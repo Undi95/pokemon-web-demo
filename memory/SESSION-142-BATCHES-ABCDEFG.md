@@ -243,10 +243,24 @@ résiduels vers la même direction 1:1 strict :
   pour BALL_TRAINER_BLOCK (5), BALL_3_SHAKES_SUCCESS (4) Wally tut, shakes (0..4)
   pour cas normal. MarkBattlerForControllerExec dans chaque branche.
 
+### Round 4 (commit `a9067033`)
+- `cmd-niveau-34.ts` Cmd_getexp case 3 : `BtlController_EmitExpUpdate` wire
+  (= XP bar fill anim, stub UI Phase 1.4) + Mark battler exec.
+
+### Round 5 (commit `02b4a4b0`)
+- `cmd-niveau-1.ts` Cmd_healthbarupdate : substitute branche full 1:1 décomp
+  (`battle_script_commands.c:3133-3158`). Si STATUS2_SUBSTITUTE + substituteHP +
+  !IGNORE_SUBSTITUTE → `PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED=199)`.
+  Sinon → EmitHealthBarUpdate normal.
+- `cmd-niveau-1.ts` Cmd_attackcanceler docs : suppression TODO obsolète (= port
+  complet via atk-canceler.ts sessions 136-138).
+
 ## Compteurs STUB final
 
 - Session 141 fin : ~126 STUB/TODO/MVP occurrences
-- Session 142 fin : 87 STUB/TODO/MVP occurrences (-39 / -31%)
+- Session 142 fin (post-A-G) : 99 occurrences
+- Session 142 fin (post-cleanup R1-R5) : **82 occurrences (-17 / -17% vs post-A-G,
+  -44 / -35% vs session 141 fin)**
 
 Restants sont majoritairement des stubs intentionnels Phase 1.4+ (UI controllers,
 naming screen, audio engine wires, Frontier-specific, PC storage, custom berries
