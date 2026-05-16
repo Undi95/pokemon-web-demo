@@ -358,6 +358,43 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'PARTNER_NAME':
         // Trainer placeholder Phase 1.4 K — wire post Frontier port.
         return `[${name}]`;
+      // 1:1 décomp B_TXT_PLAYER_MON1_NAME (0x5) / OPPONENT_MON1_NAME (0x6) / etc.
+      // (battle_message.h:16-23). Pour single battle : MON1 = battler 0/1, MON2
+      // = battler 2/3.
+      case 'PLAYER_MON1_NAME':    return _monNickname(0);
+      case 'OPPONENT_MON1_NAME':  return _monNickname(1);
+      case 'PLAYER_MON2_NAME':    return _monNickname(2);
+      case 'OPPONENT_MON2_NAME':  return _monNickname(3);
+      case 'LINK_PLAYER_MON1_NAME':
+      case 'LINK_OPPONENT_MON1_NAME':
+      case 'LINK_PLAYER_MON2_NAME':
+      case 'LINK_OPPONENT_MON2_NAME':
+        // Link multi-battle Phase 1 deferred — fallback à single-battle équivalent.
+        return _monNickname(name.includes('OPPONENT') ? (name.includes('MON2') ? 3 : 1) : (name.includes('MON2') ? 2 : 0));
+      case 'ATK_NAME_WITH_PREFIX_MON1': return _monNicknameWithPrefix(gBattlerAttacker);
+      case 'ATK_PARTNER_NAME':    return _monNickname((gBattlerAttacker & ~1) | 2);
+      // Trainer string templates (1:1 décomp B_TXT_TRAINER1_LOSE_TEXT/WIN_TEXT etc.)
+      case 'TRAINER1_LOSE_TEXT':
+      case 'TRAINER1_WIN_TEXT':
+      case 'TRAINER2_LOSE_TEXT':
+      case 'TRAINER2_WIN_TEXT':
+        return `[${name}]`;
+      case 'LINK_PLAYER_NAME':
+      case 'LINK_PARTNER_NAME':
+      case 'LINK_OPPONENT1_NAME':
+      case 'LINK_OPPONENT2_NAME':
+      case 'LINK_SCR_TRAINER_NAME':
+        // Link Phase 1 deferred — fallback player.
+        const sb2_link = (globalThis as { gSaveBlock2Ptr?: { playerName?: string } }).gSaveBlock2Ptr;
+        return sb2_link?.playerName ?? 'Joueur';
+      case 'PC_CREATOR_NAME':
+        return 'BILL';
+      // Prefix placeholders : 1:1 décomp battle_message.c utilise pour la
+      // localisation FR uniquement. EN ignore. Notre port FR : prefixes "DU "/etc.
+      case 'ATK_PREFIX1': case 'ATK_PREFIX2': case 'ATK_PREFIX3':
+        return (gBattlerAttacker & 1) === 1 ? 'du ' : '';
+      case 'DEF_PREFIX1': case 'DEF_PREFIX2': case 'DEF_PREFIX3':
+        return (gBattlerTarget & 1) === 1 ? 'du ' : '';
       default:
         return `{B_${name}}`;
     }
