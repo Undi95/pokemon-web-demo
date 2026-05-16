@@ -64,28 +64,32 @@ let _sLearningMoveTableID = 0;
  *  Source learnset : (globalThis.__game_data).getLevelUpLearnset(SPECIES_X). */
 function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number {
   const partyIdx = _gBattleStruct32.expGetterMonId ?? 0;
-  void partyIdx;
-  // Notre context battle : on lit depuis gPlayerParty (= party qui levelup).
-  // Pour Phase 1, on read directement depuis le mon courant via partyIdx.
-  // Le décomp utilise un pointer struct Pokemon* — notre party storage abstrait
-  // ça. Pour now, on lit via gBattleStruct.expGetterMonId.
-  // Si pas accessible : fallback MOVE_NONE.
-  const speciesEnum = (globalThis as { __game_data?: {
-    getSpeciesEnumByNumber?: (n: number) => string | undefined;
-    getLevelUpLearnset?: (s: string) => Array<{ level: number; move: string }> | undefined;
-  } }).__game_data;
-  // Notre BattleMon a déjà species + level. Pour port simple, on utilise le
-  // mon courant via expGetterMonId index dans gPlayerParty.
-  const mon = (globalThis as { gPlayerParty?: Array<{ species?: number; level?: number; moves?: number[] }> }).gPlayerParty?.[partyIdx];
+  // 1:1 décomp : `&gPlayerParty[gBattleStruct->expGetterMonId]`. Notre port :
+  // gameState.party[partyIdx] (= PokemonInstance avec speciesId/level/moves).
+  const gs = (globalThis as { gameState?: { party?: Array<{
+    speciesId?: number; speciesEnum?: string; level?: number;
+    moves?: Array<{ id?: string; pp?: number }>;
+  }> } }).gameState;
+  const mon = gs?.party?.[partyIdx];
   if (!mon) return MOVE_NONE;
-  const speciesNum = mon.species ?? 0;
+
+  // 1:1 décomp : species + level depuis MON_DATA_SPECIES / MON_DATA_LEVEL.
+  const speciesNum = mon.speciesId ?? 0;
   const level = mon.level ?? 1;
-  const enumKey = speciesEnum?.getSpeciesEnumByNumber?.(speciesNum) ?? `SPECIES_${speciesNum}`;
-  const learnset = speciesEnum?.getLevelUpLearnset?.(enumKey);
+  // Resolve species enum (= SPECIES_TREECKO) via globalThis cache si number,
+  // ou directement speciesEnum si déjà string.
+  let enumKey = mon.speciesEnum;
+  if (!enumKey) {
+    const cache = (globalThis as { gameDataSpeciesNumToEnum?: Record<number, string> }).gameDataSpeciesNumToEnum;
+    enumKey = cache?.[speciesNum] ?? `SPECIES_${speciesNum}`;
+  }
+  // Lookup learnset depuis bridge globalThis (= populé au boot par game-data.ts).
+  const learnsets = (globalThis as { gameDataLevelUpLearnsets?: Record<string, Array<{ level: number; move: string }>> }).gameDataLevelUpLearnsets;
+  const learnset = learnsets?.[enumKey];
   if (!learnset || learnset.length === 0) return MOVE_NONE;
 
-  // 1:1 décomp : if firstMove → reset sLearningMoveTableID + skip jusqu'au
-  // premier entry à level == mon.level.
+  // 1:1 décomp pokemon.c:3025-3034 : if firstMove → reset sLearningMoveTableID
+  // et skip jusqu'au premier entry à level == mon.level.
   if (firstMove) {
     _sLearningMoveTableID = 0;
     while (_sLearningMoveTableID < learnset.length
@@ -95,26 +99,38 @@ function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number 
     if (_sLearningMoveTableID >= learnset.length) return MOVE_NONE;
   }
 
-  // 1:1 décomp : check si entry courante à ce level (sinon return MOVE_NONE).
+  // 1:1 décomp pokemon.c:3037-3042 : check entry courante à ce level
+  // (sinon return MOVE_NONE = "no more moves at this level").
   if (_sLearningMoveTableID >= learnset.length
       || learnset[_sLearningMoveTableID].level !== level) {
     return MOVE_NONE;
   }
-  // Resolve move name → moveId (= utilise (globalThis).MOVE_X enum si dispo).
-  const moveName = learnset[_sLearningMoveTableID].move;
+
+  // Resolve move name → moveId via constants moves-data (= MOVE_POUND = 1, etc.).
+  const moveName = learnset[_sLearningMoveTableID].move;  // ex. "MOVE_POUND"
   const moveId = (globalThis as Record<string, unknown>)[moveName] as number | undefined ?? 0;
-  // Set gMoveToLearn (= state global pour Cmd_buffermovetolearn).
+
+  // 1:1 décomp : `gMoveToLearn = ...` set le global pour Cmd_buffermovetolearn.
   const setM = (globalThis as { __battleStateMutators?: { setMoveToLearn?: (v: number) => void } })
     .__battleStateMutators?.setMoveToLearn;
   if (setM) setM(moveId);
   _sLearningMoveTableID++;
-  // GiveMoveToMon → si déjà 4 moves : MON_HAS_MAX_MOVES, si déjà connu : MON_ALREADY_KNOWS_MOVE.
+
+  // 1:1 décomp : retval = GiveMoveToMon(mon, gMoveToLearn). GiveMoveToMon
+  // retourne :
+  //   - MOVE_NONE (= ne devrait pas arriver ici, mais safety)
+  //   - MON_HAS_MAX_MOVES (0xFFFF) si 4 slots full
+  //   - MON_ALREADY_KNOWS_MOVE (0xFFFE) si move déjà dans party
+  //   - moveId si appris dans slot vide.
   const moves = mon.moves ?? [];
-  if (moves.includes(moveId)) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
-  // Find empty slot.
+  const moveIdLower = moveName.replace(/^MOVE_/, '').toLowerCase();
+  const alreadyKnows = moves.some(m => m?.id === moveIdLower);
+  if (alreadyKnows) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
+  // Find empty slot. Notre party format : moves is array de {id, pp}.
   for (let i = 0; i < 4; i++) {
-    if (!moves[i] || moves[i] === MOVE_NONE) {
-      moves[i] = moveId;
+    if (!moves[i] || !moves[i].id) {
+      // Insert dans le slot vide.
+      moves[i] = { id: moveIdLower, pp: 35 /* default PP, will be overwritten */ };
       return moveId;
     }
   }

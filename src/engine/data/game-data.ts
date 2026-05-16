@@ -172,6 +172,29 @@ export function loadGameData(): Promise<void> {
     // battle-string-decoder placeholder {B_TRAINER1_CLASS}/{B_TRAINER1_NAME}.
     (globalThis as Record<string, unknown>).gameDataTrainers = trainers;
     (globalThis as Record<string, unknown>).gameDataTrainerClassesFr = trainerClassNamesFr;
+    // 1:1 décomp bridge : expose levelUpLearnsets pour MonTryLearningNewMove
+    // (= cmd-niveau-32.ts Cmd_handlelearnnewmove) + reverse cache species
+    // number → enum string pour lookup.
+    (globalThis as Record<string, unknown>).gameDataLevelUpLearnsets = levelUpLearnsets;
+    // Build species number → enum reverse cache via species-data constants.
+    const speciesMod = await import('../decomp-data/auto/include/constants/species-data');
+    const speciesNumToEnum: Record<number, string> = {};
+    for (const [key, val] of Object.entries(speciesMod)) {
+      if (key.startsWith('SPECIES_') && typeof val === 'number') {
+        if (!(val in speciesNumToEnum)) speciesNumToEnum[val] = key;
+      }
+    }
+    (globalThis as Record<string, unknown>).gameDataSpeciesNumToEnum = speciesNumToEnum;
+    // Build moves number → enum reverse cache via moves-data constants
+    // (= utile pour MonTryLearningNewMove + battle-string-decoder).
+    const movesMod = await import('../decomp-data/auto/include/constants/moves-data');
+    const movesNumToEnum: Record<number, string> = {};
+    for (const [key, val] of Object.entries(movesMod)) {
+      if (key.startsWith('MOVE_') && typeof val === 'number') {
+        if (!(val in movesNumToEnum)) movesNumToEnum[val] = key;
+      }
+    }
+    (globalThis as Record<string, unknown>).gameDataMovesNumToEnum = movesNumToEnum;
     console.log(`[game-data] loaded — ${Object.keys(species).length} species, ` +
       `${Object.keys(moves).length} moves, ${Object.keys(trainers).length} trainers, ` +
       `${typeChart.length} type-chart entries`);
