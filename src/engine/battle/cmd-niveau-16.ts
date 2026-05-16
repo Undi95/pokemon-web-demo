@@ -75,14 +75,20 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 décomp `GetPokedexHeightWeight(natDexNum, idx)` (= field helper).
- *  Pour MVP, on retourne 0 (= petits poids, gDynamicBasePower=20). Pas porté
- *  car ce sont les weights officiels Pokedex (= data côté field, pas battle). */
-function _getPokedexWeight(_species: number): number {
-  // TODO porter table gBaseStats[].height + sIndoorTrainerBattleResultFlags
-  // ou gPokedexDataPtr->weights. Pour l'instant retourne 0 = défaut petit
-  // pokemon (= Low Kick deals minimum power).
-  return 0;
+/** 1:1 décomp `GetPokedexHeightWeight(dexNum, data)` (pokedex.c:4194-4205).
+ *  Pour Low Kick : utilise weight (data=1).
+ *
+ *  Lookup via globalThis.gPokedexEntries[dexNum].weight si dispo (= decomp data
+ *  lazy load). Sinon retourne 0 (= défaut petit pokemon = Low Kick power 20).
+ *  Le décomp passe nationalDexNum, donc on convertit species → dexNum via
+ *  SpeciesToNationalPokedexNum si dispo. */
+function _getPokedexWeight(species: number): number {
+  const g = globalThis as {
+    gPokedexEntries?: Array<{ weight?: number }>;
+    SpeciesToNationalPokedexNum?: (species: number) => number;
+  };
+  const dexNum = g.SpeciesToNationalPokedexNum?.(species) ?? species;
+  return g.gPokedexEntries?.[dexNum]?.weight ?? 0;
 }
 
 // ─── 0x94 damagetohalftargethp ────────────────────────────────────────────

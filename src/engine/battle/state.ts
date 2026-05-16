@@ -1072,5 +1072,7 @@ if (!(globalThis as Record<string, unknown>).__battleStateMutators) {
   setTrainerBattleOpponent_A: (v: number) => { gTrainerBattleOpponent_A = v & 0xFFFF; },
   getNumSafariBalls: () => 0,
   setNumSafariBalls: () => { /* gNumSafariBalls pas encore déclaré (= Safari Frontier scope) */ },
+  getMoveToLearn: () => gMoveToLearn,
+  setMoveToLearn: (v: number) => { gMoveToLearn = v & 0xFFFF; },
 };
 }  // end of if-not-set guard for __battleStateMutators

@@ -54,12 +54,64 @@ import {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `GetTrainerMoneyToGive(trainerId)` (battle_setup.c). Retourne
- *  trainer.baseMoney × max(party.level). Notre stub : retourne 100 par défaut
- *  pour permettre le opcode de fonctionner sans gTrainers table portée. */
+import { getTrainerMoneyValue, gTrainerMoneyTable } from './data/trainer-money-table';
+
+const TRAINER_SECRET_BASE_LOCAL = 1024;  // 1:1 constants/trainers.h.
+const F_TRAINER_PARTY_CUSTOM_MOVESET = 1 << 0;
+const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
+
+/** 1:1 décomp `GetTrainerMoneyToGive(trainerId)` (battle_script_commands.c:5581-5636).
+ *  gTrainers est lu dynamiquement depuis globalThis (= decomp-data lazy load
+ *  quand le bytecode système charge ce data). Si non dispo, on retombe sur
+ *  default classId=0xFF (=5) et lastMonLevel=party adversaire last entry. */
 function _getTrainerMoneyToGive(trainerId: number): number {
-  // TODO porter gTrainers[id].baseMoney + max party level lookup.
-  return trainerId !== 0 ? 100 : 0;
+  // 1:1 décomp : Secret Base path (= 20 × levels[0] × moneyMultiplier).
+  if (trainerId === TRAINER_SECRET_BASE_LOCAL) {
+    const sb = (globalThis as { gBattleResources?: { secretBase?: { party?: { levels: number[] } } } })
+      .gBattleResources?.secretBase?.party;
+    const lvl0 = sb?.levels?.[0] ?? 1;
+    return 20 * lvl0 * _getMoneyMultiplier();
+  }
+
+  // 1:1 décomp : switch partyFlags → lastMonLevel = party[partySize-1].lvl.
+  const trainers = (globalThis as { gTrainers?: Array<{ partyFlags: number; partySize: number; trainerClass: number; party: { NoItemDefaultMoves?: Array<{ lvl: number }>; NoItemCustomMoves?: Array<{ lvl: number }>; ItemDefaultMoves?: Array<{ lvl: number }>; ItemCustomMoves?: Array<{ lvl: number }> } }> }).gTrainers;
+  const tr = trainers?.[trainerId];
+  let lastMonLevel = 0;
+  let trainerClass = 0xFF;
+  if (tr) {
+    trainerClass = tr.trainerClass;
+    const flags = tr.partyFlags;
+    const slot = tr.partySize - 1;
+    if (flags === 0) {
+      lastMonLevel = tr.party.NoItemDefaultMoves?.[slot]?.lvl ?? 0;
+    } else if (flags === F_TRAINER_PARTY_CUSTOM_MOVESET) {
+      lastMonLevel = tr.party.NoItemCustomMoves?.[slot]?.lvl ?? 0;
+    } else if (flags === F_TRAINER_PARTY_HELD_ITEM) {
+      lastMonLevel = tr.party.ItemDefaultMoves?.[slot]?.lvl ?? 0;
+    } else if (flags === (F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM)) {
+      lastMonLevel = tr.party.ItemCustomMoves?.[slot]?.lvl ?? 0;
+    }
+  } else {
+    // Fallback : utilise party adversaire en battle pour estimer lastMonLevel.
+    // Pas 1:1 strict mais évite crashs si gTrainers pas porté.
+    for (let i = 5; i >= 0; i--) {
+      const lvl = GetMonData(gEnemyParty[i], 6 /* MON_DATA_LEVEL */) as number;
+      if (lvl > 0) { lastMonLevel = lvl; break; }
+    }
+  }
+
+  const value = getTrainerMoneyValue(trainerClass);
+  void gTrainerMoneyTable;  // suppress unused warning for the import.
+
+  // 1:1 décomp : BATTLE_TYPE_DOUBLE × 2 multiplier, BATTLE_TYPE_TWO_OPPONENTS pas.
+  // Reference battle_script_commands.c:5627-5632.
+  if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+    return 4 * lastMonLevel * _getMoneyMultiplier() * value;
+  } else if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    return 4 * lastMonLevel * _getMoneyMultiplier() * 2 * value;
+  } else {
+    return 4 * lastMonLevel * _getMoneyMultiplier() * value;
+  }
 }
 
 // 1:1 décomp `AddMoney(money_ptr, amount)` — wired via auto-data/money.

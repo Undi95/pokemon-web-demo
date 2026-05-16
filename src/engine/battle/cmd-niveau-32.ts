@@ -25,6 +25,7 @@ import {
   gBattleMons, setActiveBattler,
   gBattleTypeFlags,
   gBattleControllerExecFlags,
+  gBattleStruct as _gBattleStruct32,
 } from './state';
 import {
   MOVE_NONE,
@@ -40,10 +41,76 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `MonTryLearningNewMove(mon, firstMove)` (pokemon.c).
- *  MVP : retourne MOVE_NONE (= rien à apprendre). */
-function _monTryLearningNewMove(_battlerIdx: number, _firstMove: number): number {
-  return MOVE_NONE;
+// 1:1 décomp `static u8 sLearningMoveTableID` (pokemon.c:155-ish).
+// État persistant entre Cmd_handlelearnnewmove successifs.
+let _sLearningMoveTableID = 0;
+
+/** 1:1 décomp `MonTryLearningNewMove(mon, firstMove)` (pokemon.c:3015-3045).
+ *  Iterate gLevelUpLearnsets[species] depuis sLearningMoveTableID, set gMoveToLearn
+ *  pour le premier match level, et GiveMoveToMon. Retourne :
+ *   - MOVE_NONE : aucun nouveau move à apprendre
+ *   - MON_HAS_MAX_MOVES : 4 moves déjà connus
+ *   - MON_ALREADY_KNOWS_MOVE : move déjà connu, caller doit reboucler
+ *   - retour de GiveMoveToMon : move appris.
+ *
+ *  Source learnset : (globalThis.__game_data).getLevelUpLearnset(SPECIES_X). */
+function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number {
+  const partyIdx = _gBattleStruct32.expGetterMonId ?? 0;
+  void partyIdx;
+  // Notre context battle : on lit depuis gPlayerParty (= party qui levelup).
+  // Pour Phase 1, on read directement depuis le mon courant via partyIdx.
+  // Le décomp utilise un pointer struct Pokemon* — notre party storage abstrait
+  // ça. Pour now, on lit via gBattleStruct.expGetterMonId.
+  // Si pas accessible : fallback MOVE_NONE.
+  const speciesEnum = (globalThis as { __game_data?: {
+    getSpeciesEnumByNumber?: (n: number) => string | undefined;
+    getLevelUpLearnset?: (s: string) => Array<{ level: number; move: string }> | undefined;
+  } }).__game_data;
+  // Notre BattleMon a déjà species + level. Pour port simple, on utilise le
+  // mon courant via expGetterMonId index dans gPlayerParty.
+  const mon = (globalThis as { gPlayerParty?: Array<{ species?: number; level?: number; moves?: number[] }> }).gPlayerParty?.[partyIdx];
+  if (!mon) return MOVE_NONE;
+  const speciesNum = mon.species ?? 0;
+  const level = mon.level ?? 1;
+  const enumKey = speciesEnum?.getSpeciesEnumByNumber?.(speciesNum) ?? `SPECIES_${speciesNum}`;
+  const learnset = speciesEnum?.getLevelUpLearnset?.(enumKey);
+  if (!learnset || learnset.length === 0) return MOVE_NONE;
+
+  // 1:1 décomp : if firstMove → reset sLearningMoveTableID + skip jusqu'au
+  // premier entry à level == mon.level.
+  if (firstMove) {
+    _sLearningMoveTableID = 0;
+    while (_sLearningMoveTableID < learnset.length
+           && learnset[_sLearningMoveTableID].level !== level) {
+      _sLearningMoveTableID++;
+    }
+    if (_sLearningMoveTableID >= learnset.length) return MOVE_NONE;
+  }
+
+  // 1:1 décomp : check si entry courante à ce level (sinon return MOVE_NONE).
+  if (_sLearningMoveTableID >= learnset.length
+      || learnset[_sLearningMoveTableID].level !== level) {
+    return MOVE_NONE;
+  }
+  // Resolve move name → moveId (= utilise (globalThis).MOVE_X enum si dispo).
+  const moveName = learnset[_sLearningMoveTableID].move;
+  const moveId = (globalThis as Record<string, unknown>)[moveName] as number | undefined ?? 0;
+  // Set gMoveToLearn (= state global pour Cmd_buffermovetolearn).
+  const setM = (globalThis as { __battleStateMutators?: { setMoveToLearn?: (v: number) => void } })
+    .__battleStateMutators?.setMoveToLearn;
+  if (setM) setM(moveId);
+  _sLearningMoveTableID++;
+  // GiveMoveToMon → si déjà 4 moves : MON_HAS_MAX_MOVES, si déjà connu : MON_ALREADY_KNOWS_MOVE.
+  const moves = mon.moves ?? [];
+  if (moves.includes(moveId)) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
+  // Find empty slot.
+  for (let i = 0; i < 4; i++) {
+    if (!moves[i] || moves[i] === MOVE_NONE) {
+      moves[i] = moveId;
+      return moveId;
+    }
+  }
+  return 0xFFFF /* MON_HAS_MAX_MOVES */;
 }
 
 const MON_HAS_MAX_MOVES = 0xFFFF;
@@ -219,8 +286,13 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
         break;
       }
       case 7  /* ITEM_DIVE_BALL */:
-        // STUB GetCurrentMapType : MAP_TYPE_UNDERWATER pas porté ; assume false.
-        ballMultiplier = 10;
+        // 1:1 décomp : GetCurrentMapType() == MAP_TYPE_UNDERWATER (5).
+        // Lookup via globalThis.gMapHeader.mapType (= overworld map sync).
+        if (_getCurrentMapTypeHBT() === 5 /* MAP_TYPE_UNDERWATER */) {
+          ballMultiplier = 35;
+        } else {
+          ballMultiplier = 10;
+        }
         break;
       case 8  /* ITEM_NEST_BALL */: {
         const lvl = _gBattleMonsHBT[targetIdx].level;
@@ -332,6 +404,15 @@ import {
 import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../decomp-data/auto/src-all/pokedex-all-auto';
 import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';
 import { speciesNumberToEnum as _speciesNumberToEnumHBT } from './data/species-runtime';
+
+/** 1:1 décomp `GetCurrentMapType()` (overworld.c:1344-1347). Lookup via global
+ *  gMapHeader.mapType — sync from overworld system. Retourne 0 (MAP_TYPE_NONE)
+ *  si non dispo (= rare en battle path : un battle est toujours triggered depuis
+ *  une map valide). */
+function _getCurrentMapTypeHBT(): number {
+  const gh = (globalThis as { gMapHeader?: { mapType?: number } }).gMapHeader;
+  return gh?.mapType ?? 0;
+}
 
 function _getSpeciesCatchRateHBT(species: number): number {
   return _getSpeciesInfoHBT(_speciesNumberToEnumHBT(species))?.catchRate ?? 0;
