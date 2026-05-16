@@ -303,6 +303,27 @@ export function getBattleHistoryItemEffect(battler: number): number {
   return _battleHistory.itemEffects[battler] ?? 0;
 }
 
+/** 1:1 décomp `PressurePPLose(u8 target, u8 attacker, u16 move)` (battle_util.c:740).
+ *  Si target a ABILITY_PRESSURE → attacker perd 1 PP supplémentaire sur ce move.
+ *  STUB BtlController_EmitSetMonData : notre BattleMon.pp[] est write direct
+ *  donc no-op nécessaire pour persistance MVP. */
+export function PressurePPLose(target: number, attacker: number, move: number): void {
+  if (gBattleMons[target].ability !== 49 /* ABILITY_PRESSURE */) return;
+
+  let moveIndex: number;
+  for (moveIndex = 0; moveIndex < 4 /* MAX_MON_MOVES */; moveIndex++) {
+    if (gBattleMons[attacker].moves[moveIndex] === move) break;
+  }
+  if (moveIndex === 4) return;
+
+  if (gBattleMons[attacker].pp[moveIndex] !== 0) {
+    gBattleMons[attacker].pp[moveIndex]--;
+  }
+
+  // STUB MOVE_IS_PERMANENT(attacker, slot) → Emit SetMonData REQUEST_PPMOVE_X.
+  // Notre BattleMon.pp[] est write direct (= persist au battle end).
+}
+
 /** 1:1 décomp `ClearBattlerMoveHistory(u8 battler)` (battle_ai_script_commands.c:635). */
 export function ClearBattlerMoveHistory(battler: number): void {
   for (let i = 0; i < NUM_BATTLE_STATS && i < 4; i++) {

@@ -89,6 +89,7 @@ import {
   gSpecialStatuses, gBattleResults,
   gBattleOutcome, setCurrentActionFuncId,
   gBideDmg, gBideTarget, gHpDealt,
+  setLastUsedAbility,
 } from './state';
 import {
   B_ACTION_FINISHED,
@@ -1353,9 +1354,80 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : `gHitMarker |= HITMARKER_OBEYS;` (= obeyed le check disobedience)
   setHitMarker(gHitMarker | HITMARKER_OBEYS);
 
-  // TODO porter : MagicCoat bounce / Snatch / LightningRod / DEFENDER_IS_PROTECTED.
+  // 1:1 décomp ll.962-1006 : Magic Coat / Snatch / Lightning Rod / Protect.
+  const moveFlags = getBattleMove(gCurrentMove).flags;
+
+  // 1. Magic Coat bounce (= reflect status moves).
+  if (gProtectStructs[gBattlerTarget].bounceMove
+      && (moveFlags & FLAG_MAGIC_COAT_AFFECTED)) {
+    PressurePPLoseAtkCanceler(gBattlerAttacker, gBattlerTarget, MOVE_MAGIC_COAT_ATKCANCELER);
+    gProtectStructs[gBattlerTarget].bounceMove = 0;
+    ctx.scriptPtrStack.push(opcodeStartPtr);
+    const off = getBattleScriptOffset('BattleScript_MagicCoatBounce');
+    if (off >= 0) ctx.scriptPtr = off;
+    return false;
+  }
+
+  // 2. Snatch (= steal status move).
+  for (let i = 0; i < gBattlersCount; i++) {
+    const snatchBattler = gBattlerByTurnOrderAC[i];
+    if (gProtectStructs[snatchBattler].stealMove
+        && (moveFlags & FLAG_SNATCH_AFFECTED)) {
+      PressurePPLoseAtkCanceler(gBattlerAttacker, snatchBattler, MOVE_SNATCH_ATKCANCELER);
+      gProtectStructs[snatchBattler].stealMove = 0;
+      gBattleScripting.battler = snatchBattler;
+      ctx.scriptPtrStack.push(opcodeStartPtr);
+      const off = getBattleScriptOffset('BattleScript_SnatchedMove');
+      if (off >= 0) ctx.scriptPtr = off;
+      return false;
+    }
+  }
+
+  // 3. Lightning Rod redirect (= absorb Electric move).
+  if (gSpecialStatuses[gBattlerTarget].lightningRodRedirected) {
+    gSpecialStatuses[gBattlerTarget].lightningRodRedirected = 0;
+    setLastUsedAbility(78 /* ABILITY_LIGHTNING_ROD */);
+    ctx.scriptPtrStack.push(opcodeStartPtr);
+    const off = getBattleScriptOffset('BattleScript_TookAttack');
+    if (off >= 0) ctx.scriptPtr = off;
+    _recordAbilityBattleAC(gBattlerTarget, 78);
+    return false;
+  }
+
+  // 4. DEFENDER_IS_PROTECTED + 2-turn check.
+  if (gProtectStructs[gBattlerTarget].protected
+      && (moveFlags & FLAG_PROTECT_AFFECTED)
+      && (gCurrentMove !== MOVE_CURSE_ATKCANCELER
+          || _isBattlerOfTypeAC(gBattlerAttacker, 7 /* TYPE_GHOST */))
+      && (!_isTwoTurnsMoveAC(gCurrentMove)
+          || (gBattleMons[gBattlerAttacker].status2 & STATUS2_MULTIPLETURNS))) {
+    _cancelMultiTurnMovesAC(gBattlerAttacker);
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    gLastLandedMoves[gBattlerTarget] = 0;
+    gLastHitByType[gBattlerTarget] = 0;
+    gBattleCommunication[5 /* MISS_TYPE */] = B_MSG_PROTECTED_ATKCANCELER;
+  }
 
   return false;
+}
+
+// Helpers pour Cmd_attackcanceler (= éviter dups import).
+import { PressurePPLose as PressurePPLoseAtkCanceler, CancelMultiTurnMoves as _cancelMultiTurnMovesAC, RecordAbilityBattle as _recordAbilityBattleAC } from './util';
+import { gBattlerByTurnOrder as gBattlerByTurnOrderAC } from './state';
+import { FLAG_MAGIC_COAT_AFFECTED, FLAG_SNATCH_AFFECTED, FLAG_PROTECT_AFFECTED } from './constants';
+import { MOVE_MAGIC_COAT as MOVE_MAGIC_COAT_ATKCANCELER, MOVE_SNATCH as MOVE_SNATCH_ATKCANCELER, MOVE_CURSE as MOVE_CURSE_ATKCANCELER } from '../decomp-data/auto/include/constants/moves-data';
+// B_MSG_PROTECTED = 0 (= "X protected itself") dans le table sProtectSuccessStringIds.
+const B_MSG_PROTECTED_ATKCANCELER = 0;
+// IsBattlerOfType + IsTwoTurnsMove helpers (= déjà portés dans d'autres modules).
+function _isBattlerOfTypeAC(battler: number, type: number): boolean {
+  const mon = gBattleMons[battler];
+  return mon.type1 === type || mon.type2 === type;
+}
+function _isTwoTurnsMoveAC(move: number): boolean {
+  const eff = getBattleMove(move).effect;
+  // 1:1 décomp battle_script_commands.c:8199 IsTwoTurnsMove — 5 effects.
+  // (Audit fix valeurs auto-data effectuée session 138.)
+  return eff === 145 || eff === 39 || eff === 151 || eff === 155 || eff === 26;
 }
 
 // ─── Install handlers in dispatch table ─────────────────────────────────────
