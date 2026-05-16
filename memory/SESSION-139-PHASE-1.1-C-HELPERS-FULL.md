@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**État final** : 25 commits, 0 erreur TS, preview clean
+**État final** : 40 commits, 0 erreur TS, preview clean (audit + helpers FULL)
 
 ## Summary
 
@@ -162,6 +162,25 @@ Source : pokemon.c:3408-3420.
 - Map badgeFlag number → enum string ('FLAG_BADGE01_GET'..'FLAG_BADGE08_GET')
 - Wire FlagGet réel via script-vars (= gameState.hasFlag)
 - Badges boost stats (+10% si BADGE01/05/07 set pour player)
+
+### Audit + helpers post-audit (commits `4306ae7d` → `f3c77c30`)
+
+**Audit complet 249 opcodes** (= `AUDIT-OPCODES-2026-05-16.md`) :
+- 4 batches d'audit via Agents Explore en parallèle
+- Résultat : ~75% FULL strict, 0 bug 1:1 critique trouvé
+- Agent over-pessimisme corrigé (= 9 opcodes signalés STUB en fait FULL)
+
+**Helpers FULL portés post-audit** :
+- `4306ae7d` Cmd_tryfaintmon FULL (HITMARKER_FAINTED + jumps + counters + Destiny Bond + Grudge)
+- `a115705e` Cmd_accuracycheck HOLD_EFFECT_EVASION_UP wire
+- `8761c9ce` Cmd_switchoutabilities bitmask fix + Cmd_pickup FULL (sPickupItems[18] + sRarePickupItems[11] + sPickupProbabilities[9])
+- `cca86963` Cmd_givecaughtmon FULL (GiveMonToPlayer wire + caughtMon{Species,Ball,Box} log)
+- `2ea9f40b` Cmd_handleballthrow FULL (~146l capture state machine + Sqrt formula)
+- `85bb32ab` _getMoneyMultiplier wire vers gBattleStruct.moneyMultiplier
+- `a18d2942` Cmd_assistattackselect FULL (party iter 1:1 vs gBattleMons stub)
+- `4cf7fe0b` gUsedHeldItems alias vers gBattleStruct.usedHeldItems
+- `297c494c` HandleAction_Run FULL 1:1 (3 branches : link + player TryRunFromBattle + opponent Roar/Whirlwind)
+- `f3c77c30` HandleAction_TryFinish + NothingIsFainted + ActionFinished FULL + table 14 entries
 
 ### gBattleResourcesFlags consolidé (`b8c60824`)
 Source : `struct ResourceFlags { u32 flags[MAX_BATTLERS_COUNT] }` (battle.h:63-66).
