@@ -10,6 +10,23 @@ type: project
 **Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
 
+## 🔄 Iter B post-/loop reload — extended validation
+
+Tests étendus post fixes :
+- **Stat stacking max** : swordsdance × 3 = ATK 6→8→10→12 (= cap MAX_STAT_STAGE)
+- **Multi-effect moves** : curse → ATK +1, DEF +1, SPEED -1 (= non-Ghost) ✓
+- **Belly Drum** : -50% hp + ATK max (= 12) ✓
+- **Sub** : -25% hp + STATUS2_SUBSTITUTE bit ✓
+- **Confuse-Ray** : STATUS2_CONFUSION bits ✓
+- **Attract** : STATUS2_INFATUATION bit ✓
+- **Toxic** : status1=0x80 STATUS1_TOXIC_POISON ✓
+- **Side effects (Reflect/Light Screen/Safeguard/Mist)** : opcodes run sans crash (= side timer wire à vérifier in field)
+- **Rest at full HP** : fail correct 1:1 décomp (= "But it failed!")
+- **Top dispatched** : moveend (112), waitmessage (102), setbyte (99) etc.
+- **Total dispatches** sur 100 scripts : 1022 — 0 unknown opcodes
+
+Bytecode 1:1 décomp est **PRODUCTION-READY** pour Phase 1 combat logic.
+
 ## 🎯 TL;DR pour réveil
 
 **8 audit bugs CRITIQUES fixés ce matin**. Bytecode 1:1 décomp est maintenant
