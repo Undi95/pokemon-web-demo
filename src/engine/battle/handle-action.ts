@@ -444,18 +444,123 @@ export function HandleAction_RunBattleScript(_ctx?: BattleScriptContext): void {
   // Script déjà en cours via le bytecode interpreter — rien à faire.
 }
 
-/** Dispatch table 1:1 décomp `sBattleStateFuncs[]` (battle_main.c:537-549).
- *  Indexed par gCurrentActionFuncId (B_ACTION_*). */
+/** 1:1 décomp `HandleAction_TryFinish` (battle_util.c:638-645). */
+export function HandleAction_TryFinish(_ctx?: BattleScriptContext): void {
+  // STUB HandleFaintedMonActions : retourne true tant qu'il y a faint flow,
+  // false quand done. Pour Phase 1, on assume done immédiatement.
+  // TODO Phase 1.4 : port HandleFaintedMonActions complet.
+  _gBattleStructHAF.faintedActionsState = 0;
+  setCurrentActionFuncId(B_ACTION_FINISHED);
+}
+
+const _HM_RESET_BITS =
+  _HITMARKER_DESTINYBOND_HAF | _HITMARKER_IGNORE_SUBSTITUTE_HAF
+  | _HITMARKER_ATTACKSTRING_PRINTED_HAF | _HITMARKER_NO_PPDEDUCT_HAF
+  | _HITMARKER_STATUS_ABILITY_EFFECT_HAF | _HITMARKER_IGNORE_ON_AIR_HAF
+  | _HITMARKER_IGNORE_UNDERGROUND_HAF | _HITMARKER_IGNORE_UNDERWATER_HAF
+  | _HITMARKER_PASSIVE_HP_UPDATE_HAF | _HITMARKER_OBEYS_HAF
+  | _HITMARKER_WAKE_UP_CLEAR_HAF | _HITMARKER_SYNCHRONIZE_EFFECT_HAF
+  | _HITMARKER_CHARGING_HAF | _HITMARKER_NEVER_SET_HAF;
+
+/** 1:1 décomp `HandleAction_NothingIsFainted` (battle_util.c:647-656). */
+export function HandleAction_NothingIsFainted(_ctx?: BattleScriptContext): void {
+  setCurrentTurnActionNumberHAR(_gCurrentTurnActionNumberHAF + 1);
+  setCurrentActionFuncId(_gActionsByTurnOrderHAF[_gCurrentTurnActionNumberHAF]);
+  setHitMarker(_gHitMarkerHAF & ~_HM_RESET_BITS);
+}
+
+/** 1:1 décomp `HandleAction_ActionFinished` (battle_util.c:658-684). */
+export function HandleAction_ActionFinished(_ctx?: BattleScriptContext): void {
+  // 1:1 décomp : monToSwitchIntoId[battlerByTurnOrder[current]] = PARTY_SIZE.
+  _gBattleStructHAF.monToSwitchIntoId[_gBattlerByTurnOrderHAF[_gCurrentTurnActionNumberHAF]] = 6 /* PARTY_SIZE */;
+  setCurrentTurnActionNumberHAR(_gCurrentTurnActionNumberHAF + 1);
+  setCurrentActionFuncId(_gActionsByTurnOrderHAF[_gCurrentTurnActionNumberHAF]);
+  _SpecialStatusesClearHAF();
+  setHitMarker(_gHitMarkerHAF & ~_HM_RESET_BITS);
+
+  setCurrentMove(0);
+  setBattleMoveDamageHAR(0);
+  setMoveResultFlags(0);
+  gBattleScripting.animTurn = 0;
+  gBattleScripting.animTargetsHit = 0;
+  _gLastLandedMovesHAF[gBattlerAttacker] = 0;
+  _gLastHitByTypeHAF[gBattlerAttacker] = 0;
+  _gBattleStructHAF.dynamicMoveType = 0;
+  setDynamicBasePowerHAR(0);
+  gBattleScripting.moveendState = 0;
+  gBattleCommunication[3] = 0;  // MOVE_EFFECT_BYTE
+  gBattleCommunication[4] = 0;
+  gBattleScripting.multihitMoveEffect = 0;
+  // STUB gBattleResources.battleScriptsStack.size = 0 (= notre scriptPtrStack
+  // est géré par BattleScriptContext, pas ici).
+}
+
+/** 1:1 décomp `SpecialStatusesClear()` (battle_util.c). Reset gSpecialStatuses
+ *  pour tous les battlers à blank. */
+function _SpecialStatusesClearHAF(): void {
+  for (let i = 0; i < gBattlersCount; i++) {
+    const ss = _gSpecialStatusesHAF[i];
+    ss.statLowered = 0;
+    ss.lightningRodRedirected = 0;
+    ss.restoredBattlerSprite = 0;
+    ss.intimidatedMon = 0;
+    ss.traced = 0;
+    ss.ppNotAffectedByPressure = 0;
+    ss.faintedHasReplacement = 0;
+    ss.focusBanded = 0;
+    ss.shellBellDmg = 0;
+    ss.physicalDmg = 0;
+    ss.specialDmg = 0;
+    ss.physicalBattlerId = 0;
+    ss.specialBattlerId = 0;
+  }
+}
+
+// Imports HandleAction_TryFinish/NothingIsFainted/ActionFinished.
+import {
+  gBattleStruct as _gBattleStructHAF,
+  gCurrentTurnActionNumber as _gCurrentTurnActionNumberHAF,
+  gActionsByTurnOrder as _gActionsByTurnOrderHAF,
+  gBattlerByTurnOrder as _gBattlerByTurnOrderHAF,
+  gHitMarker as _gHitMarkerHAF,
+  gLastLandedMoves as _gLastLandedMovesHAF,
+  gLastHitByType as _gLastHitByTypeHAF,
+  gSpecialStatuses as _gSpecialStatusesHAF,
+  setBattleMoveDamage as setBattleMoveDamageHAR,
+  setDynamicBasePower as setDynamicBasePowerHAR,
+} from './state';
+import {
+  HITMARKER_DESTINYBOND as _HITMARKER_DESTINYBOND_HAF,
+  HITMARKER_IGNORE_SUBSTITUTE as _HITMARKER_IGNORE_SUBSTITUTE_HAF,
+  HITMARKER_ATTACKSTRING_PRINTED as _HITMARKER_ATTACKSTRING_PRINTED_HAF,
+  HITMARKER_NO_PPDEDUCT as _HITMARKER_NO_PPDEDUCT_HAF,
+  HITMARKER_STATUS_ABILITY_EFFECT as _HITMARKER_STATUS_ABILITY_EFFECT_HAF,
+  HITMARKER_IGNORE_ON_AIR as _HITMARKER_IGNORE_ON_AIR_HAF,
+  HITMARKER_IGNORE_UNDERGROUND as _HITMARKER_IGNORE_UNDERGROUND_HAF,
+  HITMARKER_IGNORE_UNDERWATER as _HITMARKER_IGNORE_UNDERWATER_HAF,
+  HITMARKER_PASSIVE_HP_UPDATE as _HITMARKER_PASSIVE_HP_UPDATE_HAF,
+  HITMARKER_OBEYS as _HITMARKER_OBEYS_HAF,
+  HITMARKER_WAKE_UP_CLEAR as _HITMARKER_WAKE_UP_CLEAR_HAF,
+  HITMARKER_SYNCHRONIZE_EFFECT as _HITMARKER_SYNCHRONIZE_EFFECT_HAF,
+  HITMARKER_CHARGING as _HITMARKER_CHARGING_HAF,
+  HITMARKER_NEVER_SET as _HITMARKER_NEVER_SET_HAF,
+} from './constants';
+
+/** Dispatch table 1:1 décomp `sTurnActionsFuncsTable[]` (battle_main.c:536-552).
+ *  Indexed par gCurrentActionFuncId (B_ACTION_*). 14 entries. */
 export const handleActionTable: ReadonlyArray<(ctx?: BattleScriptContext) => void> = [
-  HandleAction_UseMove,         // 0 B_ACTION_USE_MOVE
-  HandleAction_UseItem,         // 1 B_ACTION_USE_ITEM
-  HandleAction_Switch,          // 2 B_ACTION_SWITCH
-  HandleAction_Run,             // 3 B_ACTION_RUN
-  HandleAction_RunBattleScript, // 4 STUB safari watch
-  HandleAction_RunBattleScript, // 5 STUB safari ball
-  HandleAction_RunBattleScript, // 6 STUB safari pokeblock
-  HandleAction_RunBattleScript, // 7 STUB safari go near
-  HandleAction_RunBattleScript, // 8 STUB safari run
-  HandleAction_RunBattleScript, // 9 STUB wally throw
-  HandleAction_RunBattleScript, // 10 B_ACTION_EXEC_SCRIPT
+  HandleAction_UseMove,            // 0  B_ACTION_USE_MOVE
+  HandleAction_UseItem,            // 1  B_ACTION_USE_ITEM
+  HandleAction_Switch,             // 2  B_ACTION_SWITCH
+  HandleAction_Run,                // 3  B_ACTION_RUN
+  HandleAction_RunBattleScript,    // 4  STUB safari watch (= HandleAction_WatchesCarefully)
+  HandleAction_RunBattleScript,    // 5  STUB safari ball
+  HandleAction_RunBattleScript,    // 6  STUB safari pokeblock
+  HandleAction_RunBattleScript,    // 7  STUB safari go near
+  HandleAction_RunBattleScript,    // 8  STUB safari run
+  HandleAction_RunBattleScript,    // 9  STUB wally throw
+  HandleAction_RunBattleScript,    // 10 B_ACTION_EXEC_SCRIPT
+  HandleAction_TryFinish,          // 11 B_ACTION_TRY_FINISH
+  HandleAction_ActionFinished,     // 12 B_ACTION_FINISHED
+  HandleAction_NothingIsFainted,   // 13 B_ACTION_NOTHING_FAINTED
 ];
