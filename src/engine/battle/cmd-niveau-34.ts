@@ -83,7 +83,17 @@ import {
   MarkBattlerForControllerExec,
   BtlController_EmitExpUpdate as _BtlController_EmitExpUpdate_N34,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N34,
+  PrepareStringBattle as _PrepareStringBattleN34,
 } from './battle-controllers';
+// 1:1 décomp PREPARE_*_BUFFER macros pour Cmd_getexp message "X gained Y EXP!".
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_N34,
+  gBattleTextBuff2 as _gBattleTextBuff2_N34,
+  gBattleTextBuff3 as _gBattleTextBuff3_N34,
+  PREPARE_MON_NICK_WITH_PREFIX_BUFFER as PREPARE_MON_NICK_WITH_PREFIX_BUFFER_N34,
+  PREPARE_STRING_BUFFER as PREPARE_STRING_BUFFER_N34,
+  PREPARE_WORD_NUMBER_BUFFER as PREPARE_WORD_NUMBER_BUFFER_N34,
+} from './text-buffers';
 import { GetNatureFromPersonality as _getNatureFromPersonalityN34 } from './data/flavor-compat';
 // 1:1 décomp `getBattleScriptOffset` — wired pour Cmd_getexp BattleScript_LevelUp.
 import { getBattleScriptOffset as _getBattleScriptOffsetN34 } from './script-interpreter';
@@ -481,6 +491,19 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             } else {
               gBattleStruct.expGetterBattlerId = 0;
             }
+
+            // 1:1 décomp battle_script_commands.c:3417-3422 : PREPARE buffers
+            // + PrepareStringBattle pour le message "X a gagné Y EXP!".
+            // STRINGID_PKMNGAINEDEXP = 13. Template :
+            //   "{B_BUFF1} a gagné{B_BUFF2}\n{B_BUFF3} points EXP.!"
+            // - B_BUFF1 = nickname avec préfixe (= "POKéMON ami" / "ennemi")
+            // - B_BUFF2 = " un bonus de" (ABOOSTED) ou vide (EMPTYSTRING4) selon traded
+            // - B_BUFF3 = number xp
+            const stringIdBoost = (monOtId !== playerTID) ? 53 /* STRINGID_ABOOSTED */ : 39 /* STRINGID_EMPTYSTRING4 */;
+            PREPARE_MON_NICK_WITH_PREFIX_BUFFER_N34(_gBattleTextBuff1_N34, gBattleStruct.expGetterBattlerId, monId);
+            PREPARE_STRING_BUFFER_N34(_gBattleTextBuff2_N34, stringIdBoost);
+            PREPARE_WORD_NUMBER_BUFFER_N34(_gBattleTextBuff3_N34, 5, dmg);
+            _PrepareStringBattleN34(13 /* STRINGID_PKMNGAINEDEXP */, gBattleStruct.expGetterBattlerId);
 
             // 1:1 décomp : MonGainEVs(&gPlayerParty[monId], species).
             _MonGainEVs(monId, gBattleMons[battlerFainted].species);
