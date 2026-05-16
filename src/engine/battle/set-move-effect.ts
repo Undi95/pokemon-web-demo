@@ -733,6 +733,11 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             _recordAbilityBattle(gEffectBattler, ABILITY_STICKY_HOLD);
           }
         } else if (gBattleMons[gEffectBattler].item) {
+          // 1:1 décomp battle_script_commands.c:2882-2884 :
+          //   gLastUsedItem = gBattleMons[gEffectBattler].item;
+          //   gBattleMons[gEffectBattler].item = ITEM_NONE;
+          //   gWishFutureKnock.knockedOffMons[side] |= gBitTable[partyIdx];
+          setLastUsedItemSME(gBattleMons[gEffectBattler].item);
           gBattleMons[gEffectBattler].item = 0;
           ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_KnockedOff');
