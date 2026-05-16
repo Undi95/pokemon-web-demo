@@ -160,12 +160,14 @@ type State =
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
   | 'PLAYER_USES_MOVE' | 'PLAYER_USES_MOVE_WAIT'
+  | 'PLAYER_BYTECODE_MSG' | 'PLAYER_BYTECODE_MSG_WAIT'
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
   | 'CHECK_OPP_FAINTED'
   | 'OPP_FAINTED_TEXT' | 'OPP_FAINTED_WAIT'
   | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
+  | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
@@ -405,14 +407,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return 0;
   };
 
+  /** Pending bytecode messages : queue par applyMoveDamage en mode bytecode,
+   *  consommée séquentiellement par les states USES_MOVE/DAMAGE_OPP pour
+   *  afficher chaque message via ShowFieldMessage + wait input. */
+  let _pendingBytecodeMessages: string[] = [];
+
   /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul.
    *
    *  Si flag global `__USE_BYTECODE_FOR_DAMAGE__` est set (= localStorage ou
-   *  window var), on route via le bytecode interpreter 1:1 décomp (= 639/639
+   *  window var), on route via le bytecode interpreter 1:1 décomp (= 645/645
    *  scripts validés). Sinon, formule simplifiée ad-hoc (= legacy tutorial).
    *
    *  Pour activer : localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__', '1')
-   *  puis reload, OU window.__USE_BYTECODE_FOR_DAMAGE__ = true (no reload). */
+   *  puis reload, OU window.__USE_BYTECODE_FOR_DAMAGE__ = true (no reload).
+   *
+   *  Phase 1.4 J : capture aussi result.messages dans _pendingBytecodeMessages
+   *  pour que la state machine puisse les afficher séquentiellement (= 1:1
+   *  PRINTSTRING events décodés via battle-string-decoder). */
   const applyMoveDamage = (attacker: PokemonInstance, defender: PokemonInstance, moveIdx: number): { damage: number, typeMul: number } => {
     // Flag check : si bytecode mode activé, route via runMoveScriptViaBytecode.
     const useBytecode =
@@ -428,6 +439,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         attackerBattlerId: attBId, defenderBattlerId: defBId,
       });
       if (result.ok) {
+        // Capture messages pour affichage séquentiel par state machine.
+        if (result.messages && result.messages.length > 0) {
+          _pendingBytecodeMessages = [..._pendingBytecodeMessages, ...result.messages];
+        }
         return { damage: result.damage, typeMul: result.typeMul };
       }
       console.warn('[battle-flow] bytecode route failed:', result.reason, '— fallback to ad-hoc formula');
@@ -763,6 +778,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_USES_MOVE': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
+        // Phase 1.4 J : si bytecode mode, applyMoveDamage immédiat → fills
+        // queue + apply damage + shake → drain queue séquentiellement via
+        // PLAYER_BYTECODE_MSG state. Sinon : hardcoded ShowFieldMessage legacy.
+        const useBytecodeMsgs =
+          (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
+          || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+        if (useBytecodeMsgs && opponentMon) {
+          _pendingBytecodeMessages = [];
+          const { damage } = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
+          renderHpWindows();
+          if (damage > 0 && opponentSpriteId >= 0 && !IsBattleSceneOff()) startShake(opponentSpriteId);
+          state = 'PLAYER_BYTECODE_MSG';
+          return false;
+        }
+        // Legacy path : message hardcoded puis damage state.
         const mv = playerMon.moves[chosenMoveIndex];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
         ShowFieldMessage(`${playerMon.nickname} utilise\n${moveName}!`);
@@ -774,6 +804,29 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'PLAYER_DAMAGE_OPP';
+        }
+        return false;
+      }
+
+      // Phase 1.4 J : drain bytecode messages séquentiellement. Chaque iteration
+      // pop le next msg, ShowFieldMessage + wait input, loop until empty puis
+      // CHECK_OPP_FAINTED. Préserve l'ordre 1:1 émis par le bytecode (= USEDMOVE
+      // → effectiveness → status applied → etc.).
+      case 'PLAYER_BYTECODE_MSG': {
+        if (_pendingBytecodeMessages.length === 0) {
+          state = 'CHECK_OPP_FAINTED';
+          return false;
+        }
+        const msg = _pendingBytecodeMessages.shift()!;
+        ShowFieldMessage(msg);
+        state = 'PLAYER_BYTECODE_MSG_WAIT';
+        return false;
+      }
+
+      case 'PLAYER_BYTECODE_MSG_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'PLAYER_BYTECODE_MSG';
         }
         return false;
       }
@@ -896,12 +949,44 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'OPPONENT_USES_MOVE': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
         const oppMoveIdx = pickOpponentMove();
+        // Phase 1.4 J : bytecode mode → applyMoveDamage immédiat + drain via
+        // OPPONENT_BYTECODE_MSG. Sinon : legacy hardcoded.
+        const useBytecodeMsgs =
+          (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
+          || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+        if (useBytecodeMsgs) {
+          _pendingBytecodeMessages = [];
+          const { damage } = applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
+          renderHpWindows();
+          if (damage > 0 && playerSpriteId >= 0 && !IsBattleSceneOff()) startShake(playerSpriteId);
+          chosenMoveIndex = oppMoveIdx;
+          state = 'OPPONENT_BYTECODE_MSG';
+          return false;
+        }
         const mv = opponentMon.moves[oppMoveIdx];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
         ShowFieldMessage(`Le ${opponentMon.nickname} sauvage\nutilise ${moveName}!`);
-        // Stash for next state.
-        chosenMoveIndex = oppMoveIdx;  // reuse var (= opp move idx now)
+        chosenMoveIndex = oppMoveIdx;
         state = 'OPPONENT_USES_MOVE_WAIT';
+        return false;
+      }
+
+      case 'OPPONENT_BYTECODE_MSG': {
+        if (_pendingBytecodeMessages.length === 0) {
+          state = 'CHECK_PLAYER_FAINTED';
+          return false;
+        }
+        const msg = _pendingBytecodeMessages.shift()!;
+        ShowFieldMessage(msg);
+        state = 'OPPONENT_BYTECODE_MSG_WAIT';
+        return false;
+      }
+
+      case 'OPPONENT_BYTECODE_MSG_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'OPPONENT_BYTECODE_MSG';
+        }
         return false;
       }
 
