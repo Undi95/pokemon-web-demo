@@ -50,7 +50,7 @@ import {
   MULTISTRING_CHOOSER,
   B_MSG_STAYED_AWAKE_USING,
 } from './constants';
-import { getBattlerForBattleScript } from './util';
+import { getBattlerForBattleScript, RecordAbilityBattle } from './util';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:472). */
 function isBattlerOfType(battlerIdx: number, type: number): boolean {
@@ -153,7 +153,7 @@ function Cmd_jumpifability(ctx: BattleScriptContext): boolean {
     if (battlerPlusOne) {
       setLastUsedAbility(abilityId);
       ctx.scriptPtr = jumpPtr;
-      // TODO RecordAbilityBattle(battlerPlusOne - 1, abilityId).
+      RecordAbilityBattle(battlerPlusOne - 1, abilityId);
       gBattleScripting.battlerWithAbility = battlerPlusOne - 1;
     }
     return false;
@@ -164,7 +164,7 @@ function Cmd_jumpifability(ctx: BattleScriptContext): boolean {
     if (battlerPlusOne) {
       setLastUsedAbility(abilityId);
       ctx.scriptPtr = jumpPtr;
-      // TODO RecordAbilityBattle.
+      RecordAbilityBattle(battlerPlusOne - 1, abilityId);
       gBattleScripting.battlerWithAbility = battlerPlusOne - 1;
     }
     return false;
@@ -175,7 +175,7 @@ function Cmd_jumpifability(ctx: BattleScriptContext): boolean {
   if (gBattleMons[battler].ability === abilityId) {
     setLastUsedAbility(abilityId);
     ctx.scriptPtr = jumpPtr;
-    // TODO RecordAbilityBattle.
+    RecordAbilityBattle(battler, abilityId);
     gBattleScripting.battlerWithAbility = battler;
   }
   return false;
@@ -307,7 +307,7 @@ function Cmd_jumpifcantmakeasleep(ctx: BattleScriptContext): boolean {
     setLastUsedAbility(targetAbility);
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STAYED_AWAKE_USING;
     ctx.scriptPtr = jumpPtr;
-    // TODO RecordAbilityBattle
+    RecordAbilityBattle(gBattlerTarget, targetAbility);
     return false;
   }
   return false;

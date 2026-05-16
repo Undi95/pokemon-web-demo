@@ -159,25 +159,45 @@ function weatherHasEffect(): boolean {
 
 /** 1:1 décomp `ShouldGetStatBadgeBoost(badgeFlag, battler)` (pokemon.c:3408-3420).
  *
- *  Le décomp check :
- *  - BATTLE_TYPE_LINK / EREADER_TRAINER / RECORDED_LINK / FRONTIER → false
+ *  Check :
+ *  - BATTLE_TYPE_LINK / EREADER_TRAINER / RECORDED_LINK → false
  *  - side != B_SIDE_PLAYER → false
- *  - TRAINER + opponent == TRAINER_SECRET_BASE → false
- *  - FlagGet(badgeFlag) → return
- *
- *  STUB : `FlagGet` pas wired (= SaveBlock1Ptr.flags resolve). On retourne
- *  false par défaut (= player a 0 badges au début, prudent). */
-function shouldGetStatBadgeBoost(_badgeFlag: number, battler: number): boolean {
+ *  - TRAINER + opponent == TRAINER_SECRET_BASE → false (STUB rare, pas wired)
+ *  - FlagGet(badgeFlag) → return state du flag */
+function shouldGetStatBadgeBoost(badgeFlag: number, battler: number): boolean {
   // 1:1 décomp early-outs.
   const linkFlags = (1 << 1)  /* BATTLE_TYPE_LINK */
                   | (1 << 11) /* BATTLE_TYPE_EREADER_TRAINER */
                   | (1 << 25) /* BATTLE_TYPE_RECORDED_LINK */;
   if (gBattleTypeFlags & linkFlags) return false;
   if (GET_BATTLER_SIDE(battler) !== 0 /* B_SIDE_PLAYER */) return false;
-  // STUB : BATTLE_TYPE_TRAINER + gTrainerBattleOpponent_A check (= rare Secret Base).
-  // STUB : FlagGet(badgeFlag) — pas wired, return false.
-  // TODO porter FlagGet via gSaveBlock1Ptr.flags + bit math.
-  return false;
+  // STUB Secret Base : TRAINER_SECRET_BASE check (= très rare, pas wired).
+  // 1:1 décomp `FlagGet(badgeFlag)` via gameState. Mapping number → enum string :
+  const flagName = _badgeFlagNumberToEnum(badgeFlag);
+  if (!flagName) return false;
+  return _flagGetN0(flagName);
+}
+
+// Import direct (= disobedience.ts utilise le même pattern).
+import { FlagGet as _FlagGetN0 } from '../script-vars';
+function _flagGetN0(flagName: string): boolean {
+  return _FlagGetN0(flagName);
+}
+
+function _badgeFlagNumberToEnum(badgeFlag: number): string | null {
+  // 1:1 décomp constants/flags.h (FLAG_BADGE0X_GET).
+  // SYSTEM_FLAGS base = 0x860.
+  switch (badgeFlag) {
+    case 0x867: return 'FLAG_BADGE01_GET';
+    case 0x868: return 'FLAG_BADGE02_GET';
+    case 0x869: return 'FLAG_BADGE03_GET';
+    case 0x86A: return 'FLAG_BADGE04_GET';
+    case 0x86B: return 'FLAG_BADGE05_GET';
+    case 0x86C: return 'FLAG_BADGE06_GET';
+    case 0x86D: return 'FLAG_BADGE07_GET';
+    case 0x86E: return 'FLAG_BADGE08_GET';
+    default:    return null;
+  }
 }
 
 /** 1:1 décomp `CountAliveMonsInBattle(caseId)` (pokemon.c:3375-3406).
