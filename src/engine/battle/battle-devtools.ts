@@ -67,6 +67,7 @@ import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
+import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../random';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -594,6 +595,55 @@ export function buildBattleDevtools(): Record<string, unknown> {
         errors.push(`AI run threw: ${String(e)}`);
       }
       return { ok: errors.length === 0, scriptsResolved, errors };
+    },
+    /** VÉRIF DÉTERMINISTE PRÉCISE — remplace l'A/B visuel (impossible : trop
+     *  de random : IV/EV/stats/seed). Seed RNG + IV/EV fixes → sortie EXACTE
+     *  reproductible, comparable 1:1 à la formule décomp. Lance 2× le MÊME
+     *  scénario : `deterministic:true` prouve le déterminisme (pré-requis
+     *  pour comparer à la ROM). Le fingerprint (damage/stats/rng) est la
+     *  valeur exacte à confronter au décomp.
+     *  Usage : scope.bytecode.precise({ seed:0, moveId:'tackle',
+     *    attackerSpecies:'SPECIES_TREECKO', attackerLevel:5,
+     *    enemy:'SPECIES_ZIGZAGOON', enemyLevel:2 }) */
+    precise: async (opts?: {
+      seed?: number; moveId?: string;
+      attackerSpecies?: string; attackerLevel?: number;
+      enemy?: string; enemyLevel?: number;
+      ivs?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+      evs?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const fixedIvs = opts?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+      const fixedEvs = opts?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+      const bs = (): Array<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number; maxHP: number; hp: number; level: number; species: number }> | undefined =>
+        (globalThis as { __battleState?: { gBattleMons?: never[] } }).__battleState?.gBattleMons as never;
+      const pick = (i: number) => { const m = bs()?.[i]; return m ? { atk: m.attack, def: m.defense, spe: m.speed, spa: m.spAttack, spd: m.spDefense, maxHP: m.maxHP, hp: m.hp, lvl: m.level, sp: m.species } : null; };
+      const run = async () => {
+        _debugResetRng();
+        SeedRng(seed);
+        const pokemonMod = await import('../pokemon');
+        const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, { ivs: fixedIvs, evs: fixedEvs });
+        const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2, { ivs: fixedIvs, evs: fixedEvs });
+        if (opts?.moveId) attacker.moves = [{ id: opts.moveId, nameFr: opts.moveId, pp: 35, ppMax: 35 }, ...attacker.moves.slice(1)];
+        setupPartyForBattle([attacker] as never, [enemyMon]);
+        fillActiveBattleMonsForBattleStart();
+        const rngBeforeMove = _debugGetRngValue();
+        const randCountBeforeMove = _debugGetRandCount();
+        const defenderHpBefore = enemyMon.currentHp;
+        const result = runMoveScriptViaBytecode({ attacker: attacker as never, defender: enemyMon as never, attackerMoveIdx: 0 });
+        return {
+          seed, move: attacker.moves[0]?.id,
+          attackerStats: pick(0), defenderStats: pick(1),
+          defenderHpBefore, defenderHpAfter: enemyMon.currentHp,
+          damage: result.damage, typeMul: result.typeMul, missed: result.missed, fainted: result.fainted,
+          rngBeforeMove, randCountBeforeMove,
+          rngAfter: _debugGetRngValue(), randCountAfter: _debugGetRandCount(),
+        };
+      };
+      const a = await run();
+      const b = await run();
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
     },
     // End-turn effects (Phase 1.4 L) — delegate à wire-bytecode-bridge.
     /** Run la chaîne complète end-of-turn 1:1 décomp :
