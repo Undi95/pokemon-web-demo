@@ -967,6 +967,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
                 oppSpriteShape = sized.shape;
                 oppSpriteSize  = sized.size;
               }
+              // 1:1 décomp `LoadBattleTextboxAndBackground` (battle_bg.c:859-867).
+              // Charge BG0 textbox + BG2 terrain (= GRASS par défaut).
+              // Fix B1-bis : helper dédié `_loadBattleTerrainTiles` qui supporte
+              // 3 sub-palettes 48-color (= bug racine `loadIndexedPngStrict` ne
+              // prend que 16 colors → pixels sub-pal 1/2 mappés à transparent).
+              const bgMod = await import('./battle-bg');
+              await bgMod.loadBattleTextboxAndBackground(bgMod.BATTLE_ENVIRONMENT_GRASS);
               loadDone = true;
             } catch (e) {
               console.error('[battle-flow] sprite load failed', e);
@@ -996,8 +1003,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         //   sont rendues. La couleur de fond du screen (= backgroundColor
         //   du Phaser game = '#000000') sera visible sous les BGs cachés.
         HideBg(1);
-        HideBg(2);
+        // B1-bis : ne PAS hide BG2 — on l'utilise maintenant pour le battle
+        // terrain. configureBattleBgs() a re-configuré BG2 (charBase=1,
+        // mapBase=30) → ne montrera plus le BG2 overworld mais le terrain.
+        // HideBg(2);
         HideBg(3);
+        // Force BG2 visible (= au cas où un autre code l'a hide entre temps).
+        ShowBg(2);
+        // Reset vofs/hofs qui pourraient avoir été set par overworld scrolling.
+        rt.gba.bg(2).config.hofs = 0;
+        rt.gba.bg(2).config.vofs = 0;
         // Iter16 : hide overworld OAM sprites (= player + NPCs) so they don't
         //   show on top of the battle. Stash their visibility for restore on
         //   cleanup. Iterate sprites par spriteId (= gSprites map) AVANT le
