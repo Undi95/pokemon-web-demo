@@ -380,8 +380,11 @@ async function prepareTestBattle(opts?: {
   enemyLevel?: number;
 }): Promise<Record<string, unknown>> {
   const moveId = opts?.moveId ?? 1;
-  const attacker = opts?.attacker ?? 0;
-  const target = opts?.target ?? 1;
+  // AUDIT FIX : accept number only. Si user passe un objet (= type mismatch
+  // par erreur), coerce à 0/1 défaut pour éviter `setBattlerAttacker(objet)`
+  // qui causerait undefined.item crash dans ItemBattleEffects.
+  const attacker = typeof opts?.attacker === 'number' ? opts.attacker : 0;
+  const target = typeof opts?.target === 'number' ? opts.target : 1;
   const enemySpecies = opts?.enemySpecies ?? 'SPECIES_ZIGZAGOON';
   const enemyLevel = opts?.enemyLevel ?? 2;
 
