@@ -64,7 +64,8 @@
     "audit:learnsets": "node scripts/audit-learnsets.mjs",
     "audit:trainer-parties": "node scripts/audit-trainer-parties.mjs",
     "audit:item-effects": "node scripts/audit-item-effects.mjs",
-    "audit:evolutions": "node scripts/audit-evolutions.mjs"
+    "audit:evolutions": "node scripts/audit-evolutions.mjs",
+    "audit:item-hold-effects": "node scripts/audit-item-hold-effects.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.9.32",
