@@ -37,7 +37,7 @@
  */
 
 import { getRuntime } from './decomp-globals';
-import { loadIndexedPng } from './gba/png-loader';
+import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
 
@@ -178,24 +178,22 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // ─── Player healthbox tile data ─────────────────────────────────────────
   // PNG 64×128 = 8w × 16t tiles. `-mwidth 8 -mheight 8` → 2 metatiles 8×8.
   // Comme metaW (8) === widthTiles (8), row-major == metatile order, no-op.
-  const playerPng = await loadIndexedPng(HEALTHBOX_PLAYER_PNG);
+  //
+  // CRITIQUE : utilise `loadIndexedPngStrict` qui lit la PLTE PNG (= palette
+  // canonique partagée avec ball_status_bar.png). Sinon `loadIndexedPng`
+  // reconstruct palette via canvas pixel order qui peut diverger de la PLTE
+  // originale → mismatch entre tile data indices + palette colors → corruption.
+  const playerPng = await loadIndexedPngStrict(HEALTHBOX_PLAYER_PNG, 4);
   const playerTiles = _rearrangeToMetatileOrder(
     playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 8,
   );
-  await rt.LoadCompressedSpriteSheet(HEALTHBOX_PLAYER_PNG, HEALTHBOX_PLAYER_VRAM);
-  // Note : LoadCompressedSpriteSheet écrit row-major. Pour player, c'est OK
-  // (metaW === widthTiles). Mais on a écrit `playerTiles` (= identique
-  // mathématiquement). On garde l'appel LoadCompressedSpriteSheet pour
-  // bénéficier de la palette extraction.
-  // Re-écrire avec notre rearranged dans le cas où le runtime fait du metadata
-  // différemment :
   rt.gba.objVram.set(playerTiles, HEALTHBOX_PLAYER_VRAM);
 
   // ─── Opponent healthbox tile data ───────────────────────────────────────
   // PNG 128×32 = 16w × 4t tiles. `-mwidth 8 -mheight 4` → 2 metatiles 8×4
   // arrangés horizontalement (16 cols / 8 = 2 metatile cols).
   // metaW (8) !== widthTiles (16), donc on DOIT transposer.
-  const oppPng = await loadIndexedPng(HEALTHBOX_OPPONENT_PNG);
+  const oppPng = await loadIndexedPngStrict(HEALTHBOX_OPPONENT_PNG, 4);
   const oppTiles = _rearrangeToMetatileOrder(
     oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4,
   );
@@ -208,8 +206,8 @@ export async function ensureHealthboxAssets(): Promise<void> {
   //   - hpbar.png tiles 3..11    = GREEN bar 0..8 pixels remplis (= 9 tiles)
   //   - hpbar_anim.png tiles 0..8 = YELLOW bar 0..8 pixels (= 9 tiles)
   //   - hpbar_anim.png tiles 9..17 = RED bar 0..8 pixels (= 9 tiles)
-  const hpbarPng = await loadIndexedPng(HPBAR_PNG);
-  const hpbarAnimPng = await loadIndexedPng(HPBAR_ANIM_PNG);
+  const hpbarPng = await loadIndexedPngStrict(HPBAR_PNG, 4);
+  const hpbarAnimPng = await loadIndexedPngStrict(HPBAR_ANIM_PNG, 4);
   _hpBarBaseTiles  = hpbarPng.charData.subarray(0, 3 * TILE_BYTES);              // tiles 0..2
   _hpBarTilesGreen = hpbarPng.charData.subarray(3 * TILE_BYTES, 12 * TILE_BYTES); // tiles 3..11
   _hpBarTilesYellow = hpbarAnimPng.charData.subarray(0, 9 * TILE_BYTES);          // tiles 0..8
@@ -233,6 +231,12 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // 1:1 décomp graphics_file_rules.mk:90-91 :
   //   numbers1.4bpp = digits player (white)
   //   numbers2.4bpp = digits opp (yellow/contrast)
+  // numbers1.png / numbers2.png sont en mode "L" (grayscale) sans PLTE chunk.
+  // Utilise `loadIndexedPng` (= reconstruct palette depuis pixel order).
+  // Les indices résultants correspondront aux grayscale levels du PNG (= 0..N).
+  // L'usage dans le décomp suppose que ces indices matchent les colors de la
+  // palette HEALTHBAR (= ball_display.png .gbapal). Tile data sera readable
+  // avec cette palette.
   const numbers1Png = await loadIndexedPng(NUMBERS1_PNG);
   const numbers2Png = await loadIndexedPng(NUMBERS2_PNG);
   _numbers1Tiles = numbers1Png.charData;  // 11 tiles
@@ -242,22 +246,30 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // 1:1 décomp `status.4bpp` (= 24×40 = 15 tiles : 5 status × 3 tiles each).
   // Used pour player single + opp single (= even though decomp has status2/3/4
   // pour battler 1/2/3 doubles, en single ils utilisent tous status.png).
-  const statusPng = await loadIndexedPng(STATUS_PNG);
+  const statusPng = await loadIndexedPngStrict(STATUS_PNG, 4);
   _statusTiles = statusPng.charData;
 
   // ─── EXP bar tile data ──────────────────────────────────────────────────
   // 1:1 décomp `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
-  const expbarPng = await loadIndexedPng(EXPBAR_PNG);
+  const expbarPng = await loadIndexedPngStrict(EXPBAR_PNG, 4);
   _expBarTiles = expbarPng.charData;
 
   // ─── Palettes ───────────────────────────────────────────────────────────
-  // HEALTHBOX palette = ball_status_bar.png .gbapal
-  const ballStatusBarPng = await loadIndexedPng(BALL_STATUS_BAR_PNG);
-  rt.LoadPaletteObj(ballStatusBarPng.palette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
+  // CRITIQUE : utilise `extractPngPlte` qui lit la PLTE PNG raw (= 16 colors
+  // dans l'ordre canonique). Le décomp utilise `INCGFX_U16("ball_status_bar.png", ".gbapal")`
+  // qui extract la même PLTE. C'est CETTE palette qui doit être loadée dans
+  // OBJ palette slot 5, et les tile data des healthboxes utilisent les indices
+  // correspondants à cette palette.
+  //
+  // HEALTHBOX palette = ball_status_bar.png .gbapal (= 16 colors).
+  const ballStatusBarPlte = await extractPngPlte(BALL_STATUS_BAR_PNG);
+  if (!ballStatusBarPlte) throw new Error(`PLTE missing: ${BALL_STATUS_BAR_PNG}`);
+  rt.LoadPaletteObj(ballStatusBarPlte.subarray(0, 16), 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
 
-  // HEALTHBAR palette = ball_display.png .gbapal
-  const ballDisplayPng = await loadIndexedPng(BALL_DISPLAY_PNG);
-  rt.LoadPaletteObj(ballDisplayPng.palette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+  // HEALTHBAR palette = ball_display.png .gbapal.
+  const ballDisplayPlte = await extractPngPlte(BALL_DISPLAY_PNG);
+  if (!ballDisplayPlte) throw new Error(`PLTE missing: ${BALL_DISPLAY_PNG}`);
+  rt.LoadPaletteObj(ballDisplayPlte.subarray(0, 16), 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
 
   _assetsLoaded = true;
 }
