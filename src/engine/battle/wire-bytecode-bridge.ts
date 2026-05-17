@@ -44,7 +44,23 @@ import {
   gChosenActionByBattler,
   gChosenMoveByBattler,
   gBattleStruct,
+  gBattleTypeFlags,
+  setActiveBattler,
+  setBattleTypeFlags,
+  setTrainerBattleOpponentA,
 } from './state';
+import { Random } from '../random';
+import {
+  BattleAI_SetupAIData,
+  BattleAI_ChooseMoveOrAction,
+} from './ai/ai-script-commands';
+import {
+  loadAiScriptBytecode,
+  aiBytecodeLoaded,
+  AI_CHOICE_FLEE,
+  AI_CHOICE_WATCH,
+} from './ai/ai-state';
+import { ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER } from './constants';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { TurnValuesCleanUp } from './util';
@@ -958,6 +974,92 @@ export function syncBattleMonsHpToInstances(player: PokemonInstance, enemy: Poke
     enemy.currentHp = gBattleMons[1].hp;
     _syncStatus1ToInstance(enemy, gBattleMons[1].status1);
   }
+}
+
+/** Refresh gBattleMons[bid].hp + pp depuis le PokemonInstance (= même idiome
+ *  que runMoveScriptViaBytecode:264-292). status1/statStages restent ceux de
+ *  gBattleMons (autoritaires pendant le combat, set par le bytecode). */
+function _refreshBattleMonFromInstance(bid: number, inst: PokemonInstance): void {
+  if (!gBattleMons[bid]) return;
+  gBattleMons[bid].hp = inst.currentHp;
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    const m = inst.moves[i];
+    if (m && gBattleMons[bid].pp[i] !== undefined) gBattleMons[bid].pp[i] = m.pp;
+  }
+}
+
+/** 1:1 décomp `OpponentHandleChooseMove` (battle_controller_opponent.c:1551),
+ *  branche single-battle. Remplace le MVP `pickOpponentMove` ("Tutorial AI is
+ *  dumb / first damaging move") par le vrai comportement décomp :
+ *
+ *  - WILD (non TRAINER) : move ALÉATOIRE en sautant MOVE_NONE
+ *    (= la branche `else { do { Random()%MAX_MON_MOVES } while NONE }`).
+ *    Le "premier move offensif" du MVP était une DÉRIVE — ROM Émeraude
+ *    choisit aléatoirement.
+ *  - TRAINER : BattleAI_SetupAIData(ALL_MOVES_MASK) + BattleAI_ChooseMoveOrAction()
+ *    (= scripts AI 1:1). FLEE/WATCH remontés au caller.
+ *
+ *  Retourne `{ action, index }`. index = slot move 0..3 ; -1 si indisponible
+ *  (= le caller retombe sur son comportement legacy). Robuste : tout throw →
+ *  index -1 (jamais de crash du combat). */
+export function chooseOpponentMoveViaAI(opts: {
+  opponent: PokemonInstance;
+  player: PokemonInstance;
+  opponentBattlerId?: number;
+  playerBattlerId?: number;
+  isTrainer?: boolean;
+  trainerId?: number;
+}): { action: 'move' | 'flee' | 'watch'; index: number } {
+  try {
+    const oppBId = opts.opponentBattlerId ?? 1;
+    const pBId = opts.playerBattlerId ?? 0;
+
+    const _slotEmpty = (i: number): boolean => {
+      const m = opts.opponent.moves[i];
+      return !m || !m.id;
+    };
+
+    if (!opts.isTrainer) {
+      // 1:1 décomp branche wild : move aléatoire, skip MOVE_NONE.
+      let idx = 0;
+      let tries = 0;
+      do {
+        idx = Random() % MAX_MON_MOVES;
+        tries++;
+      } while (_slotEmpty(idx) && tries < 256);
+      if (_slotEmpty(idx)) return { action: 'move', index: -1 };
+      return { action: 'move', index: idx };
+    }
+
+    // 1:1 décomp branche trainer : nécessite le bytecode AI chargé.
+    if (!aiBytecodeLoaded()) return { action: 'move', index: -1 };
+
+    _refreshBattleMonFromInstance(oppBId, opts.opponent);
+    _refreshBattleMonFromInstance(pBId, opts.player);
+    setActiveBattler(oppBId);
+    setBattlerTarget(pBId);
+
+    const prevTF = gBattleTypeFlags;
+    setBattleTypeFlags((prevTF | BATTLE_TYPE_TRAINER) >>> 0);
+    if (opts.trainerId != null) setTrainerBattleOpponentA(opts.trainerId);
+
+    BattleAI_SetupAIData(ALL_MOVES_MASK);
+    const chosen = BattleAI_ChooseMoveOrAction();
+
+    setBattleTypeFlags(prevTF); // restore (1:1 : flags non altérés hors AI setup)
+
+    if (chosen === AI_CHOICE_FLEE) return { action: 'flee', index: -1 };
+    if (chosen === AI_CHOICE_WATCH) return { action: 'watch', index: -1 };
+    return { action: 'move', index: chosen };
+  } catch (e) {
+    console.warn('[ai] chooseOpponentMoveViaAI fallback:', e);
+    return { action: 'move', index: -1 };
+  }
+}
+
+/** Boot : charge le bytecode AI (= mirror loadBattleScriptBytecode). */
+export async function ensureAiBytecodeLoaded(): Promise<void> {
+  if (!aiBytecodeLoaded()) await loadAiScriptBytecode();
 }
 
 // Used to avoid unused-import warning.

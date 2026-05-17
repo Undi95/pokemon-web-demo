@@ -137,10 +137,14 @@ void initStringsFromDecomp();
 // (= secondary effects/ability triggers/etc. ne marchent jamais).
 import { loadBattleMoves } from './engine/battle/data/battle-moves';
 import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
+import { loadAiScriptBytecode } from './engine/battle/ai/ai-state';
 import { loadItemHoldEffects } from './engine/battle/data/item-hold-effects';
 import { loadGameData } from './engine/data/game-data';
 void loadBattleMoves();
 void loadBattleScriptBytecode();
+// 1:1 décomp : bytecode AI (gBattleAI_ScriptsTable + scripts) chargé au boot,
+// requis par BattleAI_ChooseMoveOrAction (combats dresseurs).
+void loadAiScriptBytecode();
 void loadItemHoldEffects();
 // 1:1 décomp : game-data (species/moves/learnsets/abilities) doit être chargé
 // au boot pour que createPokemonInstance pick le bon learnset 1:1 (= avant

@@ -97,6 +97,7 @@ import {
   runBattleTurnPassedViaBytecode,
   runHandleFaintedMonActionsViaBytecode,
   syncBattleMonsHpToInstances,
+  chooseOpponentMoveViaAI,
 } from './battle/wire-bytecode-bridge';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
@@ -722,12 +723,29 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
-  /** 1:1 décomp battle_main.c logic : pick opponent's move. MVP = AI_SCRIPT_FIRST_BATTLE
-   *  always uses move 0 (= Tackle). Real décomp at LV 2 Zigzagoon learnset is
-   *  [Tackle, Tail Whip] — we already pick those via createPokemonInstance. */
+  /** 1:1 décomp `OpponentHandleChooseMove` (battle_controller_opponent.c:1551).
+   *
+   *  Mode bytecode (flag `__USE_BYTECODE_FOR_DAMAGE__`) → vrai comportement
+   *  décomp via `chooseOpponentMoveViaAI` : combat sauvage = move ALÉATOIRE
+   *  (skip MOVE_NONE), pas "premier move offensif" (= c'était une dérive MVP ;
+   *  ROM Émeraude choisit aléatoirement pour les Pokémon sauvages).
+   *  Flag OFF → comportement legacy inchangé (= chemin tutorial parké, zéro
+   *  régression). Si l'AI renvoie -1 (indispo) → fallback legacy aussi. */
   const pickOpponentMove = (): number => {
     if (!opponentMon || opponentMon.moves.length === 0) return 0;
-    // Prefer first damaging move (= power > 0). Tutorial AI is dumb.
+    const useBytecode =
+      (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
+      || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+    if (useBytecode) {
+      const r = chooseOpponentMoveViaAI({
+        opponent: opponentMon,
+        player: playerMon ?? opponentMon,
+        isTrainer: false, // battle-flow.ts = combat sauvage 1:1
+      });
+      if (r.index >= 0 && r.index < opponentMon.moves.length) return r.index;
+      // index -1 (indispo) → fallback legacy ci-dessous.
+    }
+    // Legacy MVP (flag OFF ou AI indispo) : premier move offensif.
     for (let i = 0; i < opponentMon.moves.length; i++) {
       const mv = getMove('MOVE_' + opponentMon.moves[i].id.toUpperCase());
       if (mv && mv.power > 0) return i;

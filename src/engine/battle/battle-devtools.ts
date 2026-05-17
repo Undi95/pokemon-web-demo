@@ -65,7 +65,8 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
+import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -519,6 +520,81 @@ export function buildBattleDevtools(): Record<string, unknown> {
     eventsQueueSize: () => getBattleEventQueueSize(),
     /** Clear la queue (= reset cross-test). */
     clearEvents: clearBattleEventQueue,
+    // ─── Battle AI 1:1 (battle_ai_script_commands.c) ──────────────────────
+    /** État du bytecode AI + offsets résolus des 12 scripts (table 1:1). */
+    aiInfo: () => {
+      const offsets: Record<string, number> = {};
+      const seen = new Set<string>();
+      for (const label of AI_SCRIPTS_TABLE_LABELS) {
+        if (seen.has(label)) continue;
+        seen.add(label);
+        offsets[label] = getAiScriptOffset(label);
+      }
+      return { loaded: aiBytecodeLoaded(), scriptOffsets: offsets };
+    },
+    /** Snapshot gAiThinkingStruct (score[]/aiFlags/funcResult/aiAction). */
+    aiScores: () => ({
+      score: [...gAiThinkingStruct.score],
+      simulatedRNG: [...gAiThinkingStruct.simulatedRNG],
+      aiFlags: gAiThinkingStruct.aiFlags,
+      aiAction: gAiThinkingStruct.aiAction,
+      funcResult: gAiThinkingStruct.funcResult,
+      moveConsidered: gAiThinkingStruct.moveConsidered,
+      movesetIndex: gAiThinkingStruct.movesetIndex,
+    }),
+    /** Exécute le vrai AI 1:1 (BattleAI_SetupAIData + ChooseMoveOrAction) sur
+     *  un matchup ad-hoc en mode TRAINER. Retourne le move choisi + scores. */
+    aiChooseMove: async (opts?: { attackerSpecies?: string; attackerLevel?: number; enemy?: string; enemyLevel?: number; trainerId?: number; }) => {
+      await ensureAiBytecodeLoaded();
+      const pokemonMod = await import('../pokemon');
+      const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 10);
+      const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_POOCHYENA', opts?.enemyLevel ?? 7);
+      setupPartyForBattle([attacker] as never, [enemyMon]);
+      fillActiveBattleMonsForBattleStart();
+      const choice = chooseOpponentMoveViaAI({
+        opponent: enemyMon as never,
+        player: attacker as never,
+        isTrainer: true,
+        trainerId: opts?.trainerId ?? 1,
+      });
+      return {
+        enemy: enemyMon.nickname,
+        enemyMoves: enemyMon.moves.map(m => m?.id),
+        choice,
+        chosenMove: choice.index >= 0 ? enemyMon.moves[choice.index]?.id : `(${choice.action})`,
+        aiFlags: gAiThinkingStruct.aiFlags,
+        scores: [...gAiThinkingStruct.score],
+      };
+    },
+    /** Batterie : vérifie que les 12 scripts de gBattleAI_ScriptsTable résolvent
+     *  + 1 run AI complet sans throw. Retour { ok, scriptsResolved, errors }. */
+    aiBattery: async () => {
+      await ensureAiBytecodeLoaded();
+      const errors: string[] = [];
+      const seen = new Set<string>();
+      let scriptsResolved = 0;
+      for (const label of AI_SCRIPTS_TABLE_LABELS) {
+        if (seen.has(label)) continue;
+        seen.add(label);
+        const off = getAiScriptOffset(label);
+        if (off < 0) errors.push(`label ${label} unresolved`);
+        else scriptsResolved++;
+      }
+      try {
+        const pokemonMod = await import('../pokemon');
+        const attacker = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 12);
+        const enemyMon = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 7);
+        setupPartyForBattle([attacker] as never, [enemyMon]);
+        fillActiveBattleMonsForBattleStart();
+        for (let r = 0; r < 8; r++) {
+          const c = chooseOpponentMoveViaAI({ opponent: enemyMon as never, player: attacker as never, isTrainer: true, trainerId: 1 });
+          if (c.index < -1 || c.index >= 4) errors.push(`run ${r}: bad index ${c.index}`);
+        }
+      } catch (e) {
+        errors.push(`AI run threw: ${String(e)}`);
+      }
+      return { ok: errors.length === 0, scriptsResolved, errors };
+    },
     // End-turn effects (Phase 1.4 L) — delegate à wire-bytecode-bridge.
     /** Run la chaîne complète end-of-turn 1:1 décomp :
      *  DoFieldEndTurnEffects → DoBattlerEndTurnEffects → HandleWishPerishSongOnTurnEnd.
