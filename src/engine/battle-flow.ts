@@ -416,6 +416,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Iter18 : track if player cry was played this battle (= once-only on first turn).
   let _playerCryPlayed = false;
 
+  // Phase 1.4 N Q3 : flag async `_restoreOverworldFromMenu()` terminé au cleanup.
+  // 1:1 décomp `CB2_ReturnToField` re-init overworld après le VRAM wipe battle.
+  let _overworldRestoreDone = false;
+
   /** Refresh both HP windows with current HP text.
    *  IMPORTANT : doit appeler CopyWindowToVram après le draw pour pousser
    *  le contenu vers le BG (sinon HP text reste blanche / stale → bug iter11).
@@ -1733,10 +1737,6 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         }
         closeMoveMenu();
         closeActionMenu();  // Phase 1.4 N : cleanup action menu windows si encore actives
-        // Iter16 : restore overworld BGs after battle.
-        ShowBg(1);
-        ShowBg(2);
-        ShowBg(3);
         // Iter16 : restore overworld sprites that were hidden at battle start.
         const stashRestore = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
         if (stashRestore) {
@@ -1755,6 +1755,36 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // pour persist au post-combat.
         teardownPartyAfterBattle(gameState.party.filter((m): m is PokemonInstance => !!m));
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
+        // 1:1 décomp `CB2_EndWildBattle` (battle_setup.c:602-616) →
+        // `SetMainCallback2(CB2_ReturnToField)` + `gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic`.
+        // CRITIQUE : on a fait `rt.gba.vram.fill(0)` au INIT (= 1:1 décomp
+        // `CB2_InitBattleInternal` ll. 626). Donc l'overworld VRAM est WIPED.
+        // Le décomp re-init l'overworld FULL via CB2_ReturnToField (= re-load
+        // tilesets/palettes/tilemaps/NPCs). Notre équivalent =
+        // `globalThis._restoreOverworldFromMenu()` (exposé par TestOverworldScene,
+        // 1:1 décomp `ReturnToFieldLocal` : reconfig BG0-3 sOverworldBgTemplates
+        // + loadAndInitMap + InitObjectEventsReturnToField).
+        // Sans ce restore → écran noir / crash post-battle (VRAM vide).
+        {
+          const restoreFn = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
+          if (typeof restoreFn === 'function') {
+            // 1:1 décomp : `SetMainCallback2(CB2_ReturnToField)` REMPLACE le
+            // battle callback — le battle est fini IMMÉDIATEMENT, le field
+            // callback prend le relais (async). Donc on fire-and-forget le
+            // restore et on retourne DONE direct. NE PAS attendre : le restore
+            // reset le script engine (ResetTasks) qui tick ce flow → si on
+            // attendait, le flow resterait bloqué (= deadlock observé).
+            restoreFn().catch(e => {
+              console.error('[battle-flow] _restoreOverworldFromMenu THREW:', e);
+            });
+          } else {
+            // Fallback (= si l'overworld n'a pas exposé le restore) : juste
+            // re-show les BGs (= comportement legacy pré-VRAM-wipe).
+            console.warn('[battle-flow] no _restoreOverworldFromMenu — fallback ShowBg');
+            ShowBg(1); ShowBg(2); ShowBg(3);
+          }
+        }
+        _overworldRestoreDone = true;  // (gardé pour compat introspection)
         state = 'DONE';
         return false;
       }
