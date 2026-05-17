@@ -27,7 +27,7 @@ import {
   gBattleMons, gBattleWeather, setBattleWeather,
   setBattlerAttacker, setBattlerTarget, setActiveBattler,
   gBattleCommunication, gBattleScripting,
-  gBattlerByTurnOrder,
+  gBattlerByTurnOrder, gBattleTypeFlags,
 } from './state';
 import {
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
@@ -36,7 +36,7 @@ import {
   B_WEATHER_SUN, B_WEATHER_SUN_TEMPORARY, B_WEATHER_SUN_PERMANENT,
   B_WEATHER_HAIL, B_WEATHER_HAIL_TEMPORARY,
   SIDE_STATUS_REFLECT, SIDE_STATUS_LIGHTSCREEN, SIDE_STATUS_MIST, SIDE_STATUS_SAFEGUARD,
-  MULTISTRING_CHOOSER,
+  MULTISTRING_CHOOSER, BATTLE_TYPE_ARENA,
 } from './constants';
 import { gBitTable } from './battle-controllers';
 import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from './text-buffers';
@@ -901,6 +901,17 @@ export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
             // qui désactive le drain Shell Bell pour ce hit).
             const IGNORE_SHELL_BELL = -0x80000000;
             gSpecialStatuses[active].shellBellDmg = IGNORE_SHELL_BELL;
+            // 1:1 décomp ll. 1802-1806 : si partner aussi à 0 (= double battle),
+            // clear SIDE_STATUS_FUTUREATTACK pour le côté target.
+            // BATTLE_PARTNER(b) = b ^ 2 (= flip side bit).
+            const partner = active ^ 2;
+            const SIDE_STATUS_FUTUREATTACK = 1 << 3;
+            if (gWishFutureKnock.futureSightCounter[active] === 0
+                && (partner >= gBattlersCount
+                    || gWishFutureKnock.futureSightCounter[partner] === 0)) {
+              const targetSide = active & 1; // GET_BATTLER_SIDE = battler & 1
+              gSideStatuses[targetSide] &= ~SIDE_STATUS_FUTUREATTACK;
+            }
             return { scriptLabel: 'BattleScript_MonTookFutureAttack' };
           }
         }
@@ -947,8 +958,17 @@ export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
       }
 
       case 2: {
-        // 1:1 décomp ll. 1852-1866 : Arena judgment (Battle Frontier).
-        // Phase 1 deferred (= Frontier specific).
+        // 1:1 décomp ll. 1852-1866 : Arena judgment (= Battle Frontier Arena).
+        // Skip pour wild/trainer normal battles (= BATTLE_TYPE_ARENA non set).
+        if ((gBattleTypeFlags & BATTLE_TYPE_ARENA)
+            && gBattleStruct.arenaTurnCounter === 2
+            && gBattleMons[0].hp !== 0 && gBattleMons[1].hp !== 0) {
+          // 1:1 décomp ll. 1859-1864 : cancel multi-turn moves + jugement.
+          _CancelMultiTurnMovesETT(0);
+          _CancelMultiTurnMovesETT(1);
+          gBattleStruct.wishPerishSongState++;
+          return { scriptLabel: 'BattleScript_ArenaDoJudgment' };
+        }
         setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
         return null;
       }
