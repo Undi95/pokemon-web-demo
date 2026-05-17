@@ -295,21 +295,27 @@ export function blitGlyphToWindow(
       const colX = dstX + px;
       if (colX < 0 || colX >= w.widthPx) continue;
       const srcIdx = glyphPixels[py * GLYPH_W + px];
+      // 1:1 décomp `GenerateFontHalfRowLookupTable` (text.c:363) +
+      // `sFontHalfRowOffsets` (text.c:51) : le glyph est 2-bit (valeurs 0/1/2/3).
+      // Mapping EXACT :
+      //   - glyph 0 → bgColor
+      //   - glyph 1 → fgColor
+      //   - glyph 2 → shadowColor
+      //   - glyph 3 → bgColor   (sFontHalfRowOffsets[3]==sFontHalfRowOffsets[0]
+      //                           = value 3 ALIASÉE à value 0)
+      // Le décomp écrit TOUJOURS la couleur (jamais "skip") : si la couleur ==
+      // TEXT_COLOR_TRANSPARENT (0), le pixel devient palette idx 0 = transparent
+      // (backdrop visible). Notre pixelBuffer idx 0 == transparent au compositor,
+      // donc écrire 0 ≡ l'ancien "skip" pour le cas transparent — MAIS pour
+      // bgColor != 0 (= dialog battle rouge, fillValue PIXEL_FILL(0xF)), le fond
+      // DERRIÈRE/AUTOUR des lettres est maintenant rempli avec bgColor (1:1),
+      // au lieu de laisser voir le BG dessous (bug "dialog box pas rouge").
       let mappedIdx: number;
       switch (srcIdx) {
-        case 1:
-          if (fgColor === 0) continue;        // TEXT_COLOR_TRANSPARENT = skip
-          mappedIdx = fgColor;
-          break;
-        case 2:
-          if (shadowColor === 0) continue;    // TEXT_COLOR_TRANSPARENT = skip
-          mappedIdx = shadowColor;
-          break;
-        case 3:
-          if (bgColor === 0) continue;        // TEXT_COLOR_TRANSPARENT = skip
-          mappedIdx = bgColor;                // BOX_FILL = matche bgColor
-          break;
-        default: continue;                     // idx 0 BG = transparent (skip)
+        case 1:  mappedIdx = fgColor;     break;  // FG = couleur texte
+        case 2:  mappedIdx = shadowColor; break;  // SHADOW = ombre
+        case 3:                                    // value 3 aliasée → bgColor
+        default: mappedIdx = bgColor;     break;  // value 0 (+3) → bgColor
       }
       w.pixelBuffer[rowStart + colX] = mappedIdx & 0x0F;
     }
