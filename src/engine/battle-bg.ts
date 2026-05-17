@@ -210,9 +210,13 @@ async function loadBattleTextboxAssets(): Promise<TextboxAssets> {
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/** Configure UNIQUEMENT BG3 (= terrain). On ne touche pas BG0 (= utilisé par
- *  AddWindow framework avec mapBaseIndex=0 default). Le textbox 1:1 décomp à
- *  mapBase=24 nécessiterait refactor du windowing → sub-phase ultérieure.
+/** Configure UNIQUEMENT BG3 (= terrain). BG0 reste avec sa config overworld
+ *  (= utilisée par AddWindow framework pour dialog + menus). Reconfigure BG0
+ *  briserait le AddWindow framework qui dépend du charBase/mapBase set par
+ *  l'overworld.
+ *
+ *  Sub-phase ultérieure : refactor du AddWindow framework pour cohabiter avec
+ *  le tilemap baseline textbox 1:1 décomp à mapBase=24.
  *
  *  1:1 décomp `gBattleBgTemplates[3]` : charBase=2, mapBase=26, screenSize=1,
  *  priority=3 (= arrière-plan derrière sprites + BG0 windows). */
@@ -325,8 +329,25 @@ export async function loadBattleStdFrame(): Promise<void> {
 }
 
 export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
-  // 1:1 décomp BG3 terrain + LoadUserWindowBorderGfx pour le frame beige.
+  // 1:1 décomp `LoadBattleTextboxAndBackground` battle_bg.c:859-867.
+  const rt = getRuntime();
+  if (!rt) return;
+
+  // 1:1 décomp `CB2_InitBattleInternal` ll. 626 : `CpuFill32(0, VRAM, VRAM_SIZE)`.
+  // Clear TOUTE la BG VRAM (= 96KB) pour supprimer les stale data overworld.
+  // Sans ça, BG0 charBase 0 contient les overworld text tiles qui s'affichent
+  // en motif orange/green/magenta squares dans la zone vide middle du battle.
+  //
+  // ATTENTION : ça wipe AUSSI les overworld assets. Heureusement on retourne
+  // à overworld via le post-battle CB2_ReturnToFieldContinueScriptPlayMapMusic
+  // qui re-load tous les assets via Overworld_LoadMapTilesetPalettes etc.
+  // Cf. cleanup state du battle-flow.ts qui re-show les BGs.
+  rt.gba.vram.fill(0);
+
   configureBattleBgs();
-  await loadBattleStdFrame();  // ← cache la zone vide via frame propre
+  // Charge le frame beige standard (= 1:1 décomp LoadUserWindowBorderGfx call
+  // dans LoadBattleMenuWindowGfx).
+  await loadBattleStdFrame();
+  // BG3 terrain.
   await drawMainBattleBackground(env);
 }

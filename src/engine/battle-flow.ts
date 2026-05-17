@@ -950,6 +950,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Cette init est requise pour que les opcodes bytecode lisent les vraies
         // stats au lieu de zéros.
         fillActiveBattleMonsForBattleStart();
+        // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:402-419) →
+        // `CreateBattleStartTask(transition, song=0)` →
+        // `PlayMapChosenOrBattleBGM(0)` qui :
+        //   1. ResetMapMusic() + m4aMPlayAllStop() (= stop overworld BGM)
+        //   2. PlayNewMapMusic(GetBattleBGM()) → MUS_VS_WILD pour wild battle
+        // Donc le BGM combat doit start AVANT le slice transition (= il joue
+        // PENDANT la transition).
+        //
+        // 1:1 décomp `GetBattleBGM` (pokemon.c:6394-6457) : pour wild battle
+        // (= !TRAINER && !LINK && !KYOGRE_GROUDON && !REGI) → MUS_VS_WILD = 474.
+        // Trainer/leader/champion variants viendront avec le trainer-battle-flow.
+        //
+        // On utilise `m4aSongNumStart(MUS_VS_WILD, true)` 1:1 décomp (= PlayBGM
+        // dispatch via song table). Loop=true car MUS_VS_WILD a des loop markers
+        // dans le .mid. `playMidiLoop` ne marchait pas car nécessite primeAudio
+        // qui n'est pas appelé par notre code overworld (= m4aPrime suffit).
+        import('./decomp-globals').then(({ m4aSongNumStart }) => {
+          m4aSongNumStart(474 /* MUS_VS_WILD */, true);
+        });
         // 1:1 décomp `CB2_StartFirstBattle` → `BattleStartTransition` →
         // `B_TRANSITION_SLICE` (= sBattleTransitionTable_Wild[NORMAL][0]) pour
         // les wild battles standard. La transition animate les BG layers
