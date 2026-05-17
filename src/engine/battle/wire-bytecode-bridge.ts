@@ -361,6 +361,99 @@ export function drainBattleEventsAsText(): { messages: string[]; eventsCount: nu
  *  d'un nouveau turn pour éviter de mixer les events). */
 export { clearBattleEventQueue };
 
+// ─── End-turn effects runner (Phase 1.4 L) ─────────────────────────────────
+
+/** 1:1 décomp battle_util.c — chaîne complète end-of-turn :
+ *  1. DoFieldEndTurnEffects (Reflect/LightScreen/Mist/Safeguard/Wish/Weather)
+ *  2. DoBattlerEndTurnEffects (Ingrain/Leech Seed/Poison/Burn/Wrap/Nightmare/etc.)
+ *  3. HandleWishPerishSongOnTurnEnd (FutureSight trigger/PerishSong countdown)
+ *
+ *  Pour chaque effect, exec le script bytecode synchronously via
+ *  runBattleScript puis drain les messages. Caller (= battle-flow turn loop)
+ *  call cette fonction APRÈS exec des 2 moves du turn.
+ *
+ *  Retourne `{ phases, messages, events }` pour debug/UI.
+ *
+ *  Note : safety bound à 30/100/20 iters par phase pour éviter infinite loops
+ *  (= ne devrait jamais arriver, mais safety net). */
+export async function runEndTurnEffectsViaBytecode(): Promise<{
+  ok: boolean;
+  phases: { phase: 'field' | 'battler' | 'wishperish'; label: string }[];
+  messages: string[];
+  events: BattleEvent[];
+  eventsCount: number;
+}> {
+  // Clear queue avant chaque end-turn run.
+  clearBattleEventQueue();
+  const phases: { phase: 'field' | 'battler' | 'wishperish'; label: string }[] = [];
+
+  // Dynamic import pour éviter circular dep avec end-turn-effects.ts qui import state.
+  const ett = await import('./end-turn-effects');
+
+  // Phase 1 : field effects.
+  ett.resetFieldEndTurnEffectsState();
+  let safetyF = 0;
+  let r = ett.DoFieldEndTurnEffects();
+  while (r && safetyF++ < 30) {
+    phases.push({ phase: 'field', label: r.scriptLabel });
+    _runScriptSync(r.scriptLabel);
+    r = ett.DoFieldEndTurnEffects();
+  }
+
+  // Phase 2 : per-battler effects.
+  ett.resetBattlerEndTurnEffectsState();
+  let safetyB = 0;
+  let b = ett.DoBattlerEndTurnEffects();
+  while (b && safetyB++ < 100) {
+    phases.push({ phase: 'battler', label: b.scriptLabel });
+    _runScriptSync(b.scriptLabel);
+    b = ett.DoBattlerEndTurnEffects();
+  }
+
+  // Phase 3 : Wish/PerishSong/Arena.
+  ett.resetWishPerishSongState();
+  let safetyW = 0;
+  let w = ett.HandleWishPerishSongOnTurnEnd();
+  while (w && safetyW++ < 20) {
+    phases.push({ phase: 'wishperish', label: w.scriptLabel });
+    _runScriptSync(w.scriptLabel);
+    w = ett.HandleWishPerishSongOnTurnEnd();
+  }
+
+  // Drain events queue → messages FR.
+  const drained = drainBattleEventsAsText();
+  return {
+    ok: true,
+    phases,
+    messages: drained.messages,
+    events: drained.events,
+    eventsCount: drained.eventsCount,
+  };
+}
+
+/** Helper interne : run un script bytecode jusqu'à fin (= fastForward).
+ *  Mirror de la logique runMoveScriptViaBytecode mais sans le sync HP/PP/Mons. */
+function _runScriptSync(label: string): void {
+  const ctx = setupBattleScriptContext(label);
+  if (!ctx) return;
+  let iters = 0;
+  let paused = runBattleScript(ctx);
+  iters++;
+  let lastPtr = ctx.scriptPtr;
+  let stuck = 0;
+  while (paused && iters < 200 && ctx.scriptPtr >= 0) {
+    paused = runBattleScript(ctx);
+    iters++;
+    if (ctx.scriptPtr === lastPtr) {
+      stuck++;
+      if (stuck > 5) break;
+    } else {
+      stuck = 0;
+      lastPtr = ctx.scriptPtr;
+    }
+  }
+}
+
 // ─── Status1 sync helpers ──────────────────────────────────────────────
 
 /** 1:1 décomp STATUS1_* bits → PokemonInstance.status string. Inverse de

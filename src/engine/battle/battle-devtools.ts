@@ -65,7 +65,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode } from './wire-bytecode-bridge';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -516,41 +516,18 @@ export function buildBattleDevtools(): Record<string, unknown> {
     eventsQueueSize: () => getBattleEventQueueSize(),
     /** Clear la queue (= reset cross-test). */
     clearEvents: clearBattleEventQueue,
-    // End-turn effects (Phase 1.4 L)
+    // End-turn effects (Phase 1.4 L) — delegate à wire-bytecode-bridge.
     /** Run la chaîne complète end-of-turn 1:1 décomp :
      *  DoFieldEndTurnEffects → DoBattlerEndTurnEffects → HandleWishPerishSongOnTurnEnd.
      *  Pour chaque effect, exec le script via runBattleScript puis drain les
      *  messages event queue. Returns { phases, msgs } debug summary. */
     runEndTurn: async () => {
-      const ett = await import('./end-turn-effects');
-      const phases: { phase: string; label: string }[] = [];
-      let safety = 0;
-      // Phase 1 : field effects (Reflect/LightScreen/Mist/Safeguard/Wish/Weather).
-      ett.resetFieldEndTurnEffectsState();
-      let r = ett.DoFieldEndTurnEffects();
-      while (r && safety++ < 30) {
-        phases.push({ phase: 'field', label: r.scriptLabel });
-        runScript(r.scriptLabel);
-        r = ett.DoFieldEndTurnEffects();
-      }
-      // Phase 2 : per-battler effects (Poison/Burn/LeechSeed/Wrap/etc.).
-      ett.resetBattlerEndTurnEffectsState();
-      let b = ett.DoBattlerEndTurnEffects();
-      while (b && safety++ < 100) {
-        phases.push({ phase: 'battler', label: b.scriptLabel });
-        runScript(b.scriptLabel);
-        b = ett.DoBattlerEndTurnEffects();
-      }
-      // Phase 3 : Wish/PerishSong.
-      ett.resetWishPerishSongState();
-      let w = ett.HandleWishPerishSongOnTurnEnd();
-      while (w && safety++ < 20) {
-        phases.push({ phase: 'wishperish', label: w.scriptLabel });
-        runScript(w.scriptLabel);
-        w = ett.HandleWishPerishSongOnTurnEnd();
-      }
-      const drained = await drainBattleEventsAsText();
-      return { phases, msgs: drained?.messages ?? [] };
+      const result = await runEndTurnEffectsViaBytecode();
+      return {
+        phases: result.phases,
+        msgs: result.messages,
+        eventsCount: result.eventsCount,
+      };
     },
     // Help
     help: () => `
