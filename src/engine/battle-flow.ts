@@ -63,12 +63,22 @@ import {
   IsFieldMessageBoxHidden,
   HideFieldMessageBox,
 } from './field-message-box';
-import { getRuntime } from './decomp-globals';
+import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
+
+/** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
+ *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
+ *  `BlendPalettes(PALETTES_ALL, 0, RGB_BLACK)` avec coeff 0 = 0% blend =
+ *  Faded ← Unfaded pur. Les palettes battle réelles sont déjà dans Unfaded
+ *  (LoadPalette écrit both buffers). */
+function _restorePalettesFromUnfaded(): void {
+  BlendPalettes(PALETTES_ALL, 0, 0 /* RGB_BLACK */);
+}
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
+import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
 import {
   createBattlerHealthboxSprites,
@@ -234,7 +244,7 @@ type State =
   | 'LOAD_ASSETS' | 'WAIT_LOAD'
   | 'POST_SPAWN_FADE_IN' | 'POST_SPAWN_FADE_WAIT'
   | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
-  | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS'
+  | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS' | 'BATTLE_INTRO_SLIDE'
   | 'INTRO_TEXT' | 'INTRO_WAIT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
   | 'ACTION_MENU_INIT' | 'ACTION_MENU_INPUT'
@@ -998,18 +1008,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'TRANSITION_SLICE': {
         // 1:1 décomp `Task_Slice` polling (battle_transition.c:2716+).
         // Quand tickBattleTransitionSlice() retourne true → effectX >= WIDTH,
-        // l'écran est totalement "découpé". On enchaîne sur fade-to-black.
+        // `Slice_End` a déjà fait `FadeScreenBlack()` = BlendPalettes(ALL, 16,
+        // BLACK) = écran NOIR **INSTANT**. 1:1 décomp `Task_BattleStart` state 1 :
+        // IsBattleTransitionDone → CleanupOverworld + SetMainCallback2(CB2_InitBattle).
+        // PAS de fade progressif intermédiaire (= sinon on revoit l'overworld).
+        // L'écran reste noir (palettes blendées) pendant le load assets.
         if (tickBattleTransitionSlice()) {
-          // 1:1 décomp `Slice_End` → `FadeScreenBlack` puis enchaînement vers
-          // load battle assets (= BG terrain + sprites).
-          rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
-          state = 'INIT_FADE_WAIT';
+          state = 'LOAD_ASSETS';
         }
         return false;
       }
 
       case 'INIT_FADE_WAIT': {
-        // Wait fade-out complete avant load assets.
+        // (Legacy state conservé pour compat ad-hoc. Plus utilisé dans le flow
+        // 1:1 standard : TRANSITION_SLICE → LOAD_ASSETS direct, l'écran est
+        // déjà noir via FadeScreenBlack.)
         if (!rt.gPaletteFade.active) {
           state = 'LOAD_ASSETS';
         }
@@ -1019,6 +1032,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'LOAD_ASSETS': {
         if (!loadStarted && playerMon && opponentMon) {
           loadStarted = true;
+          // 1:1 décomp `CB2_InitBattleInternal` ll. 629-634 : setup WIN0 =
+          // fente 1px au centre + WININ/WINOUT=0 (= tout masqué) AVANT le load
+          // assets. L'écran est déjà noir (Slice_End FadeScreenBlack) ; ce
+          // masque géométrique WIN0V tiendra le battle screen invisible pendant
+          // que les palettes battle écrasent le noir, jusqu'à l'ouverture
+          // `BattleIntroSlide` (= la fente s'ouvre du centre = "ouvre la map
+          // en deux", effet 1:1 GBA observé par user).
+          setupBattleWindowForIntro();
           (async () => {
             try {
               // Ensure game-data is loaded (= moves table for damage calc).
@@ -1132,22 +1153,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           priority: 0,
         });
         playerSpriteId = player.spriteId;
-        // Bug 5e session 124 : fade-IN to reveal battle après spawn sprites.
-        state = 'POST_SPAWN_FADE_IN';
+        // 1:1 décomp : après spawn des sprites + healthbox, le battle screen
+        // est révélé par l'OUVERTURE de la fente WIN0V (`BattleIntroSlide`),
+        // PAS par un fade palette. → INIT_HP_WINDOWS (créé healthbox, encore
+        // masqués par WIN0V) → BATTLE_INTRO_SLIDE (ouvre la fente).
+        state = 'INIT_HP_WINDOWS';
         return false;
       }
 
-      case 'POST_SPAWN_FADE_IN': {
-        // Trigger fade-in (= from black to color).
-        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
-        state = 'POST_SPAWN_FADE_WAIT';
-        return false;
-      }
-
+      case 'POST_SPAWN_FADE_IN':
       case 'POST_SPAWN_FADE_WAIT': {
-        if (!rt.gPaletteFade.active) {
-          state = 'INIT_HP_WINDOWS';
-        }
+        // Legacy (= ancien fade palette FAUX, remplacé par BattleIntroSlide
+        // WIN0V 1:1 décomp). Conservé comme no-op redirect pour compat ad-hoc.
+        state = 'INIT_HP_WINDOWS';
         return false;
       }
 
@@ -1174,7 +1192,28 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             }
           }).catch(e => console.warn('[battle-flow] player healthbox create failed:', e));
         }
-        state = 'INTRO_TEXT';
+        // 1:1 décomp : à ce stade le décomp a les VRAIES couleurs battle
+        // (LoadCompressedPalette dans CB2_InitBattle écrasent le noir du
+        // FadeScreenBlack). Notre `Slice_End` a fait BlendPalettes(ALL,16,BLACK)
+        // → gPlttBufferFaded NOIR persistant. On le restaure INSTANT (= coeff 0
+        // → Faded ← Unfaded pur, PAS un fade progressif) avant l'ouverture.
+        // Les palettes battle sont déjà dans Unfaded (LoadPalette écrit both).
+        _restorePalettesFromUnfaded();
+        // 1:1 décomp : healthbox + sprites créés (encore masqués par la fente
+        // WIN0V). On lance `BattleIntroSlide` = l'ouverture verticale de la
+        // fente du centre vers haut+bas ("ouvre la map en deux", 1:1 GBA).
+        startBattleIntroSlide();
+        state = 'BATTLE_INTRO_SLIDE';
+        return false;
+      }
+
+      case 'BATTLE_INTRO_SLIDE': {
+        // 1:1 décomp `BattleIntroSlide1` (battle_intro.c:154-237) : la fente
+        // WIN0V s'ouvre du centre (state 2 lent -0xFF/frame jusqu'à top=48,
+        // state 3 rapide -0x3FC/frame jusqu'à top=0) → battle screen révélé.
+        if (tickBattleIntroSlide()) {
+          state = 'INTRO_TEXT';
+        }
         return false;
       }
 
@@ -1725,6 +1764,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Cleanup transition state si reste actif (= safety si state machine
         // bypass TRANSITION_SLICE).
         stopBattleTransition();
+        // 1:1 décomp : reset WIN0 (= la fente d'intro) avant retour overworld.
+        // Sinon la fente WIN0V resterait active → overworld masqué/clippé.
+        resetBattleIntroWindow();
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);
         if (opponentSpriteId >= 0) rt.DestroySprite(opponentSpriteId);

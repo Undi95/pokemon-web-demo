@@ -229,10 +229,18 @@ export function tickBattleTransitionSlice(): boolean {
 
   // Return true seulement quand l'animation est terminée ET nettoyée.
   if (_slice.state === 2) {
-    // 1:1 décomp `Slice_End` ll. 2797-2802 : DmaStop, FadeScreenBlack, DestroyTask.
-    // FadeScreenBlack utilise BlendPalettes(PALETTES_ALL, 16, RGB_BLACK) — pour
-    // notre port, le caller (= battle-flow INIT) appelle déjà BeginNormalPaletteFade
-    // après tickBattleTransitionSlice → true. Donc on skip le fade ici.
+    // 1:1 décomp `Slice_End` (battle_transition.c:2797-2803) :
+    //   DmaStop(0); FadeScreenBlack(); DestroyTask(...);
+    // `FadeScreenBlack` (l.4082) = `BlendPalettes(PALETTES_ALL, 16, RGB_BLACK)`
+    // = écran NOIR **INSTANT** (coeff 16 = 100%, PAS un fade progressif).
+    //
+    // BUG corrigé : avant on SKIP ce FadeScreenBlack en supposant que
+    // battle-flow ferait `BeginNormalPaletteFade` (= fade PROGRESSIF 16 frames).
+    // Résultat : entre la fin du slice (BG offsets reset par stopBattleTransition)
+    // et le noir complet du fade progressif, l'overworld NORMAL réapparaissait
+    // quelques frames (= bug visuel "on revoit l'écran normal" rapporté user).
+    // 1:1 décomp = noir INSTANT ici.
+    BlendPalettes(PALETTES_ALL, 16, /* RGB_BLACK */ 0);
     stopBattleTransition();
     return true;
   }
