@@ -27,10 +27,33 @@
  */
 
 import { gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop } from './decomp-globals';
-import { getRuntime } from './decomp-globals';
+import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
 
 const DISPLAY_WIDTH = 240;
 const DISPLAY_HEIGHT = 160;
+
+// 1:1 décomp `RGB(11, 11, 11)` (= gris du flash d'intro transition).
+// RGB15 little : r | g<<5 | b<<10.
+const RGB_INTRO_GRAY = 11 | (11 << 5) | (11 << 10);  // = 0x2D6B
+
+/** 1:1 décomp `CreateIntroTask(0, 0, 3, 2, 2)` (battle_transition.c:3968) +
+ *  `Task_BattleTransition_Intro` (l.3987) = LE FLASH gris d'entrée combat.
+ *
+ *  PHASE 1 INTRO de TOUTE transition (= avant le Slice phase 2). 3 cycles :
+ *  blend palette ALL vers RGB(11,11,11) 0→16 par pas 2 (8 frames montée)
+ *  puis 16→0 par pas 2 (8 frames descente). 16 frames/cycle × 3 = ~48 frames.
+ *  Avant ce port, l'écran "popait direct" sans le clignotement gris 3×. */
+interface IntroFlashState {
+  /** 0 = FadeToGray (montée), 1 = FadeFromGray (descente). */
+  subState: 0 | 1;
+  /** tBlend décomp : coefficient blend 0..16. */
+  blend: number;
+  /** tNumFades décomp : nombre de cycles restants (3 → 0). */
+  numFades: number;
+  /** Gate frame (= décomp delay 0 → 1 step/frame visuelle). */
+  lastFrame: number;
+}
+let _introFlash: IntroFlashState | null = null;
 
 /** 1:1 décomp `struct TransitionData` (battle_transition.h subset utilisé par Slice). */
 interface TransitionData {
@@ -101,6 +124,61 @@ export function startBattleTransitionSlice(): void {
     }
   });
   _hblankInstalled = true;
+}
+
+/** 1:1 décomp `CreateIntroTask(0, 0, 3, 2, 2)` — démarre le flash gris d'entrée
+ *  (= phase 1 INTRO de la transition, AVANT le Slice). */
+export function startBattleIntroFlash(): void {
+  _introFlash = {
+    subState: 0,      // FadeToGray
+    blend: 0,         // tBlend
+    numFades: 3,      // tNumFades
+    lastFrame: -1,
+  };
+}
+
+/** 1:1 décomp `Task_BattleTransition_Intro` (battle_transition.c:3987) :
+ *  `TransitionIntro_FadeToGray` (l.3992) + `TransitionIntro_FadeFromGray` (l.4011).
+ *  Retourne true quand les 3 cycles de flash sont terminés.
+ *
+ *  Gate frame via `performance.now()/16` (= ~60fps) car ce tick est polled
+ *  ~5-6×/frame visuelle par le flow (= sinon flash 5× trop rapide). Décomp
+ *  delay=0 → exactement 1 step/frame. */
+export function tickBattleIntroFlash(): boolean {
+  if (!_introFlash) return true;
+  const f = _introFlash;
+  // Gate : 1 step par frame visuelle.
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === f.lastFrame) return false;
+  f.lastFrame = fc;
+
+  if (f.subState === 0) {
+    // 1:1 décomp TransitionIntro_FadeToGray (delay 0 → chaque frame) :
+    f.blend += 2;                       // tFadeToGrayIncrement = 2
+    if (f.blend > 16) f.blend = 16;
+    BlendPalettes(PALETTES_ALL, f.blend, RGB_INTRO_GRAY);
+    if (f.blend >= 16) f.subState = 1;  // → FadeFromGray
+  } else {
+    // 1:1 décomp TransitionIntro_FadeFromGray :
+    f.blend -= 2;                       // tFadeFromGrayIncrement = 2
+    if (f.blend < 0) f.blend = 0;
+    BlendPalettes(PALETTES_ALL, f.blend, RGB_INTRO_GRAY);
+    if (f.blend === 0) {
+      f.numFades -= 1;
+      if (f.numFades === 0) {
+        // 1:1 décomp : tous les fades faits → intro terminé.
+        _introFlash = null;
+        return true;
+      }
+      f.subState = 0;                   // → nouveau cycle FadeToGray
+    }
+  }
+  return false;
+}
+
+/** Devtools / debug : check si le flash d'intro est actif. */
+export function isBattleIntroFlashActive(): boolean {
+  return _introFlash !== null;
 }
 
 /** 1:1 décomp `Slice_Main` (battle_transition.c:2758-2795). Appelé chaque frame

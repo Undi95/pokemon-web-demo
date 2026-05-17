@@ -68,7 +68,7 @@ import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
-import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition } from './battle-transition';
+import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
 import {
   createBattlerHealthboxSprites,
@@ -230,7 +230,7 @@ const MOVE_TYPE_WINDOW: WindowTemplate = {
 
 // ─── Battle state ────────────────────────────────────────────────────────────
 type State =
-  | 'INIT' | 'TRANSITION_SLICE' | 'INIT_FADE_WAIT'
+  | 'INIT' | 'TRANSITION_INTRO' | 'TRANSITION_SLICE' | 'INIT_FADE_WAIT'
   | 'LOAD_ASSETS' | 'WAIT_LOAD'
   | 'POST_SPAWN_FADE_IN' | 'POST_SPAWN_FADE_WAIT'
   | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
@@ -973,12 +973,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         import('./decomp-globals').then(({ m4aSongNumStart }) => {
           m4aSongNumStart(474 /* MUS_VS_WILD */, true);
         });
-        // 1:1 décomp `CB2_StartFirstBattle` → `BattleStartTransition` →
-        // `B_TRANSITION_SLICE` (= sBattleTransitionTable_Wild[NORMAL][0]) pour
-        // les wild battles standard. La transition animate les BG layers
-        // overworld via HBLANK scanline shifts pendant ~30-60 frames.
-        startBattleTransitionSlice();
-        state = 'TRANSITION_SLICE';
+        // 1:1 décomp `Task_BattleTransition` (battle_transition.c:1063) :
+        // une transition = PHASE 1 INTRO (flash) PUIS PHASE 2 MAIN (Slice).
+        // `sTasks_Intro[B_TRANSITION_SLICE]` = `Task_Intro` → `CreateIntroTask(0,0,3,2,2)`
+        // = 3 cycles de flash gris RGB(11,11,11) AVANT l'animation Slice.
+        // Ce flash MANQUAIT (= user feedback "l'écran pop direct sans fade in").
+        startBattleIntroFlash();
+        state = 'TRANSITION_INTRO';
+        return false;
+      }
+
+      case 'TRANSITION_INTRO': {
+        // 1:1 décomp `Transition_StartIntro` + `Transition_WaitForIntro`
+        // (battle_transition.c:1068-1096) : run le flash gris 3×, puis quand
+        // `IsIntroTaskDone()` → lance le Main task (= Slice phase 2).
+        if (tickBattleIntroFlash()) {
+          // 1:1 décomp `Transition_StartMain` (l.1098) : CreateTask(sTasks_Main[SLICE]).
+          startBattleTransitionSlice();
+          state = 'TRANSITION_SLICE';
+        }
         return false;
       }
 
