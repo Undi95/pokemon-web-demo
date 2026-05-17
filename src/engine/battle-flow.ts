@@ -101,6 +101,7 @@ import {
 } from './battle/wire-bytecode-bridge';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
+import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import { Random } from './random';
 import { IsBattleSceneOff } from './gba-menu-system';
 
@@ -625,8 +626,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     if (!playerMon) return;
     const mv = playerMon.moves[moveMenuCursor];
     if (!mv) { _printToWindow(moveTypeWinId, _MOVE_INTERFACE_TYPE_LABEL); return; }
-    // Lookup move type via getMove (= battle data table)
-    const moveData = getMove('MOVE_' + mv.id.toUpperCase().replace(/-/g, '_'));
+    // Lookup move type via getMove. Resolveur CANONIQUE moveDexIdToEnum
+    // (= gère les noms composés SANS séparateur : "quickattack" →
+    // MOVE_QUICK_ATTACK). L'ancien `'MOVE_'+id.toUpperCase().replace(/-/g,
+    // '_')` donnait MOVE_QUICKATTACK (introuvable) → type affiché "???".
+    const moveData = getMove(moveDexIdToEnum(mv.id));
     const typeFr = _typeNameFr(moveData?.type);
     _printToWindow(moveTypeWinId, _MOVE_INTERFACE_TYPE_LABEL + typeFr);
   };
@@ -771,7 +775,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
     // Legacy MVP (flag OFF ou AI indispo) : premier move offensif.
     for (let i = 0; i < opponentMon.moves.length; i++) {
-      const mv = getMove('MOVE_' + opponentMon.moves[i].id.toUpperCase());
+      const mv = getMove(moveDexIdToEnum(opponentMon.moves[i].id));
       if (mv && mv.power > 0) return i;
     }
     return 0;
@@ -840,7 +844,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // ─── Ad-hoc legacy formula (= conservé pour tutorial robuste) ──────
     const mv = attacker.moves[moveIdx];
     if (!mv) return { damage: 0, typeMul: 1 };
-    const moveData = getMove('MOVE_' + mv.id.toUpperCase());
+    // Resolveur canonique (noms composés) — l'ancien `'MOVE_'+id.toUpperCase()`
+    // ratait "quickattack"/"thundershock"/etc → moveData undefined → type
+    // fallback TYPE_NORMAL = dégâts faux pour move composé non-Normal (chemin
+    // legacy ; bytecode = défaut, mais correct si rollback).
+    const moveData = getMove(moveDexIdToEnum(mv.id));
     const power = moveData?.power ?? 0;
     if (power <= 0) return { damage: 0, typeMul: 1 };  // status moves
     // Stats : we recompute Atk/Def from species + level + IVs.
