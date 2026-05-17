@@ -16,6 +16,7 @@
     "extract:trainer-parties": "node scripts/extract-trainer-parties.mjs",
     "extract:wild-encounters": "node scripts/extract-wild-encounters.mjs",
     "extract:items": "node scripts/extract-items.mjs",
+    "extract:item-effects": "node scripts/extract-item-effects.mjs",
     "extract:map-names-fr": "node scripts/extract-map-names-fr.mjs",
     "extract:metatile-labels": "node scripts/extract-metatile-labels.mjs",
     "extract:text-tables": "node scripts/extract-text-tables.mjs",
@@ -60,7 +61,8 @@
     "audit:moves-data": "node scripts/audit-moves-data.mjs",
     "audit:type-chart": "node scripts/audit-type-chart.mjs",
     "audit:learnsets": "node scripts/audit-learnsets.mjs",
-    "audit:trainer-parties": "node scripts/audit-trainer-parties.mjs"
+    "audit:trainer-parties": "node scripts/audit-trainer-parties.mjs",
+    "audit:item-effects": "node scripts/audit-item-effects.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.9.32",
