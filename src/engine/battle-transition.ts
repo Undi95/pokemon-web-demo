@@ -79,11 +79,17 @@ interface SliceState {
 
 let _slice: SliceState | null = null;
 let _hblankInstalled = false;
+// Gate frame pour le Slice (= 1 step/frame visuelle, décomp `Slice_Main` =
+// 1 step/frame Task). Sans ça, le flow polle tickBattleTransitionSlice
+// ~5-6×/frame → l'animation slice se termine 5-6× trop vite → la déchirure
+// "coupe la map en deux" était quasi-instantanée donc INVISIBLE (bug user).
+let _sliceLastFrame = -1;
 
 /** 1:1 décomp `Slice_Init` (battle_transition.c:2728-2756). Initialise les
  *  buffers scanline + le HBLANK callback. */
 export function startBattleTransitionSlice(): void {
   ScanlineEffect_Clear();
+  _sliceLastFrame = -1;  // reset gate (= nouveau slice, ex. 2e combat consécutif)
   // GetCameraOffsetWithPan : pour notre port, on assume camera (0, 0) puisque
   // l'overworld scroll est géré différement. Décomp utilise les offsets actuels
   // de la map active.
@@ -189,6 +195,15 @@ export function tickBattleTransitionSlice(): boolean {
     // Slice_End déjà traité au precedent tick.
     return true;
   }
+
+  // Gate : 1 step par frame visuelle (= décomp `Slice_Main` = 1 step/frame
+  // Task). Le flow polle ~5-6×/frame → sans ce gate l'animation slice se
+  // terminait 5-6× trop vite → la déchirure "coupe la map en deux" était
+  // quasi-instantanée donc INVISIBLE (bug rapporté user). Même pattern de
+  // gate que tickBattleIntroFlash / tickBattleIntroSlide.
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === _sliceLastFrame) return false;
+  _sliceLastFrame = fc;
 
   _slice.data.VBlank_DMA = false;
 
