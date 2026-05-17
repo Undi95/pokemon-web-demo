@@ -717,6 +717,12 @@ export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B 
  *  (Cmd_copymovepermanently) pour copier le move successfully announced. */
 export const gLastPrintedMoves: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `EWRAM_DATA u16 gRandomTurnNumber` (battle_main.c). Roll RNG
+ *  fixé une fois par tour (= SetActionsAndBattlersTurnOrder), lu par
+ *  GetWhoStrikesFirst pour Quick Claw. Default 0 jusqu'à câblage end-turn. */
+export let gRandomTurnNumber = 0;
+export function setRandomTurnNumber(v: number): void { gRandomTurnNumber = v & 0xFFFF; }
+
 /** 1:1 décomp `struct ResourceFlags { u32 flags[MAX_BATTLERS_COUNT] }`
  *  (battle.h:63-66). Per-battler bitfield (= RESOURCE_FLAG_FLASH_FIRE bit 0).
  *  Accédé via `gBattleResources->flags->flags[battler]` dans le décomp. */
