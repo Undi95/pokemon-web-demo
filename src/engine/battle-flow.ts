@@ -787,6 +787,54 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
+  // ─── Faint animation 1:1 décomp ─────────────────────────────────────────
+  // 1:1 décomp `SpriteCB_FaintSlideAnim` (battle_main.c:2881-2888) :
+  //   sprite.x2 += sSpeedX (= 0 for player faint)
+  //   sprite.y2 += sSpeedY (= 5 for player faint)
+  // Continue jusqu'à sprite hors écran (= y dépasse DISPLAY_HEIGHT 160).
+  //
+  // Pour opponent : `SpriteCB_FaintOpponentMon` + `SpriteCB_AnimFaintOpponent`
+  // (battle_main.c:2744-2811) : descend de 8px/frame ET erase progressively
+  // les tile rows depuis le bas (= sprite se "vide" visuellement). Le port
+  // tile-row erasure n'est pas faisable sans direct VRAM manipulation, donc
+  // notre adapt fait juste glissement vers bas + fade alpha à la fin.
+  let _faintSpriteId = -1;
+  let _faintFramesLeft = 0;
+  let _faintIsOpponent = false;
+  /** Démarre l'animation faint sur le sprite donné. isOpponent = true pour
+   *  utiliser le pattern décomp `SpriteCB_FaintOpponentMon` (= descend lent
+   *  + invisible à la fin). false pour player (= descend rapide hors écran). */
+  const startFaintAnim = (spriteId: number, isOpponent: boolean) => {
+    _faintSpriteId = spriteId;
+    _faintIsOpponent = isOpponent;
+    // Player : descend ~64px (= hors écran) à 5px/frame ≈ 13 frames.
+    // Opponent : descend ~64px à 4px/frame (= 8px tous les 2 frames) ≈ 16 frames.
+    _faintFramesLeft = isOpponent ? 16 : 13;
+  };
+  const tickFaint = (): void => {
+    if (_faintFramesLeft <= 0) return;
+    const rt2 = getRuntime();
+    if (!rt2) return;
+    const sprite = rt2.gSprites.get(_faintSpriteId);
+    if (!sprite) { _faintFramesLeft = 0; return; }
+    if (_faintIsOpponent) {
+      // 1:1 décomp `SpriteCB_AnimFaintOpponent` (ll. 2788-2811) : sprite y2
+      // += 8 chaque 2 frames. Notre port simplifie en y2 += 4 par frame
+      // (= équivalent visuel sans le tile-erasure).
+      sprite.y2 += 4;
+    } else {
+      // 1:1 décomp `SpriteCB_FaintSlideAnim` (ll. 2881-2888) : y2 += sSpeedY (=5).
+      sprite.y2 += 5;
+    }
+    _faintFramesLeft--;
+    if (_faintFramesLeft === 0) {
+      // Sprite hors écran ou totalement fade : hide.
+      sprite.invisible = true;
+      sprite.y2 = 0;
+      _faintSpriteId = -1;
+    }
+  };
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
@@ -794,6 +842,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // Tick shake animation (= run regardless of state, so shake survives
     // text waits + transitions).
     tickShake();
+    tickFaint();
 
     // Iter16 : during battle, re-hide overworld sprites each frame because
     // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
@@ -1274,10 +1323,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         ShowFieldMessage(`Le ${opponentMon.nickname} sauvage\nest K.O.!`);
         outcome = BATTLE_OUTCOME_WIN;
         state = 'OPP_FAINTED_WAIT';
-        // Hide opponent sprite.
+        // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
+        // au lieu de hide direct, lance SpriteCB_FaintOpponentMon → AnimFaintOpponent
+        // qui fait descendre le sprite progressivement + le clear visuellement.
         if (opponentSpriteId >= 0) {
-          const s = rt.gSprites.get(opponentSpriteId);
-          if (s) s.invisible = true;
+          startFaintAnim(opponentSpriteId, true /* isOpponent */);
         }
         return false;
       }
@@ -1449,9 +1499,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         ShowFieldMessage(`${playerMon.nickname} est K.O.!`);
         outcome = BATTLE_OUTCOME_LOST;
         state = 'PLAYER_FAINTED_WAIT';
+        // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
+        // sprite descend (y2 += 5/frame) hors écran avec SpriteCB_FaintSlideAnim.
         if (playerSpriteId >= 0) {
-          const s = rt.gSprites.get(playerSpriteId);
-          if (s) s.invisible = true;
+          startFaintAnim(playerSpriteId, false /* isOpponent=false → player */);
         }
         return false;
       }
