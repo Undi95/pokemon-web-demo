@@ -67,7 +67,7 @@ import {
   setBattlersCount as _setBattlersCount,
   setAbsentBattlerFlags as _setAbsentBattlerFlags,
 } from './state';
-import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
+import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
 import { getBattleMove as _gbm } from './data/battle-moves';
 import {
@@ -92,11 +92,14 @@ import {
   MOVE_TARGET_SELECTED as _MOVE_TARGET_SELECTED,
   MOVE_TARGET_FOES_AND_ALLY as _MOVE_TARGET_FOES_AND_ALLY,
   MOVE_TARGET_USER as _MOVE_TARGET_USER,
+  ALL_MOVES_MASK as _ALL_MOVES_MASK,
+  BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER,
 } from './constants';
 import { _GetMoveTarget } from './cmd-niveau-34';
+import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from './ai/ai-script-commands';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
-import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory } from './ai/ai-state';
+import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory, setBattlerAI } from './ai/ai-state';
 import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from './ai/ai-switch-items';
 import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
 import { gTypeEffectiveness as _gTypeEff, TYPE_FORESIGHT as _TYPE_FORESIGHT, TYPE_ENDTABLE as _TYPE_ENDTABLE } from './data/type-effectiveness';
@@ -629,6 +632,62 @@ export function buildBattleDevtools(): Record<string, unknown> {
         errors.push(`AI run threw: ${String(e)}`);
       }
       return { ok: errors.length === 0, scriptsResolved, errors };
+    },
+    /** VÉRIF DÉTERMINISTE — AI doubles `ChooseMoveOrAction_Doubles`
+     *  (battle_ai_script_commands.c:448-570). aiBattery ne testait QUE le
+     *  single ; ici on monte un VRAI 2v2 (4 battlers + movesets, DOUBLE|
+     *  TRAINER) et on appelle BattleAI_SetupAIData + BattleAI_ChooseMoveOrAction
+     *  (route → _Doubles via le flag DOUBLE). Recompute exact impractical
+     *  (scoring AI bytecode 4-cibles) + fidélité 1:1 déjà auditée
+     *  code-review (session 147) → on prouve SOUNDNESS + DÉTERMINISME :
+     *  pas de throw, run×2 identique (RNG seedé), ret/scores sains, le
+     *  chemin _Doubles est bien pris. NON wiré = test pur, zéro risque.
+     *  Usage : scope.bytecode.aiDoubles() */
+    aiDoubles: async (opts?: { seed?: number }) => {
+      await ensureAiBytecodeLoaded();
+      const seed = opts?.seed ?? 0;
+      const pokemonMod = await import('../pokemon');
+      const run = () => {
+        _debugResetRng();
+        SeedRng(seed);
+        const p1 = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 15);
+        const p2 = pokemonMod.createPokemonInstance('SPECIES_TORCHIC', 15);
+        const e1 = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 13);
+        const e2 = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 13);
+        setupPartyForBattle([p1, p2] as never, [e1, e2] as never);
+        // 2v2 réel : battlers 0/2 = player, 1/3 = enemy (layout Émeraude).
+        fillBattleMonFromParty(0, 'player', 0);
+        fillBattleMonFromParty(1, 'enemy', 0);
+        fillBattleMonFromParty(2, 'player', 1);
+        fillBattleMonFromParty(3, 'enemy', 1);
+        _setBattlersCount(4);
+        _setBattleTypeFlags((_BATTLE_TYPE_DOUBLE | _BATTLE_TYPE_TRAINER) >>> 0);
+        _setAbsentBattlerFlags(0);
+        const aiB = 1; // AI = opponent-left
+        setBattlerAI(aiB);
+        setBattlerAttacker(aiB);
+        setActiveBattler(aiB);
+        BattleAI_SetupAIData(_ALL_MOVES_MASK);
+        const ret = BattleAI_ChooseMoveOrAction();
+        return { ret, scores: [...gAiThinkingStruct.score], aiFlags: gAiThinkingStruct.aiFlags };
+      };
+      let a: ReturnType<typeof run> | undefined;
+      let b: ReturnType<typeof run> | undefined;
+      try { a = run(); b = run(); } catch (e) { return { ok: false, threw: String(e) }; }
+      if (!a || !b) return { ok: false, threw: 'no result' };
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      const ret = a.ret;
+      const moveIdx = ret & 0xFF;
+      // ret sain : action/move byte ≥0 ; moveIdx 0..3 (ou action ≥ valeur move).
+      const retSane = typeof ret === 'number' && ret >= 0 && Number.isFinite(ret);
+      const scoresPopulated = Array.isArray(a.scores) && a.scores.length > 0;
+      return {
+        ok: deterministic && retSane && scoresPopulated,
+        deterministic, retSane, scoresPopulated,
+        ret, moveIdx, aiFlags: a.aiFlags,
+        scoresSample: a.scores.slice(0, 8),
+        doublesPath: true, // BATTLE_TYPE_DOUBLE set → BattleAI_ChooseMoveOrAction → _Doubles
+      };
     },
     /** VÉRIF DÉTERMINISTE — ShouldUseItem / GetAI_ItemType 1:1 (sous-système
      *  objet AI dresseur, battle_ai_switch_items.c:792-944). Scénario fixe
