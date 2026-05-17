@@ -68,6 +68,7 @@ import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
+import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition } from './battle-transition';
 import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
@@ -216,7 +217,7 @@ const MOVE_TYPE_WINDOW: WindowTemplate = {
 
 // ─── Battle state ────────────────────────────────────────────────────────────
 type State =
-  | 'INIT' | 'INIT_FADE_WAIT'
+  | 'INIT' | 'TRANSITION_SLICE' | 'INIT_FADE_WAIT'
   | 'LOAD_ASSETS' | 'WAIT_LOAD'
   | 'POST_SPAWN_FADE_IN' | 'POST_SPAWN_FADE_WAIT'
   | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
@@ -838,11 +839,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Cette init est requise pour que les opcodes bytecode lisent les vraies
         // stats au lieu de zéros.
         fillActiveBattleMonsForBattleStart();
-        // Bug 5e session 124 : fade-out screen → black avant load battle assets.
-        // 1:1 décomp `CB2_StartFirstBattle` chain via BattleStartTransition.
-        // Notre version simplifiée : BeginNormalPaletteFade to black.
-        rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
-        state = 'INIT_FADE_WAIT';
+        // 1:1 décomp `CB2_StartFirstBattle` → `BattleStartTransition` →
+        // `B_TRANSITION_SLICE` (= sBattleTransitionTable_Wild[NORMAL][0]) pour
+        // les wild battles standard. La transition animate les BG layers
+        // overworld via HBLANK scanline shifts pendant ~30-60 frames.
+        startBattleTransitionSlice();
+        state = 'TRANSITION_SLICE';
+        return false;
+      }
+
+      case 'TRANSITION_SLICE': {
+        // 1:1 décomp `Task_Slice` polling (battle_transition.c:2716+).
+        // Quand tickBattleTransitionSlice() retourne true → effectX >= WIDTH,
+        // l'écran est totalement "découpé". On enchaîne sur fade-to-black.
+        if (tickBattleTransitionSlice()) {
+          // 1:1 décomp `Slice_End` → `FadeScreenBlack` puis enchaînement vers
+          // load battle assets (= BG terrain + sprites).
+          rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+          state = 'INIT_FADE_WAIT';
+        }
         return false;
       }
 
@@ -1526,6 +1541,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'CLEANUP': {
+        // Cleanup transition state si reste actif (= safety si state machine
+        // bypass TRANSITION_SLICE).
+        stopBattleTransition();
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);
         if (opponentSpriteId >= 0) rt.DestroySprite(opponentSpriteId);
