@@ -282,6 +282,12 @@ interface BattleParams {
   opponentSpecies: string;
   /** Opponent level (= 2 for tutorial). */
   opponentLevel: number;
+  /** 1:1 décomp : combat dresseur → BATTLE_TYPE_TRAINER → BattleAI scripts
+   *  (sinon wild = move aléatoire). Set par trainer-battle-flow.ts. */
+  isTrainerBattle?: boolean;
+  /** Id numérique du dresseur (= gTrainerBattleOpponent_A), pour résoudre
+   *  gTrainers[id].aiFlags dans BattleAI_SetupAIData. */
+  trainerNumId?: number;
 }
 
 /** 1:1 décomp battle_util.c CalculateBaseDamage simplified.
@@ -740,7 +746,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       const r = chooseOpponentMoveViaAI({
         opponent: opponentMon,
         player: playerMon ?? opponentMon,
-        isTrainer: false, // battle-flow.ts = combat sauvage 1:1
+        // 1:1 décomp : dresseur → scripts BattleAI ; sauvage → move aléatoire.
+        isTrainer: params.isTrainerBattle ?? false,
+        trainerId: params.trainerNumId,
       });
       if (r.index >= 0 && r.index < opponentMon.moves.length) return r.index;
       // index -1 (indispo) → fallback legacy ci-dessous.

@@ -189,6 +189,10 @@ import {
   BATTLE_TYPE_TRAINER_HILL,
 } from '../constants';
 import { getTrainer, type TrainerData } from '../../data/game-data';
+// Static import (= module constants leaf, aucun risque circulaire) : évite
+// la race + fragilité de chemin du dynamic import async (bug Commit 4 :
+// _trainerIdToKey restait vide → aiFlags 0 sur tous les dresseurs).
+import * as OPPONENTS_DATA from '../../decomp-data/auto/include/constants/opponents-data';
 
 // ─── s8 helper (= score[] est s8 dans le décomp) ───────────────────────────
 
@@ -222,27 +226,38 @@ const sIgnoredPowerfulMoveEffects: readonly number[] = [
 // (= même pattern que battle-string-decoder.ts).
 
 let _trainerIdToKey: Map<number, string> | null = null;
-void (async function _buildTrainerIdCache(): Promise<void> {
-  if (_trainerIdToKey) return;
-  _trainerIdToKey = new Map();
-  try {
-    const mod = await import('../../decomp-data/auto/include/constants/opponents-data');
-    for (const [key, val] of Object.entries(mod)) {
-      if (key.startsWith('TRAINER_') && typeof val === 'number') {
-        if (!_trainerIdToKey.has(val)) _trainerIdToKey.set(val, key);
-      }
+/** Build (lazy, synchrone) le reverse map id→'TRAINER_X' depuis le module
+ *  constants importé statiquement. Pas d'async = pas de race. */
+function _ensureTrainerIdMap(): Map<number, string> {
+  if (_trainerIdToKey) return _trainerIdToKey;
+  const m = new Map<number, string>();
+  for (const [key, val] of Object.entries(OPPONENTS_DATA)) {
+    if (key.startsWith('TRAINER_') && typeof val === 'number') {
+      if (!m.has(val)) m.set(val, key);
     }
-  } catch {
-    /* boot ordering edge — cache se remplit au prochain appel */
   }
-})();
+  _trainerIdToKey = m;
+  return m;
+}
 
 function _trainerKey(trainerId: number): string {
-  return _trainerIdToKey?.get(trainerId) ?? `TRAINER_${trainerId}`;
+  return _ensureTrainerIdMap().get(trainerId) ?? `TRAINER_${trainerId}`;
 }
 
 function _getTrainerData(trainerId: number): TrainerData | undefined {
-  return getTrainer(_trainerKey(trainerId));
+  const key = _trainerKey(trainerId);
+  // 1:1 robuste : lit le bridge globalThis.gameDataTrainers (= instance-
+  // indépendant, exposé par game-data.ts au load — même pattern que
+  // battle-string-decoder.ts). Évite le bug ESM dual-instance (session 145)
+  // où le `getTrainer` importé statiquement pointe une instance non chargée.
+  const bridge = (globalThis as { gameDataTrainers?: Record<string, TrainerData> }).gameDataTrainers;
+  const fromBridge = bridge?.[key];
+  if (fromBridge) return fromBridge;
+  try {
+    return getTrainer(key);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Parse `aiFlags` string expr ("AI_SCRIPT_X | AI_SCRIPT_Y") → masque numérique

@@ -76,6 +76,27 @@ async function _ensureTrainerDataLoaded(): Promise<void> {
   }
 }
 
+// 1:1 décomp : id numérique du dresseur (= gTrainerBattleOpponent_A) résolu
+// depuis la clé 'TRAINER_X' via les constantes auto-extraites opponents-data.
+let _trainerKeyToNum: Record<string, number> | null = null;
+void (async function _loadTrainerNumIds(): Promise<void> {
+  if (_trainerKeyToNum) return;
+  try {
+    const mod = await import('./decomp-data/auto/include/constants/opponents-data');
+    const map: Record<string, number> = {};
+    for (const [k, v] of Object.entries(mod)) {
+      if (k.startsWith('TRAINER_') && typeof v === 'number') map[k] = v;
+    }
+    _trainerKeyToNum = map;
+  } catch {
+    _trainerKeyToNum = {};
+  }
+})();
+
+function _resolveTrainerNumId(trainerKey: string): number {
+  return _trainerKeyToNum?.[trainerKey] ?? 0;
+}
+
 /** Start trainer battle for given trainer ID. Reads party from JSON.
  *  Falls back to stub VAR_RESULT=1 if trainer not found. */
 export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
@@ -167,6 +188,9 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
         currentBattle = startWildBattle({
           opponentSpecies: member.species,
           opponentLevel: member.level,
+          // 1:1 décomp : combat dresseur → BattleAI scripts (pas wild random).
+          isTrainerBattle: true,
+          trainerNumId: _resolveTrainerNumId(trainerId),
         });
         state = 'IN_BATTLE';
         return false;
