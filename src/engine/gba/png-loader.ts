@@ -41,11 +41,22 @@ export async function fetchAssetArrayBuffer(url: string): Promise<ArrayBuffer> {
   const ct = resp.headers.get('content-type') || '';
   const buf = await resp.arrayBuffer();
   const b = new Uint8Array(buf);
-  const looksHtml =
-    ct.includes('text/html') ||
-    (b.length >= 1 && b[0] === 0x3C /* '<' */) ||
-    // UTF-8 BOM (EF BB BF) puis '<'
-    (b.length >= 4 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF && b[3] === 0x3C);
+  // Signal FIABLE = content-type text/html (le fallback SPA Vite sert
+  // index.html avec ce content-type ; un vrai .bin est octet-stream).
+  // BUG FIX nuages titre (régression) : l'ancien sniff `b[0] === 0x3C` était
+  // un FAUX POSITIF — un tilemap .bin valide peut commencer par l'octet 60
+  // (= '<', entrée tilemap u16 légitime, ex. clouds.bin = 60,224,61,224…).
+  // Le sniff body doit matcher SPÉCIFIQUEMENT le doctype/tag HTML, pas '<' nu.
+  let bodyLooksHtml = false;
+  if (b.length >= 5) {
+    let off = (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) ? 3 : 0; // skip BOM UTF-8
+    // décode ~16 premiers octets en ASCII, trim, lowercase
+    let head = '';
+    for (let i = off; i < Math.min(b.length, off + 16); i++) head += String.fromCharCode(b[i]);
+    head = head.replace(/^\s+/, '').toLowerCase();
+    bodyLooksHtml = head.startsWith('<!doctype html') || head.startsWith('<html');
+  }
+  const looksHtml = ct.includes('text/html') || bodyLooksHtml;
   if (looksHtml || b.length === 0) {
     throw new Error(
       `[asset] MANQUANT (fallback HTML du dev server) : ${url} ` +
