@@ -63,7 +63,8 @@
     "audit:type-chart": "node scripts/audit-type-chart.mjs",
     "audit:learnsets": "node scripts/audit-learnsets.mjs",
     "audit:trainer-parties": "node scripts/audit-trainer-parties.mjs",
-    "audit:item-effects": "node scripts/audit-item-effects.mjs"
+    "audit:item-effects": "node scripts/audit-item-effects.mjs",
+    "audit:evolutions": "node scripts/audit-evolutions.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.9.32",

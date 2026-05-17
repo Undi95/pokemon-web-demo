@@ -436,18 +436,42 @@ function parseContestMoves() {
 function parseEvolutions() {
   const text = readDecomp('src/data/pokemon/evolution.h');
   if (!text) return {};
-  // Format : `[SPECIES_X] = {{EVO_METHOD, param, SPECIES_TARGET}, ...}`
-  const re = /\[(SPECIES_\w+)\]\s*=\s*\{([\s\S]*?)\n?\s*\},?$/gm;
+  // 1:1 décomp `gEvolutionTable[NUM_SPECIES][EVOS_PER_MON]`. Entrées espèce
+  // multi-lignes (ex. SPECIES_EEVEE = 5 évolutions sur 5 lignes). Le param
+  // peut être numérique (EVO_LEVEL/BEAUTY), 0 (EVO_FRIENDSHIP*/EVO_TRADE)
+  // OU une constante ITEM_* (EVO_ITEM/EVO_TRADE_ITEM) → à résoudre en id.
+  // (ancien bug : regex param `\d+` only → toutes les EVO_ITEM droppées =
+  //  Eevee + toutes les évolutions par pierre n'évoluaient pas en jeu.)
+  const itemsH = readDecomp('include/constants/items.h') || '';
+  const itemId = {};
+  for (const im of itemsH.matchAll(/^#define\s+(ITEM_[A-Z0-9_]+)\s+(\d+)\s*$/gm)) {
+    itemId[im[1]] = Number(im[2]);
+  }
+  const tblM = text.match(/gEvolutionTable\s*\[[^\]]*\]\s*\[[^\]]*\]\s*=\s*\{([\s\S]*)\}\s*;/);
+  const body = tblM ? tblM[1] : text;
   const out = {};
+  const re = /\[(SPECIES_\w+)\]\s*=\s*\{/g;
   let m;
-  while ((m = re.exec(text)) !== null) {
+  while ((m = re.exec(body)) !== null) {
     const speciesId = m[1];
-    const body = m[2];
-    const reEvo = /\{\s*(EVO_\w+)\s*,\s*(\d+|0x[\da-fA-F]+)\s*,\s*(SPECIES_\w+)\s*\}/g;
+    // Scan d'accolades appariées pour isoler le bloc espèce (multi-lignes).
+    let depth = 1, i = re.lastIndex;
+    for (; i < body.length && depth > 0; i++) {
+      if (body[i] === '{') depth++;
+      else if (body[i] === '}') depth--;
+    }
+    const inner = body.slice(re.lastIndex, i - 1);
     const evos = [];
-    let mm;
-    while ((mm = reEvo.exec(body)) !== null) {
-      evos.push({ method: mm[1], param: parseInt10(mm[2]), target: mm[3] });
+    for (const em of inner.matchAll(/\{\s*(EVO_\w+)\s*,\s*([A-Za-z0-9_]+)\s*,\s*(SPECIES_\w+)\s*\}/g)) {
+      const method = em[1];
+      if (method === 'EVO_NONE') continue;
+      const p = em[2];
+      let param;
+      if (/^0x[\da-fA-F]+$/.test(p)) param = parseInt(p, 16);
+      else if (/^\d+$/.test(p)) param = parseInt(p, 10);
+      else if (p in itemId) param = itemId[p];
+      else param = 0;
+      evos.push({ method, param, target: em[3] });
     }
     if (evos.length > 0) out[speciesId] = evos;
   }
