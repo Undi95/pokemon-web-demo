@@ -63,15 +63,27 @@ import {
   setHitMarker,
   setMoveResultFlags,
   setActiveBattler,
+  setBattleTypeFlags as _setBattleTypeFlags,
 } from './state';
-import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId } from './party-storage';
+import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
 import { getBattleMove as _gbm } from './data/battle-moves';
-import { TYPE_MYSTERY as _TYPE_MYSTERY } from './constants';
+import {
+  TYPE_MYSTERY as _TYPE_MYSTERY,
+  STATUS2_WRAPPED as _STATUS2_WRAPPED,
+  STATUS2_ESCAPE_PREVENTION as _STATUS2_ESCAPE_PREVENTION,
+  STATUS3_ROOTED as _STATUS3_ROOTED,
+  STATUS3_PERISH_SONG as _STATUS3_PERISH_SONG,
+  BATTLE_TYPE_ARENA as _BATTLE_TYPE_ARENA,
+  ABILITY_ARENA_TRAP as _ABILITY_ARENA_TRAP,
+  ABILITY_SHADOW_TAG as _ABILITY_SHADOW_TAG,
+  ABILITY_MAGNET_PULL as _ABILITY_MAGNET_PULL,
+  TYPE_STEEL as _TYPE_STEEL,
+} from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory } from './ai/ai-state';
-import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision } from './ai/ai-switch-items';
+import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from './ai/ai-switch-items';
 import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
 import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../random';
 import { getSpeciesInfo as _gdGetSpeciesInfo } from '../data/game-data';
@@ -654,6 +666,78 @@ export function buildBattleDevtools(): Record<string, unknown> {
           chosenItem: gBattleStruct.chosenItem[(ab >> 1) * 2],
           trainerItemsAfter: [...gBattleHistory.trainerItems],
           aiItemTypeOfFirst: _debugGetAI_ItemType(items[0] ?? 0, _getItemEffectBytes(items[0] ?? 0) ?? []),
+        };
+      };
+      const a = run();
+      const b = run();
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
+    },
+    /** VÉRIF DÉTERMINISTE — ShouldSwitch / GetMostSuitableMonToSwitchInto 1:1
+     *  (battle_ai_switch_items.c:429-731). Mirror du caller décomp
+     *  (battle_controller_opponent.c:1162 / battle_main.c:3134 :
+     *  monToSwitchIntoId+AI_monToSwitchIntoId init = PARTY_SIZE). Scénario
+     *  fixe → décision EXACTE reproductible, ×2 deterministic. NON wiré au
+     *  controller = test pur, zéro risque gameplay.
+     *  Usage : scope.bytecode.aiSwitch({ status3:'PERISH_SONG' })
+     *          scope.bytecode.aiSwitch({ status2:'ESCAPE_PREVENTION' })
+     *          scope.bytecode.aiSwitch({ opposingAbility:'ARENA_TRAP' }) */
+    aiSwitch: async (opts?: {
+      active?: string; activeLevel?: number;
+      benchMons?: string[];
+      status2?: 'NONE' | 'WRAPPED' | 'ESCAPE_PREVENTION';
+      status3?: 'NONE' | 'ROOTED' | 'PERISH_SONG';
+      perishTimer?: number;
+      opposingAbility?: 'NONE' | 'ARENA_TRAP' | 'SHADOW_TAG' | 'MAGNET_PULL';
+      activeSteel?: boolean;
+      arena?: boolean;
+      presetMonToSwitch?: number;
+      call?: 'ShouldSwitch' | 'GetMostSuitable' | 'both';
+      seed?: number;
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const pokemonMod = await import('../pokemon');
+      const run = () => {
+        _debugResetRng();
+        SeedRng(seed);
+        const active = pokemonMod.createPokemonInstance(opts?.active ?? 'SPECIES_POOCHYENA', opts?.activeLevel ?? 12);
+        const bench = (opts?.benchMons ?? ['SPECIES_ZIGZAGOON']).map((s) => pokemonMod.createPokemonInstance(s, 12));
+        const player = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 12);
+        setupPartyForBattle([player] as never, [active, ...bench] as never);
+        fillActiveBattleMonsForBattleStart();
+        const ab = 1;
+        setActiveBattler(ab);
+        // Mirror caller décomp : init PARTY_SIZE (sinon GetMostSuitable early-return).
+        for (let i = 0; i < 4; i++) {
+          gBattleStruct.monToSwitchIntoId[i] = _PARTY_SIZE;
+          gBattleStruct.AI_monToSwitchIntoId[i] = _PARTY_SIZE;
+        }
+        if (opts?.presetMonToSwitch != null) gBattleStruct.monToSwitchIntoId[ab] = opts.presetMonToSwitch;
+        const m = gBattleMons[ab];
+        m.status2 = opts?.status2 === 'WRAPPED' ? _STATUS2_WRAPPED
+          : opts?.status2 === 'ESCAPE_PREVENTION' ? _STATUS2_ESCAPE_PREVENTION : 0;
+        gStatuses3[ab] = opts?.status3 === 'ROOTED' ? _STATUS3_ROOTED
+          : opts?.status3 === 'PERISH_SONG' ? _STATUS3_PERISH_SONG : 0;
+        gDisableStructs[ab].perishSongTimer = opts?.perishTimer ?? 0;
+        if (opts?.activeSteel) { m.type1 = _TYPE_STEEL; m.type2 = _TYPE_STEEL; }
+        const oppA = opts?.opposingAbility ?? 'NONE';
+        gBattleMons[0].ability = oppA === 'ARENA_TRAP' ? _ABILITY_ARENA_TRAP
+          : oppA === 'SHADOW_TAG' ? _ABILITY_SHADOW_TAG
+          : oppA === 'MAGNET_PULL' ? _ABILITY_MAGNET_PULL : 0;
+        _setBattleTypeFlags((opts?.arena ? _BATTLE_TYPE_ARENA : 0) >>> 0);
+        _resetAiSwitchDecision();
+        let shouldSwitch: boolean | null = null;
+        let mostSuitable: number | null = null;
+        const call = opts?.call ?? 'both';
+        if (call === 'ShouldSwitch' || call === 'both') shouldSwitch = _ShouldSwitch();
+        if (call === 'GetMostSuitable' || call === 'both') mostSuitable = _GetMostSuitable();
+        const dec = _getAiSwitchDecision();
+        return {
+          shouldSwitch, mostSuitable,
+          decision: { action: dec.action, data: dec.data },
+          AI_monToSwitchIntoId: gBattleStruct.AI_monToSwitchIntoId[ab],
+          monToSwitchIntoId: gBattleStruct.monToSwitchIntoId[ab],
+          partyIdx: gBattlerPartyIndexes[ab],
         };
       };
       const a = run();
