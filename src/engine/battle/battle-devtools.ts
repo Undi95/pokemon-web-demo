@@ -81,6 +81,7 @@ import {
   TYPE_STEEL as _TYPE_STEEL,
   STATUS1_BURN as _STATUS1_BURN,
   SIDE_STATUS_REFLECT as _SIDE_STATUS_REFLECT,
+  SIDE_STATUS_LIGHTSCREEN as _SIDE_STATUS_LIGHTSCREEN,
   ABILITY_GUTS as _ABILITY_GUTS,
 } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
@@ -870,17 +871,18 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  badge boost), pas d'items. Attaquant = gBattleMons[1], défenseur = [0].
      *  Genèse : v1 omettait le clamp damage==0→1 → faux FAIL Pound/Geodude
      *  (got=3 = 1:1 décomp : core 0 → 1 → +2). Corrigé ici.
-     *  EXTENSION : burn/reflect (branche physique décomp pokemon.c:3263-3274,
-     *  ordre EXACT : core /50 → burn /2 (status1&BURN & ability!=GUTS) →
-     *  Reflect /2 (sideStatus&REFLECT & crit==1, single) → clamp 0→1 → +2).
+     *  EXTENSION 1:1 décomp pokemon.c : branche PHYSIQUE = burn /2 (:3264,
+     *  status1&BURN & ability!=GUTS) → Reflect /2 (:3268, single) →
+     *  clamp 0→1 (:3281). branche SPÉCIALE = Light Screen /2 (:3319, single),
+     *  AUCUN clamp min-1 (≠ physique = subtilité 1:1). +2 final (:3372).
      *  Usage : scope.bytecode.preciseDamage({ moveId:'pound', burn:true })
-     *          scope.bytecode.preciseDamage({ moveId:'tackle', reflect:true })
-     *          scope.bytecode.preciseDamage({ burn:true, reflect:true }) */
+     *          scope.bytecode.preciseDamage({ moveId:'water_gun',
+     *            attackerSpecies:'SPECIES_PIKACHU', lightscreen:true }) */
     preciseDamage: async (opts?: {
       seed?: number; moveId?: string;
       attackerSpecies?: string; attackerLevel?: number;
       defenderSpecies?: string; defenderLevel?: number;
-      burn?: boolean; reflect?: boolean;
+      burn?: boolean; reflect?: boolean; lightscreen?: boolean;
     }) => {
       const seed = opts?.seed ?? 0;
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
@@ -899,11 +901,14 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const power = md.power;
       const mtype = md.type;
       const A = bm[1]; const D = bm[0];
-      // Injecte burn (status1) et reflect (sideStatus arg, 4ᵉ) — 1:1 décomp.
+      // Injecte burn (status1) + screens (sideStatus arg, 4ᵉ) — 1:1 décomp.
+      // Décomp lit REFLECT en branche physique, LIGHTSCREEN en branche
+      // spéciale ; passer les 2 bits est inoffensif (chaque branche lit le sien).
       if (opts?.burn) A.status1 = (A.status1 | _STATUS1_BURN) >>> 0;
-      const sideStatus = opts?.reflect ? _SIDE_STATUS_REFLECT : 0;
+      const sideStatus = (opts?.reflect ? _SIDE_STATUS_REFLECT : 0)
+        | (opts?.lightscreen ? _SIDE_STATUS_LIGHTSCREEN : 0);
       const got = _cbd(A as never, D as never, moveNum, sideStatus, 0, 0, 1, 0).damage;
-      // Recompute INDÉPENDANT 1:1 core décomp (chemin pur, stages neutres =
+      // Recompute INDÉPENDANT 1:1 décomp (chemin pur, stages neutres =
       // APPLY_STAT_MOD identité, pas de badge car attaquant côté ennemi).
       const physical = mtype < _TYPE_MYSTERY;
       const atkStat = physical ? A.attack : A.spAttack;
@@ -913,15 +918,20 @@ export function buildBattleDevtools(): Record<string, unknown> {
       d = d * (Math.floor(2 * lvl / 5) + 2);
       d = Math.floor(d / defStat);
       d = Math.floor(d / 50);
-      // Burn : décomp `if ((status1 & BURN) && ability != GUTS) damage /= 2;`
-      // (branche physique uniquement, pokemon.c:3264).
+      // 1:1 décomp pokemon.c : burn(/2)+Reflect(/2)+clamp(0→1) sont DANS la
+      // branche PHYSIQUE (3264/3268/3281) ; Light Screen DANS la branche
+      // SPÉCIALE (3319) et la branche spéciale n'a PAS de clamp min-1.
       const burnApplies = !!opts?.burn && physical && A.ability !== _ABILITY_GUTS;
-      if (burnApplies) d = Math.floor(d / 2);
-      // Reflect : décomp `if ((sideStatus & REFLECT) && crit==1) damage /= 2;`
-      // (single battle, branche physique, pokemon.c:3268-3274).
       const reflectApplies = !!opts?.reflect && physical;
-      if (reflectApplies) d = Math.floor(d / 2);
-      if (d === 0) d = 1;                  // ← clamp 1:1 décomp (pokemon.c:3281)
+      const lightscreenApplies = !!opts?.lightscreen && !physical;
+      if (physical) {
+        if (burnApplies) d = Math.floor(d / 2);          // :3264
+        if (reflectApplies) d = Math.floor(d / 2);       // :3268-3274 (single)
+        if (d === 0) d = 1;                              // :3281 PHYSIQUE only
+      } else {
+        if (lightscreenApplies) d = Math.floor(d / 2);   // :3319 (single)
+        // pas de clamp en branche spéciale (1:1) ; weather/flashfire inertes (pur)
+      }
       const expected = d + 2;              // ← final +2 1:1 décomp (pokemon.c:3372)
       const isStab = A.type1 === mtype || A.type2 === mtype;
       const pure = mtype !== _TYPE_MYSTERY && !isStab && power > 1;
@@ -929,6 +939,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
         pure, pass: pure ? got === expected : null,
         move: opts?.moveId ?? 'pound', moveNum, power, mtype, physical,
         burn: !!opts?.burn, burnApplies, reflect: !!opts?.reflect, reflectApplies,
+        lightscreen: !!opts?.lightscreen, lightscreenApplies,
         attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TREECKO', lvl, atkStat, isStab, ability: A.ability },
         defender: { sp: opts?.defenderSpecies ?? 'SPECIES_GEODUDE', defStat },
         got, expected, seed,
