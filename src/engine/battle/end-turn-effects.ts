@@ -366,3 +366,575 @@ export function resetFieldEndTurnEffectsState(): void {
   gBattleStruct.turnSideTracker = 0;
 }
 
+// ─── DoBattlerEndTurnEffects (battle_util.c:1447-1766) ─────────────────────
+
+// 1:1 décomp battle_util.c:1423-1445 — ENDTURN_X per-battler enum.
+const ENDTURN_INGRAIN     = 0;
+const ENDTURN_ABILITIES   = 1;
+const ENDTURN_ITEMS1      = 2;
+const ENDTURN_LEECH_SEED  = 3;
+const ENDTURN_POISON      = 4;
+const ENDTURN_BAD_POISON  = 5;
+const ENDTURN_BURN        = 6;
+const ENDTURN_NIGHTMARES  = 7;
+const ENDTURN_CURSE       = 8;
+const ENDTURN_WRAP        = 9;
+const ENDTURN_UPROAR      = 10;
+const ENDTURN_THRASH      = 11;
+const ENDTURN_DISABLE     = 12;
+const ENDTURN_ENCORE      = 13;
+const ENDTURN_LOCK_ON     = 14;
+const ENDTURN_CHARGE      = 15;
+const ENDTURN_TAUNT       = 16;
+const ENDTURN_YAWN        = 17;
+const ENDTURN_ITEMS2      = 18;
+const ENDTURN_BATTLER_COUNT = 19;
+
+// Status bit masks 1:1 décomp battle.h.
+const STATUS1_POISON       = 0x08;
+const STATUS1_BURN         = 0x10;
+const STATUS1_SLEEP        = 0x07;
+const STATUS1_ANY          = 0xFF;
+const STATUS1_TOXIC_POISON = 0x80;
+const STATUS1_TOXIC_COUNTER = 0xF00;
+function STATUS1_TOXIC_TURN(n: number): number { return n << 8; }
+
+const STATUS2_NIGHTMARE       = 1 << 21;
+const STATUS2_CURSED          = 1 << 22;
+const STATUS2_WRAPPED         = 0x07000000;
+function STATUS2_WRAPPED_TURN(n: number): number { return n << 24; }
+const STATUS2_LOCK_CONFUSE    = 0x00C00000;
+function STATUS2_LOCK_CONFUSE_TURN(n: number): number { return n << 22; }
+const STATUS2_MULTIPLETURNS   = 1 << 12;
+const STATUS2_CONFUSION       = 0x00000007;
+const STATUS2_UPROAR          = 0x00070000;
+function STATUS2_UPROAR_TURN(n: number): number { return n << 16; }
+
+const STATUS3_ROOTED          = 1 << 9;
+const STATUS3_LEECHSEED       = 1 << 4;
+const STATUS3_LEECHSEED_BATTLER = 0x03;
+const STATUS3_ALWAYS_HITS     = 0x03 << 7;
+function STATUS3_ALWAYS_HITS_TURN(n: number): number { return n << 7; }
+const STATUS3_CHARGED_UP      = 1 << 13;
+const STATUS3_YAWN            = 0x1800;
+function STATUS3_YAWN_TURN(n: number): number { return n << 11; }
+const STATUS3_PERISH_SONG     = 1 << 14;
+
+// gStatuses3 + autres globals (= lazy via globalThis pour éviter circular deps).
+import { gStatuses3, gHitMarker, setHitMarker, gDisableStructs, gBattleMoveDamage, setBattleMoveDamage, gSpecialStatuses, gBattlerAttacker } from './state';
+const HITMARKER_GRUDGE        = 1 << 13;
+const HITMARKER_IGNORE_BIDE   = 1 << 12;
+
+/** Type étendu pour DoBattlerEndTurnEffects : retourne `null` si fini,
+ *  `{ scriptLabel }` pour exec script, ou `{ scriptLabel, retVal: 2 }` pour
+ *  signaler le special case UPROAR (= ne pas incrementer turnEffectsTracker). */
+export type EndTurnBattlerResult = null | { scriptLabel: string; uproarWoke?: boolean };
+
+/** Stub `UproarWakeUpCheck(battler)` — Phase 1.4 L extension. */
+function _UproarWakeUpCheck(_battler: number): boolean {
+  // 1:1 décomp battle_util.c — check si STATUS2_UPROAR actif sur un autre battler
+  // qui n'a pas Soundproof. Retourne TRUE si oui (= bloque le sleep).
+  for (let i = 0; i < gBattlersCount; i++) {
+    if (gBattleMons[i].status2 & STATUS2_UPROAR) return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `WasUnableToUseMove(battler)` (battle_util.c:877-891). */
+function _WasUnableToUseMoveETT(battler: number): boolean {
+  const p = gProtectStructsImport[battler];
+  if (!p) return false;
+  return Boolean(
+    p.prlzImmobility || p.targetNotAffected || p.usedImprisonedMove
+    || p.loveImmobility || p.usedDisabledMove || p.usedTauntedMove
+    || p.flag2Unknown || p.flinchImmobility || p.confusionSelfDmg
+  );
+}
+
+/** 1:1 décomp `CancelMultiTurnMoves(battler)` (battle_util.c:864-875). */
+function _CancelMultiTurnMovesETT(battler: number): void {
+  gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
+  gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
+  gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
+  gBattleMons[battler].status2 &= ~0x00100000 /* STATUS2_BIDE */;
+  gStatuses3[battler] &= ~STATUS3_ROOTED;
+  gStatuses3[battler] &= ~0x10 /* STATUS3_SEMI_INVULNERABLE proxy */;
+}
+
+import { gProtectStructs as gProtectStructsImport } from './state';
+
+/** 1:1 décomp `DoBattlerEndTurnEffects()` (battle_util.c:1447-1766).
+ *  Per-battler end-of-turn state machine. Iterate gBattlerByTurnOrder ×
+ *  ENDTURN_BATTLER_COUNT cases jusqu'à trouver un effect (= script à exec).
+ *
+ *  Retourne :
+ *    - null : tous les battler×effect consumés, fini
+ *    - { scriptLabel } : script à exec puis re-call
+ *    - { scriptLabel, uproarWoke: true } : UPROAR case spécial (= ne pas
+ *      incrementer tracker, re-iter sur même battler/case). */
+export function DoBattlerEndTurnEffects(): EndTurnBattlerResult {
+  // 1:1 décomp ll. 1451 : set marker GRUDGE + IGNORE_BIDE pour le tour entier.
+  setHitMarker(gHitMarker | HITMARKER_GRUDGE | HITMARKER_IGNORE_BIDE);
+
+  let safety = 0;
+  while (safety++ < 500) {
+    if (gBattleStruct.turnEffectsBattlerId >= gBattlersCount
+        || gBattleStruct.turnEffectsTracker > ENDTURN_BATTLER_COUNT) {
+      // 1:1 décomp ll. 1764-1765 : clear markers + return 0.
+      setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
+      return null;
+    }
+
+    const active = gBattlerByTurnOrder[gBattleStruct.turnEffectsBattlerId];
+    setActiveBattler(active);
+    setBattlerAttacker(active);
+
+    if (gAbsentBattlerFlags & gBitTable[active]) {
+      gBattleStruct.turnEffectsBattlerId++;
+      continue;
+    }
+
+    let effect = 0;
+    let scriptLabel: string | null = null;
+
+    switch (gBattleStruct.turnEffectsTracker) {
+      case ENDTURN_INGRAIN: {
+        if ((gStatuses3[active] & STATUS3_ROOTED)
+            && gBattleMons[active].hp !== gBattleMons[active].maxHP
+            && gBattleMons[active].hp !== 0) {
+          let dmg = Math.floor(gBattleMons[active].maxHP / 16);
+          if (dmg === 0) dmg = 1;
+          setBattleMoveDamage(-dmg);
+          scriptLabel = 'BattleScript_IngrainTurnHeal';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_ABILITIES: {
+        // 1:1 décomp : delegate à AbilityBattleEffects(ABILITYEFFECT_ENDTURN).
+        // Phase 1.4 L : ABILITYEFFECT_ENDTURN port partial. Pour now stub.
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_ITEMS1: {
+        // 1:1 décomp : delegate à ItemBattleEffects(ITEMEFFECT_NORMAL, _, FALSE).
+        // Phase 1.4 L wirage : import + call via globalThis pour éviter circular dep.
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_ITEMS2: {
+        // 1:1 décomp : delegate à ItemBattleEffects(ITEMEFFECT_NORMAL, _, TRUE).
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_LEECH_SEED: {
+        if ((gStatuses3[active] & STATUS3_LEECHSEED)
+            && gBattleMons[gStatuses3[active] & STATUS3_LEECHSEED_BATTLER].hp !== 0
+            && gBattleMons[active].hp !== 0) {
+          const receiver = gStatuses3[active] & STATUS3_LEECHSEED_BATTLER;
+          setBattlerTarget(receiver);
+          let dmg = Math.floor(gBattleMons[active].maxHP / 8);
+          if (dmg === 0) dmg = 1;
+          setBattleMoveDamage(dmg);
+          gBattleScripting.animArg1 = receiver;
+          gBattleScripting.animArg2 = gBattlerAttacker;
+          scriptLabel = 'BattleScript_LeechSeedTurnDrain';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_POISON: {
+        if ((gBattleMons[active].status1 & STATUS1_POISON) && gBattleMons[active].hp !== 0) {
+          let dmg = Math.floor(gBattleMons[active].maxHP / 8);
+          if (dmg === 0) dmg = 1;
+          setBattleMoveDamage(dmg);
+          scriptLabel = 'BattleScript_PoisonTurnDmg';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_BAD_POISON: {
+        if ((gBattleMons[active].status1 & STATUS1_TOXIC_POISON) && gBattleMons[active].hp !== 0) {
+          let dmg = Math.floor(gBattleMons[active].maxHP / 16);
+          if (dmg === 0) dmg = 1;
+          // 1:1 décomp : increment toxic counter unless == 15.
+          if ((gBattleMons[active].status1 & STATUS1_TOXIC_COUNTER) !== STATUS1_TOXIC_TURN(15)) {
+            gBattleMons[active].status1 += STATUS1_TOXIC_TURN(1);
+          }
+          dmg *= (gBattleMons[active].status1 & STATUS1_TOXIC_COUNTER) >> 8;
+          setBattleMoveDamage(dmg);
+          scriptLabel = 'BattleScript_PoisonTurnDmg';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_BURN: {
+        if ((gBattleMons[active].status1 & STATUS1_BURN) && gBattleMons[active].hp !== 0) {
+          let dmg = Math.floor(gBattleMons[active].maxHP / 8);
+          if (dmg === 0) dmg = 1;
+          setBattleMoveDamage(dmg);
+          scriptLabel = 'BattleScript_BurnTurnDmg';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_NIGHTMARES: {
+        if ((gBattleMons[active].status2 & STATUS2_NIGHTMARE) && gBattleMons[active].hp !== 0) {
+          if (gBattleMons[active].status1 & STATUS1_SLEEP) {
+            let dmg = Math.floor(gBattleMons[active].maxHP / 4);
+            if (dmg === 0) dmg = 1;
+            setBattleMoveDamage(dmg);
+            scriptLabel = 'BattleScript_NightmareTurnDmg';
+            effect++;
+          } else {
+            // 1:1 décomp : R/S bug fix — clear nightmare if awake.
+            gBattleMons[active].status2 &= ~STATUS2_NIGHTMARE;
+          }
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_CURSE: {
+        if ((gBattleMons[active].status2 & STATUS2_CURSED) && gBattleMons[active].hp !== 0) {
+          let dmg = Math.floor(gBattleMons[active].maxHP / 4);
+          if (dmg === 0) dmg = 1;
+          setBattleMoveDamage(dmg);
+          scriptLabel = 'BattleScript_CurseTurnDmg';
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_WRAP: {
+        if ((gBattleMons[active].status2 & STATUS2_WRAPPED) && gBattleMons[active].hp !== 0) {
+          gBattleMons[active].status2 -= STATUS2_WRAPPED_TURN(1);
+          const wrapMoveLow = gBattleStruct.wrappedMove[active * 2 + 0];
+          const wrapMoveHigh = gBattleStruct.wrappedMove[active * 2 + 1];
+          if (gBattleMons[active].status2 & STATUS2_WRAPPED) {
+            // Still wrapped, damage.
+            gBattleScripting.animArg1 = wrapMoveLow;
+            gBattleScripting.animArg2 = wrapMoveHigh;
+            gBattleTextBuff1[0] = 0xFD /* B_BUFF_PLACEHOLDER_BEGIN */;
+            gBattleTextBuff1[1] = 2 /* B_BUFF_MOVE */;
+            gBattleTextBuff1[2] = wrapMoveLow;
+            gBattleTextBuff1[3] = wrapMoveHigh;
+            gBattleTextBuff1[4] = 0xFF /* EOS */;
+            scriptLabel = 'BattleScript_WrapTurnDmg';
+            let dmg = Math.floor(gBattleMons[active].maxHP / 16);
+            if (dmg === 0) dmg = 1;
+            setBattleMoveDamage(dmg);
+          } else {
+            // Broke free.
+            gBattleTextBuff1[0] = 0xFD;
+            gBattleTextBuff1[1] = 2;
+            gBattleTextBuff1[2] = wrapMoveLow;
+            gBattleTextBuff1[3] = wrapMoveHigh;
+            gBattleTextBuff1[4] = 0xFF;
+            scriptLabel = 'BattleScript_WrapEnds';
+          }
+          effect++;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_UPROAR: {
+        // 1:1 décomp ll. 1608-1656 : Uproar — wake up sleeping mons + countdown.
+        if (gBattleMons[active].status2 & STATUS2_UPROAR) {
+          // Step 1 : check if any battler is sleeping (and not Soundproof) → wake.
+          let wokeBattler = -1;
+          for (let b = 0; b < gBattlersCount; b++) {
+            if ((gBattleMons[b].status1 & STATUS1_SLEEP)
+                && gBattleMons[b].ability !== 43 /* ABILITY_SOUNDPROOF */) {
+              gBattleMons[b].status1 &= ~STATUS1_SLEEP;
+              gBattleMons[b].status2 &= ~STATUS2_NIGHTMARE;
+              gBattleCommunication[MULTISTRING_CHOOSER] = 1;
+              wokeBattler = b;
+              break;
+            }
+          }
+          if (wokeBattler !== -1) {
+            // 1:1 décomp : exec MonWokeUpInUproar + ne pas incrementer tracker (= retry case).
+            scriptLabel = 'BattleScript_MonWokeUpInUproar';
+            // gBattleStruct.turnEffectsTracker reste pareil → re-iter UPROAR au next call.
+            return { scriptLabel, uproarWoke: true };
+          }
+          // Step 2 : décrement timer.
+          gBattleMons[active].status2 -= STATUS2_UPROAR_TURN(1);
+          if (_WasUnableToUseMoveETT(active)) {
+            _CancelMultiTurnMovesETT(active);
+            gBattleCommunication[MULTISTRING_CHOOSER] = 1 /* B_MSG_UPROAR_ENDS */;
+          } else if (gBattleMons[active].status2 & STATUS2_UPROAR) {
+            gBattleCommunication[MULTISTRING_CHOOSER] = 0 /* B_MSG_UPROAR_CONTINUES */;
+            gBattleMons[active].status2 |= STATUS2_MULTIPLETURNS;
+          } else {
+            gBattleCommunication[MULTISTRING_CHOOSER] = 1 /* B_MSG_UPROAR_ENDS */;
+            _CancelMultiTurnMovesETT(active);
+          }
+          scriptLabel = 'BattleScript_PrintUproarOverTurns';
+          effect = 1;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_THRASH: {
+        if (gBattleMons[active].status2 & STATUS2_LOCK_CONFUSE) {
+          gBattleMons[active].status2 -= STATUS2_LOCK_CONFUSE_TURN(1);
+          if (_WasUnableToUseMoveETT(active)) {
+            _CancelMultiTurnMovesETT(active);
+          } else if (!(gBattleMons[active].status2 & STATUS2_LOCK_CONFUSE)
+                     && (gBattleMons[active].status2 & STATUS2_MULTIPLETURNS)) {
+            gBattleMons[active].status2 &= ~STATUS2_MULTIPLETURNS;
+            if (!(gBattleMons[active].status2 & STATUS2_CONFUSION)) {
+              // 1:1 décomp : SetMoveEffect(TRUE, 0) avec MOVE_EFFECT_CONFUSION + AFFECTS_USER.
+              // Phase 1.4 L wirage : direct apply confusion (= skip SetMoveEffect).
+              gBattleMons[active].status2 |= 0x03 /* STATUS2_CONFUSION 2-4 turns approx */;
+              if (gBattleMons[active].status2 & STATUS2_CONFUSION) {
+                scriptLabel = 'BattleScript_ThrashConfuses';
+                effect++;
+              }
+            }
+          }
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_DISABLE: {
+        if (gDisableStructs[active].disableTimer !== 0) {
+          let i = 0;
+          for (; i < 4 /* MAX_MON_MOVES */; i++) {
+            if (gDisableStructs[active].disabledMove === gBattleMons[active].moves[i]) break;
+          }
+          if (i === 4) {
+            // Mon no longer has the disabled move.
+            gDisableStructs[active].disabledMove = 0 /* MOVE_NONE */;
+            gDisableStructs[active].disableTimer = 0;
+          } else if (--gDisableStructs[active].disableTimer === 0) {
+            gDisableStructs[active].disabledMove = 0;
+            scriptLabel = 'BattleScript_DisabledNoMore';
+            effect++;
+          }
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_ENCORE: {
+        if (gDisableStructs[active].encoreTimer !== 0) {
+          if (gBattleMons[active].moves[gDisableStructs[active].encoredMovePos]
+              !== gDisableStructs[active].encoredMove) {
+            gDisableStructs[active].encoredMove = 0;
+            gDisableStructs[active].encoreTimer = 0;
+          } else if (--gDisableStructs[active].encoreTimer === 0
+                     || gBattleMons[active].pp[gDisableStructs[active].encoredMovePos] === 0) {
+            gDisableStructs[active].encoredMove = 0;
+            gDisableStructs[active].encoreTimer = 0;
+            scriptLabel = 'BattleScript_EncoredNoMore';
+            effect++;
+          }
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_LOCK_ON: {
+        if (gStatuses3[active] & STATUS3_ALWAYS_HITS) {
+          gStatuses3[active] -= STATUS3_ALWAYS_HITS_TURN(1);
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_CHARGE: {
+        if (gDisableStructs[active].chargeTimer && --gDisableStructs[active].chargeTimer === 0) {
+          gStatuses3[active] &= ~STATUS3_CHARGED_UP;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_TAUNT: {
+        if (gDisableStructs[active].tauntTimer) {
+          gDisableStructs[active].tauntTimer--;
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_YAWN: {
+        if (gStatuses3[active] & STATUS3_YAWN) {
+          gStatuses3[active] -= STATUS3_YAWN_TURN(1);
+          if (!(gStatuses3[active] & STATUS3_YAWN)
+              && !(gBattleMons[active].status1 & STATUS1_ANY)
+              && gBattleMons[active].ability !== 72 /* ABILITY_VITAL_SPIRIT */
+              && gBattleMons[active].ability !== 15 /* ABILITY_INSOMNIA */
+              && !_UproarWakeUpCheck(active)) {
+            _CancelMultiTurnMovesETT(active);
+            // 1:1 décomp : STATUS1_SLEEP_TURN((Random() & 3) + 2) — 2-5 turns sleep.
+            const sleepTurns = ((Math.floor(Math.random() * 0x10000) & 3) + 2);
+            gBattleMons[active].status1 |= sleepTurns;
+            scriptLabel = 'BattleScript_YawnMakesAsleep';
+            effect++;
+          }
+        }
+        gBattleStruct.turnEffectsTracker++;
+        break;
+      }
+
+      case ENDTURN_BATTLER_COUNT: {
+        // 1:1 décomp ll. 1755-1758 : finish marker — reset tracker + advance battler.
+        gBattleStruct.turnEffectsTracker = 0;
+        gBattleStruct.turnEffectsBattlerId++;
+        break;
+      }
+
+      default:
+        // Sécurité.
+        gBattleStruct.turnEffectsTracker = 0;
+        gBattleStruct.turnEffectsBattlerId++;
+        break;
+    }
+
+    if (effect !== 0 && scriptLabel) {
+      return { scriptLabel };
+    }
+  }
+  // Safety bailout.
+  setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
+  return null;
+}
+
+/** Reset le state machine `DoBattlerEndTurnEffects` au début d'un nouveau turn. */
+export function resetBattlerEndTurnEffectsState(): void {
+  gBattleStruct.turnEffectsTracker = 0;
+  gBattleStruct.turnEffectsBattlerId = 0;
+}
+
+// ─── HandleWishPerishSongOnTurnEnd (battle_util.c:1768-1872) ───────────────
+
+/** 1:1 décomp `HandleWishPerishSongOnTurnEnd()` (battle_util.c:1768).
+ *  3-state machine : FutureSight trigger → PerishSong tick → Arena judgment.
+ *
+ *  Retourne :
+ *    - null : fini, turn loop peut avancer
+ *    - { scriptLabel } : exec script puis re-call. */
+export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
+  setHitMarker(gHitMarker | HITMARKER_GRUDGE | HITMARKER_IGNORE_BIDE);
+
+  let safety = 0;
+  while (safety++ < 50) {
+    switch (gBattleStruct.wishPerishSongState) {
+      case 0: {
+        // 1:1 décomp ll. 1775-1815 : FutureSight / Doom Desire trigger.
+        while (gBattleStruct.wishPerishSongBattlerId < gBattlersCount) {
+          const active = gBattleStruct.wishPerishSongBattlerId;
+          setActiveBattler(active);
+          if (gAbsentBattlerFlags & gBitTable[active]) {
+            gBattleStruct.wishPerishSongBattlerId++;
+            continue;
+          }
+          gBattleStruct.wishPerishSongBattlerId++;
+          if (gWishFutureKnock.futureSightCounter[active] !== 0
+              && --gWishFutureKnock.futureSightCounter[active] === 0
+              && gBattleMons[active].hp !== 0) {
+            // MOVE_FUTURE_SIGHT = 248, MOVE_DOOM_DESIRE = 353 (= magie noir vs lumière).
+            const fsMove = gWishFutureKnock.futureSightMove[active];
+            const B_MSG_FUTURE_SIGHT = 0;
+            const B_MSG_DOOM_DESIRE = 1;
+            gBattleCommunication[MULTISTRING_CHOOSER] = (fsMove === 248)
+              ? B_MSG_FUTURE_SIGHT : B_MSG_DOOM_DESIRE;
+            PREPARE_MOVE_BUFFER(gBattleTextBuff1, fsMove);
+            setBattlerTarget(active);
+            setBattlerAttacker(gWishFutureKnock.futureSightAttacker[active]);
+            setBattleMoveDamage(gWishFutureKnock.futureSightDmg[active]);
+            // gSpecialStatuses[target].shellBellDmg = IGNORE_SHELL_BELL (= sentinel
+            // qui désactive le drain Shell Bell pour ce hit).
+            const IGNORE_SHELL_BELL = -0x80000000;
+            gSpecialStatuses[active].shellBellDmg = IGNORE_SHELL_BELL;
+            return { scriptLabel: 'BattleScript_MonTookFutureAttack' };
+          }
+        }
+        gBattleStruct.wishPerishSongState = 1;
+        gBattleStruct.wishPerishSongBattlerId = 0;
+        // fall through → continue loop pour case 1.
+        continue;
+      }
+
+      case 1: {
+        // 1:1 décomp ll. 1818-1843 : PerishSong countdown.
+        while (gBattleStruct.wishPerishSongBattlerId < gBattlersCount) {
+          const active = gBattlerByTurnOrder[gBattleStruct.wishPerishSongBattlerId];
+          setActiveBattler(active);
+          setBattlerAttacker(active);
+          if (gAbsentBattlerFlags & gBitTable[active]) {
+            gBattleStruct.wishPerishSongBattlerId++;
+            continue;
+          }
+          gBattleStruct.wishPerishSongBattlerId++;
+          if (gStatuses3[active] & STATUS3_PERISH_SONG) {
+            // 1:1 décomp : PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff1, 1, perishSongTimer).
+            gBattleTextBuff1[0] = 0xFD /* B_BUFF_PLACEHOLDER_BEGIN */;
+            gBattleTextBuff1[1] = 1 /* B_BUFF_NUMBER */;
+            gBattleTextBuff1[2] = 1; // byteCount
+            gBattleTextBuff1[3] = 1; // maxDigits
+            gBattleTextBuff1[4] = gDisableStructs[active].perishSongTimer;
+            gBattleTextBuff1[5] = 0xFF /* EOS */;
+            let scriptLabel: string;
+            if (gDisableStructs[active].perishSongTimer === 0) {
+              gStatuses3[active] &= ~STATUS3_PERISH_SONG;
+              setBattleMoveDamage(gBattleMons[active].hp);
+              scriptLabel = 'BattleScript_PerishSongTakesLife';
+            } else {
+              gDisableStructs[active].perishSongTimer--;
+              scriptLabel = 'BattleScript_PerishSongCountGoesDown';
+            }
+            return { scriptLabel };
+          }
+        }
+        gBattleStruct.wishPerishSongState = 2;
+        gBattleStruct.wishPerishSongBattlerId = 0;
+        continue;
+      }
+
+      case 2: {
+        // 1:1 décomp ll. 1852-1866 : Arena judgment (Battle Frontier).
+        // Phase 1 deferred (= Frontier specific).
+        setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
+        return null;
+      }
+
+      default:
+        setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
+        return null;
+    }
+  }
+  setHitMarker(gHitMarker & ~HITMARKER_GRUDGE & ~HITMARKER_IGNORE_BIDE);
+  return null;
+}
+
+/** Reset le state machine `HandleWishPerishSongOnTurnEnd` au début d'un turn. */
+export function resetWishPerishSongState(): void {
+  gBattleStruct.wishPerishSongState = 0;
+  gBattleStruct.wishPerishSongBattlerId = 0;
+}
+
+// Suppress unused warnings.
+void gBattleMoveDamage;
+void gBattlerAttacker;
