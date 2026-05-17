@@ -78,8 +78,10 @@ import {
   updateHealthboxLevel,
   updateHealthboxHpDigits,
   updateHealthboxStatus,
+  updateHealthboxExpBar,
   type HealthboxHandle,
 } from './battle-healthbox';
+import { getExperienceForLevel } from './data/game-data';
 import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
@@ -506,6 +508,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       updateHealthboxHpDigits(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
       // Phase 1.4 N Q3 D4 : status icon (1:1 décomp UpdateStatusIconInHealthbox).
       updateHealthboxStatus(playerHealthbox, playerMon.status);
+      // Phase 1.4 N Q3 D5 : EXP bar (1:1 décomp UpdateHealthboxAttribute HEALTHBOX_EXP_BAR ll. 2190-2206).
+      // currExpBarValue = currentExp - currLevelExp ; maxExpBarValue = nextLevelExp - currLevelExp
+      if (playerMon.growthRate && playerMon.currentExp !== undefined) {
+        const currLevelExp = getExperienceForLevel(playerMon.growthRate, playerMon.level);
+        const nextLevelExp = getExperienceForLevel(playerMon.growthRate, playerMon.level + 1);
+        const currExpInLevel = playerMon.currentExp - currLevelExp;
+        const expForLevel = nextLevelExp - currLevelExp;
+        updateHealthboxExpBar(playerHealthbox, currExpInLevel, expForLevel, playerMon.level);
+      }
     }
   };
 

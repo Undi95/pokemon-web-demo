@@ -48,6 +48,7 @@ const HPBAR_ANIM_PNG         = '/decomp/em/battle_interface/hpbar_anim.png';   /
 const NUMBERS1_PNG           = '/decomp/em/battle_interface/numbers1.png';     // 11 tiles : [blank, 0..9]
 const NUMBERS2_PNG           = '/decomp/em/battle_interface/numbers2.png';     // 12 tiles : [0..9, blank, slash/Lv]
 const STATUS_PNG             = '/decomp/em/battle_interface/status.png';       // 15 tiles : PSN/PRZ/SLP/FRZ/BRN (3 tiles each)
+const EXPBAR_PNG             = '/decomp/em/battle_interface/expbar.png';       // 9 tiles : exp bar levels 0..8 pixels filled
 const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png';  // = palette HEALTHBOX
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
 
@@ -107,6 +108,10 @@ let _numbers2Tiles: Uint8Array | null = null;
 // For opp single nous utilisons status.png aussi (= les tile data sont identiques,
 // la palette utilisée change la couleur d'affichage).
 let _statusTiles: Uint8Array | null = null;
+
+// 1:1 décomp `expbar.4bpp` : 9 tiles avec 9 niveaux "0..8 pixels remplis".
+// Player single only (= opp single n'affiche pas d'exp bar).
+let _expBarTiles: Uint8Array | null = null;
 
 /** Re-arrange row-major tile data en metatile order.
  *
@@ -239,6 +244,11 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // pour battler 1/2/3 doubles, en single ils utilisent tous status.png).
   const statusPng = await loadIndexedPng(STATUS_PNG);
   _statusTiles = statusPng.charData;
+
+  // ─── EXP bar tile data ──────────────────────────────────────────────────
+  // 1:1 décomp `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
+  const expbarPng = await loadIndexedPng(EXPBAR_PNG);
+  _expBarTiles = expbarPng.charData;
 
   // ─── Palettes ───────────────────────────────────────────────────────────
   // HEALTHBOX palette = ball_status_bar.png .gbapal
@@ -646,6 +656,63 @@ export function updateHealthboxStatus(handle: HealthboxHandle, status: string | 
     _statusTiles.subarray(statusTileStart * TILE_BYTES, (statusTileStart + 3) * TILE_BYTES),
     destVram,
   );
+}
+
+// ─── EXP bar : D5 1:1 décomp MoveBattleBarGraphically EXP_BAR ───────────────
+
+/** 1:1 décomp `MoveBattleBarGraphically` EXP_BAR case (battle_interface.c:2309-2330).
+ *
+ *  Update les 8 fill tiles de l'EXP bar widget à OBJ VRAM. Player single uniquement.
+ *
+ *  Tile offsets décomp :
+ *    - i=0..3 : tile slots [tileNum+0x24..tileNum+0x27] (= bytes 0x480..0x500)
+ *    - i=4..7 : tile slots [tileNum+0x60..tileNum+0x63] (= bytes 0xC00..0xC80)
+ *
+ *  Si `level == MAX_LEVEL` (= 100), tous les array[i] sont mis à 0 (= bar vide).
+ *
+ *  `B_EXPBAR_PIXELS = 64` (= 8 tiles × 8 pixels), scale = 8 tiles. */
+export function updateHealthboxExpBar(
+  handle: HealthboxHandle,
+  currExp: number,
+  nextLevelExp: number,
+  level: number,
+): void {
+  if (handle.side !== 'player') return;  // Opp single doesn't have EXP bar
+  if (!_expBarTiles) return;
+  const rt = getRuntime();
+  if (!rt) return;
+
+  // 1:1 décomp ll. 2316-2320 : si MAX_LEVEL, all zeros (= bar vide).
+  let array: number[];
+  if (level >= 100) {
+    array = new Array(8).fill(0);
+  } else {
+    // 1:1 décomp ll. 2310-2314 : CalcBarFilledPixels with scale=8 (B_EXPBAR_PIXELS/8).
+    const { array: arr } = _calcBarFilledPixels(currExp, Math.max(1, nextLevelExp), 8);
+    array = arr;
+  }
+
+  // 1:1 décomp ll. 2321-2329 : write 8 fill tiles à OBJ VRAM.
+  // Tile slots player healthbox left sprite (tileNum=0) :
+  //   - i=0..3 : (0 + 0x24 + i) * 32 = bytes 0x480, 0x4A0, 0x4C0, 0x4E0
+  //   - i=4..7 : 0xB80 + (i + 0) * 32 = bytes 0xC80, 0xCA0, 0xCC0, 0xCE0
+  //     WAIT recalc: 0xB80 + i * 32 for i=4..7 = 0xC00, 0xC20, 0xC40, 0xC60
+  // Recalc: i=4 → OBJ_VRAM0 + 0xB80 + (4 + 0) * 32 = 0xB80 + 0x80 = 0xC00
+  //         i=5 → 0xB80 + 5*32 = 0xC20
+  //         i=6 → 0xC40
+  //         i=7 → 0xC60
+  const baseVram = HEALTHBOX_PLAYER_VRAM;
+  for (let i = 0; i < 8; i++) {
+    const pixels = array[i];
+    const srcOffset = pixels * TILE_BYTES;
+    const destOffset = i < 4
+      ? baseVram + (0x24 + i) * TILE_BYTES
+      : baseVram + 0xB80 + i * TILE_BYTES;
+    rt.gba.objVram.set(
+      _expBarTiles.subarray(srcOffset, srcOffset + TILE_BYTES),
+      destOffset,
+    );
+  }
 }
 
 export function updateHealthboxHpDigits(handle: HealthboxHandle, currHp: number, maxHp: number): void {
