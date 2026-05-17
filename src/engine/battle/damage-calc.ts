@@ -149,7 +149,9 @@ function applyStatMod(mon: BattleMon, stat: number, statIndex: number): number {
 function weatherHasEffect(): boolean {
   const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
   if (!checkFn) return true;  // pas wired = no field block
-  const ABILITYEFFECT_CHECK_ON_FIELD = 12;
+  // AUDIT BUG FIX : ABILITYEFFECT_CHECK_ON_FIELD était 12 (= CHECK_OTHER_SIDE!)
+  // → 19 correct (1:1 décomp battle_util.h:36).
+  const ABILITYEFFECT_CHECK_ON_FIELD = 19;
   const ABILITY_CLOUD_NINE = 13;
   // 1:1 décomp abilities.h:81. AUDIT BUG FIX : AIR_LOCK était 76 → 77.
   const ABILITY_AIR_LOCK = 77;
