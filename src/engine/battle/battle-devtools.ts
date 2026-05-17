@@ -68,6 +68,7 @@ import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
 import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../random';
+import { getSpeciesInfo as _gdGetSpeciesInfo } from '../data/game-data';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -644,6 +645,70 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const b = await run();
       const deterministic = JSON.stringify(a) === JSON.stringify(b);
       return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
+    },
+    /** Assertion 1:1 EXACTE des stats (= recompute INDÉPENDANT de la formule
+     *  décomp pokemon.c CALC_STAT + sNatureStatTable, confronté à
+     *  gBattleMons[0]). Pas d'eyeball : PASS/FAIL exact par stat, gère la
+     *  nature dérivée de personality (= ce qui m'avait piégé en calcul manuel).
+     *  Usage : scope.bytecode.preciseStats({ seed:0,
+     *    species:'SPECIES_TREECKO', level:5 }) */
+    preciseStats: async (opts?: {
+      seed?: number; species?: string; level?: number;
+      ivs?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+      evs?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const speciesEnum = opts?.species ?? 'SPECIES_TREECKO';
+      const level = opts?.level ?? 5;
+      const iv = opts?.ivs ?? { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
+      const ev = opts?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+      _debugResetRng();
+      SeedRng(seed);
+      const pokemonMod = await import('../pokemon');
+      const mon = pokemonMod.createPokemonInstance(speciesEnum, level, { ivs: iv, evs: ev });
+      setupPartyForBattle([mon] as never, [pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 2)]);
+      fillActiveBattleMonsForBattleStart();
+      const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; speed: number; spAttack: number; spDefense: number; maxHP: number; personality: number; species: number }> } }).__battleState?.gBattleMons?.[0];
+      if (!bm) return { error: 'gBattleMons[0] absent' };
+      const info = _gdGetSpeciesInfo(speciesEnum);
+      if (!info?.stats) return { error: `no decomp stats for ${speciesEnum}` };
+      const base = info.stats; // {hp,atk,def,spe,spa,spd}
+      const personality = bm.personality >>> 0;
+      const nature = personality % 25;
+      // 1:1 décomp sNatureStatTable (pokemon.c) — cols [Atk,Def,Spe,SpA,SpD].
+      const NT: ReadonlyArray<ReadonlyArray<number>> = [
+        [0, 0, 0, 0, 0], [1, -1, 0, 0, 0], [1, 0, -1, 0, 0], [1, 0, 0, -1, 0], [1, 0, 0, 0, -1],
+        [-1, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, -1, 0, 0], [0, 1, 0, -1, 0], [0, 1, 0, 0, -1],
+        [-1, 0, 1, 0, 0], [0, -1, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, -1, 0], [0, 0, 1, 0, -1],
+        [-1, 0, 0, 1, 0], [0, -1, 0, 1, 0], [0, 0, -1, 1, 0], [0, 0, 0, 0, 0], [0, 0, 0, 1, -1],
+        [-1, 0, 0, 0, 1], [0, -1, 0, 0, 1], [0, 0, -1, 0, 1], [0, 0, 0, -1, 1], [0, 0, 0, 0, 0],
+      ];
+      const modNat = (n: number, stat: number, idx: number): number => {
+        const m = NT[n]?.[idx] ?? 0;
+        return m > 0 ? Math.floor(stat * 110 / 100) : m < 0 ? Math.floor(stat * 90 / 100) : stat;
+      };
+      const calc = (bs: number, ivv: number, evv: number, idx: number): number =>
+        modNat(nature, Math.floor(((2 * bs + ivv + Math.floor(evv / 4)) * level) / 100) + 5, idx);
+      const SPECIES_SHEDINJA = 303;
+      const expHP = bm.species === SPECIES_SHEDINJA ? 1
+        : Math.floor(((2 * base.hp + iv.hp + Math.floor(ev.hp / 4)) * level) / 100) + level + 10;
+      const exp = {
+        maxHP: expHP,
+        attack: calc(base.atk, iv.atk, ev.atk, 0),
+        defense: calc(base.def, iv.def, ev.def, 1),
+        speed: calc(base.spe, iv.spe, ev.spe, 2),
+        spAttack: calc(base.spa, iv.spa, ev.spa, 3),
+        spDefense: calc(base.spd, iv.spd, ev.spd, 4),
+      };
+      const act = { maxHP: bm.maxHP, attack: bm.attack, defense: bm.defense, speed: bm.speed, spAttack: bm.spAttack, spDefense: bm.spDefense };
+      const perStat: Record<string, { expected: number; actual: number; ok: boolean }> = {};
+      let pass = true;
+      for (const k of Object.keys(exp) as Array<keyof typeof exp>) {
+        const ok = exp[k] === act[k];
+        if (!ok) pass = false;
+        perStat[k] = { expected: exp[k], actual: act[k], ok };
+      }
+      return { pass, species: speciesEnum, level, seed, personality, nature, baseStats: base, perStat };
     },
     // End-turn effects (Phase 1.4 L) — delegate à wire-bytecode-bridge.
     /** Run la chaîne complète end-of-turn 1:1 décomp :
