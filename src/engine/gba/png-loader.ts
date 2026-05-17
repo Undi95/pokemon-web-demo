@@ -161,11 +161,25 @@ export async function loadTileBin(url: string, bpp: 4 | 8): Promise<Uint8Array> 
   try {
     const resp = await fetch(binUrl);
     if (resp.ok) {
+      // BUG RACINE (= red/blue garbage tiles battle textbox) : le dev server
+      // Vite renvoie `index.html` (status 200, content-type text/html) en
+      // FALLBACK SPA quand le fichier n'existe pas. `resp.ok` est donc TRUE et
+      // on chargeait le HTML (`<!DOCTYPE html>...`) comme tile data 4bpp.
+      // → rejeter explicitement la réponse HTML pour retomber sur le PNG.
+      const ct = resp.headers.get('content-type') || '';
       const buf = await resp.arrayBuffer();
-      return new Uint8Array(buf);
+      const bytes = new Uint8Array(buf);
+      const looksHtml =
+        ct.includes('text/html') ||
+        // Garde-fou : sniff début de body ('<!DOCTYPE' / '<html' / '<' / BOM+'<').
+        (bytes.length >= 1 && (bytes[0] === 0x3C /* '<' */ ||
+          (bytes.length >= 4 && bytes[0] === 0xEF && bytes[3] === 0x3C)));
+      if (!looksHtml && bytes.length > 0) {
+        return bytes;
+      }
     }
   } catch {/* fall through */}
-  console.warn(`[png-loader] no ${binUrl}, fallback PNG canvas extraction (may corrupt indices)`);
+  console.warn(`[png-loader] no valid ${binUrl} (absent ou fallback HTML Vite), extraction PNG indexée via loadIndexedPngStrict`);
   const png = await loadIndexedPngStrict(url, bpp);
   return png.charData;
 }
