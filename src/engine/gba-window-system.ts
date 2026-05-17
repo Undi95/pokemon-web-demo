@@ -156,9 +156,40 @@ export function InitWindows(templates: readonly WindowTemplate[]): number[] {
   FreeAllWindowBuffers();
   const ids: number[] = [];
   for (const t of templates) {
+    // 1:1 décomp window.c:51 — la boucle d'allocation s'arrête au premier
+    // template avec `bg == 0xFF` (= DUMMY_WIN_TEMPLATE sentinelle de fin).
+    if (t.bg === 0xFF) break;
     ids.push(AddWindow(t));
   }
   return ids;
+}
+
+/** 1:1 décomp `u16 GetWindowAttribute(u8 windowId, u8 attributeId)` (window.c).
+ *  attributeId = enum window.h:8-17 (WINDOW_BG=0, WINDOW_TILEMAP_LEFT=1,
+ *  WINDOW_TILEMAP_TOP=2, WINDOW_WIDTH=3, WINDOW_HEIGHT=4, WINDOW_PALETTE_NUM=5,
+ *  WINDOW_BASE_BLOCK=6). */
+export const WINDOW_BG = 0;
+export const WINDOW_TILEMAP_LEFT = 1;
+export const WINDOW_TILEMAP_TOP = 2;
+export const WINDOW_WIDTH = 3;
+export const WINDOW_HEIGHT = 4;
+export const WINDOW_PALETTE_NUM = 5;
+export const WINDOW_BASE_BLOCK = 6;
+
+export function GetWindowAttribute(windowId: number, attributeId: number): number {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return 0;
+  const t = gw.template;
+  switch (attributeId) {
+    case WINDOW_BG: return t.bg;
+    case WINDOW_TILEMAP_LEFT: return t.tilemapLeft;
+    case WINDOW_TILEMAP_TOP: return t.tilemapTop;
+    case WINDOW_WIDTH: return t.width;
+    case WINDOW_HEIGHT: return t.height;
+    case WINDOW_PALETTE_NUM: return t.paletteNum;
+    case WINDOW_BASE_BLOCK: return t.baseBlock;
+    default: return 0;
+  }
 }
 
 export function AddWindow(template: WindowTemplate): number {

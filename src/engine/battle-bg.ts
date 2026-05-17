@@ -25,9 +25,15 @@
  *   - Default → sBattleEnvironmentTable[gBattleEnvironment]
  */
 
-import { getRuntime, LoadPalette } from './decomp-globals';
+import { getRuntime, LoadPalette, LoadBgTiles } from './decomp-globals';
 import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from './gba/png-loader';
 import { rgba8ToRgb15 } from './gba/types';
+import {
+  InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
+  GetWindowAttribute, WINDOW_BG, type BgTemplate,
+} from './gba-window-system';
+import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
+import { DeactivateAllTextPrinters } from './gba-text-system';
 
 /** 1:1 décomp battle terrain tiles loader avec 3 sub-palettes support.
  *
@@ -350,4 +356,97 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   await loadBattleStdFrame();
   // BG3 terrain.
   await drawMainBattleBackground(env);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PORT 1:1 STRICT — CB2_InitBattleInternal video (windowing battle complet)
+// ════════════════════════════════════════════════════════════════════════════
+// Ces fonctions remplacent à terme le chemin ad-hoc ci-dessus (configureBattleBgs
+// BG3-only + loadBattleStdFrame hack). Elles suivent EXACTEMENT le décomp
+// `src/battle_bg.c`. Wirées par battle-flow.ts (cf. battleInitVideo1to1).
+
+/** 1:1 décomp `gBattleBgTemplates[]` (battle_bg.c:123-161).
+ *  BG0 screenSize=2 (= 32×64 tiles) : c'est CE 64-tall qui permet le scroll
+ *  gBattle_BG0_Y (MSG top=15 / ACTION top=35 / MOVE top=55). */
+export const gBattleBgTemplates: BgTemplate[] = [
+  { bg: 0, charBaseIndex: 0, mapBaseIndex: 24, screenSize: 2, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 1, charBaseIndex: 1, mapBaseIndex: 28, screenSize: 2, paletteMode: 0, priority: 0, baseTile: 0 },
+  { bg: 2, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 1, paletteMode: 0, priority: 1, baseTile: 0 },
+  { bg: 3, charBaseIndex: 2, mapBaseIndex: 26, screenSize: 1, paletteMode: 0, priority: 3, baseTile: 0 },
+];
+
+/** 1:1 décomp `BattleInitBgsAndWindows` (battle_bg.c:713-731) — NORMAL only
+ *  (pas BATTLE_TYPE_ARENA). C'est ÇA qui remplace le windowing overworld par
+ *  le windowing battle : InitWindows(getBattleWindowTemplates()) =
+ *  FreeAllWindowBuffers + AddWindow chaque template → window ID == B_WIN_*. */
+export function BattleInitBgsAndWindows(): void {
+  ResetBgsAndClearDma3BusyFlags(0);
+  InitBgsFromTemplates(0, gBattleBgTemplates, gBattleBgTemplates.length);
+  // gBattleScripting.windowsType = B_WIN_TYPE_NORMAL (combats wild/trainer).
+  InitWindows(getBattleWindowTemplates());
+  DeactivateAllTextPrinters();
+}
+
+/** 1:1 décomp `LoadBattleMenuWindowGfx` (battle_bg.c:744-758) — NORMAL only.
+ *  ```c
+ *  LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1));
+ *  LoadUserWindowBorderGfx(2, 0x22, BG_PLTT_ID(1));
+ *  LoadCompressedPalette(gBattleWindowTextPalette, BG_PLTT_ID(5), PLTT_SIZE_4BPP);
+ *  ```
+ *  `LoadUserWindowBorderGfx(windowId, destOffset, palOffset)` (text_window.c:110)
+ *  → `LoadWindowGfx(windowId, optionsWindowFrameType=0, destOffset, palOffset)`
+ *  → `LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), sWindowFrames[0].tiles,
+ *     0x120, destOffset)` + `LoadPalette(sWindowFrames[0].pal, palOffset, 32)`.
+ *  sWindowFrames[0] = {gTextWindowFrame1_Gfx, gTextWindowFrame1_Pal} =
+ *  graphics/text_window/1.png (.4bpp = 9 tiles = 0x120 bytes, .gbapal = 16). */
+export async function LoadBattleMenuWindowGfx(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  const frame = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
+  // GetWindowAttribute(B_WIN_ACTION_MENU=2, WINDOW_BG) = bg 0 (template NORMAL).
+  const bg = GetWindowAttribute(B_WIN_ACTION_MENU, WINDOW_BG);
+  // LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1)) — frame tiles → BG0 @ tile 0x12.
+  LoadBgTiles(bg, frame.charData.subarray(0, 0x120), 0x120, 0x12);
+  // LoadUserWindowBorderGfx(2, 0x22, BG_PLTT_ID(1)) — copie @ tile 0x22.
+  LoadBgTiles(bg, frame.charData.subarray(0, 0x120), 0x120, 0x22);
+  // LoadPalette(gTextWindowFrame1_Pal, BG_PLTT_ID(1)=16, PLTT_SIZE_4BPP=32).
+  LoadPalette(frame.palette, 1 * 16, 32);
+  // LoadCompressedPalette(gBattleWindowTextPalette = text.pal, BG_PLTT_ID(5)=80,
+  // PLTT_SIZE_4BPP=32) — idx 15 = couleurs menu ACTION/MOVE (paletteNum=5).
+  const textPal = await loadGbaPal('/decomp/em/battle_interface/text.pal');
+  LoadPalette(textPal, 5 * 16, 32);
+}
+
+/** 1:1 décomp `LoadBattleTextboxAndBackground` (battle_bg.c:859-867) — strict.
+ *  ```c
+ *  LZDecompressVram(gBattleTextboxTiles, BG_CHAR_ADDR(0));
+ *  CopyToBgTilemapBuffer(0, gBattleTextboxTilemap, 0, 0);
+ *  CopyBgTilemapBufferToVram(0);
+ *  LoadCompressedPalette(gBattleTextboxPalette, BG_PLTT_ID(0), 2*PLTT_SIZE_4BPP);
+ *  LoadBattleMenuWindowGfx();
+ *  DrawMainBattleBackground();
+ *  ```
+ *  `loadBattleTextbox()` fait déjà les 4 premières lignes (tiles BG_CHAR_ADDR(0)
+ *  + tilemap BG0 + textbox_0/1.pal → slots 0/1). */
+export async function loadBattleTextboxAndBackground1to1(
+  env: number = BATTLE_ENVIRONMENT_GRASS,
+): Promise<void> {
+  await loadBattleTextbox();
+  await LoadBattleMenuWindowGfx();
+  await drawMainBattleBackground(env);
+}
+
+/** 1:1 décomp portion vidéo de `CB2_InitBattleInternal` (battle_main.c:619+) :
+ *  `CpuFill32(0, VRAM, VRAM_SIZE)` → `InitBattleBgsVideo` (=
+ *  `BattleInitBgsAndWindows`) → `LoadBattleTextboxAndBackground`.
+ *  Ordre CRUCIAL : BattleInitBgsAndWindows AVANT LoadBattleTextboxAndBackground
+ *  (LoadBattleMenuWindowGfx appelle GetWindowAttribute → windows doivent exister). */
+export async function battleInitVideo1to1(
+  env: number = BATTLE_ENVIRONMENT_GRASS,
+): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.vram.fill(0);              // CpuFill32(0, VRAM, VRAM_SIZE)
+  BattleInitBgsAndWindows();        // InitBattleBgsVideo → BattleInitBgsAndWindows
+  await loadBattleTextboxAndBackground1to1(env);
 }
