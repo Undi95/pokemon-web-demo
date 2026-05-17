@@ -82,29 +82,39 @@ export const MON_DATA_ABILITY_NUM = 46;
 export const MON_DATA_TOUGH = 47;
 export const MON_DATA_SHEEN = 48;
 export const MON_DATA_OT_GENDER = 49;
-// Ribbons 50..56 not implemented (= cosmetic).
-export const MON_DATA_STATUS = 57;
-export const MON_DATA_LEVEL = 58;
-export const MON_DATA_HP = 59;
-export const MON_DATA_MAX_HP = 60;
-export const MON_DATA_ATK = 61;
-export const MON_DATA_DEF = 62;
-export const MON_DATA_SPEED = 63;
-export const MON_DATA_SPATK = 64;
-export const MON_DATA_SPDEF = 65;
-export const MON_DATA_MAIL = 66;
-export const MON_DATA_SPECIES_OR_EGG = 67;
-export const MON_DATA_IVS = 68;
-// Ribbons 69..80 not implemented.
-export const MON_DATA_MODERN_FATEFUL_ENCOUNTER = 81;
-export const MON_DATA_KNOWN_MOVES = 82;
-export const MON_DATA_RIBBON_COUNT = 83;
-export const MON_DATA_RIBBONS = 84;
-export const MON_DATA_ATK2 = 85;
-export const MON_DATA_DEF2 = 86;
-export const MON_DATA_SPEED2 = 87;
-export const MON_DATA_SPATK2 = 88;
-export const MON_DATA_SPDEF2 = 89;
+// 1:1 décomp pokemon.h:58-62 — 5 ribbons (= COOL/BEAUTY/CUTE/SMART/TOUGH) =
+// indexes 50..54, pas 50..56 comme avant.
+export const MON_DATA_COOL_RIBBON = 50;
+export const MON_DATA_BEAUTY_RIBBON = 51;
+export const MON_DATA_CUTE_RIBBON = 52;
+export const MON_DATA_SMART_RIBBON = 53;
+export const MON_DATA_TOUGH_RIBBON = 54;
+// AUDIT BUG FIX : décalage de +2 sur tous les indexes après ribbons car on skip
+// 2 ribbons en trop (50..56 → 50..54 = 5 ribbons).
+export const MON_DATA_STATUS = 55;
+export const MON_DATA_LEVEL = 56;
+export const MON_DATA_HP = 57;
+export const MON_DATA_MAX_HP = 58;
+export const MON_DATA_ATK = 59;
+export const MON_DATA_DEF = 60;
+export const MON_DATA_SPEED = 61;
+export const MON_DATA_SPATK = 62;
+export const MON_DATA_SPDEF = 63;
+export const MON_DATA_MAIL = 64;
+export const MON_DATA_SPECIES_OR_EGG = 65;
+export const MON_DATA_IVS = 66;
+// 1:1 décomp pokemon.h:75-87 — 13 additional ribbons (CHAMPION..UNUSED) = 67..79.
+export const MON_DATA_CHAMPION_RIBBON = 67;
+// (WINNING/VICTORY/ARTIST/EFFORT/MARINE/LAND/SKY/COUNTRY/NATIONAL/EARTH/WORLD/UNUSED_RIBBONS = 68..79)
+export const MON_DATA_MODERN_FATEFUL_ENCOUNTER = 80;
+export const MON_DATA_KNOWN_MOVES = 81;
+export const MON_DATA_RIBBON_COUNT = 82;
+export const MON_DATA_RIBBONS = 83;
+export const MON_DATA_ATK2 = 84;
+export const MON_DATA_DEF2 = 85;
+export const MON_DATA_SPEED2 = 86;
+export const MON_DATA_SPATK2 = 87;
+export const MON_DATA_SPDEF2 = 88;
 
 /** 1:1 décomp `PARTY_SIZE` (include/constants/global.h). */
 export const PARTY_SIZE = 6;
