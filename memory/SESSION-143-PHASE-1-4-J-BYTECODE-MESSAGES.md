@@ -655,7 +655,30 @@ Décomp battle_script_commands.c:6198-6206 check les deux.
 Conséquence : Exp.Share double battle, si mon level-up = playerRight, helper
 disait off-battle → drawlvlupbox UI incorrect.
 
-## Total 50 commits (Phase 1.4 J + post-compact 143 audit additions)
+### Commit 51-52-53 : Phase 1.4 L démarrée — end-turn effects 1:1
+
+**Commit 51 (`45b24793`) : Port DoFieldEndTurnEffects 1:1 (battle_util.c:1168-1421)**
+10 cases ENDTURN_X (REFLECT/LIGHT_SCREEN/MIST/SAFEGUARD/WISH/RAIN/SANDSTORM/SUN/HAIL/ORDER)
++ helpers _GetWhoStrikesFirst stub + _SwapTurnOrder. ~368 lignes.
+
+**Commit 52 (`ddbc75cd`) : Port DoBattlerEndTurnEffects + HandleWishPerishSongOnTurnEnd 1:1**
+19 cases ENDTURN_X per-battler (INGRAIN/POISON/BAD_POISON/BURN/LEECH_SEED/
+NIGHTMARES/CURSE/WRAP/UPROAR/THRASH/DISABLE/ENCORE/LOCK_ON/CHARGE/TAUNT/YAWN +
+ABILITIES/ITEMS1/ITEMS2 stubs) + 3-state Wish/PerishSong machine. ~572 lignes.
+
+**Commit 53 (`8d587c7a`) : Wire devtools — scope.bytecode.runEndTurn() 1:1**
+Devtools API exec full 3-phase chain (Field → Battler → WishPerish) via runScript.
+
+**Validation live end-to-end** (3/3 effects + 22/22 moves smoke-test stable) :
+- POISON  : "CHENIPOTTE sauvage souffre du poison!" dmg=15 (=120/8 exact)
+- BURN    : "CHENIPOTTE sauvage souffre de sa brûlure!" dmg=13 (=109/8)
+- TOXIC   : counter 1→2 + dmg=14 (=119/16 × 2) — incrementing 1:1
+- LEECH_SEED : "VAMPIGRAINE draine l'énergie de CHENIPOTTE sauvage!" dmg=14
+
+Wirage proper à battle-flow.ts state machine = Phase 1.4 L+ (= post valid full
+turn flow bytecode end-to-end).
+
+## Total 53 commits (Phase 1.4 J/K/L + post-compact 143 audit additions)
 
 **État final** :
 - Battery 639/639 stable cross-tous-commits, 0 erreur TS.
