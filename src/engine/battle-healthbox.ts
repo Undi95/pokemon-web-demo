@@ -38,7 +38,13 @@
 
 import { getRuntime } from './decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
-import { rgba8ToRgb15 } from './gba/types';
+
+/** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
+ *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé
+ *  tôt via battle-flow → TDZ `BG_SCREEN_SIZE before initialization` au HMR). */
+function _rgba8ToRgb15(r: number, g: number, b: number): number {
+  return ((r >> 3) & 0x1F) | (((g >> 3) & 0x1F) << 5) | (((b >> 3) & 0x1F) << 10);
+}
 
 /** Charge un PNG indexed multi-sub-palette en tile data 4bpp avec indices LOCAUX
  *  (= `pltteIdx % 16`). Pattern identique à `_loadBattleTerrainTiles` (battle-bg.ts).
@@ -88,7 +94,7 @@ async function _loadMultiSubPalTiles(url: string): Promise<Uint8Array> {
     const off = i * 4;
     const a = data[off + 3];
     if (a < 128) { idxMap[i] = 0; continue; }
-    const rgb15 = rgba8ToRgb15(data[off], data[off + 1], data[off + 2]);
+    const rgb15 = _rgba8ToRgb15(data[off], data[off + 1], data[off + 2]);
     const idx = palLookup.get(rgb15);
     idxMap[i] = idx === undefined ? 0 : (idx % 16);  // local sub-pal index 0..15
   }

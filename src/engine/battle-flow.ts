@@ -1169,8 +1169,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
         ShowFieldMessage(`Un ${opponentMon.nickname} sauvage\napparaît!`);
         // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
+        // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
+        // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
+        // Avec nickname FR → medhyena.wav 404 → "cry fail EncodingError".
         void import('./music').then(({ playCry }) => {
-          playCry(opponentMon!.nickname);
+          playCry(opponentMon!.speciesName);
         });
         state = 'INTRO_WAIT';
         return false;
@@ -1191,7 +1194,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (!_playerCryPlayed) {
           _playerCryPlayed = true;
           void import('./music').then(({ playCry }) => {
-            playCry(playerMon!.nickname);
+            playCry(playerMon!.speciesName);  // EN canonique, PAS nickname FR
           });
         }
         // 1:1 décomp Phase 1.4 N : passage direct au menu action (FIGHT/BAG/
