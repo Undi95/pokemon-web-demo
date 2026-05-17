@@ -71,6 +71,12 @@ import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForB
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition } from './battle-transition';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
 import {
+  createBattlerHealthboxSprites,
+  destroyHealthboxSprite,
+  setHealthboxVisible,
+  type HealthboxHandle,
+} from './battle-healthbox';
+import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
   runHandleFaintedMonActionsViaBytecode,
@@ -353,6 +359,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Window IDs (-1 = not allocated).
   let oppHpWindowId    = -1;
   let playerHpWindowId = -1;
+  // Phase 1.4 N Q3 D1 : healthbox sprites OAM 1:1 décomp `CreateBattlerHealthboxSprites`.
+  // Créés invisibles initialement (= 1:1 décomp ll. 942-948). Visibilité activée
+  // quand le contenu dynamique sera porté en D3 (= digits HP/Lv) + D4 (status).
+  // Pendant D1-D2, les windows AddWindow legacy ci-dessus (oppHpWindowId/playerHpWindowId)
+  // restent visibles et continuent de render HP/Lv pour éviter régression.
+  let opponentHealthbox: HealthboxHandle | null = null;
+  let playerHealthbox:   HealthboxHandle | null = null;
   // 1:1 décomp battle_controller_player.c:HandleInputChooseAction.
   // gActionSelectionCursor[gActiveBattler] : 0..3 (TL/TR/BL/BR grille 2x2).
   let actionMenuWindowId   = -1;
@@ -1074,6 +1087,22 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         DrawStdFrameWithCustomTileAndPalette(oppHpWindowId, true, 0x214, 14);
         DrawStdFrameWithCustomTileAndPalette(playerHpWindowId, true, 0x214, 14);
         renderHpWindows();
+        // Phase 1.4 N Q3 D1 : créer les sprites OAM healthbox 1:1 décomp.
+        // Fire-and-forget (= async load assets + spawn sprites). Restent invisibles
+        // jusqu'à ce que D3 (digits HP/Lv) wire le contenu dynamique. Pendant ce
+        // temps les AddWindow legacy ci-dessus continuent de rendre HP/Lv visible.
+        if (!opponentHealthbox) {
+          void createBattlerHealthboxSprites('opponent').then(handle => {
+            opponentHealthbox = handle;
+            if (handle) setHealthboxVisible(handle, false);  // 1:1 décomp invisible
+          }).catch(e => console.warn('[battle-flow] opp healthbox create failed:', e));
+        }
+        if (!playerHealthbox) {
+          void createBattlerHealthboxSprites('player').then(handle => {
+            playerHealthbox = handle;
+            if (handle) setHealthboxVisible(handle, false);
+          }).catch(e => console.warn('[battle-flow] player healthbox create failed:', e));
+        }
         state = 'INTRO_TEXT';
         return false;
       }
@@ -1637,6 +1666,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           ClearStdWindowAndFrame(playerHpWindowId, true);
           RemoveWindow(playerHpWindowId);
           playerHpWindowId = -1;
+        }
+        // Phase 1.4 N Q3 D1 : destroy healthbox sprites OAM (= 1:1 décomp
+        // `DestoryHealthboxSprite` battle_interface.c:1044-1049).
+        if (opponentHealthbox) {
+          destroyHealthboxSprite(opponentHealthbox);
+          opponentHealthbox = null;
+        }
+        if (playerHealthbox) {
+          destroyHealthboxSprite(playerHealthbox);
+          playerHealthbox = null;
         }
         closeMoveMenu();
         closeActionMenu();  // Phase 1.4 N : cleanup action menu windows si encore actives
