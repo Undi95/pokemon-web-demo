@@ -1002,17 +1002,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         //   On garde BG0 visible car c'est là où nos windows (HP + dialog)
         //   sont rendues. La couleur de fond du screen (= backgroundColor
         //   du Phaser game = '#000000') sera visible sous les BGs cachés.
+        // 1:1 décomp : hide BG1/BG2 (= overlays rarement utilisés), garde BG0
+        // (= AddWindow windows) intact, et show BG3 (= terrain herbe 1:1 décomp).
         HideBg(1);
-        // B1-bis : ne PAS hide BG2 — on l'utilise maintenant pour le battle
-        // terrain. configureBattleBgs() a re-configuré BG2 (charBase=1,
-        // mapBase=30) → ne montrera plus le BG2 overworld mais le terrain.
-        // HideBg(2);
-        HideBg(3);
-        // Force BG2 visible (= au cas où un autre code l'a hide entre temps).
-        ShowBg(2);
-        // Reset vofs/hofs qui pourraient avoir été set par overworld scrolling.
-        rt.gba.bg(2).config.hofs = 0;
-        rt.gba.bg(2).config.vofs = 0;
+        HideBg(2);
+        ShowBg(3);
+        // Reset BG3 vofs/hofs qui pourraient avoir été set par overworld.
+        rt.gba.bg(3).config.hofs = 0;
+        rt.gba.bg(3).config.vofs = 0;
         // Iter16 : hide overworld OAM sprites (= player + NPCs) so they don't
         //   show on top of the battle. Stash their visibility for restore on
         //   cleanup. Iterate sprites par spriteId (= gSprites map) AVANT le

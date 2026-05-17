@@ -210,60 +210,63 @@ async function loadBattleTextboxAssets(): Promise<TextboxAssets> {
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/** 1:1 décomp `BattleInitBgsAndWindows` (ll. 713-731) + `gBattleBgTemplates`.
+/** Configure UNIQUEMENT BG3 (= terrain). On ne touche pas BG0 (= utilisé par
+ *  AddWindow framework avec mapBaseIndex=0 default). Le textbox 1:1 décomp à
+ *  mapBase=24 nécessiterait refactor du windowing → sub-phase ultérieure.
  *
- *  IMPORTANT B1-bis : version partielle qui ne configure QUE BG2 (= terrain).
- *  Ne touche pas BG0 (= utilisé par notre AddWindow framework pour HP windows,
- *  action menu, move menu, etc.). Le wirage BG0 textbox 1:1 décomp viendra
- *  dans sub-phase C1 quand on refactor le window system pour utiliser un
- *  BG layer dédié séparé.
- *
- *  BG3 (= terrain layer 2 décoratif) aussi skip pour éviter écrasement
- *  potentiel de BG layers utilisés par overworld stash. */
+ *  1:1 décomp `gBattleBgTemplates[3]` : charBase=2, mapBase=26, screenSize=1,
+ *  priority=3 (= arrière-plan derrière sprites + BG0 windows). */
 export function configureBattleBgs(): void {
   const rt = getRuntime();
   if (!rt) return;
 
-  // BG2 : charBase=1, mapBase=30, screenSize=1 (= 64x32), priority=1.
-  // → terrain background. C'est la seule modif qu'on fait pour cette sub-phase.
-  const bg2c = rt.gba.bg(2).config;
-  bg2c.charBaseIndex = 1; bg2c.mapBaseIndex = 30; bg2c.screenSize = 1;
-  bg2c.paletteMode = 0; bg2c.priority = 2; bg2c.visible = true;
-  bg2c.hofs = 0; bg2c.vofs = 0;
+  // BG3 : terrain background.
+  const bg3c = rt.gba.bg(3).config;
+  bg3c.charBaseIndex = 2; bg3c.mapBaseIndex = 26; bg3c.screenSize = 1;
+  bg3c.paletteMode = 0; bg3c.priority = 3; bg3c.visible = true;
+  bg3c.hofs = 0; bg3c.vofs = 0;
 }
 
 /** 1:1 décomp `LoadBattleTextboxAndBackground` (ll. 859-867) — partie textbox.
- *  Charge `gBattleTextboxTiles` + `gBattleTextboxTilemap` + `gBattleTextboxPalette`
- *  dans BG0 (charBase=0, mapBase=24) + palette slots 0-1. */
+ *  1:1 décomp : load sur BG0 (= charBase=0, mapBase=24) avec palette slots 0+1.
+ *  Les AddWindow écrivent DESSUS (= overwrite tile entries pour MSG/ACTION/MOVE
+ *  zones), c'est le pattern exact du décomp. */
 export async function loadBattleTextbox(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   const assets = await loadBattleTextboxAssets();
   // BG0 charBase=0 → VRAM byte offset 0.
+  // 1:1 décomp ll. 861 : LZDecompressVram(gBattleTextboxTiles, BG_CHAR_ADDR(0)).
   rt.gba.vram.set(assets.tiles, 0);
   // BG0 mapBase=24 → VRAM byte offset 24*0x800 = 0xC000.
+  // 1:1 décomp ll. 862-863 : CopyToBgTilemapBuffer(0, gBattleTextboxTilemap, 0, 0)
+  // + CopyBgTilemapBufferToVram(0).
   const mapBytes = new Uint8Array(assets.tilemap.buffer, assets.tilemap.byteOffset, assets.tilemap.byteLength);
   rt.gba.vram.set(mapBytes, 24 * 0x800);
-  // Load palettes 0 + 1 (= 32 entries 0..31).
   // 1:1 décomp ll. 864 : LoadCompressedPalette(gBattleTextboxPalette, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP).
-  LoadPalette(assets.palette0, 0, 32);     // BG palette slot 0 (= 16 colors)
-  LoadPalette(assets.palette1, 16, 32);    // BG palette slot 1 (= 16 colors)
+  // → palettes slot 0 + 1 (= 32 entries 0..31).
+  LoadPalette(assets.palette0, 0, 32);
+  LoadPalette(assets.palette1, 16, 32);
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge
  *  les assets terrain selon `BattleEnvironment` enum.
  *
- *  Charge dans BG2 (charBase=1 → VRAM byte offset 0x4000, mapBase=30 → 0xF000)
- *  et palettes slots 2-4 (= 3 sub-palettes 16-color, total 48 entries). */
+ *  1:1 décomp : terrain est rendered par BG3 (= charBase=2, mapBase=26 selon
+ *  `gBattleBgTemplates[3]`). Le décomp écrit à `BG_CHAR_ADDR(2)` (= byte
+ *  2*0x4000=0x8000) + `BG_SCREEN_ADDR(26)` (= byte 26*0x800=0xD000). Palettes
+ *  slots 2-4 (= 48 entries, 3 sub-palettes). */
 export async function loadBattleTerrain(env: number): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   const assets = await loadBattleTerrainAssets(env);
-  // BG2 charBase=1 → VRAM byte offset 1*0x4000 = 0x4000.
-  rt.gba.vram.set(assets.tiles, 0x4000);
-  // BG2 mapBase=30 → VRAM byte offset 30*0x800 = 0xF000.
+  // BG3 charBase=2 → VRAM byte offset 2*0x4000 = 0x8000.
+  // 1:1 décomp ll. 811 : LZDecompressVram(tiles, BG_CHAR_ADDR(2)).
+  rt.gba.vram.set(assets.tiles, 0x8000);
+  // BG3 mapBase=26 → VRAM byte offset 26*0x800 = 0xD000.
+  // 1:1 décomp ll. 812 : LZDecompressVram(tilemap, BG_SCREEN_ADDR(26)).
   const mapBytes = new Uint8Array(assets.tilemap.buffer, assets.tilemap.byteOffset, assets.tilemap.byteLength);
-  rt.gba.vram.set(mapBytes, 30 * 0x800);
+  rt.gba.vram.set(mapBytes, 26 * 0x800);
   // 1:1 décomp ll. 813 : LoadCompressedPalette(palette, BG_PLTT_ID(2), 3 * PLTT_SIZE_4BPP).
   // BG_PLTT_ID(2) = 32 (= entry offset). 3 * PLTT_SIZE_4BPP = 96 bytes = 48 entries.
   LoadPalette(assets.palette, 32, 96);
@@ -282,9 +285,12 @@ export async function drawMainBattleBackground(env: number = BATTLE_ENVIRONMENT_
 /** 1:1 décomp `LoadBattleTextboxAndBackground` (ll. 859-867) full orchestration :
  *  textbox + main background dans le bon ordre. */
 export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
-  // B1-bis : version partielle qui setup BG2 (= terrain) seul. La partie
-  // textbox+frames (= BG0 1:1 décomp) sera ajoutée sub-phase C1 quand le
-  // window system sera refactor pour BG layer dédié séparé.
+  // Refactor 1:1 décomp : BG3 = terrain, BG0 = textbox+windows.
+  // Skip loadBattleTextbox() pour cette sub-phase — la palette textbox a
+  // un setup spécifique (= utilise palette slot 0+1 + tile data au charBase=0)
+  // qui conflit avec notre AddWindow framework qui occupe aussi BG0.
+  // Le textbox sera wired dans sub-phase dédiée après refactor du window system.
   configureBattleBgs();
+  // await loadBattleTextbox();
   await drawMainBattleBackground(env);
 }
