@@ -151,7 +151,8 @@ function _handleSetPokedexFlag(natDexNum: number, caseId: number, personality: n
   const getFlagCaseId = caseId === 2 /* FLAG_SET_SEEN */ ? 0 /* FLAG_GET_SEEN */ : 1 /* FLAG_GET_CAUGHT */;
   if (!_getSetPokedexFlag(natDexNum, getFlagCaseId)) {
     _getSetPokedexFlag(natDexNum, caseId);
-    // SPECIES_UNOWN = 201, SPECIES_SPINDA = 327 (= include/constants/species.h).
+    // 1:1 décomp species.h : SPECIES_UNOWN = 201, SPECIES_SPINDA = 308.
+    // AUDIT BUG FIX : SPINDA était 327 → 308.
     // NationalPokedexNumToSpecies = identity en Gen 3 pour les 386 premiers.
     const species = natDexNum;
     const sb2 = (globalThis as { gSaveBlock2Ptr?: { pokedex?: {
@@ -159,7 +160,7 @@ function _handleSetPokedexFlag(natDexNum: number, caseId: number, personality: n
     } } }).gSaveBlock2Ptr;
     if (sb2?.pokedex) {
       if (species === 201 /* SPECIES_UNOWN */) sb2.pokedex.unownPersonality = personality >>> 0;
-      if (species === 327 /* SPECIES_SPINDA */) sb2.pokedex.spindaPersonality = personality >>> 0;
+      if (species === 308 /* SPECIES_SPINDA */) sb2.pokedex.spindaPersonality = personality >>> 0;
     }
   }
 }

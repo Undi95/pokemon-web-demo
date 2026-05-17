@@ -647,8 +647,9 @@ export function CalculateMonStats(mon: Pokemon): void {
   const level = mon.level || 1;
   const nature = _getNatureFromPersonality(mon.personality);
 
-  // SPECIES_SHEDINJA = 292.
-  const SPECIES_SHEDINJA = 292;
+  // 1:1 décomp species.h : SPECIES_SHEDINJA = 303.
+  // AUDIT BUG FIX : était 292 (= SPECIES_GIRAFARIG !) → 303.
+  const SPECIES_SHEDINJA = 303;
   let newMaxHP: number;
   if (mon.species === SPECIES_SHEDINJA) {
     newMaxHP = 1;
