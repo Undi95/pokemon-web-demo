@@ -729,12 +729,18 @@ export function DoBattlerEndTurnEffects(): EndTurnBattlerResult {
                      && (gBattleMons[active].status2 & STATUS2_MULTIPLETURNS)) {
             gBattleMons[active].status2 &= ~STATUS2_MULTIPLETURNS;
             if (!(gBattleMons[active].status2 & STATUS2_CONFUSION)) {
-              // 1:1 décomp : SetMoveEffect(TRUE, 0) avec MOVE_EFFECT_CONFUSION + AFFECTS_USER.
-              // Phase 1.4 L wirage : direct apply confusion (= skip SetMoveEffect).
-              gBattleMons[active].status2 |= 0x03 /* STATUS2_CONFUSION 2-4 turns approx */;
-              if (gBattleMons[active].status2 & STATUS2_CONFUSION) {
-                scriptLabel = 'BattleScript_ThrashConfuses';
-                effect++;
+              // 1:1 décomp battle_util.c:1669-1672 + battle_script_commands.c:2533-2546.
+              // SetMoveEffect(TRUE, 0) avec MOVE_EFFECT_CONFUSION → apply inline :
+              // - Si ability OWN_TEMPO ou déjà CONFUSION : skip.
+              // - Sinon : status2 |= CONFUSION_TURN((Random()%4)+2) = 2-5 turns bits 0-2.
+              const ABILITY_OWN_TEMPO = 20;
+              if (gBattleMons[active].ability !== ABILITY_OWN_TEMPO) {
+                const confTurns = ((Math.floor(Math.random() * 0x10000) % 4) + 2);
+                gBattleMons[active].status2 |= confTurns; // bits 0-2.
+                if (gBattleMons[active].status2 & STATUS2_CONFUSION) {
+                  scriptLabel = 'BattleScript_ThrashConfuses';
+                  effect++;
+                }
               }
             }
           }
