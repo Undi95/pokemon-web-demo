@@ -139,6 +139,7 @@ import { loadBattleMoves } from './engine/battle/data/battle-moves';
 import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
 import { loadAiScriptBytecode } from './engine/battle/ai/ai-state';
 import { loadItemHoldEffects } from './engine/battle/data/item-hold-effects';
+import { loadItemEffects } from './engine/battle/data/item-effects';
 import { loadGameData } from './engine/data/game-data';
 void loadBattleMoves();
 void loadBattleScriptBytecode();
@@ -146,6 +147,9 @@ void loadBattleScriptBytecode();
 // requis par BattleAI_ChooseMoveOrAction (combats dresseurs).
 void loadAiScriptBytecode();
 void loadItemHoldEffects();
+// 1:1 décomp : gItemEffectTable (octets itemEffect[]) requis par
+// ShouldUseItem/GetAI_ItemType/GetItemEffectParamOffset (AI dresseur objet).
+void loadItemEffects();
 // 1:1 décomp : game-data (species/moves/learnsets/abilities) doit être chargé
 // au boot pour que createPokemonInstance pick le bon learnset 1:1 (= avant
 // fallback [tackle, growl] partout). Aussi : ability-battle-effects /
