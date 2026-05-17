@@ -191,7 +191,10 @@ export function _castformDataTypeChange(battler: number): number {
     formChange = CASTFORM_WATER + 1;
   }
   if ((gBattleWeather & B_WEATHER_HAIL) && !isIceType) {
-    gBattleMons[battler].type1 = TYPE_ICE; gBattleMons[battler].type2 = 4;
+    // 1:1 décomp battle_util.c:2407-2410 : SET_BATTLER_TYPE(battler, TYPE_ICE)
+    // = type1 = type2 = TYPE_ICE.
+    // AUDIT BUG FIX : était type2 = 4 (= TYPE_FIGHTING) au lieu de TYPE_ICE.
+    gBattleMons[battler].type1 = TYPE_ICE; gBattleMons[battler].type2 = TYPE_ICE;
     formChange = CASTFORM_ICE + 1;
   }
   return formChange;
