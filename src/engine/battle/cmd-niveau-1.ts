@@ -861,7 +861,8 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
   let weatherActive = true;
   if (checkFn) {
-    const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 76;
+    // 1:1 décomp abilities.h:17,81. AUDIT BUG FIX : AIR_LOCK était 76 (= TRACE!) → 77.
+    const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 77;
     weatherActive = !checkFn(CHECK_ON_FIELD, 0, CLOUD_NINE, 0, 0)
                  && !checkFn(CHECK_ON_FIELD, 0, AIR_LOCK, 0, 0);
   }
