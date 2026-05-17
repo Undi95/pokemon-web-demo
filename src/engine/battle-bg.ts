@@ -26,7 +26,7 @@
  */
 
 import { getRuntime, LoadPalette } from './decomp-globals';
-import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte } from './gba/png-loader';
+import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from './gba/png-loader';
 import { rgba8ToRgb15 } from './gba/types';
 
 /** 1:1 décomp battle terrain tiles loader avec 3 sub-palettes support.
@@ -284,13 +284,49 @@ export async function drawMainBattleBackground(env: number = BATTLE_ENVIRONMENT_
 
 /** 1:1 décomp `LoadBattleTextboxAndBackground` (ll. 859-867) full orchestration :
  *  textbox + main background dans le bon ordre. */
+/** 1:1 décomp `LoadUserWindowBorderGfx(windowId, 0x214, BG_PLTT_ID(14))` qui
+ *  charge le frame beige standard 9 tiles 4bpp (= gTextWindowFrame1_Gfx + Pal).
+ *
+ *  Décomp source : text_window.c:110-113 + 104-108 :
+ *  ```c
+ *  void LoadUserWindowBorderGfx(u8 windowId, u16 destOffset, u8 palOffset) {
+ *      LoadWindowGfx(windowId, gSaveBlock2Ptr->optionsWindowFrameType, destOffset, palOffset);
+ *  }
+ *  void LoadWindowGfx(u8 windowId, u8 frameId, u16 destOffset, u8 palOffset) {
+ *      LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG),
+ *                  sWindowFrames[frameId].tiles, 0x120, destOffset);
+ *      LoadPalette(sWindowFrames[frameId].pal, palOffset, PLTT_SIZE_4BPP);
+ *  }
+ *  ```
+ *
+ *  - sWindowFrames[0] = {gTextWindowFrame1_Gfx, gTextWindowFrame1_Pal}
+ *  - 0x120 bytes = 288 bytes = 9 tiles 4bpp (= 3x3 grid 24x24px)
+ *  - PNG asset : `/decomp/em/ui/text_window/1.png` (24x24, PLTE 16 colors)
+ *
+ *  Nos windows existantes utilisent baseTileNum=0x214 et paletteNum=14 →
+ *  on charge tile data à VRAM byte 0x214*32=0x4280 + palette à entry 14*16=224. */
+export async function loadBattleStdFrame(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Load 24x24 PNG → 9 tiles 4bpp = 288 bytes.
+  const png = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
+  if (png.charData.length < 288) {
+    console.warn('[battle-bg] frame1.png charData too short:', png.charData.length);
+  }
+  // 1:1 décomp pattern : LoadBgTiles(bg=0, frame1_gfx, 0x120, 0x214).
+  // CRUCIAL : utilise `bg(0).vram` qui applique le charBase offset automatiquement
+  // (= VRAM byte base = charBaseIndex * 0x4000). Sinon `rt.gba.vram.set` écrirait
+  // à raw byte 0x4280 ce qui ne match pas où le compositor lit (= charBase*0x4000
+  // + tile*32). BG0 charBase peut être set par overworld → faut utiliser le view.
+  rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x214 * 32);
+  // Load palette à BG slot 14 (= entry offset 14*16=224, 32 bytes).
+  // 1:1 décomp : LoadPalette(frame1_pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP=32).
+  LoadPalette(png.palette, 14 * 16, 32);
+}
+
 export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
-  // Refactor 1:1 décomp : BG3 = terrain, BG0 = textbox+windows.
-  // Skip loadBattleTextbox() pour cette sub-phase — la palette textbox a
-  // un setup spécifique (= utilise palette slot 0+1 + tile data au charBase=0)
-  // qui conflit avec notre AddWindow framework qui occupe aussi BG0.
-  // Le textbox sera wired dans sub-phase dédiée après refactor du window system.
+  // 1:1 décomp BG3 terrain + LoadUserWindowBorderGfx pour le frame beige.
   configureBattleBgs();
-  // await loadBattleTextbox();
+  await loadBattleStdFrame();  // ← cache la zone vide via frame propre
   await drawMainBattleBackground(env);
 }
