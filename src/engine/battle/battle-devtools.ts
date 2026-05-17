@@ -89,7 +89,11 @@ import {
   ABILITY_WONDER_GUARD as _ABILITY_WONDER_GUARD,
   BATTLE_TYPE_DOUBLE as _BATTLE_TYPE_DOUBLE,
   MOVE_TARGET_BOTH as _MOVE_TARGET_BOTH,
+  MOVE_TARGET_SELECTED as _MOVE_TARGET_SELECTED,
+  MOVE_TARGET_FOES_AND_ALLY as _MOVE_TARGET_FOES_AND_ALLY,
+  MOVE_TARGET_USER as _MOVE_TARGET_USER,
 } from './constants';
+import { _GetMoveTarget } from './cmd-niveau-34';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory } from './ai/ai-state';
@@ -749,6 +753,88 @@ export function buildBattleDevtools(): Record<string, unknown> {
           AI_monToSwitchIntoId: gBattleStruct.AI_monToSwitchIntoId[ab],
           monToSwitchIntoId: gBattleStruct.monToSwitchIntoId[ab],
           partyIdx: gBattlerPartyIndexes[ab],
+        };
+      };
+      const a = run();
+      const b = run();
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
+    },
+    /** VÉRIF DÉTERMINISTE — ciblage `_GetMoveTarget` 1:1 (battle_util.c:3811).
+     *  Utilise l'override `setTarget` (= pattern décomp `GetMoveTarget(move,
+     *  TARGET+1)`) pour forcer chaque MOVE_TARGET_* sans dépendre d'un move.
+     *  Recompute INDÉPENDANT 1:1 : USER→attaquant ; BOTH/FOES_AND_ALLY→
+     *  GetBattlerAtPosition(BATTLE_OPPOSITE(side)) + absent→^BIT_FLANK ;
+     *  SELECTED single→l'unique opposant non-absent. Couvre single / 2v2 /
+     *  1v2 (absent[] = battlers marqués absents → prouve "1v2 descend du
+     *  2v2" au niveau ciblage : MÊME code, le flag absent redirige au
+     *  partenaire). NON wiré = test pur, zéro risque.
+     *  Usage : scope.bytecode.moveTarget({ attacker:0, target:'BOTH',
+     *    double:true, absent:[1] }) // primary absent → ^BIT_FLANK = 3 */
+    moveTarget: async (opts?: {
+      attacker?: number;
+      target?: 'SELECTED' | 'BOTH' | 'FOES_AND_ALLY' | 'USER';
+      double?: boolean; absent?: number[]; seed?: number;
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const pokemonMod = await import('../pokemon');
+      const run = () => {
+        _debugResetRng();
+        SeedRng(seed);
+        const p = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 10);
+        const e = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 10);
+        setupPartyForBattle([p] as never, [e] as never);
+        fillActiveBattleMonsForBattleStart();
+        const ab = opts?.attacker ?? 1;
+        const dbl = !!opts?.double;
+        _setBattlersCount(dbl ? 4 : 2);
+        _setBattleTypeFlags(dbl ? _BATTLE_TYPE_DOUBLE : 0);
+        let absMask = 0;
+        for (const i of opts?.absent ?? []) absMask |= (1 << i);
+        _setAbsentBattlerFlags(absMask);
+        setBattlerAttacker(ab);
+        const TMAP: Record<string, number> = {
+          SELECTED: _MOVE_TARGET_SELECTED, BOTH: _MOVE_TARGET_BOTH,
+          FOES_AND_ALLY: _MOVE_TARGET_FOES_AND_ALLY, USER: _MOVE_TARGET_USER,
+        };
+        const tname = opts?.target ?? 'BOTH';
+        const tc = TMAP[tname];
+        // override setTarget = tc + 1 (1:1 décomp : GetMoveTarget(m, T+1))
+        const got = _GetMoveTarget(33, tc + 1);
+        // recompute INDÉPENDANT 1:1 décomp (cas déterministes)
+        const side = ab & 1; // GET_BATTLER_SIDE = b & BIT_SIDE
+        const N = dbl ? 4 : 2;
+        let exp: number;
+        let asserted = true;
+        if (tc === _MOVE_TARGET_USER) {
+          exp = ab;
+        } else if (tc === _MOVE_TARGET_BOTH || tc === _MOVE_TARGET_FOES_AND_ALLY) {
+          let prim = side ^ 1; // GetBattlerAtPosition(BATTLE_OPPOSITE(side))
+          if (absMask & (1 << prim)) prim ^= 2; // BIT_FLANK
+          exp = prim;
+        } else { // SELECTED
+          if (!dbl) {
+            // single : do-while → l'unique opposant non-self non-absent
+            exp = -1;
+            for (let i = 0; i < N; i++) {
+              if (i !== ab && (i & 1) !== side && !(absMask & (1 << i))) { exp = i; break; }
+            }
+          } else {
+            // double SELECTED = RNG parmi plusieurs valides → on n'asserte
+            // que déterminisme + appartenance (pas la valeur exacte).
+            asserted = false;
+            exp = got;
+          }
+        }
+        const validMembership = (() => {
+          if (asserted) return true;
+          // got doit être un opposant non-self non-absent
+          return got !== ab && (got & 1) !== side && !(absMask & (1 << got));
+        })();
+        return {
+          target: tname, attacker: ab, double: dbl, absMask,
+          got, exp, asserted,
+          pass: asserted ? got === exp : validMembership,
         };
       };
       const a = run();
