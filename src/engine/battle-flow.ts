@@ -69,6 +69,7 @@ import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition } from './battle-transition';
+import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
 import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
@@ -358,6 +359,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let actionPromptWindowId = -1;
   let actionMenuCursor     = 0;
   let _lastFallbackKind: string = '';  // 'SAC' ou 'POKéMON' pour le fallback msg
+  // Phase 1.4 N7 : ball throw outcome stash (= set par tickBallThrow quand done).
+  let _ballThrowOutcome: 'caught' | 'escaped' | null = null;
+  let _ballThrowMessage: string | null = null;
   let moveMenuWindowId = -1;
   // 1:1 décomp Phase 1.4 N4 : 7 windows pour le move menu (= MOVE_NAME_1..4
   // + PP label + PP digits + MOVE_TYPE display).
@@ -843,6 +847,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // text waits + transitions).
     tickShake();
     tickFaint();
+    // 1:1 décomp `Task_DoPokeballSendOutAnim` polling via sprite callback chain.
+    // Notre tick centralisé invoke tickBallThrow() chaque frame ; le state machine
+    // BALL_THROW polle l'outcome pour transition.
+    if (isBallThrowActive()) {
+      const r = tickBallThrow();
+      if (r.done) {
+        // Stash outcome + message pour BALL_THROW_RESULT state.
+        _ballThrowOutcome = r.outcome;
+        _ballThrowMessage = r.message;
+      }
+    }
 
     // Iter16 : during battle, re-hide overworld sprites each frame because
     // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
