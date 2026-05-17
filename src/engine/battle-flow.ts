@@ -418,6 +418,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  afficher chaque message via ShowFieldMessage + wait input. */
   let _pendingBytecodeMessages: string[] = [];
 
+  /** Events bruts du dernier `runMoveScriptViaBytecode`. Permet aux states qui
+   *  consomment ce résultat (= PLAYER_USES_MOVE / OPPONENT_USES_MOVE) de
+   *  inspecter si un CONTROLLER_HITANIMATION a été émis (= sprite shake 1:1
+   *  décomp piloté par le bytecode au lieu de hardcoded `damage > 0`). */
+  let _lastBytecodeEvents: import('./battle/battle-event-queue').BattleEvent[] = [];
+
+  /** Helper : check si le dernier bytecode run a émis un CONTROLLER_HITANIMATION
+   *  (= 0x29). Renvoie true pour les moves qui hit le defender (= excluant
+   *  status moves comme Growl/Toxic + miss/no-effect). */
+  const _bytecodeWantsHitAnim = (): boolean => {
+    const HITANIM = 0x29;  // CONTROLLER_HITANIMATION
+    for (let i = 0; i < _lastBytecodeEvents.length; i++) {
+      if (_lastBytecodeEvents[i].type === HITANIM) return true;
+    }
+    return false;
+  };
+
   /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul.
    *
    *  Si flag global `__USE_BYTECODE_FOR_DAMAGE__` est set (= localStorage ou
@@ -449,11 +466,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (result.messages && result.messages.length > 0) {
           _pendingBytecodeMessages = [..._pendingBytecodeMessages, ...result.messages];
         }
+        // Capture events (= HIT_ANIMATION, PLAYSE, etc.) pour wirage 1:1 visual.
+        _lastBytecodeEvents = result.events ?? [];
         return { damage: result.damage, typeMul: result.typeMul };
       }
       console.warn('[battle-flow] bytecode route failed:', result.reason, '— fallback to ad-hoc formula');
+      _lastBytecodeEvents = [];  // reset si fallback
       // fall through to ad-hoc fallback.
     }
+    _lastBytecodeEvents = [];  // reset si legacy formula
 
     // ─── Ad-hoc legacy formula (= conservé pour tutorial robuste) ──────
     const mv = attacker.moves[moveIdx];
@@ -792,9 +813,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
         if (useBytecodeMsgs && opponentMon) {
           _pendingBytecodeMessages = [];
-          const { damage } = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
+          applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
           renderHpWindows();
-          if (damage > 0 && opponentSpriteId >= 0 && !IsBattleSceneOff()) startShake(opponentSpriteId);
+          // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
+          // émis par le bytecode (= move hit avec damage applied), pas par check
+          // `damage > 0` hardcoded (= manque les status moves qui shake aussi).
+          if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0 && !IsBattleSceneOff()) {
+            startShake(opponentSpriteId);
+          }
           state = 'PLAYER_BYTECODE_MSG';
           return false;
         }
@@ -962,9 +988,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
         if (useBytecodeMsgs) {
           _pendingBytecodeMessages = [];
-          const { damage } = applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
+          applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
           renderHpWindows();
-          if (damage > 0 && playerSpriteId >= 0 && !IsBattleSceneOff()) startShake(playerSpriteId);
+          // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
+          // émis par le bytecode au lieu de hardcoded `damage > 0`.
+          if (_bytecodeWantsHitAnim() && playerSpriteId >= 0 && !IsBattleSceneOff()) {
+            startShake(playerSpriteId);
+          }
           chosenMoveIndex = oppMoveIdx;
           state = 'OPPONENT_BYTECODE_MSG';
           return false;
