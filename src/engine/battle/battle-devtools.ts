@@ -83,12 +83,15 @@ import {
   SIDE_STATUS_REFLECT as _SIDE_STATUS_REFLECT,
   SIDE_STATUS_LIGHTSCREEN as _SIDE_STATUS_LIGHTSCREEN,
   ABILITY_GUTS as _ABILITY_GUTS,
+  ABILITY_LEVITATE as _ABILITY_LEVITATE,
+  ABILITY_WONDER_GUARD as _ABILITY_WONDER_GUARD,
 } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory } from './ai/ai-state';
 import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from './ai/ai-switch-items';
 import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
+import { gTypeEffectiveness as _gTypeEff, TYPE_FORESIGHT as _TYPE_FORESIGHT, TYPE_ENDTABLE as _TYPE_ENDTABLE } from './data/type-effectiveness';
 import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../random';
 import { getSpeciesInfo as _gdGetSpeciesInfo } from '../data/game-data';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
@@ -795,6 +798,112 @@ export function buildBattleDevtools(): Record<string, unknown> {
       };
       const a = await run();
       const b = await run();
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
+    },
+    /** VÉRIF 1:1 PIPELINE damage COMPLET post-CalculateBaseDamage. Recompute
+     *  INDÉPENDANT 1:1 décomp : base=_cbd (prouvé) → Cmd_damagecalc
+     *  (×gCritMultiplier ×dmgMultiplier, :1296) → Cmd_typecalc (STAB ×15
+     *  puis /10, :1371-1372 ; puis ModulateDmgByType par type défenseur
+     *  `dmg*mul/10` + clamp `==0&&mul!=0→1`, :1321-1325) → ApplyRandomDmg
+     *  (randPercent=100-(Random()%16) ∈[85,100], dmg*r/100, clamp 0→1).
+     *  Le facteur random n'est pas modélisé en ordre RNG : on prouve D
+     *  (=déterministe) par MEMBERSHIP EXACTE — got ∈ ensemble des 32 valeurs
+     *  {crit∈{1,2}}×{r∈85..100} (à stages neutres crit=×2 pur). Si un step
+     *  déterministe (STAB/type/clamp/crit) divergeait, D serait faux et got
+     *  hors ensemble. Attaquant = côté ennemi (battler 1) = pas de badge.
+     *  Pur : power>1, pas Struggle, def sans Levitate/WonderGuard, stages
+     *  neutres (battle-start), pas d'items/abilities spéciales.
+     *  Usage : scope.bytecode.precisePipeline({ seed:0, moveId:'ember',
+     *    attackerSpecies:'SPECIES_TORCHIC', enemy:'SPECIES_TREECKO' }) */
+    precisePipeline: async (opts?: {
+      seed?: number; moveId?: string;
+      attackerSpecies?: string; attackerLevel?: number;
+      enemy?: string; enemyLevel?: number;
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
+      const pokemonMod = await import('../pokemon');
+      const run = () => {
+        _debugResetRng();
+        SeedRng(seed);
+        // attaquant = côté ennemi (battler 1) → pas de badge boost (1:1 pur).
+        const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TORCHIC', opts?.attackerLevel ?? 10, fix);
+        const defMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_TREECKO', opts?.enemyLevel ?? 10, fix);
+        if (opts?.moveId) atkMon.moves = [{ id: opts.moveId, nameFr: opts.moveId, pp: 35, ppMax: 35 }, ...atkMon.moves.slice(1)];
+        // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
+        setupPartyForBattle([defMon] as never, [atkMon] as never);
+        fillActiveBattleMonsForBattleStart();
+        const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; spAttack: number; spDefense: number; level: number; type1: number; type2: number; ability: number }> } }).__battleState?.gBattleMons;
+        if (!bm || !bm[0] || !bm[1]) return { error: 'gBattleMons absent' } as Record<string, unknown>;
+        const moveNum = resolveMoveDexId(opts?.moveId ?? 'ember');
+        const md = _gbm(moveNum);
+        const power = md.power;
+        const mtype = md.type;
+        const A = bm[1]; const D = bm[0];
+        // base = CalculateBaseDamage (prouvé 1:1 par preciseDamage)
+        const base = _cbd(A as never, D as never, moveNum, 0, 0, 0, 1, 0).damage;
+        // Garde : si createPokemonInstance/fill ne peuple pas l'espèce
+        // (ex. certaines espèces Kanto = ability vide, gBattleMons poubelle
+        // → base NaN), l'input est MALFORMÉ : on n'asserte pas (= principe
+        // "garbage in → pas une divergence 1:1"). Retour STABLE (run1==run2).
+        if (!Number.isFinite(base)) {
+          return {
+            seed, move: opts?.moveId ?? 'ember', moveNum,
+            malformedInput: true, base: null, pure: false, pass: null,
+            attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TORCHIC', t: [A.type1, A.type2] },
+            defender: { sp: opts?.enemy ?? 'SPECIES_TREECKO', t: [D.type1, D.type2], ability: D.ability },
+          } as Record<string, unknown>;
+        }
+        // D déterministe : ×crit×dmgMult(=1) → STAB ×15/10 → type ModulateDmgByType
+        const isStab = A.type1 === mtype || A.type2 === mtype;
+        const modulate = (d: number, mul: number): number => {
+          let r = Math.floor((d * mul) / 10);
+          if (r === 0 && mul !== 0) r = 1;
+          return r;
+        };
+        const pipelineNoRandom = (crit: number): number => {
+          let d = base * crit; // dmgMultiplier=1 (pur, pas Charged/HelpingHand)
+          if (isStab) d = Math.floor((d * 15) / 10); // :1371-1372 (×15 puis /10)
+          // type : itère gTypeEffectiveness comme Cmd_typecalc (:1386-1406)
+          let i = 0;
+          while (_gTypeEff[i] !== _TYPE_ENDTABLE) {
+            if (_gTypeEff[i] === _TYPE_FORESIGHT) { i += 3; continue; } // pas de Foresight (pur)
+            if (_gTypeEff[i] === mtype) {
+              if (_gTypeEff[i + 1] === D.type1) d = modulate(d, _gTypeEff[i + 2]);
+              if (_gTypeEff[i + 1] === D.type2 && D.type1 !== D.type2) d = modulate(d, _gTypeEff[i + 2]);
+            }
+            i += 3;
+          }
+          return d;
+        };
+        // Ensemble exact des got possibles (crit∈{1,2} × randPercent∈[85,100]).
+        const candidates = new Set<number>();
+        for (const c of [1, 2]) {
+          const Dc = pipelineNoRandom(c);
+          for (let rp = 85; rp <= 100; rp++) {
+            let v: number;
+            if (Dc === 0) v = 0;
+            else { v = Math.floor((Dc * rp) / 100); if (v === 0) v = 1; }
+            candidates.add(v);
+          }
+        }
+        const result = runMoveScriptViaBytecode({ attacker: atkMon as never, defender: defMon as never, attackerMoveIdx: 0, attackerBattlerId: 1, defenderBattlerId: 0 });
+        const got = result.damage;
+        const defLevitate = D.ability === _ABILITY_LEVITATE || D.ability === _ABILITY_WONDER_GUARD;
+        const pure = mtype !== _TYPE_MYSTERY && power > 1 && (opts?.moveId ?? 'ember') !== 'struggle' && !defLevitate;
+        return {
+          seed, move: opts?.moveId ?? 'ember', moveNum, power, mtype, isStab,
+          base, Dcrit1: pipelineNoRandom(1), Dcrit2: pipelineNoRandom(2),
+          got, inCandidateSet: candidates.has(got), candidatesCount: candidates.size,
+          pure, pass: pure ? candidates.has(got) : null,
+          attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TORCHIC', t: [A.type1, A.type2] },
+          defender: { sp: opts?.enemy ?? 'SPECIES_TREECKO', t: [D.type1, D.type2], ability: D.ability },
+          typeMul: result.typeMul,
+        };
+      };
+      const a = run();
+      const b = run();
       const deterministic = JSON.stringify(a) === JSON.stringify(b);
       return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
     },
