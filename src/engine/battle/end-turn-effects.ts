@@ -438,14 +438,18 @@ function _WasUnableToUseMoveETT(battler: number): boolean {
   );
 }
 
-/** 1:1 décomp `CancelMultiTurnMoves(battler)` (battle_util.c:864-875). */
+/** 1:1 décomp `CancelMultiTurnMoves(battler)` (battle_util.c:864-875).
+ *  AUDIT BUG FIX : 2 constantes hardcoded fausses :
+ *    - STATUS2_BIDE 0x00100000 → 0x300 (= (1<<8)|(1<<9), battle.h:135)
+ *    - STATUS3_SEMI_INVULNERABLE 0x10 → 0x400C0 (= ON_AIR|UNDERGROUND|UNDERWATER,
+ *      battle.h:178). */
 function _CancelMultiTurnMovesETT(battler: number): void {
   gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
   gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
   gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
-  gBattleMons[battler].status2 &= ~0x00100000 /* STATUS2_BIDE */;
+  gBattleMons[battler].status2 &= ~0x300 /* STATUS2_BIDE (1<<8)|(1<<9) */;
   gStatuses3[battler] &= ~STATUS3_ROOTED;
-  gStatuses3[battler] &= ~0x10 /* STATUS3_SEMI_INVULNERABLE proxy */;
+  gStatuses3[battler] &= ~0x400C0 /* STATUS3_SEMI_INVULNERABLE ON_AIR|UNDERGROUND|UNDERWATER */;
 }
 
 import { gProtectStructs as gProtectStructsImport } from './state';
