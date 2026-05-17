@@ -34,6 +34,9 @@ import {
 } from './gba-window-system';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
 import { DeactivateAllTextPrinters } from './gba-text-system';
+// gBattleBgTemplates auto-extrait du décomp (battle_bg.c:123-161) — JAMAIS
+// retapé main (règle feedback-no-hardcoded-decomp-values).
+import { gBattleBgTemplates as _autoBattleBgTemplates } from './decomp-data/auto/src/battle_bg-data';
 
 /** 1:1 décomp battle terrain tiles loader avec 3 sub-palettes support.
  *
@@ -368,12 +371,11 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
 /** 1:1 décomp `gBattleBgTemplates[]` (battle_bg.c:123-161).
  *  BG0 screenSize=2 (= 32×64 tiles) : c'est CE 64-tall qui permet le scroll
  *  gBattle_BG0_Y (MSG top=15 / ACTION top=35 / MOVE top=55). */
-export const gBattleBgTemplates: BgTemplate[] = [
-  { bg: 0, charBaseIndex: 0, mapBaseIndex: 24, screenSize: 2, paletteMode: 0, priority: 0, baseTile: 0 },
-  { bg: 1, charBaseIndex: 1, mapBaseIndex: 28, screenSize: 2, paletteMode: 0, priority: 0, baseTile: 0 },
-  { bg: 2, charBaseIndex: 1, mapBaseIndex: 30, screenSize: 1, paletteMode: 0, priority: 1, baseTile: 0 },
-  { bg: 3, charBaseIndex: 2, mapBaseIndex: 26, screenSize: 1, paletteMode: 0, priority: 3, baseTile: 0 },
-];
+export const gBattleBgTemplates: BgTemplate[] = _autoBattleBgTemplates.map((t) => ({
+  bg: t.bg, charBaseIndex: t.charBaseIndex, mapBaseIndex: t.mapBaseIndex,
+  screenSize: t.screenSize, paletteMode: t.paletteMode, priority: t.priority,
+  baseTile: t.baseTile,
+}));
 
 /** 1:1 décomp `BattleInitBgsAndWindows` (battle_bg.c:713-731) — NORMAL only
  *  (pas BATTLE_TYPE_ARENA). C'est ÇA qui remplace le windowing overworld par

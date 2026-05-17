@@ -31,7 +31,19 @@
  *     (battle_bg.c:748 LoadBattleMenuWindowGfx) — idx 15 = rouge.
  *   - B_WIN_MSG : fillValue=PIXEL_FILL(0xF)=0xFF, bgColor=TEXT_DYNAMIC_COLOR_6=15
  *     → fond box = palette idx 15 = rouge ; fgColor=TEXT_COLOR_WHITE=1 = texte blanc.
+ *
+ * ⚠️ DONNÉES = AUTO-EXTRAITES, PAS RETAPÉES À LA MAIN.
+ * `sStandardBattleWindowTemplates` + `gBattleBgTemplates` sont importés depuis
+ * `decomp-data/auto/src/battle_bg-data.ts` (généré 1:1 par l'extracteur du
+ * décomp). Ne JAMAIS re-hardcoder ces tables ici (règle projet
+ * feedback-no-hardcoded-decomp-values). `sTextOnWindowsInfo_Normal` reste
+ * porté main car l'extraction ne le sort qu'en C brut (PIXEL_FILL(0xF)…),
+ * non consommable — mais cross-validé contre static-tables/battle_message.json.
  */
+
+import {
+  sStandardBattleWindowTemplates as _autoStdBattleWinTemplates,
+} from './decomp-data/auto/src/battle_bg-data';
 
 // ─── B_WIN_TYPE (battle.h:341-342) ──────────────────────────────────────────
 export const B_WIN_TYPE_NORMAL = 0;
@@ -116,35 +128,18 @@ export const DUMMY_WIN_TEMPLATE: BattleWindowTemplate = {
 };
 
 /** 1:1 décomp `sStandardBattleWindowTemplates` (battle_bg.c:163-382).
- *  Indexé par B_WIN_* (0..23). Y décomp bruts (= BG0 64-tall screenSize=2,
- *  scroll via gBattle_BG0_Y). `//!< French Difference` = valeurs de la ROM FR
- *  (= notre cible : MSG width=27, YESNO left=25 width=4). */
-export const sStandardBattleWindowTemplates: Record<number, BattleWindowTemplate> = {
-  [B_WIN_MSG]:              { bg: 0, tilemapLeft: 2,  tilemapTop: 15, width: 27, height: 4,  paletteNum: 0, baseBlock: 0x0090 },
-  [B_WIN_ACTION_PROMPT]:    { bg: 0, tilemapLeft: 1,  tilemapTop: 35, width: 14, height: 4,  paletteNum: 0, baseBlock: 0x01c0 },
-  [B_WIN_ACTION_MENU]:      { bg: 0, tilemapLeft: 17, tilemapTop: 35, width: 12, height: 4,  paletteNum: 5, baseBlock: 0x0190 },
-  [B_WIN_MOVE_NAME_1]:      { bg: 0, tilemapLeft: 2,  tilemapTop: 55, width: 8,  height: 2,  paletteNum: 5, baseBlock: 0x0300 },
-  [B_WIN_MOVE_NAME_2]:      { bg: 0, tilemapLeft: 11, tilemapTop: 55, width: 8,  height: 2,  paletteNum: 5, baseBlock: 0x0310 },
-  [B_WIN_MOVE_NAME_3]:      { bg: 0, tilemapLeft: 2,  tilemapTop: 57, width: 8,  height: 2,  paletteNum: 5, baseBlock: 0x0320 },
-  [B_WIN_MOVE_NAME_4]:      { bg: 0, tilemapLeft: 11, tilemapTop: 57, width: 8,  height: 2,  paletteNum: 5, baseBlock: 0x0330 },
-  [B_WIN_PP]:               { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 4,  height: 2,  paletteNum: 5, baseBlock: 0x0290 },
-  [B_WIN_DUMMY]:            { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 0,  height: 0,  paletteNum: 5, baseBlock: 0x0298 },
-  [B_WIN_PP_REMAINING]:     { bg: 0, tilemapLeft: 25, tilemapTop: 55, width: 4,  height: 2,  paletteNum: 5, baseBlock: 0x0298 },
-  [B_WIN_MOVE_TYPE]:        { bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 8,  height: 2,  paletteNum: 5, baseBlock: 0x02a0 },
-  [B_WIN_SWITCH_PROMPT]:    { bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 8,  height: 4,  paletteNum: 5, baseBlock: 0x02b0 },
-  [B_WIN_YESNO]:            { bg: 0, tilemapLeft: 25, tilemapTop: 9,  width: 4,  height: 4,  paletteNum: 5, baseBlock: 0x0100 },
-  [B_WIN_LEVEL_UP_BOX]:     { bg: 1, tilemapLeft: 19, tilemapTop: 8,  width: 10, height: 11, paletteNum: 5, baseBlock: 0x0100 },
-  [B_WIN_LEVEL_UP_BANNER]:  { bg: 2, tilemapLeft: 18, tilemapTop: 0,  width: 12, height: 3,  paletteNum: 6, baseBlock: 0x016e },
-  [B_WIN_VS_PLAYER]:        { bg: 1, tilemapLeft: 2,  tilemapTop: 3,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0020 },
-  [B_WIN_VS_OPPONENT]:      { bg: 2, tilemapLeft: 2,  tilemapTop: 3,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0040 },
-  [B_WIN_VS_MULTI_PLAYER_1]:{ bg: 1, tilemapLeft: 2,  tilemapTop: 2,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0020 },
-  [B_WIN_VS_MULTI_PLAYER_2]:{ bg: 2, tilemapLeft: 2,  tilemapTop: 2,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0040 },
-  [B_WIN_VS_MULTI_PLAYER_3]:{ bg: 1, tilemapLeft: 2,  tilemapTop: 6,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0060 },
-  [B_WIN_VS_MULTI_PLAYER_4]:{ bg: 2, tilemapLeft: 2,  tilemapTop: 6,  width: 6,  height: 2,  paletteNum: 5, baseBlock: 0x0080 },
-  [B_WIN_VS_OUTCOME_DRAW]:  { bg: 0, tilemapLeft: 12, tilemapTop: 2,  width: 6,  height: 2,  paletteNum: 0, baseBlock: 0x00a0 },
-  [B_WIN_VS_OUTCOME_LEFT]:  { bg: 0, tilemapLeft: 4,  tilemapTop: 2,  width: 7,  height: 2,  paletteNum: 0, baseBlock: 0x00a0 },
-  [B_WIN_VS_OUTCOME_RIGHT]: { bg: 0, tilemapLeft: 19, tilemapTop: 2,  width: 7,  height: 2,  paletteNum: 0, baseBlock: 0x00b0 },
-};
+ *  DÉRIVÉ de l'array auto-extrait `decomp-data/auto/src/battle_bg-data.ts`
+ *  (index array == B_WIN_* car ordre source décomp = ordre B_WIN_*).
+ *  ZÉRO valeur retapée à la main → garanti 1:1 (l'extracteur sort les valeurs
+ *  exactes de la décomp, baseBlock en décimal : 144=0x90, 448=0x1C0, …). */
+export const sStandardBattleWindowTemplates: Record<number, BattleWindowTemplate> =
+  Object.fromEntries(
+    _autoStdBattleWinTemplates.map((t, i) => [i, {
+      bg: t.bg, tilemapLeft: t.tilemapLeft, tilemapTop: t.tilemapTop,
+      width: t.width, height: t.height, paletteNum: t.paletteNum,
+      baseBlock: t.baseBlock,
+    } as BattleWindowTemplate]),
+  );
 
 /** 1:1 décomp `struct BattleWindowText` (battle_message.c:33-45).
  *  Ordre exact des champs : fillValue, fontId, x, y, letterSpacing,
