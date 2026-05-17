@@ -1,0 +1,731 @@
+/**
+ * battle/ai/ai-switch-items.ts — 1:1 décomp `src/battle_ai_switch_items.c`
+ * (sous-système AI : décision de changement de Pokémon).
+ *
+ * Source de vérité : D:/Projet 1/decomps/pokeemeraude/src/battle_ai_switch_items.c
+ *
+ * Comble le dernier MVP de l'AI dresseur : actuellement les dresseurs
+ * n'échangent jamais intelligemment leur Pokémon. Ce module porte 1:1 :
+ *   ShouldSwitchIfPerishSong / ShouldSwitchIfWonderGuard /
+ *   FindMonThatAbsorbsOpponentsMove / ShouldSwitchIfNaturalCure /
+ *   HasSuperEffectiveMoveAgainstOpponents / AreStatsRaised /
+ *   FindMonWithFlagsAndSuperEffective / ShouldSwitch (core) /
+ *   ModulateByTypeEffectiveness / GetMostSuitableMonToSwitchInto /
+ *   AI_TrySwitchOrUseItem (entry).
+ *
+ * `BtlController_EmitTwoReturnValues` → recorder local `_aiEmit` (l'action
+ * choisie est lisible via getAiSwitchDecision() ; le wirage controller
+ * action-choice = étape future). `ShouldUseItem` = STUB 1:1 documenté
+ * (le sous-système item-effect-table gItemEffectTable/ITEM*_* n'est pas
+ * porté dans le codebase — cohérent avec le reste, l'usage objet AI est
+ * une étape séparée). Module NON wiré = zéro risque gameplay.
+ */
+
+import { Random } from '../../random';
+import {
+  gActiveBattler,
+  gBattleMons,
+  gBattleTypeFlags,
+  gAbsentBattlerFlags,
+  gStatuses3,
+  gDisableStructs,
+  gBattlerPartyIndexes,
+  gBattleStruct,
+  gLastLandedMoves,
+  gLastHitBy,
+  setDynamicBasePower,
+  gBattleScripting,
+  setMoveResultFlags,
+  setCritMultiplier,
+  gBattleMoveDamage,
+  setBattleMoveDamage,
+} from '../state';
+import {
+  MAX_MON_MOVES,
+  MOVE_NONE,
+  MOVE_UNAVAILABLE,
+  BIT_FLANK,
+  B_SIDE_PLAYER,
+  BATTLE_OPPOSITE,
+  BATTLE_PARTNER,
+  GET_BATTLER_SIDE,
+  STATUS2_WRAPPED,
+  STATUS2_ESCAPE_PREVENTION,
+  STATUS2_CONFUSION,
+  STATUS3_ROOTED,
+  STATUS3_PERISH_SONG,
+  STATUS1_SLEEP,
+  ABILITY_SHADOW_TAG,
+  ABILITY_ARENA_TRAP,
+  ABILITY_MAGNET_PULL,
+  ABILITY_WONDER_GUARD,
+  ABILITY_NATURAL_CURE,
+  ABILITY_FLASH_FIRE,
+  ABILITY_WATER_ABSORB,
+  ABILITY_VOLT_ABSORB,
+  TYPE_STEEL,
+  TYPE_FIRE,
+  TYPE_WATER,
+  TYPE_ELECTRIC,
+  NUM_BATTLE_STATS,
+  DEFAULT_STAT_STAGE,
+  MOVE_RESULT_SUPER_EFFECTIVE,
+  MOVE_RESULT_DOESNT_AFFECT_FOE,
+  MOVE_RESULT_NOT_VERY_EFFECTIVE,
+  B_ACTION_SWITCH,
+  B_ACTION_USE_MOVE,
+  BATTLE_TYPE_DOUBLE,
+  BATTLE_TYPE_TRAINER,
+  BATTLE_TYPE_TWO_OPPONENTS,
+  BATTLE_TYPE_TOWER_LINK_MULTI,
+  BATTLE_TYPE_ARENA,
+} from '../constants';
+import {
+  gTypeEffectiveness,
+  TYPE_FORESIGHT,
+  TYPE_ENDTABLE,
+  TYPE_MUL_NORMAL,
+  TYPE_MUL_NO_EFFECT,
+} from '../data/type-effectiveness';
+import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from './ai-damage';
+import {
+  gPlayerParty,
+  gEnemyParty,
+  GetMonData,
+  GetAbilityBySpecies,
+  MON_DATA_HP,
+  MON_DATA_SPECIES,
+  MON_DATA_SPECIES_OR_EGG,
+  MON_DATA_ABILITY_NUM,
+  MON_DATA_MOVE1,
+  PARTY_SIZE,
+} from '../party-storage';
+import {
+  SPECIES_NONE,
+  SPECIES_EGG,
+} from '../../decomp-data/auto/include/constants/species-data';
+import { gBitTable } from '../battle-controllers';
+import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
+import {
+  AbilityBattleEffects,
+  ABILITYEFFECT_CHECK_OTHER_SIDE,
+  ABILITYEFFECT_FIELD_SPORT,
+} from '../ability-battle-effects';
+import { getBattleMove } from '../data/battle-moves';
+
+// ─── Constantes locales 1:1 ────────────────────────────────────────────────
+
+/** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). */
+const B_FLANK_LEFT = 0;
+
+/** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
+function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
+  return gBattleMons[battler].type1 === type || gBattleMons[battler].type2 === type;
+}
+
+/** 1:1 décomp macros battle_util.h:36-38 :
+ *  ABILITY_ON_OPPOSING_FIELD = AbilityBattleEffects(CHECK_OTHER_SIDE,...)
+ *  ABILITY_ON_FIELD2         = AbilityBattleEffects(FIELD_SPORT,...) */
+function ABILITY_ON_OPPOSING_FIELD(battler: number, abilityId: number): number {
+  return AbilityBattleEffects(ABILITYEFFECT_CHECK_OTHER_SIDE, battler, abilityId, 0, 0);
+}
+function ABILITY_ON_FIELD2(abilityId: number): number {
+  return AbilityBattleEffects(ABILITYEFFECT_FIELD_SPORT, 0, abilityId, 0, 0);
+}
+
+// ─── Recorder `BtlController_EmitTwoReturnValues` (non wiré) ────────────────
+
+export interface AiSwitchDecision {
+  /** B_ACTION_* (SWITCH / USE_MOVE / USE_ITEM). -1 = aucune décision émise. */
+  action: number;
+  data: number;
+}
+let _aiDecision: AiSwitchDecision = { action: -1, data: 0 };
+
+function _aiEmit(action: number, data: number): void {
+  _aiDecision = { action, data };
+}
+
+/** Lit la dernière décision émise par AI_TrySwitchOrUseItem (devtools/wirage). */
+export function getAiSwitchDecision(): AiSwitchDecision {
+  return { ..._aiDecision };
+}
+export function resetAiSwitchDecision(): void {
+  _aiDecision = { action: -1, data: 0 };
+}
+
+// ─── Helpers d'accès gBattleStruct (1:1 *(ptr + battler)) ──────────────────
+
+function _AI_monToSwitchIntoId(b: number): number {
+  return gBattleStruct.AI_monToSwitchIntoId[b];
+}
+function _set_AI_monToSwitchIntoId(b: number, v: number): void {
+  gBattleStruct.AI_monToSwitchIntoId[b] = v;
+}
+function _monToSwitchIntoId(b: number): number {
+  return gBattleStruct.monToSwitchIntoId[b];
+}
+
+// ─── ShouldSwitchIfPerishSong (battle_ai_switch_items.c:20-33) ──────────────
+
+function ShouldSwitchIfPerishSong(): boolean {
+  if ((gStatuses3[gActiveBattler] & STATUS3_PERISH_SONG)
+    && gDisableStructs[gActiveBattler].perishSongTimer === 0) {
+    _set_AI_monToSwitchIntoId(gActiveBattler, PARTY_SIZE);
+    _aiEmit(B_ACTION_SWITCH, 0);
+    return true;
+  }
+  return false;
+}
+
+// ─── ShouldSwitchIfWonderGuard (35-117) ────────────────────────────────────
+
+function ShouldSwitchIfWonderGuard(): boolean {
+  let opposingBattler: number;
+  let i: number;
+  let j: number;
+  let firstId: number;
+  let lastId: number;
+  let move: number;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) return false;
+
+  const opposingPosition = BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler));
+
+  if (gBattleMons[GetBattlerAtPosition(opposingPosition)].ability !== ABILITY_WONDER_GUARD) {
+    return false;
+  }
+
+  // Check if Pokémon has a super effective move.
+  opposingBattler = GetBattlerAtPosition(opposingPosition);
+  for (i = 0; i < MAX_MON_MOVES; i++) {
+    move = gBattleMons[gActiveBattler].moves[i];
+    if (move === MOVE_NONE) continue;
+    const moveFlags = AI_TypeCalc(move, gBattleMons[opposingBattler].species, gBattleMons[opposingBattler].ability);
+    if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) return false;
+  }
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+    if ((gActiveBattler & BIT_FLANK) === B_FLANK_LEFT) { firstId = 0; lastId = PARTY_SIZE / 2; }
+    else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+  } else {
+    firstId = 0; lastId = PARTY_SIZE;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  for (i = firstId; i < lastId; i++) {
+    if (GetMonData(party[i], MON_DATA_HP) === 0) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_NONE) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_EGG) continue;
+    if (i === gBattlerPartyIndexes[gActiveBattler]) continue;
+
+    GetMonData(party[i], MON_DATA_SPECIES); // 1:1 : unused return.
+    GetMonData(party[i], MON_DATA_ABILITY_NUM); // 1:1 : unused return.
+
+    opposingBattler = GetBattlerAtPosition(opposingPosition);
+    for (j = 0; j < MAX_MON_MOVES; j++) {
+      move = GetMonData(party[i], MON_DATA_MOVE1 + j) as number;
+      if (move === MOVE_NONE) continue;
+      const moveFlags = AI_TypeCalc(move, gBattleMons[opposingBattler].species, gBattleMons[opposingBattler].ability);
+      if ((moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) && Random() % 3 < 2) {
+        _set_AI_monToSwitchIntoId(gActiveBattler, i);
+        _aiEmit(B_ACTION_SWITCH, 0);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ─── FindMonThatAbsorbsOpponentsMove (119-216) ─────────────────────────────
+
+function FindMonThatAbsorbsOpponentsMove(): boolean {
+  let battlerIn1: number;
+  let battlerIn2: number;
+  let absorbingTypeAbility: number;
+  let firstId: number;
+  let lastId: number;
+  let i: number;
+
+  if (HasSuperEffectiveMoveAgainstOpponents(true) && Random() % 3 !== 0) return false;
+  if (gLastLandedMoves[gActiveBattler] === MOVE_NONE) return false;
+  if (gLastLandedMoves[gActiveBattler] === MOVE_UNAVAILABLE) return false;
+  if (getBattleMove(gLastLandedMoves[gActiveBattler]).power === 0) return false;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    battlerIn1 = gActiveBattler;
+    if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)))]) {
+      battlerIn2 = gActiveBattler;
+    } else {
+      battlerIn2 = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)));
+    }
+  } else {
+    battlerIn1 = gActiveBattler;
+    battlerIn2 = gActiveBattler;
+  }
+
+  if (getBattleMove(gLastLandedMoves[gActiveBattler]).type === TYPE_FIRE) absorbingTypeAbility = ABILITY_FLASH_FIRE;
+  else if (getBattleMove(gLastLandedMoves[gActiveBattler]).type === TYPE_WATER) absorbingTypeAbility = ABILITY_WATER_ABSORB;
+  else if (getBattleMove(gLastLandedMoves[gActiveBattler]).type === TYPE_ELECTRIC) absorbingTypeAbility = ABILITY_VOLT_ABSORB;
+  else return false;
+
+  if (gBattleMons[gActiveBattler].ability === absorbingTypeAbility) return false;
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+    if ((gActiveBattler & BIT_FLANK) === B_FLANK_LEFT) { firstId = 0; lastId = PARTY_SIZE / 2; }
+    else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+  } else {
+    firstId = 0; lastId = PARTY_SIZE;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  for (i = firstId; i < lastId; i++) {
+    if (GetMonData(party[i], MON_DATA_HP) === 0) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_NONE) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_EGG) continue;
+    if (i === gBattlerPartyIndexes[battlerIn1]) continue;
+    if (i === gBattlerPartyIndexes[battlerIn2]) continue;
+    if (i === _monToSwitchIntoId(battlerIn1)) continue;
+    if (i === _monToSwitchIntoId(battlerIn2)) continue;
+
+    const species = GetMonData(party[i], MON_DATA_SPECIES) as number;
+    const abilityNum = GetMonData(party[i], MON_DATA_ABILITY_NUM) as number;
+    const monAbility = abilityNum !== 0
+      ? GetAbilityBySpecies(species, 1)
+      : GetAbilityBySpecies(species, 0);
+
+    if (absorbingTypeAbility === monAbility && (Random() & 1)) {
+      _set_AI_monToSwitchIntoId(gActiveBattler, i);
+      _aiEmit(B_ACTION_SWITCH, 0);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ─── ShouldSwitchIfNaturalCure (218-256) ───────────────────────────────────
+
+function ShouldSwitchIfNaturalCure(): boolean {
+  if (!(gBattleMons[gActiveBattler].status1 & STATUS1_SLEEP)) return false;
+  if (gBattleMons[gActiveBattler].ability !== ABILITY_NATURAL_CURE) return false;
+  if (gBattleMons[gActiveBattler].hp < Math.floor(gBattleMons[gActiveBattler].maxHP / 2)) return false;
+
+  if ((gLastLandedMoves[gActiveBattler] === MOVE_NONE
+    || gLastLandedMoves[gActiveBattler] === MOVE_UNAVAILABLE)
+    && (Random() & 1)) {
+    _set_AI_monToSwitchIntoId(gActiveBattler, PARTY_SIZE);
+    _aiEmit(B_ACTION_SWITCH, 0);
+    return true;
+  } else if (getBattleMove(gLastLandedMoves[gActiveBattler]).power === 0 && (Random() & 1)) {
+    _set_AI_monToSwitchIntoId(gActiveBattler, PARTY_SIZE);
+    _aiEmit(B_ACTION_SWITCH, 0);
+    return true;
+  }
+
+  if (FindMonWithFlagsAndSuperEffective(MOVE_RESULT_DOESNT_AFFECT_FOE, 1)) return true;
+  if (FindMonWithFlagsAndSuperEffective(MOVE_RESULT_NOT_VERY_EFFECTIVE, 1)) return true;
+
+  if (Random() & 1) {
+    _set_AI_monToSwitchIntoId(gActiveBattler, PARTY_SIZE);
+    _aiEmit(B_ACTION_SWITCH, 0);
+    return true;
+  }
+  return false;
+}
+
+// ─── HasSuperEffectiveMoveAgainstOpponents (258-312) ───────────────────────
+
+function HasSuperEffectiveMoveAgainstOpponents(noRng: boolean): boolean {
+  let opposingBattler: number;
+  let i: number;
+  let move: number;
+
+  const opposingPosition = BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler));
+  opposingBattler = GetBattlerAtPosition(opposingPosition);
+
+  if (!(gAbsentBattlerFlags & gBitTable[opposingBattler])) {
+    for (i = 0; i < MAX_MON_MOVES; i++) {
+      move = gBattleMons[gActiveBattler].moves[i];
+      if (move === MOVE_NONE) continue;
+      const moveFlags = AI_TypeCalc(move, gBattleMons[opposingBattler].species, gBattleMons[opposingBattler].ability);
+      if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
+        if (noRng) return true;
+        if (Random() % 10 !== 0) return true;
+      }
+    }
+  }
+  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) return false;
+
+  opposingBattler = GetBattlerAtPosition(BATTLE_PARTNER(opposingPosition));
+
+  if (!(gAbsentBattlerFlags & gBitTable[opposingBattler])) {
+    for (i = 0; i < MAX_MON_MOVES; i++) {
+      move = gBattleMons[gActiveBattler].moves[i];
+      if (move === MOVE_NONE) continue;
+      const moveFlags = AI_TypeCalc(move, gBattleMons[opposingBattler].species, gBattleMons[opposingBattler].ability);
+      if (moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
+        if (noRng) return true;
+        if (Random() % 10 !== 0) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ─── AreStatsRaised (314-326) ──────────────────────────────────────────────
+
+function AreStatsRaised(): boolean {
+  let buffedStatsValue = 0;
+  for (let i = 0; i < NUM_BATTLE_STATS; i++) {
+    if (gBattleMons[gActiveBattler].statStages[i] > DEFAULT_STAT_STAGE) {
+      buffedStatsValue += gBattleMons[gActiveBattler].statStages[i] - DEFAULT_STAT_STAGE;
+    }
+  }
+  return buffedStatsValue > 3;
+}
+
+// ─── FindMonWithFlagsAndSuperEffective (328-427) ───────────────────────────
+
+function FindMonWithFlagsAndSuperEffective(flags: number, moduloPercent: number): boolean {
+  let battlerIn1: number;
+  let battlerIn2: number;
+  let firstId: number;
+  let lastId: number;
+  let i: number;
+  let j: number;
+  let move: number;
+
+  if (gLastLandedMoves[gActiveBattler] === MOVE_NONE) return false;
+  if (gLastLandedMoves[gActiveBattler] === MOVE_UNAVAILABLE) return false;
+  if (gLastHitBy[gActiveBattler] === 0xFF) return false;
+  if (getBattleMove(gLastLandedMoves[gActiveBattler]).power === 0) return false;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    battlerIn1 = gActiveBattler;
+    if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)))]) {
+      battlerIn2 = gActiveBattler;
+    } else {
+      battlerIn2 = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)));
+    }
+  } else {
+    battlerIn1 = gActiveBattler;
+    battlerIn2 = gActiveBattler;
+  }
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+    if ((gActiveBattler & BIT_FLANK) === 0) { firstId = 0; lastId = PARTY_SIZE / 2; }
+    else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+  } else {
+    firstId = 0; lastId = PARTY_SIZE;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  for (i = firstId; i < lastId; i++) {
+    if (GetMonData(party[i], MON_DATA_HP) === 0) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_NONE) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_EGG) continue;
+    if (i === gBattlerPartyIndexes[battlerIn1]) continue;
+    if (i === gBattlerPartyIndexes[battlerIn2]) continue;
+    if (i === _monToSwitchIntoId(battlerIn1)) continue;
+    if (i === _monToSwitchIntoId(battlerIn2)) continue;
+
+    const species = GetMonData(party[i], MON_DATA_SPECIES) as number;
+    const abilityNum = GetMonData(party[i], MON_DATA_ABILITY_NUM) as number;
+    const monAbility = abilityNum !== 0
+      ? GetAbilityBySpecies(species, 1)
+      : GetAbilityBySpecies(species, 0);
+
+    let moveFlags = AI_TypeCalc(gLastLandedMoves[gActiveBattler], species, monAbility);
+    if (moveFlags & flags) {
+      battlerIn1 = gLastHitBy[gActiveBattler];
+
+      for (j = 0; j < MAX_MON_MOVES; j++) {
+        move = GetMonData(party[i], MON_DATA_MOVE1 + j) as number;
+        if (move === 0) continue;
+
+        moveFlags = AI_TypeCalc(move, gBattleMons[battlerIn1].species, gBattleMons[battlerIn1].ability);
+        if ((moveFlags & MOVE_RESULT_SUPER_EFFECTIVE) && Random() % moduloPercent === 0) {
+          _set_AI_monToSwitchIntoId(gActiveBattler, i);
+          _aiEmit(B_ACTION_SWITCH, 0);
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// ─── ShouldSwitch (429-526) ────────────────────────────────────────────────
+
+export function ShouldSwitch(): boolean {
+  let battlerIn1: number;
+  let battlerIn2: number;
+  let firstId: number;
+  let lastId: number;
+  let i: number;
+  let availableToSwitch: number;
+
+  if (gBattleMons[gActiveBattler].status2 & (STATUS2_WRAPPED | STATUS2_ESCAPE_PREVENTION)) return false;
+  if (gStatuses3[gActiveBattler] & STATUS3_ROOTED) return false;
+  if (ABILITY_ON_OPPOSING_FIELD(gActiveBattler, ABILITY_SHADOW_TAG)) return false;
+  if (ABILITY_ON_OPPOSING_FIELD(gActiveBattler, ABILITY_ARENA_TRAP)) return false; // Misses flying/Levitate (1:1).
+  if (ABILITY_ON_FIELD2(ABILITY_MAGNET_PULL)) {
+    if (IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_STEEL)) return false;
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_ARENA) return false;
+
+  availableToSwitch = 0;
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    battlerIn1 = gActiveBattler;
+    if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)))]) {
+      battlerIn2 = gActiveBattler;
+    } else {
+      battlerIn2 = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)));
+    }
+  } else {
+    battlerIn1 = gActiveBattler;
+    battlerIn2 = gActiveBattler;
+  }
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+    if ((gActiveBattler & BIT_FLANK) === B_FLANK_LEFT) { firstId = 0; lastId = PARTY_SIZE / 2; }
+    else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+  } else {
+    firstId = 0; lastId = PARTY_SIZE;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  for (i = firstId; i < lastId; i++) {
+    if (GetMonData(party[i], MON_DATA_HP) === 0) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_NONE) continue;
+    if (GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) === SPECIES_EGG) continue;
+    if (i === gBattlerPartyIndexes[battlerIn1]) continue;
+    if (i === gBattlerPartyIndexes[battlerIn2]) continue;
+    if (i === _monToSwitchIntoId(battlerIn1)) continue;
+    if (i === _monToSwitchIntoId(battlerIn2)) continue;
+    availableToSwitch++;
+  }
+
+  if (availableToSwitch === 0) return false;
+  if (ShouldSwitchIfPerishSong()) return true;
+  if (ShouldSwitchIfWonderGuard()) return true;
+  if (FindMonThatAbsorbsOpponentsMove()) return true;
+  if (ShouldSwitchIfNaturalCure()) return true;
+  if (HasSuperEffectiveMoveAgainstOpponents(false)) return false;
+  if (AreStatsRaised()) return false;
+  if (FindMonWithFlagsAndSuperEffective(MOVE_RESULT_DOESNT_AFFECT_FOE, 2)
+    || FindMonWithFlagsAndSuperEffective(MOVE_RESULT_NOT_VERY_EFFECTIVE, 3)) {
+    return true;
+  }
+  return false;
+}
+
+// ─── ShouldUseItem — STUB 1:1 documenté (item-effect-table déféré) ─────────
+
+/** 1:1 décomp `ShouldUseItem` (808-944) : décide si le dresseur utilise un
+ *  objet (Full Restore, Potion, soin de statut, X-stat, Guard Spec). Dépend
+ *  du sous-système item-effect-table : `gItemEffectTable`, masques ITEMx
+ *  (0..4), `GetItemEffectParamOffset`, constantes AI_ITEM / AI_HEAL / AI_X,
+ *  plus gBattleStruct.AI_itemType+AI_itemFlags+chosenItem et
+ *  gBattleResources.battleHistory.trainerItems — NON porté dans le codebase.
+ *  Stub 1:1 : retourne false (= le dresseur n'utilise pas d'objet), cohérent
+ *  avec le reste du port (usage objet AI = étape future séparée). Ce n'est
+ *  pas un bug. */
+function ShouldUseItem(): boolean {
+  return false;
+}
+
+// ─── AI_TrySwitchOrUseItem (528-603) ───────────────────────────────────────
+
+/** 1:1 décomp entry point. Décide : switch / item / move-action.
+ *  Émet la décision via `_aiEmit` (lisible getAiSwitchDecision()). */
+export function AI_TrySwitchOrUseItem(): void {
+  let battlerIn1: number;
+  let battlerIn2: number;
+  let firstId: number;
+  let lastId: number;
+  const battlerIdentity = GetBattlerPosition(gActiveBattler);
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
+    if (ShouldSwitch()) {
+      if (_AI_monToSwitchIntoId(gActiveBattler) === PARTY_SIZE) {
+        let monToSwitchId = GetMostSuitableMonToSwitchInto();
+        if (monToSwitchId === PARTY_SIZE) {
+          if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+            battlerIn1 = GetBattlerAtPosition(battlerIdentity);
+            battlerIn2 = battlerIn1;
+          } else {
+            battlerIn1 = GetBattlerAtPosition(battlerIdentity);
+            battlerIn2 = GetBattlerAtPosition(BATTLE_PARTNER(battlerIdentity));
+          }
+
+          if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+            if ((gActiveBattler & BIT_FLANK) === B_FLANK_LEFT) { firstId = 0; lastId = PARTY_SIZE / 2; }
+            else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+          } else {
+            firstId = 0; lastId = PARTY_SIZE;
+          }
+
+          for (monToSwitchId = firstId; monToSwitchId < lastId; monToSwitchId++) {
+            if (GetMonData(party[monToSwitchId], MON_DATA_HP) === 0) continue;
+            if (monToSwitchId === gBattlerPartyIndexes[battlerIn1]) continue;
+            if (monToSwitchId === gBattlerPartyIndexes[battlerIn2]) continue;
+            if (monToSwitchId === _monToSwitchIntoId(battlerIn1)) continue;
+            if (monToSwitchId === _monToSwitchIntoId(battlerIn2)) continue;
+            break;
+          }
+        }
+        _set_AI_monToSwitchIntoId(gActiveBattler, monToSwitchId);
+      }
+      gBattleStruct.monToSwitchIntoId[gActiveBattler] = _AI_monToSwitchIntoId(gActiveBattler);
+      return;
+    } else if (ShouldUseItem()) {
+      return;
+    }
+  }
+
+  _aiEmit(B_ACTION_USE_MOVE, BATTLE_OPPOSITE(gActiveBattler) << 8);
+}
+
+// ─── ModulateByTypeEffectiveness (605-627) ─────────────────────────────────
+
+function ModulateByTypeEffectiveness(atkType: number, defType1: number, defType2: number, ref: { v: number }): void {
+  let i = 0;
+  while (gTypeEffectiveness[i] !== TYPE_ENDTABLE) {
+    if (gTypeEffectiveness[i] === TYPE_FORESIGHT) {
+      i += 3;
+      continue;
+    } else if (gTypeEffectiveness[i] === atkType) {
+      if (gTypeEffectiveness[i + 1] === defType1) {
+        ref.v = Math.floor((ref.v * gTypeEffectiveness[i + 2]) / TYPE_MUL_NORMAL);
+      }
+      if (gTypeEffectiveness[i + 1] === defType2 && defType1 !== defType2) {
+        ref.v = Math.floor((ref.v * gTypeEffectiveness[i + 2]) / TYPE_MUL_NORMAL);
+      }
+    }
+    i += 3;
+  }
+}
+
+// ─── GetMostSuitableMonToSwitchInto (629-790) ──────────────────────────────
+
+export function GetMostSuitableMonToSwitchInto(): number {
+  let opposingBattler: number;
+  let bestDmg: number;
+  let bestMonId: number;
+  let battlerIn1: number;
+  let battlerIn2: number;
+  let firstId: number;
+  let lastId: number;
+  let i: number;
+  let j: number;
+  let invalidMons: number;
+  let move: number;
+
+  if (_monToSwitchIntoId(gActiveBattler) !== PARTY_SIZE) return _monToSwitchIntoId(gActiveBattler);
+  if (gBattleTypeFlags & BATTLE_TYPE_ARENA) return gBattlerPartyIndexes[gActiveBattler] + 1;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    battlerIn1 = gActiveBattler;
+    if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)))]) {
+      battlerIn2 = gActiveBattler;
+    } else {
+      battlerIn2 = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gActiveBattler)));
+    }
+    // UB 1:1 : considère le côté joueur uniquement.
+    opposingBattler = Random() & BIT_FLANK;
+    if (gAbsentBattlerFlags & gBitTable[opposingBattler]) opposingBattler ^= BIT_FLANK;
+  } else {
+    opposingBattler = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gActiveBattler)));
+    battlerIn1 = gActiveBattler;
+    battlerIn2 = gActiveBattler;
+  }
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TOWER_LINK_MULTI)) {
+    if ((gActiveBattler & BIT_FLANK) === B_FLANK_LEFT) { firstId = 0; lastId = PARTY_SIZE / 2; }
+    else { firstId = PARTY_SIZE / 2; lastId = PARTY_SIZE; }
+  } else {
+    firstId = 0; lastId = PARTY_SIZE;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  invalidMons = 0;
+
+  while (invalidMons !== (1 << PARTY_SIZE) - 1) {
+    bestDmg = TYPE_MUL_NO_EFFECT;
+    bestMonId = PARTY_SIZE;
+    // Find the mon whose type is the most suitable offensively.
+    for (i = firstId; i < lastId; i++) {
+      const species = GetMonData(party[i], MON_DATA_SPECIES) as number;
+      if (species !== SPECIES_NONE
+        && GetMonData(party[i], MON_DATA_HP) !== 0
+        && !(gBitTable[i] & invalidMons)
+        && gBattlerPartyIndexes[battlerIn1] !== i
+        && gBattlerPartyIndexes[battlerIn2] !== i
+        && i !== _monToSwitchIntoId(battlerIn1)
+        && i !== _monToSwitchIntoId(battlerIn2)) {
+        const [type1, type2] = speciesTypes(species);
+        const ref = { v: TYPE_MUL_NORMAL };
+        ModulateByTypeEffectiveness(gBattleMons[opposingBattler].type1, type1, type2, ref);
+        ModulateByTypeEffectiveness(gBattleMons[opposingBattler].type2, type1, type2, ref);
+        // Bug 1:1 : prend le type qui prend le PLUS de dégâts (conservé).
+        if (bestDmg < ref.v) {
+          bestDmg = ref.v;
+          bestMonId = i;
+        }
+      } else {
+        invalidMons |= gBitTable[i];
+      }
+    }
+
+    if (bestMonId !== PARTY_SIZE) {
+      for (i = 0; i < MAX_MON_MOVES; i++) {
+        move = GetMonData(party[bestMonId], MON_DATA_MOVE1 + i) as number;
+        if (move !== MOVE_NONE && (TypeCalc(move, gActiveBattler, opposingBattler) & MOVE_RESULT_SUPER_EFFECTIVE)) break;
+      }
+      if (i !== MAX_MON_MOVES) return bestMonId; // typing + ≥1 super effective move.
+      invalidMons |= gBitTable[bestMonId];
+    } else {
+      invalidMons = (1 << PARTY_SIZE) - 1; // no viable mon.
+    }
+  }
+
+  setDynamicBasePower(0);
+  gBattleStruct.dynamicMoveType = 0;
+  gBattleScripting.dmgMultiplier = 1;
+  setMoveResultFlags(0);
+  setCritMultiplier(1);
+  bestDmg = 0;
+  bestMonId = PARTY_SIZE;
+
+  // Couldn't find by typing → the one that deals most damage.
+  for (i = firstId; i < lastId; i++) {
+    if ((GetMonData(party[i], MON_DATA_SPECIES) as number) === SPECIES_NONE) continue;
+    if (GetMonData(party[i], MON_DATA_HP) === 0) continue;
+    if (gBattlerPartyIndexes[battlerIn1] === i) continue;
+    if (gBattlerPartyIndexes[battlerIn2] === i) continue;
+    if (i === _monToSwitchIntoId(battlerIn1)) continue;
+    if (i === _monToSwitchIntoId(battlerIn2)) continue;
+
+    for (j = 0; j < MAX_MON_MOVES; j++) {
+      move = GetMonData(party[i], MON_DATA_MOVE1 + j) as number;
+      setBattleMoveDamage(0);
+      if (move !== MOVE_NONE && getBattleMove(move).power !== 1) {
+        AI_CalcDmg(gActiveBattler, opposingBattler);
+        TypeCalc(move, gActiveBattler, opposingBattler);
+      }
+      if (bestDmg < gBattleMoveDamage) {
+        bestDmg = gBattleMoveDamage;
+        bestMonId = i;
+      }
+    }
+  }
+  return bestMonId;
+}

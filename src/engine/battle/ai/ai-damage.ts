@@ -191,8 +191,9 @@ export function AI_CalcDmg(attacker: number, defender: number): void {
 
 /** Résout un species id numérique → [type1, type2] numériques via
  *  l'auto-extrait décomp `getSpeciesInfo` (= gSpeciesInfo[species].types).
- *  Même pattern que party-storage.fillBattleMonFromParty. */
-function _speciesTypes(speciesId: number): [number, number] {
+ *  Même pattern que party-storage.fillBattleMonFromParty. Exporté pour
+ *  ai-switch-items (GetMostSuitableMonToSwitchInto). */
+export function speciesTypes(speciesId: number): [number, number] {
   const speciesEnum = reverseDecompConstant(speciesId, 'SPECIES_');
   const info = speciesEnum ? getSpeciesInfo(speciesEnum) : undefined;
   if (!info?.types) return [0, 0];
@@ -214,7 +215,7 @@ function _speciesTypes(speciesId: number): [number, number] {
 export function AI_TypeCalc(move: number, targetSpecies: number, targetAbility: number): number {
   let i = 0;
   const ref = { flags: 0 };
-  const [type1, type2] = _speciesTypes(targetSpecies);
+  const [type1, type2] = speciesTypes(targetSpecies);
 
   if (move === MOVE_STRUGGLE) return 0;
 
