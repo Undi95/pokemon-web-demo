@@ -376,12 +376,38 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     FillWindowPixelRect(windowId, fill, x, y, fillW, barHeight);
   };
 
+  /** 1:1 décomp battle_interface.c : status icon rendering. Convert PokemonInstance.
+   *  status ('PSN'|'PAR'|'BRN'|'SLP'|'FRZ'|'TOX'|null) en icon FR court (1:1 GBA
+   *  text icon, e.g. STATUS_FR_ICONS dans le décomp italien/français). */
+  const _statusToIcon = (status: string | null | undefined): string => {
+    if (!status) return '';
+    switch (status) {
+      case 'PSN': return '[PSN]';
+      case 'TOX': return '[TOX]';
+      case 'PAR': return '[PAR]';
+      case 'BRN': return '[BRN]';
+      case 'SLP': return '[DOR]';  // 1:1 GBA Émeraude FR : "DORMIR" → DOR
+      case 'FRZ': return '[GEL]';  // 1:1 GBA Émeraude FR : "GELE" → GEL
+      default:    return '';
+    }
+  };
+
+  /** 1:1 décomp battle_interface.c gender symbol (♂ male / ♀ female / blank si genderless). */
+  const _genderSymbol = (mon: PokemonInstance | null): string => {
+    if (!mon) return '';
+    // PokemonInstance n'expose pas directement le gender (= dérivé du personality).
+    // Pour MVP, deferred. Décomp utilise GetMonGender(mon) qui lit MON_DATA_PERSONALITY.
+    return '';
+  };
+
   const renderHpWindows = (): void => {
     if (oppHpWindowId >= 0 && opponentMon) {
       FillWindowPixelBuffer(oppHpWindowId, 0x11);  // both nibbles = bgColor 1
+      const oppStatus = _statusToIcon(opponentMon.status);
+      const oppGender = _genderSymbol(opponentMon);
       AddTextPrinterParameterized3(
         oppHpWindowId, 1, 1, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */,
-        `${opponentMon.nickname}\nLv${opponentMon.level} PV:${opponentMon.currentHp}/${opponentMon.maxHp}`,
+        `${opponentMon.nickname}${oppGender} ${oppStatus}\nLv${opponentMon.level} PV:${opponentMon.currentHp}/${opponentMon.maxHp}`,
       );
       // HP bar visuel en bas du text (= y=24 = sous 2 lignes ~10px chacune).
       drawHpBar(oppHpWindowId, 4, 28, opponentMon.currentHp, opponentMon.maxHp);
@@ -389,9 +415,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
     if (playerHpWindowId >= 0 && playerMon) {
       FillWindowPixelBuffer(playerHpWindowId, 0x11);
+      const plStatus = _statusToIcon(playerMon.status);
+      const plGender = _genderSymbol(playerMon);
       AddTextPrinterParameterized3(
         playerHpWindowId, 1, 1, 1, [1, 2, 3], 255,
-        `${playerMon.nickname}\nLv${playerMon.level} PV:${playerMon.currentHp}/${playerMon.maxHp}`,
+        `${playerMon.nickname}${plGender} ${plStatus}\nLv${playerMon.level} PV:${playerMon.currentHp}/${playerMon.maxHp}`,
       );
       drawHpBar(playerHpWindowId, 4, 28, playerMon.currentHp, playerMon.maxHp);
       CopyWindowToVram(playerHpWindowId, 2);
