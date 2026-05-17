@@ -42,6 +42,12 @@ import * as songs from './decomp-data/auto/include/constants/songs-data';
 import * as species from './decomp-data/auto/include/constants/species-data';
 import * as trainers from './decomp-data/auto/include/constants/trainers-data';
 import * as battle from './decomp-data/auto/include/constants/battle-data';
+// include/battle.h (≠ constants/battle.h) : MOVE_TARGET_* + B_ACTION_*.
+// Orphelin (importé nulle part) → resolveDecompConstant('MOVE_TARGET_BOTH')
+// échouait → move.target=0 pour TOUS les moves non-SELECTED (Surf/Séisme/
+// Blizzard spread `/2` jamais appliqué en 2v2 + ciblage cassé). Mergé
+// SI-ABSENT (jamais d'override = zéro régression) + dans _exprNamespaces.
+import * as battleInclude from './decomp-data/auto/include/battle-data';
 import * as global from './decomp-data/auto/include/constants/global-data';
 import * as fieldEffects from './decomp-data/auto/include/constants/field_effects-data';
 import * as opponents from './decomp-data/auto/include/constants/opponents-data';
@@ -86,6 +92,17 @@ function _mergeConstants(ns: Record<string, unknown>): void {
   }
 }
 
+/** Comme _mergeConstants mais SANS override (= n'écrit que les clés absentes).
+ *  Pour les namespaces ajoutés tardivement (ex. include/battle.h) : garantit
+ *  zéro changement d'une résolution existante = strictement additif. */
+function _mergeConstantsIfAbsent(ns: Record<string, unknown>): void {
+  for (const [key, value] of Object.entries(ns)) {
+    if (typeof value === 'number' && _constantsTable[key] === undefined) {
+      _constantsTable[key] = value;
+    }
+  }
+}
+
 _mergeConstants(eventObjects);
 _mergeConstants(flags);
 _mergeConstants(items);
@@ -119,6 +136,71 @@ _mergeConstants(metatileBehaviors);
 _mergeConstants(mapScripts);
 _mergeConstants(scriptMenu);
 _mergeConstants(gameStats);
+// include/battle.h : MOVE_TARGET_SELECTED(=0) + B_ACTION_* — si-absent only.
+_mergeConstantsIfAbsent(battleInclude);
+
+// ─── Passe `*_EXPR` : l'auto-extraction émet `NAME_EXPR = "(1 << n)"` (string)
+// pour les #define à expression bit-shift / OR (MOVE_TARGET_*, FLAG_*, …) →
+// non mergés (pas number) → `resolveDecompConstant("MOVE_TARGET_BOTH")`
+// échouait → move.target=0 pour TOUS les moves non-SELECTED (Surf/Séisme/
+// Blizzard → spread `/2` jamais appliqué en 2v2 + ciblage cassé). Fix 1:1
+// GÉNÉRAL & ADDITIF : évalue chaque `*_EXPR` (`(1<<n)`, OR, déc/hex, refs
+// d'autres constantes) et l'enregistre sous le nom de base UNIQUEMENT s'il
+// n'est pas déjà résolu (= ne peut PAS changer une résolution existante ;
+// remplace le hardcode FLAG_* ci-dessus, conservé inoffensif/redondant).
+function _evalExprConstant(expr: string): number | undefined {
+  let s = expr.trim();
+  // déballe les parenthèses englobant TOUTE l'expression
+  while (s[0] === '(') {
+    let d = 0, j = -1;
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === '(') d++;
+      else if (s[i] === ')') { if (--d === 0) { j = i; break; } }
+    }
+    if (j === s.length - 1) s = s.slice(1, j).trim(); else break;
+  }
+  // split OR de profondeur 0
+  const parts: string[] = []; let d = 0, st = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '(') d++; else if (s[i] === ')') d--;
+    else if (s[i] === '|' && d === 0) { parts.push(s.slice(st, i)); st = i + 1; }
+  }
+  parts.push(s.slice(st));
+  let acc = 0;
+  for (let p of parts) {
+    p = p.trim().replace(/^\(+|\)+$/g, '').trim();
+    let mm;
+    if ((mm = p.match(/^(\d+)\s*<<\s*(\d+)$/))) acc |= (Number(mm[1]) << Number(mm[2]));
+    else if ((mm = p.match(/^0x[0-9a-fA-F]+$/))) acc |= parseInt(p, 16);
+    else if ((mm = p.match(/^-?\d+$/))) acc |= parseInt(p, 10);
+    else if (p in _constantsTable) acc |= _constantsTable[p];
+    else return undefined; // terme non résolvable → on n'enregistre pas
+  }
+  return acc >>> 0;
+}
+{
+  let _exprResolved = 0;
+  // _constantsTable ne contient que des number → les `*_EXPR` (string) sont
+  // dans les namespaces source. Re-scan des namespaces pour les strings `_EXPR`.
+  const _exprNamespaces: Record<string, unknown>[] = [
+    eventObjects, flags, items, moves, songs, species, trainers, battle,
+    battleInclude, global, fieldEffects, opponents, pokemon, abilities,
+    battleMoveEffects, holdEffects, vars, titleScreen, metatileLabels,
+    metatileBehaviors, mapScripts, scriptMenu, gameStats,
+  ];
+  for (const ns of _exprNamespaces) {
+    for (const [key, value] of Object.entries(ns)) {
+      if (typeof value !== 'string' || !key.endsWith('_EXPR')) continue;
+      const base = key.slice(0, -5);
+      if (_constantsTable[base] !== undefined) continue; // déjà résolu → ne pas toucher
+      const v = _evalExprConstant(value);
+      if (typeof v === 'number') { _constantsTable[base] = v; _exprResolved++; }
+    }
+  }
+  if (typeof console !== 'undefined') {
+    console.log(`[decomp-constants] ${_exprResolved} constantes *_EXPR évaluées (MOVE_TARGET_*, etc.)`);
+  }
+}
 
 /** Resolve a constant name to its numeric value. Returns undefined si pas trouvé.
  *  Caller decide quoi faire (= fallback 0, log warning, etc.). */

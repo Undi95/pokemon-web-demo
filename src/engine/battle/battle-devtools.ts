@@ -64,6 +64,8 @@ import {
   setMoveResultFlags,
   setActiveBattler,
   setBattleTypeFlags as _setBattleTypeFlags,
+  setBattlersCount as _setBattlersCount,
+  setAbsentBattlerFlags as _setAbsentBattlerFlags,
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
@@ -85,6 +87,8 @@ import {
   ABILITY_GUTS as _ABILITY_GUTS,
   ABILITY_LEVITATE as _ABILITY_LEVITATE,
   ABILITY_WONDER_GUARD as _ABILITY_WONDER_GUARD,
+  BATTLE_TYPE_DOUBLE as _BATTLE_TYPE_DOUBLE,
+  MOVE_TARGET_BOTH as _MOVE_TARGET_BOTH,
 } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
@@ -984,14 +988,22 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  status1&BURN & ability!=GUTS) → Reflect /2 (:3268, single) →
      *  clamp 0→1 (:3281). branche SPÉCIALE = Light Screen /2 (:3319, single),
      *  AUCUN clamp min-1 (≠ physique = subtilité 1:1). +2 final (:3372).
+     *  DOUBLE 2v2 (pokemon.c) : Reflect/Light Screen = `2*(damage/3)` si
+     *  `DOUBLE && CountAliveMonsInBattle(DEF_SIDE)==2` (:3270/:3321), sinon
+     *  `/2` ; move spread (target==MOVE_TARGET_BOTH) = `/2` suppl. (:3277/
+     *  :3328). `absentPartner` flag battler2 → CountAlive(DEF)=1 = teste
+     *  que le 1v2 « descend du 2v2 » (MÊME code, count diffère).
      *  Usage : scope.bytecode.preciseDamage({ moveId:'pound', burn:true })
-     *          scope.bytecode.preciseDamage({ moveId:'water_gun',
-     *            attackerSpecies:'SPECIES_PIKACHU', lightscreen:true }) */
+     *          scope.bytecode.preciseDamage({ reflect:true, double:true })
+     *          scope.bytecode.preciseDamage({ moveId:'surf', double:true })
+     *          scope.bytecode.preciseDamage({ reflect:true, double:true,
+     *            absentPartner:true }) // 1v2 → branche single */
     preciseDamage: async (opts?: {
       seed?: number; moveId?: string;
       attackerSpecies?: string; attackerLevel?: number;
       defenderSpecies?: string; defenderLevel?: number;
       burn?: boolean; reflect?: boolean; lightscreen?: boolean;
+      double?: boolean; absentPartner?: boolean;
     }) => {
       const seed = opts?.seed ?? 0;
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
@@ -1003,6 +1015,23 @@ export function buildBattleDevtools(): Record<string, unknown> {
       // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
       setupPartyForBattle([defMon] as never, [atkMon] as never);
       fillActiveBattleMonsForBattleStart();
+      // Setup battlers/flags AUTO-CONTENU (single OU double 2v2). 1:1 :
+      // CountAliveMonsInBattle(DEF_SIDE) ne lit QUE GET_BATTLER_SIDE +
+      // gAbsentBattlerFlags (pas la validité des gBattleMons[2/3]) → pas
+      // besoin de remplir 4 battlers réels. attaquant=1(ennemi=no badge),
+      // cible=0. double + absentPartner(battler2) → CountAlive(DEF)=1
+      // (= "1v2 descend du 2v2" : MÊME code, count diffère).
+      setBattlerAttacker(1);
+      setBattlerTarget(0);
+      if (opts?.double) {
+        _setBattleTypeFlags(_BATTLE_TYPE_DOUBLE);
+        _setBattlersCount(4);
+        _setAbsentBattlerFlags(opts?.absentPartner ? (1 << 2) : 0);
+      } else {
+        _setBattleTypeFlags(0);
+        _setBattlersCount(2);
+        _setAbsentBattlerFlags(0);
+      }
       const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; spAttack: number; spDefense: number; level: number; type1: number; type2: number; status1: number; ability: number }> } }).__battleState?.gBattleMons;
       if (!bm || !bm[0] || !bm[1]) return { error: 'gBattleMons absent' };
       const moveNum = resolveMoveDexId(opts?.moveId ?? 'pound');
@@ -1033,12 +1062,27 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const burnApplies = !!opts?.burn && physical && A.ability !== _ABILITY_GUTS;
       const reflectApplies = !!opts?.reflect && physical;
       const lightscreenApplies = !!opts?.lightscreen && !physical;
+      // CountAliveMonsInBattle(DEF_SIDE) : 2 si double & partenaire présent,
+      // 1 si absentPartner (= 1v2 « descend du 2v2 » : MÊME code, count diffère).
+      const isDouble = !!opts?.double;
+      const countAliveDef = isDouble ? (opts?.absentPartner ? 1 : 2) : 1;
+      const moveTargetBoth = md.target === _MOVE_TARGET_BOTH;
+      // moves spread (MOVE_TARGET_BOTH) en double 2v2 → /2 supplémentaire.
+      const spreadHalves = isDouble && moveTargetBoth && countAliveDef === 2;
       if (physical) {
-        if (burnApplies) d = Math.floor(d / 2);          // :3264
-        if (reflectApplies) d = Math.floor(d / 2);       // :3268-3274 (single)
-        if (d === 0) d = 1;                              // :3281 PHYSIQUE only
+        if (burnApplies) d = Math.floor(d / 2);                          // :3264
+        if (reflectApplies) {
+          if (isDouble && countAliveDef === 2) d = 2 * Math.floor(d / 3); // :3270-3271 (2v2)
+          else d = Math.floor(d / 2);                                     // :3273 (single/1v2)
+        }
+        if (spreadHalves) d = Math.floor(d / 2);                         // :3277
+        if (d === 0) d = 1;                                              // :3281 PHYSIQUE only
       } else {
-        if (lightscreenApplies) d = Math.floor(d / 2);   // :3319 (single)
+        if (lightscreenApplies) {
+          if (isDouble && countAliveDef === 2) d = 2 * Math.floor(d / 3); // :3321-3322 (2v2)
+          else d = Math.floor(d / 2);                                     // :3324 (single/1v2)
+        }
+        if (spreadHalves) d = Math.floor(d / 2);                         // :3328
         // pas de clamp en branche spéciale (1:1) ; weather/flashfire inertes (pur)
       }
       const expected = d + 2;              // ← final +2 1:1 décomp (pokemon.c:3372)
@@ -1049,6 +1093,8 @@ export function buildBattleDevtools(): Record<string, unknown> {
         move: opts?.moveId ?? 'pound', moveNum, power, mtype, physical,
         burn: !!opts?.burn, burnApplies, reflect: !!opts?.reflect, reflectApplies,
         lightscreen: !!opts?.lightscreen, lightscreenApplies,
+        double: isDouble, absentPartner: !!opts?.absentPartner, countAliveDef,
+        moveTargetBoth, spreadHalves,
         attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TREECKO', lvl, atkStat, isStab, ability: A.ability },
         defender: { sp: opts?.defenderSpecies ?? 'SPECIES_GEODUDE', defStat },
         got, expected, seed,
