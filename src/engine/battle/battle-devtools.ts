@@ -79,6 +79,9 @@ import {
   ABILITY_SHADOW_TAG as _ABILITY_SHADOW_TAG,
   ABILITY_MAGNET_PULL as _ABILITY_MAGNET_PULL,
   TYPE_STEEL as _TYPE_STEEL,
+  STATUS1_BURN as _STATUS1_BURN,
+  SIDE_STATUS_REFLECT as _SIDE_STATUS_REFLECT,
+  ABILITY_GUTS as _ABILITY_GUTS,
 } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
@@ -867,13 +870,17 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  badge boost), pas d'items. Attaquant = gBattleMons[1], défenseur = [0].
      *  Genèse : v1 omettait le clamp damage==0→1 → faux FAIL Pound/Geodude
      *  (got=3 = 1:1 décomp : core 0 → 1 → +2). Corrigé ici.
-     *  Usage : scope.bytecode.preciseDamage({ seed:0, moveId:'pound',
-     *    attackerSpecies:'SPECIES_TREECKO', attackerLevel:5,
-     *    defenderSpecies:'SPECIES_GEODUDE', defenderLevel:14 }) */
+     *  EXTENSION : burn/reflect (branche physique décomp pokemon.c:3263-3274,
+     *  ordre EXACT : core /50 → burn /2 (status1&BURN & ability!=GUTS) →
+     *  Reflect /2 (sideStatus&REFLECT & crit==1, single) → clamp 0→1 → +2).
+     *  Usage : scope.bytecode.preciseDamage({ moveId:'pound', burn:true })
+     *          scope.bytecode.preciseDamage({ moveId:'tackle', reflect:true })
+     *          scope.bytecode.preciseDamage({ burn:true, reflect:true }) */
     preciseDamage: async (opts?: {
       seed?: number; moveId?: string;
       attackerSpecies?: string; attackerLevel?: number;
       defenderSpecies?: string; defenderLevel?: number;
+      burn?: boolean; reflect?: boolean;
     }) => {
       const seed = opts?.seed ?? 0;
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
@@ -885,14 +892,17 @@ export function buildBattleDevtools(): Record<string, unknown> {
       // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
       setupPartyForBattle([defMon] as never, [atkMon] as never);
       fillActiveBattleMonsForBattleStart();
-      const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; spAttack: number; spDefense: number; level: number; type1: number; type2: number }> } }).__battleState?.gBattleMons;
+      const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; spAttack: number; spDefense: number; level: number; type1: number; type2: number; status1: number; ability: number }> } }).__battleState?.gBattleMons;
       if (!bm || !bm[0] || !bm[1]) return { error: 'gBattleMons absent' };
       const moveNum = resolveMoveDexId(opts?.moveId ?? 'pound');
       const md = _gbm(moveNum);
       const power = md.power;
       const mtype = md.type;
       const A = bm[1]; const D = bm[0];
-      const got = _cbd(A as never, D as never, moveNum, 0, 0, 0, 1, 0).damage;
+      // Injecte burn (status1) et reflect (sideStatus arg, 4ᵉ) — 1:1 décomp.
+      if (opts?.burn) A.status1 = (A.status1 | _STATUS1_BURN) >>> 0;
+      const sideStatus = opts?.reflect ? _SIDE_STATUS_REFLECT : 0;
+      const got = _cbd(A as never, D as never, moveNum, sideStatus, 0, 0, 1, 0).damage;
       // Recompute INDÉPENDANT 1:1 core décomp (chemin pur, stages neutres =
       // APPLY_STAT_MOD identité, pas de badge car attaquant côté ennemi).
       const physical = mtype < _TYPE_MYSTERY;
@@ -903,14 +913,23 @@ export function buildBattleDevtools(): Record<string, unknown> {
       d = d * (Math.floor(2 * lvl / 5) + 2);
       d = Math.floor(d / defStat);
       d = Math.floor(d / 50);
-      if (d === 0) d = 1;                  // ← clamp 1:1 décomp (pokemon.c)
-      const expected = d + 2;              // ← final +2 1:1 décomp
+      // Burn : décomp `if ((status1 & BURN) && ability != GUTS) damage /= 2;`
+      // (branche physique uniquement, pokemon.c:3264).
+      const burnApplies = !!opts?.burn && physical && A.ability !== _ABILITY_GUTS;
+      if (burnApplies) d = Math.floor(d / 2);
+      // Reflect : décomp `if ((sideStatus & REFLECT) && crit==1) damage /= 2;`
+      // (single battle, branche physique, pokemon.c:3268-3274).
+      const reflectApplies = !!opts?.reflect && physical;
+      if (reflectApplies) d = Math.floor(d / 2);
+      if (d === 0) d = 1;                  // ← clamp 1:1 décomp (pokemon.c:3281)
+      const expected = d + 2;              // ← final +2 1:1 décomp (pokemon.c:3372)
       const isStab = A.type1 === mtype || A.type2 === mtype;
       const pure = mtype !== _TYPE_MYSTERY && !isStab && power > 1;
       return {
         pure, pass: pure ? got === expected : null,
         move: opts?.moveId ?? 'pound', moveNum, power, mtype, physical,
-        attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TREECKO', lvl, atkStat, isStab },
+        burn: !!opts?.burn, burnApplies, reflect: !!opts?.reflect, reflectApplies,
+        attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TREECKO', lvl, atkStat, isStab, ability: A.ability },
         defender: { sp: opts?.defenderSpecies ?? 'SPECIES_GEODUDE', defStat },
         got, expected, seed,
       };
