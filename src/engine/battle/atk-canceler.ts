@@ -79,8 +79,9 @@ export const CANCELER_END        = 14;
  *   - Set MULTISTRING_CHOOSER = CANT_SLEEP_UPROAR ou UPROAR_KEPT_AWAKE selon.
  */
 function _UproarWakeUpCheck(battler: number): boolean {
-  // STATUS2_UPROAR = 1 << 13 (= 0x2000). ABILITY_SOUNDPROOF = 43.
-  const STATUS2_UPROAR_LOCAL = 1 << 13;
+  // 1:1 décomp battle.h:132 : STATUS2_UPROAR = (1<<4|1<<5|1<<6) = 0x70.
+  // AUDIT BUG FIX : était `1 << 13 = 0x2000` (faux, jamais fire).
+  const STATUS2_UPROAR_LOCAL = 0x70;
   const ABILITY_SOUNDPROOF_LOCAL = 43;
   const B_MSG_CANT_SLEEP_UPROAR = 0;
   const B_MSG_UPROAR_KEPT_AWAKE = 1;
@@ -435,18 +436,23 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
 }
 
 /** 1:1 décomp `CancelMultiTurnMoves(battler)` (battle_util.c:864-875).
- *  Privé pour éviter dépendance cyclique avec cmd-niveau-34. */
+ *  Privé pour éviter dépendance cyclique avec cmd-niveau-34.
+ *  AUDIT BUG FIX : 4 constantes status2/3 hardcoded fausses → utilise les bonnes
+ *  values 1:1 battle.h. */
 function _CancelMultiTurnMoves(battler: number): void {
-  // Imports inline pour éviter circular dep — re-use de constants déjà loaded.
-  const STATUS2_MULTIPLETURNS = 1 << 9;
-  const STATUS2_LOCK_CONFUSE  = 0x3 << 19;
-  const STATUS2_UPROAR        = 1 << 13;
-  const STATUS3_SEMI_INVULNERABLE = 1 << 6;
+  // 1:1 décomp battle.h:132,135,137,139,178.
+  const STATUS2_MULTIPLETURNS = 1 << 12;             // 0x1000 (= 1<<12)
+  const STATUS2_LOCK_CONFUSE  = (1 << 10) | (1 << 11); // 0xC00
+  const STATUS2_UPROAR_LOCAL  = (1 << 4) | (1 << 5) | (1 << 6); // 0x70
+  const STATUS2_BIDE_LOCAL    = (1 << 8) | (1 << 9); // 0x300
+  // 1:1 décomp : STATUS3_SEMI_INVULNERABLE = ON_AIR(1<<6) | UNDERGROUND(1<<7) | UNDERWATER(1<<18)
+  const STATUS3_SEMI_INVULNERABLE_LOCAL = (1 << 6) | (1 << 7) | (1 << 18); // 0x400C0
   gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
   gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
-  gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
-  gBattleMons[battler].status2 &= ~STATUS2_BIDE;
-  gStatuses3[battler] &= ~STATUS3_SEMI_INVULNERABLE;
+  gBattleMons[battler].status2 &= ~STATUS2_UPROAR_LOCAL;
+  gBattleMons[battler].status2 &= ~STATUS2_BIDE_LOCAL;
+  void STATUS2_BIDE;  // suppress unused import (= replaced inline avec local).
+  gStatuses3[battler] &= ~STATUS3_SEMI_INVULNERABLE_LOCAL;
   gDisableStructs[battler].rolloutTimer = 0;
   gDisableStructs[battler].furyCutterCounter = 0;
 }

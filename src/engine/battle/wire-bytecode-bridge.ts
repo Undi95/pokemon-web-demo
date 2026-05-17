@@ -40,6 +40,16 @@ import {
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { TurnValuesCleanUp } from './util';
+// AUDIT FIX : import statique de end-turn-effects (= éviter ESM dual-instance via
+// dynamic import async). Pas de circular dep car end-turn-effects → state ; bridge → state.
+import {
+  resetFieldEndTurnEffectsState,
+  resetBattlerEndTurnEffectsState,
+  resetWishPerishSongState,
+  DoFieldEndTurnEffects,
+  DoBattlerEndTurnEffects,
+  HandleWishPerishSongOnTurnEnd,
+} from './end-turn-effects';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
 import { Dex } from '@pkmn/dex';
@@ -408,37 +418,40 @@ export async function runEndTurnEffectsViaBytecode(): Promise<{
   clearBattleEventQueue();
   const phases: { phase: 'field' | 'battler' | 'wishperish'; label: string }[] = [];
 
-  // Dynamic import pour éviter circular dep avec end-turn-effects.ts qui import state.
-  const ett = await import('./end-turn-effects');
+  // AUDIT BUG FIX : remplacement de l'ancien dynamic `await import('./end-turn-effects')`
+  // par les statics imports en tête de fichier. Le dynamic import pouvait
+  // créer une 2e instance ESM (= bug 7/8 session 141) → gBattleStruct accessed
+  // par DoBattlerEndTurnEffects était une instance différente que celle exposée
+  // sur __battleState, causant POISON case skip silencieux.
 
   // Phase 1 : field effects.
-  ett.resetFieldEndTurnEffectsState();
+  resetFieldEndTurnEffectsState();
   let safetyF = 0;
-  let r = ett.DoFieldEndTurnEffects();
+  let r = DoFieldEndTurnEffects();
   while (r && safetyF++ < 30) {
     phases.push({ phase: 'field', label: r.scriptLabel });
     _runScriptSync(r.scriptLabel);
-    r = ett.DoFieldEndTurnEffects();
+    r = DoFieldEndTurnEffects();
   }
 
   // Phase 2 : per-battler effects.
-  ett.resetBattlerEndTurnEffectsState();
+  resetBattlerEndTurnEffectsState();
   let safetyB = 0;
-  let b = ett.DoBattlerEndTurnEffects();
+  let b = DoBattlerEndTurnEffects();
   while (b && safetyB++ < 100) {
     phases.push({ phase: 'battler', label: b.scriptLabel });
     _runScriptSync(b.scriptLabel);
-    b = ett.DoBattlerEndTurnEffects();
+    b = DoBattlerEndTurnEffects();
   }
 
   // Phase 3 : Wish/PerishSong/Arena.
-  ett.resetWishPerishSongState();
+  resetWishPerishSongState();
   let safetyW = 0;
-  let w = ett.HandleWishPerishSongOnTurnEnd();
+  let w = HandleWishPerishSongOnTurnEnd();
   while (w && safetyW++ < 20) {
     phases.push({ phase: 'wishperish', label: w.scriptLabel });
     _runScriptSync(w.scriptLabel);
-    w = ett.HandleWishPerishSongOnTurnEnd();
+    w = HandleWishPerishSongOnTurnEnd();
   }
 
   // Drain events queue → messages FR.

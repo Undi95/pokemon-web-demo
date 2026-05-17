@@ -433,6 +433,20 @@ export const B_MSG_DEFROSTED_BY_MOVE  = 1;
 /** `(num) << 0` — la confusion counter occupe bits 0..2 (= STATUS2_CONFUSION mask 0x7). */
 export function STATUS2_CONFUSION_TURN(num: number): number { return num << 0; }
 
+// ─── STATUS1_TOXIC_COUNTER + TURN macros (battle.h:122-123) — 1:1 décomp ──
+/** 1:1 décomp battle.h:122 : `(1<<8|1<<9|1<<10|1<<11) = 0xF00`. */
+export const STATUS1_TOXIC_COUNTER = 0xF00;
+/** 1:1 décomp battle.h:123 : `(num) << 8`. */
+export function STATUS1_TOXIC_TURN(num: number): number { return num << 8; }
+
+// ─── STATUS2_*_TURN macros (battle.h:138, 141, 133) — 1:1 décomp ──────────
+/** 1:1 décomp battle.h:138 : `(num) << 10`. */
+export function STATUS2_LOCK_CONFUSE_TURN(num: number): number { return num << 10; }
+/** 1:1 décomp battle.h:141 : `(num) << 13`. */
+export function STATUS2_WRAPPED_TURN(num: number): number { return num << 13; }
+/** 1:1 décomp battle.h:133 : `(num) << 4`. */
+export function STATUS2_UPROAR_TURN(num: number): number { return num << 4; }
+
 // ─── DISOBEDIENCE_* (battle_util.c IsMonDisobedient retval) — 1:1 décomp ──
 export const DISOBEDIENCE_OBEDIENT = 0;
 export const DISOBEDIENCE_IGNORED  = 1;

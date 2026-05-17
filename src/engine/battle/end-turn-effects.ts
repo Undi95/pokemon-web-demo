@@ -390,35 +390,18 @@ const ENDTURN_YAWN        = 17;
 const ENDTURN_ITEMS2      = 18;
 const ENDTURN_BATTLER_COUNT = 19;
 
-// Status bit masks 1:1 décomp battle.h.
-const STATUS1_POISON       = 0x08;
-const STATUS1_BURN         = 0x10;
-const STATUS1_SLEEP        = 0x07;
-const STATUS1_ANY          = 0xFF;
-const STATUS1_TOXIC_POISON = 0x80;
-const STATUS1_TOXIC_COUNTER = 0xF00;
-function STATUS1_TOXIC_TURN(n: number): number { return n << 8; }
-
-const STATUS2_NIGHTMARE       = 1 << 21;
-const STATUS2_CURSED          = 1 << 22;
-const STATUS2_WRAPPED         = 0x07000000;
-function STATUS2_WRAPPED_TURN(n: number): number { return n << 24; }
-const STATUS2_LOCK_CONFUSE    = 0x00C00000;
-function STATUS2_LOCK_CONFUSE_TURN(n: number): number { return n << 22; }
-const STATUS2_MULTIPLETURNS   = 1 << 12;
-const STATUS2_CONFUSION       = 0x00000007;
-const STATUS2_UPROAR          = 0x00070000;
-function STATUS2_UPROAR_TURN(n: number): number { return n << 16; }
-
-const STATUS3_ROOTED          = 1 << 9;
-const STATUS3_LEECHSEED       = 1 << 4;
-const STATUS3_LEECHSEED_BATTLER = 0x03;
-const STATUS3_ALWAYS_HITS     = 0x03 << 7;
-function STATUS3_ALWAYS_HITS_TURN(n: number): number { return n << 7; }
-const STATUS3_CHARGED_UP      = 1 << 13;
-const STATUS3_YAWN            = 0x1800;
-function STATUS3_YAWN_TURN(n: number): number { return n << 11; }
-const STATUS3_PERISH_SONG     = 1 << 14;
+// 1:1 décomp battle.h status1/2/3 bit masks. AUDIT BUG FIX : 10+ constantes
+// hardcoded étaient FAUSSES (= différentes de constants.ts). Now import direct.
+import {
+  STATUS1_POISON, STATUS1_BURN, STATUS1_SLEEP, STATUS1_ANY,
+  STATUS1_TOXIC_POISON, STATUS1_TOXIC_COUNTER, STATUS1_TOXIC_TURN,
+  STATUS2_NIGHTMARE, STATUS2_CURSED, STATUS2_WRAPPED, STATUS2_WRAPPED_TURN,
+  STATUS2_LOCK_CONFUSE, STATUS2_LOCK_CONFUSE_TURN, STATUS2_MULTIPLETURNS,
+  STATUS2_CONFUSION, STATUS2_UPROAR, STATUS2_UPROAR_TURN,
+  STATUS3_ROOTED, STATUS3_LEECHSEED, STATUS3_LEECHSEED_BATTLER,
+  STATUS3_ALWAYS_HITS, STATUS3_ALWAYS_HITS_TURN, STATUS3_CHARGED_UP,
+  STATUS3_YAWN, STATUS3_YAWN_TURN, STATUS3_PERISH_SONG,
+} from './constants';
 
 // gStatuses3 + autres globals (= lazy via globalThis pour éviter circular deps).
 import { gStatuses3, gHitMarker, setHitMarker, gDisableStructs, gBattleMoveDamage, setBattleMoveDamage, gSpecialStatuses, gBattlerAttacker } from './state';

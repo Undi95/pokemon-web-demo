@@ -79,7 +79,9 @@ function _abilityCheckSide(checkAttackerSide: boolean, abilityId: number): numbe
  *  Returns true si un battler sur le field a STATUS2_UPROAR + battler param
  *  n'a pas Soundproof. Stub side-effects (= ne set pas MULTISTRING_CHOOSER ici). */
 function uproarWakeUpCheck(battler: number): boolean {
-  const STATUS2_UPROAR_LOCAL = 1 << 13;
+  // 1:1 décomp battle.h:132 : STATUS2_UPROAR = (1<<4|1<<5|1<<6) = 0x70.
+  // AUDIT BUG FIX : était `1 << 13 = 0x2000` (faux, jamais fire).
+  const STATUS2_UPROAR_LOCAL = 0x70;
   const ABILITY_SOUNDPROOF_LOCAL = 43;
   const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gBattleMons?: { ability: number; status2: number }[] } }).__battleState;
   const battlersCount = stateMod?.gBattlersCount ?? 2;
