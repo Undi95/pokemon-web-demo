@@ -500,6 +500,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       console.log('[dev.battle.startBirchTutorial] auto-added Treecko Lv5 (party était vide)');
     }
     const flow = mod.startBirchTutorialBattle();
+    (globalThis as { __activeBattleFlow?: { tick: () => boolean; getState: () => string } }).__activeBattleFlow = flow;
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'Birch tutorial battle started — flow ticked via script engine';
   };
@@ -515,8 +516,13 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       console.log(`[dev.battle.startWild] auto-added Treecko Lv${starter.level} (party était vide)`);
     }
     const flow = mod.startWildBattle({ opponentSpecies: species, opponentLevel: level });
+    (globalThis as { __activeBattleFlow?: { tick: () => boolean; getState: () => string } }).__activeBattleFlow = flow;
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return `wild battle vs ${species} Lv${level} started`;
+  };
+  battleNs.state = (): string => {
+    const af = (globalThis as { __activeBattleFlow?: { getState: () => string } }).__activeBattleFlow;
+    return af?.getState() ?? '(no active flow)';
   };
   battleNs.outcome = (): number => {
     return (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome ?? 0;

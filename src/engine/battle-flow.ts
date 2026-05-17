@@ -68,7 +68,12 @@ import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
-import { runMoveScriptViaBytecode } from './battle/wire-bytecode-bridge';
+import {
+  runMoveScriptViaBytecode,
+  runBattleTurnPassedViaBytecode,
+  runHandleFaintedMonActionsViaBytecode,
+  syncBattleMonsHpToInstances,
+} from './battle/wire-bytecode-bridge';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
@@ -171,6 +176,7 @@ type State =
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
+  | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
   | 'CLEANUP'
   | 'DONE';
 
@@ -1042,8 +1048,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           state = 'PLAYER_FAINTED_TEXT';
         } else {
           turnCount++;
-          // Loop back : ask player for next move.
-          state = 'PLAYER_TURN_PROMPT';
+          // 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019) : appelé
+          // après les 2 moves du turn pour run end-of-turn effects (= field,
+          // per-battler, wish/perish, special Palace/Arena) puis reset turn vars.
+          // En mode bytecode, on route via le wrapper full ; en mode legacy on
+          // skip directement à PLAYER_TURN_PROMPT (= comportement tutorial actuel).
+          const useBytecode =
+            (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
+            || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+          state = useBytecode ? 'END_TURN_PROCESS' : 'PLAYER_TURN_PROMPT';
         }
         return false;
       }
@@ -1065,6 +1078,66 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup propre.
           state = 'CLEANUP_FADE_OUT';
+        }
+        return false;
+      }
+
+      // 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019) wirage :
+      // exécute le full wrapper 16-step (= TurnValuesCleanUp + DoFieldEndTurnEffects
+      // + DoBattlerEndTurnEffects + HandleWishPerishSongOnTurnEnd + reset HITMARKERs
+      // + Palace/Arena specials). Capture les messages FR issus des PRINTSTRING
+      // events bytecode pour les afficher séquentiellement (= 1:1 BufferStringBattle).
+      // Si battleEnded === true (= outcome != 0 pendant end-turn), on cleanup direct.
+      case 'END_TURN_PROCESS': {
+        const result = runBattleTurnPassedViaBytecode();
+        if (result.ok && result.messages && result.messages.length > 0) {
+          _pendingBytecodeMessages = [..._pendingBytecodeMessages, ...result.messages];
+        }
+        // Run HandleFaintedMonActions pour propager Intimidate/Trace/Forecast/etc.
+        // post end-turn (= 1:1 décomp battle_util.c:1877-1954). Skip si battleEnded.
+        if (result.ok && !result.battleEnded) {
+          const fr = runHandleFaintedMonActionsViaBytecode();
+          if (fr.ok && fr.messages && fr.messages.length > 0) {
+            _pendingBytecodeMessages = [..._pendingBytecodeMessages, ...fr.messages];
+          }
+        }
+        // Sync HP/status post-end-turn (= POISON tick a modifié gBattleMons[i].hp).
+        if (playerMon && opponentMon) {
+          syncBattleMonsHpToInstances(playerMon, opponentMon);
+          renderHpWindows();
+        }
+        // Re-check faint après end-turn (= POISON peut KO).
+        if (playerMon && playerMon.currentHp <= 0) {
+          state = 'PLAYER_FAINTED_TEXT';
+          return false;
+        }
+        if (opponentMon && opponentMon.currentHp <= 0) {
+          state = 'OPP_FAINTED_TEXT';
+          return false;
+        }
+        if (result.battleEnded) {
+          state = 'CLEANUP_FADE_OUT';
+          return false;
+        }
+        state = 'END_TURN_MSG';
+        return false;
+      }
+
+      case 'END_TURN_MSG': {
+        if (_pendingBytecodeMessages.length === 0) {
+          state = 'PLAYER_TURN_PROMPT';
+          return false;
+        }
+        const msg = _pendingBytecodeMessages.shift()!;
+        ShowFieldMessage(msg);
+        state = 'END_TURN_MSG_WAIT';
+        return false;
+      }
+
+      case 'END_TURN_MSG_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'END_TURN_MSG';
         }
         return false;
       }
@@ -1134,10 +1207,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return false;
   };
 
-  return {
+  const flow: BattleFlow = {
     tick,
     getState: () => state,
   };
+  // Expose pour devtools introspection (= scope.battle.state() / window.__activeBattleFlow.getState()).
+  // Évite d'avoir à toucher chaque call site (script-opcodes / starter-choose-flow / etc.).
+  (globalThis as { __activeBattleFlow?: BattleFlow }).__activeBattleFlow = flow;
+  return flow;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -411,13 +411,13 @@ export { clearBattleEventQueue };
  *
  *  Loop jusqu'à state == FAINTED_ACTIONS_MAX_CASE (=7) sans interruption.
  *  Pour le caller : `let r; while (r = runHandleFaintedMonActionsViaBytecode())`. */
-export async function runHandleFaintedMonActionsViaBytecode(): Promise<{
+export function runHandleFaintedMonActionsViaBytecode(): {
   ok: boolean;
   phases: { phase: 'fainted'; label: string }[];
   messages: string[];
   events: BattleEvent[];
   eventsCount: number;
-}> {
+} {
   clearBattleEventQueue();
   const phases: { phase: 'fainted'; label: string }[] = [];
 
@@ -659,7 +659,7 @@ export async function runHandleFaintedMonActionsViaBytecode(): Promise<{
  *
  *  Retourne `{ phases, messages, events, outcome, battleEnded }` pour le caller.
  *  Si `battleEnded === true`, le caller doit appeler la cleanup post-battle. */
-export async function runBattleTurnPassedViaBytecode(): Promise<{
+export function runBattleTurnPassedViaBytecode(): {
   ok: boolean;
   phases: { phase: 'field' | 'battler' | 'wishperish' | 'special'; label: string }[];
   messages: string[];
@@ -667,7 +667,7 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   eventsCount: number;
   outcome: number;
   battleEnded: boolean;
-}> {
+} {
   // Imports lazy via __battleState pour mutations cross-modules.
   const gs = (globalThis as { __battleState?: {
     gBattleStruct?: { arenaTurnCounter: number };
@@ -841,13 +841,13 @@ export function runTurnStartCleanupViaBytecode(): void {
  *
  *  Note : safety bound à 30/100/20 iters par phase pour éviter infinite loops
  *  (= ne devrait jamais arriver, mais safety net). */
-export async function runEndTurnEffectsViaBytecode(): Promise<{
+export function runEndTurnEffectsViaBytecode(): {
   ok: boolean;
   phases: { phase: 'field' | 'battler' | 'wishperish'; label: string }[];
   messages: string[];
   events: BattleEvent[];
   eventsCount: number;
-}> {
+} {
   // Clear queue avant chaque end-turn run.
   clearBattleEventQueue();
   const phases: { phase: 'field' | 'battler' | 'wishperish'; label: string }[] = [];
@@ -942,6 +942,22 @@ function _decodeStatus1(status1: number): 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' 
 /** Sync gBattleMons[X].status1 back to PokemonInstance.status. */
 function _syncStatus1ToInstance(inst: PokemonInstance, status1: number): void {
   inst.status = _decodeStatus1(status1);
+}
+
+/** Sync gBattleMons[0]/[1] HP+status back vers les PokemonInstance actifs.
+ *  Utile post `runBattleTurnPassedViaBytecode` / `runHandleFaintedMonActionsViaBytecode`
+ *  qui mutent gBattleMons[i].hp via POISON/BURN/Wrap/Nightmare/etc. sans
+ *  connaître la mapping PokemonInstance ↔ battlerId. Le caller (= battle-flow.ts)
+ *  passe player + enemy (= battlerId 0 + 1 en single battle). */
+export function syncBattleMonsHpToInstances(player: PokemonInstance, enemy: PokemonInstance): void {
+  if (gBattleMons[0]) {
+    player.currentHp = gBattleMons[0].hp;
+    _syncStatus1ToInstance(player, gBattleMons[0].status1);
+  }
+  if (gBattleMons[1]) {
+    enemy.currentHp = gBattleMons[1].hp;
+    _syncStatus1ToInstance(enemy, gBattleMons[1].status1);
+  }
 }
 
 // Used to avoid unused-import warning.
