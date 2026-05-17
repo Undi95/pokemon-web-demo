@@ -868,7 +868,11 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   }
 
   const moveEff = getBattleMove(move).effect;
-  if ((weatherActive && (gBattleWeather & 1 /* B_WEATHER_RAIN_TEMPORARY */) && moveEff === EFFECT_THUNDER)
+  // 1:1 décomp battle_script_commands.c:1089 : `gBattleWeather & B_WEATHER_RAIN`
+  // (= composite TEMPORARY|DOWNPOUR|PERMANENT = 0x7), pas juste TEMPORARY.
+  // AUDIT BUG FIX : était `& 1` (= TEMPORARY seul) → manquait DOWNPOUR/PERMANENT.
+  const B_WEATHER_RAIN_ALL = 0x7; // bits 0|1|2
+  if ((weatherActive && (gBattleWeather & B_WEATHER_RAIN_ALL) && moveEff === EFFECT_THUNDER)
       || moveEff === _EFFECT_ALWAYS_HIT_LOCAL
       || moveEff === _EFFECT_VITAL_THROW_LOCAL) {
     return true;  // hit, no acc check
