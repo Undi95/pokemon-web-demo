@@ -171,14 +171,47 @@ const ACTION_MENU_WINDOW: WindowTemplate = {
   paletteNum: 15,
   baseBlock: 0x190,
 };
-// Move menu : 4 cells (= 2x2 grid via 1 column 4 rows for simplicity).
-// Positioned bottom-right replacing player HP window briefly.
+// Move menu legacy : 1 grosse window (= avant refactor N4 1:1 décomp).
+// Conservée pour fallback / éventuel ROM A/B test mais non utilisée
+// quand __USE_BYTECODE_FOR_DAMAGE__ est ON (= maintenant default chemin).
 const MOVE_MENU_WINDOW: WindowTemplate = {
   bg: 0,
   tilemapLeft: 17, tilemapTop: 13,
   width: 12, height: 6,
   paletteNum: 15,
   baseBlock: 0x160,
+};
+
+// 1:1 décomp battle_bg.c:192-263 sStandardBattleWindowTemplates Move menu :
+// 7 windows : 4 noms moves (grille 2x2) + PP label + PP digits + TYPE display.
+// Layout pixel approximatif :
+//   +--------+--------+----+-------+
+//   | MOVE1  | MOVE2  | PP | xx/yy |   (= MOVE_NAME_1/_2/PP/PP_REMAINING)
+//   +--------+--------+----+-------+
+//   | MOVE3  | MOVE4  | TYPE/Type  |   (= MOVE_NAME_3/_4/MOVE_TYPE)
+//   +--------+--------+----+-------+
+// Décomp coords adapt : on remappe le tilemapTop=55-57 (= hors-visible BG-scrolled
+// dans GBA) à tilemapTop=15-17 (= zone visible). Width/positions identiques.
+const MOVE_NAME_1_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 8, height: 2, paletteNum: 15, baseBlock: 0x300,
+};
+const MOVE_NAME_2_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 11, tilemapTop: 15, width: 8, height: 2, paletteNum: 15, baseBlock: 0x310,
+};
+const MOVE_NAME_3_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 2, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x320,
+};
+const MOVE_NAME_4_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 11, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x330,
+};
+const MOVE_PP_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 21, tilemapTop: 15, width: 4, height: 2, paletteNum: 15, baseBlock: 0x290,
+};
+const MOVE_PP_REMAINING_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 25, tilemapTop: 15, width: 4, height: 2, paletteNum: 15, baseBlock: 0x298,
+};
+const MOVE_TYPE_WINDOW: WindowTemplate = {
+  bg: 0, tilemapLeft: 21, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x2A0,
 };
 
 // ─── Battle state ────────────────────────────────────────────────────────────
@@ -325,6 +358,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let actionMenuCursor     = 0;
   let _lastFallbackKind: string = '';  // 'SAC' ou 'POKéMON' pour le fallback msg
   let moveMenuWindowId = -1;
+  // 1:1 décomp Phase 1.4 N4 : 7 windows pour le move menu (= MOVE_NAME_1..4
+  // + PP label + PP digits + MOVE_TYPE display).
+  let moveName1WinId = -1;
+  let moveName2WinId = -1;
+  let moveName3WinId = -1;
+  let moveName4WinId = -1;
+  let movePpWinId = -1;
+  let movePpRemainingWinId = -1;
+  let moveTypeWinId = -1;
 
   // Async asset load tracking.
   let loadStarted = false;
@@ -426,37 +468,125 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
-  /** Refresh the move menu window with the current cursor position drawn as `>`. */
-  const refreshMoveMenu = (): void => {
-    if (moveMenuWindowId < 0 || !playerMon) return;
-    // Clear pixel buffer (= bg color 1, both nibbles).
-    FillWindowPixelBuffer(moveMenuWindowId, 0x11);
-    const moves = playerMon.moves;
-    let menuText = '';
-    for (let i = 0; i < 4; i++) {
-      const mv = moves[i];
-      const arrow = i === moveMenuCursor ? '>' : ' ';
-      menuText += arrow + ' ' + (mv ? mv.nameFr.toUpperCase() : '-') + (i < 3 ? '\n' : '');
-    }
-    AddTextPrinterParameterized3(
-      moveMenuWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
-    );
-    CopyWindowToVram(moveMenuWindowId, 2);
+  // ─── Move menu : 7 windows 1:1 décomp battle_controller_player.c ──────────
+  //   - MoveSelectionDisplayMoveNames : print 4 move names dans MOVE_NAME_{1..4}
+  //   - MoveSelectionDisplayPpString  : "PP" label dans MOVE_PP
+  //   - MoveSelectionDisplayPpNumber  : "xx/yy" dans MOVE_PP_REMAINING (refresh sur cursor change)
+  //   - MoveSelectionDisplayMoveType  : "TYPE/<TypeName>" dans MOVE_TYPE (refresh sur cursor change)
+  //   - MoveSelectionCreateCursorAt / DestroyCursorAt : tile-based cursor (= "▶" sur le slot active)
+
+  /** 1:1 décomp gText_MoveInterfacePP = "PP " (battle_message.c:1278). */
+  const _MOVE_INTERFACE_PP_LABEL = 'PP';
+  /** 1:1 décomp gText_MoveInterfaceType = "TYPE/" (battle_message.c:1279). */
+  const _MOVE_INTERFACE_TYPE_LABEL = 'TYPE/';
+
+  /** 1:1 décomp gTypeNames pour les types FR Émeraude. */
+  const _typeNameFr = (typeStr: string | undefined | null): string => {
+    if (!typeStr) return '???';
+    const map: Record<string, string> = {
+      'TYPE_NORMAL': 'NORMAL', 'TYPE_FIGHTING': 'COMBAT', 'TYPE_FLYING': 'VOL',
+      'TYPE_POISON': 'POISON', 'TYPE_GROUND': 'SOL', 'TYPE_ROCK': 'ROCHE',
+      'TYPE_BUG': 'INSECTE', 'TYPE_GHOST': 'SPECTRE', 'TYPE_STEEL': 'ACIER',
+      'TYPE_FIRE': 'FEU', 'TYPE_WATER': 'EAU', 'TYPE_GRASS': 'PLANTE',
+      'TYPE_ELECTRIC': 'ELECTRIK', 'TYPE_PSYCHIC': 'PSY', 'TYPE_ICE': 'GLACE',
+      'TYPE_DRAGON': 'DRAGON', 'TYPE_DARK': 'TENEBRES',
+    };
+    return map[typeStr] ?? typeStr.replace('TYPE_', '');
   };
 
-  /** Init the move menu window with 4 move slots. */
+  /** Helper : print text dans une window avec clear avant. */
+  const _printToWindow = (winId: number, text: string): void => {
+    if (winId < 0) return;
+    FillWindowPixelBuffer(winId, 0x11);
+    AddTextPrinterParameterized3(winId, 1, 0, 1, [1, 2, 3], 255, text);
+    CopyWindowToVram(winId, 2);
+  };
+
+  /** 1:1 décomp MoveSelectionDisplayMoveNames (= 4 noms moves + cursor sur active). */
+  const refreshMoveNames = (): void => {
+    if (!playerMon) return;
+    const moves = playerMon.moves;
+    const wins = [moveName1WinId, moveName2WinId, moveName3WinId, moveName4WinId];
+    for (let i = 0; i < 4; i++) {
+      const mv = moves[i];
+      const cursorMark = i === moveMenuCursor ? '>' : ' ';
+      const name = mv ? mv.nameFr.toUpperCase() : '-';
+      _printToWindow(wins[i], cursorMark + name);
+    }
+  };
+
+  /** 1:1 décomp MoveSelectionDisplayPpString (= "PP" label fixed). */
+  const refreshMovePpLabel = (): void => {
+    _printToWindow(movePpWinId, _MOVE_INTERFACE_PP_LABEL);
+  };
+
+  /** 1:1 décomp MoveSelectionDisplayPpNumber (= currentPp/maxPp). */
+  const refreshMovePpNumber = (): void => {
+    if (!playerMon) return;
+    const mv = playerMon.moves[moveMenuCursor];
+    const cur = mv ? mv.pp : 0;
+    const max = mv ? mv.ppMax : 0;
+    _printToWindow(movePpRemainingWinId, `${String(cur).padStart(2, ' ')}/${String(max).padStart(2, ' ')}`);
+  };
+
+  /** 1:1 décomp MoveSelectionDisplayMoveType (= "TYPE/<TypeName>"). */
+  const refreshMoveType = (): void => {
+    if (!playerMon) return;
+    const mv = playerMon.moves[moveMenuCursor];
+    if (!mv) { _printToWindow(moveTypeWinId, _MOVE_INTERFACE_TYPE_LABEL); return; }
+    // Lookup move type via getMove (= battle data table)
+    const moveData = getMove('MOVE_' + mv.id.toUpperCase().replace(/-/g, '_'));
+    const typeFr = _typeNameFr(moveData?.type);
+    _printToWindow(moveTypeWinId, _MOVE_INTERFACE_TYPE_LABEL + typeFr);
+  };
+
+  /** Refresh tout le move menu (= cursor + names + PP + type). */
+  const refreshMoveMenu = (): void => {
+    refreshMoveNames();
+    refreshMovePpLabel();
+    refreshMovePpNumber();
+    refreshMoveType();
+  };
+
+  /** Init les 7 windows du move menu. */
   const initMoveMenu = (): void => {
     if (!playerMon) return;
-    if (moveMenuWindowId < 0) moveMenuWindowId = AddWindow(MOVE_MENU_WINDOW);
-    DrawStdFrameWithCustomTileAndPalette(moveMenuWindowId, true, 0x214, 14);
+    if (moveName1WinId < 0)        moveName1WinId        = AddWindow(MOVE_NAME_1_WINDOW);
+    if (moveName2WinId < 0)        moveName2WinId        = AddWindow(MOVE_NAME_2_WINDOW);
+    if (moveName3WinId < 0)        moveName3WinId        = AddWindow(MOVE_NAME_3_WINDOW);
+    if (moveName4WinId < 0)        moveName4WinId        = AddWindow(MOVE_NAME_4_WINDOW);
+    if (movePpWinId < 0)           movePpWinId           = AddWindow(MOVE_PP_WINDOW);
+    if (movePpRemainingWinId < 0)  movePpRemainingWinId  = AddWindow(MOVE_PP_REMAINING_WINDOW);
+    if (moveTypeWinId < 0)         moveTypeWinId         = AddWindow(MOVE_TYPE_WINDOW);
+    // Draw frame autour de chaque window (= 1:1 décomp standard battle frame).
+    DrawStdFrameWithCustomTileAndPalette(moveName1WinId,       true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(moveName2WinId,       true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(moveName3WinId,       true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(moveName4WinId,       true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(movePpWinId,          true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(movePpRemainingWinId, true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(moveTypeWinId,        true, 0x214, 14);
     refreshMoveMenu();
   };
 
   const drawMoveCursor = (): void => {
+    // 1:1 décomp ll. 553-572 : after cursor move, also re-display PP + Type
+    // (= car le slot active a changé).
     refreshMoveMenu();
   };
 
+  /** Close all 7 move menu windows. */
   const closeMoveMenu = (): void => {
+    const wins = [moveName1WinId, moveName2WinId, moveName3WinId, moveName4WinId, movePpWinId, movePpRemainingWinId, moveTypeWinId];
+    for (const w of wins) {
+      if (w >= 0) {
+        ClearStdWindowAndFrame(w, true);
+        RemoveWindow(w);
+      }
+    }
+    moveName1WinId = moveName2WinId = moveName3WinId = moveName4WinId = -1;
+    movePpWinId = movePpRemainingWinId = moveTypeWinId = -1;
+    // Legacy : si l'ancien MOVE_MENU_WINDOW est encore actif (= fallback path), close.
     if (moveMenuWindowId >= 0) {
       ClearStdWindowAndFrame(moveMenuWindowId, true);
       RemoveWindow(moveMenuWindowId);
