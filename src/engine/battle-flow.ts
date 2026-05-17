@@ -1116,25 +1116,26 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'INIT_HP_WINDOWS': {
-        oppHpWindowId    = AddWindow(OPPONENT_HP_WINDOW);
-        playerHpWindowId = AddWindow(PLAYER_HP_WINDOW);
-        DrawStdFrameWithCustomTileAndPalette(oppHpWindowId, true, 0x214, 14);
-        DrawStdFrameWithCustomTileAndPalette(playerHpWindowId, true, 0x214, 14);
-        renderHpWindows();
-        // Phase 1.4 N Q3 D1 : créer les sprites OAM healthbox 1:1 décomp.
-        // Fire-and-forget (= async load assets + spawn sprites). Restent invisibles
-        // jusqu'à ce que D3 (digits HP/Lv) wire le contenu dynamique. Pendant ce
-        // temps les AddWindow legacy ci-dessus continuent de rendre HP/Lv visible.
+        // Phase 1.4 N Q3 D6 : reveal sprites OAM healthbox 1:1 décomp + cleanup
+        // des AddWindow legacy. Le nickname rendering via tile-data dynamic est
+        // une sous-phase suivante (= D6b deferred — nécessite text-to-tiles renderer).
+        // L'oppHpWindowId / playerHpWindowId restent à -1 (= AddWindow plus créés).
         if (!opponentHealthbox) {
           void createBattlerHealthboxSprites('opponent').then(handle => {
             opponentHealthbox = handle;
-            if (handle) setHealthboxVisible(handle, false);  // 1:1 décomp invisible
+            if (handle) {
+              setHealthboxVisible(handle, true);  // 1:1 décomp : visible après init
+              renderHpWindows();  // populate tile data dynamique immédiatement
+            }
           }).catch(e => console.warn('[battle-flow] opp healthbox create failed:', e));
         }
         if (!playerHealthbox) {
           void createBattlerHealthboxSprites('player').then(handle => {
             playerHealthbox = handle;
-            if (handle) setHealthboxVisible(handle, false);
+            if (handle) {
+              setHealthboxVisible(handle, true);
+              renderHpWindows();
+            }
           }).catch(e => console.warn('[battle-flow] player healthbox create failed:', e));
         }
         state = 'INTRO_TEXT';
