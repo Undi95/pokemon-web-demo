@@ -18,7 +18,7 @@
  *   0x0B Cmd_healthbarupdate  stub UI (= datahpupdate fait le HP write)
  *   0x0C Cmd_datahpupdate     1:1 minimal (= apply hp + record gHpDealt + handle BS_TARGET arg)
  *   0x19 Cmd_tryfaintmon      1:1 minimal (= consume args, set gBattlerFainted, set outcome)
- *   0x49 Cmd_moveend          stub (= skip toutes sub-states)
+ *   0x49 Cmd_moveend          full 1:1 (17 sub-states, session 137 + audit fixes)
  *
  * Pour utiliser : ces handlers sont enregistrés dans le dispatch table de
  * script-interpreter.ts via `installNiveau1Handlers()`.
