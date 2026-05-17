@@ -97,7 +97,27 @@ const targets = [
   { src: `${PUBLIC}/party_menu/hold_icons.png`, bpp: 4, extractPalette: true },
   { src: `${PUBLIC}/party_menu/pokeball.png`, bpp: 4, extractPalette: true },
   { src: `${PUBLIC}/party_menu/pokeball_small.png`, bpp: 4, extractPalette: true },
+  // FIX RACINE 2026-05-17 : ces .png étaient chargés via loadTileBin sans
+  // .4bpp.bin extrait → le dev server Vite renvoyait index.html (fallback SPA)
+  // chargé comme tile data 4bpp → garbage rouge/bleu (battle textbox, etc.).
+  // gBattleTextboxTiles = INCGFX_U32("graphics/battle_interface/textbox.png", ".4bpp.lz")
+  { src: `${PUBLIC}/battle_interface/textbox.png`, bpp: 4 },
+  // summary_screen/tiles : loadTileBin static, .bin manquait.
+  { src: `${PUBLIC}/summary_screen/tiles.png`, bpp: 4 },
 ];
+
+// trainer_pics : trainer-card-screen.ts fait loadTileBin(`.../trainer_pics/
+// ${trainerName}.png`, 4). 89 PNG, seuls brendan/may avaient leur .bin → 87
+// chargeaient le fallback HTML Vite. Glob auto = 1:1 décomp (chaque
+// gTrainerFrontPic_* est un INCGFX_U32 .4bpp).
+{
+  const tpDir = `${PUBLIC}/trainer_pics`;
+  if (fs.existsSync(tpDir)) {
+    for (const f of fs.readdirSync(tpDir)) {
+      if (f.endsWith('.png')) targets.push({ src: `${tpDir}/${f}`, bpp: 4 });
+    }
+  }
+}
 
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed
 // .bin files). Le décomp ROM utilise `.bin.lz` LZ77-compressed, mais nos source
