@@ -312,10 +312,29 @@ export function blitGlyphToWindow(
       // au lieu de laisser voir le BG dessous (bug "dialog box pas rouge").
       let mappedIdx: number;
       switch (srcIdx) {
-        case 1:  mappedIdx = fgColor;     break;  // FG = couleur texte
-        case 2:  mappedIdx = shadowColor; break;  // SHADOW = ombre
-        case 3:                                    // value 3 aliasée → bgColor
-        default: mappedIdx = bgColor;     break;  // value 0 (+3) → bgColor
+        case 1:
+          if (fgColor === 0) continue;            // fg transparent → skip
+          mappedIdx = fgColor;                    // FG = couleur texte
+          break;
+        case 2:
+          if (shadowColor === 0) continue;        // shadow transparent → skip
+          mappedIdx = shadowColor;                // SHADOW = ombre
+          break;
+        case 3:
+        default:
+          // 1:1 décomp : glyph 0 et 3 (aliasée à 0) → bgColor.
+          // NUANCE archi : notre window idx 0 == transparent (le BG dessous
+          // montre), alors que le décomp window idx 0 == palette[0] (couleur).
+          // Le décomp met bgColor==TEXT_COLOR_TRANSPARENT(0) JUSTEMENT quand il
+          // veut du transparent → chez nous, "skip" (= préserver le fillBuffer,
+          // donc le cadre/fond déjà dessiné dans la window) EST le comportement
+          // voulu pour bgColor==0 (sinon on écrase un cadre custom par du
+          // transparent → "tiles invisibles" map-name-popup / party screen).
+          // Pour bgColor != 0 (= dialog battle B_WIN_MSG bgColor=15 → rouge
+          // via text.pal), on écrit bien bgColor 1:1 décomp.
+          if (bgColor === 0) continue;
+          mappedIdx = bgColor;
+          break;
       }
       w.pixelBuffer[rowStart + colX] = mappedIdx & 0x0F;
     }
