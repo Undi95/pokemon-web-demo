@@ -55,6 +55,8 @@ import {
   GET_BATTLER_SIDE,
 } from '../constants';
 import { CalculateBaseDamage } from '../damage-calc';
+import { getSpeciesInfo } from '../../data/game-data';
+import { reverseDecompConstant, resolveDecompConstant } from '../../decomp-constants';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:472). */
 function isBattlerOfType(battlerIdx: number, type: number): boolean {
@@ -185,4 +187,65 @@ export function AI_CalcDmg(attacker: number, defender: number): void {
     dmg = Math.floor(dmg * 15 / 10);
   }
   setBattleMoveDamage(dmg);
+}
+
+/** Résout un species id numérique → [type1, type2] numériques via
+ *  l'auto-extrait décomp `getSpeciesInfo` (= gSpeciesInfo[species].types).
+ *  Même pattern que party-storage.fillBattleMonFromParty. */
+function _speciesTypes(speciesId: number): [number, number] {
+  const speciesEnum = reverseDecompConstant(speciesId, 'SPECIES_');
+  const info = speciesEnum ? getSpeciesInfo(speciesEnum) : undefined;
+  if (!info?.types) return [0, 0];
+  const t1 = resolveDecompConstant(info.types[0] ?? '');
+  const t2 = resolveDecompConstant(info.types[1] ?? info.types[0] ?? '');
+  return [typeof t1 === 'number' ? t1 : 0, typeof t2 === 'number' ? t2 : 0];
+}
+
+/** 1:1 décomp `u8 AI_TypeCalc(u16 move, u16 targetSpecies, u8 targetAbility)`
+ *  (battle_script_commands.c:1594-1636). Sibling de `TypeCalc` MAIS :
+ *  - types lus depuis gSpeciesInfo[targetSpecies] (= hypothétique, pas un
+ *    battler en jeu) ;
+ *  - AUCUN STAB (pas d'attaquant) ;
+ *  - bloc FORESIGHT TOUJOURS sauté (pas de check STATUS2_FORESIGHT) ;
+ *  - Wonder Guard → `flags |= MOVE_RESULT_DOESNT_AFFECT_FOE` (≠ TypeCalc qui
+ *    met MOVE_RESULT_MISSED).
+ *  Utilisé par battle_ai_switch_items.c (ShouldSwitchIfWonderGuard /
+ *  FindMonWithFlagsAndSuperEffective / etc.). */
+export function AI_TypeCalc(move: number, targetSpecies: number, targetAbility: number): number {
+  let i = 0;
+  const ref = { flags: 0 };
+  const [type1, type2] = _speciesTypes(targetSpecies);
+
+  if (move === MOVE_STRUGGLE) return 0;
+
+  const moveType = getBattleMove(move).type;
+
+  if (targetAbility === ABILITY_LEVITATE && moveType === TYPE_GROUND) {
+    ref.flags = MOVE_RESULT_MISSED | MOVE_RESULT_DOESNT_AFFECT_FOE;
+  } else {
+    while (gTypeEffectiveness[i] !== TYPE_ENDTABLE) {
+      if (gTypeEffectiveness[i] === TYPE_FORESIGHT) {
+        i += 3;
+        continue;
+      }
+      if (gTypeEffectiveness[i] === moveType) {
+        if (gTypeEffectiveness[i + 1] === type1) {
+          ModulateDmgByType2(gTypeEffectiveness[i + 2], move, ref);
+        }
+        if (gTypeEffectiveness[i + 1] === type2 && type1 !== type2) {
+          ModulateDmgByType2(gTypeEffectiveness[i + 2], move, ref);
+        }
+      }
+      i += 3;
+    }
+  }
+
+  if (targetAbility === ABILITY_WONDER_GUARD
+    && (!(ref.flags & MOVE_RESULT_SUPER_EFFECTIVE)
+       || ((ref.flags & (MOVE_RESULT_SUPER_EFFECTIVE | MOVE_RESULT_NOT_VERY_EFFECTIVE))
+           === (MOVE_RESULT_SUPER_EFFECTIVE | MOVE_RESULT_NOT_VERY_EFFECTIVE)))
+    && getBattleMove(move).power) {
+    ref.flags |= MOVE_RESULT_DOESNT_AFFECT_FOE;
+  }
+  return ref.flags;
 }
