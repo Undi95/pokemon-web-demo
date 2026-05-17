@@ -26,6 +26,7 @@
     "extract:movement-actions": "node scripts/extract-movement-actions.mjs",
     "extract:start-menu": "node scripts/extract-start-menu.mjs",
     "extract:script-opcodes": "node scripts/extract-script-opcodes.mjs",
+    "extract:move-effect-scripts": "node scripts/extract-move-effect-scripts.mjs",
     "extract:tileset-anims": "node scripts/extract-tileset-anims.mjs",
     "extract:doors": "node scripts/extract-doors.mjs",
     "extract:voicegroups": "node scripts/extract-voicegroups.mjs",
@@ -69,7 +70,8 @@
     "audit:hold-effect-to-type": "node scripts/audit-hold-effect-to-type.mjs",
     "audit:experience-tables": "node scripts/audit-experience-tables.mjs",
     "audit:stat-stage-ratios": "node scripts/audit-stat-stage-ratios.mjs",
-    "audit:combat": "node scripts/audit-species-basestats.mjs && node scripts/audit-species-abilities.mjs && node scripts/audit-moves-data.mjs && node scripts/audit-type-chart.mjs && node scripts/audit-learnsets.mjs && node scripts/audit-trainer-parties.mjs && node scripts/audit-item-effects.mjs && node scripts/audit-evolutions.mjs && node scripts/audit-item-hold-effects.mjs && node scripts/audit-hold-effect-to-type.mjs && node scripts/audit-experience-tables.mjs && node scripts/audit-stat-stage-ratios.mjs"
+    "audit:move-effect-scripts": "node scripts/audit-move-effect-scripts.mjs",
+    "audit:combat": "node scripts/audit-species-basestats.mjs && node scripts/audit-species-abilities.mjs && node scripts/audit-moves-data.mjs && node scripts/audit-type-chart.mjs && node scripts/audit-learnsets.mjs && node scripts/audit-trainer-parties.mjs && node scripts/audit-item-effects.mjs && node scripts/audit-evolutions.mjs && node scripts/audit-item-hold-effects.mjs && node scripts/audit-hold-effect-to-type.mjs && node scripts/audit-experience-tables.mjs && node scripts/audit-stat-stage-ratios.mjs && node scripts/audit-move-effect-scripts.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.9.32",
