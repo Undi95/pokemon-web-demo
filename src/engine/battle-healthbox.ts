@@ -44,6 +44,7 @@ import { loadIndexedPng } from './gba/png-loader';
 const HEALTHBOX_PLAYER_PNG   = '/decomp/em/battle_interface/healthbox_singles_player.png';
 const HEALTHBOX_OPPONENT_PNG = '/decomp/em/battle_interface/healthbox_singles_opponent.png';
 const HPBAR_PNG              = '/decomp/em/battle_interface/hpbar.png';
+const HPBAR_ANIM_PNG         = '/decomp/em/battle_interface/hpbar_anim.png';   // YELLOW + RED tile sets
 const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png';  // = palette HEALTHBOX
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
 
@@ -56,8 +57,14 @@ const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';  
 //     runtime au load. On choisit des offsets fixes qui n'entrent pas en conflit.
 const HEALTHBOX_PLAYER_VRAM   = 0x0000;  // 0x1000 bytes = 128 tiles
 const HEALTHBOX_OPPONENT_VRAM = 0x1000;  // 0x1000 bytes alloc (= 128 tiles, 64 used)
-const HPBAR_PLAYER_VRAM       = 0x2000;  // 0x100 bytes = 8 tiles
-const HPBAR_OPPONENT_VRAM     = 0x2100;  // 0x100 bytes = 8 tiles
+// 1:1 décomp : sSpriteSheets_HealthBar[player] alloc 0x100 bytes = 8 tiles.
+// On utilise 8 tiles consécutifs pour 2 sprites adjacents 32×8 = 64×8 total bar.
+// Layout : tiles 0..3 = bar left half (sub0), tiles 4..7 = bar right half (sub1).
+// Update HP bar copy 6 fill tiles à offset tileNum+2..tileNum+7 (= 1:1 décomp).
+const HPBAR_PLAYER_LEFT_VRAM   = 0x2000;  // 4 tiles
+const HPBAR_PLAYER_RIGHT_VRAM  = 0x2080;  // 4 tiles (= continuous from LEFT)
+const HPBAR_OPP_LEFT_VRAM      = 0x2100;  // 4 tiles
+const HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // 4 tiles
 
 // ─── OBJ palette slots ──────────────────────────────────────────────────────
 
@@ -70,6 +77,15 @@ const HEALTHBAR_PALETTE_SLOT = 6;
 // ─── Asset loading (idempotent) ─────────────────────────────────────────────
 
 let _assetsLoaded = false;
+
+// 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358-370) cache pour les
+// 3 tiers de couleur HP bar. Chaque tier = 9 tiles (= 0..8 pixels remplis).
+// Lus par updateHealthboxHpBar pour copier le bon tile dans OBJ VRAM dynamiquement.
+const TILE_BYTES = 32;
+let _hpBarTilesGreen:  Uint8Array | null = null;  // 9 tiles (= 288 bytes)
+let _hpBarTilesYellow: Uint8Array | null = null;  // 9 tiles
+let _hpBarTilesRed:    Uint8Array | null = null;  // 9 tiles
+let _hpBarBaseTiles:   Uint8Array | null = null;  // 3 tiles = "blank/H/P" frame tiles 0..2 hpbar.png
 
 /** Re-arrange row-major tile data en metatile order.
  *
@@ -160,13 +176,32 @@ export async function ensureHealthboxAssets(): Promise<void> {
   rt.gba.objVram.set(oppTiles, HEALTHBOX_OPPONENT_VRAM);
 
   // ─── HP bar widget tile data ────────────────────────────────────────────
-  // PNG hpbar.png 96×8 = 12 tiles 8×8. Pas de metatile rearrange (= linear).
-  // Note : ce tile data est ré-écrit dynamiquement par UpdateHpBar (D2) pour
-  // refléter le ratio HP courant. Initial = bar pleine (tiles 0..7 = barre verte).
+  // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358) concatène
+  // plusieurs .4bpp files. Nous cachons les sous-blocs :
+  //   - hpbar.png tiles 0..2     = "black bg" + "H" + "P" labels (= 3 tiles)
+  //   - hpbar.png tiles 3..11    = GREEN bar 0..8 pixels remplis (= 9 tiles)
+  //   - hpbar_anim.png tiles 0..8 = YELLOW bar 0..8 pixels (= 9 tiles)
+  //   - hpbar_anim.png tiles 9..17 = RED bar 0..8 pixels (= 9 tiles)
   const hpbarPng = await loadIndexedPng(HPBAR_PNG);
-  // Charge les 8 premiers tiles du hpbar.png (= barre pleine 64x8) pour player.
-  rt.gba.objVram.set(hpbarPng.charData.subarray(0, 8 * 32), HPBAR_PLAYER_VRAM);
-  rt.gba.objVram.set(hpbarPng.charData.subarray(0, 8 * 32), HPBAR_OPPONENT_VRAM);
+  const hpbarAnimPng = await loadIndexedPng(HPBAR_ANIM_PNG);
+  _hpBarBaseTiles  = hpbarPng.charData.subarray(0, 3 * TILE_BYTES);              // tiles 0..2
+  _hpBarTilesGreen = hpbarPng.charData.subarray(3 * TILE_BYTES, 12 * TILE_BYTES); // tiles 3..11
+  _hpBarTilesYellow = hpbarAnimPng.charData.subarray(0, 9 * TILE_BYTES);          // tiles 0..8
+  _hpBarTilesRed    = hpbarAnimPng.charData.subarray(9 * TILE_BYTES, 18 * TILE_BYTES); // tiles 9..17
+
+  // Initial state : bar pleine GREEN (= 8 pixels par tile, tile data GREEN+8).
+  // updateHealthboxHpBar override this dès qu'on a un mon avec HP/maxHp.
+  const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES); // tile = 8 pixels filled
+  // Bar layout (= 8 tiles per side, but only middle 6 tiles utilized for fill).
+  // tiles 0..1 reserved pour "H/P" labels (= ne pas remplir avec fill data).
+  // tiles 2..7 = les 6 fill tiles (= updated by updateHealthboxHpBar).
+  for (let i = 2; i < 8; i++) {
+    rt.gba.objVram.set(fullGreen, HPBAR_PLAYER_LEFT_VRAM + i * TILE_BYTES);
+    rt.gba.objVram.set(fullGreen, HPBAR_OPP_LEFT_VRAM + i * TILE_BYTES);
+  }
+  // tiles 0..1 = labels "H" "P" depuis hpbar.png tile 1 + 2 (= "H" + "P").
+  rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
+  rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
 
   // ─── Palettes ───────────────────────────────────────────────────────────
   // HEALTHBOX palette = ball_status_bar.png .gbapal
@@ -192,8 +227,12 @@ export interface HealthboxHandle {
   leftSpriteId: number;
   /** Sprite ID `healthboxRightSpriteId` (= 64×64 SQUARE player, 64×32 WIDE opp). */
   rightSpriteId: number;
-  /** Sprite ID `healthbarSpriteId` (= 32×8 player, 32×8 + 8×8 opponent). */
-  healthbarSpriteId: number;
+  /** Sprite ID `healthbarLeftSpriteId` (= 32×8 sub-sprite gauche du bar widget).
+   *  1:1 décomp `sHealthBar_Subsprites_*[0]` = tiles 0..3. */
+  healthbarLeftSpriteId: number;
+  /** Sprite ID `healthbarRightSpriteId` (= 32×8 sub-sprite droite du bar widget).
+   *  1:1 décomp `sHealthBar_Subsprites_*[1]` = tiles 4..7. */
+  healthbarRightSpriteId: number;
   /** Quel side : 'player' / 'opponent'. */
   side: 'player' | 'opponent';
   /** Position center du sprite left (= UpdateSpritePos `sprite.x`, `sprite.y`).
@@ -248,29 +287,31 @@ export async function createBattlerHealthboxSprites(
       shape: 0, size: 3,
       priority: 1,
     });
-    // 1:1 décomp ll. 932 : CreateSpriteAtEnd healthBar sprite at (140, 60, 0)
-    // sHealthbarSpriteTemplates[gBattlerPositions[battler]].tileTag = TAG_HEALTHBAR_PLAYER1_TILE
-    // (= our HPBAR_PLAYER_VRAM). `SetSubspriteTables` puis SpriteCB_HealthBar
-    // syncs position = healthboxSprite.x + 16 (player) ou +8 (opp).
-    // Pour D1 on créé un sprite 32×8 single (= shape WIDE size 1). Le wire-up
-    // subsprite (= 2 sprites pour player 32+32=64×8) viendra en D2.
-    const bar = rt.CreateSpriteAtOam({
-      tileId: HPBAR_PLAYER_VRAM / 32,
+    // 1:1 décomp ll. 932 + `sHealthBar_Subsprites_Player[]` = 2 subsprites
+    // 32×8 adjacents formant 64×8 total bar. Pour notre port, on crée 2 sprites
+    // séparés au lieu de subsprite (= simpler, runtime sync manuel via setHealthboxPosition).
+    //   - left sprite  : tiles 0..3 du bar VRAM (= "H/P" labels + first 2 fill tiles)
+    //   - right sprite : tiles 4..7 du bar VRAM (= last 4 fill tiles)
+    // Position décomp `SpriteCB_HealthBar` player : sprite.x = healthboxLeft.x + 16.
+    const barLeft = rt.CreateSpriteAtOam({
+      tileId: HPBAR_PLAYER_LEFT_VRAM / 32,
       paletteBank: HEALTHBAR_PALETTE_SLOT,
       x: centerX + 16, y: centerY,
-      shape: 1,  // = WIDE
-      size: 2,   // = 32×8 (WIDE+size1)... attendre.
-      // GBA OAM SHAPE×SIZE table :
-      // WIDE × size 0 = 16×8
-      // WIDE × size 1 = 32×8
-      // WIDE × size 2 = 32×16
-      // WIDE × size 3 = 64×32
+      shape: 1, size: 1,  // WIDE+size1 = 32×8 = 4 tiles
+      priority: 1,
+    });
+    const barRight = rt.CreateSpriteAtOam({
+      tileId: HPBAR_PLAYER_LEFT_VRAM / 32 + 4,  // continuous tile range
+      paletteBank: HEALTHBAR_PALETTE_SLOT,
+      x: centerX + 16 + 32, y: centerY,  // 32 px à droite du sprite gauche
+      shape: 1, size: 1,
       priority: 1,
     });
     return {
       leftSpriteId: left.spriteId,
       rightSpriteId: right.spriteId,
-      healthbarSpriteId: bar.spriteId,
+      healthbarLeftSpriteId: barLeft.spriteId,
+      healthbarRightSpriteId: barRight.spriteId,
       side: 'player',
       centerX, centerY,
     };
@@ -298,32 +339,51 @@ export async function createBattlerHealthboxSprites(
       shape: 1, size: 3,
       priority: 1,
     });
-    // Healthbar opp = 32×8 (sHealthBar_Subsprites_Opponent a 2 sprites 32×8
-    // + 1 sprite 8×8). Pour D1 single sprite 32×8, comme player.
+    // Healthbar opp = `sHealthBar_Subsprites_Opponent[]` = 2 subsprites 32×8 + 1 sprite 8×8
+    // décomp (= 8 + 1 px séparé pour le frame end). Pour D2 on simplifie à 2 sprites 32×8
+    // adjacents (= 64×8). Le frame end +8px viendra peut-être en polish ultérieur.
     // SpriteCB_HealthBar.x = mainSprite.x + 8 pour opp (data6 == 2 default).
-    const bar = rt.CreateSpriteAtOam({
-      tileId: HPBAR_OPPONENT_VRAM / 32,
+    const barLeft = rt.CreateSpriteAtOam({
+      tileId: HPBAR_OPP_LEFT_VRAM / 32,
       paletteBank: HEALTHBAR_PALETTE_SLOT,
       x: centerX + 8, y: centerY,
-      shape: 1, size: 2,  // WIDE+size1 = 32×8
+      shape: 1, size: 1,  // WIDE+size1 = 32×8
+      priority: 1,
+    });
+    const barRight = rt.CreateSpriteAtOam({
+      tileId: HPBAR_OPP_LEFT_VRAM / 32 + 4,
+      paletteBank: HEALTHBAR_PALETTE_SLOT,
+      x: centerX + 8 + 32, y: centerY,
+      shape: 1, size: 1,
       priority: 1,
     });
     return {
       leftSpriteId: left.spriteId,
       rightSpriteId: right.spriteId,
-      healthbarSpriteId: bar.spriteId,
+      healthbarLeftSpriteId: barLeft.spriteId,
+      healthbarRightSpriteId: barRight.spriteId,
       side: 'opponent',
       centerX, centerY,
     };
   }
 }
 
+/** Tous les sprite IDs d'un healthbox handle (4 sprites = left/right/barLeft/barRight). */
+function _allSpriteIds(handle: HealthboxHandle): number[] {
+  return [
+    handle.leftSpriteId,
+    handle.rightSpriteId,
+    handle.healthbarLeftSpriteId,
+    handle.healthbarRightSpriteId,
+  ];
+}
+
 /** 1:1 décomp `SetHealthboxSpriteVisible/Invisible` (ll. 1024-1036) :
- *  toggle visibility des 3 sprites (left/right/bar) ensemble. */
+ *  toggle visibility de tous les sprites du healthbox (left/right + bar L/R) ensemble. */
 export function setHealthboxVisible(handle: HealthboxHandle, visible: boolean): void {
   const rt = getRuntime();
   if (!rt) return;
-  for (const spriteId of [handle.leftSpriteId, handle.rightSpriteId, handle.healthbarSpriteId]) {
+  for (const spriteId of _allSpriteIds(handle)) {
     const sprite = rt.gSprites.get(spriteId);
     if (sprite) {
       sprite.invisible = !visible;
@@ -333,24 +393,98 @@ export function setHealthboxVisible(handle: HealthboxHandle, visible: boolean): 
   }
 }
 
-/** 1:1 décomp `DestoryHealthboxSprite` (ll. 1044-1049) : destroy les 3 sprites. */
+/** 1:1 décomp `DestoryHealthboxSprite` (ll. 1044-1049) : destroy tous les sprites. */
 export function destroyHealthboxSprite(handle: HealthboxHandle): void {
   const rt = getRuntime();
   if (!rt) return;
-  rt.DestroySprite(handle.leftSpriteId);
-  rt.DestroySprite(handle.rightSpriteId);
-  rt.DestroySprite(handle.healthbarSpriteId);
+  for (const spriteId of _allSpriteIds(handle)) rt.DestroySprite(spriteId);
 }
 
 /** 1:1 décomp `UpdateOamPriorityInAllHealthboxes` (ll. 1056-1070) : update
- *  priority des 3 sprites pour un battler. */
+ *  priority des sprites pour un battler. */
 export function setHealthboxPriority(handle: HealthboxHandle, priority: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  for (const spriteId of [handle.leftSpriteId, handle.rightSpriteId, handle.healthbarSpriteId]) {
+  for (const spriteId of _allSpriteIds(handle)) {
     const sprite = rt.gSprites.get(spriteId);
     if (!sprite) continue;
     const oam = rt.gba.oam[sprite.oamIndex];
     if (oam) oam.priority = priority;
+  }
+}
+
+// ─── HP bar widget : 1:1 décomp MoveBattleBarGraphically (D2) ───────────────
+
+/** 1:1 décomp `CalcBarFilledPixels` (battle_interface.c:2413-2459).
+ *
+ *  Compute la décomposition de la HP courante en `scale` tiles de 8 pixels
+ *  chacun. Retourne :
+ *    - `filledPixels` (0..scale*8) : total pixels remplis
+ *    - `pixelsArray[i]` (0..8) : pixels remplis dans tile i
+ *
+ *  Spécial : si HP > 0 et filledPixels == 0 → force 1 pixel (= "almost dead"
+ *  display tier "≥1 pixel"). */
+function _calcBarFilledPixels(currHp: number, maxHp: number, scale: number): { filled: number; array: number[] } {
+  const array = new Array<number>(scale).fill(0);
+  if (maxHp <= 0) return { filled: 0, array };
+  const totalPixels = scale * 8;
+  let pixels = Math.floor(currHp * totalPixels / maxHp);
+  let filledPixels = pixels;
+  if (filledPixels === 0 && currHp > 0) {
+    array[0] = 1;
+    filledPixels = 1;
+  } else {
+    for (let i = 0; i < scale; i++) {
+      if (pixels >= 8) {
+        array[i] = 8;
+      } else {
+        array[i] = pixels;
+        break;
+      }
+      pixels -= 8;
+    }
+  }
+  return { filled: filledPixels, array };
+}
+
+/** 1:1 décomp `MoveBattleBarGraphically` HEALTH_BAR case (battle_interface.c:2275-2308).
+ *
+ *  Update les 6 fill tiles du HP bar widget à OBJ VRAM. Choisit le tier
+ *  GREEN/YELLOW/RED selon `filledPixels` :
+ *    - > 50% (= > 24 pixels) → GREEN
+ *    - > 20% (= > 9.6 pixels) → YELLOW
+ *    - else → RED
+ *
+ *  Pour chaque i de 0..5, copie `tiers[barTier][array[i]]` (= 32 bytes tile)
+ *  à VRAM tile offset `barTileNumStart + 2 + i` (= les 6 fill tiles au milieu
+ *  du bar widget, après les 2 tiles "H/P" labels au début). */
+export function updateHealthboxHpBar(handle: HealthboxHandle, currHp: number, maxHp: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!_hpBarTilesGreen || !_hpBarTilesYellow || !_hpBarTilesRed) {
+    // Assets not yet loaded — silent skip (= will be retried next update).
+    return;
+  }
+
+  // 1:1 décomp `B_HEALTHBAR_PIXELS = 48`, scale = 6 tiles.
+  const { filled, array } = _calcBarFilledPixels(currHp, maxHp, 6);
+
+  // 1:1 décomp ll. 2291-2296 : color tier selection.
+  let tiles: Uint8Array;
+  if (filled > 48 * 50 / 100) tiles = _hpBarTilesGreen;
+  else if (filled > 48 * 20 / 100) tiles = _hpBarTilesYellow;
+  else tiles = _hpBarTilesRed;
+
+  // 1:1 décomp ll. 2298-2307 : copy 6 fill tiles à OBJ VRAM at offset
+  // `barTileNumStart + 2 + i`. tileNumStart = OBJ VRAM byte / 32.
+  // For our 2-sprite bar layout, tiles 0..3 are in HPBAR_*_LEFT_VRAM,
+  // tiles 4..7 are in HPBAR_*_RIGHT_VRAM (which is contiguous from LEFT + 4 tiles).
+  // So we just write to (HPBAR_*_LEFT_VRAM + (2 + i) * 32) for all i=0..5.
+  const baseVram = handle.side === 'player' ? HPBAR_PLAYER_LEFT_VRAM : HPBAR_OPP_LEFT_VRAM;
+  for (let i = 0; i < 6; i++) {
+    const pixels = array[i];
+    const srcOffset = pixels * TILE_BYTES;
+    const destOffset = baseVram + (2 + i) * TILE_BYTES;
+    rt.gba.objVram.set(tiles.subarray(srcOffset, srcOffset + TILE_BYTES), destOffset);
   }
 }

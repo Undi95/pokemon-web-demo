@@ -74,6 +74,7 @@ import {
   createBattlerHealthboxSprites,
   destroyHealthboxSprite,
   setHealthboxVisible,
+  updateHealthboxHpBar,
   type HealthboxHandle,
 } from './battle-healthbox';
 import {
@@ -483,6 +484,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       );
       drawHpBar(playerHpWindowId, 4, 28, playerMon.currentHp, playerMon.maxHp);
       CopyWindowToVram(playerHpWindowId, 2);
+    }
+    // Phase 1.4 N Q3 D2 : update HP bar tile data sur les sprites OAM healthbox.
+    // 1:1 décomp `MoveBattleBarGraphically` HEALTH_BAR case. Le tile data est
+    // écrit même si les sprites sont invisibles (= prêt pour le D6 final qui
+    // les rendra visible). Color tier GREEN > 50%, YELLOW > 20%, else RED.
+    if (opponentHealthbox && opponentMon) {
+      updateHealthboxHpBar(opponentHealthbox, opponentMon.currentHp, opponentMon.maxHp);
+    }
+    if (playerHealthbox && playerMon) {
+      updateHealthboxHpBar(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
     }
   };
 
