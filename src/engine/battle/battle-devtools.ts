@@ -62,6 +62,7 @@ import {
   setChosenMove,
   setHitMarker,
   setMoveResultFlags,
+  setActiveBattler,
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
@@ -69,7 +70,9 @@ import { getBattleMove as _gbm } from './data/battle-moves';
 import { TYPE_MYSTERY as _TYPE_MYSTERY } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
-import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
+import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory } from './ai/ai-state';
+import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision } from './ai/ai-switch-items';
+import { loadItemEffects, getItemEffectBytes as _getItemEffectBytes } from './data/item-effects';
 import { _debugResetRng, SeedRng, _debugGetRngValue, _debugGetRandCount } from '../random';
 import { getSpeciesInfo as _gdGetSpeciesInfo } from '../data/game-data';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
@@ -599,6 +602,64 @@ export function buildBattleDevtools(): Record<string, unknown> {
         errors.push(`AI run threw: ${String(e)}`);
       }
       return { ok: errors.length === 0, scriptsResolved, errors };
+    },
+    /** VÉRIF DÉTERMINISTE — ShouldUseItem / GetAI_ItemType 1:1 (sous-système
+     *  objet AI dresseur, battle_ai_switch_items.c:792-944). Scénario fixe
+     *  injecté (hp/maxHP/status/items/isFirstTurn/mistTimer) → décision
+     *  EXACTE reproductible, confrontable ligne-à-ligne au décomp. NON wiré
+     *  au gameplay = test pur. Lance 2× → deterministic:true.
+     *  Usage : scope.bytecode.aiItem({ items:[13], hp:10, maxHP:100 })  // 13=Potion
+     *          scope.bytecode.aiItem({ items:[19], hp:10, maxHP:100 })  // 19=Full Restore
+     *          scope.bytecode.aiItem({ items:[24], status1:8, items.. }) // Full Heal/poison */
+    aiItem: async (opts?: {
+      species?: string; level?: number;
+      hp?: number; maxHP?: number; status1?: number; status2?: number;
+      items?: number[]; itemsNo?: number;
+      isFirstTurn?: number; mistTimer?: number;
+    }) => {
+      await loadItemEffects();
+      const pokemonMod = await import('../pokemon');
+      const items = opts?.items ?? [13]; // 13 = ITEM_POTION
+      const run = () => {
+        const enemyMon = pokemonMod.createPokemonInstance(opts?.species ?? 'SPECIES_POOCHYENA', opts?.level ?? 10);
+        const playerMon = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 10);
+        setupPartyForBattle([playerMon] as never, [enemyMon]);
+        fillActiveBattleMonsForBattleStart();
+        const ab = 1;            // battler AI (côté opponent)
+        setActiveBattler(ab);
+        const side = ab & 1;     // ≡ GET_BATTLER_SIDE (BIT_SIDE=1) → B_SIDE_OPPONENT
+        const m = gBattleMons[ab];
+        m.maxHP = opts?.maxHP ?? 100;
+        m.hp = opts?.hp ?? m.maxHP;
+        m.status1 = opts?.status1 ?? 0;
+        m.status2 = opts?.status2 ?? 0;
+        for (let k = 0; k < gBattleHistory.trainerItems.length; k++) gBattleHistory.trainerItems[k] = items[k] ?? 0;
+        gBattleHistory.itemsNo = opts?.itemsNo ?? items.length;
+        gDisableStructs[ab].isFirstTurn = opts?.isFirstTurn ?? 1;
+        gSideTimers[side].mistTimer = opts?.mistTimer ?? 0;
+        gBattleStruct.AI_itemType[ab >> 1] = 0;
+        gBattleStruct.AI_itemFlags[ab >> 1] = 0;
+        gBattleStruct.chosenItem[(ab >> 1) * 2] = 0;
+        _resetAiSwitchDecision();
+        const used = _debugShouldUseItem();
+        const dec = _getAiSwitchDecision();
+        return {
+          items: [...items],
+          hp: m.hp, maxHP: m.maxHP, status1: m.status1, status2: m.status2,
+          isFirstTurn: gDisableStructs[ab].isFirstTurn, mistTimer: gSideTimers[side].mistTimer,
+          used,
+          decision: { action: dec.action, data: dec.data },
+          AI_itemType: gBattleStruct.AI_itemType[ab >> 1],
+          AI_itemFlags: gBattleStruct.AI_itemFlags[ab >> 1],
+          chosenItem: gBattleStruct.chosenItem[(ab >> 1) * 2],
+          trainerItemsAfter: [...gBattleHistory.trainerItems],
+          aiItemTypeOfFirst: _debugGetAI_ItemType(items[0] ?? 0, _getItemEffectBytes(items[0] ?? 0) ?? []),
+        };
+      };
+      const a = run();
+      const b = run();
+      const deterministic = JSON.stringify(a) === JSON.stringify(b);
+      return deterministic ? { deterministic: true, fingerprint: a } : { deterministic: false, run1: a, run2: b };
     },
     /** VÉRIF DÉTERMINISTE PRÉCISE — remplace l'A/B visuel (impossible : trop
      *  de random : IV/EV/stats/seed). Seed RNG + IV/EV fixes → sortie EXACTE

@@ -15,10 +15,10 @@
  *
  * `BtlController_EmitTwoReturnValues` → recorder local `_aiEmit` (l'action
  * choisie est lisible via getAiSwitchDecision() ; le wirage controller
- * action-choice = étape future). `ShouldUseItem` = STUB 1:1 documenté
- * (le sous-système item-effect-table gItemEffectTable/ITEM*_* n'est pas
- * porté dans le codebase — cohérent avec le reste, l'usage objet AI est
- * une étape séparée). Module NON wiré = zéro risque gameplay.
+ * action-choice = étape future). `ShouldUseItem` + `GetAI_ItemType` =
+ * PORTÉS 1:1 (sous-système item-effect-table via data/item-effects.ts :
+ * getItemEffectBytes + GetItemEffectParamOffset, gBattleHistory.trainerItems).
+ * Module NON wiré au controller action-choice = zéro risque gameplay.
  */
 
 import { Random } from '../../random';
@@ -39,6 +39,7 @@ import {
   setCritMultiplier,
   gBattleMoveDamage,
   setBattleMoveDamage,
+  gSideTimers,
 } from '../state';
 import {
   MAX_MON_MOVES,
@@ -74,11 +75,18 @@ import {
   MOVE_RESULT_NOT_VERY_EFFECTIVE,
   B_ACTION_SWITCH,
   B_ACTION_USE_MOVE,
+  B_ACTION_USE_ITEM,
   BATTLE_TYPE_DOUBLE,
   BATTLE_TYPE_TRAINER,
   BATTLE_TYPE_TWO_OPPONENTS,
   BATTLE_TYPE_TOWER_LINK_MULTI,
   BATTLE_TYPE_ARENA,
+  BATTLE_TYPE_INGAME_PARTNER,
+  STATUS1_POISON,
+  STATUS1_TOXIC_POISON,
+  STATUS1_BURN,
+  STATUS1_FREEZE,
+  STATUS1_PARALYSIS,
 } from '../constants';
 import {
   gTypeEffectiveness,
@@ -105,13 +113,36 @@ import {
   SPECIES_EGG,
 } from '../../decomp-data/auto/include/constants/species-data';
 import { gBitTable } from '../battle-controllers';
-import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
+import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from '../util';
 import {
   AbilityBattleEffects,
   ABILITYEFFECT_CHECK_OTHER_SIDE,
   ABILITYEFFECT_FIELD_SPORT,
 } from '../ability-battle-effects';
 import { getBattleMove } from '../data/battle-moves';
+import { getItemEffectBytes, GetItemEffectParamOffset } from '../data/item-effects';
+import { gBattleHistory } from './ai-state';
+import {
+  ITEM_NONE,
+  ITEM_FULL_RESTORE,
+  ITEM_ENIGMA_BERRY,
+} from '../../decomp-data/auto/include/constants/items-data';
+import {
+  ITEM0_X_ATTACK,
+  ITEM0_DIRE_HIT,
+  ITEM1_X_DEFEND,
+  ITEM1_X_SPEED,
+  ITEM2_X_SPATK,
+  ITEM2_X_ACCURACY,
+  ITEM3_CONFUSION,
+  ITEM3_PARALYSIS,
+  ITEM3_FREEZE,
+  ITEM3_BURN,
+  ITEM3_POISON,
+  ITEM3_SLEEP,
+  ITEM3_GUARD_SPEC,
+  ITEM4_HEAL_HP,
+} from '../../decomp-data/auto/include/constants/item_effects-data';
 
 // ─── Constantes locales 1:1 ────────────────────────────────────────────────
 
@@ -152,6 +183,16 @@ export function getAiSwitchDecision(): AiSwitchDecision {
 }
 export function resetAiSwitchDecision(): void {
   _aiDecision = { action: -1, data: 0 };
+}
+
+/** Debug-only (devtools `scope.bytecode.aiItem`) : exécute ShouldUseItem /
+ *  GetAI_ItemType 1:1 sur l'état courant. NON appelés par le moteur
+ *  (zéro impact gameplay) — vérif déterministe du sous-système objet AI. */
+export function _debugShouldUseItem(): boolean {
+  return ShouldUseItem();
+}
+export function _debugGetAI_ItemType(itemId: number, itemEffect: number[]): number {
+  return GetAI_ItemType(itemId, itemEffect);
 }
 
 // ─── Helpers d'accès gBattleStruct (1:1 *(ptr + battler)) ──────────────────
@@ -524,18 +565,176 @@ export function ShouldSwitch(): boolean {
   return false;
 }
 
-// ─── ShouldUseItem — STUB 1:1 documenté (item-effect-table déféré) ─────────
+// ─── ShouldUseItem / GetAI_ItemType — port 1:1 (792-944) ───────────────────
 
-/** 1:1 décomp `ShouldUseItem` (808-944) : décide si le dresseur utilise un
- *  objet (Full Restore, Potion, soin de statut, X-stat, Guard Spec). Dépend
- *  du sous-système item-effect-table : `gItemEffectTable`, masques ITEMx
- *  (0..4), `GetItemEffectParamOffset`, constantes AI_ITEM / AI_HEAL / AI_X,
- *  plus gBattleStruct.AI_itemType+AI_itemFlags+chosenItem et
- *  gBattleResources.battleHistory.trainerItems — NON porté dans le codebase.
- *  Stub 1:1 : retourne false (= le dresseur n'utilise pas d'objet), cohérent
- *  avec le reste du port (usage objet AI = étape future séparée). Ce n'est
- *  pas un bug. */
+/** 1:1 décomp `enum` battle_ai_switch_items.h:4-12. */
+const AI_ITEM_FULL_RESTORE = 1;
+const AI_ITEM_HEAL_HP = 2;
+const AI_ITEM_CURE_CONDITION = 3;
+const AI_ITEM_X_STAT = 4;
+const AI_ITEM_GUARD_SPEC = 5;
+const AI_ITEM_NOT_RECOGNIZABLE = 6;
+
+/** 1:1 décomp `enum` battle_ai_switch_items.h:14-21. */
+const AI_HEAL_CONFUSION = 0;
+const AI_HEAL_PARALYSIS = 1;
+const AI_HEAL_FREEZE = 2;
+const AI_HEAL_BURN = 3;
+const AI_HEAL_POISON = 4;
+const AI_HEAL_SLEEP = 5;
+
+/** 1:1 décomp `enum` battle_ai_switch_items.h:23-32 (SPDEF/EVASION inutilisés). */
+const AI_X_ATTACK = 0;
+const AI_X_DEFEND = 1;
+const AI_X_SPEED = 2;
+const AI_X_SPATK = 3;
+const AI_X_ACCURACY = 5;
+const AI_DIRE_HIT = 7;
+
+/** 1:1 décomp `#define MAX_TRAINER_ITEMS 4` (include/data.h:8). */
+const MAX_TRAINER_ITEMS = 4;
+
+/** 1:1 décomp `#define ITEM3_STATUS_ALL (ITEM3_CONFUSION | ITEM3_PARALYSIS |
+ *  ITEM3_FREEZE | ITEM3_BURN | ITEM3_POISON | ITEM3_SLEEP)`
+ *  (constants/item_effects.h:28). item_effects-data n'exporte que la string
+ *  *_EXPR → reconstruit 1:1 ici depuis les bits numériques importés. */
+const ITEM3_STATUS_ALL =
+  ITEM3_CONFUSION | ITEM3_PARALYSIS | ITEM3_FREEZE | ITEM3_BURN | ITEM3_POISON | ITEM3_SLEEP;
+
+/** 1:1 décomp `gSaveBlock1Ptr->enigmaBerry.itemEffect`. Baie Mystère =
+ *  feature câble/event jamais configurée (SaveBlock vierge = tout-à-zéro).
+ *  Inatteignable ici : ITEM_ENIGMA_BERRY → gItemEffectTable NULL → continue
+ *  AVANT cette branche (= 1:1 décomp, on reproduit la source quand même). */
+const _ENIGMA_BERRY_ITEM_EFFECT: number[] = new Array(18).fill(0);
+
+/** 1:1 décomp `static u8 GetAI_ItemType(u8 itemId, const u8 *itemEffect)`
+ *  (battle_ai_switch_items.c:792-806). */
+function GetAI_ItemType(itemId: number, itemEffect: number[]): number {
+  if (itemId === ITEM_FULL_RESTORE) return AI_ITEM_FULL_RESTORE;
+  else if (itemEffect[4] & ITEM4_HEAL_HP) return AI_ITEM_HEAL_HP;
+  else if (itemEffect[3] & ITEM3_STATUS_ALL) return AI_ITEM_CURE_CONDITION;
+  else if ((itemEffect[0] & (ITEM0_DIRE_HIT | ITEM0_X_ATTACK)) || itemEffect[1] !== 0 || itemEffect[2] !== 0)
+    return AI_ITEM_X_STAT;
+  else if (itemEffect[3] & ITEM3_GUARD_SPEC) return AI_ITEM_GUARD_SPEC;
+  else return AI_ITEM_NOT_RECOGNIZABLE;
+}
+
+/** 1:1 décomp `static bool8 ShouldUseItem(void)`
+ *  (battle_ai_switch_items.c:808-944). Décide si le dresseur utilise un
+ *  objet (Full Restore / Potion / soin statut / X-stat / Guard Spec).
+ *  `BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_ITEM, 0)`
+ *  → recorder `_aiEmit` (cf. en-tête fichier). Lit gBattleHistory
+ *  (= gBattleResources->battleHistory). */
 function ShouldUseItem(): boolean {
+  let i: number;
+  let validMons = 0;
+  let shouldUse = false;
+
+  if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
+    && GetBattlerPosition(gActiveBattler) === B_POSITION_PLAYER_RIGHT) {
+    return false;
+  }
+
+  const party = GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
+  for (i = 0; i < PARTY_SIZE; i++) {
+    if (GetMonData(party[i], MON_DATA_HP) !== 0
+      && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) !== SPECIES_NONE
+      && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) !== SPECIES_EGG) {
+      validMons++;
+    }
+  }
+
+  for (i = 0; i < MAX_TRAINER_ITEMS; i++) {
+    let itemEffects: number[];
+    let paramOffset: number;
+    let battlerSide: number;
+
+    if (i !== 0 && validMons > (gBattleHistory.itemsNo - i) + 1) continue;
+    const item = gBattleHistory.trainerItems[i];
+    if (item === ITEM_NONE) continue;
+    const tableBytes = getItemEffectBytes(item);
+    // ≡ gItemEffectTable[item - ITEM_POTION] == NULL (inclut ITEM_ENIGMA_BERRY).
+    if (tableBytes === null) continue;
+
+    if (item === ITEM_ENIGMA_BERRY) itemEffects = _ENIGMA_BERRY_ITEM_EFFECT;
+    else itemEffects = tableBytes;
+
+    gBattleStruct.AI_itemType[gActiveBattler >> 1] = GetAI_ItemType(item, itemEffects);
+
+    switch (gBattleStruct.AI_itemType[gActiveBattler >> 1]) {
+      case AI_ITEM_FULL_RESTORE:
+        if (gBattleMons[gActiveBattler].hp >= Math.floor(gBattleMons[gActiveBattler].maxHP / 4)) break;
+        if (gBattleMons[gActiveBattler].hp === 0) break;
+        shouldUse = true;
+        break;
+      case AI_ITEM_HEAL_HP:
+        paramOffset = GetItemEffectParamOffset(item, 4, ITEM4_HEAL_HP);
+        if (paramOffset === 0) break;
+        if (gBattleMons[gActiveBattler].hp === 0) break;
+        if (gBattleMons[gActiveBattler].hp < Math.floor(gBattleMons[gActiveBattler].maxHP / 4)
+          || gBattleMons[gActiveBattler].maxHP - gBattleMons[gActiveBattler].hp > itemEffects[paramOffset]) {
+          shouldUse = true;
+        }
+        break;
+      case AI_ITEM_CURE_CONDITION:
+        gBattleStruct.AI_itemFlags[gActiveBattler >> 1] = 0;
+        if ((itemEffects[3] & ITEM3_SLEEP) && (gBattleMons[gActiveBattler].status1 & STATUS1_SLEEP)) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_SLEEP);
+          shouldUse = true;
+        }
+        if ((itemEffects[3] & ITEM3_POISON)
+          && ((gBattleMons[gActiveBattler].status1 & STATUS1_POISON)
+            || (gBattleMons[gActiveBattler].status1 & STATUS1_TOXIC_POISON))) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_POISON);
+          shouldUse = true;
+        }
+        if ((itemEffects[3] & ITEM3_BURN) && (gBattleMons[gActiveBattler].status1 & STATUS1_BURN)) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_BURN);
+          shouldUse = true;
+        }
+        if ((itemEffects[3] & ITEM3_FREEZE) && (gBattleMons[gActiveBattler].status1 & STATUS1_FREEZE)) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_FREEZE);
+          shouldUse = true;
+        }
+        if ((itemEffects[3] & ITEM3_PARALYSIS) && (gBattleMons[gActiveBattler].status1 & STATUS1_PARALYSIS)) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_PARALYSIS);
+          shouldUse = true;
+        }
+        if ((itemEffects[3] & ITEM3_CONFUSION) && (gBattleMons[gActiveBattler].status2 & STATUS2_CONFUSION)) {
+          gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_HEAL_CONFUSION);
+          shouldUse = true;
+        }
+        break;
+      case AI_ITEM_X_STAT:
+        gBattleStruct.AI_itemFlags[gActiveBattler >> 1] = 0;
+        if (gDisableStructs[gActiveBattler].isFirstTurn === 0) break;
+        if (itemEffects[0] & ITEM0_X_ATTACK) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_X_ATTACK);
+        if (itemEffects[1] & ITEM1_X_DEFEND) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_X_DEFEND);
+        if (itemEffects[1] & ITEM1_X_SPEED) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_X_SPEED);
+        if (itemEffects[2] & ITEM2_X_SPATK) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_X_SPATK);
+        if (itemEffects[2] & ITEM2_X_ACCURACY) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_X_ACCURACY);
+        if (itemEffects[0] & ITEM0_DIRE_HIT) gBattleStruct.AI_itemFlags[gActiveBattler >> 1] |= (1 << AI_DIRE_HIT);
+        shouldUse = true;
+        break;
+      case AI_ITEM_GUARD_SPEC:
+        battlerSide = GET_BATTLER_SIDE(gActiveBattler);
+        if (gDisableStructs[gActiveBattler].isFirstTurn !== 0 && gSideTimers[battlerSide].mistTimer === 0) {
+          shouldUse = true;
+        }
+        break;
+      case AI_ITEM_NOT_RECOGNIZABLE:
+        return false;
+    }
+
+    if (shouldUse) {
+      _aiEmit(B_ACTION_USE_ITEM, 0);
+      gBattleStruct.chosenItem[(gActiveBattler >> 1) * 2] = item;
+      gBattleHistory.trainerItems[i] = ITEM_NONE;
+      return shouldUse;
+    }
+  }
+
   return false;
 }
 
