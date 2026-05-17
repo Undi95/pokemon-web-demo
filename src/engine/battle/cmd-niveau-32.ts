@@ -607,8 +607,9 @@ function _isMonGettingExpSentOutHBT(): boolean {
 // ─── 0xEF handleballthrow ─────────────────────────────────────────────────
 
 /** 1:1 décomp `sBallCatchBonuses[]` (battle_script_commands.c:841-847).
- *  Indexed par (ITEM_X - ITEM_ULTRA_BALL) où ITEM_ULTRA_BALL = 4.
- *  Order : ULTRA_BALL=20, GREAT_BALL=15, POKE_BALL=10, SAFARI_BALL=15. */
+ *  Indexed par (ITEM_X - ITEM_ULTRA_BALL) où ITEM_ULTRA_BALL = 2 (= items-data.ts:10).
+ *  AUDIT BUG FIX : était 4 (= POKE_BALL !) → 2 (= ULTRA_BALL).
+ *  Order : ULTRA_BALL(2)=20, GREAT_BALL(3)=15, POKE_BALL(4)=10, SAFARI_BALL(5)=15. */
 const sBallCatchBonuses_HBT: ReadonlyArray<number> = [20, 15, 10, 15];
 
 /** 1:1 décomp `Sqrt(s32 n)` (sqrt.c). Integer Newton iteration. */
@@ -703,7 +704,10 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
         ballMultiplier = 10;
     }
   } else {
-    ballMultiplier = sBallCatchBonuses_HBT[_gLastUsedItemHBT - 4 /* ITEM_ULTRA_BALL */] ?? 10;
+    // 1:1 décomp items-data.ts:10 + battle_script_commands.c:9987 :
+    // `sBallCatchBonuses[gLastUsedItem - ITEM_ULTRA_BALL=2]`.
+    // AUDIT BUG FIX : était `- 4` (= POKE_BALL !) → `- 2` (= ULTRA_BALL).
+    ballMultiplier = sBallCatchBonuses_HBT[_gLastUsedItemHBT - 2 /* ITEM_ULTRA_BALL */] ?? 10;
   }
 
   let odds = Math.floor(
