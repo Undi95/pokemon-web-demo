@@ -896,7 +896,9 @@ export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
             // clear SIDE_STATUS_FUTUREATTACK pour le côté target.
             // BATTLE_PARTNER(b) = b ^ 2 (= flip side bit).
             const partner = active ^ 2;
-            const SIDE_STATUS_FUTUREATTACK = 1 << 3;
+            // 1:1 décomp battle.h:214 : SIDE_STATUS_FUTUREATTACK = 1 << 6.
+            // AUDIT BUG FIX : était 1 << 3 (= SIDE_STATUS_X4-ish bit) → 1 << 6.
+            const SIDE_STATUS_FUTUREATTACK = 1 << 6;
             if (gWishFutureKnock.futureSightCounter[active] === 0
                 && (partner >= gBattlersCount
                     || gWishFutureKnock.futureSightCounter[partner] === 0)) {
