@@ -240,7 +240,7 @@ function applyNoIntroPreset(): void {
   // Skip si party déjà populée (= user a déjà fait l'intro + caught Treecko).
   if (gameState.party.length === 0) {
     const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
-      heldItem: 'miracleseed',  // @pkmn/dex canonical (= ITEM_MIRACLE_SEED)
+      heldItem: 'miracleseed',  // DEBUG fixture (= ITEM_MIRACLE_SEED)
       ability: 'Overgrow',
       nature: 'Hardy',
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },

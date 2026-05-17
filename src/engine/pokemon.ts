@@ -1,23 +1,25 @@
 /**
  * Représentation runtime d'un Pokémon dans la party / les combats.
  *
- * On utilise @pkmn/dex pour lookup les base stats et les moves canoniques EN
- * (que @pkmn/sim consomme pour les combats). Les noms FR viennent de
- * `text-tables.json` via `data-tables.ts`.
+ * Données 1:1 décomp Émeraude (ZÉRO @pkmn/dex) : base stats / abilities /
+ * growthRate / expYield via `getSpeciesInfo` (auto-extrait ROM), learnsets
+ * via `getLevelUpLearnset`, PP via `getMove` (moves-data), noms FR via
+ * `text-tables.json` (data-tables.ts), enums via le résolveur leaf décomp.
  *
  * Pour MVP Vague 3 : struct simple, calc HP via formule Gen 3, moves choisis
  * "manuellement" depuis le learnset jusqu'au level. Évolutions / EXP / EVs /
  * IVs randomisés = TODO Vague suivante.
  */
-import { Dex } from '@pkmn/dex';
 import {
-  getSpeciesId, getMoveId, getSpeciesNameFr, getMoveNameFr,
+  getSpeciesId, getSpeciesNameFr, getMoveNameFr,
 } from './data-tables';
 import { Random, Random32 } from './random';
 import { gameState } from './game-state';
-import { getSpeciesInfo as gameDataGetSpeciesInfo } from './data/game-data';
+import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from './data/game-data';
+// Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
+import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 
-/** Convertit `SPECIES_TREECKO` → `treecko` (id format @pkmn/dex). */
+/** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {
   return speciesEnum.replace(/^SPECIES_/, '').toLowerCase().replace(/_/g, '');
 }
@@ -46,7 +48,7 @@ export interface PokemonInstance {
   level: number;
   currentHp: number;
   maxHp: number;
-  /** 4 moves max — chaque move : id @pkmn/dex (ex. "tackle") + nom FR + PP */
+  /** 4 moves max — chaque move : id runtime (ex. "tackle") + nom FR + PP */
   moves: Array<{ id: string; nameFr: string; pp: number; ppMax: number }>;
   ability: string;        // EN canonique
   heldItem: string;       // EN canonique ou "" si rien
@@ -180,12 +182,12 @@ function calcHp(base: number, iv: number, ev: number, level: number): number {
 
 /**
  * Sélectionne les 4 derniers moves de level-up pour ce species jusqu'au level.
- * Format @pkmn/dex learnset : `{ tackle: ['3L1', '4L1'], leer: ['3L1'], ... }`
- * où "3L1" = Gen 3 Level 1.
+ * Source 1:1 décomp : `getLevelUpLearnset(SPECIES_X)` (auto-extrait ROM
+ * gLevelUpLearnsets) → entrées `{ level, move: 'MOVE_X' }`.
  */
 function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
   // 1:1 décomp `gLevelUpLearnsets[species]` — try via auto-extracted game-data
-  // first (= notre source de vérité 1:1 ROM). Fallback @pkmn/dex puis universels.
+  // first (= 1:1 ROM auto-extrait). Pas de fallback Showdown (1:1 strict).
   try {
     // Convert dexId (lowercase) to SPECIES_X enum.
     const enumKey = 'SPECIES_' + speciesDexId.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
@@ -210,26 +212,8 @@ function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
       if (last4.length > 0) return last4.map(x => x.id);
     }
   } catch { /* fallthrough */ }
-  // Fallback @pkmn/dex (= ancienne path).
-  try {
-    const species = Dex.species.get(speciesDexId);
-    const learnset = (Dex.species as unknown as { learnsets?: { get: (s: string) => { learnset?: Record<string, string[]> } } })
-      .learnsets?.get(species.id);
-    if (learnset?.learnset) {
-      const acquired: Array<{ id: string; lvl: number }> = [];
-      for (const [moveId, sources] of Object.entries(learnset.learnset)) {
-        for (const src of sources) {
-          const m = src.match(/^3L(\d+)$/);
-          if (m) {
-            const lvl = Number(m[1]);
-            if (lvl <= level) { acquired.push({ id: moveId, lvl }); break; }
-          }
-        }
-      }
-      acquired.sort((a, b) => b.lvl - a.lvl);
-      if (acquired.length > 0) return acquired.slice(0, 4).map(x => x.id);
-    }
-  } catch { /* fallback ci-dessous */ }
+  // 1:1 décomp strict : pas de fallback Showdown. Si pas de learnset décomp
+  // (= species data pas chargée), fallback universel minimal.
   return ['tackle', 'growl'];
 }
 
@@ -240,8 +224,10 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
 }): PokemonInstance {
   const speciesId = getSpeciesId(speciesEnum) || 1; // fallback bulbasaur
   const dexId = speciesEnumToDexId(speciesEnum) || 'bulbasaur';
-  const species = Dex.species.get(dexId);
-  const speciesName = species.name;
+  // 1:1 décomp : données species depuis l'auto-extrait ROM (getSpeciesInfo),
+  // PAS @pkmn/dex. stats/abilities/growthRate/expYield = 1:1 Émeraude.
+  const sInfo = gameDataGetSpeciesInfo(speciesEnum);
+  const speciesName = dexId.charAt(0).toUpperCase() + dexId.slice(1);
   const speciesNameFr = getSpeciesNameFr(speciesEnum);
   // Session 124 : 1:1 décomp `CreateBoxMon` ordering — personality FIRST,
   // PUIS IVs (= mêmes Random() calls dans le même order qu'en ROM, donc
@@ -258,25 +244,23 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const monGender = GetGenderFromSpeciesAndPersonality(speciesEnum, personality) as 0 | 254 | 255;
   const ivs = opts?.ivs ?? randomIVs();
   const evs = opts?.evs ?? ZERO_STATS;
-  const baseHp = species.baseStats?.hp ?? 50;
+  const baseHp = sInfo?.stats?.hp ?? 50;
   const maxHp = calcHp(baseHp, ivs.hp, evs.hp, level);
   const moveIds = opts?.moves ?? pickLevelUpMoves(dexId, level);
   const moves = moveIds.slice(0, 4).map(id => {
-    const mv = Dex.moves.get(id);
-    // Build MOVE_FOO_BAR enum from name "Foo Bar" (= 1:1 décomp constants).
-    // id "quickattack" → mv.name "Quick Attack" → "MOVE_QUICK_ATTACK".
-    // Si pas de mv.name : fallback id.toUpperCase() (= mono-word moves).
-    const enumKey = mv?.name
-      ? 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_')
-      : 'MOVE_' + id.toUpperCase();
+    // 1:1 décomp : id runtime ("quickattack") → enum ("MOVE_QUICK_ATTACK")
+    // via le résolveur leaf décomp (zéro @pkmn/dex). PP depuis moves-data
+    // (= include/constants/moves.h gBattleMoves[].pp), nom FR via text-tables.
+    const enumKey = moveDexIdToEnum(id);
+    const pp = (gameDataGetMove(enumKey)?.pp ?? 0) || 30;
     return {
-      id: mv.id || id,
-      nameFr: getMoveNameFr(enumKey) || mv.name || id,
-      pp: mv.pp ?? 30,
-      ppMax: mv.pp ?? 30,
+      id,
+      nameFr: getMoveNameFr(enumKey) || id,
+      pp,
+      ppMax: pp,
     };
   });
-  const ability = opts?.ability ?? (species.abilities?.[0] || '');
+  const ability = opts?.ability ?? (sInfo?.abilities?.[0] || '');
   // Session 124 : EXP/growth init via species data + experienceTables.
   const speciesInfo = (() => {
     try {

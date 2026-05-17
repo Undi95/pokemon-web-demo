@@ -24,7 +24,10 @@ import {
 } from '../pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { getSpeciesInfo } from '../data/game-data';
-import * as MOVES_DATA from '../decomp-data/auto/include/constants/moves-data';
+// Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
+// pour les call-sites existants (wire-bytecode-bridge).
+import { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
+export { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
 // AUDIT BUG FIX : import direct gBattleMons depuis state.ts (= même instance
 // singleton que bytecode runtime). Avant : globalThis.__battleState lookup
 // retournait une instance ESM différente → battle mons setup invisible aux
@@ -387,43 +390,6 @@ const _STATUS1_TO_STATUS: Record<number, 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' |
 /** Resolve un species enum ex. "SPECIES_TREECKO" vers un u16 id décomp. */
 function _resolveSpeciesId(enumStr: string): number {
   const id = resolveDecompConstant(enumStr);
-  return typeof id === 'number' ? id : 0;
-}
-
-/** Map normalisée nom-de-move → enum décomp, construite 1:1 depuis les
- *  constantes auto-extraites `moves-data` (= include/constants/moves.h).
- *  Clé = nom sans séparateur en minuscules (ex. "defensecurl"), valeur =
- *  "MOVE_DEFENSE_CURL". Aucune dépendance Showdown (= 1:1 décomp strict). */
-let _moveNameNormToEnum: Record<string, string> | null = null;
-function _ensureMoveNameMap(): Record<string, string> {
-  if (_moveNameNormToEnum) return _moveNameNormToEnum;
-  const m: Record<string, string> = {};
-  for (const key of Object.keys(MOVES_DATA)) {
-    if (!key.startsWith('MOVE_')) continue;
-    const norm = key.slice(5).replace(/_/g, '').toLowerCase();
-    if (norm && !(norm in m)) m[norm] = key;
-  }
-  _moveNameNormToEnum = m;
-  return m;
-}
-
-/** 1:1 décomp : dexId runtime ("tackle", "defensecurl") → nom d'enum décomp
- *  ("MOVE_TACKLE", "MOVE_DEFENSE_CURL"). Les ids runtime sont sans séparateur
- *  alors que les enums décomp sont underscore-segmentés : la conversion naïve
- *  échoue sur les noms composés. Résolution via constantes auto-extraites
- *  moves-data normalisées. SOURCE DE VÉRITÉ UNIQUE (réutilisé par le bridge
- *  bytecode = retrait @pkmn/dex). */
-export function moveDexIdToEnum(dexId: string): string {
-  const direct = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
-  const dId = resolveDecompConstant(direct);
-  if (typeof dId === 'number' && dId !== 0) return direct;
-  const norm = dexId.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  return _ensureMoveNameMap()[norm] ?? direct;
-}
-
-/** dexId runtime → u16 id décomp (MOVE_*). 0 si introuvable. 1:1, pas Showdown. */
-export function resolveMoveDexId(dexId: string): number {
-  const id = resolveDecompConstant(moveDexIdToEnum(dexId));
   return typeof id === 'number' ? id : 0;
 }
 
