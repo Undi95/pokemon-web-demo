@@ -343,15 +343,22 @@ function parseItemDescriptions() {
 // ─── 14. experience_tables.h ────────────────────────────────────────────────
 
 function parseExperienceTables() {
-  // 1:1 décomp : tables computed via macros (= EXP_FAST, EXP_SLOW, etc.).
-  // On compute directement les formules en JS pour MAX_LEVEL=100.
+  // 1:1 décomp `gExperienceTables` (src/data/pokemon/experience_tables.h).
+  // Le décomp écrit LITTÉRALEMENT `0, // 0` et `1, // 1` pour TOUS les 6
+  // blocs (les macros EXP_* ne donnent pas 0/1 proprement à bas n : ex.
+  // EXP_MEDIUM_SLOW(1) = -54, EXP_FAST(1) = 0), puis applique la macro
+  // pour n=2..100. (Ancien bug : recompute macro à n=1 → FAST/MEDIUM_SLOW/
+  // FLUCTUATING donnaient 0 au lieu du littéral 1 ; + `n<=35` au lieu du
+  // `n<=36` de la macro ; + `Math.max(0,)` absent du décomp.)
+  // Gardé 1:1 par npm run audit:experience-tables.
   const MAX_LEVEL = 100;
   const cube = (n) => n * n * n;
   const sq = (n) => n * n;
 
+  // arr[0]=0, arr[1]=1 littéraux (1:1 décomp), macro pour n>=2.
   const fmt = (fn) => {
-    const arr = [];
-    for (let n = 0; n <= MAX_LEVEL; n++) arr.push(fn(n));
+    const arr = [0, 1];
+    for (let n = 2; n <= MAX_LEVEL; n++) arr.push(fn(n));
     return arr;
   };
 
@@ -359,7 +366,8 @@ function parseExperienceTables() {
     GROWTH_MEDIUM_FAST: fmt((n) => cube(n)),
     GROWTH_FAST:        fmt((n) => Math.floor(4 * cube(n) / 5)),
     GROWTH_SLOW:        fmt((n) => Math.floor(5 * cube(n) / 4)),
-    GROWTH_MEDIUM_SLOW: fmt((n) => Math.max(0, Math.floor(6 * cube(n) / 5) - 15 * sq(n) + 100 * n - 140)),
+    // EXP_MEDIUM_SLOW : pas de clamp dans le décomp (positif pour n>=2).
+    GROWTH_MEDIUM_SLOW: fmt((n) => Math.floor(6 * cube(n) / 5) - 15 * sq(n) + 100 * n - 140),
     GROWTH_ERRATIC: fmt((n) => {
       if (n <= 50) return Math.floor((100 - n) * cube(n) / 50);
       if (n <= 68) return Math.floor((150 - n) * cube(n) / 100);
@@ -368,7 +376,7 @@ function parseExperienceTables() {
     }),
     GROWTH_FLUCTUATING: fmt((n) => {
       if (n <= 15) return Math.floor(cube(n) * (Math.floor((n + 1) / 3) + 24) / 50);
-      if (n <= 35) return Math.floor(cube(n) * (n + 14) / 50);
+      if (n <= 36) return Math.floor(cube(n) * (n + 14) / 50); // 1:1 décomp : n<=36
       return Math.floor(cube(n) * (Math.floor(n / 2) + 32) / 50);
     }),
   };
