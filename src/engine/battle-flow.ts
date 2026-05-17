@@ -124,6 +124,12 @@ const OPPONENT_PALETTE_SLOT = 14;
 // Sprite x/y in our engine = CENTER coords (= 1:1 décomp src/sprite.c sprite struct).
 // `syncSpritesToOam` adds centerToCornerVecX/Y to project to OAM corner pos
 // (= -32 for 64x64 sprite). Cf. decomp-runtime.ts:2052.
+// TODO Phase 1.4 N2 : positions sprites 1:1 décomp battle_anim_mons.c:38
+// sBattlerCoords : Player (72, 80), Opp (176, 40). Notre port utilise des
+// coords qui ne sont pas alignées décomp + il y a un mismatch anchor sprite
+// (= center vs top-left). Le visual actuel marche pre-action-menu mais sprite
+// player est trop à droite (overlap action menu) — fix proper nécessite porter
+// CalcCenterToCornerVec correctement. Skip pour cette session, garde existing.
 const OPPONENT_X = 60;
 const OPPONENT_Y = 60;
 const PLAYER_X   = 180;
@@ -144,6 +150,24 @@ const PLAYER_HP_WINDOW: WindowTemplate = {
   paletteNum: 15,
   baseBlock: 0x130,
 };
+// 1:1 décomp battle_bg.c:174-191 B_WIN_ACTION_PROMPT + B_WIN_ACTION_MENU.
+// `B_WIN_ACTION_PROMPT` est la window gauche bas qui affiche "Que doit faire X?"
+// pendant que le user choisit (= tilemapLeft=1, top=15 dans notre adapt).
+// `B_WIN_ACTION_MENU` est la grille 2x2 ATTAQUE/SAC/POKéMON/FUITE droite bas.
+const ACTION_PROMPT_WINDOW: WindowTemplate = {
+  bg: 0,
+  tilemapLeft: 1, tilemapTop: 15,
+  width: 14, height: 4,
+  paletteNum: 15,
+  baseBlock: 0x1C0,
+};
+const ACTION_MENU_WINDOW: WindowTemplate = {
+  bg: 0,
+  tilemapLeft: 17, tilemapTop: 15,
+  width: 12, height: 4,
+  paletteNum: 15,
+  baseBlock: 0x190,
+};
 // Move menu : 4 cells (= 2x2 grid via 1 column 4 rows for simplicity).
 // Positioned bottom-right replacing player HP window briefly.
 const MOVE_MENU_WINDOW: WindowTemplate = {
@@ -163,6 +187,9 @@ type State =
   | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS'
   | 'INTRO_TEXT' | 'INTRO_WAIT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
+  | 'ACTION_MENU_INIT' | 'ACTION_MENU_INPUT'
+  | 'ACTION_FALLBACK_TEXT' | 'ACTION_FALLBACK_WAIT'
+  | 'ACTION_RUN_TEXT' | 'ACTION_RUN_WAIT'
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
   | 'PLAYER_USES_MOVE' | 'PLAYER_USES_MOVE_WAIT'
   | 'PLAYER_BYTECODE_MSG' | 'PLAYER_BYTECODE_MSG_WAIT'
@@ -288,6 +315,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Window IDs (-1 = not allocated).
   let oppHpWindowId    = -1;
   let playerHpWindowId = -1;
+  // 1:1 décomp battle_controller_player.c:HandleInputChooseAction.
+  // gActionSelectionCursor[gActiveBattler] : 0..3 (TL/TR/BL/BR grille 2x2).
+  let actionMenuWindowId   = -1;
+  let actionPromptWindowId = -1;
+  let actionMenuCursor     = 0;
+  let _lastFallbackKind: string = '';  // 'SAC' ou 'POKéMON' pour le fallback msg
   let moveMenuWindowId = -1;
 
   // Async asset load tracking.
@@ -397,6 +430,68 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       ClearStdWindowAndFrame(moveMenuWindowId, true);
       RemoveWindow(moveMenuWindowId);
       moveMenuWindowId = -1;
+    }
+  };
+
+  // ─── Action menu (= FIGHT/BAG/POKEMON/RUN grille 2x2) 1:1 décomp ─────────
+  // Source : battle_controller_player.c:HandleInputChooseAction + battle_message.c:1276
+  // gText_BattleMenu = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE"
+  // gText_WhatWillPkmnDo = "Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?"
+
+  /** Refresh action menu window with cursor `>` at the active 2x2 cell. */
+  const refreshActionMenu = (): void => {
+    if (actionMenuWindowId < 0) return;
+    FillWindowPixelBuffer(actionMenuWindowId, 0x11);
+    // Layout grille 2x2 :
+    //   row 0 : [>]ATTAQUE   [>]SAC
+    //   row 1 : [>]POKéMON   [>]FUITE
+    // cursor pos : 0=TL, 1=TR, 2=BL, 3=BR. CLEAR_TO 56 → pad ~7 chars.
+    const c = actionMenuCursor;
+    const pad = (s: string, n: number): string => s + ' '.repeat(Math.max(0, n - s.length));
+    const tl = (c === 0 ? '>' : ' ') + 'ATTAQUE';
+    const tr = (c === 1 ? '>' : ' ') + 'SAC';
+    const bl = (c === 2 ? '>' : ' ') + 'POKéMON';
+    const br = (c === 3 ? '>' : ' ') + 'FUITE';
+    const menuText = pad(tl, 9) + tr + '\n' + pad(bl, 9) + br;
+    AddTextPrinterParameterized3(
+      actionMenuWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
+    );
+    CopyWindowToVram(actionMenuWindowId, 2);
+  };
+
+  /** Refresh action prompt window with "Que doit faire X?". */
+  const refreshActionPrompt = (): void => {
+    if (actionPromptWindowId < 0 || !playerMon) return;
+    FillWindowPixelBuffer(actionPromptWindowId, 0x11);
+    const promptText = `Que doit faire\n${playerMon.nickname.toUpperCase()}?`;
+    AddTextPrinterParameterized3(
+      actionPromptWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, promptText,
+    );
+    CopyWindowToVram(actionPromptWindowId, 2);
+  };
+
+  /** Init action menu + prompt windows simultanément. Called au début du turn. */
+  const initActionMenu = (): void => {
+    if (!playerMon) return;
+    if (actionPromptWindowId < 0) actionPromptWindowId = AddWindow(ACTION_PROMPT_WINDOW);
+    if (actionMenuWindowId < 0)   actionMenuWindowId   = AddWindow(ACTION_MENU_WINDOW);
+    DrawStdFrameWithCustomTileAndPalette(actionPromptWindowId, true, 0x214, 14);
+    DrawStdFrameWithCustomTileAndPalette(actionMenuWindowId,   true, 0x214, 14);
+    refreshActionPrompt();
+    refreshActionMenu();
+  };
+
+  /** Close both windows action menu + prompt. */
+  const closeActionMenu = (): void => {
+    if (actionMenuWindowId >= 0) {
+      ClearStdWindowAndFrame(actionMenuWindowId, true);
+      RemoveWindow(actionMenuWindowId);
+      actionMenuWindowId = -1;
+    }
+    if (actionPromptWindowId >= 0) {
+      ClearStdWindowAndFrame(actionPromptWindowId, true);
+      RemoveWindow(actionPromptWindowId);
+      actionPromptWindowId = -1;
     }
   };
 
@@ -760,14 +855,96 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             playCry(playerMon!.nickname);
           });
         }
-        ShowFieldMessage(`Que doit faire\n${playerMon.nickname}?`);
-        state = 'PLAYER_TURN_PROMPT_WAIT';
+        // 1:1 décomp Phase 1.4 N : passage direct au menu action (FIGHT/BAG/
+        // POKEMON/RUN) au lieu de ShowFieldMessage + wait input. Le prompt
+        // "Que doit faire X?" est now dessiné dans sa propre window à côté du
+        // menu et reste visible pendant la sélection.
+        state = 'ACTION_MENU_INIT';
         return false;
       }
 
       case 'PLAYER_TURN_PROMPT_WAIT': {
-        if (IsFieldMessageBoxHidden()) {
-          state = 'MOVE_MENU_INIT';
+        // Legacy : conservé pour compat ad-hoc (= si on revient ici depuis
+        // un menu fallback). Just skip à ACTION_MENU_INIT.
+        state = 'ACTION_MENU_INIT';
+        return false;
+      }
+
+      // ─── ACTION MENU 1:1 décomp battle_controller_player.c:233 ──────────
+      case 'ACTION_MENU_INIT': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        actionMenuCursor = 0;  // 1:1 décomp : reset cursor au début de chaque tour.
+        initActionMenu();
+        state = 'ACTION_MENU_INPUT';
+        return false;
+      }
+
+      case 'ACTION_MENU_INPUT': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        const newKeys = rt.gMain.newKeys;
+        // 1:1 décomp battle_controller_player.c:266-305 :
+        // - DPAD_LEFT  : toggle bit 0 SI cursor & 1 (= right column → left)
+        // - DPAD_RIGHT : toggle bit 0 SI !(cursor & 1) (= left column → right)
+        // - DPAD_UP    : toggle bit 1 SI cursor & 2 (= bottom row → top)
+        // - DPAD_DOWN  : toggle bit 1 SI !(cursor & 2) (= top row → bottom)
+        if (newKeys & DPAD_LEFT) {
+          if (actionMenuCursor & 1) { actionMenuCursor ^= 1; refreshActionMenu(); }
+        } else if (newKeys & DPAD_RIGHT) {
+          if (!(actionMenuCursor & 1)) { actionMenuCursor ^= 1; refreshActionMenu(); }
+        } else if (newKeys & DPAD_UP) {
+          if (actionMenuCursor & 2) { actionMenuCursor ^= 2; refreshActionMenu(); }
+        } else if (newKeys & DPAD_DOWN) {
+          if (!(actionMenuCursor & 2)) { actionMenuCursor ^= 2; refreshActionMenu(); }
+        } else if (newKeys & A_BUTTON) {
+          // 1:1 décomp : dispatch selon cursor :
+          // 0 = B_ACTION_USE_MOVE   → MOVE_MENU_INIT
+          // 1 = B_ACTION_USE_ITEM   → fallback msg (bag in-battle deferred)
+          // 2 = B_ACTION_SWITCH     → fallback msg (party switch in-battle deferred)
+          // 3 = B_ACTION_RUN        → run logic via TryRunFromBattle
+          closeActionMenu();
+          switch (actionMenuCursor) {
+            case 0: state = 'MOVE_MENU_INIT';      break;
+            case 1: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'SAC'; break;
+            case 2: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
+            case 3: state = 'ACTION_RUN_TEXT';      break;
+          }
+        }
+        // No B-cancel for single battle (= 1:1 décomp ll. 306-325 only fires
+        // en double battle PLAYER_RIGHT pour annuler partner choice).
+        return false;
+      }
+
+      // ─── ACTION_FALLBACK : SAC / POKéMON pas encore implémentés en combat ──
+      case 'ACTION_FALLBACK_TEXT': {
+        // Message gracieux qui ramène le user au menu action.
+        ShowFieldMessage(`${_lastFallbackKind} pas encore\ndisponible en combat!`);
+        state = 'ACTION_FALLBACK_WAIT';
+        return false;
+      }
+
+      case 'ACTION_FALLBACK_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'ACTION_MENU_INIT';  // retour au menu pour re-choisir
+        }
+        return false;
+      }
+
+      // ─── ACTION_RUN : fuite simple (= wild battle uniquement, trainer skip) ──
+      case 'ACTION_RUN_TEXT': {
+        // 1:1 décomp : trainer battles can't run (= sText_CantEscape).
+        // Pour wild : success immediate (= MVP simple, full TryRunFromBattle
+        // avec speed math wired session ultérieure).
+        ShowFieldMessage(`Vous prenez la fuite!`);
+        outcome = BATTLE_OUTCOME_RAN;
+        state = 'ACTION_RUN_WAIT';
+        return false;
+      }
+
+      case 'ACTION_RUN_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'CLEANUP_FADE_OUT';
         }
         return false;
       }
@@ -1205,6 +1382,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           playerHpWindowId = -1;
         }
         closeMoveMenu();
+        closeActionMenu();  // Phase 1.4 N : cleanup action menu windows si encore actives
         // Iter16 : restore overworld BGs after battle.
         ShowBg(1);
         ShowBg(2);
