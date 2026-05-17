@@ -24,6 +24,7 @@ import {
 } from '../pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { getSpeciesInfo } from '../data/game-data';
+import * as MOVES_DATA from '../decomp-data/auto/include/constants/moves-data';
 // AUDIT BUG FIX : import direct gBattleMons depuis state.ts (= même instance
 // singleton que bytecode runtime). Avant : globalThis.__battleState lookup
 // retournait une instance ESM différente → battle mons setup invisible aux
@@ -389,13 +390,39 @@ function _resolveSpeciesId(enumStr: string): number {
   return typeof id === 'number' ? id : 0;
 }
 
-/** Resolve un move enum ex. "MOVE_TACKLE" vers u16 id décomp. Le dex id est
- *  kebab-case ; on convertit en MOVE_* puis lookup. */
+/** Map normalisée nom-de-move → enum décomp, construite 1:1 depuis les
+ *  constantes auto-extraites `moves-data` (= include/constants/moves.h).
+ *  Clé = nom sans séparateur en minuscules (ex. "defensecurl"), valeur =
+ *  "MOVE_DEFENSE_CURL". Aucune dépendance Showdown (= 1:1 décomp strict). */
+let _moveNameNormToEnum: Record<string, string> | null = null;
+function _ensureMoveNameMap(): Record<string, string> {
+  if (_moveNameNormToEnum) return _moveNameNormToEnum;
+  const m: Record<string, string> = {};
+  for (const key of Object.keys(MOVES_DATA)) {
+    if (!key.startsWith('MOVE_')) continue;
+    const norm = key.slice(5).replace(/_/g, '').toLowerCase();
+    if (norm && !(norm in m)) m[norm] = key;
+  }
+  _moveNameNormToEnum = m;
+  return m;
+}
+
+/** Resolve un move dex id (ex. "tackle", "defensecurl") vers u16 id décomp
+ *  (MOVE_*). Les ids runtime sont sans séparateur ("defensecurl") alors que
+ *  les enums décomp sont underscore-segmentés ("MOVE_DEFENSE_CURL") : la
+ *  conversion naïve échouait sur les noms composés → 0 (= bug pré-existant
+ *  qui rendait gBattleMons[1].moves[1..3] vides pour le BattleAI). Résolution
+ *  1:1 via les constantes décomp moves-data normalisées (pas de @pkmn/dex). */
 function _resolveMoveId(dexId: string): number {
-  // 1:1 décomp : MOVE_TACKLE etc. Notre dexId est kebab-case ("tackle").
-  const enumStr = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
-  const id = resolveDecompConstant(enumStr);
-  return typeof id === 'number' ? id : 0;
+  const naive = resolveDecompConstant('MOVE_' + dexId.toUpperCase().replace(/-/g, '_'));
+  if (typeof naive === 'number' && naive !== 0) return naive;
+  const norm = dexId.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const enumName = _ensureMoveNameMap()[norm];
+  if (enumName) {
+    const viaMap = resolveDecompConstant(enumName);
+    if (typeof viaMap === 'number') return viaMap;
+  }
+  return typeof naive === 'number' ? naive : 0;
 }
 
 /** Bridge un `PokemonInstance` runtime vers un `Pokemon` battle-side. */
