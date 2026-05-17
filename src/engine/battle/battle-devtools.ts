@@ -567,6 +567,37 @@ export function buildBattleDevtools(): Record<string, unknown> {
         eventsCount: result.eventsCount,
       };
     },
+    /** Wrapper devtools : sim 1 turn complet bytecode 1:1 décomp.
+     *  Sequence :
+     *    1. runTurnStart (= TurnValuesCleanUp(FALSE) → isFirstTurn--, recharge--)
+     *    2. testMoveBridge(moveId) (= attacker exec move)
+     *    3. runTurnPassed (= TurnValuesCleanUp(TRUE) + DoField + DoBattler + Wish/Perish + cleanup)
+     *    4. runHandleFainted SI defender hp == 0 (= GiveExp + HandleFaintedMon)
+     *  Returns aggregated { startupOk, move, turn, fainted? } pour debug. */
+    runFullTurn: async (opts: { moveId: string; attackerSpecies?: string; attackerLevel?: number; enemy?: string; enemyLevel?: number; persistMons?: boolean; }) => {
+      runTurnStartCleanupViaBytecode();
+      // Lazy lookup testMoveBridge depuis window.scope (= installé par dev-scope).
+      const wScope = (window as unknown as { scope?: { bytecode?: { testMoveBridge?: (o: unknown) => Promise<Record<string, unknown>> } } }).scope;
+      const testMoveBridge = wScope?.bytecode?.testMoveBridge;
+      const moveR = testMoveBridge ? await testMoveBridge({
+        moveId: opts.moveId, attackerSpecies: opts.attackerSpecies, attackerLevel: opts.attackerLevel,
+        enemy: opts.enemy, enemyLevel: opts.enemyLevel, persistMons: opts.persistMons ?? true,
+      }) : { error: 'testMoveBridge not available' };
+      const turnR = await runBattleTurnPassedViaBytecode();
+      let faintR: Record<string, unknown> | null = null;
+      const gs = (globalThis as { __battleState?: { gBattleMons?: Array<{ hp: number }> } }).__battleState;
+      const defenderHp = gs?.gBattleMons?.[1]?.hp ?? -1;
+      if (defenderHp === 0) {
+        const fr = await runHandleFaintedMonActionsViaBytecode();
+        faintR = { phases: fr.phases, msgs: fr.messages, eventsCount: fr.eventsCount };
+      }
+      return {
+        startupOk: true,
+        move: moveR,
+        turn: { phases: turnR.phases, msgs: turnR.messages, outcome: turnR.outcome, battleEnded: turnR.battleEnded },
+        fainted: faintR,
+      };
+    },
     // Help
     help: () => `
 scope.bytecode — devtools battle script interpreter (1:1 décomp)
