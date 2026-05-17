@@ -407,8 +407,10 @@ import {
 import { gStatuses3, gHitMarker, setHitMarker, gDisableStructs, gBattleMoveDamage, setBattleMoveDamage, gSpecialStatuses, gBattlerAttacker } from './state';
 import { AbilityBattleEffects, ABILITYEFFECT_ENDTURN, consumeAbilityWantedScript } from './ability-battle-effects';
 import { ItemBattleEffects, ITEMEFFECT_NORMAL, consumeItemWantedScript } from './item-battle-effects';
-const HITMARKER_GRUDGE        = 1 << 13;
-const HITMARKER_IGNORE_BIDE   = 1 << 12;
+// 1:1 décomp battle.h:182, 201.
+// AUDIT BUG FIX : était 1<<13 / 1<<12 (= faux, jamais set/clear correct bit).
+const HITMARKER_GRUDGE        = 1 << 24;
+const HITMARKER_IGNORE_BIDE   = 1 << 5;
 
 /** Type étendu pour DoBattlerEndTurnEffects : retourne `null` si fini,
  *  `{ scriptLabel }` pour exec script, ou `{ scriptLabel, retVal: 2 }` pour

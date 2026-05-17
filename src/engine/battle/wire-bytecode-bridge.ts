@@ -721,11 +721,13 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   TurnValuesCleanUp(false);
 
   // Step 7-9 : reset markers + scripting + comm[0..4].
+  // AUDIT BUG FIX : 4 HITMARKER constantes hardcoded fausses → import depuis
+  // constants.ts (= valeurs correctes 1:1 battle.h:181-205).
   const stateMod = await import('./state');
-  const HITMARKER_NO_ATTACKSTRING    = 1 << 6;
-  const HITMARKER_UNABLE_TO_USE_MOVE = 1 << 7;
-  const HITMARKER_PLAYER_FAINTED     = 1 << 28;
-  const HITMARKER_PASSIVE_HP_UPDATE  = 1 << 14;
+  const HITMARKER_NO_ATTACKSTRING    = 1 << 9;
+  const HITMARKER_UNABLE_TO_USE_MOVE = 1 << 19;
+  const HITMARKER_PLAYER_FAINTED     = 1 << 22;
+  const HITMARKER_PASSIVE_HP_UPDATE  = 1 << 20;
   const mask = ~(HITMARKER_NO_ATTACKSTRING | HITMARKER_UNABLE_TO_USE_MOVE
                  | HITMARKER_PLAYER_FAINTED | HITMARKER_PASSIVE_HP_UPDATE);
   stateMod.setHitMarker(stateMod.gHitMarker & mask);
