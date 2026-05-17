@@ -18,6 +18,43 @@
  */
 import { rgba8ToRgb15, type Rgb15 } from './types';
 
+/**
+ * FIX RACINE SYSTÉMIQUE (2026-05-17) — fetch d'un asset binaire en rejetant le
+ * fallback SPA du dev server.
+ *
+ * Quand un fichier n'existe pas, le serveur Vite (et la plupart des hôtes SPA)
+ * renvoie `index.html` avec **status 200** + content-type `text/html`. Tous nos
+ * loaders binaires faisaient `if (!resp.ok) throw` — donc `resp.ok` était TRUE
+ * et ils interprétaient `<!DOCTYPE html>...` comme tile data / tilemap / palette
+ * → garbage silencieux (textbox rouge/bleu, palettes fausses, tilemaps cassés).
+ *
+ * Ce helper centralise le garde-fou : rejette si !ok, si content-type HTML, ou
+ * si le body commence par '<' (sniff, BOM-safe). Message d'erreur explicite =
+ * le fichier manquant est visible (plus de garbage muet). Les loaders avec un
+ * fallback légitime (loadTileBin → PNG) catchent cette exception.
+ */
+export async function fetchAssetArrayBuffer(url: string): Promise<ArrayBuffer> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`[asset] fetch failed ${url} → HTTP ${resp.status}`);
+  }
+  const ct = resp.headers.get('content-type') || '';
+  const buf = await resp.arrayBuffer();
+  const b = new Uint8Array(buf);
+  const looksHtml =
+    ct.includes('text/html') ||
+    (b.length >= 1 && b[0] === 0x3C /* '<' */) ||
+    // UTF-8 BOM (EF BB BF) puis '<'
+    (b.length >= 4 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF && b[3] === 0x3C);
+  if (looksHtml || b.length === 0) {
+    throw new Error(
+      `[asset] MANQUANT (fallback HTML du dev server) : ${url} ` +
+      `— fichier non extrait. Voir scripts/extract-all-tile-bins.mjs / extract-decomp.`,
+    );
+  }
+  return buf;
+}
+
 export interface LoadedPng {
   /** Tile data 4bpp packed. 32 bytes par tile, en row-major par tile (TL → BR). */
   charData: Uint8Array;
@@ -159,27 +196,12 @@ export async function loadIndexedPng(
 export async function loadTileBin(url: string, bpp: 4 | 8): Promise<Uint8Array> {
   const binUrl = url.replace(/\.png$/, `.${bpp}bpp.bin`);
   try {
-    const resp = await fetch(binUrl);
-    if (resp.ok) {
-      // BUG RACINE (= red/blue garbage tiles battle textbox) : le dev server
-      // Vite renvoie `index.html` (status 200, content-type text/html) en
-      // FALLBACK SPA quand le fichier n'existe pas. `resp.ok` est donc TRUE et
-      // on chargeait le HTML (`<!DOCTYPE html>...`) comme tile data 4bpp.
-      // → rejeter explicitement la réponse HTML pour retomber sur le PNG.
-      const ct = resp.headers.get('content-type') || '';
-      const buf = await resp.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      const looksHtml =
-        ct.includes('text/html') ||
-        // Garde-fou : sniff début de body ('<!DOCTYPE' / '<html' / '<' / BOM+'<').
-        (bytes.length >= 1 && (bytes[0] === 0x3C /* '<' */ ||
-          (bytes.length >= 4 && bytes[0] === 0xEF && bytes[3] === 0x3C)));
-      if (!looksHtml && bytes.length > 0) {
-        return bytes;
-      }
-    }
-  } catch {/* fall through */}
-  console.warn(`[png-loader] no valid ${binUrl} (absent ou fallback HTML Vite), extraction PNG indexée via loadIndexedPngStrict`);
+    // fetchAssetArrayBuffer rejette le fallback HTML Vite (= bug racine garbage
+    // tiles). Le .4bpp.bin est le chemin 1:1 (= gbagfx décomp).
+    const buf = await fetchAssetArrayBuffer(binUrl);
+    return new Uint8Array(buf);
+  } catch {/* .bin absent → fallback PNG indexé (= même indices via parse IDAT) */}
+  console.warn(`[png-loader] ${binUrl} absent, fallback loadIndexedPngStrict (PNG indexé)`);
   const png = await loadIndexedPngStrict(url, bpp);
   return png.charData;
 }
@@ -273,10 +295,9 @@ export async function loadIndexedPng8bppWithPal(
  * Le .bin doit être en little-endian u16 (format GBA natif).
  */
 export async function loadTilemapBin(url: string): Promise<Uint16Array> {
-  const buf = await fetch(url).then((r) => {
-    if (!r.ok) throw new Error(`tilemap fetch failed: ${url} → ${r.status}`);
-    return r.arrayBuffer();
-  });
+  // fetchAssetArrayBuffer : rejette le fallback HTML Vite (sinon le tilemap
+  // serait des octets `<!DOCTYPE html>` interprétés en u16 → BG cassé).
+  const buf = await fetchAssetArrayBuffer(url);
   // ArrayBuffer length must be even
   if (buf.byteLength % 2 !== 0) {
     throw new Error(`tilemap ${url} byte length not even (${buf.byteLength})`);
@@ -292,7 +313,9 @@ export async function loadTilemapBin(url: string): Promise<Uint16Array> {
  * PLTE chunk = liste de RGB triplets (3 bytes par couleur).
  */
 export async function extractPngPlte(url: string): Promise<Uint16Array | null> {
-  const buf = await fetch(url).then(r => r.arrayBuffer());
+  // fetchAssetArrayBuffer : si le PNG manque, throw clair "MANQUANT" au lieu
+  // de renvoyer null → "no PLTE chunk (not indexed)" trompeur en aval.
+  const buf = await fetchAssetArrayBuffer(url);
   const view = new Uint8Array(buf);
   // PNG signature : 137 80 78 71 13 10 26 10
   if (view[0] !== 137 || view[1] !== 80) return null;
@@ -361,10 +384,7 @@ export async function loadIndexedPngStrict(url: string, bpp: 4 | 8 = 4): Promise
  * avec high byte=0. Le BG affine renderer ignore les bits 8-15 de chaque entry.
  */
 export async function loadAffineTilemapBin(url: string): Promise<Uint16Array> {
-  const buf = await fetch(url).then((r) => {
-    if (!r.ok) throw new Error(`affine tilemap fetch failed: ${url} → ${r.status}`);
-    return r.arrayBuffer();
-  });
+  const buf = await fetchAssetArrayBuffer(url);
   const u8 = new Uint8Array(buf);
   const u16 = new Uint16Array(u8.length);
   for (let i = 0; i < u8.length; i++) u16[i] = u8[i];
@@ -383,10 +403,9 @@ export async function loadAffineTilemapBin(url: string): Promise<Uint16Array> {
  * assets compilés en ROM).
  */
 export async function loadGbaPal(url: string): Promise<Uint16Array> {
-  const buf = await fetch(url).then((r) => {
-    if (!r.ok) throw new Error(`pal fetch failed: ${url} → ${r.status}`);
-    return r.arrayBuffer();
-  });
+  // fetchAssetArrayBuffer : rejette le fallback HTML Vite (sinon une palette
+  // serait des octets HTML lus en RGB15 → couleurs fausses partout).
+  const buf = await fetchAssetArrayBuffer(url);
   // Heuristique : si commence par "JASC-PAL" (texte ASCII), parse texte.
   // Sinon raw binaire u16 RGB15.
   const view = new Uint8Array(buf);

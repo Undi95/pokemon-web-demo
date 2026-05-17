@@ -119,6 +119,18 @@ const targets = [
   }
 }
 
+// bag/*.png : bag-screen.ts fait loadTileBin(`/decomp/em/bag/bag_${gender}.png`)
+// + menu.png. Glob auto = couvre bag_pyramid/check_berry/check_berry_circle/hm
+// qui n'avaient pas de .4bpp.bin (fallback HTML Vite si jamais loadTileBin'd).
+{
+  const bagDir = `${PUBLIC}/bag`;
+  if (fs.existsSync(bagDir)) {
+    for (const f of fs.readdirSync(bagDir)) {
+      if (f.endsWith('.png')) targets.push({ src: `${bagDir}/${f}`, bpp: 4 });
+    }
+  }
+}
+
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed
 // .bin files). Le décomp ROM utilise `.bin.lz` LZ77-compressed, mais nos source
 // files sont uncompressed → direct VRAM write OK.
