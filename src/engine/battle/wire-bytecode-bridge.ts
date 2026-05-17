@@ -27,6 +27,8 @@ import {
   gBattlerPartyIndexes,
   setBattlerAttacker,
   setBattlerTarget,
+  setBattlerFainted,
+  setAbsentBattlerFlags,
   setCurrentMove,
   setChosenMove,
   setCurrMovePos,
@@ -50,6 +52,19 @@ import {
   DoBattlerEndTurnEffects,
   HandleWishPerishSongOnTurnEnd,
 } from './end-turn-effects';
+// AUDIT FIX : static imports pour HandleFaintedMonActions (= éviter dual-instance).
+import {
+  AbilityBattleEffects as AbilityBattleEffects_static,
+  ABILITYEFFECT_INTIMIDATE1,
+  ABILITYEFFECT_TRACE,
+  ABILITYEFFECT_FORECAST,
+  consumeAbilityWantedScript as consumeAbilityWantedScript_static,
+} from './ability-battle-effects';
+import {
+  ItemBattleEffects as ItemBattleEffects_static,
+  ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,
+  consumeItemWantedScript as consumeItemWantedScript_static,
+} from './item-battle-effects';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
 import { Dex } from '@pkmn/dex';
@@ -371,6 +386,247 @@ export function drainBattleEventsAsText(): { messages: string[]; eventsCount: nu
 /** Re-export clear pour devtools et pour battle-flow.ts (= reset queue au début
  *  d'un nouveau turn pour éviter de mixer les events). */
 export { clearBattleEventQueue };
+
+// ─── HandleFaintedMonActions runner (Phase 1.4 L) ───────────────────────────
+
+/** 1:1 décomp `HandleFaintedMonActions()` (battle_util.c:1877-1954).
+ *  7-state machine pour gestion KO mid-turn :
+ *
+ *    case 0 : init (skip si SAFARI) + reset gAbsentBattlerFlags pour mons dispo
+ *    case 1 : find unscored fainted mon → exec BattleScript_GiveExp → state 2
+ *    case 2 : OpponentSwitchInResetSentPokesToOpponentValue → next battler
+ *             → state 1 (loop) ou 3 (done)
+ *    case 3 : init pour handle faint sub-loop
+ *    case 4 : find fainted mon → exec BattleScript_HandleFaintedMon → state 5
+ *    case 5 : next battler → state 4 (loop) ou 6 (done)
+ *    case 6 : check ABILITYEFFECT_INTIMIDATE1/TRACE/ITEMEFFECT_NORMAL(TRUE)/
+ *             FORECAST → return TRUE si effect (= exec leur script via wantedScript)
+ *    case 7 : break do-while → return FALSE
+ *
+ *  Loop jusqu'à state == FAINTED_ACTIONS_MAX_CASE (=7) sans interruption.
+ *  Pour le caller : `let r; while (r = runHandleFaintedMonActionsViaBytecode())`. */
+export async function runHandleFaintedMonActionsViaBytecode(): Promise<{
+  ok: boolean;
+  phases: { phase: 'fainted'; label: string }[];
+  messages: string[];
+  events: BattleEvent[];
+  eventsCount: number;
+}> {
+  clearBattleEventQueue();
+  const phases: { phase: 'fainted'; label: string }[] = [];
+
+  const gs = (globalThis as { __battleState?: {
+    gBattleStruct?: {
+      faintedActionsState: number;
+      faintedActionsBattlerId: number;
+      givenExpMons: number;
+    };
+    gBattlersCount?: number;
+    gAbsentBattlerFlags?: number;
+    gBattleMons?: Array<{ hp: number }>;
+    gBattlerPartyIndexes?: number[];
+    gBattleTypeFlags?: number;
+  } }).__battleState;
+  if (!gs?.gBattleStruct) return { ok: false, phases, messages: [], events: [], eventsCount: 0 };
+
+  const BATTLE_TYPE_SAFARI = 1 << 7;
+  const FAINTED_ACTIONS_MAX_CASE = 7;
+  const PARTY_SIZE = 6;
+  const tf = gs.gBattleTypeFlags ?? 0;
+  if (tf & BATTLE_TYPE_SAFARI) {
+    return { ok: true, phases, messages: [], events: [], eventsCount: 0 };
+  }
+
+  const battlersCount = gs.gBattlersCount ?? 2;
+  const bitTable = [1, 2, 4, 8];
+
+  // Reset state machine au début du flow.
+  gs.gBattleStruct.faintedActionsState = 0;
+
+  // Static imports déjà en tête de fichier (= éviter ESM dual-instance).
+  const abe = { AbilityBattleEffects: AbilityBattleEffects_static,
+                ABILITYEFFECT_INTIMIDATE1, ABILITYEFFECT_TRACE, ABILITYEFFECT_FORECAST,
+                consumeAbilityWantedScript: consumeAbilityWantedScript_static };
+  const ibe = { ItemBattleEffects: ItemBattleEffects_static, ITEMEFFECT_NORMAL: ITEMEFFECT_NORMAL_static,
+                consumeItemWantedScript: consumeItemWantedScript_static };
+
+  let safety = 0;
+  while (safety++ < 100 && gs.gBattleStruct.faintedActionsState !== FAINTED_ACTIONS_MAX_CASE) {
+    const s = gs.gBattleStruct.faintedActionsState;
+    let returnedTrue = false;
+
+    switch (s) {
+      case 0: {
+        // 1:1 décomp ll. 1886-1894 : init + un-mark mons absents qui ont party.
+        gs.gBattleStruct.faintedActionsBattlerId = 0;
+        gs.gBattleStruct.faintedActionsState = 1;
+        for (let i = 0; i < battlersCount; i++) {
+          if ((gs.gAbsentBattlerFlags ?? 0) & bitTable[i]) {
+            // HasNoMonsToSwitch(i, PARTY_SIZE, PARTY_SIZE) — 1:1 stub via cmd-niveau-32.
+            // Inline simple check : un mon dispo dans son party + alive ?
+            const partyIdx = gs.gBattlerPartyIndexes?.[i] ?? 0;
+            const partyMod = (i & 1) === 0
+              ? (globalThis as { gPlayerParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gPlayerParty
+              : (globalThis as { gEnemyParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gEnemyParty;
+            let hasAlt = false;
+            if (partyMod) {
+              for (let j = 0; j < PARTY_SIZE; j++) {
+                if (j === partyIdx) continue;
+                const m = partyMod[j];
+                if (m?.species && (m.hp ?? 0) > 0 && !m.isEgg) { hasAlt = true; break; }
+              }
+            }
+            if (hasAlt) {
+              setAbsentBattlerFlags((gs.gAbsentBattlerFlags ?? 0) & ~bitTable[i]);
+            }
+          }
+        }
+        // fall through (= continue while loop, next switch case 1).
+        break;
+      }
+
+      case 1: {
+        // 1:1 décomp ll. 1896-1909 : find unscored fainted mon.
+        let foundFainted = false;
+        do {
+          const b = gs.gBattleStruct.faintedActionsBattlerId;
+          setBattlerTarget(b);
+          setBattlerFainted(b);
+          const partyIdx = gs.gBattlerPartyIndexes?.[b] ?? 0;
+          const expBit = bitTable[partyIdx] ?? 1;
+          if ((gs.gBattleMons?.[b]?.hp ?? 1) === 0
+              && !((gs.gBattleStruct.givenExpMons ?? 0) & expBit)
+              && !((gs.gAbsentBattlerFlags ?? 0) & bitTable[b])) {
+            phases.push({ phase: 'fainted', label: 'BattleScript_GiveExp' });
+            _runScriptSync('BattleScript_GiveExp');
+            gs.gBattleStruct.faintedActionsState = 2;
+            foundFainted = true;
+            returnedTrue = true;
+            break;
+          }
+        } while (++gs.gBattleStruct.faintedActionsBattlerId !== battlersCount);
+        if (!foundFainted) {
+          gs.gBattleStruct.faintedActionsState = 3;
+        }
+        break;
+      }
+
+      case 2: {
+        // 1:1 décomp ll. 1911-1916 : OpponentSwitchInReset + advance battler.
+        const b: number = gs.gBattleStruct.faintedActionsBattlerId;
+        // GET_BATTLER_SIDE(b) == OPPONENT (= b & 1).
+        if ((b & 1) === 1) {
+          // Inline OpponentSwitchInResetSentPokesToOpponentValue (= cmd-niveau-28 pattern).
+          const flank = (b & 2) >>> 1;
+          const sentPokes = (globalThis as { gSentPokesToOpponent?: number[] }).gSentPokesToOpponent;
+          if (sentPokes) {
+            sentPokes[flank] = 0;
+            let bits = 0;
+            for (let i = 0; i < battlersCount; i += 2) {
+              if (!((gs.gAbsentBattlerFlags ?? 0) & bitTable[i])) {
+                bits |= bitTable[gs.gBattlerPartyIndexes?.[i] ?? 0];
+              }
+            }
+            sentPokes[flank] = bits;
+          }
+        }
+        if (++gs.gBattleStruct.faintedActionsBattlerId === battlersCount) {
+          gs.gBattleStruct.faintedActionsState = 3;
+        } else {
+          gs.gBattleStruct.faintedActionsState = 1;
+        }
+        break;
+      }
+
+      case 3: {
+        // 1:1 décomp ll. 1918-1920 : init pour handle faint sub-loop.
+        gs.gBattleStruct.faintedActionsBattlerId = 0;
+        gs.gBattleStruct.faintedActionsState = 4;
+        // fall through
+        break;
+      }
+
+      case 4: {
+        // 1:1 décomp ll. 1922-1933 : find fainted mon → handle.
+        let foundFainted = false;
+        do {
+          const b = gs.gBattleStruct.faintedActionsBattlerId;
+          setBattlerTarget(b);
+          setBattlerFainted(b);
+          if ((gs.gBattleMons?.[b]?.hp ?? 1) === 0
+              && !((gs.gAbsentBattlerFlags ?? 0) & bitTable[b])) {
+            phases.push({ phase: 'fainted', label: 'BattleScript_HandleFaintedMon' });
+            _runScriptSync('BattleScript_HandleFaintedMon');
+            gs.gBattleStruct.faintedActionsState = 5;
+            foundFainted = true;
+            returnedTrue = true;
+            break;
+          }
+        } while (++gs.gBattleStruct.faintedActionsBattlerId !== battlersCount);
+        if (!foundFainted) {
+          gs.gBattleStruct.faintedActionsState = 6;
+        }
+        break;
+      }
+
+      case 5: {
+        // 1:1 décomp ll. 1936-1939 : advance battler.
+        if (++gs.gBattleStruct.faintedActionsBattlerId === battlersCount) {
+          gs.gBattleStruct.faintedActionsState = 6;
+        } else {
+          gs.gBattleStruct.faintedActionsState = 4;
+        }
+        break;
+      }
+
+      case 6: {
+        // 1:1 décomp ll. 1942-1947 : Intimidate/Trace/ITEMEFFECT_NORMAL TRUE/Forecast.
+        const e1 = abe.AbilityBattleEffects(abe.ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0);
+        if (e1) {
+          const label = abe.consumeAbilityWantedScript();
+          if (label) { phases.push({ phase: 'fainted', label }); _runScriptSync(label); }
+          returnedTrue = true;
+          break;
+        }
+        const e2 = abe.AbilityBattleEffects(abe.ABILITYEFFECT_TRACE, 0, 0, 0, 0);
+        if (e2) {
+          const label = abe.consumeAbilityWantedScript();
+          if (label) { phases.push({ phase: 'fainted', label }); _runScriptSync(label); }
+          returnedTrue = true;
+          break;
+        }
+        const e3 = ibe.ItemBattleEffects(ibe.ITEMEFFECT_NORMAL, 0, true);
+        if (e3) {
+          const label = ibe.consumeItemWantedScript();
+          if (label) { phases.push({ phase: 'fainted', label }); _runScriptSync(label); }
+          returnedTrue = true;
+          break;
+        }
+        const e4 = abe.AbilityBattleEffects(abe.ABILITYEFFECT_FORECAST, 0, 0, 0, 0);
+        if (e4) {
+          const label = abe.consumeAbilityWantedScript();
+          if (label) { phases.push({ phase: 'fainted', label }); _runScriptSync(label); }
+          returnedTrue = true;
+          break;
+        }
+        gs.gBattleStruct.faintedActionsState = 7;
+        break;
+      }
+    }
+
+    if (returnedTrue) {
+      // Décomp return TRUE = caller doit re-call. Notre port = loop continue
+      // pour fait equivalents repeat call. Skip to next iter.
+      continue;
+    }
+  }
+
+  const drained = drainBattleEventsAsText();
+  return {
+    ok: true, phases,
+    messages: drained.messages, events: drained.events, eventsCount: drained.eventsCount,
+  };
+}
 
 // ─── BattleTurnPassed wrapper (Phase 1.4 L) ─────────────────────────────────
 

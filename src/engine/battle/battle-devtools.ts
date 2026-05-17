@@ -65,7 +65,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode } from './wire-bytecode-bridge';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -549,6 +549,19 @@ export function buildBattleDevtools(): Record<string, unknown> {
         eventsCount: result.eventsCount,
         outcome: result.outcome,
         battleEnded: result.battleEnded,
+      };
+    },
+    /** Run 1:1 décomp `HandleFaintedMonActions()` (battle_util.c:1877-1954).
+     *  7-state machine pour gestion KO mid-turn : GiveExp → HandleFaintedMon →
+     *  Intimidate/Trace/Items/Forecast. Caller appelle quand un mon est tombé
+     *  KO mid-turn (= hp == 0 + pas dans gAbsentBattlerFlags).
+     *  Returns { phases, msgs } debug summary. */
+    runHandleFainted: async () => {
+      const result = await runHandleFaintedMonActionsViaBytecode();
+      return {
+        phases: result.phases,
+        msgs: result.messages,
+        eventsCount: result.eventsCount,
       };
     },
     // Help
