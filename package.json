@@ -59,7 +59,8 @@
     "audit:species-stats": "node scripts/audit-species-basestats.mjs",
     "audit:moves-data": "node scripts/audit-moves-data.mjs",
     "audit:type-chart": "node scripts/audit-type-chart.mjs",
-    "audit:learnsets": "node scripts/audit-learnsets.mjs"
+    "audit:learnsets": "node scripts/audit-learnsets.mjs",
+    "audit:trainer-parties": "node scripts/audit-trainer-parties.mjs"
   },
   "dependencies": {
     "@pkmn/dex": "^0.9.32",
