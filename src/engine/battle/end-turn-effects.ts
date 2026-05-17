@@ -884,7 +884,9 @@ export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
             setBattleMoveDamage(gWishFutureKnock.futureSightDmg[active]);
             // gSpecialStatuses[target].shellBellDmg = IGNORE_SHELL_BELL (= sentinel
             // qui désactive le drain Shell Bell pour ce hit).
-            const IGNORE_SHELL_BELL = -0x80000000;
+            // AUDIT BUG FIX : était -0x80000000 (= signed int32 min) → 0xFFFF
+            // (= battle.h:61 + constants.ts:906).
+            const IGNORE_SHELL_BELL = 0xFFFF;
             gSpecialStatuses[active].shellBellDmg = IGNORE_SHELL_BELL;
             // 1:1 décomp ll. 1802-1806 : si partner aussi à 0 (= double battle),
             // clear SIDE_STATUS_FUTUREATTACK pour le côté target.
