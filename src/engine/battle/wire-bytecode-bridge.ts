@@ -33,11 +33,17 @@ import {
   setChosenMove,
   setCurrMovePos,
   setHitMarker,
+  gHitMarker,
   setMoveResultFlags,
   setBattleOutcome,
   setBattleMoveDamage,
   setCritMultiplier,
   setCurrentActionFuncId,
+  gBattleScripting,
+  gBattleResults,
+  gChosenActionByBattler,
+  gChosenMoveByBattler,
+  gBattleStruct,
 } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
@@ -721,21 +727,21 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   TurnValuesCleanUp(false);
 
   // Step 7-9 : reset markers + scripting + comm[0..4].
-  // AUDIT BUG FIX : 4 HITMARKER constantes hardcoded fausses → import depuis
-  // constants.ts (= valeurs correctes 1:1 battle.h:181-205).
-  const stateMod = await import('./state');
+  // AUDIT BUG FIX : 4 HITMARKER constantes hardcoded fausses + ESM dual-instance
+  // (= ancien `await import('./state')`) → import statique en tête de fichier
+  // + valeurs correctes 1:1 battle.h:181-205.
   const HITMARKER_NO_ATTACKSTRING    = 1 << 9;
   const HITMARKER_UNABLE_TO_USE_MOVE = 1 << 19;
   const HITMARKER_PLAYER_FAINTED     = 1 << 22;
   const HITMARKER_PASSIVE_HP_UPDATE  = 1 << 20;
   const mask = ~(HITMARKER_NO_ATTACKSTRING | HITMARKER_UNABLE_TO_USE_MOVE
                  | HITMARKER_PLAYER_FAINTED | HITMARKER_PASSIVE_HP_UPDATE);
-  stateMod.setHitMarker(stateMod.gHitMarker & mask);
-  stateMod.gBattleScripting.animTurn = 0;
-  stateMod.gBattleScripting.animTargetsHit = 0;
-  stateMod.gBattleScripting.moveendState = 0;
-  stateMod.setBattleMoveDamage(0);
-  stateMod.setMoveResultFlags(0);
+  setHitMarker(gHitMarker & mask);
+  gBattleScripting.animTurn = 0;
+  gBattleScripting.animTargetsHit = 0;
+  gBattleScripting.moveendState = 0;
+  setBattleMoveDamage(0);
+  setMoveResultFlags(0);
   if (gs?.gBattleCommunication) {
     for (let i = 0; i < 5; i++) gs.gBattleCommunication[i] = 0;
   }
@@ -744,7 +750,7 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   const outcomeAfterEndTurn = gs?.getBattleOutcome?.() ?? 0;
   if (outcomeAfterEndTurn !== 0) {
     const B_ACTION_FINISHED = 0xC;
-    stateMod.setCurrentActionFuncId(B_ACTION_FINISHED);
+    setCurrentActionFuncId(B_ACTION_FINISHED);
     const drained = drainBattleEventsAsText();
     return {
       ok: true, phases, outcome: outcomeAfterEndTurn, battleEnded: true,
@@ -753,38 +759,31 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   }
 
   // Step 11 : increment turn counters cap 0xFF.
-  // gBattleResults.battleTurnCounter (= dans gBattleResults persistant) +
-  // gBattleStruct.arenaTurnCounter.
-  const gbrm = stateMod.gBattleResults;
-  if (gbrm && gbrm.battleTurnCounter < 0xFF) {
-    gbrm.battleTurnCounter++;
-    if (gs?.gBattleStruct) gs.gBattleStruct.arenaTurnCounter++;
+  if (gBattleResults.battleTurnCounter < 0xFF) {
+    gBattleResults.battleTurnCounter++;
+    gBattleStruct.arenaTurnCounter++;
   }
 
   // Step 12 : reset chosen actions/moves.
-  // gChosenActionByBattler / gChosenMoveByBattler ne sont pas dans __battleState mais
-  // dans state.ts.
   const battlersCount = gs?.gBattlersCount ?? 2;
+  const B_ACTION_NONE = 0xFF;
+  const MOVE_NONE_LOCAL = 0;
   for (let i = 0; i < battlersCount; i++) {
-    const B_ACTION_NONE = 0xFF;
-    const MOVE_NONE = 0;
-    if (stateMod.gChosenActionByBattler) stateMod.gChosenActionByBattler[i] = B_ACTION_NONE;
-    if (stateMod.gChosenMoveByBattler) stateMod.gChosenMoveByBattler[i] = MOVE_NONE;
+    gChosenActionByBattler[i] = B_ACTION_NONE;
+    gChosenMoveByBattler[i] = MOVE_NONE_LOCAL;
   }
 
   // Step 13 : reset gBattleStruct.monToSwitchIntoId.
   const MAX_BATTLERS_COUNT = 4;
   const PARTY_SIZE = 6;
-  if (stateMod.gBattleStruct?.monToSwitchIntoId) {
+  if (gBattleStruct.monToSwitchIntoId) {
     for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
-      stateMod.gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE;
+      gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE;
     }
   }
 
   // Step 14 : save absent battler flags.
-  if (stateMod.gBattleStruct) {
-    stateMod.gBattleStruct.absentBattlerFlags = gs?.gAbsentBattlerFlags ?? 0;
-  }
+  gBattleStruct.absentBattlerFlags = gs?.gAbsentBattlerFlags ?? 0;
 
   // Step 15-16 : Palace/Arena special scripts.
   // AUDIT BUG FIX : BATTLE_TYPE_PALACE était 1 << 13 (= LEGENDARY) au lieu de 1 << 17.
