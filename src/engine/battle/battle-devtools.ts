@@ -63,7 +63,10 @@ import {
   setHitMarker,
   setMoveResultFlags,
 } from './state';
-import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
+import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, resolveMoveDexId } from './party-storage';
+import { CalculateBaseDamage as _cbd } from './damage-calc';
+import { getBattleMove as _gbm } from './data/battle-moves';
+import { TYPE_MYSTERY as _TYPE_MYSTERY } from './constants';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS } from './ai/ai-state';
@@ -709,6 +712,63 @@ export function buildBattleDevtools(): Record<string, unknown> {
         perStat[k] = { expected: exp[k], actual: act[k], ok };
       }
       return { pass, species: speciesEnum, level, seed, personality, nature, baseStats: base, perStat };
+    },
+    /** Assertion 1:1 EXACTE du cœur damage `CalculateBaseDamage` (pré-RNG,
+     *  déterministe). Recompute INDÉPENDANT 1:1 du core décomp pokemon.c
+     *  (APPLY_STAT_MOD neutre au battle-start + `if(damage==0)damage=1` +
+     *  final +2) vs appel direct. PASS valable en scénario PUR : pas de STAB
+     *  (move type ≠ types attaquant), power>1, pas TYPE_MYSTERY, stages
+     *  neutres (battle-start), attaquant = gBattleMons[1] (ennemi → pas de
+     *  badge boost), pas d'items. Attaquant = gBattleMons[1], défenseur = [0].
+     *  Genèse : v1 omettait le clamp damage==0→1 → faux FAIL Pound/Geodude
+     *  (got=3 = 1:1 décomp : core 0 → 1 → +2). Corrigé ici.
+     *  Usage : scope.bytecode.preciseDamage({ seed:0, moveId:'pound',
+     *    attackerSpecies:'SPECIES_TREECKO', attackerLevel:5,
+     *    defenderSpecies:'SPECIES_GEODUDE', defenderLevel:14 }) */
+    preciseDamage: async (opts?: {
+      seed?: number; moveId?: string;
+      attackerSpecies?: string; attackerLevel?: number;
+      defenderSpecies?: string; defenderLevel?: number;
+    }) => {
+      const seed = opts?.seed ?? 0;
+      const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
+      _debugResetRng();
+      SeedRng(seed);
+      const pokemonMod = await import('../pokemon');
+      const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, fix);
+      const defMon = pokemonMod.createPokemonInstance(opts?.defenderSpecies ?? 'SPECIES_GEODUDE', opts?.defenderLevel ?? 14, fix);
+      // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].
+      setupPartyForBattle([defMon] as never, [atkMon] as never);
+      fillActiveBattleMonsForBattleStart();
+      const bm = (globalThis as { __battleState?: { gBattleMons?: Array<{ attack: number; defense: number; spAttack: number; spDefense: number; level: number; type1: number; type2: number }> } }).__battleState?.gBattleMons;
+      if (!bm || !bm[0] || !bm[1]) return { error: 'gBattleMons absent' };
+      const moveNum = resolveMoveDexId(opts?.moveId ?? 'pound');
+      const md = _gbm(moveNum);
+      const power = md.power;
+      const mtype = md.type;
+      const A = bm[1]; const D = bm[0];
+      const got = _cbd(A as never, D as never, moveNum, 0, 0, 0, 1, 0).damage;
+      // Recompute INDÉPENDANT 1:1 core décomp (chemin pur, stages neutres =
+      // APPLY_STAT_MOD identité, pas de badge car attaquant côté ennemi).
+      const physical = mtype < _TYPE_MYSTERY;
+      const atkStat = physical ? A.attack : A.spAttack;
+      const defStat = physical ? D.defense : D.spDefense;
+      const lvl = A.level;
+      let d = atkStat * power;
+      d = d * (Math.floor(2 * lvl / 5) + 2);
+      d = Math.floor(d / defStat);
+      d = Math.floor(d / 50);
+      if (d === 0) d = 1;                  // ← clamp 1:1 décomp (pokemon.c)
+      const expected = d + 2;              // ← final +2 1:1 décomp
+      const isStab = A.type1 === mtype || A.type2 === mtype;
+      const pure = mtype !== _TYPE_MYSTERY && !isStab && power > 1;
+      return {
+        pure, pass: pure ? got === expected : null,
+        move: opts?.moveId ?? 'pound', moveNum, power, mtype, physical,
+        attacker: { sp: opts?.attackerSpecies ?? 'SPECIES_TREECKO', lvl, atkStat, isStab },
+        defender: { sp: opts?.defenderSpecies ?? 'SPECIES_GEODUDE', defStat },
+        got, expected, seed,
+      };
     },
     // End-turn effects (Phase 1.4 L) — delegate à wire-bytecode-bridge.
     /** Run la chaîne complète end-of-turn 1:1 décomp :
