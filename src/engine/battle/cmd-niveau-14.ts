@@ -48,8 +48,9 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
 /** 1:1 décomp `WEATHER_HAS_EFFECT` macro (battle_util.h:47).
  *  TRUE sauf si ABILITY_CLOUD_NINE ou ABILITY_AIR_LOCK est on field. */
 function _weatherHasEffect(): boolean {
+  // 1:1 décomp abilities.h:17,81. AUDIT BUG FIX : AIR_LOCK était 76 (= TRACE!) → 77.
   const ABILITY_CLOUD_NINE_LOCAL = 13;
-  const ABILITY_AIR_LOCK_LOCAL = 76;
+  const ABILITY_AIR_LOCK_LOCAL = 77;
   const st = (globalThis as { __battleState?: {
     gBattlersCount?: number;
     gBattleMons?: Array<{ ability: number; hp: number }>;

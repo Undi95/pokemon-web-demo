@@ -415,8 +415,9 @@ export function GetDefaultMoveTarget(battler: number): number {
  *  `((!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK)))`.
  *  Retourne TRUE sauf si Cloud Nine ou Air Lock est on field (= ability bloque weather). */
 export function WEATHER_HAS_EFFECT(): boolean {
+  // 1:1 décomp abilities.h:17,81. AUDIT BUG FIX : AIR_LOCK était 76 (= TRACE!) → 77.
   const ABILITY_CLOUD_NINE_LOCAL = 13;
-  const ABILITY_AIR_LOCK_LOCAL = 76;
+  const ABILITY_AIR_LOCK_LOCAL = 77;
   for (let i = 0; i < gBattlersCount; i++) {
     const mon = gBattleMons[i];
     if (!mon) continue;

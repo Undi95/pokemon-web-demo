@@ -151,7 +151,8 @@ function weatherHasEffect(): boolean {
   if (!checkFn) return true;  // pas wired = no field block
   const ABILITYEFFECT_CHECK_ON_FIELD = 12;
   const ABILITY_CLOUD_NINE = 13;
-  const ABILITY_AIR_LOCK = 76;
+  // 1:1 décomp abilities.h:81. AUDIT BUG FIX : AIR_LOCK était 76 → 77.
+  const ABILITY_AIR_LOCK = 77;
   const cloudNine = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_CLOUD_NINE, 0, 0);
   const airLock = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_AIR_LOCK, 0, 0);
   return !cloudNine && !airLock;
