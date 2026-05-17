@@ -196,9 +196,27 @@ const ACTION_MENU_WINDOW: WindowTemplate = {
   paletteNum: 15,
   baseBlock: 0x190,
 };
+/** FLIP option 2 : le bytecode interpreter 1:1 décomp est le moteur de
+ *  combat PAR DÉFAUT (combats simples ; quatuor précision + 12 audits +
+ *  ~100 moves + formule/ciblage/AI doubles prouvés 1:1). Rollback
+ *  réversible SANS rebuild :
+ *    window.__USE_BYTECODE_FOR_DAMAGE__ = false        (no reload)
+ *    localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__','0')  (reload)
+ *  → chemin legacy MVP. Back-compat : `=true`/`='1'` force ON (inchangé). */
+export function isBytecodeDamageEnabled(): boolean {
+  const g = (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__;
+  const ls = typeof localStorage !== 'undefined'
+    ? localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') : null;
+  // Désactivé UNIQUEMENT si opt-out explicite ; sinon défaut = ON (flip).
+  return !(g === false || ls === '0');
+}
+// Observabilité (le user "surveille en jeu") : window.__isBytecodeDamageEnabled()
+// → true (défaut/flip ON) | false (opt-out actif). Zéro import, pas de circular.
+(globalThis as Record<string, unknown>).__isBytecodeDamageEnabled = isBytecodeDamageEnabled;
+
 // Move menu legacy : 1 grosse window (= avant refactor N4 1:1 décomp).
 // Conservée pour fallback / éventuel ROM A/B test mais non utilisée
-// quand __USE_BYTECODE_FOR_DAMAGE__ est ON (= maintenant default chemin).
+// quand le bytecode est ON (= maintenant default chemin).
 const MOVE_MENU_WINDOW: WindowTemplate = {
   bg: 0,
   tilemapLeft: 17, tilemapTop: 13,
@@ -731,17 +749,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
   /** 1:1 décomp `OpponentHandleChooseMove` (battle_controller_opponent.c:1551).
    *
-   *  Mode bytecode (flag `__USE_BYTECODE_FOR_DAMAGE__`) → vrai comportement
-   *  décomp via `chooseOpponentMoveViaAI` : combat sauvage = move ALÉATOIRE
-   *  (skip MOVE_NONE), pas "premier move offensif" (= c'était une dérive MVP ;
-   *  ROM Émeraude choisit aléatoirement pour les Pokémon sauvages).
-   *  Flag OFF → comportement legacy inchangé (= chemin tutorial parké, zéro
-   *  régression). Si l'AI renvoie -1 (indispo) → fallback legacy aussi. */
+   *  Bytecode = moteur PAR DÉFAUT (flip option 2, combats simples) → vrai
+   *  comportement décomp via `chooseOpponentMoveViaAI` : combat sauvage =
+   *  move ALÉATOIRE (skip MOVE_NONE) ; dresseur = scripts BattleAI 1:1.
+   *  Rollback réversible : `window.__USE_BYTECODE_FOR_DAMAGE__ = false`
+   *  OU `localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__','0')` →
+   *  chemin legacy MVP. Si l'AI renvoie -1 (indispo) → fallback legacy. */
   const pickOpponentMove = (): number => {
     if (!opponentMon || opponentMon.moves.length === 0) return 0;
-    const useBytecode =
-      (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
-      || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+    const useBytecode = isBytecodeDamageEnabled();
     if (useBytecode) {
       const r = chooseOpponentMoveViaAI({
         opponent: opponentMon,
@@ -785,21 +801,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
   /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul.
    *
-   *  Si flag global `__USE_BYTECODE_FOR_DAMAGE__` est set (= localStorage ou
-   *  window var), on route via le bytecode interpreter 1:1 décomp (= 645/645
-   *  scripts validés). Sinon, formule simplifiée ad-hoc (= legacy tutorial).
-   *
-   *  Pour activer : localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__', '1')
-   *  puis reload, OU window.__USE_BYTECODE_FOR_DAMAGE__ = true (no reload).
+   *  Bytecode interpreter 1:1 décomp = moteur PAR DÉFAUT (flip option 2 ;
+   *  645/645 scripts validés). Rollback réversible :
+   *  `window.__USE_BYTECODE_FOR_DAMAGE__ = false` (no reload) ou
+   *  `localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__','0')` (reload) →
+   *  formule simplifiée ad-hoc legacy (= chemin tutorial parké).
    *
    *  Phase 1.4 J : capture aussi result.messages dans _pendingBytecodeMessages
    *  pour que la state machine puisse les afficher séquentiellement (= 1:1
    *  PRINTSTRING events décodés via battle-string-decoder). */
   const applyMoveDamage = (attacker: PokemonInstance, defender: PokemonInstance, moveIdx: number): { damage: number, typeMul: number } => {
-    // Flag check : si bytecode mode activé, route via runMoveScriptViaBytecode.
-    const useBytecode =
-      (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
-      || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+    // FLIP option 2 : bytecode PAR DÉFAUT (opt-out réversible cf. helper).
+    const useBytecode = isBytecodeDamageEnabled();
 
     if (useBytecode) {
       // Determine battler ids : attacker = 0 si playerMon, 1 si opponentMon.
