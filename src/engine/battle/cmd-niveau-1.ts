@@ -811,7 +811,7 @@ function _JumpIfMoveAffectedByProtect(ctx: BattleScriptContext, jumpTarget: numb
     // 1:1 décomp : JumpIfMoveFailed(7, move) — jump si move failed.
     // Notre version : si jumpTarget est set, on l'utilise.
     if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
-    gBattleCommunication[5 /* MISS_TYPE */] = 1 /* B_MSG_PROTECTED */;
+    gBattleCommunication[MISS_TYPE] = 1 /* B_MSG_PROTECTED */;
     return true;
   }
   return false;
@@ -1021,7 +1021,7 @@ function _MoveValuesCleanUp(): void {
   gBattleScripting.dmgMultiplier = 1;
   setCritMultiplier(1);
   gBattleCommunication[3 /* MOVE_EFFECT_BYTE */] = 0;
-  gBattleCommunication[5 /* MISS_TYPE */] = 0;
+  gBattleCommunication[MISS_TYPE] = 0;
   setHitMarker(gHitMarker & ~HITMARKER_DESTINYBOND);
   setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
 }
@@ -1582,7 +1582,7 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     gLastLandedMoves[gBattlerTarget] = 0;
     gLastHitByType[gBattlerTarget] = 0;
-    gBattleCommunication[5 /* MISS_TYPE */] = B_MSG_PROTECTED_ATKCANCELER;
+    gBattleCommunication[MISS_TYPE] = B_MSG_PROTECTED_ATKCANCELER;
   }
 
   return false;

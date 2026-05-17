@@ -32,6 +32,10 @@ import {
   setCurrentMove,
   setChosenMove,
   setCurrMovePos,
+  setChosenMovePos,
+  setMultiHitCounter,
+  setDynamicBasePower,
+  gBattleCommunication,
   setHitMarker,
   gHitMarker,
   setMoveResultFlags,
@@ -60,7 +64,7 @@ import {
   AI_CHOICE_FLEE,
   AI_CHOICE_WATCH,
 } from './ai/ai-state';
-import { ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER } from './constants';
+import { ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE } from './constants';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { TurnValuesCleanUp } from './util';
@@ -258,6 +262,23 @@ export function runMoveScriptViaBytecode(opts: {
   setMoveResultFlags(0);
   setBattleMoveDamage(0);
   setCritMultiplier(1);
+  // 1:1 décomp `HandleAction_UseMove` (battle_util.c:91-97) — init per-move
+  // AVANT le jump `gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[...]`
+  // (battle_util.c:285). Le bridge saute directement au script d'effet, donc
+  // ces resets (faits par HandleAction_UseMove dans le vrai flow) DOIVENT
+  // être répliqués ici, sinon l'état per-move fuit d'un move au suivant
+  // (dmgMultiplier/multiHit/dynamicBasePower stale → damage faux). Bug réel
+  // (= bytecode = moteur défaut depuis le flip). gCritMultiplier=1 ci-dessus.
+  gBattleScripting.dmgMultiplier = 1;          // battle_util.c:92
+  setMultiHitCounter(0);                        // battle_util.c:95
+  gBattleCommunication[MISS_TYPE] = 0;          // battle_util.c:96
+  setChosenMovePos(opts.attackerMoveIdx);       // battle_util.c:97 (gChosenMovePos)
+  // 1:1 décomp turn-start (battle_main.c:4928-4929) — gDynamicBasePower /
+  // dynamicMoveType sont remis à 0 au début du turn ; le bridge exécute un
+  // move « dans un turn frais », donc reset ici (le script du move les
+  // re-set si besoin, ex. Return/Frustration/Magnitude, AVANT damagecalc).
+  setDynamicBasePower(0);                        // battle_main.c:4928
+  gBattleStruct.dynamicMoveType = 0;            // battle_main.c:4929
   setCurrentActionFuncId(0);  // = B_ACTION_USE_MOVE (= continue current move).
   // 1:1 décomp : si gBattleOutcome != 0, attackcanceler retourne stayOnOpcode
   // infiniment. Reset à chaque turn (= simulate fresh battle context).

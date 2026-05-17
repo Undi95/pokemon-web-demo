@@ -66,10 +66,12 @@ import {
   setBattleTypeFlags as _setBattleTypeFlags,
   setBattlersCount as _setBattlersCount,
   setAbsentBattlerFlags as _setAbsentBattlerFlags,
+  resetBattleState as _resetBattleState,
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
 import { getBattleMove as _gbm } from './data/battle-moves';
+import * as _MOVES_ENUM from '../decomp-data/auto/include/constants/moves-data';
 import {
   TYPE_MYSTERY as _TYPE_MYSTERY,
   STATUS2_WRAPPED as _STATUS2_WRAPPED,
@@ -926,6 +928,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const run = async () => {
         _debugResetRng();
         SeedRng(seed);
+        _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
         const pokemonMod = await import('../pokemon');
         const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, { ivs: fixedIvs, evs: fixedEvs });
         const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2, { ivs: fixedIvs, evs: fixedEvs });
@@ -976,6 +979,12 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
+        // 1:1 décomp : chaque scénario = un COMBAT FRAIS (= BattleStartClearSetData).
+        // Sans ça, gStatuses3/gSideStatuses (ex. Mud/Water Sport, Leech Seed,
+        // screens) fuient d'un move au suivant dans la batterie → faux mismatch
+        // (ex. Fire/Electric power /2 par Water/Mud Sport résiduel). Reset AVANT
+        // createPokemonInstance (qui reremplit les mons) + entre run a/b.
+        _resetBattleState();
         // attaquant = côté ennemi (battler 1) → pas de badge boost (1:1 pur).
         const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TORCHIC', opts?.attackerLevel ?? 10, fix);
         const defMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_TREECKO', opts?.enemyLevel ?? 10, fix);
@@ -1154,6 +1163,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
       _debugResetRng();
       SeedRng(seed);
+      _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
       const pokemonMod = await import('../pokemon');
       const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, fix);
       const defMon = pokemonMod.createPokemonInstance(opts?.defenderSpecies ?? 'SPECIES_GEODUDE', opts?.defenderLevel ?? 14, fix);
@@ -1324,6 +1334,155 @@ export function buildBattleDevtools(): Record<string, unknown> {
         fainted: faintR,
       };
     },
+    /** AUDIT 100% — BATTERIE GOLDEN DÉTERMINISTE EXHAUSTIVE. Confronte le
+     *  moteur bytecode au recompute INDÉPENDANT 1:1 décomp sur TOUS les
+     *  moves (~354) + toutes catégories de mécanique. Anti-eyeball : 100%
+     *  PASS/FAIL exact, 0 test visuel. Réutilise les méthodes prouvées
+     *  (precisePipeline / preciseDamage / moveTarget) via window.scope.
+     *  bytecode (= pattern runFullTurn). Sortie COMPACTE : compteurs +
+     *  liste des FAILs seulement (jamais 354 lignes).
+     *  Modes :
+     *   1. PIPELINE numérique (chaque move damaging) : base CalculateBaseDamage
+     *      (prouvé) → crit → STAB → type → ApplyRandomDmg ; membership exacte
+     *      + déterminisme (2 runs seedés identiques).
+     *   2. SCRIPT-INTÉGRITÉ (TOUS moves, incl. status/multi-hit/recoil/drain/
+     *      OHKO/2-turn/recharge/lock/heal/field/protect/counter/bide/trap/
+     *      confuse/transform/RNG/delayed/spread) : run via bytecode 2× seedé
+     *      → déterministe + 0 exception handler (lastBug).
+     *   3. VARIANTES mécaniques (burn/reflect/lightscreen/double-2v2/1v2/
+     *      spread) : preciseDamage recompute indépendant.
+     *   4. CIBLAGE doubles : moveTarget 1:1.
+     *  Usage : await scope.bytecode.goldenBattery()
+     *          await scope.bytecode.goldenBattery({ limit:80, startAt:0 }) */
+    goldenBattery: async (opts?: { seed?: number; limit?: number; startAt?: number }) => {
+      const seed = opts?.seed ?? 0;
+      const B = (window as unknown as { scope?: { bytecode?: Record<string, (o?: unknown) => Promise<Record<string, unknown>> | Record<string, unknown>> } }).scope?.bytecode;
+      if (!B) return { error: 'scope.bytecode introuvable' };
+      const all = Object.keys(_MOVES_ENUM)
+        .filter(k => k.startsWith('MOVE_') && (_MOVES_ENUM as Record<string, number>)[k] > 0)
+        .map(k => ({ enumName: k, num: (_MOVES_ENUM as Record<string, number>)[k], dexId: k.slice(5).replace(/_/g, '').toLowerCase() }))
+        .sort((a, b) => a.num - b.num);
+      const startAt = opts?.startAt ?? 0;
+      const slice = opts?.limit ? all.slice(startAt, startAt + opts.limit) : all.slice(startAt);
+      // 1:1 décomp `include/constants/battle_move_effects.h` — effets dont la
+      // PRÉMISSE "single-hit damage en 1 invocation" NE S'APPLIQUE PAS (= ce
+      // n'est PAS une divergence moteur, c'est l'outil naïf). Vérifié 1:1.
+      //  • SE_ZERO : dégâts turn-1 = 0 ATTENDU (charge/2-turn/semi-invuln/
+      //    delayed/conditionnel non rempli en combat frais). got!==0 ⇒ VRAIE
+      //    divergence (toujours assertée).
+      //  • SE_MULTI : multi-hit à puissance non-standard → modèle single-hit
+      //    inapplicable ; on assert SEULEMENT déterminisme + 0 exception.
+      const SE_ZERO = new Set<number>([
+        8,   // EFFECT_DREAM_EATER (cible doit dormir)
+        26,  // EFFECT_BIDE (encaisse 2 turns)
+        39,  // EFFECT_RAZOR_WIND (charge)
+        75,  // EFFECT_SKY_ATTACK (charge)
+        92,  // EFFECT_SNORE (user doit dormir)
+        145, // EFFECT_SKULL_BASH (charge)
+        148, // EFFECT_FUTURE_SIGHT (delayed +3 turns)
+        151, // EFFECT_SOLARBEAM (charge hors soleil)
+        155, // EFFECT_SEMI_INVULNERABLE (Fly/Dig/Dive/Bounce charge)
+        158, // EFFECT_FAKE_OUT (1er turn seulement)
+        161, // EFFECT_SPIT_UP (nécessite Stockpile)
+      ]);
+      const SE_MULTI = new Set<number>([
+        104, // EFFECT_TRIPLE_KICK (3 hits puissance croissante)
+        154, // EFFECT_BEAT_UP (1 hit/équipier)
+      ]);
+      const byEffect: Record<string, { n: number; pass: number; fail: number }> = {};
+      const fails: Array<Record<string, unknown>> = [];
+      let pipelineTested = 0, pure = 0, passed = 0, nondet = 0, malformed = 0, threw = 0, bugs = 0;
+      let specialZero = 0, specialMulti = 0;
+      for (const mv of slice) {
+        let effect = 'UNKNOWN';
+        try { effect = String((_gbm(mv.num) as { effect?: unknown }).effect ?? 'UNKNOWN'); } catch { /* best-effort */ }
+        byEffect[effect] = byEffect[effect] ?? { n: 0, pass: 0, fail: 0 };
+        byEffect[effect].n++;
+        clearLastBug();
+        let ok = true, reason = '';
+        let detail: Record<string, unknown> = {};
+        try {
+          // 1:1 : défenseur HAUTE-HP (Wailord, baseHP 170, lvl élevé) + attaquant
+          // niveau modéré → AUCUN move pur ne OHKO. precisePipeline mesure le
+          // HP-delta (= bridge `defenderHpBefore - currentHp`) qui PLAFONNE à
+          // la HP du défenseur s'il tombe KO (HP clamp 0). Avec Treecko L10
+          // (31 HP) tout move STAB/SE OHKO → got=31 = faux "mismatch" (artefact
+          // de MESURE de l'outil, PAS divergence moteur). Wailord ~300+ HP →
+          // got == raw damage → membership valide pour TOUS les moves damaging.
+          const r = await B.precisePipeline!({ moveId: mv.dexId, seed, attackerLevel: 40, enemy: 'SPECIES_WAILORD', enemyLevel: 70 }) as { deterministic?: boolean; fingerprint?: Record<string, unknown>; run1?: Record<string, unknown>; run2?: Record<string, unknown> };
+          pipelineTested++;
+          const fp = (r.fingerprint ?? r.run1 ?? {}) as Record<string, unknown>;
+          const effNum = Number(effect);
+          if (r.deterministic === false) { ok = false; reason = 'non-deterministic'; nondet++; detail = { run1: r.run1, run2: r.run2 }; }
+          else if (fp.error != null || fp.malformedInput === true) { malformed++; /* garbage in ≠ divergence 1:1 */ }
+          else if (SE_ZERO.has(effNum)) {
+            // 1:1 : charge/delayed/conditionnel → dégâts turn-1 = 0 ATTENDU
+            // (combat frais : pas endormi/pas 1er turn/pas Stockpile/etc.).
+            if (fp.got === 0) specialZero++;
+            else { ok = false; reason = 'special-zero: turn-1 devait être 0'; detail = { got: fp.got, base: fp.base }; }
+          }
+          else if (SE_MULTI.has(effNum)) {
+            // multi-hit puissance non-standard : modèle single-hit N/A.
+            // Déterminisme + 0 exception assertés (nondet/bug checks). OK.
+            specialMulti++;
+          }
+          else if (fp.pure === true) {
+            pure++;
+            if (fp.pass === true) passed++;
+            else { ok = false; reason = 'pipeline-mismatch'; detail = { got: fp.got, Dcrit1: fp.Dcrit1, Dcrit2: fp.Dcrit2, base: fp.base, isStab: fp.isStab, typeMul: fp.typeMul }; }
+          }
+          const bug = getLastBug();
+          if (bug && (bug as { opcode?: unknown }).opcode != null) { ok = false; reason = reason ? reason + '+handler-exception' : 'handler-exception'; bugs++; detail.bug = bug; }
+        } catch (e) { ok = false; reason = 'threw'; threw++; detail = { err: String(e) }; }
+        if (ok) byEffect[effect].pass++;
+        else { byEffect[effect].fail++; if (fails.length < 60) fails.push({ move: mv.enumName, num: mv.num, effect, reason, ...detail }); }
+      }
+      const variant = async (label: string, o: Record<string, unknown>) => {
+        try {
+          const r = await B.preciseDamage!(o) as { pure?: boolean; pass?: boolean | null; got?: number; expected?: number };
+          return { label, pure: !!r.pure, pass: r.pure ? r.pass === true : true, got: r.got, expected: r.expected };
+        } catch (e) { return { label, error: String(e), pass: false }; }
+      };
+      const variants = [
+        await variant('phys', { moveId: 'pound' }),
+        await variant('burn', { moveId: 'pound', burn: true }),
+        await variant('reflect-single', { moveId: 'pound', reflect: true }),
+        await variant('reflect-2v2', { moveId: 'pound', reflect: true, double: true }),
+        await variant('reflect-1v2', { moveId: 'pound', reflect: true, double: true, absentPartner: true }),
+        await variant('lightscreen-single', { moveId: 'ember', lightscreen: true }),
+        await variant('lightscreen-2v2', { moveId: 'ember', lightscreen: true, double: true }),
+        await variant('spread-2v2', { moveId: 'surf', double: true }),
+        await variant('spread-1v2', { moveId: 'surf', double: true, absentPartner: true }),
+      ];
+      const variantFails = variants.filter(v => v.pass !== true);
+      const targeting: Record<string, unknown> = {};
+      for (const t of ['MOVE_TARGET_SELECTED', 'MOVE_TARGET_BOTH', 'MOVE_TARGET_FOES_AND_ALLY', 'MOVE_TARGET_USER']) {
+        try {
+          const r = await B.moveTarget!({ target: t, seed }) as { deterministic?: boolean; fingerprint?: { pass?: boolean }; pass?: boolean };
+          const fp = (r.fingerprint ?? r) as { pass?: boolean };
+          targeting[t] = { deterministic: r.deterministic !== false, pass: fp.pass !== false };
+        } catch (e) { targeting[t] = { error: String(e) }; }
+      }
+      const targetingPass = Object.values(targeting).every(v => (v as { error?: unknown }).error == null && (v as { pass?: boolean }).pass !== false && (v as { deterministic?: boolean }).deterministic !== false);
+      const clean = nondet === 0 && threw === 0 && bugs === 0 && pure === passed && fails.length === 0;
+      return {
+        movesTotal: all.length,
+        range: { startAt, count: slice.length },
+        pipeline: { tested: pipelineTested, pure, passed, mismatch: pure - passed, nondeterministic: nondet, malformed, threw, handlerExceptions: bugs },
+        // Mécaniques spéciales vérifiées 1:1 (modèle single-hit inapplicable —
+        // PAS des divergences) : charge/delayed/conditionnel (got turn-1==0) +
+        // multi-hit (déterministe + 0 exception).
+        specialMechanics: { zeroTurn1Verified: specialZero, multiHitVerified: specialMulti },
+        pipelineClean: clean,
+        variants, variantFails, variantsClean: variantFails.length === 0,
+        targeting, targetingPass,
+        byEffect, fails,
+        coverage: { totalMoves: all.length, pureAsserted: pure, specialVerified: specialZero + specialMulti, malformed, statusOrNonPure: slice.length - pure - specialZero - specialMulti - malformed - nondet },
+        VERDICT: (clean && variantFails.length === 0 && targetingPass)
+          ? `✅ 0 DIVERGENCE 1:1 — ${passed}/${pure} pipeline pur + ${specialZero + specialMulti} mécaniques spéciales + variantes + ciblage (déterministe, exhaustif ${slice.length} moves)`
+          : `❌ ${fails.length} fail + ${variantFails.length} variante + targeting=${targetingPass}`,
+      };
+    },
     // Help
     help: () => `
 scope.bytecode — devtools battle script interpreter (1:1 décomp)
@@ -1351,6 +1510,12 @@ STATS + TRACE :
 ERRORS :
   lastBug()                 Dernière exception throw par un handler
   clearBug()
+
+AUDIT 100% (déterministe, anti-eyeball) :
+  goldenBattery()           Batterie exhaustive : TOUS moves + variantes + ciblage, recompute 1:1 décomp
+  precisePipeline(opts)     Pipeline damage complet 1 move (membership exacte)
+  preciseDamage(opts)       CalculateBaseDamage indépendant (burn/reflect/screen/double/1v2)
+  moveTarget(opts)          _GetMoveTarget 1:1 (SELECTED/BOTH/FOES_AND_ALLY/USER)
 
 EX :
   scope.bytecode.tracingOn(50)

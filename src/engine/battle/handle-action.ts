@@ -60,6 +60,7 @@ import {
   NO_TARGET_OVERRIDE,
   B_ACTION_FINISHED, B_ACTION_EXEC_SCRIPT,
   MULTISTRING_CHOOSER,
+  MISS_TYPE,
 } from './constants';
 import { gBitTable } from './battle-controllers';
 import {
@@ -167,7 +168,7 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   gBattleStruct.atkCancelerTracker = 0;
   setMoveResultFlags(0);
   setMultiHitCounter(0);
-  gBattleCommunication[5 /* MISS_TYPE */] = 0;
+  gBattleCommunication[MISS_TYPE] = 0;  // 1:1 décomp battle_util.c:96 (MISS_TYPE=6)
 
   // 1:1 décomp : `gCurrMovePos = gChosenMovePos = gBattleStruct->chosenMovePositions[attacker]`.
   // Notre port : utilise gChosenMoveByBattler comme alias (chosenMovePositions[] deferred).
