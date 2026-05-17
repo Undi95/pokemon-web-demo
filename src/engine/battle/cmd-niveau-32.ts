@@ -727,7 +727,10 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
     if (_gLastUsedItemHBT === 1 /* ITEM_MASTER_BALL */) {
       _gBattleResultsHBT.usedMasterBall = 1;
     } else {
-      const idx = _gLastUsedItemHBT - 4 /* ITEM_ULTRA_BALL */;
+      // 1:1 décomp battle_script_commands.c:10004 :
+      // `gBattleResults.catchAttempts[gLastUsedItem - ITEM_ULTRA_BALL]++`.
+      // AUDIT BUG FIX : ITEM_ULTRA_BALL = 2 (= items-data.ts:10), pas 4.
+      const idx = _gLastUsedItemHBT - 2 /* ITEM_ULTRA_BALL */;
       if (idx >= 0 && idx < _gBattleResultsHBT.catchAttempts.length
           && _gBattleResultsHBT.catchAttempts[idx] < 255) {
         _gBattleResultsHBT.catchAttempts[idx]++;
