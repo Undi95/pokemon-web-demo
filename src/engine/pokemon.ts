@@ -39,7 +39,7 @@ export interface PokemonInstance {
   speciesEnum: string;
   /** Pokédex ID (1..386 pour Gen 3) */
   speciesId: number;
-  /** Nom canonique EN pour @pkmn/sim ex. "Treecko" */
+  /** Nom EN dérivé de l'enum décomp ex. "Treecko" (affichage/debug). */
   speciesName: string;
   /** Nom FR ex. "ARCKO" */
   speciesNameFr: string;
@@ -352,44 +352,5 @@ export function applyExpAward(mon: PokemonInstance, gained: number): {
   return { gained, leveledUp, newLevel: mon.level, newMaxHp: mon.maxHp };
 }
 
-/** Convertit un PokemonInstance en set Showdown packé pour @pkmn/sim. */
-export function pokemonToShowdownSet(p: PokemonInstance): {
-  name: string; species: string; level: number; gender: string;
-  moves: string[]; ability: string; item: string; nature: string;
-  ivs: StatSpread; evs: StatSpread; shiny: boolean; happiness: number; pokeball: string;
-} {
-  return {
-    name: p.nickname,
-    species: p.speciesName,
-    level: p.level,
-    // Session 130 : gender 1:1 décomp dérivé de personality + species genderRatio.
-    // @pkmn/sim accepte 'M' / 'F' / 'N' (= genderless). Fallback 'N' si pas calc.
-    gender: (() => {
-      if (p.monGender === MON_MALE) return 'M';
-      if (p.monGender === MON_FEMALE) return 'F';
-      if (p.monGender === MON_GENDERLESS) return 'N';
-      // Back-compat saves pré-session-130 : derive from speciesEnum + personality.
-      if (p.personality !== undefined && p.speciesEnum) {
-        const g = GetGenderFromSpeciesAndPersonality(p.speciesEnum, p.personality);
-        if (g === MON_MALE) return 'M';
-        if (g === MON_FEMALE) return 'F';
-      }
-      return 'N';
-    })(),
-    moves: p.moves.map(m => m.id),
-    ability: p.ability,
-    item: p.heldItem,
-    nature: p.nature,
-    ivs: p.ivs,
-    evs: p.evs,
-    // Session 124 : shiny propagé depuis PokemonInstance.isShiny (= 1:1 décomp
-    // GET_SHINY_VALUE check fait au create depuis personality + playerTrainerId).
-    // Default false si pas set (= back-compat saves pre-session-124).
-    shiny: p.isShiny ?? false,
-    // Valeurs décomp-aligned (PAS du hardcode arbitraire) :
-    //   `PARTY_MON_INIT_HAPPINESS = 70` (cf. include/constants/pokemon.h)
-    //   `pokeball: 'pokeball'` = ITEM_POKE_BALL (ball par défaut au catch initial)
-    happiness: 70,
-    pokeball: 'pokeball',
-  };
-}
+// (Retiré : `pokemonToShowdownSet` — packeur set Showdown pour @pkmn/sim,
+//  code mort depuis le moteur de combat bytecode 1:1. Showdown éliminé.)
