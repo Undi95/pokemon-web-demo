@@ -1024,6 +1024,15 @@ if (!(globalThis as Record<string, unknown>).__battleState) {
   // Pour memory-map.ts accessors (cMULTISTRING_CHOOSER, cMISS_TYPE, etc.).
   gBattleCommunication,
   gBattlerPartyIndexes,
+  // Pour devtools test (= TurnValuesCleanUp / end-turn effects inspection).
+  gDisableStructs,
+  gProtectStructs,
+  gSideTimers,
+  gSideStatuses,
+  gWishFutureKnock,
+  gBattleStruct,
+  gBattlerByTurnOrder,
+  gHitMarker,
   // Setters pour memory-map writes (= opcodes natifs setbyte/addbyte/orbyte).
   setBattlerTarget,
   setBattlerAttacker,

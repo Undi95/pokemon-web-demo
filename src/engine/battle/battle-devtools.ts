@@ -65,7 +65,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode } from './wire-bytecode-bridge';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -528,6 +528,13 @@ export function buildBattleDevtools(): Record<string, unknown> {
         msgs: result.messages,
         eventsCount: result.eventsCount,
       };
+    },
+    /** Run 1:1 décomp `TurnValuesCleanUp(FALSE)` cleanup au début d'un turn :
+     *  isFirstTurn--, rechargeTimer--, STATUS2_SUBSTITUTE clear si HP 0, etc.
+     *  Caller (= devtools test ou battle-flow turn loop) appelle au début. */
+    runTurnStart: () => {
+      runTurnStartCleanupViaBytecode();
+      return { ok: true };
     },
     // Help
     help: () => `

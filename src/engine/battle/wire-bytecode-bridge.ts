@@ -39,6 +39,7 @@ import {
 } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
+import { TurnValuesCleanUp } from './util';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
 import { Dex } from '@pkmn/dex';
@@ -360,6 +361,26 @@ export function drainBattleEventsAsText(): { messages: string[]; eventsCount: nu
 /** Re-export clear pour devtools et pour battle-flow.ts (= reset queue au début
  *  d'un nouveau turn pour éviter de mixer les events). */
 export { clearBattleEventQueue };
+
+// ─── Turn-start cleanup runner (Phase 1.4 L) ────────────────────────────────
+
+/** 1:1 décomp `TurnValuesCleanUp(FALSE)` (battle_main.c:4857-4892).
+ *  Caller (= battle-flow turn loop) appelle cette fonction au DEBUT de chaque
+ *  fresh turn pour :
+ *    - clear ProtectStruct entièrement (= protected/endured + 18 autres flags)
+ *    - décrémenter isFirstTurn (= Speed Boost fire à partir turn 2)
+ *    - décrémenter rechargeTimer + clear STATUS2_RECHARGE quand reach 0
+ *      (= Hyper Beam / Giga Impact / Frenzy Plant / Blast Burn / Hydro Cannon
+ *      recovery)
+ *    - clear STATUS2_SUBSTITUTE quand substituteHP == 0
+ *    - reset gSideTimers[0..1].followmeTimer
+ *
+ *  Note : `TurnValuesCleanUp(TRUE)` est appelé entre les moves dans le même turn
+ *  pour reset juste `protected`/`endured` ; pour ce cas appeler la fonction
+ *  directement via `util.ts`. */
+export function runTurnStartCleanupViaBytecode(): void {
+  TurnValuesCleanUp(false);
+}
 
 // ─── End-turn effects runner (Phase 1.4 L) ─────────────────────────────────
 

@@ -428,3 +428,59 @@ export function WEATHER_HAS_EFFECT(): boolean {
   }
   return true;
 }
+
+// ─── TurnValuesCleanUp (battle_main.c:4857-4892) — 1:1 décomp ──────────────
+
+/** 1:1 décomp `TurnValuesCleanUp(bool8 var0)`.
+ *  - `var0=TRUE` : juste reset protected/endured pour chaque battler (= post-move cleanup).
+ *  - `var0=FALSE` : full clear ProtectStruct + decrement isFirstTurn + rechargeTimer
+ *    (= fresh turn start).
+ *  Appelé par turn loop décomp avant chaque action. Caller wire dans le bridge
+ *  pour Speed Boost isFirstTurn fix + rechargeTimer décrement post-Hyper Beam. */
+export function TurnValuesCleanUp(var0: boolean): void {
+  // Inline STATUS2_* constants (= éviter circular import).
+  const STATUS2_RECHARGE_LOCAL  = 1 << 22;
+  const STATUS2_SUBSTITUTE_LOCAL = 1 << 24;
+  for (let active = 0; active < gBattlersCount; active++) {
+    if (var0) {
+      // 1:1 décomp ll. 4866-4867 : post-move cleanup.
+      gProtectStructs[active].protected = 0;
+      gProtectStructs[active].endured = 0;
+    } else {
+      // 1:1 décomp ll. 4871-4883 : fresh turn = full clear ProtectStruct.
+      const ps = gProtectStructs[active];
+      ps.protected = 0; ps.endured = 0;
+      ps.noValidMoves = 0; ps.helpingHand = 0;
+      ps.bounceMove = 0; ps.stealMove = 0;
+      ps.flag0Unknown = 0; ps.prlzImmobility = 0;
+      ps.confusionSelfDmg = 0; ps.targetNotAffected = 0;
+      ps.chargingTurn = 0; ps.fleeType = 0;
+      ps.usedImprisonedMove = 0; ps.loveImmobility = 0;
+      ps.usedDisabledMove = 0; ps.usedTauntedMove = 0;
+      ps.flag2Unknown = 0; ps.flinchImmobility = 0;
+      ps.notFirstStrike = 0;
+      // 1:1 décomp ll. 4875-4876 : decrement isFirstTurn si > 0.
+      if (gDisableStructs[active].isFirstTurn) {
+        gDisableStructs[active].isFirstTurn--;
+      }
+      // 1:1 décomp ll. 4878-4883 : rechargeTimer countdown + STATUS2_RECHARGE clear.
+      if (gDisableStructs[active].rechargeTimer) {
+        gDisableStructs[active].rechargeTimer--;
+        if (gDisableStructs[active].rechargeTimer === 0) {
+          gBattleMons[active].status2 &= ~STATUS2_RECHARGE_LOCAL;
+        }
+      }
+    }
+    // 1:1 décomp ll. 4886-4887 : substituteHP 0 → clear STATUS2_SUBSTITUTE.
+    if (gDisableStructs[active].substituteHP === 0) {
+      gBattleMons[active].status2 &= ~STATUS2_SUBSTITUTE_LOCAL;
+    }
+  }
+  // 1:1 décomp ll. 4890-4891 : reset followmeTimer pour les 2 sides.
+  // Lazy via state singleton (= éviter d'importer gSideTimers ici).
+  const sideTimersGlobal = (globalThis as { __battleState?: { gSideTimers?: Array<{ followmeTimer: number }> } }).__battleState?.gSideTimers;
+  if (sideTimersGlobal) {
+    if (sideTimersGlobal[0]) sideTimersGlobal[0].followmeTimer = 0;
+    if (sideTimersGlobal[1]) sideTimersGlobal[1].followmeTimer = 0;
+  }
+}
