@@ -111,14 +111,23 @@ function _switchInClearSetData(active: number): void {
   }
 
   // 1:1 décomp 3173-3193 : status2/status3 reset (full ou partial Baton Pass).
+  // AUDIT BUG FIX 6 constantes hardcoded fausses vs battle.h:142-174 :
+  //   - STATUS2_ESCAPE_PREVENTION 0x4000 → 0x4000000 (= 1<<26)
+  //   - STATUS2_CURSED            0x80000 → 0x10000000 (= 1<<28)
+  //   - STATUS3_LEECHSEED_BATTLER 0x80 → 0x3 (= 1<<0|1<<1)
+  //   - STATUS3_ALWAYS_HITS       0x8 → 0x18 (= 1<<3|1<<4)
+  //   - STATUS3_PERISH_SONG       0x10 → 0x20 (= 1<<5)
+  //   - STATUS3_MUDSPORT          0x100000 → 0x10000 (= 1<<16)
+  //   - STATUS3_WATERSPORT        0x200000 → 0x20000 (= 1<<17)
   if (isBatonPass) {
     // Baton Pass : préserve CONFUSION + FOCUS_ENERGY + SUBSTITUTE + ESCAPE_PREVENTION + CURSED.
     gBattleMons[active].status2 &= (0x7 /* CONFUSION 3 bits */
-      | 0x100000 /* FOCUS_ENERGY */ | 0x1000000 /* SUBSTITUTE */
-      | 0x4000 /* ESCAPE_PREVENTION */ | 0x80000 /* CURSED */);
-    _gStatuses30()[active] &= (0x80 /* LEECHSEED_BATTLER */ | 0x4 /* LEECHSEED */
-      | 0x8 /* ALWAYS_HITS */ | 0x10 /* PERISH_SONG */ | 0x400 /* ROOTED */
-      | 0x100000 /* MUDSPORT */ | 0x200000 /* WATERSPORT */);
+      | 0x100000 /* FOCUS_ENERGY 1<<20 */ | 0x1000000 /* SUBSTITUTE 1<<24 */
+      | 0x4000000 /* ESCAPE_PREVENTION 1<<26 */ | 0x10000000 /* CURSED 1<<28 */);
+    _gStatuses30()[active] &= (0x3 /* LEECHSEED_BATTLER 1<<0|1<<1 */
+      | 0x4 /* LEECHSEED 1<<2 */ | 0x18 /* ALWAYS_HITS 1<<3|1<<4 */
+      | 0x20 /* PERISH_SONG 1<<5 */ | 0x400 /* ROOTED 1<<10 */
+      | 0x10000 /* MUDSPORT 1<<16 */ | 0x20000 /* WATERSPORT 1<<17 */);
   } else {
     gBattleMons[active].status2 = 0;
     _gStatuses30()[active] = 0;
