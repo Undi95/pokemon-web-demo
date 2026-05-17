@@ -124,16 +124,19 @@ const OPPONENT_PALETTE_SLOT = 14;
 // Sprite x/y in our engine = CENTER coords (= 1:1 décomp src/sprite.c sprite struct).
 // `syncSpritesToOam` adds centerToCornerVecX/Y to project to OAM corner pos
 // (= -32 for 64x64 sprite). Cf. decomp-runtime.ts:2052.
-// TODO Phase 1.4 N2 : positions sprites 1:1 décomp battle_anim_mons.c:38
-// sBattlerCoords : Player (72, 80), Opp (176, 40). Notre port utilise des
-// coords qui ne sont pas alignées décomp + il y a un mismatch anchor sprite
-// (= center vs top-left). Le visual actuel marche pre-action-menu mais sprite
-// player est trop à droite (overlap action menu) — fix proper nécessite porter
-// CalcCenterToCornerVec correctement. Skip pour cette session, garde existing.
-const OPPONENT_X = 60;
-const OPPONENT_Y = 60;
-const PLAYER_X   = 180;
-const PLAYER_Y   = 110;
+// Phase 1.4 N1 : positions sprites 1:1 décomp battle_anim_mons.c:38 sBattlerCoords
+// single battle :
+//   - Player   center : (72, 80)   → top-left (40, 48) pour sprite 64x64
+//   - Opponent center : (176, 40)  → top-left (144, 8) pour sprite 64x64
+// Notre port utilise top-left coords pour CreateSpriteAtOam. Le décomp utilise
+// CENTER coords (= sBattlerCoords) puis applique sprite->x -= half_width quand
+// crée via CreateSprite. On soustrait directement ici pour alignement 1:1.
+// Y player a +8 bonus 1:1 décomp GetBattlerSpriteFinal_Y (ll. 286-287) car
+// player side a un offset visuel pour "élever" sur la plateforme.
+const OPPONENT_X = 176 - 32;       // = 144
+const OPPONENT_Y = 40 - 32;        // = 8
+const PLAYER_X   = 72 - 32;        // = 40
+const PLAYER_Y   = 80 - 32 + 8;    // = 56 (+8 player side bonus 1:1 décomp)
 
 // ─── HP windows (= top-left for opp, bottom-right for player) ──────────────
 const OPPONENT_HP_WINDOW: WindowTemplate = {
@@ -1442,6 +1445,12 @@ async function detectImageWH(url: string): Promise<{ w: number, h: number } | nu
 /** Reproduce the runtime's oamShapeSizeFromWH (= internal helper that's not
  *  exported). Local copy avoids exposing internals. */
 function oamShapeSizeFromWH(w: number, h: number): { shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3 } {
+  // Phase 1.4 N1 fix : les sprites Pokémon décomp sont des PNG sprite-sheets
+  // verticaux (= 1er frame 64x64, frames empilées h=64*N). Si h est un multiple
+  // de w (= sheet), use frame_height = w. Ex: 64x256 → frame 64x64.
+  if (h > w && h % w === 0) {
+    h = w;
+  }
   if (w === h) {
     const map: Record<number, 0 | 1 | 2 | 3> = { 8: 0, 16: 1, 32: 2, 64: 3 };
     return { shape: 0, size: map[w] ?? 0 };
