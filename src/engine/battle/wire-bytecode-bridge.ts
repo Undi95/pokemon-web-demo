@@ -372,6 +372,182 @@ export function drainBattleEventsAsText(): { messages: string[]; eventsCount: nu
  *  d'un nouveau turn pour éviter de mixer les events). */
 export { clearBattleEventQueue };
 
+// ─── BattleTurnPassed wrapper (Phase 1.4 L) ─────────────────────────────────
+
+/** 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019).
+ *  Caller (= battle-flow turn loop) appelle après les 2 moves du turn. Encapsule
+ *  toute la phase end-of-turn :
+ *
+ *    1. TurnValuesCleanUp(TRUE)      → post-move quick cleanup
+ *    2. DoFieldEndTurnEffects loop   → field timers / weather
+ *    3. DoBattlerEndTurnEffects loop → per-battler effects
+ *    4. HandleFaintedMonActions      → DEFERRED Phase 1.4+ (= partial port handle-action.ts)
+ *    5. HandleWishPerishSongOnTurnEnd loop → wish/perish/arena
+ *    6. TurnValuesCleanUp(FALSE)     → fresh turn cleanup (= decrement isFirstTurn)
+ *    7. Clear HITMARKER bits NO_ATTACKSTRING/UNABLE_TO_USE_MOVE/PLAYER_FAINTED/PASSIVE_HP_UPDATE
+ *    8. Reset gBattleScripting.animTurn/animTargetsHit/moveendState
+ *    9. Reset gBattleMoveDamage + gMoveResultFlags + gBattleCommunication[0..4]
+ *   10. Si outcome != 0 : set gCurrentActionFuncId = B_ACTION_FINISHED + return
+ *   11. Increment battleTurnCounter + arenaTurnCounter (= cap 0xFF)
+ *   12. Reset gChosenActionByBattler[i] + gChosenMoveByBattler[i] pour tous battlers
+ *   13. Reset gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE (6) pour MAX_BATTLERS
+ *   14. Save gAbsentBattlerFlags → gBattleStruct.absentBattlerFlags
+ *   15. BATTLE_TYPE_PALACE → exec BattleScript_PalacePrintFlavorText
+ *   16. BATTLE_TYPE_ARENA + arenaTurnCounter==0 → exec BattleScript_ArenaTurnBeginning
+ *
+ *  Retourne `{ phases, messages, events, outcome, battleEnded }` pour le caller.
+ *  Si `battleEnded === true`, le caller doit appeler la cleanup post-battle. */
+export async function runBattleTurnPassedViaBytecode(): Promise<{
+  ok: boolean;
+  phases: { phase: 'field' | 'battler' | 'wishperish' | 'special'; label: string }[];
+  messages: string[];
+  events: BattleEvent[];
+  eventsCount: number;
+  outcome: number;
+  battleEnded: boolean;
+}> {
+  // Imports lazy via __battleState pour mutations cross-modules.
+  const gs = (globalThis as { __battleState?: {
+    gBattleStruct?: { arenaTurnCounter: number };
+    gBattlersCount?: number;
+    gAbsentBattlerFlags?: number;
+    gBattleCommunication?: number[];
+    getBattleOutcome?: () => number;
+    gBattleTypeFlags?: number;
+  } }).__battleState;
+  const phases: { phase: 'field' | 'battler' | 'wishperish' | 'special'; label: string }[] = [];
+
+  // Step 1 : TurnValuesCleanUp(TRUE) — post-move quick cleanup.
+  TurnValuesCleanUp(true);
+
+  const outcomeAfterMoves = gs?.getBattleOutcome?.() ?? 0;
+
+  // Step 2-3 : DoFieldEndTurnEffects + DoBattlerEndTurnEffects (= via runEndTurnEffectsViaBytecode).
+  // Note : décomp `if (gBattleOutcome == 0)` gate ces 2 phases. Si outcome != 0
+  // (= mon faint mid-turn), skip à HandleWishPerishSongOnTurnEnd.
+  clearBattleEventQueue();
+
+  if (outcomeAfterMoves === 0) {
+    resetFieldEndTurnEffectsState();
+    let safetyF = 0;
+    let r = DoFieldEndTurnEffects();
+    while (r && safetyF++ < 30) {
+      phases.push({ phase: 'field', label: r.scriptLabel });
+      _runScriptSync(r.scriptLabel);
+      r = DoFieldEndTurnEffects();
+    }
+
+    resetBattlerEndTurnEffectsState();
+    let safetyB = 0;
+    let b = DoBattlerEndTurnEffects();
+    while (b && safetyB++ < 100) {
+      phases.push({ phase: 'battler', label: b.scriptLabel });
+      _runScriptSync(b.scriptLabel);
+      b = DoBattlerEndTurnEffects();
+    }
+  }
+
+  // Step 4 : HandleFaintedMonActions — DEFERRED Phase 1.4+ (= partial port
+  // handle-action.ts:460-470). Skip pour now (= caller handle faint via
+  // battle-flow state machine).
+
+  // Step 5 : HandleWishPerishSongOnTurnEnd loop.
+  resetWishPerishSongState();
+  let safetyW = 0;
+  let w = HandleWishPerishSongOnTurnEnd();
+  while (w && safetyW++ < 20) {
+    phases.push({ phase: 'wishperish', label: w.scriptLabel });
+    _runScriptSync(w.scriptLabel);
+    w = HandleWishPerishSongOnTurnEnd();
+  }
+
+  // Step 6 : TurnValuesCleanUp(FALSE) — fresh turn cleanup.
+  TurnValuesCleanUp(false);
+
+  // Step 7-9 : reset markers + scripting + comm[0..4].
+  const stateMod = await import('./state');
+  const HITMARKER_NO_ATTACKSTRING    = 1 << 6;
+  const HITMARKER_UNABLE_TO_USE_MOVE = 1 << 7;
+  const HITMARKER_PLAYER_FAINTED     = 1 << 28;
+  const HITMARKER_PASSIVE_HP_UPDATE  = 1 << 14;
+  const mask = ~(HITMARKER_NO_ATTACKSTRING | HITMARKER_UNABLE_TO_USE_MOVE
+                 | HITMARKER_PLAYER_FAINTED | HITMARKER_PASSIVE_HP_UPDATE);
+  stateMod.setHitMarker(stateMod.gHitMarker & mask);
+  stateMod.gBattleScripting.animTurn = 0;
+  stateMod.gBattleScripting.animTargetsHit = 0;
+  stateMod.gBattleScripting.moveendState = 0;
+  stateMod.setBattleMoveDamage(0);
+  stateMod.setMoveResultFlags(0);
+  if (gs?.gBattleCommunication) {
+    for (let i = 0; i < 5; i++) gs.gBattleCommunication[i] = 0;
+  }
+
+  // Step 10 : check outcome != 0.
+  const outcomeAfterEndTurn = gs?.getBattleOutcome?.() ?? 0;
+  if (outcomeAfterEndTurn !== 0) {
+    const B_ACTION_FINISHED = 0xC;
+    stateMod.setCurrentActionFuncId(B_ACTION_FINISHED);
+    const drained = drainBattleEventsAsText();
+    return {
+      ok: true, phases, outcome: outcomeAfterEndTurn, battleEnded: true,
+      messages: drained.messages, events: drained.events, eventsCount: drained.eventsCount,
+    };
+  }
+
+  // Step 11 : increment turn counters cap 0xFF.
+  // gBattleResults.battleTurnCounter (= dans gBattleResults persistant) +
+  // gBattleStruct.arenaTurnCounter.
+  const gbrm = stateMod.gBattleResults;
+  if (gbrm && gbrm.battleTurnCounter < 0xFF) {
+    gbrm.battleTurnCounter++;
+    if (gs?.gBattleStruct) gs.gBattleStruct.arenaTurnCounter++;
+  }
+
+  // Step 12 : reset chosen actions/moves.
+  // gChosenActionByBattler / gChosenMoveByBattler ne sont pas dans __battleState mais
+  // dans state.ts.
+  const battlersCount = gs?.gBattlersCount ?? 2;
+  for (let i = 0; i < battlersCount; i++) {
+    const B_ACTION_NONE = 0xFF;
+    const MOVE_NONE = 0;
+    if (stateMod.gChosenActionByBattler) stateMod.gChosenActionByBattler[i] = B_ACTION_NONE;
+    if (stateMod.gChosenMoveByBattler) stateMod.gChosenMoveByBattler[i] = MOVE_NONE;
+  }
+
+  // Step 13 : reset gBattleStruct.monToSwitchIntoId.
+  const MAX_BATTLERS_COUNT = 4;
+  const PARTY_SIZE = 6;
+  if (stateMod.gBattleStruct?.monToSwitchIntoId) {
+    for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
+      stateMod.gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE;
+    }
+  }
+
+  // Step 14 : save absent battler flags.
+  if (stateMod.gBattleStruct) {
+    stateMod.gBattleStruct.absentBattlerFlags = gs?.gAbsentBattlerFlags ?? 0;
+  }
+
+  // Step 15-16 : Palace/Arena special scripts.
+  const BATTLE_TYPE_PALACE = 1 << 13;
+  const BATTLE_TYPE_ARENA_LOCAL = 1 << 18;
+  const tf = gs?.gBattleTypeFlags ?? 0;
+  if (tf & BATTLE_TYPE_PALACE) {
+    phases.push({ phase: 'special', label: 'BattleScript_PalacePrintFlavorText' });
+    _runScriptSync('BattleScript_PalacePrintFlavorText');
+  } else if ((tf & BATTLE_TYPE_ARENA_LOCAL) && gs?.gBattleStruct?.arenaTurnCounter === 0) {
+    phases.push({ phase: 'special', label: 'BattleScript_ArenaTurnBeginning' });
+    _runScriptSync('BattleScript_ArenaTurnBeginning');
+  }
+
+  // Drain events.
+  const drained = drainBattleEventsAsText();
+  return {
+    ok: true, phases, outcome: 0, battleEnded: false,
+    messages: drained.messages, events: drained.events, eventsCount: drained.eventsCount,
+  };
+}
+
 // ─── Turn-start cleanup runner (Phase 1.4 L) ────────────────────────────────
 
 /** 1:1 décomp `TurnValuesCleanUp(FALSE)` (battle_main.c:4857-4892).

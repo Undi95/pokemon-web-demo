@@ -65,7 +65,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode } from './wire-bytecode-bridge';
 import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
@@ -535,6 +535,21 @@ export function buildBattleDevtools(): Record<string, unknown> {
     runTurnStart: () => {
       runTurnStartCleanupViaBytecode();
       return { ok: true };
+    },
+    /** Run full 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019).
+     *  Caller (= battle-flow turn loop) appelle APRÈS les 2 moves du turn.
+     *  Encapsule : TurnValuesCleanUp(TRUE) → field/battler end-turn → HandleWish
+     *  → TurnValuesCleanUp(FALSE) → reset markers + turn counter + chosen actions.
+     *  Returns { phases, messages, outcome, battleEnded } debug summary. */
+    runTurnPassed: async () => {
+      const result = await runBattleTurnPassedViaBytecode();
+      return {
+        phases: result.phases,
+        msgs: result.messages,
+        eventsCount: result.eventsCount,
+        outcome: result.outcome,
+        battleEnded: result.battleEnded,
+      };
     },
     // Help
     help: () => `
