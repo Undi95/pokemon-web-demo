@@ -54,16 +54,21 @@ function IsMoveUncopyableByMimic(move: number): boolean {
   return sMovesForbiddenToCopy[i] !== MIMIC_FORBIDDEN_END;
 }
 
-/** Test si l'anim id est une weather "continues" anim. */
+/** Test si l'anim id est une weather "continues" anim.
+ *  AUDIT BUG FIX : valeurs étaient 1..4 (= STATS_CHANGE/SUBSTITUTE_FADE area)
+ *  → vraies = 10..13 (battle_anim.h:367-370). */
 function _isWeatherContinuesAnim(animId: number): boolean {
-  // B_ANIM_RAIN_CONTINUES=1, SUN_CONTINUES=2, SANDSTORM_CONTINUES=3, HAIL_CONTINUES=4.
-  return animId >= 1 && animId <= 4;
+  // 1:1 décomp battle_anim.h:367-370 :
+  //   B_ANIM_RAIN_CONTINUES=10, SUN_CONTINUES=11, SANDSTORM_CONTINUES=12, HAIL_CONTINUES=13.
+  return animId >= 10 && animId <= 13;
 }
 
-/** B_ANIM_STATS_CHANGE/SNATCH_MOVE/SUBSTITUTE_FADE — always play. */
+/** B_ANIM_STATS_CHANGE/SNATCH_MOVE/SUBSTITUTE_FADE — always play.
+ *  AUDIT BUG FIX : valeurs étaient 0/5/6 → vraies = 1/17/2 (battle_anim.h:358,374). */
 function _isAlwaysPlayAnim(animId: number): boolean {
-  // STATS_CHANGE=0, SNATCH_MOVE=5, SUBSTITUTE_FADE=6.
-  return animId === 0 || animId === 5 || animId === 6;
+  // 1:1 décomp battle_anim.h :
+  //   B_ANIM_STATS_CHANGE=1, B_ANIM_SUBSTITUTE_FADE=2, B_ANIM_SNATCH_MOVE=17.
+  return animId === 1 || animId === 2 || animId === 17;
 }
 
 // ─── 0x45 playanimation ───────────────────────────────────────────────────

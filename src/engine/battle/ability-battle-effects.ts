@@ -306,8 +306,9 @@ export function AbilityBattleEffects(
               case WEATHER_DOWNPOUR:
                 if (!(gBattleWeather & B_WEATHER_RAIN)) {
                   setBattleWeather(B_WEATHER_RAIN_TEMPORARY | B_WEATHER_RAIN_PERMANENT);
-                  // gBattleScripting.animArg1 = B_ANIM_RAIN_CONTINUES (= 9). Stub.
-                  gBattleScripting.animArg1 = 9;
+                  // 1:1 décomp battle_anim.h:367 : B_ANIM_RAIN_CONTINUES = 10.
+                  // AUDIT BUG FIX : était 9 → 10.
+                  gBattleScripting.animArg1 = 10;
                   gBattleScripting.battler = battler;
                   effect++;
                 }
@@ -315,7 +316,9 @@ export function AbilityBattleEffects(
               case WEATHER_SANDSTORM:
                 if (!(gBattleWeather & B_WEATHER_SANDSTORM)) {
                   setBattleWeather(B_WEATHER_SANDSTORM);
-                  gBattleScripting.animArg1 = 11 /* B_ANIM_SANDSTORM_CONTINUES */;
+                  // 1:1 décomp battle_anim.h:369 : B_ANIM_SANDSTORM_CONTINUES = 12.
+                  // AUDIT BUG FIX : était 11 → 12.
+                  gBattleScripting.animArg1 = 12 /* B_ANIM_SANDSTORM_CONTINUES */;
                   gBattleScripting.battler = battler;
                   effect++;
                 }
@@ -323,7 +326,9 @@ export function AbilityBattleEffects(
               case WEATHER_DROUGHT:
                 if (!(gBattleWeather & B_WEATHER_SUN)) {
                   setBattleWeather(B_WEATHER_SUN);
-                  gBattleScripting.animArg1 = 12 /* B_ANIM_SUN_CONTINUES */;
+                  // 1:1 décomp battle_anim.h:368 : B_ANIM_SUN_CONTINUES = 11.
+                  // AUDIT BUG FIX : était 12 → 11.
+                  gBattleScripting.animArg1 = 11 /* B_ANIM_SUN_CONTINUES */;
                   gBattleScripting.battler = battler;
                   effect++;
                 }
