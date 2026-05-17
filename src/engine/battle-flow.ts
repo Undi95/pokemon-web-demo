@@ -77,6 +77,7 @@ import {
   updateHealthboxHpBar,
   updateHealthboxLevel,
   updateHealthboxHpDigits,
+  updateHealthboxStatus,
   type HealthboxHandle,
 } from './battle-healthbox';
 import {
@@ -495,12 +496,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       updateHealthboxHpBar(opponentHealthbox, opponentMon.currentHp, opponentMon.maxHp);
       // Phase 1.4 N Q3 D3 : Lv display (1:1 décomp UpdateLvlInHealthbox).
       updateHealthboxLevel(opponentHealthbox, opponentMon.level);
+      // Phase 1.4 N Q3 D4 : status icon (1:1 décomp UpdateStatusIconInHealthbox).
+      updateHealthboxStatus(opponentHealthbox, opponentMon.status);
     }
     if (playerHealthbox && playerMon) {
       updateHealthboxHpBar(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
       // Phase 1.4 N Q3 D3 : Lv + HP digits (1:1 décomp UpdateLvlInHealthbox + UpdateHpTextInHealthbox).
       updateHealthboxLevel(playerHealthbox, playerMon.level);
       updateHealthboxHpDigits(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
+      // Phase 1.4 N Q3 D4 : status icon (1:1 décomp UpdateStatusIconInHealthbox).
+      updateHealthboxStatus(playerHealthbox, playerMon.status);
     }
   };
 

@@ -47,6 +47,7 @@ const HPBAR_PNG              = '/decomp/em/battle_interface/hpbar.png';
 const HPBAR_ANIM_PNG         = '/decomp/em/battle_interface/hpbar_anim.png';   // YELLOW + RED tile sets
 const NUMBERS1_PNG           = '/decomp/em/battle_interface/numbers1.png';     // 11 tiles : [blank, 0..9]
 const NUMBERS2_PNG           = '/decomp/em/battle_interface/numbers2.png';     // 12 tiles : [0..9, blank, slash/Lv]
+const STATUS_PNG             = '/decomp/em/battle_interface/status.png';       // 15 tiles : PSN/PRZ/SLP/FRZ/BRN (3 tiles each)
 const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png';  // = palette HEALTHBOX
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
 
@@ -95,6 +96,17 @@ let _hpBarBaseTiles:   Uint8Array | null = null;  // 3 tiles = "blank/H/P" frame
 //   - numbers2.png : tiles 0..9 = digits 0..9, tile 10 = blank, tile 11 = "Lv" prefix or slash
 let _numbers1Tiles: Uint8Array | null = null;
 let _numbers2Tiles: Uint8Array | null = null;
+
+// 1:1 décomp `status.4bpp` (= player single status icons) : 15 tiles arranged
+// as 5 status types × 3 tiles each. Tile offsets dans le PNG :
+//   - PSN : tiles 0..2
+//   - PRZ : tiles 3..5
+//   - SLP : tiles 6..8
+//   - FRZ : tiles 9..11
+//   - BRN : tiles 12..14
+// For opp single nous utilisons status.png aussi (= les tile data sont identiques,
+// la palette utilisée change la couleur d'affichage).
+let _statusTiles: Uint8Array | null = null;
 
 /** Re-arrange row-major tile data en metatile order.
  *
@@ -220,6 +232,13 @@ export async function ensureHealthboxAssets(): Promise<void> {
   const numbers2Png = await loadIndexedPng(NUMBERS2_PNG);
   _numbers1Tiles = numbers1Png.charData;  // 11 tiles
   _numbers2Tiles = numbers2Png.charData;  // 12 tiles
+
+  // ─── Status icons tile data ─────────────────────────────────────────────
+  // 1:1 décomp `status.4bpp` (= 24×40 = 15 tiles : 5 status × 3 tiles each).
+  // Used pour player single + opp single (= even though decomp has status2/3/4
+  // pour battler 1/2/3 doubles, en single ils utilisent tous status.png).
+  const statusPng = await loadIndexedPng(STATUS_PNG);
+  _statusTiles = statusPng.charData;
 
   // ─── Palettes ───────────────────────────────────────────────────────────
   // HEALTHBOX palette = ball_status_bar.png .gbapal
@@ -574,6 +593,61 @@ export function updateHealthboxLevel(handle: HealthboxHandle, level: number): vo
  *      · 1 tile à spriteTileNum + 0x3E0 (= byte 0x3E0)
  *      · 2 tiles à spriteTileNum + 0xB00 (= byte 0xB00 + 0x20)
  *    - HP max (3 digits) : 2 tiles à spriteTileNum + 0xB40 */
+// ─── Status icons : D4 1:1 décomp UpdateStatusIconInHealthbox ───────────────
+
+/** 1:1 décomp `UpdateStatusIconInHealthbox` (battle_interface.c:1993-2072).
+ *
+ *  Affiche l'icone de status (= 3 tiles 8×8 horizontaux) sur le sprite OAM
+ *  healthbox. Tile data depuis status.png arrangé en 5 types × 3 tiles each :
+ *    - PSN : tiles 0..2
+ *    - PRZ : tiles 3..5
+ *    - SLP : tiles 6..8
+ *    - FRZ : tiles 9..11
+ *    - BRN : tiles 12..14
+ *
+ *  Tile offsets dans le sprite OAM (= 1:1 décomp ll. 2007-2015) :
+ *    - Player single : tileNumAdder = 0x1A (= tile 26 = byte 0x340 from healthbox left)
+ *    - Opp single    : tileNumAdder = 0x11 (= tile 17 = byte 0x220 from healthbox left)
+ *
+ *  Si status null/none : copy `HEALTHBOX_GFX_39` (= blank tile) à la même position
+ *  pour effacer l'icone précédent. */
+export function updateHealthboxStatus(handle: HealthboxHandle, status: string | null | undefined): void {
+  const rt = getRuntime();
+  if (!rt || !_statusTiles) return;
+
+  // 1:1 décomp ll. 2007-2015 : tile offsets différents par side.
+  const baseVram = handle.side === 'player' ? HEALTHBOX_PLAYER_VRAM : HEALTHBOX_OPPONENT_VRAM;
+  const tileNumAdder = handle.side === 'player' ? 0x1A : 0x11;
+  const destVram = baseVram + tileNumAdder * TILE_BYTES;
+
+  // 1:1 décomp ll. 2018-2055 : status → tile offset dans status.png.
+  // Notre PokemonInstance.status format : 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX'
+  // (TOX = STATUS1_PSN_ANY = same icon PSN).
+  let statusTileStart: number;
+  switch (status) {
+    case 'PSN': case 'TOX': statusTileStart = 0;  break;   // PSN
+    case 'PAR':             statusTileStart = 3;  break;   // PRZ
+    case 'SLP':             statusTileStart = 6;  break;   // SLP
+    case 'FRZ':             statusTileStart = 9;  break;   // FRZ
+    case 'BRN':             statusTileStart = 12; break;   // BRN
+    default: {
+      // 1:1 décomp ll. 2044-2054 : no status → fill 3 tiles avec HEALTHBOX_GFX_39
+      // (= blank tile). On simule en écrivant des tiles "vides" (= zéros 4bpp).
+      const blankTile = new Uint8Array(TILE_BYTES);  // tile rempli à 0 = transparent
+      for (let i = 0; i < 3; i++) {
+        rt.gba.objVram.set(blankTile, destVram + i * TILE_BYTES);
+      }
+      return;
+    }
+  }
+
+  // Copy 3 tiles consécutifs (= 96 bytes = 3 × 32) à OBJ VRAM.
+  rt.gba.objVram.set(
+    _statusTiles.subarray(statusTileStart * TILE_BYTES, (statusTileStart + 3) * TILE_BYTES),
+    destVram,
+  );
+}
+
 export function updateHealthboxHpDigits(handle: HealthboxHandle, currHp: number, maxHp: number): void {
   if (handle.side !== 'player') return;  // Opp single doesn't display HP digits
   if (!_numbers1Tiles) return;
