@@ -422,6 +422,8 @@ const STATUS3_PERISH_SONG     = 1 << 14;
 
 // gStatuses3 + autres globals (= lazy via globalThis pour éviter circular deps).
 import { gStatuses3, gHitMarker, setHitMarker, gDisableStructs, gBattleMoveDamage, setBattleMoveDamage, gSpecialStatuses, gBattlerAttacker } from './state';
+import { AbilityBattleEffects, ABILITYEFFECT_ENDTURN, consumeAbilityWantedScript } from './ability-battle-effects';
+import { ItemBattleEffects, ITEMEFFECT_NORMAL, consumeItemWantedScript } from './item-battle-effects';
 const HITMARKER_GRUDGE        = 1 << 13;
 const HITMARKER_IGNORE_BIDE   = 1 << 12;
 
@@ -513,21 +515,46 @@ export function DoBattlerEndTurnEffects(): EndTurnBattlerResult {
       }
 
       case ENDTURN_ABILITIES: {
-        // 1:1 décomp : delegate à AbilityBattleEffects(ABILITYEFFECT_ENDTURN).
-        // Phase 1.4 L : ABILITYEFFECT_ENDTURN port partial. Pour now stub.
+        // 1:1 décomp battle_util.c:1477-1481 — delegate à
+        // AbilityBattleEffects(ABILITYEFFECT_ENDTURN, gActiveBattler, 0, 0, 0).
+        const e = AbilityBattleEffects(ABILITYEFFECT_ENDTURN, active, 0, 0, 0);
+        if (e !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) {
+            scriptLabel = label;
+            effect++;
+          }
+        }
         gBattleStruct.turnEffectsTracker++;
         break;
       }
 
       case ENDTURN_ITEMS1: {
-        // 1:1 décomp : delegate à ItemBattleEffects(ITEMEFFECT_NORMAL, _, FALSE).
-        // Phase 1.4 L wirage : import + call via globalThis pour éviter circular dep.
+        // 1:1 décomp battle_util.c:1483-1487 — delegate à
+        // ItemBattleEffects(ITEMEFFECT_NORMAL, gActiveBattler, FALSE).
+        const e = ItemBattleEffects(ITEMEFFECT_NORMAL, active, false);
+        if (e !== 0) {
+          const label = consumeItemWantedScript();
+          if (label) {
+            scriptLabel = label;
+            effect++;
+          }
+        }
         gBattleStruct.turnEffectsTracker++;
         break;
       }
 
       case ENDTURN_ITEMS2: {
-        // 1:1 décomp : delegate à ItemBattleEffects(ITEMEFFECT_NORMAL, _, TRUE).
+        // 1:1 décomp battle_util.c:1751-1754 — delegate à
+        // ItemBattleEffects(ITEMEFFECT_NORMAL, gActiveBattler, TRUE).
+        const e = ItemBattleEffects(ITEMEFFECT_NORMAL, active, true);
+        if (e !== 0) {
+          const label = consumeItemWantedScript();
+          if (label) {
+            scriptLabel = label;
+            effect++;
+          }
+        }
         gBattleStruct.turnEffectsTracker++;
         break;
       }
