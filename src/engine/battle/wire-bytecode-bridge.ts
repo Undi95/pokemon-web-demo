@@ -89,7 +89,7 @@ import {
 } from './item-battle-effects';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
-import { Dex } from '@pkmn/dex';
+import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';
 import {
   dequeueBattleEvent,
   clearBattleEventQueue,
@@ -122,27 +122,11 @@ function _decodeTypeMulFromResultFlags(flags: number): number {
 
 // ─── Move id resolution from PokemonInstance.moves[i].id (dex string) ──
 
-/** 1:1 décomp resolveMoveId : dexId ("blazekick") → cherche dans @pkmn/dex
- *  pour récup le name ("Blaze Kick") → reconstruct "MOVE_BLAZE_KICK" → numeric.
- *
- *  Avant : 'blazekick' → 'MOVE_BLAZEKICK' (= manqué l'underscore) → id 0.
- *  Maintenant : utilise Dex.moves.get(dexId).name pour split correctement. */
+/** 1:1 décomp resolveMoveId : dexId ("blazekick") → id numérique MOVE_*.
+ *  Résolution 100% décomp-extraite (constantes moves-data normalisées) via
+ *  party-storage — SOURCE DE VÉRITÉ UNIQUE, ZÉRO @pkmn/dex (1:1 strict). */
 function _resolveMoveId(dexId: string): number {
-  // Try direct first (= short single-word moves like "tackle" → MOVE_TACKLE).
-  let enumStr = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
-  let id = resolveDecompConstant(enumStr);
-  if (typeof id === 'number' && id !== 0) return id;
-  // Fall back : split via @pkmn/dex display name (= "blazekick" → "Blaze Kick"
-  // → "MOVE_BLAZE_KICK"). Direct import = always available.
-  try {
-    const mv = Dex.moves.get(dexId);
-    if (mv?.name) {
-      enumStr = 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
-      id = resolveDecompConstant(enumStr);
-      if (typeof id === 'number' && id !== 0) return id;
-    }
-  } catch { /* fallthrough */ }
-  return 0;
+  return resolveMoveDexId(dexId);
 }
 
 // ─── Effect resolution (= move's gBattleMoves[].effect → script label) ──
@@ -170,22 +154,11 @@ function _resolveMoveEffect(moveId: number): number {
   return 0;
 }
 
-/** Get move effect via faster path : direct dex id → getMove → effect.
- *  AUDIT BUG FIX : 'tailwhip' → 'MOVE_TAILWHIP' (= missing underscore) → no
- *  move data. Now : utilise Dex.moves.get(dexId).name pour split multi-word. */
+/** Get move effect via dex id → getMove → effect. Résolution du nom d'enum
+ *  100% décomp-extraite (moveDexIdToEnum, gère les noms composés type
+ *  'tailwhip'→MOVE_TAIL_WHIP). Zéro @pkmn/dex. */
 function _resolveMoveEffectFromDexId(dexId: string): number {
-  // Try direct first (single-word like "tackle" → MOVE_TACKLE).
-  let moveData = getMove('MOVE_' + dexId.toUpperCase().replace(/-/g, '_'));
-  if (!moveData) {
-    // Fall back : split via @pkmn/dex display name.
-    try {
-      const mv = Dex.moves.get(dexId);
-      if (mv?.name) {
-        const enumStr = 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
-        moveData = getMove(enumStr);
-      }
-    } catch { /* fallthrough */ }
-  }
+  const moveData = getMove(moveDexIdToEnum(dexId));
   if (!moveData) return 0;
   const effect = resolveDecompConstant(moveData.effect);
   return typeof effect === 'number' ? effect : 0;
@@ -251,16 +224,9 @@ export function runMoveScriptViaBytecode(opts: {
   }
   // 1:1 décomp : si move target = USER (= self-heal/buff), set gBattlerTarget
   // = gBattlerAttacker. Sinon : keep defender. Tableau gBattleMoves[move].target.
-  // Use Dex split pour compound names (= "softboiled" → "MOVE_SOFT_BOILED").
+  // Résolution nom composé 100% décomp-extraite (moveDexIdToEnum), zéro Showdown.
   try {
-    let moveData = getMove('MOVE_' + mv.id.toUpperCase().replace(/-/g, '_'));
-    if (!moveData) {
-      const mvDex = Dex.moves.get(mv.id);
-      if (mvDex?.name) {
-        const enumStr = 'MOVE_' + mvDex.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
-        moveData = getMove(enumStr);
-      }
-    }
+    const moveData = getMove(moveDexIdToEnum(mv.id));
     const targetField = moveData?.target;
     if (typeof targetField === 'string') {
       // 1:1 décomp include/constants/battle.h:96-103 MOVE_TARGET_*:

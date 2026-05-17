@@ -407,22 +407,28 @@ function _ensureMoveNameMap(): Record<string, string> {
   return m;
 }
 
-/** Resolve un move dex id (ex. "tackle", "defensecurl") vers u16 id décomp
- *  (MOVE_*). Les ids runtime sont sans séparateur ("defensecurl") alors que
- *  les enums décomp sont underscore-segmentés ("MOVE_DEFENSE_CURL") : la
- *  conversion naïve échouait sur les noms composés → 0 (= bug pré-existant
- *  qui rendait gBattleMons[1].moves[1..3] vides pour le BattleAI). Résolution
- *  1:1 via les constantes décomp moves-data normalisées (pas de @pkmn/dex). */
-function _resolveMoveId(dexId: string): number {
-  const naive = resolveDecompConstant('MOVE_' + dexId.toUpperCase().replace(/-/g, '_'));
-  if (typeof naive === 'number' && naive !== 0) return naive;
+/** 1:1 décomp : dexId runtime ("tackle", "defensecurl") → nom d'enum décomp
+ *  ("MOVE_TACKLE", "MOVE_DEFENSE_CURL"). Les ids runtime sont sans séparateur
+ *  alors que les enums décomp sont underscore-segmentés : la conversion naïve
+ *  échoue sur les noms composés. Résolution via constantes auto-extraites
+ *  moves-data normalisées. SOURCE DE VÉRITÉ UNIQUE (réutilisé par le bridge
+ *  bytecode = retrait @pkmn/dex). */
+export function moveDexIdToEnum(dexId: string): string {
+  const direct = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
+  const dId = resolveDecompConstant(direct);
+  if (typeof dId === 'number' && dId !== 0) return direct;
   const norm = dexId.replace(/[^a-z0-9]/gi, '').toLowerCase();
-  const enumName = _ensureMoveNameMap()[norm];
-  if (enumName) {
-    const viaMap = resolveDecompConstant(enumName);
-    if (typeof viaMap === 'number') return viaMap;
-  }
-  return typeof naive === 'number' ? naive : 0;
+  return _ensureMoveNameMap()[norm] ?? direct;
+}
+
+/** dexId runtime → u16 id décomp (MOVE_*). 0 si introuvable. 1:1, pas Showdown. */
+export function resolveMoveDexId(dexId: string): number {
+  const id = resolveDecompConstant(moveDexIdToEnum(dexId));
+  return typeof id === 'number' ? id : 0;
+}
+
+function _resolveMoveId(dexId: string): number {
+  return resolveMoveDexId(dexId);
 }
 
 /** Bridge un `PokemonInstance` runtime vers un `Pokemon` battle-side. */
