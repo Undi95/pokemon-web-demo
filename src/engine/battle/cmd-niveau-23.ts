@@ -143,7 +143,9 @@ function _moveIsPermanent_N23(battler: number, idx: number): boolean {
   const mon = st?.gBattleMons?.[battler];
   const ds = st?.gDisableStructs?.[battler];
   if (!mon || !ds) return false;
-  return !(mon.status2 & 0x4000000 /* STATUS2_TRANSFORMED */)
+  // 1:1 décomp battle.h:145 : STATUS2_TRANSFORMED = 1 << 21 = 0x200000.
+  // AUDIT BUG FIX : était 0x4000000 (= STATUS2_ESCAPE_PREVENTION) → 0x200000.
+  return !(mon.status2 & 0x200000 /* STATUS2_TRANSFORMED */)
       && !(ds.mimickedMoves & (1 << idx));
 }
 

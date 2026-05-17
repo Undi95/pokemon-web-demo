@@ -94,14 +94,17 @@ function _switchInClearSetData(active: number): void {
     for (let i = 0; i < 8 /* NUM_BATTLE_STATS */; i++) {
       gBattleMons[active].statStages[i] = 6 /* DEFAULT_STAT_STAGE */;
     }
+    // 1:1 décomp battle.h:150 + 160. AUDIT BUG FIX :
+    // - STATUS2_ESCAPE_PREVENTION était 0x4000 → 1<<26 = 0x4000000
+    // - STATUS3_ALWAYS_HITS était 0x8 → (1<<3)|(1<<4) = 0x18
     for (let i = 0; i < _gBattlersCount30(); i++) {
-      if ((gBattleMons[i].status2 & 0x4000 /* STATUS2_ESCAPE_PREVENTION */)
+      if ((gBattleMons[i].status2 & 0x4000000 /* STATUS2_ESCAPE_PREVENTION */)
           && gDisableStructs[i].battlerPreventingEscape === active) {
-        gBattleMons[i].status2 &= ~0x4000;
+        gBattleMons[i].status2 &= ~0x4000000;
       }
-      if ((_gStatuses30()[i] & 0x8 /* STATUS3_ALWAYS_HITS */)
+      if ((_gStatuses30()[i] & 0x18 /* STATUS3_ALWAYS_HITS */)
           && gDisableStructs[i].battlerWithSureHit === active) {
-        _gStatuses30()[i] &= ~0x8;
+        _gStatuses30()[i] &= ~0x18;
         gDisableStructs[i].battlerWithSureHit = 0;
       }
     }
