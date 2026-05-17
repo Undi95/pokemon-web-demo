@@ -68,13 +68,26 @@ function parseInt10(s) {
 function parseSpeciesInfo() {
   const text = readDecomp('src/data/pokemon/species_info.h');
   if (!text) return {};
-  // Format : `[SPECIES_XXX] = { .baseHP = N, .baseAttack = N, ..., }`
-  const re = /\[(SPECIES_\w+)\]\s*=\s*\{([\s\S]*?)\n\s*\}/g;
+  // Format : `[SPECIES_XXX] = { .baseHP = N, ..., }`. Scan d'accolades
+  // APPARIÉES (pas une regex non-greedy `\n\}`) : `[SPECIES_NONE] = {0},`
+  // est single-line sans `\n}` → l'ancienne regex démarrait à SPECIES_NONE
+  // et AVALAIT tout le bloc `[SPECIES_BULBASAUR] = {...}` jusqu'au 1er
+  // `\n}` (= fin de Bulbasaur) → SPECIES_NONE prenait les stats de
+  // Bulbasaur ET SPECIES_BULBASAUR (espèce #1) était DROPPÉE. Gardé 1:1
+  // par audit:species-stats / audit:species-abilities (qui FAIL désormais
+  // si une vraie espèce manque, plus de skip silencieux).
+  const re = /\[(SPECIES_\w+)\]\s*=\s*\{/g;
   const out = {};
   let m;
   while ((m = re.exec(text)) !== null) {
     const speciesId = m[1];
-    const body = m[2];
+    let depth = 1, i = re.lastIndex;
+    for (; i < text.length && depth > 0; i++) {
+      if (text[i] === '{') depth++;
+      else if (text[i] === '}') depth--;
+    }
+    const body = text.slice(re.lastIndex, i - 1);
+    re.lastIndex = i; // reprend APRÈS l'accolade fermante de ce bloc
     // Skip si juste `{0}` (= SPECIES_NONE).
     if (!body.includes('.base')) {
       out[speciesId] = { stats: { hp: 0, atk: 0, def: 0, spe: 0, spa: 0, spd: 0 } };
