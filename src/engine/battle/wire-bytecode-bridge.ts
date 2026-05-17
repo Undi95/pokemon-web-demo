@@ -785,7 +785,8 @@ export async function runBattleTurnPassedViaBytecode(): Promise<{
   }
 
   // Step 15-16 : Palace/Arena special scripts.
-  const BATTLE_TYPE_PALACE = 1 << 13;
+  // AUDIT BUG FIX : BATTLE_TYPE_PALACE était 1 << 13 (= LEGENDARY) au lieu de 1 << 17.
+  const BATTLE_TYPE_PALACE = 1 << 17;
   const BATTLE_TYPE_ARENA_LOCAL = 1 << 18;
   const tf = gs?.gBattleTypeFlags ?? 0;
   if (tf & BATTLE_TYPE_PALACE) {

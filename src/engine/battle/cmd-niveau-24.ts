@@ -27,6 +27,11 @@ import {
 import {
   REQUEST_ALL_BATTLE, B_COMM_TO_CONTROLLER,
   B_OUTCOME_WON, B_OUTCOME_LOST,
+  BATTLE_TYPE_FRONTIER as BATTLE_TYPE_FRONTIER_C24,
+  BATTLE_TYPE_LINK as BATTLE_TYPE_LINK_C24,
+  BATTLE_TYPE_TRAINER_HILL as BATTLE_TYPE_TRAINER_HILL_C24,
+  BATTLE_TYPE_RECORDED_LINK as BATTLE_TYPE_RECORDED_LINK_C24,
+  BATTLE_TYPE_EREADER_TRAINER as BATTLE_TYPE_EREADER_TRAINER_C24,
 } from './constants';
 import {
   BtlController_EmitTrainerSlide,
@@ -76,19 +81,16 @@ function Cmd_switchinanim(ctx: BattleScriptContext): boolean {
 
   // 1:1 décomp : si battler OPPONENT_SIDE + !LINK/FRONTIER battle, HandleSetPokedexFlag
   // FLAG_SET_SEEN (= mon vu par player → seen flag).
+  // AUDIT BUG FIX : 5 constantes BATTLE_TYPE_* hardcoded fausses → import depuis
+  // constants.ts (= valeurs correctes 1:1 battle.h).
   const side = active & 1;  // 0 player, 1 opponent.
-  const BATTLE_TYPE_FRONTIER_LOCAL = 1 << 28;
-  const BATTLE_TYPE_LINK_LOCAL     = 1 << 1;
-  const BATTLE_TYPE_TRAINER_HILL_LOCAL = 1 << 13;
-  const BATTLE_TYPE_RECORDED_LINK_LOCAL = 1 << 16;
-  const BATTLE_TYPE_EREADER_TRAINER_LOCAL = 1 << 18;
   const tf = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0;
   if (side === 1 /* B_SIDE_OPPONENT */
-      && !(tf & (BATTLE_TYPE_LINK_LOCAL
-                | BATTLE_TYPE_EREADER_TRAINER_LOCAL
-                | BATTLE_TYPE_RECORDED_LINK_LOCAL
-                | BATTLE_TYPE_TRAINER_HILL_LOCAL
-                | BATTLE_TYPE_FRONTIER_LOCAL))) {
+      && !(tf & (BATTLE_TYPE_LINK_C24
+                | BATTLE_TYPE_EREADER_TRAINER_C24
+                | BATTLE_TYPE_RECORDED_LINK_C24
+                | BATTLE_TYPE_TRAINER_HILL_C24
+                | BATTLE_TYPE_FRONTIER_C24))) {
     _handleSetPokedexFlag_CDS(gBattleMons[active]);
   }
   setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[active]);
