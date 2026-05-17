@@ -75,6 +75,8 @@ import {
   destroyHealthboxSprite,
   setHealthboxVisible,
   updateHealthboxHpBar,
+  updateHealthboxLevel,
+  updateHealthboxHpDigits,
   type HealthboxHandle,
 } from './battle-healthbox';
 import {
@@ -491,9 +493,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // les rendra visible). Color tier GREEN > 50%, YELLOW > 20%, else RED.
     if (opponentHealthbox && opponentMon) {
       updateHealthboxHpBar(opponentHealthbox, opponentMon.currentHp, opponentMon.maxHp);
+      // Phase 1.4 N Q3 D3 : Lv display (1:1 décomp UpdateLvlInHealthbox).
+      updateHealthboxLevel(opponentHealthbox, opponentMon.level);
     }
     if (playerHealthbox && playerMon) {
       updateHealthboxHpBar(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
+      // Phase 1.4 N Q3 D3 : Lv + HP digits (1:1 décomp UpdateLvlInHealthbox + UpdateHpTextInHealthbox).
+      updateHealthboxLevel(playerHealthbox, playerMon.level);
+      updateHealthboxHpDigits(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
     }
   };
 

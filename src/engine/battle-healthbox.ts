@@ -45,6 +45,8 @@ const HEALTHBOX_PLAYER_PNG   = '/decomp/em/battle_interface/healthbox_singles_pl
 const HEALTHBOX_OPPONENT_PNG = '/decomp/em/battle_interface/healthbox_singles_opponent.png';
 const HPBAR_PNG              = '/decomp/em/battle_interface/hpbar.png';
 const HPBAR_ANIM_PNG         = '/decomp/em/battle_interface/hpbar_anim.png';   // YELLOW + RED tile sets
+const NUMBERS1_PNG           = '/decomp/em/battle_interface/numbers1.png';     // 11 tiles : [blank, 0..9]
+const NUMBERS2_PNG           = '/decomp/em/battle_interface/numbers2.png';     // 12 tiles : [0..9, blank, slash/Lv]
 const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png';  // = palette HEALTHBOX
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
 
@@ -86,6 +88,13 @@ let _hpBarTilesGreen:  Uint8Array | null = null;  // 9 tiles (= 288 bytes)
 let _hpBarTilesYellow: Uint8Array | null = null;  // 9 tiles
 let _hpBarTilesRed:    Uint8Array | null = null;  // 9 tiles
 let _hpBarBaseTiles:   Uint8Array | null = null;  // 3 tiles = "blank/H/P" frame tiles 0..2 hpbar.png
+
+// 1:1 décomp `numbers1.4bpp` (= player digits) + `numbers2.4bpp` (= opp digits).
+// Tile layouts (= empirical inspection) :
+//   - numbers1.png : tile 0 = blank, tiles 1..10 = digits 0..9
+//   - numbers2.png : tiles 0..9 = digits 0..9, tile 10 = blank, tile 11 = "Lv" prefix or slash
+let _numbers1Tiles: Uint8Array | null = null;
+let _numbers2Tiles: Uint8Array | null = null;
 
 /** Re-arrange row-major tile data en metatile order.
  *
@@ -202,6 +211,15 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // tiles 0..1 = labels "H" "P" depuis hpbar.png tile 1 + 2 (= "H" + "P").
   rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
   rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
+
+  // ─── Numbers tile sets (= digits 0..9 pour Lv + HP display) ─────────────
+  // 1:1 décomp graphics_file_rules.mk:90-91 :
+  //   numbers1.4bpp = digits player (white)
+  //   numbers2.4bpp = digits opp (yellow/contrast)
+  const numbers1Png = await loadIndexedPng(NUMBERS1_PNG);
+  const numbers2Png = await loadIndexedPng(NUMBERS2_PNG);
+  _numbers1Tiles = numbers1Png.charData;  // 11 tiles
+  _numbers2Tiles = numbers2Png.charData;  // 12 tiles
 
   // ─── Palettes ───────────────────────────────────────────────────────────
   // HEALTHBOX palette = ball_status_bar.png .gbapal
@@ -487,4 +505,86 @@ export function updateHealthboxHpBar(handle: HealthboxHandle, currHp: number, ma
     const destOffset = baseVram + (2 + i) * TILE_BYTES;
     rt.gba.objVram.set(tiles.subarray(srcOffset, srcOffset + TILE_BYTES), destOffset);
   }
+}
+
+// ─── Digits (Lv / HP) : D3 1:1 décomp UpdateLvlInHealthbox / UpdateHpTextInHealthbox ─
+
+/** Convertit un nombre en array de tile indices `numbers1.png`.
+ *  - numbers1.png tile 0 = blank
+ *  - numbers1.png tiles 1..10 = digits 0..9 (= correspondance digit+1)
+ *
+ *  Right-align : pour `num=42` avec `len=3` → `[blank, '4', '2']` = `[0, 5, 3]`. */
+function _digitsToNumbers1Tiles(num: number, len: number): number[] {
+  const str = String(Math.max(0, Math.min(num, 999))).padStart(len, ' ');
+  return str.split('').map(c => c === ' ' ? 0 : Number(c) + 1);
+}
+
+/** Convertit un nombre en array de tile indices `numbers2.png`.
+ *  - numbers2.png tiles 0..9 = digits 0..9 (= digit directe)
+ *  - numbers2.png tile 10 = blank
+ *  - numbers2.png tile 11 = "Lv" prefix / slash special */
+function _digitsToNumbers2Tiles(num: number, len: number): number[] {
+  const str = String(Math.max(0, Math.min(num, 999))).padStart(len, ' ');
+  return str.split('').map(c => c === ' ' ? 10 : Number(c));
+}
+
+/** Write N tiles à OBJ VRAM à partir d'un tile source array. */
+function _writeTilesToVram(vramByteOffset: number, tileIndices: number[], tileSource: Uint8Array): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  for (let i = 0; i < tileIndices.length; i++) {
+    const tileIdx = tileIndices[i];
+    rt.gba.objVram.set(
+      tileSource.subarray(tileIdx * TILE_BYTES, (tileIdx + 1) * TILE_BYTES),
+      vramByteOffset + i * TILE_BYTES,
+    );
+  }
+}
+
+/** 1:1 décomp `UpdateLvlInHealthbox` (battle_interface.c:1105-1137).
+ *
+ *  Display "Lv NN" (= up to 3 digits 0..100) dans le sprite OAM healthbox.
+ *
+ *  Offsets décomp (= relative à sprite tile data byte start) :
+ *    - Player single : objVram += spriteTileNum + 0x820  (= byte 0x820 from healthbox left)
+ *    - Opp single    : objVram += spriteTileNum + 0x400  (= byte 0x400 from healthbox left)
+ *
+ *  Notre layout : healthbox left sprite tileNum = HEALTHBOX_PLAYER_VRAM/32 = 0.
+ *  Donc objVram absolu = HEALTHBOX_PLAYER_VRAM + 0x820 = byte 0x820 in OBJ VRAM.
+ *  3 tiles consécutifs (= 3 digits max). */
+export function updateHealthboxLevel(handle: HealthboxHandle, level: number): void {
+  if (!_numbers1Tiles) return;
+  const digits = _digitsToNumbers1Tiles(level, 3);
+  if (handle.side === 'player') {
+    // 1:1 décomp ll. 1126 : objVram += spriteTileNum + 0x820
+    _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0x820, digits, _numbers1Tiles);
+  } else {
+    // 1:1 décomp ll. 1133 : objVram += spriteTileNum + 0x400
+    _writeTilesToVram(HEALTHBOX_OPPONENT_VRAM + 0x400, digits, _numbers1Tiles);
+  }
+}
+
+/** 1:1 décomp `UpdateHpTextInHealthbox` (battle_interface.c:1139-1172) player single.
+ *
+ *  Display "currHp/maxHp" (= 7 chars max : "999/999") dans le sprite OAM healthbox.
+ *  Opp single n'affiche PAS de HP digits (= juste la bar + status).
+ *
+ *  Offsets décomp player single :
+ *    - HP current (3 digits) : split
+ *      · 1 tile à spriteTileNum + 0x3E0 (= byte 0x3E0)
+ *      · 2 tiles à spriteTileNum + 0xB00 (= byte 0xB00 + 0x20)
+ *    - HP max (3 digits) : 2 tiles à spriteTileNum + 0xB40 */
+export function updateHealthboxHpDigits(handle: HealthboxHandle, currHp: number, maxHp: number): void {
+  if (handle.side !== 'player') return;  // Opp single doesn't display HP digits
+  if (!_numbers1Tiles) return;
+  const currDigits = _digitsToNumbers1Tiles(currHp, 3);
+  const maxDigits  = _digitsToNumbers1Tiles(maxHp, 3);
+  // HP current split : 1 tile @ 0x3E0 + 2 tiles @ 0xB00.
+  // 1:1 décomp split for visual reasons (= the 3 digits span 2 sprite tile rows
+  // due to the HP bar position between them).
+  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0x3E0, [currDigits[0]], _numbers1Tiles);
+  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0xB00, currDigits.slice(1), _numbers1Tiles);
+  // HP max : 2 tiles (= dropping the leading digit for visual fit, decomp does
+  // same with `windowTileData + 0x20` offset which skips first 32-byte chunk).
+  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0xB40, maxDigits.slice(1), _numbers1Tiles);
 }
