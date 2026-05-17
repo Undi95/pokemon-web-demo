@@ -38,6 +38,76 @@
 
 import { getRuntime } from './decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
+import { rgba8ToRgb15 } from './gba/types';
+
+/** Charge un PNG indexed multi-sub-palette en tile data 4bpp avec indices LOCAUX
+ *  (= `pltteIdx % 16`). Pattern identique à `_loadBattleTerrainTiles` (battle-bg.ts).
+ *
+ *  Nécessaire pour `status.png` : 5 status icons (PSN/PRZ/SLP/FRZ/BRN) partagent
+ *  la MÊME tile data mais chaque status utilise une sub-palette différente. Le PNG
+ *  indexé a une PLTE 80-color (= 5 sub-palettes 16) et les pixels utilisent des
+ *  indices globaux (2,3,12 / 28 / 44 / 60 / 76 = même local 12 dans sub-pal 0..4).
+ *
+ *  1:1 décomp : `status.4bpp` contient des indices LOCAUX 0..15 ; la couleur est
+ *  appliquée au runtime via la palette OBJ du sprite healthbox (= paletteBank).
+ *  `loadIndexedPngStrict` ne prend que les 16 premières PLTE colors → les pixels
+ *  sub-pal 1..4 (439 px) non mappés → transparent (warning + icônes invisibles). */
+async function _loadMultiSubPalTiles(url: string): Promise<Uint8Array> {
+  const fullPlte = await extractPngPlte(url);
+  if (!fullPlte) throw new Error(`multi-sub-pal PLTE missing: ${url}`);
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.crossOrigin = 'anonymous';
+    el.onload = () => resolve(el);
+    el.onerror = (e) => reject(new Error(`PNG load failed: ${url}: ${e}`));
+    el.src = url;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error(`canvas ctx failed: ${url}`);
+  ctx.drawImage(img, 0, 0);
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  const widthPx = canvas.width;
+  const heightPx = canvas.height;
+  const widthTiles = widthPx / 8;
+  const heightTiles = heightPx / 8;
+
+  // Reverse lookup full PLTE (80 colors) → idx.
+  const palLookup = new Map<number, number>();
+  for (let i = 0; i < fullPlte.length; i++) {
+    const key = fullPlte[i];
+    if (!palLookup.has(key)) palLookup.set(key, i);
+  }
+
+  const idxMap = new Uint8Array(widthPx * heightPx);
+  for (let i = 0; i < widthPx * heightPx; i++) {
+    const off = i * 4;
+    const a = data[off + 3];
+    if (a < 128) { idxMap[i] = 0; continue; }
+    const rgb15 = rgba8ToRgb15(data[off], data[off + 1], data[off + 2]);
+    const idx = palLookup.get(rgb15);
+    idxMap[i] = idx === undefined ? 0 : (idx % 16);  // local sub-pal index 0..15
+  }
+
+  const charData = new Uint8Array(widthTiles * heightTiles * 32);
+  for (let ty = 0; ty < heightTiles; ty++) {
+    for (let tx = 0; tx < widthTiles; tx++) {
+      const tileBaseOffset = (ty * widthTiles + tx) * 32;
+      for (let row = 0; row < 8; row++) {
+        for (let pairCol = 0; pairCol < 4; pairCol++) {
+          const px1 = idxMap[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2)];
+          const px2 = idxMap[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2 + 1)];
+          charData[tileBaseOffset + row * 4 + pairCol] = (px1 & 0xF) | ((px2 & 0xF) << 4);
+        }
+      }
+    }
+  }
+  return charData;
+}
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
 
@@ -246,8 +316,10 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // 1:1 décomp `status.4bpp` (= 24×40 = 15 tiles : 5 status × 3 tiles each).
   // Used pour player single + opp single (= even though decomp has status2/3/4
   // pour battler 1/2/3 doubles, en single ils utilisent tous status.png).
-  const statusPng = await loadIndexedPngStrict(STATUS_PNG, 4);
-  _statusTiles = statusPng.charData;
+  // status.png = multi-sub-palette (PLTE 80-color, 5 sub-pal). Lire avec
+  // indices LOCAUX `% 16` (= 1:1 décomp status.4bpp). loadIndexedPngStrict
+  // ne prendrait que sub-pal 0 → 439 px (sub-pal 1..4) unmapped → transparent.
+  _statusTiles = await _loadMultiSubPalTiles(STATUS_PNG);
 
   // ─── EXP bar tile data ──────────────────────────────────────────────────
   // 1:1 décomp `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
