@@ -179,27 +179,31 @@ import { gBattlerPartyIndexes as _gBattlerPartyIndexesFRS } from './state';
 
 // ─── 0xE5 pickup ──────────────────────────────────────────────────────────
 
-/** 1:1 décomp `sPickupItems[]` (battle_script_commands.c:784-804). */
+/** 1:1 décomp `sPickupItems[]` (battle_script_commands.c:784-804).
+ *  AUDIT BUG FIX : 14/18 values étaient FAUSSES (= old item.h ordering or
+ *  similar). Cross-checked vs items-data.ts (= source de vérité). */
 const sPickupItems: ReadonlyArray<number> = [
-  13  /* ITEM_POTION */,    17  /* ITEM_ANTIDOTE */,
-  14  /* ITEM_SUPER_POTION */, 3   /* ITEM_GREAT_BALL */,
-  61  /* ITEM_REPEL */,     69  /* ITEM_ESCAPE_ROPE */,
-  56  /* ITEM_X_ATTACK */,  19  /* ITEM_FULL_HEAL */,
-  4   /* ITEM_ULTRA_BALL */, 15  /* ITEM_HYPER_POTION */,
-  68  /* ITEM_RARE_CANDY */, 73  /* ITEM_PROTEIN */,
-  20  /* ITEM_REVIVE */,    70  /* ITEM_HP_UP */,
-  16  /* ITEM_FULL_RESTORE */, 21  /* ITEM_MAX_REVIVE */,
-  72  /* ITEM_PP_UP */,     65  /* ITEM_MAX_ELIXIR */,
+  13  /* ITEM_POTION */,        14  /* ITEM_ANTIDOTE */,
+  22  /* ITEM_SUPER_POTION */,  3   /* ITEM_GREAT_BALL */,
+  86  /* ITEM_REPEL */,         85  /* ITEM_ESCAPE_ROPE */,
+  75  /* ITEM_X_ATTACK */,      23  /* ITEM_FULL_HEAL */,
+  2   /* ITEM_ULTRA_BALL */,    21  /* ITEM_HYPER_POTION */,
+  68  /* ITEM_RARE_CANDY */,    64  /* ITEM_PROTEIN */,
+  24  /* ITEM_REVIVE */,        63  /* ITEM_HP_UP */,
+  19  /* ITEM_FULL_RESTORE */,  25  /* ITEM_MAX_REVIVE */,
+  69  /* ITEM_PP_UP */,         37  /* ITEM_MAX_ELIXIR */,
 ];
 
-/** 1:1 décomp `sRarePickupItems[]` (battle_script_commands.c:806-819). */
+/** 1:1 décomp `sRarePickupItems[]` (battle_script_commands.c:806-819).
+ *  AUDIT BUG FIX : 10/11 values étaient FAUSSES. Cross-checked items-data.ts
+ *  + TM enum (= TM01=289 first FOCUS_PUNCH, TM26=314 EARTHQUAKE, TM44=332 REST). */
 const sRarePickupItems: ReadonlyArray<number> = [
-  15  /* ITEM_HYPER_POTION */, 92  /* ITEM_NUGGET */,
-  221 /* ITEM_KINGS_ROCK */,   16  /* ITEM_FULL_RESTORE */,
-  62  /* ITEM_ETHER */,        184 /* ITEM_WHITE_HERB */,
-  338 /* ITEM_TM_REST */,      63  /* ITEM_ELIXIR */,
-  330 /* ITEM_TM_FOCUS_PUNCH */, 211 /* ITEM_LEFTOVERS */,
-  328 /* ITEM_TM_EARTHQUAKE */,
+  21  /* ITEM_HYPER_POTION */,  110 /* ITEM_NUGGET */,
+  187 /* ITEM_KINGS_ROCK */,    19  /* ITEM_FULL_RESTORE */,
+  34  /* ITEM_ETHER */,         180 /* ITEM_WHITE_HERB */,
+  332 /* ITEM_TM44_REST */,     36  /* ITEM_ELIXIR */,
+  289 /* ITEM_TM01_FOCUS_PUNCH */, 200 /* ITEM_LEFTOVERS */,
+  314 /* ITEM_TM26_EARTHQUAKE */,
 ];
 
 /** 1:1 décomp `sPickupProbabilities[]` (battle_script_commands.c:821-824). */
