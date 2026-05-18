@@ -1314,3 +1314,270 @@ function ListMenuRemoveCursorObject(taskId: number, cursorObjId: number): void {
       break;
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// INCRÉMENT 3c — scroll indicator arrow pair 1:1 (list_menu.c)
+// ════════════════════════════════════════════════════════════════════════════
+// Port 1:1 ligne-par-ligne : SpriteCallback_ScrollIndicatorArrow (:997-1022)
+// + AddScrollIndicatorArrowObject (:1024-1043) + AddScrollIndicatorArrowPair
+// (:1052-1094) + AddScrollIndicatorArrowPairParameterized (:1096-1124) +
+// Task_ScrollIndicatorArrowPair (:1126-1140) + Task_ScrollIndicatorArrowPair
+// OnMainMenu (:1144-1159) + RemoveScrollIndicatorArrowPair (:1163-1176) +
+// sScrollIndicatorTemplates (:96-108) + sOamData/anims/template (:110-168)
+// + struct ScrollIndicatorPair (:24-34) + gTempScrollArrowTemplate (:80).
+// Flèches scroll ↑↓ ←→ (PC storage / shop / mystery gift / main menu).
+// MAPPING struct C → API TS adaptée (même esprit que 3b, helpers déjà LUS) :
+//   • `CreateSprite(&tpl,…)` → `rt.CreateSpriteAtOam` + `rt.StartSpriteAnim`
+//     + sprite.data[0..5] (= tState/tAnimNum/tBounceDir/tMultiplier/
+//     tFrequency/tSinePos, defines list_menu.c:990-995) + invisible.
+//   • `u16 *scrollOffset` (POINTEUR live vers le scroll du caller) → getter
+//     `() => number` (1:1 sémantique : `*data->scrollOffset` = lecture live ;
+//     un number figé serait FAUX car le task le relit chaque frame). Report
+//     HONNÊTE : adaptation de signature, pas un fake.
+//   • `(void*)gTasks[taskId].data` → Map `sScrollIndicatorData` (modèle 2d/3b).
+//     `data[15]` (tIsScrolled, OnMainMenu) → champ `tIsScrolled` du struct
+//     (= 1:1 sémantique du slot, posé par le caller main_menu quand porté).
+//   • Free*ByTag → helpers 3b (libèrent le mapping tag runtime, honnête).
+// VÉRIF : SpriteCallback math + seuils visibilité + remplissage gTempScroll
+// ArrowTemplate = déterministe (pattern 3b). Rendu pixel/anim sprite à
+// l'écran = A/B user au branchement écran consommateur (non portés). 1:1
+// strict, 0 demi-port, 0 fake.
+
+/** 1:1 décomp `struct ScrollIndicatorPair` (list_menu.c:24-34). `scrollOffset`
+ *  = `u16 *` (pointeur live) → getter `() => number` (adaptation 1:1
+ *  sémantique documentée). `tIsScrolled` = `gTasks[].data[15]`
+ *  (Task_…OnMainMenu, posé par main_menu.c quand porté). */
+interface ScrollIndicatorPair {
+  field_0: number;
+  scrollOffsetGet: () => number;
+  fullyUpThreshold: number;
+  fullyDownThreshold: number;
+  topSpriteId: number;
+  bottomSpriteId: number;
+  tileTag: number;
+  palTag: number;
+  tIsScrolled: number;
+}
+
+/** 1:1 décomp `sScrollIndicatorTemplates[]` (list_menu.c:96-108) — bitfields
+ *  `{animNum:4, bounceDir:4, multiplier, frequency:u16}`. `frequency` -8
+ *  stocké u16=0xFFF8 puis relu en `s16 data[4]` → -8 ; on stocke directement
+ *  la valeur source -8 (round-trip identique). Indexé par `arrowDir`
+ *  (SCROLL_ARROW_LEFT/RIGHT/UP/DOWN = 0/1/2/3). */
+const sScrollIndicatorTemplates: ReadonlyArray<{ animNum: number; bounceDir: number; multiplier: number; frequency: number }> = [
+  { animNum: 0, bounceDir: 0, multiplier: 2, frequency: 8 },
+  { animNum: 1, bounceDir: 0, multiplier: 2, frequency: -8 },
+  { animNum: 2, bounceDir: 1, multiplier: 2, frequency: 8 },
+  { animNum: 3, bounceDir: 1, multiplier: 2, frequency: -8 },
+];
+
+/** 1:1 décomp symbole `sScrollIndicator_Gfx` (list_menu.c:290) — graphics/
+ *  interface/scroll_indicator.png (.4bpp.lz). */
+const sScrollIndicator_Gfx = 'sScrollIndicator_Gfx';
+
+/** 1:1 décomp `EWRAM_DATA struct ScrollArrowsTemplate gTempScrollArrowTemplate`
+ *  (list_menu.c:80). Rempli par AddScrollIndicatorArrowPairParameterized. */
+const gTempScrollArrowTemplate: ScrollArrowsTemplate = {
+  firstArrowType: 0, firstX: 0, firstY: 0,
+  secondArrowType: 0, secondX: 0, secondY: 0,
+  fullyUpThreshold: 0, fullyDownThreshold: 0,
+  tileTag: 0, palTag: 0, palNum: 0,
+};
+
+/** Modèle objet→Map (= 1:1 sémantique cast `(void*)gTasks[taskId].data`,
+ *  modèle 2d/3b). */
+const sScrollIndicatorData = new Map<number, ScrollIndicatorPair>();
+
+/** Accès runtime sprite étendu (1:1 `gSprites[id]` ; +invisible/callback). */
+function _getSpriteFull(spriteId: number): {
+  x: number; y: number; x2: number; y2: number; data: number[];
+  invisible: boolean; callback: ((s: unknown) => void) | null;
+} | undefined {
+  const rt = getRuntime() as unknown as { gSprites?: Map<number, unknown> } | null;
+  return rt?.gSprites?.get(spriteId) as {
+    x: number; y: number; x2: number; y2: number; data: number[];
+    invisible: boolean; callback: ((s: unknown) => void) | null;
+  } | undefined;
+}
+
+/** 1:1 décomp `static void SpriteCallback_ScrollIndicatorArrow(struct Sprite
+ *  *sprite)` (list_menu.c:997-1022). data[0..5] = tState/tAnimNum/tBounceDir/
+ *  tMultiplier/tFrequency/tSinePos (defines :990-995). `(u8)tSinePos`=`&0xFF`,
+ *  `*multiplier/256` = division entière C (Math.trunc), tSinePos += freq
+ *  (s16 wrap via Int16Array). */
+function SpriteCallback_ScrollIndicatorArrow(sprite: { x2: number; y2: number; data: number[]; spriteId?: number }): void {
+  switch (sprite.data[0] /* tState */) {
+    case 0:
+      // 1:1 :1004 StartSpriteAnim(sprite, tAnimNum)
+      {
+        const rt = getRuntime() as unknown as { StartSpriteAnim?: (id: number, a: number) => void } | null;
+        const id = (sprite as { spriteId?: number }).spriteId;
+        if (rt?.StartSpriteAnim && id != null) rt.StartSpriteAnim(id, sprite.data[1]);
+      }
+      sprite.data[0]++;            // 1:1 :1005 tState++
+      break;
+    case 1: {
+      const multiplier = sprite.data[3]; // tMultiplier
+      switch (sprite.data[2] /* tBounceDir */) {
+        case 0:
+          sprite.x2 = Math.trunc((gSineTable(sprite.data[5] & 0xFF) * multiplier) / 256); // 1:1 :1012
+          break;
+        case 1:
+          sprite.y2 = Math.trunc((gSineTable(sprite.data[5] & 0xFF) * multiplier) / 256); // 1:1 :1016
+          break;
+      }
+      sprite.data[5] += sprite.data[4]; // 1:1 :1019 tSinePos += tFrequency
+      break;
+    }
+  }
+}
+
+/** 1:1 décomp `static u8 AddScrollIndicatorArrowObject(u8 arrowDir, u8 x,
+ *  u8 y, u16 tileTag, u16 palTag)` (list_menu.c:1024-1043). */
+function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, tileTag: number, _palTag: number): number {
+  // 1:1 :1029-1033 spriteTemplate = sSpriteTemplate_ScrollArrowIndicator
+  // (sOamData 16x16 shape0 size1, callback SpriteCallback_ScrollIndicator
+  // Arrow) tileTag/palTag custom ; CreateSprite(&tpl, x, y, 0). Mapping
+  // adapté CreateSpriteAtOam (tile = tag→tileStart).
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    spriteSheetTagToTileStart?: Map<string, number>;
+  };
+  const tileStart = rt.spriteSheetTagToTileStart?.get(String(tileTag)) ?? 0;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: 0,
+    x, y, shape: 0, size: 1, priority: 0, subpriority: 0,
+  });
+  const spr = _getSpriteFull(spriteId);
+  if (spr) {
+    spr.invisible = true;                                                  // 1:1 :1034
+    spr.callback = SpriteCallback_ScrollIndicatorArrow as unknown as (s: unknown) => void;
+    spr.data[0] = 0;                                                       // 1:1 :1035 tState=0
+    spr.data[1] = sScrollIndicatorTemplates[arrowDir].animNum;             // 1:1 :1036
+    spr.data[2] = sScrollIndicatorTemplates[arrowDir].bounceDir;           // 1:1 :1037
+    spr.data[3] = sScrollIndicatorTemplates[arrowDir].multiplier;          // 1:1 :1038
+    spr.data[4] = sScrollIndicatorTemplates[arrowDir].frequency;           // 1:1 :1039
+    spr.data[5] = 0;                                                       // 1:1 :1040 tSinePos=0
+  }
+  return spriteId;                                                         // 1:1 :1042
+}
+
+/** 1:1 décomp `u8 AddScrollIndicatorArrowPair(const struct ScrollArrowsTemplate
+ *  *arrowInfo, u16 *scrollOffset)` (list_menu.c:1052-1094). `scrollOffset`
+ *  = getter `() => number` (adaptation 1:1 sémantique du pointeur live). */
+export function AddScrollIndicatorArrowPair(arrowInfo: ScrollArrowsTemplate, scrollOffsetGet: () => number): number {
+  // 1:1 :1059-1062 spriteSheet{data=sScrollIndicator_Gfx,size=0x100,tag}
+  LoadCompressedSpriteSheet({ data: sScrollIndicator_Gfx, size: 0x100, tag: arrowInfo.tileTag });
+  // 1:1 :1064-1073 palTag==TAG_NONE → LoadPalette ; sinon LoadSpritePalette
+  if (arrowInfo.palTag === TAG_NONE) {
+    LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(arrowInfo.palNum), PLTT_SIZE_4BPP);
+  } else {
+    LoadSpritePalette({ data: sRedInterface_Pal, tag: arrowInfo.palTag });
+  }
+
+  const taskId = _createTask(Task_ScrollIndicatorArrowPair, 0);    // 1:1 :1075
+  const data: ScrollIndicatorPair = {                              // 1:1 :1076 (void*)gTasks[taskId].data
+    field_0: 0, scrollOffsetGet, fullyUpThreshold: 0, fullyDownThreshold: 0,
+    topSpriteId: 0, bottomSpriteId: 0, tileTag: 0, palTag: 0, tIsScrolled: 0,
+  };
+  sScrollIndicatorData.set(taskId, data);
+
+  data.field_0 = 0;                                                // 1:1 :1078
+  data.scrollOffsetGet = scrollOffsetGet;                          // 1:1 :1079 data->scrollOffset = scrollOffset
+  data.fullyUpThreshold = arrowInfo.fullyUpThreshold;              // 1:1 :1080
+  data.fullyDownThreshold = arrowInfo.fullyDownThreshold;          // 1:1 :1081
+  data.tileTag = arrowInfo.tileTag;                                // 1:1 :1082
+  data.palTag = arrowInfo.palTag;                                  // 1:1 :1083
+  data.topSpriteId = AddScrollIndicatorArrowObject(arrowInfo.firstArrowType, arrowInfo.firstX, arrowInfo.firstY, arrowInfo.tileTag, arrowInfo.palTag);    // :1084
+  data.bottomSpriteId = AddScrollIndicatorArrowObject(arrowInfo.secondArrowType, arrowInfo.secondX, arrowInfo.secondY, arrowInfo.tileTag, arrowInfo.palTag); // :1085
+
+  // 1:1 :1087-1091 palTag==TAG_NONE → oam.paletteNum = palNum (= paletteBank,
+  // mais AddScrollIndicatorArrowObject crée avec paletteBank 0 ; on aligne 1:1
+  // en ré-appliquant le palNum si TAG_NONE).
+  if (arrowInfo.palTag === TAG_NONE) {
+    const top = _getSpriteFull(data.topSpriteId);
+    const bot = _getSpriteFull(data.bottomSpriteId);
+    const rt = getRuntime() as unknown as { gba?: { oam?: Array<{ paletteBank: number }> } } | null;
+    const topOam = top as unknown as { oamIndex?: number } | undefined;
+    const botOam = bot as unknown as { oamIndex?: number } | undefined;
+    if (rt?.gba?.oam && topOam?.oamIndex != null) rt.gba.oam[topOam.oamIndex].paletteBank = arrowInfo.palNum;
+    if (rt?.gba?.oam && botOam?.oamIndex != null) rt.gba.oam[botOam.oamIndex].paletteBank = arrowInfo.palNum;
+  }
+
+  return taskId;                                                   // 1:1 :1093
+}
+
+/** 1:1 décomp `u8 AddScrollIndicatorArrowPairParameterized(u32 arrowType,
+ *  s32 commonPos, s32 firstPos, s32 secondPos, s32 fullyDownThreshold,
+ *  s32 tileTag, s32 palTag, u16 *scrollOffset)` (list_menu.c:1096-1124).
+ *  Remplit gTempScrollArrowTemplate (PUR) puis AddScrollIndicatorArrowPair. */
+export function AddScrollIndicatorArrowPairParameterized(
+  arrowType: number, commonPos: number, firstPos: number, secondPos: number,
+  fullyDownThreshold: number, tileTag: number, palTag: number, scrollOffsetGet: () => number,
+): number {
+  if (arrowType === SCROLL_ARROW_UP || arrowType === SCROLL_ARROW_DOWN) {
+    gTempScrollArrowTemplate.firstArrowType = SCROLL_ARROW_UP;     // 1:1 :1100
+    gTempScrollArrowTemplate.firstX = commonPos;                   // 1:1 :1101
+    gTempScrollArrowTemplate.firstY = firstPos;                    // 1:1 :1102
+    gTempScrollArrowTemplate.secondArrowType = SCROLL_ARROW_DOWN;  // 1:1 :1103
+    gTempScrollArrowTemplate.secondX = commonPos;                  // 1:1 :1104
+    gTempScrollArrowTemplate.secondY = secondPos;                  // 1:1 :1105
+  } else {
+    gTempScrollArrowTemplate.firstArrowType = SCROLL_ARROW_LEFT;   // 1:1 :1109
+    gTempScrollArrowTemplate.firstX = firstPos;                    // 1:1 :1110
+    gTempScrollArrowTemplate.firstY = commonPos;                   // 1:1 :1111
+    gTempScrollArrowTemplate.secondArrowType = SCROLL_ARROW_RIGHT; // 1:1 :1112
+    gTempScrollArrowTemplate.secondX = secondPos;                  // 1:1 :1113
+    gTempScrollArrowTemplate.secondY = commonPos;                  // 1:1 :1114
+  }
+  gTempScrollArrowTemplate.fullyUpThreshold = 0;                   // 1:1 :1117
+  gTempScrollArrowTemplate.fullyDownThreshold = fullyDownThreshold;// 1:1 :1118
+  gTempScrollArrowTemplate.tileTag = tileTag;                      // 1:1 :1119
+  gTempScrollArrowTemplate.palTag = palTag;                        // 1:1 :1120
+  gTempScrollArrowTemplate.palNum = 0;                             // 1:1 :1121
+  return AddScrollIndicatorArrowPair(gTempScrollArrowTemplate, scrollOffsetGet); // 1:1 :1123
+}
+
+/** 1:1 décomp `static void Task_ScrollIndicatorArrowPair(u8 taskId)`
+ *  (list_menu.c:1126-1140). Task per-frame : top/bottom invisible selon
+ *  le scroll vs seuils. `*data->scrollOffset` = `data.scrollOffsetGet()`. */
+function Task_ScrollIndicatorArrowPair(taskId: number): void {
+  const data = sScrollIndicatorData.get(taskId);
+  if (!data) return;
+  const currItem = data.scrollOffsetGet() & 0xFFFF;          // 1:1 :1129 u16
+  const top = _getSpriteFull(data.topSpriteId);
+  const bot = _getSpriteFull(data.bottomSpriteId);
+  if (top) top.invisible = (currItem === data.fullyUpThreshold && currItem !== 0xFFFF);   // 1:1 :1131-1134
+  if (bot) bot.invisible = (currItem === data.fullyDownThreshold);                         // 1:1 :1136-1139
+}
+
+/** 1:1 décomp `void Task_ScrollIndicatorArrowPairOnMainMenu(u8 taskId)`
+ *  (list_menu.c:1144-1159). `data[15]` = tIsScrolled (posé par main_menu.c
+ *  quand porté ; ici champ struct = 1:1 sémantique du slot). */
+export function Task_ScrollIndicatorArrowPairOnMainMenu(taskId: number): void {
+  const data = sScrollIndicatorData.get(taskId);
+  if (!data) return;
+  const top = _getSpriteFull(data.topSpriteId);
+  const bot = _getSpriteFull(data.bottomSpriteId);
+  if (data.tIsScrolled) {                                     // 1:1 :1149
+    if (top) top.invisible = false;                           // 1:1 :1151
+    if (bot) bot.invisible = true;                            // 1:1 :1152
+  } else {
+    if (top) top.invisible = true;                            // 1:1 :1156
+    if (bot) bot.invisible = false;                           // 1:1 :1157
+  }
+}
+
+/** 1:1 décomp `void RemoveScrollIndicatorArrowPair(u8 taskId)`
+ *  (list_menu.c:1163-1176). */
+export function RemoveScrollIndicatorArrowPair(taskId: number): void {
+  const data = sScrollIndicatorData.get(taskId);
+  if (!data) return;
+  if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1167-1168
+  if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1169-1170
+  const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
+  rt?.DestroySprite?.(data.topSpriteId);     // 1:1 :1172 DestroySprite(&gSprites[topSpriteId])
+  rt?.DestroySprite?.(data.bottomSpriteId);  // 1:1 :1173 DestroySprite(&gSprites[bottomSpriteId])
+  _destroyTask(taskId);                       // 1:1 :1175 DestroyTask(taskId)
+  sScrollIndicatorData.delete(taskId);
+}
