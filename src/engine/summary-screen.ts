@@ -54,6 +54,7 @@ import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
+import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -584,11 +585,14 @@ function _extractMonData(mon: PokemonInstance): void {
   const st = mon.status;
   s.ailment = st === 'PSN' || st === 'TOX' ? 1 : st === 'PAR' ? 2 : st === 'SLP' ? 3
     : st === 'FRZ' ? 4 : st === 'BRN' ? 5 : 0;
-  // moves + pp.
+  // moves + pp. 1:1 décomp `summary.moves[i]` = move identifier. Notre
+  // équivalent = l'ENUM ("MOVE_ABSORB") car moves-data/move-names-fr/
+  // move-descriptions-fr/contest sont keyés par enum (mv.id = dexId
+  // "absorb" → moveDexIdToEnum). gMoveNames[move]/gBattleMoves[move] 1:1.
   for (let i = 0; i < 4; i++) {
     const mv = mon.moves[i];
     if (mv && mv.id) {
-      s.moves[i] = mv.id;
+      s.moves[i] = moveDexIdToEnum(mv.id);
       s.pp[i] = mv.pp;
       s.ppMax[i] = mv.ppMax;
     }
