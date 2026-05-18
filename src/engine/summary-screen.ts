@@ -270,6 +270,8 @@ const MON_PIC_TILE_BASE = 184;
 const MON_PIC_BYTE_OFFSET = MON_PIC_TILE_BASE * 32;
 const MON_PIC_PAL_SLOT = 1;
 let _monPicSpriteId = -1;
+/** 1:1 SpriteCB_Pokemon : le cry ne joue qu'UNE fois post-fade. */
+let _cryPlayed = false;
 
 /** 1:1 décomp tables `sSpeciesToHoennPokedexNum`/`sSpeciesToNationalPokedex
  *  Num` (pokemon.c:104-105) extraites via extract-species-dex-numbers.mjs
@@ -612,6 +614,7 @@ function _freeSummary(): void {
   for (const sid of _typeSpriteIds) { try { _rt?.DestroySprite(sid); } catch { /* déjà détruit */ } }
   _typeSpriteIds = [];
   if (_monPicSpriteId >= 0) { try { _rt?.DestroySprite(_monPicSpriteId); } catch { /* idem */ } _monPicSpriteId = -1; }
+  _cryPlayed = false;
   _isOpen = false;
   _phase = 'idle';
   _currentMon = null;
@@ -705,6 +708,16 @@ export function CB2_InitSummaryScreen(): void {
       rt.SetVBlankCallback(VBlankCB_SummaryRun);
       rt.SetMainCallback2(MainCB2_SummaryRun);
       _isOpen = true;
+      // 1:1 décomp SpriteCB_Pokemon (:3994) : quand !gPaletteFade.active
+      // (= post fade-in, ici l'écran est ouvert) → PlayMonCry (:3963) :
+      // si !isEgg, ShouldPlayNormalMonCry → CRY_MODE_NORMAL (mon sain,
+      // notre cas) sinon WEAK. playCry attend le NOM EN (= speciesName,
+      // pas le surnom FR), idem battle-flow.
+      if (!_cryPlayed && _currentMon) {
+        _cryPlayed = true;
+        const _sp = _currentMon.speciesName;
+        void import('./music').then(({ playCry }) => playCry(_sp)).catch(() => { /* cry asset absent : pas bloquant */ });
+      }
       return;
   }
 }
