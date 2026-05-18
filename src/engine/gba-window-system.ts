@@ -305,6 +305,65 @@ export function FillWindowPixelRect(
   fillWindowPixelRect(gw.win, fill, x, y, w, h);
 }
 
+/** 1:1 décomp `src/window.c:478 ScrollWindow(u8 windowId, u8 direction,
+ *  u8 distance, u8 fillValue)`.
+ *
+ *  Décomp : opère sur `gWindows[windowId].tileData` (4bpp tile-packed,
+ *  32 bytes/tile, layout GBA) via les macros MOVE_TILES_DOWN/UP. `distance`
+ *  = pixels (rows). Le NET EFFECT :
+ *   - direction 0 : `data[k] = data[k+dist]` (k croissant) → le contenu
+ *     se déplace vers les adresses BASSES = scroll UP visuellement ; ce qui
+ *     déborde (`srcOffset >= size`) est rempli avec fillValue → fill BAS.
+ *   - direction 1 : `tileData += size-4` puis `data[end-k] = data[end-k-dist]`
+ *     → contenu vers les adresses HAUTES = scroll DOWN ; fill HAUT.
+ *   - direction 2 : `break` (no-op).
+ *
+ *  NUANCE ARCHI (= même justification que `scrollWindow`
+ *  gba-text-printer.ts:241-258 + `blitGlyphToWindow`:331) : notre
+ *  pixelBuffer est LINÉAIRE row-major 1 byte/pixel (pas tile-packed 4bpp),
+ *  donc la transcription littérale des offsets MOVE_TILES ne s'applique
+ *  pas — on porte le NET EFFECT EXACT (shift de `distance` rows + fill du
+ *  vide), strictement équivalent au comportement observable du décomp.
+ *
+ *  list_menu.c:794 `ScrollWindow(win, 1, count*yMul, PIXEL_FILL(fill))`
+ *  (sélection ↑ = nouveau contenu en haut, contenu existant descend) ;
+ *  :808 `ScrollWindow(win, 0, count*yMul, …)` (sélection ↓ = contenu monte,
+ *  neuf en bas). PrintEntries + FillWindowPixelRect (1:1 list_menu) posent
+ *  ensuite le neuf — ScrollWindow ne fait QUE le décalage + fill du vide. */
+export function ScrollWindow(
+  windowId: number,
+  direction: number,
+  distance: number,
+  fillValue: number,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const buf = gw.win.pixelBuffer;
+  const stride = gw.win.widthPx;
+  const heightPx = gw.win.heightPx;
+  const fill = fillValue & 0x0F; // notre buffer = 1 byte/pixel (low nibble)
+  // 1:1 décomp : distance >= window height → tout le buffer déborde
+  // (srcOffset >= size pour tous) → entièrement rempli de fillValue.
+  if (distance <= 0) return;
+  if (distance >= heightPx) {
+    buf.fill(fill);
+    gw.win.needsFlush = true;
+    return;
+  }
+  if (direction === 0) {
+    // content UP, fill BOTTOM (= scrollWindow gba-text-printer:248).
+    buf.copyWithin(0, distance * stride, heightPx * stride);
+    buf.fill(fill, (heightPx - distance) * stride, heightPx * stride);
+    gw.win.needsFlush = true;
+  } else if (direction === 1) {
+    // content DOWN, fill TOP.
+    buf.copyWithin(distance * stride, 0, (heightPx - distance) * stride);
+    buf.fill(fill, 0, distance * stride);
+    gw.win.needsFlush = true;
+  }
+  // direction === 2 (ou autre) : 1:1 décomp `case 2: break;` → no-op.
+}
+
 // ─── BG Template API ─────────────────────────────────────────────────────────
 
 export function InitBgsFromTemplates(bg: number, templates: readonly BgTemplate[], _count: number): void {
