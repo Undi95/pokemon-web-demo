@@ -35,6 +35,7 @@ import {
   FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gameState } from './game-state';
+import { getAbility, getSpeciesInfo } from './data/game-data';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
@@ -194,7 +195,7 @@ function _printInfoPageText(): void {
 
   // 1:1 PrintMonOTName : gText_OTSlash @(0,1) color1 ; OTName @(width,1)
   // color5 (OTGender==MALE) sinon color6. OT = le joueur (gameState).
-  const otSlash = 'OT/';
+  const otSlash = 'DO/';  // 1:1 décomp gText_OTSlash FR = "DO/" (Dresseur d'Origine)
   AddTextPrinterParameterized3(otWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, otSlash);
   const otX = GetStringWidth(otSlash);
   const otColor = gameState.gender === 'MALE' ? SUMMARY_TEXT_COLOR[5] : SUMMARY_TEXT_COLOR[6];
@@ -207,8 +208,32 @@ function _printInfoPageText(): void {
   const idXPos = GetStringRightAlignXOffset(idStr, 56);
   AddTextPrinterParameterized3(idWin, FONT_NORMAL, idXPos, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, idStr);
 
+  // Incr.2 — 1:1 PrintMonAbilityName + PrintMonAbilityDescription.
+  // PSS_DATA_WINDOW_INFO_ABILITY (tile 11,9 w19 h4 pal6 bb485 ; w19 = FR diff).
+  // décomp : ability = GetAbilityBySpecies(species, abilityNum) ;
+  //   gAbilityNames[ability] @(0,1) color1 ; gAbilityDescriptionPointers
+  //   @(0,17) color0. mon.ability = constante ABILITY_* (= sInfo.abilities[n],
+  //   le commentaire "EN canonique" est obsolète — vérifié via l'assignment).
+  const abWin = AddWindow({ bg: 0, tilemapLeft: 11, tilemapTop: 9, width: 19, height: 4, paletteNum: 6, baseBlock: 485 });
+  _infoWindowIds.push(abWin);
+  FillWindowPixelBuffer(abWin, 0);
+  // 1:1 GetAbilityBySpecies(species, abilityNum) : mon.ability est le NOM EN
+  // ("Overgrow") PAS la constante → on résout via les constantes ABILITY_* de
+  // l'espèce (getSpeciesInfo .abilities = ["ABILITY_OVERGROW","ABILITY_NONE"])
+  // + slot = personality & 1 (= MON_DATA_ABILITY_NUM décomp), fallback [0] si
+  // NONE. getAbility() est keyé par constante → FR name + description.
+  const sp = getSpeciesInfo(mon.speciesEnum);
+  const abilities = sp?.abilities ?? [];
+  const abilNum = (mon.personality ?? 0) & 1;
+  let abilityConst = abilities[abilNum] || abilities[0] || '';
+  if (!abilityConst || abilityConst === 'ABILITY_NONE') abilityConst = abilities[0] || '';
+  const ab = abilityConst ? getAbility(abilityConst) : { name: mon.ability, description: '' };
+  AddTextPrinterParameterized3(abWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, ab.name);
+  AddTextPrinterParameterized3(abWin, FONT_NORMAL, 0, 17, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, ab.description);
+
   PutWindowTilemap(otWin); CopyWindowToVram(otWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(idWin); CopyWindowToVram(idWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(abWin); CopyWindowToVram(abWin, 3 /* COPYWIN_FULL */);
 }
 
 function _freeSummary(): void {
