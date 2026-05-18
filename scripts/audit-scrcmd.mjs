@@ -86,11 +86,22 @@ for (const { mnemonic, scrOp } of macros) {
   seen.add(mnemonic);
   const ent = byScrOp[scrOp];
   const isEmNop = !ent || emeraldNopFuncs.has(ent.func);
+  // preExpanded : mnémonique conditionnel GÉNÉRIQUE (goto_if/call_if/
+  // vgoto_if/vcall_if) que le compilateur bytecode PRÉ-DÉVELOPPE en
+  // variantes typées (_eq/_ne/_lt/_gt/_le/_ge/_set/_unset) qui SONT
+  // registrées+1:1. La forme générique n'est JAMAIS émise dans le
+  // bytecode compilé (pattern documenté script-opcodes.ts goto_if) →
+  // PAS un gap (= équivalent FRLG-nop : absence ≡ 1:1).
+  const COND_SUFFIXES = ['_eq','_ne','_lt','_gt','_le','_ge','_set','_unset'];
+  const isPreExpanded = /^(v?goto_if|v?call_if)$/.test(mnemonic)
+    && COND_SUFFIXES.some(s => reg.has(mnemonic + s));
   if (reg.has(mnemonic)) {
     if (stub.has(mnemonic)) stubbed.push(mnemonic);
     else covered.push(mnemonic);
   } else if (isEmNop) {
     emeraldNop.push({ mnemonic, op: ent?.op, func: ent?.func || '<no-table>' });
+  } else if (isPreExpanded) {
+    emeraldNop.push({ mnemonic, op: ent?.op, func: 'pré-développé→variantes typées 1:1' });
   } else {
     missing.push({ mnemonic, scrOp, op: ent?.op, func: ent?.func });
   }
@@ -100,7 +111,7 @@ const realTotal = covered.length + missing.length + stubbed.length;
 const grandTotal = realTotal + emeraldNop.length;
 const hasHandler = covered.length + stubbed.length;
 console.log(`[audit scrcmd] mnémoniques script décomp(event.inc → SCR_OP)=${grandTotal}`);
-console.log(`  · dont OPCODES ÉMERAUDE RÉELS : ${realTotal} | nop-Émeraude(FRLG/inutilisé, no-op 1:1) : ${emeraldNop.length}`);
+console.log(`  · OPCODES ÉMERAUDE RÉELS : ${realTotal} | non-gap exclus (FRLG-nop OU générique pré-développé 1:1) : ${emeraldNop.length}`);
 console.log(`  COUVERT 1:1          : ${covered.length}/${realTotal} (= ${(100 * hasHandler / realTotal).toFixed(1)}% handler présent)`);
 console.log(`  · dont stub CONFIRMÉ : ${stubbed.length} (marqueur TODO/STUB) → ${stubbed.sort().join(', ')}`);
 console.log(`  MANQUANT (vrai gap)  : ${missing.length}  ← métrique fiable (vrais ScrCmd_ Émeraude non triviaux)`);
