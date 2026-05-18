@@ -552,6 +552,87 @@ export const FONT_BOLD = 9;
  *  immédiatement, juste setup le printer state". */
 export const TEXT_SKIP_DRAW = 0xFF;
 
+// ─── Font attributes 1:1 décomp (text.c sFontInfos + GetFontAttribute) ───────
+
+/** 1:1 décomp `include/text.h:43-50` enum (attributeId de GetFontAttribute). */
+export const FONTATTR_MAX_LETTER_WIDTH = 0;
+export const FONTATTR_MAX_LETTER_HEIGHT = 1;
+export const FONTATTR_LETTER_SPACING = 2;
+export const FONTATTR_LINE_SPACING = 3;
+export const FONTATTR_UNKNOWN = 4;
+export const FONTATTR_COLOR_FOREGROUND = 5;
+export const FONTATTR_COLOR_BACKGROUND = 6;
+export const FONTATTR_COLOR_SHADOW = 7;
+
+interface FontInfo {
+  maxLetterWidth: number;
+  maxLetterHeight: number;
+  letterSpacing: number;
+  lineSpacing: number;
+  unk: number;
+  fgColor: number;
+  bgColor: number;
+  shadowColor: number;
+}
+
+/** 1:1 décomp `src/text.c:119-221 sFontInfos[]`. Indexé par FONT_* (text.h
+ *  enum FontIds : SMALL=0, NORMAL=1, SHORT=2, SHORT_COPY_{1,2,3}=3,4,5,
+ *  BRAILLE=6, NARROW=7, SMALL_NARROW=8, BOLD=9). `.unk` non initialisé en
+ *  décomp (= 0). `.fontFunction` pointers omis (rendu géré par notre moteur
+ *  TextPrinter). Valeurs reportées EXACTEMENT du décomp. */
+const sFontInfos: ReadonlyArray<FontInfo> = [
+  /* [FONT_SMALL]        */ { maxLetterWidth: 5, maxLetterHeight: 12, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_NORMAL]       */ { maxLetterWidth: 6, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT]        */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_1] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_2] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SHORT_COPY_3] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_BRAILLE]      */ { maxLetterWidth: 8, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 8, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_NARROW]       */ { maxLetterWidth: 5, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_SMALL_NARROW] */ { maxLetterWidth: 5, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
+  /* [FONT_BOLD]         */ { maxLetterWidth: 8, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 1, bgColor: 2, shadowColor: 15 },
+];
+
+/** 1:1 décomp `src/text.c:1645 GetFontAttribute(u8 fontId, u8 attributeId)`.
+ *  Switch pur → `sFontInfos[fontId].<field>`. attributeId hors enum → 0. */
+export function GetFontAttribute(fontId: number, attributeId: number): number {
+  let result = 0;
+  const f = sFontInfos[fontId];
+  if (!f) return 0;
+  switch (attributeId) {
+    case FONTATTR_MAX_LETTER_WIDTH: result = f.maxLetterWidth; break;
+    case FONTATTR_MAX_LETTER_HEIGHT: result = f.maxLetterHeight; break;
+    case FONTATTR_LETTER_SPACING: result = f.letterSpacing; break;
+    case FONTATTR_LINE_SPACING: result = f.lineSpacing; break;
+    case FONTATTR_UNKNOWN: result = f.unk; break;
+    case FONTATTR_COLOR_FOREGROUND: result = f.fgColor; break;
+    case FONTATTR_COLOR_BACKGROUND: result = f.bgColor; break;
+    case FONTATTR_COLOR_SHADOW: result = f.shadowColor; break;
+  }
+  return result;
+}
+
+/** 1:1 décomp `src/text.c:223-235 sMenuCursorDimensions[][2]` ([w, h] par
+ *  fontId). FONT_BOLD non initialisé en décomp (= {0, 0}). */
+const sMenuCursorDimensions: ReadonlyArray<readonly [number, number]> = [
+  /* [FONT_SMALL]        */ [8, 12],
+  /* [FONT_NORMAL]       */ [8, 15],
+  /* [FONT_SHORT]        */ [8, 14],
+  /* [FONT_SHORT_COPY_1] */ [8, 14],
+  /* [FONT_SHORT_COPY_2] */ [8, 14],
+  /* [FONT_SHORT_COPY_3] */ [8, 14],
+  /* [FONT_BRAILLE]      */ [8, 16],
+  /* [FONT_NARROW]       */ [8, 15],
+  /* [FONT_SMALL_NARROW] */ [8, 8],
+  /* [FONT_BOLD]         */ [0, 0],
+];
+
+/** 1:1 décomp `src/text.c:1678 GetMenuCursorDimensionByFont(u8 fontId,
+ *  u8 whichDimension)` = `sMenuCursorDimensions[fontId][whichDimension]`. */
+export function GetMenuCursorDimensionByFont(fontId: number, whichDimension: number): number {
+  return sMenuCursorDimensions[fontId]?.[whichDimension] ?? 0;
+}
+
 // ─── Text colors helper ──────────────────────────────────────────────────────
 
 // 1:1 décomp main_menu.c:410 sTextColor_Headers = [TEXT_DYNAMIC_COLOR_1, _2, _3]
