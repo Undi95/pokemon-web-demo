@@ -37,7 +37,7 @@ import {
 import { gameState } from './game-state';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
-  getMoveDescription, getContestMove, getExperienceForLevel,
+  getMoveDescription, getContestMove, getContestEffect, getExperienceForLevel,
 } from './data/game-data';
 import {
   DynamicPlaceholderTextUtil_Reset,
@@ -1052,9 +1052,11 @@ function _drawContestMoveHearts(move: string): void {
   if (!buf || !move) return;
   const cm = getContestMove(move);
   if (!cm) return;
-  // appeal/jam : gContestEffects[effect].appeal/jam — non extrait → 0xFF (=
-  // "inconnu", coeurs vides). Report honnête : pas de fausse valeur.
-  let appeal = 0xFF, jam = 0xFF;
+  // 1:1 décomp : appeal = gContestEffects[gContestMoves[move].effect].appeal ;
+  // if (appeal != 0xFF) appeal /= 10 (= nb cœurs). (extract-contest-effects.)
+  const eff = getContestEffect(cm.effect);
+  let appeal = eff ? eff.appeal : 0xFF;
+  let jam = eff ? eff.jam : 0xFF;
   if (appeal !== 0xFF) appeal = Math.floor(appeal / 10);
   for (let i = 0; i < MAX_CONTEST_MOVE_HEARTS; i++) {
     const idx = 0x400 + (Math.floor(i / 4) * 32) + (i & 3) + 0x1E6;
@@ -1072,10 +1074,14 @@ function _printBattleMoves(): void {
   _printMoveNameAndPP(0); _printMoveNameAndPP(1);
   _printMoveNameAndPP(2); _printMoveNameAndPP(3);
 }
-/** 1:1 décomp `PrintContestMoves` (:3595). */
+/** 1:1 décomp `PrintContestMoves` (:3595) + `DrawContestMoveHearts`
+ *  (:1483 SetDefaultTilemaps appelle DrawContestMoveHearts(moves[
+ *  firstMoveIndex]) au setup de la page contest). Les cœurs vont dans le
+ *  buffer CONTEST SC1 → copié en VRAM au scroll-in (PssScroll*). */
 function _printContestMoves(): void {
   _printMoveNameAndPP(0); _printMoveNameAndPP(1);
   _printMoveNameAndPP(2); _printMoveNameAndPP(3);
+  _drawContestMoveHearts(sMon.summary.moves[0] || '');
 }
 
 /* ============================================================================

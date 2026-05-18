@@ -109,6 +109,9 @@ interface GameData {
   experienceTables: Record<string, number[]>;
   trainers: Record<string, TrainerData>;
   contestMoves: Record<string, ContestMove>;
+  /** 1:1 décomp `gContestEffects[]` (contest_moves.h:2837) keyé par
+   *  CONTEST_EFFECT_* — appeal/jam pour les cœurs CHARME/BLOCAGE résumé. */
+  contestEffects: Record<string, { appeal: number; jam: number }>;
   evolutions: Record<string, Evolution[]>;
   itemEffects: Record<string, ItemEffect>;
   pokedexOrders: Record<string, string[]>;
@@ -133,7 +136,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     ] = await Promise.all([
       fetchJson<GameData['species']>('species-info.json'),
@@ -152,6 +155,7 @@ export function loadGameData(): Promise<void> {
       fetchJson<GameData['experienceTables']>('experience-tables.json'),
       fetchJson<GameData['trainers']>('trainers.json'),
       fetchJson<GameData['contestMoves']>('contest-moves.json'),
+      fetchJson<GameData['contestEffects']>('contest-effects.json'),
       fetchJson<GameData['evolutions']>('evolutions.json'),
       fetchJson<GameData['itemEffects']>('item-effects.json'),
       fetchJson<GameData['pokedexOrders']>('pokedex-orders.json'),
@@ -162,7 +166,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     };
     // 1:1 décomp bridge : expose moves/species pour reverse-id lookups (= cache
@@ -293,6 +297,11 @@ export function getTrainer(trainerId: string): TrainerData | undefined {
 
 export function getContestMove(moveId: string): ContestMove | undefined {
   return ensureLoaded().contestMoves[moveId];
+}
+
+/** 1:1 décomp `gContestEffects[effect]` — appeal/jam (cœurs résumé). */
+export function getContestEffect(effectName: string): { appeal: number; jam: number } | undefined {
+  return ensureLoaded().contestEffects[effectName];
 }
 
 export function getEvolutions(speciesId: string): Evolution[] {

@@ -436,7 +436,11 @@ function parseTrainers() {
 function parseContestMoves() {
   const text = readDecomp('src/data/contest_moves.h');
   if (!text) return {};
-  const re = /\[(MOVE_\w+)\]\s*=\s*\{([\s\S]*?)\n\s*\}/g;
+  // Brace-équilibré (1 niveau pour `.comboMoves = {…}`). L'ancien
+  // `\{([\s\S]*?)\n\s*\}` cassait sur `[MOVE_NONE] = {0},` (pas de \n avant
+  // `}`) : fusionnait MOVE_NONE + MOVE_POUND → données POUND sous clé
+  // MOVE_NONE + clé MOVE_POUND perdue (off-by-one sur TOUT le contest).
+  const re = /\[(MOVE_\w+)\]\s*=\s*\{((?:[^{}]|\{[^}]*\})*)\}/g;
   const out = {};
   let m;
   while ((m = re.exec(text)) !== null) {
