@@ -255,7 +255,16 @@ let _iconBaseY: number[] = [0, 0, 0, 0, 0, 0];
 /** 1:1 décomp `menuBox->pokeballSpriteId` per slot (= CreatePartyMonPokeballSprite). */
 let _pokeballOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 let _cancelButtonOamId = -1;
-let _bounceCounter = 0;
+/** Per-slot état d'anim icône 1:1 décomp (champs sprite `animDelayCounter`,
+ *  `animCmdIndex`, `animNum`) + le « mode callback » posé par AnimateSelected
+ *  PartyIcon : 0 = SpriteCB_UpdatePartyMonIcon (non-sélectionné, frame only,
+ *  garde le décalage x2/y2), 1 = SpriteCB_BouncePartyMonIcon (sélectionné,
+ *  rebond y2). animNum reste 0 en party menu (sAnim_0 dur 6) : party_menu.c
+ *  n'appelle JAMAIS StartSpriteAnim sur monSpriteId (CreateMonIcon défaut). */
+let _iconAnimDelay: number[] = [0, 0, 0, 0, 0, 0];
+let _iconAnimCmdIdx: number[] = [0, 0, 0, 0, 0, 0];
+let _iconAnimNum: number[] = [0, 0, 0, 0, 0, 0];
+let _iconMode: number[] = [0, 0, 0, 0, 0, 0];
 /** 1:1 décomp `gPartyMenu.slotId` (= currently highlighted slot).
  *  Valeurs : 0..5 (mons), 6 = Confirm (unused single layout), 7 = Cancel button. */
 let _slotId = 0;
@@ -753,7 +762,12 @@ function AnimatePartySlot(slotIdx: number, animNum: number): void {
   if (slotIdx < PARTY_SIZE) {
     const mon = (gameState.party as PokemonInstance[])[slotIdx];
     if (mon) {
+      // 1:1 décomp AnimatePartySlot (party_menu.c:1129-1131) ordre EXACT :
+      //   LoadPartyBoxPalette(...) ; AnimateSelectedPartyIcon(monSpriteId,
+      //   animNum) ; PartyMenuStartSpriteAnim(pokeballSpriteId, animNum).
       _loadPartyBoxPalette(slotIdx, _getPartyBoxPaletteFlags(slotIdx, animNum));
+      // L'ANIM MANQUANTE (bug #1) : décalage icône sélectionné/non-sélectionné.
+      _animateSelectedPartyIcon(slotIdx, animNum);
       // 1:1 décomp `PartyMenuStartSpriteAnim(pokeballSpriteId, animNum)` :
       // animNum=0 → Closed (tile 256), animNum=1 → Open (tile 272).
       const rt = getRuntime();
@@ -975,6 +989,14 @@ async function _spawnIconOams(): Promise<void> {
       });
       _iconOamBySlot[i] = spr.spriteId;
       _iconBaseY[i] = oamY;
+      // 1:1 décomp : CreateMonIconSprite appelle UpdateMonIconFrame une fois
+      // (pokemon_icon.c:1046 → pose frame 0, delay 6, animCmdIndex 1) PUIS la
+      // CB2 init fait AnimatePartySlot(i, 0/1). Comme notre spawn est async (il
+      // peut finir APRÈS le case 14), on applique l'état initial ICI : reset
+      // anim + frame 0 + décalage sélection/désélection sur le bon slot.
+      _iconAnimDelay[i] = 0; _iconAnimCmdIdx[i] = 0; _iconAnimNum[i] = 0;
+      _updateMonIconFrame(i);
+      _animateSelectedPartyIcon(i, i === _slotId ? 1 : 0);
     } catch (e) {
       console.warn(`[party-screen] icon load failed for ${dexId}:`, e);
     }
@@ -1115,61 +1137,110 @@ function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
   return newKeys & (KEY_A | KEY_B);
 }
 
-/** 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003) + idle anim
- *  via `SpriteCB_UpdatePartyMonIcon` qui cycle entre frame 0 et frame 1 du
- *  icon.png. Le décomp tick `UpdateMonIconFrame(sprite)` qui retourne un
- *  animCmd. Notre engine émule le frame cycle via un counter manuel +
- *  toggle tileId entre frame 0 (= base) et frame 1 (= base+16). */
+/** 1:1 décomp `sMonIconAnims` (pokemon_icon.c:941-983). Chaque AnimCmd =
+ *  FRAME(img,dur) ; `jump:0` = ANIMCMD_JUMP(0) (= frame.imageValue -2 → boucle
+ *  animCmdIndex=0). Aucune n'utilise ANIMCMD_END (-1). Party menu = TOUJOURS
+ *  sAnim_0 (idx 0) car party_menu.c n'appelle jamais StartSpriteAnim sur le
+ *  monSpriteId (CreateMonIcon laisse animNum=0). */
+type _IconAnimCmd = { img: number; dur: number } | { jump: 0 } | { end: true };
+const sMonIconAnims: _IconAnimCmd[][] = [
+  [{ img: 0, dur: 6 },  { img: 1, dur: 6 },  { jump: 0 }], // sAnim_0
+  [{ img: 0, dur: 8 },  { img: 1, dur: 8 },  { jump: 0 }], // sAnim_1
+  [{ img: 0, dur: 14 }, { img: 1, dur: 14 }, { jump: 0 }], // sAnim_2
+  [{ img: 0, dur: 22 }, { img: 1, dur: 22 }, { jump: 0 }], // sAnim_3
+  [{ img: 0, dur: 29 }, { img: 0, dur: 29 }, { jump: 0 }], // sAnim_4 (frame 0 répété)
+];
+
+/** Pose la frame visible de l'icône slot (= RequestSpriteCopy du décomp :
+ *  on swap juste oam.tileId entre frame 0 (base) et frame 1 (base+16)). */
+function _setIconFrame(slot: number, img: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const id = _iconOamBySlot[slot]; if (id < 0) return;
+  const spr = rt.gSprites.get(id); if (!spr) return;
+  const oam = rt.gba.oam[spr.oamIndex]; if (!oam) return;
+  const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + slot * ICON_TILES_PER_SLOT;
+  oam.tileId = slotTileBase + img * ICON_TILES_PER_FRAME;
+}
+
+/** 1:1 décomp `UpdateMonIconFrame(struct Sprite *sprite)` (pokemon_icon.c:1235).
+ *  Retourne `result` = animCmdIndex post-incrément quand une frame est posée,
+ *  sinon 0 (attente / JUMP). */
+function _updateMonIconFrame(slot: number): number {
+  let result = 0;
+  if (_iconAnimDelay[slot] === 0) {
+    const anim = sMonIconAnims[_iconAnimNum[slot]];
+    const cmd = anim[_iconAnimCmdIdx[slot]];
+    if ('end' in cmd) {
+      // frame == -1 (ANIMCMD_END) : break (jamais en party = sécurité 1:1).
+    } else if ('jump' in cmd) {
+      // frame == -2 (ANIMCMD_JUMP(0)) : sprite->animCmdIndex = 0.
+      _iconAnimCmdIdx[slot] = 0;
+    } else {
+      // default : RequestSpriteCopy (= pose la frame) ; reset delay ;
+      // animCmdIndex++ ; result = animCmdIndex.
+      _setIconFrame(slot, cmd.img);
+      _iconAnimDelay[slot] = cmd.dur & 0xFF;
+      _iconAnimCmdIdx[slot]++;
+      result = _iconAnimCmdIdx[slot];
+    }
+  } else {
+    _iconAnimDelay[slot]--;
+  }
+  return result;
+}
+
+/** 1:1 décomp `AnimateSelectedPartyIcon(u8 spriteId, u8 animNum)`
+ *  (party_menu.c:3978) :
+ *
+ *      gSprites[spriteId].data[0] = 0;
+ *      if (animNum == 0) {                         // non sélectionné
+ *          if (gSprites[spriteId].x == 16) { x2 = 0;  y2 = -4; }  // slot 0 (box haute)
+ *          else                            { x2 = -4; y2 = 0;  }  // slots 1-5 (colonne droite)
+ *          callback = SpriteCB_UpdatePartyMonIcon; // frame only, garde le décalage
+ *      } else {                                    // sélectionné
+ *          x2 = 0; y2 = 0;
+ *          callback = SpriteCB_BouncePartyMonIcon; // rebond y2
+ *      }
+ *
+ *  C'ÉTAIT L'ANIM MANQUANTE (bug #1) : nos icônes restaient en permanence à
+ *  la position SÉLECTIONNÉE (x2=0). Le décalage non-sélectionné (x2=-4 colonne
+ *  droite / y2=-4 box gauche) n'était jamais appliqué → "décalé tout le temps"
+ *  vs ROM où seul le slot sélectionné revient à la position de base + rebondit. */
+function _animateSelectedPartyIcon(slot: number, animNum: number): void {
+  const rt = getRuntime(); if (!rt) return;
+  const id = _iconOamBySlot[slot]; if (id < 0) return;
+  const spr = rt.gSprites.get(id); if (!spr) return;
+  if (spr.data) spr.data[0] = 0; // 1:1 gSprites[spriteId].data[0] = 0;
+  if (animNum === 0) {
+    if (spr.x === 16) { spr.x2 = 0;  spr.y2 = -4; } // slot 0 = grande box gauche
+    else              { spr.x2 = -4; spr.y2 = 0;  } // slots 1-5 = colonne droite
+    _iconMode[slot] = 0; // SpriteCB_UpdatePartyMonIcon
+  } else {
+    spr.x2 = 0; spr.y2 = 0;
+    _iconMode[slot] = 1; // SpriteCB_BouncePartyMonIcon
+  }
+}
+
+/** Driver per-frame des callbacks d'icônes party. 1:1 décomp : chaque icône a
+ *  son `sprite->callback` (SpriteCB_BouncePartyMonIcon OU SpriteCB_UpdateParty
+ *  MonIcon) exécuté chaque frame ; on dispatch via `_iconMode[slot]` (même
+ *  effet : 1 tick/frame). SpriteCB_BouncePartyMonIcon (party_menu.c:4003) :
+ *    animCmd = UpdateMonIconFrame(sprite);
+ *    if (animCmd != 0) sprite->y2 = (animCmd & 1) ? -3 : 1;
+ *  SpriteCB_UpdatePartyMonIcon (:4016) : UpdateMonIconFrame(sprite) seul
+ *  (le décalage x2/y2 posé par AnimateSelectedPartyIcon est conservé). */
 function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
   if (!_isOpen) return;
-  // Run l'animation même dans action_menu state (= icons continuent à idle).
   if (_phase !== 'open' && _phase !== 'action_menu') return;
-  _bounceCounter++;
   const rt = getRuntime();
   if (!rt) return;
-  // 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003) +
-  // `UpdateMonIconFrame` (pokemon_icon.c:316) :
-  //   if (animCmd != 0) sprite->y2 = (animCmd & 1) ? -3 : 1;
-  // ⚠️ Modify sprite.y2 (= delta offset), PAS oam.y direct (= sync écrase chaque frame).
-  //
-  // Durations 1:1 décomp pokemon_icon.c:941-982 (sAnim_0..sAnim_4) :
-  //   HP_BAR_FULL   (= HP == max)  : 6 frames / phase (rapide)
-  //   HP_BAR_GREEN  (> 50%)        : 8 frames / phase
-  //   HP_BAR_YELLOW (> 20%)        : 14 frames / phase (lent — mon affaibli)
-  //   HP_BAR_RED    (> 0%)         : 22 frames / phase (très lent — mon en péril)
-  //   HP_BAR_EMPTY  (fainted)      : pas de bounce (frame 0 fixe)
-  // Note : décomp ralentit le bounce quand HP bas (= mon fatigué, pas panic).
-  const party = gameState.party as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
-    const id = _iconOamBySlot[i];
-    if (id < 0) continue;
-    const spr = rt.gSprites.get(id);
-    if (!spr) continue;
-    const mon = party[i];
-    let bouncePeriod = 8;  // default GREEN
-    let canBounce = true;
-    if (mon) {
-      if (mon.currentHp <= 0) { canBounce = false; }  // FAINTED
-      else if (mon.currentHp === mon.maxHp) bouncePeriod = 6;  // FULL
-      else {
-        const frac = mon.maxHp > 0 ? mon.currentHp / mon.maxHp : 0;
-        if (frac > 0.5) bouncePeriod = 8;   // GREEN
-        else if (frac > 0.2) bouncePeriod = 14;  // YELLOW
-        else bouncePeriod = 22;             // RED
-      }
+    if (_iconOamBySlot[i] < 0) continue;
+    const animCmd = _updateMonIconFrame(i);
+    if (_iconMode[i] === 1 && animCmd !== 0) {
+      const spr = rt.gSprites.get(_iconOamBySlot[i]);
+      if (spr) spr.y2 = (animCmd & 1) ? -3 : 1;
     }
-    const bouncePhase = canBounce ? Math.floor(_bounceCounter / bouncePeriod) & 1 : 0;
-    const bounceY = canBounce ? (bouncePhase ? -3 : 1) : 0;
-    // Selected slot bounces, autres slots y2=0.
-    spr.y2 = (i === _slotId) ? bounceY : 0;
-    // Frame swap pour idle anim sur TOUS les slots — utilise le même
-    // bouncePhase HP-based (= 1:1 décomp UpdateMonIconFrame qui tick
-    // chaque sAnim_N selon HP_BAR_LEVEL du mon, partagé entre Bounce et
-    // UpdatePartyMonIcon callbacks).
-    const oam = rt.gba.oam[spr.oamIndex];
-    if (!oam) continue;
-    const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * ICON_TILES_PER_SLOT;
-    oam.tileId = slotTileBase + bouncePhase * ICON_TILES_PER_FRAME;
   }
 }
 
@@ -1401,8 +1472,13 @@ export function CB2_InitPartyMenu(): void {
     case 11: _drawAllSlots(); _drawMsg(); _drawCancelButtonWindow(); rt.gMain.state++; break;
     case 12:
       _inputTaskId = rt.CreateTask(Task_PartyMenu_HandleInput, 0);
-      // 1:1 décomp icon bounce anim task : oscillate y2 du selected mon icon.
-      _bounceCounter = 0;
+      // 1:1 décomp : reset état d'anim icône par slot (animDelayCounter /
+      // animCmdIndex / animNum=0 sAnim_0 / mode). AnimatePartySlot (case 14)
+      // posera ensuite le mode + décalage sélection/désélection.
+      _iconAnimDelay = [0, 0, 0, 0, 0, 0];
+      _iconAnimCmdIdx = [0, 0, 0, 0, 0, 0];
+      _iconAnimNum = [0, 0, 0, 0, 0, 0];
+      _iconMode = [0, 0, 0, 0, 0, 0];
       _bounceTaskId = rt.CreateTask(Task_PartyMenu_BounceIcon, 1);
       rt.gMain.state++; break;
     case 13:
