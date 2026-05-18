@@ -28,7 +28,7 @@
 
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
-  RemoveWindow, ShowBg, HideBg,
+  RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow,
 } from './gba-window-system';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
@@ -72,6 +72,9 @@ interface SummaryAssets {
    *  ordre enum TYPE_*) + `gMoveTypes_Pal` (48 couleurs = 3 palettes OBJ). */
   moveTypesTiles: Uint8Array;
   moveTypesPal: Uint16Array;
+  /** 1:1 décomp `sButtons_Gfx[0]` — icône bouton (A) 16×16 4bpp (= a_button
+   *  .png), blittée dans PROMPT_CANCEL par PrintAOrBButtonIcon. */
+  aButtonTiles: Uint8Array;
 }
 
 let _isOpen = false;
@@ -88,7 +91,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pageInfo, pageSkills, pageBattleMoves, tilesPal, mtTiles, mtPal] = await Promise.all([
+    const [tiles, pageInfo, pageSkills, pageBattleMoves, tilesPal, mtTiles, mtPal, aBtn] = await Promise.all([
       loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
       loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
       loadTilemapBin('/decomp/em/summary_screen/page_skills.bin'),
@@ -96,6 +99,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
       loadGbaPal('/decomp/em/summary_screen/tiles.pal'),
       loadTileBin('/decomp/em/types/move_types.png', 4),
       loadGbaPal('/decomp/em/types/move_types.gbapal'),
+      loadTileBin('/decomp/em/summary_screen/a_button.png', 4),
     ]);
     _assets = {
       tiles,
@@ -105,6 +109,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
       tilesPalette: tilesPal,
       moveTypesTiles: mtTiles,
       moveTypesPal: mtPal,
+      aButtonTiles: aBtn,
     };
     return _assets;
   })();
@@ -408,6 +413,36 @@ function _printMonInfo(mon: PokemonInstance): void {
   PutWindowTilemap(specWin); CopyWindowToVram(specWin, 3 /* COPYWIN_FULL */);
 }
 
+/** 1:1 décomp `PrintPageNamesAndStats` (pokemon_summary_screen.c:2832) —
+ *  partie page INFO : header titre + prompt RETOUR.
+ *  - PSS_LABEL_WINDOW_POKEMON_INFO_TITLE #0 (sSummaryTemplate : bg0
+ *    tile 0,0 w11 h2 pal6 bb1) : gText_PkmnInfo="INFOS POKéMON"
+ *    @(2,1) colorId 1.
+ *  - PSS_LABEL_WINDOW_PROMPT_CANCEL #4 (bg0 tile 22,0 w8 h2 pal7 bb89) :
+ *    gText_Cancel2="RETOUR" right-aligné offset 62 @(.,1) colorId 0.
+ *    L'icône bouton (A) (PrintAOrBButtonIcon → BlitBitmapToWindow
+ *    sButtons_Gfx, a_button.png) = micro-step suivant (pas de fake). */
+function _printHeaderAndPrompt(): void {
+  const titleWin = AddWindow({ bg: 0, tilemapLeft: 0, tilemapTop: 0, width: 11, height: 2, paletteNum: 6, baseBlock: 1 });
+  const cancelWin = AddWindow({ bg: 0, tilemapLeft: 22, tilemapTop: 0, width: 8, height: 2, paletteNum: 7, baseBlock: 89 });
+  _infoWindowIds.push(titleWin, cancelWin);
+  FillWindowPixelBuffer(titleWin, 0);
+  FillWindowPixelBuffer(cancelWin, 0);
+  AddTextPrinterParameterized3(titleWin, FONT_NORMAL, 2, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, 'INFOS POKéMON');
+  const cancelStr = 'RETOUR';
+  const cancelX = GetStringRightAlignXOffset(cancelStr, 62);
+  // 1:1 PrintAOrBButtonIcon(PROMPT_CANCEL, FALSE, iconXPos) :
+  //   iconXPos = stringXPos - 16 ; if (<0) =0 ; BlitBitmapToWindow(.,
+  //   sButtons_Gfx[0], iconXPos, 0, 16, 16). sButtons_Gfx[0] = a_button.png
+  //   (16×16 4bpp). AVANT le texte (ordre décomp).
+  const iconX = Math.max(0, cancelX - 16);
+  const aBtn = _assets?.aButtonTiles;
+  if (aBtn) BlitBitmapToWindow(cancelWin, aBtn, iconX, 0, 16, 16);
+  AddTextPrinterParameterized3(cancelWin, FONT_NORMAL, cancelX, 1, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, cancelStr);
+  PutWindowTilemap(titleWin); CopyWindowToVram(titleWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(cancelWin); CopyWindowToVram(cancelWin, 3 /* COPYWIN_FULL */);
+}
+
 /** 1:1 décomp `SetMonTypeIcons` (pokemon_summary_screen.c:3817) +
  *  `SetTypeSpritePosAndPal` (:3807). Page INFO : icône type[0] @(120,48) ;
  *  si type[0]≠type[1] : type[1] @(160,48). Sprite 32×16 (sOamData_MoveTypes
@@ -534,6 +569,10 @@ function _printInfoPageText(): void {
   FillWindowPixelBuffer(memoWin, 0);
   const memoStr = _bufferMonTrainerMemo(mon);
   AddTextPrinterParameterized3(memoWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, memoStr);
+
+  // Incr.4b — 1:1 PrintPageNamesAndStats : header "INFOS POKéMON" + prompt
+  // "RETOUR" (top bar). (= les 2 items punch-list user header/RETOUR.)
+  _printHeaderAndPrompt();
 
   // Incr.4a — 1:1 PrintMonInfo : plaque nº dex + surnom + espèce + niveau +
   // genre (remplit la "box" bottom-left, qui était le cadre nu page_info.bin).
