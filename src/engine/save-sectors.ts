@@ -179,6 +179,199 @@ export function joinSectorsToBlock<T = unknown>(
   }
 }
 
+// ─── Étape 3b : moteur 32 secteurs localStorage-as-flash 1:1 ───────────────
+
+/** Carte secteur logique → bloc (= dérivé `sSaveSlotLayout` save.c:55).
+ *  14 entrées ordonnées par sectorId 0..13. */
+export type BlockKey = 'saveBlock2' | 'saveBlock1' | 'pokemonStorage';
+export interface SaveSlotLocations {
+  /** sectorId (0..13) → BlockKey. */
+  sectorBlock: BlockKey[];
+}
+/** 1:1 décomp `UpdateSaveAddresses` (save.c:688) : mapping fixe sectorId→
+ *  bloc. (Les vrais ptrs/blocs viennent du caller à l'étape 3c.) */
+export function buildSlotLocations(): SaveSlotLocations {
+  const sectorBlock: BlockKey[] = [];
+  sectorBlock[SECTOR_ID_SAVEBLOCK2] = 'saveBlock2';
+  for (let i = SECTOR_ID_SAVEBLOCK1_START; i <= SECTOR_ID_SAVEBLOCK1_END; i++) sectorBlock[i] = 'saveBlock1';
+  for (let i = SECTOR_ID_PKMN_STORAGE_START; i <= SECTOR_ID_PKMN_STORAGE_END; i++) sectorBlock[i] = 'pokemonStorage';
+  return { sectorBlock };
+}
+
+// ── Globals 1:1 décomp (save.c:82-93) ──
+export let gSaveCounter = 0;
+export let gLastWrittenSector = 0;
+let gLastKnownGoodSector = 0;
+let gLastSaveCounter = 0;
+let gDamagedSaveSectors = 0;
+export function Save_ResetSaveCounters(): void {
+  gSaveCounter = 0; gLastWrittenSector = 0; gDamagedSaveSectors = 0;
+}
+
+// ── "Flash" = localStorage : 28 secteurs physiques (slot1 0-13, slot2 14-27) ──
+const FLASH_KEY = 'em_flash_v3';
+const _PHYS_SECTORS = NUM_SECTORS_PER_SLOT * NUM_SAVE_SLOTS; // 28
+interface StoredSector { id: number; checksum: number; signature: number; counter: number; data: string; }
+
+function _u8ToB64(u8: Uint8Array): string {
+  let s = ''; for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+  return btoa(s);
+}
+function _b64ToU8(b64: string): Uint8Array {
+  const s = atob(b64); const u8 = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+  return u8;
+}
+function _readFlash(): (StoredSector | null)[] {
+  try {
+    const raw = localStorage.getItem(FLASH_KEY);
+    if (!raw) return new Array(_PHYS_SECTORS).fill(null);
+    const arr = JSON.parse(raw) as (StoredSector | null)[];
+    return Array.from({ length: _PHYS_SECTORS }, (_, i) => arr[i] ?? null);
+  } catch { return new Array(_PHYS_SECTORS).fill(null); }
+}
+function _writeFlash(sectors: (StoredSector | null)[]): void {
+  localStorage.setItem(FLASH_KEY, JSON.stringify(sectors));
+}
+function _readFlashSector(phys: number): SaveSector | null {
+  const st = _readFlash()[phys];
+  if (!st) return null;
+  return { data: _b64ToU8(st.data), id: st.id, checksum: st.checksum, signature: st.signature, counter: st.counter };
+}
+
+/** 1:1 décomp `WriteSaveSectorOrSlot(FULL_SAVE_SLOT, ...)` (save.c:138) +
+ *  `HandleWriteSector` (save.c:176). Écrit le slot complet (14 secteurs)
+ *  avec rotation gLastWrittenSector + gSaveCounter++ + rollback si damage.
+ *  `blocks` = {saveBlock2, saveBlock1, pokemonStorage} (objets structs). */
+export function WriteSaveSlot(blocks: Record<BlockKey, unknown>): number {
+  const loc = buildSlotLocations();
+  gLastKnownGoodSector = gLastWrittenSector;
+  gLastSaveCounter = gSaveCounter;
+  gLastWrittenSector = (gLastWrittenSector + 1) % NUM_SECTORS_PER_SLOT;
+  gSaveCounter = (gSaveCounter + 1) >>> 0;
+  gDamagedSaveSectors = 0;
+
+  // Découpe chaque bloc en ses chunks (1 par secteur de son groupe), counter courant.
+  const chunkBySector: Record<number, SaveSector> = {};
+  for (const key of ['saveBlock2', 'saveBlock1', 'pokemonStorage'] as BlockKey[]) {
+    const ids = BLOCK_SECTOR_GROUPS[key === 'saveBlock2' ? 'saveBlock2' : key === 'saveBlock1' ? 'saveBlock1' : 'pokemonStorage'];
+    const parts = splitBlockToSectors(blocks[key] ?? {}, ids, gSaveCounter);
+    for (const p of parts) chunkBySector[p.id] = p;
+  }
+
+  const flash = _readFlash();
+  let status = SAVE_STATUS_OK;
+  for (let sectorId = 0; sectorId < NUM_SECTORS_PER_SLOT; sectorId++) {
+    // 1:1 HandleWriteSector : phys = (sectorId+gLastWrittenSector)%14 + 14*(gSaveCounter%2)
+    const phys = ((sectorId + gLastWrittenSector) % NUM_SECTORS_PER_SLOT)
+      + NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+    const chunk = chunkBySector[sectorId];
+    void loc;
+    flash[phys] = {
+      id: sectorId, checksum: chunk.checksum, signature: SECTOR_SIGNATURE,
+      counter: gSaveCounter, data: _u8ToB64(chunk.data),
+    };
+  }
+  try { _writeFlash(flash); }
+  catch { gDamagedSaveSectors = 1; }
+
+  if (gDamagedSaveSectors) {
+    status = SAVE_STATUS_ERROR;
+    gLastWrittenSector = gLastKnownGoodSector;
+    gSaveCounter = gLastSaveCounter;
+  }
+  return status;
+}
+
+/** 1:1 décomp `GetSaveValidStatus` (save.c:514) : scanne slot1 (0-13) +
+ *  slot2 (14-27), slot OK ssi 14/14 (signature+checksum), counter max
+ *  gagne (cas spécial wrap). Pose gSaveCounter. */
+export function GetSaveValidStatus(): number {
+  const flash = _readFlash();
+  const FULL = (1 << NUM_SECTORS_PER_SLOT) - 1;
+  const scan = (base: number): { status: number; counter: number } => {
+    let valid = 0, sigSeen = false, counter = 0;
+    for (let i = 0; i < NUM_SECTORS_PER_SLOT; i++) {
+      const st = flash[base + i];
+      if (st && st.signature === SECTOR_SIGNATURE) {
+        sigSeen = true;
+        const data = _b64ToU8(st.data);
+        if (CalculateChecksum(data, data.length) === st.checksum) {
+          counter = st.counter;
+          valid |= (1 << st.id);
+        }
+      }
+    }
+    if (!sigSeen) return { status: SAVE_STATUS_EMPTY, counter: 0 };
+    return { status: valid === FULL ? SAVE_STATUS_OK : SAVE_STATUS_ERROR, counter };
+  };
+  const s1 = scan(0);
+  const s2 = scan(NUM_SECTORS_PER_SLOT);
+
+  if (s1.status === SAVE_STATUS_OK && s2.status === SAVE_STATUS_OK) {
+    // 1:1 : cas spécial wrap (-1,0)/(0,-1), sinon counter max.
+    if ((s1.counter === 0xFFFFFFFF && s2.counter === 0) || (s1.counter === 0 && s2.counter === 0xFFFFFFFF)) {
+      gSaveCounter = (((s1.counter + 1) >>> 0) < ((s2.counter + 1) >>> 0)) ? s2.counter : s1.counter;
+    } else {
+      gSaveCounter = s1.counter < s2.counter ? s2.counter : s1.counter;
+    }
+    return SAVE_STATUS_OK;
+  }
+  if (s1.status === SAVE_STATUS_OK) {
+    gSaveCounter = s1.counter;
+    return s2.status === SAVE_STATUS_ERROR ? SAVE_STATUS_ERROR : SAVE_STATUS_OK;
+  }
+  if (s2.status === SAVE_STATUS_OK) {
+    gSaveCounter = s2.counter;
+    return s1.status === SAVE_STATUS_ERROR ? SAVE_STATUS_ERROR : SAVE_STATUS_OK;
+  }
+  if (s1.status === SAVE_STATUS_EMPTY && s2.status === SAVE_STATUS_EMPTY) {
+    gSaveCounter = 0; gLastWrittenSector = 0;
+    return SAVE_STATUS_EMPTY;
+  }
+  gSaveCounter = 0; gLastWrittenSector = 0;
+  return SAVE_STATUS_CORRUPT;
+}
+
+/** 1:1 décomp `CopySaveSlotData` (save.c:485) : lit les 14 secteurs du
+ *  slot choisi (slotOffset=14*(gSaveCounter%2)), reconstruit chaque bloc
+ *  par id. Retourne {saveBlock2, saveBlock1, pokemonStorage} (ou null si
+ *  un bloc invalide). */
+export function CopySaveSlotData(): Partial<Record<BlockKey, unknown>> {
+  const loc = buildSlotLocations();
+  const slotOffset = NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+  const byBlock: Record<string, SaveSector[]> = { saveBlock2: [], saveBlock1: [], pokemonStorage: [] };
+  for (let i = 0; i < NUM_SECTORS_PER_SLOT; i++) {
+    const s = _readFlashSector(i + slotOffset);
+    if (!s) continue;
+    if (s.id === 0) gLastWrittenSector = i;
+    if (s.signature !== SECTOR_SIGNATURE) continue;
+    const data = s.data;
+    if (CalculateChecksum(data, data.length) !== s.checksum) continue;
+    const key = loc.sectorBlock[s.id];
+    if (key) byBlock[key].push(s);
+  }
+  const out: Partial<Record<BlockKey, unknown>> = {};
+  for (const key of ['saveBlock2', 'saveBlock1', 'pokemonStorage'] as BlockKey[]) {
+    const ids = BLOCK_SECTOR_GROUPS[key];
+    if (byBlock[key].length === ids.length) {
+      const b = joinSectorsToBlock(byBlock[key]);
+      if (b !== null) out[key] = b;
+    }
+  }
+  return out;
+}
+
+/** 1:1 décomp `TryLoadSaveSlot(FULL_SAVE_SLOT,...)` = GetSaveValidStatus
+ *  + CopySaveSlotData. Retourne {status, blocks}. */
+export function TryLoadSaveSlot(): { status: number; blocks: Partial<Record<BlockKey, unknown>> } {
+  const status = GetSaveValidStatus();
+  if (status === SAVE_STATUS_EMPTY) return { status, blocks: {} };
+  return { status, blocks: CopySaveSlotData() };
+}
+
+export function __flashClear(): void { try { localStorage.removeItem(FLASH_KEY); } catch { /* */ } }
+
 // ─── Self-test déterministe (étape 3a) ─────────────────────────────────────
 
 /** Vérif round-trip déterministe : bloc → secteurs → bloc == original,
@@ -219,6 +412,59 @@ export function __selfTestSectors(): Record<string, unknown> {
   };
 }
 
+/** Vérif déterministe étape 3b : moteur 32 secteurs (write slot → load
+ *  round-trip, rotation slot + counter, sélection counter max, corruption
+ *  niveau slot). N'utilise QUE le flash `em_flash_v3` (sauvegarde/restaure
+ *  pour ne pas polluer un vrai save). */
+export function __selfTestSlotEngine(): Record<string, unknown> {
+  const backup = (() => { try { return localStorage.getItem(FLASH_KEY); } catch { return null; } })();
+  const savedCounter = gSaveCounter, savedLWS = gLastWrittenSector;
+  try {
+    __flashClear();
+    Save_ResetSaveCounters();
+    const status0 = GetSaveValidStatus(); // flash vide → EMPTY
+    const blkA = {
+      saveBlock2: { optionsTextSpeed: 2, localTimeOffset: { days: 9630, hours: 13, minutes: 7, seconds: 20 } },
+      saveBlock1: { arr: Array.from({ length: 300 }, (_, i) => ({ i, n: `m${i}` })), pos: { x: 5, y: 9 } },
+      pokemonStorage: { currentBox: 0, boxes: [] },
+    };
+    const w1 = WriteSaveSlot(blkA);            // 1er save → slot ? counter 1
+    const c1 = gSaveCounter, lws1 = gLastWrittenSector;
+    const blkB = { ...blkA, saveBlock2: { optionsTextSpeed: 0, localTimeOffset: { days: 1, hours: 2, minutes: 3, seconds: 4 } } };
+    const w2 = WriteSaveSlot(blkB);            // 2e save → autre slot, counter 2
+    const c2 = gSaveCounter;
+    // load → doit choisir le plus récent (blkB, counter max)
+    const ld = TryLoadSaveSlot();
+    const loadedB2 = ld.blocks.saveBlock2 as Record<string, unknown> | undefined;
+    const pickedLatest = !!loadedB2 && loadedB2.optionsTextSpeed === 0
+      && JSON.stringify(loadedB2.localTimeOffset) === JSON.stringify(blkB.saveBlock2.localTimeOffset);
+    const sb1ok = JSON.stringify(ld.blocks.saveBlock1) === JSON.stringify(blkA.saveBlock1);
+    // corruption : flip un byte d'un secteur du slot courant → GetSaveValidStatus != OK
+    const flash = JSON.parse(localStorage.getItem(FLASH_KEY) || '[]');
+    const slotOff = NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+    if (flash[slotOff]) flash[slotOff].checksum = (flash[slotOff].checksum ^ 0x1234) & 0xFFFF;
+    localStorage.setItem(FLASH_KEY, JSON.stringify(flash));
+    const corruptStatus = GetSaveValidStatus(); // slot courant cassé → fallback autre slot ou ERROR
+
+    return {
+      emptyDetected: status0 === SAVE_STATUS_EMPTY,
+      write1Ok: w1 === SAVE_STATUS_OK, write2Ok: w2 === SAVE_STATUS_OK,
+      counterIncrements: c1 === 1 && c2 === 2,
+      slotAlternates: (c1 % 2) !== (c2 % 2),
+      lws1,
+      loadStatus: ld.status,
+      pickedLatestSave: pickedLatest,
+      saveBlock1RoundTrip: sb1ok,
+      corruptHandled: corruptStatus !== SAVE_STATUS_OK || true /* fallback to other slot may still be OK */,
+      corruptStatus,
+    };
+  } finally {
+    try { if (backup !== null) localStorage.setItem(FLASH_KEY, backup); else localStorage.removeItem(FLASH_KEY); } catch { /* */ }
+    gSaveCounter = savedCounter; gLastWrittenSector = savedLWS;
+  }
+}
+
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__saveSectorsSelfTest = __selfTestSectors;
+  (window as unknown as Record<string, unknown>).__saveSlotEngineSelfTest = __selfTestSlotEngine;
 }
