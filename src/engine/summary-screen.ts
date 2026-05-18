@@ -27,9 +27,14 @@
  */
 
 import {
-  InitWindows, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
+  InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   RemoveWindow, ShowBg, HideBg,
 } from './gba-window-system';
+import {
+  AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
+  FONT_NORMAL, TEXT_SKIP_DRAW,
+} from './gba-text-system';
+import { gameState } from './game-state';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
@@ -165,7 +170,50 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
   return false;
 }
 
+/** 1:1 décomp `sTextColors[][3]` (pokemon_summary_screen.c) — [bg,fg,shadow]
+ *  indices palette dans la font palette du summary screen. */
+const SUMMARY_TEXT_COLOR: Record<number, readonly number[]> = {
+  0: [0, 1, 2], 1: [0, 3, 4], 5: [0, 11, 12], 6: [0, 13, 14],
+};
+let _infoWindowIds: number[] = [];
+
+/** 1:1 décomp INFO page (non-egg) — increment 1 : OT name + OT ID.
+ *  Windows = sPageInfoTemplate (pokemon_summary_screen.c:591).
+ *  Texte = PrintMonOTName / PrintMonOTID (coords/colors 1:1).
+ *  Ability/Memo/species/type = increments suivants (pas de fake). */
+function _printInfoPageText(): void {
+  const mon = _currentMon;
+  if (!mon) return;
+  // PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER (tile 11,4 w11 h2 pal6 bb449).
+  const otWin = AddWindow({ bg: 0, tilemapLeft: 11, tilemapTop: 4, width: 11, height: 2, paletteNum: 6, baseBlock: 449 });
+  // PSS_DATA_WINDOW_INFO_ID (tile 22,4 w7 h2 pal6 bb471).
+  const idWin = AddWindow({ bg: 0, tilemapLeft: 22, tilemapTop: 4, width: 7, height: 2, paletteNum: 6, baseBlock: 471 });
+  _infoWindowIds = [otWin, idWin];
+  FillWindowPixelBuffer(otWin, 0);
+  FillWindowPixelBuffer(idWin, 0);
+
+  // 1:1 PrintMonOTName : gText_OTSlash @(0,1) color1 ; OTName @(width,1)
+  // color5 (OTGender==MALE) sinon color6. OT = le joueur (gameState).
+  const otSlash = 'OT/';
+  AddTextPrinterParameterized3(otWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, otSlash);
+  const otX = GetStringWidth(otSlash);
+  const otColor = gameState.gender === 'MALE' ? SUMMARY_TEXT_COLOR[5] : SUMMARY_TEXT_COLOR[6];
+  AddTextPrinterParameterized3(otWin, FONT_NORMAL, otX, 1, otColor, TEXT_SKIP_DRAW, gameState.playerName);
+
+  // 1:1 PrintMonOTID : gText_IDNumber2 + OTID 5-chiffres leading-zeros,
+  // right-aligné offset 56, @(xPos,1) color1. {NO}{ID} = glyphe FR spécial →
+  // label "Nᵒ" + la DONNÉE zero-paddée (1:1) ; glyphe exact = cosmétique A/B.
+  const idStr = 'Nᵒ' + String((gameState.trainerId ?? 0) % 100000).padStart(5, '0');
+  const idXPos = GetStringRightAlignXOffset(idStr, 56);
+  AddTextPrinterParameterized3(idWin, FONT_NORMAL, idXPos, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, idStr);
+
+  PutWindowTilemap(otWin); CopyWindowToVram(otWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(idWin); CopyWindowToVram(idWin, 3 /* COPYWIN_FULL */);
+}
+
 function _freeSummary(): void {
+  for (const w of _infoWindowIds) { try { RemoveWindow(w); } catch { /* idem décomp RemoveWindowByIndex */ } }
+  _infoWindowIds = [];
   _isOpen = false;
   _phase = 'idle';
   _currentMon = null;
@@ -231,9 +279,10 @@ export function CB2_InitSummaryScreen(): void {
       if (!_loadSummaryGraphicsCb2(rt)) break;
       rt.gMain.state++; break;
     case 9:
-      // Init windows (= TODO text windows pour stats).
-      // For MVP, juste advance.
+      // 1:1 décomp : InitWindows reset puis AddWindow par template + print.
+      // Increment 1 : page INFO (OT name + OT ID). Pages 1-3 = suivants.
       InitWindows([]);
+      if (_currentPage === 0) _printInfoPageText();
       rt.gMain.state++; break;
     case 10: _phase = 'open'; rt.gMain.state++; break;
     case 11: rt.gMain.state++; break;
