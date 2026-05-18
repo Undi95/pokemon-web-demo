@@ -159,7 +159,7 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
   if (_graphicsReady) return true;
   if (_graphicsLoading) return false;
   _graphicsLoading = true;
-  void _loadAssets().then((assets) => {
+  void _loadAssets().then(async (assets) => {
     const r = getRuntime();
     if (!r) { _graphicsLoading = false; return; }
     // Load tiles à charBase=2 (= shared BG1/2/3).
@@ -183,6 +183,33 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     //     3*PLTT_SIZE_4BPP) → OBJ pal slots 13,14,15 (48 couleurs).
     r.gba.objVram.set(assets.moveTypesTiles, TYPE_ICON_TILE_BASE * 32);
     r.LoadPaletteObj(assets.moveTypesPal, OBJ_PLTT_ID(13));
+    // Incr.4b (c) — 1:1 décomp LoadMonGfxAndSprite (:3900) : front pic du mon
+    // en OBJ VRAM + sa palette. Notre asset = /decomp/em/pokemon/<dex>/
+    // front.png (= même pipeline que battle-flow). gfx @ tile MON_PIC_TILE_
+    // BASE, pal OBJ slot MON_PIC_PAL_SLOT. Le sprite est créé après
+    // (_createMonPicSprite, 1:1 CreateMonSprite).
+    const _mon = _currentMon;
+    if (_mon) {
+      const dexId = _mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+      try {
+        const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
+        r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
+      } catch (e) {
+        console.error('[summary-screen] mon front pic load failed:', e);
+      }
+    }
+    // 1:1 SpeciesToPokedexNum : charge le mapping species→{national,hoenn}
+    // (extract-species-dex-numbers.mjs). __HOENN_DEX_COUNT=202.
+    if (!_dexNumbers) {
+      try {
+        const dj = await fetch('/decomp/em/species-dex-numbers.json').then((rsp) => rsp.json());
+        _hoennDexCount = dj.__HOENN_DEX_COUNT ?? 202;
+        delete dj.__HOENN_DEX_COUNT;
+        _dexNumbers = dj;
+      } catch (e) {
+        console.error('[summary-screen] species-dex-numbers load failed:', e);
+      }
+    }
     _graphicsReady = true;
     _graphicsLoading = false;
   }).catch((e) => {
@@ -230,6 +257,34 @@ const S_MOVE_TYPE_TO_OAM_PAL: ReadonlyArray<number> = [
  *  Summary n'a pas d'autre sprite OBJ pour l'instant ; le mon-pic (incr.4c)
  *  s'allouera après (tile ≥ 184) ou ailleurs. */
 const TYPE_ICON_TILE_BASE = 0;
+/** Mon front-pic (1:1 décomp `CreateMonSprite` → gMultiuseSpriteTemplate
+ *  64×64). OBJ VRAM tile 184 = juste après les 184 tiles du sheet type-icons
+ *  (pas de collision). 64×64 4bpp = 64 tiles = 2048 o. OBJ pal slot 1 (libre
+ *  ; type-icons = 13/14/15). Position centre décomp (40,64), oam.priority=0. */
+const MON_PIC_TILE_BASE = 184;
+const MON_PIC_BYTE_OFFSET = MON_PIC_TILE_BASE * 32;
+const MON_PIC_PAL_SLOT = 1;
+let _monPicSpriteId = -1;
+
+/** 1:1 décomp tables `sSpeciesToHoennPokedexNum`/`sSpeciesToNationalPokedex
+ *  Num` (pokemon.c:104-105) extraites via extract-species-dex-numbers.mjs
+ *  (= enums pokedex.h). { SPECIES_X: {national, hoenn} } + __HOENN_DEX_COUNT
+ *  (=202). Chargé async (gates _graphicsReady). */
+let _dexNumbers: Record<string, { national: number; hoenn: number }> | null = null;
+let _hoennDexCount = 202;
+
+/** 1:1 décomp `SpeciesToPokedexNum` (pokemon.c:6364) :
+ *    if (IsNationalPokedexEnabled()) return SpeciesToNationalPokedexNum(sp);
+ *    else { sp = SpeciesToHoennPokedexNum(sp);
+ *           return (sp <= HOENN_DEX_COUNT) ? sp : 0xFFFF; }
+ *  IsNationalPokedexEnabled() = FALSE dans tout notre gameplay actuel
+ *  (dex national = post-game non atteint) → branche Hoenn 1:1. */
+function _speciesToPokedexNum(speciesEnum: string): number {
+  const e = _dexNumbers?.[speciesEnum];
+  if (!e) return 0xFFFF;
+  // national dex désactivé (notre contexte) → Hoenn.
+  return e.hoenn <= _hoennDexCount ? e.hoenn : 0xFFFF;
+}
 
 // 1:1 décomp `sMemoNatureTextColor` / `sMemoMiscTextColor`
 // (pokemon_summary_screen.c:746-747). Control codes inline (placeholders 0/1).
@@ -313,17 +368,25 @@ function _printMonInfo(mon: PokemonInstance): void {
   FillWindowPixelBuffer(nickWin, 0);
   FillWindowPixelBuffer(specWin, 0);
 
-  // 1:1 PrintNotEggInfo : dexNum = SpeciesToPokedexNum(species). Notre
-  // mon.speciesId = nº Pokédex national (1..386). gText_NumberClear01 =
-  // "{NO}{CLEAR 1}" (strings.c:210) + dexNum 3-chiffres leading-0.
-  const dexNum = mon.speciesId;
-  if (dexNum && dexNum !== 0xFFFF) {
+  // 1:1 PrintNotEggInfo (pokemon_summary_screen.c:2755) :
+  //   dexNum = SpeciesToPokedexNum(species);
+  //   if (dexNum != 0xFFFF) { StringCopy(gStringVar1, gText_NumberClear01);
+  //     ConvertIntToDecimalStringN(gStringVar2, dexNum, LEADING_ZEROS, 3);
+  //     ... PrintTextOnWindow(DEX_NUMBER, ., 0,1,0, shiny?7:1) ... }
+  //   else ClearWindowTilemap(DEX_NUMBER) (= pas de Nº affiché).
+  // gText_NumberClear01 = "{NO}{CLEAR 1}" (strings.c:210). dexNum = vrai
+  // Pokédex (Hoenn en early game) via _speciesToPokedexNum 1:1 — PAS
+  // mon.speciesId (qui était faux : Nº001 pour tout, bug repéré user).
+  const dexNum = _speciesToPokedexNum(mon.speciesEnum);
+  if (dexNum !== 0xFFFF) {
     const dexStr = '{NO}{CLEAR 1}' + String(dexNum).padStart(3, '0');
     // non-shiny → sTextColors[1] ; shiny → sTextColors[7].
     const dexColor = mon.isShiny ? SUMMARY_TEXT_COLOR[7] : SUMMARY_TEXT_COLOR[1];
     AddTextPrinterParameterized3(dexWin, FONT_NORMAL, 0, 1, dexColor, TEXT_SKIP_DRAW, dexStr);
-    // SetMonPicBackgroundPalette(shiny) = bg3 portrait region → incr.4b.
+    // SetMonPicBackgroundPalette(shiny) = bg3 portrait region → incr.4b (e).
   }
+  // dexNum == 0xFFFF → window laissée vide (1:1 ClearWindowTilemap : espèce
+  // hors Pokédex Hoenn sans dex national).
   // 1:1 : gText_LevelSymbol "N." (strings.c:209) + level (LEFT_ALIGN 3 = nb
   // brut). @(24,17) sTextColors[1]. Window SPECIES.
   AddTextPrinterParameterized3(specWin, FONT_NORMAL, 24, 17, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, 'N.' + String(mon.level));
@@ -371,6 +434,35 @@ function _setMonTypeIcons(mon: PokemonInstance): void {
   };
   place(t0, 120, 48);
   if (t0 !== t1) place(t1, 160, 48);
+}
+
+/** 1:1 décomp `CreateMonSprite` (pokemon_summary_screen.c:3975) :
+ *  `CreateSprite(&gMultiuseSpriteTemplate, 40, 64, 5)` (centre décomp 40,64,
+ *  subprio 5) ; `oam.priority = 0`. Front pic 64×64 (gfx déjà en OBJ VRAM @
+ *  MON_PIC_TILE_BASE, pal slot MON_PIC_PAL_SLOT, chargés en async). hFlip =
+ *  !IsMonSpriteNotFlipped — la plupart des front pics NON flippés (hFlip
+ *  FALSE 1:1 cas commun). Cry + anim d'intro (SpriteCB_Pokemon →
+ *  PlayMonCry + PokemonSummaryDoMonAnimation) = polish suivant (pas de
+ *  fake : sprite statique 1:1 d'abord). */
+function _createMonPicSprite(mon: PokemonInstance): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const spr = rt.CreateSpriteAtOam({
+    x: 40, y: 64,            // 1:1 CreateSprite(&gMultiuseSpriteTemplate, 40, 64, 5)
+    shape: 0, size: 3,       // 64×64 (gMultiuseSpriteTemplate mon pic)
+    tileId: MON_PIC_TILE_BASE,
+    paletteBank: MON_PIC_PAL_SLOT,
+    priority: 0,             // 1:1 gSprites[].oam.priority = 0
+    subpriority: 5,          // 1:1 CreateSprite 4e arg
+  });
+  _monPicSpriteId = spr.spriteId;
+  // 1:1 décomp CreateMonSprite (:3986) : `if (!IsMonSpriteNotFlipped(species))
+  //   hFlip = TRUE; else hFlip = FALSE;` = hFlip = !noFlip. IsMonSpriteNot
+  //   Flipped = gSpeciesInfo[].noFlip (pokemon.c:6553). syncSpritesToOam
+  //   propage sprite.hFlip → oam.flipH chaque frame.
+  const noFlip = getSpeciesInfo(mon.speciesEnum)?.noFlip ?? false;
+  const sprObj = rt.gSprites.get(spr.spriteId);
+  if (sprObj) sprObj.hFlip = !noFlip;
 }
 
 /** 1:1 décomp INFO page (non-egg) — increment 1 : OT name + OT ID.
@@ -467,6 +559,10 @@ function _printInfoPageText(): void {
   // :3776/3817) : sprites OAM des types du mon (le `[FEU]`/`[PLANTE]` coloré
   // à droite du label TYPE/).
   _setMonTypeIcons(mon);
+  // Incr.4b (c) — 1:1 CreateMonSprite (:3975) : sprite front pic du mon
+  // (grande image 64×64 à gauche). gfx/pal chargés en async (gates
+  // _graphicsReady), donc dispo ici.
+  _createMonPicSprite(mon);
 }
 
 function _freeSummary(): void {
@@ -476,6 +572,7 @@ function _freeSummary(): void {
   const _rt = getRuntime();
   for (const sid of _typeSpriteIds) { try { _rt?.DestroySprite(sid); } catch { /* déjà détruit */ } }
   _typeSpriteIds = [];
+  if (_monPicSpriteId >= 0) { try { _rt?.DestroySprite(_monPicSpriteId); } catch { /* idem */ } _monPicSpriteId = -1; }
   _isOpen = false;
   _phase = 'idle';
   _currentMon = null;

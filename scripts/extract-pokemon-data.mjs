@@ -118,6 +118,10 @@ function parseSpeciesInfo() {
       itemRare:     parseField(body, 'itemRare') ?? 'ITEM_NONE',
       bodyColor:    parseField(body, 'bodyColor') ?? 'BODY_COLOR_BLACK',
       safariFlee:   parseInt10(parseField(body, 'safariZoneFleeRate')),
+      // 1:1 décomp `gSpeciesInfo[].noFlip` — utilisé par IsMonSpriteNotFlipped
+      // (pokemon.c:6553) ; le summary CreateMonSprite (:3986) fait
+      // `hFlip = !noFlip` (défaut FALSE → flip ; 18 espèces noFlip=TRUE).
+      noFlip:       (parseField(body, 'noFlip') ?? 'FALSE').trim() === 'TRUE',
       evYield: {
         hp:  parseInt10(parseField(body, 'evYield_HP')),
         atk: parseInt10(parseField(body, 'evYield_Attack')),

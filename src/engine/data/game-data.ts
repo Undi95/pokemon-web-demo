@@ -41,6 +41,9 @@ export interface SpeciesInfo {
   itemRare: string;
   bodyColor: string;
   safariFlee: number;
+  /** 1:1 décomp `gSpeciesInfo[].noFlip` — IsMonSpriteNotFlipped (pokemon.c
+   *  :6553). Summary CreateMonSprite : `hFlip = !noFlip`. */
+  noFlip: boolean;
   evYield: SpeciesStats;
 }
 

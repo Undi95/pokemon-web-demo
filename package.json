@@ -44,6 +44,8 @@
     "extract:trainer-pics": "node scripts/extract-trainer-pics.mjs",
     "extract:cries": "node scripts/extract-cries.mjs",
     "extract:font-widths": "node scripts/extract-font-widths.mjs",
+    "extract:move-types": "node scripts/extract-move-types.mjs",
+    "extract:species-dex-numbers": "node scripts/extract-species-dex-numbers.mjs",
     "extract:latfont": "node scripts/extract-latfont.mjs",
     "extract:text-palettes": "node scripts/extract-text-palettes.mjs",
     "extract:down-arrow": "node scripts/extract-down-arrow.mjs",
