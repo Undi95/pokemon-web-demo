@@ -441,6 +441,44 @@ export function ScriptContext_Enable(): void {
   LockPlayerFieldControls();
 }
 
+/** Snapshot complet du ScriptContext global + status. */
+export interface ScriptCtxSnapshot {
+  mode: number; scriptOpcodes: Opcode[] | null; scriptIdx: number;
+  stack: Array<{ opcodes: Opcode[]; idx: number } | null>; stackDepth: number;
+  data: number[]; nativeFn: (() => boolean) | null; comparisonResult: number;
+  status: number;
+}
+
+/** 1:1 décomp `CB2_ReturnToFieldContinueScript*` — PRÉSERVE le ScriptContext
+ *  global à travers un re-init complet du field. `loadAndInitMap` appelle
+ *  `ScriptContext_Init()` (reset total : approprié pour boot/new-game, mais
+ *  PAS pour le retour-au-field-CONTINUE post-combat où le script suspendu
+ *  — ex. tuto Birch sur `special ChooseStarter` — DOIT reprendre exactement
+ *  où il était). Le décomp ne re-init pas le ScriptContext sur ce chemin :
+ *  il continue le script après le retour field. Snapshot AVANT le re-init,
+ *  Restore APRÈS = équivalent JS de "le ScriptContext survit au CB2 swap".
+ *  Si aucun script en vol (status SHUTDOWN, ctx vide), snapshot==restore =
+ *  no-op total (zéro régression pour les autres callers : option menu/sac). */
+export function ScriptContext_Snapshot(): ScriptCtxSnapshot {
+  const c = sGlobalScriptContext;
+  return {
+    mode: c.mode, scriptOpcodes: c.scriptOpcodes, scriptIdx: c.scriptIdx,
+    stack: c.stack.slice(), stackDepth: c.stackDepth,
+    data: c.data.slice(), nativeFn: c.nativeFn,
+    comparisonResult: c.comparisonResult, status: sGlobalScriptContextStatus,
+  };
+}
+
+export function ScriptContext_Restore(s: ScriptCtxSnapshot): void {
+  const c = sGlobalScriptContext;
+  c.mode = s.mode; c.scriptOpcodes = s.scriptOpcodes; c.scriptIdx = s.scriptIdx;
+  c.stackDepth = s.stackDepth; c.nativeFn = s.nativeFn;
+  c.comparisonResult = s.comparisonResult;
+  for (let i = 0; i < c.stack.length; i++) c.stack[i] = s.stack[i] ?? null;
+  for (let i = 0; i < c.data.length; i++) c.data[i] = s.data[i] ?? 0;
+  sGlobalScriptContextStatus = s.status;
+}
+
 /** 1:1 décomp `RunScriptImmediately(const u8 *ptr)`. Run synchronous (=
  *  utilisé par OnTransition / OnLoad / OnWarp).
  *
@@ -676,4 +714,11 @@ setOnLoadMapScriptHook(RunOnLoadMapScript);
     const op = ops[sGlobalScriptContext.scriptIdx];
     return { name: op.name, args: op.args };
   },
+  // Vérif DÉTERMINISTE du fix "préserve ScriptContext au retour-field" :
+  // snapshot/restore/init/enable exposés pour prouver (anti-eyeball) que
+  // ScriptContext_Init wipe le ctx ET que Restore le ramène 1:1.
+  snapshot: ScriptContext_Snapshot,
+  restore: ScriptContext_Restore,
+  init: ScriptContext_Init,
+  enable: ScriptContext_Enable,
 };

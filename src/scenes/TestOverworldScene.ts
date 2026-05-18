@@ -84,6 +84,8 @@ import {
   loadMapScripts,
   ScriptContext_RunScript,
   ScriptContext_Init,
+  ScriptContext_Snapshot,
+  ScriptContext_Restore,
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
   RunOnTransitionMapScript,
@@ -508,7 +510,19 @@ export class TestOverworldScene extends Phaser.Scene {
         //   - state 0 : ResetScreenForMapLoad + ResumeMap + InitObjectEventsReturnToField
         //   - state 1 : InitViewGraphics (= setup BG regs + DrawWholeMapView)
         // Notre `loadAndInitMap` fait l'équivalent en 1 fonction async.
+        // 1:1 décomp `CB2_ReturnToFieldContinueScript*` : ce restore est le
+        // chemin "retour-au-field-CONTINUE" (post-combat / post-menu). Or
+        // loadAndInitMap fait `ScriptContext_Init()` (reset total) — correct
+        // pour boot/warp mais ça WIPE le ScriptContext suspendu qui pilote
+        // le tuto Birch (`special ChooseStarter` → native flow). Bug : après
+        // combat WIN, overworld restauré MAIS script Birch détruit → ne
+        // reprend jamais à `applymovement BIRCH` = HANG rapporté. Fix 1:1 :
+        // snapshot AVANT, restore APRÈS = le script suspendu survit au
+        // re-init field et reprend exactement où il était. No-op si aucun
+        // script en vol (option menu/sac : status SHUTDOWN).
+        const _scriptSnap = ScriptContext_Snapshot();
         await self.loadAndInitMap(gMapHeader.id, gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
+        ScriptContext_Restore(_scriptSnap);
         // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
         // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
         // dans BG0 mapBase 31 (= bg=0, baseBlock=0x36, 26×14 tiles). Au close,
