@@ -2141,6 +2141,35 @@ registerOpcode('bufferstring', (_ctx, args) => {
   return false;
 });
 
+// 1:1 décomp `sContestNames[]` (data/lilycove_lady.h:452, indexé
+// CONTEST_CATEGORY_* global.h:86 = COOL 0/BEAUTY 1/CUTE 2/SMART 3/TOUGH 4)
+// → gText_{Coolness,Beauty,Cuteness,Smartness,Toughness}Contest, strings FR
+// décomp strings.c:616-620 (texte ROM FR cité ligne-par-ligne, PAS un enum
+// dérivable → hardcode 1:1 documenté, idem gText_Box étape 6 PokemonStorage).
+const sContestNames = [
+  'SANG-FROID',   // [CONTEST_CATEGORY_COOL]   gText_CoolnessContest  strings.c:616
+  'BEAUTE',       // [CONTEST_CATEGORY_BEAUTY] gText_BeautyContest    strings.c:617
+  'GRACE',        // [CONTEST_CATEGORY_CUTE]   gText_CutenessContest  strings.c:618
+  'INTELLIGENCE', // [CONTEST_CATEGORY_SMART]  gText_SmartnessContest strings.c:619
+  'ROBUSTESSE',   // [CONTEST_CATEGORY_TOUGH]  gText_ToughnessContest strings.c:620
+] as const;
+
+// 1:1 décomp `ScrCmd_buffercontestname` (scrcmd.c:1635-1642) :
+//   u8 stringVarIndex = ScriptReadByte(ctx);
+//   u16 category = VarGet(ScriptReadHalfword(ctx));
+//   BufferContestName(sScriptStringVars[stringVarIndex], category);
+// BufferContestName (lilycove_lady.c:721) = StringCopy(dest, sContestNames[category]).
+// parseValue() reproduit VarGet + résolution constante (VAR_→VarGet,
+// CONTEST_CATEGORY_X→resolveDecompConstant, nombre→nombre). Mal classé
+// auparavant dans _otherVmStubs (= no-op) alors que c'est un field scrcmd
+// réel → {STR_VAR_N} restait vide dans les dialogs Contest (gap audit:overworld).
+registerOpcode('buffercontestname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  const category = parseValue(args[1]);
+  setStringVar(n, sContestNames[category] ?? '');
+  return false;
+});
+
 registerOpcode('bufferboxname', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
   setStringVar(n, '');
@@ -4733,7 +4762,7 @@ const _otherVmStubs: string[] = [
   'healpartystatus', 'hidepartystatussummary', 'hitanimation', 'dofaintanimation',
   'drawpartystatussummary', 'flee', 'end3', 'endlinkbattle', 'endselectionscript',
   'givecaughtmon', 'initmultihitstring', 'openpartyscreen', 'useitemonopponent',
-  'buffermovetolearn', 'buffercontestname', 'assistattackselect',
+  'buffermovetolearn', 'assistattackselect',
   'callmove', 'copyfoestats', 'copymovepermanently', 'checkteamslost',
   'confuseifrepeatingattackends', 'disablelastusedattack',
   'get_ability', 'get_considered_move_effect', 'get_curr_move_type',
