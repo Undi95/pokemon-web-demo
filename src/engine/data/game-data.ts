@@ -259,6 +259,16 @@ export function getNatureName(natureId: string): string {
   return ensureLoaded().natureNamesFr[natureId] ?? natureId;
 }
 
+/** 1:1 décomp `gNatureNamePointers[nature]` — nature indexée 0..24 (= ordre
+ *  enum NATURE_HARDY=0 … NATURE_QUIRKY=24). `nature-names-fr.json` est extrait
+ *  dans cet ordre exact (clés `NATURE_*` en ordre enum), donc `Object.values`
+ *  [idx] = le nom FR 1:1 (zéro hardcode de l'enum). Utilisé par
+ *  BufferNatureString (pokemon_summary_screen.c:3176). */
+export function getNatureNameByIndex(natureIndex: number): string {
+  const vals = Object.values(ensureLoaded().natureNamesFr);
+  return vals[natureIndex] ?? '';
+}
+
 export function getTrainerClassName(classId: string): string {
   return ensureLoaded().trainerClassNamesFr[classId] ?? classId;
 }

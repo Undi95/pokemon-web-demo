@@ -35,7 +35,13 @@ import {
   FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gameState } from './game-state';
-import { getAbility, getSpeciesInfo } from './data/game-data';
+import { getAbility, getSpeciesInfo, getNatureNameByIndex } from './data/game-data';
+import {
+  DynamicPlaceholderTextUtil_Reset,
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr,
+  DynamicPlaceholderTextUtil_ExpandPlaceholders,
+} from './dynamic-placeholder-text-util';
+import { GetMapNameHandleAquaHideout } from './decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
@@ -178,6 +184,66 @@ const SUMMARY_TEXT_COLOR: Record<number, readonly number[]> = {
 };
 let _infoWindowIds: number[] = [];
 
+// 1:1 décomp `sMemoNatureTextColor` / `sMemoMiscTextColor`
+// (pokemon_summary_screen.c:746-747). Control codes inline (placeholders 0/1).
+const S_MEMO_NATURE_TEXT_COLOR = '{COLOR LIGHT_RED}{SHADOW GREEN}';
+const S_MEMO_MISC_TEXT_COLOR = '{COLOR WHITE}{SHADOW DARK_GRAY}';
+
+// 1:1 décomp templates Mémo Dresseur FR (strings.c:518-525). Les
+// {DYNAMIC 0..5} sont remplis par BufferMonTrainerMemo puis expandés ;
+// {LV_2} = glyphe EXTRA_SYMBOL "Niv." (charmap.txt:1020).
+const GTEXT_X_NATURE_MET_AT_YZ =
+  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\nrencontré au {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}\n({DYNAMIC 0}{DYNAMIC 4}{DYNAMIC 1}).';
+const GTEXT_X_NATURE_HATCHED_AT_YZ =
+  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\na éclos au {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}\n({DYNAMIC 0}{DYNAMIC 4}{DYNAMIC 1}).';
+const GTEXT_X_NATURE_MET_SOMEWHERE_AT =
+  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\nrencontré quelque part\nau {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}.';
+const GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT =
+  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\na éclos quelque part\nau {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}.';
+
+/** 1:1 décomp `BufferMonTrainerMemo` (pokemon_summary_screen.c:3116) +
+ *  `BufferNatureString` (:3173) + `GetMetLevelString` (:3180). Construit
+ *  gStringVar4 (= retour). Branche `DoesMonOTMatchOwner == TRUE` : nos mons
+ *  sont tous capturés/offerts au joueur en solo, OT = le joueur, jamais
+ *  échangés → cette branche EST le 1:1 pour 100% de nos mons. Les branches
+ *  Fateful/Trade/GBA du décomp restent fidèles mais inatteignables ici (on
+ *  ne produit pas de mon événement/échangé) — report honnête, zéro fake. */
+function _bufferMonTrainerMemo(mon: PokemonInstance): string {
+  DynamicPlaceholderTextUtil_Reset();
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, S_MEMO_NATURE_TEXT_COLOR);
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, S_MEMO_MISC_TEXT_COLOR);
+  // BufferNatureString : ph2 = gNatureNamePointers[nature], ph5 = "".
+  // nature = GetNatureFromPersonality(personality) = personality % NUM_NATURES.
+  const natureIdx = (mon.personality ?? 0) % 25; // NUM_NATURES = 25
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, getNatureNameByIndex(natureIdx));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(5, ''); // gText_EmptyString5
+
+  // GetMetLevelString : level = metLevel ; if (level==0) level=EGG_HATCH_LEVEL.
+  // metLevel undefined = save legacy (champ ajouté après) → traité comme
+  // "rencontré, niveau inconnu" : niveau affiché = EGG_HATCH_LEVEL(5) (=
+  // fallback propre du décomp lui-même), jamais "éclos" (qui serait faux).
+  const rawMetLevel = mon.metLevel;
+  let dispLevel = rawMetLevel ?? 0;
+  if (dispLevel === 0) dispLevel = 5; // EGG_HATCH_LEVEL (daycare.h:17)
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, String(dispLevel));
+
+  // metLocation < MAPSEC_NONE → vrai nom de zone (ph4) ; sinon "Somewhere".
+  const metLocation = mon.metLocation;
+  const locIsRealSection = !!metLocation && metLocation !== 'MAPSEC_NONE';
+  if (locIsRealSection) {
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(4, GetMapNameHandleAquaHideout(null, metLocation!));
+  }
+
+  // DoesMonOTMatchOwner == TRUE : metLevel==0 → œuf (Hatched), sinon Met.
+  let text: string;
+  if (rawMetLevel === 0) {
+    text = locIsRealSection ? GTEXT_X_NATURE_HATCHED_AT_YZ : GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT;
+  } else {
+    text = locIsRealSection ? GTEXT_X_NATURE_MET_AT_YZ : GTEXT_X_NATURE_MET_SOMEWHERE_AT;
+  }
+  return DynamicPlaceholderTextUtil_ExpandPlaceholders(text);
+}
+
 /** 1:1 décomp INFO page (non-egg) — increment 1 : OT name + OT ID.
  *  Windows = sPageInfoTemplate (pokemon_summary_screen.c:591).
  *  Texte = PrintMonOTName / PrintMonOTID (coords/colors 1:1).
@@ -201,10 +267,14 @@ function _printInfoPageText(): void {
   const otColor = gameState.gender === 'MALE' ? SUMMARY_TEXT_COLOR[5] : SUMMARY_TEXT_COLOR[6];
   AddTextPrinterParameterized3(otWin, FONT_NORMAL, otX, 1, otColor, TEXT_SKIP_DRAW, gameState.playerName);
 
-  // 1:1 PrintMonOTID : gText_IDNumber2 + OTID 5-chiffres leading-zeros,
-  // right-aligné offset 56, @(xPos,1) color1. {NO}{ID} = glyphe FR spécial →
-  // label "Nᵒ" + la DONNÉE zero-paddée (1:1) ; glyphe exact = cosmétique A/B.
-  const idStr = 'Nᵒ' + String((gameState.trainerId ?? 0) % 100000).padStart(5, '0');
+  // 1:1 PrintMonOTID (pokemon_summary_screen.c:3093) :
+  //   ConvertIntToDecimalStringN(StringCopy(gStringVar1, gText_IDNumber2),
+  //     (u16)OTID, STR_CONV_MODE_LEADING_ZEROS, 5);
+  //   xPos = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar1, 56);
+  // gText_IDNumber2 = "{NO}{ID}" (strings.c:213) = 2 glyphes EXTRA_SYMBOL
+  // (charmap.txt:1022-1023) → rendus 1:1 maintenant que le subsystème
+  // extra-symbol existe. (u16)OTID = trainerId & 0xFFFF, 5-chiffres leading-0.
+  const idStr = '{NO}{ID}' + String((gameState.trainerId ?? 0) & 0xFFFF).padStart(5, '0');
   const idXPos = GetStringRightAlignXOffset(idStr, 56);
   AddTextPrinterParameterized3(idWin, FONT_NORMAL, idXPos, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, idStr);
 
@@ -231,9 +301,23 @@ function _printInfoPageText(): void {
   AddTextPrinterParameterized3(abWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, ab.name);
   AddTextPrinterParameterized3(abWin, FONT_NORMAL, 0, 17, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, ab.description);
 
+  // Incr.3 — 1:1 BufferMonTrainerMemo + PrintMonTrainerMemo
+  // (pokemon_summary_screen.c:3116/3168). PSS_DATA_WINDOW_INFO_MEMO
+  // (tile 11,14 w18 h6 pal6 bb561 ; bb561 = FR diff). décomp :
+  //   PrintTextOnWindow(memoWin, gStringVar4, 0, 1, 0, 0)
+  //   = AddTextPrinterParameterized4(., FONT_NORMAL, 0, 1, ls=0,
+  //     sTextColors[0], speed=0, gStringVar4). Les {COLOR}/{SHADOW} inline
+  //   du template overrident la couleur de base par segment (nature rouge).
+  const memoWin = AddWindow({ bg: 0, tilemapLeft: 11, tilemapTop: 14, width: 18, height: 6, paletteNum: 6, baseBlock: 561 });
+  _infoWindowIds.push(memoWin);
+  FillWindowPixelBuffer(memoWin, 0);
+  const memoStr = _bufferMonTrainerMemo(mon);
+  AddTextPrinterParameterized3(memoWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, memoStr);
+
   PutWindowTilemap(otWin); CopyWindowToVram(otWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(idWin); CopyWindowToVram(idWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(abWin); CopyWindowToVram(abWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(memoWin); CopyWindowToVram(memoWin, 3 /* COPYWIN_FULL */);
 }
 
 function _freeSummary(): void {

@@ -2,8 +2,11 @@
 /**
  * extract-latfont.mjs
  * --------------------
- * Extrait les glyphs des fonts latines en JSON `{ <fontName>: number[256][128] }`.
- * Chaque glyph = 8 cols × 16 rows = 128 pixels, value = idx 0-3 du PNG indexed.
+ * Extrait les glyphs des fonts latines en JSON `{ <fontName>: number[N][256] }`
+ * où N = nombre de glyphs du PNG (512 pour latin_*.png = 16×32 cells, dont
+ * 0x100-0x1FF = EXTRA_SYMBOL `{LV_2}` `{NO}` `{PP}` `{ID}` etc.).
+ * Chaque glyph = 16 cols × 16 rows = 256 pixels, value = idx 0-3 du PNG indexed
+ * (cell complète 1:1 décomp ; les glyphs ≤8px n'utilisent que les cols gauches).
  *
  * Pourquoi : le décomp consomme `latin_*.png` au format `.latfont` 2bpp, où :
  *   - 0 = BG (transparent au render via TextPrinter)
@@ -40,7 +43,13 @@ const FONTS = {
 const CELL_W = 16;
 const CELL_H = 16;
 const COLS = 16;
-const GLYPH_W = 8;   // largeur effective glyph (8 cols gauches du cell)
+// 1:1 décomp `DecompressGlyph_Normal` (text.c:1867-1881) : pour width > 8 le
+// glyph occupe les 16 cols du cell (4 tiles 8×8 : topL/topR/botL/botR), pas
+// seulement 8 (cas ≤8). Les EXTRA_SYMBOL `{LV_2}`(w10) `{NO}`(w10) `{PP}` …
+// sont > 8 px → extraire 8 cols les coupait ("N°ID serré", "N.5 cassé").
+// On extrait les 16 cols : les chars étroits (≤8) ont les cols 8-15 vides et
+// le blit ne lit que `px < glyphW` → rendu identique pour eux (zéro régression).
+const GLYPH_W = 16;  // largeur cell complète (1:1 font 16×16)
 const GLYPH_H = 16;
 
 function extractFont(pngPath) {
@@ -71,8 +80,17 @@ function extractFont(pngPath) {
   const H = png.height;
   const data = png.data;
 
+  // 1:1 décomp text.c:1853-1881 `DecompressGlyph_Normal` : l'accès glyph est
+  // LINÉAIRE (`gFontNormalLatinGlyphs + 0x20 * glyphId`), et le render des
+  // EXTRA_SYMBOL (charmap.txt:1015-1086, `{LV_2}` `{NO}` `{PP}` `{ID}` etc.)
+  // se fait via `currChar = *str | 0x100` (text.c:1110) → glyphId 0x100..0x1FF.
+  // Les latin_*.png font 256×512 = 16 cols × 32 rows = 512 glyphs : les 256
+  // premiers = ASCII/accents, 256-511 = extra-symbols. On extrait TOUTE la
+  // hauteur du png (pas un cap à 256) sinon `{LV_2}`/`{NO}` sont absents.
+  const GLYPH_COUNT = Math.floor(W / CELL_W) * Math.floor(H / CELL_H);
+
   const glyphs = [];
-  for (let byte = 0; byte < 256; byte++) {
+  for (let byte = 0; byte < GLYPH_COUNT; byte++) {
     const col = byte % COLS;
     const row = Math.floor(byte / COLS);
     const x0 = col * CELL_W;
@@ -122,7 +140,7 @@ for (const [name, file] of Object.entries(FONTS)) {
     continue;
   }
   out[name] = extractFont(fp);
-  console.log(`[extract-latfont] ${name}: 256 glyphs × 128 pixels`);
+  console.log(`[extract-latfont] ${name}: ${out[name].length} glyphs × ${out[name][0]?.length ?? 0} pixels`);
 }
 
 mkdirSync(dirname(OUT), { recursive: true });
@@ -133,3 +151,10 @@ console.log(`[extract-latfont] écrit ${OUT}`);
 const sample = out.normal?.[171] || [];
 const row2 = sample.slice(2 * GLYPH_W, 3 * GLYPH_W);
 console.log(`[extract-latfont] check normal[171=!] row y=2 : ${JSON.stringify(row2)}`);
+// Sanity check extra-symbols : glyph 0x105 (LV_2) + 0x108 (NO) doivent être
+// non-vides (= au moins 1 pixel idx>0) sinon le png n'a pas la 2e moitié.
+for (const [gid, lbl] of [[0x105, 'LV_2'], [0x108, 'NO'], [0x106, 'PP']]) {
+  const g = out.normal?.[gid] || [];
+  const nz = g.filter((p) => p > 0).length;
+  console.log(`[extract-latfont] check normal[0x${gid.toString(16)}=${lbl}] : ${nz} px non-vides / ${g.length}`);
+}

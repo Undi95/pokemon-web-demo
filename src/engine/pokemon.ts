@@ -74,6 +74,14 @@ export interface PokemonInstance {
   /** Session 130 : gender dérivé 1:1 décomp `GetGenderFromSpeciesAndPersonality`.
    *  MON_MALE=0, MON_FEMALE=254, MON_GENDERLESS=255. */
   monGender?: 0 | 254 | 255;
+  /** 1:1 décomp `MON_DATA_MET_LEVEL` / `MON_DATA_MET_LOCATION` — set par
+   *  `CreateBoxMon` (pokemon.c:2258-2260) : `value = GetCurrentRegionMap
+   *  SectionId(); SetBoxMonData(MON_DATA_MET_LOCATION,&value); SetBoxMonData
+   *  (MON_DATA_MET_LEVEL,&level)`. metLevel = niveau au create (0 = œuf, rendu
+   *  EGG_HATCH_LEVEL=5). metLocation = MAPSEC string courant. Optional pour
+   *  back-compat des saves créées avant ce champ (rendu "Somewhere" 1:1). */
+  metLevel?: number;
+  metLocation?: string;
 }
 
 /** 1:1 décomp `MON_MALE` / `MON_FEMALE` / `MON_GENDERLESS` (include/pokemon.h). */
@@ -289,6 +297,15 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     personality,
     isShiny,
     monGender,
+    // 1:1 décomp `CreateBoxMon` (pokemon.c:2258-2260) :
+    //   value = GetCurrentRegionMapSectionId();
+    //   SetBoxMonData(boxMon, MON_DATA_MET_LOCATION, &value);
+    //   SetBoxMonData(boxMon, MON_DATA_MET_LEVEL, &level);
+    // GetCurrentRegionMapSectionId() = gMapHeader.regionMapSectionId (string
+    // MAPSEC_*). metLevel = `level` passé au create.
+    metLevel: level,
+    metLocation: (globalThis as { gMapHeader?: { regionMapSectionId?: string } })
+      .gMapHeader?.regionMapSectionId,
   };
 }
 

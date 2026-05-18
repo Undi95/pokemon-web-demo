@@ -26,6 +26,12 @@ import {
   RENDER_FINISH,
   RENDER_STATE_WAIT_WITH_DOWN_ARROW,
   LINE_HEIGHT,
+  EXT_CTRL_CODE_BEGIN,
+  CHAR_EXTRA_SYMBOL,
+  CHAR_NEWLINE,
+  CHAR_PROMPT_SCROLL,
+  CHAR_PROMPT_CLEAR,
+  EOS,
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
 import { getRuntime } from './decomp-globals';
@@ -98,12 +104,25 @@ export function preloadFontData(): Promise<void> {
  *  des choices "FAST" / "OFF" / "STÉRÉO" / etc. matche exactement le décomp. */
 export function GetStringWidth(str: string): number {
   ensureFontLoaded();
-  // Strip {NAME ...} control codes (= color changes, placeholders, etc.).
-  const visible = str.replace(/\{[^}]+\}/g, '');
-  const encoded = encodeStringForFont(visible, charmap!);
+  // 1:1 décomp text.c:GetStringWidth — on encode la string COMPLÈTE (pas un
+  // strip regex naïf) puis on walk les bytes : les EXT_CTRL (0xFC) = 0 px
+  // (3 bytes), les EXTRA_SYMBOL (0xF9) = glyphWidths[0x100|sym] (2 bytes,
+  // cf. text.c:1454-1456 `func(*++str | 0x100)`), le reste = glyphWidths[b].
+  // Avant : `{NO}`/`{LV_2}` étaient stripés → width 0 → right-align ID faux.
+  const encoded = encodeStringForFont(str, charmap!);
   let width = 0;
   for (let i = 0; i < encoded.length; i++) {
-    width += glyphWidths![encoded[i]] ?? 0;
+    const b = encoded[i];
+    if (b === EOS) break;
+    if (b === EXT_CTRL_CODE_BEGIN) { i += 2; continue; } // BEGIN+sub+param = 0 px
+    if (b === CHAR_EXTRA_SYMBOL) {
+      const sym = encoded[i + 1] ?? 0;
+      width += glyphWidths![0x100 | sym] ?? 0;
+      i += 1;
+      continue;
+    }
+    if (b === CHAR_NEWLINE || b === CHAR_PROMPT_SCROLL || b === CHAR_PROMPT_CLEAR) continue;
+    width += glyphWidths![b] ?? 0;
   }
   return width;
 }

@@ -41,6 +41,25 @@ export const CHAR_PROMPT_CLEAR = 0xFB;
 export const EXT_CTRL_CODE_BEGIN = 0xFC;
 export const EOS = 0xFF;
 
+/** 1:1 décomp include/constants/characters.h:172-174 */
+export const CHAR_DYNAMIC = 0xF7;
+export const CHAR_KEYPAD_ICON = 0xF8;
+export const CHAR_EXTRA_SYMBOL = 0xF9;
+
+/** EXTRA_SYMBOL glyphs (1:1 décomp `charmap.txt:1015-1086`). Le render fait
+ *  `currChar = symByte | 0x100` (text.c:1110) → glyph index 0x100..0x1FF dans
+ *  la latfont (= 2e moitié du png 256×512, extraite par extract-latfont.mjs).
+ *  Encodés `{NAME}` dans nos strings (= analogue au `{LV_2}` du décomp FR
+ *  `gText_XNatureMetAtYZ`). Sous-set texte (F9 00-17) + emojis (F9 D0-FE). */
+export const EXTRA_SYMBOL: Readonly<Record<string, number>> = Object.freeze({
+  UP_ARROW_2: 0x00, DOWN_ARROW_2: 0x01, LEFT_ARROW_2: 0x02, RIGHT_ARROW_2: 0x03,
+  PLUS: 0x04, LV_2: 0x05, PP: 0x06, ID: 0x07, NO: 0x08, UNDERSCORE: 0x09,
+  CIRCLE_1: 0x0A, CIRCLE_2: 0x0B, CIRCLE_3: 0x0C, CIRCLE_4: 0x0D, CIRCLE_5: 0x0E,
+  CIRCLE_6: 0x0F, CIRCLE_7: 0x10, CIRCLE_8: 0x11, CIRCLE_9: 0x12,
+  ROUND_LEFT_PAREN: 0x13, ROUND_RIGHT_PAREN: 0x14, CIRCLE_DOT: 0x15,
+  TRIANGLE: 0x16, BIG_MULT_X: 0x17,
+});
+
 // EXT_CTRL_CODE sub-codes (cf. include/characters.h)
 export const EXT_CTRL_CODE_COLOR = 0x01;
 export const EXT_CTRL_CODE_HIGHLIGHT = 0x02;
@@ -269,12 +288,15 @@ export function fillWindowPixelRect(w: Window, idx: number, x: number, y: number
  * Cf. décomp `DecompressGlyphTile` (text.c:526) + `GenerateFontHalfRowLookupTable`
  * (text.c:363) qui font équivalent via une LUT 0x51 entries pour packing 4bpp.
  *
- * @param glyphPixels Array 128 = 8 cols × 16 rows = 128 idx (depuis latfont.json[byte])
+ * @param glyphPixels Array 256 = 16 cols × 16 rows = 256 idx (depuis latfont.json[byte]).
+ *                   1:1 décomp : la cell font est 16×16 ; les glyphs ≤8px
+ *                   n'utilisent que les cols gauches, les EXTRA_SYMBOL larges
+ *                   (`{NO}` `{LV_2}` w10) utilisent jusqu'à 16 cols.
  * @param dstX,dstY  Position dans pixelBuffer (origin glyph top-left)
- * @param glyphW     Largeur effective glyph (depuis widths[byte], typiquement 3-9 px)
- *                   Les pixels au-delà de glyphW sont skipped (le glyph PNG est
- *                   stocké en cell 8 wide mais les chars étroits comme "!" n'utilisent
- *                   que les 4 premières cols par exemple).
+ * @param glyphW     Largeur effective glyph (depuis widths[byte] = 1:1
+ *                   gFontNormalLatinGlyphWidths). Le blit ne lit que
+ *                   `px < glyphW` → stride 16 sans toucher au rendu des
+ *                   chars étroits (zéro régression).
  */
 export function blitGlyphToWindow(
   w: Window,
@@ -286,7 +308,7 @@ export function blitGlyphToWindow(
   bgColor: number,
   shadowColor: number,
 ): void {
-  const GLYPH_W = 8;
+  const GLYPH_W = 16; // stride 1:1 cell font 16×16 (cf. extract-latfont.mjs)
   for (let py = 0; py < 16; py++) {
     const rowY = dstY + py;
     if (rowY < 0 || rowY >= w.heightPx) continue;
@@ -455,6 +477,16 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
             i = closeIdx + 1;
             continue;
           }
+        }
+        // 1:1 décomp : EXTRA_SYMBOL `{LV_2}` `{NO}` `{PP}` `{ID}` `{PLUS}` etc.
+        // (charmap.txt:1015-1038). Encodé `CHAR_EXTRA_SYMBOL(0xF9) + symByte`,
+        // rendu glyph `symByte | 0x100` (text.c:1110). Sans ça `{LV_2}`/`{NO}`
+        // tombaient dans le skip silencieux → "N." / "№" absents du Mémo/ID.
+        const sym = EXTRA_SYMBOL[inner as keyof typeof EXTRA_SYMBOL];
+        if (sym !== undefined) {
+          bytes.push(CHAR_EXTRA_SYMBOL, sym);
+          i = closeIdx + 1;
+          continue;
         }
       }
       // Inconnu : skip silencieusement (déjà processed par substitutePlaceholders ou non supporté)
@@ -704,6 +736,38 @@ export function runTextPrinter(printer: TextPrinter): number {
       // pour PLAY_BGM (5 bytes), COLOR_HIGHLIGHT_SHADOW (5 bytes), etc.
       printer.currentChar += 3;
       continue;
+    }
+
+    // 1:1 décomp text.c:1110-1112 `case CHAR_EXTRA_SYMBOL` :
+    //   currChar = *currentChar | 0x100; currentChar++;
+    // → render glyph 0x100|symByte (extra-symbol = 2e moitié de la latfont).
+    // Largeur = gFontNormalLatinGlyphWidths[glyphId] (text.c:1868). Avance de
+    // 2 bytes (CHAR_EXTRA_SYMBOL + symByte). 1 glyph = 1 RENDER_PRINT (idem
+    // char normal). Débloque `{LV_2}` (Mémo) + `{NO}` (ID) + `{PP}` (pages).
+    if (byte === CHAR_EXTRA_SYMBOL) {
+      const symByte = printer.encodedString[printer.currentChar + 1] ?? 0;
+      const exGlyphId = 0x100 | symByte;
+      const exGlyph = printer.glyphData[exGlyphId];
+      const exGlyphW = printer.glyphWidths[exGlyphId] || 3;
+      if (exGlyph) {
+        blitGlyphToWindow(
+          printer.window,
+          exGlyph,
+          printer.currentX,
+          printer.currentY,
+          exGlyphW,
+          printer.fgColor,
+          printer.bgColor,
+          printer.shadowColor,
+        );
+      }
+      printer.currentX += exGlyphW + printer.letterSpacing;
+      printer.currentChar += 2;
+      if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
+      if (printer.textSpeed > 0) {
+        printer.delayCounter = printer.textSpeed;
+      }
+      return RENDER_PRINT;
     }
 
     // Char normal : blit glyph + advance cursor
