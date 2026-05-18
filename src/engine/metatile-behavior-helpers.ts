@@ -111,6 +111,16 @@ export function MetatileBehavior_IsTallGrass(behavior: number): boolean {
 export function MetatileBehavior_IsLongGrass(behavior: number): boolean {
   return behavior === ENUM_MB_0.MB_LONG_GRASS;
 }
+/** 1:1 décomp `MetatileBehavior_IsLongGrass_Duplicate` (metatile_behavior.c:1380).
+ *  Doublon littéral de MetatileBehavior_IsLongGrass dans le décomp (= utilisé
+ *  par FixLongGrassMetatilesWindowTop) — porté tel quel pour rester 1:1. */
+export function MetatileBehavior_IsLongGrass_Duplicate(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_LONG_GRASS;
+}
+/** 1:1 décomp `MetatileBehavior_IsLongGrassSouthEdge` (metatile_behavior.c:1388). */
+export function MetatileBehavior_IsLongGrassSouthEdge(behavior: number): boolean {
+  return behavior === ENUM_MB_0.MB_LONG_GRASS_SOUTH_EDGE;
+}
 /** 1:1 décomp `MetatileBehavior_IsShortGrass`. */
 export function MetatileBehavior_IsShortGrass(behavior: number): boolean {
   return behavior === ENUM_MB_0.MB_SHORT_GRASS;

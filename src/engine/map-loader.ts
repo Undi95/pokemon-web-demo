@@ -50,6 +50,61 @@ import type { DecompRuntime } from './decomp-runtime';
 import { LoadBgTiles, LoadPalette } from './decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from './gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset-anims';
+// Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
+// utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
+import { GetSaveBlock1 } from './save-system';
+import {
+  MetatileBehavior_IsLongGrass_Duplicate,
+  MetatileBehavior_IsLongGrassSouthEdge,
+} from './metatile-behavior-helpers';
+import {
+  METATILE_General_Grass,
+  METATILE_Fortree_LongGrass_Root,
+  METATILE_Fortree_SecretBase_LongGrass_BottomLeft,
+  METATILE_Fortree_SecretBase_LongGrass_BottomMid,
+  METATILE_Fortree_SecretBase_LongGrass_BottomRight,
+  METATILE_Fortree_SecretBase_LongGrass_TopLeft,
+  METATILE_Fortree_SecretBase_LongGrass_TopMid,
+  METATILE_Fortree_SecretBase_LongGrass_TopRight,
+  METATILE_SecretBase_SandOrnament_Top,
+  METATILE_SecretBase_SandOrnament_TopWall,
+  METATILE_SecretBase_SandOrnament_Base1,
+  METATILE_SecretBase_BreakableDoor_TopClosed,
+  METATILE_SecretBase_BreakableDoor_BottomClosed,
+} from './decomp-data/auto/include/constants/metatile_labels-data';
+
+// ─── Hook registry RunOnLoadMapScript (HOISTÉ — anti-TDZ) ───────────────────
+//
+// Set par script-runtime.ts (qui sait parser/run les map_scripts entries) ;
+// map-loader évite l'import direct via ce registre. ⚠️ DOIT être déclaré ICI,
+// avant TOUT autre import lourd : étape 5 SAVE-SYSTEM-1TO1 a ajouté des imports
+// (save-system, metatile-behavior-helpers) qui changent l'ordre d'init du cycle
+// map-loader↔script-runtime ; script-runtime appelle `setOnLoadMapScriptHook`
+// à son top-level PENDANT l'évaluation de map-loader. Si le `let` était plus
+// bas → ReferenceError TDZ « Cannot access '_runOnLoadMapScriptHook' before
+// initialization » → tout le bundle crash au boot. Hoisté = initialisé tôt.
+// ⚠️ `var` (PAS `let`) volontaire : ESM hoiste `var` et l'initialise à
+// `undefined` AU DÉBUT de l'évaluation du module, AVANT que la chaîne d'imports
+// (qui re-entre map-loader via le cycle script-runtime/field-camera et appelle
+// ces setters à leur top-level) ne s'exécute. Avec `let`, la liaison reste en
+// TDZ tant que sa ligne n'a pas tourné → ReferenceError au boot (étape 5 a
+// ajouté des imports qui ré-ordonnent le cycle). `var` = registry-hook
+// tolérant aux cycles, 0 changement de comportement runtime.
+// eslint-disable-next-line no-var
+var _runOnLoadMapScriptHook: (() => void) | null = null;
+export function setOnLoadMapScriptHook(fn: () => void): void {
+  _runOnLoadMapScriptHook = fn;
+}
+
+/** Phase 4.10 hook registry : déclenche un BG redraw après que
+ *  `InitBackupMapLayoutConnections` ait été re-run (= TransitionToConnection
+ *  retry async). Hook setté par field-camera.ts:696 à son top-level → `var`
+ *  hoisté (même anti-TDZ que ci-dessus). */
+// eslint-disable-next-line no-var
+var _redrawWholeMapViewHook: (() => void) | null = null;
+export function setRedrawWholeMapViewHook(fn: () => void): void {
+  _redrawWholeMapViewHook = fn;
+}
 
 // ─── Constants 1:1 décomp include/fieldmap.h ────────────────────────────────
 
@@ -661,23 +716,16 @@ export async function loadMapByName(mapId: string): Promise<MapHeader> {
 }
 
 // ─── 1:1 décomp fieldmap.c InitMap pipeline ─────────────────────────────────
+// (_runOnLoadMapScriptHook + setOnLoadMapScriptHook sont HOISTÉS en tête de
+//  module — cf. juste après les imports — pour éviter une TDZ : étape 5 a
+//  ajouté des imports (save-system/metatile-behavior-helpers) qui ré-ordonnent
+//  le cycle map-loader↔script-runtime, et script-runtime appelle
+//  setOnLoadMapScriptHook PENDANT l'init de map-loader.)
 
-/** Hook registry pour `RunOnLoadMapScript`. Set par script-runtime.ts qui sait
- *  parser et run les map_scripts entries. Map-loader évite ce circular import
- *  via lookup ici. */
-let _runOnLoadMapScriptHook: (() => void) | null = null;
-export function setOnLoadMapScriptHook(fn: () => void): void {
-  _runOnLoadMapScriptHook = fn;
-}
-
-/** Phase 4.10 hook registry : pour declencher un BG redraw après que
- *  `InitBackupMapLayoutConnections` ait été re-run (= TransitionToConnection
- *  retry async quand connections étaient pas cached). Hook setté par scene/
- *  field-camera (= circular import évité). */
-let _redrawWholeMapViewHook: (() => void) | null = null;
-export function setRedrawWholeMapViewHook(fn: () => void): void {
-  _redrawWholeMapViewHook = fn;
-}
+// _redrawWholeMapViewHook + setRedrawWholeMapViewHook : HOISTÉS en tête de
+// module (cf. juste après les imports), même raison TDZ que
+// _runOnLoadMapScriptHook (field-camera.ts:696 appelle setRedrawWholeMapViewHook
+// à son top-level pendant l'init du cycle).
 
 /** 1:1 décomp `InitMap()` (fieldmap.c:71-76).
  *  Init layout data + run on-load script + secret base entrance metatiles.
@@ -1122,22 +1170,33 @@ export function TransitionToConnection(connection: MapConnection): boolean {
 //
 // Source vérité : `D:/Projet 1/decomps/pokeemeraude/src/fieldmap.c:428-566`.
 
-/** 1:1 décomp `gSaveBlock1Ptr->mapView` (struct SaveBlock1, u16[256]).
- *  Snapshot temporaire entre SaveMapView (= avant cross) et MoveMapViewToBackup
- *  (= après cross). Cleared par ClearSavedMapView après usage. Notre impl
- *  module-local plutôt que SaveBlock1 struct car on n'a pas SaveBlock1
- *  structuré (= sémantique identique : pure scratch buffer). */
-const _savedMapView = new Uint16Array(0x100);
+/** 1:1 décomp `gSaveBlock1Ptr->mapView` (struct SaveBlock1 +0x34, u16[0x100]).
+ *
+ *  ⚠️ Étape 5 SAVE-SYSTEM-1TO1 : c'est LE MÊME array que le décomp utilise pour
+ *  ses DEUX usages (= `mapView = gSaveBlock1Ptr->mapView;` aux 3 sites
+ *  fieldmap.c:434/479/523) :
+ *    (a) scratch transition connexion : SaveMapView→MoveMapViewToBackup→Clear ;
+ *    (b) persistance save : InitSave (start_menu.c:879) → SaveMapView remplit le
+ *        champ → sérialisé par le moteur secteurs (étape 3) → reload →
+ *        InitMapFromSavedGame → LoadSavedMapView le consomme → ClearSavedMapView.
+ *  Avant l'étape 5 on avait un buffer module-local séparé (= la save ne portait
+ *  JAMAIS les tiles). Maintenant unifié sur `GetSaveBlock1().mapView` (number[256]
+ *  sérialisable) = strictement 1:1 décomp (un seul array, deux usages). */
+function _mapView(): number[] {
+  return GetSaveBlock1().mapView;
+}
 
 /** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443).
  *  Copy MAP_OFFSET_H × MAP_OFFSET_W metatiles depuis sBackupMapData (= camera
- *  area + 2 rows top/bottom buffer + 0 col buffer) vers _savedMapView.
+ *  area + 2 rows top/bottom buffer + 0 col buffer) vers gSaveBlock1Ptr->mapView.
  *
  *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` (= player logical coords). Nos
  *  conventions post-refactor : pos.x = `_camPos.x` et pos.y = `_camPos.y`
- *  (= 1:1 décomp). On passe explicit car pas de gSaveBlock1Ptr global. */
+ *  (= 1:1 décomp). On passe explicit car pas de gSaveBlock1Ptr global ; les
+ *  callers (field-camera cross-border, load_save PreSaveSyncBlocks) passent la
+ *  même valeur logique que `gSaveBlock1Ptr->pos`. */
 export function SaveMapView(posX: number, posY: number): void {
-  const mapView = _savedMapView;
+  const mapView = _mapView();
   const width = gBackupMapLayout.width;
   let mapViewIdx = 0;
   for (let i = posY; i < posY + MAP_OFFSET_H; i++) {
@@ -1147,10 +1206,29 @@ export function SaveMapView(posX: number, posY: number): void {
   }
 }
 
+/** 1:1 décomp `SavedMapViewIsEmpty(void)` (fieldmap.c:445-465).
+ *  OR de toutes les entrées ; retourne TRUE ssi marker == 0.
+ *
+ *  ⚠️ Le décomp `#ifndef UBFIX` itère `i < 0x200` sur un array de 0x100 (= BUG
+ *  de lecture HORS-BORNES de la mémoire EWRAM adjacente à mapView). C'est de
+ *  l'UB C INTRADUISIBLE en JS : il n'y a aucune « mémoire adjacente » définie à
+ *  répliquer (≠ le bug RNG qui est DÉTERMINISTE et reste gardé 1:1). On porte
+ *  donc la branche `#else UBFIX` du décomp LUI-MÊME (= `ARRAY_COUNT` = 0x100).
+ *  Ce n'est PAS une déviation gameplay : SaveMapView n'écrit que 210 entrées et
+ *  ClearSavedMapView remet tout à 0, donc [0..0x200) et [0..0x100) donnent le
+ *  même verdict en pratique. Documenté honnêtement (WORKING-MODE règle 2). */
+function SavedMapViewIsEmpty(): boolean {
+  const mapView = _mapView();
+  let marker = 0;
+  for (let i = 0; i < 0x100; i++) marker |= mapView[i];
+  return marker === 0;
+}
+
 /** 1:1 décomp `ClearSavedMapView(void)` (fieldmap.c:467-470).
- *  CpuFill16(0, mapView, sizeof(mapView)). */
+ *  CpuFill16(0, gSaveBlock1Ptr->mapView, sizeof(...)) = 0x100 u16. */
 export function ClearSavedMapView(): void {
-  _savedMapView.fill(0);
+  const mapView = _mapView();
+  for (let i = 0; i < 0x100; i++) mapView[i] = 0;
 }
 
 /** 1:1 décomp `MoveMapViewToBackup(u8 direction)` (fieldmap.c:512-566).
@@ -1168,7 +1246,7 @@ export function ClearSavedMapView(): void {
  *
  *  ClearSavedMapView() called automatiquement à la fin (= 1:1 décomp). */
 export function MoveMapViewToBackup(direction: number, posX: number, posY: number): void {
-  const mapView = _savedMapView;
+  const mapView = _mapView();
   const width = gBackupMapLayout.width;
   let r9 = 0;
   let r8 = 0;
@@ -1217,6 +1295,179 @@ export function MoveMapViewToBackup(direction: number, posX: number, posY: numbe
     }
   }
   ClearSavedMapView();
+}
+
+// ─── 1:1 décomp LoadSavedMapView (= reprise « même état » des tiles autour) ───
+//
+// Étape 5 SAVE-SYSTEM-1TO1. Au reload d'une save, InitMapFromSavedGame appelle
+// LoadSavedMapView qui ré-injecte les 14×15 metatiles sauvegardés (= ce que le
+// player voyait au moment du save) dans le sBackupMapData de la map fraîchement
+// chargée, AVANT RunOnLoadMapScript. Source vérité : fieldmap.c:472-510 +
+// fieldmap.c:827-840 (SkipCopying) + fldeff_misc.c:1180 (IsLargeBreakable) +
+// fldeff_cut.c:394-417/592-639 (LongGrass window fixups).
+
+/** 1:1 décomp `CurMapIsSecretBase(void)` (secret_base.c).
+ *  Le subsystem Secret Base est DÉFÉRÉ (cf. mémoire opcodes-backing-work-todo).
+ *  Aucune map supportée par le port n'est une secret base → retourne FALSE =
+ *  comportement STRICTEMENT 1:1 pour 100 % des maps jouables. Quand le
+ *  subsystem Secret Base sera porté, remplacer par le vrai check
+ *  `VarGet(VAR_CURRENT_SECRET_BASE) != 0 && ...` (honnête, WORKING-MODE r.2). */
+function CurMapIsSecretBase(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `IsLargeBreakableDecoration(metatileId, checkBase)` (fldeff_misc
+ *  .c:1180-1201). Hors secret base → FALSE immédiat (1:1). */
+function IsLargeBreakableDecoration(metatileId: number, checkBase: boolean): boolean {
+  if (!CurMapIsSecretBase()) return false;
+  if (!checkBase) {
+    if (metatileId === METATILE_SecretBase_SandOrnament_Top || metatileId === METATILE_SecretBase_SandOrnament_TopWall) return true;
+    if (metatileId === METATILE_SecretBase_BreakableDoor_TopClosed) return true;
+  } else {
+    if (metatileId === METATILE_SecretBase_SandOrnament_Base1) return true;
+    if (metatileId === METATILE_SecretBase_BreakableDoor_BottomClosed) return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `SkipCopyingMetatileFromSavedMap(u16 *mapBlock, u16 mapWidth,
+ *  u8 yMode)` (fieldmap.c:827-840). Le décomp passe un POINTEUR sur la cellule
+ *  sBackupMapData ; on passe l'index linéaire équivalent (mêmes décalages
+ *  ±mapWidth). yMode 0xFF → FALSE (= toujours copier). */
+function SkipCopyingMetatileFromSavedMap(blockIdx: number, mapWidth: number, yMode: number): boolean {
+  if (yMode === 0xFF) return false;
+  if (yMode === 0) blockIdx -= mapWidth;
+  else blockIdx += mapWidth;
+  if (IsLargeBreakableDecoration(UNPACK_METATILE(sBackupMapData[blockIdx]), yMode !== 0) === true) return true;
+  return false;
+}
+
+// 1:1 décomp `enum { LONG_GRASS_NONE, FIELD, BASE_LEFT, BASE_CENTER, BASE_RIGHT }`
+// (fldeff_cut.c:394-401).
+const LONG_GRASS_NONE = 0;
+const LONG_GRASS_FIELD = 1;
+const LONG_GRASS_BASE_LEFT = 2;
+const LONG_GRASS_BASE_CENTER = 3;
+const LONG_GRASS_BASE_RIGHT = 4;
+
+/** 1:1 décomp `GetLongGrassCaseAt(s16 x, s16 y)` (fldeff_cut.c:403-417). */
+function GetLongGrassCaseAt(x: number, y: number): number {
+  const metatileId = MapGridGetMetatileIdAt(x, y);
+  if (metatileId === METATILE_General_Grass) return LONG_GRASS_FIELD;
+  else if (metatileId === METATILE_Fortree_SecretBase_LongGrass_TopLeft) return LONG_GRASS_BASE_LEFT;
+  else if (metatileId === METATILE_Fortree_SecretBase_LongGrass_TopMid) return LONG_GRASS_BASE_CENTER;
+  else if (metatileId === METATILE_Fortree_SecretBase_LongGrass_TopRight) return LONG_GRASS_BASE_RIGHT;
+  else return LONG_GRASS_NONE;
+}
+
+/** 1:1 décomp `FixLongGrassMetatilesWindowTop(s16 x, s16 y)` (fldeff_cut.c:592). */
+function FixLongGrassMetatilesWindowTop(x: number, y: number): void {
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);
+  if (MetatileBehavior_IsLongGrass_Duplicate(metatileBehavior)) {
+    switch (GetLongGrassCaseAt(x, y + 1)) {
+      case LONG_GRASS_FIELD:
+        MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_LongGrass_Root);
+        break;
+      case LONG_GRASS_BASE_LEFT:
+        MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_BottomLeft);
+        break;
+      case LONG_GRASS_BASE_CENTER:
+        MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_BottomMid);
+        break;
+      case LONG_GRASS_BASE_RIGHT:
+        MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_BottomRight);
+        break;
+    }
+  }
+}
+
+/** 1:1 décomp `FixLongGrassMetatilesWindowBottom(s16 x, s16 y)` (fldeff_cut.c
+ *  :615-639). */
+function FixLongGrassMetatilesWindowBottom(x: number, y: number): void {
+  if (MapGridGetMetatileIdAt(x, y) === METATILE_General_Grass) {
+    const metatileBehavior = MapGridGetMetatileBehaviorAt(x, y + 1);
+    if (MetatileBehavior_IsLongGrassSouthEdge(metatileBehavior)) {
+      const metatileId = MapGridGetMetatileIdAt(x, y + 1);
+      switch (metatileId) {
+        case METATILE_Fortree_LongGrass_Root:
+          MapGridSetMetatileIdAt(x, y + 1, METATILE_General_Grass);
+          break;
+        case METATILE_Fortree_SecretBase_LongGrass_BottomLeft:
+          MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_TopLeft);
+          break;
+        case METATILE_Fortree_SecretBase_LongGrass_BottomMid:
+          MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_TopMid);
+          break;
+        case METATILE_Fortree_SecretBase_LongGrass_BottomRight:
+          MapGridSetMetatileIdAt(x, y + 1, METATILE_Fortree_SecretBase_LongGrass_TopRight);
+          break;
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `LoadSavedMapView(void)` (fieldmap.c:472-510).
+ *  Si la save view n'est pas vide, ré-injecte les 14×15 metatiles sauvegardés
+ *  dans sBackupMapData (avec gestion yMode pour les decorations breakable +
+ *  fixups long-grass top/bottom), puis ClearSavedMapView.
+ *
+ *  Le décomp utilise `i` et `j` APRÈS les boucles : à la sortie de la double
+ *  boucle `for (i = y; i < y + MAP_OFFSET_H; i++)`, C a `i == y + MAP_OFFSET_H`
+ *  → reproduit exactement via `iAfter` dans le test du second loop. */
+export function LoadSavedMapView(): void {
+  const mapView = _mapView();
+  if (!SavedMapViewIsEmpty()) {
+    if (!gMapHeader) return;
+    const mapHeight = gMapHeader.mapLayout.height;
+    const width = gBackupMapLayout.width;
+    const x = GetSaveBlock1().pos.x;
+    const y = GetSaveBlock1().pos.y;
+    let mapViewIdx = 0;
+    let i = y;
+    for (i = y; i < y + MAP_OFFSET_H; i++) {
+      let yMode: number;
+      if (i === y && i !== 0) yMode = 0;
+      else if (i === y + MAP_OFFSET_H - 1 && i !== mapHeight - 1) yMode = 1;
+      else yMode = 0xFF;
+
+      for (let j = x; j < x + MAP_OFFSET_W; j++) {
+        const blockIdx = j + width * i;
+        if (!SkipCopyingMetatileFromSavedMap(blockIdx, width, yMode)) {
+          sBackupMapData[blockIdx] = mapView[mapViewIdx];
+        }
+        mapViewIdx++;
+      }
+    }
+    // 1:1 décomp : `i` vaut ici `y + MAP_OFFSET_H` (valeur post-boucle C).
+    const iAfter = i;
+    for (let j = x; j < x + MAP_OFFSET_W; j++) {
+      if (y !== 0) FixLongGrassMetatilesWindowTop(j, y - 1);
+      if (iAfter < mapHeight - 1) FixLongGrassMetatilesWindowBottom(j, y + MAP_OFFSET_H - 1);
+    }
+    ClearSavedMapView();
+  }
+}
+
+/** 1:1 décomp `InitMapFromSavedGame(void)` (fieldmap.c:78-86).
+ *  Variante d'InitMap utilisée UNIQUEMENT au resume d'une save (= décomp
+ *  CB2_ContinueSavedGame), JAMAIS sur un warp normal (= InitMap) → évite de
+ *  ré-injecter une mapView stale dans une autre map.
+ *
+ *  Ordre décomp STRICT (critique) : InitMapLayoutData → [SecretBase déférés] →
+ *  LoadSavedMapView → RunOnLoadMapScript → [TVScreens déféré]. LoadSavedMapView
+ *  DOIT précéder RunOnLoadMapScript (sinon les setmetatile du script ON_LOAD
+ *  seraient écrasés par la vue sauvegardée). */
+export function InitMapFromSavedGame(): void {
+  if (!gMapHeader) throw new Error('InitMapFromSavedGame: gMapHeader is null (call loadMapByName first)');
+  InitMapLayoutData(gMapHeader);
+  // InitSecretBaseAppearance(FALSE) + SetOccupiedSecretBaseEntranceMetatiles
+  //   (gMapHeader.events) : subsystem Secret Base DÉFÉRÉ (no-op 1:1 pour toutes
+  //   les maps supportées ; InitMap() marque déjà SetOccupied... TODO Phase 4.7
+  //   — cohérent, honnête WORKING-MODE r.2).
+  LoadSavedMapView();
+  if (_runOnLoadMapScriptHook) _runOnLoadMapScriptHook();
+  // UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height) :
+  //   subsystem TV DÉFÉRÉ (no-op 1:1 ; aucune TV sur les maps supportées).
 }
 
 /** Helper : prefetch les map headers des connexions immédiates d'une map.

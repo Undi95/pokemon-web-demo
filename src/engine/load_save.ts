@@ -34,6 +34,7 @@ import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
 import { gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent } from './object-events';
 import { gPlayerAvatar } from './player-avatar';
 import { GetCameraTopLeftCoords } from './field-camera';
+import { SaveMapView } from './map-loader';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 
@@ -302,12 +303,20 @@ export function PreSaveSyncBlocks(): void {
   //    Le décomp ROM update block1.pos via CameraMove() à chaque step ; notre
   //    web port pour pragmatisme sync au save (= une fois suffit).
   SyncPlayerPositionToBlock();
-  // 2. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents
+  // 2. SaveMapView (= 14×15 metatiles autour du player → block1.mapView).
+  //    1:1 décomp `InitSave` (start_menu.c:877-882) qui appelle SaveMapView()
+  //    AVANT le save dialog/write, et `Task_LinkFullSave` (save.c:996).
+  //    block1.mapView est ENSUITE sérialisé par le moteur secteurs (étape 3),
+  //    et restauré au resume via InitMapFromSavedGame → LoadSavedMapView.
+  //    pos = `gSaveBlock1Ptr->pos` (set juste au-dessus par
+  //    SyncPlayerPositionToBlock = même valeur logique que le décomp).
+  //    = LA pièce « reprendre dans le MÊME état (tiles autour) » de l'étape 5.
+  const block1 = GetSaveBlock1();
+  SaveMapView(block1.pos.x, block1.pos.y);
+  // 3. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents
   //    via CopyPartyAndObjectsToSave dans HandleSavingData).
   SavePlayerParty();
   SaveObjectEvents();
-  // Note : SaveMapView (= 256 metatiles snapshot) skipped pour MVP — sera
-  // ajouté quand on implémente cross-border map view restoration.
   // Note : SetContinueGameWarpStatusToDynamicWarp NOT called ici — le décomp
   //  binary save montre flag = 0 + continueGameWarp = zeros (= async clear
   //  timing). Resume use block1.location + block1.pos.

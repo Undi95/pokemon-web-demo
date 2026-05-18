@@ -22,6 +22,7 @@ import { exposeGbaGlobals } from '../engine/gba-global-scope';
 import {
   loadMapByName,
   InitMap,
+  InitMapFromSavedGame,
   CopyMapTilesetsToVram,
   LoadMapTilesetPalettes,
   flushOverworldTilemaps,
@@ -324,7 +325,11 @@ export class TestOverworldScene extends Phaser.Scene {
       await preloadBootData();
       const boot = decideBootMode();
       console.log(`[TestOverworld] boot mode = ${boot.mode} → ${boot.mapId} (${boot.x}, ${boot.y})`);
-      const header = await this.loadAndInitMap(boot.mapId, boot.x, boot.y, boot.facing);
+      // Étape 5 : resume save → InitMapFromSavedGame (LoadSavedMapView). Les
+      // autres modes (newgame/nointro) → InitMap normal (= 1:1 décomp).
+      const header = await this.loadAndInitMap(
+        boot.mapId, boot.x, boot.y, boot.facing, boot.mode === 'resume',
+      );
 
       // 1:1 décomp `SetVBlankCallback(VBlankCB_Overworld)`. Le simple fait
       // d'avoir un vblankCallback set fait que tickFixed.runOneFrame call
@@ -591,6 +596,7 @@ export class TestOverworldScene extends Phaser.Scene {
    */
   private async loadAndInitMap(
     mapId: string, spawnX: number, spawnY: number, spawnDir: number,
+    initFromSavedGame = false,
   ): Promise<MapHeader> {
     this.statusText?.setText(`Loading ${mapId}...`);
     const header = await loadMapByName(mapId);
@@ -608,7 +614,13 @@ export class TestOverworldScene extends Phaser.Scene {
     this.rt.SetGpuReg(REG_OFFSET_DISPCNT, 0);
 
     // 1:1 décomp `InitMap` (fieldmap.c) — copy map.bin + border to gBackupMapLayout.
-    InitMap();
+    // Étape 5 SAVE-SYSTEM-1TO1 : au RESUME d'une save (boot.mode === 'resume'),
+    // le décomp appelle `InitMapFromSavedGame` (= InitMap + LoadSavedMapView,
+    // fieldmap.c:78-86) à la place d'`InitMap`, pour ré-injecter les tiles
+    // sauvegardés autour du player (« reprendre dans le même état »). Sur un
+    // warp normal → InitMap seul (= 1:1, jamais de mapView stale ré-appliquée).
+    if (initFromSavedGame) InitMapFromSavedGame();
+    else InitMap();
 
     // 1:1 décomp `CopyMapTilesetsToVram` + `LoadMapTilesetPalettes` (fieldmap.c).
     CopyMapTilesetsToVram(header.mapLayout);
