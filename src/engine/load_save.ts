@@ -31,7 +31,10 @@ import {
   emptySaveBlock1,
 } from './save-blocks';
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
-import { gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent } from './object-events';
+import {
+  gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
+  SetObjectEventSpritePosToMapCoords,
+} from './object-events';
 import { gPlayerAvatar } from './player-avatar';
 import { GetCameraTopLeftCoords } from './field-camera';
 import { SaveMapView } from './map-loader';
@@ -122,6 +125,12 @@ function applySnapshotToObjectEvent(npc: ObjectEvent, snap: ObjectEventSnapshot)
   if (snap.movementType) npc.movementType = snap.movementType as string;
   npc.movementRangeX = snap.rangeX;
   npc.movementRangeY = snap.rangeY;
+  // FIX bug "pnj reset mais pas leur hitbox" : la collision lit currentCoords
+  // (restauré ci-dessus) mais le sprite est driven par worldX/Y → ré-ancrer
+  // le sprite à la pos restaurée (1:1 décomp SetSpritePosToMapCoords ; sinon
+  // sprite au template ≠ hitbox à la pos sauvée). Doit être APRÈS currentCoords
+  // + walkDirection (le helper coupe la marche résiduelle = NPC au repos).
+  SetObjectEventSpritePosToMapCoords(npc, npc.currentCoordsX, npc.currentCoordsY);
 }
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────

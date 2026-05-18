@@ -1448,6 +1448,43 @@ export function TrySpawnObjectEvents(rt: DecompRuntime): void {
   }
 }
 
+// ─── Re-anchor sprite pixel pos depuis coords logiques (resume save) ────────
+
+/** 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
+ *  Recalcule `npc.worldX/worldY` (= ancre pixel du sprite) depuis des coords
+ *  LOGIQUES tile (x,y), avec la MÊME formule que le spawn (object-events.ts
+ *  ~1205-1237 ; garder les deux synchronisés = 1:1).
+ *
+ *  ⚠️ Étape 5 SAVE-SYSTEM-1TO1 — fix bug "pnj reset mais pas leur hitbox" :
+ *  la collision NPC lit `currentCoords` (isOtherNpcAt:566) mais le sprite est
+ *  driven par `worldX/worldY` (UpdateObjectEvents:1506). Au resume d'une save,
+ *  applySnapshotToObjectEvent restaure `currentCoords` (→ hitbox à la pos
+ *  sauvée) mais PAS `worldX/worldY` → le sprite reste à la pos template
+ *  (= "reset" visuel) tandis que la hitbox est ailleurs. Ré-ancrer ici remet
+ *  sprite ET hitbox à la pos sauvée (1:1 décomp : LoadObjectEvents copie la
+ *  struct ENTIÈRE puis le sprite est repositionné depuis les coords). */
+export function SetObjectEventSpritePosToMapCoords(npc: ObjectEvent, x: number, y: number): void {
+  const cam = GetCameraTopLeftCoords();
+  const npcGBackupCol = x + MAP_OFFSET;
+  const npcGBackupRow = y + MAP_OFFSET;
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 + dx;
+  npc.worldY = (npcGBackupRow - cam.y) * 16 + dy;
+  // NPC restauré = au repos sur sa tile (pas mid-walk) : couper toute
+  // progression de marche résiduelle pour que UpdateObjectEvents le dessine
+  // statique à worldX/Y (= 1:1 spawn qui set walkFramesLeft=0/DIR_NONE).
+  npc.walkFramesLeft = 0;
+  npc.walkDirection = DIR_NONE;
+  npc.movementStep = 0;
+  npc.visualOffsetX = 0;
+  npc.visualOffsetY = 0;
+}
+
 // ─── Update sprite positions + frame each frame ────────────────────────────
 
 /** Update sprite.x/y selon worldX/Y stored at spawn + camera scroll, ET sprite
