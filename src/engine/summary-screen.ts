@@ -37,7 +37,8 @@ import {
 import { gameState } from './game-state';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
-  getMoveDescription, getContestMove, getContestEffect, getExperienceForLevel,
+  getMoveDescription, getContestMove, getContestEffect, getItemNameFr,
+  getExperienceForLevel,
 } from './data/game-data';
 import {
   DynamicPlaceholderTextUtil_Reset,
@@ -880,11 +881,11 @@ function _printInfoPageText(): void {
  * 1:1 décomp page SKILLS (`PrintSkillsPageText` :3301 + helpers)
  * ========================================================================== */
 
-function _itemNameFr(itemEnum: string): string {
-  // heldItem "" → AUCUN. Sinon nom lisible (résolution FR item = Phase 2 sac ;
-  // ici fallback honnête = enum sans préfixe, jamais de faux nom).
-  if (!itemEnum) return gText_None;
-  return itemEnum.replace(/^ITEM_/, '').replace(/_/g, ' ');
+function _itemNameFr(itemEnumOrDexId: string): string {
+  // 1:1 décomp PrintHeldItemName (:3346) : CopyItemName(item) =
+  // gItems[item].name (= nom FR, items.json). "" → gText_None.
+  if (!itemEnumOrDexId) return gText_None;
+  return getItemNameFr(itemEnumOrDexId) || itemEnumOrDexId;
 }
 
 function _printHeldItemName(): void {

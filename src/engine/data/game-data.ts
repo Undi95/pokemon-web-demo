@@ -74,6 +74,20 @@ export interface AbilityFR { description: string; }
 
 export interface ItemEffect { size: number; fields: Record<string, string>; }
 
+/** 1:1 décomp `gItems[]` (src/data/items.h) — extract-items.mjs →
+ *  items.json keyé par ITEM_* enum. `.name` = nom FR (décomp pokeemeraude
+ *  FR : "GRAIN MIRACL", "POTION", "HYPER BALL"…). Champs utiles Phase 2 sac. */
+export interface ItemData {
+  name: string;
+  price: number;
+  pocket: string;
+  type: string;
+  descriptionLabel?: string;
+  holdEffect?: string;
+  holdEffectParam?: number;
+  battleUsage?: string;
+}
+
 export interface TrainerData {
   partyFlags: string;
   trainerClass: string;
@@ -112,6 +126,8 @@ interface GameData {
   /** 1:1 décomp `gContestEffects[]` (contest_moves.h:2837) keyé par
    *  CONTEST_EFFECT_* — appeal/jam pour les cœurs CHARME/BLOCAGE résumé. */
   contestEffects: Record<string, { appeal: number; jam: number }>;
+  /** 1:1 décomp `gItems[]` keyé ITEM_* (items.json, 377 items, noms FR). */
+  itemsData: Record<string, ItemData>;
   evolutions: Record<string, Evolution[]>;
   itemEffects: Record<string, ItemEffect>;
   pokedexOrders: Record<string, string[]>;
@@ -136,7 +152,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, contestEffects, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     ] = await Promise.all([
       fetchJson<GameData['species']>('species-info.json'),
@@ -156,6 +172,7 @@ export function loadGameData(): Promise<void> {
       fetchJson<GameData['trainers']>('trainers.json'),
       fetchJson<GameData['contestMoves']>('contest-moves.json'),
       fetchJson<GameData['contestEffects']>('contest-effects.json'),
+      fetchJson<GameData['itemsData']>('items.json'),
       fetchJson<GameData['evolutions']>('evolutions.json'),
       fetchJson<GameData['itemEffects']>('item-effects.json'),
       fetchJson<GameData['pokedexOrders']>('pokedex-orders.json'),
@@ -166,7 +183,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, contestEffects, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     };
     // 1:1 décomp bridge : expose moves/species pour reverse-id lookups (= cache
@@ -302,6 +319,30 @@ export function getContestMove(moveId: string): ContestMove | undefined {
 /** 1:1 décomp `gContestEffects[effect]` — appeal/jam (cœurs résumé). */
 export function getContestEffect(effectName: string): { appeal: number; jam: number } | undefined {
   return ensureLoaded().contestEffects[effectName];
+}
+
+/** 1:1 décomp `gItems[item]` — items.json keyé ITEM_*. */
+export function getItemData(itemEnum: string): ItemData | undefined {
+  return ensureLoaded().itemsData[itemEnum];
+}
+
+let _itemDexIdToEnum: Record<string, string> | null = null;
+/** 1:1 décomp `CopyItemName(item)` = `gItems[item].name` (nom FR). Accepte
+ *  l'enum ITEM_X OU le dexId ("miracleseed", = itemEnumToDexId, format
+ *  PokemonInstance.heldItem). "" → "" (l'appelant gère gText_None). */
+export function getItemNameFr(itemEnumOrDexId: string): string {
+  if (!itemEnumOrDexId) return '';
+  const d = ensureLoaded();
+  if (itemEnumOrDexId.startsWith('ITEM_')) return d.itemsData[itemEnumOrDexId]?.name ?? itemEnumOrDexId;
+  if (!_itemDexIdToEnum) {
+    _itemDexIdToEnum = {};
+    for (const k of Object.keys(d.itemsData)) {
+      // = itemEnumToDexId (pokemon.ts) : ITEM_ retiré, lowercase, _ retirés.
+      _itemDexIdToEnum[k.replace(/^ITEM_/, '').toLowerCase().replace(/_/g, '')] = k;
+    }
+  }
+  const en = _itemDexIdToEnum[itemEnumOrDexId];
+  return en ? (d.itemsData[en]?.name ?? en) : itemEnumOrDexId;
 }
 
 export function getEvolutions(speciesId: string): Evolution[] {
