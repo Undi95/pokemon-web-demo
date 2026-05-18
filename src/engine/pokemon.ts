@@ -94,6 +94,9 @@ export interface PokemonInstance {
   /** 1:1 décomp `MON_DATA_IS_EGG` — œuf non éclos. createEggInstance le set.
    *  Optional = mons normaux (false). */
   isEgg?: boolean;
+  /** 1:1 décomp `MON_DATA_FRIENDSHIP` — pour œuf = compteur d'éclosion
+   *  (frais = élevé → "mettre du temps"). Optional (résumé non-œuf l'ignore). */
+  friendship?: number;
 }
 
 /** 1:1 décomp `MON_MALE` / `MON_FEMALE` / `MON_GENDERLESS` (include/pokemon.h). */

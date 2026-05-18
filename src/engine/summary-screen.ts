@@ -52,6 +52,7 @@ import {
 } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
+import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
@@ -213,52 +214,117 @@ const BALL_TILE_BASE = 344;
 const BALL_BYTE_OFFSET = BALL_TILE_BASE * 32;
 const BALL_PAL_SLOT = 4;
 
-// 1:1 décomp `sMemoNatureTextColor`/`sMemoMiscTextColor` (:746-747).
-const S_MEMO_NATURE_TEXT_COLOR = '{COLOR LIGHT_RED}{SHADOW GREEN}';
-const S_MEMO_MISC_TEXT_COLOR = '{COLOR WHITE}{SHADOW DARK_GRAY}';
-// 1:1 décomp layout strings (:748-750).
-const S_STATS_LEFT_COLUMN_LAYOUT = '{DYNAMIC 0}/{DYNAMIC 1}\n{DYNAMIC 2}\n{DYNAMIC 3}';
-const S_STATS_RIGHT_COLUMN_LAYOUT = '{DYNAMIC 0}\n{DYNAMIC 1}\n{DYNAMIC 2}';
-const S_MOVES_PP_LAYOUT = '{PP}{DYNAMIC 0}/{DYNAMIC 1}';
+// ⚠️ ZÉRO HARDCODE (user : projet public/moddable). TOUTES les strings
+// viennent de `/decomp/em/strings.json` (extract-strings.mjs depuis
+// strings.c + data/text) via `getString(label)` (gba-strings.ts, chargé au
+// boot). Un moddeur qui édite strings.c → re-extract → tout se met à jour
+// sans toucher au code. `_initSummaryStrings()` (appelé au CB2 init, après
+// le chargement boot des strings) remplit ces `let` depuis getString().
+let S_MEMO_NATURE_TEXT_COLOR = '';
+let S_MEMO_MISC_TEXT_COLOR = '';
+let S_STATS_LEFT_COLUMN_LAYOUT = '';
+let S_STATS_RIGHT_COLUMN_LAYOUT = '';
+let S_MOVES_PP_LAYOUT = '';
+let GTEXT_X_NATURE_MET_AT_YZ = '';
+let GTEXT_X_NATURE_HATCHED_AT_YZ = '';
+let GTEXT_X_NATURE_MET_SOMEWHERE_AT = '';
+let GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT = '';
+let gText_PkmnInfo = '';
+let gText_PkmnSkills = '';
+let gText_BattleMoves = '';
+let gText_ContestMoves = '';
+let gText_Cancel2 = '';
+let gText_Info = '';
+let gText_Switch = '';
+let gText_RentalPkmn = '';
+let gText_TypeSlash = '';
+let gText_HP4 = '';
+let gText_Attack3 = '';
+let gText_Defense3 = '';
+let gText_SpAtk4 = '';
+let gText_SpDef4 = '';
+let gText_Speed2 = '';
+let gText_ExpPoints = '';
+let gText_NextLv = '';
+let gText_Status = '';
+let gText_Power = '';
+let gText_Accuracy2 = '';
+let gText_Appeal = '';
+let gText_Jam = '';
+let gText_None = '';
+let gText_OneDash = '';
+let gText_TwoDashes = '';
+let gText_ThreeDashes = '';
+let gText_RibbonsVar1 = '';   // "RUBANS: {STR_VAR_1}" (placeholder substitué)
+let gText_EggNickname = '';
+let gText_FiveMarks = '';
+let gText_EggWillTakeALongTime = '';
+let gText_EggWillTakeSomeTime = '';
+let gText_EggWillHatchSoon = '';
+let gText_EggAboutToHatch = '';
+let gText_OddEggFoundByCouple = '';
+let gText_OTSlash = '';
+let gText_LevelSymbol = '';
+let gText_NumberClear01 = '';
+let gText_IDNumber2 = '';
+let gText_MaleSymbol = '';
+let gText_FemaleSymbol = '';
+let _summaryStringsReady = false;
 
-// 1:1 décomp Mémo Dresseur FR (strings.c:518-525).
-const GTEXT_X_NATURE_MET_AT_YZ =
-  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\nrencontré au {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}\n({DYNAMIC 0}{DYNAMIC 4}{DYNAMIC 1}).';
-const GTEXT_X_NATURE_HATCHED_AT_YZ =
-  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\na éclos au {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}\n({DYNAMIC 0}{DYNAMIC 4}{DYNAMIC 1}).';
-const GTEXT_X_NATURE_MET_SOMEWHERE_AT =
-  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\nrencontré quelque part\nau {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}.';
-const GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT =
-  '{DYNAMIC 0}{DYNAMIC 2}{DYNAMIC 1}{DYNAMIC 5} de nature,\na éclos quelque part\nau {LV_2}{DYNAMIC 0}{DYNAMIC 3}{DYNAMIC 1}.';
-
-// 1:1 décomp strings.c FR (lignes citées).
-const gText_PkmnInfo = 'INFOS POKéMON';      // :508
-const gText_PkmnSkills = 'APTITU. POKéMON';  // :509
-const gText_BattleMoves = 'CAPACITES COMB.'; // :510
-const gText_ContestMoves = 'CAPACITES CONC.';// :511
-const gText_Cancel2 = 'RETOUR';              // :190
-const gText_Info = 'INFOS';                  // :512
-const gText_Switch = 'CHANG.';               // :507
-const gText_RentalPkmn = 'POKéMON A LOUER';  // :495
-const gText_TypeSlash = 'TYPE/';             // :496
-const gText_HP4 = 'PV';                      // :492
-const gText_Attack3 = 'ATTAQUE';             // :487
-const gText_Defense3 = 'DEFENSE';            // :488
-const gText_SpAtk4 = 'ATQ SP';               // :489
-const gText_SpDef4 = 'DEF SP';               // :490
-const gText_Speed2 = 'VIT.';                 // :491
-const gText_ExpPoints = 'POINTS EXP.';       // :502
-const gText_NextLv = 'N. SUIVANT';           // :503
-const gText_Status = 'STATUT';               // :501
-const gText_Power = 'POUVOIR';               // :497
-const gText_Accuracy2 = 'PRECIS.';           // :498
-const gText_Appeal = 'CHARME';               // :499
-const gText_Jam = 'BLOCAG.';                 // :500
-const gText_None = 'AUCUN';                  // :199
-const gText_OneDash = '-';                   // :204
-const gText_TwoDashes = '--';                // :205
-const gText_ThreeDashes = '---';             // :206
-const gText_RibbonsVar1 = 'RUBANS: ';        // :504 "RUBANS: {STR_VAR_1}"
+/** Remplit les strings depuis le décomp extrait (strings.json via
+ *  gba-strings.ts, chargé au boot). 1:1, zéro hardcode. Idempotent. */
+function _initSummaryStrings(): void {
+  S_MEMO_NATURE_TEXT_COLOR = getString('sMemoNatureTextColor');
+  S_MEMO_MISC_TEXT_COLOR = getString('sMemoMiscTextColor');
+  S_STATS_LEFT_COLUMN_LAYOUT = getString('sStatsLeftColumnLayout');
+  S_STATS_RIGHT_COLUMN_LAYOUT = getString('sStatsRightColumnLayout');
+  S_MOVES_PP_LAYOUT = getString('sMovesPPLayout');
+  GTEXT_X_NATURE_MET_AT_YZ = getString('gText_XNatureMetAtYZ');
+  GTEXT_X_NATURE_HATCHED_AT_YZ = getString('gText_XNatureHatchedAtYZ');
+  GTEXT_X_NATURE_MET_SOMEWHERE_AT = getString('gText_XNatureMetSomewhereAt');
+  GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT = getString('gText_XNatureHatchedSomewhereAt');
+  gText_PkmnInfo = getString('gText_PkmnInfo');
+  gText_PkmnSkills = getString('gText_PkmnSkills');
+  gText_BattleMoves = getString('gText_BattleMoves');
+  gText_ContestMoves = getString('gText_ContestMoves');
+  gText_Cancel2 = getString('gText_Cancel2');
+  gText_Info = getString('gText_Info');
+  gText_Switch = getString('gText_Switch');
+  gText_RentalPkmn = getString('gText_RentalPkmn');
+  gText_TypeSlash = getString('gText_TypeSlash');
+  gText_HP4 = getString('gText_HP4');
+  gText_Attack3 = getString('gText_Attack3');
+  gText_Defense3 = getString('gText_Defense3');
+  gText_SpAtk4 = getString('gText_SpAtk4');
+  gText_SpDef4 = getString('gText_SpDef4');
+  gText_Speed2 = getString('gText_Speed2');
+  gText_ExpPoints = getString('gText_ExpPoints');
+  gText_NextLv = getString('gText_NextLv');
+  gText_Status = getString('gText_Status');
+  gText_Power = getString('gText_Power');
+  gText_Accuracy2 = getString('gText_Accuracy2');
+  gText_Appeal = getString('gText_Appeal');
+  gText_Jam = getString('gText_Jam');
+  gText_None = getString('gText_None');
+  gText_OneDash = getString('gText_OneDash');
+  gText_TwoDashes = getString('gText_TwoDashes');
+  gText_ThreeDashes = getString('gText_ThreeDashes');
+  gText_RibbonsVar1 = getString('gText_RibbonsVar1');
+  gText_EggNickname = getString('gText_EggNickname');
+  gText_FiveMarks = getString('gText_FiveMarks');
+  gText_EggWillTakeALongTime = getString('gText_EggWillTakeALongTime');
+  gText_EggWillTakeSomeTime = getString('gText_EggWillTakeSomeTime');
+  gText_EggWillHatchSoon = getString('gText_EggWillHatchSoon');
+  gText_EggAboutToHatch = getString('gText_EggAboutToHatch');
+  gText_OddEggFoundByCouple = getString('gText_OddEggFoundByCouple');
+  gText_OTSlash = getString('gText_OTSlash');
+  gText_LevelSymbol = getString('gText_LevelSymbol');
+  gText_NumberClear01 = getString('gText_NumberClear01');
+  gText_IDNumber2 = getString('gText_IDNumber2');
+  gText_MaleSymbol = getString('gText_MaleSymbol');
+  gText_FemaleSymbol = getString('gText_FemaleSymbol');
+  _summaryStringsReady = true;
+}
 
 /** 1:1 décomp `sBgTemplates[]` (:319). */
 const SUMMARY_WIN_MAP_BASE = 31;     // BG0
@@ -387,6 +453,12 @@ interface SummaryAssets {
   /** 1:1 décomp `sMarkings_Pal` (summary_screen/markings.pal) — palette
    *  OBJ du sprite marques PC (passée à CreateMonMarkingAllCombosSprite). */
   markingsPal: Uint16Array;
+  /** 1:1 décomp `gBallGfx_Poke` (balls/poke.4bpp.bin, PLTT-indexed) +
+   *  `gBallPal_Poke` (balls/poke.gbapal, ordre PLTE EXACT). Chargés
+   *  séparément (PAS LoadCompressedSpriteSheet qui reconstruit la palette
+   *  par ordre d'apparition → blanc rendu gris). */
+  ballTiles: Uint8Array;
+  ballPal: Uint16Array;
 }
 
 let _assets: SummaryAssets | null = null;
@@ -396,7 +468,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal] =
+    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal, blTiles, blPal] =
       await Promise.all([
         loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
         loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
@@ -410,13 +482,15 @@ async function _loadAssets(): Promise<SummaryAssets> {
         loadTileBin('/decomp/em/summary_screen/a_button.png', 4),
         loadGbaPal('/decomp/em/battle_interface/text_pp.pal'),
         loadGbaPal('/decomp/em/summary_screen/markings.pal'),
+        loadTileBin('/decomp/em/balls/poke.4bpp.bin', 4),
+        loadGbaPal('/decomp/em/balls/poke.gbapal'),
       ]);
     _assets = {
       tiles, pageInfoTilemap: pInfo, pageInfoEggTilemap: pInfoEgg,
       pageSkillsTilemap: pSkills, pageBattleMovesTilemap: pBattle,
       pageContestMovesTilemap: pContest, tilesPalette: tilesPal,
       moveTypesTiles: mtTiles, moveTypesPal: mtPal, aButtonTiles: aBtn,
-      ppTextPal: ppPal, markingsPal: mkPal,
+      ppTextPal: ppPal, markingsPal: mkPal, ballTiles: blTiles, ballPal: blPal,
     };
     return _assets;
   })();
@@ -596,16 +670,20 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
       await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/mon_markings.png', MARKINGS_BYTE_OFFSET);
       r.LoadPaletteObj(a.markingsPal, OBJ_PLTT_ID(MARKINGS_PAL_SLOT));
     } catch (e) { console.error('[summary] markings load failed:', e); }
-    // 1:1 CreateCaughtBallSprite : gBallGfx_Poke (balls/poke.png) → OBJ VRAM
-    // + sa palette (gBallSpritePalettes[BALL_POKE]).
+    // 1:1 CreateCaughtBallSprite : gBallGfx_Poke (poke.4bpp.bin, PLTT-indexed)
+    // → OBJ VRAM + gBallPal_Poke (poke.gbapal, ordre PLTE EXACT) → pal OBJ.
+    // PAS LoadCompressedSpriteSheet (reconstruit la palette par ordre
+    // d'apparition → indices mélangés → blanc rendu gris = bug user).
     try {
-      const bl = await r.LoadCompressedSpriteSheet('/decomp/em/balls/poke.png', BALL_BYTE_OFFSET);
-      r.LoadPaletteObj(bl.palette, OBJ_PLTT_ID(BALL_PAL_SLOT));
+      r.gba.objVram.set(a.ballTiles, BALL_TILE_BASE * 32);
+      r.LoadPaletteObj(a.ballPal, OBJ_PLTT_ID(BALL_PAL_SLOT));
     } catch (e) { console.error('[summary] ball gfx load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
     if (mon) {
-      const dexId = mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+      // 1:1 LoadMonGfxAndSprite : species2 = MON_DATA_SPECIES_OR_EGG →
+      // SPECIES_EGG si œuf → gMonFrontPicTable[SPECIES_EGG] = egg/front.png.
+      const dexId = (mon.isEgg) ? 'egg' : mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
       try {
         const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
         r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
@@ -635,7 +713,7 @@ function _extractMonData(mon: PokemonInstance): void {
   s.pid = mon.personality ?? 0;
   s.abilityNum = s.pid & 1;
   s.item = mon.heldItem || '';
-  s.isEgg = false;
+  s.isEgg = mon.isEgg ?? false;                 // 1:1 MON_DATA_IS_EGG
   s.nature = (mon.personality ?? 0) % 25;       // GetNature = pid % NUM_NATURES
   s.currentHP = mon.currentHp; s.maxHP = mon.maxHp;
   s.OTName = gameState.playerName ?? '';
@@ -645,7 +723,7 @@ function _extractMonData(mon: PokemonInstance): void {
   s.metLevel = mon.metLevel;
   s.pokeball = mon.pokeball || 'ITEM_POKE_BALL'; // 1:1 MON_DATA_POKEBALL
   s.markings = mon.markings ?? 0;                // 1:1 MON_DATA_MARKINGS
-  s.friendship = 0;
+  s.friendship = mon.friendship ?? 0;            // 1:1 MON_DATA_FRIENDSHIP (œuf)
   s.ribbonCount = 0;                              // PokemonInstance n'a pas de rubans
   // ailment 1:1 GetMonAilment : AILMENT_NONE=0, PSN=1, PAR=2, SLP=3, FRZ=4,
   // BRN=5, plus PSN(TOX) traité comme PSN. (sStatusIconsSpriteSheet anim idx.)
@@ -757,7 +835,8 @@ function _printNotEggInfo(): void {
   if (dexNum !== 0xFFFF) {
     // gText_NumberClear01 = "{NO}{CLEAR 1}" (strings.c:210) + dexNum 3-digit
     // leading zeros.
-    const dexStr = '{NO}{CLEAR 1}' + String(dexNum).padStart(3, '0');
+    // 1:1 : StringCopy(gStringVar1, gText_NumberClear01) + ConvertInt 3-digit.
+    const dexStr = gText_NumberClear01 + String(dexNum).padStart(3, '0');
     if (!mon.isShiny) {
       _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER, dexStr, 0, 1, 0, 1);
       _setMonPicBackgroundPalette(false);
@@ -771,19 +850,32 @@ function _printNotEggInfo(): void {
     _setMonPicBackgroundPalette(!!mon.isShiny);
   }
   // gText_LevelSymbol "N." + level (LEFT_ALIGN) @(24,17) color1, SPECIES win.
-  _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, 'N.' + String(sum.level), 24, 17, 0, 1);
+  // 1:1 : StringCopy(gStringVar1, gText_LevelSymbol) + ConvertInt level.
+  _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_LevelSymbol + String(sum.level), 24, 17, 0, 1);
   // GetMonNickname @(0,1) color1, NICKNAME win.
   _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, mon.nickname, 0, 1, 0, 1);
   // CHAR_SLASH + gSpeciesNames @(0,1) color1, SPECIES win.
+  // 1:1 : strArray[0]=CHAR_SLASH (charmap '/', char structurel, pas une
+  // string traduisible) ; &strArray[1]=gSpeciesNames[species2] (= déjà
+  // extrait via speciesNameFr, zéro hardcode).
   _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, '/' + mon.speciesNameFr, 0, 1, 0, 1);
   // 1:1 PrintGenderSymbol (:2805) : sauf NIDORAN_M/F ; ♂ color3 / ♀ color4
   // @(57,17).
   if (sum.species !== 'SPECIES_NIDORAN_M' && sum.species !== 'SPECIES_NIDORAN_F') {
-    if (mon.monGender === 0) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, '♂', 57, 17, 0, 3);
-    else if (mon.monGender === 254) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, '♀', 57, 17, 0, 4);
+    if (mon.monGender === 0) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_MaleSymbol, 57, 17, 0, 3);
+    else if (mon.monGender === 254) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_FemaleSymbol, 57, 17, 0, 4);
   }
   _flushWin(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME);
   _flushWin(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+}
+
+/** 1:1 décomp `PrintEggInfo` (:2796) : surnom "OEUF" @(0,1) color1 ;
+ *  DEX_NUMBER + SPECIES windows ClearWindowTilemap (rien). */
+function _printEggInfo(): void {
+  _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, gText_EggNickname, 0, 1, 0, 1);
+  _flushWin(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME);
+  ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
+  ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
 }
 
 /** 1:1 décomp `PrintMonInfo` (:2738). */
@@ -792,6 +884,7 @@ function _printMonInfo(): void {
   FillWindowPixelBuffer(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, 0);
   FillWindowPixelBuffer(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, 0);
   if (!sMon.summary.isEgg) _printNotEggInfo();
+  else _printEggInfo();
   _scheduleBgCopy(0);
 }
 
@@ -857,17 +950,17 @@ function _printPageNamesAndStats(): void {
 
 function _printMonOTName(): void {
   const wid = _addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER);
-  // gText_OTSlash FR = "DO/" (Dresseur d'Origine).
-  const otSlash = 'DO/';
-  _printTextOnWindow(wid, otSlash, 0, 1, 0, 1);
-  const x = GetStringWidth(otSlash);
+  // 1:1 : gText_OTSlash (= "DO/" FR, extrait).
+  _printTextOnWindow(wid, gText_OTSlash, 0, 1, 0, 1);
+  const x = GetStringWidth(gText_OTSlash);
   // OTGender 0 → color5 ; sinon color6.
   _printTextOnWindow(wid, sMon.summary.OTName, x, 1, 0, sMon.summary.OTGender === 0 ? 5 : 6);
 }
 
 function _printMonOTID(): void {
-  // gText_IDNumber2 = "{NO}{ID}" (strings.c:213) + (u16)OTID 5-digit leading0.
-  const idStr = '{NO}{ID}' + String(sMon.summary.OTID & 0xFFFF).padStart(5, '0');
+  // 1:1 : ConvertIntToDecimalStringN(StringCopy(gStringVar1, gText_IDNumber2),
+  // (u16)OTID, LEADING_ZEROS, 5). gText_IDNumber2 = "{NO}{ID}" (extrait).
+  const idStr = gText_IDNumber2 + String(sMon.summary.OTID & 0xFFFF).padStart(5, '0');
   const x = GetStringRightAlignXOffset(idStr, 56);
   _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ID), idStr, x, 1, 0, 1);
 }
@@ -916,8 +1009,50 @@ function _printMonTrainerMemo(): void {
   _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), _trainerMemoStr, 0, 1, 0, 0);
 }
 
-/** 1:1 décomp `PrintInfoPageText` (:3028) (branche non-egg). */
+/** 1:1 décomp `PrintEggOTName` (:3241) : "DO/" color1 + "?????" (5 marks)
+ *  @(width,1) color1. */
+function _printEggOTName(): void {
+  const wid = _addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER);
+  const width = GetStringWidth(gText_OTSlash);
+  _printTextOnWindow(wid, gText_OTSlash, 0, 1, 0, 1);
+  _printTextOnWindow(wid, gText_FiveMarks, width, 1, 0, 1);
+}
+/** 1:1 décomp `PrintEggOTID` (:3249) : gText_IDNumber2 + gText_FiveMarks
+ *  right-align 56. */
+function _printEggOTID(): void {
+  const s = gText_IDNumber2 + gText_FiveMarks;
+  const x = GetStringRightAlignXOffset(s, 56);
+  _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ID), s, x, 1, 0, 1);
+}
+/** 1:1 décomp `PrintEggState` (:3258) : ability window = état d'éclosion
+ *  selon friendship (sanity→LongTime ; ≤5 AboutToHatch ; ≤10 HatchSoon ;
+ *  ≤40 SomeTime ; sinon LongTime) @(0,1) color0. */
+function _printEggState(): void {
+  const f = sMon.summary.friendship;
+  let text: string;
+  // summary.sanity (bad egg) non modélisé (nos œufs valides) → branche
+  // friendship 1:1.
+  if (f <= 5) text = gText_EggAboutToHatch;
+  else if (f <= 10) text = gText_EggWillHatchSoon;
+  else if (f <= 40) text = gText_EggWillTakeSomeTime;
+  else text = gText_EggWillTakeALongTime;
+  _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), text, 0, 1, 0, 0);
+}
+/** 1:1 décomp `PrintEggMemo` (:3277) : œuf normal (non sanity, non fateful,
+ *  non trade, non special) → gText_OddEggFoundByCouple @(0,1) color0. */
+function _printEggMemo(): void {
+  _printTextOnWindow(_addWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), gText_OddEggFoundByCouple, 0, 1, 0, 0);
+}
+
+/** 1:1 décomp `PrintInfoPageText` (:3028). */
 function _printInfoPageText(): void {
+  if (sMon.summary.isEgg) {
+    _printEggOTName();
+    _printEggOTID();
+    _printEggState();
+    _printEggMemo();
+    return;
+  }
   _printMonOTName();
   _printMonOTID();
   _printMonAbilityName();
@@ -947,8 +1082,11 @@ function _printHeldItemName(): void {
 function _printRibbonCount(): void {
   const sum = sMon.summary;
   let text: string;
+  // 1:1 : ConvertInt(gStringVar1, ribbonCount, RIGHT_ALIGN, 2) ;
+  // StringExpandPlaceholders(gStringVar4, gText_RibbonsVar1) — {STR_VAR_1}
+  // remplacé par gStringVar1 (= count). gText_RibbonsVar1 extrait.
   if (sum.ribbonCount === 0) text = gText_None;
-  else text = gText_RibbonsVar1 + String(sum.ribbonCount).padStart(2, ' ');
+  else text = gText_RibbonsVar1.replace('{STR_VAR_1}', String(sum.ribbonCount).padStart(2, ' '));
   const x = GetStringCenterAlignXOffset(text, 70) + 6;
   _printTextOnWindow(_addWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_RIBBON_COUNT), text, x, 1, 0, 0);
 }
@@ -1337,8 +1475,9 @@ function _setDefaultTilemaps(): void {
   } else if (sMon.currPageIndex !== PSS_PAGE_BATTLE_MOVES && sMon.currPageIndex !== PSS_PAGE_CONTEST_MOVES) {
     PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
   }
-  // LimitEggSummaryPageDisplay (:2713) non-egg → BG3 hofs 0.
-  _changeBgX(3, 0, BG_COORD_SET);
+  // 1:1 LimitEggSummaryPageDisplay (:2713) : isEgg → ChangeBgX(3,0x10000,
+  // SET) (BG3 hofs 256 → INFO SC1 = page_info_egg) ; sinon hofs 0 (INFO SC0).
+  _changeBgX(3, sMon.summary.isEgg ? 0x10000 : 0, BG_COORD_SET);
   _drawPokerusCuredSymbol();
   // Les buffers BATTLE/CONTEST blanchis seront copiés en VRAM au scroll-in
   // (PssScroll*). INFO (BG3) copié par _drawPokerusCuredSymbol → _scheduleBgCopy(3).
@@ -1370,6 +1509,12 @@ function _placeTypeSprite(typeId: number, x: number, y: number): void {
 
 /** 1:1 décomp `SetMonTypeIcons` (:3817). */
 function _setMonTypeIcons(): void {
+  // 1:1 décomp SetMonTypeIcons (:3817) : œuf → unique icône TYPE_MYSTERY
+  // (= type "???") @(120,48), pas de 2e.
+  if (sMon.summary.isEgg) {
+    _placeTypeSprite(TYPE_ID.TYPE_MYSTERY, 120, 48);
+    return;
+  }
   const sp = getSpeciesInfo(sMon.summary.species);
   const types = sp?.types ?? [];
   const t0 = TYPE_ID[types[0] ?? ''] ?? 0;
@@ -1618,13 +1763,21 @@ function _resumeInput(): void {
 /** 1:1 décomp `ChangeSummaryPokemon` (:1578) + `Task_ChangeSummaryMon` (:1628)
  *  (mode party, single battle). */
 function _changeSummaryPokemon(delta: number): void {
-  // 1:1 AdvanceMonIndex (:1696) page INFO : bornes strictes.
+  // 1:1 AdvanceMonIndex (:1696). Page INFO : bornes strictes (œufs
+  // sélectionnables). Pages non-INFO : boucle qui SAUTE les œufs (un œuf
+  // n'a pas de pages skills/moves).
+  let idx: number;
   if (sMon.currPageIndex === PSS_PAGE_INFO) {
     if (delta === -1 && sMon.curMonIndex === 0) return;
     if (delta === 1 && sMon.curMonIndex >= sMon.maxMonIndex) return;
+    idx = sMon.curMonIndex + delta;
+  } else {
+    idx = sMon.curMonIndex;
+    do {
+      idx += delta;
+      if (idx < 0 || idx > sMon.maxMonIndex) return;
+    } while (_monList[idx]?.isEgg);
   }
-  let idx = sMon.curMonIndex + delta;
-  if (idx < 0 || idx > sMon.maxMonIndex) return;
   const next = _monList[idx];
   if (!next) return;
   PlaySE(5 /* SE_SELECT */);
@@ -1645,7 +1798,7 @@ function _changeSummaryPokemon(delta: number): void {
   void _loadAssets().then(async () => {
     const r = getRuntime();
     if (!r) return;
-    const dexId = next.speciesEnum.replace('SPECIES_', '').toLowerCase();
+    const dexId = (next.isEgg) ? 'egg' : next.speciesEnum.replace('SPECIES_', '').toLowerCase();
     try {
       const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
       r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
@@ -1654,6 +1807,10 @@ function _changeSummaryPokemon(delta: number): void {
     _clearPageWindowTilemaps(sMon.currPageIndex);
     _printMonInfo();
     _printPageSpecificText(sMon.currPageIndex);
+    // 1:1 Task_ChangeSummaryMon case 11 : LimitEggSummaryPageDisplay (BG3
+    // hofs 256 = page_info_egg si œuf, sinon 0).
+    _changeBgX(3, sMon.summary.isEgg ? 0x10000 : 0, BG_COORD_SET);
+    _scheduleBgCopy(3);
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
     _createMonSprite();
@@ -1761,6 +1918,7 @@ export function CB2_InitSummaryScreen(): void {
   switch (rt.gMain.state) {
     case 0:
       rt.SetVBlankCallback(null);
+      _initSummaryStrings(); // strings.json (chargé au boot) → vars, zéro hardcode
       rt.gMain.state++; break;
     case 1: rt.gMain.state++; break;
     case 2:

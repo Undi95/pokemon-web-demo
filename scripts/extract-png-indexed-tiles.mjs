@@ -199,3 +199,21 @@ console.log(`[extract-png-indexed-tiles] indices used: ${usedIndices.map(e => `$
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, tileData);
 console.log(`[extract-png-indexed-tiles] wrote ${outPath} (${tileData.length} bytes, ${numTiles} tiles)`);
+
+// 1:1 décomp : émet AUSSI le .gbapal (PLTE → RGB15 LE, dans l'ORDRE
+// d'index PLTE original). = équivalent INCGFX(png, ".gbapal") du décomp
+// (ex. gBallPal_Poke = poke.png .gbapal). Sans ça, le loader navigateur
+// reconstruit la palette par ordre d'apparition (PLTE perdu via décodage
+// RGBA) → couleurs mélangées (bug ball : blanc rendu gris). Modder-proof :
+// éditer le PNG → re-extract régénère .4bpp.bin ET .gbapal cohérents.
+if (plte && plte.length >= 3) {
+  const nCol = Math.min(plte.length / 3, bpp === 4 ? 16 : 256);
+  const pal = Buffer.alloc(nCol * 2);
+  for (let i = 0; i < nCol; i++) {
+    const r = plte[i * 3] >> 3, g = plte[i * 3 + 1] >> 3, b = plte[i * 3 + 2] >> 3;
+    pal.writeUInt16LE((r | (g << 5) | (b << 10)) & 0x7FFF, i * 2);
+  }
+  const palPath = outPath.replace(/\.(4|8)bpp\.bin$/, '.gbapal');
+  fs.writeFileSync(palPath, pal);
+  console.log(`[extract-png-indexed-tiles] wrote ${palPath} (${nCol} colors RGB15, PLTE order)`);
+}

@@ -273,6 +273,20 @@ function applyNoIntroPreset(): void {
     jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
     gameState.addToParty(jirachi);
     console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
+    // ⚠️ DEBUG ONLY : Œuf de Leveinard (Chansey) — test page résumé œuf 1:1
+    // (user : "pas pour le faire éclore, juste afficher sa page"). isEgg →
+    // PrintEggInfo/State/Memo + page_info_egg bg + 1 page. friendship élevé
+    // (œuf frais) → "mettre du temps à éclore". metLevel=0 (œuf).
+    const egg = createPokemonInstance('SPECIES_CHANSEY', 5, {
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    });
+    egg.isEgg = true;
+    egg.friendship = 80;          // frais → gText_EggWillTakeALongTime
+    egg.metLevel = 0;             // œuf
+    egg.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
+    gameState.addToParty(egg);
+    console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
   }
 
   gameState.save();
