@@ -48,7 +48,9 @@ import {
   FillWindowPixelBuffer, FillWindowPixelRect,
   CopyWindowToVram, PutWindowTilemap, GetWindowAttribute, ScrollWindow,
   WINDOW_WIDTH, WINDOW_HEIGHT,
+  AddWindow, RemoveWindow, ClearWindowTilemap, ClearStdWindowAndFrame,
 } from './gba-window-system';
+import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './gba-text-window';
 import {
   AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,
   FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW,
@@ -408,9 +410,11 @@ const TASK_NONE = 0xFF;
 /** 1:1 décomp `list_menu.c:22 #define CURSOR_OBJECT_START CURSOR_RED_OUTLINE`. */
 const CURSOR_OBJECT_START = CURSOR_RED_OUTLINE;
 
-/** 1:1 décomp `include/window.h` enum : COPYWIN_GFX = 2 (notre
- *  CopyWindowToVram ignore le mode mais on passe la valeur 1:1). */
+/** 1:1 décomp `include/window.h` enum : COPYWIN_NONE 0, COPYWIN_MAP 1,
+ *  COPYWIN_GFX 2, COPYWIN_FULL 3 (notre CopyWindowToVram ignore le mode
+ *  mais on passe la valeur 1:1). */
 const COPYWIN_GFX = 2;
+const COPYWIN_MAP = 1;
 
 /** 1:1 décomp `include/constants/songs.h SE_SELECT` = 5. */
 const SE_SELECT = 5;
@@ -1580,4 +1584,98 @@ export function RemoveScrollIndicatorArrowPair(taskId: number): void {
   rt?.DestroySprite?.(data.bottomSpriteId);  // 1:1 :1173 DestroySprite(&gSprites[bottomSpriteId])
   _destroyTask(taskId);                       // 1:1 :1175 DestroyTask(taskId)
   sScrollIndicatorData.delete(taskId);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INCRÉMENT 3d — DoMysteryGiftListMenu 1:1 (list_menu.c:300-363)
+// ════════════════════════════════════════════════════════════════════════════
+// Clôt l'incrément 3 (list_menu.c ≈ 100%). State machine 0→1→2 d'un list menu
+// auto-géré (utilisé par mystery_gift.c, NON porté → pas de consommateur
+// runtime ; le DRAW window/frame pixel = A/B au branchement). La PLOMBERIE
+// (transitions d'état, JOY_NEW, valeur de retour, AddWindow/ListMenuInit/
+// ProcessInput/DestroyListMenuTask déjà portés+vérifiés 2d, DrawTextBorder
+// Outer porté 3d) = 1:1 strict, déterministe. `DrawTextBorderOuter` =
+// text_window.c porté dans gba-text-window.ts (infra PARTAGÉE). Report
+// HONNÊTE : 1:1 ligne-par-ligne, 0 demi-port, 0 fake.
+
+/** 1:1 décomp `EWRAM_DATA static struct { s32 currItemId; u8 state;
+ *  u8 windowId; u8 listTaskId; } sMysteryGiftLinkMenu = {0}`
+ *  (list_menu.c:73-78). */
+const sMysteryGiftLinkMenu = { currItemId: 0, state: 0, windowId: 0, listTaskId: 0 };
+
+/** 1:1 décomp `s32 DoMysteryGiftListMenu(const struct WindowTemplate
+ *  *windowTemplate, const struct ListMenuTemplate *listMenuTemplate,
+ *  u8 drawMode, u16 tileNum, u16 palOffset)` (list_menu.c:300-363).
+ *  Retourne LIST_NOTHING_CHOSEN tant que non choisi, sinon currItemId
+ *  (ou LIST_CANCEL sur B) à l'état 2. */
+export function DoMysteryGiftListMenu(
+  windowTemplate: Parameters<typeof AddWindow>[0],
+  listMenuTemplate: ListMenuTemplate,
+  drawMode: number,
+  tileNum: number,
+  palOffset: number,
+): number {
+  switch (sMysteryGiftLinkMenu.state) {
+    case 0:
+    default:
+      sMysteryGiftLinkMenu.windowId = AddWindow(windowTemplate);     // 1:1 :306
+      switch (drawMode) {
+        case 2:
+          // 1:1 :309-313 décomp : `case 2:` n'a PAS de break → FALLTHROUGH
+          // vers `case 1:`. Expansion fidèle (net-effect IDENTIQUE : drawMode
+          // 2 = LoadUserWindowBorderGfx PUIS DrawTextBorderOuter). Notre
+          // LoadUserWindowBorderGfx prend `bg` (pas windowId) ; la chaîne
+          // décomp dérive bg = GetWindowAttribute(windowId, WINDOW_BG)
+          // (LoadWindowGfx) → on passe ce bg résolu = net-effect 1:1 EXACT.
+          LoadUserWindowBorderGfx(GetWindowAttribute(sMysteryGiftLinkMenu.windowId, /* WINDOW_BG */ 0), tileNum, palOffset); // 1:1 :310
+          DrawTextBorderOuter(sMysteryGiftLinkMenu.windowId, tileNum, palOffset >> 4); // 1:1 :312 (fallthrough) palOffset/16 (u16)
+          break;
+        case 1:
+          DrawTextBorderOuter(sMysteryGiftLinkMenu.windowId, tileNum, palOffset >> 4); // 1:1 :312 palOffset/16 (u16)
+          break;
+      }
+      // 1:1 :315-316 gMultiuseListMenuTemplate = *listMenuTemplate (copie
+      // struct ; items = même ref = copie de pointeur C) ; .windowId = …
+      Object.assign(gMultiuseListMenuTemplate, listMenuTemplate);
+      gMultiuseListMenuTemplate.windowId = sMysteryGiftLinkMenu.windowId;
+      sMysteryGiftLinkMenu.listTaskId = ListMenuInit(gMultiuseListMenuTemplate, 0, 0); // 1:1 :317
+      CopyWindowToVram(sMysteryGiftLinkMenu.windowId, COPYWIN_MAP);   // 1:1 :318
+      sMysteryGiftLinkMenu.state = 1;                                 // 1:1 :319
+      break;
+    case 1:
+      sMysteryGiftLinkMenu.currItemId = ListMenu_ProcessInput(sMysteryGiftLinkMenu.listTaskId); // 1:1 :322
+      if (JOY_NEW(A_BUTTON)) {                                        // 1:1 :323-326
+        sMysteryGiftLinkMenu.state = 2;
+      }
+      if (JOY_NEW(B_BUTTON)) {                                        // 1:1 :327-331
+        sMysteryGiftLinkMenu.currItemId = LIST_CANCEL;
+        sMysteryGiftLinkMenu.state = 2;
+      }
+      if (sMysteryGiftLinkMenu.state === 2) {                         // 1:1 :332-353
+        if (drawMode === 0) {
+          ClearWindowTilemap(sMysteryGiftLinkMenu.windowId);          // 1:1 :336
+        } else {
+          switch (drawMode) {
+            case 0: // 1:1 :342 décomp : "can never be reached, because of the if above"
+              ClearStdWindowAndFrame(sMysteryGiftLinkMenu.windowId, false);
+              break;
+            case 2:
+            case 1:
+              ClearStdWindowAndFrame(sMysteryGiftLinkMenu.windowId, false); // 1:1 :347
+              break;
+          }
+        }
+        CopyWindowToVram(sMysteryGiftLinkMenu.windowId, COPYWIN_MAP); // 1:1 :352
+      }
+      break;
+    case 2:
+      // 1:1 :356 DestroyListMenuTask(listTaskId, NULL, NULL) — nos out-params
+      // (scrollOffset/selectedRow) ignorés = NULL,NULL 1:1.
+      DestroyListMenuTask(sMysteryGiftLinkMenu.listTaskId);
+      RemoveWindow(sMysteryGiftLinkMenu.windowId);                    // 1:1 :357
+      sMysteryGiftLinkMenu.state = 0;                                 // 1:1 :358
+      return sMysteryGiftLinkMenu.currItemId;                         // 1:1 :359
+  }
+
+  return LIST_NOTHING_CHOSEN;                                         // 1:1 :362
 }

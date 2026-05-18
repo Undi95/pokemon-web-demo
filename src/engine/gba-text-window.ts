@@ -18,6 +18,10 @@
 import { assetCache, getAsset, getRuntime, LoadBgTiles } from './decomp-globals';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { gameState } from './game-state';
+import {
+  FillBgTilemapBufferRect, GetWindowAttribute,
+  WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_HEIGHT,
+} from './gba-window-system';
 
 /** 1:1 décomp text_window.c WINDOW_FRAMES_COUNT. */
 export const WINDOW_FRAMES_COUNT = 20;
@@ -70,6 +74,30 @@ export function LoadUserWindowBorderGfx(bg: number, destOffset: number, palOffse
 
 /** Alias 1:1 décomp `LoadUserWindowBorderGfx_` (= same as without underscore). */
 export const LoadUserWindowBorderGfx_ = LoadUserWindowBorderGfx;
+
+/** 1:1 décomp `void DrawTextBorderOuter(u8 windowId, u16 tileNum, u8 palNum)`
+ *  (text_window.c:115-131). Dessine le cadre EXTÉRIEUR (8 rects de tiles
+ *  autour de la fenêtre : 4 coins + 4 bords ; tileNum+4 = centre NON dessiné
+ *  par Outer, 1:1 décomp). Helper text_window.c PARTAGÉ (mystery gift, et
+ *  futurs PC/shop). `bgLayer` dérivé de windowId via GetWindowAttribute,
+ *  comme la chaîne d'appel décomp (LoadWindowGfx → GetWindowAttribute
+ *  windowId WINDOW_BG). */
+export function DrawTextBorderOuter(windowId: number, tileNum: number, palNum: number): void {
+  const bgLayer = GetWindowAttribute(windowId, WINDOW_BG);
+  const tilemapLeft = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);
+  const tilemapTop = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);
+  const width = GetWindowAttribute(windowId, WINDOW_WIDTH);
+  const height = GetWindowAttribute(windowId, WINDOW_HEIGHT);
+
+  FillBgTilemapBufferRect(bgLayer, tileNum + 0, tilemapLeft - 1,     tilemapTop - 1,      1,     1,      palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 1, tilemapLeft,         tilemapTop - 1,      width, 1,      palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 2, tilemapLeft + width, tilemapTop - 1,      1,     1,      palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 3, tilemapLeft - 1,     tilemapTop,          1,     height, palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 5, tilemapLeft + width, tilemapTop,          1,     height, palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 6, tilemapLeft - 1,     tilemapTop + height, 1,     1,      palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 7, tilemapLeft,         tilemapTop + height, width, 1,      palNum);
+  FillBgTilemapBufferRect(bgLayer, tileNum + 8, tilemapLeft + width, tilemapTop + height, 1,     1,      palNum);
+}
 
 /** Pré-charge les 20 frame styles + leurs palettes dans assetCache.
  *  À call au boot (= avant que la moindre scène appelle GetWindowFrameTilesPal).
