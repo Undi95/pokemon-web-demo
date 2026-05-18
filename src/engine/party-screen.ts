@@ -480,6 +480,24 @@ function _drawSlotFrame(slotIdx: number): void {
   }
 }
 
+/** 1:1 décomp `ConvertIntToDecimalStringN(buf, n, STR_CONV_MODE_RIGHT_ALIGN, 3)`
+ *  (string_util.c:163-217) : entier justifié à DROITE dans un champ de
+ *  EXACTEMENT 3 caractères. Le padding GAUCHE est **CHAR_SPACER** (0x77,
+ *  string_util.c:209) — PAS CHAR_SPACE (0x00). CHAR_SPACER a une largeur
+ *  FONT_SMALL de 5 px (= largeur d'un chiffre ; gFontSmallLatinGlyphWidths
+ *  [0x77]=5, fonts.c:48), alors que CHAR_SPACE = 3 px. Donc le nombre est
+ *  rendu en mono-chasse 5px → le "/" final de DisplayPartyPokemonHP tombe
+ *  TOUJOURS à x = HPx + 15 (= x du "/" de MaxHP) quel que soit le nombre de
+ *  chiffres → les 2 "/" coïncident → 1 SEUL slash visible, 1:1 ROM (le hack
+ *  précédent paddait avec CHAR_SPACE 3px → "/" 2px trop à gauche pour ≤2
+ *  chiffres → double-slash visible "20// 20" ≠ ROM "20/ 20").
+ *  CHAR_SPACER ↔ JS 'ラ' (U+30E9) dans notre charmap (1:1 charmap.txt:280). */
+const CHAR_SPACER_STR = 'ラ'; // 'ラ' → byte 0x77 = décomp CHAR_SPACER
+function _rightAlign3(n: number): string {
+  const s = String(n);
+  return s.length >= 3 ? s : CHAR_SPACER_STR.repeat(3 - s.length) + s;
+}
+
 /** Render text for slot N. Positions 1:1 décomp `sPartyBoxInfoRects`
  *  (party_menu.h:32) — Nickname/Level/HP/MaxHP fixed coords per box layout. */
 function _drawSlot(slotIdx: number): void {
@@ -529,28 +547,32 @@ function _drawSlot(slotIdx: number): void {
     if (genderStr) {
       AddTextPrinterParameterized3(wid, FONT_SMALL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
-    // 1:1 décomp DisplayPartyPokemonHP/MaxHP (party_menu.c:2367-2393) :
-    //   Décomp render 2 strings séparés " HH/" (à 38,37) + "/ MM" (à 53,37).
-    //   Les 2 slashes overlappent au pixel près à cause des FONT_SMALL widths
-    //   spécifiques de la ROM (= visual unique "/" + 2 spaces entre les deux nombres).
-    //   Notre FONT_SMALL widths diffèrent → render 1 seul string " HH/  MM" avec
-    //   2 spaces explicites + right-align sur le slot edge pour matcher la ROM.
-    const hpStr = `${`${mon.currentHp}`.padStart(3)}/ ${`${mon.maxHp}`.padStart(3)}`;
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, hpStr);
+    // 1:1 décomp DisplayPartyPokemonHP (party_menu.c:2367) + DisplayParty
+    // PokemonMaxHP (:2388) : DEUX AddTextPrinterParameterized3 FONT_SMALL
+    // SÉPARÉS aux coords sPartyBoxInfoRects[PARTY_BOX_LEFT_COLUMN] (party_
+    // menu.h:42-43) : dimensions[12]=(38,37) HP, dimensions[16]=(53,37) MaxHP.
+    //   HP    = ConvertIntToDecimalStringN(hp,    RIGHT_ALIGN, 3) + "/"
+    //   MaxHP = "/" + ConvertIntToDecimalStringN(maxhp, RIGHT_ALIGN, 3)
+    // L'overlap des 2 "/" (FONT_SMALL widths = ROM exacts : sp 3, digit 5,
+    // '/' 5 — vérifiés vs gFontSmallLatinGlyphWidths fonts.c:40) produit le
+    // visuel ROM 1:1. PLUS de hack 1-string / espaces hardcodés.
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.currentHp)}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 53, 37, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHp)}`);
   } else {
     // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
     //   Nickname (22, 3) — width=40
     //   Level    (30, 12)
     //   Gender   (62, 12)
-    //   HP       (102, 12) + MaxHP (117, 12) → composé en 1 seul string " HH/  MM"
-    //     (= 2 espaces entre slash et MaxHP pour matcher visuel ROM 1:1).
+    //   HP       dimensions[12]=(102, 12)  MaxHP dimensions[16]=(117, 12)
     AddTextPrinterParameterized3(wid, FONT_SMALL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
       AddTextPrinterParameterized3(wid, FONT_SMALL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
-    const hpStrR = `${`${mon.currentHp}`.padStart(3)}/ ${`${mon.maxHp}`.padStart(3)}`;
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, hpStrR);
+    // 1:1 décomp DisplayPartyPokemonHP/MaxHP — 2 strings FONT_SMALL séparés
+    // aux coords sPartyBoxInfoRects[PARTY_BOX_RIGHT_COLUMN] (party_menu.h:56-57).
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.currentHp)}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHp)}`);
   }
   void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
