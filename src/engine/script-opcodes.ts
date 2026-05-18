@@ -1553,6 +1553,24 @@ registerOpcode('hideplayer', (_ctx) => {
   return false;
 });
 
+/** 1:1 décomp `ScrCmd_showobjectat` via le mnémonique `showplayer`
+ *  (= SCR_OP_SHOWOBJECTAT avec LOCALID_PLAYER) :
+ *  `SetObjectInvisibility(localId, ..., FALSE)`. Miroir exact de
+ *  `hideplayer` (invisible=false). Était MANQUANT (audit scrcmd) :
+ *  `hideplayer` existait mais pas `showplayer` → joueur restait
+ *  invisible après un cinematic (warp/cutscene). */
+registerOpcode('showplayer', (_ctx) => {
+  const rt = getRuntime();
+  if (rt && (globalThis as Record<string, unknown>).gPlayerAvatar) {
+    const pa = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId?: number };
+    if (pa.spriteId !== undefined && pa.spriteId >= 0) {
+      const s = rt.gSprites.get(pa.spriteId);
+      if (s) s.invisible = false;
+    }
+  }
+  return false;
+});
+
 // ─── Doors (= 1:1 décomp ScrCmd_opendoor etc.) ──────────────────────────────
 //
 // 1:1 décomp scrcmd.c:ScrCmd_opendoor :
@@ -1946,6 +1964,24 @@ registerOpcode('setweather', (_ctx, args) => {
   const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
     { weather?: number } | undefined;
   if (block1) block1.weather = weather;
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_resetweather` (scrcmd.c) :
+ *    SetSavedWeatherFromCurrMapHeader();
+ *  = `SetSavedWeather(gMapHeader.weather)` = `block1.weather =
+ *  gMapHeader.weather`. Restaure la météo SAUVEGARDÉE à celle PAR
+ *  DÉFAUT de la map courante (= 1:1 field_weather.c). gMapHeader.weather
+ *  est une string "WEATHER_*" → résolue en id numérique. Était MANQUANT
+ *  (audit scrcmd) → la météo ne se reset pas en sortie de zone spéciale. */
+registerOpcode('resetweather', (_ctx) => {
+  const mhWeather = gMapHeader?.weather;
+  const weatherId = typeof mhWeather === 'string'
+    ? (resolveDecompConstant(mhWeather) ?? 0)
+    : (typeof mhWeather === 'number' ? mhWeather : 0);
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { weather?: number } | undefined;
+  if (block1) block1.weather = typeof weatherId === 'number' ? weatherId : 0;
   return false;
 });
 
