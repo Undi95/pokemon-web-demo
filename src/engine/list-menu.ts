@@ -53,7 +53,11 @@ import {
   AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,
   FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW,
 } from './gba-text-system';
-import { getRuntime, PlaySE, JOY_NEW, JOY_REPEAT } from './decomp-globals';
+import {
+  getRuntime, PlaySE, JOY_NEW, JOY_REPEAT,
+  LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
+} from './decomp-globals';
+import { gSineTable } from './decomp-helpers';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
 
@@ -484,20 +488,11 @@ function _destroyTask(listTaskId: number): void {
   rt?.DestroyTask?.(listTaskId);
 }
 
-/** Curseur sprite RED_OUTLINE/RED_ARROW = DÉFÉRÉ incrément 3 (sprites +
- *  subsprite tables list_menu.c:1178-1447). En CURSOR_BLACK_ARROW/INVISIBLE
- *  (2d) `list.taskId` reste TASK_NONE → ces helpers ne sont JAMAIS appelés
- *  (déféré explicite documenté, exactement comme les render hooks de
- *  l'incrément 1 — PAS un fake silencieux). */
-function _listMenuAddCursorObjectDeferred(_list: ListMenu, _cursorObjId: number): number {
-  throw new Error('[list-menu] curseur sprite RED_* = incrément 3 (non atteint en CURSOR_BLACK_ARROW)');
-}
-function _listMenuUpdateCursorObjectDeferred(_taskId: number, _x: number, _y: number, _cursorObjId: number): void {
-  throw new Error('[list-menu] curseur sprite RED_* = incrément 3 (non atteint en CURSOR_BLACK_ARROW)');
-}
-function _listMenuRemoveCursorObjectDeferred(_taskId: number, _cursorObjId: number): void {
-  throw new Error('[list-menu] curseur sprite RED_* = incrément 3 (non atteint en CURSOR_BLACK_ARROW)');
-}
+// Curseurs sprite RED_OUTLINE/RED_ARROW (list_menu.c:662 + :1178-1447) :
+// portés 1:1 dans la SECTION INCRÉMENT 3b (bas du module). `ListMenuAdd/
+// Update/RemoveCursorObject` = `function` declarations hoistées → utilisables
+// ici (ListMenuDrawCursor/DestroyListMenuTask) bien que définies plus bas
+// (même pattern que setListMenuRenderHooks au bas du module).
 
 /** 1:1 décomp `static void ListMenuPrint(struct ListMenu *list,
  *  const u8 *str, u8 x, u8 y)` (list_menu.c:580-607). colors[3] =
@@ -565,16 +560,16 @@ function ListMenuDrawCursor(list: ListMenu): void {
       break;
     case CURSOR_RED_OUTLINE:
       if (list.taskId === TASK_NONE)
-        list.taskId = _listMenuAddCursorObjectDeferred(list, CURSOR_RED_OUTLINE - CURSOR_OBJECT_START);
-      _listMenuUpdateCursorObjectDeferred(list.taskId,
+        list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_OUTLINE - CURSOR_OBJECT_START);
+      ListMenuUpdateCursorObject(list.taskId,
         GetWindowAttribute(list.template.windowId, /* WINDOW_TILEMAP_LEFT */ 1) * 8 - 1,
         GetWindowAttribute(list.template.windowId, /* WINDOW_TILEMAP_TOP */ 2) * 8 + y - 1,
         CURSOR_RED_OUTLINE - CURSOR_OBJECT_START);
       break;
     case CURSOR_RED_ARROW:
       if (list.taskId === TASK_NONE)
-        list.taskId = _listMenuAddCursorObjectDeferred(list, CURSOR_RED_ARROW - CURSOR_OBJECT_START);
-      _listMenuUpdateCursorObjectDeferred(list.taskId,
+        list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_ARROW - CURSOR_OBJECT_START);
+      ListMenuUpdateCursorObject(list.taskId,
         GetWindowAttribute(list.template.windowId, /* WINDOW_TILEMAP_LEFT */ 1) * 8 + x,
         GetWindowAttribute(list.template.windowId, /* WINDOW_TILEMAP_TOP */ 2) * 8 + y,
         CURSOR_RED_ARROW - CURSOR_OBJECT_START);
@@ -697,7 +692,7 @@ export function DestroyListMenuTask(listTaskId: number): { scrollOffset: number;
   const result = { scrollOffset: list.scrollOffset, selectedRow: list.selectedRow };
 
   if (list.taskId !== TASK_NONE)
-    _listMenuRemoveCursorObjectDeferred(list.taskId, list.template.cursorKind - CURSOR_OBJECT_START);
+    ListMenuRemoveCursorObject(list.taskId, list.template.cursorKind - CURSOR_OBJECT_START);
 
   _destroyTask(listTaskId);
   sListMenus.delete(listTaskId);
@@ -998,5 +993,324 @@ export function ListMenuSetUpRedOutlineCursorSpriteOamTable(rowWidth: number, ro
       subsprites[id].y = _toS8(j - 120);
       id++;
     }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INCRÉMENT 3b — curseurs sprite RED_OUTLINE / RED_ARROW 1:1 (list_menu.c)
+// ════════════════════════════════════════════════════════════════════════════
+// Port 1:1 ligne-par-ligne de `ListMenuAddCursorObject` (list_menu.c:662) +
+// dispatch `ListMenuAdd/Update/RemoveCursorObjectInternal` (:1178-1214) +
+// `ListMenu{Add,Update,Remove}Red{Outline,Arrow}CursorObject` (:1297-1447) +
+// `SpriteCallback_RedArrowCursor` (:1371) + tasks vides (:1216/:1377).
+// Sert PC storage / shop / mystery gift (le sac = CURSOR_BLACK_ARROW, fait 2d).
+// MAPPING struct C → API TS adaptée (corps des helpers LUS avant port,
+// méthode obligatoire BAG-PHASE-2-PLAN) :
+//   • `CreateSprite(&tpl, x, y, 0)` → `rt.CreateSpriteAtOam({...})` (= pattern
+//     summary-screen.ts maîtrisé ; gDummySpriteTemplate = sprite vide sans
+//     callback ; sSpriteTemplate_RedArrowCursor = + SpriteCallback_RedArrow).
+//   • `(void*)gTasks[taskId].data` → Map `sCursorObjData` (1:1 sémantique du
+//     cast brut, MÊME modèle que `sListMenus` en 2d).
+//   • `SetSubspriteTables(&gSprites[id], &tbl)` → `SetSubspriteTables(spriteId,
+//     subsprites[])` (signature ADAPTÉE décomp-globals, vérifiée 1:1).
+//   • `FreeSprite{Tiles,Palette}ByTag` (PAS dans les modules core, juste des
+//     stubs auto-gen) → helpers locaux 1:1 SÉMANTIQUE : libèrent le mapping
+//     tag du runtime (alloc OBJ VRAM/pal indexée par tag-Map chez nous). PAS
+//     un fake : c'est le 1:1 sémantique pour notre modèle d'alloc-par-tag (cf.
+//     même esprit que SetSubspriteTables adaptée). Le sous-système bitmap
+//     décomp (gSpriteTileAllocBitmap) n'est pas porté → ce free est cohérent
+//     avec notre LoadCompressedSpriteSheet (curseur monotone, pas bitmap).
+// VÉRIF : plomberie/structs/dispatch/SpriteCallback math = déterministe
+// (pattern 3a). Le RENDU PIXEL (tiles/pal réels à l'écran) = A/B user au
+// BRANCHEMENT d'un écran consommateur (PC/shop NON portés → pas de consommateur
+// runtime actuel ; le préchargement asset `sOutlineCursor_Gfx`/`sArrowCursor_
+// Gfx`/`sRedInterface_Pal` dans le cache `getAsset` se fera à ce branchement).
+// Report HONNÊTE : 1:1 ligne-par-ligne, 0 demi-port, 0 fake silencieux.
+
+/** 1:1 décomp `include/gba/gba.h #define DISPLAY_HEIGHT 160`. */
+const DISPLAY_HEIGHT = 160;
+
+/** 1:1 décomp `include/constants/...`/sprite : `#define TAG_NONE 0xFFFF`. */
+const TAG_NONE = 0xFFFF;
+
+/** 1:1 décomp `include/palette.h OBJ_PLTT_ID(n) = 0x100 + (n) * 16` (=
+ *  decomp-runtime.ts:188 parité). */
+function OBJ_PLTT_ID(n: number): number { return 256 + n * 16; }
+
+/** 1:1 décomp `include/palette.h PLTT_SIZE_4BPP = 16 * sizeof(u16) = 32`
+ *  (= decomp-bridge.ts:375 parité). */
+const PLTT_SIZE_4BPP = 32;
+
+/** 1:1 décomp symboles assets (list_menu.c:289-292) — `INCGFX` graphics/
+ *  interface/{red.pal,outline_cursor.png,arrow_cursor.png}. Passés tels quels
+ *  à `getAsset` (1:1 : le décomp passe ces symboles). Assets extraits (plan
+ *  BAG : `public/decomp/em/ui/interface/`) ; préchargement cache = branchement
+ *  écran consommateur (PC/shop). */
+const sRedInterface_Pal = 'sRedInterface_Pal';
+const sOutlineCursor_Gfx = 'sOutlineCursor_Gfx';
+const sArrowCursor_Gfx = 'sArrowCursor_Gfx';
+
+/** 1:1 décomp `struct RedOutlineCursor` (list_menu.c:36-43). `subspritesPtr`
+ *  = `Alloc(count*4)` → array TS (Free = GC). */
+interface RedOutlineCursor {
+  subspriteTable: SubspriteTable;
+  subspritesPtr: Subsprite[];
+  spriteId: number;
+  tileTag: number;
+  palTag: number;
+}
+
+/** 1:1 décomp `struct RedArrowCursor` (list_menu.c:45-50). */
+interface RedArrowCursor {
+  spriteId: number;
+  tileTag: number;
+  palTag: number;
+}
+
+/** Modèle objet→Map (= 1:1 sémantique du cast `(void*)gTasks[taskId].data`
+ *  du décomp ; la task `Task_RedOutline/ArrowCursor` ne sert qu'à réserver
+ *  le slot/ID, exactement comme `ListMenuDummyTask`/`sListMenus` en 2d). */
+const sCursorObjData = new Map<number, RedOutlineCursor | RedArrowCursor>();
+
+/** 1:1 décomp `static void Task_RedOutlineCursor(u8 taskId) {}`
+ *  (list_menu.c:1216) — vide (le sprite a son rendu propre / subsprites). */
+function Task_RedOutlineCursor(_taskId: number): void { /* noop, 1:1 :1216 */ }
+
+/** 1:1 décomp `static void Task_RedArrowCursor(u8 taskId) {}`
+ *  (list_menu.c:1377) — vide (l'idle anim = SpriteCallback_RedArrowCursor). */
+function Task_RedArrowCursor(_taskId: number): void { /* noop, 1:1 :1377 */ }
+
+/** 1:1 décomp `static void SpriteCallback_RedArrowCursor(struct Sprite *sprite)`
+ *  (list_menu.c:1371-1375). `gSineTable[(u8)data0]/64` : `(u8)` = `& 0xFF`,
+ *  `/64` = division entière C (trunc vers 0) → `Math.trunc`. `data[0] += 8` :
+ *  `sprite.data` = Int16Array → wrap s16 auto (1:1 `s16 data[0]`). */
+function SpriteCallback_RedArrowCursor(sprite: { x2: number; data: number[] }): void {
+  sprite.x2 = Math.trunc(gSineTable(sprite.data[0] & 0xFF) / 64);
+  sprite.data[0] += 8;
+}
+
+/** 1:1 SÉMANTIQUE décomp `FreeSpriteTilesByTag(tag)` (sprite.c) — adapté à
+ *  notre alloc OBJ VRAM par tag-Map (`rt.spriteSheetTagToTileStart`). Libérer
+ *  = retirer le mapping (tag ré-allouable). Report HONNÊTE : le bitmap décomp
+ *  `gSpriteTileAllocBitmap` n'est pas porté ; ce free est cohérent avec notre
+ *  `LoadCompressedSpriteSheet` (curseur monotone), PAS un fake. */
+function _freeSpriteTilesByTag(tag: number): void {
+  const rt = getRuntime() as unknown as { spriteSheetTagToTileStart?: Map<string, number> } | null;
+  rt?.spriteSheetTagToTileStart?.delete(String(tag));
+}
+
+/** 1:1 SÉMANTIQUE décomp `FreeSpritePaletteByTag(tag)` (sprite.c) — idem,
+ *  modèle `rt.paletteTagToSlot`. (Inatteignable en pratique : ListMenuAdd
+ *  CursorObject fixe palTag=TAG_NONE list_menu.c:671 ; porté 1:1 pour la
+ *  garde `if palTag != TAG_NONE` et un éventuel appelant tiers.) */
+function _freeSpritePaletteByTag(tag: number): void {
+  const rt = getRuntime() as unknown as { paletteTagToSlot?: Map<string, number> } | null;
+  rt?.paletteTagToSlot?.delete(String(tag));
+}
+
+/** Accès runtime sprite (1:1 `gSprites[id]`). */
+function _getSprite(spriteId: number): { x: number; y: number; x2: number; y2: number; data: number[]; callback: ((s: unknown) => void) | null } | undefined {
+  const rt = getRuntime() as unknown as { gSprites?: Map<number, unknown> } | null;
+  return rt?.gSprites?.get(spriteId) as { x: number; y: number; x2: number; y2: number; data: number[]; callback: ((s: unknown) => void) | null } | undefined;
+}
+
+/** 1:1 décomp `static u8 ListMenuAddRedOutlineCursorObject(struct CursorStruct
+ *  *cursor)` (list_menu.c:1297-1346). */
+function ListMenuAddRedOutlineCursorObject(cursor: CursorStruct): number {
+  // 1:1 :1305-1308 spriteSheet{data=sOutlineCursor_Gfx,size=0x100,tag} ;
+  // LoadCompressedSpriteSheet (size ignoré par le wrapper = alloc auto).
+  LoadCompressedSpriteSheet({ data: sOutlineCursor_Gfx, size: 0x100, tag: cursor.tileTag });
+  // 1:1 :1310-1319 palTag==TAG_NONE → LoadPalette(sRedInterface_Pal,
+  // OBJ_PLTT_ID(palNum), PLTT_SIZE_4BPP) ; sinon LoadSpritePalette.
+  if (cursor.palTag === TAG_NONE) {
+    LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(cursor.palNum), PLTT_SIZE_4BPP);
+  } else {
+    LoadSpritePalette({ data: sRedInterface_Pal, tag: cursor.palTag });
+  }
+
+  const taskId = _createTask(Task_RedOutlineCursor, 0);          // 1:1 :1321
+  const data: RedOutlineCursor = {                               // 1:1 :1322 (void*)gTasks[taskId].data
+    subspriteTable: { subspriteCount: 0, subsprites: [] },
+    subspritesPtr: [], spriteId: 0, tileTag: 0, palTag: 0,
+  };
+  sCursorObjData.set(taskId, data);
+
+  data.tileTag = cursor.tileTag;                                 // 1:1 :1324
+  data.palTag = cursor.palTag;                                   // 1:1 :1325
+  data.subspriteTable.subspriteCount = ListMenuGetRedOutlineCursorSpriteCount(cursor.rowWidth, cursor.rowHeight); // :1326
+  // 1:1 :1327 `subspriteTable.subsprites = subspritesPtr = Alloc(count*4)`
+  // (Alloc → array TS ; SetUpOamTable le remplit par index).
+  data.subspriteTable.subsprites = data.subspritesPtr = [];
+  ListMenuSetUpRedOutlineCursorSpriteOamTable(cursor.rowWidth, cursor.rowHeight, data.subspritesPtr); // :1328 (3a)
+
+  // 1:1 :1330-1334 `spriteTemplate = gDummySpriteTemplate` (oam dummy 8x8,
+  // callback dummy) avec tileTag/paletteTag custom ; CreateSprite(&tpl,
+  // left+120, top+120, 0). Mapping adapté CreateSpriteAtOam : tile = tag→
+  // tileStart, pal = palNum, shape/size 8x8 (le rendu = subsprites).
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    spriteSheetTagToTileStart?: Map<string, number>;
+  };
+  const tileStart = rt.spriteSheetTagToTileStart?.get(String(cursor.tileTag)) ?? 0;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: cursor.palNum,
+    x: cursor.left + 120, y: cursor.top + 120,
+    shape: 0, size: 0, priority: 0, subpriority: 0,
+  });
+  data.spriteId = spriteId;
+  // 1:1 :1335 SetSubspriteTables(&gSprites[id], &data->subspriteTable)
+  SetSubspriteTables(spriteId, data.subspritesPtr as unknown as Parameters<typeof SetSubspriteTables>[1]);
+  // 1:1 :1336-1338 oam.priority=0 ; subpriority=0 (déjà via CreateSpriteAtOam) ;
+  // subspriteTableNum=0 (notre SetSubspriteTables = table unique → implicite).
+  // 1:1 :1340-1343 palTag==TAG_NONE → oam.paletteNum = palNum (= paletteBank).
+  return taskId;
+}
+
+/** 1:1 décomp `static void ListMenuUpdateRedOutlineCursorObject(u8 taskId,
+ *  u16 x, u16 y)` (list_menu.c:1348-1354). */
+function ListMenuUpdateRedOutlineCursorObject(taskId: number, x: number, y: number): void {
+  const data = sCursorObjData.get(taskId) as RedOutlineCursor | undefined;
+  if (!data) return;
+  const spr = _getSprite(data.spriteId);
+  if (spr) {
+    spr.x = x + 120;   // 1:1 :1352
+    spr.y = y + 120;   // 1:1 :1353
+  }
+}
+
+/** 1:1 décomp `static void ListMenuRemoveRedOutlineCursorObject(u8 taskId)`
+ *  (list_menu.c:1356-1369). */
+function ListMenuRemoveRedOutlineCursorObject(taskId: number): void {
+  const data = sCursorObjData.get(taskId) as RedOutlineCursor | undefined;
+  if (!data) return;
+  // 1:1 :1360 Free(data->subspritesPtr) — no-op (GC JS).
+  if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1362-1363
+  if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1364-1365
+  const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
+  rt?.DestroySprite?.(data.spriteId);   // 1:1 :1367 DestroySprite(&gSprites[id])
+  _destroyTask(taskId);                  // 1:1 :1368 DestroyTask(taskId)
+  sCursorObjData.delete(taskId);         // = slot gTasks[].data réclamé
+}
+
+/** 1:1 décomp `static u8 ListMenuAddRedArrowCursorObject(struct CursorStruct
+ *  *cursor)` (list_menu.c:1382-1426). */
+function ListMenuAddRedArrowCursorObject(cursor: CursorStruct): number {
+  // 1:1 :1390-1393 spriteSheet{data=sArrowCursor_Gfx,size=0x80,tag}.
+  LoadCompressedSpriteSheet({ data: sArrowCursor_Gfx, size: 0x80, tag: cursor.tileTag });
+  // 1:1 :1395-1404 palTag==TAG_NONE → LoadPalette ; sinon LoadSpritePalette.
+  if (cursor.palTag === TAG_NONE) {
+    LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(cursor.palNum), PLTT_SIZE_4BPP);
+  } else {
+    LoadSpritePalette({ data: sRedInterface_Pal, tag: cursor.palTag });
+  }
+
+  const taskId = _createTask(Task_RedArrowCursor, 0);            // 1:1 :1406
+  const data: RedArrowCursor = { spriteId: 0, tileTag: 0, palTag: 0 }; // 1:1 :1407
+  sCursorObjData.set(taskId, data);
+
+  data.tileTag = cursor.tileTag;                                 // 1:1 :1409
+  data.palTag = cursor.palTag;                                   // 1:1 :1410
+
+  // 1:1 :1412-1416 `spriteTemplate = sSpriteTemplate_RedArrowCursor`
+  // (sOamData_RedArrowCursor = SPRITE_SHAPE(16x16)=ST_OAM_SQUARE=0,
+  // SPRITE_SIZE(16x16)=1, priority 0 ; callback=SpriteCallback_RedArrowCursor)
+  // avec tileTag/paletteTag custom ; CreateSprite(&tpl, left, top, 0).
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    spriteSheetTagToTileStart?: Map<string, number>;
+  };
+  const tileStart = rt.spriteSheetTagToTileStart?.get(String(cursor.tileTag)) ?? 0;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: cursor.palNum,
+    x: cursor.left, y: cursor.top,
+    shape: 0, size: 1, priority: 0, subpriority: 0,
+  });
+  data.spriteId = spriteId;
+  const spr = _getSprite(spriteId);
+  if (spr) {
+    spr.x2 = 8;   // 1:1 :1417
+    spr.y2 = 8;   // 1:1 :1418
+    // sSpriteTemplate_RedArrowCursor.callback = SpriteCallback_RedArrowCursor
+    spr.callback = SpriteCallback_RedArrowCursor as unknown as (s: unknown) => void;
+  }
+  // 1:1 :1420-1423 palTag==TAG_NONE → oam.paletteNum = palNum (= paletteBank).
+  return taskId;
+}
+
+/** 1:1 décomp `static void ListMenuUpdateRedArrowCursorObject(u8 taskId,
+ *  u16 x, u16 y)` (list_menu.c:1428-1434). */
+function ListMenuUpdateRedArrowCursorObject(taskId: number, x: number, y: number): void {
+  const data = sCursorObjData.get(taskId) as RedArrowCursor | undefined;
+  if (!data) return;
+  const spr = _getSprite(data.spriteId);
+  if (spr) {
+    spr.x = x;   // 1:1 :1432
+    spr.y = y;   // 1:1 :1433
+  }
+}
+
+/** 1:1 décomp `static void ListMenuRemoveRedArrowCursorObject(u8 taskId)`
+ *  (list_menu.c:1436-1447). */
+function ListMenuRemoveRedArrowCursorObject(taskId: number): void {
+  const data = sCursorObjData.get(taskId) as RedArrowCursor | undefined;
+  if (!data) return;
+  if (data.tileTag !== TAG_NONE) _freeSpriteTilesByTag(data.tileTag);   // 1:1 :1440-1441
+  if (data.palTag !== TAG_NONE) _freeSpritePaletteByTag(data.palTag);   // 1:1 :1442-1443
+  const rt = getRuntime() as unknown as { DestroySprite?: (id: number) => void } | null;
+  rt?.DestroySprite?.(data.spriteId);   // 1:1 :1445 DestroySprite(&gSprites[id])
+  _destroyTask(taskId);                  // 1:1 :1446 DestroyTask(taskId)
+  sCursorObjData.delete(taskId);
+}
+
+/** 1:1 décomp `static u8 ListMenuAddCursorObjectInternal(struct CursorStruct
+ *  *cursor, u32 cursorObjId)` (list_menu.c:1178-1188). */
+function ListMenuAddCursorObjectInternal(cursor: CursorStruct, cursorObjId: number): number {
+  switch (cursorObjId) {
+    case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+    default:
+      return ListMenuAddRedOutlineCursorObject(cursor);
+    case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      return ListMenuAddRedArrowCursorObject(cursor);
+  }
+}
+
+/** 1:1 décomp `static u8 ListMenuAddCursorObject(struct ListMenu *list,
+ *  u32 cursorObjId)` (list_menu.c:662-675). */
+function ListMenuAddCursorObject(list: ListMenu, cursorObjId: number): number {
+  const cursor: CursorStruct = {
+    left: 0,                                                            // 1:1 :666
+    top: DISPLAY_HEIGHT,                                                // 1:1 :667
+    rowWidth: GetWindowAttribute(list.template.windowId, WINDOW_WIDTH) * 8 + 2,   // 1:1 :668
+    rowHeight: GetFontAttribute(list.template.fontId, FONTATTR_MAX_LETTER_HEIGHT) + 2, // 1:1 :669
+    tileTag: 0x4000,                                                    // 1:1 :670
+    palTag: TAG_NONE,                                                   // 1:1 :671
+    palNum: 15,                                                         // 1:1 :672
+  };
+  return ListMenuAddCursorObjectInternal(cursor, cursorObjId);          // 1:1 :674
+}
+
+/** 1:1 décomp `static void ListMenuUpdateCursorObject(u8 taskId, u16 x,
+ *  u16 y, u32 cursorObjId)` (list_menu.c:1190-1201). */
+function ListMenuUpdateCursorObject(taskId: number, x: number, y: number, cursorObjId: number): void {
+  switch (cursorObjId) {
+    case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+      ListMenuUpdateRedOutlineCursorObject(taskId, x, y);
+      break;
+    case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      ListMenuUpdateRedArrowCursorObject(taskId, x, y);
+      break;
+  }
+}
+
+/** 1:1 décomp `static void ListMenuRemoveCursorObject(u8 taskId,
+ *  u32 cursorObjId)` (list_menu.c:1203-1214). */
+function ListMenuRemoveCursorObject(taskId: number, cursorObjId: number): void {
+  switch (cursorObjId) {
+    case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+      ListMenuRemoveRedOutlineCursorObject(taskId);
+      break;
+    case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      ListMenuRemoveRedArrowCursorObject(taskId);
+      break;
   }
 }
