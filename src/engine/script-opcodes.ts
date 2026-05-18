@@ -50,7 +50,7 @@ import {
 } from './player-avatar';
 import { getRuntime } from './decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
-import { RtcCalcLocalTime, gLocalTime } from './rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { setStringVar } from './string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
@@ -2580,9 +2580,45 @@ registerOpcode('hidemonpic', (_ctx, _args) => false);
 //   early-game (= starter choose alternate path, gift Pokemon).
 //   MVP : log + skip (= the actual `starter-choose-flow.ts` does the real work
 //   for ChooseStarter, this stub is for other gift flows).
+/** 1:1 décomp `ScrCmd_givemon` (scrcmd.c:1683) → `ScriptGiveMon`
+ *  (script_pokemon_util.c:61) : species=VarGet(halfword), level=byte,
+ *  item=VarGet(halfword) ; CreateMon + SetMonData HELD_ITEM ;
+ *  sentToPc = GiveMonToPlayer ; gSpecialVar_Result = sentToPc
+ *  (MON_GIVEN_TO_PARTY=0 / MON_GIVEN_TO_PC=1 / MON_CANT_GIVE=2).
+ *  Le vrai impl existait sous le mauvais mnémonique `givepokemon` ;
+ *  `givemon` (= mnémonique décomp réel) était un STUB qui le masquait
+ *  → tous les events cadeau-mon cassés (fossiles/Beldum/in-game trades).
+ *  Notre PC a toujours de la place (Émeraude 14 boxes×30) → party
+ *  pleine ⇒ MON_GIVEN_TO_PC(1), jamais CANT(2) (= 1:1 comportement). */
 registerOpcode('givemon', (_ctx, args) => {
-  console.log(`[opcode givemon] species=${args[0]} level=${args[1]} item=${args[2]} — TODO gift mon`);
-  VarSet('VAR_RESULT', 1); // success
+  const speciesArg = args[0] ?? '';
+  const level = parseValue(args[1] ?? '5') || 5;
+  let speciesName = speciesArg;
+  if (!speciesName.startsWith('SPECIES_')) {
+    const num = VarGet(speciesArg);
+    speciesName = reverseDecompConstant(num, 'SPECIES_') ?? `SPECIES_${num}`;
+  }
+  // item : ITEM_* littéral, VAR_*, ou absent (ITEM_NONE).
+  const itemArg = args[2];
+  let heldItem: string | undefined;
+  if (itemArg && itemArg !== 'ITEM_NONE' && itemArg !== '0') {
+    heldItem = itemArg.startsWith('ITEM_')
+      ? itemArg
+      : (reverseDecompConstant(VarGet(itemArg), 'ITEM_') ?? undefined);
+  }
+  void (async () => {
+    try {
+      const { createPokemonInstance } = await import('./pokemon');
+      const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
+      const ok = gameState.addToParty(mon);
+      // 1:1 ScriptGiveMon : 0=MON_GIVEN_TO_PARTY, 1=MON_GIVEN_TO_PC.
+      gameState.setVar('VAR_RESULT', ok ? 0 : 1);
+      console.log(`[opcode givemon] ${speciesName} Lv${level}${heldItem ? ' @' + heldItem : ''} → ${ok ? 'PARTY(0)' : 'PC(1)'}`);
+    } catch (e) {
+      console.warn('[opcode givemon] failed:', e);
+      gameState.setVar('VAR_RESULT', 2);  // MON_CANT_GIVE
+    }
+  })();
   return false;
 });
 
@@ -2764,6 +2800,17 @@ registerOpcode('dofieldeffectsparkle', (_ctx, _args) => false);
 registerOpcode('setwildbattle', (_ctx, _args) => false);
 registerOpcode('dowildbattle', (_ctx, _args) => false);
 registerOpcode('dotimebasedevents', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_initclock` (scrcmd.c) :
+ *    RtcInitLocalTimeOffset(VarGet(hour), VarGet(minute));
+ *  Set l'heure in-game initiale (= new-game / wall-clock confirm). Était
+ *  MANQUANT (audit scrcmd) → l'horloge in-game restait à l'offset par
+ *  défaut. rtc.ts:RtcInitLocalTimeOffset déjà porté 1:1. */
+registerOpcode('initclock', (_ctx, args) => {
+  const hour = VarGet(args[0] ?? '0');
+  const minute = VarGet(args[1] ?? '0');
+  RtcInitLocalTimeOffset(hour, minute);
+  return false;
+});
 registerOpcode('showcontestpainting', (_ctx, _args) => false);
 registerOpcode('playslotmachine', (_ctx, _args) => false);
 registerOpcode('setvaddress', (_ctx, _args) => false);
