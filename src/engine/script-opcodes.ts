@@ -1811,8 +1811,12 @@ registerOpcode('playmoncry', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_waitmoncry` (scrcmd.c) : wait for cry to finish. No-op MVP. */
-registerOpcode('waitmoncry', (_ctx, _args) => false);
+// `waitmoncry` : registration UNIQUE = la vraie impl 1:1 plus bas
+// (SetupNativeScript + IsCryFinished, scrcmd.c:2028). L'ancien
+// registerOpcode no-op redondant ici a été supprimé (Map.set → le
+// dernier gagnait déjà, donc comportement INCHANGÉ ; retire du code mort
+// + un faux positif audit:scrcmd dont la fenêtre 220c capturait le
+// "Stub" du commentaire giveitem ci-dessous).
 
 /** 1:1 décomp `giveitem` macro = additem + msgbox + fanfare. Stub : just additem. */
 registerOpcode('giveitem', (_ctx, args) => {
