@@ -23,8 +23,11 @@
 import {
   type SaveBlock1,
   type SaveBlock2,
+  type PokemonStorage,
   emptySaveBlock1,
   emptySaveBlock2,
+  emptyPokemonStorage,
+  TOTAL_BOXES_COUNT,
 } from './save-blocks';
 import { emptyBag } from './bag';
 import {
@@ -50,11 +53,23 @@ export const SAVE_STATUS_ERROR = SS_ERR;
 
 let sCurrentBlock1: SaveBlock1 | null = null;
 let sCurrentBlock2: SaveBlock2 | null = null;
-/** Placeholder PokemonStorage (secteurs 5-13). Struct réelle = étape 6 ;
- *  pour l'instant un objet vide round-trip correctement (format 14-sect
- *  complet, 1:1). */
-let sCurrentStorage: unknown = {};
+/** 1:1 décomp `gPokemonStoragePtr` (secteurs 5-13). Étape 6 : struct réelle
+ *  `PokemonStorage` (14 boxes × 30 BoxPokemon + boxNames + wallpapers +
+ *  currentBox) au lieu de l'ancien placeholder `{}`. Défaut = 1:1
+ *  `ResetPokemonStorageSystem`. Round-trip via le moteur secteurs (étape 3 ;
+ *  JSON→UTF-8→chunks ≤3968), pas d'UI PC requise (format complet 1:1 suffit). */
+let sCurrentStorage: PokemonStorage = emptyPokemonStorage();
 let sSaveFileStatus: number = SAVE_STATUS_EMPTY;
+
+/** Valide la FORME d'une PokemonStorage désérialisée (boxes[14] présent).
+ *  Une save pré-étape-6 a `{}` (ancien placeholder) → invalide → défaut. */
+function _isValidStorage(x: unknown): x is PokemonStorage {
+  if (!x || typeof x !== 'object') return false;
+  const s = x as Partial<PokemonStorage>;
+  return Array.isArray(s.boxes) && s.boxes.length === TOTAL_BOXES_COUNT
+    && typeof s.currentBox === 'number' && Array.isArray(s.boxNames)
+    && Array.isArray(s.boxWallpapers);
+}
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────
 
@@ -67,7 +82,15 @@ export function LoadGameSave(): number {
   if (status === SAVE_STATUS_OK && blocks.saveBlock1 && blocks.saveBlock2) {
     sCurrentBlock1 = blocks.saveBlock1 as SaveBlock1;
     sCurrentBlock2 = blocks.saveBlock2 as SaveBlock2;
-    sCurrentStorage = blocks.pokemonStorage ?? {};
+    // Étape 6 : valider la FORME (pas juste != null). Une save écrite AVANT
+    // l'étape 6 a `pokemonStorage = {}` (ancien placeholder) — `{}` est
+    // truthy donc `?? ` ne la remplacerait PAS → storage cassé. Clean-break
+    // autorisé (personne n'a joué) : storage invalide/absent → défaut 1:1
+    // `ResetPokemonStorageSystem` (= emptyPokemonStorage). Une save valide
+    // post-étape-6 a `boxes[14]` → conservée telle quelle (round-trip 1:1).
+    sCurrentStorage = _isValidStorage(blocks.pokemonStorage)
+      ? (blocks.pokemonStorage as PokemonStorage)
+      : emptyPokemonStorage();
     sSaveFileStatus = SAVE_STATUS_OK;
     console.log('[save-system] loaded (sector engine, counter max slot)');
     // 1:1 RTC : offset dans sCurrentBlock2.localTimeOffset (struct Time),
@@ -80,7 +103,7 @@ export function LoadGameSave(): number {
   // migration ancien format (clean break, autorisé user).
   sCurrentBlock2 = emptySaveBlock2();
   sCurrentBlock1 = emptySaveBlock1(emptyBag());
-  sCurrentStorage = {};
+  sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = (status === SAVE_STATUS_CORRUPT) ? SAVE_STATUS_CORRUPT : SAVE_STATUS_EMPTY;
   return sSaveFileStatus;
 }
@@ -98,7 +121,7 @@ export function TrySavingData(): boolean {
   const blocks: Record<BlockKey, unknown> = {
     saveBlock2: sCurrentBlock2,
     saveBlock1: sCurrentBlock1,
-    pokemonStorage: sCurrentStorage ?? {},
+    pokemonStorage: sCurrentStorage,
   };
   const status = WriteSaveSlot(blocks);
   if (status === SAVE_STATUS_OK) {
@@ -127,13 +150,18 @@ export function GetSaveBlock2(): SaveBlock2 {
   return sCurrentBlock2;
 }
 
+/** 1:1 décomp `gPokemonStoragePtr` accessor (étape 6 : struct réelle). */
+export function GetPokemonStorage(): PokemonStorage {
+  return sCurrentStorage;
+}
+
 /** 1:1 décomp `Sav2_ClearSetDefault` + `ClearSav1` — reset RAM des blocs
  *  (NewGame). NE touche PAS la flash (= 1:1, la flash n'est effacée que
  *  par un save ou ClearSaveData). */
 export function ResetSaveBlocks(): void {
   sCurrentBlock2 = emptySaveBlock2();
   sCurrentBlock1 = emptySaveBlock1(emptyBag());
-  sCurrentStorage = {};
+  sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }
 
@@ -150,7 +178,7 @@ export function DeleteAllSaves(): void {
   } catch { /* ignore */ }
   sCurrentBlock1 = null;
   sCurrentBlock2 = null;
-  sCurrentStorage = {};
+  sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }
 
@@ -168,6 +196,7 @@ if (typeof window !== 'undefined') {
     Status: GetSaveFileStatus,
     Block1: GetSaveBlock1,
     Block2: GetSaveBlock2,
+    Storage: GetPokemonStorage,
     Reset: ResetSaveBlocks,
     DeleteAll: DeleteAllSaves,
     HasValid: HasValidSave,

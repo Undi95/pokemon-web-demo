@@ -1582,12 +1582,26 @@ export function emptySaveBlock1(emptyBag: Bag): SaveBlock1 {
   };
 }
 
-/** 1:1 décomp `ResetPokemonStorage` (= empty 14 boxes). */
+// 1:1 décomp `MAX_DEFAULT_WALLPAPER` = `WALLPAPER_SAVANNA` = 3
+// (data/wallpapers.h:21 + enum:1-5 FOREST=0/CITY=1/DESERT=2/SAVANNA=3).
+// Pas exporté dans decomp-data → const locale citée (≠ hardcode aveugle).
+const MAX_DEFAULT_WALLPAPER = 3;
+
+/** 1:1 décomp `ResetPokemonStorageSystem(void)` (pokemon_storage_system.c
+ *  :1729-1748) :
+ *    SetCurrentBox(0) ;
+ *    ZeroBoxMonAt(tous)            → slots `null` (= BoxPokemon zeroé,
+ *                                     hasSpecies 0 = vide) ;
+ *    boxNames[i] = gText_Box + ConvertIntToDecimalStringN(i+1, LEFT_ALIGN,2)
+ *                = "BOITE " + (i+1)  (strings.c:944 gText_Box = _("BOITE "),
+ *                  décomp FR) → "BOITE 1".."BOITE 14" ;
+ *    boxWallpapers[i] = i % (MAX_DEFAULT_WALLPAPER + 1) = i % 4 ;
+ *  (ResetWaldaWallpaper = subsystem Walda déféré, sans effet sur ce format). */
 export function emptyPokemonStorage(): PokemonStorage {
   return {
     currentBox: 0,
     boxes: arr2(TOTAL_BOXES_COUNT, IN_BOX_COUNT, () => null as BoxPokemonSlot),
-    boxNames: arr(TOTAL_BOXES_COUNT, () => ''),
-    boxWallpapers: zeros(TOTAL_BOXES_COUNT),
+    boxNames: Array.from({ length: TOTAL_BOXES_COUNT }, (_, i) => `BOITE ${i + 1}`),
+    boxWallpapers: Array.from({ length: TOTAL_BOXES_COUNT }, (_, i) => i % (MAX_DEFAULT_WALLPAPER + 1)),
   };
 }
