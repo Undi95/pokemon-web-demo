@@ -1740,14 +1740,18 @@ function _createCaughtBallSprite(): void {
 function _playMonCryOnce(): void {
   if (_cryPlayed || !sMon.currentMon) return;
   _cryPlayed = true;
-  const sp = sMon.currentMon.speciesName;
-  void import('./music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+  const isEgg = sMon.summary.isEgg;
+  // 1:1 décomp `PlayMonCry` (pokemon_summary_screen.c:3963) : `if (!summary
+  // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
+  if (!isEgg) {
+    const sp = sMon.currentMon.speciesName;
+    void import('./music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+  }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).
   const rt = getRuntime();
   const monSpr = rt && _monPicSpriteId >= 0 ? rt.gSprites.get(_monPicSpriteId) : null;
   if (monSpr) {
-    const isEgg = sMon.summary.isEgg;
     const speciesEnum = isEgg ? 'SPECIES_EGG' : sMon.summary.species;
     try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg, MON_PIC_TILE_BASE, MON_PIC_FRAME_TILES); }
     catch (e) { console.error('[summary] mon anim failed:', e); }

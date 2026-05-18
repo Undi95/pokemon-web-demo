@@ -211,6 +211,11 @@ interface PartyAssets {
   /** 1:1 décomp `sSlotTilemap_WideEmpty` (party_menu.h:569) :
    *  Used by `DrawEmptySlot` for slots with no Pokémon. */
   slotWideEmptyTilemap: Uint8Array;
+  /** 1:1 décomp `sSlotTilemap_MainNoHP`/`_WideNoHP` (party_menu.h:566/568) :
+   *  variante SANS label "PV"/barre PV — utilisée pour les ŒUFS (blitFunc
+   *  (.,hideHP=TRUE) dans DisplayPartyPokemonData :876). */
+  slotMainNoHpTilemap: Uint8Array;
+  slotWideNoHpTilemap: Uint8Array;
   // Pokémon icons : loaded lazy per slot below.
 }
 
@@ -259,7 +264,7 @@ async function _loadAssets(): Promise<PartyAssets> {
       if (!r.ok) throw new Error(`fetch failed ${url} → ${r.status}`);
       return new Uint8Array(await r.arrayBuffer());
     };
-    const [bgTilesRaw, bgTilemapBin, bgPalFull, slotMain, slotWide, slotWideEmpty] = await Promise.all([
+    const [bgTilesRaw, bgTilemapBin, bgPalFull, slotMain, slotWide, slotWideEmpty, slotMainNoHp, slotWideNoHp] = await Promise.all([
       loadTileBin('/decomp/em/party_menu/bg.png', 4),
       loadTilemapBin('/decomp/em/party_menu/bg.bin'),
       // 1:1 décomp FR `gPartyMenuBg_Pal` = bg.pal JASC text 176 entries
@@ -271,6 +276,8 @@ async function _loadAssets(): Promise<PartyAssets> {
       fetchU8('/decomp/em/party_menu/slot_main.bin'),
       fetchU8('/decomp/em/party_menu/slot_wide.bin'),
       fetchU8('/decomp/em/party_menu/slot_wide_empty.bin'),
+      fetchU8('/decomp/em/party_menu/slot_main_no_hp.bin'),
+      fetchU8('/decomp/em/party_menu/slot_wide_no_hp.bin'),
     ]);
     _assets = {
       bgTiles: bgTilesRaw,
@@ -279,6 +286,8 @@ async function _loadAssets(): Promise<PartyAssets> {
       slotMainTilemap: slotMain,
       slotWideTilemap: slotWide,
       slotWideEmptyTilemap: slotWideEmpty,
+      slotMainNoHpTilemap: slotMainNoHp,
+      slotWideNoHpTilemap: slotWideNoHp,
     };
     return _assets;
   })();
@@ -441,12 +450,16 @@ function _drawSlotFrame(slotIdx: number): void {
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
   const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  // 1:1 décomp DisplayPartyPokemonData (:876) : un ŒUF blit la variante
+  // NoHP (sSlotTilemap_MainNoHP/_WideNoHP) = box SANS label "PV"/barre.
+  const isEgg = !!mon?.isEgg;
   if (slotIdx === 0) {
-    // Slot 0 = LeftColumn : slot_main 10×7.
-    _blitSlotFrame(wid, _assets.slotMainTilemap, 10, 0, 0, 10, 7);
+    // Slot 0 = LeftColumn : slot_main 10×7 (NoHP si œuf).
+    _blitSlotFrame(wid, isEgg ? _assets.slotMainNoHpTilemap : _assets.slotMainTilemap, 10, 0, 0, 10, 7);
   } else {
-    // Slots 1-5 = RightColumn : slot_wide (occupé) ou slot_wide_empty (vide).
-    const tm = mon ? _assets.slotWideTilemap : _assets.slotWideEmptyTilemap;
+    // Slots 1-5 = RightColumn : slot_wide (occupé) / NoHP (œuf) / empty (vide).
+    const tm = !mon ? _assets.slotWideEmptyTilemap
+      : isEgg ? _assets.slotWideNoHpTilemap : _assets.slotWideTilemap;
     _blitSlotFrame(wid, tm, 18, 0, 0, 18, 3);
   }
 }
@@ -459,6 +472,20 @@ function _drawSlot(slotIdx: number): void {
   const mon = (gameState.party as PokemonInstance[])[slotIdx];
   if (!mon) {
     // Slot vide : no text (= just empty frame déjà blit).
+    CopyWindowToVram(wid, 3);
+    return;
+  }
+  // 1:1 décomp `DisplayPartyPokemonData` (party_menu.c:872) : un ŒUF
+  // n'affiche QUE le nickname (= "OEUF", GetMonNickname égg → gText_Egg
+  // Nickname) — PAS de niveau / genre / PV / barre PV (blitFunc(.,TRUE)
+  // blanchit ces zones). Le sprite icône = l'icône d'œuf (cf. _loadSlotIcon).
+  if (mon.isEgg) {
+    const eggName = getString('gText_EggNickname');  // "OEUF" (strings.c:21)
+    if (slotIdx === 0) {
+      AddTextPrinterParameterized3(wid, FONT_SMALL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, eggName);
+    } else {
+      AddTextPrinterParameterized3(wid, FONT_SMALL, 22, 3, COLOR_TEXT, TEXT_SKIP_DRAW, eggName);
+    }
     CopyWindowToVram(wid, 3);
     return;
   }
@@ -865,8 +892,11 @@ async function _spawnIconOams(): Promise<void> {
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
     if (!mon) continue;
-    // Load icon depuis /decomp/em/pokemon/<dexid>/icon.png
-    const dexId = mon.speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+    // 1:1 décomp `CreatePartyMonIconSprite` (party_menu.c:3937) : species2 =
+    // MON_DATA_SPECIES_OR_EGG → SPECIES_EGG si œuf → gMonIconTable[SPECIES_EGG]
+    // = icône d'ŒUF (pas l'icône de l'espèce dedans).
+    const dexId = mon.isEgg ? 'egg' : mon.speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+    const iconPalSpecies = mon.isEgg ? 'SPECIES_EGG' : mon.speciesEnum;
     try {
       const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
       // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
@@ -884,7 +914,7 @@ async function _spawnIconOams(): Promise<void> {
       // pour obtenir l'index 0/1/2, puis load `gMonIconPalettes[index]` (= un
       // de 3 palettes shared between species). Pas normal.pal (= front sprite
       // palette, DIFFERENT from icon palette).
-      const palIdx = MON_ICON_PALETTE_INDICES[mon.speciesEnum] ?? 0;
+      const palIdx = MON_ICON_PALETTE_INDICES[iconPalSpecies] ?? 0;
       const iconPal = await loadGbaPal(`/decomp/em/pokemon/icon_palettes/icon_palette_${palIdx}.pal`);
       const palBank = ICON_OBJ_PAL_BASE + i;
       rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
