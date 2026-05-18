@@ -50,6 +50,7 @@ import { ResetSpriteData } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
+import { OBJ_PLTT_ID } from './decomp-runtime';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -67,6 +68,10 @@ interface SummaryAssets {
   pageSkillsTilemap: Uint16Array;
   pageBattleMovesTilemap: Uint16Array;
   tilesPalette: Uint16Array;
+  /** 1:1 décomp `sSpriteSheet_MoveTypes` (move_types.4bpp = 23 icônes 32×16,
+   *  ordre enum TYPE_*) + `gMoveTypes_Pal` (48 couleurs = 3 palettes OBJ). */
+  moveTypesTiles: Uint8Array;
+  moveTypesPal: Uint16Array;
 }
 
 let _isOpen = false;
@@ -83,12 +88,14 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pageInfo, pageSkills, pageBattleMoves, tilesPal] = await Promise.all([
+    const [tiles, pageInfo, pageSkills, pageBattleMoves, tilesPal, mtTiles, mtPal] = await Promise.all([
       loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
       loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
       loadTilemapBin('/decomp/em/summary_screen/page_skills.bin'),
       loadTilemapBin('/decomp/em/summary_screen/page_battle_moves.bin'),
       loadGbaPal('/decomp/em/summary_screen/tiles.pal'),
+      loadTileBin('/decomp/em/types/move_types.png', 4),
+      loadGbaPal('/decomp/em/types/move_types.gbapal'),
     ]);
     _assets = {
       tiles,
@@ -96,6 +103,8 @@ async function _loadAssets(): Promise<SummaryAssets> {
       pageSkillsTilemap: pageSkills,
       pageBattleMovesTilemap: pageBattleMoves,
       tilesPalette: tilesPal,
+      moveTypesTiles: mtTiles,
+      moveTypesPal: mtPal,
     };
     return _assets;
   })();
@@ -168,6 +177,12 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     r.gba.vram.set(bgBytes, bgMapOff);
     // Load palette.
     LoadPalette(assets.tilesPalette, 0, assets.tilesPalette.length * 2);
+    // 1:1 décomp DecompressGraphics (pokemon_summary_screen.c:1359/1379) :
+    //   LoadCompressedSpriteSheet(&sSpriteSheet_MoveTypes) → OBJ VRAM ;
+    //   LoadCompressedPalette(gMoveTypes_Pal, OBJ_PLTT_ID(13),
+    //     3*PLTT_SIZE_4BPP) → OBJ pal slots 13,14,15 (48 couleurs).
+    r.gba.objVram.set(assets.moveTypesTiles, TYPE_ICON_TILE_BASE * 32);
+    r.LoadPaletteObj(assets.moveTypesPal, OBJ_PLTT_ID(13));
     _graphicsReady = true;
     _graphicsLoading = false;
   }).catch((e) => {
@@ -195,6 +210,26 @@ const SUMMARY_TEXT_COLOR: ReadonlyArray<readonly number[]> = [
   [0, 7, 8],   // 12
 ];
 let _infoWindowIds: number[] = [];
+let _typeSpriteIds: number[] = [];
+
+/** 1:1 décomp include/constants/pokemon.h TYPE_* enum (= ordre du sheet
+ *  move_types ; l'anim décomp `ANIMCMD_FRAME(typeId*8)` indexe dessus). */
+const TYPE_ID: Record<string, number> = {
+  TYPE_NORMAL: 0, TYPE_FIGHTING: 1, TYPE_FLYING: 2, TYPE_POISON: 3,
+  TYPE_GROUND: 4, TYPE_ROCK: 5, TYPE_BUG: 6, TYPE_GHOST: 7, TYPE_STEEL: 8,
+  TYPE_MYSTERY: 9, TYPE_FIRE: 10, TYPE_WATER: 11, TYPE_GRASS: 12,
+  TYPE_ELECTRIC: 13, TYPE_PSYCHIC: 14, TYPE_ICE: 15, TYPE_DRAGON: 16,
+  TYPE_DARK: 17,
+};
+/** 1:1 décomp `sMoveTypeToOamPaletteNum` (pokemon_summary_screen.c:907) —
+ *  typeId 0..17 → OBJ palette slot 13/14/15 (gMoveTypes_Pal). */
+const S_MOVE_TYPE_TO_OAM_PAL: ReadonlyArray<number> = [
+  13, 13, 14, 14, 13, 13, 15, 14, 13, 15, 13, 14, 15, 13, 14, 14, 15, 13,
+];
+/** OBJ VRAM tile base du sheet move_types (23 icônes × 8 = 184 tiles).
+ *  Summary n'a pas d'autre sprite OBJ pour l'instant ; le mon-pic (incr.4c)
+ *  s'allouera après (tile ≥ 184) ou ailleurs. */
+const TYPE_ICON_TILE_BASE = 0;
 
 // 1:1 décomp `sMemoNatureTextColor` / `sMemoMiscTextColor`
 // (pokemon_summary_screen.c:746-747). Control codes inline (placeholders 0/1).
@@ -310,6 +345,34 @@ function _printMonInfo(mon: PokemonInstance): void {
   PutWindowTilemap(specWin); CopyWindowToVram(specWin, 3 /* COPYWIN_FULL */);
 }
 
+/** 1:1 décomp `SetMonTypeIcons` (pokemon_summary_screen.c:3817) +
+ *  `SetTypeSpritePosAndPal` (:3807). Page INFO : icône type[0] @(120,48) ;
+ *  si type[0]≠type[1] : type[1] @(160,48). Sprite 32×16 (sOamData_MoveTypes
+ *  shape/size, prio 1), tile = typeId*8 (ANIMCMD_FRAME), pal OBJ =
+ *  sMoveTypeToOamPaletteNum[typeId]. CreateSpriteAtOam prend le CENTRE
+ *  décomp → on passe x+16, y+8 (= SetTypeSpritePosAndPal 1:1). Egg =
+ *  TYPE_MYSTERY (non géré ici : nos mons party ne sont pas des œufs). */
+function _setMonTypeIcons(mon: PokemonInstance): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const sp = getSpeciesInfo(mon.speciesEnum);
+  const types = sp?.types ?? [];
+  const t0 = TYPE_ID[types[0] ?? ''] ?? 0;
+  const t1 = TYPE_ID[types[1] ?? ''] ?? t0;
+  const place = (typeId: number, x: number, y: number): void => {
+    const spr = rt.CreateSpriteAtOam({
+      x: x + 16, y: y + 8,                          // 1:1 SetTypeSpritePosAndPal
+      shape: 1, size: 2,                            // SPRITE_SHAPE/SIZE(32x16)
+      tileId: TYPE_ICON_TILE_BASE + typeId * 8,     // ANIMCMD_FRAME(typeId*8)
+      paletteBank: S_MOVE_TYPE_TO_OAM_PAL[typeId] ?? 13,
+      priority: 1,                                  // sOamData_MoveTypes.priority
+    });
+    if (spr.spriteId >= 0) _typeSpriteIds.push(spr.spriteId);
+  };
+  place(t0, 120, 48);
+  if (t0 !== t1) place(t1, 160, 48);
+}
+
 /** 1:1 décomp INFO page (non-egg) — increment 1 : OT name + OT ID.
  *  Windows = sPageInfoTemplate (pokemon_summary_screen.c:591).
  *  Texte = PrintMonOTName / PrintMonOTID (coords/colors 1:1).
@@ -384,15 +447,35 @@ function _printInfoPageText(): void {
   // genre (remplit la "box" bottom-left, qui était le cadre nu page_info.bin).
   _printMonInfo(mon);
 
+  // Incr.4b (a) — 1:1 PrintPageNamesAndStats (pokemon_summary_screen.c:2865) :
+  //   PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_INFO_TYPE, gText_TypeSlash,
+  //   0, 1, 0, 0). Window #9 sSummaryTemplate : bg0 tile(11,6) w18 h2 pal6
+  //   bb173. gText_TypeSlash = "TYPE/" (strings.c:496). colorId 0 =
+  //   sTextColors[0]. Les ICÔNES de types (sprites OAM) = sous-bloc 4b(b).
+  const typeWin = AddWindow({ bg: 0, tilemapLeft: 11, tilemapTop: 6, width: 18, height: 2, paletteNum: 6, baseBlock: 173 });
+  _infoWindowIds.push(typeWin);
+  FillWindowPixelBuffer(typeWin, 0);
+  AddTextPrinterParameterized3(typeWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, 'TYPE/');
+
   PutWindowTilemap(otWin); CopyWindowToVram(otWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(idWin); CopyWindowToVram(idWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(abWin); CopyWindowToVram(abWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(memoWin); CopyWindowToVram(memoWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(typeWin); CopyWindowToVram(typeWin, 3 /* COPYWIN_FULL */);
+
+  // Incr.4b (b) — 1:1 SetTypeIcons → SetMonTypeIcons (pokemon_summary_screen.c
+  // :3776/3817) : sprites OAM des types du mon (le `[FEU]`/`[PLANTE]` coloré
+  // à droite du label TYPE/).
+  _setMonTypeIcons(mon);
 }
 
 function _freeSummary(): void {
   for (const w of _infoWindowIds) { try { RemoveWindow(w); } catch { /* idem décomp RemoveWindowByIndex */ } }
   _infoWindowIds = [];
+  // 1:1 décomp DestroySpriteAndFreeResources(SPRITE_ARR_ID_TYPE…) au close.
+  const _rt = getRuntime();
+  for (const sid of _typeSpriteIds) { try { _rt?.DestroySprite(sid); } catch { /* déjà détruit */ } }
+  _typeSpriteIds = [];
   _isOpen = false;
   _phase = 'idle';
   _currentMon = null;
