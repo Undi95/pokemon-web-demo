@@ -250,6 +250,11 @@ function applyNoIntroPreset(): void {
     // ⚠️ DEBUG ONLY : force gender FEMALE pour Arcko (= test gender symbol ♀
     // bleu dans party screen). Override le calc personality-based 1:1 décomp.
     arcko.monGender = 254;  // MON_FEMALE
+    // ⚠️ DEBUG ONLY : mons valides (user : "ball + lieu, qu'ils soient
+    // valide"). Starter Treecko 1:1 = reçu à la ROUTE 101 niv.5 (sauvetage
+    // Birch). pokeball déjà = ITEM_POKE_BALL (createPokemonInstance 1:1).
+    arcko.metLocation = 'MAPSEC_ROUTE_101';
+    arcko.metLevel = 5;
     gameState.addToParty(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
@@ -264,6 +269,8 @@ function applyNoIntroPreset(): void {
     });
     // Jirachi est MON_GENDERLESS (= mythical) — pas de symbol affiché.
     jirachi.monGender = 255;  // MON_GENDERLESS
+    // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
+    jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
     gameState.addToParty(jirachi);
     console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
   }

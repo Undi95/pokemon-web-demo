@@ -196,6 +196,22 @@ const MON_PIC_PAL_SLOT = 1;
 const STATUS_TILE_BASE = 248;
 const STATUS_BYTE_OFFSET = STATUS_TILE_BASE * 32;
 const STATUS_PAL_SLOT = 2;
+/** 1:1 décomp `CreateMonMarkingAllCombosSprite` (mon_markings.c:570) :
+ *  sMonMarkings_Gfx (ui/interface/mon_markings.png, 32×128 = 64 tiles = 16
+ *  combos × 4). Sprite 32×8 (sOamData_MarkingCombo shape1 size1), anim combo
+ *  = StartSpriteAnim(MON_DATA_MARKINGS) → FRAME(combo*4). @(60,26) prio 1.
+ *  Palette = sMarkings_Pal (summary_screen/markings.pal). OBJ tile 280+. */
+const MARKINGS_TILE_BASE = 280;
+const MARKINGS_BYTE_OFFSET = MARKINGS_TILE_BASE * 32;
+const MARKINGS_PAL_SLOT = 3;
+/** 1:1 décomp `CreateCaughtBallSprite` (:4069) : gBallGfx_Poke (balls/
+ *  poke.png 16×48 = 12 tiles, frame 0 = ball fermée). ItemIdToBallId
+ *  (battle_anim_throw.c:728) ITEM_POKE_BALL→BALL_POKE. Sprite 16×16
+ *  (sBallOamData) @(16,136), callback dummy (statique), oam.priority=3.
+ *  OBJ tile 344+. (Nos mons = ITEM_POKE_BALL 1:1 CreateBoxMon:2262.) */
+const BALL_TILE_BASE = 344;
+const BALL_BYTE_OFFSET = BALL_TILE_BASE * 32;
+const BALL_PAL_SLOT = 4;
 
 // 1:1 décomp `sMemoNatureTextColor`/`sMemoMiscTextColor` (:746-747).
 const S_MEMO_NATURE_TEXT_COLOR = '{COLOR LIGHT_RED}{SHADOW GREEN}';
@@ -282,6 +298,8 @@ interface SummaryData {
   ailment: number;       // AILMENT_NONE=0 / 1..6
   metLocation: string | undefined;
   metLevel: number | undefined;
+  pokeball: string;      // 1:1 MON_DATA_POKEBALL (ITEM_*), default ITEM_POKE_BALL
+  markings: number;      // 1:1 MON_DATA_MARKINGS (0..15 bitfield)
 }
 
 interface SummaryState {
@@ -314,6 +332,7 @@ function _emptySummary(): SummaryData {
     currentHP: 0, maxHP: 0, atk: 0, def: 0, spatk: 0, spdef: 0, speed: 0,
     friendship: 0, OTGender: 0, nature: 0, OTName: '', OTID: 0, ribbonCount: 0,
     ailment: 0, metLocation: undefined, metLevel: undefined,
+    pokeball: 'ITEM_POKE_BALL', markings: 0,
   };
 }
 
@@ -334,6 +353,8 @@ let _cryPlayed = false;
 let _typeSpriteIds: number[] = [];
 let _monPicSpriteId = -1;
 let _statusSpriteId = -1;
+let _markingsSpriteId = -1;
+let _ballSpriteId = -1;
 /** Liste party (UP/DOWN) — 1:1 décomp `monList.mons` (= gPlayerParty). */
 let _monList: PokemonInstance[] = [];
 /** 1:1 décomp `gLastViewedMonIndex` (pokemon_summary_screen.c:190) — set au
@@ -363,6 +384,9 @@ interface SummaryAssets {
    *  chargé à BG_PLTT_ID(8)+1 ; la fenêtre MOVE_PP est paletteNum 8 (sinon
    *  PP rendu en noir = bug repéré user). */
   ppTextPal: Uint16Array;
+  /** 1:1 décomp `sMarkings_Pal` (summary_screen/markings.pal) — palette
+   *  OBJ du sprite marques PC (passée à CreateMonMarkingAllCombosSprite). */
+  markingsPal: Uint16Array;
 }
 
 let _assets: SummaryAssets | null = null;
@@ -372,7 +396,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal] =
+    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal] =
       await Promise.all([
         loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
         loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
@@ -385,13 +409,14 @@ async function _loadAssets(): Promise<SummaryAssets> {
         loadGbaPal('/decomp/em/types/move_types.gbapal'),
         loadTileBin('/decomp/em/summary_screen/a_button.png', 4),
         loadGbaPal('/decomp/em/battle_interface/text_pp.pal'),
+        loadGbaPal('/decomp/em/summary_screen/markings.pal'),
       ]);
     _assets = {
       tiles, pageInfoTilemap: pInfo, pageInfoEggTilemap: pInfoEgg,
       pageSkillsTilemap: pSkills, pageBattleMovesTilemap: pBattle,
       pageContestMovesTilemap: pContest, tilesPalette: tilesPal,
       moveTypesTiles: mtTiles, moveTypesPal: mtPal, aButtonTiles: aBtn,
-      ppTextPal: ppPal,
+      ppTextPal: ppPal, markingsPal: mkPal,
     };
     return _assets;
   })();
@@ -565,6 +590,18 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
       const st = await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/status_icons.png', STATUS_BYTE_OFFSET);
       r.LoadPaletteObj(st.palette, OBJ_PLTT_ID(STATUS_PAL_SLOT));
     } catch (e) { console.error('[summary] status icons load failed:', e); }
+    // 1:1 CreateMonMarkingAllCombosSprite : sMonMarkings_Gfx → OBJ VRAM,
+    // palette = sMarkings_Pal (summary_screen/markings.pal, PAS la pal png).
+    try {
+      await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/mon_markings.png', MARKINGS_BYTE_OFFSET);
+      r.LoadPaletteObj(a.markingsPal, OBJ_PLTT_ID(MARKINGS_PAL_SLOT));
+    } catch (e) { console.error('[summary] markings load failed:', e); }
+    // 1:1 CreateCaughtBallSprite : gBallGfx_Poke (balls/poke.png) → OBJ VRAM
+    // + sa palette (gBallSpritePalettes[BALL_POKE]).
+    try {
+      const bl = await r.LoadCompressedSpriteSheet('/decomp/em/balls/poke.png', BALL_BYTE_OFFSET);
+      r.LoadPaletteObj(bl.palette, OBJ_PLTT_ID(BALL_PAL_SLOT));
+    } catch (e) { console.error('[summary] ball gfx load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
     if (mon) {
@@ -606,6 +643,8 @@ function _extractMonData(mon: PokemonInstance): void {
   s.OTGender = gameState.gender === 'FEMALE' ? 1 : 0;
   s.metLocation = mon.metLocation;
   s.metLevel = mon.metLevel;
+  s.pokeball = mon.pokeball || 'ITEM_POKE_BALL'; // 1:1 MON_DATA_POKEBALL
+  s.markings = mon.markings ?? 0;                // 1:1 MON_DATA_MARKINGS
   s.friendship = 0;
   s.ribbonCount = 0;                              // PokemonInstance n'a pas de rubans
   // ailment 1:1 GetMonAilment : AILMENT_NONE=0, PSN=1, PAR=2, SLP=3, FRZ=4,
@@ -1418,6 +1457,46 @@ function _createSetStatusSprite(): void {
   _statusSpriteId = spr.spriteId;
 }
 
+/** 1:1 décomp `CreateMonMarkingsSprite` (:4048) → `CreateMonMarkingAll
+ *  CombosSprite` (mon_markings.c:570) : sprite 32×8 (sOamData_MarkingCombo
+ *  shape1 size1), StartSpriteAnim(MON_DATA_MARKINGS) = FRAME(combo*4),
+ *  @(60,26) oam.priority=1. markings=0 (nos mons, pas de toggles boîte PC) =
+ *  combo AllOff = 4 formes vides (= ROM, cf. POUSSIFEU). */
+function _createMonMarkingsSprite(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const combo = sMon.summary.markings & 0xF; // NUM_MON_MARKINGS=4 → 0..15
+  const spr = rt.CreateSpriteAtOam({
+    x: 60, y: 26, shape: 1, size: 1,           // 1:1 sprite->x=60 y=26, 32×8
+    tileId: MARKINGS_TILE_BASE + combo * 4,    // StartSpriteAnim(combo)=FRAME(combo*4)
+    paletteBank: MARKINGS_PAL_SLOT,
+    priority: 1,                               // sMonSummaryScreen->markingsSprite->oam.priority = 1
+    subpriority: 0,
+  });
+  _markingsSpriteId = spr.spriteId;
+}
+
+/** 1:1 décomp `CreateCaughtBallSprite` (:4069) : ball = ItemIdToBallId(MON_
+ *  DATA_POKEBALL) ; CreateSprite(&gBallSpriteTemplates[ball], 16, 136, 0) ;
+ *  callback=Dummy (statique, pas l'anim throw) ; oam.priority=3. Sprite 16×16
+ *  (sBallOamData), frame 0 (ball fermée). Nos mons = ITEM_POKE_BALL →
+ *  BALL_POKE (1:1 ItemIdToBallId default + CreateBoxMon:2262). */
+function _createCaughtBallSprite(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 ItemIdToBallId : seul BALL_POKE supporté (nos mons = ITEM_POKE_BALL ;
+  // autres balls = gfx non chargés → report honnête, mais inatteignable car
+  // createPokemonInstance force ITEM_POKE_BALL 1:1 CreateBoxMon).
+  const spr = rt.CreateSpriteAtOam({
+    x: 16, y: 136, shape: 0, size: 1,          // 1:1 CreateSprite(.,16,136,0) 16×16
+    tileId: BALL_TILE_BASE,                    // frame 0 (sBallAnimSeq0 = FRAME(0), callback dummy)
+    paletteBank: BALL_PAL_SLOT,
+    priority: 3,                               // oam.priority = 3 (CreateCaughtBallSprite)
+    subpriority: 0,
+  });
+  _ballSpriteId = spr.spriteId;
+}
+
 /** 1:1 décomp `SpriteCB_Pokemon` (:3994) → PlayMonCry. L'anim d'intro
  *  (PokemonSummaryDoMonAnimation :6826 = sous-système StartMonSummaryAnimation
  *  ~30 ANIM_* affines) n'est PAS portée — report HONNÊTE : le sprite + le cry
@@ -1558,6 +1637,8 @@ function _changeSummaryPokemon(delta: number): void {
   _destroyTypeSprites();
   if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
   if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+  if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
+  if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
   _extractMonData(next);
   _graphicsReady = false; _graphicsLoading = false;
   // Recharge front-pic du nouveau mon puis re-render.
@@ -1576,6 +1657,8 @@ function _changeSummaryPokemon(delta: number): void {
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
     _createMonSprite();
+    _createMonMarkingsSprite();
+    _createCaughtBallSprite();
     _createSetStatusSprite();
     _playMonCryOnce();
   }).catch(() => { /* */ });
@@ -1648,6 +1731,8 @@ function _freeSummary(): void {
   _destroyTypeSprites();
   if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
   if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+  if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
+  if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
   _cryPlayed = false;
   _isOpen = false;
   _phase = 'idle';
@@ -1725,14 +1810,11 @@ export function CB2_InitSummaryScreen(): void {
       _createMonSprite();
       rt.gMain.state++; break;
     case 18:
-      // 1:1 CreateMonMarkingsSprite (:4048) = CreateMonMarkingAllCombosSprite
-      // + StartSpriteAnim(MON_DATA_MARKINGS). PokemonInstance n'a PAS de
-      // markings (= toggles boîte PC, jamais set sur nos mons) → markings=0
-      // → décomp affiche RIEN. Résultat 1:1 (aucun marquage) atteint sans
-      // porter le sous-système mon_markings.c. Report HONNÊTE (zéro fake :
-      // on ne dessine pas de faux marquage).
+      _createMonMarkingsSprite();       // 1:1 CreateMonMarkingsSprite (:4048)
       rt.gMain.state++; break;
-    case 19: rt.gMain.state++; break;   // CreateCaughtBallSprite (ball capture — différé honnête)
+    case 19:
+      _createCaughtBallSprite();        // 1:1 CreateCaughtBallSprite (:4069)
+      rt.gMain.state++; break;
     case 20:
       _createSetStatusSprite();         // 1:1 CreateSetStatusSprite (:4079)
       rt.gMain.state++; break;

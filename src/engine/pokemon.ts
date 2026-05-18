@@ -82,6 +82,18 @@ export interface PokemonInstance {
    *  back-compat des saves créées avant ce champ (rendu "Somewhere" 1:1). */
   metLevel?: number;
   metLocation?: string;
+  /** 1:1 décomp `MON_DATA_POKEBALL` — `CreateBoxMon` (pokemon.c:2262) :
+   *  `value = ITEM_POKE_BALL; SetBoxMonData(MON_DATA_POKEBALL,&value)`. TOUS
+   *  les mons créés (starter/cadeau/sauvage avant override capture) =
+   *  ITEM_POKE_BALL par défaut. Optional = back-compat saves (rendu BALL_POKE
+   *  1:1 via ItemIdToBallId default). */
+  pokeball?: string;
+  /** 1:1 décomp `MON_DATA_MARKINGS` — bitfield 0..15 (rond/carré/triangle/
+   *  cœur, toggles boîte PC). 0 = aucun (combo AllOff = formes vides). */
+  markings?: number;
+  /** 1:1 décomp `MON_DATA_IS_EGG` — œuf non éclos. createEggInstance le set.
+   *  Optional = mons normaux (false). */
+  isEgg?: boolean;
 }
 
 /** 1:1 décomp `MON_MALE` / `MON_FEMALE` / `MON_GENDERLESS` (include/pokemon.h). */
@@ -228,7 +240,7 @@ function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
 /** Crée une instance Pokémon prête à être ajoutée à la party. */
 export function createPokemonInstance(speciesEnum: string, level: number, opts?: {
   moves?: string[]; nickname?: string; nature?: string; ivs?: StatSpread; evs?: StatSpread;
-  ability?: string; heldItem?: string;
+  ability?: string; heldItem?: string; pokeball?: string;
 }): PokemonInstance {
   const speciesId = getSpeciesId(speciesEnum) || 1; // fallback bulbasaur
   const dexId = speciesEnumToDexId(speciesEnum) || 'bulbasaur';
@@ -306,6 +318,9 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     metLevel: level,
     metLocation: (globalThis as { gMapHeader?: { regionMapSectionId?: string } })
       .gMapHeader?.regionMapSectionId,
+    // 1:1 décomp CreateBoxMon (pokemon.c:2262) : value = ITEM_POKE_BALL.
+    pokeball: opts?.pokeball ?? 'ITEM_POKE_BALL',
+    isEgg: false,
   };
 }
 
