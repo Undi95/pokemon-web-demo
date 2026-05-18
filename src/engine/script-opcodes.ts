@@ -1865,6 +1865,24 @@ registerOpcode('givemoney', (_ctx, args) => {
   return false;
 });
 
+/** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
+ *    amount = ScriptReadWord ; ignore = ScriptReadByte ;
+ *    if (!ignore) AddMoney(&money, amount);
+ *  = mnémonique décomp RÉEL (`addmoney value, disable=0`). Le handler
+ *  existait sous le mauvais nom `givemoney` SANS l'octet `ignore`/disable
+ *  (= bug 1:1 : ignorait le 2ᵉ arg). Audit scrcmd : était MANQUANT.
+ *  AddMoney cap MAX_MONEY=999999 (= 1:1 décomp money.c). */
+registerOpcode('addmoney', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const ignore = VarGet(args[1] ?? '0');
+  if (!ignore) {
+    const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+      { money?: number } | undefined;
+    if (block1) block1.money = Math.min(999999, (block1.money ?? 0) + amount);
+  }
+  return false;
+});
+
 /** 1:1 décomp `ScrCmd_takemoney` (scrcmd.c) : sub from block1.money, floor 0. */
 registerOpcode('takemoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');

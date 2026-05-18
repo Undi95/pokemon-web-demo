@@ -15,6 +15,7 @@ const DEC = 'D:/Projet 1/decomps/pokeemeraude';
 const P = 'D:/Projet 1/pokemon-web-demo';
 const EVENT = `${DEC}/asm/macros/event.inc`;
 const INC = `${DEC}/data/script_cmd_table.inc`;
+const SCRCMD = `${DEC}/src/scrcmd.c`;
 const OURS = `${P}/src/engine/script-opcodes.ts`;
 
 // 1) event.inc : chaque `.macro <nom> …` jusqu'à `.endm` ; on retient le
@@ -31,6 +32,19 @@ const macros = [];
     const op = body.match(/\.byte\s+(SCR_OP_\w+)/);
     if (op) macros.push({ mnemonic: name, scrOp: op[1] });
   }
+}
+
+// 2bis) scrcmd.c : ScrCmd_* dont le corps Émeraude est trivial (= `return
+// TRUE/FALSE;` seul, ex. ScrCmd_nop/nop1). Ces opcodes NE FONT RIEN en
+// Émeraude (= macros FRLG/inutilisées stubées nop). Un mnémonique mappant
+// vers eux n'a PAS besoin d'un handler 1:1 (l'absence = équivalent nop).
+const emeraldNopFuncs = new Set();
+{
+  const scr = readFileSync(SCRCMD, 'utf8');
+  for (const m of scr.matchAll(/^bool8\s+(ScrCmd_\w+)\s*\(struct ScriptContext \*ctx\)\s*\{([\s\S]*?)\n\}/gm)) {
+    if (/^\s*return\s+(TRUE|FALSE);\s*$/.test(m[2].trim())) emeraldNopFuncs.add(m[1]);
+  }
+  emeraldNopFuncs.add('ScrCmd_nop'); emeraldNopFuncs.add('ScrCmd_nop1');
 }
 
 // 2) script_cmd_table.inc : SCR_OP → ScrCmd_* @ 0xNN (pour index + tri).
@@ -62,27 +76,37 @@ for (const m of src.matchAll(/registerOpcode\('([^']+)',/g)) {
 }
 
 // Confrontation : pour chaque mnémonique décomp, est-il dispatché 1:1 ?
+// emeraldNop = le mnémo mappe vers un ScrCmd_ trivial EN ÉMERAUDE (FRLG/
+// inutilisé) → PAS un vrai gap : Émeraude lui-même ne fait rien, donc
+// l'absence de handler ≡ comportement 1:1 (no-op). Exclu du MANQUANT.
 const seen = new Set();
-const covered = [], missing = [], stubbed = [];
+const covered = [], missing = [], stubbed = [], emeraldNop = [];
 for (const { mnemonic, scrOp } of macros) {
   if (seen.has(mnemonic)) continue;
   seen.add(mnemonic);
   const ent = byScrOp[scrOp];
-  if (!reg.has(mnemonic)) missing.push({ mnemonic, scrOp, op: ent?.op, func: ent?.func });
-  else if (stub.has(mnemonic)) stubbed.push(mnemonic);
-  else covered.push(mnemonic);
+  const isEmNop = !ent || emeraldNopFuncs.has(ent.func);
+  if (reg.has(mnemonic)) {
+    if (stub.has(mnemonic)) stubbed.push(mnemonic);
+    else covered.push(mnemonic);
+  } else if (isEmNop) {
+    emeraldNop.push({ mnemonic, op: ent?.op, func: ent?.func || '<no-table>' });
+  } else {
+    missing.push({ mnemonic, scrOp, op: ent?.op, func: ent?.func });
+  }
 }
 
-const total = covered.length + missing.length + stubbed.length;
+const realTotal = covered.length + missing.length + stubbed.length;
+const grandTotal = realTotal + emeraldNop.length;
 const hasHandler = covered.length + stubbed.length;
-console.log(`[audit scrcmd] mnémoniques script décomp(event.inc → SCR_OP)=${total} | nos registerOpcode=${reg.size}`);
-console.log(`  HANDLER PRÉSENT       : ${hasHandler}/${total} (= ${(100 * hasHandler / total).toFixed(1)}%)`);
-console.log(`  · dont stub CONFIRMÉ  : ${stubbed.length} (marqueur TODO/STUB explicite)`);
-console.log(`    ${stubbed.sort().join(', ')}`);
-console.log(`  MANQUANT (0 handler)  : ${missing.length}  ← métrique 100% fiable`);
-console.log(`    ${missing.map(x => `${x.mnemonic}(${x.op || '?'})`).sort().join(', ')}`);
+console.log(`[audit scrcmd] mnémoniques script décomp(event.inc → SCR_OP)=${grandTotal}`);
+console.log(`  · dont OPCODES ÉMERAUDE RÉELS : ${realTotal} | nop-Émeraude(FRLG/inutilisé, no-op 1:1) : ${emeraldNop.length}`);
+console.log(`  COUVERT 1:1          : ${covered.length}/${realTotal} (= ${(100 * hasHandler / realTotal).toFixed(1)}% handler présent)`);
+console.log(`  · dont stub CONFIRMÉ : ${stubbed.length} (marqueur TODO/STUB) → ${stubbed.sort().join(', ')}`);
+console.log(`  MANQUANT (vrai gap)  : ${missing.length}  ← métrique fiable (vrais ScrCmd_ Émeraude non triviaux)`);
+console.log(`    ${missing.map(x => `${x.mnemonic}(${x.op || '?'})`).sort().join(', ') || '—'}`);
+console.log(`  nop-Émeraude exclus  : ${emeraldNop.map(x => x.mnemonic).sort().join(', ')}`);
 console.log(`\nNote : "return false" = convention décomp return FALSE (≠ stub).`);
-console.log(`Confirmer 1:1 d'un handler trivial = diff vs ScrCmd_* décomp (hors guard).`);
 console.log(`${missing.length === 0 && stubbed.length === 0
-  ? '✓ scrcmd : 0 manquant, 0 stub confirmé.'
-  : `⚠ scrcmd : gap portage Overworld = ${missing.length} manquant + ${stubbed.length} stub confirmé.`}`);
+  ? '✓ scrcmd : 0 vrai manquant, 0 stub confirmé (gap Overworld = clos).'
+  : `⚠ scrcmd : gap portage Overworld = ${missing.length} vrai(s) manquant(s) + ${stubbed.length} stub confirmé.`}`);
