@@ -876,3 +876,127 @@ setListMenuRenderHooks({
   scroll: (list, count, movingDown) => ListMenuScroll(list, count, movingDown),
   copyWindowToVram: (windowId) => CopyWindowToVram(windowId, COPYWIN_GFX),
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// INCRÉMENT 3a — subsprite tables RED_OUTLINE (PUR déterministe)
+// ════════════════════════════════════════════════════════════════════════════
+// Les curseurs sprite RED_OUTLINE/RED_ARROW (list_menu.c:1178-1447) servent
+// PC storage / shop / mystery gift (PAS le sac = CURSOR_BLACK_ARROW, fait en
+// 2d). Partie PURE déterministe ici (subsprite OAM table + count) ; la partie
+// sprite/asset/rendu (Add/Update/Remove*CursorObject, scroll arrows,
+// DoMysteryGiftListMenu) = incrément 3b+ (visuel A/B user, branché à PC/shop).
+// Les 3 stubs `_listMenu*CursorObjectDeferred` (2d) restent (jamais atteints
+// en BLACK_ARROW). user-vision : TOUT en 1:1, pas de MVP → on porte la
+// fondation déterministe maintenant.
+
+/** 1:1 décomp `struct Subsprite` (include/sprite.h:159-167). `x`/`y` = s8
+ *  (le décomp y stocke des valeurs hors [-128,127] → wrap s8 VOULU,
+ *  positions OAM relatives au centre). shape/size/tileOffset/priority =
+ *  bitfields u16 (2/2/10/2). */
+export interface Subsprite {
+  x: number;          // s8 (wrap via _toS8 à l'assignation, 1:1 décomp)
+  y: number;          // s8
+  shape: number;      // :2
+  size: number;       // :2
+  tileOffset: number; // :10
+  priority: number;   // :2
+}
+
+/** 1:1 décomp `struct SubspriteTable` (include/sprite.h:169-173). */
+export interface SubspriteTable {
+  subspriteCount: number;
+  subsprites: Subsprite[];
+}
+
+/** Truncation s8 (= comportement `s8 field = value;` du décomp). JS bitwise
+ *  = 32-bit signé : `(v << 24) >> 24` sign-extend le byte bas → s8 exact.
+ *  Ex : 136 → -120 ; rowWidth(120)+128=248 → -8 ; -120 → -120. */
+function _toS8(v: number): number {
+  return (v << 24) >> 24;
+}
+
+// 1:1 décomp `sSubsprite_RedOutline1..8` (list_menu.c:170-248). Tous
+// SPRITE_SHAPE(8x8)=0 (ST_OAM_SQUARE) + SPRITE_SIZE(8x8)=0 (GBA OAM
+// standard square 8x8) ; tileOffset = 0..7 ; priority 0 ; x/y 0 (set au
+// runtime par SetUpOamTable). Const figées (copiées par valeur à l'usage).
+const sSubsprite_RedOutline1: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 0, priority: 0 };
+const sSubsprite_RedOutline2: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 1, priority: 0 };
+const sSubsprite_RedOutline3: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 2, priority: 0 };
+const sSubsprite_RedOutline4: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 3, priority: 0 };
+const sSubsprite_RedOutline5: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 4, priority: 0 };
+const sSubsprite_RedOutline6: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 5, priority: 0 };
+const sSubsprite_RedOutline7: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 6, priority: 0 };
+const sSubsprite_RedOutline8: Readonly<Subsprite> = { x: 0, y: 0, shape: 0, size: 0, tileOffset: 7, priority: 0 };
+
+/** 1:1 décomp `u8 ListMenuGetRedOutlineCursorSpriteCount(u16 rowWidth,
+ *  u16 rowHeight)` (list_menu.c:1221-1238). Pure : 4 coins + 2 par tranche
+ *  de 8 px au-delà de 16 (largeur ET hauteur). */
+export function ListMenuGetRedOutlineCursorSpriteCount(rowWidth: number, rowHeight: number): number {
+  let count = 4;
+  if (rowWidth > 16) {
+    for (let i = 8; i < (rowWidth - 8); i += 8)
+      count += 2;
+  }
+  if (rowHeight > 16) {
+    for (let i = 8; i < (rowHeight - 8); i += 8)
+      count += 2;
+  }
+  return count;
+}
+
+/** 1:1 décomp `void ListMenuSetUpRedOutlineCursorSpriteOamTable(u16 rowWidth,
+ *  u16 rowHeight, struct Subsprite *subsprites)` (list_menu.c:1240-1295).
+ *  Pure : remplit `subsprites[]` (alloué `count*4` octets décomp = `count`
+ *  entrées). Copie de struct par valeur (`{...}`) + assignation s8 wrappée
+ *  (1:1 `subsprites[id].x = rowWidth + 128;` → s8). */
+export function ListMenuSetUpRedOutlineCursorSpriteOamTable(rowWidth: number, rowHeight: number, subsprites: Subsprite[]): void {
+  let id = 0;
+
+  subsprites[id] = { ...sSubsprite_RedOutline1 };
+  subsprites[id].x = _toS8(136);
+  subsprites[id].y = _toS8(136);
+  id++;
+
+  subsprites[id] = { ...sSubsprite_RedOutline2 };
+  subsprites[id].x = _toS8(rowWidth + 128);
+  subsprites[id].y = _toS8(136);
+  id++;
+
+  subsprites[id] = { ...sSubsprite_RedOutline7 };
+  subsprites[id].x = _toS8(136);
+  subsprites[id].y = _toS8(rowHeight + 128);
+  id++;
+
+  subsprites[id] = { ...sSubsprite_RedOutline8 };
+  subsprites[id].x = _toS8(rowWidth + 128);
+  subsprites[id].y = _toS8(rowHeight + 128);
+  id++;
+
+  if (rowWidth > 16) {
+    for (let i = 8; i < rowWidth - 8; i += 8) {
+      subsprites[id] = { ...sSubsprite_RedOutline3 };
+      subsprites[id].x = _toS8(i - 120);
+      subsprites[id].y = _toS8(-120);
+      id++;
+
+      subsprites[id] = { ...sSubsprite_RedOutline6 };
+      subsprites[id].x = _toS8(i - 120);
+      subsprites[id].y = _toS8(rowHeight + 128);
+      id++;
+    }
+  }
+
+  if (rowHeight > 16) {
+    for (let j = 8; j < rowHeight - 8; j += 8) {
+      subsprites[id] = { ...sSubsprite_RedOutline4 };
+      subsprites[id].x = _toS8(136);
+      subsprites[id].y = _toS8(j - 120);
+      id++;
+
+      subsprites[id] = { ...sSubsprite_RedOutline5 };
+      subsprites[id].x = _toS8(rowWidth + 128);
+      subsprites[id].y = _toS8(j - 120);
+      id++;
+    }
+  }
+}
