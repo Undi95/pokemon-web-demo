@@ -188,6 +188,13 @@ const TYPE_ICON_TILE_BASE = 0;            // OBJ VRAM : 23 icônes × 8 = 184 ti
 const MON_PIC_TILE_BASE = 184;            // mon front-pic 64×64 = 64 tiles
 const MON_PIC_BYTE_OFFSET = MON_PIC_TILE_BASE * 32;
 const MON_PIC_PAL_SLOT = 1;
+/** 1:1 décomp `sStatusIconsSpriteSheet` (gStatusGfx_Icons = graphics/
+ *  interface/status_icons.png, 32×64 = 32 tiles). Sprite 32×8 (shape1 size1),
+ *  frame = (ailment-1)*4 tiles (Poison=0/Para=4/Sleep=8/Frozen=12/Burn=16).
+ *  OBJ tile 248+ (après mon-pic 184..247). OBJ pal slot 2 (libre). */
+const STATUS_TILE_BASE = 248;
+const STATUS_BYTE_OFFSET = STATUS_TILE_BASE * 32;
+const STATUS_PAL_SLOT = 2;
 
 // 1:1 décomp `sMemoNatureTextColor`/`sMemoMiscTextColor` (:746-747).
 const S_MEMO_NATURE_TEXT_COLOR = '{COLOR LIGHT_RED}{SHADOW GREEN}';
@@ -325,6 +332,7 @@ let _graphicsLoading = false;
 let _cryPlayed = false;
 let _typeSpriteIds: number[] = [];
 let _monPicSpriteId = -1;
+let _statusSpriteId = -1;
 /** Liste party (UP/DOWN) — 1:1 décomp `monList.mons` (= gPlayerParty). */
 let _monList: PokemonInstance[] = [];
 /** 1:1 décomp `gLastViewedMonIndex` (pokemon_summary_screen.c:190) — set au
@@ -540,6 +548,12 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // pal slots 13/14/15 (3 pals).
     r.gba.objVram.set(a.moveTypesTiles, TYPE_ICON_TILE_BASE * 32);
     r.LoadPaletteObj(a.moveTypesPal, OBJ_PLTT_ID(13));
+    // case 9/10 : sStatusIconsSpriteSheet (gStatusGfx_Icons = status_icons
+    // .png) → OBJ VRAM + sStatusIconsSpritePalette → OBJ pal slot 2.
+    try {
+      const st = await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/status_icons.png', STATUS_BYTE_OFFSET);
+      r.LoadPaletteObj(st.palette, OBJ_PLTT_ID(STATUS_PAL_SLOT));
+    } catch (e) { console.error('[summary] status icons load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
     if (mon) {
@@ -1277,6 +1291,28 @@ function _createMonSprite(): void {
   if (o) o.hFlip = !noFlip;
 }
 
+/** 1:1 décomp `CreateSetStatusSprite` (:4079) : sprite état (PSN/PAR/SLP/
+ *  FRZ/BRN…) @(64,152), 32×8 (sOamData_StatusCondition shape1 size1 prio3).
+ *  statusAnim = GetMonAilment ; si !=0 → frame (ailment-1)*4 visible, sinon
+ *  invisible (= mons sains, cas commun, 1:1 correct = aucun icône). */
+function _createSetStatusSprite(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const ailment = sMon.summary.ailment;
+  if (ailment === 0) {                       // SetSpriteInvisibility(TRUE)
+    if (_statusSpriteId >= 0) { try { rt.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
+    return;
+  }
+  const spr = rt.CreateSpriteAtOam({
+    x: 64, y: 152, shape: 1, size: 1,         // 1:1 CreateSprite(.,64,152,0) 32×8
+    tileId: STATUS_TILE_BASE + (ailment - 1) * 4, // StartSpriteAnim(ailment-1) = FRAME((ailment-1)*4)
+    paletteBank: STATUS_PAL_SLOT,
+    priority: 3,                              // sOamData_StatusCondition.priority
+    subpriority: 0,
+  });
+  _statusSpriteId = spr.spriteId;
+}
+
 /** 1:1 décomp `SpriteCB_Pokemon` (:3994) → PlayMonCry. L'anim d'intro
  *  (PokemonSummaryDoMonAnimation :6826 = sous-système StartMonSummaryAnimation
  *  ~30 ANIM_* affines) n'est PAS portée — report HONNÊTE : le sprite + le cry
@@ -1410,6 +1446,7 @@ function _changeSummaryPokemon(delta: number): void {
   const rt = getRuntime();
   _destroyTypeSprites();
   if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
+  if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
   _extractMonData(next);
   _graphicsReady = false; _graphicsLoading = false;
   // Recharge front-pic du nouveau mon puis re-render.
@@ -1428,6 +1465,7 @@ function _changeSummaryPokemon(delta: number): void {
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
     _createMonSprite();
+    _createSetStatusSprite();
     _playMonCryOnce();
   }).catch(() => { /* */ });
 }
@@ -1498,6 +1536,7 @@ function _freeSummary(): void {
   const rt = getRuntime();
   _destroyTypeSprites();
   if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
+  if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
   _cryPlayed = false;
   _isOpen = false;
   _phase = 'idle';
@@ -1575,9 +1614,18 @@ export function CB2_InitSummaryScreen(): void {
     case 17:
       _createMonSprite();
       rt.gMain.state++; break;
-    case 18: rt.gMain.state++; break;   // CreateMonMarkingsSprite (Phase polish)
-    case 19: rt.gMain.state++; break;   // CreateCaughtBallSprite (Phase polish)
-    case 20: rt.gMain.state++; break;   // CreateSetStatusSprite (Phase polish)
+    case 18:
+      // 1:1 CreateMonMarkingsSprite (:4048) = CreateMonMarkingAllCombosSprite
+      // + StartSpriteAnim(MON_DATA_MARKINGS). PokemonInstance n'a PAS de
+      // markings (= toggles boîte PC, jamais set sur nos mons) → markings=0
+      // → décomp affiche RIEN. Résultat 1:1 (aucun marquage) atteint sans
+      // porter le sous-système mon_markings.c. Report HONNÊTE (zéro fake :
+      // on ne dessine pas de faux marquage).
+      rt.gMain.state++; break;
+    case 19: rt.gMain.state++; break;   // CreateCaughtBallSprite (ball capture — différé honnête)
+    case 20:
+      _createSetStatusSprite();         // 1:1 CreateSetStatusSprite (:4079)
+      rt.gMain.state++; break;
     case 21:
       _setTypeIcons();
       rt.gMain.state++; break;
