@@ -1001,9 +1001,9 @@ export interface SaveBlock2 {
   /** Filler (= 8 bytes). */
   filler_90: number[];
   /** Local time offset (= RTC). */
+  /** 1:1 décomp `struct Time localTimeOffset` (global.h:535) — offset
+   *  pile↔jeu, l'UNIQUE source (plus de champ ms parallèle, modèle rtc.c). */
   localTimeOffset: Time;
-  /** Web-port extension : offset utilisateur en ms. Cf. session 124 fix Bug 4. */
-  localTimeOffsetMs: number;
   /** Last RTC update for berry trees. */
   lastBerryTreeUpdate: Time;
   /** GCN link flags (= read by Pokémon Colosseum/XD). */
@@ -1455,7 +1455,6 @@ export function emptySaveBlock2(): SaveBlock2 {
     pokedex: emptyPokedex(),
     filler_90: zeros(8),
     localTimeOffset: emptyTime(),
-    localTimeOffsetMs: 0,
     lastBerryTreeUpdate: emptyTime(),
     gcnLinkFlags: 0, encryptionKey: 0,
     playerApprentice: {

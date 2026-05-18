@@ -210,14 +210,12 @@ export function LoadGameSave(): number {
   sLastSavedSlot = chosenIdx;
   sSaveFileStatus = SAVE_STATUS_OK;
   console.log(`[save-system] loaded slot ${chosenIdx} (counter=${chosen.counter})`);
-  // Session 124 fix Bug 4 : restore RTC offset depuis save (= keep in-game
-  // clock setting persistent across reloads). Dynamic import to avoid
-  // circular ref at module init time.
-  void import('./rtc').then(({ setLocalTimeOffsetMs, RtcCalcLocalTime }) => {
-    if (sCurrentBlock2) {
-      setLocalTimeOffsetMs(sCurrentBlock2.localTimeOffsetMs ?? 0);
-      RtcCalcLocalTime();
-    }
+  // 1:1 RTC : l'offset vit dans `sCurrentBlock2.localTimeOffset` (struct
+  // Time) — déjà restauré ci-dessus avec block2. On rafraîchit juste
+  // gLocalTime (= RtcCalcLocalTime lit gSaveBlock2.localTimeOffset). Plus
+  // de champ ms parallèle (modèle 1:1 décomp rtc.c).
+  void import('./rtc').then(({ RtcCalcLocalTime }) => {
+    if (sCurrentBlock2) RtcCalcLocalTime();
   });
   return SAVE_STATUS_OK;
 }
@@ -230,18 +228,9 @@ export function TrySavingData(): boolean {
     console.warn('[save-system] TrySavingData called but no current blocks');
     return false;
   }
-  // Session 124 fix Bug 4 : sync RTC offset → save block avant écriture.
-  // Sync sync (= no async race) en lisant directement le getter exporté.
-  // Si le module rtc n'a pas été chargé (= test mode), on garde la valeur
-  // existante.
-  try {
-    // Use require-style inline import path résolu au transpile.
-    // Note : import() async serait too late ici. On accept un coupling direct.
-    const rtcMod = (globalThis as { __rtcModule?: { getLocalTimeOffsetMs(): number } }).__rtcModule;
-    if (rtcMod) {
-      sCurrentBlock2.localTimeOffsetMs = rtcMod.getLocalTimeOffsetMs();
-    }
-  } catch (_e) { /* ignore */ }
+  // 1:1 RTC : l'offset est `sCurrentBlock2.localTimeOffset` (struct Time),
+  // écrit par rtc.ts (RtcCalcLocalTimeOffset) et sérialisé tel quel dans
+  // block2 par writeSlot → round-trip automatique, plus de sync ms.
   // Alternate slots : si dernier = 0, écrire en 1 ; sinon 0.
   const targetSlot = (sLastSavedSlot === 0) ? 1 : 0;
   sSaveCounter++;
