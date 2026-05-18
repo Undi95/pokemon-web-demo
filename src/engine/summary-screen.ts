@@ -327,6 +327,9 @@ let _typeSpriteIds: number[] = [];
 let _monPicSpriteId = -1;
 /** Liste party (UP/DOWN) — 1:1 décomp `monList.mons` (= gPlayerParty). */
 let _monList: PokemonInstance[] = [];
+/** 1:1 décomp `gLastViewedMonIndex` (pokemon_summary_screen.c:190) — set au
+ *  close = curMonIndex. Le party menu y replace son curseur au retour. */
+let _lastViewedMonIndex = 0;
 
 // 1:1 décomp `sSpeciesToHoennPokedexNum` (extract-species-dex-numbers.mjs).
 let _dexNumbers: Record<string, { national: number; hoenn: number }> | null = null;
@@ -1477,8 +1480,10 @@ function _beginCloseSummaryScreen(): void {
 function Task_CloseSummary(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || rt.gPaletteFade.active) return;
-  // 1:1 CloseSummaryScreen (:1514) : SetMainCallback2(sMonSummaryScreen->
-  // callback) (= retour party menu) + cleanup.
+  // 1:1 CloseSummaryScreen (:1514-1519) : gLastViewedMonIndex =
+  // sMonSummaryScreen->curMonIndex ; SetMainCallback2(sMonSummaryScreen->
+  // callback) (= retour party menu, curseur sur le mon vu) + cleanup.
+  _lastViewedMonIndex = sMon.curMonIndex;
   const cb = sMon.callback;
   _freeSummary();
   if (cb) cb();
@@ -1604,6 +1609,12 @@ export function CB2_InitSummaryScreen(): void {
 
 export function IsSummaryScreenOpen(): boolean {
   return _isOpen;
+}
+
+/** 1:1 décomp `gLastViewedMonIndex` — index du dernier mon vu (curseur party
+ *  au retour, 1:1 CB2_ReturnToPartyMenuFromSummaryScreen). */
+export function GetSummaryLastMonIndex(): number {
+  return _lastViewedMonIndex;
 }
 
 /** 1:1 décomp `ShowPokemonSummaryScreen` (party_menu.c via CursorCb_Summary).

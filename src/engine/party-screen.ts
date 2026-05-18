@@ -52,7 +52,7 @@ import { ResetSpriteData } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { OpenSummaryScreen } from './summary-screen';
+import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';
 import { MON_ICON_PALETTE_INDICES } from './pokemon-icon-palettes';
 import type { DecompTask } from './decomp-runtime';
@@ -1220,12 +1220,14 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
     if (action === MENU_CANCEL1 /* RETOUR */) {
       _closeActionMenu();
     } else if (action === MENU_SUMMARY /* RESUME */) {
-      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770) → CB2 swap vers
-      // pokemon summary screen avec le mon courant (= slot pointed by cursor).
+      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770) :
+      // exitCallback = CB2_ShowPokemonSummaryScreen → ShowPokemonSummary
+      // Screen(..., CB2_ReturnToPartyMenuFromSummaryScreen). Le résumé revient
+      // donc au PARTY MENU (PAS au field), curseur sur le mon vu.
       const mon = (gameState.party as PokemonInstance[])[_slotId];
       if (mon) {
         _closeActionMenu();
-        OpenSummaryScreen(mon);
+        OpenSummaryScreen(mon, CB2_ReturnToPartyMenuFromSummary);
       } else {
         _closeActionMenu();
       }
@@ -1361,6 +1363,26 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   }).catch((e) => {
     console.error('[party-screen] preload failed', e);
   });
+}
+
+/** 1:1 décomp `CB2_ReturnToPartyMenuFromSummaryScreen` (party_menu.c) :
+ *  ré-init du party menu au retour du résumé, curseur (= slotId) placé sur
+ *  le mon vu en dernier dans le résumé (`gLastViewedMonIndex`). On NE touche
+ *  PAS gMain.savedCallback (B depuis party revient à l'ouvreur d'origine =
+ *  start menu / field, 1:1 contexte party). */
+export function CB2_ReturnToPartyMenuFromSummary(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Le résumé a écrasé l'état visuel (VRAM/sprites/windows) → on force une
+  // ré-init complète du party menu (flags readiness reset). _freePartyMenu
+  // n'a PAS été appelé → _slotId est settable directement (1:1 slot = mon vu).
+  _isOpen = false;
+  _phase = 'idle';
+  _graphicsReady = false; _graphicsLoading = false;
+  _windowsReady = false; _windowsLoading = false;
+  _slotId = GetSummaryLastMonIndex();
+  rt.gMain.state = 0;
+  rt.SetMainCallback2(CB2_InitPartyMenu);
 }
 
 export function ClosePartyScreen(): void {
