@@ -17,12 +17,16 @@
  * - Wall clock : le joueur choisit l'heure au début → `RtcInitLocalTime
  *   Offset` calcule et STOCKE l'offset. Reload → `RtcCalcLocalTime` →
  *   gLocalTime = pile_now − offset = le jeu a avancé du temps réel écoulé.
- * - **Bug 366e jour NON codé spécialement** : on porte rtc.c + la pile
- *   (year BCD 0-99) LIGNE-PAR-LIGNE → le bug ÉMERGE de l'algo identique
- *   (ConvertDateToDayCount + s16 days + wrap année BCD). C'est voulu.
- *
- * (Remplace l'ancienne version non-1:1 à `localTimeOffsetMs`/s32 days
- * "pour éviter le break" — déviation explicitement annulée par le user.)
+ * - **⚠️ UNIQUE DÉVIATION VOLONTAIRE (user 2026-05-18, assumée)** : le
+ *   bug du "366e jour" (gel ~1 an des events RTC) n'est PAS reproduit.
+ *   Le RNG buggé EST gardé 1:1 (random.ts) ; mais pour le RTC le user
+ *   veut le comportement 1:1 SANS le gel ("ça craint d'être bloqué un
+ *   an"). La cause GBA = compteur de jours borné (`ConvertDateToDayCount`
+ *   retour `u16` + `gLocalTime.days` `s16`). Notre seule entorse :
+ *   **le compteur de jours n'est PAS clampé** (number JS, monotone via
+ *   la date PC) → le gel ne peut JAMAIS arriver. Tout le RESTE (algo,
+ *   borrow, struct Time offset, BCD h/m/s/mois/jour) est 1:1 strict.
+ *   (h/m/s gardent la troncature s8 = no-op, valeurs bornées, 1:1.)
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/rtc.c`,
  * `include/siirtc.h` (struct SiiRtcInfo), `include/global.h` (struct Time).
@@ -83,8 +87,10 @@ let sErrorStatus = 0;
 export const gLocalTime: Time = { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
 // ─── Truncation s16/s8 (= 1:1 struct Time : s16 days; s8 h/m/s) ────────────
-const _s16 = (v: number): number => (v << 16) >> 16;
-const _s8  = (v: number): number => (v << 24) >> 24;
+// h/m/s : troncature s8 1:1 struct Time (no-op, valeurs bornées 0-59/0-23).
+// PAS de _s16 sur `days` : déviation volontaire user (compteur monotone,
+// pas de gel "366e jour" — cf. en-tête).
+const _s8 = (v: number): number => (v << 24) >> 24;
 
 // ─── BCD (1:1 décomp ConvertBcdToBinary rtc.c:46) ──────────────────────────
 
@@ -174,7 +180,9 @@ export function ConvertDateToDayCount(year: number, month: number, day: number):
   for (let i = 0; i < month - 1; i++) dayCount += sNumDaysInMonths[i];
   if (month > MONTH_FEB && IsLeapYear(year)) dayCount++;
   dayCount += day;
-  return dayCount & 0xFFFF; // u16
+  // 1:1 décomp SAUF le retour u16 (`& 0xFFFF`) : déviation user assumée —
+  // compteur de jours monotone (number JS) → JAMAIS le gel du 366e jour.
+  return dayCount;
 }
 
 /** 1:1 décomp `u16 RtcGetDayCount(struct SiiRtcInfo *rtc)` (rtc.c:89). */
@@ -199,7 +207,7 @@ function RtcCalcTimeDifference(rtc: SiiRtcInfo, result: Time, t: Time): void {
   result.seconds = _s8(seconds);
   result.minutes = _s8(minutes);
   result.hours = _s8(hours);
-  result.days = _s16(rdays);
+  result.days = rdays; // PAS de troncature s16 (déviation user : pas de gel)
 }
 
 /** 1:1 décomp `void RtcCalcLocalTime(void)` (rtc.c:290). */
@@ -212,7 +220,7 @@ export function RtcCalcLocalTime(): void {
  *  Calcule l'offset pour que gLocalTime = (days,h,m,s) MAINTENANT, et le
  *  STOCKE dans gSaveBlock2.localTimeOffset (→ persisté par la save). */
 export function RtcCalcLocalTimeOffset(days: number, hours: number, minutes: number, seconds: number): void {
-  gLocalTime.days = _s16(days);
+  gLocalTime.days = days; // PAS de troncature s16 (déviation user : pas de gel)
   gLocalTime.hours = _s8(hours);
   gLocalTime.minutes = _s8(minutes);
   gLocalTime.seconds = _s8(seconds);
