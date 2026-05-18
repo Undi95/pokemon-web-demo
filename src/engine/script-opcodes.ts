@@ -1500,45 +1500,11 @@ registerOpcode('showobject', (_ctx, args) => {
   return false;
 });
 
-registerOpcode('hideobjectat', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_setobjectinvisibility(localId, mapNum, mapGroup)` qui
-  // pose le flag d'invisibilité PERSISTANT sur le NPC du `mapGroup.mapNum`
-  // donné. Différence avec `hideobject` (= sans `at`) : `hideobjectat` cible
-  // un NPC d'une AUTRE map (= localId résolu sur la map donnée), alors que
-  // `hideobject` cible un NPC de la map courante.
-  //
-  // Usage typique : `hideobjectat LOCALID_LITTLEROOT_MOM, MAP_LITTLEROOT_TOWN`
-  // après que Mom a remis les Running Shoes au joueur dans la maison →
-  // Mom ne réapparaît plus à l'extérieur quand le joueur sort.
-  //
-  // Notre impl : SetFlag(flagId) du template (= persiste dans saveBlock1.flags)
-  // + désactive le NPC actif si trouvé. La map cible peut être différente de
-  // la map courante : on cherche le template via `(localIdRaw + mapName)` mais
-  // pour la simplicité on déclenche juste le flag — au prochain spawn de la
-  // map cible, le flag sera vu et le NPC restera caché.
-  const localIdRaw = args[0] ?? '';
-  const mapName = args[1] ?? '';  // e.g. 'MAP_LITTLEROOT_TOWN'
-  // Resolve flag via la map cible si possible (= via header cache).
-  const headersCache = (globalThis as Record<string, unknown>).__mapHeadersCache as
-    Record<string, { events?: { objectEvents?: ObjectEventTemplate[] } }> | undefined;
-  let tpl: ObjectEventTemplate | undefined;
-  if (headersCache && mapName in headersCache) {
-    tpl = headersCache[mapName].events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  } else {
-    // Fallback : map courante.
-    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
-    tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  }
-  if (tpl?.flagId) FlagSet(tpl.flagId);
-  // Si le NPC est actif sur la map COURANTE (= player y est), désactive aussi.
-  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
-  if (npc) {
-    npc.active = false;
-    npc.invisible = true;
-  }
-  return false;
-});
+// NOTE : `hideobjectat` 1:1 est défini PLUS BAS (= seule registration,
+// SetObjectInvisibility(...,TRUE) strict). L'ancienne registration ici
+// (FlagSet template + active=false) divergeait du décomp ET était de
+// toute façon masquée (last-wins Map.set) → supprimée (audit dupes :
+// résout le seul cas ≥2-real, 0 régression car elle ne tournait pas).
 
 registerOpcode('hideplayer', (_ctx) => {
   // Hide player sprite (= used during cinematic warp).
@@ -3940,18 +3906,20 @@ registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => {
 // ─── Hide object at (1:1 décomp ScrCmd_hideobjectat) ─────────────────────────
 
 registerOpcode('hideobjectat', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_hideobjectat (scrcmd.c:1015) :
-  //   localId = VarGet(args[0]) ; mapGroup, mapNum = args ;
-  //   RemoveObjectEventByLocalIdAndMap(localId, mapNum, mapGroup) ;
-  //   FlagSet(GetObjectEventFlagIdByLocalIdAndMap(localId, mapNum, mapGroup)).
-  // Hide PERSISTENT (= via flag), même map ou autre map.
+  // 1:1 décomp `ScrCmd_hideobjectat` (scrcmd.c) :
+  //   SetObjectInvisibility(localId, mapNum, mapGroup, TRUE);
+  // `SetObjectInvisibility` (event_object_movement.c:1939) :
+  //   if (!TryGetObjectEventIdByLocalIdAndMap(...,&id))  // = SI TROUVÉ
+  //     gObjectEvents[id].invisible = invisible;
+  // (TryGet… renvoie TRUE si NON trouvé → `!` = trouvé). Donc :
+  // objet chargé → invisible=TRUE ; non chargé → NO-OP. Surtout PAS
+  // de `active=false` (= ça c'est removeobject) ni FlagSet (= pas de
+  // persistance ici ; ScrCmd_removeobject lui-même ne FlagSet pas).
+  // Audit dupes : l'ancienne impl (active=false) + le dup mort plus
+  // haut (FlagSet+deactivate) divergeaient du décomp → corrigé 1:1.
   const localId = _vget(args[0]);
-  // Notre port (simplified) : find on current map, deactivate.
   const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) {
-    obj.active = false;
-    obj.invisible = true;
-  }
+  if (obj) obj.invisible = true;  // 1:1 SetObjectInvisibility(...,TRUE) ; objet reste actif
   return false;
 });
 
