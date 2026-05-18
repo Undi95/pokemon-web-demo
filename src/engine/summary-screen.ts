@@ -178,10 +178,22 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
 }
 
 /** 1:1 décomp `sTextColors[][3]` (pokemon_summary_screen.c) — [bg,fg,shadow]
- *  indices palette dans la font palette du summary screen. */
-const SUMMARY_TEXT_COLOR: Record<number, readonly number[]> = {
-  0: [0, 1, 2], 1: [0, 3, 4], 5: [0, 11, 12], 6: [0, 13, 14],
-};
+ *  indices palette. Tableau COMPLET (13 entrées) 1:1 décomp. */
+const SUMMARY_TEXT_COLOR: ReadonlyArray<readonly number[]> = [
+  [0, 1, 2],   // 0
+  [0, 3, 4],   // 1
+  [0, 5, 6],   // 2
+  [0, 7, 8],   // 3
+  [0, 9, 10],  // 4
+  [0, 11, 12], // 5
+  [0, 13, 14], // 6
+  [0, 7, 8],   // 7
+  [13, 15, 14],// 8
+  [0, 1, 2],   // 9
+  [0, 3, 4],   // 10
+  [0, 5, 6],   // 11
+  [0, 7, 8],   // 12
+];
 let _infoWindowIds: number[] = [];
 
 // 1:1 décomp `sMemoNatureTextColor` / `sMemoMiscTextColor`
@@ -242,6 +254,60 @@ function _bufferMonTrainerMemo(mon: PokemonInstance): string {
     text = locIsRealSection ? GTEXT_X_NATURE_MET_AT_YZ : GTEXT_X_NATURE_MET_SOMEWHERE_AT;
   }
   return DynamicPlaceholderTextUtil_ExpandPlaceholders(text);
+}
+
+/** 1:1 décomp `PrintMonInfo` → `PrintNotEggInfo` (pokemon_summary_screen.c
+ *  :2738/2750). Plaque portrait bottom-left : nº Pokédex (#17), surnom (#18),
+ *  nom d'espèce + niveau + genre (#19). Windows `sSummaryTemplate` bg0. C'est
+ *  CE contenu qui remplit la "box" bottom-left (vide tant que non dessinée =
+ *  le cadre nu de page_info.bin). Sprite mon + SetMonPicBackgroundPalette +
+ *  type icons = sous-étape incr.4b (pas de fake ici). */
+function _printMonInfo(mon: PokemonInstance): void {
+  // 1:1 décomp sSummaryTemplate (pokemon_summary_screen.c:407) — paletteNum
+  // EXACTS : DEX_NUMBER #17 = pal 7 ; NICKNAME #18 = pal 6 ; SPECIES #19 =
+  // pal 6. (Mettre pal 0 rendait sTextColors[n] sur des couleurs pâles =
+  // texte blanc illisible / genre délavé — bug repéré par le user.)
+  // PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER #17 tile(1,2) w4 h2 bg0 pal7 bb387.
+  const dexWin = AddWindow({ bg: 0, tilemapLeft: 1, tilemapTop: 2, width: 4, height: 2, paletteNum: 7, baseBlock: 387 });
+  // PSS_LABEL_WINDOW_PORTRAIT_NICKNAME #18 tile(1,12) w9 h2 bg0 pal6 bb395.
+  const nickWin = AddWindow({ bg: 0, tilemapLeft: 1, tilemapTop: 12, width: 9, height: 2, paletteNum: 6, baseBlock: 395 });
+  // PSS_LABEL_WINDOW_PORTRAIT_SPECIES #19 tile(1,14) w9 h4 bg0 pal6 bb413.
+  const specWin = AddWindow({ bg: 0, tilemapLeft: 1, tilemapTop: 14, width: 9, height: 4, paletteNum: 6, baseBlock: 413 });
+  _infoWindowIds.push(dexWin, nickWin, specWin);
+  FillWindowPixelBuffer(dexWin, 0);
+  FillWindowPixelBuffer(nickWin, 0);
+  FillWindowPixelBuffer(specWin, 0);
+
+  // 1:1 PrintNotEggInfo : dexNum = SpeciesToPokedexNum(species). Notre
+  // mon.speciesId = nº Pokédex national (1..386). gText_NumberClear01 =
+  // "{NO}{CLEAR 1}" (strings.c:210) + dexNum 3-chiffres leading-0.
+  const dexNum = mon.speciesId;
+  if (dexNum && dexNum !== 0xFFFF) {
+    const dexStr = '{NO}{CLEAR 1}' + String(dexNum).padStart(3, '0');
+    // non-shiny → sTextColors[1] ; shiny → sTextColors[7].
+    const dexColor = mon.isShiny ? SUMMARY_TEXT_COLOR[7] : SUMMARY_TEXT_COLOR[1];
+    AddTextPrinterParameterized3(dexWin, FONT_NORMAL, 0, 1, dexColor, TEXT_SKIP_DRAW, dexStr);
+    // SetMonPicBackgroundPalette(shiny) = bg3 portrait region → incr.4b.
+  }
+  // 1:1 : gText_LevelSymbol "N." (strings.c:209) + level (LEFT_ALIGN 3 = nb
+  // brut). @(24,17) sTextColors[1]. Window SPECIES.
+  AddTextPrinterParameterized3(specWin, FONT_NORMAL, 24, 17, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, 'N.' + String(mon.level));
+  // GetMonNickname @(0,1) sTextColors[1]. Window NICKNAME.
+  AddTextPrinterParameterized3(nickWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, mon.nickname);
+  // CHAR_SLASH(0xBA='/') + gSpeciesNames[species2] @(0,1) sTextColors[1]. SPECIES.
+  AddTextPrinterParameterized3(specWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[1], TEXT_SKIP_DRAW, '/' + mon.speciesNameFr);
+  // 1:1 PrintGenderSymbol : sauf NIDORAN_M/F ; MON_MALE→♂ sTextColors[3],
+  // MON_FEMALE→♀ sTextColors[4] @(57,17) ; genderless → rien.
+  if (mon.speciesEnum !== 'SPECIES_NIDORAN_M' && mon.speciesEnum !== 'SPECIES_NIDORAN_F') {
+    if (mon.monGender === 0) {
+      AddTextPrinterParameterized3(specWin, FONT_NORMAL, 57, 17, SUMMARY_TEXT_COLOR[3], TEXT_SKIP_DRAW, '♂');
+    } else if (mon.monGender === 254) {
+      AddTextPrinterParameterized3(specWin, FONT_NORMAL, 57, 17, SUMMARY_TEXT_COLOR[4], TEXT_SKIP_DRAW, '♀');
+    }
+  }
+  PutWindowTilemap(dexWin); CopyWindowToVram(dexWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(nickWin); CopyWindowToVram(nickWin, 3 /* COPYWIN_FULL */);
+  PutWindowTilemap(specWin); CopyWindowToVram(specWin, 3 /* COPYWIN_FULL */);
 }
 
 /** 1:1 décomp INFO page (non-egg) — increment 1 : OT name + OT ID.
@@ -313,6 +379,10 @@ function _printInfoPageText(): void {
   FillWindowPixelBuffer(memoWin, 0);
   const memoStr = _bufferMonTrainerMemo(mon);
   AddTextPrinterParameterized3(memoWin, FONT_NORMAL, 0, 1, SUMMARY_TEXT_COLOR[0], TEXT_SKIP_DRAW, memoStr);
+
+  // Incr.4a — 1:1 PrintMonInfo : plaque nº dex + surnom + espèce + niveau +
+  // genre (remplit la "box" bottom-left, qui était le cadre nu page_info.bin).
+  _printMonInfo(mon);
 
   PutWindowTilemap(otWin); CopyWindowToVram(otWin, 3 /* COPYWIN_FULL */);
   PutWindowTilemap(idWin); CopyWindowToVram(idWin, 3 /* COPYWIN_FULL */);
