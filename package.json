@@ -76,6 +76,7 @@
     "audit:collision": "node scripts/audit-collision.mjs",
     "audit:mon-pic-coords": "node scripts/audit-mon-pic-coords.mjs",
     "audit:pokemon-anims": "node scripts/audit-pokemon-anims.mjs",
+    "audit:tm-hm": "node scripts/audit-tm-hm.mjs",
     "audit:graphics": "node scripts/audit-missing-anim-tables.mjs && node scripts/audit-mon-pic-coords.mjs && node scripts/audit-pokemon-anims.mjs",
     "audit:overworld": "node scripts/audit-fullgame-opcodes.mjs && node scripts/audit-fullgame-specials.mjs && node scripts/audit-move-effect-scripts.mjs && node scripts/audit-scrcmd.mjs && node scripts/audit-movement.mjs && node scripts/audit-collision.mjs",
     "audit:combat": "node scripts/audit-species-basestats.mjs && node scripts/audit-species-abilities.mjs && node scripts/audit-moves-data.mjs && node scripts/audit-type-chart.mjs && node scripts/audit-learnsets.mjs && node scripts/audit-trainer-parties.mjs && node scripts/audit-item-effects.mjs && node scripts/audit-evolutions.mjs && node scripts/audit-item-hold-effects.mjs && node scripts/audit-hold-effect-to-type.mjs && node scripts/audit-experience-tables.mjs && node scripts/audit-stat-stage-ratios.mjs && node scripts/audit-move-effect-scripts.mjs"
