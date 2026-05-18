@@ -226,6 +226,22 @@ let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' = 'idle';
 let _actionCursor = 0;
 let _actionWindowId = -1;
 let _actionList: number[] = [];  // MENU_SUMMARY=0, MENU_ITEM=3, MENU_CANCEL1=2 (= notre order)
+/** 1:1 décomp `sPartyMenuInternal->exitCallback` — callback de sortie
+ *  TRANSITOIRE, consommé UNE fois dans Task_ClosePartyMenuAndSetCB2
+ *  (party_menu.c:1238). Distinct de `gPartyMenu.exitCallback` (= notre
+ *  `gMain.savedCallback`, sortie ULTIME vers le field). Set par
+ *  `CursorCb_Summary` (RESUME) = CB2_ShowPokemonSummaryScreen. */
+let _partyTransientExitCb: (() => void) | null = null;
+/** Mon ciblé par CB2_ShowPokemonSummaryScreen (= `gPlayerParty[
+ *  gPartyMenu.slotId]`) + garde one-shot : le décomp `ShowPokemonSummaryScreen`
+ *  est synchrone, notre `OpenSummaryScreen` est async (_loadAssets) donc ce CB2
+ *  est rappelé chaque frame jusqu'au SetMainCallback2(CB2_InitSummaryScreen). */
+let _summaryTargetMon: PokemonInstance | null = null;
+let _showSummaryPending = false;
+/** 1:1 décomp `CB2_ReturnToPartyMenuFromSummaryScreen` (party_menu.c:2790) :
+ *  re-init avec `Task_TryCreateSelectionWindow` + `PARTY_MSG_DO_WHAT_WITH_MON`
+ *  = la fenêtre de sélection (RESUME/OBJET/RETOUR) se ré-ouvre sur le mon vu. */
+let _reopenActionMenuAfterInit = false;
 let _assets: PartyAssets | null = null;
 let _assetsLoading: Promise<PartyAssets> | null = null;
 let _slotWindowIds: number[] = [];
@@ -990,7 +1006,19 @@ function Task_ClosePartyMenu(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || rt.gPaletteFade.active) return;
   _freePartyMenu();
-  const exitCb = rt.gMain.savedCallback;
+  // 1:1 décomp `Task_ClosePartyMenuAndSetCB2` (party_menu.c:1231-1245) :
+  //   if (sPartyMenuInternal->exitCallback != NULL)
+  //       SetMainCallback2(sPartyMenuInternal->exitCallback);   ← transitoire
+  //   else
+  //       SetMainCallback2(gPartyMenu.exitCallback);            ← ultime (field)
+  // Le callback transitoire (= RESUME → CB2_ShowPokemonSummaryScreen) est
+  // consommé UNE fois. Sortir le résumé de la party de façon SÉQUENTIELLE
+  // (party fully freed → handoff CB2) élimine la race async qui faisait
+  // survivre une tâche de close → CB2_ReturnToFieldWithOpenMenu = OW+START
+  // (bug #4) / CB2 stomp mid-summary (bug #3).
+  const transient = _partyTransientExitCb;
+  _partyTransientExitCb = null;
+  const exitCb = transient ?? rt.gMain.savedCallback;
   if (exitCb) rt.SetMainCallback2(exitCb);
   else rt.SetMainCallback2(null);
   rt.DestroyTask(task.taskId);
@@ -1178,9 +1206,12 @@ function _renderActionMenuContents(): void {
   CopyWindowToVram(_actionWindowId, 3);
 }
 
-function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
+function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void {
   if (!rt) return;
-  PlaySE(5);  // SE_SELECT
+  // 1:1 décomp : SE_SELECT joué par CursorCb_* à l'ENTRÉE (press A sur le mon).
+  // Au retour du résumé (Task_TryCreateSelectionWindow → CreateSelectionWindow)
+  // aucun SE n'est rejoué → playSe=false.
+  if (playSe) PlaySE(5);  // SE_SELECT
   // 1:1 décomp `SetPartyMonFieldSelectionActions` (party_menu.c:2607) :
   //   AppendToList(MENU_SUMMARY);
   //   for each field move: AppendToList(MENU_FIELD_MOVES + j);
@@ -1250,14 +1281,22 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
     if (action === MENU_CANCEL1 /* RETOUR */) {
       _closeActionMenu();
     } else if (action === MENU_SUMMARY /* RESUME */) {
-      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770) :
-      // exitCallback = CB2_ShowPokemonSummaryScreen → ShowPokemonSummary
-      // Screen(..., CB2_ReturnToPartyMenuFromSummaryScreen). Le résumé revient
-      // donc au PARTY MENU (PAS au field), curseur sur le mon vu.
+      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770-2775) :
+      //   PlaySE(SE_SELECT);                                      ← déjà fait
+      //   sPartyMenuInternal->exitCallback = CB2_ShowPokemonSummaryScreen;
+      //   Task_ClosePartyMenu(taskId);   // fade-out party PUIS handoff CB2
+      // Le party menu se ferme ENTIÈREMENT (fade gated → _freePartyMenu →
+      // SetMainCallback2) AVANT que le résumé s'init = handoff séquentiel
+      // identique au décomp. Ça supprime la race où OpenSummaryScreen était
+      // appelé pendant que le party menu vivait encore (tâche de close
+      // survivante → CB2_ReturnToFieldWithOpenMenu = OW+START bug #4, ou
+      // CB2 stomp = crash fade bug #3).
       const mon = (gameState.party as PokemonInstance[])[_slotId];
       if (mon) {
-        _closeActionMenu();
-        OpenSummaryScreen(mon, CB2_ReturnToPartyMenuFromSummary);
+        _summaryTargetMon = mon;
+        _showSummaryPending = false;
+        _partyTransientExitCb = CB2_ShowPokemonSummaryScreen_Manual;
+        ClosePartyScreen();  // = Task_ClosePartyMenu (fade + handoff séquentiel)
       } else {
         _closeActionMenu();
       }
@@ -1373,6 +1412,15 @@ export function CB2_InitPartyMenu(): void {
       rt.SetVBlankCallback(VBlankCB_PartyMenuRun);
       rt.SetMainCallback2(MainCB2_PartyMenuRun);
       _isOpen = true;
+      // 1:1 décomp CB2_ReturnToPartyMenuFromSummaryScreen → Task_TryCreate
+      // SelectionWindow (party_menu.c:2731) → CreateSelectionWindow : au
+      // retour du résumé, la fenêtre de sélection se ré-ouvre sur le mon vu.
+      // playSe=false : le SE_SELECT a été joué à CursorCb_Summary (entrée),
+      // CreateSelectionWindow n'en rejoue pas.
+      if (_reopenActionMenuAfterInit) {
+        _reopenActionMenuAfterInit = false;
+        _openActionMenu(rt, false);
+      }
       return;
   }
 }
@@ -1395,14 +1443,41 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   });
 }
 
-/** 1:1 décomp `CB2_ReturnToPartyMenuFromSummaryScreen` (party_menu.c) :
- *  ré-init du party menu au retour du résumé, curseur (= slotId) placé sur
- *  le mon vu en dernier dans le résumé (`gLastViewedMonIndex`). On NE touche
- *  PAS gMain.savedCallback (B depuis party revient à l'ouvreur d'origine =
- *  start menu / field, 1:1 contexte party). */
+/** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :
+ *
+ *      ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty,
+ *          gPartyMenu.slotId, gPlayerPartyCount - 1,
+ *          CB2_ReturnToPartyMenuFromSummaryScreen);
+ *
+ *  Le décomp est SYNCHRONE (ShowPokemonSummaryScreen → SetMainCallback2 dans
+ *  la même frame). Notre `OpenSummaryScreen` est async (_loadAssets), donc ce
+ *  CB2 est rappelé chaque frame jusqu'au SetMainCallback2(CB2_InitSummaryScreen)
+ *  interne → garde one-shot `_showSummaryPending`. */
+export function CB2_ShowPokemonSummaryScreen_Manual(): void {
+  if (_showSummaryPending) return;
+  _showSummaryPending = true;
+  const mon = _summaryTargetMon;
+  _summaryTargetMon = null;
+  if (mon) OpenSummaryScreen(mon, CB2_ReturnToPartyMenuFromSummary);
+}
+
+/** 1:1 décomp `CB2_ReturnToPartyMenuFromSummaryScreen` (party_menu.c:2790) :
+ *
+ *      gPaletteFade.bufferTransferDisabled = TRUE;
+ *      gPartyMenu.slotId = gLastViewedMonIndex;
+ *      InitPartyMenu(gPartyMenu.menuType, KEEP_PARTY_LAYOUT, gPartyMenu.action,
+ *          TRUE, PARTY_MSG_DO_WHAT_WITH_MON, Task_TryCreateSelectionWindow,
+ *          gPartyMenu.exitCallback);
+ *
+ *  → ré-init du party menu, curseur (= slotId) sur le mon vu en dernier
+ *  (`gLastViewedMonIndex`), ET la fenêtre de sélection (RESUME/OBJET/RETOUR)
+ *  se RÉ-OUVRE sur ce mon (Task_TryCreateSelectionWindow + PARTY_MSG_DO_WHAT
+ *  _WITH_MON). On NE touche PAS gMain.savedCallback (= gPartyMenu.exitCallback
+ *  préservé : B depuis party revient à l'ouvreur d'origine = start menu). */
 export function CB2_ReturnToPartyMenuFromSummary(): void {
   const rt = getRuntime();
   if (!rt) return;
+  rt.gPaletteFade.bufferTransferDisabled = true;  // 1:1 décomp :2792
   // Le résumé a écrasé l'état visuel (VRAM/sprites/windows) → on force une
   // ré-init complète du party menu (flags readiness reset). _freePartyMenu
   // n'a PAS été appelé → _slotId est settable directement (1:1 slot = mon vu).
@@ -1410,7 +1485,11 @@ export function CB2_ReturnToPartyMenuFromSummary(): void {
   _phase = 'idle';
   _graphicsReady = false; _graphicsLoading = false;
   _windowsReady = false; _windowsLoading = false;
-  _slotId = GetSummaryLastMonIndex();
+  _showSummaryPending = false;
+  _slotId = GetSummaryLastMonIndex();  // 1:1 gPartyMenu.slotId = gLastViewedMonIndex
+  // 1:1 décomp : Task_TryCreateSelectionWindow → la fenêtre d'actions
+  // (RESUME/OBJET/RETOUR) se ré-ouvre sur le mon vu (PARTY_MSG_DO_WHAT_WITH_MON).
+  _reopenActionMenuAfterInit = true;
   rt.gMain.state = 0;
   rt.SetMainCallback2(CB2_InitPartyMenu);
 }
