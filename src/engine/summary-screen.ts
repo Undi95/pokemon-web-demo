@@ -53,7 +53,7 @@ import {
 import { ResetSpriteData } from './decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { OBJ_PLTT_ID } from './decomp-runtime';
+import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import type { DecompTask } from './decomp-runtime';
@@ -359,6 +359,10 @@ interface SummaryAssets {
   moveTypesTiles: Uint8Array;
   moveTypesPal: Uint16Array;
   aButtonTiles: Uint8Array;
+  /** 1:1 décomp `gPPTextPalette` (graphics/battle_interface/text_pp.pal) —
+   *  chargé à BG_PLTT_ID(8)+1 ; la fenêtre MOVE_PP est paletteNum 8 (sinon
+   *  PP rendu en noir = bug repéré user). */
+  ppTextPal: Uint16Array;
 }
 
 let _assets: SummaryAssets | null = null;
@@ -368,7 +372,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn] =
+    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal] =
       await Promise.all([
         loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
         loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
@@ -380,12 +384,14 @@ async function _loadAssets(): Promise<SummaryAssets> {
         loadTileBin('/decomp/em/types/move_types.png', 4),
         loadGbaPal('/decomp/em/types/move_types.gbapal'),
         loadTileBin('/decomp/em/summary_screen/a_button.png', 4),
+        loadGbaPal('/decomp/em/battle_interface/text_pp.pal'),
       ]);
     _assets = {
       tiles, pageInfoTilemap: pInfo, pageInfoEggTilemap: pInfoEgg,
       pageSkillsTilemap: pSkills, pageBattleMovesTilemap: pBattle,
       pageContestMovesTilemap: pContest, tilesPalette: tilesPal,
       moveTypesTiles: mtTiles, moveTypesPal: mtPal, aButtonTiles: aBtn,
+      ppTextPal: ppPal,
     };
     return _assets;
   })();
@@ -543,8 +549,12 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     sMon.bgTilemapBuffers[PSS_PAGE_SKILLS].set(a.pageSkillsTilemap.subarray(0, 0x400), 0x400);
     sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES].set(a.pageBattleMovesTilemap.subarray(0, 0x400), 0x400);
     sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES].set(a.pageContestMovesTilemap.subarray(0, 0x400), 0x400);
-    // case 6 : LoadCompressedPalette(gSummaryScreen_Pal, BG_PLTT_ID(0), 8 pals).
-    LoadPalette(a.tilesPalette, 0, a.tilesPalette.length * 2);
+    // case 6 : LoadCompressedPalette(gSummaryScreen_Pal, BG_PLTT_ID(0),
+    // 8*PLTT_SIZE_4BPP) + LoadPalette(gPPTextPalette, BG_PLTT_ID(8)+1,
+    // PLTT_SIZEOF(16-1)) — la 2e = palette PP (fenêtre MOVE_PP paletteNum 8,
+    // sinon PP rendu noir). 8 pals = 128 couleurs.
+    LoadPalette(a.tilesPalette, 0, 8 * 16 * 2);
+    LoadPalette(a.ppTextPal, BG_PLTT_ID(8) + 1, 15 * 2);
     // case 7/12 : sSpriteSheet_MoveTypes → OBJ VRAM ; gMoveTypes_Pal → OBJ
     // pal slots 13/14/15 (3 pals).
     r.gba.objVram.set(a.moveTypesTiles, TYPE_ICON_TILE_BASE * 32);
@@ -1075,14 +1085,15 @@ function _printBattleMoves(): void {
   _printMoveNameAndPP(0); _printMoveNameAndPP(1);
   _printMoveNameAndPP(2); _printMoveNameAndPP(3);
 }
-/** 1:1 décomp `PrintContestMoves` (:3595) + `DrawContestMoveHearts`
- *  (:1483 SetDefaultTilemaps appelle DrawContestMoveHearts(moves[
- *  firstMoveIndex]) au setup de la page contest). Les cœurs vont dans le
- *  buffer CONTEST SC1 → copié en VRAM au scroll-in (PssScroll*). */
+/** 1:1 décomp `PrintContestMoves` (:3595) — mode NORMAL = juste les 4 moves.
+ *  Les cœurs CHARME/BLOCAGE (`DrawContestMoveHearts`) font partie de la
+ *  sliding window APPEAL_JAM (EFFET concours, rows SC1 13-19) : décomp ne
+ *  les dessine QU'en mode sélection de move (Task_SlideAppealJamWindow /
+ *  SetDefaultTilemaps branche moves-page). Mode NORMAL (aucun move
+ *  sélectionné, A non programmé) → EFFET caché → PAS de cœurs (1:1). */
 function _printContestMoves(): void {
   _printMoveNameAndPP(0); _printMoveNameAndPP(1);
   _printMoveNameAndPP(2); _printMoveNameAndPP(3);
-  _drawContestMoveHearts(sMon.summary.moves[0] || '');
 }
 
 /* ============================================================================
@@ -1193,18 +1204,105 @@ function _drawPagination(): void {
     }
   }
   // 1:1 CopyToBgTilemapBufferRect_ChangePalette(3, tilemap, 11, 0,
-  // PSS_PAGE_COUNT*2, 2, 16). pal 16 (= no change, garde la palette du tile).
+  // PSS_PAGE_COUNT*2, 2, 16) → CopyRectToBgTilemapBufferRect → CopyTileMap
+  // Entry palette1=16,palette2=0,tileOffset=0 (bg.c:1178) :
+  //   var = (*dest & 0xFC00) + (palette2<<12) | ((*src + tileOffset) & 0x3FF)
+  // = GARDE les bits palette/flip du tile existant (= barre de titre
+  // page_info, palette 4) + remplace SEULEMENT l'index tile (low 10 bits).
+  // (Mon ancien code écrasait l'entrée entière → palette 0 → points dex
+  // rendus en sombre/cyan = bug "palette pas bonne en haut" repéré user.)
   const dst = sMon.bgTilemapBuffers[PSS_PAGE_INFO]; // BG3 = INFO, SC0 (di < 0x400)
   if (dst) {
     const w = PSS_PAGE_COUNT * 2;
     for (let ty = 0; ty < 2; ty++) {
       for (let tx = 0; tx < w; tx++) {
         const di = (0 + ty) * 32 + (11 + tx);
-        if (di >= 0 && di < dst.length) dst[di] = tilemap[ty * 2 * PSS_PAGE_COUNT + tx];
+        if (di >= 0 && di < dst.length) {
+          const src = tilemap[ty * 2 * PSS_PAGE_COUNT + tx];
+          dst[di] = (dst[di] & 0xFC00) | (src & 0x3FF);
+        }
       }
     }
   }
   _scheduleBgCopy(3);
+}
+
+/* ============================================================================
+ * 1:1 décomp Sliding windows (EFFET / STATUT) + Pokérus + SetDefaultTilemaps
+ * ========================================================================== */
+
+/** 1:1 décomp `CopyNColumnsToTilemap` (:2405), cas instant-HIDE
+ *  (visibleColumns == width → `if (width != visibleColumns)` FALSE → tout
+ *  defaultTile, gfx ignoré). Remplit [top..top+h-1][left..left+w-1] du buffer
+ *  page (contigu : top>31 → SC1) avec defaultTile. = ce que fait
+ *  `Position*SlidingWindow(0, 0xFF)` (speed clampé à width). */
+function _hideSlidingWindow(page: number, top: number, left: number, width: number, height: number, defaultTile: number): void {
+  const buf = sMon.bgTilemapBuffers[page];
+  if (!buf) return;
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      const idx = (top + i) * 32 + left + j;
+      if (idx >= 0 && idx < buf.length) buf[idx] = defaultTile;
+    }
+  }
+}
+
+// 1:1 décomp structs (pokemon_summary_screen.c:388-405).
+const _SW_POWER_ACC = { page: PSS_PAGE_BATTLE_MOVES, top: 45, left: 0, w: 10, h: 7, def: 0 };
+const _SW_APPEAL_JAM = { page: PSS_PAGE_CONTEST_MOVES, top: 45, left: 0, w: 10, h: 7, def: 0 };
+const _SW_STATUS1 = { page: PSS_PAGE_INFO, top: 18, left: 0, w: 10, h: 2, def: 1 };
+const _SW_STATUS2 = { page: PSS_PAGE_INFO, top: 50, left: 0, w: 10, h: 2, def: 1 };
+
+/** 1:1 `PositionPowerAccSlidingWindow(0, 0xFF)` (:2434) — EFFET combat caché
+ *  (mode NORMAL, aucun move sélectionné = notre cas, A non programmé). */
+function _hidePowerAccSlidingWindow(): void {
+  _hideSlidingWindow(_SW_POWER_ACC.page, _SW_POWER_ACC.top, _SW_POWER_ACC.left, _SW_POWER_ACC.w, _SW_POWER_ACC.h, _SW_POWER_ACC.def);
+}
+/** 1:1 `PositionAppealJamSlidingWindow(0, 0xFF, 0)` (:2485) — EFFET concours caché. */
+function _hideAppealJamSlidingWindow(): void {
+  _hideSlidingWindow(_SW_APPEAL_JAM.page, _SW_APPEAL_JAM.top, _SW_APPEAL_JAM.left, _SW_APPEAL_JAM.w, _SW_APPEAL_JAM.h, _SW_APPEAL_JAM.def);
+}
+/** 1:1 `PositionStatusSlidingWindow(0, 0xFF)` (:2541) — fenêtre STATUT cachée
+ *  (mon sain AILMENT_NONE). sStatusSlidingWindow1 (top18) + 2 (top50). */
+function _hideStatusSlidingWindow(): void {
+  _hideSlidingWindow(_SW_STATUS1.page, _SW_STATUS1.top, _SW_STATUS1.left, _SW_STATUS1.w, _SW_STATUS1.h, _SW_STATUS1.def);
+  _hideSlidingWindow(_SW_STATUS2.page, _SW_STATUS2.top, _SW_STATUS2.left, _SW_STATUS2.w, _SW_STATUS2.h, _SW_STATUS2.def);
+}
+
+/** 1:1 décomp `DrawPokerusCuredSymbol` (:2612) : `!CheckPartyPokerus &&
+ *  CheckPartyHasHadPokerus` → 0x2C (guéri) sinon 0x81A. Nos mons n'ont JAMAIS
+ *  le pokérus (pas de système pokérus) → branche else → 0x81A à
+ *  bgTilemapBuffers[INFO][0][0x223] ET [INFO][1][0x223] (= my buf 0x223 SC0 +
+ *  0x400+0x223 SC1). 1:1 honnête (else = résultat correct sans pokérus). */
+function _drawPokerusCuredSymbol(): void {
+  const buf = sMon.bgTilemapBuffers[PSS_PAGE_INFO];
+  if (!buf) return;
+  buf[0x223] = 0x81A;          // [INFO][0][0x223] (SC0)
+  buf[0x400 + 0x223] = 0x81A;  // [INFO][1][0x223] (SC1)
+  _scheduleBgCopy(3);
+}
+
+/** 1:1 décomp `SetDefaultTilemaps` (:1474) — branche non-moves (page INFO au
+ *  boot = notre cas party→résumé). Cache EFFET combat+concours + STATUT
+ *  (mon sain) + symbole pokérus. La branche moves-page (TilemapFiveMoves
+ *  Display etc.) = pages moves initiales (berry/etc.), pas notre flux. */
+function _setDefaultTilemaps(): void {
+  if (sMon.currPageIndex !== PSS_PAGE_BATTLE_MOVES && sMon.currPageIndex !== PSS_PAGE_CONTEST_MOVES) {
+    _hidePowerAccSlidingWindow();
+    _hideAppealJamSlidingWindow();
+  }
+  // summary.ailment == AILMENT_NONE → hide status sliding window ; sinon
+  // (page non-moves) PutWindowTilemap(SKILLS_STATUS) (= géré au render skills).
+  if (sMon.summary.ailment === 0) {
+    _hideStatusSlidingWindow();
+  } else if (sMon.currPageIndex !== PSS_PAGE_BATTLE_MOVES && sMon.currPageIndex !== PSS_PAGE_CONTEST_MOVES) {
+    PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+  }
+  // LimitEggSummaryPageDisplay (:2713) non-egg → BG3 hofs 0.
+  _changeBgX(3, 0, BG_COORD_SET);
+  _drawPokerusCuredSymbol();
+  // Les buffers BATTLE/CONTEST blanchis seront copiés en VRAM au scroll-in
+  // (PssScroll*). INFO (BG3) copié par _drawPokerusCuredSymbol → _scheduleBgCopy(3).
 }
 
 /* ============================================================================
@@ -1382,16 +1480,22 @@ function _taskPssScrollLeft(task: DecompTask): void {
   _changeBgX(_scrollData.d1, 0x2000, BG_COORD_SUB);
   _scrollData.d0 += 32;
   if (_scrollData.d0 > 0xFF) {
-    // PssScrollLeftEnd.
+    // PssScrollLeftEnd. ⚠️ Décomp : `ScheduleBgCopyTilemapToVram(2|1)`
+    // (= d1, car d1=2 si order0 sinon 1) est DIFFÉRÉ → la copie s'exécute
+    // au vblank APRÈS le `SetBgTilemapBuffer(d1, …)` ci-dessous → copie le
+    // NOUVEAU buffer. Notre `_scheduleBgCopy` est IMMÉDIAT → il FAUT
+    // l'appeler APRÈS `_setBgTilemapBuffer` (sinon BG d1 garde l'ancien
+    // buffer en VRAM = bug page contest affichée sur slot skills).
     if (sMon.bgDisplayOrder === 0) {
-      _setBgPriority(1, 1); _setBgPriority(2, 2); _scheduleBgCopy(2);
+      _setBgPriority(1, 1); _setBgPriority(2, 2);
     } else {
-      _setBgPriority(2, 1); _setBgPriority(1, 2); _scheduleBgCopy(1);
+      _setBgPriority(2, 1); _setBgPriority(1, 2);
     }
     if (sMon.currPageIndex > 1) {
       _setBgTilemapBuffer(_scrollData.d1, sMon.currPageIndex - 1);
       _changeBgX(_scrollData.d1, 0x10000, BG_COORD_SET);
     }
+    _scheduleBgCopy(_scrollData.d1); // 1:1 net décomp (copie différée post-SetBgTilemapBuffer)
     ShowBg(1); ShowBg(2);
     sMon.bgDisplayOrder ^= 1;
     _scrollData.d1 = 0; _scrollData.d0 = 0;
@@ -1609,10 +1713,9 @@ export function CB2_InitSummaryScreen(): void {
       _printPageSpecificText(sMon.currPageIndex);
       rt.gMain.state++; break;
     case 14:
-      // 1:1 SetDefaultTilemaps (:1474) → LimitEggSummaryPageDisplay (:2713) :
-      // non-egg → ChangeBgX(3, 0, SET) (BG3 INFO montre SC0). (Page INFO au
-      // boot ; sliding windows POWER/APPEAL hors écran via SC1 vide.)
-      _changeBgX(3, 0, BG_COORD_SET);
+      // 1:1 SetDefaultTilemaps (:1474) : cache EFFET combat/concours +
+      // STATUT (mon sain) + symbole pokérus + BG3 hofs 0 (non-egg).
+      _setDefaultTilemaps();
       rt.gMain.state++; break;
     case 15:
       _putPageWindowTilemaps(sMon.currPageIndex);
@@ -1703,10 +1806,27 @@ export function CloseSummaryScreen(): void {
   _beginCloseSummaryScreen();
 }
 
+/** Debug-only : snapshot état scroll/BG pour diagnostiquer désync. */
+export function __summaryDebugState(): Record<string, unknown> {
+  const rt = getRuntime();
+  const bgCfg = (n: number) => {
+    const c = rt?.gba.bg(n as 0 | 1 | 2 | 3).config;
+    return c ? { hofs: c.hofs, prio: c.priority, mapBase: c.mapBaseIndex, vis: c.visible } : null;
+  };
+  return {
+    currPageIndex: sMon.currPageIndex, bgDisplayOrder: sMon.bgDisplayOrder,
+    bgBufRef: [..._bgBufRef], bgX: [..._bgX], scrollData: { ..._scrollData },
+    scrollTaskId: _scrollTaskId, inputTaskId: _inputTaskId, phase: _phase,
+    windowIds: [...sMon.windowIds],
+    bg1: bgCfg(1), bg2: bgCfg(2), bg3: bgCfg(3),
+  };
+}
+
 // Expose to globalThis pour debug.
 {
   const _g: Record<string, unknown> = {
     CB2_InitSummaryScreen, OpenSummaryScreen, CloseSummaryScreen, IsSummaryScreenOpen,
+    GetSummaryLastMonIndex, __summaryDebugState,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
