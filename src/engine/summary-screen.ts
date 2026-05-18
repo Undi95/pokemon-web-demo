@@ -57,6 +57,7 @@ import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
+import { PokemonSummaryDoMonAnimation, StopPokemonAnimations } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -1636,7 +1637,12 @@ function _createMonSprite(): void {
   // 1:1 CreateMonSprite (:3986) : hFlip = !IsMonSpriteNotFlipped (= !noFlip).
   const noFlip = getSpeciesInfo(mon.speciesEnum)?.noFlip ?? false;
   const o = rt.gSprites.get(spr.spriteId);
-  if (o) o.hFlip = !noFlip;
+  if (o) {
+    o.hFlip = !noFlip;
+    // 1:1 SpriteCB_Pokemon (:4000) : sprite->data[1] = IsMonSpriteNotFlipped
+    // (= sDontFlip, lu par HandleSetAffineData/TryFlipX de l'anim d'intro).
+    o.data[1] = noFlip ? 1 : 0;
+  }
 }
 
 /** 1:1 décomp `CreateSetStatusSprite` (:4079) : sprite état (PSN/PAR/SLP/
@@ -1701,17 +1707,27 @@ function _createCaughtBallSprite(): void {
   _ballSpriteId = spr.spriteId;
 }
 
-/** 1:1 décomp `SpriteCB_Pokemon` (:3994) → PlayMonCry. L'anim d'intro
- *  (PokemonSummaryDoMonAnimation :6826 = sous-système StartMonSummaryAnimation
- *  ~30 ANIM_* affines) n'est PAS portée — report HONNÊTE : le sprite + le cry
- *  sont 1:1 (1re frame statique = 1:1), l'animation squish/bounce est un
- *  sous-système séparé non implémenté (même statut que les sprites de combat
- *  qui ne font pas l'anim affine GBA). Zéro fake. */
+/** 1:1 décomp `SpriteCB_Pokemon` (:3994) : `if (!gPaletteFade.active &&
+ *  data[2]!=1) { data[1]=IsMonSpriteNotFlipped; PlayMonCry();
+ *  PokemonSummaryDoMonAnimation(sprite, species, isEgg); }`. Appelé une
+ *  fois au state 'open' (post fade-in = !gPaletteFade.active). L'anim
+ *  d'intro affine COMPLÈTE est portée 1:1 (mon-summary-anim.ts, 151
+ *  Anim_* + framework ObjAffineSet/HandleSetAffineData/sAnims). */
 function _playMonCryOnce(): void {
   if (_cryPlayed || !sMon.currentMon) return;
   _cryPlayed = true;
   const sp = sMon.currentMon.speciesName;
   void import('./music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+  // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
+  // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).
+  const rt = getRuntime();
+  const monSpr = rt && _monPicSpriteId >= 0 ? rt.gSprites.get(_monPicSpriteId) : null;
+  if (monSpr) {
+    const isEgg = sMon.summary.isEgg;
+    const speciesEnum = isEgg ? 'SPECIES_EGG' : sMon.summary.species;
+    try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg); }
+    catch (e) { console.error('[summary] mon anim failed:', e); }
+  }
 }
 
 /* ============================================================================
@@ -2449,6 +2465,12 @@ function _beginCloseSummaryScreen(): void {
   _phase = 'fading_out';
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 Task_HandleInput (:1558/:1571) : StopPokemonAnimations avant la
+  // fermeture (fige le sprite + restaure la palette OBJ du glow).
+  if (_monPicSpriteId >= 0) {
+    const ms = rt.gSprites.get(_monPicSpriteId);
+    if (ms) { try { StopPokemonAnimations(ms); } catch { /* */ } }
+  }
   if (_inputTaskId >= 0) { rt.DestroyTask(_inputTaskId); _inputTaskId = -1; }
   if (_scrollTaskId >= 0) { try { rt.DestroyTask(_scrollTaskId); } catch { /* */ } _scrollTaskId = -1; }
   FadeScreen(1 /* FADE_TO_BLACK */, 0);
