@@ -111,8 +111,13 @@ function applyNoIntroPreset(): void {
   // Preserve playerName/gender existants si une save valide existait.
   const existingName = gameState.playerName;
   const existingGender = gameState.gender;
+  // 1:1 décomp : NewGameInitData ne reset PAS les options (seul le cold boot
+  // Sav2_ClearSetDefault les met aux défauts). Préserver à travers reset()
+  // comme playerName/gender (bug #5 : options reset devant le prof).
+  const existingOptions = gameState.options;
   // 1:1 décomp `Sav2_ClearSetDefault` mais on restore les fields preserved.
   gameState.reset();
+  gameState.setOptions(existingOptions);
   if (existingName && existingName !== 'PLAYER') {
     gameState.playerName = existingName;
     gameState.gender = existingGender;
@@ -376,7 +381,18 @@ export function decideBootMode(): BootSpawn {
   //   sync dans gameState par BirchRuntimeScene.transitionToOverworld()).
   const preservedName = gameState.playerName;
   const preservedGender = gameState.gender;
+  // 1:1 décomp : la NOUVELLE PARTIE = `NewGameInitData` (overworld.c:1537)
+  // qui NE TOUCHE PAS aux options. Les options sont mises aux défauts UNE
+  // SEULE FOIS au cold boot par `Sav2_ClearSetDefault` (intro.c:1156 =
+  // ClearSav2 + SetDefaultOptions), puis écrites par le menu OPTION du
+  // titlescreen, et `NewGameInitData` les PRÉSERVE. Notre `gameState.reset()`
+  // = Sav2_ClearSetDefault (recrée emptySaveBlock2 = SetDefaultOptions) →
+  // sans cette préservation, les options perso réglées au titlescreen sont
+  // remises à zéro "devant le prof" (bug #5). On les capture/restaure comme
+  // playerName/gender (= 1:1 NewGameInitData : options intactes).
+  const preservedOptions = gameState.options;
   gameState.reset();
+  gameState.setOptions(preservedOptions);
   if (preservedName && preservedName !== 'PLAYER') {
     gameState.playerName = preservedName;
     gameState.gender = preservedGender;
