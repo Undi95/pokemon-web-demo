@@ -238,11 +238,20 @@ function _getPlayerTextSpeedDelay(): number {
   return 4;                   // MID (default)
 }
 
-export function AddTextPrinterParameterized3(
+/** Cœur commun à AddTextPrinterParameterized3/4 (= remplir le
+ *  `struct TextPrinterTemplate` puis `AddTextPrinter(&printer, speed, NULL)`,
+ *  décomp menu.c). P3 (menu.c:1917) et P4 (menu.c:1938) ont un corps
+ *  IDENTIQUE sauf la source de letterSpacing/lineSpacing : P3 =
+ *  GetFontAttribute(fontId, …), P4 = params explicites. Tout le reste
+ *  (encode, resolveFont, color[bg=0,fg=1,shadow=2], speed encoding, flush
+ *  TEXT_SKIP_DRAW, slot par windowId) = commun → factorisé ici 1:1. */
+function _addTextPrinterParameterizedCore(
   windowId: number,
   fontId: number,
   left: number,
   top: number,
+  letterSpacing: number,
+  lineSpacing: number,
   colorArray: readonly number[],
   speed: number,
   str: string,
@@ -250,7 +259,7 @@ export function AddTextPrinterParameterized3(
   ensureFontLoaded();
   const win = getWindowById(windowId);
   if (!win) {
-    console.warn('[gba-text-system] AddTextPrinterParameterized3: window', windowId, 'not found');
+    console.warn('[gba-text-system] AddTextPrinterParameterized3/4: window', windowId, 'not found');
     return 0;
   }
   const encoded = encodeStringForFont(str, charmap!);
@@ -264,14 +273,17 @@ export function AddTextPrinterParameterized3(
     glyphWidths: fnt.glyphWidths,
     x: left,
     y: top,
-    // 1:1 décomp src/text.c AddTextPrinterParameterized3 : `color` array layout
-    // is [bgColor, fgColor, shadowColor] (cf. printerTemplate.bgColor = color[0],
-    // fgColor = color[1], shadowColor = color[2]). Avant cette fix, on avait
-    // l'ordre INVERSÉ (= [fg, bg, shadow]) ce qui causait des BG résidu colorés
-    // et break le contrat décomp pour les arrays comme sTextColor_Headers.
+    // 1:1 décomp menu.c:1931-1933 : `color` array layout = [bgColor=color[0],
+    // fgColor=color[1], shadowColor=color[2]] (printer.bgColor = color[0],
+    // fgColor = color[1], shadowColor = color[2]).
     bgColor: colorArray[0] ?? 1,
     fgColor: colorArray[1] ?? 2,
     shadowColor: colorArray[2] ?? 3,
+    // 1:1 décomp menu.c:1928-1929 (P3 = GetFontAttribute) / :1949-1950
+    // (P4 = params). Honoré par le rendu (gba-text-printer currentX +=
+    // glyphW + letterSpacing). list_menu.c passe template.lettersSpacing.
+    letterSpacing,
+    lineSpacing,
     // 1:1 décomp src/text.c : speed parameter encoding :
     //   255 (TEXT_SKIP_DRAW) → instant render (= no per-char delay)
     //   -1                   → use player's saved option (= GetPlayerTextSpeedDelay())
@@ -306,6 +318,49 @@ export function AddTextPrinterParameterized3(
   gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== windowId);
   gTextPrinters.push({ printer, windowId, finished });
   return gTextPrinters.length - 1;
+}
+
+/** 1:1 décomp `src/menu.c:1917 AddTextPrinterParameterized3(u8 windowId,
+ *  u8 fontId, u8 left, u8 top, const u8 *color, s8 speed, const u8 *str)`.
+ *  letterSpacing/lineSpacing = GetFontAttribute (= 0 pour tous les fonts
+ *  sauf BRAILLE.lineSpacing=8 ; comportement P3 INCHANGÉ vs avant 2b car
+ *  ces fonts donnent 0). */
+export function AddTextPrinterParameterized3(
+  windowId: number,
+  fontId: number,
+  left: number,
+  top: number,
+  colorArray: readonly number[],
+  speed: number,
+  str: string,
+): number {
+  return _addTextPrinterParameterizedCore(
+    windowId, fontId, left, top,
+    GetFontAttribute(fontId, FONTATTR_LETTER_SPACING),
+    GetFontAttribute(fontId, FONTATTR_LINE_SPACING),
+    colorArray, speed, str,
+  );
+}
+
+/** 1:1 décomp `src/menu.c:1938 AddTextPrinterParameterized4(u8 windowId,
+ *  u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineSpacing,
+ *  const u8 *color, s8 speed, const u8 *str)`. Diffère de P3 uniquement
+ *  par letterSpacing/lineSpacing EXPLICITES (list_menu.c:588-606 passe
+ *  template.lettersSpacing + 0). */
+export function AddTextPrinterParameterized4(
+  windowId: number,
+  fontId: number,
+  left: number,
+  top: number,
+  letterSpacing: number,
+  lineSpacing: number,
+  colorArray: readonly number[],
+  speed: number,
+  str: string,
+): number {
+  return _addTextPrinterParameterizedCore(
+    windowId, fontId, left, top, letterSpacing, lineSpacing, colorArray, speed, str,
+  );
 }
 
 export function AddTextPrinterForMessage(_allowSkipping: boolean): void {

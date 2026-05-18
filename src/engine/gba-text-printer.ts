@@ -510,6 +510,13 @@ export interface AddTextPrinterOpts {
   fgColor?: number;
   bgColor?: number;
   shadowColor?: number;
+  /** 1:1 décomp `struct TextPrinterTemplate.letterSpacing` — px ajoutés
+   *  après chaque glyph (rendu : `currentX += glyphW + letterSpacing`).
+   *  Rempli par AddTextPrinterParameterized3 (= GetFontAttribute) / 4
+   *  (= param explicite, list_menu.c template.lettersSpacing). */
+  letterSpacing?: number;
+  /** 1:1 décomp `struct TextPrinterTemplate.lineSpacing`. */
+  lineSpacing?: number;
   textSpeed?: number;
   downArrowPixels?: number[][];
   onCharRendered?: (printer: TextPrinter, lastByte: number) => void;
@@ -542,8 +549,8 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     fgColor: opts.fgColor ?? FONT_NORMAL_FG,
     bgColor: opts.bgColor ?? FONT_NORMAL_BG,
     shadowColor: opts.shadowColor ?? FONT_NORMAL_SHADOW,
-    letterSpacing: 0,
-    lineSpacing: 0,
+    letterSpacing: opts.letterSpacing ?? 0,
+    lineSpacing: opts.lineSpacing ?? 0,
     state: RENDER_STATE_HANDLE_CHAR,
     textSpeed: normalizedSpeed,
     delayCounter: 0,
