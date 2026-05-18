@@ -57,7 +57,7 @@ import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
-import { PokemonSummaryDoMonAnimation, StopPokemonAnimations } from './mon-summary-anim';
+import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -188,40 +188,44 @@ const sMoveTypeToOamPaletteNum: ReadonlyArray<number> = [
 ];
 
 const TYPE_ICON_TILE_BASE = 0;            // OBJ VRAM : 23 icônes × 8 = 184 tiles
-const MON_PIC_TILE_BASE = 184;            // mon front-pic 64×64 = 64 tiles
+/** 1:1 décomp `gMonFrontPicTable[]` = `gMonFrontPic_X` = anim_front.png
+ *  (64×128 = 2 frames × 64 tiles). frame 0 = base..+63, frame 1 = base+64..
+ *  +127 (StartSpriteAnim(.,1) → tileId += 64). 128 tiles réservés. */
+const MON_PIC_TILE_BASE = 184;
+const MON_PIC_FRAME_TILES = 64;           // 64×64 = 64 tiles / frame
 const MON_PIC_BYTE_OFFSET = MON_PIC_TILE_BASE * 32;
 const MON_PIC_PAL_SLOT = 1;
 /** 1:1 décomp `sStatusIconsSpriteSheet` (gStatusGfx_Icons = graphics/
  *  interface/status_icons.png, 32×64 = 32 tiles). Sprite 32×8 (shape1 size1),
  *  frame = (ailment-1)*4 tiles (Poison=0/Para=4/Sleep=8/Frozen=12/Burn=16).
- *  OBJ tile 248+ (après mon-pic 184..247). OBJ pal slot 2 (libre). */
-const STATUS_TILE_BASE = 248;
+ *  OBJ tile 312+ (après mon-pic 2-frame 184..311). OBJ pal slot 2 (libre). */
+const STATUS_TILE_BASE = 312;
 const STATUS_BYTE_OFFSET = STATUS_TILE_BASE * 32;
 const STATUS_PAL_SLOT = 2;
 /** 1:1 décomp `CreateMonMarkingAllCombosSprite` (mon_markings.c:570) :
  *  sMonMarkings_Gfx (ui/interface/mon_markings.png, 32×128 = 64 tiles = 16
  *  combos × 4). Sprite 32×8 (sOamData_MarkingCombo shape1 size1), anim combo
  *  = StartSpriteAnim(MON_DATA_MARKINGS) → FRAME(combo*4). @(60,26) prio 1.
- *  Palette = sMarkings_Pal (summary_screen/markings.pal). OBJ tile 280+. */
-const MARKINGS_TILE_BASE = 280;
+ *  Palette = sMarkings_Pal (summary_screen/markings.pal). OBJ tile 344+. */
+const MARKINGS_TILE_BASE = 344;
 const MARKINGS_BYTE_OFFSET = MARKINGS_TILE_BASE * 32;
 const MARKINGS_PAL_SLOT = 3;
 /** 1:1 décomp `CreateCaughtBallSprite` (:4069) : gBallGfx_Poke (balls/
  *  poke.png 16×48 = 12 tiles, frame 0 = ball fermée). ItemIdToBallId
  *  (battle_anim_throw.c:728) ITEM_POKE_BALL→BALL_POKE. Sprite 16×16
  *  (sBallOamData) @(16,136), callback dummy (statique), oam.priority=3.
- *  OBJ tile 344+. (Nos mons = ITEM_POKE_BALL 1:1 CreateBoxMon:2262.) */
-const BALL_TILE_BASE = 344;
+ *  OBJ tile 408+. (Nos mons = ITEM_POKE_BALL 1:1 CreateBoxMon:2262.) */
+const BALL_TILE_BASE = 408;
 const BALL_BYTE_OFFSET = BALL_TILE_BASE * 32;
 const BALL_PAL_SLOT = 4;
 /** 1:1 décomp `sMoveSelectorSpriteSheet` (gSummaryMoveSelect_Gfx = graphics/
  *  summary_screen/move_select.png, 16×128 = 32 tiles 8×8, size 0x400). Sprite
  *  16×16 (sOamData_MoveSelector shape0 size1, 4 tiles). Frames anims
  *  Left/Right/Middle = ANIMCMD_FRAME tile 16/16+hFlip/20 ; SetMainMoveSelector
- *  Color(1) = 24/24+hFlip/28. OBJ tile 360+ (après ball 344..355). Pal slot 5
+ *  Color(1) = 24/24+hFlip/28. OBJ tile 420+ (après ball 408..419). Pal slot 5
  *  (libre). Chargé via .4bpp.bin + .gbapal (ordre PLTE, PAS LoadCompressed
  *  SpriteSheet : png-loader reconstruit la pal par ordre d'apparition). */
-const MOVE_SELECTOR_TILE_BASE = 360;
+const MOVE_SELECTOR_TILE_BASE = 420;
 const MOVE_SELECTOR_BYTE_OFFSET = MOVE_SELECTOR_TILE_BASE * 32;
 const MOVE_SELECTOR_PAL_SLOT = 5;
 const MOVE_SELECTOR_SPRITES_COUNT = 10;
@@ -738,14 +742,11 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
     if (mon) {
-      // 1:1 LoadMonGfxAndSprite : species2 = MON_DATA_SPECIES_OR_EGG →
-      // SPECIES_EGG si œuf → gMonFrontPicTable[SPECIES_EGG] = egg/front.png.
-      const dexId = (mon.isEgg) ? 'egg' : mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
-      try {
-        const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
-        r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
-      } catch (e) { console.error('[summary] mon front pic load failed:', e); }
+      // 1:1 LoadMonGfxAndSprite (:3900) : gMonFrontPicTable[species2] =
+      // anim_front.png 2 frames (front.png si œuf / HasTwoFrames FALSE).
+      await _loadMonFrontPic(r, mon);
     }
+    await preloadFrontPicAnims();   // séquences AnimCmd 2-frame (front-pic-anims.json)
     if (!_dexNumbers) {
       try {
         const dj = await fetch('/decomp/em/species-dex-numbers.json').then((rsp) => rsp.json());
@@ -861,6 +862,29 @@ function _flushWin(wid: number): void {
   if (wid === WINDOW_NONE) return;
   PutWindowTilemap(wid);
   CopyWindowToVram(wid, 3 /* COPYWIN_FULL */);
+}
+
+/** 1:1 décomp `LoadMonGfxAndSprite` (:3900) : gMonFrontPicTable[species2] =
+ *  `gMonFrontPic_X` = anim_front.png (64×128 = 2 frames, frame 1 = base+64
+ *  tiles, jouée par StartSpriteAnim(.,1)). Œuf → egg/front.png (oneFrame).
+ *  castform/deoxys/spinda/unown (HasTwoFramesAnimation FALSE) → front.png
+ *  1-frame. Fallback front.png si anim_front absent. */
+async function _loadMonFrontPic(
+  r: NonNullable<ReturnType<typeof getRuntime>>, mon: PokemonInstance,
+): Promise<void> {
+  const isEgg = !!mon.isEgg;
+  const dexId = isEgg ? 'egg' : mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+  const twoFrame = !isEgg && HasTwoFramesAnimation(mon.speciesEnum);
+  const url = `/decomp/em/pokemon/${dexId}/${twoFrame ? 'anim_front' : 'front'}.png`;
+  try {
+    const ld = await r.LoadCompressedSpriteSheet(url, MON_PIC_BYTE_OFFSET);
+    r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
+  } catch {
+    try {                                       // anim_front absent → front.png 1-frame
+      const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
+      r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
+    } catch (e) { console.error('[summary] mon front pic load failed:', e); }
+  }
 }
 
 /* ============================================================================
@@ -1725,7 +1749,7 @@ function _playMonCryOnce(): void {
   if (monSpr) {
     const isEgg = sMon.summary.isEgg;
     const speciesEnum = isEgg ? 'SPECIES_EGG' : sMon.summary.species;
-    try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg); }
+    try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg, MON_PIC_TILE_BASE, MON_PIC_FRAME_TILES); }
     catch (e) { console.error('[summary] mon anim failed:', e); }
   }
 }
@@ -1873,11 +1897,7 @@ function _changeSummaryPokemon(delta: number): void {
   void _loadAssets().then(async () => {
     const r = getRuntime();
     if (!r) return;
-    const dexId = (next.isEgg) ? 'egg' : next.speciesEnum.replace('SPECIES_', '').toLowerCase();
-    try {
-      const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
-      r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
-    } catch { /* */ }
+    await _loadMonFrontPic(r, next);   // 1:1 anim_front.png 2 frames
     _graphicsReady = true;
     _clearPageWindowTilemaps(sMon.currPageIndex);
     _printMonInfo();

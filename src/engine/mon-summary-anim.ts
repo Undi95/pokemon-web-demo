@@ -21,7 +21,7 @@ import { getRuntime } from './decomp-globals';
 import { SpriteCallbackDummy, BlendPalette } from './decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from './decomp-helpers';
 import { OBJ_PLTT_ID } from './decomp-runtime';
-import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS, RAW_MON_HAS_TWO_FRAMES } from './decomp-data/auto/src/mon-anim-tables-data';
+import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './decomp-data/auto/src/mon-anim-tables-data';
 
 /* ── RGB (1:1 include/constants/rgb.h) ───────────────────────────────────── */
 const RGB = (r: number, g: number, b: number) => (r | (g << 5) | (b << 10));
@@ -1869,8 +1869,6 @@ for (const [sp, anim] of RAW_MON_FRONT_ANIM_IDS) {
 }
 const _delayByEnum = new Map<string, number>();
 for (const [sp, d] of RAW_MON_ANIM_DELAYS) _delayByEnum.set(sp, Number(d) | 0);
-const _twoFramesByEnum = new Map<string, boolean>();
-for (const [sp, v] of RAW_MON_HAS_TWO_FRAMES) _twoFramesByEnum.set(sp, v === 'TRUE' || v === '1');
 
 /* ── API publique (1:1 PokemonSummaryDoMonAnimation + delay task) ────────── */
 let _animDelayTaskId = -1;
@@ -1893,13 +1891,86 @@ function _taskAnimateAfterDelay(task: { taskId: number; data: number[] }): void 
   }
 }
 
-/** 1:1 décomp `PokemonSummaryDoMonAnimation` (pokemon.c:6826). speciesEnum =
- *  'SPECIES_X' ; oneFrame = isEgg. */
-export function PokemonSummaryDoMonAnimation(s: DecompSprite, speciesEnum: string, oneFrame: boolean): void {
+/* ── Frame-toggle 2 frames (1:1 StartSpriteAnim(.,1) = sAnim_X_1) ─────────
+ *  gMonFrontAnimsPtrTable[species][1] = séquence AnimCmd FRAME(img,dur)…END
+ *  (toggle front-pic frame 0↔1, le mon "respire"). Jouée EN PARALLÈLE de
+ *  l'anim affine (sprite->anims/AnimateSprite ≠ sprite->callback décomp).
+ *  Données = front-pic-anims.json (extract-front-pic-anims.mjs). frame img
+ *  → oam.tileId = base + img*frameTiles (anim_front.png 2×64 tiles). */
+let _fpa: Record<string, number[][]> | null = null;
+let _fpaLoading: Promise<void> | null = null;
+export function preloadFrontPicAnims(): Promise<void> {
+  if (_fpa) return Promise.resolve();
+  if (!_fpaLoading) {
+    _fpaLoading = fetch('/decomp/em/pokemon/front-pic-anims.json')
+      .then((r) => r.json()).then((j) => { _fpa = j; })
+      .catch((e) => { console.error('[mon-anim] front-pic-anims load failed:', e); _fpa = {}; });
+  }
+  return _fpaLoading;
+}
+
+/** 1:1 décomp `HasTwoFramesAnimation` (pokemon.c:6959). */
+export function HasTwoFramesAnimation(speciesEnum: string): boolean {
+  return speciesEnum !== 'SPECIES_CASTFORM' && speciesEnum !== 'SPECIES_DEOXYS'
+      && speciesEnum !== 'SPECIES_SPINDA' && speciesEnum !== 'SPECIES_UNOWN';
+}
+
+interface FrameAnimState { spriteId: number; cmds: number[][]; idx: number; left: number; base: number; frameTiles: number }
+let _frameAnim: FrameAnimState | null = null;
+let _frameAnimTaskId = -1;
+
+function _applyFrame(st: FrameAnimState): void {
   const rt = getRuntime(); if (!rt) return;
-  // if (!oneFrame && HasTwoFramesAnimation(species)) StartSpriteAnim(.,1) :
-  // nos front.png résumé = 1-frame → no-op honnête (cf. en-tête).
-  void (!oneFrame && _twoFramesByEnum.get(speciesEnum));
+  const spr = rt.gSprites.get(st.spriteId); if (!spr) return;
+  const img = st.cmds[st.idx]?.[0] ?? 0;
+  rt.gba.oam[spr.oamIndex].tileId = st.base + img * st.frameTiles;
+}
+function _tickMonFrameAnim(): void {
+  const st = _frameAnim; if (!st) return;
+  // FRAME(img,dur) affiché `dur` ticks ; ANIMCMD_END → tient la dernière.
+  if (--st.left > 0) return;
+  st.idx++;
+  if (st.idx >= st.cmds.length) {                 // END
+    const rt = getRuntime();
+    if (rt && _frameAnimTaskId >= 0) { try { rt.DestroyTask(_frameAnimTaskId); } catch { /* */ } }
+    _frameAnimTaskId = -1; _frameAnim = null;
+    return;
+  }
+  st.left = st.cmds[st.idx][1];
+  _applyFrame(st);
+}
+function _startMonFrameAnim(s: DecompSprite, speciesEnum: string, base: number, frameTiles: number): void {
+  const rt = getRuntime(); if (!rt || !_fpa) return;
+  const cmds = _fpa[speciesEnum];
+  if (!cmds || cmds.length === 0) return;          // pas de 2-frame (1:1 GeneralFrame0)
+  _stopMonFrameAnim();
+  _frameAnim = { spriteId: s.spriteId, cmds, idx: 0, left: cmds[0][1], base, frameTiles };
+  _applyFrame(_frameAnim);
+  _frameAnimTaskId = rt.CreateTask(((_t: { taskId: number; data: number[] }) => _tickMonFrameAnim()) as unknown as (t: { taskId: number; data: number[] }) => void, 0);
+}
+function _stopMonFrameAnim(): void {
+  const rt = getRuntime();
+  if (_frameAnimTaskId >= 0) { try { rt?.DestroyTask(_frameAnimTaskId); } catch { /* */ } _frameAnimTaskId = -1; }
+  if (_frameAnim && rt) {                          // remet frame 0 (= GeneralFrame0)
+    const spr = rt.gSprites.get(_frameAnim.spriteId);
+    if (spr) rt.gba.oam[spr.oamIndex].tileId = _frameAnim.base;
+  }
+  _frameAnim = null;
+}
+
+/** 1:1 décomp `PokemonSummaryDoMonAnimation` (pokemon.c:6826). speciesEnum =
+ *  'SPECIES_X' ; oneFrame = isEgg. monPicTileBase/frameTiles = OBJ tile du
+ *  front-pic (anim_front.png 2 frames : frame 1 = base + frameTiles). */
+export function PokemonSummaryDoMonAnimation(
+  s: DecompSprite, speciesEnum: string, oneFrame: boolean,
+  monPicTileBase = 0, frameTiles = 64,
+): void {
+  const rt = getRuntime(); if (!rt) return;
+  // 1:1 : if (!oneFrame && HasTwoFramesAnimation(species)) StartSpriteAnim(.,1)
+  // → joue sAnim_X_1 (toggle frame 0↔1) EN PARALLÈLE de l'anim affine.
+  if (!oneFrame && HasTwoFramesAnimation(speciesEnum)) {
+    _startMonFrameAnim(s, speciesEnum, monPicTileBase, frameTiles);
+  }
   const animId = _frontAnimByEnum.get(speciesEnum) ?? ANIM.ANIM_V_SQUISH_AND_BOUNCE;
   const delay = _delayByEnum.get(speciesEnum) ?? 0;
   if (delay !== 0) {
@@ -1926,6 +1997,7 @@ export function StopPokemonAnimationDelayTask(): void {
 export function StopPokemonAnimations(s: DecompSprite): void {
   const rt = getRuntime(); if (!rt) return;
   s.callback = SpriteCallbackDummy as unknown as DecompSprite['callback'];
+  _stopMonFrameAnim();
   StopPokemonAnimationDelayTask();
   const palIndex = OBJ_PLTT_ID(rt.gba.oam[s.oamIndex]?.paletteBank ?? 0);
   for (let i = 0; i < 16; i++) {
