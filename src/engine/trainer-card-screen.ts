@@ -320,12 +320,25 @@ function _bufferCardData(): {
 } {
   const sb2 = (gSaveBlock2Ptr ?? {}) as {
     playTimeHours?: number; playTimeMinutes?: number;
-    playerTrainerId?: number[]; playerName?: string;
+    playerTrainerId?: number | number[]; playerName?: string;
     playerGender?: number;
   };
   const name = sb2.playerName || gameState.playerName || 'PLAYER';
-  const tidArr = sb2.playerTrainerId ?? [0, 0, 0, 0];
-  const trainerId = ((tidArr[1] ?? 0) << 8) | (tidArr[0] ?? 0);
+  // 1:1 décomp `trainer_card.c:722` :
+  //   trainerCard->trainerId = (playerTrainerId[1] << 8) | playerTrainerId[0];
+  // = les 16 bits BAS de l'ID 32-bit (ID dresseur PUBLIC, u16 0-65535).
+  // Le SID (ID secret, u16) = les 16 bits HAUTS, pas affiché sur la carte.
+  // Notre modèle stocke playerTrainerId en u32 little-endian (≡ u8[4]
+  // décomp) : TID = (u32 & 0xFFFF). (Fallback array = défensif si jamais
+  // un vieux format u8[4] traîne.)
+  const rawTid = sb2.playerTrainerId;
+  const tidU32 = (typeof rawTid === 'number'
+    ? (rawTid >>> 0)
+    : Array.isArray(rawTid)
+      ? ((((rawTid[3] ?? 0) << 24) | ((rawTid[2] ?? 0) << 16)
+          | ((rawTid[1] ?? 0) << 8) | (rawTid[0] ?? 0)) >>> 0)
+      : 0);
+  const trainerId = tidU32 & 0xFFFF;  // ID public affiché "NºID /XXXXX"
   const money = (gameState as unknown as { money?: number }).money ?? 0;
   const allFlags = (gameState as unknown as { getAllFlagNames?: () => string[] })
     .getAllFlagNames?.() ?? [];
