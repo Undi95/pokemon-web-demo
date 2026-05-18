@@ -27,8 +27,8 @@
  */
 
 import {
-  InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
-  RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
+  InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
+  CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
 } from './gba-window-system';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
@@ -57,7 +57,7 @@ import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
-import type { DecompTask } from './decomp-runtime';
+import type { DecompTask, DecompSprite } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
 /* ============================================================================
@@ -213,6 +213,17 @@ const MARKINGS_PAL_SLOT = 3;
 const BALL_TILE_BASE = 344;
 const BALL_BYTE_OFFSET = BALL_TILE_BASE * 32;
 const BALL_PAL_SLOT = 4;
+/** 1:1 décomp `sMoveSelectorSpriteSheet` (gSummaryMoveSelect_Gfx = graphics/
+ *  summary_screen/move_select.png, 16×128 = 32 tiles 8×8, size 0x400). Sprite
+ *  16×16 (sOamData_MoveSelector shape0 size1, 4 tiles). Frames anims
+ *  Left/Right/Middle = ANIMCMD_FRAME tile 16/16+hFlip/20 ; SetMainMoveSelector
+ *  Color(1) = 24/24+hFlip/28. OBJ tile 360+ (après ball 344..355). Pal slot 5
+ *  (libre). Chargé via .4bpp.bin + .gbapal (ordre PLTE, PAS LoadCompressed
+ *  SpriteSheet : png-loader reconstruit la pal par ordre d'apparition). */
+const MOVE_SELECTOR_TILE_BASE = 360;
+const MOVE_SELECTOR_BYTE_OFFSET = MOVE_SELECTOR_TILE_BASE * 32;
+const MOVE_SELECTOR_PAL_SLOT = 5;
+const MOVE_SELECTOR_SPRITES_COUNT = 10;
 
 // ⚠️ ZÉRO HARDCODE (user : projet public/moddable). TOUTES les strings
 // viennent de `/decomp/em/strings.json` (extract-strings.mjs depuis
@@ -233,7 +244,8 @@ let gText_PkmnInfo = '';
 let gText_PkmnSkills = '';
 let gText_BattleMoves = '';
 let gText_ContestMoves = '';
-let gText_Cancel2 = '';
+let gText_Cancel = '';     // "SORTIR" (slot 5 move-select)
+let gText_Cancel2 = '';    // "RETOUR" (prompt bouton A/B)
 let gText_Info = '';
 let gText_Switch = '';
 let gText_RentalPkmn = '';
@@ -287,6 +299,7 @@ function _initSummaryStrings(): void {
   gText_PkmnSkills = getString('gText_PkmnSkills');
   gText_BattleMoves = getString('gText_BattleMoves');
   gText_ContestMoves = getString('gText_ContestMoves');
+  gText_Cancel = getString('gText_Cancel');
   gText_Cancel2 = getString('gText_Cancel2');
   gText_Info = getString('gText_Info');
   gText_Switch = getString('gText_Switch');
@@ -387,9 +400,21 @@ interface SummaryState {
   bgDisplayOrder: number;
   windowIds: number[];                 // [8] (WINDOW_NONE = vide)
   switchCounter: number;
+  /** 1:1 décomp `sMonSummaryScreen->firstMoveIndex` (u8 0..MAX_MON_MOVES) —
+   *  curseur sélection de move (4 = slot CANCEL/nouveau move). */
+  firstMoveIndex: number;
+  /** 1:1 décomp `sMonSummaryScreen->secondMoveIndex` — 2e curseur (réordre). */
+  secondMoveIndex: number;
+  /** 1:1 décomp `sMonSummaryScreen->newMove` — MOVE_NONE en mode NORMAL
+   *  (notre flux party→RÉSUME ; le slot 5 affiche "ANNULE"). '' = MOVE_NONE. */
+  newMove: string;
+  /** 1:1 décomp `sMonSummaryScreen->lockMovesFlag` — FALSE en mode NORMAL
+   *  (TRUE = contexte interdisant le réordre, ex. Battle Factory). */
+  lockMovesFlag: boolean;
 }
 
 const SUMMARY_MODE_NORMAL = 0;
+const MAX_MON_MOVES = 4;
 
 function _emptySummary(): SummaryData {
   return {
@@ -408,6 +433,7 @@ const sMon: SummaryState = {
   currPageIndex: 0, minPageIndex: 0, maxPageIndex: 3, bgDisplayOrder: 0,
   windowIds: [WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE],
   switchCounter: 0,
+  firstMoveIndex: 0, secondMoveIndex: 0, newMove: '', lockMovesFlag: false,
 };
 
 let _isOpen = false;
@@ -459,6 +485,19 @@ interface SummaryAssets {
    *  par ordre d'apparition → blanc rendu gris). */
   ballTiles: Uint8Array;
   ballPal: Uint16Array;
+  /** 1:1 décomp `gSummaryMoveSelect_Gfx`+`_Pal` (move_select.png, PLTT-indexed
+   *  → .4bpp.bin + .gbapal ordre PLTE EXACT, comme la pokéball). */
+  moveSelectTiles: Uint8Array;
+  moveSelectPal: Uint16Array;
+  /** 1:1 décomp `gSummaryScreen_MoveEffect_Battle_Tilemap` (effect_battle.bin,
+   *  u16) = gfx de `sPowerAccSlidingWindow` (EFFET combat, w10 h7). */
+  effectBattleTilemap: Uint16Array;
+  /** 1:1 décomp `gSummaryScreen_MoveEffect_Contest_Tilemap` (effect_contest
+   *  .bin) = gfx de `sAppealJamSlidingWindow` (EFFET concours, w10 h7). */
+  effectContestTilemap: Uint16Array;
+  /** 1:1 décomp `gSummaryScreen_MoveEffect_Cancel_Tilemap` (effect_cancel.bin)
+   *  = slot "ANNULE"/5e move (TilemapFiveMovesDisplay). */
+  effectCancelTilemap: Uint16Array;
 }
 
 let _assets: SummaryAssets | null = null;
@@ -468,7 +507,8 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal, blTiles, blPal] =
+    const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal, blTiles, blPal,
+      msTiles, msPal, effBat, effCon, effCan] =
       await Promise.all([
         loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
         loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
@@ -484,6 +524,11 @@ async function _loadAssets(): Promise<SummaryAssets> {
         loadGbaPal('/decomp/em/summary_screen/markings.pal'),
         loadTileBin('/decomp/em/balls/poke.4bpp.bin', 4),
         loadGbaPal('/decomp/em/balls/poke.gbapal'),
+        loadTileBin('/decomp/em/summary_screen/move_select.4bpp.bin', 4),
+        loadGbaPal('/decomp/em/summary_screen/move_select.gbapal'),
+        loadTilemapBin('/decomp/em/summary_screen/effect_battle.bin'),
+        loadTilemapBin('/decomp/em/summary_screen/effect_contest.bin'),
+        loadTilemapBin('/decomp/em/summary_screen/effect_cancel.bin'),
       ]);
     _assets = {
       tiles, pageInfoTilemap: pInfo, pageInfoEggTilemap: pInfoEgg,
@@ -491,6 +536,9 @@ async function _loadAssets(): Promise<SummaryAssets> {
       pageContestMovesTilemap: pContest, tilesPalette: tilesPal,
       moveTypesTiles: mtTiles, moveTypesPal: mtPal, aButtonTiles: aBtn,
       ppTextPal: ppPal, markingsPal: mkPal, ballTiles: blTiles, ballPal: blPal,
+      moveSelectTiles: msTiles, moveSelectPal: msPal,
+      effectBattleTilemap: effBat, effectContestTilemap: effCon,
+      effectCancelTilemap: effCan,
     };
     return _assets;
   })();
@@ -678,6 +726,14 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
       r.gba.objVram.set(a.ballTiles, BALL_TILE_BASE * 32);
       r.LoadPaletteObj(a.ballPal, OBJ_PLTT_ID(BALL_PAL_SLOT));
     } catch (e) { console.error('[summary] ball gfx load failed:', e); }
+    // 1:1 décomp `sMoveSelectorSpriteSheet`/`sMoveSelectorSpritePal` (chargés
+    // par CreateMoveSelectorSprites au 1er besoin ; ici on précharge en OBJ
+    // VRAM/pal — .4bpp.bin + .gbapal ordre PLTE EXACT, PAS LoadCompressed
+    // SpriteSheet, comme la pokéball).
+    try {
+      r.gba.objVram.set(a.moveSelectTiles, MOVE_SELECTOR_BYTE_OFFSET);
+      r.LoadPaletteObj(a.moveSelectPal, OBJ_PLTT_ID(MOVE_SELECTOR_PAL_SLOT));
+    } catch (e) { console.error('[summary] move-select gfx load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
     if (mon) {
@@ -1199,10 +1255,13 @@ function _printMoveNameAndPP(moveIndex: number): void {
 }
 
 function _printMovePowerAndAccuracy(move: string): void {
-  // 1:1 PrintMovePowerAndAccuracy (:3562). FillWindowPixelRect non dispo →
-  // re-print (la window est FillWindowPixelBuffer'd avant par PrintMoveDetails).
+  // 1:1 décomp PrintMovePowerAndAccuracy (:3562). FillWindowPixelRect efface
+  // la colonne VALEURS (x53 w19 h32, = lignes POUVOIR y1 + PRECIS. y17) AVANT
+  // de réimprimer — sinon l'ancienne valeur (move précédent) bave sous la
+  // nouvelle (bug "‑20‑" repéré au runtime : "40" de Pound sous "20" d'Absorb).
   const md = getMove(move);
   if (!md) return;
+  FillWindowPixelRect(PSS_LABEL_WINDOW_MOVES_POWER_ACC, 0, 53, 0, 19, 32);
   let text = (md.power < 2) ? gText_ThreeDashes : String(md.power).padStart(3, ' ');
   _printTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, text, 53, 1, 0, 0);
   text = (md.accuracy === 0) ? gText_ThreeDashes : String(md.accuracy).padStart(3, ' ');
@@ -1822,10 +1881,534 @@ function _changeSummaryPokemon(delta: number): void {
 }
 
 /* ============================================================================
+ * 1:1 décomp SÉLECTION DE MOVES (bouton A sur pages BATTLE/CONTEST MOVES) —
+ * pokemon_summary_screen.c. Bloc cohérent : sliding window EFFET animée +
+ * curseur 10-sprites + PrintMoveDetails + réordre + B/ANNULE retour.
+ * ========================================================================== */
+
+const SE_SELECT = 5;            // include/constants/songs.h:11
+const SE_FAILURE = 32;          // include/constants/songs.h:38
+
+/** 1:1 décomp `struct SlidingWindow` (pokemon_summary_screen.c:359). gfx =
+ *  tilemap u16 (effect_battle/contest.bin) ; defaultTile rempli hors gfx. */
+interface SlidingWindow {
+  gfx: Uint16Array; defaultTile: number;
+  width: number; height: number; left: number; top: number;
+}
+/** 1:1 décomp `sPowerAccSlidingWindow` (:388) : EFFET combat, w10 h7, top45
+ *  (→ SC1 du buffer page contigu, comme `bgTilemapBuffers[BATTLE_MOVES][0]`
+ *  indexé (top+i)*32 dépasse SC0). */
+function _swPowerAcc(): SlidingWindow | null {
+  if (!_assets) return null;
+  return { gfx: _assets.effectBattleTilemap, defaultTile: 0, width: 10, height: 7, left: 0, top: 45 };
+}
+/** 1:1 décomp `sAppealJamSlidingWindow` (:397) : EFFET concours. */
+function _swAppealJam(): SlidingWindow | null {
+  if (!_assets) return null;
+  return { gfx: _assets.effectContestTilemap, defaultTile: 0, width: 10, height: 7, left: 0, top: 45 };
+}
+
+/** 1:1 décomp `CopyNColumnsToTilemap` (:2405). alloced[width*height] rempli
+ *  defaultTile ; si width!=visibleColumns copie (width-visibleColumns) cols
+ *  de gfx (gauche/droite selon isOpeningToTheLeft) ; puis blit dans destBuf
+ *  (page contigu 0x800 u16 ; (top+i)*32+left atteint SC1 pour top>31). */
+function _copyNColumnsToTilemap(sw: SlidingWindow, destBuf: Uint16Array, visibleColumns: number, isOpeningToTheLeft: boolean): void {
+  const w = sw.width, h = sw.height;
+  const alloced = new Uint16Array(w * h);
+  alloced.fill(sw.defaultTile);
+  if (w !== visibleColumns) {
+    if (!isOpeningToTheLeft) {
+      for (let i = 0; i < h; i++)
+        for (let c = 0; c < w - visibleColumns; c++)
+          alloced[w * i + c] = sw.gfx[visibleColumns + w * i + c] ?? sw.defaultTile;
+    } else {
+      for (let i = 0; i < h; i++)
+        for (let c = 0; c < w - visibleColumns; c++)
+          alloced[visibleColumns + w * i + c] = sw.gfx[w * i + c] ?? sw.defaultTile;
+    }
+  }
+  for (let i = 0; i < h; i++)
+    for (let c = 0; c < w; c++) {
+      const di = (sw.top + i) * 32 + sw.left + c;
+      if (di >= 0 && di < destBuf.length) destBuf[di] = alloced[w * i + c];
+    }
+}
+
+// 1:1 décomp `#define tScrollingSpeed data[0] / tVisibleColumns data[1] /
+// tMove data[2]` (:2430). FindTaskIdByFunc → trackers module (TASK_NONE=-1).
+let _slidePowerAccTaskId = -1;
+let _slideAppealJamTaskId = -1;
+
+/** 1:1 décomp `PositionPowerAccSlidingWindow` (:2434). */
+function _positionPowerAccSlidingWindow(visibleColumns: number, speed: number): void {
+  const sw = _swPowerAcc();
+  if (!sw) return;
+  if (speed > sw.width) speed = sw.width;
+  if (speed === 0 || speed === sw.width) {
+    _copyNColumnsToTilemap(sw, sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], speed, true);
+  } else {
+    const rt = getRuntime();
+    if (!rt) return;
+    if (_slidePowerAccTaskId < 0 || !rt.gTasks.get(_slidePowerAccTaskId)) {
+      _slidePowerAccTaskId = rt.CreateTask(_taskSlidePowerAccWindow, 8);
+    }
+    const t = rt.gTasks.get(_slidePowerAccTaskId);
+    if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }
+  }
+}
+
+/** 1:1 décomp `Task_SlidePowerAccWindow` (:2452). */
+function _taskSlidePowerAccWindow(task: DecompTask): void {
+  const sw = _swPowerAcc();
+  if (!sw) return;
+  const data = task.data;
+  data[1] += data[0];
+  if (data[1] < 0) data[1] = 0;
+  else if (data[1] > sw.width) data[1] = sw.width;
+  _copyNColumnsToTilemap(sw, sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], data[1], true);
+  if (data[1] <= 0 || data[1] >= sw.width) {
+    if (data[0] < 0) {
+      if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES) PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+    } else {
+      if (_statusSpriteId >= 0) PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+      PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    }
+    _scheduleBgCopy(0);
+    const rt = getRuntime();
+    rt?.DestroyTask(task.taskId);
+    _slidePowerAccTaskId = -1;
+  }
+  _scheduleBgCopy(1);
+  _scheduleBgCopy(2);
+}
+
+/** 1:1 décomp `PositionAppealJamSlidingWindow` (:2485). */
+function _positionAppealJamSlidingWindow(visibleColumns: number, speed: number, move: string): void {
+  const sw = _swAppealJam();
+  if (!sw) return;
+  if (speed > sw.width) speed = sw.width;
+  if (speed === 0 || speed === sw.width) {
+    _copyNColumnsToTilemap(sw, sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], speed, true);
+  } else {
+    const rt = getRuntime();
+    if (!rt) return;
+    if (_slideAppealJamTaskId < 0 || !rt.gTasks.get(_slideAppealJamTaskId)) {
+      _slideAppealJamTaskId = rt.CreateTask(_taskSlideAppealJamWindow, 8);
+    }
+    const t = rt.gTasks.get(_slideAppealJamTaskId);
+    // décomp tMove = data[2] : move stocké en index numérique. On garde le
+    // move courant côté module (string enum) car notre move = string.
+    if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }
+    _slideAppealJamMove = move;
+  }
+}
+let _slideAppealJamMove = '';
+
+/** 1:1 décomp `Task_SlideAppealJamWindow` (:2505). */
+function _taskSlideAppealJamWindow(task: DecompTask): void {
+  const sw = _swAppealJam();
+  if (!sw) return;
+  const data = task.data;
+  data[1] += data[0];
+  if (data[1] < 0) data[1] = 0;
+  else if (data[1] > sw.width) data[1] = sw.width;
+  _copyNColumnsToTilemap(sw, sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], data[1], true);
+  if (data[1] <= 0 || data[1] >= sw.width) {
+    if (data[0] < 0) {
+      // décomp `FuncIsActiveTask(PssScrollRight) == 0` ≈ aucun scroll en cours.
+      if (sMon.currPageIndex === PSS_PAGE_CONTEST_MOVES && _scrollTaskId < 0)
+        PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+      _drawContestMoveHearts(_slideAppealJamMove);
+    } else {
+      if (_statusSpriteId >= 0) PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+      PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    }
+    _scheduleBgCopy(0);
+    const rt = getRuntime();
+    rt?.DestroyTask(task.taskId);
+    _slideAppealJamTaskId = -1;
+  }
+  _scheduleBgCopy(1);
+  _scheduleBgCopy(2);
+}
+
+/* ---- 1:1 décomp curseur move (10 sprites) ------------------------------- */
+
+const SEL1 = 0;                 // ≙ SPRITE_ARR_ID_MOVE_SELECTOR1
+const SEL2 = 1;                 // ≙ SPRITE_ARR_ID_MOVE_SELECTOR2
+let _moveSel1Ids: number[] = [];
+let _moveSel2Ids: number[] = [];
+
+/** 1:1 décomp `sSpriteAnimTable_MoveSelector` (:990) : anim→(tileFrame,hFlip).
+ *  4 Left FRAME(16) ; 5 Right FRAME(16)+hFlip ; 6 Middle FRAME(20) ;
+ *  7 FRAME(24) ; 8 FRAME(24)+hFlip ; 9 FRAME(28). (0-3 inutilisés.) */
+function _moveSelectorAnimToTile(anim: number): { tile: number; hFlip: boolean } {
+  switch (anim) {
+    case 4: return { tile: 16, hFlip: false };
+    case 5: return { tile: 16, hFlip: true };
+    case 6: return { tile: 20, hFlip: false };
+    case 7: return { tile: 24, hFlip: false };
+    case 8: return { tile: 24, hFlip: true };
+    case 9: return { tile: 28, hFlip: false };
+    default: return { tile: 16, hFlip: false };
+  }
+}
+/** Applique anim (= décomp StartSpriteAnim) : tileId + hFlip + data[2]=anim. */
+function _applyMoveSelectorAnim(spriteId: number, anim: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const spr = rt.gSprites.get(spriteId);
+  if (!spr) return;
+  const { tile, hFlip } = _moveSelectorAnimToTile(anim);
+  rt.gba.oam[spr.oamIndex].tileId = MOVE_SELECTOR_TILE_BASE + tile;
+  spr.hFlip = hFlip;
+  spr.data[2] = anim;
+}
+
+/** 1:1 décomp `SpriteCB_MoveSelector` (:4127). */
+function _spriteCBMoveSelector(spr: DecompSprite): void {
+  const anim = spr.data[2];
+  if (anim > 3 && anim < 7) {                  // anims 4/5/6 = clignotement
+    spr.data[1] = (spr.data[1] + 1) & 0x1F;
+    spr.invisible = spr.data[1] > 24;
+  } else {
+    spr.data[1] = 0;
+    spr.invisible = false;
+  }
+  if (spr.data[0] === SEL1) spr.y2 = sMon.firstMoveIndex * 16;
+  else spr.y2 = sMon.secondMoveIndex * 16;
+}
+
+/** 1:1 décomp `CreateMoveSelectorSprites` (:4099). */
+function _createMoveSelectorSprites(idArrayStart: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (sMon.currPageIndex < PSS_PAGE_BATTLE_MOVES) return;
+  const subpriority = (idArrayStart === SEL1) ? 1 : 0;
+  const ids: number[] = [];
+  for (let i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++) {
+    const s = rt.CreateSpriteAtOam({
+      x: i * 16 + 89, y: 40, shape: 0, size: 1,   // 1:1 CreateSprite(.,i*16+89,40,subp) 16×16
+      tileId: MOVE_SELECTOR_TILE_BASE + 16, paletteBank: MOVE_SELECTOR_PAL_SLOT,
+      priority: 1, subpriority,                    // sOamData_MoveSelector.priority=1
+    });
+    if (s.spriteId < 0) continue;
+    const anim = (i === 0) ? 4 : (i === 9) ? 5 : 6; // left / right / middle
+    _applyMoveSelectorAnim(s.spriteId, anim);
+    const spr = rt.gSprites.get(s.spriteId);
+    if (spr) {
+      spr.callback = (sp) => _spriteCBMoveSelector(sp);
+      spr.data[0] = idArrayStart;
+      spr.data[1] = 0;
+    }
+    ids.push(s.spriteId);
+  }
+  if (idArrayStart === SEL1) _moveSel1Ids = ids; else _moveSel2Ids = ids;
+}
+
+/** 1:1 décomp `DestroyMoveSelectorSprites` (:4149). */
+function _destroyMoveSelectorSprites(firstArrayId: number): void {
+  const rt = getRuntime();
+  const ids = (firstArrayId === SEL1) ? _moveSel1Ids : _moveSel2Ids;
+  for (const id of ids) { try { rt?.DestroySprite(id); } catch { /* déjà */ } }
+  if (firstArrayId === SEL1) _moveSel1Ids = []; else _moveSel2Ids = [];
+}
+
+/** 1:1 décomp `SetMainMoveSelectorColor` (:4156) : which*3 → anims (4/5/6) ou
+ *  (7/8/9). N'agit que sur SELECTOR1. */
+function _setMainMoveSelectorColor(which: number): void {
+  const base = which * 3;
+  for (let i = 0; i < _moveSel1Ids.length; i++) {
+    const anim = (i === 0) ? base + 4 : (i === 9) ? base + 5 : base + 6;
+    _applyMoveSelectorAnim(_moveSel1Ids[i], anim);
+  }
+}
+
+/** 1:1 décomp `KeepMoveSelectorVisible` (:4173) — coupe le clignotement idle. */
+function _keepMoveSelectorVisible(firstSpriteId: number): void {
+  const rt = getRuntime();
+  const ids = (firstSpriteId === SEL1) ? _moveSel1Ids : _moveSel2Ids;
+  for (const id of ids) {
+    const spr = rt?.gSprites.get(id);
+    if (spr) { spr.data[1] = 0; spr.invisible = false; }
+  }
+}
+
+/* ---- 1:1 décomp textes/tilemaps move-select ----------------------------- */
+
+/** 1:1 décomp `TilemapFiveMovesDisplay` (:2586) — slot "ANNULE"/5e move
+ *  (gSummaryScreen_MoveEffect_Cancel_Tilemap, dst = page contigu, id 0x56A). */
+function _tilemapFiveMovesDisplay(dst: Uint16Array, palette: number, remove: boolean): void {
+  if (!_assets || !dst) return;
+  const cancel = _assets.effectCancelTilemap;
+  const pal = palette * 0x1000;
+  const id = 0x56A;
+  if (!remove) {
+    for (let i = 0; i < 20; i++) {
+      dst[id + i] = (cancel[i] ?? 0) + pal;
+      dst[id + i + 0x20] = (cancel[i] ?? 0) + pal;
+      dst[id + i + 0x40] = (cancel[i + 20] ?? 0) + pal;
+    }
+  } else {
+    for (let i = 0; i < 20; i++) {
+      dst[id + i] = (cancel[i + 20] ?? 0) + pal;
+      dst[id + i + 0x20] = (cancel[i + 40] ?? 0) + pal;
+      dst[id + i + 0x40] = (cancel[i + 40] ?? 0) + pal;
+    }
+  }
+}
+
+/** 1:1 décomp `PrintNewMoveDetailsOrCancelText` (:3686). newMove==MOVE_NONE
+ *  (notre flux NORMAL) → "ANNULE" dans la fenêtre NAMES (y=65, 5e ligne). */
+function _printNewMoveDetailsOrCancelText(): void {
+  const wid1 = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+  const wid2 = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
+  if (!sMon.newMove) {
+    _printTextOnWindow(wid1, gText_Cancel, 0, 65, 0, 1);
+  } else {
+    const move = sMon.newMove;
+    if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES)
+      _printTextOnWindow(wid1, getMoveName(move), 0, 65, 0, 6);
+    else
+      _printTextOnWindow(wid1, getMoveName(move), 0, 65, 0, 5);
+    const md = getMove(move);
+    const cur = String(md?.pp ?? 0).padStart(2, ' ');
+    DynamicPlaceholderTextUtil_Reset();
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, cur);
+    DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, cur);
+    const text = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_MOVES_PP_LAYOUT);
+    _printTextOnWindow(wid2, text, GetStringRightAlignXOffset(text, 44), 65, 0, 12);
+  }
+}
+
+/** 1:1 décomp `SetNewMoveTypeIcon` (:3866). newMove==MOVE_NONE (notre flux)
+ *  → icône type "nouveau move" masquée (jamais créée) = no-op honnête. */
+function _setNewMoveTypeIcon(): void {
+  if (!sMon.newMove) return;            // SetSpriteInvisibility(TYPE+4, TRUE)
+  // (branche newMove != NONE = contexte apprentissage de move, hors flux
+  // party→RÉSUME ; conservée 1:1 mais inatteignable ici.)
+  const md = getMove(sMon.newMove);
+  if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES) {
+    const tid = TYPE_ID[md?.type ?? ''] ?? 0;
+    _placeTypeSprite(tid, 85, 96);
+  } else {
+    const cm = getContestMove(sMon.newMove);
+    const cat = CONTEST_CATEGORY_ID[cm?.contestCategory ?? ''] ?? 0;
+    _placeTypeSprite(NUMBER_OF_MON_TYPES + cat, 85, 96);
+  }
+}
+
+/** 1:1 décomp `AddAndFillMoveNamesWindow` (:3713) — clear ligne 5 (y65).
+ *  Décomp : "This function seems to have no effect." (porté fidèlement). */
+function _addAndFillMoveNamesWindow(): void {
+  const wid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+  FillWindowPixelRect(wid, 0, 0, 65, 72, 15);   //!< French Difference (décomp)
+  CopyWindowToVram(wid, 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `SwapMovesNamesPP` (:3720). */
+function _swapMovesNamesPP(i1: number, i2: number): void {
+  const wid1 = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+  const wid2 = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
+  FillWindowPixelRect(wid1, 0, 0, i1 * 16, 72, 16);
+  FillWindowPixelRect(wid1, 0, 0, i2 * 16, 72, 16);
+  FillWindowPixelRect(wid2, 0, 0, i1 * 16, 48, 16);
+  FillWindowPixelRect(wid2, 0, 0, i2 * 16, 48, 16);
+  _printMoveNameAndPP(i1);
+  _printMoveNameAndPP(i2);
+}
+
+/** 1:1 décomp `SwapMovesTypeSprites` (:3881). Notre modèle détruit/recrée les
+ *  sprites type à chaque _setTypeIcons → après swap des données summary, on
+ *  re-place les 4 icônes = résultat visuel identique (animNum/pal swappés). */
+function _swapMovesTypeSprites(_i1: number, _i2: number): void {
+  _destroyTypeSprites();
+  if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES) _setMoveTypeIcons();
+  else _setContestMoveTypeIcons();
+}
+
+/* ---- 1:1 décomp machine à états sélection de move ------------------------ */
+
+/** 1:1 décomp `SwitchToMoveSelection` (:1883). */
+function _switchToMoveSelection(task: DecompTask): void {
+  sMon.firstMoveIndex = 0;
+  const move = sMon.summary.moves[sMon.firstMoveIndex];
+  ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+  if (_statusSpriteId >= 0) ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+  _positionPowerAccSlidingWindow(9, -3);
+  _positionAppealJamSlidingWindow(9, -3, move);
+  if (!sMon.lockMovesFlag) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+    PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_SWITCH);
+  }
+  _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], 3, false);
+  _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], 1, false);
+  _printMoveDetails(move);
+  _printNewMoveDetailsOrCancelText();
+  _setNewMoveTypeIcon();
+  _scheduleBgCopy(0); _scheduleBgCopy(1); _scheduleBgCopy(2);
+  _createMoveSelectorSprites(SEL1);
+  task.func = Task_HandleInput_MoveSelect;
+}
+
+/** 1:1 décomp `HasMoreThanOneMove` (:1953). */
+function _hasMoreThanOneMove(): boolean {
+  for (let i = 1; i < MAX_MON_MOVES; i++)
+    if (sMon.summary.moves[i]) return true;
+  return false;
+}
+
+/** 1:1 décomp `Task_HandleInput_MoveSelect` (:1911). */
+function Task_HandleInput_MoveSelect(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_UP = 0x0040, KEY_DOWN = 0x0080;
+  if (newKeys & KEY_UP) {
+    task.data[0] = 4;
+    _changeSelectedMove(task, -1, 'first');
+  } else if (newKeys & KEY_DOWN) {
+    task.data[0] = 4;
+    _changeSelectedMove(task, 1, 'first');
+  } else if (newKeys & KEY_A) {
+    if (sMon.lockMovesFlag || (!sMon.newMove && sMon.firstMoveIndex === MAX_MON_MOVES)) {
+      PlaySE(SE_SELECT);
+      _closeMoveSelectMode(task);
+    } else if (_hasMoreThanOneMove()) {
+      PlaySE(SE_SELECT);
+      _switchToMovePositionSwitchMode(task);
+    } else {
+      PlaySE(SE_FAILURE);
+    }
+  } else if (newKeys & KEY_B) {
+    PlaySE(SE_SELECT);
+    _closeMoveSelectMode(task);
+  }
+}
+
+/** 1:1 décomp `ChangeSelectedMove` (:1964). which = &firstMoveIndex |
+ *  &secondMoveIndex. taskData = task.data (data[0]=borne max, data[1]=flag). */
+function _changeSelectedMove(task: DecompTask, direction: number, which: 'first' | 'second'): void {
+  PlaySE(SE_SELECT);
+  const moveIndexOld = (which === 'first') ? sMon.firstMoveIndex : sMon.secondMoveIndex;
+  let newMoveIndex = moveIndexOld;
+  let move = '';
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    newMoveIndex += direction;
+    if (newMoveIndex > task.data[0]) newMoveIndex = 0;
+    else if (newMoveIndex < 0) newMoveIndex = task.data[0];
+    if (newMoveIndex === MAX_MON_MOVES) { move = sMon.newMove; break; }
+    move = sMon.summary.moves[newMoveIndex];
+    if (move) break;
+  }
+  _drawContestMoveHearts(move);
+  _scheduleBgCopy(1);
+  _scheduleBgCopy(2);
+  _printMoveDetails(move);
+  if ((moveIndexOld === MAX_MON_MOVES && !sMon.newMove) || task.data[1] === 1) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    if (_statusSpriteId >= 0) ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    _scheduleBgCopy(0);
+    _positionPowerAccSlidingWindow(9, -3);
+    _positionAppealJamSlidingWindow(9, -3, move);
+  }
+  if (moveIndexOld !== MAX_MON_MOVES && newMoveIndex === MAX_MON_MOVES && !sMon.newMove) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+    ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+    _scheduleBgCopy(0);
+    _positionPowerAccSlidingWindow(0, 3);
+    _positionAppealJamSlidingWindow(0, 3, '');
+  }
+  if (which === 'first') sMon.firstMoveIndex = newMoveIndex;
+  else sMon.secondMoveIndex = newMoveIndex;
+  if (which === 'first') _keepMoveSelectorVisible(SEL1);
+  else _keepMoveSelectorVisible(SEL2);
+}
+
+/** 1:1 décomp `CloseMoveSelectMode` (:2021). */
+function _closeMoveSelectMode(task: DecompTask): void {
+  _destroyMoveSelectorSprites(SEL1);
+  ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_SWITCH);
+  PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+  _printMoveDetails('');
+  _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], 3, true);
+  _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], 1, true);
+  _addAndFillMoveNamesWindow();
+  if (sMon.firstMoveIndex !== MAX_MON_MOVES) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+    ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+    _positionPowerAccSlidingWindow(0, 3);
+    _positionAppealJamSlidingWindow(0, 3, '');
+  }
+  _scheduleBgCopy(0); _scheduleBgCopy(1); _scheduleBgCopy(2);
+  task.func = Task_Summary_HandleInput;
+}
+
+/** 1:1 décomp `SwitchToMovePositionSwitchMode` (:2043). */
+function _switchToMovePositionSwitchMode(task: DecompTask): void {
+  sMon.secondMoveIndex = sMon.firstMoveIndex;
+  _setMainMoveSelectorColor(1);
+  _createMoveSelectorSprites(SEL2);
+  task.func = Task_HandleInput_MovePositionSwitch;
+}
+
+/** 1:1 décomp `Task_HandleInput_MovePositionSwitch` (:2051). */
+function Task_HandleInput_MovePositionSwitch(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_UP = 0x0040, KEY_DOWN = 0x0080;
+  if (newKeys & KEY_UP) {
+    task.data[0] = 3;
+    _changeSelectedMove(task, -1, 'second');
+  } else if (newKeys & KEY_DOWN) {
+    task.data[0] = 3;
+    _changeSelectedMove(task, 1, 'second');
+  } else if (newKeys & KEY_A) {
+    if (sMon.firstMoveIndex === sMon.secondMoveIndex) _exitMovePositionSwitchMode(task, false);
+    else _exitMovePositionSwitchMode(task, true);
+  } else if (newKeys & KEY_B) {
+    _exitMovePositionSwitchMode(task, false);
+  }
+}
+
+/** 1:1 décomp `ExitMovePositionSwitchMode` (:2081). */
+function _exitMovePositionSwitchMode(task: DecompTask, swapMoves: boolean): void {
+  PlaySE(SE_SELECT);
+  _setMainMoveSelectorColor(0);
+  _destroyMoveSelectorSprites(SEL2);
+  if (swapMoves) {
+    if (sMon.currentMon) _swapMonMoves(sMon.currentMon, sMon.firstMoveIndex, sMon.secondMoveIndex);
+    _swapMovesNamesPP(sMon.firstMoveIndex, sMon.secondMoveIndex);
+    _swapMovesTypeSprites(sMon.firstMoveIndex, sMon.secondMoveIndex);
+    sMon.firstMoveIndex = sMon.secondMoveIndex;
+  }
+  const move = sMon.summary.moves[sMon.firstMoveIndex];
+  _printMoveDetails(move);
+  _drawContestMoveHearts(move);
+  _scheduleBgCopy(1);
+  _scheduleBgCopy(2);
+  task.func = Task_HandleInput_MoveSelect;
+}
+
+/** 1:1 décomp `SwapMonMoves` (:2115). Notre PokemonInstance.moves[] porte
+ *  {id,nameFr,pp,ppMax} → swap des slots = 1:1 observable (le ppMax par slot
+ *  remplace le calcul ppBonuses/CalculatePPWithBonus du décomp). currentMon
+ *  = l'objet party persistant (mutation = SetMonData). */
+function _swapMonMoves(mon: PokemonInstance, i1: number, i2: number): void {
+  const sum = sMon.summary;
+  const m1 = mon.moves[i1], m2 = mon.moves[i2];
+  mon.moves[i1] = m2; mon.moves[i2] = m1;
+  const sm = sum.moves[i1]; sum.moves[i1] = sum.moves[i2]; sum.moves[i2] = sm;
+  const sp = sum.pp[i1]; sum.pp[i1] = sum.pp[i2]; sum.pp[i2] = sp;
+  const spm = sum.ppMax[i1]; sum.ppMax[i1] = sum.ppMax[i2]; sum.ppMax[i2] = spm;
+}
+
+/* ============================================================================
  * 1:1 décomp `Task_HandleInput` (:1532) + close
  * ========================================================================== */
 
-function Task_Summary_HandleInput(_task: DecompTask): void {
+function Task_Summary_HandleInput(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (_phase !== 'open') return;
@@ -1842,13 +2425,19 @@ function Task_Summary_HandleInput(_task: DecompTask): void {
   } else if (newKeys & (KEY_RIGHT | KEY_R)) {
     _changePage(1);
   } else if (newKeys & KEY_A) {
-    // 1:1 : page INFO/SKILLS/CONTEST → A ne ferme que page INFO (mode NORMAL).
-    if (sMon.currPageIndex === PSS_PAGE_INFO) {
-      PlaySE(5);
-      _beginCloseSummaryScreen();
+    // 1:1 décomp Task_HandleInput (:1552) : A sur SKILLS = rien ; INFO =
+    // fermeture ; BATTLE/CONTEST_MOVES = SwitchToMoveSelection.
+    if (sMon.currPageIndex !== PSS_PAGE_SKILLS) {
+      if (sMon.currPageIndex === PSS_PAGE_INFO) {
+        PlaySE(SE_SELECT);
+        _beginCloseSummaryScreen();
+      } else {
+        PlaySE(SE_SELECT);
+        _switchToMoveSelection(task);
+      }
     }
   } else if (newKeys & KEY_B) {
-    PlaySE(5);
+    PlaySE(SE_SELECT);
     _beginCloseSummaryScreen();
   }
 }
@@ -1890,6 +2479,13 @@ function _freeSummary(): void {
   if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
   if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
   if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
+  // Move-select : sprites curseur + tâches sliding EFFET (si fermeture en
+  // cours de sélection — évite tâches orphelines lisant un buffer libéré).
+  _destroyMoveSelectorSprites(SEL1);
+  _destroyMoveSelectorSprites(SEL2);
+  if (_slidePowerAccTaskId >= 0) { try { rt?.DestroyTask(_slidePowerAccTaskId); } catch { /* */ } _slidePowerAccTaskId = -1; }
+  if (_slideAppealJamTaskId >= 0) { try { rt?.DestroyTask(_slideAppealJamTaskId); } catch { /* */ } _slideAppealJamTaskId = -1; }
+  sMon.firstMoveIndex = 0; sMon.secondMoveIndex = 0;
   _cryPlayed = false;
   _isOpen = false;
   _phase = 'idle';
@@ -2030,6 +2626,12 @@ export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): 
   sMon.maxPageIndex = PSS_PAGE_CONTEST_MOVES;
   sMon.bgDisplayOrder = 0;
   sMon.mode = SUMMARY_MODE_NORMAL;
+  // 1:1 décomp : flux party→RÉSUME = mode NORMAL → pas de nouveau move,
+  // réordre autorisé (lockMovesFlag FALSE), curseurs réinitialisés.
+  sMon.newMove = '';
+  sMon.lockMovesFlag = false;
+  sMon.firstMoveIndex = 0;
+  sMon.secondMoveIndex = 0;
   sMon.callback = callback ?? null;
   void _loadAssets().then(() => {
     const rt = getRuntime();
