@@ -201,6 +201,39 @@ const POKEBALL_COORDS: Array<[number, number]> = [
   [102, 97],  // slot 4
   [102, 121], // slot 5
 ];
+/** 1:1 décomp `sPartyMenuSpriteCoords[PARTY_LAYOUT_SINGLE][slot][4,5]`
+ *  (data/party_menu.h:72-77) = coords du sprite condition de statut. */
+const STATUS_COORDS: Array<[number, number]> = [
+  [ 50,  52], // slot 0 (gros box gauche)
+  [136,  27], // slot 1
+  [136,  51], // slot 2
+  [136,  75], // slot 3
+  [136,  99], // slot 4
+  [136, 123], // slot 5
+];
+/** OBJ VRAM/pal du sprite statut. Libre entre icônes (tiles 0-191) et
+ *  pokeball (256). status_icons.png = 32 tiles, sprite 32×8 (shape1 size1),
+ *  frame = (ailment-1)*4 (1:1 sSpriteAnim_Status* data/party_menu.h:1015+). */
+const PARTY_STATUS_TILE_BASE = 192;
+const PARTY_STATUS_PAL_BANK = 11;
+let _statusOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
+
+/** 1:1 décomp `sPartyMenuSpriteCoords[PARTY_LAYOUT_SINGLE][slot][2,3]`
+ *  (data/party_menu.h:72-77) = coords du sprite objet tenu (8×8). */
+const ITEM_COORDS: Array<[number, number]> = [
+  [ 20,  50], // slot 0
+  [108,  28], // slot 1
+  [108,  52], // slot 2
+  [108,  76], // slot 3
+  [108, 100], // slot 4
+  [108, 124], // slot 5
+];
+/** OBJ VRAM/pal objet tenu : hold_icons.png = 2 tiles (8×8), anim0=item /
+ *  anim1=mail (1:1 sSpriteAnim_HeldItem/HeldMail data/party_menu.h:821-836).
+ *  Libre entre statut (192-223) et pokeball (256). */
+const PARTY_HELDITEM_TILE_BASE = 224;
+const PARTY_HELDITEM_PAL_BANK = 12;
+let _itemOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 
 interface PartyAssets {
   bgTiles: Uint8Array;
@@ -528,6 +561,11 @@ function _drawSlot(slotIdx: number): void {
   if (_slotWindowIds[slotIdx] === undefined) return;
   const wid = _slotWindowIds[slotIdx];
   const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  // 1:1 décomp RenderPartyMenuBox → SetPartyMonAilmentGfx + UpdatePartyMon
+  // HeldItemSprite : rafraîchit icône statut + objet tenu du slot (sprites
+  // slot-pinned, dérivés du mon courant).
+  _updatePartyMonAilmentGfx(slotIdx);
+  _updatePartyMonHeldItem(slotIdx);
   if (!mon) {
     // Slot vide : no text (= just empty frame déjà blit).
     CopyWindowToVram(wid, 3);
@@ -557,6 +595,14 @@ function _drawSlot(slotIdx: number): void {
     const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
     _loadGenderColors(slotPalNum, gSym === 'M');
   }
+  // 1:1 décomp DisplayPartyPokemonLevelCheck (party_menu.c:2300-2312) : le
+  // NIVEAU n'est dessiné QUE si ailment ∈ {AILMENT_NONE(0), AILMENT_PKRS(6)}.
+  // Tout autre statut (PSN/PAR/SLP/FRZ/BRN) ou K.O. (HP=0=FNT) → niveau
+  // BLANC, laissant la place à l'icône statut 32×8 (sinon : pixels du
+  // niveau derrière l'icône burn = le bug rapporté). Genre/PV/barre NON
+  // suppressés (1:1 :2323/:2356 — aucun check ailment).
+  const _lvA = _ailmentFromStatus(mon);
+  const showLevel = _lvA === 0 || _lvA === 6;
   if (slotIdx === 0) {
     // 1:1 décomp PARTY_BOX_LEFT_COLUMN (party_menu.h:32) :
     //   Nickname (24, 11) — width=40
@@ -567,7 +613,7 @@ function _drawSlot(slotIdx: number): void {
     // 1:1 décomp DisplayPartyPokemonBarDetail (party_menu.c:2282) :
     //   AddTextPrinterParameterized3(windowId, FONT_SMALL, ...) — TOUT en FONT_SMALL.
     AddTextPrinterParameterized3(wid, FONT_SMALL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    if (showLevel) AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
       AddTextPrinterParameterized3(wid, FONT_SMALL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
@@ -589,7 +635,7 @@ function _drawSlot(slotIdx: number): void {
     //   Gender   (62, 12)
     //   HP       dimensions[12]=(102, 12)  MaxHP dimensions[16]=(117, 12)
     AddTextPrinterParameterized3(wid, FONT_SMALL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    if (showLevel) AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
       AddTextPrinterParameterized3(wid, FONT_SMALL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
@@ -929,6 +975,132 @@ async function _loadPokeballGfx(): Promise<void> {
   rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
 }
 
+/** 1:1 décomp `LoadPartyMenuAilmentGfx` (party_menu.c:4223) : charge
+ *  `gStatusGfx_Icons`/`gStatusPal_Icons` (= status_icons.png, 32 tiles).
+ *  Même asset que l'écran résumé (`_createSetStatusSprite`). */
+async function _loadStatusIconsGfx(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  const st = await rt.LoadCompressedSpriteSheet('/decomp/em/ui/interface/status_icons.png', PARTY_STATUS_TILE_BASE * 32);
+  rt.LoadPaletteObj(st.palette, OBJ_PLTT_ID(PARTY_STATUS_PAL_BANK));
+}
+
+/** 1:1 décomp : `menuBox->statusSpriteId = CreateSprite(&sSpriteTemplate_
+ *  StatusIcons, spriteCoords[4], spriteCoords[5], 0)` (party_menu.c:4188).
+ *  sOamData_StatusCondition = 32×8 (shape1 size1). Créés invisibles ;
+ *  `_updatePartyMonAilmentGfx` les rend visibles selon l'ailment. */
+function _spawnStatusOams(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  _statusOamBySlot = [-1, -1, -1, -1, -1, -1];
+  const party = gameState.party as PokemonInstance[];
+  for (let i = 0; i < 6; i++) {
+    if (!party[i]) continue;
+    const [x, y] = STATUS_COORDS[i];
+    const spr = rt.CreateSpriteAtOam({
+      x, y,
+      shape: 1, size: 1,                       // sOamData_StatusCondition 32×8
+      tileId: PARTY_STATUS_TILE_BASE,
+      paletteBank: PARTY_STATUS_PAL_BANK,
+      priority: 1, subpriority: 0,
+    });
+    _statusOamBySlot[i] = spr.spriteId;
+    rt.setSpriteInvisible(spr.spriteId, true); // 1:1 défaut : caché tant que pas d'ailment
+  }
+}
+
+/** 1:1 décomp `GetMonAilment` (party_menu.c:1924-1936) → AILMENT_* :
+ *    HP==0 → AILMENT_FNT(7)  (:1928, PRIORITAIRE)
+ *    status → PSN/TOX=1, PAR=2, SLP=3, FRZ=4, BRN=5
+ *    pokérus → AILMENT_PKRS(6)  (non modélisé chez nous → NONE, honnête)
+ *    sinon AILMENT_NONE(0). */
+function _ailmentFromStatus(mon: PokemonInstance | undefined): number {
+  if (!mon) return 0;
+  if (mon.currentHp === 0) return 7;            // 1:1 :1928 AILMENT_FNT
+  const st = mon.status;
+  const a = st === 'PSN' || st === 'TOX' ? 1 : st === 'PAR' ? 2 : st === 'SLP' ? 3
+    : st === 'FRZ' ? 4 : st === 'BRN' ? 5 : 0;
+  return a;                                     // 1:1 :1930-1935 (pokérus n/a → NONE)
+}
+
+/** 1:1 décomp `SetPartyMonAilmentGfx`→`UpdatePartyMonAilmentGfx`
+ *  (party_menu.c:4203-4221) : AILMENT_NONE/PKRS → sprite invisible ;
+ *  sinon `StartSpriteAnim(sprite, ailment-1)` (frame (ailment-1)*4) +
+ *  visible. Statut slot-pinned (dérivé de gameState.party[slot].status). */
+function _updatePartyMonAilmentGfx(slot: number): void {
+  const rt = getRuntime();
+  const id = _statusOamBySlot[slot];
+  if (!rt || id === undefined || id < 0) return;
+  const spr = rt.gSprites.get(id);
+  if (!spr) return;
+  const mon = (gameState.party as PokemonInstance[])[slot];
+  const ailment = _ailmentFromStatus(mon);
+  if (ailment === 0 || ailment === 6) {         // 1:1 :4212-4213 AILMENT_NONE/PKRS → invisible
+    rt.setSpriteInvisible(id, true);
+    return;
+  }
+  // 1:1 :4217 StartSpriteAnim(sprite, ailment-1) → frame (ailment-1)*4
+  // (PSN0/PAR4/SLP8/FRZ12/BRN16/FNT24 ; ailment FNT=7 → (7-1)*4=24).
+  const oam = rt.gba.oam[spr.oamIndex];
+  if (oam) oam.tileId = PARTY_STATUS_TILE_BASE + (ailment - 1) * 4;
+  rt.setSpriteInvisible(id, false);
+}
+
+/** 1:1 décomp `LoadHeldItemIcons` (party_menu.c:4061) : hold_icons.png
+ *  (2 tiles 8×8 : frame0=item, frame1=mail). */
+async function _loadHeldItemGfx(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tiles = await loadTileBin('/decomp/em/party_menu/hold_icons.png', 4);
+  const pal = await loadGbaPal('/decomp/em/party_menu/hold_icons.gbapal');
+  rt.gba.objVram.set(tiles.slice(0, 2 * 32), PARTY_HELDITEM_TILE_BASE * 32);
+  rt.LoadPaletteObj(pal, OBJ_PLTT_ID(PARTY_HELDITEM_PAL_BANK));
+}
+
+/** 1:1 décomp `CreatePartyMonHeldItemSprite` (party_menu.c:4021) :
+ *  `CreateSprite(&sSpriteTemplate_HeldItem, spriteCoords[2], spriteCoords[3],
+ *  0)` (8×8, sOamData_HeldItem priority=1). Créés invisibles. */
+function _spawnHeldItemOams(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  _itemOamBySlot = [-1, -1, -1, -1, -1, -1];
+  const party = gameState.party as PokemonInstance[];
+  for (let i = 0; i < 6; i++) {
+    if (!party[i]) continue;
+    const [x, y] = ITEM_COORDS[i];
+    const spr = rt.CreateSpriteAtOam({
+      x, y,
+      shape: 0, size: 0,                       // sOamData_HeldItem 8×8
+      tileId: PARTY_HELDITEM_TILE_BASE,
+      paletteBank: PARTY_HELDITEM_PAL_BANK,
+      priority: 1, subpriority: 0,
+    });
+    _itemOamBySlot[i] = spr.spriteId;
+    rt.setSpriteInvisible(spr.spriteId, true);
+  }
+}
+
+/** 1:1 décomp `UpdatePartyMonHeldItemSprite`→`ShowOrHideHeldItemSprite`
+ *  (party_menu.c:4040-4059) : ITEM_NONE → invisible ; sinon ItemIsMail →
+ *  StartSpriteAnim(1) (tile+1), sinon StartSpriteAnim(0) (tile+0) + visible.
+ *  (Mail non modélisé chez nous → toujours frame0 item, honnête 1:1.) */
+function _updatePartyMonHeldItem(slot: number): void {
+  const rt = getRuntime();
+  const id = _itemOamBySlot[slot];
+  if (!rt || id === undefined || id < 0) return;
+  const spr = rt.gSprites.get(id);
+  if (!spr) return;
+  const mon = (gameState.party as PokemonInstance[])[slot];
+  const item = mon?.heldItem;
+  if (!item) {                                   // ITEM_NONE → invisible
+    rt.setSpriteInvisible(id, true);
+    return;
+  }
+  const oam = rt.gba.oam[spr.oamIndex];
+  if (oam) oam.tileId = PARTY_HELDITEM_TILE_BASE; // frame0 = item (mail n/a → 0)
+  rt.setSpriteInvisible(id, false);
+}
+
 /** Spawn the "SORTIR" cancel button OAM (= big pokeball with text gravé)
  *  1:1 décomp `CreatePokeballButtonSprite(198, 148)` (party_menu.c:4138)
  *  → sprite 32×32 sSpriteTemplate_MenuPokeball, priority=2. */
@@ -1037,6 +1209,10 @@ function _freePartyMenu(): void {
   _iconBaseY = [0, 0, 0, 0, 0, 0];
   for (const id of _pokeballOamBySlot) freeOam(id);
   _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
+  for (const id of _statusOamBySlot) freeOam(id);
+  _statusOamBySlot = [-1, -1, -1, -1, -1, -1];
+  for (const id of _itemOamBySlot) freeOam(id);
+  _itemOamBySlot = [-1, -1, -1, -1, -1, -1];
   freeOam(_cancelButtonOamId);
   _cancelButtonOamId = -1;
   if (rt && _bounceTaskId >= 0) {
@@ -1139,6 +1315,13 @@ function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
     case DPAD_DOWN:  dir = MENU_DIR_DOWN;  break;
     case DPAD_LEFT:  dir = MENU_DIR_LEFT;  break;
     case DPAD_RIGHT: dir = MENU_DIR_RIGHT; break;
+  }
+  // 1:1 décomp PartyMenuButtonHandler :1473-1486 : `default` (aucun DPAD) →
+  // GetLRKeysPressedAndHeld : L_PRESSED → MENU_DIR_UP, R_PRESSED → DOWN.
+  if (dir === 0) {
+    const KEY_L = 0x0200, KEY_R = 0x0100;
+    if (newRepKeys & KEY_L) dir = MENU_DIR_UP;
+    else if (newRepKeys & KEY_R) dir = MENU_DIR_DOWN;
   }
   if (newKeys & KEY_START) return KEY_START;
   if (dir !== 0) {
@@ -1549,16 +1732,19 @@ function _moveAndBufferPartySlot(rectSrc: Uint16Array, x: number, y: number, wid
 }
 
 /** 1:1 décomp `MovePartyMenuBoxSprites` (party_menu.c:2907-2913) : décale les
- *  sprites du box de `offset*8` px (x2). Décomp = 4 sprites (pokeball/item/mon/
- *  status) ; notre modèle = 2 (pokeball + icône), item/statut sont dans la
- *  window (slidée via le bloc tilemap) — couverture visuelle 1:1 nette. */
+ *  sprites du box de `offset*8` px (x2). Décomp = 4 sprites ; notre modèle =
+ *  4 sprites (pokeball + icône + statut + objet tenu) = 1:1 net. */
 function _movePartyMenuBoxSprites(slot: number, offset: number): void {
   const rt = getRuntime();
   if (!rt) return;
   const pk = rt.gSprites.get(_pokeballOamBySlot[slot]);
   const ic = rt.gSprites.get(_iconOamBySlot[slot]);
+  const st = rt.gSprites.get(_statusOamBySlot[slot]);
+  const it = rt.gSprites.get(_itemOamBySlot[slot]);
   if (pk) pk.x2 += offset * 8;
   if (ic) ic.x2 += offset * 8;
+  if (st) st.x2 += offset * 8;   // 1:1 :2912 statusSpriteId.x2 += offset*8
+  if (it) it.x2 += offset * 8;   // 1:1 :2910 itemSpriteId.x2 += offset*8
 }
 
 /** 1:1 décomp `SlidePartyMenuBoxSpritesOneStep` (party_menu.c:2915-2923). */
@@ -1807,6 +1993,18 @@ export function CB2_InitPartyMenu(): void {
       void _spawnIconOams();
       // Sequence : _spawnCancelButtonOam load tiles → then _spawnSlotPokeballOams réutilise.
       void _spawnCancelButtonOam().then(() => { _spawnSlotPokeballOams(); });
+      // 1:1 décomp LoadPartyMenuAilmentGfx + statusSpriteId par box +
+      // SetPartyMonAilmentGfx (party_menu.c:4188-4205).
+      void _loadStatusIconsGfx().then(() => {
+        _spawnStatusOams();
+        for (let i = 0; i < 6; i++) _updatePartyMonAilmentGfx(i);
+      });
+      // 1:1 décomp LoadHeldItemIcons + itemSpriteId par box + Update
+      // PartyMonHeldItemSprite (party_menu.c:4021-4063).
+      void _loadHeldItemGfx().then(() => {
+        _spawnHeldItemOams();
+        for (let i = 0; i < 6; i++) _updatePartyMonHeldItem(i);
+      });
       rt.gMain.state++; break;
     case 14:
       // 1:1 décomp `AnimatePartySlot(gPartyMenu.slotId, 1)` (party_menu.c:1116) :
@@ -1814,7 +2012,6 @@ export function CB2_InitPartyMenu(): void {
       for (let i = 0; i < 6; i++) AnimatePartySlot(i, 0);
       AnimatePartySlot(_slotId, 1);
       rt.gMain.state++; break;
-    case 14: rt.gMain.state++; break;
     case 15: rt.gMain.state++; break;
     case 16: rt.gMain.state++; break;
     case 17: rt.gMain.state++; break;
