@@ -68,12 +68,21 @@ const AUDITED = [
   { citeNames: ['pokemon_summary_screen.c'], rel: 'src/pokemon_summary_screen.c', kind: 'c' },
   { citeNames: ['data/party_menu.h', 'party_menu.h'], rel: 'src/data/party_menu.h', kind: 'h' },
   { citeNames: ['constants/party_menu.h'], rel: 'include/constants/party_menu.h', kind: 'h' },
+  // ── Maillon SAC (chantier BAG-PHASE-2) ──────────────────────────────────
+  { citeNames: ['item_menu.c'], rel: 'src/item_menu.c', kind: 'c' },
+  { citeNames: ['item_use.c'], rel: 'src/item_use.c', kind: 'c' },
+  { citeNames: ['item.c'], rel: 'src/item.c', kind: 'c' },
+  { citeNames: ['list_menu.c'], rel: 'src/list_menu.c', kind: 'c' },
 ];
 
 // TS port modules ↔ fichier décomp audité (pour UNCITED).
 const PORT_MAPPING = {
   'src/engine/party-screen.ts': ['party_menu.c', 'data/party_menu.h', 'party_menu.h', 'constants/party_menu.h'],
   'src/engine/summary-screen.ts': ['pokemon_summary_screen.c'],
+  'src/engine/bag-menu.ts': ['item_menu.c'],
+  'src/engine/bag-screen.ts': ['item_menu.c'],
+  'src/engine/list-menu.ts': ['list_menu.c'],
+  'src/engine/bag.ts': ['item.c'],
 };
 
 // Résout un citeName → chemin absolu décomp (ou null si non audité).

@@ -1,6 +1,6 @@
 # UNCITED — fonctions TS du port sans provenance décomp
 
-Généré : 2026-05-19T12:34:11.296Z
+Généré : 2026-05-19T12:54:11.670Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -51,4 +51,52 @@ PRECISE **4/138 (3%)** · +MARKER **115/138 (83%)** · HARD **23** (triées par 
 - `IsSummaryScreenOpen` (L3013-3015, 3l)
 - `CloseSummaryScreen` (L3056-3058, 3l)
 - `MainCB2_SummaryRun` (L2913-2913, 1l)
+
+## `src/engine/bag-menu.ts`
+
+PRECISE **9/13 (69%)** · +MARKER **10/13 (77%)** · HARD **3** (triées par taille)
+
+- `_allocZeroedBagMenu` (L116-137, 22l)
+- `__bagMenuDebugState` (L335-346, 12l)
+- `VBlankCB_BagMenuRun` (L209-209, 1l)
+
+## `src/engine/bag-screen.ts`
+
+PRECISE **19/74 (26%)** · +MARKER **54/74 (73%)** · HARD **20** (triées par taille)
+
+- `_tickTossConfirm` (L1755-1784, 30l)
+- `_tickContextMenu` (L1579-1607, 29l)
+- `_tickTossQuantity` (L1697-1725, 29l)
+- `_despawnPocketArrows` (L1082-1099, 18l)
+- `_despawnListScrollArrows` (L1165-1182, 18l)
+- `_drawYesNo` (L1736-1753, 18l)
+- `_drawTossPrompt` (L1660-1676, 17l)
+- `_wrap` (L738-752, 15l)
+- `_cancelToss` (L1813-1826, 14l)
+- `initItemIconMap` (L784-795, 12l)
+- `_tickRotatingBall` (L1392-1399, 8l)
+- `_askTossItems` (L1727-1734, 8l)
+- `_drawAll` (L754-760, 7l)
+- `_selectedItemKey` (L522-526, 5l)
+- `_cancelItemSwap` (L1902-1906, 5l)
+- `_ensureStdMenuPal` (L2276-2280, 5l)
+- `_confirmToss` (L1786-1789, 4l)
+- `preloadBagAssets` (L500-502, 3l)
+- `_drawDots` (L552-554, 3l)
+- `IsBagScreenOpen` (L898-900, 3l)
+
+## `src/engine/list-menu.ts`
+
+PRECISE **45/51 (88%)** · +MARKER **50/51 (98%)** · HARD **1** (triées par taille)
+
+- `_destroyTask` (L490-493, 4l)
+
+## `src/engine/bag.ts`
+
+PRECISE **1/14 (7%)** · +MARKER **10/14 (71%)** · HARD **4** (triées par taille)
+
+- `migrateBag` (L78-93, 16l)
+- `pocketArrayFor` (L104-113, 10l)
+- `getPocketName` (L96-101, 6l)
+- `getSlotCapacity` (L116-118, 3l)
 

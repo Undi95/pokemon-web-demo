@@ -1,6 +1,6 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-05-19T12:34:11.296Z
+Généré : 2026-05-19T12:54:11.670Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -442,4 +442,242 @@ Couverture fonctions : **6/140 (4%)** — 134 GAPS · 2 citation(s) fichier-nive
 - `DestroyMoveSelectorSprites` @ L4149-4155
 - `SetMainMoveSelectorColor` @ L4156-4172
 - `KeepMoveSelectorVisible` @ L4173-4184
+
+## `src/item_menu.c`
+
+Couverture fonctions : **30/122 (25%)** — 92 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
+
+- `CreateBagInputHandlerTask` @ L847-856
+- `AllocateBagItemListBuffers` @ L857-862
+- `LoadBagItemListBuffers` @ L863-898
+- `BagMenu_MoveCursorCallback` @ L929-948
+- `BagMenu_PrintCursor` @ L1016-1020
+- `BagDestroyPocketScrollArrowPair` @ L1044-1053
+- `CreatePocketSwitchArrowPair` @ L1054-1059
+- `DestroyPocketSwitchArrowPair` @ L1060-1068
+- `UpdatePocketItemList` @ L1105-1133
+- `UpdatePocketItemLists` @ L1134-1140
+- `UpdatePocketListPosition` @ L1141-1145
+- `InitPocketListPositions` @ L1146-1152
+- `InitPocketScrollPositions` @ L1153-1159
+- `GetItemListPosition` @ L1160-1164
+- `DisplayItemMessage` @ L1165-1174
+- `CloseItemMessage` @ L1175-1192
+- `AddItemQuantityWindow` @ L1193-1202
+- `PrintItemSoldAmount` @ L1212-1220
+- `Task_BagMenu_HandleInput` @ L1221-1283
+- `ReturnToItemList` @ L1284-1294
+- `GetSwitchBagPocketDirection` @ L1295-1313
+- `ChangeBagPocketId` @ L1314-1323
+- `SwitchBagPocket` @ L1324-1362
+- `DrawItemListBgRow` @ L1412-1417
+- `DrawPocketIndicatorSquare` @ L1418-1426
+- `CanSwapItems` @ L1427-1440
+- `StartItemSwap` @ L1441-1457
+- `Task_HandleSwappingItemsInput` @ L1458-1495
+- `DoItemSwap` @ L1496-1522
+- `CancelItemSwap` @ L1523-1539
+- `PrintContextMenuItems` @ L1678-1683
+- `Task_ItemContext_Normal` @ L1690-1701
+- `Task_ItemContext_SingleRow` @ L1702-1722
+- `Task_ItemContext_MultipleRows` @ L1723-1772
+- `IsValidContextMenuPos` @ L1773-1783
+- `RemoveContextWindow` @ L1784-1795
+- `ItemMenu_UseOutOfBattle` @ L1796-1816
+- `ItemMenu_Toss` @ L1817-1837
+- `AskTossItems` @ L1838-1849
+- `CancelToss` @ L1850-1858
+- `Task_ChooseHowManyToToss` @ L1859-1881
+- `ConfirmToss` @ L1882-1895
+- `Task_RemoveItemFromBag` @ L1896-1915
+- `ItemMenu_Register` @ L1916-1932
+- `ItemMenu_Give` @ L1933-1957
+- `PrintThereIsNoPokemon` @ L1958-1962
+- `PrintItemCantBeHeld` @ L1963-1969
+- `HandleErrorMessage` @ L1970-1978
+- `ItemMenu_CheckTag` @ L1979-1984
+- `ItemMenu_Cancel` @ L1985-1996
+- `ItemMenu_UseInBattle` @ L1997-2005
+- `CB2_ReturnToBagMenuPocket` @ L2006-2010
+- `Task_ItemContext_GiveToParty` @ L2011-2033
+- `Task_ItemContext_GiveToPC` @ L2034-2045
+- `UseRegisteredKeyItemOnField` @ L2046-2077
+- `Task_ItemContext_Sell` @ L2078-2104
+- `DisplaySellItemPriceAndConfirm` @ L2105-2113
+- `AskSellItems` @ L2114-2118
+- `CancelSell` @ L2119-2128
+- `InitSellHowManyInput` @ L2129-2138
+- `Task_ChooseHowManyToSell` @ L2139-2163
+- `ConfirmSell` @ L2164-2173
+- `SellItem` @ L2174-2192
+- `WaitAfterItemSell` @ L2193-2202
+- `Task_ItemContext_Deposit` @ L2203-2222
+- `Task_ChooseHowManyToDeposit` @ L2223-2247
+- `TryDepositItem` @ L2248-2275
+- `WaitDepositErrorMessage` @ L2276-2288
+- `IsWallysBag` @ L2289-2295
+- `PrepareBagForWallyTutorial` @ L2296-2313
+- `RestoreBagAfterWallyTutorial` @ L2314-2328
+- `DoWallyTutorialBagMenu` @ L2329-2339
+- `Task_WallyTutorialBagMenu` @ L2340-2377
+- `ItemMenu_Show` @ L2378-2385
+- `CB2_ApprenticeExitBagMenu` @ L2386-2391
+- `ItemMenu_GiveFavorLady` @ L2392-2399
+- `CB2_FavorLadyExitBagMenu` @ L2400-2407
+- `ItemMenu_ConfirmQuizLady` @ L2408-2414
+- `CB2_QuizLadyExitBagMenu` @ L2415-2420
+- `PrintPocketNames` @ L2421-2441
+- `CopyPocketNameToWindow` @ L2442-2456
+- `BagMenu_Print` @ L2476-2480
+- `BagMenu_GetWindowId` @ L2481-2485
+- `BagMenu_AddWindow` @ L2486-2497
+- `BagMenu_RemoveWindow` @ L2498-2510
+- `AddItemMessageWindow` @ L2511-2518
+- `RemoveItemMessageWindow` @ L2519-2532
+- `BagMenu_YesNo` @ L2533-2537
+- `DisplayCurrentMoneyWindow` @ L2538-2544
+- `RemoveMoneyWindow` @ L2545-2550
+- `PrepareTMHMMoveWindow` @ L2551-2560
+- `PrintTMHMMoveData` @ L2561-2610
+
+## `src/item_use.c`
+
+Couverture fonctions : **0/74 (0%)** — 74 GAPS · 1 citation(s) fichier-niveau (sans `:ligne`)
+
+- `SetUpItemUseCallback` @ L98-116
+- `SetUpItemUseOnFieldCallback` @ L117-129
+- `FieldCB_UseItemOnField` @ L130-135
+- `Task_CallItemUseOnFieldCallback` @ L136-141
+- `DisplayCannotUseItemMessage` @ L142-157
+- `DisplayDadsAdviceCannotUseItemMessage` @ L158-162
+- `DisplayCannotDismountBikeMessage` @ L163-167
+- `Task_CloseCantUseKeyItemMessage` @ L168-175
+- `CheckIfItemIsTMHMOrEvolutionStone` @ L176-186
+- `CB2_CheckMail` @ L187-193
+- `ItemUseOutOfBattle_Mail` @ L194-199
+- `ItemUseOutOfBattle_Bike` @ L200-225
+- `ItemUseOnFieldCB_Bike` @ L226-236
+- `CanFish` @ L237-266
+- `ItemUseOutOfBattle_Rod` @ L267-279
+- `ItemUseOnFieldCB_Rod` @ L280-285
+- `ItemUseOutOfBattle_Itemfinder` @ L286-292
+- `ItemUseOnFieldCB_Itemfinder` @ L293-308
+- `Task_UseItemfinder` @ L309-345
+- `Task_CloseItemfinderMessage` @ L346-353
+- `ItemfinderCheckForHiddenItems` @ L354-384
+- `IsHiddenItemPresentAtCoords` @ L385-403
+- `IsHiddenItemPresentInConnection` @ L404-442
+- `CheckForHiddenItemsInMapConnection` @ L443-473
+- `SetDistanceOfClosestHiddenItem` @ L474-533
+- `GetDirectionToHiddenItem` @ L534-579
+- `PlayerFaceHiddenItem` @ L580-587
+- `Task_HiddenItemNearby` @ L588-593
+- `Task_StandingOnHiddenItem` @ L594-619
+- `ItemUseOutOfBattle_PokeblockCase` @ L620-638
+- `CB2_OpenPokeblockFromBag` @ L639-643
+- `Task_OpenRegisteredPokeblockCase` @ L644-653
+- `ItemUseOutOfBattle_CoinCase` @ L654-668
+- `ItemUseOutOfBattle_PowderJar` @ L669-683
+- `ItemUseOutOfBattle_Berry` @ L684-698
+- `ItemUseOnFieldCB_Berry` @ L699-706
+- `ItemUseOutOfBattle_WailmerPail` @ L707-724
+- `ItemUseOnFieldCB_WailmerPailBerry` @ L725-731
+- `TryToWaterSudowoodo` @ L732-745
+- `ItemUseOnFieldCB_WailmerPailSudowoodo` @ L746-752
+- `ItemUseOutOfBattle_Medicine` @ L753-758
+- `ItemUseOutOfBattle_ReduceEV` @ L759-764
+- `ItemUseOutOfBattle_SacredAsh` @ L765-770
+- `ItemUseOutOfBattle_PPRecovery` @ L771-776
+- `ItemUseOutOfBattle_PPUp` @ L777-782
+- `ItemUseOutOfBattle_RareCandy` @ L783-788
+- `ItemUseOutOfBattle_TMHM` @ L789-796
+- `BootUpSoundTMHM` @ L797-802
+- `Task_ShowTMHMContainedMessage` @ L803-812
+- `UseTMHMYesNo` @ L813-817
+- `UseTMHM` @ L818-823
+- `RemoveUsedItem` @ L824-840
+- `ItemUseOutOfBattle_Repel` @ L841-850
+- `Task_StartUseRepel` @ L851-862
+- `Task_UseRepel` @ L863-875
+- `Task_UsedBlackWhiteFlute` @ L876-887
+- `ItemUseOutOfBattle_BlackWhiteFlute` @ L888-906
+- `Task_UseDigEscapeRopeOnField` @ L907-913
+- `ItemUseOnFieldCB_EscapeRope` @ L914-921
+- `CanUseDigOrEscapeRopeOnCurMap` @ L922-929
+- `ItemUseOutOfBattle_EscapeRope` @ L930-942
+- `ItemUseOutOfBattle_EvolutionStone` @ L943-948
+- `ItemUseInBattle_PokeBall` @ L949-968
+- `Task_CloseStatIncreaseMessage` @ L969-979
+- `Task_UseStatIncreaseItem` @ L980-993
+- `ItemUseInBattle_StatIncrease` @ L994-1011
+- `ItemUseInBattle_ShowPartyMenu` @ L1012-1025
+- `ItemUseInBattle_Medicine` @ L1026-1032
+- `ItemUseInBattle_SacredAsh` @ L1033-1038
+- `ItemUseInBattle_PPRecovery` @ L1039-1045
+- `ItemUseInBattle_Escape` @ L1046-1062
+- `ItemUseOutOfBattle_EnigmaBerry` @ L1063-1106
+- `ItemUseInBattle_EnigmaBerry` @ L1107-1133
+- `ItemUseOutOfBattle_CannotUse` @ L1134-1140
+
+## `src/item.c`
+
+Couverture fonctions : **3/52 (6%)** — 49 GAPS · 9 citation(s) fichier-niveau (sans `:ligne`)
+
+- `GetBagItemQuantity` @ L26-30
+- `SetBagItemQuantity` @ L31-35
+- `GetPCItemQuantity` @ L36-40
+- `SetPCItemQuantity` @ L41-45
+- `ApplyNewEncryptionKeyToBagItems` @ L46-55
+- `ApplyNewEncryptionKeyToBagItems_` @ L56-60
+- `SetBagItemsPointers` @ L61-78
+- `CopyItemName` @ L79-83
+- `CopyItemNameHandlePlural` @ L84-106
+- `GetBerryCountString` @ L107-121
+- `IsBagPocketNonEmpty` @ L122-133
+- `CheckBagHasItem` @ L134-162
+- `HasAtLeastOneBerry` @ L163-178
+- `CheckBagHasSpace` @ L179-242
+- `RemoveBagItem` @ L350-437
+- `GetPocketByItemId` @ L438-442
+- `ClearItemSlots` @ L443-453
+- `FindFreePCItemSlot` @ L454-465
+- `CountUsedPCItemSlots` @ L466-478
+- `CheckPCHasItem` @ L479-490
+- `AddPCItem` @ L491-547
+- `RemovePCItem` @ L548-557
+- `CompactPCItems` @ L558-576
+- `SwapRegisteredBike` @ L577-589
+- `BagGetItemIdByPocketPosition` @ L590-594
+- `BagGetQuantityByPocketPosition` @ L595-599
+- `SwapItemSlots` @ L600-605
+- `CompactItemsInBagPocket` @ L606-619
+- `SortBerriesOrTMHMs` @ L620-639
+- `MoveItemSlotInList` @ L640-665
+- `ClearBag` @ L666-675
+- `CountTotalItemQuantityInBag` @ L676-690
+- `CheckPyramidBagHasItem` @ L691-712
+- `CheckPyramidBagHasSpace` @ L713-734
+- `AddPyramidBagItem` @ L735-807
+- `RemovePyramidBagItem` @ L808-870
+- `SanitizeItemId` @ L871-878
+- `GetItemId` @ L885-889
+- `GetItemPrice` @ L890-894
+- `GetItemHoldEffect` @ L895-899
+- `GetItemHoldEffectParam` @ L900-904
+- `GetItemImportance` @ L910-915
+- `GetItemRegistrability` @ L916-920
+- `GetItemPocket` @ L921-925
+- `GetItemType` @ L926-930
+- `GetItemFieldFunc` @ L931-935
+- `GetItemBattleUsage` @ L936-940
+- `GetItemBattleFunc` @ L941-945
+- `GetItemSecondaryId` @ L946-950
+
+## `src/list_menu.c`
+
+Couverture fonctions : **45/48 (94%)** — 3 GAPS · 13 citation(s) fichier-niveau (sans `:ligne`)
+
+- `ListMenuInitInRect` @ L375-393
+- `ChangeListMenuPals` @ L481-490
+- `ChangeListMenuCoords` @ L491-499
 
