@@ -1587,40 +1587,91 @@ function _setDefaultTilemaps(): void {
  * 1:1 décomp icônes de types (`SetTypeSpritePosAndPal` :3807 + Set*Icons)
  * ========================================================================== */
 
+/** 1:1 décomp `CreateMoveTypeIcons` (:3794) — appelé UNE FOIS à l'init
+ *  (machine d'état case 16, :1250). Crée TYPE_ICON_SPRITE_COUNT (= MAX_MON_
+ *  MOVES+1 = 5) sprites d'icône type PERSISTANTS, tous invisibles. Ils
+ *  vivent toute la durée du summary : `SetTypeIcons` ne fait que les
+ *  RE-POINTER (jamais détruire/recréer).
+ *
+ *  ROOT CAUSE du bug "le type ????? de l'œuf saute en naviguant" (A/B
+ *  2026-05-19) : l'ancien modèle détruisait les sprites type en SYNC dans
+ *  `_changeSummaryPokemon` puis les recréait en ASYNC dans le `.then`
+ *  (après `await _loadAssets/_loadMonFrontPic`). En navigant, les `.then`
+ *  se chevauchaient → course d'allocation OAM : le sprite type (oam0) se
+ *  faisait clobber par le mon-pic (tileId 184) → "?????" invisible/instable.
+ *  Le décomp = sprites PERSISTANTS + `Task_ChangeSummaryMon` synchrone =
+ *  zéro course, zéro gap. */
+const TYPE_ICON_SPRITE_COUNT = 5;            // 1:1 MAX_MON_MOVES + 1 (:110)
+function _createMoveTypeIcons(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (_typeSpriteIds.length === TYPE_ICON_SPRITE_COUNT) return; // idempotent (1:1 :3800)
+  _destroyTypeSprites();
+  for (let i = 0; i < TYPE_ICON_SPRITE_COUNT; i++) {
+    const spr = rt.CreateSpriteAtOam({
+      x: 0, y: 0, shape: 1, size: 2,           // sOamData_MoveTypes : 32×16
+      tileId: TYPE_ICON_TILE_BASE,             // placeholder (re-pointé par SetTypeIcons)
+      paletteBank: 13,
+      priority: 1,                             // sOamData_MoveTypes.priority=1 (:769)
+      subpriority: 2,                          // 1:1 CreateSprite(.,.,.,2) (:3801)
+    });
+    _typeSpriteIds.push(spr.spriteId);
+    if (spr.spriteId >= 0) rt.setSpriteInvisible(spr.spriteId, true); // 1:1 :3803
+  }
+}
+
+/** Détruit les sprites type (UNIQUEMENT à la fermeture du summary —
+ *  `_freeSummary`). PAS pendant la navigation (sprites persistants 1:1). */
 function _destroyTypeSprites(): void {
   const rt = getRuntime();
   for (const sid of _typeSpriteIds) { try { rt?.DestroySprite(sid); } catch { /* déjà */ } }
   _typeSpriteIds = [];
 }
 
-/** 1:1 décomp `SetTypeSpritePosAndPal` (:3807) (création sprite à la volée). */
-function _placeTypeSprite(typeId: number, x: number, y: number): void {
+/** 1:1 décomp `SetSpriteInvisibility(u8 spriteArrayId, bool8 invisible)`
+ *  (:3759) : agit sur le sprite PERSISTANT d'index arrIdx. */
+function _setTypeSpriteInvisible(arrIdx: number, invisible: boolean): void {
   const rt = getRuntime();
-  if (!rt) return;
-  const spr = rt.CreateSpriteAtOam({
-    x: x + 16, y: y + 8,                       // 1:1 sprite->x = x+16 ; y = y+8
-    shape: 1, size: 2,                         // SPRITE 32×16
-    tileId: TYPE_ICON_TILE_BASE + typeId * 8,  // ANIMCMD_FRAME(typeId*8)
-    paletteBank: sMoveTypeToOamPaletteNum[typeId] ?? 13,
-    priority: 1,
-  });
-  if (spr.spriteId >= 0) _typeSpriteIds.push(spr.spriteId);
+  const id = _typeSpriteIds[arrIdx];
+  if (!rt || id === undefined || id < 0) return;
+  rt.setSpriteInvisible(id, invisible);
+}
+
+/** 1:1 décomp `SetTypeSpritePosAndPal(typeId, x, y, spriteArrayId)` (:3807) :
+ *  RE-POINTE le sprite persistant arrIdx — StartSpriteAnim(typeId) = tileId
+ *  ANIMCMD_FRAME(typeId*8), oam.paletteNum, x+16/y+8, invisible FALSE.
+ *  AUCUNE création (sprites créés 1× par `_createMoveTypeIcons`). */
+function _setTypeSpritePosAndPal(typeId: number, x: number, y: number, arrIdx: number): void {
+  const rt = getRuntime();
+  const id = _typeSpriteIds[arrIdx];
+  if (!rt || id === undefined || id < 0) return;
+  const spr = rt.gSprites.get(id);
+  if (!spr) return;
+  const oam = rt.gba.oam[spr.oamIndex];
+  if (oam) {
+    oam.tileId = TYPE_ICON_TILE_BASE + typeId * 8;            // 1:1 StartSpriteAnim(sprite,typeId)
+    oam.paletteBank = sMoveTypeToOamPaletteNum[typeId] ?? 13; // 1:1 sprite->oam.paletteNum
+  }
+  spr.x = x + 16;                                             // 1:1 sprite->x = x + 16
+  spr.y = y + 8;                                              // 1:1 sprite->y = y + 8
+  rt.setSpriteInvisible(id, false);                           // 1:1 SetSpriteInvisibility(.,FALSE)
 }
 
 /** 1:1 décomp `SetMonTypeIcons` (:3817). */
 function _setMonTypeIcons(): void {
-  // 1:1 décomp SetMonTypeIcons (:3817) : œuf → unique icône TYPE_MYSTERY
-  // (= type "???") @(120,48), pas de 2e.
   if (sMon.summary.isEgg) {
-    _placeTypeSprite(TYPE_ID.TYPE_MYSTERY, 120, 48);
+    // œuf → unique icône TYPE_MYSTERY ("?????") @(120,48), slot 1 caché.
+    _setTypeSpritePosAndPal(TYPE_ID.TYPE_MYSTERY, 120, 48, 0);
+    _setTypeSpriteInvisible(1, true);
     return;
   }
   const sp = getSpeciesInfo(sMon.summary.species);
   const types = sp?.types ?? [];
   const t0 = TYPE_ID[types[0] ?? ''] ?? 0;
   const t1 = TYPE_ID[types[1] ?? ''] ?? t0;
-  _placeTypeSprite(t0, 120, 48);
-  if (t0 !== t1) _placeTypeSprite(t1, 160, 48);
+  _setTypeSpritePosAndPal(t0, 120, 48, 0);
+  if (t0 !== t1) { _setTypeSpritePosAndPal(t1, 160, 48, 1); }
+  else { _setTypeSpriteInvisible(1, true); }
 }
 
 /** 1:1 décomp `SetMoveTypeIcons` (:3840). */
@@ -1631,7 +1682,9 @@ function _setMoveTypeIcons(): void {
     if (mv) {
       const md = getMove(mv);
       const tid = TYPE_ID[md?.type ?? ''] ?? 0;
-      _placeTypeSprite(tid, 85, 32 + i * 16);
+      _setTypeSpritePosAndPal(tid, 85, 32 + i * 16, i);
+    } else {
+      _setTypeSpriteInvisible(i, true);          // 1:1 SetSpriteInvisibility(i,TRUE) :3849
     }
   }
 }
@@ -1644,19 +1697,28 @@ function _setContestMoveTypeIcons(): void {
     if (mv) {
       const cm = getContestMove(mv);
       const cat = CONTEST_CATEGORY_ID[cm?.contestCategory ?? ''] ?? 0;
-      _placeTypeSprite(NUMBER_OF_MON_TYPES + cat, 85, 32 + i * 16);
+      _setTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + cat, 85, 32 + i * 16, i);
+    } else {
+      _setTypeSpriteInvisible(i, true);          // 1:1 :3862
     }
   }
 }
 
-/** 1:1 décomp `SetTypeIcons` (:3776) — dispatch selon page. */
+/** 1:1 décomp `HidePageSpecificSprites` (:3764) : cache tous les sprites
+ *  type. Appelé sur changement de PAGE (décomp `ChangePage` :1782). */
+function _hidePageSpecificSprites(): void {
+  for (let i = 0; i < _typeSpriteIds.length; i++) _setTypeSpriteInvisible(i, true);
+}
+
+/** 1:1 décomp `SetTypeIcons` (:3776) — dispatch selon page. RE-POINTE les
+ *  sprites persistants (PAS de destroy/recréation = plus de course OAM). */
 function _setTypeIcons(): void {
-  _destroyTypeSprites();
+  if (_typeSpriteIds.length === 0) _createMoveTypeIcons(); // sécurité si init sautée
   switch (sMon.currPageIndex) {
     case PSS_PAGE_INFO: _setMonTypeIcons(); break;
     case PSS_PAGE_BATTLE_MOVES: _setMoveTypeIcons(); break;
     case PSS_PAGE_CONTEST_MOVES: _setContestMoveTypeIcons(); break;
-    // SKILLS = pas d'icônes type.
+    // SKILLS = pas d'icônes type (cachées par _hidePageSpecificSprites).
   }
 }
 
@@ -1869,6 +1931,7 @@ function _changePage(delta: number): void {
   if (!rt) return;
   // CreateTextPrinterTask(currPageIndex) → on print direct (notre dispatch).
   _printPageSpecificText(sMon.currPageIndex);
+  _hidePageSpecificSprites();   // 1:1 décomp ChangePage :1782 (cache icônes type)
   if (delta === 1) _scrollTaskId = rt.CreateTask(_taskPssScrollRight, 0);
   else _scrollTaskId = rt.CreateTask(_taskPssScrollLeft, 0);
 }
@@ -1902,11 +1965,13 @@ function _changeSummaryPokemon(delta: number): void {
   PlaySE(5 /* SE_SELECT */);
   sMon.curMonIndex = idx;
   sMon.currentMon = next;
-  // 1:1 Task_ChangeSummaryMon : StopCry + détruit sprites + re-extract +
-  // re-print + recrée sprites.
+  // 1:1 Task_ChangeSummaryMon (:1628) : StopCry + détruit SEULEMENT les
+  // sprites MON (case 1) et BALL (case 2) — PAS les sprites type (:1639/
+  // :1642). Les icônes type sont PERSISTANTES (créées 1× par
+  // _createMoveTypeIcons à l'init) et juste re-pointées par _setTypeIcons
+  // (case 9). Détruire ici = la course OAM cause du bug "type œuf saute".
   _cryPlayed = false;
   const rt = getRuntime();
-  _destroyTypeSprites();
   if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
   if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
   if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
@@ -2237,20 +2302,18 @@ function _printNewMoveDetailsOrCancelText(): void {
   }
 }
 
-/** 1:1 décomp `SetNewMoveTypeIcon` (:3866). newMove==MOVE_NONE (notre flux)
- *  → icône type "nouveau move" masquée (jamais créée) = no-op honnête. */
+/** 1:1 décomp `SetNewMoveTypeIcon` (:3866) — sprite type persistant index 4
+ *  (SPRITE_ARR_ID_TYPE + 4). newMove==MOVE_NONE → slot 4 invisible. */
 function _setNewMoveTypeIcon(): void {
-  if (!sMon.newMove) return;            // SetSpriteInvisibility(TYPE+4, TRUE)
-  // (branche newMove != NONE = contexte apprentissage de move, hors flux
-  // party→RÉSUME ; conservée 1:1 mais inatteignable ici.)
+  if (!sMon.newMove) { _setTypeSpriteInvisible(4, true); return; }  // 1:1 :3870
   const md = getMove(sMon.newMove);
   if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES) {
     const tid = TYPE_ID[md?.type ?? ''] ?? 0;
-    _placeTypeSprite(tid, 85, 96);
+    _setTypeSpritePosAndPal(tid, 85, 96, 4);                         // 1:1 :3875
   } else {
     const cm = getContestMove(sMon.newMove);
     const cat = CONTEST_CATEGORY_ID[cm?.contestCategory ?? ''] ?? 0;
-    _placeTypeSprite(NUMBER_OF_MON_TYPES + cat, 85, 96);
+    _setTypeSpritePosAndPal(NUMBER_OF_MON_TYPES + cat, 85, 96, 4);   // 1:1 :3877
   }
 }
 
@@ -2274,11 +2337,10 @@ function _swapMovesNamesPP(i1: number, i2: number): void {
   _printMoveNameAndPP(i2);
 }
 
-/** 1:1 décomp `SwapMovesTypeSprites` (:3881). Notre modèle détruit/recrée les
- *  sprites type à chaque _setTypeIcons → après swap des données summary, on
- *  re-place les 4 icônes = résultat visuel identique (animNum/pal swappés). */
+/** 1:1 décomp `SwapMovesTypeSprites` (:3881). Sprites type PERSISTANTS :
+ *  après swap des données summary, on RE-POINTE les 4 icônes (= résultat
+ *  visuel identique au swap d'animNum/pal du décomp). PAS de destroy. */
 function _swapMovesTypeSprites(_i1: number, _i2: number): void {
-  _destroyTypeSprites();
   if (sMon.currPageIndex === PSS_PAGE_BATTLE_MOVES) _setMoveTypeIcons();
   else _setContestMoveTypeIcons();
 }
@@ -2621,7 +2683,9 @@ export function CB2_InitSummaryScreen(): void {
     case 15:
       _putPageWindowTilemaps(sMon.currPageIndex);
       rt.gMain.state++; break;
-    case 16: rt.gMain.state++; break;
+    case 16:
+      _createMoveTypeIcons();   // 1:1 décomp case 16 :1250 — sprites type PERSISTANTS
+      rt.gMain.state++; break;
     case 17:
       _createMonSprite();
       rt.gMain.state++; break;
