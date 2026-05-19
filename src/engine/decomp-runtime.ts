@@ -1331,7 +1331,29 @@ export class DecompRuntime {
     // diff = -32 = centerToCornerVecX pour shape=square size=64x64.
     const ctcv = CalcCenterToCornerVec(cfg.shape, cfg.size, (cfg.affineMode ?? 0));
 
-    const spriteId = this.nextSpriteId++;
+    // 1:1 décomp src/sprite.c CreateSprite : gSprites = tableau fixe
+    // MAX_SPRITES(64) ; alloue le 1er slot inUse==FALSE (réutilise les
+    // sprites détruits), retourne MAX_SPRITES si les 64 sont pris.
+    // AVANT : nextSpriteId++ MONOTONE → id≥64 (1) collisionne le sentinel
+    // d'échec MAX_SPRITES=64 chez les appelants `!= MAX_SPRITES` (icône
+    // sac orpheline à oam(-16,-16), x2/y2 jamais posés, jamais détruite)
+    // (2) fuite gSprites non bornée. = 4e instance du pattern allocateur-
+    // monotone-sans-reuse (cf. palette/tuiles/OAM déjà corrigés).
+    let spriteId = -1;
+    for (let i = 0; i < 64; i++) {
+      const ex = this.gSprites.get(i);
+      if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+    }
+    if (spriteId === -1) {
+      // 64 slots inUse → échec 1:1 (return MAX_SPRITES). Libère l'OAM réservé.
+      this.gba.oam[oamIndex].visible = false;
+      if (!this._oamExhaustedWarned) {
+        console.warn('[DecompRuntime] gSprites (64) saturé — CreateSprite=MAX_SPRITES');
+        this._oamExhaustedWarned = true;
+      }
+      return { spriteId: 64 /* MAX_SPRITES */, oamIndex: -1 };
+    }
+    if (spriteId >= this.nextSpriteId) this.nextSpriteId = spriteId + 1;
     const sprite: DecompSprite = {
       oamIndex, data: new Int16Array(16) as unknown as number[], invisible: false,
       inUse: true,
