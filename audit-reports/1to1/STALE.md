@@ -1,6 +1,6 @@
 # STALE — citations décomp périmées / hors-symbole
 
-Généré : 2026-05-19T14:11:23.599Z
+Généré : 2026-05-19T14:24:57.505Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -33,10 +33,10 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `field_player_avatar.c` cité 29× (ex. src/engine/field-effect-arrow.ts:10, src/engine/field-effect-arrow.ts:302, src/engine/field-effect-arrow.ts:310)
 - `string_util.c` cité 28× (ex. src/engine/decomp-bridge.ts:843, src/engine/decomp-bridge.ts:1220, src/engine/decomp-bridge.ts:1222)
 - `start_menu.c` cité 28× (ex. src/engine/load_save.ts:214, src/engine/load_save.ts:295, src/engine/load_save.ts:316)
+- `strings.c` cité 27× (ex. src/engine/bag-menu.ts:579, src/engine/bag-menu.ts:580, src/engine/bag-menu.ts:581)
 - `metatile_behavior.c` cité 27× (ex. src/engine/decomp-bridge.ts:3026, src/engine/field-effect-arrow.ts:279, src/engine/field-effect-arrow.ts:286)
 - `pokemon_animation.c` cité 26× (ex. src/engine/decomp-globals.ts:2321, src/engine/mon-summary-anim.ts:3, src/engine/mon-summary-anim.ts:123)
 - `rtc.c` cité 26× (ex. src/engine/rtc.ts:2, src/engine/rtc.ts:16, src/engine/rtc.ts:31)
-- `strings.c` cité 24× (ex. src/engine/bag-menu.ts:559, src/engine/bag-screen.ts:80, src/engine/battle/battle-string-decoder.ts:451)
 - `battle_ai_script_commands.c` cité 24× (ex. src/engine/battle/ai/ai-script-commands.ts:2, src/engine/battle/ai/ai-script-commands.ts:6, src/engine/battle/ai/ai-script-commands.ts:204)
 - `trainer_card.c` cité 23× (ex. src/engine/trainer-card-screen.ts:2, src/engine/trainer-card-screen.ts:29, src/engine/trainer-card-screen.ts:60)
 - `m4a.c` cité 22× (ex. src/engine/decomp-globals.ts:815, src/engine/m4a/audio-context.ts:54, src/engine/m4a/cgb-pitch.ts:2)
@@ -46,6 +46,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `battle_interface.c` cité 20× (ex. src/engine/battle/util.ts:245, src/engine/battle-flow.ts:476, src/engine/battle-flow.ts:485)
 - `battle_bg.c` cité 20× (ex. src/engine/battle-bg.ts:2, src/engine/battle-bg.ts:10, src/engine/battle-bg.ts:11)
 - `field_screen_effect.c` cité 19× (ex. src/engine/decomp-globals.ts:728, src/engine/decomp-globals.ts:742, src/engine/flash-mask.ts:3)
+- `item_menu_icons.c` cité 17× (ex. src/engine/bag-menu.ts:711, src/engine/bag-menu.ts:714, src/engine/bag-menu.ts:717)
 - `battle_controllers.c` cité 17× (ex. src/engine/battle/battle-controllers.ts:5, src/engine/battle/battle-controllers.ts:87, src/engine/battle/battle-controllers.ts:169)
 - `text_window.c` cité 17× (ex. src/engine/battle-bg.ts:303, src/engine/battle-bg.ts:398, src/engine/decomp-bridge.ts:1060)
 - `field_control_avatar.c` cité 17× (ex. src/engine/player-avatar.ts:680, src/engine/player-avatar.ts:869, src/engine/player-avatar.ts:877)
@@ -56,7 +57,6 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `event_data.c` cité 14× (ex. src/engine/decomp-bridge.ts:1816, src/engine/decomp-bridge.ts:2230, src/engine/decomp-bridge.ts:2313)
 - `bg.c` cité 14× (ex. src/engine/decomp-bridge.ts:2330, src/engine/decomp-bridge.ts:2332, src/engine/decomp-runtime.ts:764)
 - `sound.c` cité 14× (ex. src/engine/decomp-globals.ts:753, src/engine/decomp-globals.ts:774, src/engine/decomp-globals.ts:833)
-- `item_menu_icons.c` cité 13× (ex. src/engine/bag-screen.ts:153, src/engine/bag-screen.ts:341, src/engine/bag-screen.ts:347)
 - `window.c` cité 13× (ex. src/engine/decomp-bridge.ts:1531, src/engine/decomp-bridge.ts:1541, src/engine/decomp-bridge.ts:1901)
 - `data.c` cité 13× (ex. src/engine/decomp-impls/sprite-affine-extras.ts:4, src/engine/decomp-impls/sprite-affine-extras.ts:8, src/engine/decomp-impls/sprite-affine-extras.ts:56)
 - `battle_transition.c` cité 12× (ex. src/engine/battle-flow.ts:1033, src/engine/battle-flow.ts:1045, src/engine/battle-flow.ts:1056)
@@ -95,6 +95,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `match_call.c` cité 4× (ex. src/engine/decomp-bridge.ts:1863, src/engine/decomp-bridge.ts:2212, src/engine/specials-registry.ts:348)
 - `title_screen.c` cité 4× (ex. src/engine/decomp-globals.ts:1596, src/engine/decomp-globals.ts:1676, src/engine/decomp-globals.ts:2096)
 - `trainer_pokemon_sprites.c` cité 4× (ex. src/engine/main-menu-impl.ts:743, src/engine/main-menu-impl.ts:1004, src/engine/main-menu-impl.ts:1030)
+- `item_icon.c` cité 3× (ex. src/engine/bag-menu.ts:718, src/engine/bag-screen.ts:864, src/engine/decomp-bridge.ts:2189)
 - `battle_pyramid.c` cité 3× (ex. src/engine/battle/try-run-from-battle.ts:40, src/engine/battle/try-run-from-battle.ts:47, src/engine/specials-registry.ts:289)
 - `fonts.c` cité 3× (ex. src/engine/bitmap-font.ts:54, src/engine/party-screen.ts:541, src/engine/party-screen.ts:623)
 - `dynamic_placeholder_text_util.c` cité 3× (ex. src/engine/decomp-bridge.ts:858, src/engine/dynamic-placeholder-text-util.ts:3, src/engine/dynamic-placeholder-text-util.ts:27)
@@ -107,7 +108,6 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `fldeff_flash.c` cité 3× (ex. src/engine/flash-mask.ts:2, src/engine/flash-mask.ts:8, src/engine/gba/phaser-bridge.ts:55)
 - `bike.c` cité 3× (ex. src/engine/metatile-behavior-helpers.ts:252, src/engine/metatile-behavior-helpers.ts:270, src/engine/metatile-behavior-helpers.ts:278)
 - `script_menu.c` cité 3× (ex. src/engine/script-opcodes.ts:682, src/engine/script-opcodes.ts:723, src/engine/script-opcodes.ts:911)
-- `item_icon.c` cité 2× (ex. src/engine/bag-screen.ts:864, src/engine/decomp-bridge.ts:2189)
 - `pokeblock.c` cité 2× (ex. src/engine/battle/data/flavor-compat.ts:3, src/engine/battle/data/flavor-compat.ts:9)
 - `contest_painting.c` cité 2× (ex. src/engine/decomp-bridge.ts:1500, src/engine/decomp-bridge.ts:1973)
 - `gpu_regs.c` cité 2× (ex. src/engine/decomp-bridge.ts:1516, src/engine/decomp-bridge.ts:1518)
@@ -120,7 +120,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `trainer_see.c` cité 2× (ex. src/engine/script-opcodes.ts:2959, src/engine/script-opcodes.ts:3298)
 - `player_pc.c` cité 2× (ex. src/engine/specials-registry.ts:240, src/engine/specials-registry.ts:244)
 - `wallclock.c` cité 2× (ex. src/engine/wallclock-flow.ts:9, src/engine/wallclock-flow.ts:290)
-- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:366)
+- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:375)
 - `battle_util2.c` cité 1× (ex. src/engine/battle/cmd-niveau-1.ts:713)
 - `battle_gfx_sfx_util.c` cité 1× (ex. src/engine/battle-healthbox.ts:28)
 - `contest_util.c` cité 1× (ex. src/engine/decomp-bridge.ts:776)

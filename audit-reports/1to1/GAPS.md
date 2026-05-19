@@ -1,6 +1,6 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-05-19T14:11:23.599Z
+Généré : 2026-05-19T14:24:57.505Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -444,10 +444,9 @@ Couverture fonctions : **6/140 (4%)** — 134 GAPS · 2 citation(s) fichier-nive
 
 ## `src/item_menu.c`
 
-Couverture fonctions : **39/122 (32%)** — 83 GAPS · 19 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **41/122 (34%)** — 81 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
 
 - `CreateBagInputHandlerTask` @ L847-856
-- `BagMenu_PrintCursor` @ L1016-1020
 - `BagDestroyPocketScrollArrowPair` @ L1044-1053
 - `CreatePocketSwitchArrowPair` @ L1054-1059
 - `DestroyPocketSwitchArrowPair` @ L1060-1068
@@ -518,7 +517,6 @@ Couverture fonctions : **39/122 (32%)** — 83 GAPS · 19 citation(s) fichier-ni
 - `CB2_QuizLadyExitBagMenu` @ L2415-2420
 - `PrintPocketNames` @ L2421-2441
 - `CopyPocketNameToWindow` @ L2442-2456
-- `BagMenu_Print` @ L2476-2480
 - `BagMenu_GetWindowId` @ L2481-2485
 - `BagMenu_AddWindow` @ L2486-2497
 - `BagMenu_RemoveWindow` @ L2498-2510
@@ -611,7 +609,7 @@ Couverture fonctions : **0/74 (0%)** — 74 GAPS · 1 citation(s) fichier-niveau
 
 ## `src/item.c`
 
-Couverture fonctions : **10/52 (19%)** — 42 GAPS · 10 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **10/52 (19%)** — 42 GAPS · 9 citation(s) fichier-niveau (sans `:ligne`)
 
 - `GetBagItemQuantity` @ L26-30
 - `SetBagItemQuantity` @ L31-35
