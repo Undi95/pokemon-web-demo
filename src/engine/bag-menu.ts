@@ -54,7 +54,7 @@ import {
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
-  FillBgTilemapBufferRect_Palette0, CopyWindowToVram,
+  FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -259,6 +259,7 @@ interface BagAssets {
   palMale: Uint16Array;      // gBagScreenMale_Pal   (menu_male.pal)
   palFemale: Uint16Array;    // gBagScreenFemale_Pal (menu_female.pal)
   stdMenuPal: Uint16Array;   // gStandardMenuPalette (interface/std_menu.pal)
+  hmIcon: Uint8Array;        // gBagMenuHMIcon_Gfx (bag/hm.4bpp.bin) — graphique 16×16 4bpp "CS" pour les HM/CS de la liste sac (BlitBitmapToWindow, item_menu.c:971)
 }
 let _bagAssets: BagAssets | null = null;
 let _bagAssetsLoading: Promise<BagAssets> | null = null;
@@ -289,7 +290,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // AddItemIconSprite (nav sync 1:1) lise en mémoire (sinon icône absente).
     await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
-           scrollGfx, redPal] = await Promise.all([
+           scrollGfx, redPal, hmIcon] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
@@ -300,6 +301,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadGbaPal('/decomp/em/interface/menu_info3.pal'),      // gMenuInfoElements3_Pal
       loadTileBin('/decomp/em/interface/scroll_indicator.4bpp.bin', 4), // sScrollIndicator_Gfx
       loadGbaPal('/decomp/em/interface/red.pal'),             // sRedInterface_Pal
+      loadTileBin('/decomp/em/bag/hm.4bpp.bin', 4),           // gBagMenuHMIcon_Gfx (badge "CS" 16×16)
     ]);
     // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
     // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
@@ -310,7 +312,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // AddScrollIndicatorArrowPair (list-menu.ts) résout via getAsset.
     assetCache.set('sScrollIndicator_Gfx', scrollGfx);
     assetCache.set('sRedInterface_Pal', redPal);
-    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal };
+    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon };
     return _bagAssets;
   })();
   return _bagAssetsLoading;
@@ -793,13 +795,14 @@ function ShakeBagSprite(): void {
 // AddBagItemIconSprite / RemoveBagItemIconSprite : PORTÉS 1:1 Phase 2 →
 // importés de bag-menu-icons.ts (item_menu_icons.c) ↑. Call-sites 1:1
 // inchangés (itemId numérique ; traduction itemKey confinée bag-menu-icons).
-/** DÉFÉRÉ — `BlitBitmapToWindow(windowId, gBagMenuHMIcon_Gfx, 8, y-1, 16, 16)`
- *  (item_menu.c:970-971) : asset gfx gBagMenuHMIcon_Gfx non extrait (chaînon
- *  extraction graphics/ ultérieur). */
-function _bagBlitHMIcon(_windowId: number, _y: number): void {
-  /* DÉFÉRÉ Phase 3 — blit gBagMenuHMIcon_Gfx (asset gfx HM non extrait,
-     chaînon extraction graphics/ ultérieur). No-op honnête (icône CT/CS
-     manquante = cosmétique poche TMHM, non bloquant ouvrable). */
+/** 1:1 décomp `BlitBitmapToWindow(windowId, gBagMenuHMIcon_Gfx, 8, y-1, 16, 16)`
+ *  (item_menu.c:970-971). gBagMenuHMIcon_Gfx = `graphics/bag/hm.png` .4bpp
+ *  (extrait `public/decomp/em/bag/hm.4bpp.bin`, 128 o = 16×16 4bpp) —
+ *  c'EST le glyphe "CS" du sac HM (pas un char, un BITMAP — root cause
+ *  trouvée : le user voyait "CS" sur la ROM = ce blit, qu'on n'exécutait
+ *  pas en Phase 1). Préchargé _bagAssets.hmIcon. */
+function _bagBlitHMIcon(windowId: number, y: number): void {
+  if (_bagAssets) BlitBitmapToWindow(windowId, _bagAssets.hmIcon, 8, y - 1, 16, 16);
 }
 /** DÉFÉRÉ — `if (gSaveBlock1Ptr->registeredItem != ITEM_NONE &&
  *  == itemId) BlitBitmapToWindow(windowId, sRegisteredSelect_Gfx, 96, y-1,
