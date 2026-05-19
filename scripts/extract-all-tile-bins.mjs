@@ -131,6 +131,24 @@ const targets = [
   }
 }
 
+// items/icons/*.png : 1:1 décomp `gItemIcon_X[] = INCGFX_U32("graphics/items/
+// icons/<slug>.png", ".4bpp.lz")` (src/data/graphics/items.h). Chaque icône
+// objet = 24×24 4bpp = 9 tuiles 3×3 = 0x120 octets (= gItemIconDecompression
+// Buffer Alloc(0x120), item_icon.c:58). On extrait la FORME DÉCOMP (tiles
+// 4bpp) — 1:1-sém de LZDecompressWram (extraction = la décompression ; donnée
+// nette identique = tileset modifiable rom-hacker). PAS de .gbapal ici : le
+// décomp utilise une palette SÉPARÉE par item (gItemIconPalette_X), déjà
+// extraite forme décomp par scripts/extract-item-icon-map.mjs (→ icon_
+// palettes/*.pal). Glob auto = les 218 icônes 1:1 graphics/items/icons.
+{
+  const iconDir = `${PUBLIC}/items/icons`;
+  if (fs.existsSync(iconDir)) {
+    for (const f of fs.readdirSync(iconDir)) {
+      if (f.endsWith('.png')) targets.push({ src: `${iconDir}/${f}`, bpp: 4 });
+    }
+  }
+}
+
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed
 // .bin files). Le décomp ROM utilise `.bin.lz` LZ77-compressed, mais nos source
 // files sont uncompressed → direct VRAM write OK.
