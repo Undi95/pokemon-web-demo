@@ -1,6 +1,6 @@
 # SMELLS 1:1 — filet anti-régression (Outil C)
 
-Généré : 2026-05-19T12:54:12.180Z
+Généré : 2026-05-19T13:18:33.208Z
 
 > ⚠️ Statique = filet régression. **NE PROUVE PAS le comportement.**
 >

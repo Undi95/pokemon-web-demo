@@ -1,6 +1,6 @@
 # STALE — citations décomp périmées / hors-symbole
 
-Généré : 2026-05-19T12:54:11.670Z
+Généré : 2026-05-19T13:09:53.191Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -21,8 +21,8 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `main_menu.c` cité 72× (ex. src/engine/decomp-bridge.ts:2216, src/engine/decomp-globals.ts:2202, src/engine/decomp-globals.ts:2302)
 - `battle_main.c` cité 69× (ex. src/engine/battle/ai/ai-script-commands.ts:7, src/engine/battle/ai/ai-script-commands.ts:296, src/engine/battle/battle-devtools.ts:754)
 - `sprite.c` cité 66× (ex. src/engine/bag-screen.ts:1304, src/engine/battle-flow.ts:150, src/engine/decomp-bridge.ts:1795)
+- `menu.c` cité 60× (ex. src/engine/bag-menu.ts:482, src/engine/bitmap-font.ts:177, src/engine/decomp-bridge.ts:2255)
 - `overworld.c` cité 59× (ex. src/engine/battle/cmd-niveau-32.ts:807, src/engine/boot-mode.ts:388, src/engine/decomp-bridge.ts:983)
-- `menu.c` cité 59× (ex. src/engine/bitmap-font.ts:177, src/engine/decomp-bridge.ts:2255, src/engine/decomp-globals.ts:2296)
 - `naming_screen.c` cité 49× (ex. src/engine/decomp-runtime.ts:341, src/engine/gba-text-printer.ts:468, src/engine/gba-text-printer.ts:709)
 - `field_camera.c` cité 47× (ex. src/engine/field-camera.ts:2, src/engine/field-camera.ts:5, src/engine/field-camera.ts:64)
 - `battle_message.c` cité 38× (ex. src/engine/battle/battle-string-decoder.ts:3, src/engine/battle/battle-string-decoder.ts:21, src/engine/battle/battle-string-decoder.ts:114)
@@ -120,7 +120,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `trainer_see.c` cité 2× (ex. src/engine/script-opcodes.ts:2959, src/engine/script-opcodes.ts:3298)
 - `player_pc.c` cité 2× (ex. src/engine/specials-registry.ts:240, src/engine/specials-registry.ts:244)
 - `wallclock.c` cité 2× (ex. src/engine/wallclock-flow.ts:9, src/engine/wallclock-flow.ts:290)
-- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:161)
+- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:330)
 - `battle_util2.c` cité 1× (ex. src/engine/battle/cmd-niveau-1.ts:713)
 - `battle_gfx_sfx_util.c` cité 1× (ex. src/engine/battle-healthbox.ts:28)
 - `contest_util.c` cité 1× (ex. src/engine/decomp-bridge.ts:776)

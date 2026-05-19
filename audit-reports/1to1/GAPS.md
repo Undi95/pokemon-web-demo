@@ -1,6 +1,6 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-05-19T12:54:11.670Z
+Généré : 2026-05-19T13:09:53.191Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -445,7 +445,7 @@ Couverture fonctions : **6/140 (4%)** — 134 GAPS · 2 citation(s) fichier-nive
 
 ## `src/item_menu.c`
 
-Couverture fonctions : **30/122 (25%)** — 92 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **31/122 (25%)** — 91 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
 
 - `CreateBagInputHandlerTask` @ L847-856
 - `AllocateBagItemListBuffers` @ L857-862
@@ -515,7 +515,6 @@ Couverture fonctions : **30/122 (25%)** — 92 GAPS · 18 citation(s) fichier-ni
 - `Task_ChooseHowManyToDeposit` @ L2223-2247
 - `TryDepositItem` @ L2248-2275
 - `WaitDepositErrorMessage` @ L2276-2288
-- `IsWallysBag` @ L2289-2295
 - `PrepareBagForWallyTutorial` @ L2296-2313
 - `RestoreBagAfterWallyTutorial` @ L2314-2328
 - `DoWallyTutorialBagMenu` @ L2329-2339
