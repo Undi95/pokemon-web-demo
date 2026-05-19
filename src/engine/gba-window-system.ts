@@ -786,6 +786,88 @@ export function CopyRectToBgTilemapBuffer(
   }
 }
 
+/** 1:1 décomp `void CopyTileMapEntry(const u16 *src, u16 *dest, s32 palette1,
+ *  s32 tileOffset, s32 palette2)` (bg.c:1169-1190). Combine une entry tilemap
+ *  source (tile|pal) avec un tileOffset + remap palette selon `palette1` :
+ *    0..15 → (src+off)&0xFFF | ((palette1+palette2)<<12)
+ *    16    → garde bits 10-15 de dest, src&0x3FF, +palette2<<12
+ *    17(def)→ src+off+(palette2<<12)  (= copie verbatim si off=0,pal2=0). */
+export function CopyTileMapEntry(
+  srcVal: number, dest: Uint16Array, destIdx: number,
+  palette1: number, tileOffset: number, palette2: number,
+): void {
+  let v: number;
+  if (palette1 >= 0 && palette1 <= 15) {
+    v = ((srcVal + tileOffset) & 0xFFF) + ((palette1 + palette2) << 12);
+  } else if (palette1 === 16) {
+    v = dest[destIdx];
+    v &= 0xFC00;
+    v += palette2 << 12;
+    v |= (srcVal + tileOffset) & 0x3FF;
+  } else { // default / 17
+    v = srcVal + tileOffset + (palette2 << 12);
+  }
+  dest[destIdx] = v & 0xFFFF;
+}
+
+/** 1:1 décomp `void CopyToBufferFromBgTilemap(u8 bgId, u16 *dest, u8 left,
+ *  u8 top, u8 width, u8 height)` (menu.c:1866-1877) : copie un rect width×height
+ *  de la BG tilemap (entries tile|pal) vers `dest` (row-major width×height).
+ *  Décomp indexe `src[(i+top)*32 + j+left]` (stride 32 hardcodé) — les BG party
+ *  sont screenSize=0 (32 large) donc identique à notre tileMapIndex(.,.,0). */
+export function CopyToBufferFromBgTilemap(
+  bgId: number, dest: Uint16Array,
+  left: number, top: number, width: number, height: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const src = rt.gba.bg(bgId as 0 | 1 | 2 | 3).tilemap;
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      dest[i * width + j] = src[(i + top) * 32 + (j + left)];
+    }
+  }
+}
+
+/** 1:1 décomp `void CopyRectToBgTilemapBufferRect(u8 bg, const void *src,
+ *  u8 srcX, u8 srcY, u8 srcWidth, u8 srcHeight, u8 destX, u8 destY,
+ *  u8 rectWidth, u8 rectHeight, u8 palette1, s16 tileOffset, s16 palette2)`
+ *  (bg.c:951-993), branche BG_TYPE_NORMAL (les BG party sont NORMAL). Copie
+ *  un sous-rect du buffer `src` (srcWidth-strided) vers la BG tilemap à
+ *  (destX,destY), via CopyTileMapEntry. srcPtr avance d'1 u16/entry +
+ *  (srcWidth-rectWidth) en fin de ligne (1:1 décomp ; le `*2` C = bytes→u16). */
+export function CopyRectToBgTilemapBufferRect(
+  bg: number, src: Uint16Array,
+  srcX: number, srcY: number, srcWidth: number, _srcHeight: number,
+  destX: number, destY: number, rectWidth: number, rectHeight: number,
+  palette1: number, tileOffset: number, palette2: number,
+): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const gbaBg = rt.gba.bg(bg as 0 | 1 | 2 | 3);
+  const tilemap = gbaBg.tilemap;
+  const screenSize = gbaBg.config.screenSize;
+  let srcPtr = srcY * srcWidth + srcX;
+  for (let i = destY; i < destY + rectHeight; i++) {
+    for (let j = destX; j < destX + rectWidth; j++) {
+      const index = tileMapIndex(j, i, screenSize);
+      if (index >= 0 && index < tilemap.length) {
+        CopyTileMapEntry(src[srcPtr], tilemap, index, palette1, tileOffset, palette2);
+      }
+      srcPtr++;
+    }
+    srcPtr += srcWidth - rectWidth;
+  }
+}
+
+/** 1:1 décomp `ScheduleBgCopyTilemapToVram(u8 bg)` (bg.c) : planifie une copie
+ *  async tilemap→VRAM. Notre compositor lit `bg.tilemap` directement chaque
+ *  frame (cf. CopyBgTilemapBufferToVram no-op) → modifs auto-prises = no-op
+ *  (comportement net 1:1). */
+export function ScheduleBgCopyTilemapToVram(_bg: number): void {
+  /* no-op : compositor reads tilemap each frame */
+}
+
 // ─── Accesseur interne ───────────────────────────────────────────────────────
 
 export function getWindowById(windowId: number): Window | null {

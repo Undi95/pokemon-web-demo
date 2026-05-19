@@ -34,10 +34,14 @@
 
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect,
-  PutWindowTilemap, CopyWindowToVram,
+  PutWindowTilemap, CopyWindowToVram, ClearWindowTilemap,
   BlitBitmapToWindow,
   DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame,
   RemoveWindow, ShowBg, HideBg,
+  GetWindowAttribute, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP,
+  WINDOW_WIDTH, WINDOW_HEIGHT,
+  CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
+  FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
@@ -220,7 +224,7 @@ interface PartyAssets {
 }
 
 let _isOpen = false;
-let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' = 'idle';
+let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' = 'idle';
 /** Action menu state : sub-cursor pos + spawned window id. 1:1 décomp
  *  sPartyMenuInternal->actions / numActions / windowId[0]. */
 let _actionCursor = 0;
@@ -269,6 +273,17 @@ let _iconMode: number[] = [0, 0, 0, 0, 0, 0];
  *  Valeurs : 0..5 (mons), 6 = Confirm (unused single layout), 7 = Cancel button. */
 let _slotId = 0;
 let _lastSelectedSlot = 0;
+
+/** 1:1 décomp `gPartyMenu.action` (party_menu.h) — sous-ensemble utilisé ici.
+ *  PARTY_ACTION_CHOOSE_MON = défaut ; PARTY_ACTION_SWITCH = on choisit le
+ *  2e mon pour la permutation (option ORDRE) ; SWITCHING = anim slide en
+ *  cours (incrément 2). */
+const PARTY_ACTION_CHOOSE_MON = 0;   // 1:1 constants/party_menu.h:68
+const PARTY_ACTION_SWITCH = 8;       // 1:1 constants/party_menu.h:76 (PAS 4 = ABILITY_PREVENTS)
+const PARTY_ACTION_SWITCHING = 9;    // 1:1 constants/party_menu.h:77 (anim slide en cours)
+let _partyAction = PARTY_ACTION_CHOOSE_MON;
+/** 1:1 décomp `gPartyMenu.slotId2` (= 1er mon mémorisé pour la permutation). */
+let _slotId2 = 0;
 let _graphicsReady = false;
 let _graphicsLoading = false;
 let _windowsReady = false;
@@ -854,6 +869,12 @@ function _drawMsg(): void {
   if (_phase === 'action_menu') {
     msg = getString('gText_DoWhatWithPokemon');  // "Que faire avec ce PKMN?"
     template = DO_WHAT_WITH_MON_WINDOW_TEMPLATE;
+  } else if (_partyAction === PARTY_ACTION_SWITCH) {
+    // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_MOVE_TO_WHERE)
+    // (party_menu.c:2803 ; party_menu.h:603 → gText_MoveToWhere ;
+    //  strings.c:431 = "Le mettre où?"). Même famille fenêtre que CHOOSE_MON.
+    msg = getString('gText_MoveToWhere');
+    template = MSG_WINDOW_TEMPLATE;
   } else {
     msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
     template = MSG_WINDOW_TEMPLATE;
@@ -1355,6 +1376,290 @@ function _closeActionMenu(): void {
   _drawMsg();
 }
 
+// ─── Option ORDRE : permutation de 2 mons (1:1 décomp party_menu.c) ──────────
+// INCRÉMENT 1 : couche data/SE/flux 1:1 (CursorCb_Switch + SwitchSelectedMons
+// + SwitchPartyMon + FinishTwoMonAction). L'anim slide (Task_SlideSelectedSlots
+// *) = INCRÉMENT 2 : ici le swap est appliqué immédiatement (état final
+// IDENTIQUE au décomp, sans la transition glissée). PAS un demi-port : la
+// décomp sépare elle-même SwitchPartyMon (data) des Task_Slide* (visuel).
+
+/** 1:1 décomp `CursorCb_Switch` (party_menu.c:2797-2807). SE_SELECT déjà
+ *  joué au press A dans _handleActionMenuInput (= PlaySE 1:1). */
+function _cursorCbSwitch(): void {
+  _partyAction = PARTY_ACTION_SWITCH;
+  // 1:1 PartyMenuRemoveWindow(selection) + PartyMenuRemoveWindow(doWhat) :
+  // notre action window (+ msg window via _drawMsg qui retire l'ancien).
+  if (_actionWindowId >= 0) {
+    ClearStdWindowAndFrame(_actionWindowId, false);
+    CopyWindowToVram(_actionWindowId, 3);
+    RemoveWindow(_actionWindowId);
+    _actionWindowId = -1;
+  }
+  _actionList = [];
+  _actionCursor = 0;
+  _phase = 'open';
+  AnimatePartySlot(_slotId, 1);          // 1:1 :2804
+  _slotId2 = _slotId;                    // 1:1 :2805 (1er mon mémorisé)
+  _drawMsg();                            // 1:1 DisplayPartyMenuStdMessage(MOVE_TO_WHERE)
+}
+
+/** 1:1 décomp `SwitchMenuBoxSprites` (party_menu.c:2995-3014) : échange les
+ *  2 ids sprite ET leurs x/y/x2/y2 (les sprites suivent visuellement le swap
+ *  de données). Adapté à notre modèle 2-sprites/box (pokeball + icône) ;
+ *  item/statut sont rendus dans la window slot (re-dessinés par _drawSlot). */
+function _switchMenuBoxSprites(arr: number[], i: number, j: number): void {
+  const rt = getRuntime();
+  const a = arr[i], b = arr[j];
+  arr[i] = b; arr[j] = a;
+  if (!rt) return;
+  const sa = rt.gSprites.get(arr[i]);   // = ex-b
+  const sb = rt.gSprites.get(arr[j]);   // = ex-a
+  if (!sa || !sb) return;
+  const x1 = sa.x, y1 = sa.y, x2 = sa.x2, y2 = sa.y2;
+  sa.x = sb.x; sa.y = sb.y; sa.x2 = sb.x2; sa.y2 = sb.y2;
+  sb.x = x1; sb.y = y1; sb.x2 = x2; sb.y2 = y2;
+}
+
+/** 1:1-NET décomp `SwitchMenuBoxSprites(&menuBoxes[0]->monSpriteId,
+ *  &menuBoxes[1]->monSpriteId)` (party_menu.c:3033). Décomp : le sprite
+ *  d'icône POSSÈDE son graphique (CreateMonIcon alloue ses propres tiles) →
+ *  swapper les ids déplace l'icône AVEC le mon. NOTRE modèle : l'icône est
+ *  SLOT-PINNED — `_updateMonIconFrame(slot)` force `oam.tileId =
+ *  slot*ICON_TILES_PER_SLOT` CHAQUE frame (party-screen.ts:1182-1183) et le
+ *  graphique objVram + la palette obj sont chargés à un offset indexé par
+ *  SLOT (:980/:992). Le swap d'ids sprite ne déplace donc RIEN (re-pinné au
+ *  slot l'instant d'après). L'équivalent NET du swap décomp = échanger
+ *  l'état SLOT-OWNED de l'icône : tiles objVram du slot + palette obj +
+ *  compteurs d'anim. (Bug A/B 2026-05-19 : sans ça "le sprite change pas,
+ *  la palette si" — l'icône restait figée au slot.) */
+function _switchSlotIconGraphics(s1: number, s2: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1) Tiles objVram : ICON_TILES_PER_SLOT*32 = 1024 octets / slot.
+  const BYTES_PER_SLOT = ICON_TILES_PER_SLOT * 32;
+  const off1 = (ICON_OBJ_TILE_OFFSET / 32 + s1 * ICON_TILES_PER_SLOT) * 32;
+  const off2 = (ICON_OBJ_TILE_OFFSET / 32 + s2 * ICON_TILES_PER_SLOT) * 32;
+  const vram = rt.gba.objVram;
+  const tmp1 = new Uint8Array(BYTES_PER_SLOT);
+  const tmp2 = new Uint8Array(BYTES_PER_SLOT);
+  for (let k = 0; k < BYTES_PER_SLOT; k++) { tmp1[k] = vram[off1 + k]; tmp2[k] = vram[off2 + k]; }
+  for (let k = 0; k < BYTES_PER_SLOT; k++) { vram[off1 + k] = tmp2[k]; vram[off2 + k] = tmp1[k]; }
+  // 2) Palette obj du slot (bank ICON_OBJ_PAL_BASE+slot, 16 entries u16 @
+  //    gPlttBuffer[256 + bank*16]). Swap Unfaded ET Faded (1:1 LoadPalette).
+  const p1 = 256 + (ICON_OBJ_PAL_BASE + s1) * 16;
+  const p2 = 256 + (ICON_OBJ_PAL_BASE + s2) * 16;
+  for (const buf of [rt.gPlttBufferUnfaded, rt.gPlttBufferFaded]) {
+    for (let i = 0; i < 16; i++) {
+      const a = buf.get(p1 + i);
+      buf.set(p1 + i, buf.get(p2 + i));
+      buf.set(p2 + i, a);
+    }
+  }
+  // 3) Compteurs d'anim idle du slot (suivent le mon → frame cohérente).
+  const swap = (arr: number[]) => { const t = arr[s1]; arr[s1] = arr[s2]; arr[s2] = t; };
+  swap(_iconAnimDelay); swap(_iconAnimCmdIdx);
+}
+
+/** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3035) : swap mon1 ↔ mon2
+ *  dans gPlayerParty (= gameState.party) + SwitchMenuBoxSprites (pokeball +
+ *  icône ; item/statut = window, re-dessinés). */
+function _switchPartyMon(): void {
+  const party = gameState.party as PokemonInstance[];
+  const tmp = party[_slotId];
+  party[_slotId] = party[_slotId2];
+  party[_slotId2] = tmp;
+  _switchMenuBoxSprites(_pokeballOamBySlot, _slotId, _slotId2);  // 1:1 :3031
+  // ROOT CAUSE (bug A/B 2026-05-19) : la décomp fait
+  // `SwitchMenuBoxSprites(&menuBoxes[0]->monSpriteId, &menuBoxes[1]->
+  // monSpriteId)` (party_menu.c:3033) car là le sprite POSSÈDE son
+  // graphique. Chez NOUS l'icône est SLOT-PINNED : `_setIconFrame(slot)`
+  // (party-screen.ts:1177-1184) force `oam.tileId = slot*ICON_TILES_PER_
+  // SLOT` à CHAQUE frame pour `_iconOamBySlot[slot]` → l'icône affichée
+  // à un slot = TOUJOURS objVram[région slot], quel que soit le sprite
+  // qui y est. Donc swapper les ids sprite (`_switchMenuBoxSprites(
+  // _iconOamBySlot,…)`) ne déplace PAS le graphique (re-pinné au slot
+  // l'instant d'après) ET corrompt les positions par slot. L'équivalent
+  // 1:1-NET = swapper UNIQUEMENT l'état slot-owned (tiles objVram +
+  // palette obj + compteurs anim), SANS toucher aux ids/positions sprite.
+  _switchSlotIconGraphics(_slotId, _slotId2);
+  // _iconMode (slot sélectionné) est ré-appliqué par AnimatePartySlot
+  // dans FinishTwoMonAction ; _iconAnimNum reste 0 en party (sAnim_0,
+  // party_menu.c ne StartSpriteAnim jamais le monSpriteId).
+}
+
+/** 1:1 décomp `FinishTwoMonAction` (party_menu.c:3038-3047). */
+function _finishTwoMonAction(): void {
+  _partyAction = PARTY_ACTION_CHOOSE_MON;     // 1:1 :3041
+  AnimatePartySlot(_slotId, 0);               // 1:1 :3042
+  _slotId = _slotId2;                         // 1:1 :3043
+  AnimatePartySlot(_slotId2, 1);              // 1:1 :3044
+  _phase = 'open';
+  _drawMsg();                                 // 1:1 DisplayPartyMenuStdMessage(CHOOSE_MON)
+}
+
+// ─── INCRÉMENT 2 : anim slide 1:1 (party_menu.c:2809-2993) ──────────────────
+// Le décomp ne swappe PAS instantanément : il (1) capture la région BG tilemap
+// des 2 box dans des buffers, (2) ClearWindowTilemap, (3) glisse les box hors
+// écran (tilemap décalé + sprites x2+=dir*8) frame par frame, (4) à mi-course
+// SwitchPartyMon + DisplayPartyPokemonData×2 (= contenu échangé) + re-capture,
+// (5) glisse les box de retour, (6) FinishTwoMonAction. Notre box = window
+// composé dans bg.tilemap (PutWindowTilemap à l'init) → modèle 1:1 net.
+
+// État slide 1:1 décomp `tSlot*` (party_menu.c:2809-2820, données de la task).
+let _sSlot1Buf: Uint16Array | null = null;
+let _sSlot2Buf: Uint16Array | null = null;
+let _t1Left = 0, _t1Top = 0, _t1W = 0, _t1H = 0;
+let _t2Left = 0, _t2Top = 0, _t2W = 0, _t2H = 0;
+let _t1Off = 0, _t2Off = 0, _t1Dir = 0, _t2Dir = 0;
+/** task func courante pendant `_phase==='switching'` (= gTasks[].func du
+ *  décomp qui alterne SwitchSelectedMons→SlideOffscreen→SlideOnscreen). */
+let _slideTaskFn: (() => void) | null = null;
+
+/** 1:1 décomp `DisplayPartyPokemonData` (party_menu.c:872-889) : blitFunc box
+ *  (variante NoHP si œuf, = EFFACE la zone) PUIS les text printers. Notre
+ *  équivalent exact = _drawSlotFrame + _drawSlot (paire documentée _drawAllSlots
+ *  :604). Sans le frame : ancien texte non-effacé + variante œuf périmée. */
+function _displayPartyPokemonData(slot: number): void {
+  _drawSlotFrame(slot);
+  _drawSlot(slot);
+}
+
+/** 1:1 décomp `TryMovePartySlot(x, width, *leftMove, *newX, *newWidth)`
+ *  (party_menu.c:2869-2893) : clippe le rect du slot aux bornes écran [0,31].
+ *  Renvoie null = FALSE (slot entièrement hors écran). */
+function _tryMovePartySlot(x: number, width: number): { leftMove: number; newX: number; newWidth: number } | null {
+  if (x + width < 0) return null;
+  if (x > 31) return null;
+  if (x < 0) return { leftMove: -x, newX: 0, newWidth: width + x };
+  return { leftMove: 0, newX: x, newWidth: (x + width > 31) ? 32 - x : width };
+}
+
+/** 1:1 décomp `MoveAndBufferPartySlot` (party_menu.c:2895-2905) : efface le
+ *  footprint courant (FillBgTilemapBufferRect_Palette0) puis re-stampe le
+ *  buffer capturé à la position suivante (x+dir) via CopyRectToBgTilemapBufferRect
+ *  (palette1=17 = copie verbatim des entries). */
+function _moveAndBufferPartySlot(rectSrc: Uint16Array, x: number, y: number, width: number, height: number, dir: number): void {
+  const r = _tryMovePartySlot(x, width);
+  if (!r) return;
+  FillBgTilemapBufferRect_Palette0(0, 0, r.newX, y, r.newWidth, height);
+  const r2 = _tryMovePartySlot(x + dir, width);
+  if (r2) {
+    CopyRectToBgTilemapBufferRect(0, rectSrc, r2.leftMove, 0, width, height, r2.newX, y, r2.newWidth, height, 17, 0, 0);
+  }
+}
+
+/** 1:1 décomp `MovePartyMenuBoxSprites` (party_menu.c:2907-2913) : décale les
+ *  sprites du box de `offset*8` px (x2). Décomp = 4 sprites (pokeball/item/mon/
+ *  status) ; notre modèle = 2 (pokeball + icône), item/statut sont dans la
+ *  window (slidée via le bloc tilemap) — couverture visuelle 1:1 nette. */
+function _movePartyMenuBoxSprites(slot: number, offset: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const pk = rt.gSprites.get(_pokeballOamBySlot[slot]);
+  const ic = rt.gSprites.get(_iconOamBySlot[slot]);
+  if (pk) pk.x2 += offset * 8;
+  if (ic) ic.x2 += offset * 8;
+}
+
+/** 1:1 décomp `SlidePartyMenuBoxSpritesOneStep` (party_menu.c:2915-2923). */
+function _slidePartyMenuBoxSpritesOneStep(): void {
+  if (_t1Dir !== 0) _movePartyMenuBoxSprites(_slotId, _t1Dir);
+  if (_t2Dir !== 0) _movePartyMenuBoxSprites(_slotId2, _t2Dir);
+}
+
+/** 1:1 décomp `SlidePartyMenuBoxOneStep` (party_menu.c:2925-2934). */
+function _slidePartyMenuBoxOneStep(): void {
+  if (_t1Dir !== 0 && _sSlot1Buf) _moveAndBufferPartySlot(_sSlot1Buf, _t1Left + _t1Off, _t1Top, _t1W, _t1H, _t1Dir);
+  if (_t2Dir !== 0 && _sSlot2Buf) _moveAndBufferPartySlot(_sSlot2Buf, _t2Left + _t2Off, _t2Top, _t2W, _t2H, _t2Dir);
+  ScheduleBgCopyTilemapToVram(0);
+}
+
+/** 1:1 décomp `Task_SlideSelectedSlotsOffscreen` (party_menu.c:2936-2964). */
+function _taskSlideSelectedSlotsOffscreen(): void {
+  _slidePartyMenuBoxOneStep();
+  _slidePartyMenuBoxSpritesOneStep();
+  _t1Off += _t1Dir;
+  _t2Off += _t2Dir;
+  // 1:1 décomp :2939 `u16 slidingSlotPositions[2]` — sémantique UNSIGNED : la
+  // box gauche (largeur 10, dir -1) fait UNDERFLOW (1+(-N) → ~0xFFFF) donc
+  // > 33 = TRUE : c'est AINSI que la décomp détecte sa sortie par la gauche.
+  // Le masque & 0xFFFF est OBLIGATOIRE (sinon -N reste négatif, jamais >33).
+  const p0 = (_t1Left + _t1Off) & 0xFFFF;
+  const p1 = (_t2Left + _t2Off) & 0xFFFF;
+  if (p0 > 33 && p1 > 33) {
+    _t1Dir *= -1;
+    _t2Dir *= -1;
+    _switchPartyMon();
+    _displayPartyPokemonData(_slotId);
+    _displayPartyPokemonData(_slotId2);
+    PutWindowTilemap(_slotWindowIds[_slotId]);
+    PutWindowTilemap(_slotWindowIds[_slotId2]);
+    if (_sSlot1Buf) CopyToBufferFromBgTilemap(0, _sSlot1Buf, _t1Left, _t1Top, _t1W, _t1H);
+    if (_sSlot2Buf) CopyToBufferFromBgTilemap(0, _sSlot2Buf, _t2Left, _t2Top, _t2W, _t2H);
+    ClearWindowTilemap(_slotWindowIds[_slotId]);
+    ClearWindowTilemap(_slotWindowIds[_slotId2]);
+    _slideTaskFn = _taskSlideSelectedSlotsOnscreen;
+  }
+}
+
+/** 1:1 décomp `Task_SlideSelectedSlotsOnscreen` (party_menu.c:2966-2993). */
+function _taskSlideSelectedSlotsOnscreen(): void {
+  _slidePartyMenuBoxOneStep();
+  _slidePartyMenuBoxSpritesOneStep();
+  if (_t1Dir === 0 && _t2Dir === 0) {
+    PutWindowTilemap(_slotWindowIds[_slotId]);
+    PutWindowTilemap(_slotWindowIds[_slotId2]);
+    ScheduleBgCopyTilemapToVram(0);
+    _sSlot1Buf = null;            // 1:1 Free(sSlot1TilemapBuffer)
+    _sSlot2Buf = null;            // 1:1 Free(sSlot2TilemapBuffer)
+    _slideTaskFn = null;
+    _finishTwoMonAction();        // remet _phase='open', _partyAction=CHOOSE_MON
+  } else {
+    _t1Off += _t1Dir;
+    _t2Off += _t2Dir;
+    if (_t1Off === 0) _t1Dir = 0;
+    if (_t2Off === 0) _t2Dir = 0;
+  }
+}
+
+/** 1:1 décomp `SwitchSelectedMons` (party_menu.c:2822-2866). Même slot →
+ *  FinishTwoMonAction (annule, :2827-2830). Sinon : setup buffers + capture
+ *  tilemap + ClearWindowTilemap + PARTY_ACTION_SWITCHING + AnimatePartySlot×2
+ *  + 1er SlidePartyMenuBoxOneStep, puis task → SlideSelectedSlotsOffscreen. */
+function _switchSelectedMons(): void {
+  if (_slotId2 === _slotId) {
+    _finishTwoMonAction();
+    return;
+  }
+  const w0 = _slotWindowIds[_slotId];
+  _t1Left = GetWindowAttribute(w0, WINDOW_TILEMAP_LEFT);
+  _t1Top  = GetWindowAttribute(w0, WINDOW_TILEMAP_TOP);
+  _t1W    = GetWindowAttribute(w0, WINDOW_WIDTH);
+  _t1H    = GetWindowAttribute(w0, WINDOW_HEIGHT);
+  _t1Off = 0;
+  _t1Dir = (_t1W === 10) ? -1 : 1;   // 1:1 :2840 (box gauche large 10 → -1)
+  const w1 = _slotWindowIds[_slotId2];
+  _t2Left = GetWindowAttribute(w1, WINDOW_TILEMAP_LEFT);
+  _t2Top  = GetWindowAttribute(w1, WINDOW_TILEMAP_TOP);
+  _t2W    = GetWindowAttribute(w1, WINDOW_WIDTH);
+  _t2H    = GetWindowAttribute(w1, WINDOW_HEIGHT);
+  _t2Off = 0;
+  _t2Dir = (_t2W === 10) ? -1 : 1;
+  // 1:1 :2854 Alloc(width * (height<<1)) = width*height u16 entries.
+  _sSlot1Buf = new Uint16Array(_t1W * _t1H);
+  _sSlot2Buf = new Uint16Array(_t2W * _t2H);
+  CopyToBufferFromBgTilemap(0, _sSlot1Buf, _t1Left, _t1Top, _t1W, _t1H);
+  CopyToBufferFromBgTilemap(0, _sSlot2Buf, _t2Left, _t2Top, _t2W, _t2H);
+  ClearWindowTilemap(w0);
+  ClearWindowTilemap(w1);
+  _partyAction = PARTY_ACTION_SWITCHING;
+  AnimatePartySlot(_slotId, 1);
+  AnimatePartySlot(_slotId2, 1);
+  _slidePartyMenuBoxOneStep();
+  _phase = 'switching';
+  _slideTaskFn = _taskSlideSelectedSlotsOffscreen;
+}
+
 /** Action menu input handler 1:1 décomp `Task_HandleSelectionMenuInput`
  *  (party_menu.c:2740) : UP/DOWN navigate, A select, B = cancel (= action
  *  at index numActions-1 = RETOUR). */
@@ -1394,9 +1699,7 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
         _closeActionMenu();
       }
     } else if (action === MENU_SWITCH /* ORDRE */) {
-      // TODO : 1:1 décomp `CursorCb_Switch` → switch action (= slot reorder).
-      console.log('[party-screen] TODO : ORDRE → switch mon slots');
-      _closeActionMenu();
+      _cursorCbSwitch();
     } else if (action === MENU_ITEM /* OBJET */) {
       // TODO : ouvrir bag pour give/swap item
       console.log('[party-screen] TODO : OBJET → bag give/swap');
@@ -1416,17 +1719,35 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
 function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 décomp : pendant PARTY_ACTION_SWITCHING la task func du décomp EST
+  // Task_SlideSelectedSlotsOffscreen/Onscreen (pas le handler input) → input
+  // ignoré, on tick uniquement l'anim slide. (party_menu.c:2864/2962)
+  if (_phase === 'switching') { _slideTaskFn?.(); return; }
   // Sub-state action menu : dispatcher différent.
   if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
   if (_phase !== 'open') return;
   const result = _partyMenuButtonHandler(rt);
   const KEY_A = 0x0001, KEY_B = 0x0002;
   if (result === KEY_A) {
-    // A sur slot mon → ouvre action menu. (A sur CANCEL est déjà mappé à B.)
-    _openActionMenu(rt);
+    // 1:1 décomp Task_HandleChooseMonInput A_BUTTON : dispatch selon
+    // gPartyMenu.action. PARTY_ACTION_SWITCH (party_menu.c:1344-1347) →
+    // PlaySE(SE_SELECT) + SwitchSelectedMons. Sinon → action menu.
+    if (_partyAction === PARTY_ACTION_SWITCH) {
+      PlaySE(5);  // SE_SELECT (1:1 party_menu.c:1345)
+      _switchSelectedMons();
+    } else {
+      // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
+      _openActionMenu(rt);
+    }
   } else if (result === KEY_B) {
     PlaySE(5);
-    ClosePartyScreen();
+    if (_partyAction === PARTY_ACTION_SWITCH) {
+      // 1:1 net : B / Cancel pendant SWITCH = annule (= SwitchSelectedMons
+      // slot2==slot1 → FinishTwoMonAction, party_menu.c:2827-2830).
+      _finishTwoMonAction();
+    } else {
+      ClosePartyScreen();
+    }
   }
   // START: en single layout pas de Confirm → no-op
 }
