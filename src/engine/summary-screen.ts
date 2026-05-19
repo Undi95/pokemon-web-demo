@@ -57,7 +57,7 @@ import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
 import { pokemonInstanceToPokemon } from './battle/party-storage';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
-import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
+import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -503,6 +503,9 @@ interface SummaryAssets {
   /** 1:1 décomp `gSummaryScreen_MoveEffect_Cancel_Tilemap` (effect_cancel.bin)
    *  = slot "ANNULE"/5e move (TilemapFiveMovesDisplay). */
   effectCancelTilemap: Uint16Array;
+  /** 1:1 décomp `sStatusTilemap` (summary_screen/status_tilemap.bin) = gfx de
+   *  `sStatusSlidingWindow1/2` (slide fenêtre STATUT, w10 h2, top18/top50). */
+  statusTilemap: Uint16Array;
 }
 
 let _assets: SummaryAssets | null = null;
@@ -513,7 +516,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
     const [tiles, pInfo, pInfoEgg, pSkills, pBattle, pContest, tilesPal, mtTiles, mtPal, aBtn, ppPal, mkPal, blTiles, blPal,
-      msTiles, msPal, effBat, effCon, effCan] =
+      msTiles, msPal, effBat, effCon, effCan, statTm] =
       await Promise.all([
         loadTileBin('/decomp/em/summary_screen/tiles.png', 4),
         loadTilemapBin('/decomp/em/summary_screen/page_info.bin'),
@@ -534,6 +537,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
         loadTilemapBin('/decomp/em/summary_screen/effect_battle.bin'),
         loadTilemapBin('/decomp/em/summary_screen/effect_contest.bin'),
         loadTilemapBin('/decomp/em/summary_screen/effect_cancel.bin'),
+        loadTilemapBin('/decomp/em/summary_screen/status_tilemap.bin'),
       ]);
     _assets = {
       tiles, pageInfoTilemap: pInfo, pageInfoEggTilemap: pInfoEgg,
@@ -543,7 +547,7 @@ async function _loadAssets(): Promise<SummaryAssets> {
       ppTextPal: ppPal, markingsPal: mkPal, ballTiles: blTiles, ballPal: blPal,
       moveSelectTiles: msTiles, moveSelectPal: msPal,
       effectBattleTilemap: effBat, effectContestTilemap: effCon,
-      effectCancelTilemap: effCan,
+      effectCancelTilemap: effCan, statusTilemap: statTm,
     };
     return _assets;
   })();
@@ -1233,6 +1237,48 @@ function _printExpPointsNextLevel(): void {
   _printTextOnWindow(wid, v1, x, 17, 0, 0);
 }
 
+/** 1:1 décomp `DrawExperienceProgressBar` (pokemon_summary_screen.c:2636-2675).
+ *  8 tiles de barre EXP-vers-niveau-suivant : 64 "ticks" répartis (8 tiles ×
+ *  8 px). tile = 0x2062 + (ticks%8) pour le tile partiel, 0x206A si plein.
+ *  Écrit dans bgTilemapBuffers[SKILLS][1] @0x255 (= notre flat offset
+ *  0x400+0x255, SC1) puis ScheduleBgCopy du BG portant SKILLS. */
+function _drawExperienceProgressBar(): void {
+  const sum = sMon.summary;
+  const sp = getSpeciesInfo(sum.species);
+  const MAX_LEVEL = 100;
+  let ticks: number;
+  if (sum.level < MAX_LEVEL && sp) {
+    // 1:1 décomp :2645-2646 : `u32 expBetweenLevels` / `u32 expSinceLastLevel`.
+    // Sémantique UNSIGNED 32-bit : si summary->exp < table[level] (ex. mon de
+    // debug exp=0 à N>1), expSinceLastLevel UNDERFLOW → ~4.29e9 → ticks énorme
+    // → barre PLEINE (tous 0x206A), comme la ROM. (Soustraction signée JS →
+    // négatif → 0x2062+(neg%8) = tile blanche fausse = le bug observé.) `>>> 0`
+    // = cast u32 obligatoire pour le 1:1.
+    const expBetween = (getExperienceForLevel(sp.growthRate, sum.level + 1) - getExperienceForLevel(sp.growthRate, sum.level)) >>> 0;
+    const expSince = (sum.exp - getExperienceForLevel(sp.growthRate, sum.level)) >>> 0;
+    ticks = expBetween !== 0 ? Math.floor((expSince * 64) / expBetween) : 0;
+    if (ticks === 0 && expSince !== 0) ticks = 1;   // 1:1 :2652
+  } else {
+    ticks = 0;
+  }
+  const buf = sMon.bgTilemapBuffers[PSS_PAGE_SKILLS];
+  if (!buf) return;
+  const dst = 0x400 + 0x255;   // décomp [1][0x255] : SC1 = notre offset 0x400
+  for (let i = 0; i < 8; i++) {
+    buf[dst + i] = ticks > 7 ? 0x206A : (0x2062 + (ticks % 8));
+    ticks -= 8;
+    if (ticks < 0) ticks = 0;
+  }
+  // 1:1 :2672 : copie le BG qui porte actuellement la page SKILLS (1 ou 2).
+  if (_getBgPage(1) === PSS_PAGE_SKILLS) _scheduleBgCopy(1);
+  else _scheduleBgCopy(2);
+}
+
+/** 1:1 décomp `TryDrawExperienceProgressBar` (:1877). */
+function _tryDrawExperienceProgressBar(): void {
+  if (sMon.currPageIndex === PSS_PAGE_SKILLS) _drawExperienceProgressBar();
+}
+
 /** 1:1 décomp `PrintSkillsPageText` (:3301). */
 function _printSkillsPageText(): void {
   _printHeldItemName();
@@ -1389,6 +1435,82 @@ function _printPageSpecificText(pageIndex: number): void {
     if (sMon.windowIds[i] !== WINDOW_NONE) FillWindowPixelBuffer(sMon.windowIds[i], 0);
   }
   _textPrinterFunctions[pageIndex]?.();
+}
+
+/** 1:1 décomp `Task_PrintInfoPage` (:3048) : 1 champ/frame (data[0] : 0 =
+ *  frame idle, puis 1..6 champs, 7 = DestroyTask). Branche non-œuf seule
+ *  (ChangePage inatteignable pour un œuf = 1 page). */
+function _taskPrintInfoPage(task: DecompTask): void {
+  const rt = getRuntime();
+  switch (task.data[0]) {
+    case 1: _printMonOTName(); break;
+    case 2: _printMonOTID(); break;
+    case 3: _printMonAbilityName(); break;
+    case 4: _printMonAbilityDescription(); break;
+    case 5: _bufferMonTrainerMemo(); break;
+    case 6: _printMonTrainerMemo(); break;
+    case 7: rt?.DestroyTask(task.taskId); return;
+  }
+  task.data[0]++;
+}
+/** 1:1 décomp `Task_PrintSkillsPage` (:3312). */
+function _taskPrintSkillsPage(task: DecompTask): void {
+  const rt = getRuntime();
+  switch (task.data[0]) {
+    case 1: _printHeldItemName(); break;
+    case 2: _printRibbonCount(); break;
+    case 3: _bufferLeftColumnStats(); break;
+    case 4: _printLeftColumnStats(); break;
+    case 5: _bufferRightColumnStats(); break;
+    case 6: _printRightColumnStats(); break;
+    case 7: _printExpPointsNextLevel(); break;
+    case 8: rt?.DestroyTask(task.taskId); return;
+  }
+  task.data[0]++;
+}
+/** 1:1 décomp `Task_PrintBattleMoves` (:3482). Cases 5-7 = SUMMARY_MODE_
+ *  SELECT_MOVE only → no-op flux party→RÉSUME (mode ≠ SELECT_MOVE). */
+function _taskPrintBattleMoves(task: DecompTask): void {
+  const rt = getRuntime();
+  switch (task.data[0]) {
+    case 1: _printMoveNameAndPP(0); break;
+    case 2: _printMoveNameAndPP(1); break;
+    case 3: _printMoveNameAndPP(2); break;
+    case 4: _printMoveNameAndPP(3); break;
+    case 5: case 6: case 7: break;   // SELECT_MOVE only (1:1 :3501-3518)
+    case 8: rt?.DestroyTask(task.taskId); return;
+  }
+  task.data[0]++;
+}
+/** 1:1 décomp `Task_PrintContestMoves` (:3609). Cases 5-6 = SELECT_MOVE only. */
+function _taskPrintContestMoves(task: DecompTask): void {
+  const rt = getRuntime();
+  switch (task.data[0]) {
+    case 1: _printMoveNameAndPP(0); break;
+    case 2: _printMoveNameAndPP(1); break;
+    case 3: _printMoveNameAndPP(2); break;
+    case 4: _printMoveNameAndPP(3); break;
+    case 5: case 6: break;   // SELECT_MOVE only (1:1 :3627-3637)
+    case 7: rt?.DestroyTask(task.taskId); return;
+  }
+  task.data[0]++;
+}
+/** 1:1 décomp `sTextPrinterTasks[]` (:740-743). */
+const _textPrinterTasks: Array<((t: DecompTask) => void) | undefined> = [];
+_textPrinterTasks[PSS_PAGE_INFO] = _taskPrintInfoPage;
+_textPrinterTasks[PSS_PAGE_SKILLS] = _taskPrintSkillsPage;
+_textPrinterTasks[PSS_PAGE_BATTLE_MOVES] = _taskPrintBattleMoves;
+_textPrinterTasks[PSS_PAGE_CONTEST_MOVES] = _taskPrintContestMoves;
+
+/** 1:1 décomp `CreateTextPrinterTask(pageIndex)` (:3023) :
+ *  `CreateTask(sTextPrinterTasks[pageIndex], 16)`. Imprime le texte de page
+ *  1 champ/frame EN PARALLÈLE du scroll (≠ _printPageSpecificText synchrone
+ *  = init/nav). Utilisé UNIQUEMENT par ChangePage (:1781). */
+function _createTextPrinterTask(pageIndex: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const fn = _textPrinterTasks[pageIndex];
+  if (fn) rt.CreateTask(fn, 16);
 }
 
 /* ============================================================================
@@ -1744,6 +1866,27 @@ function _createMonSprite(): void {
     // 1:1 SpriteCB_Pokemon (:4000) : sprite->data[1] = IsMonSpriteNotFlipped
     // (= sDontFlip, lu par HandleSetAffineData/TryFlipX de l'anim d'intro).
     o.data[1] = noFlip ? 1 : 0;
+    // 1:1 CreateMonSprite :3982-3983 : data[2]=0 ; callback=SpriteCB_Pokemon.
+    // Le cry+anim ne se déclenchent QUE via cette callback (gate !fade &&
+    // data[2]!=1) — plus d'appel manuel _playMonCryOnce (timing 1:1 décomp).
+    o.data[2] = 0;
+    o.callback = (_spriteCB_Pokemon as unknown as typeof o.callback);
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Pokemon` (pokemon_summary_screen.c:3994-4004) :
+ *  callback per-frame du sprite mon-pic ; déclenche cry + anim UNE fois,
+ *  gaté `!gPaletteFade.active && sprite->data[2] != 1`. data[2] est mis à 1
+ *  pendant la fenêtre de redraw du changement (Task_ChangeSummaryMon case 8
+ *  → case 12) pour SUPPRIMER le trigger, remis à 0 ensuite. `_playMonCry
+ *  Once` (guard _cryPlayed) garantit le "une fois" ; pour un mon "delayed"
+ *  (JIRACHI) PokemonSummaryDoMonAnimation remplace la callback (MonAnim
+ *  DummySpriteCallback) donc SpriteCB_Pokemon cesse, 1:1 net. */
+function _spriteCB_Pokemon(sprite: { data: number[] }): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (!rt.gPaletteFade.active && sprite.data[2] !== 1) {
+    _playMonCryOnce();
   }
 }
 
@@ -1868,6 +2011,7 @@ function _taskPssScrollRight(task: DecompTask): void {
     _drawPagination();
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
+    _tryDrawExperienceProgressBar();   // 1:1 PssScroll{Right,Left}End :1824/:1873
     const rt = getRuntime();
     rt?.DestroyTask(task.taskId);
     _scrollTaskId = -1;
@@ -1907,6 +2051,7 @@ function _taskPssScrollLeft(task: DecompTask): void {
     _drawPagination();
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
+    _tryDrawExperienceProgressBar();   // 1:1 PssScroll{Right,Left}End :1824/:1873
     const rt = getRuntime();
     rt?.DestroyTask(task.taskId);
     _scrollTaskId = -1;
@@ -1929,8 +2074,9 @@ function _changePage(delta: number): void {
   if (_inputTaskId >= 0) { const rt = getRuntime(); rt?.DestroyTask(_inputTaskId); _inputTaskId = -1; }
   const rt = getRuntime();
   if (!rt) return;
-  // CreateTextPrinterTask(currPageIndex) → on print direct (notre dispatch).
-  _printPageSpecificText(sMon.currPageIndex);
+  // 1:1 décomp ChangePage :1781 : CreateTextPrinterTask (task différée qui
+  // imprime 1 champ/frame EN PARALLÈLE du scroll), PAS un print synchrone.
+  _createTextPrinterTask(sMon.currPageIndex);
   _hidePageSpecificSprites();   // 1:1 décomp ChangePage :1782 (cache icônes type)
   if (delta === 1) _scrollTaskId = rt.CreateTask(_taskPssScrollRight, 0);
   else _scrollTaskId = rt.CreateTask(_taskPssScrollLeft, 0);
@@ -1965,14 +2111,41 @@ function _changeSummaryPokemon(delta: number): void {
   PlaySE(5 /* SE_SELECT */);
   sMon.curMonIndex = idx;
   sMon.currentMon = next;
-  // 1:1 Task_ChangeSummaryMon (:1628) : StopCry + détruit SEULEMENT les
-  // sprites MON (case 1) et BALL (case 2) — PAS les sprites type (:1639/
-  // :1642). Les icônes type sont PERSISTANTES (créées 1× par
-  // _createMoveTypeIcons à l'init) et juste re-pointées par _setTypeIcons
-  // (case 9). Détruire ici = la course OAM cause du bug "type œuf saute".
-  _cryPlayed = false;
   const rt = getRuntime();
-  if (_monPicSpriteId >= 0) { try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1; }
+  // 1:1 décomp : Task_ChangeSummaryMon REMPLACE la func de la task input
+  // (:1621-1623) → l'input est BLOQUÉ tout le temps du changement (retour à
+  // Task_HandleInput seulement au case `default` :1685-1690). Sans ça, des
+  // appuis ↑/↓ rapides ré-entrent _changeSummaryPokemon et font courir 2
+  // chaînes async (.then) → sprite/data du mauvais mon. Mirroir exact de ce
+  // que _changePage fait déjà (:1929). _resumeInput() en fin de .then/.catch.
+  if (_inputTaskId >= 0) { rt?.DestroyTask(_inputTaskId); _inputTaskId = -1; }
+  // 1:1 Task_ChangeSummaryMon (:1628) : case 0 StopCryAndClearCrySongs() +
+  // case 1 SummaryScreen_DestroyAnimDelayTask() AVANT DestroySpriteAndFree
+  // Resources(MON). Notre anim mon-pic = tasks module-level (_animDelayTaskId
+  // / _frameAnimTaskId dans mon-summary-anim.ts) qui NE meurent PAS avec le
+  // sprite (≠ décomp StartSpriteAnim sprite-bound). Sans les stopper avant
+  // de remplacer le sprite, le task de délai d'un mon "delayed" (ex. JIRACHI)
+  // fire StartMonSummaryAnimation sur le sprite recyclé → l'anim continue sur
+  // l'ŒUF (bug A/B 2026-05-19). StopPokemonAnimations = callback dummy +
+  // _stopMonFrameAnim + StopPokemonAnimationDelayTask + restore palette
+  // (1:1-net décomp StopPokemonAnimations :4030 + case 1 :1638). Le cry
+  // (case 0 StopCryAndClearCrySongs) n'est PAS touché : règle projet
+  // BGM/SE intacts ; le bug rapporté est l'anim visuelle.
+  _cryPlayed = false;
+  // 1:1 décomp ChangeSummaryPokemon :1614-1620 : si le mon QUITTÉ a un
+  // statut (ailment != NONE), slide-OUT (cover) la fenêtre STATUT + clear
+  // window + scheduleBgCopy(0). (Sprite statut hidden ≈ notre destroy ci-
+  // dessous.) Utilise l'ANCIEN sMon.summary (avant _extractMonData).
+  if (sMon.summary.ailment !== 0) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    _scheduleBgCopy(0);
+    _positionStatusSlidingWindow(0, 2);   // 1:1 :1619 (slide-out, speed +2)
+  }
+  if (_monPicSpriteId >= 0) {
+    const oldMon = rt?.gSprites.get(_monPicSpriteId);
+    if (oldMon) { try { StopPokemonAnimations(oldMon); } catch { /* */ } }
+    try { rt?.DestroySprite(_monPicSpriteId); } catch { /* */ } _monPicSpriteId = -1;
+  }
   if (_statusSpriteId >= 0) { try { rt?.DestroySprite(_statusSpriteId); } catch { /* */ } _statusSpriteId = -1; }
   if (_markingsSpriteId >= 0) { try { rt?.DestroySprite(_markingsSpriteId); } catch { /* */ } _markingsSpriteId = -1; }
   if (_ballSpriteId >= 0) { try { rt?.DestroySprite(_ballSpriteId); } catch { /* */ } _ballSpriteId = -1; }
@@ -1994,11 +2167,28 @@ function _changeSummaryPokemon(delta: number): void {
     _putPageWindowTilemaps(sMon.currPageIndex);
     _setTypeIcons();
     _createMonSprite();
+    // 1:1 Task_ChangeSummaryMon case 8 :1668 : gSprites[MON].data[2]=1 —
+    // SUPPRIME le trigger cry/anim de SpriteCB_Pokemon pendant le redraw.
+    { const ms = r.gSprites.get(_monPicSpriteId); if (ms) ms.data[2] = 1; }
+    _tryDrawExperienceProgressBar();   // 1:1 Task_ChangeSummaryMon case 8 :1669
     _createMonMarkingsSprite();
     _createCaughtBallSprite();
-    _createSetStatusSprite();
-    _playMonCryOnce();
-  }).catch(() => { /* */ });
+    // 1:1 Task_ChangeSummaryMon case 7 :1659-1660 : si le NOUVEAU mon a un
+    // statut → slide-IN (uncover) ; sa fin (speed<0) appelle _createSet
+    // StatusSprite + PutWindowTilemap (1:1 _taskSlideStatusWindow :2573).
+    // Sinon (mon sain) → _createSetStatusSprite direct (= clear, pas d'icône).
+    if (sMon.summary.ailment !== 0) _positionStatusSlidingWindow(10, -2);
+    else _createSetStatusSprite();
+    // 1:1 Task_ChangeSummaryMon case 12 :1683 : gSprites[MON].data[2]=0 —
+    // RELÂCHE le gate ; SpriteCB_Pokemon déclenchera cry+anim 1 fois dès
+    // !gPaletteFade.active (plus d'appel manuel _playMonCryOnce).
+    { const ms = r.gSprites.get(_monPicSpriteId); if (ms) ms.data[2] = 0; }
+    // 1:1 décomp default case :1686 : retour à Task_HandleInput SEULEMENT si
+    // `!FuncIsActiveTask(Task_SlideStatusWindow)`. Si un slide-in statut est
+    // en cours (mon ailing), c'est sa fin (_taskSlideStatusWindow) qui
+    // _resumeInput(). Sinon on resume ici.
+    if (_slideStatusTaskId < 0) _resumeInput();
+  }).catch(() => { _resumeInput(); });
 }
 
 /* ============================================================================
@@ -2027,6 +2217,66 @@ function _swPowerAcc(): SlidingWindow | null {
 function _swAppealJam(): SlidingWindow | null {
   if (!_assets) return null;
   return { gfx: _assets.effectContestTilemap, defaultTile: 0, width: 10, height: 7, left: 0, top: 45 };
+}
+/** 1:1 décomp `sStatusSlidingWindow1` (:370) : gfx=sStatusTilemap, def=1,
+ *  10×2, left0, top18. (Cover de la fenêtre STATUT, page INFO, contigu →
+ *  top50 atteint SC1.) */
+function _swStatus1(): SlidingWindow | null {
+  if (!_assets) return null;
+  return { gfx: _assets.statusTilemap, defaultTile: 1, width: 10, height: 2, left: 0, top: 18 };
+}
+/** 1:1 décomp `sStatusSlidingWindow2` (:379) : idem, top50. */
+function _swStatus2(): SlidingWindow | null {
+  if (!_assets) return null;
+  return { gfx: _assets.statusTilemap, defaultTile: 1, width: 10, height: 2, left: 0, top: 50 };
+}
+let _slideStatusTaskId = -1;
+
+/** 1:1 décomp `PositionStatusSlidingWindow(visibleColumns, speed)` (:2541). */
+function _positionStatusSlidingWindow(visibleColumns: number, speed: number): void {
+  const sw1 = _swStatus1(); const sw2 = _swStatus2();
+  if (!sw1 || !sw2) return;
+  if (speed > sw1.width) speed = sw1.width;
+  if (speed === 0 || speed === sw1.width) {
+    // 1:1 :2547-2548 : branche instant — passe `speed` (PAS visibleColumns).
+    _copyNColumnsToTilemap(sw1, sMon.bgTilemapBuffers[PSS_PAGE_INFO], speed, false);
+    _copyNColumnsToTilemap(sw2, sMon.bgTilemapBuffers[PSS_PAGE_INFO], speed, false);
+  } else {
+    const rt = getRuntime();
+    if (!rt) return;
+    if (_slideStatusTaskId < 0 || !rt.gTasks.get(_slideStatusTaskId)) {
+      _slideStatusTaskId = rt.CreateTask(_taskSlideStatusWindow, 8);
+    }
+    const t = rt.gTasks.get(_slideStatusTaskId);
+    if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }  // tScrollingSpeed / tVisibleColumns
+  }
+}
+
+/** 1:1 décomp `Task_SlideStatusWindow` (:2558). isOpeningToTheLeft=FALSE.
+ *  Slide-in fini (speed<0) → CreateSetStatusSprite + PutWindowTilemap. */
+function _taskSlideStatusWindow(task: DecompTask): void {
+  const sw1 = _swStatus1(); const sw2 = _swStatus2();
+  if (!sw1 || !sw2) return;
+  const data = task.data;
+  data[1] += data[0];
+  if (data[1] < 0) data[1] = 0;
+  else if (data[1] > sw1.width) data[1] = sw1.width;
+  _copyNColumnsToTilemap(sw1, sMon.bgTilemapBuffers[PSS_PAGE_INFO], data[1], false);
+  _copyNColumnsToTilemap(sw2, sMon.bgTilemapBuffers[PSS_PAGE_INFO], data[1], false);
+  _scheduleBgCopy(3);                                  // 1:1 :2568 ScheduleBgCopy(3)
+  if (data[1] <= 0 || data[1] >= sw1.width) {
+    if (data[0] < 0) {                                 // slide-IN terminé
+      _createSetStatusSprite();                        // 1:1 :2573
+      PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+      _scheduleBgCopy(0);
+      // 1:1 default case :1686 : le slide-in fini débloque l'input (la nav
+      // a différé _resumeInput tant que ce task tournait).
+      if (_inputTaskId < 0 && _phase !== 'fading_out') _resumeInput();
+    }
+    const rt = getRuntime();
+    rt?.DestroyTask(task.taskId);
+    _slideStatusTaskId = -1;
+  }
 }
 
 /** 1:1 décomp `CopyNColumnsToTilemap` (:2405). alloced[width*height] rempli
@@ -2586,6 +2836,11 @@ function Task_CloseSummary(task: DecompTask): void {
   // sMonSummaryScreen->curMonIndex ; SetMainCallback2(sMonSummaryScreen->
   // callback) (= retour party menu, curseur sur le mon vu) + cleanup.
   _lastViewedMonIndex = sMon.curMonIndex;
+  // 1:1 CloseSummaryScreen :1520 `SummaryScreen_DestroyAnimDelayTask()` —
+  // INCONDITIONNEL (≠ notre _beginCloseSummaryScreen qui ne stoppe l'anim
+  // que si _monPicSpriteId existe). Garantit 0 task de délai d'anim orphelin
+  // qui leak sur l'écran suivant (fermeture sur œuf / edge).
+  StopPokemonAnimationDelayTask();
   const cb = sMon.callback;
   _freeSummary();
   if (cb) cb();
@@ -2718,7 +2973,10 @@ export function CB2_InitSummaryScreen(): void {
       rt.SetMainCallback2(MainCB2_SummaryRun);
       _isOpen = true;
       _phase = 'open';
-      _playMonCryOnce();
+      // 1:1 décomp : le cry+anim NE sont PAS lancés par la machine d'init —
+      // c'est SpriteCB_Pokemon (callback du sprite mon-pic, posée par
+      // _createMonSprite) qui les déclenche 1 fois dès la fin du fade-in
+      // (!gPaletteFade.active && data[2]!=1). Plus d'appel manuel ici.
       return;
   }
 }
