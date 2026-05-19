@@ -461,22 +461,18 @@ async function _loadPartyWindowsCb2(rt: ReturnType<typeof getRuntime>): Promise<
   //   LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13));
   //   LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP);
   //   LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-  // 1:1 décomp `LoadUserWindowBorderGfx(windowId, 0x4F, BG_PLTT_ID(13))`.
-  // En ?debug skip BirchRuntimeScene qui preload les frame assets, donc le
-  // cache est vide. On force load directement le frame 1 (= user default style)
-  // depuis PNG vers VRAM/palette. ⚠️ Ne PAS call LoadUserWindowBorderGfx APRÈS
-  // (= overwrite avec cache empty = palette 13 black).
-  try {
-    const framePng = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
-    const rtX = getRuntime();
-    if (rtX) {
-      const charOff = 0 * 0x4000 + STD_FRAME_TILE * 32;
-      rtX.gba.vram.set(framePng.charData.slice(0, 0x120), charOff);
-    }
-    LoadPalette(framePng.palette, STD_FRAME_PAL * 16, 32);
-  } catch (e) {
-    console.warn('[party-screen] frame border load failed:', e);
-  }
+  // 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (:2096) :
+  // charge le cadre de fenêtre CHOISI PAR LE JOUEUR dans le menu OPTIONS
+  // (gameState.options.windowFrameType = gSaveBlock2->optionsWindowFrameType),
+  // PAS un cadre hardcodé. L'ancien code force-chargeait `1.png` (style fixe)
+  // → à l'entrée du party menu le cadre du message reprenait le style par
+  // défaut au lieu du style user (bug A/B : corrigé en ouvrant/fermant un
+  // profil car _openActionMenu appelle le vrai LoadUserWindowBorderGfx).
+  // preloadTextWindowFrames d'abord (idempotent) : en ?debug le preload
+  // BirchRuntimeScene est skippé → assetCache vide sinon (= pal 13 noire).
+  // Exactement le même appel que _openActionMenu (qui, lui, marche).
+  await preloadTextWindowFrames();
+  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);  // 1:1 BG_PLTT_ID(13)
   const stdMenuPal = await loadGbaPal('/decomp/em/interface/std_menu.pal');
   LoadPalette(stdMenuPal, 15 * 16, 32);
   // 1:1 décomp BG_PLTT_ID(14) = overworld textbox palette (= action menu BG).
