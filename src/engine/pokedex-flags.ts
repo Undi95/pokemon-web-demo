@@ -14,12 +14,11 @@
  * redondance anti-triche `gSaveBlock1.seen1/seen2`). Le câblage
  * gameplay (capture→FLAG_SET_CAUGHT, rencontre→FLAG_SET_SEEN) = ÉTAPE 2.
  *
- * REPORT HONNÊTE — différé ÉTAPE 3 (data ordres) : `GetHoennPokedexCount`
- * + `HoennToNationalOrder` (pokemon.c:5680 → table `sHoennToNationalOrder`)
- * NE sont PAS ici : la table d'ordre Hoenn n'est pas encore portée
- * (decomp-data n'a qu'un descripteur signature, pas les données). Les
- * inclure via un stub auto serait un demi-port (WORKING-MODE r.2). Ils
- * arriveront à l'ÉTAPE 3 (data ordres/entrées) avec la table 1:1.
+ * ÉTAPE 3 part 1 (FAITE) : ordres Hoenn (Species/Hoenn/National
+ * To-order + GetHoennPokedexCount) ajoutés, débloqués par les tables
+ * extraites 1:1 (`pokedex-order-tables` ÉTAPE 2a). Reste ÉTAPE 3 part 2
+ * (autre fichier) : `pokedex_entries.h` (PokedexEntry) +
+ * `GetPokedexHeightWeight` (data table à extraire).
  */
 
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
@@ -27,7 +26,9 @@ import {
   ENUM_NATIONAL_0, ENUM_HOENN_1,
   NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,
 } from './decomp-data/auto/include/constants/pokedex-data';
-import { sSpeciesToNationalPokedexNum } from './decomp-data/auto/pokedex-order-tables';
+import {
+  sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
+} from './decomp-data/auto/pokedex-order-tables';
 import { SPECIES_UNOWN, SPECIES_SPINDA } from './decomp-data/auto/include/constants/species-data';
 
 // ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
@@ -225,4 +226,63 @@ export function HandleSetPokedexFlag(nationalNum: number, caseId: number, person
     if (NationalPokedexNumToSpecies(nationalNum) === SPECIES_SPINDA)
       GetSaveBlock2().pokedex.spindaPersonality = personality;
   }
+}
+
+// ─── ÉTAPE 3 part 1 : ordres Hoenn 1:1 (débloqué par pokedex-order-tables) ──
+// `NUM_SPECIES - 1` décomp = `.length` (= LEN 412, taille décomp
+// `[NUM_SPECIES-1]`), comme NationalPokedexNumToSpecies (ÉTAPE 2b).
+
+/** 1:1 décomp `u16 SpeciesToHoennPokedexNum(u16 species)` (pokemon.c:5672). */
+export function SpeciesToHoennPokedexNum(species: number): number {
+  if (!species)
+    return 0;
+  return sSpeciesToHoennPokedexNum[species - 1];
+}
+
+/** 1:1 décomp `u16 HoennToNationalOrder(u16 hoennNum)` (pokemon.c:5680). */
+export function HoennToNationalOrder(hoennNum: number): number {
+  if (!hoennNum)
+    return 0;
+  return sHoennToNationalOrder[hoennNum - 1];
+}
+
+/**
+ * 1:1 décomp `u16 NationalToHoennOrder(u16 nationalNum)` (pokemon.c:5646-5662).
+ * Boucle linéaire inverse sur `sHoennToNationalOrder` ; `NUM_SPECIES - 1` =
+ * `.length`.
+ */
+export function NationalToHoennOrder(nationalNum: number): number {
+  if (!nationalNum)
+    return 0;
+
+  let hoennNum = 0;
+  const len = sHoennToNationalOrder.length; // = NUM_SPECIES - 1
+
+  while (hoennNum < len && sHoennToNationalOrder[hoennNum] !== nationalNum)
+    hoennNum++;
+
+  if (hoennNum === len)
+    return 0;
+
+  return hoennNum + 1;
+}
+
+/**
+ * 1:1 décomp `u16 GetHoennPokedexCount(u8 caseID)` (pokedex.c:4287-4307).
+ * Boucle 0..HOENN_DEX_COUNT-1 ; compte les HoennToNationalOrder(i+1) dont
+ * le flag SEEN/CAUGHT est set (via GetSetPokedexFlag).
+ */
+export function GetHoennPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < HOENN_DEX_COUNT; i++) {
+    switch (caseID) {
+      case FLAG_GET_SEEN:
+        if (GetSetPokedexFlag(HoennToNationalOrder(i + 1), FLAG_GET_SEEN)) count++;
+        break;
+      case FLAG_GET_CAUGHT:
+        if (GetSetPokedexFlag(HoennToNationalOrder(i + 1), FLAG_GET_CAUGHT)) count++;
+        break;
+    }
+  }
+  return count;
 }
