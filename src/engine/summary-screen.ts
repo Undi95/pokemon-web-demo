@@ -804,9 +804,17 @@ function _extractMonData(mon: PokemonInstance): void {
       s.ppMax[i] = mv.ppMax;
     }
   }
-  // exp.
+  // exp. 1:1 décomp ExtractMonDataToSummaryStruct : summary->exp =
+  // GetMonData(MON_DATA_EXP). Invariant jeu (CreateBoxMon:2262) : l'exp
+  // TOTALE d'un mon de niveau L est TOUJOURS >= gExperienceTables[growth
+  // Rate][L]. `mon.currentExp ?? …` ne rattrapait PAS `currentExp===0`
+  // (mons debug/non-trackés) → exp=0 à N>1 → POINTS EXP 0 + barre fausse
+  // (underflow u32). Math.max applique l'invariant : exp obtenue gardée si
+  // trackée, sinon = base de la table de gain (erratic/slow/medium…) pour
+  // le niveau → expSince=0 → barre VIDE (logique, 1:1 ROM).
   const sp = getSpeciesInfo(mon.speciesEnum);
-  s.exp = mon.currentExp ?? (sp ? getExperienceForLevel(sp.growthRate, mon.level) : 0);
+  const expForLevel = sp ? getExperienceForLevel(sp.growthRate, mon.level) : 0;
+  s.exp = Math.max(mon.currentExp ?? 0, expForLevel);
   // stats calculées 1:1 décomp (CalculateMonStats via pokemonInstanceToPokemon).
   try {
     const p = pokemonInstanceToPokemon(mon);
@@ -2183,12 +2191,29 @@ function _changeSummaryPokemon(delta: number): void {
     // RELÂCHE le gate ; SpriteCB_Pokemon déclenchera cry+anim 1 fois dès
     // !gPaletteFade.active (plus d'appel manuel _playMonCryOnce).
     { const ms = r.gSprites.get(_monPicSpriteId); if (ms) ms.data[2] = 0; }
-    // 1:1 décomp default case :1686 : retour à Task_HandleInput SEULEMENT si
-    // `!FuncIsActiveTask(Task_SlideStatusWindow)`. Si un slide-in statut est
-    // en cours (mon ailing), c'est sa fin (_taskSlideStatusWindow) qui
-    // _resumeInput(). Sinon on resume ici.
-    if (_slideStatusTaskId < 0) _resumeInput();
+    // 1:1 décomp Task_ChangeSummaryMon default case :1685-1690 : retour à
+    // Task_HandleInput UNIQUEMENT quand `!FuncIsActiveTask(Task_Slide
+    // StatusWindow)` — c'est un POLL CHAQUE FRAME, pas un one-shot. Couvre
+    // tous les cas (slide-out seul = data[0]>0, slide-in = data[0]<0, les 2,
+    // aucun). Le one-shot précédent ne resumait que sur slide-IN → si on
+    // quittait un mon ailing vers un mon sain (slide-OUT seul), l'input
+    // n'était JAMAIS recréé = FREEZE (régression).
+    _waitSlideThenResumeInput();
   }).catch(() => { _resumeInput(); });
+}
+
+/** 1:1 décomp Task_ChangeSummaryMon default case :1685-1690 : poll chaque
+ *  frame `!FuncIsActiveTask(Task_SlideStatusWindow)` → recrée la task input
+ *  (retour Task_HandleInput) puis se détruit. Jamais de freeze. */
+function _waitSlideThenResumeInput(): void {
+  const rt = getRuntime();
+  if (!rt || _slideStatusTaskId < 0) { _resumeInput(); return; }
+  rt.CreateTask(((t: DecompTask) => {
+    if (_slideStatusTaskId < 0) {
+      _resumeInput();
+      getRuntime()?.DestroyTask(t.taskId);
+    }
+  }) as unknown as (t: DecompTask) => void, 0);
 }
 
 /* ============================================================================
@@ -2269,9 +2294,9 @@ function _taskSlideStatusWindow(task: DecompTask): void {
       _createSetStatusSprite();                        // 1:1 :2573
       PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
       _scheduleBgCopy(0);
-      // 1:1 default case :1686 : le slide-in fini débloque l'input (la nav
-      // a différé _resumeInput tant que ce task tournait).
-      if (_inputTaskId < 0 && _phase !== 'fading_out') _resumeInput();
+      // (1:1 décomp Task_SlideStatusWindow :2570-2576 : ne resume PAS
+      // l'input — c'est le poll default-case _waitSlideThenResumeInput
+      // qui le fait quand _slideStatusTaskId repasse à -1 ci-dessous.)
     }
     const rt = getRuntime();
     rt?.DestroyTask(task.taskId);

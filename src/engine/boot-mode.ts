@@ -260,6 +260,10 @@ function applyNoIntroPreset(): void {
     // Birch). pokeball déjà = ITEM_POKE_BALL (createPokemonInstance 1:1).
     arcko.metLocation = 'MAPSEC_ROUTE_101';
     arcko.metLevel = 5;
+    // ⚠️ DEBUG ONLY : statut BRÛLÉ pour tester l'anim slide fenêtre STATUT
+    // du résumé (MED2, 1:1 PositionStatusSlidingWindow). ailment BRN=5
+    // (summary-screen _extractMonData : mon.status==='BRN' → ailment 5).
+    arcko.status = 'BRN';
     gameState.addToParty(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
