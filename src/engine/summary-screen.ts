@@ -1173,12 +1173,25 @@ function _printRibbonCount(): void {
 }
 
 let _leftColStats = '';
+/** 1:1 décomp `ConvertIntToDecimalStringN(buf, value, STR_CONV_MODE_RIGHT_ALIGN, n)`
+ *  (string_util.c:163-325) : entier justifié à DROITE dans un champ de
+ *  EXACTEMENT n caractères. Le padding GAUCHE est **CHAR_SPACER** (0x77,
+ *  string_util.c:209/265/325) — PAS CHAR_SPACE (0x00). CHAR_SPACER a la
+ *  largeur d'un chiffre (5 px FONT_NORMAL) vs CHAR_SPACE 3 px → les colonnes
+ *  de nombres s'alignent vraiment à droite (sinon rendu ~centré ≠ ROM).
+ *  CHAR_SPACER ↔ JS 'ラ' (U+30E9 → byte 0x77, charmap.txt:280), MÊME
+ *  approche 1:1 que party-screen.ts:504 `_rightAlign3` (validée A/B). */
+const CHAR_SPACER_STR = 'ラ';
+function _rightAlignSpacer(value: number, n: number): string {
+  const s = String(value);
+  return s.length >= n ? s : CHAR_SPACER_STR.repeat(n - s.length) + s;
+}
 function _bufferLeftColumnStats(): void {
   const s = sMon.summary;
-  const cur = String(s.currentHP).padStart(3, ' ');
-  const max = String(s.maxHP).padStart(3, ' ');
-  const atk = String(s.atk).padStart(7, ' ');
-  const def = String(s.def).padStart(7, ' ');
+  const cur = _rightAlignSpacer(s.currentHP, 3);
+  const max = _rightAlignSpacer(s.maxHP, 3);
+  const atk = _rightAlignSpacer(s.atk, 7);
+  const def = _rightAlignSpacer(s.def, 7);
   DynamicPlaceholderTextUtil_Reset();
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, cur);
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, max);
@@ -1193,9 +1206,9 @@ let _rightColStats = '';
 function _bufferRightColumnStats(): void {
   const s = sMon.summary;
   DynamicPlaceholderTextUtil_Reset();
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, String(s.spatk).padStart(3, ' '));
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, String(s.spdef).padStart(3, ' '));
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, String(s.speed).padStart(3, ' '));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, _rightAlignSpacer(s.spatk, 3));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, _rightAlignSpacer(s.spdef, 3));
+  DynamicPlaceholderTextUtil_SetPlaceholderPtr(2, _rightAlignSpacer(s.speed, 3));
   _rightColStats = DynamicPlaceholderTextUtil_ExpandPlaceholders(S_STATS_RIGHT_COLUMN_LAYOUT);
 }
 function _printRightColumnStats(): void {
