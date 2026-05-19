@@ -40,6 +40,7 @@
     "extract:pokemon-anims": "node scripts/extract-pokemon-anims.mjs",
     "extract:pokemon-evolutions": "node scripts/extract-pokemon-evolutions.mjs",
     "extract:contest-effects": "node scripts/extract-contest-effects.mjs",
+    "extract:contest-effect-descriptions": "node scripts/extract-contest-effect-descriptions.mjs",
     "extract:tm-hm": "node scripts/extract-tm-hm.mjs",
     "extract:pokedex-entries": "node scripts/extract-pokedex-entries.mjs",
     "extract:trainer-pics": "node scripts/extract-trainer-pics.mjs",

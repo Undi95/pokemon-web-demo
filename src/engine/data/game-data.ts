@@ -126,6 +126,10 @@ interface GameData {
   /** 1:1 décomp `gContestEffects[]` (contest_moves.h:2837) keyé par
    *  CONTEST_EFFECT_* — appeal/jam pour les cœurs CHARME/BLOCAGE résumé. */
   contestEffects: Record<string, { appeal: number; jam: number }>;
+  /** 1:1 décomp `gContestEffectDescriptionPointers[]` (contest_text_tables
+   *  .h:220) keyé CONTEST_EFFECT_* — description d'effet concours affichée
+   *  page CAPACITÉS CONCOURS du résumé (PrintMoveDetails branche != BATTLE). */
+  contestEffectDescriptionsFr: Record<string, string>;
   /** 1:1 décomp `gItems[]` keyé ITEM_* (items.json, 377 items, noms FR). */
   itemsData: Record<string, ItemData>;
   evolutions: Record<string, Evolution[]>;
@@ -152,7 +156,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, contestEffects, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, contestEffectDescriptionsFr, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     ] = await Promise.all([
       fetchJson<GameData['species']>('species-info.json'),
@@ -172,6 +176,7 @@ export function loadGameData(): Promise<void> {
       fetchJson<GameData['trainers']>('trainers.json'),
       fetchJson<GameData['contestMoves']>('contest-moves.json'),
       fetchJson<GameData['contestEffects']>('contest-effects.json'),
+      fetchJson<GameData['contestEffectDescriptionsFr']>('contest-effect-descriptions-fr.json'),
       fetchJson<GameData['itemsData']>('items.json'),
       fetchJson<GameData['evolutions']>('evolutions.json'),
       fetchJson<GameData['itemEffects']>('item-effects.json'),
@@ -183,7 +188,7 @@ export function loadGameData(): Promise<void> {
       species, moves, moveNamesFr, moveDescriptionsFr, levelUpLearnsets, eggMoves,
       tmhmLearnsets, tutorLearnsets, abilitiesFr, abilityNamesFr, natureNamesFr,
       trainerClassNamesFr, itemDescriptionsFr, experienceTables, trainers,
-      contestMoves, contestEffects, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
+      contestMoves, contestEffects, contestEffectDescriptionsFr, itemsData, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     };
     // 1:1 décomp bridge : expose moves/species pour reverse-id lookups (= cache
@@ -319,6 +324,14 @@ export function getContestMove(moveId: string): ContestMove | undefined {
 /** 1:1 décomp `gContestEffects[effect]` — appeal/jam (cœurs résumé). */
 export function getContestEffect(effectName: string): { appeal: number; jam: number } | undefined {
   return ensureLoaded().contestEffects[effectName];
+}
+
+/** 1:1 décomp `gContestEffectDescriptionPointers[effect]` — description
+ *  d'effet concours (page CAPACITÉS CONCOURS, PrintMoveDetails branche
+ *  != PSS_PAGE_BATTLE_MOVES). `effectName` = CONTEST_EFFECT_* (=
+ *  getContestMove(move).effect). '' si absent (report honnête). */
+export function getContestEffectDescription(effectName: string): string {
+  return ensureLoaded().contestEffectDescriptionsFr[effectName] ?? '';
 }
 
 /** 1:1 décomp `gItems[item]` — items.json keyé ITEM_*. */

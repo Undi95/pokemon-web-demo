@@ -37,7 +37,7 @@ import {
 import { gameState } from './game-state';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
-  getMoveDescription, getContestMove, getContestEffect, getItemNameFr,
+  getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
   getExperienceForLevel,
 } from './data/game-data';
 import {
@@ -1314,8 +1314,11 @@ function _printMoveDetails(move: string): void {
       _printMovePowerAndAccuracy(move);
       _printTextOnWindow(wid, getMoveDescription(move), 6, 1, 0, 0);
     } else {
+      // 1:1 décomp PrintMoveDetails (pokemon_summary_screen.c:3674) : page
+      // CONTEST → gContestEffectDescriptionPointers[gContestMoves[move]
+      // .effect] (description d'EFFET concours), PAS la description combat.
       const cm = getContestMove(move);
-      _printTextOnWindow(wid, cm ? (getMoveDescription(move) || '') : '', 6, 1, 0, 0);
+      _printTextOnWindow(wid, cm ? getContestEffectDescription(cm.effect) : '', 6, 1, 0, 0);
     }
     _flushWin(wid);
   } else {
