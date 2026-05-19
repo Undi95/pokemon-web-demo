@@ -26,10 +26,15 @@
  */
 import {
   getRuntime, ResetPaletteFade, ResetTasks,
-  FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette,
+  FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
 } from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
-import { ShowBg } from './gba-window-system';
+import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
+import {
+  ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
+  LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, type WindowTemplate,
+} from './gba-window-system';
+import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { DeactivateAllTextPrinters } from './gba-text-system';
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
 import { gameState } from './game-state';
@@ -67,6 +72,29 @@ export const ITEMMENUSPRITE_BAG = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BAG;
 export const ITEMMENUSPRITE_COUNT = ITEMMENUSPRITE_SWAP_LINE + ITEMMENU_SWAP_LINE_LENGTH; // 12
 export const ITEMWIN_COUNT = ENUM_ITEMWIN_1.ITEMWIN_COUNT; // 10
 export { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT };
+
+// 1:1 décomp enum WIN_* (item_menu.c:95) — fenêtres SANS cadre (le fond
+// rayé menu.bin BG2 fait le layout ; feedback-bag-no-frames).
+const WIN_ITEM_LIST = 0;
+const WIN_DESCRIPTION = 1;
+const WIN_POCKET_NAME = 2;
+const WIN_TMHM_INFO_ICONS = 3;
+const WIN_TMHM_INFO = 4;
+const WIN_MESSAGE = 5;
+
+// 1:1 décomp `sDefaultBagWindows` (item_menu.c:396). bg/tilemapLeft/Top/
+// width/height/paletteNum/baseBlock identiques. (DUMMY_WIN_TEMPLATE = fin.)
+const sDefaultBagWindows: readonly WindowTemplate[] = [
+  { bg: 0, tilemapLeft: 14, tilemapTop: 2,  width: 15, height: 16, paletteNum: 1,  baseBlock: 0x27  }, // WIN_ITEM_LIST
+  { bg: 0, tilemapLeft: 0,  tilemapTop: 13, width: 14, height: 6,  paletteNum: 1,  baseBlock: 0x117 }, // WIN_DESCRIPTION
+  { bg: 0, tilemapLeft: 4,  tilemapTop: 1,  width: 8,  height: 2,  paletteNum: 1,  baseBlock: 0x1A1 }, // WIN_POCKET_NAME
+  { bg: 0, tilemapLeft: 1,  tilemapTop: 13, width: 5,  height: 6,  paletteNum: 12, baseBlock: 0x16B }, // WIN_TMHM_INFO_ICONS
+  { bg: 0, tilemapLeft: 7,  tilemapTop: 13, width: 4,  height: 6,  paletteNum: 12, baseBlock: 0x189 }, // WIN_TMHM_INFO
+  { bg: 1, tilemapLeft: 2,  tilemapTop: 15, width: 27, height: 4,  paletteNum: 15, baseBlock: 0x1B1 }, // WIN_MESSAGE
+];
+/** ids window du sac (= retour InitWindows, indexé par WIN_*). 1:1 décomp :
+ *  les WIN_* sont les ids globaux gWindows ; chez nous = ce tableau. */
+let _bagWinIds: number[] = [];
 
 // Sentinelles 1:1 : SPRITE_NONE sprite.h:6 / WINDOW_NONE window.h:43 /
 // TASK_NONE task.h:6 (TAIL_SENTINEL=0xFF) / NOT_SWAPPING item_menu.c:104.
@@ -162,6 +190,7 @@ interface BagAssets {
   bgTilemap: Uint16Array;    // gBagScreen_GfxTileMap (menu.bin → tilemapBuffer)
   palMale: Uint16Array;      // gBagScreenMale_Pal   (menu_male.pal)
   palFemale: Uint16Array;    // gBagScreenFemale_Pal (menu_female.pal)
+  stdMenuPal: Uint16Array;   // gStandardMenuPalette (interface/std_menu.pal)
 }
 let _bagAssets: BagAssets | null = null;
 let _bagAssetsLoading: Promise<BagAssets> | null = null;
@@ -172,13 +201,14 @@ async function _bagLoadAssets(): Promise<BagAssets> {
   if (_bagAssets) return _bagAssets;
   if (_bagAssetsLoading) return _bagAssetsLoading;
   _bagAssetsLoading = (async () => {
-    const [bgTiles, bgTilemap, palMale, palFemale] = await Promise.all([
+    const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
       loadGbaPal('/decomp/em/bag/menu_female.pal'),
+      loadGbaPal('/decomp/em/interface/std_menu.pal'), // gStandardMenuPalette
     ]);
-    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale };
+    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal };
     return _bagAssets;
   })();
   return _bagAssetsLoading;
@@ -449,7 +479,44 @@ function SetupBagMenu(): boolean {
 
 // ─── Leaf-helpers SetupBagMenu — portés étapes 4..9 (stubs LOUD honnêtes) ────
 // (BagMenu_InitBGs + LoadBagMenu_Graphics = portés étape 3, plus haut.)
-function LoadBagMenuTextWindows(): void { _nyi(4, 'LoadBagMenuTextWindows'); }
+/** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : switch palId →
+ *  gMenuInfoElements{1,2,3}_Pal → LoadPalette(pal, palOffset, 32).
+ *  ⚠️ MAILLON : l'asset `gMenuInfoElements2_Pal` (graphics/interface/
+ *  menu_info_elements2.gbapal, palId=1 du sac) N'EST PAS extrait
+ *  (vérifié : absent decomp-data/menu-data + public/decomp/em/interface).
+ *  Port 1:1 + sa maison gba-menu-system.ts = prérequis ÉTAPE 5 (palette 12
+ *  alimente le rendu texte de la liste, son consommateur). Stub LOUD
+ *  honnête (WORKING-MODE §2, jamais de fake silencieux ; non atteint en
+ *  jeu — sac pas wiré). */
+function ListMenuLoadStdPalAt(_palOffset: number, _palId: number): void {
+  _nyi(5, 'ListMenuLoadStdPalAt (menu.c:2077) — extracteur gMenuInfoElements*_Pal manquant');
+}
+
+/** 1:1 décomp `LoadBagMenuTextWindows` (item_menu.c:2457). InitWindows
+ *  (sDefaultBagWindows) + DeactivateAllTextPrinters + palettes border(14)/
+ *  msgbox(13)/listStd(12)/stdMenu(15) + FillWindowPixelBuffer(PIXEL_FILL
+ *  (0))+PutWindowTilemap pour WIN_ITEM_LIST..WIN_POCKET_NAME (AUCUN
+ *  DrawStdFrame — feedback-bag-no-frames) + ScheduleBgCopy 0/1. */
+function LoadBagMenuTextWindows(): void {
+  // 1:1 :2461 InitWindows(sDefaultBagWindows) — retourne les ids (≠ AddWindow
+  // ad-hoc, feedback-bag-refactor landmine #1 : pas de leak gWindows OW).
+  _bagWinIds = InitWindows(sDefaultBagWindows);
+  DeactivateAllTextPrinters();                              // :2462
+  LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(14));            // :2463
+  LoadMessageBoxGfx(0, 10, BG_PLTT_ID(13));                 // :2464
+  ListMenuLoadStdPalAt(BG_PLTT_ID(12), 1);                  // :2465 (maillon stub)
+  // :2466 LoadPalette(&gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP)
+  // — assets prêts en case 8 (gate _bagGraphicsReady), lecture sync 1:1.
+  if (_bagAssets) LoadPalette(_bagAssets.stdMenuPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+  // :2467 for (i=0; i<=WIN_POCKET_NAME; i++) — transparent, SANS cadre.
+  for (let i = WIN_ITEM_LIST; i <= WIN_POCKET_NAME; i++) {
+    const wid = _bagWinIds[i];
+    FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+    PutWindowTilemap(wid);
+  }
+  ScheduleBgCopyTilemapToVram(0);                            // :2472
+  ScheduleBgCopyTilemapToVram(1);                            // :2473
+}
 function UpdatePocketItemLists(): void { _nyi(5, 'UpdatePocketItemLists'); }
 function InitPocketListPositions(): void { _nyi(5, 'InitPocketListPositions'); }
 function InitPocketScrollPositions(): void { _nyi(5, 'InitPocketScrollPositions'); }
