@@ -27,6 +27,8 @@ import {
   ENUM_NATIONAL_0, ENUM_HOENN_1,
   NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,
 } from './decomp-data/auto/include/constants/pokedex-data';
+import { sSpeciesToNationalPokedexNum } from './decomp-data/auto/pokedex-order-tables';
+import { SPECIES_UNOWN, SPECIES_SPINDA } from './decomp-data/auto/include/constants/species-data';
 
 // ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
 // décomp `include/constants/pokedex.h` :
@@ -168,4 +170,59 @@ export function GetKantoPokedexCount(caseID: number): number {
     }
   }
   return count;
+}
+
+// ─── ÉTAPE 2b : mapping species↔natDex + HandleSetPokedexFlag 1:1 ───────────
+// Consomment `sSpeciesToNationalPokedexNum` (décomp-data/auto, extrait 1:1
+// ÉTAPE 2a). `NUM_SPECIES - 1` décomp = `.length` (= LEN 412, taille décomp
+// `[NUM_SPECIES-1]`). Câblage des callers gameplay = ÉTAPE 2c.
+
+/**
+ * 1:1 décomp `u16 SpeciesToNationalPokedexNum(u16 species)` (pokemon.c:5664).
+ */
+export function SpeciesToNationalPokedexNum(species: number): number {
+  if (!species)
+    return 0;
+  return sSpeciesToNationalPokedexNum[species - 1];
+}
+
+/**
+ * 1:1 décomp `u16 NationalPokedexNumToSpecies(u16 nationalNum)`
+ * (pokemon.c:5628-5644). Boucle linéaire inverse ; `NUM_SPECIES - 1` =
+ * `sSpeciesToNationalPokedexNum.length` (taille décomp `[NUM_SPECIES-1]`).
+ */
+export function NationalPokedexNumToSpecies(nationalNum: number): number {
+  if (!nationalNum)
+    return 0;
+
+  let species = 0;
+  const len = sSpeciesToNationalPokedexNum.length; // = NUM_SPECIES - 1
+
+  while (species < len && sSpeciesToNationalPokedexNum[species] !== nationalNum)
+    species++;
+
+  if (species === len)
+    return 0;
+
+  return species + 1;
+}
+
+/**
+ * 1:1 décomp `void HandleSetPokedexFlag(u16 nationalNum, u8 caseId,
+ * u32 personality)` (pokemon.c:6929-6940). Wrapper "set seulement si pas
+ * déjà set" + stocke la personality Unown/Spinda (= variation sprite dex).
+ * Backed par `GetSaveBlock2().pokedex.{unownPersonality,spindaPersonality}`
+ * (save-blocks.ts:128/130). SPECIES_UNOWN/SPINDA via décomp-data 1:1.
+ * Appelé par le gameplay (capture→FLAG_SET_CAUGHT, mon vu→FLAG_SET_SEEN,
+ * give-mon/trade/evo/egg) — câblage = ÉTAPE 2c.
+ */
+export function HandleSetPokedexFlag(nationalNum: number, caseId: number, personality: number): void {
+  const getFlagCaseId = (caseId === FLAG_SET_SEEN) ? FLAG_GET_SEEN : FLAG_GET_CAUGHT;
+  if (!GetSetPokedexFlag(nationalNum, getFlagCaseId)) { // don't set if it's already set
+    GetSetPokedexFlag(nationalNum, caseId);
+    if (NationalPokedexNumToSpecies(nationalNum) === SPECIES_UNOWN)
+      GetSaveBlock2().pokedex.unownPersonality = personality;
+    if (NationalPokedexNumToSpecies(nationalNum) === SPECIES_SPINDA)
+      GetSaveBlock2().pokedex.spindaPersonality = personality;
+  }
 }
