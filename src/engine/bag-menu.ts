@@ -27,23 +27,37 @@
 import {
   getRuntime, ResetPaletteFade, ResetTasks,
   FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
-  assetCache,
+  assetCache, PlaySE,
 } from './decomp-globals';
 import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
 import { ListMenuLoadStdPalAt } from './gba-menu-system';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId,
   CompactItemsInBagPocket, SortBerriesOrTMHMs,
+  BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition,
 } from './bag-pockets';
 import {
   SetCursorWithinListBounds, SetCursorScrollWithinListBounds, type ListPos,
 } from './menu-helpers';
 import {
+  gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
+  CURSOR_BLACK_ARROW, type ListMenuTemplate, type ListMenu,
+} from './list-menu';
+import { getItemKeyById } from './data-tables';
+import { ItemIdToBattleMoveId } from './tmhm-moves';
+import { getMoveName } from './data/game-data';
+import {
+  GetItemName, StringCopy, ConvertIntToDecimalStringN,
+  STR_CONV_MODE_LEADING_ZEROS,
+} from './decomp-bridge';
+import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { DeactivateAllTextPrinters } from './gba-text-system';
+import {
+  DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
+} from './gba-text-system';
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
 import { gameState } from './game-state';
@@ -56,6 +70,11 @@ import {
   KEYITEMS_POCKET, POCKETS_COUNT,
 } from './decomp-data/auto/include/constants/item-data';
 import { BG_SCREEN_SIZE } from './decomp-data/auto/include/gba/defines-data';
+import {
+  ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01,
+  ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
+} from './decomp-data/auto/include/constants/items-data';
+import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
@@ -527,6 +546,37 @@ function LoadBagMenuTextWindows(): void {
 // 1:1 décomp `#define MAX_ITEMS_SHOWN 8` (item_menu.c:68).
 const MAX_ITEMS_SHOWN = 8;
 
+// 1:1 décomp `#define FIRST_BERRY_INDEX ITEM_CHERI_BERRY`
+// (include/constants/items.h ; items-data n'expose que _EXPR → dérivé 1:1).
+const FIRST_BERRY_INDEX = ITEM_CHERI_BERRY;
+
+// 1:1 décomp enum COLORID (item_menu.c:379-385) — seules les valeurs
+// référencées par la STRUCTURE 5b (COLORID_NORMAL = arg du BagMenu_Print
+// déféré → réintroduit avec _bagPrintQuantity au port suivant).
+const COLORID_GRAY_CURSOR = 2;
+const COLORID_NONE = 0xFF;
+
+// 1:1 décomp strings FR `src/strings.c` (valeurs byte-identiques) :
+//  :222 gText_CloseBag / :299 gText_NumberItem_HM / :298 gText_NumberItem_TMBerry
+//  :219 gText_xVar1. Les codes de contrôle {NO}/{CLEAR n}/{CLEAR_TO n} ne
+//  sont pas (encore) interprétés par notre StringExpandPlaceholders/printer
+//  (limitation SYSTÉMIQUE du modèle texte projet, commune à tous les menus
+//  — PAS un fake local du sac ; honnête WORKING-MODE §2). Le nom est
+//  construit 1:1 ; le rendu pixel fin = concern BagMenu_Print (porté plus tard).
+const gText_CloseBag = 'FERMER LE SAC';
+const gText_NumberItem_HM = '{CLEAR_TO 17}{STR_VAR_1}{CLEAR 5}{STR_VAR_2}';
+const gText_NumberItem_TMBerry = '{NO}{STR_VAR_1}{CLEAR 7}{STR_VAR_2}';
+const gText_xVar1 = '×{STR_VAR_1}';
+
+// Accès 1:1-sém aux buffers texte gStringVarN : la décomp écrit
+// `StringCopy(gStringVar2,…)` / `ConvertIntToDecimalStringN(gStringVar1,…)`
+// puis `StringExpandPlaceholders(dest, tmpl)` (qui substitue {STR_VAR_1/2}
+// depuis les gStringVarN module). Nos helpers string retournent la valeur
+// (dest opaque, modèle projet) → on route l'écriture via le proxy globalThis
+// (= set→let module que StringExpandPlaceholders lit en closure, cf.
+// gba-text-system.ts:181-190). Net-effect identique à la décomp.
+const _gsv = globalThis as unknown as Record<string, string>;
+
 // 1:1 décomp `struct ListBuffer1{ ListMenuItem subBuffers[] }` /
 // `struct ListBuffer2{ u8 name[][] }` (item_menu.c:106/110) — alloués
 // par AllocateBagItemListBuffers, remplis par LoadBagItemListBuffers (5b).
@@ -609,7 +659,180 @@ function AllocateBagItemListBuffers(): void {
   _sListBuffer1 = { subBuffers: [] };
   _sListBuffer2 = { name: [] };
 }
-function LoadBagItemListBuffers(_pocketId: number): void { _nyi(5, 'LoadBagItemListBuffers'); }
+// ─── Leaf-helpers sprite/desc/render des callbacks — DÉFÉRÉS LOUD (5b) ───────
+// WORKING-MODE §2 : déferral honnête documenté > demi-structure foam. NON
+// atteints à 5b (sac pas wiré ; sItemListMenu n'est invoqué qu'au
+// ListMenuInit étape 5e). Portés en incrément borné AVANT que le sac soit
+// réellement ouvrable. Chaque corps décomp est cité pour un port exact.
+/** 1:1 décomp `ShakeBagSprite` (item_menu.c) — anim sprite sac. */
+function ShakeBagSprite(): void { _nyi(5, 'ShakeBagSprite (sprite sac)'); }
+/** 1:1 décomp `AddBagItemIconSprite(itemId, slot)` — sprite icône objet 24×24. */
+function AddBagItemIconSprite(_itemId: number, _slot: number): void { _nyi(5, 'AddBagItemIconSprite (icône objet)'); }
+/** 1:1 décomp `RemoveBagItemIconSprite(slot)`. */
+function RemoveBagItemIconSprite(_slot: number): void { _nyi(5, 'RemoveBagItemIconSprite (icône objet)'); }
+/** 1:1 décomp `PrintItemDescription(itemIndex)` (item_menu.c:998) — texte desc. */
+function PrintItemDescription(_itemIndex: number): void { _nyi(5, 'PrintItemDescription (texte description WIN_DESCRIPTION)'); }
+/** 1:1 décomp `BagMenu_PrintCursorAtPos(y, colorIndex)` (item_menu.c:1021). */
+function BagMenu_PrintCursorAtPos(_y: number, _colorIndex: number): void { _nyi(5, 'BagMenu_PrintCursorAtPos (curseur liste)'); }
+/** 1:1 décomp item_menu.c:970-971 `BlitBitmapToWindow(windowId,
+ *  gBagMenuHMIcon_Gfx, 8, y-1, 16, 16)` — icône HM (gfx déférée). */
+function _bagBlitHMIcon(_windowId: number, _y: number): void { _nyi(5, 'BlitBitmapToWindow gBagMenuHMIcon_Gfx (icône HM)'); }
+/** 1:1 décomp item_menu.c:976-987 : ConvertIntToDecimalStringN(quantité) +
+ *  StringExpandPlaceholders(gText_xVar1) + GetStringRightAlignXOffset +
+ *  BagMenu_Print(... TEXT_SKIP_DRAW, COLORID_NORMAL) — rendu quantité. */
+function _bagPrintQuantity(_windowId: number, _itemQuantity: number, _y: number, _numDigits: number): void {
+  _nyi(5, 'BagMenu_Print quantité (ConvertInt+gText_xVar1+rightAlign)');
+}
+/** 1:1 décomp item_menu.c:990-994 : `if (gSaveBlock1Ptr->registeredItem !=
+ *  ITEM_NONE && == itemId) BlitBitmapToWindow(windowId, sRegisteredSelect_Gfx,
+ *  96, y-1, 24, 16)` — pastille objet ENREGISTRÉ (état save + gfx déférés). */
+function _bagDrawRegisteredIcon(_windowId: number, _y: number, _itemId: number): void {
+  _nyi(5, 'sRegisteredSelect_Gfx blit (objet enregistré)');
+}
+/** 1:1 décomp `GetItemImportance` (item.c:910) `gItems[SanitizeItemId
+ *  (itemId)].importance` — condition du callback (item.c maillon, déféré 5b). */
+function GetItemImportance(_itemId: number): number { return _nyi(5, 'GetItemImportance (item.c:910)'); }
+
+/** 1:1 décomp `CopyItemName` (item.c:79) : `StringCopy(dst, GetItemName
+ *  (itemId))`. `GetItemName` décomp = `gItems[SanitizeItemId(itemId)].name`
+ *  (indexé numérique) ; notre table items est clé itemKey-string →
+ *  `getItemKeyById` = réalisation 1:1-sém de l'indexation `gItems[itemId]`.
+ *  `StringCopy` retourne src (dst opaque, modèle string projet). */
+function CopyItemName(itemId: number): string {
+  return StringCopy('', GetItemName(getItemKeyById(itemId)));
+}
+
+/** 1:1 décomp `GetItemNameFromPocket` (item_menu.c:899). La décomp remplit
+ *  `dest` (u8*) via gStringVar1/2 + StringExpandPlaceholders ; notre modèle
+ *  string retourne la valeur → on RETOURNE le nom construit (= dest). Les
+ *  gStringVarN sont routés via le proxy globalThis (cf. _gsv plus haut). */
+function GetItemNameFromPocket(itemId: number): string {
+  switch (gBagPosition.pocket) {
+    case TMHM_POCKET:
+      // StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(itemId)])
+      _gsv.gStringVar2 = StringCopy('', getMoveName(ItemIdToBattleMoveId(itemId)));
+      if (itemId >= ITEM_HM01) {
+        // Get HM number
+        _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - ITEM_HM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 1);
+        return StringExpandPlaceholders('', gText_NumberItem_HM);
+      } else {
+        // Get TM number
+        _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - ITEM_TM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
+        return StringExpandPlaceholders('', gText_NumberItem_TMBerry);
+      }
+    case BERRIES_POCKET:
+      _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
+      _gsv.gStringVar2 = CopyItemName(itemId);
+      return StringExpandPlaceholders('', gText_NumberItem_TMBerry);
+    default:
+      return CopyItemName(itemId);
+  }
+}
+
+/** 1:1 décomp `BagMenu_MoveCursorCallback` (item_menu.c:929) — STRUCTURE
+ *  1:1 ; sous-appels sprite/desc = leaf déférés LOUD (cf. bloc ci-dessus). */
+function BagMenu_MoveCursorCallback(itemIndex: number, onInit: boolean, _list: ListMenu): void {
+  if (onInit !== true) {
+    PlaySE(SE_SELECT);
+    ShakeBagSprite();
+  }
+  if (gBagMenu!.toSwapPos === NOT_SWAPPING) {
+    RemoveBagItemIconSprite(gBagMenu!.itemIconSlot ^ 1);
+    if (itemIndex !== LIST_CANCEL)
+      AddBagItemIconSprite(BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex), gBagMenu!.itemIconSlot);
+    else
+      AddBagItemIconSprite(ITEM_LIST_END, gBagMenu!.itemIconSlot);
+    gBagMenu!.itemIconSlot ^= 1;
+    if (!gBagMenu!.inhibitItemDescriptionPrint)
+      PrintItemDescription(itemIndex);
+  }
+}
+
+/** 1:1 décomp `BagMenu_ItemPrintCallback` (item_menu.c:949) — STRUCTURE
+ *  1:1 ; rendus (curseur/HM/quantité/enregistré) = leaf déférés LOUD. */
+function BagMenu_ItemPrintCallback(windowId: number, itemIndex: number, y: number): void {
+  let itemId: number;
+  let itemQuantity: number;
+  if (itemIndex !== LIST_CANCEL) {
+    if (gBagMenu!.toSwapPos !== NOT_SWAPPING) {
+      // Swapping items, draw cursor at original item's location
+      if (gBagMenu!.toSwapPos === (itemIndex & 0xFF))
+        BagMenu_PrintCursorAtPos(y, COLORID_GRAY_CURSOR);
+      else
+        BagMenu_PrintCursorAtPos(y, COLORID_NONE);
+    }
+    itemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex);
+    itemQuantity = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, itemIndex);
+    // Draw HM icon
+    if (itemId >= ITEM_HM01 && itemId <= ITEM_HM08)
+      _bagBlitHMIcon(windowId, y);
+    if (gBagPosition.pocket === BERRIES_POCKET) {
+      // Print berry quantity
+      _bagPrintQuantity(windowId, itemQuantity, y, BERRY_CAPACITY_DIGITS);
+    } else if (gBagPosition.pocket !== KEYITEMS_POCKET && GetItemImportance(itemId) === 0) {
+      // Print item quantity
+      _bagPrintQuantity(windowId, itemQuantity, y, BAG_ITEM_CAPACITY_DIGITS);
+    } else {
+      // Print registered icon
+      _bagDrawRegisteredIcon(windowId, y, itemId);
+    }
+  }
+}
+
+/** 1:1 décomp `sItemListMenu` (item_menu.c:244) — template ListMenu du sac
+ *  (items=NULL ; callbacks ci-dessus ; windowId=WIN_ITEM_LIST 1:1 littéral
+ *  = index gWindows séquentiel, cf. _bagWinIds). Copié dans
+ *  gMultiuseListMenuTemplate par LoadBagItemListBuffers. */
+const sItemListMenu: ListMenuTemplate = {
+  items: [],
+  moveCursorFunc: BagMenu_MoveCursorCallback,
+  itemPrintFunc: BagMenu_ItemPrintCallback,
+  totalItems: 0,
+  maxShowed: 0,
+  windowId: WIN_ITEM_LIST,
+  header_X: 0,
+  item_X: 8,
+  cursor_X: 0,
+  upText_Y: 1,
+  cursorPal: 1,
+  fillValue: 0,
+  cursorShadowPal: 3,
+  lettersSpacing: 0,
+  itemVerticalPadding: 0,
+  scrollMultiple: LIST_NO_MULTIPLE_SCROLL,
+  fontId: FONT_NARROW,
+  cursorKind: CURSOR_BLACK_ARROW,
+};
+
+/** 1:1 décomp `LoadBagItemListBuffers` (item_menu.c:863). Remplit
+ *  sListBuffer2->name[] (via GetItemNameFromPocket) + sListBuffer1->
+ *  subBuffers[] (ListMenuItem{name,id}) ; +1 entrée "FERMER LE SAC"
+ *  (LIST_CANCEL) si !hideCloseBagText ; bind gMultiuseListMenuTemplate
+ *  (= sItemListMenu + totalItems/items/maxShowed). */
+function LoadBagItemListBuffers(pocketId: number): void {
+  if (!gBagMenu || !_sListBuffer1 || !_sListBuffer2) return;
+  let i: number;
+  const slots = getBagPocketSlots(pocketId);          // &gBagPockets[pocketId]
+  const subBuffer = _sListBuffer1.subBuffers;          // sListBuffer1->subBuffers
+  if (!gBagMenu.hideCloseBagText) {
+    for (i = 0; i < gBagMenu.numItemStacks[pocketId] - 1; i++) {
+      _sListBuffer2.name[i] = GetItemNameFromPocket(slotItemId(slots[i]));
+      subBuffer[i] = { name: _sListBuffer2.name[i], id: i };
+    }
+    _sListBuffer2.name[i] = StringCopy('', gText_CloseBag);
+    subBuffer[i] = { name: _sListBuffer2.name[i], id: LIST_CANCEL };
+  } else {
+    for (i = 0; i < gBagMenu.numItemStacks[pocketId]; i++) {
+      _sListBuffer2.name[i] = GetItemNameFromPocket(slotItemId(slots[i]));
+      subBuffer[i] = { name: _sListBuffer2.name[i], id: i };
+    }
+  }
+  // gMultiuseListMenuTemplate = sItemListMenu (struct copy) puis surcharges.
+  Object.assign(gMultiuseListMenuTemplate, sItemListMenu);
+  gMultiuseListMenuTemplate.totalItems = gBagMenu.numItemStacks[pocketId];
+  gMultiuseListMenuTemplate.items = subBuffer;
+  gMultiuseListMenuTemplate.maxShowed = gBagMenu.numShownItems[pocketId];
+}
 function PrintPocketNames(_pocket: number): void { _nyi(5, 'PrintPocketNames'); }
 function CopyPocketNameToWindow(_a: number): void { _nyi(5, 'CopyPocketNameToWindow'); }
 function DrawPocketIndicatorSquare(_p: number, _on: boolean): void { _nyi(5, 'DrawPocketIndicatorSquare'); }

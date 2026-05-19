@@ -147,5 +147,24 @@ export function loadConstantsTable(t: ConstantsTable): void { constants = t; }
 export function getSpeciesId(enumName: string): number { return constants?.species[enumName] ?? 0; }
 export function getMoveId(enumName: string): number { return constants?.moves[enumName] ?? 0; }
 export function getItemId(enumName: string): number { return constants?.items[enumName] ?? 0; }
+// Pont 1:1-sémantique de l'indexation décomp `gItems[itemId]` (numérique) vers
+// notre modèle itemKey-string : inverse de `constants.items` (itemKey→id).
+// Map reverse lazy, invalidée si `constants` est rechargé (chargé 1× en
+// pratique). Collision d'id → 1re clé gagne (ITEM_NONE=0 inclus). Sert
+// CopyItemName/GetItemNameFromPocket/PrintItemDescription (sac, shop, PC…).
+let _itemKeyById: Map<number, string> | null = null;
+let _itemKeyByIdSrc: ConstantsTable | null = null;
+export function getItemKeyById(id: number): string {
+  if (!constants) return `ITEM_${id}`;
+  if (_itemKeyById === null || _itemKeyByIdSrc !== constants) {
+    _itemKeyById = new Map<number, string>();
+    for (const k of Object.keys(constants.items)) {
+      const v = constants.items[k];
+      if (!_itemKeyById.has(v)) _itemKeyById.set(v, k);
+    }
+    _itemKeyByIdSrc = constants;
+  }
+  return _itemKeyById.get(id) ?? `ITEM_${id}`;
+}
 export function getAbilityId(enumName: string): number { return constants?.abilities[enumName] ?? 0; }
 export function getNatureId(enumName: string): number { return constants?.natures[enumName] ?? 0; }

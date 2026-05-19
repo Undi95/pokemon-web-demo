@@ -93,3 +93,19 @@ export function SortBerriesOrTMHMs(pocketId: number): void {
     }
   }
 }
+
+/** 1:1 décomp `BagGetItemIdByPocketPosition` (item.c:590) :
+ *    return gBagPockets[pocketId - 1].itemSlots[pocketPos].itemId;
+ *  Appelé avec `gBagPosition.pocket + 1` → `pocketId - 1` = poche 0-based
+ *  (= notre `getBagPocketSlots`). Retour = itemId canonique (slotItemId). */
+export function BagGetItemIdByPocketPosition(pocketId: number, pocketPos: number): number {
+  return slotItemId(getBagPocketSlots(pocketId - 1)[pocketPos]);
+}
+
+/** 1:1 décomp `BagGetQuantityByPocketPosition` (item.c:595) :
+ *    return GetBagItemQuantity(&gBagPockets[pocketId - 1].itemSlots[pocketPos].quantity);
+ *  `GetBagItemQuantity` = 1:1-sém `_qty` (quantité en clair chez nous,
+ *  cf. en-tête module). */
+export function BagGetQuantityByPocketPosition(pocketId: number, pocketPos: number): number {
+  return _qty(getBagPocketSlots(pocketId - 1)[pocketPos]);
+}
