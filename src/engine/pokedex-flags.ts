@@ -1,0 +1,171 @@
+/**
+ * pokedex-flags.ts — port 1:1 décomp du cœur DATA seen/caught du Pokédex.
+ *
+ * Source de vérité (ne JAMAIS diverger) :
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/pokedex.c`
+ *   - `D:/Projet 1/decomps/pokeemeraude/include/pokedex.h`
+ *
+ * ⚠️ CHANTIER POKÉDEX — ÉTAPE 1 (cf. POKEDEX-CHANTIER-1TO1-PLAN.md).
+ * Module ISOLÉ (imports : save-system + constantes décomp-data uniquement
+ * → 0 risque cyclique, pattern list-menu incrément 1). Déterministe,
+ * 0 UI / 0 A/B. Le placeholder `pokedex-screen.ts` (100 l) compte des
+ * flags string `*_SEEN/_CAUGHT` ad-hoc — CE module porte le VRAI
+ * mécanisme 1:1 (bitfield `gSaveBlock2.pokedex.{seen,owned}` +
+ * redondance anti-triche `gSaveBlock1.seen1/seen2`). Le câblage
+ * gameplay (capture→FLAG_SET_CAUGHT, rencontre→FLAG_SET_SEEN) = ÉTAPE 2.
+ *
+ * REPORT HONNÊTE — différé ÉTAPE 3 (data ordres) : `GetHoennPokedexCount`
+ * + `HoennToNationalOrder` (pokemon.c:5680 → table `sHoennToNationalOrder`)
+ * NE sont PAS ici : la table d'ordre Hoenn n'est pas encore portée
+ * (decomp-data n'a qu'un descripteur signature, pas les données). Les
+ * inclure via un stub auto serait un demi-port (WORKING-MODE r.2). Ils
+ * arriveront à l'ÉTAPE 3 (data ordres/entrées) avec la table 1:1.
+ */
+
+import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
+import {
+  ENUM_NATIONAL_0, ENUM_HOENN_1,
+  NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,
+} from './decomp-data/auto/include/constants/pokedex-data';
+
+// ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
+// décomp `include/constants/pokedex.h` :
+//   #define NATIONAL_DEX_COUNT  NATIONAL_DEX_DEOXYS
+//   #define HOENN_DEX_COUNT     HOENN_DEX_DEOXYS
+//   #define KANTO_DEX_COUNT     NATIONAL_DEX_MEW
+// On résout l'EXPR (= le membre #define) via l'enum auto-extrait → 1:1
+// exact, robuste à un changement de valeur décomp (mémoire
+// no-hardcoded-decomp-values).
+const _NAT = ENUM_NATIONAL_0 as Record<string, number>;
+const _HOE = ENUM_HOENN_1 as Record<string, number>;
+
+/** 1:1 décomp `NATIONAL_DEX_COUNT` (= NATIONAL_DEX_DEOXYS = 386). */
+export const NATIONAL_DEX_COUNT = _NAT[NATIONAL_DEX_COUNT_EXPR];
+/** 1:1 décomp `KANTO_DEX_COUNT` (= NATIONAL_DEX_MEW = 151). */
+export const KANTO_DEX_COUNT = _NAT[KANTO_DEX_COUNT_EXPR];
+/** 1:1 décomp `HOENN_DEX_COUNT` (= HOENN_DEX_DEOXYS = 202). Exporté pour
+ *  ÉTAPE 3 (GetHoennPokedexCount) ; non utilisé ici. */
+export const HOENN_DEX_COUNT = _HOE[HOENN_DEX_COUNT_EXPR];
+
+/** 1:1 décomp `enum { FLAG_GET_SEEN, FLAG_GET_CAUGHT, FLAG_SET_SEEN,
+ *  FLAG_SET_CAUGHT }` (pokedex.h:13-19). */
+export const FLAG_GET_SEEN = 0;
+export const FLAG_GET_CAUGHT = 1;
+export const FLAG_SET_SEEN = 2;
+export const FLAG_SET_CAUGHT = 3;
+
+/** 1:1 décomp `enum { DEX_MODE_HOENN, DEX_MODE_NATIONAL }` (pokedex.h:9-11). */
+export const DEX_MODE_HOENN = 0;
+export const DEX_MODE_NATIONAL = 1;
+
+/**
+ * 1:1 décomp `s8 GetSetPokedexFlag(u16 nationalDexNo, u8 caseID)`
+ * (pokedex.c:4207-4263).
+ *
+ * `nationalDexNo--` AVANT index/bit (off-by-one 1:1). `index =
+ * nationalDexNo/8 ; bit = nationalDexNo%8 ; mask = 1<<bit`.
+ * GET : lit le bit + cross-check anti-triche (seen ↔ seen1 ↔ seen2 ;
+ * owned ↔ seen ↔ seen1 ↔ seen2) — mismatch → clear TOUT + retourne 0
+ * (le bug/anti-triche émerge de l'algo identique, NE PAS simplifier).
+ * SET_SEEN : pokedex.seen |= mask ET seen1 |= mask ET seen2 |= mask
+ * (triple écriture 1:1). SET_CAUGHT : pokedex.owned |= mask SEUL.
+ *
+ * Backed par les structs save-blocks réelles (save core étapes 1-6
+ * DONE) : `GetSaveBlock2().pokedex.{seen,owned}` (number[] bitset
+ * NUM_DEX_FLAG_BYTES=52) + `GetSaveBlock1().{seen1,seen2}`.
+ */
+export function GetSetPokedexFlag(nationalDexNo: number, caseID: number): number {
+  let retVal = 0;
+
+  nationalDexNo--;                       // 1:1 :4214
+  const index = (nationalDexNo / 8) | 0; // 1:1 :4215 (division entière u16)
+  const bit = nationalDexNo % 8;         // 1:1 :4216
+  const mask = 1 << bit;                 // 1:1 :4217
+
+  const sb2 = GetSaveBlock2();
+  const sb1 = GetSaveBlock1();
+  const seen = sb2.pokedex.seen;
+  const owned = sb2.pokedex.owned;
+  const seen1 = sb1.seen1;
+  const seen2 = sb1.seen2;
+
+  switch (caseID) {
+    case FLAG_GET_SEEN: // 1:1 :4221-4235
+      if (seen[index] & mask) {
+        if ((seen[index] & mask) === (seen1[index] & mask)
+          && (seen[index] & mask) === (seen2[index] & mask)) {
+          retVal = 1;
+        } else {
+          seen[index] &= ~mask;
+          seen1[index] &= ~mask;
+          seen2[index] &= ~mask;
+          retVal = 0;
+        }
+      }
+      break;
+    case FLAG_GET_CAUGHT: // 1:1 :4236-4252
+      if (owned[index] & mask) {
+        if ((owned[index] & mask) === (seen[index] & mask)
+          && (owned[index] & mask) === (seen1[index] & mask)
+          && (owned[index] & mask) === (seen2[index] & mask)) {
+          retVal = 1;
+        } else {
+          owned[index] &= ~mask;
+          seen[index] &= ~mask;
+          seen1[index] &= ~mask;
+          seen2[index] &= ~mask;
+          retVal = 0;
+        }
+      }
+      break;
+    case FLAG_SET_SEEN: // 1:1 :4253-4257
+      seen[index] |= mask;
+      seen1[index] |= mask;
+      seen2[index] |= mask;
+      break;
+    case FLAG_SET_CAUGHT: // 1:1 :4258-4260
+      owned[index] |= mask;
+      break;
+  }
+  return retVal;
+}
+
+/**
+ * 1:1 décomp `u16 GetNationalPokedexCount(u8 caseID)` (pokedex.c:4265-4285).
+ * Boucle 0..NATIONAL_DEX_COUNT-1 ; compte les natDex i+1 dont le flag
+ * SEEN/CAUGHT est set (via GetSetPokedexFlag).
+ */
+export function GetNationalPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < NATIONAL_DEX_COUNT; i++) {
+    switch (caseID) {
+      case FLAG_GET_SEEN:
+        if (GetSetPokedexFlag(i + 1, FLAG_GET_SEEN)) count++;
+        break;
+      case FLAG_GET_CAUGHT:
+        if (GetSetPokedexFlag(i + 1, FLAG_GET_CAUGHT)) count++;
+        break;
+    }
+  }
+  return count;
+}
+
+/**
+ * 1:1 décomp `u16 GetKantoPokedexCount(u8 caseID)` (pokedex.c:4309-4329).
+ * Identique à National mais borné KANTO_DEX_COUNT (les natDex 1..151
+ * = Kanto, ordre national direct).
+ */
+export function GetKantoPokedexCount(caseID: number): number {
+  let count = 0;
+  for (let i = 0; i < KANTO_DEX_COUNT; i++) {
+    switch (caseID) {
+      case FLAG_GET_SEEN:
+        if (GetSetPokedexFlag(i + 1, FLAG_GET_SEEN)) count++;
+        break;
+      case FLAG_GET_CAUGHT:
+        if (GetSetPokedexFlag(i + 1, FLAG_GET_CAUGHT)) count++;
+        break;
+    }
+  }
+  return count;
+}
