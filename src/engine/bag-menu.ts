@@ -48,7 +48,8 @@ import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from './data-ta
 import { ItemIdToBattleMoveId } from './tmhm-moves';
 import { getMoveName } from './data/game-data';
 import {
-  GetItemName, GetItemDescription, StringCopy, ConvertIntToDecimalStringN,
+  GetItemName, GetItemDescription, GetItemImportance,
+  StringCopy, ConvertIntToDecimalStringN,
   STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
 } from './decomp-bridge';
 import {
@@ -859,18 +860,10 @@ function _bagDrawRegisteredIcon(_windowId: number, _y: number, _itemId: number):
      save registeredItem). No-op honnête (icône SELECT objets-clés =
      cosmétique, non bloquant ouvrable). */
 }
-/** DÉFÉRÉ — `GetItemImportance` (item.c:910) `gItems[SanitizeItemId
- *  (itemId)].importance`. **DATA-GAP HONNÊTE** : notre items.json (ItemDef)
- *  n'expose PAS le champ `importance` → port 1:1 impossible sans
- *  ré-extraction items data (chaînon dédié). Pas de valeur devinée
- *  (WORKING-MODE §2 : report honnête > fake). */
-function GetItemImportance(_itemId: number): number {
-  // HONNÊTE-MIN documenté (résolu Phase 3 par ré-extraction items+champ
-  // `importance`) : items.json n'expose pas `importance`. 0 = défaut décomp
-  // (quasi tous les objets non-clés ; KEYITEMS_POCKET est déjà exclu en amont
-  // dans BagMenu_ItemPrintCallback). Sur chemin rendu liste → pas de throw.
-  return 0;
-}
+// GetItemImportance : PORTÉ 1:1 (item.c:910) → importé de decomp-bridge ↑.
+// items.json re-extrait avec le champ `importance` (scripts/extract-items.mjs).
+// Sans ça, les CS01..CS08 affichaient "x 1" car GetItemImportance retournait
+// toujours 0 → branche quantité au lieu de "registered icon".
 
 // ── 5c : leaves TEXTE/DATA — 1:1 sur infra texte A/B-prouvée (≠ foam) ──────
 /** `WIN_*` décomp = id gWindows séquentiel ; chez nous = `_bagWinIds[WIN_*]`

@@ -46,10 +46,20 @@ while ((m = re.exec(text)) !== null) {
   const battleUsage = get(/\.battleUsage\s*=\s*(\w+)/);
   const holdEffect = get(/\.holdEffect\s*=\s*(\w+)/);
   const holdEffectParam = get(/\.holdEffectParam\s*=\s*(\d+)/);
+  // 1:1 décomp `.importance = 1` (item.c:910 GetItemImportance). Posé sur
+  // tous les KEY ITEMS + les 8 HM (= "objets uniques à usage infini, pas
+  // de quantité affichée + jamais jetables"). Non-présent = 0.
+  const importance = Number(get(/\.importance\s*=\s*(\d+)/) || 0);
+  // 1:1 décomp `.registrability = TRUE` (item.c — flag pour le SELECT button
+  // sur la map = item assignable au raccourci). Posé sur certains KEY ITEMS
+  // (Bike, Surf, Bag Pyramid…). Non-présent = false.
+  const registrability = /\.registrability\s*=\s*TRUE/.test(body);
   const item = { name: nameStr, price, pocket, type, descriptionLabel };
   if (battleUsage) item.battleUsage = battleUsage;
   if (holdEffect) item.holdEffect = holdEffect;
   if (holdEffectParam) item.holdEffectParam = Number(holdEffectParam);
+  if (importance) item.importance = importance;
+  if (registrability) item.registrability = true;
   items[name] = item;
 }
 

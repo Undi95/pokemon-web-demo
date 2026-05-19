@@ -1007,6 +1007,17 @@ export function GetItemDescription(itemId: number | string): string {
   return _getItemDescFr(item.descriptionLabel ?? '');
 }
 
+/** 1:1 décomp `src/item.c:910 GetItemImportance(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].importance;
+ *  Posé à 1 pour tous les KEY ITEMS + les 8 HM (= "objets uniques à usage
+ *  infini" — pas de quantité affichée, jamais jetables, peuvent être
+ *  registered au SELECT). Items.json normalisé via _itemKeyForLookup
+ *  (= TM/HM enum-numbered → move-named, miroir GetItemDescription). */
+export function GetItemImportance(itemId: number | string): number {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.importance ?? 0;
+}
+
 // ─── Overworld map header (1:1 décomp `src/overworld.c`) ──────────────────────
 
 /** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :

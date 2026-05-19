@@ -57,6 +57,12 @@ export interface ItemDef {
   battleUsage?: string;
   holdEffect?: string;
   holdEffectParam?: number;
+  /** 1:1 décomp `gItems[id].importance` (item.c:910). 1 pour KEY ITEMS et
+   *  HM (= jamais jetables, jamais affichés avec quantité). 0 (absent) = défaut. */
+  importance?: number;
+  /** 1:1 décomp `gItems[id].registrability`. true = item assignable au
+   *  raccourci SELECT (Bike, Bag Pyramid…). */
+  registrability?: boolean;
 }
 let itemsTable: Record<string, ItemDef> | null = null;
 export function loadItemsTable(t: Record<string, ItemDef>): void {
