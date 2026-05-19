@@ -771,10 +771,12 @@ export function runTextPrinter(printer: TextPrinter): number {
       printer.currentX += exGlyphW + printer.letterSpacing;
       printer.currentChar += 2;
       if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
+      // idem char normal : speed>0 typewriter, speed===0 instant (continue).
       if (printer.textSpeed > 0) {
         printer.delayCounter = printer.textSpeed;
+        return RENDER_PRINT;
       }
-      return RENDER_PRINT;
+      continue;
     }
 
     // Char normal : blit glyph + advance cursor
@@ -800,17 +802,19 @@ export function runTextPrinter(printer: TextPrinter): number {
     printer.currentChar++;
     if (printer.onCharRendered) printer.onCharRendered(printer, byte);
 
-    // 1:1 décomp text.c:961 + RENDER_PRINT return after each glyph :
-    //   delayCounter = textSpeed;  (s'apply pour textSpeed > 0)
-    //   return RENDER_PRINT;       (toujours, 1 char par call/frame)
-    //
-    // Ancien bug : `if (textSpeed > 0) return` → si textSpeed=0, do-while
-    // continuait → tous les chars rendus en 1 frame (= INSTANT). Le décomp
-    // ROM textSpeed=0 = 1 char par call (= 60 chars/sec à 60Hz), pas instant.
+    // 1:1 (A/B user, RÉFÉRENCE — WORKING-MODE) : textSpeed===0 = rendu
+    // INSTANT (toute la chaîne en 1 frame = menus/descriptions ROM, ex.
+    // sac PrintItemDescription speed=0). textSpeed>0 = typewriter 1 char/
+    // frame (dialogues, option SLOW/MID/FAST). La révision antérieure
+    // "1 char/frame même à speed 0" était FAUSSE (A/B user confirme ROM
+    // instant pour speed 0, 2×). Donc : speed>0 → delay + RENDER_PRINT ;
+    // speed===0 → continue la do-while (pas de return = char suivant
+    // même frame → instant).
     if (printer.textSpeed > 0) {
       printer.delayCounter = printer.textSpeed;
+      return RENDER_PRINT;
     }
-    return RENDER_PRINT;
+    continue;
   } while (true);
 }
 

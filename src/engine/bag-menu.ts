@@ -107,6 +107,14 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
 import { AddBagItemIconSprite, RemoveBagItemIconSprite } from './bag-menu-icons';
 import { preloadItemIconAssets } from './item-icon';
+import {
+  AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
+  RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
+  SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
+} from './list-menu';
+import {
+  TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
+} from './decomp-data/auto/src/item_menu-data';
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
@@ -280,7 +288,8 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // Phase 2 : preloadItemIconAssets — buffers icône préchargés pour que
     // AddItemIconSprite (nav sync 1:1) lise en mémoire (sinon icône absente).
     await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
-    const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3] = await Promise.all([
+    const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
+           scrollGfx, redPal] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
@@ -289,12 +298,18 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadGbaPal('/decomp/em/interface/menu_info1.pal'),      // gMenuInfoElements1_Pal
       loadGbaPal('/decomp/em/interface/menu_info2.pal'),      // gMenuInfoElements2_Pal
       loadGbaPal('/decomp/em/interface/menu_info3.pal'),      // gMenuInfoElements3_Pal
+      loadTileBin('/decomp/em/interface/scroll_indicator.4bpp.bin', 4), // sScrollIndicator_Gfx
+      loadGbaPal('/decomp/em/interface/red.pal'),             // sRedInterface_Pal
     ]);
     // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
     // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
     assetCache.set('gMenuInfoElements1_Pal', mi1);
     assetCache.set('gMenuInfoElements2_Pal', mi2);
     assetCache.set('gMenuInfoElements3_Pal', mi3);
+    // Phase 2 flèches : sScrollIndicator_Gfx/sRedInterface_Pal = clés que
+    // AddScrollIndicatorArrowPair (list-menu.ts) résout via getAsset.
+    assetCache.set('sScrollIndicator_Gfx', scrollGfx);
+    assetCache.set('sRedInterface_Pal', redPal);
     _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal };
     return _bagAssets;
   })();
@@ -1108,12 +1123,37 @@ function AddBagVisualSprite(_pocket: number): void {
 function CreateItemMenuSwapLine(): void {
   /* DÉFÉRÉ étape 7 — CreateItemMenuSwapLine (swap d'objets). */
 }
+// 1:1 décomp `sBagScrollArrowsTemplate` (item_menu.c:363) — chevrons L/R
+// poche (CreatePocketSwitchArrowPair). palNum 0 (TAG ≠ TAG_NONE → slot pal).
+const sBagScrollArrowsTemplate: ScrollArrowsTemplate = {
+  firstArrowType: SCROLL_ARROW_LEFT, firstX: 28, firstY: 16,
+  secondArrowType: SCROLL_ARROW_RIGHT, secondX: 100, secondY: 16,
+  fullyUpThreshold: -1, fullyDownThreshold: -1,
+  tileTag: TAG_BAG_SCROLL_ARROW, palTag: TAG_BAG_SCROLL_ARROW, palNum: 0,
+};
+
+/** 1:1 décomp `CreatePocketScrollArrowPair` (item_menu.c:1030). `&gBag
+ *  Position.scrollPosition[pocket]` → getter live (1:1-sém pointeur). */
 function CreatePocketScrollArrowPair(): void {
-  /* DÉFÉRÉ Phase 2 — flèches scroll (ScrollIndicatorArrowPair, substrat
-     sprite/task). Spike : flèches invisibles = non bloquant ouvrable. */
+  if (gBagMenu!.pocketScrollArrowsTask === TASK_NONE)
+    gBagMenu!.pocketScrollArrowsTask = AddScrollIndicatorArrowPairParameterized(
+      SCROLL_ARROW_UP, 172, 12, 148,
+      gBagMenu!.numItemStacks[gBagPosition.pocket] - gBagMenu!.numShownItems[gBagPosition.pocket],
+      TAG_POCKET_SCROLL_ARROW, TAG_POCKET_SCROLL_ARROW,
+      () => gBagPosition.scrollPosition[gBagPosition.pocket]);
 }
+/** 1:1 décomp `CreatePocketSwitchArrowPair` (item_menu.c:1054). */
 function CreatePocketSwitchArrowPair(): void {
-  /* DÉFÉRÉ Phase 2 — chevrons L/R poche (idem). Non bloquant ouvrable. */
+  if (gBagMenu!.pocketSwitchDisabled !== 1 && gBagMenu!.pocketSwitchArrowsTask === TASK_NONE)
+    gBagMenu!.pocketSwitchArrowsTask = AddScrollIndicatorArrowPair(
+      sBagScrollArrowsTemplate, () => gBagPosition.pocketSwitchArrowPos);
+}
+/** 1:1 décomp `DestroyPocketSwitchArrowPair` (item_menu.c:1060). */
+function DestroyPocketSwitchArrowPair(): void {
+  if (gBagMenu!.pocketSwitchArrowsTask !== TASK_NONE) {
+    RemoveScrollIndicatorArrowPair(gBagMenu!.pocketSwitchArrowsTask);
+    gBagMenu!.pocketSwitchArrowsTask = TASK_NONE;
+  }
 }
 function PrepareTMHMMoveWindow(): void {
   /* DÉFÉRÉ étape 7 — fenêtre infos CT/CS (poche TMHM détaillée). */
@@ -1131,7 +1171,14 @@ function BeginNormalPaletteFadeBag(): void {
 
 // ─── BagDestroyPocketScrollArrowPair (item_menu.c:1043) — DÉFÉRÉ Phase 2 ─────
 // (flèches non créées → rien à détruire ; no-op honnête tracké Phase 2). ──────
-function BagDestroyPocketScrollArrowPair(): void { /* DÉFÉRÉ Phase 2 (flèches) */ }
+/** 1:1 décomp `BagDestroyPocketScrollArrowPair` (item_menu.c:1044). */
+function BagDestroyPocketScrollArrowPair(): void {
+  if (gBagMenu!.pocketScrollArrowsTask !== TASK_NONE) {
+    RemoveScrollIndicatorArrowPair(gBagMenu!.pocketScrollArrowsTask);
+    gBagMenu!.pocketScrollArrowsTask = TASK_NONE;
+  }
+  DestroyPocketSwitchArrowPair();
+}
 
 /** 1:1-sém décomp `FreeBagMenu` (item_menu.c:638) : Free(gBagMenu) +
  *  EWRAM ptr = NULL. Notre modèle : gBagMenu = null (GC = Free). */

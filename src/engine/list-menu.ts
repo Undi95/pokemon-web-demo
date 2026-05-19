@@ -1545,7 +1545,12 @@ export function AddScrollIndicatorArrowPairParameterized(
 /** 1:1 décomp `static void Task_ScrollIndicatorArrowPair(u8 taskId)`
  *  (list_menu.c:1126-1140). Task per-frame : top/bottom invisible selon
  *  le scroll vs seuils. `*data->scrollOffset` = `data.scrollOffsetGet()`. */
-function Task_ScrollIndicatorArrowPair(taskId: number): void {
+function Task_ScrollIndicatorArrowPair(t: number | { taskId: number }): void {
+  // Le runtime tick passe l'OBJET task (DecompTask), pas l'id → la clé
+  // Map sScrollIndicatorData (numérique, posée par _createTask) ratait →
+  // data undefined → flèches figées invisibles. Normalise obj|id (1:1
+  // sémantique, défensif pour les 2 modèles d'appel).
+  const taskId = typeof t === 'number' ? t : t.taskId;
   const data = sScrollIndicatorData.get(taskId);
   if (!data) return;
   const currItem = data.scrollOffsetGet() & 0xFFFF;          // 1:1 :1129 u16
@@ -1558,7 +1563,8 @@ function Task_ScrollIndicatorArrowPair(taskId: number): void {
 /** 1:1 décomp `void Task_ScrollIndicatorArrowPairOnMainMenu(u8 taskId)`
  *  (list_menu.c:1144-1159). `data[15]` = tIsScrolled (posé par main_menu.c
  *  quand porté ; ici champ struct = 1:1 sémantique du slot). */
-export function Task_ScrollIndicatorArrowPairOnMainMenu(taskId: number): void {
+export function Task_ScrollIndicatorArrowPairOnMainMenu(t: number | { taskId: number }): void {
+  const taskId = typeof t === 'number' ? t : t.taskId;
   const data = sScrollIndicatorData.get(taskId);
   if (!data) return;
   const top = _getSpriteFull(data.topSpriteId);
