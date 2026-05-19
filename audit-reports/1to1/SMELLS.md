@@ -1,6 +1,6 @@
 # SMELLS 1:1 — filet anti-régression (Outil C)
 
-Généré : 2026-05-19T13:38:28.856Z
+Généré : 2026-05-19T14:11:14.461Z
 
 > ⚠️ Statique = filet régression. **NE PROUVE PAS le comportement.**
 >
@@ -488,7 +488,7 @@ _aucun ✓_
 
 ## [FALLTHRU] 111 — case sans break/return ni commentaire (structurel)
 
-- `src/engine/bag-menu.ts`:543 — `case TMHM_POCKET` tombe sur le suivant
+- `src/engine/bag-menu.ts`:593 — `case TMHM_POCKET` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:304 — `case WEATHER_RAIN` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:305 — `case WEATHER_RAIN_THUNDERSTORM` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:390 — `case ABILITY_CLOUD_NINE` tombe sur le suivant

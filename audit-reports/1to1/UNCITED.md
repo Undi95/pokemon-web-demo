@@ -1,6 +1,6 @@
 # UNCITED — fonctions TS du port sans provenance décomp
 
-Généré : 2026-05-19T13:38:28.353Z
+Généré : 2026-05-19T14:11:23.599Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -54,12 +54,12 @@ PRECISE **4/138 (3%)** · +MARKER **115/138 (83%)** · HARD **23** (triées par 
 
 ## `src/engine/bag-menu.ts`
 
-PRECISE **19/25 (76%)** · +MARKER **21/25 (84%)** · HARD **4** (triées par taille)
+PRECISE **25/32 (78%)** · +MARKER **28/32 (88%)** · HARD **4** (triées par taille)
 
-- `_bagLoadAssets` (L209-232, 24l)
-- `_allocZeroedBagMenu` (L160-181, 22l)
-- `__bagMenuDebugState` (L628-639, 12l)
-- `VBlankCB_BagMenuRun` (L395-395, 1l)
+- `_bagLoadAssets` (L228-251, 24l)
+- `_allocZeroedBagMenu` (L179-200, 22l)
+- `__bagMenuDebugState` (L851-862, 12l)
+- `VBlankCB_BagMenuRun` (L414-414, 1l)
 
 ## `src/engine/bag-screen.ts`
 

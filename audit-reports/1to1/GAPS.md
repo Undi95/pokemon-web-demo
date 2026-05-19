@@ -1,13 +1,13 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-05-19T13:38:28.353Z
+Généré : 2026-05-19T14:11:23.599Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
 
 ## `src/party_menu.c`
 
-Couverture fonctions : **60/354 (17%)** — 294 GAPS · 7 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **61/354 (17%)** — 293 GAPS · 8 citation(s) fichier-niveau (sans `:ligne`)
 
 - `InitPartyMenu` @ L489-534
 - `CB2_UpdatePartyMenu` @ L535-543
@@ -185,7 +185,6 @@ Couverture fonctions : **60/354 (17%)** — 294 GAPS · 7 citation(s) fichier-ni
 - `ReturnToUseOnWhichMon` @ L4641-4648
 - `TryUsePPItem` @ L4649-4679
 - `ItemUseCB_PPUp` @ L4680-4687
-- `ItemIdToBattleMoveId` @ L4688-4693
 - `IsMoveHm` @ L4694-4705
 - `MonKnowsMove` @ L4706-4717
 - `DisplayLearnMoveMessage` @ L4718-4724
@@ -445,11 +444,9 @@ Couverture fonctions : **6/140 (4%)** — 134 GAPS · 2 citation(s) fichier-nive
 
 ## `src/item_menu.c`
 
-Couverture fonctions : **37/122 (30%)** — 85 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **39/122 (32%)** — 83 GAPS · 19 citation(s) fichier-niveau (sans `:ligne`)
 
 - `CreateBagInputHandlerTask` @ L847-856
-- `LoadBagItemListBuffers` @ L863-898
-- `BagMenu_MoveCursorCallback` @ L929-948
 - `BagMenu_PrintCursor` @ L1016-1020
 - `BagDestroyPocketScrollArrowPair` @ L1044-1053
 - `CreatePocketSwitchArrowPair` @ L1054-1059
@@ -614,7 +611,7 @@ Couverture fonctions : **0/74 (0%)** — 74 GAPS · 1 citation(s) fichier-niveau
 
 ## `src/item.c`
 
-Couverture fonctions : **6/52 (12%)** — 46 GAPS · 9 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **10/52 (19%)** — 42 GAPS · 10 citation(s) fichier-niveau (sans `:ligne`)
 
 - `GetBagItemQuantity` @ L26-30
 - `SetBagItemQuantity` @ L31-35
@@ -623,7 +620,6 @@ Couverture fonctions : **6/52 (12%)** — 46 GAPS · 9 citation(s) fichier-nivea
 - `ApplyNewEncryptionKeyToBagItems` @ L46-55
 - `ApplyNewEncryptionKeyToBagItems_` @ L56-60
 - `SetBagItemsPointers` @ L61-78
-- `CopyItemName` @ L79-83
 - `CopyItemNameHandlePlural` @ L84-106
 - `GetBerryCountString` @ L107-121
 - `IsBagPocketNonEmpty` @ L122-133
@@ -640,8 +636,6 @@ Couverture fonctions : **6/52 (12%)** — 46 GAPS · 9 citation(s) fichier-nivea
 - `RemovePCItem` @ L548-557
 - `CompactPCItems` @ L558-576
 - `SwapRegisteredBike` @ L577-589
-- `BagGetItemIdByPocketPosition` @ L590-594
-- `BagGetQuantityByPocketPosition` @ L595-599
 - `MoveItemSlotInList` @ L640-665
 - `ClearBag` @ L666-675
 - `CountTotalItemQuantityInBag` @ L676-690
@@ -654,7 +648,6 @@ Couverture fonctions : **6/52 (12%)** — 46 GAPS · 9 citation(s) fichier-nivea
 - `GetItemPrice` @ L890-894
 - `GetItemHoldEffect` @ L895-899
 - `GetItemHoldEffectParam` @ L900-904
-- `GetItemImportance` @ L910-915
 - `GetItemRegistrability` @ L916-920
 - `GetItemPocket` @ L921-925
 - `GetItemType` @ L926-930
