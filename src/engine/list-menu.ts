@@ -58,6 +58,7 @@ import {
 import {
   getRuntime, PlaySE, JOY_NEW, JOY_REPEAT,
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
+  FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
 } from './decomp-globals';
 import { gSineTable } from './decomp-helpers';
 
@@ -1099,8 +1100,7 @@ function SpriteCallback_RedArrowCursor(sprite: { x2: number; data: number[] }): 
  *  `gSpriteTileAllocBitmap` n'est pas porté ; ce free est cohérent avec notre
  *  `LoadCompressedSpriteSheet` (curseur monotone), PAS un fake. */
 function _freeSpriteTilesByTag(tag: number): void {
-  const rt = getRuntime() as unknown as { spriteSheetTagToTileStart?: Map<string, number> } | null;
-  rt?.spriteSheetTagToTileStart?.delete(String(tag));
+  _rtFreeSpriteTilesByTag(tag); // reclaim VRAM 1:1 (≠ simple Map.delete)
 }
 
 /** 1:1 SÉMANTIQUE décomp `FreeSpritePaletteByTag(tag)` (sprite.c) — idem,

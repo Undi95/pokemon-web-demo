@@ -1780,11 +1780,45 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
     return;
   }
   if (r.spriteSheetTagToTileStart.has(tagStr)) return;
-  const tileStart = (r.nextSpriteSheetByteOffset >> 5);
-  const copySize = Math.min(bytes.length, r.gba.objVram.length - r.nextSpriteSheetByteOffset);
-  if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), r.nextSpriteSheetByteOffset);
-  r.spriteSheetTagToTileStart.set(tagStr, tileStart);
-  r.nextSpriteSheetByteOffset += copySize;
+  const needed = bytes.length;
+  // 1:1-net décomp AllocSpriteTiles : réutiliser une plage OBJ VRAM
+  // LIBÉRÉE (FreeSpriteTilesByTag) qui tient `needed` AVANT d'avancer le
+  // curseur monotone — sinon le reload répété (icône sac double-buffer
+  // TAG_ITEM_ICON+0/+1) épuise la VRAM → tileStart hors-VRAM → icône
+  // cassée après N nav (bug A/B user). Réutilisation plage entière (pas
+  // de split) : borné, suffisant (bag = même taille 0x200 à chaque fois).
+  let byteOffset = -1;
+  for (let i = 0; i < r.freedSpriteTileRanges.length; i++) {
+    if (r.freedSpriteTileRanges[i].size >= needed) {
+      byteOffset = r.freedSpriteTileRanges[i].offset;
+      r.freedSpriteTileRanges.splice(i, 1);
+      break;
+    }
+  }
+  if (byteOffset < 0) {
+    byteOffset = r.nextSpriteSheetByteOffset;
+    const adv = Math.min(needed, r.gba.objVram.length - byteOffset);
+    r.nextSpriteSheetByteOffset += adv;
+  }
+  const copySize = Math.min(needed, r.gba.objVram.length - byteOffset);
+  if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
+  r.spriteSheetTagToTileStart.set(tagStr, byteOffset >> 5);
+  r.spriteSheetTagToByteSize.set(tagStr, needed);
+}
+
+/** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c) — libère la plage
+ *  OBJ VRAM du tag pour réutilisation (≠ simple Map.delete : le décomp
+ *  marque les tuiles libres dans le bitmap d'alloc → reload réutilise).
+ *  Sans ce reclaim le curseur monotone épuise la VRAM (icône sac). */
+export function FreeSpriteTilesByTag(tag: string | number): void {
+  const r = rt();
+  const tagStr = String(tag);
+  const tileStart = r.spriteSheetTagToTileStart.get(tagStr);
+  const size = r.spriteSheetTagToByteSize.get(tagStr);
+  if (tileStart !== undefined && size !== undefined && size > 0)
+    r.freedSpriteTileRanges.push({ offset: tileStart << 5, size });
+  r.spriteSheetTagToTileStart.delete(tagStr);
+  r.spriteSheetTagToByteSize.delete(tagStr);
 }
 
 /** 1:1 décomp `LoadSpritePalettes(palettes[])` — charge une table de palettes OBJ. */
@@ -1814,6 +1848,8 @@ export function resetObjAllocations(): void {
   const r = rt();
   r.nextSpriteSheetByteOffset = 0;
   r.nextObjPalSlot = 0;
+  r.spriteSheetTagToByteSize.clear();
+  r.freedSpriteTileRanges.length = 0;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

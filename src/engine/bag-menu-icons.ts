@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from './item-icon';
 import { gBagMenu } from './bag-menu';
-import { getRuntime } from './decomp-globals';
+import { getRuntime, FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag } from './decomp-globals';
 import { DestroySprite } from './decomp-bridge';
 import { getItemKeyById } from './data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from './decomp-data/auto/include/item_menu-data';
@@ -34,8 +34,7 @@ const TAG_ITEM_ICON = 5557;
  *  list-menu.ts:1101. (Le curseur VRAM est monotone — pas de rembobinage :
  *  limitation substrat documentée, raffinage Phase 3 ; fonctionnel ici.) */
 function FreeSpriteTilesByTag(tag: number): void {
-  const rt = getRuntime() as unknown as { spriteSheetTagToTileStart?: Map<string, number> } | null;
-  rt?.spriteSheetTagToTileStart?.delete(String(tag));
+  _rtFreeSpriteTilesByTag(tag); // reclaim VRAM 1:1 (≠ simple Map.delete)
 }
 /** 1:1 décomp `FreeSpritePaletteByTag(tag)` (sprite.c). */
 function FreeSpritePaletteByTag(tag: number): void {

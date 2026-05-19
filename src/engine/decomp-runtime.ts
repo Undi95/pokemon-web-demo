@@ -524,6 +524,13 @@ export class DecompRuntime {
   /** tileTag (e.g. 'GFXTAG_DROPS_LOGO') → tileNum start dans objVram.
    *  Rempli par LoadCompressedSpriteSheetsFromTable(). */
   spriteSheetTagToTileStart = new Map<string, number>();
+  /** tag → taille octets allouée (pour reclaim sur FreeSpriteTilesByTag). */
+  spriteSheetTagToByteSize = new Map<string, number>();
+  /** Plages OBJ VRAM libérées (FreeSpriteTilesByTag) réutilisables par
+   *  LoadCompressedSpriteSheet (= 1:1-net décomp AllocSpriteTiles/Free
+   *  SpriteTiles bitmap : reclaim au free, reuse à l'alloc — sinon le
+   *  curseur monotone épuise la VRAM (icône sac cassée après N nav). */
+  freedSpriteTileRanges: Array<{ offset: number; size: number }> = [];
   /** Prochain slot OBJ palette libre (auto-assigné par LoadSpritePalettes). */
   nextObjPalSlot = 0;
   /** Prochain offset libre dans objVram pour sprite sheets (auto-assigné). */
@@ -1609,6 +1616,8 @@ export class DecompRuntime {
     this.nextSpriteId = 0;
     // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM)
     this.spriteSheetTagToTileStart.clear();
+    this.spriteSheetTagToByteSize.clear();
+    this.freedSpriteTileRanges.length = 0;
     this.nextSpriteSheetByteOffset = 0;
   }
 
@@ -2142,6 +2151,8 @@ export class DecompRuntime {
   resetSpriteSystem(): void {
     this.paletteTagToSlot.clear();
     this.spriteSheetTagToTileStart.clear();
+    this.spriteSheetTagToByteSize.clear();
+    this.freedSpriteTileRanges.length = 0;
     this.nextObjPalSlot = 0;
     this.nextSpriteSheetByteOffset = 0;
     this.spriteAnimStates.clear();
