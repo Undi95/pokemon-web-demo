@@ -1,6 +1,6 @@
 # SMELLS 1:1 — filet anti-régression (Outil C)
 
-Généré : 2026-05-19T13:18:33.208Z
+Généré : 2026-05-19T13:38:28.856Z
 
 > ⚠️ Statique = filet régression. **NE PROUVE PAS le comportement.**
 >
@@ -486,8 +486,9 @@ _aucun ✓_
 - `src/engine/step-callbacks.ts`:32 — `STEP_CB_TRUCK = 4` mais décomp = **5** (src/engine/decomp-data/auto/include/constants/field_tasks-data.ts)
 - `src/engine/step-callbacks.ts`:33 — `STEP_CB_SOOTOPOLIS_ICE = 5` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/field_tasks-data.ts)
 
-## [FALLTHRU] 110 — case sans break/return ni commentaire (structurel)
+## [FALLTHRU] 111 — case sans break/return ni commentaire (structurel)
 
+- `src/engine/bag-menu.ts`:543 — `case TMHM_POCKET` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:304 — `case WEATHER_RAIN` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:305 — `case WEATHER_RAIN_THUNDERSTORM` tombe sur le suivant
 - `src/engine/battle/ability-battle-effects.ts`:390 — `case ABILITY_CLOUD_NINE` tombe sur le suivant

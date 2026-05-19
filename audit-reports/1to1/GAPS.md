@@ -1,6 +1,6 @@
 # GAPS — fonctions décomp sans citation 1:1
 
-Généré : 2026-05-19T13:09:53.191Z
+Généré : 2026-05-19T13:38:28.353Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -445,21 +445,15 @@ Couverture fonctions : **6/140 (4%)** — 134 GAPS · 2 citation(s) fichier-nive
 
 ## `src/item_menu.c`
 
-Couverture fonctions : **31/122 (25%)** — 91 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **37/122 (30%)** — 85 GAPS · 18 citation(s) fichier-niveau (sans `:ligne`)
 
 - `CreateBagInputHandlerTask` @ L847-856
-- `AllocateBagItemListBuffers` @ L857-862
 - `LoadBagItemListBuffers` @ L863-898
 - `BagMenu_MoveCursorCallback` @ L929-948
 - `BagMenu_PrintCursor` @ L1016-1020
 - `BagDestroyPocketScrollArrowPair` @ L1044-1053
 - `CreatePocketSwitchArrowPair` @ L1054-1059
 - `DestroyPocketSwitchArrowPair` @ L1060-1068
-- `UpdatePocketItemList` @ L1105-1133
-- `UpdatePocketItemLists` @ L1134-1140
-- `UpdatePocketListPosition` @ L1141-1145
-- `InitPocketListPositions` @ L1146-1152
-- `InitPocketScrollPositions` @ L1153-1159
 - `GetItemListPosition` @ L1160-1164
 - `DisplayItemMessage` @ L1165-1174
 - `CloseItemMessage` @ L1175-1192
@@ -620,7 +614,7 @@ Couverture fonctions : **0/74 (0%)** — 74 GAPS · 1 citation(s) fichier-niveau
 
 ## `src/item.c`
 
-Couverture fonctions : **3/52 (6%)** — 49 GAPS · 9 citation(s) fichier-niveau (sans `:ligne`)
+Couverture fonctions : **6/52 (12%)** — 46 GAPS · 9 citation(s) fichier-niveau (sans `:ligne`)
 
 - `GetBagItemQuantity` @ L26-30
 - `SetBagItemQuantity` @ L31-35
@@ -648,9 +642,6 @@ Couverture fonctions : **3/52 (6%)** — 49 GAPS · 9 citation(s) fichier-niveau
 - `SwapRegisteredBike` @ L577-589
 - `BagGetItemIdByPocketPosition` @ L590-594
 - `BagGetQuantityByPocketPosition` @ L595-599
-- `SwapItemSlots` @ L600-605
-- `CompactItemsInBagPocket` @ L606-619
-- `SortBerriesOrTMHMs` @ L620-639
 - `MoveItemSlotInList` @ L640-665
 - `ClearBag` @ L666-675
 - `CountTotalItemQuantityInBag` @ L676-690

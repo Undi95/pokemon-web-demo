@@ -1,6 +1,6 @@
 # STALE — citations décomp périmées / hors-symbole
 
-Généré : 2026-05-19T13:09:53.191Z
+Généré : 2026-05-19T13:38:28.353Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
@@ -21,7 +21,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `main_menu.c` cité 72× (ex. src/engine/decomp-bridge.ts:2216, src/engine/decomp-globals.ts:2202, src/engine/decomp-globals.ts:2302)
 - `battle_main.c` cité 69× (ex. src/engine/battle/ai/ai-script-commands.ts:7, src/engine/battle/ai/ai-script-commands.ts:296, src/engine/battle/battle-devtools.ts:754)
 - `sprite.c` cité 66× (ex. src/engine/bag-screen.ts:1304, src/engine/battle-flow.ts:150, src/engine/decomp-bridge.ts:1795)
-- `menu.c` cité 60× (ex. src/engine/bag-menu.ts:482, src/engine/bitmap-font.ts:177, src/engine/decomp-bridge.ts:2255)
+- `menu.c` cité 61× (ex. src/engine/bitmap-font.ts:177, src/engine/decomp-bridge.ts:2255, src/engine/decomp-globals.ts:2296)
 - `overworld.c` cité 59× (ex. src/engine/battle/cmd-niveau-32.ts:807, src/engine/boot-mode.ts:388, src/engine/decomp-bridge.ts:983)
 - `naming_screen.c` cité 49× (ex. src/engine/decomp-runtime.ts:341, src/engine/gba-text-printer.ts:468, src/engine/gba-text-printer.ts:709)
 - `field_camera.c` cité 47× (ex. src/engine/field-camera.ts:2, src/engine/field-camera.ts:5, src/engine/field-camera.ts:64)
@@ -68,6 +68,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `field_specials.c` cité 10× (ex. src/engine/battle/cmd-niveau-31.ts:322, src/engine/decomp-bridge.ts:792, src/engine/decomp-bridge.ts:1804)
 - `agb_flash.c` cité 10× (ex. src/engine/decomp-bridge.ts:1637, src/engine/decomp-bridge.ts:1640, src/engine/decomp-bridge.ts:1642)
 - `starter_choose.c` cité 10× (ex. src/engine/script-runner.ts:100, src/engine/specials-registry.ts:335, src/engine/starter-choose-flow.ts:18)
+- `menu_helpers.c` cité 9× (ex. src/engine/bag-screen.ts:2184, src/engine/bag-screen.ts:2360, src/engine/bag-screen.ts:2382)
 - `util.c` cité 9× (ex. src/engine/battle/atk-canceler.ts:119, src/engine/battle/battle-controllers.ts:9, src/engine/battle/battle-controllers.ts:120)
 - `graphics.c` cité 9× (ex. src/engine/battle-healthbox.ts:30, src/engine/battle-healthbox.ts:161, src/engine/battle-healthbox.ts:279)
 - `field_weather.c` cité 8× (ex. src/engine/bag-screen.ts:2301, src/engine/bag-screen.ts:2698, src/engine/battle/ability-battle-effects.ts:247)
@@ -83,7 +84,6 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `money.c` cité 7× (ex. src/engine/money-box-ui.ts:2, src/engine/money-box-ui.ts:5, src/engine/money-box-ui.ts:42)
 - `battle_anim_mons.c` cité 6× (ex. src/engine/battle/cmd-niveau-15.ts:65, src/engine/battle/util.ts:7, src/engine/battle/util.ts:60)
 - `battle_intro.c` cité 6× (ex. src/engine/battle-flow.ts:1258, src/engine/battle-intro.ts:2, src/engine/battle-intro.ts:15)
-- `menu_helpers.c` cité 5× (ex. src/engine/bag-screen.ts:2184, src/engine/bag-screen.ts:2360, src/engine/bag-screen.ts:2382)
 - `new_game.c` cité 5× (ex. src/engine/boot-mode.ts:12, src/engine/boot-mode.ts:355, src/engine/boot-mode.ts:409)
 - `decompress.c` cité 5× (ex. src/engine/decomp-bridge.ts:66, src/engine/decomp-bridge.ts:2338, src/engine/decomp-bridge.ts:2346)
 - `easy_chat.c` cité 5× (ex. src/engine/decomp-bridge.ts:852, src/engine/decomp-bridge.ts:1355, src/engine/decomp-bridge.ts:1364)
@@ -102,7 +102,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `pokenav.c` cité 3× (ex. src/engine/decomp-bridge.ts:1487, src/engine/decomp-bridge.ts:2045, src/engine/specials-registry.ts:425)
 - `contest.c` cité 3× (ex. src/engine/decomp-bridge.ts:1511, src/engine/decomp-bridge.ts:1919, src/engine/decomp-bridge.ts:2194)
 - `roulette.c` cité 3× (ex. src/engine/decomp-bridge.ts:1786, src/engine/decomp-bridge.ts:1788, src/engine/decomp-bridge.ts:1792)
-- `link.c` cité 3× (ex. src/engine/decomp-bridge.ts:1997, src/engine/decomp-bridge.ts:2272, src/engine/gba-menu-system.ts:238)
+- `link.c` cité 3× (ex. src/engine/decomp-bridge.ts:1997, src/engine/decomp-bridge.ts:2272, src/engine/gba-menu-system.ts:262)
 - `mon_markings.c` cité 3× (ex. src/engine/decomp-bridge.ts:2209, src/engine/summary-screen.ts:205, src/engine/summary-screen.ts:1924)
 - `fldeff_flash.c` cité 3× (ex. src/engine/flash-mask.ts:2, src/engine/flash-mask.ts:8, src/engine/gba/phaser-bridge.ts:55)
 - `bike.c` cité 3× (ex. src/engine/metatile-behavior-helpers.ts:252, src/engine/metatile-behavior-helpers.ts:270, src/engine/metatile-behavior-helpers.ts:278)
@@ -120,7 +120,7 @@ _Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — 
 - `trainer_see.c` cité 2× (ex. src/engine/script-opcodes.ts:2959, src/engine/script-opcodes.ts:3298)
 - `player_pc.c` cité 2× (ex. src/engine/specials-registry.ts:240, src/engine/specials-registry.ts:244)
 - `wallclock.c` cité 2× (ex. src/engine/wallclock-flow.ts:9, src/engine/wallclock-flow.ts:290)
-- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:330)
+- `battle_pyramid_bag.c` cité 1× (ex. src/engine/bag-menu.ts:347)
 - `battle_util2.c` cité 1× (ex. src/engine/battle/cmd-niveau-1.ts:713)
 - `battle_gfx_sfx_util.c` cité 1× (ex. src/engine/battle-healthbox.ts:28)
 - `contest_util.c` cité 1× (ex. src/engine/decomp-bridge.ts:776)
