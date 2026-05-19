@@ -96,11 +96,10 @@ import { GetStringCenterAlignXOffset } from './gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
 } from './decomp-data/auto/include/menu_helpers-data';
-import { GetLRKeysPressed } from './decomp-data/auto/src-all/menu_helpers-all-auto';
 import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
 } from './decomp-data/auto/include/menu-data';
-import { SELECT_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
+import { SELECT_BUTTON, L_BUTTON, R_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
 import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
@@ -1156,6 +1155,17 @@ function ChangeBagPocketId(bagPocketId: number, deltaBagPocketId: number): numbe
  *  le swap n'est pas porté). Pas un fake : déferral explicite tracké. */
 function CanSwapItems(): boolean {
   return false;
+}
+
+/** 1:1 décomp `GetLRKeysPressed` (menu_helpers.c) :
+ *  `if (JOY_NEW(L_BUTTON)) return MENU_L_PRESSED;
+ *   if (JOY_NEW(R_BUTTON)) return MENU_R_PRESSED; return 0;`
+ *  Port local (l'auto-transpilé menu_helpers-all-auto renvoyait NONE au
+ *  runtime = bouton épaule mort ; même classe que bg-all-auto cassé). */
+function GetLRKeysPressed(): number {
+  if (JOY_NEW(L_BUTTON)) return MENU_L_PRESSED;
+  if (JOY_NEW(R_BUTTON)) return MENU_R_PRESSED;
+  return 0; // MENU_NOTHING_PRESSED
 }
 
 /** 1:1 décomp `GetSwitchBagPocketDirection` (item_menu.c:1295). Link non
