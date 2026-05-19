@@ -30,6 +30,9 @@ import {
   sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
 } from './decomp-data/auto/pokedex-order-tables';
 import { SPECIES_UNOWN, SPECIES_SPINDA } from './decomp-data/auto/include/constants/species-data';
+import { gPokedexEntries } from './decomp-data/auto/pokedex-entries-table';
+export type { PokedexEntryData } from './decomp-data/auto/pokedex-entries-table';
+export { gPokedexEntries } from './decomp-data/auto/pokedex-entries-table';
 
 // ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
 // décomp `include/constants/pokedex.h` :
@@ -285,4 +288,22 @@ export function GetHoennPokedexCount(caseID: number): number {
     }
   }
   return count;
+}
+
+// ─── ÉTAPE 3 part 2 : GetPokedexHeightWeight 1:1 ────────────────────────────
+// Consomme `gPokedexEntries` (natDex-indexé, extrait 1:1 par
+// scripts/extract-pokedex-entries-table.mjs). `data` 0=height (décimètres)
+// 1=weight (hectogrammes) ; default → 1 (1:1 décomp).
+
+/** 1:1 décomp `u16 GetPokedexHeightWeight(u16 dexNum, u8 data)`
+ *  (pokedex.c:4194-4205). */
+export function GetPokedexHeightWeight(dexNum: number, data: number): number {
+  switch (data) {
+    case 0: // height
+      return gPokedexEntries[dexNum].height;
+    case 1: // weight
+      return gPokedexEntries[dexNum].weight;
+    default:
+      return 1;
+  }
 }
