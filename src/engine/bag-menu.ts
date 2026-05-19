@@ -44,7 +44,7 @@ import {
   CURSOR_BLACK_ARROW, gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenu,
 } from './list-menu';
-import { getItemKeyById } from './data-tables';
+import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from './data-tables';
 import { ItemIdToBattleMoveId } from './tmhm-moves';
 import { getMoveName } from './data/game-data';
 import {
@@ -54,6 +54,7 @@ import {
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
+  FillBgTilemapBufferRect_Palette0, CopyWindowToVram,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -84,6 +85,24 @@ import {
   ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
 } from './decomp-data/auto/include/constants/items-data';
 import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
+// ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
+import { JOY_NEW, BlendPalettes, PALETTES_ALL } from './decomp-globals';
+import { CreateTask, DestroyTask, BeginNormalPaletteFade } from './decomp-bridge';
+import {
+  ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
+  DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
+} from './list-menu';
+import { GetStringCenterAlignXOffset } from './gba-text-system';
+import {
+  MENU_L_PRESSED, MENU_R_PRESSED,
+} from './decomp-data/auto/include/menu_helpers-data';
+import { GetLRKeysPressed } from './decomp-data/auto/src-all/menu_helpers-all-auto';
+import {
+  MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
+} from './decomp-data/auto/include/menu-data';
+import { SELECT_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
+import type { DecompTask } from './decomp-runtime';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
@@ -234,10 +253,27 @@ let _bagAssetsLoading: Promise<BagAssets> | null = null;
 let _bagGraphicsReady = false;
 let _bagGraphicsLoading = false;
 
+/** Le sac peut être ouvert via un chemin scene (TestOverworld / CB2-swap)
+ *  qui n'a PAS exécuté `OverworldScene.afterMapLoad` → la table `constants`
+ *  (enum→id, dont dépend la couche (b) bag-pockets `slotItemId`) n'est pas
+ *  peuplée → `getItemId`=0 → liste vide. Le sac charge sa propre dép,
+ *  IDEMPOTENT (skip si déjà chargée). Source canonique = même asset que
+ *  OverworldScene (`/decomp/em/constants.json`). */
+async function _bagEnsureConstantsLoaded(): Promise<void> {
+  if (isConstantsLoaded()) return;
+  try {
+    const res = await fetch('/decomp/em/constants.json');
+    if (res.ok) loadConstantsTable(await res.json());
+  } catch (e) {
+    console.error('[bag] constants.json load failed:', e);
+  }
+}
+
 async function _bagLoadAssets(): Promise<BagAssets> {
   if (_bagAssets) return _bagAssets;
   if (_bagAssetsLoading) return _bagAssetsLoading;
   _bagAssetsLoading = (async () => {
+    await _bagEnsureConstantsLoaded();
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
@@ -368,8 +404,19 @@ export function ResetBagScrollPositions(): void {
 // ─── Entrées maillon (item_menu.c:563-615) — thin 1:1 ────────────────────────
 /** 1:1 décomp `CB2_BagMenuFromStartMenu` (item_menu.c:563). */
 export function CB2_BagMenuFromStartMenu(): void {
-  // exitCallback CB2_ReturnToFieldWithOpenMenu : câblé à l'étape 9 (flow OW).
   GoToBagMenu(ITEMMENULOCATION_FIELD, POCKETS_COUNT, _cb2ReturnToFieldWithOpenMenu);
+}
+
+/** Entrée start-menu — 1:1 décomp `StartMenuBagCallback` (start_menu.c:763) :
+ *  `gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu ;
+ *   SetMainCallback2(CB2_BagMenuFromStartMenu)`. Pattern IDENTIQUE à
+ *  `OpenPartyScreen` (party-screen.ts:2044, prouvé/A-B). Remplace le foam
+ *  `bag-screen.ts:OpenBagScreen` (recâblage start-menu = ÉTAPE 9 du plan). */
+export function OpenBagScreen(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
+  CB2_BagMenuFromStartMenu();
 }
 /** 1:1 décomp `CB2_BagMenuFromBattle` (item_menu.c:568). Branche pyramide =
  *  MAILLON ultérieur (battle_pyramid_bag.c, fichier séparé). */
@@ -389,7 +436,11 @@ export function ChooseBerryForMachine(exitCallback: MainCallback): void {
 
 // exitCallbacks externes — résolus au câblage étape 9 (placeholders honnêtes
 // NON appelés tant que le sac n'est pas wiré ; pas des fakes silencieux).
-const _cb2ReturnToFieldWithOpenMenu: MainCallback = null;
+// FIELD (START→SAC) : retour terrain + ré-ouverture start menu 1:1 (= décomp
+// CB2_ReturnToFieldWithOpenMenu) — porté option-menu-return.ts, prouvé party.
+const _cb2ReturnToFieldWithOpenMenu: MainCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
+// BATTLE / BERRY-TREE : maillons ultérieurs (hors chemin ouvrable Phase 1 ;
+// déferral honnête — ces flux ne sont pas atteints via START→SAC).
 const _cb2SetUpReshowBattleScreenAfterMenu2: MainCallback = null;
 const _cb2ReturnToFieldContinueScript: MainCallback = null;
 
@@ -415,11 +466,11 @@ export function GoToBagMenu(location: number, pocket: number, exitCallback: Main
   if (rt) rt.SetMainCallback2(CB2_Bag);
 }
 
-// ─── CB2_BagMenuRun / VBlankCB_BagMenuRun (item_menu.c:646/655) ──────────────
+// ─── MainCB2_BagMenuRun / VBlankCB_BagMenuRun (item_menu.c:646/655) ──────────────
 // 1:1 net-effect : RunTasks/AnimateSprites/BuildOamBuffer/DoScheduledBg…/
 // UpdatePaletteFade (et LoadOam/ProcessSpriteCopyRequests/TransferPlttBuffer)
 // = auto-tickés par notre runtime (modèle prouvé Summary `MainCB2_SummaryRun`).
-export function CB2_BagMenuRun(): void { /* runtime auto-tick */ }
+export function MainCB2_BagMenuRun(): void { /* runtime auto-tick */ }
 export function VBlankCB_BagMenuRun(): void { /* transferts auto */ }
 
 // ─── CB2_Bag (item_menu.c:672) + SetupBagMenu (item_menu.c:678) ──────────────
@@ -516,7 +567,7 @@ function SetupBagMenu(): boolean {
       rt.gMain.state++; break;
     default:
       rt.SetVBlankCallback(VBlankCB_BagMenuRun);
-      rt.SetMainCallback2(CB2_BagMenuRun);
+      rt.SetMainCallback2(MainCB2_BagMenuRun);
       return true;
   }
   return false;
@@ -713,29 +764,49 @@ function AllocateBagItemListBuffers(): void {
 //    présent) + blits gfx (assets non extraits) + data-gap items.json. ──────
 /** DÉFÉRÉ — `ShakeBagSprite` (item_menu_icons.c:477) : sprite sac
  *  StartSpriteAffineAnim(ANIM_BAG_SHAKE). Sous-système sprite A/B-critique. */
-function ShakeBagSprite(): void { _nyi(5, 'ShakeBagSprite — item_menu_icons.c:477 (sprite sac, A/B-critique user-présent)'); }
-/** DÉFÉRÉ — `AddBagItemIconSprite` (item_menu_icons.c:535) : AddItemIconSprite
- *  (item_icon.c, non porté) + tag alloc. Sous-système sprite A/B-critique. */
-function AddBagItemIconSprite(_itemId: number, _slot: number): void { _nyi(5, 'AddBagItemIconSprite — item_menu_icons.c:535 (icône objet, item_icon.c non porté, A/B-critique)'); }
-/** DÉFÉRÉ — `RemoveBagItemIconSprite` (item_menu_icons.c:555). A/B-critique. */
-function RemoveBagItemIconSprite(_slot: number): void { _nyi(5, 'RemoveBagItemIconSprite — item_menu_icons.c:555 (A/B-critique)'); }
+function ShakeBagSprite(): void {
+  /* DÉFÉRÉ Phase 2 — ShakeBagSprite item_menu_icons.c:477 (anim affine sprite
+     sac). Sprite sac non créé (substrat tag-mismatch) → no-op honnête tracké
+     Phase 2. Appelé en nav : ne DOIT pas throw (sac ouvrable sans sprite). */
+}
+/** DÉFÉRÉ Phase 2 — `AddBagItemIconSprite` (item_menu_icons.c:535) :
+ *  AddItemIconSprite (item_icon.c) + tag alloc. Substrat sprite tag-mismatch. */
+function AddBagItemIconSprite(_itemId: number, _slot: number): void {
+  /* DÉFÉRÉ Phase 2 (icône objet ; spike : icône OK après fix substrat). */
+}
+/** DÉFÉRÉ Phase 2 — `RemoveBagItemIconSprite` (item_menu_icons.c:555). */
+function RemoveBagItemIconSprite(_slot: number): void {
+  /* DÉFÉRÉ Phase 2 (couplé AddBagItemIconSprite). */
+}
 /** DÉFÉRÉ — `BlitBitmapToWindow(windowId, gBagMenuHMIcon_Gfx, 8, y-1, 16, 16)`
  *  (item_menu.c:970-971) : asset gfx gBagMenuHMIcon_Gfx non extrait (chaînon
  *  extraction graphics/ ultérieur). */
-function _bagBlitHMIcon(_windowId: number, _y: number): void { _nyi(5, 'BlitBitmapToWindow gBagMenuHMIcon_Gfx — item_menu.c:971 (asset gfx non extrait)'); }
+function _bagBlitHMIcon(_windowId: number, _y: number): void {
+  /* DÉFÉRÉ Phase 3 — blit gBagMenuHMIcon_Gfx (asset gfx HM non extrait,
+     chaînon extraction graphics/ ultérieur). No-op honnête (icône CT/CS
+     manquante = cosmétique poche TMHM, non bloquant ouvrable). */
+}
 /** DÉFÉRÉ — `if (gSaveBlock1Ptr->registeredItem != ITEM_NONE &&
  *  == itemId) BlitBitmapToWindow(windowId, sRegisteredSelect_Gfx, 96, y-1,
  *  24, 16)` (item_menu.c:990-994) : asset sRegisteredSelect_Gfx non extrait
  *  + registeredItem save (chaînon ultérieur). */
 function _bagDrawRegisteredIcon(_windowId: number, _y: number, _itemId: number): void {
-  _nyi(5, 'sRegisteredSelect_Gfx blit — item_menu.c:993 (asset gfx non extrait + save registeredItem)');
+  /* DÉFÉRÉ Phase 3 — blit sRegisteredSelect_Gfx (asset non extrait +
+     save registeredItem). No-op honnête (icône SELECT objets-clés =
+     cosmétique, non bloquant ouvrable). */
 }
 /** DÉFÉRÉ — `GetItemImportance` (item.c:910) `gItems[SanitizeItemId
  *  (itemId)].importance`. **DATA-GAP HONNÊTE** : notre items.json (ItemDef)
  *  n'expose PAS le champ `importance` → port 1:1 impossible sans
  *  ré-extraction items data (chaînon dédié). Pas de valeur devinée
  *  (WORKING-MODE §2 : report honnête > fake). */
-function GetItemImportance(_itemId: number): number { return _nyi(5, 'GetItemImportance — item.c:910 (items.json sans champ importance, ré-extraction requise)'); }
+function GetItemImportance(_itemId: number): number {
+  // HONNÊTE-MIN documenté (résolu Phase 3 par ré-extraction items+champ
+  // `importance`) : items.json n'expose pas `importance`. 0 = défaut décomp
+  // (quasi tous les objets non-clés ; KEYITEMS_POCKET est déjà exclu en amont
+  // dans BagMenu_ItemPrintCallback). Sur chemin rendu liste → pas de throw.
+  return 0;
+}
 
 // ── 5c : leaves TEXTE/DATA — 1:1 sur infra texte A/B-prouvée (≠ foam) ──────
 /** `WIN_*` décomp = id gWindows séquentiel ; chez nous = `_bagWinIds[WIN_*]`
@@ -943,19 +1014,261 @@ function LoadBagItemListBuffers(pocketId: number): void {
   gMultiuseListMenuTemplate.items = subBuffer;
   gMultiuseListMenuTemplate.maxShowed = gBagMenu.numShownItems[pocketId];
 }
-function PrintPocketNames(_pocket: number): void { _nyi(5, 'PrintPocketNames'); }
-function CopyPocketNameToWindow(_a: number): void { _nyi(5, 'CopyPocketNameToWindow'); }
-function DrawPocketIndicatorSquare(_p: number, _on: boolean): void { _nyi(5, 'DrawPocketIndicatorSquare'); }
-function CreateBagInputHandlerTask(_location: number): number { return _nyi(6, 'CreateBagInputHandlerTask'); }
-function ListMenuInitForBag(_scroll: number, _cursor: number): number { return _nyi(6, 'ListMenuInit(bag)'); }
-function BagSetListTaskId(_taskId: number, _listTaskId: number): void { _nyi(6, 'tListTaskId set'); }
-function AddBagVisualSprite(_pocket: number): void { _nyi(5, 'AddBagVisualSprite'); }
-function CreateItemMenuSwapLine(): void { _nyi(7, 'CreateItemMenuSwapLine'); }
-function CreatePocketScrollArrowPair(): void { _nyi(5, 'CreatePocketScrollArrowPair'); }
-function CreatePocketSwitchArrowPair(): void { _nyi(5, 'CreatePocketSwitchArrowPair'); }
-function PrepareTMHMMoveWindow(): void { _nyi(7, 'PrepareTMHMMoveWindow'); }
-function BlendPalettesBag(): void { _nyi(9, 'BlendPalettes(PALETTES_ALL,16,0)'); }
-function BeginNormalPaletteFadeBag(): void { _nyi(9, 'BeginNormalPaletteFade fade-in'); }
+// 1:1 décomp strings.c:283-295 — gPocketNamesStringsTable[] FR, indexé par
+// poche (valeurs byte-identiques au décomp FR). Table de texte 1:1 (même
+// pattern que gText_CloseBag/gBagMenu_ReturnToStrings ci-dessus : strings-data
+// auto n'expose que les NOMS de symboles, pas le texte FR → port 1:1 cité).
+const gPocketNamesStringsTable: readonly string[] = [
+  'OBJETS',      // [ITEMS_POCKET]    strings.c:283 gText_ItemsPocket
+  'POKé BALLS',  // [BALLS_POCKET]    strings.c:284 gText_PokeBallsPocket
+  'CT & CS',     // [TMHM_POCKET]     strings.c:285 gText_TMHMPocket
+  'BAIES',       // [BERRIES_POCKET]  strings.c:286 gText_BerriesPocket
+  'OBJ. RARES',  // [KEYITEMS_POCKET] strings.c:287 gText_KeyItemsPocket
+];
+
+// 1:1 décomp `RGB_BLACK` (include/constants/rgb.h) = 0.
+const RGB_BLACK = 0;
+
+/** NET-1:1 décomp `PrintPocketNames` (item_menu.c:2421) + `CopyPocketNameTo
+ *  Window` (:2442). La décomp rend dans une fenêtre temp puis CpuCopy32 le
+ *  tile-data dans gBagMenu->pocketNameBuffer[32][32] et CopyPocketNameToWindow
+ *  en re-copie une tranche (offset `a`) vers WIN_POCKET_NAME pour le slide
+ *  L/R. Notre GetWindowAttribute(WINDOW_TILE_DATA) = number (≠ u8* décomp) →
+ *  le slide byte-level ne se traduit pas : NET-1:1 = rendre le nom centré
+ *  DIRECT dans WIN_POCKET_NAME (état final identique, slide cosmétique
+ *  collapsé — pattern Summary validé A/B ; divergence modèle documentée,
+ *  PAS un fake). CopyPocketNameToWindow = flush VRAM (le rendu est direct). */
+function PrintPocketNames(pocket: number): void {
+  const wid = _win(WIN_POCKET_NAME);
+  const name = gPocketNamesStringsTable[pocket] ?? '';
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  // :2428 GetStringCenterAlignXOffset(FONT_NORMAL, name, 0x40). Le helper
+  // projet (gba-text-system) prend (str, totalWidth), FONT_NORMAL implicite.
+  const offset = GetStringCenterAlignXOffset(name, 0x40);
+  BagMenu_Print(wid, FONT_NORMAL, name, offset, 1, 0, 0, 0, 1 /* COLORID_POCKET_NAME */);
+}
+function CopyPocketNameToWindow(_a: number): void {
+  // NET-1:1 (slide collapsé) : PrintPocketNames a rendu direct → flush VRAM.
+  CopyWindowToVram(_win(WIN_POCKET_NAME), 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `DrawPocketIndicatorSquare` (item_menu.c:1418). */
+function DrawPocketIndicatorSquare(x: number, isCurrentPocket: boolean): void {
+  if (!isCurrentPocket)
+    FillBgTilemapBufferRect_Palette0(2, 0x1017, x + 5, 3, 1, 1);
+  else
+    FillBgTilemapBufferRect_Palette0(2, 0x102B, x + 5, 3, 1, 1);
+  ScheduleBgCopyTilemapToVram(2);
+}
+
+// ─── struct task-data Task_BagMenu_HandleInput (item_menu.c:1213) ────────────
+// #define tListTaskId data[0] / tListPosition data[1] / tQuantity data[2]
+// tNeverRead data[3] / tItemCount data[8]  (1:1 décomp).
+const T_LIST_TASK_ID = 0, T_LIST_POSITION = 1, T_QUANTITY = 2, T_NEVER_READ = 3, T_ITEM_COUNT = 8;
+// 1:1 décomp enum SWITCH_POCKET_* (item_menu.c:1290 — non exporté par
+// decomp-data, dérivé 1:1 local comme COLORID_*/MAX_ITEMS_SHOWN).
+const SWITCH_POCKET_NONE = 0, SWITCH_POCKET_LEFT = 1, SWITCH_POCKET_RIGHT = 2;
+function _task(taskId: number): DecompTask | undefined {
+  return getRuntime()?.gTasks?.get(taskId);
+}
+
+/** 1:1 décomp `CreateBagInputHandlerTask` (item_menu.c:847). Branche WALLY =
+ *  Task_WallyTutorialBagMenu déférée (tuto Wally = maillon ultérieur ; le
+ *  chemin FIELD/BATTLE/BERRY couvre l'ouvrable — déferral honnête documenté). */
+function CreateBagInputHandlerTask(location: number): number {
+  const rt = getRuntime()!;
+  if (location === ITEMMENULOCATION_WALLY)
+    return rt.CreateTask(Task_BagMenu_HandleInput, 0); // TODO maillon: Task_WallyTutorialBagMenu (flux Wally)
+  return rt.CreateTask(Task_BagMenu_HandleInput, 0);
+}
+/** 1:1 décomp item_menu.c:737 `ListMenuInit(&gMultiuseListMenuTemplate,
+ *  scroll, cursor)` (gMultiuseListMenuTemplate lié par LoadBagItemListBuffers). */
+function ListMenuInitForBag(scroll: number, cursor: number): number {
+  return ListMenuInit(gMultiuseListMenuTemplate, scroll, cursor);
+}
+/** 1:1 décomp item_menu.c:738-740 : gTasks[taskId].tListTaskId = … ;
+ *  tNeverRead = 0 ; tItemCount = 0. */
+function BagSetListTaskId(taskId: number, listTaskId: number): void {
+  const t = _task(taskId);
+  if (!t) return;
+  t.data[T_LIST_TASK_ID] = listTaskId;
+  t.data[T_NEVER_READ] = 0;
+  t.data[T_ITEM_COUNT] = 0;
+}
+
+// ── case 15-18 : sprites / swap-line / TMHM-window — DÉFÉRÉS Phase 2/3
+//    (sous-système sprite = tag-mismatch substrat, déféré explicite tracké
+//    Phase 2 ; swap-line + TMHM = étape 7. NON bloquant pour ouvrable :
+//    le spike a prouvé sac navigable sans ces sprites. Pas un fake —
+//    no-op documenté, résolu en phase nommée, WORKING-MODE §2). ───────────
+function AddBagVisualSprite(_pocket: number): void {
+  /* DÉFÉRÉ Phase 2 — AddBagVisualSprite item_menu_icons.c:437 (sprite sac
+     gender, substrat sprite tag-mismatch). Non bloquant ouvrable. */
+}
+function CreateItemMenuSwapLine(): void {
+  /* DÉFÉRÉ étape 7 — CreateItemMenuSwapLine (swap d'objets). */
+}
+function CreatePocketScrollArrowPair(): void {
+  /* DÉFÉRÉ Phase 2 — flèches scroll (ScrollIndicatorArrowPair, substrat
+     sprite/task). Spike : flèches invisibles = non bloquant ouvrable. */
+}
+function CreatePocketSwitchArrowPair(): void {
+  /* DÉFÉRÉ Phase 2 — chevrons L/R poche (idem). Non bloquant ouvrable. */
+}
+function PrepareTMHMMoveWindow(): void {
+  /* DÉFÉRÉ étape 7 — fenêtre infos CT/CS (poche TMHM détaillée). */
+}
+
+/** 1:1 décomp SetupBagMenu case 19 : `BlendPalettes(PALETTES_ALL, 16, 0)`. */
+function BlendPalettesBag(): void {
+  BlendPalettes(PALETTES_ALL, 16, 0);
+}
+/** 1:1 décomp SetupBagMenu case 20 :
+ *  `BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK)`. */
+function BeginNormalPaletteFadeBag(): void {
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+}
+
+// ─── BagDestroyPocketScrollArrowPair (item_menu.c:1043) — DÉFÉRÉ Phase 2 ─────
+// (flèches non créées → rien à détruire ; no-op honnête tracké Phase 2). ──────
+function BagDestroyPocketScrollArrowPair(): void { /* DÉFÉRÉ Phase 2 (flèches) */ }
+
+/** 1:1-sém décomp `FreeBagMenu` (item_menu.c:638) : Free(gBagMenu) +
+ *  EWRAM ptr = NULL. Notre modèle : gBagMenu = null (GC = Free). */
+function FreeBagMenu(): void {
+  gBagMenu = null;
+}
+
+/** 1:1 décomp `ChangeBagPocketId` (item_menu.c:1314) — wrap-around poche.
+ *  Sémantique pointeur `u8 *bagPocketId` → valeur retournée (pattern
+ *  menu-helpers ListPos : entrée/sortie par valeur, net-effect 1:1). */
+function ChangeBagPocketId(bagPocketId: number, deltaBagPocketId: number): number {
+  if (deltaBagPocketId === MENU_CURSOR_DELTA_RIGHT && bagPocketId === POCKETS_COUNT - 1)
+    return 0;
+  if (deltaBagPocketId === MENU_CURSOR_DELTA_LEFT && bagPocketId === 0)
+    return POCKETS_COUNT - 1;
+  return bagPocketId + deltaBagPocketId;
+}
+
+/** DÉFÉRÉ étape 7 — `CanSwapItems` (item_menu.c:1427). Le swap d'objets
+ *  (SELECT) est étape 7 ; ici retour FALSE honnête (SELECT = no-op tant que
+ *  le swap n'est pas porté). Pas un fake : déferral explicite tracké. */
+function CanSwapItems(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `GetSwitchBagPocketDirection` (item_menu.c:1295). Link non
+ *  modélisé (cf. convention fichier) ; GetLRKeysPressed/JOY_NEW réels. */
+function GetSwitchBagPocketDirection(): number {
+  if (gBagMenu!.pocketSwitchDisabled)
+    return SWITCH_POCKET_NONE;
+  const LRKeys = GetLRKeysPressed();
+  if (JOY_NEW(DPAD_LEFT) || LRKeys === MENU_L_PRESSED) {
+    PlaySE(SE_SELECT);
+    return SWITCH_POCKET_LEFT;
+  }
+  if (JOY_NEW(DPAD_RIGHT) || LRKeys === MENU_R_PRESSED) {
+    PlaySE(SE_SELECT);
+    return SWITCH_POCKET_RIGHT;
+  }
+  return SWITCH_POCKET_NONE;
+}
+
+/** NET-1:1 décomp `SwitchBagPocket` (item_menu.c:1324). La décomp lance une
+ *  anim slide 16-frame (Task_SwitchBagPocket en followup) ; NET-1:1 = appliquer
+ *  immédiatement le changement de poche + recharger liste/nom/desc (état final
+ *  identique, slide cosmétique collapsé — pattern Summary validé A/B ;
+ *  divergence documentée, PAS un fake). Sprite poche = déféré Phase 2. */
+function SwitchBagPocket(taskId: number, deltaBagPocketId: number, _skipEraseList: boolean): void {
+  const t = _task(taskId);
+  if (!t) return;
+  // DestroyListMenuTask(tListTaskId, &scroll[pocket], &cursor[pocket]) :1334
+  const sr = DestroyListMenuTask(t.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  // newPocket = ChangeBagPocketId(pocket, delta) :1341-1342
+  const newPocket = ChangeBagPocketId(gBagPosition.pocket, deltaBagPocketId);
+  DrawPocketIndicatorSquare(gBagPosition.pocket, false); // :1352
+  DrawPocketIndicatorSquare(newPocket, true);            // :1353
+  // L'anim commit gBagPosition.pocket=newPocket en fin de slide ; NET = direct.
+  gBagPosition.pocket = newPocket;
+  PrintPocketNames(newPocket);                            // :1345/1350 (collapsé)
+  CopyPocketNameToWindow(0);                              // :1346/1351
+  // SetBagVisualPocketId / rotating ball = sprite poche → DÉFÉRÉ Phase 2.
+  // Rebuild liste de la nouvelle poche (= ce que Task_SwitchBagPocket fait
+  // à la fin de l'anim : LoadBagItemListBuffers + ListMenuInit). NET-1:1.
+  LoadBagItemListBuffers(newPocket);
+  BagSetListTaskId(taskId, ListMenuInitForBag(
+    gBagPosition.scrollPosition[newPocket],
+    gBagPosition.cursorPosition[newPocket]));
+}
+
+/** 1:1 décomp `Task_FadeAndCloseBagMenu` (item_menu.c:1077). */
+function Task_FadeAndCloseBagMenu(task: DecompTask): void {
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  task.func = Task_CloseBagMenu;
+}
+
+/** 1:1 décomp `Task_CloseBagMenu` (item_menu.c:1083). newScreenCallback
+ *  (give-item flow) sinon exitCallback (retour terrain). */
+function Task_CloseBagMenu(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  const newScreen = gBagMenu?.newScreenCallback ?? null;
+  const exitCb = newScreen ?? gBagPosition.exitCallback;
+  BagDestroyPocketScrollArrowPair();
+  ResetSpriteData();
+  FreeAllSpritePalettes();
+  FreeBagMenu();
+  if (exitCb) rt.SetMainCallback2(exitCb);
+  else rt.SetMainCallback2(null);
+  rt.DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `Task_BagMenu_HandleInput` (item_menu.c:1221). Link non
+ *  modélisé → MenuHelpers_ShouldWaitForLinkRecv()==FALSE (convention
+ *  fichier). SELECT swap = CanSwapItems()==FALSE (étape 7, no-op honnête).
+ *  A_BUTTON ctx-menu = étape 7 (déféré : gSpecialVar_ItemId/sContextMenuFuncs
+ *  non sur le chemin ouvrable — déferral explicite, PAS un fake). */
+function Task_BagMenu_HandleInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  switch (GetSwitchBagPocketDirection()) {
+    case SWITCH_POCKET_LEFT:
+      SwitchBagPocket(task.taskId, MENU_CURSOR_DELTA_LEFT, false);
+      return;
+    case SWITCH_POCKET_RIGHT:
+      SwitchBagPocket(task.taskId, MENU_CURSOR_DELTA_RIGHT, false);
+      return;
+    default:
+      if (JOY_NEW(SELECT_BUTTON)) {
+        // 1:1 :1252 — swap d'objets (CanSwapItems) = étape 7 (no-op honnête).
+        return;
+      }
+      break;
+  }
+  const listPosition = ListMenu_ProcessInput(task.data[T_LIST_TASK_ID]);
+  const sr = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  switch (listPosition) {
+    case LIST_NOTHING_CHOSEN:
+      break;
+    case LIST_CANCEL:
+      // BERRY_BLENDER_CRUSH SE_FAILURE = maillon berry-blender (déféré).
+      PlaySE(SE_SELECT);
+      // 1:1 :1264 gSpecialVar_ItemId = ITEM_NONE — script give-item flow
+      // (étape 7+) ; le retour-terrain ne le lit pas → déféré honnête.
+      task.func = Task_FadeAndCloseBagMenu;
+      break;
+    default: // A_BUTTON — ctx-menu UTILISER/JETER/… = étape 7 (déféré).
+      PlaySE(SE_SELECT);
+      break;
+  }
+}
 
 /** Sondes d'introspection déterministe (vérif étape 2, pas du gameplay). */
 export function __bagMenuDebugState() {

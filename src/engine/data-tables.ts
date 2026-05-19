@@ -144,6 +144,9 @@ export interface ConstantsTable {
 }
 let constants: ConstantsTable | null = null;
 export function loadConstantsTable(t: ConstantsTable): void { constants = t; }
+/** Idempotence pour les écrans qui doivent garantir leur dépendance data
+ *  (ex. sac ouvert via un chemin scene qui n'a pas exécuté afterMapLoad). */
+export function isConstantsLoaded(): boolean { return constants !== null; }
 export function getSpeciesId(enumName: string): number { return constants?.species[enumName] ?? 0; }
 export function getMoveId(enumName: string): number { return constants?.moves[enumName] ?? 0; }
 export function getItemId(enumName: string): number { return constants?.items[enumName] ?? 0; }

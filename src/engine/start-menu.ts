@@ -68,7 +68,10 @@ import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
-import { OpenBagScreen } from './bag-screen';
+// SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
+// maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
+// IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
+import { OpenBagScreen } from './bag-menu';
 import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
