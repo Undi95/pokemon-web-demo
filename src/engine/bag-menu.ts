@@ -113,6 +113,7 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import {
   AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite,
   AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
+  AddSwitchPocketRotatingBallSprite,
 } from './bag-menu-icons';
 import { preloadItemIconAssets } from './item-icon';
 import {
@@ -312,7 +313,8 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
            scrollGfx, redPal, hmIcon,
-           bagSpriteMale, bagSpriteFemale, bagSpritePal] = await Promise.all([
+           bagSpriteMale, bagSpriteFemale, bagSpritePal,
+           rotatingBallGfx, rotatingBallPal] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
@@ -327,6 +329,8 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadTileBin('/decomp/em/bag/bag_male.4bpp.bin', 4),     // gBagMaleTiles (sprite sac mâle, 6×64×64)
       loadTileBin('/decomp/em/bag/bag_female.4bpp.bin', 4),   // gBagFemaleTiles (sprite sac femelle)
       loadGbaPal('/decomp/em/bag/bag_male.gbapal'),           // gBagPalette (palette OBJ, item_menu_icons.c:142 — partagée gender-neutral)
+      loadTileBin('/decomp/em/bag/rotating_ball.4bpp.bin', 4), // sRotatingBall_Gfx (16×16 4bpp = 128 octets)
+      loadGbaPal('/decomp/em/bag/rotating_ball.gbapal'),       // sRotatingBall_Pal (item_menu_icons.c:36-37)
     ]);
     // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
     // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
@@ -348,6 +352,11 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     assetCache.set('__bagSpriteMaleTiles', bagSpriteMale);
     assetCache.set('__bagSpriteFemaleTiles', bagSpriteFemale);
     assetCache.set('__bagSpritePal', bagSpritePal);
+    // Ball rotative pocket-switch (T10) — assets sous TAG_ROTATING_BALL_GFX.
+    // LoadSpriteSheet/LoadSpritePalette appelés à la 1ère AddSwitchPocketRotat
+    // ingBallSprite (= au switch, pas au boot — 1:1 décomp item_menu_icons.c:500).
+    assetCache.set('__rotatingBallTiles', rotatingBallGfx);
+    assetCache.set('__rotatingBallPal', rotatingBallPal);
     return _bagAssets;
   })();
   return _bagAssetsLoading;
@@ -1331,11 +1340,8 @@ function MenuHelpers_IsLinkActive(): boolean {
 // SetBagVisualPocketId : PORTÉ 1:1 Phase 2 (item_menu_icons.c:446) →
 // importé de bag-menu-icons.ts ↑. Appel SwitchBagPocket inchangé.
 
-/** STUB — REMPLACÉ par T10 (`AddSwitchPocketRotatingBallSprite`
- *  item_menu_icons.c:497). La pokéball qui spin lors du switch ; portée T10. */
-function AddSwitchPocketRotatingBallSprite(_dir: number): void {
-  // 1:1 PORT — voir item_menu_icons.c:497 AddSwitchPocketRotatingBallSprite.
-}
+// AddSwitchPocketRotatingBallSprite : PORTÉ 1:1 Phase 2 (item_menu_icons.c:497)
+// → importé de bag-menu-icons.ts ↑. Appel SwitchBagPocket inchangé.
 
 /** 1:1 décomp `SwitchBagPocket` (item_menu.c:1324) — VRAI 1:1, anim 16-frame.
  *  Lance l'animation slide en transformant la task courante en

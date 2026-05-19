@@ -12,14 +12,19 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from './item-icon';
 import { gBagMenu } from './bag-menu';
-import { getRuntime, FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag } from './decomp-globals';
+import {
+  getRuntime,
+  FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
+  LoadCompressedSpriteSheet,
+  LoadSpritePalette,
+} from './decomp-globals';
 import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from './decomp-bridge';
 import { getItemKeyById } from './data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from './decomp-data/auto/include/item_menu-data';
 import { ITEM_LIST_END } from './decomp-data/auto/include/constants/items-data';
 import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/auto/src/item_menu_icons-data';
-const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;          // 100, sprite sheet sac
-// (TAG_ROTATING_BALL_GFX = 101 importé par T10 plus tard si besoin ici)
+const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
+const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
 import { registerAffineAnim, registerAffineAnimTable } from './decomp-impls/sprite-affine-extras';
 import type { DecompSprite, DecompRuntime } from './decomp-runtime';
 
@@ -27,6 +32,7 @@ import type { DecompSprite, DecompRuntime } from './decomp-runtime';
 const SPRITE_NONE = 0xFF;
 // 1:1 décomp `ITEMMENUSPRITE_*` (item_menu.h) — slots dans gBagMenu->spriteIds.
 const ITEMMENUSPRITE_BAG  = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BAG;   // 0
+const ITEMMENUSPRITE_BALL = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BALL;  // 1
 const ITEMMENUSPRITE_ITEM = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_ITEM;  // 2 (base, double-buffer id^1)
 // 1:1 décomp `#define TAG_ITEM_ICON 5557` (item_menu_icons.c) — GFXTAG/
 // PALTAG de base ; les 2 slots = TAG_ITEM_ICON + id (id ∈ {0,1}). Valeur
@@ -283,4 +289,140 @@ function SpriteCB_ShakeBagSprite(sprite: DecompSprite, _rt: DecompRuntime): void
     StartSpriteAffineAnim(sprite.spriteId, ANIM_BAG_NORMAL);
     sprite.callback = null; // SpriteCallbackDummy.
   }
+}
+
+// ─── Ball rotative pocket-switch (item_menu_icons.c:184-225, 497-533) ─────────
+// sRotatingBallSpriteTemplate :216 : tileTag=paletteTag=TAG_ROTATING_BALL_GFX,
+// oam=sRotatingBallOamData (16×16 4bpp prio2, AFFINE_OFF init), anims=stationary,
+// affineAnims=sRotatingBallAnimCmds (data[0]=-1) ou _FullRotation (data[0]=+1),
+// callback=SpriteCB_SwitchPocketRotatingBallInit.
+// 1:1 décomp tables :184/190 — frame rotation +8 ou +248(=-8) par tick, 16 ticks.
+
+const ROTATING_BALL_AFFINE_TABLE_NEG = 'sRotatingBallAnimCmds';
+const ROTATING_BALL_AFFINE_TABLE_POS = 'sRotatingBallAnimCmds_FullRotation';
+
+let _rotatingBallAffineRegistered = false;
+function _registerRotatingBallAnimsIfNeeded(): void {
+  if (_rotatingBallAffineRegistered) return;
+  _rotatingBallAffineRegistered = true;
+  // sSpriteAffineAnim_RotatingBallRotation1 (item_menu_icons.c:184-188) :
+  //   AFFINEANIMCMD_FRAME(0, 0, 8, 16) + END.
+  registerAffineAnim('sSpriteAffineAnim_RotatingBallRotation1', {
+    frames: [{ xScale: 0, yScale: 0, rotation: 8, duration: 16 }],
+    terminator: 'END',
+  });
+  // sSpriteAffineAnim_RotatingBallRotation2 (item_menu_icons.c:190-194) :
+  //   AFFINEANIMCMD_FRAME(0, 0, 248, 16). 248 = s8(-8) — rotation sens inverse.
+  registerAffineAnim('sSpriteAffineAnim_RotatingBallRotation2', {
+    frames: [{ xScale: 0, yScale: 0, rotation: 248, duration: 16 }],
+    terminator: 'END',
+  });
+  // Tables (item_menu_icons.c:196-204).
+  registerAffineAnimTable(ROTATING_BALL_AFFINE_TABLE_NEG, {
+    affineAnims: ['sSpriteAffineAnim_RotatingBallRotation1'],
+  });
+  registerAffineAnimTable(ROTATING_BALL_AFFINE_TABLE_POS, {
+    affineAnims: ['sSpriteAffineAnim_RotatingBallRotation2'],
+  });
+}
+
+/** 1:1 décomp `AddSwitchPocketRotatingBallSprite` (item_menu_icons.c:497).
+ *  Appelée par SwitchBagPocket(:1359). LoadSpriteSheet+LoadSpritePalette
+ *  (idempotents au runtime) ; CreateSprite(&sRotatingBallSpriteTemplate, 16,
+ *  16, 0) ; data[0] = rotationDirection (MENU_CURSOR_DELTA_LEFT/RIGHT). */
+export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): void {
+  const bm = gBagMenu;
+  if (!bm) return;
+  _registerRotatingBallAnimsIfNeeded();
+  const rt = getRuntime() as unknown as {
+    CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
+    spriteSheetTagToTileStart?: Map<string, number>;
+    paletteTagToSlot?: Map<string, number>;
+    AllocOamMatrix: () => number;
+    FreeOamMatrix?: (n: number) => void;
+    gSprites?: Map<number, DecompSprite>;
+  } | null;
+  if (!rt) return;
+  // 1:1 :500-501 : assets chargés à chaque switch (idempotents au substrat
+  // tag-keyed). Assets préchargés au boot du sac (__rotatingBallTiles/Pal).
+  LoadCompressedSpriteSheet({ data: '__rotatingBallTiles', size: 0x80, tag: TAG_ROTATING_BALL_GFX });
+  LoadSpritePalette({ data: '__rotatingBallPal', tag: TAG_ROTATING_BALL_GFX });
+  const tileStart = rt.spriteSheetTagToTileStart?.get(String(TAG_ROTATING_BALL_GFX)) ?? 0;
+  const palBank   = rt.paletteTagToSlot?.get(String(TAG_ROTATING_BALL_GFX)) ?? 0;
+  // sRotatingBallOamData (item_menu_icons.c:156-171) : shape=0(sq), size=1(16x16),
+  // bpp=4, prio=2, AFFINE_OFF init (SpriteCB_Init le passe à NORMAL :514).
+  const matrixNum = rt.AllocOamMatrix();
+  if (matrixNum < 0) return;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileStart, paletteBank: palBank,
+    x: 16, y: 16, shape: 0, size: 1, priority: 2, subpriority: 0,
+    affineMode: 0, // AFFINE_OFF — SpriteCB_Init le passera à NORMAL :514.
+    affineParamIndex: matrixNum,
+  });
+  if (spriteId === MAX_SPRITES) {
+    rt.FreeOamMatrix?.(matrixNum);
+    return;
+  }
+  bm.spriteIds[ITEMMENUSPRITE_BALL] = spriteId;
+  // 1:1 :503 gSprites[id].data[0] = rotationDirection.
+  // Notre voie dynamique : on attache le callback Init manuellement (= le
+  // décomp le fait via template.callback). Le runtime appelle ce callback
+  // chaque frame → 1er tick = init de l'affine (oam mode + table) + bascule
+  // vers SpriteCB_Continue.
+  const spr = rt.gSprites?.get(spriteId);
+  if (spr) {
+    spr.data[0] = rotationDirection;
+    spr.callback = SpriteCB_SwitchPocketRotatingBallInit;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_SwitchPocketRotatingBallInit` (item_menu_icons.c:512).
+ *  1er tick après création : active AFFINE_NORMAL, choisit la table affine
+ *  selon data[0] (-1 → Rotation1, sinon Rotation2), InitSpriteAffineAnim,
+ *  data[1] = centerToCornerVecY (1:1 bug décomp où data[1] est écrasé), puis
+ *  bascule vers SpriteCB_Continue. */
+function SpriteCB_SwitchPocketRotatingBallInit(sprite: DecompSprite, rt: DecompRuntime): void {
+  // :514 sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL.
+  rt.gba.oam[sprite.oamIndex].affineMode = 1;
+  sprite.affineMode = 1;
+  // :515-518 : table affine selon data[0].
+  sprite.affineAnimsTableName = sprite.data[0] === -1
+    ? ROTATING_BALL_AFFINE_TABLE_NEG
+    : ROTATING_BALL_AFFINE_TABLE_POS;
+  // :520 InitSpriteAffineAnim — reset état + flag begin pour que le moteur
+  // applique le 1er frame au prochain tick affine.
+  sprite.affineAnimBeginning = true;
+  sprite.affineAnimEnded = false;
+  sprite.affineAnimNum = 0;
+  sprite.affineAnimCmdIndex = 0;
+  sprite.affineAnimDelayCounter = 0;
+  sprite.xScale = 0x100;
+  sprite.yScale = 0x100;
+  sprite.rotation = 0;
+  // :521-522 : data[1] = centerToCornerVecX puis data[1] = centerToCornerVecY
+  // (= bug décomp : seul Y est conservé, X overwritté). On préserve 1:1.
+  sprite.data[1] = sprite.centerToCornerVecY;
+  UpdateSwitchPocketRotatingBallCoords(sprite);
+  // :524 sprite->callback = SpriteCB_SwitchPocketRotatingBallContinue.
+  sprite.callback = SpriteCB_SwitchPocketRotatingBallContinue;
+}
+
+/** 1:1 décomp `SpriteCB_SwitchPocketRotatingBallContinue` (item_menu_icons.c:527).
+ *  data[3]++ chaque frame ; mise à jour des coords ; quand data[3]==16,
+ *  RemoveBagSprite (= libère le sprite + sa matrix OAM). */
+function SpriteCB_SwitchPocketRotatingBallContinue(sprite: DecompSprite, _rt: DecompRuntime): void {
+  sprite.data[3]++;
+  UpdateSwitchPocketRotatingBallCoords(sprite);
+  if (sprite.data[3] === 16)
+    RemoveBagSprite(ITEMMENUSPRITE_BALL);
+}
+
+/** 1:1 décomp `UpdateSwitchPocketRotatingBallCoords` (item_menu_icons.c:506).
+ *  Ajuste les centerToCornerVec X/Y de ±1 selon parité du timer (= jitter
+ *  visuel sur la rotation). NOTE : décomp set X et Y à la même formule
+ *  (= bug ou intentionnel pour aligner ; 1:1 préservé). */
+function UpdateSwitchPocketRotatingBallCoords(sprite: DecompSprite): void {
+  const adj = sprite.data[1] - ((sprite.data[3] + 1) & 1);
+  sprite.centerToCornerVecX = adj;
+  sprite.centerToCornerVecY = adj;
 }
