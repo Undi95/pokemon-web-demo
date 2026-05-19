@@ -51,6 +51,23 @@ function extractStrings(block) {
   return out.join(' ').replace(/\\n|\\p|\\l/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/** 1:1 décomp move_descriptions.h : les descriptions de capacités sont des
+ *  literals C ADJACENTS concaténés DIRECTEMENT (aucun séparateur) avec un
+ *  `\n` embarqué = saut de ligne RÉEL (box description = 2 lignes exactes,
+ *  ex. sPoundDescription "...les\n" "pattes..."). Le helper partagé
+ *  `extractStrings` aplatit `\n`→espace (= 1 ligne → débordement écran ≠
+ *  ROM) : on garde `\n` ICI (ciblé moves, n'affecte pas ability/item). */
+function extractMoveDescription(block) {
+  const re = /"((?:\\.|[^"\\])*)"/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(block)) !== null) out.push(m[1]);
+  return out.join('')
+    .replace(/\\n/g, '\n')   // CHAR_NEWLINE 1:1 (saut de ligne box)
+    .replace(/\\[lp]/g, '\n') // \l/\p (inusités ici) → newline (safety)
+    .trim();
+}
+
 /** Parse champ struct `.name = value` (= integer ou enum). */
 function parseField(body, name) {
   const m = body.match(new RegExp(`\\.${name}\\s*=\\s*([^,\\n]+)`));
@@ -183,7 +200,7 @@ function parseMoveDescriptions() {
   const reDesc = /static\s+const\s+u8\s+(s\w+Description)\[\]\s*=\s*_\(\s*([\s\S]*?)\s*\);/g;
   const descs = {};
   let m;
-  while ((m = reDesc.exec(text)) !== null) descs[m[1]] = extractStrings(m[2]);
+  while ((m = reDesc.exec(text)) !== null) descs[m[1]] = extractMoveDescription(m[2]);
   // Map move → description via pointer table.
   const reMap = /\[(MOVE_\w+)\s*-\s*1\]\s*=\s*(s\w+Description)/g;
   const out = {};
