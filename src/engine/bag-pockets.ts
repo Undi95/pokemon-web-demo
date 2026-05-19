@@ -18,6 +18,7 @@
  */
 import { gameState } from './game-state';
 import { getItemId } from './data-tables';
+import { sTMHMMoves } from './tmhm-moves';
 import type { ItemSlot } from './bag';
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
@@ -42,9 +43,26 @@ export function getBagPocketCapacity(pocketId: number): number {
   return getBagPocketSlots(pocketId).length;
 }
 
-/** itemId canonique 1:1 d'un slot (`slot->itemId`). '' → ITEM_NONE(0). */
+/** itemId canonique 1:1 d'un slot (`slot->itemId`). '' → ITEM_NONE(0).
+ *  CT/CS : notre modèle stocke les TM/HM move-named (`ITEM_TM_FOCUS_PUNCH`)
+ *  mais l'enum item décomp = numéroté (`ITEM_TM01..50`/`ITEM_HM01..08`,
+ *  exposés par constants.items). On normalise via l'ordre 1:1 sTMHMMoves
+ *  (tms_hms.h FOREACH : 50 TM idx0-49 puis 8 HM idx50-57) → l'itemId
+ *  canonique. Traduction CONFINÉE ici (couche (b), modèle itemKey-string). */
 export function slotItemId(slot: ItemSlot): number {
-  return slot.itemKey ? getItemId(slot.itemKey) : 0;
+  const k = slot.itemKey;
+  if (!k) return 0;
+  if (k.startsWith('ITEM_TM_') || k.startsWith('ITEM_HM_')) {
+    const moveKey = 'MOVE_' + k.slice(8); // après "ITEM_TM_" / "ITEM_HM_"
+    const idx = sTMHMMoves.indexOf(moveKey);
+    if (idx >= 0) {
+      const numbered = idx < 50
+        ? `ITEM_TM${String(idx + 1).padStart(2, '0')}`
+        : `ITEM_HM${String(idx - 50 + 1).padStart(2, '0')}`;
+      return getItemId(numbered);
+    }
+  }
+  return getItemId(k);
 }
 
 /** 1:1-sém `GetBagItemQuantity(&slot.quantity)` (quantité en clair chez

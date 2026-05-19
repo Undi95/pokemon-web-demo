@@ -1472,13 +1472,21 @@ export function LoadSpritePalette(pal: { data: string, tag: string | number } | 
   const u16 = palData instanceof Uint16Array
     ? palData
     : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
-  // Skip reserved slots — décomp behavior : LoadSpritePalette ignore les
-  // slots [0, gReservedSpritePaletteCount) et alloue à partir de là.
-  if (r.nextObjPalSlot < gReservedSpritePaletteCount) {
-    r.nextObjPalSlot = gReservedSpritePaletteCount;
-  }
-  if (r.nextObjPalSlot >= 16) return; // OBJ palette saturé
-  const slot = r.nextObjPalSlot++;
+  // 1:1 décomp src/sprite.c AllocSpritePalette : 1er slot LIBRE (tag
+  // TAG_NONE) dans [gReservedSpritePaletteCount, 16). AVANT : `nextObjPal
+  // Slot++` monotone — FreeSpritePaletteByTag (Map.delete) ne le décrément
+  // ait pas → après ~16 reloads icône (sac) le compteur sature, Load skip,
+  // l'icône prend un slot périmé = "nav corrompt la palette" (bug A/B
+  // user). paletteTagToSlot EST la table d'occupation (= sSpritePalette
+  // Tags) : un slot non-mappé = libre → réutilisé (= comportement décomp).
+  const usedSlots = new Set<number>();
+  for (const s of r.paletteTagToSlot.values()) usedSlots.add(s);
+  let slot = gReservedSpritePaletteCount;
+  while (slot < 16 && usedSlots.has(slot)) slot++;
+  if (slot >= 16) return; // OBJ palette RÉELLEMENT saturé (16 tags vivants)
+  // nextObjPalSlot maintenu (FreeAllSpritePalettes/lecture compat) mais
+  // l'alloc n'en dépend plus.
+  if (slot + 1 > r.nextObjPalSlot) r.nextObjPalSlot = slot + 1;
   // Phase D-cleanup audit session 83 : 1:1 décomp src/sprite.c LoadSpritePalette
   // écrit à gPlttBufferUnfaded ET Faded. Le TransferPlttBuffer copie Faded
   // au PLTT register au VBlank. Plus de direct gba.palette.loadObjRange.

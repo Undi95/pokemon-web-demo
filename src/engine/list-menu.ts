@@ -1438,18 +1438,21 @@ function SpriteCallback_ScrollIndicatorArrow(sprite: { x2: number; y2: number; d
 
 /** 1:1 décomp `static u8 AddScrollIndicatorArrowObject(u8 arrowDir, u8 x,
  *  u8 y, u16 tileTag, u16 palTag)` (list_menu.c:1024-1043). */
-function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, tileTag: number, _palTag: number): number {
+function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, tileTag: number, palTag: number): number {
   // 1:1 :1029-1033 spriteTemplate = sSpriteTemplate_ScrollArrowIndicator
   // (sOamData 16x16 shape0 size1, callback SpriteCallback_ScrollIndicator
   // Arrow) tileTag/palTag custom ; CreateSprite(&tpl, x, y, 0). Mapping
-  // adapté CreateSpriteAtOam (tile = tag→tileStart).
+  // adapté CreateSpriteAtOam (tile = tag→tileStart, pal = palTag→slot —
+  // sinon paletteBank 0 = palette BG = flèches non rouges, bug A/B user).
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
     spriteSheetTagToTileStart?: Map<string, number>;
+    paletteTagToSlot?: Map<string, number>;
   };
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(tileTag)) ?? 0;
+  const palBank = rt.paletteTagToSlot?.get(String(palTag)) ?? 0;
   const { spriteId } = rt.CreateSpriteAtOam({
-    tileId: tileStart, paletteBank: 0,
+    tileId: tileStart, paletteBank: palBank,
     x, y, shape: 0, size: 1, priority: 0, subpriority: 0,
   });
   const spr = _getSpriteFull(spriteId);
