@@ -1451,13 +1451,27 @@ function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, t
   };
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(tileTag)) ?? 0;
   const palBank = rt.paletteTagToSlot?.get(String(palTag)) ?? 0;
+  // 1:1 décomp sSpriteAnimTable_ScrollArrowIndicator (list_menu.c:128-149) :
+  // l'anim (animNum) est SINGLE-FRAME (ANIMCMD_FRAME + END) → sélectionne
+  // juste tile+flip, pas de boucle. StartSpriteAnim est no-op sur sprite
+  // dynamique (CreateSpriteAtOam, pas de table d'anim) → on applique la
+  // frame STATIQUEMENT (= net-effet identique). animNum :
+  //   0 LEFT  FRAME(0)        1 RIGHT FRAME(0,hFlip)
+  //   2 UP    FRAME(4)        3 DOWN  FRAME(4,vFlip)
+  // 16×16 4bpp = 4 tuiles/frame ; FRAME(4) = offset tuile 4 (2e frame).
+  const animNum = sScrollIndicatorTemplates[arrowDir].animNum;
+  const frameTileOffset = animNum >= 2 ? 4 : 0;
+  const hFlip = animNum === 1;
+  const vFlip = animNum === 3;
   const { spriteId } = rt.CreateSpriteAtOam({
-    tileId: tileStart, paletteBank: palBank,
+    tileId: tileStart + frameTileOffset, paletteBank: palBank,
     x, y, shape: 0, size: 1, priority: 0, subpriority: 0,
   });
   const spr = _getSpriteFull(spriteId);
   if (spr) {
     spr.invisible = true;                                                  // 1:1 :1034
+    (spr as unknown as { hFlip: boolean; vFlip: boolean }).hFlip = hFlip;   // 1:1 anim FRAME flip
+    (spr as unknown as { hFlip: boolean; vFlip: boolean }).vFlip = vFlip;
     spr.callback = SpriteCallback_ScrollIndicatorArrow as unknown as (s: unknown) => void;
     spr.data[0] = 0;                                                       // 1:1 :1035 tState=0
     spr.data[1] = sScrollIndicatorTemplates[arrowDir].animNum;             // 1:1 :1036
