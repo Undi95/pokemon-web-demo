@@ -88,7 +88,7 @@ import {
 } from './decomp-data/auto/include/constants/items-data';
 import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
-import { JOY_NEW, BlendPalettes, PALETTES_ALL } from './decomp-globals';
+import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from './decomp-globals';
 import {
   CreateTask, DestroyTask, BeginNormalPaletteFade,
   SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc,
@@ -110,7 +110,10 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
 // (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
-import { AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite } from './bag-menu-icons';
+import {
+  AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite,
+  AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
+} from './bag-menu-icons';
 import { preloadItemIconAssets } from './item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
@@ -120,6 +123,9 @@ import {
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
 } from './decomp-data/auto/src/item_menu-data';
+// 1:1 décomp item_menu_icons.c:15 — TAG_BAG_GFX=100 (sprite sheet du sac).
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/auto/src/item_menu_icons-data';
+const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
@@ -272,6 +278,9 @@ interface BagAssets {
   palFemale: Uint16Array;    // gBagScreenFemale_Pal (menu_female.pal)
   stdMenuPal: Uint16Array;   // gStandardMenuPalette (interface/std_menu.pal)
   hmIcon: Uint8Array;        // gBagMenuHMIcon_Gfx (bag/hm.4bpp.bin) — graphique 16×16 4bpp "CS" pour les HM/CS de la liste sac (BlitBitmapToWindow, item_menu.c:971)
+  bagSpriteMale: Uint8Array;     // gBagMaleTiles   (bag_male.4bpp.bin, 0x3000 = 6 frames 64×64 4bpp)
+  bagSpriteFemale: Uint8Array;   // gBagFemaleTiles (bag_female.4bpp.bin)
+  bagSpritePal: Uint16Array;     // gBagPalette     (bag.pal — palette OBJ partagée gender-neutral, item_menu_icons.c:142)
 }
 let _bagAssets: BagAssets | null = null;
 let _bagAssetsLoading: Promise<BagAssets> | null = null;
@@ -302,7 +311,8 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // AddItemIconSprite (nav sync 1:1) lise en mémoire (sinon icône absente).
     await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
-           scrollGfx, redPal, hmIcon] = await Promise.all([
+           scrollGfx, redPal, hmIcon,
+           bagSpriteMale, bagSpriteFemale, bagSpritePal] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
@@ -314,6 +324,9 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadTileBin('/decomp/em/interface/scroll_indicator.4bpp.bin', 4), // sScrollIndicator_Gfx
       loadGbaPal('/decomp/em/interface/red.pal'),             // sRedInterface_Pal
       loadTileBin('/decomp/em/bag/hm.4bpp.bin', 4),           // gBagMenuHMIcon_Gfx (badge "CS" 16×16)
+      loadTileBin('/decomp/em/bag/bag_male.4bpp.bin', 4),     // gBagMaleTiles (sprite sac mâle, 6×64×64)
+      loadTileBin('/decomp/em/bag/bag_female.4bpp.bin', 4),   // gBagFemaleTiles (sprite sac femelle)
+      loadGbaPal('/decomp/em/bag/bag_male.gbapal'),           // gBagPalette (palette OBJ, item_menu_icons.c:142 — partagée gender-neutral)
     ]);
     // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
     // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
@@ -324,7 +337,17 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     // AddScrollIndicatorArrowPair (list-menu.ts) résout via getAsset.
     assetCache.set('sScrollIndicator_Gfx', scrollGfx);
     assetCache.set('sRedInterface_Pal', redPal);
-    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon };
+    _bagAssets = {
+      bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon,
+      bagSpriteMale, bagSpriteFemale, bagSpritePal,
+    };
+    // 1:1 décomp item_menu.c:828-836 cases 3+4 graphics state machine :
+    // LoadCompressedSpriteSheet(bagMale|bagFemale) + LoadCompressedSpritePalette
+    // (gBagPaletteTable). Substrat sprite dynamique : assetCache + tag-keyed
+    // LoadCompressedSpriteSheet/LoadSpritePalette (= pattern item-icon prouvé).
+    assetCache.set('__bagSpriteMaleTiles', bagSpriteMale);
+    assetCache.set('__bagSpriteFemaleTiles', bagSpriteFemale);
+    assetCache.set('__bagSpritePal', bagSpritePal);
     return _bagAssets;
   })();
   return _bagAssetsLoading;
@@ -415,6 +438,14 @@ function LoadBagMenu_Graphics(): boolean {
     //          BG_PLTT_ID(0), 2*PLTT_SIZE_4BPP) — gender 1:1 (:822).
     const pal = (!IsWallysBag() && gameState.gender !== 'MALE') ? a.palFemale : a.palMale;
     LoadPalette(pal, BG_PLTT_ID(0), 2 * 16 * 2); // 2 palettes = 32 u16
+    // case 3 : LoadCompressedSpriteSheet(&gBagMale/FemaleSpriteSheet) (:828-832) —
+    //          Wally → male ; sinon selon gameState.gender. tag=TAG_BAG_GFX=100.
+    //          0x3000 = 12288 octets = 6 frames 64×64 4bpp (sBagSpriteAnimTable).
+    const tilesKey = (IsWallysBag() || gameState.gender === 'MALE')
+      ? '__bagSpriteMaleTiles' : '__bagSpriteFemaleTiles';
+    LoadCompressedSpriteSheet({ data: tilesKey, size: 0x3000, tag: TAG_BAG_GFX });
+    // case 4 : LoadCompressedSpritePalette(&gBagPaletteTable) (:836). gender-neutral.
+    LoadSpritePalette({ data: '__bagSpritePal', tag: TAG_BAG_GFX });
     _bagGraphicsReady = true;
     _bagGraphicsLoading = false;
   }).catch((e) => { console.error('[bag] graphics load failed:', e); _bagGraphicsLoading = false; });
@@ -795,16 +826,9 @@ function AllocateBagItemListBuffers(): void {
 // atteints à 5b (sac pas wiré ; sItemListMenu n'est invoqué qu'au
 // ListMenuInit étape 5e). Portés en incrément borné AVANT que le sac soit
 // réellement ouvrable. Chaque corps décomp est cité pour un port exact.
-// ── DÉFÉRÉS LOUD : sous-système sprite item_menu_icons.c (A/B-CRITIQUE =
-//    zone reverted-foam cddfcfee ; WORKING-MODE §5 : visuel attend le user
-//    présent) + blits gfx (assets non extraits) + data-gap items.json. ──────
-/** DÉFÉRÉ — `ShakeBagSprite` (item_menu_icons.c:477) : sprite sac
- *  StartSpriteAffineAnim(ANIM_BAG_SHAKE). Sous-système sprite A/B-critique. */
-function ShakeBagSprite(): void {
-  /* DÉFÉRÉ Phase 2 — ShakeBagSprite item_menu_icons.c:477 (anim affine sprite
-     sac). Sprite sac non créé (substrat tag-mismatch) → no-op honnête tracké
-     Phase 2. Appelé en nav : ne DOIT pas throw (sac ouvrable sans sprite). */
-}
+// AddBagItemIconSprite / RemoveBagItemIconSprite / ShakeBagSprite / Add/Set
+// BagVisualSprite : PORTÉS 1:1 Phase 2 (item_menu_icons.c) → importés de
+// bag-menu-icons.ts ↑. Call-sites 1:1 inchangés.
 // AddBagItemIconSprite / RemoveBagItemIconSprite : PORTÉS 1:1 Phase 2 →
 // importés de bag-menu-icons.ts (item_menu_icons.c) ↑. Call-sites 1:1
 // inchangés (itemId numérique ; traduction itemKey confinée bag-menu-icons).
@@ -1183,10 +1207,8 @@ function BagSetListTaskId(taskId: number, listTaskId: number): void {
 //    Phase 2 ; swap-line + TMHM = étape 7. NON bloquant pour ouvrable :
 //    le spike a prouvé sac navigable sans ces sprites. Pas un fake —
 //    no-op documenté, résolu en phase nommée, WORKING-MODE §2). ───────────
-function AddBagVisualSprite(_pocket: number): void {
-  /* DÉFÉRÉ Phase 2 — AddBagVisualSprite item_menu_icons.c:437 (sprite sac
-     gender, substrat sprite tag-mismatch). Non bloquant ouvrable. */
-}
+// AddBagVisualSprite : PORTÉ 1:1 Phase 2 (item_menu_icons.c:437) → importé de
+// bag-menu-icons.ts ↑. Appel case 15 inchangé.
 function CreateItemMenuSwapLine(): void {
   /* DÉFÉRÉ étape 7 — CreateItemMenuSwapLine (swap d'objets). */
 }
@@ -1306,12 +1328,8 @@ function MenuHelpers_IsLinkActive(): boolean {
   return false;
 }
 
-/** STUB — REMPLACÉ par T9 (`SetBagVisualPocketId` item_menu_icons.c:446).
- *  Le sprite sac (gender + frame par poche) sera porté à T9 ; ici l'appel
- *  depuis SwitchBagPocket est inerte tant que le sprite n'existe pas. */
-function SetBagVisualPocketId(_pocket: number, _isSwitching: boolean): void {
-  // 1:1 PORT — voir item_menu_icons.c:446 SetBagVisualPocketId.
-}
+// SetBagVisualPocketId : PORTÉ 1:1 Phase 2 (item_menu_icons.c:446) →
+// importé de bag-menu-icons.ts ↑. Appel SwitchBagPocket inchangé.
 
 /** STUB — REMPLACÉ par T10 (`AddSwitchPocketRotatingBallSprite`
  *  item_menu_icons.c:497). La pokéball qui spin lors du switch ; portée T10. */

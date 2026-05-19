@@ -110,9 +110,22 @@ function convertScaleParam(scale: number): number {
  *    pc =  (yScale * sin) >> 8
  *    pd =  (yScale * cos) >> 8
  */
+/** Wrap signed 16-bit (= sign-extend bits 0..15). Le décomp stocke
+ *  `sAffineAnimStates.rotation` en s16 → overflow wrap. JS number =
+ *  float64 sans wrap natif → l'accumulation `+= 0xFE00` (= -512 en s16)
+ *  diverge sans cet wrap (visible = BagShake/RotatingBall ne tournent pas). */
+function _wrapS16(n: number): number { return (n << 16) >> 16; }
+
 function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): void {
-  const sin = gSineTable(sprite.rotation & 0xFF);
-  const cos = gSineTable((sprite.rotation + 64) & 0xFF);
+  // 1:1 convention BIOS ObjAffineSet (libagbsyscall) : rotation s16 stocké
+  // « shifté << 8 » → index 8-bit dans gSineTable = `(rotation >> 8) & 0xFF`.
+  // Notre ancien code lisait `rotation & 0xFF` = 0 (low byte est clear par
+  // `& ~0xFF` dans ApplyAffineAnimFrameRelative) → sin/cos figés à 0/256
+  // → rotation jamais appliquée (bug latent jusque-là ; toutes les anims
+  // précedentes avaient rotation=0).
+  const rotIdx = (sprite.rotation >> 8) & 0xFF;
+  const sin = gSineTable(rotIdx);
+  const cos = gSineTable((rotIdx + 64) & 0xFF);
   // Apply ConvertScaleParam avant matrix calc (1:1 décomp sprite.c:1309-1310).
   const xScale = convertScaleParam(sprite.xScale);
   const yScale = convertScaleParam(sprite.yScale);
@@ -154,11 +167,14 @@ export function ApplyAffineAnimFrame(sprite: DecompSprite, frame: AffineAnimFram
     // Path duration == 0 : absolute set (l.1282-1287) — sans `& ~0xFF`.
     sprite.xScale = frame.xScale;
     sprite.yScale = frame.yScale;
-    sprite.rotation = frame.rotation << 8;
+    // Wrap s16 : `frame.rotation << 8` peut dépasser s16 (ex. 0x80 << 8 =
+    // 0x8000 → -32768 en s16 ; JS le garde positif sans wrap). 1:1 le
+    // décomp simule en s16.
+    sprite.rotation = _wrapS16(frame.rotation << 8);
     // Puis ApplyAffineAnimFrameRelativeAndUpdateMatrix(dummyFrame) — dummy = 0
     // partout, donc juste applyMatrix. Mais le décomp applique le `& ~0xFF` ICI
     // (= clamp rotation au byte high). On le fait équivalent en séparant.
-    sprite.rotation &= ~0xFF;
+    sprite.rotation = _wrapS16(sprite.rotation & ~0xFF);
     applyMatrixFromAffineState(sprite, rt);
   }
 }
@@ -169,7 +185,9 @@ export function ApplyAffineAnimFrame(sprite: DecompSprite, frame: AffineAnimFram
 export function ApplyAffineAnimFrameRelative(sprite: DecompSprite, frame: AffineAnimFrameCmd, rt: DecompRuntime): void {
   sprite.xScale += frame.xScale;
   sprite.yScale += frame.yScale;
-  sprite.rotation = (sprite.rotation + (frame.rotation << 8)) & ~0xFF;
+  // Wrap s16 : sans ça, `BagShake` (= ±0x200 par tick) accumule en float64
+  // au lieu d'osciller. Cf. _wrapS16 ci-dessus.
+  sprite.rotation = _wrapS16((sprite.rotation + (frame.rotation << 8)) & ~0xFF);
   applyMatrixFromAffineState(sprite, rt);
 }
 

@@ -1861,10 +1861,17 @@ export class DecompRuntime {
   StartSpriteAnim(spriteId: number, animIdx: number): void {
     const state = this.spriteAnimStates.get(spriteId);
     if (!state) return;
-    const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
+    // Consulte d'abord le runtime registry (_extraAnimTables = tables
+    // enregistrées dynamiquement, e.g. sBagSpriteAnimTable du sac) puis fallback
+    // sur SPRITE_ANIM_TABLES auto-generated. Symétrique avec tickSpriteAnims
+    // (ligne 1896-1897). Sans ça, StartSpriteAnim sur un sprite à anim table
+    // dynamique = early-return silencieux (= sac reste sur frame 0/Closed).
+    const animTable = this._extraAnimTables.get(state.animTableName)
+      ?? (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[state.animTableName];
     if (!animTable || animIdx >= animTable.anims.length) return;
     const animName = animTable.anims[animIdx];
-    const anim = (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
+    const anim = this._extraAnims.get(animName)
+      ?? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[animName];
     if (!anim || anim.frames.length === 0) return;
     state.animIdx = animIdx;
     state.frameIdx = 0;
