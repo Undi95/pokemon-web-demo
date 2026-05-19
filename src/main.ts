@@ -123,6 +123,26 @@ void (async () => {
   }
 })();
 
+// Phase 2 substrat (2026-05-19) : preload constants.json AU BOOT (=
+// species/moves/items/abilities/natures enum→id). AVANT : chargé UNIQUEMENT
+// par OverworldScene (= scène LEGACY, morte dans les 2 chemins vivants :
+// GameScene prod + TestOverworldScene debug) → `constants` singleton null →
+// getItemId/getSpeciesId/getMoveId = 0 partout dans la boucle réelle (bug
+// systémique exposé par le sac : liste vide). Aligné sur les autres tables
+// préchargées ici. Idempotent (OverworldScene legacy re-set = même data).
+import { loadConstantsTable, type ConstantsTable } from './engine/data-tables';
+void (async () => {
+  try {
+    const resp = await fetch('/decomp/em/constants.json');
+    if (resp.ok) {
+      const json = await resp.json() as ConstantsTable;
+      loadConstantsTable(json);
+    }
+  } catch (e) {
+    console.warn('[main] constants preload failed', e);
+  }
+})();
+
 // Session 127 : preload strings.json AU BOOT (= gText_* du décomp).
 // Sans ça, les screens qui appellent getString() voient "[MISSING:gText_...]".
 // Pattern 1:1 ABSOLU ZÉRO HARDCODE : tous les textes FR viennent du décomp.
