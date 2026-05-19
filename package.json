@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "audit:1to1": "node scripts/audit-decomp-1to1-coverage.mjs",
     "audit:dupes": "node scripts/audit-registry-dupes.mjs",
     "audit:opcodes": "node scripts/audit-fullgame-opcodes.mjs",
     "audit:specials": "node scripts/audit-fullgame-specials.mjs",
