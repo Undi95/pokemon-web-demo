@@ -24,8 +24,15 @@
  * Non wiré → ouvrir le sac passe encore par le foam ; ici tsc=0 +
  * import sain (feuille, pas de cycle TDZ) = vérif déterministe étape 2.
  */
-import { getRuntime, ResetPaletteFade, ResetTasks } from './decomp-globals';
+import {
+  getRuntime, ResetPaletteFade, ResetTasks,
+  FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette,
+} from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
+import { ShowBg } from './gba-window-system';
+import { BG_PLTT_ID } from './decomp-runtime';
+import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
+import { gameState } from './game-state';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
@@ -136,7 +143,139 @@ function _allocZeroedBagMenu(): BagMenu {
   };
 }
 
-// ─── Helpers étapes 3..9 non encore portés — STUB HONNÊTE LOUD ───────────────
+/* ============================================================================
+ * ÉTAPE 3 — BagMenu_InitBGs (item_menu.c:789) + LoadBagMenu_Graphics (:805)
+ * Pattern BG-buffer + loader gated-bool = IDENTIQUE summary-screen.ts prouvé
+ * (net-effect 1:1 du state machine synchrone décomp ; structure gated =
+ * exigence anti-foam respectée, pas d'async ad-hoc éparpillé).
+ * ========================================================================== */
+
+// 1:1 décomp `sBgTemplates_ItemMenu` (item_menu.c:213) :
+//  BG0 char0 map31 ss0 prio1 ; BG1 char0 map30 ss0 prio0 ; BG2 char3 map29 ss0 prio2.
+const BAG_BG0_MAP_BASE = 31;
+const BAG_BG1_MAP_BASE = 30;
+const BAG_BG2_MAP_BASE = 29;
+const BAG_BG2_CHAR_BASE = 3;
+
+interface BagAssets {
+  bgTiles: Uint8Array;       // gBagScreen_Gfx     (menu.4bpp.bin → BG2 charBase 3)
+  bgTilemap: Uint16Array;    // gBagScreen_GfxTileMap (menu.bin → tilemapBuffer)
+  palMale: Uint16Array;      // gBagScreenMale_Pal   (menu_male.pal)
+  palFemale: Uint16Array;    // gBagScreenFemale_Pal (menu_female.pal)
+}
+let _bagAssets: BagAssets | null = null;
+let _bagAssetsLoading: Promise<BagAssets> | null = null;
+let _bagGraphicsReady = false;
+let _bagGraphicsLoading = false;
+
+async function _bagLoadAssets(): Promise<BagAssets> {
+  if (_bagAssets) return _bagAssets;
+  if (_bagAssetsLoading) return _bagAssetsLoading;
+  _bagAssetsLoading = (async () => {
+    const [bgTiles, bgTilemap, palMale, palFemale] = await Promise.all([
+      loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
+      loadTilemapBin('/decomp/em/bag/menu.bin'),
+      loadGbaPal('/decomp/em/bag/menu_male.pal'),
+      loadGbaPal('/decomp/em/bag/menu_female.pal'),
+    ]);
+    _bagAssets = { bgTiles, bgTilemap, palMale, palFemale };
+    return _bagAssets;
+  })();
+  return _bagAssetsLoading;
+}
+
+/** 1:1 décomp `IsWallysBag` (item_menu.c:2289) :
+ *  `return gBagPosition.location == ITEMMENULOCATION_WALLY`. */
+function IsWallysBag(): boolean {
+  return gBagPosition.location === ITEMMENULOCATION_WALLY;
+}
+
+/** 1:1 décomp `SetBgTilemapBuffer(2, gBagMenu->tilemapBuffer)` +
+ *  `ScheduleBgCopyTilemapToVram(2)` : le buffer (gBagMenu.tilemapBuffer,
+ *  0x800 octets = 1024 u16) → VRAM mapBase BG2. Modèle BG-buffer prouvé
+ *  Summary (`_scheduleBgCopy`), 1 seul buffer ici (≠ pages Summary). */
+function _bagScheduleBgCopy(bg: number): void {
+  const rt = getRuntime();
+  if (!rt || !gBagMenu) return;
+  if (bg === 0 || bg === 1) return; // BG0/BG1 = windows/ctx, gérés ailleurs
+  const buf = gBagMenu.tilemapBuffer;
+  const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  rt.gba.vram.set(bytes, BAG_BG2_MAP_BASE * 0x800);
+}
+
+/** 1:1 décomp `BagMenu_InitBGs` (item_menu.c:789). ResetVramOamAndBgCntRegs
+ *  + InitBgsFromTemplates(sBgTemplates_ItemMenu) + SetBgTilemapBuffer(2)
+ *  + ResetAllBgsCoordinates + ScheduleBgCopy(2) + DISPCNT OBJ + ShowBg
+ *  0/1/2 + BLDCNT=0. Style runtime-API = pattern Summary `_initBGs`. */
+function BagMenu_InitBGs(): void {
+  const rt = getRuntime();
+  if (!rt || !gBagMenu) return;
+  // ResetVramOamAndBgCntRegs() : DISPCNT/BGxCNT=0, VRAM/OAM/PLTT clear.
+  rt.SetGpuReg(0x00, 0);
+  rt.SetGpuReg(0x08, 0); rt.SetGpuReg(0x0A, 0); rt.SetGpuReg(0x0C, 0); rt.SetGpuReg(0x0E, 0);
+  rt.gba.vram.fill(0);
+  for (let i = 0; i < rt.gba.oam.length; i++) {
+    const oam = rt.gba.oam[i];
+    oam.visible = false; oam.x = 0; oam.y = 0;
+    oam.tileId = 0; oam.paletteBank = 0; oam.affineMode = 0;
+  }
+  for (let i = 0; i < 512; i++) { rt.gPlttBufferUnfaded.set(i, 0); rt.gPlttBufferFaded.set(i, 0); }
+  // memset(gBagMenu->tilemapBuffer, 0, sizeof) — déjà zéro à l'alloc, 1:1.
+  gBagMenu.tilemapBuffer.fill(0);
+  // ResetBgsAndClearDma3BusyFlags(0) + InitBgsFromTemplates(sBgTemplates_ItemMenu).
+  const cfg = (n: 0 | 1 | 2 | 3) => rt.gba.bg(n).config;
+  const b0 = cfg(0);
+  b0.charBaseIndex = 0; b0.mapBaseIndex = BAG_BG0_MAP_BASE; b0.screenSize = 0;
+  b0.paletteMode = 0; b0.priority = 1; b0.hofs = 0; b0.vofs = 0;
+  const b1 = cfg(1);
+  b1.charBaseIndex = 0; b1.mapBaseIndex = BAG_BG1_MAP_BASE; b1.screenSize = 0;
+  b1.paletteMode = 0; b1.priority = 0; b1.hofs = 0; b1.vofs = 0;
+  const b2 = cfg(2);
+  b2.charBaseIndex = BAG_BG2_CHAR_BASE; b2.mapBaseIndex = BAG_BG2_MAP_BASE; b2.screenSize = 0;
+  b2.paletteMode = 0; b2.priority = 2; b2.hofs = 0; b2.vofs = 0;
+  // SetBgTilemapBuffer(2, gBagMenu->tilemapBuffer) : le buffer EST
+  // gBagMenu.tilemapBuffer (rien à enregistrer) ; ResetAllBgsCoordinates.
+  for (let i = 0; i < 4; i++) { const c = cfg(i as 0 | 1 | 2 | 3); c.hofs = 0; c.vofs = 0; }
+  _bagScheduleBgCopy(2);
+  // SetGpuReg(DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP) (1:1 :798).
+  rt.SetGpuReg(0x00, 0x1000 | 0x40);
+  ShowBg(0); ShowBg(1); ShowBg(2);
+  rt.SetGpuReg(0x50, 0); // BLDCNT = 0
+}
+
+/** 1:1 décomp `LoadBagMenu_Graphics` (item_menu.c:805) — STRUCTURE 5
+ *  sous-états ; gated-bool = net-effect 1:1 (Summary prouvé). cases 0-2
+ *  (fond BG2 = livrable visuel étape 3) ; case3/4 sprite sac =
+ *  AddBagVisualSprite étape 5 (notre modèle sprite alloue à la création —
+ *  report HONNÊTE, pas un fake) ; default LoadListMenuSwapLineGfx =
+ *  swap-line étape 7. */
+function LoadBagMenu_Graphics(): boolean {
+  const rt = getRuntime();
+  if (!rt || !gBagMenu) return false;
+  if (_bagGraphicsReady) return true;
+  if (_bagGraphicsLoading) return false;
+  _bagGraphicsLoading = true;
+  void _bagLoadAssets().then((a) => {
+    const r = getRuntime();
+    if (!r || !gBagMenu) { _bagGraphicsLoading = false; return; }
+    // case 0 : DecompressAndCopyTileDataToVram(2, gBagScreen_Gfx) → BG2
+    //          charBase 3 (1 charblock = 0x4000 octets).
+    r.gba.vram.set(a.bgTiles, BAG_BG2_CHAR_BASE * 0x4000);
+    // case 1 : LZDecompressWram(gBagScreen_GfxTileMap, tilemapBuffer)
+    //          (0x800 octets = 1024 u16) + ScheduleBgCopy(2).
+    gBagMenu.tilemapBuffer.set(a.bgTilemap.subarray(0, gBagMenu.tilemapBuffer.length));
+    _bagScheduleBgCopy(2);
+    // case 2 : LoadCompressedPalette(gBagScreen{Female,Male}_Pal,
+    //          BG_PLTT_ID(0), 2*PLTT_SIZE_4BPP) — gender 1:1 (:822).
+    const pal = (!IsWallysBag() && gameState.gender !== 'MALE') ? a.palFemale : a.palMale;
+    LoadPalette(pal, BG_PLTT_ID(0), 2 * 16 * 2); // 2 palettes = 32 u16
+    _bagGraphicsReady = true;
+    _bagGraphicsLoading = false;
+  }).catch((e) => { console.error('[bag] graphics load failed:', e); _bagGraphicsLoading = false; });
+  return false;
+}
+
+// ─── Helpers étapes 4..9 non encore portés — STUB HONNÊTE LOUD ───────────────
 // WORKING-MODE §2 : jamais de fake silencieux. Atteint = crash explicite
 // (le sac n'est PAS encore wiré au start-menu → jamais atteint en jeu ;
 // la structure de la state machine ci-dessous est, elle, 1:1 complète).
@@ -228,10 +367,10 @@ function SetupBagMenu(): boolean {
       rt.SetVBlankCallback(null);
       rt.gMain.state++; break;
     case 1:
-      // ScanlineEffect_Stop().
+      ScanlineEffect_Stop();
       rt.gMain.state++; break;
     case 2:
-      // FreeAllSpritePalettes() — étape 3 (avec InitBGs/Graphics).
+      FreeAllSpritePalettes();
       rt.gMain.state++; break;
     case 3:
       ResetPaletteFade();
@@ -308,9 +447,8 @@ function SetupBagMenu(): boolean {
   return false;
 }
 
-// ─── Leaf-helpers SetupBagMenu — portés étapes 3..9 (stubs LOUD honnêtes) ────
-function BagMenu_InitBGs(): void { _nyi(3, 'BagMenu_InitBGs'); }
-function LoadBagMenu_Graphics(): boolean { return _nyi(3, 'LoadBagMenu_Graphics'); }
+// ─── Leaf-helpers SetupBagMenu — portés étapes 4..9 (stubs LOUD honnêtes) ────
+// (BagMenu_InitBGs + LoadBagMenu_Graphics = portés étape 3, plus haut.)
 function LoadBagMenuTextWindows(): void { _nyi(4, 'LoadBagMenuTextWindows'); }
 function UpdatePocketItemLists(): void { _nyi(5, 'UpdatePocketItemLists'); }
 function InitPocketListPositions(): void { _nyi(5, 'InitPocketListPositions'); }
@@ -328,7 +466,7 @@ function CreateItemMenuSwapLine(): void { _nyi(7, 'CreateItemMenuSwapLine'); }
 function CreatePocketScrollArrowPair(): void { _nyi(5, 'CreatePocketScrollArrowPair'); }
 function CreatePocketSwitchArrowPair(): void { _nyi(5, 'CreatePocketSwitchArrowPair'); }
 function PrepareTMHMMoveWindow(): void { _nyi(7, 'PrepareTMHMMoveWindow'); }
-function BlendPalettesBag(): void { _nyi(3, 'BlendPalettes(PALETTES_ALL,16,0)'); }
+function BlendPalettesBag(): void { _nyi(9, 'BlendPalettes(PALETTES_ALL,16,0)'); }
 function BeginNormalPaletteFadeBag(): void { _nyi(9, 'BeginNormalPaletteFade fade-in'); }
 
 /** Sondes d'introspection déterministe (vérif étape 2, pas du gameplay). */
