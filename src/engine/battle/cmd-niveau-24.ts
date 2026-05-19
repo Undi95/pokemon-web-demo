@@ -15,6 +15,13 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
+// ÉTAPE 2c : câblage 1:1 module Pokédex canonique (remplace le POC inline
+// `_handleSetPokedexFlag_CDS` species==natDex identité + seen-only sans
+// triple-redondance). pokedex-flags n'importe PAS battle/ → 0 cycle (l'ancien
+// "éviter import circulaire 27→24" est moot, les 2 importent le module partagé).
+import {
+  SpeciesToNationalPokedexNum, HandleSetPokedexFlag, FLAG_SET_SEEN,
+} from '../pokedex-flags';
 import {
   gBattleMons, gBattlersCount,
   setActiveBattler,
@@ -91,7 +98,12 @@ function Cmd_switchinanim(ctx: BattleScriptContext): boolean {
                 | BATTLE_TYPE_RECORDED_LINK_C24
                 | BATTLE_TYPE_TRAINER_HILL_C24
                 | BATTLE_TYPE_FRONTIER_C24))) {
-    _handleSetPokedexFlag_CDS(gBattleMons[active]);
+    // 1:1 décomp battle_script_commands.c:4690 / battle_main.c:3448 :
+    // HandleSetPokedexFlag(SpeciesToNationalPokedexNum(gBattleMons[active]
+    //   .species), FLAG_SET_SEEN, gBattleMons[active].personality)
+    HandleSetPokedexFlag(
+      SpeciesToNationalPokedexNum(gBattleMons[active].species),
+      FLAG_SET_SEEN, gBattleMons[active].personality);
   }
   setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[active]);
   // 1:1 décomp : passe gBattlerPartyIndexes[active] comme partyId (= slot du mon switched in).
@@ -100,22 +112,10 @@ function Cmd_switchinanim(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 1:1 décomp helper : `HandleSetPokedexFlag(SpeciesToNationalPokedexNum(mon.species),
- *  FLAG_SET_SEEN, mon.personality)`. */
-function _handleSetPokedexFlag_CDS(mon: { species: number; personality: number }): void {
-  // FLAG_SET_SEEN = 2. SpeciesToNationalPokedexNum = identity en Gen 3 pour 386 premiers.
-  const natDexNum = mon.species;
-  // Inline impl (= éviter import circulaire cmd-niveau-27 → cmd-niveau-24).
-  const sb2 = (globalThis as { gSaveBlock2Ptr?: { pokedex?: {
-    seen?: number[] | Uint8Array;
-    owned?: number[] | Uint8Array;
-  } } }).gSaveBlock2Ptr;
-  if (!sb2?.pokedex?.seen) return;
-  const byteIdx = (natDexNum - 1) >> 3;
-  const bitIdx = (natDexNum - 1) & 7;
-  if (byteIdx < 0) return;
-  sb2.pokedex.seen[byteIdx] = ((sb2.pokedex.seen[byteIdx] ?? 0) | (1 << bitIdx)) & 0xFF;
-}
+// ÉTAPE 2c — POC inline `_handleSetPokedexFlag_CDS` (species==natDex identité
+// FAUX Hoenn ; seen-only sans triple-redondance ni wrapper Unown/Spinda)
+// SUPPRIMÉ. Remplacé 1:1 par `../pokedex-flags` (appel inline ci-dessus dans
+// Cmd_switchinanim, = décomp battle_script_commands.c:4690).
 
 // ─── 0x53 trainerslidein ──────────────────────────────────────────────────
 

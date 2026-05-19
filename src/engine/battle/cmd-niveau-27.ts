@@ -16,6 +16,13 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readWord, Random, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
+// ÉTAPE 2c : câblage 1:1 sur le module Pokédx canonique (remplace les POC
+// locaux species==natDex identité + sans triple-redondance). pokedex-flags
+// n'importe PAS battle/ → 0 cycle (l'ancien "éviter cycle 27↔24" est moot).
+import {
+  SpeciesToNationalPokedexNum, GetSetPokedexFlag, HandleSetPokedexFlag,
+  FLAG_GET_CAUGHT, FLAG_SET_CAUGHT,
+} from '../pokedex-flags';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   setCurrentMove, gCurrentMove,
@@ -109,67 +116,12 @@ function _recordAbilityBattle(battler: number, ability: number): void {
 // L'auto-gen `pokedex-all-auto.ts` use bare globals (FLAG_GET_SEEN, FLAG_SET_*,
 // gSaveBlock2Ptr) sans imports → `ReferenceError` runtime. On port 1:1 ici
 // avec accès via globalThis pour gSaveBlock2Ptr.
-const FLAG_GET_SEEN = 0;
-const FLAG_GET_CAUGHT_AC = 1;
-const FLAG_SET_SEEN_AC = 2;
-const FLAG_SET_CAUGHT_AC = 3;
-void FLAG_GET_CAUGHT_AC; void FLAG_SET_SEEN_AC; void FLAG_SET_CAUGHT_AC;
-
-/** 1:1 décomp `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c:1900-1959).
- *  Pour notre POC : implémentation locale lue depuis globalThis.gSaveBlock2Ptr.
- *  Si non-disponible (= avant save load), retourne 0 (= pas seen / pas caught). */
-function _getSetPokedexFlag(natDexNum: number, caseId: number): number {
-  if (natDexNum <= 0) return 0;
-  const sb2 = (globalThis as { gSaveBlock2Ptr?: {
-    pokedex?: { seen?: Uint8Array | number[]; owned?: Uint8Array | number[] };
-  } }).gSaveBlock2Ptr;
-  if (!sb2?.pokedex) return 0;  // pas de save load → silent.
-  const idx = (natDexNum - 1) >>> 3;
-  const bit = 1 << ((natDexNum - 1) & 7);
-  if (caseId === FLAG_GET_SEEN) {
-    return (sb2.pokedex.seen?.[idx] ?? 0) & bit ? 1 : 0;
-  }
-  if (caseId === FLAG_GET_CAUGHT_AC) {
-    return (sb2.pokedex.owned?.[idx] ?? 0) & bit ? 1 : 0;
-  }
-  if (caseId === FLAG_SET_SEEN_AC) {
-    if (sb2.pokedex.seen) sb2.pokedex.seen[idx] = ((sb2.pokedex.seen[idx] ?? 0) | bit) & 0xFF;
-    return 0;
-  }
-  if (caseId === FLAG_SET_CAUGHT_AC) {
-    if (sb2.pokedex.owned) sb2.pokedex.owned[idx] = ((sb2.pokedex.owned[idx] ?? 0) | bit) & 0xFF;
-    if (sb2.pokedex.seen) sb2.pokedex.seen[idx] = ((sb2.pokedex.seen[idx] ?? 0) | bit) & 0xFF;
-    return 0;
-  }
-  return 0;
-}
-
-/** 1:1 décomp `HandleSetPokedexFlag(natDexNum, caseId, personality)` (pokemon.c:6929-6940).
- *  Set caught/seen flag puis si caught + UNOWN/SPINDA → store personality. */
-function _handleSetPokedexFlag(natDexNum: number, caseId: number, personality: number): void {
-  // FLAG_SET_SEEN = 2, FLAG_GET_SEEN = 0 ; FLAG_SET_CAUGHT = 3, FLAG_GET_CAUGHT = 1.
-  const getFlagCaseId = caseId === 2 /* FLAG_SET_SEEN */ ? 0 /* FLAG_GET_SEEN */ : 1 /* FLAG_GET_CAUGHT */;
-  if (!_getSetPokedexFlag(natDexNum, getFlagCaseId)) {
-    _getSetPokedexFlag(natDexNum, caseId);
-    // 1:1 décomp species.h : SPECIES_UNOWN = 201, SPECIES_SPINDA = 308.
-    // AUDIT BUG FIX : SPINDA était 327 → 308.
-    // NationalPokedexNumToSpecies = identity en Gen 3 pour les 386 premiers.
-    const species = natDexNum;
-    const sb2 = (globalThis as { gSaveBlock2Ptr?: { pokedex?: {
-      unownPersonality?: number; spindaPersonality?: number;
-    } } }).gSaveBlock2Ptr;
-    if (sb2?.pokedex) {
-      if (species === 201 /* SPECIES_UNOWN */) sb2.pokedex.unownPersonality = personality >>> 0;
-      if (species === 308 /* SPECIES_SPINDA */) sb2.pokedex.spindaPersonality = personality >>> 0;
-    }
-  }
-}
-
-/** 1:1 stub `SpeciesToNationalPokedexNum(species)` — Gen 3 species id == natDexNum
- *  pour les 386 premiers. */
-function _speciesToNationalPokedexNum(species: number): number {
-  return species;
-}
+// ÉTAPE 2c — les POC locaux `_getSetPokedexFlag` / `_handleSetPokedexFlag` /
+// `_speciesToNationalPokedexNum` (species==natDex identité = FAUX Hoenn ;
+// sans triple-redondance anti-triche) SUPPRIMÉS. Remplacés 1:1 par le module
+// canonique `../pokedex-flags` (ÉTAPE 1/2a/2b : GetSetPokedexFlag triple-
+// redondance + SpeciesToNationalPokedexNum table réelle + HandleSetPokedex
+// Flag wrapper Unown/Spinda). Cf. Cmd_trysetcaughtmondexflags ci-dessous.
 
 // ─── 0x97 tryinfatuating ──────────────────────────────────────────────────
 
@@ -295,17 +247,18 @@ function Cmd_callenvironmentattack(ctx: BattleScriptContext): boolean {
  *  pas wired battle-side. */
 function Cmd_trysetcaughtmondexflags(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  const species = gBattleMons[1].species;  // gEnemyParty[0] proxy.
+  // 1:1 décomp lit gEnemyParty[0] (species + personality). Notre engine :
+  // gBattleMons[1] (= opponent battler) en proxy (gEnemyParty pas wired
+  // battle-side — adaptation pré-existante documentée, hors scope ÉTAPE 2c).
+  const species = gBattleMons[1].species;
   const personality = gBattleMons[1].personality;
-  const dexNum = _speciesToNationalPokedexNum(species);
-  const FLAG_GET_CAUGHT = 1;
-  const FLAG_SET_CAUGHT = 3;
+  const dexNum = SpeciesToNationalPokedexNum(species); // 1:1 (table réelle ÉTAPE 2a)
 
-  if (_getSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
-    ctx.scriptPtr = failJump;
+  if (GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT)) {
+    ctx.scriptPtr = failJump; // 1:1 : déjà caught → jump (gBattlescriptCurrInstr = ptr)
     return false;
   }
-  _handleSetPokedexFlag(dexNum, FLAG_SET_CAUGHT, personality);
+  HandleSetPokedexFlag(dexNum, FLAG_SET_CAUGHT, personality); // 1:1 (triple-redondance + Unown/Spinda)
   return false;
 }
 
