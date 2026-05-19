@@ -52,7 +52,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -545,11 +545,11 @@ function _drawSlotFrame(slotIdx: number): void {
  *  précédent paddait avec CHAR_SPACE 3px → "/" 2px trop à gauche pour ≤2
  *  chiffres → double-slash visible "20// 20" ≠ ROM "20/ 20").
  *  CHAR_SPACER ↔ JS 'ラ' (U+30E9) dans notre charmap (1:1 charmap.txt:280). */
-const CHAR_SPACER_STR = 'ラ'; // 'ラ' → byte 0x77 = décomp CHAR_SPACER
-function _rightAlign3(n: number): string {
-  const s = String(n);
-  return s.length >= 3 ? s : CHAR_SPACER_STR.repeat(3 - s.length) + s;
-}
+// Helper local _rightAlign3 retiré : `ConvertIntToDecimalStringN(value,
+// RIGHT_ALIGN, 3)` (decomp-bridge) fait l exact même travail 1:1 — substrat
+// partagé avec summary-screen + 14 autres callers (factoring dedup 2026-05-20).
+const _rightAlign3 = (n: number) =>
+  ConvertIntToDecimalStringN('', n, STR_CONV_MODE_RIGHT_ALIGN, 3);
 
 /** Render text for slot N. Positions 1:1 décomp `sPartyBoxInfoRects`
  *  (party_menu.h:32) — Nickname/Level/HP/MaxHP fixed coords per box layout. */

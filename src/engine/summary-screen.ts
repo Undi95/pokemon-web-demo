@@ -50,7 +50,7 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -1193,11 +1193,11 @@ let _leftColStats = '';
  *  de nombres s'alignent vraiment à droite (sinon rendu ~centré ≠ ROM).
  *  CHAR_SPACER ↔ JS 'ラ' (U+30E9 → byte 0x77, charmap.txt:280), MÊME
  *  approche 1:1 que party-screen.ts:504 `_rightAlign3` (validée A/B). */
-const CHAR_SPACER_STR = 'ラ';
-function _rightAlignSpacer(value: number, n: number): string {
-  const s = String(value);
-  return s.length >= n ? s : CHAR_SPACER_STR.repeat(n - s.length) + s;
-}
+// Helper local _rightAlignSpacer retiré : `ConvertIntToDecimalStringN(value,
+// RIGHT_ALIGN, n)` (decomp-bridge) fait l exact même travail 1:1 — substrat
+// partagé avec party-screen + 14 autres callers (factoring dedup 2026-05-20).
+const _rightAlignSpacer = (value: number, n: number) =>
+  ConvertIntToDecimalStringN('', value, STR_CONV_MODE_RIGHT_ALIGN, n);
 function _bufferLeftColumnStats(): void {
   const s = sMon.summary;
   const cur = _rightAlignSpacer(s.currentHP, 3);

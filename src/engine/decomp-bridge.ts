@@ -273,7 +273,9 @@ export {
   ClearTextPrinters,
   DeactivateAllTextPrinters,
   RunTextPrintersAndIsPrinter0Active,
+  CHAR_SPACER_STR,
 } from './gba-text-system';
+import { CHAR_SPACER_STR } from './gba-text-system';
 
 // ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
 
@@ -1260,17 +1262,38 @@ export function StringAppend(dest: string | any, src: string): string {
   return src;
 }
 
-/** 1:1 décomp `src/string_util.c:285 ConvertIntToDecimalStringN`
- *    Converts integer to decimal string with mode (= LEADING_ZEROS / RIGHT_ALIGN
- *    / LEFT_ALIGN). En TS : équivalent direct via toString. */
+/** 1:1 décomp `src/string_util.c:285 ConvertIntToDecimalStringN` :
+ *    - LEFT_ALIGN (mode 0)    : print digits sans padding (le seul cas où
+ *      length > n produit une troncation = peu réaliste en pratique).
+ *    - RIGHT_ALIGN (mode 1)   : pad LEFT avec CHAR_SPACER pour width = n.
+ *      Cas typique : niveaux Pokémon "  5" / " 12" / "100" alignés à droite.
+ *    - LEADING_ZEROS (mode 2) : pad LEFT avec '0' pour width = n.
+ *      Cas typique : CT/HM "CT 01..50", HM "CS 1..8", BAIES "BAIE 01..43".
+ *  L'ancienne impl ignorait silencieusement `mode` et ne paddait JAMAIS
+ *  (= bug latent qui produisait "CT 1 ROULA-LAME" au lieu de "CT 01"
+ *  dans le sac, "  5/ 20" dégradé en "5/20" partout, etc.). */
 export const STR_CONV_MODE_LEFT_ALIGN = 0;
 export const STR_CONV_MODE_RIGHT_ALIGN = 1;
 export const STR_CONV_MODE_LEADING_ZEROS = 2;
 export function ConvertIntToDecimalStringN(
-  _dest: any, value: number, _mode: number, n: number,
+  _dest: any, value: number, mode: number, n: number,
 ): string {
   let s = String(value);
-  if (s.length > n) s = s.slice(s.length - n);
+  if (s.length >= n) {
+    // Le décomp tronque à droite si plus long que n ; on conserve la sémantique
+    // (bien que ce cas soit improbable pour des valeurs réelles).
+    if (s.length > n) s = s.slice(s.length - n);
+    return s;
+  }
+  // value.length < n : padding LEFT selon le mode.
+  const pad = n - s.length;
+  if (mode === STR_CONV_MODE_RIGHT_ALIGN) {
+    return CHAR_SPACER_STR.repeat(pad) + s;
+  }
+  if (mode === STR_CONV_MODE_LEADING_ZEROS) {
+    return '0'.repeat(pad) + s;
+  }
+  // LEFT_ALIGN : pas de padding (mode décomp par défaut).
   return s;
 }
 

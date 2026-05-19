@@ -146,6 +146,13 @@ export function GetStringCenterAlignXOffset(str: string, totalWidth: number): nu
   return Math.floor((totalWidth - GetStringWidth(str)) / 2);
 }
 
+/** 1:1 décomp `CHAR_SPACER` (= byte 0x77 dans charmap, charmap.txt:280).
+ *  Caractère spacer demi-largeur utilisé par `ConvertIntToDecimalStringN`
+ *  en mode RIGHT_ALIGN pour padder à gauche les nombres courts (ex. " 5"
+ *  vs "12" alignés à droite). Côté JS = 'ラ' (U+30E9), mappé byte 0x77.
+ *  Promu globalement (était dupliqué dans party-screen + summary-screen). */
+export const CHAR_SPACER_STR = 'ラ';
+
 function ensureFontLoaded(): void {
   if (!glyphData || !glyphWidths || !charmap) {
     throw new Error('[gba-text-system] Font data not loaded. Call preloadFontData() first.');
