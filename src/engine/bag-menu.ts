@@ -32,6 +32,13 @@ import {
 import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
 import { ListMenuLoadStdPalAt } from './gba-menu-system';
 import {
+  getBagPocketSlots, getBagPocketCapacity, slotItemId,
+  CompactItemsInBagPocket, SortBerriesOrTMHMs,
+} from './bag-pockets';
+import {
+  SetCursorWithinListBounds, SetCursorScrollWithinListBounds, type ListPos,
+} from './menu-helpers';
+import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, type WindowTemplate,
 } from './gba-window-system';
@@ -517,10 +524,91 @@ function LoadBagMenuTextWindows(): void {
   ScheduleBgCopyTilemapToVram(0);                            // :2472
   ScheduleBgCopyTilemapToVram(1);                            // :2473
 }
-function UpdatePocketItemLists(): void { _nyi(5, 'UpdatePocketItemLists'); }
-function InitPocketListPositions(): void { _nyi(5, 'InitPocketListPositions'); }
-function InitPocketScrollPositions(): void { _nyi(5, 'InitPocketScrollPositions'); }
-function AllocateBagItemListBuffers(): void { _nyi(5, 'AllocateBagItemListBuffers'); }
+// 1:1 décomp `#define MAX_ITEMS_SHOWN 8` (item_menu.c:68).
+const MAX_ITEMS_SHOWN = 8;
+
+// 1:1 décomp `struct ListBuffer1{ ListMenuItem subBuffers[] }` /
+// `struct ListBuffer2{ u8 name[][] }` (item_menu.c:106/110) — alloués
+// par AllocateBagItemListBuffers, remplis par LoadBagItemListBuffers (5b).
+interface ListMenuItemRef { name: string; id: number; }
+let _sListBuffer1: { subBuffers: ListMenuItemRef[] } | null = null;
+let _sListBuffer2: { name: string[] } | null = null;
+
+/** 1:1 décomp `UpdatePocketItemList` (item_menu.c:1105) : Sort/Compact la
+ *  poche puis compte les slots non-vides → numItemStacks (+1 CLOSE BAG si
+ *  !hideCloseBagText) ; numShownItems = min(numItemStacks, MAX). */
+function UpdatePocketItemList(pocketId: number): void {
+  if (!gBagMenu) return;
+  switch (pocketId) {
+    case TMHM_POCKET:
+    case BERRIES_POCKET:
+      SortBerriesOrTMHMs(pocketId);
+      break;
+    default:
+      CompactItemsInBagPocket(pocketId);
+      break;
+  }
+  const slots = getBagPocketSlots(pocketId);
+  const capacity = getBagPocketCapacity(pocketId);
+  gBagMenu.numItemStacks[pocketId] = 0;
+  for (let i = 0; i < capacity && slotItemId(slots[i]) !== 0; i++)
+    gBagMenu.numItemStacks[pocketId]++;
+  if (!gBagMenu.hideCloseBagText)
+    gBagMenu.numItemStacks[pocketId]++;
+  if (gBagMenu.numItemStacks[pocketId] > MAX_ITEMS_SHOWN)
+    gBagMenu.numShownItems[pocketId] = MAX_ITEMS_SHOWN;
+  else
+    gBagMenu.numShownItems[pocketId] = gBagMenu.numItemStacks[pocketId];
+}
+
+/** 1:1 décomp `UpdatePocketItemLists` (item_menu.c:1134). */
+function UpdatePocketItemLists(): void {
+  for (let i = 0; i < POCKETS_COUNT; i++)
+    UpdatePocketItemList(i);
+}
+
+/** 1:1 décomp `UpdatePocketListPosition` (item_menu.c:1142) : SetCursor
+ *  WithinListBounds(&scroll[p], &cursor[p], numShownItems, numItemStacks).
+ *  Sémantique pointeur → ListPos copié/réécrit (menu-helpers.ts). */
+function UpdatePocketListPosition(pocketId: number): void {
+  if (!gBagMenu) return;
+  const pos: ListPos = {
+    scroll: gBagPosition.scrollPosition[pocketId],
+    cursor: gBagPosition.cursorPosition[pocketId],
+  };
+  SetCursorWithinListBounds(pos, gBagMenu.numShownItems[pocketId], gBagMenu.numItemStacks[pocketId]);
+  gBagPosition.scrollPosition[pocketId] = pos.scroll;
+  gBagPosition.cursorPosition[pocketId] = pos.cursor;
+}
+
+/** 1:1 décomp `InitPocketListPositions` (item_menu.c:1146). */
+function InitPocketListPositions(): void {
+  for (let i = 0; i < POCKETS_COUNT; i++)
+    UpdatePocketListPosition(i);
+}
+
+/** 1:1 décomp `InitPocketScrollPositions` (item_menu.c:1153) : SetCursor
+ *  ScrollWithinListBounds(&scroll[i],&cursor[i],numShownItems,numItemStacks,
+ *  MAX_ITEMS_SHOWN) sur chaque poche. */
+function InitPocketScrollPositions(): void {
+  if (!gBagMenu) return;
+  for (let i = 0; i < POCKETS_COUNT; i++) {
+    const pos: ListPos = {
+      scroll: gBagPosition.scrollPosition[i],
+      cursor: gBagPosition.cursorPosition[i],
+    };
+    SetCursorScrollWithinListBounds(pos, gBagMenu.numShownItems[i], gBagMenu.numItemStacks[i], MAX_ITEMS_SHOWN);
+    gBagPosition.scrollPosition[i] = pos.scroll;
+    gBagPosition.cursorPosition[i] = pos.cursor;
+  }
+}
+
+/** 1:1 décomp `AllocateBagItemListBuffers` (item_menu.c:857) : Alloc
+ *  sListBuffer1/2 (les remplir = LoadBagItemListBuffers, étape 5b). */
+function AllocateBagItemListBuffers(): void {
+  _sListBuffer1 = { subBuffers: [] };
+  _sListBuffer2 = { name: [] };
+}
 function LoadBagItemListBuffers(_pocketId: number): void { _nyi(5, 'LoadBagItemListBuffers'); }
 function PrintPocketNames(_pocket: number): void { _nyi(5, 'PrintPocketNames'); }
 function CopyPocketNameToWindow(_a: number): void { _nyi(5, 'CopyPocketNameToWindow'); }
