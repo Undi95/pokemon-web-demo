@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "audit:1to1": "node scripts/audit-decomp-1to1-coverage.mjs",
     "lint:1to1": "node scripts/lint-1to1-smells.mjs",
+    "pair:1to1": "node scripts/pair-decomp-port.mjs",
     "audit:dupes": "node scripts/audit-registry-dupes.mjs",
     "audit:opcodes": "node scripts/audit-fullgame-opcodes.mjs",
     "audit:specials": "node scripts/audit-fullgame-specials.mjs",
