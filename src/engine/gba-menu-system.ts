@@ -15,10 +15,34 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime, m4aSongNumStart, PlaySE } from './decomp-globals';
+import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from './decomp-globals';
+import { PLTT_SIZE_4BPP } from './decomp-bridge';
 import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
+
+/** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfo
+ *  Elements{1,2,3}_Pal → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP).
+ *  Les symboles sont résolus via assetCache (LoadPalette(string)) — le
+ *  consommateur précharge les .pal (interface/menu_info{1,2,3}.pal,
+ *  copies décomp byte-identiques). Fonction PARTAGÉE menu.c (bag, union
+ *  room…) → sa maison = ici (≠ bag-menu local). */
+export function ListMenuLoadStdPalAt(palOffset: number, palId: number): void {
+  let palette: string;
+  switch (palId) {
+    case 0:
+    default:
+      palette = 'gMenuInfoElements1_Pal';
+      break;
+    case 1:
+      palette = 'gMenuInfoElements2_Pal';
+      break;
+    case 2:
+      palette = 'gMenuInfoElements3_Pal';
+      break;
+  }
+  LoadPalette(palette, palOffset, PLTT_SIZE_4BPP);
+}
 
 // 1:1 décomp include/constants/songs.h:11 : SE_SELECT = 5.
 const SE_SELECT_KEY = 5;

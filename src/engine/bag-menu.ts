@@ -27,8 +27,10 @@
 import {
   getRuntime, ResetPaletteFade, ResetTasks,
   FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
+  assetCache,
 } from './decomp-globals';
 import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
+import { ListMenuLoadStdPalAt } from './gba-menu-system';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, type WindowTemplate,
@@ -201,13 +203,21 @@ async function _bagLoadAssets(): Promise<BagAssets> {
   if (_bagAssets) return _bagAssets;
   if (_bagAssetsLoading) return _bagAssetsLoading;
   _bagAssetsLoading = (async () => {
-    const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal] = await Promise.all([
+    const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
       loadGbaPal('/decomp/em/bag/menu_male.pal'),
       loadGbaPal('/decomp/em/bag/menu_female.pal'),
-      loadGbaPal('/decomp/em/interface/std_menu.pal'), // gStandardMenuPalette
+      loadGbaPal('/decomp/em/interface/std_menu.pal'),       // gStandardMenuPalette
+      loadGbaPal('/decomp/em/interface/menu_info1.pal'),      // gMenuInfoElements1_Pal
+      loadGbaPal('/decomp/em/interface/menu_info2.pal'),      // gMenuInfoElements2_Pal
+      loadGbaPal('/decomp/em/interface/menu_info3.pal'),      // gMenuInfoElements3_Pal
     ]);
+    // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
+    // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
+    assetCache.set('gMenuInfoElements1_Pal', mi1);
+    assetCache.set('gMenuInfoElements2_Pal', mi2);
+    assetCache.set('gMenuInfoElements3_Pal', mi3);
     _bagAssets = { bgTiles, bgTilemap, palMale, palFemale, stdMenuPal };
     return _bagAssets;
   })();
@@ -478,19 +488,9 @@ function SetupBagMenu(): boolean {
 }
 
 // ─── Leaf-helpers SetupBagMenu — portés étapes 4..9 (stubs LOUD honnêtes) ────
-// (BagMenu_InitBGs + LoadBagMenu_Graphics = portés étape 3, plus haut.)
-/** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : switch palId →
- *  gMenuInfoElements{1,2,3}_Pal → LoadPalette(pal, palOffset, 32).
- *  ⚠️ MAILLON : l'asset `gMenuInfoElements2_Pal` (graphics/interface/
- *  menu_info_elements2.gbapal, palId=1 du sac) N'EST PAS extrait
- *  (vérifié : absent decomp-data/menu-data + public/decomp/em/interface).
- *  Port 1:1 + sa maison gba-menu-system.ts = prérequis ÉTAPE 5 (palette 12
- *  alimente le rendu texte de la liste, son consommateur). Stub LOUD
- *  honnête (WORKING-MODE §2, jamais de fake silencieux ; non atteint en
- *  jeu — sac pas wiré). */
-function ListMenuLoadStdPalAt(_palOffset: number, _palId: number): void {
-  _nyi(5, 'ListMenuLoadStdPalAt (menu.c:2077) — extracteur gMenuInfoElements*_Pal manquant');
-}
+// (BagMenu_InitBGs + LoadBagMenu_Graphics = portés étape 3 ; ListMenuLoad
+//  StdPalAt = porté 1:1 dans gba-menu-system.ts, importé en tête — chaînon
+//  MAILLON résolu : menu_info{1,2,3}.pal copiés 1:1 + préchargés assetCache.)
 
 /** 1:1 décomp `LoadBagMenuTextWindows` (item_menu.c:2457). InitWindows
  *  (sDefaultBagWindows) + DeactivateAllTextPrinters + palettes border(14)/
