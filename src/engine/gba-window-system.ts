@@ -215,6 +215,32 @@ export function FillWindowPixelBuffer(windowId: number, fillValue: number): void
   fillWindowPixelBuffer(gw.win, fillValue);
 }
 
+/** Équivalent fonctionnel décomp `GetWindowAttribute(windowId, WINDOW_TILE_DATA)`
+ *  qui retourne `(u8*)` vers le tile-data 4bpp packed de la fenêtre.
+ *
+ *  Notre layout diffère : pixelBuffer linéaire row-major 1 byte/pixel (idx
+ *  0-15) — équivalent sémantique 1:1 (= contenu image), pas le format byte
+ *  (= 4bpp tile-arranged en décomp). Les opérations bulk-copy (CpuCopy32 du
+ *  décomp) deviennent ici des bulk-copy sur le pixelBuffer (Uint8Array).
+ *
+ *  Usage typique (= item_menu.c:2438/:2442 PrintPocketNames + slide) :
+ *  snapshot le pixelBuffer d'une fenêtre temp, puis copier des slices vers
+ *  une autre fenêtre.
+ *
+ *  Retourne la référence Uint8Array vivante (mutation = écrit le buffer). */
+export function GetWindowPixelBuffer(windowId: number): Uint8Array | null {
+  const gw = gWindows.find((w) => w.id === windowId);
+  return gw ? gw.win.pixelBuffer : null;
+}
+
+/** Marque le pixelBuffer d'une fenêtre comme modifié (force flush au prochain
+ *  CopyWindowToVram / flushDirtyWindows). À appeler quand on écrit directement
+ *  le pixelBuffer en bypass des AddTextPrinter (= bulk-copy du slide). */
+export function MarkWindowDirty(windowId: number): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (gw) gw.win.needsFlush = true;
+}
+
 export function CopyWindowToVram(windowId: number, mode: number): void {
   const gw = gWindows.find((w) => w.id === windowId);
   if (!gw) return;

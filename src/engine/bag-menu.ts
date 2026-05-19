@@ -55,6 +55,8 @@ import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
   FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
+  AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
+  ClearWindowTilemap,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -87,7 +89,10 @@ import {
 import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
 import { JOY_NEW, BlendPalettes, PALETTES_ALL } from './decomp-globals';
-import { CreateTask, DestroyTask, BeginNormalPaletteFade } from './decomp-bridge';
+import {
+  CreateTask, DestroyTask, BeginNormalPaletteFade,
+  SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc,
+} from './decomp-bridge';
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
@@ -105,7 +110,7 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
 // (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
-import { AddBagItemIconSprite, RemoveBagItemIconSprite } from './bag-menu-icons';
+import { AddBagItemIconSprite, RemoveBagItemIconSprite, RemoveBagSprite } from './bag-menu-icons';
 import { preloadItemIconAssets } from './item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
@@ -137,6 +142,8 @@ export const ITEMMENULOCATION_LAST = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_LA
 // + ITEMMENU_SWAP_LINE_LENGTH` = 4 + 8 = 12. On le DÉRIVE 1:1 (pas hardcode).
 const ITEMMENUSPRITE_SWAP_LINE = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_SWAP_LINE;
 export const ITEMMENUSPRITE_BAG = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BAG;
+export const ITEMMENUSPRITE_BALL = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_BALL;
+export const ITEMMENUSPRITE_ITEM = ENUM_ITEMMENUSPRITE_2.ITEMMENUSPRITE_ITEM;
 export const ITEMMENUSPRITE_COUNT = ITEMMENUSPRITE_SWAP_LINE + ITEMMENU_SWAP_LINE_LENGTH; // 12
 export const ITEMWIN_COUNT = ENUM_ITEMWIN_1.ITEMWIN_COUNT; // 10
 export { ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT };
@@ -212,7 +219,12 @@ interface BagMenu {
   numItemStacks: number[];           // [POCKETS_COUNT]
   numShownItems: number[];           // [POCKETS_COUNT]
   graphicsLoadState: number;         // s16
-  pocketNameBuffer: Uint8Array;      // [32][32]
+  /** Décomp : `u8 pocketNameBuffer[32][32]` (1024B, 4bpp tile-arranged d'une
+   *  fenêtre temp 16×2 tiles utilisée par PrintPocketNames :2421).
+   *  TS : layout pixelBuffer linéaire 1B/pixel (8bpp idx) = 128 px × 16 px
+   *  = 2048B (sémantique 1:1 = mêmes pixels, différent encoding). Le slide
+   *  CopyPocketNameToWindow opère par bulk-copy de slices 64×16 (cf. :2442). */
+  pocketNameBuffer: Uint8Array;      // 128 px × 16 px (= 16×2 tiles)
 }
 export let gBagMenu: BagMenu | null = null;
 
@@ -235,7 +247,7 @@ function _allocZeroedBagMenu(): BagMenu {
     numItemStacks: new Array(POCKETS_COUNT).fill(0),
     numShownItems: new Array(POCKETS_COUNT).fill(0),
     graphicsLoadState: 0,
-    pocketNameBuffer: new Uint8Array(32 * 32),
+    pocketNameBuffer: new Uint8Array(128 * 16),
   };
 }
 
@@ -557,7 +569,8 @@ function SetupBagMenu(): boolean {
       LoadBagItemListBuffers(gBagPosition.pocket);
       rt.gMain.state++; break;
     case 13:
-      PrintPocketNames(gBagPosition.pocket);
+      // 1:1 décomp :823-825 : setup initial = un seul nom rendu (= name1).
+      PrintPocketNames(gPocketNamesStringsTable[gBagPosition.pocket] ?? '', null);
       CopyPocketNameToWindow(0);
       DrawPocketIndicatorSquare(gBagPosition.pocket, true);
       rt.gMain.state++; break;
@@ -1049,27 +1062,74 @@ const gPocketNamesStringsTable: readonly string[] = [
 // 1:1 décomp `RGB_BLACK` (include/constants/rgb.h) = 0.
 const RGB_BLACK = 0;
 
-/** NET-1:1 décomp `PrintPocketNames` (item_menu.c:2421) + `CopyPocketNameTo
- *  Window` (:2442). La décomp rend dans une fenêtre temp puis CpuCopy32 le
- *  tile-data dans gBagMenu->pocketNameBuffer[32][32] et CopyPocketNameToWindow
- *  en re-copie une tranche (offset `a`) vers WIN_POCKET_NAME pour le slide
- *  L/R. Notre GetWindowAttribute(WINDOW_TILE_DATA) = number (≠ u8* décomp) →
- *  le slide byte-level ne se traduit pas : NET-1:1 = rendre le nom centré
- *  DIRECT dans WIN_POCKET_NAME (état final identique, slide cosmétique
- *  collapsé — pattern Summary validé A/B ; divergence modèle documentée,
- *  PAS un fake). CopyPocketNameToWindow = flush VRAM (le rendu est direct). */
-function PrintPocketNames(pocket: number): void {
-  const wid = _win(WIN_POCKET_NAME);
-  const name = gPocketNamesStringsTable[pocket] ?? '';
-  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
-  // :2428 GetStringCenterAlignXOffset(FONT_NORMAL, name, 0x40). Le helper
-  // projet (gba-text-system) prend (str, totalWidth), FONT_NORMAL implicite.
-  const offset = GetStringCenterAlignXOffset(name, 0x40);
-  BagMenu_Print(wid, FONT_NORMAL, name, offset, 1, 0, 0, 0, 1 /* COLORID_POCKET_NAME */);
+/** 1:1 décomp `PrintPocketNames` (item_menu.c:2421).
+ *  Crée une fenêtre temp 16×2 tiles (= 128 px × 16 px), rend `pocketName1`
+ *  centré dans les 64 premiers pixels et (si non null) `pocketName2` centré
+ *  dans les 64 suivants — soit deux noms de poche côte-à-côte. Snapshot le
+ *  pixelBuffer dans `gBagMenu.pocketNameBuffer` pour que `CopyPocketName
+ *  ToWindow(a)` puisse en extraire une tranche 64 px-wide à l'offset `a` × 8 px
+ *  (= le slide horizontal de l'anim SwitchBagPocket). */
+function PrintPocketNames(pocketName1: string, pocketName2: string | null): void {
+  // Décomp :2423-2429 : `struct WindowTemplate window = {0}` puis .width=16 .height=2.
+  // Sur GBA, baseBlock=0 + bg=0 = chevauche le tile data d'autres fenêtres ;
+  // mais on le RemoveWindow avant CopyWindowToVram, donc rien n'est écrit en
+  // VRAM. Notre AddWindow alloue un pixelBuffer interne suffisant.
+  const tempTemplate: WindowTemplate = {
+    bg: 0, tilemapLeft: 0, tilemapTop: 0,
+    width: 16, height: 2, paletteNum: 1, baseBlock: 0,
+  };
+  const tempWid = AddWindow(tempTemplate);
+  FillWindowPixelBuffer(tempWid, PIXEL_FILL(0));
+  // :2431-2436 BagMenu_Print(windowId, FONT_NORMAL, name, offset, 1, 0, 0, TEXT_SKIP_DRAW, COLORID_POCKET_NAME)
+  let offset = GetStringCenterAlignXOffset(pocketName1, 0x40);
+  BagMenu_Print(tempWid, FONT_NORMAL, pocketName1, offset, 1, 0, 0, TEXT_SKIP_DRAW, 1 /* COLORID_POCKET_NAME */);
+  if (pocketName2) {
+    offset = GetStringCenterAlignXOffset(pocketName2, 0x40);
+    BagMenu_Print(tempWid, FONT_NORMAL, pocketName2, offset + 0x40, 1, 0, 0, TEXT_SKIP_DRAW, 1);
+  }
+  // :2438 CpuCopy32(GetWindowAttribute(windowId, WINDOW_TILE_DATA), gBagMenu->pocketNameBuffer, sizeof(...))
+  // — snapshot pixelBuffer (8bpp 1B/pixel, 128*16=2048B) dans le buffer struct.
+  const src = GetWindowPixelBuffer(tempWid);
+  if (src && gBagMenu) {
+    gBagMenu.pocketNameBuffer.set(src.subarray(0, gBagMenu.pocketNameBuffer.length));
+  }
+  // :2439 RemoveWindow(windowId)
+  RemoveWindow(tempWid);
 }
-function CopyPocketNameToWindow(_a: number): void {
-  // NET-1:1 (slide collapsé) : PrintPocketNames a rendu direct → flush VRAM.
-  CopyWindowToVram(_win(WIN_POCKET_NAME), 2 /* COPYWIN_GFX */);
+
+/** 1:1 décomp `CopyPocketNameToWindow` (item_menu.c:2442).
+ *  Copie une tranche 64 px-wide × 16 px-high depuis le `pocketNameBuffer`
+ *  (128×16) à l'offset horizontal `a*8` px, vers WIN_POCKET_NAME (64×16).
+ *  Pendant l'anim de switch, `a` progresse 0→8 (right) ou 8→0 (left), créant
+ *  un slide horizontal qui révèle l'ancien nom → nouveau nom. */
+function CopyPocketNameToWindow(a: number): void {
+  // :2447 `if (a > 8) a = 8;` (clamp).
+  if (a > 8) a = 8;
+  if (!gBagMenu) return;
+  const wid = _win(WIN_POCKET_NAME);
+  const dst = GetWindowPixelBuffer(wid);
+  if (!dst) return;
+  const src = gBagMenu.pocketNameBuffer;
+  // 16 rows × 64 px par row. Source pas: 128 px ; Dest pas: 64 px.
+  for (let row = 0; row < 16; row++) {
+    const srcOff = row * 128 + a * 8;
+    const dstOff = row * 64;
+    dst.set(src.subarray(srcOff, srcOff + 64), dstOff);
+  }
+  // :2454 CopyWindowToVram(WIN_POCKET_NAME, COPYWIN_GFX).
+  MarkWindowDirty(wid);
+  CopyWindowToVram(wid, 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `DrawItemListBgRow` (item_menu.c:1412).
+ *  *« The background of the item list is a lighter color than the surrounding
+ *  menu. When the pocket is switched this lighter background is redrawn row by
+ *  row »* — chaque frame de l'anim repeint une rangée du fond clair (= 15
+ *  tiles de large, 1 tile de haut, à y+2 sur BG2). Le tile metatile `17` est
+ *  la définition de la rangée claire (cf. menu.bin). */
+function DrawItemListBgRow(y: number): void {
+  FillBgTilemapBufferRect_Palette0(2, 17, 14, y + 2, 15, 1);
+  ScheduleBgCopyTilemapToVram(2);
 }
 
 /** 1:1 décomp `DrawPocketIndicatorSquare` (item_menu.c:1418). */
@@ -1085,6 +1145,8 @@ function DrawPocketIndicatorSquare(x: number, isCurrentPocket: boolean): void {
 // #define tListTaskId data[0] / tListPosition data[1] / tQuantity data[2]
 // tNeverRead data[3] / tItemCount data[8]  (1:1 décomp).
 const T_LIST_TASK_ID = 0, T_LIST_POSITION = 1, T_QUANTITY = 2, T_NEVER_READ = 3, T_ITEM_COUNT = 8;
+// 1:1 décomp item_menu.c:668-670 task-data extra pour anim slide poche.
+const T_POCKET_SWITCH_DIR = 11, T_POCKET_SWITCH_TIMER = 12, T_POCKET_SWITCH_STATE = 13;
 // 1:1 décomp enum SWITCH_POCKET_* (item_menu.c:1290 — non exporté par
 // decomp-data, dérivé 1:1 local comme COLORID_*/MAX_ITEMS_SHOWN).
 const SWITCH_POCKET_NONE = 0, SWITCH_POCKET_LEFT = 1, SWITCH_POCKET_RIGHT = 2;
@@ -1237,33 +1299,161 @@ function GetSwitchBagPocketDirection(): number {
   return SWITCH_POCKET_NONE;
 }
 
-/** NET-1:1 décomp `SwitchBagPocket` (item_menu.c:1324). La décomp lance une
- *  anim slide 16-frame (Task_SwitchBagPocket en followup) ; NET-1:1 = appliquer
- *  immédiatement le changement de poche + recharger liste/nom/desc (état final
- *  identique, slide cosmétique collapsé — pattern Summary validé A/B ;
- *  divergence documentée, PAS un fake). Sprite poche = déféré Phase 2. */
-function SwitchBagPocket(taskId: number, deltaBagPocketId: number, _skipEraseList: boolean): void {
+/** 1:1 décomp `MenuHelpers_IsLinkActive` (menu_helpers.c). Le sub-système
+ *  lien n'est pas modélisé ; on respecte la convention décomp : la branche
+ *  link-active est dead-code dans le sac single-player. */
+function MenuHelpers_IsLinkActive(): boolean {
+  return false;
+}
+
+/** STUB — REMPLACÉ par T9 (`SetBagVisualPocketId` item_menu_icons.c:446).
+ *  Le sprite sac (gender + frame par poche) sera porté à T9 ; ici l'appel
+ *  depuis SwitchBagPocket est inerte tant que le sprite n'existe pas. */
+function SetBagVisualPocketId(_pocket: number, _isSwitching: boolean): void {
+  // 1:1 PORT — voir item_menu_icons.c:446 SetBagVisualPocketId.
+}
+
+/** STUB — REMPLACÉ par T10 (`AddSwitchPocketRotatingBallSprite`
+ *  item_menu_icons.c:497). La pokéball qui spin lors du switch ; portée T10. */
+function AddSwitchPocketRotatingBallSprite(_dir: number): void {
+  // 1:1 PORT — voir item_menu_icons.c:497 AddSwitchPocketRotatingBallSprite.
+}
+
+/** 1:1 décomp `SwitchBagPocket` (item_menu.c:1324) — VRAI 1:1, anim 16-frame.
+ *  Lance l'animation slide en transformant la task courante en
+ *  `Task_SwitchBagPocket` via `SetTaskFuncWithFollowupFunc` (= la task
+ *  reprendra sa fonction normale après l'anim grâce à `SwitchTaskToFollowup
+ *  Func`). NE COMMIT PAS gBagPosition.pocket ici (= Task_SwitchBagPocket le
+ *  fait dans son state 1, fin de slide). */
+function SwitchBagPocket(taskId: number, deltaBagPocketId: number, skipEraseList: boolean): void {
   const t = _task(taskId);
   if (!t) return;
-  // DestroyListMenuTask(tListTaskId, &scroll[pocket], &cursor[pocket]) :1334
-  const sr = DestroyListMenuTask(t.data[T_LIST_TASK_ID]);
-  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
-  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
-  // newPocket = ChangeBagPocketId(pocket, delta) :1341-1342
+  // :1326 s16 *data = gTasks[taskId].data ; :1329-1331 reset task-data anim.
+  t.data[T_POCKET_SWITCH_STATE] = 0;
+  t.data[T_POCKET_SWITCH_TIMER] = 0;
+  t.data[T_POCKET_SWITCH_DIR] = deltaBagPocketId;
+
+  if (!skipEraseList) {
+    // :1334-1340
+    ClearWindowTilemap(_win(WIN_ITEM_LIST));
+    ClearWindowTilemap(_win(WIN_DESCRIPTION));
+    const sr = DestroyListMenuTask(t.data[T_LIST_TASK_ID]);
+    gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+    gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+    ScheduleBgCopyTilemapToVram(0);
+    // :1338 `gSprites[…ITEMMENUSPRITE_ITEM + (itemIconSlot ^ 1)].invisible = TRUE`
+    // — cache l'icône objet de l'AUTRE slot pendant le slide (le slot courant
+    // reste visible). itemIconSlot ∈ {0,1} ; ^1 = l'autre.
+    if (gBagMenu) {
+      const otherIconSpriteId = gBagMenu.spriteIds[ITEMMENUSPRITE_ITEM + (gBagMenu.itemIconSlot ^ 1)];
+      const rt = getRuntime();
+      if (rt && otherIconSpriteId !== SPRITE_NONE)
+        rt.setSpriteInvisible(otherIconSpriteId, true);
+    }
+    BagDestroyPocketScrollArrowPair();
+  }
+
+  // :1341-1342 newPocket = local copy puis wrap-around (NE PAS muter
+  // gBagPosition.pocket — l'anim fait ça en state 1).
   const newPocket = ChangeBagPocketId(gBagPosition.pocket, deltaBagPocketId);
-  DrawPocketIndicatorSquare(gBagPosition.pocket, false); // :1352
-  DrawPocketIndicatorSquare(newPocket, true);            // :1353
-  // L'anim commit gBagPosition.pocket=newPocket en fin de slide ; NET = direct.
-  gBagPosition.pocket = newPocket;
-  PrintPocketNames(newPocket);                            // :1345/1350 (collapsé)
-  CopyPocketNameToWindow(0);                              // :1346/1351
-  // SetBagVisualPocketId / rotating ball = sprite poche → DÉFÉRÉ Phase 2.
-  // Rebuild liste de la nouvelle poche (= ce que Task_SwitchBagPocket fait
-  // à la fin de l'anim : LoadBagItemListBuffers + ListMenuInit). NET-1:1.
-  LoadBagItemListBuffers(newPocket);
-  BagSetListTaskId(taskId, ListMenuInitForBag(
-    gBagPosition.scrollPosition[newPocket],
-    gBagPosition.cursorPosition[newPocket]));
+
+  // :1343-1352 deux noms côte-à-côte + slide initial selon direction.
+  if (deltaBagPocketId === MENU_CURSOR_DELTA_RIGHT) {
+    PrintPocketNames(
+      gPocketNamesStringsTable[gBagPosition.pocket] ?? '',
+      gPocketNamesStringsTable[newPocket] ?? '',
+    );
+    CopyPocketNameToWindow(0); // commence à gauche, slide vers droite
+  } else {
+    PrintPocketNames(
+      gPocketNamesStringsTable[newPocket] ?? '',
+      gPocketNamesStringsTable[gBagPosition.pocket] ?? '',
+    );
+    CopyPocketNameToWindow(8); // commence à droite, slide vers gauche
+  }
+
+  // :1353-1354 indicateurs de poche : éteindre l'ancienne, allumer la nouvelle.
+  DrawPocketIndicatorSquare(gBagPosition.pocket, false);
+  DrawPocketIndicatorSquare(newPocket, true);
+
+  // :1355-1356 rangée fond clair init (effacée puis re-dessinée par
+  // Task_SwitchBagPocket via DrawItemListBgRow row-by-row).
+  FillBgTilemapBufferRect_Palette0(2, 11, 14, 2, 15, 16);
+  ScheduleBgCopyTilemapToVram(2);
+
+  // :1357-1359 sprite sac (T9) + ball rotative (T10).
+  SetBagVisualPocketId(newPocket, true);
+  RemoveBagSprite(ITEMMENUSPRITE_BALL);
+  AddSwitchPocketRotatingBallSprite(deltaBagPocketId);
+
+  // :1360 transforme la task en anim ; la func normale (Task_BagMenu_HandleInput
+  // ou variant) sera restaurée à la fin du slide par SwitchTaskToFollowupFunc.
+  const oldFunc = t.func!;
+  SetTaskFuncWithFollowupFunc(taskId, Task_SwitchBagPocket, oldFunc);
+}
+
+/** 1:1 décomp `Task_SwitchBagPocket` (item_menu.c:1363) — anim slide 16 frames.
+ *  state 0 (16 frames) : DrawItemListBgRow(timer) repeint le fond clair rangée-
+ *  par-rangée, et toutes les 2 frames CopyPocketNameToWindow(timer>>1) slide
+ *  le nom (= "OBJETS" → "POKé BALLS"). state 1 : commit gBagPosition.pocket,
+ *  rebuild la liste de la nouvelle poche, remet les flèches, restaure la
+ *  task normale via SwitchTaskToFollowupFunc.
+ *
+ *  Early-out (:1367-1382) : si LR pressé PENDANT l'anim, on commit la poche
+ *  intermédiaire et on relance immédiatement un nouveau slide (= chain rapide
+ *  des poches en maintenant LR). Le `IsWallysBag()` désactive ça pour Wally. */
+function Task_SwitchBagPocket(task: DecompTask): void {
+  // :1367-1382 early-out LR pressé pendant l'anim → chain.
+  if (!MenuHelpers_IsLinkActive() && !IsWallysBag()) {
+    const dir = GetSwitchBagPocketDirection();
+    if (dir === SWITCH_POCKET_LEFT) {
+      gBagPosition.pocket = ChangeBagPocketId(gBagPosition.pocket, task.data[T_POCKET_SWITCH_DIR]);
+      SwitchTaskToFollowupFunc(task.taskId);
+      SwitchBagPocket(task.taskId, MENU_CURSOR_DELTA_LEFT, true);
+      return;
+    }
+    if (dir === SWITCH_POCKET_RIGHT) {
+      gBagPosition.pocket = ChangeBagPocketId(gBagPosition.pocket, task.data[T_POCKET_SWITCH_DIR]);
+      SwitchTaskToFollowupFunc(task.taskId);
+      SwitchBagPocket(task.taskId, MENU_CURSOR_DELTA_RIGHT, true);
+      return;
+    }
+  }
+  // :1383-1407 state machine de l'anim.
+  if (task.data[T_POCKET_SWITCH_STATE] === 0) {
+    // :1386 DrawItemListBgRow(timer) (= rangée y=timer du fond clair).
+    DrawItemListBgRow(task.data[T_POCKET_SWITCH_TIMER]);
+    // :1387 ++tPocketSwitchTimer en pre-incr puis check parité.
+    task.data[T_POCKET_SWITCH_TIMER]++;
+    if (!(task.data[T_POCKET_SWITCH_TIMER] & 1)) {
+      // :1388-1392 slide du nom toutes les 2 frames.
+      if (task.data[T_POCKET_SWITCH_DIR] === MENU_CURSOR_DELTA_RIGHT)
+        CopyPocketNameToWindow(task.data[T_POCKET_SWITCH_TIMER] >> 1);
+      else
+        CopyPocketNameToWindow(8 - (task.data[T_POCKET_SWITCH_TIMER] >> 1));
+    }
+    if (task.data[T_POCKET_SWITCH_TIMER] === 16)
+      task.data[T_POCKET_SWITCH_STATE]++;
+  } else if (task.data[T_POCKET_SWITCH_STATE] === 1) {
+    // :1398 commit du changement de poche (reporté depuis SwitchBagPocket).
+    gBagPosition.pocket = ChangeBagPocketId(gBagPosition.pocket, task.data[T_POCKET_SWITCH_DIR]);
+    // :1399-1400 rebuild liste de la nouvelle poche.
+    LoadBagItemListBuffers(gBagPosition.pocket);
+    task.data[T_LIST_TASK_ID] = ListMenuInit(
+      gMultiuseListMenuTemplate,
+      gBagPosition.scrollPosition[gBagPosition.pocket],
+      gBagPosition.cursorPosition[gBagPosition.pocket],
+    );
+    // :1401-1403
+    PutWindowTilemap(_win(WIN_DESCRIPTION));
+    PutWindowTilemap(_win(WIN_POCKET_NAME));
+    ScheduleBgCopyTilemapToVram(0);
+    // :1404-1405 flèches reposées.
+    CreatePocketScrollArrowPair();
+    CreatePocketSwitchArrowPair();
+    // :1406 restaure la func normale (Task_BagMenu_HandleInput).
+    SwitchTaskToFollowupFunc(task.taskId);
+  }
 }
 
 /** 1:1 décomp `Task_FadeAndCloseBagMenu` (item_menu.c:1077). */

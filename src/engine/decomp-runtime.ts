@@ -439,6 +439,13 @@ export interface DecompTask {
   func: ((task: DecompTask) => void) | null;
   /** data[0..15] arbitraire (1:1 gTasks[taskId].data) */
   data: number[];
+  /** 1:1 sémantique décomp `SetTaskFuncWithFollowupFunc` :
+   *  src/task.c:139-153 pack le pointer 32-bit dans data[NUM_TASK_DATA-2]
+   *  + data[NUM_TASK_DATA-1] (deux halfwords s16). En TS on n'a pas de cast
+   *  fonction→s16 fidèle (le `>>16` produit NaN), donc on stocke la fonction
+   *  dans un champ dédié — sémantique 1:1 préservée, layout JS-correct.
+   *  Lu par `SwitchTaskToFollowupFunc`. */
+  followupFunc: ((task: DecompTask) => void) | null;
 }
 
 /**
@@ -1539,7 +1546,7 @@ export class DecompRuntime {
     // data = Int16Array (= s16 décomp `s16 *data`). Wrap natif overflow à
     // -32768/32767. Critical pour Tasks comme Task_Scene3_Groudon qui font
     // `data[N] += K; if (data[N] == constant)` qui suppose s16 wrap.
-    const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[] };
+    const task: DecompTask = { taskId, func, data: new Int16Array(16) as unknown as number[], followupFunc: null };
     this.gTasks.set(taskId, task);
     if (RT_DEBUG) console.log('[CreateTask] taskId=', taskId, 'gTasks.size=', this.gTasks.size);
     return taskId;
@@ -1547,6 +1554,31 @@ export class DecompRuntime {
 
   DestroyTask(taskId: number): void {
     this.gTasks.delete(taskId);
+  }
+
+  /** 1:1 décomp src/task.c:139 `SetTaskFuncWithFollowupFunc`.
+   *  Décomp : pack le pointer 32-bit dans data[NUM_TASK_DATA-2..-1] (s16 halfwords).
+   *  TS : stocke dans `task.followupFunc` (champ dédié, sémantique 1:1).
+   *  Lu plus tard par `SwitchTaskToFollowupFunc`. */
+  SetTaskFuncWithFollowupFunc(
+    taskId: number,
+    func: (task: DecompTask) => void,
+    followupFunc: (task: DecompTask) => void,
+  ): void {
+    const task = this.gTasks.get(taskId);
+    if (!task) return;
+    task.followupFunc = followupFunc;
+    task.func = func;
+  }
+
+  /** 1:1 décomp src/task.c:148 `SwitchTaskToFollowupFunc`.
+   *  Restaure `task.func` depuis le followup stocké par `SetTaskFuncWithFollowupFunc`.
+   *  La décomp ne clear PAS data[14]/data[15] après le swap (= permet
+   *  re-switch). On préserve la sémantique : `followupFunc` reste set. */
+  SwitchTaskToFollowupFunc(taskId: number): void {
+    const task = this.gTasks.get(taskId);
+    if (!task) return;
+    if (task.followupFunc) task.func = task.followupFunc;
   }
 
   /** Run all tasks once (= 1 frame). À call chaque frame depuis update().

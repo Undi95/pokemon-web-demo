@@ -2936,6 +2936,20 @@ export function DestroyTask(taskId: number): void {
   _getRT().DestroyTask(taskId);
 }
 
+/** 1:1 décomp `src/task.c:139 SetTaskFuncWithFollowupFunc`.
+ *  Reroute la task vers `func`, en mémorisant `followupFunc` pour un
+ *  futur `SwitchTaskToFollowupFunc(taskId)`. Voir DecompTask.followupFunc
+ *  (impl. dédiée 1:1 sémantique : pas de cast pointer→s16 cassé). */
+export function SetTaskFuncWithFollowupFunc(taskId: number, func: any, followupFunc: any): void {
+  _getRT().SetTaskFuncWithFollowupFunc(taskId, func, followupFunc);
+}
+
+/** 1:1 décomp `src/task.c:148 SwitchTaskToFollowupFunc`.
+ *  Restaure la task vers le `followupFunc` mémorisé. */
+export function SwitchTaskToFollowupFunc(taskId: number): void {
+  _getRT().SwitchTaskToFollowupFunc(taskId);
+}
+
 /** 1:1 décomp `src/sprite.c SetGpuReg(reg, value)` — write to GPU register. */
 export function SetGpuReg(reg: number, value: number): void {
   _getRT().SetGpuReg(reg, value);
