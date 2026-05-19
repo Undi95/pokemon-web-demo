@@ -1,6 +1,6 @@
 # UNCITED — fonctions TS du port sans provenance décomp
 
-Généré : 2026-05-19T12:16:32.475Z
+Généré : 2026-05-19T12:34:11.296Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.

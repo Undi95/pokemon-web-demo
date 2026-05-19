@@ -1,13 +1,11 @@
 # STALE — citations décomp périmées / hors-symbole
 
-Généré : 2026-05-19T12:16:32.475Z
+Généré : 2026-05-19T12:34:11.296Z
 
 > ⚠️ Statique = couverture + traçabilité + filet régression. **NE PROUVE PAS le comportement.**
 > Bugs timing/fade/sprite = runtime ROM-diff séparé (mgba-wasm), hors de cet outil.
 
-## `src/engine/specials-registry.ts`
-
-- L53 → `party_menu.c:7144` : ligne 7144 HORS-BORNES (fichier 6431 lignes)
+_Aucune citation hors-bornes. ✓ (STALE = ligne > total fichier uniquement — zéro faux positif)_
 
 ## Fichiers .c décomp RÉELS cités mais hors set audité (informationnel — étendre AUDITED au fur)
 
@@ -72,7 +70,7 @@ Généré : 2026-05-19T12:16:32.475Z
 - `pokedex.c` cité 10× (ex. src/engine/battle/cmd-niveau-16.ts:78, src/engine/battle/cmd-niveau-27.ts:115, src/engine/pokedex-flags.ts:5)
 - `field_specials.c` cité 10× (ex. src/engine/battle/cmd-niveau-31.ts:322, src/engine/decomp-bridge.ts:792, src/engine/decomp-bridge.ts:1804)
 - `agb_flash.c` cité 10× (ex. src/engine/decomp-bridge.ts:1637, src/engine/decomp-bridge.ts:1640, src/engine/decomp-bridge.ts:1642)
-- `starter_choose.c` cité 10× (ex. src/engine/script-runner.ts:100, src/engine/specials-registry.ts:323, src/engine/starter-choose-flow.ts:18)
+- `starter_choose.c` cité 10× (ex. src/engine/script-runner.ts:100, src/engine/specials-registry.ts:335, src/engine/starter-choose-flow.ts:18)
 - `util.c` cité 9× (ex. src/engine/battle/atk-canceler.ts:119, src/engine/battle/battle-controllers.ts:9, src/engine/battle/battle-controllers.ts:120)
 - `graphics.c` cité 9× (ex. src/engine/battle-healthbox.ts:30, src/engine/battle-healthbox.ts:161, src/engine/battle-healthbox.ts:279)
 - `field_weather.c` cité 8× (ex. src/engine/bag-screen.ts:2301, src/engine/bag-screen.ts:2698, src/engine/battle/ability-battle-effects.ts:247)
@@ -97,14 +95,14 @@ Généré : 2026-05-19T12:16:32.475Z
 - `fldeff_cut.c` cité 5× (ex. src/engine/map-loader.ts:1307, src/engine/map-loader.ts:1346, src/engine/map-loader.ts:1353)
 - `coins.c` cité 5× (ex. src/engine/money-box-ui.ts:2, src/engine/money-box-ui.ts:7, src/engine/money-box-ui.ts:110)
 - `battle_controller_opponent.c` cité 4× (ex. src/engine/battle/battle-devtools.ts:754, src/engine/battle/party-storage.ts:729, src/engine/battle/wire-bytecode-bridge.ts:978)
-- `match_call.c` cité 4× (ex. src/engine/decomp-bridge.ts:1863, src/engine/decomp-bridge.ts:2212, src/engine/specials-registry.ts:336)
+- `match_call.c` cité 4× (ex. src/engine/decomp-bridge.ts:1863, src/engine/decomp-bridge.ts:2212, src/engine/specials-registry.ts:348)
 - `title_screen.c` cité 4× (ex. src/engine/decomp-globals.ts:1596, src/engine/decomp-globals.ts:1676, src/engine/decomp-globals.ts:2096)
 - `trainer_pokemon_sprites.c` cité 4× (ex. src/engine/main-menu-impl.ts:743, src/engine/main-menu-impl.ts:1004, src/engine/main-menu-impl.ts:1030)
-- `battle_pyramid.c` cité 3× (ex. src/engine/battle/try-run-from-battle.ts:40, src/engine/battle/try-run-from-battle.ts:47, src/engine/specials-registry.ts:277)
+- `battle_pyramid.c` cité 3× (ex. src/engine/battle/try-run-from-battle.ts:40, src/engine/battle/try-run-from-battle.ts:47, src/engine/specials-registry.ts:289)
 - `fonts.c` cité 3× (ex. src/engine/bitmap-font.ts:54, src/engine/party-screen.ts:541, src/engine/party-screen.ts:623)
 - `dynamic_placeholder_text_util.c` cité 3× (ex. src/engine/decomp-bridge.ts:858, src/engine/dynamic-placeholder-text-util.ts:3, src/engine/dynamic-placeholder-text-util.ts:27)
 - `malloc.c` cité 3× (ex. src/engine/decomp-bridge.ts:1102, src/engine/decomp-bridge.ts:1108, src/engine/decomp-bridge.ts:1114)
-- `pokenav.c` cité 3× (ex. src/engine/decomp-bridge.ts:1487, src/engine/decomp-bridge.ts:2045, src/engine/specials-registry.ts:413)
+- `pokenav.c` cité 3× (ex. src/engine/decomp-bridge.ts:1487, src/engine/decomp-bridge.ts:2045, src/engine/specials-registry.ts:425)
 - `contest.c` cité 3× (ex. src/engine/decomp-bridge.ts:1511, src/engine/decomp-bridge.ts:1919, src/engine/decomp-bridge.ts:2194)
 - `roulette.c` cité 3× (ex. src/engine/decomp-bridge.ts:1786, src/engine/decomp-bridge.ts:1788, src/engine/decomp-bridge.ts:1792)
 - `link.c` cité 3× (ex. src/engine/decomp-bridge.ts:1997, src/engine/decomp-bridge.ts:2272, src/engine/gba-menu-system.ts:238)
@@ -121,8 +119,9 @@ Généré : 2026-05-19T12:16:32.475Z
 - `secret_base.c` cité 2× (ex. src/engine/decomp-bridge.ts:2224, src/engine/map-loader.ts:1309)
 - `trig.c` cité 2× (ex. src/engine/decomp-helpers.ts:9, src/engine/pokeball-effects.ts:444)
 - `field_message_box.c` cité 2× (ex. src/engine/field-message-box.ts:4, src/engine/field-message-box.ts:95)
+- `script_pokemon_util.c` cité 2× (ex. src/engine/script-opcodes.ts:2637, src/engine/specials-registry.ts:53)
 - `trainer_see.c` cité 2× (ex. src/engine/script-opcodes.ts:2959, src/engine/script-opcodes.ts:3298)
-- `player_pc.c` cité 2× (ex. src/engine/specials-registry.ts:228, src/engine/specials-registry.ts:232)
+- `player_pc.c` cité 2× (ex. src/engine/specials-registry.ts:240, src/engine/specials-registry.ts:244)
 - `wallclock.c` cité 2× (ex. src/engine/wallclock-flow.ts:9, src/engine/wallclock-flow.ts:290)
 - `battle_util2.c` cité 1× (ex. src/engine/battle/cmd-niveau-1.ts:713)
 - `item_use.c` cité 1× (ex. src/engine/battle/cmd-niveau-28.ts:90)
@@ -147,10 +146,9 @@ Généré : 2026-05-19T12:16:32.475Z
 - `egg_hatch.c` cité 1× (ex. src/engine/pokeball-effects.ts:6)
 - `lilycove_lady.c` cité 1× (ex. src/engine/script-opcodes.ts:2165)
 - `shop.c` cité 1× (ex. src/engine/script-opcodes.ts:2415)
-- `script_pokemon_util.c` cité 1× (ex. src/engine/script-opcodes.ts:2637)
-- `mail.c` cité 1× (ex. src/engine/specials-registry.ts:105)
-- `cable_club.c` cité 1× (ex. src/engine/specials-registry.ts:139)
-- `battle_factory.c` cité 1× (ex. src/engine/specials-registry.ts:164)
-- `roamer.c` cité 1× (ex. src/engine/specials-registry.ts:251)
+- `mail.c` cité 1× (ex. src/engine/specials-registry.ts:117)
+- `cable_club.c` cité 1× (ex. src/engine/specials-registry.ts:151)
+- `battle_factory.c` cité 1× (ex. src/engine/specials-registry.ts:176)
+- `roamer.c` cité 1× (ex. src/engine/specials-registry.ts:263)
 - `clock.c` cité 1× (ex. src/engine/wallclock-flow.ts:10)
 

@@ -50,29 +50,41 @@ registerSpecial('BufferBigGuyOrBigGirlString', () => {
   setStringVar(1, stringVar);
 });
 
-/** 1:1 décomp `HealPlayerParty` (party_menu.c:7144) :
+/** 1:1 décomp `HealPlayerParty` (script_pokemon_util.c:30) :
  *  ```c
  *  void HealPlayerParty(void) {
  *      u8 i, j;
+ *      u8 ppBonuses;
+ *      u8 arg[4];
  *      for (i = 0; i < gPlayerPartyCount; i++) {
- *          u8 ppBonuses = GetMonData(&gPlayerParty[i], MON_DATA_PP_BONUSES);
- *          u16 hp = GetMonData(&gPlayerParty[i], MON_DATA_MAX_HP);
- *          SetMonData(&gPlayerParty[i], MON_DATA_HP, &hp);
- *          // Restore PP
- *          ...
- *          SetMonData(&gPlayerParty[i], MON_DATA_STATUS, &arg);
+ *          u16 maxHP = GetMonData(&gPlayerParty[i], MON_DATA_MAX_HP);
+ *          arg[0] = maxHP; arg[1] = maxHP >> 8;
+ *          SetMonData(&gPlayerParty[i], MON_DATA_HP, arg);
+ *          ppBonuses = GetMonData(&gPlayerParty[i], MON_DATA_PP_BONUSES);
+ *          for (j = 0; j < MAX_MON_MOVES; j++) {
+ *              arg[0] = CalculatePPWithBonus(GetMonData(&gPlayerParty[i], MON_DATA_MOVE1 + j), ppBonuses, j);
+ *              SetMonData(&gPlayerParty[i], MON_DATA_PP1 + j, arg);
+ *          }
+ *          arg[0]=arg[1]=arg[2]=arg[3]=0;
+ *          SetMonData(&gPlayerParty[i], MON_DATA_STATUS, arg);
  *      }
  *  }
  *  ```
- *  Restore HP/PP de tous les Pokemon du joueur + clear status. Used par
- *  Pokemon Center NPCs + après défaite trainer + après ChooseStarter battle. */
+ *  Restore HP + PP + clear status de toute l'équipe. Appelé par les NPC
+ *  Centre Pokémon, après défaite dresseur, après le combat ChooseStarter.
+ *
+ *  HP (maxHP) et status (0) = 1:1 strict. PP : la décomp recalcule via
+ *  `CalculatePPWithBonus(move, ppBonuses, j)` ; les PP Up (ppBonuses) ne
+ *  sont PAS modélisés dans tout le projet (même défèrement honnête que
+ *  summary-screen.ts:2789 — `ppMax` tient lieu de PP max effectif). On
+ *  restaure donc à `ppMax`, conséquence de ce défèrement systémique, PAS
+ *  un raccourci local. Porter ppBonuses + CalculatePPWithBonus =
+ *  chantier data-model séparé (supervisé). */
 registerSpecial('HealPlayerParty', () => {
   for (const mon of gameState.party) {
     if (!mon) continue;
     mon.currentHp = mon.maxHp;
     mon.status = null;
-    // Restore PP de chaque move (= 1:1 décomp PpBonuses non implémenté pour
-    // MVP, on restore à pp_max sans calcul bonus PP).
     for (const mv of mon.moves) {
       mv.pp = mv.ppMax;
     }
