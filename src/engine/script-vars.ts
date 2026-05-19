@@ -96,6 +96,13 @@ export const gSpecialVar = {
   set Result(value: number) { gameState.setVar('VAR_RESULT', value & 0xFFFF); },
   get LastTalked(): number { return gameState.getVar('VAR_LAST_TALKED'); },
   set LastTalked(value: number) { gameState.setVar('VAR_LAST_TALKED', value & 0xFFFF); },
+  /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — u16 global set par
+   *  `Task_BagMenu_HandleInput` quand A pressé sur un item, lu par les
+   *  handlers context-menu (UTILIS./DONNER/JETER/etc.) + scripts give-item. */
+  ItemId: 0,
+  /** 1:1 décomp `gSpecialVar_0x8005` — slot generic (item_menu.c utilise pour
+   *  Apprentice/FavorLady/QuizLady). */
+  Aux: 0,
 };
 
 /** 1:1 décomp `gSelectedObjectEvent` : index dans gObjectEvents du NPC en

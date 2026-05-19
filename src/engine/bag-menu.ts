@@ -108,6 +108,9 @@ import {
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
 import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+// Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
+import { Task_ItemContext_Normal } from './bag-menu-ctx';
+import { gSpecialVar } from './script-vars';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
 // (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
@@ -1275,6 +1278,13 @@ function BagDestroyPocketScrollArrowPair(): void {
  *  EWRAM ptr = NULL. Notre modèle : gBagMenu = null (GC = Free). */
 function FreeBagMenu(): void {
   gBagMenu = null;
+  // Reset le gate "graphics chargé en VRAM" — le terrain reprend BG2 quand
+  // on ferme le sac, donc à la ré-ouverture il faut RE-écrire la VRAM (sinon
+  // BG2 corrompu, tilemap absent, fond rayé visible). Les assets en mémoire
+  // (_bagAssets) restent cachés — c'est juste le bit "déjà écrit en VRAM"
+  // qu'il faut reset.
+  _bagGraphicsReady = false;
+  _bagGraphicsLoading = false;
 }
 
 /** 1:1 décomp `ChangeBagPocketId` (item_menu.c:1314) — wrap-around poche.
@@ -1498,11 +1508,40 @@ function Task_CloseBagMenu(task: DecompTask): void {
   rt.DestroyTask(task.taskId);
 }
 
+/** 1:1 décomp `ReturnToItemList` (item_menu.c:1284) + restore section de
+ *  `ItemMenu_Cancel` (:1985-1994). Appelé par bag-menu-ctx après un
+ *  cancel/use pour remettre le sac dans l'état "navigation liste" :
+ *   - cursor liste en COLORID_NORMAL (= sortie de l'état "GRAY pendant ctx") ;
+ *   - description re-imprimée (au cas où WIN_DESCRIPTION a été clear) ;
+ *   - flèches scroll + chevrons L/R recréées (= détruites à l'ouverture ctx) ;
+ *   - task.func ← Task_BagMenu_HandleInput.
+ *  Exporté pour être appelé depuis bag-menu-ctx.ts (évite cycle d'import). */
+export function _CtxReturnToList(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const task = rt.gTasks.get(taskId);
+  if (!task) return;
+  // 1:1 :1990-1993 ItemMenu_Cancel restore :
+  PrintItemDescription(task.data[T_LIST_POSITION]);
+  ScheduleBgCopyTilemapToVram(0);
+  ScheduleBgCopyTilemapToVram(1);
+  BagMenu_PrintCursor(task.data[T_LIST_TASK_ID], COLORID_NORMAL);
+  // 1:1 :1286-1287 ReturnToItemList :
+  CreatePocketScrollArrowPair();
+  CreatePocketSwitchArrowPair();
+  // ClearWindowTilemap(WIN_TMHM_INFO_ICONS+WIN_TMHM_INFO) = TMHM panneau non
+  // porté, no-op honnête ; PutWindowTilemap(WIN_DESCRIPTION) implicit dans
+  // PrintItemDescription. ScheduleBgCopy(0) déjà fait ci-dessus.
+  // 1:1 :1292 task.func = Task_BagMenu_HandleInput.
+  task.func = Task_BagMenu_HandleInput;
+}
+
 /** 1:1 décomp `Task_BagMenu_HandleInput` (item_menu.c:1221). Link non
  *  modélisé → MenuHelpers_ShouldWaitForLinkRecv()==FALSE (convention
  *  fichier). SELECT swap = CanSwapItems()==FALSE (étape 7, no-op honnête).
- *  A_BUTTON ctx-menu = étape 7 (déféré : gSpecialVar_ItemId/sContextMenuFuncs
- *  non sur le chemin ouvrable — déferral explicite, PAS un fake). */
+ *  A_BUTTON ctx-menu : pose gSpecialVar_ItemId + dispatch
+ *  sContextMenuFuncs[location] (= Task_ItemContext_Normal pour FIELD/BATTLE,
+ *  branche déférée pour les autres locations). */
 function Task_BagMenu_HandleInput(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || rt.gPaletteFade.active) return;
@@ -1532,11 +1571,28 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
       PlaySE(SE_SELECT);
       // 1:1 :1264 gSpecialVar_ItemId = ITEM_NONE — script give-item flow
       // (étape 7+) ; le retour-terrain ne le lit pas → déféré honnête.
+      gSpecialVar.ItemId = 0; // ITEM_NONE
       task.func = Task_FadeAndCloseBagMenu;
       break;
-    default: // A_BUTTON — ctx-menu UTILISER/JETER/… = étape 7 (déféré).
+    default: {
+      // 1:1 décomp item_menu.c:1271-1279 — A_BUTTON sur un item :
+      //   PlaySE(SE_SELECT) ; BagDestroyPocketScrollArrowPair() ;
+      //   BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR) ;
+      //   tListPosition = listPosition ; tQuantity = BagGetQuantity… ;
+      //   gSpecialVar_ItemId = BagGetItemId… ; sContextMenuFuncs[location](taskId).
       PlaySE(SE_SELECT);
+      BagDestroyPocketScrollArrowPair();
+      BagMenu_PrintCursor(task.data[T_LIST_TASK_ID], 2 /* COLORID_GRAY_CURSOR */);
+      task.data[T_LIST_POSITION] = listPosition;
+      task.data[T_QUANTITY] = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, listPosition);
+      gSpecialVar.ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
+      // 1:1 :1278 dispatch — FIELD/BATTLE → Task_ItemContext_Normal. Pour les
+      // autres locations (PARTY/SHOP/etc.), même route stub pour l'instant.
+      // SetTaskFuncWithFollowupFunc : la task reviendra à Task_BagMenu_Handle
+      // Input après cancel via SwitchTaskToFollowupFunc dans ItemMenu_Cancel.
+      SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
       break;
+    }
   }
 }
 

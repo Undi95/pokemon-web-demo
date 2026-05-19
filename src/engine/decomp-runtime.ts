@@ -1673,6 +1673,10 @@ export class DecompRuntime {
     this.spriteSheetTagToByteSize.clear();
     this.freedSpriteTileRanges.length = 0;
     this.nextSpriteSheetByteOffset = 0;
+    // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release toutes les 32
+    // matrix OAM. Sans ça, ré-ouvrir le sac alloue matrix 2, 3, … (= leak)
+    // jusqu'à saturer le pool 32 → CreateSprite échoue silencieusement.
+    this._matrixUsed.clear();
   }
 
   /** IntroResetGpuRegs : reset DISPCNT et BG/blend regs (mimique décomp intro.c). */
