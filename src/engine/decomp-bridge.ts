@@ -899,7 +899,28 @@ export {
 // différente du décomp (= retourne string, pas u8*). On adapte ici pour matcher
 // l'API décomp utilisée dans les auto-bodies.
 
-import { getItemNameFr as _getItemNameFr, getItem as _getItem, getItemDescriptionFr as _getItemDescFr } from './data-tables';
+import { getItemNameFr as _getItemNameFr, getItem as _getItem, getItemDescriptionFr as _getItemDescFr, getItemKeyById as _getItemKeyById } from './data-tables';
+import { sTMHMMoves as _sTMHMMoves } from './tmhm-moves';
+
+/** items.json key d'un itemId numérique (= modèle move-named du projet :
+ *  "ITEM_TM_FOCUS_PUNCH" pour TM01, "ITEM_HM_CUT" pour HM01) — miroir de
+ *  bag-pockets.slotItemId qui fait le sens inverse. getItemKeyById fait
+ *  numéric → enum-numbered ("ITEM_TM01") via constants.items reverse ;
+ *  on convertit ensuite en move-named via sTMHMMoves (= clé items.json).
+ *  Sans ça, getItem("ITEM_TM01") rate (items.json n'a que "ITEM_TM_…"). */
+function _itemKeyForLookup(itemId: number): string {
+  const enumKey = _getItemKeyById(itemId);
+  if (enumKey.startsWith('ITEM_TM') && /^\d+$/.test(enumKey.slice(7))) {
+    const tmIdx = parseInt(enumKey.slice(7), 10) - 1; // ITEM_TM01 → 0
+    const move = _sTMHMMoves[tmIdx];
+    if (move) return 'ITEM_TM_' + move.slice(5); // "MOVE_FOCUS_PUNCH" → "ITEM_TM_FOCUS_PUNCH"
+  } else if (enumKey.startsWith('ITEM_HM') && /^\d+$/.test(enumKey.slice(7))) {
+    const hmIdx = 50 + parseInt(enumKey.slice(7), 10) - 1; // ITEM_HM01 → 50
+    const move = _sTMHMMoves[hmIdx];
+    if (move) return 'ITEM_HM_' + move.slice(5);
+  }
+  return enumKey;
+}
 
 /** 1:1 décomp `src/item.c:879 GetItemName(itemId)` :
  *    return gItems[SanitizeItemId(itemId)].name;
@@ -972,9 +993,13 @@ function _writeMapNameDest(dest: any, name: string): string {
   return name;
 }
 
-/** 1:1 décomp `src/item.c:905 GetItemDescription(itemId)`. */
+/** 1:1 décomp `src/item.c:905 GetItemDescription(itemId)`. AVANT : `ITEM_${id}`
+ *  produisait "ITEM_331" → getItem rate (items.json clés = enum-name, pas
+ *  numéric stringifié) → desc vide. Pour TM/HM : items.json utilise des
+ *  clés move-named ("ITEM_TM_FOCUS_PUNCH") ≠ enum décomp ("ITEM_TM01") →
+ *  conversion via _itemKeyForLookup (= miroir slotItemId, 1:1-faithful). */
 export function GetItemDescription(itemId: number | string): string {
-  const itemKey = typeof itemId === 'number' ? `ITEM_${itemId}` : itemId;
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
   const item = _getItem(itemKey);
   if (!item) return '';
   return _getItemDescFr(item.descriptionLabel ?? '');

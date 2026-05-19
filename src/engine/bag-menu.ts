@@ -862,14 +862,16 @@ function BagMenu_PrintCursor(listTaskId: number, colorIndex: number): void {
   BagMenu_PrintCursorAtPos(ListMenuGetYCoordForPrintingArrowCursor(listTaskId), colorIndex);
 }
 
-/** 1:1 décomp `PrintItemDescription` (item_menu.c:998). `GetItemDescription`
- *  (item.c:905, déjà porté decomp-bridge.ts:976) est clé itemKey-string ;
- *  BagGetItemIdByPocketPosition rend l'itemId numérique → pont getItemKeyById
- *  = réalisation 1:1-sém de l'index `gItems[itemId]` (idem CopyItemName). */
+/** 1:1 décomp `PrintItemDescription` (item_menu.c:998). Pur numéric →
+ *  GetItemDescription (bridge fait la conversion id→itemKey items.json,
+ *  y compris la normalisation TM/HM enum-numbered → move-named). AVANT
+ *  Phase 1 wrappait getItemKeyById = workaround cassé pour la CT/CS
+ *  (string "ITEM_TM01" passée au bridge, mais items.json clé =
+ *  "ITEM_TM_FOCUS_PUNCH" → desc vide). */
 function PrintItemDescription(itemIndex: number): void {
   let str: string;
   if (itemIndex !== LIST_CANCEL) {
-    str = GetItemDescription(getItemKeyById(BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex)));
+    str = GetItemDescription(BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex));
   } else {
     // Print 'Cancel' description
     _gsv.gStringVar1 = StringCopy('', gBagMenu_ReturnToStrings[gBagPosition.location]);
