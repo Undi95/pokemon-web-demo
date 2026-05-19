@@ -103,6 +103,11 @@ import {
 import { SELECT_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
 import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+// Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
+// Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
+// (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
+import { AddBagItemIconSprite, RemoveBagItemIconSprite } from './bag-menu-icons';
+import { preloadItemIconAssets } from './item-icon';
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───
 export const ITEMMENULOCATION_FIELD = ENUM_ITEMMENULOCATION_0.ITEMMENULOCATION_FIELD;
@@ -273,7 +278,9 @@ async function _bagLoadAssets(): Promise<BagAssets> {
   if (_bagAssets) return _bagAssets;
   if (_bagAssetsLoading) return _bagAssetsLoading;
   _bagAssetsLoading = (async () => {
-    await _bagEnsureConstantsLoaded();
+    // Phase 2 : preloadItemIconAssets — buffers icône préchargés pour que
+    // AddItemIconSprite (nav sync 1:1) lise en mémoire (sinon icône absente).
+    await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3] = await Promise.all([
       loadTileBin('/decomp/em/bag/menu.4bpp.bin', 4),
       loadTilemapBin('/decomp/em/bag/menu.bin'),
@@ -769,15 +776,9 @@ function ShakeBagSprite(): void {
      sac). Sprite sac non créé (substrat tag-mismatch) → no-op honnête tracké
      Phase 2. Appelé en nav : ne DOIT pas throw (sac ouvrable sans sprite). */
 }
-/** DÉFÉRÉ Phase 2 — `AddBagItemIconSprite` (item_menu_icons.c:535) :
- *  AddItemIconSprite (item_icon.c) + tag alloc. Substrat sprite tag-mismatch. */
-function AddBagItemIconSprite(_itemId: number, _slot: number): void {
-  /* DÉFÉRÉ Phase 2 (icône objet ; spike : icône OK après fix substrat). */
-}
-/** DÉFÉRÉ Phase 2 — `RemoveBagItemIconSprite` (item_menu_icons.c:555). */
-function RemoveBagItemIconSprite(_slot: number): void {
-  /* DÉFÉRÉ Phase 2 (couplé AddBagItemIconSprite). */
-}
+// AddBagItemIconSprite / RemoveBagItemIconSprite : PORTÉS 1:1 Phase 2 →
+// importés de bag-menu-icons.ts (item_menu_icons.c) ↑. Call-sites 1:1
+// inchangés (itemId numérique ; traduction itemKey confinée bag-menu-icons).
 /** DÉFÉRÉ — `BlitBitmapToWindow(windowId, gBagMenuHMIcon_Gfx, 8, y-1, 16, 16)`
  *  (item_menu.c:970-971) : asset gfx gBagMenuHMIcon_Gfx non extrait (chaînon
  *  extraction graphics/ ultérieur). */
