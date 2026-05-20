@@ -201,6 +201,14 @@ export function NewGameInit(): void {
   // → trainerId doit être persisté dans la save SaveBlock2.
   const trainerId = ((Random() << 16) | GetGeneratedTrainerIdLower()) >>> 0;
   gameState.setTrainerId(trainerId);
+  // 1:1 décomp `NewGameInitData` (new_game.c:186-187) :
+  //   ClearBag();
+  //   NewGameInitPCItems();
+  // ⇒ ajoute 1× POTION dans le PC du joueur. Sans ça, le PC est vide au boot
+  // alors que le décomp officiel donne toujours 1 POTION en stockage.
+  void import('./pc-items').then(({ NewGameInitPCItems }) => {
+    NewGameInitPCItems();
+  });
   console.log(`[new-game-flags] InitPlayerTrainerId : trainerId=0x${trainerId.toString(16).padStart(8, '0')}`);
   console.log(`[new-game-flags] set ${NEW_GAME_HIDE_FLAGS.length} hide flags (= EventScript_ResetAllMapFlags)`);
 }
