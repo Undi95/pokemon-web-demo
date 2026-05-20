@@ -1049,6 +1049,14 @@ export class TestOverworldScene extends Phaser.Scene {
         // Note : FieldSetDoorOpened déjà appelé en Pre-Phase 4 (= 1:1 case 0).
         const doorX = gPlayerAvatar.x;
         const doorY = gPlayerAvatar.y;
+        // 1:1 décomp `FieldCB_DefaultWarpExit` line 278 : `LockPlayerFieldControls()`
+        // tient le lock pendant toute la durée du `Task_ExitDoor`. Si le warp
+        // provient d'un opcode `warp` scripté (= e.g. `GoUpstairsToSetClock` qui
+        // fait `lockall ... warp ... waitstate ... releaseall`), le `releaseall`
+        // a unlock les controls juste avant que Phase 5 ne commence → sans ce
+        // re-lock, PlayerStep est dans la branche unlocked où `forceMovement`
+        // n'est pas consommé → push down jamais effectué.
+        LockPlayerFieldControls();
         // case 1 : SetPlayerVisibility(TRUE) + ObjectEventSetHeldMovement(WALK_NORMAL_DOWN).
         SetPlayerVisibility(this.rt, true);
         gPlayerAvatar.forceMovement = DIR_SOUTH;
@@ -1076,6 +1084,20 @@ export class TestOverworldScene extends Phaser.Scene {
         // qui flip facing avant le task (= peut-être InitObjectEventsLocal
         // ou WarpFadeInScreen post-load), pas reproduit dans notre port.
         // Fix simple : force DIR_SOUTH au exit des "trous d'escalier".
+        //
+        // Bug fix 2026-05-21 (user report : "monter par escalier 2F via
+        // script MAMAN GoUpstairsToSetClock laisse player dans la cage
+        // d'escalier sans push-down") : si le warp provient d'un script
+        // `lockall ... warp ... waitstate ... releaseall`, le `releaseall`
+        // a UNLOCKED les controls AVANT que Phase 5 ne s'exécute (le
+        // waitstate du script résout dès que la map switch, soit au début
+        // de Phase 4). Or PlayerStep ne consomme `forceMovement` QUE dans
+        // la branche `ArePlayerFieldControlsLocked()` (lignes 778-810).
+        // Solution 1:1 décomp : `FieldCB_DefaultWarpExit` line 278 fait
+        // `LockPlayerFieldControls()` AVANT `SetUpWarpExitTask` → le lock
+        // tient pendant tout `Task_ExitNonAnimDoor`. Re-lock ici garantit
+        // le même comportement.
+        LockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
         gPlayerAvatar.facing = DIR_SOUTH;
         gPlayerAvatar.forceMovement = DIR_SOUTH;
