@@ -98,7 +98,8 @@ type SubState =
   | 'save_yesno'            // Yes/No menu open ; wait input
   | 'save_overwrite_msg'    // showing "Une partie déjà sauvegardée. Remplacer?" dialog ; printer done → spawn Yes/No
   | 'save_overwrite_yesno'  // Yes/No menu open for overwrite confirm
-  | 'save_done'             // showing "Partie sauvegardée!" ; A/B → close menu
+  | 'save_saving_msg'       // showing "SAUVEGARDE EN COURS…" ; printer done → gameState.save() + show "X a sauvegardé."
+  | 'save_done'             // showing "X a sauvegardé." ; printer done → PlaySE(SE_SAVE) + wait SE done → close
   | 'bag_screen'            // session 127 : bag UI ouvert, drive via TickBagScreen
   | 'party_screen'          // session 127 : party UI ouvert, drive via TickPartyScreen
   | 'trainer_card_screen'   // session 127 : trainer card UI ouvert
@@ -120,6 +121,9 @@ let sPendingScreenAction: (() => void) | null = null;
 
 const SE_SELECT_FALLBACK = 5;
 const SE_WIN_OPEN_FALLBACK = 6;
+// 1:1 décomp `include/constants/songs.h` SE_SAVE = 55. Joué par
+// SaveSuccessCallback (start_menu.c:1116) après le message "X a sauvegardé".
+const SE_SAVE = 55;
 const A_BUTTON = 0x01;
 const B_BUTTON = 0x02;
 const START_BUTTON = 0x08;
@@ -704,6 +708,9 @@ export function TickStartMenu(): void {
     case 'save_overwrite_yesno':
       _tickSaveOverwriteYesNo();
       break;
+    case 'save_saving_msg':
+      _tickSaveSavingMsg();
+      break;
     case 'save_done':
       _tickSaveDone(newKeys);
       break;
@@ -877,8 +884,32 @@ function _tickSaveOverwriteYesNo(): void {
   }
 }
 
-/** Execute le save effectif + affiche "X a sauvegardé la partie!". */
+/** Démarre le flow save 1:1 décomp `SaveSavingMessageCallback` (start_menu.c:1080) :
+ *  1. ShowSaveMessage(gText_SavingDontTurnOff = "SAUVEGARDE EN COURS…\nN'ETEIGNEZ PAS LA CONSOLE.")
+ *  2. → _tickSaveSavingMsg attend printer done puis TrySavingData + show gText_PlayerSavedGame
+ *  3. → _tickSaveDone attend printer done puis PlaySE(SE_SAVE) + wait SE done + close. */
 function _doSave(): void {
+  HideFieldMessageBox();
+  // 1:1 décomp gText_SavingDontTurnOff (= save.inc).
+  const text = getText('gText_SavingDontTurnOff')
+    ?? "SAUVEGARDE EN COURS…\nN'ETEIGNEZ PAS LA CONSOLE.";
+  ShowFieldMessage(text + '$');
+  sSubState = 'save_saving_msg';
+}
+
+/** Tick "SAUVEGARDE EN COURS…" — wait printer done puis call gameState.save()
+ *  + transition à save_done avec "X a sauvegardé la partie." */
+function _tickSaveSavingMsg(): void {
+  // Attend que le printer ait fini de typer le message complet (= IsTextPrinterActive
+  // false). NB : on n'attend PAS le hide via A press ; le décomp enchaîne direct
+  // sur le save effectif puis swap le message (= sSaveDialogCallback pattern).
+  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as object | undefined;
+  if (!sb2) return;
+  // Use IsTextPrinterActive(0) — printer slot 0 = field message box.
+  const printerStillActive = (globalThis as Record<string, unknown>).IsTextPrinterActive as
+    ((id: number) => boolean) | undefined;
+  if (printerStillActive && printerStillActive(0)) return;
+  // Printer done → save effectif + swap au message success.
   gameState.save();
   HideFieldMessageBox();
   // 1:1 décomp gText_PlayerSavedGame (= save.inc:13). Le placeholder {PLAYER}
@@ -889,13 +920,30 @@ function _doSave(): void {
   sSubState = 'save_done';
 }
 
+let _saveDoneSeStarted = false;
+
 function _tickSaveDone(newKeys: number): void {
-  const dialogDone = GetFieldMessageBoxMode() === FIELD_MESSAGE_BOX_HIDDEN;
-  if (!dialogDone) return;
+  // 1:1 décomp `SaveSuccessCallback` (start_menu.c:1112-1121) :
+  //   if (!IsTextPrinterActive(0)) { PlaySE(SE_SAVE); sSaveDialogCallback = SaveReturnSuccessCallback; }
+  // SaveReturnSuccessCallback (1123-1134) :
+  //   if (!IsSEPlaying() && SaveSuccesTimer()) { HideSaveInfoWindow; return SUCCESS; }
+  //
+  // Notre impl simplifiée : attend printer done → PlaySE(SE_SAVE), puis A/B
+  // pour close (= compatible avec input user, + fallback A/B si pas d'IsSEPlaying).
+  const printerStillActive = (globalThis as Record<string, unknown>).IsTextPrinterActive as
+    ((id: number) => boolean) | undefined;
+  const printerActive = printerStillActive ? printerStillActive(0) : false;
+  if (!printerActive && !_saveDoneSeStarted) {
+    // Printer done → fire SE_SAVE 1×. 1:1 décomp.
+    void import('./decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
+    _saveDoneSeStarted = true;
+  }
+  // Attend A/B pour close (= équivalent du timer décomp + user feedback).
   if (newKeys & (A_BUTTON | B_BUTTON)) {
     // 1:1 décomp HideSaveInfoWindow + close menu.
     _removeSaveInfoWindow();
     HideFieldMessageBox();
+    _saveDoneSeStarted = false;
     // 1:1 décomp : after save success, close start menu (= retour gameplay).
     CloseStartMenu();
   }

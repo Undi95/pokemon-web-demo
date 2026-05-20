@@ -776,7 +776,14 @@ export function runTextPrinter(printer: TextPrinter): number {
       if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
       // idem char normal : speed>0 typewriter, speed===0 instant (continue).
       if (printer.textSpeed > 0) {
-        printer.delayCounter = printer.textSpeed;
+        // User-flag 2026-05-20 : "FAST trop lent à 30 chars/sec". Compromise
+        // -1 frame par char pour matcher la perception ROM réelle (= 1 char/
+        // frame à FAST=1 = 60 chars/sec ; MID=4 → 1 char/4 frames = 15
+        // chars/sec ; SLOW=8 → 1 char/8 frames = 7.5 chars/sec). Le décomp
+        // strict `delayCounter = textSpeed` donne 30/12/6.7 chars/sec
+        // respectivement (= 1 frame plus lent par char). Divergence assumée
+        // pour matcher le feel attendu user.
+        printer.delayCounter = Math.max(0, printer.textSpeed - 1);
         return RENDER_PRINT;
       }
       continue;
