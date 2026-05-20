@@ -547,15 +547,59 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       SetUpItemUseCallback(task);
       return;
     }
-    case 'ItemUseOutOfBattle_Bike':
-    case 'ItemUseOutOfBattle_EscapeRope':
-      // Décomp : ces handlers checkent l'overworld state (allowed/cave) et
-      // soit fade-close bag pour effet field, soit affichent DadsAdvice si
-      // pas le moment. Subsystem overworld non porté → fallback DadsAdvice
-      // 1:1 FR (= conservative ; le user comprend qu'il faut aller dans
-      // une zone adaptée). À enrichir quand le subsystem field sera prêt.
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+    case 'ItemUseOutOfBattle_Bike': {
+      // 1:1 décomp item_use.c:200-224 ItemUseOutOfBattle_Bike :
+      //   if (FLAG_SYS_CYCLING_ROAD || rail behavior) DadsAdvice "Cant dismount".
+      //   else if (Overworld_IsBikingAllowed = gMapHeader.allowCycling) :
+      //     SetUpItemUseOnFieldCallback → bike avatar toggle (= deferred).
+      //   else DadsAdvice.
+      // Notre 1:1 partiel : on check gMapHeader.allowCycling. Si TRUE :
+      // message "{player} utilise X." (= gText_PlayerUsedVar2 1:1). Polish
+      // = porter le toggle bike avatar + check cycling road / rail behaviors.
+      const playerName = gameState.playerName || 'JOUEUR';
+      const cyclingAllowed = gMapHeader?.allowCycling === true;
+      if (cyclingAllowed) {
+        const tmpl = getString('gText_PlayerUsedVar2');
+        msg = tmpl
+          .replace(/\{PLAYER\}/g, playerName)
+          .replace(/\{STR_VAR_2\}/g, itemName)
+          .replace('{PAUSE_UNTIL_PRESS}', '')
+          .replace(/\\n/g, '\n')
+          .replace(/\\p/g, '\n');
+      } else {
+        // 1:1 :221 DadsAdvice fallback (= zone non-cycling).
+        msg = `Conseil de PAPA…\n${playerName}, chaque chose en son temps!`;
+      }
       break;
+    }
+    case 'ItemUseOutOfBattle_EscapeRope': {
+      // 1:1 décomp item_use.c:930-941 ItemUseOutOfBattle_EscapeRope :
+      //   if (CanUseDigOrEscapeRopeOnCurMap = gMapHeader.allowEscaping) :
+      //     SetUpItemUseOnFieldCallback → ItemUseOnFieldCB_EscapeRope
+      //     (= warp out + remove + close).
+      //   else DadsAdvice.
+      // Notre 1:1 partiel : check allowEscaping. Si TRUE : "{player} utilise X."
+      // + RemoveBagItem (= consume 1:1). Polish = porter SetEscapeWarp + Do
+      // EscapeRopeFieldEffect (= warp animation).
+      const playerName = gameState.playerName || 'JOUEUR';
+      const canEscape = gMapHeader?.allowEscaping === true;
+      if (canEscape) {
+        _CtxRemoveUsedItem(itemId);
+        const tmpl = getString('gText_PlayerUsedVar2');
+        const baseMsg = tmpl
+          .replace(/\{PLAYER\}/g, playerName)
+          .replace(/\{STR_VAR_2\}/g, itemName)
+          .replace('{PAUSE_UNTIL_PRESS}', '')
+          .replace(/\\n/g, '\n')
+          .replace(/\\p/g, '\n');
+        _showItemMessageThenRebuild(task, baseMsg);
+        return;
+      } else {
+        // 1:1 :939 DadsAdvice (= zone non-cave / outdoor).
+        msg = `Conseil de PAPA…\n${playerName}, chaque chose en son temps!`;
+      }
+      break;
+    }
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
       const repelActive = gameState.getVar('VAR_REPEL_STEP_COUNT');
