@@ -927,11 +927,14 @@ function _itemKeyForLookup(itemId: number): string {
 /** 1:1 décomp `src/item.c:879 GetItemName(itemId)` :
  *    return gItems[SanitizeItemId(itemId)].name;
  *
- *  Notre data table contient les noms FR ; on les retourne tels quels.
- *  Le code auto les passe à StringCopy/StringExpand, qui acceptent string ou u8*. */
+ *  Notre data table contient les noms FR. itemId numérique → itemKey via
+ *  `_itemKeyForLookup` (= miroir GetItemDescription, normalise TM/HM
+ *  enum-numbered → move-named, gère les autres items via getItemKeyById).
+ *  Ancien `ITEM_${id}` ne matchait AUCUNE clé items.json → retournait l'enum
+ *  string brut (= "13 est sélectionné." au lieu de "POTION est sélectionné."). */
 export function GetItemName(itemId: number | string): string {
-  // itemId peut être un enum string (ITEM_POTION) ou u16 ; data-tables accepte string.
-  return _getItemNameFr(typeof itemId === 'number' ? `ITEM_${itemId}` : itemId);
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItemNameFr(itemKey);
 }
 
 // ─── Re-exports : map names (map-names-fr) ───────────────────────────────────

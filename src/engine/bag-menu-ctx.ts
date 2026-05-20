@@ -32,7 +32,8 @@
  * un follow-up.
  */
 import type { DecompTask } from './decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected } from './bag-menu';
+import { gSpecialVar } from './script-vars';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -41,10 +42,9 @@ import {
 } from './gba-window-system';
 import { JOY_NEW, PALETTES_ALL, getRuntime } from './decomp-globals';
 import {
-  AddTextPrinterParameterized4, FONT_NARROW, FONT_NORMAL, TEXT_SKIP_DRAW,
-  setStringVar4,
+  AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from './gba-text-system';
-import { GetItemName, StringExpandPlaceholders, BeginNormalPaletteFade } from './decomp-bridge';
+import { BeginNormalPaletteFade } from './decomp-bridge';
 import { PIXEL_FILL } from './decomp-globals';
 import { ENUM_ITEMWIN_1 } from './decomp-data/auto/include/item_menu-data';
 import {
@@ -298,28 +298,14 @@ export function OpenContextMenu(_task: DecompTask): void {
   gBagMenu.contextMenuNumItems = items.length;
   // 1:1 :1662-1666 — affiche "X est sélectionné." dans WIN_DESCRIPTION
   // (TM_HM pocket utilise PrintTMHMMoveData à la place — déféré, on tombe sur
-  // le path générique).
-  const itemId = _getSelectedItemId();
-  const itemName = GetItemName(itemId);
-  setStringVar4('');
-  const gsv = globalThis as unknown as Record<string, string>;
-  gsv['gStringVar1'] = itemName;
-  const msg = StringExpandPlaceholders('', 'gText_Var1IsSelected'); // fallback : strings.json key
-  void msg; // pour l'instant, message description différé (intégration avec WIN_DESCRIPTION = follow-up)
+  // le path générique). Utilise gSpecialVar.ItemId set par Task_BagMenu_Handle
+  // Input juste avant le dispatch sContextMenuFuncs.
+  _CtxPrintItemSelected(gSpecialVar.ItemId);
   // 1:1 :1668-1675 — choisit le window type et imprime.
   _ctxWindowType = _windowTypeFor(_ctxNumItems);
   _ctxGrid2D = _ctxNumItems >= 4;
   _ctxWindowId = BagMenu_AddWindow(_ctxWindowType);
   _printCtxItems();
-}
-
-/** Helper : itemId courant (= cursor liste sac). */
-function _getSelectedItemId(): number {
-  // Importer dynamiquement BagGetItemIdByPocketPosition pour éviter cycle.
-  // Stub minimal pour le SetUp : 0 (Cancel safe).
-  // (Réel : `BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition)`
-  // ; on fera ce câblage à la 1ère intégration use-handler.)
-  return 0;
 }
 
 // ─── Task_ItemContext_Normal + SingleRow + MultipleRows (1:1 :1690+) ──────────

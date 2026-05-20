@@ -32,7 +32,7 @@ import {
 import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
 import { ListMenuLoadStdPalAt } from './gba-menu-system';
 import {
-  getBagPocketSlots, getBagPocketCapacity, slotItemId,
+  getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
   CompactItemsInBagPocket, SortBerriesOrTMHMs,
   BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition,
 } from './bag-pockets';
@@ -105,7 +105,7 @@ import {
 import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
 } from './decomp-data/auto/include/menu-data';
-import { SELECT_BUTTON, L_BUTTON, R_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
+import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
 import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
@@ -740,6 +740,13 @@ const gBagMenu_ReturnToStrings: Record<number, string> = {
 //  construit 1:1 ; le rendu pixel fin = concern BagMenu_Print (porté plus tard).
 const gText_CloseBag = 'FERMER LE SAC';
 const gText_NumberItem_HM = '{CLEAR_TO 17}{STR_VAR_1}{CLEAR 5}{STR_VAR_2}';
+// 1:1 strings.json :gText_Var1IsSelected → affiché dans WIN_DESCRIPTION pendant
+// le ctx menu (= remplace la description normale tant que le menu UTILIS./
+// DONNER/JETER/RETOUR est ouvert) ; item_menu.c:1664.
+const gText_Var1IsSelected = '{STR_VAR_1} est\nsélectionné.';
+// 1:1 strings.json :gText_MoveVar1Where → affiché dans WIN_DESCRIPTION pendant
+// le mode swap SELECT (= "Où voulez-vous placer X ?") ; item_menu.c:1449.
+const gText_MoveVar1Where = 'Où voulez-vous\nplacer\n{STR_VAR_1}?';
 const gText_NumberItem_TMBerry = '{NO}{STR_VAR_1}{CLEAR 7}{STR_VAR_2}';
 const gText_xVar1 = '×{STR_VAR_1}';
 
@@ -1298,11 +1305,126 @@ function ChangeBagPocketId(bagPocketId: number, deltaBagPocketId: number): numbe
   return bagPocketId + deltaBagPocketId;
 }
 
-/** DÉFÉRÉ étape 7 — `CanSwapItems` (item_menu.c:1427). Le swap d'objets
- *  (SELECT) est étape 7 ; ici retour FALSE honnête (SELECT = no-op tant que
- *  le swap n'est pas porté). Pas un fake : déferral explicite tracké. */
+/** 1:1 décomp `CanSwapItems` (item_menu.c:1427). Le swap d'objets est permis
+ *  uniquement en FIELD/BATTLE ET dans les poches NON-numérotées (= ni
+ *  TM_HM ni BERRIES, qui ont leur ordre fixe Nº01..N défini par enum). */
 function CanSwapItems(): boolean {
+  if (gBagPosition.location === ITEMMENULOCATION_FIELD
+   || gBagPosition.location === ITEMMENULOCATION_BATTLE) {
+    if (gBagPosition.pocket !== TMHM_POCKET && gBagPosition.pocket !== BERRIES_POCKET)
+      return true;
+  }
   return false;
+}
+
+/** 1:1 décomp `StartItemSwap` (item_menu.c:1441). SELECT pressé sur item :
+ *  marque la position d'origine (toSwapPos), affiche "Où voulez-vous placer
+ *  X ?", grise le cursor liste, et bascule la task en Task_HandleSwapping
+ *  ItemsInput pour gérer la nouvelle position. */
+function StartItemSwap(task: DecompTask): void {
+  // 1:1 :1445 ListMenuSetTemplateField(LISTFIELD_CURSORKIND, CURSOR_INVISIBLE)
+  // — masque le cursor du list-menu pendant le drag. Helper non porté ; on
+  // accepte la limitation (le cursor list-menu reste visible mais grisé via
+  // BagMenu_PrintCursor ci-dessous, signal "mode swap" déjà clair).
+  const pocket = gBagPosition.pocket;
+  const pos = gBagPosition.scrollPosition[pocket] + gBagPosition.cursorPosition[pocket];
+  task.data[T_LIST_POSITION] = pos;
+  if (gBagMenu) gBagMenu.toSwapPos = pos;
+  // 1:1 :1448-1451 message "Où voulez-vous placer X ?"
+  const itemId = BagGetItemIdByPocketPosition(pocket + 1, pos);
+  _gsv.gStringVar1 = GetItemName(itemId);
+  const msg = StringExpandPlaceholders('', gText_MoveVar1Where);
+  const wid = _win(WIN_DESCRIPTION);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
+  // 1:1 :1453 DestroyPocketSwitchArrowPair (chevrons L/R désactivés pendant le swap).
+  DestroyPocketSwitchArrowPair();
+  // 1:1 :1454 cursor liste en GRAY (signal "mode swap actif").
+  BagMenu_PrintCursor(task.data[T_LIST_TASK_ID], COLORID_GRAY_CURSOR);
+  task.func = Task_HandleSwappingItemsInput;
+}
+
+/** 1:1 décomp `Task_HandleSwappingItemsInput` (item_menu.c:1458). Pendant
+ *  le swap : input SELECT re-déclenche DoItemSwap à la position courante,
+ *  UP/DOWN bouge le cursor (sans changer scroll = la liste se "feuillete"
+ *  visuellement), A confirme à la nouvelle position, B cancel. */
+function Task_HandleSwappingItemsInput(task: DecompTask): void {
+  if (JOY_NEW(SELECT_BUTTON)) {
+    PlaySE(SE_SELECT);
+    const sr = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]);
+    gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+    gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+    DoItemSwap(task);
+    return;
+  }
+  const input = ListMenu_ProcessInput(task.data[T_LIST_TASK_ID]);
+  const sr = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  switch (input) {
+    case LIST_NOTHING_CHOSEN:
+      break;
+    case LIST_CANCEL:
+      PlaySE(SE_SELECT);
+      // 1:1 :1482 : A en même temps que B → DoItemSwap (= confirmer aussi par A).
+      if (JOY_NEW(A_BUTTON)) DoItemSwap(task);
+      else CancelItemSwap(task);
+      break;
+    default: // A_BUTTON sur item (= confirmer position)
+      PlaySE(SE_SELECT);
+      DoItemSwap(task);
+      break;
+  }
+}
+
+/** 1:1 décomp `DoItemSwap` (item_menu.c:1496). Si la nouvelle position est
+ *  identique (ou juste avant, cf. décomp special-case "to=realPos-1") on
+ *  cancel ; sinon on MoveItemSlotInList + rebuild la liste + adj cursor. */
+function DoItemSwap(task: DecompTask): void {
+  const pocket = gBagPosition.pocket;
+  const realPos = gBagPosition.scrollPosition[pocket] + gBagPosition.cursorPosition[pocket];
+  const fromPos = task.data[T_LIST_POSITION];
+  if (fromPos === realPos || fromPos === realPos - 1) {
+    CancelItemSwap(task);
+    return;
+  }
+  // 1:1 :1510 MoveItemSlotInList(gBagPockets[pocket].itemSlots, from, to).
+  MoveItemSlotInList(getBagPocketSlots(pocket), fromPos, realPos);
+  if (gBagMenu) gBagMenu.toSwapPos = NOT_SWAPPING;
+  // 1:1 :1512 DestroyListMenuTask → rebuild via LoadBagItemListBuffers +
+  // ListMenuInit (= la liste se re-imprime avec le nouvel ordre).
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[pocket] = sr.selectedRow;
+  if (fromPos < realPos) gBagPosition.cursorPosition[pocket]--;
+  LoadBagItemListBuffers(pocket);
+  task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
+    gBagPosition.scrollPosition[pocket],
+    gBagPosition.cursorPosition[pocket],
+  );
+  // 1:1 :1518 CreatePocketSwitchArrowPair (= chevrons L/R restored).
+  CreatePocketSwitchArrowPair();
+  task.func = Task_BagMenu_HandleInput;
+}
+
+/** 1:1 décomp `CancelItemSwap` (item_menu.c:1523). Annule le swap sans
+ *  déplacer : rebuild la liste à l'ordre actuel + restore Task_BagMenu_HandleInput. */
+function CancelItemSwap(task: DecompTask): void {
+  const pocket = gBagPosition.pocket;
+  if (gBagMenu) gBagMenu.toSwapPos = NOT_SWAPPING;
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[pocket] = sr.selectedRow;
+  const fromPos = task.data[T_LIST_POSITION];
+  if (fromPos < gBagPosition.scrollPosition[pocket] + gBagPosition.cursorPosition[pocket])
+    gBagPosition.cursorPosition[pocket]--;
+  LoadBagItemListBuffers(pocket);
+  task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
+    gBagPosition.scrollPosition[pocket],
+    gBagPosition.cursorPosition[pocket],
+  );
+  CreatePocketSwitchArrowPair();
+  task.func = Task_BagMenu_HandleInput;
 }
 
 /** 1:1 décomp `GetLRKeysPressed` (menu_helpers.c) :
@@ -1508,6 +1630,18 @@ function Task_CloseBagMenu(task: DecompTask): void {
   rt.DestroyTask(task.taskId);
 }
 
+/** 1:1 décomp item_menu.c:1663-1666 (section "X est sélectionné." dans
+ *  OpenContextMenu). Imprime le message dans WIN_DESCRIPTION (= remplace la
+ *  description normale tant que le ctx menu est affiché). Helper exporté
+ *  pour bag-menu-ctx (évite cycle d'import). */
+export function _CtxPrintItemSelected(itemId: number): void {
+  _gsv.gStringVar1 = GetItemName(itemId);
+  const msg = StringExpandPlaceholders('', gText_Var1IsSelected);
+  const wid = _win(WIN_DESCRIPTION);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
+}
+
 /** 1:1 décomp `ReturnToItemList` (item_menu.c:1284) + restore section de
  *  `ItemMenu_Cancel` (:1985-1994). Appelé par bag-menu-ctx après un
  *  cancel/use pour remettre le sac dans l'état "navigation liste" :
@@ -1554,7 +1688,14 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
       return;
     default:
       if (JOY_NEW(SELECT_BUTTON)) {
-        // 1:1 :1252 — swap d'objets (CanSwapItems) = étape 7 (no-op honnête).
+        // 1:1 décomp item_menu.c:1252-1257 — SELECT déclenche StartItemSwap
+        // si CanSwapItems (= FIELD/BATTLE non-TMHM/BERRIES). Sinon no-op.
+        if (CanSwapItems()) {
+          const sr = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]);
+          gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+          gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+          StartItemSwap(task);
+        }
         return;
       }
       break;

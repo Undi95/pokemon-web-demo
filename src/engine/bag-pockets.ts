@@ -43,6 +43,34 @@ export function getBagPocketCapacity(pocketId: number): number {
   return getBagPocketSlots(pocketId).length;
 }
 
+/** 1:1 décomp `src/item.c:640 MoveItemSlotInList(itemSlots, from, to)`.
+ *  Déplace le slot `from` à la position `to` dans le tableau, en shiftant
+ *  les éléments intermédiaires. Utilisé par bag-menu / player-pc StartItem
+ *  Swap quand le user re-ordonne les items via SELECT.
+ *
+ *  Algorithme (1:1) : save firstSlot=slots[from] ; si to>from, décrément to
+ *  puis shift gauche slots[i..to-1] ← slots[i+1] ; si to<from, shift droite
+ *  slots[i..to+1] ← slots[i-1] ; slots[to]=firstSlot. */
+export function MoveItemSlotInList(slots: ItemSlot[], from: number, to_: number): void {
+  let to = to_;
+  if (from === to) return;
+  const firstSlot: ItemSlot = { itemKey: slots[from].itemKey, quantity: slots[from].quantity };
+  if (to > from) {
+    to--;
+    for (let i = from; i < to; i++) {
+      slots[i].itemKey = slots[i + 1].itemKey;
+      slots[i].quantity = slots[i + 1].quantity;
+    }
+  } else {
+    for (let i = from; i > to; i--) {
+      slots[i].itemKey = slots[i - 1].itemKey;
+      slots[i].quantity = slots[i - 1].quantity;
+    }
+  }
+  slots[to].itemKey = firstSlot.itemKey;
+  slots[to].quantity = firstSlot.quantity;
+}
+
 /** itemId canonique 1:1 d'un slot (`slot->itemId`). '' → ITEM_NONE(0).
  *  CT/CS : notre modèle stocke les TM/HM move-named (`ITEM_TM_FOCUS_PUNCH`)
  *  mais l'enum item décomp = numéroté (`ITEM_TM01..50`/`ITEM_HM01..08`,
