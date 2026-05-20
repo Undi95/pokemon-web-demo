@@ -578,8 +578,23 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
   // défaut décomp pre-Birch-naming) ou fallback.
   result = result.replace(/\{PLAYER\}/g, playerName || 'PLAYER');
 
-  // {RIVAL} = nom du rival (si gender female → BRENDAN, else MAY) — TODO Phase E.
-  result = result.replace(/\{RIVAL\}/g, 'RIVAL');
+  // B2 fix (DEMO-AUDIT-FINDINGS) : {RIVAL} = nom du rival gender-aware.
+  // 1:1 décomp string_util.c:456-462 `ExpandPlaceholder_RivalName` :
+  //   if (gSaveBlock2Ptr->playerGender == MALE)
+  //       return gText_ExpandedPlaceholder_May;    // = "FLORA"
+  //   else
+  //       return gText_ExpandedPlaceholder_Brendan; // = "BRICE"
+  // Ancien : 'RIVAL' hardcodé. User aurait vu "Salut RIVAL !" partout.
+  const gsForRival = (globalThis as Record<string, unknown>).gameState as
+    | { gender?: 'MALE' | 'FEMALE' } | undefined;
+  let rivalName: string;
+  if (gsForRival?.gender === 'FEMALE') {
+    rivalName = 'BRICE'; // = gText_ExpandedPlaceholder_Brendan FR
+  } else {
+    // Default MALE (= player non set) → FLORA (= rival féminin).
+    rivalName = 'FLORA'; // = gText_ExpandedPlaceholder_May FR
+  }
+  result = result.replace(/\{RIVAL\}/g, rivalName);
 
   // Mute le module-level gStringVar4. Écriture en dur (= ne mute PAS _dest car
   // les strings TS sont immutables, et tous les callers utilisent gStringVar4

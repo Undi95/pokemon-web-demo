@@ -774,9 +774,18 @@ export function getDisableMusic(): boolean { return _gDisableMusic; }
 /** 1:1 décomp `PlayFanfare(songNum)` (sound.c) — joue un fanfare court (level
  *  up, item obtained, etc.). Décomp utilise un slot dédié `gMPlayInfo_BGM` mais
  *  avec auto-fade BGM pendant le fanfare puis resume. Pour MVP : juste m4a play
- *  sur le slot bgm (= override BGM, comme le décomp final fait). */
+ *  sur le slot bgm (= override BGM, comme le décomp final fait).
+ *
+ *  E4 fix (DEMO-AUDIT-FINDINGS) : mark le slot fanfare actif pour que
+ *  IsFanfareTaskInactive() retourne false pendant ~3 sec (= durée moyenne
+ *  d'un fanfare court : MUS_OBTAIN_ITEM, MUS_LEVEL_UP, MUS_FANFA1, etc.).
+ *  Sans ça waitfanfare opcode ne bloquait pas → tempo cassé pour
+ *  "PLAYER reçoit STR_VAR_1!" message. */
 export function PlayFanfare(songNum: number): void {
   m4aSongNumStart(songNum);
+  // Estimation ~3 sec pour les fanfares standard. À raffiner avec real
+  // duration via song config (= cf. PlaySE pattern qui lookup durSec).
+  _markAudioSlotActive('fanfare', 3000);
 }
 
 /** 1:1 décomp `PlayFanfareByFanfareNum` — alias avec id différent (= identique). */

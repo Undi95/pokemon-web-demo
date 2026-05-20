@@ -1150,7 +1150,20 @@ registerOpcode('playse', (_ctx, args) => {
 });
 
 registerOpcode('playfanfare', (_ctx, args) => {
-  console.log(`[opcode playfanfare] '${args[0]}' (audio TBD)`);
+  // E4 fix (DEMO-AUDIT-FINDINGS) : 1:1 décomp `ScrCmd_playfanfare` (scrcmd.c) :
+  //   PlayFanfare(songNum); return FALSE;
+  // Resolve song name via Songs map (= playbgm pattern l. 1170-1183).
+  // PlayFanfare marque _audioEndTimeMs.fanfare = +3000ms → waitfanfare opcode
+  // bloque jusqu'à fin (= "PLAYER reçoit STR_VAR_1!" tempo correct).
+  const songName = args[0] ?? '';
+  const songId = (Songs as unknown as Record<string, number>)[songName];
+  if (typeof songId === 'number') {
+    void import('./decomp-globals').then(({ PlayFanfare }) => {
+      PlayFanfare(songId);
+    });
+  } else {
+    console.warn(`[opcode playfanfare] unknown fanfare '${songName}'`);
+  }
   return false;
 });
 
