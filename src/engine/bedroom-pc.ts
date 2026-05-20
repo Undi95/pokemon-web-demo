@@ -55,7 +55,7 @@ import { gameState } from './game-state';
 import { getString } from './gba-strings';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import {
-  CountUsedPCItemSlots, RemovePCItem, CompactPCItems, PC_ITEMS_COUNT,
+  CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
 } from './pc-items';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
@@ -64,6 +64,10 @@ import {
 import { AddBagItem } from './bag';
 import { getItemNameFr } from './data-tables';
 import { GetItemDescription } from './decomp-bridge';
+import {
+  AddItemIconSprite, MAX_SPRITES,
+} from './item-icon';
+import { FreeSpriteTilesByTag } from './decomp-globals';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 
@@ -160,9 +164,13 @@ type SubState =
   | 'main_menu'        // 1:1 décomp PlayerPCProcessMenuInput
   | 'item_storage'     // 1:1 décomp ItemStorageMenuProcessInput (sub-menu RETIRER/DEPOSER/JETER/SORTIR)
   | 'pc_list'          // 1:1 décomp ItemStorage_ProcessInput (= liste PC items active)
+  | 'pc_qty_rolling'   // 1:1 décomp ItemStorage_HandleQuantityRolling (D-pad adjust qty)
+  | 'pc_swap'          // 1:1 décomp ItemStorage_ProcessItemSwapInput (SELECT pressed)
   | 'pc_action_msg'    // 1:1 décomp ItemStorage_HandleRemoveItem / ItemStorage_HandleErrorMessageInput
   | 'pc_toss_confirm'  // 1:1 décomp YesNo toss confirm
+  | 'mailbox_list'     // 1:1 décomp Mailbox_ProcessInput (list-menu mails même vide)
   | 'decoration_menu'  // 1:1 décomp HandleDecorationActionsMenuInput (DECORER/RANGER/JETER/SORTIR)
+  | 'deposit_list'     // 1:1 décomp CB2_GoToItemDepositMenu : list bag items + select → AddPCItem
   | 'msg_wait'         // showing "No items"/"No mail" message ; A press → return prev
   | 'closing';         // cleanup en cours
 
@@ -186,6 +194,18 @@ let sPCListItems: ListMenuItem[] = [];
 let sPCInTossMode = false;  // 1:1 décomp tInTossMenu
 let sPCItemCount = 0;       // 1:1 décomp gPlayerPCItemPageInfo.count (incluant Cancel)
 let sPCActionMsgIsError = false;  // true = error msg (= no_room/too_important), false = remove confirmed
+
+// 1:1 décomp player_pc.c:82 :
+//   #define TAG_ITEM_ICON 5110
+const TAG_ITEM_ICON = 5110;
+let sPCIconSpriteId = -1;  // 1:1 décomp sItemStorageMenu->spriteId (init = SPRITE_NONE)
+
+// 1:1 décomp tQuantity (= gTasks.data[2]) pour le rolling quantity.
+let sPCQuantitySelected = 1;
+// 1:1 décomp toSwapPos (= sItemStorageMenu->toSwapPos) — pos en cours de swap.
+let sPCSwapFromPos = -1;
+// 1:1 décomp NOT_SWAPPING = 0xFF ; on utilise -1 en TS.
+const NOT_SWAPPING = -1;
 
 // ─── API publique ──────────────────────────────────────────────────────────
 
@@ -216,9 +236,13 @@ export function TickBedroomPC(): void {
     case 'main_menu':       _tickMainMenu(newKeys); break;
     case 'item_storage':    _tickItemStorage(newKeys); break;
     case 'pc_list':         _tickPCList(newKeys); break;
+    case 'pc_qty_rolling':  _tickPCQuantityRolling(newKeys); break;
+    case 'pc_swap':         _tickPCSwap(newKeys); break;
     case 'pc_action_msg':   _tickPCActionMsg(newKeys); break;
     case 'pc_toss_confirm': _tickPCTossConfirm(newKeys); break;
+    case 'mailbox_list':    _tickMailboxList(newKeys); break;
     case 'decoration_menu': _tickDecorationMenu(newKeys); break;
+    case 'deposit_list':    _tickDepositList(newKeys); break;
     case 'msg_wait':        _tickMsgWait(newKeys); break;
     case 'closing':         _tickClosing(); break;
   }
@@ -375,16 +399,174 @@ function _itemStorageWithdraw(): void {
  *    gTasks[taskId].func = Task_ItemStorage_Deposit;
  *    FadeScreen(FADE_TO_BLACK, 0);
  *  Puis Task_ItemStorage_Deposit : CleanupOverworldWindowsAndTilemaps() +
- *  CB2_GoToItemDepositMenu().
- *  Le bag-menu en mode DEPOSIT n'est pas porté 1:1 séparément encore — pour
- *  la démo placeholder honnête. */
+ *  CB2_GoToItemDepositMenu(). CB2 swap vers bag-menu en mode DEPOSIT.
+ *
+ *  Notre port : inline DEPOSIT UI (= list bag items + select → AddPCItem +
+ *  RemoveBagItem). Réutilise pattern ItemStorage UI (= list-menu + desc). */
 function _itemStorageDeposit(): void {
   PlaySE(Songs.SE_SELECT);
   _removeSubWindow();
-  // TODO 1:1 décomp : ouvrir bag-menu en mode DEPOSIT (= CB2_GoToItemDepositMenu).
-  // Pour l'instant, fallback msg honnête.
-  _showMessageThenReturn(getString('gText_NoItems'), 'main_menu');
+  _clearSticky();
+  sSubState = 'deposit_list';
+  _depositOpenList();
 }
+
+// ─── DEPOSIT bag → PC UI ────────────────────────────────────────────────────
+
+let sDepositListItems: ListMenuItem[] = [];
+let sDepositBagSlotIndices: number[] = [];  // map listIndex → bag.items[slotIdx]
+
+/** Ouvre la list-menu des items du bag (= pocket ITEMS uniquement, comme décomp).
+ *  1:1 décomp : ItemDeposit_OpenBagMenu → liste les items pocket "Items" du bag. */
+function _depositOpenList(): void {
+  // Setup 3 windows : TITLE / MESSAGE / LIST (= même layout que ItemStorage).
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  sPCTitleWindowId = AddWindow(WIN_PC_TITLE);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCTitleWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  sPCMessageWindowId = AddWindow(WIN_PC_MESSAGE);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  sPCListWindowId = AddWindow(WIN_PC_LIST);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  // Title centered "DEPOSER OBJET".
+  const titleText = getString('gText_DepositItem');
+  AddTextPrinterParameterized3(
+    sPCTitleWindowId, FONT_NORMAL,
+    GetStringCenterAlignXOffset(titleText, WIN_PC_TITLE.width * 8),
+    1, [1, 2, 3], TEXT_SKIP_DRAW, titleText,
+  );
+  // Build list-items depuis bag.items (pocket Items uniquement, 1:1 décomp DEPOSIT
+  // ne dépose que les pocket Items).
+  sDepositListItems = [];
+  sDepositBagSlotIndices = [];
+  const bagItems = gameState.bag.items;
+  for (let i = 0; i < bagItems.length; i++) {
+    if (bagItems[i].itemKey) {
+      sDepositListItems.push({
+        name: getItemNameFr(bagItems[i].itemKey),
+        id: sDepositListItems.length,
+      });
+      sDepositBagSlotIndices.push(i);
+    }
+  }
+  // Cancel entry à la fin.
+  sDepositListItems.push({ name: getString('gText_Cancel2'), id: -2 });
+  // Build list-menu.
+  const template: ListMenuTemplate = {
+    items: sDepositListItems,
+    moveCursorFunc: _depositMoveCursor,
+    itemPrintFunc: _depositPrintMenuItem,
+    totalItems: sDepositListItems.length,
+    maxShowed: Math.min(8, sDepositListItems.length),
+    windowId: sPCListWindowId,
+    header_X: 0, item_X: 8, cursor_X: 0,
+    upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
+    lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
+    fontId: 7, cursorKind: 0,
+  };
+  sPCListTaskId = ListMenuInit(template, 0, 0);
+  // Init icon + description.
+  const firstId = sDepositListItems[0]?.id ?? -2;
+  if (firstId === -2) {
+    _itemStorageDrawItemIcon('ITEM_LIST_END');
+  } else {
+    const bagIdx = sDepositBagSlotIndices[firstId];
+    _itemStorageDrawItemIcon(gameState.bag.items[bagIdx].itemKey);
+  }
+  _depositPrintDescription(firstId);
+}
+
+function _depositMoveCursor(itemId: number, onInit: boolean, _list: unknown): void {
+  if (!onInit) PlaySE(Songs.SE_SELECT);
+  _itemStorageEraseItemIcon();
+  if (itemId === -2) {
+    _itemStorageDrawItemIcon('ITEM_LIST_END');
+  } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
+    const bagIdx = sDepositBagSlotIndices[itemId];
+    _itemStorageDrawItemIcon(gameState.bag.items[bagIdx].itemKey);
+  }
+  _depositPrintDescription(itemId);
+}
+
+function _depositPrintMenuItem(windowId: number, itemId: number, yOffset: number): void {
+  if (itemId === -2) return;
+  if (itemId < 0 || itemId >= sDepositBagSlotIndices.length) return;
+  const bagIdx = sDepositBagSlotIndices[itemId];
+  const qty = gameState.bag.items[bagIdx].quantity;
+  const qtyStr = `× ${String(qty).padStart(3, ' ')}`;
+  AddTextPrinterParameterized3(
+    windowId, 7 /* FONT_NARROW */,
+    GetStringRightAlignXOffset(qtyStr, 104), yOffset,
+    [1, 2, 3], TEXT_SKIP_DRAW, qtyStr,
+  );
+}
+
+function _depositPrintDescription(itemId: number): void {
+  if (sPCMessageWindowId < 0) return;
+  let description: string;
+  if (itemId === -2) {
+    description = getString('gText_GoBackPrevMenu');
+  } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
+    const bagIdx = sDepositBagSlotIndices[itemId];
+    description = String(GetItemDescription(gameState.bag.items[bagIdx].itemKey));
+  } else {
+    description = '';
+  }
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  AddTextPrinterParameterized3(
+    sPCMessageWindowId, FONT_NORMAL, 0, 1,
+    [1, 2, 3], TEXT_SKIP_DRAW, description,
+  );
+}
+
+function _tickDepositList(_newKeys: number): void {
+  const sel = ListMenu_ProcessInput(sPCListTaskId);
+  if (sel === -1) return;
+  if (sel === -2) {
+    PlaySE(Songs.SE_SELECT);
+    _depositExitList();
+    return;
+  }
+  // Selected an item → deposit 1 (= simplifié, le décomp full a quantity rolling).
+  PlaySE(Songs.SE_SELECT);
+  const bagIdx = sDepositBagSlotIndices[sel];
+  const slot = gameState.bag.items[bagIdx];
+  const itemName = getItemNameFr(slot.itemKey);
+  // AddPCItem + remove from bag.
+  if (AddPCItem(slot.itemKey, 1)) {
+    slot.quantity -= 1;
+    if (slot.quantity === 0) slot.itemKey = '';
+    _itemStoragePrintWindowMessage(`Déposé 1 ${itemName}.`);
+    sPCActionMsgIsError = false;
+    sPCLastActionPos = -1;
+    // Re-build list après deposit.
+    sSubState = 'pc_action_msg';
+    sPCActionMsgIsError = true;  // skip RemovePCItem in confirm handler
+  } else {
+    _itemStoragePrintWindowMessage('PC plein.');
+    sPCActionMsgIsError = true;
+    sSubState = 'pc_action_msg';
+  }
+}
+
+function _depositExitList(): void {
+  _itemStorageEraseItemIcon();
+  if (sPCListTaskId >= 0) {
+    DestroyListMenuTask(sPCListTaskId);
+    sPCListTaskId = -1;
+  }
+  _removePCWindows();
+  sSubState = 'item_storage';
+  _openItemStorage();
+}
+
 
 /** 1:1 décomp `ItemStorage_Toss` (player_pc.c:609-624) : same flow que Withdraw
  *  mais toss=TRUE. */
@@ -451,23 +633,16 @@ function _itemStorageCreateListMenu(): void {
   _itemStorageRefreshList();
 
   // ListMenuInit avec template 1:1 décomp sListMenuTemplate_ItemStorage.
-  const template: ListMenuTemplate = {
-    items: sPCListItems,
-    moveCursorFunc: _itemStorageMoveCursor,
-    itemPrintFunc: _itemStoragePrintMenuItem,
-    totalItems: sPCItemCount,
-    maxShowed: Math.min(8, sPCItemCount),
-    windowId: sPCListWindowId,
-    header_X: 0, item_X: 8, cursor_X: 0,
-    upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
-    lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
-    fontId: 7,  // FONT_NARROW
-    cursorKind: 0,  // CURSOR_BLACK_ARROW
-  };
-  sPCListTaskId = ListMenuInit(template, 0, 0);
+  sPCListTaskId = ListMenuInit(_buildPCListTemplate(), 0, 0);
 
-  // Init description sur le 1er item (= 1:1 décomp ItemStorage_MoveCursor onInit).
-  _itemStoragePrintDescription(sPCListItems[0]?.id ?? -1);
+  // Init icon + description sur le 1er item (= 1:1 décomp ItemStorage_MoveCursor onInit).
+  const firstId = sPCListItems[0]?.id ?? -2;
+  if (firstId === -2) {
+    _itemStorageDrawItemIcon('ITEM_LIST_END');
+  } else {
+    _itemStorageDrawItemIcon(gameState.pcItems[firstId].itemKey);
+  }
+  _itemStoragePrintDescription(firstId);
 }
 
 /** 1:1 décomp `ItemStorage_RefreshListMenu` (player_pc.c:986-1009).
@@ -488,11 +663,68 @@ function _itemStorageRefreshList(): void {
 }
 
 /** 1:1 décomp `ItemStorage_MoveCursor` (player_pc.c:1016-1029) :
- *  PlaySE(SE_SELECT) + ItemStorage_EraseItemIcon + ItemStorage_DrawItemIcon +
- *  ItemStorage_PrintDescription. */
+ *    if (onInit != TRUE) PlaySE(SE_SELECT);
+ *    if (toSwapPos == NOT_SWAPPING) {
+ *        ItemStorage_EraseItemIcon();
+ *        if (id != LIST_CANCEL)
+ *            ItemStorage_DrawItemIcon(pcItems[id].itemId);
+ *        else
+ *            ItemStorage_DrawItemIcon(ITEM_LIST_END);
+ *        ItemStorage_PrintDescription(id);
+ *    }
+ *
+ *  En swap mode, le cursor move ne change pas l'icone (= track l'item en
+ *  cours de swap visuellement via la swap arrow). */
 function _itemStorageMoveCursor(itemId: number, onInit: boolean, _list: unknown): void {
   if (!onInit) PlaySE(Songs.SE_SELECT);
-  _itemStoragePrintDescription(itemId);
+  if (sPCSwapFromPos === NOT_SWAPPING) {
+    _itemStorageEraseItemIcon();
+    if (itemId === -2) {
+      // LIST_CANCEL : draw "return" icon (= ITEM_LIST_END dans le décomp).
+      _itemStorageDrawItemIcon('ITEM_LIST_END');
+    } else if (itemId >= 0 && itemId < PC_ITEMS_COUNT) {
+      _itemStorageDrawItemIcon(gameState.pcItems[itemId].itemKey);
+    }
+    _itemStoragePrintDescription(itemId);
+  }
+}
+
+/** 1:1 décomp `ItemStorage_DrawItemIcon` (player_pc.c:1096-1114) :
+ *    if (spriteId == SPRITE_NONE) {
+ *        FreeSpriteTilesByTag(TAG_ITEM_ICON); FreeSpritePaletteByTag(TAG_ITEM_ICON);
+ *        spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemId);
+ *        gSprites[spriteId].oam.priority = 0;
+ *        gSprites[spriteId].x2 = 24;
+ *        gSprites[spriteId].y2 = 80;
+ *    } */
+function _itemStorageDrawItemIcon(itemKey: string): void {
+  if (sPCIconSpriteId !== -1) return;  // already drawn
+  FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  const spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemKey);
+  if (spriteId === MAX_SPRITES) return;
+  sPCIconSpriteId = spriteId;
+  // 1:1 décomp lines 1109-1111 : oam priority=0, x2=24, y2=80 (= sprite anchor).
+  const rt = getRuntime() as unknown as {
+    gSprites?: Map<number, { x2: number; y2: number; oam?: { priority: number } }>
+  } | null;
+  const spr = rt?.gSprites?.get(spriteId);
+  if (spr) {
+    spr.x2 = 24;
+    spr.y2 = 80;
+    if (spr.oam) spr.oam.priority = 0;
+  }
+}
+
+/** 1:1 décomp `ItemStorage_EraseItemIcon` (player_pc.c:1116-1126). */
+function _itemStorageEraseItemIcon(): void {
+  if (sPCIconSpriteId === -1) return;
+  FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  // 1:1 décomp : DestroySprite(&gSprites[*spriteIdLoc]).
+  const rt = getRuntime() as unknown as {
+    DestroySprite?: (spriteId: number) => void;
+  } | null;
+  rt?.DestroySprite?.(sPCIconSpriteId);
+  sPCIconSpriteId = -1;
 }
 
 /** 1:1 décomp `ItemStorage_PrintMenuItem` (player_pc.c:1031-1046) :
@@ -533,7 +765,25 @@ function _itemStoragePrintDescription(itemId: number): void {
 }
 
 /** 1:1 décomp `ItemStorage_ProcessInput` (player_pc.c:1213-1245). */
-function _tickPCList(_newKeys: number): void {
+function _tickPCList(newKeys: number): void {
+  // 1:1 décomp lines 1217-1226 : SELECT button → start item swap (sauf si Cancel).
+  if (newKeys & SELECT_BUTTON) {
+    const used = CountUsedPCItemSlots();
+    // currentRow = cursor pos dans la list ; LIST_CANCEL = last row (index used).
+    // Skip si on est sur Cancel ou si la list est vide.
+    if (used > 0) {
+      // 1:1 décomp listMenuGetScrollAndRow + check `!= count - 1` (= pas sur Cancel).
+      // Simple heuristic : cursor pos = ListMenuGetSelectedRow ; we use sPCListTaskId.
+      const rt = getRuntime() as unknown as { _listMenus?: Map<number, { selectedRow: number; scrollOffset: number }> } | null;
+      const list = rt?._listMenus?.get(sPCListTaskId);
+      const cursorPos = list ? (list.scrollOffset + list.selectedRow) : 0;
+      if (cursorPos < used) {
+        PlaySE(Songs.SE_SELECT);
+        _itemStorageStartItemSwap(cursorPos);
+        return;
+      }
+    }
+  }
   const sel = ListMenu_ProcessInput(sPCListTaskId);
   // sel = -1 = nothing, -2 = LIST_CANCEL, >=0 = item index.
   if (sel === -1) return;  // LIST_NOTHING_CHOSEN
@@ -548,28 +798,206 @@ function _tickPCList(_newKeys: number): void {
   _itemStorageDoItemAction(sel);
 }
 
+/** 1:1 décomp `ItemStorage_StartItemSwap` (player_pc.c:1274-1284) :
+ *    ListMenuSetTemplateField(LISTFIELD_CURSORKIND, CURSOR_INVISIBLE);
+ *    sItemStorageMenu->toSwapPos = currentPos;
+ *    ItemStorage_SetSwapArrow + ItemStorage_UpdateSwapLinePos;
+ *    CopyItemName(... gStringVar1); ItemStorage_PrintMessage(MSG_SWITCH_WHICH_ITEM);
+ *    gTasks.func = ItemStorage_ProcessItemSwapInput; */
+function _itemStorageStartItemSwap(pos: number): void {
+  sPCSwapFromPos = pos;
+  const itemName = getItemNameFr(gameState.pcItems[pos].itemKey);
+  _itemStoragePrintWindowMessage(`Déplacer ${itemName} où ?`);
+  sSubState = 'pc_swap';
+}
+
+/** 1:1 décomp `ItemStorage_ProcessItemSwapInput` (player_pc.c:1286-1316) :
+ *    if (SELECT) → ItemStorage_FinishItemSwap(taskId, FALSE);
+ *    else input = ListMenu_ProcessInput(...) ; on selection : finish swap. */
+function _tickPCSwap(newKeys: number): void {
+  if ((newKeys & SELECT_BUTTON) || (newKeys & A_BUTTON)) {
+    // 1:1 décomp lines 1292-1297 : SELECT/A → finish swap (commit).
+    const rt = getRuntime() as unknown as { _listMenus?: Map<number, { selectedRow: number; scrollOffset: number }> } | null;
+    const list = rt?._listMenus?.get(sPCListTaskId);
+    const newPos = list ? (list.scrollOffset + list.selectedRow) : 0;
+    _itemStorageFinishItemSwap(newPos, false);
+    return;
+  }
+  if (newKeys & B_BUTTON) {
+    // 1:1 décomp lines 1306-1311 : B (canceled via LIST_CANCEL) → finish without move.
+    _itemStorageFinishItemSwap(-1, true);
+    return;
+  }
+  // Continue list input (= cursor move).
+  ListMenu_ProcessInput(sPCListTaskId);
+}
+
+/** 1:1 décomp `ItemStorage_FinishItemSwap` (player_pc.c:1318-1338). */
+function _itemStorageFinishItemSwap(newPos: number, canceled: boolean): void {
+  PlaySE(Songs.SE_SELECT);
+  const fromPos = sPCSwapFromPos;
+  if (!canceled && fromPos !== newPos && fromPos !== newPos - 1 && newPos >= 0) {
+    // Move slot fromPos → newPos in gameState.pcItems.
+    _moveItemSlotInList(fromPos, newPos);
+    _itemStorageRefreshList();
+    // Re-init the list with new items.
+    DestroyListMenuTask(sPCListTaskId);
+    const template = _buildPCListTemplate();
+    sPCListTaskId = ListMenuInit(template, 0, 0);
+  }
+  sPCSwapFromPos = NOT_SWAPPING;
+  // Restore description + icon for current cursor pos.
+  const rt = getRuntime() as unknown as { _listMenus?: Map<number, { selectedRow: number; scrollOffset: number }> } | null;
+  const list = rt?._listMenus?.get(sPCListTaskId);
+  const cursorPos = list ? (list.scrollOffset + list.selectedRow) : 0;
+  const itemKey = cursorPos < CountUsedPCItemSlots()
+    ? gameState.pcItems[cursorPos].itemKey
+    : 'ITEM_LIST_END';
+  _itemStorageEraseItemIcon();
+  _itemStorageDrawItemIcon(itemKey);
+  _itemStoragePrintDescription(cursorPos < CountUsedPCItemSlots() ? cursorPos : -2);
+  sSubState = 'pc_list';
+}
+
+/** 1:1 décomp `MoveItemSlotInList(itemSlots, fromPos, toPos)` (item.c). */
+function _moveItemSlotInList(fromPos: number, toPos: number): void {
+  const pcItems = gameState.pcItems;
+  const tmp = { itemKey: pcItems[fromPos].itemKey, quantity: pcItems[fromPos].quantity };
+  if (fromPos < toPos) {
+    for (let i = fromPos; i < toPos - 1; i++) {
+      pcItems[i].itemKey = pcItems[i + 1].itemKey;
+      pcItems[i].quantity = pcItems[i + 1].quantity;
+    }
+    pcItems[toPos - 1].itemKey = tmp.itemKey;
+    pcItems[toPos - 1].quantity = tmp.quantity;
+  } else if (fromPos > toPos) {
+    for (let i = fromPos; i > toPos; i--) {
+      pcItems[i].itemKey = pcItems[i - 1].itemKey;
+      pcItems[i].quantity = pcItems[i - 1].quantity;
+    }
+    pcItems[toPos].itemKey = tmp.itemKey;
+    pcItems[toPos].quantity = tmp.quantity;
+  }
+}
+
+/** Helper : factorize list template build (= 1:1 décomp sListMenuTemplate_ItemStorage). */
+function _buildPCListTemplate(): ListMenuTemplate {
+  return {
+    items: sPCListItems,
+    moveCursorFunc: _itemStorageMoveCursor,
+    itemPrintFunc: _itemStoragePrintMenuItem,
+    totalItems: sPCItemCount,
+    maxShowed: Math.min(8, sPCItemCount),
+    windowId: sPCListWindowId,
+    header_X: 0, item_X: 8, cursor_X: 0,
+    upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
+    lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
+    fontId: 7,  // FONT_NARROW
+    cursorKind: 0,  // CURSOR_BLACK_ARROW
+  };
+}
+
 /** 1:1 décomp `ItemStorage_DoItemAction` (player_pc.c:1353-1390).
  *
  *  Démarre une action Withdraw/Toss sur l'item à `pos`. Si quantity == 1,
- *  fait l'action immédiate. Sinon, devrait ouvrir le quantity rolling
- *  (= simplifié à 1 pour la démo). */
+ *  fait l'action immédiate. Sinon → quantity rolling (= 1:1 décomp prompt
+ *  "Combien ?" + window WIN_QUANTITY + D-pad up/down adjust). */
 function _itemStorageDoItemAction(pos: number): void {
+  sPCLastActionPos = pos;
   const slot = gameState.pcItems[pos];
+  sPCQuantitySelected = 1;  // 1:1 décomp tQuantity = 1
   if (!sPCInTossMode) {
     if (slot.quantity === 1) {
+      // 1:1 décomp player_pc.c:1362-1367 : qty == 1 → withdraw immédiat.
       _itemStorageDoItemWithdraw(pos, 1);
       return;
     }
-    // 1:1 décomp : devrait ouvrir quantity rolling. Pour démo : withdraw all.
-    _itemStorageDoItemWithdraw(pos, slot.quantity);
+    // 1:1 décomp lines 1369-1371 : "Combien retirer ?" message.
+    const itemName = getItemNameFr(slot.itemKey);
+    _itemStoragePrintWindowMessage(`Retirer combien ? (1-${slot.quantity})\n${itemName}`);
   } else {
     if (slot.quantity === 1) {
       _itemStorageStartToss(pos, 1);
       return;
     }
-    _itemStorageStartToss(pos, slot.quantity);
+    // 1:1 décomp lines 1383-1384 : "Jeter combien ?" message.
+    const itemName = getItemNameFr(slot.itemKey);
+    _itemStoragePrintWindowMessage(`Jeter combien ? (1-${slot.quantity})\n${itemName}`);
+  }
+  // 1:1 décomp line 1388 : ItemStorage_PrintItemQuantity dans WIN_QUANTITY.
+  _itemStorageShowQuantityWindow();
+  sSubState = 'pc_qty_rolling';
+}
+
+/** 1:1 décomp `ItemStorage_PrintItemQuantity` (player_pc.c:1345-1350) :
+ *    ConvertIntToDecimalStringN(gStringVar1, value, mode, n);
+ *    StringExpandPlaceholders(gStringVar4, gText_xVar1);
+ *    AddTextPrinter(... "x N" centered dans windowId, 48 px wide). */
+function _itemStorageShowQuantityWindow(): void {
+  if (sPCQuantityWindowId < 0) {
+    sPCQuantityWindowId = AddWindow(WIN_PC_QUANTITY);
+    LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+    DrawStdFrameWithCustomTileAndPalette(
+      sPCQuantityWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+    );
+  } else {
+    DrawStdFrameWithCustomTileAndPalette(
+      sPCQuantityWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+    );
+  }
+  const qtyStr = `× ${String(sPCQuantitySelected).padStart(2, '0')}`;
+  AddTextPrinterParameterized3(
+    sPCQuantityWindowId, FONT_NORMAL,
+    GetStringCenterAlignXOffset(qtyStr, WIN_PC_QUANTITY.width * 8),
+    1, [1, 2, 3], TEXT_SKIP_DRAW, qtyStr,
+  );
+}
+
+function _itemStorageRemoveQuantityWindow(): void {
+  if (sPCQuantityWindowId < 0) return;
+  ClearStdWindowAndFrame(sPCQuantityWindowId, true);
+  RemoveWindow(sPCQuantityWindowId);
+  sPCQuantityWindowId = -1;
+}
+
+/** 1:1 décomp `AdjustQuantityAccordingToDPadInput` (item_menu.c:utility) +
+ *  `ItemStorage_HandleQuantityRolling` (player_pc.c:1392-1422). */
+function _tickPCQuantityRolling(newKeys: number): void {
+  const pos = sPCLastActionPos;
+  const slot = gameState.pcItems[pos];
+  let changed = false;
+  // 1:1 décomp DPAD UP / DOWN / LEFT / RIGHT adjust qty (+/- 1, +/- 10).
+  if (newKeys & DPAD_UP)    { sPCQuantitySelected = Math.min(slot.quantity, sPCQuantitySelected + 1); changed = true; }
+  if (newKeys & DPAD_DOWN)  { sPCQuantitySelected = Math.max(1, sPCQuantitySelected - 1); changed = true; }
+  if (newKeys & DPAD_RIGHT) { sPCQuantitySelected = Math.min(slot.quantity, sPCQuantitySelected + 10); changed = true; }
+  if (newKeys & DPAD_LEFT)  { sPCQuantitySelected = Math.max(1, sPCQuantitySelected - 10); changed = true; }
+  if (changed) {
+    _itemStorageShowQuantityWindow();
+    return;
+  }
+  if (newKeys & A_BUTTON) {
+    // 1:1 décomp lines 1405-1411 : qty confirmed → withdraw/toss.
+    PlaySE(Songs.SE_SELECT);
+    _itemStorageRemoveQuantityWindow();
+    if (!sPCInTossMode) {
+      _itemStorageDoItemWithdraw(pos, sPCQuantitySelected);
+    } else {
+      _itemStorageStartToss(pos, sPCQuantitySelected);
+    }
+  } else if (newKeys & B_BUTTON) {
+    // 1:1 décomp lines 1413-1420 : canceled → restore description + return list.
+    PlaySE(Songs.SE_SELECT);
+    _itemStorageRemoveQuantityWindow();
+    _itemStoragePrintDescription(pos);
+    sSubState = 'pc_list';
   }
 }
+
+const DPAD_UP    = 0x40;
+const DPAD_DOWN  = 0x80;
+const DPAD_LEFT  = 0x20;
+const DPAD_RIGHT = 0x10;
+const SELECT_BUTTON = 0x04;
 
 /** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444). */
 function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
@@ -642,24 +1070,16 @@ function _tickPCActionMsg(newKeys: number): void {
       RemovePCItem(sPCLastActionPos, sPCLastActionQty);
       DestroyListMenuTask(sPCListTaskId);
       _itemStorageRefreshList();
-      const template: ListMenuTemplate = {
-        items: sPCListItems,
-        moveCursorFunc: _itemStorageMoveCursor,
-        itemPrintFunc: _itemStoragePrintMenuItem,
-        totalItems: sPCItemCount,
-        maxShowed: Math.min(8, sPCItemCount),
-        windowId: sPCListWindowId,
-        header_X: 0, item_X: 8, cursor_X: 0,
-        upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
-        lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
-        fontId: 7, cursorKind: 0,
-      };
-      sPCListTaskId = ListMenuInit(template, 0, 0);
+      sPCListTaskId = ListMenuInit(_buildPCListTemplate(), 0, 0);
     }
     sPCLastActionPos = -1;
     sPCLastActionQty = 0;
-    // Reprint description (= ItemStorage_PrintMessage avec current item).
-    _itemStoragePrintDescription(sPCListItems[0]?.id ?? -2);
+    // Reprint icon + description (= ItemStorage_MoveCursor sur new first item).
+    const firstId = sPCListItems[0]?.id ?? -2;
+    _itemStorageEraseItemIcon();
+    if (firstId === -2) _itemStorageDrawItemIcon('ITEM_LIST_END');
+    else _itemStorageDrawItemIcon(gameState.pcItems[firstId].itemKey);
+    _itemStoragePrintDescription(firstId);
     sSubState = 'pc_list';
   }
 }
@@ -680,7 +1100,8 @@ function _itemStoragePrintWindowMessage(text: string): void {
  *    ItemStorage_EraseItemIcon + RemoveScrollIndicator + DestroyListMenuTask +
  *    ItemStorage_Free + gTasks[taskId].func = ItemStorage_ReturnToMenuSelect. */
 function _itemStorageExitItemList(): void {
-  // Cleanup all 4 PC windows.
+  // Cleanup all PC windows + icon sprite.
+  _itemStorageEraseItemIcon();
   if (sPCListTaskId >= 0) {
     DestroyListMenuTask(sPCListTaskId);
     sPCListTaskId = -1;
@@ -734,9 +1155,97 @@ function _tickItemStorage(_newKeys: number): void {
   }
 }
 
-/** 1:1 décomp `PlayerPC_Mailbox` (player_pc.c:457) : count == 0 → "No mail." */
+/** 1:1 décomp `PlayerPC_Mailbox` (player_pc.c:457-485) :
+ *    count = GetMailboxMailCount();
+ *    if (count == 0) DisplayItemMessageOnField(..., gText_NoMailHere, ...);
+ *    else { MailboxMenu_Alloc + Mailbox_DrawMailboxMenu → list mails + actions }
+ *
+ *  Notre port : on affiche le visuel de la liste mailbox MÊME SI count == 0
+ *  (= juste "RETOUR"), pour montrer l'UI dans la démo. Le décomp affiche un
+ *  msgbox dans ce cas, on peut faire pareil ou montrer la liste.
+ *
+ *  Le user a demandé "juste le visuel des menus" — on fait l'UI minimum :
+ *  liste mailbox avec items (vide en early game) + RETOUR. */
 function _openMailboxEmpty(): void {
-  _showMessageThenReturn(getString('gText_NoMailHere'), 'main_menu');
+  _removeMainWindow();
+  _clearSticky();
+  sSubState = 'mailbox_list';
+  _mailboxOpenList();
+}
+
+// ─── Mailbox UI ────────────────────────────────────────────────────────────
+
+let sMailboxListItems: ListMenuItem[] = [];
+
+function _mailboxOpenList(): void {
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  sPCTitleWindowId = AddWindow(WIN_PC_TITLE);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCTitleWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  sPCMessageWindowId = AddWindow(WIN_PC_MESSAGE);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  sPCListWindowId = AddWindow(WIN_PC_LIST);
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  // Title centered "BOITE LETTRE" (= gText_Mailbox, décomp affiche dans MAILBOXWIN_TITLE).
+  const titleText = getString('gText_Mailbox');
+  AddTextPrinterParameterized3(
+    sPCTitleWindowId, FONT_NORMAL,
+    GetStringCenterAlignXOffset(titleText, WIN_PC_TITLE.width * 8),
+    1, [1, 2, 3], TEXT_SKIP_DRAW, titleText,
+  );
+  // Build mailbox list (= vide en early game ; only RETOUR).
+  // 1:1 décomp : iterate gSaveBlock1Ptr->mail[PARTY_SIZE..MAIL_COUNT] où itemId != ITEM_NONE.
+  // Notre runtime n'a pas mail data extensive → list always vide.
+  sMailboxListItems = [];
+  sMailboxListItems.push({ name: getString('gText_Cancel2'), id: -2 });
+
+  const template: ListMenuTemplate = {
+    items: sMailboxListItems,
+    moveCursorFunc: null,
+    itemPrintFunc: null,
+    totalItems: sMailboxListItems.length,
+    maxShowed: sMailboxListItems.length,
+    windowId: sPCListWindowId,
+    header_X: 0, item_X: 8, cursor_X: 0,
+    upText_Y: 9, cursorPal: 2, fillValue: 1, cursorShadowPal: 3,
+    lettersSpacing: 0, itemVerticalPadding: 0, scrollMultiple: 0,
+    fontId: 7, cursorKind: 0,
+  };
+  sPCListTaskId = ListMenuInit(template, 0, 0);
+  // Description = "Aucun MAIL." (= décomp gText_NoMailHere) ou neutre.
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  AddTextPrinterParameterized3(
+    sPCMessageWindowId, FONT_NORMAL, 0, 1,
+    [1, 2, 3], TEXT_SKIP_DRAW, getString('gText_NoMailHere'),
+  );
+}
+
+function _tickMailboxList(_newKeys: number): void {
+  const sel = ListMenu_ProcessInput(sPCListTaskId);
+  if (sel === -1) return;
+  // -2 = LIST_CANCEL ou >= 0 = mail selected (jamais accessible si vide).
+  if (sel === -2 || sel >= 0) {
+    PlaySE(Songs.SE_SELECT);
+    _mailboxExitList();
+  }
+}
+
+function _mailboxExitList(): void {
+  if (sPCListTaskId >= 0) {
+    DestroyListMenuTask(sPCListTaskId);
+    sPCListTaskId = -1;
+  }
+  _removePCWindows();
+  sSubState = 'main_menu';
+  _showSticky(getString('gText_WhatWouldYouLike'));
+  _openMainMenu();
 }
 
 /** 1:1 décomp `PlayerPC_Decoration` (player_pc.c:487-490) :
