@@ -88,41 +88,35 @@ function FieldCB_ReturnToFieldOpenStartMenu(): boolean {
  *  Notre version simplifiée : open start menu directement (= notre TS
  *  startMenu.open() handle l'ouverture sync). */
 function FieldCB_ReturnToFieldStartMenu(): boolean {
+  // 1:1 décomp `FieldCB_ReturnToFieldStartMenu` (start_menu.c:543-552) :
+  //   if (InitStartMenuStep() == FALSE) return FALSE;
+  //   ReturnToFieldOpenStartMenu();
+  //   return TRUE;
+  //
+  // ⚠️ USER FLAG 2026-05-20 (round 3, devtools ingame frozen frame) :
+  // Le décomp BUILD le menu (= window + items + cursor draw via
+  // InitStartMenuStep cases 0..5) AVANT d'appeler ReturnToFieldOpenStartMenu
+  // qui fait FadeInFromBlack. Le LoadPalette du menu (cases 2-3-5) écrit
+  // palette 14/15 dans Faded+Unfaded ; puis FillPalBufferBlack clear le
+  // Faded ENTIER (= y compris palette menu) ; puis FadeScreen FROM_BLACK
+  // anime le fade depuis 0 → Unfaded → menu+field fade in ENSEMBLE.
+  //
+  // Notre `sm.open()` est synchrone (= équivalent fonctionnel à while
+  // (InitStartMenuStep() == FALSE) ;). On l'appelle AVANT FillPalBufferBlack
+  // pour que la palette menu soit dans Unfaded au moment du FillPalBufferBlack
+  // → fade in tire le menu depuis black vers Unfaded en même temps que le field.
+  //
+  // Cursor persiste 1:1 décomp `sStartMenuCursorPos` (= module static, jamais
+  // reset entre opens). Voir start-menu.ts sCursorPos.
+  const sm = (globalThis as Record<string, unknown>).startMenu as
+    { open?: () => void } | undefined;
+  sm?.open?.();
   // 1:1 décomp `ReturnToFieldOpenStartMenu` (field_screen_effect.c:433) :
-  //   FadeInFromBlack();
-  //   CreateTask(Task_WaitForFadeShowStartMenu, 0x50);
-  //   LockPlayerFieldControls();
-  // FadeInFromBlack (field_weather.c:71) :
-  //   FillPalBufferBlack();
-  //   FadeScreen(FADE_FROM_BLACK, 0);
-  // Task_WaitForFadeShowStartMenu (field_screen_effect.c:424) :
-  //   if (WaitForWeatherFadeIn() == TRUE) {
-  //       DestroyTask(taskId);
-  //       CreateTask(Task_ShowStartMenu, 80);
-  //   }
-  //
-  // ⚠️ USER FLAG 2026-05-20 (round 2, devtools ingame frozen frame) :
-  // précédent fix `sm.open()` synchrone causait flash. À l'ouverture du
-  // menu via LoadPalette (= palette 14/15 menu écrites direct dans Faded),
-  // les nouvelles couleurs menu bypass la fade en cours → menu apparaît au
-  // FULL COLOR sur fond field BLACK fadant → "flash" du menu sans transition.
-  //
-  // Fix 1:1 décomp : ouvrir le menu UNIQUEMENT après que la fade soit
-  // terminée, via task qui poll `!gPaletteFade.active`. Match exactement le
-  // pattern Task_WaitForFadeShowStartMenu.
+  //   FadeInFromBlack();  // = FillPalBufferBlack + FadeScreen(FADE_FROM_BLACK, 0)
+  //   CreateTask(Task_WaitForFadeShowStartMenu, 0x50);  // = active input post-fade
+  //   LockPlayerFieldControls();  // déjà set via sm.open()
   FillPalBufferBlack();
   FadeScreen(FADE_FROM_BLACK, 0);
-  const rt = getRuntime();
-  rt.CreateTask((task) => {
-    if (!rt.gPaletteFade.active) {
-      rt.DestroyTask(task.taskId);
-      // 1:1 décomp `CreateTask(Task_ShowStartMenu, 80)` → notre TS
-      // `startMenu.open()` est synchrone (= équivalent fonctionnel direct).
-      const sm = (globalThis as Record<string, unknown>).startMenu as
-        { open?: () => void } | undefined;
-      sm?.open?.();
-    }
-  }, 0x50);
   return true;
 }
 

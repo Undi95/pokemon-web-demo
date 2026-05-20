@@ -603,7 +603,17 @@ export function OpenStartMenu(): void {
   // l'unload du popup avant ouverture.
   HideMapNamePopUpWindow();
   sItems = buildItems();
-  sCursorPos = 0;
+  // 1:1 décomp `sStartMenuCursorPos` (start_menu.c:83) — EWRAM_DATA static u8,
+  // jamais reset entre opens. Le cursor est lu/écrit par InitStartMenuStep
+  // case 5 : `sStartMenuCursorPos = InitMenuNormal(..., sStartMenuCursorPos)`.
+  // Quand le user navigue UP/DOWN, sStartMenuCursorPos update ; quand il
+  // ferme (selection ou EXIT), la valeur PERSISTE. À la prochaine ouverture,
+  // le cursor reprend exactement la même position.
+  // User-flag 2026-05-20 : "le vrai jeu retient où on était dans le menu".
+  // Clamp à items.length-1 au cas où le menu a moins d'items (= early game
+  // sans Pokédex/Pokémon → 5 items au lieu de 8).
+  if (sCursorPos >= sItems.length) sCursorPos = sItems.length - 1;
+  if (sCursorPos < 0) sCursorPos = 0;
   sSubState = 'menu';
   _spawnMenuWindow();
   LockPlayerFieldControls();
