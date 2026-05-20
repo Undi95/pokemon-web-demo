@@ -958,25 +958,22 @@ function _tickSaveDone(newKeys: number): void {
     return;  // décomp switche le callback à SaveReturnSuccessCallback ; on attend next frame.
   }
   // Étape 2 : `SaveReturnSuccessCallback` — wait `!IsSEPlaying() && SaveSuccesTimer()`.
-  // 1:1 SaveSuccesTimer : decrement timer (u8 wrap), A held → SE_SELECT + TRUE,
-  // timer === 0 → TRUE, else FALSE.
-  _saveTimer = (_saveTimer - 1) & 0xFF;
-  const rt = getRuntime();
-  const heldA = !!(rt && (rt.gMain.heldKeys & A_BUTTON));
-  let timerSays = false;
-  if (heldA) {
-    // 1:1 décomp : PlaySE(SE_SELECT) + return TRUE chaque frame A held (= y compris
-    // si timer déjà 0 ou underflow). Pas de gate `_saveTimer > 0` (= décomp non plus).
-    void import('./decomp-globals').then(({ PlaySE }) => PlaySE(_seSelect()));
-    timerSays = true;
-  } else if (_saveTimer === 0) {
-    timerSays = true;
-  }
-  if (!timerSays) return;
-  // 1:1 décomp `IsSEPlaying()` (sound.c:577). Import direct depuis
-  // decomp-globals.ts (= la vraie impl tracker _audioEndTimeMs). Ne PAS
-  // utiliser le globalThis lookup ni l'auto-transpilation sound-all-auto.ts
-  // (= broken, gMPlayInfo_SE1 not defined).
+  // 1:1 SaveSuccesTimer décomp : decrement timer u8 wrap, JOY_HELD(A) → PlaySE
+  // (SE_SELECT) + TRUE, timer === 0 → TRUE.
+  //
+  // ⚠️ DIVERGENCE user-flag 2026-05-20 (assumée) :
+  //   1. Clamp timer à 0 au lieu de u8 wrap. Le wrap (= 0 → 255) ajoute +255
+  //      frames d'attente si SE_SAVE prend plus de 60 frames à finir → fenêtre
+  //      "prend bien trop de temps à disparaître". Décomp 1:1 a la même quirk
+  //      mais c'est rarement triggered car SE_SAVE GBA est court (~30 frames).
+  //      Notre SE_SAVE.mid via spessasynth peut être plus long → wrap visible.
+  //   2. Retire le JOY_HELD(A) PlaySE(SE_SELECT) + skip. User-flag :
+  //      "les contrôles doivent être bloqués pendant la pause exprès".
+  //      La pause anti-corruption doit être SILENCIEUSE et non-skippable.
+  //      Décomp 1:1 plays SE_SELECT chaque frame A held — spam audio +
+  //      court-circuite la sécurité. User préfère block strict.
+  if (_saveTimer > 0) _saveTimer--;
+  if (_saveTimer !== 0) return;
   if (_isSEPlaying()) return;
   // Both TRUE → HideSaveInfoWindow + SAVE_SUCCESS → close start menu.
   _removeSaveInfoWindow();
