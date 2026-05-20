@@ -32,8 +32,11 @@
  * un follow-up.
  */
 import type { DecompTask } from './decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar } from './script-vars';
+import { gameState } from './game-state';
+import { getItem as _getItem, getItemKeyById } from './data-tables';
+import { FlagSet, FlagClear } from './script-vars';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -416,8 +419,8 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   let msg: string;
   switch (fieldUseFunc) {
     case 'ItemUseOutOfBattle_CannotUse':
-      // 1:1 décomp item_use.c — gText_DadsAdvice "Hmm, ce n'est pas le moment d'utiliser ça."
-      msg = "Hmm, ce n'est pas\nle moment d'utiliser ça.";
+      // 1:1 décomp item_use.c — gText_DadsAdvice (strings.json FR officielle).
+      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Medicine':
       msg = `Utiliser ${itemName} sur un\nPOKéMON [Medicine à porter].`;
@@ -431,10 +434,42 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_EscapeRope':
       msg = `${itemName} utilisée.\n[Sortie donjon à porter]`;
       break;
-    case 'ItemUseOutOfBattle_Repel':
-    case 'ItemUseOutOfBattle_BlackWhiteFlute':
-      msg = `${itemName} activé !\n[Repel/Flute à porter]`;
+    case 'ItemUseOutOfBattle_Repel': {
+      // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
+      const repelActive = gameState.getVar('VAR_REPEL_STEP_COUNT');
+      if (repelActive > 0) {
+        // 1:1 :845 — un autre repel est encore actif.
+        _showItemMessage(task, "Mais le REPOUSSE précédent\nest toujours actif.");
+      } else {
+        // 1:1 :867-868 — set step count = holdEffectParam de l'item + RemoveUsedItem.
+        const itemKey = _itemKeyFromBag(itemId);
+        const item = itemKey ? _getItem(itemKey) : undefined;
+        const steps = item?.holdEffectParam ?? 100;
+        gameState.setVar('VAR_REPEL_STEP_COUNT', steps);
+        _CtxRemoveUsedItem(itemId);
+        // 1:1 :870 gText_PlayerUsedVar2 (= player utilise X) + suffix repelled.
+        const player = gameState.playerName || 'JOUEUR';
+        _showItemMessageThenRebuild(task,
+          `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`);
+      }
+      return;
+    }
+    case 'ItemUseOutOfBattle_BlackWhiteFlute': {
+      // 1:1 décomp item_use.c:888-902 — set encounter flag selon White/Black.
+      // ITEM_WHITE_FLUTE = 43, ITEM_BLACK_FLUTE = 42.
+      const player = gameState.playerName || 'JOUEUR';
+      if (itemId === 43 /* ITEM_WHITE_FLUTE */) {
+        FlagSet('FLAG_SYS_ENC_UP_ITEM');
+        FlagClear('FLAG_SYS_ENC_DOWN_ITEM');
+        msg = `${player} utilise\n${itemName}.\nÇa va attirer les\nPOKéMON sauvages.`;
+      } else {
+        FlagSet('FLAG_SYS_ENC_DOWN_ITEM');
+        FlagClear('FLAG_SYS_ENC_UP_ITEM');
+        msg = `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`;
+      }
+      // Note 1:1 : flute reusable = pas de RemoveBagItem.
       break;
+    }
     case 'ItemUseOutOfBattle_Mail':
       msg = `${itemName}\n[Mail screen à porter]`;
       break;
@@ -468,13 +503,18 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   _showItemMessage(task, msg);
 }
 
-/** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION (= overwrite la
- *  description "X est sélectionné.") puis bascule la task en wait-for-A.
- *  Substitut au DisplayItemMessage décomp (= WIN_MESSAGE dédié + state
- *  machine). À porter 1:1 quand on attaque les vrais handlers item-use. */
+/** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION puis bascule la
+ *  task en wait-for-A. Sur press A/B → return list (sans rebuild). */
 function _showItemMessage(task: DecompTask, msg: string): void {
   _CtxPrintItemMessage(msg);
   task.func = Task_ItemUseMessageWaitForA;
+}
+
+/** Variant qui rebuild la liste après press A (= post-use d'item consommé :
+ *  Repel/Medicine/etc. → quantité décrémentée, faut recharger la liste). */
+function _showItemMessageThenRebuild(task: DecompTask, msg: string): void {
+  _CtxPrintItemMessage(msg);
+  task.func = Task_ItemUseMessageWaitForAThenRebuild;
 }
 
 /** Task wait-for-A : tout press A/B → return list. */
@@ -483,6 +523,24 @@ function Task_ItemUseMessageWaitForA(task: DecompTask): void {
     PlaySE(SE_SELECT);
     _CtxReturnToList(task.taskId);
   }
+}
+
+/** Variant Task qui rebuild la liste après press. */
+function Task_ItemUseMessageWaitForAThenRebuild(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    _CtxReturnToListWithRebuild(task.taskId);
+  }
+}
+
+/** Récupère l'itemKey items.json à partir d'un itemId numérique. Pour les
+ *  items non-TM/HM (= cas standard : POTION, REPEL, BIKE, etc.), l'enum-
+ *  numbered de constants.items est IDENTIQUE à la clé items.json. Pour TM/HM
+ *  (ITEM_TM01 ≠ items.json "ITEM_TM_FOCUS_PUNCH"), les handlers Repel/Bike/
+ *  EscapeRope/Mail/etc. ne sont JAMAIS appelés (= leur fieldUseFunc est
+ *  Medicine/TMHM, dispatché ailleurs). Donc getItemKeyById suffit ici. */
+function _itemKeyFromBag(itemId: number): string {
+  return getItemKeyById(itemId);
 }
 
 /** STUB ItemMenu_Toss (item_menu.c) — ouvrira AskTossItems → quantity → confirm

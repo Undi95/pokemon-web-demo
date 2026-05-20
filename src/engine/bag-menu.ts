@@ -113,6 +113,7 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';
 import { gSpecialVar } from './script-vars';
+import { RemoveBagItem } from './bag';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
 // (live binding ESM, pas de TDZ — cf. feedback-map-loader-var-tdz).
@@ -1833,6 +1834,43 @@ export function _CtxPrintItemMessage(msg: string): void {
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
   BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
   ScheduleBgCopyTilemapToVram(0);
+}
+
+/** 1:1 décomp `RemoveUsedItem` (item_use.c:824). Decrement bag item count
+ *  + update pocket list. Helper utilisé par les handlers item-use qui
+ *  consomment un item (Repel, Medicine, Bike-consommable... pas Bike key). */
+export function _CtxRemoveUsedItem(itemId: number): void {
+  const itemKey = getItemKeyById(itemId);
+  // getItemKeyById retourne ITEM_TM01/ITEM_HM01 enum-numbered. Pour bag.ts
+  // RemoveBagItem, on a besoin de la clé items.json (move-named pour TM/HM).
+  // bag-pockets gère ça via slotItemId/itemKey, on passe l'enum-numbered.
+  // RemoveBagItem cherche par itemKey dans gameState.bag.pockets, qui est
+  // stocké move-named. Soit on convertit, soit on accepte l'asymétrie :
+  // POUR L'INSTANT on tente l'enum direct ; si bug → port _itemKeyForLookup.
+  // Pour items normales (POTION etc.) c'est identique.
+  RemoveBagItem(itemKey, 1);
+}
+
+/** Version de `_CtxReturnToList` qui rebuild aussi la liste (= post-use de
+ *  l'item, la quantité a baissé / item a disparu). Appelé par les handlers
+ *  qui consomment un item (Repel, etc.). */
+export function _CtxReturnToListWithRebuild(taskId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const task = rt.gTasks.get(taskId);
+  if (!task) return;
+  // Rebuild la liste via DestroyListMenuTask + LoadBagItemListBuffers +
+  // ListMenuInit (= 1:1 décomp DoItemSwap restore pattern).
+  const sr = DestroyListMenuTask(task.data[T_LIST_TASK_ID]);
+  gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
+  gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  LoadBagItemListBuffers(gBagPosition.pocket);
+  task.data[T_LIST_TASK_ID] = ListMenuInitForBag(
+    gBagPosition.scrollPosition[gBagPosition.pocket],
+    gBagPosition.cursorPosition[gBagPosition.pocket],
+  );
+  // Restore standard.
+  _CtxReturnToList(taskId);
 }
 
 /** 1:1 décomp `ReturnToItemList` (item_menu.c:1284) + restore section de
