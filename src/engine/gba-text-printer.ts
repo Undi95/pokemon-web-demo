@@ -186,8 +186,16 @@ export interface TextPrinter {
 
   // State machine
   state: number;
-  textSpeed: number;       // frames de delay entre chars
+  textSpeed: number;       // frames de delay entre chars (= -1 du input 1:1 décomp AddTextPrinter:296)
   delayCounter: number;
+  // 1:1 décomp distinction "instant render path" (= for loop 0x400 dans
+  // AddTextPrinter:303-308 quand speed==0 || speed==TEXT_SKIP_DRAW) vs.
+  // "typewriter path" (= RenderText ticked par frame via RunTextPrinters).
+  // Notre impl : runTextPrinter render plusieurs chars dans la même frame si
+  // instantPath=true (do-while continue), sinon return RENDER_PRINT après
+  // chaque char. textSpeed=0 SEUL ne suffit pas pour distinguer car FAST
+  // stored=0 après --textSpeed à l'init mais doit rendre 1 char/frame.
+  instantPath: boolean;
 
   // Down arrow sub-state
   downArrowDelay: number;
@@ -550,13 +558,15 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
   // Notre impl distingue ces 2 cas via textSpeed === 0 + path do-while continue
   // (= rend toute la chaîne en 1 frame, cf. ligne ~815 plus bas).
   const TEXT_SKIP_DRAW = 255;
-  let normalizedSpeed = opts.textSpeed ?? 0;
-  if (normalizedSpeed === TEXT_SKIP_DRAW || normalizedSpeed === 0) {
-    normalizedSpeed = 0;
-  } else {
-    // 1:1 décomp `--sTempTextPrinter.textSpeed` (text.c:296).
-    normalizedSpeed = normalizedSpeed - 1;
-  }
+  const inputSpeed = opts.textSpeed ?? 0;
+  // 1:1 décomp `text.c:271-298 AddTextPrinter` :
+  //   if (speed != TEXT_SKIP_DRAW && speed != 0) {
+  //       --sTempTextPrinter.textSpeed;     // typewriter path
+  //   } else {
+  //       sTempTextPrinter.textSpeed = 0;   // instant path
+  //   }
+  const isInstantPath = inputSpeed === TEXT_SKIP_DRAW || inputSpeed === 0;
+  const normalizedSpeed = isInstantPath ? 0 : (inputSpeed - 1);
   return {
     encodedString: opts.encodedString,
     currentChar: 0,
@@ -571,6 +581,7 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     lineSpacing: opts.lineSpacing ?? 0,
     state: RENDER_STATE_HANDLE_CHAR,
     textSpeed: normalizedSpeed,
+    instantPath: isInstantPath,
     delayCounter: 0,
     downArrowDelay: 0,
     downArrowYPosIdx: 0,
@@ -791,14 +802,10 @@ export function runTextPrinter(printer: TextPrinter): number {
       if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
       // 1:1 décomp text.c:961 `textPrinter->delayCounter = textPrinter->textSpeed;`
       // après render char. textSpeed est ALREADY -1'd à l'init (= AddTextPrinter
-      // décomp ligne 296 `--sTempTextPrinter.textSpeed`). Donc :
-      //   FAST stored=0 → delayCounter=0 → next frame skip wait → 60 chars/sec
-      //   MID stored=3  → delayCounter=3 → 4 frames per char = 15 chars/sec
-      //   SLOW stored=7 → delayCounter=7 → 8 frames per char = 7.5 chars/sec
-      // Cas textSpeed===0 (instant path) ne render qu'au case "char normal"
-      // ci-dessous (continue do-while), pas ici (= CHAR_EXTRA path = pas
-      // utilisé en mode instant typiquement).
-      if (printer.textSpeed > 0) {
+      // décomp ligne 296). instantPath=true distingue le mode "render all at
+      // once" (= 1:1 décomp for loop 0x400 dans AddTextPrinter:303-308) du
+      // mode typewriter classique.
+      if (!printer.instantPath) {
         printer.delayCounter = printer.textSpeed;
         return RENDER_PRINT;
       }
@@ -828,15 +835,11 @@ export function runTextPrinter(printer: TextPrinter): number {
     printer.currentChar++;
     if (printer.onCharRendered) printer.onCharRendered(printer, byte);
 
-    // 1:1 (A/B user, RÉFÉRENCE — WORKING-MODE) : textSpeed===0 = rendu
-    // INSTANT (toute la chaîne en 1 frame = menus/descriptions ROM, ex.
-    // sac PrintItemDescription speed=0). textSpeed>0 = typewriter 1 char/
-    // frame (dialogues, option SLOW/MID/FAST). La révision antérieure
-    // "1 char/frame même à speed 0" était FAUSSE (A/B user confirme ROM
-    // instant pour speed 0, 2×). Donc : speed>0 → delay + RENDER_PRINT ;
-    // speed===0 → continue la do-while (pas de return = char suivant
-    // même frame → instant).
-    if (printer.textSpeed > 0) {
+    // 1:1 décomp text.c:961 — `textPrinter->delayCounter = textPrinter->textSpeed`.
+    // Le distinction "instant path" (= speed input 0 || TEXT_SKIP_DRAW) vs
+    // "typewriter path" (= speed input 1..N) se fait via instantPath, pas
+    // via `textSpeed > 0` (= FAST stored=0 mais doit return PRINT, pas continue).
+    if (!printer.instantPath) {
       printer.delayCounter = printer.textSpeed;
       return RENDER_PRINT;
     }
