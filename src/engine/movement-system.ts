@@ -516,6 +516,20 @@ function _tickWalk(
   } else if (target.npc) {
     target.npc.worldX += dx;
     target.npc.worldY += dy;
+    // C4 fix (DEMO-AUDIT-FINDINGS) : décrément walkFramesLeft pour driver le
+    // cycle walk1/face/walk2/face dans updateNpcSpriteFrame. Sans ça,
+    // walkFramesLeft restait à 16 (= toujours >= 8) → NPC affiche walk1 ou
+    // walk2 TOUTE la durée du step (jamais face). Bug user-flag : "PNJ qui
+    // marche en 2 frames et pas 3" = walk1+walk2+walk1+... sans pose entre.
+    //
+    // 1:1 décomp `event_object_movement.c:1858 MovementType_WalkNormal_Step1`
+    // décrémente directionTimer (= équivalent walkFramesLeft) chaque frame.
+    // sAnim_GoSouth/North/West/East (object_event_anims.h:202-236) =
+    // FRAME(walk1,8) FRAME(face,8) FRAME(walk2,8) FRAME(face,8) JUMP(0) →
+    // sur 1 step de 16 frames, walkFramesLeft 16→9 affiche walk_alt (walk1
+    // si alt=0, walk2 si alt=1), 8→1 affiche face. Step suivant : alt flip
+    // → walk2 puis face. Cycle 32 frames = 2 steps consécutifs.
+    target.npc.walkFramesLeft = duration - frame;
   }
 
   // Done when frame == duration.
