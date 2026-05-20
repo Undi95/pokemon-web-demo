@@ -80,6 +80,10 @@ import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-scr
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
 import { getString } from './gba-strings';
 import { FadeScreen, FADE_TO_BLACK } from './fade-screen';
+// 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
+// pour éviter le globalThis lookup qui pourrait résoudre vers la version
+// auto-transpilée broken (= sound-all-auto.ts:561, gMPlayInfo_SE1 undefined).
+import { IsSEPlaying as _isSEPlaying } from './decomp-globals';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -897,78 +901,84 @@ function _doSave(): void {
   sSubState = 'save_saving_msg';
 }
 
-/** Tick "SAUVEGARDE EN COURS…" — wait printer done puis call gameState.save()
- *  + transition à save_done avec "X a sauvegardé la partie." + start timer. */
+// ─── Save flow 1:1 décomp `start_menu.c:884-1134` ──────────────────────────
+//
+// Architecture pattern décomp :
+//   - `RunSaveCallback` (l.884-894) gate ALL callbacks par :
+//       if (RunTextPrintersAndIsPrinter0Active() == TRUE) return SAVE_IN_PROGRESS;
+//     = aucun callback ne run tant que le text printer du field message box
+//     n'a pas fini de typer.
+//   - `SaveDoSaveCallback` (l.1086-1109) : TrySavingData → ShowSaveMessage(
+//     gText_PlayerSavedGame, SaveSuccessCallback) → SaveStartTimer (= 60).
+//   - `SaveSuccessCallback` (l.1112-1121) : PlaySE(SE_SAVE) + switch callback
+//     à SaveReturnSuccessCallback.
+//   - `SaveReturnSuccessCallback` (l.1123-1134) :
+//       if (!IsSEPlaying() && SaveSuccesTimer()) HideSaveInfoWindow + SUCCESS;
+//   - `SaveSuccesTimer` (l.947-960) :
+//       sSaveDialogTimer--;
+//       if (JOY_HELD(A_BUTTON)) { PlaySE(SE_SELECT); return TRUE; }
+//       if (sSaveDialogTimer == 0) return TRUE;
+//       return FALSE;
+//
+// Adaptation web : remplace `RunTextPrintersAndIsPrinter0Active` par
+// `GetFieldMessageBoxMode() === FIELD_MESSAGE_BOX_HIDDEN` (= notre field
+// message box state machine setTrue HIDDEN dès `IsTextPrinterActive(sWindowId)
+// false`, cf. field-message-box.ts:185-188). Pattern déjà utilisé dans
+// _tickSaveConfirm (= preuve qu'il marche pour gater post-typing).
+let _saveDoneSeStarted = false;
+let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89, u8)
+
+/** 1:1 décomp `SaveDoSaveCallback` (start_menu.c:1086-1109). Gated par
+ *  `RunSaveCallback`'s `IsTextPrinterActive(0)` check = équivalent à
+ *  notre field message box mode === HIDDEN. */
 function _tickSaveSavingMsg(): void {
-  // Attend que le printer ait fini de typer le message complet (= IsTextPrinterActive
-  // false). NB : on n'attend PAS le hide via A press ; le décomp enchaîne direct
-  // sur le save effectif puis swap le message (= sSaveDialogCallback pattern).
-  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as object | undefined;
-  if (!sb2) return;
-  // Use IsTextPrinterActive(0) — printer slot 0 = field message box.
-  const printerStillActive = (globalThis as Record<string, unknown>).IsTextPrinterActive as
-    ((id: number) => boolean) | undefined;
-  if (printerStillActive && printerStillActive(0)) return;
-  // Printer done → save effectif + swap au message success.
+  // Gate 1:1 RunSaveCallback : wait printer done.
+  if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
+  // TrySavingData (= notre persist).
   gameState.save();
-  HideFieldMessageBox();
-  // 1:1 décomp gText_PlayerSavedGame (= save.inc:13). Le placeholder {PLAYER}
-  // est résolu par StringExpandPlaceholders dans ShowFieldMessage.
-  const text = getText('gText_PlayerSavedGame')
-    ?? '{PLAYER} a sauvegardé la partie.';
+  // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
+  const text = getText('gText_PlayerSavedGame') ?? '{PLAYER} a sauvegardé la partie.';
   ShowFieldMessage(text + '$');
-  // 1:1 décomp `SaveStartTimer` (start_menu.c:942-945) : sSaveDialogTimer = 60.
-  // Démarre le timer 60 frames de la pause post-success message. Décrémenté
-  // par _tickSaveDone via SaveSuccesTimer pattern.
+  // SaveStartTimer : sSaveDialogTimer = 60.
   _saveTimer = 60;
   _saveDoneSeStarted = false;
   sSubState = 'save_done';
 }
 
-let _saveDoneSeStarted = false;
-let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89)
-
+/** 1:1 décomp `SaveSuccessCallback` + `SaveReturnSuccessCallback` +
+ *  `SaveSuccesTimer` (start_menu.c:1112-1134, 947-960). */
 function _tickSaveDone(newKeys: number): void {
-  // 1:1 décomp `SaveSuccessCallback` (start_menu.c:1112-1121) :
-  //   if (!IsTextPrinterActive(0)) { PlaySE(SE_SAVE); sSaveDialogCallback = SaveReturnSuccessCallback; }
-  // `SaveReturnSuccessCallback` (1123-1134) :
-  //   if (!IsSEPlaying() && SaveSuccesTimer()) { HideSaveInfoWindow; return SUCCESS; }
-  // `SaveSuccesTimer` (947-960) :
-  //   sSaveDialogTimer--;
-  //   if (JOY_HELD(A_BUTTON)) { PlaySE(SE_SELECT); return TRUE; }
-  //   if (sSaveDialogTimer == 0) return TRUE;
-  //   return FALSE;
   void newKeys;
-  const printerStillActive = (globalThis as Record<string, unknown>).IsTextPrinterActive as
-    ((id: number) => boolean) | undefined;
-  const printerActive = printerStillActive ? printerStillActive(0) : false;
-  // Étape 1 : attend printer done puis PlaySE(SE_SAVE) 1×.
-  if (!printerActive && !_saveDoneSeStarted) {
+  // Gate 1:1 RunSaveCallback : printer 0 not active = field message box mode HIDDEN.
+  if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
+  // Étape 1 : `SaveSuccessCallback` — PlaySE(SE_SAVE) une fois quand printer done.
+  if (!_saveDoneSeStarted) {
     void import('./decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
     _saveDoneSeStarted = true;
+    return;  // décomp switche le callback à SaveReturnSuccessCallback ; on attend next frame.
   }
-  // Étape 2 : si SE pas encore fired, ne pas advance.
-  if (!_saveDoneSeStarted) return;
-  // Étape 3 : 1:1 décomp SaveSuccesTimer — decrement timer + JOY_HELD(A) skip.
-  if (_saveTimer > 0) _saveTimer--;
+  // Étape 2 : `SaveReturnSuccessCallback` — wait `!IsSEPlaying() && SaveSuccesTimer()`.
+  // 1:1 SaveSuccesTimer : decrement timer (u8 wrap), A held → SE_SELECT + TRUE,
+  // timer === 0 → TRUE, else FALSE.
+  _saveTimer = (_saveTimer - 1) & 0xFF;
   const rt = getRuntime();
   const heldA = !!(rt && (rt.gMain.heldKeys & A_BUTTON));
-  let timerDone = false;
+  let timerSays = false;
   if (heldA) {
-    // 1:1 décomp : A held + timer pas encore 0 → fire SE_SELECT + skip.
-    if (_saveTimer > 0) {
-      void import('./decomp-globals').then(({ PlaySE }) => PlaySE(_seSelect()));
-    }
-    timerDone = true;
+    // 1:1 décomp : PlaySE(SE_SELECT) + return TRUE chaque frame A held (= y compris
+    // si timer déjà 0 ou underflow). Pas de gate `_saveTimer > 0` (= décomp non plus).
+    void import('./decomp-globals').then(({ PlaySE }) => PlaySE(_seSelect()));
+    timerSays = true;
   } else if (_saveTimer === 0) {
-    timerDone = true;
+    timerSays = true;
   }
-  if (!timerDone) return;
-  // Étape 4 : attend SE done (= IsSEPlaying false).
-  const isSEPlayingFn = (globalThis as Record<string, unknown>).IsSEPlaying as
-    (() => boolean) | undefined;
-  if (isSEPlayingFn && isSEPlayingFn()) return;
-  // Tout done → close.
+  if (!timerSays) return;
+  // 1:1 décomp `IsSEPlaying()` (sound.c:577). Import direct depuis
+  // decomp-globals.ts (= la vraie impl tracker _audioEndTimeMs). Ne PAS
+  // utiliser le globalThis lookup ni l'auto-transpilation sound-all-auto.ts
+  // (= broken, gMPlayInfo_SE1 not defined).
+  if (_isSEPlaying()) return;
+  // Both TRUE → HideSaveInfoWindow + SAVE_SUCCESS → close start menu.
   _removeSaveInfoWindow();
   HideFieldMessageBox();
   _saveDoneSeStarted = false;
