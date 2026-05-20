@@ -31,6 +31,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
+import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -646,7 +647,20 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
     // sa propre step machinery (= override our movement). Au lieu, on drive le
     // BG scroll via gFieldCamera.movementSpeedX/Y et on update gPlayerAvatar.x/y
     // directement à la fin du jump.
-    if (!target.isPlayer && target.npc) {
+    if (target.isPlayer) {
+      // Bug user-flag 2026-05-21 : "Le joueur saute du camion sans le bon
+      // sprite ni l'ombre en dessous". 1:1 décomp `InitJumpRegular`
+      // (event_object_movement.c:5450) :
+      //   - Set jumpFramesLeft pour driver sprite y2 arc + walk anim frame
+      //   - DoShadowFieldEffect → CreateShadowSprite sous player
+      //   - Sprite anim = walk1/walk2 alterné pendant le jump (= sAnim_GoSouth)
+      // Notre updatePlayerSpriteFrame (player-avatar.ts) check stepFramesLeft
+      // >= halfStep pour render walk vs face. Et jumpFramesLeft drive y2 via
+      // getJumpYOffset. Sans ces 2 → face frame statique + pas d'ombre.
+      gPlayerAvatar.jumpFramesLeft = totalFrames;
+      gPlayerAvatar.stepFramesLeft = totalFrames;
+      if (_activeRt) CreateShadowSprite(_activeRt);
+    } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;
       target.npc.currentCoordsX += (DIR_TO_DX[dir] ?? 0) * distance;
@@ -654,6 +668,12 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       target.npc.walkDirection = dir;
       target.npc.walkFramesLeft = totalFrames;
     }
+  }
+
+  // Player : drive countdown stepFramesLeft for sprite anim + jumpFramesLeft for arc.
+  if (target.isPlayer) {
+    gPlayerAvatar.stepFramesLeft = totalFrames - frame;
+    if (gPlayerAvatar.jumpFramesLeft > 0) gPlayerAvatar.jumpFramesLeft--;
   }
 
   // Apply jump curve y2 offset directly on sprite (= 1:1 décomp `sprite->y2`).
@@ -696,6 +716,12 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
         gPlayerAvatar.x = nx2;
         gPlayerAvatar.y = ny2;
       }
+      // Cleanup jump state : sprite frame reset à face + shadow destroyed +
+      // walkAnimAlt flipped pour next step start avec l'autre walk frame.
+      gPlayerAvatar.jumpFramesLeft = 0;
+      gPlayerAvatar.stepFramesLeft = 0;
+      gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
+      if (_activeRt) DestroyShadowSprite(_activeRt);
       // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c).
       // Spawn dust cloud à landing position si on a un rt.
       // Player jump landing : pas de flag disable côté player (= toujours dust).
