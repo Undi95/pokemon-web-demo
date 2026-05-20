@@ -1103,24 +1103,26 @@ registerOpcode('special', (ctx, args) => {
     });
     return true;
   }
-  // Phase 6 (session 124) : WallClock UI inline. PC time as source + 366-day
-  // overflow fix. Le décomp `Special_ViewWallClock` / `StartWallClock` ouvrent
-  // un CB2_WallClock UI complet avec aiguilles affines + tilemap. Notre version
-  // utilise un overlay HTML/Canvas (= pas pixel-perfect mais fonctionnel +
-  // joli). Le mode SET est techniquement reachable via dev console seulement.
-  // Cf. wallclock-flow.ts pour détails + memory/next-session-bugs-2026-05-09.md
-  // Bug 4 pour rationale.
+  // 1:1 décomp port `wallclock.c` (session 2026-05-20) : CB2 swap via
+  // SetMainCallback2(CB2_InitWallClock). Aiguilles affines via SetOamMatrix +
+  // sClockHandCoords pivot offsets. Tilemap BG3 clock_start/clock_view depuis
+  // graphics/wallclock/. AM/PM indicator anime entre 2 positions selon période.
+  // `Special_ViewWallClock` = mode VIEW (RTC live + A/B = close).
+  // `StartWallClock` = mode SET (D-pad ajuste hours/minutes, A = confirm via
+  // RtcInitLocalTimeOffset, sauvegarde).
   if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
     const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
-    let flowReady = false;
-    let flow: { tick: () => boolean } | null = null;
-    void import('./wallclock-flow').then((mod) => {
-      flow = mod.startWallClockFlow(mode);
-      flowReady = true;
+    let opened = false;
+    let isOpenChecker: (() => boolean) | null = null;
+    void import('./wallclock').then((mod) => {
+      mod.OpenWallClock(mode);
+      isOpenChecker = mod.IsWallClockOpen;
+      opened = true;
     });
     SetupNativeScript(ctx, () => {
-      if (!flowReady) return false;
-      return flow!.tick();
+      if (!opened) return false;
+      // Wait until wallclock closes (= Task_*_Exit restored savedCallback).
+      return !isOpenChecker!();
     });
     return true;
   }
