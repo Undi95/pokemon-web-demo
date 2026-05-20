@@ -229,6 +229,9 @@ export class TestOverworldScene extends Phaser.Scene {
 
     // Expose Phase 4.6+ globals pour debug devtools console.
     // Usage : `arrowDebug()` → log player + cam + arrow positions.
+    // Expose Phaser scene pour les modules overlay (= region-map, wallclock, etc.)
+    // qui ont besoin d'add GameObjects au scene principal sans circular import.
+    (globalThis as Record<string, unknown>).__phaserOverworldScene = this;
     (globalThis as Record<string, unknown>).gPlayerAvatar = gPlayerAvatar;
     (globalThis as Record<string, unknown>).gTotalCamera = gTotalCamera;
     (globalThis as Record<string, unknown>).GetCameraTopLeftCoords = GetCameraTopLeftCoords;
