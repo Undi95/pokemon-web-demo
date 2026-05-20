@@ -630,7 +630,14 @@ export function OpenStartMenu(): void {
   // menu ET ses sous-menus, même mid-step."
   void import('./object-events').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
-  PlaySE(_seWinOpen());
+  // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
+  // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même
+  // (start_menu.c:581-591) ne joue AUCUN SE. Donc PlaySE est joué SEULEMENT au
+  // press START field initial, PAS quand le menu re-open après un submenu
+  // (= FieldCB_ReturnToFieldStartMenu chain qui appelle sm.open() silencieux).
+  // User-flag 2026-05-20 : "Revenir en arrière depuis un sous menu du menu
+  // start rejoue le SE alors que le menu est déjà ouvert" — fix : PlaySE
+  // moved au caller TickStartMenu START button branch.
   console.log('[start-menu] opened');
 }
 
@@ -696,6 +703,14 @@ export function TickStartMenu(): void {
       // lock pour respecter le "retrait du contrôle joueur".
       if (ArePlayerFieldControlsLocked()) return;
       if (!IsFieldMessageBoxHidden()) return;
+      // 1:1 décomp `field_control_avatar.c:182-187` :
+      //     if (input->pressedStartButton) {
+      //         PlaySE(SE_WIN_OPEN);
+      //         ShowStartMenu();
+      //         return TRUE;
+      //     }
+      // SE est joué ICI au caller PAS dans ShowStartMenu lui-même.
+      PlaySE(_seWinOpen());
       OpenStartMenu();
     }
     return;

@@ -773,10 +773,18 @@ function Task_TrainerCard_HandleInput(_task: DecompTask): void {
   if (_flipping) return;  // input disabled pendant flip animation
   const newKeys = rt.gMain.newKeys;
   const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
+  // 1:1 décomp `include/constants/songs.h` :
+  //   SE_RG_CARD_FLIP = 249 (= card flip animation SE)
+  //   SE_RG_CARD_OPEN = 251 (= card settled-into-stable-state SE)
+  // Ancien code : PlaySE(5) = SE_SELECT — WRONG. User-flag 2026-05-20 :
+  // "Ouvrir la carte dresseur joue le mauvais SE".
+  const SE_RG_CARD_FLIP = 249;
   if (_cardSide === 'front') {
     if (newKeys & KEY_A) {
-      // A on front → flip to back.
-      PlaySE(5);  // SE_RG_CARD_FLIP (= 1:1 décomp PlaySE après FlipTrainerCard)
+      // 1:1 décomp `trainer_card.c:446-451` STATE_HANDLE_INPUT_FRONT JOY_NEW(A) :
+      //   FlipTrainerCard();
+      //   PlaySE(SE_RG_CARD_FLIP);
+      PlaySE(SE_RG_CARD_FLIP);
       _flipping = true;
       _flipState = 0;
       _flipTargetSide = 'back';
@@ -784,14 +792,21 @@ function Task_TrainerCard_HandleInput(_task: DecompTask): void {
       return;
     }
     if (newKeys & (KEY_B | KEY_START)) {
-      PlaySE(5);
+      // 1:1 décomp `trainer_card.c:452-462` STATE_HANDLE_INPUT_FRONT JOY_NEW(B) :
+      //   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData->blendColor);
+      //   sData->mainState = STATE_CLOSE_CARD;
+      // = AUCUN PlaySE. Close = fade silencieux. Précédent PlaySE(5) (= SE_SELECT)
+      // = divergence ; retiré pour 1:1 strict.
       CloseTrainerCardScreen();
     }
   } else {
     // _cardSide === 'back'
     if (newKeys & KEY_B) {
-      // B on back → flip to front.
-      PlaySE(5);
+      // 1:1 décomp `trainer_card.c:484-489` STATE_HANDLE_INPUT_BACK JOY_NEW(B)
+      // (else branch, pas link) :
+      //   FlipTrainerCard();
+      //   PlaySE(SE_RG_CARD_FLIP);
+      PlaySE(SE_RG_CARD_FLIP);
       _flipping = true;
       _flipState = 0;
       _flipTargetSide = 'front';
@@ -799,7 +814,8 @@ function Task_TrainerCard_HandleInput(_task: DecompTask): void {
       return;
     }
     if (newKeys & (KEY_A | KEY_START)) {
-      PlaySE(5);
+      // 1:1 décomp `trainer_card.c:491-502` STATE_HANDLE_INPUT_BACK JOY_NEW(A)
+      // (else branch) : fade-out + STATE_CLOSE_CARD. AUCUN PlaySE.
       CloseTrainerCardScreen();
     }
   }
@@ -896,11 +912,29 @@ export function CB2_InitTrainerCard(): void {
       rt.gMain.state++;
       break;
     case 20:
-      // Fade IN from BLACK.
+      // Fade IN from BLACK. 1:1 décomp `trainer_card.c:422-423` :
+      //   BlendPalettes(PALETTES_ALL, 16, sData->blendColor);
+      //   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, sData->blendColor);
+      // PAS de PlaySE ici — décomp joue PlaySE(SE_RG_CARD_OPEN=251) à
+      // l'étape SUIVANTE (state 8) une fois le fade complete.
       FadeScreen(FADE_FROM_BLACK, 0);
       rt.gPaletteFade.bufferTransferDisabled = false;
-      PlaySE(6);
       rt.gMain.state++;
+      break;
+    case 21:
+      // 1:1 décomp `trainer_card.c:427-433` case 8 :
+      //   if (!UpdatePaletteFade() && !IsDma3ManagerBusyWithBgCopy()) {
+      //       PlaySE(SE_RG_CARD_OPEN);
+      //       sData->mainState = STATE_HANDLE_INPUT_FRONT;
+      //   }
+      // Wait fade complete THEN play SE_RG_CARD_OPEN.
+      // User-flag 2026-05-20 : "Ouvrir la carte dresseur joue le mauvais SE".
+      // Avant : PlaySE(6) = SE_WIN_OPEN à fade START — wrong timing + wrong id.
+      // Maintenant : PlaySE(251) = SE_RG_CARD_OPEN à fade END — 1:1 décomp.
+      if (!rt.gPaletteFade.active) {
+        PlaySE(251);  // SE_RG_CARD_OPEN
+        rt.gMain.state++;
+      }
       break;
     default:
       rt.SetVBlankCallback(VBlankCB_TrainerCardRun);
