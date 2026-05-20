@@ -525,19 +525,22 @@ export interface AddTextPrinterOpts {
 export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
   const x = opts.x ?? 0;
   const y = opts.y ?? 1;
-  // 1:1 décomp text.c:294-301 — `--sTempTextPrinter.textSpeed` :
-  // si speed != 0 et != TEXT_SKIP_DRAW (= 255), DECREMENTE de 1 avant d'appliquer.
-  // Donc :
-  //   SLOW=8 → 7 wait frames/char (≈ 7.5 chars/sec)
-  //   MID=4  → 3 wait frames/char (≈ 15 chars/sec)
-  //   FAST=1 → 0 wait frames/char (= INSTANT, ALL chars rendered au 1er tick)
-  //   TEXT_SKIP_DRAW=255 → instant via skip path (= déjà géré).
-  // Sans ce -1, FAST=1 donnait 30 chars/sec (= la moitié de la vitesse ROM).
-  // Cause racine du "FAST feels slow" reporté par user session 122.
+  // 1:1 décomp menu.c:79-81 sTextSpeeds[] :
+  //   SLOW=8 → 8 frames wait/char
+  //   MID=4  → 4 frames wait/char
+  //   FAST=1 → 1 frame wait/char
+  //   TEXT_SKIP_DRAW=255 → instant (= skip path déjà géré ailleurs)
+  //   speed=0 → instant (= menus/descriptions ROM, ex. sac PrintItemDescription)
+  //
+  // RÉGRESSION session 2026-05-20 : on faisait `textSpeed - 1` ici (= "fix"
+  // session 122 supposé) → FAST=1 devenait 0 = INSTANT. User a re-flag :
+  // "Les textes sont tous instantanés en option vitesse 3 : régression."
+  // Revert : on garde textSpeed tel quel, le décrément se fait dans la
+  // state machine via `--delayCounter`.
   const TEXT_SKIP_DRAW = 255;
   let normalizedSpeed = opts.textSpeed ?? 0;
-  if (normalizedSpeed !== 0 && normalizedSpeed !== TEXT_SKIP_DRAW) {
-    normalizedSpeed = Math.max(0, normalizedSpeed - 1);
+  if (normalizedSpeed === TEXT_SKIP_DRAW) {
+    normalizedSpeed = 0; // skip path = pas de delay
   }
   return {
     encodedString: opts.encodedString,

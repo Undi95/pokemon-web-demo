@@ -46,6 +46,7 @@ import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
+  ArePlayerFieldControlsLocked,
   getText,
 } from './script-runtime';
 import {
@@ -658,6 +659,13 @@ export function TickStartMenu(): void {
   if (!sIsOpen) {
     if (newKeys & START_BUTTON) {
       if (ScriptContext_IsEnabled()) return;
+      // 1:1 décomp `ShowStartMenuCallback` (start_menu.c) — check
+      // `ArePlayerFieldControlsLocked()` AVANT d'ouvrir. Sans ça, le user
+      // peut START pendant Truck cinematic / scripted lock (= bug
+      // user-flag : "Lorsque le camion roule, le menu start est ouvrable").
+      // Le pattern global : tout consumer d'input field doit checker le
+      // lock pour respecter le "retrait du contrôle joueur".
+      if (ArePlayerFieldControlsLocked()) return;
       if (!IsFieldMessageBoxHidden()) return;
       OpenStartMenu();
     }

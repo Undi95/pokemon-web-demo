@@ -452,9 +452,13 @@ export class GameScene extends Phaser.Scene {
       gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
       // Force truck cinematic via decideBootMode default path.
       gameState.map = undefined;
-      // Save le new state (= name/gender de Birch). Pas de risque overwrite
-      // car c'est explicitement une nouvelle partie.
-      gameState.save();
+      // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
+      // SRAM persiste tant que user n'a pas explicitement choisi SAUVEGARDER
+      // (= START menu). Auto-save ici = wipe la save existante du user dès
+      // qu'il commence une nouvelle partie (= bug user-flag :
+      // "Sauvegarder => Faire une nouvelle partie SANS sauvegarder =>
+      // Recharger la save montre qu'elle est wipe"). Si user F5 mid-Birch =
+      // 1:1 ROM power off : la save SRAM précédente est préservée.
     }
     console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
 

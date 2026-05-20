@@ -263,9 +263,14 @@ export class BirchRuntimeScene extends Phaser.Scene {
     // `map` field set, decideBootMode triggers le resume mode qui spawn à la
     // saved position au lieu du truck.
     gameState.map = undefined;
-    // Persist le playerName/gender + map cleared (= au cas où user F5 avant le
-    // truck warp final, on garde les Birch-set fields).
-    gameState.save();
+    // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
+    // SRAM persiste tant que user n'appuie pas explicitement sur SAUVEGARDER
+    // (= START menu) ou qu'un script ne déclenche pas un save. Si on save ici,
+    // on wipe la save existante du user (= "Nouvelle partie SANS sauvegarder
+    // => Recharger montre que la save est wipe"). F5 mid-Birch = 1:1 ROM power
+    // off : la progression Birch non-committée est perdue, la save SRAM
+    // précédente est préservée. La playerName/gender + map vivent en RAM
+    // jusqu'au save explicite.
 
     // Start overworld scene. decideBootMode :
     //   - Pas de ?nointro / ?truck.
