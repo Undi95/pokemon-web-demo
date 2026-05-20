@@ -525,22 +525,37 @@ export interface AddTextPrinterOpts {
 export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
   const x = opts.x ?? 0;
   const y = opts.y ?? 1;
-  // 1:1 décomp menu.c:79-81 sTextSpeeds[] :
-  //   SLOW=8 → 8 frames wait/char
-  //   MID=4  → 4 frames wait/char
-  //   FAST=1 → 1 frame wait/char
-  //   TEXT_SKIP_DRAW=255 → instant (= skip path déjà géré ailleurs)
-  //   speed=0 → instant (= menus/descriptions ROM, ex. sac PrintItemDescription)
+  // 1:1 décomp `text.c:271-298 AddTextPrinter` :
+  //   sTempTextPrinter.textSpeed = speed;
+  //   ...
+  //   if (speed != TEXT_SKIP_DRAW && speed != 0) {
+  //       --sTempTextPrinter.textSpeed;   // ← KEY : décrément à l'init
+  //       sTextPrinters[windowId] = sTempTextPrinter;
+  //   } else {
+  //       sTempTextPrinter.textSpeed = 0;
+  //       // render all at once (= instant via for loop 0x400)
+  //   }
   //
-  // RÉGRESSION session 2026-05-20 : on faisait `textSpeed - 1` ici (= "fix"
-  // session 122 supposé) → FAST=1 devenait 0 = INSTANT. User a re-flag :
-  // "Les textes sont tous instantanés en option vitesse 3 : régression."
-  // Revert : on garde textSpeed tel quel, le décrément se fait dans la
-  // state machine via `--delayCounter`.
+  // sTextSpeeds[] (menu.c:79-81) = {SLOW=8, MID=4, FAST=1}.
+  // Après --textSpeed à l'init :
+  //   SLOW : stored=7 → wait check `delayCounter && 7` true → 8 frames per char
+  //   MID  : stored=3 → wait check true → 4 frames per char
+  //   FAST : stored=0 → wait check `delayCounter && 0` FALSE → 0 frames wait
+  //          → 1 char/frame = 60 chars/sec = MÊME vitesse que JOY_HELD(A/B) +
+  //          spedUp (= delayCounter forced 0 par le first if). USER-FLAG
+  //          2026-05-20 : "speed 3 n'est toujours pas aussi rapide que
+  //          maintenir A ou B" — fix : appliquer le --textSpeed décomp.
+  //
+  // TEXT_SKIP_DRAW (255) / speed=0 : path "render all at once" = instant.
+  // Notre impl distingue ces 2 cas via textSpeed === 0 + path do-while continue
+  // (= rend toute la chaîne en 1 frame, cf. ligne ~815 plus bas).
   const TEXT_SKIP_DRAW = 255;
   let normalizedSpeed = opts.textSpeed ?? 0;
-  if (normalizedSpeed === TEXT_SKIP_DRAW) {
-    normalizedSpeed = 0; // skip path = pas de delay
+  if (normalizedSpeed === TEXT_SKIP_DRAW || normalizedSpeed === 0) {
+    normalizedSpeed = 0;
+  } else {
+    // 1:1 décomp `--sTempTextPrinter.textSpeed` (text.c:296).
+    normalizedSpeed = normalizedSpeed - 1;
   }
   return {
     encodedString: opts.encodedString,
@@ -774,16 +789,17 @@ export function runTextPrinter(printer: TextPrinter): number {
       printer.currentX += exGlyphW + printer.letterSpacing;
       printer.currentChar += 2;
       if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
-      // idem char normal : speed>0 typewriter, speed===0 instant (continue).
+      // 1:1 décomp text.c:961 `textPrinter->delayCounter = textPrinter->textSpeed;`
+      // après render char. textSpeed est ALREADY -1'd à l'init (= AddTextPrinter
+      // décomp ligne 296 `--sTempTextPrinter.textSpeed`). Donc :
+      //   FAST stored=0 → delayCounter=0 → next frame skip wait → 60 chars/sec
+      //   MID stored=3  → delayCounter=3 → 4 frames per char = 15 chars/sec
+      //   SLOW stored=7 → delayCounter=7 → 8 frames per char = 7.5 chars/sec
+      // Cas textSpeed===0 (instant path) ne render qu'au case "char normal"
+      // ci-dessous (continue do-while), pas ici (= CHAR_EXTRA path = pas
+      // utilisé en mode instant typiquement).
       if (printer.textSpeed > 0) {
-        // User-flag 2026-05-20 : "FAST trop lent à 30 chars/sec". Compromise
-        // -1 frame par char pour matcher la perception ROM réelle (= 1 char/
-        // frame à FAST=1 = 60 chars/sec ; MID=4 → 1 char/4 frames = 15
-        // chars/sec ; SLOW=8 → 1 char/8 frames = 7.5 chars/sec). Le décomp
-        // strict `delayCounter = textSpeed` donne 30/12/6.7 chars/sec
-        // respectivement (= 1 frame plus lent par char). Divergence assumée
-        // pour matcher le feel attendu user.
-        printer.delayCounter = Math.max(0, printer.textSpeed - 1);
+        printer.delayCounter = printer.textSpeed;
         return RENDER_PRINT;
       }
       continue;
