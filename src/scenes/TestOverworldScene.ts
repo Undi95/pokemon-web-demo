@@ -77,7 +77,7 @@ import {
   UpdateObjectEventsForCameraUpdate,
   preloadNpcGraphicsForMap,
 } from '../engine/object-events';
-import { tickMovementQueues, resetMovementQueues } from '../engine/movement-system';
+import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/movement-system';
 import { decideBootMode, preloadBootData } from '../engine/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 import { installEngineDevtools } from '../engine/engine-devtools';
@@ -861,7 +861,7 @@ export class TestOverworldScene extends Phaser.Scene {
     try {
       // ─── Phase 1 : kind-specific pre-warp anim (= Task_DoDoorWarp pour 'door') ───
       // 1:1 décomp `Task_DoDoorWarp` (field_screen_effect.c:677-728).
-      // warpInProgress = false : on laisse le player walk-up auto via forceMovement.
+      // warpInProgress = false : tickMovementQueues run = applyMovement tick.
       if (kind === 'door') {
         // Door tile = position en face du player (= player.x, player.y - 1
         // car player face NORTH au moment du collision dispatch).
@@ -871,8 +871,10 @@ export class TestOverworldScene extends Phaser.Scene {
         PlaySE(GetDoorSoundEffect(doorX, doorY));
         await FieldAnimateDoorOpen(doorX, doorY);
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_UP) — force walk player UP.
-        gPlayerAvatar.forceMovement = DIR_NORTH;
-        await this.waitForForcedWalkComplete();
+        // 1:1 décomp : queue WALK_NORMAL_UP sur le player ObjectEvent via le
+        // movement queue system (= equiv MOVEMENT_ACTION_WALK_NORMAL_UP).
+        applyMovement('LOCALID_PLAYER', ['walk_up']);
+        await this.waitForPlayerMovementDone();
         // case 2 : FieldAnimateDoorClose + **SetPlayerVisibility(FALSE)**.
         // Order décomp : ObjectEventClearHeldMovementIfFinished puis
         // SetPlayerVisibility(FALSE), puis door close.
@@ -1043,7 +1045,7 @@ export class TestOverworldScene extends Phaser.Scene {
       FieldUpdateBgTilemapScroll(this.rt);
 
       if (exitKind === 'door') {
-        // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317-340) :
+        // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317-363) :
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_DOWN). Doors always
         // exit DOWN (= player came IN from below, exits OUT toward south).
         // Note : FieldSetDoorOpened déjà appelé en Pre-Phase 4 (= 1:1 case 0).
@@ -1053,14 +1055,21 @@ export class TestOverworldScene extends Phaser.Scene {
         // tient le lock pendant toute la durée du `Task_ExitDoor`. Si le warp
         // provient d'un opcode `warp` scripté (= e.g. `GoUpstairsToSetClock` qui
         // fait `lockall ... warp ... waitstate ... releaseall`), le `releaseall`
-        // a unlock les controls juste avant que Phase 5 ne commence → sans ce
-        // re-lock, PlayerStep est dans la branche unlocked où `forceMovement`
-        // n'est pas consommé → push down jamais effectué.
+        // a unlock les controls juste avant que Phase 5 ne commence. Le décomp
+        // re-lock ici (= équivalent FieldCB_DefaultWarpExit). DoCB1_Overworld
+        // (overworld.c:1445) `if (!ArePlayerFieldControlsLocked()) PlayerStep`
+        // → lock = pas d'input D-pad pendant l'auto-walk.
         LockPlayerFieldControls();
         // case 1 : SetPlayerVisibility(TRUE) + ObjectEventSetHeldMovement(WALK_NORMAL_DOWN).
+        // 1:1 décomp : queue movement action `MOVEMENT_ACTION_WALK_NORMAL_DOWN`
+        // sur le player ObjectEvent. tickMovementQueues tick chaque frame
+        // indépendamment du lock controls (= équivalent UpdateObjectEvent
+        // qui exec held movement action via ObjectEventExecHeldMovementAction,
+        // event_object_movement.c:4934). PlayerStep dans branche lock reste
+        // passif (= pas de forceMovement set, runningState=NOT_MOVING).
         SetPlayerVisibility(this.rt, true);
-        gPlayerAvatar.forceMovement = DIR_SOUTH;
-        await this.waitForForcedWalkComplete();
+        applyMovement('LOCALID_PLAYER', ['walk_down']);
+        await this.waitForPlayerMovementDone();
         // case 2-3 : FieldAnimateDoorClose à la door position originale.
         await FieldAnimateDoorClose(doorX, doorY);
       } else if (exitKind === 'non_anim') {
@@ -1070,38 +1079,34 @@ export class TestOverworldScene extends Phaser.Scene {
         // TROU/échelle dans le sol. Le player apparait EN HAUT du trou et
         // est auto-poussé vers le BAS (= south) pour atterrir sur le floor
         // adjacent. Sans ça, le player reste bloqué dans le trou.
-        // → on force toujours DIR_SOUTH + walk SOUTH au exit.
         //
         // Couvre :
         //   - MB_NON_ANIMATED_DOOR (= stairs going up/down)
         //   - MB_WATER_DOOR (= dive entry)
         //   - MB_DEEP_SOUTH_WARP
         //
-        // Bug fix 2026-05-09 (user report) : avant on utilisait
-        // `gPlayerAvatar.facing` (= 1:1 Task_ExitNonAnimDoor décomp
-        // littéral). Mais pour les stairs montants, facing était NORTH →
-        // player walked NORTH off-map. La décomp doit avoir un mécanisme
-        // qui flip facing avant le task (= peut-être InitObjectEventsLocal
-        // ou WarpFadeInScreen post-load), pas reproduit dans notre port.
-        // Fix simple : force DIR_SOUTH au exit des "trous d'escalier".
+        // Bug fix 2026-05-09 : la décomp Task_ExitNonAnimDoor case 1 fait
+        // `ObjectEventSetHeldMovement(GetWalkNormalMovementAction(GetPlayerFacingDirection()))`.
+        // Pour les stairs montants, le facing post-warp serait NORTH →
+        // player walked NORTH off-map. La décomp flip facing à DIR_SOUTH
+        // implicitement via le warp transition (= mecanisme à investiguer
+        // si on porte les stairs montants au 1F). Pour les stairs descendant
+        // (= 1F→2F escalier dans la chambre), force DIR_SOUTH = correct.
         //
-        // Bug fix 2026-05-21 (user report : "monter par escalier 2F via
-        // script MAMAN GoUpstairsToSetClock laisse player dans la cage
-        // d'escalier sans push-down") : si le warp provient d'un script
-        // `lockall ... warp ... waitstate ... releaseall`, le `releaseall`
-        // a UNLOCKED les controls AVANT que Phase 5 ne s'exécute (le
-        // waitstate du script résout dès que la map switch, soit au début
-        // de Phase 4). Or PlayerStep ne consomme `forceMovement` QUE dans
-        // la branche `ArePlayerFieldControlsLocked()` (lignes 778-810).
-        // Solution 1:1 décomp : `FieldCB_DefaultWarpExit` line 278 fait
-        // `LockPlayerFieldControls()` AVANT `SetUpWarpExitTask` → le lock
-        // tient pendant tout `Task_ExitNonAnimDoor`. Re-lock ici garantit
-        // le même comportement.
+        // Bug fix 2026-05-21 : 1:1 décomp via applyMovement('LOCALID_PLAYER',
+        // ['walk_down']) (= équiv ObjectEventSetHeldMovement(WALK_NORMAL_DOWN)).
+        // tickMovementQueues tick le movement action INDÉPENDAMMENT du lock
+        // controls (= équiv UpdateObjectEvent dans le décomp qui exec held
+        // movement, event_object_movement.c:4929). LockPlayerFieldControls
+        // équiv `FieldCB_DefaultWarpExit` (field_screen_effect.c:278) : bloque
+        // input D-pad via DoCB1_Overworld (overworld.c:1445) qui skip
+        // PlayerStep si lock. Le `finally` du try restore l'unlock final
+        // (équiv `Task_ExitNonAnimDoor` case 3 `UnlockPlayerFieldControls`).
         LockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
         gPlayerAvatar.facing = DIR_SOUTH;
-        gPlayerAvatar.forceMovement = DIR_SOUTH;
-        await this.waitForForcedWalkComplete();
+        applyMovement('LOCALID_PLAYER', ['walk_down']);
+        await this.waitForPlayerMovementDone();
       }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
       // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404) : juste unlock.
@@ -1229,15 +1234,18 @@ export class TestOverworldScene extends Phaser.Scene {
     void connection;
   }
 
-  /** Wait que le forced movement (= forceMovement step auto) soit terminé.
-   *  forceMovement est cleared par PlayerStep block lock controls quand le
-   *  step auto se finit (= stepFramesLeft → 0). */
-  private waitForForcedWalkComplete(): Promise<void> {
+  /** Wait que la queue de movement du player (= LOCALID_PLAYER) soit terminée.
+   *  1:1 décomp pattern : `ObjectEventClearHeldMovementIfFinished` poll en case
+   *  2 de `Task_ExitDoor` / `Task_ExitNonAnimDoor` (field_screen_effect.c:343 +
+   *  391) : `IsPlayerStandingStill()` = check ObjectEventCheckHeldMovementStatus
+   *  == 0x10 (= heldMovementFinished).
+   *
+   *  Notre équivalent : `isMovementDone('LOCALID_PLAYER')` retourne true quand
+   *  la queue applyMovement est terminée (= toutes les actions consommées). */
+  private waitForPlayerMovementDone(): Promise<void> {
     return new Promise((resolve) => {
       const check = (): void => {
-        // Step done = forceMovement reset à DIR_NONE par PlayerStep block lock
-        // controls + runningState = NOT_MOVING.
-        if (gPlayerAvatar.forceMovement === DIR_NONE && gPlayerAvatar.runningState === NOT_MOVING) {
+        if (isMovementDone('LOCALID_PLAYER')) {
           resolve();
         } else {
           setTimeout(check, 17);
