@@ -44,6 +44,17 @@ import {
   ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
 } from './item-use-callbacks';
+import { getString } from './gba-strings';
+import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
+import {
+  GetItemEffectType,
+  ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP,
+  ITEM_EFFECT_CURE_BURN, ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS,
+  ITEM_EFFECT_CURE_ALL_STATUS, ITEM_EFFECT_HP_EV, ITEM_EFFECT_ATK_EV,
+  ITEM_EFFECT_DEF_EV, ITEM_EFFECT_SPEED_EV, ITEM_EFFECT_SPATK_EV,
+  ITEM_EFFECT_SPDEF_EV, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_PP_UP,
+  ITEM_EFFECT_PP_MAX, ITEM_EFFECT_HEAL_PP,
+} from './bag-item-effects';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -580,24 +591,103 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // Note 1:1 : flute reusable = pas de RemoveBagItem.
       break;
     }
-    case 'ItemUseOutOfBattle_Mail':
-    case 'ItemUseOutOfBattle_EnigmaBerry':
-      // Mail = ouvre Mail screen (= chantier indépendant). EnigmaBerry =
-      // SetUpItemUseCallback type spécial (= rare en pratique). Fallback
-      // DadsAdvice 1:1 FR temporaire — à porter quand le subsystem dédié
-      // sera dispo.
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+    case 'ItemUseOutOfBattle_CoinCase': {
+      // 1:1 décomp item_use.c:654-667 ItemUseOutOfBattle_CoinCase :
+      //     ConvertIntToDecimalStringN(gStringVar1, GetCoins(),
+      //         STR_CONV_MODE_LEFT_ALIGN, 4);
+      //     StringExpandPlaceholders(gStringVar4, gText_CoinCase);
+      //     DisplayItemMessage(gStringVar4, ...);
+      const coins = GetSaveBlock1().coins ?? 0;
+      const tmpl = getString('gText_CoinCase');  // "JETONS:\n{STR_VAR_1}{PAUSE_UNTIL_PRESS}"
+      msg = tmpl
+        .replace('{STR_VAR_1}', String(coins))
+        .replace('{PAUSE_UNTIL_PRESS}', '')
+        .replace(/\\n/g, '\n')
+        .replace(/\\p/g, '\n');
       break;
+    }
+    case 'ItemUseOutOfBattle_PowderJar': {
+      // 1:1 décomp item_use.c:669-682 ItemUseOutOfBattle_PowderJar :
+      //     ConvertIntToDecimalStringN(gStringVar1, GetBerryPowder(),
+      //         STR_CONV_MODE_LEFT_ALIGN, 5);
+      //     StringExpandPlaceholders(gStringVar4, gText_PowderQty);
+      const powder = GetSaveBlock2().berryCrush?.berryPowderAmount ?? 0;
+      const tmpl = getString('gText_PowderQty');  // "QUANT. POUDRE: {STR_VAR_1}{PAUSE_UNTIL_PRESS}"
+      msg = tmpl
+        .replace('{STR_VAR_1}', String(powder))
+        .replace('{PAUSE_UNTIL_PRESS}', '')
+        .replace(/\\n/g, '\n')
+        .replace(/\\p/g, '\n');
+      break;
+    }
+    case 'ItemUseOutOfBattle_EnigmaBerry': {
+      // 1:1 décomp item_use.c:1063-1105 ItemUseOutOfBattle_EnigmaBerry :
+      //     switch (GetItemEffectType(item)) {
+      //         case HEAL_HP/CURE_*/*_EV: ItemUseOutOfBattle_Medicine(taskId);
+      //         case SACRED_ASH: ItemUseOutOfBattle_SacredAsh(taskId);
+      //         case RAISE_LEVEL: ItemUseOutOfBattle_RareCandy(taskId);
+      //         case PP_UP/PP_MAX: ItemUseOutOfBattle_PPUp(taskId);
+      //         case HEAL_PP: ItemUseOutOfBattle_PPRecovery(taskId);
+      //         default: ItemUseOutOfBattle_CannotUse(taskId);
+      //     }
+      // L'EnigmaBerry est custom (= save block enigmaBerry.itemEffect) mais
+      // pour cette ROM-port l'enigma berry est vierge → fallback CannotUse 1:1.
+      const ef = GetItemEffectType(itemId);
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      switch (ef) {
+        case ITEM_EFFECT_HEAL_HP:
+        case ITEM_EFFECT_CURE_POISON:
+        case ITEM_EFFECT_CURE_SLEEP:
+        case ITEM_EFFECT_CURE_BURN:
+        case ITEM_EFFECT_CURE_FREEZE:
+        case ITEM_EFFECT_CURE_PARALYSIS:
+        case ITEM_EFFECT_CURE_ALL_STATUS:
+        case ITEM_EFFECT_HP_EV:
+        case ITEM_EFFECT_ATK_EV:
+        case ITEM_EFFECT_DEF_EV:
+        case ITEM_EFFECT_SPEED_EV:
+        case ITEM_EFFECT_SPATK_EV:
+        case ITEM_EFFECT_SPDEF_EV:
+          setItemUseCB(ItemUseCB_Medicine);
+          SetUpItemUseCallback(task);
+          return;
+        case ITEM_EFFECT_RAISE_LEVEL:
+          setItemUseCB(ItemUseCB_RareCandy);
+          SetUpItemUseCallback(task);
+          return;
+        case ITEM_EFFECT_PP_UP:
+        case ITEM_EFFECT_PP_MAX:
+          setItemUseCB(ItemUseCB_PPUp);
+          SetUpItemUseCallback(task);
+          return;
+        case ITEM_EFFECT_HEAL_PP:
+          setItemUseCB(ItemUseCB_PPRecovery);
+          SetUpItemUseCallback(task);
+          return;
+        default:
+          msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+          break;
+      }
+      break;
+    }
+    case 'ItemUseOutOfBattle_Mail':
     case 'ItemUseOutOfBattle_Rod':
     case 'ItemUseOutOfBattle_Itemfinder':
     case 'ItemUseOutOfBattle_PokeblockCase':
-    case 'ItemUseOutOfBattle_CoinCase':
-    case 'ItemUseOutOfBattle_PowderJar':
     case 'ItemUseOutOfBattle_Berry':
     case 'ItemUseOutOfBattle_WailmerPail':
-      // Tous ces handlers ouvrent un screen dédié (mail/pokeblock/etc.) ou
-      // un sous-système overworld (rod/itemfinder). Subsystems non portés
-      // → fallback DadsAdvice 1:1 FR.
+      // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou
+      // un sous-système overworld (rod/itemfinder/wailmer berry/plant berry).
+      // Quand la condition prerequisite n'est pas remplie (cf. décomp Rod
+      // :269 CanFish() == FALSE → DisplayDadsAdviceCannotUseItemMessage,
+      // WailmerPail :721 same), le décomp affiche DadsAdvice. Notre port :
+      // condition prerequisite jamais remplie (pas d'overworld subsystem),
+      // donc DadsAdvice = comportement 1:1 valide pour ces items en l'état.
+      // À étendre quand bike/fishing/itemfinder/mail/pokeblock screens
+      // seront portés (= chantiers indépendants).
       msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     default:
