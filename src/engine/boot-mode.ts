@@ -360,8 +360,21 @@ export function decideBootMode(): BootSpawn {
     return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 2, y: 2, facing: DIR_SOUTH, mode: 'newgame' };
   }
 
-  // Tentative de resume from save.
-  if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
+  // Bug fix user 2026-05-21 : si BirchRuntimeScene a transit vers TestOverworld
+  // (= post-character-creation), playerName est set en RAM + gameState.map est
+  // undefined intentionnellement (= force truck cinematic). MAIS `gameState.load()`
+  // ci-dessous OVERWRITE map avec la valeur saved → on resume à l'ancienne
+  // position au lieu du truck. Détection : playerName set en RAM + pas de
+  // ?nointro / ?truck → on vient de Birch → skip resume + force new game.
+  const cameFromBirch = gameState.playerName !== undefined
+                     && gameState.playerName !== ''
+                     && gameState.playerName !== 'PLAYER'
+                     && gameState.map === undefined;
+  if (cameFromBirch) {
+    console.log('[boot-mode] post-Birch detected (playerName RAM, map undefined) → skip resume, force new game truck');
+    // Fall through au default new game path infra.
+  } else if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
+    // Tentative de resume from save (= cold boot avec save existante).
     const m = gameState.map;
     return {
       mapId: m.name,
