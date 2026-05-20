@@ -55,6 +55,21 @@ function FieldCB_ReturnToFieldOpenStartMenu(): boolean {
   //   gFieldCallback2 = FieldCB_ReturnToFieldStartMenu;
   // Notre wrapper TS skip le sInitStartMenuData (= state machine du init multi-step
   // décomp pas porté ici car notre `startMenu.open()` est synchrone).
+  //
+  // ⚠️ USER FLAG 2026-05-20 (in-game devtools confirmé via frame freeze) :
+  // 1 frame de flash visible ici. À ce point :
+  //   - case 1 ReturnToFieldLocal a loadé les NEW tileset palettes
+  //     (= LoadPalette écrit Faded + Unfaded aux nouvelles couleurs)
+  //   - case 2 RunFieldCallback appelle CE callback (= 1er cb2 dans la chaîne)
+  //   - Returns FALSE → state reste à 2 → frame rendu AVANT que le 2ème cb2
+  //     (FieldCB_ReturnToFieldStartMenu) fire son FillPalBufferBlack +
+  //     FadeScreen. Pendant ce frame, Faded = couleurs nouvelles → FLASH.
+  // Fix : FillPalBufferBlack ICI, dans le 1er cb2. Le render qui suit dans
+  // la MÊME frame voit Faded=black → pas de flash. Le 2ème cb2 fait
+  // FillPalBufferBlack à nouveau (= idempotent) puis FadeScreen.
+  // Décomp 1:1 ne fait pas ce clear ici (= leur impl est sync donc pas de
+  // gap visible), mais avec notre tick + async restore ici c'est nécessaire.
+  FillPalBufferBlack();
   (globalThis as Record<string, unknown>).gFieldCallback2 = FieldCB_ReturnToFieldStartMenu;
   return false;
 }
