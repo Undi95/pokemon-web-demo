@@ -48,7 +48,7 @@ import {
 import { ResetSpriteData } from './decomp-bridge';
 import { gameState } from './game-state';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin } from './gba/png-loader';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { SetOamMatrix } from './decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
 import type { DecompTask, DecompSprite, DecompRuntime } from './decomp-runtime';
@@ -325,71 +325,24 @@ function InitClockWithRtc(): void {
 
 // ─── Asset loader ───────────────────────────────────────────────────────────
 
-/** Load a grayscale 4bpp PNG and pack pixel indices (0-15) into tile-major 4bpp.
- *  hand.png est grayscale (= no PLTE chunk), donc loadIndexedPngStrict throw.
- *  Notre runtime applique la palette dynamiquement, donc les indices grayscale
- *  0-15 mappent directement aux 16 slots de la palette male/female loadée
- *  via LoadPaletteObj. */
-async function _loadGrayscale4bppTiles(url: string): Promise<Uint8Array> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const el = new Image();
-    el.crossOrigin = 'anonymous';
-    el.onload = () => resolve(el);
-    el.onerror = (e) => reject(new Error(`PNG load failed: ${url}: ${e}`));
-    el.src = url;
-  });
-  const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error(`canvas ctx fail for ${url}`);
-  ctx.drawImage(img, 0, 0);
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const widthPx = canvas.width;
-  const heightPx = canvas.height;
-  if (widthPx % 8 !== 0 || heightPx % 8 !== 0) {
-    throw new Error(`PNG ${url} dims not multiple of 8 (${widthPx}×${heightPx})`);
-  }
-  // Pack en tile-major 4bpp : pour chaque tile 8×8 (= 32 bytes), pixels row-major
-  // dans la tile, 2 pixels par byte (low nibble = pixel pair, high nibble = next).
-  const widthTiles = widthPx / 8;
-  const heightTiles = heightPx / 8;
-  const out = new Uint8Array(widthTiles * heightTiles * 32);
-  for (let tileRow = 0; tileRow < heightTiles; tileRow++) {
-    for (let tileCol = 0; tileCol < widthTiles; tileCol++) {
-      const tileIdx = tileRow * widthTiles + tileCol;
-      const outOff = tileIdx * 32;
-      for (let py = 0; py < 8; py++) {
-        for (let px = 0; px < 8; px += 2) {
-          const x0 = tileCol * 8 + px;
-          const x1 = tileCol * 8 + px + 1;
-          const y = tileRow * 8 + py;
-          // Grayscale → 4-bit index. Décomp gbagfx inverse les grey values
-          // pour que WHITE background (grey=15) devienne index 0 (= transparent
-          // en OAM) et DARK hand pixels (grey=0..5) deviennent indices 10..15
-          // (= couleurs hand depuis palette male/female). Sans inversion,
-          // tout l'écran 64×64 du sprite remplirait avec palette[15] = blob
-          // visible avec rotation invisible.
-          const r0 = data[(y * widthPx + x0) * 4];
-          const r1 = data[(y * widthPx + x1) * 4];
-          const idx0 = 0xF - ((r0 >> 4) & 0xF);
-          const idx1 = 0xF - ((r1 >> 4) & 0xF);
-          out[outOff + py * 4 + px / 2] = idx0 | (idx1 << 4);
-        }
-      }
-    }
-  }
-  return out;
-}
-
-/** Async fetch tous les assets nécessaires. Cache via `_assetsCache` singleton. */
+/** Async fetch tous les assets nécessaires. Cache via `_assetsCache` singleton.
+ *
+ *  Pattern 1:1 décomp : `loadTileBin` charge le `.4bpp.bin` pré-extrait par
+ *  `scripts/extract-all-tile-bins.mjs` (= 1:1 reproduction du gbagfx pipeline
+ *  qui inverse les pixel values pour grayscale PNGs colorType=0 → white bg
+ *  devient idx 0 transparent). Cf. extract-png-indexed-tiles.mjs:84 :
+ *    if (colorType === 0) invertColors = true; → idx = 15 - rawValue;
+ *
+ *  Pour hand.png (= 4-bit grayscale sans PLTE), le .4bpp.bin a déjà les
+ *  indices correctement inversés. Pour clock.png (= 4-bit indexed avec PLTE),
+ *  les indices sont préservés via raw IDAT parse. */
 async function _loadAssets(): Promise<WallClockAssets> {
   if (_assetsCache) return _assetsCache;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [clockPng, handTiles, startTmap, viewTmap, malePal, femalePal, textPromptPal] = await Promise.all([
-      loadIndexedPngStrict('/decomp/em/wallclock/clock.png', 4),
-      _loadGrayscale4bppTiles('/decomp/em/wallclock/hand.png'),
+    const [clockTiles, handTiles, startTmap, viewTmap, malePal, femalePal, textPromptPal] = await Promise.all([
+      loadTileBin('/decomp/em/wallclock/clock.png', 4),
+      loadTileBin('/decomp/em/wallclock/hand.png', 4),
       loadTilemapBin('/decomp/em/wallclock/clock_start.bin'),
       loadTilemapBin('/decomp/em/wallclock/clock_view.bin'),
       loadGbaPal('/decomp/em/wallclock/male.pal'),
@@ -397,7 +350,7 @@ async function _loadAssets(): Promise<WallClockAssets> {
       loadGbaPal('/decomp/em/wallclock/text_prompt.pal'),
     ]);
     _assetsCache = {
-      clockTiles: clockPng.charData,
+      clockTiles,
       handTiles,
       startTilemap: startTmap,
       viewTilemap: viewTmap,
@@ -608,12 +561,20 @@ function _tickHourHand(rt: DecompRuntime): void {
 }
 
 /** 1:1 décomp `SpriteCB_PMIndicator` (wallclock.c:1063-1081).
- *  Animates AM/PM indicator between 2 positions based on period. */
+ *  Animates AM/PM indicator between 2 positions based on period.
+ *
+ *  User-flag 2026-05-20 : hide indicator inutilisé (= en mode AM, le PM
+ *  indicator devient invisible ; en mode PM, l'AM indicator). Non-1:1
+ *  décomp (qui affiche les 2 indicators à des positions différentes), mais
+ *  user-requested pour clarté visuelle. */
 function _tickPMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.pm;
   if (sprId < 0) return;
   const sprite = rt.gSprites.get(sprId);
   if (!sprite) return;
+  // Hide PM indicator if period is AM (= unused).
+  sprite.invisible = _state.period === PERIOD_AM;
+  if (sprite.invisible) return;  // skip anim si caché
   if (_state.period !== PERIOD_AM) {
     if (_state.pmAngle >= 60 && _state.pmAngle < 90) _state.pmAngle += 5;
     if (_state.pmAngle < 60) _state.pmAngle++;
@@ -625,12 +586,16 @@ function _tickPMIndicator(rt: DecompRuntime): void {
   sprite.y2 = Math.trunc(Sin2(_state.pmAngle) * 30 / 0x1000);
 }
 
-/** 1:1 décomp `SpriteCB_AMIndicator` (wallclock.c:1083-1101). */
+/** 1:1 décomp `SpriteCB_AMIndicator` (wallclock.c:1083-1101).
+ *  Hide indicator inutilisé selon période (= user-requested polish). */
 function _tickAMIndicator(rt: DecompRuntime): void {
   const sprId = _state.spriteIds.am;
   if (sprId < 0) return;
   const sprite = rt.gSprites.get(sprId);
   if (!sprite) return;
+  // Hide AM indicator if period is PM (= unused).
+  sprite.invisible = _state.period !== PERIOD_AM;
+  if (sprite.invisible) return;  // skip anim si caché
   if (_state.period !== PERIOD_AM) {
     if (_state.amAngle >= 105 && _state.amAngle < 135) _state.amAngle += 5;
     if (_state.amAngle < 105) _state.amAngle++;
@@ -861,14 +826,29 @@ function _freeWallClock(): void {
   }
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
   if (_labelWid >= 0) { RemoveWindow(_labelWid); _labelWid = -1; }
+  // Clear BG3 (= wallclock tilemap + tiles) avant return-to-field. Sans ça,
+  // CB2_ReturnToFieldLocal_Manual re-init les BG0/1/2 (= overworld layers) MAIS
+  // le BG3 reste avec les wallclock tiles → résidu visible (= clock face
+  // partial rendering au coin écran après close).
+  // 1:1 décomp `CB2_ReturnToField` reset DISPCNT puis re-init tous les BG via
+  // ResetBgsAndClearDma3BusyFlags + InitBgsFromTemplates de l'overworld.
+  // Notre simplification : clear BG3 char/map VRAM + désactiver le BG.
+  const bg3Char = BG_CLOCK_CHAR * 0x4000;
+  const bg3Map = BG_CLOCK_MAP * 0x800;
+  rt.gba.vram.fill(0, bg3Char, bg3Char + 0x4000);
+  rt.gba.vram.fill(0, bg3Map, bg3Map + 0x800);
+  rt.gba.bg(3).config.visible = false;
   // Restore BG1 visible pour que `CB2_ReturnToFieldLocal_Manual` puisse
   // re-init l'overworld correctement. Sans ça l'OW reste partiel (= BG1 hidden).
-  // 1:1 décomp `CB2_ReturnToField` réinit DISPCNT depuis scratch, mais notre
-  // implem ne le fait pas explicitement → restore manuel ici.
   rt.gba.bg(1).config.visible = true;
+  // Reset DISPCNT pour que CB2_ReturnToField re-configure les BG layers depuis
+  // scratch (= sans héritage de notre wallclock layout BG0/2/3 only).
+  rt.SetGpuReg(0x00, 0);  // DISPCNT = 0 (= all BG/OBJ disabled, ReturnToField re-set)
   _state.phase = 'idle';
   _state.graphicsLoaded = false;
   _state.graphicsLoading = false;
+  _assetsCache = null;  // force re-load if user re-opens (= fresh palette/tiles)
+  _assetsLoading = null;
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────

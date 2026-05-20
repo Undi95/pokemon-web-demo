@@ -113,6 +113,15 @@ const targets = [
   // 128×128 4bpp = 8 KB sheet. Contient labels (Type/Puiss/Préc/PP) + 18 icones
   // de type elemental (Normal/Combat/Vol/...) + Ball red/blue.
   { src: `${PUBLIC}/interface/menu_info.png`, bpp: 4, extractPalette: true },
+  // Session 2026-05-20 — Wallclock (= 1:1 décomp src/wallclock.c) :
+  //   gWallClock_Gfx = clock.png 4bpp.lz (128×64 = 128 BG tiles, palette PLTE)
+  //   sHand_Gfx = hand.png 4bpp.lz (64×144 = 4 sprite frames : minute/hour 64×64 + AM/PM 16×16)
+  // hand.png est `4-bit grayscale` (= sans PLTE). gbagfx inverse les pixel
+  // values (= white bg → idx 0 transparent, dark hand → idx 10-15 colored).
+  // Notre `extract-png-indexed-tiles.mjs` reproduit ce comportement
+  // (= colorType=0 → invertColors=true ligne 84).
+  { src: `${PUBLIC}/wallclock/clock.png`, bpp: 4 },
+  { src: `${PUBLIC}/wallclock/hand.png`, bpp: 4 },
 ];
 
 // trainer_pics : trainer-card-screen.ts fait loadTileBin(`.../trainer_pics/
