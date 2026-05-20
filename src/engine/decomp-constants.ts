@@ -70,6 +70,8 @@ import * as mapScripts from './decomp-data/auto/include/constants/map_scripts-da
 import * as scriptMenu from './decomp-data/auto/include/constants/script_menu-data';
 // GAME_STAT_* enum (= incrementgamestat opcode resolves names).
 import * as gameStats from './decomp-data/auto/include/constants/game_stat-data';
+// PLAYERS_HOUSE_TV_NONE/LATI/MOVIE — used by EventScript_TV path dispatch.
+import * as tv from './decomp-data/auto/include/constants/tv-data';
 // Misc per-screen constants (= title screen tile offsets, etc.) extraits
 // dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
@@ -136,6 +138,7 @@ _mergeConstants(metatileBehaviors);
 _mergeConstants(mapScripts);
 _mergeConstants(scriptMenu);
 _mergeConstants(gameStats);
+_mergeConstants(tv);
 // include/battle.h : MOVE_TARGET_SELECTED(=0) + B_ACTION_* — si-absent only.
 _mergeConstantsIfAbsent(battleInclude);
 
@@ -186,7 +189,7 @@ function _evalExprConstant(expr: string): number | undefined {
     eventObjects, flags, items, moves, songs, species, trainers, battle,
     battleInclude, global, fieldEffects, opponents, pokemon, abilities,
     battleMoveEffects, holdEffects, vars, titleScreen, metatileLabels,
-    metatileBehaviors, mapScripts, scriptMenu, gameStats,
+    metatileBehaviors, mapScripts, scriptMenu, gameStats, tv,
   ];
   for (const ns of _exprNamespaces) {
     for (const [key, value] of Object.entries(ns)) {

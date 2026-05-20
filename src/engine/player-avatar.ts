@@ -41,6 +41,14 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
+import {
+  MB_TELEVISION, MB_PC, MB_REGION_MAP, MB_CLOSED_SOOTOPOLIS_DOOR,
+  MB_SKY_PILLAR_CLOSED_DOOR, MB_CABLE_BOX_RESULTS_1, MB_CABLE_BOX_RESULTS_2,
+  MB_POKEBLOCK_FEEDER, MB_TRICK_HOUSE_PUZZLE_DOOR, MB_RUNNING_SHOES_INSTRUCTION,
+  MB_PICTURE_BOOK_SHELF, MB_BOOKSHELF, MB_POKEMON_CENTER_BOOKSHELF,
+  MB_VASE, MB_TRASH_CAN, MB_SHOP_SHELF, MB_BLUEPRINT,
+  MB_WIRELESS_BOX_RESULTS, MB_QUESTIONNAIRE, MB_TRAINER_HILL_TIMER,
+} from './decomp-bridge';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
@@ -705,6 +713,53 @@ function tryInteractWithFacingNPC(): void {
       return;
     }
   }
+  // 1:1 décomp `field_control_avatar.c:GetInteractedMetatileScript` (line 367).
+  // 3e fallback : si pas d'NPC + pas de BG event, check metatile behavior à la
+  // tile facing. Used par TV, PC (metatile), Carte du monde, vases, étagères…
+  const facingBeh = MapGridGetMetatileBehaviorAt(tx + MAP_OFFSET, ty + MAP_OFFSET);
+  const metatileScript = getInteractedMetatileScript(facingBeh, gPlayerAvatar.facing);
+  if (metatileScript) {
+    console.log(`[player-avatar] interact metatile beh=0x${facingBeh.toString(16)} at (${tx},${ty}) → script '${metatileScript}'`);
+    ScriptContext_SetupScript(metatileScript);
+    return;
+  }
+}
+
+/** 1:1 décomp `field_control_avatar.c:GetInteractedMetatileScript` (367-446).
+ *  Lookup un script global selon le metatile behavior face au joueur.
+ *  Retourne null si le metatile n'est pas interactif. */
+function getInteractedMetatileScript(metatileBehavior: number, direction: number): string | null {
+  // MetatileBehavior_IsPlayerFacingTVScreen : nécessite DIR_NORTH + MB_TELEVISION
+  if (direction === _DIR_NORTH && metatileBehavior === MB_TELEVISION) {
+    return 'EventScript_TV';
+  }
+  if (metatileBehavior === MB_PC) return 'EventScript_PC';
+  if (metatileBehavior === MB_CLOSED_SOOTOPOLIS_DOOR) return 'EventScript_ClosedSootopolisDoor';
+  if (metatileBehavior === MB_SKY_PILLAR_CLOSED_DOOR) return 'SkyPillar_Outside_EventScript_ClosedDoor';
+  if (metatileBehavior === MB_CABLE_BOX_RESULTS_1) return 'EventScript_CableBoxResults';
+  if (metatileBehavior === MB_POKEBLOCK_FEEDER) return 'EventScript_PokeBlockFeeder';
+  if (metatileBehavior === MB_TRICK_HOUSE_PUZZLE_DOOR) return 'Route110_TrickHousePuzzle_EventScript_Door';
+  if (metatileBehavior === MB_REGION_MAP) return 'EventScript_RegionMap';
+  if (metatileBehavior === MB_RUNNING_SHOES_INSTRUCTION) return 'EventScript_RunningShoesManual';
+  if (metatileBehavior === MB_PICTURE_BOOK_SHELF) return 'EventScript_PictureBookShelf';
+  if (metatileBehavior === MB_BOOKSHELF) return 'EventScript_BookShelf';
+  if (metatileBehavior === MB_POKEMON_CENTER_BOOKSHELF) return 'EventScript_PokemonCenterBookShelf';
+  if (metatileBehavior === MB_VASE) return 'EventScript_Vase';
+  if (metatileBehavior === MB_TRASH_CAN) return 'EventScript_EmptyTrashCan';
+  if (metatileBehavior === MB_SHOP_SHELF) return 'EventScript_ShopShelf';
+  if (metatileBehavior === MB_BLUEPRINT) return 'EventScript_Blueprint';
+  // MetatileBehavior_IsPlayerFacingWirelessBoxResults : direction != EAST && MB_WIRELESS_BOX_RESULTS
+  if (direction !== _DIR_EAST && metatileBehavior === MB_WIRELESS_BOX_RESULTS) {
+    return 'EventScript_WirelessBoxResults';
+  }
+  // MetatileBehavior_IsCableBoxResults2 : direction != EAST && MB_CABLE_BOX_RESULTS_2
+  if (direction !== _DIR_EAST && metatileBehavior === MB_CABLE_BOX_RESULTS_2) {
+    return 'EventScript_CableBoxResults';
+  }
+  if (metatileBehavior === MB_QUESTIONNAIRE) return 'EventScript_Questionnaire';
+  if (metatileBehavior === MB_TRAINER_HILL_TIMER) return 'EventScript_TrainerHillTimer';
+  // Secret base metatiles : skip (Phase later) — pas d'impact démo Littleroot.
+  return null;
 }
 
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {

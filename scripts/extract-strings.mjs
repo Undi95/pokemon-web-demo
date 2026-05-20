@@ -69,7 +69,9 @@ function parseIncFile(filePath) {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || line.startsWith('@') || line.startsWith(';')) continue;
-    const label = line.match(/^(\w+)::\s*$/);
+    // Labels : `gText_X::` (global) ou `LocalText_X:` (single colon, local).
+    // Both contain valid .string définitions, donc on les capture tous.
+    const label = line.match(/^(\w+):{1,2}\s*$/);
     if (label) { flush(); currentLabel = label[1]; buf = []; continue; }
     const sm = line.match(/^\.string\s+"(.*)"\s*$/);
     if (sm && currentLabel) { buf.push(sm[1]); }
@@ -80,6 +82,28 @@ function parseIncFile(filePath) {
 const dataTextDir = join(decompPath, 'data', 'text');
 if (existsSync(dataTextDir)) {
   walk(dataTextDir, (p, name) => { if (name.endsWith('.inc')) parseIncFile(p); });
+}
+
+// data/event_scripts.s et autres .s à la racine de data/ — contiennent
+// gText_PlayerHouseBootPC, gText_PokemonTrainerSchoolEmail,
+// gText_MomOrDadMightLikeThisProgram, etc.
+const dataDir = join(decompPath, 'data');
+for (const entry of readdirSync(dataDir)) {
+  const p = join(dataDir, entry);
+  if (statSync(p).isFile() && entry.endsWith('.s')) parseIncFile(p);
+}
+
+// data/scripts/*.inc — contient tv.inc, pc.inc, mauville_old_man.inc etc.
+const dataScriptsDir = join(dataDir, 'scripts');
+if (existsSync(dataScriptsDir)) {
+  walk(dataScriptsDir, (p, name) => { if (name.endsWith('.inc') || name.endsWith('.s')) parseIncFile(p); });
+}
+
+// data/maps/*/scripts.inc — texts définis localement par map (Notebook,
+// GameCube, MomBlabla, etc.). Permet de récupérer TOUS les textes officiels FR.
+const dataMapsDir = join(dataDir, 'maps');
+if (existsSync(dataMapsDir)) {
+  walk(dataMapsDir, (p, name) => { if (name.endsWith('.inc')) parseIncFile(p); });
 }
 
 writeFileSync(outPath, JSON.stringify(strings));

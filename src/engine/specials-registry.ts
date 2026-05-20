@@ -244,11 +244,90 @@ registerSpecial('DoPCTurnOnEffect', () => { /* no-op */ });
 /** 1:1 décomp `DoPCTurnOffEffect` (player_pc.c). Stub. */
 registerSpecial('DoPCTurnOffEffect', () => { /* no-op */ });
 
-/** 1:1 décomp `TurnOnTVScreen` (field_specials.c) : TV interaction effect. */
-registerSpecial('TurnOnTVScreen', () => { /* no-op */ });
+/** 1:1 décomp `TurnOnTVScreen` (field_specials.c) : TV interaction effect.
+ *  Change le metatile TV de "OFF" (= MB_TELEVISION) à "ON". Notre métatile dispatch
+ *  fonctionne identifié par MB_TELEVISION qui ne change pas, donc no-op suffit
+ *  (= visuel only, pas de gameplay impact). */
+registerSpecial('TurnOnTVScreen', () => { /* no-op : pas d'anim metatile pour la démo */ });
 
 /** 1:1 décomp `TurnOffTVScreen` (field_specials.c). Stub. */
 registerSpecial('TurnOffTVScreen', () => { /* no-op */ });
+
+/** 1:1 décomp `ResetTVShowState` (tv.c:6825-6828).
+ *    void ResetTVShowState(void) { sTVShowState = 0; }
+ *  Notre runtime n'utilise pas sTVShowState (= reset interne au TV show
+ *  generator). No-op safe pour démo. */
+registerSpecial('ResetTVShowState', () => { /* no-op : pas de TV show generator */ });
+
+/** 1:1 décomp `CheckForPlayersHouseNews` (tv.c:3359-3384).
+ *  Retourne :
+ *    - PLAYERS_HOUSE_TV_NONE (0) si pas dans la maison du joueur
+ *    - PLAYERS_HOUSE_TV_LATI (1) si flag FLAG_SYS_TV_LATIAS_LATIOS set
+ *    - PLAYERS_HOUSE_TV_MOVIE (2) si flag FLAG_SYS_TV_HOME set
+ *    - Bug décomp : default fallback returns LATI (1) au lieu de NONE
+ *  En early-game, on est dans HOUSE_2F (pas HOUSE_1F) → return NONE.
+ *  Note : décomp utilise mapGroup/mapNum, nous utilisons gMapHeader.id direct. */
+registerSpecial('CheckForPlayersHouseNews', () => {
+  const mapId = (globalThis as { gMapHeader?: { id?: string } }).gMapHeader?.id ?? '';
+  const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
+  const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
+  const isInPlayersHouse = (gameState.gender === 'MALE' && isMaleHouse)
+                        || (gameState.gender === 'FEMALE' && isFemaleHouse);
+  if (!isInPlayersHouse) return 0;  // PLAYERS_HOUSE_TV_NONE
+  if (gameState.hasFlag('FLAG_SYS_TV_LATIAS_LATIOS')) return 1;  // LATI
+  if (gameState.hasFlag('FLAG_SYS_TV_HOME')) return 2;  // MOVIE
+  return 1;  // Décomp bug : default = LATI au lieu de NONE
+});
+
+/** 1:1 décomp `GetMomOrDadStringForTVMessage` (tv.c:3386-3440).
+ *  Écrit gStringVar1 = "MAMAN" ou "PAPA" :
+ *    - Dans la maison du joueur (= HOUSE_1F gender-match) → toujours "MAMAN"
+ *    - Sinon : VAR_TEMP_3 si déjà set, sinon random 50/50 (puis cache dans VAR_TEMP_3)
+ */
+/** 1:1 décomp `FieldShowRegionMap` (field_specials.c:973-976) :
+ *    void FieldShowRegionMap(void) { SetMainCallback2(CB2_FieldShowRegionMap); }
+ *  Lance la worldmap UI (= region_map.c, ~700 lignes pas encore portées 1:1).
+ *  Placeholder honnête : on fade-from-black immédiat pour ne pas laisser
+ *  l'écran noir après le `fadescreen FADE_TO_BLACK` de EventScript_RegionMap.
+ *  TODO : porter region_map.c 1:1 → CB2 swap (= pattern wallclock.ts). */
+registerSpecial('FieldShowRegionMap', () => {
+  // Fade-from-black immédiat — restaure l'overworld visible jusqu'au port UI.
+  try {
+    void (async () => {
+      const { getRuntime } = await import('./decomp-globals');
+      getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+    })();
+  } catch { /* fallthrough */ }
+});
+
+registerSpecial('GetMomOrDadStringForTVMessage', () => {
+  const mapId = (globalThis as { gMapHeader?: { id?: string } }).gMapHeader?.id ?? '';
+  const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
+  const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
+  const isInPlayersHouse = (gameState.gender === 'MALE' && isMaleHouse)
+                        || (gameState.gender === 'FEMALE' && isFemaleHouse);
+  console.log(`[special GetMomOrDadStringForTVMessage] mapId=${mapId} gender=${gameState.gender} isInPlayersHouse=${isInPlayersHouse}`);
+  if (isInPlayersHouse) {
+    setStringVar(1, 'MAMAN');
+    gameState.setVar('VAR_TEMP_3', 1);
+    return;
+  }
+  const cached = gameState.getVar('VAR_TEMP_3');
+  if (cached === 1) { setStringVar(1, 'MAMAN'); return; }
+  if (cached === 2) { setStringVar(1, 'PAPA'); return; }
+  if (cached > 2) {
+    setStringVar(1, cached % 2 === 0 ? 'MAMAN' : 'PAPA');
+    return;
+  }
+  // Random 50/50
+  if (Math.floor(Math.random() * 2) !== 0) {
+    setStringVar(1, 'MAMAN');
+    gameState.setVar('VAR_TEMP_3', 1);
+  } else {
+    setStringVar(1, 'PAPA');
+    gameState.setVar('VAR_TEMP_3', 2);
+  }
+});
 
 /** 1:1 décomp `EnableNationalPokedex` (pokedex_data.c) : unlock National Pokedex.
  *  Used post-Hall of Fame. MVP : just set a flag. */
@@ -661,7 +740,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CallFallarborTentFunction', 'CallFrontierUtilFunc',
   'CallSlateportTentFunction', 'CallTrainerHillFunction',
   'CallVerdanturfTentFunction', 'ChangeBoxPokemonNickname',
-  'CheckDaycareMonReceivedMail', 'CheckForPlayersHouseNews',
+  'CheckDaycareMonReceivedMail',
+  // 'CheckForPlayersHouseNews' — handler concret enregistré supra (= TV path dispatch 1:1).
   'CheckInteractedWithFriendsCushionDecor', 'CheckInteractedWithFriendsDollDecor',
   'CheckInteractedWithFriendsFurnitureBottom', 'CheckInteractedWithFriendsFurnitureMiddle',
   'CheckInteractedWithFriendsFurnitureTop', 'CheckInteractedWithFriendsPosterDecor',
@@ -686,7 +766,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoesPlayerHaveNoDecorations', 'DrewSecretBaseBattle', 'EggHatch',
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
   'EnterSafariMode', 'EnterSecretBase', 'ExitLinkRoom', 'ExitSafariMode',
-  'FavorLadyGetPrize', 'FieldShowRegionMap', 'FinishCyclingRoadChallenge',
+  'FavorLadyGetPrize',
+  // 'FieldShowRegionMap' — handler concret enregistré infra (= fade-from-black
+  // jusqu'au port 1:1 worldmap UI region_map.c).
+  'FinishCyclingRoadChallenge',
   'FoundAbandonedShipRoom1Key', 'FoundAbandonedShipRoom2Key',
   'FoundAbandonedShipRoom4Key', 'FoundAbandonedShipRoom6Key',
   'GabbyAndTyAfterInterview', 'GabbyAndTyBeforeInterview',
@@ -700,7 +783,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetCurSecretBaseRegistrationValidity', 'GetDaycareCost',
   'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
   'GetFavorLadyState', 'GetGabbyAndTyLocalIds', 'GetLinkPartnerNames',
-  'GetMartEmployeeObjectEventId', 'GetMomOrDadStringForTVMessage',
+  'GetMartEmployeeObjectEventId',
+  // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
   'GetNpcContestantLocalId', 'GetNumLevelsGainedFromDaycare',
   'GetNumMovesSelectedMonHas', 'GetObjectEventLocalIdByFlag',
