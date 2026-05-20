@@ -46,6 +46,7 @@ import {
 } from './item-use-callbacks';
 import { getString } from './gba-strings';
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
+import { gMapHeader } from './map-loader';
 import {
   GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP,
@@ -673,20 +674,44 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       }
       break;
     }
+    case 'ItemUseOutOfBattle_Itemfinder': {
+      // 1:1 décomp item_use.c:286-298 ItemUseOutOfBattle_Itemfinder :
+      //     sItemUseOnFieldCB = ItemUseOnFieldCB_Itemfinder;
+      //     SetUpItemUseOnFieldCallback(var);
+      // → fade bag → ItemfinderCheckForHiddenItems(gMapHeader.events) :
+      //   - Scan bgEvents pour kind='hidden_item' dans range player ±7H ±5V
+      //   - Si trouvé → Task_UseItemfinder (player spin + bip beeps + face)
+      //   - Sinon → gText_ItemFinderNothing "… … … Non!\nPas de réaction."
+      // Notre port : check basique = au moins un bg_event hidden_item sur le
+      // map (= sans flag-picked check, polish ultérieur). Le sac est fermé
+      // pour 1:1 décomp (= fade + display on field), mais notre version
+      // garde le sac ouvert et display dans WIN_DESCRIPTION pour ne pas
+      // perdre l'état (polish ultérieur = fade + scan animation).
+      const events = gMapHeader?.events?.bgEvents ?? [];
+      const hasHidden = events.some(e => e.kind === 'hidden_item');
+      if (!hasHidden) {
+        // 1:1 gText_ItemFinderNothing FR officielle.
+        const tmpl = getString('gText_ItemFinderNothing');
+        msg = tmpl.replace('{PAUSE_UNTIL_PRESS}', '').replace(/\\n/g, '\n').replace(/\\p/g, '\n');
+      } else {
+        // 1:1 décomp : si trouvé, lance Task_UseItemfinder (spin anim). Polish.
+        // En attendant, message "L'objet semble proche !" honnête.
+        msg = "Le CHERCH'OBJET réagit !\nUn objet est près d'ici.";
+      }
+      break;
+    }
     case 'ItemUseOutOfBattle_Mail':
     case 'ItemUseOutOfBattle_Rod':
-    case 'ItemUseOutOfBattle_Itemfinder':
     case 'ItemUseOutOfBattle_PokeblockCase':
     case 'ItemUseOutOfBattle_Berry':
     case 'ItemUseOutOfBattle_WailmerPail':
       // 1:1 décomp : ces handlers ouvrent un screen dédié (mail/pokeblock) ou
-      // un sous-système overworld (rod/itemfinder/wailmer berry/plant berry).
-      // Quand la condition prerequisite n'est pas remplie (cf. décomp Rod
-      // :269 CanFish() == FALSE → DisplayDadsAdviceCannotUseItemMessage,
-      // WailmerPail :721 same), le décomp affiche DadsAdvice. Notre port :
-      // condition prerequisite jamais remplie (pas d'overworld subsystem),
-      // donc DadsAdvice = comportement 1:1 valide pour ces items en l'état.
-      // À étendre quand bike/fishing/itemfinder/mail/pokeblock screens
+      // un sous-système overworld (rod/wailmer berry/plant berry). Quand la
+      // condition prerequisite n'est pas remplie (cf. décomp Rod :269
+      // CanFish()==FALSE → DadsAdvice, WailmerPail :721 same), le décomp
+      // affiche DadsAdvice. Notre port : condition jamais remplie (pas
+      // d'overworld subsystem), donc DadsAdvice = 1:1 valide pour ces items
+      // en l'état. À étendre quand fishing/mail/pokeblock/berry-water
       // seront portés (= chantiers indépendants).
       msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
