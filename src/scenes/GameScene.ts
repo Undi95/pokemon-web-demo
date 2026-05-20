@@ -462,19 +462,36 @@ export class GameScene extends Phaser.Scene {
     }
     console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
 
-    // 1:1 décomp Cleanup : attend la fin de la fade Birch (= screen passe BG
-    // black + OBJ white → tout black puis silence). Démarre une fade out vers
-    // black explicite si pas encore active, puis poll until !active.
-    // Sans ça → la transition Birch est coupée brutalement → effet "snap".
-    if (!this.rt.gPaletteFade.active) {
-      this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+    // 1:1 décomp Cleanup : attend la fin de la fade en cours puis assure que
+    // Faded est full black avant scene.start. Précédent code lançait
+    // INCONDITIONNELLEMENT une NEW fade ici quand `!active`, ce qui FLASHait
+    // visuellement :
+    //   - User-flag 2026-05-20 : "Il manque deux fade out" → en réalité c'est
+    //     une fade IN parasite (= flash) qui mange la fade-out précédente.
+    //   - Décomp main_menu.c:893 HandleMainMenuInput fait DÉJÀ
+    //     BeginNormalPaletteFade ALL TO BLACK (= 8 frames). Task_HandleMainMenuAPressed
+    //     wait `!active` puis SetMainCallback2(CB2_ContinueSavedGame) (= sync
+    //     post-fade-done). Notre détection callback2 === CB2_ContinueSavedGame
+    //     dans GameScene.update fire APRÈS = screen DÉJÀ BLACK.
+    //   - 2ème BeginNormalPaletteFade startY=0 → RESET Faded vers Unfaded
+    //     (= main menu colors visible) puis re-fade → FLASH. 1 frame visible.
+    //
+    // 1:1 décomp CB2_ContinueSavedGame (overworld.c:1705-1754) ne fait AUCUNE
+    // nouvelle fade — il set juste gFieldCallback = FieldCB_FadeTryShowMapPopup
+    // → fade-IN au moment où FieldCB_WarpExitFadeFromBlack fire post-load.
+    // Donc skip le redundant fade ici.
+    if (this.rt.gPaletteFade.active) {
+      let waitFrames = 0;
+      while (this.rt.gPaletteFade.active && waitFrames < 60) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 16));
+        waitFrames++;
+      }
     }
-    // Wait fade complete (= ~16 frames @ deltaY=2 = 32 frames real). Cap à 60 frames safety.
-    let waitFrames = 0;
-    while (this.rt.gPaletteFade.active && waitFrames < 60) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 16));  // ~1 frame at 60fps
-      waitFrames++;
-    }
+    // Force Faded full black (= 1:1 décomp FillPalBufferBlack pattern) pour
+    // garantir aucun pixel non-noir avant scene swap. Idempotent si déjà black.
+    const { FillPalBufferBlack } = await import('../engine/decomp-globals');
+    FillPalBufferBlack();
+    const waitFrames = 0;
     console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);
     this.scene.start('TestOverworldScene');
   }
