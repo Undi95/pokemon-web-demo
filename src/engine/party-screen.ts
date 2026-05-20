@@ -173,6 +173,14 @@ const DO_WHAT_WITH_MON_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 2, tilemapLeft: 1, tilemapTop: 17, width: 16, height: 2, paletteNum: 15, baseBlock: 0x279,
 };
 
+/** 1:1 décomp `sSinglePartyMenuWindowTemplate[WIN_MSG]` (party_menu.h:180-187) :
+ *  bg=2, (1, 15), 28×4, paletteNum=14, baseBlock=0x1DF. — WIN_MSG = celui que
+ *  PrintMessage utilise pour gText_PkmnHPRestoredByVar2/Cured/etc. Hauteur 4
+ *  tiles = 32 px = 2 lignes FONT_NORMAL (= permet `\n` du décomp FR). */
+const ITEM_USED_MSG_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 2, tilemapLeft: 1, tilemapTop: 15, width: 28, height: 4, paletteNum: 14, baseBlock: 0x1DF,
+};
+
 /** 1:1 décomp `sCancelButtonWindowTemplate` (pokeemeraude FR party_menu.h:386) :
  *  Window "SORTIR" à droite du SORTIR pokeball OAM. */
 const CANCEL_BUTTON_WINDOW_TEMPLATE: WindowTemplate = {
@@ -257,7 +265,7 @@ interface PartyAssets {
 }
 
 let _isOpen = false;
-let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' = 'idle';
+let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -265,6 +273,14 @@ let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item
  *  on draw msg dans WIN_MSG, et au prochain A_BUTTON → ClosePartyScreen vers
  *  bag (via savedCallback = CB2_ReturnToBagMenu). */
 let _itemUsedMsgText: string | null = null;
+
+/** 1:1 décomp `PartyMenuModifyHP` state (party_menu.c:5455). Le décomp utilise
+ *  les data slots de la task ; ici on stocke en module vars. */
+let _hpAnimSlot = -1;
+let _hpAnimDirection = 0;  // +1 (heal) ou -1 (damage)
+let _hpAnimRemaining = 0;  // delta countdown
+let _hpAnimOnDone: (() => void) | null = null;
+let _hpAnimFrameCounter = 0;  // pour throttler (= 1 HP par 2 frames typique).
 /** Action menu state : sub-cursor pos + spawned window id. 1:1 décomp
  *  sPartyMenuInternal->actions / numActions / windowId[0]. */
 let _actionCursor = 0;
@@ -926,11 +942,13 @@ function _drawMsg(): void {
     msg = getString('gText_MoveToWhere');
     template = MSG_WINDOW_TEMPLATE;
   } else if (_phase === 'item_used_msg' && _itemUsedMsgText) {
-    // 1:1 décomp DisplayPartyMenuMessage(text, TRUE) — affiche un message
-    // libre dans WIN_MSG après use d'item (= "Les PV de X restaurés…",
-    // "Ça n'aura aucun effet.", etc.). Au prochain A_BUTTON → ClosePartyScreen.
+    // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
+    // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
+    // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
+    // PAS la window CHOOSE_MON (= 21×2). Le `\n` du décomp FR pour
+    // gText_PkmnHPRestoredByVar2 prend la 2e ligne.
     msg = _itemUsedMsgText;
-    template = MSG_WINDOW_TEMPLATE;
+    template = ITEM_USED_MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
     // (party_menu.c:4646 ; party_menu.h:605 → gText_UseOnWhichPokemon ;
@@ -1927,6 +1945,8 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   if (_phase === 'switching') { _slideTaskFn?.(); return; }
   // Sub-state action menu : dispatcher différent.
   if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
+  // Sub-state hp_anim : tick l'anim HP bar (= 1:1 PartyMenuModifyHP).
+  if (_phase === 'hp_anim') { _tickHpAnim(); return; }
   // Sub-state item used message : attend ack A/B press → close.
   // 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472) : check
   // !IsPartyMenuTextPrinterActive + A/B press → Task_ClosePartyMenu.
@@ -2182,7 +2202,80 @@ export function ShowPartyMenuItemMessage(text: string): void {
  *  le status icon updated DANS la party box (= avant le message). */
 export function RefreshPartySlot(slotIdx: number): void {
   if (slotIdx < 0 || slotIdx >= 6) return;
+  // 1:1 décomp : redraw frame d'abord (= clear pixel buffer slot), PUIS text
+  // par-dessus. Sans le frame reset, AddTextPrinter empile par-dessus l'ancien
+  // text (= bug "PV d'avant sous PV d'après" observé).
+  _drawSlotFrame(slotIdx);
   _drawSlot(slotIdx);
+}
+
+/** 1:1 décomp `PartyMenuModifyHP(taskId, slot, direction, delta, callback)`
+ *  (party_menu.c:5455). Anime le HP bar frame-par-frame du oldHp au targetHp
+ *  via `direction` (+1 heal / -1 damage). À chaque tick : incrémente
+ *  `mon.currentHp` + redraw le slot. À la fin (delta atteint) : appelle
+ *  `onDone()`.
+ *
+ *  Le caller (ItemUseCB_Medicine) doit avoir DÉJÀ appliqué l'effet (=
+ *  mon.currentHp = newHp post-heal). Cette fonction reverse momentanément
+ *  pour démarrer l'anim depuis oldHp, puis incrémente jusqu'à newHp.
+ *
+ *  `onDone` est typiquement `() => ShowPartyMenuItemMessage(msg)` (= 1:1
+ *  décomp Task_DisplayHPRestoredMessage chained). */
+export function PartyMenuAnimateHP(
+  slotIdx: number,
+  oldHp: number,
+  newHp: number,
+  onDone: () => void,
+): void {
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotIdx];
+  if (!mon) { onDone(); return; }
+  const delta = newHp - oldHp;
+  if (delta === 0) { onDone(); return; }
+  // Reverse à oldHp pour démarrer l'anim.
+  mon.currentHp = oldHp;
+  _hpAnimSlot = slotIdx;
+  _hpAnimDirection = delta > 0 ? 1 : -1;
+  _hpAnimRemaining = Math.abs(delta);
+  _hpAnimOnDone = onDone;
+  _hpAnimFrameCounter = 0;
+  _phase = 'hp_anim';
+  // Initial frame at oldHp : redraw frame d'abord (= clear pixel buffer
+  // slot) PUIS text par-dessus. Sans le frame reset, AddTextPrinter empile
+  // par-dessus l'ancien text (bug "20/20" reste visible alors que HP=5).
+  _drawSlotFrame(slotIdx);
+  _drawSlot(slotIdx);
+}
+
+/** Tick frame de l'anim HP bar — appelé par Task_PartyMenu_HandleInput
+ *  pendant phase `'hp_anim'`. */
+function _tickHpAnim(): void {
+  // 1:1 décomp PartyMenuModifyHP (party_menu.c:1839) : tick chaque frame
+  // (= 60Hz / GBA). Ici on throttle pour visibilité humaine (3 frames/HP =
+  // ~50ms/HP soit ~600ms pour heal de 12 PV — anim visible).
+  _hpAnimFrameCounter++;
+  const ticksPerHp = 3;  // = 1 HP per 3 frames (~50ms/HP).
+  if (_hpAnimFrameCounter < ticksPerHp) return;
+  _hpAnimFrameCounter = 0;
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[_hpAnimSlot];
+  if (!mon) {
+    // Mon disparu en cours d'anim → cancel + onDone.
+    const cb = _hpAnimOnDone; _hpAnimOnDone = null;
+    cb?.();
+    return;
+  }
+  mon.currentHp += _hpAnimDirection;
+  _hpAnimRemaining--;
+  // 1:1 décomp :1846-1847 DisplayPartyPokemonHPCheck + HPBarCheck —
+  // redraw HP bar + text. Notre RefreshPartySlot (= _drawSlotFrame +
+  // _drawSlot) clear le pixel buffer avant text → pas d'empilement.
+  RefreshPartySlot(_hpAnimSlot);
+  if (_hpAnimRemaining <= 0) {
+    const cb = _hpAnimOnDone; _hpAnimOnDone = null;
+    _hpAnimSlot = -1;
+    cb?.();
+  }
 }
 
 /** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :
@@ -2260,7 +2353,7 @@ export function TickPartyScreen(_newKeys: number): void {
     Task_FadeAndClosePartyMenu, Task_ClosePartyMenu,
     OpenPartyScreen, OpenPartyScreenForItemUse, ClosePartyScreen,
     IsPartyScreenOpen, GetPartyScreenSlotId, ShowPartyMenuItemMessage,
-    RefreshPartySlot,
+    RefreshPartySlot, PartyMenuAnimateHP,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

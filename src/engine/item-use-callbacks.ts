@@ -68,11 +68,13 @@ import {
   ClosePartyScreen,
   ShowPartyMenuItemMessage,
   RefreshPartySlot,
+  PartyMenuAnimateHP,
 } from './party-screen';
 import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
-import { getRuntime } from './decomp-globals';
+import { getRuntime, PlaySE } from './decomp-globals';
+import { SE_USE_ITEM } from './decomp-data/auto/include/constants/songs-data';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`
@@ -281,29 +283,33 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  // 1:1 :4432 PlaySE(SE_USE_ITEM) au moment de l'apply.
+  PlaySE(SE_USE_ITEM);
   // 1:1 :4434 RemoveBagItem(item, 1).
   _removeOneFromBag(itemId);
-  // 1:1 :4440-4442 SetPartyMonAilmentGfx + DisplayPartyPokemonLevelCheck —
-  // refresh status icon + level dans la party box. Notre RefreshPartySlot
-  // redraw tout le slot (= HP bar + text + status icon + nickname).
-  RefreshPartySlot(slotId);
-  // 1:1 :4447 PartyMenuModifyHP anim + Task_DisplayHPRestoredMessage.
-  // Note dette user-feedback : décomp anime le HP bar frame-by-frame ;
-  // notre version skip l'anim → HP saute directement (= visible via
-  // RefreshPartySlot ci-dessus). Polish ulterieur = port anim incremental.
-  let msg: string;
   if (result.hpHealed > 0) {
-    // 1:1 décomp Task_DisplayHPRestoredMessage (party_menu.c:4462) :
-    //   gText_PkmnHPRestoredByVar2 = "Les PV de X sont res-\ntaurés de N
-    //   points."
-    msg = _expandStr(getString('gText_PkmnHPRestoredByVar2'),
+    // 1:1 :4447 PartyMenuModifyHP(taskId, slotId, 1, hpDelta,
+    //   Task_DisplayHPRestoredMessage). Anim HP bar frame-by-frame du
+    //   hpBefore → newHp puis message "Les PV de X restaurés N pts.".
+    // L'anim fait son propre initial draw (= reverse à hpBefore + redraw),
+    // pas besoin de RefreshPartySlot ici. Status icon refresh hors anim.
+    const newHp = mon.currentHp;
+    const msg = _expandStr(getString('gText_PkmnHPRestoredByVar2'),
       { var1: mon.nickname, var2: String(result.hpHealed) });
+    PartyMenuAnimateHP(slotId, hpBefore, newHp, () => {
+      // 1:1 :4440-4442 SetPartyMonAilmentGfx — refresh status icon + level
+      // une fois l'anim HP finie.
+      RefreshPartySlot(slotId);
+      ShowPartyMenuItemMessage(msg);
+    });
   } else {
-    // 1:1 :4453-4456 GetMedicineItemEffectMessage(item) → message FR par effectType.
-    msg = _getMedicineItemEffectMessage(itemId, mon.nickname, null);
+    // 1:1 :4440-4442 SetPartyMonAilmentGfx + DisplayPartyPokemonLevelCheck —
+    // refresh status icon + level dans la party box (= status cure path).
+    RefreshPartySlot(slotId);
+    // 1:1 :4453-4456 GetMedicineItemEffectMessage(item) → message FR direct.
+    const msg = _getMedicineItemEffectMessage(itemId, mon.nickname, null);
+    ShowPartyMenuItemMessage(msg);
   }
-  void hpBefore;
-  ShowPartyMenuItemMessage(msg);
 }
 
 // ─── ItemUseCB_PPRecovery (party_menu.c:4610) — 1:1-sémantique ──────────────
@@ -322,6 +328,7 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  PlaySE(SE_USE_ITEM);  // 1:1 :4669
   _removeOneFromBag(itemId);
   // 1:1 décomp :4671-4675 — gMoveNames[move] + GetMedicineItemEffectMessage
   // → "PP de {move} restaurés.".
@@ -342,6 +349,7 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  PlaySE(SE_USE_ITEM);
   _removeOneFromBag(itemId);
   const moveName = mon.moves[0]?.nameFr ?? '';
   ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
@@ -360,6 +368,9 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  // 1:1 décomp :4984 PlayFanfareByFanfareNum(FANFARE_LEVEL_UP). Notre 1ère
+  // iter : SE_USE_ITEM (= sound positif), polish ultérieur = fanfare full.
+  PlaySE(SE_USE_ITEM);
   _removeOneFromBag(itemId);
   // 1:1 :4996-5007 UpdateMonDisplayInfoAfterRareCandy : refresh status icon
   // + level + HP text + HP bar + AnimatePartySlot.
@@ -384,6 +395,7 @@ export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTa
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  PlaySE(SE_USE_ITEM);  // 1:1 :4504
   _removeOneFromBag(itemId);
   // 1:1 :4517 gText_PkmnAdoresBaseVar2Fell = "X aime BERRIES… {stat} baisse."
   // (= friendship pas changée mais EV oui).
@@ -420,6 +432,7 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
+  PlaySE(SE_USE_ITEM);  // 1:1 :5175
   _removeOneFromBag(itemId);
   // 1:1 refresh tous les slots party (= tous mons KO ont été revived).
   for (let i = 0; i < 6; i++) RefreshPartySlot(i);
