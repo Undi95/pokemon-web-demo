@@ -2175,6 +2175,16 @@ export function ShowPartyMenuItemMessage(text: string): void {
   _drawMsg();
 }
 
+/** 1:1-sem `DisplayPartyPokemonHPCheck/MaxHPCheck/HPBarCheck + SetPartyMon
+ *  AilmentGfx` (party_menu.c:4440-4442) — redraw le slot N pour refléter
+ *  l'état actuel du mon (HP modifié + status cleared par item use).
+ *  Appelé après use d'item Medicine pour que le user voit le delta HP +
+ *  le status icon updated DANS la party box (= avant le message). */
+export function RefreshPartySlot(slotIdx: number): void {
+  if (slotIdx < 0 || slotIdx >= 6) return;
+  _drawSlot(slotIdx);
+}
+
 /** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :
  *
  *      ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty,
@@ -2250,6 +2260,7 @@ export function TickPartyScreen(_newKeys: number): void {
     Task_FadeAndClosePartyMenu, Task_ClosePartyMenu,
     OpenPartyScreen, OpenPartyScreenForItemUse, ClosePartyScreen,
     IsPartyScreenOpen, GetPartyScreenSlotId, ShowPartyMenuItemMessage,
+    RefreshPartySlot,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

@@ -67,6 +67,7 @@ import {
   GetPartyScreenSlotId,
   ClosePartyScreen,
   ShowPartyMenuItemMessage,
+  RefreshPartySlot,
 } from './party-screen';
 import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
@@ -282,7 +283,14 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
   }
   // 1:1 :4434 RemoveBagItem(item, 1).
   _removeOneFromBag(itemId);
+  // 1:1 :4440-4442 SetPartyMonAilmentGfx + DisplayPartyPokemonLevelCheck —
+  // refresh status icon + level dans la party box. Notre RefreshPartySlot
+  // redraw tout le slot (= HP bar + text + status icon + nickname).
+  RefreshPartySlot(slotId);
   // 1:1 :4447 PartyMenuModifyHP anim + Task_DisplayHPRestoredMessage.
+  // Note dette user-feedback : décomp anime le HP bar frame-by-frame ;
+  // notre version skip l'anim → HP saute directement (= visible via
+  // RefreshPartySlot ci-dessus). Polish ulterieur = port anim incremental.
   let msg: string;
   if (result.hpHealed > 0) {
     // 1:1 décomp Task_DisplayHPRestoredMessage (party_menu.c:4462) :
@@ -353,6 +361,9 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
     return;
   }
   _removeOneFromBag(itemId);
+  // 1:1 :4996-5007 UpdateMonDisplayInfoAfterRareCandy : refresh status icon
+  // + level + HP text + HP bar + AnimatePartySlot.
+  RefreshPartySlot(slotId);
   // 1:1 :4988-4989 ConvertIntToDecimalStringN(new level) + gText_Pkmn
   // ElevatedToLvVar2 = "X est promu au\nN.\xb0{lvl}!"
   const tmpl = getString('gText_PkmnElevatedToLvVar2');
@@ -410,6 +421,8 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
     return;
   }
   _removeOneFromBag(itemId);
+  // 1:1 refresh tous les slots party (= tous mons KO ont été revived).
+  for (let i = 0; i < 6; i++) RefreshPartySlot(i);
   // 1:1 décomp Task_SacredAshDisplayHPRestored — pour chaque revive,
   // affiche "PV de X restaurés.". Notre version simplifiée : affiche
   // un message générique pour le 1er KO revived. Polish 1:1 = display
