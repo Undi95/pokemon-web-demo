@@ -35,7 +35,7 @@
  *   - src/field_screen_effect.c:440 FieldCB_ReturnToFieldOpenStartMenu
  */
 
-import { getRuntime, gMain, ResetTasks, ResetPaletteFade } from './decomp-globals';
+import { getRuntime, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
 import { InitFieldMessageBox } from './field-message-box';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
@@ -77,8 +77,19 @@ function FieldCB_ReturnToFieldStartMenu(): boolean {
   //   FadeInFromBlack();
   //   CreateTask(Task_WaitForFadeShowStartMenu, 0x50);
   //   LockPlayerFieldControls();
-  // FadeInFromBlack = FillPalBufferBlack + FadeScreen(FADE_FROM_BLACK, 0).
-  // = 1:1 décomp `FadeScreen(FADE_FROM_BLACK, 0)` (= field_weather.c).
+  // FadeInFromBlack (field_weather.c:71) :
+  //   FillPalBufferBlack();
+  //   FadeScreen(FADE_FROM_BLACK, 0);
+  //
+  // ⚠️ USER FLAG 2026-05-20 : précédent commentaire disait "= FadeScreen(...)"
+  // ce qui était FAUX — il MANQUAIT le FillPalBufferBlack pré-fade. Sans ça,
+  // _restoreOverworldFromMenu a déjà loadé les NEW tileset palettes via
+  // LoadPalette (= écrit gPlttBufferFaded + Unfaded). Le fade FROM_BLACK
+  // démarre alors depuis "Faded = couleurs nouvelles" au lieu de "Faded =
+  // black" → 1 frame de flash couleurs visible avant que la fade animation
+  // ne reprenne le contrôle. Fix : FillPalBufferBlack() AVANT FadeScreen,
+  // exactement 1:1 décomp FadeInFromBlack.
+  FillPalBufferBlack();
   FadeScreen(FADE_FROM_BLACK, 0);
   // Open start menu via le module start-menu.ts (exposé via globalThis).
   // 1:1 décomp `Task_ShowStartMenu` set gMenuCallback = HandleStartMenuInput.
