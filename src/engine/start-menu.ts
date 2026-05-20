@@ -898,7 +898,7 @@ function _doSave(): void {
 }
 
 /** Tick "SAUVEGARDE EN COURS…" — wait printer done puis call gameState.save()
- *  + transition à save_done avec "X a sauvegardé la partie." */
+ *  + transition à save_done avec "X a sauvegardé la partie." + start timer. */
 function _tickSaveSavingMsg(): void {
   // Attend que le printer ait fini de typer le message complet (= IsTextPrinterActive
   // false). NB : on n'attend PAS le hide via A press ; le décomp enchaîne direct
@@ -917,36 +917,63 @@ function _tickSaveSavingMsg(): void {
   const text = getText('gText_PlayerSavedGame')
     ?? '{PLAYER} a sauvegardé la partie.';
   ShowFieldMessage(text + '$');
+  // 1:1 décomp `SaveStartTimer` (start_menu.c:942-945) : sSaveDialogTimer = 60.
+  // Démarre le timer 60 frames de la pause post-success message. Décrémenté
+  // par _tickSaveDone via SaveSuccesTimer pattern.
+  _saveTimer = 60;
+  _saveDoneSeStarted = false;
   sSubState = 'save_done';
 }
 
 let _saveDoneSeStarted = false;
+let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89)
 
 function _tickSaveDone(newKeys: number): void {
   // 1:1 décomp `SaveSuccessCallback` (start_menu.c:1112-1121) :
   //   if (!IsTextPrinterActive(0)) { PlaySE(SE_SAVE); sSaveDialogCallback = SaveReturnSuccessCallback; }
-  // SaveReturnSuccessCallback (1123-1134) :
+  // `SaveReturnSuccessCallback` (1123-1134) :
   //   if (!IsSEPlaying() && SaveSuccesTimer()) { HideSaveInfoWindow; return SUCCESS; }
-  //
-  // Notre impl simplifiée : attend printer done → PlaySE(SE_SAVE), puis A/B
-  // pour close (= compatible avec input user, + fallback A/B si pas d'IsSEPlaying).
+  // `SaveSuccesTimer` (947-960) :
+  //   sSaveDialogTimer--;
+  //   if (JOY_HELD(A_BUTTON)) { PlaySE(SE_SELECT); return TRUE; }
+  //   if (sSaveDialogTimer == 0) return TRUE;
+  //   return FALSE;
+  void newKeys;
   const printerStillActive = (globalThis as Record<string, unknown>).IsTextPrinterActive as
     ((id: number) => boolean) | undefined;
   const printerActive = printerStillActive ? printerStillActive(0) : false;
+  // Étape 1 : attend printer done puis PlaySE(SE_SAVE) 1×.
   if (!printerActive && !_saveDoneSeStarted) {
-    // Printer done → fire SE_SAVE 1×. 1:1 décomp.
     void import('./decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
     _saveDoneSeStarted = true;
   }
-  // Attend A/B pour close (= équivalent du timer décomp + user feedback).
-  if (newKeys & (A_BUTTON | B_BUTTON)) {
-    // 1:1 décomp HideSaveInfoWindow + close menu.
-    _removeSaveInfoWindow();
-    HideFieldMessageBox();
-    _saveDoneSeStarted = false;
-    // 1:1 décomp : after save success, close start menu (= retour gameplay).
-    CloseStartMenu();
+  // Étape 2 : si SE pas encore fired, ne pas advance.
+  if (!_saveDoneSeStarted) return;
+  // Étape 3 : 1:1 décomp SaveSuccesTimer — decrement timer + JOY_HELD(A) skip.
+  if (_saveTimer > 0) _saveTimer--;
+  const rt = getRuntime();
+  const heldA = !!(rt && (rt.gMain.heldKeys & A_BUTTON));
+  let timerDone = false;
+  if (heldA) {
+    // 1:1 décomp : A held + timer pas encore 0 → fire SE_SELECT + skip.
+    if (_saveTimer > 0) {
+      void import('./decomp-globals').then(({ PlaySE }) => PlaySE(_seSelect()));
+    }
+    timerDone = true;
+  } else if (_saveTimer === 0) {
+    timerDone = true;
   }
+  if (!timerDone) return;
+  // Étape 4 : attend SE done (= IsSEPlaying false).
+  const isSEPlayingFn = (globalThis as Record<string, unknown>).IsSEPlaying as
+    (() => boolean) | undefined;
+  if (isSEPlayingFn && isSEPlayingFn()) return;
+  // Tout done → close.
+  _removeSaveInfoWindow();
+  HideFieldMessageBox();
+  _saveDoneSeStarted = false;
+  _saveTimer = 0;
+  CloseStartMenu();
 }
 
 // ─── Debug exposure ─────────────────────────────────────────────────────────
