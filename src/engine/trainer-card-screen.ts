@@ -912,13 +912,22 @@ export function CB2_InitTrainerCard(): void {
       rt.gMain.state++;
       break;
     case 20:
-      // Fade IN from BLACK. 1:1 décomp `trainer_card.c:422-423` :
+      // Fade IN from BLACK. 1:1 décomp `trainer_card.c:422-425` :
       //   BlendPalettes(PALETTES_ALL, 16, sData->blendColor);
       //   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, sData->blendColor);
-      // PAS de PlaySE ici — décomp joue PlaySE(SE_RG_CARD_OPEN=251) à
-      // l'étape SUIVANTE (state 8) une fois le fade complete.
+      //   SetVBlankCallback(VblankCb_TrainerCard);
+      //   sData->mainState++;
+      //
+      // ⚠️ USER FLAG 2026-05-20 : fade IN était invisible car SetVBlankCallback
+      // était dans `default` (= APRÈS case 21 poll). Sans vblankCallback,
+      // `flushTo` ne run pas dans runOneFrame (= cf decomp-runtime.ts:2120-2126),
+      // donc la fade animate Faded mais le PLTT register reste sur BLACK ancien
+      // → fade invisible jusqu'à default → screen pop direct sur colors.
+      //
+      // Fix 1:1 décomp : SetVBlankCallback ICI au même state que BeginNormalPaletteFade.
       FadeScreen(FADE_FROM_BLACK, 0);
       rt.gPaletteFade.bufferTransferDisabled = false;
+      rt.SetVBlankCallback(VBlankCB_TrainerCardRun);
       rt.gMain.state++;
       break;
     case 21:
