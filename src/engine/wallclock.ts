@@ -38,14 +38,22 @@
 import {
   ShowBg, HideBg,
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
-  CopyWindowToVram,
+  CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
 } from './gba-window-system';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
+import { ResetSpriteData, GetOverworldTextboxPalettePtr } from './decomp-bridge';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
+import { loadIndexedPngStrict } from './gba/png-loader';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
+import {
+  CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
+} from './gba-menu-system';
+import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
+import { getString } from './gba-strings';
 import { gameState } from './game-state';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -181,6 +189,7 @@ interface WallClockAssets {
   malePalette: Uint16Array;      // male.pal 16c (= BG palette 0)
   femalePalette: Uint16Array;    // female.pal 16c
   textPromptPal: Uint16Array;    // text_prompt.pal 4c (= BG palette 12 for "Confirm"/"Cancel")
+  messageBoxPalette: Uint16Array; // gMessageBox_Pal 16c (= BG palette 14 for WIN_MSG)
 }
 
 /** Module-level state. Reset on each OpenWallClock call.
@@ -340,7 +349,7 @@ async function _loadAssets(): Promise<WallClockAssets> {
   if (_assetsCache) return _assetsCache;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const [clockTiles, handTiles, startTmap, viewTmap, malePal, femalePal, textPromptPal] = await Promise.all([
+    const [clockTiles, handTiles, startTmap, viewTmap, malePal, femalePal, textPromptPal, messageBoxPng] = await Promise.all([
       loadTileBin('/decomp/em/wallclock/clock.png', 4),
       loadTileBin('/decomp/em/wallclock/hand.png', 4),
       loadTilemapBin('/decomp/em/wallclock/clock_start.bin'),
@@ -348,6 +357,16 @@ async function _loadAssets(): Promise<WallClockAssets> {
       loadGbaPal('/decomp/em/wallclock/male.pal'),
       loadGbaPal('/decomp/em/wallclock/female.pal'),
       loadGbaPal('/decomp/em/wallclock/text_prompt.pal'),
+      // gMessageBox_Pal direct load (= palette 14 textbox for WIN_MSG text
+      // rendering). On charge directement le PNG palette pour bypass
+      // `GetOverworldTextboxPalettePtr()` qui dépend de `assetCache` module
+      // state (= HMR-fragile : multiple instances depending sur dynamic vs
+      // static import). Plus robuste = charger nous-mêmes.
+      loadIndexedPngStrict('/decomp/em/text_window/message_box.png', 4),
+      // Side-effect : prefill assetCache for `LoadUserWindowBorderGfx` (= it
+      // reads `gMessageBox_Gfx` from assetCache to draw the std frame border
+      // tiles). On garde le préload pour compat.
+      preloadTextWindowFrames(),
     ]);
     _assetsCache = {
       clockTiles,
@@ -357,6 +376,7 @@ async function _loadAssets(): Promise<WallClockAssets> {
       malePalette: malePal,
       femalePalette: femalePal,
       textPromptPal: textPromptPal,
+      messageBoxPalette: messageBoxPng.palette,
     };
     return _assetsCache;
   })();
@@ -411,6 +431,12 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
   // 4 colors (= small palette for label window).
   LoadPalette(assets.textPromptPal, BG_PLTT_ID(12), 32);
 
+  // 1:1 décomp `LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP)` :
+  // palette pour text rendering dans WIN_MSG (= "Est-ce la bonne heure?" en mode SET).
+  // On utilise directement assets.messageBoxPalette (= chargé via loadIndexedPngStrict)
+  // au lieu de GetOverworldTextboxPalettePtr() qui dépend du module-state assetCache.
+  LoadPalette(assets.messageBoxPalette, BG_PLTT_ID(14), 32);
+
   // Setup BG templates (= sBgTemplates 1:1 décomp wallclock.c:111-131).
   // BG0 char=2 map=31 priority=0  → text windows
   // BG2 char=1 map=8  priority=1  → label window bg
@@ -442,6 +468,11 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
   const ids = InitWindows(wins);
   _msgWid = ids[0];
   _labelWid = ids[1];
+
+  // 1:1 décomp `LoadUserWindowBorderGfx(0, 0x250, BG_PLTT_ID(13))` (wallclock.c:660) :
+  // charge les tiles du frame std border à tile 0x250 sur BG0 char base + palette 13.
+  // Used by `DrawStdFrameWithCustomTileAndPalette` dans Task_SetClock_AskConfirm.
+  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
 
   // DISPCNT : OBJ_ON | OBJ_1D_MAP | BG0/2/3.
   rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x400 | 0x800);
@@ -617,8 +648,9 @@ function Task_SetClock_WaitFadeIn(task: DecompTask): void {
 }
 
 /** 1:1 décomp `Task_SetClock_HandleInput` (wallclock.c:793-831).
- *  Wait pour minute hand angle à aligné %6, puis poll keys. */
-function Task_SetClock_HandleInput(_task: DecompTask): void {
+ *  Wait pour minute hand angle à aligné %6, puis poll keys. A button →
+ *  transition to AskConfirm dialog. */
+function Task_SetClock_HandleInput(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   if (_state.minuteHandAngle % 6) {
@@ -629,13 +661,9 @@ function Task_SetClock_HandleInput(_task: DecompTask): void {
     const newKeys = rt.gMain.newKeys;
     const heldKeys = rt.gMain.heldKeys;
     if (newKeys & A_BUTTON) {
-      // No confirm dialog implementation : on accepte directement (MVP) +
-      // ajout SE pour feedback.
-      // Future iter : 1:1 décomp = `task.func = Task_SetClock_AskConfirm`
-      // qui DrawStdFrameWithCustomTileAndPalette + AddTextPrinter +
-      // CreateYesNoMenu. Pour MVP iter 1, direct confirm via A press.
-      PlaySE(5);  // SE_SELECT
-      _task_setConfirmed();
+      // 1:1 décomp wallclock.c:803-806 :
+      //   if (JOY_NEW(A_BUTTON)) gTasks[taskId].func = Task_SetClock_AskConfirm;
+      task.func = Task_SetClock_AskConfirm;
     } else {
       _state.moveDir = MOVE_NONE;
       if (heldKeys & DPAD_LEFT) _state.moveDir = MOVE_BACKWARD;
@@ -651,20 +679,75 @@ function Task_SetClock_HandleInput(_task: DecompTask): void {
   }
 }
 
-/** Helper : transition to Confirmed state. */
-function _task_setConfirmed(): void {
+/** 1:1 décomp `Task_SetClock_AskConfirm` (wallclock.c:833-841).
+ *  Draw std frame + "Est-ce la bonne heure?" + create YesNo menu. */
+function Task_SetClock_AskConfirm(task: DecompTask): void {
+  // 1:1 décomp :
+  //   DrawStdFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x250, 0x0d);
+  //   AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_IsThisTheCorrectTime, 0, 1, 0, NULL);
+  //   PutWindowTilemap(WIN_MSG);
+  //   ScheduleBgCopyTilemapToVram(0);
+  //   CreateYesNoMenu(&sWindowTemplate_ConfirmYesNo, 0x250, 0x0d, 1);
+  //   gTasks[taskId].func = Task_SetClock_HandleConfirmInput;
+  if (_msgWid < 0) return;
+  DrawStdFrameWithCustomTileAndPalette(_msgWid, false, STD_FRAME_TILE, STD_FRAME_PAL);
+  const msgStr = getString('gText_IsThisTheCorrectTime') || 'Est-ce la bonne heure?';
+  AddTextPrinterParameterized3(
+    _msgWid, FONT_NORMAL, 0, 1,
+    [1, 2, 3],  // [bgColor=1 fill, fgColor=2 white, shadowColor=3 gray]
+    255,  // TEXT_SKIP_DRAW = sync
+    msgStr,
+  );
+  PutWindowTilemap(_msgWid);
+  CopyWindowToVram(_msgWid, 3);
+  // CreateYesNoMenu : sWindowTemplate_ConfirmYesNo = bg=0 (24,9) 5×4
+  // paletteNum=14 baseBlock=572. initialCursorPos=1 (= "NON" default).
+  const yesNoTemplate: WindowTemplate = {
+    bg: 0, tilemapLeft: 24, tilemapTop: 9, width: 5, height: 4,
+    paletteNum: 14, baseBlock: 572,
+  };
+  CreateYesNoMenu(yesNoTemplate, STD_FRAME_TILE, STD_FRAME_PAL, 1);
+  task.func = Task_SetClock_HandleConfirmInput;
+}
+
+/** 1:1 décomp `Task_SetClock_HandleConfirmInput` (wallclock.c:843-859).
+ *  Process YesNo input : OUI → Confirmed ; NON/B → back to HandleInput. */
+function Task_SetClock_HandleConfirmInput(task: DecompTask): void {
+  const result = Menu_ProcessInputNoWrapClearOnChoose();
+  switch (result) {
+    case 0:  // YES
+      PlaySE(5);  // SE_SELECT
+      task.func = Task_SetClock_Confirmed;
+      break;
+    case 1:  // NO
+    case -1:  // MENU_B_PRESSED
+      PlaySE(5);  // SE_SELECT
+      // 1:1 décomp :
+      //   ClearStdWindowAndFrameToTransparent(WIN_MSG, FALSE);
+      //   ClearWindowTilemap(WIN_MSG);
+      //   gTasks[taskId].func = Task_SetClock_HandleInput;
+      if (_msgWid >= 0) {
+        ClearStdWindowAndFrame(_msgWid, false);
+        ClearWindowTilemap(_msgWid);
+      }
+      task.func = Task_SetClock_HandleInput;
+      break;
+  }
+}
+
+/** 1:1 décomp `Task_SetClock_Confirmed` (wallclock.c:861-866). */
+function Task_SetClock_Confirmed(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
-  // 1:1 décomp Task_SetClock_Confirmed (wallclock.c:861-866) :
-  //   RtcInitLocalTimeOffset(hours, minutes);
+  // 1:1 décomp :
+  //   RtcInitLocalTimeOffset(gTasks[taskId].tHours, gTasks[taskId].tMinutes);
   //   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
-  //   task.func = Task_SetClock_Exit;
+  //   gTasks[taskId].func = Task_SetClock_Exit;
   RtcInitLocalTimeOffset(_state.hours, _state.minutes);
   gameState.setFlag('FLAG_SYS_CLOCK_SET');
   gameState.save();
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
-  const task = rt.gTasks.get(_state.taskId);
-  if (task) task.func = Task_SetClock_Exit;
+  task.func = Task_SetClock_Exit;
 }
 
 /** 1:1 décomp `Task_SetClock_Exit` (wallclock.c:868-875).
@@ -785,6 +868,25 @@ export function CB2_InitWallClock(): void {
         const angle1 = _state.period === PERIOD_AM ? 45 : 90;
         const angle2 = _state.period === PERIOD_AM ? 90 : 135;
         _spawnHandSprites(rt, /*amInit*/ angle2, /*pmInit*/ angle1);
+      }
+      // 1:1 décomp `AddTextPrinterParameterized(WIN_BUTTON_LABEL, FONT_NORMAL,
+      // gText_Confirm3/Cancel4, 0, 1, 0, NULL)` (wallclock.c:723/771).
+      // Label = "CONFIR." en mode SET (= action A button = confirm),
+      //         "SORTIR" en mode VIEW (= action A/B button = exit).
+      // Rendered on WIN_BUTTON_LABEL (= bg=2 paletteNum=12 = text_prompt.pal).
+      {
+        const labelStr = _state.mode === 'SET'
+          ? (getString('gText_Confirm3') || 'CONFIR.')
+          : (getString('gText_Cancel4') || 'SORTIR');
+        FillWindowPixelBuffer(_labelWid, 0x00);
+        AddTextPrinterParameterized3(
+          _labelWid, FONT_NORMAL, 0, 1,
+          [0, 2, 3],  // [bgColor=0 transparent, fgColor=2, shadowColor=3]
+          255,  // TEXT_SKIP_DRAW = sync render
+          labelStr,
+        );
+        PutWindowTilemap(_labelWid);
+        CopyWindowToVram(_labelWid, 3);  // COPYWIN_FULL = 3
       }
       rt.gMain.state++;
       break;
