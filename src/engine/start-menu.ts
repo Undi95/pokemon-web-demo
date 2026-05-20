@@ -44,6 +44,8 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
+import { IsNationalPokedexEnabled } from './decomp-data/auto/src-all/event_data-all-auto';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
@@ -380,8 +382,17 @@ function _showSaveInfoWindow(): void {
     yOffset += 16;
     AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW,
       getString('gText_ContinueMenuPokedex'));
-    // TODO Phase 4+ : implement real dex count via dex flags. Pour l'instant : 0.
-    const dexStr = '0';
+    // 1:1 décomp menu.c:2122-2127 BufferSaveMenuText case SAVE_MENU_CAUGHT :
+    //   if (IsNationalPokedexEnabled())
+    //       string = GetNationalPokedexCount(FLAG_GET_CAUGHT);
+    //   else
+    //       string = GetHoennPokedexCount(FLAG_GET_CAUGHT);
+    // Ancien : dexStr = '0' hardcoded. Maintenant : compte réel via Pokédex
+    // backbone (= pokedex-flags.ts GetSetPokedexFlag, déjà 1:1 validé).
+    const dexCount = IsNationalPokedexEnabled()
+      ? GetNationalPokedexCount(FLAG_GET_CAUGHT)
+      : GetHoennPokedexCount(FLAG_GET_CAUGHT);
+    const dexStr = String(dexCount);
     AddTextPrinterParameterized3(
       sSaveInfoWindowId, FONT_NORMAL,
       GetStringRightAlignXOffset(dexStr, 0x70), yOffset,
