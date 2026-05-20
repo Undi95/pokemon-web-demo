@@ -520,6 +520,13 @@ const COLLISION_OBJECT_EVENT = 5;
  *
  *  Returns COLLISION_* enum value. */
 function checkPlayerCollision(direction: number): number {
+  // Dev-only noclip (= devmenu touche « " » toggle ; cf. DebugOverlayScene).
+  // Bypass tous les checks → player marche à travers murs/NPCs/ledges/elevation
+  // pour debug map ou playthrough rapide pendant la chasse aux bugs demo.
+  // Flag global posé sur globalThis pour rester isolé du runtime décomp 1:1.
+  if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
+    return COLLISION_NONE;
+  }
   const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
   // 1. Map collision flag (= bit collision dans le map block).
   const mapCollision = MapGridGetCollisionAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
