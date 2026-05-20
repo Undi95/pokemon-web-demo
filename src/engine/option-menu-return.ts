@@ -95,21 +95,34 @@ function FieldCB_ReturnToFieldStartMenu(): boolean {
   // FadeInFromBlack (field_weather.c:71) :
   //   FillPalBufferBlack();
   //   FadeScreen(FADE_FROM_BLACK, 0);
+  // Task_WaitForFadeShowStartMenu (field_screen_effect.c:424) :
+  //   if (WaitForWeatherFadeIn() == TRUE) {
+  //       DestroyTask(taskId);
+  //       CreateTask(Task_ShowStartMenu, 80);
+  //   }
   //
-  // ⚠️ USER FLAG 2026-05-20 : précédent commentaire disait "= FadeScreen(...)"
-  // ce qui était FAUX — il MANQUAIT le FillPalBufferBlack pré-fade. Sans ça,
-  // _restoreOverworldFromMenu a déjà loadé les NEW tileset palettes via
-  // LoadPalette (= écrit gPlttBufferFaded + Unfaded). Le fade FROM_BLACK
-  // démarre alors depuis "Faded = couleurs nouvelles" au lieu de "Faded =
-  // black" → 1 frame de flash couleurs visible avant que la fade animation
-  // ne reprenne le contrôle. Fix : FillPalBufferBlack() AVANT FadeScreen,
-  // exactement 1:1 décomp FadeInFromBlack.
+  // ⚠️ USER FLAG 2026-05-20 (round 2, devtools ingame frozen frame) :
+  // précédent fix `sm.open()` synchrone causait flash. À l'ouverture du
+  // menu via LoadPalette (= palette 14/15 menu écrites direct dans Faded),
+  // les nouvelles couleurs menu bypass la fade en cours → menu apparaît au
+  // FULL COLOR sur fond field BLACK fadant → "flash" du menu sans transition.
+  //
+  // Fix 1:1 décomp : ouvrir le menu UNIQUEMENT après que la fade soit
+  // terminée, via task qui poll `!gPaletteFade.active`. Match exactement le
+  // pattern Task_WaitForFadeShowStartMenu.
   FillPalBufferBlack();
   FadeScreen(FADE_FROM_BLACK, 0);
-  // Open start menu via le module start-menu.ts (exposé via globalThis).
-  // 1:1 décomp `Task_ShowStartMenu` set gMenuCallback = HandleStartMenuInput.
-  const sm = (globalThis as Record<string, unknown>).startMenu as { open?: () => void } | undefined;
-  sm?.open?.();
+  const rt = getRuntime();
+  rt.CreateTask((task) => {
+    if (!rt.gPaletteFade.active) {
+      rt.DestroyTask(task.taskId);
+      // 1:1 décomp `CreateTask(Task_ShowStartMenu, 80)` → notre TS
+      // `startMenu.open()` est synchrone (= équivalent fonctionnel direct).
+      const sm = (globalThis as Record<string, unknown>).startMenu as
+        { open?: () => void } | undefined;
+      sm?.open?.();
+    }
+  }, 0x50);
   return true;
 }
 
