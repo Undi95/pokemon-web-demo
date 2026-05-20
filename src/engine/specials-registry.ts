@@ -311,18 +311,22 @@ registerSpecial('CheckForPlayersHouseNews', () => {
  */
 /** 1:1 décomp `FieldShowRegionMap` (field_specials.c:973-976) :
  *    void FieldShowRegionMap(void) { SetMainCallback2(CB2_FieldShowRegionMap); }
- *  Lance la worldmap UI (= region_map.c, ~700 lignes pas encore portées 1:1).
- *  Placeholder honnête : on fade-from-black immédiat pour ne pas laisser
- *  l'écran noir après le `fadescreen FADE_TO_BLACK` de EventScript_RegionMap.
- *  TODO : porter region_map.c 1:1 → CB2 swap (= pattern wallclock.ts). */
+ *  → CB2_FieldShowRegionMap (= 1:1 décomp field_region_map.c:92).
+ *
+ *  Notre port : ouvre overlay HTML region-map.ts (= visuel HOENN map + cursor +
+ *  player icon + mapsec name + title). Le special bloque le script via
+ *  SetupNativeScript dans script-opcodes.ts (= dispatch direct), wait IsOpen()
+ *  false → script reprend après. Fade-from-black géré au open (= ouverture
+ *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
 registerSpecial('FieldShowRegionMap', () => {
-  // Fade-from-black immédiat — restaure l'overworld visible jusqu'au port UI.
-  try {
-    void (async () => {
-      const { getRuntime } = await import('./decomp-globals');
+  void import('./region-map').then(({ OpenRegionMap }) => {
+    OpenRegionMap();
+    // Fade-from-black aussi pour que l'overlay carte soit visible (= sinon
+    // l'écran noir GPU reste derrière l'overlay HTML).
+    void import('./decomp-globals').then(({ getRuntime }) => {
       getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
-    })();
-  } catch { /* fallthrough */ }
+    });
+  });
 });
 
 registerSpecial('GetMomOrDadStringForTVMessage', () => {

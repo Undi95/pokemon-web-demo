@@ -143,6 +143,7 @@ import {
 import { TickStartMenu } from '../engine/start-menu';
 import { TickBedroomPC } from '../engine/bedroom-pc';
 import { TickPCAnim } from '../engine/pc-anim';
+import { TickRegionMap } from '../engine/region-map';
 import { syncSubspriteOam } from '../engine/object-events';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
@@ -436,6 +437,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 5 fois quand DoPCTurnOnEffect a été déclenché par script. Notre task
         // runtime tick chaque frame, toggle every 6 frames.
         TickPCAnim();
+        // 1:1 décomp field_region_map.c: tick worldmap overlay (= MoveRegionMapCursor_Full
+        // input + cursor pos update). A/B = close + SignalWaitState.
+        TickRegionMap();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         // Phase 4.10 : tick script-driven movements AVANT CameraUpdate. Le tick
         // set gFieldCamera.movementSpeedX/Y que CameraUpdate lit ce même frame

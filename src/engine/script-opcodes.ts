@@ -1110,6 +1110,25 @@ registerOpcode('special', (ctx, args) => {
   // `Special_ViewWallClock` = mode VIEW (RTC live + A/B = close).
   // `StartWallClock` = mode SET (D-pad ajuste hours/minutes, A = confirm via
   // RtcInitLocalTimeOffset, sauvegarde).
+  // 1:1 décomp `FieldShowRegionMap` (field_specials.c:973) : CB2 swap vers
+  // worldmap HOENN. Notre version utilise un overlay HTML (= region-map.ts)
+  // qui se dessine au-dessus du field. Le special est `waitstate=1`
+  // dans specials.inc:279 donc on bloque le script via SetupNativeScript
+  // jusqu'à ce que la carte se ferme (= IsRegionMapOpen() false).
+  if (name === 'FieldShowRegionMap') {
+    let opened = false;
+    let isOpenChecker: (() => boolean) | null = null;
+    void import('./region-map').then((mod) => {
+      mod.OpenRegionMap();
+      isOpenChecker = mod.IsRegionMapOpen;
+      opened = true;
+    });
+    SetupNativeScript(ctx, () => {
+      if (!opened) return false;
+      return !isOpenChecker!();
+    });
+    return true;
+  }
   // 1:1 décomp player_pc.c (= BedroomPC + PlayerPC). Pattern overlay (= pas
   // de CB2 swap car le PC dessine au-dessus de l'overworld). OpenBedroomPC()
   // ouvre le main menu UI ; TickBedroomPC() est polled chaque frame depuis
