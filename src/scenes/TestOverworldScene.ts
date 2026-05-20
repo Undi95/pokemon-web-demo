@@ -1087,7 +1087,8 @@ export class TestOverworldScene extends Phaser.Scene {
     // dans le bon état grâce à RedrawMapSlicesForCameraUpdate qui s'exécute
     // post-CameraMove dans CameraUpdate avec NEW gBackupMapLayout.
     //
-    // handleConnectionTransition fait juste les scene-level ops :
+    // handleConnectionTransition fait :
+    //   - Script loading + OnTransition (D1 fix audit DEMO-D, demo prio).
     //   - NPC orchestrator (= UpdateCoords + TrySpawn + RemoveOutsideView).
     //   - BGM transition.
     //   - Status text update.
@@ -1097,6 +1098,37 @@ export class TestOverworldScene extends Phaser.Scene {
       clearPendingConnection();
       return;
     }
+
+    // D1 fix (DEMO-AUDIT-FINDINGS) : 1:1 décomp `LoadMapFromCameraTransition`
+    // (overworld.c:807,860). Au cross-border, charger les scripts de la new
+    // map + run RunOnTransitionMapScript. Sans ça :
+    //   - _scriptsByLabel garde les scripts de l'ancienne map.
+    //   - OnFrame poll silent no-op sur la new map.
+    //   - VAR_ROUTE101_STATE reste à 0 → coord_event Birch (10,19)/(11,19)
+    //     check STATE===1 false → Birch run script jamais fire (= bug user-flag).
+    //
+    // Symétrique avec afterMapLoad:679-698 mais sans TryRunOnWarpIntoMapScript
+    // (= warps explicites only). Async fire-and-forget : OnFrame poll continue
+    // chaque frame, donc dès que scripts loaded + OnTransition fire, le state
+    // converge naturellement.
+    //
+    // NB sur OnLoad : TransitionToConnection.InitMap a déjà run _runOnLoadMapScriptHook
+    // (= map-loader.ts:748). Si Route101 avait un OnLoad, il aurait silently
+    // no-op'd faute de scripts chargés. Route101 n'a pas d'OnLoad (= cf.
+    // data/maps/Route101/scripts.inc:1-4). Pour les maps WITH OnLoad qu'on
+    // traverse via connection, on accepte qu'OnLoad ne s'exécute pas (= dette
+    // documentée — la plupart des routes n'ont pas d'OnLoad critique).
+    const newScriptsBaseName = newHeader.mapScripts.replace(/_MapScripts$/, '');
+    void loadMapScripts(newScriptsBaseName).then(() => {
+      // Re-check gMapHeader (= user n'a pas cross une autre border entretemps).
+      const curHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader;
+      if (curHeader !== newHeader) {
+        console.log(`[connection] scripts load done but map changed (${newHeader.id} → ${curHeader?.id}), skip OnTransition`);
+        return;
+      }
+      console.log(`[connection] scripts loaded for ${newHeader.id}, run OnTransition`);
+      RunOnTransitionMapScript();
+    });
 
     // 1:1 décomp NPC orchestrator post-cross.
     void preloadNpcGraphicsForMap(newHeader);
