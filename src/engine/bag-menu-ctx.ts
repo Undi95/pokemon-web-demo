@@ -37,6 +37,7 @@ import { gSpecialVar } from './script-vars';
 import { gameState } from './game-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { FlagSet, FlagClear } from './script-vars';
+import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -48,7 +49,9 @@ import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from './decomp-bridge';
-import { CalculatePlayerPartyCount } from './battle/party-storage';
+// CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
+// si la party n'est pas synchronisée depuis gameState (= bug observé). On
+// utilise directement gameState.party.length qui est la source de vérité.
 import { PIXEL_FILL } from './decomp-globals';
 import { ENUM_ITEMWIN_1 } from './decomp-data/auto/include/item_menu-data';
 import {
@@ -408,7 +411,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   }
   RemoveContextWindow();
   const itemType = GetItemType(itemId);
-  if (itemType === 'ITEM_USE_PARTY_MENU' && CalculatePlayerPartyCount() === 0) {
+  if (itemType === 'ITEM_USE_PARTY_MENU' && gameState.party.length === 0) {
     // 1:1 :1801 PrintThereIsNoPokemon.
     _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
     return;
@@ -422,9 +425,39 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // 1:1 décomp item_use.c — gText_DadsAdvice (strings.json FR officielle).
       msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
-    case 'ItemUseOutOfBattle_Medicine':
-      msg = `Utiliser ${itemName} sur un\nPOKéMON [Medicine à porter].`;
-      break;
+    case 'ItemUseOutOfBattle_Medicine': {
+      // 1:1-sémantique décomp item_use.c:753 ItemUseOutOfBattle_Medicine +
+      // party_menu.c:4396 ItemUseCB_Medicine. SIMPLIFICATION : pas de party
+      // menu visible (T13c/d futur) — on applique sur party[0] direct.
+      // Le décomp passerait par SetUpItemUseCallback → party menu → user choisit
+      // mon → ItemUseCB_Medicine. Ici : auto-target party[0] pour test e2e.
+      const mon = gameState.party[0];
+      if (!mon) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      const result = ApplyMedicineEffect(itemId, mon);
+      if (result.cannotUse) {
+        // 1:1 :4423 gText_WontHaveEffect : "Ça n'aura aucun effet."
+        _showItemMessage(task, `Ça n'aura aucun effet\nsur ${mon.nickname}.`);
+        return;
+      }
+      // 1:1 :4434 RemoveBagItem si pas item flute / reusable.
+      _CtxRemoveUsedItem(itemId);
+      // 1:1 :4447 / :4453-4456 message selon heal vs status.
+      if (result.hpHealed > 0) {
+        // gText_PkmnHPRestoredByVar2 : "Les PV de X sont restaurés de N points."
+        _showItemMessageThenRebuild(task,
+          `Les PV de ${mon.nickname} sont\nrestaurés de ${result.hpHealed} points.`);
+      } else if (result.statusCured) {
+        _showItemMessageThenRebuild(task,
+          `${mon.nickname} est guéri.`);
+      } else {
+        _showItemMessageThenRebuild(task,
+          `${mon.nickname} a utilisé\n${itemName}.`);
+      }
+      return;
+    }
     case 'ItemUseOutOfBattle_TMHM':
       msg = `${itemName} démarrée !\n[TMHM apprentissage à porter]`;
       break;
