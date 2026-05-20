@@ -104,6 +104,10 @@ import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import { Random } from './random';
 import { IsBattleSceneOff } from './gba-menu-system';
+// E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
+// décomp battle_setup.c:937 CB2_StartFirstBattle).
+import { setBattleTypeFlags, gBattleTypeFlags } from './battle/state';
+import { BATTLE_TYPE_FIRST_BATTLE } from './battle/constants';
 
 // ─── GBA input keys (= 1:1 décomp gba/key.h) ─────────────────────────────────
 const A_BUTTON   = 0x01;
@@ -378,8 +382,28 @@ function getTypeEffectivenessMul(moveType: string, defType1: string, defType2: s
   return mul1 * mul2;
 }
 
-/** Build a fresh battle flow + return controller. */
+/** Build a fresh battle flow + return controller.
+ *
+ *  1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:917-948) :
+ *    gBattleTypeFlags = BATTLE_TYPE_FIRST_BATTLE;
+ *    BattleTransition_Start(B_TRANSITION_BLUR);  // TODO non porté
+ *    ...
+ *
+ *  Le flag `BATTLE_TYPE_FIRST_BATTLE` active :
+ *    - FUITE → message FR "PROF. SEKO: Ne me laisse pas comme ça!"
+ *      (battle_main.c:4078-4082) au lieu de BATTLE_RUN_SUCCESS
+ *    - AI dispatch via BattleAI_ChooseMoveOrAction (battle_controller_opponent.c:1563)
+ *    - Gates `Cmd_struggle` + AI scripts (cf. cmd-niveau-1.ts:357 qui check ce flag)
+ *
+ *  B_TRANSITION_BLUR (= transition blur tutorial spécifique) reste à porter —
+ *  voir DEMO-AUDIT-FINDINGS.md E5. */
 export function startBirchTutorialBattle(): BattleFlow {
+  // 1:1 décomp : overwrite (pas OR) ; à cette étape gBattleTypeFlags = 0
+  // car aucun autre combat en cours.
+  setBattleTypeFlags(BATTLE_TYPE_FIRST_BATTLE >>> 0);
+  // (Référence pour ts-prune : gBattleTypeFlags importé pour symmetrie même
+  // si pas lu ici directement.)
+  void gBattleTypeFlags;
   return startWildBattle({
     opponentSpecies: 'SPECIES_ZIGZAGOON',
     opponentLevel: 2,

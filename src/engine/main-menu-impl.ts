@@ -94,6 +94,16 @@ import { FlagGet } from './script-vars';
 const SE_SELECT = 5;
 const HAS_MYSTERY_EVENTS = ENUM_HAS_0.HAS_MYSTERY_EVENTS;
 
+// A2 fix : 1:1 décomp `include/bg.h:24-28` enum BG_COORD_*. Utilisés par
+// HandleMainMenuInput pour ChangeBgY(bg, value, mode). Ancien code utilisait
+// littéraux `1` et `0` avec commentaires inversés → scroll dans mauvais sens.
+const BG_COORD_SET = 0;
+const BG_COORD_ADD = 1;
+const BG_COORD_SUB = 2;
+// ts-prune appease : SET référence non utilisée pour l'instant mais on garde
+// l'enum complet pour cohérence.
+void BG_COORD_SET;
+
 // ─── Mutable globals utilisés par les auto callbacks ─────────────────────────
 
 export let sCurrItemAndOptionMenuCheck = 0;
@@ -263,8 +273,12 @@ export function HandleMainMenuInput(taskId: number): boolean {
     task.func = (t: any) => Task_HandleMainMenuBPressed(t, rt);
   } else if ((newKeys & DPAD_UP) && data[1] > 0) {
     if (data[0] === HAS_MYSTERY_EVENTS && data[14] === 1 && data[1] === 1) {
-      ChangeBgY(0, 0x2000, 1); // BG_COORD_SUB
-      ChangeBgY(1, 0x2000, 1);
+      // A2 fix : 1:1 décomp main_menu.c:908-921 + bg.h:24-28 enum
+      //   { BG_COORD_SET=0, BG_COORD_ADD=1, BG_COORD_SUB=2 }.
+      // DPAD_UP = scrolling vers entry du haut → décomp utilise BG_COORD_SUB.
+      // Ancien littéral `1` était BG_COORD_ADD (= scroll dans le mauvais sens).
+      ChangeBgY(0, 0x2000, BG_COORD_SUB);
+      ChangeBgY(1, 0x2000, BG_COORD_SUB);
       const arrowTask = rt.gTasks.get(data[13]);
       if (arrowTask) arrowTask.data[15] = 0;
       data[14] = 0;
@@ -275,8 +289,11 @@ export function HandleMainMenuInput(taskId: number): boolean {
     return true;
   } else if ((newKeys & DPAD_DOWN) && data[1] < data[12] - 1) {
     if (data[0] === HAS_MYSTERY_EVENTS && data[1] === 3 && data[14] === 0) {
-      ChangeBgY(0, 0x2000, 0); // BG_COORD_ADD
-      ChangeBgY(1, 0x2000, 0);
+      // A2 fix : DPAD_DOWN = scrolling vers entry du bas → décomp utilise
+      // BG_COORD_ADD. Ancien littéral `0` était BG_COORD_SET (= reset BG Y,
+      // pas un add). Cf. bg.h:24-28.
+      ChangeBgY(0, 0x2000, BG_COORD_ADD);
+      ChangeBgY(1, 0x2000, BG_COORD_ADD);
       const arrowTask = rt.gTasks.get(data[13]);
       if (arrowTask) arrowTask.data[15] = 1;
       data[14] = 1;

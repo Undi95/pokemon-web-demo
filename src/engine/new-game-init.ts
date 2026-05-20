@@ -37,15 +37,12 @@ export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
   // le joueur marche vers l'est et déclenche le coord trigger à (3, 2).
   gameState.setDynamicWarp('MAP_INSIDE_OF_TRUCK', 1, 2);
 
-  // [DEBUG] Donne un Treecko level 5 pour pouvoir tester les combats avant que
-  // l'event Birch (donne le starter) soit fonctionnel. À virer quand A.3 est OK.
-  try {
-    const { createPokemonInstance } = await import('./pokemon');
-    const starter = createPokemonInstance('SPECIES_TREECKO', 5);
-    gameState.addToParty(starter);
-  } catch (e) {
-    console.warn('[new-game-init] starter debug failed', e);
-  }
+  // C2 fix : starter Treecko hardcodé RETIRÉ (= leak debug en démo normale).
+  // 1:1 décomp : le starter est ajouté à la party UNIQUEMENT via
+  // `LittlerootTown_ProfessorBirchsLab_EventScript_GiveStarterEvent`
+  // (= givepokemon SPECIES_X, 5) après la séquence Birch run sur Route 101 et
+  // l'event ChooseStarter. Si tu veux tester avec un Treecko en début de
+  // session, utilise `?debug` (= preset complet via boot-mode.ts).
 
   console.log(`[new-game-init] init OK pour ${gender}`,
     'flags=', gameState.getAllFlagNames().length,

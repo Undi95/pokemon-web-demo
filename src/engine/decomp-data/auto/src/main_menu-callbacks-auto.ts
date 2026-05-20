@@ -74,7 +74,14 @@ const WININ_WIN0_BG0 = 1;
 const WINOUT_WIN01_BG0 = 1;
 // Unresolved constants (auto-stub at 0; replace with real values when needed) :
 const _UNDEFINED = 0;
-const NUM_PRESET_NAMES: any = _UNDEFINED; // TODO : not found in decomp /include or auto/src — possibly dynamic
+// B3 fix MANUAL OVERRIDE : 1:1 décomp main_menu.c:509
+//   #define NUM_PRESET_NAMES min(ARRAY_COUNT(sMalePresetNames), ARRAY_COUNT(sFemalePresetNames))
+// sMalePresetNames + sFemalePresetNames ont chacun 20 entrées FR confirmées
+// (cf. preset names dans main-menu-data.ts). Auto-transpiler ne résolvait pas le
+// macro `min(...)` au compile-time → fallback _UNDEFINED=0 → `Math.random() % 0 = NaN`
+// → preset name toujours [0] (STEF/AGNES). Hardcode à 20 pour fix le random.
+// Si l'auto-transpiler est re-run, garder ce const explicite (= ne pas écraser).
+const NUM_PRESET_NAMES = 20;
 
 export type SpriteCallback = (sprite: DecompSprite, rt: DecompRuntime) => void;
 export type TaskCallback = (task: DecompTask, rt: DecompRuntime) => void;

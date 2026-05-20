@@ -585,19 +585,22 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
 
       case 'ASK_CONFIRM_WAIT': {
         if (IsFieldMessageBoxHidden()) {
-          // 1:1 décomp `CreateYesNoMenu(sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0)`.
-          // sWindowTemplate_ConfirmStarter from décomp : tilemapLeft=21, tilemapTop=8,
-          // width=6, height=4, paletteNum=14, baseBlock=0x125.
+          // E6 fix : 1:1 décomp `starter_choose.c:77-86` sWindowTemplate_ConfirmStarter
+          //   { .bg=0, .tilemapLeft=24, .tilemapTop=9, .width=5, .height=4,
+          //     .paletteNum=14, .baseBlock=0x0260 }.
+          // Et 1:1 décomp `starter_choose.c:CreateYesNoMenu(..., 0x2A8, 0xD, 0)`.
+          // Ancien : tilemapLeft=21/top=8/w=6/pal=15/base=0x125 + args (0x214, 14, 0) =
+          // tous divergents → cadre YesNo décalé et palette wrong.
           const tmpl: WindowTemplate = {
             bg: 0,
-            tilemapLeft: 21,
-            tilemapTop: 8,
-            width: 6,
+            tilemapLeft: 24,
+            tilemapTop: 9,
+            width: 5,
             height: 4,
-            paletteNum: 15,
-            baseBlock: 0x125,
+            paletteNum: 14,
+            baseBlock: 0x0260,
           };
-          CreateYesNoMenu(tmpl, 0x214, 14, 0);
+          CreateYesNoMenu(tmpl, 0x2A8, 0xD, 0);
           state = 'WAIT_CONFIRM';
         }
         return false;
