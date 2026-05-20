@@ -951,9 +951,6 @@ function _doSave(): void {
 // false`, cf. field-message-box.ts:185-188). Pattern déjà utilisé dans
 // _tickSaveConfirm (= preuve qu'il marche pour gater post-typing).
 let _saveDoneSeStarted = false;
-let _saveDoneSeWasPlaying = false;  // Tracker pour détecter quand l'async PlaySE
-                                     // a effectivement démarré (= IsSEPlaying true
-                                     // au moins une fois post-PlaySE call).
 let _saveTimer = 0;  // 1:1 décomp sSaveDialogTimer (start_menu.c:89, u8)
 
 /** 1:1 décomp `SaveDoSaveCallback` (start_menu.c:1086-1109). Gated par
@@ -983,15 +980,7 @@ function _tickSaveDone(newKeys: number): void {
   if (!_saveDoneSeStarted) {
     void import('./decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
     _saveDoneSeStarted = true;
-    _saveDoneSeWasPlaying = false;
     return;  // décomp switche le callback à SaveReturnSuccessCallback ; on attend next frame.
-  }
-  // Track quand IsSEPlaying devient TRUE pour la 1ère fois (= notre PlaySE
-  // async a fini m4aPrime + lancé le sample). Sans ce track, IsSEPlaying peut
-  // être FALSE entre `PlaySE` call (= avant que m4aPrime resolve) et début du
-  // sample audio → close prématuré. Décomp PlaySE est sync, pas ce problème.
-  if (!_saveDoneSeWasPlaying && _isSEPlaying()) {
-    _saveDoneSeWasPlaying = true;
   }
   // Étape 2 : `SaveReturnSuccessCallback` — wait `!IsSEPlaying() && SaveSuccesTimer()`.
   // 1:1 SaveSuccesTimer décomp : decrement timer u8 wrap, JOY_HELD(A) → PlaySE
@@ -1010,19 +999,11 @@ function _tickSaveDone(newKeys: number): void {
   //      court-circuite la sécurité. User préfère block strict.
   if (_saveTimer > 0) _saveTimer--;
   if (_saveTimer !== 0) return;
-  // 1:1 décomp `SaveReturnSuccessCallback` wait `!IsSEPlaying()`. Mais notre
-  // PlaySE est ASYNC (await m4aPrime avant _markAudioSlotActive) → IsSEPlaying
-  // peut retourner FALSE entre PlaySE call et début du sample. Gate explicite :
-  // attendre que IsSEPlaying soit devenu TRUE au moins une fois (= SE
-  // effectivement démarré) AVANT de check `!IsSEPlaying()` pour close.
-  // User-flag : "laisse la fenetre ouverte de force le temps que le se se joue".
-  if (!_saveDoneSeWasPlaying) return;
   if (_isSEPlaying()) return;
   // Both TRUE → HideSaveInfoWindow + SAVE_SUCCESS → close start menu.
   _removeSaveInfoWindow();
   HideFieldMessageBox();
   _saveDoneSeStarted = false;
-  _saveDoneSeWasPlaying = false;
   _saveTimer = 0;
   CloseStartMenu();
 }
