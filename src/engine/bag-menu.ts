@@ -41,12 +41,14 @@ import {
 } from './menu-helpers';
 import {
   gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
-  CURSOR_BLACK_ARROW, gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
+  CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND,
+  gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
+  ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
 } from './list-menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from './data-tables';
 import { ItemIdToBattleMoveId } from './tmhm-moves';
-import { getMoveName } from './data/game-data';
+import { getMoveName, getMove } from './data/game-data';
 import {
   GetItemName, GetItemDescription, GetItemImportance,
   StringCopy, ConvertIntToDecimalStringN,
@@ -57,7 +59,7 @@ import {
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
   FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
-  ClearWindowTilemap,
+  ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -119,6 +121,12 @@ import {
   AddBagVisualSprite, SetBagVisualPocketId, ShakeBagSprite,
   AddSwitchPocketRotatingBallSprite,
 } from './bag-menu-icons';
+// Swap line — barre grise ▶ rouge affichée pendant SELECT swap (1:1 menu_helpers.c).
+import {
+  preloadSwapLineAssets, LoadListMenuSwapLineGfx,
+  CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
+  SWAP_LINE_HAS_MARGIN,
+} from './swap-line';
 import { preloadItemIconAssets } from './item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
@@ -286,6 +294,8 @@ interface BagAssets {
   bagSpriteMale: Uint8Array;     // gBagMaleTiles   (bag_male.4bpp.bin, 0x3000 = 6 frames 64×64 4bpp)
   bagSpriteFemale: Uint8Array;   // gBagFemaleTiles (bag_female.4bpp.bin)
   bagSpritePal: Uint16Array;     // gBagPalette     (bag.pal — palette OBJ partagée gender-neutral, item_menu_icons.c:142)
+  menuInfoGfx: Uint8Array;       // gMenuInfoElements_Gfx (interface/menu_info.png 128×128 4bpp = 8 KB) — labels + type icons
+  menuInfoPal: Uint16Array;      // palette dédiée 16 colors pour menu_info (paletteNum=12 dans les WIN_TMHM_INFO* templates)
 }
 let _bagAssets: BagAssets | null = null;
 let _bagAssetsLoading: Promise<BagAssets> | null = null;
@@ -314,7 +324,8 @@ async function _bagLoadAssets(): Promise<BagAssets> {
   _bagAssetsLoading = (async () => {
     // Phase 2 : preloadItemIconAssets — buffers icône préchargés pour que
     // AddItemIconSprite (nav sync 1:1) lise en mémoire (sinon icône absente).
-    await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets()]);
+    // preloadSwapLineAssets : barre grise ▶ rouge affichée pendant SELECT swap.
+    await Promise.all([_bagEnsureConstantsLoaded(), preloadItemIconAssets(), preloadSwapLineAssets()]);
     const [bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, mi1, mi2, mi3,
            scrollGfx, redPal, hmIcon,
            bagSpriteMale, bagSpriteFemale, bagSpritePal,
@@ -336,6 +347,13 @@ async function _bagLoadAssets(): Promise<BagAssets> {
       loadTileBin('/decomp/em/bag/rotating_ball.4bpp.bin', 4), // sRotatingBall_Gfx (16×16 4bpp = 128 octets)
       loadGbaPal('/decomp/em/bag/rotating_ball.gbapal'),       // sRotatingBall_Pal (item_menu_icons.c:36-37)
     ]);
+    // Asset gMenuInfoElements_Gfx + palette dédiée (menu.c:113 sMenuInfoIcons)
+    // — sheet 128×128 4bpp avec labels TYPE/PUISS/PRÉC/PP + 18 icones de type
+    // (= panneau ctx menu poche CT/CS). Chargé en BG_PLTT_ID(12) cf. paletteNum.
+    const [menuInfoGfx, menuInfoPal] = await Promise.all([
+      loadTileBin('/decomp/em/interface/menu_info.4bpp.bin', 4),
+      loadGbaPal('/decomp/em/interface/menu_info.gbapal'),
+    ]);
     // Préchauffe assetCache pour le ListMenuLoadStdPalAt PARTAGÉ (gba-menu-
     // system.ts) — pattern préchargement-symbole prouvé (intro/std_menu).
     assetCache.set('gMenuInfoElements1_Pal', mi1);
@@ -348,6 +366,7 @@ async function _bagLoadAssets(): Promise<BagAssets> {
     _bagAssets = {
       bgTiles, bgTilemap, palMale, palFemale, stdMenuPal, hmIcon,
       bagSpriteMale, bagSpriteFemale, bagSpritePal,
+      menuInfoGfx, menuInfoPal,
     };
     // 1:1 décomp item_menu.c:828-836 cases 3+4 graphics state machine :
     // LoadCompressedSpriteSheet(bagMale|bagFemale) + LoadCompressedSpritePalette
@@ -459,6 +478,14 @@ function LoadBagMenu_Graphics(): boolean {
     LoadCompressedSpriteSheet({ data: tilesKey, size: 0x3000, tag: TAG_BAG_GFX });
     // case 4 : LoadCompressedSpritePalette(&gBagPaletteTable) (:836). gender-neutral.
     LoadSpritePalette({ data: '__bagSpritePal', tag: TAG_BAG_GFX });
+    // default case (= LoadListMenuSwapLineGfx, item_menu.c:840) — barre swap
+    // (sprite shared bag/PC/pokeblock, TAG_SWAP_LINE=109).
+    LoadListMenuSwapLineGfx();
+    // Palette menu_info → BG_PLTT_ID(12) (= paletteNum=12 utilisé par les
+    // WindowTemplates WIN_TMHM_INFO_ICONS et WIN_TMHM_INFO). Sans cette
+    // palette, le panneau TM/HM affiche en couleurs corrompues (= palette
+    // VRAM contient les valeurs de la frame précédente / autre BG).
+    LoadPalette(a.menuInfoPal, BG_PLTT_ID(12), 32 /* 16 colors × 2 octets */);
     _bagGraphicsReady = true;
     _bagGraphicsLoading = false;
   }).catch((e) => { console.error('[bag] graphics load failed:', e); _bagGraphicsLoading = false; });
@@ -695,6 +722,7 @@ const FIRST_BERRY_INDEX = ITEM_CHERI_BERRY;
 // PrintPocketNames / étape TMHM) ; ici seuls NORMAL/GRAY_CURSOR/NONE servis.
 const COLORID_NORMAL = 0;
 const COLORID_GRAY_CURSOR = 2;
+const COLORID_TMHM_INFO = 4;
 const COLORID_NONE = 0xFF;
 
 // 1:1 décomp `sFontColorTable[][3]` (item_menu.c:387-394) {bg,text,shadow}.
@@ -1221,8 +1249,34 @@ function BagSetListTaskId(taskId: number, listTaskId: number): void {
 //    no-op documenté, résolu en phase nommée, WORKING-MODE §2). ───────────
 // AddBagVisualSprite : PORTÉ 1:1 Phase 2 (item_menu_icons.c:437) → importé de
 // bag-menu-icons.ts ↑. Appel case 15 inchangé.
+
+/** 1:1 décomp `CreateItemMenuSwapLine` (item_menu_icons.c:575) :
+ *  `CreateSwapLineSprites(&gBagMenu->spriteIds[ITEMMENUSPRITE_SWAP_LINE],
+ *   ITEMMENU_SWAP_LINE_LENGTH)`. Alloue 8 sprites SIZE(16x16) côte-à-côte
+ *  qui formeront la barre grise + ▶ rouge pendant le mode SELECT swap.
+ *  Tous invisibles à la création (= SetSwapLineSpritesInvisibility(.., TRUE)
+ *  via SetItemMenuSwapLineInvisibility appelé au bon moment). */
 function CreateItemMenuSwapLine(): void {
-  /* DÉFÉRÉ étape 7 — CreateItemMenuSwapLine (swap d'objets). */
+  if (!gBagMenu) return;
+  CreateSwapLineSprites(gBagMenu.spriteIds, ITEMMENUSPRITE_SWAP_LINE, ITEMMENU_SWAP_LINE_LENGTH);
+}
+
+/** 1:1 décomp `SetItemMenuSwapLineInvisibility` (item_menu_icons.c:580). */
+function SetItemMenuSwapLineInvisibility(invisible: boolean): void {
+  if (!gBagMenu) return;
+  SetSwapLineSpritesInvisibility(gBagMenu.spriteIds, ITEMMENUSPRITE_SWAP_LINE, ITEMMENU_SWAP_LINE_LENGTH, invisible);
+}
+
+/** 1:1 décomp `UpdateItemMenuSwapLinePos` (item_menu_icons.c:585) :
+ *  `UpdateSwapLineSpritesPos(&...[SWAP_LINE], LENGTH | SWAP_LINE_HAS_MARGIN,
+ *  120, (y + 1) * 16)`. `y` = cursorRow (0..maxShown-1). */
+function UpdateItemMenuSwapLinePos(y: number): void {
+  if (!gBagMenu) return;
+  UpdateSwapLineSpritesPos(
+    gBagMenu.spriteIds, ITEMMENUSPRITE_SWAP_LINE,
+    ITEMMENU_SWAP_LINE_LENGTH | SWAP_LINE_HAS_MARGIN,
+    120, (y + 1) * 16,
+  );
 }
 // 1:1 décomp `sBagScrollArrowsTemplate` (item_menu.c:363) — chevrons L/R
 // poche (CreatePocketSwitchArrowPair). palNum 0 (TAG ≠ TAG_NONE → slot pal).
@@ -1256,8 +1310,126 @@ function DestroyPocketSwitchArrowPair(): void {
     gBagMenu!.pocketSwitchArrowsTask = TASK_NONE;
   }
 }
+// 1:1 décomp `sMenuInfoIcons[]` (menu.c:113). Chaque entrée = { width, height,
+// offset } où offset est en TILES dans le sheet menu_info.png (16 tiles wide).
+// Indices : 0 unused ; 1..18 = TYPE_NORMAL+1..TYPE_DARK+1 ; 19=TYPE label,
+// 20=POWER, 21=ACCURACY, 22=PP, 23=EFFECT (unused), 24=BALL_RED, 25=BALL_BLUE.
+const sMenuInfoIcons: ReadonlyArray<{ width: number; height: number; offset: number }> = [
+  { width: 12, height: 12, offset: 0x00 },  // [0] Unused
+  { width: 32, height: 12, offset: 0x20 },  // [1] TYPE_NORMAL+1
+  { width: 32, height: 12, offset: 0x24 },  // [2] TYPE_FIRE+1
+  { width: 32, height: 12, offset: 0x28 },  // [3] TYPE_WATER+1
+  { width: 32, height: 12, offset: 0x2C },  // [4] TYPE_GRASS+1
+  { width: 32, height: 12, offset: 0x40 },  // [5] TYPE_ELECTRIC+1
+  { width: 32, height: 12, offset: 0x44 },  // [6] TYPE_ROCK+1
+  { width: 32, height: 12, offset: 0x48 },  // [7] TYPE_GROUND+1
+  { width: 32, height: 12, offset: 0x4C },  // [8] TYPE_ICE+1
+  { width: 32, height: 12, offset: 0x60 },  // [9] TYPE_FLYING+1
+  { width: 32, height: 12, offset: 0x64 },  // [10] TYPE_FIGHTING+1
+  { width: 32, height: 12, offset: 0x68 },  // [11] TYPE_GHOST+1
+  { width: 32, height: 12, offset: 0x6C },  // [12] TYPE_BUG+1
+  { width: 32, height: 12, offset: 0x80 },  // [13] TYPE_POISON+1
+  { width: 32, height: 12, offset: 0x84 },  // [14] TYPE_PSYCHIC+1
+  { width: 32, height: 12, offset: 0x88 },  // [15] TYPE_STEEL+1
+  { width: 32, height: 12, offset: 0x8C },  // [16] TYPE_DARK+1
+  { width: 32, height: 12, offset: 0xA0 },  // [17] TYPE_DRAGON+1
+  { width: 32, height: 12, offset: 0xA4 },  // [18] TYPE_MYSTERY+1
+  { width: 42, height: 12, offset: 0xA8 },  // [19] MENU_INFO_ICON_TYPE
+  { width: 42, height: 12, offset: 0xC0 },  // [20] MENU_INFO_ICON_POWER
+  { width: 42, height: 12, offset: 0xC8 },  // [21] MENU_INFO_ICON_ACCURACY
+  { width: 42, height: 12, offset: 0xE0 },  // [22] MENU_INFO_ICON_PP
+];
+
+// Constants 1:1 décomp menu.h:17-23 (= NUMBER_OF_MON_TYPES = 18 + offset).
+const MENU_INFO_ICON_TYPE = 19;
+const MENU_INFO_ICON_POWER = 20;
+const MENU_INFO_ICON_ACCURACY = 21;
+const MENU_INFO_ICON_PP = 22;
+
+// Map type string décomp → index sMenuInfoIcons (+1 car [0] = unused).
+const _TYPE_NAME_TO_ICON_IDX: Record<string, number> = {
+  'TYPE_NORMAL': 1, 'TYPE_FIRE': 2, 'TYPE_WATER': 3, 'TYPE_GRASS': 4,
+  'TYPE_ELECTRIC': 5, 'TYPE_ROCK': 6, 'TYPE_GROUND': 7, 'TYPE_ICE': 8,
+  'TYPE_FLYING': 9, 'TYPE_FIGHTING': 10, 'TYPE_GHOST': 11, 'TYPE_BUG': 12,
+  'TYPE_POISON': 13, 'TYPE_PSYCHIC': 14, 'TYPE_STEEL': 15, 'TYPE_DARK': 16,
+  'TYPE_DRAGON': 17, 'TYPE_MYSTERY': 18,
+};
+
+/** 1:1 décomp `BlitMenuInfoIcon(windowId, iconId, x, y)` (menu.c:2098).
+ *  Blit l'icône `iconId` (= index dans sMenuInfoIcons) depuis le sheet
+ *  gMenuInfoElements_Gfx (= preload _bagAssets.menuInfoGfx) à la position
+ *  (x, y) du pixelBuffer du window. */
+function BlitMenuInfoIcon(windowId: number, iconId: number, x: number, y: number): void {
+  if (!_bagAssets) return;
+  const icon = sMenuInfoIcons[iconId];
+  if (!icon) return;
+  // Offset en TILES dans sheet 16 tiles wide → (srcX, srcY) en pixels.
+  const srcX = (icon.offset & 15) * 8;
+  const srcY = (icon.offset >> 4) * 8;
+  BlitBitmapRectToWindow(
+    windowId, _bagAssets.menuInfoGfx,
+    srcX, srcY, 128, 128,
+    x, y, icon.width, icon.height,
+  );
+}
+
+/** 1:1 décomp `PrepareTMHMMoveWindow` (item_menu.c:2551). Imprime les labels
+ *  fixes (TYPE / PUISS. / PRÉC. / PP) dans WIN_TMHM_INFO_ICONS. Appelé une
+ *  fois à case 18 du setup. */
 function PrepareTMHMMoveWindow(): void {
-  /* DÉFÉRÉ étape 7 — fenêtre infos CT/CS (poche TMHM détaillée). */
+  const wid = _win(WIN_TMHM_INFO_ICONS);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  BlitMenuInfoIcon(wid, MENU_INFO_ICON_TYPE,     0,  0);
+  BlitMenuInfoIcon(wid, MENU_INFO_ICON_POWER,    0, 12);
+  BlitMenuInfoIcon(wid, MENU_INFO_ICON_ACCURACY, 0, 24);
+  BlitMenuInfoIcon(wid, MENU_INFO_ICON_PP,       0, 36);
+  CopyWindowToVram(wid, 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `PrintTMHMMoveData(itemId)` (item_menu.c:2561). Imprime les
+ *  valeurs (type icon + puiss + préc + PP) du move associé à l'item CT/CS,
+ *  dans WIN_TMHM_INFO. ITEM_NONE → "---" partout (= cas swap dummy). */
+function PrintTMHMMoveData(itemId: number): void {
+  const wid = _win(WIN_TMHM_INFO);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  if (itemId === 0 /* ITEM_NONE */) {
+    // 1:1 :2570-2572 — 4 lignes "---" (dummy).
+    for (let i = 0; i < 4; i++) {
+      BagMenu_Print(wid, FONT_NORMAL, '---', 7, i * 12, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
+    }
+    CopyWindowToVram(wid, 2);
+    return;
+  }
+  // 1:1 :2576 move = ItemIdToBattleMoveId(itemId).
+  const moveId = ItemIdToBattleMoveId(itemId); // = string 'MOVE_FOCUS_PUNCH' etc.
+  const move = getMove(moveId);
+  // 1:1 :2577 — type icon (= gBattleMoves[move].type + 1).
+  const typeIdx = move ? (_TYPE_NAME_TO_ICON_IDX[move.type] ?? 0) : 0;
+  if (typeIdx > 0) BlitMenuInfoIcon(wid, typeIdx, 0, 0);
+  // 1:1 :2579-2589 power.
+  const pw = move?.power ?? 0;
+  const pwText = pw <= 1 ? '---' : ConvertIntToDecimalStringN('', pw, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  BagMenu_Print(wid, FONT_NORMAL, pwText, 7, 12, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
+  // 1:1 :2591-2601 accuracy.
+  const acc = move?.accuracy ?? 0;
+  const accText = acc === 0 ? '---' : ConvertIntToDecimalStringN('', acc, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  BagMenu_Print(wid, FONT_NORMAL, accText, 7, 24, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
+  // 1:1 :2603-2605 pp.
+  const pp = move?.pp ?? 0;
+  const ppText = ConvertIntToDecimalStringN('', pp, STR_CONV_MODE_RIGHT_ALIGN, 3);
+  BagMenu_Print(wid, FONT_NORMAL, ppText, 7, 36, 0, 0, TEXT_SKIP_DRAW, COLORID_TMHM_INFO);
+  CopyWindowToVram(wid, 2);
+}
+
+/** Helper exporté pour bag-menu-ctx : affiche le panneau TM/HM (= remplace
+ *  WIN_DESCRIPTION dans le ctx menu en poche TM/HM). 1:1 décomp item_menu.c
+ *  :1653-1660. */
+export function _CtxShowTMHMPanel(itemId: number): void {
+  ClearWindowTilemap(_win(WIN_DESCRIPTION));
+  PrintTMHMMoveData(itemId);
+  PutWindowTilemap(_win(WIN_TMHM_INFO_ICONS));
+  PutWindowTilemap(_win(WIN_TMHM_INFO));
+  ScheduleBgCopyTilemapToVram(0);
 }
 
 /** 1:1 décomp SetupBagMenu case 19 : `BlendPalettes(PALETTES_ALL, 16, 0)`. */
@@ -1322,10 +1494,10 @@ function CanSwapItems(): boolean {
  *  X ?", grise le cursor liste, et bascule la task en Task_HandleSwapping
  *  ItemsInput pour gérer la nouvelle position. */
 function StartItemSwap(task: DecompTask): void {
-  // 1:1 :1445 ListMenuSetTemplateField(LISTFIELD_CURSORKIND, CURSOR_INVISIBLE)
-  // — masque le cursor du list-menu pendant le drag. Helper non porté ; on
-  // accepte la limitation (le cursor list-menu reste visible mais grisé via
-  // BagMenu_PrintCursor ci-dessous, signal "mode swap" déjà clair).
+  // 1:1 :1445 ListMenuSetTemplateField(LISTFIELD_CURSORKIND, CURSOR_INVISIBLE) —
+  // masque le cursor du list-menu pour qu'il ne bouge pas avec UP/DOWN
+  // (= cursor liste figé en gris à la position FROM, seule la swap line bouge).
+  ListMenuSetTemplateField(task.data[T_LIST_TASK_ID], LISTFIELD_CURSORKIND, CURSOR_INVISIBLE);
   const pocket = gBagPosition.pocket;
   const pos = gBagPosition.scrollPosition[pocket] + gBagPosition.cursorPosition[pocket];
   task.data[T_LIST_POSITION] = pos;
@@ -1337,6 +1509,9 @@ function StartItemSwap(task: DecompTask): void {
   const wid = _win(WIN_DESCRIPTION);
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
   BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
+  // 1:1 :1452 — révèle la swap line + position à la cursorRow courante.
+  SetItemMenuSwapLineInvisibility(false);
+  UpdateItemMenuSwapLinePos(gBagPosition.cursorPosition[gBagPosition.pocket]);
   // 1:1 :1453 DestroyPocketSwitchArrowPair (chevrons L/R désactivés pendant le swap).
   DestroyPocketSwitchArrowPair();
   // 1:1 :1454 cursor liste en GRAY (signal "mode swap actif").
@@ -1361,6 +1536,9 @@ function Task_HandleSwappingItemsInput(task: DecompTask): void {
   const sr = ListMenuGetScrollAndRow(task.data[T_LIST_TASK_ID]);
   gBagPosition.scrollPosition[gBagPosition.pocket] = sr.scrollOffset;
   gBagPosition.cursorPosition[gBagPosition.pocket] = sr.selectedRow;
+  // 1:1 :1474-1475 — chaque frame du swap : maj swap line à la cursorRow.
+  SetItemMenuSwapLineInvisibility(false);
+  UpdateItemMenuSwapLinePos(gBagPosition.cursorPosition[gBagPosition.pocket]);
   switch (input) {
     case LIST_NOTHING_CHOSEN:
       break;
@@ -1402,6 +1580,8 @@ function DoItemSwap(task: DecompTask): void {
     gBagPosition.scrollPosition[pocket],
     gBagPosition.cursorPosition[pocket],
   );
+  // 1:1 :1517 SetItemMenuSwapLineInvisibility(TRUE) — cache la barre swap.
+  SetItemMenuSwapLineInvisibility(true);
   // 1:1 :1518 CreatePocketSwitchArrowPair (= chevrons L/R restored).
   CreatePocketSwitchArrowPair();
   task.func = Task_BagMenu_HandleInput;
@@ -1423,6 +1603,8 @@ function CancelItemSwap(task: DecompTask): void {
     gBagPosition.scrollPosition[pocket],
     gBagPosition.cursorPosition[pocket],
   );
+  // 1:1 :1535 SetItemMenuSwapLineInvisibility(TRUE).
+  SetItemMenuSwapLineInvisibility(true);
   CreatePocketSwitchArrowPair();
   task.func = Task_BagMenu_HandleInput;
 }
@@ -1655,6 +1837,10 @@ export function _CtxReturnToList(taskId: number): void {
   if (!rt) return;
   const task = rt.gTasks.get(taskId);
   if (!task) return;
+  // 1:1 :1288-1290 ReturnToItemList : cache panneau TMHM + restore description.
+  ClearWindowTilemap(_win(WIN_TMHM_INFO_ICONS));
+  ClearWindowTilemap(_win(WIN_TMHM_INFO));
+  PutWindowTilemap(_win(WIN_DESCRIPTION));
   // 1:1 :1990-1993 ItemMenu_Cancel restore :
   PrintItemDescription(task.data[T_LIST_POSITION]);
   ScheduleBgCopyTilemapToVram(0);
@@ -1663,9 +1849,6 @@ export function _CtxReturnToList(taskId: number): void {
   // 1:1 :1286-1287 ReturnToItemList :
   CreatePocketScrollArrowPair();
   CreatePocketSwitchArrowPair();
-  // ClearWindowTilemap(WIN_TMHM_INFO_ICONS+WIN_TMHM_INFO) = TMHM panneau non
-  // porté, no-op honnête ; PutWindowTilemap(WIN_DESCRIPTION) implicit dans
-  // PrintItemDescription. ScheduleBgCopy(0) déjà fait ci-dessus.
   // 1:1 :1292 task.func = Task_BagMenu_HandleInput.
   task.func = Task_BagMenu_HandleInput;
 }

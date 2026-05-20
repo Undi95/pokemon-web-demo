@@ -318,6 +318,46 @@ export function BlitBitmapToWindow(
   win.needsFlush = true;
 }
 
+/** 1:1 décomp `BlitBitmapRectToWindow(windowId, pixels, srcX, srcY, srcWidth,
+ *  srcHeight, destX, destY, rectWidth, rectHeight)` (window.c:398). Blit un
+ *  RECT du bitmap source (tile-arranged 4bpp) vers le pixelBuffer du window.
+ *  Le sub-rect commence à (srcX, srcY) dans le src, taille (rectW, rectH),
+ *  destination (destX, destY). srcWidth/Height = dimensions complètes du src
+ *  bitmap (= 128×128 px pour gMenuInfoElements_Gfx). */
+export function BlitBitmapRectToWindow(
+  windowId: number,
+  src: Uint8Array,
+  srcX: number, srcY: number,
+  srcWidth: number, _srcHeight: number,
+  destX: number, destY: number,
+  rectW: number, rectH: number,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const win = gw.win;
+  const srcWidthTiles = srcWidth / 8;
+  for (let py = 0; py < rectH; py++) {
+    const dstY = destY + py;
+    if (dstY < 0 || dstY >= win.heightPx) continue;
+    const sy = srcY + py;
+    const tileY = (sy / 8) | 0;
+    const yInTile = sy & 7;
+    for (let px = 0; px < rectW; px++) {
+      const dstX = destX + px;
+      if (dstX < 0 || dstX >= win.widthPx) continue;
+      const sx = srcX + px;
+      const tileX = (sx / 8) | 0;
+      const xInTile = sx & 7;
+      const tileIdx = tileY * srcWidthTiles + tileX;
+      const byteIdx = tileIdx * 32 + yInTile * 4 + (xInTile >> 1);
+      const nibbleShift = (xInTile & 1) * 4;
+      const pixel = (src[byteIdx] >> nibbleShift) & 0xF;
+      win.pixelBuffer[dstY * win.widthPx + dstX] = pixel;
+    }
+  }
+  win.needsFlush = true;
+}
+
 export function FillWindowPixelRect(
   windowId: number,
   fill: number,

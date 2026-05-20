@@ -32,7 +32,7 @@
  * un follow-up.
  */
 import type { DecompTask } from './decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected, _CtxShowTMHMPanel } from './bag-menu';
 import { gSpecialVar } from './script-vars';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
@@ -296,11 +296,13 @@ export function OpenContextMenu(_task: DecompTask): void {
   _ctxNumItems = items.length;
   gBagMenu.contextMenuItemsPtr = items;
   gBagMenu.contextMenuNumItems = items.length;
-  // 1:1 :1662-1666 — affiche "X est sélectionné." dans WIN_DESCRIPTION
-  // (TM_HM pocket utilise PrintTMHMMoveData à la place — déféré, on tombe sur
-  // le path générique). Utilise gSpecialVar.ItemId set par Task_BagMenu_Handle
-  // Input juste avant le dispatch sContextMenuFuncs.
-  _CtxPrintItemSelected(gSpecialVar.ItemId);
+  // 1:1 :1653-1666 — TM/HM pocket affiche le panneau type/puiss/préc/PP du
+  // move, les autres pockets affichent "X est sélectionné.".
+  if (gBagPosition.pocket === TMHM_POCKET) {
+    _CtxShowTMHMPanel(gSpecialVar.ItemId);
+  } else {
+    _CtxPrintItemSelected(gSpecialVar.ItemId);
+  }
   // 1:1 :1668-1675 — choisit le window type et imprime.
   _ctxWindowType = _windowTypeFor(_ctxNumItems);
   _ctxGrid2D = _ctxNumItems >= 4;

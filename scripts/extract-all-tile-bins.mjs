@@ -104,6 +104,15 @@ const targets = [
   { src: `${PUBLIC}/battle_interface/textbox.png`, bpp: 4 },
   // summary_screen/tiles : loadTileBin static, .bin manquait.
   { src: `${PUBLIC}/summary_screen/tiles.png`, bpp: 4 },
+  // SwapLine sprite (= 1:1 décomp menu_helpers.c:72 sSpriteSheet_SwapLine,
+  // utilise par bag/PC/pokeblock quand le user re-ordonne les items via SELECT).
+  // gSwapLineGfx + gSwapLinePal : graphics/interface/swap_line.png 4bpp 0x100 octets.
+  { src: `${PUBLIC}/interface/swap_line.png`, bpp: 4, extractPalette: true },
+  // Menu info icons (= 1:1 decomp menu.c:113 sMenuInfoIcons, utilise par
+  // bag TM/HM ctx menu + secret base placement). graphics/interface/menu_info.png
+  // 128×128 4bpp = 8 KB sheet. Contient labels (Type/Puiss/Préc/PP) + 18 icones
+  // de type elemental (Normal/Combat/Vol/...) + Ball red/blue.
+  { src: `${PUBLIC}/interface/menu_info.png`, bpp: 4, extractPalette: true },
 ];
 
 // trainer_pics : trainer-card-screen.ts fait loadTileBin(`.../trainer_pics/
