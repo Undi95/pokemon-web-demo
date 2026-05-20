@@ -298,8 +298,10 @@ function applyNoIntroPreset(): void {
     console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
   }
 
-  gameState.save();
-  console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);
+  // 1:1 ROM : pas de save SRAM auto, le mode test vit en RAM tant que user
+  // n'appuie pas SAUVER explicitement. User-flag : "Retire save auto SRAM des
+  // mode test (les ?) comme ca on peut tester sans ecraser sa save".
+  console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6 (RAM-only, pas de save auto)`);
 }
 
 /**
@@ -350,8 +352,8 @@ export function decideBootMode(): BootSpawn {
     gameState.gender = 'MALE';
     NewGameInit();  // = trainerId set par InitPlayerTrainerId (= u32 random)
     gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
-    gameState.save();
-    console.log('[boot-mode] ?truck shortcut : save reset + truck spawn pour test cinematic');
+    // 1:1 ROM : pas de save SRAM auto (= user-flag, ne pas écraser sa save).
+    console.log('[boot-mode] ?truck shortcut : reset RAM + truck spawn (RAM-only, pas de save auto)');
     // 1:1 décomp `WarpToTruck` (new_game.c:127) → SetWarpDestination(..., -1, -1, -1) →
     // SetPlayerCoordsFromWarp() falls into "Invalid warpId and coords" branch
     // → `pos.x = mapLayout->width / 2; pos.y = mapLayout->height / 2;`
