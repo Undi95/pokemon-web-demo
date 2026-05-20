@@ -162,6 +162,7 @@ type SubState =
   | 'pc_list'          // 1:1 décomp ItemStorage_ProcessInput (= liste PC items active)
   | 'pc_action_msg'    // 1:1 décomp ItemStorage_HandleRemoveItem / ItemStorage_HandleErrorMessageInput
   | 'pc_toss_confirm'  // 1:1 décomp YesNo toss confirm
+  | 'decoration_menu'  // 1:1 décomp HandleDecorationActionsMenuInput (DECORER/RANGER/JETER/SORTIR)
   | 'msg_wait'         // showing "No items"/"No mail" message ; A press → return prev
   | 'closing';         // cleanup en cours
 
@@ -217,6 +218,7 @@ export function TickBedroomPC(): void {
     case 'pc_list':         _tickPCList(newKeys); break;
     case 'pc_action_msg':   _tickPCActionMsg(newKeys); break;
     case 'pc_toss_confirm': _tickPCTossConfirm(newKeys); break;
+    case 'decoration_menu': _tickDecorationMenu(newKeys); break;
     case 'msg_wait':        _tickMsgWait(newKeys); break;
     case 'closing':         _tickClosing(); break;
   }
@@ -737,16 +739,96 @@ function _openMailboxEmpty(): void {
   _showMessageThenReturn(getString('gText_NoMailHere'), 'main_menu');
 }
 
-/** 1:1 décomp `PlayerPC_Decoration` (player_pc.c:487) :
+/** 1:1 décomp `PlayerPC_Decoration` (player_pc.c:487-490) :
  *    DoPlayerRoomDecorationMenu(taskId);
- *  C'est un gros chantier (= decoration.c). Pour l'instant fallback msg.
- *  Le gText_NoDecorations n'existe pas dans le décomp ; on utilise une
- *  string honnête neutre. */
+ *
+ *  Ouvre le sub-menu Decoration (= 1:1 décomp decoration.c:591-599) avec
+ *  4 options : DECORER / RANGER / JETER / SORTIR (= sDecorationMainMenuActions).
+ *  Notre port : ouvre une fenêtre menu + sticky description per option.
+ *
+ *  Les actions DECORER/RANGER/JETER déclenchent le UI complet decoration.c
+ *  (= ~5000 lignes, place item dans le room, list categories, etc.).
+ *  En early game : GetNumOwnedDecorations() == 0 + HasDecorationsInUse() == FALSE
+ *  → tous renvoient un msg honnête depuis strings.json. */
 function _openDecorationEmpty(): void {
-  // gText_PleaseChooseADecoration / similar n'a pas de match early-game.
-  // Le décomp ouvre directement la UI sans early-return — donc en attendant
-  // le port complet, on affiche un fallback texte simple.
-  _showMessageThenReturn('Aucune DÉCORATION rangée.', 'main_menu');
+  _removeMainWindow();
+  _clearSticky();
+  sSubState = 'decoration_menu';
+  // 1:1 décomp `InitDecorationActionsWindow` : crée le window "main menu" decoration.
+  sSubWindowId = AddWindow(WIN_ITEM_STORAGE_MENU);
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(
+    sSubWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  // 1:1 décomp sDecorationMainMenuActions : 4 options.
+  const decoOpts: PCOption[] = [
+    { label: getString('gText_Decorate'),  action: _decorationActionDecorate },
+    { label: getString('gText_PutAway'),   action: _decorationActionPutAway },
+    { label: getString('gText_Toss2'),     action: _decorationActionToss },
+    { label: getString('gText_Cancel'),    action: _decorationActionCancel },
+  ];
+  _printMenuOptions(sSubWindowId, decoOpts);
+  InitMenuInUpperLeftCornerNormal(sSubWindowId, decoOpts.length, 0);
+  // 1:1 décomp `PrintCurMainMenuDescription` (decoration.c:625-629) : print
+  // description du first option dans la sticky.
+  _showSticky(getString('gText_PutOutSelectedDecorItem'));
+}
+
+/** 1:1 décomp `DecorationMenuAction_Decorate` (decoration.c:631-644) :
+ *    if (GetNumOwnedDecorations() == 0)
+ *        DisplayItemMessageOnField(taskId, gText_NoDecorations, ...);
+ *    else
+ *        gTasks[taskId].tDecorationMenuCommand = DECOR_MENU_PLACE;
+ *        SecretBasePC_PrepMenuForSelectingStoredDecors(taskId);
+ *  En early game : aucune décoration → branch NoDecorations. */
+function _decorationActionDecorate(): void {
+  PlaySE(Songs.SE_SELECT);
+  _removeSubWindow();
+  _showMessageThenReturn(getString('gText_NoDecorations'), 'main_menu');
+}
+
+/** 1:1 décomp `DecorationMenuAction_PutAway` (decoration.c:646-661) :
+ *    if (!HasDecorationsInUse(taskId)) → gText_NoDecorationsInUse */
+function _decorationActionPutAway(): void {
+  PlaySE(Songs.SE_SELECT);
+  _removeSubWindow();
+  _showMessageThenReturn(getString('gText_NoDecorationsInUse'), 'main_menu');
+}
+
+/** 1:1 décomp `DecorationMenuAction_Toss` (decoration.c:663-678) : same
+ *  flow que Decorate (= gText_NoDecorations si aucune deco). */
+function _decorationActionToss(): void {
+  PlaySE(Songs.SE_SELECT);
+  _removeSubWindow();
+  _showMessageThenReturn(getString('gText_NoDecorations'), 'main_menu');
+}
+
+/** 1:1 décomp `DecorationMenuAction_Cancel` (decoration.c) :
+ *    HideStartMenu(); ReshowPlayerPC(taskId); */
+function _decorationActionCancel(): void {
+  PlaySE(Songs.SE_SELECT);
+  _removeSubWindow();
+  sSubState = 'main_menu';
+  _showSticky(getString('gText_WhatWouldYouLike'));
+  _openMainMenu();
+}
+
+/** 1:1 décomp `HandleDecorationActionsMenuInput` (decoration.c:601-623). */
+function _tickDecorationMenu(_newKeys: number): void {
+  const sel = Menu_ProcessInputNoWrap();
+  if (sel === MENU_NOTHING_CHOSEN) return;
+  if (sel === MENU_B_PRESSED) {
+    PlaySE(Songs.SE_SELECT);
+    _decorationActionCancel();
+    return;
+  }
+  PlaySE(Songs.SE_SELECT);
+  switch (sel) {
+    case 0: _decorationActionDecorate(); break;
+    case 1: _decorationActionPutAway(); break;
+    case 2: _decorationActionToss(); break;
+    case 3: _decorationActionCancel(); break;
+  }
 }
 
 /** 1:1 décomp `PlayerPC_TurnOff` (player_pc.c:492) :
