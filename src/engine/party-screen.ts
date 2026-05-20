@@ -2251,10 +2251,12 @@ export function PartyMenuAnimateHP(
  *  pendant phase `'hp_anim'`. */
 function _tickHpAnim(): void {
   // 1:1 décomp PartyMenuModifyHP (party_menu.c:1839) : tick chaque frame
-  // (= 60Hz / GBA). Ici on throttle pour visibilité humaine (3 frames/HP =
-  // ~50ms/HP soit ~600ms pour heal de 12 PV — anim visible).
+  // (= 60Hz / GBA) avec 1 HP/frame fixed. La "smoothness" perçue ROM vient
+  // du REDRAW HP bar à 60Hz qui interpole visuellement entre les sauts.
+  // ticksPerHp=1 = ROM-exact. Pour Pokemons à petit maxHp (= peu de pixels
+  // par PV), l'anim est rapide mais visuellement smooth grâce à 16ms/tick.
   _hpAnimFrameCounter++;
-  const ticksPerHp = 3;  // = 1 HP per 3 frames (~50ms/HP).
+  const ticksPerHp = 1;  // 1:1 décomp = 1 HP/frame (60Hz, ~16ms/HP).
   if (_hpAnimFrameCounter < ticksPerHp) return;
   _hpAnimFrameCounter = 0;
   const party = gameState.party as PokemonInstance[];
