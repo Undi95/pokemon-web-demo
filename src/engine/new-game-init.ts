@@ -1,5 +1,6 @@
 import { gameState } from './game-state';
 import { RunScriptImmediately, ensureCommonScriptsLoaded } from './script-runtime';
+import { NewGameInitPCItems } from './pc-items';
 
 /**
  * Initialise une nouvelle partie en exécutant directement les vrais scripts
@@ -32,6 +33,11 @@ export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
   // Reset des flags par défaut (cache tous les NPCs de début de jeu).
   // 1:1 décomp `EventScript_ResetAllMapFlags` (= setflag séries pour FLAG_HIDE_*).
   RunScriptImmediately('EventScript_ResetAllMapFlags');
+
+  // 1:1 décomp `NewGameInitData` (new_game.c:149-207) ligne 187 :
+  //   ClearBag(); NewGameInitPCItems();
+  // ⇒ ajoute 1× POTION dans le PC du joueur (= sNewGamePCItems table).
+  NewGameInitPCItems();
 
   // Spawn manuel dans le camion. Coords (1, 2) = côté ouest du camion 5×5,
   // le joueur marche vers l'est et déclenche le coord trigger à (3, 2).

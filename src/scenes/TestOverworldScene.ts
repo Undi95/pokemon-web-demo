@@ -141,6 +141,8 @@ import {
   preloadStandardMenuPalette,
 } from '../engine/field-message-box';
 import { TickStartMenu } from '../engine/start-menu';
+import { TickBedroomPC } from '../engine/bedroom-pc';
+import { TickPCAnim } from '../engine/pc-anim';
 import { syncSubspriteOam } from '../engine/object-events';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
@@ -426,6 +428,14 @@ export class TestOverworldScene extends Phaser.Scene {
         // (navigation/selection/close). LockPlayerFieldControls assure que
         // PlayerStep skip son input quand menu ouvert.
         TickStartMenu();
+        // 1:1 décomp player_pc.c : tick BedroomPC overlay menu state machine.
+        // Si PC ouvert : drive l'input + navigate sub-menus. Quand PC se ferme :
+        // soit ScriptContext_SetupScript(TurnOffPlayerPC), soit SignalWaitState.
+        TickBedroomPC();
+        // 1:1 décomp field_specials.c:Task_PCTurnOnEffect : flicker PC metatile
+        // 5 fois quand DoPCTurnOnEffect a été déclenché par script. Notre task
+        // runtime tick chaque frame, toggle every 6 frames.
+        TickPCAnim();
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
         // Phase 4.10 : tick script-driven movements AVANT CameraUpdate. Le tick
         // set gFieldCamera.movementSpeedX/Y que CameraUpdate lit ce même frame

@@ -114,11 +114,18 @@ registerSpecial('HealPlayerParty', () => {
 // registerSpecial here because we need access to `ctx` to call SetupNativeScript
 // (= block script while UI runs). registerSpecial handlers don't have ctx access.
 
-/** 1:1 décomp `BedroomPC` (mail.c).
- *  Open le PC interface. Stub no-op (= no PC UI yet). */
-registerSpecial('BedroomPC', () => {
-  // TODO Phase 6+ : open PC menu interface.
-});
+/** 1:1 décomp `BedroomPC` (player_pc.c:373) : open PC menu in bedroom (= 4
+ *  options : PC OBJET / COURRIER / DÉCORATION / SORTIR). Le special est
+ *  `waitstate=1` (specials.inc:277) donc l'opcode dispatcher dans
+ *  script-opcodes.ts intercepte BedroomPC directement et installe un
+ *  SetupNativeScript bloquant jusqu'à fermeture du PC.
+ *  Stub ici pour audit-coverage ; vrai dispatch dans script-opcodes.ts. */
+registerSpecial('BedroomPC', () => { /* see script-opcodes.ts dispatcher */ });
+
+/** 1:1 décomp `PlayerPC` (player_pc.c:380) : open PC menu hors chambre (= 3
+ *  options : PC OBJET / COURRIER / SORTIR, pas de DECORATION).
+ *  Stub ici pour audit-coverage ; vrai dispatch dans script-opcodes.ts. */
+registerSpecial('PlayerPC', () => { /* see script-opcodes.ts dispatcher */ });
 
 /** 1:1 décomp `GetBattleOutcome` (battle_util.c).
  *  Returns gBattleOutcome (= win/lose/run/draw). Phase 5.6 : on lit le résultat
@@ -237,12 +244,30 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
 
 // ─── PC effects (= used by post-rival-battle when player visits Birch's lab) ─
 
-/** 1:1 décomp `DoPCTurnOnEffect` (player_pc.c) : flicker animation when
- *  PC monitor turns on. Stub : no visual effect. */
-registerSpecial('DoPCTurnOnEffect', () => { /* no-op */ });
+/** 1:1 décomp `DoPCTurnOnEffect` (field_specials.c:986-997).
+ *  Spawn task qui flicker le metatile PC 5 fois (off→on→off→on→off→on) en
+ *  finissant sur ON. Notre port utilise une mini state machine ticked depuis
+ *  TestOverworldScene.
+ *
+ *  1:1 décomp PCTurnOnEffect_SetMetatile (lines 1046-1070) :
+ *    - lit gSpecialVar_0x8004 (= PC_LOCATION_OTHER/BRENDANS/MAYS_HOUSE)
+ *    - lit player facing (NORTH/WEST/EAST) → calcule dx/dy offset du PC
+ *    - MapGridSetMetatileIdAt(player.x + dx, player.y + dy, metatileId | MAPGRID_IMPASSABLE)
+ *
+ *  PC est TOUJOURS au-dessus du player (dy = -1) selon la direction face. */
+registerSpecial('DoPCTurnOnEffect', () => {
+  void import('./pc-anim').then(({ StartPCTurnOnEffect }) => {
+    StartPCTurnOnEffect();
+  });
+});
 
-/** 1:1 décomp `DoPCTurnOffEffect` (player_pc.c). Stub. */
-registerSpecial('DoPCTurnOffEffect', () => { /* no-op */ });
+/** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
+ *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
+registerSpecial('DoPCTurnOffEffect', () => {
+  void import('./pc-anim').then(({ DoPCTurnOffEffect }) => {
+    DoPCTurnOffEffect();
+  });
+});
 
 /** 1:1 décomp `TurnOnTVScreen` (field_specials.c) : TV interaction effect.
  *  Change le metatile TV de "OFF" (= MB_TELEVISION) à "ON". Notre métatile dispatch
@@ -785,6 +810,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetFavorLadyState', 'GetGabbyAndTyLocalIds', 'GetLinkPartnerNames',
   'GetMartEmployeeObjectEventId',
   // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
+  // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
   'GetNpcContestantLocalId', 'GetNumLevelsGainedFromDaycare',
   'GetNumMovesSelectedMonHas', 'GetObjectEventLocalIdByFlag',
@@ -825,7 +851,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
   'Overworld_PlaySpecialMapMusic', 'PickLotteryCornerTicket',
   'PlayBardSong', 'PlayRoulette', 'PlayerNotAtTrainerHillEntrance',
-  'PlayerPC', 'PrepSecretBaseBattleFlags', 'PrintPlayerBerryPowderAmount',
+  // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
+  'PrepSecretBaseBattleFlags', 'PrintPlayerBerryPowderAmount',
   'PutAwayDecorationIteration', 'PutFanClubSpecialOnTheAir',
   'PutLilycoveContestLadyShowOnTheAir', 'QuizLadyGetPlayerAnswer',
   'QuizLadyPickNewQuestion', 'QuizLadyRecordCustomQuizData',

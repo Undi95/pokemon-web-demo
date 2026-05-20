@@ -12,7 +12,7 @@
  */
 
 import type { PokemonInstance } from './pokemon';
-import { type Bag, emptyBag } from './bag';
+import { type Bag, type ItemSlot, emptyBag } from './bag';
 import {
   GetSaveBlock1, GetSaveBlock2, LoadGameSave, TrySavingData,
   ResetSaveBlocks, HasValidSave,
@@ -209,6 +209,12 @@ class GameState {
   // ===== Bag ==========================================================
   get bag(): Bag {
     return GetSaveBlock1().bag;
+  }
+
+  // ===== PC items (= 50 slots, max 999/slot, séparé du bag) ===========
+  /** 1:1 décomp `gSaveBlock1Ptr->pcItems` (= 50 slots de PC item storage). */
+  get pcItems(): ItemSlot[] {
+    return GetSaveBlock1().pcItems;
   }
 
   // ===== Options ======================================================

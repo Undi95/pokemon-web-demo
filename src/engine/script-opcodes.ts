@@ -1110,6 +1110,27 @@ registerOpcode('special', (ctx, args) => {
   // `Special_ViewWallClock` = mode VIEW (RTC live + A/B = close).
   // `StartWallClock` = mode SET (D-pad ajuste hours/minutes, A = confirm via
   // RtcInitLocalTimeOffset, sauvegarde).
+  // 1:1 décomp player_pc.c (= BedroomPC + PlayerPC). Pattern overlay (= pas
+  // de CB2 swap car le PC dessine au-dessus de l'overworld). OpenBedroomPC()
+  // ouvre le main menu UI ; TickBedroomPC() est polled chaque frame depuis
+  // TestOverworldScene main loop pour drive l'input. Le special est `waitstate=1`
+  // dans specials.inc:277-278 donc on bloque le script via SetupNativeScript
+  // jusqu'à ce que le PC se ferme (= IsBedroomPCOpen() false).
+  if (name === 'BedroomPC' || name === 'PlayerPC') {
+    const isBedroom = (name === 'BedroomPC');
+    let opened = false;
+    let isOpenChecker: (() => boolean) | null = null;
+    void import('./bedroom-pc').then((mod) => {
+      mod.OpenBedroomPC(isBedroom);
+      isOpenChecker = mod.IsBedroomPCOpen;
+      opened = true;
+    });
+    SetupNativeScript(ctx, () => {
+      if (!opened) return false;
+      return !isOpenChecker!();
+    });
+    return true;
+  }
   if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
     const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
     let opened = false;
@@ -4408,9 +4429,19 @@ registerOpcode('checkitemtype', (_ctx, args) => {
 });
 
 registerOpcode('addpcitem', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_addpcitem : AddPCItem(item, quantity).
-  // Notre port : pas de PC item storage séparé → fallback bag.
-  return getOpcodeHandler('additem')?.(_ctx, args) ?? false;
+  // 1:1 décomp `ScrCmd_addpcitem` (scrcmd.c) :
+  //   gSpecialVar_Result = AddPCItem(itemId, quantity);
+  //   return FALSE;
+  // Ajoute des items au PC du joueur (= gSaveBlock1Ptr->pcItems, pas le bag).
+  // Notre port : appelle pc-items.ts AddPCItem 1:1.
+  const itemKey = args[0] ?? '';
+  const qty = parseValue(args[1]);
+  // Lazy import to avoid circular dep with bedroom-pc → script-runtime → script-opcodes.
+  void import('./pc-items').then(({ AddPCItem }) => {
+    const ok = AddPCItem(itemKey, qty);
+    VarSet('VAR_RESULT', ok ? 1 : 0);
+  });
+  return false;
 });
 
 // ─── Decoration extras ──────────────────────────────────────────────────────
