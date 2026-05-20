@@ -669,7 +669,12 @@ function tryInteractWithFacingNPC(): void {
     for (let i = 0; i < gObjectEvents.length; i++) {
       const npc = gObjectEvents[i];
       if (!npc.active) continue;
-      if (npc.walkFramesLeft > 0) continue;  // skip mid-walk (= cell non stable)
+      // 1:1 décomp `GetObjectEventIdByPosition` (event_object_movement.c:2192) :
+      // match strict sur `currentCoords` (= destination du walk). Pas de check
+      // `walkFramesLeft`. Le NPC mid-walk a déjà sa currentCoords pointant vers
+      // la destination tile, donc user qui face cette destination peut interact.
+      // Le `lock` opcode du script freeze le NPC en place — sub-pixel position
+      // resté au moment du freeze (= 1:1 décomp behavior, "NPC frozen mid-step").
       if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
         gSelectedObjectEvent.index = i;
         gSpecialVar.LastTalked = npc.localId;

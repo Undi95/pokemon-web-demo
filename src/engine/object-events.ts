@@ -190,6 +190,12 @@ export interface ObjectEvent {
    *  frame layout invalide pour un sprite multi-OAM). syncSubspriteOam refresh
    *  les child OAMs chaque frame depuis sprite.tileBase + sub.tileOffset. */
   useSubsprites: boolean;
+  /** True si NPC est sprite 32×32 single-OAM (= Vigoroth déménageurs). 16 tiles
+   *  par frame ; updateNpcSpriteFrame alterne entre 3 frames consecutivement
+   *  chargés en VRAM (face / walk1 / walk2). Pas de direction switch — Vigoroth
+   *  affiche toujours la même orientation (= sprite "carrying box" face down,
+   *  "facing away" face up). */
+  is32x32: boolean;
   movementStep: number;
   movementDelay: number;
   walkFramesLeft: number;
@@ -247,6 +253,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkDirection: DIR_NONE,
   walkAnimAlt: 0,
   frozen: false,
+  is32x32: false,
   initialCoordsX: 0,
   initialCoordsY: 0,
   movementRangeX: 0,
@@ -326,6 +333,7 @@ export function resetObjectEventAllocations(): void {
     npc.invisible = false;
     npc.frozen = false;
     npc.useSubsprites = false;
+    npc.is32x32 = false;
     npc.walkFramesLeft = 0;
     npc.movementStep = 0;
     npc.movementDelay = 0;
@@ -514,11 +522,102 @@ export { syncSubspriteOam };
 
 // ─── Movement type → initial facing direction ──────────────────────────────
 
+/** 1:1 décomp `gInitialMovementTypeFacingDirections[]`
+ *  (event_object_movement.c:351-433). Read par `InitObjectEventStateFromTemplate`
+ *  (line 1320) pour init `previousMovementDirection` au spawn, et utilisé par
+ *  les `MovementType_*_Step0` (e.g. MovementType_WalkInPlace_Step0 line 4422)
+ *  pour set le facing initial du sprite avant la première anim.
+ *
+ *  Ancienne impl heuristique `includes('FACE_DOWN')` etc. : fallback DIR_SOUTH
+ *  pour les patterns sans 'FACE_*' → bug Vigoroth FACING_AWAY/CARRYING_BOX dans
+ *  MaysHouse_1F : mt=WALK_IN_PLACE_UP était mappé à DIR_SOUTH au lieu de
+ *  DIR_NORTH → sprite stuck sur frame face-down (= n'existe pas dans assets
+ *  VIGOROTH_FACING_AWAY) → Vigoroth ne s'anime pas (user-flag : "Un ne bouge
+ *  pas, l'autre slide"). */
+const _INITIAL_FACING_BY_MT: ReadonlyMap<string, number> = new Map([
+  // FACE_* (= reste statique facing direction)
+  ['MOVEMENT_TYPE_FACE_DOWN', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_UP', DIR_NORTH],
+  ['MOVEMENT_TYPE_FACE_LEFT', DIR_WEST],
+  ['MOVEMENT_TYPE_FACE_RIGHT', DIR_EAST],
+  // FACE_*_AND_* (= face direction principale + range autour)
+  ['MOVEMENT_TYPE_FACE_DOWN_AND_UP', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_LEFT_AND_RIGHT', DIR_WEST],
+  ['MOVEMENT_TYPE_FACE_UP_AND_LEFT', DIR_NORTH],
+  ['MOVEMENT_TYPE_FACE_UP_AND_RIGHT', DIR_NORTH],
+  ['MOVEMENT_TYPE_FACE_DOWN_AND_LEFT', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_DOWN_AND_RIGHT', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_DOWN_UP_AND_LEFT', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_DOWN_UP_AND_RIGHT', DIR_SOUTH],
+  ['MOVEMENT_TYPE_FACE_UP_LEFT_AND_RIGHT', DIR_NORTH],
+  ['MOVEMENT_TYPE_FACE_DOWN_LEFT_AND_RIGHT', DIR_SOUTH],
+  // WANDER_*
+  ['MOVEMENT_TYPE_WANDER_AROUND', DIR_SOUTH],
+  ['MOVEMENT_TYPE_WANDER_UP_AND_DOWN', DIR_NORTH],
+  ['MOVEMENT_TYPE_WANDER_DOWN_AND_UP', DIR_SOUTH],
+  ['MOVEMENT_TYPE_WANDER_LEFT_AND_RIGHT', DIR_WEST],
+  ['MOVEMENT_TYPE_WANDER_RIGHT_AND_LEFT', DIR_EAST],
+  // WALK_*
+  ['MOVEMENT_TYPE_WALK_UP_AND_DOWN', DIR_NORTH],
+  ['MOVEMENT_TYPE_WALK_DOWN_AND_UP', DIR_SOUTH],
+  ['MOVEMENT_TYPE_WALK_LEFT_AND_RIGHT', DIR_WEST],
+  ['MOVEMENT_TYPE_WALK_RIGHT_AND_LEFT', DIR_EAST],
+  // WALK_IN_PLACE_*
+  ['MOVEMENT_TYPE_WALK_IN_PLACE_DOWN', DIR_SOUTH],
+  ['MOVEMENT_TYPE_WALK_IN_PLACE_UP', DIR_NORTH],
+  ['MOVEMENT_TYPE_WALK_IN_PLACE_LEFT', DIR_WEST],
+  ['MOVEMENT_TYPE_WALK_IN_PLACE_RIGHT', DIR_EAST],
+  // JOG_IN_PLACE_*
+  ['MOVEMENT_TYPE_JOG_IN_PLACE_DOWN', DIR_SOUTH],
+  ['MOVEMENT_TYPE_JOG_IN_PLACE_UP', DIR_NORTH],
+  ['MOVEMENT_TYPE_JOG_IN_PLACE_LEFT', DIR_WEST],
+  ['MOVEMENT_TYPE_JOG_IN_PLACE_RIGHT', DIR_EAST],
+  // RUN_IN_PLACE_*
+  ['MOVEMENT_TYPE_RUN_IN_PLACE_DOWN', DIR_SOUTH],
+  ['MOVEMENT_TYPE_RUN_IN_PLACE_UP', DIR_NORTH],
+  ['MOVEMENT_TYPE_RUN_IN_PLACE_LEFT', DIR_WEST],
+  ['MOVEMENT_TYPE_RUN_IN_PLACE_RIGHT', DIR_EAST],
+  // WALK_SLOWLY_IN_PLACE_*
+  ['MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_DOWN', DIR_SOUTH],
+  ['MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_UP', DIR_NORTH],
+  ['MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_LEFT', DIR_WEST],
+  ['MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_RIGHT', DIR_EAST],
+  // COPY_PLAYER (= NPC copie le mvt joueur, facing init dérive du premier
+  // movement de chaîne).
+  ['MOVEMENT_TYPE_COPY_PLAYER', DIR_NORTH],
+  ['MOVEMENT_TYPE_COPY_PLAYER_OPPOSITE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_COPY_PLAYER_COUNTERCLOCKWISE', DIR_WEST],
+  ['MOVEMENT_TYPE_COPY_PLAYER_CLOCKWISE', DIR_EAST],
+  ['MOVEMENT_TYPE_COPY_PLAYER_IN_GRASS', DIR_NORTH],
+  ['MOVEMENT_TYPE_COPY_PLAYER_OPPOSITE_IN_GRASS', DIR_SOUTH],
+  ['MOVEMENT_TYPE_COPY_PLAYER_COUNTERCLOCKWISE_IN_GRASS', DIR_WEST],
+  ['MOVEMENT_TYPE_COPY_PLAYER_CLOCKWISE_IN_GRASS', DIR_EAST],
+  // Misc statiques
+  ['MOVEMENT_TYPE_NONE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_LOOK_AROUND', DIR_SOUTH],
+  ['MOVEMENT_TYPE_PLAYER', DIR_SOUTH],
+  ['MOVEMENT_TYPE_BERRY_TREE_GROWTH', DIR_SOUTH],
+  ['MOVEMENT_TYPE_ROTATE_COUNTERCLOCKWISE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_ROTATE_CLOCKWISE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_TREE_DISGUISE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_MOUNTAIN_DISGUISE', DIR_SOUTH],
+  ['MOVEMENT_TYPE_BURIED', DIR_SOUTH],
+  ['MOVEMENT_TYPE_INVISIBLE', DIR_SOUTH],
+]);
+
 function movementTypeToInitialFacing(movementType: string): number {
-  if (movementType.includes('FACE_DOWN')) return DIR_SOUTH;
-  if (movementType.includes('FACE_UP')) return DIR_NORTH;
-  if (movementType.includes('FACE_LEFT')) return DIR_WEST;
-  if (movementType.includes('FACE_RIGHT')) return DIR_EAST;
+  const mapped = _INITIAL_FACING_BY_MT.get(movementType);
+  if (mapped !== undefined) return mapped;
+  // WALK_SEQUENCE_* (= 24 variantes) : DIR = première lettre de la séquence
+  // (UP→DIR_NORTH, DOWN→DIR_SOUTH, LEFT→DIR_WEST, RIGHT→DIR_EAST). 1:1 décomp
+  // event_object_movement.c:381-404.
+  if (movementType.startsWith('MOVEMENT_TYPE_WALK_SEQUENCE_')) {
+    const rest = movementType.slice('MOVEMENT_TYPE_WALK_SEQUENCE_'.length);
+    if (rest.startsWith('UP_')) return DIR_NORTH;
+    if (rest.startsWith('DOWN_')) return DIR_SOUTH;
+    if (rest.startsWith('LEFT_')) return DIR_WEST;
+    if (rest.startsWith('RIGHT_')) return DIR_EAST;
+  }
   return DIR_SOUTH;
 }
 
@@ -663,6 +762,30 @@ export function FreezeObjectEvents(): void {
  *  call this après interact pour forcer face-toward-player visible immédiatement). */
 function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
+  // 32×32 NPCs (= Vigoroth déménageurs) : 16 tiles par frame, 3 frames
+  // consecutivement en VRAM (face=base, walk1=base+16, walk2=base+32). Pas
+  // de direction switching (= le sprite Vigoroth_CarryingBox affiche toujours
+  // face down ; Vigoroth_FacingAway toujours face up). 1:1 décomp sAnim_Go*
+  // approx : walkFramesLeft >= 8 → walk1/walk2 (selon walkAnimAlt) ; sinon face.
+  if (npc.is32x32) {
+    const sprite32 = rt.gSprites.get(npc.spriteId);
+    if (!sprite32) return;
+    const oam32 = rt.gba.oam[sprite32.oamIndex];
+    let frame32 = 0;
+    if (npc.walkFramesLeft > 0 && npc.walkFramesLeft >= 8) {
+      frame32 = npc.walkAnimAlt === 0 ? 1 : 2;  // walk1 / walk2
+    }
+    oam32.tileId = npc.objTileBase + frame32 * 16;  // 16 tiles per 32x32 frame
+    // hFlip selon facingDirection. 1:1 décomp sAnim_GoEast réutilise les frames
+    // de sAnim_GoWest avec .hFlip = TRUE (object_event_anims.h:229-236). Pour
+    // Vigoroth_CarryingBox mt=WALK_LEFT_AND_RIGHT, facingDirection alterne
+    // DIR_WEST/DIR_EAST → hFlip OFF/ON. Sans ça, sprite reste face WEST même
+    // quand walkDirection=EAST → user-flag "ne regarde qu'à gauche".
+    const flip = npc.facingDirection === DIR_EAST;
+    sprite32.hFlip = flip;
+    oam32.flipH = flip;
+    return;
+  }
   // Phase 4.10 : NPCs subsprite-driven (= truck) skip le frame update car leur
   // tile layout n'est pas un grid 16×32 frame. Le rendu visuel passe par
   // syncSubspriteOam qui refresh les child OAMs depuis sprite.tileBase + offsets.
@@ -937,11 +1060,44 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     tickWalkBackAndForth(rt, npc, primaryDir);
     return true;
   }
-  // WALK_IN_PLACE_* = face static avec walk anim "in place" cycle.
-  // MVP : juste static face, pas d'anim cycle (ajout futur si désiré).
-  if (mt.startsWith('MOVEMENT_TYPE_WALK_IN_PLACE_')) {
-    // Static face : facing direction déjà set au spawn par initialFacing.
-    // Aucun tick nécessaire.
+  // WALK_IN_PLACE_* / WALK_SLOWLY_IN_PLACE_* / JOG_IN_PLACE_* / RUN_IN_PLACE_*
+  // = facing static + walk anim "in place" cycle (= sprite pattes bougent sans
+  //   bouger logical coords). 1:1 décomp `MovementType_WalkInPlace_Step0/1`
+  //   (event_object_movement.c:4422 + MovementType_MoveInPlace_Step1:4413) :
+  //     Step0: ClearObjectEventMovement + ObjectEventSetSingleMovement(
+  //                GetWalkInPlaceNormalMovementAction(facing))
+  //     Step1: ExecSingleMovementAction → quand fini, retour Step0 (= loop)
+  //
+  //   GetWalkInPlace*MovementAction(facing) retourne l'action ID qui declenche
+  //   l'anim StartSpriteAnim(GetMoveDirectionAnimNum(facing)) avec une duration
+  //   de 16/32/8/4 frames (normal/slow/fast/faster). updateNpcSpriteFrame
+  //   alterne entre walk1/walk2 quand walkFramesLeft >= 8.
+  //
+  //   Bug user-flag : Vigoroth_FACING_AWAY (mt=WALK_IN_PLACE_UP) à MaysHouse_1F
+  //   "ne bouge pas" = static facing init était broken (DIR_SOUTH au lieu de
+  //   DIR_NORTH), résolu côté `_INITIAL_FACING_BY_MT`. Mais le sprite restait
+  //   aussi STATIQUE (= jamais alternait walk1/walk2) faute de tick d'anim.
+  if (mt.startsWith('MOVEMENT_TYPE_WALK_IN_PLACE_')
+   || mt.startsWith('MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_')
+   || mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')
+   || mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) {
+    // 1:1 décomp duration : walk_in_place_normal=16, slow=32, fast=8, faster=4
+    // (= event_object_movement.c:5732-5826 InitMoveInPlace, audit session 124).
+    let duration = 16;
+    if (mt.startsWith('MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_')) duration = 32;
+    else if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) duration = 8;
+    else if (mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) duration = 4;
+    // Init le cycle au premier tick (= mimic Step0 ObjectEventSetSingleMovement).
+    if (npc.walkFramesLeft === 0) {
+      npc.walkFramesLeft = duration;
+      npc.walkDirection = npc.facingDirection;
+    }
+    npc.walkFramesLeft--;
+    // Quand fini → toggle walkAnimAlt (= mimic ExecSingleMovementAction
+    // return TRUE → Step1 re-Step0 loop), reset cycle next frame.
+    if (npc.walkFramesLeft === 0) {
+      npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+    }
     return true;
   }
   // INVISIBLE : sprite hidden. Set npc.invisible.
@@ -1150,18 +1306,34 @@ function _spawnSingleNpcFromTemplate(
     // Fix : utiliser pngTo1dObjLayoutSingleFrame (= reorganise 16 tiles d'un
     // frame N en row-major frame-local).
     //
-    // Frame index selon graphics ID :
-    //   - VIGOROTH_CARRYING_BOX  → frame 0 (= face down avec boîte, 1:1
-    //     décomp sPicTable_VigorothCarryingBox[0])
-    //   - VIGOROTH_FACING_AWAY   → frame 3 (= face up, 1:1 décomp
-    //     sPicTable_VigorothFacingAway[0])
-    //   - autres 32x32 (futur)   → frame 0 (default)
-    let frameIdx = 0;
-    if (graphicsKey === 'OBJ_EVENT_GFX_VIGOROTH_FACING_AWAY') frameIdx = 3;
-    const reordered = pngTo1dObjLayoutSingleFrame(
-      png.charData, frameIdx, png.widthTiles, 32, 32,
-    );
-    rt.gba.objVram.set(reordered, objTileBase * 32);
+    // Anim multi-frame 1:1 décomp (session 2026-05-20 user-flag Vigoroth) :
+    // 1:1 décomp `sPicTable_Vigoroth*` (object_event_pic_tables.h:928-950) +
+    // `sAnim_GoSouth/North/West/East` (object_event_anims.h:202-236) :
+    //   - VIGOROTH_CARRYING_BOX : face=PNG[0], walk1=PNG[1], walk2=PNG[2]
+    //     (= face down avec box + 2 frames marche down ; le hFlip vers east
+    //      utilise les mêmes frames car le sprite reste face DOWN).
+    //   - VIGOROTH_FACING_AWAY : face=PNG[3], walk1=PNG[4], walk2=PNG[4]
+    //     (= face up ; pas de walk2 distinct du PNG, walk1 répété sur les
+    //      sub-frames walk1/walk2 de sAnim_GoNorth → oscillation 2-frame).
+    //   - autres 32x32 (futur) : face=0, walk1=1, walk2=2 (defaults).
+    //
+    // Charge les 3 frames consecutivement en VRAM à objTileBase pour que
+    // updateNpcSpriteFrame branch is32x32 puisse cycler oam.tileId entre
+    // objTileBase, objTileBase+16, objTileBase+32 (16 tiles par frame 32×32).
+    let faceFrame = 0;
+    let walk1Frame = 1;
+    let walk2Frame = 2;
+    if (graphicsKey === 'OBJ_EVENT_GFX_VIGOROTH_FACING_AWAY') {
+      faceFrame = 3;
+      walk1Frame = 4;
+      walk2Frame = 4;  // pas de walk2 distinct du PNG
+    }
+    const faceTiles = pngTo1dObjLayoutSingleFrame(png.charData, faceFrame, png.widthTiles, 32, 32);
+    const walk1Tiles = pngTo1dObjLayoutSingleFrame(png.charData, walk1Frame, png.widthTiles, 32, 32);
+    const walk2Tiles = pngTo1dObjLayoutSingleFrame(png.charData, walk2Frame, png.widthTiles, 32, 32);
+    rt.gba.objVram.set(faceTiles, objTileBase * 32);
+    rt.gba.objVram.set(walk1Tiles, (objTileBase + 16) * 32);
+    rt.gba.objVram.set(walk2Tiles, (objTileBase + 32) * 32);
   } else if (is16x16) {
     // 16×16 inanimate (= moving box, berry, egg). 4 tiles row-major.
     // Single frame, sequential layout dans le PNG.
@@ -1315,9 +1487,19 @@ function _spawnSingleNpcFromTemplate(
     }
   } else if (is32x32) {
     // 32×32 large Pokemon (= Vigoroth déménageurs). Single OAM shape=0 size=2
-    // (= 32×32). Skip updateNpcSpriteFrame via useSubsprites hack (= pas de
-    // frame layout 16×32).
-    npc.useSubsprites = true;
+    // (= 32×32). is32x32=true active la branche dédiée dans updateNpcSpriteFrame
+    // (= cycle oam.tileId entre 3 frames consecutivement chargées en VRAM :
+    // face=base, walk1=base+16, walk2=base+32). 1:1 décomp sAnim_Go* alterne
+    // walk1/face/walk2/face sur 32 frames (= 4 sub-frames × 8 ticks) — notre
+    // approximation MVP : walkFramesLeft cycle 16 → 0, walkAnimAlt toggle pour
+    // alterner walk1/walk2. updateNpcSpriteFrame branche is32x32 mappe :
+    //   - walkFramesLeft >= 8 → walk1 (alt=0) ou walk2 (alt=1)
+    //   - walkFramesLeft < 8  → face
+    // useSubsprites stays FALSE (= we want updateNpcSpriteFrame to run for
+    // Vigoroth ; useSubsprites=true previously was a hack pour skip le
+    // 16×32 frame layout invalide qui produisait du garbage).
+    npc.useSubsprites = false;
+    npc.is32x32 = true;
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,

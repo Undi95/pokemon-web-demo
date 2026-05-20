@@ -490,10 +490,19 @@ registerOpcode('lockall', (ctx) => {
 });
 
 registerOpcode('release', (_ctx) => {
-  // 1:1 décomp ScrCmd_release : HideFieldMessageBox + unfreeze selected NPC.
+  // 1:1 décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
+  //   HideFieldMessageBox();
+  //   ObjectEventClearHeldMovementIfFinished(selected);
+  //   ObjectEventClearHeldMovementIfFinished(player);
+  //   ScriptMovement_UnfreezeObjectEvents();
+  //   UnfreezeObjectEvents();   ← unfreeze TOUS les NPCs, pas juste le selected.
+  // Ancienne impl unfreezait SEULEMENT le selected → user-flag : parler à
+  // Vigoroth1 freeze Vigoroth2 indéfiniment (= release du script Vigoroth1
+  // ne libérait pas Vigoroth2 qui était frozen par lock).
   HideFieldMessageBox();
-  const npc = getSelectedNpc();
-  if (npc) npc.frozen = false;
+  for (const npc of gObjectEvents) {
+    if (npc.active) npc.frozen = false;
+  }
   return false;
 });
 

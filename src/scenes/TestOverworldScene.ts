@@ -739,6 +739,15 @@ export class TestOverworldScene extends Phaser.Scene {
     // false en Phase 5). Le user voit donc tous les NPCs flash en haut-gauche
     // pendant 1-2 frames avant fade in. Sync explicite ici fixe le flash.
     UpdateObjectEvents(this.rt);
+    // Phase 4.10 : sync child OAMs des NPCs subsprite-driven (= truck 48×48)
+    // IMMÉDIATEMENT après UpdateObjectEvents. Sans ça : SetSubspriteTables au
+    // spawn écrit OAM coords = (sprite.x=0 + sub.x) = (-24..8, -24..16),
+    // UpdateObjectEvents update sprite.x au bon endroit (= 104 pour le truck
+    // FEMALE 11,10), mais syncSubspriteOam ne tick qu'à la frame SUIVANTE dans
+    // MainCB2_Overworld → 1-2 frames de fade-in où les subsprites truck restent
+    // affichés en haut-gauche de l'écran (= user-flag : "camion en haut à gauche
+    // devrait être où je suis, c'est pile au fade après être sorti").
+    syncSubspriteOam();
 
     // 1:1 décomp `TryRunOnWarpIntoMapScript()` (= overworld.c:2160 dans
     // `InitObjectEventsLocal` → APRÈS TrySpawnObjectEvents). Run le table
