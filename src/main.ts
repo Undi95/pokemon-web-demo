@@ -29,7 +29,7 @@ import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
 import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
-import { OverworldScene } from './scenes/OverworldScene';
+// import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
 import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
@@ -258,8 +258,8 @@ const config: Phaser.Types.Core.GameConfig = {
     } catch { /* localStorage may be disabled — fallback to title */ }
     const skipTitle = noIntro || truckTest || hasResumableSave;
     return skipTitle
-      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene, OverworldScene]
-      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene, OverworldScene];
+      ? [TestOverworldScene, TestGbaScene, GameScene, BirchRuntimeScene]
+      : [TestGbaScene, GameScene, BirchRuntimeScene, TestOverworldScene];
   })(),
   // Restrict input listeners to the canvas only (= clicks/keys outside the
   // game window don't start/affect the game). Default Phaser behavior is to
