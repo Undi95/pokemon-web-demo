@@ -948,9 +948,21 @@ function tickRotate(rt: DecompRuntime, npc: ObjectEvent, clockwise: boolean): vo
   void rt;
 }
 
-/** 1:1 décomp `MovementType_WalkBackAndForth_Step*` (3766-3822).
- *  NPC walk 1 metatile in initial dir, then back to initialCoords, repeat.
- *  Si collision (= bord ou wall), turn around et walk autre côté. */
+/** 1:1 décomp `MovementType_WalkBackAndForth_Step*` (event_object_movement.c
+ *  3766-3822). NPC walk dans `primaryDir` jusqu'à atteindre la limite du
+ *  `movementRange*` (= rangeX/rangeY) puis fait demi-tour et revient à
+ *  `initialCoords`, repeat.
+ *
+ *  Le `directionSequenceIndex` (= `seq`) flag le sens courant :
+ *    seq=0 → going outbound (primaryDir)
+ *    seq=1 → returning to initial (OPPOSITE(primaryDir))
+ *
+ *  Seq n'est INCRÉMENTÉ qu'au moment d'un `COLLISION_OUTSIDE_RANGE` dans
+ *  Step2 (= NPC a atteint le bord du range). Step3 NE TOUCHE PAS seq.
+ *
+ *  Bug session 2026-05-21 corrigé : on incrémentait seq dans Step3 dès qu'on
+ *  s'éloignait de initialCoords d'1 case → ping-pong 1 pas E / 1 pas W au
+ *  lieu de range pas E / range pas W (= user-flag Vigoroth déménageur). */
 function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: number): void {
   // 1:1 décomp : step 0 → step 1 → step 2 fall-through inline. On merge en
   // appelant la logique step 1 (= set dir+facing) avant case 2 si on entre
@@ -962,32 +974,54 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
   }
   switch (npc.movementStep) {
     case 2: {
-      // Check collision in walk direction.
-      // 1:1 décomp : si returned to initialCoords avec seq=1, reset seq=0.
-      if (npc.directionSeqIdx === 1
+      // 1:1 décomp Step2 (3785-3811) :
+      // 1. Si seq && currentCoords == initialCoords → reset seq=0 + reverse
+      //    movementDirection (= on vient de rentrer à init, on repart outbound).
+      if (npc.directionSeqIdx !== 0
           && npc.currentCoordsX === npc.initialCoordsX
           && npc.currentCoordsY === npc.initialCoordsY) {
         npc.directionSeqIdx = 0;
-        npc.facingDirection = primaryDir;
+        npc.facingDirection = OPPOSITE_DIR[npc.facingDirection] ?? npc.facingDirection;
       }
-      const dir = npc.facingDirection;
+      // 2. Compute target cell + check COLLISION_OUTSIDE_RANGE en priorité.
+      //    Si dépasse range → seq++ + reverse dir + recompute target dans la
+      //    nouvelle direction (= 1:1 décomp ré-appelle GetCollisionInDirection
+      //    avec la dir reversée dans la MÊME frame).
+      let dir = npc.facingDirection;
+      let dx = DIR_TO_DX[dir] ?? 0;
+      let dy = DIR_TO_DY[dir] ?? 0;
+      let tx = npc.currentCoordsX + dx;
+      let ty = npc.currentCoordsY + dy;
+      if (IsCoordOutsideObjectEventMovementRange(npc, tx, ty)) {
+        npc.directionSeqIdx++;
+        dir = OPPOSITE_DIR[dir] ?? dir;
+        npc.facingDirection = dir;
+        dx = DIR_TO_DX[dir] ?? 0;
+        dy = DIR_TO_DY[dir] ?? 0;
+        tx = npc.currentCoordsX + dx;
+        ty = npc.currentCoordsY + dy;
+      }
+      // 3. Si la dir choisie peut walk (= wall/NPC/player check) → walk normal.
+      //    Sinon (= wall ou NPC) → walk-in-place via retry next tick (1:1 décomp
+      //    movementActionId = GetWalkInPlaceNormalMovementAction).
       if (canWalk(npc, dir)) {
         // 1:1 décomp `InitNpcForMovement` : shift current/previous au début.
-        const dx = DIR_TO_DX[dir] ?? 0;
-        const dy = DIR_TO_DY[dir] ?? 0;
-        ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
+        ShiftObjectEventCoords(npc, tx, ty);
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 3;
       } else {
-        // Collision : flip seq + retry next tick.
-        npc.directionSeqIdx = npc.directionSeqIdx === 0 ? 1 : 0;
+        // Wall/NPC collision : pas de progression cette frame, retry next.
+        // NE PAS toucher seq (1:1 décomp Step2 garde la même direction quand
+        // la collision n'est pas OUTSIDE_RANGE — la wall reste là).
         npc.movementStep = 1;
       }
       break;
     }
     case 3: {
-      // Tick walk frames (= worldX/Y visual).
+      // Tick walk frames (= worldX/Y visual). 1:1 décomp Step3 ne touche pas
+      // directionSequenceIndex (= la transition outbound→return est gérée dans
+      // Step2 via COLLISION_OUTSIDE_RANGE).
       const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
       const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
       npc.worldX += speedX;
@@ -998,12 +1032,6 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
         ShiftStillObjectEventCoords(npc);
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
-        // Si arrived 1 step from initialCoords, increment seq → backward.
-        // Si returned to initialCoords, decrement seq → forward (case 2).
-        if (npc.directionSeqIdx === 0
-            && (npc.currentCoordsX !== npc.initialCoordsX || npc.currentCoordsY !== npc.initialCoordsY)) {
-          npc.directionSeqIdx = 1;  // Now we go back.
-        }
         npc.movementStep = 1;
       }
       break;
