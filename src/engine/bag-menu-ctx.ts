@@ -459,13 +459,19 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       return;
     }
     case 'ItemUseOutOfBattle_TMHM':
-      msg = `${itemName} démarrée !\n[TMHM apprentissage à porter]`;
+      // 1:1 sémantique : décomp "CT activée." → "Apprendre {move} à un POKéMON?"
+      // OUI/NON → party menu. Sans party-menu mode item-use, on bloque ici.
+      // Affiche le 1er message décomp (gText_BootedUpTM/HM) + retour liste.
+      msg = itemId >= 339 /* ITEM_HM01 */ ? "CS activée." : "CT activée.";
       break;
     case 'ItemUseOutOfBattle_Bike':
-      msg = `${itemName} déployé.\n[Bike toggle à porter]`;
-      break;
     case 'ItemUseOutOfBattle_EscapeRope':
-      msg = `${itemName} utilisée.\n[Sortie donjon à porter]`;
+      // Décomp : ces handlers checkent l'overworld state (allowed/cave) et
+      // soit fade-close bag pour effet field, soit affichent DadsAdvice si
+      // pas le moment. Subsystem overworld non porté → fallback DadsAdvice
+      // 1:1 FR (= conservative ; le user comprend qu'il faut aller dans
+      // une zone adaptée). À enrichir quand le subsystem field sera prêt.
+      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
@@ -504,34 +510,32 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       break;
     }
     case 'ItemUseOutOfBattle_Mail':
-      msg = `${itemName}\n[Mail screen à porter]`;
-      break;
     case 'ItemUseOutOfBattle_EvolutionStone':
-      msg = `${itemName}\n[Evolution stone à porter]`;
-      break;
     case 'ItemUseOutOfBattle_PPRecovery':
     case 'ItemUseOutOfBattle_PPUp':
     case 'ItemUseOutOfBattle_ReduceEV':
     case 'ItemUseOutOfBattle_RareCandy':
     case 'ItemUseOutOfBattle_SacredAsh':
-      msg = `Utiliser ${itemName} sur un\nPOKéMON [${fieldUseFunc.slice(20)} à porter].`;
+    case 'ItemUseOutOfBattle_EnigmaBerry':
+      // Tous ces handlers dépendent de party-menu mode item-use (T13c/d à
+      // porter). Fallback DadsAdvice 1:1 FR temporaire.
+      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Rod':
-      msg = `${itemName}\n[Pêche à porter]`;
-      break;
     case 'ItemUseOutOfBattle_Itemfinder':
-      msg = `${itemName}\n[Cherch'objet à porter]`;
-      break;
     case 'ItemUseOutOfBattle_PokeblockCase':
     case 'ItemUseOutOfBattle_CoinCase':
     case 'ItemUseOutOfBattle_PowderJar':
     case 'ItemUseOutOfBattle_Berry':
     case 'ItemUseOutOfBattle_WailmerPail':
-    case 'ItemUseOutOfBattle_EnigmaBerry':
-      msg = `${itemName}\n[${fieldUseFunc.slice(20)} à porter]`;
+      // Tous ces handlers ouvrent un screen dédié (mail/pokeblock/etc.) ou
+      // un sous-système overworld (rod/itemfinder). Subsystems non portés
+      // → fallback DadsAdvice 1:1 FR.
+      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     default:
-      msg = `${itemName}\n[${fieldUseFunc} à porter]`;
+      // Handler inconnu → DadsAdvice 1:1 FR pour ne pas exposer le nom interne.
+      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
   }
   _showItemMessage(task, msg);
 }
