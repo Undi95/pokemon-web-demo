@@ -257,7 +257,14 @@ interface PartyAssets {
 }
 
 let _isOpen = false;
-let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' = 'idle';
+let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' = 'idle';
+
+/** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
+ *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
+ *  du PSN", "Ça n'aura aucun effet.", etc.). Phase passe à `'item_used_msg'`,
+ *  on draw msg dans WIN_MSG, et au prochain A_BUTTON → ClosePartyScreen vers
+ *  bag (via savedCallback = CB2_ReturnToBagMenu). */
+let _itemUsedMsgText: string | null = null;
 /** Action menu state : sub-cursor pos + spawned window id. 1:1 décomp
  *  sPartyMenuInternal->actions / numActions / windowId[0]. */
 let _actionCursor = 0;
@@ -917,6 +924,12 @@ function _drawMsg(): void {
     // (party_menu.c:2803 ; party_menu.h:603 → gText_MoveToWhere ;
     //  strings.c:431 = "Le mettre où?"). Même famille fenêtre que CHOOSE_MON.
     msg = getString('gText_MoveToWhere');
+    template = MSG_WINDOW_TEMPLATE;
+  } else if (_phase === 'item_used_msg' && _itemUsedMsgText) {
+    // 1:1 décomp DisplayPartyMenuMessage(text, TRUE) — affiche un message
+    // libre dans WIN_MSG après use d'item (= "Les PV de X restaurés…",
+    // "Ça n'aura aucun effet.", etc.). Au prochain A_BUTTON → ClosePartyScreen.
+    msg = _itemUsedMsgText;
     template = MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
     // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
@@ -1914,6 +1927,19 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   if (_phase === 'switching') { _slideTaskFn?.(); return; }
   // Sub-state action menu : dispatcher différent.
   if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
+  // Sub-state item used message : attend ack A/B press → close.
+  // 1:1 décomp Task_ClosePartyMenuAfterText (party_menu.c:4472) : check
+  // !IsPartyMenuTextPrinterActive + A/B press → Task_ClosePartyMenu.
+  if (_phase === 'item_used_msg') {
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (newKeys & (KEY_A | KEY_B)) {
+      PlaySE(5);  // SE_SELECT
+      _itemUsedMsgText = null;
+      ClosePartyScreen();
+    }
+    return;
+  }
   if (_phase !== 'open') return;
   const result = _partyMenuButtonHandler(rt);
   const KEY_A = 0x0001, KEY_B = 0x0002;
@@ -2139,6 +2165,16 @@ export function GetPartyScreenSlotId(): number {
   return _slotId;
 }
 
+/** Affiche un message FR dans WIN_MSG party-screen (= 1:1 décomp
+ *  `DisplayPartyMenuMessage(text, TRUE)` party_menu.c:4423/4447/etc.) puis
+ *  attend l'ack press A_BUTTON. Au A_BUTTON → ClosePartyScreen → retour
+ *  via savedCallback (= CB2_ReturnToBagMenu). */
+export function ShowPartyMenuItemMessage(text: string): void {
+  _itemUsedMsgText = text;
+  _phase = 'item_used_msg';
+  _drawMsg();
+}
+
 /** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :
  *
  *      ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty,
@@ -2213,7 +2249,7 @@ export function TickPartyScreen(_newKeys: number): void {
     CB2_InitPartyMenu, MainCB2_PartyMenuRun, VBlankCB_PartyMenuRun,
     Task_FadeAndClosePartyMenu, Task_ClosePartyMenu,
     OpenPartyScreen, OpenPartyScreenForItemUse, ClosePartyScreen,
-    IsPartyScreenOpen, GetPartyScreenSlotId,
+    IsPartyScreenOpen, GetPartyScreenSlotId, ShowPartyMenuItemMessage,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

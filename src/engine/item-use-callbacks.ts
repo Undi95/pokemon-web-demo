@@ -49,6 +49,10 @@ import {
   ITEM_EFFECT_HP_EV, ITEM_EFFECT_ATK_EV, ITEM_EFFECT_DEF_EV,
   ITEM_EFFECT_SPEED_EV, ITEM_EFFECT_SPATK_EV, ITEM_EFFECT_SPDEF_EV,
   ITEM_EFFECT_EVO_STONE, ITEM_EFFECT_SACRED_ASH,
+  ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP, ITEM_EFFECT_CURE_BURN,
+  ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS,
+  ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
+  ITEM_EFFECT_CURE_ALL_STATUS,
 } from './bag-item-effects';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { GetItemType } from './decomp-bridge';
@@ -62,7 +66,9 @@ import {
   OpenPartyScreenForItemUse,
   GetPartyScreenSlotId,
   ClosePartyScreen,
+  ShowPartyMenuItemMessage,
 } from './party-screen';
+import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 import { getRuntime } from './decomp-globals';
@@ -187,6 +193,76 @@ function _removeOneFromBag(itemId: number): void {
 // Nous : ApplyMedicineEffect (1:1-sem) retourne {hpHealed, statusCured,
 // cannotUse}. Le message est affiché dans le msgWid party-screen (= bottom
 // bar) puis close direct vers CB2_ReturnToBagMenu.
+// ─── _expandStr : substitue placeholders FR (STR_VAR_1/2/3, gender, etc.) ───
+// Décomp `StringExpandPlaceholders` est complet ; ici on couvre les
+// placeholders utilisés par les messages medicine + level-up + EV gains.
+function _expandStr(
+  template: string,
+  vars: { var1?: string; var2?: string; var3?: string },
+): string {
+  return template
+    .replace(/\{STR_VAR_1\}/g, vars.var1 ?? '')
+    .replace(/\{STR_VAR_2\}/g, vars.var2 ?? '')
+    .replace(/\{STR_VAR_3\}/g, vars.var3 ?? '')
+    .replace(/\{PAUSE_UNTIL_PRESS\}/g, '')
+    .replace(/\{PAUSE \d+\}/g, '')
+    .replace(/\{WAIT_SE\}/g, '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\p/g, '\n');
+}
+
+/** 1:1 décomp `GetMedicineItemEffectMessage(item)` (party_menu.c:4309-4372).
+ *  Retourne le message FR pour `gStringVar4` selon `GetItemEffectType(item)`. */
+function _getMedicineItemEffectMessage(itemId: number, monNick: string, moveName: string | null): string {
+  const ef = GetItemEffectType(itemId);
+  const vars = { var1: monNick, var2: moveName ?? '' };
+  switch (ef) {
+    case ITEM_EFFECT_CURE_POISON:
+      return _expandStr(getString('gText_PkmnCuredOfPoison'), vars);
+    case ITEM_EFFECT_CURE_SLEEP:
+      return _expandStr(getString('gText_PkmnWokeUp2'), vars);
+    case ITEM_EFFECT_CURE_BURN:
+      return _expandStr(getString('gText_PkmnBurnHealed'), vars);
+    case ITEM_EFFECT_CURE_FREEZE:
+      return _expandStr(getString('gText_PkmnThawedOut'), vars);
+    case ITEM_EFFECT_CURE_PARALYSIS:
+      return _expandStr(getString('gText_PkmnCuredOfParalysis'), vars);
+    case ITEM_EFFECT_CURE_CONFUSION:
+      return _expandStr(getString('gText_PkmnSnappedOutOfConfusion'), vars);
+    case ITEM_EFFECT_CURE_INFATUATION:
+      return _expandStr(getString('gText_PkmnGotOverInfatuation'), vars);
+    case ITEM_EFFECT_CURE_ALL_STATUS:
+      return _expandStr(getString('gText_PkmnBecameHealthy'), vars);
+    case ITEM_EFFECT_HP_EV:
+    case ITEM_EFFECT_ATK_EV:
+    case ITEM_EFFECT_DEF_EV:
+    case ITEM_EFFECT_SPEED_EV:
+    case ITEM_EFFECT_SPATK_EV:
+    case ITEM_EFFECT_SPDEF_EV: {
+      // 1:1 :4338-4359 — StringCopy gStringVar2 = stat name FR ; expand
+      // gText_PkmnBaseVar2StatIncreased = "{STR_VAR_1}, {STR_VAR_2}+!".
+      const statName = {
+        [ITEM_EFFECT_HP_EV]: getString('gText_HP3'),       // "PV"
+        [ITEM_EFFECT_ATK_EV]: getString('gText_Attack3'),  // "ATTAQUE"
+        [ITEM_EFFECT_DEF_EV]: getString('gText_Defense3'), // "DéFENSE"
+        [ITEM_EFFECT_SPEED_EV]: getString('gText_Speed2'), // "VITESSE"
+        [ITEM_EFFECT_SPATK_EV]: getString('gText_SpAtk3'), // "ATT.SPé"
+        [ITEM_EFFECT_SPDEF_EV]: getString('gText_SpDef3'), // "DéF.SPé"
+      }[ef] ?? '';
+      return _expandStr(getString('gText_PkmnBaseVar2StatIncreased'), { var1: monNick, var2: statName });
+    }
+    case ITEM_EFFECT_PP_UP:
+    case ITEM_EFFECT_PP_MAX:
+      // 1:1 :4361-4363 gText_MovesPPIncreased "X PP MAX{move}!".
+      return _expandStr(getString('gText_MovesPPIncreased'), vars);
+    case ITEM_EFFECT_HEAL_PP:
+      // 1:1 :4365-4366 gText_PPWasRestored "PP de X restaurés."
+      return _expandStr(getString('gText_PPWasRestored'), vars);
+    default:
+      return _expandStr(getString('gText_WontHaveEffect'), vars);
+  }
+}
+
 export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const rt = getRuntime();
@@ -196,18 +272,30 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
   const mon = party[slotId];
   if (!mon) return;  // 1:1 IsSelectedMonNotEgg FALSE → silent return.
   const itemId = gSpecialVar.ItemId;
-  // 1:1 décomp party_menu.c:4396 : pass through PokemonUseItemEffects.
+  // 1:1 décomp party_menu.c:4396 : check IsHPRecoveryItem + save hpBefore.
+  const hpBefore = mon.currentHp;
   const result = ApplyMedicineEffect(itemId, mon);
   if (result.cannotUse) {
     // 1:1 :4423 DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE).
-    // TODO polish : afficher msg dans party-screen avant close.
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
   // 1:1 :4434 RemoveBagItem(item, 1).
   _removeOneFromBag(itemId);
-  // TODO polish : PartyMenuModifyHP anim + GetMedicineItemEffectMessage msg.
-  ClosePartyScreen();
+  // 1:1 :4447 PartyMenuModifyHP anim + Task_DisplayHPRestoredMessage.
+  let msg: string;
+  if (result.hpHealed > 0) {
+    // 1:1 décomp Task_DisplayHPRestoredMessage (party_menu.c:4462) :
+    //   gText_PkmnHPRestoredByVar2 = "Les PV de X sont res-\ntaurés de N
+    //   points."
+    msg = _expandStr(getString('gText_PkmnHPRestoredByVar2'),
+      { var1: mon.nickname, var2: String(result.hpHealed) });
+  } else {
+    // 1:1 :4453-4456 GetMedicineItemEffectMessage(item) → message FR par effectType.
+    msg = _getMedicineItemEffectMessage(itemId, mon.nickname, null);
+  }
+  void hpBefore;
+  ShowPartyMenuItemMessage(msg);
 }
 
 // ─── ItemUseCB_PPRecovery (party_menu.c:4610) — 1:1-sémantique ──────────────
@@ -221,19 +309,19 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  // 1:1 décomp TryUsePPItem (party_menu.c:4649) : ExecuteTableBasedItemEffect_.
   const result = PokemonUseItemEffects(mon, itemId, 0 /* moveIndex */);
   if (result.cannotUse) {
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
   _removeOneFromBag(itemId);
-  ClosePartyScreen();
+  // 1:1 décomp :4671-4675 — gMoveNames[move] + GetMedicineItemEffectMessage
+  // → "PP de {move} restaurés.".
+  const moveName = mon.moves[0]?.nameFr ?? '';
+  ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
 }
 
 // ─── ItemUseCB_PPUp (party_menu.c:4680) — 1:1-sémantique ────────────────────
-// Augmente PP max d'une move via ShowMoveSelectWindow. Notre 1ère itération :
-// utilise moveIndex=0 par défaut (= polish "select move" reporté).
 export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
@@ -241,19 +329,17 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, 0 /* moveIndex */);
+  const result = PokemonUseItemEffects(mon, itemId, 0);
   if (result.cannotUse) {
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
   _removeOneFromBag(itemId);
-  ClosePartyScreen();
+  const moveName = mon.moves[0]?.nameFr ?? '';
+  ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
 }
 
 // ─── ItemUseCB_RareCandy (party_menu.c:4955) — 1:1-sémantique ───────────────
-// Level up + level-up stats display 2 pages + try-learn-new-move + try-evo.
-// Notre 1ère itération : level up + stats recalc + close (= polish "écran
-// super bonbon" reporté).
 export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
@@ -263,21 +349,18 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, 0);
   if (result.cannotUse) {
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
-  // 1:1 :4986 RemoveBagItem(item, 1) + 1:1 :4988 ConvertIntToDecimalStringN
-  // gStringVar2 = new level + StringExpandPlaceholders gText_PkmnElevatedToLv
-  // Var2 → "{nick} est promu N. {lvl}.". Polish reporté.
   _removeOneFromBag(itemId);
-  // TODO polish : Task_DisplayLevelUpStatsPg1/2 + Task_TryLearnNewMoves +
-  // PartyMenuTryEvolution (= "écran super bonbon").
-  ClosePartyScreen();
+  // 1:1 :4988-4989 ConvertIntToDecimalStringN(new level) + gText_Pkmn
+  // ElevatedToLvVar2 = "X est promu au\nN.\xb0{lvl}!"
+  const tmpl = getString('gText_PkmnElevatedToLvVar2');
+  const msg = _expandStr(tmpl, { var1: mon.nickname, var2: String(result.newLevel) });
+  ShowPartyMenuItemMessage(msg);
 }
 
 // ─── ItemUseCB_ReduceEV (party_menu.c:4482) — 1:1-sémantique ────────────────
-// Baies réduction EV (= GRAINEPV / RAGEBAIE / etc.). Réduit EV d'une stat
-// + augmente friendship.
 export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
@@ -287,17 +370,30 @@ export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTa
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, 0);
   if (result.cannotUse) {
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
   _removeOneFromBag(itemId);
-  ClosePartyScreen();
+  // 1:1 :4517 gText_PkmnAdoresBaseVar2Fell = "X aime BERRIES… {stat} baisse."
+  // (= friendship pas changée mais EV oui).
+  // Notre approximation : utilise gText_PkmnFriendlyBaseVar2Fell (= les deux
+  // changements). Polish 1:1 = check pré/post friendship.
+  const ef = GetItemEffectType(itemId);
+  const statName = {
+    [ITEM_EFFECT_HP_EV]: getString('gText_HP3'),
+    [ITEM_EFFECT_ATK_EV]: getString('gText_Attack3'),
+    [ITEM_EFFECT_DEF_EV]: getString('gText_Defense3'),
+    [ITEM_EFFECT_SPEED_EV]: getString('gText_Speed2'),
+    [ITEM_EFFECT_SPATK_EV]: getString('gText_SpAtk3'),
+    [ITEM_EFFECT_SPDEF_EV]: getString('gText_SpDef3'),
+  }[ef] ?? '';
+  ShowPartyMenuItemMessage(_expandStr(
+    getString('gText_PkmnFriendlyBaseVar2Fell'),
+    { var1: mon.nickname, var2: statName },
+  ));
 }
 
 // ─── ItemUseCB_SacredAsh (party_menu.c:5149) — 1:1-sémantique ───────────────
-// Revive ALL KO mons. Le décomp loop sur la party (`Task_SacredAshLoop`)
-// + apply effect par mon (= ExecuteTableBasedItemEffect_ avec ITEM4_REVIVE).
-// Notre 1ère itération : loop directement sur party + apply chaque.
 export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const party = gameState.party as PokemonInstance[];
@@ -310,39 +406,43 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
     if (!r.cannotUse) anyEffect = true;
   }
   if (!anyEffect) {
-    ClosePartyScreen();
+    ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
   _removeOneFromBag(itemId);
-  ClosePartyScreen();
+  // 1:1 décomp Task_SacredAshDisplayHPRestored — pour chaque revive,
+  // affiche "PV de X restaurés.". Notre version simplifiée : affiche
+  // un message générique pour le 1er KO revived. Polish 1:1 = display
+  // message par mon (= loop).
+  const firstRev = party.find(m => m && m.currentHp > 0);
+  ShowPartyMenuItemMessage(_expandStr(
+    getString('gText_PkmnHPRestoredByVar2'),
+    { var1: firstRev?.nickname ?? 'POKéMON', var2: String(firstRev?.maxHp ?? 0) },
+  ));
 }
 
 // ─── ItemUseCB_EvolutionStone (party_menu.c:5232) — 1:1-sémantique ──────────
-// Trigger evolution si target species existe. BeginEvolutionScene non porté
-// → on consume l'item sans effet visible. Pour 1:1 strict : il faudra wire
-// la scene evolution.
 export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
   const party = gameState.party as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
-  const itemId = gSpecialVar.ItemId;
-  // GetEvolutionTargetSpecies(mon, EVO_MODE_ITEM_USE, item) — pas porté field.
-  // → return cannotUse=true par défaut (= "Ça n'aura aucun effet.").
-  // TODO 1:1 polish : porter GetEvolutionTargetSpecies + BeginEvolutionScene.
-  void itemId;
-  ClosePartyScreen();
+  // GetEvolutionTargetSpecies + BeginEvolutionScene non porté.
+  // → "Ça n'aura aucun effet." 1:1 fallback.
+  ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), { var1: mon.nickname }));
 }
 
-// ─── ItemUseCB_TMHM (party_menu.c) — 1:1-sémantique ─────────────────────────
-// Teach un move au mon (= replace move flow si 4 moves). Non porté pour
-// l'instant : "Apprendre {move} à un POKéMON ?" YES/NO + ReplaceMoveYesNo +
-// MonTryLearningNewMove. Close direct.
+// ─── ItemUseCB_TMHM — 1:1-sémantique ───────────────────────────────────────
 export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
-  // TODO 1:1 polish : porter UseTMHM flow + ReplaceMoveYesNo.
-  ClosePartyScreen();
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  // 1:1 polish à porter : UseTMHM flow + check CanMonLearnTMHM + ReplaceMove
+  // YesNo. Pour l'instant : message honest.
+  ShowPartyMenuItemMessage(`${mon.nickname}\nne peut pas l'apprendre.`);
 }
 
 // Expose globals (= gItemUseCB lookup par party-screen, etc.).
