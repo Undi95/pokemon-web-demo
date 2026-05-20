@@ -42,7 +42,14 @@
 
 import { gameState } from './game-state';
 import { gSpecialVar } from './script-vars';
-import { ApplyMedicineEffect } from './bag-item-effects';
+import {
+  ApplyMedicineEffect, PokemonUseItemEffects, GetItemEffectType,
+  ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_HEAL_PP,
+  ITEM_EFFECT_PP_UP, ITEM_EFFECT_PP_MAX,
+  ITEM_EFFECT_HP_EV, ITEM_EFFECT_ATK_EV, ITEM_EFFECT_DEF_EV,
+  ITEM_EFFECT_SPEED_EV, ITEM_EFFECT_SPATK_EV, ITEM_EFFECT_SPDEF_EV,
+  ITEM_EFFECT_EVO_STONE, ITEM_EFFECT_SACRED_ASH,
+} from './bag-item-effects';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { GetItemType } from './decomp-bridge';
 import {
@@ -181,33 +188,160 @@ function _removeOneFromBag(itemId: number): void {
 // cannotUse}. Le message est affiché dans le msgWid party-screen (= bottom
 // bar) puis close direct vers CB2_ReturnToBagMenu.
 export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
-  void _returnTask;  // (Task_ClosePartyMenuAfterText — pas utilisé directement)
-  void taskId;
+  void _returnTask; void taskId;
   const rt = getRuntime();
   if (!rt) return;
   const slotId = GetPartyScreenSlotId();
   const party = gameState.party as PokemonInstance[];
   const mon = party[slotId];
-  if (!mon) {
-    // 1:1 IsSelectedMonNotEgg FALSE → silent return (= égu garde).
-    return;
-  }
+  if (!mon) return;  // 1:1 IsSelectedMonNotEgg FALSE → silent return.
   const itemId = gSpecialVar.ItemId;
+  // 1:1 décomp party_menu.c:4396 : pass through PokemonUseItemEffects.
   const result = ApplyMedicineEffect(itemId, mon);
   if (result.cannotUse) {
-    // 1:1 :4423 DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE)
-    // → "Ça n'aura aucun effet." Le décomp wait l'ack press. Ici on close
-    // direct vers bag — le user voit le sac réouvert (= item pas consommé).
-    // TODO : afficher msg dans party-screen msgWid avant close (= polish 1:1).
+    // 1:1 :4423 DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE).
+    // TODO polish : afficher msg dans party-screen avant close.
     ClosePartyScreen();
     return;
   }
-  // 1:1 :4434 RemoveBagItem(item, 1) — sauf si REUSABLE_ITEM (= pas géré ici).
+  // 1:1 :4434 RemoveBagItem(item, 1).
   _removeOneFromBag(itemId);
-  // 1:1 :4440 SetPartyMonAilmentGfx — refresh status icon. Sera repeint à la
-  // réouverture du sac → retour → reouverture party (= cycle réinit complet).
-  // 1:1 :4447 PartyMenuModifyHP / :4454 GetMedicineItemEffectMessage —
-  // anim HP bar + message. Pas porté : direct close.
+  // TODO polish : PartyMenuModifyHP anim + GetMedicineItemEffectMessage msg.
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_PPRecovery (party_menu.c:4610) — 1:1-sémantique ──────────────
+// Heal PP — soit toutes les moves (HEAL_PP), soit une (HEAL_PP_ONE = via
+// ShowMoveSelectWindow). Notre 1ère itération : utilise moveIndex=0 par
+// défaut (= polish "select move" reporté).
+export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  const itemId = gSpecialVar.ItemId;
+  // 1:1 décomp TryUsePPItem (party_menu.c:4649) : ExecuteTableBasedItemEffect_.
+  const result = PokemonUseItemEffects(mon, itemId, 0 /* moveIndex */);
+  if (result.cannotUse) {
+    ClosePartyScreen();
+    return;
+  }
+  _removeOneFromBag(itemId);
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_PPUp (party_menu.c:4680) — 1:1-sémantique ────────────────────
+// Augmente PP max d'une move via ShowMoveSelectWindow. Notre 1ère itération :
+// utilise moveIndex=0 par défaut (= polish "select move" reporté).
+export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  const itemId = gSpecialVar.ItemId;
+  const result = PokemonUseItemEffects(mon, itemId, 0 /* moveIndex */);
+  if (result.cannotUse) {
+    ClosePartyScreen();
+    return;
+  }
+  _removeOneFromBag(itemId);
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_RareCandy (party_menu.c:4955) — 1:1-sémantique ───────────────
+// Level up + level-up stats display 2 pages + try-learn-new-move + try-evo.
+// Notre 1ère itération : level up + stats recalc + close (= polish "écran
+// super bonbon" reporté).
+export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  const itemId = gSpecialVar.ItemId;
+  const result = PokemonUseItemEffects(mon, itemId, 0);
+  if (result.cannotUse) {
+    ClosePartyScreen();
+    return;
+  }
+  // 1:1 :4986 RemoveBagItem(item, 1) + 1:1 :4988 ConvertIntToDecimalStringN
+  // gStringVar2 = new level + StringExpandPlaceholders gText_PkmnElevatedToLv
+  // Var2 → "{nick} est promu N. {lvl}.". Polish reporté.
+  _removeOneFromBag(itemId);
+  // TODO polish : Task_DisplayLevelUpStatsPg1/2 + Task_TryLearnNewMoves +
+  // PartyMenuTryEvolution (= "écran super bonbon").
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_ReduceEV (party_menu.c:4482) — 1:1-sémantique ────────────────
+// Baies réduction EV (= GRAINEPV / RAGEBAIE / etc.). Réduit EV d'une stat
+// + augmente friendship.
+export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  const itemId = gSpecialVar.ItemId;
+  const result = PokemonUseItemEffects(mon, itemId, 0);
+  if (result.cannotUse) {
+    ClosePartyScreen();
+    return;
+  }
+  _removeOneFromBag(itemId);
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_SacredAsh (party_menu.c:5149) — 1:1-sémantique ───────────────
+// Revive ALL KO mons. Le décomp loop sur la party (`Task_SacredAshLoop`)
+// + apply effect par mon (= ExecuteTableBasedItemEffect_ avec ITEM4_REVIVE).
+// Notre 1ère itération : loop directement sur party + apply chaque.
+export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const party = gameState.party as PokemonInstance[];
+  const itemId = gSpecialVar.ItemId;
+  let anyEffect = false;
+  for (let i = 0; i < party.length; i++) {
+    const mon = party[i];
+    if (!mon) continue;
+    const r = PokemonUseItemEffects(mon, itemId, 0);
+    if (!r.cannotUse) anyEffect = true;
+  }
+  if (!anyEffect) {
+    ClosePartyScreen();
+    return;
+  }
+  _removeOneFromBag(itemId);
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_EvolutionStone (party_menu.c:5232) — 1:1-sémantique ──────────
+// Trigger evolution si target species existe. BeginEvolutionScene non porté
+// → on consume l'item sans effet visible. Pour 1:1 strict : il faudra wire
+// la scene evolution.
+export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  const slotId = GetPartyScreenSlotId();
+  const party = gameState.party as PokemonInstance[];
+  const mon = party[slotId];
+  if (!mon) return;
+  const itemId = gSpecialVar.ItemId;
+  // GetEvolutionTargetSpecies(mon, EVO_MODE_ITEM_USE, item) — pas porté field.
+  // → return cannotUse=true par défaut (= "Ça n'aura aucun effet.").
+  // TODO 1:1 polish : porter GetEvolutionTargetSpecies + BeginEvolutionScene.
+  void itemId;
+  ClosePartyScreen();
+}
+
+// ─── ItemUseCB_TMHM (party_menu.c) — 1:1-sémantique ─────────────────────────
+// Teach un move au mon (= replace move flow si 4 moves). Non porté pour
+// l'instant : "Apprendre {move} à un POKéMON ?" YES/NO + ReplaceMoveYesNo +
+// MonTryLearningNewMove. Close direct.
+export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
+  void _returnTask; void taskId;
+  // TODO 1:1 polish : porter UseTMHM flow + ReplaceMoveYesNo.
   ClosePartyScreen();
 }
 
@@ -217,6 +351,13 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
     gItemUseCB,
     SetUpItemUseCallback,
     ItemUseCB_Medicine,
+    ItemUseCB_PPRecovery,
+    ItemUseCB_PPUp,
+    ItemUseCB_RareCandy,
+    ItemUseCB_ReduceEV,
+    ItemUseCB_SacredAsh,
+    ItemUseCB_EvolutionStone,
+    ItemUseCB_TMHM,
     CB2_ShowPartyMenuForItemUse,
     CB2_ReturnToBagMenu,
   };

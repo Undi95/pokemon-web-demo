@@ -38,7 +38,12 @@ import { gameState } from './game-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { FlagSet, FlagClear } from './script-vars';
 import { ApplyMedicineEffect } from './bag-item-effects';
-import { setItemUseCB, ItemUseCB_Medicine, SetUpItemUseCallback } from './item-use-callbacks';
+import {
+  setItemUseCB, SetUpItemUseCallback,
+  ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp,
+  ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
+  ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
+} from './item-use-callbacks';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -450,12 +455,86 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       SetUpItemUseCallback(task);
       return;
     }
-    case 'ItemUseOutOfBattle_TMHM':
-      // 1:1 sémantique : décomp "CT activée." → "Apprendre {move} à un POKéMON?"
-      // OUI/NON → party menu. Sans party-menu mode item-use, on bloque ici.
-      // Affiche le 1er message décomp (gText_BootedUpTM/HM) + retour liste.
-      msg = itemId >= 339 /* ITEM_HM01 */ ? "CS activée." : "CT activée.";
-      break;
+    case 'ItemUseOutOfBattle_TMHM': {
+      // 1:1 décomp item_use.c:807-825 ItemUseOutOfBattle_TMHM :
+      //     RemoveUsingBlankMessageBox;
+      //     DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpTM_HM,
+      //                        BootUpSound_TMHM);
+      // → message "CT activée."/"CS activée." + YesNoBox "Apprendre {move}
+      // à un POKéMON ?" + UseTMHM = setItemUseCB(ItemUseCB_TMHM) +
+      // SetUpItemUseCallback. Notre 1ère itération : skip le YES/NO box
+      // (= polish), enchaîne direct setItemUseCB + SetUpItemUseCallback.
+      // L'utilisateur verra le party-screen "Apprendre à quel POKéMON ?".
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_TMHM);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_PPRecovery': {
+      // 1:1 décomp item_use.c:770-775 ItemUseOutOfBattle_PPRecovery :
+      //     gItemUseCB = ItemUseCB_PPRecovery;
+      //     SetUpItemUseCallback(taskId);
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_PPRecovery);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_PPUp': {
+      // 1:1 décomp item_use.c:776-781 ItemUseOutOfBattle_PPUp.
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_PPUp);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_RareCandy': {
+      // 1:1 décomp item_use.c:782-787 ItemUseOutOfBattle_RareCandy.
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_RareCandy);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_ReduceEV': {
+      // 1:1 décomp item_use.c:758-763 ItemUseOutOfBattle_ReduceEV (= baies).
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_ReduceEV);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_SacredAsh': {
+      // 1:1 décomp item_use.c:764-769 ItemUseOutOfBattle_SacredAsh.
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_SacredAsh);
+      SetUpItemUseCallback(task);
+      return;
+    }
+    case 'ItemUseOutOfBattle_EvolutionStone': {
+      // 1:1 décomp item_use.c:942-948 ItemUseOutOfBattle_EvolutionStone.
+      if (gameState.party.length === 0) {
+        _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+        return;
+      }
+      setItemUseCB(ItemUseCB_EvolutionStone);
+      SetUpItemUseCallback(task);
+      return;
+    }
     case 'ItemUseOutOfBattle_Bike':
     case 'ItemUseOutOfBattle_EscapeRope':
       // Décomp : ces handlers checkent l'overworld state (allowed/cave) et
@@ -502,15 +581,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       break;
     }
     case 'ItemUseOutOfBattle_Mail':
-    case 'ItemUseOutOfBattle_EvolutionStone':
-    case 'ItemUseOutOfBattle_PPRecovery':
-    case 'ItemUseOutOfBattle_PPUp':
-    case 'ItemUseOutOfBattle_ReduceEV':
-    case 'ItemUseOutOfBattle_RareCandy':
-    case 'ItemUseOutOfBattle_SacredAsh':
     case 'ItemUseOutOfBattle_EnigmaBerry':
-      // Tous ces handlers dépendent de party-menu mode item-use (T13c/d à
-      // porter). Fallback DadsAdvice 1:1 FR temporaire.
+      // Mail = ouvre Mail screen (= chantier indépendant). EnigmaBerry =
+      // SetUpItemUseCallback type spécial (= rare en pratique). Fallback
+      // DadsAdvice 1:1 FR temporaire — à porter quand le subsystem dédié
+      // sera dispo.
       msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Rod':
