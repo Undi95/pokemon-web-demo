@@ -145,6 +145,7 @@ import { syncSubspriteOam } from '../engine/object-events';
 import { preloadFontData } from '../engine/gba-text-system';
 import { preloadTextWindowFrames } from '../engine/gba-text-window';
 import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from '../engine/fade-screen';
 import * as Songs from '../engine/decomp-data/auto/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../engine/script-opcodes';
@@ -351,6 +352,29 @@ export class TestOverworldScene extends Phaser.Scene {
       if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
         const { ExecuteTruckSequence } = await import('../engine/truck-cinematic');
         ExecuteTruckSequence(this.rt);
+      } else if (boot.mode === 'resume') {
+        // 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1750) :
+        //   gFieldCallback = FieldCB_FadeTryShowMapPopup;
+        // → RunFieldCallback → FieldCB_WarpExitFadeFromBlack (field_screen_effect.c:289) :
+        //     Overworld_PlaySpecialMapMusic();
+        //     FadeInFromBlack();   // = FillPalBufferBlack + FadeScreen(FADE_FROM_BLACK, 0)
+        //     SetUpWarpExitTask();
+        //     LockPlayerFieldControls();
+        //
+        // User-flag 2026-05-20 : "Au chargement d'une sauvegarde dans le jeu,
+        // il y a un fade noir, on a pas le jeu comme ça en pleine face".
+        // Avant : loadAndInitMap chargeait les palettes (= LoadPalette écrit
+        // Faded direct) → SetVBlankCallback flush → field visible INSTANT sans
+        // fade. Fix : FillPalBufferBlack + FadeScreen FADE_FROM_BLACK juste
+        // après loadAndInitMap, BEFORE le MainCB2_Overworld register → fade-in
+        // 8 frames black → field colors.
+        FillPalBufferBlack();
+        // Force flush BLACK au PLTT register IMMEDIATELY pour overrider le push
+        // de NEW colors fait par loadAndInitMap (= LoadMapTilesetPalettes
+        // flushTo). Pattern identique au warp fade-in (= executeWarp:971).
+        this.rt.gPlttBufferFaded.flushTo();
+        this.rt.gPaletteFade.bufferTransferDisabled = false;
+        FadeScreen(FADE_FROM_BLACK, 0);
       }
 
       // 13. Register MainCB2_Overworld (= per-frame callback) qui drive
