@@ -312,6 +312,7 @@ let _lastSelectedSlot = 0;
  *  2e mon pour la permutation (option ORDRE) ; SWITCHING = anim slide en
  *  cours (incrément 2). */
 const PARTY_ACTION_CHOOSE_MON = 0;   // 1:1 constants/party_menu.h:68
+const PARTY_ACTION_USE_ITEM = 3;     // 1:1 constants/party_menu.h:71 (item-use mode)
 const PARTY_ACTION_SWITCH = 8;       // 1:1 constants/party_menu.h:76 (PAS 4 = ABILITY_PREVENTS)
 const PARTY_ACTION_SWITCHING = 9;    // 1:1 constants/party_menu.h:77 (anim slide en cours)
 let _partyAction = PARTY_ACTION_CHOOSE_MON;
@@ -916,6 +917,12 @@ function _drawMsg(): void {
     // (party_menu.c:2803 ; party_menu.h:603 → gText_MoveToWhere ;
     //  strings.c:431 = "Le mettre où?"). Même famille fenêtre que CHOOSE_MON.
     msg = getString('gText_MoveToWhere');
+    template = MSG_WINDOW_TEMPLATE;
+  } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
+    // 1:1 décomp DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON)
+    // (party_menu.c:4646 ; party_menu.h:605 → gText_UseOnWhichPokemon ;
+    //  strings.c:433 = "Utiliser sur quel POKéMON?"). Famille fenêtre CHOOSE_MON.
+    msg = getString('gText_UseOnWhichPokemon');
     template = MSG_WINDOW_TEMPLATE;
   } else {
     msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
@@ -1917,6 +1924,39 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     if (_partyAction === PARTY_ACTION_SWITCH) {
       PlaySE(5);  // SE_SELECT (1:1 party_menu.c:1345)
       _switchSelectedMons();
+    } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
+      // 1:1 décomp HandleChooseMonSelection case PARTY_ACTION_USE_ITEM
+      // (party_menu.c:1309-1317) :
+      //   if (IsSelectedMonNotEgg(slotPtr)) {
+      //       PartyMenuRemoveWindow(&sPartyMenuInternal->windowId[1]);
+      //       gItemUseCB(taskId, Task_ClosePartyMenuAfterText);
+      //   }
+      // Note : slotId = CANCEL (7) → tombe dans `gPartyMenu.task(taskId)`
+      // (party_menu.c:1294-1297) qui pour USE_ITEM = Task_HandleChooseMonInput
+      // (= retour bag implicite via savedCallback). On gère via case KEY_B
+      // ci-dessous pour clarté.
+      const PARTY_SIZE = 6;
+      const CANCEL = PARTY_SIZE + 1; // = 7
+      if (_slotId === CANCEL) {
+        // 1:1 décomp slotPtr==PARTY_SIZE → gPartyMenu.task → cancel/return.
+        PlaySE(5);
+        ClosePartyScreen();
+        return;
+      }
+      // 1:1 décomp IsSelectedMonNotEgg : on évite slot vide/egg. Notre party
+      // n'a pas d'œuf encore, on check juste mon présent.
+      const party = gameState.party as PokemonInstance[];
+      const mon = party[_slotId];
+      if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
+      // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
+      const cb = (globalThis as Record<string, unknown>).gItemUseCB as
+        | ((taskId: number, returnTask: ((task: DecompTask) => void) | null) => void)
+        | null
+        | undefined;
+      if (typeof cb === 'function') {
+        const taskId = _inputTaskId;
+        cb(taskId, null);  // 1:1 :1316 gItemUseCB(taskId, Task_ClosePartyMenuAfterText)
+      }
     } else {
       // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
       _openActionMenu(rt);
@@ -1928,6 +1968,10 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       // slot2==slot1 → FinishTwoMonAction, party_menu.c:2827-2830).
       _finishTwoMonAction();
     } else {
+      // PARTY_ACTION_USE_ITEM : B → retour bag via savedCallback
+      // (= CB2_ReturnToBagMenu défini par OpenPartyScreenForItemUse).
+      // PARTY_ACTION_CHOOSE_MON : B → retour overworld via savedCallback
+      // (= CB2_ReturnToFieldWithOpenMenu_Manual). Même flow.
       ClosePartyScreen();
     }
   }
@@ -2044,6 +2088,11 @@ export function IsPartyScreenOpen(): boolean {
 export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   if (_isOpen) return;
   void _onCloseLegacy;
+  // 1:1 décomp `CB2_PartyMenuFromStartMenu` (party_menu.c:5354) :
+  //   InitPartyMenu(PARTY_MENU_TYPE_FIELD, PARTY_LAYOUT_SINGLE,
+  //                 PARTY_ACTION_CHOOSE_MON, FALSE, PARTY_MSG_CHOOSE_MON,
+  //                 Task_HandleChooseMonInput, CB2_ReturnToFieldWithOpenMenu);
+  _partyAction = PARTY_ACTION_CHOOSE_MON;
   void _loadAssets().then(() => {
     const rt = getRuntime();
     if (!rt) return;
@@ -2053,6 +2102,41 @@ export function OpenPartyScreen(_onCloseLegacy?: () => void): void {
   }).catch((e) => {
     console.error('[party-screen] preload failed', e);
   });
+}
+
+/** 1:1 décomp `CB2_ShowPartyMenuForItemUse` (party_menu.c:4225-4274) — entrée
+ *  party menu en mode item-use (= user choisit un mon target pour Medicine,
+ *  TMHM, EvolutionStone, etc.). Le décomp :
+ *
+ *      InitPartyMenu(PARTY_MENU_TYPE_FIELD, PARTY_LAYOUT_SINGLE,
+ *                    PARTY_ACTION_USE_ITEM, TRUE, PARTY_MSG_USE_ON_WHICH_MON,
+ *                    Task_HandleChooseMonInput, CB2_ReturnToBagMenu);
+ *
+ *  Notre TS : OpenPartyScreen async (preload assets) → set state AVANT le
+ *  switch CB2. `gItemUseCB` doit avoir été assigné par `SetUpItemUseCallback`
+ *  AVANT cet appel (= flow décomp item_use.c:755 + 98). Le `returnBagCb`
+ *  fourni est attribué à `gMain.savedCallback` (= CB2_ReturnToBagMenu).
+ *
+ *  Le décomp dispatche aussi un cas spécial ITEM_EFFECT_SACRED_ASH (= auto-
+ *  select premier mon KO + task=Task_SetSacredAshCB). Pas porté (Sacred Ash
+ *  = fallback DadsAdvice actuellement). */
+export function OpenPartyScreenForItemUse(returnBagCb: () => void): void {
+  if (_isOpen) return;
+  _partyAction = PARTY_ACTION_USE_ITEM;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = returnBagCb;
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => {
+    console.error('[party-screen] preload failed', e);
+  });
+}
+
+/** Slot courant (= gPartyMenu.slotId) — exposé pour ItemUseCB_Medicine etc. */
+export function GetPartyScreenSlotId(): number {
+  return _slotId;
 }
 
 /** 1:1 décomp `CB2_ShowPokemonSummaryScreen` (party_menu.c:2777) :
@@ -2128,7 +2212,8 @@ export function TickPartyScreen(_newKeys: number): void {
   const _g: Record<string, unknown> = {
     CB2_InitPartyMenu, MainCB2_PartyMenuRun, VBlankCB_PartyMenuRun,
     Task_FadeAndClosePartyMenu, Task_ClosePartyMenu,
-    OpenPartyScreen, ClosePartyScreen, IsPartyScreenOpen,
+    OpenPartyScreen, OpenPartyScreenForItemUse, ClosePartyScreen,
+    IsPartyScreenOpen, GetPartyScreenSlotId,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

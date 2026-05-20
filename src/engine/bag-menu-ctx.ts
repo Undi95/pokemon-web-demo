@@ -38,6 +38,7 @@ import { gameState } from './game-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { FlagSet, FlagClear } from './script-vars';
 import { ApplyMedicineEffect } from './bag-item-effects';
+import { setItemUseCB, ItemUseCB_Medicine, SetUpItemUseCallback } from './item-use-callbacks';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
@@ -426,36 +427,27 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Medicine': {
-      // 1:1-sémantique décomp item_use.c:753 ItemUseOutOfBattle_Medicine +
-      // party_menu.c:4396 ItemUseCB_Medicine. SIMPLIFICATION : pas de party
-      // menu visible (T13c/d futur) — on applique sur party[0] direct.
-      // Le décomp passerait par SetUpItemUseCallback → party menu → user choisit
-      // mon → ItemUseCB_Medicine. Ici : auto-target party[0] pour test e2e.
-      const mon = gameState.party[0];
-      if (!mon) {
+      // 1:1 décomp item_use.c:753-757 ItemUseOutOfBattle_Medicine :
+      //     gItemUseCB = ItemUseCB_Medicine;
+      //     SetUpItemUseCallback(taskId);
+      //
+      // SetUpItemUseCallback (item_use.c:98) :
+      //     gBagMenu->newScreenCallback = CB2_ShowPartyMenuForItemUse;
+      //     Task_FadeAndCloseBagMenu(taskId);
+      //
+      // → fade bag → ouvre party-screen en mode PARTY_ACTION_USE_ITEM
+      // ("Utiliser sur quel POKéMON ?") → user select mon → ItemUseCB_Medicine
+      // s'exécute (apply ApplyMedicineEffect + remove from bag + close).
+      // Le item-use-callbacks.ts module porte CB2_ShowPartyMenuForItemUse,
+      // CB2_ReturnToBagMenu, et ItemUseCB_Medicine.
+      void itemName;
+      void ApplyMedicineEffect;  // (utilisé par ItemUseCB_Medicine, exposé pour DCE)
+      if (gameState.party.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
-      const result = ApplyMedicineEffect(itemId, mon);
-      if (result.cannotUse) {
-        // 1:1 :4423 gText_WontHaveEffect : "Ça n'aura aucun effet."
-        _showItemMessage(task, `Ça n'aura aucun effet\nsur ${mon.nickname}.`);
-        return;
-      }
-      // 1:1 :4434 RemoveBagItem si pas item flute / reusable.
-      _CtxRemoveUsedItem(itemId);
-      // 1:1 :4447 / :4453-4456 message selon heal vs status.
-      if (result.hpHealed > 0) {
-        // gText_PkmnHPRestoredByVar2 : "Les PV de X sont restaurés de N points."
-        _showItemMessageThenRebuild(task,
-          `Les PV de ${mon.nickname} sont\nrestaurés de ${result.hpHealed} points.`);
-      } else if (result.statusCured) {
-        _showItemMessageThenRebuild(task,
-          `${mon.nickname} est guéri.`);
-      } else {
-        _showItemMessageThenRebuild(task,
-          `${mon.nickname} a utilisé\n${itemName}.`);
-      }
+      setItemUseCB(ItemUseCB_Medicine);
+      SetUpItemUseCallback(task);
       return;
     }
     case 'ItemUseOutOfBattle_TMHM':

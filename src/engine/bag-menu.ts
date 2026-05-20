@@ -1788,8 +1788,10 @@ function Task_SwitchBagPocket(task: DecompTask): void {
   }
 }
 
-/** 1:1 décomp `Task_FadeAndCloseBagMenu` (item_menu.c:1077). */
-function Task_FadeAndCloseBagMenu(task: DecompTask): void {
+/** 1:1 décomp `Task_FadeAndCloseBagMenu` (item_menu.c:1077). Exporté pour
+ *  `SetUpItemUseCallback` (item-use-callbacks.ts) qui set `gBagMenu.
+ *  newScreenCallback` avant de scheduler ce fade. */
+export function Task_FadeAndCloseBagMenu(task: DecompTask): void {
   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
   task.func = Task_CloseBagMenu;
 }
