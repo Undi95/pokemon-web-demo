@@ -63,6 +63,16 @@ export interface ItemDef {
   /** 1:1 décomp `gItems[id].registrability`. true = item assignable au
    *  raccourci SELECT (Bike, Bag Pyramid…). */
   registrability?: boolean;
+  /** 1:1 décomp `gItems[id].fieldUseFunc` (item.h struct Item). Nom du
+   *  handler appelé quand le user fait A sur l'item depuis le sac en field
+   *  (e.g. "ItemUseOutOfBattle_Medicine"). null/undefined = l'item n'a pas
+   *  d'utilisation field. */
+  fieldUseFunc?: string;
+  /** 1:1 décomp `gItems[id].battleUseFunc`. */
+  battleUseFunc?: string;
+  /** 1:1 décomp `gItems[id].secondaryId`. Sub-ID pour distinguer les variantes
+   *  d'un même handler (Mach Bike/Acro Bike, super/max repel, ...). */
+  secondaryId?: string;
 }
 let itemsTable: Record<string, ItemDef> | null = null;
 export function loadItemsTable(t: Record<string, ItemDef>): void {

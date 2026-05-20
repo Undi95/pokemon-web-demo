@@ -1021,6 +1021,29 @@ export function GetItemImportance(itemId: number | string): number {
   return _getItem(itemKey)?.importance ?? 0;
 }
 
+/** 1:1 décomp `src/item.c GetItemFieldFunc(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].fieldUseFunc;
+ *  Notre TS retourne le NOM du handler (= string depuis items.json) — le
+ *  dispatcher `ItemMenu_UseOutOfBattle` route ensuite vers l'impl TS. */
+export function GetItemFieldFunc(itemId: number | string): string | null {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.fieldUseFunc ?? null;
+}
+
+/** 1:1 décomp `src/item.c GetItemType(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].type;
+ *  Notre TS retourne le NOM du type (= string `ITEM_USE_PARTY_MENU` etc.). */
+export function GetItemType(itemId: number | string): string {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.type ?? '';
+}
+
+/** 1:1 décomp `src/item.c GetItemSecondaryId(itemId)`. */
+export function GetItemSecondaryId(itemId: number | string): string | null {
+  const itemKey = typeof itemId === 'number' ? _itemKeyForLookup(itemId) : itemId;
+  return _getItem(itemKey)?.secondaryId ?? null;
+}
+
 // ─── Overworld map header (1:1 décomp `src/overworld.c`) ──────────────────────
 
 /** 1:1 décomp `src/overworld.c:579 Overworld_GetMapHeaderByGroupAndId(group, num)` :

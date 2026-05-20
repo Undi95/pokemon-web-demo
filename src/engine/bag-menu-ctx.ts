@@ -32,7 +32,7 @@
  * un follow-up.
  */
 import type { DecompTask } from './decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected, _CtxShowTMHMPanel } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar } from './script-vars';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, FillWindowPixelRect,
@@ -44,7 +44,8 @@ import { JOY_NEW, PALETTES_ALL, getRuntime } from './decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from './gba-text-system';
-import { BeginNormalPaletteFade } from './decomp-bridge';
+import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from './decomp-bridge';
+import { CalculatePlayerPartyCount } from './battle/party-storage';
 import { PIXEL_FILL } from './decomp-globals';
 import { ENUM_ITEMWIN_1 } from './decomp-data/auto/include/item_menu-data';
 import {
@@ -377,12 +378,111 @@ export function RemoveContextWindow(): void {
 
 // ─── Action handlers — STUBS (à implémenter type-d'item-par-type-d'item) ──────
 
-/** STUB ItemMenu_UseOutOfBattle (item_menu.c:1796). Retour Task_BagMenu_HandleInput
- *  (= le cursor liste reste actif). Sera porté par type d'item (Potion = heal
- *  party ; CT/CS = teach move ; Bike = ItemUseOutOfBattle_Bike ; etc.). */
+/** 1:1 décomp `ItemMenu_UseOutOfBattle` (item_menu.c:1796) :
+ *    if (GetItemFieldFunc(itemId)) {
+ *        RemoveContextWindow();
+ *        if (party_count == 0 && type == ITEM_USE_PARTY_MENU)
+ *            PrintThereIsNoPokemon(taskId);
+ *        else {
+ *            FillWindowPixelBuffer(WIN_DESCRIPTION, PIXEL_FILL(0));
+ *            if (type != ITEM_USE_PARTY_MENU) ScheduleBgCopyTilemapToVram(0);
+ *            GetItemFieldFunc(itemId)(taskId);  // dispatch
+ *        }
+ *    }
+ *  Notre TS dispatch via le NOM du handler (string depuis items.json). Les
+ *  handlers concrets seront portés type-par-type (Medicine, TMHM, Bike, etc.).
+ *  Pour l'instant : `CannotUse` 1:1 (= dialog "Pas le moment"), les autres
+ *  affichent un message générique "[handler] à porter" → retour liste sur A/B. */
 function ItemMenu_UseOutOfBattle(task: DecompTask): void {
+  const itemId = gSpecialVar.ItemId;
+  const fieldUseFunc = GetItemFieldFunc(itemId);
+  if (!fieldUseFunc) {
+    // 1:1 décomp :1797 `if (GetItemFieldFunc(itemId))` — pas de field func :
+    // l'item n'a pas d'utilisation hors-battle. Retour direct à la liste.
+    RemoveContextWindow();
+    _returnToList(task);
+    return;
+  }
   RemoveContextWindow();
-  _returnToList(task);
+  const itemType = GetItemType(itemId);
+  if (itemType === 'ITEM_USE_PARTY_MENU' && CalculatePlayerPartyCount() === 0) {
+    // 1:1 :1801 PrintThereIsNoPokemon.
+    _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
+    return;
+  }
+  // 1:1 :1804-1806 — fill desc + dispatch.
+  // Dispatcher : pour l'instant, message FR par handler (vrai handler à porter).
+  const itemName = GetItemName(itemId);
+  let msg: string;
+  switch (fieldUseFunc) {
+    case 'ItemUseOutOfBattle_CannotUse':
+      // 1:1 décomp item_use.c — gText_DadsAdvice "Hmm, ce n'est pas le moment d'utiliser ça."
+      msg = "Hmm, ce n'est pas\nle moment d'utiliser ça.";
+      break;
+    case 'ItemUseOutOfBattle_Medicine':
+      msg = `Utiliser ${itemName} sur un\nPOKéMON [Medicine à porter].`;
+      break;
+    case 'ItemUseOutOfBattle_TMHM':
+      msg = `${itemName} démarrée !\n[TMHM apprentissage à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_Bike':
+      msg = `${itemName} déployé.\n[Bike toggle à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_EscapeRope':
+      msg = `${itemName} utilisée.\n[Sortie donjon à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_Repel':
+    case 'ItemUseOutOfBattle_BlackWhiteFlute':
+      msg = `${itemName} activé !\n[Repel/Flute à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_Mail':
+      msg = `${itemName}\n[Mail screen à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_EvolutionStone':
+      msg = `${itemName}\n[Evolution stone à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_PPRecovery':
+    case 'ItemUseOutOfBattle_PPUp':
+    case 'ItemUseOutOfBattle_ReduceEV':
+    case 'ItemUseOutOfBattle_RareCandy':
+    case 'ItemUseOutOfBattle_SacredAsh':
+      msg = `Utiliser ${itemName} sur un\nPOKéMON [${fieldUseFunc.slice(20)} à porter].`;
+      break;
+    case 'ItemUseOutOfBattle_Rod':
+      msg = `${itemName}\n[Pêche à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_Itemfinder':
+      msg = `${itemName}\n[Cherch'objet à porter]`;
+      break;
+    case 'ItemUseOutOfBattle_PokeblockCase':
+    case 'ItemUseOutOfBattle_CoinCase':
+    case 'ItemUseOutOfBattle_PowderJar':
+    case 'ItemUseOutOfBattle_Berry':
+    case 'ItemUseOutOfBattle_WailmerPail':
+    case 'ItemUseOutOfBattle_EnigmaBerry':
+      msg = `${itemName}\n[${fieldUseFunc.slice(20)} à porter]`;
+      break;
+    default:
+      msg = `${itemName}\n[${fieldUseFunc} à porter]`;
+  }
+  _showItemMessage(task, msg);
+}
+
+/** Helper temporaire : affiche `msg` dans WIN_DESCRIPTION (= overwrite la
+ *  description "X est sélectionné.") puis bascule la task en wait-for-A.
+ *  Substitut au DisplayItemMessage décomp (= WIN_MESSAGE dédié + state
+ *  machine). À porter 1:1 quand on attaque les vrais handlers item-use. */
+function _showItemMessage(task: DecompTask, msg: string): void {
+  _CtxPrintItemMessage(msg);
+  task.func = Task_ItemUseMessageWaitForA;
+}
+
+/** Task wait-for-A : tout press A/B → return list. */
+function Task_ItemUseMessageWaitForA(task: DecompTask): void {
+  if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    _CtxReturnToList(task.taskId);
+  }
 }
 
 /** STUB ItemMenu_Toss (item_menu.c) — ouvrira AskTossItems → quantity → confirm

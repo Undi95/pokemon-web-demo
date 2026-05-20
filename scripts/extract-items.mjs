@@ -54,12 +54,25 @@ while ((m = re.exec(text)) !== null) {
   // sur la map = item assignable au raccourci). Posé sur certains KEY ITEMS
   // (Bike, Surf, Bag Pyramid…). Non-présent = false.
   const registrability = /\.registrability\s*=\s*TRUE/.test(body);
+  // 1:1 décomp `.fieldUseFunc = ItemUseOutOfBattle_X` (item.c struct Item).
+  // Pointer vers le handler appelé quand le user fait A sur l'item en field.
+  // Notre TS : on stocke le NOM du handler (ex. "ItemUseOutOfBattle_Medicine")
+  // pour dispatch côté `ItemMenu_UseOutOfBattle`.
+  const fieldUseFunc = get(/\.fieldUseFunc\s*=\s*(\w+)/);
+  // 1:1 décomp `.battleUseFunc = ItemUseInBattle_X` (handler battle).
+  const battleUseFunc = get(/\.battleUseFunc\s*=\s*(\w+)/);
+  // 1:1 décomp `.secondaryId` (= sub-id pour Mach Bike/Acro Bike, repels,
+  // evolution stones, etc. — distingue les variantes au sein d'un handler).
+  const secondaryId = get(/\.secondaryId\s*=\s*(\w+)/);
   const item = { name: nameStr, price, pocket, type, descriptionLabel };
   if (battleUsage) item.battleUsage = battleUsage;
   if (holdEffect) item.holdEffect = holdEffect;
   if (holdEffectParam) item.holdEffectParam = Number(holdEffectParam);
   if (importance) item.importance = importance;
   if (registrability) item.registrability = true;
+  if (fieldUseFunc) item.fieldUseFunc = fieldUseFunc;
+  if (battleUseFunc) item.battleUseFunc = battleUseFunc;
+  if (secondaryId) item.secondaryId = secondaryId;
   items[name] = item;
 }
 

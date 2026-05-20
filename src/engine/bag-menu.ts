@@ -1824,6 +1824,17 @@ export function _CtxPrintItemSelected(itemId: number): void {
   BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
 }
 
+/** Helper exporté pour bag-menu-ctx : print un message arbitraire dans
+ *  WIN_DESCRIPTION (= remplace temporairement la description normale ou
+ *  "X est sélectionné."). Utilisé par les handlers ItemMenu_UseOutOfBattle
+ *  stubs (= "Hmm, c'est pas le moment", "[handler] à porter"). */
+export function _CtxPrintItemMessage(msg: string): void {
+  const wid = _win(WIN_DESCRIPTION);
+  FillWindowPixelBuffer(wid, PIXEL_FILL(0));
+  BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
+  ScheduleBgCopyTilemapToVram(0);
+}
+
 /** 1:1 décomp `ReturnToItemList` (item_menu.c:1284) + restore section de
  *  `ItemMenu_Cancel` (:1985-1994). Appelé par bag-menu-ctx après un
  *  cancel/use pour remettre le sac dans l'état "navigation liste" :
