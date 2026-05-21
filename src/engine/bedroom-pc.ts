@@ -405,12 +405,38 @@ function _itemStorageWithdraw(): void {
  *
  *  Notre port : inline DEPOSIT UI (= list bag items + select → AddPCItem +
  *  RemoveBagItem). Réutilise pattern ItemStorage UI (= list-menu + desc). */
+/** 1:1 décomp `ItemStorage_Deposit` (player_pc.c:555-559) :
+ *    gTasks[taskId].func = Task_ItemStorage_Deposit;
+ *    FadeScreen(FADE_TO_BLACK, 0);
+ *  Puis `Task_ItemStorage_Deposit` (561-569) après fade :
+ *    CleanupOverworldWindowsAndTilemaps();
+ *    CB2_GoToItemDepositMenu();   ← bascule sur le BAG MENU en mode ItemPC
+ *    DestroyTask(taskId);
+ *  Le `CB2_GoToItemDepositMenu` ouvre le bag complet (= GoToBagMenu(
+ *  ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)) qui
+ *  permet de choisir un item depuis le sac, prompt qty, deposit, return PC.
+ *
+ *  Notre port (honest min) : ferme le PC + ouvre le bag overworld. Le
+ *  context menu deposit complet (= "DEPOSER" + qty rolling depuis le bag)
+ *  reste à câbler dans `bag-screen.ts` sous le flag mode `ITEM_PC`. */
 function _itemStorageDeposit(): void {
   PlaySE(Songs.SE_SELECT);
+  // 1:1 décomp : ferme le PC entièrement avant d'ouvrir le bag.
+  // Cleanup state.
   _removeSubWindow();
   _clearSticky();
-  sSubState = 'deposit_list';
-  _depositOpenList();
+  _removePCWindows();
+  _itemStorageEraseItemIcon();
+  if (sPCListTaskId >= 0) {
+    DestroyListMenuTask(sPCListTaskId);
+    sPCListTaskId = -1;
+  }
+  sIsOpen = false;
+  SignalWaitState();
+  // Lazy import pour éviter cycle deps.
+  void import('./bag-screen').then(({ OpenBagScreen }) => {
+    OpenBagScreen();
+  });
 }
 
 // ─── DEPOSIT bag → PC UI ────────────────────────────────────────────────────
