@@ -53,6 +53,12 @@ import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from '
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
 import { GetSaveBlock1 } from './save-system';
+// Chantier OW 1:1 — `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) source unique
+// pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
+// Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
+// args (= élimine désync historique cam.x ≠ player.x).
+import { gSaveBlock1Ptr } from './gba-menu-system';
+import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
@@ -982,6 +988,65 @@ export function GetMapBorderIdAt(x: number, y: number): number {
 
 const CONNECTION_NONE = 0;
 const CONNECTION_INVALID = 0xFF;
+
+// ─── 1:1 décomp camera focus / coords helpers (fieldmap.c:792-814) ──────────
+//
+// Source unique pour position joueur + camera focus = `gSaveBlock1Ptr->pos`
+// (Coords16, global.h:992). NE PAS dupliquer dans des locals — alias direct.
+
+/** 1:1 décomp `SetCameraFocusCoords(u16 x, u16 y)` (fieldmap.c:792-796). Set
+ *  la camera focus à (x - MAP_OFFSET, y - MAP_OFFSET) en map-local coords. */
+export function SetCameraFocusCoords(x: number, y: number): void {
+  gSaveBlock1Ptr.pos.x = x - MAP_OFFSET;
+  gSaveBlock1Ptr.pos.y = y - MAP_OFFSET;
+}
+
+/** 1:1 décomp `GetCameraFocusCoords(u16 *x, u16 *y)` (fieldmap.c:798-802).
+ *  Retourne (pos.x + MAP_OFFSET, pos.y + MAP_OFFSET) = focus en gBackupMapLayout
+ *  coords (= équivalent player gBackup coords). */
+export function GetCameraFocusCoords(): { x: number; y: number } {
+  return {
+    x: gSaveBlock1Ptr.pos.x + MAP_OFFSET,
+    y: gSaveBlock1Ptr.pos.y + MAP_OFFSET,
+  };
+}
+
+/** 1:1 décomp `SetCameraCoords(u16 x, u16 y)` (fieldmap.c:804-808). UNUSED
+ *  côté décomp mais porté 1:1 pour exhaustivité. Écrit directement
+ *  gSaveBlock1Ptr->pos en map-local coords. */
+export function SetCameraCoords(x: number, y: number): void {
+  gSaveBlock1Ptr.pos.x = x;
+  gSaveBlock1Ptr.pos.y = y;
+}
+
+/** 1:1 décomp `GetCameraCoords(u16 *x, u16 *y)` (fieldmap.c:810-814). */
+export function GetCameraCoords(): { x: number; y: number } {
+  return {
+    x: gSaveBlock1Ptr.pos.x,
+    y: gSaveBlock1Ptr.pos.y,
+  };
+}
+
+/** 1:1 décomp `GetPostCameraMoveMapBorderId(int x, int y)` (fieldmap.c:607-610).
+ *  Predicts le border id à (pos + MAP_OFFSET + delta). Utilisé par CameraMove
+ *  pour décider si le step va traverser un border vers une connexion. */
+export function GetPostCameraMoveMapBorderId(x: number, y: number): number {
+  return GetMapBorderIdAt(
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET + x,
+    gSaveBlock1Ptr.pos.y + MAP_OFFSET + y,
+  );
+}
+
+/** 1:1 décomp `CanCameraMoveInDirection(int direction)` (fieldmap.c:612-622).
+ *  TRUE si avancer d'1 metatile dans cette direction ne sortirait pas hors-map
+ *  (= CONNECTION_INVALID). Note décomp utilise `gDirectionToVectors[direction]`
+ *  (event_object_movement.c:907) ; notre équivalent = DIR_TO_DX/DY tables
+ *  (direction-coords.ts). */
+export function CanCameraMoveInDirection(direction: number): boolean {
+  const x = gSaveBlock1Ptr.pos.x + MAP_OFFSET + DIR_TO_DX[direction];
+  const y = gSaveBlock1Ptr.pos.y + MAP_OFFSET + DIR_TO_DY[direction];
+  return GetMapBorderIdAt(x, y) !== CONNECTION_INVALID;
+}
 
 // ─── Phase 4.8 : seamless cross-border transition (1:1 décomp) ───────────────
 

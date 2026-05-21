@@ -352,7 +352,18 @@ function _migrateLegacySaveBlock2(): void {
 }
 _migrateLegacySaveBlock2();
 
-export const gSaveBlock1Ptr = {} as any;
+/** 1:1 décomp `gSaveBlock1Ptr` (= pointer vers gSaveBlock1 EWRAM, global.h:990).
+ *  Conservé `any` pour compat avec les call-sites legacy qui accèdent à des
+ *  champs dynamiques. Le champ `pos` (= Coords16 = struct {s16 x; s16 y;}) est
+ *  la SOURCE UNIQUE de la position du joueur + camera focus dans le décomp
+ *  (= struct PlayerAvatar global.fieldmap.h:342-362 ne contient PAS x/y). 1:1
+ *  décomp `global.h:992` `struct Coords16 pos;`.
+ *
+ *  field-camera.ts et player-avatar.ts pointent leurs accessors x/y dessus
+ *  via référence partagée + getter/setter — éviter la duplication TS historique
+ *  `_camPos` vs `gPlayerAvatar.x/y` qui causait le désync `cam.x ≠ player.x`
+ *  user-flag 2026-05-22. */
+export const gSaveBlock1Ptr: any = { pos: { x: 0, y: 0 } };
 
 /** 1:1 décomp `gSaveBlock2Ptr` — delegates to save-system's SaveBlock2.
  *

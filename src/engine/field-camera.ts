@@ -60,6 +60,7 @@ import {
 } from './decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { getRuntime } from './decomp-globals';
+import { gSaveBlock1Ptr } from './gba-menu-system';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 
@@ -420,8 +421,13 @@ export function DrawDoorMetatileAt(
 // ─── 1:1 décomp CameraUpdate (field_camera.c:360-426) ───────────────────────
 
 /** Camera position (= top-left metatile of current view, en gBackupMapLayout coords).
- *  Tracking interne pour Phase 4.2 — Phase 4.3 le wirera sur gSaveBlock1Ptr->pos. */
-const _camPos = { x: 0, y: 0 };
+ *  1:1 décomp `gSaveBlock1Ptr->pos` (= SaveBlock1.pos, struct Coords16, global.h:992).
+ *  Source unique partagée avec gPlayerAvatar.x/y (= alias getter/setter dans
+ *  player-avatar.ts). Élimine le désync historique cam.x ≠ player.x.
+ *
+ *  IMPORTANT : ne JAMAIS réassigner `gSaveBlock1Ptr.pos = {...}` ailleurs, sinon
+ *  cet alias devient stale. Seulement muter `.x` / `.y`. */
+const _camPos: { x: number; y: number } = gSaveBlock1Ptr.pos;
 
 /** DEV : trace buffer pour debug movement. Chaque event (= deltaX/Y fire,
  *  RedrawMapSlice*) push ici. window.dev.movementLog() lit + clear.
@@ -548,17 +554,26 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   gCamera.x = oldX - preStepNewX;
   gCamera.y = oldY - preStepNewY;
 
-  // pos += delta (= post-step now). PlayerStep step end appliquera AUSSI
-  // moveCoords (= notre impl), donc finir au step end gPlayerAvatar = post-step
-  // + delta = double count. Pour éviter : laisse gPlayerAvatar pre-step ICI,
-  // step end fera le +delta naturellement.
-  // → Ne fait PAS `gPlayerAvatar.x/y += delta` ici comme décomp.
+  // 1:1 décomp `pos.x += x; pos.y += y;` (fieldmap.c:673-674) → post-step value.
+  // Notre architecture diverge : PlayerStep step end applique le delta lui-même
+  // sur gPlayerAvatar.x/y (= alias gSaveBlock1Ptr.pos POST chantier OW PHASE A).
+  // Si on faisait `_camPos += delta` ici, PlayerStep le re-applique au step end
+  // → 2× delta = bug 1-case offset (= cause root du bug user-flag 2026-05-22
+  //   "cam.x ≠ player.x après quelques pas"). Donc on NE TOUCHE PAS _camPos ici
+  // (= pos reste à preStepNewX = border value à la fin de CameraMove).
+  //
+  // Conséquence visuelle entre cross et step end : pos = border (= -1 ou width)
+  // → BG redrawn avec coords border, sprite déjà visible à border+delta. Le BG
+  // semble "lag" d'1 case pendant le step animation. PlayerStep step end →
+  // pos = border + delta = post-step → tile boundary suivant redraw correct.
+  //
+  // VRAI fix 1:1 décomp = refactor PlayerStep pour skipper le delta apply si
+  // _pendingConnection !== null au début du step (= chantier OW phase player-
+  // avatar #5 dans le plan). Déferé pour cette session.
 
-  // _camPos = post-step (= 1:1 décomp pos.y after `pos.y += y` at fieldmap.c:674).
-  _camPos.x = preStepNewX + deltaX;
-  _camPos.y = preStepNewY + deltaY;
-
-  // MoveMapViewToBackup avec post-step pos (= 1:1 décomp).
+  // MoveMapViewToBackup utilise post-step pos (= 1:1 décomp lit gSaveBlock1Ptr->pos
+  // après `pos += delta`). Args explicit ici car le pos global est pre-step à
+  // ce point dans notre archi (cf. comment ci-dessus).
   MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
 
   // Signal pending pour scene-level handling (BGM, status, NPC orchestrator).

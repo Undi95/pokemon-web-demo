@@ -93,6 +93,7 @@ import {
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
 import { getGObjectEvents } from './field-globals';
+import { gSaveBlock1Ptr } from './gba-menu-system';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -200,10 +201,20 @@ interface PlayerAvatar {
   jumpFramesLeft: number;
 }
 
-/** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374). */
-export const gPlayerAvatar: PlayerAvatar = {
-  x: 0,
-  y: 0,
+/** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374).
+ *
+ *  ATTENTION 1:1 STRICT — `struct PlayerAvatar` décomp NE CONTIENT PAS `x/y`
+ *  (cf. global.fieldmap.h:342-362). La position du joueur dans le décomp est
+ *  stockée dans `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) — source
+ *  unique partagée avec `_camPos` (= field-camera.ts).
+ *
+ *  Pour préserver les call-sites TS existants (`gPlayerAvatar.x = ...`), `x` et
+ *  `y` sont implémentés en getter/setter qui délèguent à `gSaveBlock1Ptr.pos`.
+ *  Élimine le désync historique `cam.x ≠ player.x` user-flag 2026-05-22.
+ *
+ *  IMPORTANT : ne JAMAIS réassigner `gSaveBlock1Ptr.pos = {...}` ailleurs, sinon
+ *  l'alias `_camPos` (field-camera) devient stale. Seulement muter `.x` / `.y`. */
+const _gPlayerAvatarBase = {
   facing: DIR_SOUTH,
   runningState: NOT_MOVING,
   tileTransitionState: T_NOT_MOVING,
@@ -215,10 +226,25 @@ export const gPlayerAvatar: PlayerAvatar = {
   currentElevation: 3,  // = elevation neutre (1:1 décomp default)
   spriteId: -1,
   walkAnimAlt: 0,
-  gender: 'MALE',
+  gender: 'MALE' as 'MALE' | 'FEMALE',
   dashing: false,
   jumpFramesLeft: 0,
-};
+} as Omit<PlayerAvatar, 'x' | 'y'>;
+
+Object.defineProperty(_gPlayerAvatarBase, 'x', {
+  get(): number { return gSaveBlock1Ptr.pos.x; },
+  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
+  enumerable: true,
+  configurable: true,
+});
+Object.defineProperty(_gPlayerAvatarBase, 'y', {
+  get(): number { return gSaveBlock1Ptr.pos.y; },
+  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
+  enumerable: true,
+  configurable: true,
+});
+
+export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase as PlayerAvatar;
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 
