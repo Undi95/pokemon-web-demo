@@ -206,28 +206,78 @@ export function CloseRegionMap(confirmed = false): void {
       console.log(`[region-map] FLY stub : would warp to ${targetMapSec} (no callback registered)`);
     }
   }
-  st.isOpen = false;
-  st.mode = 'VIEW';  // reset
-  _destroyGameObjects();
-  // 1:1 décomp `field_region_map.c` case 6 + `FieldCB_DefaultWarpExit` pattern :
-  // restore field controls (= 1:1 `SetMainCallback2(callback)` qui ramène le
-  // main loop OW dans son état "field actif"). Pas d'unlock fait depuis le
-  // décomp lui-même (= CB2 swap restore tout), donc on doit unlock ici notre
-  // proxy lock posé par OpenRegionMap.
-  UnlockPlayerFieldControls();
-  // CRITICAL : clear gMain.newKeys A/B pour éviter un loop "re-open carte".
-  // Sans ça : user presse A pour close → newKeys=A persiste → next frame
-  // ProcessPlayerFieldInput voit A press devant le wall map tile → re-trigger
-  // EventScript_RegionMap → loop infini. 1:1 décomp : le CB2 swap reset les
-  // input states (= gMain.heldKeys/newKeys repris à zero par le re-init du
-  // CB2 overworld), notre overlay n'a pas ce reset → clear manuel.
-  const rt = getRuntime();
-  if (rt) {
-    rt.gMain.newKeys = 0;
+  // 1:1 décomp `field_region_map.c` state 5-6 fade-out :
+  //   case 5: BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  //   case 6: if (!gPaletteFade.active) FreeRegionMapIconResources +
+  //           SetMainCallback2(callback) → restore overworld.
+  // Animation : 16 frames @ 60fps = ~270ms. Notre version tween Phaser
+  // alpha 1→0 sur tous les GameObjects de la carte.
+  const scene = _getScene();
+  const overlayObjects = [st.mapImage, st.cursorSprite, st.playerIconSprite,
+    st.titleWindow, st.mapsecWindow].filter(o => o !== null);
+  // Spawn un Phaser rect noir fullscreen au-dessus de tout (= simule fade-to-black
+  // overworld). Quand le tween rect fade-in 0→1 termine, on destroy l'overlay
+  // carte (sous le rect) + on tween le rect 1→0 (= fade-in OW reveal). Cela
+  // matche le pattern décomp state 5 fade-to-black + state 6 restore +
+  // probably FieldCB_DefaultWarpExit fade-in implicite côté CB2 OW restore.
+  if (scene) {
+    const cam = scene.cameras.main;
+    const blackRect = scene.add.rectangle(0, 0, cam.width, cam.height, 0x000000)
+      .setOrigin(0, 0)
+      .setAlpha(0)
+      .setDepth(REGION_MAP_DEPTH + 100)
+      .setScrollFactor(0);
+    // Phase 1 : tween black rect 0→1 sur 270ms (= 1:1 case 5 fade-to-black).
+    scene.tweens.add({
+      targets: blackRect,
+      alpha: 1,
+      duration: 270,
+      ease: 'Linear',
+      onComplete: () => {
+        // 1:1 case 6 : destroy carte GameObjects sous le rect noir (= hidden).
+        st.isOpen = false;
+        st.mode = 'VIEW';
+        _destroyGameObjects();
+        // Phase 2 : tween black rect 1→0 sur 270ms (= équivalent fade-from-black
+        // OW au retour via FieldCB_DefaultWarpExit / `Overworld_PlaySpecialMapMusic`
+        // + `WarpFadeInScreen` pattern qu'on n'a pas formellement, donc on simule).
+        scene.tweens.add({
+          targets: blackRect,
+          alpha: 0,
+          duration: 270,
+          ease: 'Linear',
+          onComplete: () => {
+            blackRect.destroy();
+          },
+        });
+        // Restore field controls + unblock script.
+        UnlockPlayerFieldControls();
+        const rt = getRuntime();
+        if (rt) rt.gMain.newKeys = 0;
+        // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
+        SignalWaitState();
+      },
+    });
+    // Tween la carte vers alpha 0 EN PARALLÈLE pendant que le rect noir
+    // monte (= la carte disparait progressivement DERRIÈRE le voile noir).
+    if (overlayObjects.length > 0) {
+      scene.tweens.add({
+        targets: overlayObjects,
+        alpha: 0,
+        duration: 270,
+        ease: 'Linear',
+      });
+    }
+  } else {
+    // Fallback sans scene : destroy + signal immediate.
+    st.isOpen = false;
+    st.mode = 'VIEW';
+    _destroyGameObjects();
+    UnlockPlayerFieldControls();
+    const rt = getRuntime();
+    if (rt) rt.gMain.newKeys = 0;
+    SignalWaitState();
   }
-  // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
-  // Notre version : SignalWaitState pour unblock le script `special FieldShowRegionMap`.
-  SignalWaitState();
 }
 
 // ─── Fly stub (= 1:1 décomp `SetFlyMapCallback`, region_map.c:1700) ─────────
