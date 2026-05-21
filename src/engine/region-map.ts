@@ -378,12 +378,19 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
     // 1:1 décomp `CreateRegionMapCursor` (region_map.c:1418-1419) :
     //   sRegionMap->cursorSprite->x = 8 * sRegionMap->cursorPosX + 4;
     //   sRegionMap->cursorSprite->y = 8 * sRegionMap->cursorPosY + 4;
-    // L'offset +4 vient du fait que le décomp utilise OAM avec origin top-left
-    // = pixel coord. Le sprite 16×16 placé à (8*pos+4) le centre sur le tile.
+    // `sprite->x` est le CENTER coord (= GBA decomp convention, sprite.h
+    // `struct Sprite`). Le rendu OAM top-left = `sprite->x + sprite->x2 +
+    // sprite->centerToCornerVecX` (sprite.c:349). Pour un sprite 16×16,
+    // centerToCornerVecX = -8 (= sprite_table_template setup).
+    //
+    // Donc top-left affiché = (8 * posX + 4) - 8 = 8 * posX - 4.
+    // Pour notre Phaser sprite avec origin (0, 0) (= top-left), on assigne
+    // directement `x = (posX * 8 - 4) * sx`.
+    //
     // Le PNG source `cursor_small.png` est 16×32 (= 2 frames stackées). On crop
     // top half (= frame 0 idle) au spawn, puis tick alterne frame 0/1 via setCrop.
-    const cursorPx = (st.cursorPosX * 8 + 4) * sx;
-    const cursorPy = (st.cursorPosY * 8 + 4) * sy;
+    const cursorPx = (st.cursorPosX * 8 - 4) * sx;
+    const cursorPy = (st.cursorPosY * 8 - 4) * sy;
     st.cursorSprite = scene.add.image(cursorPx, cursorPy, 'region_map_cursor')
       .setOrigin(0, 0)
       .setCrop(0, 0, 16, 16)
@@ -394,11 +401,14 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
     // 1:1 décomp `CreateRegionMapPlayerIcon` (region_map.c:1470-1471) :
     //   sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 8 + 4;
     //   sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 8 + 4;
+    // Idem cursor : sprite->x est le center, top-left rendu = pos*8 - 4 pour
+    // un sprite 16×16 (centerToCornerVecX = -8 via sRegionMapPlayerIconOam
+    // SPRITE_SHAPE(16x16) + SPRITE_SIZE(16x16) → sprite.c:702 setup).
     // Sprite icon gender-aware au playerIconSpritePos (= same coords que cursor
     // au start, 1:1 décomp `playerIconSpritePosX = cursorPosX` LoadRegionMapGfx case 5).
     const playerKey = gameState.gender === 'MALE' ? 'region_map_brendan' : 'region_map_may';
-    const playerPx = (playerLoc.x * 8 + 4) * sx;
-    const playerPy = (playerLoc.y * 8 + 4) * sy;
+    const playerPx = (playerLoc.x * 8 - 4) * sx;
+    const playerPy = (playerLoc.y * 8 - 4) * sy;
     st.playerIconSprite = scene.add.image(playerPx, playerPy, playerKey)
       .setOrigin(0, 0)
       .setDisplaySize(16 * sx, 16 * sy)
@@ -611,9 +621,11 @@ function _updateCursorPosition(): void {
   const cam = scene.cameras.main;
   const sx = cam.width / GBA_SCREEN_WIDTH;
   const sy = cam.height / GBA_SCREEN_HEIGHT;
-  // 1:1 décomp region_map.c:1418-1419 offset +4 (= OAM top-left pixel center).
-  st.cursorSprite.x = (st.cursorPosX * 8 + 4) * sx;
-  st.cursorSprite.y = (st.cursorPosY * 8 + 4) * sy;
+  // 1:1 décomp region_map.c:1418-1419 : sprite->x = 8*posX + 4 (= center coord).
+  // OAM top-left rendu = sprite->x + centerToCornerVecX (= -8 pour 16×16
+  // sprite.c:349) = 8*posX + 4 - 8 = 8*posX - 4. Phaser origin (0, 0) = top-left.
+  st.cursorSprite.x = (st.cursorPosX * 8 - 4) * sx;
+  st.cursorSprite.y = (st.cursorPosY * 8 - 4) * sy;
 }
 
 /** 1:1 décomp `sRegionMapCursorAnim1` ANIMCMD_FRAME tick (region_map.c:218).
