@@ -167,7 +167,8 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Bottom);
-  if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
+  // 1:1 décomp DrawWholeMapView() = no args (lit _camPos + gMapHeader internally).
+  DrawWholeMapView();
   LockPlayerFieldControls();
   // 1:1 décomp `CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` : screen instantly
   // black. Notre équivalent : BeginNormalPaletteFade target startY=16 endY=16.
@@ -337,7 +338,8 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Top);
         MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Mid);
         MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Bottom);
-        if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
+        // 1:1 décomp DrawWholeMapView() = no args (lit _camPos + gMapHeader internally).
+        DrawWholeMapView();
         PlaySE(SE_TRUCK_DOOR);
         rt.DestroyTask(task.taskId);
         UnlockPlayerFieldControls();

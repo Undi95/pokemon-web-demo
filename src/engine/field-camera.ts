@@ -272,10 +272,26 @@ function DrawWholeMapViewInternal(camX: number, camY: number, mapLayout: MapLayo
   }
 }
 
-/** 1:1 décomp `DrawWholeMapView()` (field_camera.c:94-98).
- *  Wrapper qui prend la position courante du player (= camera focus). */
-export function DrawWholeMapView(camX: number, camY: number, mapLayout: MapLayout): void {
-  DrawWholeMapViewInternal(camX, camY, mapLayout);
+/** 1:1 décomp `DrawWholeMapView(void)` (field_camera.c:94-98) :
+ *      DrawWholeMapViewInternal(gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y,
+ *                                gMapHeader.mapLayout);
+ *      sFieldCameraOffset.copyBGToVRAM = TRUE;
+ *
+ *  Signature 1:1 strict (= no args). Lit `_camPos` (= gSaveBlock1Ptr->pos
+ *  équivalent côté TS) + `gMapHeader.mapLayout` internally. Cause du bug
+ *  user-flag "Utiliser le PC nous bouge temporairement d'une case a droite"
+ *  (2026-05-21) : avant on prenait camX/camY/mapLayout en args, et les
+ *  callers (pc-anim.ts, truck-cinematic.ts) passaient `gPlayerAvatar.x/y`
+ *  au lieu de `_camPos.x/y` → desync entre la BG redraw et la position
+ *  camera réelle → tile shift visible de 1 case. Le décomp utilise TOUJOURS
+ *  `gSaveBlock1Ptr->pos`, qui est la camera focus (post-step), pas
+ *  nécessairement = player avatar position pendant les transitions. */
+export function DrawWholeMapView(): void {
+  if (!gMapHeader) {
+    console.warn('[field-camera] DrawWholeMapView : gMapHeader null, skipping');
+    return;
+  }
+  DrawWholeMapViewInternal(_camPos.x, _camPos.y, gMapHeader.mapLayout);
   sFieldCameraOffset.copyBGToVRAM = true;
 }
 
@@ -694,6 +710,5 @@ export function ClearBgRedrawPending(): void {
 // après async prefetch, redraw full map view + flush BG. Sinon les borders
 // reste vide visually même si sBackupMapData a été refilled.
 setRedrawWholeMapViewHook(() => {
-  if (!gMapHeader) return;
-  DrawWholeMapView(_camPos.x, _camPos.y, gMapHeader.mapLayout);
+  DrawWholeMapView();
 });

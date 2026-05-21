@@ -711,10 +711,12 @@ export class TestOverworldScene extends Phaser.Scene {
     const playerGender = gameState.gender ?? 'MALE';
     await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
 
-    // 1:1 décomp `DrawWholeMapView` (field_camera.c).
+    // 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) — no args,
+    // lit `gSaveBlock1Ptr->pos.x/y` (= `_camPos` côté TS) + gMapHeader.mapLayout
+    // internally. À ce point, _camPos a été setté par SetCameraTopLeftCoords()
+    // depuis InitPlayerAvatar → cohérent avec gPlayerAvatar.
     clearOverworldTilemaps();
-    const cam = GetCameraTopLeftCoords();
-    DrawWholeMapView(cam.x, cam.y, header.mapLayout);
+    DrawWholeMapView();
     flushOverworldTilemaps(this.rt);
     FieldUpdateBgTilemapScroll(this.rt);
     // ⚠️ NE PAS faire `gPlttBufferFaded.flushTo()` ici (= ancien code).
@@ -1081,8 +1083,10 @@ export class TestOverworldScene extends Phaser.Scene {
       // Re-running clear+draw+flush+scroll garantit un état BG buffer 100%
       // consistent avec _camPos post-warp avant que user puisse walk.
       clearOverworldTilemaps();
-      const camPostWarp = GetCameraTopLeftCoords();
-      DrawWholeMapView(camPostWarp.x, camPostWarp.y, destHeader.mapLayout);
+      // 1:1 décomp DrawWholeMapView() = no args (lit `_camPos` + gMapHeader
+      // internally). Le post-warp _camPos est déjà setté en Phase 3 par
+      // SetPlayerAvatar via SetCameraTopLeftCoords.
+      DrawWholeMapView();
       flushOverworldTilemaps(this.rt);
       FieldUpdateBgTilemapScroll(this.rt);
 

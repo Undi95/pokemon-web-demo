@@ -79,10 +79,12 @@ export function TickPCAnim(): void {
     const { dx, dy } = dxdy;
     _setPCMetatile(_state.isScreenOn, dx, dy);
     // 1:1 décomp `DrawWholeMapView()` (field_specials.c:1035) — re-render le BG
-    // overworld après la modif metatile. Sans ça, gBackupMapLayout.map est
-    // updated mais le tilemap rendu Phaser ne reflète pas le changement →
-    // l'écran reste sur l'ancien metatile (= bug user "PC ne s'allume pas").
-    if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
+    // overworld après la modif metatile. Signature 1:1 = no args (lit
+    // gSaveBlock1Ptr->pos.x/y + gMapHeader.mapLayout internally). Avant on
+    // passait `gPlayerAvatar.x/y` → décalage 1 case visuel quand player ≠
+    // camera focus (user-flag "Utiliser le PC nous bouge temporairement d'une
+    // case a droite" 2026-05-21).
+    DrawWholeMapView();
 
     _state.isScreenOn = !_state.isScreenOn;
     _state.flickerCount++;
@@ -100,7 +102,7 @@ export function DoPCTurnOffEffect(): void {
   if (!dxdy) return;
   const { dx, dy } = dxdy;
   _setPCMetatileToOff(dx, dy);
-  if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
+  DrawWholeMapView();
 }
 
 // ─── Internal helpers ──────────────────────────────────────────────────────
