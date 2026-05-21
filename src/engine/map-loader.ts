@@ -1322,9 +1322,13 @@ export function ClearSavedMapView(): void {
  *  conventions : caller doit passer post-step pos en LOGICAL coords du new map.
  *
  *  ClearSavedMapView() called automatiquement à la fin (= 1:1 décomp). */
-export function MoveMapViewToBackup(direction: number, posX: number, posY: number): void {
+export function MoveMapViewToBackup(direction: number): void {
   const mapView = _mapView();
   const width = gBackupMapLayout.width;
+  // 1:1 décomp `x0 = gSaveBlock1Ptr->pos.x; y0 = gSaveBlock1Ptr->pos.y;`
+  // (fieldmap.c:527-528). Post chantier OW PHASE A.2 : pos est la source unique.
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
   let r9 = 0;
   let r8 = 0;
   let x0 = posX;

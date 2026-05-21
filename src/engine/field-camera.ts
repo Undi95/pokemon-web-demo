@@ -490,6 +490,22 @@ export function clearPendingConnection(): void {
   _pendingConnection = null;
 }
 
+/** PHASE B' chantier OW : signal pour PlayerStep step end. Set par `CameraMove`
+ *  cross-border (= juste avant le retour). PlayerStep step end check ce flag
+ *  pour skipper `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` (= éviter le 2×
+ *  delta apply, vu que CameraMove a déjà appliqué `pos += delta` 1:1 décomp).
+ *
+ *  Distinct de `_pendingConnection` qui est drainé par la scene dans la même
+ *  frame que le cross — ce flag persiste pendant les 16 frames du step
+ *  animation jusqu'au step end qui le consume + reset. */
+let _lastStepCrossedBorder = false;
+
+export function consumeLastStepCrossedBorder(): boolean {
+  const r = _lastStepCrossedBorder;
+  _lastStepCrossedBorder = false;
+  return r;
+}
+
 /** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678).
  *  Update _camPos par (deltaX, deltaY) en metatiles. Si le camera traverse
  *  un border vers une connexion, signaler via _pendingConnection (= MainCB2
@@ -555,38 +571,29 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // getter dynamique, _camPos et gPlayerAvatar.x/y reflètent automatiquement.
   SetPositionFromConnection(connection, direction, deltaX, deltaY);
 
-  const preStepNewX = _camPos.x;  // = border value post SetPositionFromConnection
-  const preStepNewY = _camPos.y;
-
   // LoadMapFromCameraTransition : sync swap gMapHeader + InitMap + secondary
   // tileset + palette. APRÈS ça, gBackupMapLayout = NEW map's data.
   TransitionToConnection(connection);
 
   // 1:1 décomp `gCamera.active = TRUE; gCamera.x = old_x - pos.x;` etc.
+  // À CE moment, pos est encore à PRE-step (= border value).
   gCamera.active = true;
-  gCamera.x = oldX - preStepNewX;
-  gCamera.y = oldY - preStepNewY;
+  gCamera.x = oldX - _camPos.x;
+  gCamera.y = oldY - _camPos.y;
 
-  // 1:1 décomp `pos += delta` (fieldmap.c:673-674) → post-step value SKIPPED.
-  // Notre archi diverge : PlayerStep step end applique le delta lui-même sur
-  // gPlayerAvatar.x/y (= alias gSaveBlock1Ptr.pos PHASE A.2). Si on faisait
-  // `pos += delta` ici, PlayerStep le re-applique → 2× delta = bug 1-case
-  // offset (= cause root user-flag 2026-05-22). Donc on NE TOUCHE PAS pos ici
-  // → pos reste à preStepNewX = border value à la fin de CameraMove cross.
-  //
-  // Conséquence visuelle entre cross et step end : pos = border (-1 ou width).
-  // BG redrawn avec coords border tandis que le sprite avance à border+delta
-  // → BG lag d'1 case pendant le step animation. PlayerStep step end → pos =
-  // border + delta = post-step → tile boundary suivant redraw correct.
-  //
-  // VRAI fix 1:1 décomp = refactor PlayerStep pour skipper le delta apply si
-  // _pendingConnection !== null au début du step (= chantier OW PHASE B' #5).
+  // 1:1 décomp `pos.x += x; pos.y += y;` (fieldmap.c:673-674) → POST-step value.
+  // PHASE B' : on apply ce delta 1:1 décomp ici (= pos devient post-step), ET
+  // on set `_lastStepCrossedBorder` pour signaler à PlayerStep step end de
+  // SKIPPER son `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` (= éviter le 2×
+  // delta apply). Cela aligne BG redraw + sprite + camera focus 1:1 décomp,
+  // élimine le "côté gauche se répète" entre cross et step end.
+  _camPos.x += deltaX;
+  _camPos.y += deltaY;
+  _lastStepCrossedBorder = true;
 
-  // 1:1 décomp `MoveMapViewToBackup(direction)` lit gSaveBlock1Ptr.pos POST-step.
-  // Notre archi diverge (cf. ci-dessus) : pos est pre-step ici. Args explicit
-  // au lieu de no-args pour préserver le comportement attendu (= post-step coords).
-  // À nettoyer dans PHASE B' avec le PlayerStep skip-delta.
-  MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
+  // 1:1 décomp `MoveMapViewToBackup(direction)` no-args, lit gSaveBlock1Ptr.pos
+  // POST-step (= 1:1 strict).
+  MoveMapViewToBackup(direction);
 
   // Signal pending pour scene-level handling (BGM, status, NPC orchestrator).
   // Le swap visuel (BG buffer) est maintenant TOTALEMENT fait par CameraMove.

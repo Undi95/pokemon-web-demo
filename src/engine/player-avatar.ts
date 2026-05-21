@@ -58,6 +58,7 @@ import {
   GetCameraTopLeftCoords,
   GetCameraPanX,
   GetCameraPanY,
+  consumeLastStepCrossedBorder,
 } from './field-camera';
 import {
   ArePlayerFieldControlsLocked,
@@ -822,9 +823,14 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // OU step forced via forceMovement qui vient de démarrer ci-dessus).
       gPlayerAvatar.stepFramesLeft--;
       if (gPlayerAvatar.stepFramesLeft === 0) {
-        const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
-        gPlayerAvatar.x = nx;
-        gPlayerAvatar.y = ny;
+        // PHASE B' chantier OW : si ce step a cross un border, CameraMove a
+        // déjà appliqué `pos += delta` 1:1 décomp → ne pas re-appliquer ici.
+        const crossed = consumeLastStepCrossedBorder();
+        if (!crossed) {
+          const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
+          gPlayerAvatar.x = nx;
+          gPlayerAvatar.y = ny;
+        }
         gPlayerAvatar.runningState = NOT_MOVING;
         gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
         gPlayerAvatar.stepDirection = DIR_NONE;
@@ -913,9 +919,22 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // Sinon : reset → DIR_NONE → IsArrowWarpMetatileBehavior(SOUTH_ARROW, NONE)
       // = false → walk DOWN sur carpette ne TP pas (= player bloqué).
       const stepDirAtEnd = gPlayerAvatar.stepDirection;
-      const { x: nx, y: ny } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
-      gPlayerAvatar.x = nx;
-      gPlayerAvatar.y = ny;
+      // PHASE B' chantier OW : si ce step a cross un border, CameraMove a
+      // déjà appliqué `pos += delta` 1:1 décomp → ne pas re-appliquer ici.
+      const crossed = consumeLastStepCrossedBorder();
+      let nx: number;
+      let ny: number;
+      if (crossed) {
+        // Pos déjà à post-step via CameraMove. nx/ny pour downstream lit pos courant.
+        nx = gPlayerAvatar.x;
+        ny = gPlayerAvatar.y;
+      } else {
+        const coords = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
+        nx = coords.x;
+        ny = coords.y;
+        gPlayerAvatar.x = nx;
+        gPlayerAvatar.y = ny;
+      }
       // 1:1 décomp ledge jump = 2 tiles total. Le 1er moveCoords ci-dessus
       // applique 1 tile (= sortie du ledge tile). Si flag _pendingLedgeJump,
       // applique 1 tile de plus pour atterrir sur la tile au-delà du ledge.
