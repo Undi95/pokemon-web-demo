@@ -39,6 +39,7 @@ import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
 import { getRuntime, getAsset } from './decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
+import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from './bitmap-font';
 import {
   preloadRegionMapData,
   getRegionMapEntries,
@@ -391,9 +392,10 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
     // top half (= frame 0 idle) au spawn, puis tick alterne frame 0/1 via setCrop.
     const cursorPx = (st.cursorPosX * 8 - 4) * sx;
     const cursorPy = (st.cursorPosY * 8 - 4) * sy;
-    st.cursorSprite = scene.add.image(cursorPx, cursorPy, 'region_map_cursor')
+    // 1:1 GBA OAM cursor : texture pré-rendue avec idx 0 → alpha 0 (= 2 frames
+    // séparées `region_map_cursor_0` et `_1`). Tick alterne via setTexture.
+    st.cursorSprite = scene.add.image(cursorPx, cursorPy, 'region_map_cursor_0')
       .setOrigin(0, 0)
-      .setCrop(0, 0, 16, 16)
       .setDisplaySize(16 * sx, 16 * sy)
       .setDepth(REGION_MAP_DEPTH + 2)
       .setScrollFactor(0);
@@ -535,23 +537,41 @@ function _renderWindowToCanvas(
   ctx.fillRect(8, 8, contentW * 8, contentH * 8);
 
   // 1:1 décomp `AddTextPrinterParameterized(windowId, FONT_NORMAL, text, x, y, ...)` :
-  // dessine le text avec sFontShadowSpec = {TEXT_COLOR_TRANSPARENT(0),
-  // TEXT_COLOR_DARK_GRAY(2), TEXT_COLOR_LIGHT_GRAY(3)} (= 1:1 décomp
-  // sFontNormalShadowSpec text.c). Donc text color = palette_bank_15[2].
-  const textRgb15 = messageBoxPal[2] ?? 0x294A;
-  const tr = (textRgb15 & 0x1F) << 3;
-  const tg = ((textRgb15 >> 5) & 0x1F) << 3;
-  const tb = ((textRgb15 >> 10) & 0x1F) << 3;
-  ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
-  ctx.font = '10px monospace';
-  ctx.textBaseline = 'middle';
-  const textY = 8 + contentH * 4;  // = vertical center of content area
-  if (centered) {
-    ctx.textAlign = 'center';
-    ctx.fillText(text, 8 + contentW * 4, textY);
-  } else {
-    ctx.textAlign = 'left';
-    ctx.fillText(text, 8 + 4, textY);  // +4 padding 1:1 décomp PrintRegionMapSecName
+  // dessine le text avec la VRAIE bitmap font GBA Émeraude FR (= 1:1 ROM
+  // `sFontInfos[FONT_NORMAL]`) via `renderTextToCanvas` qui rend chaque char
+  // comme un sprite tile 8×16 (= GBA font cells) avec authenticColors qui
+  // remap les pixels vers la palette message_box (= 1:1 sFontInfos.fgColor=2
+  // shadowColor=3 et palette[3] cream).
+  try {
+    const textCanvas = renderTextToCanvas(scene, text, contentW * 8, { authenticColors: true });
+    const textY = 8 + Math.max(0, (contentH * 8 - textCanvas.height) >> 1);
+    if (centered) {
+      // 1:1 décomp `GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, 0x38)` :
+      // center align dans une largeur de 0x38=56 pixels (= 7 tiles WIN_TITLE).
+      const textX = 8 + Math.max(0, (contentW * 8 - textCanvas.width) >> 1);
+      ctx.drawImage(textCanvas, textX, textY);
+    } else {
+      // 1:1 décomp PrintRegionMapSecName : pas d'offset center, gauche à 0.
+      ctx.drawImage(textCanvas, 8 + 0, textY);
+    }
+  } catch (e) {
+    // Fallback ctx.fillText si bitmap font pas dispo (= setupBitmapFont a fail).
+    console.warn('[region-map] bitmap font render failed, fallback monospace:', e);
+    const textRgb15 = messageBoxPal[2] ?? 0x294A;
+    const tr = (textRgb15 & 0x1F) << 3;
+    const tg = ((textRgb15 >> 5) & 0x1F) << 3;
+    const tb = ((textRgb15 >> 10) & 0x1F) << 3;
+    ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
+    ctx.font = '10px monospace';
+    ctx.textBaseline = 'middle';
+    const textY = 8 + contentH * 4;
+    if (centered) {
+      ctx.textAlign = 'center';
+      ctx.fillText(text, 8 + contentW * 4, textY);
+    } else {
+      ctx.textAlign = 'left';
+      ctx.fillText(text, 8 + 4, textY);
+    }
   }
 
   // Ajoute la texture à Phaser (= remplace si existe).
@@ -636,17 +656,19 @@ function _updateCursorPosition(): void {
   st.cursorSprite.y = (st.cursorPosY * 8 - 4) * sy;
 }
 
-/** 1:1 décomp `sRegionMapCursorAnim1` ANIMCMD_FRAME tick (region_map.c:218).
- *  Update le sprite frame selon le counter : 0..19 = frame 0, 20..39 = frame 1.
- *  `cursor_small.png` est 16×32 = 2 frames stackées verticalement
- *  (top = idle, bottom = blink). setCrop sélectionne la portion visible. */
+/** 1:1 décomp `sRegionMapCursorAnim1` ANIMCMD_FRAME tick (region_map.c:218-223).
+ *    ANIMCMD_FRAME(0, 20) ANIMCMD_FRAME(4, 20) ANIMCMD_JUMP(0)
+ *  Frame 0 (= tiles 0..3) pendant 20 frames, puis frame 1 (= tiles 4..7) 20 frames.
+ *  Switch entre les 2 textures pré-rendues `region_map_cursor_0/1` (= alpha
+ *  corrigée avec idx 0 → transparent). */
 function _updateCursorBlinkFrame(): void {
   const st = _state();
   if (!st.cursorSprite) return;
   const frame = st.cursorAnimFrameCounter < 20 ? 0 : 1;
-  // Phaser Image setCrop(x, y, w, h) : crop relatif à la texture source (16×32).
-  // Frame 0 = top half (0..16), frame 1 = bottom half (16..32).
-  st.cursorSprite.setCrop(0, frame * 16, 16, 16);
+  const targetKey = `region_map_cursor_${frame}`;
+  if (st.cursorSprite.texture.key !== targetKey) {
+    st.cursorSprite.setTexture(targetKey);
+  }
 }
 
 function _updateMapsecNameDisplay(): void {
@@ -699,24 +721,100 @@ function _loadAssetsIfNeeded(scene: Phaser.Scene, onReady: () => void): void {
   if (st.assetsLoaded) { onReady(); return; }
   if (st.assetsLoading) return;
   st.assetsLoading = true;
-  // Compose la map finale 1:1 décomp via canvas hors-écran (= tiles + tilemap +
-  // palette pre-render). Puis utilise le dataURL comme texture Phaser.
-  void _composeRegionMapTexture(scene).then(() => {
-    // Load les autres assets (= cursor + player icons) directement (= pas besoin
-    // de tilemap pour eux).
-    scene.load.image('region_map_cursor', '/decomp/em/region_map/cursor_small.png');
+  // Préchargé bitmap font 1:1 GBA Émeraude FR (= font_a_fr.png + char widths)
+  // si pas déjà chargée par d'autres scènes. Idempotent.
+  preloadBitmapFont(scene);
+  // Compose la map finale + cursor sprites (= 2 frames pré-rendues avec idx 0
+  // transparent) 1:1 décomp via canvas hors-écran. Player icons direct depuis
+  // PNG (= ils ont pas la même contrainte de transparence).
+  void Promise.all([
+    _composeRegionMapTexture(scene),
+    _composeCursorTextures(scene),
+  ]).then(() => {
     scene.load.image('region_map_brendan', '/decomp/em/region_map/brendan_icon.png');
     scene.load.image('region_map_may', '/decomp/em/region_map/may_icon.png');
     scene.load.once('complete', () => {
+      // 1:1 init bitmap font widths post-load (= setupBitmapFont idempotent,
+      // attend que font_a soit dispo).
+      try { setupBitmapFont(scene); } catch (e) { console.warn('[region-map] setupBitmapFont failed (font assets pas encore prêts ?):', e); }
       st.assetsLoaded = true;
       st.assetsLoading = false;
       onReady();
     });
     scene.load.start();
   }).catch((e) => {
-    console.error('[region-map] compose texture failed:', e);
+    console.error('[region-map] asset load failed:', e);
     st.assetsLoading = false;
   });
+}
+
+/** 1:1 décomp `LZ77UnCompWram(sRegionMapCursorSmallGfxLZ, sRegionMap->cursorSmallImage)`
+ *  (region_map.c:570) + `CreateRegionMapCursor` (region_map.c:1375-1424).
+ *
+ *  Le PNG source `cursor_small.png` (= INCGFX 4bpp 16×32) a 8 tiles, soit 2
+ *  frames 16×16 (= 2×2 tiles each, stackées verticalement). L'animation
+ *  `sRegionMapCursorAnim1` (region_map.c:218-223) cycle entre frame 0
+ *  (= tile 0 + 1 + 2 + 3 = top 16×16) et frame 1 (= tile 4 + 5 + 6 + 7 =
+ *  bottom 16×16) toutes les 20 frames.
+ *
+ *  Le PNG décomp n'a PAS de chunk tRNS — Phaser charge l'image avec TOUS les
+ *  pixels opaques, donc l'idx 0 (= GBA "transparent color" RGB(98, 156, 0))
+ *  apparait comme un carré vert opaque rendant le cursor invisible sur la map.
+ *
+ *  Solution 1:1 GBA OAM : pré-render 2 canvases 16×16 avec idx 0 → alpha 0
+ *  (= 1:1 GBA OAM convention "palette index 0 = transparent" pour les sprites).
+ *  On enregistre 2 textures Phaser `region_map_cursor_0` et `region_map_cursor_1`
+ *  → TickRegionMap toggle via setTexture toutes les 20 frames. */
+async function _composeCursorTextures(scene: Phaser.Scene): Promise<void> {
+  if (scene.textures.exists('region_map_cursor_0')
+   && scene.textures.exists('region_map_cursor_1')) return;
+  const { loadIndexedPngStrict } = await import('./gba/png-loader');
+  const png = await loadIndexedPngStrict('/decomp/em/region_map/cursor_small.png', 4);
+  // PNG 16×32 = 2 cols × 4 rows tiles = 8 tiles total. Chaque frame 16×16 =
+  // 2×2 tiles. Frame 0 = tiles 0..3, frame 1 = tiles 4..7.
+  for (let frame = 0; frame < 2; frame++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) continue;
+    const imageData = ctx.createImageData(16, 16);
+    const pixels = imageData.data;
+    // Frame 0 utilise tiles 0..3 (= rows 0..1 du PNG). Frame 1 utilise tiles
+    // 4..7 (= rows 2..3 du PNG). Le PNG est arrangé en 2 colonnes par row.
+    // Tile dans la PNG : tileBase = (frame * 4 + frameTileIdx) * 32.
+    //   frameTileIdx 0 = TL, 1 = TR, 2 = BL, 3 = BR (dans le frame 16×16).
+    for (let frameTileIdx = 0; frameTileIdx < 4; frameTileIdx++) {
+      const tileBase = (frame * 4 + frameTileIdx) * 32;
+      const dstTileX = (frameTileIdx % 2) * 8;
+      const dstTileY = Math.floor(frameTileIdx / 2) * 8;
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 4; col++) {
+          const byte = png.charData[tileBase + row * 4 + col] ?? 0;
+          const px1 = byte & 0xF;
+          const px2 = (byte >> 4) & 0xF;
+          for (const [pxIdx, palIdx] of [[col * 2, px1], [col * 2 + 1, px2]]) {
+            const off = ((dstTileY + row) * 16 + (dstTileX + pxIdx)) * 4;
+            if (palIdx === 0) {
+              // 1:1 GBA OAM : idx 0 = transparent (= alpha 0).
+              pixels[off + 3] = 0;
+            } else {
+              const rgb15 = png.palette[palIdx] ?? 0;
+              pixels[off + 0] = (rgb15 & 0x1F) << 3;
+              pixels[off + 1] = ((rgb15 >> 5) & 0x1F) << 3;
+              pixels[off + 2] = ((rgb15 >> 10) & 0x1F) << 3;
+              pixels[off + 3] = 0xFF;
+            }
+          }
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    const key = `region_map_cursor_${frame}`;
+    if (scene.textures.exists(key)) scene.textures.remove(key);
+    scene.textures.addCanvas(key, canvas);
+  }
+  console.log('[region-map] composed cursor textures (2 frames, alpha = idx0 transparent)');
 }
 
 /** 1:1 décomp pré-render BG2 affine map. Décode tiles (map.png 8bpp indexed)
