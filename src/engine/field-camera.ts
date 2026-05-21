@@ -490,29 +490,10 @@ export function clearPendingConnection(): void {
   _pendingConnection = null;
 }
 
-/** PHASE B' chantier OW : signal "CameraMove a appliqué pos += delta sur ce step".
- *  Set par `CameraMove` SUR TOUTES LES BRANCHES qui font `pos += delta` (= non-cross
- *  ET cross-border). PlayerStep step end consume le flag et SKIP son propre
- *  `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` quand set — éviter le 2× delta
- *  apply.
- *
- *  Post-PHASE A : `_camPos.x === gPlayerAvatar.x === gSaveBlock1Ptr.pos.x`. Si
- *  CameraMove fait `pos += 1` et que PlayerStep step end fait `pos = pos + 1`,
- *  on a `pos = old + 2` = 1-case offset.
- *
- *  Distinct de `_pendingConnection` qui est drainé par la scene dans la même
- *  frame que le cross. Ce flag persiste pendant les 16 frames du step animation
- *  jusqu'au step end qui le consume + reset. */
-let _lastStepCamMoved = false;
-
-export function consumeLastStepCamMoved(): boolean {
-  const r = _lastStepCamMoved;
-  _lastStepCamMoved = false;
-  return r;
-}
-
-/** Backcompat alias temporaire — à retirer dans une session ultérieure. */
-export const consumeLastStepCrossedBorder = consumeLastStepCamMoved;
+// Note 1:1 STRICT chantier OW : le flag `_lastStepCamMoved` (PHASE B' workaround)
+// a été RETIRÉ. Le décomp ne dual-write pos — seul CameraMove (= fieldmap.c)
+// mute pos. PlayerStep/movement-system step ends ne touchent PAS pos. C'est
+// strict 1:1 et élimine le besoin de tout flag de coordination.
 
 /** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678).
  *  Update _camPos par (deltaX, deltaY) en metatiles. Si le camera traverse
@@ -543,7 +524,8 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     // 1:1 décomp `pos += delta` (fieldmap.c:658-659).
     _camPos.x += deltaX;
     _camPos.y += deltaY;
-    _lastStepCamMoved = true;  // signal PlayerStep step end : skip son delta apply.
+    // 1:1 décomp : pas de flag — pos est mutée ici, PlayerStep skip son apply
+    // (= retiré). CameraMove est seule source de pos += delta.  // signal PlayerStep step end : skip son delta apply.
     return false;
   }
 
@@ -553,7 +535,8 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     // Fallback safe : pas de connexion → comportement non-cross.
     _camPos.x += deltaX;
     _camPos.y += deltaY;
-    _lastStepCamMoved = true;
+    // 1:1 décomp : pas de flag — pos est mutée ici, PlayerStep skip son apply
+    // (= retiré). CameraMove est seule source de pos += delta.
     return false;
   }
 
@@ -594,14 +577,11 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   gCamera.y = oldY - _camPos.y;
 
   // 1:1 décomp `pos.x += x; pos.y += y;` (fieldmap.c:673-674) → POST-step value.
-  // PHASE B' : on apply ce delta 1:1 décomp ici (= pos devient post-step), ET
-  // on set `_lastStepCrossedBorder` pour signaler à PlayerStep step end de
-  // SKIPPER son `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` (= éviter le 2×
-  // delta apply). Cela aligne BG redraw + sprite + camera focus 1:1 décomp,
-  // élimine le "côté gauche se répète" entre cross et step end.
+  // PHASE B' : on apply ce delta 1:1 décomp ici (= pos devient post-step).
+  // PlayerStep / movement-system step ends NE TOUCHENT PAS pos (= 1:1 strict
+  // décomp `field_player_avatar.c`). CameraMove est la seule source de mutation.
   _camPos.x += deltaX;
   _camPos.y += deltaY;
-  _lastStepCamMoved = true;
 
   // 1:1 décomp `MoveMapViewToBackup(direction)` no-args, lit gSaveBlock1Ptr.pos
   // POST-step (= 1:1 strict).

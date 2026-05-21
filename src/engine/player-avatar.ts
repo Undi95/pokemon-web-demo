@@ -58,7 +58,6 @@ import {
   GetCameraTopLeftCoords,
   GetCameraPanX,
   GetCameraPanY,
-  consumeLastStepCrossedBorder,
 } from './field-camera';
 import {
   ArePlayerFieldControlsLocked,
@@ -823,14 +822,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // OU step forced via forceMovement qui vient de démarrer ci-dessus).
       gPlayerAvatar.stepFramesLeft--;
       if (gPlayerAvatar.stepFramesLeft === 0) {
-        // PHASE B' chantier OW : si ce step a cross un border, CameraMove a
-        // déjà appliqué `pos += delta` 1:1 décomp → ne pas re-appliquer ici.
-        const crossed = consumeLastStepCrossedBorder();
-        if (!crossed) {
-          const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
-          gPlayerAvatar.x = nx;
-          gPlayerAvatar.y = ny;
-        }
+        // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche
+        // JAMAIS `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c:649) mute
+        // pos via CameraUpdate au tile boundary. À ce point, pos = post-step
+        // car CameraMove a déjà été appelée durant les frames du step.
         gPlayerAvatar.runningState = NOT_MOVING;
         gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
         gPlayerAvatar.stepDirection = DIR_NONE;
@@ -919,33 +914,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // Sinon : reset → DIR_NONE → IsArrowWarpMetatileBehavior(SOUTH_ARROW, NONE)
       // = false → walk DOWN sur carpette ne TP pas (= player bloqué).
       const stepDirAtEnd = gPlayerAvatar.stepDirection;
-      // PHASE B' chantier OW : si ce step a cross un border, CameraMove a
-      // déjà appliqué `pos += delta` 1:1 décomp → ne pas re-appliquer ici.
-      const crossed = consumeLastStepCrossedBorder();
-      let nx: number;
-      let ny: number;
-      if (crossed) {
-        // Pos déjà à post-step via CameraMove. nx/ny pour downstream lit pos courant.
-        nx = gPlayerAvatar.x;
-        ny = gPlayerAvatar.y;
-      } else {
-        const coords = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
-        nx = coords.x;
-        ny = coords.y;
-        gPlayerAvatar.x = nx;
-        gPlayerAvatar.y = ny;
-      }
+      // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche JAMAIS
+      // `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c) mute pos au tile
+      // boundary du CameraUpdate. À ce point, pos = post-step (= via CameraMove
+      // appliquée durant les 16 frames du step). nx/ny pour downstream usage
+      // (= warp check, behavior check) lit pos courant.
+      const nx = gPlayerAvatar.x;
+      const ny = gPlayerAvatar.y;
       // 1:1 décomp ledge jump = 2 tiles total. Step est 32 frames → CameraMove
       // est appelée 2 fois (= 2 tile boundaries) qui appliquent chacune `pos +=
-      // delta`. PHASE B' : si `crossed` (= CameraMove a appliqué), pos est déjà
-      // à old + 2 → ne PAS re-appliquer ici. Sinon (= ne devrait pas arriver
-      // post-PHASE A.2 mais safety), apply le 2nd tile.
+      // delta`. pos est déjà à old + 2 — pas de re-apply ici.
       if (_pendingLedgeJump) {
-        if (!crossed) {
-          const { x: nx2, y: ny2 } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
-          gPlayerAvatar.x = nx2;
-          gPlayerAvatar.y = ny2;
-        }
         _pendingLedgeJump = false;
         // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
         // spawn dust cloud à la position d'atterrissage.
