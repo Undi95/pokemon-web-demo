@@ -443,21 +443,115 @@ function _getMapsecNameAtCursor(): string {
 }
 
 /** Load assets Phaser une seule fois (= cached après 1er open).
- *  Asset state shared via globalThis state (= same singleton que isOpen). */
+ *  Asset state shared via globalThis state (= same singleton que isOpen).
+ *
+ *  1:1 décomp `LoadRegionMapGfx` (region_map.c:544-619) charge :
+ *    - case 0 : map tiles (= sRegionMapBg_GfxLZ → BG_CHAR_ADDR(2))
+ *    - case 1 : map tilemap (= sRegionMapBg_TilemapLZ → BG_SCREEN_ADDR(28))
+ *    - case 2 : map palette (= sRegionMapBg_Pal → BG_PLTT_ID(7), 3 sub-pals)
+ *    - case 3 : cursor sprite (= sRegionMapCursorSmallGfxLZ → cursorSmallImage)
+ *  Notre version : compose la map finale via canvas en pré-render (= 1 fois)
+ *  à partir des PNG/PAL/BIN sources, puis l'utilise comme texture Phaser. */
 function _loadAssetsIfNeeded(scene: Phaser.Scene, onReady: () => void): void {
   const st = _state();
   if (st.assetsLoaded) { onReady(); return; }
   if (st.assetsLoading) return;
   st.assetsLoading = true;
-  // Load all assets dans le scene's loader.
-  scene.load.image('region_map_bg', '/decomp/em/region_map/map.png');
-  scene.load.image('region_map_cursor', '/decomp/em/region_map/cursor_small.png');
-  scene.load.image('region_map_brendan', '/decomp/em/region_map/brendan_icon.png');
-  scene.load.image('region_map_may', '/decomp/em/region_map/may_icon.png');
-  scene.load.once('complete', () => {
-    st.assetsLoaded = true;
+  // Compose la map finale 1:1 décomp via canvas hors-écran (= tiles + tilemap +
+  // palette pre-render). Puis utilise le dataURL comme texture Phaser.
+  void _composeRegionMapTexture(scene).then(() => {
+    // Load les autres assets (= cursor + player icons) directement (= pas besoin
+    // de tilemap pour eux).
+    scene.load.image('region_map_cursor', '/decomp/em/region_map/cursor_small.png');
+    scene.load.image('region_map_brendan', '/decomp/em/region_map/brendan_icon.png');
+    scene.load.image('region_map_may', '/decomp/em/region_map/may_icon.png');
+    scene.load.once('complete', () => {
+      st.assetsLoaded = true;
+      st.assetsLoading = false;
+      onReady();
+    });
+    scene.load.start();
+  }).catch((e) => {
+    console.error('[region-map] compose texture failed:', e);
     st.assetsLoading = false;
-    onReady();
   });
-  scene.load.start();
+}
+
+/** 1:1 décomp pré-render BG2 affine map. Décode tiles (map.png 8bpp indexed)
+ *  + palette (map.pal RGB15, 3 sub-pals × 16 colors = 48 entries chargées au
+ *  BG_PLTT_ID(7) = BG palettes 7/8/9) + tilemap (map.bin 64×64 1-byte tile ids).
+ *
+ *  Compose un canvas 240×160 (= GBA visible area) en piochant chaque tile 8×8
+ *  dans la PNG selon tilemap[y][x], et résoud chaque pixel via la palette.
+ *  Le résultat est ajouté à Phaser TextureManager sous la clé `region_map_bg`. */
+async function _composeRegionMapTexture(scene: Phaser.Scene): Promise<void> {
+  if (scene.textures.exists('region_map_bg')) return;
+  // Lazy import pour éviter coût au module load (= seulement quand on ouvre la map).
+  const { loadIndexedPngStrict, loadAffineTilemapBin } =
+    await import('./gba/png-loader');
+  const { rgb15ToRgba8 } = await import('./gba/types');
+  // Charge en parallèle. NB : on utilise la PLTE embeddée dans map.png (= 256
+  // entries dont les 32 vraies couleurs HOENN à partir de l'index 113, =
+  // alignement palette bank 7 du décomp `LoadPalette(sRegionMapBg_Pal,
+  // BG_PLTT_ID(7), ...)`. Les indices `charData` matchent directement cette PLTE).
+  // map.pal externe (= 32 entries JASC-PAL) est redondante avec ce que la PLTE
+  // PNG contient déjà → pas besoin de loadGbaPal.
+  const [png, tilemap] = await Promise.all([
+    loadIndexedPngStrict('/decomp/em/region_map/map.png', 8),
+    loadAffineTilemapBin('/decomp/em/region_map/map.bin'),
+  ]);
+  const pal = png.palette;
+  // PNG : 128×120 = 16×15 tiles 8×8 = 240 unique tiles.
+  // Tilemap : 64×64 = 4096 tile entries (1 byte each = 1:1 décomp BG2 affine
+  // paletteMode=1 256-color).
+  // BG2 screenSize=2 = 512×512 px BG. Le visible GBA screen = 240×160 px =
+  // 30×20 tiles. Avec scroll (0, 0) initial (= CalcZoomScrollParams(0,0,0,0,
+  // 0x100, 0x100, 0)), on affiche les 30 premières colonnes × 20 premières lignes.
+  const VISIBLE_W = 240, VISIBLE_H = 160;
+  const VISIBLE_TILES_W = 30, VISIBLE_TILES_H = 20;
+  const TILEMAP_STRIDE = 64;  // = 1:1 BG2 screenSize=2 / 8
+  const PNG_TILES_W = 16;     // = png.widthTiles
+
+  // Canvas hors-écran.
+  const canvas = document.createElement('canvas');
+  canvas.width = VISIBLE_W;
+  canvas.height = VISIBLE_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas 2d unsupported');
+  const imageData = ctx.createImageData(VISIBLE_W, VISIBLE_H);
+  const pixels = imageData.data;
+
+  // Compose tile par tile. `charData` est packé tile-par-tile (= 64 bytes par
+  // tile en ordre row-major). Pour accéder au pixel (px, py) du tile_id :
+  //   charData[tile_id * 64 + py * 8 + px] = palette index dans la pal externe.
+  for (let ty = 0; ty < VISIBLE_TILES_H; ty++) {
+    for (let tx = 0; tx < VISIBLE_TILES_W; tx++) {
+      // 1:1 décomp tilemap lookup : tile_id = tilemap[ty][tx] (= u8).
+      const tileId = tilemap[ty * TILEMAP_STRIDE + tx] & 0xFF;
+      const tileBase = tileId * 64;
+      // Draw 8×8 du tile au canvas.
+      for (let py = 0; py < 8; py++) {
+        for (let px = 0; px < 8; px++) {
+          // 1:1 décomp : palette index dans le PNG 8bpp (= 32-color subset).
+          const palIdx = png.charData[tileBase + py * 8 + px];
+          // GBA convention : palette index 0 = transparent. Pour le BG2 affine
+          // (paletteMode=1 256-color), on rend toujours en utilisant la pal
+          // externe `map.pal` (= 32 colors) chargée par LoadPalette(.., BG_PLTT_ID(7)).
+          const rgb15 = pal[palIdx] ?? 0;
+          const [r, g, b] = rgb15ToRgba8(rgb15);
+          const dstX = tx * 8 + px;
+          const dstY = ty * 8 + py;
+          const dstOff = (dstY * VISIBLE_W + dstX) * 4;
+          pixels[dstOff + 0] = r;
+          pixels[dstOff + 1] = g;
+          pixels[dstOff + 2] = b;
+          pixels[dstOff + 3] = 0xFF;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  // Ajoute la texture composée à Phaser.
+  scene.textures.addCanvas('region_map_bg', canvas);
+  console.log(`[region-map] composed BG texture ${VISIBLE_W}×${VISIBLE_H} from ${png.widthTiles}×${png.heightTiles} tiles (${png.charData.length} bytes) + ${tilemap.length} tilemap entries + ${pal.length} pal colors`);
 }
