@@ -38,7 +38,13 @@ import { OBJ_PLTT_ID } from './decomp-globals';
 const EXCLAMATION_PNG = '/decomp/em/field_effects/emotion_exclamation.png';
 const QUESTION_PNG    = '/decomp/em/field_effects/emotion_question.png';
 const HEART_PNG       = '/decomp/em/field_effects/emotion_heart.png';
-const GENERAL_0_PAL   = '/decomp/em/field_effects/general_0.pal';
+/** Palette dédiée du sprite emote (= 16 colors RGB15 binaire 32 bytes).
+ *  Extraite par `scripts/extract-png-indexed-tiles.mjs` depuis la PLTE du PNG
+ *  source emotion_exclamation.png (= bytes identiques aux 3 PNGs emote car ils
+ *  partagent la même PLTE, qui est elle-même 1:1 décomp `general_0.pal`).
+ *  Le fichier `general_0.pal` source est en format JASC-PAL texte ASCII
+ *  (= 213 bytes), donc utilisable directement par loadGbaPal. */
+const EMOTE_PAL_BIN   = '/decomp/em/field_effects/emotion_exclamation.gbapal';
 
 // ─── OBJ VRAM + palette allocation ─────────────────────────────────────────
 
@@ -97,7 +103,7 @@ export async function LoadEmoteAssets(rt: DecompRuntime): Promise<void> {
       loadTileBin(EXCLAMATION_PNG, 4),
       loadTileBin(QUESTION_PNG, 4),
       loadTileBin(HEART_PNG, 4),
-      loadGbaPal(GENERAL_0_PAL),
+      loadGbaPal(EMOTE_PAL_BIN),
     ]);
     const objVram = rt.gba.objVram;
     // Layout : 4 tiles consecutifs par emote (= 2x2 tiles 4bpp = 128 bytes).
