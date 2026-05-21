@@ -33,6 +33,8 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
+import { setStringVar } from './string-buffers';
+import { StringExpandPlaceholders } from './gba-text-system';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
 import { RemoveBagItem, UpdatePocketItemList } from './bag';
 import {
@@ -907,8 +909,20 @@ export function IsBagScreenOpen(): boolean {
  *    - BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK) → fade IN
  *      depuis BLACK pendant 16 frames
  *    - Wait fade fini → bag interactive */
-export function OpenBagScreen(_onCloseLegacy?: () => void): void {
+/** 1:1 décomp BagLocation public mapping pour les callers externes (= bedroom-pc).
+ *  Permet d'ouvrir le bag en mode ITEMPC (= dispatch vers Task_ItemContext_Deposit
+ *  au lieu du context menu USE/GIVE/TOSS normal). */
+export const BAG_LOCATION_FIELD = 0;
+export const BAG_LOCATION_ITEMPC = 6;
+/** Callback exécuté au close du bag (= 1:1 décomp gBagPosition.exitCallback).
+ *  Pour ITEMPC : `CB2_PlayerPCExitBagMenu` qui retourne au PC menu. */
+let _bagExitCallback: (() => void) | null = null;
+
+export function OpenBagScreen(_onCloseLegacy?: () => void, location: number = 0, exitCallback?: () => void): void {
   if (_isOpen) return;
+  // 1:1 décomp `gBagPosition.location = location` (item_menu.c:617).
+  _bagLocation = location as BagLocation;
+  _bagExitCallback = exitCallback ?? null;
   // 1:1 décomp `GoToBagMenu` (item_menu.c:617) :
   //   gBagMenu = AllocZeroed(...)  ← notre gBagMenu state est implicite
   //   gBagPosition.exitCallback = exitCallback
@@ -2059,6 +2073,16 @@ export function CloseBagScreen(): void {
   }
   // 1:1 décomp Task_FadeAndCloseBagMenu — créé directement.
   rt.CreateTask(Task_FadeAndCloseBagMenu_BagScreen, 0);
+  // 1:1 décomp `gBagPosition.exitCallback` : pour ITEMPC mode, le exitCallback
+  // est `CB2_PlayerPCExitBagMenu` (= player_pc.c:571) qui retourne au PC menu.
+  // On l'invoque ici après le scheduling de la fade out task.
+  const exitCb = _bagExitCallback;
+  _bagExitCallback = null;
+  _bagLocation = BagLocation.FIELD;  // reset pour next open
+  if (exitCb) {
+    // Wait short pour que la fade out se déclenche, puis fire callback.
+    setTimeout(() => { try { exitCb(); } catch (e) { console.error('[bag exit cb]', e); } }, 100);
+  }
 }
 
 export function TickBagScreen(newKeys: number): void {
@@ -2132,6 +2156,14 @@ export function TickBagScreen(newKeys: number): void {
   }
   if (_phase === 'toss_message') {
     _tickTossMessage(newKeys, KEY_A, KEY_B);
+    return;
+  }
+  if (_phase === 'itempc_deposit_qty' as typeof _phase) {
+    _tickItemPCDepositQty(repeatedKeys, KEY_A, KEY_B, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT);
+    return;
+  }
+  if (_phase === 'itempc_deposit_msg' as typeof _phase) {
+    _tickItemPCDepositMsg(newKeys, KEY_A, KEY_B);
     return;
   }
   if (_phase === 'swap_items') {
@@ -2248,9 +2280,145 @@ export function TickBagScreen(newKeys: number): void {
       return;
     }
     PlaySE(5);
-    // 1:1 décomp Task_ItemContext_Normal → OpenContextMenu(taskId).
-    _openContextMenu();
+    // 1:1 décomp item_menu.c:1278 :
+    //   sContextMenuFuncs[gBagPosition.location](taskId);
+    // FIELD/PARTY/SHOP/etc. → Task_ItemContext_Normal → OpenContextMenu
+    // ITEMPC → Task_ItemContext_Deposit (= bypass context menu, dispatch direct)
+    if (_bagLocation === BagLocation.ITEMPC) {
+      _itemContextDeposit(itemKey);
+    } else {
+      _openContextMenu();
+    }
     return;
+  }
+}
+
+// ─── ITEMMENULOCATION_ITEMPC deposit flow (= 1:1 item_menu.c:2203-2274) ─────
+
+let _depositQtySelected = 1;
+let _depositMaxQty = 1;
+let _depositItemKey = '';
+let _depositBagItemIdx = -1;
+/** Index of selected item in pocket array (for ListMenu refresh). */
+let _depositListIdx = -1;
+
+/** 1:1 décomp `Task_ItemContext_Deposit` (item_menu.c:2203-2221).
+ *  qty=1 → TryDepositItem direct, sinon prompt "Déposer combien?" + qty rolling. */
+function _itemContextDeposit(itemKey: string): void {
+  _depositItemKey = itemKey;
+  _depositListIdx = _scrollOffset + _cursorPos;
+  _depositBagItemIdx = _findBagItemIdx(itemKey);
+  if (_depositBagItemIdx < 0) {
+    console.warn('[bag-screen ITEMPC] bag item not found:', itemKey);
+    return;
+  }
+  _depositMaxQty = gameState.bag.items[_depositBagItemIdx].quantity;
+  _depositQtySelected = 1;
+  if (_depositMaxQty === 1) {
+    _tryDepositItem();
+    return;
+  }
+  // qty > 1 : prompt + qty window. 1:1 décomp item_menu.c:2214-2219.
+  // CopyItemName(itemId, gStringVar1) + gText_DepositHowManyVar1
+  const itemName = getItemNameFr(itemKey);
+  setStringVar(1, itemName);
+  const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
+  _printDescription(StringExpandPlaceholders('', tpl));
+  _drawDepositQtyWindow();
+  _phase = 'itempc_deposit_qty' as typeof _phase;
+}
+
+/** Find bag slot index for the given itemKey. */
+function _findBagItemIdx(itemKey: string): number {
+  const items = gameState.bag.items;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].itemKey === itemKey && items[i].quantity > 0) return i;
+  }
+  return -1;
+}
+
+/** Draw "× N" centered in WIN_DESCRIPTION area (= 1:1 décomp PrintItemQuantity). */
+function _drawDepositQtyWindow(): void {
+  if (_descWid < 0) return;
+  FillWindowPixelBuffer(_descWid, 0x00);
+  const qtyStr = `× ${String(_depositQtySelected).padStart(2, '0')}`;
+  AddTextPrinterParameterized3(
+    _descWid, FONT_NORMAL, 100, 17,
+    COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+  );
+  PutWindowTilemap(_descWid);
+  CopyWindowToVram(_descWid, 3);
+}
+
+function _printDescription(text: string): void {
+  if (_descWid < 0) return;
+  FillWindowPixelBuffer(_descWid, 0x00);
+  const lines = text.split(/\\n|\n/);
+  for (let i = 0; i < Math.min(lines.length, 3); i++) {
+    AddTextPrinterParameterized3(
+      _descWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
+    );
+  }
+  PutWindowTilemap(_descWid);
+  CopyWindowToVram(_descWid, 3);
+}
+
+/** 1:1 décomp `Task_ChooseHowManyToDeposit` (item_menu.c:2223-2246).
+ *  D-pad ajuste qty, A confirm → TryDepositItem, B annule → return list. */
+function _tickItemPCDepositQty(newKeys: number, KEY_A: number, KEY_B: number, KEY_UP: number, KEY_DOWN: number, KEY_LEFT: number, KEY_RIGHT: number): void {
+  let changed = false;
+  if (newKeys & KEY_UP)    { _depositQtySelected = Math.min(_depositMaxQty, _depositQtySelected + 1); changed = true; }
+  if (newKeys & KEY_DOWN)  { _depositQtySelected = Math.max(1, _depositQtySelected - 1); changed = true; }
+  if (newKeys & KEY_RIGHT) { _depositQtySelected = Math.min(_depositMaxQty, _depositQtySelected + 10); changed = true; }
+  if (newKeys & KEY_LEFT)  { _depositQtySelected = Math.max(1, _depositQtySelected - 10); changed = true; }
+  if (changed) {
+    _drawDepositQtyWindow();
+    return;
+  }
+  if (newKeys & KEY_A) {
+    PlaySE(5);
+    _tryDepositItem();
+    return;
+  }
+  if (newKeys & KEY_B) {
+    PlaySE(5);
+    _phase = 'list_input';
+    _drawDesc();
+    return;
+  }
+}
+
+/** 1:1 décomp `TryDepositItem` (item_menu.c:2248-2274). */
+async function _tryDepositItem(): Promise<void> {
+  const { AddPCItem } = await import('./pc-items');
+  if (AddPCItem(_depositItemKey, _depositQtySelected)) {
+    // success → remove from bag.
+    const slot = gameState.bag.items[_depositBagItemIdx];
+    slot.quantity -= _depositQtySelected;
+    if (slot.quantity === 0) slot.itemKey = '';
+    // 1:1 décomp gText_DepositedVar2Var1s "{STR_VAR_2} {STR_VAR_1} déposé(s)."
+    const itemName = getItemNameFr(_depositItemKey);
+    setStringVar(1, itemName);
+    setStringVar(2, String(_depositQtySelected));
+    const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
+    _printDescription(StringExpandPlaceholders('', tpl));
+    _phase = 'itempc_deposit_msg' as typeof _phase;
+  } else {
+    // No room in PC.
+    _printDescription(getString('gText_NoRoomForItems') ?? 'Pas de place pour les objets.');
+    _phase = 'itempc_deposit_msg' as typeof _phase;
+  }
+}
+
+/** Wait A/B press après deposit message, refresh list + return to list input. */
+function _tickItemPCDepositMsg(newKeys: number, KEY_A: number, KEY_B: number): void {
+  if (newKeys & (KEY_A | KEY_B)) {
+    PlaySE(5);
+    // Refresh list (= item peut être removed du bag).
+    _drawList();
+    _drawDesc();
+    _drawItemIcon();
+    _phase = 'list_input';
   }
 }
 

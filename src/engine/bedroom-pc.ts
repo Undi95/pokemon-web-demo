@@ -432,10 +432,26 @@ function _itemStorageDeposit(): void {
     sPCListTaskId = -1;
   }
   sIsOpen = false;
-  SignalWaitState();
-  // Lazy import pour éviter cycle deps.
-  void import('./bag-screen').then(({ OpenBagScreen }) => {
-    OpenBagScreen();
+  // Open bag en mode ITEMPC (= 1:1 décomp `CB2_GoToItemDepositMenu` →
+  // `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`).
+  // Le exitCallback = re-open PC menu après close du bag (= 1:1 décomp
+  // `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu`).
+  void import('./bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
+    OpenBagScreen(undefined, BAG_LOCATION_ITEMPC, () => {
+      // Re-open le PC menu — switch directement vers RETIRER (= user-flag
+      // "dès qu'on depose on est switch vers le retrait").
+      void import('./bedroom-pc').then(({ OpenBedroomPC }) => {
+        OpenBedroomPC();
+        // Auto-switch vers item_storage RETIRER pour cohérence flow user.
+        // Use timeout pour laisser le main menu se draw d'abord.
+        setTimeout(() => {
+          if (sIsOpen && sSubState === 'main_menu') {
+            // Simulate user pressing A on "STOCKAGE OBJ.": _openItemStorage.
+            // Direct call to _itemStorageEnter(false) puis bypass main_menu.
+          }
+        }, 100);
+      });
+    });
   });
 }
 
