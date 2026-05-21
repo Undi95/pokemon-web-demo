@@ -238,9 +238,24 @@ export function CloseRegionMap(confirmed = false): void {
         st.isOpen = false;
         st.mode = 'VIEW';
         _destroyGameObjects();
+        // CRITICAL : restore palette GBA à normal (= cancel le fadescreen
+        // FADE_TO_BLACK du script EventScript_RegionMap qui a laissé
+        // gPlttBufferFaded en RGB_BLACK). Sans ça, l'overworld reste rendu
+        // noir derrière notre rect Phaser qui se dissipe → écran noir
+        // permanent au retour.
+        // 1:1 décomp pattern : le CB2 restore + Overworld_PlaySpecialMapMusic
+        // + WarpFadeInScreen implicite fait fade-from-black au retour.
+        // BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK) =
+        // start=16 (= noir) → end=0 (= clair), delay=0 → animé sur 16/2=8 ticks.
+        const rt = getRuntime();
+        if (rt) {
+          rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+        }
         // Phase 2 : tween black rect 1→0 sur 270ms (= équivalent fade-from-black
         // OW au retour via FieldCB_DefaultWarpExit / `Overworld_PlaySpecialMapMusic`
-        // + `WarpFadeInScreen` pattern qu'on n'a pas formellement, donc on simule).
+        // + `WarpFadeInScreen` pattern. Sync avec le palette fade GBA ci-dessus
+        // pour que le rect noir Phaser ET la palette overworld restaurent
+        // ensemble = transition smooth).
         scene.tweens.add({
           targets: blackRect,
           alpha: 0,
@@ -252,7 +267,6 @@ export function CloseRegionMap(confirmed = false): void {
         });
         // Restore field controls + unblock script.
         UnlockPlayerFieldControls();
-        const rt = getRuntime();
         if (rt) rt.gMain.newKeys = 0;
         // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
         SignalWaitState();
