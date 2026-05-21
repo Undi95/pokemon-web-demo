@@ -274,6 +274,9 @@ const EVER_GRANDE_VDESTS = [224, 228, 232, 236, 240, 244, 248, 252]
 export function setPrimaryTilesetAnimCallback(tilesetName: string): void {
   const cb = PRIMARY_INIT_MAP[tilesetName] ?? null;
   gPrimaryTilesetInitCallback = cb;
+  if (!cb && tilesetName) {
+    console.warn(`[tileset-anims] no PRIMARY init callback for tileset '${tilesetName}' — anim disabled`);
+  }
 }
 
 /** Set le callback d'init du tileset secondaire selon son nom. */
@@ -350,6 +353,34 @@ export function UpdateTilesetAnimations(): void {
     sSecondaryTilesetAnimCallback(sSecondaryTilesetAnimCounter);
   }
 }
+
+/** Dev/debug : retourne l'état interne tileset anim. Utile pour vérifier si
+ *  les callbacks sont actives + le compteur tourne. */
+export function getTilesetAnimDebugState(): {
+  primaryCounter: number; primaryCounterMax: number; primaryCallback: string | null;
+  secondaryCounter: number; secondaryCounterMax: number; secondaryCallback: string | null;
+  bufferSize: number;
+  buildingTiles: { f0Loaded: boolean; f1Loaded: boolean };
+} {
+  return {
+    primaryCounter: sPrimaryTilesetAnimCounter,
+    primaryCounterMax: sPrimaryTilesetAnimCounterMax,
+    primaryCallback: sPrimaryTilesetAnimCallback ? sPrimaryTilesetAnimCallback.name : null,
+    secondaryCounter: sSecondaryTilesetAnimCounter,
+    secondaryCounterMax: sSecondaryTilesetAnimCounterMax,
+    secondaryCallback: sSecondaryTilesetAnimCallback ? sSecondaryTilesetAnimCallback.name : null,
+    bufferSize: sTilesetDMA3TransferBufferSize,
+    buildingTiles: {
+      f0Loaded: sTileCache.has(BUILDING_URLS.tv_turned_on[0]),
+      f1Loaded: sTileCache.has(BUILDING_URLS.tv_turned_on[1]),
+    },
+  };
+}
+(globalThis as Record<string, unknown>).__getTilesetAnimDebugState = getTilesetAnimDebugState;
+// Side-effect : install eagerly une référence sur globalThis pour bypasser
+// les éventuels duplicate-module HMR. Permet à preview_eval d'appeler le bon
+// state même s'il y a 2 instances du module (= Vite HMR cycle).
+(globalThis as Record<string, unknown>).__tilesetAnimDebug_global = getTilesetAnimDebugState;
 
 /** 1:1 décomp `TransferTilesetAnimsBuffer(void)`.
  *  Flush le buffer de writes VRAM différés → gba.vram (= simule DMA au VBlank).
