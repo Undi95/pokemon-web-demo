@@ -2308,6 +2308,11 @@ let _depositQtySelected = 1;
 let _depositMaxQty = 1;
 let _depositItemKey = '';
 let _depositBagItemIdx = -1;
+/** Pocket dans lequel l'item à déposer se trouve (= 1:1 décomp : la list courante
+ *  du bag pointe vers ce pocket via gBagPosition.pocket). Sans ça, _findBagItemIdx
+ *  ne cherche que dans gameState.bag.items (= POCKET_ITEMS), et tous les autres
+ *  pockets (BERRIES/POKE_BALLS/etc.) retournent -1 → deposit muet. */
+let _depositPocketKey: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems' = 'items';
 /** Index of selected item in pocket array (for ListMenu refresh). */
 let _depositListIdx = -1;
 
@@ -2316,47 +2321,71 @@ let _depositListIdx = -1;
 function _itemContextDeposit(itemKey: string): void {
   _depositItemKey = itemKey;
   _depositListIdx = _scrollOffset + _cursorPos;
+  // 1:1 décomp : `gBagPosition.pocket` (= pocket courant du bag) est utilisé
+  // par TryDepositItem pour appeler RemoveBagItem qui prend l'itemId et trouve
+  // automatiquement le slot via gItems[].pocket. Côté TS, on stocke le pocket
+  // courant pour adresser le bon array gameState.bag[*].
+  _depositPocketKey = POCKETS[_pocketIdx].key;
   _depositBagItemIdx = _findBagItemIdx(itemKey);
   if (_depositBagItemIdx < 0) {
-    console.warn('[bag-screen ITEMPC] bag item not found:', itemKey);
+    console.warn('[bag-screen ITEMPC] bag item not found:', itemKey, 'in pocket', _depositPocketKey);
     return;
   }
-  _depositMaxQty = gameState.bag.items[_depositBagItemIdx].quantity;
+  _depositMaxQty = _getBagPocketSlots()[_depositBagItemIdx].quantity;
   _depositQtySelected = 1;
   if (_depositMaxQty === 1) {
     _tryDepositItem();
     return;
   }
-  // qty > 1 : prompt + qty window. 1:1 décomp item_menu.c:2214-2219.
-  // CopyItemName(itemId, gStringVar1) + gText_DepositHowManyVar1
+  // qty > 1 : prompt "Déposer combien?" dans WIN_DESCRIPTION + qty window
+  // séparée (= ITEMWIN_QUANTITY). 1:1 décomp item_menu.c:2214-2219 :
+  //   BagMenu_Print(WIN_DESCRIPTION, ..., gStringVar4, ...)  // prompt
+  //   AddItemQuantityWindow(ITEMWIN_QUANTITY)                // qty window
+  // Avant : on écrasait le prompt avec le qty texte dans _descWid → user voyait
+  // "× 01" mais pas le prompt + qty ne s'affichait pas correctement.
   const itemName = getItemNameFr(itemKey);
   setStringVar(1, itemName);
   const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
   _printDescription(StringExpandPlaceholders('', tpl));
+  // Open qty window (= 1:1 AddItemQuantityWindow).
+  _qtyWid = AddWindow(QTY_WINDOW_TEMPLATE);
+  DrawStdFrameWithCustomTileAndPalette(_qtyWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
   _drawDepositQtyWindow();
   _phase = 'itempc_deposit_qty';
 }
 
-/** Find bag slot index for the given itemKey. */
+/** 1:1 décomp : raw slots du pocket courant (= sans filter empty, contrairement
+ *  à _currentPocketItems qui ajoute CLOSE_BAG sentinel). */
+function _getBagPocketSlots(): ItemSlot[] {
+  const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
+  return bag[_depositPocketKey] ?? [];
+}
+
+/** Find slot index dans le pocket courant (= _depositPocketKey) pour l'item donné.
+ *  Avant : cherchait seulement dans gameState.bag.items → fail si l'item est dans
+ *  un autre pocket (= berries/balls/etc.). */
 function _findBagItemIdx(itemKey: string): number {
-  const items = gameState.bag.items;
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].itemKey === itemKey && items[i].quantity > 0) return i;
+  const slots = _getBagPocketSlots();
+  for (let i = 0; i < slots.length; i++) {
+    if (slots[i].itemKey === itemKey && slots[i].quantity > 0) return i;
   }
   return -1;
 }
 
-/** Draw "× N" centered in WIN_DESCRIPTION area (= 1:1 décomp PrintItemQuantity). */
+/** Draw "× N" centered dans la qty window (= 1:1 décomp PrintItemQuantity).
+ *  Avant : écrivait dans _descWid → écrasait le prompt "Déposer combien?". */
 function _drawDepositQtyWindow(): void {
-  if (_descWid < 0) return;
-  FillWindowPixelBuffer(_descWid, 0x00);
-  const qtyStr = `× ${String(_depositQtySelected).padStart(2, '0')}`;
+  if (_qtyWid < 0) return;
+  // PIXEL_FILL(1) = cream opaque (palette 15 idx 1 std_menu.pal).
+  FillWindowPixelBuffer(_qtyWid, 0x11);
+  // 1:1 décomp item_menu.c:1203 PrintItemQuantity : "×NN" centered dans 0x28 (= 40 px).
+  const qtyStr = `×${String(_depositQtySelected).padStart(2, '0')}`;
+  const xOffset = GetStringCenterAlignXOffset(qtyStr, 0x28);
   AddTextPrinterParameterized3(
-    _descWid, FONT_NORMAL, 100, 17,
-    COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+    _qtyWid, FONT_NORMAL, xOffset, 2, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW, qtyStr,
   );
-  PutWindowTilemap(_descWid);
-  CopyWindowToVram(_descWid, 3);
+  PutWindowTilemap(_qtyWid);
+  CopyWindowToVram(_qtyWid, 3);
 }
 
 function _printDescription(text: string): void {
@@ -2381,16 +2410,29 @@ function _tickItemPCDepositQty(newKeys: number, KEY_A: number, KEY_B: number, KE
   if (newKeys & KEY_RIGHT) { _depositQtySelected = Math.min(_depositMaxQty, _depositQtySelected + 10); changed = true; }
   if (newKeys & KEY_LEFT)  { _depositQtySelected = Math.max(1, _depositQtySelected - 10); changed = true; }
   if (changed) {
+    PlaySE(5);
     _drawDepositQtyWindow();
     return;
   }
   if (newKeys & KEY_A) {
     PlaySE(5);
+    // 1:1 décomp item_menu.c:2235 : BagMenu_RemoveWindow(ITEMWIN_QUANTITY).
+    if (_qtyWid >= 0) {
+      ClearStdWindowAndFrame(_qtyWid, true);
+      RemoveWindow(_qtyWid);
+      _qtyWid = -1;
+    }
     _tryDepositItem();
     return;
   }
   if (newKeys & KEY_B) {
     PlaySE(5);
+    // 1:1 décomp item_menu.c:2238-2244 : cleanup qty window + return list.
+    if (_qtyWid >= 0) {
+      ClearStdWindowAndFrame(_qtyWid, true);
+      RemoveWindow(_qtyWid);
+      _qtyWid = -1;
+    }
     _phase = 'list_input';
     _drawDesc();
     return;
@@ -2401,10 +2443,19 @@ function _tickItemPCDepositQty(newKeys: number, KEY_A: number, KEY_B: number, KE
 async function _tryDepositItem(): Promise<void> {
   const { AddPCItem } = await import('./pc-items');
   if (AddPCItem(_depositItemKey, _depositQtySelected)) {
-    // success → remove from bag.
-    const slot = gameState.bag.items[_depositBagItemIdx];
-    slot.quantity -= _depositQtySelected;
-    if (slot.quantity === 0) slot.itemKey = '';
+    // success → remove from bag (= 1:1 RemoveBagItem qui retire du pocket courant).
+    const slots = _getBagPocketSlots();
+    const slot = slots[_depositBagItemIdx];
+    if (slot) {
+      slot.quantity -= _depositQtySelected;
+      if (slot.quantity <= 0) {
+        slot.quantity = 0;
+        slot.itemKey = '';
+      }
+    }
+    // 1:1 décomp UpdatePocketItemList resort le pocket (= retire empty slots
+    // dans le pocket bag). Sans ça, l'item reste visible "vide" dans la list.
+    UpdatePocketItemList(_depositPocketKey);
     // 1:1 décomp gText_DepositedVar2Var1s "{STR_VAR_2} {STR_VAR_1} déposé(s)."
     const itemName = getItemNameFr(_depositItemKey);
     setStringVar(1, itemName);
@@ -2423,6 +2474,15 @@ async function _tryDepositItem(): Promise<void> {
 function _tickItemPCDepositMsg(newKeys: number, KEY_A: number, KEY_B: number): void {
   if (newKeys & (KEY_A | KEY_B)) {
     PlaySE(5);
+    // 1:1 décomp : après deposit, reset cursor au début si l'item courant
+    // n'existe plus (= last item du pocket déposé entièrement). Sinon le cursor
+    // peut pointer hors-bounds → crash.
+    const items = _currentPocketItems();
+    if (_scrollOffset + _cursorPos >= items.length) {
+      const maxIdx = Math.max(0, items.length - 1);
+      _scrollOffset = Math.max(0, maxIdx - (VISIBLE_ROWS - 1));
+      _cursorPos = maxIdx - _scrollOffset;
+    }
     // Refresh list (= item peut être removed du bag).
     _drawList();
     _drawDesc();
