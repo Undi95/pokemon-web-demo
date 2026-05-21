@@ -20,6 +20,7 @@
 import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from './map-loader';
 import { gPlayerAvatar } from './player-avatar';
 import { gameState } from './game-state';
+import { DrawWholeMapView } from './field-camera';
 import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
   METATILE_BrendansMaysHouse_BrendanPC_On, METATILE_BrendansMaysHouse_BrendanPC_Off,
@@ -77,8 +78,11 @@ export function TickPCAnim(): void {
     }
     const { dx, dy } = dxdy;
     _setPCMetatile(_state.isScreenOn, dx, dy);
-    // 1:1 décomp DrawWholeMapView() — refresh full tilemap.
-    // Our setMetatileAt is sync, so the tilemap is already up-to-date.
+    // 1:1 décomp `DrawWholeMapView()` (field_specials.c:1035) — re-render le BG
+    // overworld après la modif metatile. Sans ça, gBackupMapLayout.map est
+    // updated mais le tilemap rendu Phaser ne reflète pas le changement →
+    // l'écran reste sur l'ancien metatile (= bug user "PC ne s'allume pas").
+    if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
 
     _state.isScreenOn = !_state.isScreenOn;
     _state.flickerCount++;
@@ -89,12 +93,14 @@ export function TickPCAnim(): void {
   _state.timer++;
 }
 
-/** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111). Pas de flicker. */
+/** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111). Pas de flicker.
+ *  Refresh BG via DrawWholeMapView (= 1:1 décomp DrawWholeMapView() post setMetatile). */
 export function DoPCTurnOffEffect(): void {
   const dxdy = _computeDxDy();
   if (!dxdy) return;
   const { dx, dy } = dxdy;
   _setPCMetatileToOff(dx, dy);
+  if (gMapHeader) DrawWholeMapView(gPlayerAvatar.x, gPlayerAvatar.y, gMapHeader.mapLayout);
 }
 
 // ─── Internal helpers ──────────────────────────────────────────────────────
