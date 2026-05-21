@@ -50,8 +50,19 @@ const EMOTE_PAL_BIN   = '/decomp/em/field_effects/emotion_exclamation.gbapal';
 // ─── OBJ VRAM + palette allocation ─────────────────────────────────────────
 
 /** Tile start dans OBJ VRAM. 4 tiles 8x8 par emote × 3 emotes = 12 tiles.
- *  Réservons 976..988 (= juste avant ARROW_OBJ_TILE_START=992 du field-effect-arrow). */
-const EMOTE_OBJ_TILE_START = 976;
+ *  Layout OBJ VRAM des field effects (= partage strict, voir comments dans
+ *  chaque module) :
+ *    - 0..143      : player (= 18 frames × 8 tiles)
+ *    - 144..(NPCs dynamic)
+ *    - 952..971    : tall grass (field-effect-grass)
+ *    - 972..977    : jump dust  (field-effect-jump-dust, 6 tiles)
+ *    - 978..989    : EMOTES     (= ICI, 12 tiles = 3 emotes × 4)
+ *    - 992..1023   : warp arrow (field-effect-arrow, 32 tiles)
+ *
+ *  Avant : 976..987 chevauchait 976+977 avec dust → tile data écrasé par
+ *  dust frames → sprite emote affichait des bytes wrong (user-flag 2026-05-21
+ *  "le sprite emote bug + n'est pas au bon endroit"). */
+const EMOTE_OBJ_TILE_START = 978;
 const TILES_PER_EMOTE = 4;  // 16x16 = 2x2 tiles 4bpp
 
 /** Frame index dans l'OBJ tile space (= tile offset relative to EMOTE_OBJ_TILE_START). */
