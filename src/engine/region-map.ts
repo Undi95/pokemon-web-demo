@@ -38,6 +38,12 @@ import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
 import { getRuntime } from './decomp-globals';
+import {
+  preloadRegionMapData,
+  getRegionMapEntries,
+  GetMapSecIdAt,
+  GetMapName,
+} from './region-map-data';
 
 // ─── Constants 1:1 décomp region_map.c:41-46 ───────────────────────────────
 
@@ -113,17 +119,23 @@ export function IsRegionMapOpen(): boolean {
 /** 1:1 décomp `FieldInitRegionMap(callback)` (field_region_map.c:92-99) :
  *    SetMainCallback2(MCB2_InitRegionMapRegisters);
  *  + état 0 de FieldUpdateRegionMap : InitRegionMap + CreateRegionMapPlayerIcon +
- *  CreateRegionMapCursor. */
-export function OpenRegionMap(): void {
+ *  CreateRegionMapCursor.
+ *
+ *  Async pour pouvoir preload les données décomp (= region_map_data.json) avant
+ *  d'initialiser le cursor au mapsec courant 1:1. */
+export async function OpenRegionMap(): Promise<void> {
   const st = _state();
   if (st.isOpen) return;
+  // Preload data décomp avant de lookup gRegionMapEntries.
+  await preloadRegionMapData();
   st.isOpen = true;
   // 1:1 décomp `InitMapBasedOnPlayerLocation` (= state 5 LoadRegionMapGfx) :
   // cursor positionné au mapsec du player + playerIconSpritePos = cursorPos.
   const playerLoc = _getPlayerMapsecLocation();
   st.cursorPosX = playerLoc.x;
   st.cursorPosY = playerLoc.y;
-  st.currentMapsecName = _getCurrentMapsecName();
+  // 1:1 décomp : currentMapsecName = lookup direct via GetMapName(mapSecId).
+  st.currentMapsecName = GetMapName(playerLoc.mapSecId) || _getCurrentMapsecName();
   st.cursorMovementFrameCounter = 0;
   _spawnGameObjects(playerLoc);
 }
@@ -190,35 +202,55 @@ export function TickRegionMap(): void {
 
 // ─── Internal helpers ──────────────────────────────────────────────────────
 
-/** 1:1 décomp `InitMapBasedOnPlayerLocation` (region_map.c, lookup gRegionMapEntries).
- *  Compute cursor (x, y) basé sur le mapsec actuel du player. Mapping
- *  approximatif via mapId → coord HOENN car notre runtime n'a pas porté la
- *  table sMapSecIdAt complète. */
-function _getPlayerMapsecLocation(): { x: number; y: number } {
-  const mapId = gMapHeader?.id ?? '';
-  // 1:1 décomp `gRegionMapEntries[mapSecId]` table mappe each mapsec à (x, y) HOENN.
-  // Ces coords sont en GBA tiles (= 1 tile = 8 px), cursor ranges 1-28 X, 2-16 Y.
-  // Mapping pour les early-game mapsecs (= LITTLEROOT/OLDALE/ROUTE101/PETALBURG).
-  const LITTLEROOT = { x: 4,  y: 11 };   // Bourg-en-Vol = SW
-  const OLDALE     = { x: 4,  y: 9  };   // Rosyères = au-dessus de Littleroot
-  const PETALBURG  = { x: 1,  y: 9  };   // Algatia = à l'ouest d'Oldale
-  const ROUTE101   = { x: 4,  y: 10 };   // entre Littleroot et Oldale
-  const ROUTE102   = { x: 2,  y: 9  };   // entre Oldale et Petalburg
-  const ROUTE103   = { x: 6,  y: 9  };   // route est d'Oldale
-  if (mapId.includes('LITTLEROOT')) return LITTLEROOT;
-  if (mapId.includes('OLDALE'))     return OLDALE;
-  if (mapId.includes('PETALBURG'))  return PETALBURG;
-  if (mapId.includes('ROUTE101'))   return ROUTE101;
-  if (mapId.includes('ROUTE102'))   return ROUTE102;
-  if (mapId.includes('ROUTE103'))   return ROUTE103;
-  if (mapId.includes('INSIDE_OF_TRUCK')) return LITTLEROOT;  // arrival
-  // Fallback : centre HOENN.
-  return { x: 15, y: 9 };
+/** 1:1 décomp `InitMapBasedOnPlayerLocation` (region_map.c:968-1121). Détermine
+ *  le mapsec courant du player + ses coords (cursorPosX/Y) sur la worldmap.
+ *
+ *  Le décomp utilise un switch sur `GetMapTypeByGroupAndId(mapGroup, mapNum)` :
+ *  - TOWN/CITY/ROUTE/UNDERWATER/OCEAN_ROUTE → mapSec = gMapHeader.regionMapSectionId
+ *  - UNDERGROUND/UNKNOWN → mapSec = escapeWarp's map (cave indoor → exit town)
+ *  - SECRET_BASE → mapSec = dynamicWarp's map
+ *  - INDOOR → mapSec = current OR escapeWarp si MAPSEC_DYNAMIC
+ *
+ *  Pour notre démo, on simplifie : lookup direct via `gMapHeader.regionMapSectionId`.
+ *  Si en INDOOR (= bedroom 2F), regionMapSectionId = LITTLEROOT_TOWN (= la maison
+ *  EST à Bourg-en-Vol). Pas besoin d'escapeWarp pour les early maps.
+ *
+ *  Le cursor est ensuite positionné à `gRegionMapEntries[mapSecId].x + MAPCURSOR_X_MIN`
+ *  + .y + MAPCURSOR_Y_MIN (= conversion grille → cursor coords). */
+function _getPlayerMapsecLocation(): { x: number; y: number; mapSecId: string } {
+  const mapSecId = gMapHeader?.regionMapSectionId ?? '';
+  if (!mapSecId) return { x: 15, y: 9, mapSecId: 'MAPSEC_NONE' };
+  // 1:1 décomp `gRegionMapEntries[mapSecId]` lookup.
+  try {
+    const entries = getRegionMapEntries();
+    const entry = entries.get(mapSecId);
+    if (entry) {
+      // 1:1 décomp region_map.c:1119-1120 : cursor = entry.x + MAPCURSOR_X_MIN.
+      // MAPCURSOR_X_MIN=1, MAPCURSOR_Y_MIN=2.
+      return {
+        x: entry.x + MAPCURSOR_X_MIN,
+        y: entry.y + MAPCURSOR_Y_MIN,
+        mapSecId,
+      };
+    }
+  } catch (e) {
+    // Data not preloaded → fallback.
+    void e;
+  }
+  return { x: 15, y: 9, mapSecId };
 }
 
 function _getCurrentMapsecName(): string {
   const mapId = gMapHeader?.id ?? '';
   const secId = gMapHeader?.regionMapSectionId ?? mapId;
+  // 1:1 décomp `GetMapName(dest, mapSecId, padLength)` (region_map.c:1568) :
+  // lookup gRegionMapEntries[mapSecId].name.
+  try {
+    const name = GetMapName(secId);
+    if (name) return name;
+  } catch (e) {
+    void e;
+  }
   return getMapNameFr(secId) || getMapNameFr(mapId) || 'HOENN';
 }
 
@@ -230,7 +262,7 @@ function _getScene(): Phaser.Scene | null {
  *  InitRegionMap + CreateRegionMapPlayerIcon + CreateRegionMapCursor +
  *  DrawStdFrameWithCustomTileAndPalette(WIN_TITLE) + WIN_MAPSEC_NAME +
  *  BeginNormalPaletteFade. */
-function _spawnGameObjects(playerLoc: { x: number; y: number }): void {
+function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string }): void {
   const scene = _getScene();
   if (!scene) return;
   // Load assets dynamically si pas déjà chargés.
@@ -357,25 +389,13 @@ function _updateMapsecNameDisplay(): void {
 
 function _getMapsecNameAtCursor(): string {
   const st = _state();
-  // Mapping approximatif cursor pos → mapsec FR. 1:1 décomp utiliserait la
-  // table sMapSecIdAt 30×16. Pour démo : sections approximatives par quadrants.
-  const x = st.cursorPosX;
-  const y = st.cursorPosY;
-  // Centre du player = current mapsec.
-  const playerLoc = _getPlayerMapsecLocation();
-  if (Math.abs(x - playerLoc.x) <= 1 && Math.abs(y - playerLoc.y) <= 1) {
-    return st.currentMapsecName;
-  }
-  // Mapping approximatif par région HOENN (= early-game sections seulement).
-  if (x <= 6 && y >= 10) return 'BOURG-EN-VOL';
-  if (x <= 6 && y >= 8)  return 'ROSYERES';
-  if (x <= 3 && y <= 8)  return 'ALGATIA';
-  if (x <= 8 && y <= 6)  return 'POIVRESSEL';
-  if (x >= 20 && y <= 5) return 'ATALANOPOLIS';
-  if (x >= 20)           return 'ALGATIA';
-  if (y <= 5)            return 'POIVRESSEL';
-  if (y >= 13)           return 'NÉNUCRIQUE';
-  return 'HOENN';
+  // 1:1 décomp `MoveRegionMapCursor_Full` (region_map.c:715-721) :
+  //   mapSecId = GetMapSecIdAt(cursorPosX, cursorPosY);
+  //   if (mapSecId != sRegionMap->mapSecId) GetMapName(name, mapSecId, MAX_LEN);
+  // Utilise le layout 15×28 1:1 décomp + gRegionMapEntries[].name.
+  const mapSecId = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
+  if (mapSecId === 'MAPSEC_NONE') return '';  // 1:1 décomp blank pour mapsec invalide
+  return GetMapName(mapSecId) || '';
 }
 
 /** Load assets Phaser une seule fois (= cached après 1er open).

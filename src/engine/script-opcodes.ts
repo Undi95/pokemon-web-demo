@@ -1118,8 +1118,8 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'FieldShowRegionMap') {
     let opened = false;
     let isOpenChecker: (() => boolean) | null = null;
-    void import('./region-map').then((mod) => {
-      mod.OpenRegionMap();
+    void import('./region-map').then(async (mod) => {
+      await mod.OpenRegionMap();
       isOpenChecker = mod.IsRegionMapOpen;
       opened = true;
     });

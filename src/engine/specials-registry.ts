@@ -319,8 +319,8 @@ registerSpecial('CheckForPlayersHouseNews', () => {
  *  false → script reprend après. Fade-from-black géré au open (= ouverture
  *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
 registerSpecial('FieldShowRegionMap', () => {
-  void import('./region-map').then(({ OpenRegionMap }) => {
-    OpenRegionMap();
+  void import('./region-map').then(async ({ OpenRegionMap }) => {
+    await OpenRegionMap();
     // Fade-from-black aussi pour que l'overlay carte soit visible (= sinon
     // l'écran noir GPU reste derrière l'overlay HTML).
     void import('./decomp-globals').then(({ getRuntime }) => {
