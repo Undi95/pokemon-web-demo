@@ -425,9 +425,22 @@ export function DrawDoorMetatileAt(
  *  Source unique partagée avec gPlayerAvatar.x/y (= alias getter/setter dans
  *  player-avatar.ts). Élimine le désync historique cam.x ≠ player.x.
  *
- *  IMPORTANT : ne JAMAIS réassigner `gSaveBlock1Ptr.pos = {...}` ailleurs, sinon
- *  cet alias devient stale. Seulement muter `.x` / `.y`. */
-const _camPos: { x: number; y: number } = gSaveBlock1Ptr.pos;
+ *  PHASE A.2 : getter dynamique (= chaque accès passe par Proxy gSaveBlock1Ptr
+ *  qui lit GetSaveBlock1().pos courant). Survit à LoadSavedGame (= reassign
+ *  sCurrentBlock1) sans stale ref. */
+const _camPos: { x: number; y: number } = {} as { x: number; y: number };
+Object.defineProperty(_camPos, 'x', {
+  get(): number { return gSaveBlock1Ptr.pos.x; },
+  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
+  enumerable: true,
+  configurable: true,
+});
+Object.defineProperty(_camPos, 'y', {
+  get(): number { return gSaveBlock1Ptr.pos.y; },
+  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
+  enumerable: true,
+  configurable: true,
+});
 
 /** DEV : trace buffer pour debug movement. Chaque event (= deltaX/Y fire,
  *  RedrawMapSlice*) push ici. window.dev.movementLog() lit + clear.
