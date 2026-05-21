@@ -119,6 +119,11 @@ import {
   UpdateWarpArrowSprite,
 } from '../engine/field-effect-arrow';
 import {
+  LoadEmoteAssets,
+  tickEmoteSprites,
+  DestroyAllEmoteSprites,
+} from '../engine/field-effect-emotes';
+import {
   preloadTallGrassEffect,
   UpdateTallGrassEffects,
   DestroyAllTallGrassEffects,
@@ -508,6 +513,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // destroy après cycle.
         UpdateTallGrassEffects(rt);
         UpdateJumpDustEffects(rt);
+        // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
+        // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
+        // auto-destroy après 60 frames.
+        tickEmoteSprites(rt);
         // 1:1 décomp UpdateShadowFieldEffect : shadow copie player sprite x
         // mais reste à y baseline (= no jump arc) → ground-locked effet 3D.
         UpdateShadowSprite(rt, gPlayerAvatar.spriteId);
@@ -800,6 +809,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // Re-create at each map load (= ancien sprite cleanup automatique en interne).
     DestroyWarpArrowSprite(this.rt);
     await CreateWarpArrowSprite(this.rt);
+    // 1:1 décomp `LoadFieldEffectGraphics` (field_effect.c) : preload tile +
+    // palette des emote sprites (!?♥) utilisés par les movement actions
+    // `emote_exclamation_mark` / `emote_question_mark` / `emote_heart`.
+    // Cleanup actifs au map switch puis re-load idempotent.
+    DestroyAllEmoteSprites(this.rt);
+    await LoadEmoteAssets(this.rt);
     // Phase 4.10 : preload tall grass effect assets + cleanup pool.
     DestroyAllTallGrassEffects(this.rt);
     await preloadTallGrassEffect(this.rt);

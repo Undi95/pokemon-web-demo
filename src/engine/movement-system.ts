@@ -285,13 +285,36 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'face_originally_facing_direction' || action === 'face_original_direction') {
     return true;
   }
-  // emote_X : afficher un emoticon (= ! ? love etc) au-dessus du NPC. MVP no-op.
-  // 1:1 décomp : crée un FieldEffect ATTENTION_MARK / EXCLAMATION_MARK / etc.
-  // qui spawn un sprite emoji au-dessus du NPC pendant ~1 seconde.
+  // emote_X : afficher un emoticon (= ! ? love etc) au-dessus du NPC.
+  // 1:1 décomp event_object_movement.c:6479-6501 `MovementAction_Emote*_Step0` :
+  //     ObjectEventGetLocalIdAndMap(objectEvent, ...);
+  //     FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON / QUESTION_MARK_ICON / HEART_ICON);
+  //     sprite->sActionFuncId = 1;
+  //     return TRUE;     ← action terminée IMMÉDIATEMENT, sprite vit indépendamment ~60 frames.
+  // (cf. field-effect-emotes.ts pour le port complet bounce + auto-destroy 1:1
+  //  trainer_see.c:SpriteCB_TrainerIcons.)
   if (action === 'emote_exclamation_mark' || action === 'emote_question_mark' ||
-      action === 'emote_heart' || action === 'emote_x' || action === 'emote_double_exclamation' ||
+      action === 'emote_heart') {
+    if (rt) {
+      // Lookup le NPC : target = { isPlayer, npc }. Pour player, on utilise
+      // `LOCALID_PLAYER`. Pour NPC, on lit `target.npc.localIdRaw`.
+      const npcLocalIdRaw = target.isPlayer ? 'LOCALID_PLAYER' : (target.npc?.localIdRaw ?? '');
+      if (npcLocalIdRaw) {
+        void import('./field-effect-emotes').then(({ SpawnEmoteSprite }) => {
+          const emoteType = action === 'emote_exclamation_mark' ? 'exclamation'
+                          : action === 'emote_question_mark'    ? 'question'
+                          : 'heart';
+          SpawnEmoteSprite(rt, npcLocalIdRaw, emoteType);
+        });
+      }
+    }
+    return true;  // 1:1 décomp : action terminée immédiatement (sprite vit indép).
+  }
+  // emote_x / emote_double_exclamation / emote_happy : pas dans décomp Emerald
+  // standard, custom additions (= no-op safe).
+  if (action === 'emote_x' || action === 'emote_double_exclamation' ||
       action === 'emote_happy') {
-    return true;  // TODO Phase E : real emote spawn.
+    return true;
   }
   if (action === 'set_invisible') { _setInvisible(target, true, rt); return true; }
   if (action === 'set_visible')   { _setInvisible(target, false, rt); return true; }
