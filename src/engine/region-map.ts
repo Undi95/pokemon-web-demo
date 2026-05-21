@@ -37,7 +37,7 @@ import { gameState } from './game-state';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
-import { getRuntime } from './decomp-globals';
+import { getRuntime, getAsset } from './decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
 import {
   preloadRegionMapData,
@@ -519,8 +519,15 @@ function _renderWindowToCanvas(
   }
 
   // 1:1 décomp `FillWindowPixelBuffer(windowId, PIXEL_FILL(1))` :
-  // remplir le content area avec la couleur palette[1] (= white-ish bg).
-  const bgRgb15 = pal[1] ?? 0x7FFF;
+  // remplir le content area avec la couleur palette_bank_15[1] (= white-ish bg).
+  // Le window template `paletteNum=15` (field_region_map.c:77/86) référence la
+  // palette bank 15. Le décomp ne charge PAS explicitement bank 15 dans
+  // field_region_map.c — la palette carry over de l'overworld (= `gMessageBox_Pal`
+  // = `sTextWindowPalettes[0]` = palette extraite de `text_window/message_box.png`).
+  // C'est la palette TEXTBOX STANDARD ROM (= cream bg + dark text).
+  // Notre runtime préchargé via `preloadTextWindowFrames` → assetCache (= sync read).
+  const messageBoxPal = (getAsset('gMessageBox_Pal') as Uint16Array | null) ?? pal;
+  const bgRgb15 = messageBoxPal[1] ?? 0x7FFF;
   const r = (bgRgb15 & 0x1F) << 3;
   const g = ((bgRgb15 >> 5) & 0x1F) << 3;
   const b = ((bgRgb15 >> 10) & 0x1F) << 3;
@@ -528,9 +535,10 @@ function _renderWindowToCanvas(
   ctx.fillRect(8, 8, contentW * 8, contentH * 8);
 
   // 1:1 décomp `AddTextPrinterParameterized(windowId, FONT_NORMAL, text, x, y, ...)` :
-  // dessine le text à pixel (x, y) interne du window, color = palette[2] (=
-  // TEXT_COLOR_DARK_GRAY 1:1 décomp `sFontShadowSpec`). Centered si demandé.
-  const textRgb15 = pal[2] ?? 0x294A;
+  // dessine le text avec sFontShadowSpec = {TEXT_COLOR_TRANSPARENT(0),
+  // TEXT_COLOR_DARK_GRAY(2), TEXT_COLOR_LIGHT_GRAY(3)} (= 1:1 décomp
+  // sFontNormalShadowSpec text.c). Donc text color = palette_bank_15[2].
+  const textRgb15 = messageBoxPal[2] ?? 0x294A;
   const tr = (textRgb15 & 0x1F) << 3;
   const tg = ((textRgb15 >> 5) & 0x1F) << 3;
   const tb = ((textRgb15 >> 10) & 0x1F) << 3;
