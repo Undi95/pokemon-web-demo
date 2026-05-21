@@ -144,10 +144,12 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
     console.warn(`[field-effect-emotes] SpawnEmoteSprite: NPC ${npcLocalIdRaw} not found`);
     return false;
   }
-  // Calculate initial sprite position = NPC center, 16 px above.
-  // gObjectEvents NPC has worldX/worldY in screen pixel space (= computed by
-  // syncObjectEventToOam each frame). Initial pos read directly.
-  const { x: spriteX, y: spriteY } = _computeEmoteWorldPos(npc);
+  // Initial position = sprite NPC déjà synchronisé (= 1:1 décomp `sprite->x =
+  // objEventSprite->x; sprite->y = objEventSprite->y - 16`). Lecture directe du
+  // sprite NPC, pas de `npc.worldX/Y` qui est pre-sync cam/pan.
+  const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+  const spriteX = npcSprite?.x ?? 0;
+  const spriteY = (npcSprite?.y ?? 0) - 16;
   const tileId = EMOTE_OBJ_TILE_START + EMOTE_TILE_OFFSET[type];
   const result = rt.CreateSpriteAtOam({
     tileId,
@@ -172,13 +174,18 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
 
 /** 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) :
  *      sYOffset += sYVelocity;
- *      sprite->x = objEventSprite->x;
+ *      sprite->x = objEventSprite->x;        ← copie du sprite NPC (= déjà sync cam)
  *      sprite->y = objEventSprite->y - 16;
  *      sprite->x2 = objEventSprite->x2;
  *      sprite->y2 = objEventSprite->y2 + sYOffset;
  *      if (sYOffset) sYVelocity++;
  *      else sYVelocity = 0;
  *      → quand animEnded (= 60 frames), destroy sprite.
+ *
+ *  Crucial 1:1 : on copie `objEventSprite->x/y`, pas `npc.worldX/Y`. La
+ *  raison : `sprite.x/y` est la position FINALE post-camera-pan post-offset
+ *  (cf. object-events.ts:1753-1754 `sprite.x = npc.worldX + offX - panX + visualOffsetX`).
+ *  Si on lit `worldX` directement, l'emote sera décalé du sprite NPC.
  *
  *  À call chaque frame depuis le main loop OW. */
 export function tickEmoteSprites(rt: DecompRuntime): void {
@@ -202,12 +209,13 @@ export function tickEmoteSprites(rt: DecompRuntime): void {
     emote.yOffset += emote.yVelocity;
     if (emote.yOffset !== 0) emote.yVelocity++;
     else emote.yVelocity = 0;
-    // Update sprite position : NPC pos + yOffset bounce.
-    const { x: baseX, y: baseY } = _computeEmoteWorldPos(npc);
+    // 1:1 décomp : sprite->x = objEventSprite->x; sprite->y = objEventSprite->y - 16
+    // + sYOffset (= bounce). Copy depuis le sprite NPC déjà synchronisé.
     const sprite = rt.gSprites.get(emote.spriteId);
-    if (sprite) {
-      sprite.x = baseX;
-      sprite.y = baseY + emote.yOffset;
+    const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
+    if (sprite && npcSprite) {
+      sprite.x = npcSprite.x;
+      sprite.y = npcSprite.y - 16 + emote.yOffset;
     }
   }
 }
@@ -227,20 +235,6 @@ function _findNpc(localIdRaw: string): ObjectEvent | null {
     if (npc.active && npc.localIdRaw === localIdRaw) return npc;
   }
   return null;
-}
-
-/** Compute la position pixel-space (= sprite.x/y) du sprite emote au-dessus
- *  d'un NPC. 1:1 décomp `sprite->y = objEventSprite->y - 16` (= 16 px au-dessus).
- *
- *  `npc.worldX/worldY` est déjà screen-relative (cf. object-events.ts:1686
- *  `npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 + dx`). On le réutilise
- *  directement et applique l'offset -16 vertical pour positionner l'emote
- *  au-dessus de la tête du NPC. */
-function _computeEmoteWorldPos(npc: ObjectEvent): { x: number; y: number } {
-  return {
-    x: npc.worldX,
-    y: npc.worldY - 16,  // 1:1 décomp "au-dessus" (= -16 px = 1 tile height).
-  };
 }
 
 function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
