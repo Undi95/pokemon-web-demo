@@ -1105,42 +1105,11 @@ export function GetIncomingConnection(direction: number, x: number, y: number): 
  *  @param curPosX/Y  Player logical position in OLD map (= avant cross). Pour
  *                    NORTH/SOUTH : curPosX utilisé pour calculer offset shift x.
  *                    Pour EAST/WEST : curPosY utilisé pour offset shift y. */
-export function ComputeConnectionDestPos(
-  connection: MapConnection,
-  direction: number,
-  curPosX: number,  // OLD player logical x (= 1:1 décomp pos.x)
-  curPosY: number,  // OLD player logical y (= 1:1 décomp pos.y, post-refactor)
-): { camX: number; camY: number } {
-  const cMap = mapHeaderCache.get(connection.destMap);
-  if (!cMap) return { camX: curPosX, camY: curPosY };
-
-  let newCamX = curPosX;
-  let newCamY = curPosY;
-  // Phase 4.9 fix : 1:1 décomp `SetPositionFromConnection` (fieldmap.c:624-647)
-  // retourne PRE-step value. PlayerStep applique le step delta naturellement
-  // au step end → final pos = pre-step + delta. Sans cette correction, mon
-  // "force step end" + post-step value double-comptait le delta → player TP'd
-  // 1 case en avance (= bug user "transition zone 3 cases").
-  switch (direction) {
-    case CONNECTION_EAST:
-      newCamX = -1;  // décomp : pos.x = -x = -1. Step end +1 → 0 (= WEST border col)
-      newCamY = curPosY - connection.offset;
-      break;
-    case CONNECTION_WEST:
-      newCamX = cMap.mapLayout.width;  // décomp : pos.x = newMap.width. Step end -1 → last valid col
-      newCamY = curPosY - connection.offset;
-      break;
-    case CONNECTION_SOUTH:
-      newCamX = curPosX - connection.offset;
-      newCamY = -1;  // décomp : pos.y = -y = -1. Step end +1 → 0 (= NORTH border row)
-      break;
-    case CONNECTION_NORTH:
-      newCamX = curPosX - connection.offset;
-      newCamY = cMap.mapLayout.height;  // décomp : pos.y = newMap.height. Step end -1 → last valid row
-      break;
-  }
-  return { camX: newCamX, camY: newCamY };
-}
+// Note : `ComputeConnectionDestPos` (= variant qui retournait { camX, camY }
+// au lieu d'écrire pos directement) supprimé chantier OW PHASE B. Remplacé
+// 1:1 décomp par `SetPositionFromConnection` ci-dessous qui écrit gSaveBlock1Ptr
+// .pos directement. Tous les callers (= field-camera.ts:CameraMove) ont été
+// migrés.
 
 /** 1:1 décomp `SetPositionFromConnection(connection, direction, x, y)`
  *  (fieldmap.c:624-647). ÉCRIT directement dans `gSaveBlock1Ptr.pos` la nouvelle
