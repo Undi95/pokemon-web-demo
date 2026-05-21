@@ -42,7 +42,7 @@ import {
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { getString } from './gba-strings';
@@ -213,13 +213,15 @@ const QTY_WINDOW_TEMPLATE: WindowTemplate = {
  *  - 'fading_out' : close démarré, fade TO BLACK en cours
  *  - 'switching_pocket' : animation switch pocket (16 frames, DrawItemListBgRow). */
 type Phase =
-  | 'idle' | 'fading_in' | 'open' | 'fading_out' | 'switching_pocket'
+  | 'idle' | 'fading_in' | 'open' | 'fading_out' | 'switching_pocket' | 'list_input'
   | 'context_menu'      // Context menu (Use/Give/Toss/Cancel) overlay
   | 'toss_quantity'     // Quantity selector (1..max) avant confirm toss
   | 'toss_confirm'      // Yes/No confirm "Toss N item?"
   | 'toss_message'      // "Threw away N item" wait A/B before remove
   | 'swap_items'        // SELECT pressed : moving item, list cursor moves
-  | 'message';          // Generic field message (Use stub etc.)
+  | 'message'           // Generic field message (Use stub etc.)
+  | 'itempc_deposit_qty'    // 1:1 décomp Task_ChooseHowManyToDeposit (ITEMPC)
+  | 'itempc_deposit_msg';   // 1:1 décomp deposit success/error message wait
 let _phase: Phase = 'idle';
 
 /** 1:1 décomp ItemMenuAction enum (item_menu.c:70). Le mapping action →
@@ -939,7 +941,14 @@ export function OpenBagScreen(_onCloseLegacy?: () => void, location: number = 0,
     const rt = getRuntime();
     if (!rt) return;
     rt.gMain.state = 0;
-    rt.gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
+    // 1:1 décomp `gBagPosition.savedCallback` :
+    //   ITEMPC → CB2_PlayerPCExitBagMenu (= retour direct PC, PAS start menu)
+    //   FIELD  → CB2_ReturnToFieldWithOpenMenu_Manual (= reopen start menu)
+    // Sans cette branche, après close du bag ITEMPC, le start menu s'ouvre
+    // par-dessus le PC re-open (= bug user "mélange des deux modes du sac").
+    rt.gMain.savedCallback = (location === 6 /* ITEMPC */)
+      ? CB2_ReturnToFieldLocal_Manual
+      : CB2_ReturnToFieldWithOpenMenu_Manual;
     rt.SetMainCallback2(CB2_InitBagMenu);
   }).catch((e) => {
     console.error('[bag-screen] OpenBagScreen asset preload failed', e);
@@ -2158,11 +2167,11 @@ export function TickBagScreen(newKeys: number): void {
     _tickTossMessage(newKeys, KEY_A, KEY_B);
     return;
   }
-  if (_phase === 'itempc_deposit_qty' as typeof _phase) {
+  if (_phase === 'itempc_deposit_qty') {
     _tickItemPCDepositQty(repeatedKeys, KEY_A, KEY_B, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT);
     return;
   }
-  if (_phase === 'itempc_deposit_msg' as typeof _phase) {
+  if (_phase === 'itempc_deposit_msg') {
     _tickItemPCDepositMsg(newKeys, KEY_A, KEY_B);
     return;
   }
@@ -2325,7 +2334,7 @@ function _itemContextDeposit(itemKey: string): void {
   const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
   _printDescription(StringExpandPlaceholders('', tpl));
   _drawDepositQtyWindow();
-  _phase = 'itempc_deposit_qty' as typeof _phase;
+  _phase = 'itempc_deposit_qty';
 }
 
 /** Find bag slot index for the given itemKey. */
@@ -2402,11 +2411,11 @@ async function _tryDepositItem(): Promise<void> {
     setStringVar(2, String(_depositQtySelected));
     const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
     _printDescription(StringExpandPlaceholders('', tpl));
-    _phase = 'itempc_deposit_msg' as typeof _phase;
+    _phase = 'itempc_deposit_msg';
   } else {
     // No room in PC.
     _printDescription(getString('gText_NoRoomForItems') ?? 'Pas de place pour les objets.');
-    _phase = 'itempc_deposit_msg' as typeof _phase;
+    _phase = 'itempc_deposit_msg';
   }
 }
 
