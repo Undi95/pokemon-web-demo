@@ -536,27 +536,59 @@ function _tickDepositList(_newKeys: number): void {
     _depositExitList();
     return;
   }
-  // Selected an item → deposit 1 (= simplifié, le décomp full a quantity rolling).
   PlaySE(Songs.SE_SELECT);
+  // 1:1 décomp `Task_ItemContext_Deposit` (item_menu.c:2203-2221) :
+  //   tItemCount = 1;
+  //   if (qty == 1) TryDepositItem(taskId);
+  //   else { msg "DepositHowMany" + AddItemQuantityWindow + Task_ChooseHowManyToDeposit }
   const bagIdx = sDepositBagSlotIndices[sel];
   const slot = gameState.bag.items[bagIdx];
+  sPCLastActionPos = sel;  // bagIdx via mapping sDepositBagSlotIndices[sel]
+  sPCQuantitySelected = 1;
+  if (slot.quantity === 1) {
+    _depositDoDeposit(bagIdx, 1);
+    return;
+  }
+  // 1:1 décomp : "Déposer combien?" via gText_DepositHowManyVar1.
   const itemName = getItemNameFr(slot.itemKey);
-  // AddPCItem + remove from bag.
-  if (AddPCItem(slot.itemKey, 1)) {
-    slot.quantity -= 1;
+  setStringVar(1, itemName);
+  const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
+  _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+  _itemStorageShowQuantityWindow();
+  // Réutilise pc_qty_rolling via flag sPCInDepositQtyMode (= variant deposit).
+  sSubState = 'pc_qty_rolling';
+  sPCInDepositQtyMode = true;
+}
+
+let sPCInDepositQtyMode = false;
+
+/** 1:1 décomp `TryDepositItem` (item_menu.c:2248-2274) : AddPCItem + remove from bag,
+ *  ou error "no room". Sur success → message + switch state vers withdraw (= user-flag :
+ *  après dépôt, switch vers RETIRER au lieu de rester dans dépôt). */
+function _depositDoDeposit(bagIdx: number, qty: number): void {
+  const slot = gameState.bag.items[bagIdx];
+  const itemName = getItemNameFr(slot.itemKey);
+  if (AddPCItem(slot.itemKey, qty)) {
+    slot.quantity -= qty;
     if (slot.quantity === 0) slot.itemKey = '';
-    _itemStoragePrintWindowMessage(`Déposé 1 ${itemName}.`);
+    // 1:1 décomp `gText_DepositedVar2Var1s` = "{STR_VAR_2} {STR_VAR_1} déposé(s)."
+    setStringVar(1, itemName);
+    setStringVar(2, String(qty));
+    const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
+    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
     sPCActionMsgIsError = false;
+    sPCDepositJustDone = true;  // = switch vers RETIRER au prochain A press
     sPCLastActionPos = -1;
-    // Re-build list après deposit.
     sSubState = 'pc_action_msg';
-    sPCActionMsgIsError = true;  // skip RemovePCItem in confirm handler
   } else {
-    _itemStoragePrintWindowMessage('PC plein.');
+    // 1:1 décomp `gText_NoRoomForItems` = "Pas de place pour les objets."
+    _itemStoragePrintWindowMessage(getString('gText_NoRoomForItems') ?? 'Pas de place pour les objets.');
     sPCActionMsgIsError = true;
     sSubState = 'pc_action_msg';
   }
 }
+
+let sPCDepositJustDone = false;
 
 function _depositExitList(): void {
   _itemStorageEraseItemIcon();
@@ -975,23 +1007,32 @@ function _itemStorageRemoveQuantityWindow(): void {
 /** 1:1 décomp `AdjustQuantityAccordingToDPadInput` (item_menu.c:utility) +
  *  `ItemStorage_HandleQuantityRolling` (player_pc.c:1392-1422). */
 function _tickPCQuantityRolling(newKeys: number): void {
+  // 1:1 décomp `AdjustQuantityAccordingToDPadInput` : qty bounds depend du mode.
+  // Withdraw/Toss : pc slot.quantity (= items dans le PC).
+  // Deposit : bag slot.quantity (= items dans le bag à déposer).
   const pos = sPCLastActionPos;
-  const slot = gameState.pcItems[pos];
+  const maxQty = sPCInDepositQtyMode
+    ? gameState.bag.items[sDepositBagSlotIndices[pos]].quantity
+    : gameState.pcItems[pos].quantity;
   let changed = false;
   // 1:1 décomp DPAD UP / DOWN / LEFT / RIGHT adjust qty (+/- 1, +/- 10).
-  if (newKeys & DPAD_UP)    { sPCQuantitySelected = Math.min(slot.quantity, sPCQuantitySelected + 1); changed = true; }
+  if (newKeys & DPAD_UP)    { sPCQuantitySelected = Math.min(maxQty, sPCQuantitySelected + 1); changed = true; }
   if (newKeys & DPAD_DOWN)  { sPCQuantitySelected = Math.max(1, sPCQuantitySelected - 1); changed = true; }
-  if (newKeys & DPAD_RIGHT) { sPCQuantitySelected = Math.min(slot.quantity, sPCQuantitySelected + 10); changed = true; }
+  if (newKeys & DPAD_RIGHT) { sPCQuantitySelected = Math.min(maxQty, sPCQuantitySelected + 10); changed = true; }
   if (newKeys & DPAD_LEFT)  { sPCQuantitySelected = Math.max(1, sPCQuantitySelected - 10); changed = true; }
   if (changed) {
     _itemStorageShowQuantityWindow();
     return;
   }
   if (newKeys & A_BUTTON) {
-    // 1:1 décomp lines 1405-1411 : qty confirmed → withdraw/toss.
+    // 1:1 décomp lines 1405-1411 : qty confirmed → withdraw/toss/deposit.
     PlaySE(Songs.SE_SELECT);
     _itemStorageRemoveQuantityWindow();
-    if (!sPCInTossMode) {
+    if (sPCInDepositQtyMode) {
+      const bagIdx = sDepositBagSlotIndices[pos];
+      sPCInDepositQtyMode = false;
+      _depositDoDeposit(bagIdx, sPCQuantitySelected);
+    } else if (!sPCInTossMode) {
       _itemStorageDoItemWithdraw(pos, sPCQuantitySelected);
     } else {
       _itemStorageStartToss(pos, sPCQuantitySelected);
@@ -1000,8 +1041,14 @@ function _tickPCQuantityRolling(newKeys: number): void {
     // 1:1 décomp lines 1413-1420 : canceled → restore description + return list.
     PlaySE(Songs.SE_SELECT);
     _itemStorageRemoveQuantityWindow();
-    _itemStoragePrintDescription(pos);
-    sSubState = 'pc_list';
+    if (sPCInDepositQtyMode) {
+      sPCInDepositQtyMode = false;
+      _depositPrintDescription(pos);
+      sSubState = 'deposit_list';
+    } else {
+      _itemStoragePrintDescription(pos);
+      sSubState = 'pc_list';
+    }
   }
 }
 
@@ -1097,6 +1144,27 @@ function _tickPCTossConfirm(_newKeys: number): void {
 function _tickPCActionMsg(newKeys: number): void {
   if (newKeys & (A_BUTTON | B_BUTTON)) {
     PlaySE(Songs.SE_SELECT);
+    // CASE 1 : DEPOSIT just done → switch vers RETIRER (= user-flag :
+    // "dès qu'on depose un item on est switch vers le retrait").
+    // 1:1 décomp `CB2_PlayerPCExitBagMenu` (player_pc.c:571) qui retour au PC
+    // après le bag, ici on simule en cleanup + re-open Withdraw menu.
+    if (sPCDepositJustDone) {
+      sPCDepositJustDone = false;
+      sPCLastActionPos = -1;
+      sPCLastActionQty = 0;
+      // Cleanup deposit list + windows.
+      _itemStorageEraseItemIcon();
+      if (sPCListTaskId >= 0) {
+        DestroyListMenuTask(sPCListTaskId);
+        sPCListTaskId = -1;
+      }
+      _removePCWindows();
+      // Switch vers RETIRER (= _itemStorageWithdraw flow direct).
+      sPCInTossMode = false;
+      _itemStorageEnter(false);
+      return;
+    }
+    // CASE 2 : Withdraw / Toss success → RemovePCItem + refresh list.
     if (!sPCActionMsgIsError && sPCLastActionPos >= 0) {
       // 1:1 décomp : RemovePCItem + DestroyListMenuTask + ItemStorage_CompactList + RefreshListMenu + ListMenuInit.
       RemovePCItem(sPCLastActionPos, sPCLastActionQty);
