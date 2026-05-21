@@ -468,9 +468,13 @@ registerSpecial('GetRivalSonDaughterString', () => {
   setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
 });
 
-/** 1:1 décomp `SavePlayerParty` / `LoadPlayerParty` — battle frontier-like
- *  party save state. Notre gameState gère déjà la party persistée. */
-registerSpecial('SavePlayerParty', () => { gameState.save(); });
+/** 1:1 décomp `SavePlayerParty` / `LoadPlayerParty` — battle frontier party
+ *  save state. Le décomp original copie `gPlayerParty` → `gSaveBlock2Ptr->
+ *  frontier.playerParty` (mem-to-mem), PAS d'appel à `TrySavingData`. La
+ *  save SRAM se fait uniquement via START → SAUVER explicite. (Avant : on
+ *  appelait `gameState.save()` ici → cause user-flag "save random" 2026-05-21).
+ *  Notre party est déjà partagée en RAM, donc no-op suffit côté TS. */
+registerSpecial('SavePlayerParty', () => { /* mem-to-mem, no SRAM write */ });
 registerSpecial('LoadPlayerParty', () => { /* loaded at boot already */ });
 
 /** 1:1 décomp `IsStarterInParty` — checks if starter is still in party. */

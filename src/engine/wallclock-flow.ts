@@ -271,12 +271,14 @@ export function startWallClockFlow(mode: Mode): WallClockFlow {
       }
 
       case 'COMMIT': {
-        // Sauvegarde l'offset RTC
+        // 1:1 décomp wallclock.c:861-866 Task_SetClock_Confirmed : pas de
+        // save SRAM ici. Seuls RtcCalcLocalTimeOffset + setFlag. La save SRAM
+        // se fait UNIQUEMENT via START → SAUVER explicite. (Avant :
+        // `gameState.save()` ici → cause user-flag "save random" 2026-05-21.)
         RtcCalcLocalTime();
         const currentDays = gLocalTime.days;
         RtcCalcLocalTimeOffset(currentDays, editHour, editMinute, 0);
         gameState.setFlag('FLAG_SYS_CLOCK_SET');
-        gameState.save();
         console.log(`[wallclock] in-game time set to ${editHour}:${String(editMinute).padStart(2,'0')}`);
         state = 'FADE_OUT';
         return false;

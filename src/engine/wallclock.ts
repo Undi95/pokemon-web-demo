@@ -745,7 +745,11 @@ function Task_SetClock_Confirmed(task: DecompTask): void {
   //   gTasks[taskId].func = Task_SetClock_Exit;
   RtcInitLocalTimeOffset(_state.hours, _state.minutes);
   gameState.setFlag('FLAG_SYS_CLOCK_SET');
-  gameState.save();
+  // 1:1 décomp wallclock.c:861-866 Task_SetClock_Confirmed : pas de save ici.
+  // Le décomp ne fait QUE RtcInitLocalTimeOffset + BeginNormalPaletteFade +
+  // setMainCallback2. La save SRAM se fait UNIQUEMENT via START → SAUVER
+  // explicite du joueur. (Avant : `gameState.save()` ici → save random
+  // user-flag 2026-05-21).
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
   task.func = Task_SetClock_Exit;
 }

@@ -15,7 +15,7 @@ import type { PokemonInstance } from './pokemon';
 import { type Bag, type ItemSlot, emptyBag } from './bag';
 import {
   GetSaveBlock1, GetSaveBlock2, LoadGameSave, TrySavingData,
-  ResetSaveBlocks, HasValidSave,
+  ResetSaveBlocks, HasValidSave, IsSaveLocked,
   SAVE_STATUS_OK,
 } from './save-system';
 import {
@@ -45,29 +45,19 @@ export const TEXT_SPEED_FRAME_DELAYS = [8, 4, 1] as const;
 
 /** Latch global qui bloque toute écriture en SRAM (= localStorage). Set TRUE
  *  par boot-mode.ts quand un mode test est actif (`?debug` / `?nointro` /
- *  `?truck`). Toute appel à `gameState.save()` devient un no-op silencieux
- *  tant que le latch est TRUE : ça permet de tester librement sans risquer
- *  d'écraser la save du joueur (= user-flag "Le mode debug écrase ma save
- *  toujours, j'aimerai bien tester sans péter ma save a chaque fois").
+ *  `?truck`). Implémentation 1:1 maintenant dans save-system.ts (= point
+ *  d'entrée RÉEL `TrySavingData`) pour couvrir TOUS les callers : Proxy
+ *  gSaveBlock2Ptr, scripts/specials, migration legacy, Battle Frontier, etc.
  *
- *  Couvre les call sites suivants qui appellent `gameState.save()` :
- *    - `start-menu.ts:963` (SAUVER explicite dans le START menu)
- *    - `wallclock.ts:748` + `wallclock-flow.ts:279` (wallclock SET confirm)
- *    - `script-runner.ts:124` + `specials-registry.ts:473` (special
- *       SavePlayerParty appelé par scripts du Battle Frontier, Mossdeep
- *       Space Center, etc.)
- *    - `game-state.ts:315/319` (cheats `window.cheat.*`)
+ *  Avant : check seulement dans `gameState.save()` → Proxy gSaveBlock2Ptr
+ *  qui appelait TrySavingData directement bypass le latch → save random
+ *  (user-flag "le jeu sauvegarde à des moments complètement random dans la
+ *  SRAM" 2026-05-21). Fixé en (1) retirant l'auto-save du Proxy et (2)
+ *  déplaçant le check dans TrySavingData.
  *
- *  Reset à FALSE si user reload sans param test (= nouveau boot normal qui
- *  doit pouvoir save). */
-let _saveLocked = false;
-export function SetSaveLocked(locked: boolean): void {
-  _saveLocked = locked;
-  console.log(`[gameState] save SRAM ${locked ? 'BLOCKED (test mode)' : 'unblocked'}`);
-}
-export function IsSaveLocked(): boolean {
-  return _saveLocked;
-}
+ *  Re-export pour les callers existants (boot-mode.ts, etc.) qui importaient
+ *  depuis game-state. */
+export { SetSaveLocked, IsSaveLocked } from './save-system';
 
 class GameState {
   load(): boolean {
@@ -76,13 +66,12 @@ class GameState {
   }
 
   save(): void {
-    // 1:1 ROM safety : test modes (`?debug` / `?nointro` / `?truck`) bloquent
-    // l'écriture SRAM via `SetSaveLocked(true)` au boot. Toute tentative de
-    // `gameState.save()` devient un no-op (= la RAM reste modifiée mais la
-    // SRAM/localStorage n'est pas écrasée). Le user peut ainsi tester
-    // librement le preset sans risquer d'écraser sa save de progression.
-    if (_saveLocked) {
-      console.log('[gameState.save] BLOCKED (test mode, SRAM preserved)');
+    // 1:1 ROM safety : test modes bloquent l'écriture SRAM via SetSaveLocked
+    // (cf. save-system.ts). Le vrai gate est dans TrySavingData() lui-même,
+    // mais on early-return ici pour skip aussi le PreSaveSyncBlocks coûteux
+    // qui muterait gSaveBlock1Ptr inutilement.
+    if (IsSaveLocked()) {
+      console.log('[gameState.save] skipped (SRAM locked)');
       return;
     }
     // 1:1 décomp `HandleSavingData` flow : sync runtime states → save blocks

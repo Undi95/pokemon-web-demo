@@ -120,8 +120,11 @@ const SPECIALS: Record<string, SpecialFn> = {
   },
   // Heal complet (HP + PP + status) de toute la party. Centre Pokémon.
   HealPlayerParty: () => { gameState.healAllParty(); },
-  // Save/Load party : déjà persisté dans gameState (localStorage). save() pour safe.
-  SavePlayerParty: () => { gameState.save(); },
+  // Save/Load party : décomp = mem-to-mem entre gPlayerParty et frontier
+  // playerParty buffer, PAS d'écriture SRAM. La save SRAM ne se fait QUE via
+  // START → SAUVER explicite. Notre party est déjà partagée en RAM. (Avant :
+  // `gameState.save()` ici → cause user-flag "save random" 2026-05-21).
+  SavePlayerParty: () => { /* mem-to-mem, no SRAM write */ },
   LoadPlayerParty: () => { /* gameState.load() déjà fait au boot */ },
   // Refresh visuel de la map après setmetatile. Nos setmetatile sont sync.
   DrawWholeMapView: () => { /* no-op */ },

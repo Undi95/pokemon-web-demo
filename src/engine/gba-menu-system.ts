@@ -312,7 +312,7 @@ export function PlayBGM(songNum: number): void {
 //
 // Pas de cycle d'import : save-system ne dépend PAS de gba-menu-system
 // (vérifié via grep). On peut donc importer GetSaveBlock2 statiquement.
-import { GetSaveBlock2 as _GetSaveBlock2, TrySavingData as _TrySavingData, HasValidSave as _HasValidSave } from './save-system';
+import { GetSaveBlock2 as _GetSaveBlock2 } from './save-system';
 
 const LEGACY_SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
 
@@ -338,11 +338,12 @@ function _migrateLegacySaveBlock2(): void {
         migrated = true;
       }
     }
-    if (migrated && _HasValidSave()) {
-      _TrySavingData();
-      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2');
-    } else if (migrated) {
-      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2 in-memory (no save yet)');
+    if (migrated) {
+      // 1:1 décomp : la migration mute le SaveBlock2 RAM uniquement. Pas
+      // d'écriture SRAM auto — l'utilisateur sauvegarde explicitement via
+      // START → SAUVER. Avant : on appelait _TrySavingData() si HasValidSave
+      // → save automatique random non-1:1, retiré.
+      console.log('[gSaveBlock2Ptr] migrated legacy localStorage options → SaveBlock2 RAM (no auto-save)');
     }
     localStorage.removeItem(LEGACY_SAVEBLOCK2_LSKEY);
   } catch (e) {
@@ -351,34 +352,31 @@ function _migrateLegacySaveBlock2(): void {
 }
 _migrateLegacySaveBlock2();
 
-/** Persist auto les options au save-system (= au prochain TrySavingData).
- *  Pour ne pas perdre les options modifiées au refresh, on appelle TrySavingData
- *  après chaque write (debounce micro-task pour éviter spam si plusieurs sets
- *  consécutifs dans le même tick). */
-let _persistTimer: ReturnType<typeof setTimeout> | null = null;
-function _persistSaveBlock2(): void {
-  if (_persistTimer != null) return;
-  _persistTimer = setTimeout(() => {
-    _persistTimer = null;
-    // Ne save que si une save existe déjà (= post-NewGame). Sinon laisse le
-    // SaveBlock2 en mémoire seulement — le prochain TrySavingData (= via
-    // SAUVER menu ou NewGame) le persistera.
-    if (_HasValidSave()) _TrySavingData();
-  }, 0);
-}
-
 export const gSaveBlock1Ptr = {} as any;
 
 /** 1:1 décomp `gSaveBlock2Ptr` — delegates to save-system's SaveBlock2.
+ *
  *  Lecture : redirige vers le SaveBlock2 partagé en mémoire (= 1:1 décomp pointer).
- *  Écriture : mute le SaveBlock2 + queue auto-persist via TrySavingData. */
+ *  Écriture : mute le SaveBlock2 en mémoire UNIQUEMENT — pas d'écriture SRAM
+ *  automatique. C'est 1:1 décomp pure : le décomp n'écrit en flash QUE via
+ *  `TrySavingData()` explicite (= START → SAUVER, Mystery Gift, Hall of Fame,
+ *  Battle Frontier confirm). Aucun set proxy ne déclenche d'écriture latente.
+ *
+ *  Implication : si un user reload la page sans avoir click SAUVER, il perd ses
+ *  changements (= options, naming, etc.). C'est le comportement attendu et
+ *  conforme au décomp ROM (= la flash n'est mise à jour qu'au save explicite).
+ *
+ *  User-flag verbatim (2026-05-21) : "le jeu sauvegarde à des moments
+ *  complètement random dans la SRAM (...) le seul moyen de sauvegarde est et
+ *  restera START => SAUVER, corrige ça définitivement". Cause root identifiée
+ *  = ce Proxy set() qui auto-saved en `TrySavingData()` à chaque mut → ENLEVÉ. */
 export const gSaveBlock2Ptr: any = new Proxy({} as Record<string, unknown>, {
   get(_target, prop: string | symbol): unknown {
     return (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string];
   },
   set(_target, prop: string | symbol, value: unknown): boolean {
+    // 1:1 décomp : mute le SaveBlock2 partagé en RAM. Pas d'écriture SRAM.
     (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string] = value;
-    _persistSaveBlock2();
     return true;
   },
   ownKeys(_target): ArrayLike<string | symbol> {

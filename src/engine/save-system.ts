@@ -53,6 +53,30 @@ export const SAVE_STATUS_ERROR = SS_ERR;
 
 let sCurrentBlock1: SaveBlock1 | null = null;
 let sCurrentBlock2: SaveBlock2 | null = null;
+
+// ─── Save lock (= user-flag "PAS DE SAVE SANS INPUT SAUVER DU JOUEUR") ──────
+//
+// Latch global qui bloque TOUTE écriture en SRAM. Set TRUE par :
+//   - `boot-mode.ts` quand un mode test est actif (`?debug`/`?nointro`/`?truck`)
+//
+// Rationale : le décomp Émeraude ne sauve JAMAIS automatiquement (sauf Battle
+// Frontier / multijoueur qui sont gated par un YesNo dialog explicite). Chaque
+// path qui écrivait en SRAM "en passant" (= options touchées, playtime, Proxy
+// gSaveBlock2Ptr.set, etc.) est non-1:1 et à supprimer. Le check `IsSaveLocked`
+// est ici (= au point d'entrée RÉEL `TrySavingData`) plutôt que dans
+// `gameState.save()` — sinon le Proxy gSaveBlock2Ptr et tout caller direct
+// bypass le latch.
+//
+// User-flag verbatim : "PAS DE SAVE SANS L'INPUT 'SAUVER / SAUVGARDER' DU
+// JOUEUR, NULLE PART, ce jeu n'as pas de save automatique."
+let _saveLocked = false;
+export function SetSaveLocked(locked: boolean): void {
+  _saveLocked = locked;
+  console.log(`[save-system] SRAM ${locked ? 'BLOCKED' : 'unblocked'}`);
+}
+export function IsSaveLocked(): boolean {
+  return _saveLocked;
+}
 /** 1:1 décomp `gPokemonStoragePtr` (secteurs 5-13). Étape 6 : struct réelle
  *  `PokemonStorage` (14 boxes × 30 BoxPokemon + boxNames + wallpapers +
  *  currentBox) au lieu de l'ancien placeholder `{}`. Défaut = 1:1
@@ -114,6 +138,16 @@ export function LoadGameSave(): number {
  *  party/objectEvents → block1 est fait par PreSaveSyncBlocks AVANT, côté
  *  gameState.save().) */
 export function TrySavingData(): boolean {
+  // 1:1 ROM safety : test modes (`?debug` / `?nointro` / `?truck`) bloquent
+  // l'écriture SRAM via `SetSaveLocked(true)` au boot. Tout caller (= y compris
+  // le Proxy gSaveBlock2Ptr et l'auto-engine code) devient no-op silencieux.
+  // Le user save explicitement via START → SAUVER → `gameState.save()` qui
+  // gère son propre flow ; ce check ici protège contre toute écriture latente
+  // hors-flow.
+  if (_saveLocked) {
+    console.log('[save-system] TrySavingData BLOCKED (SetSaveLocked=true)');
+    return false;
+  }
   if (!sCurrentBlock1 || !sCurrentBlock2) {
     console.warn('[save-system] TrySavingData : pas de blocs courants');
     return false;

@@ -441,7 +441,10 @@ function _itemStorageDeposit(): void {
       // Re-open le PC menu — switch directement vers RETIRER (= user-flag
       // "dès qu'on depose on est switch vers le retrait").
       void import('./bedroom-pc').then(({ OpenBedroomPC }) => {
-        OpenBedroomPC();
+        // isBedroom=true → re-ouvre le PC dans la bedroom (= chambre joueur).
+        // 1:1 décomp `ItemStorage_ReshowAfterBagMenu` reload le state PlayerPC
+        // tel qu'il était à l'open (= bedroom). PC de Centre Pokémon = isBedroom=false.
+        OpenBedroomPC(true);
         // Auto-switch vers item_storage RETIRER pour cohérence flow user.
         // Use timeout pour laisser le main menu se draw d'abord.
         setTimeout(() => {
