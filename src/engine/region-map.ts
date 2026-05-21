@@ -38,6 +38,7 @@ import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
 import { getRuntime } from './decomp-globals';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
 import {
   preloadRegionMapData,
   getRegionMapEntries,
@@ -77,6 +78,8 @@ const REGION_MAP_DEPTH = 2000;
 
 interface RegionMapGlobalState {
   isOpen: boolean;
+  /** Mode VIEW (= field_region_map.c) vs FLY (= region_map.c CB2_FlyMap). */
+  mode: 'VIEW' | 'FLY';
   cursorPosX: number;
   cursorPosY: number;
   cursorMovementFrameCounter: number;
@@ -99,6 +102,7 @@ function _state(): RegionMapGlobalState {
   if (!g.__regionMapState) {
     g.__regionMapState = {
       isOpen: false,
+      mode: 'VIEW',
       cursorPosX: MAPCURSOR_X_MIN,
       cursorPosY: MAPCURSOR_Y_MIN,
       cursorMovementFrameCounter: 0,
@@ -123,19 +127,43 @@ export function IsRegionMapOpen(): boolean {
   return _state().isOpen;
 }
 
+/** Mode d'ouverture de la carte :
+ *  - `'VIEW'`  : 1:1 décomp `field_region_map.c` (= métatile wall map au PC).
+ *    A/B ferme la carte sans rien sélectionner. Carte non-zoomable.
+ *  - `'FLY'`   : 1:1 décomp `region_map.c` CB2_FlyMap (= ouverture via HM02 Fly
+ *    depuis party menu). A confirme la destination, B annule. Stub posé pour
+ *    un raccord ultérieur (= CreateFlyDestIcons + ConfirmFlyDestination).
+ *    Pour l'instant, comportement identique à VIEW (= aucun script ne déclenche
+ *    encore la map en mode Fly dans la démo).
+ */
+export type RegionMapMode = 'VIEW' | 'FLY';
+
 /** 1:1 décomp `FieldInitRegionMap(callback)` (field_region_map.c:92-99) :
  *    SetMainCallback2(MCB2_InitRegionMapRegisters);
  *  + état 0 de FieldUpdateRegionMap : InitRegionMap + CreateRegionMapPlayerIcon +
  *  CreateRegionMapCursor.
  *
  *  Async pour pouvoir preload les données décomp (= region_map_data.json) avant
- *  d'initialiser le cursor au mapsec courant 1:1. */
-export async function OpenRegionMap(): Promise<void> {
+ *  d'initialiser le cursor au mapsec courant 1:1.
+ *
+ *  @param mode 'VIEW' par défaut (= field_region_map.c). 'FLY' pour future
+ *              HM02 Fly transition (= stub, voir RegionMapMode). */
+export async function OpenRegionMap(mode: RegionMapMode = 'VIEW'): Promise<void> {
   const st = _state();
   if (st.isOpen) return;
   // Preload data décomp avant de lookup gRegionMapEntries.
   await preloadRegionMapData();
   st.isOpen = true;
+  st.mode = mode;
+  // 1:1 décomp `FieldCB_DefaultWarpExit` pattern + `field_region_map.c`
+  // implicit lock : pendant que la carte est ouverte, le player overworld
+  // ne doit pas pouvoir bouger (= sinon il marche derrière l'overlay).
+  // Le décomp atteint cela en swappant CB2 entièrement (= le main loop
+  // overworld n'est plus exécuté). Notre overlay garde le main loop OW
+  // actif → on lock les controls pour empêcher PlayerStep input D-pad.
+  // Unlock dans CloseRegionMap (= 1:1 case 6 `SetMainCallback2(callback)`
+  // qui restore le contrôle field).
+  LockPlayerFieldControls();
   // 1:1 décomp `InitMapBasedOnPlayerLocation` (= state 5 LoadRegionMapGfx) :
   // cursor positionné au mapsec du player + playerIconSpritePos = cursorPos.
   const playerLoc = _getPlayerMapsecLocation();
@@ -144,19 +172,59 @@ export async function OpenRegionMap(): Promise<void> {
   // 1:1 décomp : currentMapsecName = lookup direct via GetMapName(mapSecId).
   st.currentMapsecName = GetMapName(playerLoc.mapSecId) || _getCurrentMapsecName();
   st.cursorMovementFrameCounter = 0;
+  st.cursorAnimFrameCounter = 0;
   _spawnGameObjects(playerLoc);
 }
 
 /** 1:1 décomp `FreeRegionMapIconResources` (region_map.c:627-641) + state 6
- *  FieldUpdateRegionMap : destroy sprites + free windows + restore callback. */
-export function CloseRegionMap(): void {
+ *  FieldUpdateRegionMap : destroy sprites + free windows + restore callback.
+ *
+ *  Pour mode FLY (= stub) : si une callback `_flyCallback` était set par
+ *  l'appelant et que la fermeture a été déclenchée par A_BUTTON (= confirm),
+ *  on appellerait `_flyCallback(selectedMapSecId)` pour exécuter le warp Fly.
+ *  Pas encore branché — le décomp `CB_ExitFlyMap` consulte `sFlyMap->
+ *  choseFlyLocation` pour décider warp vs cancel.
+ *
+ *  @param confirmed (mode FLY only) true si A_BUTTON a fermé (= confirm),
+ *                   false si B_BUTTON (= cancel). VIEW ignore. */
+export function CloseRegionMap(confirmed = false): void {
   const st = _state();
   if (!st.isOpen) return;
+  // 1:1 décomp stub Fly : si mode FLY + confirmed + mapSec valide → fire le
+  // callback Fly transition. Pour la démo, juste log et continue.
+  if (st.mode === 'FLY' && confirmed) {
+    const targetMapSec = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
+    if (_flyCallback) {
+      _flyCallback(targetMapSec);
+    } else {
+      console.log(`[region-map] FLY stub : would warp to ${targetMapSec} (no callback registered)`);
+    }
+  }
   st.isOpen = false;
+  st.mode = 'VIEW';  // reset
   _destroyGameObjects();
+  // 1:1 décomp `field_region_map.c` case 6 + `FieldCB_DefaultWarpExit` pattern :
+  // restore field controls (= 1:1 `SetMainCallback2(callback)` qui ramène le
+  // main loop OW dans son état "field actif"). Pas d'unlock fait depuis le
+  // décomp lui-même (= CB2 swap restore tout), donc on doit unlock ici notre
+  // proxy lock posé par OpenRegionMap.
+  UnlockPlayerFieldControls();
   // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
   // Notre version : SignalWaitState pour unblock le script `special FieldShowRegionMap`.
   SignalWaitState();
+}
+
+// ─── Fly stub (= 1:1 décomp `SetFlyMapCallback`, region_map.c:1700) ─────────
+
+type FlyCallback = (targetMapSecId: string) => void;
+let _flyCallback: FlyCallback | null = null;
+
+/** 1:1 décomp `SetFlyMapCallback(callback)` (region_map.c:1700) : enregistre
+ *  la callback à exécuter quand le user confirme une destination Fly. Stub
+ *  posé pour usage futur (= HM02 Fly depuis party menu, ou
+ *  `Special_DoFlyMap`). Pour l'instant aucun call site dans la démo. */
+export function SetFlyMapCallback(callback: FlyCallback | null): void {
+  _flyCallback = callback;
 }
 
 /** Tick called per-frame depuis MainCB2_Overworld (= overlay actif).
@@ -178,14 +246,15 @@ export function TickRegionMap(): void {
   st.cursorAnimFrameCounter = (st.cursorAnimFrameCounter + 1) % 40;
   _updateCursorBlinkFrame();
 
-  // 1:1 décomp `MAP_INPUT_A_BUTTON` / `MAP_INPUT_B_BUTTON` (region_map.c:675-682) :
-  // A or B button → exit fade-out → close.
+  // 1:1 décomp `MAP_INPUT_A_BUTTON` / `MAP_INPUT_B_BUTTON` (region_map.c:675-682).
+  // VIEW : A ou B ferme la carte (= field_region_map.c:180-183 case 4).
+  // FLY  : A confirme la destination (= choseFlyLocation=TRUE), B annule.
   if (newKeys & 0x01) {  // A_BUTTON
-    CloseRegionMap();
+    CloseRegionMap(true);   // confirmed
     return;
   }
   if (newKeys & 0x02) {  // B_BUTTON
-    CloseRegionMap();
+    CloseRegionMap(false);  // cancelled
     return;
   }
 
@@ -306,12 +375,15 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
       .setDepth(REGION_MAP_DEPTH)
       .setScrollFactor(0);
 
-    // 1:1 décomp `CreateRegionMapCursor` (region_map.c:1375) : sprite 16×16
-    // à la position (cursorPosX * 8, cursorPosY * 8) pixel. Le PNG source
-    // `cursor_small.png` est 16×32 (= 2 frames stackées). On crop top half
-    // (= frame 0 idle) au spawn, puis tick alterne frame 0/1 via setCrop.
-    const cursorPx = st.cursorPosX * 8 * sx;
-    const cursorPy = st.cursorPosY * 8 * sy;
+    // 1:1 décomp `CreateRegionMapCursor` (region_map.c:1418-1419) :
+    //   sRegionMap->cursorSprite->x = 8 * sRegionMap->cursorPosX + 4;
+    //   sRegionMap->cursorSprite->y = 8 * sRegionMap->cursorPosY + 4;
+    // L'offset +4 vient du fait que le décomp utilise OAM avec origin top-left
+    // = pixel coord. Le sprite 16×16 placé à (8*pos+4) le centre sur le tile.
+    // Le PNG source `cursor_small.png` est 16×32 (= 2 frames stackées). On crop
+    // top half (= frame 0 idle) au spawn, puis tick alterne frame 0/1 via setCrop.
+    const cursorPx = (st.cursorPosX * 8 + 4) * sx;
+    const cursorPy = (st.cursorPosY * 8 + 4) * sy;
     st.cursorSprite = scene.add.image(cursorPx, cursorPy, 'region_map_cursor')
       .setOrigin(0, 0)
       .setCrop(0, 0, 16, 16)
@@ -319,11 +391,14 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
       .setDepth(REGION_MAP_DEPTH + 2)
       .setScrollFactor(0);
 
-    // 1:1 décomp `CreateRegionMapPlayerIcon` (region_map.c) : sprite icon
-    // gender-aware au playerIconSpritePos (= same coords que cursor au start).
+    // 1:1 décomp `CreateRegionMapPlayerIcon` (region_map.c:1470-1471) :
+    //   sRegionMap->playerIconSprite->x = sRegionMap->playerIconSpritePosX * 8 + 4;
+    //   sRegionMap->playerIconSprite->y = sRegionMap->playerIconSpritePosY * 8 + 4;
+    // Sprite icon gender-aware au playerIconSpritePos (= same coords que cursor
+    // au start, 1:1 décomp `playerIconSpritePosX = cursorPosX` LoadRegionMapGfx case 5).
     const playerKey = gameState.gender === 'MALE' ? 'region_map_brendan' : 'region_map_may';
-    const playerPx = playerLoc.x * 8 * sx;
-    const playerPy = playerLoc.y * 8 * sy;
+    const playerPx = (playerLoc.x * 8 + 4) * sx;
+    const playerPy = (playerLoc.y * 8 + 4) * sy;
     st.playerIconSprite = scene.add.image(playerPx, playerPy, playerKey)
       .setOrigin(0, 0)
       .setDisplaySize(16 * sx, 16 * sy)
@@ -398,8 +473,9 @@ function _updateCursorPosition(): void {
   const cam = scene.cameras.main;
   const sx = cam.width / GBA_SCREEN_WIDTH;
   const sy = cam.height / GBA_SCREEN_HEIGHT;
-  st.cursorSprite.x = st.cursorPosX * 8 * sx;
-  st.cursorSprite.y = st.cursorPosY * 8 * sy;
+  // 1:1 décomp region_map.c:1418-1419 offset +4 (= OAM top-left pixel center).
+  st.cursorSprite.x = (st.cursorPosX * 8 + 4) * sx;
+  st.cursorSprite.y = (st.cursorPosY * 8 + 4) * sy;
 }
 
 /** 1:1 décomp `sRegionMapCursorAnim1` ANIMCMD_FRAME tick (region_map.c:218).
