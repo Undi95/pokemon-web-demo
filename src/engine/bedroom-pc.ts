@@ -53,6 +53,8 @@ import { SignalWaitState } from './script-opcodes';
 import { ScriptContext_SetupScript } from './script-runtime';
 import { gameState } from './game-state';
 import { getString } from './gba-strings';
+import { setStringVar } from './string-buffers';
+import { StringExpandPlaceholders } from './gba-text-system';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
@@ -912,17 +914,27 @@ function _itemStorageDoItemAction(pos: number): void {
       _itemStorageDoItemWithdraw(pos, 1);
       return;
     }
-    // 1:1 décomp lines 1369-1371 : "Combien retirer ?" message.
+    // 1:1 décomp lines 1369-1371 :
+    //   CopyItemName(itemId, gStringVar1);
+    //   ItemStorage_PrintMessage(GetMessage(MSG_HOW_MANY_TO_WITHDRAW)); → gText_WithdrawHowManyItems
+    //   "Vous voulez en\nretirer combien?"
     const itemName = getItemNameFr(slot.itemKey);
-    _itemStoragePrintWindowMessage(`Retirer combien ? (1-${slot.quantity})\n${itemName}`);
+    setStringVar(1, itemName);
+    const tpl = getString('gText_WithdrawHowManyItems') ?? 'Vous voulez en\nretirer combien?';
+    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
   } else {
     if (slot.quantity === 1) {
       _itemStorageStartToss(pos, 1);
       return;
     }
-    // 1:1 décomp lines 1383-1384 : "Jeter combien ?" message.
+    // 1:1 décomp lines 1383-1384 :
+    //   CopyItemName(itemId, gStringVar1);
+    //   ItemStorage_PrintMessage(GetMessage(MSG_HOW_MANY_TO_TOSS)); → gText_TossHowManyVar1s
+    //   "En jeter combien?"
     const itemName = getItemNameFr(slot.itemKey);
-    _itemStoragePrintWindowMessage(`Jeter combien ? (1-${slot.quantity})\n${itemName}`);
+    setStringVar(1, itemName);
+    const tpl = getString('gText_TossHowManyVar1s') ?? 'En jeter combien?';
+    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
   }
   // 1:1 décomp line 1388 : ItemStorage_PrintItemQuantity dans WIN_QUANTITY.
   _itemStorageShowQuantityWindow();
@@ -999,21 +1011,28 @@ const DPAD_LEFT  = 0x20;
 const DPAD_RIGHT = 0x10;
 const SELECT_BUTTON = 0x04;
 
-/** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444). */
+/** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444) :
+ *    CopyItemName(itemId, gStringVar1);
+ *    ConvertIntToDecimalStringN(gStringVar2, tQuantity, LEFT_ALIGN, 3);
+ *    ItemStorage_PrintMessage(GetMessage(MSG_WITHDREW_ITEM)); → gText_WithdrawXItems
+ *    "{STR_VAR_1}:\nretiré {STR_VAR_2}." */
 function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
   const slot = gameState.pcItems[pos];
   if (AddBagItem(slot.itemKey, qty)) {
-    // 1:1 décomp : gStringVar1 = item name, gStringVar2 = qty → "{PLAYER} a retiré N {STR_VAR_1}!"
+    // 1:1 décomp StringExpandPlaceholders avec STR_VAR_1=item, STR_VAR_2=qty.
     const itemName = getItemNameFr(slot.itemKey);
-    const msg = `Retiré ${qty} ${itemName}.`;
-    _itemStoragePrintWindowMessage(msg);
+    setStringVar(1, itemName);
+    setStringVar(2, String(qty));
+    const tpl = getString('gText_WithdrawXItems') ?? '{STR_VAR_1}:\nretiré {STR_VAR_2}.';
+    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
     // Mark pos pour remove après confirmation A_BUTTON.
     sPCLastActionPos = pos;
     sPCLastActionQty = qty;
   } else {
-    _itemStoragePrintWindowMessage(getString('gText_NoRoomInBag'));
+    // 1:1 décomp MSG_NO_MORE_ROOM = gText_NoRoomInBag "Il n'y a plus de\nplace dans le SAC."
+    _itemStoragePrintWindowMessage(getString('gText_NoRoomInBag') ?? "Il n'y a plus de\nplace dans le SAC.");
     sPCActionMsgIsError = true;
     sSubState = 'pc_action_msg';
   }
@@ -1023,7 +1042,14 @@ function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
 let sPCLastActionPos = -1;
 let sPCLastActionQty = 0;
 
-/** 1:1 décomp `ItemStorage_DoItemToss` (player_pc.c:1446-1466). */
+/** 1:1 décomp `ItemStorage_DoItemToss` (player_pc.c:1446-1466) :
+ *    if (!GetItemImportance(itemId)) {
+ *      CopyItemName(itemId, gStringVar1);
+ *      ConvertIntToDecimalStringN(gStringVar2, tQuantity, LEFT_ALIGN, 3);
+ *      ItemStorage_PrintMessage(GetMessage(MSG_OKAY_TO_THROW_AWAY)); → gText_ConfirmTossItems
+ *      "{STR_VAR_1}:\nen jeter {STR_VAR_2}?"
+ *      CreateYesNoMenuWithCallbacks(taskId, ..., 1, &ItemTossYesNoFuncs);
+ *    } */
 function _itemStorageStartToss(pos: number, qty: number): void {
   const slot = gameState.pcItems[pos];
   // 1:1 décomp GetItemImportance check (= pas de toss pour items importants).
@@ -1031,8 +1057,10 @@ function _itemStorageStartToss(pos: number, qty: number): void {
   sPCLastActionPos = pos;
   sPCLastActionQty = qty;
   const itemName = getItemNameFr(slot.itemKey);
-  const msg = `Vraiment jeter ${qty} ${itemName} ?`;
-  _itemStoragePrintWindowMessage(msg);
+  setStringVar(1, itemName);
+  setStringVar(2, String(qty));
+  const tpl = getString('gText_ConfirmTossItems') ?? '{STR_VAR_1}:\nen jeter {STR_VAR_2}?';
+  _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
   // Spawn YesNo menu (= 1:1 décomp CreateYesNoMenuWithCallbacks).
   CreateYesNoMenu(WIN_PC_YESNO, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 1);  // default = NO
   sSubState = 'pc_toss_confirm';
@@ -1043,12 +1071,16 @@ function _tickPCTossConfirm(_newKeys: number): void {
   // -2 = nothing, -1 = B, 0 = YES, 1 = NO.
   if (res === -2) return;
   if (res === 0) {
-    // YES → throw away
+    // YES → throw away. 1:1 décomp ItemStorage_TossItemYes :
+    //   ItemStorage_PrintMessage(GetMessage(MSG_THREW_AWAY_ITEM)); → gText_ThrewAwayVar2Var1s
+    //   "{STR_VAR_1}:\njeté {STR_VAR_2}."
     PlaySE(Songs.SE_SELECT);
     const slot = gameState.pcItems[sPCLastActionPos];
     const itemName = getItemNameFr(slot.itemKey);
-    const msg = `${sPCLastActionQty} ${itemName} jeté(s).`;
-    _itemStoragePrintWindowMessage(msg);
+    setStringVar(1, itemName);
+    setStringVar(2, String(sPCLastActionQty));
+    const tpl = getString('gText_ThrewAwayVar2Var1s') ?? '{STR_VAR_1}:\njeté {STR_VAR_2}.';
+    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
   } else {
