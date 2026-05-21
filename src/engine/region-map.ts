@@ -405,55 +405,193 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
       .setDepth(REGION_MAP_DEPTH + 1)
       .setScrollFactor(0);
 
-    // 1:1 décomp state 1 : `DrawStdFrameWithCustomTileAndPalette(WIN_TITLE, 0x27, 0xd)`
-    // + `AddTextPrinterParameterized(WIN_TITLE, gText_Hoenn, centered, 1, ...)`.
-    // WIN_TITLE template = bg=0, left=22 top=1 w=7 h=2.
-    st.titleWindow = _createWindowContainer(scene,
-      22 * 8 * sx, 1 * 8 * sy,         // x, y pixel (= tile coords ×8)
-      7 * 8 * sx, 2 * 8 * sy,          // width, height pixel
-      getString('gText_Hoenn') || 'HOENN',
-      true);  // centered
-    st.titleWindow.setDepth(REGION_MAP_DEPTH + 3);
+    // 1:1 décomp state 1 (field_region_map.c:152-158) :
+    //   DrawStdFrameWithCustomTileAndPalette(WIN_TITLE, FALSE, 0x27, 0xd);
+    //   offset = GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, 0x38);
+    //   AddTextPrinterParameterized(WIN_TITLE, FONT_NORMAL, gText_Hoenn, offset, 1, 0, NULL);
+    //   ScheduleBgCopyTilemapToVram(0);
+    //   DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 0x27, 0xd);
+    //   PrintRegionMapSecName();
+    // WIN_TITLE template = bg=0, left=22 top=1 w=7 h=2 → content 7×2 tiles +
+    // frame border 1 tile around = 9×4 tiles render area at pos (21, 0).
+    void _renderWindowToCanvas(scene, 7, 2, getString('gText_Hoenn') || 'HOENN', true, 'region_map_title');
+    st.titleWindow = scene.add.image(21 * 8 * sx, 0 * 8 * sy, 'region_map_title')
+      .setOrigin(0, 0)
+      .setDisplaySize(9 * 8 * sx, 4 * 8 * sy)
+      .setDepth(REGION_MAP_DEPTH + 3)
+      .setScrollFactor(0) as unknown as Phaser.GameObjects.Container;
 
-    // 1:1 décomp `DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, ...)`
-    // + `AddTextPrinterParameterized(WIN_MAPSEC_NAME, mapSecName, 0, 1, ...)`.
-    // WIN_MAPSEC_NAME template = bg=0, left=17 top=17 w=12 h=2.
-    st.mapsecWindow = _createWindowContainer(scene,
-      17 * 8 * sx, 17 * 8 * sy,
-      12 * 8 * sx, 2 * 8 * sy,
-      st.currentMapsecName,
-      false);  // left-aligned
-    st.mapsecWindow.setDepth(REGION_MAP_DEPTH + 3);
-    // Stocke ref au Text pour update au cursor move.
-    st.mapsecText = st.mapsecWindow.getAt(1) as Phaser.GameObjects.Text;
+    // WIN_MAPSEC_NAME template = bg=0, left=17 top=17 w=12 h=2 → content 12×2
+    // + frame border = 14×4 tiles at pos (16, 16).
+    void _renderWindowToCanvas(scene, 12, 2, st.currentMapsecName, false, 'region_map_mapsec');
+    st.mapsecWindow = scene.add.image(16 * 8 * sx, 16 * 8 * sy, 'region_map_mapsec')
+      .setOrigin(0, 0)
+      .setDisplaySize(14 * 8 * sx, 4 * 8 * sy)
+      .setDepth(REGION_MAP_DEPTH + 3)
+      .setScrollFactor(0) as unknown as Phaser.GameObjects.Container;
+    // Stocke ref pour update au cursor move (= re-render canvas avec nouveau text).
+    st.mapsecText = null;  // = pas de text Phaser séparé, le canvas est complet
   });
+}
+
+/** 1:1 décomp `DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, 0x27, 0xd)`
+ *  (menu.c:687) + `AddTextPrinterParameterized(windowId, FONT_NORMAL, text, ...)`
+ *  (= pré-render canvas avec 9-slice border 1:1 + text rendu monospace).
+ *
+ *  Le frame style est celui sélectionné par l'user via le menu OPTIONS
+ *  (= `gameState.options.windowFrameType`, 1..20, 1:1 décomp
+ *  `gSaveBlock2Ptr->optionsWindowFrameType`). Charge les tiles via
+ *  `GetWindowFrameTilesPal(frameType)` (= 9 tiles 4bpp + palette 16 colors,
+ *  1:1 décomp text_window.c:14-23 sTextWindowFrameN_Gfx/_Pal).
+ *
+ *  Le content area (= width×height tiles) est rempli de la couleur palette[1]
+ *  (= PIXEL_FILL(1) du décomp `FillWindowPixelBuffer(windowId, PIXEL_FILL(1))`).
+ *  Le text est dessiné en couleur palette[2] (= TEXT_COLOR_DARK_GRAY 1:1 décomp).
+ *
+ *  Le 9-slice layout (1:1 décomp `WindowFunc_DrawStdFrameWithCustomTileAndPalette`
+ *  + `DrawTextBorderOuter` text_window.c:85-100) :
+ *    tile[0] TL,   tile[1] top,    tile[2] TR
+ *    tile[3] left, tile[4] center, tile[5] right
+ *    tile[6] BL,   tile[7] bottom, tile[8] BR */
+function _renderWindowToCanvas(
+  scene: Phaser.Scene,
+  contentW: number, contentH: number,  // window content size in tiles (8×8 each)
+  text: string,
+  centered: boolean,
+  textureKey: string,
+): void {
+  // Total size = content + 1 tile border each side.
+  const totalTilesW = contentW + 2;
+  const totalTilesH = contentH + 2;
+  const W = totalTilesW * 8;
+  const H = totalTilesH * 8;
+
+  // 1:1 décomp : récupère les tiles + palette du frame user-selected.
+  // Lazy import pour éviter circular deps.
+  const txtWindow = (globalThis as Record<string, unknown>).GetWindowFrameTilesPal as
+    ((idx: number) => { tiles: Uint8Array; pal: Uint16Array }) | undefined;
+  const frameType = gameState.options.windowFrameType ?? 0;
+  const { tiles, pal } = txtWindow ? txtWindow(frameType) : { tiles: new Uint8Array(0x120), pal: new Uint16Array(16) };
+
+  // Canvas hors-écran pour pré-render.
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // 1:1 décomp `WindowFunc_DrawStdFrameWithCustomTileAndPalette` (menu.c) +
+  // `DrawTextBorderOuter` (text_window.c:85-100) : 8 FillBgTilemapBufferRect +
+  // 1 fill content. On compose canvas 9-slice :
+  //   row 0   : TL  top×W top×W ... top×W  TR    (contentW+2 tiles wide)
+  //   rows 1..contentH+1 : left  center×W ... center×W  right
+  //   row contentH+1 : BL  bottom×W ... bottom×W  BR
+  // Note : tile[4] center est utilisé pour le fond CONTENT du décomp via
+  // FillBgTilemapBufferRect(bg, tileNum+4, ...) sur (tilemapLeft, tilemapTop,
+  // width, height). Mais notre `FillWindowPixelBuffer` du décomp utilise
+  // PIXEL_FILL(1) → couleur palette[1] (= blanc en général). Pour 1:1 visuel,
+  // on dessine d'abord tile[4] (= dot/pattern frame) puis on FILL le content
+  // area en couleur palette[1] uniforme par-dessus (= matche AddTextPrinter
+  // qui FillWindowPixelBuffer en pal[1] avant de dessiner les caractères).
+  for (let ty = 0; ty < totalTilesH; ty++) {
+    for (let tx = 0; tx < totalTilesW; tx++) {
+      // Choix du tile selon position (9-slice).
+      let tileIdx: number;
+      if (ty === 0) {
+        tileIdx = tx === 0 ? 0 : tx === totalTilesW - 1 ? 2 : 1;
+      } else if (ty === totalTilesH - 1) {
+        tileIdx = tx === 0 ? 6 : tx === totalTilesW - 1 ? 8 : 7;
+      } else {
+        tileIdx = tx === 0 ? 3 : tx === totalTilesW - 1 ? 5 : 4;
+      }
+      _drawTile4bpp(ctx, tiles, tileIdx, pal, tx * 8, ty * 8);
+    }
+  }
+
+  // 1:1 décomp `FillWindowPixelBuffer(windowId, PIXEL_FILL(1))` :
+  // remplir le content area avec la couleur palette[1] (= white-ish bg).
+  const bgRgb15 = pal[1] ?? 0x7FFF;
+  const r = (bgRgb15 & 0x1F) << 3;
+  const g = ((bgRgb15 >> 5) & 0x1F) << 3;
+  const b = ((bgRgb15 >> 10) & 0x1F) << 3;
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(8, 8, contentW * 8, contentH * 8);
+
+  // 1:1 décomp `AddTextPrinterParameterized(windowId, FONT_NORMAL, text, x, y, ...)` :
+  // dessine le text à pixel (x, y) interne du window, color = palette[2] (=
+  // TEXT_COLOR_DARK_GRAY 1:1 décomp `sFontShadowSpec`). Centered si demandé.
+  const textRgb15 = pal[2] ?? 0x294A;
+  const tr = (textRgb15 & 0x1F) << 3;
+  const tg = ((textRgb15 >> 5) & 0x1F) << 3;
+  const tb = ((textRgb15 >> 10) & 0x1F) << 3;
+  ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
+  ctx.font = '10px monospace';
+  ctx.textBaseline = 'middle';
+  const textY = 8 + contentH * 4;  // = vertical center of content area
+  if (centered) {
+    ctx.textAlign = 'center';
+    ctx.fillText(text, 8 + contentW * 4, textY);
+  } else {
+    ctx.textAlign = 'left';
+    ctx.fillText(text, 8 + 4, textY);  // +4 padding 1:1 décomp PrintRegionMapSecName
+  }
+
+  // Ajoute la texture à Phaser (= remplace si existe).
+  if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+  scene.textures.addCanvas(textureKey, canvas);
+}
+
+/** Décode un tile 4bpp GBA (= 32 bytes, 8×8 px, 4 bits par pixel low/high
+ *  nibble row-major) et le dessine au canvas à (destX, destY). Le pixel idx 0
+ *  est rendu transparent (= GBA convention).
+ *
+ *  1:1 décomp gba/io_reg.h tile data layout :
+ *    byte 0 : px(0,0) low nibble | px(1,0) high nibble
+ *    byte 1 : px(2,0) low | px(3,0) high
+ *    ... 4 bytes par row, 8 rows = 32 bytes par tile. */
+function _drawTile4bpp(
+  ctx: CanvasRenderingContext2D,
+  tiles: Uint8Array, tileIdx: number,
+  pal: Uint16Array,
+  destX: number, destY: number,
+): void {
+  const base = tileIdx * 32;
+  const imageData = ctx.createImageData(8, 8);
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 4; col++) {
+      const byte = tiles[base + row * 4 + col] ?? 0;
+      const px1 = byte & 0xF;
+      const px2 = (byte >> 4) & 0xF;
+      // Pixel left (px1).
+      const o1 = (row * 8 + col * 2) * 4;
+      if (px1 === 0) {
+        imageData.data[o1 + 3] = 0;  // transparent
+      } else {
+        const rgb15 = pal[px1] ?? 0;
+        imageData.data[o1 + 0] = (rgb15 & 0x1F) << 3;
+        imageData.data[o1 + 1] = ((rgb15 >> 5) & 0x1F) << 3;
+        imageData.data[o1 + 2] = ((rgb15 >> 10) & 0x1F) << 3;
+        imageData.data[o1 + 3] = 0xFF;
+      }
+      // Pixel right (px2).
+      const o2 = o1 + 4;
+      if (px2 === 0) {
+        imageData.data[o2 + 3] = 0;
+      } else {
+        const rgb15 = pal[px2] ?? 0;
+        imageData.data[o2 + 0] = (rgb15 & 0x1F) << 3;
+        imageData.data[o2 + 1] = ((rgb15 >> 5) & 0x1F) << 3;
+        imageData.data[o2 + 2] = ((rgb15 >> 10) & 0x1F) << 3;
+        imageData.data[o2 + 3] = 0xFF;
+      }
+    }
+  }
+  ctx.putImageData(imageData, destX, destY);
 }
 
 /** Crée un window container Phaser avec frame + text 1:1 décomp style. */
-function _createWindowContainer(
-  scene: Phaser.Scene,
-  x: number, y: number, w: number, h: number,
-  text: string,
-  centered: boolean,
-): Phaser.GameObjects.Container {
-  const cam = scene.cameras.main;
-  const scaleY = cam.height / GBA_SCREEN_HEIGHT;
-  // Frame (= 1:1 DrawStdFrameWithCustomTileAndPalette : fond blanc + border noir).
-  const frame = scene.add.rectangle(0, 0, w, h, 0xFFFFFF)
-    .setOrigin(0, 0)
-    .setStrokeStyle(2 * scaleY, 0x303030);
-  // Text (= AddTextPrinter FONT_NORMAL black on white).
-  const fontSize = Math.max(8, Math.round(10 * scaleY));
-  const txt = scene.add.text(centered ? w / 2 : 4 * scaleY, h / 2, text, {
-    fontFamily: 'monospace',
-    fontSize: `${fontSize}px`,
-    color: '#000',
-  });
-  if (centered) txt.setOrigin(0.5, 0.5);
-  else txt.setOrigin(0, 0.5);
-  return scene.add.container(x, y, [frame, txt])
-    .setScrollFactor(0);
-}
+// _createWindowContainer retiré : remplacé par _renderWindowToCanvas (= 1:1
+// décomp 9-slice frame tiles user-selected + text rendering).
 
 function _destroyGameObjects(): void {
   const st = _state();
@@ -493,12 +631,20 @@ function _updateCursorBlinkFrame(): void {
 
 function _updateMapsecNameDisplay(): void {
   const st = _state();
-  if (!st.mapsecText) return;
+  const scene = _getScene();
+  if (!scene) return;
   // 1:1 décomp `MoveRegionMapCursor_Full` (region_map.c:715-721) :
   //   mapSecId = GetMapSecIdAt(cursorPosX, cursorPosY);
   //   if (mapSecId != sRegionMap->mapSecId) GetMapName(name, mapSecId, MAX_LEN);
-  // Notre lookup approximatif (= table sMapSecIdAt 30×16 pas portée 1:1).
-  st.mapsecText.setText(_getMapsecNameAtCursor());
+  //   PrintRegionMapSecName();   ← re-render the WIN_MAPSEC_NAME window text.
+  // Re-render le canvas mapsec window avec le nouveau nom.
+  const newName = _getMapsecNameAtCursor();
+  _renderWindowToCanvas(scene, 12, 2, newName, false, 'region_map_mapsec');
+  // Phaser refresh : la canvas texture a été remplacée, le Image GameObject
+  // doit re-render. setTexture force refresh.
+  if (st.mapsecWindow) {
+    (st.mapsecWindow as unknown as Phaser.GameObjects.Image).setTexture('region_map_mapsec');
+  }
 }
 
 function _getMapsecNameAtCursor(): string {
