@@ -935,13 +935,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         gPlayerAvatar.x = nx;
         gPlayerAvatar.y = ny;
       }
-      // 1:1 décomp ledge jump = 2 tiles total. Le 1er moveCoords ci-dessus
-      // applique 1 tile (= sortie du ledge tile). Si flag _pendingLedgeJump,
-      // applique 1 tile de plus pour atterrir sur la tile au-delà du ledge.
+      // 1:1 décomp ledge jump = 2 tiles total. Step est 32 frames → CameraMove
+      // est appelée 2 fois (= 2 tile boundaries) qui appliquent chacune `pos +=
+      // delta`. PHASE B' : si `crossed` (= CameraMove a appliqué), pos est déjà
+      // à old + 2 → ne PAS re-appliquer ici. Sinon (= ne devrait pas arriver
+      // post-PHASE A.2 mais safety), apply le 2nd tile.
       if (_pendingLedgeJump) {
-        const { x: nx2, y: ny2 } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
-        gPlayerAvatar.x = nx2;
-        gPlayerAvatar.y = ny2;
+        if (!crossed) {
+          const { x: nx2, y: ny2 } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
+          gPlayerAvatar.x = nx2;
+          gPlayerAvatar.y = ny2;
+        }
         _pendingLedgeJump = false;
         // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
         // spawn dust cloud à la position d'atterrissage.

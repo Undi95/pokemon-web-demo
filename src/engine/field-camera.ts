@@ -490,21 +490,29 @@ export function clearPendingConnection(): void {
   _pendingConnection = null;
 }
 
-/** PHASE B' chantier OW : signal pour PlayerStep step end. Set par `CameraMove`
- *  cross-border (= juste avant le retour). PlayerStep step end check ce flag
- *  pour skipper `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` (= éviter le 2×
- *  delta apply, vu que CameraMove a déjà appliqué `pos += delta` 1:1 décomp).
+/** PHASE B' chantier OW : signal "CameraMove a appliqué pos += delta sur ce step".
+ *  Set par `CameraMove` SUR TOUTES LES BRANCHES qui font `pos += delta` (= non-cross
+ *  ET cross-border). PlayerStep step end consume le flag et SKIP son propre
+ *  `gPlayerAvatar.x = nx; gPlayerAvatar.y = ny;` quand set — éviter le 2× delta
+ *  apply.
+ *
+ *  Post-PHASE A : `_camPos.x === gPlayerAvatar.x === gSaveBlock1Ptr.pos.x`. Si
+ *  CameraMove fait `pos += 1` et que PlayerStep step end fait `pos = pos + 1`,
+ *  on a `pos = old + 2` = 1-case offset.
  *
  *  Distinct de `_pendingConnection` qui est drainé par la scene dans la même
- *  frame que le cross — ce flag persiste pendant les 16 frames du step
- *  animation jusqu'au step end qui le consume + reset. */
-let _lastStepCrossedBorder = false;
+ *  frame que le cross. Ce flag persiste pendant les 16 frames du step animation
+ *  jusqu'au step end qui le consume + reset. */
+let _lastStepCamMoved = false;
 
-export function consumeLastStepCrossedBorder(): boolean {
-  const r = _lastStepCrossedBorder;
-  _lastStepCrossedBorder = false;
+export function consumeLastStepCamMoved(): boolean {
+  const r = _lastStepCamMoved;
+  _lastStepCamMoved = false;
   return r;
 }
+
+/** Backcompat alias temporaire — à retirer dans une session ultérieure. */
+export const consumeLastStepCrossedBorder = consumeLastStepCamMoved;
 
 /** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678).
  *  Update _camPos par (deltaX, deltaY) en metatiles. Si le camera traverse
@@ -532,16 +540,20 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
 
   // CONNECTION_NONE (0) ou CONNECTION_INVALID (0xFF) : pas de border cross.
   if (direction === 0 || direction === 0xFF) {
+    // 1:1 décomp `pos += delta` (fieldmap.c:658-659).
     _camPos.x += deltaX;
     _camPos.y += deltaY;
+    _lastStepCamMoved = true;  // signal PlayerStep step end : skip son delta apply.
     return false;
   }
 
   // Border crossed : find la connexion correspondante.
   const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y);
   if (!connection) {
+    // Fallback safe : pas de connexion → comportement non-cross.
     _camPos.x += deltaX;
     _camPos.y += deltaY;
+    _lastStepCamMoved = true;
     return false;
   }
 
@@ -589,7 +601,7 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // élimine le "côté gauche se répète" entre cross et step end.
   _camPos.x += deltaX;
   _camPos.y += deltaY;
-  _lastStepCrossedBorder = true;
+  _lastStepCamMoved = true;
 
   // 1:1 décomp `MoveMapViewToBackup(direction)` no-args, lit gSaveBlock1Ptr.pos
   // POST-step (= 1:1 strict).
