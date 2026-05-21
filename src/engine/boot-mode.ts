@@ -16,7 +16,7 @@
  * Phase 4.10 démo : indispensable pour tester rapidement le post-intro state
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
-import { gameState } from './game-state';
+import { gameState, SetSaveLocked } from './game-state';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
@@ -316,13 +316,23 @@ function applyNoIntroPreset(): void {
  *   5. Default → new game truck cinematic.
  */
 export function decideBootMode(): BootSpawn {
+  // 1:1 user-flag "Le mode debug écrase ma save toujours, j'aimerai bien
+  // tester sans péter ma save a chaque fois" : les 3 modes test
+  // (?debug / ?nointro / ?truck) BLOQUENT toute écriture SRAM via
+  // `SetSaveLocked(true)`. Toute appel à `gameState.save()` (= START menu
+  // SAUVER, wallclock confirm, SavePlayerParty special, cheats console)
+  // devient un no-op tant que le latch est ON. La SRAM existante est donc
+  // intacte. Reload sans param test → `SetSaveLocked(false)` re-déverrouille.
+  const isTestMode = hasDebugParam() || hasNoIntroParam() || hasTruckParam();
+  SetSaveLocked(isTestMode);
+
   if (hasDebugParam()) {
     // `?debug` = preset complet testing : tous les items, all flags.
-    // Toujours appliqué (même si save existante = override).
+    // Toujours appliqué (même si save existante = override en RAM only).
     applyNoIntroPreset();
     const isFemale = gameState.gender === 'FEMALE';
     const spawnX = isFemale ? 14 : 5;
-    console.log(`[boot-mode] ?debug → preset complet, spawn (${spawnX}, 9)`);
+    console.log(`[boot-mode] ?debug → preset complet, spawn (${spawnX}, 9) (SRAM bloquée)`);
     return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
   }
 
@@ -331,14 +341,14 @@ export function decideBootMode(): BootSpawn {
     // Pas de preset, pas de touch à la save : juste resume.
     if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
       const m = gameState.map;
-      console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y})`);
+      console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y}) (SRAM bloquée)`);
       return {
         mapId: m.name, x: m.x, y: m.y,
         facing: m.facing ?? DIR_SOUTH, mode: 'resume',
       };
     }
     // Pas de save valide → fallback new game truck (= cinematic).
-    console.log(`[boot-mode] ?nointro mais pas de save valide → fallback newgame`);
+    console.log(`[boot-mode] ?nointro mais pas de save valide → fallback newgame (SRAM bloquée)`);
   }
 
   if (hasTruckParam()) {

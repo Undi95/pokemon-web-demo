@@ -43,6 +43,32 @@ export const DEFAULT_OPTIONS: PokemonOptions = {
 /** Frames per char selon textSpeed (cf. menu.c:77 sTextSpeedFrameDelays). */
 export const TEXT_SPEED_FRAME_DELAYS = [8, 4, 1] as const;
 
+/** Latch global qui bloque toute écriture en SRAM (= localStorage). Set TRUE
+ *  par boot-mode.ts quand un mode test est actif (`?debug` / `?nointro` /
+ *  `?truck`). Toute appel à `gameState.save()` devient un no-op silencieux
+ *  tant que le latch est TRUE : ça permet de tester librement sans risquer
+ *  d'écraser la save du joueur (= user-flag "Le mode debug écrase ma save
+ *  toujours, j'aimerai bien tester sans péter ma save a chaque fois").
+ *
+ *  Couvre les call sites suivants qui appellent `gameState.save()` :
+ *    - `start-menu.ts:963` (SAUVER explicite dans le START menu)
+ *    - `wallclock.ts:748` + `wallclock-flow.ts:279` (wallclock SET confirm)
+ *    - `script-runner.ts:124` + `specials-registry.ts:473` (special
+ *       SavePlayerParty appelé par scripts du Battle Frontier, Mossdeep
+ *       Space Center, etc.)
+ *    - `game-state.ts:315/319` (cheats `window.cheat.*`)
+ *
+ *  Reset à FALSE si user reload sans param test (= nouveau boot normal qui
+ *  doit pouvoir save). */
+let _saveLocked = false;
+export function SetSaveLocked(locked: boolean): void {
+  _saveLocked = locked;
+  console.log(`[gameState] save SRAM ${locked ? 'BLOCKED (test mode)' : 'unblocked'}`);
+}
+export function IsSaveLocked(): boolean {
+  return _saveLocked;
+}
+
 class GameState {
   load(): boolean {
     const status = LoadGameSave();
@@ -50,6 +76,15 @@ class GameState {
   }
 
   save(): void {
+    // 1:1 ROM safety : test modes (`?debug` / `?nointro` / `?truck`) bloquent
+    // l'écriture SRAM via `SetSaveLocked(true)` au boot. Toute tentative de
+    // `gameState.save()` devient un no-op (= la RAM reste modifiée mais la
+    // SRAM/localStorage n'est pas écrasée). Le user peut ainsi tester
+    // librement le preset sans risquer d'écraser sa save de progression.
+    if (_saveLocked) {
+      console.log('[gameState.save] BLOCKED (test mode, SRAM preserved)');
+      return;
+    }
     // 1:1 décomp `HandleSavingData` flow : sync runtime states → save blocks
     // BEFORE writing. Sans ça, block1.pos/objectEvents stay at boot spawn et
     // continueGameWarp est invalide → resume detection fail au reload.
