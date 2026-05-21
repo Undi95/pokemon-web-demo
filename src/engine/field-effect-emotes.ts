@@ -32,6 +32,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { OBJ_PLTT_ID } from './decomp-globals';
+import { gPlayerAvatar } from './player-avatar';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
 
@@ -236,7 +237,21 @@ export function DestroyAllEmoteSprites(rt: DecompRuntime): void {
 
 // ─── Internal helpers ──────────────────────────────────────────────────────
 
+/** Lookup NPC ObjectEvent par localIdRaw, ou retourne un proxy player-shaped
+ *  si localIdRaw == 'LOCALID_PLAYER' (= le décomp `gPlayerAvatar.objectEventId`
+ *  pointe vers un slot dans gObjectEvents, mais notre TS player utilise une
+ *  struct `gPlayerAvatar` séparée). On wrap `gPlayerAvatar` en mini-ObjectEvent
+ *  pour que `tickEmoteSprites` puisse lire spriteId. */
 function _findNpc(localIdRaw: string): ObjectEvent | null {
+  if (localIdRaw === 'LOCALID_PLAYER') {
+    // 1:1 décomp : le player est gObjectEvents[gPlayerAvatar.objectEventId].
+    // Côté TS : on synth un mini-ObjectEvent à partir de gPlayerAvatar.
+    return {
+      active: true,
+      spriteId: gPlayerAvatar.spriteId,
+      localIdRaw: 'LOCALID_PLAYER',
+    } as unknown as ObjectEvent;
+  }
   for (const npc of gObjectEvents) {
     if (npc.active && npc.localIdRaw === localIdRaw) return npc;
   }
