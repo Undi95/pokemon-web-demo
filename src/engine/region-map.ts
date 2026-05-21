@@ -37,7 +37,7 @@ import { gameState } from './game-state';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
-import { getRuntime, getAsset } from './decomp-globals';
+import { getRuntime, getAsset, PlaySE } from './decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
 import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from './bitmap-font';
 import {
@@ -191,6 +191,11 @@ export async function OpenRegionMap(mode: RegionMapMode = 'VIEW'): Promise<void>
 export function CloseRegionMap(confirmed = false): void {
   const st = _state();
   if (!st.isOpen) return;
+  // 1:1 décomp `Special_ViewWallClock` / dialog flow : A/B button press joue
+  // SE_SELECT (= 5) pour audio feedback. Pour la carte VIEW, A et B ferment
+  // tous deux, on joue SE_SELECT pour matcher le ROM. Pour FLY confirmed,
+  // SE_SELECT aussi (= 1:1 décomp `Special_ConfirmedFlyToPoint`).
+  PlaySE(5);  // SE_SELECT
   // 1:1 décomp stub Fly : si mode FLY + confirmed + mapSec valide → fire le
   // callback Fly transition. Pour la démo, juste log et continue.
   if (st.mode === 'FLY' && confirmed) {
@@ -210,6 +215,16 @@ export function CloseRegionMap(confirmed = false): void {
   // décomp lui-même (= CB2 swap restore tout), donc on doit unlock ici notre
   // proxy lock posé par OpenRegionMap.
   UnlockPlayerFieldControls();
+  // CRITICAL : clear gMain.newKeys A/B pour éviter un loop "re-open carte".
+  // Sans ça : user presse A pour close → newKeys=A persiste → next frame
+  // ProcessPlayerFieldInput voit A press devant le wall map tile → re-trigger
+  // EventScript_RegionMap → loop infini. 1:1 décomp : le CB2 swap reset les
+  // input states (= gMain.heldKeys/newKeys repris à zero par le re-init du
+  // CB2 overworld), notre overlay n'a pas ce reset → clear manuel.
+  const rt = getRuntime();
+  if (rt) {
+    rt.gMain.newKeys = 0;
+  }
   // 1:1 décomp `SetMainCallback2(sFieldRegionMapHandler->callback)` (= retour field).
   // Notre version : SignalWaitState pour unblock le script `special FieldShowRegionMap`.
   SignalWaitState();
@@ -443,6 +458,25 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
       .setScrollFactor(0) as unknown as Phaser.GameObjects.Container;
     // Stocke ref pour update au cursor move (= re-render canvas avec nouveau text).
     st.mapsecText = null;  // = pas de text Phaser séparé, le canvas est complet
+
+    // 1:1 décomp `field_region_map.c` state 1-3 fade-in :
+    //   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);  // case 1
+    //   ShowBg(0); ShowBg(2);                                       // case 2
+    //   if (!gPaletteFade.active) state++;                          // case 3
+    // Avec delay=0, 16 steps × 1 frame = 16 frames = ~0.27s fade animé.
+    // Pour notre overlay Phaser (= GameObjects qui ignorent la palette GBA),
+    // on simule via alpha tween 0→1 sur 270ms sur tous les sprites/windows.
+    const overlayObjects = [st.mapImage, st.cursorSprite, st.playerIconSprite,
+      st.titleWindow, st.mapsecWindow].filter(o => o !== null);
+    for (const obj of overlayObjects) {
+      if (obj) (obj as unknown as Phaser.GameObjects.Image).setAlpha(0);
+    }
+    scene.tweens.add({
+      targets: overlayObjects,
+      alpha: 1,
+      duration: 270,   // = 16 frames @ 60fps, 1:1 décomp BeginNormalPaletteFade
+      ease: 'Linear',
+    });
   });
 }
 
