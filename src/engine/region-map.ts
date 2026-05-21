@@ -43,6 +43,9 @@ import {
   getRegionMapEntries,
   GetMapSecIdAt,
   GetMapName,
+  GetMapsecType,
+  CorrectSpecialMapSecId,
+  MAPSECTYPE_NONE,
 } from './region-map-data';
 
 // ─── Constants 1:1 décomp region_map.c:41-46 ───────────────────────────────
@@ -77,6 +80,9 @@ interface RegionMapGlobalState {
   cursorPosX: number;
   cursorPosY: number;
   cursorMovementFrameCounter: number;
+  /** 1:1 décomp sRegionMapCursorAnim1 ANIMCMD_FRAME(0, 20) FRAME(4, 20) JUMP(0).
+   *  Counter 0..39 : 0..19 = frame 0 visible, 20..39 = frame 1 visible. */
+  cursorAnimFrameCounter: number;
   currentMapsecName: string;
   mapImage: Phaser.GameObjects.Image | null;
   cursorSprite: Phaser.GameObjects.Image | null;
@@ -96,6 +102,7 @@ function _state(): RegionMapGlobalState {
       cursorPosX: MAPCURSOR_X_MIN,
       cursorPosY: MAPCURSOR_Y_MIN,
       cursorMovementFrameCounter: 0,
+      cursorAnimFrameCounter: 0,
       currentMapsecName: '',
       mapImage: null,
       cursorSprite: null,
@@ -153,7 +160,8 @@ export function CloseRegionMap(): void {
 }
 
 /** Tick called per-frame depuis MainCB2_Overworld (= overlay actif).
- *  1:1 décomp `MCB2_FieldUpdateRegionMap` state 4 (input + cursor move). */
+ *  1:1 décomp `MCB2_FieldUpdateRegionMap` state 4 (input + cursor move) +
+ *  cursor anim blink 2-frame. */
 export function TickRegionMap(): void {
   const st = _state();
   if (!st.isOpen) return;
@@ -161,6 +169,14 @@ export function TickRegionMap(): void {
   if (!rt) return;
   const heldKeys = rt.gMain.heldKeys;
   const newKeys = rt.gMain.newKeys;
+
+  // 1:1 décomp `sRegionMapCursorAnim1` (region_map.c:218-223) :
+  //   ANIMCMD_FRAME(0, 20) ANIMCMD_FRAME(4, 20) ANIMCMD_JUMP(0)
+  // Cursor blink alternant entre frame 0 (tile 0) et frame 1 (tile 4 = 16×16
+  // tiles décalées) toutes les 20 frames. Pattern total = 40 frames (= 0..19
+  // visible frame 0, 20..39 visible frame 1).
+  st.cursorAnimFrameCounter = (st.cursorAnimFrameCounter + 1) % 40;
+  _updateCursorBlinkFrame();
 
   // 1:1 décomp `MAP_INPUT_A_BUTTON` / `MAP_INPUT_B_BUTTON` (region_map.c:675-682) :
   // A or B button → exit fade-out → close.
@@ -218,8 +234,14 @@ export function TickRegionMap(): void {
  *  Le cursor est ensuite positionné à `gRegionMapEntries[mapSecId].x + MAPCURSOR_X_MIN`
  *  + .y + MAPCURSOR_Y_MIN (= conversion grille → cursor coords). */
 function _getPlayerMapsecLocation(): { x: number; y: number; mapSecId: string } {
-  const mapSecId = gMapHeader?.regionMapSectionId ?? '';
-  if (!mapSecId) return { x: 15, y: 9, mapSecId: 'MAPSEC_NONE' };
+  const rawMapSecId = gMapHeader?.regionMapSectionId ?? '';
+  if (!rawMapSecId) return { x: 15, y: 9, mapSecId: 'MAPSEC_NONE' };
+  // 1:1 décomp `LoadRegionMapGfx` case 5 (region_map.c:579) :
+  //   mapSecId = CorrectSpecialMapSecId_Internal(mapSecId);
+  // Mappe les mapsecs spéciaux (= UNDERWATER, AQUA_HIDEOUT, PETALBURG_WOODS,
+  // MT_PYRE, etc.) vers leur parent affiché sur la worldmap. Important pour les
+  // caves/indoors qui hériteraient sinon d'une coord (0, 0) inutilisable.
+  const mapSecId = CorrectSpecialMapSecId(rawMapSecId);
   // 1:1 décomp `gRegionMapEntries[mapSecId]` lookup.
   try {
     const entries = getRegionMapEntries();
@@ -285,11 +307,14 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
       .setScrollFactor(0);
 
     // 1:1 décomp `CreateRegionMapCursor` (region_map.c:1375) : sprite 16×16
-    // à la position (cursorPosX * 8, cursorPosY * 8) pixel.
+    // à la position (cursorPosX * 8, cursorPosY * 8) pixel. Le PNG source
+    // `cursor_small.png` est 16×32 (= 2 frames stackées). On crop top half
+    // (= frame 0 idle) au spawn, puis tick alterne frame 0/1 via setCrop.
     const cursorPx = st.cursorPosX * 8 * sx;
     const cursorPy = st.cursorPosY * 8 * sy;
     st.cursorSprite = scene.add.image(cursorPx, cursorPy, 'region_map_cursor')
       .setOrigin(0, 0)
+      .setCrop(0, 0, 16, 16)
       .setDisplaySize(16 * sx, 16 * sy)
       .setDepth(REGION_MAP_DEPTH + 2)
       .setScrollFactor(0);
@@ -377,6 +402,19 @@ function _updateCursorPosition(): void {
   st.cursorSprite.y = st.cursorPosY * 8 * sy;
 }
 
+/** 1:1 décomp `sRegionMapCursorAnim1` ANIMCMD_FRAME tick (region_map.c:218).
+ *  Update le sprite frame selon le counter : 0..19 = frame 0, 20..39 = frame 1.
+ *  `cursor_small.png` est 16×32 = 2 frames stackées verticalement
+ *  (top = idle, bottom = blink). setCrop sélectionne la portion visible. */
+function _updateCursorBlinkFrame(): void {
+  const st = _state();
+  if (!st.cursorSprite) return;
+  const frame = st.cursorAnimFrameCounter < 20 ? 0 : 1;
+  // Phaser Image setCrop(x, y, w, h) : crop relatif à la texture source (16×32).
+  // Frame 0 = top half (0..16), frame 1 = bottom half (16..32).
+  st.cursorSprite.setCrop(0, frame * 16, 16, 16);
+}
+
 function _updateMapsecNameDisplay(): void {
   const st = _state();
   if (!st.mapsecText) return;
@@ -391,10 +429,16 @@ function _getMapsecNameAtCursor(): string {
   const st = _state();
   // 1:1 décomp `MoveRegionMapCursor_Full` (region_map.c:715-721) :
   //   mapSecId = GetMapSecIdAt(cursorPosX, cursorPosY);
+  //   sRegionMap->mapSecType = GetMapsecType(mapSecId);
   //   if (mapSecId != sRegionMap->mapSecId) GetMapName(name, mapSecId, MAX_LEN);
-  // Utilise le layout 15×28 1:1 décomp + gRegionMapEntries[].name.
+  // + 1:1 `PrintRegionMapSecName` (field_region_map.c:202-215) :
+  //   if (mapSecType != MAPSECTYPE_NONE) draw name window;
+  //   else fill blank.
+  // Utilise le layout 15×28 1:1 décomp + gRegionMapEntries[].name + flag visit.
   const mapSecId = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
-  if (mapSecId === 'MAPSEC_NONE') return '';  // 1:1 décomp blank pour mapsec invalide
+  if (mapSecId === 'MAPSEC_NONE') return '';
+  const mapSecType = GetMapsecType(mapSecId, (flag: string) => gameState.hasFlag(flag));
+  if (mapSecType === MAPSECTYPE_NONE) return '';  // = 1:1 décomp blank pour types NONE (= Battle Frontier sans flag, Southern Island sans flag)
   return GetMapName(mapSecId) || '';
 }
 
