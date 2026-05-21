@@ -37,7 +37,7 @@ import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
 } from './direction-coords';
-import { gFieldCamera } from './field-camera';
+import { gFieldCamera, consumeLastStepCamMoved } from './field-camera';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -562,9 +562,15 @@ function _tickWalk(
       // Step end : finalize player position. NB : ne PAS reset speedX/Y = 0
       // ici (= CameraUpdate runs après, ferait perdre le dernier décrément).
       // Reset géré à la fin de tickMovementQueues quand queue done.
-      const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-      gPlayerAvatar.x = nx;
-      gPlayerAvatar.y = ny;
+      // PHASE B' chantier OW : si CameraMove a déjà appliqué `pos += delta`
+      // pendant ce step (= flag set), skip le write ici pour éviter le 2×
+      // delta (= cause bug téléport user-flag 2026-05-22 event TV).
+      const crossed = consumeLastStepCamMoved();
+      if (!crossed) {
+        const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx;
+        gPlayerAvatar.y = ny;
+      }
       // Session 124 fix : reset stepFramesLeft + flip walkAnimAlt (= 1:1
       // PlayerStep end-of-step behavior pour next walk action commence avec
       // l'autre walk frame, donnant l'effet de pas alterné).
@@ -731,13 +737,18 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       if (sprite) sprite.y2 = 0;
     }
     if (target.isPlayer) {
-      const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-      gPlayerAvatar.x = nx;
-      gPlayerAvatar.y = ny;
-      if (distance === 2) {
-        const { x: nx2, y: ny2 } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-        gPlayerAvatar.x = nx2;
-        gPlayerAvatar.y = ny2;
+      // PHASE B' chantier OW : si CameraMove a déjà appliqué `pos += delta`,
+      // skip le write ici (= éviter 2× delta).
+      const crossed = consumeLastStepCamMoved();
+      if (!crossed) {
+        const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx;
+        gPlayerAvatar.y = ny;
+        if (distance === 2) {
+          const { x: nx2, y: ny2 } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
+          gPlayerAvatar.x = nx2;
+          gPlayerAvatar.y = ny2;
+        }
       }
       // Cleanup jump state : sprite frame reset à face + shadow destroyed +
       // walkAnimAlt flipped pour next step start avec l'autre walk frame.
