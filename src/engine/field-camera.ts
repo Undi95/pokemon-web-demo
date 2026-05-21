@@ -46,7 +46,7 @@ import {
   GetMapBorderIdAt,
   GetIncomingConnection,
   SaveMapView,
-  ComputeConnectionDestPos,
+  SetPositionFromConnection,
   TransitionToConnection,
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
@@ -529,64 +529,63 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
     return false;
   }
 
-  // 1:1 décomp CameraMove fieldmap.c:649-678 (cross-border path) :
+  // 1:1 décomp `CameraMove` cross-border path (fieldmap.c:649-678) :
   //   SaveMapView();
   //   ClearMirageTowerPulseBlendEffect();
   //   old_x = pos.x; old_y = pos.y;
   //   connection = GetIncomingConnection(direction, pos.x, pos.y);
-  //   SetPositionFromConnection(connection, direction, x, y);
+  //   SetPositionFromConnection(connection, direction, x, y);   ← écrit pos = border
   //   LoadMapFromCameraTransition(connection->mapGroup, connection->mapNum);
   //   gCamera.active = TRUE;
-  //   gCamera.x = old_x - pos.x;
+  //   gCamera.x = old_x - pos.x;  // delta logique pour translater NPCs
   //   gCamera.y = old_y - pos.y;
-  //   pos.x += x; pos.y += y;
+  //   pos.x += x; pos.y += y;     ← post-step (1:1 décomp)
   //   MoveMapViewToBackup(direction);
   //
-  // Notre conv : gPlayerAvatar.x/y = LOGICAL pos. _camPos.x/y = LOGICAL (= 1:1 décomp).
-  SaveMapView(_camPos.x, _camPos.y);
+  // PHASE A.2 : pos = gSaveBlock1Ptr.pos source unique (= alias _camPos.x/y et
+  // gPlayerAvatar.x/y via Proxy + getter dynamique).
+
+  SaveMapView();  // 1:1 décomp no-args, lit gSaveBlock1Ptr.pos directement.
 
   const oldX = _camPos.x;
   const oldY = _camPos.y;
 
-  // SetPositionFromConnection : compute pre-step pos in new map.
-  // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= 1:1 fix).
-  const newPos = ComputeConnectionDestPos(connection, direction, oldX, oldY);
-  const preStepNewX = newPos.camX;
-  const preStepNewY = newPos.camY;
+  // 1:1 décomp `SetPositionFromConnection(connection, direction, x, y)` (fieldmap
+  // .c:624). ÉCRIT gSaveBlock1Ptr.pos = border (= pre-step value). Via Proxy +
+  // getter dynamique, _camPos et gPlayerAvatar.x/y reflètent automatiquement.
+  SetPositionFromConnection(connection, direction, deltaX, deltaY);
 
-  // gPlayerAvatar.x/y set to PRE-step (= équivalent décomp's pos = pre-step).
-  gPlayerAvatar.x = preStepNewX;
-  gPlayerAvatar.y = preStepNewY;
+  const preStepNewX = _camPos.x;  // = border value post SetPositionFromConnection
+  const preStepNewY = _camPos.y;
 
   // LoadMapFromCameraTransition : sync swap gMapHeader + InitMap + secondary
   // tileset + palette. APRÈS ça, gBackupMapLayout = NEW map's data.
   TransitionToConnection(connection);
 
-  // gCamera.active = TRUE + delta = old - new (pre-step) = 1:1 décomp.
+  // 1:1 décomp `gCamera.active = TRUE; gCamera.x = old_x - pos.x;` etc.
   gCamera.active = true;
   gCamera.x = oldX - preStepNewX;
   gCamera.y = oldY - preStepNewY;
 
-  // 1:1 décomp `pos.x += x; pos.y += y;` (fieldmap.c:673-674) → post-step value.
-  // Notre architecture diverge : PlayerStep step end applique le delta lui-même
-  // sur gPlayerAvatar.x/y (= alias gSaveBlock1Ptr.pos POST chantier OW PHASE A).
-  // Si on faisait `_camPos += delta` ici, PlayerStep le re-applique au step end
-  // → 2× delta = bug 1-case offset (= cause root du bug user-flag 2026-05-22
-  //   "cam.x ≠ player.x après quelques pas"). Donc on NE TOUCHE PAS _camPos ici
-  // (= pos reste à preStepNewX = border value à la fin de CameraMove).
+  // 1:1 décomp `pos += delta` (fieldmap.c:673-674) → post-step value SKIPPED.
+  // Notre archi diverge : PlayerStep step end applique le delta lui-même sur
+  // gPlayerAvatar.x/y (= alias gSaveBlock1Ptr.pos PHASE A.2). Si on faisait
+  // `pos += delta` ici, PlayerStep le re-applique → 2× delta = bug 1-case
+  // offset (= cause root user-flag 2026-05-22). Donc on NE TOUCHE PAS pos ici
+  // → pos reste à preStepNewX = border value à la fin de CameraMove cross.
   //
-  // Conséquence visuelle entre cross et step end : pos = border (= -1 ou width)
-  // → BG redrawn avec coords border, sprite déjà visible à border+delta. Le BG
-  // semble "lag" d'1 case pendant le step animation. PlayerStep step end →
-  // pos = border + delta = post-step → tile boundary suivant redraw correct.
+  // Conséquence visuelle entre cross et step end : pos = border (-1 ou width).
+  // BG redrawn avec coords border tandis que le sprite avance à border+delta
+  // → BG lag d'1 case pendant le step animation. PlayerStep step end → pos =
+  // border + delta = post-step → tile boundary suivant redraw correct.
   //
   // VRAI fix 1:1 décomp = refactor PlayerStep pour skipper le delta apply si
-  // _pendingConnection !== null au début du step (= chantier OW phase player-
-  // avatar #5 dans le plan). Déferé pour cette session.
+  // _pendingConnection !== null au début du step (= chantier OW PHASE B' #5).
 
-  // MoveMapViewToBackup utilise post-step pos (= 1:1 décomp lit gSaveBlock1Ptr->pos
-  // après `pos += delta`). Args explicit ici car le pos global est pre-step à
-  // ce point dans notre archi (cf. comment ci-dessus).
+  // 1:1 décomp `MoveMapViewToBackup(direction)` lit gSaveBlock1Ptr.pos POST-step.
+  // Notre archi diverge (cf. ci-dessus) : pos est pre-step ici. Args explicit
+  // au lieu de no-args pour préserver le comportement attendu (= post-step coords).
+  // À nettoyer dans PHASE B' avec le PlayerStep skip-delta.
   MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
 
   // Signal pending pour scene-level handling (BGM, status, NPC orchestrator).

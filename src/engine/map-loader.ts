@@ -1142,6 +1142,51 @@ export function ComputeConnectionDestPos(
   return { camX: newCamX, camY: newCamY };
 }
 
+/** 1:1 décomp `SetPositionFromConnection(connection, direction, x, y)`
+ *  (fieldmap.c:624-647). ÉCRIT directement dans `gSaveBlock1Ptr.pos` la nouvelle
+ *  pre-step position dans la new map. Le caller `CameraMove` fait ensuite
+ *  `pos += x/y` pour atteindre la post-step pos (= 1:1 décomp fieldmap.c:673-674).
+ *
+ *  Notre archi diverge : on N'EXECUTE PAS le `pos += delta` après (= PlayerStep
+ *  finalize le delta dans step end). Donc `pos` reste à pre-step value (= border)
+ *  à la sortie de SetPositionFromConnection.
+ *
+ *  Decomp PRE-condition : `gSaveBlock1Ptr.pos.x/y` = OLD player position (= avant
+ *  cross). La fonction OVERWRITE en partie (= certains champs) selon direction.
+ *  Donc on doit appeler `SetPositionFromConnection` AVANT `TransitionToConnection`
+ *  (= swap gMapHeader), car la pre-condition lit l'offset connection. */
+export function SetPositionFromConnection(
+  connection: MapConnection,
+  direction: number,
+  x: number,
+  y: number,
+): void {
+  const cMap = mapHeaderCache.get(connection.destMap);
+  if (!cMap) return;
+  switch (direction) {
+    case CONNECTION_EAST:
+      // 1:1 décomp `pos.x = -x;` (= -deltaX = -1 si EAST move). Step end +deltaX
+      // → 0 = WEST border col du new map.
+      gSaveBlock1Ptr.pos.x = -x;
+      gSaveBlock1Ptr.pos.y -= connection.offset;
+      break;
+    case CONNECTION_WEST:
+      // 1:1 décomp `pos.x = mapHeader->mapLayout->width;`. Step end -deltaX →
+      // last valid col du new map.
+      gSaveBlock1Ptr.pos.x = cMap.mapLayout.width;
+      gSaveBlock1Ptr.pos.y -= connection.offset;
+      break;
+    case CONNECTION_SOUTH:
+      gSaveBlock1Ptr.pos.x -= connection.offset;
+      gSaveBlock1Ptr.pos.y = -y;
+      break;
+    case CONNECTION_NORTH:
+      gSaveBlock1Ptr.pos.x -= connection.offset;
+      gSaveBlock1Ptr.pos.y = cMap.mapLayout.height;
+      break;
+  }
+}
+
 /** Transition seamless vers une map connectée. Sync : assume tous les assets
  *  de la connexion sont déjà cached (= via prefetch depth 1 dans loadMapByName).
  *
@@ -1251,18 +1296,16 @@ function _mapView(): number[] {
   return GetSaveBlock1().mapView;
 }
 
-/** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443).
+/** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443) — no-args.
  *  Copy MAP_OFFSET_H × MAP_OFFSET_W metatiles depuis sBackupMapData (= camera
  *  area + 2 rows top/bottom buffer + 0 col buffer) vers gSaveBlock1Ptr->mapView.
- *
- *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` (= player logical coords). Nos
- *  conventions post-refactor : pos.x = `_camPos.x` et pos.y = `_camPos.y`
- *  (= 1:1 décomp). On passe explicit car pas de gSaveBlock1Ptr global ; les
- *  callers (field-camera cross-border, load_save PreSaveSyncBlocks) passent la
- *  même valeur logique que `gSaveBlock1Ptr->pos`. */
-export function SaveMapView(posX: number, posY: number): void {
+ *  Lit `gSaveBlock1Ptr.pos.x/y` (= 1:1 décomp `gSaveBlock1Ptr->pos.x/y`) — post
+ *  chantier OW PHASE A, c'est la source unique. */
+export function SaveMapView(): void {
   const mapView = _mapView();
   const width = gBackupMapLayout.width;
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
   let mapViewIdx = 0;
   for (let i = posY; i < posY + MAP_OFFSET_H; i++) {
     for (let j = posX; j < posX + MAP_OFFSET_W; j++) {
