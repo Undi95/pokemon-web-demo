@@ -63,6 +63,7 @@ import {
   DIR_NORTH,
   DIR_SOUTH,
   DIR_EAST,
+  DIR_WEST,
   NOT_MOVING,
   T_NOT_MOVING,
   gPlayerAvatar,
@@ -76,6 +77,8 @@ import {
   destroyAllNpcSprites,
   UpdateObjectEventsForCameraUpdate,
   preloadNpcGraphicsForMap,
+  FreezeObjectEvents,
+  UnfreezeAllNpcs as UnfreezeObjectEvents,
 } from '../engine/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/movement-system';
 import { decideBootMode, preloadBootData } from '../engine/boot-mode';
@@ -99,6 +102,7 @@ import {
   getExitTaskKindFor,
   getMetatileBehaviorAtPlayerPos,
   getPlayerCoordsFromWarp,
+  GetAdjustedInitialDirection,
 } from '../engine/warp-system';
 import type { WarpKind } from '../engine/warp-system';
 import {
@@ -161,6 +165,22 @@ import {
   UpdateTilesetAnimations,
   TransferTilesetAnimsBuffer,
 } from '../engine/tileset-anims';
+
+/** 1:1 décomp `GetWalkNormalMovementAction` (event_object_movement.c:4959,
+ *  via `dirn_to_anim` macro). Map direction → walk_normal movement action
+ *  label. Utilisé par `Task_ExitNonAnimDoor` case 1 pour push 1 case dans
+ *  le facing courant. Notre équivalent : convertir le facing en action
+ *  string compatible avec applyMovement. */
+function _walkActionForDirection(dir: number): string {
+  if (dir === DIR_NORTH) return 'walk_up';
+  if (dir === DIR_SOUTH) return 'walk_down';
+  if (dir === DIR_WEST)  return 'walk_left';
+  if (dir === DIR_EAST)  return 'walk_right';
+  // Defensive default : décomp ligne 4955 set direction=0 (= DIR_NONE) si
+  // hors range, ce qui retourne `gWalkNormalMovementActions[0]` =
+  // MOVEMENT_ACTION_WALK_NORMAL_DOWN (= sud). Match notre default 'walk_down'.
+  return 'walk_down';
+}
 
 // 1:1 décomp `Overworld_PlaySpecialMapMusic` (overworld.c) — track current
 // playing BGM id pour skip restart si new map a la même music. Sans ça, warp
@@ -867,7 +887,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // car player face NORTH au moment du collision dispatch).
         const doorX = gPlayerAvatar.x;
         const doorY = gPlayerAvatar.y - 1;
-        // case 0 : PlaySE(GetDoorSoundEffect) + FieldAnimateDoorOpen.
+        // case 0 : FreezeObjectEvents + PlayerGetDestCoords + PlaySE +
+        // FieldAnimateDoorOpen. Le freeze gèle les NPCs (= skip player) pour
+        // que la door anim + le walk up ne soient pas perturbés.
+        FreezeObjectEvents();
         PlaySE(GetDoorSoundEffect(doorX, doorY));
         await FieldAnimateDoorOpen(doorX, doorY);
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_UP) — force walk player UP.
@@ -995,16 +1018,35 @@ export class TestOverworldScene extends Phaser.Scene {
       // close anim.
       // Si on call FieldSetDoorOpened APRÈS fade in (= dans Phase 5), le user
       // voit door fermée pendant fade in puis pop ouverte, c'est pas 1:1.
-      const exitKind = getExitTaskKindFor(getMetatileBehaviorAtPlayerPos());
+      const postWarpBehavior = getMetatileBehaviorAtPlayerPos();
+      const exitKind = getExitTaskKindFor(postWarpBehavior);
       console.log(`[executeWarp] exit task kind=${exitKind}`);
+      // 1:1 décomp `Task_ExitDoor` case 0 / `Task_ExitNonAnimDoor` case 0 :
+      //   SetPlayerVisibility(FALSE);
+      //   FreezeObjectEvents();   ← geler tous les NPCs (skip player)
+      //   PlayerGetDestCoords + FieldSetDoorOpened (door only)
+      // Important : FreezeObjectEvents AVANT fade in pour que les NPCs ne
+      // bougent pas pendant la transition.
       if (exitKind === 'door' || exitKind === 'non_anim') {
         SetPlayerVisibility(this.rt, false);
+        FreezeObjectEvents();
       }
       if (exitKind === 'door') {
         // 1:1 case 0 : FieldSetDoorOpened (= instant draw open frame, no SE, no anim).
         // À call MAINTENANT avant fade in, pas en Phase 5.
         await FieldSetDoorOpened(gPlayerAvatar.x, gPlayerAvatar.y);
       }
+
+      // 1:1 décomp `InitObjectEventsLocal` → `GetInitialPlayerAvatarState` →
+      // `GetAdjustedInitialDirection` (overworld.c:929) : ajuste le facing du
+      // player selon le metatile_behavior à la dest position. Pour les
+      // MB_NON_ANIMATED_DOOR / MB_ANIMATED_DOOR → DIR_SOUTH, pour MB_DEEP_SOUTH_WARP
+      // → DIR_NORTH, pour MB_*_ARROW_WARP → direction opposée à l'arrow, pour
+      // MB_LADDER → preserve l'ancien facing. Appliqué avant Phase 5 pour que
+      // le push 1 case se fasse dans la bonne direction.
+      const previousFacing = gPlayerAvatar.facing;
+      const adjustedDir = GetAdjustedInitialDirection(postWarpBehavior, previousFacing);
+      gPlayerAvatar.facing = adjustedDir;
 
       // ─── Phase 4 : fade in (= 1:1 décomp `WarpFadeInScreen` field_screen_effect.c:74) ─
       // L'ordre 1:1 décomp :
@@ -1051,66 +1093,55 @@ export class TestOverworldScene extends Phaser.Scene {
         // Note : FieldSetDoorOpened déjà appelé en Pre-Phase 4 (= 1:1 case 0).
         const doorX = gPlayerAvatar.x;
         const doorY = gPlayerAvatar.y;
-        // 1:1 décomp `FieldCB_DefaultWarpExit` line 278 : `LockPlayerFieldControls()`
-        // tient le lock pendant toute la durée du `Task_ExitDoor`. Si le warp
-        // provient d'un opcode `warp` scripté (= e.g. `GoUpstairsToSetClock` qui
-        // fait `lockall ... warp ... waitstate ... releaseall`), le `releaseall`
-        // a unlock les controls juste avant que Phase 5 ne commence. Le décomp
-        // re-lock ici (= équivalent FieldCB_DefaultWarpExit). DoCB1_Overworld
-        // (overworld.c:1445) `if (!ArePlayerFieldControlsLocked()) PlayerStep`
-        // → lock = pas d'input D-pad pendant l'auto-walk.
+        // 1:1 décomp `FieldCB_DefaultWarpExit` (field_screen_effect.c:278) :
+        // `LockPlayerFieldControls()` tient le lock pendant toute la durée
+        // du `Task_ExitDoor`. DoCB1_Overworld (overworld.c:1445) skip
+        // PlayerStep si lock → pas d'input D-pad pendant l'auto-walk.
         LockPlayerFieldControls();
         // case 1 : SetPlayerVisibility(TRUE) + ObjectEventSetHeldMovement(WALK_NORMAL_DOWN).
-        // 1:1 décomp : queue movement action `MOVEMENT_ACTION_WALK_NORMAL_DOWN`
-        // sur le player ObjectEvent. tickMovementQueues tick chaque frame
-        // indépendamment du lock controls (= équivalent UpdateObjectEvent
-        // qui exec held movement action via ObjectEventExecHeldMovementAction,
-        // event_object_movement.c:4934). PlayerStep dans branche lock reste
-        // passif (= pas de forceMovement set, runningState=NOT_MOVING).
+        // 1:1 décomp : queue movement action via `applyMovement` (=
+        // ObjectEventSetHeldMovement). Le `Task_ExitDoor` hardcode
+        // WALK_NORMAL_DOWN (= door always south, behavior MB_ANIMATED_DOOR
+        // retourne DIR_SOUTH via GetAdjustedInitialDirection).
         SetPlayerVisibility(this.rt, true);
-        applyMovement('LOCALID_PLAYER', ['walk_down']);
+        applyMovement('LOCALID_PLAYER', [_walkActionForDirection(adjustedDir)]);
         await this.waitForPlayerMovementDone();
-        // case 2-3 : FieldAnimateDoorClose à la door position originale.
+        // case 2 : FieldAnimateDoorClose à la door position originale +
+        // ObjectEventClearHeldMovementIfFinished (= la queue est déjà clear
+        // par tickMovementQueues quand q.done est set à TRUE).
         await FieldAnimateDoorClose(doorX, doorY);
+        // case 3 : UnfreezeObjectEvents (= reset frozen sur tous les NPCs).
+        // case 4 : UnlockPlayerFieldControls + DestroyTask (= fait en finally).
+        UnfreezeObjectEvents();
       } else if (exitKind === 'non_anim') {
         // 1:1 décomp `Task_ExitNonAnimDoor` (field_screen_effect.c:366-402)
-        // + behavior MB_NON_ANIMATED_DOOR (= "stairwell hole") :
-        // les escaliers de maison Pokemon sont rendus visuellement comme un
-        // TROU/échelle dans le sol. Le player apparait EN HAUT du trou et
-        // est auto-poussé vers le BAS (= south) pour atterrir sur le floor
-        // adjacent. Sans ça, le player reste bloqué dans le trou.
-        //
-        // Couvre :
-        //   - MB_NON_ANIMATED_DOOR (= stairs going up/down)
-        //   - MB_WATER_DOOR (= dive entry)
-        //   - MB_DEEP_SOUTH_WARP
-        //
-        // Bug fix 2026-05-09 : la décomp Task_ExitNonAnimDoor case 1 fait
-        // `ObjectEventSetHeldMovement(GetWalkNormalMovementAction(GetPlayerFacingDirection()))`.
-        // Pour les stairs montants, le facing post-warp serait NORTH →
-        // player walked NORTH off-map. La décomp flip facing à DIR_SOUTH
-        // implicitement via le warp transition (= mecanisme à investiguer
-        // si on porte les stairs montants au 1F). Pour les stairs descendant
-        // (= 1F→2F escalier dans la chambre), force DIR_SOUTH = correct.
-        //
-        // Bug fix 2026-05-21 : 1:1 décomp via applyMovement('LOCALID_PLAYER',
-        // ['walk_down']) (= équiv ObjectEventSetHeldMovement(WALK_NORMAL_DOWN)).
-        // tickMovementQueues tick le movement action INDÉPENDAMMENT du lock
-        // controls (= équiv UpdateObjectEvent dans le décomp qui exec held
-        // movement, event_object_movement.c:4929). LockPlayerFieldControls
-        // équiv `FieldCB_DefaultWarpExit` (field_screen_effect.c:278) : bloque
-        // input D-pad via DoCB1_Overworld (overworld.c:1445) qui skip
-        // PlayerStep si lock. Le `finally` du try restore l'unlock final
-        // (équiv `Task_ExitNonAnimDoor` case 3 `UnlockPlayerFieldControls`).
+        // pour MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP :
+        // case 1 : ObjectEventSetHeldMovement(GetWalkNormalMovementAction(
+        //          GetPlayerFacingDirection())).
+        // Le facing a été ajusté par GetAdjustedInitialDirection avant
+        // Phase 5 :
+        //   - MB_NON_ANIMATED_DOOR / MB_WATER_DOOR → DIR_SOUTH (push down)
+        //   - MB_DEEP_SOUTH_WARP                  → DIR_NORTH (push up)
+        // Donc le walk action est dérivé du facing courant, 1:1 décomp.
         LockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
-        gPlayerAvatar.facing = DIR_SOUTH;
-        applyMovement('LOCALID_PLAYER', ['walk_down']);
+        applyMovement('LOCALID_PLAYER', [_walkActionForDirection(adjustedDir)]);
         await this.waitForPlayerMovementDone();
+        // case 2 : IsPlayerStandingStill → case 3 UnfreezeObjectEvents.
+        UnfreezeObjectEvents();
       }
       // exitKind === 'none' (= MB_LADDER, MB_*_ARROW_WARP, etc.) :
-      // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404) : juste unlock.
-      // PAS de SetPlayerVisibility (= sprite reste visible, spawn déjà à dest pos).
+      // 1:1 décomp `Task_ExitNonDoor` (field_screen_effect.c:404-421) :
+      //   case 0 : FreezeObjectEvents + LockPlayerFieldControls
+      //   case 1 : WaitForWeatherFadeIn → UnfreezeObjectEvents + UnlockPlayerFieldControls
+      // PAS de push 1 case (= ladder / arrow ne pousse pas le player), mais
+      // freeze/unfreeze NPCs quand-même + lock pendant la transition. Le fade
+      // in s'est déjà fait, on freeze/unfreeze ici pour 1:1 strict.
+      else if (exitKind === 'none') {
+        LockPlayerFieldControls();
+        FreezeObjectEvents();
+        UnfreezeObjectEvents();
+      }
 
       this.statusText?.setText(`${destHeader.id} ${destHeader.mapLayout.width}x${destHeader.mapLayout.height}`);
     } catch (e) {

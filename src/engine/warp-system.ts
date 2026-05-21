@@ -31,7 +31,7 @@
 
 import type { WarpEvent, MapHeader } from './map-loader';
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
-import { gPlayerAvatar, DIR_NORTH, DIR_SOUTH } from './player-avatar';
+import { gPlayerAvatar, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from './player-avatar';
 import {
   MB_ANIMATED_DOOR,
   MB_NON_ANIMATED_DOOR,
@@ -183,6 +183,53 @@ export function getExitTaskKindFor(behavior: number): ExitTaskKind {
  *  Helper pour scene executeWarp post-load → dispatch exit task. */
 export function getMetatileBehaviorAtPlayerPos(): number {
   return MapGridGetMetatileBehaviorAt(gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+}
+
+// ─── Post-warp facing direction ─────────────────────────────────────────────
+
+/** 1:1 décomp `GetAdjustedInitialDirection` (overworld.c:929-952). Détermine
+ *  la direction du facing du player après le load de la dest map, selon le
+ *  metatile_behavior à la position post-warp + son ancien facing.
+ *
+ *  Décomp appelé via `GetInitialPlayerAvatarState()` → `InitObjectEventsLocal`
+ *  → `InitPlayerAvatar(x, y, direction, gender)` au spawn dans la dest map.
+ *  Donc le facing est défini AVANT que `FieldCB_DefaultWarpExit` ne lance
+ *  `Task_ExitNonAnimDoor` qui lit `GetPlayerFacingDirection()` pour walker
+ *  dans cette direction (= push 1 case).
+ *
+ *  Cas couverts (= 1:1 décomp branches) :
+ *  - MB_DEEP_SOUTH_WARP     → DIR_NORTH (= player vient du sud)
+ *  - MB_NON_ANIMATED_DOOR   → DIR_SOUTH (= escalier classique, push south)
+ *  - MB_ANIMATED_DOOR       → DIR_SOUTH (= porte normale, push south)
+ *  - MB_SOUTH_ARROW_WARP    → DIR_NORTH
+ *  - MB_NORTH_ARROW_WARP    → DIR_SOUTH
+ *  - MB_WEST_ARROW_WARP     → DIR_EAST
+ *  - MB_EAST_ARROW_WARP     → DIR_WEST
+ *  - MB_LADDER              → preserve previousDirection (= keep facing)
+ *  - default                → DIR_SOUTH
+ *
+ *  Skipped (= MVP, à porter si besoin) :
+ *  - FLAG_SYS_CRUISE_MODE + MAP_TYPE_OCEAN_ROUTE → DIR_EAST
+ *  - underwater/surfing transition flags
+ *  - MetatileBehavior_IsWaterDoor → traitée comme MB_NON_ANIMATED_DOOR
+ *    (= notre classifier IsNonAnimDoor inclut MB_WATER_DOOR, c'est cohérent).
+ */
+export function GetAdjustedInitialDirection(
+  metatileBehavior: number,
+  previousDirection: number,
+): number {
+  // 1:1 décomp branches (= ordre conservé pour priorité identique).
+  if (metatileBehavior === MB_DEEP_SOUTH_WARP) return DIR_NORTH;
+  if (metatileBehavior === MB_NON_ANIMATED_DOOR
+   || metatileBehavior === MB_WATER_DOOR
+   || metatileBehavior === MB_ANIMATED_DOOR) return DIR_SOUTH;
+  if (metatileBehavior === MB_SOUTH_ARROW_WARP) return DIR_NORTH;
+  if (metatileBehavior === MB_NORTH_ARROW_WARP) return DIR_SOUTH;
+  if (metatileBehavior === MB_WEST_ARROW_WARP) return DIR_EAST;
+  if (metatileBehavior === MB_EAST_ARROW_WARP) return DIR_WEST;
+  if (metatileBehavior === MB_LADDER) return previousDirection;
+  // Default 1:1 décomp ligne 951 : DIR_SOUTH.
+  return DIR_SOUTH;
 }
 
 // ─── Player coords resolution ───────────────────────────────────────────────
