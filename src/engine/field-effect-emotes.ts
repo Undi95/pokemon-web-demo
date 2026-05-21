@@ -256,3 +256,18 @@ function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
 // ─── Debug exposure ────────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__getActiveEmotes = () => [..._activeEmotes];
+
+/** Dev helper : spawn un emote sur le player ou un NPC visible.
+ *  Usage console : `testEmote()` (sur player), `testEmote('exclamation', 'LOCALID_PLAYERS_HOUSE_1F_MOM')`. */
+(globalThis as Record<string, unknown>).testEmote = (
+  type: EmoteType = 'exclamation',
+  npcLocalIdRaw: string = 'LOCALID_PLAYER',
+): boolean => {
+  // Lazy import getRuntime to avoid circular dep.
+  const rt = (globalThis as { getRuntime?: () => unknown }).getRuntime?.() as DecompRuntime | null;
+  if (!rt) {
+    console.warn('[testEmote] no runtime');
+    return false;
+  }
+  return SpawnEmoteSprite(rt, npcLocalIdRaw, type);
+};
