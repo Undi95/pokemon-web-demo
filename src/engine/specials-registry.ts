@@ -28,6 +28,7 @@
 
 import { registerSpecial } from './script-opcodes';
 import { gameState } from './game-state';
+import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
@@ -269,14 +270,25 @@ registerSpecial('DoPCTurnOffEffect', () => {
   });
 });
 
-/** 1:1 décomp `TurnOnTVScreen` (field_specials.c) : TV interaction effect.
- *  Change le metatile TV de "OFF" (= MB_TELEVISION) à "ON". Notre métatile dispatch
- *  fonctionne identifié par MB_TELEVISION qui ne change pas, donc no-op suffit
- *  (= visuel only, pas de gameplay impact). */
-registerSpecial('TurnOnTVScreen', () => { /* no-op : pas d'anim metatile pour la démo */ });
+/** 1:1 décomp `TurnOnTVScreen` (tv.c:875-879).
+ *    SetTVMetatilesOnMap(gBackupMapLayout.width, gBackupMapLayout.height,
+ *                        METATILE_Building_TV_On);
+ *    DrawWholeMapView();
+ *  → Set TOUS les MB_TELEVISION metatiles à TV_On + refresh BG → TV cycle
+ *  via TilesetAnim_Building (tile 496..499). */
+registerSpecial('TurnOnTVScreen', () => {
+  void import('./tv-screen').then(({ TurnOnTVScreen }) => {
+    TurnOnTVScreen();
+  });
+});
 
-/** 1:1 décomp `TurnOffTVScreen` (field_specials.c). Stub. */
-registerSpecial('TurnOffTVScreen', () => { /* no-op */ });
+/** 1:1 décomp `TurnOffTVScreen` (tv.c:869-873). Identique à TurnOnTVScreen
+ *  mais avec METATILE_Building_TV_Off (= TV statique noir). */
+registerSpecial('TurnOffTVScreen', () => {
+  void import('./tv-screen').then(({ TurnOffTVScreen }) => {
+    TurnOffTVScreen();
+  });
+});
 
 /** 1:1 décomp `ResetTVShowState` (tv.c:6825-6828).
  *    void ResetTVShowState(void) { sTVShowState = 0; }
@@ -285,24 +297,9 @@ registerSpecial('TurnOffTVScreen', () => { /* no-op */ });
 registerSpecial('ResetTVShowState', () => { /* no-op : pas de TV show generator */ });
 
 /** 1:1 décomp `CheckForPlayersHouseNews` (tv.c:3359-3384).
- *  Retourne :
- *    - PLAYERS_HOUSE_TV_NONE (0) si pas dans la maison du joueur
- *    - PLAYERS_HOUSE_TV_LATI (1) si flag FLAG_SYS_TV_LATIAS_LATIOS set
- *    - PLAYERS_HOUSE_TV_MOVIE (2) si flag FLAG_SYS_TV_HOME set
- *    - Bug décomp : default fallback returns LATI (1) au lieu de NONE
- *  En early-game, on est dans HOUSE_2F (pas HOUSE_1F) → return NONE.
- *  Note : décomp utilise mapGroup/mapNum, nous utilisons gMapHeader.id direct. */
-registerSpecial('CheckForPlayersHouseNews', () => {
-  const mapId = (globalThis as { gMapHeader?: { id?: string } }).gMapHeader?.id ?? '';
-  const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
-  const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
-  const isInPlayersHouse = (gameState.gender === 'MALE' && isMaleHouse)
-                        || (gameState.gender === 'FEMALE' && isFemaleHouse);
-  if (!isInPlayersHouse) return 0;  // PLAYERS_HOUSE_TV_NONE
-  if (gameState.hasFlag('FLAG_SYS_TV_LATIAS_LATIOS')) return 1;  // LATI
-  if (gameState.hasFlag('FLAG_SYS_TV_HOME')) return 2;  // MOVIE
-  return 1;  // Décomp bug : default = LATI au lieu de NONE
-});
+ *  Délégué au module tv-screen.ts qui contient l'implémentation 1:1 partagée
+ *  avec `UpdateTVScreensOnMap` (= map load) + `TurnOnTVScreen/Off`. */
+registerSpecial('CheckForPlayersHouseNews', () => _CheckForPlayersHouseNews());
 
 /** 1:1 décomp `GetMomOrDadStringForTVMessage` (tv.c:3386-3440).
  *  Écrit gStringVar1 = "MAMAN" ou "PAPA" :

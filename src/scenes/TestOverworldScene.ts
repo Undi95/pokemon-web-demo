@@ -123,6 +123,7 @@ import {
   tickEmoteSprites,
   DestroyAllEmoteSprites,
 } from '../engine/field-effect-emotes';
+import { UpdateTVScreensOnMap } from '../engine/tv-screen';
 import {
   preloadTallGrassEffect,
   UpdateTallGrassEffects,
@@ -768,6 +769,21 @@ export class TestOverworldScene extends Phaser.Scene {
     // PUIS OnTransition → rival NPC spawnait avec gfxId=0 (= invalid) →
     // skipped silencieusement → rival jamais visible.
     RunOnTransitionMapScript();
+
+    // 1:1 décomp `LoadMapHeaderInternal` (overworld.c:870-874) — après
+    // `RunOnTransitionMapScript` + `InitMap`, si on est INDOOR :
+    //     UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height);
+    // Set tous les MB_TELEVISION metatiles à TV_On/Off selon
+    // CheckForPlayersHouseNews (= 1:1 tv.c:3359). En early-game maison du
+    // joueur (FLAG_SYS_TV_HOME pas set) → TV_LATI default → TV_On → cycling
+    // actif via TilesetAnim_Building (= TV cycle pour event PetalburgGymReport).
+    // Sur maps non-indoor : early return NONE dans CheckForPlayersHouseNews,
+    // boucle sur metatiles trouvent rien, no-op. Safe à call inconditionnel.
+    // Re-DrawWholeMapView après (= 1:1 décomp DrawWholeMapView call dans flow)
+    // pour rendre les changes BG tilemap visuels immédiatement.
+    UpdateTVScreensOnMap(header.mapLayout.width, header.mapLayout.height);
+    DrawWholeMapView();
+    flushOverworldTilemaps(this.rt);
 
     // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
     await SpawnObjectEventsOnMap(this.rt);
