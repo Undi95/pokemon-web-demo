@@ -414,6 +414,50 @@ export function HideShowWarpArrow(
   setArrowInvisible(rt);
 }
 
+/** 1:1 STRICT décomp signature `HideShowWarpArrow(struct ObjectEvent *objectEvent)`
+ *  (field_player_avatar.c:1428-1448).
+ *
+ *  Lit `objectEvent->currentMetatileBehavior` + `objectEvent->movementDirection`
+ *  + `objectEvent->currentCoords.x/y` directement depuis l'ObjectEvent (= 1:1
+ *  décomp). Used quand le caller a accès au player ObjectEvent (=
+ *  `gObjectEvents[gPlayerAvatar.objectEventId]`).
+ *
+ *  Wrapper `HideShowWarpArrow(rt, playerX, playerY, movementDir)` reste
+ *  disponible pour compat avec call-sites qui passent les coords/dir séparées
+ *  (= notre TestOverworldScene actuel).
+ */
+export function HideShowWarpArrowFromObjectEvent(
+  rt: DecompRuntime,
+  objectEvent: {
+    currentCoordsX: number;
+    currentCoordsY: number;
+    currentMetatileBehavior: number;
+    movementDirection: number;
+    active: boolean;
+    isPlayer: boolean;
+  },
+): void {
+  if (!_arrowState) return;
+  if (!objectEvent.active || !objectEvent.isPlayer) {
+    setArrowInvisible(rt);
+    return;
+  }
+  // 1:1 décomp : metatileBehavior cached depuis objectEvent (= updated par
+  // ObjectEventUpdateMetatileBehaviors au step end). Notre currentCoordsX/Y
+  // sont LOGICAL ; on convertit en INTERNAL pour MoveCoords + showWarpArrowSprite.
+  const metatileBehavior = objectEvent.currentMetatileBehavior;
+  const internalX = objectEvent.currentCoordsX + MAP_OFFSET;
+  const internalY = objectEvent.currentCoordsY + MAP_OFFSET;
+  for (const dir of [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST]) {
+    if (ARROW_CHECKS[dir]!(metatileBehavior) && dir === objectEvent.movementDirection) {
+      const target = MoveCoords(dir, internalX, internalY);
+      showWarpArrowSprite(rt, dir, target.x, target.y);
+      return;
+    }
+  }
+  setArrowInvisible(rt);
+}
+
 /** Tick anim + sync sprite OAM position. Appelé chaque frame depuis MainCB2_
  *  Overworld après HideShowWarpArrow.
  *
