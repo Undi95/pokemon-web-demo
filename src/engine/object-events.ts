@@ -152,8 +152,61 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
 // ─── Object Event struct ────────────────────────────────────────────────────
 
 export interface ObjectEvent {
+  // ─── Bit flags 1:1 décomp `struct ObjectEvent` (global.fieldmap.h:194-255) ──
   active: boolean;
+  /** 1:1 décomp `singleMovementActive:1`. True quand un MovementAction unique
+   *  est en cours (= non-held movement). Reset au step end. */
+  singleMovementActive: boolean;
+  /** 1:1 décomp `triggerGroundEffectsOnMove:1`. Flag pour déclencher ground
+   *  effects (= grass rustle, sand kick, water splash) au prochain move. */
+  triggerGroundEffectsOnMove: boolean;
+  /** 1:1 décomp `triggerGroundEffectsOnStop:1`. Idem mais au stop. */
+  triggerGroundEffectsOnStop: boolean;
+  /** 1:1 décomp `disableCoveringGroundEffects:1`. */
+  disableCoveringGroundEffects: boolean;
+  /** 1:1 décomp `landingJump:1`. Jump landing flag. */
+  landingJump: boolean;
+  /** 1:1 décomp `heldMovementActive:1`. True quand `ObjectEventSetHeldMovement`
+   *  a queued un movement action (= used par scripted walks + door warps). */
+  heldMovementActive: boolean;
+  /** 1:1 décomp `heldMovementFinished:1`. True quand le held movement vient
+   *  de finir (= read par `ObjectEventClearHeldMovementIfFinished`). */
+  heldMovementFinished: boolean;
+  /** 1:1 décomp `facingDirectionLocked:1`. Quand TRUE, le sprite face direction
+   *  est gelée (= used pendant scripted movements pour pas changer le facing). */
+  facingDirectionLocked: boolean;
+  /** 1:1 décomp `disableAnim:1`. Disable sprite animation. */
+  disableAnim: boolean;
+  /** 1:1 décomp `enableAnim:1`. Re-enable anim after disable. */
+  enableAnim: boolean;
+  /** 1:1 décomp `inanimate:1`. NPC inanimate (= mailbox, vase, etc.). */
+  inanimate: boolean;
   invisible: boolean;
+  /** 1:1 décomp `offScreen:1`. */
+  offScreen: boolean;
+  /** 1:1 décomp `trackedByCamera:1`. */
+  trackedByCamera: boolean;
+  /** 1:1 décomp `isPlayer:1`. True pour le player ObjectEvent. */
+  isPlayer: boolean;
+  /** 1:1 décomp `hasReflection:1`. Player/NPC sur eau → reflet visible. */
+  hasReflection: boolean;
+  /** 1:1 décomp `inShortGrass:1`. Player/NPC dans short grass → footprints. */
+  inShortGrass: boolean;
+  /** 1:1 décomp `inShallowFlowingWater:1`. */
+  inShallowFlowingWater: boolean;
+  /** 1:1 décomp `inSandPile:1`. Step sur sand → kick effect. */
+  inSandPile: boolean;
+  /** 1:1 décomp `inHotSprings:1`. Hot springs anim. */
+  inHotSprings: boolean;
+  /** 1:1 décomp `hasShadow:1`. Player jump → shadow visible. */
+  hasShadow: boolean;
+  /** 1:1 décomp `disableJumpLandingGroundEffect:1`. */
+  disableJumpLandingGroundEffect: boolean;
+  /** 1:1 décomp `fixedPriority:1`. */
+  fixedPriority: boolean;
+  /** 1:1 décomp `hideReflection:1`. */
+  hideReflection: boolean;
+  // ─── Fields (= u8 + structs 1:1 décomp) ─────────────────────────────────
   spriteId: number;
   graphicsId: string;
   movementType: string;
@@ -226,23 +279,116 @@ export interface ObjectEvent {
    *  Default 0 = sprite à sa position normale. */
   visualOffsetX: number;
   visualOffsetY: number;
+  /** 1:1 décomp `currentElevation:4` (4-bit). 0 = ground level. >0 = bridge/
+   *  staircase elevation. Used par `IsElevationMismatchAt` pour bloquer player
+   *  passage entre tiles d'elevation différente. */
+  currentElevation: number;
+  /** 1:1 décomp `previousElevation:4`. Elevation du tile précédent. */
+  previousElevation: number;
+  /** 1:1 décomp `mapNum` (= map index dans le group). Separate from mapId string.
+   *  Used pour ObjectEventTemplate matching + spawn detection. */
+  mapNum: number;
+  /** 1:1 décomp `mapGroup` (= map group index, e.g. MAP_GROUP_LITTLEROOT). */
+  mapGroup: number;
+  /** 1:1 décomp `trainerType`. Trainer behavior si NPC est un trainer (=
+   *  TRAINER_TYPE_NORMAL = engage si player line of sight, TRAINER_TYPE_SEE_ALL_
+   *  DIRECTIONS = engage si player dans range omnidirectional). */
+  trainerType: number;
+  /** 1:1 décomp `trainerRange_berryTreeId` (= packed u8). Pour trainers : range
+   *  de la line of sight (= 1..7 tiles). Pour berry trees : berryTreeId. */
+  trainerRange_berryTreeId: number;
+  /** 1:1 décomp `currentMetatileBehavior`. Cached metatile behavior à la
+   *  position courante. Updated à chaque step end via `ObjectEventUpdateCurrent
+   *  MetatileBehavior`. Used par `HideShowWarpArrow` + ground effects + collision. */
+  currentMetatileBehavior: number;
+  /** 1:1 décomp `previousMetatileBehavior`. Cached metatile behavior du tile
+   *  précédent. Used pour detect transition (= e.g. step OFF tall grass). */
+  previousMetatileBehavior: number;
+  /** 1:1 décomp `movementDirection:4`. Direction de la dernière MovementAction
+   *  appliquée (= différent de `facingDirection` qui peut être locked).
+   *  Used par `HideShowWarpArrow` pour determine quelle direction d'arrow show. */
+  movementDirection: number;
+  /** 1:1 décomp `previousMovementDirection`. Direction du dernier MovementAction
+   *  COMPLETED. Used par `PlayerAllowForcedMovementIfMovingSameDirection`. */
+  previousMovementDirection: number;
+  /** 1:1 décomp `fieldEffectSpriteId`. Sprite ID d'un field effect attached
+   *  (= e.g. reflection, shadow). MAX_SPRITES (64) = none. */
+  fieldEffectSpriteId: number;
+  /** 1:1 décomp `warpArrowSpriteId`. Sprite ID de l'arrow warp visual attaché.
+   *  MAX_SPRITES (64) = none. Used par `HideShowWarpArrow` + `ShowWarpArrowSprite`.
+   *  Set par `CreateWarpArrowSprite` au player object event spawn. */
+  warpArrowSpriteId: number;
+  /** 1:1 décomp `movementActionId`. Action ID en cours (= e.g. MOVEMENT_ACTION_
+   *  WALK_NORMAL_DOWN = 0x09). Used par MovementType state machines + held
+   *  movement system. */
+  movementActionId: number;
+  /** 1:1 décomp `playerCopyableMovement`. Pour le player, indique quel
+   *  movement type est "copyable" par les NPCs avec MOVEMENT_TYPE_COPY_*
+   *  (= NPCs qui imitent le player). Cf. `COPY_MOVE_*` enum. */
+  playerCopyableMovement: number;
 }
 
+/** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
+ *  size). Used pour fields sprite-IDs "absent" (= e.g. fieldEffectSpriteId,
+ *  warpArrowSpriteId = MAX_SPRITES = no sprite attached). */
+const MAX_SPRITES = 64;
+
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
+  // Bit flags (= 1:1 décomp struct ObjectEvent l.196-223, all init FALSE).
   active: false,
+  singleMovementActive: false,
+  triggerGroundEffectsOnMove: false,
+  triggerGroundEffectsOnStop: false,
+  disableCoveringGroundEffects: false,
+  landingJump: false,
+  heldMovementActive: false,
+  heldMovementFinished: false,
+  facingDirectionLocked: false,
+  disableAnim: false,
+  enableAnim: false,
+  inanimate: false,
   invisible: false,
+  offScreen: false,
+  trackedByCamera: false,
+  isPlayer: false,
+  hasReflection: false,
+  inShortGrass: false,
+  inShallowFlowingWater: false,
+  inSandPile: false,
+  inHotSprings: false,
+  hasShadow: false,
+  disableJumpLandingGroundEffect: false,
+  fixedPriority: false,
+  hideReflection: false,
+  // Fields u8 + structs.
   spriteId: -1,
   graphicsId: '',
   movementType: '',
   localId: 0,
   localIdRaw: '',
   mapId: '',
+  mapNum: 0,
+  mapGroup: 0,
+  trainerType: 0,
+  trainerRange_berryTreeId: 0,
   scriptLabel: '',
   currentCoordsX: 0,
   currentCoordsY: 0,
   previousCoordsX: 0,
   previousCoordsY: 0,
+  initialCoordsX: 0,
+  initialCoordsY: 0,
   facingDirection: DIR_SOUTH,
+  movementDirection: DIR_SOUTH,
+  previousMovementDirection: DIR_SOUTH,
+  currentElevation: 0,
+  previousElevation: 0,
+  currentMetatileBehavior: 0,  // MB_NORMAL
+  previousMetatileBehavior: 0,
+  movementActionId: 0xFF,  // 1:1 décomp MOVEMENT_ACTION_NONE sentinel
+  fieldEffectSpriteId: MAX_SPRITES,
+  warpArrowSpriteId: MAX_SPRITES,
+  playerCopyableMovement: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -254,8 +400,6 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkAnimAlt: 0,
   frozen: false,
   is32x32: false,
-  initialCoordsX: 0,
-  initialCoordsY: 0,
   movementRangeX: 0,
   movementRangeY: 0,
   directionSeqIdx: 0,
