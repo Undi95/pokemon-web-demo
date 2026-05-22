@@ -30,7 +30,8 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadTileBin } from './gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
-import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
+import { gTotalCamera, gFieldCamera, gSpriteCoordOffset } from './field-camera';
+import { gSaveBlock1Ptr } from './gba-menu-system';
 import { ENUM_MB_0 as MB } from './decomp-data/auto/include/constants/metatile_behaviors-data';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
@@ -126,32 +127,30 @@ function pngTo1dObjLayoutArrow(charData: Uint8Array): Uint8Array {
 
 // ─── State machine ─────────────────────────────────────────────────────────
 
-/** Per-instance state d'un warp arrow. Décomp = champs `data[0..1] = sPrevX/Y`
- *  + sprite invisible flag. */
+/** Per-instance state d'un warp arrow. 1:1 décomp `struct Sprite` champs
+ *  utilisés pour l'arrow + ses `data[0..1] = sPrevX/Y` + `invisible` flag. */
 interface WarpArrowState {
   spriteId: number;
   oamIndex: number;
+  /** 1:1 décomp `sprite->data[0] = sPrevX`. Map INTERNAL X au dernier show. */
   prevX: number;
+  /** 1:1 décomp `sprite->data[1] = sPrevY`. Map INTERNAL Y au dernier show. */
   prevY: number;
   direction: number;
-  /** Anim frame counter : 0..31 = "off" frame, 32..63 = "on" frame. Wraps. */
+  /** Anim frame counter : 0..31 = "off" frame, 32..63 = "on" frame. Wraps.
+   *  1:1 décomp `sprite->animDelayCounter` + `animCmdIndex` (= union AnimCmd). */
   animTicks: number;
-  /** Tracks last invisible state pour détecter changement (= 1:1 décomp Show check). */
+  /** 1:1 décomp `sprite->invisible`. Tracks last invisible state. */
   invisible: boolean;
-  /** Pixel-space world position relative à cam AT SHOW TIME.
-   *  Formula : (internalCol - cam.x_at_show) * 16 + 8.
-   *  Per-frame sprite.x = worldX + (gTotalCamera.pixelOffsetX - offsetAtShow).
-   *  → idle : sprite.x = worldX (= correct at show position).
-   *  → walking : sprite.x changes par delta offset (= smooth scroll).
+  /** 1:1 décomp `sprite->x/y` (= sprite-space reference position, fixée AT SHOW
+   *  via `SetSpritePosToMapCoords` + 8).
    *
-   *  Différent du pattern NPCs (= spawn au map load, offsetAtShow == 0). Arrow
-   *  spawn DYNAMIQUEMENT (= heldDirection match), donc offset accumulé au show. */
-  worldX: number;
-  worldY: number;
-  /** gTotalCamera.pixelOffsetX au moment du show. Sert à computer le delta
-   *  scroll depuis show (= sprite.x = worldX + (offX_now - offX_at_show)). */
-  offsetXAtShow: number;
-  offsetYAtShow: number;
+   *  Per-frame OAM rendering ajoute `gSpriteCoordOffset.x/y` (= 1:1 décomp
+   *  `coordOffsetEnabled = TRUE` + engine `BuildOamBuffer` qui add `gSpriteCoord
+   *  OffsetX/Y` à l'OAM x/y). Notre engine n'a pas de support natif coordOffset
+   *  Enabled → on apply le offset manuellement dans `UpdateWarpArrowSprite`. */
+  spriteX: number;
+  spriteY: number;
 }
 
 // Module-level state (= 1 arrow per player typically, simplified).
@@ -214,10 +213,8 @@ export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> 
     direction: DIR_SOUTH,
     animTicks: 0,
     invisible: true,
-    worldX: 0,
-    worldY: 0,
-    offsetXAtShow: 0,
-    offsetYAtShow: 0,
+    spriteX: 0,
+    spriteY: 0,
   };
 
   return result.spriteId;
@@ -234,36 +231,82 @@ export function DestroyWarpArrowSprite(rt: DecompRuntime): void {
   _arrowState = null;
 }
 
+/** 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
+ *  Convertit des MAP INTERNAL coords (= +MAP_OFFSET) en sprite-space pixel
+ *  position (= `sprite->x/y` reference, qui sera ensuite combinée avec
+ *  `gSpriteCoordOffset.x/y` per-frame via `coordOffsetEnabled`).
+ *
+ *  Décomp body :
+ *  ```c
+ *  void SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY) {
+ *      s16 dx = -gTotalCameraPixelOffsetX - gFieldCamera.x;
+ *      s16 dy = -gTotalCameraPixelOffsetY - gFieldCamera.y;
+ *      if (gFieldCamera.x > 0) dx += 16;
+ *      if (gFieldCamera.x < 0) dx -= 16;
+ *      if (gFieldCamera.y > 0) dy += 16;
+ *      if (gFieldCamera.y < 0) dy -= 16;
+ *      *destX = ((mapX - gSaveBlock1Ptr->pos.x) << 4) + dx;
+ *      *destY = ((mapY - gSaveBlock1Ptr->pos.y) << 4) + dy;
+ *  }
+ *  ```
+ */
+function setSpritePosToMapCoords(mapX: number, mapY: number): { x: number; y: number } {
+  const pos = gSaveBlock1Ptr.pos;
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  return {
+    x: ((mapX - pos.x) << 4) + dx,
+    y: ((mapY - pos.y) << 4) + dy,
+  };
+}
+
 /** 1:1 décomp `ShowWarpArrowSprite` (field_effect_helpers.c:193).
- *  Show l'arrow at (x, y) facing direction (= map coords WITHOUT MAP_OFFSET).
- *  Triggers anim restart si direction ou position change. */
+ *
+ *  Body décomp :
+ *  ```c
+ *  void ShowWarpArrowSprite(u8 spriteId, u8 direction, s16 x, s16 y) {
+ *      struct Sprite *sprite = &gSprites[spriteId];
+ *      if (sprite->invisible || sprite->sPrevX != x || sprite->sPrevY != y) {
+ *          s16 x2, y2;
+ *          SetSpritePosToMapCoords(x, y, &x2, &y2);
+ *          sprite->x = x2 + 8;
+ *          sprite->y = y2 + 8;
+ *          sprite->invisible = FALSE;
+ *          sprite->sPrevX = x;
+ *          sprite->sPrevY = y;
+ *          StartSpriteAnim(sprite, direction - 1);
+ *      }
+ *  }
+ *  ```
+ *
+ *  @param mapX  INTERNAL X (= logical + MAP_OFFSET, 1:1 décomp). C'est l'API
+ *               décomp = `objectEvent->currentCoords.x` qui est interne.
+ *  @param mapY  INTERNAL Y.
+ */
 function showWarpArrowSprite(rt: DecompRuntime, direction: number, mapX: number, mapY: number): void {
   if (!_arrowState) return;
   const state = _arrowState;
-  // 1:1 décomp : if invisible || prevX != x || prevY != y → re-show + StartSpriteAnim.
+  // 1:1 décomp : if invisible || prevX != x || prevY != y → re-position + show + StartSpriteAnim.
   if (state.invisible || state.prevX !== mapX || state.prevY !== mapY) {
+    const tilePos = setSpritePosToMapCoords(mapX, mapY);
+    // 1:1 décomp `sprite->x = x2 + 8; sprite->y = y2 + 8`. Le +8 cale le
+    // sprite sur le CENTER de la tile (= 1:1 décomp interprétation : sprite.x
+    // est le centre, l'engine compute oam.x = sprite.x + x2 + centerToCornerVec).
+    // Pour 16x16 sprite + gObjectEventBaseOam_16x16, CalcCenterToCornerVec
+    // (= décomp src/sprite.c) retourne centerToCornerVec = (-8, -8).
+    // Donc : oam.x = (sprite_center.x) + 0 + (-8) = top-left de la tile. ✓
+    state.spriteX = tilePos.x + 8;
+    state.spriteY = tilePos.y + 8;
     state.prevX = mapX;
     state.prevY = mapY;
     state.direction = direction;
-    state.animTicks = 0;  // restart anim
+    state.animTicks = 0;  // restart anim (= 1:1 décomp StartSpriteAnim)
     state.invisible = false;
-    // Save world position + offset AT SHOW TIME. Per-frame sprite.x =
-    // worldX + (offX_now - offX_at_show). Au show idle, delta = 0 → sprite at
-    // worldX (= correct position). Au scroll, delta change → smooth.
-    const cam = GetCameraTopLeftCoords();
-    const internalCol = mapX + MAP_OFFSET;
-    const internalRow = mapY + MAP_OFFSET;
-    state.worldX = (internalCol - cam.x) * 16 + 8;
-    // Subtract sVerticalCameraPan via GetBgVofsBaseline()-8 (= sVerticalCameraPan)
-    // pour compenser BG_VOFS additionnel post-refactor cam convention 1:1 décomp.
-    state.worldY = (internalRow - cam.y) * 16 - (GetBgVofsBaseline() - 8);
-    state.offsetXAtShow = gTotalCamera.pixelOffsetX;
-    state.offsetYAtShow = gTotalCamera.pixelOffsetY;
     rt.setSpriteInvisible(state.spriteId, false);
-  } else if (state.direction !== direction) {
-    // Direction changed but same tile : just update direction + reset anim.
-    state.direction = direction;
-    state.animTicks = 0;
   }
 }
 
@@ -308,46 +351,86 @@ const ARROW_CHECKS: Record<number, (b: number) => boolean> = {
 };
 
 /** 1:1 décomp `HideShowWarpArrow` (field_player_avatar.c:1428).
- *  Per-frame. Si player on ARROW_WARP tile + walking direction matches → show
- *  arrow at adjacent tile pointing direction. Sinon hide.
  *
- *  @param rt           DecompRuntime
- *  @param playerX      Map coord X (= without MAP_OFFSET)
- *  @param playerY      Map coord Y
- *  @param movementDir  Current player movement direction (DIR_*)
+ *  Body décomp :
+ *  ```c
+ *  static void HideShowWarpArrow(struct ObjectEvent *objectEvent) {
+ *      s16 x, y;
+ *      u8 direction;
+ *      u8 metatileBehavior = objectEvent->currentMetatileBehavior;
+ *      for (x = 0, direction = DIR_SOUTH; x < 4; x++, direction++) {
+ *          if (sArrowWarpMetatileBehaviorChecks2[x](metatileBehavior)
+ *              && direction == objectEvent->movementDirection) {
+ *              x = objectEvent->currentCoords.x;
+ *              y = objectEvent->currentCoords.y;
+ *              MoveCoords(direction, &x, &y);
+ *              ShowWarpArrowSprite(objectEvent->warpArrowSpriteId, direction, x, y);
+ *              return;
+ *          }
+ *      }
+ *      SetSpriteInvisible(objectEvent->warpArrowSpriteId);
+ *  }
+ *  ```
+ *
+ *  Notre wrapper TS prend des LOGICAL coords (= sans MAP_OFFSET) en input
+ *  parce que `gPlayerAvatar.x/y` sont logical. On convertit en INTERNAL pour
+ *  matcher l'API décomp (= `objectEvent->currentCoords` est interne).
+ *
+ *  @param playerX     LOGICAL X du player (= gPlayerAvatar.x).
+ *  @param playerY     LOGICAL Y du player.
+ *  @param movementDir Direction du dernier mouvement (= 1:1 décomp
+ *                     `objectEvent->movementDirection`). C'est la direction
+ *                     dans laquelle le player a fait son dernier step ou
+ *                     turn. Maintenu par PlayerStep keypad logic + scripted
+ *                     movement actions.
  */
 export function HideShowWarpArrow(
   rt: DecompRuntime, playerX: number, playerY: number, movementDir: number,
 ): void {
   if (!_arrowState) return;
 
-  // 1:1 décomp : metatileBehavior at player current tile.
-  const metatileBehavior = MapGridGetMetatileBehaviorAt(playerX + MAP_OFFSET, playerY + MAP_OFFSET);
+  // 1:1 décomp `objectEvent->currentMetatileBehavior` (= cached behavior).
+  // Notre impl : query frais via MapGridGetMetatileBehaviorAt à chaque appel.
+  // C'est équivalent car le cached behavior dans l'ObjectEvent est aussi
+  // refresh chaque step end via ObjectEventUpdateCurrentMetatileBehavior.
+  const internalX = playerX + MAP_OFFSET;
+  const internalY = playerY + MAP_OFFSET;
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
 
-  // Loop over 4 directions (SOUTH=1, NORTH=2, WEST=3, EAST=4) :
-  //   if (sArrowWarpMetatileBehaviorChecks2[i](behavior) && direction == movementDirection)
-  //     show arrow at adjacent (movement direction) tile.
+  // 1:1 décomp loop : `for (x = 0, direction = DIR_SOUTH; x < 4; x++, direction++)`.
+  // Test chaque direction (SOUTH=1, NORTH=2, WEST=3, EAST=4) : si la tile
+  // courante a le ARROW_WARP behavior matchant cette direction ET le player
+  // movementDirection == cette direction → show arrow at adjacent tile.
   for (const dir of [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST]) {
     if (ARROW_CHECKS[dir]!(metatileBehavior) && dir === movementDir) {
-      const target = MoveCoords(dir, playerX, playerY);
+      // 1:1 décomp : `x = objectEvent->currentCoords.x; y = ...; MoveCoords(direction, &x, &y);`
+      // Use INTERNAL coords (= 1:1 décomp `currentCoords` est interne).
+      const target = MoveCoords(dir, internalX, internalY);
       showWarpArrowSprite(rt, dir, target.x, target.y);
       return;
     }
   }
-  // No match : hide arrow.
+  // 1:1 décomp `SetSpriteInvisible(objectEvent->warpArrowSpriteId)`.
   setArrowInvisible(rt);
 }
 
-/** Tick anim + sync sprite OAM position (= camera offset + map coord).
- *  Appelé chaque frame depuis MainCB2 après HideShowWarpArrow. */
+/** Tick anim + sync sprite OAM position. Appelé chaque frame depuis MainCB2_
+ *  Overworld après HideShowWarpArrow.
+ *
+ *  L'engine décomp gère `coordOffsetEnabled = TRUE` en ajoutant
+ *  `gSpriteCoordOffset.x/y` à l'OAM x/y chaque frame dans `BuildOamBuffer`.
+ *  Notre engine TS n'a pas ce mécanisme natif → on apply ici manuellement.
+ *
+ *  Tick anim 1:1 décomp `sAnimTable_Arrow` (data/field_effects/field_effect_
+ *  objects.h:260) : 2 frames (off/on) à 32 ticks chacun, loop infini. */
 export function UpdateWarpArrowSprite(rt: DecompRuntime): void {
   if (!_arrowState) return;
   const state = _arrowState;
   const sprite = rt.gSprites.get(state.spriteId);
   if (!sprite) return;
 
-  // Tick anim : 32 frames per state, 64 total cycle.
   if (!state.invisible) {
+    // 1:1 décomp anim tick : sArrowAnim_X = ANIMCMD_FRAME(N, 32), ANIMCMD_FRAME(M, 32), JUMP(0).
     state.animTicks = (state.animTicks + 1) % (ANIM_FRAME_DURATION * 2);
     const isOnFrame = state.animTicks >= ANIM_FRAME_DURATION;
     const frameIdx = isOnFrame
@@ -356,14 +439,23 @@ export function UpdateWarpArrowSprite(rt: DecompRuntime): void {
     const oam = rt.gba.oam[sprite.oamIndex];
     oam.tileId = ARROW_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
 
-    // Position : worldX + (offX_now - offsetXAtShow).
-    // - Idle après show : delta = 0 → sprite.x = worldX (= correct screen pos).
-    // - Scroll : delta change → sprite.x suit le scroll camera (= smooth).
+    // 1:1 décomp `coordOffsetEnabled = TRUE` (= field_effect_helpers.c:182).
+    // L'engine décomp `BuildOamBuffer` (sprite.c:UpdateOamCoords) fait :
+    //   oam.x = sprite->x + sprite->x2 + centerToCornerVecX + gSpriteCoordOffsetX
+    //   oam.y = sprite->y + sprite->y2 + centerToCornerVecY + gSpriteCoordOffsetY
     //
-    // Bug évité : sans `- offsetXAtShow`, l'offX accumulé depuis MAP LOAD
-    // (= avant le show) est compté en double → arrow décalé de la valeur
-    // d'offset au show (= 16 px par tile walked depuis map load).
-    sprite.x = state.worldX + (gTotalCamera.pixelOffsetX - state.offsetXAtShow);
-    sprite.y = state.worldY + (gTotalCamera.pixelOffsetY - state.offsetYAtShow);
+    // Notre `syncSpritesToOam` (= decomp-runtime.ts:2175-2176) NE FAIT PAS le
+    // `+ gSpriteCoordOffset` automatiquement (= pas de support natif
+    // `coordOffsetEnabled` dans notre engine).
+    //
+    // Workaround 1:1 strict : on add `gSpriteCoordOffset` à `sprite.x` ici
+    // chaque frame. Notre `syncSpritesToOam` add ensuite `centerToCornerVec`
+    // (= -8 pour 16x16) automatiquement → résultat OAM x identique au décomp.
+    //
+    // À long terme : porter `coordOffsetEnabled` dans `syncSpritesToOam` =
+    // dette engine documentée (= virtual-objects.ts, object-events.ts utilisent
+    // déjà des patterns similaires).
+    sprite.x = state.spriteX + gSpriteCoordOffset.x;
+    sprite.y = state.spriteY + gSpriteCoordOffset.y;
   }
 }
