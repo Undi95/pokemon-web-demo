@@ -71,6 +71,7 @@ import {
   ArePlayerFieldControlsLocked,
   ScriptContext_SetupScript,
   TryRunCoordEventScript,
+  LockPlayerFieldControls,
 } from './script-runtime';
 import { gSelectedObjectEvent, gSpecialVar, FlagGet } from './script-vars';
 import { B_BUTTON } from './gba-menu-system';
@@ -112,7 +113,7 @@ import {
   IsMetatileDirectionallyImpassable,
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
-import { gSaveBlock1Ptr } from './gba-menu-system';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './gba-menu-system';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -756,30 +757,107 @@ const sAcroBikeTrickCollisionTypes: number[] = [
 
 // ─── Side-effects R4 dette explicite (= hors démo Brendan house) ───────────
 
-/** 1:1 décomp `CreateStopSurfingTask(direction)` (field_player_avatar.c:2024).
- *  Crée task `Task_StopSurfingInit` qui handle surf-exit anim + sprite swap.
- *  R4 dette : à porter quand Surf wired à la démo. Pour 1:1 strict, signature
- *  conservée + warn explicite. */
+/** 1:1 décomp `CreateStopSurfingTask(u8 direction)` (field_player_avatar.c:1630-1644).
+ *
+ *  ```c
+ *  LockPlayerFieldControls();
+ *  Overworld_ClearSavedMusic();
+ *  Overworld_ChangeMusicToDefault();
+ *  gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
+ *  gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
+ *  gPlayerAvatar.preventStep = TRUE;
+ *  taskId = CreateTask(Task_StopSurfingInit, 0xFF);
+ *  gTasks[taskId].data[0] = direction;
+ *  Task_StopSurfingInit(taskId);
+ *  ```
+ *
+ *  Port partiel 1:1 strict :
+ *  - flags / preventStep / lock : portés.
+ *  - Overworld music change : R4 dette (= Surf BGM hors démo).
+ *  - Task_StopSurfingInit (= jump anim surf→land + sprite swap + UnlockPlayerFieldControls)
+ *    : R4 dette (= gTasks Phaser + ObjectEventSetGraphicsId visuel hors démo).
+ *
+ *  Note : utilisé uniquement par `CanStopSurfing` qui early-returns false si
+ *  PLAYER_AVATAR_FLAG_SURFING non set (= jamais en démo). */
 function CreateStopSurfingTask(direction: number): void {
-  console.warn('[player-avatar] R4 TODO: CreateStopSurfingTask(' + direction + ')'
-    + ' — Surf subsystem non porté (hors démo).');
+  LockPlayerFieldControls();
+  // R4 dette : Overworld_ClearSavedMusic + Overworld_ChangeMusicToDefault non
+  // portés (= Surf BGM hors démo, MUSIQUE = ne pas toucher sans demande user).
+  gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
+  gPlayerAvatar.flags |= 1 << 0;  // PLAYER_AVATAR_FLAG_ON_FOOT = (1 << 0)
+  gPlayerAvatar.preventStep = true;
+  // R4 dette : Task_StopSurfingInit (= jump anim Surf→land + sprite swap Brendan
+  // Normal + DestroySprite blob + UnlockPlayerFieldControls) non porté.
+  // À porter avec Surf subsystem (= besoin gTasks Phaser + ObjectEventSetGraphicsId).
+  console.warn('[player-avatar] R4 partiel: CreateStopSurfingTask(' + direction
+    + ') — flags/lock OK, Task_StopSurfingInit (anim + sprite swap) non porté.');
 }
 
-/** 1:1 décomp `StartStrengthAnim(objectEventId, direction)`
- *  (field_player_avatar.c:1796). Démarre task `Task_PushBoulder` qui anime
- *  le boulder en push + son SE_STRENGTH. R4 dette : à porter avec HM Strength
- *  + boulder push. Signature conservée + warn explicite. */
+/** 1:1 décomp `StartStrengthAnim(u8 objectEventId, u8 direction)`
+ *  (field_player_avatar.c:1796-1804).
+ *
+ *  ```c
+ *  u8 taskId = CreateTask(Task_PushBoulder, 0xFF);
+ *  gTasks[taskId].data[1] = objectEventId;
+ *  gTasks[taskId].data[2] = direction;
+ *  Task_PushBoulder(taskId);
+ *  ```
+ *
+ *  Task_PushBoulder lock controls + setup ObjectEventSetHeldMovement (=
+ *  walk_slow direction) sur le boulder + play SE_PUSH_BOULDER.
+ *
+ *  R4 dette : Task_PushBoulder + SE_PUSH_BOULDER + boulder movement non
+ *  portés (= HM Strength subsystem hors démo). Utilisé uniquement par
+ *  `TryPushBoulder` qui early-returns false si FLAG_SYS_USE_STRENGTH non set
+ *  (= jamais en démo). */
 function StartStrengthAnim(objectEventId: number, direction: number): void {
+  // R4 dette : Task_PushBoulder non porté. Signature 1:1 conservée pour wire
+  // future. À porter avec HM Strength subsystem.
   console.warn('[player-avatar] R4 TODO: StartStrengthAnim(' + objectEventId + ', '
-    + direction + ') — Strength subsystem non porté (hors démo).');
+    + direction + ') — Task_PushBoulder non porté (hors démo).');
 }
 
-/** 1:1 décomp `IncrementGameStat(index)` (overworld.c:1820-1837). Incrémente
- *  un compteur `gSaveBlock1Ptr.gameStats[index]` avec cap 0xFFFFFF. R4 stub :
- *  pour la démo, les stats ledge/etc. ne sont pas tracked. À wire-up avec
- *  gameStats persistence si besoin Trainer Card achievements. */
+/** 1:1 décomp `IncrementGameStat(u8 index)` (overworld.c:433-445).
+ *
+ *  ```c
+ *  if (index < NUM_USED_GAME_STATS) {
+ *      u32 statVal = GetGameStat(index);
+ *      if (statVal < 0xFFFFFF) statVal++;
+ *      else statVal = 0xFFFFFF;
+ *      SetGameStat(index, statVal);
+ *  }
+ *  ```
+ *
+ *  NUM_USED_GAME_STATS = 52 (= game_stat.h:57). gSaveBlock1Ptr.gameStats[]
+ *  est XOR'd avec gSaveBlock2Ptr.encryptionKey (= save protection).
+ *  Cap 0xFFFFFF (16M) car compteur 24-bit dans le save format. */
 function IncrementGameStat(index: number): void {
-  void index;  // R4 dette : porter gSaveBlock1Ptr.gameStats[].
+  const NUM_USED_GAME_STATS_LOCAL = 52;
+  if (index < NUM_USED_GAME_STATS_LOCAL) {
+    let statVal = GetGameStat(index);
+    if (statVal < 0xFFFFFF) statVal++;
+    else statVal = 0xFFFFFF;
+    SetGameStat(index, statVal);
+  }
+}
+
+/** 1:1 décomp `GetGameStat(u8 index)` (overworld.c:447-453). */
+function GetGameStat(index: number): number {
+  const NUM_USED_GAME_STATS_LOCAL = 52;
+  if (index >= NUM_USED_GAME_STATS_LOCAL) return 0;
+  const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
+  const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
+  return (stats[index] | 0) ^ key;
+}
+
+/** 1:1 décomp `SetGameStat(u8 index, u32 value)` (overworld.c:455-459). */
+function SetGameStat(index: number, value: number): void {
+  const NUM_USED_GAME_STATS_LOCAL = 52;
+  if (index < NUM_USED_GAME_STATS_LOCAL) {
+    const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
+    const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
+    stats[index] = (value | 0) ^ key;
+  }
 }
 
 // ─── 1:1 décomp `CheckForObjectEventCollision` subsystems ──────────────────
