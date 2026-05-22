@@ -41,14 +41,6 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import {
-  MB_TELEVISION, MB_PC, MB_REGION_MAP, MB_CLOSED_SOOTOPOLIS_DOOR,
-  MB_SKY_PILLAR_CLOSED_DOOR, MB_CABLE_BOX_RESULTS_1, MB_CABLE_BOX_RESULTS_2,
-  MB_POKEBLOCK_FEEDER, MB_TRICK_HOUSE_PUZZLE_DOOR, MB_RUNNING_SHOES_INSTRUCTION,
-  MB_PICTURE_BOOK_SHELF, MB_BOOKSHELF, MB_POKEMON_CENTER_BOOKSHELF,
-  MB_VASE, MB_TRASH_CAN, MB_SHOP_SHELF, MB_BLUEPRINT,
-  MB_WIRELESS_BOX_RESULTS, MB_QUESTIONNAIRE, MB_TRAINER_HILL_TIMER,
-} from './decomp-bridge';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
@@ -70,11 +62,10 @@ import {
 } from './field-camera';
 import {
   ArePlayerFieldControlsLocked,
-  ScriptContext_SetupScript,
   TryRunCoordEventScript,
   LockPlayerFieldControls,
 } from './script-runtime';
-import { gSelectedObjectEvent, gSpecialVar, FlagGet } from './script-vars';
+import { FlagGet } from './script-vars';
 import { B_BUTTON } from './gba-menu-system';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
@@ -115,6 +106,15 @@ import {
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './gba-menu-system';
+// 1:1 décomp `field_control_avatar.c` interaction chain. ESM cycle safe :
+// field-control-avatar importe player-avatar (gPlayerAvatar/GetXY...) au top-level,
+// nous l'importons ici aussi mais ses fonctions sont appelées uniquement DANS
+// les bodies (= au runtime A button frame), donc tous les modules sont init avant l'usage.
+import {
+  TryStartInteractionScript,
+  GetInFrontOfPlayerPosition,
+  type MapPosition,
+} from './field-control-avatar';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -271,7 +271,6 @@ interface PlayerAvatar {
  *  IMPORTANT : ne JAMAIS réassigner `gSaveBlock1Ptr.pos = {...}` ailleurs, sinon
  *  l'alias `_camPos` (field-camera) devient stale. Seulement muter `.x` / `.y`. */
 const _gPlayerAvatarBase = {
-  facing: DIR_SOUTH,
   flags: 0x21,  // 1:1 décomp PLAYER_AVATAR_FLAG_ON_FOOT (1<<0) | _CONTROLLABLE (1<<5)
   transitionFlags: 0,
   objectEventId: 0,  // 1:1 décomp : set au InitPlayerAvatar via SpawnSpecialObjectEvent retour
@@ -297,7 +296,12 @@ const _gPlayerAvatarBase = {
   abStartSelectHistory: 0,
   dirTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
   abStartSelectTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
-} as Omit<PlayerAvatar, 'x' | 'y'>;
+} as Omit<PlayerAvatar, 'x' | 'y' | 'facing'>;
+
+// Backing pour `pa.facing` quand slot 0 pas encore init (= boot très early
+// avant InitPlayerObjectEvent). 1:1 strict décomp : `facing` n'existe PAS dans
+// struct PlayerAvatar (= idem x/y). Source unique = slot0.facingDirection.
+let _facingFallback = DIR_SOUTH;
 
 /** 1:1 STRICT décomp `gPlayerAvatar.x/y` : N'EXISTE PAS dans le décomp.
  *  `struct PlayerAvatar` (global.fieldmap.h:342-362) n'a PAS x/y. La position
@@ -328,6 +332,38 @@ Object.defineProperty(_gPlayerAvatarBase, 'x', {
 Object.defineProperty(_gPlayerAvatarBase, 'y', {
   get(): number { return gSaveBlock1Ptr.pos.y; },
   set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
+  enumerable: true,
+  configurable: true,
+});
+
+/** 1:1 STRICT décomp `gPlayerAvatar.facing` : N'EXISTE PAS dans le décomp.
+ *  `struct PlayerAvatar` (global.fieldmap.h:342-362) n'a PAS `facing`. La
+ *  direction du joueur est UNIQUEMENT dans `gObjectEvents[gPlayerAvatar
+ *  .objectEventId].facingDirection` (= source unique 1:1 strict).
+ *
+ *  Notre TS port : `pa.facing` getter/setter alias vers `slot0.facingDirection`.
+ *  Pré-init (= boot très early avant InitPlayerObjectEvent), fallback sur
+ *  `_facingFallback` local.
+ *
+ *  Pourquoi : avant ce fix, `pa.facing` était un plain field désynchronisé de
+ *  `slot0.facingDirection` → `GetPlayerFacingDirection()` (qui lit le slot)
+ *  retournait l'ancienne direction → `GetXYCoordsOneStepInFrontOfPlayer`
+ *  cherchait la mauvaise tile → interaction A button cassée
+ *  (PC/TV/Carte/WallClock/GameCube tous silencieux). */
+Object.defineProperty(_gPlayerAvatarBase, 'facing', {
+  get(): number {
+    const obj = gObjectEvents[(_gPlayerAvatarBase as { objectEventId: number }).objectEventId];
+    if (obj && obj.active && obj.isPlayer) return obj.facingDirection;
+    return _facingFallback;
+  },
+  set(v: number): void {
+    _facingFallback = v;
+    const obj = gObjectEvents[(_gPlayerAvatarBase as { objectEventId: number }).objectEventId];
+    if (obj && obj.active && obj.isPlayer) {
+      obj.facingDirection = v;
+      obj.movementDirection = v;
+    }
+  },
   enumerable: true,
   configurable: true,
 });
@@ -1194,112 +1230,26 @@ const getInputDirection = _getInputDirection;
 /** GBA A button mask (= 0x01). 1:1 décomp `A_BUTTON`. */
 const A_BUTTON = 0x01;
 
-/** 1:1 décomp `CheckForObjectEventInteractive` (field_player_avatar.c) +
- *  `TryStartInteractionScript`. Phase 4.5 wire :
- *    1. Find facing NPC (= adjacent tile in facing direction)
- *    2. Set gSelectedObjectEvent.index = NPC slot (= used par lock/faceplayer)
- *    3. Set gSpecialVar.LastTalked = NPC localId
- *    4. ScriptContext_SetupScript(npc.scriptLabel) → script engine takes over
+/** 1:1 décomp `ProcessPlayerFieldInput` snippet lines 170-173 :
+ *  ```c
+ *  GetInFrontOfPlayerPosition(&position);
+ *  metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
+ *  if (input->pressedAButton && TryStartInteractionScript(&position, metatileBehavior, playerDirection) == TRUE)
+ *      return TRUE;
+ *  ```
+ *
+ *  Délégué à `field-control-avatar.TryStartInteractionScript` qui implémente
+ *  le port 1:1 strict de la chaîne `GetInteractedObjectEventScript` →
+ *  `GetInteractedBackgroundEventScript` → `GetInteractedMetatileScript`.
  *
  *  ScriptContext_SetupScript appelle LockPlayerFieldControls() qui fait que
  *  PlayerStep skip son keypad logic la frame suivante. Les opcodes lock /
  *  faceplayer / msgbox / release gèrent eux-mêmes l'état NPC frozen. */
 function tryInteractWithFacingNPC(): void {
-  // Post R3 refactor : npc.currentCoords INTERNAL → convertir tx/ty (LOGICAL
-  // venant de pa.x/y) en INTERNAL pour comparaison directe.
-  const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const gObjectEvents = (globalThis as any).__gObjectEvents as
-    Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;
-            graphicsId: string; movementType: string; localId: number;
-            walkFramesLeft: number; scriptLabel?: string }> | undefined;
-  if (gObjectEvents) {
-    for (let i = 0; i < gObjectEvents.length; i++) {
-      const npc = gObjectEvents[i];
-      if (!npc.active) continue;
-      // 1:1 décomp `GetObjectEventIdByPosition` (event_object_movement.c:2192) :
-      // match strict sur `currentCoords` (= destination du walk). Pas de check
-      // `walkFramesLeft`. Le NPC mid-walk a déjà sa currentCoords pointant vers
-      // la destination tile, donc user qui face cette destination peut interact.
-      // Le `lock` opcode du script freeze le NPC en place — sub-pixel position
-      // resté au moment du freeze (= 1:1 décomp behavior, "NPC frozen mid-step").
-      if (npc.currentCoordsX === tx && npc.currentCoordsY === ty) {
-        gSelectedObjectEvent.index = i;
-        gSpecialVar.LastTalked = npc.localId;
-        const scriptLabel = npc.scriptLabel;
-        if (!scriptLabel) {
-          console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) — no script label`);
-          return;
-        }
-        console.log(`[player-avatar] interact ${npc.graphicsId} (localId=${npc.localId}) → script '${scriptLabel}'`);
-        ScriptContext_SetupScript(scriptLabel);
-        return;
-      }
-    }
-  }
-  // 1:1 décomp `field_control_avatar.c:GetBackgroundEventScriptAtPosition`
-  // (line 923-941). Si pas d'NPC interaction, check bg_events sign à la
-  // facing position. Used par e.g. signs / posters / boxes textbox in truck.
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { events?: { bgEvents?: Array<{ x: number; y: number; kind: string; script: string }> } } | undefined;
-  const bgEvents = gMapHeader?.events?.bgEvents;
-  if (bgEvents) {
-    for (const bg of bgEvents) {
-      if (bg.x !== tx || bg.y !== ty) continue;
-      if (bg.kind !== 'sign' && bg.kind !== 'hidden_item') continue;
-      if (!bg.script) continue;
-      console.log(`[player-avatar] interact bg_event '${bg.kind}' at (${tx},${ty}) → script '${bg.script}'`);
-      ScriptContext_SetupScript(bg.script);
-      return;
-    }
-  }
-  // 1:1 décomp `field_control_avatar.c:GetInteractedMetatileScript` (line 367).
-  // 3e fallback : si pas d'NPC + pas de BG event, check metatile behavior à la
-  // tile facing. Used par TV, PC (metatile), Carte du monde, vases, étagères…
-  const facingBeh = MapGridGetMetatileBehaviorAt(tx + MAP_OFFSET, ty + MAP_OFFSET);
-  const metatileScript = getInteractedMetatileScript(facingBeh, gPlayerAvatar.facing);
-  if (metatileScript) {
-    console.log(`[player-avatar] interact metatile beh=0x${facingBeh.toString(16)} at (${tx},${ty}) → script '${metatileScript}'`);
-    ScriptContext_SetupScript(metatileScript);
-    return;
-  }
-}
-
-/** 1:1 décomp `field_control_avatar.c:GetInteractedMetatileScript` (367-446).
- *  Lookup un script global selon le metatile behavior face au joueur.
- *  Retourne null si le metatile n'est pas interactif. */
-function getInteractedMetatileScript(metatileBehavior: number, direction: number): string | null {
-  // MetatileBehavior_IsPlayerFacingTVScreen : nécessite DIR_NORTH + MB_TELEVISION
-  if (direction === _DIR_NORTH && metatileBehavior === MB_TELEVISION) {
-    return 'EventScript_TV';
-  }
-  if (metatileBehavior === MB_PC) return 'EventScript_PC';
-  if (metatileBehavior === MB_CLOSED_SOOTOPOLIS_DOOR) return 'EventScript_ClosedSootopolisDoor';
-  if (metatileBehavior === MB_SKY_PILLAR_CLOSED_DOOR) return 'SkyPillar_Outside_EventScript_ClosedDoor';
-  if (metatileBehavior === MB_CABLE_BOX_RESULTS_1) return 'EventScript_CableBoxResults';
-  if (metatileBehavior === MB_POKEBLOCK_FEEDER) return 'EventScript_PokeBlockFeeder';
-  if (metatileBehavior === MB_TRICK_HOUSE_PUZZLE_DOOR) return 'Route110_TrickHousePuzzle_EventScript_Door';
-  if (metatileBehavior === MB_REGION_MAP) return 'EventScript_RegionMap';
-  if (metatileBehavior === MB_RUNNING_SHOES_INSTRUCTION) return 'EventScript_RunningShoesManual';
-  if (metatileBehavior === MB_PICTURE_BOOK_SHELF) return 'EventScript_PictureBookShelf';
-  if (metatileBehavior === MB_BOOKSHELF) return 'EventScript_BookShelf';
-  if (metatileBehavior === MB_POKEMON_CENTER_BOOKSHELF) return 'EventScript_PokemonCenterBookShelf';
-  if (metatileBehavior === MB_VASE) return 'EventScript_Vase';
-  if (metatileBehavior === MB_TRASH_CAN) return 'EventScript_EmptyTrashCan';
-  if (metatileBehavior === MB_SHOP_SHELF) return 'EventScript_ShopShelf';
-  if (metatileBehavior === MB_BLUEPRINT) return 'EventScript_Blueprint';
-  // MetatileBehavior_IsPlayerFacingWirelessBoxResults : direction != EAST && MB_WIRELESS_BOX_RESULTS
-  if (direction !== _DIR_EAST && metatileBehavior === MB_WIRELESS_BOX_RESULTS) {
-    return 'EventScript_WirelessBoxResults';
-  }
-  // MetatileBehavior_IsCableBoxResults2 : direction != EAST && MB_CABLE_BOX_RESULTS_2
-  if (direction !== _DIR_EAST && metatileBehavior === MB_CABLE_BOX_RESULTS_2) {
-    return 'EventScript_CableBoxResults';
-  }
-  if (metatileBehavior === MB_QUESTIONNAIRE) return 'EventScript_Questionnaire';
-  if (metatileBehavior === MB_TRAINER_HILL_TIMER) return 'EventScript_TrainerHillTimer';
-  // Secret base metatiles : skip (Phase later) — pas d'impact démo Littleroot.
-  return null;
+  const position: MapPosition = { x: 0, y: 0, elevation: 0 };
+  GetInFrontOfPlayerPosition(position);
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
+  TryStartInteractionScript(position, metatileBehavior, gPlayerAvatar.facing);
 }
 
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {

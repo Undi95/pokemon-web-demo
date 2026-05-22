@@ -24,7 +24,7 @@
  *  scattered par `ProcessPlayerFieldInput`) est progressif.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent } from './map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from './map-loader';
 import {
   gPlayerAvatar,
   DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
@@ -46,7 +46,37 @@ import {
   MetatileBehavior_IsUnionRoomWarp,
   MetatileBehavior_IsMtPyreHole,
   MetatileBehavior_IsMossdeepGymWarp,
+  MetatileBehavior_IsCounter,
+  MetatileBehavior_IsPC,
+  MetatileBehavior_IsPlayerFacingTVScreen,
+  MetatileBehavior_IsClosedSootopolisDoor,
+  MetatileBehavior_IsSkyPillarClosedDoor,
+  MetatileBehavior_IsCableBoxResults1,
+  MetatileBehavior_IsPokeblockFeeder,
+  MetatileBehavior_IsTrickHousePuzzleDoor,
+  MetatileBehavior_IsRegionMap,
+  MetatileBehavior_IsRunningShoesManual,
+  MetatileBehavior_IsPictureBookShelf,
+  MetatileBehavior_IsBookShelf,
+  MetatileBehavior_IsPokeCenterBookShelf,
+  MetatileBehavior_IsVase,
+  MetatileBehavior_IsTrashCan,
+  MetatileBehavior_IsShopShelf,
+  MetatileBehavior_IsBlueprint,
+  MetatileBehavior_IsPlayerFacingWirelessBoxResults,
+  MetatileBehavior_IsCableBoxResults2,
+  MetatileBehavior_IsQuestionnaire,
+  MetatileBehavior_IsTrainerHillTimer,
 } from './metatile-behavior';
+import {
+  gObjectEvents,
+  OBJECT_EVENTS_COUNT,
+  GetObjectEventIdByPosition,
+} from './object-events';
+import { LOCALID_PLAYER } from './decomp-bridge';
+import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
+import { ScriptContext_SetupScript } from './script-runtime';
+import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
@@ -62,11 +92,6 @@ let sWildEncounterImmunitySteps = 0;
  *  Scripts` pour détecter transitions (= entrer dans grass à hauteur élevée
  *  → trigger script). */
 let sPrevMetatileBehavior = 0;
-
-/** 1:1 décomp `COMMON_DATA u8 gSelectedObjectEvent = 0` (field_control_avatar.c:41).
- *  Index de l'ObjectEvent sélectionné (= NPC interact actuel, used par
- *  `lock` / `faceplayer` opcodes pour identifier le NPC ciblé). */
-export const gSelectedObjectEvent = { index: 0 };
 
 // ─── struct FieldInput 1:1 décomp ───────────────────────────────────────────
 
@@ -426,6 +451,191 @@ export function TryDoorWarp(
     }
   }
   return null;
+}
+
+// ─── Interaction script helpers 1:1 décomp ─────────────────────────────────
+
+/** 1:1 décomp `GetBackgroundEventAtPosition(struct MapHeader *, u16 x, u16 y, u8 elevation)`
+ *  (field_control_avatar.c — used by GetInteractedBackgroundEventScript).
+ *
+ *  Body décomp : iterate sur `mapHeader->events->bgEvents` et match strict
+ *  `(x, y)` + `(bg.elevation == elevation || bg.elevation == 0)`.
+ *
+ *  IMPORTANT : x/y attendus en **LOGICAL** (= post-strip MAP_OFFSET). */
+export function GetBackgroundEventAtPosition(
+  mapHeader: typeof gMapHeader,
+  x: number, y: number, elevation: number,
+): BgEvent | null {
+  if (!mapHeader) return null;
+  const bgEvents = mapHeader.events.bgEvents as BgEvent[];
+  for (const bg of bgEvents) {
+    if (bg.x !== x || bg.y !== y) continue;
+    if (bg.elevation !== elevation && bg.elevation !== 0) continue;
+    return bg;
+  }
+  return null;
+}
+
+/** 1:1 décomp `GetInteractedObjectEventScript` (field_control_avatar.c:286-314).
+ *
+ *  ```c
+ *  objectEventId = GetObjectEventIdByPosition(position->x, position->y, position->elevation);
+ *  if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER) {
+ *      if (MetatileBehavior_IsCounter(metatileBehavior) != TRUE) return NULL;
+ *      objectEventId = GetObjectEventIdByPosition(position->x + dx, position->y + dy, position->elevation);
+ *      if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER) return NULL;
+ *  }
+ *  gSelectedObjectEvent = objectEventId;
+ *  gSpecialVar_LastTalked = gObjectEvents[objectEventId].localId;
+ *  gSpecialVar_Facing = direction;
+ *  ... GetRamScript filter ...
+ *  return script;
+ *  ```
+ *
+ *  Position en INTERNAL (= match avec `currentCoordsX/Y` INTERNAL post-R3). */
+export function GetInteractedObjectEventScript(
+  position: MapPosition, metatileBehavior: number, direction: number,
+): string | null {
+  let objectEventId = GetObjectEventIdByPosition(position.x, position.y, position.elevation);
+  if (objectEventId === OBJECT_EVENTS_COUNT
+      || gObjectEvents[objectEventId].localId === LOCALID_PLAYER) {
+    if (!MetatileBehavior_IsCounter(metatileBehavior)) return null;
+    const dx = DIR_TO_DX[direction] ?? 0;
+    const dy = DIR_TO_DY[direction] ?? 0;
+    objectEventId = GetObjectEventIdByPosition(position.x + dx, position.y + dy, position.elevation);
+    if (objectEventId === OBJECT_EVENTS_COUNT
+        || gObjectEvents[objectEventId].localId === LOCALID_PLAYER) return null;
+  }
+  gSelectedObjectEvent.index = objectEventId;
+  gSpecialVar.LastTalked = gObjectEvents[objectEventId].localId;
+  // 1:1 décomp `gSpecialVar_Facing = direction` skip — notre `VarGet('VAR_FACING')`
+  // live-read depuis `gPlayerAvatar.facing` (= équivalent comportemental durant
+  // l'interaction puisque player est locked + face direction inchangée).
+  // TrainerHill skip pour MVP.
+  const script = gObjectEvents[objectEventId].scriptLabel;
+  if (!script) return null;
+  // GetRamScript filter skip — pas de RAM scripts dynamic dans notre port.
+  return script;
+}
+
+/** 1:1 décomp `GetInteractedBackgroundEventScript` (field_control_avatar.c:316-365).
+ *
+ *  Body décomp : `position->x - MAP_OFFSET, position->y - MAP_OFFSET` → strip
+ *  pour comparer avec bg events stockés en LOGICAL.
+ *
+ *  Dispatch par `bgEvent.kind` :
+ *    - BG_EVENT_PLAYER_FACING_ANY : return script.
+ *    - BG_EVENT_PLAYER_FACING_NORTH/SOUTH/EAST/WEST : return script si dir match.
+ *    - BG_EVENT_HIDDEN_ITEM : check FLAG_HIDDEN_ITEMS_START + EventScript_HiddenItemScript.
+ *    - BG_EVENT_SECRET_BASE : secret base entrance check.
+ *  Si script vide → return `EventScript_TestSignpostMsg` ("There's nothing here."). */
+export function GetInteractedBackgroundEventScript(
+  position: MapPosition, _metatileBehavior: number, direction: number,
+): string | null {
+  const bgEvent = GetBackgroundEventAtPosition(
+    gMapHeader, position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+  if (!bgEvent) return null;
+  // Hidden item dispatch (= kind 'hidden_item' dans notre data, BG_EVENT_HIDDEN_ITEM décomp).
+  if (bgEvent.kind === 'hidden_item') {
+    return 'EventScript_HiddenItemScript';
+  }
+  // Secret base entrance (= kind 'secret_base'). Skip MVP — pas critique démo Littleroot.
+  if (bgEvent.kind === 'secret_base') {
+    return null;
+  }
+  // Sign / panneau standard : dispatch par playerFacingDir.
+  const pfd = bgEvent.playerFacingDir;
+  if (pfd === 'BG_EVENT_PLAYER_FACING_NORTH' && direction !== DIR_NORTH) return null;
+  if (pfd === 'BG_EVENT_PLAYER_FACING_SOUTH' && direction !== DIR_SOUTH) return null;
+  if (pfd === 'BG_EVENT_PLAYER_FACING_EAST'  && direction !== DIR_EAST)  return null;
+  if (pfd === 'BG_EVENT_PLAYER_FACING_WEST'  && direction !== DIR_WEST)  return null;
+  if (!bgEvent.script) {
+    return 'EventScript_TestSignpostMsg';
+  }
+  return bgEvent.script;
+}
+
+/** 1:1 décomp `GetInteractedMetatileScript` (field_control_avatar.c:367-446).
+ *
+ *  Lookup un EventScript_* global selon le metatile behavior face au joueur.
+ *  Order des checks 1:1 strict avec décomp.
+ *
+ *  Secret base + decoration metatiles skip MVP (= pas de secret base démo). */
+export function GetInteractedMetatileScript(
+  _position: MapPosition, metatileBehavior: number, direction: number,
+): string | null {
+  if (MetatileBehavior_IsPlayerFacingTVScreen(metatileBehavior, direction))
+    return 'EventScript_TV';
+  if (MetatileBehavior_IsPC(metatileBehavior))
+    return 'EventScript_PC';
+  if (MetatileBehavior_IsClosedSootopolisDoor(metatileBehavior))
+    return 'EventScript_ClosedSootopolisDoor';
+  if (MetatileBehavior_IsSkyPillarClosedDoor(metatileBehavior))
+    return 'SkyPillar_Outside_EventScript_ClosedDoor';
+  if (MetatileBehavior_IsCableBoxResults1(metatileBehavior))
+    return 'EventScript_CableBoxResults';
+  if (MetatileBehavior_IsPokeblockFeeder(metatileBehavior))
+    return 'EventScript_PokeBlockFeeder';
+  if (MetatileBehavior_IsTrickHousePuzzleDoor(metatileBehavior))
+    return 'Route110_TrickHousePuzzle_EventScript_Door';
+  if (MetatileBehavior_IsRegionMap(metatileBehavior))
+    return 'EventScript_RegionMap';
+  if (MetatileBehavior_IsRunningShoesManual(metatileBehavior))
+    return 'EventScript_RunningShoesManual';
+  if (MetatileBehavior_IsPictureBookShelf(metatileBehavior))
+    return 'EventScript_PictureBookShelf';
+  if (MetatileBehavior_IsBookShelf(metatileBehavior))
+    return 'EventScript_BookShelf';
+  if (MetatileBehavior_IsPokeCenterBookShelf(metatileBehavior))
+    return 'EventScript_PokemonCenterBookShelf';
+  if (MetatileBehavior_IsVase(metatileBehavior))
+    return 'EventScript_Vase';
+  if (MetatileBehavior_IsTrashCan(metatileBehavior))
+    return 'EventScript_EmptyTrashCan';
+  if (MetatileBehavior_IsShopShelf(metatileBehavior))
+    return 'EventScript_ShopShelf';
+  if (MetatileBehavior_IsBlueprint(metatileBehavior))
+    return 'EventScript_Blueprint';
+  if (MetatileBehavior_IsPlayerFacingWirelessBoxResults(metatileBehavior, direction))
+    return 'EventScript_WirelessBoxResults';
+  if (MetatileBehavior_IsCableBoxResults2(metatileBehavior, direction))
+    return 'EventScript_CableBoxResults';
+  if (MetatileBehavior_IsQuestionnaire(metatileBehavior))
+    return 'EventScript_Questionnaire';
+  if (MetatileBehavior_IsTrainerHillTimer(metatileBehavior))
+    return 'EventScript_TrainerHillTimer';
+  return null;
+}
+
+/** 1:1 décomp `GetInteractionScript` (field_control_avatar.c:240-259).
+ *
+ *  Chain : ObjectEventScript → BackgroundEventScript → MetatileScript → WaterScript.
+ *  Returns le premier non-NULL. WaterScript (Surf/Waterfall) skip pour MVP. */
+export function GetInteractionScript(
+  position: MapPosition, metatileBehavior: number, direction: number,
+): string | null {
+  let script = GetInteractedObjectEventScript(position, metatileBehavior, direction);
+  if (script !== null) return script;
+  script = GetInteractedBackgroundEventScript(position, metatileBehavior, direction);
+  if (script !== null) return script;
+  script = GetInteractedMetatileScript(position, metatileBehavior, direction);
+  if (script !== null) return script;
+  // GetInteractedWaterScript skip (= Surf/Waterfall, badges 5/8 pas relevant démo).
+  return null;
+}
+
+/** 1:1 décomp `TryStartInteractionScript` (field_control_avatar.c:220-238).
+ *
+ *  Si script non-NULL → PlaySE(SE_SELECT) (sauf PC variants) + ScriptContext_SetupScript.
+ *  Notre impl skip PlaySE explicite (= user a demandé no-touch BGM/SE). */
+export function TryStartInteractionScript(
+  position: MapPosition, metatileBehavior: number, direction: number,
+): boolean {
+  const script = GetInteractionScript(position, metatileBehavior, direction);
+  if (!script) return false;
+  console.log(`[field-control] interaction script → '${script}' at INTERNAL=(${position.x},${position.y}) dir=${direction} mb=0x${metatileBehavior.toString(16)}`);
+  ScriptContext_SetupScript(script);
+  return true;
 }
 
 // ─── Step counter helpers 1:1 décomp ───────────────────────────────────────
