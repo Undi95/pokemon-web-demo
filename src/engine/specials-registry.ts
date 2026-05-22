@@ -86,7 +86,7 @@ registerSpecial('BufferBigGuyOrBigGirlString', () => {
  *  un raccourci local. Porter ppBonuses + CalculatePPWithBonus =
  *  chantier data-model séparé (supervisé). */
 registerSpecial('HealPlayerParty', () => {
-  for (const mon of gameState.party) {
+  for (const mon of gSaveBlock1Ptr.playerParty) {
     if (!mon) continue;
     mon.currentHp = mon.maxHp;
     mon.status = null;
@@ -94,7 +94,7 @@ registerSpecial('HealPlayerParty', () => {
       mv.pp = mv.ppMax;
     }
   }
-  console.log(`[special HealPlayerParty] healed ${gameState.party.length} mons`);
+  console.log(`[special HealPlayerParty] healed ${gSaveBlock1Ptr.playerParty.length} mons`);
 });
 
 /** 1:1 décomp `ChooseStarter` (battle_setup.c:911) :
@@ -202,7 +202,7 @@ registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
  *  Returns 1 if first party mon has a nickname (= different from species name).
  *  For starter, name == species (= "ARCKO"), so returns 0 (= not nicknamed). */
 registerSpecial('IsLeadMonNicknamed', () => {
-  const lead = gameState.party[0];
+  const lead = gSaveBlock1Ptr.playerParty[0];
   if (!lead) return 0;
   // Nickname is set via createPokemonInstance default = species name FR.
   // Real check : compare nickname to species name. Stub : assume not nicknamed.
@@ -241,7 +241,7 @@ registerSpecial('ChangePokemonNickname', () => {
 /** 1:1 décomp `BufferLeadMonSpeciesName` (pokemon_util.c).
  *  Sets gStringVar1 to lead party mon species name. Used by scripts post-battle. */
 registerSpecial('BufferLeadMonSpeciesName', () => {
-  const lead = gameState.party[0];
+  const lead = gSaveBlock1Ptr.playerParty[0];
   if (lead && lead.speciesNameFr) {
     setStringVar(1, lead.speciesNameFr);
   }
@@ -381,7 +381,7 @@ registerSpecial('PlayerFaceTrainerAfterBattle', () => { /* no-op */ });
 
 /** 1:1 décomp `ScrSpecial_HealPlayerParty` (= alias of HealPlayerParty). */
 registerSpecial('ScrSpecial_HealPlayerParty', () => {
-  for (const mon of gameState.party) {
+  for (const mon of gSaveBlock1Ptr.playerParty) {
     if (!mon) continue;
     mon.currentHp = mon.maxHp;
     mon.status = null;
@@ -674,7 +674,7 @@ import { resolveDecompConstant } from './decomp-constants';
  *  STR_VAR_1 le nickname du party[VAR_0x8004]. */
 registerSpecial('BufferMonNickname', () => {
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gameState.party?.[slot];
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
   setStringVar(1, mon?.nickname || mon?.speciesNameFr || '???');
   return 0;
 });
@@ -684,7 +684,7 @@ registerSpecial('BufferMonNickname', () => {
  *  Utilisé par scripts pour check le species du Pokémon en slot. */
 registerSpecial('ScriptGetPartyMonSpecies', () => {
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gameState.party?.[slot];
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
   if (!mon?.speciesEnum) return mon?.speciesId ?? 0;
   // Resolve species name → numeric ID via constants.
   return mon.speciesEnum.startsWith('SPECIES_')
@@ -708,7 +708,7 @@ registerSpecial('ShowMapNamePopup', () => {
  *    return GetMonData(party[VAR_0x8004], MON_DATA_IS_EGG); */
 registerSpecial('IsSelectedMonEgg', () => {
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gameState.party?.[slot];
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
   return (mon as { isEgg?: number })?.isEgg ? 1 : 0;
 });
 

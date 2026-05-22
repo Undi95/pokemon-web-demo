@@ -19,7 +19,7 @@
 import { gameState, SetSaveLocked } from './game-state';
 import { FlagSet, VarSet } from './script-vars';
 import { HasValidSave } from './save-system';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
@@ -247,7 +247,7 @@ function applyNoIntroPreset(): void {
   //   - IVs : 31/31/31/31/31/31 (= max, simplifie damage calc tests)
   //   - EVs : 0 (= un fresh starter)
   // Skip si party déjà populée (= user a déjà fait l'intro + caught Treecko).
-  if (gameState.party.length === 0) {
+  if (gSaveBlock1Ptr.playerParty.length === 0) {
     const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
       heldItem: 'miracleseed',  // DEBUG fixture (= ITEM_MIRACLE_SEED)
       ability: 'Overgrow',

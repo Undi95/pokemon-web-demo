@@ -429,10 +429,12 @@ async function prepareTestBattle(opts?: {
   const enemySpecies = opts?.enemySpecies ?? 'SPECIES_ZIGZAGOON';
   const enemyLevel = opts?.enemyLevel ?? 2;
 
-  // Lazy imports pour break circular deps.
-  const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
-  if (!gs?.party) return { ok: false, reason: 'no gameState.party' };
-  const realParty = (gs.party as Array<unknown>).filter((m): m is { speciesEnum: string } => !!m);
+  // 1:1 décomp : gPlayerParty[] = gSaveBlock1Ptr->playerParty. Lazy import
+  // pour break circular deps de battle-devtools.
+  const sbsMod = await import('../save-block-state');
+  const party = sbsMod.gSaveBlock1Ptr.playerParty;
+  if (!party) return { ok: false, reason: 'no gSaveBlock1Ptr.playerParty' };
+  const realParty = (party as Array<unknown>).filter((m): m is { speciesEnum: string } => !!m);
   if (realParty.length === 0) return { ok: false, reason: 'empty party' };
 
   // Use module-level imports (= same instance as Cmd_attackcanceler).

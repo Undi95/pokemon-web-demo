@@ -75,6 +75,7 @@ function _restorePalettesFromUnfaded(): void {
 }
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
@@ -299,7 +300,7 @@ export interface BattleFlow {
 }
 
 interface BattleParams {
-  /** Player Pokemon (= takes from gameState.party[0] by default). */
+  /** Player Pokemon (= takes from gSaveBlock1Ptr.playerParty[0] by default). */
   playerMon?: PokemonInstance;
   /** Opponent species enum (= 'SPECIES_ZIGZAGOON' for tutorial). */
   opponentSpecies: string;
@@ -1005,7 +1006,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     switch (state) {
       case 'INIT': {
         // Pick player Pokemon : first non-fainted from party.
-        const party = gameState.party;
+        const party = gSaveBlock1Ptr.playerParty;
         playerMon = params.playerMon
           ?? party.find((m) => m && m.currentHp > 0)
           ?? null;
@@ -1882,7 +1883,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = outcome;
         // 1:1 décomp : sync HP/status/exp depuis gPlayerParty vers PokemonInstance
         // pour persist au post-combat.
-        teardownPartyAfterBattle(gameState.party.filter((m): m is PokemonInstance => !!m));
+        teardownPartyAfterBattle(gSaveBlock1Ptr.playerParty.filter((m): m is PokemonInstance => !!m));
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
         // 1:1 décomp `CB2_EndWildBattle` (battle_setup.c:602-616) →
         // `SetMainCallback2(CB2_ReturnToField)` + `gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic`.

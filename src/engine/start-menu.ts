@@ -33,7 +33,7 @@
  *   - gba-menu-system : CreateYesNoMenu + Menu_ProcessInputNoWrapClearOnChoose
  *   - field-message-box : ShowFieldMessage / TickFieldMessageBox / HideFieldMessageBox
  *   - script-runtime : LockPlayerFieldControls
- *   - game-state : gameState.save() / gameState.party / gameState.bag
+ *   - game-state : gameState.save() / gSaveBlock1Ptr.playerParty / gameState.bag
  */
 
 import {
@@ -68,6 +68,7 @@ import { GetStringRightAlignXOffset } from './gba-text-system';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
@@ -246,7 +247,7 @@ function pokedexAction(): boolean {
  *  (start_menu.c:759) : FadeScreen(FADE_TO_BLACK, 0) + queue OpenPartyScreen.
  *  Pattern identique au sac/trainer-card (= CB2 swap). */
 function pokemonAction(): boolean {
-  if (gameState.party.length === 0) {
+  if (gSaveBlock1Ptr.playerParty.length === 0) {
     return showMessageThenReturn('Vous n\'avez pas\nencore de POKéMON.');
   }
   FadeScreen(FADE_TO_BLACK, 0);

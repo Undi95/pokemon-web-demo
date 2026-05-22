@@ -17,6 +17,7 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { PlaySE } from './decomp-globals';
 
 const FONT_NORMAL = 1;
@@ -55,7 +56,7 @@ function _draw(): void {
   AddTextPrinterParameterized3(_wid, FONT_NORMAL, 8, 96, COLOR_MAIN, TEXT_SKIP_DRAW,
     'Statistiques :');
   AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 114, COLOR_MAIN, TEXT_SKIP_DRAW,
-    `${gameState.party.length} dans ton équipe`);
+    `${gSaveBlock1Ptr.playerParty.length} dans ton équipe`);
   AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 128, COLOR_MAIN, TEXT_SKIP_DRAW,
     `${seen} en cours d'exploration`);
 

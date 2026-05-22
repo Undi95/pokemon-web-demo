@@ -22,6 +22,7 @@
  */
 
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import type { ItemSlot } from './bag';
 
 /** 1:1 décomp `include/constants/global.h:PC_ITEMS_COUNT`. */
@@ -47,7 +48,7 @@ function _setPCItemQuantity(slot: ItemSlot, value: number): void {
  *    return -1;
  */
 function _findFreePCItemSlot(): number {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   for (let i = 0; i < PC_ITEMS_COUNT; i++) {
     if (!pcItems[i].itemKey) return i;
   }
@@ -56,7 +57,7 @@ function _findFreePCItemSlot(): number {
 
 /** 1:1 décomp `u8 CountUsedPCItemSlots(void)` (item.c:466-477). */
 export function CountUsedPCItemSlots(): number {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   let used = 0;
   for (let i = 0; i < PC_ITEMS_COUNT; i++) {
     if (pcItems[i].itemKey) used++;
@@ -66,7 +67,7 @@ export function CountUsedPCItemSlots(): number {
 
 /** 1:1 décomp `bool8 CheckPCHasItem(u16 itemId, u16 count)` (item.c:479-489). */
 export function CheckPCHasItem(itemKey: string, count: number): boolean {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   for (let i = 0; i < PC_ITEMS_COUNT; i++) {
     if (pcItems[i].itemKey === itemKey && _getPCItemQuantity(pcItems[i]) >= count) {
       return true;
@@ -90,7 +91,7 @@ export function CheckPCHasItem(itemKey: string, count: number): boolean {
 export function AddPCItem(itemKey: string, count: number): boolean {
   // 1:1 décomp : AllocZeroed + memcpy pour stage la modif. En TS on stage
   // dans un array local + commit à la fin.
-  const newItems: ItemSlot[] = gameState.pcItems.map((s) => ({
+  const newItems: ItemSlot[] = gSaveBlock1Ptr.pcItems.map((s) => ({
     itemKey: s.itemKey,
     quantity: s.quantity,
   }));
@@ -134,7 +135,7 @@ export function AddPCItem(itemKey: string, count: number): boolean {
 
 /** 1:1 décomp `void RemovePCItem(u8 index, u16 count)` (item.c:548-556). */
 export function RemovePCItem(index: number, count: number): void {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   pcItems[index].quantity -= count;
   if (pcItems[index].quantity === 0) {
     pcItems[index].itemKey = '';  // = ITEM_NONE
@@ -145,7 +146,7 @@ export function RemovePCItem(index: number, count: number): void {
 /** 1:1 décomp `void CompactPCItems(void)` (item.c:558-575). Compacte les slots
  *  en poussant les ITEM_NONE à la fin. */
 export function CompactPCItems(): void {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   for (let i = 0; i < PC_ITEMS_COUNT - 1; i++) {
     for (let j = i + 1; j < PC_ITEMS_COUNT; j++) {
       if (!pcItems[i].itemKey) {
@@ -160,7 +161,7 @@ export function CompactPCItems(): void {
 /** 1:1 décomp `void ClearItemSlots(struct ItemSlot *itemSlots, u8 itemCount)`
  *  (item.c:443-452). */
 export function ClearPCItems(): void {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   for (let i = 0; i < PC_ITEMS_COUNT; i++) {
     pcItems[i].itemKey = '';
     pcItems[i].quantity = 0;
@@ -193,9 +194,9 @@ export function NewGameInitPCItems(): void {
   }
 }
 
-/** Helper internal : commit staging array → gameState.pcItems. */
+/** Helper internal : commit staging array → gSaveBlock1Ptr.pcItems. */
 function _commitPCItems(newItems: ItemSlot[]): void {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   for (let i = 0; i < PC_ITEMS_COUNT; i++) {
     pcItems[i].itemKey = newItems[i].itemKey;
     pcItems[i].quantity = newItems[i].quantity;

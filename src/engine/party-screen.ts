@@ -47,6 +47,7 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -542,7 +543,7 @@ function _drawSlotFrame(slotIdx: number): void {
   if (!_assets) return;
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
-  const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
   // 1:1 décomp DisplayPartyPokemonData (:876) : un ŒUF blit la variante
   // NoHP (sSlotTilemap_MainNoHP/_WideNoHP) = box SANS label "PV"/barre.
   const isEgg = !!mon?.isEgg;
@@ -580,7 +581,7 @@ const _rightAlign3 = (n: number) =>
 function _drawSlot(slotIdx: number): void {
   if (_slotWindowIds[slotIdx] === undefined) return;
   const wid = _slotWindowIds[slotIdx];
-  const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
   // 1:1 décomp RenderPartyMenuBox → SetPartyMonAilmentGfx + UpdatePartyMon
   // HeldItemSprite : rafraîchit icône statut + objet tenu du slot (sprites
   // slot-pinned, dérivés du mon courant).
@@ -828,7 +829,7 @@ function _loadPartyBoxPalette(slotIdx: number, palFlags: number): void {
 function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
   let palFlags = 0;
   if (animNum === 1) palFlags |= PARTY_PAL_SELECTED;
-  const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
   if (mon && mon.currentHp === 0) palFlags |= PARTY_PAL_FAINTED;
   return palFlags;
 }
@@ -841,7 +842,7 @@ function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
 function AnimatePartySlot(slotIdx: number, animNum: number): void {
   const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
   if (slotIdx < PARTY_SIZE) {
-    const mon = (gameState.party as PokemonInstance[])[slotIdx];
+    const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
     if (mon) {
       // 1:1 décomp AnimatePartySlot (party_menu.c:1129-1131) ordre EXACT :
       //   LoadPartyBoxPalette(...) ; AnimateSelectedPartyIcon(monSpriteId,
@@ -922,7 +923,7 @@ function _drawMsg(): void {
     _msgWid = -1;
   }
   // 1:1 décomp ShouldUseChooseMonText : count alive mons.
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   let numAlive = 0;
   for (const m of party) {
     if (m && m.currentHp > 0) numAlive++;
@@ -974,7 +975,7 @@ function _spawnSlotPokeballOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const POKEBALL_TILE_BASE = 256;
   const POKEBALL_PAL_BANK = 9;
   for (let i = 0; i < 6; i++) {
@@ -1027,7 +1028,7 @@ function _spawnStatusOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _statusOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
     if (!party[i]) continue;
     const [x, y] = STATUS_COORDS[i];
@@ -1060,14 +1061,14 @@ function _ailmentFromStatus(mon: PokemonInstance | undefined): number {
 /** 1:1 décomp `SetPartyMonAilmentGfx`→`UpdatePartyMonAilmentGfx`
  *  (party_menu.c:4203-4221) : AILMENT_NONE/PKRS → sprite invisible ;
  *  sinon `StartSpriteAnim(sprite, ailment-1)` (frame (ailment-1)*4) +
- *  visible. Statut slot-pinned (dérivé de gameState.party[slot].status). */
+ *  visible. Statut slot-pinned (dérivé de gSaveBlock1Ptr.playerParty[slot].status). */
 function _updatePartyMonAilmentGfx(slot: number): void {
   const rt = getRuntime();
   const id = _statusOamBySlot[slot];
   if (!rt || id === undefined || id < 0) return;
   const spr = rt.gSprites.get(id);
   if (!spr) return;
-  const mon = (gameState.party as PokemonInstance[])[slot];
+  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slot];
   const ailment = _ailmentFromStatus(mon);
   if (ailment === 0 || ailment === 6) {         // 1:1 :4212-4213 AILMENT_NONE/PKRS → invisible
     rt.setSpriteInvisible(id, true);
@@ -1098,7 +1099,7 @@ function _spawnHeldItemOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _itemOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
     if (!party[i]) continue;
     const [x, y] = ITEM_COORDS[i];
@@ -1124,7 +1125,7 @@ function _updatePartyMonHeldItem(slot: number): void {
   if (!rt || id === undefined || id < 0) return;
   const spr = rt.gSprites.get(id);
   if (!spr) return;
-  const mon = (gameState.party as PokemonInstance[])[slot];
+  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slot];
   const item = mon?.heldItem;
   if (!item) {                                   // ITEM_NONE → invisible
     rt.setSpriteInvisible(id, true);
@@ -1167,7 +1168,7 @@ async function _spawnIconOams(): Promise<void> {
   if (!rt) return;
   _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
   _iconBaseY = [0, 0, 0, 0, 0, 0];
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
     if (!mon) continue;
@@ -1304,7 +1305,7 @@ function Task_ClosePartyMenu(task: DecompTask): void {
  *  Layout single (= notre cas) : slotId values 0..5 (mons), 7 (Cancel).
  *  Confirm (slot 6) pas utilisé en single layout (= chooseHalf=false). */
 function _updateSlotIdSingle(dir: number): void {
-  const partyCount = (gameState.party as PokemonInstance[]).length;
+  const partyCount = (gSaveBlock1Ptr.playerParty as PokemonInstance[]).length;
   const PARTY_SIZE = 6;
   const CANCEL = PARTY_SIZE + 1;  // = 7
   switch (dir) {
@@ -1551,7 +1552,7 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
   //   AppendToList(MENU_CANCEL1);
   _actionList = [MENU_SUMMARY];
   // TODO : add field moves (CUT/FLASH/SURF/etc.) si mon les connait.
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   if (party.length > 1 && party[1] && party[1].speciesEnum !== 'SPECIES_NONE') {
     _actionList.push(MENU_SWITCH);  // ORDRE - si plus de 1 mon
   }
@@ -1678,10 +1679,10 @@ function _switchSlotIconGraphics(s1: number, s2: number): void {
 }
 
 /** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3035) : swap mon1 ↔ mon2
- *  dans gPlayerParty (= gameState.party) + SwitchMenuBoxSprites (pokeball +
+ *  dans gPlayerParty (= gSaveBlock1Ptr.playerParty) + SwitchMenuBoxSprites (pokeball +
  *  icône ; item/statut = window, re-dessinés). */
 function _switchPartyMon(): void {
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const tmp = party[_slotId];
   party[_slotId] = party[_slotId2];
   party[_slotId2] = tmp;
@@ -1909,7 +1910,7 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
       // appelé pendant que le party menu vivait encore (tâche de close
       // survivante → CB2_ReturnToFieldWithOpenMenu = OW+START bug #4, ou
       // CB2 stomp = crash fade bug #3).
-      const mon = (gameState.party as PokemonInstance[])[_slotId];
+      const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[_slotId];
       if (mon) {
         _summaryTargetMon = mon;
         _showSummaryPending = false;
@@ -1991,7 +1992,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       }
       // 1:1 décomp IsSelectedMonNotEgg : on évite slot vide/egg. Notre party
       // n'a pas d'œuf encore, on check juste mon présent.
-      const party = gameState.party as PokemonInstance[];
+      const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
       const mon = party[_slotId];
       if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
       // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
@@ -2227,7 +2228,7 @@ export function PartyMenuAnimateHP(
   newHp: number,
   onDone: () => void,
 ): void {
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotIdx];
   if (!mon) { onDone(); return; }
   const delta = newHp - oldHp;
@@ -2259,7 +2260,7 @@ function _tickHpAnim(): void {
   const ticksPerHp = 1;  // 1:1 décomp = 1 HP/frame (60Hz, ~16ms/HP).
   if (_hpAnimFrameCounter < ticksPerHp) return;
   _hpAnimFrameCounter = 0;
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[_hpAnimSlot];
   if (!mon) {
     // Mon disparu en cours d'anim → cancel + onDone.

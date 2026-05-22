@@ -2066,7 +2066,7 @@ registerOpcode('bufferspeciesname', (_ctx, args) => {
  *    StringCopy(dest, gSpeciesNames[species]); */
 registerOpcode('bufferleadmonspeciesname', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
-  const lead = gameState.party?.[0];
+  const lead = gSaveBlock1Ptr.playerParty?.[0];
   const speciesName = lead?.speciesNameFr ?? (lead?.speciesEnum ? getSpeciesNameFr(lead.speciesEnum) : '');
   setStringVar(n, speciesName);
   return false;
@@ -2090,7 +2090,7 @@ registerOpcode('buffertrainername', (_ctx, args) => {
 registerOpcode('bufferpartymonnick', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
   const slot = Math.max(0, Math.min(5, parseValue(args[1] || '0')));
-  const mon = gameState.party?.[slot];
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
   setStringVar(n, mon?.nickname || mon?.speciesNameFr || '');
   return false;
 });
@@ -4443,7 +4443,7 @@ registerOpcode('setmonmove', (_ctx, args) => {
   const partyIndex = parseValue(args[0] ?? '0');
   const slot = parseValue(args[1] ?? '0');
   const moveArg = args[2] ?? 'MOVE_NONE';
-  const party = gameState.party;
+  const party = gSaveBlock1Ptr.playerParty;
   if (party && partyIndex >= 0 && partyIndex < party.length && slot >= 0 && slot < 4) {
     const mon = party[partyIndex];
     if (!mon.moves) mon.moves = [];
@@ -4462,7 +4462,7 @@ registerOpcode('setmonmetlocation', (_ctx, args) => {
   // 1:1 décomp ScrCmd_setmonmetlocation : SetMonData(&gPlayerParty[idx], MON_DATA_MET_LOCATION, &loc).
   const partyIndex = _vget(args[0]);
   const location = parseValue(args[1] ?? '0');
-  const party = gameState.party as Array<{ metLocation?: number }>;
+  const party = gSaveBlock1Ptr.playerParty as Array<{ metLocation?: number }>;
   if (party && partyIndex >= 0 && partyIndex < party.length) {
     party[partyIndex].metLocation = location;
   }
@@ -4491,7 +4491,7 @@ registerOpcode('setmodernfatefulencounter', (_ctx, args) => {
   // 1:1 décomp ScrCmd_setmodernfatefulencounter :
   //   SetMonData(&gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER, &TRUE).
   const partyIndex = _vget(args[0]);
-  const party = gameState.party as Array<{ modernFatefulEncounter?: boolean }>;
+  const party = gSaveBlock1Ptr.playerParty as Array<{ modernFatefulEncounter?: boolean }>;
   if (party && partyIndex >= 0 && partyIndex < party.length) {
     party[partyIndex].modernFatefulEncounter = true;
   }
@@ -4502,7 +4502,7 @@ registerOpcode('checkmodernfatefulencounter', (_ctx, args) => {
   // 1:1 décomp ScrCmd_checkmodernfatefulencounter :
   //   gSpecialVar_Result = GetMonData(&gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER).
   const partyIndex = _vget(args[0]);
-  const party = gameState.party as Array<{ modernFatefulEncounter?: boolean }>;
+  const party = gSaveBlock1Ptr.playerParty as Array<{ modernFatefulEncounter?: boolean }>;
   if (party && partyIndex >= 0 && partyIndex < party.length) {
     VarSet('VAR_RESULT', party[partyIndex].modernFatefulEncounter ? 1 : 0);
   } else {

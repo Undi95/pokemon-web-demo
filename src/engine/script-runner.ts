@@ -534,13 +534,13 @@ export async function runScript(
     if (op === 'bufferpartymonnick') {
       // bufferpartymonnick STR_VAR_N, SLOT (0-5) → nickname du Pokémon à ce slot
       const slot = Math.max(0, Math.min(5, Number(tokens[2]) || 0));
-      const mon = gameState.party[slot];
+      const mon = gSaveBlock1Ptr.playerParty[slot];
       setStringVar(Number(tokens[1]) || 1, mon?.nickname || mon?.speciesNameFr || (gSaveBlock2Ptr.playerName ?? 'UNDI'));
       continue;
     }
     if (op === 'bufferleadmonspeciesname') {
       // bufferleadmonspeciesname STR_VAR_N → species name du lead (party[0])
-      const lead = gameState.party[0];
+      const lead = gSaveBlock1Ptr.playerParty[0];
       setStringVar(Number(tokens[1]) || 1, lead?.speciesNameFr || (gSaveBlock2Ptr.playerName ?? 'UNDI'));
       continue;
     }

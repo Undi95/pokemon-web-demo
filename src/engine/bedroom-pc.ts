@@ -52,7 +52,7 @@ import { getRuntime, PlaySE } from './decomp-globals';
 import { SignalWaitState } from './script-opcodes';
 import { ScriptContext_SetupScript } from './script-runtime';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from './string-buffers';
@@ -721,13 +721,13 @@ function _itemStorageCreateListMenu(): void {
   if (firstId === -2) {
     _itemStorageDrawItemIcon('ITEM_LIST_END');
   } else {
-    _itemStorageDrawItemIcon(gameState.pcItems[firstId].itemKey);
+    _itemStorageDrawItemIcon(gSaveBlock1Ptr.pcItems[firstId].itemKey);
   }
   _itemStoragePrintDescription(firstId);
 }
 
 /** 1:1 décomp `ItemStorage_RefreshListMenu` (player_pc.c:986-1009).
- *  Build sPCListItems[] depuis gameState.pcItems + ajoute RETOUR à la fin. */
+ *  Build sPCListItems[] depuis gSaveBlock1Ptr.pcItems + ajoute RETOUR à la fin. */
 function _itemStorageRefreshList(): void {
   CompactPCItems();  // 1:1 décomp ItemStorage_CompactList → CompactPCItems
   const used = CountUsedPCItemSlots();
@@ -735,7 +735,7 @@ function _itemStorageRefreshList(): void {
   sPCListItems = [];
   for (let i = 0; i < used; i++) {
     sPCListItems.push({
-      name: getItemNameFr(gameState.pcItems[i].itemKey),
+      name: getItemNameFr(gSaveBlock1Ptr.pcItems[i].itemKey),
       id: i,
     });
   }
@@ -764,7 +764,7 @@ function _itemStorageMoveCursor(itemId: number, onInit: boolean, _list: unknown)
       // LIST_CANCEL : draw "return" icon (= ITEM_LIST_END dans le décomp).
       _itemStorageDrawItemIcon('ITEM_LIST_END');
     } else if (itemId >= 0 && itemId < PC_ITEMS_COUNT) {
-      _itemStorageDrawItemIcon(gameState.pcItems[itemId].itemKey);
+      _itemStorageDrawItemIcon(gSaveBlock1Ptr.pcItems[itemId].itemKey);
     }
     _itemStoragePrintDescription(itemId);
   }
@@ -812,7 +812,7 @@ function _itemStorageEraseItemIcon(): void {
  *  Print quantity "× N" right-aligned à 104 px pour chaque item (= pas pour Cancel). */
 function _itemStoragePrintMenuItem(windowId: number, itemId: number, yOffset: number): void {
   if (itemId === -2) return;  // LIST_CANCEL : pas de quantity
-  const qty = gameState.pcItems[itemId].quantity;
+  const qty = gSaveBlock1Ptr.pcItems[itemId].quantity;
   const qtyStr = `× ${String(qty).padStart(3, ' ')}`;
   // FONT_NARROW = 7.
   AddTextPrinterParameterized3(
@@ -830,7 +830,7 @@ function _itemStoragePrintDescription(itemId: number): void {
   if (itemId === -2) {
     description = getString('gText_GoBackPrevMenu');
   } else if (itemId >= 0 && itemId < PC_ITEMS_COUNT) {
-    description = String(GetItemDescription(gameState.pcItems[itemId].itemKey));
+    description = String(GetItemDescription(gSaveBlock1Ptr.pcItems[itemId].itemKey));
   } else {
     description = '';
   }
@@ -887,7 +887,7 @@ function _tickPCList(newKeys: number): void {
  *    gTasks.func = ItemStorage_ProcessItemSwapInput; */
 function _itemStorageStartItemSwap(pos: number): void {
   sPCSwapFromPos = pos;
-  const itemName = getItemNameFr(gameState.pcItems[pos].itemKey);
+  const itemName = getItemNameFr(gSaveBlock1Ptr.pcItems[pos].itemKey);
   _itemStoragePrintWindowMessage(`Déplacer ${itemName} où ?`);
   sSubState = 'pc_swap';
 }
@@ -918,7 +918,7 @@ function _itemStorageFinishItemSwap(newPos: number, canceled: boolean): void {
   PlaySE(Songs.SE_SELECT);
   const fromPos = sPCSwapFromPos;
   if (!canceled && fromPos !== newPos && fromPos !== newPos - 1 && newPos >= 0) {
-    // Move slot fromPos → newPos in gameState.pcItems.
+    // Move slot fromPos → newPos in gSaveBlock1Ptr.pcItems.
     _moveItemSlotInList(fromPos, newPos);
     _itemStorageRefreshList();
     // Re-init the list with new items.
@@ -932,7 +932,7 @@ function _itemStorageFinishItemSwap(newPos: number, canceled: boolean): void {
   const list = rt?._listMenus?.get(sPCListTaskId);
   const cursorPos = list ? (list.scrollOffset + list.selectedRow) : 0;
   const itemKey = cursorPos < CountUsedPCItemSlots()
-    ? gameState.pcItems[cursorPos].itemKey
+    ? gSaveBlock1Ptr.pcItems[cursorPos].itemKey
     : 'ITEM_LIST_END';
   _itemStorageEraseItemIcon();
   _itemStorageDrawItemIcon(itemKey);
@@ -942,7 +942,7 @@ function _itemStorageFinishItemSwap(newPos: number, canceled: boolean): void {
 
 /** 1:1 décomp `MoveItemSlotInList(itemSlots, fromPos, toPos)` (item.c). */
 function _moveItemSlotInList(fromPos: number, toPos: number): void {
-  const pcItems = gameState.pcItems;
+  const pcItems = gSaveBlock1Ptr.pcItems;
   const tmp = { itemKey: pcItems[fromPos].itemKey, quantity: pcItems[fromPos].quantity };
   if (fromPos < toPos) {
     for (let i = fromPos; i < toPos - 1; i++) {
@@ -985,7 +985,7 @@ function _buildPCListTemplate(): ListMenuTemplate {
  *  "Combien ?" + window WIN_QUANTITY + D-pad up/down adjust). */
 function _itemStorageDoItemAction(pos: number): void {
   sPCLastActionPos = pos;
-  const slot = gameState.pcItems[pos];
+  const slot = gSaveBlock1Ptr.pcItems[pos];
   sPCQuantitySelected = 1;  // 1:1 décomp tQuantity = 1
   if (!sPCInTossMode) {
     if (slot.quantity === 1) {
@@ -1060,7 +1060,7 @@ function _tickPCQuantityRolling(newKeys: number): void {
   const pos = sPCLastActionPos;
   const maxQty = sPCInDepositQtyMode
     ? gameState.bag.items[sDepositBagSlotIndices[pos]].quantity
-    : gameState.pcItems[pos].quantity;
+    : gSaveBlock1Ptr.pcItems[pos].quantity;
   let changed = false;
   // 1:1 décomp DPAD UP / DOWN / LEFT / RIGHT adjust qty (+/- 1, +/- 10).
   if (newKeys & DPAD_UP)    { sPCQuantitySelected = Math.min(maxQty, sPCQuantitySelected + 1); changed = true; }
@@ -1111,7 +1111,7 @@ const SELECT_BUTTON = 0x04;
  *    ItemStorage_PrintMessage(GetMessage(MSG_WITHDREW_ITEM)); → gText_WithdrawXItems
  *    "{STR_VAR_1}:\nretiré {STR_VAR_2}." */
 function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
-  const slot = gameState.pcItems[pos];
+  const slot = gSaveBlock1Ptr.pcItems[pos];
   if (AddBagItem(slot.itemKey, qty)) {
     // 1:1 décomp StringExpandPlaceholders avec STR_VAR_1=item, STR_VAR_2=qty.
     const itemName = getItemNameFr(slot.itemKey);
@@ -1145,7 +1145,7 @@ let sPCLastActionQty = 0;
  *      CreateYesNoMenuWithCallbacks(taskId, ..., 1, &ItemTossYesNoFuncs);
  *    } */
 function _itemStorageStartToss(pos: number, qty: number): void {
-  const slot = gameState.pcItems[pos];
+  const slot = gSaveBlock1Ptr.pcItems[pos];
   // 1:1 décomp GetItemImportance check (= pas de toss pour items importants).
   // Pour la démo on assume aucun item PC n'est important (= TM/HM exclus du PC).
   sPCLastActionPos = pos;
@@ -1169,7 +1169,7 @@ function _tickPCTossConfirm(_newKeys: number): void {
     //   ItemStorage_PrintMessage(GetMessage(MSG_THREW_AWAY_ITEM)); → gText_ThrewAwayVar2Var1s
     //   "{STR_VAR_1}:\njeté {STR_VAR_2}."
     PlaySE(Songs.SE_SELECT);
-    const slot = gameState.pcItems[sPCLastActionPos];
+    const slot = gSaveBlock1Ptr.pcItems[sPCLastActionPos];
     const itemName = getItemNameFr(slot.itemKey);
     setStringVar(1, itemName);
     setStringVar(2, String(sPCLastActionQty));
@@ -1225,7 +1225,7 @@ function _tickPCActionMsg(newKeys: number): void {
     const firstId = sPCListItems[0]?.id ?? -2;
     _itemStorageEraseItemIcon();
     if (firstId === -2) _itemStorageDrawItemIcon('ITEM_LIST_END');
-    else _itemStorageDrawItemIcon(gameState.pcItems[firstId].itemKey);
+    else _itemStorageDrawItemIcon(gSaveBlock1Ptr.pcItems[firstId].itemKey);
     _itemStoragePrintDescription(firstId);
     sSubState = 'pc_list';
   }

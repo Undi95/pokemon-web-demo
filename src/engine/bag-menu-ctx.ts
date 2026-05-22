@@ -35,7 +35,7 @@ import type { DecompTask } from './decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
@@ -69,7 +69,7 @@ import {
 import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from './decomp-bridge';
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
-// utilise directement gameState.party.length qui est la source de vérité.
+// utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
 import { PIXEL_FILL } from './decomp-globals';
 import { ENUM_ITEMWIN_1 } from './decomp-data/auto/include/item_menu-data';
 import {
@@ -429,7 +429,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   }
   RemoveContextWindow();
   const itemType = GetItemType(itemId);
-  if (itemType === 'ITEM_USE_PARTY_MENU' && gameState.party.length === 0) {
+  if (itemType === 'ITEM_USE_PARTY_MENU' && gSaveBlock1Ptr.playerParty.length === 0) {
     // 1:1 :1801 PrintThereIsNoPokemon.
     _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
     return;
@@ -459,7 +459,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // CB2_ReturnToBagMenu, et ItemUseCB_Medicine.
       void itemName;
       void ApplyMedicineEffect;  // (utilisé par ItemUseCB_Medicine, exposé pour DCE)
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -477,7 +477,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // SetUpItemUseCallback. Notre 1ère itération : skip le YES/NO box
       // (= polish), enchaîne direct setItemUseCB + SetUpItemUseCallback.
       // L'utilisateur verra le party-screen "Apprendre à quel POKéMON ?".
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -489,7 +489,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // 1:1 décomp item_use.c:770-775 ItemUseOutOfBattle_PPRecovery :
       //     gItemUseCB = ItemUseCB_PPRecovery;
       //     SetUpItemUseCallback(taskId);
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -499,7 +499,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     }
     case 'ItemUseOutOfBattle_PPUp': {
       // 1:1 décomp item_use.c:776-781 ItemUseOutOfBattle_PPUp.
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -509,7 +509,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     }
     case 'ItemUseOutOfBattle_RareCandy': {
       // 1:1 décomp item_use.c:782-787 ItemUseOutOfBattle_RareCandy.
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -519,7 +519,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     }
     case 'ItemUseOutOfBattle_ReduceEV': {
       // 1:1 décomp item_use.c:758-763 ItemUseOutOfBattle_ReduceEV (= baies).
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -529,7 +529,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     }
     case 'ItemUseOutOfBattle_SacredAsh': {
       // 1:1 décomp item_use.c:764-769 ItemUseOutOfBattle_SacredAsh.
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -539,7 +539,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     }
     case 'ItemUseOutOfBattle_EvolutionStone': {
       // 1:1 décomp item_use.c:942-948 ItemUseOutOfBattle_EvolutionStone.
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }
@@ -638,7 +638,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // L'EnigmaBerry est custom (= save block enigmaBerry.itemEffect) mais
       // pour cette ROM-port l'enigma berry est vierge → fallback CannotUse 1:1.
       const ef = GetItemEffectType(itemId);
-      if (gameState.party.length === 0) {
+      if (gSaveBlock1Ptr.playerParty.length === 0) {
         _showItemMessage(task, "Pas de POKéMON\ndans votre équipe !");
         return;
       }

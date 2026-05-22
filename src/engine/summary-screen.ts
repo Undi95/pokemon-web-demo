@@ -35,7 +35,7 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
@@ -3027,7 +3027,7 @@ export function GetSummaryLastMonIndex(): number {
 export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): void {
   if (_isOpen) return;
   // monList = party courante ; curMonIndex = slot du mon.
-  _monList = (gameState.party as PokemonInstance[]) ?? [];
+  _monList = (gSaveBlock1Ptr.playerParty as PokemonInstance[]) ?? [];
   const idx = _monList.indexOf(mon);
   sMon.curMonIndex = idx >= 0 ? idx : 0;
   sMon.maxMonIndex = Math.max(0, _monList.length - 1);

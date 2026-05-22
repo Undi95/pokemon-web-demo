@@ -271,7 +271,7 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
   const rt = getRuntime();
   if (!rt) return;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;  // 1:1 IsSelectedMonNotEgg FALSE → silent return.
   const itemId = gSpecialVar.ItemId;
@@ -319,7 +319,7 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
 export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
@@ -340,7 +340,7 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
 export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
@@ -359,7 +359,7 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
 export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
@@ -386,7 +386,7 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
 export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
@@ -419,7 +419,7 @@ export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTa
 // ─── ItemUseCB_SacredAsh (party_menu.c:5149) — 1:1-sémantique ───────────────
 export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const itemId = gSpecialVar.ItemId;
   let anyEffect = false;
   for (let i = 0; i < party.length; i++) {
@@ -451,7 +451,7 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
 export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   // GetEvolutionTargetSpecies + BeginEvolutionScene non porté.
@@ -463,7 +463,7 @@ export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: De
 export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gameState.party as PokemonInstance[];
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const mon = party[slotId];
   if (!mon) return;
   // 1:1 polish à porter : UseTMHM flow + check CanMonLearnTMHM + ReplaceMove
