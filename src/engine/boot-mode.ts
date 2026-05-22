@@ -18,6 +18,7 @@
  */
 import { gameState, SetSaveLocked } from './game-state';
 import { FlagSet, VarSet } from './script-vars';
+import { HasValidSave } from './save-system';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
@@ -340,7 +341,7 @@ export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
     // `?nointro` = charger save existante directement (= 1:1 ROM Continue).
     // Pas de preset, pas de touch à la save : juste resume.
-    if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
+    if (HasValidSave() && gameState.load() && gameState.map) {
       const m = gameState.map;
       console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y}) (SRAM bloquée)`);
       return {
@@ -390,7 +391,7 @@ export function decideBootMode(): BootSpawn {
                      && gameState.playerName !== 'PLAYER'
                      && gameState.map === undefined;
   // Tentative de resume from save (= cold boot avec save existante, pas post-Birch).
-  if (!cameFromBirch && gameState.hasPersistedSave() && gameState.load() && gameState.map) {
+  if (!cameFromBirch && HasValidSave() && gameState.load() && gameState.map) {
     const m = gameState.map;
     return {
       mapId: m.name,

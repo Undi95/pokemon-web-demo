@@ -31,6 +31,7 @@ import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMet
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
 import { gameState } from '../engine/game-state';
 import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
+import { PostLoadApplyBlocks } from '../engine/load_save';
 
 const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';

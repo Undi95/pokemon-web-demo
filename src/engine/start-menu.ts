@@ -61,6 +61,7 @@ import {
 import { PlaySE, getRuntime, gMain } from './decomp-globals';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import { gameState } from './game-state';
+import { HasValidSave } from './save-system';
 import { bagContents } from './bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
 import { GetStringRightAlignXOffset } from './gba-text-system';
@@ -866,7 +867,7 @@ function _tickSaveYesNo(): void {
     // OUI → check si une save existe déjà → si oui, demander confirmation
     // de remplacement (= 1:1 décomp `SaveFileExistsCallback` start_menu.c:1034
     // qui affiche "Une partie est déjà sauvegardée. Voulez-vous la remplacer?")
-    if (gameState.hasPersistedSave()) {
+    if (HasValidSave()) {
       HideFieldMessageBox();
       // 1:1 décomp gText_AlreadySavedFile (= save.inc:5-7).
       const text = getText('gText_AlreadySavedFile')
