@@ -31,9 +31,11 @@ import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMet
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
 import { gameState } from '../engine/game-state';
 import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
-import { PostLoadApplyBlocks } from '../engine/load_save';
+import { PostLoadApplyBlocks, SetCurrentMap } from '../engine/load_save';
 import { gSaveBlock2Ptr } from '../engine/save-block-state';
 import { FEMALE } from '../engine/decomp-globals';
+import { GetDynamicWarp } from '../engine/warp-system';
+import { SetObjectXY, GetObjectXY, GetTakenItemBalls } from '../engine/web-overlays';
 
 const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';
@@ -344,10 +346,10 @@ export class OverworldScene extends Phaser.Scene {
     const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
     const resolved = resolveNpcs(this.mapJson, gfxTable,
       (f) => FlagGet(f),
-      (id) => gameState.getObjectXY(this.mapName, id),
+      (id) => GetObjectXY(this.mapName, id),
       undefined, inanimateMap)
       // Filtre les item balls déjà ramassées (script label dans takenItemBalls).
-      .filter(n => !(n.raw.graphics_id === 'OBJ_EVENT_GFX_ITEM_BALL' && gameState.takenItemBalls.has(n.raw.script)));
+      .filter(n => !(n.raw.graphics_id === 'OBJ_EVENT_GFX_ITEM_BALL' && GetTakenItemBalls().has(n.raw.script)));
 
     for (const bg of this.mapJson.bg_events ?? []) {
       if (bg.type === 'sign' && bg.script) this.signs.push({ x: bg.x, y: bg.y, script: bg.script });
@@ -561,7 +563,7 @@ export class OverworldScene extends Phaser.Scene {
         const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
         const resolvedAdj = resolveNpcs(adjMapJson, gfxTable,
           (f) => FlagGet(f),
-          (id) => gameState.getObjectXY(adjMapName, id),
+          (id) => GetObjectXY(adjMapName, id),
           undefined, inanimateMap);
         this.world.buildMapInstance(adjMapName, off.x, off.y, resolvedAdj);
       } catch (e) {
@@ -618,7 +620,7 @@ export class OverworldScene extends Phaser.Scene {
         });
       },
       setObjectXY: (localId, x, y) => {
-        gameState.setObjectXY(this.mapName, localId, x, y);
+        SetObjectXY(this.mapName, localId, x, y);
         const npc = this.npcs.find(n => n.raw.local_id === localId);
         if (npc) {
           npc.raw.x = x; npc.raw.y = y;
@@ -772,9 +774,9 @@ export class OverworldScene extends Phaser.Scene {
       },
       markItemBallTaken: (scriptLabel) => {
         // Le décomp use FLAG_ITEM_<MAP>_<X> mais on n'a pas extrait ce mapping.
-        // Workaround : on stocke le scriptLabel dans gameState.takenItemBalls
+        // Workaround : on stocke le scriptLabel dans GetTakenItemBalls()
         // et au respawn de map on filtre les NPCs item ball déjà pris.
-        gameState.takenItemBalls.add(scriptLabel);
+        GetTakenItemBalls().add(scriptLabel);
       },
     };
   }
@@ -1115,7 +1117,7 @@ export class OverworldScene extends Phaser.Scene {
     const cooldown = this.keyX?.isDown ? RUN_COOLDOWN : WALK_COOLDOWN;
     playSingleStep(this.playerSprite, tex, facing, cooldown);
     this.playerTile.x = nx; this.playerTile.y = ny;
-    if (!crossing) gameState.map = { name: this.mapName, x: nx, y: ny };
+    if (!crossing) SetCurrentMap({ name: this.mapName, x: nx, y: ny });
     const tx = crossing ? crossing.targetPxX : nx * TILE_SIZE + TILE_SIZE / 2;
     const ty = crossing ? crossing.targetPxY : ny * TILE_SIZE + TILE_SIZE;
     if (crossing) this.crossingInProgress = true;
@@ -1290,7 +1292,7 @@ export class OverworldScene extends Phaser.Scene {
     // playerTile en coords NEW current. Sprite reste à sa position pixel absolue
     // (visuellement aucun saut — c'est ça le vrai seamless).
     this.playerTile = { x: newTileX, y: newTileY };
-    gameState.map = { name: this.mapName, x: newTileX, y: newTileY };
+    SetCurrentMap({ name: this.mapName, x: newTileX, y: newTileY });
     this.refreshMapLabel();
 
     // Spawn les NPCs de la new current map (depuis resolvedNpcs)
@@ -1378,7 +1380,7 @@ export class OverworldScene extends Phaser.Scene {
     let spawnY: number | undefined;
     let warpIdForRestart: string | undefined = warp.dest_warp_id;
     if (warp.dest_map === 'MAP_DYNAMIC') {
-      const dw = gameState.dynamicWarp;
+      const dw = GetDynamicWarp();
       if (!dw) { console.warn('[warp] MAP_DYNAMIC sans dynamicWarp set'); this.warpInProgress = false; return; }
       destDir = mapIds[dw.mapId];
       spawnX = dw.x; spawnY = dw.y;
@@ -1421,7 +1423,7 @@ export class OverworldScene extends Phaser.Scene {
     const fx = this.playerTile.x + dx * 2;
     const fy = this.playerTile.y + dy * 2;
     this.playerTile.x = fx; this.playerTile.y = fy;
-    gameState.map = { name: this.mapName, x: fx, y: fy };
+    SetCurrentMap({ name: this.mapName, x: fx, y: fy });
     const tx = fx * TILE_SIZE + TILE_SIZE / 2;
     const ty = fy * TILE_SIZE + TILE_SIZE;
     const startY = this.playerSprite.y;

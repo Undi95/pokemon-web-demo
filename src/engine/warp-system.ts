@@ -366,5 +366,26 @@ export function resetWarpState(): void {
   _gPendingWarpKind = null;
 }
 
+// ─── DynamicWarp 1:1 décomp (= setdynamicwarp opcode) ────────────────────────
+
+/** 1:1 décomp `ScrCmd_setdynamicwarp` (scrcmd.c) :
+ *    SetDynamicWarp(mapGroup, mapNum, warpId);
+ *  Stocke dans `gSaveBlock1Ptr->dynamicWarp` la prochaine destination MAP_DYNAMIC.
+ *  Notre port : mapId est string (= conversion mapGroup/mapNum → name déférée),
+ *  stocké dans `__dynamicWarpMapId` overlay. */
+export function SetDynamicWarp(mapId: string, x: number, y: number): void {
+  gSaveBlock1Ptr.dynamicWarp = { mapGroup: 0, mapNum: 0, warpId: -1, x, y };
+  (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId = mapId;
+}
+
+/** 1:1 décomp `GetDynamicWarp` accessor : lit gSaveBlock1Ptr->dynamicWarp.
+ *  Retourne undefined si pas set. */
+export function GetDynamicWarp(): { mapId: string; x: number; y: number } | undefined {
+  const w = gSaveBlock1Ptr.dynamicWarp as { x: number; y: number } | undefined;
+  const mapId = (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId;
+  if (!mapId || !w) return undefined;
+  return { mapId, x: w.x, y: w.y };
+}
+
 // Re-exports pour back-compat avec ancien API (= player-avatar import).
 // TODO Phase 4.7 : refactor caller pour use new typed API.

@@ -90,6 +90,7 @@ export type ScriptContext = {
 
 import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { SetDynamicWarp } from './warp-system';
 import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { setStringVar } from './string-buffers';
@@ -121,8 +122,15 @@ const SPECIALS: Record<string, SpecialFn> = {
     const rivalIsBoy = gSaveBlock2Ptr.playerGender === FEMALE;
     setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
   },
-  // Heal complet (HP + PP + status) de toute la party. Centre Pokémon.
-  HealPlayerParty: () => { gameState.healAllParty(); },
+  // 1:1 décomp `HealPlayerParty()` (script_pokemon_util.c) : heal HP + PP +
+  // status pour tous les mons de gPlayerParty (= gSaveBlock1Ptr.playerParty).
+  HealPlayerParty: () => {
+    for (const m of (gSaveBlock1Ptr.playerParty as Array<{ currentHp: number; maxHp: number; status: unknown; moves: Array<{ pp: number; ppMax: number }> }>)) {
+      m.currentHp = m.maxHp;
+      m.status = null;
+      for (const mv of m.moves) mv.pp = mv.ppMax;
+    }
+  },
   // Save/Load party : décomp = mem-to-mem entre gPlayerParty et frontier
   // playerParty buffer, PAS d'écriture SRAM. La save SRAM ne se fait QUE via
   // START → SAUVER explicite. Notre party est déjà partagée en RAM. (Avant :
@@ -365,7 +373,7 @@ export async function runScript(
     if (op === 'setrespawn') { gSaveBlock1Ptr.respawnLocation = tokens[1]; continue; }
     // setdynamicwarp MAP_X, X, Y : spawn point dynamique (1er spawn de partie / cordes...)
     if (op === 'setdynamicwarp') {
-      gameState.setDynamicWarp(tokens[1], Number(tokens[2]) || 0, Number(tokens[3]) || 0);
+      SetDynamicWarp(tokens[1], Number(tokens[2]) || 0, Number(tokens[3]) || 0);
       continue;
     }
     if (op === 'setstepcallback') {

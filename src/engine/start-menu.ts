@@ -962,7 +962,7 @@ function _tickSaveSavingMsg(): void {
   // Gate 1:1 RunSaveCallback : wait printer done.
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // TrySavingData (= notre persist).
-  gameState.save();
+  void (async () => { const { SaveGame } = await import('./save-system'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
   const text = getText('gText_PlayerSavedGame') ?? '{PLAYER} a sauvegardé la partie.';
   ShowFieldMessage(text + '$');

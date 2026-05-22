@@ -50,6 +50,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from './decomp-consta
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from './save-block-state';
+import { GetObjectXY } from './web-overlays';
 
 const BASE = '/decomp/em';
 
@@ -2353,7 +2354,7 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   const { gameState } = await import('./game-state');
   for (const template of templates) {
     const idKey = template.localIdRaw || `idx_${template.localId}`;
-    const pos = gameState.getObjectXY(currentMapId, idKey);
+    const pos = GetObjectXY(currentMapId, idKey);
     if (pos) {
       template.x = pos.x;
       template.y = pos.y;

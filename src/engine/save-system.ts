@@ -153,6 +153,26 @@ export function LoadGameSave(): number {
   return sSaveFileStatus;
 }
 
+/** 1:1 décomp `HandleSavingData(SAVE_NORMAL)` (save.c:765-806) :
+ *    Sync runtime → blocks (= PreSaveSyncBlocks équivalent) puis
+ *    `WriteSaveSlot(FULL_SAVE_SLOT)`. Notre port : check SaveLocked avant
+ *    le sync coûteux (= bypass total pour les modes test). */
+export async function SaveGame(): Promise<boolean> {
+  if (_saveLocked) {
+    console.log('[save-system] SaveGame skipped (SRAM locked)');
+    return false;
+  }
+  // 1:1 décomp : sync states runtime → blocks AVANT save (= PreSaveSyncBlocks
+  // wrap les helpers SaveObjectEvents/SyncPlayerPositionToBlock/etc).
+  try {
+    const lsMod = await import('./load_save');
+    lsMod.PreSaveSyncBlocks();
+  } catch (e) {
+    console.warn('[save-system] PreSaveSyncBlocks failed (non-fatal):', e);
+  }
+  return TrySavingData();
+}
+
 /** 1:1 décomp `TrySavingData(SAVE_NORMAL)` → `HandleSavingData` →
  *  `WriteSaveSectorOrSlot(FULL_SAVE_SLOT)` (save.c:765/707/138). Le moteur
  *  gère rotation slot + gSaveCounter++ + checksum/signature. (Le sync

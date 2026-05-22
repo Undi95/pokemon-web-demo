@@ -32,6 +32,7 @@ import { FlagSet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
+import { GetCurrentMap } from './load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
 
@@ -567,7 +568,7 @@ registerSpecial('GetPlayerFacingDirection', () => {
   // 1:1 décomp : retourne gObjectEvents[gPlayerAvatar.objectEventId].facingDirection.
   // Notre port stocke direct DIR_* (= DIR_NONE=0, DIR_SOUTH=1, DIR_NORTH=2,
   // DIR_WEST=3, DIR_EAST=4) dans block1.__facing.
-  return gameState.map?.facing ?? 0;
+  return GetCurrentMap()?.facing ?? 0;
 });
 
 /** 1:1 décomp `ShouldTryGetTrainerScript` (battle_setup.c). Returns 0 = no

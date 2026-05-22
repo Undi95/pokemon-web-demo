@@ -1,5 +1,6 @@
 import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
+import { SetDynamicWarp, GetDynamicWarp } from './warp-system';
 import { VarSet } from './script-vars';
 import { RunScriptImmediately, ensureCommonScriptsLoaded } from './script-runtime';
 import { NewGameInitPCItems } from './pc-items';
@@ -43,7 +44,7 @@ export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
 
   // Spawn manuel dans le camion. Coords (1, 2) = côté ouest du camion 5×5,
   // le joueur marche vers l'est et déclenche le coord trigger à (3, 2).
-  gameState.setDynamicWarp('MAP_INSIDE_OF_TRUCK', 1, 2);
+  SetDynamicWarp('MAP_INSIDE_OF_TRUCK', 1, 2);
 
   // C2 fix : starter Treecko hardcodé RETIRÉ (= leak debug en démo normale).
   // 1:1 décomp : le starter est ajouté à la party UNIQUEMENT via
@@ -54,6 +55,6 @@ export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
 
   console.log(`[new-game-init] init OK pour ${gender}`,
     'flags=', Object.keys(gSaveBlock1Ptr.flags).length,
-    'dynamicWarp=', gameState.dynamicWarp,
+    'dynamicWarp=', GetDynamicWarp(),
     'party=', gSaveBlock1Ptr.playerPartyCount);
 }

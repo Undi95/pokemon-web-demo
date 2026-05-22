@@ -73,7 +73,7 @@ import {
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
 import { gameState } from '../engine/game-state';
-import { PostLoadApplyBlocks } from '../engine/load_save';
+import { PostLoadApplyBlocks, SetCurrentMap } from '../engine/load_save';
 import {
   SpawnObjectEventsOnMap,
   UpdateObjectEvents,
@@ -108,6 +108,7 @@ import {
   getMetatileBehaviorAtPlayerPos,
   getPlayerCoordsFromWarp,
   GetAdjustedInitialDirection,
+  GetDynamicWarp,
 } from '../engine/warp-system';
 import type { WarpKind } from '../engine/warp-system';
 import {
@@ -934,7 +935,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.10 : update gameState.map IN-MEMORY (pas de save auto). Le user
     // doit explicitement save via le Start Menu → SAUVEG. (= 1:1 décomp où
     // l'overworld n'auto-save pas, c'est le menu Save qui appelle TrySavingData).
-    gameState.map = { name: mapId, x: sx, y: sy, facing: spawnDir };
+    SetCurrentMap({ name: mapId, x: sx, y: sy, facing: spawnDir });
 
     return header;
   }
@@ -1029,7 +1030,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // warps non-door (= ladder/arrow/teleport), on preserve aussi.
       //
       // Phase 4.10 Chunk 1 : MAP_DYNAMIC + WARP_ID_DYNAMIC = destination
-      // résolue via gameState.dynamicWarp (= 1:1 décomp gSaveBlock1Ptr->dynamicWarp).
+      // résolue via GetDynamicWarp() (= 1:1 décomp gSaveBlock1Ptr->dynamicWarp).
       // Set par `setdynamicwarp` opcode dans les scripts (e.g. truck →
       // setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10) ou directement par notre
       // boot init pour le démo.
@@ -1038,7 +1039,7 @@ export class TestOverworldScene extends Phaser.Scene {
       let destY: number;
       let destDir: number;
       if (destMapId === 'MAP_DYNAMIC') {
-        const dw = gameState.dynamicWarp;
+        const dw = GetDynamicWarp();
         if (!dw) {
           console.error('[executeWarp] MAP_DYNAMIC sans dynamicWarp set, abort');
           this.warpInProgress = false;

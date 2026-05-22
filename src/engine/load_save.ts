@@ -290,6 +290,47 @@ export function SetCurrentMapLocation(mapId: string, x: number, y: number, warpI
   block1.pos = { x, y };
 }
 
+// ─── Map courante helpers (= 1:1 décomp `gSaveBlock1Ptr->location` + `pos`) ──
+
+/** 1:1 décomp accessor : composite `{ name, x, y, facing? }` depuis
+ *  `gSaveBlock1Ptr->location` + `gSaveBlock1Ptr->pos` + `__mapId/__facing`
+ *  overlay (= notre web port stocke le mapId string et facing en plus). */
+export function GetCurrentMap(): { name: string; x: number; y: number; facing?: number } | undefined {
+  const block1 = GetSaveBlock1();
+  const loc = block1.location;
+  const mapId = (block1 as { __mapId?: string }).__mapId;
+  // location invalid sentinel : (-1, -1, -1, -1, -1) après emptySaveBlock1
+  // OR (0, 0, 0, 0, 0) pré-WarpIntoMap.
+  const isDummy = (loc.mapGroup === -1 && loc.mapNum === -1)
+               || (loc.mapGroup === 0 && loc.mapNum === 0 && !mapId);
+  if (isDummy || !mapId) return undefined;
+  // 1:1 décomp : pos est la position courante du player (= updated par
+  // CameraMove). Si pos invalide (= 0, 0 initial), fallback à location.x/y.
+  const px = (block1.pos.x === 0 && block1.pos.y === 0 && loc.x >= 0) ? loc.x : block1.pos.x;
+  const py = (block1.pos.x === 0 && block1.pos.y === 0 && loc.y >= 0) ? loc.y : block1.pos.y;
+  return { name: mapId, x: px, y: py, facing: (block1 as { __facing?: number }).__facing };
+}
+
+/** 1:1 strict setter : update `gSaveBlock1Ptr->location` + `pos` + overlay
+ *  `__mapId/__facing` selon le composite. v=undefined → clear (= sentinel). */
+export function SetCurrentMap(v: { name: string; x: number; y: number; facing?: number } | undefined): void {
+  const block1 = GetSaveBlock1();
+  if (!v) {
+    // Clear → reset location + pos to invalid sentinel.
+    block1.location = { mapGroup: -1, mapNum: -1, warpId: -1, x: -1, y: -1 };
+    block1.pos = { x: 0, y: 0 };
+    delete (block1 as { __mapId?: string }).__mapId;
+    delete (block1 as { __facing?: number }).__facing;
+    return;
+  }
+  // 1:1 décomp `WarpIntoMap` flow : location = current map info (= warp dest),
+  // pos = spawn coords (= depuis SetPlayerCoordsFromWarp).
+  block1.location = { mapGroup: 0, mapNum: 0, warpId: -1, x: -1, y: -1 };
+  block1.pos = { x: v.x, y: v.y };
+  (block1 as { __mapId?: string }).__mapId = v.name;
+  (block1 as { __facing?: number }).__facing = v.facing;
+}
+
 // ─── Save flow complet (= 1:1 décomp HandleSavingData) ──────────────────────
 
 /** Pre-save sync : sync tous les states courants vers les save blocks AVANT

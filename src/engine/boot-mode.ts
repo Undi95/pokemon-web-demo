@@ -19,6 +19,9 @@
 import { gameState, SetSaveLocked } from './game-state';
 import { FlagSet, VarSet } from './script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
+import { SetDynamicWarp } from './warp-system';
+import { GetCurrentMap } from './load_save';
+import { SetObjectXY } from './web-overlays';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './new-game-flags';
@@ -118,10 +121,23 @@ function applyNoIntroPreset(): void {
   // 1:1 décomp : NewGameInitData ne reset PAS les options (seul le cold boot
   // Sav2_ClearSetDefault les met aux défauts). Préserver à travers reset()
   // comme playerName/gender (bug #5 : options reset devant le prof).
-  const existingOptions = gameState.options;
+  // Snapshot direct depuis gSaveBlock2Ptr (= 1:1 décomp fields).
+  const existingOptions = {
+    textSpeed: gSaveBlock2Ptr.optionsTextSpeed ?? 0,
+    battleSceneOff: gSaveBlock2Ptr.optionsBattleSceneOff ?? 0,
+    battleStyle: gSaveBlock2Ptr.optionsBattleStyle ?? 0,
+    sound: gSaveBlock2Ptr.optionsSound ?? 0,
+    buttonMode: gSaveBlock2Ptr.optionsButtonMode ?? 0,
+    windowFrameType: gSaveBlock2Ptr.optionsWindowFrameType ?? 0,
+  };
   // 1:1 décomp `Sav2_ClearSetDefault` mais on restore les fields preserved.
   ResetSaveBlocks();
-  gameState.setOptions(existingOptions);
+  gSaveBlock2Ptr.optionsTextSpeed = existingOptions.textSpeed;
+  gSaveBlock2Ptr.optionsBattleSceneOff = existingOptions.battleSceneOff;
+  gSaveBlock2Ptr.optionsBattleStyle = existingOptions.battleStyle;
+  gSaveBlock2Ptr.optionsSound = existingOptions.sound;
+  gSaveBlock2Ptr.optionsButtonMode = existingOptions.buttonMode;
+  gSaveBlock2Ptr.optionsWindowFrameType = existingOptions.windowFrameType;
   if (existingName && existingName !== 'PLAYER') {
     gSaveBlock2Ptr.playerName = existingName;
     gSaveBlock2Ptr.playerGender = existingGender;
@@ -230,7 +246,7 @@ function applyNoIntroPreset(): void {
   const playerHouseMap = gSaveBlock2Ptr.playerGender === FEMALE
     ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F'
     : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
-  gameState.setObjectXY(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
+  SetObjectXY(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
   // Note : movementType (FACE_UP) n'est pas persisté actuellement (= follow-up).
   // L'API `setObjectMovementType` n'existe pas encore sur gameState. Mom
   // gardera son MOVEMENT_TYPE_FACE_RIGHT du template jusqu'à ce qu'on étende.
@@ -343,8 +359,9 @@ export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
     // `?nointro` = charger save existante directement (= 1:1 ROM Continue).
     // Pas de preset, pas de touch à la save : juste resume.
-    if (HasValidSave() && LoadGameSave() === SAVE_STATUS_OK && gameState.map) {
-      const m = gameState.map;
+    const _resumedMap = (HasValidSave() && LoadGameSave() === SAVE_STATUS_OK) ? GetCurrentMap() : undefined;
+    if (_resumedMap) {
+      const m = _resumedMap;
       console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y}) (SRAM bloquée)`);
       return {
         mapId: m.name, x: m.x, y: m.y,
@@ -365,7 +382,7 @@ export function decideBootMode(): BootSpawn {
     gSaveBlock2Ptr.playerName = 'PLAYER';
     gSaveBlock2Ptr.playerGender = MALE;
     NewGameInit();  // = trainerId set par InitPlayerTrainerId (= u32 random)
-    gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
+    SetDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
     // 1:1 ROM : pas de save SRAM auto (= user-flag, ne pas écraser sa save).
     console.log('[boot-mode] ?truck shortcut : reset RAM + truck spawn (RAM-only, pas de save auto)');
     // 1:1 décomp `WarpToTruck` (new_game.c:127) → SetWarpDestination(..., -1, -1, -1) →
@@ -391,10 +408,11 @@ export function decideBootMode(): BootSpawn {
   const cameFromBirch = gSaveBlock2Ptr.playerName !== undefined
                      && gSaveBlock2Ptr.playerName !== ''
                      && gSaveBlock2Ptr.playerName !== 'PLAYER'
-                     && gameState.map === undefined;
+                     && GetCurrentMap() === undefined;
   // Tentative de resume from save (= cold boot avec save existante, pas post-Birch).
-  if (!cameFromBirch && HasValidSave() && LoadGameSave() === SAVE_STATUS_OK && gameState.map) {
-    const m = gameState.map;
+  const _loadedMap = (!cameFromBirch && HasValidSave() && LoadGameSave() === SAVE_STATUS_OK) ? GetCurrentMap() : undefined;
+  if (_loadedMap) {
+    const m = _loadedMap;
     return {
       mapId: m.name,
       x: m.x,
@@ -426,9 +444,21 @@ export function decideBootMode(): BootSpawn {
   // sans cette préservation, les options perso réglées au titlescreen sont
   // remises à zéro "devant le prof" (bug #5). On les capture/restaure comme
   // playerName/gender (= 1:1 NewGameInitData : options intactes).
-  const preservedOptions = gameState.options;
+  const preservedOptions = {
+    textSpeed: gSaveBlock2Ptr.optionsTextSpeed ?? 0,
+    battleSceneOff: gSaveBlock2Ptr.optionsBattleSceneOff ?? 0,
+    battleStyle: gSaveBlock2Ptr.optionsBattleStyle ?? 0,
+    sound: gSaveBlock2Ptr.optionsSound ?? 0,
+    buttonMode: gSaveBlock2Ptr.optionsButtonMode ?? 0,
+    windowFrameType: gSaveBlock2Ptr.optionsWindowFrameType ?? 0,
+  };
   ResetSaveBlocks();
-  gameState.setOptions(preservedOptions);
+  gSaveBlock2Ptr.optionsTextSpeed = preservedOptions.textSpeed;
+  gSaveBlock2Ptr.optionsBattleSceneOff = preservedOptions.battleSceneOff;
+  gSaveBlock2Ptr.optionsBattleStyle = preservedOptions.battleStyle;
+  gSaveBlock2Ptr.optionsSound = preservedOptions.sound;
+  gSaveBlock2Ptr.optionsButtonMode = preservedOptions.buttonMode;
+  gSaveBlock2Ptr.optionsWindowFrameType = preservedOptions.windowFrameType;
   if (preservedName && preservedName !== 'PLAYER') {
     gSaveBlock2Ptr.playerName = preservedName;
     gSaveBlock2Ptr.playerGender = preservedGender;
@@ -437,7 +467,7 @@ export function decideBootMode(): BootSpawn {
   // - setDynamicWarp Bourg (= sera utilisé par MAP_DYNAMIC quand le coord
   //   trigger SetIntroFlagsMale fait son setdynamicwarp + warp).
   NewGameInit();
-  gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
+  SetDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
   // 1:1 décomp `WarpToTruck` (new_game.c:127) → coords par défaut center map +
   // facing DIR_SOUTH (= ResetInitialPlayerAvatarState). User a A/B testé contre
   // ROM (session 124) : spawn ROM = (2, 2) DIR_SOUTH pour truck 5×5.

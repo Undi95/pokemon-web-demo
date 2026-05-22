@@ -31,7 +31,8 @@ import {
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
 import { gameState } from './game-state';
-import { setPendingWarp, getPendingWarp } from './warp-system';
+import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
+import { GetCurrentMap } from './load_save';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
 import {
@@ -2252,7 +2253,7 @@ registerOpcode('setdynamicwarp', (_ctx, args) => {
   const x = parseInt(xStr ?? '0', 10);
   const y = parseInt(yStr ?? '0', 10);
   // Set via gameState (= used by executeWarp MAP_DYNAMIC resolution).
-  gameState.setDynamicWarp(destMap, x, y);
+  SetDynamicWarp(destMap, x, y);
   console.log(`[opcode setdynamicwarp] ${destMap} (${x},${y})`);
   return false;
 });
@@ -2785,8 +2786,8 @@ registerOpcode('showobjectat', (_ctx, args) => {
 registerOpcode('getplayerxy', (_ctx, args) => {
   const xVar = args[0] ?? '';
   const yVar = args[1] ?? '';
-  if (xVar) VarSet(xVar, gameState.map?.x ?? 0);
-  if (yVar) VarSet(yVar, gameState.map?.y ?? 0);
+  if (xVar) VarSet(xVar, GetCurrentMap()?.x ?? 0);
+  if (yVar) VarSet(yVar, GetCurrentMap()?.y ?? 0);
   return false;
 });
 

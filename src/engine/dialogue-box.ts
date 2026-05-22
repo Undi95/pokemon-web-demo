@@ -341,8 +341,11 @@ export class DialogueBox {
     fillWindowPixelBuffer(win, 0);
 
     const encoded = encodeStringForFont(pageText, charmap);
-    // textSpeed depuis options user (1=FAST, 4=MID, 8=SLOW frames/char). 1:1 menu.c:77.
-    const textSpeed = gameState.getTextSpeedFrameDelay();
+    // textSpeed depuis options user (1=FAST, 4=MID, 8=SLOW frames/char). 1:1 menu.c:77
+    // `sTextSpeedFrameDelays = {8, 4, 1}` indexed par `gSaveBlock2Ptr->optionsTextSpeed`.
+    const TEXT_SPEED_FRAME_DELAYS = [8, 4, 1];
+    const idx = Math.max(0, Math.min(2, gSaveBlock2Ptr.optionsTextSpeed ?? 0));
+    const textSpeed = TEXT_SPEED_FRAME_DELAYS[idx];
     // onPause : 1:1 décomp NewGameBirchSpeech_WaitForThisIsPokemonText (main_menu.c:2254)
     // qui détecte EXT_CTRL_CODE_PAUSE pour spawn Lotad release. Fire once par show().
     let pauseCallbackFired = false;
