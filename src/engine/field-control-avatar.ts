@@ -25,7 +25,14 @@
  */
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent } from './map-loader';
-import { gPlayerAvatar, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING } from './player-avatar';
+import {
+  gPlayerAvatar,
+  DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
+  GetPlayerFacingDirection,
+  PlayerGetElevation,
+  PlayerGetDestCoords,
+  GetXYCoordsOneStepInFrontOfPlayer,
+} from './player-avatar';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -193,28 +200,46 @@ export interface MapPosition {
 }
 
 /** 1:1 décomp `GetPlayerPosition` (field_control_avatar.c:194-198).
+ *
+ *  Body décomp :
+ *  ```c
+ *  PlayerGetDestCoords(&position->x, &position->y);
+ *  position->elevation = PlayerGetElevation();
+ *  ```
+ *
  *  Stores player current position (= INTERNAL coords) + elevation. */
 export function GetPlayerPosition(position: MapPosition): void {
-  position.x = gPlayerAvatar.x + MAP_OFFSET;
-  position.y = gPlayerAvatar.y + MAP_OFFSET;
-  position.elevation = gPlayerAvatar.currentElevation;
+  const coords = PlayerGetDestCoords();
+  // 1:1 décomp : PlayerGetDestCoords return INTERNAL coords. Notre impl return
+  // LOGICAL, donc +MAP_OFFSET ici pour matcher décomp convention.
+  position.x = coords.x + MAP_OFFSET;
+  position.y = coords.y + MAP_OFFSET;
+  position.elevation = PlayerGetElevation();
 }
 
 /** 1:1 décomp `GetInFrontOfPlayerPosition` (field_control_avatar.c:200-210).
- *  Stores position 1 tile DEVANT le player (= dans la direction de son facing).
+ *
+ *  Body décomp :
+ *  ```c
+ *  s16 x, y;
+ *  GetXYCoordsOneStepInFrontOfPlayer(&position->x, &position->y);
+ *  PlayerGetDestCoords(&x, &y);
+ *  if (MapGridGetElevationAt(x, y) != ELEVATION_TRANSITION)
+ *      position->elevation = PlayerGetElevation();
+ *  else
+ *      position->elevation = ELEVATION_TRANSITION;
+ *  ```
+ *
+ *  Stores position 1 tile DEVANT le player + elevation (= preserved si dest
+ *  tile a ELEVATION_TRANSITION, sinon = player current elevation).
  *  Used pour A-button interaction + push-door check. */
 export function GetInFrontOfPlayerPosition(position: MapPosition): void {
-  const facing = gPlayerAvatar.facing;
-  let dx = 0, dy = 0;
-  if (facing === DIR_NORTH) dy = -1;
-  else if (facing === DIR_SOUTH) dy = 1;
-  else if (facing === DIR_WEST) dx = -1;
-  else if (facing === DIR_EAST) dx = 1;
-  position.x = gPlayerAvatar.x + MAP_OFFSET + dx;
-  position.y = gPlayerAvatar.y + MAP_OFFSET + dy;
-  // 1:1 décomp : si tile devant a ELEVATION_TRANSITION (= bridge), preserve
-  // player elevation. Sinon prendre l'elevation du player current.
-  position.elevation = gPlayerAvatar.currentElevation;
+  const inFront = GetXYCoordsOneStepInFrontOfPlayer();
+  position.x = inFront.x + MAP_OFFSET;
+  position.y = inFront.y + MAP_OFFSET;
+  // 1:1 décomp ELEVATION_TRANSITION = 0xF check. Skip pour MVP (= notre impl
+  // ne tracks pas ELEVATION_TRANSITION par tile). Default = player elevation.
+  position.elevation = PlayerGetElevation();
 }
 
 // ─── Warp event lookup helpers 1:1 décomp ──────────────────────────────────
