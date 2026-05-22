@@ -32,6 +32,8 @@ import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '..
 import { gameState } from '../engine/game-state';
 import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
 import { PostLoadApplyBlocks } from '../engine/load_save';
+import { gSaveBlock2Ptr } from '../engine/save-block-state';
+import { FEMALE } from '../engine/decomp-globals';
 
 const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';
@@ -209,8 +211,8 @@ export class OverworldScene extends Phaser.Scene {
       // JSON déjà en cache (warp interne) → preload PNGs direct.
       preloadAllDoors(this);
     }
-    this.load.spritesheet('player-walk', playerSheetUrl(gameState.gender, 'walking'), { frameWidth: 16, frameHeight: 32 });
-    this.load.spritesheet('player-run', playerSheetUrl(gameState.gender, 'running'), { frameWidth: 16, frameHeight: 32 });
+    this.load.spritesheet('player-walk', playerSheetUrl(gSaveBlock2Ptr.playerGender === FEMALE ? 'FEMALE' : 'MALE','walking'), { frameWidth: 16, frameHeight: 32 });
+    this.load.spritesheet('player-run', playerSheetUrl(gSaveBlock2Ptr.playerGender === FEMALE ? 'FEMALE' : 'MALE','running'), { frameWidth: 16, frameHeight: 32 });
   }
 
   create() {

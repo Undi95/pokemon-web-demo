@@ -89,6 +89,8 @@ export type ScriptContext = {
 };
 
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { setStringVar } from './string-buffers';
 import {
@@ -116,7 +118,7 @@ const SPECIALS: Record<string, SpecialFn> = {
   // Cf. src/data/event_scripts.s + src/script_specials.c.
   GetRivalSonDaughterString: () => {
     // gameState.gender MALE → rival = May (fille). FEMALE → rival = Brendan (garçon).
-    const rivalIsBoy = gameState.gender === 'FEMALE';
+    const rivalIsBoy = gSaveBlock2Ptr.playerGender === FEMALE;
     setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
   },
   // Heal complet (HP + PP + status) de toute la party. Centre Pokémon.
@@ -433,7 +435,7 @@ export async function runScript(
     if (op === 'cleartrainerflag') { FlagClear(`__defeated_${tokens[1]}`); continue; }
 
     if (op === 'checkplayergender') {
-      vars['VAR_RESULT'] = gameState.gender === 'MALE' ? 0 : 1;
+      vars['VAR_RESULT'] = gSaveBlock2Ptr.playerGender === MALE ? 0 : 1;
       VarSet('VAR_RESULT', vars['VAR_RESULT']);
       continue;
     }
@@ -533,13 +535,13 @@ export async function runScript(
       // bufferpartymonnick STR_VAR_N, SLOT (0-5) → nickname du Pokémon à ce slot
       const slot = Math.max(0, Math.min(5, Number(tokens[2]) || 0));
       const mon = gameState.party[slot];
-      setStringVar(Number(tokens[1]) || 1, mon?.nickname || mon?.speciesNameFr || gameState.playerName);
+      setStringVar(Number(tokens[1]) || 1, mon?.nickname || mon?.speciesNameFr || (gSaveBlock2Ptr.playerName ?? 'UNDI'));
       continue;
     }
     if (op === 'bufferleadmonspeciesname') {
       // bufferleadmonspeciesname STR_VAR_N → species name du lead (party[0])
       const lead = gameState.party[0];
-      setStringVar(Number(tokens[1]) || 1, lead?.speciesNameFr || gameState.playerName);
+      setStringVar(Number(tokens[1]) || 1, lead?.speciesNameFr || (gSaveBlock2Ptr.playerName ?? 'UNDI'));
       continue;
     }
     if (op === 'bufferstdstring' || op === 'bufferdecorationname'

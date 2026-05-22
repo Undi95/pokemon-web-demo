@@ -35,6 +35,7 @@ import type { DecompTask } from './decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
@@ -440,7 +441,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
   switch (fieldUseFunc) {
     case 'ItemUseOutOfBattle_CannotUse':
       // 1:1 décomp item_use.c — gText_DadsAdvice (strings.json FR officielle).
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Medicine': {
       // 1:1 décomp item_use.c:753-757 ItemUseOutOfBattle_Medicine :
@@ -557,7 +558,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // DadsAdvice (= 1:1 décomp comportement quand prerequisite check
       // échoue, e.g. !Overworld_IsBikingAllowed || !allowEscaping). À porter
       // proprement = chantier overworld subsystem dédié, voir DETTE-OVERWORLD.
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
@@ -573,7 +574,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         VarSet('VAR_REPEL_STEP_COUNT', steps);
         _CtxRemoveUsedItem(itemId);
         // 1:1 :870 gText_PlayerUsedVar2 (= player utilise X) + suffix repelled.
-        const player = gameState.playerName || 'JOUEUR';
+        const player = gSaveBlock2Ptr.playerName || 'JOUEUR';
         _showItemMessageThenRebuild(task,
           `${player} utilise\n${itemName}.\nÇa va repousser les\nPOKéMON sauvages.`);
       }
@@ -582,7 +583,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
     case 'ItemUseOutOfBattle_BlackWhiteFlute': {
       // 1:1 décomp item_use.c:888-902 — set encounter flag selon White/Black.
       // ITEM_WHITE_FLUTE = 43, ITEM_BLACK_FLUTE = 42.
-      const player = gameState.playerName || 'JOUEUR';
+      const player = gSaveBlock2Ptr.playerName || 'JOUEUR';
       if (itemId === 43 /* ITEM_WHITE_FLUTE */) {
         FlagSet('FLAG_SYS_ENC_UP_ITEM');
         FlagClear('FLAG_SYS_ENC_DOWN_ITEM');
@@ -672,7 +673,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
           SetUpItemUseCallback(task);
           return;
         default:
-          msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+          msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
           break;
       }
       break;
@@ -716,11 +717,11 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       // d'overworld subsystem), donc DadsAdvice = 1:1 valide pour ces items
       // en l'état. À étendre quand fishing/mail/pokeblock/berry-water
       // seront portés (= chantiers indépendants).
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
       break;
     default:
       // Handler inconnu → DadsAdvice 1:1 FR pour ne pas exposer le nom interne.
-      msg = `Conseil de PAPA…\n${gameState.playerName || 'JOUEUR'}, chaque chose en son temps!`;
+      msg = `Conseil de PAPA…\n${gSaveBlock2Ptr.playerName || 'JOUEUR'}, chaque chose en son temps!`;
   }
   _showItemMessage(task, msg);
 }

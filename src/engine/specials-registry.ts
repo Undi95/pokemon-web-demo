@@ -30,7 +30,8 @@ import { registerSpecial } from './script-opcodes';
 import { gameState } from './game-state';
 import { FlagSet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { MALE, FEMALE } from './decomp-globals';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
 
@@ -41,7 +42,7 @@ import { setStringVar } from './string-buffers';
  *  placeholder {STR_VAR_1} dans dialogues type "Hum, salut, GRAND/GRANDE !".
  *  Used par e.g. LittlerootTown_Text_CanYouGoSeeWhatsHappening (= Twin NPC). */
 registerSpecial('GetPlayerBigGuyGirlString', () => {
-  const stringVar = gameState.gender === 'MALE' ? 'GRAND' : 'GRANDE';
+  const stringVar = gSaveBlock2Ptr.playerGender === MALE ? 'GRAND' : 'GRANDE';
   // 1:1 décomp : StringCopy(gStringVar1, gText_BigGuy/gText_BigGirl).
   // Notre version : stocke dans gameState pour expand par dialogue-box.ts.
   setStringVar(1, stringVar);
@@ -50,7 +51,7 @@ registerSpecial('GetPlayerBigGuyGirlString', () => {
 /** 1:1 décomp `BufferBigGuyOrBigGirlString` (string_util.c). Same que
  *  `GetPlayerBigGuyGirlString` mais pour expand dans un autre context. */
 registerSpecial('BufferBigGuyOrBigGirlString', () => {
-  const stringVar = gameState.gender === 'MALE' ? 'GRAND' : 'GRANDE';
+  const stringVar = gSaveBlock2Ptr.playerGender === MALE ? 'GRAND' : 'GRANDE';
   setStringVar(1, stringVar);
 });
 
@@ -333,9 +334,9 @@ registerSpecial('GetMomOrDadStringForTVMessage', () => {
   const mapId = gMapHeader?.id ?? '';
   const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
   const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
-  const isInPlayersHouse = (gameState.gender === 'MALE' && isMaleHouse)
-                        || (gameState.gender === 'FEMALE' && isFemaleHouse);
-  console.log(`[special GetMomOrDadStringForTVMessage] mapId=${mapId} gender=${gameState.gender} isInPlayersHouse=${isInPlayersHouse}`);
+  const isInPlayersHouse = (gSaveBlock2Ptr.playerGender === MALE && isMaleHouse)
+                        || (gSaveBlock2Ptr.playerGender === FEMALE && isFemaleHouse);
+  console.log(`[special GetMomOrDadStringForTVMessage] mapId=${mapId} gender=${gSaveBlock2Ptr.playerGender === FEMALE ? 'FEMALE' : 'MALE'} isInPlayersHouse=${isInPlayersHouse}`);
   if (isInPlayersHouse) {
     setStringVar(1, 'MAMAN');
     VarSet('VAR_TEMP_3', 1);
@@ -464,7 +465,7 @@ registerSpecial('IsTrainerRegistered', () => {
 /** 1:1 décomp `GetRivalSonDaughterString` (string_util.c) — set sStringVar1
  *  pour rival NPC dialog. May = "fille", Brendan = "fils". 3x usage. */
 registerSpecial('GetRivalSonDaughterString', () => {
-  const rivalIsBoy = gameState.gender === 'FEMALE';
+  const rivalIsBoy = gSaveBlock2Ptr.playerGender === FEMALE;
   setStringVar(1, rivalIsBoy ? 'fils' : 'fille');
 });
 

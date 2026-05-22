@@ -33,6 +33,8 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { FEMALE } from './decomp-globals';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
@@ -461,7 +463,7 @@ async function _loadAssets(): Promise<BagAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const gender = gameState.gender === 'FEMALE' ? 'female' : 'male';
+    const gender = gSaveBlock2Ptr.playerGender === FEMALE ? 'female' : 'male';
     const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal, bagRaw, bagPal,
            scrollArrow, scrollArrowPal] = await Promise.all([
       loadIndexedPngStrict(`/decomp/em/bag/bag_${gender}.png`, 4),

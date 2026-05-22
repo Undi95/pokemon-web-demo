@@ -35,6 +35,8 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { FEMALE } from './decomp-globals';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
@@ -778,9 +780,9 @@ function _extractMonData(mon: PokemonInstance): void {
   s.isEgg = mon.isEgg ?? false;                 // 1:1 MON_DATA_IS_EGG
   s.nature = (mon.personality ?? 0) % 25;       // GetNature = pid % NUM_NATURES
   s.currentHP = mon.currentHp; s.maxHP = mon.maxHp;
-  s.OTName = gameState.playerName ?? '';
-  s.OTID = (gameState.trainerId ?? 0) >>> 0;
-  s.OTGender = gameState.gender === 'FEMALE' ? 1 : 0;
+  s.OTName = gSaveBlock2Ptr.playerName ?? '';
+  s.OTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
+  s.OTGender = gSaveBlock2Ptr.playerGender === FEMALE ? 1 : 0;
   s.metLocation = mon.metLocation;
   s.metLevel = mon.metLevel;
   s.pokeball = mon.pokeball || 'ITEM_POKE_BALL'; // 1:1 MON_DATA_POKEBALL

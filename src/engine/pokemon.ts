@@ -15,6 +15,7 @@ import {
 } from './data-tables';
 import { Random, Random32 } from './random';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from './data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
@@ -263,7 +264,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   //   value = playerTrainerId;    (= no RNG)
   //   ... ivs = randomIVs();      ← 2× Random() calls
   const personality = Random32();
-  const otId = gameState.trainerId ?? 0;
+  const otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
   const isShiny = isShinyFromOtIdPersonality(otId, personality);
   // 1:1 décomp `GetGenderFromSpeciesAndPersonality` (pokemon.c:6080) :
   // gender dérivé de species genderRatio + (personality & 0xFF).

@@ -540,7 +540,7 @@ function buildItems(): MenuItem[] {
   //   Pour PokéNav, le décomp utilise `gText_MenuOptionPokenav` (= "POKéNAV").
   //   {PLAYER} (= entry trainer card) → décomp expand `gText_MenuPlayer` =
   //     "{PLAYER}" via StringExpandPlaceholders ; nous on resolve direct via
-  //     gameState.playerName car notre AddTextPrinter ne fait pas l'expand.
+  //     (gSaveBlock2Ptr.playerName ?? 'UNDI') car notre AddTextPrinter ne fait pas l'expand.
   const items: MenuItem[] = [];
   if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
     items.push({ label: getString('gText_MenuPokedex'), onSelect: pokedexAction });
@@ -553,7 +553,7 @@ function buildItems(): MenuItem[] {
     items.push({ label: getString('gText_MenuOptionPokenav'), onSelect: pokenavAction });
   }
   // {PLAYER} entry : décomp expand placeholder, nous on resolve direct.
-  items.push({ label: gameState.playerName, onSelect: playerCardAction });
+  items.push({ label: (gSaveBlock2Ptr.playerName ?? 'UNDI'), onSelect: playerCardAction });
   items.push({ label: getString('gText_MenuSave'), onSelect: saveAction });
   items.push({ label: getString('gText_MenuOption'), onSelect: optionsAction });
   items.push({ label: getString('gText_MenuExit'), onSelect: () => true });

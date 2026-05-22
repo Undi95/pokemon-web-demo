@@ -70,7 +70,7 @@ import {
   T_NOT_MOVING,
   gPlayerAvatar,
 } from '../engine/player-avatar';
-import { gSaveBlock1Ptr } from '../engine/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
 import { gameState } from '../engine/game-state';
 import { PostLoadApplyBlocks } from '../engine/load_save';
@@ -757,7 +757,8 @@ export class TestOverworldScene extends Phaser.Scene {
     // (= source unique : sync depuis gSaveBlock2Ptr.playerGender via Birch flow
     // OR depuis save reload). 1:1 décomp field_player_avatar.c qui lit
     // `gSaveBlock2Ptr->playerGender` pour piquer le sprite asset (= Brendan ou May).
-    const playerGender = gameState.gender ?? 'MALE';
+    // 1:1 décomp field_player_avatar.c : lit `gSaveBlock2Ptr->playerGender`.
+    const playerGender: 'MALE' | 'FEMALE' = gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE';
     await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
 
     // 1:1 décomp `ResetFieldCamera()` (field_camera.c:69-72) — case 5 du

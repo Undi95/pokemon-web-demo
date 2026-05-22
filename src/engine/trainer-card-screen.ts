@@ -41,6 +41,7 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { gameState } from './game-state';
 import { FlagGet } from './script-vars';
 import { gSaveBlock2Ptr } from './gba-menu-system';
+import { FEMALE } from './decomp-globals';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -147,7 +148,7 @@ async function _loadAssets(): Promise<TrainerCardAssets> {
   if (_assets) return _assets;
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
-    const gender = gameState.gender === 'FEMALE' ? 'female' : 'male';
+    const gender = gSaveBlock2Ptr.playerGender === FEMALE ? 'female' : 'male';
     const trainerName = gender === 'female' ? 'may' : 'brendan';
     // 1:1 décomp LoadCardGfx + LoadPalette pour 0-stars Hoenn :
     //   - green.pal (48 entries) → BG_PLTT_ID(0) fill palettes 0+1+2
@@ -277,7 +278,7 @@ function _loadCardGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     //   star.pal → BG_PLTT_ID(4) (= achievement stars).
     LoadPalette(assets.starPalette, 4 * 16, 32);
     //   FEMALE : overwrite palette 1 avec female_bg.pal (= pink theme).
-    const isFemale = gameState.gender === 'FEMALE';
+    const isFemale = gSaveBlock2Ptr.playerGender === FEMALE;
     if (isFemale) {
       LoadPalette(assets.femaleBgPalette, 1 * 16, 32);
     }
@@ -323,7 +324,7 @@ function _bufferCardData(): {
     playerTrainerId?: number | number[]; playerName?: string;
     playerGender?: number;
   };
-  const name = sb2.playerName || gameState.playerName || 'PLAYER';
+  const name = sb2.playerName || (gSaveBlock2Ptr.playerName ?? 'UNDI') || 'PLAYER';
   // 1:1 décomp `trainer_card.c:722` :
   //   trainerCard->trainerId = (playerTrainerId[1] << 8) | playerTrainerId[0];
   // = les 16 bits BAS de l'ID 32-bit (ID dresseur PUBLIC, u16 0-65535).
@@ -355,7 +356,7 @@ function _bufferCardData(): {
     if (FlagGet(`FLAG_BADGE0${i}_GET`)) badges++;
   }
   const hasDex = FlagGet('FLAG_SYS_POKEDEX_GET');
-  const isFemale = (sb2.playerGender === 1) || gameState.gender === 'FEMALE';
+  const isFemale = (sb2.playerGender === 1) || gSaveBlock2Ptr.playerGender === FEMALE;
   return { name, trainerId, money, caughtMonsCount, hours, minutes, badges, hasDex, isFemale };
 }
 

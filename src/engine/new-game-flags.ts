@@ -21,6 +21,7 @@
 import { FlagSet } from './script-vars';
 import { Random, GetGeneratedTrainerIdLower } from './random';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).
  *  159 flags à SET au démarrage d'une nouvelle partie. */
@@ -200,7 +201,7 @@ export function NewGameInit(): void {
   // après NewGameInit (= boot-mode.ts ?truck preset → reset+NewGameInit+save)
   // → trainerId doit être persisté dans la save SaveBlock2.
   const trainerId = ((Random() << 16) | GetGeneratedTrainerIdLower()) >>> 0;
-  gameState.setTrainerId(trainerId);
+  gSaveBlock2Ptr.playerTrainerId = trainerId >>> 0;
   // 1:1 décomp `NewGameInitData` (new_game.c:186-187) :
   //   ClearBag();
   //   NewGameInitPCItems();

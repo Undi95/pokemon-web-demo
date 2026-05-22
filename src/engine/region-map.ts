@@ -34,6 +34,8 @@
 import type Phaser from 'phaser';
 import { SignalWaitState } from './script-opcodes';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { MALE } from './decomp-globals';
 import { FlagGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
@@ -488,7 +490,7 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
     // SPRITE_SHAPE(16x16) + SPRITE_SIZE(16x16) → sprite.c:702 setup).
     // Sprite icon gender-aware au playerIconSpritePos (= same coords que cursor
     // au start, 1:1 décomp `playerIconSpritePosX = cursorPosX` LoadRegionMapGfx case 5).
-    const playerKey = gameState.gender === 'MALE' ? 'region_map_brendan' : 'region_map_may';
+    const playerKey = gSaveBlock2Ptr.playerGender === MALE ? 'region_map_brendan' : 'region_map_may';
     const playerPx = (playerLoc.x * 8 - 4) * sx;
     const playerPy = (playerLoc.y * 8 - 4) * sy;
     st.playerIconSprite = scene.add.image(playerPx, playerPy, playerKey)

@@ -247,16 +247,13 @@ export class BirchRuntimeScene extends Phaser.Scene {
     this.overworldTransitionStarted = true;
     console.log('[BirchRuntime] CB2_NewGame detected → transitioning to TestOverworldScene');
 
-    // Sync gSaveBlock2Ptr → gameState (= playerName + gender choisis à la naming
-    // screen + Birch dialog "Garçon ou Fille?").
-    const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
+    // 1:1 décomp : gSaveBlock2Ptr->playerName + ->playerGender sont set par
+    // NamingScreen + Birch dialog "Garçon ou Fille?" via les auto modules.
+    // Plus de sync vers `gameState.*` (= éliminé : gameState lit direct
+    // gSaveBlock2Ptr maintenant).
+    const { gSaveBlock2Ptr } = await import('../engine/save-block-state');
     const { gameState } = await import('../engine/game-state');
-    const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
-    if (sb2.playerName) {
-      gameState.playerName = sb2.playerName;
-    }
-    gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
-    console.log(`[BirchRuntime] synced gameState : name='${gameState.playerName}' gender='${gameState.gender}'`);
+    console.log(`[BirchRuntime] post-NamingScreen : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'}`);
 
     // Clear gameState.map pour forcer le truck cinematic flow (= 1:1 décomp
     // WarpToTruck post-Birch). Sans ce clear, si une save précédente a un

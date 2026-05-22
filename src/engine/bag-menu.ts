@@ -76,6 +76,8 @@ import {
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { MALE } from './decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
@@ -469,12 +471,12 @@ function LoadBagMenu_Graphics(): boolean {
     _bagScheduleBgCopy(2);
     // case 2 : LoadCompressedPalette(gBagScreen{Female,Male}_Pal,
     //          BG_PLTT_ID(0), 2*PLTT_SIZE_4BPP) — gender 1:1 (:822).
-    const pal = (!IsWallysBag() && gameState.gender !== 'MALE') ? a.palFemale : a.palMale;
+    const pal = (!IsWallysBag() && gSaveBlock2Ptr.playerGender !== MALE) ? a.palFemale : a.palMale;
     LoadPalette(pal, BG_PLTT_ID(0), 2 * 16 * 2); // 2 palettes = 32 u16
     // case 3 : LoadCompressedSpriteSheet(&gBagMale/FemaleSpriteSheet) (:828-832) —
     //          Wally → male ; sinon selon gameState.gender. tag=TAG_BAG_GFX=100.
     //          0x3000 = 12288 octets = 6 frames 64×64 4bpp (sBagSpriteAnimTable).
-    const tilesKey = (IsWallysBag() || gameState.gender === 'MALE')
+    const tilesKey = (IsWallysBag() || gSaveBlock2Ptr.playerGender === MALE)
       ? '__bagSpriteMaleTiles' : '__bagSpriteFemaleTiles';
     LoadCompressedSpriteSheet({ data: tilesKey, size: 0x3000, tag: TAG_BAG_GFX });
     // case 4 : LoadCompressedSpritePalette(&gBagPaletteTable) (:836). gender-neutral.

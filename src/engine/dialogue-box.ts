@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { preloadBitmapFont, setupBitmapFont, renderTextToCanvas, measureLastLine } from './bitmap-font';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
 import { runTextPrinter as gpRunTextPrinter } from './gba-text-printer';
 import { getStringVar } from './string-buffers';
 import { createDialogWindow, getTemplatePixelRect } from './window-renderer';
@@ -39,9 +40,10 @@ export function setPlaceholderTable(t: Record<string, string>) { placeholderTabl
  */
 export function substitutePlaceholders(text: string): string {
   const T = placeholderTable;
-  const rivalKey = gameState.gender === 'MALE' ? 'May' : 'Brendan';
+  // 1:1 décomp `gSaveBlock2Ptr->playerGender` (= 0=MALE / 1=FEMALE).
+  const rivalKey = gSaveBlock2Ptr.playerGender === 1 ? 'Brendan' : 'May';
   return text
-    .replace(/\{PLAYER\}/g, gameState.playerName)
+    .replace(/\{PLAYER\}/g, gSaveBlock2Ptr.playerName ?? 'UNDI')
     .replace(/\{RIVAL\}/g, T[rivalKey] ?? rivalKey.toUpperCase())
     .replace(/\{KUN\}/g, T.Kun ?? '')
     .replace(/\{POKEBLOCK\}/g, T.PokeBlock ?? T.Pokeblock ?? 'POKéBLOC')

@@ -52,6 +52,8 @@ import { getRuntime, PlaySE } from './decomp-globals';
 import { SignalWaitState } from './script-opcodes';
 import { ScriptContext_SetupScript } from './script-runtime';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
@@ -1499,10 +1501,9 @@ function _tickClosing(): void {
   if (sIsBedroomMode) {
     // 1:1 décomp : run TurnOffPlayerPC script per gender (= playse SE_PC_OFF
     // + special DoPCTurnOffEffect + releaseall + end).
-    const gender = gameState.gender;
-    const scriptLabel = gender === 'MALE'
-      ? 'LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC'
-      : 'LittlerootTown_MaysHouse_2F_EventScript_TurnOffPlayerPC';
+    const scriptLabel = gSaveBlock2Ptr.playerGender === FEMALE
+      ? 'LittlerootTown_MaysHouse_2F_EventScript_TurnOffPlayerPC'
+      : 'LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC';
     ScriptContext_SetupScript(scriptLabel);
   } else {
     // PlayerPC mode : just unblock the calling script `waitstate` opcode.

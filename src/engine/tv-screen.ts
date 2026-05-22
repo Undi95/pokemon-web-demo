@@ -37,6 +37,8 @@
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './map-loader';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from './script-vars';
 import { DrawWholeMapView } from './field-camera';
 import {
@@ -69,8 +71,8 @@ export function CheckForPlayersHouseNews(): number {
   const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
   const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
   const isInPlayersHouse =
-    (gameState.gender === 'MALE'   && isMaleHouse) ||
-    (gameState.gender === 'FEMALE' && isFemaleHouse);
+    (gSaveBlock2Ptr.playerGender === MALE   && isMaleHouse) ||
+    (gSaveBlock2Ptr.playerGender === FEMALE && isFemaleHouse);
   if (!isInPlayersHouse) return PLAYERS_HOUSE_TV_NONE;
   if (FlagGet('FLAG_SYS_TV_LATIAS_LATIOS')) return PLAYERS_HOUSE_TV_LATI;
   if (FlagGet('FLAG_SYS_TV_HOME')) return PLAYERS_HOUSE_TV_MOVIE;

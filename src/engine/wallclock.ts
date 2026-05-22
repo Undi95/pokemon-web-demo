@@ -55,6 +55,8 @@ import {
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
 import { getString } from './gba-strings';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { FEMALE } from './decomp-globals';
 import { FlagSet } from './script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -424,7 +426,7 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
 
   // 1:1 décomp `LoadPalette(gWallClockMale/Female_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP)` :
   // Gender-aware palette. SET → use player gender. VIEW → use gameState.gender.
-  const isFemale = gameState.gender === 'FEMALE';
+  const isFemale = gSaveBlock2Ptr.playerGender === FEMALE;
   const bgPal = isFemale ? assets.femalePalette : assets.malePalette;
   LoadPalette(bgPal, BG_PLTT_ID(0), 32);  // 16 colors × 2 bytes = 32
 

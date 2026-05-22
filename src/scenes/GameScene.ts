@@ -434,7 +434,7 @@ export class GameScene extends Phaser.Scene {
   private async transitionToOverworld(mode: 'newgame' | 'continue'): Promise<void> {
     this.overworldTransitionStarted = true;
     console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
-    const { gSaveBlock2Ptr } = await import('../engine/gba-menu-system');
+    const { gSaveBlock2Ptr } = await import('../engine/save-block-state');
     const { gameState } = await import('../engine/game-state');
     if (mode === 'continue') {
       // ⚠️ CRITICAL : LOAD la save AVANT de toucher gameState. Sinon
@@ -446,10 +446,8 @@ export class GameScene extends Phaser.Scene {
       console.log(`[GameScene continue] gameState.load() → ${ok}, map=${JSON.stringify(gameState.map)}`);
     } else {
       // 'newgame' : Birch speech a déjà set name/gender dans gSaveBlock2Ptr
-      // via auto code. Sync vers gameState pour TestOverworldScene boot.
-      const sb2 = gSaveBlock2Ptr as { playerName?: string; playerGender?: number };
-      if (sb2.playerName) gameState.playerName = sb2.playerName;
-      gameState.gender = sb2.playerGender === 1 ? 'FEMALE' : 'MALE';
+      // via auto code. gameState.playerName/gender lisent direct
+      // gSaveBlock2Ptr → plus de sync nécessaire (= 1:1 strict).
       // Force truck cinematic via decideBootMode default path.
       gameState.map = undefined;
       // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
@@ -460,7 +458,7 @@ export class GameScene extends Phaser.Scene {
       // Recharger la save montre qu'elle est wipe"). Si user F5 mid-Birch =
       // 1:1 ROM power off : la save SRAM précédente est préservée.
     }
-    console.log(`[GameScene] synced : name='${gameState.playerName}' gender='${gameState.gender}' map=${JSON.stringify(gameState.map)}`);
+    console.log(`[GameScene] start : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'} map=${JSON.stringify(gameState.map)}`);
 
     // 1:1 décomp Cleanup : attend la fin de la fade en cours puis assure que
     // Faded est full black avant scene.start. Précédent code lançait

@@ -19,6 +19,8 @@
 import { gameState, SetSaveLocked } from './game-state';
 import { FlagSet, VarSet } from './script-vars';
 import { HasValidSave } from './save-system';
+import { gSaveBlock2Ptr } from './save-block-state';
+import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
@@ -111,8 +113,8 @@ export function hasTruckParam(): boolean {
  */
 function applyNoIntroPreset(): void {
   // Preserve playerName/gender existants si une save valide existait.
-  const existingName = gameState.playerName;
-  const existingGender = gameState.gender;
+  const existingName = gSaveBlock2Ptr.playerName;
+  const existingGender = gSaveBlock2Ptr.playerGender;
   // 1:1 décomp : NewGameInitData ne reset PAS les options (seul le cold boot
   // Sav2_ClearSetDefault les met aux défauts). Préserver à travers reset()
   // comme playerName/gender (bug #5 : options reset devant le prof).
@@ -121,13 +123,13 @@ function applyNoIntroPreset(): void {
   gameState.reset();
   gameState.setOptions(existingOptions);
   if (existingName && existingName !== 'PLAYER') {
-    gameState.playerName = existingName;
-    gameState.gender = existingGender;
+    gSaveBlock2Ptr.playerName = existingName;
+    gSaveBlock2Ptr.playerGender = existingGender;
   } else {
     // No prior save : default 1:1 décomp placeholder. User devrait passer par
     // l'intro proper pour set un vrai nom.
-    gameState.playerName = 'PLAYER';
-    gameState.gender = 'MALE';
+    gSaveBlock2Ptr.playerName = 'PLAYER';
+    gSaveBlock2Ptr.playerGender = MALE;
   }
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
@@ -189,7 +191,7 @@ function applyNoIntroPreset(): void {
   //   - Maison rival : hide player_mom, show rival_mom + rival_sibling
   // Bug fix iter20 : on inversait MAYS_HOUSE_RIVAL_MOM ↔ BRENDANS_HOUSE_RIVAL_MOM.
   // Symptôme : les 2 maisons montraient les MEMES NPCs (= rival_mom partout, etc).
-  if (gameState.gender === 'FEMALE') {
+  if (gSaveBlock2Ptr.playerGender === FEMALE) {
     // Player May → sa maison = MaysHouse, rival = Brendan dans BrendansHouse.
     FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');         // hide player_mom dans rival's house
     FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');       // hide rival_mom dans sa maison
@@ -225,7 +227,7 @@ function applyNoIntroPreset(): void {
   // Sans ça Mom spawn à la position map.json default (2, 6) FACE_RIGHT au lieu
   // de (4, 5) FACE_UP devant la TV.
   // Audit follow-up Issue 3 : memory/audit-2026-05-09-followup.md
-  const playerHouseMap = gameState.gender === 'FEMALE'
+  const playerHouseMap = gSaveBlock2Ptr.playerGender === FEMALE
     ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F'
     : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
   gameState.setObjectXY(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
@@ -303,7 +305,7 @@ function applyNoIntroPreset(): void {
   // 1:1 ROM : pas de save SRAM auto, le mode test vit en RAM tant que user
   // n'appuie pas SAUVER explicitement. User-flag : "Retire save auto SRAM des
   // mode test (les ?) comme ca on peut tester sans ecraser sa save".
-  console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6 (RAM-only, pas de save auto)`);
+  console.log(`[boot-mode] ?nointro preset : name='${gSaveBlock2Ptr.playerName ?? ''}' gender='${gSaveBlock2Ptr.playerGender === FEMALE ? 'FEMALE' : 'MALE'}' INTRO_STATE=6 (RAM-only, pas de save auto)`);
 }
 
 /**
@@ -332,7 +334,7 @@ export function decideBootMode(): BootSpawn {
     // `?debug` = preset complet testing : tous les items, all flags.
     // Toujours appliqué (même si save existante = override en RAM only).
     applyNoIntroPreset();
-    const isFemale = gameState.gender === 'FEMALE';
+    const isFemale = gSaveBlock2Ptr.playerGender === FEMALE;
     const spawnX = isFemale ? 14 : 5;
     console.log(`[boot-mode] ?debug → preset complet, spawn (${spawnX}, 9) (SRAM bloquée)`);
     return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
@@ -360,8 +362,8 @@ export function decideBootMode(): BootSpawn {
     // Sans nom set, dialog "MAMAN: , on est là, chouchou!" affiche {PLAYER} vide.
     // En vrai flow, Birch speech naming overwrite ces defaults — mais ?truck
     // skip Birch donc on doit fournir un nom valide.
-    gameState.playerName = 'PLAYER';
-    gameState.gender = 'MALE';
+    gSaveBlock2Ptr.playerName = 'PLAYER';
+    gSaveBlock2Ptr.playerGender = MALE;
     NewGameInit();  // = trainerId set par InitPlayerTrainerId (= u32 random)
     gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
     // 1:1 ROM : pas de save SRAM auto (= user-flag, ne pas écraser sa save).
@@ -386,9 +388,9 @@ export function decideBootMode(): BootSpawn {
   // default new game path infra (= gameState.reset + NewGameInit + spawn truck
   // sans save). User flag : "PAS DE SAVE SANS L'INPUT SAUVER" — la SRAM
   // précédente reste intacte tant que user n'a pas explicitement écrasé.
-  const cameFromBirch = gameState.playerName !== undefined
-                     && gameState.playerName !== ''
-                     && gameState.playerName !== 'PLAYER'
+  const cameFromBirch = gSaveBlock2Ptr.playerName !== undefined
+                     && gSaveBlock2Ptr.playerName !== ''
+                     && gSaveBlock2Ptr.playerName !== 'PLAYER'
                      && gameState.map === undefined;
   // Tentative de resume from save (= cold boot avec save existante, pas post-Birch).
   if (!cameFromBirch && HasValidSave() && gameState.load() && gameState.map) {
@@ -413,8 +415,8 @@ export function decideBootMode(): BootSpawn {
   //   complètement avant `NewGameInitData`.
   //   Note : on PRÉSERVE playerName/gender qui viennent de Birch speech (= déjà
   //   sync dans gameState par BirchRuntimeScene.transitionToOverworld()).
-  const preservedName = gameState.playerName;
-  const preservedGender = gameState.gender;
+  const preservedName = gSaveBlock2Ptr.playerName;
+  const preservedGender = gSaveBlock2Ptr.playerGender;
   // 1:1 décomp : la NOUVELLE PARTIE = `NewGameInitData` (overworld.c:1537)
   // qui NE TOUCHE PAS aux options. Les options sont mises aux défauts UNE
   // SEULE FOIS au cold boot par `Sav2_ClearSetDefault` (intro.c:1156 =
@@ -428,8 +430,8 @@ export function decideBootMode(): BootSpawn {
   gameState.reset();
   gameState.setOptions(preservedOptions);
   if (preservedName && preservedName !== 'PLAYER') {
-    gameState.playerName = preservedName;
-    gameState.gender = preservedGender;
+    gSaveBlock2Ptr.playerName = preservedName;
+    gSaveBlock2Ptr.playerGender = preservedGender;
   }
   // - NewGameInit pour les flags d'init.
   // - setDynamicWarp Bourg (= sera utilisé par MAP_DYNAMIC quand le coord
