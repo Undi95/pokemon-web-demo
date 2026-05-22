@@ -232,12 +232,16 @@ export function FieldUpdateBgTilemapScroll(rt: DecompRuntime): void {
   const r5 = sFieldCameraOffset.xPixelOffset + sHorizontalCameraPan;
   const r4 = sVerticalCameraPan + sFieldCameraOffset.yPixelOffset + 8;
 
-  rt.SetGpuReg(REG_OFFSET_BG1HOFS, r5 & 0x1FF);
-  rt.SetGpuReg(REG_OFFSET_BG1VOFS, r4 & 0x1FF);
-  rt.SetGpuReg(REG_OFFSET_BG2HOFS, r5 & 0x1FF);
-  rt.SetGpuReg(REG_OFFSET_BG2VOFS, r4 & 0x1FF);
-  rt.SetGpuReg(REG_OFFSET_BG3HOFS, r5 & 0x1FF);
-  rt.SetGpuReg(REG_OFFSET_BG3VOFS, r4 & 0x1FF);
+  // 1:1 décomp `field_camera.c:80-85` — pas de mask côté CPU. Le HW BG_HOFS/VOFS
+  // register mask déjà via définition register 9 bits. Masquer côté CPU TS écrasait
+  // le bit signé sur valeurs négatives (-3 & 0x1FF = 509) → BG_HOFS sautait 512 px
+  // = snap visible 1 case = bug "1 case off" post-warp.
+  rt.SetGpuReg(REG_OFFSET_BG1HOFS, r5);
+  rt.SetGpuReg(REG_OFFSET_BG1VOFS, r4);
+  rt.SetGpuReg(REG_OFFSET_BG2HOFS, r5);
+  rt.SetGpuReg(REG_OFFSET_BG2VOFS, r4);
+  rt.SetGpuReg(REG_OFFSET_BG3HOFS, r5);
+  rt.SetGpuReg(REG_OFFSET_BG3VOFS, r4);
 }
 
 /** 1:1 décomp `GetCameraOffsetWithPan(x, y)` (field_camera.c:88-92).

@@ -958,7 +958,10 @@ function FillEastConnection(mapHeader: MapHeader, cMap: MapHeader, offset: numbe
     height = (y + cHeight < gBackupMapLayout.height) ? cHeight : gBackupMapLayout.height - y;
   }
 
-  if (height > 0) FillConnection(x, y, cMap, 0, y2, MAP_OFFSET, height);
+  // 1:1 décomp `fieldmap.c:341` : width = `MAP_OFFSET + 1` (= 8), NOT `MAP_OFFSET` (= 7).
+  // L'extra colonne fill la 8e col du buffer côté EAST. Sans elle, dernière col
+  // est MAPGRID_UNDEFINED → tile garbage = "1 case off" sur border EAST cross.
+  if (height > 0) FillConnection(x, y, cMap, 0, y2, MAP_OFFSET + 1, height);
 }
 
 /** 1:1 décomp `GetMapBorderIdAt(x, y)` (fieldmap.c:568-605).
