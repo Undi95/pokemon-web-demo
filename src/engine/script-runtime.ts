@@ -592,8 +592,6 @@ export function RunOnLoadMapScript(): void {
   // Lookup mapHeader.mapScripts via globalThis pour éviter circular import.
   // map-loader.ts → script-runtime.ts → map-loader (= circular). Avec
   // globalThis on évite le cycle.
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { mapScripts?: string } | undefined;
   if (!gMapHeader?.mapScripts) return;
   const onLoadLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_LOAD');
   if (!onLoadLabel) return;
@@ -605,8 +603,6 @@ export function RunOnLoadMapScript(): void {
  *  `MAP_SCRIPT_ON_TRANSITION`. Appelé après warp, pour positionner les NPCs
  *  selon plot state. */
 export function RunOnTransitionMapScript(): void {
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { mapScripts?: string } | undefined;
   if (!gMapHeader?.mapScripts) return;
   const label = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_TRANSITION');
   if (!label) return;
@@ -626,8 +622,6 @@ export function RunOnTransitionMapScript(): void {
 export function TryRunOnFrameMapScript(): boolean {
   // Skip si script déjà actif (= sinon race condition).
   if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { mapScripts?: string } | undefined;
   if (!gMapHeader?.mapScripts) return false;
   const tableLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_FRAME_TABLE');
   if (!tableLabel) return false;
@@ -671,8 +665,6 @@ export function TryRunOnFrameMapScript(): boolean {
 export function TryRunOnWarpIntoMapScript(): boolean {
   // 1:1 décomp : NE check PAS le script status — RunScriptImmediately est sync,
   // ne va pas conflicter. Mais notre RunScriptImmediately appelle ctx pas global.
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { mapScripts?: string } | undefined;
   if (!gMapHeader?.mapScripts) return false;
   const tableLabel = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE');
   if (!tableLabel) return false;
@@ -700,10 +692,7 @@ export function TryRunOnWarpIntoMapScript(): boolean {
  *  si player at (x, y) AND var_name == var_value. */
 export function TryRunCoordEventScript(playerX: number, playerY: number): boolean {
   if (sGlobalScriptContextStatus !== CONTEXT_SHUTDOWN) return false;
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { events?: { coordEvents?: Array<{
-      x: number; y: number; trigger: string; index: number; script: string;
-    }> } } | undefined;
+  // 1:1 décomp `gMapHeader.events->coordEvents` (= struct MapEvents).
   const coordEvents = gMapHeader?.events?.coordEvents;
   if (!coordEvents || coordEvents.length === 0) return false;
   for (const ce of coordEvents) {
@@ -722,7 +711,7 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
-import { setOnLoadMapScriptHook } from './map-loader';
+import { setOnLoadMapScriptHook, gMapHeader } from './map-loader';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
 
 // ─── Expose pour debug ───────────────────────────────────────────────────────

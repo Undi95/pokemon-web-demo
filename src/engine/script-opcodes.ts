@@ -1264,8 +1264,6 @@ registerOpcode('savebgm', (_ctx, args) => {
  *  scripts qui call playbgm puis fadedefaultbgm (= TV event PetalburgGymReport,
  *  Brendan rival meet, etc). */
 registerOpcode('fadedefaultbgm', (_ctx, _args) => {
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { music?: number | string } | undefined;
   const mapMusic = gMapHeader?.music;
   let songId: number | undefined;
   if (typeof mapMusic === 'number' && mapMusic > 0) {
@@ -1345,8 +1343,6 @@ function _findNpcByLocalId(arg: string): typeof gObjectEvents[number] | null {
  *  permanente (= setobjectxyperm 1:1 décomp modifie gObjectEventTemplates). */
 function _findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
   if (!arg) return null;
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const templates = gMapHeader?.events?.objectEvents ?? [];
   for (const t of templates) {
     if (t.localIdRaw === arg) return t;
@@ -1495,8 +1491,6 @@ function _resolveObjectLocalIdRaw(arg: string): string {
     if (resolved) return resolved;
     // Fallback : match par numeric localId dans gMapHeader (= map.json local_id
     // assignment-order).
-    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
     const tplByLocalId = gMapHeader?.events?.objectEvents?.find(t => t.localId === num);
     if (tplByLocalId?.localIdRaw) return tplByLocalId.localIdRaw;
   }
@@ -1510,8 +1504,6 @@ registerOpcode('addobject', (_ctx, args) => {
   // attendrait le prochain tile cross pour apparaitre — mais pendant un script
   // lockall le player ne bouge pas → NPC jamais visible.
   const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
   if (tpl?.flagId) FlagClear(tpl.flagId);
   // Spawn immédiat (= 1:1 décomp behavior).
@@ -1530,8 +1522,6 @@ registerOpcode('removeobject', (_ctx, args) => {
   // qu'elle quitte (= post-clock 2F). 1:1 décomp `RemoveObjectEvent` aussi
   // destroy le sprite via FreeAndDestroyObjectEventSprite.
   const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
-  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-    { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
   if (tpl?.flagId) FlagSet(tpl.flagId);
   // Find active NPC + destroy sprite + mark inactive.
@@ -1574,14 +1564,11 @@ registerOpcode('showobject', (_ctx, args) => {
 // résout le seul cas ≥2-real, 0 régression car elle ne tournait pas).
 
 registerOpcode('hideplayer', (_ctx) => {
-  // Hide player sprite (= used during cinematic warp).
+  // 1:1 décomp `SetPlayerInvisibility(TRUE)` (= field_player_avatar.c:1396).
   const rt = getRuntime();
-  if (rt && (globalThis as Record<string, unknown>).gPlayerAvatar) {
-    const pa = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId?: number };
-    if (pa.spriteId !== undefined && pa.spriteId >= 0) {
-      const s = rt.gSprites.get(pa.spriteId);
-      if (s) s.invisible = true;
-    }
+  if (rt && gPlayerAvatar.spriteId >= 0) {
+    const s = rt.gSprites.get(gPlayerAvatar.spriteId);
+    if (s) s.invisible = true;
   }
   return false;
 });
@@ -1593,13 +1580,11 @@ registerOpcode('hideplayer', (_ctx) => {
  *  `hideplayer` existait mais pas `showplayer` → joueur restait
  *  invisible après un cinematic (warp/cutscene). */
 registerOpcode('showplayer', (_ctx) => {
+  // 1:1 décomp `SetPlayerInvisibility(FALSE)`.
   const rt = getRuntime();
-  if (rt && (globalThis as Record<string, unknown>).gPlayerAvatar) {
-    const pa = (globalThis as Record<string, unknown>).gPlayerAvatar as { spriteId?: number };
-    if (pa.spriteId !== undefined && pa.spriteId >= 0) {
-      const s = rt.gSprites.get(pa.spriteId);
-      if (s) s.invisible = false;
-    }
+  if (rt && gPlayerAvatar.spriteId >= 0) {
+    const s = rt.gSprites.get(gPlayerAvatar.spriteId);
+    if (s) s.invisible = false;
   }
   return false;
 });
@@ -1832,7 +1817,7 @@ registerOpcode('warp', (_ctx, args) => {
  *  Set `gSaveBlock1Ptr->lastHealLocation` à la heal location passée en arg.
  *  Audit session 126 C1 : avant no-op → après defeat / poison KO, le player
  *  reste là où il était (= bug ROM-faithful majeur). Maintenant store dans
- *  block1.respawnLocation (= notre proxy) ET aussi block1.lastHealLocation
+ *  gSaveBlock1Ptr.respawnLocation (= notre proxy) ET aussi gSaveBlock1Ptr.lastHealLocation
  *  (= structure WarpData attendue par les auto-files comme field_specials). */
 registerOpcode('setrespawn', (_ctx, args) => {
   const healLocId = args[0] ?? '';
@@ -1852,14 +1837,12 @@ registerOpcode('setrespawn', (_ctx, args) => {
  *    IncrementGameStat(stat);  // +1 à gSaveBlock1Ptr->gameStats[stat]
  *  Audit session 126 C2 : avant no-op → stats jamais tracked. Some flags
  *  conditional dependent (e.g. GAME_STAT_STEPS for daycare egg). Maintenant
- *  on update block1.gameStats[]. Le numeric `stat` est résolu via VarGet (=
+ *  on update gSaveBlock1Ptr.gameStats[]. Le numeric `stat` est résolu via VarGet (=
  *  resolveDecompConstant si literal GAME_STAT_X). */
 registerOpcode('incrementgamestat', (_ctx, args) => {
   const stat = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { gameStats?: number[] } | undefined;
-  if (block1?.gameStats && stat >= 0 && stat < block1.gameStats.length) {
-    block1.gameStats[stat] = (block1.gameStats[stat] ?? 0) + 1;
+  if (gSaveBlock1Ptr?.gameStats && stat >= 0 && stat < gSaveBlock1Ptr.gameStats.length) {
+    gSaveBlock1Ptr.gameStats[stat] = (gSaveBlock1Ptr.gameStats[stat] ?? 0) + 1;
   }
   return false;
 });
@@ -1897,25 +1880,21 @@ registerOpcode('giveitem', (_ctx, args) => {
 
 /** 1:1 décomp `givecoins` macro. Stub. */
 /** 1:1 décomp `ScrCmd_givecoins` (scrcmd.c) :
- *    GiveCoins(VarGet(amount));  // block1.coins += amount, cap 9999. */
+ *    GiveCoins(VarGet(amount));  // gSaveBlock1Ptr.coins += amount, cap 9999. */
 registerOpcode('givecoins', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { coins?: number } | undefined;
-  if (block1) block1.coins = Math.min(9999, (block1.coins ?? 0) + amount);
+  if (gSaveBlock1Ptr) gSaveBlock1Ptr.coins = Math.min(9999, (gSaveBlock1Ptr.coins ?? 0) + amount);
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
  *    AddMoney(&gSaveBlock1Ptr->money, VarGet(amount));
  *  Audit session 126 C4 : avant no-op → casino + Wally evolution broken.
- *  Now : add montant à block1.money, capped à 999999 (= MAX_MONEY décomp). */
+ *  Now : add montant à gSaveBlock1Ptr.money, capped à 999999 (= MAX_MONEY décomp). */
 registerOpcode('givemoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { money?: number } | undefined;
-  if (block1) {
-    block1.money = Math.min(999999, (block1.money ?? 0) + amount);
+  if (gSaveBlock1Ptr) {
+    gSaveBlock1Ptr.money = Math.min(999999, (gSaveBlock1Ptr.money ?? 0) + amount);
   }
   return false;
 });
@@ -1931,20 +1910,16 @@ registerOpcode('addmoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
   const ignore = VarGet(args[1] ?? '0');
   if (!ignore) {
-    const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-      { money?: number } | undefined;
-    if (block1) block1.money = Math.min(999999, (block1.money ?? 0) + amount);
+    if (gSaveBlock1Ptr) gSaveBlock1Ptr.money = Math.min(999999, (gSaveBlock1Ptr.money ?? 0) + amount);
   }
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_takemoney` (scrcmd.c) : sub from block1.money, floor 0. */
+/** 1:1 décomp `ScrCmd_takemoney` (scrcmd.c) : sub from gSaveBlock1Ptr.money, floor 0. */
 registerOpcode('takemoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { money?: number } | undefined;
-  if (block1) {
-    block1.money = Math.max(0, (block1.money ?? 0) - amount);
+  if (gSaveBlock1Ptr) {
+    gSaveBlock1Ptr.money = Math.max(0, (gSaveBlock1Ptr.money ?? 0) - amount);
   }
   return false;
 });
@@ -1983,9 +1958,7 @@ registerOpcode('givepokemon', (_ctx, args) => {
  *  Returns TRUE si player a assez d'argent. */
 registerOpcode('checkmoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { money?: number } | undefined;
-  const has = (block1?.money ?? 0) >= amount;
+  const has = (gSaveBlock1Ptr?.money ?? 0) >= amount;
   gameState.setVar('VAR_RESULT', has ? 1 : 0);
   return false;
 });
@@ -1995,18 +1968,16 @@ registerOpcode('cmd5e', (_ctx, _args) => false);
 
 /** 1:1 décomp `ScrCmd_setweather` (scrcmd.c) :
  *    SetSavedWeather(VarGet(weather));
- *  Stocke dans block1.weather. Effet visuel applied au prochain doweather. */
+ *  Stocke dans gSaveBlock1Ptr.weather. Effet visuel applied au prochain doweather. */
 registerOpcode('setweather', (_ctx, args) => {
   const weather = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { weather?: number } | undefined;
-  if (block1) block1.weather = weather;
+  if (gSaveBlock1Ptr) gSaveBlock1Ptr.weather = weather;
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_resetweather` (scrcmd.c) :
  *    SetSavedWeatherFromCurrMapHeader();
- *  = `SetSavedWeather(gMapHeader.weather)` = `block1.weather =
+ *  = `SetSavedWeather(gMapHeader.weather)` = `gSaveBlock1Ptr.weather =
  *  gMapHeader.weather`. Restaure la météo SAUVEGARDÉE à celle PAR
  *  DÉFAUT de la map courante (= 1:1 field_weather.c). gMapHeader.weather
  *  est une string "WEATHER_*" → résolue en id numérique. Était MANQUANT
@@ -2016,9 +1987,7 @@ registerOpcode('resetweather', (_ctx) => {
   const weatherId = typeof mhWeather === 'string'
     ? (resolveDecompConstant(mhWeather) ?? 0)
     : (typeof mhWeather === 'number' ? mhWeather : 0);
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { weather?: number } | undefined;
-  if (block1) block1.weather = typeof weatherId === 'number' ? weatherId : 0;
+  if (gSaveBlock1Ptr) gSaveBlock1Ptr.weather = typeof weatherId === 'number' ? weatherId : 0;
   return false;
 });
 
@@ -2049,24 +2018,20 @@ registerOpcode('setdoor_closed', (ctx, args) => getOpcodeHandler('setdoorclosed'
 registerOpcode('addelevmenuitem', (_ctx, _args) => false);
 registerOpcode('showelevmenu', (_ctx, _args) => false);
 /** 1:1 décomp `ScrCmd_checkcoins` (scrcmd.c) :
- *    *(u16 *)VarGetPtr(args[0]) = block1.coins;
+ *    *(u16 *)VarGetPtr(args[0]) = gSaveBlock1Ptr.coins;
  *  Le résultat va dans la VAR passée en arg, pas VAR_RESULT. */
 registerOpcode('checkcoins', (_ctx, args) => {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { coins?: number } | undefined;
-  const coins = block1?.coins ?? 0;
+  const coins = gSaveBlock1Ptr?.coins ?? 0;
   const dst = args[0] ?? 'VAR_RESULT';
   if (dst.startsWith('VAR_')) gameState.setVar(dst, coins);
   else gameState.setVar('VAR_RESULT', coins);
   return false;
 });
 /** 1:1 décomp `ScrCmd_takecoins` (scrcmd.c) :
- *    SubtractCoins(VarGet(amount));  // block1.coins -= amount, floor 0. */
+ *    SubtractCoins(VarGet(amount));  // gSaveBlock1Ptr.coins -= amount, floor 0. */
 registerOpcode('takecoins', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { coins?: number } | undefined;
-  if (block1) block1.coins = Math.max(0, (block1.coins ?? 0) - amount);
+  if (gSaveBlock1Ptr) gSaveBlock1Ptr.coins = Math.max(0, (gSaveBlock1Ptr.coins ?? 0) - amount);
   return false;
 });
 registerOpcode('vbuffer', (_ctx, _args) => false);
@@ -2260,7 +2225,7 @@ registerOpcode('vmessage', (ctx, args) => getOpcodeHandler('message')?.(ctx, arg
 registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args) ?? false);
 registerOpcode('vbufferstring', (ctx, args) => getOpcodeHandler('bufferstring')?.(ctx, args) ?? false);
 
-// 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : block1.coins += amount, cap 9999.
+// 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : gSaveBlock1Ptr.coins += amount, cap 9999.
 registerOpcode('addcoins', (ctx, args) => getOpcodeHandler('givecoins')?.(ctx, args) ?? false);
 
 // 1:1 décomp `ScrCmd_messageinstant` (scrcmd.c) : msgbox sans typewriter effect
@@ -2362,8 +2327,6 @@ function parseValue(arg: string | undefined): number {
   if (arg === 'LOCALID_NONE') return 0;
   if (arg === 'LOCALID_CAMERA') return 127;
   if (arg.startsWith('LOCALID_')) {
-    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
-      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
     const templates = gMapHeader?.events?.objectEvents ?? [];
     const idx = templates.findIndex(t => t.localIdRaw === arg);
     if (idx >= 0) return idx + 1;  // 1-based, matches localId assigned au load.
@@ -3031,9 +2994,7 @@ let _sCurrentApproachingTrainerObjectEventId = 0;
 /** 1:1 décomp `sBerryTrees[BERRY_TREES_COUNT]` (berry.c). Persisté dans
  *  gSaveBlock1Ptr->berryTrees. Notre port a déjà l'array dans save-blocks.ts. */
 function _berryTreesArr(): Array<{ berry: number; stage: number; minutesUntilNextStage?: number; berryYield?: number; regrowthCount?: number; watered1?: number; watered2?: number; watered3?: number; watered4?: number; stopGrowth?: number }> | undefined {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { berryTrees?: Array<{ berry: number; stage: number; minutesUntilNextStage?: number; berryYield?: number; regrowthCount?: number; watered1?: number; watered2?: number; watered3?: number; watered4?: number; stopGrowth?: number }> } | undefined;
-  return block1?.berryTrees;
+  return gSaveBlock1Ptr?.berryTrees;
 }
 
 // ─── Helpers privés (1:1 décomp) ─────────────────────────────────────────────
@@ -3577,15 +3538,13 @@ registerOpcode('removecoins', (_ctx, args) => {
   // (= TRUE si remove failed, FALSE si succès — comportement inverse étrange
   //    mais c'est ce que dit la décomp).
   const coins = _vget(args[0]);
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { coins?: number } | undefined;
-  if (!block1) {
+  if (!gSaveBlock1Ptr) {
     gameState.setVar('VAR_RESULT', 1);  // fail
     return false;
   }
-  const current = block1.coins ?? 0;
+  const current = gSaveBlock1Ptr.coins ?? 0;
   if (current >= coins) {
-    block1.coins = current - coins;
+    gSaveBlock1Ptr.coins = current - coins;
     gameState.setVar('VAR_RESULT', 0);
   } else {
     gameState.setVar('VAR_RESULT', 1);
@@ -3766,11 +3725,9 @@ registerOpcode('warpspinenter', (ctx, args) => {
 // un placeholder array.
 
 function _decorationsArr(): number[] {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { decorations?: number[] } | undefined;
-  if (!block1) return [];
-  if (!block1.decorations) block1.decorations = [];
-  return block1.decorations;
+  if (!gSaveBlock1Ptr) return [];
+  if (!gSaveBlock1Ptr.decorations) gSaveBlock1Ptr.decorations = [];
+  return gSaveBlock1Ptr.decorations;
 }
 
 registerOpcode('adddecoration', (_ctx, args) => {
