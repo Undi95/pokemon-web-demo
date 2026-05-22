@@ -559,15 +559,12 @@ function _tickWalk(
   // Done when frame == duration.
   if (frame >= duration - 1) {
     if (target.isPlayer) {
-      // Step end : finalize player position. NB : ne PAS reset speedX/Y = 0
-      // ici (= CameraUpdate runs après, ferait perdre le dernier décrément).
-      // Reset géré à la fin de tickMovementQueues quand queue done.
-      const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-      gPlayerAvatar.x = nx;
-      gPlayerAvatar.y = ny;
-      // Session 124 fix : reset stepFramesLeft + flip walkAnimAlt (= 1:1
-      // PlayerStep end-of-step behavior pour next walk action commence avec
-      // l'autre walk frame, donnant l'effet de pas alterné).
+      // 1:1 STRICT décomp : les action handlers NPCs (= event_object_movement.c
+      // MovementAction_Walk*) ne touchent jamais `gSaveBlock1Ptr->pos`. Pour le
+      // player, CameraMove (= fieldmap.c:649) au tile boundary de CameraUpdate
+      // mute pos. À ce point, pos = post-step.
+      // Reset stepFramesLeft + flip walkAnimAlt (= 1:1 PlayerStep end behavior
+      // pour next walk anim alterne).
       gPlayerAvatar.stepFramesLeft = 0;
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
     } else if (target.npc) {
@@ -731,14 +728,9 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       if (sprite) sprite.y2 = 0;
     }
     if (target.isPlayer) {
-      const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-      gPlayerAvatar.x = nx;
-      gPlayerAvatar.y = ny;
-      if (distance === 2) {
-        const { x: nx2, y: ny2 } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
-        gPlayerAvatar.x = nx2;
-        gPlayerAvatar.y = ny2;
-      }
+      // 1:1 STRICT décomp : jump handler ne touche pas pos. CameraMove (=
+      // fieldmap.c:649) au tile boundary applique pos += delta — appelée
+      // 1× pour distance 1, 2× pour distance 2 (= ledge jump 32 frames).
       // Cleanup jump state : sprite frame reset à face + shadow destroyed +
       // walkAnimAlt flipped pour next step start avec l'autre walk frame.
       gPlayerAvatar.jumpFramesLeft = 0;

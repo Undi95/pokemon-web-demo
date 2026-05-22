@@ -53,6 +53,12 @@ import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from '
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
 import { GetSaveBlock1 } from './save-system';
+// Chantier OW 1:1 — `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) source unique
+// pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
+// Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
+// args (= élimine désync historique cam.x ≠ player.x).
+import { gSaveBlock1Ptr } from './gba-menu-system';
+import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
@@ -983,6 +989,65 @@ export function GetMapBorderIdAt(x: number, y: number): number {
 const CONNECTION_NONE = 0;
 const CONNECTION_INVALID = 0xFF;
 
+// ─── 1:1 décomp camera focus / coords helpers (fieldmap.c:792-814) ──────────
+//
+// Source unique pour position joueur + camera focus = `gSaveBlock1Ptr->pos`
+// (Coords16, global.h:992). NE PAS dupliquer dans des locals — alias direct.
+
+/** 1:1 décomp `SetCameraFocusCoords(u16 x, u16 y)` (fieldmap.c:792-796). Set
+ *  la camera focus à (x - MAP_OFFSET, y - MAP_OFFSET) en map-local coords. */
+export function SetCameraFocusCoords(x: number, y: number): void {
+  gSaveBlock1Ptr.pos.x = x - MAP_OFFSET;
+  gSaveBlock1Ptr.pos.y = y - MAP_OFFSET;
+}
+
+/** 1:1 décomp `GetCameraFocusCoords(u16 *x, u16 *y)` (fieldmap.c:798-802).
+ *  Retourne (pos.x + MAP_OFFSET, pos.y + MAP_OFFSET) = focus en gBackupMapLayout
+ *  coords (= équivalent player gBackup coords). */
+export function GetCameraFocusCoords(): { x: number; y: number } {
+  return {
+    x: gSaveBlock1Ptr.pos.x + MAP_OFFSET,
+    y: gSaveBlock1Ptr.pos.y + MAP_OFFSET,
+  };
+}
+
+/** 1:1 décomp `SetCameraCoords(u16 x, u16 y)` (fieldmap.c:804-808). UNUSED
+ *  côté décomp mais porté 1:1 pour exhaustivité. Écrit directement
+ *  gSaveBlock1Ptr->pos en map-local coords. */
+export function SetCameraCoords(x: number, y: number): void {
+  gSaveBlock1Ptr.pos.x = x;
+  gSaveBlock1Ptr.pos.y = y;
+}
+
+/** 1:1 décomp `GetCameraCoords(u16 *x, u16 *y)` (fieldmap.c:810-814). */
+export function GetCameraCoords(): { x: number; y: number } {
+  return {
+    x: gSaveBlock1Ptr.pos.x,
+    y: gSaveBlock1Ptr.pos.y,
+  };
+}
+
+/** 1:1 décomp `GetPostCameraMoveMapBorderId(int x, int y)` (fieldmap.c:607-610).
+ *  Predicts le border id à (pos + MAP_OFFSET + delta). Utilisé par CameraMove
+ *  pour décider si le step va traverser un border vers une connexion. */
+export function GetPostCameraMoveMapBorderId(x: number, y: number): number {
+  return GetMapBorderIdAt(
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET + x,
+    gSaveBlock1Ptr.pos.y + MAP_OFFSET + y,
+  );
+}
+
+/** 1:1 décomp `CanCameraMoveInDirection(int direction)` (fieldmap.c:612-622).
+ *  TRUE si avancer d'1 metatile dans cette direction ne sortirait pas hors-map
+ *  (= CONNECTION_INVALID). Note décomp utilise `gDirectionToVectors[direction]`
+ *  (event_object_movement.c:907) ; notre équivalent = DIR_TO_DX/DY tables
+ *  (direction-coords.ts). */
+export function CanCameraMoveInDirection(direction: number): boolean {
+  const x = gSaveBlock1Ptr.pos.x + MAP_OFFSET + DIR_TO_DX[direction];
+  const y = gSaveBlock1Ptr.pos.y + MAP_OFFSET + DIR_TO_DY[direction];
+  return GetMapBorderIdAt(x, y) !== CONNECTION_INVALID;
+}
+
 // ─── Phase 4.8 : seamless cross-border transition (1:1 décomp) ───────────────
 
 /** 1:1 décomp `IsCoordInIncomingConnectingMap` (fieldmap.c:717). */
@@ -1040,41 +1105,55 @@ export function GetIncomingConnection(direction: number, x: number, y: number): 
  *  @param curPosX/Y  Player logical position in OLD map (= avant cross). Pour
  *                    NORTH/SOUTH : curPosX utilisé pour calculer offset shift x.
  *                    Pour EAST/WEST : curPosY utilisé pour offset shift y. */
-export function ComputeConnectionDestPos(
+// Note : `ComputeConnectionDestPos` (= variant qui retournait { camX, camY }
+// au lieu d'écrire pos directement) supprimé chantier OW PHASE B. Remplacé
+// 1:1 décomp par `SetPositionFromConnection` ci-dessous qui écrit gSaveBlock1Ptr
+// .pos directement. Tous les callers (= field-camera.ts:CameraMove) ont été
+// migrés.
+
+/** 1:1 décomp `SetPositionFromConnection(connection, direction, x, y)`
+ *  (fieldmap.c:624-647). ÉCRIT directement dans `gSaveBlock1Ptr.pos` la nouvelle
+ *  pre-step position dans la new map. Le caller `CameraMove` fait ensuite
+ *  `pos += x/y` pour atteindre la post-step pos (= 1:1 décomp fieldmap.c:673-674).
+ *
+ *  Notre archi diverge : on N'EXECUTE PAS le `pos += delta` après (= PlayerStep
+ *  finalize le delta dans step end). Donc `pos` reste à pre-step value (= border)
+ *  à la sortie de SetPositionFromConnection.
+ *
+ *  Decomp PRE-condition : `gSaveBlock1Ptr.pos.x/y` = OLD player position (= avant
+ *  cross). La fonction OVERWRITE en partie (= certains champs) selon direction.
+ *  Donc on doit appeler `SetPositionFromConnection` AVANT `TransitionToConnection`
+ *  (= swap gMapHeader), car la pre-condition lit l'offset connection. */
+export function SetPositionFromConnection(
   connection: MapConnection,
   direction: number,
-  curPosX: number,  // OLD player logical x (= 1:1 décomp pos.x)
-  curPosY: number,  // OLD player logical y (= 1:1 décomp pos.y, post-refactor)
-): { camX: number; camY: number } {
+  x: number,
+  y: number,
+): void {
   const cMap = mapHeaderCache.get(connection.destMap);
-  if (!cMap) return { camX: curPosX, camY: curPosY };
-
-  let newCamX = curPosX;
-  let newCamY = curPosY;
-  // Phase 4.9 fix : 1:1 décomp `SetPositionFromConnection` (fieldmap.c:624-647)
-  // retourne PRE-step value. PlayerStep applique le step delta naturellement
-  // au step end → final pos = pre-step + delta. Sans cette correction, mon
-  // "force step end" + post-step value double-comptait le delta → player TP'd
-  // 1 case en avance (= bug user "transition zone 3 cases").
+  if (!cMap) return;
   switch (direction) {
     case CONNECTION_EAST:
-      newCamX = -1;  // décomp : pos.x = -x = -1. Step end +1 → 0 (= WEST border col)
-      newCamY = curPosY - connection.offset;
+      // 1:1 décomp `pos.x = -x;` (= -deltaX = -1 si EAST move). Step end +deltaX
+      // → 0 = WEST border col du new map.
+      gSaveBlock1Ptr.pos.x = -x;
+      gSaveBlock1Ptr.pos.y -= connection.offset;
       break;
     case CONNECTION_WEST:
-      newCamX = cMap.mapLayout.width;  // décomp : pos.x = newMap.width. Step end -1 → last valid col
-      newCamY = curPosY - connection.offset;
+      // 1:1 décomp `pos.x = mapHeader->mapLayout->width;`. Step end -deltaX →
+      // last valid col du new map.
+      gSaveBlock1Ptr.pos.x = cMap.mapLayout.width;
+      gSaveBlock1Ptr.pos.y -= connection.offset;
       break;
     case CONNECTION_SOUTH:
-      newCamX = curPosX - connection.offset;
-      newCamY = -1;  // décomp : pos.y = -y = -1. Step end +1 → 0 (= NORTH border row)
+      gSaveBlock1Ptr.pos.x -= connection.offset;
+      gSaveBlock1Ptr.pos.y = -y;
       break;
     case CONNECTION_NORTH:
-      newCamX = curPosX - connection.offset;
-      newCamY = cMap.mapLayout.height;  // décomp : pos.y = newMap.height. Step end -1 → last valid row
+      gSaveBlock1Ptr.pos.x -= connection.offset;
+      gSaveBlock1Ptr.pos.y = cMap.mapLayout.height;
       break;
   }
-  return { camX: newCamX, camY: newCamY };
 }
 
 /** Transition seamless vers une map connectée. Sync : assume tous les assets
@@ -1186,18 +1265,16 @@ function _mapView(): number[] {
   return GetSaveBlock1().mapView;
 }
 
-/** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443).
+/** 1:1 décomp `SaveMapView(void)` (fieldmap.c:428-443) — no-args.
  *  Copy MAP_OFFSET_H × MAP_OFFSET_W metatiles depuis sBackupMapData (= camera
  *  area + 2 rows top/bottom buffer + 0 col buffer) vers gSaveBlock1Ptr->mapView.
- *
- *  Décomp utilise `gSaveBlock1Ptr->pos.x/y` (= player logical coords). Nos
- *  conventions post-refactor : pos.x = `_camPos.x` et pos.y = `_camPos.y`
- *  (= 1:1 décomp). On passe explicit car pas de gSaveBlock1Ptr global ; les
- *  callers (field-camera cross-border, load_save PreSaveSyncBlocks) passent la
- *  même valeur logique que `gSaveBlock1Ptr->pos`. */
-export function SaveMapView(posX: number, posY: number): void {
+ *  Lit `gSaveBlock1Ptr.pos.x/y` (= 1:1 décomp `gSaveBlock1Ptr->pos.x/y`) — post
+ *  chantier OW PHASE A, c'est la source unique. */
+export function SaveMapView(): void {
   const mapView = _mapView();
   const width = gBackupMapLayout.width;
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
   let mapViewIdx = 0;
   for (let i = posY; i < posY + MAP_OFFSET_H; i++) {
     for (let j = posX; j < posX + MAP_OFFSET_W; j++) {
@@ -1245,9 +1322,13 @@ export function ClearSavedMapView(): void {
  *  conventions : caller doit passer post-step pos en LOGICAL coords du new map.
  *
  *  ClearSavedMapView() called automatiquement à la fin (= 1:1 décomp). */
-export function MoveMapViewToBackup(direction: number, posX: number, posY: number): void {
+export function MoveMapViewToBackup(direction: number): void {
   const mapView = _mapView();
   const width = gBackupMapLayout.width;
+  // 1:1 décomp `x0 = gSaveBlock1Ptr->pos.x; y0 = gSaveBlock1Ptr->pos.y;`
+  // (fieldmap.c:527-528). Post chantier OW PHASE A.2 : pos est la source unique.
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
   let r9 = 0;
   let r8 = 0;
   let x0 = posX;

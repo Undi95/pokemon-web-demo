@@ -46,7 +46,7 @@ import {
   GetMapBorderIdAt,
   GetIncomingConnection,
   SaveMapView,
-  ComputeConnectionDestPos,
+  SetPositionFromConnection,
   TransitionToConnection,
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
@@ -60,6 +60,7 @@ import {
 } from './decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { getRuntime } from './decomp-globals';
+import { gSaveBlock1Ptr } from './gba-menu-system';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 
@@ -420,8 +421,26 @@ export function DrawDoorMetatileAt(
 // ─── 1:1 décomp CameraUpdate (field_camera.c:360-426) ───────────────────────
 
 /** Camera position (= top-left metatile of current view, en gBackupMapLayout coords).
- *  Tracking interne pour Phase 4.2 — Phase 4.3 le wirera sur gSaveBlock1Ptr->pos. */
-const _camPos = { x: 0, y: 0 };
+ *  1:1 décomp `gSaveBlock1Ptr->pos` (= SaveBlock1.pos, struct Coords16, global.h:992).
+ *  Source unique partagée avec gPlayerAvatar.x/y (= alias getter/setter dans
+ *  player-avatar.ts). Élimine le désync historique cam.x ≠ player.x.
+ *
+ *  PHASE A.2 : getter dynamique (= chaque accès passe par Proxy gSaveBlock1Ptr
+ *  qui lit GetSaveBlock1().pos courant). Survit à LoadSavedGame (= reassign
+ *  sCurrentBlock1) sans stale ref. */
+const _camPos: { x: number; y: number } = {} as { x: number; y: number };
+Object.defineProperty(_camPos, 'x', {
+  get(): number { return gSaveBlock1Ptr.pos.x; },
+  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
+  enumerable: true,
+  configurable: true,
+});
+Object.defineProperty(_camPos, 'y', {
+  get(): number { return gSaveBlock1Ptr.pos.y; },
+  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
+  enumerable: true,
+  configurable: true,
+});
 
 /** DEV : trace buffer pour debug movement. Chaque event (= deltaX/Y fire,
  *  RedrawMapSlice*) push ici. window.dev.movementLog() lit + clear.
@@ -471,6 +490,11 @@ export function clearPendingConnection(): void {
   _pendingConnection = null;
 }
 
+// Note 1:1 STRICT chantier OW : le flag `_lastStepCamMoved` (PHASE B' workaround)
+// a été RETIRÉ. Le décomp ne dual-write pos — seul CameraMove (= fieldmap.c)
+// mute pos. PlayerStep/movement-system step ends ne touchent PAS pos. C'est
+// strict 1:1 et élimine le besoin de tout flag de coordination.
+
 /** 1:1 décomp `CameraMove(x, y)` (fieldmap.c:649-678).
  *  Update _camPos par (deltaX, deltaY) en metatiles. Si le camera traverse
  *  un border vers une connexion, signaler via _pendingConnection (= MainCB2
@@ -497,69 +521,71 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
 
   // CONNECTION_NONE (0) ou CONNECTION_INVALID (0xFF) : pas de border cross.
   if (direction === 0 || direction === 0xFF) {
+    // 1:1 décomp `pos += delta` (fieldmap.c:658-659).
     _camPos.x += deltaX;
     _camPos.y += deltaY;
+    // 1:1 décomp : pas de flag — pos est mutée ici, PlayerStep skip son apply
+    // (= retiré). CameraMove est seule source de pos += delta.  // signal PlayerStep step end : skip son delta apply.
     return false;
   }
 
   // Border crossed : find la connexion correspondante.
   const connection = GetIncomingConnection(direction, _camPos.x, _camPos.y);
   if (!connection) {
+    // Fallback safe : pas de connexion → comportement non-cross.
     _camPos.x += deltaX;
     _camPos.y += deltaY;
+    // 1:1 décomp : pas de flag — pos est mutée ici, PlayerStep skip son apply
+    // (= retiré). CameraMove est seule source de pos += delta.
     return false;
   }
 
-  // 1:1 décomp CameraMove fieldmap.c:649-678 (cross-border path) :
+  // 1:1 décomp `CameraMove` cross-border path (fieldmap.c:649-678) :
   //   SaveMapView();
   //   ClearMirageTowerPulseBlendEffect();
   //   old_x = pos.x; old_y = pos.y;
   //   connection = GetIncomingConnection(direction, pos.x, pos.y);
-  //   SetPositionFromConnection(connection, direction, x, y);
+  //   SetPositionFromConnection(connection, direction, x, y);   ← écrit pos = border
   //   LoadMapFromCameraTransition(connection->mapGroup, connection->mapNum);
   //   gCamera.active = TRUE;
-  //   gCamera.x = old_x - pos.x;
+  //   gCamera.x = old_x - pos.x;  // delta logique pour translater NPCs
   //   gCamera.y = old_y - pos.y;
-  //   pos.x += x; pos.y += y;
+  //   pos.x += x; pos.y += y;     ← post-step (1:1 décomp)
   //   MoveMapViewToBackup(direction);
   //
-  // Notre conv : gPlayerAvatar.x/y = LOGICAL pos. _camPos.x/y = LOGICAL (= 1:1 décomp).
-  SaveMapView(_camPos.x, _camPos.y);
+  // PHASE A.2 : pos = gSaveBlock1Ptr.pos source unique (= alias _camPos.x/y et
+  // gPlayerAvatar.x/y via Proxy + getter dynamique).
+
+  SaveMapView();  // 1:1 décomp no-args, lit gSaveBlock1Ptr.pos directement.
 
   const oldX = _camPos.x;
   const oldY = _camPos.y;
 
-  // SetPositionFromConnection : compute pre-step pos in new map.
-  // ComputeConnectionDestPos retourne maintenant TOUJOURS pre-step (= 1:1 fix).
-  const newPos = ComputeConnectionDestPos(connection, direction, oldX, oldY);
-  const preStepNewX = newPos.camX;
-  const preStepNewY = newPos.camY;
-
-  // gPlayerAvatar.x/y set to PRE-step (= équivalent décomp's pos = pre-step).
-  gPlayerAvatar.x = preStepNewX;
-  gPlayerAvatar.y = preStepNewY;
+  // 1:1 décomp `SetPositionFromConnection(connection, direction, x, y)` (fieldmap
+  // .c:624). ÉCRIT gSaveBlock1Ptr.pos = border (= pre-step value). Via Proxy +
+  // getter dynamique, _camPos et gPlayerAvatar.x/y reflètent automatiquement.
+  SetPositionFromConnection(connection, direction, deltaX, deltaY);
 
   // LoadMapFromCameraTransition : sync swap gMapHeader + InitMap + secondary
   // tileset + palette. APRÈS ça, gBackupMapLayout = NEW map's data.
   TransitionToConnection(connection);
 
-  // gCamera.active = TRUE + delta = old - new (pre-step) = 1:1 décomp.
+  // 1:1 décomp `gCamera.active = TRUE; gCamera.x = old_x - pos.x;` etc.
+  // À CE moment, pos est encore à PRE-step (= border value).
   gCamera.active = true;
-  gCamera.x = oldX - preStepNewX;
-  gCamera.y = oldY - preStepNewY;
+  gCamera.x = oldX - _camPos.x;
+  gCamera.y = oldY - _camPos.y;
 
-  // pos += delta (= post-step now). PlayerStep step end appliquera AUSSI
-  // moveCoords (= notre impl), donc finir au step end gPlayerAvatar = post-step
-  // + delta = double count. Pour éviter : laisse gPlayerAvatar pre-step ICI,
-  // step end fera le +delta naturellement.
-  // → Ne fait PAS `gPlayerAvatar.x/y += delta` ici comme décomp.
+  // 1:1 décomp `pos.x += x; pos.y += y;` (fieldmap.c:673-674) → POST-step value.
+  // PHASE B' : on apply ce delta 1:1 décomp ici (= pos devient post-step).
+  // PlayerStep / movement-system step ends NE TOUCHENT PAS pos (= 1:1 strict
+  // décomp `field_player_avatar.c`). CameraMove est la seule source de mutation.
+  _camPos.x += deltaX;
+  _camPos.y += deltaY;
 
-  // _camPos = post-step (= 1:1 décomp pos.y after `pos.y += y` at fieldmap.c:674).
-  _camPos.x = preStepNewX + deltaX;
-  _camPos.y = preStepNewY + deltaY;
-
-  // MoveMapViewToBackup avec post-step pos (= 1:1 décomp).
-  MoveMapViewToBackup(direction, preStepNewX + deltaX, preStepNewY + deltaY);
+  // 1:1 décomp `MoveMapViewToBackup(direction)` no-args, lit gSaveBlock1Ptr.pos
+  // POST-step (= 1:1 strict).
+  MoveMapViewToBackup(direction);
 
   // Signal pending pour scene-level handling (BGM, status, NPC orchestrator).
   // Le swap visuel (BG buffer) est maintenant TOTALEMENT fait par CameraMove.
