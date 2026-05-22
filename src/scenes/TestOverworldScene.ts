@@ -726,12 +726,13 @@ export class TestOverworldScene extends Phaser.Scene {
     // Doit être appelé APRÈS CopyMapTilesetsToVram (= callbacks setté par CopyMapTilesetsToVram).
     InitTilesetAnimations();
 
-    // 1:1 décomp `ResetFieldCamera` + `ResetCameraUpdateInfo` (= reset complet
-    // camera state pour la new map). Sans ResetCameraUpdateInfo, gFieldCamera.x/y
-    // (= sub-tile pixel offset) + gTotalCamera reste stale du map précédent →
-    // scroll wiggle / split visual au prochain step. 1:1 décomp `ResumeMap`
-    // (overworld.c:2138) appelle ResetCameraUpdateInfo systématiquement.
-    ResetFieldCamera();
+    // 1:1 décomp `ResumeMap` (overworld.c:2138) : `ResetCameraUpdateInfo` SEUL
+    // avant `InitObjectEvents` (= InitPlayerAvatar). `ResetFieldCamera` est
+    // appelé APRÈS dans la séquence (= case 5 vs case 3 du LoadMapInStepsLocal).
+    // L'ordre TS antérieur (= ResetFieldCamera AVANT InitPlayerAvatar) divergeait
+    // du décomp et créait un état où `sFieldCameraOffset` était reset à 0 avant
+    // que `pos` soit setté → BG drawn avec offset stale (= bug user "1 case off
+    // post-warp" flag 2026-05-22). Fix audit chantier OW.
     ResetCameraUpdateInfo();
 
     // Determine spawn coords (= -1 fallback to map center for boot testing).
@@ -746,6 +747,13 @@ export class TestOverworldScene extends Phaser.Scene {
     // `gSaveBlock2Ptr->playerGender` pour piquer le sprite asset (= Brendan ou May).
     const playerGender = gameState.gender ?? 'MALE';
     await InitPlayerAvatar(sx, sy, spawnDir, playerGender, this.rt);
+
+    // 1:1 décomp `ResetFieldCamera()` (field_camera.c:69-72) — case 5 du
+    // LoadMapInStepsLocal (overworld.c:1893+) — APRÈS InitObjectEventsLocal +
+    // InitPlayerAvatar (= case 3 + 4). Reset `sFieldCameraOffset` à 0 quand
+    // `pos` est déjà setté → la séquence DrawWholeMapView qui suit voit un
+    // sFieldCameraOffset cohérent (= 0 tile/pixel offset) avec pos = new.
+    ResetFieldCamera();
 
     // 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) — no args,
     // lit `gSaveBlock1Ptr->pos.x/y` (= `_camPos` côté TS) + gMapHeader.mapLayout
@@ -1133,19 +1141,12 @@ export class TestOverworldScene extends Phaser.Scene {
       // warpInProgress = false : on laisse PlayerStep tick le walk-down auto.
       this.warpInProgress = false;
 
-      // Defensive : force BG buffer redraw + flush + scroll register reset.
-      // Bug observed : après warp + walking, "map sur le côté de l'écran"
-      // (= flicker visuel). Hypothèse : sFieldCameraOffset state stale (=
-      // xTileOffset/yTileOffset/pixelOffset) pas reset cleanly avant walking.
-      // Re-running clear+draw+flush+scroll garantit un état BG buffer 100%
-      // consistent avec _camPos post-warp avant que user puisse walk.
-      clearOverworldTilemaps();
-      // 1:1 décomp DrawWholeMapView() = no args (lit `_camPos` + gMapHeader
-      // internally). Le post-warp _camPos est déjà setté en Phase 3 par
-      // SetPlayerAvatar via SetCameraTopLeftCoords.
-      DrawWholeMapView();
-      flushOverworldTilemaps(this.rt);
-      FieldUpdateBgTilemapScroll(this.rt);
+      // 1:1 STRICT décomp : NE PAS re-faire `clear+DrawWholeMapView+flush+
+      // FieldUpdateBgTilemapScroll` ici. `loadAndInitMap` l'a DÉJÀ fait (= case
+      // 9 du LoadMapInStepsLocal). Le double-call était un workaround défensif
+      // (= "Defensive : force BG buffer redraw") qui MASQUAIT le vrai bug de
+      // l'ordre `ResetFieldCamera` avant `InitPlayerAvatar` (= maintenant fixé).
+      // Audit chantier OW : retiré pour 1:1 strict + ne plus masquer divergences.
 
       if (exitKind === 'door') {
         // 1:1 décomp `Task_ExitDoor` (field_screen_effect.c:317-363) :
