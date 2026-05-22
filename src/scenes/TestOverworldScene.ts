@@ -789,6 +789,11 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.10 : reset movement queues au map switch (= old map's queues
     // pourraient référencer des NPCs de l'ancienne map).
     resetMovementQueues();
+    // 1:1 décomp `RotatingGate_InitPuzzle` (rotating_gate.c:933-940) call par
+    // `RotatingGate_InitPuzzleAndGraphics` (= overworld.c LoadMap step). Init
+    // puzzle config + reset gate orientations à VAR_TEMP_0. No-op si current
+    // map n'a pas de rotating gate puzzle (= démo maps).
+    void import('../engine/rotating-gate').then(m => m.RotatingGate_InitPuzzle());
 
     // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
     // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
