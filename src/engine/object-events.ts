@@ -453,13 +453,27 @@ function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
  *  (= +MAP_OFFSET, 1:1 décomp ObjectEvent struct convention). `MapGridGetMetatile
  *  BehaviorAt` prend des internal coords directement. */
 export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
-  // map-loader.ts expose MapGridGetMetatileBehaviorAt sur globalThis pour
-  // éviter circular dep object-events ↔ map-loader.
+  // 1:1 décomp `MapGridGetMetatileBehaviorAt(objEvent->currentCoords.x, ...)` :
+  // décomp stocke `currentCoords` en INTERNAL coords (= +MAP_OFFSET), donc le
+  // `MapGridGet` reçoit directement les internal coords.
+  //
+  // Notre impl divergence : `currentCoordsX/Y` sont en LOGICAL coords (= sans
+  // offset). On compense ici en ajoutant `MAP_OFFSET = 7` à l'appel pour matcher
+  // le `MapGridGet` qui attend internal coords. Functionnellement équivalent à
+  // 1:1 décomp.
+  //
+  // Future refactor (R3 dette explicite) : standardiser sur INTERNAL coords
+  // partout dans gObjectEvents pour vrai 1:1 strict.
   const fn = (globalThis as Record<string, unknown>).MapGridGetMetatileBehaviorAt as
     ((x: number, y: number) => number) | undefined;
   if (!fn) return;
-  npc.previousMetatileBehavior = fn(npc.previousCoordsX, npc.previousCoordsY);
-  npc.currentMetatileBehavior = fn(npc.currentCoordsX, npc.currentCoordsY);
+  const MAP_OFFSET_LOCAL = 7;
+  npc.previousMetatileBehavior = fn(
+    npc.previousCoordsX + MAP_OFFSET_LOCAL,
+    npc.previousCoordsY + MAP_OFFSET_LOCAL);
+  npc.currentMetatileBehavior = fn(
+    npc.currentCoordsX + MAP_OFFSET_LOCAL,
+    npc.currentCoordsY + MAP_OFFSET_LOCAL);
 }
 
 // Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
@@ -1578,6 +1592,12 @@ function _spawnSingleNpcFromTemplate(
   npc.previousCoordsX = template.x;
   npc.previousCoordsY = template.y;
   npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
+  npc.movementDirection = npc.facingDirection;
+  npc.previousMovementDirection = npc.facingDirection;
+  // 1:1 décomp `GetAllGroundEffectFlags_OnSpawn` (event_object_movement.c:7389)
+  // appelle `ObjectEventUpdateMetatileBehaviors(objEvent)` au spawn pour init
+  // `currentMetatileBehavior` + `previousMetatileBehavior` cached fields.
+  ObjectEventUpdateMetatileBehaviors(npc);
   npc.objTileBase = objTileBase;
   npc.paletteBank = paletteBank;
   const npcGBackupCol = template.x + MAP_OFFSET;

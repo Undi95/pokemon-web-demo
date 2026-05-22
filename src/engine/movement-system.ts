@@ -32,7 +32,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { gObjectEvents, type ObjectEvent } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors } from './object-events';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
@@ -606,6 +606,14 @@ function _tickWalk(
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
       target.npc.walkAnimAlt = (target.npc.walkAnimAlt ^ 1) as 0 | 1;
+      // 1:1 décomp `previousMovementDirection = movementDirection` (= save direction
+      // pour PlayerAllowForcedMovementIfMovingSameDirection check, even for NPCs).
+      target.npc.previousMovementDirection = target.npc.movementDirection;
+      // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
+      // :7415) appelle `ObjectEventUpdateMetatileBehaviors(objEvent)` au step end
+      // pour update `currentMetatileBehavior` + `previousMetatileBehavior` cached.
+      // Used par ground effects + HideShowWarpArrow + collision dispatch.
+      ObjectEventUpdateMetatileBehaviors(target.npc);
     }
     return true;
   }
@@ -634,6 +642,16 @@ function _initWalk(target: MovementTarget, dir: number): void {
     target.npc.currentCoordsY += dy;
     target.npc.walkDirection = dir;
     target.npc.walkFramesLeft = 16;
+    // 1:1 décomp `InitMoveInDirection` (event_object_movement.c:5444) :
+    //   objectEvent->movementDirection = direction;
+    //   objectEvent->facingDirection = direction;
+    // Used par HideShowWarpArrow + PlayerAllowForcedMovement check.
+    target.npc.movementDirection = dir;
+    target.npc.facingDirection = dir;
+    // 1:1 décomp `GetAllGroundEffectFlags_OnBeginStep` (event_object_movement.c
+    // :7401) appelle `ObjectEventUpdateMetatileBehaviors(objEvent)` au step
+    // start pour refresh `currentMetatileBehavior` après ShiftObjectEventCoords.
+    ObjectEventUpdateMetatileBehaviors(target.npc);
   }
 }
 
