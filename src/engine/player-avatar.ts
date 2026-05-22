@@ -52,6 +52,7 @@ import {
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
+import { InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents } from './object-events';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,
@@ -372,6 +373,27 @@ export async function InitPlayerAvatar(
   gPlayerAvatar.currentElevation = 3;  // reset à elevation neutre default
   gPlayerAvatar.gender = gender;
   gPlayerAvatar.walkAnimAlt = 0;
+
+  // 1:1 décomp `InitPlayerAvatar` (field_player_avatar.c:1382-1385) :
+  // ```c
+  // objectEventId = SpawnSpecialObjectEvent(&playerObjEventTemplate);
+  // objectEvent = &gObjectEvents[objectEventId];
+  // objectEvent->isPlayer = TRUE;
+  // ...
+  // gPlayerAvatar.objectEventId = objectEventId;
+  // ```
+  // Notre impl : réserver `gObjectEvents[PLAYER_OBJECT_EVENT_SLOT=0]` comme
+  // player slot fixe. NPCs spawn (= via findIndex(!active)) skip naturellement
+  // ce slot car `InitPlayerObjectEvent` set `active=true`.
+  //
+  // Cette init DOIT être avant `SpawnObjectEventsOnMap` (= TestOverworldScene
+  // l.836) sinon NPCs spawn dans slot 0 → écrasent player.
+  const playerGraphicsKey = gender === 'FEMALE' ? 'May' : 'Brendan';
+  InitPlayerObjectEvent(mapX, mapY, direction, playerGraphicsKey);
+  // 1:1 décomp `gPlayerAvatar.objectEventId = objectEventId` (= 0 chez nous,
+  // slot réservé). HideShowWarpArrow + autres helpers décomp peuvent maintenant
+  // lire `gObjectEvents[gPlayerAvatar.objectEventId]` directement.
+  gPlayerAvatar.objectEventId = PLAYER_OBJECT_EVENT_SLOT;
 
   // 1:1 décomp `sPicTable_BrendanNormal[18]` : load walking.png + running.png
   // en parallèle, concaténer en single VRAM block (= 18 frames). updateSpriteFrame
@@ -992,6 +1014,11 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       const newElev = MapGridGetElevationAt(
         gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
       if (newElev !== 0) gPlayerAvatar.currentElevation = newElev;
+      // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
+      // :7415) : ObjectEventUpdateMetatileBehaviors(playerObjEvent) au step end
+      // pour refresh `currentMetatileBehavior` + `previousMetatileBehavior`.
+      // Notre `SyncPlayerObjectEvent` shift coords + update behaviors 1:1.
+      SyncPlayerObjectEvent(nx, ny, gPlayerAvatar.facing, stepDirAtEnd, true);
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
       // 1:1 décomp `RunOnSteppedCallback` (overworld.c:1930) : dispatch
@@ -1235,6 +1262,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
   gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
   gPlayerAvatar.stepDirection = inputDir;
+  // 1:1 décomp `InitMoveInDirection` (event_object_movement.c:5444) :
+  // ```c
+  // objectEvent->movementDirection = direction;
+  // objectEvent->facingDirection = direction;
+  // ```
+  // Sync au start du step pour que HideShowWarpArrow + ground effects lisent
+  // la bonne movementDirection.
+  if (gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].active) {
+    gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].movementDirection = inputDir;
+    gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].facingDirection = inputDir;
+  }
   const speed = dirToCameraSpeed(inputDir);
   const speedMult = wantDash ? 2 : 1;
   gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME * speedMult;

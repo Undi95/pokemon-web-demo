@@ -333,6 +333,17 @@ export interface ObjectEvent {
  *  warpArrowSpriteId = MAX_SPRITES = no sprite attached). */
 const MAX_SPRITES = 64;
 
+/** 1:1 décomp convention : `gPlayerAvatar.objectEventId` pointe vers le slot
+ *  du player dans `gObjectEvents[]`. Notre impl : on réserve `gObjectEvents[0]`
+ *  comme slot player. NPCs spawn via `findIndex(o => !o.active)` qui skip
+ *  naturellement le slot 0 si le player est `active=true` (= init dans
+ *  `InitPlayerAvatar`).
+ *
+ *  Décomp ROM utilise `SpawnSpecialObjectEvent` qui alloue dynamiquement,
+ *  donc le slot peut varier. Notre simplification : slot 0 fixe pour le player.
+ *  Identique à `LOCALID_PLAYER = 0xFF` mais pour l'index dans gObjectEvents. */
+export const PLAYER_OBJECT_EVENT_SLOT = 0;
+
 export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_COUNT }, () => ({
   // Bit flags (= 1:1 décomp struct ObjectEvent l.196-223, all init FALSE).
   active: false,
@@ -601,6 +612,139 @@ export function ObjectEventGetHeldMovementActionId(objectEvent: ObjectEvent): nu
     return objectEvent.movementActionId;
   }
   return MOVEMENT_ACTION_NONE;
+}
+
+/** 1:1 décomp `SpawnSpecialObjectEvent` (event_object_movement.c) helper
+ *  spécialisé pour le PLAYER. Init `gObjectEvents[PLAYER_OBJECT_EVENT_SLOT]`
+ *  comme player ObjectEvent.
+ *
+ *  Décomp `InitPlayerAvatar` (field_player_avatar.c:1364-1394) :
+ *  ```c
+ *  playerObjEventTemplate.localId = LOCALID_PLAYER;
+ *  playerObjEventTemplate.graphicsId = GetPlayerAvatarGraphicsIdByStateIdAndGender(...);
+ *  playerObjEventTemplate.x = x - MAP_OFFSET;
+ *  playerObjEventTemplate.y = y - MAP_OFFSET;
+ *  playerObjEventTemplate.elevation = ELEVATION_TRANSITION;
+ *  playerObjEventTemplate.movementType = MOVEMENT_TYPE_PLAYER;
+ *  ...
+ *  objectEventId = SpawnSpecialObjectEvent(&playerObjEventTemplate);
+ *  objectEvent = &gObjectEvents[objectEventId];
+ *  objectEvent->isPlayer = TRUE;
+ *  objectEvent->warpArrowSpriteId = CreateWarpArrowSprite();
+ *  ObjectEventTurn(objectEvent, direction);
+ *  ```
+ *
+ *  Used par `InitPlayerAvatar` (player-avatar.ts) au map load + post-warp.
+ *
+ *  @param mapX        Player position LOGICAL X (= sans MAP_OFFSET).
+ *  @param mapY        Player position LOGICAL Y.
+ *  @param direction   Initial facing direction (DIR_*).
+ *  @param graphicsKey Player graphics ID (= 'Brendan' / 'May' for the demo). */
+export function InitPlayerObjectEvent(
+  mapX: number, mapY: number, direction: number, graphicsKey: string,
+): void {
+  const npc = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
+  // 1:1 décomp : init all fields à leur valeur par défaut + override les
+  // player-specific.
+  npc.active = true;
+  npc.invisible = false;
+  npc.isPlayer = true;
+  npc.localId = 0xFF;  // 1:1 décomp LOCALID_PLAYER = 255 (= sentinel pour
+                       // matching scripted movements via 'LOCALID_PLAYER' string).
+  npc.localIdRaw = 'LOCALID_PLAYER';
+  npc.graphicsId = graphicsKey;
+  npc.movementType = 'MOVEMENT_TYPE_PLAYER';
+  npc.scriptLabel = '';
+  // 1:1 décomp : currentCoords / previousCoords sont en INTERNAL coords
+  // (= +MAP_OFFSET). Notre `gObjectEvents` stocke en LOGICAL coords (= sans
+  // offset). On reste cohérent avec notre impl NPCs.
+  npc.currentCoordsX = mapX;
+  npc.currentCoordsY = mapY;
+  npc.previousCoordsX = mapX;
+  npc.previousCoordsY = mapY;
+  npc.initialCoordsX = mapX;
+  npc.initialCoordsY = mapY;
+  npc.facingDirection = direction;
+  npc.movementDirection = direction;
+  npc.previousMovementDirection = direction;
+  npc.currentElevation = 3;  // 1:1 décomp ELEVATION_TRANSITION (= 3) default
+  npc.previousElevation = 3;
+  npc.movementActionId = MOVEMENT_ACTION_NONE;
+  npc.fieldEffectSpriteId = MAX_SPRITES;
+  npc.warpArrowSpriteId = MAX_SPRITES;  // 1:1 décomp CreateWarpArrowSprite()
+                                         // appelé séparément par scene (= notre
+                                         // archi : loadAndInitMap call DestroyWarp +
+                                         // CreateWarpArrowSprite).
+  npc.playerCopyableMovement = 0;
+  npc.mapId = '';  // Set par caller au current map.
+  npc.mapNum = 0;
+  npc.mapGroup = 0;
+  // Bit flags reset.
+  npc.singleMovementActive = false;
+  npc.triggerGroundEffectsOnMove = false;
+  npc.triggerGroundEffectsOnStop = false;
+  npc.disableCoveringGroundEffects = false;
+  npc.landingJump = false;
+  npc.heldMovementActive = false;
+  npc.heldMovementFinished = false;
+  npc.facingDirectionLocked = false;
+  npc.disableAnim = false;
+  npc.enableAnim = false;
+  npc.inanimate = false;
+  npc.offScreen = false;
+  npc.trackedByCamera = false;  // 1:1 décomp : player n'est PAS trackedByCamera
+                                 // (= la camera FOLLOW le player via _camPos =
+                                 // gSaveBlock1Ptr.pos, pas via objectEvent flag).
+  npc.hasReflection = false;
+  npc.inShortGrass = false;
+  npc.inShallowFlowingWater = false;
+  npc.inSandPile = false;
+  npc.inHotSprings = false;
+  npc.hasShadow = false;
+  npc.disableJumpLandingGroundEffect = false;
+  npc.fixedPriority = false;
+  npc.hideReflection = false;
+  npc.frozen = false;
+  npc.is32x32 = false;
+  npc.useSubsprites = false;
+  // 1:1 décomp `GetAllGroundEffectFlags_OnSpawn` (event_object_movement.c:7389)
+  // → ObjectEventUpdateMetatileBehaviors(objEvent) au spawn.
+  ObjectEventUpdateMetatileBehaviors(npc);
+}
+
+/** Sync `gObjectEvents[PLAYER_OBJECT_EVENT_SLOT]` avec `gPlayerAvatar`. À
+ *  call à chaque step boundary (= step end) + au facing change. Maintient
+ *  les fields lus par décomp helpers (= `currentCoords`, `facingDirection`,
+ *  `movementDirection`, `currentMetatileBehavior`, etc.).
+ *
+ *  @param mapX        Logical X (= gPlayerAvatar.x).
+ *  @param mapY        Logical Y.
+ *  @param facing      gPlayerAvatar.facing.
+ *  @param movementDir Direction du step en cours (= optional, default = facing).
+ *  @param shiftCoords TRUE = shift previous from current (= ShiftObjectEventCoords
+ *                     style 1:1 décomp au step start). FALSE = no shift (= keep
+ *                     previous as-is).
+ */
+export function SyncPlayerObjectEvent(
+  mapX: number, mapY: number, facing: number,
+  movementDir?: number, shiftCoords: boolean = false,
+): void {
+  const npc = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
+  if (!npc.active || !npc.isPlayer) return;
+  if (shiftCoords) {
+    // 1:1 décomp ShiftObjectEventCoords : previous = old current, current = new.
+    npc.previousCoordsX = npc.currentCoordsX;
+    npc.previousCoordsY = npc.currentCoordsY;
+  }
+  npc.currentCoordsX = mapX;
+  npc.currentCoordsY = mapY;
+  npc.facingDirection = facing;
+  if (movementDir !== undefined) {
+    npc.movementDirection = movementDir;
+  }
+  // 1:1 décomp `ObjectEventUpdateMetatileBehaviors` au step end (=
+  // GetAllGroundEffectFlags_OnFinishStep event_object_movement.c:7415).
+  ObjectEventUpdateMetatileBehaviors(npc);
 }
 
 export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
