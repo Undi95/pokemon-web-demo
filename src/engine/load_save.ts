@@ -319,9 +319,9 @@ export function PreSaveSyncBlocks(): void {
   //    et restauré au resume via InitMapFromSavedGame → LoadSavedMapView.
   //    pos = `gSaveBlock1Ptr->pos` (set juste au-dessus par
   //    SyncPlayerPositionToBlock = même valeur logique que le décomp).
-  //    Post chantier OW PHASE A.2 : SaveMapView no-args (= 1:1 décomp), lit
-  //    gSaveBlock1Ptr.pos qui est === block1.pos via Proxy.
-  SaveMapView();
+  //    = LA pièce « reprendre dans le MÊME état (tiles autour) » de l'étape 5.
+  const block1 = GetSaveBlock1();
+  SaveMapView(block1.pos.x, block1.pos.y);
   // 3. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents
   //    via CopyPartyAndObjectsToSave dans HandleSavingData).
   SavePlayerParty();

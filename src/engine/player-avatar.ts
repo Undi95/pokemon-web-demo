@@ -93,7 +93,6 @@ import {
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
 import { getGObjectEvents } from './field-globals';
-import { gSaveBlock1Ptr } from './gba-menu-system';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -201,20 +200,10 @@ interface PlayerAvatar {
   jumpFramesLeft: number;
 }
 
-/** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374).
- *
- *  ATTENTION 1:1 STRICT — `struct PlayerAvatar` décomp NE CONTIENT PAS `x/y`
- *  (cf. global.fieldmap.h:342-362). La position du joueur dans le décomp est
- *  stockée dans `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) — source
- *  unique partagée avec `_camPos` (= field-camera.ts).
- *
- *  Pour préserver les call-sites TS existants (`gPlayerAvatar.x = ...`), `x` et
- *  `y` sont implémentés en getter/setter qui délèguent à `gSaveBlock1Ptr.pos`.
- *  Élimine le désync historique `cam.x ≠ player.x` user-flag 2026-05-22.
- *
- *  IMPORTANT : ne JAMAIS réassigner `gSaveBlock1Ptr.pos = {...}` ailleurs, sinon
- *  l'alias `_camPos` (field-camera) devient stale. Seulement muter `.x` / `.y`. */
-const _gPlayerAvatarBase = {
+/** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374). */
+export const gPlayerAvatar: PlayerAvatar = {
+  x: 0,
+  y: 0,
   facing: DIR_SOUTH,
   runningState: NOT_MOVING,
   tileTransitionState: T_NOT_MOVING,
@@ -226,25 +215,10 @@ const _gPlayerAvatarBase = {
   currentElevation: 3,  // = elevation neutre (1:1 décomp default)
   spriteId: -1,
   walkAnimAlt: 0,
-  gender: 'MALE' as 'MALE' | 'FEMALE',
+  gender: 'MALE',
   dashing: false,
   jumpFramesLeft: 0,
-} as Omit<PlayerAvatar, 'x' | 'y'>;
-
-Object.defineProperty(_gPlayerAvatarBase, 'x', {
-  get(): number { return gSaveBlock1Ptr.pos.x; },
-  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
-  enumerable: true,
-  configurable: true,
-});
-Object.defineProperty(_gPlayerAvatarBase, 'y', {
-  get(): number { return gSaveBlock1Ptr.pos.y; },
-  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
-  enumerable: true,
-  configurable: true,
-});
-
-export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase as PlayerAvatar;
+};
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 
@@ -822,10 +796,9 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // OU step forced via forceMovement qui vient de démarrer ci-dessus).
       gPlayerAvatar.stepFramesLeft--;
       if (gPlayerAvatar.stepFramesLeft === 0) {
-        // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche
-        // JAMAIS `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c:649) mute
-        // pos via CameraUpdate au tile boundary. À ce point, pos = post-step
-        // car CameraMove a déjà été appelée durant les frames du step.
+        const { x: nx, y: ny } = moveCoords(gPlayerAvatar.stepDirection, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx;
+        gPlayerAvatar.y = ny;
         gPlayerAvatar.runningState = NOT_MOVING;
         gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
         gPlayerAvatar.stepDirection = DIR_NONE;
@@ -914,17 +887,16 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // Sinon : reset → DIR_NONE → IsArrowWarpMetatileBehavior(SOUTH_ARROW, NONE)
       // = false → walk DOWN sur carpette ne TP pas (= player bloqué).
       const stepDirAtEnd = gPlayerAvatar.stepDirection;
-      // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche JAMAIS
-      // `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c) mute pos au tile
-      // boundary du CameraUpdate. À ce point, pos = post-step (= via CameraMove
-      // appliquée durant les 16 frames du step). nx/ny pour downstream usage
-      // (= warp check, behavior check) lit pos courant.
-      const nx = gPlayerAvatar.x;
-      const ny = gPlayerAvatar.y;
-      // 1:1 décomp ledge jump = 2 tiles total. Step est 32 frames → CameraMove
-      // est appelée 2 fois (= 2 tile boundaries) qui appliquent chacune `pos +=
-      // delta`. pos est déjà à old + 2 — pas de re-apply ici.
+      const { x: nx, y: ny } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
+      gPlayerAvatar.x = nx;
+      gPlayerAvatar.y = ny;
+      // 1:1 décomp ledge jump = 2 tiles total. Le 1er moveCoords ci-dessus
+      // applique 1 tile (= sortie du ledge tile). Si flag _pendingLedgeJump,
+      // applique 1 tile de plus pour atterrir sur la tile au-delà du ledge.
       if (_pendingLedgeJump) {
+        const { x: nx2, y: ny2 } = moveCoords(stepDirAtEnd, gPlayerAvatar.x, gPlayerAvatar.y);
+        gPlayerAvatar.x = nx2;
+        gPlayerAvatar.y = ny2;
         _pendingLedgeJump = false;
         // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
         // spawn dust cloud à la position d'atterrissage.

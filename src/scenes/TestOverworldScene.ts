@@ -29,6 +29,7 @@ import {
   clearOverworldTilemaps,
   MAP_OFFSET,
   TransitionToConnection,
+  ComputeConnectionDestPos,
   MoveMapViewToBackup,
   CONNECTION_NORTH,
   CONNECTION_SOUTH,
