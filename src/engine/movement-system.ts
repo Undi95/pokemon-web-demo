@@ -52,6 +52,21 @@ interface MovementQueue {
   actionFrame: number;
   /** True si la queue est vide / terminée (= 'step_end' atteint ou consumé). */
   done: boolean;
+  /** 1:1 décomp fix : flag qui retarde `_onQueueDone` d'1 frame après l'action
+   *  finale. Cause root : le scripted walk_down (= e.g. door exit) tick set
+   *  `gFieldCamera.movementSpeedX/Y = ±1` à chaque frame, dont la dernière (=
+   *  `frame === duration - 1`). Si `_onQueueDone` reset speed=0 dans la MÊME
+   *  frame, CameraUpdate (= appelé APRÈS tickMovementQueues dans MainCB2_Overworld)
+   *  voit speed=0 et NE FAIT PAS le wrap final `gFieldCamera.y % 16 = 0`.
+   *  → fcY reste à 15 (= post-frame 14 d'un walk_down). Le bug Nintendo dormant
+   *  `field_camera.c:400-406` (= copy-paste deltaX au lieu de deltaY) fire alors
+   *  au prochain step UP/DOWN quand `fcY == -speedY` match transitoirement, mute
+   *  pos.x. ROM ne déclenche pas car face_direction action (queued par
+   *  PlayerNotOnBikeNotMoving) set sprite.sCamera_Move=0 au FRAME D'APRÈS via
+   *  CameraUpdateCallback → fcY wrap correct happens dans la dernière walk frame.
+   *  Fix : `pendingFinish = true` sur dernière action, `_onQueueDone` fire au
+   *  PROCHAIN tick → 1 frame de latence pour wrap. */
+  pendingFinish?: boolean;
 }
 
 const _queues = new Map<string, MovementQueue>();  // key = localIdRaw or "PLAYER"
@@ -138,8 +153,20 @@ function _queueKey(targetLocalId: string): string {
 export function tickMovementQueues(rt: DecompRuntime): void {
   _activeRt = rt;  // Capture for sprite access in action handlers.
   for (const [key, q] of _queues.entries()) {
+    // 1:1 décomp fix fcY=15 stuck (cf. interface MovementQueue.pendingFinish) :
+    // si pendingFinish set frame précédente, on consomme MAINTENANT le
+    // `_onQueueDone` (= speed reset 0). CameraUpdate de la frame précédente a
+    // déjà processé le wrap final fcY → 0 avec speed != 0 set.
+    if (q.pendingFinish && !q.done) {
+      q.done = true;
+      q.pendingFinish = false;
+      _onQueueDone(key);
+      continue;
+    }
     if (q.done) continue;
     if (q.currentIdx >= q.actions.length) {
+      // Empty queue (e.g. action 'step_end' consumed at the very first idx) :
+      // skip 1-frame delay (= rien à finaliser, speed déjà 0 par init).
       q.done = true;
       _onQueueDone(key);
       continue;
@@ -161,9 +188,14 @@ export function tickMovementQueues(rt: DecompRuntime): void {
       q.currentIdx++;
       q.actionFrame = 0;
       // Si action == 'step_end' OR currentIdx hors bounds → queue done.
+      // 1:1 décomp fix : on marque `pendingFinish` au lieu de fire
+      // `_onQueueDone` immédiatement. Le speed reset (= via _onQueueDone)
+      // sera consommé au PROCHAIN tick → 1 frame de latence laisse
+      // CameraUpdate de CETTE frame voir speed != 0 et faire le wrap final
+      // fcY % 16 → 0. Sans ça, fcY reste à 15 (= post frame 14 d'un walk_down)
+      // et déclenche le bug Nintendo l.400-406 au prochain step UP/DOWN.
       if (action === 'step_end' || q.currentIdx >= q.actions.length) {
-        q.done = true;
-        _onQueueDone(key);
+        q.pendingFinish = true;
       }
     } else {
       q.actionFrame++;
