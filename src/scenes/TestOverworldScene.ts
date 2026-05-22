@@ -993,12 +993,16 @@ export class TestOverworldScene extends Phaser.Scene {
       // TODO Phase 4.7 : implementer + wait BGMusicStopped. Pour MVP : skip,
       // PlayBGM dans loadAndInitMap override automatiquement.
       this.rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
-      // 1:1 décomp `DoWarp` line 490 : PlaySE(SE_EXIT) pour step warps.
-      // Pour 'door' : SE déjà joué dans Task_DoDoorWarp. Pour 'teleport' :
-      // SE_WARP_IN (= 1:1 décomp `DoTeleportTileWarp`).
+      // 1:1 décomp `DoWarp` (field_screen_effect.c:484) : PlaySE(SE_EXIT) pour
+      // step warps. Pour 'door' : SE déjà joué dans Task_DoDoorWarp.
+      // Pour 'aqua_teleport' / 'mossdeep_gym' : SE_WARP_IN (= 1:1 décomp
+      // `DoTeleportTileWarp` line 554 + `DoMossdeepGymWarp` line 566).
+      // Pour 'fall' : SE_FALL (= 1:1 décomp `DoFallWarp` chain → DoDiveWarp).
+      // Pour 'lavaridge_*' / 'escalator_*' / 'mt_pyre_hole' / 'union_room' /
+      // 'secret_base' : SE handled dans leur task spécifique (= TODO port).
       if (kind === 'step' || kind === 'arrow' || kind === 'ladder') {
         PlaySE(SE_EXIT);
-      } else if (kind === 'teleport') {
+      } else if (kind === 'aqua_teleport' || kind === 'mossdeep_gym') {
         PlaySE(SE_WARP_IN);
       }
       await this.waitForFadeComplete();

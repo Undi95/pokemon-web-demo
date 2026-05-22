@@ -49,19 +49,68 @@ import {
   MB_DOWN_ESCALATOR,
   isAnimatedDoor,
 } from './tilemap-loader';
+import {
+  MetatileBehavior_IsWarpDoor,
+  MetatileBehavior_IsDoor,
+  MetatileBehavior_IsNonAnimDoor,
+  MetatileBehavior_IsDeepSouthWarp,
+  MetatileBehavior_IsLadder,
+  MetatileBehavior_IsEscalator,
+  MetatileBehavior_IsNorthArrowWarp,
+  MetatileBehavior_IsSouthArrowWarp,
+  MetatileBehavior_IsEastArrowWarp,
+  MetatileBehavior_IsWestArrowWarp,
+  MetatileBehavior_IsLavaridgeB1FWarp,
+  MetatileBehavior_IsLavaridge1FWarp,
+  MetatileBehavior_IsAquaHideoutWarp,
+  MetatileBehavior_IsUnionRoomWarp,
+  MetatileBehavior_IsMossdeepGymWarp,
+  MetatileBehavior_IsMtPyreHole,
+  MetatileBehavior_IsCrackedFloorHole,
+  MetatileBehavior_IsCrackedFloor,
+  MetatileBehavior_IsBattlePyramidWarp,
+  MetatileBehavior_IsOpenSecretBaseDoor,
+  IsWarpMetatileBehavior as _IsWarpMetatileBehavior,
+  IsArrowWarpMetatileBehavior as _IsArrowWarpMetatileBehavior,
+} from './metatile-behavior';
 
 // ─── Warp kind classification ───────────────────────────────────────────────
 
 /** Type de warp détecté. Dispatché par executeWarp dans la scene.
- *  1:1 décomp branches dans TryStartWarpEventScript + TryDoorWarp + TryArrowWarp. */
+ *  1:1 décomp branches dans `TryStartWarpEventScript` (field_control_avatar.c:702)
+ *  + `TryDoorWarp` (line 833) + `TryArrowWarp` (line 688).
+ *
+ *  Chaque kind correspond à un `Do*Warp` du décomp `field_screen_effect.c` :
+ *    - door         → `DoDoorWarp` (= door open SE + anim + walk-up + warp).
+ *    - step         → `DoWarp` (= step on non_anim door / water door / deep south).
+ *    - ladder       → `DoWarp` (= no walk-down, preserves facing).
+ *    - arrow        → `DoWarp` (= arrow direction match + held).
+ *    - fall         → `DoFallWarp` (= cracked floor hole fall anim).
+ *    - mt_pyre_hole → `ScriptContext_SetupScript(EventScript_FallDownHoleMtPyre)`
+ *                     (= 1:1 décomp Mt Pyre fall via script, PAS DoFallWarp).
+ *    - aqua_teleport→ `DoTeleportTileWarp` (= spin enter anim).
+ *    - union_room   → `DoSpinExitWarp` (= union room spin exit).
+ *    - escalator_up / escalator_down → `DoEscalatorWarp(metatileBehavior)`.
+ *    - lavaridge_b1f→ `DoLavaridgeGymB1FWarp` (= fire pop anim).
+ *    - lavaridge_1f → `DoLavaridgeGym1FWarp` (= hole drop anim).
+ *    - mossdeep_gym → `DoMossdeepGymWarp` (= specific Mossdeep effect).
+ *    - secret_base  → `WarpIntoSecretBase` (= push NORTH sur secret base ouvert).
+ */
 export type WarpKind =
-  | 'door'        // MB_ANIMATED_DOOR : door anim + walk-up + Task_DoDoorWarp
-  | 'step'        // MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP : DoWarp + Task_ExitNonAnimDoor
-  | 'ladder'      // MB_LADDER : DoWarp + Task_ExitNonDoor (= no walk-down)
-  | 'arrow'       // MB_*_ARROW_WARP : DoWarp + Task_ExitNonDoor
-  | 'fall'        // MB_CRACKED_FLOOR_HOLE / MB_MT_PYRE_HOLE : DoFallWarp + FieldCB_FallWarpExit
-  | 'teleport'    // MB_AQUA_HIDEOUT_WARP : DoTeleportTileWarp + FieldCB_SpinEnterWarp
-  | 'escalator';  // MB_UP_ESCALATOR / MB_DOWN_ESCALATOR : DoEscalatorWarp
+  | 'door'         // MB_ANIMATED_DOOR (= TryDoorWarp push NORTH)
+  | 'step'         // MB_NON_ANIMATED_DOOR / MB_WATER_DOOR / MB_DEEP_SOUTH_WARP (= TryStartWarpEventScript step)
+  | 'ladder'       // MB_LADDER (= preserve facing)
+  | 'arrow'        // MB_*_ARROW_WARP (= TryArrowWarp held direction match)
+  | 'fall'         // MB_CRACKED_FLOOR_HOLE (= DoFallWarp post-cracked-floor step)
+  | 'mt_pyre_hole' // MB_MT_PYRE_HOLE (= script EventScript_FallDownHoleMtPyre)
+  | 'aqua_teleport'// MB_AQUA_HIDEOUT_WARP (= DoTeleportTileWarp spin enter)
+  | 'union_room'   // MB_BRIDGE_OVER_OCEAN reused (= DoSpinExitWarp)
+  | 'escalator_up' // MB_UP_ESCALATOR (= DoEscalatorWarp up direction)
+  | 'escalator_down'// MB_DOWN_ESCALATOR (= DoEscalatorWarp down direction)
+  | 'lavaridge_b1f'// MB_LAVARIDGE_GYM_B1F_WARP (= fire pop to F1)
+  | 'lavaridge_1f' // MB_LAVARIDGE_GYM_1F_WARP (= hole drop to B1F)
+  | 'mossdeep_gym' // MB_MOSSDEEP_GYM_WARP (= Mossdeep specific spin)
+  | 'secret_base'; // IsOpenSecretBaseDoor (= push NORTH WarpIntoSecretBase)
 
 /** Type d'exit task à run au load de la dest map. 1:1 décomp `SetUpWarpExitTask`
  *  (field_screen_effect.c:256). Dispatch selon le metatile_behavior à la position
@@ -110,72 +159,98 @@ export function getWarpAtPlayerPos(): WarpEvent | null {
   return findWarpEventAt(gPlayerAvatar.x, gPlayerAvatar.y);
 }
 
-/** 1:1 décomp `IsWarpMetatileBehavior` (field_control_avatar.c:751).
+/** 1:1 décomp `IsWarpMetatileBehavior` (field_control_avatar.c:751-765).
  *  Returns TRUE si le metatile_behavior est un type de warp détecté
- *  par TryStartWarpEventScript (= step warp). */
+ *  par TryStartWarpEventScript (= step warp).
+ *
+ *  Délégué au helper 1:1 strict dans `metatile-behavior.ts`. */
 export function isWarpMetatileBehavior(behavior: number): boolean {
-  return behavior === MB_ANIMATED_DOOR
-      || behavior === MB_NON_ANIMATED_DOOR
-      || behavior === MB_WATER_DOOR
-      || behavior === MB_DEEP_SOUTH_WARP
-      || behavior === MB_LADDER
-      || behavior === MB_AQUA_HIDEOUT_WARP
-      || behavior === MB_CRACKED_FLOOR_HOLE
-      || behavior === MB_MT_PYRE_HOLE
-      || behavior === MB_UP_ESCALATOR
-      || behavior === MB_DOWN_ESCALATOR;
+  return _IsWarpMetatileBehavior(behavior);
 }
 
-/** 1:1 décomp `IsArrowWarpMetatileBehavior` (field_control_avatar.c:767).
- *  Returns TRUE si tile + direction = arrow warp matching. */
+/** 1:1 décomp `IsArrowWarpMetatileBehavior` (field_control_avatar.c:767-781).
+ *  Returns TRUE si tile + direction = arrow warp matching.
+ *
+ *  Délégué au helper 1:1 strict dans `metatile-behavior.ts`. */
 export function isArrowWarpMetatileBehavior(behavior: number, direction: number): boolean {
-  switch (direction) {
-    case DIR_NORTH: return behavior === MB_NORTH_ARROW_WARP;
-    case DIR_SOUTH: return behavior === MB_SOUTH_ARROW_WARP;
-    case 3: /* DIR_WEST */ return behavior === MB_WEST_ARROW_WARP;
-    case 4: /* DIR_EAST */ return behavior === MB_EAST_ARROW_WARP;
-    default: return false;
-  }
+  return _IsArrowWarpMetatileBehavior(behavior, direction);
 }
 
-/** Classifier le metatile en WarpKind. Utilisé par PlayerStep au step end +
- *  collision dispatch. Returns null si pas un warp. */
+/** Classifier le metatile en WarpKind. 1:1 décomp dispatch ordre de
+ *  `TryStartWarpEventScript` (field_control_avatar.c:702-749) + `TryDoorWarp`
+ *  (line 833) + `TryArrowWarp` (line 688).
+ *
+ *  Important : l'ordre du dispatch décomp est SIGNIFICATIF — certains tiles
+ *  peuvent matcher plusieurs helpers (= e.g. door tile matche aussi
+ *  `IsWarpMetatileBehavior` qui inclut `IsWarpDoor`). On retourne le PREMIER
+ *  match en suivant l'ordre décomp.
+ *
+ *  Returns null si pas un warp. */
 export function getWarpKindFor(behavior: number): WarpKind | null {
-  if (behavior === MB_ANIMATED_DOOR) return 'door';
-  if (behavior === MB_NON_ANIMATED_DOOR
-   || behavior === MB_WATER_DOOR
-   || behavior === MB_DEEP_SOUTH_WARP) return 'step';
-  if (behavior === MB_LADDER) return 'ladder';
-  if (behavior === MB_NORTH_ARROW_WARP
-   || behavior === MB_SOUTH_ARROW_WARP
-   || behavior === MB_EAST_ARROW_WARP
-   || behavior === MB_WEST_ARROW_WARP) return 'arrow';
-  if (behavior === MB_CRACKED_FLOOR_HOLE
-   || behavior === MB_MT_PYRE_HOLE) return 'fall';
-  if (behavior === MB_AQUA_HIDEOUT_WARP) return 'teleport';
-  if (behavior === MB_UP_ESCALATOR
-   || behavior === MB_DOWN_ESCALATOR) return 'escalator';
+  // 1. Secret base door (= TryDoorWarp push NORTH branch décomp:839-843).
+  //    Premier check parce que `IsOpenSecretBaseDoor` overlap pas avec autres.
+  if (MetatileBehavior_IsOpenSecretBaseDoor(behavior)) return 'secret_base';
+
+  // 2. Door warp (= TryDoorWarp décomp:845-855, MB_ANIMATED_DOOR).
+  if (MetatileBehavior_IsWarpDoor(behavior)) return 'door';
+
+  // 3. Arrow warps (= TryArrowWarp décomp:688-700). Direction-spécifique mais
+  //    le classifier ici n'a pas la direction → retourne 'arrow' générique,
+  //    le caller (= player-avatar) check IsArrowWarpMetatileBehavior(behavior,
+  //    direction) avant d'invoquer.
+  if (MetatileBehavior_IsNorthArrowWarp(behavior)
+   || MetatileBehavior_IsSouthArrowWarp(behavior)
+   || MetatileBehavior_IsEastArrowWarp(behavior)
+   || MetatileBehavior_IsWestArrowWarp(behavior)) return 'arrow';
+
+  // 4. Special warps (= TryStartWarpEventScript dispatch ordre 1:1).
+  //    `IsEscalator` retourné split UP/DOWN pour permettre dispatch correct.
+  if (behavior === MB_UP_ESCALATOR) return 'escalator_up';
+  if (behavior === MB_DOWN_ESCALATOR) return 'escalator_down';
+  if (MetatileBehavior_IsLavaridgeB1FWarp(behavior)) return 'lavaridge_b1f';
+  if (MetatileBehavior_IsLavaridge1FWarp(behavior)) return 'lavaridge_1f';
+  if (MetatileBehavior_IsAquaHideoutWarp(behavior)) return 'aqua_teleport';
+  if (MetatileBehavior_IsUnionRoomWarp(behavior)) return 'union_room';
+  if (MetatileBehavior_IsMtPyreHole(behavior)) return 'mt_pyre_hole';
+  if (MetatileBehavior_IsMossdeepGymWarp(behavior)) return 'mossdeep_gym';
+
+  // 5. Cracked floor hole (= fall warp, dispatch via player step). Pas couvert
+  //    par `IsWarpMetatileBehavior` du décomp (= géré par player collision).
+  if (MetatileBehavior_IsCrackedFloorHole(behavior)) return 'fall';
+
+  // 6. Non-anim door + ladder (= TryStartWarpEventScript fallback DoWarp).
+  if (MetatileBehavior_IsNonAnimDoor(behavior)) return 'step';
+  if (MetatileBehavior_IsLadder(behavior)) return 'ladder';
+
   return null;
 }
 
 // ─── Exit task classification ───────────────────────────────────────────────
 
 /** 1:1 décomp `SetUpWarpExitTask` (field_screen_effect.c:256).
- *  Selon le metatile_behavior à la position du player post-warp, choisit
- *  l'exit task à run :
- *    - IsDoor         → 'door' (Task_ExitDoor : door open + walk-down + door close)
- *    - IsNonAnimDoor  → 'non_anim' (Task_ExitNonAnimDoor : juste walk-down)
- *    - else           → 'none' (Task_ExitNonDoor : no walk-down, juste unlock)
- */
+ *
+ *  Body décomp :
+ *  ```c
+ *  static u8 SetUpWarpExitTask(void) {
+ *      s16 x, y;
+ *      u8 behavior;
+ *      const TaskFunc *func;
+ *      PlayerGetDestCoords(&x, &y);
+ *      behavior = MapGridGetMetatileBehaviorAt(x, y);
+ *      if (MetatileBehavior_IsDoor(behavior) == TRUE)
+ *          func = sExitDoorTaskFunc;       // = Task_ExitDoor
+ *      else if (MetatileBehavior_IsNonAnimDoor(behavior) == TRUE)
+ *          func = sExitNonAnimDoorTaskFunc; // = Task_ExitNonAnimDoor
+ *      else
+ *          func = sExitNonDoorTaskFunc;    // = Task_ExitNonDoor
+ *      return CreateTask(*func, 0);
+ *  }
+ *  ```
+ *
+ *  Délégué aux helpers 1:1 strict `MetatileBehavior_IsDoor` / `IsNonAnimDoor`. */
 export function getExitTaskKindFor(behavior: number): ExitTaskKind {
-  // 1:1 décomp `MetatileBehavior_IsDoor` :
-  //   == MB_PETALBURG_GYM_DOOR || == MB_ANIMATED_DOOR
-  if (behavior === MB_ANIMATED_DOOR) return 'door';
-  // 1:1 décomp `MetatileBehavior_IsNonAnimDoor` :
-  //   == MB_NON_ANIMATED_DOOR || == MB_WATER_DOOR || == MB_DEEP_SOUTH_WARP
-  if (behavior === MB_NON_ANIMATED_DOOR
-   || behavior === MB_WATER_DOOR
-   || behavior === MB_DEEP_SOUTH_WARP) return 'non_anim';
+  if (MetatileBehavior_IsDoor(behavior)) return 'door';
+  if (MetatileBehavior_IsNonAnimDoor(behavior)) return 'non_anim';
   return 'none';
 }
 
@@ -218,16 +293,17 @@ export function GetAdjustedInitialDirection(
   metatileBehavior: number,
   previousDirection: number,
 ): number {
-  // 1:1 décomp branches (= ordre conservé pour priorité identique).
-  if (metatileBehavior === MB_DEEP_SOUTH_WARP) return DIR_NORTH;
-  if (metatileBehavior === MB_NON_ANIMATED_DOOR
-   || metatileBehavior === MB_WATER_DOOR
-   || metatileBehavior === MB_ANIMATED_DOOR) return DIR_SOUTH;
-  if (metatileBehavior === MB_SOUTH_ARROW_WARP) return DIR_NORTH;
-  if (metatileBehavior === MB_NORTH_ARROW_WARP) return DIR_SOUTH;
-  if (metatileBehavior === MB_WEST_ARROW_WARP) return DIR_EAST;
-  if (metatileBehavior === MB_EAST_ARROW_WARP) return DIR_WEST;
-  if (metatileBehavior === MB_LADDER) return previousDirection;
+  // 1:1 décomp branches (= overworld.c:929-952, ordre conservé pour priorité
+  // identique). Skipped : FLAG_SYS_CRUISE_MODE + MAP_TYPE_OCEAN_ROUTE → DIR_EAST,
+  // PLAYER_AVATAR_FLAG_SURFING → preserve, à porter quand surf wired.
+  if (MetatileBehavior_IsDeepSouthWarp(metatileBehavior)) return DIR_NORTH;
+  if (MetatileBehavior_IsNonAnimDoor(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsDoor(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsSouthArrowWarp(metatileBehavior)) return DIR_NORTH;
+  if (MetatileBehavior_IsNorthArrowWarp(metatileBehavior)) return DIR_SOUTH;
+  if (MetatileBehavior_IsWestArrowWarp(metatileBehavior)) return DIR_EAST;
+  if (MetatileBehavior_IsEastArrowWarp(metatileBehavior)) return DIR_WEST;
+  if (MetatileBehavior_IsLadder(metatileBehavior)) return previousDirection;
   // Default 1:1 décomp ligne 951 : DIR_SOUTH.
   return DIR_SOUTH;
 }
