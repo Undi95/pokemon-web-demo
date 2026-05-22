@@ -163,15 +163,82 @@ export function ResetFieldCamera(): void {
   ResetCameraOffset(sFieldCameraOffset);
 }
 
+// ─── 1:1 décomp camera panning helpers (field_camera.c:437-507) ─────────────
+
+/** 1:1 décomp `static void (*sFieldCameraPanningCallback)(void)` (field_camera.c:40). */
+let sFieldCameraPanningCallback: (() => void) | null = null;
+/** 1:1 décomp `static bool8 sBikeCameraPanFlag` (field_camera.c:39). */
+let sBikeCameraPanFlag = false;
+/** 1:1 décomp `EWRAM_DATA bool8 gUnusedBikeCameraAheadPanback = FALSE` (field_camera.c:15).
+ *  Reste FALSE en runtime → `CameraPanningCB_PanAhead` rentre toujours dans le
+ *  branche `InstallCameraPanAheadCallback()`. */
+const gUnusedBikeCameraAheadPanback = false;
+
+/** 1:1 décomp `gSpriteCoordOffsetX/Y` (field_camera.c:461-462). Lus par les
+ *  sprites overworld (= OBJ avec `coordOffsetEnabled = TRUE`) pour shift leur
+ *  position selon le total pan + camera offset. */
+export const gSpriteCoordOffset = { x: 0, y: 0 };
+
+/** 1:1 décomp `CameraPanningCB_PanAhead(void)` (field_camera.c:465-507).
+ *  Avec `gUnusedBikeCameraAheadPanback = FALSE` constant, se réduit à
+ *  `InstallCameraPanAheadCallback()` (= ré-install + reset pan vars). */
+function CameraPanningCB_PanAhead(): void {
+  if (!gUnusedBikeCameraAheadPanback) {
+    InstallCameraPanAheadCallback();
+  }
+  // else : dead path bike camera pan (= jamais atteint dans le jeu).
+}
+
+/** 1:1 décomp `SetCameraPanningCallback(void (*callback)(void))` (field_camera.c:437-440). */
+export function SetCameraPanningCallback(callback: (() => void) | null): void {
+  sFieldCameraPanningCallback = callback;
+}
+
 /** 1:1 décomp `InstallCameraPanAheadCallback()` (field_camera.c:448-454).
- *  Appelé dans `ResumeMap` (overworld.c:2139) à chaque load de map.
- *  Reset sHorizontalCameraPan = 0 + sVerticalCameraPan = 32 (= default values).
- *  Sans cet appel, sVerticalCameraPan pourrait rester à une valeur stale d'une
- *  session précédente (= e.g. modifiée par SetCameraPanning lors d'un effet bike)
- *  → BG_VOFS register mal aligné post-warp → décalage visible. */
+ *  Appelé dans `ResumeMap` (overworld.c:2139) à chaque load de map. */
 export function InstallCameraPanAheadCallback(): void {
+  sFieldCameraPanningCallback = CameraPanningCB_PanAhead;
+  sBikeCameraPanFlag = false;
   sHorizontalCameraPan = 0;
   sVerticalCameraPan = 32;
+}
+
+/** 1:1 décomp `UpdateCameraPanning(void)` (field_camera.c:456-463). À call
+ *  chaque frame du main overworld loop (= 1:1 décomp `CB1_Overworld` →
+ *  `CB2_Overworld` chain). Déclenche le pan callback puis dérive
+ *  `gSpriteCoordOffsetX/Y` que les sprites overworld utilisent pour positionner
+ *  via `coordOffsetEnabled`. */
+export function UpdateCameraPanning(): void {
+  if (sFieldCameraPanningCallback !== null) sFieldCameraPanningCallback();
+  gSpriteCoordOffset.x = gTotalCamera.pixelOffsetX - sHorizontalCameraPan;
+  gSpriteCoordOffset.y = gTotalCamera.pixelOffsetY - sVerticalCameraPan - 8;
+}
+
+/** 1:1 décomp `MoveCameraAndRedrawMap(int deltaX, int deltaY)` (field_camera.c:428-435).
+ *  Marqué `unused` dans le décomp. Porté pour exhaustivité 1:1. */
+export function MoveCameraAndRedrawMap(deltaX: number, deltaY: number): void {
+  CameraMove(deltaX, deltaY);
+  try {
+    callUpdateObjectEventsForCameraUpdate(getRuntime(), deltaX, deltaY);
+  } catch (e) { void e; }
+  DrawWholeMapView();
+  gTotalCamera.pixelOffsetX -= deltaX * 16;
+  gTotalCamera.pixelOffsetY -= deltaY * 16;
+}
+
+/** 1:1 décomp `CameraUpdateCallback(struct CameraObject *fieldCamera)` (field_camera.c:332-339).
+ *  Lit movementSpeedX/Y depuis le sprite tracké pour driver le scroll. */
+function CameraUpdateCallback(cam: FieldCameraObject): void {
+  // Notre archi : pas de sprite tracking (= le scene driver set directement
+  // movementSpeedX/Y). Stub no-op pour 1:1 signature compatibility.
+  void cam;
+}
+
+/** 1:1 décomp `InitCameraUpdateCallback(u8 trackedSpriteId)` (field_camera.c:351-358). */
+export function InitCameraUpdateCallback(trackedSpriteId: number): number {
+  void trackedSpriteId;
+  gFieldCamera.callback = CameraUpdateCallback;
+  return 0;
 }
 
 /** 1:1 décomp `ResetCameraUpdateInfo()` (field_camera.c:341-349) — reset

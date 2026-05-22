@@ -964,6 +964,56 @@ function FillEastConnection(mapHeader: MapHeader, cMap: MapHeader, offset: numbe
   if (height > 0) FillConnection(x, y, cMap, 0, y2, MAP_OFFSET + 1, height);
 }
 
+/** 1:1 décomp `IsCoordInConnectingMap(int coord, int max)` (fieldmap.c:734-740).
+ *  Returns TRUE si `coord` est dans `[0, max)`. */
+function IsCoordInConnectingMap(coord: number, max: number): boolean {
+  return coord >= 0 && coord < max;
+}
+
+/** 1:1 décomp `IsPosInConnectingMap(const struct MapConnection *connection, int x, int y)`
+ *  (fieldmap.c:742-756). Check si une position (x, y) dans la map source est dans
+ *  la connection map's bounds adjusté par offset. */
+function IsPosInConnectingMap(connection: MapConnection, x: number, y: number): boolean {
+  const cMap = mapHeaderCache.get(connection.destMap);
+  if (!cMap) return false;
+  switch (connection.direction) {
+    case CONNECTION_SOUTH:
+    case CONNECTION_NORTH:
+      return IsCoordInConnectingMap(x - connection.offset, cMap.mapLayout.width);
+    case CONNECTION_WEST:
+    case CONNECTION_EAST:
+      return IsCoordInConnectingMap(y - connection.offset, cMap.mapLayout.height);
+  }
+  return false;
+}
+
+/** 1:1 décomp `GetMapConnectionAtPos(s16 x, s16 y)` (fieldmap.c:758-790).
+ *  Returns la connexion appropriée à la position gBackup (x, y), si on est dans
+ *  la zone border. Utilisé par metatile dispatch sur les borders pour rerouter
+ *  vers la connection map.
+ *
+ *  Le décomp utilise `CONNECTION_DIVE = 5` et `CONNECTION_EMERGE = 6` pour
+ *  surf/dive. Notre port skip ces directions (= pas de surf/dive supportés). */
+const CONNECTION_DIVE = 5;
+const CONNECTION_EMERGE = 6;
+export function GetMapConnectionAtPos(x: number, y: number): MapConnection | null {
+  if (!gMapHeader || !gMapHeader.connections) return null;
+  for (const connection of gMapHeader.connections) {
+    const direction = connection.direction;
+    if ((direction === CONNECTION_DIVE || direction === CONNECTION_EMERGE)
+      || (direction === CONNECTION_NORTH && y > MAP_OFFSET - 1)
+      || (direction === CONNECTION_SOUTH && y < gMapHeader.mapLayout.height + MAP_OFFSET)
+      || (direction === CONNECTION_WEST && x > MAP_OFFSET - 1)
+      || (direction === CONNECTION_EAST && x < gMapHeader.mapLayout.width + MAP_OFFSET)) {
+      continue;
+    }
+    if (IsPosInConnectingMap(connection, x - MAP_OFFSET, y - MAP_OFFSET)) {
+      return connection;
+    }
+  }
+  return null;
+}
+
 /** 1:1 décomp `GetMapBorderIdAt(x, y)` (fieldmap.c:568-605).
  *  Retourne CONNECTION_NORTH/SOUTH/WEST/EAST si (x, y) (= en gBackupMapLayout
  *  coords) est dans la zone border et la connexion existe. Retourne
