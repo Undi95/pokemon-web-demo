@@ -485,6 +485,33 @@ export class TestOverworldScene extends Phaser.Scene {
         if (pendingConn) {
           self.handleConnectionTransition(pendingConn);
         }
+
+        // ─── Fix défensif désync `_camPos` vs `gPlayerAvatar` ────────────────
+        // Bug user-flag 2026-05-22 : après warp / menu / event scripted, le
+        // sprite player + BG apparaissent décalés d'1 case (= cam.x ≠ player.x).
+        // Cause root TS : `_camPos` (field-camera) et `gPlayerAvatar.x/y`
+        // (player-avatar) sont 2 vars SÉPARÉES qui peuvent diverger sur certains
+        // paths (= probablement Task_ExitDoor walk-down qui call PlayerStep step
+        // end avant CameraMove fire). Décomp n'a qu'1 seule var `gSaveBlock1Ptr
+        // ->pos`, impossible de diverger.
+        //
+        // Fix défensif (= éviter refactor invasif PHASE A qui a cassé scroll) :
+        // si player NOT_MOVING + pas de cross-border en cours + cam ≠ player,
+        // re-sync cam = player + force full redraw. Trigger seulement quand
+        // le state est stable (= player not mid-step), donc 0 effet visible
+        // sur les steps normaux.
+        if (gPlayerAvatar.runningState === 0  // NOT_MOVING
+            && gPlayerAvatar.stepFramesLeft === 0
+            && !pendingConn) {
+          const c = GetCameraTopLeftCoords();
+          if (c.x !== gPlayerAvatar.x || c.y !== gPlayerAvatar.y) {
+            console.warn(`[ow-sync] divergence cam=(${c.x},${c.y}) vs player=(${gPlayerAvatar.x},${gPlayerAvatar.y}) → re-sync + redraw`);
+            SetCameraTopLeftCoords(gPlayerAvatar.x, gPlayerAvatar.y);
+            clearOverworldTilemaps();
+            DrawWholeMapView();
+            flushOverworldTilemaps(self.rt);
+          }
+        }
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
         // NB : tickMovementQueues a déjà run avant CameraUpdate. Pour les NPCs
         // en script-driven movement, leur walkFramesLeft non-zéro empêche le
