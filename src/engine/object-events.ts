@@ -808,7 +808,12 @@ export function resetObjectEventAllocations(): void {
   _nextNpcTileBase = NPC_TILE_BASE_START;
   _nextNpcPaletteBank = NPC_PALETTE_START;
   _freeNpcSlots.length = 0;
-  for (const npc of gObjectEvents) {
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const npc = gObjectEvents[i];
+    // 1:1 décomp : ne PAS reset le player ObjectEvent slot (= survit aux map
+    // switches). Décomp utilise `SpawnSpecialObjectEvent` qui alloue le slot
+    // au boot + le préserve. Le map switch reset les NPCs mais pas le player.
+    if (i === PLAYER_OBJECT_EVENT_SLOT && npc.isPlayer) continue;
     npc.active = false;
     npc.spriteId = -1;
     // 1:1 décomp : reset visualOffsetX/Y (= sprite.x2/y2) sinon les NPCs de
