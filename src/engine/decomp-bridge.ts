@@ -277,6 +277,27 @@ export {
 } from './gba-text-system';
 import { CHAR_SPACER_STR } from './gba-text-system';
 
+// ─── Local-use imports (hoisted from scattered scope) ────────────────────────
+//
+// Pattern ESM standard : tous les imports au TOP du fichier. Évite l'anti-
+// pattern « imports scattered en cours de fichier » qui crée des pièges TDZ
+// quand l'eager-init chain change (= ex. save-system → bag → game-state →
+// load_save → object-events → metatile-behavior → decomp-bridge). Ces imports
+// sont utilisés localement avec des alias `_xxx` pour éviter la collision avec
+// les re-exports `export { Xxx } from './xxx'` situés plus bas dans ce fichier.
+
+import { Random as _Random } from './random';
+import { getObjectEventGraphicsInfo as _getOEGI } from './object-event-graphics';
+import {
+  getItemNameFr as _getItemNameFr,
+  getItem as _getItem,
+  getItemDescriptionFr as _getItemDescFr,
+  getItemKeyById as _getItemKeyById,
+} from './data-tables';
+import { sTMHMMoves as _sTMHMMoves } from './tmhm-moves';
+import { getMapNameFr } from '../data/map-names-fr';
+import { getRuntime as _getRT } from './decomp-globals';
+
 // ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
 
 /** 1:1 décomp `include/macro.h` :
@@ -866,8 +887,7 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
 export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from './random';
-// Local import pour usage inline dans ce fichier (= e.g. RANDOM_TRANSITION).
-import { Random as _Random } from './random';
+// Note : `_Random` alias local hoisted en tête de fichier (section "Local-use imports").
 
 // ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
 
@@ -880,8 +900,8 @@ import { Random as _Random } from './random';
  *  (= fail-fast, surface the bug).
  *  Note 1:1 : in the real décomp, this function also handles OBJ_EVENT_GFX_VARS
  *  (= dynamic gfxId lookups via VarGet) + OBJ_EVENT_GFX_BARD (= old man variants).
- *  Notre impl simple ne gère pas ces cas spéciaux ; on les ajoutera si besoin. */
-import { getObjectEventGraphicsInfo as _getOEGI } from './object-event-graphics';
+ *  Notre impl simple ne gère pas ces cas spéciaux ; on les ajoutera si besoin.
+ *  Note : `_getOEGI` alias local hoisted en tête de fichier. */
 export function GetObjectEventGraphicsInfo(graphicsId: number): any {
   return _getOEGI(graphicsId);
 }
@@ -900,9 +920,8 @@ export {
 // Notre `data-tables.ts` expose les lookup fns FR avec un signature légèrement
 // différente du décomp (= retourne string, pas u8*). On adapte ici pour matcher
 // l'API décomp utilisée dans les auto-bodies.
-
-import { getItemNameFr as _getItemNameFr, getItem as _getItem, getItemDescriptionFr as _getItemDescFr, getItemKeyById as _getItemKeyById } from './data-tables';
-import { sTMHMMoves as _sTMHMMoves } from './tmhm-moves';
+// Note : aliases locaux `_getItemNameFr`, `_getItem`, `_getItemDescFr`,
+// `_getItemKeyById`, `_sTMHMMoves` hoisted en tête de fichier.
 
 /** items.json key d'un itemId numérique (= modèle move-named du projet :
  *  "ITEM_TM_FOCUS_PUNCH" pour TM01, "ITEM_HM_CUT" pour HM01) — miroir de
@@ -938,8 +957,7 @@ export function GetItemName(itemId: number | string): string {
 }
 
 // ─── Re-exports : map names (map-names-fr) ───────────────────────────────────
-
-import { getMapNameFr } from '../data/map-names-fr';
+// Note : `getMapNameFr` import hoisted en tête de fichier.
 
 /** 1:1 décomp `src/region_map.c:1568 GetMapName(dest, regionMapId, padLength)` :
  *    if (regionMapId == MAPSEC_SECRET_BASE) return GetSecretBaseMapName(dest);
@@ -2953,8 +2971,7 @@ export function ALIGNED<T>(arg: T): T {
 //
 // Ces wrappers récupèrent le runtime singleton via `getRuntime()` et délèguent
 // à la méthode correspondante. 1:1 décomp signatures préservées.
-
-import { getRuntime as _getRT } from './decomp-globals';
+// Note : `_getRT` alias local hoisted en tête de fichier.
 
 /** 1:1 décomp `src/sprite.c CreateSprite(template, x, y, subpriority)` :
  *  Crée un sprite depuis un SpriteTemplate. Retourne le spriteId.
