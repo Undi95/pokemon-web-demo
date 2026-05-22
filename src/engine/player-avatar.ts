@@ -152,6 +152,22 @@ interface PlayerAvatar {
   y: number;
   /** Direction face actuelle (1=south/down, 2=north/up, 3=west/left, 4=east/right). */
   facing: number;
+  /** 1:1 décomp `gPlayerAvatar.flags` (= PLAYER_AVATAR_FLAG_* bitmask).
+   *  Bit 0 = ON_FOOT, bit 1 = MACH_BIKE, bit 2 = ACRO_BIKE, bit 3 = SURFING,
+   *  bit 4 = UNDERWATER, bit 5 = CONTROLLABLE, bit 6 = FORCED_MOVE, bit 7 = DASH. */
+  flags: number;
+  /** 1:1 décomp `gPlayerAvatar.transitionFlags`. Used pendant les transitions
+   *  entre states (= e.g. surfing → walking transition). */
+  transitionFlags: number;
+  /** 1:1 décomp `gPlayerAvatar.objectEventId`. Index dans gObjectEvents[] du
+   *  player ObjectEvent. Set au `InitPlayerAvatar` via `SpawnSpecialObjectEvent`
+   *  retour. Permet à HideShowWarpArrow + ground effects + autres code décomp
+   *  de read `gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior`
+   *  etc. */
+  objectEventId: number;
+  /** 1:1 décomp `gPlayerAvatar.preventStep`. TRUE = block keypad input dans
+   *  PlayerStep (= used pendant scripted movements + warp transitions). */
+  preventStep: boolean;
   /** 1:1 décomp gPlayerAvatar.runningState (NOT_MOVING / TURN_DIRECTION / MOVING). */
   runningState: number;
   /** 1:1 décomp gPlayerAvatar.tileTransitionState. */
@@ -199,6 +215,25 @@ interface PlayerAvatar {
    *  de 32 → 0 (= JUMP_DISTANCE_FAR durée 32 frames). Pendant ce step, sprite
    *  y2 offset suit la courbe sJumpY_High[i/2] pour effet visuel d'arc. */
   jumpFramesLeft: number;
+  /** 1:1 décomp `gPlayerAvatar.acroBikeState`. 0=normal, 1=turning, 2=standing
+   *  wheelie, 3=hopping wheelie. */
+  acroBikeState: number;
+  /** 1:1 décomp `gPlayerAvatar.newDirBackup`. Bike movement direction backup. */
+  newDirBackup: number;
+  /** 1:1 décomp `gPlayerAvatar.bikeFrameCounter`. */
+  bikeFrameCounter: number;
+  /** 1:1 décomp `gPlayerAvatar.bikeSpeed`. */
+  bikeSpeed: number;
+  /** 1:1 décomp `gPlayerAvatar.directionHistory`. Acro bike up/down/left/right
+   *  history stored in each nibble of u32. */
+  directionHistory: number;
+  /** 1:1 décomp `gPlayerAvatar.abStartSelectHistory`. Same but pour A+B+Start+Select. */
+  abStartSelectHistory: number;
+  /** 1:1 décomp `gPlayerAvatar.dirTimerHistory[8]`. Acro bike timer history.
+   *  Index 0 = active timer. Chaque update backup [N] → [N+1]. */
+  dirTimerHistory: number[];
+  /** 1:1 décomp `gPlayerAvatar.abStartSelectTimerHistory[8]`. */
+  abStartSelectTimerHistory: number[];
 }
 
 /** 1:1 décomp `EWRAM_DATA struct PlayerAvatar gPlayerAvatar` (global.fieldmap.h:374).
@@ -216,6 +251,10 @@ interface PlayerAvatar {
  *  l'alias `_camPos` (field-camera) devient stale. Seulement muter `.x` / `.y`. */
 const _gPlayerAvatarBase = {
   facing: DIR_SOUTH,
+  flags: 0x21,  // 1:1 décomp PLAYER_AVATAR_FLAG_ON_FOOT (1<<0) | _CONTROLLABLE (1<<5)
+  transitionFlags: 0,
+  objectEventId: 0,  // 1:1 décomp : set au InitPlayerAvatar via SpawnSpecialObjectEvent retour
+  preventStep: false,
   runningState: NOT_MOVING,
   tileTransitionState: T_NOT_MOVING,
   stepFramesLeft: 0,
@@ -229,6 +268,14 @@ const _gPlayerAvatarBase = {
   gender: 'MALE' as 'MALE' | 'FEMALE',
   dashing: false,
   jumpFramesLeft: 0,
+  acroBikeState: 0,
+  newDirBackup: 0,
+  bikeFrameCounter: 0,
+  bikeSpeed: 0,
+  directionHistory: 0,
+  abStartSelectHistory: 0,
+  dirTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
+  abStartSelectTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
 } as Omit<PlayerAvatar, 'x' | 'y'>;
 
 Object.defineProperty(_gPlayerAvatarBase, 'x', {
