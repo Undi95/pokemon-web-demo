@@ -163,6 +163,17 @@ export function ResetFieldCamera(): void {
   ResetCameraOffset(sFieldCameraOffset);
 }
 
+/** 1:1 décomp `InstallCameraPanAheadCallback()` (field_camera.c:448-454).
+ *  Appelé dans `ResumeMap` (overworld.c:2139) à chaque load de map.
+ *  Reset sHorizontalCameraPan = 0 + sVerticalCameraPan = 32 (= default values).
+ *  Sans cet appel, sVerticalCameraPan pourrait rester à une valeur stale d'une
+ *  session précédente (= e.g. modifiée par SetCameraPanning lors d'un effet bike)
+ *  → BG_VOFS register mal aligné post-warp → décalage visible. */
+export function InstallCameraPanAheadCallback(): void {
+  sHorizontalCameraPan = 0;
+  sVerticalCameraPan = 32;
+}
+
 /** 1:1 décomp `ResetCameraUpdateInfo()` (field_camera.c:341-349) — reset
  *  gFieldCamera state (= speeds + sub-tile pixel offset). À call au load de
  *  map (= ResumeMap) sinon scroll buggy après warp (= state stale du map

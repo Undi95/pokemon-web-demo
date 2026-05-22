@@ -41,6 +41,7 @@ import {
   DrawWholeMapView,
   ResetFieldCamera,
   ResetCameraUpdateInfo,
+  InstallCameraPanAheadCallback,
   FieldUpdateBgTilemapScroll,
   CameraUpdate,
   SetCameraTopLeftCoords,
@@ -754,6 +755,11 @@ export class TestOverworldScene extends Phaser.Scene {
     // `pos` est déjà setté → la séquence DrawWholeMapView qui suit voit un
     // sFieldCameraOffset cohérent (= 0 tile/pixel offset) avec pos = new.
     ResetFieldCamera();
+    // 1:1 décomp `InstallCameraPanAheadCallback()` (field_camera.c:448-454) —
+    // appelé par ResumeMap (overworld.c:2139). Reset sVerticalCameraPan = 32 +
+    // sHorizontalCameraPan = 0 (= default). Sans ça, valeurs stale d'une
+    // session précédente persistent → BG_VOFS mal aligné post-warp.
+    InstallCameraPanAheadCallback();
 
     // 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) — no args,
     // lit `gSaveBlock1Ptr->pos.x/y` (= `_camPos` côté TS) + gMapHeader.mapLayout
