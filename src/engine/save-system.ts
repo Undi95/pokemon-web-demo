@@ -38,6 +38,18 @@ import {
   SAVE_STATUS_ERROR as SS_ERR, SECTOR_SIGNATURE as SECT_SIG,
   NUM_SAVE_SLOTS as NSLOTS,
 } from './save-sectors';
+// Storage authoritatif des SaveBlock1/2 déplacé dans le module Foundation
+// `save-block-state.ts` (= permet l'import direct depuis n'importe quel
+// module sans cycle ESM). save-system continue à orchestrer load/save mais
+// délègue le storage via Set*/Get* + le Proxy gSaveBlock1/2Ptr.
+import {
+  GetSaveBlock1 as _GetSaveBlock1Foundation,
+  GetSaveBlock2 as _GetSaveBlock2Foundation,
+  SetSaveBlock1,
+  SetSaveBlock2,
+  gSaveBlock1Ptr as _gSaveBlock1PtrFoundation,
+  gSaveBlock2Ptr as _gSaveBlock2PtrFoundation,
+} from './save-block-state';
 
 // ─── Constants 1:1 décomp (ré-exports pour les callers existants) ────────────
 
@@ -50,9 +62,11 @@ export const SAVE_STATUS_NO_FLASH = SS_NOFLASH;
 export const SAVE_STATUS_ERROR = SS_ERR;
 
 // ─── Module state (= 1:1 décomp gSaveBlock1Ptr / gSaveBlock2Ptr / status) ────
-
-let sCurrentBlock1: SaveBlock1 | null = null;
-let sCurrentBlock2: SaveBlock2 | null = null;
+//
+// Storage des blocs déplacé dans `save-block-state.ts` (Foundation). Ce module
+// orchestre uniquement le load/save flow + le status. Les accesseurs
+// `GetSaveBlock1`/`GetSaveBlock2` + le Proxy `gSaveBlock1/2Ptr` sont
+// re-exportés ci-dessous pour préserver les call-sites.
 
 // ─── Save lock (= user-flag "PAS DE SAVE SANS INPUT SAUVER DU JOUEUR") ──────
 //
@@ -104,8 +118,8 @@ function _isValidStorage(x: unknown): x is PokemonStorage {
 export function LoadGameSave(): number {
   const { status, blocks } = TryLoadSaveSlot();
   if (status === SAVE_STATUS_OK && blocks.saveBlock1 && blocks.saveBlock2) {
-    sCurrentBlock1 = blocks.saveBlock1 as SaveBlock1;
-    sCurrentBlock2 = blocks.saveBlock2 as SaveBlock2;
+    SetSaveBlock1(blocks.saveBlock1 as SaveBlock1);
+    SetSaveBlock2(blocks.saveBlock2 as SaveBlock2);
     // Étape 6 : valider la FORME (pas juste != null). Une save écrite AVANT
     // l'étape 6 a `pokemonStorage = {}` (ancien placeholder) — `{}` est
     // truthy donc `?? ` ne la remplacerait PAS → storage cassé. Clean-break
@@ -117,16 +131,16 @@ export function LoadGameSave(): number {
       : emptyPokemonStorage();
     sSaveFileStatus = SAVE_STATUS_OK;
     console.log('[save-system] loaded (sector engine, counter max slot)');
-    // 1:1 RTC : offset dans sCurrentBlock2.localTimeOffset (struct Time),
+    // 1:1 RTC : offset dans gSaveBlock2.localTimeOffset (struct Time),
     // déjà restauré ci-dessus. Rafraîchir gLocalTime (rtc.c RtcCalcLocalTime).
-    void import('./rtc').then(({ RtcCalcLocalTime }) => { if (sCurrentBlock2) RtcCalcLocalTime(); });
+    void import('./rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
     return SAVE_STATUS_OK;
   }
   // EMPTY/CORRUPT : pas de save valide → blocs par défaut (le boot 1:1
   // appellera Sav2_ClearSetDefault si EMPTY/CORRUPT — étape 4). Pas de
   // migration ancien format (clean break, autorisé user).
-  sCurrentBlock2 = emptySaveBlock2();
-  sCurrentBlock1 = emptySaveBlock1(emptyBag());
+  SetSaveBlock2(emptySaveBlock2());
+  SetSaveBlock1(emptySaveBlock1(emptyBag()));
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = (status === SAVE_STATUS_CORRUPT) ? SAVE_STATUS_CORRUPT : SAVE_STATUS_EMPTY;
   return sSaveFileStatus;
@@ -148,13 +162,13 @@ export function TrySavingData(): boolean {
     console.log('[save-system] TrySavingData BLOCKED (SetSaveLocked=true)');
     return false;
   }
-  if (!sCurrentBlock1 || !sCurrentBlock2) {
-    console.warn('[save-system] TrySavingData : pas de blocs courants');
-    return false;
-  }
+  // 1:1 décomp : gSaveBlock1/2Ptr sont TOUJOURS valides après init Foundation
+  // (= save-block-state lazy-init avec emptySaveBlock1/2 si null). Pas de check
+  // null nécessaire (= le décomp ROM n'a pas ce check non plus, le pointer
+  // est assigné une fois pour toutes au boot via OpenSaveData).
   const blocks: Record<BlockKey, unknown> = {
-    saveBlock2: sCurrentBlock2,
-    saveBlock1: sCurrentBlock1,
+    saveBlock2: _GetSaveBlock2Foundation(),
+    saveBlock1: _GetSaveBlock1Foundation(),
     pokemonStorage: sCurrentStorage,
   };
   const status = WriteSaveSlot(blocks);
@@ -172,17 +186,21 @@ export function GetSaveFileStatus(): number {
   return sSaveFileStatus;
 }
 
-/** 1:1 décomp `gSaveBlock1Ptr` accessor. Init si null. */
-export function GetSaveBlock1(): SaveBlock1 {
-  if (!sCurrentBlock1) sCurrentBlock1 = emptySaveBlock1(emptyBag());
-  return sCurrentBlock1;
-}
+// Re-exports depuis `save-block-state.ts` (= module Foundation qui contient
+// le storage authoritatif des SaveBlock1/2 + accesseurs + Proxy
+// `gSaveBlock1/2Ptr`). Préserve l'API publique de ce module pour les call-sites.
 
-/** 1:1 décomp `gSaveBlock2Ptr` accessor. Init si null. */
-export function GetSaveBlock2(): SaveBlock2 {
-  if (!sCurrentBlock2) sCurrentBlock2 = emptySaveBlock2();
-  return sCurrentBlock2;
-}
+/** 1:1 décomp `gSaveBlock1Ptr` accessor (re-export Foundation). */
+export const GetSaveBlock1 = _GetSaveBlock1Foundation;
+
+/** 1:1 décomp `gSaveBlock2Ptr` accessor (re-export Foundation). */
+export const GetSaveBlock2 = _GetSaveBlock2Foundation;
+
+/** 1:1 décomp `gSaveBlock1Ptr` pointer (re-export Foundation). */
+export const gSaveBlock1Ptr = _gSaveBlock1PtrFoundation;
+
+/** 1:1 décomp `gSaveBlock2Ptr` pointer (re-export Foundation). */
+export const gSaveBlock2Ptr = _gSaveBlock2PtrFoundation;
 
 /** 1:1 décomp `gPokemonStoragePtr` accessor (étape 6 : struct réelle). */
 export function GetPokemonStorage(): PokemonStorage {
@@ -193,8 +211,8 @@ export function GetPokemonStorage(): PokemonStorage {
  *  (NewGame). NE touche PAS la flash (= 1:1, la flash n'est effacée que
  *  par un save ou ClearSaveData). */
 export function ResetSaveBlocks(): void {
-  sCurrentBlock2 = emptySaveBlock2();
-  sCurrentBlock1 = emptySaveBlock1(emptyBag());
+  SetSaveBlock2(emptySaveBlock2());
+  SetSaveBlock1(emptySaveBlock1(emptyBag()));
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }
@@ -210,8 +228,8 @@ export function DeleteAllSaves(): void {
     localStorage.removeItem('em_save_v2_last_slot');
     localStorage.removeItem('em_save_v1');
   } catch { /* ignore */ }
-  sCurrentBlock1 = null;
-  sCurrentBlock2 = null;
+  SetSaveBlock1(null);
+  SetSaveBlock2(null);
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }

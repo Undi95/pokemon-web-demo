@@ -352,74 +352,14 @@ function _migrateLegacySaveBlock2(): void {
 }
 _migrateLegacySaveBlock2();
 
-/** 1:1 décomp `gSaveBlock1Ptr` (= pointer vers gSaveBlock1 EWRAM, global.h:990).
- *
- *  PHASE A.2 chantier OW : Proxy qui délègue TOUT au `GetSaveBlock1()` (= struct
- *  réelle save-system.ts). Pattern identique à `gSaveBlock2Ptr`. Garantie :
- *    - `gSaveBlock1Ptr.pos` retourne TOUJOURS le `pos` courant de `sCurrentBlock1`
- *      (= 1:1 décomp pointer dereferencing).
- *    - Survit aux LoadSavedGame (= `sCurrentBlock1 = newBlock`) sans stale ref :
- *      le Proxy interroge `GetSaveBlock1()` à chaque get → toujours frais.
- *    - Le `pos` field (= Coords16, global.h:992) est la SOURCE UNIQUE de la
- *      position du joueur + camera focus dans le décomp (= struct PlayerAvatar
- *      global.fieldmap.h:342-362 NE CONTIENT PAS x/y).
- *
- *  field-camera.ts (= `_camPos`) et player-avatar.ts (= `gPlayerAvatar.x/y`)
- *  pointent leurs accessors x/y dessus via getter dynamique → élimine désync
- *  `cam.x ≠ player.x` user-flag 2026-05-22.
- *
- *  Comme `gSaveBlock2Ptr`, les écritures NE déclenchent PAS d'écriture SRAM
- *  automatique — seul `TrySavingData()` (= START → SAUVER explicite) flush. */
-export const gSaveBlock1Ptr: any = new Proxy({} as Record<string, unknown>, {
-  get(_target, prop: string | symbol): unknown {
-    return (_GetSaveBlock1() as unknown as Record<string, unknown>)[prop as string];
-  },
-  set(_target, prop: string | symbol, value: unknown): boolean {
-    (_GetSaveBlock1() as unknown as Record<string, unknown>)[prop as string] = value;
-    return true;
-  },
-  ownKeys(_target): ArrayLike<string | symbol> {
-    return Object.keys(_GetSaveBlock1() as unknown as Record<string, unknown>);
-  },
-  getOwnPropertyDescriptor(_target, prop: string | symbol): PropertyDescriptor | undefined {
-    const v = (_GetSaveBlock1() as unknown as Record<string, unknown>)[prop as string];
-    return v === undefined ? undefined : { enumerable: true, configurable: true, value: v, writable: true };
-  },
-});
-
-/** 1:1 décomp `gSaveBlock2Ptr` — delegates to save-system's SaveBlock2.
- *
- *  Lecture : redirige vers le SaveBlock2 partagé en mémoire (= 1:1 décomp pointer).
- *  Écriture : mute le SaveBlock2 en mémoire UNIQUEMENT — pas d'écriture SRAM
- *  automatique. C'est 1:1 décomp pure : le décomp n'écrit en flash QUE via
- *  `TrySavingData()` explicite (= START → SAUVER, Mystery Gift, Hall of Fame,
- *  Battle Frontier confirm). Aucun set proxy ne déclenche d'écriture latente.
- *
- *  Implication : si un user reload la page sans avoir click SAUVER, il perd ses
- *  changements (= options, naming, etc.). C'est le comportement attendu et
- *  conforme au décomp ROM (= la flash n'est mise à jour qu'au save explicite).
- *
- *  User-flag verbatim (2026-05-21) : "le jeu sauvegarde à des moments
- *  complètement random dans la SRAM (...) le seul moyen de sauvegarde est et
- *  restera START => SAUVER, corrige ça définitivement". Cause root identifiée
- *  = ce Proxy set() qui auto-saved en `TrySavingData()` à chaque mut → ENLEVÉ. */
-export const gSaveBlock2Ptr: any = new Proxy({} as Record<string, unknown>, {
-  get(_target, prop: string | symbol): unknown {
-    return (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string];
-  },
-  set(_target, prop: string | symbol, value: unknown): boolean {
-    // 1:1 décomp : mute le SaveBlock2 partagé en RAM. Pas d'écriture SRAM.
-    (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string] = value;
-    return true;
-  },
-  ownKeys(_target): ArrayLike<string | symbol> {
-    return Object.keys(_GetSaveBlock2() as unknown as Record<string, unknown>);
-  },
-  getOwnPropertyDescriptor(_target, prop: string | symbol): PropertyDescriptor | undefined {
-    const v = (_GetSaveBlock2() as unknown as Record<string, unknown>)[prop as string];
-    return v === undefined ? undefined : { enumerable: true, configurable: true, value: v, writable: true };
-  },
-});
+/** 1:1 décomp `gSaveBlock1Ptr` / `gSaveBlock2Ptr` (= pointers vers EWRAM,
+ *  global.h:990). Définition déplacée dans `save-block-state.ts` (= module
+ *  Foundation qui permet l'import direct depuis n'importe quel module du port
+ *  sans cycle ESM). Re-export ici pour préserver les call-sites existants
+ *  qui font `import { gSaveBlock1Ptr } from './gba-menu-system'`. */
+import { gSaveBlock1Ptr as _gSaveBlock1PtrFoundation, gSaveBlock2Ptr as _gSaveBlock2PtrFoundation } from './save-block-state';
+export const gSaveBlock1Ptr = _gSaveBlock1PtrFoundation;
+export const gSaveBlock2Ptr = _gSaveBlock2PtrFoundation;
 
 export let gSaveFileStatus = 0; // SAVE_STATUS_EMPTY
 

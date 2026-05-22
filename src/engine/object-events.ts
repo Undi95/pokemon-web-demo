@@ -45,7 +45,11 @@ import { FlagGet } from './script-vars';
 import { Random } from './random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
 import { reverseDecompConstant as _reverseDecompConstant } from './decomp-constants';
-import { gameState as _gameState } from './game-state';
+// 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`
+// (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
+// cycle ESM (= avant on passait par gameState.getVar qui créait
+// `object-events → game-state → load_save → object-events`).
+import { gSaveBlock1Ptr } from './save-block-state';
 
 const BASE = '/decomp/em';
 
@@ -125,7 +129,7 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     const varMatch = key.match(/^OBJ_EVENT_GFX_VAR_(\d+)$/);
     if (varMatch) {
       const n = Number(varMatch[1]);
-      const gfxIdValue = _gameState.getVar(`VAR_OBJ_GFX_ID_${n}`);
+      const gfxIdValue = (gSaveBlock1Ptr.vars[`VAR_OBJ_GFX_ID_${n}`] as number) ?? 0;
       if (gfxIdValue !== 0) {
         const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
         if (resolved) key = resolved;
@@ -1962,7 +1966,7 @@ function _spawnSingleNpcFromTemplate(
   if (varMatch) {
     const n = Number(varMatch[1]);
     const varName = `VAR_OBJ_GFX_ID_${n}`;
-    const gfxIdValue = _gameState.getVar(varName);
+    const gfxIdValue = (gSaveBlock1Ptr.vars[varName] as number) ?? 0;
     if (gfxIdValue !== 0) {
       const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
       if (resolved) {
