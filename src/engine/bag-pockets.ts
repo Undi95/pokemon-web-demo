@@ -17,25 +17,17 @@
  * slot.quantity`. Comportement identique (0 = slot vide).
  */
 import { gameState } from './game-state';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gBagPockets, ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from './bag';
 import { getItemId } from './data-tables';
 import { sTMHMMoves } from './tmhm-moves';
 import type { ItemSlot } from './bag';
-import {
-  ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
-} from './decomp-data/auto/include/constants/item-data';
 
-/** pocketId décomp (0..4) → tableau live `ItemSlot[]` de gSaveBlock1Ptr.bag.
- *  1:1 `&gBagPockets[pocketId]` (mutations écrites en place = décomp). */
+/** pocketId décomp (0..4) → tableau live `ItemSlot[]` du pocket. 1:1 strict
+ *  `&gBagPockets[pocketId].itemSlots` (= item.c). Mutations écrites en place
+ *  = persistées dans SaveBlock1 via les pointers wire par SetBagItemsPointers(). */
 export function getBagPocketSlots(pocketId: number): ItemSlot[] {
-  switch (pocketId) {
-    case ITEMS_POCKET: return gSaveBlock1Ptr.bag.items;
-    case BALLS_POCKET: return gSaveBlock1Ptr.bag.pokeBalls;
-    case TMHM_POCKET: return gSaveBlock1Ptr.bag.tmHm;
-    case BERRIES_POCKET: return gSaveBlock1Ptr.bag.berries;
-    case KEYITEMS_POCKET: return gSaveBlock1Ptr.bag.keyItems;
-    default: return gSaveBlock1Ptr.bag.items;
-  }
+  const idx = (pocketId >= 0 && pocketId < 5) ? pocketId : ITEMS_POCKET;
+  return gBagPockets[idx].itemSlots;
 }
 
 /** capacity 1:1 `gBagPockets[pocketId].capacity` (= taille fixe du

@@ -29,7 +29,7 @@ import {
   emptyPokemonStorage,
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
-import { emptyBag } from './bag';
+import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from './bag';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,
   __flashClear, type BlockKey,
@@ -118,8 +118,13 @@ function _isValidStorage(x: unknown): x is PokemonStorage {
 export function LoadGameSave(): number {
   const { status, blocks } = TryLoadSaveSlot();
   if (status === SAVE_STATUS_OK && blocks.saveBlock1 && blocks.saveBlock2) {
-    SetSaveBlock1(blocks.saveBlock1 as SaveBlock1);
+    // 1:1 décomp load_save.c:80 : SetBagItemsPointers() après le swap du
+    // SaveBlock1 (= wire gBagPockets vers les nouveaux pointers).
+    // Migration ancien format (= block1.bag composite) → 5 fields séparés.
+    const block1 = migrateBlock1BagFormat(blocks.saveBlock1 as SaveBlock1);
+    SetSaveBlock1(block1);
     SetSaveBlock2(blocks.saveBlock2 as SaveBlock2);
+    SetBagItemsPointers();
     // Étape 6 : valider la FORME (pas juste != null). Une save écrite AVANT
     // l'étape 6 a `pokemonStorage = {}` (ancien placeholder) — `{}` est
     // truthy donc `?? ` ne la remplacerait PAS → storage cassé. Clean-break
@@ -140,7 +145,9 @@ export function LoadGameSave(): number {
   // appellera Sav2_ClearSetDefault si EMPTY/CORRUPT — étape 4). Pas de
   // migration ancien format (clean break, autorisé user).
   SetSaveBlock2(emptySaveBlock2());
-  SetSaveBlock1(emptySaveBlock1(emptyBag()));
+  SetSaveBlock1(emptySaveBlock1());
+  // 1:1 décomp load_save.c:80 : wire gBagPockets après init blocks.
+  SetBagItemsPointers();
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = (status === SAVE_STATUS_CORRUPT) ? SAVE_STATUS_CORRUPT : SAVE_STATUS_EMPTY;
   return sSaveFileStatus;
@@ -212,7 +219,9 @@ export function GetPokemonStorage(): PokemonStorage {
  *  par un save ou ClearSaveData). */
 export function ResetSaveBlocks(): void {
   SetSaveBlock2(emptySaveBlock2());
-  SetSaveBlock1(emptySaveBlock1(emptyBag()));
+  SetSaveBlock1(emptySaveBlock1());
+  // 1:1 décomp load_save.c:80 : wire gBagPockets après init blocks.
+  SetBagItemsPointers();
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }

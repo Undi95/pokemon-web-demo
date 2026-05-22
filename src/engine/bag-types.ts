@@ -34,18 +34,38 @@ export const BAG_TMHM_COUNT = 64;
 export const BAG_BERRIES_COUNT = 46;
 export const BAG_KEYITEMS_COUNT = 30;
 
+/** 1:1 décomp `include/constants/item.h:12-17` pocket IDs. */
+export const ITEMS_POCKET = 0;
+export const BALLS_POCKET = 1;
+export const TMHM_POCKET = 2;
+export const BERRIES_POCKET = 3;
+export const KEYITEMS_POCKET = 4;
+export const POCKETS_COUNT = 5;
+
+/** 1:1 décomp `struct BagPocket` (= item.h:21-24) :
+ *    struct BagPocket { struct ItemSlot *itemSlots; u8 capacity; };
+ *  `gBagPockets[POCKETS_COUNT]` est un EWRAM array global pointing vers les
+ *  `gSaveBlock1Ptr->bagPocket_*` arrays. Wire fait par `SetBagItemsPointers()`. */
+export interface BagPocket {
+  itemSlots: ItemSlot[];
+  capacity: number;
+}
+
 // ─── Helpers Foundation ──────────────────────────────────────────────────────
+
+/** Helper : crée un array de N empty ItemSlots. */
+export function emptyItemSlots(n: number): ItemSlot[] {
+  return Array.from({ length: n }, () => ({ itemKey: '', quantity: 0 }));
+}
 
 /** Construit un bag vide aux capacités décomp (= toutes les slots itemKey:''). */
 export function emptyBag(): Bag {
-  const empty = (n: number): ItemSlot[] =>
-    Array.from({ length: n }, () => ({ itemKey: '', quantity: 0 }));
   return {
-    items: empty(BAG_ITEMS_COUNT),
-    pokeBalls: empty(BAG_POKEBALLS_COUNT),
-    tmHm: empty(BAG_TMHM_COUNT),
-    berries: empty(BAG_BERRIES_COUNT),
-    keyItems: empty(BAG_KEYITEMS_COUNT),
+    items: emptyItemSlots(BAG_ITEMS_COUNT),
+    pokeBalls: emptyItemSlots(BAG_POKEBALLS_COUNT),
+    tmHm: emptyItemSlots(BAG_TMHM_COUNT),
+    berries: emptyItemSlots(BAG_BERRIES_COUNT),
+    keyItems: emptyItemSlots(BAG_KEYITEMS_COUNT),
   };
 }
 

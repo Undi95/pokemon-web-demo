@@ -1069,8 +1069,16 @@ export interface SaveBlock1 {
   registeredItem: number;
   /** PC items (= boîte du joueur, 50 slots). */
   pcItems: ItemSlot[];
-  /** Bag (= 5 pockets unifiés en TS). */
-  bag: Bag;
+  /** 1:1 décomp `gSaveBlock1Ptr->bagPocket_Items` (global.h:1012). 30 slots, max 99/slot. */
+  bagPocket_Items: ItemSlot[];
+  /** 1:1 décomp `gSaveBlock1Ptr->bagPocket_KeyItems` (global.h:1013). 30 slots, max 1/slot. */
+  bagPocket_KeyItems: ItemSlot[];
+  /** 1:1 décomp `gSaveBlock1Ptr->bagPocket_PokeBalls` (global.h:1014). 16 slots, max 99/slot. */
+  bagPocket_PokeBalls: ItemSlot[];
+  /** 1:1 décomp `gSaveBlock1Ptr->bagPocket_TMHM` (global.h:1015). 64 slots, max 99/slot, no dup. */
+  bagPocket_TMHM: ItemSlot[];
+  /** 1:1 décomp `gSaveBlock1Ptr->bagPocket_Berries` (global.h:1016). 46 slots, max 999/slot, no dup. */
+  bagPocket_Berries: ItemSlot[];
   /** Pokéblocks (= 40 slots). */
   pokeblocks: Pokeblock[];
   /** Pokédex SEEN bits (= compact bit array). */
@@ -1484,8 +1492,13 @@ export function emptySaveBlock2(): SaveBlock2 {
   };
 }
 
-/** 1:1 décomp `ClearSav1` (load_save.c). */
-export function emptySaveBlock1(emptyBag: Bag): SaveBlock1 {
+/** 1:1 décomp `ClearSav1` (load_save.c). Bag pockets init 1:1 strict
+ *  (= 5 fields séparés `bagPocket_*`, capacités fixes BAG_*_COUNT depuis
+ *  bag-types.ts). Plus de paramètre `emptyBag` (= ancien composite Bag retiré). */
+export function emptySaveBlock1(): SaveBlock1 {
+  // 1:1 décomp global.h:1012-1016 : 5 arrays séparés dans SaveBlock1.
+  const emptyItemSlots = (n: number): ItemSlot[] =>
+    Array.from({ length: n }, () => ({ itemKey: '', quantity: 0 }));
   return {
     pos: emptyCoords(),
     location: emptyWarp(),
@@ -1498,7 +1511,12 @@ export function emptySaveBlock1(emptyBag: Bag): SaveBlock1 {
     playerPartyCount: 0, playerParty: [],
     money: 0, coins: 0, registeredItem: 0,
     pcItems: arr(PC_ITEMS_COUNT, () => ({ itemKey: '', quantity: 0 })),
-    bag: emptyBag,
+    // 1:1 décomp global.h:1012-1016 — 5 bagPocket_* arrays séparés.
+    bagPocket_Items: emptyItemSlots(30),       // BAG_ITEMS_COUNT
+    bagPocket_KeyItems: emptyItemSlots(30),    // BAG_KEYITEMS_COUNT
+    bagPocket_PokeBalls: emptyItemSlots(16),   // BAG_POKEBALLS_COUNT
+    bagPocket_TMHM: emptyItemSlots(64),        // BAG_TMHM_COUNT
+    bagPocket_Berries: emptyItemSlots(46),     // BAG_BERRIES_COUNT
     pokeblocks: arr(POKEBLOCKS_COUNT, () => ({ color: 0, spicy: 0, dry: 0, sweet: 0, bitter: 0, sour: 0, feel: 0 })),
     seen1: zeros(NUM_DEX_FLAG_BYTES),
     berryBlenderRecords: zeros(3),

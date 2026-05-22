@@ -30,7 +30,6 @@
 
 import type { SaveBlock1, SaveBlock2 } from './save-blocks';
 import { emptySaveBlock1, emptySaveBlock2 } from './save-blocks';
-import { emptyBag } from './bag-types';
 
 // ─── Storage authoritatif (= EWRAM du décomp) ────────────────────────────────
 
@@ -41,7 +40,7 @@ let _sCurrentBlock2: SaveBlock2 | null = null;
 
 /** 1:1 décomp `gSaveBlock1Ptr` accessor. Init si null (= boot pré-LoadGameSave). */
 export function GetSaveBlock1(): SaveBlock1 {
-  if (!_sCurrentBlock1) _sCurrentBlock1 = emptySaveBlock1(emptyBag());
+  if (!_sCurrentBlock1) _sCurrentBlock1 = emptySaveBlock1();
   return _sCurrentBlock1;
 }
 

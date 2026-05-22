@@ -231,8 +231,19 @@ class GameState {
   }
 
   // ===== Bag ==========================================================
+  // 1:1 strict : SaveBlock1 contient maintenant 5 fields séparés bagPocket_*
+  // (= 1:1 décomp global.h:1012-1016). Le composite virtuel est exposé ici
+  // pour compat avec window.gameState.bag debug. Code engine accède direct
+  // via gBagPockets[] (= 1:1 item.c pattern). */
   get bag(): Bag {
-    return GetSaveBlock1().bag;
+    const b1 = GetSaveBlock1() as unknown as Record<string, ItemSlot[]>;
+    return {
+      items: b1.bagPocket_Items ?? [],
+      keyItems: b1.bagPocket_KeyItems ?? [],
+      pokeBalls: b1.bagPocket_PokeBalls ?? [],
+      tmHm: b1.bagPocket_TMHM ?? [],
+      berries: b1.bagPocket_Berries ?? [],
+    };
   }
 
   // ===== PC items (= 50 slots, max 999/slot, séparé du bag) ===========
