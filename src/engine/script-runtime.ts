@@ -368,6 +368,25 @@ export function RunScriptCommand(ctx: ScriptContext): boolean {
     }
     const op = ctx.scriptOpcodes[ctx.scriptIdx];
     ctx.scriptIdx++;
+    // Devtools ring buffer pour scope.scriptHistory(). Push silently si dispo
+    // — aucun effet runtime si __scriptOpcodeLog absent. Cap à 256 entries.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const _olog = (globalThis as any).__scriptOpcodeLog as Array<{
+      frame: number; label: string; opcode: string; args: unknown[]; idx: number; ts: number;
+    }> | undefined;
+    if (_olog) {
+      if (_olog.length >= 256) _olog.shift();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const _rt = (globalThis as any).dev?._rt;
+      _olog.push({
+        frame: _rt?.gIntroFrameCounter ?? 0,
+        label: _currentScriptLabel ?? 'native',
+        opcode: op.name,
+        args: op.args,
+        idx: ctx.scriptIdx - 1,
+        ts: performance.now(),
+      });
+    }
     const wait = dispatchOpcode(ctx, op);
     if (wait) return true;
     // Si dispatchOpcode a set mode = STOPPED (= via end opcode), bail.

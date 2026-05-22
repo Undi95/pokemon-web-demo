@@ -39,6 +39,26 @@ import {
   IsFieldMessageBoxHidden,
 } from './field-message-box';
 import { buildBattleDevtools } from './battle/battle-devtools';
+import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
+import { setHeldKeysOverride, clearHeldKeysOverride } from './input-handler';
+import type { DecompRuntime } from './decomp-runtime';
+import * as decompBridge from './decomp-bridge';
+
+const MAP_OFFSET = 7;  // 1:1 décomp constants/global.h
+
+/** Reverse map metatileBehavior value → name (= 'MB_LONG_GRASS' pour 3).
+ *  Construit au boot par scan de decomp-bridge exports. */
+const _MB_REVERSE_MAP: Record<number, string> = (() => {
+  const out: Record<number, string> = {};
+  for (const [k, v] of Object.entries(decompBridge)) {
+    if (k.startsWith('MB_') && typeof v === 'number') out[v] = k;
+  }
+  return out;
+})();
+
+function _behaviorName(behavior: number): string {
+  return _MB_REVERSE_MAP[behavior] ?? `MB_UNKNOWN(0x${behavior.toString(16)})`;
+}
 
 interface ObjectEvent {
   active?: boolean;
@@ -308,21 +328,141 @@ function _audio(): Record<string, unknown> {
   };
 }
 
+/** Tile inspector enrichi : retourne metatile + behavior NAMED + collision +
+ *  elevation + warp/coord/bg event si applicable. Coords prises en LOGICAL
+ *  (= map JSON convention) pour matcher ce que l'user voit dans Tiled. */
 function _tile(x: number, y: number): Record<string, unknown> {
   const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
   const behFn = _g<(x: number, y: number) => number>('MapGridGetMetatileBehaviorAt');
   const elevFn = _g<(x: number, y: number) => number>('MapGridGetElevationAt');
   const idFn = _g<(x: number, y: number) => number>('MapGridGetMetatileIdAt');
-  const MAP_OFFSET = 7;  // 1:1 décomp constants/global.h
   const xx = x + MAP_OFFSET;
   const yy = y + MAP_OFFSET;
+  const behavior = behFn?.(xx, yy) ?? 0;
+  const collision = collFn?.(xx, yy) ?? 0;
+
+  // Lookup events at LOGICAL (x, y).
+  const hdr = _g<{ events?: { warps?: Array<{ x: number; y: number; warpId: number; destMap: string }>;
+                              coordEvents?: Array<{ x: number; y: number; trigger: string; index: number; script: string }>;
+                              bgEvents?: Array<{ x: number; y: number; kind: string; script: string; playerFacingDir?: string }>;
+                            } }>('gMapHeader');
+  const warp = hdr?.events?.warps?.find(w => w.x === x && w.y === y);
+  const coordEvent = hdr?.events?.coordEvents?.find(c => c.x === x && c.y === y);
+  const bgEvent = hdr?.events?.bgEvents?.find(b => b.x === x && b.y === y);
+
   return {
     coords: [x, y],
+    coordsInternal: [xx, yy],
     metatileId: idFn?.(xx, yy),
-    collision: collFn?.(xx, yy),
-    behavior: '0x' + (behFn?.(xx, yy) ?? 0).toString(16),
+    collision,
+    behavior: _behaviorName(behavior),
+    behaviorRaw: '0x' + behavior.toString(16),
     elevation: elevFn?.(xx, yy),
+    warp: warp ? { destMap: warp.destMap, warpId: warp.warpId } : null,
+    coordEvent: coordEvent ? {
+      trigger: coordEvent.trigger, index: coordEvent.index, script: coordEvent.script,
+    } : null,
+    bgEvent: bgEvent ? {
+      kind: bgEvent.kind, script: bgEvent.script, facing: bgEvent.playerFacingDir,
+    } : null,
   };
+}
+
+/** Audit slot 0 ↔ gPlayerAvatar. Post R3 refactor (= storage INTERNAL), le
+ *  slot 0 currentCoords doit toujours satisfaire `slot.cur = pa + MAP_OFFSET`.
+ *  Si drift détecté, c'est un bug du sync à signaler. */
+function _coords(): Record<string, unknown> {
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  const objs = _g<ObjectEvent[]>('__gObjectEvents') ?? [];
+  const slot0 = objs[0];
+  if (!pa) return { error: 'no gPlayerAvatar' };
+  if (!slot0) return { error: 'no slot 0 (= runtime not ready)' };
+  const paX = pa.x ?? 0;
+  const paY = pa.y ?? 0;
+  const expectedSlotX = paX + MAP_OFFSET;
+  const expectedSlotY = paY + MAP_OFFSET;
+  const slotCurX = (slot0 as { currentCoordsX?: number }).currentCoordsX ?? -1;
+  const slotCurY = (slot0 as { currentCoordsY?: number }).currentCoordsY ?? -1;
+  const drift = slotCurX !== expectedSlotX || slotCurY !== expectedSlotY;
+  return {
+    gPlayerAvatar_LOGICAL: { x: paX, y: paY, facing: _DIR_NAMES[pa.facing ?? 0] },
+    slot0_INTERNAL: {
+      cur: [slotCurX, slotCurY],
+      prev: [(slot0 as { previousCoordsX?: number }).previousCoordsX,
+             (slot0 as { previousCoordsY?: number }).previousCoordsY],
+      initial: [(slot0 as { initialCoordsX?: number }).initialCoordsX,
+                (slot0 as { initialCoordsY?: number }).initialCoordsY],
+    },
+    slot0_DERIVED_LOGICAL: {
+      cur: [slotCurX - MAP_OFFSET, slotCurY - MAP_OFFSET],
+      prev: [((slot0 as { previousCoordsX?: number }).previousCoordsX ?? MAP_OFFSET) - MAP_OFFSET,
+             ((slot0 as { previousCoordsY?: number }).previousCoordsY ?? MAP_OFFSET) - MAP_OFFSET],
+      initial: [((slot0 as { initialCoordsX?: number }).initialCoordsX ?? MAP_OFFSET) - MAP_OFFSET,
+                ((slot0 as { initialCoordsY?: number }).initialCoordsY ?? MAP_OFFSET) - MAP_OFFSET],
+    },
+    expected_slot0_INTERNAL: [expectedSlotX, expectedSlotY],
+    drift,
+    driftDetail: drift
+      ? `slot0.cur(${slotCurX},${slotCurY}) ≠ pa(${paX},${paY})+OFFSET(7)=(${expectedSlotX},${expectedSlotY})`
+      : 'OK 1:1 strict R3',
+    note: 'INTERNAL = LOGICAL + MAP_OFFSET (= 7). Post R3 storage refactor.',
+  };
+}
+
+/** Resolve metatile behavior number → name (= MB_LONG_GRASS). */
+function _behaviorNameExposed(behavior: number | string): string {
+  const num = typeof behavior === 'string'
+    ? parseInt(behavior.replace(/^0x/, ''), 16)
+    : behavior;
+  return _behaviorName(num);
+}
+
+/** List events de la map courante : warps + coord triggers + bg events.
+ *  Permet d'auditer ce qui peut se déclencher sur la map. */
+function _events(): Record<string, unknown> {
+  const hdr = _g<{ id?: string; events?: {
+    warps?: Array<{ x: number; y: number; warpId: number; destMap: string; elevation: number }>;
+    coordEvents?: Array<{ x: number; y: number; trigger: string; index: number; script: string }>;
+    bgEvents?: Array<{ x: number; y: number; kind: string; script: string; playerFacingDir?: string }>;
+    objectEvents?: Array<{ localId: number | string; x: number; y: number; graphicsId?: string; script?: string; flagId?: string }>;
+  } }>('gMapHeader');
+  const ev = hdr?.events;
+  if (!ev) return { error: 'no gMapHeader.events', map: hdr?.id };
+  return {
+    map: hdr?.id,
+    warps: (ev.warps ?? []).map((w, i) => ({
+      idx: i, at: [w.x, w.y], elev: w.elevation, to: w.destMap, warpId: w.warpId,
+    })),
+    coordEvents: (ev.coordEvents ?? []).map((c, i) => ({
+      idx: i, at: [c.x, c.y], var: c.trigger, value: c.index, script: c.script,
+    })),
+    bgEvents: (ev.bgEvents ?? []).map((b, i) => ({
+      idx: i, at: [b.x, b.y], kind: b.kind, script: b.script, facing: b.playerFacingDir,
+    })),
+    objectTemplates: (ev.objectEvents ?? []).length,
+  };
+}
+
+/** Find NPCs par filtre : localIdRaw, gfx, script substring (case-insensitive). */
+function _findNpc(filter: string): Array<Record<string, unknown>> {
+  const objs = _g<ObjectEvent[]>('__gObjectEvents') ?? [];
+  const q = filter.toLowerCase();
+  return objs.map((o, i) => ({ slot: i, npc: o })).filter(({ npc }) => {
+    if (!npc?.active) return false;
+    if ((npc.localIdRaw ?? '').toLowerCase().includes(q)) return true;
+    if ((npc.graphicsId ?? '').toLowerCase().includes(q)) return true;
+    if ((npc.scriptLabel ?? '').toLowerCase().includes(q)) return true;
+    return false;
+  }).map(({ slot, npc }) => ({
+    slot,
+    id: npc.localIdRaw ?? `localId=${npc.localId}`,
+    gfx: npc.graphicsId,
+    pos: [(npc.currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET, (npc.currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET],
+    facing: _DIR_NAMES[npc.facingDirection ?? 0],
+    mvt: npc.movementType,
+    script: npc.scriptLabel,
+    visible: !npc.invisible,
+  }));
 }
 
 function _time(): Record<string, unknown> {
@@ -337,49 +477,167 @@ function _time(): Record<string, unknown> {
   };
 }
 
-function _press(key: string, holdMs = 100): void {
-  const KEY_MAP: Record<string, [string, string]> = {
-    'up': ['ArrowUp', 'ArrowUp'],
-    'down': ['ArrowDown', 'ArrowDown'],
-    'left': ['ArrowLeft', 'ArrowLeft'],
-    'right': ['ArrowRight', 'ArrowRight'],
-    'a': ['w', 'KeyW'],
-    'b': ['x', 'KeyX'],
-    'start': ['Enter', 'Enter'],
-    'select': ['Backspace', 'Backspace'],
-    'l': ['a', 'KeyA'],
-    'r': ['d', 'KeyD'],
-  };
-  const [keyV, code] = KEY_MAP[key.toLowerCase()] ?? [key, key];
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: keyV, code, bubbles: true }));
-  setTimeout(() => {
+// ─── Input control via heldKeys override (= canonical) ──────────────────────
+// Avant : `_press` faisait `window.dispatchEvent(KeyboardEvent)` qui ne marche
+// que si le canvas a le focus + dépend du keymap localStorage. La nouvelle
+// version écrit DIRECTEMENT dans `rt.gMain.heldKeys` via `setHeldKeysOverride`,
+// donc :
+//   - 100% fiable (= pas de dépendance focus, layout clavier, AZERTY vs QWERTY)
+//   - bypass le binding remap user-side (= 'up' = UP_BUTTON mask, point)
+//   - bloque le clavier natif tant que l'override actif (= no race)
+
+const _KEY_TO_BUTTON: Record<string, GbaButton> = {
+  up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT',
+  a: 'A', b: 'B', start: 'START', select: 'SELECT',
+  l: 'L', r: 'R',
+};
+
+function _maskForKey(key: string): number {
+  const button = _KEY_TO_BUTTON[key.toLowerCase()];
+  return button ? GBA_BUTTON_MASKS[button] : 0;
+}
+
+function _rtSafe(): DecompRuntime | null {
+  const dev = _g<{ _rt?: DecompRuntime }>('dev');
+  return dev?._rt ?? null;
+}
+
+function _sleep(ms: number): Promise<void> {
+  return new Promise<void>(r => setTimeout(r, ms));
+}
+
+/** Press = pulse mask pendant holdMs puis release. Suffit pour déclencher
+ *  un newKeys edge (= bouton A → confirm dialog, START → menu, etc.). */
+async function _press(key: string, holdMs = 80): Promise<{ ok: boolean; reason?: string }> {
+  const mask = _maskForKey(key);
+  if (mask === 0) return { ok: false, reason: `unknown key '${key}' (valid: up/down/left/right/a/b/start/select/l/r)` };
+  const rt = _rtSafe();
+  if (!rt) {
+    // Fallback dispatchEvent si runtime pas exposé (= probablement test offline).
+    const KEY_MAP: Record<string, [string, string]> = {
+      up: ['ArrowUp', 'ArrowUp'], down: ['ArrowDown', 'ArrowDown'],
+      left: ['ArrowLeft', 'ArrowLeft'], right: ['ArrowRight', 'ArrowRight'],
+      a: ['w', 'KeyW'], b: ['x', 'KeyX'],
+      start: ['Enter', 'Enter'], select: ['Backspace', 'Backspace'],
+      l: ['a', 'KeyA'], r: ['d', 'KeyD'],
+    };
+    const [keyV, code] = KEY_MAP[key.toLowerCase()] ?? [key, key];
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: keyV, code, bubbles: true }));
+    await _sleep(holdMs);
     window.dispatchEvent(new KeyboardEvent('keyup', { key: keyV, code, bubbles: true }));
-  }, holdMs);
-}
-
-async function _walk(dir: 'up' | 'down' | 'left' | 'right', steps = 1): Promise<void> {
-  for (let i = 0; i < steps; i++) {
-    _press(dir, 200);
-    await new Promise<void>((resolve) => setTimeout(resolve, 250));
+    return { ok: true, reason: 'fallback dispatchEvent (no rt exposed)' };
   }
+  setHeldKeysOverride(rt, mask);
+  await _sleep(holdMs);
+  // setHeldKeysOverride(null) libère mais NE met PAS heldKeys à 0 → le mask
+  // reste actif 1 frame de plus côté décomp ⇒ overshoot d'un step. Le set
+  // explicite à 0 sous override puis clear évite ce bug.
+  setHeldKeysOverride(rt, 0);
+  clearHeldKeysOverride(rt);
+  // Petit délai post-release pour que la frame suivante détecte release.
+  await _sleep(40);
+  return { ok: true };
 }
 
-async function _ai(plan: string[]): Promise<void> {
+/** Walk = hold direction mask jusqu'à observer N steps faits (= pa.x/y change),
+ *  ou timeout. Retourne nombre de steps actually walked (peut être < requested
+ *  si bloqué par collision ou warp). */
+async function _walk(dir: 'up' | 'down' | 'left' | 'right', steps = 1): Promise<{
+  ok: boolean; walked: number; blocked: boolean; reason?: string;
+}> {
+  const mask = _maskForKey(dir);
+  if (mask === 0) return { ok: false, walked: 0, blocked: false, reason: `bad direction '${dir}'` };
+  const rt = _rtSafe();
+  if (!rt) {
+    // Fallback dispatchEvent path (= legacy).
+    for (let i = 0; i < steps; i++) {
+      await _press(dir, 200);
+      await _sleep(250);
+    }
+    return { ok: true, walked: steps, blocked: false, reason: 'fallback dispatchEvent (no rt exposed)' };
+  }
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  if (!pa) return { ok: false, walked: 0, blocked: false, reason: 'no gPlayerAvatar' };
+  setHeldKeysOverride(rt, mask);
+  let walked = 0;
+  let lastX = pa.x ?? 0;
+  let lastY = pa.y ?? 0;
+  let stuckTicks = 0;
+  const tickMs = 25;
+  const maxStuckTicks = Math.ceil(800 / tickMs);  // ~800ms de patience avant déclarer bloqué
+  const maxTotalMs = steps * 600 + 2000;
+  const startMs = performance.now();
+  while (walked < steps && performance.now() - startMs < maxTotalMs) {
+    await _sleep(tickMs);
+    const curX = pa.x ?? 0;
+    const curY = pa.y ?? 0;
+    const dx = Math.abs(curX - lastX);
+    const dy = Math.abs(curY - lastY);
+    if (dx + dy > 0) {
+      walked += dx + dy;  // distance taxicab = nombre de tiles parcourus depuis dernier check
+      lastX = curX; lastY = curY;
+      stuckTicks = 0;
+    } else {
+      stuckTicks++;
+      if (stuckTicks >= maxStuckTicks) {
+        // Bloqué : collision, dialog, script qui prend la main, etc.
+        // setHeldKeysOverride(null) libère mais NE met PAS heldKeys à 0 → le mask
+  // reste actif 1 frame de plus côté décomp ⇒ overshoot d'un step. Le set
+  // explicite à 0 sous override puis clear évite ce bug.
+  setHeldKeysOverride(rt, 0);
+  clearHeldKeysOverride(rt);
+        await _sleep(50);
+        return { ok: walked > 0, walked, blocked: true, reason: 'stuck (collision / dialog / busy script)' };
+      }
+    }
+  }
+  // Release ASAP — minimise overshoot (= step suivant initié sur frame en cours).
+  // setHeldKeysOverride(null) libère mais NE met PAS heldKeys à 0 → le mask
+  // reste actif 1 frame de plus côté décomp ⇒ overshoot d'un step. Le set
+  // explicite à 0 sous override puis clear évite ce bug.
+  setHeldKeysOverride(rt, 0);
+  clearHeldKeysOverride(rt);
+  // Laisser la frame courante finir son walk anim.
+  await _sleep(280);
+  return { ok: walked >= steps, walked, blocked: walked < steps };
+}
+
+/** AI = mini-DSL pour scripter une suite d'actions.
+ *  Reconnaît : 'up'/'down'/'left'/'right'/'a'/'b'/'start'/'select'/'l'/'r',
+ *    'walk <dir> <n>', 'wait <frames>', 'sleep <ms>', 'snap' (= snapshot diff). */
+async function _ai(plan: string[]): Promise<Array<Record<string, unknown>>> {
+  const log: Array<Record<string, unknown>> = [];
   for (const cmd of plan) {
     const trimmed = cmd.trim();
+    if (!trimmed) continue;
     if (trimmed.startsWith('wait ')) {
       const ms = parseInt(trimmed.slice(5), 10) * 16;  // frames → ms (60fps)
-      await new Promise<void>((resolve) => setTimeout(resolve, ms));
+      await _sleep(ms);
+      log.push({ cmd: trimmed, kind: 'wait', ms });
+      continue;
+    }
+    if (trimmed.startsWith('sleep ')) {
+      const ms = parseInt(trimmed.slice(6), 10);
+      await _sleep(ms);
+      log.push({ cmd: trimmed, kind: 'sleep', ms });
       continue;
     }
     if (trimmed.startsWith('walk ')) {
-      const [dir, n] = trimmed.slice(5).split(' ');
-      await _walk(dir as 'up', parseInt(n ?? '1', 10));
+      const [dirRaw, n] = trimmed.slice(5).split(' ');
+      const r = await _walk(dirRaw as 'up', parseInt(n ?? '1', 10));
+      log.push({ cmd: trimmed, kind: 'walk', ...r });
       continue;
     }
-    _press(trimmed);
-    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+    if (trimmed === 'snap') {
+      _lastSnapshot = _see();
+      log.push({ cmd: trimmed, kind: 'snap', ok: true });
+      continue;
+    }
+    const r = await _press(trimmed);
+    log.push({ cmd: trimmed, kind: 'press', ...r });
+    await _sleep(80);
   }
+  return log;
 }
 
 let _lastSnapshot: ReturnType<typeof _see> | null = null;
@@ -409,50 +667,94 @@ Pokémon Émeraude port — devtools "voir sans voir l'écran"
 ══════════════════════════════════════════════════════════
 
 INSPECTION (read-only) :
-  scope.where()        Position courante du player (string format)
-  scope.whereObj()     Position structurée { map, x, y, facing, layoutId, ... }
-  scope.see()          Snapshot complet : player + NPCs + flags + vars + state
-  scope.npcs()         Tous les NPCs actifs avec coords + gfx + mvt
-  scope.dialog()       Text actuellement dans le field message box
-  scope.party()        Ton équipe Pokémon avec stats + moves
-  scope.bag()          Ton sac par pocket
-  scope.flags(prefix)  Flags actifs (filtre optionnel par prefix)
-  scope.vars()         Vars non-zéro
-  scope.script()       Script en cours : status + label + opcode actuel
-  scope.battle()       État combat si actif
-  scope.audio()        BGM + SE en cours
-  scope.tile(x,y)      Metatile + behavior + collision + elevation à coords
-  scope.time()         PC time + in-game RTC + play time
-  scope.warp()         Last warp info
-  scope.sprites(mode)  Liste sprites ('visible'|'invisible'|'all') + coords + anim
-  scope.fade()         État du gPaletteFade (active, brightness, mode, etc.)
-  scope.starterChoose() State du starter-choose-flow si en cours
+  scope.where()           Position du player (string)
+  scope.whereObj()        Position structurée { map, x, y, facing, layoutId, ... }
+  scope.see()             Snapshot complet : player + NPCs + flags + vars + state
+  scope.npcs()            Tous les NPCs actifs (coords LOGICAL, gfx, mvt)
+  scope.dialog()          Text actuellement dans le field message box
+  scope.party()           Ton équipe Pokémon avec stats + moves
+  scope.bag()             Ton sac par pocket
+  scope.flags(prefix)     Flags actifs (filtre optionnel par prefix)
+  scope.vars()            Vars non-zéro
+  scope.script()          Script en cours : status + label + opcode actuel
+  scope.battle()          État combat si actif
+  scope.audio()           BGM + SE en cours
+  scope.tile(x,y)         Metatile + behaviorName + warp + coordEvent + bgEvent
+  scope.time()            PC time + in-game RTC + play time
+  scope.warp()            Last warp info
+  scope.sprites(mode)     Liste sprites ('visible'|'invisible'|'all')
+  scope.fade()            État du gPaletteFade (active, brightness, mode, etc.)
+  scope.starterChoose()   State du starter-choose-flow si en cours
+
+OW INSPECTION (post R3 INTERNAL/LOGICAL coords audit) :
+  scope.coords()          Audit slot 0 ↔ gPlayerAvatar : drift detect 1:1 strict
+  scope.behaviorName(n)   3 → 'MB_LONG_GRASS' (= reverse lookup)
+  scope.events()          Warps + coordEvents + bgEvents de la map courante
+  scope.findNpc(q)        Find NPCs par localIdRaw/gfx/script substring
+  scope.map(opts?)        Map ASCII (15×11 par défaut) avec player + NPCs + collision
+  scope.movement()        State machine MovementAction_* du player + NPCs
+
+SCRIPT :
+  scope.scriptHistory(n)  N derniers opcodes exécutés (ring buffer 256)
+  scope.scriptHistoryClear() Reset ring buffer
 
 DIFF :
-  scope.snapshot()     Capture état courant
-  scope.compare()      Diff vs snapshot précédent
+  scope.snapshot()        Capture état courant
+  scope.compare()         Diff vs snapshot précédent
 
-CONTROLE :
-  scope.press(key)     'up' 'down' 'left' 'right' 'a' 'b' 'start' 'select'
-  scope.walk(dir, n)   Simule N pas dans direction
-  scope.ai(plan)       Exécute plan ['up', 'walk right 3', 'wait 60', 'a']
-  scope.skipDialog(ms) Auto-spam A jusqu'à dialog fermé (async, returns ok)
-  scope.observe(fn,ms) Await jusqu'à predicate truthy (async, returns result)
-  scope.gotoMap(id,x,y) Warp helper rapide (= 1:1 transition + scripts)
+CONTROLE (via gMain.heldKeys override, plus de KeyboardEvent fallible) :
+  scope.press(key)        'up'/'down'/'left'/'right'/'a'/'b'/'start'/'select'/'l'/'r'
+  scope.walk(dir, n)      Walk N tiles, detect collision/blocage, return walked count
+  scope.go(x, y)          Pathfinder A* simple → drive jusqu'à (x,y) LOGICAL
+  scope.ai(plan)          Mini-DSL : ['up', 'walk right 3', 'wait 60', 'snap', 'a']
+  scope.skipDialog(ms?)   Auto-spam A jusqu'à dialog fermé
+  scope.observe(fn,ms?)   Await jusqu'à predicate truthy
+  scope.gotoMap(id,x,y)   Warp helper rapide (= 1:1 transition + scripts)
 
-EX : await scope.ai(['walk down 5', 'a', 'wait 30', 'a', 'a'])
-EX : await scope.observe(() => scope.battle().active)
-EX : await scope.skipDialog()
+EXEMPLES :
+  await scope.go(5, 12)
+  await scope.ai(['walk down 5', 'a', 'wait 30', 'a', 'a'])
+  await scope.observe(() => scope.battle().active)
+  await scope.skipDialog()
+  scope.map({width: 25, height: 17})
 
 BATTLE BYTECODE (session 140) :
   scope.bytecode.help()              Devtools complet pour wire bytecode → gameplay
   scope.bytecode.dumpMons()          gBattleMons[0..N] structured
-  scope.bytecode.snapshot()          Full battle state (battlers + scripting + protect/disable/...)
+  scope.bytecode.snapshot()          Full battle state (battlers + scripting + ...)
   scope.bytecode.labels('Hit')       Labels filtrés
-  scope.bytecode.runScript('BattleScript_EffectHit', { trace: true, resetStats: true })
+  scope.bytecode.runScript(label)    Run script en mode trace ou reset stats
   scope.bytecode.dispatchStats()     Opcodes appelés
   scope.bytecode.lastBug()           Dernière exception handler
+
+AUTRES NAMESPACES — voir scope.helpAll() pour la surface complète :
+  dev.*            Frame control / savestates / pixel trace / hooks (engine-devtools)
+  dev.audit.*      State / save / assets / party / bag / flags / tile ASCII
+  dev.breakpoint.* Pause auto sur fade-out/fade-in/map-change/palette leak
+  dev.bridge.*     Coverage du decomp-bridge (helpers manquants, % couverture)
 `.trim();
+}
+
+/** Help GLOBAL : dump complet de toutes les surfaces dispo. */
+function _helpAll(): string {
+  const sections: string[] = [];
+  sections.push(_help());
+  // Délégation à chaque sous-namespace si dispo.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = globalThis as any;
+  if (typeof w.dev?.help === 'function') {
+    sections.push('\n\n═══ dev.* (engine-devtools) ═══\n' + w.dev.help());
+  }
+  if (typeof w.dev?.audit?.help === 'function') {
+    sections.push('\n\n═══ dev.audit.* ═══\n' + w.dev.audit.help());
+  }
+  if (typeof w.dev?.breakpoint?.help === 'function') {
+    sections.push('\n\n═══ dev.breakpoint.* ═══\n' + w.dev.breakpoint.help());
+  }
+  if (typeof w.dev?.bridge?.help === 'function') {
+    sections.push('\n\n═══ dev.bridge.* ═══\n' + w.dev.bridge.help());
+  }
+  return sections.join('\n');
 }
 
 function _warp(): Record<string, unknown> {
@@ -598,6 +900,333 @@ function _gotoMap(mapId: string, x: number, y: number): { ok: boolean; reason?: 
   catch (e) { return { ok: false, reason: String(e) }; }
 }
 
+// ─── Map ASCII visualizer ────────────────────────────────────────────────────
+// "Voir sans voir l'écran" : dump une fenêtre de la map en ASCII avec overlays
+// player + NPCs + collision + behavior + warps. Utile pour audit OW sans canvas.
+
+const _FACING_SYMBOL: Record<number, string> = {
+  1: 'v',  // SOUTH
+  2: '^',  // NORTH
+  3: '<',  // WEST
+  4: '>',  // EAST
+};
+
+function _behaviorSymbol(behavior: number, collision: number): string {
+  // collision != 0 → wall (toujours). 0 = walkable.
+  if (collision !== 0) return '#';
+  // Group par catégorie pour rester lisible.
+  // Grass : MB_TALL_GRASS=2, MB_LONG_GRASS=3, MB_LONG_GRASS_SOUTH_EDGE=9, MB_ASHGRASS=0x24
+  if (behavior === 0x02 || behavior === 0x03 || behavior === 0x09 || behavior === 0x24) return '~';
+  // Water : MB_POND_WATER=0x10, MB_INTERIOR_DEEP_WATER=0x11, MB_DEEP_WATER=0x12,
+  //         MB_SOOTOPOLIS_DEEP_WATER=0x14, MB_OCEAN_WATER=0x15, MB_PUDDLE=0x16,
+  //         MB_SHALLOW_WATER=0x17, MB_UNUSED_SOOTOPOLIS_DEEP_WATER=0x18,
+  //         MB_NO_SURFACING=0x19, MB_UNUSED_SOOTOPOLIS_DEEP_WATER_2=0x1A
+  if (behavior >= 0x10 && behavior <= 0x1A) return 'W';
+  // Waterfall : MB_WATERFALL=0x13
+  if (behavior === 0x13) return 'F';
+  // Sand : MB_DEEP_SAND=0x06, MB_SAND=0x21 — 'd' pour éviter clash avec sign 's'.
+  if (behavior === 0x06 || behavior === 0x21) return 'd';
+  // Cave : MB_CAVE=0x08
+  if (behavior === 0x08) return 'c';
+  // Ice : MB_ICE=0x20, MB_THIN_ICE=0x26, MB_CRACKED_ICE=0x27
+  if (behavior === 0x20 || behavior === 0x26 || behavior === 0x27) return 'i';
+  // Doors : MB_NON_ANIMATED_DOOR=0x60, MB_ANIMATED_DOOR=0x69, MB_WATER_DOOR=0x6C
+  if (behavior === 0x60 || behavior === 0x69 || behavior === 0x6C) return 'D';
+  // Ladders : MB_LADDER=0x61
+  if (behavior === 0x61) return 'L';
+  // Arrow warps : MB_EAST_ARROW_WARP=0x62..MB_SOUTH_ARROW_WARP=0x65
+  if (behavior >= 0x62 && behavior <= 0x65) return '>';
+  // Generic walkable.
+  if (behavior === 0x00) return '.';
+  return ',';
+}
+
+/** Map ASCII viewer.
+ *
+ *  Usage :
+ *    scope.map()                       → 15×11 centré sur player
+ *    scope.map({width: 25, height: 17}) → fenêtre plus large
+ *    scope.map({centerX: 10, centerY: 5}) → centré ailleurs
+ *
+ *  Legend retournée dans la 2e ligne du dump. */
+function _map(opts?: { width?: number; height?: number; centerX?: number; centerY?: number }): string {
+  const width = opts?.width ?? 15;
+  const height = opts?.height ?? 11;
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  if (!pa) return 'no gPlayerAvatar';
+  const cx = opts?.centerX ?? pa.x ?? 0;
+  const cy = opts?.centerY ?? pa.y ?? 0;
+  const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
+  const behFn = _g<(x: number, y: number) => number>('MapGridGetMetatileBehaviorAt');
+  if (!collFn || !behFn) return 'no MapGrid* fns exposed (= map not loaded ?)';
+
+  // Build overlay map of (lx, ly) → symbol.
+  const overlays = new Map<string, string>();
+  // Player from slot 0 if available, else gPlayerAvatar.
+  const objs = _g<ObjectEvent[]>('__gObjectEvents') ?? [];
+  const slot0 = objs[0];
+  const slot0Active = !!(slot0 && (slot0 as { active?: boolean }).active);
+  if (slot0Active) {
+    const slot0X = ((slot0 as { currentCoordsX?: number }).currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET;
+    const slot0Y = ((slot0 as { currentCoordsY?: number }).currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET;
+    overlays.set(`${slot0X},${slot0Y}`, _FACING_SYMBOL[(slot0 as { facingDirection?: number }).facingDirection ?? 0] ?? '@');
+  } else {
+    overlays.set(`${pa.x},${pa.y}`, _FACING_SYMBOL[pa.facing ?? 0] ?? '@');
+  }
+  // NPCs at slot 1..N.
+  for (let i = 1; i < objs.length; i++) {
+    const npc = objs[i];
+    if (!npc?.active || npc.invisible) continue;
+    const lx = (npc.currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET;
+    const ly = (npc.currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET;
+    const key = `${lx},${ly}`;
+    if (overlays.has(key)) continue;
+    overlays.set(key, i < 10 ? String(i) : (i < 36 ? String.fromCharCode(55 + i) : '*'));
+  }
+
+  // Warps + bgEvents + coordEvents from header.
+  const hdr = _g<{ id?: string; events?: {
+    warps?: Array<{ x: number; y: number }>;
+    bgEvents?: Array<{ x: number; y: number; kind: string }>;
+    coordEvents?: Array<{ x: number; y: number }>;
+  } }>('gMapHeader');
+  const warps = new Set<string>((hdr?.events?.warps ?? []).map(w => `${w.x},${w.y}`));
+  const bgEventByKey = new Map<string, string>();
+  for (const b of hdr?.events?.bgEvents ?? []) {
+    if (b.kind === 'hidden_item') bgEventByKey.set(`${b.x},${b.y}`, '!');
+    else if (b.kind === 'secret_base') bgEventByKey.set(`${b.x},${b.y}`, 'S');
+    else bgEventByKey.set(`${b.x},${b.y}`, 's');  // sign / autre
+  }
+  const coordEventByKey = new Set<string>((hdr?.events?.coordEvents ?? []).map(c => `${c.x},${c.y}`));
+
+  const halfW = Math.floor(width / 2);
+  const halfH = Math.floor(height / 2);
+  const lines: string[] = [];
+  lines.push(`Map [${hdr?.id ?? '?'}] center=(${cx},${cy}) size=${width}×${height}`);
+  lines.push('Legend: ^v<> player(N/S/W/E), 1-9/A-Z NPC, X=warp s=sign !=item t=coordTrigger');
+  lines.push('        .=walk #=wall ~=grass W=water F=fall d=sand c=cave i=ice D=door L=ladder ,=other');
+  // Column ruler (every 5 cols indicates lx % 10).
+  let header = '     ';
+  for (let i = 0; i < width; i++) {
+    const lx = cx - halfW + i;
+    header += (lx % 5 === 0) ? String(((lx % 100) + 100) % 10) : ' ';
+  }
+  lines.push(header);
+
+  for (let row = 0; row < height; row++) {
+    const ly = cy - halfH + row;
+    let line = String(ly).padStart(4) + ' ';
+    for (let col = 0; col < width; col++) {
+      const lx = cx - halfW + col;
+      const k = `${lx},${ly}`;
+      const overlay = overlays.get(k);
+      if (overlay) { line += overlay; continue; }
+      // Warp '>' avait clash avec player EAST '>'. Player overlay PRIORITAIRE,
+      // donc ici warp = 'X' pour rester sans ambiguïté.
+      if (warps.has(k)) { line += 'X'; continue; }
+      if (coordEventByKey.has(k)) { line += 't'; continue; }
+      const bgSym = bgEventByKey.get(k);
+      if (bgSym) { line += bgSym; continue; }
+      const ix = lx + MAP_OFFSET;
+      const iy = ly + MAP_OFFSET;
+      const beh = behFn(ix, iy);
+      const coll = collFn(ix, iy);
+      line += _behaviorSymbol(beh, coll);
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
+
+// ─── Movement introspection (= state machine MovementAction_*) ───────────────
+// Pour debug post-R3 : quel mouvement le player + chaque NPC est en train de
+// faire ? Quel sub-state ? Combien de frames restantes ?
+
+interface ObjectEventMovementFields {
+  active?: boolean;
+  invisible?: boolean;
+  graphicsId?: string;
+  localId?: number;
+  localIdRaw?: string;
+  movementType?: string;
+  movementActionId?: number;
+  heldMovementActive?: boolean;
+  heldMovementFinished?: boolean;
+  walkFramesLeft?: number;
+  facingDirection?: number;
+  movementDirection?: number;
+  currentCoordsX?: number; currentCoordsY?: number;
+  previousCoordsX?: number; previousCoordsY?: number;
+  spriteAnimNum?: number;
+}
+
+function _movement(): Record<string, unknown> {
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  const objs = _g<ObjectEventMovementFields[]>('__gObjectEvents') ?? [];
+  const slot0 = objs[0];
+  const player: Record<string, unknown> = pa ? {
+    x: pa.x, y: pa.y,
+    facing: _DIR_NAMES[pa.facing ?? 0],
+    stepFramesLeft: pa.stepFramesLeft,
+    tileTransitionState: pa.tileTransitionState,
+    elevation: pa.currentElevation,
+    walking: (pa.stepFramesLeft ?? 0) > 0,
+  } : { error: 'no gPlayerAvatar' };
+  if (slot0) {
+    player.slot0_movement = {
+      action: slot0.movementActionId,
+      held: slot0.heldMovementActive,
+      heldFinished: slot0.heldMovementFinished,
+      walkFramesLeft: slot0.walkFramesLeft,
+      facing: _DIR_NAMES[slot0.facingDirection ?? 0],
+      moveDir: _DIR_NAMES[slot0.movementDirection ?? 0],
+      spriteAnimNum: slot0.spriteAnimNum,
+    };
+  }
+  const npcs: Array<Record<string, unknown>> = [];
+  for (let i = 1; i < objs.length; i++) {
+    const o = objs[i];
+    if (!o?.active) continue;
+    npcs.push({
+      slot: i,
+      id: o.localIdRaw ?? `localId=${o.localId}`,
+      gfx: o.graphicsId,
+      mvtType: o.movementType,
+      mvtAction: o.movementActionId,
+      held: o.heldMovementActive,
+      heldFinished: o.heldMovementFinished,
+      walkFramesLeft: o.walkFramesLeft,
+      facing: _DIR_NAMES[o.facingDirection ?? 0],
+      moveDir: _DIR_NAMES[o.movementDirection ?? 0],
+      anim: o.spriteAnimNum,
+      pos: [(o.currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET, (o.currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET],
+    });
+  }
+  return { player, npcs };
+}
+
+// ─── Pathfinder simple (= scope.go(x, y) target LOGICAL) ─────────────────────
+// A* basique sur la grille de collision visible. Drive via setHeldKeysOverride.
+// Pas optimal pour les longues distances ni les obstacles dynamiques (= NPCs
+// qui bougent) mais suffit pour scénarios de test.
+
+type PathNode = { x: number; y: number; gScore: number; fScore: number; parent: PathNode | null };
+
+function _findPathAStar(startX: number, startY: number, goalX: number, goalY: number, maxNodes = 2000): Array<[number, number]> | null {
+  const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
+  if (!collFn) return null;
+  const h = (x: number, y: number): number => Math.abs(x - goalX) + Math.abs(y - goalY);
+  const openByKey = new Map<string, PathNode>();
+  const closed = new Set<string>();
+  const start: PathNode = { x: startX, y: startY, gScore: 0, fScore: h(startX, startY), parent: null };
+  openByKey.set(`${startX},${startY}`, start);
+  let visited = 0;
+  while (openByKey.size > 0 && visited < maxNodes) {
+    let best: PathNode | null = null;
+    for (const node of openByKey.values()) {
+      if (!best || node.fScore < best.fScore) best = node;
+    }
+    if (!best) break;
+    if (best.x === goalX && best.y === goalY) {
+      const path: Array<[number, number]> = [];
+      let cur: PathNode | null = best;
+      while (cur) { path.unshift([cur.x, cur.y]); cur = cur.parent; }
+      return path;
+    }
+    openByKey.delete(`${best.x},${best.y}`);
+    closed.add(`${best.x},${best.y}`);
+    visited++;
+    const neighbors: Array<[number, number]> = [
+      [best.x + 1, best.y], [best.x - 1, best.y],
+      [best.x, best.y + 1], [best.x, best.y - 1],
+    ];
+    for (const [nx, ny] of neighbors) {
+      const nk = `${nx},${ny}`;
+      if (closed.has(nk)) continue;
+      // Goal cell may be NPC (= collision != 0 due to slot0 marker), accept it.
+      const isGoal = (nx === goalX && ny === goalY);
+      if (!isGoal) {
+        const coll = collFn(nx + MAP_OFFSET, ny + MAP_OFFSET);
+        if (coll !== 0) continue;
+      }
+      const tentativeG = best.gScore + 1;
+      const existing = openByKey.get(nk);
+      if (existing && tentativeG >= existing.gScore) continue;
+      const node: PathNode = { x: nx, y: ny, gScore: tentativeG, fScore: tentativeG + h(nx, ny), parent: best };
+      openByKey.set(nk, node);
+    }
+  }
+  return null;
+}
+
+/** Drive player vers (targetX, targetY) en LOGICAL via pas-à-pas walk.
+ *  Retourne { ok, walked, reason } avec ok=true seulement si arrivé exact. */
+async function _go(targetX: number, targetY: number, opts?: { maxSteps?: number }): Promise<{
+  ok: boolean; walked: number; reason?: string; path?: Array<[number, number]>;
+}> {
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  if (!pa) return { ok: false, walked: 0, reason: 'no gPlayerAvatar' };
+  const sx = pa.x ?? 0;
+  const sy = pa.y ?? 0;
+  if (sx === targetX && sy === targetY) return { ok: true, walked: 0, reason: 'already at target' };
+  const path = _findPathAStar(sx, sy, targetX, targetY);
+  if (!path) return { ok: false, walked: 0, reason: 'no path (= goal unreachable or collision blocks)' };
+  const maxSteps = opts?.maxSteps ?? path.length + 5;
+  let walked = 0;
+  for (let i = 1; i < path.length && walked < maxSteps; i++) {
+    const [px, py] = path[i];
+    const [qx, qy] = path[i - 1];
+    let dir: 'up' | 'down' | 'left' | 'right' | null = null;
+    if (px > qx) dir = 'right';
+    else if (px < qx) dir = 'left';
+    else if (py > qy) dir = 'down';
+    else if (py < qy) dir = 'up';
+    if (!dir) continue;
+    const r = await _walk(dir, 1);
+    if (r.blocked || !r.ok) {
+      return { ok: false, walked, reason: r.reason ?? 'blocked mid-path', path };
+    }
+    walked++;
+  }
+  const arrivedX = pa.x ?? 0;
+  const arrivedY = pa.y ?? 0;
+  const arrived = arrivedX === targetX && arrivedY === targetY;
+  return {
+    ok: arrived,
+    walked,
+    reason: arrived ? undefined : `stopped at (${arrivedX},${arrivedY}) ≠ target (${targetX},${targetY})`,
+    path,
+  };
+}
+
+// ─── Script history (= ring buffer opcode log) ───────────────────────────────
+// Le log est rempli par script-runtime.ts via globalThis.__scriptOpcodeLog.push().
+// Si script-runtime n'a pas encore wiré le hook, le log restera vide — on
+// retourne {note: 'no opcode hook wired'} pour signaler. */
+
+interface OpcodeLogEntry {
+  frame: number;
+  label: string;
+  opcode: string;
+  args: unknown[];
+  idx: number;
+  ts: number;
+}
+
+function _scriptHistory(n = 30): Array<OpcodeLogEntry> | { note: string } {
+  const log = _g<OpcodeLogEntry[]>('__scriptOpcodeLog');
+  if (!log) return { note: 'no __scriptOpcodeLog wired (= script-runtime.ts doit pousser via ring buffer)' };
+  return log.slice(-n);
+}
+
+function _scriptHistoryClear(): { cleared: number } {
+  const log = _g<OpcodeLogEntry[]>('__scriptOpcodeLog');
+  if (!log) return { cleared: 0 };
+  const n = log.length;
+  log.length = 0;
+  return { cleared: n };
+}
+
 // Build the scope API as a fresh object on every install. We expose the latest
 // fn references to support HMR re-install (= les nouvelles versions des _xxx
 // après edit sont propagées au prochain install).
@@ -622,6 +1251,16 @@ function _buildScopeApi(): Record<string, unknown> {
     sprites: _sprites,
     fade: _fade,
     starterChoose: _starterChoose,
+    // Inspection OW (post R3 — INTERNAL/LOGICAL coords audit + ASCII map).
+    coords: _coords,
+    behaviorName: _behaviorNameExposed,
+    events: _events,
+    findNpc: _findNpc,
+    map: _map,
+    movement: _movement,
+    // Script
+    scriptHistory: _scriptHistory,
+    scriptHistoryClear: _scriptHistoryClear,
     // Diff
     snapshot: _snapshot,
     compare: _compare,
@@ -629,6 +1268,7 @@ function _buildScopeApi(): Record<string, unknown> {
     press: _press,
     walk: _walk,
     ai: _ai,
+    go: _go,
     skipDialog: _skipDialog,
     observe: _observe,
     gotoMap: _gotoMap,
@@ -637,13 +1277,17 @@ function _buildScopeApi(): Record<string, unknown> {
     bytecode: buildBattleDevtools(),
     // Help
     help: _help,
+    helpAll: _helpAll,
   };
 }
 
 export function installScopeDevtools(): void {
   if (typeof window === 'undefined') return;
+  // Initialise le ring buffer opcodes (= scope.scriptHistory) si pas déjà fait.
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__scriptOpcodeLog) g.__scriptOpcodeLog = [];
   (window as unknown as { scope: Record<string, unknown> }).scope = _buildScopeApi();
-  console.log('[scope] devtools installed — type `scope.help()` for usage');
+  console.log('[scope] devtools installed — type `scope.help()` for usage, `scope.helpAll()` for the full surface');
 }
 
 // Session 133 add : Vite HMR re-install pour propager les fixes des helpers
