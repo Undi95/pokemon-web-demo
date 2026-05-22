@@ -1940,9 +1940,10 @@ registerOpcode('givepokemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance } = await import('./pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./pokemon');
       const mon = createPokemonInstance(speciesName, level);
-      const ok = gameState.addToParty(mon);
+      const result = GiveMonToPlayer(mon);
+      const ok = result === MON_GIVEN_TO_PARTY;
       VarSet('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail
       console.log(`[opcode givepokemon] ${speciesName} Lv${level} → ${ok ? 'added' : 'party full'}`);
     } catch (e) {
@@ -2691,9 +2692,10 @@ registerOpcode('givemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance } = await import('./pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./pokemon');
       const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
-      const ok = gameState.addToParty(mon);
+      const result = GiveMonToPlayer(mon);
+      const ok = result === MON_GIVEN_TO_PARTY;
       // 1:1 ScriptGiveMon : 0=MON_GIVEN_TO_PARTY, 1=MON_GIVEN_TO_PC.
       VarSet('VAR_RESULT', ok ? 0 : 1);
       console.log(`[opcode givemon] ${speciesName} Lv${level}${heldItem ? ' @' + heldItem : ''} → ${ok ? 'PARTY(0)' : 'PC(1)'}`);

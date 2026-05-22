@@ -18,14 +18,14 @@
  */
 import { gameState, SetSaveLocked } from './game-state';
 import { FlagSet, VarSet } from './script-vars';
-import { HasValidSave } from './save-system';
+import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
-import { createPokemonInstance } from './pokemon';
+import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -120,7 +120,7 @@ function applyNoIntroPreset(): void {
   // comme playerName/gender (bug #5 : options reset devant le prof).
   const existingOptions = gameState.options;
   // 1:1 décomp `Sav2_ClearSetDefault` mais on restore les fields preserved.
-  gameState.reset();
+  ResetSaveBlocks();
   gameState.setOptions(existingOptions);
   if (existingName && existingName !== 'PLAYER') {
     gSaveBlock2Ptr.playerName = existingName;
@@ -268,7 +268,7 @@ function applyNoIntroPreset(): void {
     // du résumé (MED2, 1:1 PositionStatusSlidingWindow). ailment BRN=5
     // (summary-screen _extractMonData : mon.status==='BRN' → ailment 5).
     arcko.status = 'BRN';
-    gameState.addToParty(arcko);
+    GiveMonToPlayer(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
     // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
@@ -284,7 +284,7 @@ function applyNoIntroPreset(): void {
     jirachi.monGender = 255;  // MON_GENDERLESS
     // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
     jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    gameState.addToParty(jirachi);
+    GiveMonToPlayer(jirachi);
     console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
     // ⚠️ DEBUG ONLY : Œuf de Leveinard (Chansey) — test page résumé œuf 1:1
     // (user : "pas pour le faire éclore, juste afficher sa page"). isEgg →
@@ -298,7 +298,7 @@ function applyNoIntroPreset(): void {
     egg.friendship = 80;          // frais → gText_EggWillTakeALongTime
     egg.metLevel = 0;             // œuf
     egg.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    gameState.addToParty(egg);
+    GiveMonToPlayer(egg);
     console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
   }
 
@@ -343,7 +343,7 @@ export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
     // `?nointro` = charger save existante directement (= 1:1 ROM Continue).
     // Pas de preset, pas de touch à la save : juste resume.
-    if (HasValidSave() && gameState.load() && gameState.map) {
+    if (HasValidSave() && LoadGameSave() === SAVE_STATUS_OK && gameState.map) {
       const m = gameState.map;
       console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y}) (SRAM bloquée)`);
       return {
@@ -357,7 +357,7 @@ export function decideBootMode(): BootSpawn {
 
   if (hasTruckParam()) {
     // Dev shortcut : reset save + spawn truck pour tester la cinematic intro.
-    gameState.reset();
+    ResetSaveBlocks();
     // Default identity : "PLAYER" / MALE (= 1:1 décomp placeholder pre-Birch).
     // Sans nom set, dialog "MAMAN: , on est là, chouchou!" affiche {PLAYER} vide.
     // En vrai flow, Birch speech naming overwrite ces defaults — mais ?truck
@@ -393,7 +393,7 @@ export function decideBootMode(): BootSpawn {
                      && gSaveBlock2Ptr.playerName !== 'PLAYER'
                      && gameState.map === undefined;
   // Tentative de resume from save (= cold boot avec save existante, pas post-Birch).
-  if (!cameFromBirch && HasValidSave() && gameState.load() && gameState.map) {
+  if (!cameFromBirch && HasValidSave() && LoadGameSave() === SAVE_STATUS_OK && gameState.map) {
     const m = gameState.map;
     return {
       mapId: m.name,
@@ -427,7 +427,7 @@ export function decideBootMode(): BootSpawn {
   // remises à zéro "devant le prof" (bug #5). On les capture/restaure comme
   // playerName/gender (= 1:1 NewGameInitData : options intactes).
   const preservedOptions = gameState.options;
-  gameState.reset();
+  ResetSaveBlocks();
   gameState.setOptions(preservedOptions);
   if (preservedName && preservedName !== 'PLAYER') {
     gSaveBlock2Ptr.playerName = preservedName;

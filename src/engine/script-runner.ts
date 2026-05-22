@@ -97,7 +97,7 @@ import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
   getItemNameFr, getTrainer, getTrainerNameFr,
 } from './data-tables';
-import { createPokemonInstance } from './pokemon';
+import { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from './pokemon';
 
 // Constantes décomp `include/constants/items.h` enum starters (Hoenn).
 // `sStarterMon[]` dans starter_choose.c : index 0/1/2 → species enum.
@@ -159,14 +159,14 @@ const SPECIALS: Record<string, SpecialFn> = {
       console.warn('[ChooseStarter] askMultichoice non fourni → defaultIdx 0');
       VarSet('VAR_RESULT', 0);
       VarSet('VAR_STARTER_MON', 0);
-      gameState.addToParty(createPokemonInstance(STARTER_SPECIES[0], 5));
+      GiveMonToPlayer(createPokemonInstance(STARTER_SPECIES[0], 5));
       return;
     }
     let idx = await ctx.askMultichoice(STARTER_NAMES_FR);
     if (idx < 0 || idx > 2) idx = 0; // cancel = treecko (déco fait pareil)
     const speciesEnum = STARTER_SPECIES[idx];
     const mon = createPokemonInstance(speciesEnum, 5);
-    gameState.addToParty(mon);
+    GiveMonToPlayer(mon);
     VarSet('VAR_RESULT', idx);
     VarSet('VAR_STARTER_MON', idx);
     console.log(`[ChooseStarter] starter=${speciesEnum} (idx=${idx}) → party size=${gSaveBlock1Ptr.playerPartyCount}`);
@@ -678,7 +678,7 @@ export async function runScript(
         ? itemTok.replace(/^ITEM_/, '').toLowerCase().replace(/_/g, '')
         : '';
       const mon = createPokemonInstance(species, level, heldItem ? { heldItem } : undefined);
-      const ok = gameState.addToParty(mon);
+      const ok = GiveMonToPlayer(mon) === MON_GIVEN_TO_PARTY;
       const result = ok ? 0 : 1; // MVP : si pas de place → faux PC (= 1), pas d'erreur
       vars['VAR_RESULT'] = result;
       VarSet('VAR_RESULT', result);

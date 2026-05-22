@@ -302,11 +302,11 @@ if (typeof window !== 'undefined') {
   dev.battle = dev.battle ?? {};
   dev.battle.startTrainer = async (trainerId: string) => {
     // Auto-add starter Pokemon if party is empty (= dev convenience).
-    const gsMod = await import('./game-state');
-    if (gsMod.gameState.partySize /* TODO: migrate to gSaveBlock1Ptr.playerPartyCount */ === 0) {
+    const sbsMod = await import('./save-block-state');
+    if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('./pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
-      gsMod.gameState.addToParty(starter);
+      pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startTrainer] auto-added Treecko Lv8 (party était vide)');
     }
     const flow = startTrainerBattle(trainerId);

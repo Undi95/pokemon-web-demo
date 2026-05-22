@@ -36,7 +36,7 @@ import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
 import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { createPokemonInstance } from './pokemon';
+import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
 import { VarSet } from './script-vars';
 import { Sin } from './decomp-helpers';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
@@ -637,7 +637,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         try {
           const speciesEnum = STARTER_SPECIES[chosenIdx];
           const starter = createPokemonInstance(speciesEnum, 5);
-          gameState.addToParty(starter);
+          GiveMonToPlayer(starter);
           VarSet('VAR_RESULT', chosenIdx);
           VarSet('VAR_STARTER_MON', chosenIdx);
           VarSet('VAR_RESULT', chosenIdx);

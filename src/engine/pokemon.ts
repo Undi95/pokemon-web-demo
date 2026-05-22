@@ -15,7 +15,7 @@ import {
 } from './data-tables';
 import { Random, Random32 } from './random';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from './data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
@@ -392,3 +392,43 @@ export function applyExpAward(mon: PokemonInstance, gained: number): {
 
 // (Retiré : `pokemonToShowdownSet` — packeur set Showdown pour @pkmn/sim,
 //  code mort depuis le moteur de combat bytecode 1:1. Showdown éliminé.)
+
+// ─── 1:1 décomp pokemon.c:4412 GiveMonToPlayer ───────────────────────────────
+
+/** 1:1 décomp `u8 MON_GIVEN_TO_PARTY = 0` (pokemon.h). */
+export const MON_GIVEN_TO_PARTY = 0;
+/** 1:1 décomp `u8 MON_GIVEN_TO_PC = 1` (pokemon.h). */
+export const MON_GIVEN_TO_PC = 1;
+/** 1:1 décomp `u8 MON_CANT_GIVE = 2` (pokemon.h). */
+export const MON_CANT_GIVE = 2;
+
+/** 1:1 décomp `u8 GiveMonToPlayer(struct Pokemon *mon)` (pokemon.c:4412) :
+ *    SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr->playerName);
+ *    SetMonData(mon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
+ *    SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr->playerTrainerId);
+ *    for (i = 0; i < PARTY_SIZE; i++)
+ *        if (gPlayerParty[i].species == SPECIES_NONE) break;
+ *    if (i >= PARTY_SIZE) return CopyMonToPC(mon);
+ *    CopyMon(&gPlayerParty[i], mon, sizeof(*mon));
+ *    gPlayerPartyCount = i + 1;
+ *    return MON_GIVEN_TO_PARTY;
+ *
+ *  Notre port stocke playerParty comme dynamic array (= push si pas full).
+ *  CopyMonToPC = future (= PC storage system Phase 5).
+ */
+export function GiveMonToPlayer(mon: PokemonInstance): number {
+  // Set OT data depuis gSaveBlock2Ptr (= 1:1 décomp).
+  if (!mon.otName) mon.otName = gSaveBlock2Ptr.playerName ?? 'UNDI';
+  if (mon.otGender === undefined) mon.otGender = gSaveBlock2Ptr.playerGender ?? 0;
+  if (mon.otId === undefined || mon.otId === 0) mon.otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
+  // Cherche slot libre (= 1:1 SPECIES_NONE check, ici = absent du array).
+  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  if (party.length >= 6) {
+    // 1:1 décomp CopyMonToPC — pas porté. Return CANT_GIVE.
+    console.warn('[GiveMonToPlayer] party full → CopyMonToPC pas porté');
+    return MON_CANT_GIVE;
+  }
+  party.push(mon);
+  gSaveBlock1Ptr.playerPartyCount = party.length;
+  return MON_GIVEN_TO_PARTY;
+}
