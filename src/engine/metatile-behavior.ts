@@ -20,6 +20,7 @@
  */
 
 import {
+  // Door / Ladder / Escalator / Warp
   MB_ANIMATED_DOOR,
   MB_NON_ANIMATED_DOOR,
   MB_WATER_DOOR,
@@ -44,6 +45,110 @@ import {
   MB_WATER_SOUTH_ARROW_WARP,
   MB_SHOAL_CAVE_ENTRANCE,
   MB_BRIDGE_OVER_OCEAN,
+  // Grass / Sand / Ice / Water
+  MB_NORMAL,
+  MB_TALL_GRASS,
+  MB_LONG_GRASS,
+  MB_SHORT_GRASS,
+  MB_LONG_GRASS_SOUTH_EDGE,
+  MB_ASHGRASS,
+  MB_SAND,
+  MB_DEEP_SAND,
+  MB_ICE,
+  MB_THIN_ICE,
+  MB_CRACKED_ICE,
+  MB_HOT_SPRINGS,
+  MB_PUDDLE,
+  MB_SHALLOW_WATER,
+  MB_POND_WATER,
+  MB_OCEAN_WATER,
+  MB_DEEP_WATER,
+  MB_INTERIOR_DEEP_WATER,
+  MB_SOOTOPOLIS_DEEP_WATER,
+  MB_WATERFALL,
+  MB_REFLECTION_UNDER_BRIDGE,
+  // Jumps / Slides / Walks / Currents
+  MB_JUMP_EAST,
+  MB_JUMP_WEST,
+  MB_JUMP_NORTH,
+  MB_JUMP_SOUTH,
+  MB_WALK_EAST,
+  MB_WALK_WEST,
+  MB_WALK_NORTH,
+  MB_WALK_SOUTH,
+  MB_SLIDE_EAST,
+  MB_SLIDE_WEST,
+  MB_SLIDE_NORTH,
+  MB_SLIDE_SOUTH,
+  MB_EASTWARD_CURRENT,
+  MB_WESTWARD_CURRENT,
+  MB_NORTHWARD_CURRENT,
+  MB_SOUTHWARD_CURRENT,
+  MB_TRICK_HOUSE_PUZZLE_8_FLOOR,
+  // Blockers
+  MB_IMPASSABLE_EAST,
+  MB_IMPASSABLE_WEST,
+  MB_IMPASSABLE_NORTH,
+  MB_IMPASSABLE_SOUTH,
+  MB_IMPASSABLE_NORTHEAST,
+  MB_IMPASSABLE_NORTHWEST,
+  MB_IMPASSABLE_SOUTHEAST,
+  MB_IMPASSABLE_SOUTHWEST,
+  MB_IMPASSABLE_SOUTH_AND_NORTH,
+  MB_IMPASSABLE_WEST_AND_EAST,
+  // Bridges / Pacifidlog / Fortree
+  MB_BRIDGE_OVER_POND_LOW,
+  MB_BRIDGE_OVER_POND_MED,
+  MB_BRIDGE_OVER_POND_HIGH,
+  MB_BRIDGE_OVER_POND_MED_EDGE_1,
+  MB_BRIDGE_OVER_POND_MED_EDGE_2,
+  MB_BRIDGE_OVER_POND_HIGH_EDGE_1,
+  MB_BRIDGE_OVER_POND_HIGH_EDGE_2,
+  MB_PACIFIDLOG_VERTICAL_LOG_TOP,
+  MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM,
+  MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT,
+  MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT,
+  MB_FORTREE_BRIDGE,
+  MB_BIKE_BRIDGE_OVER_BARRIER,
+  // Slopes / Rails / Mountain
+  MB_MUDDY_SLOPE,
+  MB_BUMPY_SLOPE,
+  MB_ISOLATED_VERTICAL_RAIL,
+  MB_ISOLATED_HORIZONTAL_RAIL,
+  MB_VERTICAL_RAIL,
+  MB_HORIZONTAL_RAIL,
+  MB_MOUNTAIN_TOP,
+  MB_NO_RUNNING,
+  MB_NO_SURFACING,
+  MB_FOOTPRINTS,
+  // Encounter types
+  MB_CAVE,
+  MB_INDOOR_ENCOUNTER,
+  MB_SEAWEED,
+  MB_SEAWEED_NO_SURFACING,
+  // Interaction tiles
+  MB_TELEVISION as MB_TV,
+  MB_PC,
+  MB_PICTURE_BOOK_SHELF,
+  MB_BOOKSHELF,
+  MB_POKEMON_CENTER_BOOKSHELF,
+  MB_VASE,
+  MB_TRASH_CAN,
+  MB_SHOP_SHELF,
+  MB_BLUEPRINT,
+  MB_QUESTIONNAIRE,
+  MB_TRAINER_HILL_TIMER,
+  MB_COUNTER,
+  MB_RUNNING_SHOES_INSTRUCTION,
+  MB_REGION_MAP,
+  MB_POKEBLOCK_FEEDER,
+  MB_PLAYER_ROOM_PC_ON,
+  MB_CABLE_BOX_RESULTS_1,
+  MB_CABLE_BOX_RESULTS_2,
+  MB_WIRELESS_BOX_RESULTS,
+  MB_CLOSED_SOOTOPOLIS_DOOR,
+  MB_SKY_PILLAR_CLOSED_DOOR,
+  MB_TRICK_HOUSE_PUZZLE_DOOR,
 } from './decomp-bridge';
 
 // Secret base spot constants — re-exported depuis decomp-bridge si présentes.
@@ -280,3 +385,445 @@ export function IsArrowWarpMetatileBehavior(
     default: return false;
   }
 }
+
+// ─── sTileBitAttributes table 1:1 décomp (metatile_behavior.c:9-128) ────────
+
+/** 1:1 décomp `TILE_FLAG_HAS_ENCOUNTERS` (metatile_behavior.c:5). */
+export const TILE_FLAG_HAS_ENCOUNTERS = 1 << 0;
+/** 1:1 décomp `TILE_FLAG_SURFABLE` (metatile_behavior.c:6). */
+export const TILE_FLAG_SURFABLE = 1 << 1;
+/** 1:1 décomp `TILE_FLAG_UNUSED` (metatile_behavior.c:7).
+ *  "Roughly all of the traversable metatiles. Set but never read" — décomp note. */
+export const TILE_FLAG_UNUSED = 1 << 2;
+
+/** 1:1 décomp `sTileBitAttributes[NUM_METATILE_BEHAVIORS]` (metatile_behavior.c:9-128).
+ *
+ *  Table 128 entries u8 où chaque MB est tagué avec ses bit flags
+ *  (HAS_ENCOUNTERS | SURFABLE | UNUSED). Used par :
+ *    - `MetatileBehavior_IsEncounterTile` (= bit 0)
+ *    - `MetatileBehavior_IsSurfableWaterOrUnderwater` (= bit 1)
+ *
+ *  Sparse-init au 1:1 : array de 128 entries indexées par MB const value.
+ *  Default = 0 si MB absent (= comportement "no flags").
+ */
+export const sTileBitAttributes: Uint8Array = (() => {
+  const t = new Uint8Array(256);  // 256 pour safety (= NUM_METATILE_BEHAVIORS = 256 dans em)
+  const U = TILE_FLAG_UNUSED;
+  const E = TILE_FLAG_HAS_ENCOUNTERS;
+  const S = TILE_FLAG_SURFABLE;
+  // 1:1 décomp ordering (= metatile_behavior.c:11-127).
+  t[MB_NORMAL]                        = U;
+  t[MB_TALL_GRASS]                    = U | E;
+  t[MB_LONG_GRASS]                    = U | E;
+  // MB_UNUSED_05 = 0x05 (= ENCOUNTERS only, pas dans bridge donc inline).
+  t[0x05]                             = E;
+  t[MB_DEEP_SAND]                     = U | E;
+  t[MB_SHORT_GRASS]                   = U;
+  t[MB_CAVE]                          = U | E;
+  t[MB_LONG_GRASS_SOUTH_EDGE]         = U;
+  t[MB_NO_RUNNING]                    = U;
+  t[MB_INDOOR_ENCOUNTER]              = U | E;
+  t[MB_MOUNTAIN_TOP]                  = U;
+  t[MB_BATTLE_PYRAMID_WARP]           = U;
+  t[MB_MOSSDEEP_GYM_WARP]             = U;
+  t[MB_MT_PYRE_HOLE]                  = U;
+  t[MB_POND_WATER]                    = U | S | E;
+  t[MB_INTERIOR_DEEP_WATER]           = U | S | E;
+  t[MB_DEEP_WATER]                    = U | S | E;
+  t[MB_WATERFALL]                     = U | S;
+  t[MB_SOOTOPOLIS_DEEP_WATER]         = U | S;
+  t[MB_OCEAN_WATER]                   = U | S | E;
+  t[MB_PUDDLE]                        = U;
+  t[MB_SHALLOW_WATER]                 = U;
+  t[MB_NO_SURFACING]                  = U | S;
+  t[MB_STAIRS_OUTSIDE_ABANDONED_SHIP] = U;
+  t[MB_SHOAL_CAVE_ENTRANCE]           = U;
+  t[MB_ICE]                           = U;
+  t[MB_SAND]                          = U;
+  t[MB_SEAWEED]                       = U | S | E;
+  // MB_UNUSED_23 = 0x23, inline.
+  t[0x23]                             = U;
+  t[MB_ASHGRASS]                      = U | E;
+  t[MB_FOOTPRINTS]                    = U | E;
+  t[MB_THIN_ICE]                      = U;
+  t[MB_CRACKED_ICE]                   = U;
+  t[MB_HOT_SPRINGS]                   = U;
+  t[MB_LAVARIDGE_GYM_B1F_WARP]        = U;
+  t[MB_SEAWEED_NO_SURFACING]          = U | S | E;
+  t[MB_REFLECTION_UNDER_BRIDGE]       = U;
+  t[MB_IMPASSABLE_EAST]               = U;
+  t[MB_IMPASSABLE_WEST]               = U;
+  t[MB_IMPASSABLE_NORTH]              = U;
+  t[MB_IMPASSABLE_SOUTH]              = U;
+  t[MB_IMPASSABLE_NORTHEAST]          = U;
+  t[MB_IMPASSABLE_NORTHWEST]          = U;
+  t[MB_IMPASSABLE_SOUTHEAST]          = U;
+  t[MB_IMPASSABLE_SOUTHWEST]          = U;
+  // MB_JUMP_NE/NW/SE/SW = 0x2E..0x31 (diagonal jumps non-cardinal), inline.
+  t[0x2E]                             = U;  // MB_JUMP_NORTHEAST
+  t[0x2F]                             = U;
+  t[0x30]                             = U;
+  t[0x31]                             = U;
+  t[MB_WALK_EAST]                     = U;
+  t[MB_WALK_WEST]                     = U;
+  t[MB_WALK_NORTH]                    = U;
+  t[MB_WALK_SOUTH]                    = U;
+  t[MB_SLIDE_EAST]                    = U;
+  t[MB_SLIDE_WEST]                    = U;
+  t[MB_SLIDE_NORTH]                   = U;
+  t[MB_SLIDE_SOUTH]                   = U;
+  t[MB_TRICK_HOUSE_PUZZLE_8_FLOOR]    = U;
+  t[MB_EASTWARD_CURRENT]              = U | S;
+  t[MB_WESTWARD_CURRENT]              = U | S;
+  t[MB_NORTHWARD_CURRENT]             = U | S;
+  t[MB_SOUTHWARD_CURRENT]             = U | S;
+  t[MB_NON_ANIMATED_DOOR]             = U;
+  t[MB_LADDER]                        = U;
+  t[MB_EAST_ARROW_WARP]               = U;
+  t[MB_WEST_ARROW_WARP]               = U;
+  t[MB_NORTH_ARROW_WARP]              = U;
+  t[MB_SOUTH_ARROW_WARP]              = U;
+  t[MB_CRACKED_FLOOR_HOLE]            = U;
+  t[MB_AQUA_HIDEOUT_WARP]             = U;
+  t[MB_LAVARIDGE_GYM_1F_WARP]         = U;
+  t[MB_ANIMATED_DOOR]                 = U;
+  t[MB_UP_ESCALATOR]                  = U;
+  t[MB_DOWN_ESCALATOR]                = U;
+  t[MB_WATER_DOOR]                    = U | S;
+  t[MB_WATER_SOUTH_ARROW_WARP]        = U | S;
+  t[MB_DEEP_SOUTH_WARP]               = U;
+  // MB_UNUSED_6F = 0x6F (surfable but unused), inline.
+  t[0x6F]                             = U | S;
+  t[MB_BRIDGE_OVER_POND_LOW]          = U;
+  t[MB_BRIDGE_OVER_POND_MED]          = U;
+  t[MB_BRIDGE_OVER_POND_HIGH]         = U;
+  t[MB_PACIFIDLOG_VERTICAL_LOG_TOP]   = U;
+  t[MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM]= U;
+  t[MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT]= U;
+  t[MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT]= U;
+  t[MB_FORTREE_BRIDGE]                = U;
+  t[MB_BRIDGE_OVER_POND_MED_EDGE_1]   = U;
+  t[MB_BRIDGE_OVER_POND_MED_EDGE_2]   = U;
+  t[MB_BRIDGE_OVER_POND_HIGH_EDGE_1]  = U;
+  t[MB_BRIDGE_OVER_POND_HIGH_EDGE_2]  = U;
+  // MB_UNUSED_BRIDGE = 0x7D, inline.
+  t[0x7D]                             = U;
+  t[MB_BIKE_BRIDGE_OVER_BARRIER]      = U;
+  t[MB_PLAYER_ROOM_PC_ON]             = U;
+  t[MB_MUDDY_SLOPE]                   = U;
+  t[MB_BUMPY_SLOPE]                   = U;
+  t[MB_CRACKED_FLOOR]                 = U;
+  t[MB_ISOLATED_VERTICAL_RAIL]        = U;
+  t[MB_ISOLATED_HORIZONTAL_RAIL]      = U;
+  t[MB_VERTICAL_RAIL]                 = U;
+  t[MB_HORIZONTAL_RAIL]               = U;
+  t[MB_IMPASSABLE_SOUTH_AND_NORTH]    = U;
+  t[MB_IMPASSABLE_WEST_AND_EAST]      = U;
+  return t;
+})();
+
+// ─── MetatileBehavior_Is* helpers 1:1 décomp (= reste de metatile_behavior.c) ──
+
+/** 1:1 décomp `MetatileBehavior_IsATile` (metatile_behavior.c:130-133).
+ *  Décomp : `return TRUE;` (= tile générique, jamais "non-tile"). */
+export function MetatileBehavior_IsATile(_metatileBehavior: number): boolean {
+  return true;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsEncounterTile` (metatile_behavior.c:135-141). */
+export function MetatileBehavior_IsEncounterTile(metatileBehavior: number): boolean {
+  return (sTileBitAttributes[metatileBehavior] & TILE_FLAG_HAS_ENCOUNTERS) !== 0;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsSurfableWaterOrUnderwater` (metatile_behavior.c:280-286). */
+export function MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior: number): boolean {
+  return (sTileBitAttributes[metatileBehavior] & TILE_FLAG_SURFABLE) !== 0;
+}
+
+// Jump tiles (= ledges, hop avec animation).
+export function MetatileBehavior_IsJumpEast(mb: number): boolean { return mb === MB_JUMP_EAST; }
+export function MetatileBehavior_IsJumpWest(mb: number): boolean { return mb === MB_JUMP_WEST; }
+export function MetatileBehavior_IsJumpNorth(mb: number): boolean { return mb === MB_JUMP_NORTH; }
+export function MetatileBehavior_IsJumpSouth(mb: number): boolean { return mb === MB_JUMP_SOUTH; }
+
+// Grass tiles.
+export function MetatileBehavior_IsPokeGrass(mb: number): boolean {
+  return mb === MB_TALL_GRASS || mb === MB_LONG_GRASS;
+}
+export function MetatileBehavior_IsTallGrass(mb: number): boolean {
+  return mb === MB_TALL_GRASS;
+}
+export function MetatileBehavior_IsLongGrass(mb: number): boolean {
+  return mb === MB_LONG_GRASS;
+}
+export function MetatileBehavior_IsAshGrass(mb: number): boolean {
+  return mb === MB_ASHGRASS;
+}
+export function MetatileBehavior_IsShortGrass(mb: number): boolean {
+  return mb === MB_SHORT_GRASS;
+}
+export function MetatileBehavior_IsLongGrassSouthEdge(mb: number): boolean {
+  return mb === MB_LONG_GRASS_SOUTH_EDGE;
+}
+
+// Sand tiles.
+export function MetatileBehavior_IsSandOrDeepSand(mb: number): boolean {
+  return mb === MB_SAND || mb === MB_DEEP_SAND;
+}
+export function MetatileBehavior_IsDeepSand(mb: number): boolean {
+  return mb === MB_DEEP_SAND;
+}
+
+// Ice tiles.
+export function MetatileBehavior_IsIce(mb: number): boolean { return mb === MB_ICE; }
+export function MetatileBehavior_IsThinIce(mb: number): boolean { return mb === MB_THIN_ICE; }
+export function MetatileBehavior_IsCrackedIce(mb: number): boolean { return mb === MB_CRACKED_ICE; }
+/** 1:1 décomp `MetatileBehavior_IsIce_2` (metatile_behavior.c:353-359).
+ *  Note décomp : c'est un duplicate de IsIce (= probable copy-paste bug ROM). */
+export function MetatileBehavior_IsIce_2(mb: number): boolean { return mb === MB_ICE; }
+
+// Water tiles.
+export function MetatileBehavior_IsReflective(mb: number): boolean {
+  return mb === MB_POND_WATER
+      || mb === MB_PUDDLE
+      || mb === MB_ICE
+      || mb === MB_SOOTOPOLIS_DEEP_WATER
+      || mb === MB_REFLECTION_UNDER_BRIDGE;
+}
+export function MetatileBehavior_IsPuddle(mb: number): boolean { return mb === MB_PUDDLE; }
+export function MetatileBehavior_IsShallowFlowingWater(mb: number): boolean {
+  return mb === MB_SHALLOW_WATER
+      || mb === MB_NO_SURFACING
+      || mb === MB_STAIRS_OUTSIDE_ABANDONED_SHIP;
+}
+export function MetatileBehavior_IsWaterfall(mb: number): boolean { return mb === MB_WATERFALL; }
+export function MetatileBehavior_IsHotSprings(mb: number): boolean { return mb === MB_HOT_SPRINGS; }
+export function MetatileBehavior_IsDeepOrOceanWater(mb: number): boolean {
+  return mb === MB_DEEP_WATER
+      || mb === MB_OCEAN_WATER
+      || mb === MB_INTERIOR_DEEP_WATER;
+}
+export function MetatileBehavior_IsSurfableAndNotWaterfall(mb: number): boolean {
+  return MetatileBehavior_IsSurfableWaterOrUnderwater(mb) && mb !== MB_WATERFALL;
+}
+export function MetatileBehavior_IsDiveable(mb: number): boolean {
+  return mb === MB_DEEP_WATER
+      || mb === MB_SOOTOPOLIS_DEEP_WATER
+      || mb === MB_INTERIOR_DEEP_WATER;
+}
+export function MetatileBehavior_IsUnableToEmerge(mb: number): boolean {
+  return mb === MB_NO_SURFACING
+      || mb === MB_SEAWEED_NO_SURFACING;
+}
+export function MetatileBehavior_IsSeaweed(mb: number): boolean {
+  return mb === MB_SEAWEED || mb === MB_SEAWEED_NO_SURFACING;
+}
+
+// Forced movement / slide tiles.
+export function MetatileBehavior_IsWalkNorth(mb: number): boolean { return mb === MB_WALK_NORTH; }
+export function MetatileBehavior_IsWalkSouth(mb: number): boolean { return mb === MB_WALK_SOUTH; }
+export function MetatileBehavior_IsWalkWest(mb: number): boolean { return mb === MB_WALK_WEST; }
+export function MetatileBehavior_IsWalkEast(mb: number): boolean { return mb === MB_WALK_EAST; }
+export function MetatileBehavior_IsSlideNorth(mb: number): boolean { return mb === MB_SLIDE_NORTH; }
+export function MetatileBehavior_IsSlideSouth(mb: number): boolean { return mb === MB_SLIDE_SOUTH; }
+export function MetatileBehavior_IsSlideWest(mb: number): boolean { return mb === MB_SLIDE_WEST; }
+export function MetatileBehavior_IsSlideEast(mb: number): boolean { return mb === MB_SLIDE_EAST; }
+export function MetatileBehavior_IsNorthwardCurrent(mb: number): boolean { return mb === MB_NORTHWARD_CURRENT; }
+export function MetatileBehavior_IsSouthwardCurrent(mb: number): boolean { return mb === MB_SOUTHWARD_CURRENT; }
+export function MetatileBehavior_IsWestwardCurrent(mb: number): boolean { return mb === MB_WESTWARD_CURRENT; }
+export function MetatileBehavior_IsEastwardCurrent(mb: number): boolean { return mb === MB_EASTWARD_CURRENT; }
+export function MetatileBehavior_IsTrickHouseSlipperyFloor(mb: number): boolean {
+  return mb === MB_TRICK_HOUSE_PUZZLE_8_FLOOR;
+}
+/** 1:1 décomp `MetatileBehavior_IsForcedMovementTile` (metatile_behavior.c:338-351).
+ *  Dispatch toutes les forced movement tiles (= walk/slide/current). */
+export function MetatileBehavior_IsForcedMovementTile(mb: number): boolean {
+  return MetatileBehavior_IsIce(mb)
+      || MetatileBehavior_IsTrickHouseSlipperyFloor(mb)
+      || MetatileBehavior_IsWalkNorth(mb)
+      || MetatileBehavior_IsWalkSouth(mb)
+      || MetatileBehavior_IsWalkWest(mb)
+      || MetatileBehavior_IsWalkEast(mb)
+      || MetatileBehavior_IsSlideNorth(mb)
+      || MetatileBehavior_IsSlideSouth(mb)
+      || MetatileBehavior_IsSlideWest(mb)
+      || MetatileBehavior_IsSlideEast(mb)
+      || MetatileBehavior_IsNorthwardCurrent(mb)
+      || MetatileBehavior_IsSouthwardCurrent(mb)
+      || MetatileBehavior_IsWestwardCurrent(mb)
+      || MetatileBehavior_IsEastwardCurrent(mb)
+      || MetatileBehavior_IsWaterfall(mb)
+      || MetatileBehavior_IsMuddySlope(mb);
+}
+
+// Blocked direction tiles.
+export function MetatileBehavior_IsEastBlocked(mb: number): boolean {
+  return mb === MB_IMPASSABLE_EAST
+      || mb === MB_IMPASSABLE_NORTHEAST
+      || mb === MB_IMPASSABLE_SOUTHEAST
+      || mb === MB_IMPASSABLE_WEST_AND_EAST;
+}
+export function MetatileBehavior_IsWestBlocked(mb: number): boolean {
+  return mb === MB_IMPASSABLE_WEST
+      || mb === MB_IMPASSABLE_NORTHWEST
+      || mb === MB_IMPASSABLE_SOUTHWEST
+      || mb === MB_IMPASSABLE_WEST_AND_EAST;
+}
+export function MetatileBehavior_IsNorthBlocked(mb: number): boolean {
+  return mb === MB_IMPASSABLE_NORTH
+      || mb === MB_IMPASSABLE_NORTHEAST
+      || mb === MB_IMPASSABLE_NORTHWEST
+      || mb === MB_IMPASSABLE_SOUTH_AND_NORTH;
+}
+export function MetatileBehavior_IsSouthBlocked(mb: number): boolean {
+  return mb === MB_IMPASSABLE_SOUTH
+      || mb === MB_IMPASSABLE_SOUTHEAST
+      || mb === MB_IMPASSABLE_SOUTHWEST
+      || mb === MB_IMPASSABLE_SOUTH_AND_NORTH;
+}
+
+// Slope tiles.
+export function MetatileBehavior_IsMuddySlope(mb: number): boolean { return mb === MB_MUDDY_SLOPE; }
+export function MetatileBehavior_IsBumpySlope(mb: number): boolean { return mb === MB_BUMPY_SLOPE; }
+
+// Rail tiles (= Mauville/Pacifidlog).
+export function MetatileBehavior_IsIsolatedVerticalRail(mb: number): boolean {
+  return mb === MB_ISOLATED_VERTICAL_RAIL;
+}
+export function MetatileBehavior_IsIsolatedHorizontalRail(mb: number): boolean {
+  return mb === MB_ISOLATED_HORIZONTAL_RAIL;
+}
+export function MetatileBehavior_IsVerticalRail(mb: number): boolean {
+  return mb === MB_VERTICAL_RAIL;
+}
+export function MetatileBehavior_IsHorizontalRail(mb: number): boolean {
+  return mb === MB_HORIZONTAL_RAIL;
+}
+
+// Bridge tiles.
+export function MetatileBehavior_IsBridgeOverWater(mb: number): boolean {
+  return mb === MB_BRIDGE_OVER_POND_LOW
+      || mb === MB_BRIDGE_OVER_POND_MED
+      || mb === MB_BRIDGE_OVER_POND_HIGH
+      || mb === MB_BRIDGE_OVER_POND_MED_EDGE_1
+      || mb === MB_BRIDGE_OVER_POND_MED_EDGE_2
+      || mb === MB_BRIDGE_OVER_POND_HIGH_EDGE_1
+      || mb === MB_BRIDGE_OVER_POND_HIGH_EDGE_2
+      || mb === MB_BRIDGE_OVER_OCEAN;
+}
+export function MetatileBehavior_IsBridgeOverWaterNoEdge(mb: number): boolean {
+  return mb === MB_BRIDGE_OVER_POND_LOW
+      || mb === MB_BRIDGE_OVER_POND_MED
+      || mb === MB_BRIDGE_OVER_POND_HIGH;
+}
+export function MetatileBehavior_IsFortreeBridge(mb: number): boolean {
+  return mb === MB_FORTREE_BRIDGE;
+}
+
+// Pacifidlog log tiles.
+export function MetatileBehavior_IsPacifidlogVerticalLogTop(mb: number): boolean {
+  return mb === MB_PACIFIDLOG_VERTICAL_LOG_TOP;
+}
+export function MetatileBehavior_IsPacifidlogVerticalLogBottom(mb: number): boolean {
+  return mb === MB_PACIFIDLOG_VERTICAL_LOG_BOTTOM;
+}
+export function MetatileBehavior_IsPacifidlogHorizontalLogLeft(mb: number): boolean {
+  return mb === MB_PACIFIDLOG_HORIZONTAL_LOG_LEFT;
+}
+export function MetatileBehavior_IsPacifidlogHorizontalLogRight(mb: number): boolean {
+  return mb === MB_PACIFIDLOG_HORIZONTAL_LOG_RIGHT;
+}
+export function MetatileBehavior_IsPacifidlogLog(mb: number): boolean {
+  return MetatileBehavior_IsPacifidlogVerticalLogTop(mb)
+      || MetatileBehavior_IsPacifidlogVerticalLogBottom(mb)
+      || MetatileBehavior_IsPacifidlogHorizontalLogLeft(mb)
+      || MetatileBehavior_IsPacifidlogHorizontalLogRight(mb);
+}
+
+// Misc terrain.
+export function MetatileBehavior_IsMountain(mb: number): boolean {
+  return mb === MB_MOUNTAIN_TOP;
+}
+export function MetatileBehavior_IsFootprints(mb: number): boolean {
+  return mb === MB_FOOTPRINTS;
+}
+export function MetatileBehavior_IsRunningDisallowed(mb: number): boolean {
+  return mb === MB_NO_RUNNING
+      || mb === MB_LONG_GRASS
+      || mb === MB_HOT_SPRINGS
+      || MetatileBehavior_IsPacifidlogLog(mb);
+}
+export function MetatileBehavior_IsCuttableGrass(mb: number): boolean {
+  return mb === MB_TALL_GRASS
+      || mb === MB_LONG_GRASS
+      || mb === MB_ASHGRASS
+      || mb === MB_LONG_GRASS_SOUTH_EDGE;
+}
+
+// Encounter type queries.
+export function MetatileBehavior_IsLandWildEncounter(mb: number): boolean {
+  return MetatileBehavior_IsEncounterTile(mb)
+      && !MetatileBehavior_IsSurfableWaterOrUnderwater(mb);
+}
+export function MetatileBehavior_IsWaterWildEncounter(mb: number): boolean {
+  return MetatileBehavior_IsEncounterTile(mb)
+      && MetatileBehavior_IsSurfableWaterOrUnderwater(mb);
+}
+export function MetatileBehavior_IsIndoorEncounter(mb: number): boolean {
+  return mb === MB_INDOOR_ENCOUNTER;
+}
+
+// Interaction tiles (= A button targets).
+export function MetatileBehavior_IsCounter(mb: number): boolean { return mb === MB_COUNTER; }
+export function MetatileBehavior_IsPC(mb: number): boolean { return mb === MB_PC; }
+export function MetatileBehavior_IsPlayerFacingTVScreen(mb: number, direction: number): boolean {
+  // 1:1 décomp `MetatileBehavior_IsPlayerFacingTVScreen` (metatile_behavior.c:481-489).
+  // Requires direction == DIR_NORTH (=2) AND tile = MB_TELEVISION.
+  return direction === 2 && mb === MB_TV;
+}
+export function MetatileBehavior_IsPlayerRoomPCOn(mb: number): boolean {
+  return mb === MB_PLAYER_ROOM_PC_ON;
+}
+export function MetatileBehavior_IsRunningShoesManual(mb: number): boolean {
+  return mb === MB_RUNNING_SHOES_INSTRUCTION;
+}
+export function MetatileBehavior_IsPictureBookShelf(mb: number): boolean {
+  return mb === MB_PICTURE_BOOK_SHELF;
+}
+export function MetatileBehavior_IsBookShelf(mb: number): boolean { return mb === MB_BOOKSHELF; }
+export function MetatileBehavior_IsPokeCenterBookShelf(mb: number): boolean {
+  return mb === MB_POKEMON_CENTER_BOOKSHELF;
+}
+export function MetatileBehavior_IsVase(mb: number): boolean { return mb === MB_VASE; }
+export function MetatileBehavior_IsTrashCan(mb: number): boolean { return mb === MB_TRASH_CAN; }
+export function MetatileBehavior_IsShopShelf(mb: number): boolean { return mb === MB_SHOP_SHELF; }
+export function MetatileBehavior_IsBlueprint(mb: number): boolean { return mb === MB_BLUEPRINT; }
+export function MetatileBehavior_IsQuestionnaire(mb: number): boolean { return mb === MB_QUESTIONNAIRE; }
+export function MetatileBehavior_IsTrainerHillTimer(mb: number): boolean { return mb === MB_TRAINER_HILL_TIMER; }
+export function MetatileBehavior_IsCableBoxResults1(mb: number): boolean { return mb === MB_CABLE_BOX_RESULTS_1; }
+export function MetatileBehavior_IsCableBoxResults2(mb: number, direction: number): boolean {
+  // 1:1 décomp `MetatileBehavior_IsCableBoxResults2` (metatile_behavior.c:1362-1370).
+  // direction != DIR_EAST (=4) AND tile = MB_CABLE_BOX_RESULTS_2.
+  return direction !== 4 && mb === MB_CABLE_BOX_RESULTS_2;
+}
+export function MetatileBehavior_IsPlayerFacingWirelessBoxResults(mb: number, direction: number): boolean {
+  // 1:1 décomp `MetatileBehavior_IsPlayerFacingWirelessBoxResults` (metatile_behavior.c:1352-1360).
+  // direction != DIR_EAST AND tile = MB_WIRELESS_BOX_RESULTS.
+  return direction !== 4 && mb === MB_WIRELESS_BOX_RESULTS;
+}
+export function MetatileBehavior_IsRegionMap(mb: number): boolean { return mb === MB_REGION_MAP; }
+export function MetatileBehavior_IsClosedSootopolisDoor(mb: number): boolean {
+  return mb === MB_CLOSED_SOOTOPOLIS_DOOR;
+}
+export function MetatileBehavior_IsSkyPillarClosedDoor(mb: number): boolean {
+  return mb === MB_SKY_PILLAR_CLOSED_DOOR;
+}
+export function MetatileBehavior_IsTrickHousePuzzleDoor(mb: number): boolean {
+  return mb === MB_TRICK_HOUSE_PUZZLE_DOOR;
+}
+export function MetatileBehavior_IsPokeblockFeeder(mb: number): boolean {
+  return mb === MB_POKEBLOCK_FEEDER;
+}
+
+// Normal tile (= no special behavior).
+export function MetatileBehavior_IsNormal(mb: number): boolean { return mb === MB_NORMAL; }
