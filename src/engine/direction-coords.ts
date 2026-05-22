@@ -101,3 +101,141 @@ export function getInputDirection(heldKeys: number): number {
   if (heldKeys & 0x10) return DIR_EAST;
   return DIR_NONE;
 }
+
+/** 1:1 décomp `GetOppositeDirection` (event_object_movement.c:4991-5000).
+ *
+ *  Body décomp :
+ *  ```c
+ *  u8 GetOppositeDirection(u8 direction) {
+ *      u8 directions[sizeof sOppositeDirections];
+ *      memcpy(directions, sOppositeDirections, sizeof sOppositeDirections);
+ *      if (direction <= DIR_NONE || direction > (sizeof sOppositeDirections))
+ *          return direction;
+ *      return directions[direction - 1];
+ *  }
+ *  ```
+ *
+ *  Wrapper sur `OPPOSITE_DIR` table avec bounds check 1:1 décomp. */
+export function GetOppositeDirection(direction: number): number {
+  // 1:1 décomp : direction <= DIR_NONE (0) ou > 8 → return direction unchanged.
+  if (direction <= DIR_NONE || direction > 8) return direction;
+  return OPPOSITE_DIR[direction]!;
+}
+
+// ─── Anim num tables 1:1 décomp event_object_movement.c:715-769 ─────────────
+//
+// Each table maps DIR_* index (0..8) to ANIM_STD_* constant pour sprite
+// animation lookup. Used par updateSpriteFrame / NPC dispatch.
+
+/** 1:1 décomp ANIM_STD_* constants (= sprite anim numbers).
+ *  Cf. include/constants/event_object_movement.h. */
+const ANIM_STD_FACE_SOUTH      = 0;
+const ANIM_STD_FACE_NORTH      = 1;
+const ANIM_STD_FACE_WEST       = 2;
+const ANIM_STD_FACE_EAST       = 3;
+const ANIM_STD_GO_SOUTH        = 4;
+const ANIM_STD_GO_NORTH        = 5;
+const ANIM_STD_GO_WEST         = 6;
+const ANIM_STD_GO_EAST         = 7;
+const ANIM_STD_GO_FAST_SOUTH   = 8;
+const ANIM_STD_GO_FAST_NORTH   = 9;
+const ANIM_STD_GO_FAST_WEST    = 10;
+const ANIM_STD_GO_FAST_EAST    = 11;
+const ANIM_STD_GO_FASTER_SOUTH = 12;
+const ANIM_STD_GO_FASTER_NORTH = 13;
+const ANIM_STD_GO_FASTER_WEST  = 14;
+const ANIM_STD_GO_FASTER_EAST  = 15;
+const ANIM_STD_GO_FASTEST_SOUTH = 16;
+const ANIM_STD_GO_FASTEST_NORTH = 17;
+const ANIM_STD_GO_FASTEST_WEST  = 18;
+const ANIM_STD_GO_FASTEST_EAST  = 19;
+
+/** 1:1 décomp `sFaceDirectionAnimNums[]` (event_object_movement.c:715-725). */
+const sFaceDirectionAnimNums: readonly number[] = [
+  ANIM_STD_FACE_SOUTH,  // DIR_NONE → fallback SOUTH
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTH
+  ANIM_STD_FACE_NORTH,  // DIR_NORTH
+  ANIM_STD_FACE_WEST,   // DIR_WEST
+  ANIM_STD_FACE_EAST,   // DIR_EAST
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTHWEST
+  ANIM_STD_FACE_SOUTH,  // DIR_SOUTHEAST
+  ANIM_STD_FACE_NORTH,  // DIR_NORTHWEST
+  ANIM_STD_FACE_NORTH,  // DIR_NORTHEAST
+];
+
+/** 1:1 décomp `sMoveDirectionAnimNums[]` (event_object_movement.c:726-736). */
+const sMoveDirectionAnimNums: readonly number[] = [
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_NORTH,
+  ANIM_STD_GO_WEST,
+  ANIM_STD_GO_EAST,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_SOUTH,
+  ANIM_STD_GO_NORTH,
+  ANIM_STD_GO_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFastAnimNums[]` (event_object_movement.c:737-747). */
+const sMoveDirectionFastAnimNums: readonly number[] = [
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_NORTH,
+  ANIM_STD_GO_FAST_WEST,
+  ANIM_STD_GO_FAST_EAST,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_SOUTH,
+  ANIM_STD_GO_FAST_NORTH,
+  ANIM_STD_GO_FAST_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFasterAnimNums[]`. */
+const sMoveDirectionFasterAnimNums: readonly number[] = [
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_NORTH,
+  ANIM_STD_GO_FASTER_WEST,
+  ANIM_STD_GO_FASTER_EAST,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_SOUTH,
+  ANIM_STD_GO_FASTER_NORTH,
+  ANIM_STD_GO_FASTER_NORTH,
+];
+
+/** 1:1 décomp `sMoveDirectionFastestAnimNums[]`. */
+const sMoveDirectionFastestAnimNums: readonly number[] = [
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+  ANIM_STD_GO_FASTEST_WEST,
+  ANIM_STD_GO_FASTEST_EAST,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_SOUTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+  ANIM_STD_GO_FASTEST_NORTH,
+];
+
+/** 1:1 décomp `GetFaceDirectionAnimNum` (event_object_movement.c:4495-4498). */
+export function GetFaceDirectionAnimNum(direction: number): number {
+  return sFaceDirectionAnimNums[direction] ?? ANIM_STD_FACE_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionAnimNum` (event_object_movement.c:4500-4503). */
+export function GetMoveDirectionAnimNum(direction: number): number {
+  return sMoveDirectionAnimNums[direction] ?? ANIM_STD_GO_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFastAnimNum` (event_object_movement.c:4505-4508). */
+export function GetMoveDirectionFastAnimNum(direction: number): number {
+  return sMoveDirectionFastAnimNums[direction] ?? ANIM_STD_GO_FAST_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFasterAnimNum`. */
+export function GetMoveDirectionFasterAnimNum(direction: number): number {
+  return sMoveDirectionFasterAnimNums[direction] ?? ANIM_STD_GO_FASTER_SOUTH;
+}
+
+/** 1:1 décomp `GetMoveDirectionFastestAnimNum`. */
+export function GetMoveDirectionFastestAnimNum(direction: number): number {
+  return sMoveDirectionFastestAnimNums[direction] ?? ANIM_STD_GO_FASTEST_SOUTH;
+}
