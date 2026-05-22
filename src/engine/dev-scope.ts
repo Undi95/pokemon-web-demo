@@ -138,7 +138,8 @@ function _see(): Record<string, unknown> {
   const activeNpcs = objs.filter(o => o?.active).map(o => ({
     localId: o.localIdRaw ?? `id${o.localId}`,
     gfx: o.graphicsId,
-    pos: [o.currentCoordsX, o.currentCoordsY],
+    // Post R3 refactor : currentCoords INTERNAL → afficher en LOGICAL (= map JSON).
+    pos: [(o.currentCoordsX ?? 7) - 7, (o.currentCoordsY ?? 7) - 7],
     facing: _DIR_NAMES[o.facingDirection ?? 0],
     mvt: o.movementType,
     visible: !o.invisible,
@@ -172,7 +173,8 @@ function _npcs(): Array<Record<string, unknown>> {
       slot: o.slot,
       id: o.localIdRaw ?? `(localId=${o.localId})`,
       gfx: o.graphicsId,
-      pos: `(${o.currentCoordsX},${o.currentCoordsY})`,
+      // Post R3 refactor : currentCoords INTERNAL → afficher en LOGICAL.
+      pos: `(${(o.currentCoordsX ?? 7) - 7},${(o.currentCoordsY ?? 7) - 7})`,
       facing: _DIR_NAMES[o.facingDirection ?? 0],
       mvt: o.movementType,
       world: `${o.worldX},${o.worldY}`,

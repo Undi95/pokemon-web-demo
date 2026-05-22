@@ -37,7 +37,7 @@ import {
 } from './object-events';
 import { gPlayerAvatar } from './player-avatar';
 import { GetCameraTopLeftCoords } from './field-camera';
-import { SaveMapView } from './map-loader';
+import { SaveMapView, MAP_OFFSET } from './map-loader';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 
@@ -130,7 +130,9 @@ function applySnapshotToObjectEvent(npc: ObjectEvent, snap: ObjectEventSnapshot)
   // le sprite à la pos restaurée (1:1 décomp SetSpritePosToMapCoords ; sinon
   // sprite au template ≠ hitbox à la pos sauvée). Doit être APRÈS currentCoords
   // + walkDirection (le helper coupe la marche résiduelle = NPC au repos).
-  SetObjectEventSpritePosToMapCoords(npc, npc.currentCoordsX, npc.currentCoordsY);
+  // Post R3 refactor : currentCoords INTERNAL → convertir LOGICAL pour la
+  // signature de SetObjectEventSpritePosToMapCoords qui attend LOGICAL.
+  SetObjectEventSpritePosToMapCoords(npc, npc.currentCoordsX - MAP_OFFSET, npc.currentCoordsY - MAP_OFFSET);
 }
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────

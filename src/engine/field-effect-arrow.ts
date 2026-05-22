@@ -443,11 +443,11 @@ export function HideShowWarpArrowFromObjectEvent(
     return;
   }
   // 1:1 décomp : metatileBehavior cached depuis objectEvent (= updated par
-  // ObjectEventUpdateMetatileBehaviors au step end). Notre currentCoordsX/Y
-  // sont LOGICAL ; on convertit en INTERNAL pour MoveCoords + showWarpArrowSprite.
+  // ObjectEventUpdateMetatileBehaviors au step end). Post R3 refactor :
+  // currentCoordsX/Y INTERNAL → use direct (1:1 strict path).
   const metatileBehavior = objectEvent.currentMetatileBehavior;
-  const internalX = objectEvent.currentCoordsX + MAP_OFFSET;
-  const internalY = objectEvent.currentCoordsY + MAP_OFFSET;
+  const internalX = objectEvent.currentCoordsX;
+  const internalY = objectEvent.currentCoordsY;
   for (const dir of [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST]) {
     if (ARROW_CHECKS[dir]!(metatileBehavior) && dir === objectEvent.movementDirection) {
       const target = MoveCoords(dir, internalX, internalY);

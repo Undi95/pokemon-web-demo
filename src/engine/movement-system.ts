@@ -33,6 +33,7 @@ import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors } from './object-events';
+import { MAP_OFFSET } from './map-loader';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
@@ -296,10 +297,11 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
 
   // face_player : 1:1 décomp `MovementAction_FacePlayer_Step0` — calcule la
   // direction relative depuis le NPC vers le player et set la facing.
+  // Post R3 refactor : npc.currentCoords INTERNAL → convertir pa.x/y LOGICAL.
   if (action === 'face_player' || action === 'face_away_player') {
     if (target.npc) {
-      const dx = gPlayerAvatar.x - target.npc.currentCoordsX;
-      const dy = gPlayerAvatar.y - target.npc.currentCoordsY;
+      const dx = (gPlayerAvatar.x + MAP_OFFSET) - target.npc.currentCoordsX;
+      const dy = (gPlayerAvatar.y + MAP_OFFSET) - target.npc.currentCoordsY;
       let dir = DIR_SOUTH;
       if (Math.abs(dx) > Math.abs(dy)) {
         dir = dx > 0 ? DIR_EAST : DIR_WEST;
@@ -872,7 +874,9 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       // event_object_movement.c:DoLandingEffect skip si flag set.
       const flag = (target.npc as unknown as { disableJumpLandingGroundEffect?: boolean }).disableJumpLandingGroundEffect;
       if (_activeRt && !flag) {
-        SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX, target.npc.currentCoordsY);
+        // SpawnJumpLandingDust signature attend LOGICAL coords. Post R3 refactor :
+        // npc.currentCoords INTERNAL → convertir.
+        SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX - MAP_OFFSET, target.npc.currentCoordsY - MAP_OFFSET);
       }
     }
     return true;

@@ -384,16 +384,16 @@ export function PlayerGetElevation(): number {
  *  *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;
  *  ```
  *
- *  Returns INTERNAL coords (= +MAP_OFFSET dans décomp). Notre impl : nos
- *  `currentCoordsX/Y` sont en LOGICAL coords (= sans offset). On return logical
- *  pour cohérence avec notre convention NPC. */
+ *  Returns INTERNAL coords (= +MAP_OFFSET dans décomp). Post R3 refactor :
+ *  notre `currentCoordsX/Y` aussi en INTERNAL → 1:1 strict path identique. */
 export function PlayerGetDestCoords(): { x: number; y: number } {
   const slot = gPlayerAvatar.objectEventId;
   const obj = gObjectEvents[slot];
   if (obj && obj.active && obj.isPlayer) {
     return { x: obj.currentCoordsX, y: obj.currentCoordsY };
   }
-  return { x: gPlayerAvatar.x, y: gPlayerAvatar.y };
+  // Fallback : pa.x/y LOGICAL → convertir INTERNAL.
+  return { x: gPlayerAvatar.x + MAP_OFFSET, y: gPlayerAvatar.y + MAP_OFFSET };
 }
 
 /** 1:1 décomp `GetXYCoordsOneStepInFrontOfPlayer` (field_player_avatar.c:1117-1122).
@@ -1060,24 +1060,23 @@ export function CheckForObjectEventStaticCollision(
  *                                       MapGridGetMetatileBehaviorAt(x, y));
  *  ```
  *
- *  Notre player utilise LOGICAL coords (= sans MAP_OFFSET) côté gPlayerAvatar.
- *  GetCollisionAtCoords + CheckForObjectEventCollision attendent INTERNAL
- *  coords (= +MAP_OFFSET). On compense ici. Fallback inline si slot 0 pas init. */
+ *  Post R3 refactor : `gObjectEvents[playerSlot].currentCoords` est INTERNAL
+ *  (= +MAP_OFFSET, 1:1 décomp). Pass direct à GetCollisionAtCoords + helpers.
+ *  Fallback inline si slot 0 pas init utilise pa.x/y (LOGICAL) → convert. */
 export function CheckForPlayerAvatarCollision(direction: number): number {
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
-  let sx: number, sy: number;
+  let sx: number, sy: number;  // INTERNAL coords (1:1 décomp).
   let obj: Parameters<typeof _GetCollisionAtCoords>[0];
   if (useSlot) {
     sx = playerObjEvent.currentCoordsX;
     sy = playerObjEvent.currentCoordsY;
     obj = playerObjEvent;
   } else {
-    sx = gPlayerAvatar.x;
-    sy = gPlayerAvatar.y;
-    // Construire un objectEvent virtuel pour fallback boot early.
-    const playerBehavior = MapGridGetMetatileBehaviorAt(
-      sx + MAP_OFFSET, sy + MAP_OFFSET);
+    // Fallback : convertir pa.x/y (LOGICAL) → INTERNAL pour rester 1:1 décomp.
+    sx = gPlayerAvatar.x + MAP_OFFSET;
+    sy = gPlayerAvatar.y + MAP_OFFSET;
+    const playerBehavior = MapGridGetMetatileBehaviorAt(sx, sy);
     obj = {
       active: false, trackedByCamera: false,
       currentMetatileBehavior: playerBehavior,
@@ -1088,16 +1087,14 @@ export function CheckForPlayerAvatarCollision(direction: number): number {
       initialCoordsX: sx, initialCoordsY: sy,
     } as unknown as Parameters<typeof _GetCollisionAtCoords>[0];
   }
-  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
-  // GetCollisionAtCoords + CheckForObjectEventCollision : INTERNAL coords.
-  const internalX = dx + MAP_OFFSET;
-  const internalY = dy + MAP_OFFSET;
-  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
-  return CheckForObjectEventCollision(obj, internalX, internalY, direction, metatileBehavior);
+  const { x: tx, y: ty } = moveCoords(direction, sx, sy);
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(tx, ty);
+  return CheckForObjectEventCollision(obj, tx, ty, direction, metatileBehavior);
 }
 
 /** 1:1 décomp `CheckForPlayerAvatarStaticCollision(u8 direction)`
- *  (field_player_avatar.c:665-674). Variante "static" : pas de side-effects. */
+ *  (field_player_avatar.c:665-674). Variante "static" : pas de side-effects.
+ *  Post R3 refactor : slot 0 currentCoords INTERNAL, 1:1 décomp direct path. */
 export function CheckForPlayerAvatarStaticCollision(direction: number): number {
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
@@ -1108,10 +1105,9 @@ export function CheckForPlayerAvatarStaticCollision(direction: number): number {
     sy = playerObjEvent.currentCoordsY;
     obj = playerObjEvent;
   } else {
-    sx = gPlayerAvatar.x;
-    sy = gPlayerAvatar.y;
-    const playerBehavior = MapGridGetMetatileBehaviorAt(
-      sx + MAP_OFFSET, sy + MAP_OFFSET);
+    sx = gPlayerAvatar.x + MAP_OFFSET;
+    sy = gPlayerAvatar.y + MAP_OFFSET;
+    const playerBehavior = MapGridGetMetatileBehaviorAt(sx, sy);
     obj = {
       active: false, trackedByCamera: false,
       currentMetatileBehavior: playerBehavior,
@@ -1122,11 +1118,9 @@ export function CheckForPlayerAvatarStaticCollision(direction: number): number {
       initialCoordsX: sx, initialCoordsY: sy,
     } as unknown as Parameters<typeof _GetCollisionAtCoords>[0];
   }
-  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
-  const internalX = dx + MAP_OFFSET;
-  const internalY = dy + MAP_OFFSET;
-  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
-  return CheckForObjectEventStaticCollision(obj, internalX, internalY, direction, metatileBehavior);
+  const { x: tx, y: ty } = moveCoords(direction, sx, sy);
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(tx, ty);
+  return CheckForObjectEventStaticCollision(obj, tx, ty, direction, metatileBehavior);
 }
 
 /** Wrapper local : `checkPlayerCollision(direction)` = noclip dev + delegate à
@@ -1211,7 +1205,9 @@ const A_BUTTON = 0x01;
  *  PlayerStep skip son keypad logic la frame suivante. Les opcodes lock /
  *  faceplayer / msgbox / release gèrent eux-mêmes l'état NPC frozen. */
 function tryInteractWithFacingNPC(): void {
-  const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x, gPlayerAvatar.y);
+  // Post R3 refactor : npc.currentCoords INTERNAL → convertir tx/ty (LOGICAL
+  // venant de pa.x/y) en INTERNAL pour comparaison directe.
+  const { x: tx, y: ty } = moveCoords(gPlayerAvatar.facing, gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gObjectEvents = (globalThis as any).__gObjectEvents as
     Array<{ active: boolean; currentCoordsX: number; currentCoordsY: number;

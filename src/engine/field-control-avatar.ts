@@ -210,10 +210,9 @@ export interface MapPosition {
  *  Stores player current position (= INTERNAL coords) + elevation. */
 export function GetPlayerPosition(position: MapPosition): void {
   const coords = PlayerGetDestCoords();
-  // 1:1 décomp : PlayerGetDestCoords return INTERNAL coords. Notre impl return
-  // LOGICAL, donc +MAP_OFFSET ici pour matcher décomp convention.
-  position.x = coords.x + MAP_OFFSET;
-  position.y = coords.y + MAP_OFFSET;
+  // Post R3 refactor : PlayerGetDestCoords return INTERNAL coords (= 1:1 décomp).
+  position.x = coords.x;
+  position.y = coords.y;
   position.elevation = PlayerGetElevation();
 }
 
@@ -235,8 +234,9 @@ export function GetPlayerPosition(position: MapPosition): void {
  *  Used pour A-button interaction + push-door check. */
 export function GetInFrontOfPlayerPosition(position: MapPosition): void {
   const inFront = GetXYCoordsOneStepInFrontOfPlayer();
-  position.x = inFront.x + MAP_OFFSET;
-  position.y = inFront.y + MAP_OFFSET;
+  // Post R3 refactor : GetXYCoords... return INTERNAL coords (= 1:1 décomp).
+  position.x = inFront.x;
+  position.y = inFront.y;
   // 1:1 décomp ELEVATION_TRANSITION = 0xF check. Skip pour MVP (= notre impl
   // ne tracks pas ELEVATION_TRANSITION par tile). Default = player elevation.
   position.elevation = PlayerGetElevation();

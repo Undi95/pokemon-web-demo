@@ -659,15 +659,17 @@ export function InitPlayerObjectEvent(
   npc.graphicsId = graphicsKey;
   npc.movementType = 'MOVEMENT_TYPE_PLAYER';
   npc.scriptLabel = '';
-  // 1:1 décomp : currentCoords / previousCoords sont en INTERNAL coords
-  // (= +MAP_OFFSET). Notre `gObjectEvents` stocke en LOGICAL coords (= sans
-  // offset). On reste cohérent avec notre impl NPCs.
-  npc.currentCoordsX = mapX;
-  npc.currentCoordsY = mapY;
-  npc.previousCoordsX = mapX;
-  npc.previousCoordsY = mapY;
-  npc.initialCoordsX = mapX;
-  npc.initialCoordsY = mapY;
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1298) :
+  //   x = template->x + MAP_OFFSET;  ← INTERNAL coords storage
+  //   objectEvent->currentCoords.x = x;  etc.
+  // R3 refactor : `gObjectEvents` stocke maintenant en INTERNAL coords (= +
+  // MAP_OFFSET), 1:1 strict path identique au décomp.
+  npc.currentCoordsX = mapX + MAP_OFFSET;
+  npc.currentCoordsY = mapY + MAP_OFFSET;
+  npc.previousCoordsX = mapX + MAP_OFFSET;
+  npc.previousCoordsY = mapY + MAP_OFFSET;
+  npc.initialCoordsX = mapX + MAP_OFFSET;
+  npc.initialCoordsY = mapY + MAP_OFFSET;
   npc.facingDirection = direction;
   npc.movementDirection = direction;
   npc.previousMovementDirection = direction;
@@ -740,8 +742,9 @@ export function SyncPlayerObjectEvent(
     npc.previousCoordsX = npc.currentCoordsX;
     npc.previousCoordsY = npc.currentCoordsY;
   }
-  npc.currentCoordsX = mapX;
-  npc.currentCoordsY = mapY;
+  // R3 refactor : currentCoords stockés en INTERNAL (= +MAP_OFFSET) 1:1 décomp.
+  npc.currentCoordsX = mapX + MAP_OFFSET;
+  npc.currentCoordsY = mapY + MAP_OFFSET;
   npc.facingDirection = facing;
   if (movementDir !== undefined) {
     npc.movementDirection = movementDir;
@@ -753,22 +756,15 @@ export function SyncPlayerObjectEvent(
 
 export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
   // 1:1 décomp `MapGridGetMetatileBehaviorAt(objEvent->currentCoords.x, ...)` :
-  // décomp stocke `currentCoords` en INTERNAL coords (= +MAP_OFFSET), donc le
+  // décomp stocke `currentCoords` en INTERNAL coords (= +MAP_OFFSET), le
   // `MapGridGet` reçoit directement les internal coords.
   //
-  // Notre impl divergence : `currentCoordsX/Y` sont en LOGICAL coords (= sans
-  // offset). On compense ici en ajoutant `MAP_OFFSET = 7` à l'appel pour matcher
-  // le `MapGridGet` qui attend internal coords. Functionnellement équivalent à
-  // 1:1 décomp.
-  //
-  // Future refactor (R3 dette explicite) : standardiser sur INTERNAL coords
-  // partout dans gObjectEvents pour vrai 1:1 strict.
+  // Post R3 refactor : notre `gObjectEvents` stocke aussi INTERNAL → call direct
+  // sans conversion. 1:1 strict path identique au décomp.
   npc.previousMetatileBehavior = MapGridGetMetatileBehaviorAt(
-    npc.previousCoordsX + MAP_OFFSET,
-    npc.previousCoordsY + MAP_OFFSET);
+    npc.previousCoordsX, npc.previousCoordsY);
   npc.currentMetatileBehavior = MapGridGetMetatileBehaviorAt(
-    npc.currentCoordsX + MAP_OFFSET,
-    npc.currentCoordsY + MAP_OFFSET);
+    npc.currentCoordsX, npc.currentCoordsY);
 }
 
 // Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
@@ -1131,17 +1127,26 @@ function pickRandomDelay(): number {
   return sMovementDelaysMedium[Random() % sMovementDelaysMedium.length];
 }
 
-/** Check si target tile occupé par player.
- *  Considère AUSSI la player's destination cell quand player est MOVING (=
- *  évite que NPC walk vers la cell où player s'apprête à aller).
- *  gPlayerAvatar.x/y sont en ORIGINAL map coords (= no MAP_OFFSET). */
+/** Check si target tile (INTERNAL coords) occupé par player.
+ *  1:1 décomp pattern : lit slot 0 (= player ObjectEvent unifié post-refactor)
+ *  qui sync currentCoords IMMÉDIATEMENT au Step0. La cell TARGET d'un walk
+ *  MOVING est déjà dans `slot0.currentCoords` (= post InitNpcForMovement),
+ *  donc pas besoin de logic séparée "player MOVING vers target". */
 function isPlayerAt(x: number, y: number): boolean {
-  if (gPlayerAvatar.x === x && gPlayerAvatar.y === y) return true;
-  // Player MOVING : sa cible est gPlayerAvatar.x + DIR_TO_DX[stepDirection].
+  const p = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
+  if (p && p.active && p.isPlayer) {
+    if (p.currentCoordsX === x && p.currentCoordsY === y) return true;
+    if (p.previousCoordsX === x && p.previousCoordsY === y) return true;
+    return false;
+  }
+  // Fallback (= slot 0 pas init, early boot) : compare avec pa.x/y converti INTERNAL.
+  const paX = gPlayerAvatar.x + MAP_OFFSET;
+  const paY = gPlayerAvatar.y + MAP_OFFSET;
+  if (paX === x && paY === y) return true;
   if (gPlayerAvatar.runningState === 2 /* MOVING */ && gPlayerAvatar.stepFramesLeft > 0) {
     const sdx = DIR_TO_DX[gPlayerAvatar.stepDirection] ?? 0;
     const sdy = DIR_TO_DY[gPlayerAvatar.stepDirection] ?? 0;
-    if (gPlayerAvatar.x + sdx === x && gPlayerAvatar.y + sdy === y) return true;
+    if (paX + sdx === x && paY + sdy === y) return true;
   }
   return false;
 }
@@ -1281,16 +1286,12 @@ export function DoesObjectCollideWithObjectAt(
   objectEvent: ObjectEvent, x: number, y: number,
 ): boolean {
   // x, y arrivent en INTERNAL coords (= +MAP_OFFSET, convention décomp).
-  // Notre TS stocke `currentCoords` en LOGICAL coords (= sans MAP_OFFSET).
-  // Décomp stocke en INTERNAL → comparison directe. Notre TS doit convertir.
-  // Future refactor R3 : standardiser sur INTERNAL coords partout (= vrai 1:1
-  // strict path). Pour l'instant, conversion locale ici.
-  const logicalX = x - MAP_OFFSET;
-  const logicalY = y - MAP_OFFSET;
+  // Post R3 refactor : `currentCoords` stockés INTERNAL → comparison directe
+  // 1:1 strict path identique au décomp event_object_movement.c:4734.
   for (const curObject of gObjectEvents) {
     if (!curObject.active || curObject === objectEvent) continue;
-    if ((curObject.currentCoordsX === logicalX && curObject.currentCoordsY === logicalY)
-        || (curObject.previousCoordsX === logicalX && curObject.previousCoordsY === logicalY)) {
+    if ((curObject.currentCoordsX === x && curObject.currentCoordsY === y)
+        || (curObject.previousCoordsX === x && curObject.previousCoordsY === y)) {
       if (AreElevationsCompatible(objectEvent.currentElevation, curObject.currentElevation)) {
         return true;
       }
@@ -1408,19 +1409,17 @@ function movementTypeHasRange(movementType: string): boolean {
 function IsCoordOutsideObjectEventMovementRange(
   npc: ObjectEvent, x: number, y: number,
 ): boolean {
-  // x, y arrivent en INTERNAL coords (= +MAP_OFFSET, convention décomp).
-  // Notre TS stocke `initialCoords` en LOGICAL → convert pour comparison.
-  const logicalX = x - MAP_OFFSET;
-  const logicalY = y - MAP_OFFSET;
+  // x, y arrivent en INTERNAL coords. Post R3 refactor : `initialCoords` aussi
+  // INTERNAL → comparison directe 1:1 décomp event_object_movement.c:4691-4711.
   if (npc.movementRangeX !== 0) {
     const left = npc.initialCoordsX - npc.movementRangeX;
     const right = npc.initialCoordsX + npc.movementRangeX;
-    if (left > logicalX || right < logicalX) return true;
+    if (left > x || right < x) return true;
   }
   if (npc.movementRangeY !== 0) {
     const top = npc.initialCoordsY - npc.movementRangeY;
     const bottom = npc.initialCoordsY + npc.movementRangeY;
-    if (top > logicalY || bottom < logicalY) return true;
+    if (top > y || bottom < y) return true;
   }
   return false;
 }
@@ -1435,14 +1434,13 @@ function IsCoordOutsideObjectEventMovementRange(
 function canWalk(npc: ObjectEvent, direction: number): boolean {
   const dx = DIR_TO_DX[direction] ?? 0;
   const dy = DIR_TO_DY[direction] ?? 0;
+  // Post R3 refactor : npc.currentCoords stockés INTERNAL → targetX/Y INTERNAL.
   const targetX = npc.currentCoordsX + dx;
   const targetY = npc.currentCoordsY + dy;
   // Phase 4.6 audit Opus §3.1 : check movement range AVANT collision (= 1:1
   // décomp `GetCollisionAtCoords` qui retourne COLLISION_OUTSIDE_RANGE en 1er).
   if (IsCoordOutsideObjectEventMovementRange(npc, targetX, targetY)) return false;
-  const targetGBackupCol = targetX + MAP_OFFSET;
-  const targetGBackupRow = targetY + MAP_OFFSET;
-  if (MapGridGetCollisionAt(targetGBackupCol, targetGBackupRow) !== 0) return false;
+  if (MapGridGetCollisionAt(targetX, targetY) !== 0) return false;
   if (isPlayerAt(targetX, targetY)) return false;
   if (isOtherNpcAt(targetX, targetY, npc)) return false;
   return true;
@@ -2007,11 +2005,12 @@ function _spawnSingleNpcFromTemplate(
   // dedup par (localId, mapId). Notre loader set localId=0 pour templates
   // avec local_id JSON (= placeholder, pas encore résolu), donc unreliable.
   // Fallback : dedup via (mapId, initialCoordsX, initialCoordsY) uniques.
+  // Post R3 refactor : initialCoords INTERNAL → compare avec template.x + MAP_OFFSET.
   const existing = gObjectEvents.findIndex(
     o => o.active
       && o.mapId === currentMapId
-      && o.initialCoordsX === template.x
-      && o.initialCoordsY === template.y,
+      && o.initialCoordsX === template.x + MAP_OFFSET
+      && o.initialCoordsY === template.y + MAP_OFFSET,
   );
   if (existing >= 0) return false;
 
@@ -2115,12 +2114,18 @@ function _spawnSingleNpcFromTemplate(
   npc.localIdRaw = template.localIdRaw;  // Phase 4.10 : pour movement-system applymovement.
   npc.mapId = currentMapId;  // Phase 4.8 : track map of origin pour dedup cross-border.
   npc.scriptLabel = template.script ?? '';
-  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1309) :
-  // currentCoords = previousCoords = template position au spawn.
-  npc.currentCoordsX = template.x;
-  npc.currentCoordsY = template.y;
-  npc.previousCoordsX = template.x;
-  npc.previousCoordsY = template.y;
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1298-1312) :
+  //   x = template->x + MAP_OFFSET;
+  //   y = template->y + MAP_OFFSET;
+  //   objectEvent->currentCoords.x = x;
+  //   objectEvent->currentCoords.y = y;
+  //   objectEvent->previousCoords.x = x;
+  //   objectEvent->previousCoords.y = y;
+  // Post R3 refactor : storage INTERNAL 1:1 strict path identique au décomp.
+  npc.currentCoordsX = template.x + MAP_OFFSET;
+  npc.currentCoordsY = template.y + MAP_OFFSET;
+  npc.previousCoordsX = template.x + MAP_OFFSET;
+  npc.previousCoordsY = template.y + MAP_OFFSET;
   npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
   npc.movementDirection = npc.facingDirection;
   npc.previousMovementDirection = npc.facingDirection;
@@ -2130,8 +2135,9 @@ function _spawnSingleNpcFromTemplate(
   ObjectEventUpdateMetatileBehaviors(npc);
   npc.objTileBase = objTileBase;
   npc.paletteBank = paletteBank;
-  const npcGBackupCol = template.x + MAP_OFFSET;
-  const npcGBackupRow = template.y + MAP_OFFSET;
+  // Post R3 refactor : npc.currentCoords déjà INTERNAL (= template + MAP_OFFSET).
+  const npcGBackupCol = npc.currentCoordsX;
+  const npcGBackupRow = npc.currentCoordsY;
   // Phase 4.9 audit : 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
   //
   // ```c
@@ -2169,8 +2175,10 @@ function _spawnSingleNpcFromTemplate(
   npc.walkDirection = DIR_NONE;
   npc.walkAnimAlt = 0;
   npc.frozen = false;
-  npc.initialCoordsX = template.x;
-  npc.initialCoordsY = template.y;
+  // Post R3 refactor : initialCoords INTERNAL (= +MAP_OFFSET) 1:1 décomp
+  // event_object_movement.c:1307.
+  npc.initialCoordsX = template.x + MAP_OFFSET;
+  npc.initialCoordsY = template.y + MAP_OFFSET;
   npc.movementRangeX = template.movementRangeX;
   npc.movementRangeY = template.movementRangeY;
   // 1:1 décomp event_object_movement.c:1323-1328 — force range = 1 si 0 et
@@ -2287,7 +2295,7 @@ function _spawnSingleNpcFromTemplate(
     rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
   }
 
-  console.log(`[object-events] spawn slot=${slot} ${graphicsKey} mt=${npc.movementType} at (${npc.currentCoordsX}, ${npc.currentCoordsY})`);
+  console.log(`[object-events] spawn slot=${slot} ${graphicsKey} mt=${npc.movementType} at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET})`);
   return true;
 }
 
@@ -2455,8 +2463,9 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     const sprite = rt.gSprites.get(npc.spriteId);
     if (!sprite) continue;
 
-    const npcGBackupCol = npc.currentCoordsX + MAP_OFFSET;
-    const npcGBackupRow = npc.currentCoordsY + MAP_OFFSET;
+    // Post R3 refactor : npc.currentCoords stockés INTERNAL → use direct.
+    const npcGBackupCol = npc.currentCoordsX;
+    const npcGBackupRow = npc.currentCoordsY;
     const viewCol = npcGBackupCol - cam.x;
     const viewRow = npcGBackupRow - cam.y;
     if (viewCol < -2 || viewCol > 17 || viewRow < -2 || viewRow > 13) {
@@ -2611,10 +2620,12 @@ _registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
 export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
   if (!gMapHeader) return;
   const cam = GetCameraTopLeftCoords();
-  const left = cam.x - 9;
-  const right = cam.x + 10;
-  const top = cam.y - 7;
-  const bottom = cam.y + 9;
+  // Post R3 refactor : npc.currentCoords/initialCoords stockés INTERNAL → bounds
+  // alignés INTERNAL (= cam.x LOGICAL + MAP_OFFSET).
+  const left = cam.x - 9 + MAP_OFFSET;
+  const right = cam.x + 10 + MAP_OFFSET;
+  const top = cam.y - 7 + MAP_OFFSET;
+  const bottom = cam.y + 9 + MAP_OFFSET;
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;

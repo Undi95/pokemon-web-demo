@@ -1358,10 +1358,11 @@ registerOpcode('setobjectxy', (_ctx, args) => {
   const y = parseValue(args[2]);
   const npc = _findNpcByLocalId(args[0] ?? '');
   if (npc) {
-    npc.currentCoordsX = x;
-    npc.currentCoordsY = y;
-    npc.previousCoordsX = x;
-    npc.previousCoordsY = y;
+    // Post R3 refactor : currentCoords INTERNAL (= +MAP_OFFSET) 1:1 décomp.
+    npc.currentCoordsX = x + MAP_OFFSET;
+    npc.currentCoordsY = y + MAP_OFFSET;
+    npc.previousCoordsX = x + MAP_OFFSET;
+    npc.previousCoordsY = y + MAP_OFFSET;
   }
   return false;
 });
@@ -1380,8 +1381,9 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
   }
   const npc = _findNpcByLocalId(args[0] ?? '');
   if (npc) {
-    npc.initialCoordsX = x;
-    npc.initialCoordsY = y;
+    // Post R3 refactor : initialCoords/currentCoords INTERNAL (= +MAP_OFFSET).
+    npc.initialCoordsX = x + MAP_OFFSET;
+    npc.initialCoordsY = y + MAP_OFFSET;
     // Audit session 126 C6 : aussi sync `currentCoordsX/Y` + `previousCoordsX/Y`.
     // 1:1 décomp `setobjectxyperm` ne touche QUE le template — le NPC actif
     // reste à sa position courante. MAIS notre runtime spawn déjà actifs au
@@ -1390,11 +1392,11 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
     // initiale au lieu de bouger. Pour 1:1 visuel sur les changements en cours
     // de game, on sync les coords actuelles aussi. Sans ça : NPC visuellement
     // figé à son spawn pos même si template a changé.
-    npc.currentCoordsX = x;
-    npc.currentCoordsY = y;
-    npc.previousCoordsX = x;
-    npc.previousCoordsY = y;
-    // Sync world coords (= pixel pos) aussi pour que le sprite se déplace.
+    npc.currentCoordsX = x + MAP_OFFSET;
+    npc.currentCoordsY = y + MAP_OFFSET;
+    npc.previousCoordsX = x + MAP_OFFSET;
+    npc.previousCoordsY = y + MAP_OFFSET;
+    // Sync world coords (= pixel pos) — worldX/Y restent en LOGICAL pixel.
     npc.worldX = x * 16;
     npc.worldY = y * 16;
   }
