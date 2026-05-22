@@ -24,6 +24,7 @@
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
 import { getString } from '../gba-strings';
+import { gSaveBlock2Ptr } from '../save-block-state';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
 import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../data-tables';
 import { resolveDecompConstant } from '../decomp-constants';
@@ -482,9 +483,8 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         // 1:1 décomp battle_message.c:2580-2582 : utilise gEffectBattler.
         return _abilityName(msgData.abilities[gEffectBattler] ?? 0);
       case 'PLAYER_NAME': {
-        // Resolve depuis gSaveBlock2Ptr.playerName via globalThis.
-        const sb2 = (globalThis as { gSaveBlock2Ptr?: { playerName?: string } }).gSaveBlock2Ptr;
-        return sb2?.playerName ?? 'Joueur';
+        // 1:1 décomp `gSaveBlock2Ptr->playerName`.
+        return (gSaveBlock2Ptr.playerName as string | undefined) ?? 'Joueur';
       }
       case 'TRAINER1_CLASS':
         return _resolveTrainerClassNameFr(gTrainerBattleOpponent_A);
@@ -526,8 +526,7 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'LINK_OPPONENT2_NAME':
       case 'LINK_SCR_TRAINER_NAME':
         // Link Phase 1 deferred — fallback player.
-        const sb2_link = (globalThis as { gSaveBlock2Ptr?: { playerName?: string } }).gSaveBlock2Ptr;
-        return sb2_link?.playerName ?? 'Joueur';
+        return (gSaveBlock2Ptr.playerName as string | undefined) ?? 'Joueur';
       case 'PC_CREATOR_NAME':
         return 'BILL';
       // Prefix placeholders 1:1 décomp battle_message.c:2704-2728 :

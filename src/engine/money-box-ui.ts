@@ -24,6 +24,9 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
+// 1:1 décomp `gSaveBlock1Ptr->money/coins` (= struct SaveBlock1 fields). Foundation
+// `save-block-state` permet l'import direct (= élimine pattern globalThis non-1:1).
+import { gSaveBlock1Ptr } from './save-block-state';
 
 const FONT_NORMAL = 0;
 const FONT_SMALL = 1;
@@ -34,9 +37,7 @@ const COLOR_BG_FG_SHADOW: [number, number, number] = [1, 2, 3];
 let _moneyBoxWindowId = -1;
 
 function _getMoney(): number {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { money?: number } | undefined;
-  return block1?.money ?? 0;
+  return (gSaveBlock1Ptr.money as number) ?? 0;
 }
 
 /** 1:1 décomp `DrawMoneyBox(amount, x, y)` (money.c:117).
@@ -102,9 +103,7 @@ function _printAmountInMoneyBox(amount: number): void {
 let _coinsBoxWindowId = -1;
 
 function _getCoins(): number {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { coins?: number } | undefined;
-  return block1?.coins ?? 0;
+  return (gSaveBlock1Ptr.coins as number) ?? 0;
 }
 
 /** 1:1 décomp `ShowCoinsWindow(coinAmount, x, y)` (coins.c:33). */

@@ -16,6 +16,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readWord, Random } from './script-interpreter';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save-block-state';
 import {
   gBattleMons, gBattlerAttacker,
   gBattleScripting, gBattleCommunication,
@@ -327,13 +328,13 @@ function _shouldShowBoxWasFullMessage_GC(): boolean {
   return false;
 }
 
-/** 1:1 décomp `FlagGet(flag)` — wired via globalThis.gSaveBlock1Ptr.flags. */
+/** 1:1 décomp `FlagGet(flag)` — `gSaveBlock1Ptr->flags[byteIdx] & (1<<bitIdx)`. */
 function _flagGet_GC(flag: number): boolean {
-  const sb1 = (globalThis as { gSaveBlock1Ptr?: { flags?: number[] | Uint8Array } }).gSaveBlock1Ptr;
-  if (!sb1?.flags) return false;
+  const flags = gSaveBlock1Ptr.flags as number[] | Uint8Array | undefined;
+  if (!flags) return false;
   const byteIdx = flag >> 3;
   const bitIdx = flag & 7;
-  const byte = sb1.flags[byteIdx] ?? 0;
+  const byte = flags[byteIdx] ?? 0;
   return (byte & (1 << bitIdx)) !== 0;
 }
 import {
@@ -361,12 +362,12 @@ import {
 function _GiveMonToPlayerGC(mon: unknown): number {
   // 1:1 décomp pokemon.c GiveMonToPlayer (1:1 strict).
   // SetMonData OT depuis gSaveBlock2Ptr (= player info).
-  const sb2 = (globalThis as { gSaveBlock2Ptr?: {
+  const sb2 = gSaveBlock2Ptr as {
     playerName?: string;
     playerGender?: number;
     playerTrainerId?: number[] | { 0: number };
-  } }).gSaveBlock2Ptr;
-  if (sb2 && mon) {
+  };
+  if (mon) {
     if (sb2.playerName !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_NAME_GC, sb2.playerName);
     if (sb2.playerGender !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_GENDER_GC, sb2.playerGender);
     // 1:1 décomp : playerTrainerId est u8[4] ; pack en u32 little-endian.

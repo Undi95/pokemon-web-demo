@@ -22,6 +22,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
+import { gMapHeader } from '../map-loader';
 import {
   gBattleMons, setActiveBattler,
   gBattleTypeFlags,
@@ -809,8 +810,8 @@ function _gBattlerAttacker_HBT(): number {
  *  si non dispo (= rare en battle path : un battle est toujours triggered depuis
  *  une map valide). */
 function _getCurrentMapTypeHBT(): number {
-  const gh = (globalThis as { gMapHeader?: { mapType?: number } }).gMapHeader;
-  return gh?.mapType ?? 0;
+  // 1:1 décomp `gMapHeader.mapType` (= struct MapHeader, global.fieldmap.h).
+  return (gMapHeader?.mapType as number | undefined) ?? 0;
 }
 
 function _getSpeciesCatchRateHBT(species: number): number {

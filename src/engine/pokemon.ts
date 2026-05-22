@@ -18,6 +18,9 @@ import { gameState } from './game-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from './data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
+// 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
+// global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
+import { gMapHeader } from './map-loader';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {
@@ -319,8 +322,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     // GetCurrentRegionMapSectionId() = gMapHeader.regionMapSectionId (string
     // MAPSEC_*). metLevel = `level` passé au create.
     metLevel: level,
-    metLocation: (globalThis as { gMapHeader?: { regionMapSectionId?: string } })
-      .gMapHeader?.regionMapSectionId,
+    metLocation: gMapHeader?.regionMapSectionId,
     // 1:1 décomp CreateBoxMon (pokemon.c:2262) : value = ITEM_POKE_BALL.
     pokeball: opts?.pokeball ?? 'ITEM_POKE_BALL',
     isEgg: false,

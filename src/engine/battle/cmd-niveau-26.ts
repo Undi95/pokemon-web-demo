@@ -16,6 +16,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
+import { gSaveBlock1Ptr } from '../save-block-state';
 import {
   gBattleMons, setCurrentMove, gCurrentMove,
   setActiveBattler,
@@ -117,11 +118,8 @@ function _getTrainerMoneyToGive(trainerId: number): number {
 // 1:1 décomp `AddMoney(money_ptr, amount)` — wired via auto-data/money.
 import { AddMoney as _AddMoneyFull } from '../decomp-data/auto/src-all/money-all-auto';
 function _addMoney(amount: number): void {
-  // 1:1 décomp : passe gSaveBlock1Ptr.money via globalThis (= déjà sync).
-  const saveBlock = (globalThis as { gSaveBlock1Ptr?: { money: number } }).gSaveBlock1Ptr;
-  if (saveBlock) {
-    _AddMoneyFull(saveBlock.money, amount);
-  }
+  // 1:1 décomp `AddMoney(&gSaveBlock1Ptr->money, amount)` (money.c).
+  _AddMoneyFull(gSaveBlock1Ptr.money, amount);
 }
 
 /** 1:1 décomp `gBattleStruct->moneyMultiplier`. Set à 1 par défaut, doublé

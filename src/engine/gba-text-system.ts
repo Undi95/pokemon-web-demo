@@ -35,6 +35,7 @@ import {
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
 import { getRuntime } from './decomp-globals';
+import { gSaveBlock2Ptr } from './save-block-state';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
 
@@ -236,9 +237,8 @@ let gTextPrinters: ActivePrinter[] = [];
  *  A/B held override → delayCounter=0 chaque frame (= 60 chars/sec) gérée
  *  dans gba-text-printer.ts runTextPrinter (pas ici). */
 function _getPlayerTextSpeedDelay(): number {
-  const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
-    { optionsTextSpeed?: number } | undefined;
-  const speed = (sb2?.optionsTextSpeed ?? 1) | 0;
+  // 1:1 décomp `gSaveBlock2Ptr->optionsTextSpeed`.
+  const speed = ((gSaveBlock2Ptr.optionsTextSpeed as number | undefined) ?? 1) | 0;
   // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 }.
   if (speed === 0) return 8;  // SLOW
   if (speed === 2) return 1;  // FAST
@@ -480,9 +480,8 @@ export function RunTextPrinters(): void {
       // 1:1 décomp text.c:1189-1209 : scroll progressif chaque frame.
       // sWindowVerticalScrollSpeeds[textSpeed] : SLOW=1, MID=2, FAST=4 pixels/frame.
       if (ap.printer.scrollDistance > 0) {
-        const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
-          { optionsTextSpeed?: number } | undefined;
-        const textSpeed = sb2?.optionsTextSpeed ?? 1;  // default MID
+        // 1:1 décomp `gSaveBlock2Ptr->optionsTextSpeed`.
+        const textSpeed = (gSaveBlock2Ptr.optionsTextSpeed as number | undefined) ?? 1;  // default MID
         const speeds = [1, 2, 4];  // SLOW, MID, FAST
         const speed = speeds[textSpeed] ?? 2;
         const deltaY = Math.min(ap.printer.scrollDistance, speed);
@@ -566,9 +565,8 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
     | { playerName?: string } | undefined;
   let playerName: string | undefined = gs?.playerName;
   if (!playerName) {
-    const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
-      | { playerName?: string } | undefined;
-    playerName = sb2?.playerName;
+    // 1:1 décomp `gSaveBlock2Ptr->playerName`.
+    playerName = gSaveBlock2Ptr.playerName as string | undefined;
   }
   // 1:1 décomp `StringCopy(dest, gSaveBlock2Ptr->playerName)` : substitute
   // toujours (= si playerName empty, le décomp pousse aussi vide). Avant on

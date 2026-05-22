@@ -21,6 +21,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
+import { gSaveBlock1Ptr } from '../save-block-state';
 import {
   gMultiHitCounter, setMultiHitCounter,
   gBattlerAttacker, gBattlerTarget, gBattlersCount,
@@ -148,10 +149,10 @@ function Cmd_incrementgamestat(ctx: BattleScriptContext): boolean {
  *  Wired vers globalThis.gSaveBlock1Ptr.gameStats[] qui est maintenu par
  *  game-state.ts (= persisté au save). */
 function _incrementGameStat(statId: number): void {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { gameStats?: number[] } | undefined;
-  if (block1?.gameStats && statId >= 0 && statId < block1.gameStats.length) {
-    block1.gameStats[statId] = (block1.gameStats[statId] ?? 0) + 1;
+  // 1:1 décomp `gSaveBlock1Ptr->gameStats[statId]++` (= overworld.c IncrementGameStat).
+  const stats = gSaveBlock1Ptr.gameStats as number[] | undefined;
+  if (stats && statId >= 0 && statId < stats.length) {
+    stats[statId] = (stats[statId] ?? 0) + 1;
   }
 }
 
