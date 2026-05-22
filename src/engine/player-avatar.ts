@@ -55,6 +55,10 @@ import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   GetCollisionAtCoords as _GetCollisionAtCoords,
+  GetObjectEventIdByXY,
+  GetObjectEventIdByPosition,
+  OBJECT_EVENTS_COUNT,
+  ELEVATION_DEFAULT,
 } from './object-events';
 import {
   gFieldCamera,
@@ -71,6 +75,18 @@ import {
 import { gSelectedObjectEvent, gSpecialVar, FlagGet } from './script-vars';
 import { B_BUTTON } from './gba-menu-system';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
+import {
+  MetatileBehavior_IsBumpySlope,
+  MetatileBehavior_IsIsolatedVerticalRail,
+  MetatileBehavior_IsIsolatedHorizontalRail,
+  MetatileBehavior_IsVerticalRail,
+  MetatileBehavior_IsHorizontalRail,
+  MetatileBehavior_IsNonAnimDoor,
+} from './metatile-behavior';
+import {
+  CheckForRotatingGatePuzzleCollision,
+  CheckForRotatingGatePuzzleCollisionWithoutAnimation,
+} from './rotating-gate';
 import { PlaySE } from './decomp-globals';
 import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/auto/include/constants/songs-data';
 import {
@@ -688,14 +704,252 @@ function updateSpriteFrame(rt: DecompRuntime): void {
 /** Alias pour `MoveCoords` du module direction-coords (= back-compat). */
 const moveCoords = MoveCoords;
 
-/** Constants de collision 1:1 décomp `enum Collision` (global.fieldmap.h:309-319).
+/** Constants de collision 1:1 décomp `enum Collision` (global.fieldmap.h:309-323).
  *  Valeurs 1:1 strict — re-déclarées local pour éviter cycle ESM avec
  *  object-events (= player-avatar ↔ object-events s'importent mutuellement). */
-const COLLISION_NONE                = 0;
-const COLLISION_IMPASSABLE          = 2;
-export const COLLISION_LEDGE_JUMP   = 6;
+const COLLISION_NONE                       = 0;
+const COLLISION_IMPASSABLE                 = 2;
+const COLLISION_ELEVATION_MISMATCH         = 3;
+const COLLISION_OBJECT_EVENT               = 4;
+const COLLISION_STOP_SURFING               = 5;
+export const COLLISION_LEDGE_JUMP          = 6;
+const COLLISION_PUSHED_BOULDER             = 7;
+const COLLISION_ROTATING_GATE              = 8;
+const COLLISION_WHEELIE_HOP                = 9;
+const COLLISION_ISOLATED_VERTICAL_RAIL     = 10;
+const COLLISION_ISOLATED_HORIZONTAL_RAIL   = 11;
+const COLLISION_VERTICAL_RAIL              = 12;
+const COLLISION_HORIZONTAL_RAIL            = 13;
 
-/** 1:1 décomp `CheckForPlayerAvatarCollision(u8 direction)` (field_player_avatar.c:654-663).
+/** 1:1 décomp `PLAYER_AVATAR_FLAG_SURFING = (1 << 3)` (global.fieldmap.h:51). */
+const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
+
+/** 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87`
+ *  (include/constants/event_objects.h:99). */
+const OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87;
+
+/** 1:1 décomp `NUM_ACRO_BIKE_COLLISIONS = 5` (field_player_avatar.c:34). */
+const NUM_ACRO_BIKE_COLLISIONS = 5;
+
+/** 1:1 décomp `sAcroBikeTrickMetatiles[NUM_ACRO_BIKE_COLLISIONS]`
+ *  (field_player_avatar.c:197-204). Functions appliquées au metatileBehavior
+ *  pour détecter les tiles trick Acro Bike (= bumpy slope + rails). */
+const sAcroBikeTrickMetatiles: Array<(mb: number) => boolean> = [
+  MetatileBehavior_IsBumpySlope,
+  MetatileBehavior_IsIsolatedVerticalRail,
+  MetatileBehavior_IsIsolatedHorizontalRail,
+  MetatileBehavior_IsVerticalRail,
+  MetatileBehavior_IsHorizontalRail,
+];
+
+/** 1:1 décomp `sAcroBikeTrickCollisionTypes[NUM_ACRO_BIKE_COLLISIONS]`
+ *  (field_player_avatar.c:206-212). Collision codes correspondant aux tables
+ *  metatiles ci-dessus. Used par `CheckAcroBikeCollision` pour override le
+ *  collision returned par GetCollisionAtCoords. */
+const sAcroBikeTrickCollisionTypes: number[] = [
+  COLLISION_WHEELIE_HOP,
+  COLLISION_ISOLATED_VERTICAL_RAIL,
+  COLLISION_ISOLATED_HORIZONTAL_RAIL,
+  COLLISION_VERTICAL_RAIL,
+  COLLISION_HORIZONTAL_RAIL,
+];
+
+// ─── Side-effects R4 dette explicite (= hors démo Brendan house) ───────────
+
+/** 1:1 décomp `CreateStopSurfingTask(direction)` (field_player_avatar.c:2024).
+ *  Crée task `Task_StopSurfingInit` qui handle surf-exit anim + sprite swap.
+ *  R4 dette : à porter quand Surf wired à la démo. Pour 1:1 strict, signature
+ *  conservée + warn explicite. */
+function CreateStopSurfingTask(direction: number): void {
+  console.warn('[player-avatar] R4 TODO: CreateStopSurfingTask(' + direction + ')'
+    + ' — Surf subsystem non porté (hors démo).');
+}
+
+/** 1:1 décomp `StartStrengthAnim(objectEventId, direction)`
+ *  (field_player_avatar.c:1796). Démarre task `Task_PushBoulder` qui anime
+ *  le boulder en push + son SE_STRENGTH. R4 dette : à porter avec HM Strength
+ *  + boulder push. Signature conservée + warn explicite. */
+function StartStrengthAnim(objectEventId: number, direction: number): void {
+  console.warn('[player-avatar] R4 TODO: StartStrengthAnim(' + objectEventId + ', '
+    + direction + ') — Strength subsystem non porté (hors démo).');
+}
+
+/** 1:1 décomp `IncrementGameStat(index)` (overworld.c:1820-1837). Incrémente
+ *  un compteur `gSaveBlock1Ptr.gameStats[index]` avec cap 0xFFFFFF. R4 stub :
+ *  pour la démo, les stats ledge/etc. ne sont pas tracked. À wire-up avec
+ *  gameStats persistence si besoin Trainer Card achievements. */
+function IncrementGameStat(index: number): void {
+  void index;  // R4 dette : porter gSaveBlock1Ptr.gameStats[].
+}
+
+// ─── 1:1 décomp `CheckForObjectEventCollision` subsystems ──────────────────
+
+/** 1:1 décomp `CanStopSurfing(s16 x, s16 y, u8 direction)`
+ *  (field_player_avatar.c:712-725).
+ *
+ *  ```c
+ *  if ((gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+ *      && MapGridGetElevationAt(x, y) == ELEVATION_DEFAULT
+ *      && GetObjectEventIdByPosition(x, y, ELEVATION_DEFAULT) == OBJECT_EVENTS_COUNT)
+ *  {
+ *      CreateStopSurfingTask(direction);
+ *      return TRUE;
+ *  }
+ *  return FALSE;
+ *  ```
+ *
+ *  Si player surfe + tile target = land (ELEVATION_DEFAULT=3) + pas d'NPC dessus
+ *  → start surf-exit task. Return TRUE pour signal override COLLISION_ELEVATION
+ *  _MISMATCH en COLLISION_STOP_SURFING. */
+function CanStopSurfing(x: number, y: number, direction: number): boolean {
+  if ((gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+      && MapGridGetElevationAt(x, y) === ELEVATION_DEFAULT
+      && GetObjectEventIdByPosition(x, y, ELEVATION_DEFAULT) === OBJECT_EVENTS_COUNT) {
+    CreateStopSurfingTask(direction);
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `TryPushBoulder(s16 x, s16 y, u8 direction)`
+ *  (field_player_avatar.c:735-755).
+ *
+ *  ```c
+ *  if (FlagGet(FLAG_SYS_USE_STRENGTH)) {
+ *      u8 objectEventId = GetObjectEventIdByXY(x, y);
+ *      if (objectEventId != OBJECT_EVENTS_COUNT
+ *          && gObjectEvents[objectEventId].graphicsId == OBJ_EVENT_GFX_PUSHABLE_BOULDER) {
+ *          // compute target = boulder pos + direction.
+ *          MoveCoords(direction, &x, &y);
+ *          if (GetCollisionAtCoords(boulderObj, x, y, direction) == COLLISION_NONE
+ *              && !MetatileBehavior_IsNonAnimDoor(MapGridGetMetatileBehaviorAt(x, y))) {
+ *              StartStrengthAnim(objectEventId, direction);
+ *              return TRUE;
+ *          }
+ *      }
+ *  }
+ *  return FALSE;
+ *  ```
+ *
+ *  Si player a HM Strength used + tile target = boulder + boulder peut bouger
+ *  dans la direction → start push anim. Return TRUE pour override
+ *  COLLISION_OBJECT_EVENT en COLLISION_PUSHED_BOULDER.
+ *
+ *  x, y = INTERNAL coords (= +MAP_OFFSET déjà). */
+function TryPushBoulder(x: number, y: number, direction: number): boolean {
+  if (FlagGet('FLAG_SYS_USE_STRENGTH')) {
+    const objectEventId = GetObjectEventIdByXY(x, y);
+    if (objectEventId !== OBJECT_EVENTS_COUNT
+        && gObjectEvents[objectEventId].graphicsId === String(OBJ_EVENT_GFX_PUSHABLE_BOULDER)) {
+      // 1:1 décomp : boulder pos + direction = new target.
+      const bx = gObjectEvents[objectEventId].currentCoordsX;
+      const by = gObjectEvents[objectEventId].currentCoordsY;
+      const { x: newX, y: newY } = moveCoords(direction, bx, by);
+      if (_GetCollisionAtCoords(gObjectEvents[objectEventId], newX, newY, direction) === COLLISION_NONE
+          && !MetatileBehavior_IsNonAnimDoor(MapGridGetMetatileBehaviorAt(newX, newY))) {
+        StartStrengthAnim(objectEventId, direction);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `CheckAcroBikeCollision(s16 x, s16 y, u8 metatileBehavior, u8 *collision)`
+ *  (field_player_avatar.c:757-769).
+ *
+ *  ```c
+ *  for (i = 0; i < NUM_ACRO_BIKE_COLLISIONS; i++) {
+ *      if (sAcroBikeTrickMetatiles[i](metatileBehavior)) {
+ *          *collision = sAcroBikeTrickCollisionTypes[i];
+ *          return;
+ *      }
+ *  }
+ *  ```
+ *
+ *  Si target tile est un trick Acro Bike (bumpy slope / rail), override le
+ *  collision en COLLISION_WHEELIE_HOP / VERTICAL_RAIL / etc. Sinon no-op.
+ *
+ *  C-pattern `u8 *collision` modifié in-place → TS retourne le nouveau collision
+ *  (= caller assigne `collision = CheckAcroBikeCollision(...)`). */
+function CheckAcroBikeCollision(
+  _x: number, _y: number, metatileBehavior: number, collision: number,
+): number {
+  for (let i = 0; i < NUM_ACRO_BIKE_COLLISIONS; i++) {
+    if (sAcroBikeTrickMetatiles[i](metatileBehavior)) {
+      return sAcroBikeTrickCollisionTypes[i];
+    }
+  }
+  return collision;
+}
+
+// ─── 1:1 décomp `CheckForObjectEventCollision` (main dispatcher) ───────────
+
+/** 1:1 décomp `CheckForObjectEventCollision(struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior)`
+ *  (field_player_avatar.c:676-697).
+ *
+ *  ```c
+ *  u8 collision = GetCollisionAtCoords(objectEvent, x, y, direction);
+ *  if (collision == COLLISION_ELEVATION_MISMATCH && CanStopSurfing(x, y, direction))
+ *      return COLLISION_STOP_SURFING;
+ *  if (ShouldJumpLedge(x, y, direction)) {
+ *      IncrementGameStat(GAME_STAT_JUMPED_DOWN_LEDGES);
+ *      return COLLISION_LEDGE_JUMP;
+ *  }
+ *  if (collision == COLLISION_OBJECT_EVENT && TryPushBoulder(x, y, direction))
+ *      return COLLISION_PUSHED_BOULDER;
+ *  if (collision == COLLISION_NONE) {
+ *      if (CheckForRotatingGatePuzzleCollision(direction, x, y))
+ *          return COLLISION_ROTATING_GATE;
+ *      CheckAcroBikeCollision(x, y, metatileBehavior, &collision);
+ *  }
+ *  return collision;
+ *  ```
+ *
+ *  ShouldJumpLedge utilise notre helper port qui prend `targetBehavior` au lieu
+ *  de `(x, y, direction)`. Fonctionnellement équivalent à l'override décomp.
+ *
+ *  x, y = INTERNAL coords (= +MAP_OFFSET déjà). */
+export function CheckForObjectEventCollision(
+  objectEvent: Parameters<typeof _GetCollisionAtCoords>[0],
+  x: number, y: number, direction: number, metatileBehavior: number,
+): number {
+  let collision = _GetCollisionAtCoords(objectEvent, x, y, direction);
+  if (collision === COLLISION_ELEVATION_MISMATCH && CanStopSurfing(x, y, direction))
+    return COLLISION_STOP_SURFING;
+  if (ShouldJumpLedge(metatileBehavior, direction)) {
+    IncrementGameStat(43);  // GAME_STAT_JUMPED_DOWN_LEDGES = 43
+    return COLLISION_LEDGE_JUMP;
+  }
+  if (collision === COLLISION_OBJECT_EVENT && TryPushBoulder(x, y, direction))
+    return COLLISION_PUSHED_BOULDER;
+  if (collision === COLLISION_NONE) {
+    if (CheckForRotatingGatePuzzleCollision(direction, x, y))
+      return COLLISION_ROTATING_GATE;
+    collision = CheckAcroBikeCollision(x, y, metatileBehavior, collision);
+  }
+  return collision;
+}
+
+/** 1:1 décomp `CheckForObjectEventStaticCollision(struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction, u8 metatileBehavior)`
+ *  (field_player_avatar.c:699-710). Variante "static" : pas de side-effects
+ *  (= pas de StartStrengthAnim, pas de CreateStopSurfingTask). Used par
+ *  trainer line-of-sight check. */
+export function CheckForObjectEventStaticCollision(
+  objectEvent: Parameters<typeof _GetCollisionAtCoords>[0],
+  x: number, y: number, direction: number, metatileBehavior: number,
+): number {
+  let collision = _GetCollisionAtCoords(objectEvent, x, y, direction);
+  if (collision === COLLISION_NONE) {
+    if (CheckForRotatingGatePuzzleCollisionWithoutAnimation(direction, x, y))
+      return COLLISION_ROTATING_GATE;
+    collision = CheckAcroBikeCollision(x, y, metatileBehavior, collision);
+  }
+  return collision;
+}
+
+/** 1:1 décomp `CheckForPlayerAvatarCollision(u8 direction)`
+ *  (field_player_avatar.c:654-663).
  *
  *  ```c
  *  s16 x, y;
@@ -708,76 +962,84 @@ export const COLLISION_LEDGE_JUMP   = 6;
  *  ```
  *
  *  Notre player utilise LOGICAL coords (= sans MAP_OFFSET) côté gPlayerAvatar.
- *  GetCollisionAtCoords attend INTERNAL coords (= +MAP_OFFSET). On compense
- *  ici en passant `dx + MAP_OFFSET, dy + MAP_OFFSET`.
- *
- *  Subsystems décomp `CheckForObjectEventCollision` non-portés (= R4 dette
- *  explicite, hors démo Brendan house) :
- *    - CanStopSurfing (= COLLISION_STOP_SURFING) — Surf seulement.
- *    - TryPushBoulder (= COLLISION_PUSHED_BOULDER) — Strength HM seulement.
- *    - CheckForRotatingGatePuzzleCollision (= COLLISION_ROTATING_GATE) — Trick
- *      House gates seulement.
- *    - CheckAcroBikeCollision (= COLLISION_NONE override) — Acro Bike seulement.
- *
- *  ShouldJumpLedge (= COLLISION_LEDGE_JUMP) PORTÉ ici (= used dès Litoral 102).
- *
- *  Returns COLLISION_* enum value. */
-function checkPlayerCollision(direction: number): number {
-  // Dev-only noclip (= devmenu touche « " » toggle ; cf. DebugOverlayScene).
-  // Bypass tous les checks → player marche à travers murs/NPCs/ledges/elevation
-  // pour debug map ou playthrough rapide pendant la chasse aux bugs demo.
-  // Flag global posé sur globalThis pour rester isolé du runtime décomp 1:1.
-  if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
-    return COLLISION_NONE;
-  }
-  // 1:1 décomp : read coords depuis playerObjEvent. Notre slot 0 stocke en
-  // LOGICAL coords (= sans MAP_OFFSET). Pour GetCollisionAtCoords qui attend
-  // INTERNAL coords, on add MAP_OFFSET au target. Fallback gPlayerAvatar.x/y
-  // si slot 0 pas init (= boot early ou tests).
+ *  GetCollisionAtCoords + CheckForObjectEventCollision attendent INTERNAL
+ *  coords (= +MAP_OFFSET). On compense ici. Fallback inline si slot 0 pas init. */
+export function CheckForPlayerAvatarCollision(direction: number): number {
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
-  const sx = useSlot ? playerObjEvent.currentCoordsX : gPlayerAvatar.x;
-  const sy = useSlot ? playerObjEvent.currentCoordsY : gPlayerAvatar.y;
-  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
-  // GetCollisionAtCoords : INTERNAL coords (= +MAP_OFFSET).
-  const internalX = dx + MAP_OFFSET;
-  const internalY = dy + MAP_OFFSET;
-  // 1:1 décomp `GetCollisionAtCoords` wrapper. Couvre :
-  //   - IsCoordOutsideObjectEventMovementRange (= player a movementRange=0 → no-op).
-  //   - MapGridGetCollisionAt + GetMapBorderIdAt + IsMetatileDirectionallyImpassable.
-  //   - trackedByCamera (= player.trackedByCamera=false → no-op).
-  //   - IsElevationMismatchAt (= 1:1 décomp avec ELEVATION_TRANSITION=0).
-  //   - DoesObjectCollideWithObjectAt (= skip self via reference compare → fix
-  //     bug 180° self-collision commit `9b08a0bf`).
-  let collision: number;
+  let sx: number, sy: number;
+  let obj: Parameters<typeof _GetCollisionAtCoords>[0];
   if (useSlot) {
-    collision = _GetCollisionAtCoords(playerObjEvent, internalX, internalY, direction);
+    sx = playerObjEvent.currentCoordsX;
+    sy = playerObjEvent.currentCoordsY;
+    obj = playerObjEvent;
   } else {
-    // Fallback boot early : construire un objectEvent virtuel avec les fields
-    // minimaux que GetCollisionAtCoords lit. Pas idéal 1:1 mais évite crash.
+    sx = gPlayerAvatar.x;
+    sy = gPlayerAvatar.y;
+    // Construire un objectEvent virtuel pour fallback boot early.
     const playerBehavior = MapGridGetMetatileBehaviorAt(
-      gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
-    const virtualObj = {
+      sx + MAP_OFFSET, sy + MAP_OFFSET);
+    obj = {
       active: false, trackedByCamera: false,
       currentMetatileBehavior: playerBehavior,
       currentElevation: gPlayerAvatar.currentElevation,
-      currentCoordsX: gPlayerAvatar.x, currentCoordsY: gPlayerAvatar.y,
-      previousCoordsX: gPlayerAvatar.x, previousCoordsY: gPlayerAvatar.y,
+      currentCoordsX: sx, currentCoordsY: sy,
+      previousCoordsX: sx, previousCoordsY: sy,
       movementRangeX: 0, movementRangeY: 0,
-      initialCoordsX: gPlayerAvatar.x, initialCoordsY: gPlayerAvatar.y,
+      initialCoordsX: sx, initialCoordsY: sy,
     } as unknown as Parameters<typeof _GetCollisionAtCoords>[0];
-    collision = _GetCollisionAtCoords(virtualObj, internalX, internalY, direction);
   }
-  // 1:1 décomp `CheckForObjectEventCollision` (field_player_avatar.c:676-697) :
-  //   ShouldJumpLedge fire APRÈS GetCollisionAtCoords (= peut override
-  //   COLLISION_IMPASSABLE car ledge tile a mapCollision > 0 mais le jump
-  //   override permet de sauter par dessus). L'anim de saut = sJumpY_High
-  //   curve dans updateSpriteFrame.
-  const targetBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
-  if (ShouldJumpLedge(targetBehavior, direction)) {
-    return COLLISION_LEDGE_JUMP;
+  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
+  // GetCollisionAtCoords + CheckForObjectEventCollision : INTERNAL coords.
+  const internalX = dx + MAP_OFFSET;
+  const internalY = dy + MAP_OFFSET;
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
+  return CheckForObjectEventCollision(obj, internalX, internalY, direction, metatileBehavior);
+}
+
+/** 1:1 décomp `CheckForPlayerAvatarStaticCollision(u8 direction)`
+ *  (field_player_avatar.c:665-674). Variante "static" : pas de side-effects. */
+export function CheckForPlayerAvatarStaticCollision(direction: number): number {
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
+  let sx: number, sy: number;
+  let obj: Parameters<typeof _GetCollisionAtCoords>[0];
+  if (useSlot) {
+    sx = playerObjEvent.currentCoordsX;
+    sy = playerObjEvent.currentCoordsY;
+    obj = playerObjEvent;
+  } else {
+    sx = gPlayerAvatar.x;
+    sy = gPlayerAvatar.y;
+    const playerBehavior = MapGridGetMetatileBehaviorAt(
+      sx + MAP_OFFSET, sy + MAP_OFFSET);
+    obj = {
+      active: false, trackedByCamera: false,
+      currentMetatileBehavior: playerBehavior,
+      currentElevation: gPlayerAvatar.currentElevation,
+      currentCoordsX: sx, currentCoordsY: sy,
+      previousCoordsX: sx, previousCoordsY: sy,
+      movementRangeX: 0, movementRangeY: 0,
+      initialCoordsX: sx, initialCoordsY: sy,
+    } as unknown as Parameters<typeof _GetCollisionAtCoords>[0];
   }
-  return collision;
+  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
+  const internalX = dx + MAP_OFFSET;
+  const internalY = dy + MAP_OFFSET;
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
+  return CheckForObjectEventStaticCollision(obj, internalX, internalY, direction, metatileBehavior);
+}
+
+/** Wrapper local : `checkPlayerCollision(direction)` = noclip dev + delegate à
+ *  `CheckForPlayerAvatarCollision` 1:1 strict. Used par PlayerStep + autres
+ *  call-sites internes du module. */
+function checkPlayerCollision(direction: number): number {
+  // Dev-only noclip (= devmenu touche « " » toggle ; cf. DebugOverlayScene).
+  // Bypass tous les checks → player marche à travers murs/NPCs/ledges/elevation.
+  if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
+    return COLLISION_NONE;
+  }
+  return CheckForPlayerAvatarCollision(direction);
 }
 
 /** 1:1 décomp `PlayCollisionSoundIfNotFacingWarp(direction)` (field_player_avatar.c:1098-1115).

@@ -1162,7 +1162,60 @@ export const COLLISION_ROTATING_GATE       = 8;
 
 /** 1:1 décomp `enum Elevation` (global.fieldmap.h:14-20). */
 export const ELEVATION_TRANSITION  = 0;
+export const ELEVATION_DEFAULT     = 3;
 export const ELEVATION_MULTI_LEVEL = 15;
+
+/** 1:1 décomp `ObjectEventDoesElevationMatch(objectEvent, elevation)`
+ *  (event_object_movement.c:2209-2215).
+ *
+ *  ```c
+ *  if (objectEvent->currentElevation != ELEVATION_TRANSITION
+ *      && elevation != ELEVATION_TRANSITION
+ *      && objectEvent->currentElevation != elevation)
+ *      return FALSE;
+ *  return TRUE;
+ *  ```
+ *
+ *  TRANSITION elevation (= 0) match toujours. Else même value requise. */
+export function ObjectEventDoesElevationMatch(
+  objectEvent: ObjectEvent, elevation: number,
+): boolean {
+  if (objectEvent.currentElevation !== ELEVATION_TRANSITION
+      && elevation !== ELEVATION_TRANSITION
+      && objectEvent.currentElevation !== elevation) return false;
+  return true;
+}
+
+/** 1:1 décomp `GetObjectEventIdByXY(s16 x, s16 y)`
+ *  (event_object_movement.c:1251-1261). Returns index dans gObjectEvents
+ *  matching position OR `OBJECT_EVENTS_COUNT` (= sentinel "not found"). */
+export function GetObjectEventIdByXY(x: number, y: number): number {
+  let i: number;
+  for (i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    if (gObjectEvents[i].active
+        && gObjectEvents[i].currentCoordsX === x
+        && gObjectEvents[i].currentCoordsY === y) break;
+  }
+  return i;
+}
+
+/** 1:1 décomp `GetObjectEventIdByPosition(u16 x, u16 y, u8 elevation)`
+ *  (event_object_movement.c:2192-2207). Same que GetObjectEventIdByXY mais
+ *  filtre aussi sur `ObjectEventDoesElevationMatch`. */
+export function GetObjectEventIdByPosition(
+  x: number, y: number, elevation: number,
+): number {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    if (gObjectEvents[i].active) {
+      if (gObjectEvents[i].currentCoordsX === x
+          && gObjectEvents[i].currentCoordsY === y
+          && ObjectEventDoesElevationMatch(gObjectEvents[i], elevation)) {
+        return i;
+      }
+    }
+  }
+  return OBJECT_EVENTS_COUNT;
+}
 
 /** 1:1 décomp `AreElevationsCompatible(u8 a, u8 b)`
  *  (event_object_movement.c:7791-7800).
