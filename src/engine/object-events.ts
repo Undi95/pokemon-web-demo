@@ -452,6 +452,157 @@ function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
  *  Note coords : `currentCoords` / `previousCoords` sont en INTERNAL coords
  *  (= +MAP_OFFSET, 1:1 décomp ObjectEvent struct convention). `MapGridGetMetatile
  *  BehaviorAt` prend des internal coords directement. */
+/** 1:1 décomp `MOVEMENT_ACTION_NONE = 0xFE` (= include/constants/event_object_movement.h).
+ *  Sentinel value pour `movementActionId` indiquant "no action active". */
+const MOVEMENT_ACTION_NONE = 0xFE;
+
+/** 1:1 décomp `ObjectEventIsMovementOverridden` (event_object_movement.c:4854-4860).
+ *
+ *  Body décomp :
+ *  ```c
+ *  if (objectEvent->singleMovementActive || objectEvent->heldMovementActive)
+ *      return TRUE;
+ *  return FALSE;
+ *  ```
+ *
+ *  Used par `ObjectEventSetHeldMovement` pour gate l'application d'un nouveau
+ *  movement action (= si déjà override, refuse). */
+export function ObjectEventIsMovementOverridden(objectEvent: ObjectEvent): boolean {
+  return objectEvent.singleMovementActive || objectEvent.heldMovementActive;
+}
+
+/** 1:1 décomp `ObjectEventIsHeldMovementActive` (event_object_movement.c:4862-4868).
+ *
+ *  Body décomp :
+ *  ```c
+ *  if (objectEvent->heldMovementActive && objectEvent->movementActionId != MOVEMENT_ACTION_NONE)
+ *      return TRUE;
+ *  return FALSE;
+ *  ```
+ *
+ *  Used par `UpdateObjectEventCurrentMovement` pour dispatch ExecHeldMovementAction. */
+export function ObjectEventIsHeldMovementActive(objectEvent: ObjectEvent): boolean {
+  return objectEvent.heldMovementActive && objectEvent.movementActionId !== MOVEMENT_ACTION_NONE;
+}
+
+/** 1:1 décomp `ObjectEventSetHeldMovement` (event_object_movement.c:4870-4881).
+ *
+ *  Body décomp :
+ *  ```c
+ *  if (ObjectEventIsMovementOverridden(objectEvent))
+ *      return TRUE;
+ *  UnfreezeObjectEvent(objectEvent);
+ *  objectEvent->movementActionId = movementActionId;
+ *  objectEvent->heldMovementActive = TRUE;
+ *  objectEvent->heldMovementFinished = FALSE;
+ *  gSprites[objectEvent->spriteId].sActionFuncId = 0;
+ *  return FALSE;
+ *  ```
+ *
+ *  Used par `Task_ExitDoor`, `Task_DoDoorWarp`, scripted movement applymovement
+ *  pour queue un movement action sur un ObjectEvent. Returns TRUE si refusé
+ *  (= déjà overridden), FALSE si accepté. */
+export function ObjectEventSetHeldMovement(objectEvent: ObjectEvent, movementActionId: number): boolean {
+  if (ObjectEventIsMovementOverridden(objectEvent)) return true;
+  objectEvent.frozen = false;  // 1:1 décomp `UnfreezeObjectEvent(objectEvent)`
+  objectEvent.movementActionId = movementActionId;
+  objectEvent.heldMovementActive = true;
+  objectEvent.heldMovementFinished = false;
+  // 1:1 décomp `gSprites[objectEvent->spriteId].sActionFuncId = 0` — sprite
+  // action state reset. Notre engine n'a pas de sActionFuncId direct (= sprite
+  // anim tracking diffère). Skip cette ligne, no-op fonctionnel.
+  return false;
+}
+
+/** 1:1 décomp `ObjectEventForceSetHeldMovement` (event_object_movement.c:4883-4887).
+ *
+ *  Body décomp :
+ *  ```c
+ *  ObjectEventClearHeldMovementIfActive(objectEvent);
+ *  ObjectEventSetHeldMovement(objectEvent, movementActionId);
+ *  ```
+ *
+ *  Used pour override un held movement existant (= contrairement à SetHeldMovement
+ *  qui refuse si déjà active). */
+export function ObjectEventForceSetHeldMovement(objectEvent: ObjectEvent, movementActionId: number): void {
+  ObjectEventClearHeldMovementIfActive(objectEvent);
+  ObjectEventSetHeldMovement(objectEvent, movementActionId);
+}
+
+/** 1:1 décomp `ObjectEventClearHeldMovementIfActive` (event_object_movement.c:4889-4893). */
+export function ObjectEventClearHeldMovementIfActive(objectEvent: ObjectEvent): void {
+  if (objectEvent.heldMovementActive) {
+    ObjectEventClearHeldMovement(objectEvent);
+  }
+}
+
+/** 1:1 décomp `ObjectEventClearHeldMovement` (event_object_movement.c:4895-4902).
+ *
+ *  Body décomp :
+ *  ```c
+ *  objectEvent->movementActionId = MOVEMENT_ACTION_NONE;
+ *  objectEvent->heldMovementActive = FALSE;
+ *  objectEvent->heldMovementFinished = FALSE;
+ *  gSprites[objectEvent->spriteId].sTypeFuncId = 0;
+ *  gSprites[objectEvent->spriteId].sActionFuncId = 0;
+ *  ```
+ */
+export function ObjectEventClearHeldMovement(objectEvent: ObjectEvent): void {
+  objectEvent.movementActionId = MOVEMENT_ACTION_NONE;
+  objectEvent.heldMovementActive = false;
+  objectEvent.heldMovementFinished = false;
+  // Sprite anim state reset : voir note dans ObjectEventSetHeldMovement.
+}
+
+/** 1:1 décomp `ObjectEventCheckHeldMovementStatus` (event_object_movement.c:4904-4910).
+ *
+ *  Body décomp :
+ *  ```c
+ *  if (objectEvent->heldMovementActive)
+ *      return objectEvent->heldMovementFinished;
+ *  return 16;
+ *  ```
+ *
+ *  Retourne :
+ *    - `heldMovementFinished` flag (0 ou 1) si held movement active.
+ *    - 16 (= "no held movement" sentinel) si pas active.
+ *
+ *  Used par `ObjectEventClearHeldMovementIfFinished` pour decide d'auto-clear. */
+export function ObjectEventCheckHeldMovementStatus(objectEvent: ObjectEvent): number {
+  if (objectEvent.heldMovementActive) {
+    return objectEvent.heldMovementFinished ? 1 : 0;
+  }
+  return 16;
+}
+
+/** 1:1 décomp `ObjectEventClearHeldMovementIfFinished` (event_object_movement.c:4912-4919).
+ *
+ *  Body décomp :
+ *  ```c
+ *  u8 heldMovementStatus = ObjectEventCheckHeldMovementStatus(objectEvent);
+ *  if (heldMovementStatus != 0 && heldMovementStatus != 16)
+ *      ObjectEventClearHeldMovementIfActive(objectEvent);
+ *  return heldMovementStatus;
+ *  ```
+ *
+ *  Used par scripts `waitmovement` opcode pour check si movement done +
+ *  auto-clear. Returns same status as Check (= caller distingue done/notDone). */
+export function ObjectEventClearHeldMovementIfFinished(objectEvent: ObjectEvent): number {
+  const heldMovementStatus = ObjectEventCheckHeldMovementStatus(objectEvent);
+  if (heldMovementStatus !== 0 && heldMovementStatus !== 16) {
+    ObjectEventClearHeldMovementIfActive(objectEvent);
+  }
+  return heldMovementStatus;
+}
+
+/** 1:1 décomp `ObjectEventGetHeldMovementActionId` (event_object_movement.c:4921-4927). */
+export function ObjectEventGetHeldMovementActionId(objectEvent: ObjectEvent): number {
+  if (objectEvent.heldMovementActive) {
+    return objectEvent.movementActionId;
+  }
+  return MOVEMENT_ACTION_NONE;
+}
+
 export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
   // 1:1 décomp `MapGridGetMetatileBehaviorAt(objEvent->currentCoords.x, ...)` :
   // décomp stocke `currentCoords` en INTERNAL coords (= +MAP_OFFSET), donc le
