@@ -552,7 +552,7 @@ function _spawnGameObjects(playerLoc: { x: number; y: number; mapSecId?: string 
  *  (= pré-render canvas avec 9-slice border 1:1 + text rendu monospace).
  *
  *  Le frame style est celui sélectionné par l'user via le menu OPTIONS
- *  (= `gameState.options.windowFrameType`, 1..20, 1:1 décomp
+ *  (= `gSaveBlock2Ptr.optionsWindowFrameType`, 1..20, 1:1 décomp
  *  `gSaveBlock2Ptr->optionsWindowFrameType`). Charge les tiles via
  *  `GetWindowFrameTilesPal(frameType)` (= 9 tiles 4bpp + palette 16 colors,
  *  1:1 décomp text_window.c:14-23 sTextWindowFrameN_Gfx/_Pal).
@@ -583,7 +583,7 @@ function _renderWindowToCanvas(
   // Lazy import pour éviter circular deps.
   const txtWindow = (globalThis as Record<string, unknown>).GetWindowFrameTilesPal as
     ((idx: number) => { tiles: Uint8Array; pal: Uint16Array }) | undefined;
-  const frameType = gameState.options.windowFrameType ?? 0;
+  const frameType = gSaveBlock2Ptr.optionsWindowFrameType ?? 0;
   const { tiles, pal } = txtWindow ? txtWindow(frameType) : { tiles: new Uint8Array(0x120), pal: new Uint16Array(16) };
 
   // Canvas hors-écran pour pré-render.

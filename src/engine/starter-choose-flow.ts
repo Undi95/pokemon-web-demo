@@ -35,6 +35,7 @@ import { getRuntime, LoadPalette } from './decomp-globals';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { createPokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
 import { Sin } from './decomp-helpers';
@@ -641,7 +642,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           VarSet('VAR_STARTER_MON', chosenIdx);
           VarSet('VAR_RESULT', chosenIdx);
           VarSet('VAR_STARTER_MON', chosenIdx);
-          console.log(`[StarterChoose] commit ${speciesEnum} (idx=${chosenIdx}) → party size=${gameState.partySize}`);
+          console.log(`[StarterChoose] commit ${speciesEnum} (idx=${chosenIdx}) → party size=${gSaveBlock1Ptr.playerPartyCount}`);
           // Session 124 Bug 5b : 1:1 décomp Task_AskConfirmStarter
           // PlayCry_Normal(GetStarterPokemon(task.data[0]), 0).
           const cryName = speciesEnum.replace('SPECIES_', '').toLowerCase();

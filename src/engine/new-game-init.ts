@@ -1,4 +1,5 @@
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { VarSet } from './script-vars';
 import { RunScriptImmediately, ensureCommonScriptsLoaded } from './script-runtime';
 import { NewGameInitPCItems } from './pc-items';
@@ -52,7 +53,7 @@ export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
   // session, utilise `?debug` (= preset complet via boot-mode.ts).
 
   console.log(`[new-game-init] init OK pour ${gender}`,
-    'flags=', gameState.getAllFlagNames().length,
+    'flags=', Object.keys(gSaveBlock1Ptr.flags).length,
     'dynamicWarp=', gameState.dynamicWarp,
-    'party=', gameState.partySize);
+    'party=', gSaveBlock1Ptr.playerPartyCount);
 }

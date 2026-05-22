@@ -89,7 +89,7 @@ export type ScriptContext = {
 };
 
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { setStringVar } from './string-buffers';
@@ -169,7 +169,7 @@ const SPECIALS: Record<string, SpecialFn> = {
     gameState.addToParty(mon);
     VarSet('VAR_RESULT', idx);
     VarSet('VAR_STARTER_MON', idx);
-    console.log(`[ChooseStarter] starter=${speciesEnum} (idx=${idx}) → party size=${gameState.partySize}`);
+    console.log(`[ChooseStarter] starter=${speciesEnum} (idx=${idx}) → party size=${gSaveBlock1Ptr.playerPartyCount}`);
     // Combat tutorial vs Poochyena lvl 2 (équivalent BATTLE_TYPE_FIRST_BATTLE
     // du décomp `CB2_StartFirstBattle`). Bloquant : on attend la fin avant que
     // le script Birch continue (Birch remercie + warp lab).
@@ -362,7 +362,7 @@ export async function runScript(
       continue;
     }
     // setrespawn HEAL_LOCATION_X : où on revient après un blackout
-    if (op === 'setrespawn') { gameState.setRespawn(tokens[1]); continue; }
+    if (op === 'setrespawn') { gSaveBlock1Ptr.respawnLocation = tokens[1]; continue; }
     // setdynamicwarp MAP_X, X, Y : spawn point dynamique (1er spawn de partie / cordes...)
     if (op === 'setdynamicwarp') {
       gameState.setDynamicWarp(tokens[1], Number(tokens[2]) || 0, Number(tokens[3]) || 0);
@@ -682,7 +682,7 @@ export async function runScript(
       const result = ok ? 0 : 1; // MVP : si pas de place → faux PC (= 1), pas d'erreur
       vars['VAR_RESULT'] = result;
       VarSet('VAR_RESULT', result);
-      console.log(`[givemon] ${species} L${level} → party (size=${gameState.partySize}, result=${result})`);
+      console.log(`[givemon] ${species} L${level} → party (size=${gSaveBlock1Ptr.playerPartyCount}, result=${result})`);
       continue;
     }
     // Opcode inconnu : log une fois pour traçabilité (warn limité)

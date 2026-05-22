@@ -145,7 +145,7 @@ registerSpecial('GetBattleOutcome', () => {
 /** 1:1 décomp `CalculatePlayerPartyCount` (pokemon_util.c:CalculatePlayerPartyCount).
  *  Returns gPlayerPartyCount (= number of party slots filled, 0..6). */
 registerSpecial('CalculatePlayerPartyCount', () => {
-  return gameState.partySize;
+  return gSaveBlock1Ptr.playerPartyCount;
 });
 
 /** 1:1 décomp `ShouldTryRematchBattle` (rematch_setup.c).
@@ -429,7 +429,7 @@ registerSpecial('GetGameStat', () => 0);
 registerSpecial('PutZigzagoonInPlayerParty', () => {
   // For our flow, we already have a Pokemon from ChooseStarter. If party is
   // empty (= dev test), add a Zigzagoon.
-  if (gameState.partySize === 0) {
+  if (gSaveBlock1Ptr.playerPartyCount === 0) {
     void (async () => {
       const { createPokemonInstance } = await import('./pokemon');
       const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
@@ -480,7 +480,7 @@ registerSpecial('LoadPlayerParty', () => { /* loaded at boot already */ });
 
 /** 1:1 décomp `IsStarterInParty` — checks if starter is still in party. */
 registerSpecial('IsStarterInParty', () => {
-  return gameState.partySize > 0 ? 1 : 0;
+  return gSaveBlock1Ptr.playerPartyCount > 0 ? 1 : 0;
 });
 
 /** 1:1 décomp `InitBirchState` — initializes Birch lab state machine. */

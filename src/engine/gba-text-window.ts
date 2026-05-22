@@ -18,6 +18,7 @@
 import { assetCache, getAsset, getRuntime, LoadBgTiles } from './decomp-globals';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { gameState } from './game-state';
+import { gSaveBlock2Ptr } from './save-block-state';
 import {
   FillBgTilemapBufferRect, GetWindowAttribute,
   WINDOW_BG, WINDOW_TILEMAP_LEFT, WINDOW_TILEMAP_TOP, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -66,9 +67,9 @@ export function LoadWindowGfx(bg: number, frameId: number, destOffset: number, p
  *    LoadWindowGfx(windowId, gSaveBlock2Ptr->optionsWindowFrameType, destOffset, palOffset);
  *
  *  Utilise le frame style sélectionné par le user dans le menu OPTIONS
- *  (= gameState.options.windowFrameType, default 0). */
+ *  (= gSaveBlock2Ptr.optionsWindowFrameType, default 0). */
 export function LoadUserWindowBorderGfx(bg: number, destOffset: number, palOffset: number): void {
-  const frameId = gameState.options.windowFrameType ?? 0;
+  const frameId = gSaveBlock2Ptr.optionsWindowFrameType ?? 0;
   LoadWindowGfx(bg, frameId, destOffset, palOffset);
 }
 

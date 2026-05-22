@@ -303,7 +303,7 @@ if (typeof window !== 'undefined') {
   dev.battle.startTrainer = async (trainerId: string) => {
     // Auto-add starter Pokemon if party is empty (= dev convenience).
     const gsMod = await import('./game-state');
-    if (gsMod.gameState.partySize === 0) {
+    if (gsMod.gameState.partySize /* TODO: migrate to gSaveBlock1Ptr.playerPartyCount */ === 0) {
       const pokeMod = await import('./pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
       gsMod.gameState.addToParty(starter);

@@ -1827,7 +1827,7 @@ registerOpcode('setrespawn', (_ctx, args) => {
   // qui consume (= DoWhiteOut → SetWarpDestinationToLastHealLocation) résoudra
   // au moment du respawn (= probably aussi à porter). Pour MVP : note la heal
   // location dans saveBlock1 pour persist + sync DEBUG.
-  gameState.setRespawn(healLocId);
+  gSaveBlock1Ptr.respawnLocation = healLocId;
   return false;
 });
 
@@ -2240,7 +2240,7 @@ registerOpcode('checkpartymove', (_ctx, _args) => {
   return false;
 });
 registerOpcode('countpokemon', (_ctx) => {
-  VarSet('VAR_RESULT', gameState.partySize);
+  VarSet('VAR_RESULT', gSaveBlock1Ptr.playerPartyCount);
   return false;
 });
 
@@ -2790,7 +2790,7 @@ registerOpcode('getplayerxy', (_ctx, args) => {
 
 // 1:1 décomp `ScrCmd_getpartysize` (scrcmd.c) — read partySize into VAR_RESULT.
 registerOpcode('getpartysize', (_ctx) => {
-  VarSet('VAR_RESULT', gameState.partySize);
+  VarSet('VAR_RESULT', gSaveBlock1Ptr.playerPartyCount);
   return false;
 });
 
