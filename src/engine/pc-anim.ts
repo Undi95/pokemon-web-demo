@@ -18,7 +18,8 @@
  */
 
 import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from './map-loader';
-import { gPlayerAvatar } from './player-avatar';
+import { GetPlayerFacingDirection } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { gameState } from './game-state';
 import { DrawWholeMapView } from './field-camera';
 import {
@@ -109,7 +110,7 @@ export function DoPCTurnOffEffect(): void {
 
 /** 1:1 décomp `PCTurnOnEffect` (lines 1015-1031) : compute dx/dy depuis player dir. */
 function _computeDxDy(): { dx: number; dy: number } | null {
-  const facing = gPlayerAvatar.facing;
+  const facing = GetPlayerFacingDirection();
   if (facing === DIR_NORTH) return { dx: 0, dy: -1 };
   if (facing === DIR_WEST)  return { dx: -1, dy: -1 };
   if (facing === DIR_EAST)  return { dx: 1, dy: -1 };
@@ -135,8 +136,8 @@ function _setPCMetatile(isScreenOn: boolean, dx: number, dy: number): void {
   }
   // 1:1 décomp : x + dx + MAP_OFFSET, y + dy + MAP_OFFSET.
   MapGridSetMetatileIdAt(
-    gPlayerAvatar.x + dx + MAP_OFFSET,
-    gPlayerAvatar.y + dy + MAP_OFFSET,
+    gSaveBlock1Ptr.pos.x + dx + MAP_OFFSET,
+    gSaveBlock1Ptr.pos.y + dy + MAP_OFFSET,
     metatileId | MAPGRID_IMPASSABLE,
   );
 }
@@ -148,8 +149,8 @@ function _setPCMetatileToOff(dx: number, dy: number): void {
   else if (pcLocation === PC_LOCATION_BRENDANS_HOUSE) metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;
   else if (pcLocation === PC_LOCATION_MAYS_HOUSE)  metatileId = METATILE_BrendansMaysHouse_MayPC_Off;
   MapGridSetMetatileIdAt(
-    gPlayerAvatar.x + dx + MAP_OFFSET,
-    gPlayerAvatar.y + dy + MAP_OFFSET,
+    gSaveBlock1Ptr.pos.x + dx + MAP_OFFSET,
+    gSaveBlock1Ptr.pos.y + dy + MAP_OFFSET,
     metatileId | MAPGRID_IMPASSABLE,
   );
 }

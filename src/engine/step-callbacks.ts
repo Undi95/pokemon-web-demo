@@ -20,7 +20,6 @@
  *   player-avatar.ts `PlayerStep` complete handler appelle `DoPerStepCallback()`.
  */
 
-import { gPlayerAvatar } from './player-avatar';
 import { gameState } from './game-state';
 
 // ─── Callback IDs 1:1 décomp event_objects.h ────────────────────────────────
@@ -111,7 +110,6 @@ function _stepCb_Ash(): void {
   // change le metatile pour montrer un ash pile cleared + drop White Soot bag.
   // MVP : pour le déclencher il faut detect MB_ASH metatile. Notre map system
   // expose MapGridGetMetatileBehaviorAt. Future : full Soot collection logic.
-  void gPlayerAvatar.x;
   // Placeholder log pour debug. Réel impl = SetMapGridMetatileId(x, y, METATILE_ROUTE113_ASH_CLEARED).
 }
 

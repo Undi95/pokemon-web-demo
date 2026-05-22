@@ -35,7 +35,8 @@ import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
 } from './object-events';
-import { gPlayerAvatar } from './player-avatar';
+import { GetPlayerFacingDirection } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { GetCameraTopLeftCoords } from './field-camera';
 import { SaveMapView, MAP_OFFSET } from './map-loader';
 
@@ -259,8 +260,8 @@ export function SyncPlayerPositionToBlock(): void {
   // gPlayerAvatar est la source primaire (= updated à chaque step).
   // Si gPlayerAvatar non initialisé (= boot pre-1er-map-load), fallback
   // au _camPos (= field-camera).
-  const gpaX = gPlayerAvatar.x;
-  const gpaY = gPlayerAvatar.y;
+  const gpaX = gSaveBlock1Ptr.pos.x;
+  const gpaY = gSaveBlock1Ptr.pos.y;
   const cp = GetCameraTopLeftCoords();
   let x = gpaX;
   let y = gpaY;
@@ -274,9 +275,9 @@ export function SyncPlayerPositionToBlock(): void {
   if (x < 0) x = 0;
   if (y < 0) y = 0;
   block1.pos = { x, y };
-  (block1 as { __facing?: number }).__facing = gPlayerAvatar.facing;
+  (block1 as { __facing?: number }).__facing = GetPlayerFacingDirection();
   // Debug log : aide à diagnostiquer pourquoi pos est (0,0) au save.
-  console.log(`[SyncPlayerPositionToBlock] gPlayerAvatar=(${gpaX},${gpaY}) camPos=(${cp.x},${cp.y}) → block1.pos=(${x},${y}) facing=${gPlayerAvatar.facing}`);
+  console.log(`[SyncPlayerPositionToBlock] gSaveBlock1Ptr.pos=(${gpaX},${gpaY}) camPos=(${cp.x},${cp.y}) → block1.pos=(${x},${y}) facing=${GetPlayerFacingDirection()}`);
 }
 
 /** Helper web-port : sync la map courante vers `block1.location` et update

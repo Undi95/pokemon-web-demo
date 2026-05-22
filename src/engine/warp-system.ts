@@ -31,7 +31,8 @@
 
 import type { WarpEvent, MapHeader } from './map-loader';
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
-import { gPlayerAvatar, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from './player-avatar';
+import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import {
   MB_ANIMATED_DOOR,
   MB_NON_ANIMATED_DOOR,
@@ -156,7 +157,7 @@ export function findWarpEventAt(x: number, y: number): WarpEvent | null {
 
 /** Find warp à la position courante du player. */
 export function getWarpAtPlayerPos(): WarpEvent | null {
-  return findWarpEventAt(gPlayerAvatar.x, gPlayerAvatar.y);
+  return findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
 }
 
 /** 1:1 décomp `IsWarpMetatileBehavior` (field_control_avatar.c:751-765).
@@ -257,7 +258,7 @@ export function getExitTaskKindFor(behavior: number): ExitTaskKind {
 /** Read le metatile_behavior à la position courante du player.
  *  Helper pour scene executeWarp post-load → dispatch exit task. */
 export function getMetatileBehaviorAtPlayerPos(): number {
-  return MapGridGetMetatileBehaviorAt(gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+  return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
 }
 
 // ─── Post-warp facing direction ─────────────────────────────────────────────
@@ -349,12 +350,12 @@ export function getPlayerCoordsFromWarp(
     return {
       x: Math.floor(destMapHeader.mapLayout.width / 2),
       y: Math.floor(destMapHeader.mapLayout.height / 2),
-      facing: gPlayerAvatar.facing,  // = preserve current facing
+      facing: GetPlayerFacingDirection(),  // = preserve current facing
     };
   }
   // 1:1 décomp : preserve facing courant. La scene executeWarp override
   // DIR_SOUTH pour door/non_anim exit task + Task_ExitDoor walk-down.
-  return { x: dest.x, y: dest.y, facing: gPlayerAvatar.facing };
+  return { x: dest.x, y: dest.y, facing: GetPlayerFacingDirection() };
 }
 
 // ─── Reset ─────────────────────────────────────────────────────────────────

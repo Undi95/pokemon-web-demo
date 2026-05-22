@@ -60,6 +60,7 @@ import {
   PlayerStep,
   DestroyPlayerAvatar,
   SetPlayerVisibility,
+  GetPlayerFacingDirection,
   DIR_NONE,
   DIR_NORTH,
   DIR_SOUTH,
@@ -69,6 +70,8 @@ import {
   T_NOT_MOVING,
   gPlayerAvatar,
 } from '../engine/player-avatar';
+import { gSaveBlock1Ptr } from '../engine/save-block-state';
+import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
 import { gameState } from '../engine/game-state';
 import {
   SpawnObjectEventsOnMap,
@@ -266,8 +269,8 @@ export class TestOverworldScene extends Phaser.Scene {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const arrowState = (globalThis as any).getArrowState?.();
       console.log('arrowDebug:', {
-        playerX: gPlayerAvatar.x,
-        playerY: gPlayerAvatar.y,
+        playerX: gSaveBlock1Ptr.pos.x,
+        playerY: gSaveBlock1Ptr.pos.y,
         camX: GetCameraTopLeftCoords().x,
         camY: GetCameraTopLeftCoords().y,
         offX: gTotalCamera.pixelOffsetX,
@@ -496,7 +499,7 @@ export class TestOverworldScene extends Phaser.Scene {
         // ─── Fix défensif désync `_camPos` vs `gPlayerAvatar` ────────────────
         // Bug user-flag 2026-05-22 : après warp / menu / event scripted, le
         // sprite player + BG apparaissent décalés d'1 case (= cam.x ≠ player.x).
-        // Cause root TS : `_camPos` (field-camera) et `gPlayerAvatar.x/y`
+        // Cause root TS : `_camPos` (field-camera) et `gSaveBlock1Ptr.pos.x/y`
         // (player-avatar) sont 2 vars SÉPARÉES qui peuvent diverger sur certains
         // paths (= probablement Task_ExitDoor walk-down qui call PlayerStep step
         // end avant CameraMove fire). Décomp n'a qu'1 seule var `gSaveBlock1Ptr
@@ -511,9 +514,9 @@ export class TestOverworldScene extends Phaser.Scene {
             && gPlayerAvatar.stepFramesLeft === 0
             && !pendingConn) {
           const c = GetCameraTopLeftCoords();
-          if (c.x !== gPlayerAvatar.x || c.y !== gPlayerAvatar.y) {
-            console.warn(`[ow-sync] divergence cam=(${c.x},${c.y}) vs player=(${gPlayerAvatar.x},${gPlayerAvatar.y}) → re-sync + redraw`);
-            SetCameraTopLeftCoords(gPlayerAvatar.x, gPlayerAvatar.y);
+          if (c.x !== gSaveBlock1Ptr.pos.x || c.y !== gSaveBlock1Ptr.pos.y) {
+            console.warn(`[ow-sync] divergence cam=(${c.x},${c.y}) vs player=(${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) → re-sync + redraw`);
+            SetCameraTopLeftCoords(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
             clearOverworldTilemaps();
             DrawWholeMapView();
             flushOverworldTilemaps(self.rt);
@@ -541,7 +544,7 @@ export class TestOverworldScene extends Phaser.Scene {
         // check : si player on ARROW_WARP tile + facing/walking matching dir
         // → show arrow at adjacent tile. Sinon hide. UpdateWarpArrowSprite tick
         // anim + sync sprite OAM position avec camera scroll.
-        HideShowWarpArrow(rt, gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
+        HideShowWarpArrow(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
         UpdateWarpArrowSprite(rt);
         // 1:1 décomp tall grass field effect (= field_effect_helpers.c
         // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
@@ -589,7 +592,7 @@ export class TestOverworldScene extends Phaser.Scene {
           console.warn('[restoreOverworldFromMenu] no gMapHeader, abort');
           return;
         }
-        console.log(`[restoreOverworldFromMenu] mapId=${gMapHeader.id} pos=(${gPlayerAvatar.x},${gPlayerAvatar.y}) facing=${gPlayerAvatar.facing}`);
+        console.log(`[restoreOverworldFromMenu] mapId=${gMapHeader.id} pos=(${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) facing=${GetPlayerFacingDirection()}`);
         // 1:1 décomp `InitOverworldBgs` (overworld.c) : re-config BG0/1/2/3 via
         // `sOverworldBgTemplates`. CB2_InitOptionMenu state 1 fait
         // `InitBgsFromTemplates(0, sOptionMenuBgTemplates)` → BG0 charBase=1
@@ -631,7 +634,7 @@ export class TestOverworldScene extends Phaser.Scene {
         // re-init field et reprend exactement où il était. No-op si aucun
         // script en vol (option menu/sac : status SHUTDOWN).
         const _scriptSnap = ScriptContext_Snapshot();
-        await self.loadAndInitMap(gMapHeader.id, gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
+        await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
         ScriptContext_Restore(_scriptSnap);
         // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
         // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
@@ -970,8 +973,8 @@ export class TestOverworldScene extends Phaser.Scene {
       if (kind === 'door') {
         // Door tile = position en face du player (= player.x, player.y - 1
         // car player face NORTH au moment du collision dispatch).
-        const doorX = gPlayerAvatar.x;
-        const doorY = gPlayerAvatar.y - 1;
+        const doorX = gSaveBlock1Ptr.pos.x;
+        const doorY = gSaveBlock1Ptr.pos.y - 1;
         // case 0 : FreezeObjectEvents + PlayerGetDestCoords + PlaySE +
         // FieldAnimateDoorOpen. Le freeze gèle les NPCs (= skip player) pour
         // que la door anim + le walk up ne soient pas perturbés.
@@ -1019,7 +1022,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // NORTH au warp, et Task_ExitDoor case 1 dispatch WALK_NORMAL_DOWN qui set
       // facing à DIR_SOUTH au step 0 (= 1 frame après SetPlayerVisibility(TRUE)).
       // → on voit 1 frame de sprite facing UP puis walk-down auto.
-      // Notre version : preserve gPlayerAvatar.facing courant (= depuis la
+      // Notre version : preserve GetPlayerFacingDirection() courant (= depuis la
       // source map). Le walk-down auto override facing au step start. Pour les
       // warps non-door (= ladder/arrow/teleport), on preserve aussi.
       //
@@ -1042,7 +1045,7 @@ export class TestOverworldScene extends Phaser.Scene {
         destMapId = dw.mapId;
         destX = dw.x;
         destY = dw.y;
-        destDir = gPlayerAvatar.facing;  // preserve facing
+        destDir = GetPlayerFacingDirection();  // preserve facing
         console.log(`[executeWarp] MAP_DYNAMIC → ${destMapId} (${destX}, ${destY})`);
       } else {
         // 1:1 décomp `SetPlayerCoordsFromWarp` (overworld.c:603) :
@@ -1072,13 +1075,13 @@ export class TestOverworldScene extends Phaser.Scene {
           // dest coords, warpId is sentinel -1 / 0xFF.
           destX = warp.x;
           destY = warp.y;
-          destDir = gPlayerAvatar.facing;
+          destDir = GetPlayerFacingDirection();
           console.log(`[executeWarp] explicit coords → ${destMapId} (${destX}, ${destY})`);
         } else {
           // Both invalid → fallback to map center (= 1:1 décomp behavior).
           destX = Math.floor(destPreheader.mapLayout.width / 2);
           destY = Math.floor(destPreheader.mapLayout.height / 2);
-          destDir = gPlayerAvatar.facing;
+          destDir = GetPlayerFacingDirection();
           console.warn(`[executeWarp] no valid warpId or coords → map center (${destX}, ${destY})`);
         }
       }
@@ -1123,7 +1126,7 @@ export class TestOverworldScene extends Phaser.Scene {
       if (exitKind === 'door') {
         // 1:1 case 0 : FieldSetDoorOpened (= instant draw open frame, no SE, no anim).
         // À call MAINTENANT avant fade in, pas en Phase 5.
-        await FieldSetDoorOpened(gPlayerAvatar.x, gPlayerAvatar.y);
+        await FieldSetDoorOpened(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
       }
 
       // 1:1 décomp `InitObjectEventsLocal` → `GetInitialPlayerAvatarState` →
@@ -1133,9 +1136,11 @@ export class TestOverworldScene extends Phaser.Scene {
       // → DIR_NORTH, pour MB_*_ARROW_WARP → direction opposée à l'arrow, pour
       // MB_LADDER → preserve l'ancien facing. Appliqué avant Phase 5 pour que
       // le push 1 case se fasse dans la bonne direction.
-      const previousFacing = gPlayerAvatar.facing;
+      const previousFacing = GetPlayerFacingDirection();
       const adjustedDir = GetAdjustedInitialDirection(postWarpBehavior, previousFacing);
-      gPlayerAvatar.facing = adjustedDir;
+      // 1:1 décomp : pa.facing n'existe PAS — source unique slot.facingDirection
+      // via SetObjectEventDirection (= maintient invariant previousMovementDirection).
+      SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], adjustedDir);
 
       // ─── Phase 4 : fade in (= 1:1 décomp `WarpFadeInScreen` field_screen_effect.c:74) ─
       // L'ordre 1:1 décomp :
@@ -1175,8 +1180,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_DOWN). Doors always
         // exit DOWN (= player came IN from below, exits OUT toward south).
         // Note : FieldSetDoorOpened déjà appelé en Pre-Phase 4 (= 1:1 case 0).
-        const doorX = gPlayerAvatar.x;
-        const doorY = gPlayerAvatar.y;
+        const doorX = gSaveBlock1Ptr.pos.x;
+        const doorY = gSaveBlock1Ptr.pos.y;
         // 1:1 décomp `FieldCB_DefaultWarpExit` (field_screen_effect.c:278) :
         // `LockPlayerFieldControls()` tient le lock pendant toute la durée
         // du `Task_ExitDoor`. DoCB1_Overworld (overworld.c:1445) skip
@@ -1260,7 +1265,7 @@ export class TestOverworldScene extends Phaser.Scene {
    *       logical coords (= 1:1 décomp `SetPositionFromConnection` + delta).
    *    3. TransitionToConnection : sync swap gMapHeader + InitMap + secondary
    *       tileset/palette. Primary tileset stays in VRAM.
-   *    4. Update gPlayerAvatar.x/y to new logical coords.
+   *    4. Update gSaveBlock1Ptr.pos.x/y to new logical coords.
    *    5. SetCameraTopLeftCoords to the new map's view top-left.
    *    6. clearOverworldTilemaps + DrawWholeMapView for new map.
    *    7. flushOverworldTilemaps + FieldUpdateBgTilemapScroll.

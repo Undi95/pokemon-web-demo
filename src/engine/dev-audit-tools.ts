@@ -32,7 +32,8 @@
 
 import { gameState } from './game-state';
 import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from './save-system';
-import { gPlayerAvatar } from './player-avatar';
+import { GetPlayerFacingDirection } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { assetCache, getRuntime } from './decomp-globals';
 import { gMapHeader } from './map-loader';
 import { bagContents } from './bag';
@@ -84,9 +85,9 @@ const audit: DevAudit = {
     return {
       // Player position
       mapId: gMapHeader?.id ?? 'NONE',
-      x: gPlayerAvatar.x,
-      y: gPlayerAvatar.y,
-      facing: gPlayerAvatar.facing,
+      x: gSaveBlock1Ptr.pos.x,
+      y: gSaveBlock1Ptr.pos.y,
+      facing: GetPlayerFacingDirection(),
       // Identity
       playerName: sb2.playerName,
       gender: sb2.playerGender === 1 ? 'FEMALE' : 'MALE',

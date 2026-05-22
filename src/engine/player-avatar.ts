@@ -50,6 +50,7 @@ import {
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
+  SetObjectEventDirection,
   OBJECT_EVENTS_COUNT,
   ELEVATION_DEFAULT,
 } from './object-events';
@@ -105,7 +106,10 @@ import {
   IsMetatileDirectionallyImpassable,
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './gba-menu-system';
+// 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
+// dans le module Foundation `save-block-state.ts` (= permet l'import direct
+// depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 // 1:1 décomp `field_control_avatar.c` interaction chain. ESM cycle safe :
 // field-control-avatar importe player-avatar (gPlayerAvatar/GetXY...) au top-level,
 // nous l'importons ici aussi mais ses fonctions sont appelées uniquement DANS
@@ -168,11 +172,6 @@ const SPRITE_FRAMES = {
 // ─── Player Avatar struct (= simplified gPlayerAvatar) ──────────────────────
 
 interface PlayerAvatar {
-  /** Player position en map coords (= 0-indexed dans original map). */
-  x: number;
-  y: number;
-  /** Direction face actuelle (1=south/down, 2=north/up, 3=west/left, 4=east/right). */
-  facing: number;
   /** 1:1 décomp `gPlayerAvatar.flags` (= PLAYER_AVATAR_FLAG_* bitmask).
    *  Bit 0 = ON_FOOT, bit 1 = MACH_BIKE, bit 2 = ACRO_BIKE, bit 3 = SURFING,
    *  bit 4 = UNDERWATER, bit 5 = CONTROLLABLE, bit 6 = FORCED_MOVE, bit 7 = DASH. */
@@ -264,7 +263,7 @@ interface PlayerAvatar {
  *  stockée dans `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) — source
  *  unique partagée avec `_camPos` (= field-camera.ts).
  *
- *  Pour préserver les call-sites TS existants (`gPlayerAvatar.x = ...`), `x` et
+ *  Pour préserver les call-sites TS existants (`gSaveBlock1Ptr.pos.x = ...`), `x` et
  *  `y` sont implémentés en getter/setter qui délèguent à `gSaveBlock1Ptr.pos`.
  *  Élimine le désync historique `cam.x ≠ player.x` user-flag 2026-05-22.
  *
@@ -296,79 +295,9 @@ const _gPlayerAvatarBase = {
   abStartSelectHistory: 0,
   dirTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
   abStartSelectTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
-} as Omit<PlayerAvatar, 'x' | 'y' | 'facing'>;
+} as PlayerAvatar;
 
-// Backing pour `pa.facing` quand slot 0 pas encore init (= boot très early
-// avant InitPlayerObjectEvent). 1:1 strict décomp : `facing` n'existe PAS dans
-// struct PlayerAvatar (= idem x/y). Source unique = slot0.facingDirection.
-let _facingFallback = DIR_SOUTH;
-
-/** 1:1 STRICT décomp `gPlayerAvatar.x/y` : N'EXISTE PAS dans le décomp.
- *  `struct PlayerAvatar` (global.fieldmap.h:342-362) n'a PAS x/y. La position
- *  du joueur est UNIQUEMENT dans `gObjectEvents[gPlayerAvatar.objectEventId]
- *  .currentCoords` (= source unique 1:1 strict).
- *
- *  Notre TS port : `pa.x/y` getter/setter alias vers `gSaveBlock1Ptr.pos`
- *  (= camera focus, 1:1 décomp save state updated par CameraMove). Slot 0
- *  `currentCoords` est la source unique pour position physique (= 1:1 décomp).
- *
- *  Sync invariant maintenu par le pattern `MovementAction_*_Step0` 1:1
- *  strict path (= movement-system.ts _initWalk player + player-avatar.ts
- *  PlayerStep MOVING dispatch) : slot 0 currentCoords += delta IMMEDIATEMENT
- *  au step start. CameraMove update pos via _camPos mid-step au tile boundary.
- *  Au step end, slot 0.currentCoords == pos. Aucune désync possible si tous
- *  les chemins respectent ce pattern.
- *
- *  Note : si du code legacy modifie pa.x/y direct (= dev tool replace,
- *  applymovement non-walk-handlers), le setter NE SYNC PAS slot 0 (= 1:1
- *  strict décomp ; le décomp lui-même n'a pas ce duplication). Si nécessaire,
- *  caller doit appeler SyncPlayerObjectEvent explicitement après le write. */
-Object.defineProperty(_gPlayerAvatarBase, 'x', {
-  get(): number { return gSaveBlock1Ptr.pos.x; },
-  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
-  enumerable: true,
-  configurable: true,
-});
-Object.defineProperty(_gPlayerAvatarBase, 'y', {
-  get(): number { return gSaveBlock1Ptr.pos.y; },
-  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
-  enumerable: true,
-  configurable: true,
-});
-
-/** 1:1 STRICT décomp `gPlayerAvatar.facing` : N'EXISTE PAS dans le décomp.
- *  `struct PlayerAvatar` (global.fieldmap.h:342-362) n'a PAS `facing`. La
- *  direction du joueur est UNIQUEMENT dans `gObjectEvents[gPlayerAvatar
- *  .objectEventId].facingDirection` (= source unique 1:1 strict).
- *
- *  Notre TS port : `pa.facing` getter/setter alias vers `slot0.facingDirection`.
- *  Pré-init (= boot très early avant InitPlayerObjectEvent), fallback sur
- *  `_facingFallback` local.
- *
- *  Pourquoi : avant ce fix, `pa.facing` était un plain field désynchronisé de
- *  `slot0.facingDirection` → `GetPlayerFacingDirection()` (qui lit le slot)
- *  retournait l'ancienne direction → `GetXYCoordsOneStepInFrontOfPlayer`
- *  cherchait la mauvaise tile → interaction A button cassée
- *  (PC/TV/Carte/WallClock/GameCube tous silencieux). */
-Object.defineProperty(_gPlayerAvatarBase, 'facing', {
-  get(): number {
-    const obj = gObjectEvents[(_gPlayerAvatarBase as { objectEventId: number }).objectEventId];
-    if (obj && obj.active && obj.isPlayer) return obj.facingDirection;
-    return _facingFallback;
-  },
-  set(v: number): void {
-    _facingFallback = v;
-    const obj = gObjectEvents[(_gPlayerAvatarBase as { objectEventId: number }).objectEventId];
-    if (obj && obj.active && obj.isPlayer) {
-      obj.facingDirection = v;
-      obj.movementDirection = v;
-    }
-  },
-  enumerable: true,
-  configurable: true,
-});
-
-export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase as PlayerAvatar;
+export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase;
 
 // ─── 1:1 décomp helpers `field_player_avatar.c` ─────────────────────────────
 
@@ -378,12 +307,12 @@ export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase as PlayerAvatar;
  *
  *  Notre impl : lit depuis `gObjectEvents[playerSlot].facingDirection` qui est
  *  synced via `SyncPlayerObjectEvent` ou via le step start. Si player objectEvent
- *  pas encore init (= boot early), fallback sur `gPlayerAvatar.facing` direct. */
+ *  pas encore init (= boot early), fallback sur `GetPlayerFacingDirection()` direct. */
 export function GetPlayerFacingDirection(): number {
   const slot = gPlayerAvatar.objectEventId;
   const obj = gObjectEvents[slot];
   if (obj && obj.active && obj.isPlayer) return obj.facingDirection;
-  return gPlayerAvatar.facing;
+  return GetPlayerFacingDirection();
 }
 
 /** 1:1 décomp `GetPlayerMovementDirection` (field_player_avatar.c:1170-1173).
@@ -396,7 +325,7 @@ export function GetPlayerMovementDirection(): number {
   const slot = gPlayerAvatar.objectEventId;
   const obj = gObjectEvents[slot];
   if (obj && obj.active && obj.isPlayer) return obj.movementDirection;
-  return gPlayerAvatar.facing;
+  return GetPlayerFacingDirection();
 }
 
 /** 1:1 décomp `PlayerGetElevation` (field_player_avatar.c:1175-1178).
@@ -429,7 +358,7 @@ export function PlayerGetDestCoords(): { x: number; y: number } {
     return { x: obj.currentCoordsX, y: obj.currentCoordsY };
   }
   // Fallback : pa.x/y LOGICAL → convertir INTERNAL.
-  return { x: gPlayerAvatar.x + MAP_OFFSET, y: gPlayerAvatar.y + MAP_OFFSET };
+  return { x: gSaveBlock1Ptr.pos.x + MAP_OFFSET, y: gSaveBlock1Ptr.pos.y + MAP_OFFSET };
 }
 
 /** 1:1 décomp `GetXYCoordsOneStepInFrontOfPlayer` (field_player_avatar.c:1117-1122).
@@ -522,9 +451,15 @@ export async function InitPlayerAvatar(
   gender: 'MALE' | 'FEMALE',
   rt: DecompRuntime,
 ): Promise<void> {
-  gPlayerAvatar.x = mapX;
-  gPlayerAvatar.y = mapY;
-  gPlayerAvatar.facing = direction;
+  // 1:1 décomp `InitPlayerAvatar` (field_player_avatar.c:1364-1394) :
+  // pas d'écriture `gSaveBlock1Ptr.pos.x/y/facing` (= ces fields n'existent PAS
+  // dans struct PlayerAvatar décomp). La position LOGICAL est dans
+  // `gSaveBlock1Ptr->pos` (= updated par CameraMove + LoadSavedMapView).
+  // La direction est set par `ObjectEventTurn(slot, direction)` post-spawn
+  // (= ligne 1386 décomp). Notre `InitPlayerObjectEvent` ci-dessous set
+  // déjà `slot.facingDirection = direction` au spawn (= 1:1 équivalent).
+  gSaveBlock1Ptr.pos.x = mapX;
+  gSaveBlock1Ptr.pos.y = mapY;
   gPlayerAvatar.runningState = NOT_MOVING;
   gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
   gPlayerAvatar.stepFramesLeft = 0;
@@ -676,7 +611,7 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
   if (!sprite) return;
   const oam = rt.gba.oam[sprite.oamIndex];
-  const cfg = SPRITE_FRAMES[gPlayerAvatar.facing as keyof typeof SPRITE_FRAMES];
+  const cfg = SPRITE_FRAMES[GetPlayerFacingDirection() as keyof typeof SPRITE_FRAMES];
   if (!cfg) return;
 
   let frameIdx: number;
@@ -1110,8 +1045,8 @@ export function CheckForPlayerAvatarCollision(direction: number): number {
     obj = playerObjEvent;
   } else {
     // Fallback : convertir pa.x/y (LOGICAL) → INTERNAL pour rester 1:1 décomp.
-    sx = gPlayerAvatar.x + MAP_OFFSET;
-    sy = gPlayerAvatar.y + MAP_OFFSET;
+    sx = gSaveBlock1Ptr.pos.x + MAP_OFFSET;
+    sy = gSaveBlock1Ptr.pos.y + MAP_OFFSET;
     const playerBehavior = MapGridGetMetatileBehaviorAt(sx, sy);
     obj = {
       active: false, trackedByCamera: false,
@@ -1141,8 +1076,8 @@ export function CheckForPlayerAvatarStaticCollision(direction: number): number {
     sy = playerObjEvent.currentCoordsY;
     obj = playerObjEvent;
   } else {
-    sx = gPlayerAvatar.x + MAP_OFFSET;
-    sy = gPlayerAvatar.y + MAP_OFFSET;
+    sx = gSaveBlock1Ptr.pos.x + MAP_OFFSET;
+    sy = gSaveBlock1Ptr.pos.y + MAP_OFFSET;
     const playerBehavior = MapGridGetMetatileBehaviorAt(sx, sy);
     obj = {
       active: false, trackedByCamera: false,
@@ -1190,13 +1125,13 @@ function checkPlayerCollision(direction: number): number {
  *  @param direction DIR_SOUTH/NORTH/WEST/EAST */
 function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
   const playerBehavior = MapGridGetMetatileBehaviorAt(
-    gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
   // 1:1 décomp `sArrowWarpMetatileBehaviorChecks[direction-1]` (field_player_avatar.c:226).
   // Si player on arrow warp matching direction → no SE (= warp will trigger).
   if (isArrowWarpMetatileBehavior(playerBehavior, direction)) return;
   // 1:1 décomp : check warp door au north uniquement.
   if (direction === DIR_NORTH) {
-    const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
+    const { x: dx, y: dy } = moveCoords(direction, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
     const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
     if (getWarpKindFor(targetBehavior) === 'door') return;
   }
@@ -1209,7 +1144,7 @@ function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
  *  CheckForPlayerAvatarCollision pour permettre le jump anim (sinon le tile
  *  serait blocked par MapGridGetCollisionAt = 1). */
 function checkLedgeJump(direction: number): boolean {
-  const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
+  const { x: dx, y: dy } = moveCoords(direction, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
   const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
   return ShouldJumpLedge(targetBehavior, direction);
 }
@@ -1249,7 +1184,7 @@ function tryInteractWithFacingNPC(): void {
   const position: MapPosition = { x: 0, y: 0, elevation: 0 };
   GetInFrontOfPlayerPosition(position);
   const metatileBehavior = MapGridGetMetatileBehaviorAt(position.x, position.y);
-  TryStartInteractionScript(position, metatileBehavior, gPlayerAvatar.facing);
+  TryStartInteractionScript(position, metatileBehavior, GetPlayerFacingDirection());
 }
 
 export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime): void {
@@ -1266,7 +1201,8 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     // pour walk player UP/DOWN automatiquement avant/après warp. Si pas de
     // step actif + forceMovement set → start un step dans cette dir.
     if (gPlayerAvatar.runningState !== MOVING && gPlayerAvatar.forceMovement !== DIR_NONE) {
-      gPlayerAvatar.facing = gPlayerAvatar.forceMovement;
+      // 1:1 décomp : facing via SetObjectEventDirection (= slot source unique).
+      SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], gPlayerAvatar.forceMovement);
       gPlayerAvatar.runningState = MOVING;
       gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
       gPlayerAvatar.stepFramesLeft = 16;
@@ -1334,7 +1270,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     if (gPlayerAvatar.collideFramesLeft === 0) {
       // Cycle done. Check if still colliding same direction → re-trigger.
       const inputDir = getInputDirection(heldKeys);
-      if (inputDir !== DIR_NONE && inputDir === gPlayerAvatar.facing) {
+      if (inputDir !== DIR_NONE && inputDir === GetPlayerFacingDirection()) {
         const collision = checkPlayerCollision(inputDir);
         if (collision !== 0) {
           // Re-trigger : SE + new 32 frames + flip walkAnimAlt.
@@ -1384,7 +1320,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // appliquée durant les 16 frames du step).
       //
       // CRITICAL : lire pos DIRECT depuis `gSaveBlock1Ptr.pos` (= source updated
-      // par CameraMove), NON via `gPlayerAvatar.x` getter (= lit slot 0 stale
+      // par CameraMove), NON via `gSaveBlock1Ptr.pos.x` getter (= lit slot 0 stale
       // pré-step → circular sync au write). Le slot 0 doit être SYNCED à new
       // pos = post-step value via SyncPlayerObjectEvent ci-dessous.
       const nx = gSaveBlock1Ptr.pos.x;
@@ -1396,7 +1332,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         _pendingLedgeJump = false;
         // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
         // spawn dust cloud à la position d'atterrissage.
-        SpawnJumpLandingDust(rt, gPlayerAvatar.x, gPlayerAvatar.y);
+        SpawnJumpLandingDust(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
         // 1:1 décomp `MovementAction_Jump2Down_Step1:5535` : `objectEvent->hasShadow
         // = FALSE` au jump end → UpdateShadowFieldEffect détruit le sprite.
         // Notre impl : destroy direct.
@@ -1411,13 +1347,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // ça, currentElevation reste à 3 (= default neutre) → IsElevationMismatchAt
       // ne fire jamais → ledges/staircases pas 1:1.
       const newElev = MapGridGetElevationAt(
-        gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+        gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
       if (newElev !== 0) gPlayerAvatar.currentElevation = newElev;
       // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
       // :7415) : ObjectEventUpdateMetatileBehaviors(playerObjEvent) au step end
       // pour refresh `currentMetatileBehavior` + `previousMetatileBehavior`.
       // Notre `SyncPlayerObjectEvent` shift coords + update behaviors 1:1.
-      SyncPlayerObjectEvent(nx, ny, gPlayerAvatar.facing, stepDirAtEnd, true);
+      SyncPlayerObjectEvent(nx, ny, GetPlayerFacingDirection(), stepDirAtEnd, true);
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
       // 1:1 décomp `RunOnSteppedCallback` (overworld.c:1930) : dispatch
@@ -1457,7 +1393,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         // skip). Player s'arrête sur la carpette. Pour TP, user doit ré-appuyer
         // DOWN (= TryArrowWarp pre-step check trigger au prochain frame).
         const playerBehavior = MapGridGetMetatileBehaviorAt(
-          gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+          gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
         const kind = getWarpKindFor(playerBehavior);
         // Skip 'arrow' kind here : géré par pre-step TryArrowWarp.
         if (kind && kind !== 'arrow') {
@@ -1472,7 +1408,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // Phase 4.10 : check coord triggers (= 1:1 décomp `TryRunCoordEventScript`,
       // field_control_avatar.c:733). Si player step end on a coord_event tile
       // qui match VAR_X = value, run le script. Used par truck SetIntroFlags.
-      if (TryRunCoordEventScript(gPlayerAvatar.x, gPlayerAvatar.y)) {
+      if (TryRunCoordEventScript(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y)) {
         // Script triggered : freeze player + return (= no keypad).
         updateSpriteFrame(rt);
         return;
@@ -1525,7 +1461,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     return;
   }
 
-  if (inputDir !== gPlayerAvatar.facing && gPlayerAvatar.runningState !== MOVING) {
+  if (inputDir !== GetPlayerFacingDirection() && gPlayerAvatar.runningState !== MOVING) {
     // 1:1 décomp `PlayerNotOnBikeTurningInPlace` → `PlayerTurnInPlace` →
     // `GetWalkInPlaceFastMovementAction` (= 8-frame anim).
     // Pendant 8 frames : user voit sprite tourner, keypad bloqué (cf.
@@ -1533,7 +1469,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     // n'est PAS dans la slow range = 0x19..0x1C).
     // Si user release → reste turné. Si user hold même direction → MOVING
     // après les 8 frames.
-    gPlayerAvatar.facing = inputDir;
+    SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
     gPlayerAvatar.runningState = TURN_DIRECTION;
     gPlayerAvatar.turnFramesLeft = 8;  // 1:1 décomp WalkInPlaceFast duration
     updateSpriteFrame(rt);
@@ -1553,13 +1489,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // frame, AVANT le step movement. C'est ici l'équivalent.
   {
     const playerBehavior = MapGridGetMetatileBehaviorAt(
-      gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+      gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
     if (isArrowWarpMetatileBehavior(playerBehavior, inputDir)) {
-      const warp = findWarpEventAt(gPlayerAvatar.x, gPlayerAvatar.y);
+      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
       if (warp) {
-        console.log(`[player-avatar] TryArrowWarp at (${gPlayerAvatar.x},${gPlayerAvatar.y}) dir=${inputDir} → ${warp.destMap}#${warp.warpId}`);
+        console.log(`[player-avatar] TryArrowWarp at (${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) dir=${inputDir} → ${warp.destMap}#${warp.warpId}`);
         setPendingWarp(warp, 'arrow');
-        gPlayerAvatar.facing = inputDir;
+        SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
         gPlayerAvatar.runningState = NOT_MOVING;
         updateSpriteFrame(rt);
         return;
@@ -1569,7 +1505,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
 
   // MOVING dispatch : facing match (= réactif) OR mid-walk turn (= continuous).
   // 1:1 décomp `PlayerNotOnBikeMoving` : update facing first, puis check collision.
-  gPlayerAvatar.facing = inputDir;
+  SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], inputDir);
   const collision = checkPlayerCollision(inputDir);
   if (collision !== COLLISION_NONE) {
     // 1:1 décomp `PlayerNotOnBikeMoving` line 614-618 : COLLISION_LEDGE_JUMP →
@@ -1609,7 +1545,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     // Check AVANT le bump anim car le door tile est marqué impassable mais
     // le push UP doit warp pas bump.
     if (inputDir === DIR_NORTH) {
-      const { x: dx, y: dy } = moveCoords(inputDir, gPlayerAvatar.x, gPlayerAvatar.y);
+      const { x: dx, y: dy } = moveCoords(inputDir, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
       const behavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
       const kind = getWarpKindFor(behavior);
       if (kind === 'door') {
@@ -1647,7 +1583,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   //   else
   //       PlayerWalkNormal(direction);  // = MOVEMENT_ACTION_WALK_NORMAL_* = 16-frame step à 1 px/frame
   const playerBehavior = MapGridGetMetatileBehaviorAt(
-    gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
   const wantDash = (heldKeys & B_BUTTON) !== 0
                 && FlagGet('FLAG_SYS_B_DASH')
                 && !IsRunningDisallowed(playerBehavior);

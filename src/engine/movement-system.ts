@@ -32,7 +32,8 @@ import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection } from './object-events';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { MAP_OFFSET } from './map-loader';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -300,8 +301,8 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   // Post R3 refactor : npc.currentCoords INTERNAL → convertir pa.x/y LOGICAL.
   if (action === 'face_player' || action === 'face_away_player') {
     if (target.npc) {
-      const dx = (gPlayerAvatar.x + MAP_OFFSET) - target.npc.currentCoordsX;
-      const dy = (gPlayerAvatar.y + MAP_OFFSET) - target.npc.currentCoordsY;
+      const dx = (gSaveBlock1Ptr.pos.x + MAP_OFFSET) - target.npc.currentCoordsX;
+      const dy = (gSaveBlock1Ptr.pos.y + MAP_OFFSET) - target.npc.currentCoordsY;
       let dir = DIR_SOUTH;
       if (Math.abs(dx) > Math.abs(dy)) {
         dir = dx > 0 ? DIR_EAST : DIR_WEST;
@@ -513,7 +514,10 @@ function _tryAutoDispatch(action: string, target: MovementTarget, frame: number)
 
 function _setFacing(target: MovementTarget, dir: number): void {
   if (target.isPlayer) {
-    gPlayerAvatar.facing = dir;
+    // 1:1 décomp : pa.facing n'existe PAS dans struct PlayerAvatar — source
+    // unique = slot.facingDirection via SetObjectEventDirection (= maintient
+    // l'invariant previousMovementDirection + lock check).
+    SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], dir);
   } else if (target.npc) {
     target.npc.facingDirection = dir;
     // 1:1 décomp Audit BIG #2.2 fix : pour les NPCs en MOVEMENT_TYPE_LOOK_AROUND,
@@ -863,7 +867,7 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c).
       // Spawn dust cloud à landing position si on a un rt.
       // Player jump landing : pas de flag disable côté player (= toujours dust).
-      if (_activeRt) SpawnJumpLandingDust(_activeRt, gPlayerAvatar.x, gPlayerAvatar.y);
+      if (_activeRt) SpawnJumpLandingDust(_activeRt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
     } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;

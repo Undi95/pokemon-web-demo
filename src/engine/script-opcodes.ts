@@ -46,8 +46,9 @@ import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { InitMenuInUpperLeftCornerNormal } from './gba-menu-system';
 import { getMultichoiceList } from './multichoice-data';
 import {
-  gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
+  gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { getRuntime } from './decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
@@ -519,7 +520,7 @@ registerOpcode('faceplayer', (_ctx) => {
   // opposée à la direction face du player).
   const npc = getSelectedNpc();
   if (!npc) return false;
-  npc.facingDirection = OPPOSITE_DIR[gPlayerAvatar.facing] ?? DIR_SOUTH;
+  npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
   return false;
 });
 
@@ -637,7 +638,7 @@ registerOpcode('msgbox', (ctx, args) => {
           const npc = getSelectedNpc();
           if (npc) {
             npc.frozen = true;
-            npc.facingDirection = OPPOSITE_DIR[gPlayerAvatar.facing] ?? DIR_SOUTH;
+            npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
           }
         }
         // MSGBOX_DEFAULT / MSGBOX_AUTOCLOSE / MSGBOX_YESNO : pas de lock/face.
@@ -3091,7 +3092,7 @@ function _runStdScript(ctx: ScriptContext, stdIndex: number, isCall: boolean): b
       const npc = getSelectedNpc();
       if (npc) {
         npc.frozen = true;
-        npc.facingDirection = OPPOSITE_DIR[gPlayerAvatar.facing] ?? DIR_SOUTH;
+        npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
       }
       console.log('[opcode std] STD_FIND_ITEM dispatch');
       return false;
@@ -3713,8 +3714,8 @@ registerOpcode('warphole', (_ctx, args) => {
   // (ou SetWarpDestinationToFixedHoleWarp si MAP_UNDEFINED) + DoFallWarp +
   // ResetInitialPlayerAvatarState.
   const destMap = args[0] ?? 'MAP_UNDEFINED';
-  const playerX = gPlayerAvatar.x ?? 0;
-  const playerY = gPlayerAvatar.y ?? 0;
+  const playerX = gSaveBlock1Ptr.pos.x ?? 0;
+  const playerY = gSaveBlock1Ptr.pos.y ?? 0;
   if (destMap === 'MAP_UNDEFINED') {
     // SetWarpDestinationToFixedHoleWarp(x, y) : utilise gHoleWarp set par setholewarp.
     const holeWarp = (globalThis as Record<string, unknown>).gHoleWarp as

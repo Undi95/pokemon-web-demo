@@ -33,6 +33,7 @@ import {
   PlayerGetDestCoords,
   GetXYCoordsOneStepInFrontOfPlayer,
 } from './player-avatar';
+import { gSaveBlock1Ptr } from './save-block-state';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -157,8 +158,8 @@ const PLAYER_SPEED_FASTEST = 4;
  *  (= mid-step ou stable). Stub : query direct via MapGridGet pour notre impl. */
 function GetPlayerCurMetatileBehavior(_runningState: number): number {
   return MapGridGetMetatileBehaviorAt(
-    gPlayerAvatar.x + MAP_OFFSET,
-    gPlayerAvatar.y + MAP_OFFSET);
+    gSaveBlock1Ptr.pos.x + MAP_OFFSET,
+    gSaveBlock1Ptr.pos.y + MAP_OFFSET);
 }
 
 /** 1:1 décomp `GetPlayerSpeed` (field_player_avatar.c).

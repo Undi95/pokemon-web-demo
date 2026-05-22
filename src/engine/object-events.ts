@@ -1144,8 +1144,8 @@ function isPlayerAt(x: number, y: number): boolean {
     return false;
   }
   // Fallback (= slot 0 pas init, early boot) : compare avec pa.x/y converti INTERNAL.
-  const paX = gPlayerAvatar.x + MAP_OFFSET;
-  const paY = gPlayerAvatar.y + MAP_OFFSET;
+  const paX = gSaveBlock1Ptr.pos.x + MAP_OFFSET;
+  const paY = gSaveBlock1Ptr.pos.y + MAP_OFFSET;
   if (paX === x && paY === y) return true;
   if (gPlayerAvatar.runningState === 2 /* MOVING */ && gPlayerAvatar.stepFramesLeft > 0) {
     const sdx = DIR_TO_DX[gPlayerAvatar.stepDirection] ?? 0;
@@ -1206,6 +1206,33 @@ export function GetObjectEventIdByXY(x: number, y: number): number {
         && gObjectEvents[i].currentCoordsY === y) break;
   }
   return i;
+}
+
+/** 1:1 décomp `SetObjectEventDirection` (event_object_movement.c:2361-2371).
+ *
+ *  ```c
+ *  void SetObjectEventDirection(struct ObjectEvent *objectEvent, u8 direction)
+ *  {
+ *      s8 d2;
+ *      objectEvent->previousMovementDirection = objectEvent->facingDirection;
+ *      if (!objectEvent->facingDirectionLocked)
+ *      {
+ *          d2 = direction;
+ *          objectEvent->facingDirection = d2;
+ *      }
+ *      objectEvent->movementDirection = direction;
+ *  }
+ *  ```
+ *
+ *  Source unique pour rotater un ObjectEvent (NPC ou player). N'écrire JAMAIS
+ *  `obj.facingDirection = X` direct depuis l'extérieur — passer par ce helper
+ *  pour maintenir l'invariant `previousMovementDirection` + lock check. */
+export function SetObjectEventDirection(obj: ObjectEvent, direction: number): void {
+  obj.previousMovementDirection = obj.facingDirection;
+  if (!obj.facingDirectionLocked) {
+    obj.facingDirection = direction;
+  }
+  obj.movementDirection = direction;
 }
 
 /** 1:1 décomp `GetObjectEventIdByPosition(u16 x, u16 y, u8 elevation)`
@@ -2384,8 +2411,8 @@ export function TrySpawnObjectEvents(rt: DecompRuntime): void {
 
   // 1:1 décomp pos.x/y. Notre conv : pos.x = playerLogical.x = gPlayerAvatar.x,
   // pos.y = playerLogical.y = gPlayerAvatar.y.
-  const posX = gPlayerAvatar.x;
-  const posY = gPlayerAvatar.y;
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
   const left = posX - 9;
   const right = posX + 10;
   const top = posY - 7;
