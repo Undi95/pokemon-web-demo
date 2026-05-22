@@ -20,8 +20,10 @@
  * Le pocket pour un itemId vient de `getItem(itemKey).pocket` (= items.json,
  * extrait de items.h `.pocket = POCKET_X` par scripts/extract-items.mjs).
  */
-import { gameState } from './game-state';
+import { gameState as _gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { getItem } from './data-tables';
+void _gameState; // keep side-effect import (= force game-state init early via save-system → bag chain)
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -123,7 +125,7 @@ function getSlotCapacity(pocketName: string): number {
 export function GetBagItemQuantity(itemKey: string): number {
   const p = getPocketName(itemKey);
   if (!p) return 0;
-  const arr = pocketArrayFor(gameState.bag, p);
+  const arr = pocketArrayFor(gSaveBlock1Ptr.bag, p);
   if (!arr) return 0;
   let total = 0;
   for (const slot of arr) {
@@ -146,7 +148,7 @@ export function CheckBagHasItem(itemKey: string, count: number): boolean {
 export function AddBagItem(itemKey: string, count: number): boolean {
   const p = getPocketName(itemKey);
   if (!p) return false;
-  const arr = pocketArrayFor(gameState.bag, p);
+  const arr = pocketArrayFor(gSaveBlock1Ptr.bag, p);
   if (!arr) return false;
   const slotCap = getSlotCapacity(p);
   const noDup = (p === 'POCKET_TM_HM' || p === 'POCKET_BERRIES');
@@ -198,7 +200,7 @@ export function RemoveBagItem(itemKey: string, count: number): boolean {
   if (!CheckBagHasItem(itemKey, count)) return false;
   const p = getPocketName(itemKey);
   if (!p) return false;
-  const arr = pocketArrayFor(gameState.bag, p);
+  const arr = pocketArrayFor(gSaveBlock1Ptr.bag, p);
   if (!arr) return false;
   let remaining = count;
   for (const slot of arr) {
@@ -223,11 +225,11 @@ export function DEBUG_ExpandBagToFit(maxPerPocket = 256): void {
   const grow = (arr: ItemSlot[]) => {
     while (arr.length < maxPerPocket) arr.push({ itemKey: '', quantity: 0 });
   };
-  grow(gameState.bag.items);
-  grow(gameState.bag.pokeBalls);
-  grow(gameState.bag.tmHm);
-  grow(gameState.bag.berries);
-  grow(gameState.bag.keyItems);
+  grow(gSaveBlock1Ptr.bag.items);
+  grow(gSaveBlock1Ptr.bag.pokeBalls);
+  grow(gSaveBlock1Ptr.bag.tmHm);
+  grow(gSaveBlock1Ptr.bag.berries);
+  grow(gSaveBlock1Ptr.bag.keyItems);
 }
 
 /** 1:1 décomp item.c:CompactItemsInBagPocket : remove gaps (= empty slots) en
@@ -268,7 +270,7 @@ function sortPocketByItemId(arr: ItemSlot[]): void {
  *  modification (= AddBagItem / RemoveBagItem / DoItemSwap) pour normaliser le
  *  pocket. TMHM + Berries → sort by itemId. Autres → compact (remove gaps). */
 export function UpdatePocketItemList(pocketKey: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems'): void {
-  const arr = gameState.bag[pocketKey];
+  const arr = gSaveBlock1Ptr.bag[pocketKey];
   if (pocketKey === 'tmHm' || pocketKey === 'berries') sortPocketByItemId(arr);
   else compactPocket(arr);
 }
@@ -276,22 +278,22 @@ export function UpdatePocketItemList(pocketKey: 'items' | 'pokeBalls' | 'tmHm' |
 /** 1:1 décomp `ClearBag` : reset complet à empty. */
 export function ClearBag(): void {
   const empty = emptyBag();
-  gameState.bag.items = empty.items;
-  gameState.bag.pokeBalls = empty.pokeBalls;
-  gameState.bag.tmHm = empty.tmHm;
-  gameState.bag.berries = empty.berries;
-  gameState.bag.keyItems = empty.keyItems;
+  gSaveBlock1Ptr.bag.items = empty.items;
+  gSaveBlock1Ptr.bag.pokeBalls = empty.pokeBalls;
+  gSaveBlock1Ptr.bag.tmHm = empty.tmHm;
+  gSaveBlock1Ptr.bag.berries = empty.berries;
+  gSaveBlock1Ptr.bag.keyItems = empty.keyItems;
 }
 
 /** Debug helper : list non-empty slots across all pockets. */
 export function bagContents(): Array<{ pocket: string; itemKey: string; quantity: number }> {
   const result: Array<{ pocket: string; itemKey: string; quantity: number }> = [];
   const all: Array<[string, ItemSlot[]]> = [
-    ['POCKET_ITEMS', gameState.bag.items],
-    ['POCKET_POKE_BALLS', gameState.bag.pokeBalls],
-    ['POCKET_TM_HM', gameState.bag.tmHm],
-    ['POCKET_BERRIES', gameState.bag.berries],
-    ['POCKET_KEY_ITEMS', gameState.bag.keyItems],
+    ['POCKET_ITEMS', gSaveBlock1Ptr.bag.items],
+    ['POCKET_POKE_BALLS', gSaveBlock1Ptr.bag.pokeBalls],
+    ['POCKET_TM_HM', gSaveBlock1Ptr.bag.tmHm],
+    ['POCKET_BERRIES', gSaveBlock1Ptr.bag.berries],
+    ['POCKET_KEY_ITEMS', gSaveBlock1Ptr.bag.keyItems],
   ];
   for (const [pocket, arr] of all) {
     for (const slot of arr) {

@@ -3,7 +3,7 @@
  * ============================================================================
  * La décomp `struct BagPocket gBagPockets[5]` = `{ struct ItemSlot{u16
  * itemId,u16 quantity} itemSlots[]; u8 capacity }`. Notre persistance
- * (`gameState.bag`, bag.ts) stocke les poches en `ItemSlot{itemKey:string,
+ * (`gSaveBlock1Ptr.bag`, bag.ts) stocke les poches en `ItemSlot{itemKey:string,
  * quantity}[]` (clé string, '' = vide). Cette couche **matérialise la
  * shape décomp 1:1** au-dessus du stockage string : `bag-menu.ts` (SPINE)
  * lit/ports `itemSlots[i].itemId` / `capacity` EXACTEMENT comme la décomp,
@@ -17,6 +17,7 @@
  * slot.quantity`. Comportement identique (0 = slot vide).
  */
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { getItemId } from './data-tables';
 import { sTMHMMoves } from './tmhm-moves';
 import type { ItemSlot } from './bag';
@@ -24,16 +25,16 @@ import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
 } from './decomp-data/auto/include/constants/item-data';
 
-/** pocketId décomp (0..4) → tableau live `ItemSlot[]` de gameState.bag.
+/** pocketId décomp (0..4) → tableau live `ItemSlot[]` de gSaveBlock1Ptr.bag.
  *  1:1 `&gBagPockets[pocketId]` (mutations écrites en place = décomp). */
 export function getBagPocketSlots(pocketId: number): ItemSlot[] {
   switch (pocketId) {
-    case ITEMS_POCKET: return gameState.bag.items;
-    case BALLS_POCKET: return gameState.bag.pokeBalls;
-    case TMHM_POCKET: return gameState.bag.tmHm;
-    case BERRIES_POCKET: return gameState.bag.berries;
-    case KEYITEMS_POCKET: return gameState.bag.keyItems;
-    default: return gameState.bag.items;
+    case ITEMS_POCKET: return gSaveBlock1Ptr.bag.items;
+    case BALLS_POCKET: return gSaveBlock1Ptr.bag.pokeBalls;
+    case TMHM_POCKET: return gSaveBlock1Ptr.bag.tmHm;
+    case BERRIES_POCKET: return gSaveBlock1Ptr.bag.berries;
+    case KEYITEMS_POCKET: return gSaveBlock1Ptr.bag.keyItems;
+    default: return gSaveBlock1Ptr.bag.items;
   }
 }
 

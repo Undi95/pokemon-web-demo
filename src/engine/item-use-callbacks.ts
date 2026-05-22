@@ -152,7 +152,7 @@ function _removeOneFromBag(itemId: number): void {
   if (!key) return;
   // 1:1 décomp RemoveBagItem (item.c:570) — décrémente quantité, supprime
   // le slot si quantity tombe à 0. Notre gameState API : removeItem(key, qty).
-  const bag = gameState.bag as unknown as Record<string, unknown>;
+  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, unknown>;
   const rm = bag && (bag.removeItem as ((k: string, q: number) => void) | undefined);
   if (typeof rm === 'function') {
     rm.call(bag, key, 1);

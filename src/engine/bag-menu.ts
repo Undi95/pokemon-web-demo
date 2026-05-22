@@ -76,7 +76,7 @@ import {
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE } from './decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
@@ -1848,7 +1848,7 @@ export function _CtxRemoveUsedItem(itemId: number): void {
   // getItemKeyById retourne ITEM_TM01/ITEM_HM01 enum-numbered. Pour bag.ts
   // RemoveBagItem, on a besoin de la clé items.json (move-named pour TM/HM).
   // bag-pockets gère ça via slotItemId/itemKey, on passe l'enum-numbered.
-  // RemoveBagItem cherche par itemKey dans gameState.bag.pockets, qui est
+  // RemoveBagItem cherche par itemKey dans gSaveBlock1Ptr.bag.pockets, qui est
   // stocké move-named. Soit on convertit, soit on accepte l'asymétrie :
   // POUR L'INSTANT on tente l'enum direct ; si bug → port _itemKeyForLookup.
   // Pour items normales (POTION etc.) c'est identique.

@@ -493,7 +493,7 @@ function _depositOpenList(): void {
   // ne dépose que les pocket Items).
   sDepositListItems = [];
   sDepositBagSlotIndices = [];
-  const bagItems = gameState.bag.items;
+  const bagItems = gSaveBlock1Ptr.bag.items;
   for (let i = 0; i < bagItems.length; i++) {
     if (bagItems[i].itemKey) {
       sDepositListItems.push({
@@ -525,7 +525,7 @@ function _depositOpenList(): void {
     _itemStorageDrawItemIcon('ITEM_LIST_END');
   } else {
     const bagIdx = sDepositBagSlotIndices[firstId];
-    _itemStorageDrawItemIcon(gameState.bag.items[bagIdx].itemKey);
+    _itemStorageDrawItemIcon(gSaveBlock1Ptr.bag.items[bagIdx].itemKey);
   }
   _depositPrintDescription(firstId);
 }
@@ -537,7 +537,7 @@ function _depositMoveCursor(itemId: number, onInit: boolean, _list: unknown): vo
     _itemStorageDrawItemIcon('ITEM_LIST_END');
   } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
     const bagIdx = sDepositBagSlotIndices[itemId];
-    _itemStorageDrawItemIcon(gameState.bag.items[bagIdx].itemKey);
+    _itemStorageDrawItemIcon(gSaveBlock1Ptr.bag.items[bagIdx].itemKey);
   }
   _depositPrintDescription(itemId);
 }
@@ -546,7 +546,7 @@ function _depositPrintMenuItem(windowId: number, itemId: number, yOffset: number
   if (itemId === -2) return;
   if (itemId < 0 || itemId >= sDepositBagSlotIndices.length) return;
   const bagIdx = sDepositBagSlotIndices[itemId];
-  const qty = gameState.bag.items[bagIdx].quantity;
+  const qty = gSaveBlock1Ptr.bag.items[bagIdx].quantity;
   const qtyStr = `× ${String(qty).padStart(3, ' ')}`;
   AddTextPrinterParameterized3(
     windowId, 7 /* FONT_NARROW */,
@@ -562,7 +562,7 @@ function _depositPrintDescription(itemId: number): void {
     description = getString('gText_GoBackPrevMenu');
   } else if (itemId >= 0 && itemId < sDepositBagSlotIndices.length) {
     const bagIdx = sDepositBagSlotIndices[itemId];
-    description = String(GetItemDescription(gameState.bag.items[bagIdx].itemKey));
+    description = String(GetItemDescription(gSaveBlock1Ptr.bag.items[bagIdx].itemKey));
   } else {
     description = '';
   }
@@ -589,7 +589,7 @@ function _tickDepositList(_newKeys: number): void {
   //   if (qty == 1) TryDepositItem(taskId);
   //   else { msg "DepositHowMany" + AddItemQuantityWindow + Task_ChooseHowManyToDeposit }
   const bagIdx = sDepositBagSlotIndices[sel];
-  const slot = gameState.bag.items[bagIdx];
+  const slot = gSaveBlock1Ptr.bag.items[bagIdx];
   sPCLastActionPos = sel;  // bagIdx via mapping sDepositBagSlotIndices[sel]
   sPCQuantitySelected = 1;
   if (slot.quantity === 1) {
@@ -613,7 +613,7 @@ let sPCInDepositQtyMode = false;
  *  ou error "no room". Sur success → message + switch state vers withdraw (= user-flag :
  *  après dépôt, switch vers RETIRER au lieu de rester dans dépôt). */
 function _depositDoDeposit(bagIdx: number, qty: number): void {
-  const slot = gameState.bag.items[bagIdx];
+  const slot = gSaveBlock1Ptr.bag.items[bagIdx];
   const itemName = getItemNameFr(slot.itemKey);
   if (AddPCItem(slot.itemKey, qty)) {
     slot.quantity -= qty;
@@ -1059,7 +1059,7 @@ function _tickPCQuantityRolling(newKeys: number): void {
   // Deposit : bag slot.quantity (= items dans le bag à déposer).
   const pos = sPCLastActionPos;
   const maxQty = sPCInDepositQtyMode
-    ? gameState.bag.items[sDepositBagSlotIndices[pos]].quantity
+    ? gSaveBlock1Ptr.bag.items[sDepositBagSlotIndices[pos]].quantity
     : gSaveBlock1Ptr.pcItems[pos].quantity;
   let changed = false;
   // 1:1 décomp DPAD UP / DOWN / LEFT / RIGHT adjust qty (+/- 1, +/- 10).

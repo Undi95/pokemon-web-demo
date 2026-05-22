@@ -33,7 +33,7 @@
  *   - gba-menu-system : CreateYesNoMenu + Menu_ProcessInputNoWrapClearOnChoose
  *   - field-message-box : ShowFieldMessage / TickFieldMessageBox / HideFieldMessageBox
  *   - script-runtime : LockPlayerFieldControls
- *   - game-state : gameState.save() / gSaveBlock1Ptr.playerParty / gameState.bag
+ *   - game-state : gameState.save() / gSaveBlock1Ptr.playerParty / gSaveBlock1Ptr.bag
  */
 
 import {

@@ -33,7 +33,7 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
@@ -516,7 +516,7 @@ interface ItemSlot { itemKey: string; quantity: number }
 const CLOSE_BAG_KEY = '__CLOSE_BAG__';
 
 function _currentPocketItems(): ItemSlot[] {
-  const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
+  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
   const k = POCKETS[_pocketIdx].key;
   const slots = bag[k] ?? [];
   // Filter out empty slots, then append CLOSE_BAG sentinel à la fin (= 1:1
@@ -1887,7 +1887,7 @@ function _startItemSwap(): void {
 
 function _doItemSwap(toIdx: number): void {
   const pocketKey = POCKETS[_pocketIdx].key;
-  const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
+  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
   const arr = bag[pocketKey];
   // 1:1 décomp MoveItemSlotInList : déplace slot from → to en shiftant.
   if (_swapFromIdx !== toIdx && _swapFromIdx >= 0 && toIdx >= 0) {
@@ -2312,7 +2312,7 @@ let _depositItemKey = '';
 let _depositBagItemIdx = -1;
 /** Pocket dans lequel l'item à déposer se trouve (= 1:1 décomp : la list courante
  *  du bag pointe vers ce pocket via gBagPosition.pocket). Sans ça, _findBagItemIdx
- *  ne cherche que dans gameState.bag.items (= POCKET_ITEMS), et tous les autres
+ *  ne cherche que dans gSaveBlock1Ptr.bag.items (= POCKET_ITEMS), et tous les autres
  *  pockets (BERRIES/POKE_BALLS/etc.) retournent -1 → deposit muet. */
 let _depositPocketKey: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems' = 'items';
 /** Index of selected item in pocket array (for ListMenu refresh). */
@@ -2326,7 +2326,7 @@ function _itemContextDeposit(itemKey: string): void {
   // 1:1 décomp : `gBagPosition.pocket` (= pocket courant du bag) est utilisé
   // par TryDepositItem pour appeler RemoveBagItem qui prend l'itemId et trouve
   // automatiquement le slot via gItems[].pocket. Côté TS, on stocke le pocket
-  // courant pour adresser le bon array gameState.bag[*].
+  // courant pour adresser le bon array gSaveBlock1Ptr.bag[*].
   _depositPocketKey = POCKETS[_pocketIdx].key;
   _depositBagItemIdx = _findBagItemIdx(itemKey);
   if (_depositBagItemIdx < 0) {
@@ -2359,12 +2359,12 @@ function _itemContextDeposit(itemKey: string): void {
 /** 1:1 décomp : raw slots du pocket courant (= sans filter empty, contrairement
  *  à _currentPocketItems qui ajoute CLOSE_BAG sentinel). */
 function _getBagPocketSlots(): ItemSlot[] {
-  const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
+  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
   return bag[_depositPocketKey] ?? [];
 }
 
 /** Find slot index dans le pocket courant (= _depositPocketKey) pour l'item donné.
- *  Avant : cherchait seulement dans gameState.bag.items → fail si l'item est dans
+ *  Avant : cherchait seulement dans gSaveBlock1Ptr.bag.items → fail si l'item est dans
  *  un autre pocket (= berries/balls/etc.). */
 function _findBagItemIdx(itemKey: string): number {
   const slots = _getBagPocketSlots();
