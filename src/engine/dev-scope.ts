@@ -38,6 +38,16 @@ import {
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
 } from './field-message-box';
+import {
+  gCamera as _gCamera,
+  gFieldCamera as _gFieldCamera,
+  gTotalCamera as _gTotalCamera,
+  gSpriteCoordOffset as _gSpriteCoordOffset,
+  GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
+  GetCameraPanX as _GetCameraPanX,
+  GetCameraPanY as _GetCameraPanY,
+} from './field-camera';
+import { ScriptContext_SetupInlineBytecode } from './script-runtime';
 import { buildBattleDevtools } from './battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
 import { setHeldKeysOverride, clearHeldKeysOverride } from './input-handler';
@@ -697,6 +707,18 @@ OW INSPECTION (post R3 INTERNAL/LOGICAL coords audit) :
 SCRIPT :
   scope.scriptHistory(n)  N derniers opcodes exécutés (ring buffer 256)
   scope.scriptHistoryClear() Reset ring buffer
+  scope.action(op,...args) Exec opcode isolé (= scope.action('msgbox', 'X_EventScript_PC'))
+
+CAMERA :
+  scope.cam()             Dump gCamera + gFieldCamera + gSpriteCoordOffset + topLeft
+
+RECORDER (= record/replay scénarios input) :
+  scope.recorder.start()  Démarre record du heldKeys (poll 16ms)
+  scope.recorder.stop()   Stop record, retourne Recording { events, totalMs }
+  scope.recorder.replay(rec|name, {speed?})
+                          Rejoue un Recording (ou un name localStorage)
+  scope.recorder.save(name, rec) / load(name) / list() / delete(name)
+  scope.recorder.state()  État courant du record en cours
 
 DIFF :
   scope.snapshot()        Capture état courant
@@ -1227,6 +1249,222 @@ function _scriptHistoryClear(): { cleared: number } {
   return { cleared: n };
 }
 
+// ─── Camera state inspector ──────────────────────────────────────────────────
+// Dump complet de la cam (= 4 globals + helpers résolus). Utile pour debug
+// scrolling, sprite offset et cross-border drift.
+
+function _cam(): Record<string, unknown> {
+  const tl = _GetCameraTopLeftCoords();
+  return {
+    gCamera: { active: _gCamera.active, x: _gCamera.x, y: _gCamera.y },
+    gFieldCamera: {
+      movementSpeedX: _gFieldCamera.movementSpeedX,
+      movementSpeedY: _gFieldCamera.movementSpeedY,
+      subTilePx: { x: _gFieldCamera.x, y: _gFieldCamera.y },
+      spriteId: _gFieldCamera.spriteId,
+      hasCallback: !!_gFieldCamera.callback,
+    },
+    gTotalCamera: { pixelOffsetX: _gTotalCamera.pixelOffsetX, pixelOffsetY: _gTotalCamera.pixelOffsetY },
+    gSpriteCoordOffset: { x: _gSpriteCoordOffset.x, y: _gSpriteCoordOffset.y },
+    pan: { x: _GetCameraPanX(), y: _GetCameraPanY() },
+    topLeftCoords_LOGICAL: tl,
+    topLeftCoords_INTERNAL: { x: tl.x + MAP_OFFSET, y: tl.y + MAP_OFFSET },
+    note: 'topLeftCoords = 1:1 décomp GetCameraCoords ; gFieldCamera.x/y = sub-tile pixel offset (= modulo 16) ; gSpriteCoordOffset = pixel offset appliqué aux sprites OAM',
+  };
+}
+
+// ─── Action : exec opcode isolé sans setup script complet ────────────────────
+// Ex : scope.action('msgbox', 'PlayersHouse_2F_EventScript_PC')
+//   → setup un script bytecode avec 1 seul opcode `msgbox PlayersHouse_2F_EventScript_PC`
+//   → dispatch via script runtime existant
+//
+// Le script ne s'auto-stop pas à la fin (= comportement msgbox = wait input),
+// donc utile pour tester opcodes individuels. Lib uniquement les opcodes qui
+// fonctionnent en isolation ; les opcodes qui dépendent de stack/data
+// préexistantes (= goto/call/loadword) peuvent échouer.
+
+function _action(opname: string, ...args: unknown[]): { ok: boolean; reason?: string } {
+  if (typeof opname !== 'string' || !opname) {
+    return { ok: false, reason: 'opname required (string)' };
+  }
+  try {
+    // Opcode.args est `string[]` (= format parsed from JSON). Convert tout en string.
+    const argsStr = args.map(a => typeof a === 'string' ? a : String(a));
+    ScriptContext_SetupInlineBytecode([{ name: opname, args: argsStr }], `dev.action:${opname}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: String(e) };
+  }
+}
+
+// ─── Input recorder : record / stop / replay ────────────────────────────────
+// Wrap autour de rt.gMain.heldKeys pour capturer chaque transition.
+// Polling 60Hz (= 16ms) — suffisant pour matcher le rythme du décomp.
+// Recordings persistent localStorage sous "scope_recording:<name>".
+//
+// Format de record :
+//   { name, recordedAt, totalMs, events: [{ tMs, mask }, ...] }
+//
+// `tMs` = ms depuis le start du record. Replay le set chaque mask au bon
+// moment via setTimeout.
+
+interface RecorderEvent { tMs: number; mask: number }
+interface Recording { name: string; recordedAt: number; totalMs: number; events: RecorderEvent[]; startMap?: string; startPos?: [number, number] }
+
+let _recordingState: {
+  active: boolean;
+  startMs: number;
+  events: RecorderEvent[];
+  intervalId: number | null;
+  lastMask: number;
+  startMap?: string;
+  startPos?: [number, number];
+} = { active: false, startMs: 0, events: [], intervalId: null, lastMask: -1 };
+
+const _RECORDING_STORAGE_PREFIX = 'scope_recording:';
+
+const _recorder = {
+  start(): { ok: boolean; reason?: string } {
+    if (_recordingState.active) return { ok: false, reason: 'already recording (= stop d\'abord)' };
+    const rt = _rtSafe();
+    if (!rt) return { ok: false, reason: 'no runtime' };
+    const pa = _g<PlayerAvatar>('gPlayerAvatar');
+    const hdr = _g<{ id?: string }>('gMapHeader');
+    _recordingState = {
+      active: true,
+      startMs: performance.now(),
+      events: [],
+      intervalId: null,
+      lastMask: -1,
+      startMap: hdr?.id,
+      startPos: pa ? [pa.x ?? 0, pa.y ?? 0] : undefined,
+    };
+    const tick = (): void => {
+      if (!_recordingState.active) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cur = ((rt as any).gMain?.heldKeys ?? 0) as number;
+      if (cur !== _recordingState.lastMask) {
+        _recordingState.events.push({
+          tMs: Math.round(performance.now() - _recordingState.startMs),
+          mask: cur,
+        });
+        _recordingState.lastMask = cur;
+      }
+    };
+    _recordingState.intervalId = window.setInterval(tick, 16);
+    return { ok: true };
+  },
+
+  stop(): Recording | { ok: false; reason: string } {
+    if (!_recordingState.active) return { ok: false, reason: 'not recording' };
+    _recordingState.active = false;
+    if (_recordingState.intervalId !== null) {
+      window.clearInterval(_recordingState.intervalId);
+    }
+    const totalMs = Math.round(performance.now() - _recordingState.startMs);
+    // Push final release event si dernier mask != 0 pour clean termination.
+    if (_recordingState.lastMask !== 0) {
+      _recordingState.events.push({ tMs: totalMs, mask: 0 });
+    }
+    const recording: Recording = {
+      name: '(unnamed)',
+      recordedAt: Date.now(),
+      totalMs,
+      events: _recordingState.events.slice(),
+      startMap: _recordingState.startMap,
+      startPos: _recordingState.startPos,
+    };
+    console.log(`[scope.recorder] stopped — ${recording.events.length} events over ${totalMs}ms`);
+    return recording;
+  },
+
+  async replay(rec: Recording | string, opts?: { speed?: number }): Promise<{ ok: boolean; reason?: string }> {
+    const rt = _rtSafe();
+    if (!rt) return { ok: false, reason: 'no runtime' };
+    const speed = opts?.speed ?? 1;
+    let recording: Recording;
+    if (typeof rec === 'string') {
+      const loaded = _recorder.load(rec);
+      if (!loaded) return { ok: false, reason: `no recording named '${rec}'` };
+      recording = loaded;
+    } else {
+      recording = rec;
+    }
+    if (recording.startMap) {
+      const hdr = _g<{ id?: string }>('gMapHeader');
+      if (hdr?.id !== recording.startMap) {
+        console.warn(`[scope.recorder] replay : map mismatch — recording started on ${recording.startMap}, current=${hdr?.id}`);
+      }
+    }
+    const start = performance.now();
+    for (const ev of recording.events) {
+      const targetMs = start + ev.tMs / speed;
+      const waitMs = targetMs - performance.now();
+      if (waitMs > 0) await _sleep(waitMs);
+      setHeldKeysOverride(rt, ev.mask);
+    }
+    // Final release.
+    setHeldKeysOverride(rt, 0);
+    clearHeldKeysOverride(rt);
+    return { ok: true };
+  },
+
+  save(name: string, rec?: Recording): { ok: boolean; reason?: string } {
+    if (typeof localStorage === 'undefined') return { ok: false, reason: 'no localStorage' };
+    if (!rec) return { ok: false, reason: 'recording argument required' };
+    const key = _RECORDING_STORAGE_PREFIX + name;
+    try {
+      localStorage.setItem(key, JSON.stringify({ ...rec, name }));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: String(e) };
+    }
+  },
+
+  load(name: string): Recording | null {
+    if (typeof localStorage === 'undefined') return null;
+    const key = _RECORDING_STORAGE_PREFIX + name;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try { return JSON.parse(raw) as Recording; }
+    catch { return null; }
+  },
+
+  list(): Array<{ name: string; recordedAt: string; totalMs: number; events: number; startMap?: string }> {
+    if (typeof localStorage === 'undefined') return [];
+    const out: Array<{ name: string; recordedAt: string; totalMs: number; events: number; startMap?: string }> = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k?.startsWith(_RECORDING_STORAGE_PREFIX)) continue;
+      try {
+        const r = JSON.parse(localStorage.getItem(k) ?? '{}') as Recording;
+        out.push({
+          name: k.slice(_RECORDING_STORAGE_PREFIX.length),
+          recordedAt: new Date(r.recordedAt ?? 0).toISOString(),
+          totalMs: r.totalMs ?? 0,
+          events: r.events?.length ?? 0,
+          startMap: r.startMap,
+        });
+      } catch { /* skip */ }
+    }
+    return out;
+  },
+
+  delete(name: string): { ok: boolean } {
+    if (typeof localStorage === 'undefined') return { ok: false };
+    localStorage.removeItem(_RECORDING_STORAGE_PREFIX + name);
+    return { ok: true };
+  },
+
+  state(): { active: boolean; eventsSoFar: number; elapsedMs: number } {
+    return {
+      active: _recordingState.active,
+      eventsSoFar: _recordingState.events.length,
+      elapsedMs: _recordingState.active ? Math.round(performance.now() - _recordingState.startMs) : 0,
+    };
+  },
+};
+
 // Build the scope API as a fresh object on every install. We expose the latest
 // fn references to support HMR re-install (= les nouvelles versions des _xxx
 // après edit sont propagées au prochain install).
@@ -1261,6 +1499,11 @@ function _buildScopeApi(): Record<string, unknown> {
     // Script
     scriptHistory: _scriptHistory,
     scriptHistoryClear: _scriptHistoryClear,
+    action: _action,
+    // Camera
+    cam: _cam,
+    // Recorder
+    recorder: _recorder,
     // Diff
     snapshot: _snapshot,
     compare: _compare,

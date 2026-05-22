@@ -455,6 +455,18 @@ export function ScriptContext_Stop(): void {
   sGlobalScriptContextStatus = CONTEXT_WAITING;
 }
 
+/** Devtools-only : setup un script inline composé d'opcodes pré-construits
+ *  (= pas besoin d'un label dans _scriptsByLabel). Utilisé par scope.action()
+ *  pour exécuter un opcode unique sans setup d'un script complet. */
+export function ScriptContext_SetupInlineBytecode(opcodes: Opcode[], devLabel = 'inline'): boolean {
+  InitScriptContext(sGlobalScriptContext);
+  SetupBytecodeScript(sGlobalScriptContext, opcodes);
+  LockPlayerFieldControls();
+  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  _currentScriptLabel = devLabel;
+  return true;
+}
+
 export function ScriptContext_Enable(): void {
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
   LockPlayerFieldControls();
