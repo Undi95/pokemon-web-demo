@@ -298,12 +298,20 @@ const _gPlayerAvatarBase = {
   abStartSelectTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
 } as Omit<PlayerAvatar, 'x' | 'y'>;
 
-/** Sync slot 0 `currentCoordsX/Y` à pa.x/y. 1:1 strict décomp : `gPlayerAvatar`
- *  N'A PAS x/y (= source unique = `gObjectEvents[playerSlot].currentCoords`).
- *  Notre TS dual storage (= pa.x/y alias vers gSaveBlock1Ptr.pos via Proxy +
- *  slot 0 separate) DOIT rester en sync. Hook au setter pour couvrir TOUS les
- *  chemins de write (= dev tool replace, applymovement script direct write,
- *  CameraMove cross-border, save load, etc.). */
+/** 1:1 STRICT décomp `gPlayerAvatar.x/y` : N'EXISTE PAS dans le décomp.
+ *  `struct PlayerAvatar` (global.fieldmap.h:342-362) n'a PAS x/y. La position
+ *  du joueur est UNIQUEMENT dans `gObjectEvents[gPlayerAvatar.objectEventId]
+ *  .currentCoords` (= source unique 1:1 strict).
+ *
+ *  Notre TS lit pa.x/y depuis `gSaveBlock1Ptr.pos` (= camera focus, updated
+ *  mid-step par CameraMove à chaque tile boundary). Le `slot 0.currentCoords`
+ *  est synced au step END seulement (= via `SyncPlayerObjectEvent`). Donc
+ *  mid-step, pos > slot 0 (= temporaire). À l'étape de KEYPAD CHECK (=
+ *  CheckForPlayerAvatarCollision call), c'est post step end → ils sont synced.
+ *
+ *  Setter hook _syncSlot0Coord : couvre les writes directs à pa.x/y (= dev
+ *  replace, applymovement script direct, etc.). InitPlayerObjectEvent au
+ *  warp init slot 0 direct. */
 function _syncSlot0Coord(axis: 'x' | 'y', v: number): void {
   const slot = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
   if (!slot || !slot.active || !slot.isPlayer) return;
@@ -1445,10 +1453,14 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // 1:1 STRICT décomp `field_player_avatar.c` : PlayerStep ne touche JAMAIS
       // `gSaveBlock1Ptr->pos`. Seul `CameraMove` (= fieldmap.c) mute pos au tile
       // boundary du CameraUpdate. À ce point, pos = post-step (= via CameraMove
-      // appliquée durant les 16 frames du step). nx/ny pour downstream usage
-      // (= warp check, behavior check) lit pos courant.
-      const nx = gPlayerAvatar.x;
-      const ny = gPlayerAvatar.y;
+      // appliquée durant les 16 frames du step).
+      //
+      // CRITICAL : lire pos DIRECT depuis `gSaveBlock1Ptr.pos` (= source updated
+      // par CameraMove), NON via `gPlayerAvatar.x` getter (= lit slot 0 stale
+      // pré-step → circular sync au write). Le slot 0 doit être SYNCED à new
+      // pos = post-step value via SyncPlayerObjectEvent ci-dessous.
+      const nx = gSaveBlock1Ptr.pos.x;
+      const ny = gSaveBlock1Ptr.pos.y;
       // 1:1 décomp ledge jump = 2 tiles total. Step est 32 frames → CameraMove
       // est appelée 2 fois (= 2 tile boundaries) qui appliquent chacune `pos +=
       // delta`. pos est déjà à old + 2 — pas de re-apply ici.

@@ -32,7 +32,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SyncPlayerObjectEvent } from './object-events';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
@@ -205,11 +205,25 @@ export function tickMovementQueues(rt: DecompRuntime): void {
 
 /** Quand une queue devient done, reset le movementSpeed pour le player (= stop
  *  le BG scroll). 1:1 décomp `MovementAction_FinishedMovement` qui set sprite
- *  speed = 0 quand action done. */
+ *  speed = 0 quand action done.
+ *
+ *  CRITICAL 1:1 fix : pour LOCALID_PLAYER (= scripted applymovement TV event,
+ *  intro Brendan, truck exit, etc.), call SyncPlayerObjectEvent pour sync
+ *  slot 0.currentCoords = pos (= post-CameraMove). Sans ça : applymovement
+ *  drive CameraUpdate → pos updated, MAIS slot 0 reste à pre-applymovement
+ *  value. PlayerStep step end appelle SyncPlayerObjectEvent à chaque step,
+ *  mais applymovement bypass PlayerStep → jamais synced.
+ *
+ *  Bug user 2026-05-22 : post warp escalier F2→F1 + TV event Maman applymovement,
+ *  slot 0 = (8, 2) stale F2 escalator. CheckForPlayerAvatarCollision lisait
+ *  slot 0 = (8, 2) → walk target = (7/9, 2) F1 = mur → IMPASSABLE phantom. */
 function _onQueueDone(key: string): void {
-  if (key === 'PLAYER') {
+  if (key === 'PLAYER' || key === 'LOCALID_PLAYER' || key === '255') {
     gFieldCamera.movementSpeedX = 0;
     gFieldCamera.movementSpeedY = 0;
+    // 1:1 STRICT sync slot 0 = pos après scripted movement player. Sans ça,
+    // collision check lit slot 0 stale.
+    SyncPlayerObjectEvent(gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
   }
 }
 
