@@ -764,13 +764,27 @@ function checkPlayerCollision(direction: number): number {
       return COLLISION_ELEVATION_MISMATCH;
     }
   }
-  // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`).
-  //    Pendant un walk, currentCoords = TARGET et previousCoords = SOURCE →
+  // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`,
+  //    event_object_movement.c:4724-4742) :
+  //    ```c
+  //    for (i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+  //        curObject = &gObjectEvents[i];
+  //        if (curObject->active && curObject != objectEvent) { ... }
+  //    }
+  //    ```
+  //    Le check `curObject != objectEvent` skip le self. Critique pour le player
+  //    unifié dans gObjectEvents[gPlayerAvatar.objectEventId] (= slot 0) :
+  //    sans skip, après un step le slot 0 a previousCoords = old position et
+  //    currentCoords = new position. Un 180° turn fait checkPlayerCollision sur
+  //    old position → match slot 0 previousCoords → COLLISION_OBJECT_EVENT
+  //    phantom → player bloqué jusqu'à un perpendiculaire qui shift à nouveau.
+  //    Pendant un walk NPC, currentCoords = TARGET et previousCoords = SOURCE →
   //    les 2 cells sont bloquées simultanément (= step-on race fix).
-  //    Audit Opus §5 : utilise field-globals.getGObjectEvents() pour type-safety
-  //    au lieu du `globalThis.__gObjectEvents` cast `any`.
   const gObjectEvents = getGObjectEvents();
-  for (const npc of gObjectEvents) {
+  const playerSlot = gPlayerAvatar.objectEventId;
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    if (i === playerSlot) continue;  // 1:1 décomp curObject != objectEvent (skip self)
+    const npc = gObjectEvents[i];
     if (!npc.active || npc.invisible) continue;
     if (npc.currentCoordsX === dx && npc.currentCoordsY === dy) return COLLISION_OBJECT_EVENT;
     if (npc.previousCoordsX === dx && npc.previousCoordsY === dy) return COLLISION_OBJECT_EVENT;
