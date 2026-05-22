@@ -428,6 +428,40 @@ function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
   npc.previousCoordsY = npc.currentCoordsY;
 }
 
+/** 1:1 décomp `ObjectEventUpdateMetatileBehaviors` (event_object_movement.c:7428-7432).
+ *
+ *  Body décomp :
+ *  ```c
+ *  static void ObjectEventUpdateMetatileBehaviors(struct ObjectEvent *objEvent) {
+ *      objEvent->previousMetatileBehavior = MapGridGetMetatileBehaviorAt(
+ *          objEvent->previousCoords.x, objEvent->previousCoords.y);
+ *      objEvent->currentMetatileBehavior = MapGridGetMetatileBehaviorAt(
+ *          objEvent->currentCoords.x, objEvent->currentCoords.y);
+ *  }
+ *  ```
+ *
+ *  Appelée par décomp dans 3 contextes :
+ *    - `GetAllGroundEffectFlags_OnSpawn` (= au spawn d'un object event)
+ *    - `GetAllGroundEffectFlags_OnBeginStep` (= début d'un step)
+ *    - `GetAllGroundEffectFlags_OnFinishStep` (= fin d'un step)
+ *
+ *  Used par `HideShowWarpArrow` (= warp arrow direction match) + collision
+ *  detection + ground effect dispatch (= grass rustle / sand kick / water
+ *  splash / etc.).
+ *
+ *  Note coords : `currentCoords` / `previousCoords` sont en INTERNAL coords
+ *  (= +MAP_OFFSET, 1:1 décomp ObjectEvent struct convention). `MapGridGetMetatile
+ *  BehaviorAt` prend des internal coords directement. */
+export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
+  // map-loader.ts expose MapGridGetMetatileBehaviorAt sur globalThis pour
+  // éviter circular dep object-events ↔ map-loader.
+  const fn = (globalThis as Record<string, unknown>).MapGridGetMetatileBehaviorAt as
+    ((x: number, y: number) => number) | undefined;
+  if (!fn) return;
+  npc.previousMetatileBehavior = fn(npc.previousCoordsX, npc.previousCoordsY);
+  npc.currentMetatileBehavior = fn(npc.currentCoordsX, npc.currentCoordsY);
+}
+
 // Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
 // gObjectEvents reste exposé sur globalThis pour back-compat avec les
 // auto-callbacks décomp générés (= castent en `any`), mais les call-sites
