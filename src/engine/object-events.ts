@@ -29,7 +29,11 @@ import {
   MAP_OFFSET,
   gMapHeader,
   MapGridGetCollisionAt,
+  MapGridGetMetatileBehaviorAt,
+  GetMapBorderIdAt,
+  CanCameraMoveInDirection,
 } from './map-loader';
+import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from './field-camera';
 import { gPlayerAvatar } from './player-avatar';
 import {
@@ -759,16 +763,12 @@ export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
   //
   // Future refactor (R3 dette explicite) : standardiser sur INTERNAL coords
   // partout dans gObjectEvents pour vrai 1:1 strict.
-  const fn = (globalThis as Record<string, unknown>).MapGridGetMetatileBehaviorAt as
-    ((x: number, y: number) => number) | undefined;
-  if (!fn) return;
-  const MAP_OFFSET_LOCAL = 7;
-  npc.previousMetatileBehavior = fn(
-    npc.previousCoordsX + MAP_OFFSET_LOCAL,
-    npc.previousCoordsY + MAP_OFFSET_LOCAL);
-  npc.currentMetatileBehavior = fn(
-    npc.currentCoordsX + MAP_OFFSET_LOCAL,
-    npc.currentCoordsY + MAP_OFFSET_LOCAL);
+  npc.previousMetatileBehavior = MapGridGetMetatileBehaviorAt(
+    npc.previousCoordsX + MAP_OFFSET,
+    npc.previousCoordsY + MAP_OFFSET);
+  npc.currentMetatileBehavior = MapGridGetMetatileBehaviorAt(
+    npc.currentCoordsX + MAP_OFFSET,
+    npc.currentCoordsY + MAP_OFFSET);
 }
 
 // Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
@@ -1146,18 +1146,184 @@ function isPlayerAt(x: number, y: number): boolean {
   return false;
 }
 
-/** 1:1 décomp `DoesObjectCollideWithObjectAt` (event_object_movement.c:4724).
- *  Scan gObjectEvents, exclus self. Décomp check `currentCoords` ET
- *  `previousCoords` → couvre TARGET + SOURCE pendant un walk.
- *  Pas de check d'élévation pour MVP (= AreElevationsCompatible). */
-function isOtherNpcAt(x: number, y: number, excluding: ObjectEvent): boolean {
-  for (const other of gObjectEvents) {
-    if (other === excluding) continue;
-    if (!other.active || other.invisible) continue;
-    if (other.currentCoordsX === x && other.currentCoordsY === y) return true;
-    if (other.previousCoordsX === x && other.previousCoordsY === y) return true;
+// ─── 1:1 décomp collision constants + helpers (global.fieldmap.h:309-319) ─
+
+/** 1:1 décomp `enum Collision` (global.fieldmap.h:309-319). NE PAS modifier
+ *  les valeurs : matchent l'index décomp utilisé par sites externes. */
+export const COLLISION_NONE                = 0;
+export const COLLISION_OUTSIDE_RANGE       = 1;
+export const COLLISION_IMPASSABLE          = 2;
+export const COLLISION_ELEVATION_MISMATCH  = 3;
+export const COLLISION_OBJECT_EVENT        = 4;
+export const COLLISION_STOP_SURFING        = 5;
+export const COLLISION_LEDGE_JUMP          = 6;
+export const COLLISION_PUSHED_BOULDER      = 7;
+export const COLLISION_ROTATING_GATE       = 8;
+
+/** 1:1 décomp `enum Elevation` (global.fieldmap.h:14-20). */
+export const ELEVATION_TRANSITION  = 0;
+export const ELEVATION_MULTI_LEVEL = 15;
+
+/** 1:1 décomp `AreElevationsCompatible(u8 a, u8 b)`
+ *  (event_object_movement.c:7791-7800).
+ *
+ *  ```c
+ *  if (a == ELEVATION_TRANSITION || b == ELEVATION_TRANSITION) return TRUE;
+ *  if (a != b) return FALSE;
+ *  return TRUE;
+ *  ```
+ *
+ *  ELEVATION_TRANSITION (= 0) signifie "tile traversable peu importe l'élév
+ *  du caller" — used pour transitions stairs/bridges. */
+export function AreElevationsCompatible(a: number, b: number): boolean {
+  if (a === ELEVATION_TRANSITION || b === ELEVATION_TRANSITION) return true;
+  if (a !== b) return false;
+  return true;
+}
+
+/** 1:1 décomp `IsElevationMismatchAt(u8 elevation, s16 x, s16 y)`
+ *  (event_object_movement.c:7707-7723).
+ *
+ *  ```c
+ *  if (elevation == ELEVATION_TRANSITION) return FALSE;
+ *  mapElevation = MapGridGetElevationAt(x, y);
+ *  if (mapElevation == ELEVATION_TRANSITION || mapElevation == ELEVATION_MULTI_LEVEL)
+ *      return FALSE;
+ *  if (mapElevation != elevation) return TRUE;
+ *  return FALSE;
+ *  ```
+ *
+ *  x, y = INTERNAL coords (= déjà +MAP_OFFSET). Bug user session 129 fixé :
+ *  tile devant truck cache elev=15 (MULTI_LEVEL) → skip check = passable. */
+export function IsElevationMismatchAt(elevation: number, x: number, y: number): boolean {
+  if (elevation === ELEVATION_TRANSITION) return false;
+  const fn = (globalThis as Record<string, unknown>).MapGridGetElevationAt as
+    ((x: number, y: number) => number) | undefined;
+  if (!fn) return false;
+  const mapElevation = fn(x, y);
+  if (mapElevation === ELEVATION_TRANSITION || mapElevation === ELEVATION_MULTI_LEVEL) return false;
+  if (mapElevation !== elevation) return true;
+  return false;
+}
+
+/** 1:1 décomp `DoesObjectCollideWithObjectAt(struct ObjectEvent *objectEvent, s16 x, s16 y)`
+ *  (event_object_movement.c:4724-4742).
+ *
+ *  ```c
+ *  for (i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+ *      curObject = &gObjectEvents[i];
+ *      if (curObject->active && curObject != objectEvent) {
+ *          if ((curObject->currentCoords.x == x && curObject->currentCoords.y == y)
+ *              || (curObject->previousCoords.x == x && curObject->previousCoords.y == y)) {
+ *              if (AreElevationsCompatible(objectEvent->currentElevation, curObject->currentElevation))
+ *                  return TRUE;
+ *          }
+ *      }
+ *  }
+ *  ```
+ *
+ *  Skip self via reference compare. Check `currentCoords` ET `previousCoords`
+ *  → couvre TARGET + SOURCE pendant un walk (= step-on race fix). */
+export function DoesObjectCollideWithObjectAt(
+  objectEvent: ObjectEvent, x: number, y: number,
+): boolean {
+  for (const curObject of gObjectEvents) {
+    if (!curObject.active || curObject === objectEvent) continue;
+    if ((curObject.currentCoordsX === x && curObject.currentCoordsY === y)
+        || (curObject.previousCoordsX === x && curObject.previousCoordsY === y)) {
+      if (AreElevationsCompatible(objectEvent.currentElevation, curObject.currentElevation)) {
+        return true;
+      }
+    }
   }
   return false;
+}
+
+/** Back-compat wrapper : isOtherNpcAt → DoesObjectCollideWithObjectAt 1:1
+ *  strict signature. Used par `canWalk` pour NPCs movement validation. */
+function isOtherNpcAt(x: number, y: number, excluding: ObjectEvent): boolean {
+  return DoesObjectCollideWithObjectAt(excluding, x, y);
+}
+
+/** 1:1 décomp `GetCollisionAtCoords(struct ObjectEvent *objectEvent, s16 x, s16 y, u32 dir)`
+ *  (event_object_movement.c:4658-4672).
+ *
+ *  ```c
+ *  if (IsCoordOutsideObjectEventMovementRange(objectEvent, x, y))
+ *      return COLLISION_OUTSIDE_RANGE;
+ *  else if (MapGridGetCollisionAt(x, y) || GetMapBorderIdAt(x, y) == CONNECTION_INVALID
+ *           || IsMetatileDirectionallyImpassable(objectEvent, x, y, direction))
+ *      return COLLISION_IMPASSABLE;
+ *  else if (objectEvent->trackedByCamera && !CanCameraMoveInDirection(direction))
+ *      return COLLISION_IMPASSABLE;
+ *  else if (IsElevationMismatchAt(objectEvent->currentElevation, x, y))
+ *      return COLLISION_ELEVATION_MISMATCH;
+ *  else if (DoesObjectCollideWithObjectAt(objectEvent, x, y))
+ *      return COLLISION_OBJECT_EVENT;
+ *  return COLLISION_NONE;
+ *  ```
+ *
+ *  CONNECTION_INVALID = -1 (= map border edge). x, y = INTERNAL coords
+ *  (= +MAP_OFFSET déjà). Notre convention LOGICAL pour gObjectEvents → caller
+ *  doit add MAP_OFFSET avant call (= matche les call-sites décomp). */
+export function GetCollisionAtCoords(
+  objectEvent: ObjectEvent, x: number, y: number, dir: number,
+): number {
+  const direction = dir;
+  if (IsCoordOutsideObjectEventMovementRange(objectEvent, x, y))
+    return COLLISION_OUTSIDE_RANGE;
+  const targetBehavior = MapGridGetMetatileBehaviorAt(x, y);
+  if (MapGridGetCollisionAt(x, y) !== 0
+      || GetMapBorderIdAt(x, y) === -1
+      || IsMetatileDirectionallyImpassable(
+           objectEvent.currentMetatileBehavior, targetBehavior, direction))
+    return COLLISION_IMPASSABLE;
+  if (objectEvent.trackedByCamera && !CanCameraMoveInDirection(direction))
+    return COLLISION_IMPASSABLE;
+  if (IsElevationMismatchAt(objectEvent.currentElevation, x, y))
+    return COLLISION_ELEVATION_MISMATCH;
+  if (DoesObjectCollideWithObjectAt(objectEvent, x, y))
+    return COLLISION_OBJECT_EVENT;
+  return COLLISION_NONE;
+}
+
+/** 1:1 décomp `GetCollisionFlagsAtCoords(struct ObjectEvent *objectEvent, s16 x, s16 y, u8 direction)`
+ *  (event_object_movement.c:4674-4687). Bitfield variant : check ALL conditions
+ *  et set 1 bit per collision type (= used par trainer_see + autres callers qui
+ *  veulent saber TOUTES les raisons de collision, pas juste la 1ère).
+ *
+ *  Bit i = (1 << (COLLISION_X - 1)). */
+export function GetCollisionFlagsAtCoords(
+  objectEvent: ObjectEvent, x: number, y: number, direction: number,
+): number {
+  let flags = 0;
+  if (IsCoordOutsideObjectEventMovementRange(objectEvent, x, y))
+    flags |= 1 << (COLLISION_OUTSIDE_RANGE - 1);
+  const targetBehavior = MapGridGetMetatileBehaviorAt(x, y);
+  if (MapGridGetCollisionAt(x, y) !== 0
+      || GetMapBorderIdAt(x, y) === -1
+      || IsMetatileDirectionallyImpassable(
+           objectEvent.currentMetatileBehavior, targetBehavior, direction)
+      || (objectEvent.trackedByCamera && !CanCameraMoveInDirection(direction)))
+    flags |= 1 << (COLLISION_IMPASSABLE - 1);
+  if (IsElevationMismatchAt(objectEvent.currentElevation, x, y))
+    flags |= 1 << (COLLISION_ELEVATION_MISMATCH - 1);
+  if (DoesObjectCollideWithObjectAt(objectEvent, x, y))
+    flags |= 1 << (COLLISION_OBJECT_EVENT - 1);
+  return flags;
+}
+
+/** 1:1 décomp `GetCollisionInDirection(struct ObjectEvent *objectEvent, u8 direction)`
+ *  (event_object_movement.c:4650-4656). Compute (x, y) target depuis
+ *  currentCoords + direction, puis call `GetCollisionAtCoords`. */
+export function GetCollisionInDirection(
+  objectEvent: ObjectEvent, direction: number,
+): number {
+  const dx = DIR_TO_DX[direction] ?? 0;
+  const dy = DIR_TO_DY[direction] ?? 0;
+  const x = objectEvent.currentCoordsX + dx;
+  const y = objectEvent.currentCoordsY + dy;
+  return GetCollisionAtCoords(objectEvent, x, y, direction);
 }
 
 /** 1:1 décomp `sMovementTypeHasRange[]` (event_object_movement.c:307).

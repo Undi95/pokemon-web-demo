@@ -52,7 +52,10 @@ import {
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents } from './object-events';
+import {
+  InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
+  GetCollisionAtCoords as _GetCollisionAtCoords,
+} from './object-events';
 import {
   gFieldCamera,
   SetCameraTopLeftCoords,
@@ -93,7 +96,6 @@ import {
   IsMetatileDirectionallyImpassable,
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
-import { getGObjectEvents } from './field-globals';
 import { gSaveBlock1Ptr } from './gba-menu-system';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
@@ -686,26 +688,38 @@ function updateSpriteFrame(rt: DecompRuntime): void {
 /** Alias pour `MoveCoords` du module direction-coords (= back-compat). */
 const moveCoords = MoveCoords;
 
-/** Constants de collision return values 1:1 décomp (event_object_movement.h). */
-const COLLISION_NONE         = 0;
-const COLLISION_OUTSIDE_RANGE = 1;
-const COLLISION_IMPASSABLE   = 2;
-const COLLISION_ELEVATION_MISMATCH = 3;
-export const COLLISION_LEDGE_JUMP   = 4;
-const COLLISION_OBJECT_EVENT = 5;
+/** Constants de collision 1:1 décomp `enum Collision` (global.fieldmap.h:309-319).
+ *  Valeurs 1:1 strict — re-déclarées local pour éviter cycle ESM avec
+ *  object-events (= player-avatar ↔ object-events s'importent mutuellement). */
+const COLLISION_NONE                = 0;
+const COLLISION_IMPASSABLE          = 2;
+export const COLLISION_LEDGE_JUMP   = 6;
 
-/** 1:1 décomp `GetCollisionAtCoords` (event_object_movement.c:4658) :
+/** 1:1 décomp `CheckForPlayerAvatarCollision(u8 direction)` (field_player_avatar.c:654-663).
  *
- *    if (IsCoordOutsideObjectEventMovementRange) return COLLISION_OUTSIDE_RANGE
- *    if (MapGridGetCollisionAt || GetMapBorderIdAt == CONNECTION_INVALID
- *        || IsMetatileDirectionallyImpassable) return COLLISION_IMPASSABLE
- *    if (IsElevationMismatchAt) return COLLISION_ELEVATION_MISMATCH
- *    if (DoesObjectCollideWithObjectAt) return COLLISION_OBJECT_EVENT
- *    return COLLISION_NONE
+ *  ```c
+ *  s16 x, y;
+ *  struct ObjectEvent *playerObjEvent = &gObjectEvents[gPlayerAvatar.objectEventId];
+ *  x = playerObjEvent->currentCoords.x;
+ *  y = playerObjEvent->currentCoords.y;
+ *  MoveCoords(direction, &x, &y);
+ *  return CheckForObjectEventCollision(playerObjEvent, x, y, direction,
+ *                                       MapGridGetMetatileBehaviorAt(x, y));
+ *  ```
  *
- *  Pour le player, on ne check pas movement range (= player a pas de range).
- *  Le ShouldJumpLedge (= COLLISION_LEDGE_JUMP) est checké séparément avant
- *  ce return par PlayerNotOnBikeMoving (= field_player_avatar.c:608).
+ *  Notre player utilise LOGICAL coords (= sans MAP_OFFSET) côté gPlayerAvatar.
+ *  GetCollisionAtCoords attend INTERNAL coords (= +MAP_OFFSET). On compense
+ *  ici en passant `dx + MAP_OFFSET, dy + MAP_OFFSET`.
+ *
+ *  Subsystems décomp `CheckForObjectEventCollision` non-portés (= R4 dette
+ *  explicite, hors démo Brendan house) :
+ *    - CanStopSurfing (= COLLISION_STOP_SURFING) — Surf seulement.
+ *    - TryPushBoulder (= COLLISION_PUSHED_BOULDER) — Strength HM seulement.
+ *    - CheckForRotatingGatePuzzleCollision (= COLLISION_ROTATING_GATE) — Trick
+ *      House gates seulement.
+ *    - CheckAcroBikeCollision (= COLLISION_NONE override) — Acro Bike seulement.
+ *
+ *  ShouldJumpLedge (= COLLISION_LEDGE_JUMP) PORTÉ ici (= used dès Litoral 102).
  *
  *  Returns COLLISION_* enum value. */
 function checkPlayerCollision(direction: number): number {
@@ -716,80 +730,54 @@ function checkPlayerCollision(direction: number): number {
   if ((globalThis as unknown as { __devNoclip?: boolean }).__devNoclip) {
     return COLLISION_NONE;
   }
-  const { x: dx, y: dy } = moveCoords(direction, gPlayerAvatar.x, gPlayerAvatar.y);
-  // 1. Map collision flag (= bit collision dans le map block).
-  const mapCollision = MapGridGetCollisionAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-  // 2. IsMetatileDirectionallyImpassable (= ledges + composite blocks).
-  //    Audit Opus 2.3 : check critique manquant. Block player de quitter
-  //    un MB_IMPASSABLE_X dans la direction X, ou d'entrer un tile cible
-  //    qui bloque l'entrée depuis la direction opposée.
-  const currentBehavior = MapGridGetMetatileBehaviorAt(
-    gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
-  const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-  // 1:1 décomp `CheckForObjectEventCollision` (event_object_movement.c:676-697) :
-  //   ShouldJumpLedge est checké AVANT le impassable check car les ledge tiles
-  //   ONT mapCollision > 0 (= bloquent walk normal) mais le ledge jump override
-  //   cette collision pour permettre de sauter par dessus. L'anim de saut est
-  //   gérée via sJumpY_High curve dans updateSpriteFrame.
+  // 1:1 décomp : read coords depuis playerObjEvent. Notre slot 0 stocke en
+  // LOGICAL coords (= sans MAP_OFFSET). Pour GetCollisionAtCoords qui attend
+  // INTERNAL coords, on add MAP_OFFSET au target. Fallback gPlayerAvatar.x/y
+  // si slot 0 pas init (= boot early ou tests).
+  const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
+  const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
+  const sx = useSlot ? playerObjEvent.currentCoordsX : gPlayerAvatar.x;
+  const sy = useSlot ? playerObjEvent.currentCoordsY : gPlayerAvatar.y;
+  const { x: dx, y: dy } = moveCoords(direction, sx, sy);
+  // GetCollisionAtCoords : INTERNAL coords (= +MAP_OFFSET).
+  const internalX = dx + MAP_OFFSET;
+  const internalY = dy + MAP_OFFSET;
+  // 1:1 décomp `GetCollisionAtCoords` wrapper. Couvre :
+  //   - IsCoordOutsideObjectEventMovementRange (= player a movementRange=0 → no-op).
+  //   - MapGridGetCollisionAt + GetMapBorderIdAt + IsMetatileDirectionallyImpassable.
+  //   - trackedByCamera (= player.trackedByCamera=false → no-op).
+  //   - IsElevationMismatchAt (= 1:1 décomp avec ELEVATION_TRANSITION=0).
+  //   - DoesObjectCollideWithObjectAt (= skip self via reference compare → fix
+  //     bug 180° self-collision commit `9b08a0bf`).
+  let collision: number;
+  if (useSlot) {
+    collision = _GetCollisionAtCoords(playerObjEvent, internalX, internalY, direction);
+  } else {
+    // Fallback boot early : construire un objectEvent virtuel avec les fields
+    // minimaux que GetCollisionAtCoords lit. Pas idéal 1:1 mais évite crash.
+    const playerBehavior = MapGridGetMetatileBehaviorAt(
+      gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+    const virtualObj = {
+      active: false, trackedByCamera: false,
+      currentMetatileBehavior: playerBehavior,
+      currentElevation: gPlayerAvatar.currentElevation,
+      currentCoordsX: gPlayerAvatar.x, currentCoordsY: gPlayerAvatar.y,
+      previousCoordsX: gPlayerAvatar.x, previousCoordsY: gPlayerAvatar.y,
+      movementRangeX: 0, movementRangeY: 0,
+      initialCoordsX: gPlayerAvatar.x, initialCoordsY: gPlayerAvatar.y,
+    } as unknown as Parameters<typeof _GetCollisionAtCoords>[0];
+    collision = _GetCollisionAtCoords(virtualObj, internalX, internalY, direction);
+  }
+  // 1:1 décomp `CheckForObjectEventCollision` (field_player_avatar.c:676-697) :
+  //   ShouldJumpLedge fire APRÈS GetCollisionAtCoords (= peut override
+  //   COLLISION_IMPASSABLE car ledge tile a mapCollision > 0 mais le jump
+  //   override permet de sauter par dessus). L'anim de saut = sJumpY_High
+  //   curve dans updateSpriteFrame.
+  const targetBehavior = MapGridGetMetatileBehaviorAt(internalX, internalY);
   if (ShouldJumpLedge(targetBehavior, direction)) {
     return COLLISION_LEDGE_JUMP;
   }
-  if (mapCollision > 0
-   || IsMetatileDirectionallyImpassable(currentBehavior, targetBehavior, direction)) {
-    return COLLISION_IMPASSABLE;
-  }
-  // 3. Elevation mismatch check (= 1:1 décomp `IsElevationMismatchAt`,
-  //    event_object_movement.c:13000) — exact pattern :
-  //      static bool8 IsElevationMismatchAt(u8 elevation, s16 x, s16 y) {
-  //          if (elevation == ELEVATION_TRANSITION) return FALSE;
-  //          mapElevation = MapGridGetElevationAt(x, y);
-  //          if (mapElevation == ELEVATION_TRANSITION
-  //              || mapElevation == ELEVATION_MULTI_LEVEL) return FALSE;
-  //          if (mapElevation != elevation) return TRUE;
-  //          return FALSE;
-  //      }
-  //
-  //  ELEVATION_TRANSITION = 15 (= "0xF"), ELEVATION_MULTI_LEVEL = 0.
-  //  Bug user session 129 : tile (11,10) devant truck cache a elevation 15
-  //  (transition), player elevation 3 → ancienne logique retournait MISMATCH
-  //  car target!=0 && current!=0 && target!=current. 1:1 décomp = no mismatch
-  //  (transition tile traversable peu importe currentElev).
-  const ELEVATION_TRANSITION = 15;
-  const ELEVATION_MULTI_LEVEL = 0;
-  const currentElev = gPlayerAvatar.currentElevation;
-  if (currentElev !== ELEVATION_TRANSITION) {
-    const targetElev = MapGridGetElevationAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-    if (targetElev !== ELEVATION_TRANSITION && targetElev !== ELEVATION_MULTI_LEVEL
-        && targetElev !== currentElev) {
-      return COLLISION_ELEVATION_MISMATCH;
-    }
-  }
-  // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`,
-  //    event_object_movement.c:4724-4742) :
-  //    ```c
-  //    for (i = 0; i < OBJECT_EVENTS_COUNT; i++) {
-  //        curObject = &gObjectEvents[i];
-  //        if (curObject->active && curObject != objectEvent) { ... }
-  //    }
-  //    ```
-  //    Le check `curObject != objectEvent` skip le self. Critique pour le player
-  //    unifié dans gObjectEvents[gPlayerAvatar.objectEventId] (= slot 0) :
-  //    sans skip, après un step le slot 0 a previousCoords = old position et
-  //    currentCoords = new position. Un 180° turn fait checkPlayerCollision sur
-  //    old position → match slot 0 previousCoords → COLLISION_OBJECT_EVENT
-  //    phantom → player bloqué jusqu'à un perpendiculaire qui shift à nouveau.
-  //    Pendant un walk NPC, currentCoords = TARGET et previousCoords = SOURCE →
-  //    les 2 cells sont bloquées simultanément (= step-on race fix).
-  const gObjectEvents = getGObjectEvents();
-  const playerSlot = gPlayerAvatar.objectEventId;
-  for (let i = 0; i < gObjectEvents.length; i++) {
-    if (i === playerSlot) continue;  // 1:1 décomp curObject != objectEvent (skip self)
-    const npc = gObjectEvents[i];
-    if (!npc.active || npc.invisible) continue;
-    if (npc.currentCoordsX === dx && npc.currentCoordsY === dy) return COLLISION_OBJECT_EVENT;
-    if (npc.previousCoordsX === dx && npc.previousCoordsY === dy) return COLLISION_OBJECT_EVENT;
-  }
-  return COLLISION_NONE;
+  return collision;
 }
 
 /** 1:1 décomp `PlayCollisionSoundIfNotFacingWarp(direction)` (field_player_avatar.c:1098-1115).
