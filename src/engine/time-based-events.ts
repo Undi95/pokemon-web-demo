@@ -20,6 +20,7 @@
  */
 
 import { RtcGetMinuteCount } from './rtc';
+import { gSaveBlock1Ptr } from './save-block-state';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -58,9 +59,8 @@ interface BerryTree {
 }
 
 function _berryTreesArr(): BerryTree[] | undefined {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { berryTrees?: BerryTree[] } | undefined;
-  return block1?.berryTrees;
+  // 1:1 décomp `gSaveBlock1Ptr->berryTrees[]`.
+  return gSaveBlock1Ptr.berryTrees as BerryTree[] | undefined;
 }
 
 const _gBlankBerryTree: BerryTree = {
@@ -148,15 +148,13 @@ export function BerryTreeTimeUpdate(minutes: number): void {
  *    - Also : daily flag clear, weather rotation, etc.
  *  Notre version : utilise minutes since RTC anchor (s32) à la place de struct Time. */
 export function DoTimeBasedEvents(): void {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { lastBerryTreeUpdateMin?: number } | undefined;
-  if (!block1) return;
-
+  // 1:1 décomp `gSaveBlock1Ptr->lastBerryTreeUpdate` (= u16 sur ROM, on stocke
+  // en s32 minutes-since-anchor).
   const minuteNow = RtcGetMinuteCount();
-  const lastUpdate = block1.lastBerryTreeUpdateMin ?? minuteNow;
+  const lastUpdate = (gSaveBlock1Ptr.lastBerryTreeUpdateMin as number | undefined) ?? minuteNow;
   const diff = minuteNow - lastUpdate;
 
-  block1.lastBerryTreeUpdateMin = minuteNow;
+  gSaveBlock1Ptr.lastBerryTreeUpdateMin = minuteNow;
 
   if (diff > 0) {
     BerryTreeTimeUpdate(diff);

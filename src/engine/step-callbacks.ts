@@ -21,6 +21,7 @@
  */
 
 import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
 
 // ─── Callback IDs 1:1 décomp event_objects.h ────────────────────────────────
 
@@ -42,16 +43,15 @@ let _sActivePerStepCallback = STEP_CB_DUMMY;
  *  Stocké via gameState.gameStats. Utilisé par daily flag clear, daycare egg
  *  generation, time-based events trigger. */
 function _getStepCount(): number {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { gameStats?: number[] } | undefined;
-  return block1?.gameStats?.[1 /* GAME_STAT_STEPS */] ?? 0;
+  // 1:1 décomp `gSaveBlock1Ptr->gameStats[GAME_STAT_STEPS]`.
+  const stats = gSaveBlock1Ptr.gameStats as number[] | undefined;
+  return stats?.[1 /* GAME_STAT_STEPS */] ?? 0;
 }
 
 function _incStepCount(): void {
-  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
-    { gameStats?: number[] } | undefined;
-  if (block1?.gameStats) {
-    block1.gameStats[1] = (block1.gameStats[1] ?? 0) + 1;
+  const stats = gSaveBlock1Ptr.gameStats as number[] | undefined;
+  if (stats) {
+    stats[1] = (stats[1] ?? 0) + 1;
   }
 }
 

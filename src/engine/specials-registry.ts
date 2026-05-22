@@ -28,6 +28,8 @@
 
 import { registerSpecial } from './script-opcodes';
 import { gameState } from './game-state';
+import { gMapHeader } from './map-loader';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
 
@@ -327,7 +329,7 @@ registerSpecial('FieldShowRegionMap', () => {
 });
 
 registerSpecial('GetMomOrDadStringForTVMessage', () => {
-  const mapId = (globalThis as { gMapHeader?: { id?: string } }).gMapHeader?.id ?? '';
+  const mapId = gMapHeader?.id ?? '';
   const isMaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
   const isFemaleHouse = mapId === 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F';
   const isInPlayersHouse = (gameState.gender === 'MALE' && isMaleHouse)
@@ -713,11 +715,10 @@ registerSpecial('IsSelectedMonEgg', () => {
  *    *VarGetPtr(VAR_0x8005) = gPlayerAvatar.y;
  *  Used par scripts qui veulent positionner un NPC à coords player. */
 registerSpecial('StorePlayerCoordsInVars', () => {
-  const pa = (globalThis as { gPlayerAvatar?: { x: number; y: number } }).gPlayerAvatar;
-  if (pa) {
-    gameState.setVar?.('VAR_0x8004', pa.x);
-    gameState.setVar?.('VAR_0x8005', pa.y);
-  }
+  // 1:1 décomp : *VarGetPtr(VAR_0x8004) = gSaveBlock1Ptr->pos.x ; pareil pos.y.
+  // (= dans le décomp, pa n'a pas x/y ; on lit gSaveBlock1Ptr->pos).
+  gameState.setVar?.('VAR_0x8004', gSaveBlock1Ptr.pos.x);
+  gameState.setVar?.('VAR_0x8005', gSaveBlock1Ptr.pos.y);
   return 0;
 });
 

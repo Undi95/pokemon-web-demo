@@ -36,6 +36,7 @@ import {
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
+import { gSaveBlock2Ptr } from './save-block-state';
 
 /** HOTFIX 2026-05-09 : auto-extracted SPRITE_ANIMS data has tileNum stored
  *  as STRING for unresolved constants (= "VERSION_BANNER_RIGHT_TILEOFFSET").
@@ -2022,11 +2023,9 @@ export class DecompRuntime {
     // Si optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A, presser L
     // déclenche aussi A. BUG note décomp : `newAndRepeatedKeys` n'est PAS
     // remappé (cf. main.c comment), seuls newKeys + heldKeys.
-    // Lecture gSaveBlock2Ptr via globalThis pour éviter circular dep avec
-    // gba-menu-system (= mutable Proxy autopersistant localStorage).
-    const sb2 = (globalThis as Record<string, unknown>).gSaveBlock2Ptr as
-      { optionsButtonMode?: number } | undefined;
-    if (sb2 && sb2.optionsButtonMode === 2 /* OPTIONS_BUTTON_MODE_L_EQUALS_A */) {
+    // 1:1 décomp `gSaveBlock2Ptr->optionsButtonMode`. Foundation
+    // `save-block-state` permet l'import direct (= élimine pattern globalThis).
+    if (gSaveBlock2Ptr.optionsButtonMode === 2 /* OPTIONS_BUTTON_MODE_L_EQUALS_A */) {
       const L_BUTTON = 0x200;
       const A_BUTTON = 0x001;
       if (this.gMain.newKeys & L_BUTTON) this.gMain.newKeys |= A_BUTTON;

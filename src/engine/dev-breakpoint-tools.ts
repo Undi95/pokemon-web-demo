@@ -21,6 +21,9 @@
  * persistant, passe `{ once: false }`.
  */
 
+import { gMapHeader } from './map-loader';
+import { gObjectEvents } from './object-events';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Rt = any;
 
@@ -134,15 +137,13 @@ function onMapChange(target?: string, opts: { once?: boolean } = {}): string {
   const name = `onMapChange${target ? `(${target})` : ''}`;
   if (_activeBreakpoints.get(name)?.armed) return `[breakpoint] ${name} already armed`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let lastMapId: string | undefined = (globalThis as any).gMapHeader?.id;
+  let lastMapId: string | undefined = gMapHeader?.id;
 
   const origTick = rt.gba.tick.bind(rt.gba);
   _hookOriginals.set(name, origTick);
   rt.gba.tick = function() {
     const r = origTick();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cur = (globalThis as any).gMapHeader?.id;
+    const cur = gMapHeader?.id;
     if (cur && cur !== lastMapId) {
       const matched = !target || cur === target;
       lastMapId = cur;
@@ -228,8 +229,7 @@ function onNpcFacingChange(localId: string, opts: { once?: boolean } = {}): stri
   const name = `onNpcFacingChange(${localId})`;
   if (_activeBreakpoints.get(name)?.armed) return `[breakpoint] ${name} already armed`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const npcs = (globalThis as any).__gObjectEvents;
+  const npcs = gObjectEvents;
   if (!npcs) return '[breakpoint] no gObjectEvents';
 
   let lastFacing = -1;
@@ -283,8 +283,7 @@ function traceFade(): string {
       active: fade.active,
       palBgB1: rt.gba.palette.bgRgb15 ? rt.gba.palette.bgRgb15[1] : 0,
       btd: fade.bufferTransferDisabled,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mapId: (globalThis as any).gMapHeader?.id?.replace('MAP_', '').slice(0, 12),
+      mapId: gMapHeader?.id?.replace('MAP_', '').slice(0, 12),
     });
     if (log.length > 200) log.shift();
 
