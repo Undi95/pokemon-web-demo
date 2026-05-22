@@ -54,6 +54,7 @@ import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
+  ObjectEventUpdateMetatileBehaviors,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -303,37 +304,30 @@ const _gPlayerAvatarBase = {
  *  du joueur est UNIQUEMENT dans `gObjectEvents[gPlayerAvatar.objectEventId]
  *  .currentCoords` (= source unique 1:1 strict).
  *
- *  Notre TS lit pa.x/y depuis `gSaveBlock1Ptr.pos` (= camera focus, updated
- *  mid-step par CameraMove à chaque tile boundary). Le `slot 0.currentCoords`
- *  est synced au step END seulement (= via `SyncPlayerObjectEvent`). Donc
- *  mid-step, pos > slot 0 (= temporaire). À l'étape de KEYPAD CHECK (=
- *  CheckForPlayerAvatarCollision call), c'est post step end → ils sont synced.
+ *  Notre TS port : `pa.x/y` getter/setter alias vers `gSaveBlock1Ptr.pos`
+ *  (= camera focus, 1:1 décomp save state updated par CameraMove). Slot 0
+ *  `currentCoords` est la source unique pour position physique (= 1:1 décomp).
  *
- *  Setter hook _syncSlot0Coord : couvre les writes directs à pa.x/y (= dev
- *  replace, applymovement script direct, etc.). InitPlayerObjectEvent au
- *  warp init slot 0 direct. */
-function _syncSlot0Coord(axis: 'x' | 'y', v: number): void {
-  const slot = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
-  if (!slot || !slot.active || !slot.isPlayer) return;
-  if (axis === 'x') slot.currentCoordsX = v;
-  else slot.currentCoordsY = v;
-}
-
+ *  Sync invariant maintenu par le pattern `MovementAction_*_Step0` 1:1
+ *  strict path (= movement-system.ts _initWalk player + player-avatar.ts
+ *  PlayerStep MOVING dispatch) : slot 0 currentCoords += delta IMMEDIATEMENT
+ *  au step start. CameraMove update pos via _camPos mid-step au tile boundary.
+ *  Au step end, slot 0.currentCoords == pos. Aucune désync possible si tous
+ *  les chemins respectent ce pattern.
+ *
+ *  Note : si du code legacy modifie pa.x/y direct (= dev tool replace,
+ *  applymovement non-walk-handlers), le setter NE SYNC PAS slot 0 (= 1:1
+ *  strict décomp ; le décomp lui-même n'a pas ce duplication). Si nécessaire,
+ *  caller doit appeler SyncPlayerObjectEvent explicitement après le write. */
 Object.defineProperty(_gPlayerAvatarBase, 'x', {
   get(): number { return gSaveBlock1Ptr.pos.x; },
-  set(v: number): void {
-    gSaveBlock1Ptr.pos.x = v;
-    _syncSlot0Coord('x', v);
-  },
+  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
   enumerable: true,
   configurable: true,
 });
 Object.defineProperty(_gPlayerAvatarBase, 'y', {
   get(): number { return gSaveBlock1Ptr.pos.y; },
-  set(v: number): void {
-    gSaveBlock1Ptr.pos.y = v;
-    _syncSlot0Coord('y', v);
-  },
+  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
   enumerable: true,
   configurable: true,
 });
@@ -1072,18 +1066,6 @@ export function CheckForObjectEventStaticCollision(
 export function CheckForPlayerAvatarCollision(direction: number): number {
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
-  // BUGFIX désync slot 0 ↔ gPlayerAvatar (= post-warp/replace dev tool/TV event) :
-  // si pa.x/y != slot.currentCoords, force re-sync. Notre TS a gPlayerAvatar.x/y
-  // comme champ "live" (= via gSaveBlock1Ptr.pos Proxy), tandis que slot 0 stocke
-  // separately. 1:1 décomp n'a pas ce duplication (= pa lit slot directement),
-  // mais notre refactor session OW unify utilise les 2. Sync défensif ici évite
-  // que collision check fire sur stale coords (= bug user post-warp escalier
-  // F2→F1 + dev replace : pa=(4,5) F1 mais slot0=(8,2) F2 stale → check (9,2)
-  // qui est mur F1 → IMPASSABLE phantom).
-  if (useSlot && (playerObjEvent.currentCoordsX !== gPlayerAvatar.x
-              || playerObjEvent.currentCoordsY !== gPlayerAvatar.y)) {
-    SyncPlayerObjectEvent(gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
-  }
   let sx: number, sy: number;
   let obj: Parameters<typeof _GetCollisionAtCoords>[0];
   if (useSlot) {
@@ -1733,16 +1715,35 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
   gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
   gPlayerAvatar.stepDirection = inputDir;
-  // 1:1 décomp `InitMoveInDirection` (event_object_movement.c:5444) :
-  // ```c
-  // objectEvent->movementDirection = direction;
-  // objectEvent->facingDirection = direction;
-  // ```
-  // Sync au start du step pour que HideShowWarpArrow + ground effects lisent
-  // la bonne movementDirection.
-  if (gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].active) {
-    gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].movementDirection = inputDir;
-    gObjectEvents[PLAYER_OBJECT_EVENT_SLOT].facingDirection = inputDir;
+  // 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081) appelée
+  // par `MovementAction_WalkNormal*_Step0` au start du player walk :
+  //   x = objEvent->currentCoords.x; y = objEvent->currentCoords.y;
+  //   SetObjectEventDirection(objEvent, dir);  ← facing + movementDirection
+  //   MoveCoords(direction, &x, &y);            ← x,y = post-step
+  //   ShiftObjectEventCoords(objEvent, x, y);  ← previousCoords=current, current=post-step
+  //   ...
+  //   objectEvent->triggerGroundEffectsOnMove = TRUE;
+  //
+  // Le décomp update slot 0 currentCoords IMMEDIATEMENT au step start. Pas
+  // mid-step. Notre TS port 1:1 strict : pareil. Sans ça, mid-step lectures
+  // de slot 0 (= collision, events, scripts) voient pre-step → divergent
+  // décomp. Aussi : event scripts firing mid-step (= coordEvents trigger
+  // quand player walk sur tile) attendent slot 0 = new tile dès Step0.
+  {
+    const playerSlot = gPlayerAvatar.objectEventId;
+    const slot = gObjectEvents[playerSlot];
+    if (slot && slot.active && slot.isPlayer) {
+      const stepDx = (inputDir === DIR_WEST ? -1 : inputDir === DIR_EAST ? 1 : 0);
+      const stepDy = (inputDir === DIR_NORTH ? -1 : inputDir === DIR_SOUTH ? 1 : 0);
+      slot.previousCoordsX = slot.currentCoordsX;
+      slot.previousCoordsY = slot.currentCoordsY;
+      slot.currentCoordsX += stepDx;
+      slot.currentCoordsY += stepDy;
+      slot.movementDirection = inputDir;
+      slot.facingDirection = inputDir;
+      slot.triggerGroundEffectsOnMove = true;
+      ObjectEventUpdateMetatileBehaviors(slot);
+    }
   }
   const speed = dirToCameraSpeed(inputDir);
   const speedMult = wantDash ? 2 : 1;

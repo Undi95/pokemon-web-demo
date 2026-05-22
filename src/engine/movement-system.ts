@@ -32,7 +32,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SyncPlayerObjectEvent } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors } from './object-events';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
@@ -207,23 +207,15 @@ export function tickMovementQueues(rt: DecompRuntime): void {
  *  le BG scroll). 1:1 décomp `MovementAction_FinishedMovement` qui set sprite
  *  speed = 0 quand action done.
  *
- *  CRITICAL 1:1 fix : pour LOCALID_PLAYER (= scripted applymovement TV event,
- *  intro Brendan, truck exit, etc.), call SyncPlayerObjectEvent pour sync
- *  slot 0.currentCoords = pos (= post-CameraMove). Sans ça : applymovement
- *  drive CameraUpdate → pos updated, MAIS slot 0 reste à pre-applymovement
- *  value. PlayerStep step end appelle SyncPlayerObjectEvent à chaque step,
- *  mais applymovement bypass PlayerStep → jamais synced.
- *
- *  Bug user 2026-05-22 : post warp escalier F2→F1 + TV event Maman applymovement,
- *  slot 0 = (8, 2) stale F2 escalator. CheckForPlayerAvatarCollision lisait
- *  slot 0 = (8, 2) → walk target = (7/9, 2) F1 = mur → IMPASSABLE phantom. */
+ *  Note 1:1 strict : pas de SyncPlayerObjectEvent ici. Slot 0 est synced
+ *  IMMEDIATEMENT au Step0 (= _initWalk / _tickJump frame 0 update slot 0
+ *  currentCoords + previousCoords + ObjectEventUpdateMetatileBehaviors).
+ *  ShiftStillObjectEventCoords (= previousCoords = currentCoords) fire au
+ *  step end. Match exactement le pattern décomp `MovementAction_*_Step0`. */
 function _onQueueDone(key: string): void {
   if (key === 'PLAYER' || key === 'LOCALID_PLAYER' || key === '255') {
     gFieldCamera.movementSpeedX = 0;
     gFieldCamera.movementSpeedY = 0;
-    // 1:1 STRICT sync slot 0 = pos après scripted movement player. Sans ça,
-    // collision check lit slot 0 stale.
-    SyncPlayerObjectEvent(gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
   }
 }
 
@@ -605,10 +597,27 @@ function _tickWalk(
   // Done when frame == duration.
   if (frame >= duration - 1) {
     if (target.isPlayer) {
-      // 1:1 STRICT décomp : les action handlers NPCs (= event_object_movement.c
-      // MovementAction_Walk*) ne touchent jamais `gSaveBlock1Ptr->pos`. Pour le
-      // player, CameraMove (= fieldmap.c:649) au tile boundary de CameraUpdate
-      // mute pos. À ce point, pos = post-step.
+      // 1:1 décomp `UpdateMovementNormal` (event_object_movement.c:5116-5126) :
+      //   if (NpcTakeStep(sprite)) {
+      //       ShiftStillObjectEventCoords(objectEvent);  ← previous = current (= post-step)
+      //       objectEvent->triggerGroundEffectsOnStop = TRUE;
+      //       sprite->animPaused = TRUE;
+      //       return TRUE;
+      //   }
+      // Le décomp fait pareil pour player et NPC. Notre TS skip historiquement
+      // pour player (= laissait previousCoords à pre-step). Fix 1:1 strict.
+      const playerSlot = gPlayerAvatar.objectEventId;
+      const slot = gObjectEvents[playerSlot];
+      if (slot && slot.active && slot.isPlayer) {
+        // ShiftStillObjectEventCoords (= previous = current = post-step value).
+        slot.previousCoordsX = slot.currentCoordsX;
+        slot.previousCoordsY = slot.currentCoordsY;
+        slot.previousMovementDirection = slot.movementDirection;
+        slot.triggerGroundEffectsOnStop = true;
+        // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
+        // :7415) appelle `ObjectEventUpdateMetatileBehaviors(objEvent)` au step end.
+        ObjectEventUpdateMetatileBehaviors(slot);
+      }
       // Reset stepFramesLeft + flip walkAnimAlt (= 1:1 PlayerStep end behavior
       // pour next walk anim alterne).
       gPlayerAvatar.stepFramesLeft = 0;
@@ -643,13 +652,38 @@ function _tickWalk(
  *  drive juste gFieldCamera.movementSpeedX/Y (= read par CameraUpdate pour
  *  scroll BG). gPlayerAvatar.x/y est mis à jour à la fin du _tickWalk. */
 function _initWalk(target: MovementTarget, dir: number): void {
+  const dx = DIR_TO_DX[dir] ?? 0;
+  const dy = DIR_TO_DY[dir] ?? 0;
+  // 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081) :
+  //   x = objectEvent->currentCoords.x;
+  //   y = objectEvent->currentCoords.y;
+  //   SetObjectEventDirection(objectEvent, direction);
+  //   MoveCoords(direction, &x, &y);
+  //   ShiftObjectEventCoords(objectEvent, x, y);   ← previous=current, current=post-step
+  //   ...
+  // Le décomp fait pareil pour player et NPC (= MovementAction_* Step0 call
+  // InitNpcForMovement avec objectEvent = player slot ou NPC slot). Notre TS
+  // historiquement skip pour player (= drove gFieldCamera only) — divergence
+  // 1:1 qui causait slot 0 désync user-flag 2026-05-22 post warp + TV event.
+  //
+  // Fix 1:1 strict path identique : update slot 0 directement IMMEDIATEMENT
+  // au Step0, comme NPCs. CameraMove continue à drive pos (= camera focus
+  // mirror) via gFieldCamera.movementSpeedX/Y au tick suivant.
   if (target.isPlayer) {
-    // No state machinery; direct drive via gFieldCamera.movementSpeedX/Y.
+    const playerSlot = gPlayerAvatar.objectEventId;
+    const slot = gObjectEvents[playerSlot];
+    if (slot && slot.active && slot.isPlayer) {
+      slot.previousCoordsX = slot.currentCoordsX;
+      slot.previousCoordsY = slot.currentCoordsY;
+      slot.currentCoordsX += dx;
+      slot.currentCoordsY += dy;
+      slot.movementDirection = dir;
+      slot.facingDirection = dir;
+      ObjectEventUpdateMetatileBehaviors(slot);
+    }
     return;
   }
   if (target.npc) {
-    const dx = DIR_TO_DX[dir] ?? 0;
-    const dy = DIR_TO_DY[dir] ?? 0;
     target.npc.previousCoordsX = target.npc.currentCoordsX;
     target.npc.previousCoordsY = target.npc.currentCoordsY;
     target.npc.currentCoordsX += dx;
@@ -726,29 +760,40 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
 
   if (frame === 0) {
     _setFacing(target, dir);
-    // NB : ne PAS set gPlayerAvatar.runningState = MOVING ni stepFramesLeft.
-    // PlayerStep en locked path verrait MOVING + stepFramesLeft > 0 et tickerait
-    // sa propre step machinery (= override our movement). Au lieu, on drive le
-    // BG scroll via gFieldCamera.movementSpeedX/Y et on update gPlayerAvatar.x/y
-    // directement à la fin du jump.
+    // 1:1 décomp `InitJumpRegular` (event_object_movement.c:5450) :
+    //   ShiftObjectEventCoords(objectEvent, objectEvent->currentCoords.x + x*dist, ...);
+    //   SetJumpSpriteData(sprite, direction, distance, type);
+    //   objectEvent->triggerGroundEffectsOnMove = TRUE;
+    // Le décomp fait pareil pour player et NPC. Notre TS update slot 0
+    // currentCoords IMMEDIATEMENT au Step0 (= 1:1 strict path).
+    const dxLogical = (DIR_TO_DX[dir] ?? 0) * distance;
+    const dyLogical = (DIR_TO_DY[dir] ?? 0) * distance;
     if (target.isPlayer) {
+      const playerSlot = gPlayerAvatar.objectEventId;
+      const slot = gObjectEvents[playerSlot];
+      if (slot && slot.active && slot.isPlayer) {
+        slot.previousCoordsX = slot.currentCoordsX;
+        slot.previousCoordsY = slot.currentCoordsY;
+        slot.currentCoordsX += dxLogical;
+        slot.currentCoordsY += dyLogical;
+        slot.movementDirection = dir;
+        slot.facingDirection = dir;
+        slot.triggerGroundEffectsOnMove = true;
+        slot.disableJumpLandingGroundEffect = false;
+        ObjectEventUpdateMetatileBehaviors(slot);
+      }
       // Bug user-flag 2026-05-21 : "Le joueur saute du camion sans le bon
-      // sprite ni l'ombre en dessous". 1:1 décomp `InitJumpRegular`
-      // (event_object_movement.c:5450) :
-      //   - Set jumpFramesLeft pour driver sprite y2 arc + walk anim frame
+      // sprite ni l'ombre en dessous". 1:1 décomp `InitJumpRegular` :
+      //   - jumpFramesLeft drive sprite y2 arc + walk anim frame
       //   - DoShadowFieldEffect → CreateShadowSprite sous player
-      //   - Sprite anim = walk1/walk2 alterné pendant le jump (= sAnim_GoSouth)
-      // Notre updatePlayerSpriteFrame (player-avatar.ts) check stepFramesLeft
-      // >= halfStep pour render walk vs face. Et jumpFramesLeft drive y2 via
-      // getJumpYOffset. Sans ces 2 → face frame statique + pas d'ombre.
       gPlayerAvatar.jumpFramesLeft = totalFrames;
       gPlayerAvatar.stepFramesLeft = totalFrames;
       if (_activeRt) CreateShadowSprite(_activeRt);
     } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;
-      target.npc.currentCoordsX += (DIR_TO_DX[dir] ?? 0) * distance;
-      target.npc.currentCoordsY += (DIR_TO_DY[dir] ?? 0) * distance;
+      target.npc.currentCoordsX += dxLogical;
+      target.npc.currentCoordsY += dyLogical;
       target.npc.walkDirection = dir;
       target.npc.walkFramesLeft = totalFrames;
     }
@@ -792,9 +837,21 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       if (sprite) sprite.y2 = 0;
     }
     if (target.isPlayer) {
-      // 1:1 STRICT décomp : jump handler ne touche pas pos. CameraMove (=
-      // fieldmap.c:649) au tile boundary applique pos += delta — appelée
-      // 1× pour distance 1, 2× pour distance 2 (= ledge jump 32 frames).
+      // 1:1 décomp `MovementAction_Jump*_Step1` end (event_object_movement.c:5535) :
+      //   objectEvent->hasShadow = FALSE;
+      //   ShiftStillObjectEventCoords(objectEvent);   ← previous = current (= post-jump)
+      //   sActionFuncId = 2;
+      // Le décomp pareil pour player et NPC. Notre TS sync slot 0 pour player.
+      const playerSlot = gPlayerAvatar.objectEventId;
+      const slot = gObjectEvents[playerSlot];
+      if (slot && slot.active && slot.isPlayer) {
+        slot.previousCoordsX = slot.currentCoordsX;
+        slot.previousCoordsY = slot.currentCoordsY;
+        slot.previousMovementDirection = slot.movementDirection;
+        slot.hasShadow = false;
+        slot.triggerGroundEffectsOnStop = true;
+        ObjectEventUpdateMetatileBehaviors(slot);
+      }
       // Cleanup jump state : sprite frame reset à face + shadow destroyed +
       // walkAnimAlt flipped pour next step start avec l'autre walk frame.
       gPlayerAvatar.jumpFramesLeft = 0;

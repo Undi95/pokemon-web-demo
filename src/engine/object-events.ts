@@ -1280,10 +1280,17 @@ export function IsElevationMismatchAt(elevation: number, x: number, y: number): 
 export function DoesObjectCollideWithObjectAt(
   objectEvent: ObjectEvent, x: number, y: number,
 ): boolean {
+  // x, y arrivent en INTERNAL coords (= +MAP_OFFSET, convention décomp).
+  // Notre TS stocke `currentCoords` en LOGICAL coords (= sans MAP_OFFSET).
+  // Décomp stocke en INTERNAL → comparison directe. Notre TS doit convertir.
+  // Future refactor R3 : standardiser sur INTERNAL coords partout (= vrai 1:1
+  // strict path). Pour l'instant, conversion locale ici.
+  const logicalX = x - MAP_OFFSET;
+  const logicalY = y - MAP_OFFSET;
   for (const curObject of gObjectEvents) {
     if (!curObject.active || curObject === objectEvent) continue;
-    if ((curObject.currentCoordsX === x && curObject.currentCoordsY === y)
-        || (curObject.previousCoordsX === x && curObject.previousCoordsY === y)) {
+    if ((curObject.currentCoordsX === logicalX && curObject.currentCoordsY === logicalY)
+        || (curObject.previousCoordsX === logicalX && curObject.previousCoordsY === logicalY)) {
       if (AreElevationsCompatible(objectEvent.currentElevation, curObject.currentElevation)) {
         return true;
       }
@@ -1401,15 +1408,19 @@ function movementTypeHasRange(movementType: string): boolean {
 function IsCoordOutsideObjectEventMovementRange(
   npc: ObjectEvent, x: number, y: number,
 ): boolean {
+  // x, y arrivent en INTERNAL coords (= +MAP_OFFSET, convention décomp).
+  // Notre TS stocke `initialCoords` en LOGICAL → convert pour comparison.
+  const logicalX = x - MAP_OFFSET;
+  const logicalY = y - MAP_OFFSET;
   if (npc.movementRangeX !== 0) {
     const left = npc.initialCoordsX - npc.movementRangeX;
     const right = npc.initialCoordsX + npc.movementRangeX;
-    if (left > x || right < x) return true;
+    if (left > logicalX || right < logicalX) return true;
   }
   if (npc.movementRangeY !== 0) {
     const top = npc.initialCoordsY - npc.movementRangeY;
     const bottom = npc.initialCoordsY + npc.movementRangeY;
-    if (top > y || bottom < y) return true;
+    if (top > logicalY || bottom < logicalY) return true;
   }
   return false;
 }
