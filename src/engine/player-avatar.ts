@@ -298,15 +298,34 @@ const _gPlayerAvatarBase = {
   abStartSelectTimerHistory: [0, 0, 0, 0, 0, 0, 0, 0],
 } as Omit<PlayerAvatar, 'x' | 'y'>;
 
+/** Sync slot 0 `currentCoordsX/Y` à pa.x/y. 1:1 strict décomp : `gPlayerAvatar`
+ *  N'A PAS x/y (= source unique = `gObjectEvents[playerSlot].currentCoords`).
+ *  Notre TS dual storage (= pa.x/y alias vers gSaveBlock1Ptr.pos via Proxy +
+ *  slot 0 separate) DOIT rester en sync. Hook au setter pour couvrir TOUS les
+ *  chemins de write (= dev tool replace, applymovement script direct write,
+ *  CameraMove cross-border, save load, etc.). */
+function _syncSlot0Coord(axis: 'x' | 'y', v: number): void {
+  const slot = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
+  if (!slot || !slot.active || !slot.isPlayer) return;
+  if (axis === 'x') slot.currentCoordsX = v;
+  else slot.currentCoordsY = v;
+}
+
 Object.defineProperty(_gPlayerAvatarBase, 'x', {
   get(): number { return gSaveBlock1Ptr.pos.x; },
-  set(v: number): void { gSaveBlock1Ptr.pos.x = v; },
+  set(v: number): void {
+    gSaveBlock1Ptr.pos.x = v;
+    _syncSlot0Coord('x', v);
+  },
   enumerable: true,
   configurable: true,
 });
 Object.defineProperty(_gPlayerAvatarBase, 'y', {
   get(): number { return gSaveBlock1Ptr.pos.y; },
-  set(v: number): void { gSaveBlock1Ptr.pos.y = v; },
+  set(v: number): void {
+    gSaveBlock1Ptr.pos.y = v;
+    _syncSlot0Coord('y', v);
+  },
   enumerable: true,
   configurable: true,
 });
