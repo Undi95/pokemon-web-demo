@@ -827,3 +827,184 @@ export function MetatileBehavior_IsPokeblockFeeder(mb: number): boolean {
 
 // Normal tile (= no special behavior).
 export function MetatileBehavior_IsNormal(mb: number): boolean { return mb === MB_NORMAL; }
+
+// ─── Secret base + decoration constants 1:1 décomp ──────────────────────────
+//
+// Constantes MB_SECRET_BASE_*_* / MB_HOLDS_* / etc. computed depuis l'enum
+// `include/constants/metatile_behaviors.h` (= order-based auto-increment).
+// Notre `decomp-bridge.ts` n'expose pas toutes ces constantes (= auto-gen
+// limité). On les inline ici localement avec leur valeur exacte 1:1 décomp.
+
+const MB_SECRET_BASE_SPOT_RED_CAVE        = 0x90;
+const MB_SECRET_BASE_SPOT_BROWN_CAVE      = 0x92;
+const MB_SECRET_BASE_SPOT_YELLOW_CAVE     = 0x94;
+const MB_SECRET_BASE_SPOT_TREE_LEFT       = 0x96;
+const MB_SECRET_BASE_SPOT_SHRUB           = 0x98;
+const MB_SECRET_BASE_SPOT_BLUE_CAVE       = 0x9A;
+const MB_SECRET_BASE_SPOT_TREE_RIGHT      = 0x9C;
+const MB_SECRET_BASE_SCENERY              = 0xB2;
+const MB_SECRET_BASE_TRAINER_SPOT         = 0xB3;
+const MB_SECRET_BASE_IMPASSABLE           = 0xB9;
+const MB_SECRET_BASE_GLITTER_MAT          = 0xBA;
+const MB_SECRET_BASE_JUMP_MAT             = 0xBB;
+const MB_SECRET_BASE_SPIN_MAT             = 0xBC;
+const MB_SECRET_BASE_SOUND_MAT            = 0xBD;
+const MB_SECRET_BASE_SAND_ORNAMENT        = 0xBF;
+const MB_SECRET_BASE_TV_SHIELD            = 0xC4;
+const MB_SECRET_BASE_DECORATION_BASE      = 0xC6;
+const MB_SECRET_BASE_POSTER               = 0xC7;
+const MB_BERRY_TREE_SOIL_LOCAL            = 0xA0;
+const MB_SLOT_MACHINE_LOCAL               = 0x89;
+const MB_ROULETTE_LOCAL                   = 0x8A;
+
+// ─── Secret base helpers 1:1 décomp ─────────────────────────────────────────
+
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseCave` (metatile_behavior.c:521-530). */
+export function MetatileBehavior_IsSecretBaseCave(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SPOT_RED_CAVE
+      || mb === MB_SECRET_BASE_SPOT_BROWN_CAVE
+      || mb === MB_SECRET_BASE_SPOT_YELLOW_CAVE
+      || mb === MB_SECRET_BASE_SPOT_BLUE_CAVE;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseTree` (metatile_behavior.c:532-539). */
+export function MetatileBehavior_IsSecretBaseTree(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SPOT_TREE_LEFT
+      || mb === MB_SECRET_BASE_SPOT_TREE_RIGHT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseShrub` (metatile_behavior.c:541-547). */
+export function MetatileBehavior_IsSecretBaseShrub(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SPOT_SHRUB;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBasePC` (metatile_behavior.c:549-555). */
+export function MetatileBehavior_IsSecretBasePC(mb: number): boolean {
+  // Decomp bridge MB_SECRET_BASE_PC = 0xB0.
+  return mb === 0xB0;
+}
+/** 1:1 décomp `MetatileBehavior_IsRecordMixingSecretBasePC` (metatile_behavior.c:557-563). */
+export function MetatileBehavior_IsRecordMixingSecretBasePC(mb: number): boolean {
+  // Decomp bridge MB_SECRET_BASE_REGISTER_PC = 0xB1.
+  return mb === 0xB1;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseScenery1` (metatile_behavior.c:566-572).
+ *  Used by rock/grass floor spaces (= NOT where trainer stands). */
+export function MetatileBehavior_IsSecretBaseScenery1(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SCENERY;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseTrainerSpot` (metatile_behavior.c:575-581). */
+export function MetatileBehavior_IsSecretBaseTrainerSpot(mb: number): boolean {
+  return mb === MB_SECRET_BASE_TRAINER_SPOT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseImpassable` (metatile_behavior.c:583-589). */
+export function MetatileBehavior_IsSecretBaseImpassable(mb: number): boolean {
+  return mb === MB_SECRET_BASE_IMPASSABLE;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseDecorationBase` (metatile_behavior.c:591-597). */
+export function MetatileBehavior_IsSecretBaseDecorationBase(mb: number): boolean {
+  return mb === MB_SECRET_BASE_DECORATION_BASE;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBasePoster` (metatile_behavior.c:599-605). */
+export function MetatileBehavior_IsSecretBasePoster(mb: number): boolean {
+  return mb === MB_SECRET_BASE_POSTER;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseNorthWall` (metatile_behavior.c:615-621). */
+export function MetatileBehavior_IsSecretBaseNorthWall(mb: number): boolean {
+  // MB_SECRET_BASE_NORTH_WALL = 0xB7 (= in decomp-bridge).
+  return mb === 0xB7;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseScenery2` (metatile_behavior.c:623-629). */
+export function MetatileBehavior_IsSecretBaseScenery2(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SCENERY;
+}
+/** 1:1 décomp `MetatileBehavior_HoldsSmallDecoration` (metatile_behavior.c:631-637). */
+export function MetatileBehavior_HoldsSmallDecoration(mb: number): boolean {
+  // MB_HOLDS_SMALL_DECORATION = 0xB5 (= in decomp-bridge).
+  return mb === 0xB5;
+}
+/** 1:1 décomp `MetatileBehavior_HoldsLargeDecoration` (metatile_behavior.c:639-645). */
+export function MetatileBehavior_HoldsLargeDecoration(mb: number): boolean {
+  // MB_HOLDS_LARGE_DECORATION = 0xC3.
+  return mb === 0xC3;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseHole` (metatile_behavior.c:647-653). */
+export function MetatileBehavior_IsSecretBaseHole(mb: number): boolean {
+  // MB_SECRET_BASE_HOLE = 0xC2.
+  return mb === 0xC2;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseBalloon` (metatile_behavior.c:655-661). */
+export function MetatileBehavior_IsSecretBaseBalloon(mb: number): boolean {
+  // MB_SECRET_BASE_BALLOON = 0xB8.
+  return mb === 0xB8;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseBreakableDoor` (metatile_behavior.c:663-669). */
+export function MetatileBehavior_IsSecretBaseBreakableDoor(mb: number): boolean {
+  // MB_SECRET_BASE_BREAKABLE_DOOR = 0xBE.
+  return mb === 0xBE;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseSoundMat` (metatile_behavior.c:671-677). */
+export function MetatileBehavior_IsSecretBaseSoundMat(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SOUND_MAT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseGlitterMat` (metatile_behavior.c:679-685). */
+export function MetatileBehavior_IsSecretBaseGlitterMat(mb: number): boolean {
+  return mb === MB_SECRET_BASE_GLITTER_MAT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseSandOrnament` (metatile_behavior.c:687-693). */
+export function MetatileBehavior_IsSecretBaseSandOrnament(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SAND_ORNAMENT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseShieldOrToyTV` (metatile_behavior.c:695-701). */
+export function MetatileBehavior_IsSecretBaseShieldOrToyTV(mb: number): boolean {
+  return mb === MB_SECRET_BASE_TV_SHIELD;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseJumpMat` (metatile_behavior.c:1102-1108). */
+export function MetatileBehavior_IsSecretBaseJumpMat(mb: number): boolean {
+  return mb === MB_SECRET_BASE_JUMP_MAT;
+}
+/** 1:1 décomp `MetatileBehavior_IsSecretBaseSpinMat` (metatile_behavior.c:1110-1116). */
+export function MetatileBehavior_IsSecretBaseSpinMat(mb: number): boolean {
+  return mb === MB_SECRET_BASE_SPIN_MAT;
+}
+
+// ─── Misc helpers manquants 1:1 décomp ──────────────────────────────────────
+
+/** 1:1 décomp `MetatileBehavior_HasRipples` (metatile_behavior.c:711-719). */
+export function MetatileBehavior_HasRipples(mb: number): boolean {
+  return mb === MB_POND_WATER
+      || mb === MB_PUDDLE
+      || mb === MB_SOOTOPOLIS_DEEP_WATER;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsBerryTreeSoil` (metatile_behavior.c:745-751). */
+export function MetatileBehavior_IsBerryTreeSoil(mb: number): boolean {
+  return mb === MB_BERRY_TREE_SOIL_LOCAL;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsLongGrass_Duplicate` (metatile_behavior.c:1380-1386).
+ *  Note décomp : duplicate de `IsLongGrass` (= copy-paste bug ROM). */
+export function MetatileBehavior_IsLongGrass_Duplicate(mb: number): boolean {
+  return mb === MB_LONG_GRASS;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsSurfableFishableWater` (metatile_behavior.c:1162-1176). */
+export function MetatileBehavior_IsSurfableFishableWater(mb: number): boolean {
+  return mb === MB_POND_WATER
+      || mb === MB_OCEAN_WATER
+      || mb === MB_INTERIOR_DEEP_WATER
+      || mb === MB_DEEP_WATER
+      || mb === MB_SOOTOPOLIS_DEEP_WATER
+      || mb === MB_EASTWARD_CURRENT
+      || mb === MB_WESTWARD_CURRENT
+      || mb === MB_NORTHWARD_CURRENT
+      || mb === MB_SOUTHWARD_CURRENT;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsRoulette` (metatile_behavior.c:1086-1092) — unused.
+ *  MB_ROULETTE = 0x8A. */
+export function MetatileBehavior_IsRoulette(mb: number): boolean {
+  return mb === MB_ROULETTE_LOCAL;
+}
+
+/** 1:1 décomp `MetatileBehavior_IsLongGrassSouthEdge` (metatile_behavior.c:1388-1394).
+ *  Note : déjà déclaré supra dans bloc "Grass tiles" — duplicate intentionnel pour
+ *  matcher décomp call-graph. Garde la version supra (= function name unique). */
+// MetatileBehavior_IsLongGrassSouthEdge déjà déclaré supra.
