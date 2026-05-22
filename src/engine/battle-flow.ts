@@ -1877,7 +1877,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         }
         // Set outcome vars (= 1:1 décomp battle_main.c gBattleOutcome + VAR_RESULT).
         VarSet('VAR_RESULT', outcome);
-        gameState.setVar('VAR_RESULT', outcome);
+        VarSet('VAR_RESULT', outcome);
         // Track "is battle over" for GetBattleOutcome special read by scripts.
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = outcome;
         // 1:1 décomp : sync HP/status/exp depuis gPlayerParty vers PokemonInstance

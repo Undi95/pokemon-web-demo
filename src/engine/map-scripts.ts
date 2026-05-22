@@ -51,6 +51,7 @@ export async function runMapScript(
 }
 
 import { gameState } from './game-state';
+import { VarGet } from './script-vars';
 
 /**
  * Évalue le `MAP_SCRIPT_ON_FRAME_TABLE` qui contient des entrées :
@@ -86,7 +87,7 @@ export function findOnFrameMatch(parsed: ParsedScripts, mapName: string): string
     if (!m) continue;
     const [, varName, valueTok, scriptName] = m;
     const expected = /^\d+$/.test(valueTok) ? Number(valueTok) : 0;
-    if (gameState.getVar(varName) === expected) {
+    if (VarGet(varName) === expected) {
       return scriptName;
     }
   }

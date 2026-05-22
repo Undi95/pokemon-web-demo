@@ -33,6 +33,7 @@
 import { gMain, getRuntime } from './decomp-globals';
 import { RtcCalcLocalTime, gLocalTime, RtcCalcLocalTimeOffset } from './rtc';
 import { gameState } from './game-state';
+import { FlagSet } from './script-vars';
 import { SignalWaitState } from './script-opcodes';
 
 // GBA key masks (= 1:1 décomp gba/key.h).
@@ -278,7 +279,7 @@ export function startWallClockFlow(mode: Mode): WallClockFlow {
         RtcCalcLocalTime();
         const currentDays = gLocalTime.days;
         RtcCalcLocalTimeOffset(currentDays, editHour, editMinute, 0);
-        gameState.setFlag('FLAG_SYS_CLOCK_SET');
+        FlagSet('FLAG_SYS_CLOCK_SET');
         console.log(`[wallclock] in-game time set to ${editHour}:${String(editMinute).padStart(2,'0')}`);
         state = 'FADE_OUT';
         return false;

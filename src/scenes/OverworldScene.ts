@@ -30,6 +30,7 @@ import { traceReset, traceMark } from '../engine/warp-trace';
 import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMetatileLabels as loadMetatileLabelsForDoor, preloadAllDoors } from '../engine/door-anim';
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
 import { gameState } from '../engine/game-state';
+import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
 
 const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';
@@ -339,7 +340,7 @@ export class OverworldScene extends Phaser.Scene {
     const gfxTable = this.cache.json.get('gfx-table') as GraphicsTable;
     const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
     const resolved = resolveNpcs(this.mapJson, gfxTable,
-      (f) => gameState.hasFlag(f),
+      (f) => FlagGet(f),
       (id) => gameState.getObjectXY(this.mapName, id),
       undefined, inanimateMap)
       // Filtre les item balls déjà ramassées (script label dans takenItemBalls).
@@ -556,7 +557,7 @@ export class OverworldScene extends Phaser.Scene {
         const gfxTable = this.cache.json.get('gfx-table') as GraphicsTable;
         const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
         const resolvedAdj = resolveNpcs(adjMapJson, gfxTable,
-          (f) => gameState.hasFlag(f),
+          (f) => FlagGet(f),
           (id) => gameState.getObjectXY(adjMapName, id),
           undefined, inanimateMap);
         this.world.buildMapInstance(adjMapName, off.x, off.y, resolvedAdj);
@@ -600,7 +601,7 @@ export class OverworldScene extends Phaser.Scene {
         // call_if_eq VAR_FACING, DIR_X dans plein de scripts (ex: MeetMay).
         // Cf. include/constants/global.h : SOUTH=1, NORTH=2, WEST=3, EAST=4.
         const dir = { up: 2, down: 1, left: 3, right: 4 }[this.playerFacing];
-        gameState.setVar('VAR_FACING', dir);
+        VarSet('VAR_FACING', dir);
       },
       releasePlayer: () => { this.dialogueOpen = false; },
       warp: (destMapId, x, y) => {
@@ -803,7 +804,7 @@ export class OverworldScene extends Phaser.Scene {
       c.x === this.playerTile.x &&
       c.y === this.playerTile.y &&
       c.script &&
-      (c.var ? gameState.getVar(c.var) === Number(c.var_value ?? '0') : true)
+      (c.var ? VarGet(c.var) === Number(c.var_value ?? '0') : true)
     );
     if (!match || !match.script) return;
     // Évite re-trigger en boucle si le script ne modifie pas la var de garde

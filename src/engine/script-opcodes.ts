@@ -319,7 +319,7 @@ registerOpcode('copyvar', (_ctx, args) => {
 function _stubTrainerBattle(trainerArg: string): void {
   console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
   gSpecialVar.Result = 1;
-  gameState.setFlag(`__defeated_${trainerArg}`);
+  FlagSet(`__defeated_${trainerArg}`);
 }
 
 /** Phase 5.7 : real trainer battle via state machine + battle-flow.
@@ -1853,7 +1853,7 @@ registerOpcode('playmoncry', (_ctx, args) => {
   const speciesArg = args[0] ?? '';
   // Resolve species : VAR_X → lookup numeric, else enum name → constant.
   const speciesId = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
-    ? gameState.getVar(speciesArg)
+    ? VarGet(speciesArg)
     : (resolveDecompConstant(speciesArg) ?? 0);
   void import('./decomp-globals').then(({ PlayCryInternal }) => {
     PlayCryInternal(speciesId, 0, 64, 0, 0);
@@ -1873,7 +1873,7 @@ registerOpcode('giveitem', (_ctx, args) => {
   const itemKey = args[0] ?? '';
   const count = resolveCount(args[1] ?? '1');
   const ok = AddBagItem(itemKey, count);
-  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  VarSet('VAR_RESULT', ok ? 1 : 0);
   console.log(`[opcode giveitem] ${itemKey} x${count} → ${ok ? 'ok' : 'failed'}`);
   return false;
 });
@@ -1943,11 +1943,11 @@ registerOpcode('givepokemon', (_ctx, args) => {
       const { createPokemonInstance } = await import('./pokemon');
       const mon = createPokemonInstance(speciesName, level);
       const ok = gameState.addToParty(mon);
-      gameState.setVar('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail
+      VarSet('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail
       console.log(`[opcode givepokemon] ${speciesName} Lv${level} → ${ok ? 'added' : 'party full'}`);
     } catch (e) {
       console.warn('[opcode givepokemon] failed:', e);
-      gameState.setVar('VAR_RESULT', 2);
+      VarSet('VAR_RESULT', 2);
     }
   })();
   return false;
@@ -1959,7 +1959,7 @@ registerOpcode('givepokemon', (_ctx, args) => {
 registerOpcode('checkmoney', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
   const has = (gSaveBlock1Ptr?.money ?? 0) >= amount;
-  gameState.setVar('VAR_RESULT', has ? 1 : 0);
+  VarSet('VAR_RESULT', has ? 1 : 0);
   return false;
 });
 
@@ -2023,8 +2023,8 @@ registerOpcode('showelevmenu', (_ctx, _args) => false);
 registerOpcode('checkcoins', (_ctx, args) => {
   const coins = gSaveBlock1Ptr?.coins ?? 0;
   const dst = args[0] ?? 'VAR_RESULT';
-  if (dst.startsWith('VAR_')) gameState.setVar(dst, coins);
-  else gameState.setVar('VAR_RESULT', coins);
+  if (dst.startsWith('VAR_')) VarSet(dst, coins);
+  else VarSet('VAR_RESULT', coins);
   return false;
 });
 /** 1:1 décomp `ScrCmd_takecoins` (scrcmd.c) :
@@ -2236,11 +2236,11 @@ registerOpcode('messageinstant', (ctx, args) => getOpcodeHandler('message')?.(ct
 // transition (= rare, used Sky Pillar etc.). MVP : alias warp normal.
 registerOpcode('warpwhitefade', (ctx, args) => getOpcodeHandler('warp')?.(ctx, args) ?? false);
 registerOpcode('checkpartymove', (_ctx, _args) => {
-  gameState.setVar('VAR_RESULT', 0);
+  VarSet('VAR_RESULT', 0);
   return false;
 });
 registerOpcode('countpokemon', (_ctx) => {
-  gameState.setVar('VAR_RESULT', gameState.partySize);
+  VarSet('VAR_RESULT', gameState.partySize);
   return false;
 });
 
@@ -2263,7 +2263,7 @@ function resolveCount(arg: string): number {
   if (!arg) return 1;
   // Si VAR_*, lire la valeur. Sinon parseInt.
   if (arg.startsWith('VAR_') || arg.startsWith('0x80')) {
-    return gameState.getVar(arg);
+    return VarGet(arg);
   }
   const n = parseInt(arg, 10);
   return Number.isNaN(n) ? 1 : n;
@@ -2276,7 +2276,7 @@ registerOpcode('additem', (_ctx, args) => {
   const count = resolveCount(args[1] ?? '1');
   const ok = AddBagItem(itemKey, count);
   // 1:1 décomp : gSpecialVar_Result = AddBagItem(...). On set VAR_RESULT.
-  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  VarSet('VAR_RESULT', ok ? 1 : 0);
   console.log(`[opcode additem] ${itemKey} x${count} → ${ok ? 'ok' : 'FAILED (bag full?)'}`);
   return false;
 });
@@ -2286,7 +2286,7 @@ registerOpcode('removeitem', (_ctx, args) => {
   const itemKey = args[0] ?? '';
   const count = resolveCount(args[1] ?? '1');
   const ok = RemoveBagItem(itemKey, count);
-  gameState.setVar('VAR_RESULT', ok ? 1 : 0);
+  VarSet('VAR_RESULT', ok ? 1 : 0);
   console.log(`[opcode removeitem] ${itemKey} x${count} → ${ok ? 'ok' : 'FAILED (not enough)'}`);
   return false;
 });
@@ -2295,7 +2295,7 @@ registerOpcode('removeitem', (_ctx, args) => {
 registerOpcode('checkitem', (_ctx, args) => {
   const itemKey = args[0] ?? '';
   const count = resolveCount(args[1] ?? '1');
-  gameState.setVar('VAR_RESULT', CheckBagHasItem(itemKey, count) ? 1 : 0);
+  VarSet('VAR_RESULT', CheckBagHasItem(itemKey, count) ? 1 : 0);
   return false;
 });
 
@@ -2303,7 +2303,7 @@ registerOpcode('checkitem', (_ctx, args) => {
  *   MVP : on retourne toujours true (= bag rarely full en démo).
  *   À améliorer : implémenter `CheckBagHasSpace` 1:1 item.c. */
 registerOpcode('checkitemspace', (_ctx) => {
-  gameState.setVar('VAR_RESULT', 1);
+  VarSet('VAR_RESULT', 1);
   return false;
 });
 
@@ -2695,11 +2695,11 @@ registerOpcode('givemon', (_ctx, args) => {
       const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
       const ok = gameState.addToParty(mon);
       // 1:1 ScriptGiveMon : 0=MON_GIVEN_TO_PARTY, 1=MON_GIVEN_TO_PC.
-      gameState.setVar('VAR_RESULT', ok ? 0 : 1);
+      VarSet('VAR_RESULT', ok ? 0 : 1);
       console.log(`[opcode givemon] ${speciesName} Lv${level}${heldItem ? ' @' + heldItem : ''} → ${ok ? 'PARTY(0)' : 'PC(1)'}`);
     } catch (e) {
       console.warn('[opcode givemon] failed:', e);
-      gameState.setVar('VAR_RESULT', 2);  // MON_CANT_GIVE
+      VarSet('VAR_RESULT', 2);  // MON_CANT_GIVE
     }
   })();
   return false;
@@ -3539,15 +3539,15 @@ registerOpcode('removecoins', (_ctx, args) => {
   //    mais c'est ce que dit la décomp).
   const coins = _vget(args[0]);
   if (!gSaveBlock1Ptr) {
-    gameState.setVar('VAR_RESULT', 1);  // fail
+    VarSet('VAR_RESULT', 1);  // fail
     return false;
   }
   const current = gSaveBlock1Ptr.coins ?? 0;
   if (current >= coins) {
     gSaveBlock1Ptr.coins = current - coins;
-    gameState.setVar('VAR_RESULT', 0);
+    VarSet('VAR_RESULT', 0);
   } else {
-    gameState.setVar('VAR_RESULT', 1);
+    VarSet('VAR_RESULT', 1);
   }
   return false;
 });
@@ -3736,9 +3736,9 @@ registerOpcode('adddecoration', (_ctx, args) => {
   const arr = _decorationsArr();
   if (arr.length < 256) {
     arr.push(decorId);
-    gameState.setVar('VAR_RESULT', 1);
+    VarSet('VAR_RESULT', 1);
   } else {
-    gameState.setVar('VAR_RESULT', 0);
+    VarSet('VAR_RESULT', 0);
   }
   return false;
 });
@@ -3757,9 +3757,9 @@ registerOpcode('takedecoration', (_ctx, args) => {
   const idx = arr.indexOf(decorId);
   if (idx >= 0) {
     arr.splice(idx, 1);
-    gameState.setVar('VAR_RESULT', 1);
+    VarSet('VAR_RESULT', 1);
   } else {
-    gameState.setVar('VAR_RESULT', 0);
+    VarSet('VAR_RESULT', 0);
   }
   return false;
 });
@@ -3768,7 +3768,7 @@ registerOpcode('checkdecor', (_ctx, args) => {
   // 1:1 décomp ScrCmd_checkdecor : gSpecialVar_Result = CheckHasDecoration(decorId).
   const decorId = _vget(args[0]);
   const arr = _decorationsArr();
-  gameState.setVar('VAR_RESULT', arr.includes(decorId) ? 1 : 0);
+  VarSet('VAR_RESULT', arr.includes(decorId) ? 1 : 0);
   return false;
 });
 
@@ -3776,7 +3776,7 @@ registerOpcode('checkdecorspace', (_ctx, args) => {
   // 1:1 décomp ScrCmd_checkdecorspace : gSpecialVar_Result = DecorationCheckSpace(decorId).
   const _decorId = _vget(args[0]);
   const arr = _decorationsArr();
-  gameState.setVar('VAR_RESULT', arr.length < 256 ? 1 : 0);
+  VarSet('VAR_RESULT', arr.length < 256 ? 1 : 0);
   return false;
 });
 
@@ -3941,9 +3941,9 @@ registerOpcode('seteventmon', (_ctx, args) => {
   const species = parseValue(args[0] ?? '0');
   const level = parseValue(args[1] ?? '5');
   const item = parseValue(args[2] ?? 'ITEM_NONE');
-  gameState.setVar('VAR_0x8004', species);
-  gameState.setVar('VAR_0x8005', level);
-  gameState.setVar('VAR_0x8006', item);
+  VarSet('VAR_0x8004', species);
+  VarSet('VAR_0x8005', level);
+  VarSet('VAR_0x8006', item);
   _invokeSpecial('CreateEnemyEventMon');
   return false;
 });
@@ -3997,14 +3997,14 @@ registerOpcode('hideobjectat', (_ctx, args) => {
 
 /** Expand un macro 'facility' opcode : set vars + call special. */
 function _facilityCall(specialFn: string, funcId: number, dataVal?: number | string, val?: number | string): void {
-  gameState.setVar('VAR_0x8004', funcId);
+  VarSet('VAR_0x8004', funcId);
   if (dataVal !== undefined) {
     const v = typeof dataVal === 'string' ? parseValue(dataVal) : dataVal;
-    gameState.setVar('VAR_0x8005', v);
+    VarSet('VAR_0x8005', v);
   }
   if (val !== undefined) {
     const v = typeof val === 'string' ? parseValue(val) : val;
-    gameState.setVar('VAR_0x8006', v);
+    VarSet('VAR_0x8006', v);
   }
   _invokeSpecial(specialFn);
 }
@@ -4403,7 +4403,7 @@ registerOpcode('checkitemtype', (_ctx, args) => {
   // Map item → pocket via decomp constants. Simplifié : tous → POCKET_ITEMS (1).
   // Future : map ITEM_X → pocket via data tables.
   void itemArg;
-  gameState.setVar('VAR_RESULT', 1);
+  VarSet('VAR_RESULT', 1);
   return false;
 });
 
@@ -4481,7 +4481,7 @@ registerOpcode('contestlinktransfer', (_ctx, _args) => false);
 registerOpcode('getpokenewsactive', (_ctx, args) => {
   // 1:1 décomp ScrCmd_getpokenewsactive : gSpecialVar_Result = GetPokeNewsActive(channel).
   const _channel = parseValue(args[0] ?? '0');
-  gameState.setVar('VAR_RESULT', 0);  // pas de pokenews active par défaut
+  VarSet('VAR_RESULT', 0);  // pas de pokenews active par défaut
   return false;
 });
 
@@ -4504,9 +4504,9 @@ registerOpcode('checkmodernfatefulencounter', (_ctx, args) => {
   const partyIndex = _vget(args[0]);
   const party = gameState.party as Array<{ modernFatefulEncounter?: boolean }>;
   if (party && partyIndex >= 0 && partyIndex < party.length) {
-    gameState.setVar('VAR_RESULT', party[partyIndex].modernFatefulEncounter ? 1 : 0);
+    VarSet('VAR_RESULT', party[partyIndex].modernFatefulEncounter ? 1 : 0);
   } else {
-    gameState.setVar('VAR_RESULT', 0);
+    VarSet('VAR_RESULT', 0);
   }
   return false;
 });

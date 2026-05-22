@@ -21,6 +21,7 @@
  */
 
 import { gameState } from './game-state';
+import { FlagSet } from './script-vars';
 import { gSaveBlock1Ptr } from './save-block-state';
 
 // ─── Callback IDs 1:1 décomp event_objects.h ────────────────────────────────
@@ -161,7 +162,7 @@ const _PER_STEP_CALLBACKS: Array<() => void> = [
  *  state. */
 function _onDailyStepThreshold(): void {
   // Set a flag pour daily logic à read.
-  gameState.setFlag('FLAG_HIT_256_STEPS_THRESHOLD');
+  FlagSet('FLAG_HIT_256_STEPS_THRESHOLD');
   // Trigger time-based event check (= berry growth, daily flags).
   // Future : call DoTimeBasedEvents() depuis ici.
 }

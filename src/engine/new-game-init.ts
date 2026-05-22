@@ -1,4 +1,5 @@
 import { gameState } from './game-state';
+import { VarSet } from './script-vars';
 import { RunScriptImmediately, ensureCommonScriptsLoaded } from './script-runtime';
 import { NewGameInitPCItems } from './pc-items';
 
@@ -24,7 +25,7 @@ import { NewGameInitPCItems } from './pc-items';
  */
 export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
   // Set VAR_RESULT au genre choisi pour les éventuels branch `goto_if_eq VAR_RESULT`
-  gameState.setVar('VAR_RESULT', gender === 'MALE' ? 0 : 1);
+  VarSet('VAR_RESULT', gender === 'MALE' ? 0 : 1);
 
   // Audit session 126 C10 : preload common scripts pour que RunScriptImmediately
   // trouve `EventScript_ResetAllMapFlags` (= scripts/new_game.inc, dans common).

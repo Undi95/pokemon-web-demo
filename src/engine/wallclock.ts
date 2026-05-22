@@ -55,6 +55,7 @@ import {
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
 import { getString } from './gba-strings';
 import { gameState } from './game-state';
+import { FlagSet } from './script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { SetOamMatrix } from './decomp-helpers';
@@ -744,7 +745,7 @@ function Task_SetClock_Confirmed(task: DecompTask): void {
   //   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
   //   gTasks[taskId].func = Task_SetClock_Exit;
   RtcInitLocalTimeOffset(_state.hours, _state.minutes);
-  gameState.setFlag('FLAG_SYS_CLOCK_SET');
+  FlagSet('FLAG_SYS_CLOCK_SET');
   // 1:1 décomp wallclock.c:861-866 Task_SetClock_Confirmed : pas de save ici.
   // Le décomp ne fait QUE RtcInitLocalTimeOffset + BeginNormalPaletteFade +
   // setMainCallback2. La save SRAM se fait UNIQUEMENT via START → SAUVER

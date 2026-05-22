@@ -33,10 +33,9 @@
  */
 import type { DecompTask } from './decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
-import { gSpecialVar } from './script-vars';
+import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gameState } from './game-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
-import { FlagSet, FlagClear } from './script-vars';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   setItemUseCB, SetUpItemUseCallback,
@@ -562,7 +561,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
       break;
     case 'ItemUseOutOfBattle_Repel': {
       // 1:1 décomp item_use.c:841-873 ItemUseOutOfBattle_Repel + Task_UseRepel.
-      const repelActive = gameState.getVar('VAR_REPEL_STEP_COUNT');
+      const repelActive = VarGet('VAR_REPEL_STEP_COUNT');
       if (repelActive > 0) {
         // 1:1 :845 — un autre repel est encore actif.
         _showItemMessage(task, "Mais le REPOUSSE précédent\nest toujours actif.");
@@ -571,7 +570,7 @@ function ItemMenu_UseOutOfBattle(task: DecompTask): void {
         const itemKey = _itemKeyFromBag(itemId);
         const item = itemKey ? _getItem(itemKey) : undefined;
         const steps = item?.holdEffectParam ?? 100;
-        gameState.setVar('VAR_REPEL_STEP_COUNT', steps);
+        VarSet('VAR_REPEL_STEP_COUNT', steps);
         _CtxRemoveUsedItem(itemId);
         // 1:1 :870 gText_PlayerUsedVar2 (= player utilise X) + suffix repelled.
         const player = gameState.playerName || 'JOUEUR';

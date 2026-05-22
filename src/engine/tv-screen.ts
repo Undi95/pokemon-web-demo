@@ -37,6 +37,7 @@
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './map-loader';
 import { gameState } from './game-state';
+import { FlagSet, FlagClear, FlagGet } from './script-vars';
 import { DrawWholeMapView } from './field-camera';
 import {
   METATILE_Building_TV_On,
@@ -71,8 +72,8 @@ export function CheckForPlayersHouseNews(): number {
     (gameState.gender === 'MALE'   && isMaleHouse) ||
     (gameState.gender === 'FEMALE' && isFemaleHouse);
   if (!isInPlayersHouse) return PLAYERS_HOUSE_TV_NONE;
-  if (gameState.hasFlag('FLAG_SYS_TV_LATIAS_LATIOS')) return PLAYERS_HOUSE_TV_LATI;
-  if (gameState.hasFlag('FLAG_SYS_TV_HOME')) return PLAYERS_HOUSE_TV_MOVIE;
+  if (FlagGet('FLAG_SYS_TV_LATIAS_LATIOS')) return PLAYERS_HOUSE_TV_LATI;
+  if (FlagGet('FLAG_SYS_TV_HOME')) return PLAYERS_HOUSE_TV_MOVIE;
   // 1:1 décomp tv.c:3383 : `return PLAYERS_HOUSE_TV_LATI;` (= bug-or-feature
   // default qui fait que la TV cycle en early-game maison).
   return PLAYERS_HOUSE_TV_LATI;
@@ -98,7 +99,7 @@ export function SetTVMetatilesOnMap(width: number, height: number, metatileId: n
  *  via `overworld.c:872 LoadMapHeaderInternal` if !outdoor branch. Set les
  *  TVs à ON ou OFF selon le state CheckForPlayersHouseNews. */
 export function UpdateTVScreensOnMap(width: number, height: number): void {
-  gameState.setFlag('FLAG_SYS_TV_WATCH');
+  FlagSet('FLAG_SYS_TV_WATCH');
   switch (CheckForPlayersHouseNews()) {
     case PLAYERS_HOUSE_TV_LATI:
       SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
@@ -123,11 +124,11 @@ export function UpdateTVScreensOnMap(width: number, height: number): void {
       // mais sans show actif = false branche → no change. Honnête deferred port
       // documenté ici (= si user voit TV statique post-FLAG_SYS_TV_START attendue
       // ON, c'est ce stub).
-      if (gameState.hasFlag('FLAG_SYS_TV_START')) {
+      if (FlagGet('FLAG_SYS_TV_START')) {
         // Honnête-min : sans TV show generator, on suppose au moins 1 show
         // disponible → TV_On. C'est la behavior la plus proche du décomp en
         // attendant le port complet du TV show system.
-        gameState.clearFlag('FLAG_SYS_TV_WATCH');
+        FlagClear('FLAG_SYS_TV_WATCH');
         SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
       }
       break;

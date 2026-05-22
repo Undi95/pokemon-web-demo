@@ -217,7 +217,7 @@ function showMessageThenClose(text: string): boolean {
 /** POKéDEX action : ouvre vraie UI Pokédex (compteurs + stats).
  *  Session 127 : remplace le `showMessageThenReturn` par pokedex-screen. */
 function pokedexAction(): boolean {
-  if (!gameState.hasFlag('FLAG_SYS_POKEDEX_GET')) {
+  if (!FlagGet('FLAG_SYS_POKEDEX_GET')) {
     return showMessageThenReturn('Le POKéDEX n\'est pas\nencore disponible.');
   }
   if (sWindowId >= 0) {

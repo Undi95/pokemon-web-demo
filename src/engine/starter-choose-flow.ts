@@ -639,8 +639,8 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           gameState.addToParty(starter);
           VarSet('VAR_RESULT', chosenIdx);
           VarSet('VAR_STARTER_MON', chosenIdx);
-          gameState.setVar('VAR_RESULT', chosenIdx);
-          gameState.setVar('VAR_STARTER_MON', chosenIdx);
+          VarSet('VAR_RESULT', chosenIdx);
+          VarSet('VAR_STARTER_MON', chosenIdx);
           console.log(`[StarterChoose] commit ${speciesEnum} (idx=${chosenIdx}) → party size=${gameState.partySize}`);
           // Session 124 Bug 5b : 1:1 décomp Task_AskConfirmStarter
           // PlayCry_Normal(GetStarterPokemon(task.data[0]), 0).

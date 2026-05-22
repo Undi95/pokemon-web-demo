@@ -17,6 +17,7 @@
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
 import { gameState, SetSaveLocked } from './game-state';
+import { FlagSet, VarSet } from './script-vars';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
@@ -155,30 +156,30 @@ function applyNoIntroPreset(): void {
   }
   // Running shoes (= FLAG_SYS_B_DASH set par dad in
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
-  gameState.setFlag('FLAG_SYS_B_DASH');
+  FlagSet('FLAG_SYS_B_DASH');
   // Pokédex + Pokémon menu unlocks (= 1:1 décomp BuildNormalStartMenu requis
   // pour POKéDEX et POKéMON entries du start menu). Permet aussi de tester
   // ces écrans via ?nointro sans avoir à faire toute l'intro.
   // FLAG_SYS_POKEMON_GET set par BirchSendPokemonToPlayer (= 1ère capture starter).
   // FLAG_SYS_POKEDEX_GET set par Prof Birch après combat zigzagton.
-  gameState.setFlag('FLAG_SYS_POKEMON_GET');
-  gameState.setFlag('FLAG_SYS_POKEDEX_GET');
+  FlagSet('FLAG_SYS_POKEMON_GET');
+  FlagSet('FLAG_SYS_POKEDEX_GET');
   // Vars post-intro.
   // ⚠️ HOTFIX 2026-05-09 : était à 6, ce qui fait que walking dans
   // une maison fire le coord trigger `PetalburgGymReport` (= map_script_2
   // VAR_LITTLEROOT_INTRO_STATE, 6, ...). State=7 = post-PetalburgGymReport,
   // disable retrigger. Cf. data/scripts/players_house.inc:141.
   // User report : "Chez May : Active quand même l'event de la TV".
-  gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 7);
-  gameState.setVar('VAR_LITTLEROOT_TOWN_STATE', 4);
-  gameState.setFlag('FLAG_SET_WALL_CLOCK');
+  VarSet('VAR_LITTLEROOT_INTRO_STATE', 7);
+  VarSet('VAR_LITTLEROOT_TOWN_STATE', 4);
+  FlagSet('FLAG_SET_WALL_CLOCK');
   // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlagsMale` (scripts.inc:28-29) :
   // pose les flags HIDE_*_TRUCK pour que les sprites du camion ne soient pas
   // visibles dans Bourg-en-Vol après l'intro. Sans ces flags, les 2 trucks
   // (Brendan et May) apparaissent visibles sur la map → décor cassé.
   // Le preset ?nointro bypass le coord trigger qui set normalement ces flags.
-  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK');
-  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK');
+  FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK');
+  FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK');
   // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlags{Male,Female}`
   // (data/maps/InsideOfTruck/scripts.inc). Les deux maisons partagent le même
   // layout/objets — flags determinent qui est player_mom vs rival_mom.
@@ -189,30 +190,30 @@ function applyNoIntroPreset(): void {
   // Symptôme : les 2 maisons montraient les MEMES NPCs (= rival_mom partout, etc).
   if (gameState.gender === 'FEMALE') {
     // Player May → sa maison = MaysHouse, rival = Brendan dans BrendansHouse.
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');         // hide player_mom dans rival's house
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');       // hide rival_mom dans sa maison
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_SIBLING');   // hide rival's sibling chez elle
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_2F_POKE_BALL');    // post-intro pokeball gone
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');         // hide player_mom dans rival's house
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');       // hide rival_mom dans sa maison
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_SIBLING');   // hide rival's sibling chez elle
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_2F_POKE_BALL');    // post-intro pokeball gone
     // HOTFIX P1 : =2 au lieu de =1 → "déjà rencontré le rival's mom" → disable
     // OnFrame trigger `YoureNewNeighbor` qui sinon fire dans BrendansHouse
     // au moment où player y entre (= cross-house event leak signalé par user).
-    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_MAY', 2);
+    VarSet('VAR_LITTLEROOT_HOUSES_STATE_MAY', 2);
   } else {
     // Player Brendan → sa maison = BrendansHouse, rival = May dans MaysHouse.
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');             // hide player_mom dans rival's house
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');   // hide rival_mom dans sa maison
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_SIBLING'); // hide rival's sibling
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F_POKE_BALL');
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');             // hide player_mom dans rival's house
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');   // hide rival_mom dans sa maison
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_SIBLING'); // hide rival's sibling
+    FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F_POKE_BALL');
     // HOTFIX P1 : same as FEMALE branch — passe à 2 (= déjà rencontré).
-    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_BRENDAN', 2);
+    VarSet('VAR_LITTLEROOT_HOUSES_STATE_BRENDAN', 2);
   }
   // Vigoroth déménageurs : visibles pendant l'intro 1F seulement (= player coming
   // home). Une fois sortis (= ?nointro = post-intro), ils sont gone.
   // Pas spécifié dans SetIntroFlagsMale/Female mais après l'intro Maman talks
   // (`PlayersHouse_1F_EventScript_Mom`) ces flags sont set.
   // Cf. décomp data/scripts/players_house.inc lignes ~50.
-  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_1');
-  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_2');
+  FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_1');
+  FlagSet('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_2');
 
   // 1:1 décomp `BrendansHouse_1F_EventScript_MoveMomToTV` (scripts.inc:37-40) :
   //   setobjectxyperm LOCALID_PLAYERS_HOUSE_1F_MOM, 4, 5

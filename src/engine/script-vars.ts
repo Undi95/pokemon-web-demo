@@ -2,54 +2,78 @@
  * script-vars.ts — flags + variables global state pour le script engine.
  *
  * Source de vérité (1:1 décomp) :
- *   - `D:/Projet 1/decomps/pokeemeraude/src/event_data.c` (= FlagSet, FlagGet,
- *     FlagClear, VarSet, VarGet, GetVarPointer)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/event_data.c:164-233` (= FlagSet,
+ *     FlagGet, FlagClear, VarSet, VarGet, GetVarPointer, GetFlagPointer)
  *   - `D:/Projet 1/decomps/pokeemeraude/include/event_data.h` (= macros / IDs)
  *
- * Phase 4.10 unification : tous les flags/vars vivent dans `gameState.data`
- * (= 1:1 décomp `gSaveBlock1Ptr->flags / vars`). Cf. `game-state.ts`. Avant ce
- * commit, gFlags Set + gVars Map étaient en mémoire seule → état perdu sur F5
- * + non-persisté en localStorage. Maintenant, tout passe par gameState et
- * survit au reload via gameState.save() (= called au map switch + manually).
+ * 1:1 strict : tous les flags/vars vivent dans `gSaveBlock1Ptr->flags / vars`.
+ * Décomp `GetFlagPointer(id)` returns `&gSaveBlock1Ptr->flags[id / 8]`, le
+ * `FlagSet` set le bit `1 << (id & 7)`. Notre port stocke chaque flag par
+ * name (= simplification structurelle, mais comportementalement identique :
+ * un bit du décomp = une entry de notre Record<string, boolean>).
+ *
+ * 2026-05-23 : élimination du round-trip via gameState (= ancien wrapper non-
+ * 1:1). Maintenant 1:1 direct gSaveBlock1Ptr. Brise aussi le cycle ESM
+ * script-vars → game-state.
  */
 
-import { gameState } from './game-state';
+import { gSaveBlock1Ptr } from './save-block-state';
+import { ResetSaveBlocks } from './save-system';
 import { resolveDecompConstant } from './decomp-constants';
 
-// ─── Flag API (1:1 décomp event_data.c) ──────────────────────────────────────
+// ─── Flag API (1:1 décomp event_data.c:206-233) ──────────────────────────────
 
-/** 1:1 décomp `FlagSet(flag)` : set le flag à TRUE. */
+/** 1:1 décomp `FlagSet(id)` (event_data.c:206-212) :
+ *    u8 *ptr = GetFlagPointer(id);
+ *    if (ptr) *ptr |= 1 << (id & 7);
+ *  Notre port : `gSaveBlock1Ptr->flags` est `Record<string, boolean>` indexé
+ *  par name de flag (= u8 array bitfield indexé par id/8 dans ROM). */
 export function FlagSet(flag: string): void {
-  gameState.setFlag(flag);
+  gSaveBlock1Ptr.flags[flag] = true;
 }
 
-/** 1:1 décomp `FlagClear(flag)` : set le flag à FALSE. */
+/** 1:1 décomp `FlagClear(id)` (event_data.c:214-220) :
+ *    u8 *ptr = GetFlagPointer(id);
+ *    if (ptr) *ptr &= ~(1 << (id & 7)); */
 export function FlagClear(flag: string): void {
-  gameState.clearFlag(flag);
+  delete gSaveBlock1Ptr.flags[flag];
 }
 
-/** 1:1 décomp `FlagGet(flag)` : returns TRUE si flag set. */
+/** 1:1 décomp `FlagGet(id)` (event_data.c:222-233) :
+ *    u8 *ptr = GetFlagPointer(id);
+ *    if (!ptr) return FALSE;
+ *    if (!(((*ptr) >> (id & 7)) & 1)) return FALSE;
+ *    return TRUE; */
 export function FlagGet(flag: string): boolean {
-  return gameState.hasFlag(flag);
+  return !!gSaveBlock1Ptr.flags[flag];
 }
 
-// ─── Var API (1:1 décomp event_data.c) ───────────────────────────────────────
+// ─── Var API (1:1 décomp event_data.c:164-189) ───────────────────────────────
 
-/** 1:1 décomp `VarSet(varId, value)`. */
+/** 1:1 décomp `VarSet(id, value)` (event_data.c:182-189) :
+ *    u16 *ptr = GetVarPointer(id);
+ *    if (!ptr) return FALSE;
+ *    *ptr = value;
+ *  Notre port : `gSaveBlock1Ptr->vars` est `Record<string, number>` indexé
+ *  par name de var (= u16 array indexé par id-VARS_START dans ROM). */
 export function VarSet(varId: string, value: number): void {
-  gameState.setVar(varId, value & 0xFFFF);
+  gSaveBlock1Ptr.vars[varId] = value & 0xFFFF;
 }
 
-/** 1:1 décomp `VarGet(varId)`. Returns 0 si var pas définie.
- *  Si arg est un nombre (= immediate), return le nombre directement (= utilisé
- *  par compare opcodes qui prennent var ou immediate).
- *  Pour les constantes connues (MALE/FEMALE/etc) qui ne sont pas des var
- *  symboliques, return 0 (= vérifie via gameState qui retourne 0 par défaut).
+/** 1:1 décomp `VarGet(id)` (event_data.c:174-180) :
+ *    u16 *ptr = GetVarPointer(id);
+ *    if (!ptr) return id;        // 1:1 décomp : if id < VARS_START, return id
+ *    return *ptr;
  *
- *  1:1 décomp `event_data.c:GetVarPointer` : pour les SPECIAL_VARS (= id >=
- *  0x8000), lookup dans `gSpecialVars[]` table. VAR_FACING (= 0x800C) = pointe
- *  vers `gSpecialVar_Facing` set par field_control_avatar.c:282,305 quand le
- *  player trigger un script (= direction du player à ce moment). */
+ *  Notre port reçoit le name string : si c'est un immediate numérique → return.
+ *  Si c'est une var name (= VAR_xxx) → lookup `gSaveBlock1Ptr.vars[name]`.
+ *  Si c'est une constant name (= METATILE_X, MALE, etc) → resolveDecompConstant
+ *  (= simule le compile-time literal resolution du décomp).
+ *
+ *  Special var `VAR_FACING` (= 0x800C dans le décomp) pointe vers
+ *  `gSpecialVar_Facing` (= field_control_avatar.c:282,305) — facing direction
+ *  du player au moment de l'interact. Notre port lit gPlayerAvatar.facing
+ *  via globalThis (= évite cycle ESM script-vars ↔ player-avatar). */
 export function VarGet(varId: string): number {
   // Si l'arg ressemble à un nombre / hex, le return tel quel (= immediate).
   if (/^-?\d+$/.test(varId)) return parseInt(varId, 10) & 0xFFFF;
@@ -68,14 +92,15 @@ export function VarGet(varId: string): number {
   // les headers décomp. Audit session 125 : sans ça, setmetatile écrivait 0
   // (= wall) sur (4,2) → player can't exit truck après option menu cycle.
   if (varId.startsWith('VAR_')) {
-    // Var symbolique → lookup gameState (= ROM : gSaveBlock1Ptr->vars[id-0x4000]).
-    return gameState.getVar(varId);
+    // Var symbolique → lookup direct gSaveBlock1Ptr.vars (= 1:1 décomp
+    // gSaveBlock1Ptr->vars[id-0x4000]).
+    return gSaveBlock1Ptr.vars[varId] ?? 0;
   }
   // Constant resolution (METATILE_*, MALE/FEMALE, FLAG_*, ITEM_*, MUS_*, etc).
   const constVal = resolveDecompConstant(varId);
   if (constVal !== undefined) return constVal & 0xFFFF;
-  // Unknown : fallback gameState (= legacy comportement, returns 0 if not set).
-  return gameState.getVar(varId);
+  // Unknown : fallback lookup direct gSaveBlock1Ptr.vars (= returns 0 if not set).
+  return gSaveBlock1Ptr.vars[varId] ?? 0;
 }
 
 // ─── Special vars (1:1 décomp) ───────────────────────────────────────────────
@@ -83,19 +108,19 @@ export function VarGet(varId: string): number {
 /** `gSpecialVar_Result` (= VAR_RESULT, 0x800D dans le décomp). Set par checkflag,
  *  checkplayergender, yesnobox, etc. Read par goto_if_eq, call_if_eq.
  *
- *  Phase 4.10 unification : Result est désormais un getter/setter sur la var
- *  VAR_RESULT dans gameState. Ça permet de read VAR_RESULT via VarGet AND via
- *  gSpecialVar.Result indistinctement (= 1:1 décomp où c'est la même chose).
- *  Critique pour goto_if_eq VAR_RESULT, MALE qui était cassé avant (= deux
- *  stores séparés faisaient que VarGet(VAR_RESULT) = 0 toujours).
+ *  1:1 strict : Result est un getter/setter sur la var VAR_RESULT dans
+ *  gSaveBlock1Ptr.vars direct. Ça permet de read VAR_RESULT via VarGet AND
+ *  via gSpecialVar.Result indistinctement (= 1:1 décomp où c'est la même
+ *  chose). Critique pour goto_if_eq VAR_RESULT, MALE qui était cassé avant
+ *  (= deux stores séparés faisaient que VarGet(VAR_RESULT) = 0 toujours).
  *
  *  LastTalked = gSpecialVar_LastTalked (= localId du NPC interacted). Set par
  *  CheckForObjectEventInteractive avant ScriptContext_SetupScript. */
 export const gSpecialVar = {
-  get Result(): number { return gameState.getVar('VAR_RESULT'); },
-  set Result(value: number) { gameState.setVar('VAR_RESULT', value & 0xFFFF); },
-  get LastTalked(): number { return gameState.getVar('VAR_LAST_TALKED'); },
-  set LastTalked(value: number) { gameState.setVar('VAR_LAST_TALKED', value & 0xFFFF); },
+  get Result(): number { return gSaveBlock1Ptr.vars['VAR_RESULT'] ?? 0; },
+  set Result(value: number) { gSaveBlock1Ptr.vars['VAR_RESULT'] = value & 0xFFFF; },
+  get LastTalked(): number { return gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] ?? 0; },
+  set LastTalked(value: number) { gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] = value & 0xFFFF; },
   /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — u16 global set par
    *  `Task_BagMenu_HandleInput` quand A pressé sur un item, lu par les
    *  handlers context-menu (UTILIS./DONNER/JETER/etc.) + scripts give-item. */
@@ -122,26 +147,27 @@ export function Compare(a: number, b: number): number {
   return COMPARE_EQ;
 }
 
-/** Reset complet (= pour debugging / map reload). Délègue à gameState.reset.
- *  Note : ça reset AUSSI playerName/gender/bag/etc — donc à utiliser avec
- *  prudence. Pour reset script vars seulement, écrire ici un helper dédié. */
+/** Reset complet (= pour debugging / map reload). Appelle ResetSaveBlocks
+ *  direct (= 1:1 save-system). Note : ça reset AUSSI playerName/gender/bag/
+ *  etc — donc à utiliser avec prudence. Pour reset script vars seulement,
+ *  écrire ici un helper dédié. */
 export function ResetScriptVars(): void {
-  gameState.reset();
+  ResetSaveBlocks();
   gSelectedObjectEvent.index = 0;
 }
 
 // ─── Debug exposure ─────────────────────────────────────────────────────────
 // Compat avec ancien code qui lit window.__gFlags / window.__gVars depuis console.
-// Maintenant ces valeurs viennent de gameState. On expose des proxies qui font le
-// pont au runtime.
+// Lecture directe gSaveBlock1Ptr (= 1:1 décomp event_data.c storage location).
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, '__gFlags', {
     configurable: true,
     get() {
-      const names = gameState.getAllFlagNames();
+      const flags = gSaveBlock1Ptr.flags;
+      const names = Object.keys(flags);
       return {
         size: names.length,
-        has: (flag: string) => gameState.hasFlag(flag),
+        has: (flag: string) => !!flags[flag],
         forEach: (cb: (flag: string) => void) => names.forEach(cb),
       };
     },
@@ -149,12 +175,12 @@ if (typeof window !== 'undefined') {
   Object.defineProperty(window, '__gVars', {
     configurable: true,
     get() {
-      const all = gameState.getAllVars();
+      const vars = gSaveBlock1Ptr.vars;
       return {
-        size: Object.keys(all).length,
-        get: (varId: string) => gameState.getVar(varId),
-        set: (varId: string, value: number) => gameState.setVar(varId, value),
-        has: (varId: string) => varId in all,
+        size: Object.keys(vars).length,
+        get: (varId: string) => vars[varId] ?? 0,
+        set: (varId: string, value: number) => { vars[varId] = value & 0xFFFF; },
+        has: (varId: string) => varId in vars,
       };
     },
   });

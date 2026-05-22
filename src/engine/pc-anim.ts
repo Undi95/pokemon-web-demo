@@ -21,6 +21,7 @@ import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from './map-loader';
 import { GetPlayerFacingDirection } from './player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { gameState } from './game-state';
+import { VarGet } from './script-vars';
 import { DrawWholeMapView } from './field-camera';
 import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
@@ -161,7 +162,7 @@ function _setPCMetatileToOff(dx: number, dy: number): void {
 function _getCurrentPCLocation(): number {
   // Le script setvar VAR_0x8004 just before special DoPCTurnOnEffect.
   // Lecture via gameState.getVar.
-  const v = gameState.getVar('VAR_0x8004');
+  const v = VarGet('VAR_0x8004');
   // Fallback : si non-set explicitly, regarde la mapId pour deviner.
   if (v === 0) {
     const mapId = gMapHeader?.id ?? '';

@@ -4,7 +4,7 @@
  *
  * Audit session 126 LOT C10 : le commentaire daté précédent disait que
  * `goto_if_set` était toujours ignoré. C'est faux : ligne 602 lit
- * `gameState.hasFlag(token)` correctement. Vars / flags sont aussi readés
+ * `FlagGet(token)` correctement. Vars / flags sont aussi readés
  * depuis `gameState` (= shared avec `script-runtime` moderne).
  *
  * **Status legacy** : le runtime principal est désormais `script-runtime.ts`
@@ -18,7 +18,7 @@
  *   faceplayer        : tourne le NPC vers le joueur
  *   msgbox <tx>, ... : affiche le texte <tx>, attend input
  *   goto <label>      : saut inconditionnel
- *   goto_if_set ...   : check gameState.hasFlag (= 1:1 décomp)
+ *   goto_if_set ...   : check FlagGet (= 1:1 décomp)
  *   goto_if_ne ...    : check var != value
  *   goto_if_eq ...    : check var == value
  *   call <label>      : push et saut
@@ -89,6 +89,7 @@ export type ScriptContext = {
 };
 
 import { gameState } from './game-state';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { setStringVar } from './string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
@@ -154,8 +155,8 @@ const SPECIALS: Record<string, SpecialFn> = {
   ChooseStarter: async (ctx) => {
     if (!ctx.askMultichoice) {
       console.warn('[ChooseStarter] askMultichoice non fourni → defaultIdx 0');
-      gameState.setVar('VAR_RESULT', 0);
-      gameState.setVar('VAR_STARTER_MON', 0);
+      VarSet('VAR_RESULT', 0);
+      VarSet('VAR_STARTER_MON', 0);
       gameState.addToParty(createPokemonInstance(STARTER_SPECIES[0], 5));
       return;
     }
@@ -164,8 +165,8 @@ const SPECIALS: Record<string, SpecialFn> = {
     const speciesEnum = STARTER_SPECIES[idx];
     const mon = createPokemonInstance(speciesEnum, 5);
     gameState.addToParty(mon);
-    gameState.setVar('VAR_RESULT', idx);
-    gameState.setVar('VAR_STARTER_MON', idx);
+    VarSet('VAR_RESULT', idx);
+    VarSet('VAR_STARTER_MON', idx);
     console.log(`[ChooseStarter] starter=${speciesEnum} (idx=${idx}) → party size=${gameState.partySize}`);
     // Combat tutorial vs Poochyena lvl 2 (équivalent BATTLE_TYPE_FIRST_BATTLE
     // du décomp `CB2_StartFirstBattle`). Bloquant : on attend la fin avant que
@@ -192,8 +193,8 @@ function resolveValue(token: string, vars: Record<string, number>): number {
   if (token in vars) return vars[token];
   if (token in CONST_VALUES) return CONST_VALUES[token];
   // Var globale dans gameState (VAR_*) ou flag (FLAG_* → 1 si set, 0 sinon)
-  if (token.startsWith('VAR_')) return gameState.getVar(token);
-  if (token.startsWith('FLAG_')) return gameState.hasFlag(token) ? 1 : 0;
+  if (token.startsWith('VAR_')) return VarGet(token);
+  if (token.startsWith('FLAG_')) return FlagGet(token) ? 1 : 0;
   return 0;
 }
 
@@ -392,7 +393,7 @@ export async function runScript(
       if (ctx.runTrainerBattle && trainerId?.startsWith('TRAINER_')) {
         const result = await ctx.runTrainerBattle(trainerId);
         vars['__lastBattleResult'] = result === 'win' ? 1 : 0;
-        if (result === 'win') gameState.setFlag(`__defeated_${trainerId}`); // proxy trainer flag
+        if (result === 'win') FlagSet(`__defeated_${trainerId}`); // proxy trainer flag
       }
       continue;
     }
@@ -424,16 +425,16 @@ export async function runScript(
     }
     // Trainer flag opcodes (proxy via gameState flags)
     if (op === 'checktrainerflag') {
-      vars['VAR_RESULT'] = gameState.hasFlag(`__defeated_${tokens[1]}`) ? 1 : 0;
-      gameState.setVar('VAR_RESULT', vars['VAR_RESULT']);
+      vars['VAR_RESULT'] = FlagGet(`__defeated_${tokens[1]}`) ? 1 : 0;
+      VarSet('VAR_RESULT', vars['VAR_RESULT']);
       continue;
     }
-    if (op === 'settrainerflag') { gameState.setFlag(`__defeated_${tokens[1]}`); continue; }
-    if (op === 'cleartrainerflag') { gameState.clearFlag(`__defeated_${tokens[1]}`); continue; }
+    if (op === 'settrainerflag') { FlagSet(`__defeated_${tokens[1]}`); continue; }
+    if (op === 'cleartrainerflag') { FlagClear(`__defeated_${tokens[1]}`); continue; }
 
     if (op === 'checkplayergender') {
       vars['VAR_RESULT'] = gameState.gender === 'MALE' ? 0 : 1;
-      gameState.setVar('VAR_RESULT', vars['VAR_RESULT']);
+      VarSet('VAR_RESULT', vars['VAR_RESULT']);
       continue;
     }
     // gettime → VAR_0x8000=heures, 0x8001=minutes, 0x8002=secondes (cf. ScrCmd_gettime du décomp)
@@ -442,35 +443,35 @@ export async function runScript(
       vars['VAR_0x8000'] = d.getHours();
       vars['VAR_0x8001'] = d.getMinutes();
       vars['VAR_0x8002'] = d.getSeconds();
-      gameState.setVar('VAR_0x8000', d.getHours());
-      gameState.setVar('VAR_0x8001', d.getMinutes());
-      gameState.setVar('VAR_0x8002', d.getSeconds());
+      VarSet('VAR_0x8000', d.getHours());
+      VarSet('VAR_0x8001', d.getMinutes());
+      VarSet('VAR_0x8002', d.getSeconds());
       continue;
     }
     if (op === 'setvar') {
       const v = resolveValue(tokens[2], vars);
       vars[tokens[1]] = v;
-      if (tokens[1].startsWith('VAR_')) gameState.setVar(tokens[1], v);
+      if (tokens[1].startsWith('VAR_')) VarSet(tokens[1], v);
       // Si on stocke un LOCALID dans une scratch var, garde l'alias string
       if (tokens[2]?.startsWith('LOCALID_')) localIdAlias[tokens[1]] = tokens[2];
       continue;
     }
     if (op === 'addvar') {
-      const cur = tokens[1].startsWith('VAR_') ? gameState.getVar(tokens[1]) : (vars[tokens[1]] ?? 0);
+      const cur = tokens[1].startsWith('VAR_') ? VarGet(tokens[1]) : (vars[tokens[1]] ?? 0);
       const v = cur + resolveValue(tokens[2], vars);
       vars[tokens[1]] = v;
-      if (tokens[1].startsWith('VAR_')) gameState.setVar(tokens[1], v);
+      if (tokens[1].startsWith('VAR_')) VarSet(tokens[1], v);
       continue;
     }
     if (op === 'subvar') {
-      const cur = tokens[1].startsWith('VAR_') ? gameState.getVar(tokens[1]) : (vars[tokens[1]] ?? 0);
+      const cur = tokens[1].startsWith('VAR_') ? VarGet(tokens[1]) : (vars[tokens[1]] ?? 0);
       const v = cur - resolveValue(tokens[2], vars);
       vars[tokens[1]] = v;
-      if (tokens[1].startsWith('VAR_')) gameState.setVar(tokens[1], v);
+      if (tokens[1].startsWith('VAR_')) VarSet(tokens[1], v);
       continue;
     }
-    if (op === 'setflag') { if (tokens[1]?.startsWith('FLAG_')) gameState.setFlag(tokens[1]); continue; }
-    if (op === 'clearflag') { if (tokens[1]?.startsWith('FLAG_')) gameState.clearFlag(tokens[1]); continue; }
+    if (op === 'setflag') { if (tokens[1]?.startsWith('FLAG_')) FlagSet(tokens[1]); continue; }
+    if (op === 'clearflag') { if (tokens[1]?.startsWith('FLAG_')) FlagClear(tokens[1]); continue; }
     if (op === 'playse' || op === 'waitse' || op === 'playfanfare' || op === 'waitfanfare') continue;
     if (op === 'delay' || op === 'playbgm' || op === 'savebgm' || op === 'fadedefaultbgm' || op === 'fadenewbgm') continue;
     if (op === 'applymovement' || op === 'waitmovement' || op === 'applymovement_canmove') continue;
@@ -486,7 +487,7 @@ export async function runScript(
     if (op === 'copyvar') {
       const v = resolveValue(tokens[2], vars);
       vars[tokens[1]] = v;
-      if (tokens[1].startsWith('VAR_')) gameState.setVar(tokens[1], v);
+      if (tokens[1].startsWith('VAR_')) VarSet(tokens[1], v);
       continue;
     }
 
@@ -555,7 +556,7 @@ export async function runScript(
       if (ctx.askYesNo) {
         const yes = await ctx.askYesNo();
         vars['VAR_RESULT'] = yes ? 1 : 0;
-        gameState.setVar('VAR_RESULT', yes ? 1 : 0);
+        VarSet('VAR_RESULT', yes ? 1 : 0);
       }
       continue;
     }
@@ -564,7 +565,7 @@ export async function runScript(
     if (op === 'multichoice' || op === 'multichoicedefault' || op === 'multichoicegrid') {
       // TODO Vague suivante : extract data/list_menu_items.h pour résoudre MULTI_X → labels
       vars['VAR_RESULT'] = 0;
-      gameState.setVar('VAR_RESULT', 0);
+      VarSet('VAR_RESULT', 0);
       continue;
     }
 
@@ -586,7 +587,7 @@ export async function runScript(
       if (style === 'MSGBOX_YESNO' && ctx.askYesNo) {
         const yes = await ctx.askYesNo();
         vars['VAR_RESULT'] = yes ? 1 : 0;
-        gameState.setVar('VAR_RESULT', yes ? 1 : 0);
+        VarSet('VAR_RESULT', yes ? 1 : 0);
       }
       continue;
     }
@@ -608,7 +609,7 @@ export async function runScript(
     // pas de flags persistents. Maintenant qu'il en a, faut vraiment check
     // sinon les scripts à branches type "horloge déjà réglée → skip" boucle.
     if (op === 'goto_if_set' || op === 'call_if_set') {
-      if (tokens[1]?.startsWith('FLAG_') && gameState.hasFlag(tokens[1])) {
+      if (tokens[1]?.startsWith('FLAG_') && FlagGet(tokens[1])) {
         if (op === 'call_if_set') callStack.push({ label, pc });
         label = tokens[2]; pc = 0;
       }
@@ -616,7 +617,7 @@ export async function runScript(
     }
     // goto_if_unset / call_if_unset FLAG, LABEL : check le vrai état du flag.
     if (op === 'goto_if_unset' || op === 'call_if_unset') {
-      const isUnset = !tokens[1]?.startsWith('FLAG_') || !gameState.hasFlag(tokens[1]);
+      const isUnset = !tokens[1]?.startsWith('FLAG_') || !FlagGet(tokens[1]);
       if (isUnset) {
         if (op === 'call_if_unset') callStack.push({ label, pc });
         label = tokens[2]; pc = 0;
@@ -678,7 +679,7 @@ export async function runScript(
       const ok = gameState.addToParty(mon);
       const result = ok ? 0 : 1; // MVP : si pas de place → faux PC (= 1), pas d'erreur
       vars['VAR_RESULT'] = result;
-      gameState.setVar('VAR_RESULT', result);
+      VarSet('VAR_RESULT', result);
       console.log(`[givemon] ${species} L${level} → party (size=${gameState.partySize}, result=${result})`);
       continue;
     }

@@ -34,6 +34,7 @@
 import type Phaser from 'phaser';
 import { SignalWaitState } from './script-opcodes';
 import { gameState } from './game-state';
+import { FlagGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getString } from './gba-strings';
@@ -799,7 +800,7 @@ function _getMapsecNameAtCursor(): string {
   // Utilise le layout 15×28 1:1 décomp + gRegionMapEntries[].name + flag visit.
   const mapSecId = GetMapSecIdAt(st.cursorPosX, st.cursorPosY);
   if (mapSecId === 'MAPSEC_NONE') return '';
-  const mapSecType = GetMapsecType(mapSecId, (flag: string) => gameState.hasFlag(flag));
+  const mapSecType = GetMapsecType(mapSecId, (flag: string) => FlagGet(flag));
   if (mapSecType === MAPSECTYPE_NONE) return '';  // = 1:1 décomp blank pour types NONE (= Battle Frontier sans flag, Southern Island sans flag)
   return GetMapName(mapSecId) || '';
 }

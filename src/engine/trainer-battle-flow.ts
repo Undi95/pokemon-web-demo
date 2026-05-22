@@ -25,7 +25,7 @@ import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
 import { gameState } from './game-state';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
 import { getRuntime } from './decomp-globals';
-import { VarSet } from './script-vars';
+import { FlagSet, VarSet } from './script-vars';
 import { ShowBg, HideBg } from './gba-window-system';
 
 interface TrainerPartyMember {
@@ -137,7 +137,7 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
         if (!trainerData || !trainerData.party || trainerData.party.length === 0) {
           console.warn(`[trainer-battle-flow] trainer ${trainerId} not found or empty party — fallback WIN`);
           VarSet('VAR_RESULT', 1);
-          gameState.setVar('VAR_RESULT', 1);
+          VarSet('VAR_RESULT', 1);
           (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = BATTLE_OUTCOME_WIN;
           state = 'DONE';
           return false;
@@ -233,8 +233,8 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
         const name = trainerData!.trainerName ?? 'Adversaire';
         ShowFieldMessage(`${name} a perdu!`);
         VarSet('VAR_RESULT', 1);
-        gameState.setVar('VAR_RESULT', 1);
-        gameState.setFlag(`__defeated_${trainerId}`);
+        VarSet('VAR_RESULT', 1);
+        FlagSet(`__defeated_${trainerId}`);
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = BATTLE_OUTCOME_WIN;
         state = 'WIN_WAIT';
         return false;
@@ -251,7 +251,7 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       case 'LOSE_TEXT': {
         ShowFieldMessage('Tu as été vaincu!');
         VarSet('VAR_RESULT', 2);
-        gameState.setVar('VAR_RESULT', 2);
+        VarSet('VAR_RESULT', 2);
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = 2;
         state = 'LOSE_WAIT';
         return false;

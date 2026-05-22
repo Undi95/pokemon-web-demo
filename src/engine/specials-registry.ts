@@ -28,6 +28,7 @@
 
 import { registerSpecial } from './script-opcodes';
 import { gameState } from './game-state';
+import { FlagSet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
@@ -337,10 +338,10 @@ registerSpecial('GetMomOrDadStringForTVMessage', () => {
   console.log(`[special GetMomOrDadStringForTVMessage] mapId=${mapId} gender=${gameState.gender} isInPlayersHouse=${isInPlayersHouse}`);
   if (isInPlayersHouse) {
     setStringVar(1, 'MAMAN');
-    gameState.setVar('VAR_TEMP_3', 1);
+    VarSet('VAR_TEMP_3', 1);
     return;
   }
-  const cached = gameState.getVar('VAR_TEMP_3');
+  const cached = VarGet('VAR_TEMP_3');
   if (cached === 1) { setStringVar(1, 'MAMAN'); return; }
   if (cached === 2) { setStringVar(1, 'PAPA'); return; }
   if (cached > 2) {
@@ -350,17 +351,17 @@ registerSpecial('GetMomOrDadStringForTVMessage', () => {
   // Random 50/50
   if (Math.floor(Math.random() * 2) !== 0) {
     setStringVar(1, 'MAMAN');
-    gameState.setVar('VAR_TEMP_3', 1);
+    VarSet('VAR_TEMP_3', 1);
   } else {
     setStringVar(1, 'PAPA');
-    gameState.setVar('VAR_TEMP_3', 2);
+    VarSet('VAR_TEMP_3', 2);
   }
 });
 
 /** 1:1 décomp `EnableNationalPokedex` (pokedex_data.c) : unlock National Pokedex.
  *  Used post-Hall of Fame. MVP : just set a flag. */
 registerSpecial('EnableNationalPokedex', () => {
-  gameState.setFlag('FLAG_RECEIVED_POKEDEX_FROM_BIRCH');
+  FlagSet('FLAG_RECEIVED_POKEDEX_FROM_BIRCH');
 });
 
 /** 1:1 décomp `SetUnlockedPokedexFlags` (pokedex_data.c) : when player gets PokeDex,
@@ -398,7 +399,7 @@ registerSpecial('LoadBattlePyramidObjectEventTemplates', () => { /* no-op */ });
 
 /** 1:1 décomp `Special_StartLegendaryBattle` (battle_setup.c). Stub return WIN. */
 registerSpecial('Special_StartLegendaryBattle', () => {
-  gameState.setVar('VAR_RESULT', 1);
+  VarSet('VAR_RESULT', 1);
   return 1;
 });
 
@@ -671,7 +672,7 @@ import { resolveDecompConstant } from './decomp-constants';
  *  Utilisé par scripts give Pokémon, daycare retrieve, etc. Buffer dans
  *  STR_VAR_1 le nickname du party[VAR_0x8004]. */
 registerSpecial('BufferMonNickname', () => {
-  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const slot = VarGet('VAR_0x8004') ?? 0;
   const mon = gameState.party?.[slot];
   setStringVar(1, mon?.nickname || mon?.speciesNameFr || '???');
   return 0;
@@ -681,7 +682,7 @@ registerSpecial('BufferMonNickname', () => {
  *    return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES);
  *  Utilisé par scripts pour check le species du Pokémon en slot. */
 registerSpecial('ScriptGetPartyMonSpecies', () => {
-  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const slot = VarGet('VAR_0x8004') ?? 0;
   const mon = gameState.party?.[slot];
   if (!mon?.speciesEnum) return mon?.speciesId ?? 0;
   // Resolve species name → numeric ID via constants.
@@ -705,7 +706,7 @@ registerSpecial('ShowMapNamePopup', () => {
 /** 1:1 décomp `IsSelectedMonEgg` :
  *    return GetMonData(party[VAR_0x8004], MON_DATA_IS_EGG); */
 registerSpecial('IsSelectedMonEgg', () => {
-  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const slot = VarGet('VAR_0x8004') ?? 0;
   const mon = gameState.party?.[slot];
   return (mon as { isEgg?: number })?.isEgg ? 1 : 0;
 });
@@ -717,8 +718,8 @@ registerSpecial('IsSelectedMonEgg', () => {
 registerSpecial('StorePlayerCoordsInVars', () => {
   // 1:1 décomp : *VarGetPtr(VAR_0x8004) = gSaveBlock1Ptr->pos.x ; pareil pos.y.
   // (= dans le décomp, pa n'a pas x/y ; on lit gSaveBlock1Ptr->pos).
-  gameState.setVar?.('VAR_0x8004', gSaveBlock1Ptr.pos.x);
-  gameState.setVar?.('VAR_0x8005', gSaveBlock1Ptr.pos.y);
+  VarSet('VAR_0x8004', gSaveBlock1Ptr.pos.x);
+  VarSet('VAR_0x8005', gSaveBlock1Ptr.pos.y);
   return 0;
 });
 
