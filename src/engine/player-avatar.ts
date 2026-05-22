@@ -1045,6 +1045,18 @@ export function CheckForObjectEventStaticCollision(
 export function CheckForPlayerAvatarCollision(direction: number): number {
   const playerObjEvent = gObjectEvents[gPlayerAvatar.objectEventId];
   const useSlot = playerObjEvent && playerObjEvent.active && playerObjEvent.isPlayer;
+  // BUGFIX désync slot 0 ↔ gPlayerAvatar (= post-warp/replace dev tool/TV event) :
+  // si pa.x/y != slot.currentCoords, force re-sync. Notre TS a gPlayerAvatar.x/y
+  // comme champ "live" (= via gSaveBlock1Ptr.pos Proxy), tandis que slot 0 stocke
+  // separately. 1:1 décomp n'a pas ce duplication (= pa lit slot directement),
+  // mais notre refactor session OW unify utilise les 2. Sync défensif ici évite
+  // que collision check fire sur stale coords (= bug user post-warp escalier
+  // F2→F1 + dev replace : pa=(4,5) F1 mais slot0=(8,2) F2 stale → check (9,2)
+  // qui est mur F1 → IMPASSABLE phantom).
+  if (useSlot && (playerObjEvent.currentCoordsX !== gPlayerAvatar.x
+              || playerObjEvent.currentCoordsY !== gPlayerAvatar.y)) {
+    SyncPlayerObjectEvent(gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
+  }
   let sx: number, sy: number;
   let obj: Parameters<typeof _GetCollisionAtCoords>[0];
   if (useSlot) {
