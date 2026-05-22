@@ -42,6 +42,7 @@ import {
   ResetFieldCamera,
   ResetCameraUpdateInfo,
   InstallCameraPanAheadCallback,
+  UpdateCameraPanning,
   FieldUpdateBgTilemapScroll,
   CameraUpdate,
   SetCameraTopLeftCoords,
@@ -485,6 +486,12 @@ export class TestOverworldScene extends Phaser.Scene {
         if (pendingConn) {
           self.handleConnectionTransition(pendingConn);
         }
+
+        // 1:1 décomp `UpdateCameraPanning()` (field_camera.c:456-463) appelé
+        // chaque frame du `CB2_Overworld` chain (= overworld.c:2310+). Dérive
+        // `gSpriteCoordOffset.x/y` depuis gTotalCamera - pan utilisés par les
+        // sprites overworld (= OBJ avec `coordOffsetEnabled = TRUE` côté HW).
+        UpdateCameraPanning();
 
         // ─── Fix défensif désync `_camPos` vs `gPlayerAvatar` ────────────────
         // Bug user-flag 2026-05-22 : après warp / menu / event scripted, le
