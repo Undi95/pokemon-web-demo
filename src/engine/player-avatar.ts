@@ -294,6 +294,92 @@ Object.defineProperty(_gPlayerAvatarBase, 'y', {
 
 export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase as PlayerAvatar;
 
+// ─── 1:1 décomp helpers `field_player_avatar.c` ─────────────────────────────
+
+/** 1:1 décomp `GetPlayerFacingDirection` (field_player_avatar.c:1165-1168).
+ *
+ *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;`
+ *
+ *  Notre impl : lit depuis `gObjectEvents[playerSlot].facingDirection` qui est
+ *  synced via `SyncPlayerObjectEvent` ou via le step start. Si player objectEvent
+ *  pas encore init (= boot early), fallback sur `gPlayerAvatar.facing` direct. */
+export function GetPlayerFacingDirection(): number {
+  const slot = gPlayerAvatar.objectEventId;
+  const obj = gObjectEvents[slot];
+  if (obj && obj.active && obj.isPlayer) return obj.facingDirection;
+  return gPlayerAvatar.facing;
+}
+
+/** 1:1 décomp `GetPlayerMovementDirection` (field_player_avatar.c:1170-1173).
+ *
+ *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].movementDirection;`
+ *
+ *  Différent de `GetPlayerFacingDirection` : movementDirection = direction de
+ *  la dernière action de mouvement (= peut différer de facing si facing locked). */
+export function GetPlayerMovementDirection(): number {
+  const slot = gPlayerAvatar.objectEventId;
+  const obj = gObjectEvents[slot];
+  if (obj && obj.active && obj.isPlayer) return obj.movementDirection;
+  return gPlayerAvatar.facing;
+}
+
+/** 1:1 décomp `PlayerGetElevation` (field_player_avatar.c:1175-1178).
+ *
+ *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].previousElevation;`
+ *
+ *  Returns PREVIOUS elevation (= avant le step en cours). Used par
+ *  `GetInFrontOfPlayerPosition` pour décider si tile devant a même elevation. */
+export function PlayerGetElevation(): number {
+  const slot = gPlayerAvatar.objectEventId;
+  const obj = gObjectEvents[slot];
+  if (obj && obj.active && obj.isPlayer) return obj.previousElevation;
+  return gPlayerAvatar.currentElevation;
+}
+
+/** 1:1 décomp `PlayerGetDestCoords` (field_player_avatar.c:1124-1128).
+ *
+ *  Body décomp :
+ *  ```c
+ *  *x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;
+ *  *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;
+ *  ```
+ *
+ *  Returns INTERNAL coords (= +MAP_OFFSET dans décomp). Notre impl : nos
+ *  `currentCoordsX/Y` sont en LOGICAL coords (= sans offset). On return logical
+ *  pour cohérence avec notre convention NPC. */
+export function PlayerGetDestCoords(): { x: number; y: number } {
+  const slot = gPlayerAvatar.objectEventId;
+  const obj = gObjectEvents[slot];
+  if (obj && obj.active && obj.isPlayer) {
+    return { x: obj.currentCoordsX, y: obj.currentCoordsY };
+  }
+  return { x: gPlayerAvatar.x, y: gPlayerAvatar.y };
+}
+
+/** 1:1 décomp `GetXYCoordsOneStepInFrontOfPlayer` (field_player_avatar.c:1117-1122).
+ *
+ *  Body décomp :
+ *  ```c
+ *  *x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;
+ *  *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;
+ *  MoveCoords(GetPlayerFacingDirection(), x, y);
+ *  ```
+ *
+ *  Returns position 1 tile devant le player (= dans la direction de son facing).
+ *  Used par `GetInFrontOfPlayerPosition` + `TryStartInteractionScript` pour
+ *  l'A-button interact target. */
+export function GetXYCoordsOneStepInFrontOfPlayer(): { x: number; y: number } {
+  const facing = GetPlayerFacingDirection();
+  const pos = PlayerGetDestCoords();
+  // 1:1 décomp `MoveCoords(direction, x, y)` : advance par DIR_TO_DX/DY.
+  let dx = 0, dy = 0;
+  if (facing === DIR_NORTH) dy = -1;
+  else if (facing === DIR_SOUTH) dy = 1;
+  else if (facing === DIR_WEST) dx = -1;
+  else if (facing === DIR_EAST) dx = 1;
+  return { x: pos.x + dx, y: pos.y + dy };
+}
+
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
 
 /** Player sprite occupe OBJ tiles 0..143 (= 18 frames × 8 tiles).
