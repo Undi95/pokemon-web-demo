@@ -40,7 +40,6 @@ import './load_save';
 import './save-block-state';
 import './script-vars';
 import './warp-system';
-import './web-overlays';
 
 import { gSaveBlock1Ptr } from './save-block-state';
 import type { ItemSlot, Bag } from './bag';

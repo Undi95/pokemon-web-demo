@@ -290,6 +290,72 @@ export function SetCurrentMapLocation(mapId: string, x: number, y: number, warpI
   block1.pos = { x, y };
 }
 
+// ─── ObjectEventTemplate coords (= 1:1 décomp `setobjectxyperm` opcode) ──────
+
+/** 1:1 décomp `void SetObjEventTemplateCoords(u8 localId, s16 x, s16 y)`
+ *  (overworld.c:490) :
+ *    struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;
+ *    for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+ *        if (savObjTemplates[i].localId == localId)
+ *            { savObjTemplates[i].x = x; y = y; return; }
+ *
+ *  Web-port extension : ajoute un `mapId` field pour identifier le template
+ *  cross-map (le décomp ROM reload `objectEventTemplates[]` depuis mapHeader
+ *  à chaque map switch via `LoadObjectEvents` ; notre port persiste cross-
+ *  map via le `mapId` field pour les mods `?nointro`). Si pas de template
+ *  match, en ajoute un nouveau (= comportement non-1:1 mais nécessaire pour
+ *  notre flow boot-mode preset).
+ *
+ *  Appelé par `setobjectxyperm` scrcmd.c:1093 + via boot-mode preset hack. */
+export function SetObjEventTemplateCoords(mapId: string, localId: number | string, x: number, y: number): void {
+  const block1 = GetSaveBlock1();
+  const templates = block1.objectEventTemplates;
+  const localIdNum = typeof localId === 'number' ? localId : 0; // string localId = web-port; numeric = décomp
+  for (const t of templates) {
+    const idMatch = typeof localId === 'string'
+      ? (t as { localIdRaw?: string }).localIdRaw === localId
+      : t.localId === localIdNum;
+    if (idMatch && (!t.mapId || t.mapId === mapId)) {
+      t.x = x;
+      t.y = y;
+      t.mapId = mapId;
+      return;
+    }
+  }
+  // No template found : append new (= web-port persistence helper).
+  templates.push({
+    localId: localIdNum,
+    graphicsId: 0,
+    kind: 0,
+    x, y,
+    elevation: 0,
+    movementType: 0,
+    movementRangeX: 0,
+    movementRangeY: 0,
+    trainerType: 0,
+    trainerRange_berryTreeId: 0,
+    script: '',
+    flagId: 0,
+    mapId,
+    ...(typeof localId === 'string' ? { localIdRaw: localId } : {}),
+  } as never);
+}
+
+/** Web-port helper : lookup coords override pour un (mapId, localId).
+ *  Retourne undefined si pas d'override = template doit utiliser default
+ *  mapHeader coords. */
+export function GetObjEventTemplateCoords(mapId: string, localId: number | string): { x: number; y: number } | undefined {
+  const block1 = GetSaveBlock1();
+  for (const t of block1.objectEventTemplates) {
+    if (t.mapId !== mapId) continue;
+    const idMatch = typeof localId === 'string'
+      ? (t as { localIdRaw?: string }).localIdRaw === localId
+      : t.localId === localId;
+    if (idMatch) return { x: t.x, y: t.y };
+  }
+  return undefined;
+}
+
 // ─── Map courante helpers (= 1:1 décomp `gSaveBlock1Ptr->location` + `pos`) ──
 
 /** 1:1 décomp accessor : composite `{ name, x, y, facing? }` depuis

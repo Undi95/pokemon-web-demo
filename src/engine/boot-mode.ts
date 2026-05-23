@@ -21,7 +21,7 @@ import { FlagSet, VarSet } from './script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
 import { SetDynamicWarp } from './warp-system';
 import { GetCurrentMap } from './load_save';
-import { SetObjectXY } from './web-overlays';
+import { SetObjEventTemplateCoords } from './load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './new-game-flags';
@@ -246,7 +246,7 @@ function applyNoIntroPreset(): void {
   const playerHouseMap = gSaveBlock2Ptr.playerGender === FEMALE
     ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F'
     : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
-  SetObjectXY(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
+  SetObjEventTemplateCoords(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
   // Note : movementType (FACE_UP) n'est pas persisté actuellement (= follow-up).
   // L'API `setObjectMovementType` n'existe pas encore sur gameState. Mom
   // gardera son MOVEMENT_TYPE_FACE_RIGHT du template jusqu'à ce qu'on étende.

@@ -29,12 +29,12 @@ import { primeAudio, playMidiLoop, playSE, playCry, stopMusic, playFanfare, setS
 import { traceReset, traceMark } from '../engine/warp-trace';
 import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMetatileLabels as loadMetatileLabelsForDoor, preloadAllDoors } from '../engine/door-anim';
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
-import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
+import { FlagSet, FlagGet, VarSet, VarGet } from '../engine/script-vars';
 import { SetCurrentMap } from '../engine/load_save';
 import { gSaveBlock2Ptr } from '../engine/save-block-state';
 import { FEMALE } from '../engine/decomp-globals';
 import { GetDynamicWarp } from '../engine/warp-system';
-import { SetObjectXY, GetObjectXY, GetTakenItemBalls } from '../engine/web-overlays';
+import { SetObjEventTemplateCoords, GetObjEventTemplateCoords } from '../engine/load_save';
 
 const BASE = '/decomp/em';
 const PLAYER_TEX = 'player-walk-a';
@@ -345,10 +345,13 @@ export class OverworldScene extends Phaser.Scene {
     const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
     const resolved = resolveNpcs(this.mapJson, gfxTable,
       (f) => FlagGet(f),
-      (id) => GetObjectXY(this.mapName, id),
+      (id) => GetObjEventTemplateCoords(this.mapName, id),
       undefined, inanimateMap)
-      // Filtre les item balls déjà ramassées (script label dans takenItemBalls).
-      .filter(n => !(n.raw.graphics_id === 'OBJ_EVENT_GFX_ITEM_BALL' && GetTakenItemBalls().has(n.raw.script)));
+      // 1:1 décomp : filtre les item balls déjà ramassées via flag dédié
+      // `__ITEM_BALL_TAKEN_<scriptLabel>` (= notre proxy 1:1 mécanisme FlagSet
+      // pour les FLAG_ITEM_X du décomp ROM, mapping scriptLabel non extracté).
+      .filter(n => !(n.raw.graphics_id === 'OBJ_EVENT_GFX_ITEM_BALL'
+                     && FlagGet('__ITEM_BALL_TAKEN_' + n.raw.script)));
 
     for (const bg of this.mapJson.bg_events ?? []) {
       if (bg.type === 'sign' && bg.script) this.signs.push({ x: bg.x, y: bg.y, script: bg.script });
@@ -562,7 +565,7 @@ export class OverworldScene extends Phaser.Scene {
         const inanimateMap = (this.cache.json.get('inanimate-gfx') as Record<string, boolean>) ?? {};
         const resolvedAdj = resolveNpcs(adjMapJson, gfxTable,
           (f) => FlagGet(f),
-          (id) => GetObjectXY(adjMapName, id),
+          (id) => GetObjEventTemplateCoords(adjMapName, id),
           undefined, inanimateMap);
         this.world.buildMapInstance(adjMapName, off.x, off.y, resolvedAdj);
       } catch (e) {
@@ -619,7 +622,7 @@ export class OverworldScene extends Phaser.Scene {
         });
       },
       setObjectXY: (localId, x, y) => {
-        SetObjectXY(this.mapName, localId, x, y);
+        SetObjEventTemplateCoords(this.mapName, localId, x, y);
         const npc = this.npcs.find(n => n.raw.local_id === localId);
         if (npc) {
           npc.raw.x = x; npc.raw.y = y;
@@ -772,10 +775,12 @@ export class OverworldScene extends Phaser.Scene {
         await this.dialogue.show(`{PLAYER} a trouvé\nun(e) ${label} !`);
       },
       markItemBallTaken: (scriptLabel) => {
-        // Le décomp use FLAG_ITEM_<MAP>_<X> mais on n'a pas extrait ce mapping.
-        // Workaround : on stocke le scriptLabel dans GetTakenItemBalls()
-        // et au respawn de map on filtre les NPCs item ball déjà pris.
-        GetTakenItemBalls().add(scriptLabel);
+        // 1:1 décomp mécanisme : le script ItemBall set un flag dédié
+        // `FLAG_ITEM_<MAP>_<X>` après pickup. Mapping scriptLabel → flag
+        // numérique non extracté → on utilise `FlagSet(scriptLabel)` avec
+        // préfixe pour le filtrage au respawn (= 1:1 mécanisme FlagSet
+        // event_data.c, naming proxy).
+        FlagSet('__ITEM_BALL_TAKEN_' + scriptLabel);
       },
     };
   }
