@@ -46,7 +46,6 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {

@@ -36,7 +36,6 @@
  */
 
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './map-loader';
-import { gameState } from './game-state';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet } from './script-vars';

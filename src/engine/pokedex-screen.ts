@@ -16,7 +16,6 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { PlaySE } from './decomp-globals';
 
@@ -39,9 +38,9 @@ function _draw(): void {
   if (_wid < 0) return;
   FillWindowPixelBuffer(_wid, 0x11);
 
-  // Compteurs via flags FLAG_DEX_FLAG_X_SEEN/CAUGHT.
-  const allFlags = (gameState as unknown as { getAllFlagNames?: () => string[] })
-    .getAllFlagNames?.() ?? [];
+  // Compteurs via flags FLAG_DEX_FLAG_X_SEEN/CAUGHT (= 1:1 décomp lit
+  // direct gSaveBlock1Ptr->flags bitset).
+  const allFlags = Object.keys(gSaveBlock1Ptr.flags);
   let seen = 0;
   let caught = 0;
   for (const f of allFlags) {

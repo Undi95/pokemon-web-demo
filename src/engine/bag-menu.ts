@@ -75,7 +75,6 @@ import {
 } from './decomp-data/auto/include/constants/characters-data';
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE } from './decomp-globals';
 import {

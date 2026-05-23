@@ -29,7 +29,6 @@ import { primeAudio, playMidiLoop, playSE, playCry, stopMusic, playFanfare, setS
 import { traceReset, traceMark } from '../engine/warp-trace';
 import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMetatileLabels as loadMetatileLabelsForDoor, preloadAllDoors } from '../engine/door-anim';
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
-import { gameState } from '../engine/game-state';
 import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
 import { SetCurrentMap } from '../engine/load_save';
 import { gSaveBlock2Ptr } from '../engine/save-block-state';

@@ -2351,7 +2351,6 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   // persister cross map-reload. Apply the overlay BEFORE spawning so NPCs
   // appear at their persisted position. Required pour ?nointro qui set Mom
   // à (4, 5) post-MoveMomToTV même si la map.json default est (2, 6).
-  const { gameState } = await import('./game-state');
   for (const template of templates) {
     const idKey = template.localIdRaw || `idx_${template.localId}`;
     const pos = GetObjectXY(currentMapId, idKey);

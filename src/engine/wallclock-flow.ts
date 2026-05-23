@@ -32,7 +32,6 @@
 
 import { gMain, getRuntime } from './decomp-globals';
 import { RtcCalcLocalTime, gLocalTime, RtcCalcLocalTimeOffset } from './rtc';
-import { gameState } from './game-state';
 import { FlagSet } from './script-vars';
 import { SignalWaitState } from './script-opcodes';
 

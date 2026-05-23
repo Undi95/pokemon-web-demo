@@ -31,18 +31,9 @@
  * extrait de items.h `.pocket = POCKET_X` par scripts/extract-items.mjs). On
  * convertit 'POCKET_X' string → pocketId number via `_pocketNameToId`.
  */
-// Side-effect import ESSENTIEL au boot : la chaîne ESM eager `save-system →
-// bag → game-state` doit charger game-state.ts. Sans cet import :
-//   - main.ts top-level ne s'exécute jamais (= boot stall silencieux après
-//     decomp-constants loaded).
-//   - Diag confirmé : `console.log` au top de main.ts n'apparaît pas → ESM
-//     init chain stall avant main.ts.
-//   - Vérifié POST cleanup de tous les dead imports `gameState` (= ce n'est
-//     pas un consumer qui dépend de window.gameState au boot).
-// La cause root reste à identifier (= probablement un cycle ESM dans la
-// chaîne d'init phaser → scenes → engine modules qui se résout grâce au
-// chargement early de game-state via cette ligne).
-// **NE PAS RETIRER** sauf si refactor profond ESM init chain.
+// Side-effect import : charge game-state.ts via la chaîne ESM eager
+// save-system → bag → game-state. Sans, le boot stall silencieusement après
+// decomp-constants (cause root non identifiée, dette explicite).
 import { gameState as _gameState } from './game-state';
 void _gameState;
 import { gSaveBlock1Ptr } from './save-block-state';

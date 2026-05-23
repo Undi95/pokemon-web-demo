@@ -27,7 +27,6 @@
  */
 
 import { registerSpecial } from './script-opcodes';
-import { gameState } from './game-state';
 import { FlagSet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';

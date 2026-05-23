@@ -20,7 +20,6 @@
  *   player-avatar.ts `PlayerStep` complete handler appelle `DoPerStepCallback()`.
  */
 
-import { gameState } from './game-state';
 import { FlagSet } from './script-vars';
 import { gSaveBlock1Ptr } from './save-block-state';
 

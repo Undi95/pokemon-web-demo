@@ -40,7 +40,6 @@
  *  Module leaf : importé par bag-menu-ctx (Medicine handler), pas l'inverse.
  */
 
-import { gameState } from './game-state';
 import { gSpecialVar } from './script-vars';
 import {
   ApplyMedicineEffect, PokemonUseItemEffects, GetItemEffectType,

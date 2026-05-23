@@ -435,7 +435,6 @@ export class GameScene extends Phaser.Scene {
     this.overworldTransitionStarted = true;
     console.log(`[GameScene] CB2_${mode === 'continue' ? 'ContinueSavedGame' : 'NewGame'} detected → TestOverworldScene (${mode})`);
     const { gSaveBlock2Ptr } = await import('../engine/save-block-state');
-    const { gameState } = await import('../engine/game-state');
     if (mode === 'continue') {
       // ⚠️ CRITICAL : LOAD la save AVANT de toucher gameState. Sinon
       // gameState est en état initial vide (= block1.flags={}, vars={}, etc.)

@@ -21,7 +21,6 @@
  * traite la chaîne vide '' comme ITEM_NONE.
  */
 
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import type { ItemSlot } from './bag';
 

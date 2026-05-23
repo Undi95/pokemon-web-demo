@@ -16,7 +16,7 @@
  * Phase 4.10 démo : indispensable pour tester rapidement le post-intro state
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
-import { gameState, SetSaveLocked } from './game-state';
+import { SetSaveLocked } from './save-system';
 import { FlagSet, VarSet } from './script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
 import { SetDynamicWarp } from './warp-system';

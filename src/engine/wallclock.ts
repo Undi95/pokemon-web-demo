@@ -54,7 +54,6 @@ import {
 } from './gba-menu-system';
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
 import { getString } from './gba-strings';
-import { gameState } from './game-state';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import { FlagSet } from './script-vars';

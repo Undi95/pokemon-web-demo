@@ -30,7 +30,6 @@ import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent,
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
-import { gameState } from './game-state';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
 import { GetCurrentMap } from './load_save';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';

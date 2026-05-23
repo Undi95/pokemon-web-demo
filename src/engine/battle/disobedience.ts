@@ -71,16 +71,15 @@ import { gPlayerParty as gPlayerParty_DSO, GetMonData as GetMonData_DSO, MON_DAT
 import { GET_BATTLER_SIDE as _GET_BATTLER_SIDE, B_SIDE_OPPONENT as B_SIDE_OPPONENT_LOCAL } from './constants';
 
 /** 1:1 décomp `IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c). Compare le
- *  trainerId du mon avec player TID stocké dans gSaveBlock2Ptr.playerTrainerId
- *  ET le name (= 7 chars). Si different → other trainer (= traded/event mon).
- *  Notre port : wire via gameState.player.trainerId. */
-import { gameState as _gameStateDSO } from '../game-state';
+ *  trainerId du mon avec `gSaveBlock2Ptr->playerTrainerId` ET le name (= 7
+ *  chars). Si different → other trainer (= traded/event mon). */
+import { gSaveBlock2Ptr } from '../save-block-state';
 function _IsOtherTrainer(otId: number, _otName: string): boolean {
   // 1:1 décomp : retourne 1 si TID OU OT name diffèrent, 0 si match.
-  const playerTID = _gameStateDSO.trainerId;
+  const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
   if (playerTID !== (otId >>> 0)) return true;
-  // OT name comparison via gameState.name (= 7 chars truncated).
-  // Pour Phase 1 single-tutorial, on assume name match si TID match.
+  // OT name comparison : 7 chars truncated. Phase 1 single-tutorial assume
+  // name match si TID match.
   return false;
 }
 

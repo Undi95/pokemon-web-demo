@@ -72,7 +72,6 @@ import {
 } from '../engine/player-avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
-import { gameState } from '../engine/game-state';
 import { CopyPartyAndObjectsFromSave, SetCurrentMap } from '../engine/load_save';
 import {
   SpawnObjectEventsOnMap,

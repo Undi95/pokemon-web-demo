@@ -20,7 +20,6 @@
 import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from './map-loader';
 import { GetPlayerFacingDirection } from './player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { gameState } from './game-state';
 import { VarGet } from './script-vars';
 import { DrawWholeMapView } from './field-camera';
 import {

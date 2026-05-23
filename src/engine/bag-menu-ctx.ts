@@ -34,7 +34,6 @@
 import type { DecompTask } from './decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';

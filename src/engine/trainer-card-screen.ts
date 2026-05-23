@@ -38,8 +38,8 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gameState } from './game-state';
 import { FlagGet } from './script-vars';
+import { gSaveBlock1Ptr } from './save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from './decomp-globals';
 import {
@@ -340,9 +340,10 @@ function _bufferCardData(): {
           | ((rawTid[1] ?? 0) << 8) | (rawTid[0] ?? 0)) >>> 0)
       : 0);
   const trainerId = tidU32 & 0xFFFF;  // ID public affiché "NºID /XXXXX"
-  const money = (gameState as unknown as { money?: number }).money ?? 0;
-  const allFlags = (gameState as unknown as { getAllFlagNames?: () => string[] })
-    .getAllFlagNames?.() ?? [];
+  // 1:1 décomp `gSaveBlock1Ptr->money` (= XOR'd avec encryptionKey dans
+  // ROM ; notre port stocke en clair).
+  const money = (gSaveBlock1Ptr.money as number | undefined) ?? 0;
+  const allFlags = Object.keys(gSaveBlock1Ptr.flags);
   let caughtMonsCount = 0;
   for (const f of allFlags) {
     if (f.endsWith('_CAUGHT')) caughtMonsCount++;

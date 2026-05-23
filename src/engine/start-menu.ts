@@ -60,7 +60,6 @@ import {
 } from './gba-menu-system';
 import { PlaySE, getRuntime, gMain } from './decomp-globals';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
-import { gameState } from './game-state';
 import { HasValidSave } from './save-system';
 import { bagContents } from './bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
