@@ -43,6 +43,20 @@ interface ShadowState {
 const _shadow: ShadowState = { spriteId: -1, oamIndex: -1, active: false };
 let _initialized = false;
 
+// ─── Reset hook : clear _shadow au ResetSpriteData ─────────────────────────
+// 1:1 décomp : sprite.c:294 ResetSpriteData set tous sprite.inUse=FALSE. Notre
+// port utilise un pool externe `_shadow` qui garde son spriteId stale apres
+// gSprites.clear(). Au prochain DestroyShadowSprite, ce spriteId pointe vers
+// un autre sprite (NPC respawn, etc.) -> set son inUse=false par erreur ->
+// CreateSpriteAtOam reutilise le slot avec shape/size du shadow (16x8) ->
+// ecrase ce sprite. Meme pattern bug que A1f/A1g.
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  callbacks.push(() => { _shadow.active = false; _shadow.spriteId = -1; _shadow.oamIndex = -1; });
+  g.__spriteResetCallbacks = callbacks;
+})();
+
 function pngTo1dObjLayoutShadow(charData: Uint8Array): Uint8Array {
   // shadow_medium.png = 16×8 = 2×1 tiles row-major. PNG bytes already in
   // tile-major format from loadIndexedPngStrict. Direct copy.

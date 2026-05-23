@@ -54,6 +54,18 @@ const POOL_SIZE = 2;  // = max 2 dust simultanés (= rare, jump séquentiel)
 const _pool: DustEffectState[] = [];
 let _initialized = false;
 
+// ─── Reset hook : clear _pool au ResetSpriteData ───────────────────────────
+// 1:1 décomp : sprite.c:294 ResetSpriteData set tous sprite.inUse=FALSE. Notre
+// port utilise un pool externe `_pool` qui garde ses spriteIds stale apres
+// gSprites.clear(). Au prochain tick/destroy, ces spriteIds pointent vers
+// d'autres sprites -> ecrasement par erreur. Meme pattern bug que A1f/A1g.
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  callbacks.push(() => { _pool.length = 0; });
+  g.__spriteResetCallbacks = callbacks;
+})();
+
 /** PNG layout 48×8 = 6×1 tiles. Each frame = 2×1 tiles consecutive.
  *  Frame F (= 0..2) → PNG tiles 2F, 2F+1. */
 function pngTo1dObjLayoutDust(charData: Uint8Array): Uint8Array {
