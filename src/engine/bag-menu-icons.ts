@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from './item-icon';
 import { gBagMenu } from './bag-menu';
-import { IndexOfSpritePaletteTag } from './sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag } from './sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
@@ -52,10 +52,15 @@ const POCKET_NONE = 0;
 function FreeSpriteTilesByTag(tag: number): void {
   _rtFreeSpriteTilesByTag(tag); // reclaim VRAM 1:1 (≠ simple Map.delete)
 }
-/** 1:1 décomp `FreeSpritePaletteByTag(tag)` (sprite.c). */
+/** 1:1 décomp `FreeSpritePaletteByTag(tag)` (sprite.c:1652-1657). Délègue à
+ *  la VRAIE impl sprite.ts qui clear sSpritePaletteTags[index] = TAG_NONE +
+ *  sync paletteTagToSlot Map. Sans clear de l'array primary, le prochain
+ *  LoadSpritePalette du même tag voit le slot toujours alloué via Index
+ *  OfSpritePaletteTag → return early sans re-charger la palette → icône
+ *  item rendue avec la palette du PRÉCÉDENT item (= bug user "POTION noire"
+ *  après scroll depuis ITEM_LIST_END/return_arrow). */
 function FreeSpritePaletteByTag(tag: number): void {
-  const rt = getRuntime() as unknown as { paletteTagToSlot?: Map<string, number> } | null;
-  rt?.paletteTagToSlot?.delete(String(tag));
+  _spFreeSpritePaletteByTag(tag);
 }
 
 /** 1:1 décomp `RemoveBagSprite(id)` (item_menu_icons.c:425) :
@@ -109,10 +114,32 @@ export function AddBagItemIconSprite(itemId: number, id: number): void {
   }
 }
 
-/** 1:1 décomp `RemoveBagItemIconSprite(id)` (item_menu_icons.c:555, branche
- *  non-BUGFIX) : `RemoveBagSprite(id + ITEMMENUSPRITE_ITEM)`. */
+/** 1:1 décomp `RemoveBagItemIconSprite(id)` (item_menu_icons.c:555-572,
+ *  branche **BUGFIX**) : libère les tags ITEM_ICON propres + destroy + hide
+ *  l'autre slot. La branche non-BUGFIX appelait `RemoveBagSprite(id+ITEMMENU
+ *  SPRITE_ITEM)` qui libère `(id+ITEMMENUSPRITE_ITEM)+TAG_BAG_GFX` au lieu
+ *  de `id+TAG_ITEM_ICON` (= MAUVAIS TAG) → la palette item reste prise
+ *  dans sSpritePaletteTags → next LoadSpritePalette voit existant → ne
+ *  re-charge PAS la palette du nouvel item → icône item rendue avec palette
+ *  du précédent (= user-bug "POTION noire" après scroll). */
 export function RemoveBagItemIconSprite(id: number): void {
-  RemoveBagSprite(id + ITEMMENUSPRITE_ITEM);
+  const bm = gBagMenu;
+  if (!bm) return;
+  // 1:1 :562-563 hide the OTHER slot avant de destroy le slot courant —
+  // évite le flicker 1-frame mentionné dans le commentaire décomp.
+  const otherSpriteId = bm.spriteIds[(id ^ 1) + ITEMMENUSPRITE_ITEM];
+  if (otherSpriteId !== SPRITE_NONE) {
+    const rt = getRuntime() as unknown as { setSpriteInvisible?: (id: number, v: boolean) => void } | null;
+    rt?.setSpriteInvisible?.(otherSpriteId, true);
+  }
+  // 1:1 :565-569 destroy le slot courant + libère ses tags ITEM_ICON propres.
+  const spriteId = bm.spriteIds[id + ITEMMENUSPRITE_ITEM];
+  if (spriteId !== SPRITE_NONE) {
+    FreeSpriteTilesByTag(id + TAG_ITEM_ICON);
+    FreeSpritePaletteByTag(id + TAG_ITEM_ICON);
+    DestroySprite(spriteId);
+    bm.spriteIds[id + ITEMMENUSPRITE_ITEM] = SPRITE_NONE;
+  }
 }
 
 // ─── Sprite sac (gender + animation par poche + shake affine) ────────────────
