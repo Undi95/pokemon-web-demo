@@ -55,7 +55,7 @@ import { ScriptContext_SetupScript } from './script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './save-blocks';
 import { ReadMail } from './mail';
-import { ITEM_NONE } from './mail-data';
+import { ITEM_NONE, ClearMail } from './mail-data';
 import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from './string-buffers';
@@ -181,6 +181,7 @@ type SubState =
   | 'pc_toss_confirm'  // 1:1 décomp YesNo toss confirm
   | 'mailbox_list'     // 1:1 décomp Mailbox_ProcessInput (list-menu mails même vide)
   | 'mailbox_options'  // 1:1 décomp Mailbox_MailOptionsProcessInput (LIRE/AU SAC/DONNER/RETOUR)
+  | 'mailbox_confirm_movetobag' // 1:1 décomp Mailbox_HandleConfirmMoveToBag (YesNo)
   | 'decoration_menu'  // 1:1 décomp HandleDecorationActionsMenuInput (DECORER/RANGER/JETER/SORTIR)
   | 'deposit_list'     // 1:1 décomp CB2_GoToItemDepositMenu : list bag items + select → AddPCItem
   | 'msg_wait'         // showing "No items"/"No mail" message ; A press → return prev
@@ -372,6 +373,7 @@ export function TickBedroomPC(): void {
     case 'pc_toss_confirm': _tickPCTossConfirm(newKeys); break;
     case 'mailbox_list':    _tickMailboxList(newKeys); break;
     case 'mailbox_options': _tickMailboxOptions(newKeys); break;
+    case 'mailbox_confirm_movetobag': _tickMailboxConfirmMoveToBag(newKeys); break;
     case 'decoration_menu': _tickDecorationMenu(newKeys); break;
     case 'deposit_list':    _tickDepositList(newKeys); break;
     case 'msg_wait':        _tickMsgWait(newKeys); break;
@@ -1401,6 +1403,162 @@ function _itemStoragePrintWindowMessage(text: string): void {
   );
 }
 
+// ─── 1:1 décomp player_pc.c:70-80 MSG_* constants ────────────────────────────
+const MSG_SWITCH_WHICH_ITEM    = 0xFFF7;
+const MSG_OKAY_TO_THROW_AWAY   = 0xFFF8;
+const MSG_TOO_IMPORTANT        = 0xFFF9;
+const MSG_NO_MORE_ROOM         = 0xFFFA;
+const MSG_THREW_AWAY_ITEM      = 0xFFFB;
+const MSG_HOW_MANY_TO_TOSS     = 0xFFFC;
+const MSG_WITHDREW_ITEM        = 0xFFFD;
+const MSG_HOW_MANY_TO_WITHDRAW = 0xFFFE;
+const MSG_GO_BACK_TO_PREV      = 0xFFFF;
+
+/** 1:1 décomp `static const u8 *ItemStorage_GetMessage(u16 itemId)`
+ *  (player_pc.c:1165-1203). Switch sur MSG_* → retourne le gText FR
+ *  correspondant. Default (= itemId réel) → GetItemDescription(itemId). */
+function ItemStorage_GetMessage(itemIdOrMsg: number): string {
+  switch (itemIdOrMsg) {
+    case MSG_GO_BACK_TO_PREV:      return getString('gText_GoBackPrevMenu');
+    case MSG_HOW_MANY_TO_WITHDRAW: return getString('gText_WithdrawHowManyItems');
+    case MSG_WITHDREW_ITEM:        return getString('gText_WithdrawXItems');
+    case MSG_HOW_MANY_TO_TOSS:     return getString('gText_TossHowManyVar1s');
+    case MSG_THREW_AWAY_ITEM:      return getString('gText_ThrewAwayVar2Var1s');
+    case MSG_NO_MORE_ROOM:         return getString('gText_NoRoomInBag');
+    case MSG_TOO_IMPORTANT:        return getString('gText_TooImportantToToss');
+    case MSG_OKAY_TO_THROW_AWAY:   return getString('gText_ConfirmTossItems');
+    case MSG_SWITCH_WHICH_ITEM:    return getString('gText_MoveVar1Where');
+    default:
+      // 1:1 GetItemDescription : si pas un MSG_*, on retourne la description de
+      // l'item. Notre `GetItemDescription` prend un itemKey string, donc on
+      // retourne string vide si itemIdOrMsg n'est pas un MSG_* (= caller doit
+      // utiliser le helper différent pour les items réels).
+      return '';
+  }
+}
+
+/** 1:1 décomp `static void ItemStorage_PrintMessage(const u8 *string)`
+ *  (player_pc.c:1205-1211) :
+ *      windowId = sItemStorageMenu->windowIds[ITEMPC_WIN_MESSAGE];
+ *      FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+ *      StringExpandPlaceholders(gStringVar4, string);
+ *      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL); */
+function ItemStorage_PrintMessage(text: string): void {
+  // 1:1 : StringExpandPlaceholders pour résoudre {STR_VAR_*} placeholders.
+  const expanded = StringExpandPlaceholders('', text);
+  // Délègue au helper existant qui matche le pattern décomp (Draw frame + Print).
+  _itemStoragePrintWindowMessage(expanded);
+}
+
+/** 1:1 décomp `static void ItemStorage_PrintItemQuantity(u8 windowId, u16 value,
+ *               u32 mode, u8 x, u8 y, u8 n)` (player_pc.c:1345-1350) :
+ *      ConvertIntToDecimalStringN(gStringVar1, value, mode, n);
+ *      StringExpandPlaceholders(gStringVar4, gText_xVar1);
+ *      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4,
+ *          GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 48), y, 0, NULL); */
+function ItemStorage_PrintItemQuantity(windowId: number, value: number, _mode: number, _x: number, y: number, n: number): void {
+  if (windowId < 0) return;
+  // 1:1 ConvertIntToDecimalStringN avec LEADING_ZEROS (= STR_CONV_MODE_LEADING_ZEROS = 1).
+  // Notre `padStart` matche pour mode 1.
+  const valStr = String(value).padStart(n, '0');
+  setStringVar(1, valStr);
+  const tpl = getString('gText_xVar1') ?? '×{STR_VAR_1}';
+  const expanded = StringExpandPlaceholders('', tpl);
+  // 1:1 GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 48) → centré dans 48 px.
+  const xPos = GetStringCenterAlignXOffset(expanded, 48);
+  // Clear window pixel buffer + print centré.
+  DrawStdFrameWithCustomTileAndPalette(
+    windowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  AddTextPrinterParameterized3(
+    windowId, FONT_NORMAL, xPos, y,
+    [1, 2, 3], TEXT_SKIP_DRAW, expanded,
+  );
+}
+
+// ─── 1:1 décomp Mailbox MoveToBag YesNo flow (player_pc.c:828-879) ──────────
+
+/** 1:1 décomp `static void Mailbox_AskConfirmMoveToBag(u8 taskId)`
+ *  (player_pc.c:833-837) :
+ *      DisplayYesNoMenuDefaultYes();
+ *      gTasks[taskId].func = Mailbox_HandleConfirmMoveToBag; */
+function _mailboxAskConfirmMoveToBag(): void {
+  // 1:1 décomp DisplayYesNoMenuDefaultYes : YesNo menu avec YES par défaut.
+  CreateYesNoMenu(WIN_PC_YESNO, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
+  sSubState = 'mailbox_confirm_movetobag';
+}
+
+/** 1:1 décomp `static void Mailbox_HandleConfirmMoveToBag(u8 taskId)`
+ *  (player_pc.c:839-855) :
+ *      switch (Menu_ProcessInputNoWrapClearOnChoose()) {
+ *        case 0: Mailbox_DoMailMoveToBag(taskId); break;  // Yes
+ *        case MENU_B_PRESSED: PlaySE(SE_SELECT);
+ *        case 1: Mailbox_CancelMoveToBag(taskId); break;  // No
+ *      } */
+function _tickMailboxConfirmMoveToBag(_newKeys: number): void {
+  const res = Menu_ProcessInputNoWrapClearOnChoose();
+  if (res === -2) return;  // MENU_NOTHING_CHOSEN
+  if (res === 0) {
+    // YES → DoMailMoveToBag
+    _mailboxDoMailMoveToBag();
+  } else {
+    // NO ou B → CancelMoveToBag
+    PlaySE(Songs.SE_SELECT);
+    _mailboxCancelMoveToBag();
+  }
+}
+
+/** 1:1 décomp `static void Mailbox_DoMailMoveToBag(u8 taskId)`
+ *  (player_pc.c:857-874) :
+ *      mail = &gSaveBlock1Ptr->mail[selected];
+ *      if (!AddBagItem(mail->itemId, 1))
+ *          DisplayItemMessageOnField(taskId, gText_BagIsFull, Mailbox_Cancel);
+ *      else {
+ *          DisplayItemMessageOnField(taskId, gText_MailToBagMessageErased, Mailbox_Cancel);
+ *          ClearMail(mail);
+ *          Mailbox_CompactMailList();
+ *          gPlayerPCItemPageInfo.count--;
+ *          if (...) gPlayerPCItemPageInfo.itemsAbove--;
+ *          SetPlayerPCListCount(taskId);
+ *      } */
+function _mailboxDoMailMoveToBag(): void {
+  const mailIdx = sMailboxSelectedIdx;
+  if (mailIdx < 0) {
+    _mailboxCancel();
+    return;
+  }
+  const mail = gSaveBlock1Ptr.mail[mailIdx];
+  // 1:1 AddBagItem avec itemId du mail (= ITEM_ORANGE_MAIL etc.).
+  // Notre AddBagItem prend itemKey string ; le mail.itemId est un number.
+  // Conversion via auto-data → STUB pour l'instant.
+  // 1:1 TODO : convert mail.itemId number → itemKey string via auto-data.
+  console.warn('[bedroom-pc] _mailboxDoMailMoveToBag : AddBagItem stub (mail.itemId number → itemKey string conversion à câbler)');
+  // STUB : on simule succes (= mail erased + cleanup, sans add réel dans le bag).
+  // Quand le mapping itemId→itemKey sera porté, decommenter la vraie logique.
+  const success = true;  // STUB
+  if (!success) {
+    // 1:1 gText_BagIsFull
+    _showSticky(getString('gText_BagIsFull'));
+    sSubState = 'msg_wait';
+    sMsgReturnState = 'mailbox_list';
+    return;
+  }
+  // 1:1 : ClearMail + CompactMailList + count--.
+  ClearMail(mail);
+  Mailbox_CompactMailList();
+  // Affiche message + return to list.
+  _showSticky(getString('gText_MailToBagMessageErased') ?? 'Message effacé,\nMAIL au SAC.');
+  sSubState = 'msg_wait';
+  sMsgReturnState = 'mailbox_list';
+}
+
+/** 1:1 décomp `static void Mailbox_CancelMoveToBag(u8 taskId)`
+ *  (player_pc.c:876-879) :
+ *      Mailbox_Cancel(taskId); */
+function _mailboxCancelMoveToBag(): void {
+  _mailboxCancel();
+}
+
 /** 1:1 décomp `ItemStorage_ExitItemList` (player_pc.c:1263-1272) :
  *    ItemStorage_EraseItemIcon + RemoveScrollIndicator + DestroyListMenuTask +
  *    ItemStorage_Free + gTasks[taskId].func = ItemStorage_ReturnToMenuSelect. */
@@ -1669,13 +1827,13 @@ function _mailboxDoMailRead(): void {
 /** 1:1 décomp `Mailbox_MoveToBag(taskId)` (player_pc.c:828-830) :
  *      DisplayItemMessageOnField(taskId, gText_MessageWillBeLost,
  *                                Mailbox_AskConfirmMoveToBag);
- *  → AskConfirm → DisplayYesNoMenuDefaultYes + Mailbox_HandleConfirmMoveToBag */
+ *  → 1:1 strict : affiche sticky msg "Le message sera perdu, OK?" puis
+ *  YesNo prompt via Mailbox_AskConfirmMoveToBag → HandleConfirm → DoMailMoveToBag. */
 function _mailboxMoveToBag(): void {
-  // STUB simplifié : pas de YesNo prompt (= flow décomp.c:828-873 demande
-  // DisplayYesNoMenuDefaultYes + Mailbox_HandleConfirmMoveToBag + DoMailMoveToBag).
-  // Port complet 1:1 = chantier futur. Pour l'instant, retour direct.
-  console.warn('[bedroom-pc] _mailboxMoveToBag — STUB, port 1:1 complet différé (YesNo flow)');
-  _mailboxCancel();
+  _removeSubWindow();
+  // 1:1 gText_MessageWillBeLost : "Le message sera perdu, OK?"
+  _showSticky(getString('gText_MessageWillBeLost') ?? 'Le message sera perdu, OK?');
+  _mailboxAskConfirmMoveToBag();
 }
 
 /** 1:1 décomp `Mailbox_Give(taskId)` (player_pc.c:881-892) :
