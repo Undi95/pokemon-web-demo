@@ -29,7 +29,7 @@
 import { assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette } from './decomp-globals';
 import { CpuCopy16 } from './decomp-bridge';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
-import { IndexOfSpritePaletteTag } from './sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
 
 // 1:1 décomp `#define MAX_SPRITES 64` (sprite.h) — retour échec AddItemIcon.
 export const MAX_SPRITES = 64;
@@ -143,14 +143,11 @@ export function AddItemIconSprite(tilesTag: number, paletteTag: number, itemKey:
   // (item_icon.c:23) = SPRITE_SHAPE(32x32)=square(0) SIZE(32x32)=2 4BPP prio1.
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteSheetTagToTileStart?: Map<string, number>;
-    paletteTagToSlot?: Map<string, number>;
   } | null;
   if (!rt) return MAX_SPRITES;
-  const tileStart = rt.spriteSheetTagToTileStart?.get(String(tilesTag)) ?? 0;
-  // 1:1 STRICT décomp `IndexOfSpritePaletteTag(paletteTag)` (sprite.c:1637-1645) :
-  // scan sSpritePaletteTags array primary, PAS la Map secondary qui peut être
-  // désync → fallback bag palette (verte) au lieu de la vraie palette item icon.
+  // 1:1 STRICT lookups via array primary (sprite.c:1542 + :1637).
+  const tileStartRaw = GetSpriteTileStartByTag(tilesTag);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
   const palBankRaw = IndexOfSpritePaletteTag(paletteTag);
   const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
   const { spriteId } = rt.CreateSpriteAtOam({

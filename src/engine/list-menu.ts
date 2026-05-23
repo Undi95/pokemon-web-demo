@@ -60,7 +60,7 @@ import {
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
 } from './decomp-globals';
-import { IndexOfSpritePaletteTag } from './sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from './sprite';
 import { gSineTable } from './decomp-helpers';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
@@ -1104,13 +1104,12 @@ function _freeSpriteTilesByTag(tag: number): void {
   _rtFreeSpriteTilesByTag(tag); // reclaim VRAM 1:1 (≠ simple Map.delete)
 }
 
-/** 1:1 SÉMANTIQUE décomp `FreeSpritePaletteByTag(tag)` (sprite.c) — idem,
- *  modèle `rt.paletteTagToSlot`. (Inatteignable en pratique : ListMenuAdd
- *  CursorObject fixe palTag=TAG_NONE list_menu.c:671 ; porté 1:1 pour la
- *  garde `if palTag != TAG_NONE` et un éventuel appelant tiers.) */
+/** 1:1 STRICT décomp `FreeSpritePaletteByTag(tag)` (sprite.c:1652-1657) :
+ *  clear sSpritePaletteTags[index] = TAG_NONE via sprite.ts. (Inatteignable
+ *  en pratique : ListMenuAddCursorObject fixe palTag=TAG_NONE list_menu.c:671 ;
+ *  porté 1:1 pour la garde `if palTag != TAG_NONE` et un éventuel appelant tiers.) */
 function _freeSpritePaletteByTag(tag: number): void {
-  const rt = getRuntime() as unknown as { paletteTagToSlot?: Map<string, number> } | null;
-  rt?.paletteTagToSlot?.delete(String(tag));
+  _spriteFreeSpritePaletteByTag(tag);
 }
 
 /** Accès runtime sprite (1:1 `gSprites[id]`). */
@@ -1154,9 +1153,10 @@ function ListMenuAddRedOutlineCursorObject(cursor: CursorStruct): number {
   // tileStart, pal = palNum, shape/size 8x8 (le rendu = subsprites).
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteSheetTagToTileStart?: Map<string, number>;
   };
-  const tileStart = rt.spriteSheetTagToTileStart?.get(String(cursor.tileTag)) ?? 0;
+  // 1:1 STRICT lookup via array primary (sprite.c:1542).
+  const tileStartRaw = GetSpriteTileStartByTag(cursor.tileTag);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileStart, paletteBank: cursor.palNum,
     x: cursor.left + 120, y: cursor.top + 120,
@@ -1222,9 +1222,10 @@ function ListMenuAddRedArrowCursorObject(cursor: CursorStruct): number {
   // avec tileTag/paletteTag custom ; CreateSprite(&tpl, left, top, 0).
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteSheetTagToTileStart?: Map<string, number>;
   };
-  const tileStart = rt.spriteSheetTagToTileStart?.get(String(cursor.tileTag)) ?? 0;
+  // 1:1 STRICT lookup via array primary (sprite.c:1542).
+  const tileStartRaw = GetSpriteTileStartByTag(cursor.tileTag);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileStart, paletteBank: cursor.palNum,
     x: cursor.left, y: cursor.top,
@@ -1447,14 +1448,10 @@ function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, t
   // sinon paletteBank 0 = palette BG = flèches non rouges, bug A/B user).
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteSheetTagToTileStart?: Map<string, number>;
-    paletteTagToSlot?: Map<string, number>;
   };
-  const tileStart = rt.spriteSheetTagToTileStart?.get(String(tileTag)) ?? 0;
-  // 1:1 STRICT décomp `IndexOfSpritePaletteTag(palTag)` (sprite.c:1637-1645) :
-  // scan sSpritePaletteTags array primary, PAS la Map secondary qui peut être
-  // désync (= bug observé : la Map n'avait que "100" et "109" mais l'array
-  // avait 5+ tags additionnels → chevrons rendus avec palette bag verte).
+  // 1:1 STRICT lookups via array primary (sprite.c:1542 + :1637-1645).
+  const tileStartRaw = GetSpriteTileStartByTag(tileTag);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
   const palBankRaw = IndexOfSpritePaletteTag(palTag);
   const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
   // 1:1 décomp sSpriteAnimTable_ScrollArrowIndicator (list_menu.c:128-149) :

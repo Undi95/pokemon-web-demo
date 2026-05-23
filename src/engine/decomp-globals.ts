@@ -65,6 +65,8 @@ import {
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
   IndexOfSpriteTileTag as _IndexOfSpriteTileTag_1to1,
   _freeSpriteTileRangeByTag as _FreeSpriteTileRangeByTag_1to1,
+  MarkObjPaletteAllocated as _MarkObjPaletteAllocated_1to1,
+  MarkObjTilesAllocated as _MarkObjTilesAllocated_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
@@ -116,6 +118,10 @@ export function setGlobalRuntime(rt: DecompRuntime): void {
     GetSpriteTileStartByTag: _GetSpriteTileStartByTag_1to1,
     IndexOfSpriteTileTag: _IndexOfSpriteTileTag_1to1,
     AllocSpriteTileRange: _AllocSpriteTileRange_1to1,
+    // Helpers d'allocation sync arrays primary (= utilisés par les sites
+    // qui écrivent raw OBJ VRAM / palette sans passer par LoadSpriteSheet/Palette).
+    MarkObjPaletteAllocated: _MarkObjPaletteAllocated_1to1,
+    MarkObjTilesAllocated: _MarkObjTilesAllocated_1to1,
     // 1:1 STRICT décomp EWRAM static arrays (Phase 1)
     sSpritePaletteTags: _sSpritePaletteTags,
     sSpriteTileRangeTags: _sSpriteTileRangeTags,
@@ -1837,10 +1843,14 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
         }
       }
     }
-    r.spriteSheetTagToTileStart.set(tagStr, sheet.targetTileBase);
+    // 1:1 STRICT register tag dans sSpriteTileRangeTags array primary.
+    // copySize >> 5 = tile count. Si sheet.size != copySize (= bytes clamped
+    // par OBJ VRAM end), on prend copySize comme source authentique.
+    _AllocSpriteTileRange_1to1(sheet.tag, sheet.targetTileBase, copySize >> 5);
     return;
   }
-  if (r.spriteSheetTagToTileStart.has(tagStr)) return;
+  // 1:1 STRICT check existing via GetSpriteTileStartByTag array primary.
+  if (_GetSpriteTileStartByTag_1to1(sheet.tag) !== 0xFFFF) return;
   const needed = bytes.length;
   const tileCount = needed >> 5;  // bytes / 32 = tiles 4bpp
   // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet :
@@ -1869,16 +1879,9 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
  *  Source unique = sSpriteTileRangeTags array primary (1:1 STRICT). Lecture
  *  des coords via GetSpriteTileStartByTag (= sprite.c:1542) au lieu de Map. */
 export function FreeSpriteTilesByTag(tag: string | number): void {
-  const r = rt();
-  const tagStr = String(tag);
-  // 1:1 STRICT lecture array primary pour le reclaim queue (= legacy fallback).
-  const tileStart = _GetSpriteTileStartByTag_1to1(tag);
-  const size = r.spriteSheetTagToByteSize.get(tagStr);
-  if (tileStart !== 0xFFFF && size !== undefined && size > 0)
-    r.freedSpriteTileRanges.push({ offset: tileStart << 5, size });
-  r.spriteSheetTagToTileStart.delete(tagStr);
-  r.spriteSheetTagToByteSize.delete(tagStr);
-  // 1:1 STRICT : clear sSpriteTileRangeTags + sSpriteTileRanges + bitmap.
+  // 1:1 STRICT décomp sprite.c:1509-1529 : IndexOfSpriteTileTag → clear bits
+  // bitmap + sSpriteTileRangeTags[index] = TAG_NONE. _FreeSpriteTileRangeByTag
+  // dans sprite.ts encapsule le tout via array primary.
   _FreeSpriteTileRangeByTag_1to1(tag);
 }
 
@@ -1893,12 +1896,13 @@ export function FreeSpriteTilesByTag(tag: string | number): void {
 export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string | number }>): void {
   _LoadSpritePalettes_1to1(palettes);
 }
-/** Reset des allocations OBJ slots (à call entre 2 scènes). */
+/** Reset des allocations OBJ slots (à call entre 2 scènes).
+ *  1:1 STRICT : tout passe par les arrays primary sprite.ts (= FreeSpriteTileRanges
+ *  + FreeAllSpritePalettes). nextSpriteSheetByteOffset gardé pour les sites
+ *  legacy qui utilisent encore le cursor (= migration A2 à venir). */
 export function resetObjAllocations(): void {
   const r = rt();
   r.nextSpriteSheetByteOffset = 0;
-  r.nextObjPalSlot = 0;
-  r.spriteSheetTagToByteSize.clear();
   r.freedSpriteTileRanges.length = 0;
 }
 

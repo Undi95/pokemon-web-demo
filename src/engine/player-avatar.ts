@@ -524,10 +524,6 @@ export async function InitPlayerAvatar(
   // player à offset ≠ 0 → sprite OAM tileId=0 lit ancien bag sprite → NOIR.
   rt.nextSpriteSheetByteOffset = 0;
   rt.freedSpriteTileRanges.length = 0;
-  rt.spriteSheetTagToTileStart.clear();
-  rt.spriteSheetTagToByteSize.clear();
-  rt.paletteTagToSlot.clear();
-  rt.nextObjPalSlot = 0;
   setReservedSpriteTileCount(0);
   setReservedSpritePaletteCount_helper(0);
   // 1:1 STRICT clear arrays primary storage + bitmap (= ce que ResetSpriteData

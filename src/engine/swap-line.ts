@@ -25,7 +25,7 @@ import {
 } from './decomp-globals';
 import { DestroySprite, StartSpriteAnim } from './decomp-bridge';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
-import { IndexOfSpritePaletteTag } from './sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
 
 // 1:1 décomp menu_helpers.c:20 — TAG_SWAP_LINE 109.
 const TAG_SWAP_LINE = 109;
@@ -99,14 +99,13 @@ export function CreateSwapLineSprites(spriteIds: number[], baseIdx: number, coun
   _registerSwapLineAnimsIfNeeded();
   const rt = getRuntime() as unknown as {
     CreateSpriteAtOam: (c: Record<string, number>) => { spriteId: number };
-    spriteSheetTagToTileStart?: Map<string, number>;
-    paletteTagToSlot?: Map<string, number>;
     spriteAnimStatesRegister: (id: number, name: string, idx: number, base: number) => void;
     setSpriteInvisible: (id: number, invisible: boolean) => void;
   } | null;
   if (!rt) return;
-  const tileStart = rt.spriteSheetTagToTileStart?.get(String(TAG_SWAP_LINE)) ?? 0;
-  // 1:1 STRICT décomp IndexOfSpritePaletteTag (sprite.c:1637-1645).
+  // 1:1 STRICT lookups via array primary (sprite.c:1542 + :1637).
+  const tileStartRaw = GetSpriteTileStartByTag(TAG_SWAP_LINE);
+  const tileStart = tileStartRaw === 0xFFFF ? 0 : tileStartRaw;
   const palBankRaw = IndexOfSpritePaletteTag(TAG_SWAP_LINE);
   const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
   for (let i = 0; i < count; i++) {

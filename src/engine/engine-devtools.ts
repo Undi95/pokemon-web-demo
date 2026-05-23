@@ -101,10 +101,13 @@ interface SaveState {
   gTasks: Array<[number, { data: number[]; func: ((task: any) => void) | null; taskId: number }]>;
   gPaletteFade: Record<string, unknown>;
   gMain: { callback2: ((rt: DecompRuntime) => void) | null; state: number; heldKeys: number; newKeys: number };
-  spriteSheetTagToTileStart: Array<[string, number]>;
-  paletteTagToSlot: Array<[string, number]>;
+  // 1:1 STRICT arrays primary snapshot (Phase A3 cleanup : Maps secondaires
+  // retirées, sources uniques = sSprite{Palette,TileRange}Tags + ranges + bitmap).
+  sSpritePaletteTags: Uint16Array;
+  sSpriteTileRangeTags: Uint16Array;
+  sSpriteTileRanges: Uint16Array;
+  sSpriteTileAllocBitmap: Uint8Array;
   nextSpriteSheetByteOffset: number;
-  nextObjPalSlot: number;
   frameCounter: number;
 }
 
@@ -182,16 +185,29 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       gTasks: Array.from(rt.gTasks.entries()).map(([id, t]) => [id, { taskId: t.taskId, data: Array.from(t.data || []), func: t.func }]),
       gPaletteFade: { ...rt.gPaletteFade },
       gMain: { callback2: rt.gMain.callback2, state: rt.gMain.state, heldKeys: rt.gMain.heldKeys, newKeys: rt.gMain.newKeys },
-      spriteSheetTagToTileStart: Array.from(rt.spriteSheetTagToTileStart.entries()),
-      paletteTagToSlot: Array.from(rt.paletteTagToSlot.entries()),
+      // 1:1 STRICT arrays primary snapshot via globalThis.__sprite.
+      sSpritePaletteTags: new Uint16Array(16),
+      sSpriteTileRangeTags: new Uint16Array(64),
+      sSpriteTileRanges: new Uint16Array(128),
+      sSpriteTileAllocBitmap: new Uint8Array(128),
       nextSpriteSheetByteOffset: rt.nextSpriteSheetByteOffset,
-      nextObjPalSlot: rt.nextObjPalSlot,
       frameCounter: rt.gIntroFrameCounter,
     };
     for (let i = 0; i < 512; i++) {
       ss.pltUnfaded[i] = rt.gPlttBufferUnfaded.get(i);
       ss.pltFaded[i] = rt.gPlttBufferFaded.get(i);
     }
+    // 1:1 STRICT capture des arrays primary via globalThis.__sprite.
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      sSpritePaletteTags?: Uint16Array;
+      sSpriteTileRangeTags?: Uint16Array;
+      sSpriteTileRanges?: Uint16Array;
+      sSpriteTileAllocBitmap?: Uint8Array;
+    } | undefined;
+    if (sp?.sSpritePaletteTags) ss.sSpritePaletteTags.set(sp.sSpritePaletteTags);
+    if (sp?.sSpriteTileRangeTags) ss.sSpriteTileRangeTags.set(sp.sSpriteTileRangeTags);
+    if (sp?.sSpriteTileRanges) ss.sSpriteTileRanges.set(sp.sSpriteTileRanges);
+    if (sp?.sSpriteTileAllocBitmap) ss.sSpriteTileAllocBitmap.set(sp.sSpriteTileAllocBitmap);
     savestates.set(name, ss);
     return `saved '${name}' (frame=${ss.frameCounter}, sprites=${ss.gSprites.length}, tasks=${ss.gTasks.length})`;
   };
@@ -226,12 +242,18 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     Object.assign(rt.gPaletteFade, ss.gPaletteFade);
     rt.gMain.callback2 = ss.gMain.callback2;
     rt.gMain.state = ss.gMain.state;
-    rt.spriteSheetTagToTileStart.clear();
-    for (const [k, v] of ss.spriteSheetTagToTileStart) rt.spriteSheetTagToTileStart.set(k, v);
-    rt.paletteTagToSlot.clear();
-    for (const [k, v] of ss.paletteTagToSlot) rt.paletteTagToSlot.set(k, v);
+    // 1:1 STRICT restore des arrays primary via globalThis.__sprite.
+    const spR = (globalThis as Record<string, unknown>).__sprite as {
+      sSpritePaletteTags?: Uint16Array;
+      sSpriteTileRangeTags?: Uint16Array;
+      sSpriteTileRanges?: Uint16Array;
+      sSpriteTileAllocBitmap?: Uint8Array;
+    } | undefined;
+    if (spR?.sSpritePaletteTags) spR.sSpritePaletteTags.set(ss.sSpritePaletteTags);
+    if (spR?.sSpriteTileRangeTags) spR.sSpriteTileRangeTags.set(ss.sSpriteTileRangeTags);
+    if (spR?.sSpriteTileRanges) spR.sSpriteTileRanges.set(ss.sSpriteTileRanges);
+    if (spR?.sSpriteTileAllocBitmap) spR.sSpriteTileAllocBitmap.set(ss.sSpriteTileAllocBitmap);
     rt.nextSpriteSheetByteOffset = ss.nextSpriteSheetByteOffset;
-    rt.nextObjPalSlot = ss.nextObjPalSlot;
     rt.gIntroFrameCounter = ss.frameCounter;
     return `loaded '${name}' (frame=${ss.frameCounter}, sprites=${ss.gSprites.length}, tasks=${ss.gTasks.length})`;
   };

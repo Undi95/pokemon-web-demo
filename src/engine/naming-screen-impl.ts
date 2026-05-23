@@ -534,7 +534,8 @@ async function loadNamingScreenAssets(): Promise<void> {
       { url: BASE + 'buttons.pal', tag: PALTAG_OK_BUTTON },
     ];
     for (const e of palLoadOrder) {
-      if (rt.paletteTagToSlot.has(e.tag)) continue;
+      // 1:1 STRICT lookup via sSpritePaletteTags array primary (sprite.c:1637).
+      if (IndexOfSpritePaletteTag(e.tag) !== 0xFF) continue;
       const pal = await loadGbaPal(e.url);
       // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free
       // dans [gReservedSpritePaletteCount, 16). Avant : `nextObjPalSlot++` raw
@@ -778,15 +779,9 @@ function CB2_LoadNamingScreen(): void {
     case 3:
       rt.ResetSpriteData();
       FreeAllSpritePalettes();
-      // Reset OBJ pal slot allocator + sprite sheet allocator (= 1:1 décomp
-      // ResetSpriteData clears these too, but we don't reset them in our
-      // ResetSpriteData → do explicitly here, otherwise the NamingScreen
-      // sprite tags get assigned slot numbers above 8 due to leftover
-      // allocations from the Birch flow).
-      rt.nextObjPalSlot = 0;
+      // 1:1 STRICT cleanup : Maps secondaires retirées, source unique = arrays
+      // primary sprite.ts. nextSpriteSheetByteOffset gardé (= migration A2).
       rt.nextSpriteSheetByteOffset = 0;
-      rt.paletteTagToSlot.clear();
-      rt.spriteSheetTagToTileStart.clear();
       _assetsLoaded = false;  // force reload (= fresh slot/tile assignments)
       clearAllSubspriteTables();
       rt.gMain.state++;

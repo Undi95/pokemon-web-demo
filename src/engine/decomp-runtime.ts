@@ -525,15 +525,11 @@ export class DecompRuntime {
     this.gba.bg(bgIdx).config.affineRefY = y;
   }
 
-  /** paletteTag (e.g. 'PALTAG_LOGO') → OBJ palette slot (0-15).
-   *  Rempli par LoadSpritePalettesFromTable(). Permet de résoudre paletteTag → bank
-   *  pour CreateSpriteFromTemplate au lieu de hardcoder. */
-  paletteTagToSlot = new Map<string, number>();
-  /** tileTag (e.g. 'GFXTAG_DROPS_LOGO') → tileNum start dans objVram.
-   *  Rempli par LoadCompressedSpriteSheetsFromTable(). */
-  spriteSheetTagToTileStart = new Map<string, number>();
-  /** tag → taille octets allouée (pour reclaim sur FreeSpriteTilesByTag). */
-  spriteSheetTagToByteSize = new Map<string, number>();
+  // Phase A3 cleanup : Maps secondaires `paletteTagToSlot` / `spriteSheet
+  // TagToTileStart` / `spriteSheetTagToByteSize` retirées. Source UNIQUE de
+  // vérité = sSpritePaletteTags + sSpriteTileRangeTags arrays primary
+  // (1:1 STRICT décomp sprite.c). Tous les lookups passent par sprite.ts
+  // helpers : IndexOfSpritePaletteTag, GetSpriteTileStartByTag.
   /** Plages OBJ VRAM libérées (FreeSpriteTilesByTag) réutilisables par
    *  LoadCompressedSpriteSheet (= 1:1-net décomp AllocSpriteTiles/Free
    *  SpriteTiles bitmap : reclaim au free, reuse à l'alloc — sinon le
@@ -1689,8 +1685,6 @@ export class DecompRuntime {
     this.nextOamSlot = 0;
     this.nextSpriteId = 0;
     // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM)
-    this.spriteSheetTagToTileStart.clear();
-    this.spriteSheetTagToByteSize.clear();
     this.freedSpriteTileRanges.length = 0;
     this.nextSpriteSheetByteOffset = 0;
     // 1:1 STRICT décomp sprite.c:294-306 ResetSpriteData : aussi reset les
@@ -1751,6 +1745,14 @@ export class DecompRuntime {
       console.warn(`[runtime] LoadSpritePalettesFromTable: table ${tableName} not found in SPRITE_PALETTES`);
       return;
     }
+    // 1:1 STRICT décomp sprite.c LoadSpritePalettes loop : pour chaque entry,
+    // check existing tag (early return) ; sinon find first-free dans
+    // [gReservedSpritePaletteCount, 16) via sSpritePaletteTags array primary ;
+    // load palette + register tag.
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      IndexOfSpritePaletteTag?: (tag: string | number) => number;
+      sSpritePaletteTags?: Uint16Array;
+    } | undefined;
     for (const entry of table.entries) {
       const url = resolveUrl(entry.paletteName);
       if (!url) {
@@ -1758,14 +1760,15 @@ export class DecompRuntime {
         continue;
       }
       // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
-      if (this.paletteTagToSlot.has(entry.tag)) continue;
-      // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) = scan first-free.
+      if (sp?.IndexOfSpritePaletteTag?.(entry.tag) !== 0xFF) continue;
+      // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) =
+      // scan first-free dans [gReservedSpritePaletteCount, 16) via array primary.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-      const used = new Set<number>();
-      for (const s of this.paletteTagToSlot.values()) used.add(s);
       let slot = -1;
-      for (let i = reserved; i < 16; i++) {
-        if (!used.has(i)) { slot = i; break; }
+      if (sp?.sSpritePaletteTags) {
+        for (let i = reserved; i < 16; i++) {
+          if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
+        }
       }
       if (slot < 0) {
         console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${entry.tag}`);
@@ -1779,8 +1782,11 @@ export class DecompRuntime {
         } else {
           await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
         }
-        this.paletteTagToSlot.set(entry.tag, slot);
-        if (slot + 1 > this.nextObjPalSlot) this.nextObjPalSlot = slot + 1;
+        // 1:1 STRICT register tag via sSpritePaletteTags array primary.
+        const markPal = (globalThis as Record<string, unknown>).__sprite as {
+          MarkObjPaletteAllocated?: (slot: number, tag: string | number) => void;
+        } | undefined;
+        markPal?.MarkObjPaletteAllocated?.(slot, entry.tag);
         if (RT_DEBUG) console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
@@ -1800,6 +1806,9 @@ export class DecompRuntime {
       console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable: table ${tableName} not found`);
       return;
     }
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      AllocSpriteTileRange?: (tag: string | number, start: number, count: number) => void;
+    } | undefined;
     for (const entry of table.entries) {
       const url = resolveUrl(entry.gfxName);
       if (!url) {
@@ -1809,7 +1818,9 @@ export class DecompRuntime {
       const tileStart = this.nextSpriteSheetByteOffset / 32;
       try {
         const result = await this.LoadCompressedSpriteSheetStrict(url, this.nextSpriteSheetByteOffset);
-        this.spriteSheetTagToTileStart.set(entry.tag, tileStart);
+        // 1:1 STRICT register tag via sSpriteTileRangeTags array primary
+        // (sprite.c:1574-1579 AllocSpriteTileRange).
+        sp?.AllocSpriteTileRange?.(entry.tag, tileStart, result.byteSize >> 5);
         this.nextSpriteSheetByteOffset += result.byteSize;
         if (RT_DEBUG) console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${result.byteSize}B)`);
       } catch (e) {
@@ -2274,13 +2285,22 @@ export class DecompRuntime {
     this.spriteAnimStates.delete(spriteId);
   }
 
-  /** Reset additionnel pour les nouveaux maps (sprite-system). */
+  /** Reset additionnel pour les nouveaux maps (sprite-system).
+   *  1:1 STRICT : delegate à sprite.ts FreeSpriteTileRanges + FreeAllSprite
+   *  Palettes (= reset arrays primary). nextSpriteSheetByteOffset gardé pour
+   *  les sites legacy (migration A2 à venir). */
   resetSpriteSystem(): void {
-    this.paletteTagToSlot.clear();
-    this.spriteSheetTagToTileStart.clear();
-    this.spriteSheetTagToByteSize.clear();
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      sSpriteTileRangeTags?: Uint16Array;
+      sSpriteTileRanges?: Uint16Array;
+      sSpritePaletteTags?: Uint16Array;
+      sSpriteTileAllocBitmap?: Uint8Array;
+    } | undefined;
+    if (sp?.sSpriteTileRangeTags) sp.sSpriteTileRangeTags.fill(0xFFFF);
+    if (sp?.sSpriteTileRanges) sp.sSpriteTileRanges.fill(0);
+    if (sp?.sSpritePaletteTags) sp.sSpritePaletteTags.fill(0xFFFF);
+    if (sp?.sSpriteTileAllocBitmap) sp.sSpriteTileAllocBitmap.fill(0);
     this.freedSpriteTileRanges.length = 0;
-    this.nextObjPalSlot = 0;
     this.nextSpriteSheetByteOffset = 0;
     this.spriteAnimStates.clear();
     this.accumulatorMs = 0;
