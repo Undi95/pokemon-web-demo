@@ -535,13 +535,27 @@ async function loadNamingScreenAssets(): Promise<void> {
     for (const e of palLoadOrder) {
       if (rt.paletteTagToSlot.has(e.tag)) continue;
       const pal = await loadGbaPal(e.url);
-      const slot = rt.nextObjPalSlot++;
+      // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free
+      // dans [gReservedSpritePaletteCount, 16). Avant : `nextObjPalSlot++` raw
+      // saturait → palettes player+PNJ écrasées après cycles PC/bag/naming.
+      const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
+      const used = new Set<number>();
+      for (const s of rt.paletteTagToSlot.values()) used.add(s);
+      let slot = -1;
+      for (let i = reserved; i < 16; i++) {
+        if (!used.has(i)) { slot = i; break; }
+      }
+      if (slot < 0) {
+        console.warn(`[naming-screen] OBJ palette saturated (16/16), cannot load ${e.tag}`);
+        continue;
+      }
       // OBJ palette write : gPlttBufferUnfaded + Faded (= 1:1 LoadSpritePalette)
       for (let i = 0; i < Math.min(16, pal.length); i++) {
         rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, pal[i]);
         rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
       }
       rt.paletteTagToSlot.set(e.tag, slot);
+      if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
       reBlackenFaded();
     }
   } catch (e) {

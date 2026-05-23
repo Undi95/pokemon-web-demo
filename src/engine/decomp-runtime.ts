@@ -1700,8 +1700,13 @@ export class DecompRuntime {
   // ============================================================================
 
   /** 1:1 décomp `LoadSpritePalettes(sSpritePalettes_X)` :
-   *  parcourt la table, charge chaque palette à un slot OBJ libre auto-incrémenté,
-   *  enregistre paletteTag → slot pour résolution future via paletteTagToSlot. */
+   *  parcourt la table, charge chaque palette à un slot OBJ libre via scan
+   *  first-free (= IndexOfSpritePaletteTag(TAG_NONE) dans le décomp), enregistre
+   *  paletteTag → slot pour résolution future via paletteTagToSlot.
+   *
+   *  BUG RACINE RÉSOLU : avant, faisait `this.nextObjPalSlot++` (counter monotone)
+   *  qui saturait après ~16 reloads PC/bag → palettes player+PNJ écrasées.
+   *  Maintenant : scan first-free dans [gReservedSpritePaletteCount, 16). */
   async LoadSpritePalettesFromTable(
     tableName: string,
     resolveUrl: (paletteName: string) => string | null,
@@ -1717,7 +1722,20 @@ export class DecompRuntime {
         console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: cannot resolve URL for ${entry.paletteName}`);
         continue;
       }
-      const slot = this.nextObjPalSlot++;
+      // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
+      if (this.paletteTagToSlot.has(entry.tag)) continue;
+      // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) = scan first-free.
+      const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
+      const used = new Set<number>();
+      for (const s of this.paletteTagToSlot.values()) used.add(s);
+      let slot = -1;
+      for (let i = reserved; i < 16; i++) {
+        if (!used.has(i)) { slot = i; break; }
+      }
+      if (slot < 0) {
+        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${entry.tag}`);
+        break;
+      }
       try {
         if (url.endsWith('.png')) {
           // Load PNG-embedded PLTE (used quand pal name pointe vers un .png)
@@ -1727,6 +1745,7 @@ export class DecompRuntime {
           await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
         }
         this.paletteTagToSlot.set(entry.tag, slot);
+        if (slot + 1 > this.nextObjPalSlot) this.nextObjPalSlot = slot + 1;
         if (RT_DEBUG) console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);

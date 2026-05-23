@@ -326,14 +326,28 @@ export async function loadObjectEventGraphicsInfo(rt: DecompRuntime, gfxId: numb
     if (existing !== undefined) return existing;
   }
   // Load palette (= 16 entries × 2 bytes = 32 bytes, into OBJ palette slot N).
+  // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free dans
+  // [gReservedSpritePaletteCount, 16). Avant : `nextObjPal Slot++` raw saturait
+  // après ~16 cycles PC/bag → palettes player+PNJ écrasées.
   if (!rt.paletteTagToSlot.has(info.paletteTag)) {
     const pal = await loadGbaPal(info.palUrl);
-    const slot = rt.nextObjPalSlot++;
+    const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
+    const used = new Set<number>();
+    for (const s of rt.paletteTagToSlot.values()) used.add(s);
+    let slot = -1;
+    for (let i = reserved; i < 16; i++) {
+      if (!used.has(i)) { slot = i; break; }
+    }
+    if (slot < 0) {
+      console.warn(`[object-event-graphics] OBJ palette saturated (16/16), cannot load ${info.paletteTag}`);
+      return 0;
+    }
     for (let i = 0; i < Math.min(16, pal.length); i++) {
       rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, pal[i]);
       rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
     }
     rt.paletteTagToSlot.set(info.paletteTag, slot);
+    if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
   }
   // Load gfx + frame-major repack.
   if (!rt.spriteSheetTagToTileStart.has(info.tileTag)) {

@@ -52,11 +52,35 @@ import {
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
+import {
+  _setSpriteRuntimeGetter,
+  LoadSpritePalette as _LoadSpritePalette_1to1,
+  LoadSpritePalettes as _LoadSpritePalettes_1to1,
+  IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
+  AllocSpritePalette as _AllocSpritePalette_1to1,
+  FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
+  DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
+} from './sprite';
+
 let _rt: DecompRuntime | null = null;
 
 /** Set le runtime actif. À call dans GameScene.create() AVANT toute Task. */
 export function setGlobalRuntime(rt: DecompRuntime): void {
   _rt = rt;
+  // Wire sprite.ts (= source de vérité 1:1 décomp pour palette tag system).
+  // Doit être fait à chaque setGlobalRuntime car le runtime peut changer entre
+  // les scènes (= preview reload, test scene swap, etc.).
+  _setSpriteRuntimeGetter(getRuntime, getAsset);
+  // Expose pour devtools/inspect runtime — uniquement en preview/dev.
+  (globalThis as Record<string, unknown>).__rt = rt;
+  (globalThis as Record<string, unknown>).__sprite = {
+    AllocSpritePalette: _AllocSpritePalette_1to1,
+    LoadSpritePalette: _LoadSpritePalette_1to1,
+    LoadSpritePalettes: _LoadSpritePalettes_1to1,
+    FreeSpritePaletteByTag: _FreeSpritePaletteByTag_1to1,
+    IndexOfSpritePaletteTag: _IndexOfSpritePaletteTag_1to1,
+    DoLoadSpritePalette: _DoLoadSpritePalette_1to1,
+  };
 }
 
 /** Récupère le runtime actif. Throw si pas init (= bug : on a oublié setGlobalRuntime). */
@@ -413,14 +437,9 @@ export function LoadIntroPart2Graphics(scenery: number): void {
   // gReservedSpritePaletteCount = 8 → no-op chez nous (= alloc OBJ palette).
 }
 
-/** 1:1 décomp `FreeAllSpritePalettes` — libère tous les slots OBJ palette
- *  alloués par tag. Permet de réutiliser les 16 slots OBJ palette entre 2 scènes
- *  (= sinon overflow `nextObjPalSlot >= 16`). */
-export function FreeAllSpritePalettes(): void {
-  const r = rt();
-  r.paletteTagToSlot.clear();
-  r.nextObjPalSlot = 0;
-}
+/** 1:1 décomp src/sprite.c:1581-1587 — délégué à `src/engine/sprite.ts`
+ *  (= source de vérité 1:1 strict du palette tag system). */
+export { FreeAllSpritePalettes } from './sprite';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)
@@ -1467,43 +1486,18 @@ export function ScanlineEffect_Stop(): void {
   gScanlineEffect.state = 0;
 }
 export function EnableInterrupts(_flag: number): void { /* no-op */ }
-/** 1:1 décomp `LoadSpritePalette(pal)` — alloue le prochain slot OBJ libre
- *  (>= gReservedSpritePaletteCount), enregistre le tag, et copie 16 colors. */
+/** 1:1 décomp src/sprite.c:1589-1608 — délégué à `src/engine/sprite.ts`
+ *  (= source de vérité 1:1 strict du palette tag system).
+ *
+ *  Wrapper compat : signature historique de decomp-globals.ts accepte `pal:
+ *  unknown` pour tolérer les callers transpilés du décomp qui passent des
+ *  objets partial. On normalise + délègue à sprite.ts.
+ *  Discard return value (la signature historique était `void`). */
 export function LoadSpritePalette(pal: { data: string, tag: string | number } | unknown): void {
   if (!pal || typeof pal !== 'object') return;
   const p = pal as { data: string, tag: string | number };
   if (typeof p.data !== 'string') return;
-  const r = rt();
-  const tagStr = String(p.tag);
-  if (r.paletteTagToSlot.has(tagStr)) return;
-  const palData = getAsset(p.data);
-  if (!palData) return;
-  const u16 = palData instanceof Uint16Array
-    ? palData
-    : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
-  // 1:1 décomp src/sprite.c AllocSpritePalette : 1er slot LIBRE (tag
-  // TAG_NONE) dans [gReservedSpritePaletteCount, 16). AVANT : `nextObjPal
-  // Slot++` monotone — FreeSpritePaletteByTag (Map.delete) ne le décrément
-  // ait pas → après ~16 reloads icône (sac) le compteur sature, Load skip,
-  // l'icône prend un slot périmé = "nav corrompt la palette" (bug A/B
-  // user). paletteTagToSlot EST la table d'occupation (= sSpritePalette
-  // Tags) : un slot non-mappé = libre → réutilisé (= comportement décomp).
-  const usedSlots = new Set<number>();
-  for (const s of r.paletteTagToSlot.values()) usedSlots.add(s);
-  let slot = gReservedSpritePaletteCount;
-  while (slot < 16 && usedSlots.has(slot)) slot++;
-  if (slot >= 16) return; // OBJ palette RÉELLEMENT saturé (16 tags vivants)
-  // nextObjPalSlot maintenu (FreeAllSpritePalettes/lecture compat) mais
-  // l'alloc n'en dépend plus.
-  if (slot + 1 > r.nextObjPalSlot) r.nextObjPalSlot = slot + 1;
-  // Phase D-cleanup audit session 83 : 1:1 décomp src/sprite.c LoadSpritePalette
-  // écrit à gPlttBufferUnfaded ET Faded. Le TransferPlttBuffer copie Faded
-  // au PLTT register au VBlank. Plus de direct gba.palette.loadObjRange.
-  for (let i = 0; i < Math.min(16, u16.length); i++) {
-    r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
-    r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
-  }
-  r.paletteTagToSlot.set(tagStr, slot);
+  void _LoadSpritePalette_1to1(p);
 }
 
 /** 1:1 décomp `UpdatePaletteFade()` — tick palette fade + return active state.
@@ -1830,27 +1824,16 @@ export function FreeSpriteTilesByTag(tag: string | number): void {
   r.spriteSheetTagToByteSize.delete(tagStr);
 }
 
-/** 1:1 décomp `LoadSpritePalettes(palettes[])` — charge une table de palettes OBJ. */
+/** 1:1 décomp src/sprite.c:1610-1616 — délégué à `src/engine/sprite.ts`.
+ *
+ *  BUG RACINE RÉSOLU : avant, cette fonction faisait `nextObjPalSlot++` raw
+ *  (= counter monotone), bypassant le scan first-free du décomp. Le décomp
+ *  appelle simplement `LoadSpritePalette` en boucle, qui fait scan first-free.
+ *
+ *  Wrapper compat : signature historique accepte `palettes: Array<{ data:
+ *  string, tag }>` — sprite.ts accepte `Uint16Array | string`. On forward. */
 export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string | number }>): void {
-  const r = rt();
-  for (const p of palettes) {
-    const tagStr = String(p.tag);
-    if (r.paletteTagToSlot.has(tagStr)) continue;
-    const palData = getAsset(p.data);
-    if (!palData) continue; // asset manquant
-    const u16 = palData instanceof Uint16Array
-      ? palData
-      : new Uint16Array(palData.buffer, palData.byteOffset, Math.floor(palData.byteLength / 2));
-    const slot = r.nextObjPalSlot++;
-    // Phase D-cleanup audit session 83 : 1:1 décomp src/sprite.c
-    // LoadSpritePalettes — écrit à gPlttBufferUnfaded/Faded uniquement.
-    // TransferPlttBuffer copie Faded → PLTT register au VBlank.
-    for (let i = 0; i < Math.min(16, u16.length); i++) {
-      r.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
-      r.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
-    }
-    r.paletteTagToSlot.set(tagStr, slot);
-  }
+  _LoadSpritePalettes_1to1(palettes);
 }
 /** Reset des allocations OBJ slots (à call entre 2 scènes). */
 export function resetObjAllocations(): void {
@@ -1879,8 +1862,7 @@ export function resetObjAllocations(): void {
  *    const palOffset = OBJ_PLTT_ID(IndexOfSpritePaletteTag(PALTAG_CURSOR)) + 1;
  *    MultiplyInvertedPaletteRGBComponents(palOffset, r, g, b);   */
 export function IndexOfSpritePaletteTag(tag: string | number): number {
-  const slot = rt().paletteTagToSlot.get(String(tag));
-  return slot ?? 0xFF;
+  return _IndexOfSpritePaletteTag_1to1(tag);
 }
 
 /** 1:1 décomp src/sprite.c:GetSpriteTileStartByTag — retourne le tileNum

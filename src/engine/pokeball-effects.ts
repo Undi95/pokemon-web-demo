@@ -483,12 +483,26 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
     const u16 = pal instanceof Uint16Array
       ? pal
       : new Uint16Array(pal.buffer, pal.byteOffset, Math.floor(pal.byteLength / 2));
-    const slot = rt.nextObjPalSlot++;
-    for (let i = 0; i < Math.min(16, u16.length); i++) {
-      rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
-      rt.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
+    // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free
+    // dans [gReservedSpritePaletteCount, 16). Avant : `nextObjPalSlot++` raw
+    // saturait → particles écrasent palette player+PNJ après ~16 captures.
+    const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
+    const used = new Set<number>();
+    for (const s of rt.paletteTagToSlot.values()) used.add(s);
+    let slot = -1;
+    for (let i = reserved; i < 16; i++) {
+      if (!used.has(i)) { slot = i; break; }
     }
-    rt.paletteTagToSlot.set(String(PARTICLES_PAL_TAG), slot);
+    if (slot < 0) {
+      console.warn(`[pokeball-effects] OBJ palette saturated (16/16), cannot load PARTICLES_PAL_TAG`);
+    } else {
+      for (let i = 0; i < Math.min(16, u16.length); i++) {
+        rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
+        rt.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
+      }
+      rt.paletteTagToSlot.set(String(PARTICLES_PAL_TAG), slot);
+      if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
+    }
   }
 
   _particlesLoaded = !!gfx && !!pal;
