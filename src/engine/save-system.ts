@@ -30,6 +30,7 @@ import {
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
 import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from './bag';
+import { SetDecorationInventoriesPointers } from './decoration-inventory';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,
   __flashClear, type BlockKey,
@@ -125,6 +126,7 @@ export function LoadGameSave(): number {
     SetSaveBlock1(block1);
     SetSaveBlock2(blocks.saveBlock2 as SaveBlock2);
     SetBagItemsPointers();
+    SetDecorationInventoriesPointers();
     // Étape 6 : valider la FORME (pas juste != null). Une save écrite AVANT
     // l'étape 6 a `pokemonStorage = {}` (ancien placeholder) — `{}` est
     // truthy donc `?? ` ne la remplacerait PAS → storage cassé. Clean-break
@@ -146,8 +148,9 @@ export function LoadGameSave(): number {
   // migration ancien format (clean break, autorisé user).
   SetSaveBlock2(emptySaveBlock2());
   SetSaveBlock1(emptySaveBlock1());
-  // 1:1 décomp load_save.c:80 : wire gBagPockets après init blocks.
+  // 1:1 décomp load_save.c:80 : wire gBagPockets + gDecorationInventories après init blocks.
   SetBagItemsPointers();
+  SetDecorationInventoriesPointers();
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = (status === SAVE_STATUS_CORRUPT) ? SAVE_STATUS_CORRUPT : SAVE_STATUS_EMPTY;
   return sSaveFileStatus;
@@ -250,8 +253,9 @@ export function GetPokemonStorage(): PokemonStorage {
 export function ResetSaveBlocks(): void {
   SetSaveBlock2(emptySaveBlock2());
   SetSaveBlock1(emptySaveBlock1());
-  // 1:1 décomp load_save.c:80 : wire gBagPockets après init blocks.
+  // 1:1 décomp load_save.c:80 : wire gBagPockets + gDecorationInventories après init blocks.
   SetBagItemsPointers();
+  SetDecorationInventoriesPointers();
   sCurrentStorage = emptyPokemonStorage();
   sSaveFileStatus = SAVE_STATUS_EMPTY;
 }
