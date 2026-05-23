@@ -40,6 +40,7 @@ import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
   LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
+  FillBgTilemapBufferRect,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -68,7 +69,7 @@ import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag';
 import { getItemNameFr } from './data-tables';
 import { GetItemDescription } from './decomp-bridge';
 import {
-  AddItemIconSprite, MAX_SPRITES,
+  AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
 import { FreeSpriteTilesByTag } from './decomp-globals';
 
@@ -118,7 +119,7 @@ const WIN_ITEM_STORAGE_MENU: WindowTemplate = {
 // quand la list des PC items est ouverte). 5 windows simultanées :
 //   ITEMPC_WIN_LIST     left=16 top=1  w=13 h=18 baseBlock=0x001 → liste items (droite)
 //   ITEMPC_WIN_MESSAGE  left=1  top=13 w=13 h=6  baseBlock=0x0EB → description (bas-gauche)
-//   ITEMPC_WIN_ICON     left=1  top=8  w=3  h=3  baseBlock=0x153 → item icon sprite anchor (skip pour démo)
+//   ITEMPC_WIN_ICON     left=1  top=8  w=3  h=3  baseBlock=0x153 → frame autour du sprite item icon
 //   ITEMPC_WIN_TITLE    left=1  top=1  w=13 h=2  baseBlock=0x139 → titre centered "RETIRER OBJET"
 //   ITEMPC_WIN_QUANTITY left=8  top=9  w=6  h=2  baseBlock=0x15C → quantity rolling
 const WIN_PC_LIST: WindowTemplate = {
@@ -128,6 +129,10 @@ const WIN_PC_LIST: WindowTemplate = {
 const WIN_PC_MESSAGE: WindowTemplate = {
   bg: 0, tilemapLeft: 1, tilemapTop: 13, width: 13, height: 6,
   paletteNum: 15, baseBlock: 0x0EB,
+};
+const WIN_PC_ICON: WindowTemplate = {
+  bg: 0, tilemapLeft: 1, tilemapTop: 8, width: 3, height: 3,
+  paletteNum: 15, baseBlock: 0x153,
 };
 const WIN_PC_TITLE: WindowTemplate = {
   bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 13, height: 2,
@@ -190,6 +195,7 @@ let sOptions: PCOption[] = [];
 let sPCListWindowId = -1;
 let sPCMessageWindowId = -1;
 let sPCTitleWindowId = -1;
+let sPCIconWindowId = -1;  // 1:1 décomp ITEMPC_WIN_ICON (frame autour du sprite icon).
 let sPCQuantityWindowId = -1;
 let sPCYesNoWindowId = -1;
 let sPCListTaskId = -1;
@@ -682,6 +688,11 @@ function _itemStorageEnter(toss: boolean): void {
  *
  *  Setup 4 windows (TITLE + ICON + MESSAGE + LIST) + ListMenuInit + scroll. */
 function _itemStorageCreateListMenu(): void {
+  // Clear la zone GAUCHE inter-windows à tile 0 (transparent) — sinon notre
+  // BG0 garde du contenu opaque (= fond noir entre TITRE/ICON/MESSAGE
+  // user-flag). Le décomp laisse transparaître l'OW BG dans ces zones ;
+  // chez nous le BG0 doit être explicitement transparent.
+  FillBgTilemapBufferRect(0, 0, 0, 0, 16, 20, 0);
   // 1:1 décomp ItemStorage_AddWindow pour TITLE, ICON, MESSAGE (et LIST plus tard).
   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
   sPCTitleWindowId = AddWindow(WIN_PC_TITLE);
@@ -696,6 +707,29 @@ function _itemStorageCreateListMenu(): void {
   DrawStdFrameWithCustomTileAndPalette(
     sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
   );
+  // 1:1 décomp ItemStorage_AddWindow(ITEMPC_WIN_ICON) (player_pc.c:963-969) :
+  // frame fixe autour du sprite item icon (left=1, top=8, w=3, h=3).
+  // Décomp standard : DrawStdFrame + sprite OAM (priority 0) par-dessus le
+  // fond opaque. Notre runtime n'honore pas sprite-trump-BG (= sprite caché
+  // par BG opaque même avec prio 0). Workaround : 8 tiles bordure SEULEMENT,
+  // intérieur reste transparent (tile 0) → sprite OAM visible par-dessus.
+  sPCIconWindowId = AddWindow(WIN_PC_ICON);
+  {
+    const w = WIN_PC_ICON;
+    const t = STD_WINDOW_BASE_TILE_NUM;
+    const p = STD_WINDOW_PALETTE_NUM;
+    // 8 tiles bordure (= 1:1 WindowFunc_DrawStdFrameWithCustomTileAndPalette).
+    FillBgTilemapBufferRect(w.bg, t + 0, w.tilemapLeft - 1, w.tilemapTop - 1, 1, 1, p);
+    FillBgTilemapBufferRect(w.bg, t + 1, w.tilemapLeft,     w.tilemapTop - 1, w.width, 1, p);
+    FillBgTilemapBufferRect(w.bg, t + 2, w.tilemapLeft + w.width, w.tilemapTop - 1, 1, 1, p);
+    FillBgTilemapBufferRect(w.bg, t + 3, w.tilemapLeft - 1, w.tilemapTop,     1, w.height, p);
+    FillBgTilemapBufferRect(w.bg, t + 5, w.tilemapLeft + w.width, w.tilemapTop, 1, w.height, p);
+    FillBgTilemapBufferRect(w.bg, t + 6, w.tilemapLeft - 1, w.tilemapTop + w.height, 1, 1, p);
+    FillBgTilemapBufferRect(w.bg, t + 7, w.tilemapLeft,     w.tilemapTop + w.height, w.width, 1, p);
+    FillBgTilemapBufferRect(w.bg, t + 8, w.tilemapLeft + w.width, w.tilemapTop + w.height, 1, 1, p);
+    // Intérieur : tile 0 (= transparent) pour que le sprite icon passe par-dessus.
+    FillBgTilemapBufferRect(w.bg, 0, w.tilemapLeft, w.tilemapTop, w.width, w.height, 0);
+  }
 
   // 1:1 décomp ItemStorage_CreateListMenu lignes 1149-1154 : title text centered.
   // FR : "RETIRER OBJET" (= gText_WithdrawItem) ou "JETER OBJET" (= gText_TossItem).
@@ -717,11 +751,14 @@ function _itemStorageCreateListMenu(): void {
 
   // Init icon + description sur le 1er item (= 1:1 décomp ItemStorage_MoveCursor onInit).
   const firstId = sPCListItems[0]?.id ?? -2;
-  if (firstId === -2) {
-    _itemStorageDrawItemIcon('ITEM_LIST_END');
-  } else {
-    _itemStorageDrawItemIcon(gSaveBlock1Ptr.pcItems[firstId].itemKey);
-  }
+  const initialIconKey = firstId === -2 ? 'ITEM_LIST_END' : gSaveBlock1Ptr.pcItems[firstId].itemKey;
+  // AddItemIconSprite est SYNC mais nécessite que les assets soient préchargés
+  // (= _iconAssets cache, sinon retourne MAX_SPRITES). Le bag-menu préchargé
+  // au open mais le PC peut être ouvert sans passer par le sac. Fire-and-forget :
+  // 1er draw rate si pas en cache, le _itemStorageMoveCursor au prochain scroll
+  // re-trigger. Idempotent (= bag open après n'a pas de surcoût).
+  void preloadItemIconAssets().then(() => _itemStorageDrawItemIcon(initialIconKey));
+  _itemStorageDrawItemIcon(initialIconKey);  // sync attempt if cache déjà chaud
   _itemStoragePrintDescription(firstId);
 }
 
@@ -1260,7 +1297,7 @@ function _itemStorageExitItemList(): void {
 
 function _removePCWindows(): void {
   for (const id of [sPCListWindowId, sPCMessageWindowId, sPCTitleWindowId,
-                    sPCQuantityWindowId, sPCYesNoWindowId]) {
+                    sPCIconWindowId, sPCQuantityWindowId, sPCYesNoWindowId]) {
     if (id >= 0) {
       ClearStdWindowAndFrame(id, true);
       RemoveWindow(id);
@@ -1269,6 +1306,7 @@ function _removePCWindows(): void {
   sPCListWindowId = -1;
   sPCMessageWindowId = -1;
   sPCTitleWindowId = -1;
+  sPCIconWindowId = -1;
   sPCQuantityWindowId = -1;
   sPCYesNoWindowId = -1;
 }
