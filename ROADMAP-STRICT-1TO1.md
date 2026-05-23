@@ -35,6 +35,9 @@ Cible : zéro divergence, zéro raccourci, zéro auto-générer naze.
 | `9ebae008` | **A1c** | Réimport field-effect-emotes 1:1 strict trainer_see.c |
 | `71471f97` | **A1d** | Fix tag mismatch number/string LoadCompressedSpriteSheet |
 | `d725a6de` | **A1e** | Implement CreateSpriteAtEnd 1:1 (fix emote/NPC slot collision) |
+| `2bd2a34c` | **A1f** | Reset hook _activeEmotes au ResetSpriteData |
+| `730d51bd` | **A1g** | Reset hook _arrowState (fix MOM moitié) |
+| `e5fb1576` | **A1h** | Reset hooks shadow + grass + jump-dust (audit follow-up) |
 
 ## Bugs visibles post-A2/A3 (statut)
 
