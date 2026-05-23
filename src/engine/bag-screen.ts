@@ -351,15 +351,16 @@ let _loadedIconKey: string | null = null;
  *    POCKET_ITEMS=64, POKE_BALLS=192, TM_HM=256, BERRIES=320, KEY_ITEMS=128. */
 const BAG_FRAME_TILE_OFFSET: ReadonlyArray<number> = [64, 192, 256, 320, 128];
 
-/** 1:1 STRICT décomp tags GFX/PAL (= item_menu_icons.c TAG_BAG_GFX/SCROLL_INDICATOR
- *  /ROTATING_BALL_GFX). Notre runtime n'utilise pas les IDs numériques décomp
- *  (= LoadSpriteSheet/LoadSpritePalette keyent par string tag), donc strings. */
-const TAG_BAG_SPRITE_GFX = 'BAG_SPRITE_GFX';
-const TAG_BAG_SPRITE_PAL = 'BAG_SPRITE_PAL';
-const TAG_SCROLL_ARROW_GFX = 'SCROLL_ARROW_GFX';
-const TAG_SCROLL_ARROW_PAL = 'SCROLL_ARROW_PAL';
-const TAG_ROTATING_BALL_GFX_LOCAL = 'ROTATING_BALL_GFX_LOCAL';
-const TAG_ROTATING_BALL_PAL = 'ROTATING_BALL_PAL';
+/** 1:1 STRICT décomp tags GFX/PAL u16 (= item_menu_icons.c). Utilisation des
+ *  CONSTANTES numériques décomp pour éviter divergence avec bag-menu.ts qui
+ *  utilise aussi TAG_BAG_GFX=100 → si tags différents, 2 slots palette
+ *  alloués pour MÊME bag.pal → désync visuel pendant scroll (= bug user). */
+const TAG_BAG_SPRITE_GFX = 100;             // 1:1 TAG_BAG_GFX
+const TAG_BAG_SPRITE_PAL = 100;             // 1:1 same as GFX (= shared tag)
+const TAG_SCROLL_ARROW_GFX = 109;           // 1:1 TAG_SCROLL_INDICATOR
+const TAG_SCROLL_ARROW_PAL = 109;
+const TAG_ROTATING_BALL_GFX_LOCAL = 110;    // 1:1 TAG_ROTATING_BALL_GFX
+const TAG_ROTATING_BALL_PAL = 110;
 
 /** 1:1 STRICT : tileStart + palSlot dynamiquement alloués par LoadSpriteSheet/
  *  LoadSpritePalette. Avant : raw `objVram.set` à offsets hardcoded 0/0x3000/

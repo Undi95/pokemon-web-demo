@@ -23,7 +23,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
-import { LoadSpriteSheet } from './sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
 
 const SHADOW_PNG = '/decomp/em/field_effects/shadow_medium.png';
 
@@ -55,7 +55,11 @@ function pngTo1dObjLayoutShadow(charData: Uint8Array): Uint8Array {
 let _initPromise: Promise<void> | null = null;
 
 export function preloadShadowEffect(rt: DecompRuntime): Promise<void> {
-  if (_initPromise) return _initPromise;
+  // 1:1 STRICT : check tag présent ; sinon re-load.
+  const stillAlloc = _initialized && IndexOfSpriteTileTag(TAG_SHADOW_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_initPromise && !_initialized) return _initPromise;
+  _initialized = false; _initPromise = null;
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(SHADOW_PNG, 4);
     const reordered = pngTo1dObjLayoutShadow(png.charData);

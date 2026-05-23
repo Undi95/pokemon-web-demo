@@ -29,7 +29,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from './sprite';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { OBJ_PLTT_ID } from './decomp-globals';
@@ -108,8 +108,12 @@ let _emoteAssetsLoading: Promise<void> | null = null;
  *  Idempotent : safe à appeler plusieurs fois (= cache). À call avant le
  *  1er SpawnEmoteSprite (= TestOverworldScene boot ou warp). */
 export async function LoadEmoteAssets(rt: DecompRuntime): Promise<void> {
-  if (_emoteAssetsLoaded) return;
+  // 1:1 STRICT : si flag set MAIS tag absent du tag system (= ResetSpriteData
+  // entre-temps a clear bitmap), force re-load. Sinon return early.
+  const stillAlloc = _emoteAssetsLoaded && IndexOfSpriteTileTag(TAG_EMOTE_GFX_EXCLAMATION) !== 0xFF;
+  if (stillAlloc) return;
   if (_emoteAssetsLoading) return _emoteAssetsLoading;
+  _emoteAssetsLoaded = false;  // force re-set after re-load
   _emoteAssetsLoading = (async () => {
     const [excl, qst, hrt, pal] = await Promise.all([
       loadTileBin(EXCLAMATION_PNG, 4),

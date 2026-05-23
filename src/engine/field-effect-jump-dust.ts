@@ -16,7 +16,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet } from './sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
@@ -75,7 +75,11 @@ function pngTo1dObjLayoutDust(charData: Uint8Array): Uint8Array {
 let _initPromise: Promise<void> | null = null;
 
 export function preloadJumpDustEffect(rt: DecompRuntime): Promise<void> {
-  if (_initPromise) return _initPromise;
+  // 1:1 STRICT : check tag présent ; sinon re-load.
+  const stillAlloc = _initialized && IndexOfSpriteTileTag(TAG_DUST_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_initPromise && !_initialized) return _initPromise;
+  _initialized = false; _initPromise = null;
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(DUST_PNG, 4);
     const reordered = pngTo1dObjLayoutDust(png.charData);

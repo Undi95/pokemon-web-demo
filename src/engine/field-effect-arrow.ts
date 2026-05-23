@@ -27,7 +27,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet } from './sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
 import { loadTileBin } from './gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
@@ -186,7 +186,9 @@ export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> 
   // palette de bank 0 (= player Brendan/May), couleurs vert/blanc du décomp.
   // AllocSpriteTiles bitmap-based honore gReservedSpriteTileCount → alloué
   // APRÈS player tiles.
-  if (!_arrowInitialized) {
+  // 1:1 STRICT : check tag présent ; sinon re-load (= ResetSpriteData a clear).
+  const stillAlloc = _arrowInitialized && IndexOfSpriteTileTag(TAG_ARROW_GFX) !== 0xFF;
+  if (!stillAlloc) {
     _arrowTileStart = LoadSpriteSheet({
       data: reordered, size: reordered.length, tag: TAG_ARROW_GFX,
     });

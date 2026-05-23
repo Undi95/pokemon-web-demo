@@ -29,7 +29,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from './sprite';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
@@ -129,7 +129,11 @@ async function loadGeneralPal1(): Promise<Uint16Array> {
 let _initPromise: Promise<void> | null = null;
 
 export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
-  if (_initPromise) return _initPromise;
+  // 1:1 STRICT : check tag présent ; sinon re-load.
+  const stillAlloc = _initialized && IndexOfSpriteTileTag(TAG_TALL_GRASS_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_initPromise && !_initialized) return _initPromise;
+  _initialized = false; _initPromise = null;
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(TALL_GRASS_PNG, 4);
     const reordered = pngTo1dObjLayoutGrass(png.charData);
