@@ -1,80 +1,68 @@
 /**
- * field-effect-emotes.ts — Port 1:1 des field effects emote (!?♥) du décomp.
+ * field-effect-emotes.ts — Port 1:1 STRICT du décomp trainer_see.c.
  *
- * Source de vérité (1:1 strict) :
- *   - `D:/Projet 1/decomps/pokeemeraude/src/trainer_see.c:62-177` :
- *      sEmotion_ExclamationMarkGfx + sSpriteTemplate_ExclamationQuestionMark
- *   - `D:/Projet 1/decomps/pokeemeraude/src/trainer_see.c:696-743` :
- *      FldEff_ExclamationMarkIcon / FldEff_QuestionMarkIcon / FldEff_HeartIcon
- *      + SetIconSpriteData + SpriteCB_TrainerIcons (bounce + auto-destroy)
- *   - `D:/Projet 1/decomps/pokeemeraude/src/event_object_movement.c:6479-6501` :
- *      MovementAction_EmoteExclamationMark/QuestionMark/Heart_Step0 → call
- *      FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON) puis sActionFuncId=1
- *      → action terminée immédiatement (= sprite vit indépendamment).
+ * Source unique de vérité (= ne JAMAIS diverger) :
+ *   D:/Projet 1/decomps/pokeemeraude/src/trainer_see.c
  *
- * Wiring :
- *   - `movement-system.ts` `_tickAction('emote_*')` appelle `SpawnEmoteSprite()`
- *     puis retourne TRUE immédiatement. Le sprite vit ~60 frames de bounce.
- *   - `TestOverworldScene.ts` `update()` appelle `tickEmoteSprites(rt)` chaque
- *     frame pour update positions + détecter sprite ended.
+ * Structures portées 1:1 :
+ *   - lignes 62-64    : sEmotion_ExclamationMarkGfx / QuestionMarkGfx / HeartGfx
+ *   - lignes 113-128  : sOamData_Icons (shape 16x16, size 16x16, priority 1)
+ *   - lignes 130-148  : sSpriteImageTable_ExclamationQuestionMark / HeartIcon
+ *   - lignes 150-166  : sSpriteAnimTable_Icons (2 anims ANIMCMD_FRAME 60 frames)
+ *   - lignes 168-188  : sSpriteTemplate_ExclamationQuestionMark / HeartIcon
+ *                       (tileTag=TAG_NONE → branch `images` dans CreateSpriteAt)
+ *   - lignes 696-729  : FldEff_ExclamationMarkIcon / QuestionMarkIcon / HeartIcon
+ *   - lignes 731-743  : SetIconSpriteData
+ *   - lignes 745-767  : SpriteCB_TrainerIcons (bounce + auto-destroy)
  *
- * Architecture :
- *   - Tiles 4bpp : 4 tiles 8x8 par emote (16x16), 3 emotes = 12 tiles total
- *     loaded à OBJ VRAM offset `EMOTE_OBJ_TILE_START` (= 976..988).
- *   - Palette : `general_0.pal` (= `gFieldEffectObjectPalette0`) loaded à OBJ
- *     palette bank `EMOTE_PALETTE_BANK` (= 13). Couleurs jaune/bleu/rouge
- *     1:1 décomp.
- *   - State : array `_activeEmotes` avec sprite OAM + npc reference + bounce
- *     state. tick chaque frame pour update sprite.x/y + bounce + ttl decrement.
+ * Sprite allocation (= 1:1 décomp sprite.c:562-575 branch tileTag==TAG_NONE) :
+ *   sprite->images = template->images;                                   ← SpriteFrameImage array
+ *   tileNum = AllocSpriteTiles(images[0].size / TILE_SIZE_4BPP);         ← 4 tiles 4bpp
+ *   if (tileNum == -1) { ResetSprite(); return MAX_SPRITES; }
+ *   sprite->oam.tileNum = tileNum;
+ *   sprite->usingSheet = FALSE;
+ *
+ * Sprite destroy (= 1:1 décomp sprite.c:622-628 branch !usingSheet) :
+ *   for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+ *
+ * Pas de tag tile system, pas de pre-load tile range, pas de cache flag.
+ * Chaque spawn → AllocSpriteTiles fresh. Chaque destroy → MarkObjTilesFree.
+ *
+ * Adaptation web justifiée :
+ *   - PNG/PAL fetch async (= équivalent décomp INCGFX_U8 / general_0.pal static).
+ *     Premier spawn lazy-load + skip cette frame. Frames suivants OK.
+ *   - Palette OBJ via tag system (= 1:1 LoadObjectEventPalette pattern), pas
+ *     de slot fixe hardcoded (= dynamique mais idempotent via IndexOfSpritePaletteTag).
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from './sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, IndexOfSpritePaletteTag } from './sprite';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
-import { OBJ_PLTT_ID } from './decomp-globals';
 import { gPlayerAvatar } from './player-avatar';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
+// Équivalent décomp `static const u8 sEmotion_*Gfx[] = INCGFX_U8(...)` (= byte
+// arrays statiques compilées dans le ROM). Notre port fetch async ces blobs au
+// 1er spawn puis cache.
 
 const EXCLAMATION_PNG = '/decomp/em/field_effects/emotion_exclamation.png';
 const QUESTION_PNG    = '/decomp/em/field_effects/emotion_question.png';
 const HEART_PNG       = '/decomp/em/field_effects/emotion_heart.png';
-/** Palette dédiée du sprite emote (= 16 colors RGB15 binaire 32 bytes).
- *  Extraite par `scripts/extract-png-indexed-tiles.mjs` depuis la PLTE du PNG
- *  source emotion_exclamation.png (= bytes identiques aux 3 PNGs emote car ils
- *  partagent la même PLTE, qui est elle-même 1:1 décomp `general_0.pal`).
- *  Le fichier `general_0.pal` source est en format JASC-PAL texte ASCII
- *  (= 213 bytes), donc utilisable directement par loadGbaPal. */
+/** Palette dédiée OBJ. Source : `general_0.pal` (= 1:1 décomp
+ *  `gFieldEffectObjectPalette0` loaded par LoadFieldEffectGraphics au boot). */
 const EMOTE_PAL_BIN   = '/decomp/em/field_effects/emotion_exclamation.gbapal';
 
-// ─── OBJ VRAM + palette allocation ─────────────────────────────────────────
+/** 1:1 décomp `FLDEFF_PAL_TAG_GENERAL_0` (event_object_movement_constants.h). */
+const FLDEFF_PAL_TAG_GENERAL_0 = 'FLDEFF_PAL_TAG_GENERAL_0';
 
-/** Tile start dans OBJ VRAM. 4 tiles 8x8 par emote × 3 emotes = 12 tiles.
- *  Layout OBJ VRAM des field effects (= partage strict, voir comments dans
- *  chaque module) :
- *    - 0..143      : player (= 18 frames × 8 tiles)
- *    - 144..(NPCs dynamic)
- *    - 952..971    : tall grass (field-effect-grass)
- *    - 972..977    : jump dust  (field-effect-jump-dust, 6 tiles)
- *    - 978..989    : EMOTES     (= ICI, 12 tiles = 3 emotes × 4)
- *    - 992..1023   : warp arrow (field-effect-arrow, 32 tiles)
- *
- *  Avant : 976..987 chevauchait 976+977 avec dust → tile data écrasé par
- *  dust frames → sprite emote affichait des bytes wrong (user-flag 2026-05-21
- *  "le sprite emote bug + n'est pas au bon endroit"). */
-/** 1:1 STRICT décomp `sSpriteSheets_TrainerIcons[]` (trainer_see.c) : 3 sheets
- *  séparées chacune avec son tag FLDEFF_GFXTAG_* (= EXCLAMATION/QUESTION/HEART).
- *  Bitmap allocator les alloue séquentiellement → tileStarts consécutifs. */
-const TAG_EMOTE_GFX_EXCLAMATION = 'FIELD_EFFECT_EMOTE_GFX_EXCLAMATION';
-const TAG_EMOTE_GFX_QUESTION    = 'FIELD_EFFECT_EMOTE_GFX_QUESTION';
-const TAG_EMOTE_GFX_HEART       = 'FIELD_EFFECT_EMOTE_GFX_HEART';
-const TAG_EMOTE_PAL             = 'FIELD_EFFECT_EMOTE_PAL';
-let _emoteTileStartExclamation = -1;
-let _emoteTileStartQuestion    = -1;
-let _emoteTileStartHeart       = -1;
-let _emotePalSlot              = -1;
-const TILES_PER_EMOTE = 4;  // 16x16 = 2x2 tiles 4bpp
+// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
+
+const TILE_SIZE_4BPP = 32;
+const TILES_PER_EMOTE = 4;                          // 16x16 = 2x2 tiles 4bpp
+const EMOTE_SIZE_BYTES = TILES_PER_EMOTE * TILE_SIZE_4BPP;  // 128 bytes
+/** 1:1 décomp `ANIMCMD_FRAME(N, 60)` → 60 game frames d'affichage avant END. */
+const EMOTE_FRAMES_TTL = 60;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -82,15 +70,17 @@ const TILES_PER_EMOTE = 4;  // 16x16 = 2x2 tiles 4bpp
 export type EmoteType = 'exclamation' | 'question' | 'heart';
 
 interface EmoteState {
-  /** OAM sprite ID alloué via CreateSpriteAtOam. */
+  /** OAM sprite ID alloué via CreateSpriteAtOam (= 1:1 décomp CreateSpriteAtEnd). */
   spriteId: number;
+  /** Tile start dans le bitmap général (= 1:1 décomp sprite->oam.tileNum).
+   *  Stocké pour libération via MarkObjTilesFree au destroy. */
+  tileStart: number;
   /** localId du NPC qui porte cet emote (= pour tracking position). */
   npcLocalIdRaw: string;
-  /** Frames restantes avant auto-destroy (= 1:1 décomp ANIMCMD_FRAME(0, 60) +
-   *  ANIMCMD_END → sprite ends après 60 game frames). */
+  /** Frames restantes avant auto-destroy (= 1:1 décomp animEnded check). */
   framesRemaining: number;
   /** 1:1 décomp `sYVelocity` (= sprite->data[3]). Initial = -5. Incrémenté
-   *  chaque frame (= rebondit puis tombe). */
+   *  chaque frame quand sYOffset != 0 (= rebondit puis tombe). */
   yVelocity: number;
   /** 1:1 décomp `sYOffset` (= sprite->data[4]). Accumule yVelocity chaque
    *  frame. Utilisé comme y2 sprite offset. */
@@ -99,106 +89,156 @@ interface EmoteState {
 
 const _activeEmotes: EmoteState[] = [];
 
-// ─── Asset loading (idempotent) ────────────────────────────────────────────
+// ─── Asset cache (= équivalent décomp INCGFX_U8 byte arrays statiques) ──────
 
-let _emoteAssetsLoaded = false;
-let _emoteAssetsLoading: Promise<void> | null = null;
+let _gfxExclamation: Uint8Array | null = null;
+let _gfxQuestion: Uint8Array | null = null;
+let _gfxHeart: Uint8Array | null = null;
+let _palData: Uint16Array | null = null;
+let _assetsLoading: Promise<void> | null = null;
 
-/** Charge async les 3 PNG emote + palette general_0.pal en OBJ VRAM/PLTT.
- *  Idempotent : safe à appeler plusieurs fois (= cache). À call avant le
- *  1er SpawnEmoteSprite (= TestOverworldScene boot ou warp). */
-export async function LoadEmoteAssets(rt: DecompRuntime): Promise<void> {
-  // 1:1 STRICT : si flag set MAIS tag absent du tag system (= ResetSpriteData
-  // entre-temps a clear bitmap), force re-load. Sinon return early.
-  const stillAlloc = _emoteAssetsLoaded && IndexOfSpriteTileTag(TAG_EMOTE_GFX_EXCLAMATION) !== 0xFF;
-  if (stillAlloc) return;
-  if (_emoteAssetsLoading) return _emoteAssetsLoading;
-  _emoteAssetsLoaded = false;  // force re-set after re-load
-  _emoteAssetsLoading = (async () => {
-    const [excl, qst, hrt, pal] = await Promise.all([
-      loadTileBin(EXCLAMATION_PNG, 4),
-      loadTileBin(QUESTION_PNG, 4),
-      loadTileBin(HEART_PNG, 4),
-      loadGbaPal(EMOTE_PAL_BIN),
-    ]);
-    // 1:1 STRICT décomp `LoadSpriteSheets(sSpriteSheets_TrainerIcons)` :
-    // 3 sheets séparées chargées via bitmap allocator.
-    const TILE_BYTES = 32;
-    const EMOTE_SHEET_SIZE = TILES_PER_EMOTE * TILE_BYTES;  // 128 bytes
-    _emoteTileStartExclamation = LoadSpriteSheet({
-      data: excl.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_EXCLAMATION,
-    });
-    _emoteTileStartQuestion = LoadSpriteSheet({
-      data: qst.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_QUESTION,
-    });
-    _emoteTileStartHeart = LoadSpriteSheet({
-      data: hrt.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_HEART,
-    });
-    // 1:1 STRICT décomp `LoadSpritePalette(sSpritePalette_TrainerIcons)`.
-    _emotePalSlot = LoadSpritePalette({ data: pal, tag: TAG_EMOTE_PAL });
-    _emoteAssetsLoaded = true;
-    console.log(`[field-effect-emotes] tiles excl=${_emoteTileStartExclamation} qst=${_emoteTileStartQuestion} hrt=${_emoteTileStartHeart} palSlot=${_emotePalSlot}`);
+/** Fetch async les PNG + palette. Idempotent : si déjà loadé, no-op.
+ *  Équivalent web du décomp `INCGFX_U8` (= byte arrays compilés dans ROM,
+ *  immédiatement accessibles). Nous on fetch en async + cache.
+ *
+ *  IMPORTANT : ne dépend PAS de l'état du tag system. Les tiles VRAM sont
+ *  alloués DYNAMIQUEMENT à chaque SpawnEmoteSprite (= 1:1 décomp). Ce cache
+ *  ne tient que les BYTES SOURCE qui sont identiques à chaque appel. */
+function _ensureAssetsLoaded(): Promise<void> {
+  if (_gfxExclamation && _gfxQuestion && _gfxHeart && _palData) return Promise.resolve();
+  if (_assetsLoading) return _assetsLoading;
+  _assetsLoading = (async () => {
+    try {
+      const [excl, qst, hrt, pal] = await Promise.all([
+        loadTileBin(EXCLAMATION_PNG, 4),
+        loadTileBin(QUESTION_PNG, 4),
+        loadTileBin(HEART_PNG, 4),
+        loadGbaPal(EMOTE_PAL_BIN),
+      ]);
+      _gfxExclamation = excl.subarray(0, EMOTE_SIZE_BYTES);
+      _gfxQuestion = qst.subarray(0, EMOTE_SIZE_BYTES);
+      _gfxHeart = hrt.subarray(0, EMOTE_SIZE_BYTES);
+      _palData = pal;
+    } finally {
+      _assetsLoading = null;
+    }
   })();
-  return _emoteAssetsLoading;
+  return _assetsLoading;
+}
+
+/** Returns le palette slot pour les emotes via tag system 1:1 décomp.
+ *  Si tag déjà alloué (= persistant entre spawns), retourne le slot existant.
+ *  Si clear (= ResetSpriteData entre temps), alloue un nouveau slot + écrit data.
+ *  1:1 décomp pattern `LoadSpritePaletteIfTagExists` (sprite.c:2035). */
+function _ensureEmotePaletteLoaded(): number {
+  if (!_palData) return 0xFF;
+  const existing = IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_GENERAL_0);
+  if (existing !== 0xFF) return existing;
+  return LoadSpritePalette({ data: _palData, tag: FLDEFF_PAL_TAG_GENERAL_0 });
 }
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────
 
-/** Map EmoteType → tileStart dynamiquement alloué via LoadSpriteSheet. */
-function _emoteTileStart(type: EmoteType): number {
-  switch (type) {
-    case 'exclamation': return _emoteTileStartExclamation;
-    case 'question':    return _emoteTileStartQuestion;
-    case 'heart':       return _emoteTileStartHeart;
-  }
-}
-
-/** 1:1 décomp `FldEff_ExclamationMarkIcon` / `FldEff_QuestionMarkIcon` /
- *  `FldEff_HeartIcon` (trainer_see.c:696-729). Spawn un sprite OAM 16x16
- *  au-dessus du NPC pour ~60 frames.
+/** 1:1 décomp `FldEff_ExclamationMarkIcon` (trainer_see.c:696-704) :
+ *    u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x53);
+ *    if (spriteId != MAX_SPRITES)
+ *        SetIconSpriteData(&gSprites[spriteId], FLDEFF_EXCLAMATION_MARK_ICON, 0);
  *
- *  Si les assets ne sont pas encore chargés (= map load pas fait LoadEmoteAssets
- *  préalable), call async + return false. Ne spawn rien dans ce cas (= MVP, le
- *  décomp ne devrait jamais avoir cet edge case car LoadFieldEffectGraphics
- *  load au boot).
+ *  Pour le type 'question' :
+ *  1:1 décomp `FldEff_QuestionMarkIcon` (trainer_see.c:706-714) idem + frame 1.
  *
- *  Returns true si spawn OK, false sinon. */
+ *  Pour le type 'heart' :
+ *  1:1 décomp `FldEff_HeartIcon` (trainer_see.c:716-728) :
+ *    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HeartIcon, 0, 0, 0x52);
+ *    SetIconSpriteData(...); sprite->oam.paletteNum = 2;
+ *
+ *  Returns true si spawn OK, false sinon (= assets pas loadés OU OBJ VRAM
+ *  saturé OU NPC introuvable). Le caller (= movement-system) ne re-essaie pas.
+ */
 export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type: EmoteType): boolean {
-  if (!_emoteAssetsLoaded) {
-    // Defensive : si pas loaded, kick off async load + skip ce call (= sprite
-    // pas spawned cette frame). Le prochain emote sera OK.
-    void LoadEmoteAssets(rt);
-    console.warn('[field-effect-emotes] SpawnEmoteSprite called before assets loaded — skipping');
+  if (!_gfxExclamation || !_gfxQuestion || !_gfxHeart || !_palData) {
+    // Lazy load + skip cette frame (= défensif web, le décomp n'a pas ce cas
+    // car les assets sont compilés dans le ROM).
+    void _ensureAssetsLoaded();
     return false;
   }
+  // 1:1 décomp sprite.c:562-575 branch tileTag==TAG_NONE :
+  //   tileNum = AllocSpriteTiles(images[0].size / TILE_SIZE_4BPP);
+  //   if (tileNum == -1) { ResetSprite(); return MAX_SPRITES; }
+  const tileStart = AllocSpriteTiles(TILES_PER_EMOTE);
+  if (tileStart < 0) {
+    console.warn('[field-effect-emotes] AllocSpriteTiles saturé — emote skip');
+    return false;
+  }
+
+  // Sélection du frame data + palette selon le type :
+  //   - exclamation : sSpriteImageTable_ExclamationQuestionMark[0] (= sEmotion_ExclamationMarkGfx)
+  //   - question    : sSpriteImageTable_ExclamationQuestionMark[1] (= sEmotion_QuestionMarkGfx)
+  //   - heart       : sSpriteImageTable_HeartIcon[0] (= sEmotion_HeartGfx)
+  let gfxData: Uint8Array;
+  if (type === 'exclamation') gfxData = _gfxExclamation;
+  else if (type === 'question') gfxData = _gfxQuestion;
+  else gfxData = _gfxHeart;
+
+  // 1:1 décomp : RequestSpriteFrameImageCopy copierait images[frame].data en
+  // VRAM à tileNum*32 quand le sprite anim cycle. Comme les emotes n'ont pas
+  // d'anim cycle (= 1 seul frame visible 60 frames), on copie directement ici
+  // au spawn (= équivalent du 1er ProcessSpriteCopyRequests fire après
+  // RequestSpriteFrameImageCopy au StartSpriteAnim).
+  rt.gba.objVram.set(gfxData, tileStart * TILE_SIZE_4BPP);
+
+  // Palette : 1:1 décomp sprite.c:585-586 :
+  //   if (template->paletteTag != TAG_NONE)
+  //       sprite->oam.paletteNum = IndexOfSpritePaletteTag(template->paletteTag);
+  //
+  // Template_ExclamationQuestionMark a paletteTag=TAG_NONE → le décomp utilise
+  // la palette ambiante (= général_0 loadée par LoadFieldEffectGraphics au boot).
+  // Template_HeartIcon a paletteTag=FLDEFF_PAL_TAG_GENERAL_0 → IndexOfSpritePaletteTag.
+  // Puis FldEff_HeartIcon override avec paletteNum=2 (ligne 725).
+  //
+  // Notre port : on utilise LE MÊME slot pour les 3 emotes (= même palette
+  // général_0.pal source) via tag system. Pas de différence paletteNum=2 car
+  // notre slot est dynamique.
+  const paletteSlot = _ensureEmotePaletteLoaded();
+  if (paletteSlot === 0xFF) {
+    // Palette saturé → free tiles + abort.
+    MarkObjTilesFree(tileStart * TILE_SIZE_4BPP, TILES_PER_EMOTE * TILE_SIZE_4BPP);
+    console.warn('[field-effect-emotes] palette OBJ saturé — emote skip');
+    return false;
+  }
+
+  // Position initiale = sprite NPC déjà synchronisé (= 1:1 décomp `sprite->x =
+  // objEventSprite->x; sprite->y = objEventSprite->y - 16`).
   const npc = _findNpc(npcLocalIdRaw);
   if (!npc) {
+    MarkObjTilesFree(tileStart * TILE_SIZE_4BPP, TILES_PER_EMOTE * TILE_SIZE_4BPP);
     console.warn(`[field-effect-emotes] SpawnEmoteSprite: NPC ${npcLocalIdRaw} not found`);
     return false;
   }
-  // Initial position = sprite NPC déjà synchronisé (= 1:1 décomp `sprite->x =
-  // objEventSprite->x; sprite->y = objEventSprite->y - 16`). Lecture directe du
-  // sprite NPC, pas de `npc.worldX/Y` qui est pre-sync cam/pan.
   const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
   const spriteX = npcSprite?.x ?? 0;
   const spriteY = (npcSprite?.y ?? 0) - 16;
-  const tileId = _emoteTileStart(type);
+
   const result = rt.CreateSpriteAtOam({
-    tileId,
-    paletteBank: _emotePalSlot,
+    tileId: tileStart,
+    paletteBank: paletteSlot,
     x: spriteX,
     y: spriteY,
-    shape: 0,    // square
-    size: 1,     // 16x16
-    priority: 1, // au-dessus de BG2 + NPCs
-    paletteMode: 0,
-    affineMode: 0,
+    shape: 0,        // SPRITE_SHAPE(16x16) = SQUARE
+    size: 1,         // SPRITE_SIZE(16x16)
+    priority: 1,     // 1:1 décomp sOamData_Icons.priority = 1
+    paletteMode: 0,  // ST_OAM_4BPP
+    affineMode: 0,   // ST_OAM_AFFINE_OFF
   });
+
+  // 1:1 décomp SetIconSpriteData (trainer_see.c:731-743) : init data slots +
+  // StartSpriteAnim. Notre port stocke la state dans _activeEmotes pour ticker.
   _activeEmotes.push({
     spriteId: result.spriteId,
+    tileStart,
     npcLocalIdRaw,
-    framesRemaining: 60,  // 1:1 décomp ANIMCMD_FRAME(N, 60) → 60 game frames.
-    yVelocity: -5,        // 1:1 décomp `sprite->sYVelocity = -5`.
+    framesRemaining: EMOTE_FRAMES_TTL,  // 1:1 décomp ANIMCMD_FRAME(0, 60) → 60 frames.
+    yVelocity: -5,                       // 1:1 décomp sprite->sYVelocity = -5.
     yOffset: 0,
   });
   return true;
@@ -212,11 +252,11 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
  *      sprite->y2 = objEventSprite->y2 + sYOffset;
  *      if (sYOffset) sYVelocity++;
  *      else sYVelocity = 0;
- *      → quand animEnded (= 60 frames), destroy sprite.
+ *      → quand animEnded (= 60 frames), FieldEffectStop → DestroySprite.
  *
  *  Crucial 1:1 : on copie `objEventSprite->x/y`, pas `npc.worldX/Y`. La
  *  raison : `sprite.x/y` est la position FINALE post-camera-pan post-offset
- *  (cf. object-events.ts:1753-1754 `sprite.x = npc.worldX + offX - panX + visualOffsetX`).
+ *  (cf. object-events.ts `sprite.x = npc.worldX + offX - panX + visualOffsetX`).
  *  Si on lit `worldX` directement, l'emote sera décalé du sprite NPC.
  *
  *  À call chaque frame depuis le main loop OW. */
@@ -225,19 +265,19 @@ export function tickEmoteSprites(rt: DecompRuntime): void {
     const emote = _activeEmotes[i];
     const npc = _findNpc(emote.npcLocalIdRaw);
     if (!npc || !npc.active) {
-      // NPC disparu → cleanup sprite.
+      // NPC disparu → cleanup sprite (= 1:1 décomp TryGetObjectEventIdByLocalIdAndMap fail).
       _destroyEmoteSprite(rt, emote);
       _activeEmotes.splice(i, 1);
       continue;
     }
     emote.framesRemaining--;
     if (emote.framesRemaining <= 0) {
-      // Anim ended → destroy.
+      // animEnded (= 60 frames passées) → FieldEffectStop → DestroySprite.
       _destroyEmoteSprite(rt, emote);
       _activeEmotes.splice(i, 1);
       continue;
     }
-    // Update bounce : yOffset += yVelocity, puis yVelocity++ si yOffset != 0.
+    // 1:1 décomp : sYOffset += sYVelocity, puis sYVelocity++ si sYOffset != 0.
     emote.yOffset += emote.yVelocity;
     if (emote.yOffset !== 0) emote.yVelocity++;
     else emote.yVelocity = 0;
@@ -252,7 +292,8 @@ export function tickEmoteSprites(rt: DecompRuntime): void {
   }
 }
 
-/** Cleanup tous les emote sprites actifs. À call au map switch / scene close. */
+/** Cleanup tous les emote sprites actifs. À call au map switch / scene close
+ *  (= 1:1 décomp FieldEffectStop + destruction). */
 export function DestroyAllEmoteSprites(rt: DecompRuntime): void {
   for (const emote of _activeEmotes) {
     _destroyEmoteSprite(rt, emote);
@@ -263,14 +304,12 @@ export function DestroyAllEmoteSprites(rt: DecompRuntime): void {
 // ─── Internal helpers ──────────────────────────────────────────────────────
 
 /** Lookup NPC ObjectEvent par localIdRaw, ou retourne un proxy player-shaped
- *  si localIdRaw == 'LOCALID_PLAYER' (= le décomp `gPlayerAvatar.objectEventId`
+ *  si localIdRaw == 'LOCALID_PLAYER' (= 1:1 décomp `gPlayerAvatar.objectEventId`
  *  pointe vers un slot dans gObjectEvents, mais notre TS player utilise une
  *  struct `gPlayerAvatar` séparée). On wrap `gPlayerAvatar` en mini-ObjectEvent
- *  pour que `tickEmoteSprites` puisse lire spriteId. */
+ *  pour que tickEmoteSprites puisse lire spriteId. */
 function _findNpc(localIdRaw: string): ObjectEvent | null {
   if (localIdRaw === 'LOCALID_PLAYER') {
-    // 1:1 décomp : le player est gObjectEvents[gPlayerAvatar.objectEventId].
-    // Côté TS : on synth un mini-ObjectEvent à partir de gPlayerAvatar.
     return {
       active: true,
       spriteId: gPlayerAvatar.spriteId,
@@ -283,6 +322,9 @@ function _findNpc(localIdRaw: string): ObjectEvent | null {
   return null;
 }
 
+/** 1:1 décomp DestroySprite sprite.c:618-631 branch !usingSheet :
+ *    for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+ *  Libère les 4 tiles dans `sSpriteTileAllocBitmap` pour ré-utilisation. */
 function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
   const sprite = rt.gSprites.get(emote.spriteId);
   if (sprite) {
@@ -290,6 +332,10 @@ function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
       rt.gba.oam[sprite.oamIndex].visible = false;
     }
     sprite.inUse = false;
+  }
+  // 1:1 décomp DestroySprite branch !usingSheet : free tiles.
+  if (emote.tileStart >= 0) {
+    MarkObjTilesFree(emote.tileStart * TILE_SIZE_4BPP, TILES_PER_EMOTE * TILE_SIZE_4BPP);
   }
 }
 
@@ -303,7 +349,6 @@ function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
   type: EmoteType = 'exclamation',
   npcLocalIdRaw: string = 'LOCALID_PLAYER',
 ): boolean => {
-  // Lazy import getRuntime to avoid circular dep.
   const rt = (globalThis as { getRuntime?: () => unknown }).getRuntime?.() as DecompRuntime | null;
   if (!rt) {
     console.warn('[testEmote] no runtime');
@@ -311,3 +356,10 @@ function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
   }
   return SpawnEmoteSprite(rt, npcLocalIdRaw, type);
 };
+
+/** Pre-load lazy : à call au boot field pour éviter le skip du 1er spawn.
+ *  Idempotent : safe si déjà loadé. Le décomp load au boot via
+ *  LoadFieldEffectGraphics, on offre la même API. */
+export function LoadEmoteAssets(_rt: DecompRuntime): Promise<void> {
+  return _ensureAssetsLoaded();
+}
