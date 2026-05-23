@@ -510,6 +510,19 @@ export async function InitPlayerAvatar(
   const objVram = rt.gba.objVram;
   objVram.set(combined, PLAYER_OBJ_TILE_START * 32);
 
+  // 1:1 STRICT sprite.c : MARQUER ces tiles dans rt.spriteSheetTagToTileStart
+  // sinon LoadCompressedSpriteSheet (= item icon, bag, etc.) considère cette
+  // plage LIBRE et alloue à offset 0 → écrase player tiles.
+  // Bug user reporté 2026-05-23 : "j'ai visualiser la potion dans mon PC et
+  // mon sprite a été écrasé" = exactement ce scenario. Fix : tag + avancer
+  // le cursor pour que les allocs subséquentes commencent APRÈS le player.
+  rt.spriteSheetTagToTileStart.set('PLAYER_AVATAR_GFX', PLAYER_OBJ_TILE_START);
+  rt.spriteSheetTagToByteSize.set('PLAYER_AVATAR_GFX', combined.length);
+  const playerTilesEndByte = PLAYER_OBJ_TILE_START * 32 + combined.length;
+  if (playerTilesEndByte > rt.nextSpriteSheetByteOffset) {
+    rt.nextSpriteSheetByteOffset = playerTilesEndByte;
+  }
+
   // Load palette → OBJ palette bank PLAYER_PALETTE_BANK (= bank 0 of OBJ).
   // gPlttBufferFaded entries 256..271 = OBJ bank 0. Décomp : walking + running
   // partagent la même palette player → on charge celle de walking.
@@ -519,6 +532,13 @@ export async function InitPlayerAvatar(
   for (let i = 0; i < Math.min(16, palette.length); i++) {
     rt.gPlttBufferFaded.set(objPaletteSlot + i, palette[i]);
     rt.gPlttBufferUnfaded.set(objPaletteSlot + i, palette[i]);
+  }
+  // 1:1 STRICT sprite.c : MARQUER cette palette bank dans rt.paletteTagToSlot
+  // sinon AllocSpritePalette (= item icon, bag) considère le slot LIBRE et
+  // alloue dessus → écrase player palette.
+  rt.paletteTagToSlot.set('PLAYER_AVATAR_PAL', PLAYER_PALETTE_BANK);
+  if (PLAYER_PALETTE_BANK + 1 > rt.nextObjPalSlot) {
+    rt.nextObjPalSlot = PLAYER_PALETTE_BANK + 1;
   }
   // 1:1 décomp : NE PAS flushTo inline ici. Le décomp `LoadSpritePalette` ne flush
   // pas non plus — c'est `TransferPlttBuffer()` au prochain VBlank qui copie
