@@ -31,11 +31,12 @@
  * extrait de items.h `.pocket = POCKET_X` par scripts/extract-items.mjs). On
  * convertit 'POCKET_X' string → pocketId number via `_pocketNameToId`.
  */
-// Side-effect import : charge game-state.ts (= module vide, juste pour
-// préserver la chaîne ESM eager save-system → bag → game-state qui est
-// essentielle au boot. Sans, boot stall silencieux après decomp-constants.
-// Cause root non identifiée, dette explicite documentée).
-import './game-state';
+// Side-effect import : charge bagFix.ts (= shim ESM technique, juste pour
+// préserver la chaîne ESM eager save-system → bag → bagFix qui est essentielle
+// au boot. Sans, boot stall silencieux après decomp-constants.
+// Cause root non identifiée — investigation déférée. Voir bagFix.ts pour
+// détails complets de la dette.
+import './bagFix';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { getItem } from './data-tables';
 import {

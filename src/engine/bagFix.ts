@@ -1,15 +1,18 @@
 /**
- * game-state.ts — Module SHIM ESM + getter `bag` debug compat.
+ * bagFix.ts — Module SHIM ESM technique + getter `bag` debug compat.
  *
  * **NON-1:1 décomp** : le décomp n'a PAS de class GameState. Il utilise
  * `gSaveBlock1Ptr` + `gSaveBlock2Ptr` (globals) + helpers (FlagSet/VarSet/etc)
- * direct. **Code engine : 0 sites utilisent `gameState.X`.**
+ * direct. **Code engine : 0 sites utilisent une `gameState.X` class.**
  *
- * Ce module est gardé pour DEUX raisons :
- *   1. **Init ESM eager chain** : la chaîne `save-system → bag → game-state`
- *      est essentielle au boot. Sans game-state.ts qui charge la chaîne
+ * Ce module (= ex `game-state.ts`, renommé `bagFix.ts` 2026-05-23) est gardé
+ * pour DEUX raisons :
+ *   1. **Init ESM eager chain** : la chaîne `save-system → bag → bagFix`
+ *      est essentielle au boot. Sans bagFix.ts qui charge la chaîne
  *      complète des helpers 1:1, `main.ts` top-level ne s'exécute jamais
  *      (= boot stall silencieux après decomp-constants loaded).
+ *      Cause root : cycle ESM subtil non identifié dans phaser → scenes →
+ *      engine modules. **Investigation déférée**.
  *
  *   2. **Debug compat `window.gameState.bag`** : getter virtuel composite
  *      qui expose les 5 fields séparés `gSaveBlock1Ptr.bagPocket_*` comme
@@ -17,11 +20,12 @@
  *      l'inspection console browser. Le sac REAL = `gBagPockets[]` (1:1
  *      item.c) ; ce getter n'est qu'une convenience debug.
  *
- * Investigation détaillée : session 2026-05-23-2 (= tentatives suppression
- * complète → boot stall, refactor déféré jusqu'à investigation profonde du
- * resolver ESM dynamique de Vite).
+ * Investigation : session 2026-05-23 (= tentatives suppression complète →
+ * boot stall reproductible, options de fix = refactor architectural des
+ * scenes ou patch Vite resolver — toutes haut risque, déférées).
  *
- * **Helpers 1:1 à utiliser dans le code engine** :
+ * **Helpers 1:1 à utiliser dans le code engine (= zero dependence à ce
+ * module)** :
  *   - `gSaveBlock1Ptr` / `gSaveBlock2Ptr` (save-block-state.ts)
  *   - `FlagSet/FlagClear/FlagGet/VarSet/VarGet` (script-vars.ts)
  *   - `GetCurrentMap/SetCurrentMap` (load_save.ts)
