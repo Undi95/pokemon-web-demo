@@ -522,7 +522,6 @@ export async function InitPlayerAvatar(
   // (= 1:1 décomp EWRAM static storage). Sans ça, AllocSpriteTiles bitmap scan
   // saute la zone "libre" précédente (= 0..143 si bag avait alloué) et alloue
   // player à offset ≠ 0 → sprite OAM tileId=0 lit ancien bag sprite → NOIR.
-  rt.nextSpriteSheetByteOffset = 0;
   rt.freedSpriteTileRanges.length = 0;
   setReservedSpriteTileCount(0);
   setReservedSpritePaletteCount_helper(0);

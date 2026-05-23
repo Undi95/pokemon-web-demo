@@ -107,7 +107,6 @@ interface SaveState {
   sSpriteTileRangeTags: Uint16Array;
   sSpriteTileRanges: Uint16Array;
   sSpriteTileAllocBitmap: Uint8Array;
-  nextSpriteSheetByteOffset: number;
   frameCounter: number;
 }
 
@@ -190,7 +189,6 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       sSpriteTileRangeTags: new Uint16Array(64),
       sSpriteTileRanges: new Uint16Array(128),
       sSpriteTileAllocBitmap: new Uint8Array(128),
-      nextSpriteSheetByteOffset: rt.nextSpriteSheetByteOffset,
       frameCounter: rt.gIntroFrameCounter,
     };
     for (let i = 0; i < 512; i++) {
@@ -253,7 +251,6 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     if (spR?.sSpriteTileRangeTags) spR.sSpriteTileRangeTags.set(ss.sSpriteTileRangeTags);
     if (spR?.sSpriteTileRanges) spR.sSpriteTileRanges.set(ss.sSpriteTileRanges);
     if (spR?.sSpriteTileAllocBitmap) spR.sSpriteTileAllocBitmap.set(ss.sSpriteTileAllocBitmap);
-    rt.nextSpriteSheetByteOffset = ss.nextSpriteSheetByteOffset;
     rt.gIntroFrameCounter = ss.frameCounter;
     return `loaded '${name}' (frame=${ss.frameCounter}, sprites=${ss.gSprites.length}, tasks=${ss.gTasks.length})`;
   };

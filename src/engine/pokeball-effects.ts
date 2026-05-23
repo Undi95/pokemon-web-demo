@@ -478,20 +478,26 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
   const gfx = charData ? charData('gBattleAnimSpriteGfx_Particles') : null;
   const pal = charData ? charData('gBattleAnimSpritePal_Particles') : null;
 
-  // 1:1 STRICT décomp src/sprite.c:1486 LoadSpriteSheet : AllocSpriteTiles
-  // bitmap + AllocSpriteTileRange + CpuCopy16. Source unique = arrays primary.
+  // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet :
+  //   tileStart = AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP);
+  //   if (tileStart < 0) return 0;
+  //   AllocSpriteTileRange(tag, tileStart, size / TILE_SIZE_4BPP);
+  //   CpuCopy16(data, OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart, size);
   if (gfx && GetSpriteTileStartByTag(PARTICLES_TILE_TAG) === 0xFFFF) {
     const bytes = gfx instanceof Uint16Array ? new Uint8Array(gfx.buffer, gfx.byteOffset, gfx.byteLength) : gfx;
-    const tileStart = (rt.nextSpriteSheetByteOffset >> 5);
-    const copySize = Math.min(bytes.length, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
-    if (copySize > 0) {
-      rt.gba.objVram.set(bytes.subarray(0, copySize), rt.nextSpriteSheetByteOffset);
-      // 1:1 STRICT bitmap allocator sync + sSpriteTileRangeTags tag enregistré
-      // via AllocSpriteTileRange (= arrays primary + Map secondary sync auto).
-      MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, copySize);
-      AllocSpriteTileRange(PARTICLES_TILE_TAG, tileStart, copySize >> 5);
+    const tileCount = bytes.length >> 5;
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      AllocSpriteTiles?: (count: number) => number;
+    } | undefined;
+    const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+    if (tileStart >= 0) {
+      const byteOffset = tileStart << 5;
+      const copySize = Math.min(bytes.length, rt.gba.objVram.length - byteOffset);
+      if (copySize > 0) {
+        rt.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
+      }
+      AllocSpriteTileRange(PARTICLES_TILE_TAG, tileStart, tileCount);
     }
-    rt.nextSpriteSheetByteOffset += copySize;
   }
   // 1:1 STRICT décomp src/sprite.c:1589 LoadSpritePalette : scan first-free
   // sSpritePaletteTags array primary + DoLoadSpritePalette + sync auto Map.

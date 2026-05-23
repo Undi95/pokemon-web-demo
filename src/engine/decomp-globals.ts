@@ -1896,13 +1896,11 @@ export function FreeSpriteTilesByTag(tag: string | number): void {
 export function LoadSpritePalettes(palettes: Array<{ data: string, tag: string | number }>): void {
   _LoadSpritePalettes_1to1(palettes);
 }
-/** Reset des allocations OBJ slots (à call entre 2 scènes).
- *  1:1 STRICT : tout passe par les arrays primary sprite.ts (= FreeSpriteTileRanges
- *  + FreeAllSpritePalettes). nextSpriteSheetByteOffset gardé pour les sites
- *  legacy qui utilisent encore le cursor (= migration A2 à venir). */
+/** Reset des allocations OBJ entre 2 scènes.
+ *  1:1 STRICT : utilise FreeSpriteTileRanges + FreeAllSpritePalettes (=
+ *  arrays primary sprite.ts). Pas de cursor monotone — A2 cleanup. */
 export function resetObjAllocations(): void {
   const r = rt();
-  r.nextSpriteSheetByteOffset = 0;
   r.freedSpriteTileRanges.length = 0;
 }
 

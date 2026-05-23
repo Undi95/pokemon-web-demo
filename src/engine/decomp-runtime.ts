@@ -535,10 +535,11 @@ export class DecompRuntime {
    *  SpriteTiles bitmap : reclaim au free, reuse à l'alloc — sinon le
    *  curseur monotone épuise la VRAM (icône sac cassée après N nav). */
   freedSpriteTileRanges: Array<{ offset: number; size: number }> = [];
-  /** Prochain slot OBJ palette libre (auto-assigné par LoadSpritePalettes). */
-  nextObjPalSlot = 0;
-  /** Prochain offset libre dans objVram pour sprite sheets (auto-assigné). */
-  nextSpriteSheetByteOffset = 0;
+  // Phase A2 cleanup : `nextObjPalSlot` + `nextSpriteSheetByteOffset` cursors
+  // monotones retirés. Allocation 1:1 STRICT décomp via sprite.ts :
+  //  - AllocSpriteTiles (sprite.c:702-753) scan first-free dans bitmap
+  //  - AllocSpritePalette (sprite.c:1623-1635) scan first-free sSpritePaletteTags
+  // Source UNIQUE = arrays primary + bitmap, pas de cursor.
   /** State des sprite anims actives : spriteId → state. */
   private spriteAnimStates = new Map<number, SpriteAnimState>();
 
@@ -1686,7 +1687,6 @@ export class DecompRuntime {
     this.nextSpriteId = 0;
     // FreeSpriteTileRanges : reset tile allocator (1024 tiles OBJ VRAM)
     this.freedSpriteTileRanges.length = 0;
-    this.nextSpriteSheetByteOffset = 0;
     // 1:1 STRICT décomp sprite.c:294-306 ResetSpriteData : aussi reset les
     // sSpriteTileRangeTags + sSpriteTileRanges arrays + sSpriteTileAllocBitmap.
     // gReservedSpriteTileCount = 0 + AllocSpriteTiles(0) (= free all unreserved
@@ -1806,7 +1806,12 @@ export class DecompRuntime {
       console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable: table ${tableName} not found`);
       return;
     }
+    // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet pour chaque
+    // entry : LZ77UnComp data → AllocSpriteTiles (bitmap scan first-free) →
+    // AllocSpriteTileRange (tag register) → CpuCopy16. Source unique = arrays
+    // primary, pas de cursor monotone.
     const sp = (globalThis as Record<string, unknown>).__sprite as {
+      AllocSpriteTiles?: (count: number) => number;
       AllocSpriteTileRange?: (tag: string | number, start: number, count: number) => void;
     } | undefined;
     for (const entry of table.entries) {
@@ -1815,14 +1820,18 @@ export class DecompRuntime {
         console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: cannot resolve URL for ${entry.gfxName}`);
         continue;
       }
-      const tileStart = this.nextSpriteSheetByteOffset / 32;
       try {
-        const result = await this.LoadCompressedSpriteSheetStrict(url, this.nextSpriteSheetByteOffset);
-        // 1:1 STRICT register tag via sSpriteTileRangeTags array primary
-        // (sprite.c:1574-1579 AllocSpriteTileRange).
-        sp?.AllocSpriteTileRange?.(entry.tag, tileStart, result.byteSize >> 5);
-        this.nextSpriteSheetByteOffset += result.byteSize;
-        if (RT_DEBUG) console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${result.byteSize}B)`);
+        const png = await loadIndexedPngStrict(url, 4);
+        const tileCount = png.charData.length >> 5;
+        const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+        if (tileStart < 0) {
+          console.warn(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: OBJ VRAM saturated for ${entry.tag}`);
+          continue;
+        }
+        const byteOffset = tileStart << 5;
+        this._writeToObjVram(png.charData, byteOffset);
+        sp?.AllocSpriteTileRange?.(entry.tag, tileStart, tileCount);
+        if (RT_DEBUG) console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
       } catch (e) {
         console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
       }
@@ -2301,7 +2310,6 @@ export class DecompRuntime {
     if (sp?.sSpritePaletteTags) sp.sSpritePaletteTags.fill(0xFFFF);
     if (sp?.sSpriteTileAllocBitmap) sp.sSpriteTileAllocBitmap.fill(0);
     this.freedSpriteTileRanges.length = 0;
-    this.nextSpriteSheetByteOffset = 0;
     this.spriteAnimStates.clear();
     this.accumulatorMs = 0;
   }

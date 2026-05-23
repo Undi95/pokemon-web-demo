@@ -783,21 +783,13 @@ export function _freeSpriteTileRangeByTag(tag: string | number): void {
  *  }
  *  ```
  *
- *  Retourne tile start (0-1023), ou -1 si VRAM saturée.
- *  Sync legacy : update rt.nextSpriteSheetByteOffset au cas où ancien code
- *  inspecte ce cursor. */
+ *  Retourne tile start (0-1023), ou -1 si VRAM saturée. */
 export function AllocSpriteTiles(tileCount: number): number {
-  const r = _rt();
   const reservedTiles = getReservedSpriteTileCount();
 
   if (tileCount === 0) {
     // 1:1 décomp : tileCount==0 → free all unreserved tiles in bitmap.
     for (let i = reservedTiles; i < TOTAL_OBJ_TILE_COUNT; i++) _freeSpriteTile(i);
-    // Sync legacy cursor.
-    r.freedSpriteTileRanges.length = 0;
-    if (r.nextSpriteSheetByteOffset > reservedTiles * TILE_SIZE_4BPP) {
-      r.nextSpriteSheetByteOffset = reservedTiles * TILE_SIZE_4BPP;
-    }
     return 0;
   }
 
@@ -825,11 +817,6 @@ export function AllocSpriteTiles(tileCount: number): number {
   }
   // Mark all `tileCount` tiles as allocated in bitmap.
   for (let j = start; j < tileCount + start; j++) _allocSpriteTile(j);
-  // Sync legacy cursor (= advance pour callers qui inspect nextSpriteSheetByteOffset).
-  const endByteOffset = (start + tileCount) * TILE_SIZE_4BPP;
-  if (endByteOffset > r.nextSpriteSheetByteOffset) {
-    r.nextSpriteSheetByteOffset = endByteOffset;
-  }
   return start;
 }
 

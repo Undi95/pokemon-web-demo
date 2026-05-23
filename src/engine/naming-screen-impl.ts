@@ -616,27 +616,32 @@ async function loadNamingScreenAssets(): Promise<void> {
     { url: BASE + 'pc_icon_off.png',      tag: GFXTAG_PC_ICON_OFF,      sizeBytes: 0x0C0, srcOffset: 0 },
   ];
   try {
+    // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet pour chaque
+    // entry : AllocSpriteTiles (bitmap scan first-free) → AllocSpriteTileRange
+    // → CpuCopy16. Source unique = arrays primary.
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      AllocSpriteTiles?: (count: number) => number;
+    } | undefined;
     for (const sheet of sheets) {
       // 1:1 STRICT check via array primary (sSpriteTileRangeTags).
       if (GetSpriteTileStartByTag(sheet.tag) !== 0xFFFF) continue;
       const charData = await loadTileBin(sheet.url, 4);
-      const tileStart = rt.nextSpriteSheetByteOffset >> 5;
+      const tileCount = sheet.sizeBytes >> 5;
+      const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+      if (tileStart < 0) {
+        console.warn(`[naming-screen] OBJ VRAM saturated, cannot load ${sheet.tag}`);
+        continue;
+      }
+      const byteOffset = tileStart << 5;
       // Source slice : srcOffset..srcOffset+sizeBytes (clamped to file end).
       const srcStart = Math.min(sheet.srcOffset, charData.length);
       const srcEnd = Math.min(srcStart + sheet.sizeBytes, charData.length);
-      const writeSize = Math.min(srcEnd - srcStart, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
+      const writeSize = Math.min(srcEnd - srcStart, rt.gba.objVram.length - byteOffset);
       if (writeSize > 0) {
-        rt.gba.objVram.set(charData.subarray(srcStart, srcStart + writeSize), rt.nextSpriteSheetByteOffset);
-        // 1:1 STRICT bitmap allocator sync.
-        MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, sheet.sizeBytes);
+        rt.gba.objVram.set(charData.subarray(srcStart, srcStart + writeSize), byteOffset);
       }
-      // 1:1 STRICT AllocSpriteTileRange : sync sSpriteTileRangeTags array
-      // primary + Map secondary (sprite.c:1574-1579). Source unique de vérité.
-      AllocSpriteTileRange(sheet.tag, tileStart, sheet.sizeBytes >> 5);
-      // Round up to sizeBytes (= 1:1 décomp behavior — always advance by
-      // sheet.size even if our extracted file was shorter, so the next
-      // sheet starts at the canonical offset).
-      rt.nextSpriteSheetByteOffset += sheet.sizeBytes;
+      // 1:1 STRICT AllocSpriteTileRange : sync sSpriteTileRangeTags array primary.
+      AllocSpriteTileRange(sheet.tag, tileStart, tileCount);
     }
   } catch (e) {
     console.warn('[naming-screen] loadNamingScreenAssets sprite sheets failed:', e);
@@ -777,11 +782,10 @@ function CB2_LoadNamingScreen(): void {
       rt.gMain.state++;
       break;
     case 3:
+      // 1:1 STRICT décomp ResetSpriteData + FreeAllSpritePalettes au boot
+      // d'écran (= clear arrays primary + bitmap). Source UNIQUE.
       rt.ResetSpriteData();
       FreeAllSpritePalettes();
-      // 1:1 STRICT cleanup : Maps secondaires retirées, source unique = arrays
-      // primary sprite.ts. nextSpriteSheetByteOffset gardé (= migration A2).
-      rt.nextSpriteSheetByteOffset = 0;
       _assetsLoaded = false;  // force reload (= fresh slot/tile assignments)
       clearAllSubspriteTables();
       rt.gMain.state++;
