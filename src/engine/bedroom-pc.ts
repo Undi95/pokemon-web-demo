@@ -53,6 +53,9 @@ import { getRuntime, PlaySE } from './decomp-globals';
 import { SignalWaitState } from './script-opcodes';
 import { ScriptContext_SetupScript } from './script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { MAIL_COUNT, PARTY_SIZE } from './save-blocks';
+import { ReadMail } from './mail';
+import { ITEM_NONE } from './mail-data';
 import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from './string-buffers';
@@ -1456,20 +1459,51 @@ function _tickItemStorage(_newKeys: number): void {
   }
 }
 
+/** 1:1 décomp `static u8 GetMailboxMailCount(void)` (player_pc.c:668-678) :
+ *      u8 mailInPC, i;
+ *      for (mailInPC = 0, i = PARTY_SIZE; i < MAIL_COUNT; i++)
+ *          if (gSaveBlock1Ptr->mail[i].itemId != ITEM_NONE)
+ *              mailInPC++;
+ *      return mailInPC; */
+function GetMailboxMailCount(): number {
+  let mailInPC = 0;
+  for (let i = PARTY_SIZE; i < MAIL_COUNT; i++)
+    if (gSaveBlock1Ptr.mail[i].itemId !== ITEM_NONE)
+      mailInPC++;
+  return mailInPC;
+}
+
+/** 1:1 décomp `static void Mailbox_CompactMailList(void)` (player_pc.c:680-693).
+ *  Bubble-sort : push slots vides (itemId == ITEM_NONE) à la fin. */
+function Mailbox_CompactMailList(): void {
+  for (let i = PARTY_SIZE; i < MAIL_COUNT - 1; i++) {
+    for (let j = i + 1; j < MAIL_COUNT; j++) {
+      if (gSaveBlock1Ptr.mail[i].itemId === ITEM_NONE) {
+        // 1:1 SWAP(mail[i], mail[j]) — échange complet du struct Mail.
+        const temp = gSaveBlock1Ptr.mail[i];
+        gSaveBlock1Ptr.mail[i] = gSaveBlock1Ptr.mail[j];
+        gSaveBlock1Ptr.mail[j] = temp;
+      }
+    }
+  }
+}
+
 /** 1:1 décomp `PlayerPC_Mailbox` (player_pc.c:457-485) :
  *    count = GetMailboxMailCount();
- *    if (count == 0) DisplayItemMessageOnField(..., gText_NoMailHere, ...);
- *    else { MailboxMenu_Alloc + Mailbox_DrawMailboxMenu → list mails + actions }
+ *    if (count == 0) DisplayItemMessageOnField(taskId, gText_NoMailHere, ReshowPlayerPC);
+ *    else { compact list ; MailboxMenu_Alloc ; Mailbox_DrawMailboxMenu ; }
  *
- *  Notre port : on affiche le visuel de la liste mailbox MÊME SI count == 0
- *  (= juste "RETOUR"), pour montrer l'UI dans la démo. Le décomp affiche un
- *  msgbox dans ce cas, on peut faire pareil ou montrer la liste.
+ *  Notre port : check count via GetMailboxMailCount(), affiche la liste si non
+ *  vide (= 1:1 strict), sinon msgbox "Aucun MAIL." sticky.
  *
- *  Le user a demandé "juste le visuel des menus" — on fait l'UI minimum :
- *  liste mailbox avec items (vide en early game) + RETOUR. */
+ *  Le sub-état `mailbox_list` est utilisé pour les 2 cas (= 1 seule fenêtre liste
+ *  avec items réels ou juste RETOUR si vide). */
 function _openMailboxEmpty(): void {
   _removeMainWindow();
   _clearSticky();
+  // 1:1 décomp count = GetMailboxMailCount() + Mailbox_CompactMailList si non vide.
+  const count = GetMailboxMailCount();
+  if (count > 0) Mailbox_CompactMailList();
   sSubState = 'mailbox_list';
   _mailboxOpenList();
 }
@@ -1499,10 +1533,17 @@ function _mailboxOpenList(): void {
     GetStringCenterAlignXOffset(titleText, WIN_PC_TITLE.width * 8),
     1, [1, 2, 3], TEXT_SKIP_DRAW, titleText,
   );
-  // Build mailbox list (= vide en early game ; only RETOUR).
-  // 1:1 décomp : iterate gSaveBlock1Ptr->mail[PARTY_SIZE..MAIL_COUNT] où itemId != ITEM_NONE.
-  // Notre runtime n'a pas mail data extensive → list always vide.
+  // Build mailbox list (= 1:1 décomp Mailbox_DrawMailboxMenu + MailboxMenu_CreateList).
+  // Itère gSaveBlock1Ptr.mail[PARTY_SIZE..MAIL_COUNT] où itemId != ITEM_NONE,
+  // ajoute chaque playerName + ajoute RETOUR à la fin (= 1:1 LIST_CANCEL).
   sMailboxListItems = [];
+  for (let i = PARTY_SIZE; i < MAIL_COUNT; i++) {
+    const m = gSaveBlock1Ptr.mail[i];
+    if (m.itemId !== ITEM_NONE) {
+      // 1:1 décomp : `playerName` du sender utilisé comme label dans la list.
+      sMailboxListItems.push({ name: m.playerName || 'MAIL', id: i });
+    }
+  }
   sMailboxListItems.push({ name: getString('gText_Cancel2'), id: -2 });
 
   const template: ListMenuTemplate = {
@@ -1530,12 +1571,29 @@ function _mailboxOpenList(): void {
 
 function _tickMailboxList(_newKeys: number): void {
   const sel = ListMenu_ProcessInput(sPCListTaskId);
-  if (sel === -1) return;
-  // -2 = LIST_CANCEL ou >= 0 = mail selected (jamais accessible si vide).
-  if (sel === -2 || sel >= 0) {
+  if (sel === -1) return;  // LIST_NOTHING_CHOSEN
+  if (sel === -2) {
+    // 1:1 décomp LIST_CANCEL → Mailbox_ReturnToPlayerPC.
     PlaySE(Songs.SE_SELECT);
     _mailboxExitList();
+    return;
   }
+  // 1:1 décomp Mailbox_DoMailRead (player_pc.c:786-790) :
+  //   FadeScreen(FADE_TO_BLACK, 0); gTasks[taskId].func = Mailbox_FadeAndReadMail;
+  // → après fade : MailboxMenu_Free + CleanupOverworldWindowsAndTilemaps +
+  //   ReadMail(&mail, Mailbox_ReturnToFieldFromReadMail, TRUE)
+  // Notre port : appel direct ReadMail avec un exitCallback qui re-ouvre le PC.
+  PlaySE(Songs.SE_SELECT);
+  const mailIdx = sel;  // index dans gSaveBlock1Ptr.mail (PARTY_SIZE..MAIL_COUNT)
+  _mailboxExitList();
+  ReadMail(
+    gSaveBlock1Ptr.mail[mailIdx],
+    () => {
+      // 1:1 décomp Mailbox_ReshowAfterMail : re-open PC bedroom à exit.
+      OpenBedroomPC(sIsBedroomMode);
+    },
+    true,
+  );
 }
 
 function _mailboxExitList(): void {
