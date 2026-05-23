@@ -32,6 +32,8 @@ Cible : zéro divergence, zéro raccourci, zéro auto-générer naze.
 | `e445556e` | A2 | Retrait cursors `nextSpriteSheetByteOffset`/`nextObjPalSlot` |
 | `c120e8df` | docs | Roadmap STRICT 1:1 état + prochaines étapes |
 | `ec6b555e` | **A1** | NPC sprite system 1:1 strict (bitmap allocator + tag palette) |
+| `9ebae008` | **A1c** | Réimport field-effect-emotes 1:1 strict trainer_see.c |
+| `71471f97` | **A1d** | Fix tag mismatch number/string LoadCompressedSpriteSheet |
 
 ## Bugs visibles post-A2/A3 (statut)
 
