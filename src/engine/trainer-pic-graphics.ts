@@ -82,7 +82,7 @@ async function _hydrateFromGeneratedData(): Promise<void> {
   if (_hydrated) return;
   _hydrated = true;
   try {
-    const tablesMod = await import('./decomp-data/auto/src/trainer-pic-tables-data');
+    const tablesMod = await import('./decomp-data/trainer-pic-tables-data');
     const gfxEntries = tablesMod.RAW_TRAINER_FRONT_PIC_GFX;
     const palEntries = tablesMod.RAW_TRAINER_FRONT_PIC_PAL;
     // Build pal lookup by trainer pic name (= string).
