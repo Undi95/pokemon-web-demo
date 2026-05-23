@@ -61,16 +61,27 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
   DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
 } from './sprite';
+import { _setPaletteRuntimeGetter } from './palette';
+export {
+  LoadCompressedPalette, FillPalette,
+  InvertPlttBuffer, TintPlttBuffer, UnfadePlttBuffer,
+  BeginFastPaletteFade, BeginHardwarePaletteFade,
+  UpdateFastPaletteFade, UpdateHardwarePaletteFade, UpdateBlendRegisters,
+  IsSoftwarePaletteFadeFinishing,
+  TintPalette_GrayScale, TintPalette_GrayScale2, TintPalette_SepiaTone, TintPalette_CustomTone,
+  BlendPalettesGradually,
+} from './palette';
 
 let _rt: DecompRuntime | null = null;
 
 /** Set le runtime actif. À call dans GameScene.create() AVANT toute Task. */
 export function setGlobalRuntime(rt: DecompRuntime): void {
   _rt = rt;
-  // Wire sprite.ts (= source de vérité 1:1 décomp pour palette tag system).
+  // Wire sprite.ts + palette.ts (= sources de vérité 1:1 décomp).
   // Doit être fait à chaque setGlobalRuntime car le runtime peut changer entre
   // les scènes (= preview reload, test scene swap, etc.).
   _setSpriteRuntimeGetter(getRuntime, getAsset);
+  _setPaletteRuntimeGetter(getRuntime);
   // Expose pour devtools/inspect runtime — uniquement en preview/dev.
   (globalThis as Record<string, unknown>).__rt = rt;
   (globalThis as Record<string, unknown>).__sprite = {
