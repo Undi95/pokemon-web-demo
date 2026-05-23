@@ -12,6 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from './item-icon';
 import { gBagMenu } from './bag-menu';
+import { IndexOfSpritePaletteTag } from './sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
@@ -201,7 +202,10 @@ export function AddBagVisualSprite(bagPocketId: number): void {
   } | null;
   if (!rt) return;
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(TAG_BAG_GFX)) ?? 0;
-  const palBank   = rt.paletteTagToSlot?.get(String(TAG_BAG_GFX)) ?? 0;
+  // 1:1 STRICT décomp IndexOfSpritePaletteTag (sprite.c:1637-1645) ; Map secondary
+  // peut être désync → fallback wrong slot.
+  const palBankBag = IndexOfSpritePaletteTag(TAG_BAG_GFX);
+  const palBank = palBankBag === 0xFF ? 0 : palBankBag;
   // AFFINE_NORMAL exige une matrix OAM (= sAffineAnimStates[matrixNum]).
   const matrixNum = rt.AllocOamMatrix();
   if (matrixNum < 0) return; // 32 slots saturés → impossible (cf. décomp MAX_SPRITES).
@@ -348,7 +352,9 @@ export function AddSwitchPocketRotatingBallSprite(rotationDirection: number): vo
   LoadCompressedSpriteSheet({ data: '__rotatingBallTiles', size: 0x80, tag: TAG_ROTATING_BALL_GFX });
   LoadSpritePalette({ data: '__rotatingBallPal', tag: TAG_ROTATING_BALL_GFX });
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(TAG_ROTATING_BALL_GFX)) ?? 0;
-  const palBank   = rt.paletteTagToSlot?.get(String(TAG_ROTATING_BALL_GFX)) ?? 0;
+  // 1:1 STRICT décomp IndexOfSpritePaletteTag (sprite.c:1637-1645).
+  const palBankRot = IndexOfSpritePaletteTag(TAG_ROTATING_BALL_GFX);
+  const palBank = palBankRot === 0xFF ? 0 : palBankRot;
   // sRotatingBallOamData (item_menu_icons.c:156-171) : shape=0(sq), size=1(16x16),
   // bpp=4, prio=2, AFFINE_OFF init (SpriteCB_Init le passe à NORMAL :514).
   const matrixNum = rt.AllocOamMatrix();

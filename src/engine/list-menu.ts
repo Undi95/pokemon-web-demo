@@ -60,6 +60,7 @@ import {
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
 } from './decomp-globals';
+import { IndexOfSpritePaletteTag } from './sprite';
 import { gSineTable } from './decomp-helpers';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
@@ -1450,7 +1451,12 @@ function AddScrollIndicatorArrowObject(arrowDir: number, x: number, y: number, t
     paletteTagToSlot?: Map<string, number>;
   };
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(tileTag)) ?? 0;
-  const palBank = rt.paletteTagToSlot?.get(String(palTag)) ?? 0;
+  // 1:1 STRICT décomp `IndexOfSpritePaletteTag(palTag)` (sprite.c:1637-1645) :
+  // scan sSpritePaletteTags array primary, PAS la Map secondary qui peut être
+  // désync (= bug observé : la Map n'avait que "100" et "109" mais l'array
+  // avait 5+ tags additionnels → chevrons rendus avec palette bag verte).
+  const palBankRaw = IndexOfSpritePaletteTag(palTag);
+  const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
   // 1:1 décomp sSpriteAnimTable_ScrollArrowIndicator (list_menu.c:128-149) :
   // l'anim (animNum) est SINGLE-FRAME (ANIMCMD_FRAME + END) → sélectionne
   // juste tile+flip, pas de boucle. StartSpriteAnim est no-op sur sprite

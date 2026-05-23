@@ -25,6 +25,7 @@ import {
 } from './decomp-globals';
 import { DestroySprite, StartSpriteAnim } from './decomp-bridge';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
+import { IndexOfSpritePaletteTag } from './sprite';
 
 // 1:1 décomp menu_helpers.c:20 — TAG_SWAP_LINE 109.
 const TAG_SWAP_LINE = 109;
@@ -105,7 +106,9 @@ export function CreateSwapLineSprites(spriteIds: number[], baseIdx: number, coun
   } | null;
   if (!rt) return;
   const tileStart = rt.spriteSheetTagToTileStart?.get(String(TAG_SWAP_LINE)) ?? 0;
-  const palBank   = rt.paletteTagToSlot?.get(String(TAG_SWAP_LINE)) ?? 0;
+  // 1:1 STRICT décomp IndexOfSpritePaletteTag (sprite.c:1637-1645).
+  const palBankRaw = IndexOfSpritePaletteTag(TAG_SWAP_LINE);
+  const palBank = palBankRaw === 0xFF ? 0 : palBankRaw;
   for (let i = 0; i < count; i++) {
     const r = rt.CreateSpriteAtOam({
       tileId: tileStart, paletteBank: palBank,
