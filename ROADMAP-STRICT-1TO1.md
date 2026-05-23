@@ -34,6 +34,7 @@ Cible : zéro divergence, zéro raccourci, zéro auto-générer naze.
 | `ec6b555e` | **A1** | NPC sprite system 1:1 strict (bitmap allocator + tag palette) |
 | `9ebae008` | **A1c** | Réimport field-effect-emotes 1:1 strict trainer_see.c |
 | `71471f97` | **A1d** | Fix tag mismatch number/string LoadCompressedSpriteSheet |
+| `d725a6de` | **A1e** | Implement CreateSpriteAtEnd 1:1 (fix emote/NPC slot collision) |
 
 ## Bugs visibles post-A2/A3 (statut)
 
