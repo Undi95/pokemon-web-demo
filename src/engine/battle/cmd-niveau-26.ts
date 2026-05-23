@@ -115,11 +115,12 @@ function _getTrainerMoneyToGive(trainerId: number): number {
   }
 }
 
-// 1:1 décomp `AddMoney(money_ptr, amount)` — wired via auto-data/money.
-import { AddMoney as _AddMoneyFull } from '../decomp-data/auto/src-all/money-all-auto';
+// 1:1 STRICT décomp `AddMoney(money_ptr, amount)` (money.c:90-108) — vraie
+// impl dans engine/money.ts. Notre AddMoney opère direct sur gSaveBlock1Ptr
+// .money (= pas d'encryption XOR ; signature simplifiée sans pointer).
+import { AddMoney as _AddMoneyFull } from '../money';
 function _addMoney(amount: number): void {
-  // 1:1 décomp `AddMoney(&gSaveBlock1Ptr->money, amount)` (money.c).
-  _AddMoneyFull(gSaveBlock1Ptr.money, amount);
+  _AddMoneyFull(amount);
 }
 
 /** 1:1 décomp `gBattleStruct->moneyMultiplier`. Set à 1 par défaut, doublé

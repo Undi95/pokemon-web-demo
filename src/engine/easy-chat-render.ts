@@ -157,11 +157,11 @@ import {
   TEXT_SKIP_DRAW,
 } from './gba-text-system';
 
-// AddTextPrinterParameterized (= variante 7-args du decomp) vit dans le module
-// auto/text-all-auto.ts. Import direct via le bridge auto.
+// 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
+// dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
 import {
   AddTextPrinterParameterized,
-} from './decomp-data/auto/src-all/text-all-auto';
+} from './gba-text-system';
 
 import {
   LoadUserWindowBorderGfx,

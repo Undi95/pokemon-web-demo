@@ -498,14 +498,16 @@ import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/s
 // Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
 // fichier). On les expose sur globalThis pour matcher le scope C où ces
 // symboles statiques sont visibles partout dans le fichier.
-import * as autoOptionMenu from './decomp-data/auto/src-all/option_menu-all-auto';
-// Le retour CB2_ReturnToFieldWithOpenMenu (= savedCallback après option menu)
-// vit dans overworld-all-auto.ts et appelle des helpers cross-fichier
-// (FieldCB_ReturnToFieldOpenStartMenu, ClearMirageTowerPulseBlend, etc.).
-// Pour 1:1 décomp complet, on importe TOUS les *-all-auto.ts via le barrel
-// `_barrel.ts` (= généré par scripts/gen-all-auto-barrel.mjs) puis on
-// expose tous leurs exports à plat sur globalThis (= scope C visibility).
-import * as allAutoBarrel from './decomp-data/auto/src-all/_barrel';
+// Phase 14b purge : `* as autoOptionMenu` retiré. Le fichier `option_menu-all-auto.ts`
+// est @ts-nocheck transpilé C-style cassé. Les vraies impls 1:1 viennent de
+// `decomp-data/src/option_menu-callbacks-auto.ts` (= structure TS propre) + helpers
+// 1:1 strict ce fichier-ci.
+const autoOptionMenu: Record<string, unknown> = {};
+// Phase 14b purge : `import * as allAutoBarrel from './decomp-data/auto/src-all/_barrel'`
+// retiré — les fichiers `*-all-auto.ts` du barrel sont @ts-nocheck C-style cassés
+// (= cf. AUTO-FILES-AUDIT). Les vraies impls 1:1 strict sont importées
+// directement dans les call-sites. flattenBarrelOnGlobalThis() ci-dessous devient no-op.
+const allAutoBarrel: Record<string, unknown> = {};
 
 // Helpers requis par CB2_InitOptionMenu / Task_* (= cf. callsTo manifest).
 // decomp-globals re-exporte tout depuis gba-window/text/menu-system.

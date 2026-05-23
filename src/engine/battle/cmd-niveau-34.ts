@@ -67,8 +67,8 @@ import {
   MON_DATA_LEVEL, MON_DATA_EXP,
   type Pokemon,
 } from './party-storage';
-// 1:1 décomp `AdjustFriendship(mon, event)` — auto-data via pokemon-all-auto.
-import { AdjustFriendship as _adjustFriendshipN34 } from '../decomp-data/auto/src-all/pokemon-all-auto';
+// 1:1 décomp `AdjustFriendship(mon, event)` — vraie impl 1:1 dans party-storage.ts.
+import { AdjustFriendship as _adjustFriendshipN34 } from './party-storage';
 import { FRIENDSHIP_EVENT_GROW_LEVEL as FRIENDSHIP_EVENT_GROW_LEVEL_N34 } from '../decomp-data/include/constants/pokemon-data';
 import {
   HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG, HOLD_EFFECT_MACHO_BRACE,

@@ -327,6 +327,32 @@ function _addTextPrinterParameterizedCore(
   return gTextPrinters.length - 1;
 }
 
+/** 1:1 décomp `src/text.c:251-269 AddTextPrinterParameterized(u8 windowId,
+ *  u8 fontId, const u8 *str, u8 x, u8 y, u8 speed, void (*callback))`.
+ *  Variante simple : utilise les colors par défaut du font (= gFonts[fontId]
+ *  .fgColor/bgColor/shadowColor). Wrapper sur AddTextPrinterParameterized3. */
+export function AddTextPrinterParameterized(
+  windowId: number,
+  fontId: number,
+  str: string | Uint8Array,
+  x: number,
+  y: number,
+  speed: number,
+  _callback: ((tmpl: unknown, idx: number) => void) | null = null,
+): number {
+  // 1:1 décomp : `const u8 *str` peut venir en bytes (= easy_chat avec
+  // chars GBA charmap). Convert vers string ASCII pour notre text-system.
+  const text = typeof str === 'string' ? str : Array.from(str).map(b => String.fromCharCode(b)).join('');
+  // 1:1 décomp text.c:262-267 : prend les colors par défaut du font via
+  // GetFontAttribute (= équivalent gFonts[fontId].XColor du décomp).
+  const bg = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);
+  const fg = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);
+  const shadow = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);
+  // Color array order [bg, fg, shadow] — matche le pattern utilisé par
+  // AddTextPrinterParameterized3 callers (= cf. option-menu-impl TEXT_COLOR_NORMAL).
+  return AddTextPrinterParameterized3(windowId, fontId, x, y, [bg, fg, shadow], speed, text);
+}
+
 /** 1:1 décomp `src/menu.c:1917 AddTextPrinterParameterized3(u8 windowId,
  *  u8 fontId, u8 left, u8 top, const u8 *color, s8 speed, const u8 *str)`.
  *  letterSpacing/lineSpacing = GetFontAttribute (= 0 pour tous les fonts

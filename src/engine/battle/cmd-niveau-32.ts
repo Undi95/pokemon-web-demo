@@ -793,7 +793,8 @@ import {
   MON_DATA_POKEBALL as _MON_DATA_POKEBALL_HBT,
   CalculatePlayerPartyCount as _CalculatePlayerPartyCountHBT,
 } from './party-storage';
-import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../decomp-data/auto/src-all/pokedex-all-auto';
+// 1:1 décomp `GetSetPokedexFlag` — vraie impl 1:1 strict dans pokedex-flags.ts.
+import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../pokedex-flags';
 import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';
 import { speciesNumberToEnum as _speciesNumberToEnumHBT } from './data/species-runtime';
 // 1:1 décomp BtlController_EmitBallThrowAnim + Mark — wired pour les ball anim.

@@ -45,7 +45,8 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
-import { IsNationalPokedexEnabled } from './decomp-data/auto/src-all/event_data-all-auto';
+// 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
+import { IsNationalPokedexEnabled } from './event-data';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
@@ -69,7 +70,11 @@ import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { FlagGet } from './script-vars';
-import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
+// 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
+import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './decomp-data/src/option_menu-callbacks-auto';
+// Le callback signature est (rt) => void, on adapte vers () => void pour
+// SetMainCallback2 (= notre runtime utilise no-arg callbacks).
+const CB2_InitOptionMenu = (): void => { const rt = (globalThis as Record<string, unknown>).__rt as Parameters<typeof _CB2_InitOptionMenu_callback>[0]; _CB2_InitOptionMenu_callback(rt); };
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
 // SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
