@@ -358,3 +358,289 @@ export function FreeOamMatrix(matrixNum: number): void {
   const bit = (1 << matrixNum) >>> 0;
   g.gOamMatrixAllocBitmap = (bitmap & ~bit) >>> 0;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OAM MATRIX OPS (sprite.c:661-680, 1188-1194, 1475-1484)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp src/sprite.c:661-672 :
+ *  ```c
+ *  void ResetOamMatrices(void) {
+ *      u8 i;
+ *      for (i = 0; i < OAM_MATRIX_COUNT; i++) {
+ *          gOamMatrices[i].a = 0x0100;  // identity
+ *          gOamMatrices[i].b = 0x0000;
+ *          gOamMatrices[i].c = 0x0000;
+ *          gOamMatrices[i].d = 0x0100;
+ *      }
+ *  }
+ *  ```
+ *  Notre runtime : gOamMatrices = rt.gba.affineParams[]. */
+export function ResetOamMatrices(): void {
+  const r = _rt();
+  for (let i = 0; i < OAM_MATRIX_COUNT; i++) {
+    const m = r.gba.affineParams[i];
+    if (m) { m.pa = 0x0100; m.pb = 0x0000; m.pc = 0x0000; m.pd = 0x0100; }
+  }
+}
+
+/** 1:1 décomp src/sprite.c:674-680 :
+ *  ```c
+ *  void SetOamMatrix(u8 matrixNum, u16 a, u16 b, u16 c, u16 d) {
+ *      gOamMatrices[matrixNum].a = a;
+ *      gOamMatrices[matrixNum].b = b;
+ *      gOamMatrices[matrixNum].c = c;
+ *      gOamMatrices[matrixNum].d = d;
+ *  }
+ *  ```
+ */
+export function SetOamMatrix(matrixNum: number, a: number, b: number, c: number, d: number): void {
+  if (matrixNum < 0 || matrixNum >= OAM_MATRIX_COUNT) return;
+  const r = _rt();
+  const m = r.gba.affineParams[matrixNum];
+  if (!m) return;
+  m.pa = a; m.pb = b; m.pc = c; m.pd = d;
+}
+
+/** 1:1 décomp src/sprite.c:1188-1194 :
+ *  ```c
+ *  void CopyOamMatrix(u8 destMatrixIndex, struct OamMatrix *srcMatrix) {
+ *      gOamMatrices[destMatrixIndex].a = srcMatrix->a;
+ *      gOamMatrices[destMatrixIndex].b = srcMatrix->b;
+ *      gOamMatrices[destMatrixIndex].c = srcMatrix->c;
+ *      gOamMatrices[destMatrixIndex].d = srcMatrix->d;
+ *  }
+ *  ```
+ */
+export function CopyOamMatrix(destMatrixIndex: number, srcMatrix: { a: number, b: number, c: number, d: number }): void {
+  SetOamMatrix(destMatrixIndex, srcMatrix.a, srcMatrix.b, srcMatrix.c, srcMatrix.d);
+}
+
+/** 1:1 décomp src/sprite.c:1316-1320 :
+ *  ```c
+ *  s16 ConvertScaleParam(s16 scale) { return SAFE_DIV(0x10000, scale); }
+ *  ```
+ *  Inverse le scale pour le passer à ObjAffineSet. */
+function _convertScaleParam(scale: number): number {
+  if (scale === 0) return 0x7FFF;
+  const result = (0x10000 / scale) | 0;
+  if (result > 0x7FFF) return 0x7FFF;
+  if (result < -0x8000) return -0x8000;
+  return result;
+}
+
+/** 1:1 décomp src/sprite.c:1475-1484 :
+ *  ```c
+ *  void SetOamMatrixRotationScaling(u8 matrixNum, s16 xScale, s16 yScale, u16 rotation) {
+ *      struct ObjAffineSrcData srcData;
+ *      struct OamMatrix matrix;
+ *      srcData.xScale = ConvertScaleParam(xScale);
+ *      srcData.yScale = ConvertScaleParam(yScale);
+ *      srcData.rotation = rotation;
+ *      ObjAffineSet(&srcData, &matrix, 1, 2);
+ *      CopyOamMatrix(matrixNum, &matrix);
+ *  }
+ *  ```
+ *
+ *  ObjAffineSet (= BIOS SWI 0x0F) calcule la matrix affine OAM depuis
+ *  xScale/yScale/rotation. Formule (cf. GBATEK, libagbsyscall) :
+ *    sin = SineTable[rot>>8 & 0xFF]
+ *    cos = SineTable[(rot>>8 + 64) & 0xFF]
+ *    pa =  (xScale * cos) >> 8
+ *    pb = -(xScale * sin) >> 8
+ *    pc =  (yScale * sin) >> 8
+ *    pd =  (yScale * cos) >> 8
+ */
+export function SetOamMatrixRotationScaling(
+  matrixNum: number, xScale: number, yScale: number, rotation: number,
+): void {
+  // 1:1 décomp gSineTable lookup (= 256 entries Q.8 sin sur [0,2π]).
+  // Notre runtime expose G_SINE_TABLE indexable.
+  const rotIdx = (rotation >> 8) & 0xFF;
+  // Use globalThis sine table if available (= decomp-runtime gSineTable export).
+  const sineTable = (globalThis as Record<string, unknown>).__sineTable as ((i: number) => number) | undefined;
+  let sin = 0, cos = 0x100;
+  if (sineTable) {
+    sin = sineTable(rotIdx);
+    cos = sineTable((rotIdx + 64) & 0xFF);
+  }
+  const xs = _convertScaleParam(xScale);
+  const ys = _convertScaleParam(yScale);
+  const pa =  (xs * cos) >> 8;
+  const pb = -(xs * sin) >> 8;
+  const pc =  (ys * sin) >> 8;
+  const pd =  (ys * cos) >> 8;
+  SetOamMatrix(matrixNum, pa, pb, pc, pd);
+}
+
+/** 1:1 décomp src/sprite.c:633-638 :
+ *  ```c
+ *  void ResetOamRange(u8 start, u8 end) {
+ *      u8 i;
+ *      for (i = start; i < end; i++)
+ *          gMain.oamBuffer[i] = gDummyOamData;
+ *  }
+ *  ```
+ *  Reset les entries OAM dans la plage [start, end) à la DUMMY OAM data
+ *  (= sprite invisible hors-écran). Notre runtime utilise rt.gba.oam[]. */
+export function ResetOamRange(start: number, end: number): void {
+  const r = _rt();
+  for (let i = start; i < end; i++) {
+    const o = r.gba.oam[i];
+    if (!o) continue;
+    // DUMMY_OAM_DATA (sprite.c:101-116) : y=DISPLAY_HEIGHT=160, x=DISPLAY_WIDTH+64=304,
+    // affineMode=OFF, shape=SQUARE(8x8), size=SPRITE_SIZE(8x8), priority=3.
+    o.x = 304; o.y = 160;
+    o.affineMode = 0; o.objMode = 0; o.mosaic = false; o.bpp = 0;
+    o.shape = 0; o.size = 0; o.tileNum = 0; o.matrixNum = 0;
+    o.priority = 3; o.paletteNum = 0;
+    o.visible = false;
+  }
+}
+
+/** 1:1 décomp src/sprite.c:640-644 :
+ *  ```c
+ *  void LoadOam(void) {
+ *      if (!gMain.oamLoadDisabled) CpuCopy32(gMain.oamBuffer, (void *)OAM, sizeof(gMain.oamBuffer));
+ *  }
+ *  ```
+ *  No-op chez nous : compositor lit rt.gba.oam[] direct chaque frame. */
+export function LoadOam(): void {
+  // No-op : pas de double-buffer (oamBuffer → OAM) chez nous.
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TILE TAG SYSTEM HELPERS (sprite.c:1509-1579)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp src/sprite.c:1550-1559 :
+ *  ```c
+ *  u8 IndexOfSpriteTileTag(u16 tag) {
+ *      for (i = 0; i < MAX_SPRITES; i++)
+ *          if (sSpriteTileRangeTags[i] == tag)
+ *              return i;
+ *      return 0xFF;
+ *  }
+ *  ```
+ *  Substrat : rt.spriteSheetTagToTileStart Map. L'index conceptuel = position
+ *  dans l'iter order. */
+export function IndexOfSpriteTileTag(tag: string | number): number {
+  const r = _rt();
+  const tagStr = String(tag);
+  let i = 0;
+  for (const key of r.spriteSheetTagToTileStart.keys()) {
+    if (key === tagStr) return i;
+    i++;
+  }
+  return 0xFF;
+}
+
+/** 1:1 décomp src/sprite.c:1542-1548 :
+ *  ```c
+ *  u16 GetSpriteTileStartByTag(u16 tag) {
+ *      u8 index = IndexOfSpriteTileTag(tag);
+ *      if (index == 0xFF) return 0xFFFF;
+ *      return sSpriteTileRanges[index * 2];
+ *  }
+ *  ```
+ *  Substrat : direct lookup tag→tileStart via Map. */
+export function GetSpriteTileStartByTag(tag: string | number): number {
+  const r = _rt();
+  const tileStart = r.spriteSheetTagToTileStart.get(String(tag));
+  return tileStart ?? 0xFFFF;
+}
+
+/** 1:1 décomp src/sprite.c:1561-1572 :
+ *  ```c
+ *  u16 GetSpriteTileTagByTileStart(u16 start) {
+ *      for (i = 0; i < MAX_SPRITES; i++) {
+ *          if (sSpriteTileRangeTags[i] != TAG_NONE && sSpriteTileRanges[i*2] == start)
+ *              return sSpriteTileRangeTags[i];
+ *      }
+ *      return TAG_NONE;
+ *  }
+ *  ```
+ *  Reverse lookup : tile start → tag. */
+export function GetSpriteTileTagByTileStart(start: number): number {
+  const r = _rt();
+  for (const [tag, tileStart] of r.spriteSheetTagToTileStart.entries()) {
+    if (tileStart === start) {
+      const asNum = Number(tag);
+      if (!isNaN(asNum)) return asNum & 0xFFFF;
+      return _hashTagToU16(tag);
+    }
+  }
+  return TAG_NONE;
+}
+
+/** 1:1 décomp src/sprite.c:1574-1579 :
+ *  ```c
+ *  void AllocSpriteTileRange(u16 tag, u16 start, u16 count) {
+ *      u8 freeIndex = IndexOfSpriteTileTag(TAG_NONE);
+ *      sSpriteTileRangeTags[freeIndex] = tag;
+ *      SET_SPRITE_TILE_RANGE(freeIndex, start, count);
+ *  }
+ *  ```
+ *  Substrat : set tag→tileStart + size dans Maps runtime. */
+export function AllocSpriteTileRange(tag: string | number, start: number, count: number): void {
+  const r = _rt();
+  const tagStr = String(tag);
+  r.spriteSheetTagToTileStart.set(tagStr, start);
+  r.spriteSheetTagToByteSize.set(tagStr, count * TILE_SIZE_4BPP);
+}
+
+/** 1:1 décomp src/sprite.c:1531-1540 :
+ *  ```c
+ *  void FreeSpriteTileRanges(void) {
+ *      for (i = 0; i < MAX_SPRITES; i++) {
+ *          sSpriteTileRangeTags[i] = TAG_NONE;
+ *          SET_SPRITE_TILE_RANGE(i, 0, 0);
+ *      }
+ *  }
+ *  ```
+ *  Substrat : clear all tile maps + reclaim queue + linear cursor reset. */
+export function FreeSpriteTileRanges(): void {
+  const r = _rt();
+  r.spriteSheetTagToTileStart.clear();
+  r.spriteSheetTagToByteSize.clear();
+  r.freedSpriteTileRanges.length = 0;
+  r.nextSpriteSheetByteOffset = 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALC CENTER-TO-CORNER VEC (sprite.c:687-700)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp src/sprite.c:137 sCenterToCornerVecTable[3][4][2].
+ *  Le décomp stocke en u8 mais valeurs signées (= -w/2, -h/2). */
+const _sCenterToCornerVecTable: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
+  // shape 0 = square
+  [[-4, -4], [-8, -8], [-16, -16], [-32, -32]],
+  // shape 1 = horizontal rectangle
+  [[-8, -4], [-16, -4], [-16, -8], [-32, -16]],
+  // shape 2 = vertical rectangle
+  [[-4, -8], [-4, -16], [-8, -16], [-16, -32]],
+];
+
+const ST_OAM_AFFINE_DOUBLE_MASK = 2;
+
+/** 1:1 décomp src/sprite.c:687-700 :
+ *  ```c
+ *  void CalcCenterToCornerVec(struct Sprite *sprite, u8 shape, u8 size, u8 affineMode) {
+ *      u8 x = sCenterToCornerVecTable[shape][size][0];
+ *      u8 y = sCenterToCornerVecTable[shape][size][1];
+ *      if (affineMode & ST_OAM_AFFINE_DOUBLE_MASK) { x *= 2; y *= 2; }
+ *      sprite->centerToCornerVecX = x;
+ *      sprite->centerToCornerVecY = y;
+ *  }
+ *  ```
+ *
+ *  Notre interface : retourne {centerToCornerVecX, centerToCornerVecY} au lieu
+ *  d'écrire dans le sprite (= caller doit assigner). Sémantique 1:1. */
+export function CalcCenterToCornerVec(
+  shape: number, size: number, affineMode: number,
+): { centerToCornerVecX: number, centerToCornerVecY: number } {
+  let [x, y] = _sCenterToCornerVecTable[shape & 3]?.[size & 3] ?? [0, 0];
+  if (affineMode & ST_OAM_AFFINE_DOUBLE_MASK) { x *= 2; y *= 2; }
+  return { centerToCornerVecX: x, centerToCornerVecY: y };
+}

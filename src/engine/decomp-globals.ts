@@ -61,6 +61,17 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
   DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
 } from './sprite';
+export {
+  // Tile tag system helpers (sprite.c:1509-1579)
+  IndexOfSpriteTileTag, GetSpriteTileTagByTileStart,
+  AllocSpriteTileRange, FreeSpriteTileRanges,
+  // OAM matrix ops (sprite.c:661-680, 1188-1194, 1475-1484)
+  ResetOamMatrices, CopyOamMatrix, SetOamMatrixRotationScaling,
+  ResetOamRange,
+  // Sprite geometry (sprite.c:687-700)
+  CalcCenterToCornerVec,
+} from './sprite';
+// LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
 import { _setPaletteRuntimeGetter } from './palette';
 export {
   LoadCompressedPalette, FillPalette,
