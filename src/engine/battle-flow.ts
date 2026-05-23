@@ -64,6 +64,7 @@ import {
   HideFieldMessageBox,
 } from './field-message-box';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
+import { LoadSpritePalette } from './sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -143,8 +144,13 @@ const PLAYER_SPRITE_BYTE_OFFSET   = BATTLE_OBJ_VRAM_BASE_BYTES;
 const OPPONENT_SPRITE_BYTE_OFFSET = BATTLE_OBJ_VRAM_BASE_BYTES + POKEMON_SPRITE_BYTES;
 
 // OBJ palette slots for battle sprites (chosen high-end to avoid overworld clash).
-const PLAYER_PALETTE_SLOT   = 13;
-const OPPONENT_PALETTE_SLOT = 14;
+/** 1:1 STRICT décomp `LoadSpritePalette` : slots dynamiquement alloués. */
+const TAG_BATTLE_PLAYER_PAL = 'BATTLE_PLAYER_PAL';
+const TAG_BATTLE_OPPONENT_PAL = 'BATTLE_OPPONENT_PAL';
+let _battlePlayerPalSlot = -1;
+let _battleOpponentPalSlot = -1;
+const PLAYER_PALETTE_SLOT   = 13;  // legacy fallback
+const OPPONENT_PALETTE_SLOT = 14;  // legacy fallback
 
 // ─── Sprite positions (= roughly mimicking Gen 3 battle layout) ─────────────
 // Screen is 240×160. Standard battle layout (= mimics décomp battle_main.c
@@ -1122,7 +1128,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
               const playerLoaded = await rt.LoadCompressedSpriteSheet(playerUrl, PLAYER_SPRITE_BYTE_OFFSET);
-              rt.LoadPaletteObj(playerLoaded.palette, OBJ_PLTT_ID(PLAYER_PALETTE_SLOT));
+              _battlePlayerPalSlot = LoadSpritePalette({ data: playerLoaded.palette, tag: TAG_BATTLE_PLAYER_PAL });
               // Detect actual sprite dimensions (back sprite often 64x64 but can vary).
               const playerWH = await detectImageWH(playerUrl);
               if (playerWH) {
@@ -1135,7 +1141,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               const oppDexId = opponentMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const oppUrl = `/decomp/em/pokemon/${oppDexId}/front.png`;
               const oppLoaded = await rt.LoadCompressedSpriteSheet(oppUrl, OPPONENT_SPRITE_BYTE_OFFSET);
-              rt.LoadPaletteObj(oppLoaded.palette, OBJ_PLTT_ID(OPPONENT_PALETTE_SLOT));
+              _battleOpponentPalSlot = LoadSpritePalette({ data: oppLoaded.palette, tag: TAG_BATTLE_OPPONENT_PAL });
               const oppWH = await detectImageWH(oppUrl);
               if (oppWH) {
                 const sized = oamShapeSizeFromWH(oppWH.w, oppWH.h);
@@ -1210,7 +1216,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Practical : use top-left coords.
         const opp = rt.CreateSpriteAtOam({
           tileId: opponentTileId,
-          paletteBank: OPPONENT_PALETTE_SLOT,
+          paletteBank: _battleOpponentPalSlot,
           x: OPPONENT_X, y: OPPONENT_Y,
           shape: oppSpriteShape, size: oppSpriteSize,
           priority: 0,
@@ -1218,7 +1224,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         opponentSpriteId = opp.spriteId;
         const player = rt.CreateSpriteAtOam({
           tileId: playerTileId,
-          paletteBank: PLAYER_PALETTE_SLOT,
+          paletteBank: _battlePlayerPalSlot,
           x: PLAYER_X, y: PLAYER_Y,
           shape: playerSpriteShape, size: playerSpriteSize,
           priority: 0,

@@ -28,6 +28,7 @@
  */
 
 import { getRuntime } from './decomp-globals';
+import { LoadSpritePalette } from './sprite';
 
 const DISPLAY_WIDTH = 240;
 const DISPLAY_HEIGHT = 160;
@@ -39,7 +40,10 @@ const POKE_BALL_URL = '/decomp/em/balls/poke.png';
 // On met ball à byte 0x4000 = tileId 512 (= 0x4000/32). OBJ VRAM total 32KB,
 // donc shape 0 size 1 (= 16x16 = 4 tiles) fits OK à tileId 512..515.
 const BALL_SPRITE_BYTE_OFFSET = 0x4000;
-const BALL_PALETTE_SLOT = 7;             // OBJ palette slot, après player/opp
+/** 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué. */
+const TAG_BALL_THROW_PAL = 'BATTLE_BALL_THROW_PAL';
+let _ballPaletteSlot = -1;
+const BALL_PALETTE_SLOT = 7;             // legacy : utilisé fallback si non alloué
 
 /** Résultat final d'un throw : caught si N=4 shakes réussis, escaped sinon. */
 export type BallThrowResult = 'caught' | 'escaped';
@@ -87,7 +91,7 @@ async function _ensureBallAsset(): Promise<void> {
   if (!rt) return;
   try {
     const loaded = await rt.LoadCompressedSpriteSheet(POKE_BALL_URL, BALL_SPRITE_BYTE_OFFSET);
-    rt.LoadPaletteObj(loaded.palette, /* OBJ_PLTT_ID(7) */ (0x100 + BALL_PALETTE_SLOT * 16));
+    _ballPaletteSlot = LoadSpritePalette({ data: loaded.palette, tag: TAG_BALL_THROW_PAL });
     _ballAssetLoaded = true;
   } catch (e) {
     console.warn('[ball-throw] failed to load poke.png:', e);
@@ -126,7 +130,7 @@ export async function startBallThrow(opts: {
   // Spawn ball sprite. 1:1 décomp sBallOamData : shape SQUARE size 16x16 = shape 0 size 1.
   const ball = rt.CreateSpriteAtOam({
     tileId: BALL_SPRITE_BYTE_OFFSET / 32,
-    paletteBank: BALL_PALETTE_SLOT,
+    paletteBank: _ballPaletteSlot,
     x: startX, y: startY,
     shape: 0, size: 1,  // = 16x16 (= 4 tiles 8x8)
     priority: 0,
