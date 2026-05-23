@@ -36,6 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
+import { LoadSpriteSheet } from './sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
@@ -188,7 +189,11 @@ const sMoveTypeToOamPaletteNum: ReadonlyArray<number> = [
   13, 14, 14, 15, 13, // COOL BEAUTY CUTE SMART TOUGH
 ];
 
-const TYPE_ICON_TILE_BASE = 0;            // OBJ VRAM : 23 icônes × 8 = 184 tiles
+/** 1:1 STRICT décomp `LoadSpriteSheet(sSpriteSheet_MoveTypes)` : tileStart
+ *  dynamiquement alloué APRÈS gReservedSpriteTileCount (= safe vs player). */
+const TAG_TYPE_ICONS_GFX = 'SUMMARY_TYPE_ICONS_GFX';
+let _typeIconTileStart = -1;
+const TYPE_ICON_TILE_BASE = 0;            // legacy const (= replaced par _typeIconTileStart via LoadSpriteSheet)
 /** 1:1 décomp `gMonFrontPicTable[]` = `gMonFrontPic_X` = anim_front.png
  *  (64×128 = 2 frames × 64 tiles). frame 0 = base..+63, frame 1 = base+64..
  *  +127 (StartSpriteAnim(.,1) → tileId += 64). 128 tiles réservés. */
@@ -714,7 +719,11 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     LoadPalette(a.ppTextPal, BG_PLTT_ID(8) + 1, 15 * 2);
     // case 7/12 : sSpriteSheet_MoveTypes → OBJ VRAM ; gMoveTypes_Pal → OBJ
     // pal slots 13/14/15 (3 pals).
-    r.gba.objVram.set(a.moveTypesTiles, TYPE_ICON_TILE_BASE * 32);
+    // 1:1 STRICT décomp `LoadSpriteSheet(sSpriteSheet_MoveTypes)` — tag system
+    // alloue après reserved player zone.
+    _typeIconTileStart = LoadSpriteSheet({
+      data: a.moveTypesTiles, size: a.moveTypesTiles.length, tag: TAG_TYPE_ICONS_GFX,
+    });
     r.LoadPaletteObj(a.moveTypesPal, OBJ_PLTT_ID(13));
     // case 9/10 : sStatusIconsSpriteSheet (gStatusGfx_Icons = status_icons
     // .png) → OBJ VRAM + sStatusIconsSpritePalette → OBJ pal slot 2.
@@ -1741,7 +1750,7 @@ function _createMoveTypeIcons(): void {
   for (let i = 0; i < TYPE_ICON_SPRITE_COUNT; i++) {
     const spr = rt.CreateSpriteAtOam({
       x: 0, y: 0, shape: 1, size: 2,           // sOamData_MoveTypes : 32×16
-      tileId: TYPE_ICON_TILE_BASE,             // placeholder (re-pointé par SetTypeIcons)
+      tileId: _typeIconTileStart,              // 1:1 STRICT alloué par LoadSpriteSheet
       paletteBank: 13,
       priority: 1,                             // sOamData_MoveTypes.priority=1 (:769)
       subpriority: 2,                          // 1:1 CreateSprite(.,.,.,2) (:3801)
@@ -1780,7 +1789,7 @@ function _setTypeSpritePosAndPal(typeId: number, x: number, y: number, arrIdx: n
   if (!spr) return;
   const oam = rt.gba.oam[spr.oamIndex];
   if (oam) {
-    oam.tileId = TYPE_ICON_TILE_BASE + typeId * 8;            // 1:1 StartSpriteAnim(sprite,typeId)
+    oam.tileId = _typeIconTileStart + typeId * 8;            // 1:1 StartSpriteAnim(sprite,typeId)
     oam.paletteBank = sMoveTypeToOamPaletteNum[typeId] ?? 13; // 1:1 sprite->oam.paletteNum
   }
   spr.x = x + 16;                                             // 1:1 sprite->x = x + 16
