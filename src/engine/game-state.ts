@@ -29,7 +29,10 @@
  *   - `SaveGame/LoadGameSave/ResetSaveBlocks/HasValidSave` (save-system.ts)
  *   - `GiveMonToPlayer` (pokemon.ts)
  *   - `gBagPockets` + AddBagItem/RemoveBagItem/etc. (bag.ts) ← sac réel
- *   - `GetObjectXY/SetObjectXY/GetTakenItemBalls` (web-overlays.ts)
+ *   - `SetObjEventTemplateCoords/GetObjEventTemplateCoords` (load_save.ts ;
+ *     1:1 overworld.c:490 — modifie `gSaveBlock1Ptr.objectEventTemplates[]`)
+ *   - `FlagSet('__ITEM_BALL_TAKEN_<scriptLabel>')` (= 1:1 mécanisme item ball
+ *     respawn flag de la décomp item_ball scripts)
  */
 
 // ─── Side-effect imports : préservent l'init ESM eager chain ────────────────
