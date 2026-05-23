@@ -344,6 +344,26 @@ function _destroyEmoteSprite(rt: DecompRuntime, emote: EmoteState): void {
   }
 }
 
+// ─── Reset hook : clear _activeEmotes au ResetSpriteData ───────────────────
+// 1:1 décomp : sprite.c:294 ResetSpriteData set tous sprite.inUse=FALSE → les
+// callbacks SpriteCB_TrainerIcons cessent de fire (= game loop skip). Notre
+// port utilise un pool externe `_activeEmotes` qui n'a pas cette propagation
+// auto. Sans ce hook, après ResetSpriteData (= bag open / menu), les entries
+// _activeEmotes pointent vers spriteIds maintenant ré-attribués à d'autres
+// sprites (NPC respawnés, etc.) → tickEmoteSprites overwrite sprite.x/y de
+// ces sprites avec position emote → ou pire, _destroyEmoteSprite libère leurs
+// tiles via MarkObjTilesFree (= bug user "moitié de maman").
+//
+// Le `__spriteResetCallbacks` est lu par decomp-runtime.ts:ResetSpriteData
+// avant de clear gSprites. Chaque module avec un pool externe doit register
+// son cleanup ici.
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  callbacks.push(() => { _activeEmotes.length = 0; });
+  g.__spriteResetCallbacks = callbacks;
+})();
+
 // ─── Debug exposure ────────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__getActiveEmotes = () => [..._activeEmotes];

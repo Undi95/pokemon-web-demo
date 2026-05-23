@@ -1712,6 +1712,24 @@ export class DecompRuntime {
    *  Sans ça : 1024+ tiles d'OBJ VRAM overflow → Manectric tile_id 1056 hors
    *  range → frame 4 transparent → clignotement. */
   ResetSpriteData(): void {
+    // ⚠️ Fix 2026-05-24 : avant de clear gSprites + OAMs, notifier les modules
+    // qui maintiennent leur propre pool de spriteIds (= field-effect-emotes
+    // `_activeEmotes`, etc.). Sans ça, leur state contient des spriteIds qui
+    // pointent vers des slots maintenant ré-attribués → tickXxxSprites overwrite
+    // les sprites NPC respawnés (= bug user "moitié de maman" : emote re-fire
+    // post-bag-close écrase MOM avec shape=0 size=1).
+    //
+    // 1:1 décomp : sprite.c:294 ResetSpriteData iterate `for (i = 0; i < MAX_
+    // SPRITES; i++) ResetSprite(&gSprites[i])` qui set `inUse=FALSE`. Les
+    // callbacks de sprite (= SpriteCB_TrainerIcons) checkent `sprite->inUse`
+    // implicitly via game loop → cessent de fire. Notre port utilise des pools
+    // module-level (`_activeEmotes`) qui n'ont pas cette propagation auto.
+    const resetCallbacks = (globalThis as Record<string, unknown>).__spriteResetCallbacks as Array<() => void> | undefined;
+    if (resetCallbacks) {
+      for (const cb of resetCallbacks) {
+        try { cb(); } catch (e) { console.warn('[ResetSpriteData] cleanup hook failed', e); }
+      }
+    }
     for (let i = 0; i < 128; i++) this.gba.oam[i].visible = false;
     this.gSprites.clear();
     this.spriteAnimStates.clear();
