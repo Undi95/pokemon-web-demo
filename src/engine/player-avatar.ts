@@ -512,17 +512,26 @@ export async function InitPlayerAvatar(
   combined.set(walkingReordered, 0);
   combined.set(runningReordered, walkingReordered.length);
 
-  // 1:1 STRICT décomp pattern InitObjectEventPalettes + LoadObjectEventPic :
-  // reset cursor + reserved counts → LoadSpriteSheet alloue à offset 0 →
-  // LoadSpritePalette alloue à first-free (= 0) → set reserved counts pour
-  // protéger contre les UI menus suivants (= bag, item icon, etc.).
+  // 1:1 STRICT décomp pattern `ResetScreenForMapLoad` + `InitObjectEventsLocal` :
+  //  1. ResetSpriteData (= clear all sprite sheets + tile alloc state)
+  //  2. FreeAllSpritePalettes (= clear all OBJ palette tags)
+  //  3. LoadSpriteSheet(player) + LoadSpritePalette(player) → alloue slot 0
+  //  4. Set reserved counts pour protéger
   //
-  // Avant : raw `objVram.set` + manual tag marker → divergent du décomp +
-  // bug user "sprite player écrasé" si UI menu alloue par-dessus.
+  // Sans ces clears : si bag/PC item menu a laissé des palettes mappées dans
+  // paletteTagToSlot, LoadSpritePalette('PLAYER_AVATAR_PAL') scan first-free →
+  // alloue slot 1+ → sprite OAM player à slot 0 (= ancienne palette stale) →
+  // player NOIR au retour OW (bug user 2026-05-23 PC deposit).
   //
-  // Reset cursor à 0 + clear freedRanges + reserved=0 → garantit alloc à 0.
+  // 1:1 décomp : ResetScreenForMapLoad précède InitObjectEventsLocal. Notre
+  // loadAndInitMap n'appelle pas ResetScreenForMapLoad → on fait clear inline
+  // ici pour préserver l'invariant 1:1 architectural.
   rt.nextSpriteSheetByteOffset = 0;
   rt.freedSpriteTileRanges.length = 0;
+  rt.spriteSheetTagToTileStart.clear();
+  rt.spriteSheetTagToByteSize.clear();
+  rt.paletteTagToSlot.clear();
+  rt.nextObjPalSlot = 0;
   setReservedSpriteTileCount(0);
   setReservedSpritePaletteCount_helper(0);
   // 1:1 décomp src/sprite.c:1486 LoadSpriteSheet : écrit OBJ VRAM + marker tag.

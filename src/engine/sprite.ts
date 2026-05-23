@@ -274,7 +274,7 @@ export function DoLoadSpritePalette(src: Uint16Array, paletteOffset: number): vo
  *    - palette.data : Uint16Array (direct) | string (asset symbol)
  *    - palette.tag : string | number
  *  Retourne le slot (0-15), ou 0xFF si palette OBJ saturée. */
-export function LoadSpritePalette(palette: { data: Uint16Array | string | null | undefined, tag: string | number }): number {
+export function LoadSpritePalette(palette: { data: Uint16Array | Uint8Array | string | null | undefined, tag: string | number }): number {
   // 1:1 décomp ligne 1591 : si déjà chargé, return le slot existant.
   const r = _rt();
   const existing = r.paletteTagToSlot.get(String(palette.tag));
@@ -285,10 +285,14 @@ export function LoadSpritePalette(palette: { data: Uint16Array | string | null |
   // 1:1 décomp ligne 1604 : marquer le tag.
   r.paletteTagToSlot.set(String(palette.tag), slot);
   if (slot + 1 > r.nextObjPalSlot) r.nextObjPalSlot = slot + 1;
-  // 1:1 décomp ligne 1605 : write palette data.
+  // 1:1 décomp ligne 1605 : write palette data. Accepts Uint16Array (= déjà
+  // u16 colors), Uint8Array (= raw bytes, 32 = 16 colors × 2), ou string asset.
   let palData: Uint16Array | null = null;
   if (palette.data instanceof Uint16Array) {
     palData = palette.data;
+  } else if (palette.data instanceof Uint8Array) {
+    // Raw bytes → Uint16Array view (= 16 colors × 2 bytes = 32 bytes typical).
+    palData = new Uint16Array(palette.data.buffer, palette.data.byteOffset, Math.floor(palette.data.byteLength / 2));
   } else if (typeof palette.data === 'string' && palette.data !== '') {
     const got = _asset(palette.data);
     if (got) {
