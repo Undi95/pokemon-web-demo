@@ -37,7 +37,7 @@ import { FEMALE } from './decomp-globals';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
-import { RemoveBagItem, UpdatePocketItemList } from './bag';
+import { RemoveBagItem, UpdatePocketItemList, gBagPockets } from './bag';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -514,10 +514,10 @@ interface ItemSlot { itemKey: string; quantity: number }
  *  item_menu.c:LoadBagItemListBuffers qui ajoute gText_CloseBag avec id=LIST_CANCEL). */
 const CLOSE_BAG_KEY = '__CLOSE_BAG__';
 
+// 1:1 décomp item.h:12-17 — POCKETS order = ITEMS_POCKET, BALLS_POCKET,
+// TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET. `_pocketIdx` suit cet ordre.
 function _currentPocketItems(): ItemSlot[] {
-  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
-  const k = POCKETS[_pocketIdx].key;
-  const slots = bag[k] ?? [];
+  const slots = gBagPockets[_pocketIdx]?.itemSlots ?? [];
   // Filter out empty slots, then append CLOSE_BAG sentinel à la fin (= 1:1
   // décomp gText_CloseBag dernière entry, sauf si hideCloseBagText).
   const realItems = slots.filter(s => s?.itemKey && (s.quantity ?? 0) > 0);
@@ -1885,9 +1885,8 @@ function _startItemSwap(): void {
 }
 
 function _doItemSwap(toIdx: number): void {
-  const pocketKey = POCKETS[_pocketIdx].key;
-  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
-  const arr = bag[pocketKey];
+  const arr = gBagPockets[_pocketIdx]?.itemSlots;
+  if (!arr) return;
   // 1:1 décomp MoveItemSlotInList : déplace slot from → to en shiftant.
   if (_swapFromIdx !== toIdx && _swapFromIdx >= 0 && toIdx >= 0) {
     const realItems = arr.filter(s => s.itemKey && s.quantity > 0);
@@ -2082,17 +2081,13 @@ export function CloseBagScreen(): void {
     _bagInputTaskId = -1;
   }
   // 1:1 décomp Task_FadeAndCloseBagMenu — créé directement.
+  // Le exitCallback (= `_bagExitCallback`) est invoqué DANS
+  // Task_CloseBagMenu_BagScreen APRÈS `_freeBagMenu` (= windows/sprites/VRAM
+  // bag clean). Sans ça, le exitCb (ex. OpenBedroomPC qui re-ouvre le PC)
+  // fire pendant que le bag est encore visible → corruption visuelle BG/OAM
+  // (user-flag : "quand on sors du menu on a une corruption").
   rt.CreateTask(Task_FadeAndCloseBagMenu_BagScreen, 0);
-  // 1:1 décomp `gBagPosition.exitCallback` : pour ITEMPC mode, le exitCallback
-  // est `CB2_PlayerPCExitBagMenu` (= player_pc.c:571) qui retourne au PC menu.
-  // On l'invoque ici après le scheduling de la fade out task.
-  const exitCb = _bagExitCallback;
-  _bagExitCallback = null;
   _bagLocation = BagLocation.FIELD;  // reset pour next open
-  if (exitCb) {
-    // Wait short pour que la fade out se déclenche, puis fire callback.
-    setTimeout(() => { try { exitCb(); } catch (e) { console.error('[bag exit cb]', e); } }, 100);
-  }
 }
 
 export function TickBagScreen(newKeys: number): void {
@@ -2358,8 +2353,9 @@ function _itemContextDeposit(itemKey: string): void {
 /** 1:1 décomp : raw slots du pocket courant (= sans filter empty, contrairement
  *  à _currentPocketItems qui ajoute CLOSE_BAG sentinel). */
 function _getBagPocketSlots(): ItemSlot[] {
-  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, ItemSlot[]>;
-  return bag[_depositPocketKey] ?? [];
+  // 1:1 décomp item.h:12-17 — POCKETS array order matches gBagPockets indices.
+  const idx = POCKETS.findIndex(p => p.key === _depositPocketKey);
+  return gBagPockets[idx]?.itemSlots ?? [];
 }
 
 /** Find slot index dans le pocket courant (= _depositPocketKey) pour l'item donné.
@@ -2556,11 +2552,31 @@ function Task_CloseBagMenu_BagScreen(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || rt.gPaletteFade.active) return;
   _freeBagMenu();
-  // 1:1 décomp `SetMainCallback2(gBagPosition.exitCallback)` (= notre
-  // gMain.savedCallback set par sacAction = CB2_ReturnToFieldWithOpenMenu_Manual).
-  const exitCb = rt.gMain.savedCallback;
+  // 1:1 décomp `CB2_PlayerPCExitBagMenu` (player_pc.c:571) → ItemStorage_
+  // ReshowAfterBagMenu re-render PC. Notre exitCallback (= OpenBedroomPC)
+  // doit fire APRÈS que `CB2_ReturnToFieldLocal_Manual` (= savedCb) ait
+  // restauré l'OW (= state machine 0→3, async case 1 _restoreOverworldFromMenu).
+  // Sans ça : exitCb fire avant restore → PC draw dans context vide, puis
+  // restore efface tout → "écran de sélection ne revient jamais".
+  //
+  // Pattern 1:1 décomp : `gFieldCallback2` set ici, fire au case 2 de
+  // ReturnToFieldLocal_Manual (= APRÈS restore OW, équivalent
+  // `FieldCB_ReturnToFieldOpenStartMenu` du start menu flow).
+  const exitCb = _bagExitCallback;
+  _bagExitCallback = null;
   if (exitCb) {
-    rt.SetMainCallback2(exitCb);
+    (globalThis as Record<string, unknown>).gFieldCallback2 = (): boolean => {
+      try { exitCb(); } catch (e) { console.error('[bag exit cb]', e); }
+      return true;  // state++ → final swap CB2 vers MainCB2_Overworld
+    };
+  }
+  // 1:1 décomp `SetMainCallback2(gBagPosition.exitCallback)` (= notre
+  // gMain.savedCallback set par sacAction = CB2_ReturnToFieldWithOpenMenu_Manual
+  // OU CB2_ReturnToFieldLocal_Manual pour ITEMPC).
+  const savedCb = rt.gMain.savedCallback;
+  if (savedCb) {
+    rt.gMain.state = 0;  // 1:1 reset state machine pour la nouvelle séquence
+    rt.SetMainCallback2(savedCb);
   } else {
     console.warn('[bag-screen] Task_CloseBagMenu : no savedCallback');
     rt.SetMainCallback2(null);
