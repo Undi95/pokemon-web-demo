@@ -61,10 +61,12 @@ import {
   FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
   DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
+  AllocSpriteTiles as _AllocSpriteTiles_1to1,
   _freeSpriteTileRangeByTag as _FreeSpriteTileRangeByTag_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
+  sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
 } from './sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
@@ -111,6 +113,9 @@ export function setGlobalRuntime(rt: DecompRuntime): void {
     sSpritePaletteTags: _sSpritePaletteTags,
     sSpriteTileRangeTags: _sSpriteTileRangeTags,
     sSpriteTileRanges: _sSpriteTileRanges,
+    // 1:1 STRICT décomp tile alloc bitmap (Phase 2)
+    sSpriteTileAllocBitmap: _sSpriteTileAllocBitmap,
+    AllocSpriteTiles: _AllocSpriteTiles_1to1,
   };
 }
 
@@ -1815,47 +1820,26 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   }
   if (r.spriteSheetTagToTileStart.has(tagStr)) return;
   const needed = bytes.length;
-  // 1:1 STRICT décomp src/sprite.c:702-753 AllocSpriteTiles : honore
-  // `gReservedSpriteTileCount` (= zone OBJ VRAM réservée au début, [0, N×32)).
-  // Le décomp itère depuis `i = gReservedSpriteTileCount` pour trouver des
-  // tiles libres. Notre cursor + freedRanges doivent skip cette zone réservée.
+  const tileCount = needed >> 5;  // bytes / 32 = tiles 4bpp
+  // 1:1 STRICT décomp src/sprite.c:1486-1500 LoadSpriteSheet :
+  //   tileStart = AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP);
+  //   if (tileStart < 0) return 0;
+  //   AllocSpriteTileRange(tag, tileStart, count);
+  //   CpuCopy16(data, OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart, size);
   //
-  // Pattern décomp 1:1 : au boot OW, InitObjectEventPalettes-like set
-  // gReservedSpriteTileCount = playerTilesEnd. Bag open → ResetSpriteData
-  // reset gReservedSpriteTileCount=0 + cursor=0 → bag clear et écrit à 0.
-  // Bag close → loadAndInitMap → InitPlayerAvatar re-set gReservedSpriteTileCount
-  // + re-écrit player tiles. Cycle.
-  // PC PLAYER n'appelle pas ResetSpriteData → reserved reste set → item icon
-  // alloue APRÈS player (= safe, pas d'écrasement).
-  const reservedTileCount = (globalThis as Record<string, unknown>).gReservedSpriteTileCount as number ?? 0;
-  const reservedBytes = reservedTileCount * 32;
-  // 1:1-net décomp AllocSpriteTiles : réutiliser une plage OBJ VRAM
-  // LIBÉRÉE (FreeSpriteTilesByTag) qui tient `needed` AVANT d'avancer le
-  // curseur monotone — sinon le reload répété (icône sac double-buffer
-  // TAG_ITEM_ICON+0/+1) épuise la VRAM → tileStart hors-VRAM → icône
-  // cassée après N nav (bug A/B user). Réutilisation plage entière (pas
-  // de split) : borné, suffisant (bag = même taille 0x200 à chaque fois).
-  // ⚠️ Skip les freedRanges dans la zone réservée (= player tiles).
-  let byteOffset = -1;
-  for (let i = 0; i < r.freedSpriteTileRanges.length; i++) {
-    if (r.freedSpriteTileRanges[i].size >= needed && r.freedSpriteTileRanges[i].offset >= reservedBytes) {
-      byteOffset = r.freedSpriteTileRanges[i].offset;
-      r.freedSpriteTileRanges.splice(i, 1);
-      break;
-    }
+  // AllocSpriteTiles (sprite.ts Phase 2) = bitmap-based scan dans
+  // [gReservedSpriteTileCount, 1024). Marque les bits dans sSpriteTileAllocBitmap.
+  const tileStart = _AllocSpriteTiles_1to1(tileCount);
+  if (tileStart < 0) {
+    console.warn(`[LoadCompressedSpriteSheet] OBJ VRAM saturated for tag '${tagStr}' (needed ${tileCount} tiles)`);
+    return;
   }
-  if (byteOffset < 0) {
-    // Cursor doit démarrer au moins à reservedBytes (= 1:1 décomp).
-    if (r.nextSpriteSheetByteOffset < reservedBytes) r.nextSpriteSheetByteOffset = reservedBytes;
-    byteOffset = r.nextSpriteSheetByteOffset;
-    const adv = Math.min(needed, r.gba.objVram.length - byteOffset);
-    r.nextSpriteSheetByteOffset += adv;
-  }
+  const byteOffset = tileStart * 32;
   const copySize = Math.min(needed, r.gba.objVram.length - byteOffset);
   if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
   // 1:1 STRICT décomp `AllocSpriteTileRange(tag, start, count)` (sprite.c:1574-1579) :
   // marque le tag dans sSpriteTileRangeTags + sSpriteTileRanges arrays. Sync auto la Map.
-  _AllocSpriteTileRange_1to1(tagStr, byteOffset >> 5, needed / 32);
+  _AllocSpriteTileRange_1to1(tagStr, tileStart, tileCount);
 }
 
 /** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c:1509-1529) — libère la plage

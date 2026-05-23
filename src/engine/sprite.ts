@@ -93,6 +93,28 @@ sSpriteTileRangeTags.fill(TAG_NONE);
  */
 export const sSpriteTileRanges = new Uint16Array(MAX_SPRITES * 2);
 
+/** 1:1 décomp src/sprite.c:288 :
+ *    EWRAM_DATA static u8 sSpriteTileAllocBitmap[128] = {0};
+ *  Bitmap d'allocation des 1024 tiles OBJ VRAM. 1 bit par tile :
+ *    bit set = tile allocated, bit clear = tile free.
+ *  Macros sprite.c:17-27 :
+ *    ALLOC_SPRITE_TILE(n) = sSpriteTileAllocBitmap[n/8] |= (1 << (n%8))
+ *    FREE_SPRITE_TILE(n)  = sSpriteTileAllocBitmap[n/8] &= ~(1 << (n%8))
+ *    SPRITE_TILE_IS_ALLOCATED(n) = (sSpriteTileAllocBitmap[n/8] >> (n%8)) & 1
+ */
+export const sSpriteTileAllocBitmap = new Uint8Array(128);
+
+/** Macros bitmap 1:1 décomp sprite.c:17-27. */
+function _allocSpriteTile(n: number): void {
+  sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
+}
+function _freeSpriteTile(n: number): void {
+  sSpriteTileAllocBitmap[n >> 3] &= ~(1 << (n & 7)) & 0xFF;
+}
+function _spriteTileIsAllocated(n: number): boolean {
+  return ((sSpriteTileAllocBitmap[n >> 3] >> (n & 7)) & 1) === 1;
+}
+
 // ─── Internal string ↔ u16 tag mapping ────────────────────────────────────
 // Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100 etc.). Notre runtime
 // historiquement utilise des strings ('PALTAG_LOGO'). Pour stocker dans les
@@ -696,65 +718,106 @@ export function FreeSpriteTileRanges(): void {
   r.nextSpriteSheetByteOffset = 0;
 }
 
-/** Helper interne : free le SLOT sSpriteTileRangeTags pour un tag donné.
+/** Helper interne : free le SLOT sSpriteTileRangeTags pour un tag donné +
+ *  clear les bits correspondants dans sSpriteTileAllocBitmap.
  *  Used by FreeSpriteTilesByTag (decomp-globals.ts) en complément du
- *  Map.delete pour préserver l'invariant 1:1 décomp arrays. */
+ *  Map.delete pour préserver l'invariant 1:1 décomp arrays + bitmap.
+ *  1:1 STRICT décomp src/sprite.c:1509-1529 :
+ *    `FreeSpriteTilesByTag(tag)` → IndexOfSpriteTileTag + free bits via macro */
 export function _freeSpriteTileRangeByTag(tag: string | number): void {
   const index = IndexOfSpriteTileTag(tag);
   if (index === 0xFF) return;
+  // 1:1 décomp : clear N tiles bits from start.
+  const start = sSpriteTileRanges[index * 2];
+  const count = sSpriteTileRanges[index * 2 + 1];
+  for (let i = start; i < start + count; i++) _freeSpriteTile(i);
+  // Clear tag + range slot.
   sSpriteTileRangeTags[index] = TAG_NONE;
   sSpriteTileRanges[index * 2] = 0;
   sSpriteTileRanges[index * 2 + 1] = 0;
 }
 
-/** 1:1 décomp src/sprite.c:702-753 (simplified — cursor-based au lieu de bitmap) :
+/** 1:1 STRICT décomp src/sprite.c:702-753 — bitmap-based allocator :
  *  ```c
  *  s16 AllocSpriteTiles(u16 tileCount) {
- *      i = gReservedSpriteTileCount;
- *      while (...) {
- *          while (SPRITE_TILE_IS_ALLOCATED(i)) i++;
- *          // scan numTilesFound consecutive free tiles starting at i
+ *      u16 i;
+ *      s16 start;
+ *      u16 numTilesFound;
+ *      if (tileCount == 0) {
+ *          for (i = gReservedSpriteTileCount; i < TOTAL_OBJ_TILE_COUNT; i++)
+ *              FREE_SPRITE_TILE(i);
+ *          return 0;
  *      }
- *      return start tileNum;
+ *      i = gReservedSpriteTileCount;
+ *      for (;;) {
+ *          while (SPRITE_TILE_IS_ALLOCATED(i)) {
+ *              i++;
+ *              if (i == TOTAL_OBJ_TILE_COUNT) return -1;
+ *          }
+ *          start = i;
+ *          numTilesFound = 1;
+ *          while (numTilesFound != tileCount) {
+ *              i++;
+ *              if (i == TOTAL_OBJ_TILE_COUNT) return -1;
+ *              if (!SPRITE_TILE_IS_ALLOCATED(i)) numTilesFound++;
+ *              else break;
+ *          }
+ *          if (numTilesFound == tileCount) break;
+ *      }
+ *      for (i = start; i < tileCount + start; i++)
+ *          ALLOC_SPRITE_TILE(i);
+ *      return start;
  *  }
  *  ```
- *  Notre runtime utilise un cursor monotone (= nextSpriteSheetByteOffset) +
- *  reclaim queue (= freedSpriteTileRanges). Pas un bitmap 1:1 sémantique mais
- *  garantit le même invariant : tiles allouées dans [reserved, TOTAL_OBJ_TILE_COUNT),
- *  jamais d'écrasement zone réservée.
  *
- *  Retourne tile start (= bytes / TILE_SIZE_4BPP), ou -1 si VRAM saturée. */
+ *  Retourne tile start (0-1023), ou -1 si VRAM saturée.
+ *  Sync legacy : update rt.nextSpriteSheetByteOffset au cas où ancien code
+ *  inspecte ce cursor. */
 export function AllocSpriteTiles(tileCount: number): number {
   const r = _rt();
   const reservedTiles = getReservedSpriteTileCount();
-  const reservedBytes = reservedTiles * TILE_SIZE_4BPP;
-  const needed = tileCount * TILE_SIZE_4BPP;
 
   if (tileCount === 0) {
-    // 1:1 décomp : tileCount==0 → free all unreserved tiles.
+    // 1:1 décomp : tileCount==0 → free all unreserved tiles in bitmap.
+    for (let i = reservedTiles; i < TOTAL_OBJ_TILE_COUNT; i++) _freeSpriteTile(i);
+    // Sync legacy cursor.
     r.freedSpriteTileRanges.length = 0;
-    if (r.nextSpriteSheetByteOffset > reservedBytes) {
-      r.nextSpriteSheetByteOffset = reservedBytes;
+    if (r.nextSpriteSheetByteOffset > reservedTiles * TILE_SIZE_4BPP) {
+      r.nextSpriteSheetByteOffset = reservedTiles * TILE_SIZE_4BPP;
     }
     return 0;
   }
 
-  // Reuse freedRanges si plage suffisante DANS LA ZONE NON-RÉSERVÉE.
-  for (let i = 0; i < r.freedSpriteTileRanges.length; i++) {
-    const range = r.freedSpriteTileRanges[i];
-    if (range.size >= needed && range.offset >= reservedBytes) {
-      r.freedSpriteTileRanges.splice(i, 1);
-      return range.offset / TILE_SIZE_4BPP;
+  // 1:1 décomp scan algorithm — find first range of `tileCount` contiguous
+  // free tiles in [reservedTiles, TOTAL_OBJ_TILE_COUNT).
+  let i = reservedTiles;
+  let start = -1;
+  outer: for (;;) {
+    while (_spriteTileIsAllocated(i)) {
+      i++;
+      if (i >= TOTAL_OBJ_TILE_COUNT) return -1;
     }
+    start = i;
+    let numTilesFound = 1;
+    while (numTilesFound !== tileCount) {
+      i++;
+      if (i >= TOTAL_OBJ_TILE_COUNT) return -1;
+      if (!_spriteTileIsAllocated(i)) {
+        numTilesFound++;
+      } else {
+        continue outer;
+      }
+    }
+    if (numTilesFound === tileCount) break;
   }
-  // Allouer après le cursor (= floor à reservedBytes).
-  if (r.nextSpriteSheetByteOffset < reservedBytes) {
-    r.nextSpriteSheetByteOffset = reservedBytes;
+  // Mark all `tileCount` tiles as allocated in bitmap.
+  for (let j = start; j < tileCount + start; j++) _allocSpriteTile(j);
+  // Sync legacy cursor (= advance pour callers qui inspect nextSpriteSheetByteOffset).
+  const endByteOffset = (start + tileCount) * TILE_SIZE_4BPP;
+  if (endByteOffset > r.nextSpriteSheetByteOffset) {
+    r.nextSpriteSheetByteOffset = endByteOffset;
   }
-  const byteOffset = r.nextSpriteSheetByteOffset;
-  if (byteOffset + needed > OBJ_VRAM_SIZE) return -1; // 1:1 décomp : -1 si saturé
-  r.nextSpriteSheetByteOffset += needed;
-  return byteOffset / TILE_SIZE_4BPP;
+  return start;
 }
 
 /** 1:1 décomp src/sprite.c:1486-1500 :

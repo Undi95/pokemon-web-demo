@@ -1674,6 +1674,22 @@ export class DecompRuntime {
     this.spriteSheetTagToByteSize.clear();
     this.freedSpriteTileRanges.length = 0;
     this.nextSpriteSheetByteOffset = 0;
+    // 1:1 STRICT décomp sprite.c:294-306 ResetSpriteData : aussi reset les
+    // sSpriteTileRangeTags + sSpriteTileRanges arrays + sSpriteTileAllocBitmap.
+    // gReservedSpriteTileCount = 0 + AllocSpriteTiles(0) (= free all unreserved
+    // tiles in bitmap). Accès via globalThis.__sprite exposé par decomp-globals.
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      sSpriteTileRangeTags?: Uint16Array;
+      sSpriteTileRanges?: Uint16Array;
+    } | undefined;
+    if (sp?.sSpriteTileRangeTags) sp.sSpriteTileRangeTags.fill(0xFFFF);
+    if (sp?.sSpriteTileRanges) sp.sSpriteTileRanges.fill(0);
+    // Clear sSpriteTileAllocBitmap (= will be re-populated by next allocs).
+    const spBitmap = (globalThis as Record<string, unknown>).__sprite as {
+      sSpriteTileAllocBitmap?: Uint8Array;
+    } | undefined;
+    if (spBitmap?.sSpriteTileAllocBitmap) spBitmap.sSpriteTileAllocBitmap.fill(0);
+    (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0;
     // 1:1 décomp ResetAffineAnimData (sprite.c:299) — release toutes les 32
     // matrix OAM. Sans ça, ré-ouvrir le sac alloue matrix 2, 3, … (= leak)
     // jusqu'à saturer le pool 32 → CreateSprite échoue silencieusement.
