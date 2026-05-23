@@ -180,6 +180,7 @@ type SubState =
   | 'pc_action_msg'    // 1:1 décomp ItemStorage_HandleRemoveItem / ItemStorage_HandleErrorMessageInput
   | 'pc_toss_confirm'  // 1:1 décomp YesNo toss confirm
   | 'mailbox_list'     // 1:1 décomp Mailbox_ProcessInput (list-menu mails même vide)
+  | 'mailbox_options'  // 1:1 décomp Mailbox_MailOptionsProcessInput (LIRE/AU SAC/DONNER/RETOUR)
   | 'decoration_menu'  // 1:1 décomp HandleDecorationActionsMenuInput (DECORER/RANGER/JETER/SORTIR)
   | 'deposit_list'     // 1:1 décomp CB2_GoToItemDepositMenu : list bag items + select → AddPCItem
   | 'msg_wait'         // showing "No items"/"No mail" message ; A press → return prev
@@ -370,6 +371,7 @@ export function TickBedroomPC(): void {
     case 'pc_action_msg':   _tickPCActionMsg(newKeys); break;
     case 'pc_toss_confirm': _tickPCTossConfirm(newKeys); break;
     case 'mailbox_list':    _tickMailboxList(newKeys); break;
+    case 'mailbox_options': _tickMailboxOptions(newKeys); break;
     case 'decoration_menu': _tickDecorationMenu(newKeys); break;
     case 'deposit_list':    _tickDepositList(newKeys); break;
     case 'msg_wait':        _tickMsgWait(newKeys); break;
@@ -1569,31 +1571,135 @@ function _mailboxOpenList(): void {
   );
 }
 
+/** Index du mail sélectionné dans gSaveBlock1Ptr.mail (PARTY_SIZE..MAIL_COUNT).
+ *  Set par _tickMailboxList sur sélection, lu par les Mailbox_DoMail* actions. */
+let sMailboxSelectedIdx = -1;
+
 function _tickMailboxList(_newKeys: number): void {
   const sel = ListMenu_ProcessInput(sPCListTaskId);
   if (sel === -1) return;  // LIST_NOTHING_CHOSEN
   if (sel === -2) {
-    // 1:1 décomp LIST_CANCEL → Mailbox_ReturnToPlayerPC.
+    // 1:1 décomp LIST_CANCEL → Mailbox_ReturnToPlayerPC (player_pc.c:719-722).
     PlaySE(Songs.SE_SELECT);
     _mailboxExitList();
     return;
   }
-  // 1:1 décomp Mailbox_DoMailRead (player_pc.c:786-790) :
-  //   FadeScreen(FADE_TO_BLACK, 0); gTasks[taskId].func = Mailbox_FadeAndReadMail;
-  // → après fade : MailboxMenu_Free + CleanupOverworldWindowsAndTilemaps +
-  //   ReadMail(&mail, Mailbox_ReturnToFieldFromReadMail, TRUE)
-  // Notre port : appel direct ReadMail avec un exitCallback qui re-ouvre le PC.
+  // 1:1 décomp Mailbox_ProcessInput default branch (player_pc.c:724-734) :
+  //   PlaySE + MailboxMenu_RemoveWindow + DestroyListMenuTask +
+  //   gTasks[taskId].func = Mailbox_PrintWhatToDoWithPlayerMailText
+  //   → DisplayItemMessageOnField + Mailbox_PrintMailOptions (= sub-menu 4 opts)
   PlaySE(Songs.SE_SELECT);
-  const mailIdx = sel;  // index dans gSaveBlock1Ptr.mail (PARTY_SIZE..MAIL_COUNT)
-  _mailboxExitList();
+  sMailboxSelectedIdx = sel;
+  // Cleanup list cursor (= 1:1 DestroyListMenuTask).
+  if (sPCListTaskId >= 0) {
+    DestroyListMenuTask(sPCListTaskId);
+    sPCListTaskId = -1;
+  }
+  // 1:1 Mailbox_PrintWhatToDoWithPlayerMailText : sticky msg "Que faire avec
+  // le MAIL de <playerName>?" puis options menu.
+  const playerName = gSaveBlock1Ptr.mail[sel].playerName || 'MAIL';
+  setStringVar(1, playerName);
+  const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
+  _showSticky(StringExpandPlaceholders('', tpl));
+  _mailboxPrintMailOptions();
+}
+
+/** 1:1 décomp `Mailbox_PrintMailOptions(taskId)` (player_pc.c:758-765) :
+ *      windowId = MailboxMenu_AddWindow(MAILBOXWIN_OPTIONS);
+ *      PrintMenuTable(windowId, ARRAY_COUNT(gMailboxMailOptions), gMailboxMailOptions);
+ *      InitMenuInUpperLeftCornerNormal(windowId, ARRAY_COUNT(gMailboxMailOptions), 0);
+ *      gTasks[taskId].func = Mailbox_MailOptionsProcessInput; */
+function _mailboxPrintMailOptions(): void {
+  // 1:1 décomp gMailboxMailOptions (player_pc.c:231-237) :
+  //   { gText_Read,      Mailbox_DoMailRead }
+  //   { gText_MoveToBag, Mailbox_MoveToBag }
+  //   { gText_Give2,     Mailbox_Give }
+  //   { gText_Cancel2,   Mailbox_Cancel }
+  const opts: PCOption[] = [
+    { label: getString('gText_Read'),      action: _mailboxDoMailRead },
+    { label: getString('gText_MoveToBag'), action: _mailboxMoveToBag },
+    { label: getString('gText_Give2'),     action: _mailboxGive },
+    { label: getString('gText_Cancel2'),   action: _mailboxCancel },
+  ];
+  sSubWindowId = AddWindow(WIN_ITEM_STORAGE_MENU);
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(
+    sSubWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
+  sOptions = opts;
+  _printMenuOptions(sSubWindowId, opts);
+  InitMenuInUpperLeftCornerNormal(sSubWindowId, opts.length, 0);
+  sSubState = 'mailbox_options';
+}
+
+/** 1:1 décomp `Mailbox_MailOptionsProcessInput(taskId)` (player_pc.c:767-784). */
+function _tickMailboxOptions(_newKeys: number): void {
+  const sel = Menu_ProcessInputNoWrap();
+  if (sel === MENU_NOTHING_CHOSEN) return;
+  if (sel === MENU_B_PRESSED) {
+    PlaySE(Songs.SE_SELECT);
+    _mailboxCancel();
+    return;
+  }
+  PlaySE(Songs.SE_SELECT);
+  sOptions[sel]?.action();
+}
+
+/** 1:1 décomp `Mailbox_DoMailRead(taskId)` (player_pc.c:786-790) :
+ *      FadeScreen(FADE_TO_BLACK, 0); gTasks[taskId].func = Mailbox_FadeAndReadMail;
+ *  → après fade : MailboxMenu_Free + CleanupOverworldWindowsAndTilemaps +
+ *    ReadMail(&mail, Mailbox_ReturnToFieldFromReadMail, TRUE) */
+function _mailboxDoMailRead(): void {
+  _removeSubWindow();
+  _clearSticky();
+  _removePCWindows();
+  const mailIdx = sMailboxSelectedIdx;
+  sMailboxSelectedIdx = -1;
+  sIsOpen = false;  // close PC (= 1:1 MailboxMenu_Free)
   ReadMail(
     gSaveBlock1Ptr.mail[mailIdx],
     () => {
-      // 1:1 décomp Mailbox_ReshowAfterMail : re-open PC bedroom à exit.
+      // 1:1 décomp Mailbox_ReshowAfterMail : re-open PC bedroom.
       OpenBedroomPC(sIsBedroomMode);
     },
     true,
   );
+}
+
+/** 1:1 décomp `Mailbox_MoveToBag(taskId)` (player_pc.c:828-830) :
+ *      DisplayItemMessageOnField(taskId, gText_MessageWillBeLost,
+ *                                Mailbox_AskConfirmMoveToBag);
+ *  → AskConfirm → DisplayYesNoMenuDefaultYes + Mailbox_HandleConfirmMoveToBag */
+function _mailboxMoveToBag(): void {
+  // STUB simplifié : pas de YesNo prompt (= flow décomp.c:828-873 demande
+  // DisplayYesNoMenuDefaultYes + Mailbox_HandleConfirmMoveToBag + DoMailMoveToBag).
+  // Port complet 1:1 = chantier futur. Pour l'instant, retour direct.
+  console.warn('[bedroom-pc] _mailboxMoveToBag — STUB, port 1:1 complet différé (YesNo flow)');
+  _mailboxCancel();
+}
+
+/** 1:1 décomp `Mailbox_Give(taskId)` (player_pc.c:881-892) :
+ *      if (CalculatePlayerPartyCount() == 0) Mailbox_NoPokemonForMail(taskId);
+ *      else FadeScreen + gTasks.func = Mailbox_DoGiveMailPokeMenu;
+ *  → ChooseMonToGiveMailFromMailbox (= party_menu.c, port futur) */
+function _mailboxGive(): void {
+  console.warn('[bedroom-pc] _mailboxGive — STUB, port 1:1 complet différé (party_menu.c)');
+  _mailboxCancel();
+}
+
+/** 1:1 décomp `Mailbox_Cancel(taskId)` (player_pc.c:936-943) :
+ *      MailboxMenu_RemoveWindow(MAILBOXWIN_OPTIONS);
+ *      ClearDialogWindowAndFrame(0, FALSE);
+ *      Mailbox_DrawMailboxMenu(taskId);  ← redraw list
+ *      gTasks[taskId].func = Mailbox_ProcessInput;
+ *
+ *  Notre port : retour à mailbox_list state, redraw list. */
+function _mailboxCancel(): void {
+  _removeSubWindow();
+  sMailboxSelectedIdx = -1;
+  sSubState = 'mailbox_list';
+  // Redraw list (= 1:1 Mailbox_DrawMailboxMenu).
+  _mailboxOpenList();
 }
 
 function _mailboxExitList(): void {
