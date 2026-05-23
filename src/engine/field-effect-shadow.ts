@@ -23,12 +23,14 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
+import { LoadSpriteSheet } from './sprite';
 
 const SHADOW_PNG = '/decomp/em/field_effects/shadow_medium.png';
 
-/** OBJ tile alloc : 16×8 = 2 tiles. Allocate at OBJ tile 970..971 (= just before
- *  jump dust 972). */
-const SHADOW_OBJ_TILE_START = 970;
+/** 1:1 STRICT décomp LoadSpriteSheet auto-alloue tileStart APRÈS reserved zone.
+ *  Palette = bank 0 (= shared with player, TAG_NONE décomp). */
+const TAG_SHADOW_GFX = 'FIELD_EFFECT_SHADOW_GFX';
+let _shadowTileStart = -1;
 const TILES_PER_SHADOW = 2;
 const SHADOW_PALETTE_BANK = 0;  // TAG_NONE → shared with player
 
@@ -57,7 +59,9 @@ export function preloadShadowEffect(rt: DecompRuntime): Promise<void> {
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(SHADOW_PNG, 4);
     const reordered = pngTo1dObjLayoutShadow(png.charData);
-    rt.gba.objVram.set(reordered, SHADOW_OBJ_TILE_START * 32);
+    _shadowTileStart = LoadSpriteSheet({
+      data: reordered, size: reordered.length, tag: TAG_SHADOW_GFX,
+    });
     _initialized = true;
   })();
   return _initPromise;
@@ -69,7 +73,7 @@ export function CreateShadowSprite(rt: DecompRuntime): void {
   if (!_initialized) return;
   if (_shadow.active) DestroyShadowSprite(rt);
   const result = rt.CreateSpriteAtOam({
-    tileId: SHADOW_OBJ_TILE_START,
+    tileId: _shadowTileStart,
     paletteBank: SHADOW_PALETTE_BANK,
     x: 0, y: 0,
     shape: 1, size: 0,  // 16×8 (= shape WIDE, size SMALL)

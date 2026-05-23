@@ -29,6 +29,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { OBJ_PLTT_ID } from './decomp-globals';
@@ -62,19 +63,19 @@ const EMOTE_PAL_BIN   = '/decomp/em/field_effects/emotion_exclamation.gbapal';
  *  Avant : 976..987 chevauchait 976+977 avec dust → tile data écrasé par
  *  dust frames → sprite emote affichait des bytes wrong (user-flag 2026-05-21
  *  "le sprite emote bug + n'est pas au bon endroit"). */
-const EMOTE_OBJ_TILE_START = 978;
+/** 1:1 STRICT décomp `LoadSpriteSheet(sFieldEffectObjectGfxInfo_Icons)` :
+ *  un seul sheet de 12 tiles (= 3 emotes × 4 tiles 16x16) avec tag commun
+ *  FLDEFF_GFXTAG_GENERAL_0. tileStart dynamiquement alloué APRÈS reserved. */
+const TAG_EMOTE_GFX = 'FIELD_EFFECT_EMOTE_GFX';
+const TAG_EMOTE_PAL = 'FIELD_EFFECT_EMOTE_PAL';
+let _emoteTileStart = -1;
+let _emotePalSlot = -1;
 const TILES_PER_EMOTE = 4;  // 16x16 = 2x2 tiles 4bpp
 
-/** Frame index dans l'OBJ tile space (= tile offset relative to EMOTE_OBJ_TILE_START). */
-const ANIM_FRAME_EXCLAMATION = 0;  // tiles 976..979
-const ANIM_FRAME_QUESTION    = 1;  // tiles 980..983
-const ANIM_FRAME_HEART       = 2;  // tiles 984..987
-
-/** Palette OBJ bank dédiée aux emotes. Slot 13 = libre dans nos OW maps
- *  (= banks 0-12 utilisés par NPCs + player). 1:1 décomp `gFieldEffectObjectPalette0`
- *  = `general_0.pal`, qui contient les couleurs jaune (!), bleu (?), rouge (♥)
- *  + plage standard pour effects. */
-const EMOTE_PALETTE_BANK = 13;
+/** Frame index dans l'OBJ tile space (= tile offset relative to _emoteTileStart). */
+const ANIM_FRAME_EXCLAMATION = 0;
+const ANIM_FRAME_QUESTION    = 1;
+const ANIM_FRAME_HEART       = 2;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -117,15 +118,19 @@ export async function LoadEmoteAssets(rt: DecompRuntime): Promise<void> {
       loadTileBin(HEART_PNG, 4),
       loadGbaPal(EMOTE_PAL_BIN),
     ]);
-    const objVram = rt.gba.objVram;
-    // Layout : 4 tiles consecutifs par emote (= 2x2 tiles 4bpp = 128 bytes).
-    objVram.set(excl, (EMOTE_OBJ_TILE_START + ANIM_FRAME_EXCLAMATION * TILES_PER_EMOTE) * 32);
-    objVram.set(qst,  (EMOTE_OBJ_TILE_START + ANIM_FRAME_QUESTION    * TILES_PER_EMOTE) * 32);
-    objVram.set(hrt,  (EMOTE_OBJ_TILE_START + ANIM_FRAME_HEART       * TILES_PER_EMOTE) * 32);
-    // Palette : general_0.pal → OBJ palette bank EMOTE_PALETTE_BANK.
-    rt.LoadPaletteObj(pal, OBJ_PLTT_ID(EMOTE_PALETTE_BANK));
+    // 1:1 STRICT décomp `LoadSpriteSheet(sFieldEffectObjectGfxInfo_Icons)` :
+    // concat 3 emotes en un seul sheet de 12 tiles (= 3 × 4 tiles 16x16).
+    const TILE_BYTES = 32;
+    const EMOTE_BYTES = TILES_PER_EMOTE * TILE_BYTES;
+    const combined = new Uint8Array(3 * EMOTE_BYTES);
+    combined.set(excl.subarray(0, EMOTE_BYTES), ANIM_FRAME_EXCLAMATION * EMOTE_BYTES);
+    combined.set(qst.subarray(0, EMOTE_BYTES),  ANIM_FRAME_QUESTION    * EMOTE_BYTES);
+    combined.set(hrt.subarray(0, EMOTE_BYTES),  ANIM_FRAME_HEART       * EMOTE_BYTES);
+    _emoteTileStart = LoadSpriteSheet({ data: combined, size: combined.length, tag: TAG_EMOTE_GFX });
+    // 1:1 STRICT décomp `LoadSpritePalette(sFieldEffectObjectPaletteInfo_Icons)`.
+    _emotePalSlot = LoadSpritePalette({ data: pal, tag: TAG_EMOTE_PAL });
     _emoteAssetsLoaded = true;
-    console.log(`[field-effect-emotes] assets loaded (tiles ${EMOTE_OBJ_TILE_START}..${EMOTE_OBJ_TILE_START + 12}, palette bank ${EMOTE_PALETTE_BANK})`);
+    console.log(`[field-effect-emotes] assets loaded (tileStart=${_emoteTileStart}, palSlot=${_emotePalSlot})`);
   })();
   return _emoteAssetsLoading;
 }
@@ -168,10 +173,10 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
   const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
   const spriteX = npcSprite?.x ?? 0;
   const spriteY = (npcSprite?.y ?? 0) - 16;
-  const tileId = EMOTE_OBJ_TILE_START + EMOTE_TILE_OFFSET[type];
+  const tileId = _emoteTileStart + EMOTE_TILE_OFFSET[type];
   const result = rt.CreateSpriteAtOam({
     tileId,
-    paletteBank: EMOTE_PALETTE_BANK,
+    paletteBank: _emotePalSlot,
     x: spriteX,
     y: spriteY,
     shape: 0,    // square
