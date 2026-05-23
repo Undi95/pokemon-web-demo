@@ -31,7 +31,7 @@ import { preloadDoorAnim, setupDoorAnim, playDoorOpen, loadDoorsCatalog, loadMet
 import { preloadWindowAssets, setupWindowAssets, getTemplatePixelRect } from '../engine/window-renderer';
 import { gameState } from '../engine/game-state';
 import { FlagGet, VarSet, VarGet } from '../engine/script-vars';
-import { PostLoadApplyBlocks, SetCurrentMap } from '../engine/load_save';
+import { SetCurrentMap } from '../engine/load_save';
 import { gSaveBlock2Ptr } from '../engine/save-block-state';
 import { FEMALE } from '../engine/decomp-globals';
 import { GetDynamicWarp } from '../engine/warp-system';

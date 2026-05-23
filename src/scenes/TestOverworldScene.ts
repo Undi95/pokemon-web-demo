@@ -73,7 +73,7 @@ import {
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
 import { gameState } from '../engine/game-state';
-import { PostLoadApplyBlocks, SetCurrentMap } from '../engine/load_save';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap } from '../engine/load_save';
 import {
   SpawnObjectEventsOnMap,
   UpdateObjectEvents,
@@ -853,7 +853,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // sauvegarde l'état des objectEvents et le restore au resume). Critique
     // pour le resume : l'animation du Mom dialog dans la maison déplace Mom
     // → user save → reload → Mom doit rester à sa nouvelle position.
-    PostLoadApplyBlocks();
+    CopyPartyAndObjectsFromSave();
 
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
     // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran

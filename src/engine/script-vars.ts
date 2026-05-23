@@ -80,10 +80,10 @@ export function VarGet(varId: string): number {
   if (/^0x[0-9a-fA-F]+$/.test(varId)) return parseInt(varId, 16) & 0xFFFF;
   // Special vars resolved at runtime (= 1:1 décomp gSpecialVars[]).
   if (varId === 'VAR_FACING') {
-    // 1:1 décomp event_data.c gSpecialVar_Facing pointer dans gSpecialVars[].
-    // gPlayerAvatar exposé sur globalThis par player-avatar.ts (= évite cycle).
-    const pa = (globalThis as { gPlayerAvatar?: { facing: number } }).gPlayerAvatar;
-    return pa?.facing ?? 0;
+    // 1:1 décomp event_data.c:24 `EWRAM_DATA u16 gSpecialVar_Facing = 0;`
+    // Set par field-control-avatar.ts (= 1:1 field_control_avatar.c:282,305)
+    // au moment de starting un script d'interaction. Read direct via gSpecialVar.Facing.
+    return gSpecialVar.Facing;
   }
   // 1:1 décomp event_data.c:174-180 : `if (id < VARS_START) return id`.
   // Sur ROM les constants comme METATILE_X / MALE / FEMALE sont resolved au
@@ -121,6 +121,13 @@ export const gSpecialVar = {
   set Result(value: number) { gSaveBlock1Ptr.vars['VAR_RESULT'] = value & 0xFFFF; },
   get LastTalked(): number { return gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] ?? 0; },
   set LastTalked(value: number) { gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] = value & 0xFFFF; },
+  /** 1:1 décomp `EWRAM_DATA u16 gSpecialVar_Facing = 0` (event_data.c:24).
+   *  Set par `field_control_avatar.c:282,305` quand le player trigger un
+   *  script d'interaction (= snapshot direction du player à ce moment).
+   *  Read par scripts via VarGet('VAR_FACING'). Notre port stocke direct
+   *  ici (= module-level), sans passer par gSaveBlock1Ptr (le décomp non
+   *  plus — c'est un EWRAM global séparé). */
+  Facing: 0,
   /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — u16 global set par
    *  `Task_BagMenu_HandleInput` quand A pressé sur un item, lu par les
    *  handlers context-menu (UTILIS./DONNER/JETER/etc.) + scripts give-item. */

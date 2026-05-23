@@ -332,55 +332,16 @@ export function SetCurrentMap(v: { name: string; x: number; y: number; facing?: 
 }
 
 // ─── Save flow complet (= 1:1 décomp HandleSavingData) ──────────────────────
-
-/** Pre-save sync : sync tous les states courants vers les save blocks AVANT
- *  d'écrire en localStorage. À call dans gameState.save() avant TrySavingData.
- *
- *  1:1 décomp `start_menu.c case 1+2` Save flow analysed via vrai .sav ROM
- *  Émeraude (= user a fourni un .sav save in truck) :
- *    case 1: SetContinueGameWarpStatusToDynamicWarp() ← set flag in RAM
- *            WriteSaveBlock2() ← incremental write over frames
- *    case 2: WriteSaveBlock1Sector() ← incremental
- *            ClearContinueGameWarpStatus2() ← clear flag in RAM
- *
- *  Le résultat PERSISTED dans le .sav binaire montre `specialSaveWarpFlags = 0`
- *  et `continueGameWarp = zeros`. Le timing async write + clear → la version
- *  persistée a flag CLEAR. Le ROM resume utilise `block1.location` + `block1.pos`
- *  directement (= via branch ELSE de CB2_ContinueSavedGame quand
- *  UseContinueGameWarp() returns 0).
- *
- *  Donc on NE TOUCHE PAS continueGameWarp au save normal. block1.location +
- *  block1.pos sont la source de vérité pour resume. */
-export function PreSaveSyncBlocks(): void {
-  // 1. Sync player position to block1.pos (= sync runtime → persistent).
-  //    Le décomp ROM update block1.pos via CameraMove() à chaque step ; notre
-  //    web port pour pragmatisme sync au save (= une fois suffit).
-  SyncPlayerPositionToBlock();
-  // 2. SaveMapView (= 14×15 metatiles autour du player → block1.mapView).
-  //    1:1 décomp `InitSave` (start_menu.c:877-882) qui appelle SaveMapView()
-  //    AVANT le save dialog/write, et `Task_LinkFullSave` (save.c:996).
-  //    block1.mapView est ENSUITE sérialisé par le moteur secteurs (étape 3),
-  //    et restauré au resume via InitMapFromSavedGame → LoadSavedMapView.
-  //    pos = `gSaveBlock1Ptr->pos` (set juste au-dessus par
-  //    SyncPlayerPositionToBlock = même valeur logique que le décomp).
-  //    Post chantier OW PHASE A.2 : SaveMapView no-args (= 1:1 décomp), lit
-  //    gSaveBlock1Ptr.pos qui est === block1.pos via Proxy.
-  SaveMapView();
-  // 3. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents
-  //    via CopyPartyAndObjectsToSave dans HandleSavingData).
-  SavePlayerParty();
-  SaveObjectEvents();
-  // Note : SetContinueGameWarpStatusToDynamicWarp NOT called ici — le décomp
-  //  binary save montre flag = 0 + continueGameWarp = zeros (= async clear
-  //  timing). Resume use block1.location + block1.pos.
-}
-
-/** Post-load apply : restore les NPCs positions live depuis block1.
- *  À call APRÈS que la map ait été loaded et les NPCs spawnés depuis leur
- *  templates, pour override les positions default avec les saved positions. */
-export function PostLoadApplyBlocks(): void {
-  CopyPartyAndObjectsFromSave();
-}
+//
+// `PreSaveSyncBlocks` + `PostLoadApplyBlocks` wrappers SUPPRIMÉS (= task #3
+// élimination). Le décomp utilise directement `CopyPartyAndObjectsToSave/
+// FromSave` + `SaveMapView` + `SyncPlayerPositionToBlock`. Les callers
+// appellent maintenant ces helpers individuels 1:1 décomp directement :
+//
+//   - `save-system.ts:SaveGame()` → SyncPlayerPositionToBlock +
+//     SaveMapView + CopyPartyAndObjectsToSave (= 1:1 HandleSavingData).
+//   - `TestOverworldScene.ts` post-load → CopyPartyAndObjectsFromSave
+//     (= 1:1 décomp call direct).
 
 // Re-export pour facilité d'access.
 export { GetSaveBlock1, GetSaveBlock2, emptySaveBlock1 };

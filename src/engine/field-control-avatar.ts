@@ -509,9 +509,8 @@ export function GetInteractedObjectEventScript(
   }
   gSelectedObjectEvent.index = objectEventId;
   gSpecialVar.LastTalked = gObjectEvents[objectEventId].localId;
-  // 1:1 décomp `gSpecialVar_Facing = direction` skip — notre `VarGet('VAR_FACING')`
-  // live-read depuis `gPlayerAvatar.facing` (= équivalent comportemental durant
-  // l'interaction puisque player est locked + face direction inchangée).
+  // 1:1 décomp `gSpecialVar_Facing = direction` (field_control_avatar.c:305).
+  gSpecialVar.Facing = direction;
   // TrainerHill skip pour MVP.
   const script = gObjectEvents[objectEventId].scriptLabel;
   if (!script) return null;

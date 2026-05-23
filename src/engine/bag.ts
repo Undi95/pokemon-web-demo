@@ -41,7 +41,12 @@ import {
   BAG_ITEMS_COUNT, BAG_POKEBALLS_COUNT, BAG_TMHM_COUNT, BAG_BERRIES_COUNT, BAG_KEYITEMS_COUNT,
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET, POCKETS_COUNT,
 } from './bag-types';
-void _gameState; // keep side-effect import (= force game-state init early via save-system → bag chain)
+// Note : side-effect import `gameState as _gameState` est ESSENTIEL au boot.
+// Sans, l'ordre d'init eager ESM change (= chaîne save-system → bag →
+// game-state cassée) et le boot stall silencieusement. Voir
+// session-2026-05-23-2 memory file pour analyse. À retirer une fois la
+// chaîne save-system → bag → ? sera audited proprement.
+void _gameState;
 
 // Re-export types/constants pour les callers existants (= compat).
 export type { ItemSlot, Bag, BagPocket } from './bag-types';

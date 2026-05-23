@@ -154,21 +154,31 @@ export function LoadGameSave(): number {
 }
 
 /** 1:1 décomp `HandleSavingData(SAVE_NORMAL)` (save.c:765-806) :
- *    Sync runtime → blocks (= PreSaveSyncBlocks équivalent) puis
- *    `WriteSaveSlot(FULL_SAVE_SLOT)`. Notre port : check SaveLocked avant
- *    le sync coûteux (= bypass total pour les modes test). */
+ *    InitSave → SaveMapView (start_menu.c:877-882) + CopyPartyAndObjectsToSave
+ *    (load_save.c) puis `WriteSaveSlot(FULL_SAVE_SLOT)`.
+ *
+ *  Notre port : check SaveLocked avant le sync coûteux (= bypass total pour
+ *  les modes test). Helpers individuels appelés 1:1 décomp, plus de wrapper
+ *  `PreSaveSyncBlocks` (= éliminé). */
 export async function SaveGame(): Promise<boolean> {
   if (_saveLocked) {
     console.log('[save-system] SaveGame skipped (SRAM locked)');
     return false;
   }
-  // 1:1 décomp : sync states runtime → blocks AVANT save (= PreSaveSyncBlocks
-  // wrap les helpers SaveObjectEvents/SyncPlayerPositionToBlock/etc).
+  // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
     const lsMod = await import('./load_save');
-    lsMod.PreSaveSyncBlocks();
+    // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
+    // SyncPlayerPositionToBlock = notre helper port (le décomp update
+    // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save
+    // pour pragmatisme — comportement identique au save).
+    lsMod.SyncPlayerPositionToBlock();
+    lsMod.SaveMapView();
+    // 1:1 décomp CopyPartyAndObjectsToSave (load_save.c) = SavePlayerParty +
+    // SaveObjectEvents.
+    lsMod.CopyPartyAndObjectsToSave();
   } catch (e) {
-    console.warn('[save-system] PreSaveSyncBlocks failed (non-fatal):', e);
+    console.warn('[save-system] SaveGame sync failed (non-fatal):', e);
   }
   return TrySavingData();
 }
