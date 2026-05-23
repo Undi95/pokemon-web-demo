@@ -2027,10 +2027,6 @@ function _spawnSingleNpcFromTemplate(
   const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
   if (!is48x48 && !is32x32 && !is16x32 && !is16x16) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
-  // 🐛 DEBUG temp 2026-05-24 : trace branch + dims pour MOM (= bug "moitié de maman" post-cycle bag).
-  if (graphicsKey === 'OBJ_EVENT_GFX_MOM') {
-    console.log(`[spawn MOM] dims=${graphics.frameWidth}x${graphics.frameHeight} branches: 48x48=${is48x48} 32x32=${is32x32} 16x32=${is16x32} 16x16=${is16x16}`);
-  }
 
   // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
   // dedup par (localId, mapId). Notre loader set localId=0 pour templates

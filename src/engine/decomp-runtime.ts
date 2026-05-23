@@ -1285,6 +1285,14 @@ export class DecompRuntime {
     paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
     /** 1:1 décomp `CreateSprite` 4th arg. Default 0xFF (= sentinel "behind"). */
     subpriority?: number,
+    /** 1:1 décomp `CreateSpriteAtEnd` (sprite.c:513-522) : itère gSprites
+     *  + OAM de MAX_SPRITES-1 vers 0 au lieu de 0 vers MAX_SPRITES-1.
+     *  Utilisé par les sprites field-effect (emote !/?/♥, etc.) qui doivent
+     *  occuper les HAUTS slots → évite la collision avec les NPCs qui prennent
+     *  les BAS slots via `CreateSprite` (= CreateSpriteAtOam par défaut).
+     *  Sans ce flag, l'emote pouvait écraser le slot 1 (= NPC MOM) → sprite
+     *  MOM rendu avec shape/size de l'emote (16x16) = "moitié de maman" bug. */
+    fromEnd?: boolean,
   }): { spriteId: number, oamIndex: number } {
     // Recherche un slot OAM libre.
     // Bug session 89 fix : avant on testait `!oam.visible` pour décider si un
@@ -1318,10 +1326,25 @@ export class DecompRuntime {
       for (const idx of getChildOams()) takenSlots.add(idx);
     }
     let oamIndex = -1;
-    for (let i = 0; i < 128; i++) {
-      if (!takenSlots.has(i)) {
-        oamIndex = i;
-        break;
+    // 1:1 STRICT décomp sprite.c:502-522 :
+    //   - CreateSprite       : itère 0 → MAX_SPRITES-1 (= 1er slot libre du bas)
+    //   - CreateSpriteAtEnd  : itère MAX_SPRITES-1 → 0 (= 1er slot libre du haut)
+    // Ces deux fns wrap CreateSpriteAt(index, ...). Notre `fromEnd` flag bascule
+    // l'ordre de scan pour le seul cas où le décomp utilise CreateSpriteAtEnd
+    // (= sprites field-effect emote/etc. qui doivent prendre slots hauts).
+    if (cfg.fromEnd) {
+      for (let i = 127; i >= 0; i--) {
+        if (!takenSlots.has(i)) {
+          oamIndex = i;
+          break;
+        }
+      }
+    } else {
+      for (let i = 0; i < 128; i++) {
+        if (!takenSlots.has(i)) {
+          oamIndex = i;
+          break;
+        }
       }
     }
     if (oamIndex === -1) {
@@ -1364,9 +1387,18 @@ export class DecompRuntime {
     // (2) fuite gSprites non bornée. = 4e instance du pattern allocateur-
     // monotone-sans-reuse (cf. palette/tuiles/OAM déjà corrigés).
     let spriteId = -1;
-    for (let i = 0; i < 64; i++) {
-      const ex = this.gSprites.get(i);
-      if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+    // 1:1 STRICT décomp sprite.c:502-522 : CreateSprite scan 0→63,
+    // CreateSpriteAtEnd scan 63→0. Same `fromEnd` flag basule.
+    if (cfg.fromEnd) {
+      for (let i = 63; i >= 0; i--) {
+        const ex = this.gSprites.get(i);
+        if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+      }
+    } else {
+      for (let i = 0; i < 64; i++) {
+        const ex = this.gSprites.get(i);
+        if (ex === undefined || ex.inUse === false) { spriteId = i; break; }
+      }
     }
     if (spriteId === -1) {
       // 64 slots inUse → échec 1:1 (return MAX_SPRITES). Libère l'OAM réservé.

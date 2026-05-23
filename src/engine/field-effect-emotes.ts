@@ -219,6 +219,10 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
   const spriteX = npcSprite?.x ?? 0;
   const spriteY = (npcSprite?.y ?? 0) - 16;
 
+  // 1:1 STRICT décomp trainer_see.c:698 `CreateSpriteAtEnd` — alloue gSprites
+  // slot depuis MAX_SPRITES-1 vers 0. Sans `fromEnd: true`, le sprite emote
+  // prend slot bas (= occupé par NPCs) → écrase MOM avec 16x16 emote → "moitié
+  // de maman" (bug user 2026-05-24).
   const result = rt.CreateSpriteAtOam({
     tileId: tileStart,
     paletteBank: paletteSlot,
@@ -229,6 +233,7 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
     priority: 1,     // 1:1 décomp sOamData_Icons.priority = 1
     paletteMode: 0,  // ST_OAM_4BPP
     affineMode: 0,   // ST_OAM_AFFINE_OFF
+    fromEnd: true,   // 1:1 décomp CreateSpriteAtEnd (sprite.c:513-522)
   });
 
   // 1:1 décomp SetIconSpriteData (trainer_see.c:731-743) : init data slots +
