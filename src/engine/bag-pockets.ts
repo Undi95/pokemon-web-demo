@@ -16,7 +16,6 @@
  * CLAIR (simplification modèle-large déjà actée bag.ts) → `_qty(slot) =
  * slot.quantity`. Comportement identique (0 = slot vide).
  */
-import { gameState } from './game-state';
 import { gBagPockets, ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from './bag';
 import { getItemId } from './data-tables';
 import { sTMHMMoves } from './tmhm-moves';

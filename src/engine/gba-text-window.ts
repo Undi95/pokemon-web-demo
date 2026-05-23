@@ -17,7 +17,6 @@
 
 import { assetCache, getAsset, getRuntime, LoadBgTiles } from './decomp-globals';
 import { loadIndexedPngStrict } from './gba/png-loader';
-import { gameState } from './game-state';
 import { gSaveBlock2Ptr } from './save-block-state';
 import {
   FillBgTilemapBufferRect, GetWindowAttribute,

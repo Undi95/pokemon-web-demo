@@ -23,6 +23,7 @@
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
 import { gMapHeader } from '../map-loader';
+import { gSaveBlock1Ptr } from '../save-block-state';
 import {
   gBattleMons, setActiveBattler,
   gBattleTypeFlags,
@@ -66,13 +67,13 @@ let _sLearningMoveTableID = 0;
  *  Source learnset : (globalThis.__game_data).getLevelUpLearnset(SPECIES_X). */
 function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number {
   const partyIdx = _gBattleStruct32.expGetterMonId ?? 0;
-  // 1:1 décomp : `&gPlayerParty[gBattleStruct->expGetterMonId]`. Notre port :
-  // gameState.party[partyIdx] (= PokemonInstance avec speciesId/level/moves).
-  const gs = (globalThis as { gameState?: { party?: Array<{
+  // 1:1 décomp : `&gPlayerParty[gBattleStruct->expGetterMonId]` = read direct
+  // gSaveBlock1Ptr.playerParty[partyIdx] (= notre PokemonInstance avec
+  // speciesId/level/moves).
+  const mon = gSaveBlock1Ptr.playerParty[partyIdx] as {
     speciesId?: number; speciesEnum?: string; level?: number;
     moves?: Array<{ id?: string; pp?: number }>;
-  }> } }).gameState;
-  const mon = gs?.party?.[partyIdx];
+  } | undefined;
   if (!mon) return MOVE_NONE;
 
   // 1:1 décomp : species + level depuis MON_DATA_SPECIES / MON_DATA_LEVEL.

@@ -34,7 +34,6 @@ import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getRuntime, LoadPalette } from './decomp-globals';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
 import { VarSet } from './script-vars';

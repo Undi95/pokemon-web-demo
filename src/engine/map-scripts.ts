@@ -50,7 +50,6 @@ export async function runMapScript(
   await runScript(name, parsed, ctx);
 }
 
-import { gameState } from './game-state';
 import { VarGet } from './script-vars';
 
 /**

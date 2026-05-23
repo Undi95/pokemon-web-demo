@@ -34,7 +34,6 @@ import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from './gba-text-system';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import {

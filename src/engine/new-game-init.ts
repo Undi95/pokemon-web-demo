@@ -1,4 +1,3 @@
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { SetDynamicWarp, GetDynamicWarp } from './warp-system';
 import { VarSet } from './script-vars';

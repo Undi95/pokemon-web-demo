@@ -30,7 +30,6 @@
  * je perdais 5+ tool calls juste pour lire 3 fichiers et grep une valeur.
  */
 
-import { gameState } from './game-state';
 import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from './save-system';
 import { GetPlayerFacingDirection } from './player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';

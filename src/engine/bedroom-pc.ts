@@ -51,7 +51,6 @@ import {
 import { getRuntime, PlaySE } from './decomp-globals';
 import { SignalWaitState } from './script-opcodes';
 import { ScriptContext_SetupScript } from './script-runtime';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';

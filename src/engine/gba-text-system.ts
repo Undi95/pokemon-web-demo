@@ -557,17 +557,8 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
   result = result.replace(/\{STR_VAR_2\}/g, () => gStringVar2);
   result = result.replace(/\{STR_VAR_3\}/g, () => gStringVar3);
 
-  // {PLAYER} = nom du joueur. Lookup priority :
-  //   1. window.gameState.playerName (= notre source canonique post Phase 4.10)
-  //   2. gSaveBlock2Ptr.playerName (= legacy save block proxy, fallback)
-  // Lazy via globalThis pour éviter import circular.
-  const gs = (globalThis as Record<string, unknown>).gameState as
-    | { playerName?: string } | undefined;
-  let playerName: string | undefined = gs?.playerName;
-  if (!playerName) {
-    // 1:1 décomp `gSaveBlock2Ptr->playerName`.
-    playerName = gSaveBlock2Ptr.playerName as string | undefined;
-  }
+  // {PLAYER} = nom du joueur. 1:1 décomp `gSaveBlock2Ptr->playerName` direct.
+  const playerName: string | undefined = gSaveBlock2Ptr.playerName as string | undefined;
   // 1:1 décomp `StringCopy(dest, gSaveBlock2Ptr->playerName)` : substitute
   // toujours (= si playerName empty, le décomp pousse aussi vide). Avant on
   // skipped si playerName === 'PLAYER' → résultat "MAMAN: Alors, ?" car le
@@ -582,11 +573,8 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
   //       return gText_ExpandedPlaceholder_May;    // = "FLORA"
   //   else
   //       return gText_ExpandedPlaceholder_Brendan; // = "BRICE"
-  // Ancien : 'RIVAL' hardcodé. User aurait vu "Salut RIVAL !" partout.
-  const gsForRival = (globalThis as Record<string, unknown>).gameState as
-    | { gender?: 'MALE' | 'FEMALE' } | undefined;
   let rivalName: string;
-  if (gsForRival?.gender === 'FEMALE') {
+  if ((gSaveBlock2Ptr.playerGender ?? 0) === 1 /* FEMALE */) {
     rivalName = 'BRICE'; // = gText_ExpandedPlaceholder_Brendan FR
   } else {
     // Default MALE (= player non set) → FLORA (= rival féminin).

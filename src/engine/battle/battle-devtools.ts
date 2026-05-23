@@ -499,9 +499,9 @@ export function buildBattleDevtools(): Record<string, unknown> {
       if (opts?.attackerSpecies) {
         attacker = pokemonMod.createPokemonInstance(opts.attackerSpecies, opts.attackerLevel ?? 50) as never;
       } else {
-        // Use scope.party real one for attacker.
-        const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
-        const realParty = (gs?.party as Array<typeof attacker> | undefined)?.filter(m => !!m);
+        // Use real gSaveBlock1Ptr.playerParty[0] for attacker (= 1:1 décomp).
+        const sbsMod = await import('../save-block-state');
+        const realParty = (sbsMod.gSaveBlock1Ptr.playerParty as Array<typeof attacker> | undefined)?.filter(m => !!m);
         if (!realParty?.length) return { error: 'no party (specify attackerSpecies)' };
         attacker = realParty[0];
       }

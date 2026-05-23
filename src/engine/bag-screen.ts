@@ -32,7 +32,6 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
 import { setStringVar } from './string-buffers';

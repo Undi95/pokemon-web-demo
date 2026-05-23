@@ -19,6 +19,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte } from './script-interpreter';
+import { gSaveBlock2Ptr } from '../save-block-state';
 import {
   gBattleControllerExecFlags, gBattleMons, gBattlerAttacker, gBattlerTarget,
   gActiveBattler, setActiveBattler, setBattlerAttacker, setBattlerTarget,
@@ -471,10 +472,9 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
               dmg = Math.floor((dmg * 150) / 100);
             }
             // 1:1 décomp : si traded mon (= otId != playerTrainerId OR otName
-            // != playerName), XP × 1.5. IsTradedMon impl inline ici (= simple
-            // compare avec gameState.trainerId).
-            const playerTID = (globalThis as { gameState?: { trainerId?: number } })
-              .gameState?.trainerId ?? 0;
+            // != playerName), XP × 1.5. IsTradedMon impl inline (= compare
+            // direct gSaveBlock2Ptr.playerTrainerId, 1:1 décomp).
+            const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
             const monOtId = gPlayerParty[monId]?.otId ?? 0;
             if (monOtId !== playerTID) {
               dmg = Math.floor((dmg * 150) / 100);

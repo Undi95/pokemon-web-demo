@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { preloadBitmapFont, setupBitmapFont, renderTextToCanvas, measureLastLine } from './bitmap-font';
-import { gameState } from './game-state';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { runTextPrinter as gpRunTextPrinter } from './gba-text-printer';
 import { getStringVar } from './string-buffers';

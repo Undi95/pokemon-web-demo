@@ -74,7 +74,6 @@ function _restorePalettesFromUnfaded(): void {
   BlendPalettes(PALETTES_ALL, 0, 0 /* RGB_BLACK */);
 }
 import { OBJ_PLTT_ID } from './decomp-runtime';
-import { gameState } from './game-state';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
