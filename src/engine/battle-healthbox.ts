@@ -38,6 +38,7 @@
 
 import { getRuntime } from './decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
+import { MarkObjTilesAllocated } from './sprite';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
  *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé
@@ -264,6 +265,10 @@ export async function ensureHealthboxAssets(): Promise<void> {
     playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 8,
   );
   rt.gba.objVram.set(playerTiles, HEALTHBOX_PLAYER_VRAM);
+  // 1:1 STRICT bitmap allocator sync : ces tiles healthbox sont hardcodées
+  // au début d'OBJ VRAM (= 0x0000..) → si on ne marque pas, AllocSpriteTiles
+  // les voit free et les re-attribue (= corruption).
+  MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, playerTiles.length);
 
   // ─── Opponent healthbox tile data ───────────────────────────────────────
   // PNG 128×32 = 16w × 4t tiles. `-mwidth 8 -mheight 4` → 2 metatiles 8×4
@@ -274,6 +279,7 @@ export async function ensureHealthboxAssets(): Promise<void> {
     oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4,
   );
   rt.gba.objVram.set(oppTiles, HEALTHBOX_OPPONENT_VRAM);
+  MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, oppTiles.length);
 
   // ─── HP bar widget tile data ────────────────────────────────────────────
   // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358) concatène
@@ -302,6 +308,10 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // tiles 0..1 = labels "H" "P" depuis hpbar.png tile 1 + 2 (= "H" + "P").
   rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
   rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
+  // 1:1 STRICT bitmap allocator sync : HP bars couvrent 8 tiles continus
+  // (= LEFT+RIGHT) chacune côté player et opp.
+  MarkObjTilesAllocated(HPBAR_PLAYER_LEFT_VRAM, 8 * TILE_BYTES);
+  MarkObjTilesAllocated(HPBAR_OPP_LEFT_VRAM, 8 * TILE_BYTES);
 
   // ─── Numbers tile sets (= digits 0..9 pour Lv + HP display) ─────────────
   // 1:1 décomp graphics_file_rules.mk:90-91 :

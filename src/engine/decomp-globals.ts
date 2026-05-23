@@ -1814,7 +1814,22 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   if (sheet.targetTileBase !== undefined) {
     const byteOffset = sheet.targetTileBase * 32;  // 32 bytes per 8x8 4bpp tile
     const copySize = Math.min(bytes.length, r.gba.objVram.length - byteOffset);
-    if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
+    if (copySize > 0) {
+      r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
+      // 1:1 STRICT bitmap allocator sync : targetTileBase = overwrite ciblé
+      // (LoadBallGfx remplace open.png frames). Marquer assure que ces tiles
+      // ne sont pas re-attribuées par AllocSpriteTiles.
+      const sp = (globalThis as Record<string, unknown>).__sprite as {
+        sSpriteTileAllocBitmap?: Uint8Array;
+      } | undefined;
+      if (sp?.sSpriteTileAllocBitmap) {
+        const tileStart = byteOffset >> 5;
+        const tileCount = copySize >> 5;
+        for (let n = tileStart; n < tileStart + tileCount; n++) {
+          sp.sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
+        }
+      }
+    }
     r.spriteSheetTagToTileStart.set(tagStr, sheet.targetTileBase);
     return;
   }

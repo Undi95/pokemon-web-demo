@@ -897,11 +897,28 @@ export class DecompRuntime {
     if (copySize > 0) this.gba.objVram.set(charData.subarray(0, copySize), byteOffset);
   }
 
+  /** 1:1 STRICT helper : marker les tiles dans sSpriteTileAllocBitmap après
+   *  un write avec byteOffset fourni par le caller (= rt.LoadCompressedSpriteSheet
+   *  paths historiques). Sans ce marker, le bitmap allocator (= field-effect via
+   *  LoadSpriteSheet) voit ces tiles "libres" et alloue dessus → collision. */
+  private _markTilesInBitmap(byteOffset: number, byteSize: number): void {
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      sSpriteTileAllocBitmap?: Uint8Array;
+    } | undefined;
+    if (!sp?.sSpriteTileAllocBitmap) return;
+    const tileStart = byteOffset >> 5;
+    const tileCount = byteSize >> 5;
+    for (let n = tileStart; n < tileStart + tileCount; n++) {
+      sp.sSpriteTileAllocBitmap[n >> 3] |= (1 << (n & 7));
+    }
+  }
+
   /** Charge un sprite sheet 4bpp dans objVram à un offset (en bytes). Auto-detect palette
    *  via les couleurs uniques (= ordre d'apparition pixels, peut diverger de PLTE). */
   async LoadCompressedSpriteSheet(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
     const png = await loadIndexedPng(pngUrl);
     this._writeToObjVram(png.charData, byteOffset);
+    this._markTilesInBitmap(byteOffset, png.charData.length);
     return { palette: png.palette, byteSize: png.charData.length };
   }
 
@@ -911,6 +928,7 @@ export class DecompRuntime {
   async LoadCompressedSpriteSheetStrict(pngUrl: string, byteOffset: number): Promise<{ palette: Uint16Array, byteSize: number }> {
     const png = await loadIndexedPngStrict(pngUrl, 4);
     this._writeToObjVram(png.charData, byteOffset);
+    this._markTilesInBitmap(byteOffset, png.charData.length);
     return { palette: png.palette, byteSize: png.charData.length };
   }
 
@@ -918,6 +936,7 @@ export class DecompRuntime {
   async LoadCompressedSpriteSheetWithPal(pngUrl: string, byteOffset: number, palette: Uint16Array): Promise<{ byteSize: number }> {
     const png = await loadIndexedPngWithPal(pngUrl, palette.subarray(0, 16));
     this._writeToObjVram(png.charData, byteOffset);
+    this._markTilesInBitmap(byteOffset, png.charData.length);
     return { byteSize: png.charData.length };
   }
 

@@ -47,7 +47,7 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { LoadSpritePalette } from './sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated } from './sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -1012,6 +1012,9 @@ async function _loadPokeballGfx(): Promise<void> {
   const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
   const POKEBALL_TILE_BASE = 256;
   rt.gba.objVram.set(tiles.slice(0, 32 * 32), POKEBALL_TILE_BASE * 32);
+  // 1:1 STRICT bitmap allocator sync : mark tiles allocated (= sinon AllocSpriteTiles
+  // peut les re-attribuer à un autre sheet → écrasement visuel).
+  MarkObjTilesAllocated(POKEBALL_TILE_BASE * 32, 32 * 32);
   // 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué.
   _pokeballPalSlot = LoadSpritePalette({ data: pal, tag: TAG_POKEBALL_PAL });
 }
@@ -1095,6 +1098,8 @@ async function _loadHeldItemGfx(): Promise<void> {
   const tiles = await loadTileBin('/decomp/em/party_menu/hold_icons.png', 4);
   const pal = await loadGbaPal('/decomp/em/party_menu/hold_icons.gbapal');
   rt.gba.objVram.set(tiles.slice(0, 2 * 32), PARTY_HELDITEM_TILE_BASE * 32);
+  // 1:1 STRICT bitmap allocator sync.
+  MarkObjTilesAllocated(PARTY_HELDITEM_TILE_BASE * 32, 2 * 32);
   _partyHeldItemPalSlot = LoadSpritePalette({ data: pal, tag: TAG_PARTY_HELDITEM_PAL });
 }
 
@@ -1194,6 +1199,8 @@ async function _spawnIconOams(): Promise<void> {
       // Frames stockées contiguës : tiles [slotTileBase..+15] = frame 0,
       //   [slotTileBase+16..+31] = frame 1.
       rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_SLOT), slotByteOffset);
+      // 1:1 STRICT bitmap allocator sync : mark icon tiles allocated.
+      MarkObjTilesAllocated(slotByteOffset, BYTES_PER_SLOT);
       void BYTES_PER_FRAME;
       // 1:1 décomp `LoadMonIconPalette(species)` : lookup gMonIconPaletteIndices
       // pour obtenir l'index 0/1/2, puis load `gMonIconPalettes[index]` (= un

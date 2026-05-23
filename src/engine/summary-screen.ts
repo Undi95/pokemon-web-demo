@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
-import { LoadSpriteSheet } from './sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from './sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
@@ -754,6 +754,8 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // d'apparition → indices mélangés → blanc rendu gris = bug user).
     try {
       r.gba.objVram.set(a.ballTiles, BALL_TILE_BASE * 32);
+      // 1:1 STRICT bitmap allocator sync.
+      MarkObjTilesAllocated(BALL_TILE_BASE * 32, a.ballTiles.length);
       _ballPalSlot = LoadSpritePalette({ data: a.ballPal, tag: TAG_BALL_PAL_SUMMARY });
     } catch (e) { console.error('[summary] ball gfx load failed:', e); }
     // 1:1 décomp `sMoveSelectorSpriteSheet`/`sMoveSelectorSpritePal` (chargés
@@ -762,6 +764,8 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // SpriteSheet, comme la pokéball).
     try {
       r.gba.objVram.set(a.moveSelectTiles, MOVE_SELECTOR_BYTE_OFFSET);
+      // 1:1 STRICT bitmap allocator sync.
+      MarkObjTilesAllocated(MOVE_SELECTOR_BYTE_OFFSET, a.moveSelectTiles.length);
       _moveSelectorPalSlot = LoadSpritePalette({ data: a.moveSelectPal, tag: TAG_MOVE_SELECTOR_PAL });
     } catch (e) { console.error('[summary] move-select gfx load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.

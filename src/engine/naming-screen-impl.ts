@@ -20,6 +20,7 @@
  * auto-callbacks y accèdent.
  */
 import { OBJ_PLTT_ID } from './decomp-runtime';
+import { MarkObjTilesAllocated } from './sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
@@ -618,6 +619,8 @@ async function loadNamingScreenAssets(): Promise<void> {
       const writeSize = Math.min(srcEnd - srcStart, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
       if (writeSize > 0) {
         rt.gba.objVram.set(charData.subarray(srcStart, srcStart + writeSize), rt.nextSpriteSheetByteOffset);
+        // 1:1 STRICT bitmap allocator sync.
+        MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, sheet.sizeBytes);
       }
       rt.spriteSheetTagToTileStart.set(sheet.tag, tileStart);
       // Round up to sizeBytes (= 1:1 décomp behavior — always advance by

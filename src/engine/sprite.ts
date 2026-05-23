@@ -115,6 +115,16 @@ function _spriteTileIsAllocated(n: number): boolean {
   return ((sSpriteTileAllocBitmap[n >> 3] >> (n & 7)) & 1) === 1;
 }
 
+/** Helper exposé pour les sites qui font raw `objVram.set(data, byteOffset)`
+ *  hardcoded (= party/summary/battle screens). Marker les tiles dans le bitmap
+ *  pour que AllocSpriteTiles (= field-effect bitmap allocator) ne les considère
+ *  pas libres → évite collisions visuelles 1:1 décomp. */
+export function MarkObjTilesAllocated(byteOffset: number, byteSize: number): void {
+  const tileStart = byteOffset >> 5;
+  const tileCount = byteSize >> 5;
+  for (let n = tileStart; n < tileStart + tileCount; n++) _allocSpriteTile(n);
+}
+
 // ─── Internal string ↔ u16 tag mapping ────────────────────────────────────
 // Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100, TAG_ITEM_ICON = 5110
 // = 0x13F6, TAG_NPC_PALETTE = 0x1100+ etc.). Pour éviter COLLISION avec les
@@ -591,9 +601,9 @@ export function ResetOamRange(start: number, end: number): void {
     // DUMMY_OAM_DATA (sprite.c:101-116) : y=DISPLAY_HEIGHT=160, x=DISPLAY_WIDTH+64=304,
     // affineMode=OFF, shape=SQUARE(8x8), size=SPRITE_SIZE(8x8), priority=3.
     o.x = 304; o.y = 160;
-    o.affineMode = 0; o.objMode = 0; o.mosaic = false; o.bpp = 0;
-    o.shape = 0; o.size = 0; o.tileNum = 0; o.matrixNum = 0;
-    o.priority = 3; o.paletteNum = 0;
+    o.affineMode = 0; o.objMode = 0; o.mosaic = false; o.paletteMode = 0;
+    o.shape = 0; o.size = 0; o.tileId = 0; o.affineParamIndex = 0;
+    o.priority = 3; o.paletteBank = 0;
     o.visible = false;
   }
 }

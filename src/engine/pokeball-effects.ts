@@ -25,6 +25,7 @@
 
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from './decomp-helpers';
+import { MarkObjTilesAllocated } from './sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
 export const BALL_POKE = 0;
@@ -475,7 +476,12 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
     const bytes = gfx instanceof Uint16Array ? new Uint8Array(gfx.buffer, gfx.byteOffset, gfx.byteLength) : gfx;
     const tileStart = (rt.nextSpriteSheetByteOffset >> 5);
     const copySize = Math.min(bytes.length, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
-    if (copySize > 0) rt.gba.objVram.set(bytes.subarray(0, copySize), rt.nextSpriteSheetByteOffset);
+    if (copySize > 0) {
+      rt.gba.objVram.set(bytes.subarray(0, copySize), rt.nextSpriteSheetByteOffset);
+      // 1:1 STRICT bitmap allocator sync : sans ça AllocSpriteTiles peut
+      // attribuer ces tiles à un autre sheet → écrasement.
+      MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, copySize);
+    }
     rt.spriteSheetTagToTileStart.set(PARTICLES_TILE_TAG, tileStart);
     rt.nextSpriteSheetByteOffset += copySize;
   }

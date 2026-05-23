@@ -23,6 +23,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import type { LoadedPng } from './gba/png-loader';
+import { MarkObjTilesAllocated } from './sprite';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -2125,6 +2126,11 @@ function _spawnSingleNpcFromTemplate(
     const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
     rt.gba.objVram.set(reordered, objTileBase * 32);
   }
+  // 1:1 STRICT bitmap allocator sync : ce système NPC legacy gère son propre
+  // pool (`_nextNpcTileBase` + `_freeNpcSlots`). Sans marquer le slot complet
+  // dans le bitmap, AllocSpriteTiles voit ces tiles libres et les attribue
+  // à un autre sheet (= field-effect / UI) → écrasement NPC.
+  MarkObjTilesAllocated(objTileBase * 32, TILES_PER_NPC * 32);
   const paletteSlot = 256 + paletteBank * 16;
   for (let i = 0; i < Math.min(16, png.palette.length); i++) {
     rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
