@@ -47,6 +47,7 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from './save-block-state';
+import { LoadSpritePalette } from './sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -144,6 +145,9 @@ const PARTY_OVERLAY_MAP_BASE = 28; // BG2 empty
 /** OAM offsets. */
 const ICON_OBJ_PAL_BASE = 5;       // palette 5..7 (= per icon pal index)
 const ICON_OBJ_TILE_OFFSET = 0;    // OBJ VRAM offset 0 = base for icons
+/** 1:1 STRICT décomp `LoadSpritePalette(sPokeballPalette)` : slot dynamique. */
+let _pokeballPalSlot = -1;
+const TAG_POKEBALL_PAL = 'PARTY_POKEBALL_PAL';
 /** 1:1 décomp pokemon_icon.png 32×64 = 2 frames empilées verticalement.
  *  Chaque frame 32×32 = 16 tiles 4bpp. On réserve 32 tiles par slot (= 6 slots
  *  × 32 = 192 tiles VRAM, fit avant POKEBALL_TILE_BASE=256). */
@@ -223,7 +227,9 @@ const STATUS_COORDS: Array<[number, number]> = [
  *  pokeball (256). status_icons.png = 32 tiles, sprite 32×8 (shape1 size1),
  *  frame = (ailment-1)*4 (1:1 sSpriteAnim_Status* data/party_menu.h:1015+). */
 const PARTY_STATUS_TILE_BASE = 192;
-const PARTY_STATUS_PAL_BANK = 11;
+/** 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué. */
+let _partyStatusPalSlot = -1;
+const TAG_PARTY_STATUS_PAL = 'PARTY_STATUS_PAL';
 let _statusOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 
 /** 1:1 décomp `sPartyMenuSpriteCoords[PARTY_LAYOUT_SINGLE][slot][2,3]`
@@ -240,7 +246,9 @@ const ITEM_COORDS: Array<[number, number]> = [
  *  anim1=mail (1:1 sSpriteAnim_HeldItem/HeldMail data/party_menu.h:821-836).
  *  Libre entre statut (192-223) et pokeball (256). */
 const PARTY_HELDITEM_TILE_BASE = 224;
-const PARTY_HELDITEM_PAL_BANK = 12;
+/** 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué. */
+let _partyHeldItemPalSlot = -1;
+const TAG_PARTY_HELDITEM_PAL = 'PARTY_HELDITEM_PAL';
 let _itemOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 
 interface PartyAssets {
@@ -976,7 +984,6 @@ function _spawnSlotPokeballOams(): void {
   _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
   const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
   const POKEBALL_TILE_BASE = 256;
-  const POKEBALL_PAL_BANK = 9;
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
     if (!mon) continue;
@@ -985,7 +992,7 @@ function _spawnSlotPokeballOams(): void {
       x, y,
       shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
       tileId: POKEBALL_TILE_BASE,  // frame 0 (Closed)
-      paletteBank: POKEBALL_PAL_BANK,
+      paletteBank: _pokeballPalSlot,
       // 1:1 décomp CreatePartyMonPokeballSprite uses default OAM priority=1
       // (= sSpriteTemplate_MenuPokeball template) + subpriority=8 from
       // CreateSprite(..., x, y, 8) arg. Icon subpriority=1 → icon RENDU
@@ -1005,8 +1012,8 @@ async function _loadPokeballGfx(): Promise<void> {
   const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
   const POKEBALL_TILE_BASE = 256;
   rt.gba.objVram.set(tiles.slice(0, 32 * 32), POKEBALL_TILE_BASE * 32);
-  const POKEBALL_PAL_BANK = 9;
-  rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
+  // 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué.
+  _pokeballPalSlot = LoadSpritePalette({ data: pal, tag: TAG_POKEBALL_PAL });
 }
 
 /** 1:1 décomp `LoadPartyMenuAilmentGfx` (party_menu.c:4223) : charge
@@ -1016,7 +1023,7 @@ async function _loadStatusIconsGfx(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   const st = await rt.LoadCompressedSpriteSheet('/decomp/em/ui/interface/status_icons.png', PARTY_STATUS_TILE_BASE * 32);
-  rt.LoadPaletteObj(st.palette, OBJ_PLTT_ID(PARTY_STATUS_PAL_BANK));
+  _partyStatusPalSlot = LoadSpritePalette({ data: st.palette, tag: TAG_PARTY_STATUS_PAL });
 }
 
 /** 1:1 décomp : `menuBox->statusSpriteId = CreateSprite(&sSpriteTemplate_
@@ -1035,7 +1042,7 @@ function _spawnStatusOams(): void {
       x, y,
       shape: 1, size: 1,                       // sOamData_StatusCondition 32×8
       tileId: PARTY_STATUS_TILE_BASE,
-      paletteBank: PARTY_STATUS_PAL_BANK,
+      paletteBank: _partyStatusPalSlot,
       priority: 1, subpriority: 0,
     });
     _statusOamBySlot[i] = spr.spriteId;
@@ -1088,7 +1095,7 @@ async function _loadHeldItemGfx(): Promise<void> {
   const tiles = await loadTileBin('/decomp/em/party_menu/hold_icons.png', 4);
   const pal = await loadGbaPal('/decomp/em/party_menu/hold_icons.gbapal');
   rt.gba.objVram.set(tiles.slice(0, 2 * 32), PARTY_HELDITEM_TILE_BASE * 32);
-  rt.LoadPaletteObj(pal, OBJ_PLTT_ID(PARTY_HELDITEM_PAL_BANK));
+  _partyHeldItemPalSlot = LoadSpritePalette({ data: pal, tag: TAG_PARTY_HELDITEM_PAL });
 }
 
 /** 1:1 décomp `CreatePartyMonHeldItemSprite` (party_menu.c:4021) :
@@ -1106,7 +1113,7 @@ function _spawnHeldItemOams(): void {
       x, y,
       shape: 0, size: 0,                       // sOamData_HeldItem 8×8
       tileId: PARTY_HELDITEM_TILE_BASE,
-      paletteBank: PARTY_HELDITEM_PAL_BANK,
+      paletteBank: _partyHeldItemPalSlot,
       priority: 1, subpriority: 0,
     });
     _itemOamBySlot[i] = spr.spriteId;
@@ -1144,14 +1151,13 @@ async function _spawnCancelButtonOam(): Promise<void> {
   try {
     await _loadPokeballGfx();
     const POKEBALL_TILE_BASE = 256;
-    const POKEBALL_PAL_BANK = 9;
     // 1:1 décomp `CreateSprite(template, 198, 148, 8)` puis
     // `gSprites[spriteId].oam.priority = 2` (party_menu.c:4142).
     const spr = rt.CreateSpriteAtOam({
       x: 198, y: 148,
       shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
       tileId: POKEBALL_TILE_BASE,
-      paletteBank: POKEBALL_PAL_BANK,
+      paletteBank: _pokeballPalSlot,
       priority: 2,
     });
     _cancelButtonOamId = spr.spriteId;
