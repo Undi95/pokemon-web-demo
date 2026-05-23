@@ -60,6 +60,11 @@ import {
   AllocSpritePalette as _AllocSpritePalette_1to1,
   FreeSpritePaletteByTag as _FreeSpritePaletteByTag_1to1,
   DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
+  AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
+  _freeSpriteTileRangeByTag as _FreeSpriteTileRangeByTag_1to1,
+  sSpritePaletteTags as _sSpritePaletteTags,
+  sSpriteTileRangeTags as _sSpriteTileRangeTags,
+  sSpriteTileRanges as _sSpriteTileRanges,
 } from './sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
@@ -102,6 +107,10 @@ export function setGlobalRuntime(rt: DecompRuntime): void {
     FreeSpritePaletteByTag: _FreeSpritePaletteByTag_1to1,
     IndexOfSpritePaletteTag: _IndexOfSpritePaletteTag_1to1,
     DoLoadSpritePalette: _DoLoadSpritePalette_1to1,
+    // 1:1 STRICT décomp EWRAM static arrays (Phase 1)
+    sSpritePaletteTags: _sSpritePaletteTags,
+    sSpriteTileRangeTags: _sSpriteTileRangeTags,
+    sSpriteTileRanges: _sSpriteTileRanges,
   };
 }
 
@@ -1844,13 +1853,13 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   }
   const copySize = Math.min(needed, r.gba.objVram.length - byteOffset);
   if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
-  r.spriteSheetTagToTileStart.set(tagStr, byteOffset >> 5);
-  r.spriteSheetTagToByteSize.set(tagStr, needed);
+  // 1:1 STRICT décomp `AllocSpriteTileRange(tag, start, count)` (sprite.c:1574-1579) :
+  // marque le tag dans sSpriteTileRangeTags + sSpriteTileRanges arrays. Sync auto la Map.
+  _AllocSpriteTileRange_1to1(tagStr, byteOffset >> 5, needed / 32);
 }
 
-/** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c) — libère la plage
- *  OBJ VRAM du tag pour réutilisation (≠ simple Map.delete : le décomp
- *  marque les tuiles libres dans le bitmap d'alloc → reload réutilise).
+/** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c:1509-1529) — libère la plage
+ *  OBJ VRAM du tag : clear arrays + reclaim queue.
  *  Sans ce reclaim le curseur monotone épuise la VRAM (icône sac). */
 export function FreeSpriteTilesByTag(tag: string | number): void {
   const r = rt();
@@ -1861,6 +1870,8 @@ export function FreeSpriteTilesByTag(tag: string | number): void {
     r.freedSpriteTileRanges.push({ offset: tileStart << 5, size });
   r.spriteSheetTagToTileStart.delete(tagStr);
   r.spriteSheetTagToByteSize.delete(tagStr);
+  // 1:1 STRICT : clear sSpriteTileRangeTags slot for this tag.
+  _FreeSpriteTileRangeByTag_1to1(tagStr);
 }
 
 /** 1:1 décomp src/sprite.c:1610-1616 — délégué à `src/engine/sprite.ts`.

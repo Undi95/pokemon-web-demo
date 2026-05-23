@@ -68,6 +68,59 @@ function _asset(symbol: string): Uint8Array | Uint16Array | null {
   return _assetGetter(symbol);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRIMARY STORAGE 1:1 décomp src/sprite.c:271-292 EWRAM static arrays
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp src/sprite.c:274 :
+ *    static u16 sSpritePaletteTags[16];
+ *  Tags des palettes OBJ allouées. TAG_NONE (= 0xFFFF) = slot libre.
+ *  Index = OBJ palette bank (0-15). */
+export const sSpritePaletteTags = new Uint16Array(16);
+sSpritePaletteTags.fill(TAG_NONE);  // init all TAG_NONE
+
+/** 1:1 décomp src/sprite.c:271 :
+ *    static u16 sSpriteTileRangeTags[MAX_SPRITES];
+ *  Tags des plages tiles OBJ allouées. MAX_SPRITES=64 slots. TAG_NONE = libre. */
+export const sSpriteTileRangeTags = new Uint16Array(MAX_SPRITES);
+sSpriteTileRangeTags.fill(TAG_NONE);
+
+/** 1:1 décomp src/sprite.c:272 :
+ *    static u16 sSpriteTileRanges[MAX_SPRITES * 2];
+ *  Pairs (start, count) parallèle à sSpriteTileRangeTags. Index i :
+ *    sSpriteTileRanges[i*2]   = start tile (0-1023)
+ *    sSpriteTileRanges[i*2+1] = count tiles
+ */
+export const sSpriteTileRanges = new Uint16Array(MAX_SPRITES * 2);
+
+// ─── Internal string ↔ u16 tag mapping ────────────────────────────────────
+// Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100 etc.). Notre runtime
+// historiquement utilise des strings ('PALTAG_LOGO'). Pour stocker dans les
+// arrays u16, on convertit string → u16 via une table interne stable.
+
+let _nextSyntheticU16 = 0x1000;  // start at 0x1000 (= avoid décomp small tags 0..0xFFF)
+const _stringToU16Tag = new Map<string, number>();
+const _u16TagToString = new Map<number, string>();
+
+/** Convertit un tag string|number en u16 stable (= même string → même u16
+ *  toujours). Numbers passent tel quel (= mask 0xFFFF). Strings reçoivent un
+ *  u16 unique persistant. */
+function _tagToU16(tag: string | number): number {
+  if (typeof tag === 'number') return tag & 0xFFFF;
+  const cached = _stringToU16Tag.get(tag);
+  if (cached !== undefined) return cached;
+  let u16 = _nextSyntheticU16++;
+  if (u16 === TAG_NONE) u16 = _nextSyntheticU16++;  // skip 0xFFFF
+  _stringToU16Tag.set(tag, u16);
+  _u16TagToString.set(u16, tag);
+  return u16;
+}
+
+/** Reverse lookup u16 → string (pour Map sync). */
+function _u16ToTagString(u16: number): string {
+  return _u16TagToString.get(u16) ?? String(u16);
+}
+
 // ─── gReservedSpritePaletteCount accessor ──────────────────────────────────
 // Exposé via globalThis (defineProperty getter/setter dans decomp-globals.ts).
 // 1:1 décomp : `COMMON_DATA u8 gReservedSpritePaletteCount = 0;` (sprite.c:278)
@@ -118,6 +171,9 @@ export function setReservedSpritePaletteCount(v: number): void {
 export function FreeAllSpritePalettes(): void {
   const r = _rt();
   _setReserved(0);
+  // 1:1 STRICT : clear primary storage array.
+  sSpritePaletteTags.fill(TAG_NONE);
+  // Sync compat Map (= secondary view pour callers existants).
   r.paletteTagToSlot.clear();
   // Reset nextObjPalSlot pour compat lecteurs legacy (= devtools, etc.).
   r.nextObjPalSlot = 0;
@@ -140,25 +196,23 @@ export function FreeAllSpritePalettes(): void {
  *     (battle sprite palettes) qui ne passent pas par ce tag lookup.
  */
 export function IndexOfSpritePaletteTag(tag: string | number): number {
-  const r = _rt();
-  const slot = r.paletteTagToSlot.get(String(tag));
-  if (slot === undefined) return 0xFF;
-  if (slot < _getReserved()) return 0xFF;
-  return slot;
+  // 1:1 STRICT décomp : scan sSpritePaletteTags[] depuis gReservedSpritePaletteCount.
+  const tagU16 = _tagToU16(tag);
+  const reserved = _getReserved();
+  for (let i = reserved; i < 16; i++) {
+    if (sSpritePaletteTags[i] === tagU16) return i;
+  }
+  return 0xFF;
 }
 
 /** Helper interne : scan PREMIER slot OBJ palette LIBRE dans
- *  `[gReservedSpritePaletteCount, 16)`. Équivalent à
- *  `IndexOfSpritePaletteTag(TAG_NONE)` du décomp puisque les slots vides
- *  ont sSpritePaletteTags[i] == TAG_NONE.
+ *  `[gReservedSpritePaletteCount, 16)`. 1:1 décomp :
+ *    `IndexOfSpritePaletteTag(TAG_NONE)` puisque slots vides = TAG_NONE.
  *  Retourne 0xFF si tous les slots [reserved, 16) sont occupés. */
 function _findFirstFreeSlot(): number {
-  const r = _rt();
-  const used = new Set<number>();
-  for (const s of r.paletteTagToSlot.values()) used.add(s);
   const reserved = _getReserved();
   for (let slot = reserved; slot < 16; slot++) {
-    if (!used.has(slot)) return slot;
+    if (sSpritePaletteTags[slot] === TAG_NONE) return slot;
   }
   return 0xFF;
 }
@@ -182,6 +236,10 @@ function _findFirstFreeSlot(): number {
 export function AllocSpritePalette(tag: string | number): number {
   const slot = _findFirstFreeSlot();
   if (slot === 0xFF) return 0xFF;
+  // 1:1 STRICT : write primary storage array.
+  const tagU16 = _tagToU16(tag);
+  sSpritePaletteTags[slot] = tagU16;
+  // Sync compat Map (= secondary view pour callers existants).
   const r = _rt();
   r.paletteTagToSlot.set(String(tag), slot);
   // Maintain nextObjPalSlot pour compat lecteurs legacy (sans bypass alloc).
@@ -199,23 +257,9 @@ export function AllocSpritePalette(tag: string | number): number {
  *  string tags → si le tag d'origine était numérique on retourne le u16,
  *  sinon on hash le string en u16 (= compat tools qui attendent u16). */
 export function GetSpritePaletteTagByPaletteNum(paletteNum: number): number {
-  const r = _rt();
-  for (const [tag, slot] of r.paletteTagToSlot.entries()) {
-    if (slot === paletteNum) {
-      const asNum = Number(tag);
-      if (!isNaN(asNum)) return asNum & 0xFFFF;
-      return _hashTagToU16(tag);
-    }
-  }
-  return TAG_NONE;
-}
-
-function _hashTagToU16(tag: string): number {
-  let h = 0;
-  for (let i = 0; i < tag.length; i++) {
-    h = (h * 31 + tag.charCodeAt(i)) | 0;
-  }
-  return h & 0xFFFF;
+  // 1:1 STRICT décomp : direct array lookup.
+  if (paletteNum < 0 || paletteNum >= 16) return TAG_NONE;
+  return sSpritePaletteTags[paletteNum];
 }
 
 /** 1:1 décomp src/sprite.c:1652-1657 :
@@ -228,12 +272,12 @@ function _hashTagToU16(tag: string): number {
  *  ```
  */
 export function FreeSpritePaletteByTag(tag: string | number): void {
-  const r = _rt();
-  const tagStr = String(tag);
-  const slot = r.paletteTagToSlot.get(tagStr);
-  if (slot === undefined) return;
-  if (slot < _getReserved()) return;  // 1:1 décomp : IndexOfSpritePaletteTag skip
-  r.paletteTagToSlot.delete(tagStr);
+  // 1:1 STRICT décomp : IndexOfSpritePaletteTag + sSpritePaletteTags[i] = TAG_NONE.
+  const slot = IndexOfSpritePaletteTag(tag);
+  if (slot === 0xFF) return;
+  sSpritePaletteTags[slot] = TAG_NONE;
+  // Sync compat Map (secondary).
+  _rt().paletteTagToSlot.delete(String(tag));
 }
 
 /** 1:1 décomp src/sprite.c:1618-1621 :
@@ -275,14 +319,17 @@ export function DoLoadSpritePalette(src: Uint16Array, paletteOffset: number): vo
  *    - palette.tag : string | number
  *  Retourne le slot (0-15), ou 0xFF si palette OBJ saturée. */
 export function LoadSpritePalette(palette: { data: Uint16Array | Uint8Array | string | null | undefined, tag: string | number }): number {
-  // 1:1 décomp ligne 1591 : si déjà chargé, return le slot existant.
-  const r = _rt();
-  const existing = r.paletteTagToSlot.get(String(palette.tag));
-  if (existing !== undefined && existing >= _getReserved()) return existing;
-  // 1:1 décomp ligne 1596 : trouver premier slot libre.
+  // 1:1 décomp ligne 1591 : if (IndexOfSpritePaletteTag(palette->tag) != 0xFF) return index.
+  const existing = IndexOfSpritePaletteTag(palette.tag);
+  if (existing !== 0xFF) return existing;
+  // 1:1 décomp ligne 1596 : index = IndexOfSpritePaletteTag(TAG_NONE) ; find free slot.
   const slot = _findFirstFreeSlot();
   if (slot === 0xFF) return 0xFF;
-  // 1:1 décomp ligne 1604 : marquer le tag.
+  // 1:1 décomp ligne 1604 : sSpritePaletteTags[index] = palette->tag.
+  const tagU16 = _tagToU16(palette.tag);
+  sSpritePaletteTags[slot] = tagU16;
+  // Sync compat Map (secondary).
+  const r = _rt();
   r.paletteTagToSlot.set(String(palette.tag), slot);
   if (slot + 1 > r.nextObjPalSlot) r.nextObjPalSlot = slot + 1;
   // 1:1 décomp ligne 1605 : write palette data. Accepts Uint16Array (= déjà
@@ -551,12 +598,10 @@ export function LoadOam(): void {
  *  Substrat : rt.spriteSheetTagToTileStart Map. L'index conceptuel = position
  *  dans l'iter order. */
 export function IndexOfSpriteTileTag(tag: string | number): number {
-  const r = _rt();
-  const tagStr = String(tag);
-  let i = 0;
-  for (const key of r.spriteSheetTagToTileStart.keys()) {
-    if (key === tagStr) return i;
-    i++;
+  // 1:1 STRICT décomp : scan sSpriteTileRangeTags[] for matching tag.
+  const tagU16 = _tagToU16(tag);
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    if (sSpriteTileRangeTags[i] === tagU16) return i;
   }
   return 0xFF;
 }
@@ -571,9 +616,10 @@ export function IndexOfSpriteTileTag(tag: string | number): number {
  *  ```
  *  Substrat : direct lookup tag→tileStart via Map. */
 export function GetSpriteTileStartByTag(tag: string | number): number {
-  const r = _rt();
-  const tileStart = r.spriteSheetTagToTileStart.get(String(tag));
-  return tileStart ?? 0xFFFF;
+  // 1:1 STRICT décomp : IndexOfSpriteTileTag + sSpriteTileRanges[index*2].
+  const index = IndexOfSpriteTileTag(tag);
+  if (index === 0xFF) return 0xFFFF;
+  return sSpriteTileRanges[index * 2];
 }
 
 /** 1:1 décomp src/sprite.c:1561-1572 :
@@ -588,12 +634,10 @@ export function GetSpriteTileStartByTag(tag: string | number): number {
  *  ```
  *  Reverse lookup : tile start → tag. */
 export function GetSpriteTileTagByTileStart(start: number): number {
-  const r = _rt();
-  for (const [tag, tileStart] of r.spriteSheetTagToTileStart.entries()) {
-    if (tileStart === start) {
-      const asNum = Number(tag);
-      if (!isNaN(asNum)) return asNum & 0xFFFF;
-      return _hashTagToU16(tag);
+  // 1:1 STRICT décomp : scan sSpriteTileRangeTags + sSpriteTileRanges[i*2].
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    if (sSpriteTileRangeTags[i] !== TAG_NONE && sSpriteTileRanges[i * 2] === start) {
+      return sSpriteTileRangeTags[i];
     }
   }
   return TAG_NONE;
@@ -609,6 +653,21 @@ export function GetSpriteTileTagByTileStart(start: number): number {
  *  ```
  *  Substrat : set tag→tileStart + size dans Maps runtime. */
 export function AllocSpriteTileRange(tag: string | number, start: number, count: number): void {
+  // 1:1 STRICT décomp : freeIndex = IndexOfSpriteTileTag(TAG_NONE) ; write arrays.
+  const tagU16 = _tagToU16(tag);
+  // Find first TAG_NONE slot in sSpriteTileRangeTags.
+  let freeIndex = -1;
+  for (let i = 0; i < MAX_SPRITES; i++) {
+    if (sSpriteTileRangeTags[i] === TAG_NONE) { freeIndex = i; break; }
+  }
+  if (freeIndex < 0) {
+    console.warn('[AllocSpriteTileRange] all 64 tile range slots in use');
+    return;
+  }
+  sSpriteTileRangeTags[freeIndex] = tagU16;
+  sSpriteTileRanges[freeIndex * 2] = start;
+  sSpriteTileRanges[freeIndex * 2 + 1] = count;
+  // Sync compat Maps (secondary).
   const r = _rt();
   const tagStr = String(tag);
   r.spriteSheetTagToTileStart.set(tagStr, start);
@@ -626,11 +685,26 @@ export function AllocSpriteTileRange(tag: string | number, start: number, count:
  *  ```
  *  Substrat : clear all tile maps + reclaim queue + linear cursor reset. */
 export function FreeSpriteTileRanges(): void {
+  // 1:1 STRICT décomp : reset arrays.
+  sSpriteTileRangeTags.fill(TAG_NONE);
+  sSpriteTileRanges.fill(0);
+  // Sync compat Maps + cursor.
   const r = _rt();
   r.spriteSheetTagToTileStart.clear();
   r.spriteSheetTagToByteSize.clear();
   r.freedSpriteTileRanges.length = 0;
   r.nextSpriteSheetByteOffset = 0;
+}
+
+/** Helper interne : free le SLOT sSpriteTileRangeTags pour un tag donné.
+ *  Used by FreeSpriteTilesByTag (decomp-globals.ts) en complément du
+ *  Map.delete pour préserver l'invariant 1:1 décomp arrays. */
+export function _freeSpriteTileRangeByTag(tag: string | number): void {
+  const index = IndexOfSpriteTileTag(tag);
+  if (index === 0xFF) return;
+  sSpriteTileRangeTags[index] = TAG_NONE;
+  sSpriteTileRanges[index * 2] = 0;
+  sSpriteTileRanges[index * 2 + 1] = 0;
 }
 
 /** 1:1 décomp src/sprite.c:702-753 (simplified — cursor-based au lieu de bitmap) :
