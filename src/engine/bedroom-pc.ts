@@ -259,6 +259,52 @@ interface ItemStorageMenuState {
  *  (player_pc.c:182). Set par `ItemStorage_Init()`, free par `ItemStorage_Free()`. */
 let sItemStorageMenu: ItemStorageMenuState | null = null;
 
+/** 1:1 décomp `struct PlayerPCItemPageStruct` (player_pc.h:13-21) :
+ *      u16 cursorPos;
+ *      u16 itemsAbove;
+ *      u16 pageItems;
+ *      u16 count;
+ *      u8 scrollIndicatorTaskId;
+ *
+ *  `EWRAM_DATA struct PlayerPCItemPageStruct gPlayerPCItemPageInfo = {}`
+ *  (player_pc.c:181). Exposé (= public via header) pour mailbox/item storage
+ *  pagination state partagé. */
+export interface PlayerPCItemPageStruct {
+  cursorPos: number;
+  itemsAbove: number;
+  pageItems: number;
+  count: number;
+  scrollIndicatorTaskId: number;
+}
+export const gPlayerPCItemPageInfo: PlayerPCItemPageStruct = {
+  cursorPos: 0,
+  itemsAbove: 0,
+  pageItems: 0,
+  count: 0,
+  scrollIndicatorTaskId: -1,  // 1:1 TASK_NONE = 0xFF en C, on garde -1 en TS
+};
+
+/** 1:1 décomp `static void SetPlayerPCListCount(u8 taskId)` (player_pc.c:651-657) :
+ *      if (gPlayerPCItemPageInfo.count > 7)
+ *          gPlayerPCItemPageInfo.pageItems = 8;
+ *      else
+ *          gPlayerPCItemPageInfo.pageItems = gPlayerPCItemPageInfo.count + 1; */
+function SetPlayerPCListCount(): void {
+  if (gPlayerPCItemPageInfo.count > 7)
+    gPlayerPCItemPageInfo.pageItems = 8;
+  else
+    gPlayerPCItemPageInfo.pageItems = gPlayerPCItemPageInfo.count + 1;
+}
+
+/** 1:1 décomp `void CopyItemName_PlayerPC(u8 *string, u16 itemId)` (player_pc.c:1011-1014) :
+ *      CopyItemName(itemId, string);
+ *
+ *  Notre `getItemNameFr(itemKey)` matche le pattern (string itemKey vs u16
+ *  itemId est la seule différence). Wrap pour exposer le nom 1:1. */
+export function CopyItemName_PlayerPC(itemKey: string): string {
+  return getItemNameFr(itemKey);
+}
+
 /** Note : on garde une CONSTANTE séparée alignée 1:1 décomp (0xFF) pour le
  *  struct sItemStorageMenu, distincte du `NOT_SWAPPING = -1` qui est la valeur
  *  négative TS utilisée par `sPCSwapFromPos` (var séparée legacy).
