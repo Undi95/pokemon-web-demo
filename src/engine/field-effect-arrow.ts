@@ -160,6 +160,25 @@ interface WarpArrowState {
 let _arrowState: WarpArrowState | null = null;
 let _arrowInitialized = false;
 
+// ─── Reset hook : clear _arrowState au ResetSpriteData ──────────────────────
+// 1:1 décomp : sprite.c:294 ResetSpriteData set tous sprite.inUse=FALSE → les
+// callbacks SpriteCB_* cessent de fire et FieldEffectStop free le slot. Notre
+// port utilise un pool externe `_arrowState` qui n'a pas cette propagation
+// auto. Sans ce hook, après ResetSpriteData (= bag open / menu / warp), la
+// valeur `_arrowState.spriteId` est STALE (= pointe vers ancien slot). Au
+// prochain DestroyWarpArrowSprite (= dans loadAndInitMap), on lit ce spriteId
+// + set le sprite slot inUse=FALSE → écrase un AUTRE sprite (= NPC respawné
+// dans ce slot) → bug user "moitié de maman" (= arrow shape=0 size=1 prend
+// slot MOM 16x32). Le `_arrowInitialized` reste valide (= tile range est
+// idempotent via IndexOfSpriteTileTag check), mais `_arrowState` doit être
+// reset.
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  callbacks.push(() => { _arrowState = null; });
+  g.__spriteResetCallbacks = callbacks;
+})();
+
 /** Debug helper exposé sur globalThis. À call dans devtools console pour voir
  *  l'état arrow + position du player + camera. */
 export function getArrowState(): WarpArrowState | null { return _arrowState; }
