@@ -168,6 +168,8 @@ export function MarkObjPaletteAllocated(slot: number, tag: string | number): voi
 let _nextSyntheticU16 = 0xC000;  // start at 0xC000 (= safe vs all décomp tags < ~0x6000)
 const _stringToU16Tag = new Map<string, number>();
 const _u16TagToString = new Map<number, string>();
+// Debug exposure pour diagnose tag system.
+(globalThis as Record<string, unknown>).__spriteTagMap = _u16TagToString;
 
 /** Convertit un tag string|number en u16 stable (= même string → même u16
  *  toujours). Numbers passent tel quel (= mask 0xFFFF). Strings reçoivent un

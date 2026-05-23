@@ -1870,8 +1870,17 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   const copySize = Math.min(needed, r.gba.objVram.length - byteOffset);
   if (copySize > 0) r.gba.objVram.set(bytes.subarray(0, copySize), byteOffset);
   // 1:1 STRICT décomp `AllocSpriteTileRange(tag, start, count)` (sprite.c:1574-1579) :
-  // marque le tag dans sSpriteTileRangeTags + sSpriteTileRanges arrays. Sync auto la Map.
-  _AllocSpriteTileRange_1to1(tagStr, tileStart, tileCount);
+  // marque le tag dans sSpriteTileRangeTags + sSpriteTileRanges arrays.
+  //
+  // ⚠️ Bug fix 2026-05-24 : passer `sheet.tag` (= valeur originale, number ou
+  // string) et NON `tagStr = String(sheet.tag)`. Le tag system distingue
+  // number 100 ↔ string "100" via _tagToU16 (= number stocké tel quel, string
+  // → synthetic u16 0xC007+). Si on store string "100" et lookup avec number
+  // 100, mismatch → IndexOfSpriteTileTag retourne 0xFF → AddItemIconSprite
+  // fallback à tileStart=0 → sprite item icon rend tiles 0..15 (= début du
+  // bag sprite) au lieu de l'icône réelle (= bug user "POTION/retour = bout
+  // du sac", 2026-05-24).
+  _AllocSpriteTileRange_1to1(sheet.tag, tileStart, tileCount);
 }
 
 /** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c:1509-1529) — libère la plage
