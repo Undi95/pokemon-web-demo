@@ -518,14 +518,10 @@ export async function InitPlayerAvatar(
   //  3. LoadSpriteSheet(player) + LoadSpritePalette(player) → alloue slot 0
   //  4. Set reserved counts pour protéger
   //
-  // Sans ces clears : si bag/PC item menu a laissé des palettes mappées dans
-  // paletteTagToSlot, LoadSpritePalette('PLAYER_AVATAR_PAL') scan first-free →
-  // alloue slot 1+ → sprite OAM player à slot 0 (= ancienne palette stale) →
-  // player NOIR au retour OW (bug user 2026-05-23 PC deposit).
-  //
-  // 1:1 décomp : ResetScreenForMapLoad précède InitObjectEventsLocal. Notre
-  // loadAndInitMap n'appelle pas ResetScreenForMapLoad → on fait clear inline
-  // ici pour préserver l'invariant 1:1 architectural.
+  // CRITIQUE : aussi clear sSpriteTileAllocBitmap + sSpritePaletteTags arrays
+  // (= 1:1 décomp EWRAM static storage). Sans ça, AllocSpriteTiles bitmap scan
+  // saute la zone "libre" précédente (= 0..143 si bag avait alloué) et alloue
+  // player à offset ≠ 0 → sprite OAM tileId=0 lit ancien bag sprite → NOIR.
   rt.nextSpriteSheetByteOffset = 0;
   rt.freedSpriteTileRanges.length = 0;
   rt.spriteSheetTagToTileStart.clear();
@@ -534,6 +530,18 @@ export async function InitPlayerAvatar(
   rt.nextObjPalSlot = 0;
   setReservedSpriteTileCount(0);
   setReservedSpritePaletteCount_helper(0);
+  // 1:1 STRICT clear arrays primary storage + bitmap (= ce que ResetSpriteData
+  // décomp fait via FreeSpriteTileRanges + AllocSpriteTiles(0) + FreeAllSpritePalettes).
+  const spriteGlobal = (globalThis as Record<string, unknown>).__sprite as {
+    sSpritePaletteTags?: Uint16Array;
+    sSpriteTileRangeTags?: Uint16Array;
+    sSpriteTileRanges?: Uint16Array;
+    sSpriteTileAllocBitmap?: Uint8Array;
+  } | undefined;
+  if (spriteGlobal?.sSpritePaletteTags) spriteGlobal.sSpritePaletteTags.fill(0xFFFF);
+  if (spriteGlobal?.sSpriteTileRangeTags) spriteGlobal.sSpriteTileRangeTags.fill(0xFFFF);
+  if (spriteGlobal?.sSpriteTileRanges) spriteGlobal.sSpriteTileRanges.fill(0);
+  if (spriteGlobal?.sSpriteTileAllocBitmap) spriteGlobal.sSpriteTileAllocBitmap.fill(0);
   // 1:1 décomp src/sprite.c:1486 LoadSpriteSheet : écrit OBJ VRAM + marker tag.
   const tileStart = LoadSpriteSheet({
     data: combined, size: combined.length, tag: 'PLAYER_AVATAR_GFX',
