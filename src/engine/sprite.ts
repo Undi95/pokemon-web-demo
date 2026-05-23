@@ -125,6 +125,29 @@ export function MarkObjTilesAllocated(byteOffset: number, byteSize: number): voi
   for (let n = tileStart; n < tileStart + tileCount; n++) _allocSpriteTile(n);
 }
 
+/** 1:1 STRICT décomp : helper exposé pour les sites qui écrivent une palette
+ *  OBJ raw via `rt.gPlttBufferFaded.set(OBJ_PLTT_ID(slot)+i, color)` sans
+ *  passer par LoadSpritePalette (= notre NPC system legacy `object-events.ts`,
+ *  reflection palette). Marker `sSpritePaletteTags[slot] = tag` pour que le
+ *  tag system ne ré-alloue PAS ce slot.
+ *
+ *  Sans ça : un caller LoadSpritePalette ultérieur trouve `sSpritePaletteTags
+ *  [slot] === TAG_NONE` → l'attribue à un autre tag + écrase la palette →
+ *  bug user "la mère affichée avec palette grass" (= MOM paletteBank=1 +
+ *  grass loaded → IndexOfSpritePaletteTag(TAG_NONE) returns slot 1 → écrase).
+ *
+ *  Tag = string|number unique par caller. */
+export function MarkObjPaletteAllocated(slot: number, tag: string | number): void {
+  if (slot < 0 || slot >= 16) return;
+  sSpritePaletteTags[slot] = _tagToU16(tag);
+  // Sync compat Map (= secondary view).
+  try {
+    const r = _rt();
+    r.paletteTagToSlot.set(String(tag), slot);
+    if (slot + 1 > r.nextObjPalSlot) r.nextObjPalSlot = slot + 1;
+  } catch { /* runtime pas wired = init early */ }
+}
+
 // ─── Internal string ↔ u16 tag mapping ────────────────────────────────────
 // Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100, TAG_ITEM_ICON = 5110
 // = 0x13F6, TAG_NPC_PALETTE = 0x1100+ etc.). Pour éviter COLLISION avec les

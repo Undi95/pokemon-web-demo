@@ -23,7 +23,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import type { LoadedPng } from './gba/png-loader';
-import { MarkObjTilesAllocated } from './sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated } from './sprite';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -2136,6 +2136,13 @@ function _spawnSingleNpcFromTemplate(
     rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
     rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
   }
+  // 1:1 STRICT marker `sSpritePaletteTags[paletteBank]` pour que le tag system
+  // (= LoadSpritePalette pour grass / arrow / shadow / emote / bag etc.) ne
+  // ré-alloue PAS ce slot via IndexOfSpritePaletteTag(TAG_NONE) → bug racine
+  // identifié 2026-05-23 : MOM paletteBank=1 + grass LoadSpritePalette →
+  // grass écrase MOM (faded buffer + tag mis à TallGrass) → la mère rendue
+  // avec palette grass à l'écran.
+  MarkObjPaletteAllocated(paletteBank, `NPC_PAL_${graphicsKey}`);
   // 1:1 décomp : NE PAS flushTo inline (= cf. player-avatar.ts:InitPlayerAvatar
   // pour rationale détaillée). L'auto-flushTo VBlank pousse via TransferPlttBuffer
   // qui respecte `bufferTransferDisabled` → permet de gater le palette transfer
