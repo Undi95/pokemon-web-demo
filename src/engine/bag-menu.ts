@@ -72,7 +72,7 @@ import {
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
   TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5,
-} from './decomp-data/auto/include/constants/characters-data';
+} from './decomp-data/include/constants/characters-data';
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
@@ -80,17 +80,17 @@ import { MALE } from './decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
-} from './decomp-data/auto/include/item_menu-data';
+} from './decomp-data/include/item_menu-data';
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET,
   KEYITEMS_POCKET, POCKETS_COUNT,
-} from './decomp-data/auto/include/constants/item-data';
-import { BG_SCREEN_SIZE } from './decomp-data/auto/include/gba/defines-data';
+} from './decomp-data/include/constants/item-data';
+import { BG_SCREEN_SIZE } from './decomp-data/include/gba/defines-data';
 import {
   ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01,
   ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
-} from './decomp-data/auto/include/constants/items-data';
-import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
+} from './decomp-data/include/constants/items-data';
+import { SE_SELECT } from './decomp-data/include/constants/songs-data';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
 import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from './decomp-globals';
 import {
@@ -104,11 +104,11 @@ import {
 import { GetStringCenterAlignXOffset } from './gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
-} from './decomp-data/auto/include/menu_helpers-data';
+} from './decomp-data/include/menu_helpers-data';
 import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
-} from './decomp-data/auto/include/menu-data';
-import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from './decomp-data/auto/include/gba/io_reg-data';
+} from './decomp-data/include/menu-data';
+import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from './decomp-data/include/gba/io_reg-data';
 import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
@@ -137,9 +137,9 @@ import {
 } from './list-menu';
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
-} from './decomp-data/auto/src/item_menu-data';
+} from './decomp-data/src/item_menu-data';
 // 1:1 décomp item_menu_icons.c:15 — TAG_BAG_GFX=100 (sprite sheet du sac).
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/auto/src/item_menu_icons-data';
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───

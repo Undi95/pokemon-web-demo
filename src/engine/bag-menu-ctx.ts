@@ -70,11 +70,11 @@ import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } fr
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
 import { PIXEL_FILL } from './decomp-globals';
-import { ENUM_ITEMWIN_1 } from './decomp-data/auto/include/item_menu-data';
+import { ENUM_ITEMWIN_1 } from './decomp-data/include/item_menu-data';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
-} from './decomp-data/auto/include/gba/io_reg-data';
-import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
+} from './decomp-data/include/gba/io_reg-data';
+import { SE_SELECT } from './decomp-data/include/constants/songs-data';
 import { PlaySE } from './decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────

@@ -39,10 +39,10 @@
  */
 
 import { gSaveBlock1Ptr } from './save-block-state';
-import { DECOR_NONE } from './decomp-data/auto/include/constants/decorations-data';
+import { DECOR_NONE } from './decomp-data/include/constants/decorations-data';
 import {
   ENUM_DecorationCategory,
-} from './decomp-data/auto/include/decoration-data';
+} from './decomp-data/include/decoration-data';
 import { gDecorations } from './decoration-data';
 export { gDecorations };
 export type { Decoration } from './decoration-data';

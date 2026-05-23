@@ -77,7 +77,7 @@ import {
   METATILE_SecretBase_SandOrnament_Base1,
   METATILE_SecretBase_BreakableDoor_TopClosed,
   METATILE_SecretBase_BreakableDoor_BottomClosed,
-} from './decomp-data/auto/include/constants/metatile_labels-data';
+} from './decomp-data/include/constants/metatile_labels-data';
 
 // ─── Hook registry RunOnLoadMapScript (HOISTÉ — anti-TDZ) ───────────────────
 //

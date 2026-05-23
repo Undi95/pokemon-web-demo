@@ -32,7 +32,7 @@ import {
 import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
   SPRITE_PALETTES, SPRITE_SHEETS,
-} from './decomp-data/auto/src/sprite-system';
+} from './decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';

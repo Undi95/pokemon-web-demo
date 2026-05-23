@@ -25,7 +25,7 @@ import {
   MB_JUMP_EAST, MB_JUMP_WEST, MB_JUMP_NORTH, MB_JUMP_SOUTH,
   MB_LONG_GRASS,
 } from './tilemap-loader';
-import { ENUM_MB_0 } from './decomp-data/auto/include/constants/metatile_behaviors-data';
+import { ENUM_MB_0 } from './decomp-data/include/constants/metatile_behaviors-data';
 import { DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
 import { gMapHeader } from './map-loader';
 

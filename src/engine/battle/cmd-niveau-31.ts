@@ -269,7 +269,7 @@ function _getSpeciesAbilityPK(species: number, abilityNum: number): number {
 }
 
 /** Resolve ability enum string → number via auto-data constants. */
-import * as _AbilityConsts from '../decomp-data/auto/include/constants/abilities-data';
+import * as _AbilityConsts from '../decomp-data/include/constants/abilities-data';
 function _abilityNameToNumberPK(abilityName: string): number {
   const val = (_AbilityConsts as Record<string, unknown>)[abilityName];
   return typeof val === 'number' ? val : 0;

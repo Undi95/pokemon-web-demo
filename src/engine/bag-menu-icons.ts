@@ -21,9 +21,9 @@ import {
 } from './decomp-globals';
 import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from './decomp-bridge';
 import { getItemKeyById } from './data-tables';
-import { ENUM_ITEMMENUSPRITE_2 } from './decomp-data/auto/include/item_menu-data';
-import { ITEM_LIST_END } from './decomp-data/auto/include/constants/items-data';
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/auto/src/item_menu_icons-data';
+import { ENUM_ITEMMENUSPRITE_2 } from './decomp-data/include/item_menu-data';
+import { ITEM_LIST_END } from './decomp-data/include/constants/items-data';
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
 const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
 import { registerAffineAnim, registerAffineAnimTable } from './decomp-impls/sprite-affine-extras';

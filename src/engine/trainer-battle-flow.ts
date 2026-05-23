@@ -81,7 +81,7 @@ let _trainerKeyToNum: Record<string, number> | null = null;
 void (async function _loadTrainerNumIds(): Promise<void> {
   if (_trainerKeyToNum) return;
   try {
-    const mod = await import('./decomp-data/auto/include/constants/opponents-data');
+    const mod = await import('./decomp-data/include/constants/opponents-data');
     const map: Record<string, number> = {};
     for (const [k, v] of Object.entries(mod)) {
       if (k.startsWith('TRAINER_') && typeof v === 'number') map[k] = v;

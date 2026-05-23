@@ -163,12 +163,12 @@ import {
   DECOR_REGIROCK_DOLL,
   DECOR_REGICE_DOLL,
   DECOR_REGISTEEL_DOLL,
-} from './decomp-data/auto/include/constants/decorations-data';
+} from './decomp-data/include/constants/decorations-data';
 import {
   ENUM_DecorationPermission,
   ENUM_DecorationShape,
   ENUM_DecorationCategory,
-} from './decomp-data/auto/include/decoration-data';
+} from './decomp-data/include/decoration-data';
 
 // ─── 1:1 décomp `enum DecorationPermission` (decoration.h:4-14) ──────────────
 const DECORPERM_SOLID_FLOOR  = ENUM_DecorationPermission.DECORPERM_SOLID_FLOOR;  // 0

@@ -30,7 +30,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { getRuntime } from './decomp-globals';
 import { loadTileBin } from './gba/png-loader';
-import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from './decomp-data/auto/include/constants/songs-data';
+import { SE_DOOR, SE_SLIDING_DOOR, SE_REPEL } from './decomp-data/include/constants/songs-data';
 import { MapGridGetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET, NUM_TILES_TOTAL } from './map-loader';
 import { MB_ANIMATED_DOOR } from './tilemap-loader';
 import { CurrentMapDrawMetatileAt, DrawDoorMetatileAt, GetCameraTopLeftCoords } from './field-camera';
@@ -87,7 +87,7 @@ import {
   METATILE_BattleTent_Door,
   METATILE_TrainerHill_Door_Elevator_Lobby,
   METATILE_TrainerHill_Door_Elevator_Roof,
-} from './decomp-data/auto/include/constants/metatile_labels-data';
+} from './decomp-data/include/constants/metatile_labels-data';
 import {
   sDoorAnimPalettes_General,
   sDoorAnimPalettes_PokeCenter,
@@ -139,7 +139,7 @@ import {
   sDoorAnimPalettes_BattleTentInterior,
   sDoorAnimPalettes_TrainerHillLobbyElevator,
   sDoorAnimPalettes_TrainerHillRoofElevator,
-} from './decomp-data/auto/src/field_door-data';
+} from './decomp-data/src/field_door-data';
 
 // ─── Sound types 1:1 décomp ─────────────────────────────────────────────────
 

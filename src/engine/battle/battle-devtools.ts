@@ -71,7 +71,7 @@ import {
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
 import { CalculateBaseDamage as _cbd } from './damage-calc';
 import { getBattleMove as _gbm } from './data/battle-moves';
-import * as _MOVES_ENUM from '../decomp-data/auto/include/constants/moves-data';
+import * as _MOVES_ENUM from '../decomp-data/include/constants/moves-data';
 import {
   TYPE_MYSTERY as _TYPE_MYSTERY,
   STATUS2_WRAPPED as _STATUS2_WRAPPED,

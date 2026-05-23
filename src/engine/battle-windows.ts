@@ -34,7 +34,7 @@
  *
  * ⚠️ DONNÉES = AUTO-EXTRAITES, PAS RETAPÉES À LA MAIN.
  * `sStandardBattleWindowTemplates` + `gBattleBgTemplates` sont importés depuis
- * `decomp-data/auto/src/battle_bg-data.ts` (généré 1:1 par l'extracteur du
+ * `decomp-data/src/battle_bg-data.ts` (généré 1:1 par l'extracteur du
  * décomp). Ne JAMAIS re-hardcoder ces tables ici (règle projet
  * feedback-no-hardcoded-decomp-values). `sTextOnWindowsInfo_Normal` reste
  * porté main car l'extraction ne le sort qu'en C brut (PIXEL_FILL(0xF)…),
@@ -43,7 +43,7 @@
 
 import {
   sStandardBattleWindowTemplates as _autoStdBattleWinTemplates,
-} from './decomp-data/auto/src/battle_bg-data';
+} from './decomp-data/src/battle_bg-data';
 
 // ─── B_WIN_TYPE (battle.h:341-342) ──────────────────────────────────────────
 export const B_WIN_TYPE_NORMAL = 0;
@@ -128,7 +128,7 @@ export const DUMMY_WIN_TEMPLATE: BattleWindowTemplate = {
 };
 
 /** 1:1 décomp `sStandardBattleWindowTemplates` (battle_bg.c:163-382).
- *  DÉRIVÉ de l'array auto-extrait `decomp-data/auto/src/battle_bg-data.ts`
+ *  DÉRIVÉ de l'array auto-extrait `decomp-data/src/battle_bg-data.ts`
  *  (index array == B_WIN_* car ordre source décomp = ordre B_WIN_*).
  *  ZÉRO valeur retapée à la main → garanti 1:1 (l'extracteur sort les valeurs
  *  exactes de la décomp, baseBlock en décimal : 144=0x90, 448=0x1C0, …). */

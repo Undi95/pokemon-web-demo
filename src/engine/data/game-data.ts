@@ -206,7 +206,7 @@ export function loadGameData(): Promise<void> {
     // number → enum string pour lookup.
     (globalThis as Record<string, unknown>).gameDataLevelUpLearnsets = levelUpLearnsets;
     // Build species number → enum reverse cache via species-data constants.
-    const speciesMod = await import('../decomp-data/auto/include/constants/species-data');
+    const speciesMod = await import('../decomp-data/include/constants/species-data');
     const speciesNumToEnum: Record<number, string> = {};
     for (const [key, val] of Object.entries(speciesMod)) {
       if (key.startsWith('SPECIES_') && typeof val === 'number') {
@@ -216,7 +216,7 @@ export function loadGameData(): Promise<void> {
     (globalThis as Record<string, unknown>).gameDataSpeciesNumToEnum = speciesNumToEnum;
     // Build moves number → enum reverse cache via moves-data constants
     // (= utile pour MonTryLearningNewMove + battle-string-decoder).
-    const movesMod = await import('../decomp-data/auto/include/constants/moves-data');
+    const movesMod = await import('../decomp-data/include/constants/moves-data');
     const movesNumToEnum: Record<number, string> = {};
     for (const [key, val] of Object.entries(movesMod)) {
       if (key.startsWith('MOVE_') && typeof val === 'number') {

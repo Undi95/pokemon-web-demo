@@ -73,7 +73,7 @@ async function _buildTrainerIdCache(): Promise<void> {
   if (_trainerIdToKey) return;
   _trainerIdToKey = new Map();
   try {
-    const mod = await import('../decomp-data/auto/include/constants/opponents-data');
+    const mod = await import('../decomp-data/include/constants/opponents-data');
     for (const [key, val] of Object.entries(mod)) {
       if (key.startsWith('TRAINER_') && typeof val === 'number') {
         if (!_trainerIdToKey.has(val)) _trainerIdToKey.set(val, key);

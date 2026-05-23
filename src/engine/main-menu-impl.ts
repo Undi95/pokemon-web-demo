@@ -76,7 +76,7 @@ import {
   Task_NewGameBirchSpeech_FadePlatformIn,
   Task_NewGameBirchSpeech_FadePlatformOut,
   Task_NewGameBirchSpeechSub_InitPokeBall,
-} from './decomp-data/auto/src/main_menu-callbacks-auto';
+} from './decomp-data/src/main_menu-callbacks-auto';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN,
   IsWirelessAdapterConnected,
@@ -128,7 +128,7 @@ export let sStartedPokeBallTask = false;
 //   - sSpriteAffineAnimTable_PlayerShrink (= affine anim table, player shrink fx)
 //
 // TODO Phase D : étendre `scripts/extract-main-menu-data.mjs` (à créer) pour
-// parser ces structs depuis le décomp + générer dans `decomp-data/auto/src/main_menu-data.ts`.
+// parser ces structs depuis le décomp + générer dans `decomp-data/src/main_menu-data.ts`.
 //
 // Pour l'instant : valeurs string-symbol (= matchent le getAsset() pattern) ou
 // zero-init structs. Le code Birch ne sera jamais déclenché tant qu'on n'a

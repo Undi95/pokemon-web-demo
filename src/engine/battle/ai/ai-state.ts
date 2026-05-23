@@ -51,7 +51,7 @@ import {
   MOVE_POWER_OTHER as _MOVE_POWER_OTHER,
   MOVE_NOT_MOST_POWERFUL as _MOVE_NOT_MOST_POWERFUL,
   MOVE_MOST_POWERFUL as _MOVE_MOST_POWERFUL,
-} from '../../decomp-data/auto/include/constants/battle_ai-data';
+} from '../../decomp-data/include/constants/battle_ai-data';
 
 // ─── Constantes AI (1:1 décomp) ─────────────────────────────────────────────
 

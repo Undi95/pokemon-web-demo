@@ -69,16 +69,16 @@ import {
 } from './party-storage';
 // 1:1 décomp `AdjustFriendship(mon, event)` — auto-data via pokemon-all-auto.
 import { AdjustFriendship as _adjustFriendshipN34 } from '../decomp-data/auto/src-all/pokemon-all-auto';
-import { FRIENDSHIP_EVENT_GROW_LEVEL as FRIENDSHIP_EVENT_GROW_LEVEL_N34 } from '../decomp-data/auto/include/constants/pokemon-data';
+import { FRIENDSHIP_EVENT_GROW_LEVEL as FRIENDSHIP_EVENT_GROW_LEVEL_N34 } from '../decomp-data/include/constants/pokemon-data';
 import {
   HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG, HOLD_EFFECT_MACHO_BRACE,
-} from '../decomp-data/auto/include/constants/hold_effects-data';
+} from '../decomp-data/include/constants/hold_effects-data';
 import { getSpeciesExpYield, getSpeciesGrowthRate, getSpeciesEvYield } from './data/species-runtime';
 import { getLevelFromExp, MAX_LEVEL } from './data/experience-tables';
 import { gBitTable } from './battle-controllers';
 import {
   HOLD_EFFECT_CAN_ALWAYS_RUN,
-} from '../decomp-data/auto/include/constants/hold_effects-data';
+} from '../decomp-data/include/constants/hold_effects-data';
 import {
   BtlController_EmitReturnMonToBall, BtlController_EmitPlayFanfareOrBGM,
   MarkBattlerForControllerExec,
@@ -175,7 +175,7 @@ const VARIOUS_PLAY_TRAINER_DEFEATED_MUSIC     = 26;
 
 // MUS_VICTORY_TRAINER = 412 — import depuis auto-data (= AUDIT FIX :
 // précédemment hardcoded 0x174=372 FAUX).
-import { MUS_VICTORY_TRAINER as _MUS_VICTORY_TRAINER } from '../decomp-data/auto/include/constants/songs-data';
+import { MUS_VICTORY_TRAINER as _MUS_VICTORY_TRAINER } from '../decomp-data/include/constants/songs-data';
 const MUS_VICTORY_TRAINER = _MUS_VICTORY_TRAINER;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@
  */
 
 import { resolveDecompConstant } from '../../decomp-constants';
-import * as MOVES_DATA from '../../decomp-data/auto/include/constants/moves-data';
+import * as MOVES_DATA from '../../decomp-data/include/constants/moves-data';
 
 /** Map normalisée : nom sans séparateur minuscule ("defensecurl") → enum
  *  décomp ("MOVE_DEFENSE_CURL"). Construite lazy depuis les constantes

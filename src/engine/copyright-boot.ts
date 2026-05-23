@@ -23,7 +23,7 @@ import {
   BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_16COLOR, BGCNT_TXT256x256,
   INTR_FLAG_VBLANK,
 } from './decomp-globals';
-import { MainCB2_EndIntro, Task_Scene1_Load } from './decomp-data/auto/src/intro-callbacks-auto';
+import { MainCB2_EndIntro, Task_Scene1_Load } from './decomp-data/src/intro-callbacks-auto';
 import type { CB2Callback } from './decomp-runtime';
 
 const RGB_WHITE = 0x7FFF;

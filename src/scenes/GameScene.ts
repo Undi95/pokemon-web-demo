@@ -30,7 +30,7 @@ import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
 import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
-import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
+import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
 import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
 import { preloadFontData } from '../engine/gba-text-system';
 import { exposeGbaGlobals } from '../engine/gba-global-scope';
@@ -44,16 +44,16 @@ import {
   SpriteCB_WaterDrop_DangleFromLeaf, SpriteCB_WaterDrop_Fall, SpriteCB_WaterDropShort,
   SpriteCB_PlayerOnBicycle, SpriteCB_Flygon, SpriteCB_LogoLetter,
   SpriteCB_GameFreakLogo, SpriteCB_FlygonSilhouette, SpriteCB_RayquazaOrb,
-} from '../engine/decomp-data/auto/src/intro-callbacks-auto';
+} from '../engine/decomp-data/src/intro-callbacks-auto';
 import {
   CB2_InitTitleScreen,
   SpriteCB_VersionBannerLeft, SpriteCB_VersionBannerRight,
   SpriteCB_PressStartCopyrightBanner,
   SpriteCB_PokemonLogoShine, SpriteCB_PokemonLogoShine_Fast,
-} from '../engine/decomp-data/auto/src/title_screen-callbacks-auto';
+} from '../engine/decomp-data/src/title_screen-callbacks-auto';
 import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
-} from '../engine/decomp-data/auto/src/intro_credits_graphics-callbacks-auto';
+} from '../engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 import { InitKeys } from '../engine/decomp-runtime';
 import { installEngineDevtools } from '../engine/engine-devtools';

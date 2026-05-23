@@ -53,14 +53,14 @@ import {
   FreeAllSpritePalettes,
   ScanlineEffect_Stop,
 } from '../engine/decomp-globals';
-import { sMainMenuBgTemplates } from '../engine/decomp-data/auto/src/main_menu-data';
+import { sMainMenuBgTemplates } from '../engine/decomp-data/src/main_menu-data';
 import {
   Task_NewGameBirchSpeech_Init,
   SpriteCB_MovePlayerDownWhileShrinking,
   SpriteCB_Null,
   CB2_MainMenu,
-} from '../engine/decomp-data/auto/src/main_menu-callbacks-auto';
-import { CB2_NewGame } from '../engine/decomp-data/auto/src/overworld-callbacks-auto';
+} from '../engine/decomp-data/src/main_menu-callbacks-auto';
+import { CB2_NewGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,

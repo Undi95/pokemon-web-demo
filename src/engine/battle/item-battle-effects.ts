@@ -91,7 +91,7 @@ import {
   HOLD_EFFECT_FLINCH, HOLD_EFFECT_DOUBLE_PRIZE,
   HOLD_EFFECT_LEFTOVERS,
   HOLD_EFFECT_SHELL_BELL,
-} from '../decomp-data/auto/include/constants/hold_effects-data';
+} from '../decomp-data/include/constants/hold_effects-data';
 
 // 1:1 décomp text-buffers (= gBattleTextBuff1/2 + PREPARE_*_BUFFER macros).
 import {

@@ -25,7 +25,7 @@ import {
   TRAINER_CLASS_MAGMA_ADMIN, TRAINER_CLASS_MAGMA_LEADER, TRAINER_CLASS_LASS,
   TRAINER_CLASS_BUG_CATCHER, TRAINER_CLASS_HIKER, TRAINER_CLASS_YOUNG_COUPLE,
   TRAINER_CLASS_WINSTRATE,
-} from '../../decomp-data/auto/include/constants/trainers-data';
+} from '../../decomp-data/include/constants/trainers-data';
 
 export interface TrainerMoney { classId: number; value: number; }
 

@@ -45,7 +45,7 @@ import {
   HOLD_EFFECT_LIGHT_BALL as _HOLD_EFFECT_LIGHT_BALL,
   HOLD_EFFECT_METAL_POWDER as _HOLD_EFFECT_METAL_POWDER,
   HOLD_EFFECT_THICK_CLUB as _HOLD_EFFECT_THICK_CLUB,
-} from '../decomp-data/auto/include/constants/hold_effects-data';
+} from '../decomp-data/include/constants/hold_effects-data';
 import {
   SPECIES_LATIAS as SPECIES_LATIAS_LOCAL,
   SPECIES_LATIOS as SPECIES_LATIOS_LOCAL,
@@ -54,7 +54,7 @@ import {
   SPECIES_DITTO as SPECIES_DITTO_LOCAL,
   SPECIES_CUBONE as SPECIES_CUBONE_LOCAL,
   SPECIES_MAROWAK as SPECIES_MAROWAK_LOCAL,
-} from '../decomp-data/auto/include/constants/species-data';
+} from '../decomp-data/include/constants/species-data';
 
 // 1:1 décomp `BATTLE_TYPE_FRONTIER` mask — utilisé pour ignore Soul Dew boost.
 // Valeurs vraies de constants.ts : TOWER 1<<8, DOME 1<<16, PALACE 1<<17,

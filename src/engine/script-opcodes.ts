@@ -25,7 +25,7 @@ import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from './movement-system';
 import { PlaySE } from './decomp-globals';
-import * as Songs from './decomp-data/auto/include/constants/songs-data';
+import * as Songs from './decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent,
 } from './object-events';

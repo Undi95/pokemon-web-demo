@@ -60,7 +60,7 @@ import { FEMALE } from './decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
-import * as Songs from './decomp-data/auto/include/constants/songs-data';
+import * as Songs from './decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
 } from './pc-items';

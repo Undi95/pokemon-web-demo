@@ -23,7 +23,7 @@ import { DecompRuntime, type DecompSprite } from '../decomp-runtime';
 import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../decomp-helpers';
 import {
   SPRITE_AFFINE_ANIM_TABLES, SPRITE_AFFINE_ANIMS,
-} from '../decomp-data/auto/src/sprite-system';
+} from '../decomp-data/src/sprite-system';
 import {
   getExtraAffineAnim, getExtraAffineAnimTable,
 } from './sprite-affine-extras';

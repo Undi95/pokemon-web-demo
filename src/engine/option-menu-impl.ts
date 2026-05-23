@@ -493,7 +493,7 @@ export function getOptionMenuTextPal(): Uint16Array {
 import { DmaClearLarge16, DmaClear32 } from './decomp-globals';
 
 // Import templates depuis option_menu-data.ts (auto-générés)
-import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/auto/src/option_menu-data';
+import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/src/option_menu-data';
 
 // Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
 // fichier). On les expose sur globalThis pour matcher le scope C où ces

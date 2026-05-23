@@ -87,7 +87,7 @@ import {
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
 } from './sprite';
-import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/auto/include/constants/songs-data';
+import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/include/constants/songs-data';
 import {
   getWarpAtPlayerPos,
   findWarpEventAt,

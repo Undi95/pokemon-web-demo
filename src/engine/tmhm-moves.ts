@@ -20,7 +20,7 @@
  * L'ORDRE EXACT du source (1:1-sémantique = même décision de modèle que
  * bag-pockets itemKey-string : l'identifiant enum C EST notre clé).
  */
-import { ITEM_TM01 } from './decomp-data/auto/include/constants/items-data';
+import { ITEM_TM01 } from './decomp-data/include/constants/items-data';
 
 /** 1:1 `sTMHMMoves[]` — copie byte-identique de l'ordre
  *  `include/constants/tms_hms.h` FOREACH_TM (50) puis FOREACH_HM (8).

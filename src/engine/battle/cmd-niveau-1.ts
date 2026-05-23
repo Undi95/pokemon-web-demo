@@ -97,7 +97,7 @@ import {
   HITMARKER_IGNORE_BIDE,
   HITMARKER_PASSIVE_HP_UPDATE,
 } from './constants';
-import { MOVE_PAIN_SPLIT } from '../decomp-data/auto/include/constants/moves-data';
+import { MOVE_PAIN_SPLIT } from '../decomp-data/include/constants/moves-data';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
@@ -708,7 +708,7 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
 }
 
 // HOLD_EFFECT_EVASION_UP pour Cmd_accuracycheck (= Brightpowder / Lax Incense).
-import { HOLD_EFFECT_EVASION_UP as HOLD_EFFECT_EVASION_UP_AC } from '../decomp-data/auto/include/constants/hold_effects-data';
+import { HOLD_EFFECT_EVASION_UP as HOLD_EFFECT_EVASION_UP_AC } from '../decomp-data/include/constants/hold_effects-data';
 
 /** 1:1 décomp `AdjustFriendshipOnBattleFaint(battler)` (battle_util2.c:77-107).
  *  Décrément friendship du party member faint. Replace l'auto-gen battle_util2-
@@ -1592,7 +1592,7 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
 import { PressurePPLose as PressurePPLoseAtkCanceler, CancelMultiTurnMoves as _cancelMultiTurnMovesAC, RecordAbilityBattle as _recordAbilityBattleAC } from './util';
 import { gBattlerByTurnOrder as gBattlerByTurnOrderAC } from './state';
 import { FLAG_MAGIC_COAT_AFFECTED, FLAG_SNATCH_AFFECTED, FLAG_PROTECT_AFFECTED } from './constants';
-import { MOVE_MAGIC_COAT as MOVE_MAGIC_COAT_ATKCANCELER, MOVE_SNATCH as MOVE_SNATCH_ATKCANCELER, MOVE_CURSE as MOVE_CURSE_ATKCANCELER } from '../decomp-data/auto/include/constants/moves-data';
+import { MOVE_MAGIC_COAT as MOVE_MAGIC_COAT_ATKCANCELER, MOVE_SNATCH as MOVE_SNATCH_ATKCANCELER, MOVE_CURSE as MOVE_CURSE_ATKCANCELER } from '../decomp-data/include/constants/moves-data';
 // B_MSG_PROTECTED = 0 (= "X protected itself") dans le table sProtectSuccessStringIds.
 const B_MSG_PROTECTED_ATKCANCELER = 0;
 // IsBattlerOfType + IsTwoTurnsMove helpers (= déjà portés dans d'autres modules).

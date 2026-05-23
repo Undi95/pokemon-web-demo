@@ -12,7 +12,7 @@
  * = data en ROM décompressable au runtime via LZ77UnCompVram.
  */
 import { assetCache } from './decomp-globals';
-import { GFX_SOURCES } from './decomp-data/auto/src/intro-data';
+import { GFX_SOURCES } from './decomp-data/src/intro-data';
 import { loadIndexedPng, loadIndexedPngStrict, loadTilemapBin, loadAffineTilemapBin, loadGbaPal } from './gba/png-loader';
 
 /** Charge un .4bpp.bin ou .8bpp.bin pré-extrait via scripts/extract-png-indexed-tiles.mjs.

@@ -26,7 +26,7 @@ import {
   ITEM4_PP_UP, ITEM4_REVIVE, ITEM4_EVO_STONE,
   ITEM5_EV_DEF, ITEM5_EV_SPEED, ITEM5_EV_SPDEF, ITEM5_EV_SPATK, ITEM5_PP_MAX,
   ITEM5_FRIENDSHIP_LOW, ITEM5_FRIENDSHIP_MID, ITEM5_FRIENDSHIP_HIGH,
-} from './decomp-data/auto/include/constants/item_effects-data';
+} from './decomp-data/include/constants/item_effects-data';
 
 // 1:1 décomp ITEM3_STATUS_ALL_EXPR
 const ITEM3_STATUS_ALL =

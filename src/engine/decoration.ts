@@ -111,7 +111,7 @@ import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
 import { FadeScreen, FADE_TO_BLACK } from './fade-screen';
 import { LockPlayerFieldControls, ScriptContext_SetupScript } from './script-runtime';
-import { SE_SELECT } from './decomp-data/auto/include/constants/songs-data';
+import { SE_SELECT } from './decomp-data/include/constants/songs-data';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetScrollAndRow,

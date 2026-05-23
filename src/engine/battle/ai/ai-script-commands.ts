@@ -109,7 +109,7 @@ import { GetItemHoldEffect, GetItemHoldEffectParam } from '../data/item-hold-eff
 import {
   HOLD_EFFECT_MACHO_BRACE,
   HOLD_EFFECT_QUICK_CLAW,
-} from '../../decomp-data/auto/include/constants/hold_effects-data';
+} from '../../decomp-data/include/constants/hold_effects-data';
 import {
   gPlayerParty,
   gEnemyParty,
@@ -124,7 +124,7 @@ import {
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from '../../decomp-data/auto/include/constants/species-data';
+} from '../../decomp-data/include/constants/species-data';
 import {
   EFFECT_EXPLOSION,
   EFFECT_DREAM_EATER,
@@ -138,7 +138,7 @@ import {
   EFFECT_SUPERPOWER,
   EFFECT_ERUPTION,
   EFFECT_OVERHEAT,
-} from '../../decomp-data/auto/include/constants/battle_move_effects-data';
+} from '../../decomp-data/include/constants/battle_move_effects-data';
 import { gBitTable } from '../battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
 import { FlagGet } from '../../script-vars';
@@ -192,7 +192,7 @@ import { getTrainer, type TrainerData } from '../../data/game-data';
 // Static import (= module constants leaf, aucun risque circulaire) : évite
 // la race + fragilité de chemin du dynamic import async (bug Commit 4 :
 // _trainerIdToKey restait vide → aiFlags 0 sur tous les dresseurs).
-import * as OPPONENTS_DATA from '../../decomp-data/auto/include/constants/opponents-data';
+import * as OPPONENTS_DATA from '../../decomp-data/include/constants/opponents-data';
 
 // ─── s8 helper (= score[] est s8 dans le décomp) ───────────────────────────
 

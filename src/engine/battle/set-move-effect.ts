@@ -20,7 +20,7 @@
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset, Random } from './script-interpreter';
 import { setLastUsedItem as setLastUsedItemSME } from './state';
-import { ITEM_ENIGMA_BERRY } from '../decomp-data/auto/include/constants/items-data';
+import { ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';
 import { RecordAbilityBattle as _recordAbilityBattleSME } from './util';
 
 // 1:1 décomp `IS_ITEM_MAIL(itemId)` (mail.h:6-17).

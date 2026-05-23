@@ -111,7 +111,7 @@ import {
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from '../../decomp-data/auto/include/constants/species-data';
+} from '../../decomp-data/include/constants/species-data';
 import { gBitTable } from '../battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from '../util';
 import {
@@ -126,7 +126,7 @@ import {
   ITEM_NONE,
   ITEM_FULL_RESTORE,
   ITEM_ENIGMA_BERRY,
-} from '../../decomp-data/auto/include/constants/items-data';
+} from '../../decomp-data/include/constants/items-data';
 import {
   ITEM0_X_ATTACK,
   ITEM0_DIRE_HIT,
@@ -142,7 +142,7 @@ import {
   ITEM3_SLEEP,
   ITEM3_GUARD_SPEC,
   ITEM4_HEAL_HP,
-} from '../../decomp-data/auto/include/constants/item_effects-data';
+} from '../../decomp-data/include/constants/item_effects-data';
 
 // ─── Constantes locales 1:1 ────────────────────────────────────────────────
 

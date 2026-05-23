@@ -42,7 +42,7 @@ import { gBitTable } from './battle-controllers';
 import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from './text-buffers';
 import {
   MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST,
-} from '../decomp-data/auto/include/constants/moves-data';
+} from '../decomp-data/include/constants/moves-data';
 
 // 1:1 décomp battle_string_ids.h:445-447 + 450-451.
 const B_MSG_RAIN_CONTINUES = 0;

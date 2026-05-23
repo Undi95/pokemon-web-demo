@@ -145,7 +145,7 @@ export interface ObjectEventGraphicsInfo {
 
 // ─── Anim registry (= runtime mutable, distinct from auto-generated SPRITE_ANIMS) ─
 // Permet d'ajouter dynamiquement des anim defs sans toucher le auto-generated
-// `decomp-data/auto/src/sprite-system.ts`. tickSpriteAnims (decomp-runtime)
+// `decomp-data/src/sprite-system.ts`. tickSpriteAnims (decomp-runtime)
 // consultera ce registry en fallback.
 
 const _objectEventAnims = new Map<string, AnimDef>();

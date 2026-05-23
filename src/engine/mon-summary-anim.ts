@@ -21,7 +21,7 @@ import { getRuntime } from './decomp-globals';
 import { SpriteCallbackDummy, BlendPalette } from './decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from './decomp-helpers';
 import { OBJ_PLTT_ID } from './decomp-runtime';
-import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './decomp-data/auto/src/mon-anim-tables-data';
+import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './decomp-data/src/mon-anim-tables-data';
 
 /* ── RGB (1:1 include/constants/rgb.h) ───────────────────────────────────── */
 const RGB = (r: number, g: number, b: number) => (r | (g << 5) | (b << 10));

@@ -26,10 +26,10 @@ import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
   METATILE_BrendansMaysHouse_BrendanPC_On, METATILE_BrendansMaysHouse_BrendanPC_Off,
   METATILE_BrendansMaysHouse_MayPC_On, METATILE_BrendansMaysHouse_MayPC_Off,
-} from './decomp-data/auto/include/constants/metatile_labels-data';
+} from './decomp-data/include/constants/metatile_labels-data';
 import {
   PC_LOCATION_OTHER, PC_LOCATION_BRENDANS_HOUSE, PC_LOCATION_MAYS_HOUSE,
-} from './decomp-data/auto/include/constants/field_specials-data';
+} from './decomp-data/include/constants/field_specials-data';
 import { DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
 
 /** 1:1 décomp `include/fieldmap.h:24` :

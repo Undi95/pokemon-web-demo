@@ -73,7 +73,7 @@ import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 import { getRuntime, PlaySE } from './decomp-globals';
-import { SE_USE_ITEM } from './decomp-data/auto/include/constants/songs-data';
+import { SE_USE_ITEM } from './decomp-data/include/constants/songs-data';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`

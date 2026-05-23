@@ -31,7 +31,7 @@ import {
   PYRAMID_LOCATION_NONE,
   BATTLE_OPPOSITE,
 } from './constants';
-import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../decomp-data/auto/include/constants/hold_effects-data';
+import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../decomp-data/include/constants/hold_effects-data';
 import { GetItemHoldEffect } from './data/item-hold-effects';
 import { Random } from '../random';
 

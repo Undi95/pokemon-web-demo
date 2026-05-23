@@ -86,7 +86,7 @@ import {
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP,
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT,
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
-} from './decomp-data/auto/include/constants/event_object_movement-data';
+} from './decomp-data/include/constants/event_object_movement-data';
 
 // ─── Dispatch tables 1:1 décomp event_object_movement.c:919-1009+ ──────────
 

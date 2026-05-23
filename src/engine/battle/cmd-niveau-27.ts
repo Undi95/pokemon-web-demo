@@ -51,7 +51,7 @@ import {
   EFFECT_SOLAR_BEAM as _EFFECT_SOLAR_BEAM,
   EFFECT_SEMI_INVULNERABLE as _EFFECT_SEMI_INVULNERABLE,
   EFFECT_BIDE as _EFFECT_BIDE,
-} from '../decomp-data/auto/include/constants/battle_move_effects-data';
+} from '../decomp-data/include/constants/battle_move_effects-data';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

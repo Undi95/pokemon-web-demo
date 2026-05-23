@@ -30,8 +30,8 @@ import {
   DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
   DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_ON,
 } from './decomp-runtime';
-import { G_SINE_TABLE } from './decomp-data/auto/src/sine-table';
-import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/auto/src/song-table';
+import { G_SINE_TABLE } from './decomp-data/src/sine-table';
+import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/src/song-table';
 import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
@@ -994,7 +994,7 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
       // species-data.ts exporte tous les `SPECIES_X = N`. Module import = sync
       // après bundling, mais on dynamic-import pour rester async-safe.
       const [speciesData, criesResp] = await Promise.all([
-        import('./decomp-data/auto/include/constants/species-data'),
+        import('./decomp-data/include/constants/species-data'),
         fetch('/decomp/em/cries.json'),
       ]);
       const cries = await criesResp.json() as Record<string, string>;
@@ -2396,8 +2396,8 @@ export * from './gba-menu-system';
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.
 export * from './main-menu-impl';
 export * from './gba-strings';
-export * from './decomp-data/auto/src/sprite-system-flat';
-export * from './decomp-data/auto/src/intro-c-data-auto';
+export * from './decomp-data/src/sprite-system-flat';
+export * from './decomp-data/src/intro-c-data-auto';
 // Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).
 export {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
