@@ -33,6 +33,8 @@ import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
+// Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
+import './engine/dev-cheat';
 import { setMasterVolume } from './engine/m4a/audio-context';
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
