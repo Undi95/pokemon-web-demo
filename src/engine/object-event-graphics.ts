@@ -40,6 +40,10 @@
 
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 import { getRuntime } from './decomp-globals';
+import {
+  AllocSpriteTiles as _AllocSpriteTiles_1to1,
+  AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
+} from './sprite';
 import { loadGbaPal, loadTileBin } from './gba/png-loader';
 
 // ─── OBJ_EVENT_GFX_* constants (= subset; 1:1 décomp include/event_object_movement.h) ─
@@ -373,13 +377,26 @@ export async function loadObjectEventGraphicsInfo(rt: DecompRuntime, gfxId: numb
         }
       }
     }
-    const tileStart = rt.nextSpriteSheetByteOffset >> 5;
-    const writeSize = Math.min(totalBytes, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
-    if (writeSize > 0) {
-      rt.gba.objVram.set(repacked.subarray(0, writeSize), rt.nextSpriteSheetByteOffset);
+    // 1:1 STRICT décomp `LoadSpriteSheet(sObjectEventSpriteSheets[X])` :
+    // AllocSpriteTiles bitmap-based marque les tiles dans sSpriteTileAllocBitmap.
+    // Sans ça, le bitmap voit ces tiles libres → field-effect/UI alloue dessus
+    // → écrasement NPC sprites (user-bug 2026-05-23).
+    const tileCount = totalBytes >> 5;
+    const allocTileStart = _AllocSpriteTiles_1to1(tileCount);
+    if (allocTileStart < 0) {
+      console.warn(`[object-event-graphics] OBJ VRAM saturated for gfxId 0x${gfxId.toString(16)} (needed ${tileCount} tiles)`);
+      _loadedGfx.delete(gfxId);
+      return 0;
     }
-    rt.spriteSheetTagToTileStart.set(info.tileTag, tileStart);
-    rt.nextSpriteSheetByteOffset += totalBytes;
+    const tileStart = allocTileStart;
+    const byteOffset = tileStart * 32;
+    const writeSize = Math.min(totalBytes, rt.gba.objVram.length - byteOffset);
+    if (writeSize > 0) {
+      rt.gba.objVram.set(repacked.subarray(0, writeSize), byteOffset);
+    }
+    // 1:1 STRICT décomp `AllocSpriteTileRange(tag, tileStart, count)` : marque
+    // dans sSpriteTileRangeTags + sSpriteTileRanges arrays.
+    _AllocSpriteTileRange_1to1(info.tileTag, tileStart, tileCount);
   }
   _loadedGfx.add(gfxId);
   return rt.spriteSheetTagToTileStart.get(info.tileTag) ?? 0;
