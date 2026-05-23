@@ -30,31 +30,48 @@ Cible : zéro divergence, zéro raccourci, zéro auto-générer naze.
 | `7951ea00` | 14b.2 | Purge totale `decomp-data/auto/` (~840 fichiers C-style) |
 | `23b9d61e` | A3 | Retrait Maps secondaires `paletteTagToSlot`/`spriteSheetTagToTileStart` |
 | `e445556e` | A2 | Retrait cursors `nextSpriteSheetByteOffset`/`nextObjPalSlot` |
+| `c120e8df` | docs | Roadmap STRICT 1:1 état + prochaines étapes |
+| `ec6b555e` | **A1** | NPC sprite system 1:1 strict (bitmap allocator + tag palette) |
 
-## Bugs visibles introduits par A2/A3 (à fixer par A1)
+## Bugs visibles post-A2/A3 (statut)
 
 Tests user 2026-05-23 post-A2 :
-- **Emote (!)** affiche le haut de la tête MOM au lieu du sprite exclamation
-- **POTION sprite cassé** dans le PC (= player N&B) ET dans le sac (= image brisée bout du sac)
-- **Bouton retour sac cassé** pareil (= image brisée bout du sac)
-- **Scroll items** garde la bonne palette mais sprite brisé
-- **Open/close cycle** → corruption des arrows
+- **Emote (!)** affiche le haut de la tête MOM au lieu du sprite exclamation → reste à vérifier post-A1
+- **POTION sprite cassé** dans le PC + sac = "bout du sac" → bug **non-A1** (= tile data résiduel bag-screen)
+- **Bouton retour sac cassé** = "bout du sac" → bug **non-A1** (= idem)
+- **Scroll items** palette OK mais sprite brisé → bug **non-A1**
+- **Open/close cycle** → corruption des arrows → bug **non-A1**
 
-**Diagnostic** : `AllocSpriteTiles` (bitmap scan first-free) alloue dans la zone NPC legacy
-(`_nextNpcTileBase` = 144..215) parce que `MarkObjTilesAllocated` n'est pas appelé au bon
-timing (= NPC pas encore loaded quand item-icon/emote allouent). Conflit d'allocation.
+**Diagnostic A1 confirmé runtime** : NPCs alloués via bitmap général
+`sSpriteTileAllocBitmap` 1:1 décomp (sprite.c:540-589 CreateSpriteAt branch
+tileTag==TAG_NONE → AllocSpriteTiles), palette via tag system. Validation :
+- Brendan tile=0 pal=0 (player)
+- Twin tile=144 pal=1
+- Boy_2 tile=216 pal=2
+- Bag open/close cycle conserve allocations NPCs.
 
-**Fix = A1** (= refactor NPC system 1:1 strict).
+**Bugs sac restants (= A1b à investiguer)** : la palette est correcte mais
+le tile data en VRAM contient un "bout du sac". User a flag `sprite brisé
+≠ palette OK`. Hypothèse : un site bag-screen (= item icon, scroll arrow,
+return button, rotating ball) utilise un cursor cached qui skip un
+LoadSpriteSheet au cycle suivant → ResetSpriteData clear le bitmap, autre
+sprite alloue à la même zone, écrasement. Sites suspects :
+- `_bagAssetsLoadedToObj`, `_scrollArrowAssetsLoaded`, `_rotatingBallAssetsLoaded`
+  (reset au close, mais peut-être insuffisant)
+- `_drawItemIcon` utilise `BlitBitmapToWindow` (= BG layer, pas OAM) — différent
+- Pattern `field-effect-emotes.ts` (= check `IndexOfSpriteTileTag` + force
+  re-load) à appliquer ici si manquant
 
 ## ROADMAP RESTANTE
 
 ### PHASE A — Base saine sprite/palette/VRAM
 
-**A1 (CRITIQUE, prochaine étape)** — NPC sprite system 1:1 strict
-- Sources : `event_object_movement.c:1543-1614` (CopyObjectGraphicsInfoToSpriteTemplate, CreateObjectGraphicsSprite)
-- Cible : remplacer `_nextNpcTileBase`/`_nextNpcPaletteBank`/`_freeNpcSlots` dans `object-events.ts` par `LoadSpriteSheet`/`LoadSpritePalette` tag system
-- Difficulté : élevée (= NPC critique pour gameplay)
-- Validation : warp entre maps, NPCs visibles avec palettes correctes ; emote/POTION/scroll arrow PLUS de conflit
+**A1** — NPC sprite system 1:1 strict ✅ FAIT (commit `ec6b555e`)
+
+**A1b (prochaine étape)** — Bugs sac sprite tile data résiduel
+- Audit bag-screen.ts pour identifier sites bypass tag system
+- Cibles : POTION/retour/scroll arrows visualement brisés
+- Source décomp : `item_menu_icons.c` + `item_menu.c` (= setup graphics)
 
 **A4** — Audit sous-dossiers `auto-engine/`, `auto-tasks/`, `auto-asm/`, `auto-test/`
 - Lancer agent audit comme `auto/` (déjà purgé)
