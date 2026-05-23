@@ -52,7 +52,7 @@ import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from './decomp-globals';
-import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
+import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -2893,6 +2893,14 @@ function Task_CloseSummary(task: DecompTask): void {
   StopPokemonAnimationDelayTask();
   const cb = sMon.callback;
   _freeSummary();
+  // 1:1 STRICT décomp pokemon_summary_screen.c:1521-1522 — APRÈS SetMainCallback2,
+  // AVANT FreeSummaryScreen. Sans ces deux appels, les tags summary (mon pic,
+  // type icons, ball, markings, move selectors, status icons) restent allous
+  // dans sSpriteTileRangeTags + sSpritePaletteTags après la fermeture → leak
+  // (= AllocSpriteTiles skip ranges + bitmap stale écrasera OW sprites au
+  // prochain warp).
+  ResetSpriteData();
+  FreeAllSpritePalettes();
   if (cb) cb();
   else rt.SetMainCallback2(rt.gMain.savedCallback ?? null);
   rt.DestroyTask(task.taskId);

@@ -43,7 +43,7 @@ import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
+import { ResetSpriteData, FreeAllSpritePalettes } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -2579,6 +2579,15 @@ function Task_CloseBagMenu_BagScreen(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt || rt.gPaletteFade.active) return;
   _freeBagMenu();
+  // 1:1 STRICT décomp item_menu.c:1098-1099 — APRÈS BagDestroyPocketScrollArrowPair
+  // (= _freeBagMenu chez nous) et AVANT FreeBagMenu. Sans ces deux appels,
+  // les tags bag (TAG_BAG_SPRITE_GFX/_PAL/TAG_SCROLL_ARROW_GFX/TAG_ROTATING_
+  // BALL_GFX + leur palette) restent allous dans sSpriteTileRangeTags +
+  // sSpritePaletteTags après la fermeture → leak progressif (= AllocSpriteTiles
+  // skip ces ranges, bitmap reste sale → écrasement visuels NPCs/field effects
+  // après quelques cycles bag/OW + user-flag "sac leak toujours").
+  ResetSpriteData();
+  FreeAllSpritePalettes();
   // 1:1 décomp `CB2_PlayerPCExitBagMenu` (player_pc.c:571) → ItemStorage_
   // ReshowAfterBagMenu re-render PC. Notre exitCallback (= OpenBedroomPC)
   // doit fire APRÈS que `CB2_ReturnToFieldLocal_Manual` (= savedCb) ait

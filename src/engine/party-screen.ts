@@ -1309,6 +1309,12 @@ function Task_ClosePartyMenu(task: DecompTask): void {
   const exitCb = transient ?? rt.gMain.savedCallback;
   if (exitCb) rt.SetMainCallback2(exitCb);
   else rt.SetMainCallback2(null);
+  // 1:1 STRICT décomp party_menu.c:1243 — APRÈS SetMainCallback2, AVANT
+  // FreePartyPointers. Sans ça, les tags party (icon/status/pokeball/helditem)
+  // restent allous dans sSpriteTileRangeTags + sSpritePaletteTags → leak
+  // progressif après chaque cycle party/OW. NOTE : décomp NE FAIT PAS
+  // FreeAllSpritePalettes ici (party garde ses palettes), seul Bag les free.
+  ResetSpriteData();
   rt.DestroyTask(task.taskId);
   _inputTaskId = -1;
 }
