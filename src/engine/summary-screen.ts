@@ -200,6 +200,17 @@ const TYPE_ICON_TILE_BASE = 0;            // legacy const (= replaced par _typeI
 const MON_PIC_TILE_BASE = 184;
 const MON_PIC_FRAME_TILES = 64;           // 64×64 = 64 tiles / frame
 const MON_PIC_BYTE_OFFSET = MON_PIC_TILE_BASE * 32;
+/** 1:1 STRICT décomp `LoadSpritePalette` : slots dynamiquement alloués. */
+const TAG_MON_PIC_PAL = 'SUMMARY_MON_PIC_PAL';
+const TAG_STATUS_PAL = 'SUMMARY_STATUS_PAL';
+const TAG_MARKINGS_PAL = 'SUMMARY_MARKINGS_PAL';
+const TAG_BALL_PAL_SUMMARY = 'SUMMARY_BALL_PAL';
+const TAG_MOVE_SELECTOR_PAL = 'SUMMARY_MOVE_SELECTOR_PAL';
+let _monPicPalSlot = -1;
+let _statusPalSlot = -1;
+let _markingsPalSlot = -1;
+let _ballPalSlot = -1;
+let _moveSelectorPalSlot = -1;
 const MON_PIC_PAL_SLOT = 1;
 /** 1:1 décomp `sStatusIconsSpriteSheet` (gStatusGfx_Icons = graphics/
  *  interface/status_icons.png, 32×64 = 32 tiles). Sprite 32×8 (shape1 size1),
@@ -729,13 +740,13 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // .png) → OBJ VRAM + sStatusIconsSpritePalette → OBJ pal slot 2.
     try {
       const st = await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/status_icons.png', STATUS_BYTE_OFFSET);
-      r.LoadPaletteObj(st.palette, OBJ_PLTT_ID(STATUS_PAL_SLOT));
+      _statusPalSlot = LoadSpritePalette({ data: st.palette, tag: TAG_STATUS_PAL });
     } catch (e) { console.error('[summary] status icons load failed:', e); }
     // 1:1 CreateMonMarkingAllCombosSprite : sMonMarkings_Gfx → OBJ VRAM,
     // palette = sMarkings_Pal (summary_screen/markings.pal, PAS la pal png).
     try {
       await r.LoadCompressedSpriteSheet('/decomp/em/ui/interface/mon_markings.png', MARKINGS_BYTE_OFFSET);
-      r.LoadPaletteObj(a.markingsPal, OBJ_PLTT_ID(MARKINGS_PAL_SLOT));
+      _markingsPalSlot = LoadSpritePalette({ data: a.markingsPal, tag: TAG_MARKINGS_PAL });
     } catch (e) { console.error('[summary] markings load failed:', e); }
     // 1:1 CreateCaughtBallSprite : gBallGfx_Poke (poke.4bpp.bin, PLTT-indexed)
     // → OBJ VRAM + gBallPal_Poke (poke.gbapal, ordre PLTE EXACT) → pal OBJ.
@@ -743,7 +754,7 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // d'apparition → indices mélangés → blanc rendu gris = bug user).
     try {
       r.gba.objVram.set(a.ballTiles, BALL_TILE_BASE * 32);
-      r.LoadPaletteObj(a.ballPal, OBJ_PLTT_ID(BALL_PAL_SLOT));
+      _ballPalSlot = LoadSpritePalette({ data: a.ballPal, tag: TAG_BALL_PAL_SUMMARY });
     } catch (e) { console.error('[summary] ball gfx load failed:', e); }
     // 1:1 décomp `sMoveSelectorSpriteSheet`/`sMoveSelectorSpritePal` (chargés
     // par CreateMoveSelectorSprites au 1er besoin ; ici on précharge en OBJ
@@ -751,7 +762,7 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // SpriteSheet, comme la pokéball).
     try {
       r.gba.objVram.set(a.moveSelectTiles, MOVE_SELECTOR_BYTE_OFFSET);
-      r.LoadPaletteObj(a.moveSelectPal, OBJ_PLTT_ID(MOVE_SELECTOR_PAL_SLOT));
+      _moveSelectorPalSlot = LoadSpritePalette({ data: a.moveSelectPal, tag: TAG_MOVE_SELECTOR_PAL });
     } catch (e) { console.error('[summary] move-select gfx load failed:', e); }
     // 1:1 LoadMonGfxAndSprite (:3900) : front pic mon → OBJ VRAM + palette.
     const mon = sMon.currentMon;
@@ -900,11 +911,11 @@ async function _loadMonFrontPic(
   const url = `/decomp/em/pokemon/${dexId}/${twoFrame ? 'anim_front' : 'front'}.png`;
   try {
     const ld = await r.LoadCompressedSpriteSheet(url, MON_PIC_BYTE_OFFSET);
-    r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
+    _monPicPalSlot = LoadSpritePalette({ data: ld.palette, tag: TAG_MON_PIC_PAL });
   } catch {
     try {                                       // anim_front absent → front.png 1-frame
       const ld = await r.LoadCompressedSpriteSheet(`/decomp/em/pokemon/${dexId}/front.png`, MON_PIC_BYTE_OFFSET);
-      r.LoadPaletteObj(ld.palette, OBJ_PLTT_ID(MON_PIC_PAL_SLOT));
+      _monPicPalSlot = LoadSpritePalette({ data: ld.palette, tag: TAG_MON_PIC_PAL });
     } catch (e) { console.error('[summary] mon front pic load failed:', e); }
   }
 }
@@ -1872,7 +1883,7 @@ function _createMonSprite(): void {
   if (!rt || !mon) return;
   const spr = rt.CreateSpriteAtOam({
     x: 40, y: 64, shape: 0, size: 3,           // 1:1 CreateSprite(.,40,64,5) 64×64
-    tileId: MON_PIC_TILE_BASE, paletteBank: MON_PIC_PAL_SLOT,
+    tileId: MON_PIC_TILE_BASE, paletteBank: _monPicPalSlot,
     priority: 0, subpriority: 5,
   });
   _monPicSpriteId = spr.spriteId;
@@ -1923,7 +1934,7 @@ function _createSetStatusSprite(): void {
   const spr = rt.CreateSpriteAtOam({
     x: 64, y: 152, shape: 1, size: 1,         // 1:1 CreateSprite(.,64,152,0) 32×8
     tileId: STATUS_TILE_BASE + (ailment - 1) * 4, // StartSpriteAnim(ailment-1) = FRAME((ailment-1)*4)
-    paletteBank: STATUS_PAL_SLOT,
+    paletteBank: _statusPalSlot,
     priority: 3,                              // sOamData_StatusCondition.priority
     subpriority: 0,
   });
@@ -1942,7 +1953,7 @@ function _createMonMarkingsSprite(): void {
   const spr = rt.CreateSpriteAtOam({
     x: 60, y: 26, shape: 1, size: 1,           // 1:1 sprite->x=60 y=26, 32×8
     tileId: MARKINGS_TILE_BASE + combo * 4,    // StartSpriteAnim(combo)=FRAME(combo*4)
-    paletteBank: MARKINGS_PAL_SLOT,
+    paletteBank: _markingsPalSlot,
     priority: 1,                               // sMonSummaryScreen->markingsSprite->oam.priority = 1
     subpriority: 0,
   });
@@ -1963,7 +1974,7 @@ function _createCaughtBallSprite(): void {
   const spr = rt.CreateSpriteAtOam({
     x: 16, y: 136, shape: 0, size: 1,          // 1:1 CreateSprite(.,16,136,0) 16×16
     tileId: BALL_TILE_BASE,                    // frame 0 (sBallAnimSeq0 = FRAME(0), callback dummy)
-    paletteBank: BALL_PAL_SLOT,
+    paletteBank: _ballPalSlot,
     priority: 3,                               // oam.priority = 3 (CreateCaughtBallSprite)
     subpriority: 0,
   });
@@ -2495,7 +2506,7 @@ function _createMoveSelectorSprites(idArrayStart: number): void {
   for (let i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++) {
     const s = rt.CreateSpriteAtOam({
       x: i * 16 + 89, y: 40, shape: 0, size: 1,   // 1:1 CreateSprite(.,i*16+89,40,subp) 16×16
-      tileId: MOVE_SELECTOR_TILE_BASE + 16, paletteBank: MOVE_SELECTOR_PAL_SLOT,
+      tileId: MOVE_SELECTOR_TILE_BASE + 16, paletteBank: _moveSelectorPalSlot,
       priority: 1, subpriority,                    // sOamData_MoveSelector.priority=1
     });
     if (s.spriteId < 0) continue;
