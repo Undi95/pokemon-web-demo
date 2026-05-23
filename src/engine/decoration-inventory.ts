@@ -30,13 +30,12 @@
  *     `gDecorationInventories[category].items[i]`, jamais sur
  *     `gSaveBlock1Ptr->decoration*` direct (= 1:1 décomp).
  *
- * Dette honnête :
- *   - `gDecorations[]` table (= 121 entries dans décomp `src/decoration.c`) n'est
- *     PAS encore portée en TS. On crée un STUB minimal avec `category` correct
- *     pour les 120 entrées + `DECOR_NONE = { category: 0 }`. La catégorie est
- *     directement déductible des plages d'IDs (= layout fixe du décomp).
- *     Quand `decoration.c` sera porté, remplacer `_gDecorationsStub` par l'import.
- *     // 1:1 TODO : import gDecorations from decoration.c when ported.
+ * Notes 1:1 :
+ *   - `gDecorations[]` table (= 121 entries dans décomp `src/data/decoration/header.h`)
+ *     est portée 1:1 strict dans `decoration-data.ts` (import direct ci-dessous).
+ *     Chaque entrée a id/name/permission/shape/category/price/description/tiles.
+ *     `description` et `tiles` = string identifiers (résolvables via getString /
+ *     asset loader). Voir `decoration-data.ts` pour les détails.
  */
 
 import { gSaveBlock1Ptr } from './save-block-state';
@@ -44,6 +43,9 @@ import { DECOR_NONE } from './decomp-data/auto/include/constants/decorations-dat
 import {
   ENUM_DecorationCategory,
 } from './decomp-data/auto/include/decoration-data';
+import { gDecorations } from './decoration-data';
+export { gDecorations };
+export type { Decoration } from './decoration-data';
 
 // ─── 1:1 décomp enum DecorationCategory (= decoration.h) ─────────────────────
 
@@ -80,62 +82,8 @@ export const gDecorationInventories: DecorationInventory[] = (() => {
   return arr;
 })();
 
-// ─── 1:1 décomp `gDecorations[]` STUB ────────────────────────────────────────
-// `src/decoration.c` n'est PAS encore porté. On crée un stub minimal avec UN
-// SEUL field utilisé par decoration_inventory.c : `category`. Layout 1:1 décomp :
-//   DECOR_NONE = 0                                         -> category=0 (no-op, jamais lookup)
-//   DECOR_SMALL_DESK..DECOR_HARD_DESK     (1..9)           -> DECORCAT_DESK
-//   DECOR_SMALL_CHAIR..DECOR_HARD_CHAIR   (10..18)         -> DECORCAT_CHAIR
-//   DECOR_RED_PLANT..DECOR_GORGEOUS_PLANT (19..24)         -> DECORCAT_PLANT
-//   DECOR_RED_BRICK..DECOR_CUTE_TV        (25..47)         -> DECORCAT_ORNAMENT
-//   DECOR_GLITTER_MAT..DECOR_SPIKES_MAT   (48..65)         -> DECORCAT_MAT
-//   DECOR_BALL_POSTER..DECOR_KISS_POSTER  (66..75)         -> DECORCAT_POSTER
-//   DECOR_PICHU_DOLL..DECOR_SEEDOT_DOLL   (76..100)        -> DECORCAT_DOLL
-//   DECOR_PIKA_CUSHION..DECOR_WATER_CUSHION (101..110)     -> DECORCAT_CUSHION
-//   DECOR_SNORLAX_DOLL..DECOR_REGISTEEL_DOLL (111..120)    -> DECORCAT_DOLL
-//
-// 1:1 TODO : import gDecorations from decoration.c when ported (= remplace ce
-// stub par les vraies entrées complètes avec name/permission/shape/price/desc/tiles).
-
-/** STUB minimal — voir TODO ci-dessus. */
-export interface DecorationStub {
-  name: string;
-  permission: number;
-  shape: number;
-  category: number;
-  price: number;
-  description: string;
-}
-
-function _categoryForDecorId(decorId: number): number {
-  if (decorId === DECOR_NONE) return DECORCAT_DESK;          // no-op, jamais lookup réel
-  if (decorId >= 1   && decorId <= 9)   return DECORCAT_DESK;
-  if (decorId >= 10  && decorId <= 18)  return DECORCAT_CHAIR;
-  if (decorId >= 19  && decorId <= 24)  return DECORCAT_PLANT;
-  if (decorId >= 25  && decorId <= 47)  return DECORCAT_ORNAMENT;
-  if (decorId >= 48  && decorId <= 65)  return DECORCAT_MAT;
-  if (decorId >= 66  && decorId <= 75)  return DECORCAT_POSTER;
-  if (decorId >= 76  && decorId <= 100) return DECORCAT_DOLL;
-  if (decorId >= 101 && decorId <= 110) return DECORCAT_CUSHION;
-  if (decorId >= 111 && decorId <= 120) return DECORCAT_DOLL;
-  return DECORCAT_DESK; // out-of-range fallback (= défensif, jamais hit en 1:1)
-}
-
-export const gDecorations: DecorationStub[] = (() => {
-  // 121 entrées : indices 0..120 (= DECOR_NONE..DECOR_REGISTEEL_DOLL).
-  const arr: DecorationStub[] = [];
-  for (let i = 0; i <= 120; i++) {
-    arr.push({
-      name: '',
-      permission: 0,
-      shape: 0,
-      category: _categoryForDecorId(i),
-      price: 0,
-      description: '',
-    });
-  }
-  return arr;
-})();
+// `gDecorations[]` est exporté depuis `decoration-data.ts` (re-exporté en tête
+// de ce fichier pour préserver la compat des consommateurs).
 
 // ─── Helpers internes 1:1 ────────────────────────────────────────────────────
 //
