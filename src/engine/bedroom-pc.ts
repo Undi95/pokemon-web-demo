@@ -216,6 +216,123 @@ let sPCSwapFromPos = -1;
 // 1:1 décomp NOT_SWAPPING = 0xFF ; on utilise -1 en TS.
 const NOT_SWAPPING = -1;
 
+// 1:1 décomp player_pc.c:88 `#define SWAP_LINE_LENGTH 7`.
+const SWAP_LINE_LENGTH = 7;
+
+// 1:1 décomp player_pc.c:57-65 ITEMPC_WIN_* enum (pour ItemStorage_Add/RemoveWindow).
+const ITEMPC_WIN_LIST = 0;
+const ITEMPC_WIN_MESSAGE = 1;
+const ITEMPC_WIN_ICON = 2;
+const ITEMPC_WIN_TITLE = 3;
+const ITEMPC_WIN_QUANTITY = 4;
+const ITEMPC_WIN_YESNO = 5;
+const ITEMPC_WIN_COUNT = 6;
+// 1:1 décomp player_pc.c:67 `#define ITEMPC_WIN_LIST_END ITEMPC_WIN_TITLE`.
+const ITEMPC_WIN_LIST_END = ITEMPC_WIN_TITLE;
+
+// 1:1 décomp window.h `#define WINDOW_NONE 0xFF`.
+const WINDOW_NONE = 0xFF;
+// 1:1 décomp sprite.h `#define SPRITE_NONE 0xFF`.
+const SPRITE_NONE = 0xFF;
+
+/** 1:1 décomp `struct ItemStorageMenu` (player_pc.c:90-98).
+ *  Allocated par `ItemStorage_Init()`, freed par `ItemStorage_Free()`. */
+interface ItemStorageMenuState {
+  listItems: ListMenuItem[];
+  itemNames: string[];
+  /** windowIds[ITEMPC_WIN_COUNT] = WINDOW_NONE par défaut. */
+  windowIds: number[];
+  /** toSwapPos = NOT_SWAPPING par défaut (= 0xFF). */
+  toSwapPos: number;
+  /** spriteId = SPRITE_NONE par défaut (= 0xFF). */
+  spriteId: number;
+  /** swapLineSpriteIds[SWAP_LINE_LENGTH] = SPRITE_NONE par défaut. */
+  swapLineSpriteIds: number[];
+}
+
+/** 1:1 décomp `static EWRAM_DATA struct ItemStorageMenu *sItemStorageMenu = NULL`
+ *  (player_pc.c:182). Set par `ItemStorage_Init()`, free par `ItemStorage_Free()`. */
+let sItemStorageMenu: ItemStorageMenuState | null = null;
+
+/** Note : on garde une CONSTANTE séparée alignée 1:1 décomp (0xFF) pour le
+ *  struct sItemStorageMenu, distincte du `NOT_SWAPPING = -1` qui est la valeur
+ *  négative TS utilisée par `sPCSwapFromPos` (var séparée legacy).
+ *  Migration future : unifier les 2. */
+const NOT_SWAPPING_C = 0xFF;
+
+/** 1:1 décomp `static void ItemStorage_Init(void)` (player_pc.c:945-951) :
+ *      sItemStorageMenu = AllocZeroed(sizeof(*sItemStorageMenu));
+ *      memset(sItemStorageMenu->windowIds, WINDOW_NONE, ITEMPC_WIN_COUNT);
+ *      sItemStorageMenu->toSwapPos = NOT_SWAPPING;
+ *      sItemStorageMenu->spriteId = SPRITE_NONE; */
+export function ItemStorage_Init(): void {
+  sItemStorageMenu = {
+    listItems: [],
+    itemNames: [],
+    windowIds: new Array(ITEMPC_WIN_COUNT).fill(WINDOW_NONE),
+    toSwapPos: NOT_SWAPPING_C,
+    spriteId: SPRITE_NONE,
+    swapLineSpriteIds: new Array(SWAP_LINE_LENGTH).fill(SPRITE_NONE),
+  };
+}
+
+/** 1:1 décomp `static u8 ItemStorage_AddWindow(u8 i)` (player_pc.c:961-971) :
+ *      u8 *windowIdLoc = &sItemStorageMenu->windowIds[i];
+ *      if (*windowIdLoc == WINDOW_NONE) {
+ *          *windowIdLoc = AddWindow(&sWindowTemplates_ItemStorage[i]);
+ *          DrawStdFrameWithCustomTileAndPalette(*windowIdLoc, FALSE, 0x214, 0xE);
+ *          ScheduleBgCopyTilemapToVram(0);
+ *      }
+ *      return *windowIdLoc; */
+export function ItemStorage_AddWindow(i: number): number {
+  if (!sItemStorageMenu) return WINDOW_NONE;
+  if (sItemStorageMenu.windowIds[i] === WINDOW_NONE) {
+    const tpl = _sWindowTemplates_ItemStorage(i);
+    if (!tpl) return WINDOW_NONE;
+    const wid = AddWindow(tpl);
+    sItemStorageMenu.windowIds[i] = wid;
+    DrawStdFrameWithCustomTileAndPalette(wid, false, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
+    // ScheduleBgCopyTilemapToVram(0) — no-op chez nous (auto-tick).
+  }
+  return sItemStorageMenu.windowIds[i];
+}
+
+/** 1:1 décomp `static void ItemStorage_RemoveWindow(u8 i)` (player_pc.c:973-984). */
+export function ItemStorage_RemoveWindow(i: number): void {
+  if (!sItemStorageMenu) return;
+  const wid = sItemStorageMenu.windowIds[i];
+  if (wid !== WINDOW_NONE) {
+    ClearStdWindowAndFrame(wid, false);
+    RemoveWindow(wid);
+    sItemStorageMenu.windowIds[i] = WINDOW_NONE;
+  }
+}
+
+/** 1:1 décomp `static void ItemStorage_Free(void)` (player_pc.c:953-959) :
+ *      for (i = 0; i < ITEMPC_WIN_COUNT; i++)
+ *          ItemStorage_RemoveWindow(i);
+ *      Free(sItemStorageMenu); */
+export function ItemStorage_Free(): void {
+  if (!sItemStorageMenu) return;
+  for (let i = 0; i < ITEMPC_WIN_COUNT; i++)
+    ItemStorage_RemoveWindow(i);
+  sItemStorageMenu = null;
+}
+
+/** 1:1 décomp `sWindowTemplates_ItemStorage[ITEMPC_WIN_COUNT]` (player_pc.c:298-354).
+ *  Lookup par enum index pour `ItemStorage_AddWindow`. */
+function _sWindowTemplates_ItemStorage(i: number): WindowTemplate | null {
+  switch (i) {
+    case ITEMPC_WIN_LIST:     return WIN_PC_LIST;
+    case ITEMPC_WIN_MESSAGE:  return WIN_PC_MESSAGE;
+    case ITEMPC_WIN_ICON:     return WIN_PC_ICON;
+    case ITEMPC_WIN_TITLE:    return WIN_PC_TITLE;
+    case ITEMPC_WIN_QUANTITY: return WIN_PC_QUANTITY;
+    case ITEMPC_WIN_YESNO:    return WIN_PC_YESNO;
+    default: return null;
+  }
+}
+
 // ─── API publique ──────────────────────────────────────────────────────────
 
 export function IsBedroomPCOpen(): boolean {
