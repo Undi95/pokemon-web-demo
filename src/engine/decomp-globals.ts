@@ -62,6 +62,8 @@ import {
   DoLoadSpritePalette as _DoLoadSpritePalette_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
+  GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
+  IndexOfSpriteTileTag as _IndexOfSpriteTileTag_1to1,
   _freeSpriteTileRangeByTag as _FreeSpriteTileRangeByTag_1to1,
   sSpritePaletteTags as _sSpritePaletteTags,
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
@@ -109,6 +111,11 @@ export function setGlobalRuntime(rt: DecompRuntime): void {
     FreeSpritePaletteByTag: _FreeSpritePaletteByTag_1to1,
     IndexOfSpritePaletteTag: _IndexOfSpritePaletteTag_1to1,
     DoLoadSpritePalette: _DoLoadSpritePalette_1to1,
+    // Tile tag system lookups (sprite.c:1542 + :1550) — pour consumers qui
+    // ne peuvent pas importer sprite.ts directement (= cycle ESM).
+    GetSpriteTileStartByTag: _GetSpriteTileStartByTag_1to1,
+    IndexOfSpriteTileTag: _IndexOfSpriteTileTag_1to1,
+    AllocSpriteTileRange: _AllocSpriteTileRange_1to1,
     // 1:1 STRICT décomp EWRAM static arrays (Phase 1)
     sSpritePaletteTags: _sSpritePaletteTags,
     sSpriteTileRangeTags: _sSpriteTileRangeTags,
@@ -1859,18 +1866,20 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
 
 /** 1:1 décomp `FreeSpriteTilesByTag(tag)` (src/sprite.c:1509-1529) — libère la plage
  *  OBJ VRAM du tag : clear arrays + reclaim queue.
- *  Sans ce reclaim le curseur monotone épuise la VRAM (icône sac). */
+ *  Source unique = sSpriteTileRangeTags array primary (1:1 STRICT). Lecture
+ *  des coords via GetSpriteTileStartByTag (= sprite.c:1542) au lieu de Map. */
 export function FreeSpriteTilesByTag(tag: string | number): void {
   const r = rt();
   const tagStr = String(tag);
-  const tileStart = r.spriteSheetTagToTileStart.get(tagStr);
+  // 1:1 STRICT lecture array primary pour le reclaim queue (= legacy fallback).
+  const tileStart = _GetSpriteTileStartByTag_1to1(tag);
   const size = r.spriteSheetTagToByteSize.get(tagStr);
-  if (tileStart !== undefined && size !== undefined && size > 0)
+  if (tileStart !== 0xFFFF && size !== undefined && size > 0)
     r.freedSpriteTileRanges.push({ offset: tileStart << 5, size });
   r.spriteSheetTagToTileStart.delete(tagStr);
   r.spriteSheetTagToByteSize.delete(tagStr);
-  // 1:1 STRICT : clear sSpriteTileRangeTags slot for this tag.
-  _FreeSpriteTileRangeByTag_1to1(tagStr);
+  // 1:1 STRICT : clear sSpriteTileRangeTags + sSpriteTileRanges + bitmap.
+  _FreeSpriteTileRangeByTag_1to1(tag);
 }
 
 /** 1:1 décomp src/sprite.c:1610-1616 — délégué à `src/engine/sprite.ts`.
@@ -1914,12 +1923,11 @@ export function IndexOfSpritePaletteTag(tag: string | number): number {
   return _IndexOfSpritePaletteTag_1to1(tag);
 }
 
-/** 1:1 décomp src/sprite.c:GetSpriteTileStartByTag — retourne le tileNum
- *  start (offset en tiles 8x8 dans objVram) précédemment alloué pour ce tag
- *  via LoadCompressedSpriteSheet. Retourne 0xFFFF si non trouvé. */
+/** 1:1 STRICT décomp src/sprite.c:1542-1548 GetSpriteTileStartByTag — délégué
+ *  à la VRAIE impl sprite.ts qui scan sSpriteTileRangeTags array primary.
+ *  Retourne 0xFFFF si non trouvé. */
 export function GetSpriteTileStartByTag(tag: string | number): number {
-  const tile = rt().spriteSheetTagToTileStart.get(String(tag));
-  return tile ?? 0xFFFF;
+  return _GetSpriteTileStartByTag_1to1(tag);
 }
 
 /** 1:1 décomp src/util.c:MultiplyInvertedPaletteRGBComponents (palette.c:1764).
@@ -2456,8 +2464,11 @@ export function CreatePokeballSpriteToReleaseMon(
   // 1:1 décomp pokeball.c:1035-1037 : LoadCompressedSpriteSheet + LoadCompressedSpritePalette + CreateSprite
   LoadSpritePalette({ data: 'gBallPal_Poke', tag: POKEBALL_PAL_TAG });
   LoadCompressedSpriteSheet({ data: 'gBallGfx_Poke', size: 384, tag: POKEBALL_TAG });
-  const tileBase = r.spriteSheetTagToTileStart.get(POKEBALL_TAG) ?? 0;
-  const palSlot = r.paletteTagToSlot.get(String(POKEBALL_PAL_TAG)) ?? 0;
+  // 1:1 STRICT lecture array primary via sprite.ts helpers (sprite.c:1542 + :1637).
+  const tileBaseRaw = _GetSpriteTileStartByTag_1to1(POKEBALL_TAG);
+  const palSlotRaw = _IndexOfSpritePaletteTag_1to1(POKEBALL_PAL_TAG);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
 
   // 1:1 décomp pokeball.c:1326-1328 LoadBallGfx :
   //   LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var * 32);

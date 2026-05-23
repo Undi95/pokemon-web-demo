@@ -43,6 +43,9 @@ import { getRuntime } from './decomp-globals';
 import {
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
+  LoadSpritePalette as _LoadSpritePalette_1to1,
+  IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
+  GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
 } from './sprite';
 import { loadGbaPal, loadTileBin } from './gba/png-loader';
 
@@ -326,35 +329,23 @@ export async function loadObjectEventGraphicsInfo(rt: DecompRuntime, gfxId: numb
   }
   // Already loaded → return registered tile base.
   if (_loadedGfx.has(gfxId)) {
-    const existing = rt.spriteSheetTagToTileStart.get(info.tileTag);
-    if (existing !== undefined) return existing;
+    const existing = _GetSpriteTileStartByTag_1to1(info.tileTag);
+    if (existing !== 0xFFFF) return existing;
   }
-  // Load palette (= 16 entries × 2 bytes = 32 bytes, into OBJ palette slot N).
-  // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free dans
-  // [gReservedSpritePaletteCount, 16). Avant : `nextObjPal Slot++` raw saturait
-  // après ~16 cycles PC/bag → palettes player+PNJ écrasées.
-  if (!rt.paletteTagToSlot.has(info.paletteTag)) {
+  // 1:1 STRICT décomp `LoadSpritePalette(sObjectEventSpritePalette_X)`
+  // (sprite.c:1589-1608) : check existing tag → return ; sinon find first free
+  // dans [gReservedSpritePaletteCount, 16) + DoLoadSpritePalette + sync arrays.
+  // Source unique = sSpritePaletteTags array primary (= sync auto Map secondary).
+  if (_IndexOfSpritePaletteTag_1to1(info.paletteTag) === 0xFF) {
     const pal = await loadGbaPal(info.palUrl);
-    const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-    const used = new Set<number>();
-    for (const s of rt.paletteTagToSlot.values()) used.add(s);
-    let slot = -1;
-    for (let i = reserved; i < 16; i++) {
-      if (!used.has(i)) { slot = i; break; }
-    }
-    if (slot < 0) {
+    const slot = _LoadSpritePalette_1to1({ data: pal, tag: info.paletteTag });
+    if (slot === 0xFF) {
       console.warn(`[object-event-graphics] OBJ palette saturated (16/16), cannot load ${info.paletteTag}`);
       return 0;
     }
-    for (let i = 0; i < Math.min(16, pal.length); i++) {
-      rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, pal[i]);
-      rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
-    }
-    rt.paletteTagToSlot.set(info.paletteTag, slot);
-    if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
   }
-  // Load gfx + frame-major repack.
-  if (!rt.spriteSheetTagToTileStart.has(info.tileTag)) {
+  // Load gfx + frame-major repack. 1:1 décomp `IndexOfSpriteTileTag` check.
+  if (_GetSpriteTileStartByTag_1to1(info.tileTag) === 0xFFFF) {
     const sheet = await loadTileBin(info.gfxUrl, 4);
     const totalBytes = info.bytesPerFrame * info.totalFrames;
     const repacked = new Uint8Array(totalBytes);
@@ -399,7 +390,10 @@ export async function loadObjectEventGraphicsInfo(rt: DecompRuntime, gfxId: numb
     _AllocSpriteTileRange_1to1(info.tileTag, tileStart, tileCount);
   }
   _loadedGfx.add(gfxId);
-  return rt.spriteSheetTagToTileStart.get(info.tileTag) ?? 0;
+  // 1:1 décomp `GetSpriteTileStartByTag(tag)` (sprite.c:1542-1548) — scan
+  // sSpriteTileRangeTags array primary. 0xFFFF si pas trouvé → fallback 0.
+  const tileStart = _GetSpriteTileStartByTag_1to1(info.tileTag);
+  return tileStart === 0xFFFF ? 0 : tileStart;
 }
 
 // ─── CreateObjectGraphicsSprite factory ─────────────────────────────────────
@@ -447,12 +441,16 @@ export function CreateObjectGraphicsSprite(
     console.warn(`[object-event-graphics] CreateObjectGraphicsSprite: unknown gfxId 0x${gfxId.toString(16)}`);
     return -1;
   }
-  const tileBase = rt.spriteSheetTagToTileStart.get(info.tileTag);
-  const palSlot = rt.paletteTagToSlot.get(info.paletteTag);
-  if (tileBase === undefined || palSlot === undefined) {
+  // 1:1 STRICT décomp `GetSpriteTileStartByTag` (sprite.c:1542) + `IndexOf
+  // SpritePaletteTag` (sprite.c:1637) — lecture array primary, pas Map secondary.
+  const tileBaseRaw = _GetSpriteTileStartByTag_1to1(info.tileTag);
+  const palSlotRaw = _IndexOfSpritePaletteTag_1to1(info.paletteTag);
+  if (tileBaseRaw === 0xFFFF || palSlotRaw === 0xFF) {
     console.warn(`[object-event-graphics] gfxId 0x${gfxId.toString(16)} not loaded — call loadObjectEventGraphicsInfo first`);
     return -1;
   }
+  const tileBase = tileBaseRaw;
+  const palSlot = palSlotRaw;
   // Bridge anim defs into runtime registry (idempotent set).
   _bridgeAnimsToRuntime(rt);
   // Create the OAM sprite at (x, y). Shape/size/priority widened à `number` dans

@@ -25,7 +25,10 @@
 
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
 import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from './decomp-helpers';
-import { MarkObjTilesAllocated } from './sprite';
+import {
+  MarkObjTilesAllocated, MarkObjPaletteAllocated,
+  IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,
+} from './sprite';
 
 // ─── Ball IDs (1:1 décomp include/constants/items.h) ────────────────────────
 export const BALL_POKE = 0;
@@ -346,8 +349,11 @@ export function AnimateBallOpenParticles(rt: DecompRuntime, x: number, y: number
   // engine's LoadCompressedSpriteSheet skips if the tag already exists).
   loadParticlesAssets(rt, ballId);
 
-  const tileBase = rt.spriteSheetTagToTileStart.get(PARTICLES_TILE_TAG) ?? 0;
-  const palSlot = rt.paletteTagToSlot.get(String(PARTICLES_PAL_TAG)) ?? 0;
+  // 1:1 STRICT décomp lookup via array primary (sprite.c:1542 + :1637).
+  const tileBaseRaw = GetSpriteTileStartByTag(PARTICLES_TILE_TAG);
+  const palSlotRaw = IndexOfSpritePaletteTag(PARTICLES_PAL_TAG);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
 
   const taskId = rt.CreateTask((task) => {
     // task.data[0] = spawn frame counter (= the décomp `data[0]` in
@@ -472,32 +478,36 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
   const gfx = charData ? charData('gBattleAnimSpriteGfx_Particles') : null;
   const pal = charData ? charData('gBattleAnimSpritePal_Particles') : null;
 
-  if (gfx && !rt.spriteSheetTagToTileStart.has(PARTICLES_TILE_TAG)) {
+  // 1:1 STRICT décomp src/sprite.c:1486 LoadSpriteSheet : AllocSpriteTiles
+  // bitmap + AllocSpriteTileRange + CpuCopy16. Source unique = arrays primary.
+  if (gfx && GetSpriteTileStartByTag(PARTICLES_TILE_TAG) === 0xFFFF) {
     const bytes = gfx instanceof Uint16Array ? new Uint8Array(gfx.buffer, gfx.byteOffset, gfx.byteLength) : gfx;
     const tileStart = (rt.nextSpriteSheetByteOffset >> 5);
     const copySize = Math.min(bytes.length, rt.gba.objVram.length - rt.nextSpriteSheetByteOffset);
     if (copySize > 0) {
       rt.gba.objVram.set(bytes.subarray(0, copySize), rt.nextSpriteSheetByteOffset);
-      // 1:1 STRICT bitmap allocator sync : sans ça AllocSpriteTiles peut
-      // attribuer ces tiles à un autre sheet → écrasement.
+      // 1:1 STRICT bitmap allocator sync + sSpriteTileRangeTags tag enregistré
+      // via AllocSpriteTileRange (= arrays primary + Map secondary sync auto).
       MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, copySize);
+      AllocSpriteTileRange(PARTICLES_TILE_TAG, tileStart, copySize >> 5);
     }
-    rt.spriteSheetTagToTileStart.set(PARTICLES_TILE_TAG, tileStart);
     rt.nextSpriteSheetByteOffset += copySize;
   }
-  if (pal && !rt.paletteTagToSlot.has(String(PARTICLES_PAL_TAG))) {
+  // 1:1 STRICT décomp src/sprite.c:1589 LoadSpritePalette : scan first-free
+  // sSpritePaletteTags array primary + DoLoadSpritePalette + sync auto Map.
+  if (pal && IndexOfSpritePaletteTag(PARTICLES_PAL_TAG) === 0xFF) {
     const u16 = pal instanceof Uint16Array
       ? pal
       : new Uint16Array(pal.buffer, pal.byteOffset, Math.floor(pal.byteLength / 2));
-    // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free
-    // dans [gReservedSpritePaletteCount, 16). Avant : `nextObjPalSlot++` raw
-    // saturait → particles écrasent palette player+PNJ après ~16 captures.
     const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-    const used = new Set<number>();
-    for (const s of rt.paletteTagToSlot.values()) used.add(s);
+    // Scan first-free via array primary (= sSpritePaletteTags), comme IndexOf
+    // SpritePaletteTag(TAG_NONE) (sprite.c:1637-1645).
+    const sp = (globalThis as Record<string, unknown>).__sprite as { sSpritePaletteTags?: Uint16Array } | undefined;
     let slot = -1;
-    for (let i = reserved; i < 16; i++) {
-      if (!used.has(i)) { slot = i; break; }
+    if (sp?.sSpritePaletteTags) {
+      for (let i = reserved; i < 16; i++) {
+        if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
+      }
     }
     if (slot < 0) {
       console.warn(`[pokeball-effects] OBJ palette saturated (16/16), cannot load PARTICLES_PAL_TAG`);
@@ -506,8 +516,8 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
         rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, u16[i]);
         rt.gPlttBufferFaded.set(256 + slot * 16 + i, u16[i]);
       }
-      rt.paletteTagToSlot.set(String(PARTICLES_PAL_TAG), slot);
-      if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
+      // Sync array primary + Map secondary via helper 1:1.
+      MarkObjPaletteAllocated(slot, PARTICLES_PAL_TAG);
     }
   }
 

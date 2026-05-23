@@ -20,7 +20,7 @@
  * auto-callbacks y accèdent.
  */
 import { OBJ_PLTT_ID } from './decomp-runtime';
-import { MarkObjTilesAllocated } from './sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from './sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
@@ -539,12 +539,16 @@ async function loadNamingScreenAssets(): Promise<void> {
       // 1:1 décomp src/sprite.c:1589-1608 LoadSpritePalette : scan first-free
       // dans [gReservedSpritePaletteCount, 16). Avant : `nextObjPalSlot++` raw
       // saturait → palettes player+PNJ écrasées après cycles PC/bag/naming.
+      // 1:1 STRICT scan first-free via sSpritePaletteTags array primary
+      // (= sprite.c:1637-1645 IndexOfSpritePaletteTag(TAG_NONE)). Avant : scan
+      // via Map secondary qui pouvait être désync avec l'array.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
-      const used = new Set<number>();
-      for (const s of rt.paletteTagToSlot.values()) used.add(s);
+      const sp = (globalThis as Record<string, unknown>).__sprite as { sSpritePaletteTags?: Uint16Array } | undefined;
       let slot = -1;
-      for (let i = reserved; i < 16; i++) {
-        if (!used.has(i)) { slot = i; break; }
+      if (sp?.sSpritePaletteTags) {
+        for (let i = reserved; i < 16; i++) {
+          if (sp.sSpritePaletteTags[i] === 0xFFFF) { slot = i; break; }
+        }
       }
       if (slot < 0) {
         console.warn(`[naming-screen] OBJ palette saturated (16/16), cannot load ${e.tag}`);
@@ -555,8 +559,10 @@ async function loadNamingScreenAssets(): Promise<void> {
         rt.gPlttBufferUnfaded.set(256 + slot * 16 + i, pal[i]);
         rt.gPlttBufferFaded.set(256 + slot * 16 + i, pal[i]);
       }
-      rt.paletteTagToSlot.set(e.tag, slot);
-      if (slot + 1 > rt.nextObjPalSlot) rt.nextObjPalSlot = slot + 1;
+      // Sync array primary (sSpritePaletteTags) + Map secondary via helper 1:1.
+      // Sans ça, le prochain LoadSpritePalette voit le slot LIBRE dans l'array
+      // → réalloue → écrase la palette naming screen.
+      MarkObjPaletteAllocated(slot, e.tag);
       reBlackenFaded();
     }
   } catch (e) {
@@ -610,7 +616,8 @@ async function loadNamingScreenAssets(): Promise<void> {
   ];
   try {
     for (const sheet of sheets) {
-      if (rt.spriteSheetTagToTileStart.has(sheet.tag)) continue;
+      // 1:1 STRICT check via array primary (sSpriteTileRangeTags).
+      if (GetSpriteTileStartByTag(sheet.tag) !== 0xFFFF) continue;
       const charData = await loadTileBin(sheet.url, 4);
       const tileStart = rt.nextSpriteSheetByteOffset >> 5;
       // Source slice : srcOffset..srcOffset+sizeBytes (clamped to file end).
@@ -622,7 +629,9 @@ async function loadNamingScreenAssets(): Promise<void> {
         // 1:1 STRICT bitmap allocator sync.
         MarkObjTilesAllocated(rt.nextSpriteSheetByteOffset, sheet.sizeBytes);
       }
-      rt.spriteSheetTagToTileStart.set(sheet.tag, tileStart);
+      // 1:1 STRICT AllocSpriteTileRange : sync sSpriteTileRangeTags array
+      // primary + Map secondary (sprite.c:1574-1579). Source unique de vérité.
+      AllocSpriteTileRange(sheet.tag, tileStart, sheet.sizeBytes >> 5);
       // Round up to sizeBytes (= 1:1 décomp behavior — always advance by
       // sheet.size even if our extracted file was shorter, so the next
       // sheet starts at the canonical offset).

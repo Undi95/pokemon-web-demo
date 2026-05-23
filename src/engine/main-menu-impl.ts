@@ -25,6 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from './decomp-globals';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
 import { GetWindowFrameTilesPal } from './gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,
@@ -723,8 +724,11 @@ function AddNewGameBirchObject(x: number, y: number, subpriority: number): numbe
   // (= obj_frame_tiles(sNewGameBirch_Gfx)), pas un tileTag. Notre engine veut
   // un tileTag via LoadCompressedSpriteSheet. On charge sous TAG_BIRCH_SHEET.
   LoadCompressedSpriteSheet({ data: 'sNewGameBirch_Gfx', size: TRAINER_PIC_SIZE_BYTES, tag: TAG_BIRCH_SHEET });
-  const tileBase = rt.spriteSheetTagToTileStart.get(TAG_BIRCH_SHEET) ?? 0;
-  const palSlot = rt.paletteTagToSlot.get(String(TAG_BIRCH_PALETTE)) ?? 0;
+  // 1:1 STRICT lecture array primary (sprite.c:1542 + :1637).
+  const tileBaseRaw = GetSpriteTileStartByTag(TAG_BIRCH_SHEET);
+  const palSlotRaw = IndexOfSpritePaletteTag(TAG_BIRCH_PALETTE);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
   // sOam_64x64 → shape=0 (square), size=3 (64x64), priority=0.
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileBase, paletteBank: palSlot, x, y,
@@ -744,8 +748,11 @@ function CreateTrainerSprite(gfxSymbol: string, palSymbol: string, tag: string, 
   if (!rt) return -1;
   LoadSpritePalette({ data: palSymbol, tag: palTag });
   LoadCompressedSpriteSheet({ data: gfxSymbol, size: TRAINER_PIC_SIZE_BYTES, tag });
-  const tileBase = rt.spriteSheetTagToTileStart.get(tag) ?? 0;
-  const palSlot = rt.paletteTagToSlot.get(String(palTag)) ?? 0;
+  // 1:1 STRICT lecture array primary (sprite.c:1542 + :1637).
+  const tileBaseRaw = GetSpriteTileStartByTag(tag);
+  const palSlotRaw = IndexOfSpritePaletteTag(palTag);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
   const { spriteId } = rt.CreateSpriteAtOam({
     tileId: tileBase, paletteBank: palSlot, x, y,
     shape: 0, size: 3, priority: 0,
@@ -778,8 +785,11 @@ function NewGameBirchSpeech_CreateLotadSprite(x: number, y: number): number {
   // = tileBase + (animFrame * 64). 1:1 décomp `gMonFrontPicTable[SPECIES_LOTAD]`
   // points at `INCBIN_U32("graphics/pokemon/lotad/anim_front.4bpp.lz")`.
   LoadCompressedSpriteSheet({ data: 'gMonFrontPic_Lotad', size: MON_PIC_2FRAME_SIZE_BYTES, tag: TAG_LOTAD_FRONT });
-  const tileBase = rt.spriteSheetTagToTileStart.get(TAG_LOTAD_FRONT) ?? 0;
-  const palSlot = rt.paletteTagToSlot.get(String(LOTAD_PAL_TAG)) ?? 0;
+  // 1:1 STRICT lecture array primary (sprite.c:1542 + :1637).
+  const tileBaseRaw = GetSpriteTileStartByTag(TAG_LOTAD_FRONT);
+  const palSlotRaw = IndexOfSpritePaletteTag(LOTAD_PAL_TAG);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
   // Audit V2 : affineMode=1 (NORMAL) at creation = 1:1 décomp sOamData_Affine.
   // CreateSpriteAtOam doesn't auto-alloc matrix on its own; we need to alloc
   // here to match decomp's InitSpriteAffineAnim path.

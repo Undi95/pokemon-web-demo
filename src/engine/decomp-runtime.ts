@@ -1853,8 +1853,17 @@ export class DecompRuntime {
     const firstAnim = firstAnimName ? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[firstAnimName] : null;
     const initialTileOffset = firstAnim?.frames[0]?.tileNum !== undefined ? _resolveTileNum(firstAnim.frames[0].tileNum) : 0;
 
-    const tileBase = this.spriteSheetTagToTileStart.get(tpl.tileTag) ?? 0;
-    const palSlot = this.paletteTagToSlot.get(tpl.paletteTag) ?? 0;
+    // 1:1 STRICT décomp : lecture array primary via __sprite global
+    // (GetSpriteTileStartByTag = sprite.c:1542 ; IndexOfSpritePaletteTag =
+    // sprite.c:1637). Évite la désync Map secondary observée bug user.
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      GetSpriteTileStartByTag?: (tag: string | number) => number;
+      IndexOfSpritePaletteTag?: (tag: string | number) => number;
+    } | undefined;
+    const tileBaseRaw = sp?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF;
+    const palSlotRaw = sp?.IndexOfSpritePaletteTag?.(tpl.paletteTag) ?? 0xFF;
+    const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+    const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
 
     const [w, h] = oam._sizeWH ?? [8, 8];  // default 8x8 si extracteur incomplet
     const { shape, size } = oamShapeSizeFromWH(w, h);
