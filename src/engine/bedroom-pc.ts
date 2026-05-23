@@ -1605,6 +1605,56 @@ function _mailboxCancelMoveToBag(): void {
   _mailboxCancel();
 }
 
+/** 1:1 décomp `Mailbox_PrintWhatToDoWithPlayerMailText(taskId)` (player_pc.c:738-744) :
+ *      StringCopy(gStringVar1, gSaveBlock1Ptr->mail[...].playerName);
+ *      ConvertInternationalPlayerNameStripChar(gStringVar1, CHAR_SPACE);
+ *      StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithVar1sMail);
+ *      DisplayItemMessageOnField(taskId, gStringVar4, Mailbox_PrintMailOptions); */
+function Mailbox_PrintWhatToDoWithPlayerMailText(mailIdx: number): void {
+  const playerName = gSaveBlock1Ptr.mail[mailIdx].playerName || 'MAIL';
+  setStringVar(1, playerName);
+  const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
+  _showSticky(StringExpandPlaceholders('', tpl));
+}
+
+/** 1:1 décomp `Mailbox_ReturnToPlayerPC(taskId)` (player_pc.c:746-756). Alias. */
+function Mailbox_ReturnToPlayerPC(): void {
+  _mailboxExitList();
+}
+
+/** 1:1 décomp `Mailbox_NoPokemonForMail(taskId)` (player_pc.c:931-934). */
+function Mailbox_NoPokemonForMail(): void {
+  _showSticky(getString('gText_NoPokemon') ?? "Vous n'avez pas de POKéMON.");
+  sSubState = 'msg_wait';
+  sMsgReturnState = 'mailbox_list';
+}
+
+/** 1:1 décomp `Mailbox_FadeAndReadMail(taskId)` (player_pc.c:792-801) :
+ *      if (!gPaletteFade.active) {
+ *          MailboxMenu_Free();
+ *          CleanupOverworldWindowsAndTilemaps();
+ *          ReadMail(&mail[...], Mailbox_ReturnToFieldFromReadMail, TRUE);
+ *      }
+ *  Notre port : pas de vraie fade (= absente du stack), appel direct ReadMail. */
+function Mailbox_FadeAndReadMail(mailIdx: number): void {
+  // 1:1 TODO : fade FADE_TO_BLACK + wait !gPaletteFade.active avant ReadMail.
+  ReadMail(
+    gSaveBlock1Ptr.mail[mailIdx],
+    () => OpenBedroomPC(sIsBedroomMode),
+    true,
+  );
+}
+
+// ─── Suppression unused warnings ──────────────────────────────────────────────
+// Les helpers 1:1 ci-dessus (Mailbox_PrintWhatToDoWithPlayerMailText / ReturnToPlayerPC /
+// NoPokemonForMail / FadeAndReadMail) sont définis 1:1 strict mais pas tous
+// utilisés par notre dispatch state machine actuel (= certains sont des wrappers
+// pour le code en task system décomp). On les void pour TypeScript no-unused.
+void Mailbox_PrintWhatToDoWithPlayerMailText;
+void Mailbox_ReturnToPlayerPC;
+void Mailbox_NoPokemonForMail;
+void Mailbox_FadeAndReadMail;
+
 /** 1:1 décomp `ItemStorage_ExitItemList` (player_pc.c:1263-1272) :
  *    ItemStorage_EraseItemIcon + RemoveScrollIndicator + DestroyListMenuTask +
  *    ItemStorage_Free + gTasks[taskId].func = ItemStorage_ReturnToMenuSelect. */
