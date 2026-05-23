@@ -29,6 +29,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { OBJ_PLTT_ID } from './decomp-globals';
@@ -62,19 +63,18 @@ const EMOTE_PAL_BIN   = '/decomp/em/field_effects/emotion_exclamation.gbapal';
  *  Avant : 976..987 chevauchait 976+977 avec dust → tile data écrasé par
  *  dust frames → sprite emote affichait des bytes wrong (user-flag 2026-05-21
  *  "le sprite emote bug + n'est pas au bon endroit"). */
-const EMOTE_OBJ_TILE_START = 978;
+/** 1:1 STRICT décomp `sSpriteSheets_TrainerIcons[]` (trainer_see.c) : 3 sheets
+ *  séparées chacune avec son tag FLDEFF_GFXTAG_* (= EXCLAMATION/QUESTION/HEART).
+ *  Bitmap allocator les alloue séquentiellement → tileStarts consécutifs. */
+const TAG_EMOTE_GFX_EXCLAMATION = 'FIELD_EFFECT_EMOTE_GFX_EXCLAMATION';
+const TAG_EMOTE_GFX_QUESTION    = 'FIELD_EFFECT_EMOTE_GFX_QUESTION';
+const TAG_EMOTE_GFX_HEART       = 'FIELD_EFFECT_EMOTE_GFX_HEART';
+const TAG_EMOTE_PAL             = 'FIELD_EFFECT_EMOTE_PAL';
+let _emoteTileStartExclamation = -1;
+let _emoteTileStartQuestion    = -1;
+let _emoteTileStartHeart       = -1;
+let _emotePalSlot              = -1;
 const TILES_PER_EMOTE = 4;  // 16x16 = 2x2 tiles 4bpp
-
-/** Frame index dans l'OBJ tile space (= tile offset relative to EMOTE_OBJ_TILE_START). */
-const ANIM_FRAME_EXCLAMATION = 0;  // tiles 976..979
-const ANIM_FRAME_QUESTION    = 1;  // tiles 980..983
-const ANIM_FRAME_HEART       = 2;  // tiles 984..987
-
-/** Palette OBJ bank dédiée aux emotes. Slot 13 = libre dans nos OW maps
- *  (= banks 0-12 utilisés par NPCs + player). 1:1 décomp `gFieldEffectObjectPalette0`
- *  = `general_0.pal`, qui contient les couleurs jaune (!), bleu (?), rouge (♥)
- *  + plage standard pour effects. */
-const EMOTE_PALETTE_BANK = 13;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -117,27 +117,37 @@ export async function LoadEmoteAssets(rt: DecompRuntime): Promise<void> {
       loadTileBin(HEART_PNG, 4),
       loadGbaPal(EMOTE_PAL_BIN),
     ]);
-    const objVram = rt.gba.objVram;
-    // Layout : 4 tiles consecutifs par emote (= 2x2 tiles 4bpp = 128 bytes).
-    objVram.set(excl, (EMOTE_OBJ_TILE_START + ANIM_FRAME_EXCLAMATION * TILES_PER_EMOTE) * 32);
-    objVram.set(qst,  (EMOTE_OBJ_TILE_START + ANIM_FRAME_QUESTION    * TILES_PER_EMOTE) * 32);
-    objVram.set(hrt,  (EMOTE_OBJ_TILE_START + ANIM_FRAME_HEART       * TILES_PER_EMOTE) * 32);
-    // Palette : general_0.pal → OBJ palette bank EMOTE_PALETTE_BANK.
-    rt.LoadPaletteObj(pal, OBJ_PLTT_ID(EMOTE_PALETTE_BANK));
+    // 1:1 STRICT décomp `LoadSpriteSheets(sSpriteSheets_TrainerIcons)` :
+    // 3 sheets séparées chargées via bitmap allocator.
+    const TILE_BYTES = 32;
+    const EMOTE_SHEET_SIZE = TILES_PER_EMOTE * TILE_BYTES;  // 128 bytes
+    _emoteTileStartExclamation = LoadSpriteSheet({
+      data: excl.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_EXCLAMATION,
+    });
+    _emoteTileStartQuestion = LoadSpriteSheet({
+      data: qst.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_QUESTION,
+    });
+    _emoteTileStartHeart = LoadSpriteSheet({
+      data: hrt.subarray(0, EMOTE_SHEET_SIZE), size: EMOTE_SHEET_SIZE, tag: TAG_EMOTE_GFX_HEART,
+    });
+    // 1:1 STRICT décomp `LoadSpritePalette(sSpritePalette_TrainerIcons)`.
+    _emotePalSlot = LoadSpritePalette({ data: pal, tag: TAG_EMOTE_PAL });
     _emoteAssetsLoaded = true;
-    console.log(`[field-effect-emotes] assets loaded (tiles ${EMOTE_OBJ_TILE_START}..${EMOTE_OBJ_TILE_START + 12}, palette bank ${EMOTE_PALETTE_BANK})`);
+    console.log(`[field-effect-emotes] tiles excl=${_emoteTileStartExclamation} qst=${_emoteTileStartQuestion} hrt=${_emoteTileStartHeart} palSlot=${_emotePalSlot}`);
   })();
   return _emoteAssetsLoading;
 }
 
 // ─── Public API 1:1 décomp ──────────────────────────────────────────────────
 
-/** Map EmoteType → tile offset dans OBJ VRAM. */
-const EMOTE_TILE_OFFSET: Record<EmoteType, number> = {
-  exclamation: ANIM_FRAME_EXCLAMATION * TILES_PER_EMOTE,
-  question:    ANIM_FRAME_QUESTION    * TILES_PER_EMOTE,
-  heart:       ANIM_FRAME_HEART       * TILES_PER_EMOTE,
-};
+/** Map EmoteType → tileStart dynamiquement alloué via LoadSpriteSheet. */
+function _emoteTileStart(type: EmoteType): number {
+  switch (type) {
+    case 'exclamation': return _emoteTileStartExclamation;
+    case 'question':    return _emoteTileStartQuestion;
+    case 'heart':       return _emoteTileStartHeart;
+  }
+}
 
 /** 1:1 décomp `FldEff_ExclamationMarkIcon` / `FldEff_QuestionMarkIcon` /
  *  `FldEff_HeartIcon` (trainer_see.c:696-729). Spawn un sprite OAM 16x16
@@ -168,10 +178,10 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
   const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
   const spriteX = npcSprite?.x ?? 0;
   const spriteY = (npcSprite?.y ?? 0) - 16;
-  const tileId = EMOTE_OBJ_TILE_START + EMOTE_TILE_OFFSET[type];
+  const tileId = _emoteTileStart(type);
   const result = rt.CreateSpriteAtOam({
     tileId,
-    paletteBank: EMOTE_PALETTE_BANK,
+    paletteBank: _emotePalSlot,
     x: spriteX,
     y: spriteY,
     shape: 0,    // square

@@ -29,6 +29,7 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
@@ -38,12 +39,15 @@ const GENERAL_1_PAL  = '/decomp/em/field_effects/general_1.pal';
 
 // ─── OBJ allocation (= 20 tiles avant warp arrow 992) ──────────────────────
 
-const TALL_GRASS_OBJ_TILE_START = 952;
+/** 1:1 STRICT décomp `LoadSpriteSheet(sFieldEffectObjectGfxInfo_TallGrass)`
+ *  + `LoadSpritePalette(sFieldEffectObjectPaletteInfo_General1)`. Tag system
+ *  bitmap-based honore reserved zone. */
+const TAG_TALL_GRASS_GFX = 'FIELD_EFFECT_TALL_GRASS_GFX';
+const TAG_TALL_GRASS_PAL = 'FIELD_EFFECT_TALL_GRASS_PAL';
+let _tallGrassTileStart = -1;
+let _tallGrassPalSlot = -1;
 const TILES_PER_FRAME = 4;  // 16×16 = 2x2 tiles 4bpp
 const NUM_FRAMES = 5;
-/** 1:1 décomp `FLDEFF_PAL_TAG_GENERAL_1` → palette bank dédié. Bank 9 : low
- *  conflict probability avec NPCs (qui partent de bank 1, ~5-10 utilisés). */
-const GRASS_PALETTE_BANK = 9;
 
 // ─── Anim spec 1:1 décomp ──────────────────────────────────────────────────
 
@@ -129,7 +133,10 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(TALL_GRASS_PNG, 4);
     const reordered = pngTo1dObjLayoutGrass(png.charData);
-    rt.gba.objVram.set(reordered, TALL_GRASS_OBJ_TILE_START * 32);
+    // 1:1 STRICT décomp LoadSpriteSheet via bitmap allocator.
+    _tallGrassTileStart = LoadSpriteSheet({
+      data: reordered, size: reordered.length, tag: TAG_TALL_GRASS_GFX,
+    });
 
     // Load palette : prefer general_1.pal (= 1:1 décomp). Fallback PNG palette.
     let palette: Uint16Array;
@@ -138,11 +145,8 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
     } catch {
       palette = png.palette;
     }
-    const slot = 256 + GRASS_PALETTE_BANK * 16;
-    for (let i = 0; i < 16; i++) {
-      rt.gPlttBufferUnfaded.set(slot + i, palette[i] ?? 0);
-      rt.gPlttBufferFaded.set(slot + i, palette[i] ?? 0);
-    }
+    // 1:1 STRICT décomp LoadSpritePalette : scan first-free.
+    _tallGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_TALL_GRASS_PAL });
     // 1:1 décomp : NE PAS flushTo inline (= cf. player-avatar.ts:InitPlayerAvatar
     // pour rationale détaillée). Auto-flushTo VBlank (= TransferPlttBuffer) gere
     // ça en respectant `bufferTransferDisabled` pour gater le palette transfer
@@ -191,8 +195,8 @@ export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: numb
   const worldY = (npcGBackupRow - cam.y) * 16 + 8;  // = tile mid (= corps player)
 
   const result = rt.CreateSpriteAtOam({
-    tileId: TALL_GRASS_OBJ_TILE_START + 1 * TILES_PER_FRAME,  // start at frame 1
-    paletteBank: GRASS_PALETTE_BANK,
+    tileId: _tallGrassTileStart + 1 * TILES_PER_FRAME,  // start at frame 1
+    paletteBank: _tallGrassPalSlot,
     x: 0, y: 0,
     shape: 0, size: 1,  // 16x16 (= shape SQUARE, size SMALL)
     priority: 2,         // = behind player (player priority 2 too, but tall grass derrière BG2)
@@ -229,7 +233,7 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
     }
     // Update sprite tile + position.
     const oam = rt.gba.oam[s.oamIndex];
-    oam.tileId = TALL_GRASS_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
+    oam.tileId = _tallGrassTileStart + frameIdx * TILES_PER_FRAME;
     sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
     sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
     s.ticks++;
