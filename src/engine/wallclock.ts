@@ -56,6 +56,7 @@ import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './
 import { getString } from './gba-strings';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { FlagSet } from './script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
@@ -96,12 +97,15 @@ const BG_LABEL_MAP = 8;        // BG2 map base
 const BG_CLOCK_CHAR = 0;       // BG3 char base (= clock face tiles from clock.png)
 const BG_CLOCK_MAP = 7;        // BG3 map base (= clock_start.bin or clock_view.bin)
 
-/** OBJ VRAM offset for clock hand tiles. 1:1 décomp `LoadCompressedSpriteSheet`
- *  uses tileTag GFXTAG_WALL_CLOCK_HAND=0x1000 — notre runtime alloue
- *  séquentiellement, on use offset 0 (= début OBJ VRAM). */
-const OBJ_HAND_TILE_OFFSET = 0;
-/** OBJ palette slots. */
-const OBJ_HAND_PAL_SLOT = 0;   // sprite palette 0 = wall clock male/female
+/** 1:1 STRICT décomp `LoadCompressedSpriteSheet(GFXTAG_WALL_CLOCK_HAND=0x1000)` +
+ *  `LoadSpritePalette(PALTAG_WALL_CLOCK_HAND)`. Tag system honore
+ *  gReservedSpriteTileCount → alloué STRICTEMENT après player tiles. */
+const TAG_WALL_CLOCK_HAND_GFX = 'WALL_CLOCK_HAND_GFX';
+const TAG_WALL_CLOCK_HAND_PAL = 'WALL_CLOCK_HAND_PAL';
+/** Module-level vars : tileStart + palSlot dynamiquement alloués par LoadSpriteSheet/
+ *  LoadSpritePalette. Avant : offset 0 hardcoded → écrasait player tiles. */
+let _wallClockHandTileStart = -1;
+let _wallClockHandPalSlot = -1;
 
 /** Hand sprite frame layout (= hand.png 64×144 4bpp) :
  *  - Tiles 0..63   = minute hand (64×64 = 8×8 tiles)
@@ -457,10 +461,15 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
   bg3c.hofs = 0; bg3c.vofs = 0;
   rt.gba.bg(1).config.visible = false;
 
-  // Load OBJ tiles (= hand.png) à OBJ VRAM offset 0.
-  rt.gba.objVram.set(assets.handTiles, OBJ_HAND_TILE_OFFSET);
-  // Load OBJ palette (= same male/female that we used pour BG).
-  rt.LoadPaletteObj(bgPal, OBJ_PLTT_ID(OBJ_HAND_PAL_SLOT));
+  // 1:1 STRICT décomp `LoadCompressedSpriteSheet(GFXTAG_WALL_CLOCK_HAND)` +
+  // `LoadSpritePalette(PALTAG_WALL_CLOCK_HAND)`. Tag system honore
+  // gReservedSpriteTileCount → alloué STRICTEMENT après player tiles.
+  _wallClockHandTileStart = LoadSpriteSheet({
+    data: assets.handTiles,
+    size: assets.handTiles.length,
+    tag: TAG_WALL_CLOCK_HAND_GFX,
+  });
+  _wallClockHandPalSlot = LoadSpritePalette({ data: bgPal, tag: TAG_WALL_CLOCK_HAND_PAL });
 
   // Init windows (= sWindowTemplates wallclock-data.ts).
   const wins: WindowTemplate[] = [
@@ -513,8 +522,8 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
   // Minute hand (64×64 = shape 0 size 3).
   const minuteSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 3,
-    tileId: OBJ_HAND_TILE_OFFSET / 32 + TILE_MINUTE_HAND_START,
-    paletteBank: OBJ_HAND_PAL_SLOT, priority: 1,
+    tileId: _wallClockHandTileStart + TILE_MINUTE_HAND_START,
+    paletteBank: _wallClockHandPalSlot, priority: 1,
     affineMode: 1,  // ST_OAM_AFFINE_NORMAL
   });
   _state.spriteIds.minute = minuteSpr.spriteId;
@@ -527,8 +536,8 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
   // Hour hand (64×64).
   const hourSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 3,
-    tileId: OBJ_HAND_TILE_OFFSET / 32 + TILE_HOUR_HAND_START,
-    paletteBank: OBJ_HAND_PAL_SLOT, priority: 0,
+    tileId: _wallClockHandTileStart + TILE_HOUR_HAND_START,
+    paletteBank: _wallClockHandPalSlot, priority: 0,
     affineMode: 1,
   });
   _state.spriteIds.hour = hourSpr.spriteId;
@@ -541,8 +550,8 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
   // PM indicator (16×16 = shape 0 size 1).
   const pmSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 1,
-    tileId: OBJ_HAND_TILE_OFFSET / 32 + TILE_PM_INDICATOR_START,
-    paletteBank: OBJ_HAND_PAL_SLOT, priority: 2,
+    tileId: _wallClockHandTileStart + TILE_PM_INDICATOR_START,
+    paletteBank: _wallClockHandPalSlot, priority: 2,
     affineMode: 0,
   });
   _state.spriteIds.pm = pmSpr.spriteId;
@@ -551,8 +560,8 @@ function _spawnHandSprites(rt: DecompRuntime, amInitAngle: number, pmInitAngle: 
   // AM indicator (16×16).
   const amSpr = rt.CreateSpriteAtOam({
     x: 120, y: 80, shape: 0, size: 1,
-    tileId: OBJ_HAND_TILE_OFFSET / 32 + TILE_AM_INDICATOR_START,
-    paletteBank: OBJ_HAND_PAL_SLOT, priority: 2,
+    tileId: _wallClockHandTileStart + TILE_AM_INDICATOR_START,
+    paletteBank: _wallClockHandPalSlot, priority: 2,
     affineMode: 0,
   });
   _state.spriteIds.am = amSpr.spriteId;

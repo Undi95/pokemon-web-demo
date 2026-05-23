@@ -42,6 +42,7 @@ import { FlagGet } from './script-vars';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from './decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -70,12 +71,19 @@ const CARD_FRONT_MAP_BASE = 27;     // BG0 = front.bin overlay (= card front)
 const CARD_WIN_MAP_BASE = 29;       // BG1 = text windows
 const CARD_BG_MAP_BASE = 30;        // BG2 = bg.bin background
 
-/** OAM palette slots. */
-const TRAINER_PIC_OBJ_PAL = 0;      // OBJ palette 0 = trainer pic colors
-const BADGES_OBJ_PAL = 1;           // OBJ palette 1 = badges colors
-/** OBJ VRAM offsets (= 4bpp byte offsets). */
-const TRAINER_PIC_OBJ_OFFSET = 0;           // start of OBJ VRAM
-const BADGES_OBJ_OFFSET = 64 * 32;          // after trainer pic (64 tiles × 32 bytes 4bpp)
+/** 1:1 STRICT décomp `LoadCompressedSpriteSheet` + `LoadSpritePalette`. Tag
+ *  system honore gReservedSpriteTileCount → alloué STRICTEMENT après player. */
+const TAG_TRAINER_PIC_GFX = 'TRAINER_PIC_GFX';
+const TAG_TRAINER_PIC_PAL = 'TRAINER_PIC_PAL';
+const TAG_BADGES_GFX = 'TRAINER_CARD_BADGES_GFX';
+const TAG_BADGES_PAL = 'TRAINER_CARD_BADGES_PAL';
+/** Module-level vars : tileStart + palSlot dynamiquement alloués par
+ *  LoadSpriteSheet/LoadSpritePalette. Avant : offsets hardcoded 0 + 64*32
+ *  → écrasait player tiles (= within [0, 4608) reserved zone). */
+let _trainerPicTileStart = -1;
+let _trainerPicPalSlot = -1;
+let _badgesTileStart = -1;
+let _badgesPalSlot = -1;
 
 /** 1:1 décomp `sTrainerCardTextColors` (trainer_card.c:283) :
  *    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}
@@ -282,13 +290,18 @@ function _loadCardGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     if (isFemale) {
       LoadPalette(assets.femaleBgPalette, 1 * 16, 32);
     }
-    // Load trainer pic raw 4bpp → OBJ VRAM offset 0.
-    r.gba.objVram.set(assets.trainerPicRaw4bpp, TRAINER_PIC_OBJ_OFFSET);
-    // Load trainer pic palette → OBJ palette 0.
-    r.LoadPaletteObj(assets.trainerPicPal, OBJ_PLTT_ID(TRAINER_PIC_OBJ_PAL));
-    // Load badges raw 4bpp → OBJ VRAM offset after trainer pic.
-    r.gba.objVram.set(assets.badgesGfx, BADGES_OBJ_OFFSET);
-    r.LoadPaletteObj(assets.badgesPal, OBJ_PLTT_ID(BADGES_OBJ_PAL));
+    // 1:1 STRICT décomp `LoadCompressedSpriteSheet` + `LoadSpritePalette` via
+    // tag system. Honore gReservedSpriteTileCount + first-free palette.
+    _trainerPicTileStart = LoadSpriteSheet({
+      data: assets.trainerPicRaw4bpp,
+      size: assets.trainerPicRaw4bpp.length,
+      tag: TAG_TRAINER_PIC_GFX,
+    });
+    _trainerPicPalSlot = LoadSpritePalette({ data: assets.trainerPicPal, tag: TAG_TRAINER_PIC_PAL });
+    _badgesTileStart = LoadSpriteSheet({
+      data: assets.badgesGfx, size: assets.badgesGfx.length, tag: TAG_BADGES_GFX,
+    });
+    _badgesPalSlot = LoadSpritePalette({ data: assets.badgesPal, tag: TAG_BADGES_PAL });
     _graphicsReady = true;
     _graphicsLoading = false;
   }).catch((e) => {
@@ -526,8 +539,8 @@ function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   const trainerSpr = rt.CreateSpriteAtOam({
     x: 185, y: 72,
     shape: 0, size: 3,       // 64×64
-    tileId: TRAINER_PIC_OBJ_OFFSET / 32,
-    paletteBank: TRAINER_PIC_OBJ_PAL,
+    tileId: _trainerPicTileStart,
+    paletteBank: _trainerPicPalSlot,
     priority: 0,
   });
   _trainerPicOamId = trainerSpr.spriteId;
@@ -542,8 +555,8 @@ function _spawnBadgesOam(assets: TrainerCardAssets): void {
   _badgeOamIds = [];
   // Badge tiles : 8 badges × 4 tiles each (32×32 = 4 tiles 8×8 in 4bpp).
   // Layout from badges.png : 8 badges in a row, 32×32 each.
-  // OBJ VRAM offset BADGES_OBJ_OFFSET, tile = offset / 32 bytes per tile.
-  const baseTile = BADGES_OBJ_OFFSET / 32;
+  // Tile base dynamiquement alloué par LoadSpriteSheet (= 1:1 STRICT décomp).
+  const baseTile = _badgesTileStart;
   const TILES_PER_BADGE = 16;  // 32×32 = 16 tiles 8×8 in 4bpp (= 4 wide × 4 tall)
   // Position : 8 slots horizontaux y=132, x espacé 32px from x=8.
   for (let i = 0; i < 8; i++) {
@@ -552,7 +565,7 @@ function _spawnBadgesOam(assets: TrainerCardAssets): void {
       x: 24 + i * 28, y: 132,
       shape: 0, size: 2,         // 32×32
       tileId: baseTile + i * TILES_PER_BADGE,
-      paletteBank: BADGES_OBJ_PAL,
+      paletteBank: _badgesPalSlot,
       priority: 0,
     });
     _badgeOamIds.push(badgeSpr.spriteId);
