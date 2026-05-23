@@ -34,6 +34,7 @@ import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { FEMALE } from './decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { setStringVar } from './string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
@@ -345,26 +346,31 @@ let _loadedIconKey: string | null = null;
 
 // ─── Sprite sac OAM (= 1:1 décomp item_menu_icons.c sBagSpriteTemplate) ─────
 
-/** VRAM OBJ byte offset pour bag_male.4bpp.bin (= 12288 bytes = 0x3000).
- *  Offset 0 = libre car overworld OAM cleared via _syncSubspriteOam hook. */
-const BAG_SPRITE_OBJ_OFFSET = 0;
-const BAG_SPRITE_OBJ_PAL = 0;
-/** 1:1 décomp item_menu_icons.c sBagSpriteAnimTable[bagPocketId+1] tile offsets :
+/** 1:1 STRICT décomp item_menu_icons.c sBagSpriteAnimTable[bagPocketId+1] :
+ *  tile offsets relatifs au tileStart du bag sprite (= dans gBagMaleTiles).
  *    POCKET_ITEMS=64, POKE_BALLS=192, TM_HM=256, BERRIES=320, KEY_ITEMS=128. */
 const BAG_FRAME_TILE_OFFSET: ReadonlyArray<number> = [64, 192, 256, 320, 128];
 
-/** VRAM OBJ byte offset pour scroll_indicator.4bpp = 256 bytes = 8 tiles.
- *  Placé après le bag sprite (= offset 0x3000). */
-const SCROLL_ARROW_OBJ_OFFSET = 0x3000;
-/** Palette OBJ slot pour les chevrons (= red.pal du décomp interface).
- *  Slot 1 libre (= bag.pal a slot 0). */
-const SCROLL_ARROW_OBJ_PAL = 1;
+/** 1:1 STRICT décomp tags GFX/PAL (= item_menu_icons.c TAG_BAG_GFX/SCROLL_INDICATOR
+ *  /ROTATING_BALL_GFX). Notre runtime n'utilise pas les IDs numériques décomp
+ *  (= LoadSpriteSheet/LoadSpritePalette keyent par string tag), donc strings. */
+const TAG_BAG_SPRITE_GFX = 'BAG_SPRITE_GFX';
+const TAG_BAG_SPRITE_PAL = 'BAG_SPRITE_PAL';
+const TAG_SCROLL_ARROW_GFX = 'SCROLL_ARROW_GFX';
+const TAG_SCROLL_ARROW_PAL = 'SCROLL_ARROW_PAL';
+const TAG_ROTATING_BALL_GFX_LOCAL = 'ROTATING_BALL_GFX_LOCAL';
+const TAG_ROTATING_BALL_PAL = 'ROTATING_BALL_PAL';
 
-/** VRAM OBJ byte offset pour rotating_ball.4bpp = 128 bytes = 4 tiles.
- *  Placé après scroll_indicator (= offset 0x3100). */
-const ROTATING_BALL_OBJ_OFFSET = 0x3100;
-/** Palette OBJ slot pour le rotating ball (= rotating_ball.pal). */
-const ROTATING_BALL_OBJ_PAL = 2;
+/** 1:1 STRICT : tileStart + palSlot dynamiquement alloués par LoadSpriteSheet/
+ *  LoadSpritePalette. Avant : raw `objVram.set` à offsets hardcoded 0/0x3000/
+ *  0x3100 → écrasait player tiles à offset 0 (bug user 2026-05-23). Maintenant :
+ *  alloc respecte gReservedSpriteTileCount + paletteTagToSlot. */
+let _bagSpriteTileStart = -1;
+let _bagSpritePalSlot = -1;
+let _scrollArrowTileStart = -1;
+let _scrollArrowPalSlot = -1;
+let _rotatingBallTileStart_local = -1;
+let _rotatingBallPalSlot_local = -1;
 
 let _bagSpriteOamId = -1;
 /** OAM index du bag sprite (= différent du spriteId). Used by _syncSubspriteOam
@@ -991,27 +997,34 @@ function _fillBgTilemapRect(
  *    SetBagVisualPocketId(bagPocketId, FALSE);
  *    → StartSpriteAnim(sprite, bagPocketId + 1)
  *
- *  Sprite 64×64 OAM, palette = bag.pal (= 16 colors slot OBJ_PLTT[BAG_SPRITE_OBJ_PAL]).
+ *  Sprite 64×64 OAM, palette = bag.pal (16 colors, slot dynamique LoadSpritePalette).
  *  Le sprite affiche le sac selon le pocket courant (= différentes "frames"
  *  d'animation = différents tile offsets). */
 function _spawnBagSpriteOam(assets: BagAssets): void {
   const rt = getRuntime();
   if (!rt) return;
   // Idempotent : ne load les assets dans VRAM OBJ qu'une fois.
+  // 1:1 STRICT décomp item_menu_icons.c : LoadSpriteSheet(sBagSpriteSheet) +
+  // LoadSpritePalette(sBagPaletteTable). Tag system honore gReservedSpriteTile
+  // Count + alloue first-free → JAMAIS d'écrasement player tiles/palette.
   if (!_bagAssetsLoadedToObj) {
-    rt.gba.objVram.set(assets.bagSpriteRaw4bpp, BAG_SPRITE_OBJ_OFFSET);
-    rt.LoadPaletteObj(assets.bagSpritePal, OBJ_PLTT_ID(BAG_SPRITE_OBJ_PAL));
+    _bagSpriteTileStart = LoadSpriteSheet({
+      data: assets.bagSpriteRaw4bpp,
+      size: assets.bagSpriteRaw4bpp.length,
+      tag: TAG_BAG_SPRITE_GFX,
+    });
+    _bagSpritePalSlot = LoadSpritePalette({ data: assets.bagSpritePal, tag: TAG_BAG_SPRITE_PAL });
     _bagAssetsLoadedToObj = true;
   }
-  // tileNum dans OAM = byteOffset / 32 + frame_offset selon pocket.
+  // tileNum dans OAM = tileStart alloué + frame_offset selon pocket.
   // NB: dans le décomp, AnimCmds référencent des tile offsets relatifs au
   // sBagSpriteTemplate.tileTag — les frames pour chaque pocket sont à
   // offset 64, 128, 192, 256, 320 dans gBagMaleTiles.
-  const baseTileNum = BAG_SPRITE_OBJ_OFFSET / 32;
+  const baseTileNum = _bagSpriteTileStart;
   const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
   const sprite = rt.CreateSpriteAtOam({
     tileId: baseTileNum + frameOff,
-    paletteBank: BAG_SPRITE_OBJ_PAL,
+    paletteBank: _bagSpritePalSlot,
     // 1:1 décomp CreateSprite(template, 68, 66, 0) — CalcCenterToCornerVec
     // applique automatiquement -32/-32 pour shape=square 64×64. Notre
     // syncSpritesToOam fait oam.x = sprite.x + centerToCornerVecX.
@@ -1072,16 +1085,21 @@ function _spawnPocketArrows(assets: BagAssets): void {
   const rt = getRuntime();
   if (!rt) return;
   // Idempotent : load gfx + palette dans VRAM OBJ une fois.
+  // 1:1 STRICT décomp list_menu.c LoadCompressedSpriteSheet/LoadSpritePalette.
   if (!_scrollArrowAssetsLoaded) {
-    rt.gba.objVram.set(assets.scrollArrowGfx, SCROLL_ARROW_OBJ_OFFSET);
-    rt.LoadPaletteObj(assets.scrollArrowPal, OBJ_PLTT_ID(SCROLL_ARROW_OBJ_PAL));
+    _scrollArrowTileStart = LoadSpriteSheet({
+      data: assets.scrollArrowGfx,
+      size: assets.scrollArrowGfx.length,
+      tag: TAG_SCROLL_ARROW_GFX,
+    });
+    _scrollArrowPalSlot = LoadSpritePalette({ data: assets.scrollArrowPal, tag: TAG_SCROLL_ARROW_PAL });
     _scrollArrowAssetsLoaded = true;
   }
-  const baseTile = SCROLL_ARROW_OBJ_OFFSET / 32;
+  const baseTile = _scrollArrowTileStart;
   // 1:1 décomp sScrollIndicatorTemplates[SCROLL_ARROW_LEFT] :
   //   animNum=0 (frame 0, no flip), bounceDir=0 (horizontal), freq=8.
   const left = rt.CreateSpriteAtOam({
-    tileId: baseTile, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    tileId: baseTile, paletteBank: _scrollArrowPalSlot,
     x: 28, y: 16,
     shape: 0, size: 1,    // shape 0=square, size 1=16×16
     priority: 0,
@@ -1090,7 +1108,7 @@ function _spawnPocketArrows(assets: BagAssets): void {
   _arrowLeftOamIndex = left.oamIndex;
   // 1:1 décomp animNum=1 = ANIMCMD_FRAME(0, 30, 1, 0) → tile 0 + hflip.
   const right = rt.CreateSpriteAtOam({
-    tileId: baseTile, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    tileId: baseTile, paletteBank: _scrollArrowPalSlot,
     x: 100, y: 16,
     shape: 0, size: 1,
     priority: 0,
@@ -1161,11 +1179,11 @@ function _spawnListScrollArrows(): void {
   // Idempotent — gfx + palette déjà loadés par _spawnPocketArrows (= même
   // scroll_indicator.png + red.pal).
   if (!_scrollArrowAssetsLoaded) return;
-  const baseTile = SCROLL_ARROW_OBJ_OFFSET / 32;
+  const baseTile = _scrollArrowTileStart;
   // 1:1 décomp animNum=2 = ANIMCMD_FRAME(4, 30) → tile 4 (= frame UP/DOWN base).
   // Pour UP : no flip. Pour DOWN : vflip (= animNum=3 ANIMCMD_FRAME(4, 30, 0, 1)).
   const up = rt.CreateSpriteAtOam({
-    tileId: baseTile + 4, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    tileId: baseTile + 4, paletteBank: _scrollArrowPalSlot,
     x: 172, y: 12,
     shape: 0, size: 1,
     priority: 0,
@@ -1173,7 +1191,7 @@ function _spawnListScrollArrows(): void {
   _arrowUpOamId = up.spriteId;
   _arrowUpOamIndex = up.oamIndex;
   const down = rt.CreateSpriteAtOam({
-    tileId: baseTile + 4, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    tileId: baseTile + 4, paletteBank: _scrollArrowPalSlot,
     x: 172, y: 148,
     shape: 0, size: 1,
     priority: 0,
@@ -1245,8 +1263,16 @@ function _spawnRotatingBallSprite(dir: -1 | 1): void {
   // 1:1 décomp LoadSpriteSheet(sRotatingBallTable) + LoadSpritePalette :
   //   tag-based VRAM upload une fois, idempotent.
   if (!_rotatingBallAssetsLoaded) {
-    rt.gba.objVram.set(_assets.rotatingBall.charData, ROTATING_BALL_OBJ_OFFSET);
-    rt.LoadPaletteObj(_assets.rotatingBall.palette, OBJ_PLTT_ID(ROTATING_BALL_OBJ_PAL));
+    // 1:1 STRICT décomp LoadSpriteSheet(sRotatingBallTable) + LoadSpritePalette.
+    _rotatingBallTileStart_local = LoadSpriteSheet({
+      data: _assets.rotatingBall.charData,
+      size: _assets.rotatingBall.charData.length,
+      tag: TAG_ROTATING_BALL_GFX_LOCAL,
+    });
+    _rotatingBallPalSlot_local = LoadSpritePalette({
+      data: _assets.rotatingBall.palette,
+      tag: TAG_ROTATING_BALL_PAL,
+    });
     _rotatingBallAssetsLoaded = true;
   }
   // Despawn ancien (= safety si on enchaîne 2 switches rapidement).
@@ -1259,9 +1285,9 @@ function _spawnRotatingBallSprite(dir: -1 | 1): void {
   //   .size = SPRITE_SIZE(16x16) (= 1)
   //   .priority = 2
   //   .matrixNum = 4 (= placeholder dans la struct, override par alloc)
-  const baseTile = ROTATING_BALL_OBJ_OFFSET / 32;
+  const baseTile = _rotatingBallTileStart_local;
   const ball = rt.CreateSpriteAtOam({
-    tileId: baseTile, paletteBank: ROTATING_BALL_OBJ_PAL,
+    tileId: baseTile, paletteBank: _rotatingBallPalSlot_local,
     // 1:1 décomp CreateSprite(template, 16, 16, 0) — sprite center à (16, 16).
     x: 16, y: 16,
     shape: 0, size: 1,        // 16×16 square
@@ -1938,7 +1964,7 @@ function _updateBagSpriteOam(): void {
   if (!rt || _bagSpriteOamId < 0) return;
   const sprite = rt.gSprites.get(_bagSpriteOamId);
   if (!sprite) return;
-  const baseTileNum = BAG_SPRITE_OBJ_OFFSET / 32;
+  const baseTileNum = _bagSpriteTileStart;
   const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
   const oam = rt.gba.oam[sprite.oamIndex];
   // OAM field = `tileId` (pas tileNum, qui n'existe pas dans la struct). Bug
@@ -2694,12 +2720,14 @@ function _loadBagMenuGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // 1:1 décomp sub-state 2 : LoadCompressedPalette(gBagScreenMale_Pal,
     // BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP) → 32 entries à offset 0 (= sub-pal 0+1).
     LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
-    // 1:1 décomp sub-state 3 : LoadCompressedSpriteSheet(gBagMaleSpriteSheet)
-    // → bag sprite tile data dans OBJ VRAM offset 0.
-    r.gba.objVram.set(assets.bagSpriteRaw4bpp, BAG_SPRITE_OBJ_OFFSET);
-    // 1:1 décomp sub-state 4 : LoadCompressedSpritePalette(gBagPaletteTable)
-    // → bag.pal dans OBJ palette slot 0.
-    r.LoadPaletteObj(assets.bagSpritePal, OBJ_PLTT_ID(BAG_SPRITE_OBJ_PAL));
+    // 1:1 STRICT décomp sub-state 3-4 : LoadCompressedSpriteSheet + Palette
+    // via tag system (honore gReservedSpriteTileCount + first-free palette).
+    _bagSpriteTileStart = LoadSpriteSheet({
+      data: assets.bagSpriteRaw4bpp,
+      size: assets.bagSpriteRaw4bpp.length,
+      tag: TAG_BAG_SPRITE_GFX,
+    });
+    _bagSpritePalSlot = LoadSpritePalette({ data: assets.bagSpritePal, tag: TAG_BAG_SPRITE_PAL });
     _bagAssetsLoadedToObj = true;
     // Bag sprite window palette (= slot 13 BG palette pour le sprite window).
     LoadPalette(assets.bagSprite.palette, BAG_SPRITE_PAL * 16, 32);
