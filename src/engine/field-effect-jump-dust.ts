@@ -16,21 +16,22 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet } from './sprite';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
 
 const DUST_PNG = '/decomp/em/field_effects/ground_impact_dust.png';
 
-/** 1:1 STRICT décomp LoadSpriteSheet auto-alloue tileStart APRÈS reserved zone.
- *  Palette = bank 0 (= shared with player) car 1:1 décomp `FLDEFF_PAL_TAG_GENERAL_0`
- *  partagée. paletteBank=0 (= PLAYER_PALETTE_BANK) intentionnel. */
-const TAG_DUST_GFX = 'FIELD_EFFECT_JUMP_DUST_GFX';
-let _dustTileStart = -1;
+/** OBJ tile alloc : 16×8 = 2 tiles per frame × 3 frames = 6 tiles. Allocate
+ *  near end of OBJ VRAM, après tall grass (952..971) et avant arrow (992).
+ *  Free range 972..991 = 20 tiles → on prend 972..977 (= 6 tiles). */
+const DUST_OBJ_TILE_START = 972;
 const TILES_PER_FRAME = 2;  // 16×8 = 2x1 tiles 4bpp
 const NUM_FRAMES = 3;
-const DUST_PALETTE_BANK = 0;  // 1:1 décomp shared with player
+/** 1:1 décomp `FLDEFF_PAL_TAG_GENERAL_0` → bank 0 (= shared with player).
+ *  Le sprite dust est noir/gris simple, ses indices PNG correspondent à des
+ *  shades neutres présents dans player palette. */
+const DUST_PALETTE_BANK = 0;
 
 /** sAnim_GroundImpactDust : 3 frames × 8 game frames each. */
 const ANIM_SEQUENCE: ReadonlyArray<{ frameIdx: number; duration: number }> = [
@@ -80,9 +81,7 @@ export function preloadJumpDustEffect(rt: DecompRuntime): Promise<void> {
   _initPromise = (async () => {
     const png = await loadIndexedPngStrict(DUST_PNG, 4);
     const reordered = pngTo1dObjLayoutDust(png.charData);
-    _dustTileStart = LoadSpriteSheet({
-      data: reordered, size: reordered.length, tag: TAG_DUST_GFX,
-    });
+    rt.gba.objVram.set(reordered, DUST_OBJ_TILE_START * 32);
     // Palette : shared with player (= bank 0). Pas de re-upload nécessaire.
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = {
@@ -116,7 +115,7 @@ export function SpawnJumpLandingDust(rt: DecompRuntime, mapX: number, mapY: numb
   const worldY = (npcGBackupRow - cam.y) * 16 + 12;  // = près du bas de tile (= sol)
 
   const result = rt.CreateSpriteAtOam({
-    tileId: _dustTileStart,
+    tileId: DUST_OBJ_TILE_START,
     paletteBank: DUST_PALETTE_BANK,
     x: 0, y: 0,
     shape: 1, size: 0,  // 16×8 (= shape WIDE, size SMALL)
@@ -150,7 +149,7 @@ export function UpdateJumpDustEffects(rt: DecompRuntime): void {
       if (s.ticks < acc) { frameIdx = step.frameIdx; break; }
     }
     const oam = rt.gba.oam[s.oamIndex];
-    oam.tileId = _dustTileStart + frameIdx * TILES_PER_FRAME;
+    oam.tileId = DUST_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
     sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
     sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
     s.ticks++;

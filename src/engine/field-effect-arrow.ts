@@ -27,7 +27,6 @@
  */
 
 import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet } from './sprite';
 import { loadTileBin } from './gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
@@ -42,10 +41,8 @@ const ARROW_PNG_URL = '/decomp/em/field_effects/arrow.png';
 // ─── OBJ tile + palette allocation ──────────────────────────────────────────
 
 /** Arrow sprite : 8 frames × 4 tiles each = 32 tiles total.
- *  1:1 STRICT décomp : LoadSpriteSheet({tag: GFXTAG_ARROW}) auto-alloue après
- *  gReservedSpriteTileCount → safe vs player tiles. */
-const TAG_ARROW_GFX = 'FIELD_EFFECT_ARROW_GFX';
-let _arrowTileStart = -1;
+ *  Allouons les tiles 992..1023 (= 32 tiles à la fin du OBJ VRAM). Réservé. */
+const ARROW_OBJ_TILE_START = 992;
 const TILES_PER_FRAME = 4;  // 16x16 = 2x2 = 4 tiles 4bpp
 
 /** Palette bank de l'arrow.
@@ -181,20 +178,20 @@ export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> 
   // Réorganise en OBJ 1D layout.
   const reordered = pngTo1dObjLayoutArrow(rawTiles);
 
-  // 1:1 STRICT décomp `LoadCompressedSpriteSheet(gFieldEffectObjectGfxInfo_Arrow)`.
-  // Pas de LoadSpritePalette (= paletteTag = TAG_NONE) : l'arrow hérite la
-  // palette de bank 0 (= player Brendan/May), couleurs vert/blanc du décomp.
-  // LoadSpriteSheet honore gReservedSpriteTileCount → alloué APRÈS player.
+  // Write to OBJ VRAM at ARROW_OBJ_TILE_START.
+  // 1:1 décomp : pas de LoadSpritePalette (= paletteTag = TAG_NONE). L'arrow
+  // hérite la palette de bank 0 (= player Brendan/May) — c'est ce qui donne
+  // les couleurs vert/blanc qu'on voit dans le décomp original. Si on charge
+  // general_0.pal dans un bank dédié → couleurs wrong.
+  const objVram = rt.gba.objVram;
   if (!_arrowInitialized) {
-    _arrowTileStart = LoadSpriteSheet({
-      data: reordered, size: reordered.length, tag: TAG_ARROW_GFX,
-    });
+    objVram.set(reordered, ARROW_OBJ_TILE_START * 32);
     _arrowInitialized = true;
   }
 
   // Create sprite OAM. 16x16 = shape 0, size 1.
   const result = rt.CreateSpriteAtOam({
-    tileId: _arrowTileStart + FRAME_INDEX[DIR_SOUTH].off * TILES_PER_FRAME,
+    tileId: ARROW_OBJ_TILE_START + FRAME_INDEX[DIR_SOUTH].off * TILES_PER_FRAME,
     paletteBank: ARROW_PALETTE_BANK,
     x: 0,
     y: 0,
@@ -484,7 +481,7 @@ export function UpdateWarpArrowSprite(rt: DecompRuntime): void {
       ? FRAME_INDEX[state.direction as keyof typeof FRAME_INDEX].on
       : FRAME_INDEX[state.direction as keyof typeof FRAME_INDEX].off;
     const oam = rt.gba.oam[sprite.oamIndex];
-    oam.tileId = _arrowTileStart + frameIdx * TILES_PER_FRAME;
+    oam.tileId = ARROW_OBJ_TILE_START + frameIdx * TILES_PER_FRAME;
 
     // 1:1 décomp `coordOffsetEnabled = TRUE` (= field_effect_helpers.c:182).
     // L'engine décomp `BuildOamBuffer` (sprite.c:UpdateOamCoords) fait :

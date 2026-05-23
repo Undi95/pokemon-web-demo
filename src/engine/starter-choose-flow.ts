@@ -32,7 +32,6 @@ import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId
 import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getRuntime, LoadPalette } from './decomp-globals';
-import { LoadSpritePalette } from './sprite';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
 import { gSaveBlock1Ptr } from './save-block-state';
@@ -169,10 +168,10 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   // We use offsets after the pokeball sheet (= 0x0800 bytes) + circle sheet.
   // 3 starters × 64×64 = 3 × 2048 bytes = 6144 bytes total.
   const STARTER_FRONT_BYTE_OFFSET_BASE = 0x2000;  // Avoid clash with pokeball/circle.
+  const STARTER_FRONT_PALETTE_SLOT_BASE = 5;       // Slots 5/6/7 (= avoid pokeball+circle slots 0-4).
   let starterFrontLoaded = false;
   let starterFrontFailed = false;
   const starterFrontPalettes: (Uint16Array | null)[] = [null, null, null];
-  const starterFrontPalSlots: number[] = [-1, -1, -1];  // 1:1 STRICT alloué par LoadSpritePalette
   const starterFrontWH: ({ w: number, h: number } | null)[] = [null, null, null];
 
   // Async preload state.
@@ -307,11 +306,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                   const offset = STARTER_FRONT_BYTE_OFFSET_BASE + i * 0x800;  // 2048 bytes per 64x64 sprite
                   const result = await rt.LoadCompressedSpriteSheet(url, offset);
                   starterFrontPalettes[i] = result.palette;
-                  // 1:1 STRICT décomp `LoadSpritePalette(sStarterFrontPalettes[i])` :
-                  // scan first-free → safe vs reserved player palette.
-                  starterFrontPalSlots[i] = LoadSpritePalette({
-                    data: result.palette, tag: `STARTER_FRONT_PAL_${i}`,
-                  });
+                  rt.LoadPaletteObj(result.palette, OBJ_PLTT_ID(STARTER_FRONT_PALETTE_SLOT_BASE + i));
                   // Detect sprite size (= front sprites usually 64x64 but vary).
                   starterFrontWH[i] = { w: 64, h: 64 };  // Conservative default
                 } catch (subE) {
@@ -563,7 +558,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         // Phase 5.5d-bis : Spawn the chosen starter's front sprite ON TOP of the circle.
         if (starterFrontLoaded && starterFrontWH[selection]) {
           const tileId = (STARTER_FRONT_BYTE_OFFSET_BASE + selection * 0x800) / 32;
-          const palBank = starterFrontPalSlots[selection];
+          const palBank = STARTER_FRONT_PALETTE_SLOT_BASE + selection;
           // Center sprite on pokeball coords. CreateSpriteAtOam takes top-left for OAM.
           // For a 64×64 sprite to be centered at (cx, cy), we offset by -32, -32.
           const spawn = rt.CreateSpriteAtOam({
