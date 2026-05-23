@@ -41,6 +41,7 @@ export const OAM_MATRIX_COUNT = 32;
 export const TOTAL_OBJ_TILE_COUNT = 1024;
 export const TILE_SIZE_4BPP = 32;
 export const PLTT_SIZE_4BPP = 32;
+export const OBJ_VRAM_SIZE = 0x8000;  // 32 KB OBJ VRAM
 
 // ─── Setter injection pour rompre le cycle ESM avec decomp-globals.ts ──────
 
@@ -77,6 +78,27 @@ function _getReserved(): number {
 
 function _setReserved(v: number): void {
   (globalThis as Record<string, unknown>).gReservedSpritePaletteCount = v;
+}
+
+/** 1:1 décomp `EWRAM_DATA u16 gReservedSpriteTileCount = 0;` (sprite.c:287)
+ *  Nombre de TILES OBJ VRAM réservées au début (= [0, N×32 bytes)). AllocSpriteTiles
+ *  scan first-free APRÈS cette zone. Utilisé par InitObjectEventPalettes + le
+ *  field setup pour réserver les tiles player + NPC (= persistents) contre les
+ *  UI menus qui font ResetSpriteData (qui reset cette valeur à 0). */
+export function getReservedSpriteTileCount(): number {
+  return ((globalThis as Record<string, unknown>).gReservedSpriteTileCount as number) ?? 0;
+}
+export function setReservedSpriteTileCount(v: number): void {
+  (globalThis as Record<string, unknown>).gReservedSpriteTileCount = v;
+}
+
+/** 1:1 décomp `COMMON_DATA u8 gReservedSpritePaletteCount = 0;` (sprite.c:278)
+ *  Setter exposé pour le boot OW + InitObjectEventPalettes. */
+export function getReservedSpritePaletteCount(): number {
+  return _getReserved();
+}
+export function setReservedSpritePaletteCount(v: number): void {
+  _setReserved(v);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -605,6 +627,94 @@ export function FreeSpriteTileRanges(): void {
   r.spriteSheetTagToByteSize.clear();
   r.freedSpriteTileRanges.length = 0;
   r.nextSpriteSheetByteOffset = 0;
+}
+
+/** 1:1 décomp src/sprite.c:702-753 (simplified — cursor-based au lieu de bitmap) :
+ *  ```c
+ *  s16 AllocSpriteTiles(u16 tileCount) {
+ *      i = gReservedSpriteTileCount;
+ *      while (...) {
+ *          while (SPRITE_TILE_IS_ALLOCATED(i)) i++;
+ *          // scan numTilesFound consecutive free tiles starting at i
+ *      }
+ *      return start tileNum;
+ *  }
+ *  ```
+ *  Notre runtime utilise un cursor monotone (= nextSpriteSheetByteOffset) +
+ *  reclaim queue (= freedSpriteTileRanges). Pas un bitmap 1:1 sémantique mais
+ *  garantit le même invariant : tiles allouées dans [reserved, TOTAL_OBJ_TILE_COUNT),
+ *  jamais d'écrasement zone réservée.
+ *
+ *  Retourne tile start (= bytes / TILE_SIZE_4BPP), ou -1 si VRAM saturée. */
+export function AllocSpriteTiles(tileCount: number): number {
+  const r = _rt();
+  const reservedTiles = getReservedSpriteTileCount();
+  const reservedBytes = reservedTiles * TILE_SIZE_4BPP;
+  const needed = tileCount * TILE_SIZE_4BPP;
+
+  if (tileCount === 0) {
+    // 1:1 décomp : tileCount==0 → free all unreserved tiles.
+    r.freedSpriteTileRanges.length = 0;
+    if (r.nextSpriteSheetByteOffset > reservedBytes) {
+      r.nextSpriteSheetByteOffset = reservedBytes;
+    }
+    return 0;
+  }
+
+  // Reuse freedRanges si plage suffisante DANS LA ZONE NON-RÉSERVÉE.
+  for (let i = 0; i < r.freedSpriteTileRanges.length; i++) {
+    const range = r.freedSpriteTileRanges[i];
+    if (range.size >= needed && range.offset >= reservedBytes) {
+      r.freedSpriteTileRanges.splice(i, 1);
+      return range.offset / TILE_SIZE_4BPP;
+    }
+  }
+  // Allouer après le cursor (= floor à reservedBytes).
+  if (r.nextSpriteSheetByteOffset < reservedBytes) {
+    r.nextSpriteSheetByteOffset = reservedBytes;
+  }
+  const byteOffset = r.nextSpriteSheetByteOffset;
+  if (byteOffset + needed > OBJ_VRAM_SIZE) return -1; // 1:1 décomp : -1 si saturé
+  r.nextSpriteSheetByteOffset += needed;
+  return byteOffset / TILE_SIZE_4BPP;
+}
+
+/** 1:1 décomp src/sprite.c:1486-1500 :
+ *  ```c
+ *  u16 LoadSpriteSheet(const struct SpriteSheet *sheet) {
+ *      s16 tileStart = AllocSpriteTiles(sheet->size / TILE_SIZE_4BPP);
+ *      if (tileStart < 0) return 0;
+ *      AllocSpriteTileRange(sheet->tag, (u16)tileStart, sheet->size / TILE_SIZE_4BPP);
+ *      CpuCopy16(sheet->data, (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart, sheet->size);
+ *      return (u16)tileStart;
+ *  }
+ *  ```
+ *  Notre interface : `data` peut être Uint8Array direct (= déjà décompressé).
+ *  Retourne tile start (= tileNum), ou 0 si VRAM saturée. */
+export function LoadSpriteSheet(sheet: { data: Uint8Array, size: number, tag: string | number }): number {
+  const tileCount = sheet.size / TILE_SIZE_4BPP;
+  const tileStart = AllocSpriteTiles(tileCount);
+  if (tileStart < 0) return 0;
+  AllocSpriteTileRange(sheet.tag, tileStart, tileCount);
+  const r = _rt();
+  const byteOffset = tileStart * TILE_SIZE_4BPP;
+  const copySize = Math.min(sheet.size, r.gba.objVram.length - byteOffset);
+  if (copySize > 0) r.gba.objVram.set(sheet.data.subarray(0, copySize), byteOffset);
+  return tileStart;
+}
+
+/** 1:1 décomp src/sprite.c:1502-1507 :
+ *  ```c
+ *  void LoadSpriteSheets(const struct SpriteSheet *sheets) {
+ *      for (i = 0; sheets[i].data != NULL; i++) LoadSpriteSheet(&sheets[i]);
+ *  }
+ *  ```
+ */
+export function LoadSpriteSheets(sheets: Array<{ data: Uint8Array | null, size: number, tag: string | number }>): void {
+  for (const sheet of sheets) {
+    if (!sheet.data) break;
+    LoadSpriteSheet(sheet as { data: Uint8Array, size: number, tag: string | number });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

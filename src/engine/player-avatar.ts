@@ -82,6 +82,11 @@ import {
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
 } from './rotating-gate';
 import { PlaySE } from './decomp-globals';
+import {
+  LoadSpriteSheet, LoadSpritePalette,
+  setReservedSpriteTileCount,
+  setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
+} from './sprite';
 import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/auto/include/constants/songs-data';
 import {
   getWarpAtPlayerPos,
@@ -507,39 +512,40 @@ export async function InitPlayerAvatar(
   combined.set(walkingReordered, 0);
   combined.set(runningReordered, walkingReordered.length);
 
-  const objVram = rt.gba.objVram;
-  objVram.set(combined, PLAYER_OBJ_TILE_START * 32);
-
-  // 1:1 STRICT sprite.c : MARQUER ces tiles dans rt.spriteSheetTagToTileStart
-  // sinon LoadCompressedSpriteSheet (= item icon, bag, etc.) considère cette
-  // plage LIBRE et alloue à offset 0 → écrase player tiles.
-  // Bug user reporté 2026-05-23 : "j'ai visualiser la potion dans mon PC et
-  // mon sprite a été écrasé" = exactement ce scenario. Fix : tag + avancer
-  // le cursor pour que les allocs subséquentes commencent APRÈS le player.
-  rt.spriteSheetTagToTileStart.set('PLAYER_AVATAR_GFX', PLAYER_OBJ_TILE_START);
-  rt.spriteSheetTagToByteSize.set('PLAYER_AVATAR_GFX', combined.length);
-  const playerTilesEndByte = PLAYER_OBJ_TILE_START * 32 + combined.length;
-  if (playerTilesEndByte > rt.nextSpriteSheetByteOffset) {
-    rt.nextSpriteSheetByteOffset = playerTilesEndByte;
+  // 1:1 STRICT décomp pattern InitObjectEventPalettes + LoadObjectEventPic :
+  // reset cursor + reserved counts → LoadSpriteSheet alloue à offset 0 →
+  // LoadSpritePalette alloue à first-free (= 0) → set reserved counts pour
+  // protéger contre les UI menus suivants (= bag, item icon, etc.).
+  //
+  // Avant : raw `objVram.set` + manual tag marker → divergent du décomp +
+  // bug user "sprite player écrasé" si UI menu alloue par-dessus.
+  //
+  // Reset cursor à 0 + clear freedRanges + reserved=0 → garantit alloc à 0.
+  rt.nextSpriteSheetByteOffset = 0;
+  rt.freedSpriteTileRanges.length = 0;
+  setReservedSpriteTileCount(0);
+  setReservedSpritePaletteCount_helper(0);
+  // 1:1 décomp src/sprite.c:1486 LoadSpriteSheet : écrit OBJ VRAM + marker tag.
+  const tileStart = LoadSpriteSheet({
+    data: combined, size: combined.length, tag: 'PLAYER_AVATAR_GFX',
+  });
+  if (tileStart !== PLAYER_OBJ_TILE_START) {
+    console.error(`[InitPlayerAvatar] LoadSpriteSheet returned tileStart=${tileStart}, expected ${PLAYER_OBJ_TILE_START}`);
   }
-
-  // Load palette → OBJ palette bank PLAYER_PALETTE_BANK (= bank 0 of OBJ).
-  // gPlttBufferFaded entries 256..271 = OBJ bank 0. Décomp : walking + running
-  // partagent la même palette player → on charge celle de walking.
+  // 1:1 décomp src/sprite.c:1589 LoadSpritePalette : écrit gPlttBufferUnfaded/Faded
+  // + marker tag. walking + running partagent la même palette (= shared player).
   const palette = walkingPng.palette;
-  void runningPng;  // palette identique, pas besoin (= 1:1 décomp shared player palette)
-  const objPaletteSlot = 256 + PLAYER_PALETTE_BANK * 16;
-  for (let i = 0; i < Math.min(16, palette.length); i++) {
-    rt.gPlttBufferFaded.set(objPaletteSlot + i, palette[i]);
-    rt.gPlttBufferUnfaded.set(objPaletteSlot + i, palette[i]);
+  void runningPng;  // palette identique
+  const palSlot = LoadSpritePalette({ data: palette, tag: 'PLAYER_AVATAR_PAL' });
+  if (palSlot !== PLAYER_PALETTE_BANK) {
+    console.error(`[InitPlayerAvatar] LoadSpritePalette returned palSlot=${palSlot}, expected ${PLAYER_PALETTE_BANK}`);
   }
-  // 1:1 STRICT sprite.c : MARQUER cette palette bank dans rt.paletteTagToSlot
-  // sinon AllocSpritePalette (= item icon, bag) considère le slot LIBRE et
-  // alloue dessus → écrase player palette.
-  rt.paletteTagToSlot.set('PLAYER_AVATAR_PAL', PLAYER_PALETTE_BANK);
-  if (PLAYER_PALETTE_BANK + 1 > rt.nextObjPalSlot) {
-    rt.nextObjPalSlot = PLAYER_PALETTE_BANK + 1;
-  }
+  // 1:1 STRICT décomp InitObjectEventPalettes : réserve la zone player (=
+  // tiles + palette bank) pour que les UI menus suivants alloue STRICTEMENT
+  // après. ResetSpriteData (= bag boot) reset ces values à 0 → bag écrase →
+  // au close, loadAndInitMap → InitPlayerAvatar re-set → cycle complet 1:1.
+  setReservedSpriteTileCount(combined.length / 32);
+  setReservedSpritePaletteCount_helper(palSlot + 1);
   // 1:1 décomp : NE PAS flushTo inline ici. Le décomp `LoadSpritePalette` ne flush
   // pas non plus — c'est `TransferPlttBuffer()` au prochain VBlank qui copie
   // gPlttBufferFaded → PLTT register. Notre auto-flushTo (decomp-runtime tickFixed)

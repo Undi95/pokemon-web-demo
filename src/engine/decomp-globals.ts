@@ -1806,21 +1806,38 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
   }
   if (r.spriteSheetTagToTileStart.has(tagStr)) return;
   const needed = bytes.length;
+  // 1:1 STRICT décomp src/sprite.c:702-753 AllocSpriteTiles : honore
+  // `gReservedSpriteTileCount` (= zone OBJ VRAM réservée au début, [0, N×32)).
+  // Le décomp itère depuis `i = gReservedSpriteTileCount` pour trouver des
+  // tiles libres. Notre cursor + freedRanges doivent skip cette zone réservée.
+  //
+  // Pattern décomp 1:1 : au boot OW, InitObjectEventPalettes-like set
+  // gReservedSpriteTileCount = playerTilesEnd. Bag open → ResetSpriteData
+  // reset gReservedSpriteTileCount=0 + cursor=0 → bag clear et écrit à 0.
+  // Bag close → loadAndInitMap → InitPlayerAvatar re-set gReservedSpriteTileCount
+  // + re-écrit player tiles. Cycle.
+  // PC PLAYER n'appelle pas ResetSpriteData → reserved reste set → item icon
+  // alloue APRÈS player (= safe, pas d'écrasement).
+  const reservedTileCount = (globalThis as Record<string, unknown>).gReservedSpriteTileCount as number ?? 0;
+  const reservedBytes = reservedTileCount * 32;
   // 1:1-net décomp AllocSpriteTiles : réutiliser une plage OBJ VRAM
   // LIBÉRÉE (FreeSpriteTilesByTag) qui tient `needed` AVANT d'avancer le
   // curseur monotone — sinon le reload répété (icône sac double-buffer
   // TAG_ITEM_ICON+0/+1) épuise la VRAM → tileStart hors-VRAM → icône
   // cassée après N nav (bug A/B user). Réutilisation plage entière (pas
   // de split) : borné, suffisant (bag = même taille 0x200 à chaque fois).
+  // ⚠️ Skip les freedRanges dans la zone réservée (= player tiles).
   let byteOffset = -1;
   for (let i = 0; i < r.freedSpriteTileRanges.length; i++) {
-    if (r.freedSpriteTileRanges[i].size >= needed) {
+    if (r.freedSpriteTileRanges[i].size >= needed && r.freedSpriteTileRanges[i].offset >= reservedBytes) {
       byteOffset = r.freedSpriteTileRanges[i].offset;
       r.freedSpriteTileRanges.splice(i, 1);
       break;
     }
   }
   if (byteOffset < 0) {
+    // Cursor doit démarrer au moins à reservedBytes (= 1:1 décomp).
+    if (r.nextSpriteSheetByteOffset < reservedBytes) r.nextSpriteSheetByteOffset = reservedBytes;
     byteOffset = r.nextSpriteSheetByteOffset;
     const adv = Math.min(needed, r.gba.objVram.length - byteOffset);
     r.nextSpriteSheetByteOffset += adv;
