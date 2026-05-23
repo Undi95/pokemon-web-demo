@@ -116,11 +116,16 @@ function _spriteTileIsAllocated(n: number): boolean {
 }
 
 // ─── Internal string ↔ u16 tag mapping ────────────────────────────────────
-// Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100 etc.). Notre runtime
-// historiquement utilise des strings ('PALTAG_LOGO'). Pour stocker dans les
-// arrays u16, on convertit string → u16 via une table interne stable.
+// Le décomp utilise des u16 tags (= TAG_BAG_GFX = 100, TAG_ITEM_ICON = 5110
+// = 0x13F6, TAG_NPC_PALETTE = 0x1100+ etc.). Pour éviter COLLISION avec les
+// vrais tags décomp, synthetic u16 démarrent à 0xC000 (= zone non-utilisée).
+//
+// Sans ça : `sSpritePaletteTags[slot] === tagU16` matchait wrongly entre
+// synthetic 0x1001 et décomp 0x1001 → tag lookup retournait slot d'un autre
+// sprite → palette/tile collisions visuels (= bag corruption, sprite noir,
+// emote points sur tile NPC etc., user-bugs 2026-05-23).
 
-let _nextSyntheticU16 = 0x1000;  // start at 0x1000 (= avoid décomp small tags 0..0xFFF)
+let _nextSyntheticU16 = 0xC000;  // start at 0xC000 (= safe vs all décomp tags < ~0x6000)
 const _stringToU16Tag = new Map<string, number>();
 const _u16TagToString = new Map<number, string>();
 
