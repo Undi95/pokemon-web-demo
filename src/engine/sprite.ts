@@ -125,6 +125,17 @@ export function MarkObjTilesAllocated(byteOffset: number, byteSize: number): voi
   for (let n = tileStart; n < tileStart + tileCount; n++) _allocSpriteTile(n);
 }
 
+/** 1:1 STRICT décomp sprite.c:622-628 `DestroySprite` branch `if (!usingSheet)` :
+ *    for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+ *  Libère N tiles consécutifs dans le bitmap pour qu'AllocSpriteTiles puisse
+ *  les ré-utiliser au prochain spawn. Utilisé par object-events.ts au despawn
+ *  NPC (= 1:1 décomp `DestroySprite` pour sprites avec images / TAG_NONE). */
+export function MarkObjTilesFree(byteOffset: number, byteSize: number): void {
+  const tileStart = byteOffset >> 5;
+  const tileCount = byteSize >> 5;
+  for (let n = tileStart; n < tileStart + tileCount; n++) _freeSpriteTile(n);
+}
+
 /** 1:1 STRICT décomp : helper exposé pour les sites qui écrivent une palette
  *  OBJ raw via `rt.gPlttBufferFaded.set(OBJ_PLTT_ID(slot)+i, color)` sans
  *  passer par LoadSpritePalette (= notre NPC system legacy `object-events.ts`,

@@ -23,7 +23,7 @@
 import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import type { LoadedPng } from './gba/png-loader';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated } from './sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from './sprite';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -781,35 +781,25 @@ _registerGObjectEvents(gObjectEvents);
 (globalThis as Record<string, unknown>).__gObjectEvents = gObjectEvents;
 
 // ─── OBJ tile/palette allocation ────────────────────────────────────────────
+// 1:1 STRICT décomp event_object_movement.c → src/sprite.c:CreateSpriteAt
+// (sprite.c:540-589). NPCs ont graphicsInfo->tileTag == TAG_NONE → branch
+// "images" : `AllocSpriteTiles(images[0].size / TILE_SIZE_4BPP)` depuis le
+// bitmap général `sSpriteTileAllocBitmap`, pas de pool séparé. Free via
+// `DestroySprite` (sprite.c:622-628) qui appelle `FREE_SPRITE_TILE` pour
+// chaque tile dans la range.
+//
+// Notre implémentation : on alloue TILES_PER_NPC tiles consécutifs pour
+// pré-charger plusieurs frames en VRAM (= éviter RequestSpriteFrameImageCopy
+// à chaque change frame = optim web acceptable, doc dette). Le bitmap est
+// la source de vérité unique.
+//
+// Pour la palette : 1:1 décomp LoadObjectEventPalette (event_object_movement.c
+// :2014-2025) → LoadSpritePaletteIfTagExists (sprite.c:1610) → LoadSpritePalette
+// (sprite.c:1589-1608). Le tag system gère first-free + dedup automatique.
 
-/** Phase 4.9 : player sprite occupe maintenant tiles 0..143 (= 18 frames concat,
- *  walking 0..8 + running 9..17 = 1:1 décomp sPicTable_BrendanNormal). NPCs
- *  allouent depuis 144. */
-const NPC_TILE_BASE_START = 144;
 const TILES_PER_NPC = 72;
-let _nextNpcTileBase = NPC_TILE_BASE_START;
-const NPC_PALETTE_START = 1;
-let _nextNpcPaletteBank = NPC_PALETTE_START;
-
-/** Phase 4.8 Tâche 3 : free list pour tile/palette slots des NPCs removed.
- *  Sans ça : _nextNpcTileBase et _nextNpcPaletteBank croissent monotone à
- *  chaque cross-border → pool exhaust à ~13 NPCs total. Avec : slots removed
- *  poussés ici, ré-utilisés au prochain spawn. */
-const _freeNpcSlots: Array<{ tileBase: number; paletteBank: number }> = [];
-
-/** Push slot d'un NPC removed dans le free pool. À call AVANT de set
- *  `npc.active = false` ou de reset spriteId. Idempotent : ne push pas si
- *  les valeurs sont 0/start (= jamais alloué). */
-function _freeNpcSlot(npc: ObjectEvent): void {
-  if (npc.objTileBase >= NPC_TILE_BASE_START) {
-    _freeNpcSlots.push({ tileBase: npc.objTileBase, paletteBank: npc.paletteBank });
-  }
-}
 
 export function resetObjectEventAllocations(): void {
-  _nextNpcTileBase = NPC_TILE_BASE_START;
-  _nextNpcPaletteBank = NPC_PALETTE_START;
-  _freeNpcSlots.length = 0;
   for (let i = 0; i < gObjectEvents.length; i++) {
     const npc = gObjectEvents[i];
     // 1:1 décomp : ne PAS reset le player ObjectEvent slot (= survit aux map
@@ -878,9 +868,13 @@ export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: num
         rt.gba.oam[sprite.oamIndex].visible = false;
         sprite.inUse = false;
       }
-      // Phase 4.8 Tâche 3 : free slot pool aussi (note : caller utilise typiquement
-      // resetObjectEventAllocations après → pool wipe complet, free list = noop).
-      _freeNpcSlot(npc);
+      // 1:1 STRICT décomp sprite.c:622-628 `DestroySprite` branch `if (!usingSheet)` :
+      //   for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+      // Libère les tiles dans `sSpriteTileAllocBitmap` pour qu'AllocSpriteTiles
+      // puisse les ré-utiliser au prochain spawn (= NPCs map suivante / new spawn).
+      if (npc.objTileBase > 0) {
+        MarkObjTilesFree(npc.objTileBase * 32, TILES_PER_NPC * 32);
+      }
       npc.spriteId = -1;
     }
   }
@@ -2055,20 +2049,32 @@ function _spawnSingleNpcFromTemplate(
   const png = _npcPngCache.get(pngPath);
   if (!png) return false;
 
-  // Phase 4.8 Tâche 3 : prefer free slot du pool removed avant d'allouer un
-  // nouveau (sinon pool exhaust à ~13 NPCs après plusieurs cross-borders).
-  let objTileBase: number;
-  let paletteBank: number;
-  const freeSlot = _freeNpcSlots.pop();
-  if (freeSlot) {
-    objTileBase = freeSlot.tileBase;
-    paletteBank = freeSlot.paletteBank;
-  } else {
-    if (_nextNpcTileBase + TILES_PER_NPC > 1024) return false;
-    if (_nextNpcPaletteBank >= 16) return false;
-    objTileBase = _nextNpcTileBase;
-    _nextNpcTileBase += TILES_PER_NPC;
-    paletteBank = _nextNpcPaletteBank++;
+  // 1:1 STRICT décomp sprite.c:562-575 `CreateSpriteAt` branch `if (tileTag == TAG_NONE)` :
+  //   sprite->images = template->images;
+  //   tileNum = AllocSpriteTiles(images->size / TILE_SIZE_4BPP);
+  //   if (tileNum == -1) { ResetSprite(); return MAX_SPRITES; }
+  //   sprite->oam.tileNum = tileNum;
+  //   sprite->usingSheet = FALSE;
+  // NPCs ont tileTag == TAG_NONE → AllocSpriteTiles depuis bitmap général.
+  // On alloue TILES_PER_NPC tiles consécutifs (= ≥ images[0].size / 32 + room
+  // pour pré-charger N frames consécutifs en VRAM pour anim sans recopier).
+  const objTileBase = AllocSpriteTiles(TILES_PER_NPC);
+  if (objTileBase < 0) return false;
+
+  // 1:1 STRICT décomp event_object_movement.c:1577-1578 + 2014-2025 :
+  //   if (spriteTemplate->paletteTag != TAG_NONE)
+  //       LoadObjectEventPalette(spriteTemplate->paletteTag);
+  // LoadObjectEventPalette → LoadSpritePaletteIfTagExists → LoadSpritePalette
+  // (sprite.c:1589-1608) : scan first-free dans `sSpritePaletteTags`. Si 2 NPCs
+  // avec même graphicsKey → tag déjà alloué → ré-utilise le même slot (= 1:1
+  // décomp authentique, palette partagée).
+  const paletteTag = `NPC_PAL_${graphicsKey}`;
+  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion.
+  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
+  if (paletteBank === 0xFF) {
+    // Saturation 16 slots palette OBJ → free tiles + abort 1:1 décomp.
+    MarkObjTilesFree(objTileBase * 32, TILES_PER_NPC * 32);
+    return false;
   }
 
   if (is48x48) {
@@ -2126,28 +2132,17 @@ function _spawnSingleNpcFromTemplate(
     const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
     rt.gba.objVram.set(reordered, objTileBase * 32);
   }
-  // 1:1 STRICT bitmap allocator sync : ce système NPC legacy gère son propre
-  // pool (`_nextNpcTileBase` + `_freeNpcSlots`). Sans marquer le slot complet
-  // dans le bitmap, AllocSpriteTiles voit ces tiles libres et les attribue
-  // à un autre sheet (= field-effect / UI) → écrasement NPC.
-  MarkObjTilesAllocated(objTileBase * 32, TILES_PER_NPC * 32);
-  const paletteSlot = 256 + paletteBank * 16;
-  for (let i = 0; i < Math.min(16, png.palette.length); i++) {
-    rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
-    rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
-  }
-  // 1:1 STRICT marker `sSpritePaletteTags[paletteBank]` pour que le tag system
-  // (= LoadSpritePalette pour grass / arrow / shadow / emote / bag etc.) ne
-  // ré-alloue PAS ce slot via IndexOfSpritePaletteTag(TAG_NONE) → bug racine
-  // identifié 2026-05-23 : MOM paletteBank=1 + grass LoadSpritePalette →
-  // grass écrase MOM (faded buffer + tag mis à TallGrass) → la mère rendue
-  // avec palette grass à l'écran.
-  MarkObjPaletteAllocated(paletteBank, `NPC_PAL_${graphicsKey}`);
-  // 1:1 décomp : NE PAS flushTo inline (= cf. player-avatar.ts:InitPlayerAvatar
-  // pour rationale détaillée). L'auto-flushTo VBlank pousse via TransferPlttBuffer
-  // qui respecte `bufferTransferDisabled` → permet de gater le palette transfer
-  // pendant warp load. Sans ce gate, chaque NPC spawn (SpawnObjectEventsOnMap fire
-  // N×) leak les NEW colors → flash de la dest map AVANT fade-in.
+  // 1:1 STRICT décomp : AllocSpriteTiles (au-dessus) marque déjà les tiles
+  // comme allouées dans `sSpriteTileAllocBitmap`. LoadSpritePalette (au-dessus)
+  // marque déjà `sSpritePaletteTags[paletteBank]` + écrit la palette via
+  // DoLoadSpritePalette (sprite.c:1618-1621 = LoadPalette buffers unfaded+faded
+  // à OBJ_PLTT_ID(slot)). Pas de double-write ici.
+  //
+  // Note dette web : on a chargé `png.palette` directement via LoadSpritePalette,
+  // mais le décomp aurait passé un `OBJ_EVENT_PAL_TAG_<X>` issu de
+  // `sObjectEventSpritePalettes[]` (= constante data du décomp). On utilise un
+  // tag string `NPC_PAL_${graphicsKey}` qui est unique par graphicsKey →
+  // équivalent fonctionnel pour le tag system.
 
   const cam = GetCameraTopLeftCoords();
   const npc = gObjectEvents[slot];
@@ -2684,8 +2679,14 @@ export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
       sprite.inUse = false;
       rt.gba.oam[sprite.oamIndex].visible = false;
     }
-    // Phase 4.8 Tâche 3 : free le slot tile/palette dans le pool pour réuse.
-    _freeNpcSlot(npc);
+    // 1:1 STRICT décomp sprite.c:622-628 `DestroySprite` branch `if (!usingSheet)` :
+    //   for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
+    // Libère les tiles dans `sSpriteTileAllocBitmap`. Palette PAS libérée
+    // individuellement (= 1:1 décomp, libérée uniquement via FreeAllSpritePalettes
+    // au map switch / boot field).
+    if (npc.objTileBase > 0) {
+      MarkObjTilesFree(npc.objTileBase * 32, TILES_PER_NPC * 32);
+    }
     npc.active = false;
     npc.spriteId = -1;
   }
