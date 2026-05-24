@@ -117,6 +117,21 @@ interface GraphicsInfo {
 
 let _graphicsCatalog: Record<string, GraphicsInfo> | null = null;
 
+// 1:1 STRICT décomp `sPicTable_BrendanNormal` (object_event_pic_tables.h:1-20) +
+// `sPicTable_MayNormal` (:992-1011) : ces 4 graphicsId utilisent 2 buffers PNG
+// distincts (= gObjectEventPic_X_Normal + gObjectEventPic_X_Running) mixed dans
+// un seul SpriteFrameImage[18] (frames 0-8 normal + 9-17 running).
+//
+// Notre catalog n'a qu'1 PNG par graphicsId (= primary = walking.png). Pour le
+// secondaire (= running.png), on définit un mapping explicit ici. Le préload
+// charge les 2 PNGs et le spawn passe les 2 buffers convertis au factory.
+const MULTI_PNG_SECONDARY_PATHS: Readonly<Record<string, string>> = {
+  OBJ_EVENT_GFX_BRENDAN_NORMAL: 'object_events/people/brendan/running.png',
+  OBJ_EVENT_GFX_MAY_NORMAL: 'object_events/people/may/running.png',
+  OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL: 'object_events/people/brendan/running.png',
+  OBJ_EVENT_GFX_RIVAL_MAY_NORMAL: 'object_events/people/may/running.png',
+};
+
 async function loadGraphicsCatalog(): Promise<Record<string, GraphicsInfo>> {
   if (_graphicsCatalog) return _graphicsCatalog;
   const r = await fetch(`${BASE}/object-event-graphics.json`);
@@ -191,6 +206,10 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     if (!is48x48 && !is32x32 && !is16x32 && !is16x16) continue;
     if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) continue;
     paths.add(`${BASE}/${graphics.png}`);
+    // 1:1 STRICT : si graphicsKey utilise 2 buffers PNG (BrendanNormal, MayNormal,
+    // RivalBrendan, RivalMay), précharge aussi le secondaire (running.png).
+    const secondary = MULTI_PNG_SECONDARY_PATHS[key];
+    if (secondary) paths.add(`${BASE}/${secondary}`);
   }
   await Promise.all(
     [...paths].map(p =>
@@ -2201,15 +2220,29 @@ function _spawnSingleNpcFromTemplate(
   const _pic1dObj = pngTo1dObjLayoutAllFrames(
     png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
   );
-  // C1.3 fix : certains factories (= BrendanNormal/MayNormal/RivalMayNormal/
-  // RivalBrendanNormal) attendent 2 buffers (normalPic + runningPic). Notre
-  // preload ne charge qu'1 PNG par graphicsKey. Détection via Function.length :
-  // duplique le buffer pour les frames running (= dette : visuels running
-  // incorrects mais évite crash subarray undefined).
+  // 1:1 STRICT décomp : certains factories (= BrendanNormal/MayNormal/Rival
+  // BrendanNormal/RivalMayNormal) attendent 2 buffers PNG distincts (= mixed
+  // walking + running frames dans sPicTable_X[18]). Le secondaire est défini
+  // dans MULTI_PNG_SECONDARY_PATHS et préchargé par preloadNpcGraphicsForMap.
+  // Convert le 2nd PNG row-major → 1D OBJ et passe au factory.
   const _factory = gObjectEventGraphicsInfoPointers[graphicsKey];
   const _numPicsExpected = _factory ? _factory.length : 1;
-  const _picsArgs: Uint8Array[] = [];
-  for (let i = 0; i < _numPicsExpected; i++) _picsArgs.push(_pic1dObj);
+  const _picsArgs: Uint8Array[] = [_pic1dObj];
+  if (_numPicsExpected > 1) {
+    const secondaryRelPath = MULTI_PNG_SECONDARY_PATHS[graphicsKey];
+    const secondaryPng = secondaryRelPath ? _npcPngCache.get(`${BASE}/${secondaryRelPath}`) : undefined;
+    if (secondaryPng) {
+      const sec1dObj = pngTo1dObjLayoutAllFrames(
+        secondaryPng.charData, secondaryPng.widthTiles, graphics.frameWidth, graphics.frameHeight,
+      );
+      _picsArgs.push(sec1dObj);
+    } else {
+      // Fallback (= dette : 2nd PNG pas chargé, duplique le primary pour éviter
+      // crash subarray undefined). Frames running afficheront frames normales.
+      console.warn(`[object-events] secondary PNG manquant pour ${graphicsKey} (path=${secondaryRelPath ?? 'undefined'})`);
+      _picsArgs.push(_pic1dObj);
+    }
+  }
   const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(graphicsKey, ..._picsArgs);
   const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
   if (_hasNewFlow) {
