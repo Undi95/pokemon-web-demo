@@ -832,7 +832,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
   'GetNpcContestantLocalId', 'GetNumLevelsGainedFromDaycare',
   'GetNumMovesSelectedMonHas', 'GetObjectEventLocalIdByFlag',
-  'GetPCBoxToSendMon', 'GetPlayerTrainerIdOnesDigit',
+  'GetPCBoxToSendMon',
+  // 'GetPlayerTrainerIdOnesDigit' — porté 1:1 décomp field_specials.c:901 ci-bas.
   'GetPokeblockFeederInFront', 'GetPokeblockNameByMonNature',
   'GetQuizAuthor', 'GetQuizLadyState', 'GetRandomActiveShowIdx',
   'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
@@ -859,7 +860,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'IsTrendyPhraseBoring', 'LeadMonHasEffortRibbon',
   'LinkContestTryHideWirelessIndicator', 'LinkContestTryShowWirelessIndicator',
   'LinkContestWaitForConnection', 'LoadPlayerBag', 'LostSecretBaseBattle',
-  'MauvilleGymSetDefaultBarriers', 'MonOTNameNotPlayer',
+  'MauvilleGymSetDefaultBarriers',
+  // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
   'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',
   'ObjectEventInteractionGetBerryCountString',
@@ -1063,6 +1065,32 @@ registerSpecial('HasAtLeastOneBerry', () => {
   }
   VarSet('VAR_RESULT', 0);
   return 0;
+});
+
+/** 1:1 décomp `GetPlayerTrainerIdOnesDigit` (field_specials.c:901-904).
+ *  Retourne les low 16 bits du trainer ID modulo 10. */
+registerSpecial('GetPlayerTrainerIdOnesDigit', () => {
+  const trainerId = gSaveBlock2Ptr.playerTrainerId;
+  return (trainerId & 0xFFFF) % 10;
+});
+
+// `ScriptGetPartyMonSpecies` déjà porté ligne 692 (= duplicate skip).
+
+/** 1:1 décomp `MonOTNameNotPlayer` (field_specials.c:1572-1583).
+ *  Retourne TRUE si OT name du mon var0x8004 != player name OR language != GAME_LANGUAGE.
+ *  Used par scripts e.g. NameRater pour bloquer rename de mons étrangers. */
+registerSpecial('MonOTNameNotPlayer', () => {
+  const slot = VarGet('VAR_0x8004');
+  const mon = gSaveBlock1Ptr.playerParty[slot];
+  if (!mon || mon.speciesId === 0) return 1;
+  // 1:1 décomp :1574 : MON_DATA_LANGUAGE != GAME_LANGUAGE
+  // Notre projet : FR only, donc tous nos mons sont GAME_LANGUAGE (= français).
+  // Si on porte multi-language plus tard, ajouter language field PokemonInstance.
+  // 1:1 :1577-1582 : compare playerName vs otName.
+  const otName = mon.otName ?? '';
+  const playerName = gSaveBlock2Ptr.playerName;
+  if (!otName) return 1;  // pas d'OT → considère étranger
+  return otName === playerName ? 0 : 1;
 });
 
 /** 1:1 décomp `IsGrassTypeInParty` (field_specials.c:1230-1249).
