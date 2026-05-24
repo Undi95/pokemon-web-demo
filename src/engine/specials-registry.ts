@@ -895,7 +895,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetSecretBaseOwnerAndState', 'GetSecretBaseTypeInFrontOfPlayer',
   'GetSelectedMonNicknameAndSpecies', 'GetSelectedTVShow',
   'GetTraderTradedFlag', 'GetTrainerBattleMode', 'GetTrainerFlag',
-  'GetWirelessCommType', 'GiddyShouldTellAnotherTale',
+  // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
+  'GiddyShouldTellAnotherTale',
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
   'HasAnotherPlayerGivenFavorLadyItem',
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
@@ -905,7 +906,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'HipsterTryTeachWord', 'IncrementDailyPickedBerries',
   'IncrementDailyPlantedBerries', 'InitSecretBaseDecorationSprites',
   'InitSecretBaseVars', 'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
-  'InterviewAfter', 'IsContestDebugActive', 'IsContestWithRSPlayer',
+  'InterviewAfter',
+  // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
+  'IsContestWithRSPlayer',
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
   'IsFavorLadyThresholdMet', 'IsGabbyAndTyShowOnTheAir',
@@ -1126,6 +1129,16 @@ registerSpecial('HasAtLeastOneBerry', () => {
 
 // `IsSelectedMonEgg` déjà porté ligne 741 (= duplicate skip).
 // `IsLastMonThatKnowsSurf` real body ajouté ligne 415 (= remplace stub).
+
+/** 1:1 décomp `IsContestDebugActive` (contest_util.c:2571-2574).
+ *  Return FALSE — toujours (= contest debug n'a jamais été enabled in shipping
+ *  Emerald). 1:1 strict justifié. */
+registerSpecial('IsContestDebugActive', () => 0);
+
+/** 1:1 décomp `GetWirelessCommType` (link.c:1846-1849).
+ *  Return gWirelessCommType (= 0 si pas link, non-zero si Wireless).
+ *  Notre projet : pas de wireless link (= retourne 0 = 1:1 strict justifié). */
+registerSpecial('GetWirelessCommType', () => 0);
 
 /** 1:1 décomp `DoesPlayerHaveNoDecorations` (trader.c:145-158).
  *  Loop sur DECORCAT_COUNT (= 8 catégories). Return TRUE si aucune category
