@@ -716,6 +716,32 @@ export function MetatileBehavior_IsBridgeOverWaterNoEdge(mb: number): boolean {
       || mb === MB_BRIDGE_OVER_POND_MED
       || mb === MB_BRIDGE_OVER_POND_HIGH;
 }
+
+/** 1:1 STRICT décomp `MetatileBehavior_GetBridgeType` (metatile_behavior.c:788-807) :
+ *    MB_BRIDGE_OVER_OCEAN     --> BRIDGE_TYPE_OCEAN     (Routes 110/119)
+ *    MB_BRIDGE_OVER_POND_LOW  --> BRIDGE_TYPE_POND_LOW  (Unused)
+ *    MB_BRIDGE_OVER_POND_MED  --> BRIDGE_TYPE_POND_MED  (Route 120, south)
+ *    MB_BRIDGE_OVER_POND_HIGH --> BRIDGE_TYPE_POND_HIGH (Route 120, north)
+ *    MED_EDGE_1/2 --> BRIDGE_TYPE_POND_MED
+ *    HIGH_EDGE_1/2 --> BRIDGE_TYPE_POND_HIGH
+ *    default     --> BRIDGE_TYPE_OCEAN
+ *  1:1 strict comportement décomp (= retourne 0 par défaut si mb n'est pas un bridge). */
+export function MetatileBehavior_GetBridgeType(mb: number): number {
+  // BRIDGE_TYPE_* constants 1:1 décomp include/metatile_behavior.h.
+  const BRIDGE_TYPE_OCEAN = 0;
+  const BRIDGE_TYPE_POND_MED = 2;
+  const BRIDGE_TYPE_POND_HIGH = 3;
+  if (mb >= MB_BRIDGE_OVER_OCEAN && mb <= MB_BRIDGE_OVER_POND_HIGH) {
+    return mb - MB_BRIDGE_OVER_OCEAN;
+  }
+  if (mb >= MB_BRIDGE_OVER_POND_MED_EDGE_1 && mb <= MB_BRIDGE_OVER_POND_MED_EDGE_2) {
+    return BRIDGE_TYPE_POND_MED;
+  }
+  if (mb >= MB_BRIDGE_OVER_POND_HIGH_EDGE_1 && mb <= MB_BRIDGE_OVER_POND_HIGH_EDGE_2) {
+    return BRIDGE_TYPE_POND_HIGH;
+  }
+  return BRIDGE_TYPE_OCEAN;
+}
 export function MetatileBehavior_IsFortreeBridge(mb: number): boolean {
   return mb === MB_FORTREE_BRIDGE;
 }
