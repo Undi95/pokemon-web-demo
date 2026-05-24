@@ -54,10 +54,10 @@ import {
 } from './gba-menu-system';
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
 import { getString } from './gba-strings';
-import { gSaveBlock2Ptr } from './save-block-state';
+// gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from './decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
-import { FlagSet } from './script-vars';
+import { FlagSet, VarGet } from './script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { SetOamMatrix } from './decomp-helpers';
@@ -433,9 +433,21 @@ function _loadWallClockGraphics(rt: DecompRuntime): void {
   const clockCharOff = BG_CLOCK_CHAR * 0x4000;
   rt.gba.vram.set(assets.clockTiles, clockCharOff);
 
-  // 1:1 décomp `LoadPalette(gWallClockMale/Female_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP)` :
-  // Gender-aware palette. SET → use player gender. VIEW → use gameState.gender.
-  const isFemale = gSaveBlock2Ptr.playerGender === FEMALE;
+  // 1:1 STRICT décomp wallclock.c:649-652 :
+  //   if (gSpecialVar_0x8004 == MALE)
+  //       LoadPalette(gWallClockMale_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
+  //   else
+  //       LoadPalette(gWallClockFemale_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
+  //
+  // VAR_0x8004 est set par le SCRIPT caller AVANT special StartWallClock /
+  // Special_ViewWallClock :
+  //   LittlerootTown_BrendansHouse_2F_EventScript_WallClock : setvar VAR_0x8004, MALE
+  //   LittlerootTown_MaysHouse_2F_EventScript_WallClock : setvar VAR_0x8004, FEMALE
+  // Donc l'horloge chez Brendan = male palette, chez May = female palette,
+  // INDÉPENDAMMENT du gender du player (= user-flag : chez May on voit
+  // horloge May, pas notre horloge).
+  const var8004 = VarGet('VAR_0x8004');
+  const isFemale = var8004 === FEMALE;
   const bgPal = isFemale ? assets.femalePalette : assets.malePalette;
   LoadPalette(bgPal, BG_PLTT_ID(0), 32);  // 16 colors × 2 bytes = 32
 
