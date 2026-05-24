@@ -1652,15 +1652,20 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   // simplifié ici en StartSpriteAnimIfDifferent (= équivalent fonctionnel sans
   // alternation tracking inanimate-aware).
   if (sprite.anims) {
-    const targetAnimNum = npc.walkFramesLeft > 0
-      ? GetMoveDirectionAnimNum(npc.walkDirection !== DIR_NONE ? npc.walkDirection : npc.facingDirection)
-      : GetFaceDirectionAnimNum(npc.facingDirection);
-    if (sprite.animNum !== targetAnimNum) {
-      sprite.animNum = targetAnimNum;
-      sprite.animBeginning = true;
-      sprite.animEnded = false;
-      sprite.animCmdIndex = 0;
-      sprite.animDelayCounter = 0;
+    // 1:1 STRICT décomp event_object_movement.c:1470-1471 : si inanimate, on
+    // ne touche PAS sprite.animNum (= reste 0 = sAnimTable_Inanimate single
+    // entry). Sinon corruption visuelle car animNum 4..7 hors range table.
+    if (!npc.inanimate) {
+      const targetAnimNum = npc.walkFramesLeft > 0
+        ? GetMoveDirectionAnimNum(npc.walkDirection !== DIR_NONE ? npc.walkDirection : npc.facingDirection)
+        : GetFaceDirectionAnimNum(npc.facingDirection);
+      if (sprite.animNum !== targetAnimNum) {
+        sprite.animNum = targetAnimNum;
+        sprite.animBeginning = true;
+        sprite.animEnded = false;
+        sprite.animCmdIndex = 0;
+        sprite.animDelayCounter = 0;
+      }
     }
     return;
   }
@@ -2488,7 +2493,12 @@ function _spawnSingleNpcFromTemplate(
     npc.useSubsprites = false;
     npc.is32x32 = false;
     npc.is16x16 = false;
-    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} (1:1 flow) at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET}) animNum=${GetFaceDirectionAnimNum(npc.facingDirection)}`);
+    // 1:1 STRICT décomp event_object_movement.c:1469 :
+    //   objectEvent->inanimate = graphicsInfo->inanimate;
+    // Stocker le flag pour updateNpcSpriteFrame qui skip le sync animNum quand
+    // inanimate (= sAnimTable_Inanimate n'a qu'1 entry index 0).
+    npc.inanimate = graphicsInfo.inanimate === 1;
+    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} (1:1 flow) at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET}) animNum=${GetFaceDirectionAnimNum(npc.facingDirection)} inanimate=${npc.inanimate}`);
     return true;
   }
 

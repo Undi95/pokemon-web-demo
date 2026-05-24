@@ -960,8 +960,12 @@ export function build_sPicTable_Nurse(gObjectEventPic_Nurse: Uint8Array): Sprite
   ];
 }
 
-export function build_sPicTable_ItemBall(): SpriteFrameImage[] {
+export function build_sPicTable_ItemBall(gObjectEventPic_ItemBall: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp object_event_pic_tables.h:746-748 :
+  //   obj_frame_tiles(gObjectEventPic_ItemBall)
+  // = { .data = ptr, .size = sizeof(ptr) }. Single 16x16 frame.
   return [
+    { data: gObjectEventPic_ItemBall, size: gObjectEventPic_ItemBall.length },
   ];
 }
 
@@ -4292,7 +4296,7 @@ export function build_gObjectEventGraphicsInfo_Nurse(gObjectEventPic_Nurse: Uint
   };
 }
 
-export function build_gObjectEventGraphicsInfo_ItemBall(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_ItemBall(gObjectEventPic_ItemBall: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -4308,7 +4312,7 @@ export function build_gObjectEventGraphicsInfo_ItemBall(): ObjectEventGraphicsIn
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_ItemBall(),
+    images: build_sPicTable_ItemBall(gObjectEventPic_ItemBall),
     affineAnims: null,
   };
 }
