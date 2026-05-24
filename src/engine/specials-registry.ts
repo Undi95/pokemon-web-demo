@@ -396,8 +396,8 @@ registerSpecial('ScrSpecial_HealPlayerParty', () => {
   }
 });
 
-/** 1:1 décomp `Special_AreLeadMonEVsMaxedOut` (pokemon_util.c). Returns 0 (= no). */
-registerSpecial('Special_AreLeadMonEVsMaxedOut', () => 0);
+// `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390) — porté ci-bas avec
+// real body (= sum 6 EVs >= MAX_TOTAL_EVS=510). Stub supprimé.
 
 /** 1:1 décomp `IsBigMonAndPlayerCantPushDoor` (= door push check). Returns 0. */
 registerSpecial('IsBigMonAndPlayerCantPushDoor', () => 0);
@@ -1161,6 +1161,23 @@ registerSpecial('HasAtLeastOneBerry', () => {
 
 // `IsSelectedMonEgg` déjà porté ligne 741 (= duplicate skip).
 // `IsLastMonThatKnowsSurf` real body ajouté ligne 415 (= remplace stub).
+
+/** 1:1 décomp `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390-1396).
+ *  Return TRUE si EVs total du lead mon >= MAX_TOTAL_EVS (= 510). */
+registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  // GetLeadMonIndex : 1st non-egg non-empty slot.
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
+    // 1:1 décomp pokemon.c:1845 GetMonEVCount = sum of all 6 EVs.
+    const evCount = (mon.evs?.hp ?? 0) + (mon.evs?.atk ?? 0) + (mon.evs?.def ?? 0)
+                  + (mon.evs?.spe ?? 0) + (mon.evs?.spa ?? 0) + (mon.evs?.spd ?? 0);
+    // MAX_TOTAL_EVS = 510 (= 1:1 décomp constants/pokemon.h).
+    return evCount >= 510 ? 1 : 0;
+  }
+  return 0;
+});
 
 /** 1:1 décomp `RetrieveLotteryNumber` (lottery_corner.c:42-46).
  *  Set gSpecialVar_Result = GetLotteryNumber() (= (lowNum << 16) | highNum).
