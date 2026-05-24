@@ -603,18 +603,24 @@ export function MOVE_IS_PERMANENT(_battler: number, _moveSlot: number): boolean 
 // utilisé par BattleStringExpand). En C, c'est du write direct par index ; en
 // TS, on opère sur un Uint8Array ou un array.
 //
-// B_BUFF_PLACEHOLDER_BEGIN = 0xFD, B_BUFF_EOS = 0xFF.
-
+// 1:1 décomp include/battle_message.h:67-80. CORRIGÉ A8 audit : les valeurs
+// précédentes étaient WRONG (NUMBER=1✓, mais STRING=2 décomp=0 ; MOVE=3
+// décomp=2 ; TYPE=4 décomp=3 ; MON_NICK=5 décomp=7 ; MON_NICK_WITH_PREFIX=6
+// décomp=4 ; ITEM=12 décomp=10 ; SPECIES=13 décomp=6).
+const B_BUFF_STRING = 0;
+const B_BUFF_NUMBER = 1;
+const B_BUFF_MOVE = 2;
+const B_BUFF_TYPE = 3;
+const B_BUFF_MON_NICK_WITH_PREFIX = 4;
+const _B_BUFF_STAT = 5;  // unused mais 1:1 strict
+const B_BUFF_SPECIES = 6;
+const B_BUFF_MON_NICK = 7;
+const _B_BUFF_NEGATIVE_FLAVOR = 8;  // unused
+const _B_BUFF_ABILITY = 9;  // unused
+const B_BUFF_ITEM = 10;
 const B_BUFF_PLACEHOLDER_BEGIN = 0xFD;
 const B_BUFF_EOS = 0xFF;
-const B_BUFF_NUMBER = 1;
-const B_BUFF_STRING = 2;
-const B_BUFF_MOVE = 3;
-const B_BUFF_TYPE = 4;
-const B_BUFF_MON_NICK = 5;
-const B_BUFF_MON_NICK_WITH_PREFIX = 6;
-const B_BUFF_ITEM = 12;
-const B_BUFF_SPECIES = 13;
+void _B_BUFF_STAT; void _B_BUFF_NEGATIVE_FLAVOR; void _B_BUFF_ABILITY;
 
 /** 1:1 décomp `include/battle_message.h:114-122` PREPARE_BYTE_NUMBER_BUFFER. */
 export function PREPARE_BYTE_NUMBER_BUFFER(textVar: any, maxDigits: number, number: number): void {
