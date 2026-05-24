@@ -82,22 +82,15 @@ const STAT_CHANGE_CANT_PREVENT    = 1 << 3;
 // B_ANIM_* (battle_anim.h) — used by playstatchangeanimation Emit call.
 const B_ANIM_STATS_CHANGE = 0;
 
-// MOVE_EFFECT_* indices (battle.h:245-298) — pour la status flags table.
-const MOVE_EFFECT_SLEEP          = 1;
-const MOVE_EFFECT_POISON         = 2;
-const MOVE_EFFECT_BURN           = 3;
-const MOVE_EFFECT_FREEZE         = 4;
-const MOVE_EFFECT_PARALYSIS      = 5;
-const MOVE_EFFECT_TOXIC          = 6;
-const MOVE_EFFECT_CONFUSION      = 7;
-const MOVE_EFFECT_FLINCH         = 8;
-const MOVE_EFFECT_UPROAR         = 10;
-const MOVE_EFFECT_CHARGING       = 12;
-const MOVE_EFFECT_WRAP           = 13;
-const MOVE_EFFECT_RECHARGE       = 29;
-const MOVE_EFFECT_PREVENT_ESCAPE = 32;
-const MOVE_EFFECT_NIGHTMARE      = 33;
-const MOVE_EFFECT_THRASH         = 53;
+// MOVE_EFFECT_* indices (battle.h:245-298) — import depuis decomp-data au lieu
+// de hardcode (= 1:1 strict, A8 audit).
+import {
+  MOVE_EFFECT_SLEEP, MOVE_EFFECT_POISON, MOVE_EFFECT_BURN, MOVE_EFFECT_FREEZE,
+  MOVE_EFFECT_PARALYSIS, MOVE_EFFECT_TOXIC, MOVE_EFFECT_CONFUSION,
+  MOVE_EFFECT_FLINCH, MOVE_EFFECT_UPROAR, MOVE_EFFECT_CHARGING, MOVE_EFFECT_WRAP,
+  MOVE_EFFECT_RECHARGE, MOVE_EFFECT_PREVENT_ESCAPE, MOVE_EFFECT_NIGHTMARE,
+  MOVE_EFFECT_THRASH,
+} from '../decomp-data/include/constants/battle-data';
 
 // 1:1 décomp `sStatusFlagsForMoveEffects[NUM_MOVE_EFFECTS]` (battle_script_commands.c:608-625).
 // Partial table mais 1:1 décomp pour les 15 entries définies.

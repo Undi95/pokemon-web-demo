@@ -161,8 +161,14 @@ registerSpecial('CalculatePlayerPartyCount', () => {
   return count;
 });
 
-/** 1:1 décomp `ShouldTryRematchBattle` (rematch_setup.c).
- *  Returns TRUE si trainer rematch available. Stub return 0 (= pas de rematch). */
+/** 1:1 décomp `ShouldTryRematchBattle` (battle_setup.c:1839-1845) :
+ *    if (IsFirstTrainerIdReadyForRematch(gRematchTable, gTrainerBattleOpponent_A))
+ *        return TRUE;
+ *    return WasSecondRematchWon(gRematchTable, gTrainerBattleOpponent_A);
+ *  Dette R3 justifiée : gRematchTable + IsFirstTrainerIdReadyForRematch +
+ *  WasSecondRematchWon pas portés (= subsystem rematch hors démo Littleroot).
+ *  Return 0 = "no rematch available", 1:1 strict valide tant que rematch
+ *  system pas wire. */
 registerSpecial('ShouldTryRematchBattle', () => {
   return 0;
 });

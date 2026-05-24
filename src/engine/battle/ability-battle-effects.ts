@@ -141,8 +141,11 @@ export const ABILITYEFFECT_WATER_SPORT = 254;
 export const ABILITYEFFECT_SWITCH_IN_WEATHER = 255;
 
 // ─── CASTFORM_* enum (constants/battle.h) ────────────────────────────────
+// SPECIES_CASTFORM importé depuis decomp-data (= 1:1 strict, pas hardcode).
+import { SPECIES_CASTFORM } from '../decomp-data/include/constants/species-data';
 
-const SPECIES_CASTFORM = 385;
+// CASTFORM_NORMAL/FIRE/WATER/ICE = constants/battle.h enum (= 0..3). Pas
+// extraits dans decomp-data — hardcodes locaux 1:1 strict justifiés.
 const CASTFORM_NORMAL = 0;
 const CASTFORM_FIRE = 1;
 const CASTFORM_WATER = 2;
