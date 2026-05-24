@@ -356,6 +356,64 @@ export function GetObjEventTemplateCoords(mapId: string, localId: number | strin
   return undefined;
 }
 
+// ─── 1:1 STRICT décomp `LoadObjEventTemplatesFromHeader` (overworld.c:469-478) ──
+/**
+ *  void LoadObjEventTemplatesFromHeader(void)
+ *  {
+ *      // Clear map object templates
+ *      CpuFill32(0, gSaveBlock1Ptr->objectEventTemplates,
+ *                sizeof(gSaveBlock1Ptr->objectEventTemplates));
+ *
+ *      // Copy map header events to save block
+ *      CpuCopy32(gMapHeader.events->objectEvents,
+ *                gSaveBlock1Ptr->objectEventTemplates,
+ *                gMapHeader.events->objectEventCount * sizeof(struct ObjectEventTemplate));
+ *  }
+ *
+ *  Appelé par `LoadMapFromCameraTransition` (overworld.c:796) ET
+ *  `LoadMapFromWarp` (overworld.c:840) — donc à CHAQUE map switch normal
+ *  (cross-border ou warp). Le décomp WIPE le saveblock templates puis copy
+ *  depuis mapHeader → les setobjectxyperm précédents SONT PERDUS au map
+ *  switch. C'est intentionnel : OnTransition fire ensuite et re-applique
+ *  les setobjectxyperm selon l'état actuel des vars.
+ *
+ *  Notre port avait l'inverse (= overlay persistent cross-map) → bug user
+ *  2026-05-24 "MOM revient devant TV au sortir/rentrer maison". Fix 1:1
+ *  strict : wipe saveblock au map switch.
+ */
+export function LoadObjEventTemplatesFromHeader(mapId: string, headerTemplates: ReadonlyArray<{ localId: number; localIdRaw?: string; graphicsId: number | string; kind: number; x: number; y: number; elevation: number; movementType: number | string; movementRangeX: number; movementRangeY: number; trainerType: number; trainerRange_berryTreeId: number; script: string; flagId: number | string }>): void {
+  const block1 = GetSaveBlock1();
+  // 1:1 décomp CpuFill32 : clear all templates.
+  // Notre port : remove tous les templates pour ce mapId (= cleanup overlay).
+  // Note divergence : décomp wipe l'array global de 64 entries pour tous les
+  // maps. Notre port garde un mapId field → wipe seulement les entries de ce
+  // map. Comportementalement équivalent : au prochain spawn cette map, le
+  // saveblock contient juste les templates fresh from mapHeader (no overlay).
+  block1.objectEventTemplates = block1.objectEventTemplates.filter(
+    (t: { mapId?: string }) => t.mapId !== mapId,
+  );
+  // 1:1 décomp CpuCopy32 : copy mapHeader events → saveblock.
+  for (const ht of headerTemplates) {
+    block1.objectEventTemplates.push({
+      localId: ht.localId,
+      localIdRaw: ht.localIdRaw,
+      graphicsId: ht.graphicsId,
+      kind: ht.kind,
+      x: ht.x,
+      y: ht.y,
+      elevation: ht.elevation,
+      movementType: ht.movementType,
+      movementRangeX: ht.movementRangeX,
+      movementRangeY: ht.movementRangeY,
+      trainerType: ht.trainerType,
+      trainerRange_berryTreeId: ht.trainerRange_berryTreeId,
+      script: ht.script,
+      flagId: ht.flagId,
+      mapId,
+    } as never);
+  }
+}
+
 // ─── Map courante helpers (= 1:1 décomp `gSaveBlock1Ptr->location` + `pos`) ──
 
 /** 1:1 décomp accessor : composite `{ name, x, y, facing? }` depuis

@@ -72,7 +72,7 @@ import {
 } from '../engine/player-avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
-import { CopyPartyAndObjectsFromSave, SetCurrentMap } from '../engine/load_save';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/load_save';
 import {
   SpawnObjectEventsOnMap,
   SpawnObjectEventsOnReturnToField,
@@ -843,6 +843,34 @@ export class TestOverworldScene extends Phaser.Scene {
       loadGameData(),      // Phase 4.10 : 21 tables Pokémon (= base Pokédex / battles)
     ]);
     installDexDevtools();  // dev.dex.* accessible en console
+
+    // 1:1 STRICT décomp `LoadObjEventTemplatesFromHeader` (overworld.c:469-478)
+    // appelé par LoadMapFromWarp:840 AVANT RunOnTransitionMapScript. Clear le
+    // saveblock objectEventTemplates pour cette map + copy depuis mapHeader
+    // (= reset les setobjectxyperm de la map précédente). OnTransition fire
+    // ensuite et re-applique setobjectxyperm selon état courant des vars.
+    //
+    // Si returnToField=true (= bag/menu close, same map), on SKIP ce reset
+    // pour preserve gObjectEvents memory (= déjà fait par A3 ReturnToFieldLocal).
+    if (!returnToField) {
+      const headerTemplates = (header.events?.objectEvents ?? []).map(t => ({
+        localId: t.localId,
+        localIdRaw: t.localIdRaw,
+        graphicsId: t.graphicsId,
+        kind: (t as { kind?: number }).kind ?? 0,
+        x: t.x,
+        y: t.y,
+        elevation: (t as { elevation?: number }).elevation ?? 0,
+        movementType: (t as { movementType?: number | string }).movementType ?? 0,
+        movementRangeX: (t as { movementRangeX?: number }).movementRangeX ?? 0,
+        movementRangeY: (t as { movementRangeY?: number }).movementRangeY ?? 0,
+        trainerType: (t as { trainerType?: number }).trainerType ?? 0,
+        trainerRange_berryTreeId: (t as { trainerRange_berryTreeId?: number }).trainerRange_berryTreeId ?? 0,
+        script: (t as { script?: string }).script ?? '',
+        flagId: (t as { flagId?: number | string }).flagId ?? 0,
+      }));
+      LoadObjEventTemplatesFromHeader(header.id, headerTemplates);
+    }
 
     // 1:1 décomp `RunOnTransitionMapScript` (overworld.c:807,860). Appelé
     // dans LoadMapFromWarp AVANT InitMap → AVANT TrySpawnObjectEvents. Set
