@@ -63,7 +63,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from './decomp-consta
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from './save-block-state';
-import { GetObjEventTemplateCoords } from './load_save';
+import { GetSaveBlock1 } from './save-system';
 
 const BASE = '/decomp/em';
 
@@ -2382,52 +2382,41 @@ function _spawnSingleNpcFromTemplate(
 
 /** Phase 4.8 Tâche 2 : Spawn TOUS les NPC templates de la map courante.
  *  Async car preload des PNGs (parallel). Iteration spawn elle-même est sync.
- *  1:1 décomp `TrySpawnObjectEvents(0, 0)` au map init/warp (overworld.c:2159).
+ *  1:1 STRICT décomp `TrySpawnObjectEvents(0, 0)` au map init/warp (overworld.c
+ *  :2159) → event_object_movement.c:1666 itère `gSaveBlock1Ptr->object
+ *  EventTemplates[i]` (= saveblock = ROM copy + setobjectxyperm overlay).
  *  Pas de bounds check ici — décomp init spawn TOUS templates sans filter
- *  (= le bounds check c'est pour TrySpawnObjectEvents per-frame). */
+ *  (= le bounds check c'est pour TrySpawnObjectEvents per-frame).
+ *
+ *  A10 (2026-05-24) — migration vers saveblock direct : le saveblock est
+ *  populé par LoadObjEventTemplatesFromHeader au map switch (= CpuCopy32 ROM
+ *  → saveblock), puis muté par setobjectxyperm. Iterer le saveblock direct
+ *  élimine le besoin de overlay merge (= 1 source unique 1:1 strict). */
 export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   if (!gMapHeader) throw new Error('SpawnObjectEventsOnMap: gMapHeader is null');
-  const templates = gMapHeader.events?.objectEvents ?? [];
+  const currentMapId = gMapHeader.id;
+  // 1:1 STRICT décomp event_object_movement.c:1666 : iterer le saveblock direct.
+  const block1 = GetSaveBlock1();
+  const templates = block1.objectEventTemplates.filter(
+    (t: { mapId?: string }) => t.mapId === currentMapId,
+  );
   if (templates.length === 0) {
-    console.log('[object-events] no NPCs in this map');
+    console.log('[object-events] no NPCs in this map (saveblock empty for ' + currentMapId + ')');
     return;
   }
-  const currentMapId = gMapHeader.id;
   const catalog = await loadGraphicsCatalog();
-
-  // 1:1 STRICT décomp event_object_movement.c:1666 :
-  //   struct ObjectEventTemplate *template = &gSaveBlock1Ptr->objectEventTemplates[i];
-  // Le decomp itère le SAVEBLOCK (= persistent, muté par setobjectxyperm).
-  // Le gMapHeader.events.objectEvents reste pristine (= ROM read-only).
-  //
-  // Notre port itère le mapHeader pour le tour iteration (= structure logique),
-  // mais lit la pos effective DEPUIS le saveblock overlay au spawn time SANS
-  // muter le mapHeader (= 1:1 strict pristine).
-  //
-  // Bug 2026-05-24 : avant on faisait `template.x = pos.x` qui mutait le
-  // mapHeader → au prochain LoadObjEventTemplatesFromHeader, le saveblock
-  // était reset depuis le mapHeader DÉJÀ MUTÉ → MOM bloquée à (4, 5)
-  // post-event cross-warp.
 
   // PARALLEL preload (= élimine sequential await + matches décomp instant
   // spawn). Templates qui referencent une PNG manquante après preload sont
   // loggées (= via _spawnSingleNpcFromTemplate which checks cache).
+  // Preload reste basé sur mapHeader (= structure logique map.json) car le
+  // saveblock contient les mêmes graphicsId (= LoadObjEventTemplatesFromHeader
+  // copy à l'identique sauf x/y muté par setobjectxyperm).
   await preloadNpcGraphicsForMap(gMapHeader);
 
-  // SYNC iteration spawn. Passer overlay pos (= saveblock) au lieu de muter.
+  // SYNC iteration spawn — saveblock IS la source 1:1 (= overlay déjà appliqué).
   for (const template of templates) {
-    const idKey = template.localIdRaw || `idx_${template.localId}`;
-    const overlayPos = GetObjEventTemplateCoords(currentMapId, idKey);
-    // 1:1 STRICT : on passe la pos effective (saveblock overlay si exists,
-    // sinon mapHeader pristine) au spawn. Le mapHeader n'est PAS muté.
-    if (overlayPos) {
-      // Construire un template-like avec overlay pos pour le spawn (= copie
-      // shallow, le mapHeader original reste pristine).
-      const overlayTemplate = { ...template, x: overlayPos.x, y: overlayPos.y };
-      _spawnSingleNpcFromTemplate(overlayTemplate, currentMapId, rt, catalog);
-    } else {
-      _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
-    }
+    _spawnSingleNpcFromTemplate(template as never, currentMapId, rt, catalog);
   }
 }
 
@@ -2640,10 +2629,11 @@ export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): bool
   return _spawnSingleNpcFromTemplate(tpl, gMapHeader.id, rt, _graphicsCatalog);
 }
 
-/** 1:1 décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`
+/** 1:1 STRICT décomp `TrySpawnObjectEvents(s16 cameraX, s16 cameraY)`
  *  (event_object_movement.c:1645-1675). Per-frame ou per-boundary-cross :
- *  iterate tous les NPC templates de la map, spawn ceux dans bounds qui
- *  ne sont pas déjà active (= dedup via (mapId, initialCoords)).
+ *  iterate tous les NPC templates DU SAVEBLOCK (= ROM copy + setobjectxyperm
+ *  overlay), spawn ceux dans bounds qui ne sont pas déjà active (= dedup via
+ *  localId).
  *
  *  Bounds 1:1 décomp :
  *    left   = pos.x - 2
@@ -2654,15 +2644,22 @@ export function TrySpawnObjectEvent(localIdRaw: string, rt: DecompRuntime): bool
  *  Réécrit en LOGICAL frame : template.x dans [pos.x - 9, pos.x + 10],
  *  template.y dans [pos.y - 7, pos.y + 9].
  *
+ *  A10 (2026-05-24) — migration vers saveblock direct : 1:1 strict décomp
+ *  ligne 1666 utilise `gSaveBlock1Ptr->objectEventTemplates[i]`, PAS gMapHeader.
+ *
  *  SYNC : assume PNGs préchargées via preloadNpcGraphicsForMap. Si pas cached,
  *  _spawnSingleNpcFromTemplate retourne false et le NPC sera retried frame
  *  suivante (= no-op rapide). */
 export function TrySpawnObjectEvents(rt: DecompRuntime): void {
   if (!gMapHeader) return;
-  const templates = gMapHeader.events?.objectEvents ?? [];
-  if (templates.length === 0) return;
   if (!_graphicsCatalog) return;  // Catalog pas encore loaded — caller missed init.
   const currentMapId = gMapHeader.id;
+  // 1:1 STRICT décomp event_object_movement.c:1666.
+  const block1 = GetSaveBlock1();
+  const templates = block1.objectEventTemplates.filter(
+    (t: { mapId?: string }) => t.mapId === currentMapId,
+  );
+  if (templates.length === 0) return;
   const catalog = _graphicsCatalog;
 
   // 1:1 décomp pos.x/y. Notre conv : pos.x = playerLogical.x = gPlayerAvatar.x,
@@ -2677,7 +2674,7 @@ export function TrySpawnObjectEvents(rt: DecompRuntime): void {
   for (const template of templates) {
     if (template.x < left || template.x > right) continue;
     if (template.y < top || template.y > bottom) continue;
-    _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
+    _spawnSingleNpcFromTemplate(template as never, currentMapId, rt, catalog);
   }
 }
 

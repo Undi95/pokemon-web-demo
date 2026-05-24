@@ -32,6 +32,7 @@ import {
 import type { ObjectEventTemplate } from './map-loader';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
 import { GetCurrentMap, SetObjEventTemplateCoords } from './load_save';
+import { GetSaveBlock1 } from './save-system';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
 import {
@@ -1339,13 +1340,18 @@ function _findNpcByLocalId(arg: string): typeof gObjectEvents[number] | null {
   return null;
 }
 
-/** Helper : modifie aussi le template dans gMapHeader pour persister la position
- *  permanente (= setobjectxyperm 1:1 décomp modifie gObjectEventTemplates). */
+/** Helper : trouve un template dans le SAVEBLOCK (= 1:1 strict décomp
+ *  `GetBaseTemplateForObjectEvent` event_object_movement.c:2462 itère
+ *  `gSaveBlock1Ptr->objectEventTemplates`). Le saveblock est populé au map
+ *  switch par `LoadObjEventTemplatesFromHeader` (= copy from mapHeader),
+ *  puis muté par setobjectxyperm/setobjectmovementtype/copyobjectxytoperm. */
 function _findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
   if (!arg) return null;
-  const templates = gMapHeader?.events?.objectEvents ?? [];
-  for (const t of templates) {
-    if (t.localIdRaw === arg) return t;
+  const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
+  const block1 = GetSaveBlock1();
+  for (const t of block1.objectEventTemplates) {
+    if ((t as { mapId?: string }).mapId !== currentMapId) continue;
+    if ((t as { localIdRaw?: string }).localIdRaw === arg) return t as unknown as ObjectEventTemplate;
   }
   return null;
 }

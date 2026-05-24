@@ -381,7 +381,7 @@ export function GetObjEventTemplateCoords(mapId: string, localId: number | strin
  *  2026-05-24 "MOM revient devant TV au sortir/rentrer maison". Fix 1:1
  *  strict : wipe saveblock au map switch.
  */
-export function LoadObjEventTemplatesFromHeader(mapId: string, headerTemplates: ReadonlyArray<{ localId: number; localIdRaw?: string; graphicsId: number | string; kind: number; x: number; y: number; elevation: number; movementType: number | string; movementRangeX: number; movementRangeY: number; trainerType: number; trainerRange_berryTreeId: number; script: string; flagId: number | string }>): void {
+export function LoadObjEventTemplatesFromHeader(mapId: string, headerTemplates: ReadonlyArray<{ localId: number; localIdRaw?: string; graphicsId: number | string; graphicsIdRaw?: string; kind: number; x: number; y: number; elevation: number; movementType: number | string; movementTypeRaw?: string; movementRangeX: number; movementRangeY: number; trainerType: number; trainerRange_berryTreeId: number; script: string; flagId: number | string }>): void {
   const block1 = GetSaveBlock1();
   // 1:1 décomp CpuFill32 : clear all templates.
   // Notre port : remove tous les templates pour ce mapId (= cleanup overlay).
@@ -393,16 +393,21 @@ export function LoadObjEventTemplatesFromHeader(mapId: string, headerTemplates: 
     (t: { mapId?: string }) => t.mapId !== mapId,
   );
   // 1:1 décomp CpuCopy32 : copy mapHeader events → saveblock.
+  // A10 : copier aussi les fields *Raw (graphicsIdRaw, localIdRaw, movementTypeRaw)
+  // pour que SpawnObjectEventsOnMap puisse iterer le saveblock direct
+  // (= 1:1 décomp event_object_movement.c:1666 lit saveblock, pas mapHeader).
   for (const ht of headerTemplates) {
     block1.objectEventTemplates.push({
       localId: ht.localId,
       localIdRaw: ht.localIdRaw,
       graphicsId: ht.graphicsId,
+      graphicsIdRaw: ht.graphicsIdRaw,
       kind: ht.kind,
       x: ht.x,
       y: ht.y,
       elevation: ht.elevation,
       movementType: ht.movementType,
+      movementTypeRaw: ht.movementTypeRaw,
       movementRangeX: ht.movementRangeX,
       movementRangeY: ht.movementRangeY,
       trainerType: ht.trainerType,
