@@ -711,10 +711,11 @@ registerOpcode('msgbox', (ctx, args) => {
           ClearStdWindowAndFrame(wid, true);
           RemoveWindow(wid);
         }
-        // Release dialog + NPC (= MSGBOX_YESNO behavior 1:1 décomp).
+        // Release dialog + NPC 1:1 STRICT via UnfreezeObjectEvent (= restore
+        // sprite.animPaused = backup, sinon anim stuck pause).
         HideFieldMessageBox();
         const npc = getSelectedNpc();
-        if (npc) npc.frozen = false;
+        if (npc) UnfreezeObjectEvent(npc);
         return true;
       }
     }
@@ -3093,10 +3094,11 @@ function _runStdScript(ctx: ScriptContext, stdIndex: number, isCall: boolean): b
       return false;
     }
     case 1: {
-      // STD_FIND_ITEM : lock + faceplayer + waitse + add item + msg.
+      // STD_FIND_ITEM : lock + faceplayer 1:1 STRICT via FreezeObjectEvent
+      // (= sinon anim sprite continue à cycler pendant le pickup).
       const npc = getSelectedNpc();
       if (npc) {
-        npc.frozen = true;
+        FreezeObjectEvent(npc);
         npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
       }
       console.log('[opcode std] STD_FIND_ITEM dispatch');
@@ -3367,9 +3369,10 @@ registerOpcode('lockfortrainer', (ctx, _args) => {
   if (_isInTrainerLink()) return false;
   const npc = gObjectEvents[gSelectedObjectEvent.index];
   if (npc && npc.active) {
-    // 1:1 décomp FreezeForApproachingTrainers (trainer_see.c) : freeze tous
-    // les NPCs sauf le selected approaching trainer.
-    for (const n of gObjectEvents) if (n.active) n.frozen = true;
+    // 1:1 STRICT décomp FreezeForApproachingTrainers (trainer_see.c) : freeze
+    // tous les NPCs via FreezeObjectEvent (= pause sprite.animPaused = sinon
+    // les autres trainers continuent à wander visuellement).
+    for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
     // Capture the initial step state of player + all NPCs to detect when
     // all step animations have completed.
     const poll = (): boolean => {
