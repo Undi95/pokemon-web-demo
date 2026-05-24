@@ -19,8 +19,10 @@ import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { PlaySE } from './decomp-globals';
 
+// FONT_NORMAL = text.h enum local (= pas extrait, hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;
-const TEXT_SKIP_DRAW = 255;
+// 1:1 strict A8 audit : import depuis decomp-data.
+import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
 const COLOR_MAIN: [number, number, number] = [1, 2, 3];
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;

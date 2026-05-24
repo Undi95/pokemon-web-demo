@@ -43,10 +43,10 @@ export function setSArrowPressed(v: boolean): void { sArrowPressed = v; }
 
 // ─── Const layout (1:1 décomp option_menu.c:90-111 + helpers) ───────────────
 
-const A_BUTTON = 1;
-const B_BUTTON = 2;
-const DPAD_LEFT = 0x20;
-const DPAD_RIGHT = 0x10;
+// 1:1 strict A8 audit : import GBA keys depuis decomp-data.
+import {
+  A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
+} from './decomp-data/include/gba/io_reg-data';
 const WIN_HEADER = 0;
 const WIN_OPTIONS = 1;
 

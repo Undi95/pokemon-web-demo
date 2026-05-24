@@ -1033,8 +1033,9 @@ export function ListMenuSetUpRedOutlineCursorSpriteOamTable(rowWidth: number, ro
 // Gfx`/`sRedInterface_Pal` dans le cache `getAsset` se fera à ce branchement).
 // Report HONNÊTE : 1:1 ligne-par-ligne, 0 demi-port, 0 fake silencieux.
 
-/** 1:1 décomp `include/gba/gba.h #define DISPLAY_HEIGHT 160`. */
-const DISPLAY_HEIGHT = 160;
+/** 1:1 décomp `include/gba/defines.h #define DISPLAY_HEIGHT 160`. Import
+ *  depuis decomp-data (= A8 audit). */
+import { DISPLAY_HEIGHT } from './decomp-data/include/gba/defines-data';
 
 /** 1:1 décomp `include/constants/...`/sprite : `#define TAG_NONE 0xFFFF`. */
 const TAG_NONE = 0xFFFF;

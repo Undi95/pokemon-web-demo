@@ -30,8 +30,8 @@
 import { getRuntime } from './decomp-globals';
 import { LoadSpritePalette } from './sprite';
 
-const DISPLAY_WIDTH = 240;
-const DISPLAY_HEIGHT = 160;
+// 1:1 strict A8 audit : import depuis decomp-data.
+import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './decomp-data/include/gba/defines-data';
 
 // Sprite Poke Ball asset 16x16 (= 4 tiles 8x8 = 4*32=128 bytes 4bpp).
 const POKE_BALL_URL = '/decomp/em/balls/poke.png';

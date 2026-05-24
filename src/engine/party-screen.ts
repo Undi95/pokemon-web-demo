@@ -63,9 +63,12 @@ import { MON_ICON_PALETTE_INDICES } from './pokemon-icon-palettes';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
+// FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
+// hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
-const TEXT_SKIP_DRAW = 255;
+// 1:1 strict A8 audit : import depuis decomp-data.
+import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;

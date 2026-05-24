@@ -137,15 +137,12 @@ export function FieldClearPlayerInput(input: FieldInput): void {
   input.dpadDirection = 0;
 }
 
-// 1:1 décomp button bit masks (= include/gba/keys.h).
-const START_BUTTON  = 0x08;
-const SELECT_BUTTON = 0x04;
-const A_BUTTON      = 0x01;
-const B_BUTTON      = 0x02;
-const DPAD_RIGHT    = 0x10;
-const DPAD_LEFT     = 0x20;
-const DPAD_UP       = 0x40;
-const DPAD_DOWN     = 0x80;
+// 1:1 décomp button bit masks (= include/gba/io_reg.h). Import depuis
+// decomp-data (= A8 audit).
+import {
+  START_BUTTON, SELECT_BUTTON, A_BUTTON, B_BUTTON,
+  DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
+} from './decomp-data/include/gba/io_reg-data';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;

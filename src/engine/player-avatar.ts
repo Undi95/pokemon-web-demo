@@ -1234,8 +1234,9 @@ const getInputDirection = _getInputDirection;
  *  @param newKeys   Touches qui viennent d'être pressées (= front montant)
  *  @param rt        DecompRuntime
  */
-/** GBA A button mask (= 0x01). 1:1 décomp `A_BUTTON`. */
-const A_BUTTON = 0x01;
+/** GBA A button mask. 1:1 décomp `A_BUTTON` (gba/io_reg.h). Import depuis
+ *  decomp-data (= A8 audit). */
+import { A_BUTTON } from './decomp-data/include/gba/io_reg-data';
 
 /** 1:1 décomp `ProcessPlayerFieldInput` snippet lines 170-173 :
  *  ```c
