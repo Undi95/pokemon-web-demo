@@ -273,14 +273,19 @@ export function ScriptJump(ctx: ScriptContext, opcodes: Opcode[]): void {
   ctx.scriptIdx = 0;
 }
 
+/** 1:1 STRICT décomp `ScriptCall(ctx, ptr)` (script.c:155-159) :
+ *    ScriptPush(ctx, ctx->scriptPtr);   ← push, ignore overflow result
+ *    ctx->scriptPtr = ptr;              ← set new ptr REGARDLESS of overflow
+ *  ScriptPush retourne TRUE si overflow (stackDepth + 1 >= STACK_DEPTH) mais
+ *  ScriptCall ignore la valeur — le décomp continue à set ptr quoi qu'il arrive. */
 export function ScriptCall(ctx: ScriptContext, opcodes: Opcode[]): void {
-  // Push current position.
-  if (ctx.stackDepth + 1 >= STACK_DEPTH) {
-    console.warn('[script-runtime] stack overflow on call');
-    return;
+  // Push (= 1:1 ScriptPush) : si overflow, warn silencieux mais set ptr quand même.
+  if (ctx.stackDepth + 1 < STACK_DEPTH) {
+    ctx.stack[ctx.stackDepth] = { opcodes: ctx.scriptOpcodes ?? [], idx: ctx.scriptIdx };
+    ctx.stackDepth++;
+  } else {
+    console.warn('[script-runtime] stack overflow on call (= dropped push, set ptr anyway)');
   }
-  ctx.stack[ctx.stackDepth] = { opcodes: ctx.scriptOpcodes ?? [], idx: ctx.scriptIdx };
-  ctx.stackDepth++;
   ctx.scriptOpcodes = opcodes;
   ctx.scriptIdx = 0;
 }
