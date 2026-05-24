@@ -972,7 +972,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'QuizLadySetCustomQuestion', 'QuizLadySetWaitingForChallenger',
   'QuizLadyShowQuizQuestion', 'QuizLadyTakePrizeForCustomQuiz',
   'RejectEggFromDayCare', 'ResetTVShowState', 'ResetTrickHouseNuggetFlag',
-  'RetrieveLotteryNumber', 'ReturnFromLinkRoom', 'RockSmashWildEncounter',
+  // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
+  'ReturnFromLinkRoom', 'RockSmashWildEncounter',
   'SaveBardSongLyrics', 'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
   'ScriptGetPokedexInfo', 'ScriptHatchMon',
   'ScriptMenu_CreatePCMultichoice',
@@ -1160,6 +1161,18 @@ registerSpecial('HasAtLeastOneBerry', () => {
 
 // `IsSelectedMonEgg` déjà porté ligne 741 (= duplicate skip).
 // `IsLastMonThatKnowsSurf` real body ajouté ligne 415 (= remplace stub).
+
+/** 1:1 décomp `RetrieveLotteryNumber` (lottery_corner.c:42-46).
+ *  Set gSpecialVar_Result = GetLotteryNumber() (= (lowNum << 16) | highNum).
+ *  GetLotteryNumber décomp ligne 156-161 utilise VAR_POKELOT_RND1/2. */
+registerSpecial('RetrieveLotteryNumber', () => {
+  const highNum = VarGet('VAR_POKELOT_RND1');
+  const lowNum = VarGet('VAR_POKELOT_RND2');
+  // Note 1:1 strict : décomp retourne u32 (lowNum << 16) | highNum, mais
+  // gSpecialVar_Result est u16 → l'high 16 bits seront truncated. Notre retour
+  // se fait via VAR_RESULT u16 donc on retourne juste les low 16 bits.
+  return ((lowNum << 16) | highNum) & 0xFFFF;
+});
 
 /** 1:1 décomp `HasBardSongBeenChanged` (mauville_old_man.c:151-154).
  *  Set gSpecialVar_Result = oldMan.bard.hasChangedSong (= 0/1). */
