@@ -111,6 +111,8 @@ import {
   IsMetatileDirectionallyImpassable,
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
+// 1:1 décomp `include/constants/game_stat.h` enum values.
+import { GAME_STAT_JUMPED_DOWN_LEDGES } from './decomp-data/include/constants/game_stat-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
@@ -306,23 +308,22 @@ export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase;
 
 // ─── 1:1 décomp helpers `field_player_avatar.c` ─────────────────────────────
 
-/** 1:1 décomp `GetPlayerFacingDirection` (field_player_avatar.c:1165-1168).
- *
- *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;`
+/** 1:1 décomp `GetPlayerFacingDirection` (field_player_avatar.c:1165-1168) :
+ *    return gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;
  *
  *  Notre impl : lit depuis `gObjectEvents[playerSlot].facingDirection` qui est
  *  synced via `SyncPlayerObjectEvent` ou via le step start. Si player objectEvent
- *  pas encore init (= boot early), fallback sur `GetPlayerFacingDirection()` direct. */
+ *  pas encore init (= boot early), fallback DIR_SOUTH (= safety, le décomp ferait
+ *  UB undefined behavior si objectEventId pointe slot inactif). */
 export function GetPlayerFacingDirection(): number {
   const slot = gPlayerAvatar.objectEventId;
   const obj = gObjectEvents[slot];
   if (obj && obj.active && obj.isPlayer) return obj.facingDirection;
-  return GetPlayerFacingDirection();
+  return DIR_SOUTH;
 }
 
-/** 1:1 décomp `GetPlayerMovementDirection` (field_player_avatar.c:1170-1173).
- *
- *  Body décomp : `return gObjectEvents[gPlayerAvatar.objectEventId].movementDirection;`
+/** 1:1 décomp `GetPlayerMovementDirection` (field_player_avatar.c:1170-1173) :
+ *    return gObjectEvents[gPlayerAvatar.objectEventId].movementDirection;
  *
  *  Différent de `GetPlayerFacingDirection` : movementDirection = direction de
  *  la dernière action de mouvement (= peut différer de facing si facing locked). */
@@ -330,7 +331,7 @@ export function GetPlayerMovementDirection(): number {
   const slot = gPlayerAvatar.objectEventId;
   const obj = gObjectEvents[slot];
   if (obj && obj.active && obj.isPlayer) return obj.movementDirection;
-  return GetPlayerFacingDirection();
+  return DIR_SOUTH;
 }
 
 /** 1:1 décomp `PlayerGetElevation` (field_player_avatar.c:1175-1178).
@@ -366,28 +367,17 @@ export function PlayerGetDestCoords(): { x: number; y: number } {
   return { x: gSaveBlock1Ptr.pos.x + MAP_OFFSET, y: gSaveBlock1Ptr.pos.y + MAP_OFFSET };
 }
 
-/** 1:1 décomp `GetXYCoordsOneStepInFrontOfPlayer` (field_player_avatar.c:1117-1122).
- *
- *  Body décomp :
- *  ```c
- *  *x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;
- *  *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;
- *  MoveCoords(GetPlayerFacingDirection(), x, y);
- *  ```
+/** 1:1 décomp `GetXYCoordsOneStepInFrontOfPlayer` (field_player_avatar.c:1117-1122) :
+ *    *x = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x;
+ *    *y = gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y;
+ *    MoveCoords(GetPlayerFacingDirection(), x, y);
  *
  *  Returns position 1 tile devant le player (= dans la direction de son facing).
  *  Used par `GetInFrontOfPlayerPosition` + `TryStartInteractionScript` pour
  *  l'A-button interact target. */
 export function GetXYCoordsOneStepInFrontOfPlayer(): { x: number; y: number } {
-  const facing = GetPlayerFacingDirection();
   const pos = PlayerGetDestCoords();
-  // 1:1 décomp `MoveCoords(direction, x, y)` : advance par DIR_TO_DX/DY.
-  let dx = 0, dy = 0;
-  if (facing === DIR_NORTH) dy = -1;
-  else if (facing === DIR_SOUTH) dy = 1;
-  else if (facing === DIR_WEST) dx = -1;
-  else if (facing === DIR_EAST) dx = 1;
-  return { x: pos.x + dx, y: pos.y + dy };
+  return MoveCoords(GetPlayerFacingDirection(), pos.x, pos.y);
 }
 
 // ─── OBJ VRAM allocation (= player sprite occupe les 1ères tiles) ──────────
@@ -1026,7 +1016,7 @@ export function CheckForObjectEventCollision(
   if (collision === COLLISION_ELEVATION_MISMATCH && CanStopSurfing(x, y, direction))
     return COLLISION_STOP_SURFING;
   if (ShouldJumpLedge(metatileBehavior, direction)) {
-    IncrementGameStat(43);  // GAME_STAT_JUMPED_DOWN_LEDGES = 43
+    IncrementGameStat(GAME_STAT_JUMPED_DOWN_LEDGES);
     return COLLISION_LEDGE_JUMP;
   }
   if (collision === COLLISION_OBJECT_EVENT && TryPushBoulder(x, y, direction))
@@ -1144,46 +1134,46 @@ function checkPlayerCollision(direction: number): number {
   return CheckForPlayerAvatarCollision(direction);
 }
 
-/** 1:1 décomp `PlayCollisionSoundIfNotFacingWarp(direction)` (field_player_avatar.c:1098-1115).
- *
- *  ```c
- *  if (!sArrowWarpMetatileBehaviorChecks[direction-1](metatileBehavior))
- *  {
- *      if (direction == DIR_NORTH && IsWarpDoor(targetBehavior)) return;
- *      PlaySE(SE_WALL_HIT);
- *  }
- *  ```
- *
- *  Skip SE_WALL_HIT si :
- *    - Player on un ARROW_WARP tile matching la direction (= bump est en réalité
- *      un warp arrow trigger, pas une vraie collision avec mur).
- *    - OR direction = NORTH et target tile = MB_ANIMATED_DOOR (= push UP sur
- *      door, le door anim handle le SE).
- *
- *  @param direction DIR_SOUTH/NORTH/WEST/EAST */
+/** 1:1 STRICT décomp `PlayCollisionSoundIfNotFacingWarp(direction)`
+ *  (field_player_avatar.c:1098-1115) :
+ *    metatileBehavior = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
+ *    if (!sArrowWarpMetatileBehaviorChecks[direction-1](metatileBehavior)) {
+ *        if (direction == DIR_NORTH) {
+ *            PlayerGetDestCoords(&x, &y);
+ *            MoveCoords(direction, &x, &y);
+ *            if (IsWarpDoor(MapGridGetMetatileBehaviorAt(x, y))) return;
+ *        }
+ *        PlaySE(SE_WALL_HIT);
+ *    }
+ */
 function PlayCollisionSoundIfNotFacingWarp(direction: number): void {
-  const playerBehavior = MapGridGetMetatileBehaviorAt(
-    gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
+  // 1:1 STRICT décomp : utilise cached `currentMetatileBehavior` du player slot.
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  const useSlot = slot && slot.active && slot.isPlayer;
+  const playerBehavior = useSlot
+    ? slot.currentMetatileBehavior
+    : MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
   // 1:1 décomp `sArrowWarpMetatileBehaviorChecks[direction-1]` (field_player_avatar.c:226).
-  // Si player on arrow warp matching direction → no SE (= warp will trigger).
   if (isArrowWarpMetatileBehavior(playerBehavior, direction)) return;
   // 1:1 décomp : check warp door au north uniquement.
   if (direction === DIR_NORTH) {
-    const { x: dx, y: dy } = moveCoords(direction, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
-    const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
-    if (getWarpKindFor(targetBehavior) === 'door') return;
+    const pos = PlayerGetDestCoords();  // INTERNAL coords (= 1:1 décomp).
+    const { x: tx, y: ty } = MoveCoords(direction, pos.x, pos.y);
+    if (getWarpKindFor(MapGridGetMetatileBehaviorAt(tx, ty)) === 'door') return;
   }
   PlaySE(SE_WALL_HIT);
 }
 
-/** 1:1 décomp `ShouldJumpLedge(x, y, direction)` (field_player_avatar.c:727).
+/** 1:1 STRICT décomp `ShouldJumpLedge(x, y, direction)` (field_player_avatar.c:727-733) :
+ *    if (GetLedgeJumpDirection(x, y, direction) != DIR_NONE) return TRUE;
  *  Returns TRUE si le tile target = MB_JUMP_X et direction = X (= ledge drop).
  *  Helper public pour PlayerNotOnBikeMoving qui check ShouldJumpLedge AVANT
  *  CheckForPlayerAvatarCollision pour permettre le jump anim (sinon le tile
  *  serait blocked par MapGridGetCollisionAt = 1). */
 function checkLedgeJump(direction: number): boolean {
-  const { x: dx, y: dy } = moveCoords(direction, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
-  const targetBehavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+  const pos = PlayerGetDestCoords();  // INTERNAL coords 1:1 décomp.
+  const { x: tx, y: ty } = MoveCoords(direction, pos.x, pos.y);
+  const targetBehavior = MapGridGetMetatileBehaviorAt(tx, ty);
   return ShouldJumpLedge(targetBehavior, direction);
 }
 
