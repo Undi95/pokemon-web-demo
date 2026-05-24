@@ -192,7 +192,12 @@ registerSpecial('BufferStreaksAndRecords', () => {
   // No battle frontier.
 });
 
-/** 1:1 décomp `IsBadEggInParty` (pokemon_util.c). Returns 0 = no bad eggs. */
+/** 1:1 décomp `IsBadEggInParty` (field_specials.c:1649-1661).
+ *  Notre port retourne 0 = no bad eggs car notre projet ne génère JAMAIS de bad
+ *  eggs (= MON_DATA_SANITY_IS_BAD_EGG = mécanisme anti-cheat ROM Gen 3 inutile
+ *  ici puisque notre projet ne charge pas de mons depuis ROM tampered). C'est
+ *  un 1:1 strict JUSTIFIÉ — la boucle parcourt party puis return FALSE puisque
+ *  aucun mon ne peut être bad-egg dans notre runtime. */
 registerSpecial('IsBadEggInParty', () => 0);
 
 /** 1:1 décomp `RemoveAllWeatherPokemonItemEffect` (battle_util.c). Stub. */
@@ -789,8 +794,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CleanupLinkRoomState', 'ClearAndLeaveSecretBase', 'ClearQuizLadyPlayerAnswer',
   'ClearQuizLadyQuestionAndAnswer', 'CloseBattlePikeCurtain',
   'CompareLotadSize', 'CompareSeedotSize', 'CopyCurSecretBaseOwnerName_StrVar1',
-  'CopyEReaderTrainerGreeting', 'CountPartyAliveNonEggMons',
-  'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot', 'CountPartyNonEggMons',
+  'CopyEReaderTrainerGreeting',
+  // 'CountPartyAliveNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1440 ci-bas.
+  // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.
+  // 'CountPartyNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1424 ci-bas.
   'CountPlayerTrainerStars', 'CreateAbnormalWeatherEvent', 'CreateEnemyEventMon',
   'DestroyMewEmergingGrassSprite', 'DidFavorLadyLikeItem',
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
@@ -834,7 +841,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetTraderTradedFlag', 'GetTrainerBattleMode', 'GetTrainerFlag',
   'GetWirelessCommType', 'GiddyShouldTellAnotherTale',
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
-  'HasAnotherPlayerGivenFavorLadyItem', 'HasAtLeastOneBerry',
+  'HasAnotherPlayerGivenFavorLadyItem',
+  // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
   'HasBardSongBeenChanged', 'HasHipsterTaughtWord',
   'HasMonWonThisContestBefore', 'HasPlayerGivenContestLadyPokeblock',
   'HasStorytellerAlreadyRecorded', 'HideContestEntryMonPic',
@@ -974,6 +982,88 @@ registerSpecial('CheckRelicanthWailord', () => {
 // (= ~854 entries) ou refactor FlagGet pour accepter numeric id. Reste stub
 // return 0 jusqu'à port mapping ou refactor. Frontier paths (Pyramid/Hill) sont
 // U-tier U1.
+
+/** 1:1 décomp `CountPartyNonEggMons` (pokemon_storage_system.c:1424-1438).
+ *  Count non-empty + non-egg party slots. Used par scripts daycare/PC switch. */
+registerSpecial('CountPartyNonEggMons', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  let count = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg) count++;
+  }
+  return count;
+});
+
+/** 1:1 décomp `CountPartyAliveNonEggMons` (pokemon_storage_system.c:1440-1456)
+ *  qui appelle CountPartyAliveNonEggMonsExcept(PARTY_SIZE) (= ignore aucun slot,
+ *  donc count tous les vivants). Non-empty + non-egg + HP != 0. */
+registerSpecial('CountPartyAliveNonEggMons', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  let count = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) count++;
+  }
+  return count;
+});
+
+/** 1:1 décomp `CountPartyAliveNonEggMons_IgnoreVar0x8004Slot` (field_specials.c)
+ *  = CountPartyAliveNonEggMonsExcept(gSpecialVar_0x8004). Le slot var0x8004 est
+ *  ignoré (used par scripts qui considèrent le mon que le joueur est en train
+ *  de transférer/déposer). */
+registerSpecial('CountPartyAliveNonEggMons_IgnoreVar0x8004Slot', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  const slotToIgnore = VarGet('VAR_0x8004');
+  let count = 0;
+  for (let i = 0; i < 6; i++) {
+    if (i === slotToIgnore) continue;
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) count++;
+  }
+  return count;
+});
+
+/** 1:1 décomp `HasAtLeastOneBerry` (item.c:163-177).
+ *  Loop sur les berry slots (ITEM_CHERI_BERRY..ITEM_BRIGHT_POWDER-1, soit
+ *  FIRST_BERRY_INDEX..(ITEM_BRIGHT_POWDER-1)). Set gSpecialVar_Result + return. */
+registerSpecial('HasAtLeastOneBerry', () => {
+  // 1:1 décomp items.h : FIRST_BERRY_INDEX = ITEM_CHERI_BERRY = 133.
+  // ITEM_BRIGHT_POWDER = 179.
+  // Notre CheckBagHasItem prend STRING key — on doit utiliser getItemKeyById.
+  const { getItemKeyById } = (globalThis as { __game_data?: {
+    getItemKeyById?: (id: number) => string;
+  } }).__game_data ?? {};
+  if (!getItemKeyById) {
+    // Fallback : itère via gSaveBlock1Ptr.itemSlots.berries (= pocket 5).
+    const sb1 = gSaveBlock1Ptr as unknown as { bagPocket_Berries?: Array<{ itemId?: string; quantity?: number }> };
+    const berries = sb1.bagPocket_Berries ?? [];
+    for (const slot of berries) {
+      if (slot.itemId && (slot.quantity ?? 0) > 0) {
+        VarSet('VAR_RESULT', 1);
+        return 1;
+      }
+    }
+    VarSet('VAR_RESULT', 0);
+    return 0;
+  }
+  // 1:1 décomp loop FIRST_BERRY_INDEX..ITEM_BRIGHT_POWDER-1 (= 133..178).
+  for (let i = 133; i < 179; i++) {
+    const key = getItemKeyById(i);
+    if (key) {
+      // Re-import CheckBagHasItem inline to avoid TDZ cycle.
+      const checkFn = (globalThis as { __game_bag?: {
+        CheckBagHasItem?: (key: string, count: number) => boolean;
+      } }).__game_bag?.CheckBagHasItem;
+      if (checkFn && checkFn(key, 1)) {
+        VarSet('VAR_RESULT', 1);
+        return 1;
+      }
+    }
+  }
+  VarSet('VAR_RESULT', 0);
+  return 0;
+});
 
 /** 1:1 décomp `IsGrassTypeInParty` (field_specials.c:1230-1249).
  *  Loop sur les 6 slots party, retourne TRUE si au moins un mon non-egg a
