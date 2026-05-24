@@ -871,7 +871,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'FoundAbandonedShipRoom1Key', 'FoundAbandonedShipRoom2Key',
   'FoundAbandonedShipRoom4Key', 'FoundAbandonedShipRoom6Key',
   'GabbyAndTyAfterInterview', 'GabbyAndTyBeforeInterview',
-  'GabbyAndTyGetBattleNum', 'GabbyAndTyGetLastBattleTrivia',
+  // 'GabbyAndTyGetLastBattleTrivia' — porté 1:1 décomp tv.c:1020 ci-bas.
+  'GabbyAndTyGetBattleNum',
   'GabbyAndTyGetLastQuote', 'GenerateGiddyLine',
   'GetAbnormalWeatherMapNameAndType', 'GetBattleFrontierTutorMoveIndex',
   'GetBattlePyramidHint', 'GetBattleTowerSinglesStreak',
@@ -1140,6 +1141,19 @@ registerSpecial('IsContestDebugActive', () => 0);
  *  Return gSaveBlock1Ptr->gabbyAndTyData.onAir. */
 registerSpecial('IsGabbyAndTyShowOnTheAir', () => {
   return gSaveBlock1Ptr.gabbyAndTyData?.onAir ?? 0;
+});
+
+/** 1:1 décomp `GabbyAndTyGetLastBattleTrivia` (tv.c:1020-1035).
+ *  Check 4 flags battle dans gabbyAndTyData ; retourne 1/2/3/4 selon le
+ *  premier flag positif. Default 0 (= rien à dire). */
+registerSpecial('GabbyAndTyGetLastBattleTrivia', () => {
+  const d = gSaveBlock1Ptr.gabbyAndTyData;
+  if (!d) return 0;
+  if (!d.battleTookMoreThanOneTurn2) return 1;
+  if (d.playerThrewABall2) return 2;
+  if (d.playerUsedHealingItem2) return 3;
+  if (d.playerLostAMon2) return 4;
+  return 0;
 });
 
 /** 1:1 décomp `GetWirelessCommType` (link.c:1846-1849).
