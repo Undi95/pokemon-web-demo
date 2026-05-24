@@ -90,7 +90,7 @@ export function CheckPCHasItem(itemKey: string, count: number): boolean {
 export function AddPCItem(itemKey: string, count: number): boolean {
   // 1:1 décomp : AllocZeroed + memcpy pour stage la modif. En TS on stage
   // dans un array local + commit à la fin.
-  const newItems: ItemSlot[] = gSaveBlock1Ptr.pcItems.map((s) => ({
+  const newItems: ItemSlot[] = gSaveBlock1Ptr.pcItems.map((s: ItemSlot) => ({
     itemKey: s.itemKey,
     quantity: s.quantity,
   }));

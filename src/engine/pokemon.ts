@@ -100,6 +100,15 @@ export interface PokemonInstance {
   /** 1:1 décomp `MON_DATA_FRIENDSHIP` — pour œuf = compteur d'éclosion
    *  (frais = élevé → "mettre du temps"). Optional (résumé non-œuf l'ignore). */
   friendship?: number;
+  /** 1:1 décomp `MON_DATA_OT_NAME` (pokemon.h) — nom du trainer original (=
+   *  joueur pour starter / NPC giver pour cadeau / wild capture = joueur).
+   *  Set par GiveMonToPlayer / CreateBoxMon (pokemon.c:2228-2253). */
+  otName?: string;
+  /** 1:1 décomp `MON_DATA_OT_GENDER` — gender du trainer original (0=M, 1=F). */
+  otGender?: number;
+  /** 1:1 décomp `MON_DATA_OT_ID` — TrainerID 32-bit du joueur original
+   *  (= playerTrainerId). Used pour shiny check + traded mon detection. */
+  otId?: number;
 }
 
 /** 1:1 décomp `MON_MALE` / `MON_FEMALE` / `MON_GENDERLESS` (include/pokemon.h). */

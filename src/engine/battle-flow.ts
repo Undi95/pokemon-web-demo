@@ -1013,7 +1013,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Pick player Pokemon : first non-fainted from party.
         const party = gSaveBlock1Ptr.playerParty;
         playerMon = params.playerMon
-          ?? party.find((m) => m && m.currentHp > 0)
+          ?? party.find((m: PokemonInstance | null) => m && m.currentHp > 0)
           ?? null;
         if (!playerMon) {
           console.warn('[battle-flow] no player Pokemon — auto-defeat');
@@ -1035,7 +1035,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp : fill gPlayerParty/gEnemyParty battle-side au début de
         // combat. Ainsi les opcodes du bytecode interpreter qui lisent
         // GetMonData(gPlayerParty[i], ...) ont les bonnes données.
-        setupPartyForBattle(party.filter((m): m is PokemonInstance => !!m), [opponentMon]);
+        setupPartyForBattle(party.filter((m: PokemonInstance | null): m is PokemonInstance => !!m), [opponentMon]);
         // 1:1 décomp battle_main.c:BattleIntroGetMonsData : populate gBattleMons[0]
         // (player active) + gBattleMons[1] (enemy active) depuis party slot 0.
         // Cette init est requise pour que les opcodes bytecode lisent les vraies
@@ -1888,7 +1888,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = outcome;
         // 1:1 décomp : sync HP/status/exp depuis gPlayerParty vers PokemonInstance
         // pour persist au post-combat.
-        teardownPartyAfterBattle(gSaveBlock1Ptr.playerParty.filter((m): m is PokemonInstance => !!m));
+        teardownPartyAfterBattle(gSaveBlock1Ptr.playerParty.filter((m: PokemonInstance | null): m is PokemonInstance => !!m));
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
         // 1:1 décomp `CB2_EndWildBattle` (battle_setup.c:602-616) →
         // `SetMainCallback2(CB2_ReturnToField)` + `gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic`.
