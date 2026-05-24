@@ -75,6 +75,7 @@ import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
 import { FreeSpriteTilesByTag } from './decomp-globals';
+import { FreeSpritePaletteByTag } from './sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 
@@ -978,26 +979,41 @@ function _itemStorageMoveCursor(itemId: number, onInit: boolean, _list: unknown)
  *    } */
 function _itemStorageDrawItemIcon(itemKey: string): void {
   if (sPCIconSpriteId !== -1) return;  // already drawn
+  // 1:1 STRICT décomp player_pc.c:1103-1104 :
+  //   FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  //   FreeSpritePaletteByTag(TAG_ITEM_ICON);
+  // Sans Free palette, le tag reste alloué → LoadSpritePalette dans
+  // AddItemIconSprite voit le tag déjà bound → skip load → sprite hérite de
+  // la palette précédente (= POTION violet vs RETOUR bleu cross-bleed).
   FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  FreeSpritePaletteByTag(TAG_ITEM_ICON);
   const spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemKey);
   if (spriteId === MAX_SPRITES) return;
   sPCIconSpriteId = spriteId;
   // 1:1 décomp lines 1109-1111 : oam priority=0, x2=24, y2=80 (= sprite anchor).
+  // Fix B2 : `spr.oam.priority` n'existe pas dans DecompSprite (= no-op cast).
+  // Le hardware OAM est `rt.gba.oam[sprite.oamIndex].priority`. Sans ce fix, le
+  // sprite reste à priority 1 (= default gItemIconSpriteTemplate) → caché par
+  // BG0 priority 0 (= window pixel buffer après B1).
   const rt = getRuntime() as unknown as {
-    gSprites?: Map<number, { x2: number; y2: number; oam?: { priority: number } }>
+    gSprites?: Map<number, { x2: number; y2: number; oamIndex: number }>;
+    gba?: { oam?: Array<{ priority: number }> };
   } | null;
   const spr = rt?.gSprites?.get(spriteId);
   if (spr) {
     spr.x2 = 24;
     spr.y2 = 80;
-    if (spr.oam) spr.oam.priority = 0;
+    const oamEntry = rt?.gba?.oam?.[spr.oamIndex];
+    if (oamEntry) oamEntry.priority = 0;
   }
 }
 
 /** 1:1 décomp `ItemStorage_EraseItemIcon` (player_pc.c:1116-1126). */
 function _itemStorageEraseItemIcon(): void {
   if (sPCIconSpriteId === -1) return;
+  // 1:1 STRICT décomp player_pc.c:1121-1122 : free TILES + PALETTE.
   FreeSpriteTilesByTag(TAG_ITEM_ICON);
+  FreeSpritePaletteByTag(TAG_ITEM_ICON);
   // 1:1 décomp : DestroySprite(&gSprites[*spriteIdLoc]).
   const rt = getRuntime() as unknown as {
     DestroySprite?: (spriteId: number) => void;
