@@ -877,29 +877,21 @@ function _itemStorageCreateListMenu(): void {
   DrawStdFrameWithCustomTileAndPalette(
     sPCListWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
   );
-  // 1:1 décomp ItemStorage_AddWindow(ITEMPC_WIN_ICON) (player_pc.c:963-969) :
-  // frame fixe autour du sprite item icon (left=1, top=8, w=3, h=3).
-  // Décomp standard : DrawStdFrame + sprite OAM (priority 0) par-dessus le
-  // fond opaque. Notre runtime n'honore pas sprite-trump-BG (= sprite caché
-  // par BG opaque même avec prio 0). Workaround : 8 tiles bordure SEULEMENT,
-  // intérieur reste transparent (tile 0) → sprite OAM visible par-dessus.
+  // 1:1 STRICT décomp ItemStorage_AddWindow(ITEMPC_WIN_ICON) (player_pc.c:963-969) :
+  //   *windowIdLoc = AddWindow(&sWindowTemplates_ItemStorage[i]);
+  //   DrawStdFrameWithCustomTileAndPalette(*windowIdLoc, FALSE, 0x214, 0xE);
+  // Puis player_pc.c:1155 : CopyWindowToVram(... ITEMPC_WIN_ICON, COPYWIN_GFX).
+  //
+  // Décomp : DrawStdFrame fait fillWindowPixelBuffer(PIXEL_FILL(1)) = idx 1
+  // = blanc + writeWindowTilemap → pixel buffer = fond blanc dans le tilemap.
+  // Le sprite OAM (priority 0) est posé par-dessus le BG = visible.
+  //
+  // Bug B1 2026-05-24 : workaround "tile 0 transparent" laissait passer la
+  // tile 0 noire du BG → fond noir derrière le sprite item. Retour 1:1 strict.
   sPCIconWindowId = AddWindow(WIN_PC_ICON);
-  {
-    const w = WIN_PC_ICON;
-    const t = STD_WINDOW_BASE_TILE_NUM;
-    const p = STD_WINDOW_PALETTE_NUM;
-    // 8 tiles bordure (= 1:1 WindowFunc_DrawStdFrameWithCustomTileAndPalette).
-    FillBgTilemapBufferRect(w.bg, t + 0, w.tilemapLeft - 1, w.tilemapTop - 1, 1, 1, p);
-    FillBgTilemapBufferRect(w.bg, t + 1, w.tilemapLeft,     w.tilemapTop - 1, w.width, 1, p);
-    FillBgTilemapBufferRect(w.bg, t + 2, w.tilemapLeft + w.width, w.tilemapTop - 1, 1, 1, p);
-    FillBgTilemapBufferRect(w.bg, t + 3, w.tilemapLeft - 1, w.tilemapTop,     1, w.height, p);
-    FillBgTilemapBufferRect(w.bg, t + 5, w.tilemapLeft + w.width, w.tilemapTop, 1, w.height, p);
-    FillBgTilemapBufferRect(w.bg, t + 6, w.tilemapLeft - 1, w.tilemapTop + w.height, 1, 1, p);
-    FillBgTilemapBufferRect(w.bg, t + 7, w.tilemapLeft,     w.tilemapTop + w.height, w.width, 1, p);
-    FillBgTilemapBufferRect(w.bg, t + 8, w.tilemapLeft + w.width, w.tilemapTop + w.height, 1, 1, p);
-    // Intérieur : tile 0 (= transparent) pour que le sprite icon passe par-dessus.
-    FillBgTilemapBufferRect(w.bg, 0, w.tilemapLeft, w.tilemapTop, w.width, w.height, 0);
-  }
+  DrawStdFrameWithCustomTileAndPalette(
+    sPCIconWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
+  );
 
   // 1:1 décomp ItemStorage_CreateListMenu lignes 1149-1154 : title text centered.
   // FR : "RETIRER OBJET" (= gText_WithdrawItem) ou "JETER OBJET" (= gText_TossItem).
