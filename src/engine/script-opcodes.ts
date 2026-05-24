@@ -264,27 +264,8 @@ registerOpcode('call_if_ge', (ctx, args) => {
   return false;
 });
 
-// ─── Variables / flags ───────────────────────────────────────────────────────
-
-registerOpcode('setvar', (_ctx, args) => {
-  VarSet(args[0], parseValue(args[1]));
-  return false;
-});
-
-registerOpcode('addvar', (_ctx, args) => {
-  VarSet(args[0], (VarGet(args[0]) + parseValue(args[1])) & 0xFFFF);
-  return false;
-});
-
-registerOpcode('subvar', (_ctx, args) => {
-  VarSet(args[0], (VarGet(args[0]) - parseValue(args[1])) & 0xFFFF);
-  return false;
-});
-
-registerOpcode('copyvar', (_ctx, args) => {
-  VarSet(args[0], VarGet(args[1]));
-  return false;
-});
+// ─── Variables / flags extraits vers `./script-opcodes-flag-var`
+// (= 1:1 décomp event_data.c). setvar/addvar/subvar/copyvar.
 
 // 1:1 décomp asm/macros/event.inc:730-823 — trainerbattle macros.
 // Notre extracteur garde les macros user-level non-expandées (= trainerbattle_*
@@ -374,50 +355,8 @@ registerOpcode('trainerbattle_no_intro', (ctx, args) => {
 // Notre extracteur garde les macros user-level (= switch/case) non-expandées.
 // 337 usages `switch` + 1278 `case` (= biggest opcode gap). Bloquer `switch` =
 // rival dispatch Route103 ne fonctionne pas (= match starter type).
-registerOpcode('switch', (_ctx, args) => {
-  // copyvar VAR_0x8000, args[0]
-  VarSet('VAR_0x8000', VarGet(args[0]));
-  return false;
-});
-
-registerOpcode('case', (ctx, args) => {
-  // compare VAR_0x8000, args[0] + goto_if_eq args[1]
-  // 1:1 décomp : args[0] peut être MALE/FEMALE/numbers/VAR_X (= parseValue).
-  const condition = parseValue(args[0]);
-  const scratch = VarGet('VAR_0x8000');
-  if (scratch === condition) {
-    const target = getScript(args[1]);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('setflag', (_ctx, args) => {
-  FlagSet(args[0]);
-  return false;
-});
-
-registerOpcode('clearflag', (_ctx, args) => {
-  FlagClear(args[0]);
-  return false;
-});
-
-registerOpcode('checkflag', (ctx, args) => {
-  // 1:1 décomp : ctx.comparisonResult = FlagGet (= 0/1).
-  ctx.comparisonResult = FlagGet(args[0]) ? 1 : 0;
-  // gSpecialVar.Result aussi set par checkflag (= via VAR_RESULT).
-  gSpecialVar.Result = ctx.comparisonResult;
-  return false;
-});
-
-registerOpcode('compare', (ctx, args) => {
-  // 1:1 décomp : args peuvent être var noms, immediates, ou constantes
-  // (MALE/FEMALE/LOCALID_X). parseValue les résout tous (= comme dans goto_if_*).
-  const a = parseValue(args[0]);
-  const b = parseValue(args[1]);
-  ctx.comparisonResult = Compare(a, b);
-  return false;
-});
+// `switch` / `case` / `setflag` / `clearflag` / `checkflag` / `compare` extraits
+// vers `./script-opcodes-flag-var`.
 
 // `checkplayergender` extrait vers `./script-opcodes-player-avatar`.
 
@@ -1425,19 +1364,7 @@ registerOpcode('fadescreenswapbuffers', (ctx, args) => {
 
 // ─── Misc stubs (= unblock script flow without full implementation) ─────────
 
-/** 1:1 décomp `ScrCmd_incrementgamestat` (scrcmd.c) :
- *    IncrementGameStat(stat);  // +1 à gSaveBlock1Ptr->gameStats[stat]
- *  Audit session 126 C2 : avant no-op → stats jamais tracked. Some flags
- *  conditional dependent (e.g. GAME_STAT_STEPS for daycare egg). Maintenant
- *  on update gSaveBlock1Ptr.gameStats[]. Le numeric `stat` est résolu via VarGet (=
- *  resolveDecompConstant si literal GAME_STAT_X). */
-registerOpcode('incrementgamestat', (_ctx, args) => {
-  const stat = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr?.gameStats && stat >= 0 && stat < gSaveBlock1Ptr.gameStats.length) {
-    gSaveBlock1Ptr.gameStats[stat] = (gSaveBlock1Ptr.gameStats[stat] ?? 0) + 1;
-  }
-  return false;
-});
+// `incrementgamestat` extrait vers `./script-opcodes-flag-var`.
 
 // `playmoncry` extrait vers `./script-opcodes-sound`.
 
@@ -1742,17 +1669,7 @@ registerOpcode('pokenavcall', (_ctx, args) => {
 //   4x usage (= each shop has a list ending with this).
 // `pokemartlistend` extrait vers `./script-opcodes-shop` (= 1:1 décomp shop.c).
 
-// 1:1 décomp `ScrCmd_setorcopyvar` (scrcmd.c) — alt setvar that handles VAR_*.
-registerOpcode('setorcopyvar', (_ctx, args) => {
-  const dst = args[0] ?? '';
-  const src = args[1] ?? '';
-  if (src && src.startsWith('VAR_')) {
-    VarSet(dst, VarGet(src));
-  } else {
-    VarSet(dst, parseValue(src));
-  }
-  return false;
-});
+// `setorcopyvar` extrait vers `./script-opcodes-flag-var`.
 
 // `checkpcitem` extrait vers `./script-opcodes-pc-storage`.
 
@@ -3432,6 +3349,7 @@ import './script-opcodes-rtc-clock';
 import './script-opcodes-player-avatar';
 import './script-opcodes-string';
 import './script-opcodes-party';
+import './script-opcodes-flag-var';
 
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
