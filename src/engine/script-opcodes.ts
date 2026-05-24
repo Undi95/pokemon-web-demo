@@ -282,64 +282,11 @@ registerOpcode('call_if_ge', (ctx, args) => {
 //   trainerbattle_rematch trainer, intro, lose
 //   trainerbattle_rematch_double trainer, intro, lose, not_enough_text
 //   trainerbattle_no_intro trainer, lose_text  →  TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT
-function _stubTrainerBattle(trainerArg: string): void {
-  console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
-  gSpecialVar.Result = 1;
-  FlagSet(`__defeated_${trainerArg}`);
-}
-
-/** Phase 5.7 : real trainer battle via state machine + battle-flow.
- *  Reads trainer party from JSON, runs battles in sequence.
- *  Falls back to stub if trainer data not available or battle fails. */
-function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
-  if (!trainerArg) {
-    _stubTrainerBattle(trainerArg);
-    return false;
-  }
-  // Dynamic import : avoid circular deps at load.
-  let flowReady = false;
-  let flow: { tick: () => boolean } | null = null;
-  void import('./trainer-battle-flow').then((mod) => {
-    flow = mod.startTrainerBattle(trainerArg);
-    flowReady = true;
-  }).catch(() => {
-    // Fallback to stub if import fails.
-    _stubTrainerBattle(trainerArg);
-    flowReady = true;
-    flow = { tick: () => true };
-  });
-  SetupNativeScript(ctx, () => {
-    if (!flowReady) return false;
-    return flow!.tick();
-  });
-  return true;  // block script
-}
-
-registerOpcode('trainerbattle', (ctx, args) => {
-  // args = [type, trainer, localId, ptr1, ...]
-  return _runTrainerBattle(ctx, args[1] ?? '');
-});
-
-registerOpcode('trainerbattle_single', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
-});
-
-registerOpcode('trainerbattle_double', (ctx, args) => {
-  // Double battles not yet supported — fallback to single.
-  return _runTrainerBattle(ctx, args[0] ?? '');
-});
-
-registerOpcode('trainerbattle_rematch', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
-});
-
-registerOpcode('trainerbattle_rematch_double', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
-});
-
-registerOpcode('trainerbattle_no_intro', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
-});
+// Trainer battle / wild battle opcodes (= trainerbattle/_single/_double/_rematch/
+// _rematch_double/_no_intro, dotrainerbattle, gotopostbattlescript, gotobeatenscript,
+// settrainerflag, cleartrainerflag, checktrainerflag, goto_if_defeated,
+// goto_if_not_defeated, call_if_defeated, setwildbattle, dowildbattle)
+// extraits vers `./script-opcodes-battle` (= 1:1 décomp battle_setup.c + trainer_see.c).
 
 // 1:1 décomp asm/macros/event.inc:1914-1921 :
 //
@@ -360,96 +307,8 @@ registerOpcode('trainerbattle_no_intro', (ctx, args) => {
 
 // `checkplayergender` extrait vers `./script-opcodes-player-avatar`.
 
-// ─── Lock / Release / FacePlayer ─────────────────────────────────────────────
-
-// `_isPlayerStepFinished` est maintenant importé depuis `./script-opcodes/helpers`
-// (1:1 décomp `IsFreezePlayerFinished` event_object_movement.c).
-
-registerOpcode('lock', (ctx) => {
-  // 1:1 décomp `ScrCmd_lock` (scrcmd.c:1217-1237) :
-  //   FreezeObjects_WaitForPlayerAndSelected();
-  //   SetupNativeScript(ctx, IsFreezeSelectedObjectAndPlayerFinished);
-  // Freeze tous les NPCs sauf player + selected NPC. Player + selected sont
-  // freeze APRÈS leur step courant termine.
-  const npc = getSelectedNpc();
-  // Freeze immediately tous sauf player/selected — 1:1 strict via FreezeObjectEvent
-  // qui pause aussi sprite.animPaused (= sinon anim continue malgré frozen).
-  for (const n of gObjectEvents) {
-    if (n.active && n !== npc) FreezeObjectEvent(n);
-  }
-  // Wait pour player step end. Le selected NPC était déjà frozen ou en step ;
-  // on freeze le selected aussi à la fin du wait.
-  SetupNativeScript(ctx, () => {
-    if (!_isPlayerStepFinished()) return false;
-    if (npc) FreezeObjectEvent(npc);
-    return true;
-  });
-  return true;  // tells script-runtime to wait
-});
-
-registerOpcode('lockall', (ctx) => {
-  // 1:1 STRICT décomp `ScrCmd_lockall` (scrcmd.c:1199-1213) :
-  //   FreezeObjects_WaitForPlayer();
-  //   SetupNativeScript(ctx, IsFreezePlayerFinished);
-  // → FreezeObjectEvents() qui appelle FreezeObjectEvent par NPC, qui set
-  //   frozen=true ET pause sprite.animPaused (= sinon anim cycle malgré frozen).
-  for (const npc of gObjectEvents) {
-    if (npc.active) FreezeObjectEvent(npc);
-  }
-  SetupNativeScript(ctx, () => _isPlayerStepFinished());
-  return true;
-});
-
-registerOpcode('release', (_ctx) => {
-  // 1:1 STRICT décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
-  //   HideFieldMessageBox();
-  //   ObjectEventClearHeldMovementIfFinished(selected);
-  //   ObjectEventClearHeldMovementIfFinished(player);
-  //   ScriptMovement_UnfreezeObjectEvents();
-  //   UnfreezeObjectEvents();   ← unfreeze TOUS les NPCs via UnfreezeObjectEvent
-  //   qui restore sprite.animPaused = spriteAnimPausedBackup (= reverse du
-  //   FreezeObjectEvent qui avait pause les anims).
-  HideFieldMessageBox();
-  for (const npc of gObjectEvents) {
-    if (npc.active) UnfreezeObjectEvent(npc);
-  }
-  return false;
-});
-
-registerOpcode('releaseall', (_ctx) => {
-  HideFieldMessageBox();
-  for (const npc of gObjectEvents) {
-    if (npc.active) UnfreezeObjectEvent(npc);
-  }
-  return false;
-});
-
-registerOpcode('faceplayer', (_ctx) => {
-  // 1:1 décomp ScrCmd_faceplayer : NPC tourne face au player (= direction
-  // opposée à la direction face du player).
-  const npc = getSelectedNpc();
-  if (!npc) return false;
-  npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
-  return false;
-});
-
-registerOpcode('turnobject', (_ctx, args) => {
-  // turnobject LOCALID, DIRECTION. Trouve NPC par localId, set facing.
-  const localId = parseInt(args[0], 10) || 0;
-  const dirArg = args[1];
-  let dir = DIR_SOUTH;
-  if (dirArg.includes('SOUTH') || dirArg.includes('DOWN')) dir = DIR_SOUTH;
-  else if (dirArg.includes('NORTH') || dirArg.includes('UP')) dir = DIR_NORTH;
-  else if (dirArg.includes('WEST') || dirArg.includes('LEFT')) dir = DIR_WEST;
-  else if (dirArg.includes('EAST') || dirArg.includes('RIGHT')) dir = DIR_EAST;
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localId === localId) {
-      npc.facingDirection = dir;
-      break;
-    }
-  }
-  return false;
-});
+// ─── Lock / Release / FacePlayer / Turnobject extraits vers `./script-opcodes-lock`
+// (= 1:1 décomp event_object_lock.c). ─────────────────────────────────────────
 
 // ─── Dialog / Message ────────────────────────────────────────────────────────
 
@@ -1290,72 +1149,9 @@ registerOpcode('removeobject', (_ctx, args) => {
 // ─── Doors (= 1:1 décomp ScrCmd_opendoor etc.) ──────────────────────────────
 // Extraits vers `./script-opcodes-door` (= 1:1 décomp field_door.c).
 
-// 1:1 décomp scrcmd.c:ScrCmd_fadescreen (lignes 626-631) :
-//   FadeScreen(mode, 0); SetupNativeScript(ctx, IsPaletteNotActive);
-//
-// Modes 1:1 décomp constants/field_weather.h :
-//   FADE_FROM_BLACK = 0  →  startY=0x10, endY=0, color=BLACK
-//   FADE_TO_BLACK   = 1  →  startY=0, endY=0x10, color=BLACK
-//   FADE_FROM_WHITE = 2  →  startY=0x10, endY=0, color=WHITE
-//   FADE_TO_WHITE   = 3  →  startY=0, endY=0x10, color=WHITE
-//
-// Notre BeginNormalPaletteFade prend (palettes, delay, startY, endY, color).
-// 70 usages (= cinematic Birch bag, warps, etc.).
-const FADE_MODE_FROM_BLACK = 0;
-const FADE_MODE_TO_BLACK = 1;
-const FADE_MODE_FROM_WHITE = 2;
-const FADE_MODE_TO_WHITE = 3;
-
-function _resolveFadeMode(arg: string): number {
-  if (arg === 'FADE_FROM_BLACK') return FADE_MODE_FROM_BLACK;
-  if (arg === 'FADE_TO_BLACK') return FADE_MODE_TO_BLACK;
-  if (arg === 'FADE_FROM_WHITE') return FADE_MODE_FROM_WHITE;
-  if (arg === 'FADE_TO_WHITE') return FADE_MODE_TO_WHITE;
-  return parseValue(arg);
-}
-
-function _doFadeScreen(mode: number, _delay: number): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  // 1:1 décomp palette.c : start/end/color selon mode.
-  const isToBlack = mode === FADE_MODE_TO_BLACK;
-  const isToWhite = mode === FADE_MODE_TO_WHITE;
-  const isFromBlack = mode === FADE_MODE_FROM_BLACK;
-  const isFromWhite = mode === FADE_MODE_FROM_WHITE;
-  const startY = (isFromBlack || isFromWhite) ? 0x10 : 0;
-  const endY = (isToBlack || isToWhite) ? 0x10 : 0;
-  const color = (isToWhite || isFromWhite) ? 'RGB_WHITEALPHA' : 'RGB_BLACK';
-  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, startY, endY, color);
-}
-
-registerOpcode('fadescreen', (ctx, args) => {
-  const mode = _resolveFadeMode(args[0]);
-  _doFadeScreen(mode, 0);
-  // 1:1 décomp : SetupNativeScript(ctx, IsPaletteNotActive) — attend que le fade
-  // soit terminé avant de continuer.
-  const rt = getRuntime();
-  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
-  return true;
-});
-
-registerOpcode('fadescreenspeed', (ctx, args) => {
-  const mode = _resolveFadeMode(args[0]);
-  const speed = parseValue(args[1]);
-  _doFadeScreen(mode, speed);
-  const rt = getRuntime();
-  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
-  return true;
-});
-
-registerOpcode('fadescreenswapbuffers', (ctx, args) => {
-  // 1:1 décomp scrcmd.c:643 — variante qui swap gPlttBufferUnfaded ↔
-  // gPaletteDecompressionBuffer avant fade. Pour l'instant : same as fadescreen.
-  const mode = _resolveFadeMode(args[0]);
-  _doFadeScreen(mode, 0);
-  const rt = getRuntime();
-  SetupNativeScript(ctx, () => !rt?.gPaletteFade.active);
-  return true;
-});
+// `fadescreen` / `fadescreenspeed` / `fadescreenswapbuffers` extraits vers
+// `./script-opcodes-screen-fx` (= 1:1 décomp field_screen_effect.c + palette.c).
+// (fadescreenswapbuffers extrait vers `./script-opcodes-screen-fx`)
 
 // `setmetatile` extrait vers `./script-opcodes-fieldmap` (= 1:1 décomp fieldmap.c).
 
@@ -1416,8 +1212,7 @@ registerOpcode('showelevmenu', (_ctx, _args) => false);
 // `checkcoins` / `takecoins` extraits vers `./script-opcodes-money-coins`.
 // ─── Buffer opcodes extraits vers `./script-opcodes-string`
 // (= 1:1 décomp string_util.c). Tous les buffer* + vbuffer + preparemsg. ─────
-registerOpcode('selectapproachingtrainer', (_ctx, _args) => false);
-registerOpcode('lockfortrainer', (_ctx, _args) => false);
+// `selectapproachingtrainer` / `lockfortrainer` early stubs extraits vers `./script-opcodes-lock`.
 // HOTFIX 2026-05-09 : faceplayer/turnobject sont déjà registered avec les vraies
 // implementations plus haut (lignes 496, 505). Les stubs no-op qui étaient ici
 // écrasaient → NPCs ne se tournent plus vers le player. Reported by user. Removed.
@@ -1550,71 +1345,14 @@ registerOpcode('gotostd', (_ctx, _args) => false);
 registerOpcode('callstd_if', (_ctx, _args) => false);
 registerOpcode('gotostd_if', (_ctx, _args) => false);
 
-// 1:1 décomp `ScrCmd_settrainerflag` / `cleartrainerflag`. 114x usage.
-registerOpcode('settrainerflag', (_ctx, args) => {
-  const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  if (!g.__defeatedTrainers) g.__defeatedTrainers = new Set<string>();
-  (g.__defeatedTrainers as Set<string>).add(trainer);
-  return false;
-});
-registerOpcode('cleartrainerflag', (_ctx, args) => {
-  const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  if (g.__defeatedTrainers) (g.__defeatedTrainers as Set<string>).delete(trainer);
-  return false;
-});
-registerOpcode('checktrainerflag', (_ctx, args) => {
-  const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const has = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  VarSet('VAR_RESULT', has ? 1 : 0);
-  return false;
-});
+// `settrainerflag` / `cleartrainerflag` / `checktrainerflag` extraits vers `./script-opcodes-battle`.
 
 // ─── Phase 5.7+ iter7 : early-game-specific gap fillers ─────────────────────
 // Audit: scripts/audit-early-game-opcodes.mjs found 14 missing opcodes for the
 // 20 maps the user actually traverses first.
 
-// 1:1 décomp `ScrCmd_goto_if_not_defeated` — branch if trainer NOT defeated.
-//   Used 10x in early-game scripts (= rival rematch logic, etc.).
-registerOpcode('goto_if_not_defeated', (ctx, args) => {
-  const trainer = args[0] ?? '';
-  const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (!defeated) {
-    const sub = getScript(target);
-    if (sub) ScriptJump(ctx, sub);
-  }
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_call_if_defeated`. 7x usage.
-registerOpcode('call_if_defeated', (ctx, args) => {
-  const trainer = args[0] ?? '';
-  const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (defeated) {
-    const sub = getScript(target);
-    if (sub) ScriptCall(ctx, sub);
-  }
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_goto_if_defeated`. Inverse de goto_if_not_defeated. 16x.
-registerOpcode('goto_if_defeated', (ctx, args) => {
-  const trainer = args[0] ?? '';
-  const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (defeated) {
-    const sub = getScript(target);
-    if (sub) ScriptJump(ctx, sub);
-  }
-  return false;
-});
+// `goto_if_not_defeated` / `call_if_defeated` / `goto_if_defeated` extraits vers
+// `./script-opcodes-battle`.
 
 // 1:1 décomp `ScrCmd_showmonpic` / `hidemonpic` — show/hide a Pokemon front
 //   sprite in a window. 10x usage in Birch lab + cinematic moments.
@@ -1730,8 +1468,7 @@ registerOpcode('pyramid_get', (_ctx, _args) => false);
 // *moneybox / *coinsbox / removemoney early stubs extraits vers `./script-opcodes-money-coins`.
 
 // Flash HM (Mt. Pyre, Granite Cave) :
-registerOpcode('setflashlevel', (_ctx, _args) => false);
-registerOpcode('animateflash', (_ctx, _args) => false);
+// `setflashlevel` / `animateflash` early stubs extraits vers `./script-opcodes-screen-fx`.
 
 // rotating-tile-puzzle opcodes extraits vers `./script-opcodes-rotating-tile-puzzle`.
 
@@ -1740,8 +1477,7 @@ registerOpcode('animateflash', (_ctx, _args) => false);
 // Other late-game / minigames :
 // `setdivewarp` / `setholewarp` extraits vers `./script-opcodes-warp`.
 registerOpcode('dofieldeffectsparkle', (_ctx, _args) => false);
-registerOpcode('setwildbattle', (_ctx, _args) => false);
-registerOpcode('dowildbattle', (_ctx, _args) => false);
+// `setwildbattle` / `dowildbattle` early stubs extraits vers `./script-opcodes-battle`.
 // `dotimebasedevents` / `initclock` extraits vers `./script-opcodes-rtc-clock`.
 // `showcontestpainting` extrait vers `./script-opcodes-contest`.
 // `playslotmachine` extrait vers `./script-opcodes-slot-machine`.
@@ -1814,11 +1550,7 @@ let _sFieldEffectScriptId = 0;
  *  `setfieldeffectargument` opcode + utilisé par `dofieldeffect`. */
 const _gFieldEffectArguments: number[] = new Array(8).fill(0);
 
-/** 1:1 décomp `gFlashLevel` (overworld.c). 0 = pas d'obscurité, 7 = obscurité
- *  maximale (= ASTUCE FLASH HM). Affiche une mask noire avec un cercle
- *  transparent autour du player. Notre port stocke ici, le rendering field
- *  scene lit cette valeur pour appliquer le mask. */
-let _gFlashLevel = 0;
+// `_gFlashLevel` extrait vers `./script-opcodes-screen-fx`.
 
 /** Virtual objects (1:1 décomp `gVirtualObjects[VIRTUAL_OBJECT_COUNT]`).
  *  Sprites décoratifs non-interactifs (e.g., enfant qui court dans cutscene,
@@ -2115,51 +1847,7 @@ registerOpcode('hidemonpic', (ctx, _args) => {
   return true;
 });
 
-// ─── Trainers (1:1 décomp ScrCmd_selectapproachingtrainer + lockfortrainer) ──
-
-registerOpcode('selectapproachingtrainer', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_selectapproachingtrainer (scrcmd.c) :
-  //   gSelectedObjectEvent = GetCurrentApproachingTrainerObjectEventId().
-  gSelectedObjectEvent.index = _sCurrentApproachingTrainerObjectEventId;
-  return false;
-});
-
-registerOpcode('lockfortrainer', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_lockfortrainer (scrcmd.c) :
-  //   if (IsOverworldLinkActive()) return FALSE ;
-  //   if (gObjectEvents[gSelectedObjectEvent].active) {
-  //     FreezeForApproachingTrainers() ;
-  //     SetupNativeScript(ctx, IsFreezeObjectAndPlayerFinished) ;
-  //   }
-  //   return TRUE
-  if (_isInTrainerLink()) return false;
-  const npc = gObjectEvents[gSelectedObjectEvent.index];
-  if (npc && npc.active) {
-    // 1:1 STRICT décomp FreezeForApproachingTrainers (trainer_see.c) : freeze
-    // tous les NPCs via FreezeObjectEvent (= pause sprite.animPaused = sinon
-    // les autres trainers continuent à wander visuellement).
-    for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
-    // Capture the initial step state of player + all NPCs to detect when
-    // all step animations have completed.
-    const poll = (): boolean => {
-      // 1:1 décomp IsFreezeObjectAndPlayerFinished (event_object_movement.c) :
-      //   return !player.runningState !== MOVING && all NPCs stepFramesLeft === 0
-      // Notre check : gPlayerAvatar.stepFramesLeft === 0 (= player tile-aligned)
-      //   ET tous les active NPCs ont leur step done.
-      if (gPlayerAvatar.stepFramesLeft > 0) return false;
-      // NPC step state : si npc.walkFramesLeft > 0, encore en cours.
-      for (const n of gObjectEvents) {
-        if (!n.active) continue;
-        const walking = (n as unknown as { walkFramesLeft?: number }).walkFramesLeft ?? 0;
-        if (walking > 0) return false;
-      }
-      return true;  // tous arrêtés → resume script
-    };
-    SetupNativeScript(ctx, poll);
-    return true;
-  }
-  return false;
-});
+// `selectapproachingtrainer` / `lockfortrainer` real impls extraits vers `./script-opcodes-lock`.
 
 // ─── Object subpriority (1:1 décomp ScrCmd_setobjectsubpriority) ────────────
 
@@ -2247,39 +1935,7 @@ registerOpcode('turnvobject', (_ctx, args) => {
   return false;
 });
 
-// ─── Flash (1:1 décomp ScrCmd_setflashlevel/animateflash) ───────────────────
-
-registerOpcode('setflashlevel', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setflashlevel : SetFlashLevel(VarGet(level)).
-  // Level 0 = pas d'obscurité (= salle illuminée), 7 = obscurité maximale.
-  const level = _vget(args[0]) & 0xF;
-  _gFlashLevel = level;
-  (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-  return false;
-});
-
-registerOpcode('animateflash', (ctx, args) => {
-  // 1:1 décomp ScrCmd_animateflash : AnimateFlash(level) ; ScriptContext_Stop ; return TRUE.
-  // Fade animation entre l'ancien level et le nouveau (= radial transition).
-  const targetLevel = parseValue(args[0] ?? '0') & 0xF;
-  const startLevel = _gFlashLevel;
-  let frame = 0;
-  const totalFrames = 16;
-  const poll = (): boolean => {
-    frame++;
-    // Lerp linéaire entre startLevel et targetLevel.
-    _gFlashLevel = Math.round(startLevel + (targetLevel - startLevel) * (frame / totalFrames));
-    (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-    if (frame >= totalFrames) {
-      _gFlashLevel = targetLevel;
-      (globalThis as Record<string, unknown>).gFlashLevel = _gFlashLevel;
-      return true;
-    }
-    return false;
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
+// `setflashlevel` / `animateflash` real impls extraits vers `./script-opcodes-screen-fx`.
 
 // `setmaplayoutindex` + `setstepcallback` extraits vers `./script-opcodes-fieldmap`
 // (= 1:1 décomp fieldmap.c + field_tasks.c).
@@ -2342,56 +1998,8 @@ registerOpcode('showelevmenu', (_ctx, _args) => {
   return false;
 });
 
-// ─── Wild battles (1:1 décomp ScrCmd_setwildbattle/dowildbattle) ────────────
-
-registerOpcode('setwildbattle', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setwildbattle : CreateScriptedWildMon(species, level, item).
-  const speciesArg = args[0] ?? '';
-  const level = parseValue(args[1] ?? '5');
-  const itemArg = args[2] ?? 'ITEM_NONE';
-  const speciesId = parseValue(speciesArg);
-  const itemId = parseValue(itemArg);
-  (globalThis as Record<string, unknown>).gScriptedWildMon = {
-    species: speciesId,
-    level,
-    item: itemId,
-  };
-  return false;
-});
-
-registerOpcode('dowildbattle', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_dowildbattle : BattleSetup_StartScriptedWildBattle + ScriptContext_Stop.
-  // Notre port : trigger un wild battle via le battle system existant.
-  void (async () => {
-    try {
-      const mon = (globalThis as Record<string, unknown>).gScriptedWildMon as
-        { species?: number; level?: number; item?: number } | undefined;
-      if (mon) {
-        const { startWildBattle } = await import('./battle-flow').catch(() => ({ startWildBattle: undefined }));
-        if (typeof startWildBattle === 'function') {
-          // 1:1 décomp BattleParams { opponentSpecies: string, opponentLevel: number }.
-          const enumName = reverseDecompConstant(mon.species ?? 0, 'SPECIES_') ?? `SPECIES_${mon.species ?? 0}`;
-          startWildBattle({
-            opponentSpecies: enumName,
-            opponentLevel: mon.level ?? 5,
-          });
-        } else {
-          console.warn('[opcode dowildbattle] battle-flow.startWildBattle not exposed yet');
-        }
-      }
-    } catch (e) {
-      console.warn('[opcode dowildbattle] failed:', e);
-    }
-  })();
-  // SetupNativeScript wait — battle screen takes over until done.
-  let framesWaited = 0;
-  const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 1;  // resume immediately (battle scene is async)
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
+// ─── Wild battles real impls extraits vers `./script-opcodes-battle` ───────
+// (Real impl dowildbattle extrait vers `./script-opcodes-battle`.)
 
 // ─── Event Mon (1:1 décomp seteventmon macro) ───────────────────────────────
 
@@ -2830,23 +2438,8 @@ registerOpcode('addobjectat', (ctx, args) => {
   return getOpcodeHandler('addobject')?.(ctx, args) ?? false;
 });
 
-// ─── Trainer battle internal opcodes ────────────────────────────────────────
-
-registerOpcode('dotrainerbattle', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_dotrainerbattle : ConfigureAndSetUpOneTrainerBattle.
-  // Internal — pas appelé directement par les scripts user. No-op safe.
-  return false;
-});
-
-registerOpcode('gotopostbattlescript', (_ctx, _args) => {
-  // 1:1 décomp : jump to BattleScript_PostBattle. Internal.
-  return false;
-});
-
-registerOpcode('gotobeatenscript', (_ctx, _args) => {
-  // 1:1 décomp : jump to BattleScript_TrainerDefeated. Internal.
-  return false;
-});
+// `dotrainerbattle` / `gotopostbattlescript` / `gotobeatenscript` extraits vers
+// `./script-opcodes-battle`.
 
 // ─── Item helpers extraits vers `./script-opcodes-item` ────────────────────
 
@@ -3350,6 +2943,9 @@ import './script-opcodes-player-avatar';
 import './script-opcodes-string';
 import './script-opcodes-party';
 import './script-opcodes-flag-var';
+import './script-opcodes-screen-fx';
+import './script-opcodes-lock';
+import './script-opcodes-battle';
 
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
