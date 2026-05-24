@@ -31,6 +31,7 @@ import {
   gStringVar4,
   StringExpandPlaceholders,
 } from './gba-text-system';
+import { gTextFlags } from './gba-text-printer';
 import { getRuntime } from './decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
@@ -75,14 +76,25 @@ export async function preloadStandardMenuPalette(): Promise<void> {
   /* no-op — kept for backward compat with TestOverworldScene boot */
 }
 
-/** 1:1 décomp `InitFieldMessageBox(void)`. À call au boot.
- *  ⚠️ Reset `sWindowId` AUSSI (= 1:1 InitFieldMessageBox post-FreeAllWindowBuffers
- *  flow décomp). Sans ce reset : si un sub-menu (bag/options/party) appelle
+/** 1:1 STRICT décomp `InitFieldMessageBox(void)` (field_message_box.c:14-21) :
+ *    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
+ *    gTextFlags.canABSpeedUpPrint = FALSE;
+ *    gTextFlags.useAlternateDownArrow = FALSE;
+ *    gTextFlags.autoScroll = FALSE;
+ *    gTextFlags.forceMidTextSpeed = FALSE;
+ *
+ *  ⚠️ Reset `sWindowId` AUSSI (= notre extension post-FreeAllWindowBuffers
+ *  flow). Sans ce reset : si un sub-menu (bag/options/party) appelle
  *  `InitWindows(...)` qui fait `FreeAllWindowBuffers`, le sWindowId capturé
  *  AVANT pointe vers un slot libéré → AddTextPrinterParameterized3 warn
  *  "window N not found" + dialog invisible. */
 export function InitFieldMessageBox(): void {
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
+  // 1:1 STRICT décomp : reset gTextFlags.
+  gTextFlags.canABSpeedUpPrint = false;
+  gTextFlags.useAlternateDownArrow = false;
+  gTextFlags.autoScroll = false;
+  gTextFlags.forceMidTextSpeed = false;
   sStateStep = 0;
   sWindowId = -1;
 }
@@ -130,6 +142,33 @@ export function HideFieldMessageBox(): void {
 /** 1:1 décomp `GetFieldMessageBoxMode(void)`. */
 export function GetFieldMessageBoxMode(): number {
   return sFieldMessageBoxMode;
+}
+
+/** 1:1 STRICT décomp `StopFieldMessage(void)` (field_message_box.c:157-161) :
+ *    DestroyTask_DrawFieldMessage();
+ *    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
+ *  Différent de HideFieldMessageBox : ne clear PAS le dialog frame visuel
+ *  (= le caller fait ça séparément si besoin). Used par opcodes `closemessage`
+ *  variants qui veulent stop le print sans clear le window. */
+export function StopFieldMessage(): void {
+  sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
+  sStateStep = 0;
+}
+
+/** 1:1 STRICT décomp `ShowFieldMessageFromBuffer(void)` (field_message_box.c:109-116) :
+ *    if (sFieldMessageBoxMode != FIELD_MESSAGE_BOX_HIDDEN) return FALSE;
+ *    sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;
+ *    StartDrawFieldMessage();   ← AddTextPrinterForMessage(TRUE) + CreateTask
+ *    return TRUE;
+ *  Same as ShowFieldMessage but utilise gStringVar4 directement (= déjà set
+ *  par script via préparation/buffer). */
+export function ShowFieldMessageFromBuffer(): boolean {
+  if (sFieldMessageBoxMode !== FIELD_MESSAGE_BOX_HIDDEN) return false;
+  // gStringVar4 contient déjà le texte (= set par caller). On capture pour debug.
+  sCurrentText = gStringVar4;
+  sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;
+  sStateStep = 0;
+  return true;
 }
 
 /** Pas dans le décomp — helper devtools (= dev-scope.ts) pour lire le texte

@@ -102,10 +102,12 @@ export const TEXT_COLOR = Object.freeze({
   DYNAMIC_COLOR_6: 0xF,
 });
 
-// 1:1 décomp gTextFlags global. Set par certaines scenes pour disable le
-// A/B speed up (= e.g. battle messages forcing fixed speed).
+// 1:1 STRICT décomp gTextFlags global (= include/text.h struct). Set par
+// scenes/init pour controller le rendering (= A/B speed up, auto scroll,
+// arrow shape, etc.).
 export const gTextFlags = {
   canABSpeedUpPrint: true,  // default TRUE pour Birch + dialogues normaux
+  useAlternateDownArrow: false,  // 1:1 décomp : Pokenav use l'alternate down arrow.
   forceMidTextSpeed: false,
   autoScroll: false,
 };
