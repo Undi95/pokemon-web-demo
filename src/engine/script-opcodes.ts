@@ -1383,6 +1383,7 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
   const y = parseValue(args[2]);
   const localIdRaw = args[0] ?? '';
   const currentMapId = GetCurrentMap()?.name ?? (gMapHeader?.id ?? '');
+  console.log(`[setobjectxyperm] mapId=${currentMapId} localId=${localIdRaw} x=${x} y=${y}`);
   SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
   const tpl = _findTemplateByLocalId(localIdRaw);
   if (tpl) {
