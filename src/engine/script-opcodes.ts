@@ -58,37 +58,21 @@ import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
   getTrainerClassNameFr, getTrainer,
 } from './data-tables';
+import {
+  OPPOSITE_DIR, MALE_GENDER, FEMALE_GENDER,
+  getSelectedNpc, isAOrBNewlyPressed, parseValue, resolveCount,
+  findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,
+  isPlayerStepFinished,
+} from './script-opcodes-helpers';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers partagés exportés depuis `script-opcodes/helpers.ts` (= 1:1 décomp).
+// Aliases legacy avec underscore préservés ci-dessous le temps du split D1.
 
-const OPPOSITE_DIR: Record<number, number> = {
-  [DIR_SOUTH]: DIR_NORTH,
-  [DIR_NORTH]: DIR_SOUTH,
-  [DIR_WEST]: DIR_EAST,
-  [DIR_EAST]: DIR_WEST,
-};
-
-function getSelectedNpc(): ObjectEvent | null {
-  const idx = gSelectedObjectEvent.index;
-  if (idx < 0 || idx >= gObjectEvents.length) return null;
-  const npc = gObjectEvents[idx];
-  if (!npc.active) return null;
-  return npc;
-}
-
-/** A_BUTTON = 0x01 (= 1:1 décomp gba/key.h). */
-const A_BUTTON = 0x01;
-const B_BUTTON = 0x02;
-
-function isAOrBNewlyPressed(): boolean {
-  const rt = getRuntime();
-  if (!rt) return false;
-  return (rt.gMain.newKeys & (A_BUTTON | B_BUTTON)) !== 0;
-}
-
-/** 1:1 décomp checkplayergender : 0 = MALE, 1 = FEMALE. */
-const MALE_GENDER = 0;
-const FEMALE_GENDER = 1;
+const _findNpcByLocalId = findNpcByLocalId;
+const _findTemplateByLocalId = findTemplateByLocalId;
+const _resolveObjectLocalIdRaw = resolveObjectLocalIdRaw;
+const _isPlayerStepFinished = isPlayerStepFinished;
 
 // ─── Control flow ────────────────────────────────────────────────────────────
 
@@ -442,20 +426,8 @@ registerOpcode('checkplayergender', (_ctx, _args) => {
 
 // ─── Lock / Release / FacePlayer ─────────────────────────────────────────────
 
-/** 1:1 décomp `IsFreezePlayerFinished` (event_object_movement.c) :
- *  retourne TRUE quand le player a fini son current step (= safe to msgbox).
- *  Sans cette wait, un msgbox peut interrompre un walk mid-step → glitch
- *  visuel + désync facingDirection.
- *
- *  Fix Audit BIG section 2.3 : avant, `lock`/`lockall` retournaient false sans
- *  wait → script peut afficher dialog avant que le step end snap les coords. */
-function _isPlayerStepFinished(): boolean {
-  return gPlayerAvatar.stepFramesLeft <= 0
-      && gPlayerAvatar.collideFramesLeft <= 0
-      && gPlayerAvatar.turnFramesLeft <= 0
-      && gPlayerAvatar.jumpFramesLeft <= 0
-      && gPlayerAvatar.forceMovement === 0;  // DIR_NONE
-}
+// `_isPlayerStepFinished` est maintenant importé depuis `./script-opcodes/helpers`
+// (1:1 décomp `IsFreezePlayerFinished` event_object_movement.c).
 
 registerOpcode('lock', (ctx) => {
   // 1:1 décomp `ScrCmd_lock` (scrcmd.c:1217-1237) :
@@ -1195,123 +1167,9 @@ registerOpcode('specialvar', (_ctx, args) => {
   return false;
 });
 
-registerOpcode('playse', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_playse` (scrcmd.c) : PlaySE avec le SE constant string.
-  // On lookup l'ID dans songs-data (= e.g. SE_LEDGE → 22).
-  const seName = args[0] ?? '';
-  const seId = (Songs as unknown as Record<string, number>)[seName];
-  if (typeof seId === 'number') {
-    PlaySE(seId);
-  } else {
-    console.warn(`[opcode playse] unknown SE '${seName}'`);
-  }
-  return false;
-});
-
-registerOpcode('playfanfare', (_ctx, args) => {
-  // E4 fix (DEMO-AUDIT-FINDINGS) : 1:1 décomp `ScrCmd_playfanfare` (scrcmd.c) :
-  //   PlayFanfare(songNum); return FALSE;
-  // Resolve song name via Songs map (= playbgm pattern l. 1170-1183).
-  // PlayFanfare marque _audioEndTimeMs.fanfare = +3000ms → waitfanfare opcode
-  // bloque jusqu'à fin (= "PLAYER reçoit STR_VAR_1!" tempo correct).
-  const songName = args[0] ?? '';
-  const songId = (Songs as unknown as Record<string, number>)[songName];
-  if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ PlayFanfare }) => {
-      PlayFanfare(songId);
-    });
-  } else {
-    console.warn(`[opcode playfanfare] unknown fanfare '${songName}'`);
-  }
-  return false;
-});
-
-registerOpcode('waitfanfare', (ctx) => {
-  // 1:1 décomp ScrCmd_waitfanfare (scrcmd.c:1187) :
-  //   SetupNativeScript(ctx, WaitForFanfareFinish) ; return TRUE
-  // WaitForFanfareFinish : return IsFanfareTaskInactive().
-  // Session 132 : real tracking via decomp-globals.IsFanfareTaskInactive.
-  const poll = (): boolean => {
-    const dg = (globalThis as { __decompGlobals?: { IsFanfareTaskInactive?: () => boolean } }).__decompGlobals;
-    return dg?.IsFanfareTaskInactive?.() ?? true;
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
-
-/** 1:1 décomp `ScrCmd_playbgm` (scrcmd.c) : PlayBGM avec un song id + loop flag.
- *  Format args : args[0] = song name (= 'MUS_ENCOUNTER_MAY' etc.), args[1] = TRUE/FALSE for loop. */
-registerOpcode('playbgm', (_ctx, args) => {
-  const songName = args[0] ?? '';
-  const songId = (Songs as unknown as Record<string, number>)[songName];
-  if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
-      m4aSongNumStart(songId, true);
-    });
-  } else {
-    console.warn(`[opcode playbgm] unknown BGM '${songName}'`);
-  }
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_savebgm` (scrcmd.c) :
- *    sSavedBgm = VarGet(arg);  // store song id for restore by fadedefaultbgm
- *  Audit session 126 (post-test user) : avant no-op → BGM restait bloqué. */
-let _savedBgmSongId = 0;
-registerOpcode('savebgm', (_ctx, args) => {
-  const songName = args[0] ?? '';
-  const songId = (Songs as unknown as Record<string, number>)[songName];
-  _savedBgmSongId = typeof songId === 'number' ? songId : VarGet(songName);
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_fadedefaultbgm` (scrcmd.c) :
- *    PlayNewMapMusic(GetCurrentMapMusic());  // restart map default BGM
- *  Audit session 126 (post-test user) : avant no-op → BGM bloqué après
- *  scripts qui call playbgm puis fadedefaultbgm (= TV event PetalburgGymReport,
- *  Brendan rival meet, etc). */
-registerOpcode('fadedefaultbgm', (_ctx, _args) => {
-  const mapMusic = gMapHeader?.music;
-  let songId: number | undefined;
-  if (typeof mapMusic === 'number' && mapMusic > 0) {
-    songId = mapMusic;
-  } else if (typeof mapMusic === 'string') {
-    songId = (Songs as unknown as Record<string, number>)[mapMusic];
-  }
-  if (typeof songId === 'number' && songId > 0) {
-    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
-      m4aSongNumStart(songId!, true);
-    });
-  }
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_fadenewbgm` (scrcmd.c) : fade to new BGM. */
-registerOpcode('fadenewbgm', (_ctx, args) => {
-  const songName = args[0] ?? '';
-  const songId = (Songs as unknown as Record<string, number>)[songName];
-  if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ m4aSongNumStart, FadeOutBGM }) => {
-      FadeOutBGM(4);
-      setTimeout(() => m4aSongNumStart(songId, true), 200);
-    });
-  }
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_fadeoutbgm` (scrcmd.c) : fade out current BGM. */
-registerOpcode('fadeoutbgm', (_ctx, args) => {
-  const speed = parseInt(args[0] ?? '4', 10) || 4;
-  void import('./decomp-globals').then(({ FadeOutBGM }) => FadeOutBGM(speed));
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_fadeinbgm` (scrcmd.c) : fade in current BGM. */
-registerOpcode('fadeinbgm', (_ctx, args) => {
-  const speed = parseInt(args[0] ?? '4', 10) || 4;
-  void import('./decomp-globals').then(({ FadeInBGM }) => FadeInBGM(speed));
-  return false;
-});
+// Sound opcodes (playse/playbgm/savebgm/fadedefaultbgm/fadenewbgm/fadeoutbgm/
+// fadeinbgm/playfanfare/waitfanfare) extraits vers `./script-opcodes-sound`
+// (= 1:1 décomp sound.c).
 
 // Standard NPC scripts utilitaires fréquemment appelés via `call` :
 // Common_EventScript_SetupRivalGfxId, Common_EventScript_SaveGame, etc.
@@ -1319,48 +1177,8 @@ registerOpcode('fadeinbgm', (_ctx, args) => {
 
 // ─── Object events utility opcodes ───────────────────────────────────────────
 
-/** Helper : match NPC par localIdRaw (= string, ex 'LOCALID_PLAYERS_HOUSE_1F_MOM').
- *  Supporte aussi VAR_X (= lit la value, match par localId number) et
- *  numeric arg (= match par localId number). */
-function _findNpcByLocalId(arg: string): typeof gObjectEvents[number] | null {
-  if (!arg) return null;
-  // 1:1 décomp : si VAR_*, lire la value (= un number qui matche localId).
-  if (arg.startsWith('VAR_')) {
-    const n = VarGet(arg);
-    for (const npc of gObjectEvents) {
-      if (npc.active && npc.localId === n) return npc;
-    }
-    return null;
-  }
-  // Match par localIdRaw (= string) en priorité.
-  for (const npc of gObjectEvents) {
-    if (npc.active && npc.localIdRaw === arg) return npc;
-  }
-  // Fallback : parseInt (= si arg est numérique).
-  const n = parseInt(arg, 10);
-  if (!Number.isNaN(n)) {
-    for (const npc of gObjectEvents) {
-      if (npc.active && npc.localId === n) return npc;
-    }
-  }
-  return null;
-}
-
-/** Helper : trouve un template dans le SAVEBLOCK (= 1:1 strict décomp
- *  `GetBaseTemplateForObjectEvent` event_object_movement.c:2462 itère
- *  `gSaveBlock1Ptr->objectEventTemplates`). Le saveblock est populé au map
- *  switch par `LoadObjEventTemplatesFromHeader` (= copy from mapHeader),
- *  puis muté par setobjectxyperm/setobjectmovementtype/copyobjectxytoperm. */
-function _findTemplateByLocalId(arg: string): ObjectEventTemplate | null {
-  if (!arg) return null;
-  const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
-  const block1 = GetSaveBlock1();
-  for (const t of block1.objectEventTemplates) {
-    if ((t as { mapId?: string }).mapId !== currentMapId) continue;
-    if ((t as { localIdRaw?: string }).localIdRaw === arg) return t as unknown as ObjectEventTemplate;
-  }
-  return null;
-}
+// `_findNpcByLocalId` + `_findTemplateByLocalId` sont maintenant importés depuis
+// `./script-opcodes/helpers` (= 1:1 décomp event_object_movement.c).
 
 registerOpcode('setobjectxy', (_ctx, args) => {
   const x = parseValue(args[1]);
@@ -1513,32 +1331,7 @@ registerOpcode('map_script_2', () => false);
 
 // ─── Object event manipulation (= 1:1 décomp ScrCmd_addobject etc.) ─────────
 
-/** Helper : resolve un identifier d'objet en `localIdRaw` (= string LOCALID_*).
- *
- *  Audit session 126 fix Mom invisible 2F : le décomp `ScrCmd_addobject` fait
- *  `objectId = VarGet(...)` (= number), puis match template par `objectId` numérique.
- *  Notre impl matchait par `localIdRaw` (string), ce qui marche pour les
- *  literals `LOCALID_X` mais PAS pour les VAR_0x8008 que les scripts comme
- *  `PlayersHouse_2F_EventScript_MomComesUpstairsFemale` utilisent :
- *      setvar VAR_0x8008, LOCALID_PLAYERS_HOUSE_2F_MOM
- *      addobject VAR_0x8008
- *  Avant : `addobject VAR_0x8008` était traité comme localIdRaw = "VAR_0x8008"
- *  → template introuvable → no-op → Mom invisible.
- *  Maintenant : si arg starts with `VAR_`, on VarGet → number, puis on resolve
- *  via `reverseDecompConstant(num, 'LOCALID_')` pour retrouver le LOCALID_X. */
-function _resolveObjectLocalIdRaw(arg: string): string {
-  if (arg.startsWith('LOCALID_')) return arg;
-  if (arg.startsWith('VAR_') || /^-?\d+$/.test(arg) || /^0x[0-9a-fA-F]+$/.test(arg)) {
-    const num = VarGet(arg);
-    const resolved = reverseDecompConstant(num, 'LOCALID_');
-    if (resolved) return resolved;
-    // Fallback : match par numeric localId dans gMapHeader (= map.json local_id
-    // assignment-order).
-    const tplByLocalId = gMapHeader?.events?.objectEvents?.find(t => t.localId === num);
-    if (tplByLocalId?.localIdRaw) return tplByLocalId.localIdRaw;
-  }
-  return arg;
-}
+// `_resolveObjectLocalIdRaw` est maintenant importé depuis `./script-opcodes/helpers`.
 
 registerOpcode('addobject', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_addobject` (scrcmd.c) :
@@ -1633,83 +1426,7 @@ registerOpcode('showplayer', (_ctx) => {
 });
 
 // ─── Doors (= 1:1 décomp ScrCmd_opendoor etc.) ──────────────────────────────
-//
-// 1:1 décomp scrcmd.c:ScrCmd_opendoor :
-//   x = VarGet(ScriptReadHalfword(ctx));
-//   y = VarGet(ScriptReadHalfword(ctx));
-//   PlaySE(GetDoorSoundEffect(x, y));
-//   FieldAnimateDoorOpen(x, y);   ← starts anim (= 16 frames)
-//   return FALSE;  (= continue script immédiatement)
-//
-// `waitdooranim` ensuite halt le script jusqu'à anim fin via SetupNativeScript
-// + IsDoorAnimationStopped (= `_doorAnimActive` polled).
-//
-// Avant : tous les opcodes étaient no-op → la porte ne s'ouvrait JAMAIS
-// pendant la cinematic GoInsideWithMom (= mom + player walk into closed
-// door visually) ; LittlerootTown_EventScript_StepOffTruckMale.
-
-let _doorAnimActive = false;
-
-registerOpcode('opendoor', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  void (async () => {
-    try {
-      const fdoor = await import('./field-door');
-      const seId = fdoor.GetDoorSoundEffect(x, y);
-      PlaySE(seId);
-      _doorAnimActive = true;
-      await fdoor.FieldAnimateDoorOpen(x, y);
-      _doorAnimActive = false;
-    } catch (e) {
-      console.warn('[opcode opendoor] failed', e);
-      _doorAnimActive = false;
-    }
-  })();
-  return false;
-});
-
-registerOpcode('closedoor', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  void (async () => {
-    try {
-      const fdoor = await import('./field-door');
-      _doorAnimActive = true;
-      await fdoor.FieldAnimateDoorClose(x, y);
-      _doorAnimActive = false;
-    } catch (e) {
-      console.warn('[opcode closedoor] failed', e);
-      _doorAnimActive = false;
-    }
-  })();
-  return false;
-});
-
-registerOpcode('waitdooranim', (ctx) => {
-  // 1:1 décomp ScrCmd_waitdooranim : SetupNativeScript(IsDoorAnimationStopped).
-  // On poll _doorAnimActive jusqu'à false (= anim terminée). Si aucune anim
-  // n'a été démarrée par opendoor/closedoor (= behavior pas MB_ANIMATED_DOOR
-  // donc no-op), _doorAnimActive reste false → continue immédiatement.
-  const tick = (): boolean => !_doorAnimActive;
-  SetupNativeScript(ctx, tick);
-  return true;
-});
-
-registerOpcode('setdooropen', (_ctx, args) => {
-  const x = parseValue(args[0]);
-  const y = parseValue(args[1]);
-  // 1:1 décomp `FieldSetDoorOpened(x, y)` = instant draw open frame, no SE.
-  void (async () => {
-    try {
-      const fdoor = await import('./field-door');
-      await fdoor.FieldSetDoorOpened(x, y);
-    } catch (e) { console.warn('[opcode setdooropen] failed', e); }
-  })();
-  return false;
-});
-
-registerOpcode('setdoorclosed', (_ctx, _args) => false);
+// Extraits vers `./script-opcodes-door` (= 1:1 décomp field_door.c).
 
 // 1:1 décomp scrcmd.c:ScrCmd_fadescreen (lignes 626-631) :
 //   FadeScreen(mode, 0); SetupNativeScript(ctx, IsPaletteNotActive);
@@ -1778,101 +1495,10 @@ registerOpcode('fadescreenswapbuffers', (ctx, args) => {
   return true;
 });
 
-// 1:1 décomp scrcmd.c:ScrCmd_setmetatile (lignes 2034-2048).
-//   x += MAP_OFFSET ; y += MAP_OFFSET ;
-//   if (!isImpassable) MapGridSetMetatileIdAt(x, y, metatileId)
-//   else MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE)
-//
-// Args : x, y, metatileId, isImpassable. Tous peuvent être var noms ou immediates.
-// 595 usages dans les scripts (= portes dynamiques, escaliers, hidden items, etc.).
-registerOpcode('setmetatile', (_ctx, args) => {
-  const x = VarGet(args[0]) + MAP_OFFSET;
-  const y = VarGet(args[1]) + MAP_OFFSET;
-  const metatileId = VarGet(args[2]);
-  const isImpassable = VarGet(args[3]);
-  if (!isImpassable) {
-    MapGridSetMetatileIdAt(x, y, metatileId);
-  } else {
-    MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE);
-  }
-  return false;
-});
+// `setmetatile` extrait vers `./script-opcodes-fieldmap` (= 1:1 décomp fieldmap.c).
 
-// ─── Warp opcodes ──────────────────────────────────────────────────────────
-
-/**
- * Parse les args de warpsilent/warp selon la macro `formatwarp` (asm/macros/event.inc:425).
- *
- * 4 formes possibles (= nombre d'args APRÈS le map name) :
- *   - 0 arg     : warpId=NONE, x=-1, y=-1 (= use coords par default ?)
- *   - 1 arg     : warpId=arg, x=-1, y=-1 (= warpId-based warp standard)
- *   - 2 args    : warpId=NONE, x=arg0, y=arg1 (= coords-based warp explicit)
- *   - 3 args    : warpId=arg0, x=arg1, y=arg2 (= rare, warp sort out)
- *
- * NB : args[0] est destMap. Donc args.length-1 = nombre d'args formatwarp.
- */
-function parseWarpArgs(args: string[]): { destMap: string; warpId: number; x: number; y: number } {
-  const destMap = args[0] ?? '';
-  const rest = args.slice(1);
-  const WARP_ID_NONE = -1;
-  let warpId: number, x: number, y: number;
-  if (rest.length === 0) {
-    warpId = WARP_ID_NONE; x = -1; y = -1;
-  } else if (rest.length === 1) {
-    warpId = parseInt(rest[0] ?? '0', 10); x = -1; y = -1;
-  } else if (rest.length === 2) {
-    // Coord pair : warpId=NONE, x=arg0, y=arg1.
-    warpId = WARP_ID_NONE;
-    x = parseInt(rest[0] ?? '0', 10);
-    y = parseInt(rest[1] ?? '0', 10);
-  } else {
-    warpId = parseInt(rest[0] ?? '0', 10);
-    x = parseInt(rest[1] ?? '0', 10);
-    y = parseInt(rest[2] ?? '0', 10);
-  }
-  return { destMap, warpId, x, y };
-}
-
-registerOpcode('warpsilent', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_warpsilent` : warp instantané sans fade.
-  const { destMap, warpId, x, y } = parseWarpArgs(args);
-  // Bug fix 2026-05-09 : préserve warpId = -1 (= WARP_ID_NONE) quand le script
-  // utilise explicit coords (= form `warpsilent MAP, NONE, X, Y`). Avant on
-  // forçait warpId = 0, ce qui faisait que executeWarp utilisait warps[0] de
-  // la dest map au lieu des x/y explicites → tous les warps script-driven
-  // arrivaient à la mauvaise position.
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
-  console.log(`[opcode warpsilent] ${destMap} warpId=${warpId} coords=(${x},${y})`);
-  return false;
-});
-
-registerOpcode('warp', (_ctx, args) => {
-  const { destMap, warpId, x, y } = parseWarpArgs(args);
-  setPendingWarp({ destMap, x, y, elevation: 0, warpId }, 'step');
-  console.log(`[opcode warp] ${destMap} warpId=${warpId} coords=(${x},${y})`);
-  return false;
-});
-
-// ─── Setrespawn (= MVP no-op) ────────────────────────────────────────────────
-
-/** 1:1 décomp `ScrCmd_setrespawn` (scrcmd.c) :
- *    SetLastHealLocationWarp(VarGet(healLocationId));
- *  Set `gSaveBlock1Ptr->lastHealLocation` à la heal location passée en arg.
- *  Audit session 126 C1 : avant no-op → après defeat / poison KO, le player
- *  reste là où il était (= bug ROM-faithful majeur). Maintenant store dans
- *  gSaveBlock1Ptr.respawnLocation (= notre proxy) ET aussi gSaveBlock1Ptr.lastHealLocation
- *  (= structure WarpData attendue par les auto-files comme field_specials). */
-registerOpcode('setrespawn', (_ctx, args) => {
-  const healLocId = args[0] ?? '';
-  // Le décomp resolve la heal location en (mapGroup, mapNum, x, y) via
-  // sHealLocations[]. Notre table TS est dans heal_location-all-auto.ts mais
-  // pas exposée comme lookup direct. Fallback : store la STRING ID, et le code
-  // qui consume (= DoWhiteOut → SetWarpDestinationToLastHealLocation) résoudra
-  // au moment du respawn (= probably aussi à porter). Pour MVP : note la heal
-  // location dans saveBlock1 pour persist + sync DEBUG.
-  gSaveBlock1Ptr.respawnLocation = healLocId;
-  return false;
-});
+// ─── Warp opcodes / setrespawn extraits vers `./script-opcodes-warp`
+// (= 1:1 décomp overworld.c). ────────────────────────────────────────────────
 
 // ─── Misc stubs (= unblock script flow without full implementation) ─────────
 
@@ -1890,19 +1516,7 @@ registerOpcode('incrementgamestat', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_playmoncry` (scrcmd.c) : play Pokemon cry.
- *  Args : species (= "VAR_TEMP_1" ou "SPECIES_X"), mode (= 0 normal). */
-registerOpcode('playmoncry', (_ctx, args) => {
-  const speciesArg = args[0] ?? '';
-  // Resolve species : VAR_X → lookup numeric, else enum name → constant.
-  const speciesId = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
-    ? VarGet(speciesArg)
-    : (resolveDecompConstant(speciesArg) ?? 0);
-  void import('./decomp-globals').then(({ PlayCryInternal }) => {
-    PlayCryInternal(speciesId, 0, 64, 0, 0);
-  }).catch(() => {});
-  return false;
-});
+// `playmoncry` extrait vers `./script-opcodes-sound`.
 
 // `waitmoncry` : registration UNIQUE = la vraie impl 1:1 plus bas
 // (SetupNativeScript + IsCryFinished, scrcmd.c:2028). L'ancien
@@ -1922,50 +1536,9 @@ registerOpcode('giveitem', (_ctx, args) => {
 });
 
 /** 1:1 décomp `givecoins` macro. Stub. */
-/** 1:1 décomp `ScrCmd_givecoins` (scrcmd.c) :
- *    GiveCoins(VarGet(amount));  // gSaveBlock1Ptr.coins += amount, cap 9999. */
-registerOpcode('givecoins', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) gSaveBlock1Ptr.coins = Math.min(9999, (gSaveBlock1Ptr.coins ?? 0) + amount);
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
- *    AddMoney(&gSaveBlock1Ptr->money, VarGet(amount));
- *  Audit session 126 C4 : avant no-op → casino + Wally evolution broken.
- *  Now : add montant à gSaveBlock1Ptr.money, capped à 999999 (= MAX_MONEY décomp). */
-registerOpcode('givemoney', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) {
-    gSaveBlock1Ptr.money = Math.min(999999, (gSaveBlock1Ptr.money ?? 0) + amount);
-  }
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
- *    amount = ScriptReadWord ; ignore = ScriptReadByte ;
- *    if (!ignore) AddMoney(&money, amount);
- *  = mnémonique décomp RÉEL (`addmoney value, disable=0`). Le handler
- *  existait sous le mauvais nom `givemoney` SANS l'octet `ignore`/disable
- *  (= bug 1:1 : ignorait le 2ᵉ arg). Audit scrcmd : était MANQUANT.
- *  AddMoney cap MAX_MONEY=999999 (= 1:1 décomp money.c). */
-registerOpcode('addmoney', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  const ignore = VarGet(args[1] ?? '0');
-  if (!ignore) {
-    if (gSaveBlock1Ptr) gSaveBlock1Ptr.money = Math.min(999999, (gSaveBlock1Ptr.money ?? 0) + amount);
-  }
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_takemoney` (scrcmd.c) : sub from gSaveBlock1Ptr.money, floor 0. */
-registerOpcode('takemoney', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) {
-    gSaveBlock1Ptr.money = Math.max(0, (gSaveBlock1Ptr.money ?? 0) - amount);
-  }
-  return false;
-});
+// Money/coins opcodes (givecoins/givemoney/addmoney/takemoney/checkmoney/checkcoins/
+// takecoins/addcoins/removemoney/removecoins/*moneybox/*coinsbox) extraits vers
+// `./script-opcodes-money-coins` (= 1:1 décomp money.c + coins.c).
 
 /** 1:1 décomp `ScrCmd_givemon` (scrcmd.c) :
  *    species = VarGet(args[0]); level = VarGet(args[1]); item = VarGet(args[2]);
@@ -1997,54 +1570,15 @@ registerOpcode('givepokemon', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_checkmoneyforshop` :
- *    gSpecialVar_Result = (gSaveBlock1Ptr->money >= amount);
- *  Returns TRUE si player a assez d'argent. */
-registerOpcode('checkmoney', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  const has = (gSaveBlock1Ptr?.money ?? 0) >= amount;
-  VarSet('VAR_RESULT', has ? 1 : 0);
-  return false;
-});
+// `checkmoney` extrait vers `./script-opcodes-money-coins`.
 
 /** 1:1 décomp `startminigame_*` etc. Stubs no-op. */
 registerOpcode('cmd5e', (_ctx, _args) => false);
 
-/** 1:1 décomp `ScrCmd_setweather` (scrcmd.c) :
- *    SetSavedWeather(VarGet(weather));
- *  Stocke dans gSaveBlock1Ptr.weather. Effet visuel applied au prochain doweather. */
-registerOpcode('setweather', (_ctx, args) => {
-  const weather = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) gSaveBlock1Ptr.weather = weather;
-  return false;
-});
+// `setweather` / `resetweather` / `doweather` extraits vers `./script-opcodes-weather`
+// (= 1:1 décomp field_weather.c).
 
-/** 1:1 décomp `ScrCmd_resetweather` (scrcmd.c) :
- *    SetSavedWeatherFromCurrMapHeader();
- *  = `SetSavedWeather(gMapHeader.weather)` = `gSaveBlock1Ptr.weather =
- *  gMapHeader.weather`. Restaure la météo SAUVEGARDÉE à celle PAR
- *  DÉFAUT de la map courante (= 1:1 field_weather.c). gMapHeader.weather
- *  est une string "WEATHER_*" → résolue en id numérique. Était MANQUANT
- *  (audit scrcmd) → la météo ne se reset pas en sortie de zone spéciale. */
-registerOpcode('resetweather', (_ctx) => {
-  const mhWeather = gMapHeader?.weather;
-  const weatherId = typeof mhWeather === 'string'
-    ? (resolveDecompConstant(mhWeather) ?? 0)
-    : (typeof mhWeather === 'number' ? mhWeather : 0);
-  if (gSaveBlock1Ptr) gSaveBlock1Ptr.weather = typeof weatherId === 'number' ? weatherId : 0;
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_doweather` (scrcmd.c) :
- *    DoCurrentWeather();  // active le weather sauvegardé
- *  Pour MVP on log + no-op (= sans repro live d'un cas qui en a besoin). */
-registerOpcode('doweather', (_ctx, _args) => {
-  // TODO : appeler le système weather pour appliquer la weather courante.
-  return false;
-});
-
-registerOpcode('setstepcallback', (_ctx, _args) => false);
-registerOpcode('setmaplayoutindex', (_ctx, _args) => false);
+// `setstepcallback` / `setmaplayoutindex` extraits vers `./script-opcodes-fieldmap`.
 registerOpcode('setobjectsubpriority', (_ctx, _args) => false);
 registerOpcode('resetobjectsubpriority', (_ctx, _args) => false);
 registerOpcode('createvobject', (_ctx, _args) => false);
@@ -2057,27 +1591,10 @@ registerOpcode('turnvobject', (_ctx, _args) => false);
 // underscore), pas dupliqués, on les garde.
 // Alias setdoor_opened/setdoor_closed → versions handled par setdooropen/setdoorclosed.
 // 1:1 décomp scrcmd : these are just naming variants.
-registerOpcode('setdoor_opened', (ctx, args) => getOpcodeHandler('setdooropen')?.(ctx, args) ?? false);
-registerOpcode('setdoor_closed', (ctx, args) => getOpcodeHandler('setdoorclosed')?.(ctx, args) ?? false);
+// `setdoor_opened` / `setdoor_closed` extraits vers `./script-opcodes-door`.
 registerOpcode('addelevmenuitem', (_ctx, _args) => false);
 registerOpcode('showelevmenu', (_ctx, _args) => false);
-/** 1:1 décomp `ScrCmd_checkcoins` (scrcmd.c) :
- *    *(u16 *)VarGetPtr(args[0]) = gSaveBlock1Ptr.coins;
- *  Le résultat va dans la VAR passée en arg, pas VAR_RESULT. */
-registerOpcode('checkcoins', (_ctx, args) => {
-  const coins = gSaveBlock1Ptr?.coins ?? 0;
-  const dst = args[0] ?? 'VAR_RESULT';
-  if (dst.startsWith('VAR_')) VarSet(dst, coins);
-  else VarSet('VAR_RESULT', coins);
-  return false;
-});
-/** 1:1 décomp `ScrCmd_takecoins` (scrcmd.c) :
- *    SubtractCoins(VarGet(amount));  // gSaveBlock1Ptr.coins -= amount, floor 0. */
-registerOpcode('takecoins', (_ctx, args) => {
-  const amount = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) gSaveBlock1Ptr.coins = Math.max(0, (gSaveBlock1Ptr.coins ?? 0) - amount);
-  return false;
-});
+// `checkcoins` / `takecoins` extraits vers `./script-opcodes-money-coins`.
 registerOpcode('vbuffer', (_ctx, _args) => false);
 
 // ─── Buffer opcodes (= 1:1 décomp scrcmd.c bufferXXX) ────────────────────────
@@ -2163,11 +1680,7 @@ registerOpcode('bufferitemnameplural', (_ctx, args) => {
   return false;
 });
 
-registerOpcode('bufferdecorationname', (_ctx, args) => {
-  const n = parseValue(args[0]) || 1;
-  setStringVar(n, args[1]?.replace(/^DECOR_/, '') ?? '');
-  return false;
-});
+// `bufferdecorationname` extrait vers `./script-opcodes-decoration`.
 
 registerOpcode('buffermovename', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
@@ -2221,34 +1734,8 @@ registerOpcode('bufferstring', (_ctx, args) => {
   return false;
 });
 
-// 1:1 décomp `sContestNames[]` (data/lilycove_lady.h:452, indexé
-// CONTEST_CATEGORY_* global.h:86 = COOL 0/BEAUTY 1/CUTE 2/SMART 3/TOUGH 4)
-// → gText_{Coolness,Beauty,Cuteness,Smartness,Toughness}Contest, strings FR
-// décomp strings.c:616-620 (texte ROM FR cité ligne-par-ligne, PAS un enum
-// dérivable → hardcode 1:1 documenté, idem gText_Box étape 6 PokemonStorage).
-const sContestNames = [
-  'SANG-FROID',   // [CONTEST_CATEGORY_COOL]   gText_CoolnessContest  strings.c:616
-  'BEAUTE',       // [CONTEST_CATEGORY_BEAUTY] gText_BeautyContest    strings.c:617
-  'GRACE',        // [CONTEST_CATEGORY_CUTE]   gText_CutenessContest  strings.c:618
-  'INTELLIGENCE', // [CONTEST_CATEGORY_SMART]  gText_SmartnessContest strings.c:619
-  'ROBUSTESSE',   // [CONTEST_CATEGORY_TOUGH]  gText_ToughnessContest strings.c:620
-] as const;
-
-// 1:1 décomp `ScrCmd_buffercontestname` (scrcmd.c:1635-1642) :
-//   u8 stringVarIndex = ScriptReadByte(ctx);
-//   u16 category = VarGet(ScriptReadHalfword(ctx));
-//   BufferContestName(sScriptStringVars[stringVarIndex], category);
-// BufferContestName (lilycove_lady.c:721) = StringCopy(dest, sContestNames[category]).
-// parseValue() reproduit VarGet + résolution constante (VAR_→VarGet,
-// CONTEST_CATEGORY_X→resolveDecompConstant, nombre→nombre). Mal classé
-// auparavant dans _otherVmStubs (= no-op) alors que c'est un field scrcmd
-// réel → {STR_VAR_N} restait vide dans les dialogs Contest (gap audit:overworld).
-registerOpcode('buffercontestname', (_ctx, args) => {
-  const n = parseValue(args[0]) || 1;
-  const category = parseValue(args[1]);
-  setStringVar(n, sContestNames[category] ?? '');
-  return false;
-});
+// `buffercontestname` + `sContestNames[]` extraits vers `./script-opcodes-lilycove`
+// (= 1:1 décomp lilycove_lady.c:BufferContestName).
 
 registerOpcode('bufferboxname', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
@@ -2270,15 +1757,13 @@ registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args)
 registerOpcode('vbufferstring', (ctx, args) => getOpcodeHandler('bufferstring')?.(ctx, args) ?? false);
 
 // 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : gSaveBlock1Ptr.coins += amount, cap 9999.
-registerOpcode('addcoins', (ctx, args) => getOpcodeHandler('givecoins')?.(ctx, args) ?? false);
+// `addcoins` extrait vers `./script-opcodes-money-coins`.
 
 // 1:1 décomp `ScrCmd_messageinstant` (scrcmd.c) : msgbox sans typewriter effect
 // (= text appears all at once instead of char-by-char). MVP : alias message.
 registerOpcode('messageinstant', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
 
-// 1:1 décomp `ScrCmd_warpwhitefade` (scrcmd.c) : warp avec white fade
-// transition (= rare, used Sky Pillar etc.). MVP : alias warp normal.
-registerOpcode('warpwhitefade', (ctx, args) => getOpcodeHandler('warp')?.(ctx, args) ?? false);
+// `warpwhitefade` extrait vers `./script-opcodes-warp`.
 registerOpcode('checkpartymove', (_ctx, _args) => {
   VarSet('VAR_RESULT', 0);
   return false;
@@ -2288,30 +1773,10 @@ registerOpcode('countpokemon', (_ctx) => {
   return false;
 });
 
-// ─── Setdynamicwarp + sync gameState ───────────────────────────────────────
-
-registerOpcode('setdynamicwarp', (_ctx, args) => {
-  const [destMap, xStr, yStr] = args;
-  const x = parseInt(xStr ?? '0', 10);
-  const y = parseInt(yStr ?? '0', 10);
-  // Set via gameState (= used by executeWarp MAP_DYNAMIC resolution).
-  SetDynamicWarp(destMap, x, y);
-  console.log(`[opcode setdynamicwarp] ${destMap} (${x},${y})`);
-  return false;
-});
+// `setdynamicwarp` extrait vers `./script-opcodes-warp`.
 
 // ─── Bag opcodes (= 1:1 décomp ScrCmd_additem etc.) ─────────────────────────
-
-/** Helper : resolve un arg "VAR_X" ou "ITEM_Y" ou number en numeric quantity. */
-function resolveCount(arg: string): number {
-  if (!arg) return 1;
-  // Si VAR_*, lire la valeur. Sinon parseInt.
-  if (arg.startsWith('VAR_') || arg.startsWith('0x80')) {
-    return VarGet(arg);
-  }
-  const n = parseInt(arg, 10);
-  return Number.isNaN(n) ? 1 : n;
-}
+// `resolveCount` est maintenant importé depuis `./script-opcodes/helpers`.
 
 /** 1:1 décomp `ScrCmd_additem` (scrcmd.c:487).
  *   `additem ITEMID, QUANTITY` → AddBagItem + set gSpecialVar_Result. */
@@ -2352,78 +1817,13 @@ registerOpcode('checkitemspace', (_ctx) => {
 });
 
 // ─── Helpers privés ──────────────────────────────────────────────────────────
-
-/** Parse un arg comme nombre. Si VAR_*, lit la value courante. Si LOCALID_X,
- *  résout via les templates de la map courante. Si MALE/FEMALE/autres
- *  constantes connues, retourne le numeric value 1:1 décomp.
- *  Pour les constantes inconnues, return 0 (= safe default). */
-function parseValue(arg: string | undefined): number {
-  if (!arg) return 0;
-  if (/^-?\d+$/.test(arg)) return parseInt(arg, 10);
-  if (/^0x[0-9a-fA-F]+$/.test(arg)) return parseInt(arg, 16);
-  if (arg.startsWith('VAR_')) return VarGet(arg);
-  // 1:1 décomp constants : MALE = 0, FEMALE = 1 (= include/constants/global.h).
-  if (arg === 'MALE') return MALE_GENDER;
-  if (arg === 'FEMALE') return FEMALE_GENDER;
-  // 1:1 décomp LOCALID_X : look up index dans les templates de la map courante.
-  // LOCALID_PLAYER = 255, LOCALID_NONE = 0, LOCALID_CAMERA = 127.
-  if (arg === 'LOCALID_PLAYER') return 255;
-  if (arg === 'LOCALID_NONE') return 0;
-  if (arg === 'LOCALID_CAMERA') return 127;
-  if (arg.startsWith('LOCALID_')) {
-    const templates = gMapHeader?.events?.objectEvents ?? [];
-    const idx = templates.findIndex(t => t.localIdRaw === arg);
-    if (idx >= 0) return idx + 1;  // 1-based, matches localId assigned au load.
-    console.warn(`[parseValue] LOCALID '${arg}' not found in map templates`);
-    return 0;
-  }
-  // 1:1 décomp constants lookup (= OBJ_EVENT_GFX_*, ITEM_*, MOVE_*, SPECIES_*,
-  // TRAINER_*, FLAG_* numeric ID etc.). Cf. decomp-constants.ts pour list des
-  // namespaces couverts. Sans ça, setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_RIVAL_*
-  // stockait 0 → rival NPC sprite wrong (= toujours Brendan = 0).
-  const constValue = resolveDecompConstant(arg);
-  if (constValue !== undefined) return constValue;
-  return 0;
-}
+// `parseValue` est maintenant importé depuis `./script-opcodes/helpers`.
 
 // ─── Phase 5.7+ iteration 6 : field SE/audio extras + register_matchcall ─────
-// 1:1 décomp scrcmd.c — alias to playse with stereo pan ignored (= we don't
-// emulate stereo positioning). 1746x usage in scripts.
-registerOpcode('playsewithpan', (_ctx, args) => {
-  const seName = args[0] ?? '';
-  const seId = (Songs as unknown as Record<string, number>)[seName];
-  if (typeof seId === 'number') PlaySE(seId);
-  return false;
-});
+// `playsewithpan` / `loopsewithpan` / `waitse` / `waitplaysewithpan` extraits
+// vers `./script-opcodes-sound`.
 
-// 1:1 décomp `ScrCmd_loopsewithpan` — looped SE. Same as playsewithpan for
-// stub purpose. 194x usage.
-registerOpcode('loopsewithpan', (_ctx, args) => {
-  const seName = args[0] ?? '';
-  const seId = (Songs as unknown as Record<string, number>)[seName];
-  if (typeof seId === 'number') PlaySE(seId);
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_waitse` — wait for current SE to finish. We treat SE as
-// fire-and-forget so this is a no-op. 342x usage.
-registerOpcode('waitse', (_ctx) => false);
-
-// 1:1 décomp `ScrCmd_waitplaysewithpan`. 96x usage.
-registerOpcode('waitplaysewithpan', (_ctx) => false);
-
-// 1:1 décomp `ScrCmd_register_matchcall` (scrcmd.c) :
-//   sets `gMatchCallTrainerFlags` bit pour que le trainer puisse rappeler
-//   pour rematch. 152x usage (= post-battle des dresseurs early-game).
-//   MVP : on stocke un flag perso.
-registerOpcode('register_matchcall', (_ctx, args) => {
-  const trainerName = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  if (!g.__matchCallTrainers) g.__matchCallTrainers = new Set<string>();
-  (g.__matchCallTrainers as Set<string>).add(trainerName);
-  console.log(`[opcode register_matchcall] '${trainerName}' registered for rematch`);
-  return false;
-});
+// `register_matchcall` extrait vers `./script-opcodes-match-call`.
 
 // 1:1 décomp `ScrCmd_setbyte` (scrcmd.c) — set a byte var. Le decomp utilise ça
 // rarement directement (= surtout pour battle script land). MVP no-op.
@@ -2441,13 +1841,7 @@ registerOpcode('pause', (ctx, args) => {
   return true;
 });
 
-// 1:1 décomp `ScrCmd_random` — RNG result into VAR_RESULT. Range = args[0].
-registerOpcode('random', (_ctx, args) => {
-  const range = parseValue(args[0]);
-  const r = Math.floor(Math.random() * Math.max(1, range));
-  VarSet('VAR_RESULT', r);
-  return false;
-});
+// `random` opcode : 1:1 décomp `random.c` — voir `./script-opcodes-random`.
 
 // 1:1 décomp `ScrCmd_finditem` — field find item / `setvar VAR_RESULT` if found.
 //   MVP : mark obtained as success (= not blocking flow but no real item).
@@ -2492,32 +1886,10 @@ registerOpcode('finditem', (_ctx, args) => {
  *  Note : `args[0]` est typiquement un POINTER LABEL (= "DewfordTown_Mart_
  *  Pokemart") qui est résolu au compile time vers une array de u16 itemIds.
  *  Notre runtime a probably la liste dans le scripts JSON sous ce label. */
-registerOpcode('pokemart', (_ctx, args) => {
-  const productsLabel = args[0] ?? '';
-  const createPokemartMenu = (globalThis as Record<string, unknown>).CreatePokemartMenu as
-    ((items: unknown) => void) | undefined;
-  if (typeof createPokemartMenu === 'function') {
-    try {
-      // Pour l'instant on passe le label string ; le auto-file expects un u16*.
-      // À wire proprement : resolve label → array via map scripts data.
-      createPokemartMenu(productsLabel);
-      console.log(`[opcode pokemart] CreatePokemartMenu('${productsLabel}') dispatched`);
-    } catch (e) {
-      console.warn(`[opcode pokemart] CreatePokemartMenu threw:`, e);
-    }
-  } else {
-    console.warn(`[opcode pokemart] '${productsLabel}' — CreatePokemartMenu not exposed (= shop UI ~3000 lignes décomp à wire)`);
-  }
-  return false;
-});
+// `pokemart` / `pokemartdecoration` / `pokemartdecoration2` extraits vers
+// `./script-opcodes-shop` (= 1:1 décomp shop.c).
 
-// 1:1 décomp `ScrCmd_pokemartdecoration` / `pokemartdecoration2`.
-registerOpcode('pokemartdecoration', (_ctx, _args) => false);
-registerOpcode('pokemartdecoration2', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_setberrytree` — set berry tree state. 160x usage but
-// only outdoor maps with berry trees. MVP no-op (= no berry growth sim yet).
-registerOpcode('setberrytree', (_ctx, _args) => false);
+// `setberrytree` stub → real impl 1:1 décomp `berry.c` — voir `./script-opcodes-berry`.
 
 // 1:1 décomp `ScrCmd_braillemsgbox` — message in braille font. 48x usage.
 //   MVP : log + skip (= no braille font yet).
@@ -2537,58 +1909,7 @@ registerOpcode('messageautoscroll', (_ctx, args) => {
   return false;
 });
 
-// 1:1 décomp `ScrCmd_dofieldeffect` — fire a field effect (= leaves rustle,
-// rocksmash break, etc.). MVP no-op (= we don't have field effects yet).
-/** 1:1 décomp `ScrCmd_dofieldeffect` (scrcmd.c) :
- *    sFieldEffectScriptId = VarGet(effectId);
- *    ScriptContext_Stop();
- *    FieldEffectStart(effectId);
- *
- *  Audit session 126 LOT C3 : avant strict no-op → Cut/Surf/Fly/Strength/
- *  Rock Smash all broken. Maintenant on dispatch via FieldEffectStart depuis
- *  l'auto-file (= field_effect-all-auto.ts). Si l'effect n'est pas câblé
- *  (= many require sprite anim + tile gfx + sound + waitstate), fallback log
- *  + no-op. Le wiring complet de chaque FLDEFF_X est itératif (= à fix au
- *  cas par cas quand l'user rencontre un bug).
- *
- *  Effet IDs critiques (= path commun) :
- *    - FLDEFF_CUT_GRASS = 1  (= Cut HM)
- *    - FLDEFF_USE_FLY = 2
- *    - FLDEFF_USE_SURF = 3
- *    - FLDEFF_USE_STRENGTH = 6
- *    - FLDEFF_USE_ROCK_SMASH = 7
- *    - FLDEFF_USE_DIG = 8
- *    - FLDEFF_USE_TELEPORT = 9
- *    - FLDEFF_USE_WATERFALL = 10
- *    - FLDEFF_USE_DIVE = 11
- *    - FLDEFF_USE_SWEET_SCENT = 27
- *    - FLDEFF_TASK_CUT_GRASS = 41
- *    - FLDEFF_USE_VS_SEEKER = 56  (variant)
- */
-registerOpcode('dofieldeffect', (_ctx, args) => {
-  const effectId = VarGet(args[0] ?? '0');
-  // Session 132 : track active list pour waitfieldeffect consumer.
-  // 1:1 décomp `FieldEffectStart(id)` ajoute id à gFieldEffectActiveList.
-  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number) => void } }).__fieldEffectActiveList;
-  fa?.FieldEffectActiveListAdd?.(effectId);
-  // Try to resolve via auto-file FieldEffectStart. Le auto-file référence
-  // gFieldEffectScriptPointers + FieldEffectScriptFuncs qui sont des bytecode
-  // tables — pas trivial à exposer sur globalThis. Pour l'instant on log +
-  // continue (= same behavior as before mais avec effect ID resolved).
-  const fieldEffectStart = (globalThis as Record<string, unknown>).FieldEffectStart as
-    ((id: number) => unknown) | undefined;
-  if (typeof fieldEffectStart === 'function') {
-    try {
-      fieldEffectStart(effectId);
-      console.log(`[opcode dofieldeffect] FLDEFF id=${effectId} dispatched`);
-    } catch (e) {
-      console.warn(`[opcode dofieldeffect] FLDEFF id=${effectId} threw:`, e);
-    }
-  } else {
-    console.warn(`[opcode dofieldeffect] FieldEffectStart not exposed — FLDEFF id=${effectId} skipped (Cut/Surf/Fly/etc broken until wired)`);
-  }
-  return false;
-});
+// `dofieldeffect` extrait vers `./script-opcodes-fieldeffect` (= 1:1 décomp field_effect.c).
 
 // 1:1 décomp `ScrCmd_setfieldeffectargument` — sets args for next field effect.
 registerOpcode('setfieldeffectargument', (_ctx, _args) => false);
@@ -2776,7 +2097,7 @@ registerOpcode('pokenavcall', (_ctx, args) => {
 
 // 1:1 décomp `ScrCmd_pokemartlistend` — data terminator for pokemart lists.
 //   4x usage (= each shop has a list ending with this).
-registerOpcode('pokemartlistend', (_ctx, _args) => false);
+// `pokemartlistend` extrait vers `./script-opcodes-shop` (= 1:1 décomp shop.c).
 
 // 1:1 décomp `ScrCmd_setorcopyvar` (scrcmd.c) — alt setvar that handles VAR_*.
 registerOpcode('setorcopyvar', (_ctx, args) => {
@@ -2790,30 +2111,9 @@ registerOpcode('setorcopyvar', (_ctx, args) => {
   return false;
 });
 
-// 1:1 décomp `ScrCmd_checkpcitem` — checks if PC has a given item.
-registerOpcode('checkpcitem', (_ctx, _args) => {
-  VarSet('VAR_RESULT', 0); // No PC items implemented
-  return false;
-});
+// `checkpcitem` extrait vers `./script-opcodes-pc-storage`.
 
-// 1:1 décomp `ScrCmd_warpdoor` — warp through a door (= warp + door anim).
-//   Same effect as warp for MVP.
-registerOpcode('warpdoor', (ctx, args) => {
-  const handler = (globalThis as Record<string, unknown>).__opcodeWarp as
-    ((ctx: ScriptContext, args: string[]) => boolean) | undefined;
-  if (handler) return handler(ctx, args);
-  // Fallback : same logic as 'warp' opcode (= we registered it earlier).
-  // Use the warp-system directly.
-  const dst = args[0] ?? '';
-  setPendingWarp({
-    destMap: dst,
-    x: parseValue(args[2]),
-    y: parseValue(args[3]),
-    elevation: 0,
-    warpId: -1,
-  });
-  return false;
-});
+// `warpdoor` extrait vers `./script-opcodes-warp`.
 
 // 1:1 décomp `ScrCmd_showobjectat` — alt showobject with explicit map id.
 registerOpcode('showobjectat', (_ctx, args) => {
@@ -2839,16 +2139,7 @@ registerOpcode('getpartysize', (_ctx) => {
   return false;
 });
 
-// 1:1 décomp `ScrCmd_setescapewarp` (scrcmd.c) — set the escape warp (= where
-// player teleports back to when using ESCAPE rope or losing battle).
-registerOpcode('setescapewarp', (_ctx, args) => {
-  const map = args[0] ?? '';
-  const x = parseValue(args[2]);
-  const y = parseValue(args[3]);
-  const g = globalThis as Record<string, unknown>;
-  g.__escapeWarp = { mapName: map.replace(/^MAP_/, ''), x, y };
-  return false;
-});
+// `setescapewarp` extrait vers `./script-opcodes-warp`.
 
 // 1:1 décomp `ScrCmd_giveegg` (scrcmd.c) — give a Pokemon egg to player party.
 //   MVP : log + skip.
@@ -2896,34 +2187,18 @@ registerOpcode('pyramid_set', (_ctx, _args) => false);
 registerOpcode('pyramid_get', (_ctx, _args) => false);
 
 // Money / Coin UI :
-registerOpcode('showmoneybox', (_ctx, _args) => false);
-registerOpcode('hidemoneybox', (_ctx, _args) => false);
-registerOpcode('updatemoneybox', (_ctx, _args) => false);
-registerOpcode('showcoinsbox', (_ctx, _args) => false);
-registerOpcode('hidecoinsbox', (_ctx, _args) => false);
-registerOpcode('updatecoinsbox', (_ctx, _args) => false);
-registerOpcode('removemoney', (_ctx, _args) => false);
+// *moneybox / *coinsbox / removemoney early stubs extraits vers `./script-opcodes-money-coins`.
 
 // Flash HM (Mt. Pyre, Granite Cave) :
 registerOpcode('setflashlevel', (_ctx, _args) => false);
 registerOpcode('animateflash', (_ctx, _args) => false);
 
-// Mt. Pyre / Sky Pillar rotating puzzles :
-registerOpcode('initrotatingtilepuzzle', (_ctx, _args) => false);
-registerOpcode('moverotatingtileobjects', (_ctx, _args) => false);
-registerOpcode('turnrotatingtileobjects', (_ctx, _args) => false);
-registerOpcode('freerotatingtilepuzzle', (_ctx, _args) => false);
+// rotating-tile-puzzle opcodes extraits vers `./script-opcodes-rotating-tile-puzzle`.
 
-// Secret Base décoration :
-registerOpcode('givedecoration', (_ctx, _args) => false);
-registerOpcode('takedecoration', (_ctx, _args) => false);
-registerOpcode('checkdecor', (_ctx, _args) => false);
-registerOpcode('checkdecorspace', (_ctx, _args) => false);
-registerOpcode('movedecoration', (_ctx, _args) => false);
+// Secret Base décoration opcodes extraits vers `./script-opcodes-decoration`.
 
 // Other late-game / minigames :
-registerOpcode('setdivewarp', (_ctx, _args) => false);
-registerOpcode('setholewarp', (_ctx, _args) => false);
+// `setdivewarp` / `setholewarp` extraits vers `./script-opcodes-warp`.
 registerOpcode('dofieldeffectsparkle', (_ctx, _args) => false);
 registerOpcode('setwildbattle', (_ctx, _args) => false);
 registerOpcode('dowildbattle', (_ctx, _args) => false);
@@ -2939,8 +2214,8 @@ registerOpcode('initclock', (_ctx, args) => {
   RtcInitLocalTimeOffset(hour, minute);
   return false;
 });
-registerOpcode('showcontestpainting', (_ctx, _args) => false);
-registerOpcode('playslotmachine', (_ctx, _args) => false);
+// `showcontestpainting` extrait vers `./script-opcodes-contest`.
+// `playslotmachine` extrait vers `./script-opcodes-slot-machine`.
 registerOpcode('setvaddress', (_ctx, _args) => false);
 registerOpcode('vgoto', (_ctx, _args) => false);
 registerOpcode('vcall', (_ctx, _args) => false);
@@ -2952,7 +2227,7 @@ registerOpcode('vcall_if_unset', (_ctx, _args) => false);
 registerOpcode('vcall_if_set', (_ctx, _args) => false);
 
 // More post-game / battle facility stubs (= further audit findings)
-registerOpcode('removecoins', (_ctx, _args) => false);
+// `removecoins` early stub extrait vers `./script-opcodes-money-coins`.
 registerOpcode('seteventmon', (_ctx, _args) => false);
 registerOpcode('frontier_settrainers', (_ctx, _args) => false);
 registerOpcode('frontier_resetsketch', (_ctx, _args) => false);
@@ -2972,8 +2247,8 @@ registerOpcode('arena_save', (_ctx, _args) => false);
 registerOpcode('fallarbortent_save', (_ctx, _args) => false);
 registerOpcode('slateporttent_save', (_ctx, _args) => false);
 registerOpcode('verdanturftent_save', (_ctx, _args) => false);
-registerOpcode('adddecoration', (_ctx, _args) => false);
-registerOpcode('setwarp', (_ctx, _args) => false);
+// `adddecoration` extrait vers `./script-opcodes-decoration`.
+// `setwarp` extrait vers `./script-opcodes-warp`.
 registerOpcode('init_affine_anim', (_ctx, _args) => false);
 registerOpcode('walk_down_affine', (_ctx, _args) => false);
 registerOpcode('walk_up_affine', (_ctx, _args) => false);
@@ -3038,9 +2313,7 @@ let _sCurrentApproachingTrainerObjectEventId = 0;
 
 /** 1:1 décomp `sBerryTrees[BERRY_TREES_COUNT]` (berry.c). Persisté dans
  *  gSaveBlock1Ptr->berryTrees. Notre port a déjà l'array dans save-blocks.ts. */
-function _berryTreesArr(): Array<{ berry: number; stage: number; minutesUntilNextStage?: number; berryYield?: number; regrowthCount?: number; watered1?: number; watered2?: number; watered3?: number; watered4?: number; stopGrowth?: number }> | undefined {
-  return gSaveBlock1Ptr?.berryTrees;
-}
+// `_berryTreesArr` extrait vers `./script-opcodes-berry`.
 
 // ─── Helpers privés (1:1 décomp) ─────────────────────────────────────────────
 
@@ -3244,39 +2517,7 @@ registerOpcode('jumpifbytewasset', (_ctx, _args) => false);
 registerOpcode('preparemsg', (_ctx, _args) => false);  // RS-era, removed in Em
 
 // ─── Waits (1:1 décomp ScrCmd_wait*) ────────────────────────────────────────
-
-registerOpcode('waitse', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_waitse (scrcmd.c:1162) :
-  //   SetupNativeScript(ctx, WaitForSoundEffectFinish) ; return TRUE
-  // WaitForSoundEffectFinish : return !IsSEPlaying().
-  // Session 132 : real tracking via decomp-globals.IsSEPlaying (= check m4a
-  // sequencer state + prerendered slot active + endTimeMs tracker).
-  const poll = (): boolean => {
-    // Import lazy pour éviter cycle decomp-globals.ts ↔ script-opcodes.ts.
-    const dg = (globalThis as { __decompGlobals?: { IsSEPlaying?: () => boolean } }).__decompGlobals;
-    return !(dg?.IsSEPlaying?.() ?? false);  // poll returns TRUE when SE done
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
-
-registerOpcode('waitplaysewithpan', (ctx, _args) => {
-  // 1:1 décomp : alias de waitse (le 'pan' = stéréo, n'affecte pas le tracking).
-  return getOpcodeHandler('waitse')?.(ctx, []) ?? false;
-});
-
-registerOpcode('waitmoncry', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_waitmoncry (scrcmd.c:1610) :
-  //   SetupNativeScript(ctx, IsCryFinished) ; return TRUE
-  // IsCryFinished : returns !IsCryPlaying.
-  // Session 132 : real tracking via decomp-globals.IsCryFinished
-  const poll = (): boolean => {
-    const dg = (globalThis as { __decompGlobals?: { IsCryFinished?: () => boolean } }).__decompGlobals;
-    return dg?.IsCryFinished?.() ?? true;  // poll returns TRUE when cry done
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
+// `waitse` / `waitplaysewithpan` / `waitmoncry` extraits vers `./script-opcodes-sound`.
 
 registerOpcode('waitfieldeffect', (ctx, args) => {
   // 1:1 décomp ScrCmd_waitfieldeffect (scrcmd.c) :
@@ -3515,159 +2756,14 @@ registerOpcode('animateflash', (ctx, args) => {
   return true;
 });
 
-// ─── Map layout (1:1 décomp ScrCmd_setmaplayoutindex) ───────────────────────
-
-registerOpcode('setmaplayoutindex', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setmaplayoutindex : SetCurrentMapLayout(VarGet(layout)).
-  // Change le layout (= tile data + collisions) de la map active sans recharger
-  // toute la map (= utilisé pour Birch lab post-starter, Pacifidlog day/night,
-  // Sootopolis ice cracks, ShoalCave tide, SkyPillar dust, Route 111 desert).
-  // Session 132 : dispatch à map-layout-swap.ts qui gère le load layout async.
-  const layoutIdx = _vget(args[0]);
-  void (async () => {
-    const swap = (globalThis as { __mapLayoutSwap?: { SetCurrentMapLayout?: (idx: number) => Promise<void> } }).__mapLayoutSwap;
-    await swap?.SetCurrentMapLayout?.(layoutIdx);
-  })();
-  return false;
-});
-
-// ─── Step callback (1:1 décomp ScrCmd_setstepcallback) ──────────────────────
-
-registerOpcode('setstepcallback', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setstepcallback : ActivatePerStepCallback(callbackId).
-  // Active une callback exécutée à chaque step du player.
-  // Session 132 : real dispatch via step-callbacks.ts (= 8 callback handlers
-  // 1:1 décomp gPerStepCallbacks[]).
-  const callbackId = parseValue(args[0] ?? '0');
-  void (async () => {
-    const { ActivatePerStepCallback } = await import('./step-callbacks');
-    ActivatePerStepCallback(callbackId);
-  })();
-  return false;
-});
+// `setmaplayoutindex` + `setstepcallback` extraits vers `./script-opcodes-fieldmap`
+// (= 1:1 décomp fieldmap.c + field_tasks.c).
 
 // ─── Berry tree (1:1 décomp ScrCmd_setberrytree) ────────────────────────────
+// Real impl 1:1 décomp `berry.c` — voir `./script-opcodes-berry`.
 
-registerOpcode('setberrytree', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setberrytree (scrcmd.c:2000) :
-  //   PlantBerryTree(treeId, berry, growthStage, FALSE).
-  const treeId = parseValue(args[0] ?? '0');
-  const berry = parseValue(args[1] ?? '0');
-  const growthStage = parseValue(args[2] ?? '0');
-  const trees = _berryTreesArr();
-  if (trees && treeId >= 0 && treeId < trees.length) {
-    trees[treeId].berry = berry;
-    trees[treeId].stage = growthStage;
-    trees[treeId].minutesUntilNextStage = 0;
-    trees[treeId].watered1 = 0;
-    trees[treeId].watered2 = 0;
-    trees[treeId].watered3 = 0;
-    trees[treeId].watered4 = 0;
-    trees[treeId].berryYield = 0;
-    trees[treeId].regrowthCount = 0;
-    trees[treeId].stopGrowth = 0;
-  }
-  return false;
-});
-
-// ─── Money & coins (1:1 décomp) ─────────────────────────────────────────────
-
-registerOpcode('removemoney', (ctx, args) => {
-  // 1:1 décomp ScrCmd_removemoney : RemoveMoney(&gSaveBlock1Ptr->money, amount).
-  // Alias de takemoney (= même opcode 0x91 dans la décomp, takemoney est notre
-  // nom interne pour le même comportement).
-  return getOpcodeHandler('takemoney')?.(ctx, args) ?? false;
-});
-
-registerOpcode('removecoins', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_removecoins (scrcmd.c:1830) :
-  //   gSpecialVar_Result = !RemoveCoins(VarGet(coins)).
-  // (= TRUE si remove failed, FALSE si succès — comportement inverse étrange
-  //    mais c'est ce que dit la décomp).
-  const coins = _vget(args[0]);
-  if (!gSaveBlock1Ptr) {
-    VarSet('VAR_RESULT', 1);  // fail
-    return false;
-  }
-  const current = gSaveBlock1Ptr.coins ?? 0;
-  if (current >= coins) {
-    gSaveBlock1Ptr.coins = current - coins;
-    VarSet('VAR_RESULT', 0);
-  } else {
-    VarSet('VAR_RESULT', 1);
-  }
-  return false;
-});
-
-// Money/Coins box UI : opcodes pour afficher la fenêtre money/coins pendant
-// les transactions pokemart/casino. Notre port : pas encore d'UI dédiée, on
-// stocke les flags pour que la field scene puisse les rendre.
-
-registerOpcode('showmoneybox', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_showmoneybox (scrcmd.c) :
-  //   if (!ignore) DrawMoneyBox(GetMoney(&gSaveBlock1Ptr->money), x, y).
-  // Session 132 : real UI via money-box-ui.ts.
-  const x = parseValue(args[0] ?? '0');
-  const y = parseValue(args[1] ?? '0');
-  const ignore = parseValue(args[2] ?? '0');
-  if (ignore) return false;
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { DrawMoneyBox?: (amt: number, x: number, y: number) => void; _getMoney?: () => number } }).__moneyBoxUI;
-    if (ui?.DrawMoneyBox && ui._getMoney) ui.DrawMoneyBox(ui._getMoney(), x, y);
-  })();
-  return false;
-});
-
-registerOpcode('hidemoneybox', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_hidemoneybox : HideMoneyBox().
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { HideMoneyBox?: () => void } }).__moneyBoxUI;
-    ui?.HideMoneyBox?.();
-  })();
-  return false;
-});
-
-registerOpcode('updatemoneybox', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_updatemoneybox : ChangeAmountInMoneyBox(GetMoney(...)).
-  const _x = parseValue(args[0] ?? '0');
-  const _y = parseValue(args[1] ?? '0');
-  const ignore = parseValue(args[2] ?? '0');
-  if (ignore) return false;
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { ChangeAmountInMoneyBox?: (amt: number) => void; _getMoney?: () => number } }).__moneyBoxUI;
-    if (ui?.ChangeAmountInMoneyBox && ui._getMoney) ui.ChangeAmountInMoneyBox(ui._getMoney());
-  })();
-  return false;
-});
-
-registerOpcode('showcoinsbox', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_showcoinsbox : ShowCoinsWindow(GetCoins(), x, y).
-  const x = parseValue(args[0] ?? '0');
-  const y = parseValue(args[1] ?? '0');
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { ShowCoinsWindow?: (amt: number, x: number, y: number) => void; _getCoins?: () => number } }).__moneyBoxUI;
-    if (ui?.ShowCoinsWindow && ui._getCoins) ui.ShowCoinsWindow(ui._getCoins(), x, y);
-  })();
-  return false;
-});
-
-registerOpcode('hidecoinsbox', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_hidecoinsbox : HideCoinsWindow().
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { HideCoinsWindow?: () => void } }).__moneyBoxUI;
-    ui?.HideCoinsWindow?.();
-  })();
-  return false;
-});
-
-registerOpcode('updatecoinsbox', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_updatecoinsbox : PrintCoinsString(GetCoins()).
-  void (async () => {
-    const ui = (globalThis as { __moneyBoxUI?: { PrintCoinsString?: (amt: number) => void; _getCoins?: () => number } }).__moneyBoxUI;
-    if (ui?.PrintCoinsString && ui._getCoins) ui.PrintCoinsString(ui._getCoins());
-  })();
-  return false;
-});
+// Money & coins real impls extraits vers `./script-opcodes-money-coins`
+// (= 1:1 décomp money.c + coins.c).
 
 // ─── Time-based events (1:1 décomp ScrCmd_dotimebasedevents) ────────────────
 
@@ -3687,167 +2783,22 @@ registerOpcode('dotimebasedevents', (_ctx, _args) => {
   return false;
 });
 
-// ─── Special warps (1:1 décomp setdivewarp/setholewarp/setwarp/warphole/etc.) ─
+// ─── Special warps extraits vers `./script-opcodes-warp` ─────────────────
+// setwarp / setdivewarp / setholewarp / warphole / warpteleport / warpmossdeepgym.
 
-registerOpcode('setwarp', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setwarp : SetWarpDestination(mapGroup, mapNum, warpId, x, y).
-  // Stocke seulement la destination ; le warp n'est pas exécuté.
-  const { destMap, warpId, x, y } = parseWarpArgs(args);
-  (globalThis as Record<string, unknown>).gSavedWarp = { destMap, warpId, x, y };
-  console.log(`[opcode setwarp] ${destMap} warpId=${warpId} (${x},${y})`);
-  return false;
-});
-
-registerOpcode('setdivewarp', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setdivewarp : SetFixedDiveWarp(mapGroup, mapNum, warpId, x, y).
-  // Quand le player utilise dive depuis ce point, il warp vers cette destination.
-  const { destMap, warpId, x, y } = parseWarpArgs(args);
-  (globalThis as Record<string, unknown>).gDiveWarp = { destMap, warpId, x, y };
-  return false;
-});
-
-registerOpcode('setholewarp', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setholewarp : SetFixedHoleWarp(mapGroup, mapNum, warpId, x, y).
-  // Quand player tombe par un trou (cracked floor) dans cette map, warp ici.
-  // Note : warpId/x/y sont stockés mais ignorés par warphole, seul map compte.
-  const { destMap, warpId, x, y } = parseWarpArgs(args);
-  (globalThis as Record<string, unknown>).gHoleWarp = { destMap, warpId, x, y };
-  return false;
-});
-
-registerOpcode('warphole', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_warphole : PlayerGetDestCoords + SetWarpDestination
-  // (ou SetWarpDestinationToFixedHoleWarp si MAP_UNDEFINED) + DoFallWarp +
-  // ResetInitialPlayerAvatarState.
-  const destMap = args[0] ?? 'MAP_UNDEFINED';
-  const playerX = gSaveBlock1Ptr.pos.x ?? 0;
-  const playerY = gSaveBlock1Ptr.pos.y ?? 0;
-  if (destMap === 'MAP_UNDEFINED') {
-    // SetWarpDestinationToFixedHoleWarp(x, y) : utilise gHoleWarp set par setholewarp.
-    const holeWarp = (globalThis as Record<string, unknown>).gHoleWarp as
-      { destMap?: string; warpId?: number; x?: number; y?: number } | undefined;
-    if (holeWarp?.destMap) {
-      setPendingWarp({
-        destMap: holeWarp.destMap,
-        warpId: -1,
-        x: playerX,
-        y: playerY,
-        elevation: 0,
-      }, 'fall');
-    }
-  } else {
-    setPendingWarp({
-      destMap,
-      warpId: -1,
-      x: playerX,
-      y: playerY,
-      elevation: 0,
-    }, 'fall');
-  }
-  return true;  // wait state (DoFallWarp = animated fall)
-});
-
-registerOpcode('warpteleport', (ctx, args) => {
-  // 1:1 décomp ScrCmd_warpteleport : SetWarpDestination + DoTeleportTileWarp.
-  // Effet fade out + warp (= différent de warpspinenter qui spin avant).
-  return getOpcodeHandler('warp')?.(ctx, args) ?? false;
-});
-
-registerOpcode('warpmossdeepgym', (ctx, args) => {
-  // 1:1 décomp ScrCmd_warpmossdeepgym : SetWarpDestination + DoMossdeepGymWarp.
-  // Animation spécifique au Mossdeep Gym tiles rotatifs (= warp avec spin).
-  return getOpcodeHandler('warp')?.(ctx, args) ?? false;
-});
-
-registerOpcode('warpspinenter', (ctx, args) => {
-  // 1:1 décomp ScrCmd_warpspinenter : SetWarpDestination + SetSpinStartFacingDir
-  // + DoSpinEnterWarp.
-  // Animation spin avant warp (= Union Room entry, secret base entry).
-  return getOpcodeHandler('warp')?.(ctx, args) ?? false;
-});
+// `warpspinenter` extrait vers `./script-opcodes-warp`.
 
 // ─── Decorations (1:1 décomp) ───────────────────────────────────────────────
 // Decorations sont des items spéciaux placés dans la Secret Base. Système
 // complet (DecorationAdd, CheckHasDecoration, etc.) est post-MVP, on stocke
 // un placeholder array.
 
-function _decorationsArr(): number[] {
-  if (!gSaveBlock1Ptr) return [];
-  if (!gSaveBlock1Ptr.decorations) gSaveBlock1Ptr.decorations = [];
-  return gSaveBlock1Ptr.decorations;
-}
+// Decorations (adddecoration/givedecoration/takedecoration/checkdecor/
+// checkdecorspace/movedecoration) extraites vers `./script-opcodes-decoration`
+// (= 1:1 décomp decoration.c + decoration_inventory.c).
 
-registerOpcode('adddecoration', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_adddecoration : gSpecialVar_Result = DecorationAdd(decorId).
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  if (arr.length < 256) {
-    arr.push(decorId);
-    VarSet('VAR_RESULT', 1);
-  } else {
-    VarSet('VAR_RESULT', 0);
-  }
-  return false;
-});
-
-registerOpcode('givedecoration', (_ctx, args) => {
-  // 1:1 décomp macro `givedecoration decoration` (event.inc:1960) :
-  //   setorcopyvar VAR_0x8000, decoration ; callstd STD_OBTAIN_DECORATION
-  // STD_OBTAIN_DECORATION = adddecoration + obtained msg. Notre port : juste add.
-  return getOpcodeHandler('adddecoration')?.(_ctx, args) ?? false;
-});
-
-registerOpcode('takedecoration', (_ctx, args) => {
-  // 1:1 décomp : remove decoration from inventory.
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  const idx = arr.indexOf(decorId);
-  if (idx >= 0) {
-    arr.splice(idx, 1);
-    VarSet('VAR_RESULT', 1);
-  } else {
-    VarSet('VAR_RESULT', 0);
-  }
-  return false;
-});
-
-registerOpcode('checkdecor', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_checkdecor : gSpecialVar_Result = CheckHasDecoration(decorId).
-  const decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  VarSet('VAR_RESULT', arr.includes(decorId) ? 1 : 0);
-  return false;
-});
-
-registerOpcode('checkdecorspace', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_checkdecorspace : gSpecialVar_Result = DecorationCheckSpace(decorId).
-  const _decorId = _vget(args[0]);
-  const arr = _decorationsArr();
-  VarSet('VAR_RESULT', arr.length < 256 ? 1 : 0);
-  return false;
-});
-
-registerOpcode('movedecoration', (_ctx, _args) => {
-  // RS-era opcode, non-functional dans Em (= retiré du décomp Em). No-op safe.
-  return false;
-});
-
-registerOpcode('pokemartdecoration', (ctx, args) => {
-  // 1:1 décomp ScrCmd_pokemartdecoration : CreateDecorationShop1Menu(ptr) + ScriptContext_Stop.
-  // Shop décoration mode 1. Notre port : delegate au pokemart standard.
-  return getOpcodeHandler('pokemart')?.(ctx, args) ?? false;
-});
-
-registerOpcode('pokemartdecoration2', (ctx, args) => {
-  // 1:1 décomp ScrCmd_pokemartdecoration2 : CreateDecorationShop2Menu(ptr).
-  return getOpcodeHandler('pokemart')?.(ctx, args) ?? false;
-});
-
-registerOpcode('pokemartlistend', (_ctx, _args) => {
-  // 1:1 décomp event.inc:1158 — c'est un MARQUEUR DE FIN dans une liste, pas
-  // un opcode actif. Macro : .2byte ITEM_NONE + release + end.
-  return false;
-});
+// `pokemartdecoration` / `pokemartdecoration2` / `pokemartlistend` extraits vers
+// `./script-opcodes-shop` (= 1:1 décomp shop.c).
 
 // ─── Braille (1:1 décomp ScrCmd_braillemessage + macros) ────────────────────
 
@@ -3868,55 +2819,9 @@ registerOpcode('brailleformat', (_ctx, _args) => {
 
 // ─── Rotating tile puzzles (Mossdeep Gym + Trick House) ─────────────────────
 
-registerOpcode('initrotatingtilepuzzle', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_initrotatingtilepuzzle : InitRotatingTilePuzzle(isTrickHouse).
-  const isTrickHouse = _vget(args[0]);
-  (globalThis as Record<string, unknown>).gRotatingTilePuzzleState = {
-    active: true,
-    isTrickHouse: isTrickHouse !== 0,
-  };
-  return false;
-});
-
-registerOpcode('moverotatingtileobjects', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_moverotatingtileobjects : sMovingNpcId = MoveRotatingTileObjects(puzzleNumber).
-  const _puzzleNumber = _vget(args[0]);
-  return false;
-});
-
-registerOpcode('turnrotatingtileobjects', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_turnrotatingtileobjects : TurnRotatingTileObjects().
-  return false;
-});
-
-registerOpcode('freerotatingtilepuzzle', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_freerotatingtilepuzzle : FreeRotatingTilePuzzle().
-  (globalThis as Record<string, unknown>).gRotatingTilePuzzleState = { active: false };
-  return false;
-});
-
-// ─── Slot machine + Contest + elevators ─────────────────────────────────────
-
-registerOpcode('playslotmachine', (ctx, args) => {
-  // 1:1 décomp ScrCmd_playslotmachine : PlaySlotMachine(machineId, CB2_ReturnToFieldContinueScriptPlayMapMusic) + ScriptContext_Stop ; return TRUE.
-  const _machineId = _vget(args[0]);
-  // Notre port : slot machine non implémentée. Wait state + return immédiatement.
-  // Future : spawn CB2 swap vers slot scene.
-  let framesWaited = 0;
-  const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 1;
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
-
-registerOpcode('showcontestpainting', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_showcontestpainting : SetContestWinnerForPainting + ShowContestPainting.
-  const _contestWinnerId = parseValue(args[0] ?? '0');
-  // Notre port : contest paintings post-MVP. Log + continue.
-  return false;
-});
+// rotating-tile-puzzle / playslotmachine / showcontestpainting real impls extraits
+// vers `./script-opcodes-rotating-tile-puzzle` / `./script-opcodes-slot-machine` /
+// `./script-opcodes-contest`.
 
 registerOpcode('addelevmenuitem', (_ctx, _args) => {
   // 1:1 décomp : stubbed in Emerald (= RS-only feature, non-functional).
@@ -4354,15 +3259,8 @@ registerOpcode('endram', (ctx, _args) => {
   return false;
 });
 
-// ─── Mystery event status (setmysteryeventstatus) ───────────────────────────
-
-registerOpcode('setmysteryeventstatus', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setmysteryeventstatus :
-  //   SetMysteryEventScriptStatus(ScriptReadByte(ctx)).
-  const status = parseValue(args[0] ?? '0');
-  (globalThis as Record<string, unknown>).gMysteryEventScriptStatus = status;
-  return false;
-});
+// `setmysteryeventstatus` extrait vers `./script-opcodes-mystery-event`
+// (= 1:1 décomp mystery_event_script.c).
 
 // ─── RAM ops (setptr / setptrbyte / loadbyte / loadbytefromptr / copybyte / copylocal) ─
 
@@ -4454,27 +3352,9 @@ registerOpcode('checkitemtype', (_ctx, args) => {
   return false;
 });
 
-registerOpcode('addpcitem', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_addpcitem` (scrcmd.c) :
-  //   gSpecialVar_Result = AddPCItem(itemId, quantity);
-  //   return FALSE;
-  // Ajoute des items au PC du joueur (= gSaveBlock1Ptr->pcItems, pas le bag).
-  // Notre port : appelle pc-items.ts AddPCItem 1:1.
-  const itemKey = args[0] ?? '';
-  const qty = parseValue(args[1]);
-  // Lazy import to avoid circular dep with bedroom-pc → script-runtime → script-opcodes.
-  void import('./pc-items').then(({ AddPCItem }) => {
-    const ok = AddPCItem(itemKey, qty);
-    VarSet('VAR_RESULT', ok ? 1 : 0);
-  });
-  return false;
-});
+// `addpcitem` extrait vers `./script-opcodes-pc-storage`.
 
-// ─── Decoration extras ──────────────────────────────────────────────────────
-
-registerOpcode('removedecoration', (_ctx, args) => {
-  return getOpcodeHandler('takedecoration')?.(_ctx, args) ?? false;
-});
+// `removedecoration` extrait vers `./script-opcodes-decoration`.
 
 // ─── Box drawing (RS-era, removed in Emerald — all nop1) ────────────────────
 
@@ -4516,55 +3396,13 @@ registerOpcode('setmonmetlocation', (_ctx, args) => {
   return false;
 });
 
-// ─── Contest opcodes (RS-era, mostly stubbed) ───────────────────────────────
+// Contest opcodes (choose/start/show/link) extraits vers `./script-opcodes-contest`.
 
-registerOpcode('choosecontestmon', (_ctx, _args) => false);
-registerOpcode('startcontest', (_ctx, _args) => false);
-registerOpcode('showcontestresults', (_ctx, _args) => false);
-registerOpcode('contestlinktransfer', (_ctx, _args) => false);
+// ─── PokéNews / TV ─────────────────────────────────────────────────────────
+// `getpokenewsactive` extrait vers `./script-opcodes-tv` (= 1:1 décomp tv.c).
 
-// ─── PokéNews ──────────────────────────────────────────────────────────────
-
-registerOpcode('getpokenewsactive', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_getpokenewsactive : gSpecialVar_Result = GetPokeNewsActive(channel).
-  const _channel = parseValue(args[0] ?? '0');
-  VarSet('VAR_RESULT', 0);  // pas de pokenews active par défaut
-  return false;
-});
-
-// ─── Modern fateful encounter / Wonder Card ─────────────────────────────────
-
-registerOpcode('setmodernfatefulencounter', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setmodernfatefulencounter :
-  //   SetMonData(&gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER, &TRUE).
-  const partyIndex = _vget(args[0]);
-  const party = gSaveBlock1Ptr.playerParty as Array<{ modernFatefulEncounter?: boolean }>;
-  if (party && partyIndex >= 0 && partyIndex < party.length) {
-    party[partyIndex].modernFatefulEncounter = true;
-  }
-  return false;
-});
-
-registerOpcode('checkmodernfatefulencounter', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_checkmodernfatefulencounter :
-  //   gSpecialVar_Result = GetMonData(&gPlayerParty[idx], MON_DATA_MODERN_FATEFUL_ENCOUNTER).
-  const partyIndex = _vget(args[0]);
-  const party = gSaveBlock1Ptr.playerParty as Array<{ modernFatefulEncounter?: boolean }>;
-  if (party && partyIndex >= 0 && partyIndex < party.length) {
-    VarSet('VAR_RESULT', party[partyIndex].modernFatefulEncounter ? 1 : 0);
-  } else {
-    VarSet('VAR_RESULT', 0);
-  }
-  return false;
-});
-
-registerOpcode('trywondercardscript', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_trywondercardscript : execute saved RAM script si valid.
-  // Notre port : Mystery Event / Wonder Card non implémenté. No-op safe.
-  return false;
-});
-
-registerOpcode('setworldmapflag', (_ctx, _args) => false);  // RS-era, nop1.
+// ─── Modern fateful encounter / Wonder Card / setworldmapflag ──────────────
+// Extraits vers `./script-opcodes-mystery-event` (= 1:1 décomp mystery_event_script.c).
 
 // ─── Braille extras ─────────────────────────────────────────────────────────
 
@@ -5021,9 +3859,34 @@ function _handlersHas(name: string): boolean {
   return getOpcodeHandler(name) !== undefined;
 }
 
+// ─── Side-effect imports : fichiers d'opcodes par section décomp ────────────
+// Chaque module register ses opcodes au boot via registerOpcode side-effect.
+// Order : APRÈS les opcodes définis dans ce fichier → real impls overwrites
+// any earlier stub of same name défini ici.
+
+import './script-opcodes-random';
+import './script-opcodes-berry';
+import './script-opcodes-tv';
+import './script-opcodes-match-call';
+import './script-opcodes-weather';
+import './script-opcodes-fieldeffect';
+import './script-opcodes-shop';
+import './script-opcodes-mystery-event';
+import './script-opcodes-rotating-tile-puzzle';
+import './script-opcodes-slot-machine';
+import './script-opcodes-contest';
+import './script-opcodes-pc-storage';
+import './script-opcodes-lilycove';
+import './script-opcodes-door';
+import './script-opcodes-fieldmap';
+import './script-opcodes-warp';
+import './script-opcodes-sound';
+import './script-opcodes-decoration';
+import './script-opcodes-money-coins';
+
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
-console.log('[script-opcodes] registered Phase 4.5 MVP + iter6/7 stubs + session 131 1:1 décomp completion (all field opcodes + battle facility macros + other VM safe stubs)');
+console.log('[script-opcodes] registered Phase 4.5 MVP + iter6/7 stubs + session 131 1:1 décomp completion (all field opcodes + battle facility macros + other VM safe stubs) + D1 split');
 
 // Lint-friendly export to avoid "unused imports".
 export { COMPARE_LT, COMPARE_EQ, COMPARE_GT };
