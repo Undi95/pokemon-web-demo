@@ -417,7 +417,20 @@ registerSpecial('EnableNationalPokedex', () => {
 
 /** 1:1 décomp `SetUnlockedPokedexFlags` (pokedex_data.c) : when player gets PokeDex,
  *  flag the dex types as unlocked. Stub no-op. */
-registerSpecial('SetUnlockedPokedexFlags', () => { /* no-op */ });
+/** 1:1 décomp `SetUnlockedPokedexFlags` (save_location.c:125-134).
+ *  Set bits 0, 1, 2, 3, 4, 5, 15 dans gSaveBlock2Ptr->gcnLinkFlags. */
+registerSpecial('SetUnlockedPokedexFlags', () => {
+  const sb2 = gSaveBlock2Ptr as unknown as { gcnLinkFlags?: number };
+  if (sb2 && typeof sb2.gcnLinkFlags === 'number') {
+    sb2.gcnLinkFlags |= (1 << 15);
+    sb2.gcnLinkFlags |= (1 << 0);
+    sb2.gcnLinkFlags |= (1 << 1);
+    sb2.gcnLinkFlags |= (1 << 2);
+    sb2.gcnLinkFlags |= (1 << 4);
+    sb2.gcnLinkFlags |= (1 << 5);
+    sb2.gcnLinkFlags |= (1 << 3);
+  }
+});
 
 /** 1:1 décomp `InitRoamer` (roamer.c) : initialize legendary roamer state
  *  (= Latios/Latias). Used post-EV. Stub no-op. */
