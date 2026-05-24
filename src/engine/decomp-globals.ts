@@ -863,8 +863,26 @@ export function PlayFanfareByFanfareNum(num: number): void { PlayFanfare(num); }
 // (= IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive section).
 // L'ancien stub `return true` est remplacé par check `_audioEndTimeMs.fanfare`.
 
-/** 1:1 décomp `WaitFanfare` — task qui attend la fin du fanfare. MVP no-op. */
-export function WaitFanfare(): boolean { return true; }
+/** 1:1 STRICT décomp `WaitFanfare(stop)` (sound.c:189-203) :
+ *    if (sFanfareCounter) { sFanfareCounter--; return FALSE; }
+ *    else { m4aMPlayContinue/m4aSongNumStart ; return TRUE; }
+ *
+ *  Notre port : utilise `_audioEndTimeMs.fanfare` pour tracker la durée
+ *  restante. Si encore en cours → return false (pas done). Sinon return true.
+ *  Le décomp `stop` arg (= force stop) wired vers _staticStopSong('bgm') si
+ *  user demande arrêt forcé. */
+export function WaitFanfare(stop: boolean = false): boolean {
+  if (_audioEndTimeMs.fanfare > performance.now()) {
+    return false;  // 1:1 décomp : sFanfareCounter > 0 → return FALSE.
+  }
+  if (stop) {
+    // 1:1 décomp : m4aSongNumStart(MUS_DUMMY) = stop bgm. Notre équivalent.
+    _staticStopSong('bgm');
+  }
+  // Sinon : m4aMPlayContinue(&gMPlayInfo_BGM) — bgm resume si paused.
+  // Notre archi : bgm continue de jouer naturellement quand fanfare end.
+  return true;  // 1:1 décomp : sFanfareCounter == 0 → return TRUE.
+}
 
 /** 1:1 décomp `StopFanfare` — stoppe le fanfare en cours. MVP : stop bgm slot. */
 export function StopFanfare(): void { _staticStopSong('bgm'); }
