@@ -34,6 +34,8 @@ import { MALE, FEMALE } from './decomp-globals';
 import { GetCurrentMap } from './load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
+import { SPECIES_WAILORD, SPECIES_RELICANTH } from './decomp-data/include/constants/species-data';
+import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -780,7 +782,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CheckInteractedWithFriendsFurnitureTop', 'CheckInteractedWithFriendsPosterDecor',
   'CheckInteractedWithFriendsSandOrnament', 'CheckLeadMonBeauty',
   'CheckLeadMonCool', 'CheckLeadMonCute', 'CheckLeadMonSmart', 'CheckLeadMonTough',
-  'CheckPlayerHasSecretBase', 'CheckRelicanthWailord',
+  // 'CheckPlayerHasSecretBase' — porté 1:1 décomp secret_base.c:258 ci-bas.
+  // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
   'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',
   'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame', 'ChooseSendDaycareMon',
   'CleanupLinkRoomState', 'ClearAndLeaveSecretBase', 'ClearQuizLadyPlayerAnswer',
@@ -841,7 +844,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'InterviewAfter', 'IsContestDebugActive', 'IsContestWithRSPlayer',
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
   'IsDodrioInParty', 'IsFavorLadyThresholdMet', 'IsGabbyAndTyShowOnTheAir',
-  'IsGrassTypeInParty', 'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
+  // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
+  'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
   'IsTrendyPhraseBoring', 'LeadMonHasEffortRibbon',
@@ -935,6 +939,65 @@ const _SESSION_131_DECOMP_SPECIALS = [
 for (const name of _SESSION_131_DECOMP_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// ─── Session A2 batch 1 — ports 1:1 strict ─────────────────────────────────
+
+/** 1:1 décomp `CheckPlayerHasSecretBase` (secret_base.c:258-265).
+ *  Sets gSpecialVar_Result = TRUE si le joueur a une secret base (= slot 0
+ *  non-zero), sinon FALSE. Player's secret base est toujours en slot 0. */
+registerSpecial('CheckPlayerHasSecretBase', () => {
+  return gSaveBlock1Ptr.secretBases[0].secretBaseId ? 1 : 0;
+});
+
+/** 1:1 décomp `CheckRelicanthWailord` (braille_puzzles.c:92-104).
+ *  Sealed Chamber puzzle : WAILORD en slot 0 + RELICANTH en dernier slot
+ *  occupé de la party. Emerald flip vs RS (= "First comes Wailord"). */
+registerSpecial('CheckRelicanthWailord', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp :96 GetMonData SLOT 0 SPECIES_OR_EGG == SPECIES_WAILORD
+  const lead = party[0];
+  if (!lead || lead.speciesId !== SPECIES_WAILORD) return 0;
+  // 1:1 décomp :98 CalculatePlayerPartyCount (= count non-empty slots).
+  let partyCount = 0;
+  for (let i = 0; i < 6; i++) {
+    if (party[i] && party[i].speciesId !== 0) partyCount++;
+  }
+  if (partyCount === 0) return 0;
+  // 1:1 décomp :100 GetMonData SLOT [partyCount-1] SPECIES_OR_EGG == SPECIES_RELICANTH
+  const last = party[partyCount - 1];
+  return (last && last.speciesId === SPECIES_RELICANTH) ? 1 : 0;
+});
+
+// `GetTrainerFlag` (battle_setup.c:1235-1243) — dette R3 architecturale documentée :
+// notre FlagGet prend string name, décomp utilise computed numeric id
+// (opponent_A + TRAINER_FLAGS_START). Demande mapping TRAINER_ID → FLAG_NAME
+// (= ~854 entries) ou refactor FlagGet pour accepter numeric id. Reste stub
+// return 0 jusqu'à port mapping ou refactor. Frontier paths (Pyramid/Hill) sont
+// U-tier U1.
+
+/** 1:1 décomp `IsGrassTypeInParty` (field_specials.c:1230-1249).
+ *  Loop sur les 6 slots party, retourne TRUE si au moins un mon non-egg a
+ *  TYPE_GRASS comme type1 ou type2. Set gSpecialVar_Result. */
+registerSpecial('IsGrassTypeInParty', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
+    // 1:1 décomp :1240-1241 : check gSpeciesInfo[species].types[0/1] == TYPE_GRASS.
+    // Notre PokemonInstance ne stocke pas les types par mon (= dérivé species
+    // via gSpeciesInfo lookup). Dette : import species → types pour ce check.
+    // En attendant : approximation grossière via gSpeciesInfo dynamic require.
+    const dataMod = (globalThis as { __game_data?: {
+      getSpeciesInfo: (k: string) => { types?: number[] } | undefined;
+    } }).__game_data;
+    const info = dataMod?.getSpeciesInfo(mon.speciesEnum);
+    const types = info?.types ?? [];
+    if (types[0] === TYPE_GRASS || types[1] === TYPE_GRASS) {
+      return 1;
+    }
+  }
+  return 0;
+});
 
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
