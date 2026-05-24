@@ -1382,8 +1382,18 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
   const x = parseValue(args[1]);
   const y = parseValue(args[2]);
   const localIdRaw = args[0] ?? '';
-  const currentMapId = GetCurrentMap()?.name ?? (gMapHeader?.id ?? '');
-  console.log(`[setobjectxyperm] mapId=${currentMapId} localId=${localIdRaw} x=${x} y=${y}`);
+  // 1:1 STRICT décomp event_object_movement.c:1666 utilise gSaveBlock1Ptr->
+  // objectEventTemplates qui correspond à la map COURANTE (= en cours de
+  // load via LoadObjEventTemplatesFromHeader). Priorité à gMapHeader.id
+  // (= la map en cours de load via OnTransition) sur GetCurrentMap (= lit
+  // saveblock1.location qui n'est pas update avant ApplyCurrentWarp).
+  //
+  // Bug 2026-05-24 : setobjectxyperm fire dans OnTransition AVANT le commit
+  // saveblock location → GetCurrentMap retourne map précédente (= 2F si on
+  // descend en 1F) → SetObjEventTemplateCoords écrit dans le mauvais saveblock
+  // → template 1F reste à chair initial map.json → MOM ne va PAS à TV au
+  // state=6.
+  const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
   SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
   const tpl = _findTemplateByLocalId(localIdRaw);
   if (tpl) {
