@@ -271,6 +271,10 @@ export interface ObjectEvent {
    *  affiche toujours la même orientation (= sprite "carrying box" face down,
    *  "facing away" face up). */
   is32x32: boolean;
+  /** True si le sprite est 16x16 animate (= NINJA_BOY kids 9-frame standard
+   *  anim chargé en VRAM consecutivement). updateNpcSpriteFrame branche
+   *  is16x16 cycle oam.tileId entre face/walk1/walk2 par direction. */
+  is16x16: boolean;
   movementStep: number;
   movementDelay: number;
   walkFramesLeft: number;
@@ -433,6 +437,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   walkAnimAlt: 0,
   frozen: false,
   is32x32: false,
+  is16x16: false,
   movementRangeX: 0,
   movementRangeY: 0,
   directionSeqIdx: 0,
@@ -730,6 +735,7 @@ export function InitPlayerObjectEvent(
   npc.hideReflection = false;
   npc.frozen = false;
   npc.is32x32 = false;
+  npc.is16x16 = false;
   npc.useSubsprites = false;
   // 1:1 décomp `GetAllGroundEffectFlags_OnSpawn` (event_object_movement.c:7389)
   // → ObjectEventUpdateMetatileBehaviors(objEvent) au spawn.
@@ -1565,7 +1571,10 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
     frameIdx = cfg.face;
   }
 
-  oam.tileId = npc.objTileBase + frameIdx * TILES_PER_FRAME_16x32;
+  // Fix B3 : pour les sprites 16x16 (= NINJA_BOY kids), 4 tiles par frame
+  // (= 16x16 = 2x2 tiles). Pour les 16x32 standard NPCs, 8 tiles par frame.
+  const tilesPerFrame = npc.is16x16 ? 4 : TILES_PER_FRAME_16x32;
+  oam.tileId = npc.objTileBase + frameIdx * tilesPerFrame;
   sprite.hFlip = cfg.hFlip;
   oam.flipH = cfg.hFlip;
 }
@@ -2142,10 +2151,21 @@ function _spawnSingleNpcFromTemplate(
     rt.gba.objVram.set(walk1Tiles, (objTileBase + 16) * 32);
     rt.gba.objVram.set(walk2Tiles, (objTileBase + 32) * 32);
   } else if (is16x16) {
-    // 16×16 inanimate (= moving box, berry, egg). 4 tiles row-major.
-    // Single frame, sequential layout dans le PNG.
-    const numTiles = png.widthTiles * png.heightTiles;
-    rt.gba.objVram.set(png.charData.subarray(0, numTiles * 32), objTileBase * 32);
+    // 16×16 — peut être inanimate (= moving box, berry, egg) OU animate (=
+    // NINJA_BOY, kids 9-frame standard anim). Bug B3 2026-05-24 : le copy
+    // row-major naïf prenait les 4 premiers tiles du PNG → frame 0 top-left,
+    // frame 0 top-right, frame 1 top-left, frame 1 top-right (= "2 têtes
+    // empilées").
+    //
+    // Fix : charger jusqu'à 9 frames consécutifs en VRAM via
+    // pngTo1dObjLayoutSingleFrame (= layout 1D OBJ frame-local). Si le PNG
+    // contient < 9 frames (= inanimate), on charge ce qui est dispo (le
+    // sprite reste static via cfg.face=0).
+    const numAvailFrames = Math.min(9, Math.floor(png.widthTiles / 2));
+    for (let f = 0; f < numAvailFrames; f++) {
+      const frameTiles = pngTo1dObjLayoutSingleFrame(png.charData, f, png.widthTiles, 16, 16);
+      rt.gba.objVram.set(frameTiles, (objTileBase + f * 4) * 32);
+    }
   } else {
     const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
     const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
@@ -2285,12 +2305,11 @@ function _spawnSingleNpcFromTemplate(
     SetSubspriteTables(npc.spriteId, sOamTable_48x48);
     npc.useSubsprites = true;
   } else if (is16x16) {
-    // 16×16 inanimate (= moving box, berry, egg, etc.) : single OAM shape=0
-    // size=1 (= 16×16). Pas de frame anim (= 1 frame seul, useSubsprites=false
-    // = updateNpcSpriteFrame skip via la même logique que les subsprites
-    // puisque cfg.face * 8 ne matche pas notre tile layout 16×16).
-    npc.useSubsprites = true; // hack : skip updateNpcSpriteFrame (= pas de
-                               // frame layout 16×32) en réutilisant le flag.
+    // 16×16 — sprite kid (= NINJA_BOY) ou inanimate (= box, berry, egg). Pour
+    // les kids 9-frame standard anim, updateNpcSpriteFrame branche is16x16
+    // cycle oam.tileId entre face/walk1/walk2 par direction. Pour inanimate
+    // (= PNG < 2 frames), le cycle reste sur frame 0 face.
+    npc.is16x16 = true;
     // Session 124 fix Bug 3 : 1:1 décomp `UpdateObjectEventElevationAndPriority`
     // assigne priority + subspriteTableNum selon elevation :
     //   sprite->subspriteTableNum = sElevationToSubspriteTableNum[elevation];
@@ -2318,7 +2337,14 @@ function _spawnSingleNpcFromTemplate(
     });
     npc.spriteId = result.spriteId;
     const sprite = rt.gSprites.get(npc.spriteId);
-    if (sprite) sprite.tileBase = objTileBase;
+    if (sprite) {
+      sprite.tileBase = objTileBase;
+      // Fix B3 : pour les NPCs 16x16 (= kids NINJA_BOY etc.), shift Y de +8
+      // pour que les pieds soient au bot du tile (= same convention que sprites
+      // 16x32). Sans ce shift, sprite 16x16 ctcvY=-8 → pieds au middle du tile
+      // → "trop haut" user-flag.
+      sprite.y2 = 8;
+    }
     rt.gba.oam[result.oamIndex].flipH = false;
     // Apply subsprite split si elevation→table 2 (= elevation 4,6,8,10,12).
     if (subspriteNum === 2) {
