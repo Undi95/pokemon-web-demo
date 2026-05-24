@@ -146,8 +146,9 @@ import {
 
 // ─── Constantes locales 1:1 ────────────────────────────────────────────────
 
-/** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). */
-const B_FLANK_LEFT = 0;
+/** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). Import
+ *  depuis decomp-data au lieu de hardcode (= A8 audit). */
+import { B_FLANK_LEFT } from '../../decomp-data/include/constants/battle-data';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
 function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
