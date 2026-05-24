@@ -42,6 +42,7 @@ import {
   MAP_OFFSET,
   gMapHeader,
   MapGridGetCollisionAt,
+  MapGridGetElevationAt,
   MapGridGetMetatileBehaviorAt,
   GetMapBorderIdAt,
   CanCameraMoveInDirection,
@@ -516,12 +517,12 @@ function ShiftObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
   npc.currentCoordsY = y;
 }
 
-/** 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162).
+/** 1:1 STRICT décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162-2165) :
+ *    ShiftObjectEventCoords(objectEvent, objectEvent->currentCoords.x, objectEvent->currentCoords.y);
  *  Used à la FIN d'un walk : previous = current → NPC stable, plus de
  *  collision sur la source cell. */
 function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
-  npc.previousCoordsX = npc.currentCoordsX;
-  npc.previousCoordsY = npc.currentCoordsY;
+  ShiftObjectEventCoords(npc, npc.currentCoordsX, npc.currentCoordsY);
 }
 
 /** 1:1 décomp `ObjectEventUpdateMetatileBehaviors` (event_object_movement.c:7428-7432).
@@ -600,7 +601,10 @@ export function ObjectEventIsHeldMovementActive(objectEvent: ObjectEvent): boole
  *  (= déjà overridden), FALSE si accepté. */
 export function ObjectEventSetHeldMovement(objectEvent: ObjectEvent, movementActionId: number): boolean {
   if (ObjectEventIsMovementOverridden(objectEvent)) return true;
-  objectEvent.frozen = false;  // 1:1 décomp `UnfreezeObjectEvent(objectEvent)`
+  // 1:1 STRICT décomp event_object_movement.c:4875 : UnfreezeObjectEvent(objectEvent)
+  // — appel via la fonction pour restore animPaused/affineAnimPaused depuis backups
+  // (event_object_movement.c:8175-8183). Inline `frozen=false` aurait raté ces restores.
+  UnfreezeObjectEvent(objectEvent);
   objectEvent.movementActionId = movementActionId;
   objectEvent.heldMovementActive = true;
   objectEvent.heldMovementFinished = false;
@@ -819,14 +823,15 @@ export function SyncPlayerObjectEvent(
 ): void {
   const npc = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
   if (!npc.active || !npc.isPlayer) return;
-  if (shiftCoords) {
-    // 1:1 décomp ShiftObjectEventCoords : previous = old current, current = new.
-    npc.previousCoordsX = npc.currentCoordsX;
-    npc.previousCoordsY = npc.currentCoordsY;
-  }
   // R3 refactor : currentCoords stockés en INTERNAL (= +MAP_OFFSET) 1:1 décomp.
-  npc.currentCoordsX = mapX + MAP_OFFSET;
-  npc.currentCoordsY = mapY + MAP_OFFSET;
+  if (shiftCoords) {
+    // 1:1 décomp event_object_movement.c:2117-2123 : ShiftObjectEventCoords
+    // (previous = old current, current = new).
+    ShiftObjectEventCoords(npc, mapX + MAP_OFFSET, mapY + MAP_OFFSET);
+  } else {
+    npc.currentCoordsX = mapX + MAP_OFFSET;
+    npc.currentCoordsY = mapY + MAP_OFFSET;
+  }
   npc.facingDirection = facing;
   if (movementDir !== undefined) {
     npc.movementDirection = movementDir;
@@ -1392,10 +1397,7 @@ export function AreElevationsCompatible(a: number, b: number): boolean {
  *  tile devant truck cache elev=15 (MULTI_LEVEL) → skip check = passable. */
 export function IsElevationMismatchAt(elevation: number, x: number, y: number): boolean {
   if (elevation === ELEVATION_TRANSITION) return false;
-  const fn = (globalThis as Record<string, unknown>).MapGridGetElevationAt as
-    ((x: number, y: number) => number) | undefined;
-  if (!fn) return false;
-  const mapElevation = fn(x, y);
+  const mapElevation = MapGridGetElevationAt(x, y);
   if (mapElevation === ELEVATION_TRANSITION || mapElevation === ELEVATION_MULTI_LEVEL) return false;
   if (mapElevation !== elevation) return true;
   return false;
@@ -1524,14 +1526,21 @@ export function GetCollisionInDirection(
   return GetCollisionAtCoords(objectEvent, x, y, direction);
 }
 
-/** 1:1 décomp `sMovementTypeHasRange[]` (event_object_movement.c:307).
+/** 1:1 STRICT décomp `sMovementTypeHasRange[]` (event_object_movement.c:307-349).
  *  Returns TRUE si le movement type doit avoir un range non-nul (= NPCs qui
- *  walk : WANDER, WALK, WALK_SEQUENCE_*). FACE/LOOK_AROUND/etc. → no range. */
+ *  walk : WANDER_*, WALK_*, WALK_SEQUENCE_*, COPY_PLAYER_*).
+ *  FACE/LOOK_AROUND/ROTATE/etc. → no range.
+ *
+ *  WANDER_AROUND est dans WANDER_ via startsWith. Les 8 COPY_PLAYER_* doivent
+ *  être listés explicitement (= pas couverts par les startsWith des autres). */
 function movementTypeHasRange(movementType: string): boolean {
   if (!movementType) return false;
-  return movementType.startsWith('MOVEMENT_TYPE_WANDER_')
-      || movementType.startsWith('MOVEMENT_TYPE_WALK_')
-      || movementType === 'MOVEMENT_TYPE_WANDER_AROUND';
+  if (movementType.startsWith('MOVEMENT_TYPE_WANDER_')) return true;
+  if (movementType.startsWith('MOVEMENT_TYPE_WALK_')) return true;
+  if (movementType === 'MOVEMENT_TYPE_WANDER_AROUND') return true;
+  // 1:1 décomp event_object_movement.c:341-348 : 8 COPY_PLAYER_* tous TRUE.
+  if (movementType.startsWith('MOVEMENT_TYPE_COPY_PLAYER')) return true;
+  return false;
 }
 
 /** 1:1 décomp `IsCoordOutsideObjectEventMovementRange(objectEvent, x, y)`
@@ -1562,25 +1571,13 @@ function IsCoordOutsideObjectEventMovementRange(
 }
 
 /** Check si NPC peut walker en `direction` depuis sa position courante.
- *  1:1 décomp `GetCollisionInDirection` : map collision + player collision +
- *  NPC-NPC collision (= IsCoordCollidingWithObjectEvent) + movement range.
- *
- *  Considère la TARGET cell du player MOVING ET d'un autre NPC walking,
- *  pour éviter step-on race : si 2 entités démarrent walk vers même cell
- *  en même frame, la 2e voit la cell occupée → bloquée. */
+ *  1:1 STRICT décomp : délègue à `GetCollisionInDirection` (=
+ *  event_object_movement.c:4650-4656), qui couvre map collision +
+ *  border + IsMetatileDirectionallyImpassable (ledges/walls) + camera
+ *  tracking + elevation + DoesObjectCollideWithObjectAt (= player +
+ *  autres NPCs, currentCoords ET previousCoords pour step-on race). */
 function canWalk(npc: ObjectEvent, direction: number): boolean {
-  const dx = DIR_TO_DX[direction] ?? 0;
-  const dy = DIR_TO_DY[direction] ?? 0;
-  // Post R3 refactor : npc.currentCoords stockés INTERNAL → targetX/Y INTERNAL.
-  const targetX = npc.currentCoordsX + dx;
-  const targetY = npc.currentCoordsY + dy;
-  // Phase 4.6 audit Opus §3.1 : check movement range AVANT collision (= 1:1
-  // décomp `GetCollisionAtCoords` qui retourne COLLISION_OUTSIDE_RANGE en 1er).
-  if (IsCoordOutsideObjectEventMovementRange(npc, targetX, targetY)) return false;
-  if (MapGridGetCollisionAt(targetX, targetY) !== 0) return false;
-  if (isPlayerAt(targetX, targetY)) return false;
-  if (isOtherNpcAt(targetX, targetY, npc)) return false;
-  return true;
+  return GetCollisionInDirection(npc, direction) === COLLISION_NONE;
 }
 
 /** 1:1 STRICT décomp `FreezeObjectEvent(struct ObjectEvent *objectEvent)`
@@ -1631,26 +1628,33 @@ export function UnfreezeObjectEvent(npc: ObjectEvent): void {
   }
 }
 
-/** Un-freeze tous les NPCs 1:1 décomp `UnfreezeObjectEvents`
- *  (event_object_movement.c:8185-8191). */
-export function UnfreezeAllNpcs(): void {
-  for (const npc of gObjectEvents) {
+/** 1:1 STRICT décomp `UnfreezeObjectEvents` (event_object_movement.c:8185-8191) :
+ *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+ *        if (gObjectEvents[i].active)
+ *            UnfreezeObjectEvent(&gObjectEvents[i]);
+ */
+export function UnfreezeObjectEvents(): void {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const npc = gObjectEvents[i];
     if (npc.active) UnfreezeObjectEvent(npc);
   }
 }
+/** Back-compat alias (= ancien nom non-décomp). */
+export const UnfreezeAllNpcs = UnfreezeObjectEvents;
 
-/** 1:1 décomp event_object_movement.c:8159-8164 FreezeObjectEvents :
+/** 1:1 STRICT décomp event_object_movement.c:8159-8164 FreezeObjectEvents :
  *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
  *        if (gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
  *            FreezeObjectEvent(&gObjectEvents[i]);
  *
  *  Set frozen=true + pause anim sprite (= 1:1 strict). Skip player. */
 export function FreezeObjectEvents(): void {
-  for (let i = 0; i < gObjectEvents.length; i++) {
+  const playerSlot = gPlayerAvatar.objectEventId;
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
     const npc = gObjectEvents[i];
-    if (!npc.active) continue;
-    if (npc.localIdRaw === 'LOCALID_PLAYER') continue;
-    FreezeObjectEvent(npc);
+    if (npc.active && i !== playerSlot) {
+      FreezeObjectEvent(npc);
+    }
   }
 }
 // Phase 4.6 audit Opus §5 : back-compat globalThis + register field-globals.
