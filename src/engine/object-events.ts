@@ -2591,7 +2591,19 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
     if (!npc.active) continue;
     // Skip player slot (= preserved by InitPlayerAvatar already).
     if (npc.isPlayer) continue;
-    await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
+    const ok = await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
+    if (!ok) continue;
+    // 1:1 STRICT décomp event_object_movement.c:1773 :
+    //   GetMapCoordsFromSpritePos(x + objectEvent->currentCoords.x,
+    //                              y + objectEvent->currentCoords.y,
+    //                              &sprite->x, &sprite->y);
+    // Re-calcule npc.worldX/Y depuis currentCoords (= LOGICAL = INTERNAL - MAP_
+    // OFFSET) et le camera state COURANT. Sans ça, le sprite reste à worldX/Y
+    // stale (= valeurs d'avant le bag open) qui peuvent être hors viewport
+    // (bug user 2026-05-24 "MOM décalée en bas-gauche post-cycle bag").
+    const logicalX = npc.currentCoordsX - MAP_OFFSET;
+    const logicalY = npc.currentCoordsY - MAP_OFFSET;
+    SetObjectEventSpritePosToMapCoords(npc, logicalX, logicalY);
   }
   // Note : CreateReflectionEffectSprites (= 1:1 décomp) port différé (= notre
   // port n'a pas de reflection sprite system pour les NPCs).
