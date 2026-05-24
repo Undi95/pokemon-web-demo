@@ -1622,10 +1622,29 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.useSubsprites) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite) return;
-  // C1.3 — 1:1 STRICT décomp : si sprite.anims est wired (= flow 1:1 par
-  // graphicsInfo + AnimateSprite tick), on skip ce legacy updateNpcSpriteFrame
-  // pour ne pas conflict avec le AnimCmd dispatch qui drive déjà oam.tileNum.
-  if (sprite.anims) return;
+  // C1.4 — 1:1 STRICT décomp : si sprite.anims est wired (= flow 1:1 par
+  // graphicsInfo + AnimateSprite tick), on sync sprite.animNum selon le state
+  // (walking → MoveDirectionAnimNum ; standing → FaceDirectionAnimNum), puis
+  // skip le legacy frame update (= AnimCmd dispatch via AnimateSprite drive
+  // déjà oam.tileNum).
+  //
+  // 1:1 décomp event_object_movement.c:5052/5147/5449 etc. :
+  //   SetStepAnim(objectEvent, sprite, GetMoveDirectionAnimNum(facingDirection));
+  // simplifié ici en StartSpriteAnimIfDifferent (= équivalent fonctionnel sans
+  // alternation tracking inanimate-aware).
+  if (sprite.anims) {
+    const targetAnimNum = npc.walkFramesLeft > 0
+      ? GetMoveDirectionAnimNum(npc.walkDirection !== DIR_NONE ? npc.walkDirection : npc.facingDirection)
+      : GetFaceDirectionAnimNum(npc.facingDirection);
+    if (sprite.animNum !== targetAnimNum) {
+      sprite.animNum = targetAnimNum;
+      sprite.animBeginning = true;
+      sprite.animEnded = false;
+      sprite.animCmdIndex = 0;
+      sprite.animDelayCounter = 0;
+    }
+    return;
+  }
   const oam = rt.gba.oam[sprite.oamIndex];
   const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
 
