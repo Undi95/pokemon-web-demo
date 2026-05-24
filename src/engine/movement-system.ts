@@ -32,7 +32,7 @@ import type { DecompRuntime } from './decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
-import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection } from './object-events';
+import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { VarGet } from './script-vars';
 import { MAP_OFFSET } from './map-loader';
@@ -418,13 +418,16 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'player_run_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
   if (action === 'player_run_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
 
-  // ─── Slide actions (= glide sans walk anim cycle, used pour ice/conveyor) ─
-  // 1:1 décomp `MovementAction_SlideUp_Step0` etc. (event_object_movement.c).
-  // Same speed as walk_normal but no leg anim cycle.
-  if (action === 'slide_down')  return _tickWalk(target, DIR_SOUTH, frame, 8, 2);
-  if (action === 'slide_up')    return _tickWalk(target, DIR_NORTH, frame, 8, 2);
-  if (action === 'slide_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
-  if (action === 'slide_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
+  // ─── Slide actions (= glide ice tile via InitMovementNormal MOVE_SPEED_FASTEST) ─
+  // 1:1 STRICT décomp `MovementAction_SlideDown_Step0` (event_object_movement.c:5956)
+  // → InitMovementNormal(..., MOVE_SPEED_FASTEST). sStep8Funcs = 2 frames × 8 px.
+  if (action === 'slide_down')  return _tickWalk(target, DIR_SOUTH, frame, 2, 8);
+  if (action === 'slide_up')    return _tickWalk(target, DIR_NORTH, frame, 2, 8);
+  if (action === 'slide_left')  return _tickWalk(target, DIR_WEST,  frame, 2, 8);
+  if (action === 'slide_right') return _tickWalk(target, DIR_EAST,  frame, 2, 8);
+  // DETTE : slide_slow_/fast_ pas dans décomp Emerald (= notre extension custom
+  // pour scripts hors-démo). Pas 1:1 strict — laisser tel quel sans wire-up
+  // dans la démo. À supprimer ou porter si un script Emerald les requiert.
   if (action === 'slide_slow_down')  return _tickWalk(target, DIR_SOUTH, frame, 16, 1);
   if (action === 'slide_slow_up')    return _tickWalk(target, DIR_NORTH, frame, 16, 1);
   if (action === 'slide_slow_left')  return _tickWalk(target, DIR_WEST,  frame, 16, 1);
@@ -434,12 +437,15 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'slide_fast_left')  return _tickWalk(target, DIR_WEST,  frame, 4, 4);
   if (action === 'slide_fast_right') return _tickWalk(target, DIR_EAST,  frame, 4, 4);
 
-  // ─── Walk diagonale slow (= 32 frames, used pour Lavaridge ash) ──────────
-  // 1:1 décomp `MovementAction_WalkSlowDiagonalNE_Step0` etc.
-  // Direction visuelle composite (= 0.5 px/frame x + y).
+  // ─── Walk diagonale slow (= 32 frames, used pour Lavaridge ash + Mossdeep) ──
+  // DETTE 1:1 décomp `MovementAction_WalkSlowDiagonalUpLeft_Step0` etc.
+  // (event_object_movement.c:5162-5232) → InitNpcForWalkSlow avec
+  // DIR_NORTHWEST/NORTHEAST/SOUTHWEST/SOUTHEAST.
+  // Notre TS skip le composant horizontal → NPC marche tout droit verticalement.
+  // À porter via un _tickWalkDiag helper (= 0.5 px x + 0.5 px y / 2 frames pour
+  // matcher WalkSlow rate). Pas dans la démo Littleroot → bug latent OK.
   if (action === 'walk_slow_diag_northeast' || action === 'walk_slow_diag_northwest'
    || action === 'walk_slow_diag_southeast' || action === 'walk_slow_diag_southwest') {
-    // MVP : alias to vertical walk_slow (= visual approximation).
     const dir = action.includes('north') ? DIR_NORTH : DIR_SOUTH;
     return _tickWalk(target, dir, frame, 32, 0.5);
   }
@@ -611,9 +617,9 @@ function _tickWalk(
       const playerSlot = gPlayerAvatar.objectEventId;
       const slot = gObjectEvents[playerSlot];
       if (slot && slot.active && slot.isPlayer) {
-        // ShiftStillObjectEventCoords (= previous = current = post-step value).
-        slot.previousCoordsX = slot.currentCoordsX;
-        slot.previousCoordsY = slot.currentCoordsY;
+        // 1:1 STRICT décomp event_object_movement.c:5120 :
+        //   ShiftStillObjectEventCoords(objectEvent);  ← previous = current
+        ShiftStillObjectEventCoords(slot);
         slot.previousMovementDirection = slot.movementDirection;
         slot.triggerGroundEffectsOnStop = true;
         // 1:1 décomp `GetAllGroundEffectFlags_OnFinishStep` (event_object_movement.c
@@ -625,9 +631,9 @@ function _tickWalk(
       gPlayerAvatar.stepFramesLeft = 0;
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
     } else if (target.npc) {
-      // 1:1 décomp ShiftStillObjectEventCoords : previous = current.
-      target.npc.previousCoordsX = target.npc.currentCoordsX;
-      target.npc.previousCoordsY = target.npc.currentCoordsY;
+      // 1:1 STRICT décomp event_object_movement.c:5120 ShiftStillObjectEventCoords :
+      //   previous = current → NPC stable, plus de collision sur la source cell.
+      ShiftStillObjectEventCoords(target.npc);
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
       target.npc.walkAnimAlt = (target.npc.walkAnimAlt ^ 1) as 0 | 1;
@@ -675,10 +681,9 @@ function _initWalk(target: MovementTarget, dir: number): void {
     const playerSlot = gPlayerAvatar.objectEventId;
     const slot = gObjectEvents[playerSlot];
     if (slot && slot.active && slot.isPlayer) {
-      slot.previousCoordsX = slot.currentCoordsX;
-      slot.previousCoordsY = slot.currentCoordsY;
-      slot.currentCoordsX += dx;
-      slot.currentCoordsY += dy;
+      // 1:1 STRICT décomp InitNpcForMovement (5081-5097) : ShiftObjectEventCoords
+      // avec (currentX + dx, currentY + dy). Maintien previous=ancien current.
+      ShiftObjectEventCoords(slot, slot.currentCoordsX + dx, slot.currentCoordsY + dy);
       slot.movementDirection = dir;
       slot.facingDirection = dir;
       ObjectEventUpdateMetatileBehaviors(slot);
@@ -686,10 +691,8 @@ function _initWalk(target: MovementTarget, dir: number): void {
     return;
   }
   if (target.npc) {
-    target.npc.previousCoordsX = target.npc.currentCoordsX;
-    target.npc.previousCoordsY = target.npc.currentCoordsY;
-    target.npc.currentCoordsX += dx;
-    target.npc.currentCoordsY += dy;
+    // 1:1 STRICT décomp ShiftObjectEventCoords (= previous=current, current+=d).
+    ShiftObjectEventCoords(target.npc, target.npc.currentCoordsX + dx, target.npc.currentCoordsY + dy);
     target.npc.walkDirection = dir;
     target.npc.walkFramesLeft = 16;
     // 1:1 décomp `InitMoveInDirection` (event_object_movement.c:5444) :
@@ -774,10 +777,9 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       const playerSlot = gPlayerAvatar.objectEventId;
       const slot = gObjectEvents[playerSlot];
       if (slot && slot.active && slot.isPlayer) {
-        slot.previousCoordsX = slot.currentCoordsX;
-        slot.previousCoordsY = slot.currentCoordsY;
-        slot.currentCoordsX += dxLogical;
-        slot.currentCoordsY += dyLogical;
+        // 1:1 STRICT décomp event_object_movement.c:5450 InitJumpRegular →
+        //   ShiftObjectEventCoords(objectEvent, currentX + dx*dist, currentY + dy*dist)
+        ShiftObjectEventCoords(slot, slot.currentCoordsX + dxLogical, slot.currentCoordsY + dyLogical);
         slot.movementDirection = dir;
         slot.facingDirection = dir;
         slot.triggerGroundEffectsOnMove = true;
@@ -792,10 +794,8 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       gPlayerAvatar.stepFramesLeft = totalFrames;
       if (_activeRt) CreateShadowSprite(_activeRt);
     } else if (target.npc) {
-      target.npc.previousCoordsX = target.npc.currentCoordsX;
-      target.npc.previousCoordsY = target.npc.currentCoordsY;
-      target.npc.currentCoordsX += dxLogical;
-      target.npc.currentCoordsY += dyLogical;
+      // 1:1 STRICT décomp ShiftObjectEventCoords (= previous=current, current+=d*dist).
+      ShiftObjectEventCoords(target.npc, target.npc.currentCoordsX + dxLogical, target.npc.currentCoordsY + dyLogical);
       target.npc.walkDirection = dir;
       target.npc.walkFramesLeft = totalFrames;
     }

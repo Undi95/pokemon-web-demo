@@ -507,10 +507,14 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
 
 // ─── Coord shift helpers 1:1 décomp event_object_movement.c ─────────────────
 
-/** 1:1 décomp `ShiftObjectEventCoords` (event_object_movement.c:2117).
+/** 1:1 décomp `ShiftObjectEventCoords` (event_object_movement.c:2117-2123) :
+ *    objectEvent->previousCoords.x = objectEvent->currentCoords.x;
+ *    objectEvent->previousCoords.y = objectEvent->currentCoords.y;
+ *    objectEvent->currentCoords.x = x;
+ *    objectEvent->currentCoords.y = y;
  *  Used au DÉBUT d'un walk : previous = ancienne pos, current = nouvelle target.
  *  Pendant le walk, current/previous restent figés à TARGET/SOURCE. */
-function ShiftObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
+export function ShiftObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
   npc.previousCoordsX = npc.currentCoordsX;
   npc.previousCoordsY = npc.currentCoordsY;
   npc.currentCoordsX = x;
@@ -521,7 +525,7 @@ function ShiftObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
  *    ShiftObjectEventCoords(objectEvent, objectEvent->currentCoords.x, objectEvent->currentCoords.y);
  *  Used à la FIN d'un walk : previous = current → NPC stable, plus de
  *  collision sur la source cell. */
-function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
+export function ShiftStillObjectEventCoords(npc: ObjectEvent): void {
   ShiftObjectEventCoords(npc, npc.currentCoordsX, npc.currentCoordsY);
 }
 
