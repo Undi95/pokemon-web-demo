@@ -929,7 +929,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
   'HasAnotherPlayerGivenFavorLadyItem',
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
-  'HasBardSongBeenChanged', 'HasHipsterTaughtWord',
+  // 'HasBardSongBeenChanged' — porté 1:1 décomp mauville_old_man.c:151 ci-bas.
+  // 'HasHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:241 ci-bas.
   'HasMonWonThisContestBefore', 'HasPlayerGivenContestLadyPokeblock',
   'HasStorytellerAlreadyRecorded', 'HideContestEntryMonPic',
   'HipsterTryTeachWord', 'IncrementDailyPickedBerries',
@@ -1159,6 +1160,22 @@ registerSpecial('HasAtLeastOneBerry', () => {
 
 // `IsSelectedMonEgg` déjà porté ligne 741 (= duplicate skip).
 // `IsLastMonThatKnowsSurf` real body ajouté ligne 415 (= remplace stub).
+
+/** 1:1 décomp `HasBardSongBeenChanged` (mauville_old_man.c:151-154).
+ *  Set gSpecialVar_Result = oldMan.bard.hasChangedSong (= 0/1). */
+registerSpecial('HasBardSongBeenChanged', () => {
+  const om = gSaveBlock1Ptr.oldMan;
+  if (om && om.kind === 'bard') return om.hasChangedSong;
+  return 0;
+});
+
+/** 1:1 décomp `HasHipsterTaughtWord` (mauville_old_man.c:241-244).
+ *  Set gSpecialVar_Result = oldMan.hipster.taughtWord (= 0/1). */
+registerSpecial('HasHipsterTaughtWord', () => {
+  const om = gSaveBlock1Ptr.oldMan;
+  if (om && om.kind === 'hipster') return om.taughtWord;
+  return 0;
+});
 
 /** 1:1 décomp `IsContestDebugActive` (contest_util.c:2571-2574).
  *  Return FALSE — toujours (= contest debug n'a jamais été enabled in shipping
