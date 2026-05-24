@@ -64,6 +64,11 @@ import {
   findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,
   isPlayerStepFinished,
 } from './script-opcodes-helpers';
+import { invokeSpecial as _invokeSpecial } from './script-opcodes-special';
+import { spawnYesNoMenu } from './script-opcodes-menu';
+// Re-export pour préserver les imports externes (= bedroom-pc.ts, wallclock-flow.ts,
+// region-map.ts, specials-registry.ts).
+export { SignalWaitState, registerSpecial } from './script-opcodes-special';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 // Helpers partagés exportés depuis `script-opcodes/helpers.ts` (= 1:1 décomp).
@@ -310,187 +315,10 @@ registerOpcode('call_if_ge', (ctx, args) => {
 // ─── Lock / Release / FacePlayer / Turnobject extraits vers `./script-opcodes-lock`
 // (= 1:1 décomp event_object_lock.c). ─────────────────────────────────────────
 
-// ─── Dialog / Message ────────────────────────────────────────────────────────
+// ─── Dialog / Message extraits vers `./script-opcodes-message`
+// (= 1:1 décomp field_message_box.c). message/waitmessage/waitbuttonpress/closemessage.
 
-registerOpcode('message', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_message : ShowFieldMessage(text).
-  const label = args[0];
-  const rawText = getText(label);
-  if (!rawText) {
-    console.warn(`[opcode message] text '${label}' not found`);
-    return false;
-  }
-  ShowFieldMessage(rawText);
-  return false;
-});
-
-registerOpcode('waitmessage', (ctx) => {
-  // 1:1 décomp ScrCmd_waitmessage : SetupNativeScript IsFieldMessageBoxHidden.
-  // Quand IsFieldMessageBoxHidden returns TRUE → resume bytecode.
-  SetupNativeScript(ctx, IsFieldMessageBoxHidden);
-  return true;
-});
-
-registerOpcode('waitbuttonpress', (ctx) => {
-  // 1:1 décomp ScrCmd_waitbuttonpress : SetupNativeScript WaitForAorBPress.
-  SetupNativeScript(ctx, isAOrBNewlyPressed);
-  return true;
-});
-
-registerOpcode('closemessage', (_ctx) => {
-  HideFieldMessageBox();
-  return false;
-});
-
-/** msgbox = composite macro : équivalent à `loadword 0, text` + `callstd N`.
- *  Notre version : run la sequence complète inline (= équivalent fonctionnel
- *  des std scripts MSGBOX_NPC, MSGBOX_DEFAULT, MSGBOX_SIGN, MSGBOX_YESNO).
- *
- *  MSGBOX_NPC      = 2 → lock + faceplayer + message + waitmessage + waitbuttonpress + release
- *  MSGBOX_SIGN     = 3 → lockall + message + waitmessage + waitbuttonpress + releaseall
- *  MSGBOX_DEFAULT  = 4 → idem MSGBOX_NPC (= avec ou sans faceplayer selon variantes)
- *  MSGBOX_YESNO    = 5 → message + waitmessage + spawn yesnobox + wait selection
- *  MSGBOX_AUTOCLOSE= 6 → message + waitmessage + waitbuttonpress + closemessage
- *
- *  Implémenté via SetupNativeScript : state machine polling chaque frame. */
-registerOpcode('msgbox', (ctx, args) => {
-  const textLabel = args[0];
-  const type = args[1] ?? 'MSGBOX_DEFAULT';
-  // 1:1 décomp : le linker GBA garantit le label existe au compile time, donc le
-  // décomp ne gère pas ce cas. Notre runtime fetch async les textes depuis JSON,
-  // un label peut être absent si extract-scripts.mjs ne l'a pas récolté ou si la
-  // map JSON est mal chargée. Avant : `return false` (= advance) → le script
-  // exécutait silencieusement les opcodes suivants (setvar, applymovement...) →
-  // bug invisible (= dialog jamais affiché mais state changed). Maintenant on
-  // affiche `[MISSING:label]` à l'écran avec le flow msgbox normal → debug visible
-  // + halt jusqu'à A press, comme un vrai dialog.
-  const lookupText = getText(textLabel);
-  if (!lookupText) {
-    console.error(`[opcode msgbox] text '${textLabel}' not found — showing [MISSING] placeholder`);
-  }
-  const rawText = lookupText ?? `[MISSING:${textLabel}]`;
-
-  // 1:1 décomp `data/scripts/std_msgbox.inc` semantics :
-  //   MSGBOX_NPC      → lock + faceplayer + message + waitbuttonpress + release
-  //   MSGBOX_SIGN     → lockall + message + waitbuttonpress + releaseall
-  //   MSGBOX_DEFAULT  → message + waitbuttonpress + return (NO lock, NO facing)
-  //   MSGBOX_AUTOCLOSE→ message + waitbuttonpress + closemessage
-  //   MSGBOX_YESNO    → message + yesnobox
-  // Bug fixed session 124 (= Audit Opus A.2) : avant cette dispatch, on
-  // appliquait `npc.frozen=true + facingDirection=OPPOSITE_DIR[player]` à
-  // TOUT non-SIGN msgbox, y compris MSGBOX_DEFAULT. Conséquence : Mom dialog
-  // "C'est joli ici, non?" (= MSGBOX_DEFAULT) flippait Mom de NORTH (= set par
-  // OnTransition setobjectmovementtype FACE_UP) vers SOUTH (= OPPOSITE_DIR
-  // player.facing=NORTH). La répétition `MoveMomToDoor/Stairs/TV → msgbox`
-  // dans le flow stomppait sur facing à chaque dialog → user voyait Mom face
-  // DOWN au lieu de UP/WEST.
-  const isSign = type === 'MSGBOX_SIGN';
-  const isNpc = type === 'MSGBOX_NPC';
-  const isYesNo = type === 'MSGBOX_YESNO';
-  const isAutoclose = type === 'MSGBOX_AUTOCLOSE';
-  // MSGBOX_DEFAULT : juste afficher le message, pas de lock/face.
-  // (= cf. std_msgbox.inc Std_MsgboxDefault).
-
-  let state = 0;
-
-  const tick = (): boolean => {
-    switch (state) {
-      case 0: {
-        // Lock + face NPC selon msgbox type.
-        if (isSign) {
-          // 1:1 STRICT décomp Std_MsgboxSign : lockall (= FreezeObjectEvents).
-          // FreezeObjectEvent set frozen + pause sprite.animPaused (= sinon
-          // anim continue à cycler face/walk visuellement malgré frozen).
-          for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
-        } else if (isNpc) {
-          // 1:1 décomp Std_MsgboxNPC : lock (= freeze TOUS sauf player+selected)
-          // + faceplayer (= selected NPC tourne vers player).
-          const selected = getSelectedNpc();
-          for (const n of gObjectEvents) {
-            if (n.active && n !== selected) FreezeObjectEvent(n);
-          }
-          if (selected) {
-            FreezeObjectEvent(selected);
-            selected.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
-          }
-        }
-        // MSGBOX_DEFAULT / MSGBOX_AUTOCLOSE / MSGBOX_YESNO : pas de lock/face.
-        // 1:1 décomp Std_MsgboxDefault : juste `message + waitbuttonpress + return`.
-        ShowFieldMessage(rawText);
-        state = 1;
-        return false;
-      }
-      case 1: {
-        // Wait for message done.
-        if (IsFieldMessageBoxHidden()) {
-          state = isYesNo ? 3 : 2;  // YesNo : skip waitbuttonpress, spawn menu directement.
-        }
-        return false;
-      }
-      case 2: {
-        // Wait for A/B button press. 1:1 décomp `TextPrinterWait` (text.c:884)
-        // qui PlaySE(SE_SELECT) sur A/B press → match comportement ROM.
-        if (isAOrBNewlyPressed()) {
-          // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
-          void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));
-          // Autoclose: close + release. Sinon (NPC/SIGN/DEFAULT) : juste close.
-          HideFieldMessageBox();
-          // Release frozen NPCs 1:1 STRICT via UnfreezeObjectEvent qui restore
-          // sprite.animPaused = backup (= reverse du FreezeObjectEvent).
-          if (isSign) {
-            for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
-          } else if (isNpc) {
-            for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
-          }
-          // MSGBOX_DEFAULT : pas de lock à release. NB: si le script appelait
-          // explicitement `lockall` avant le msgbox (= comme dans
-          // EnterHouseMovingIn), c'est `releaseall` qui doit unfreeze, pas msgbox.
-          void isAutoclose;  // future: AUTOCLOSE pourrait avoir comportement différent
-          return true;  // resume bytecode
-        }
-        return false;
-      }
-      case 3: {
-        // MSGBOX_YESNO : spawn YesNo menu (= 1:1 décomp std_msgbox_yesno script
-        // qui call yesnobox + waitstate). Position 1:1 décomp menu.c:98-107
-        // sYesNo_WindowTemplates : tilemapLeft=21, tilemapTop=9.
-        _spawnYesNoMenu(21, 9);
-        state = 4;
-        return false;
-      }
-      case 4: {
-        // Wait yesnobox selection. Menu_ProcessInputNoWrapClearOnChoose returns
-        // cursor pos (0=OUI top, 1=NON bottom), -1 (B pressed), -2 (no choice).
-        // Audit session 126 (post-test user) BUG MAJEUR : 1:1 décomp
-        // `script_menu.c:Task_HandleYesNoInput` INVERSE les valeurs :
-        //   case 0 (OUI top)     → gSpecialVar_Result = 1 (= YES enum)
-        //   case 1 / B_PRESSED  → gSpecialVar_Result = 0 (= NO enum)
-        // event.inc:1932-1933 confirme : `YES = 1, NO = 0`. Avant ce fix on
-        // faisait l'inverse → tous les `goto_if_eq VAR_RESULT, YES` failed
-        // silencieusement (= rename starter, multiples dialogues YESNO).
-        const result = Menu_ProcessInputNoWrapClearOnChoose();
-        if (result === -2) return false;
-        const yesNoResult = result === 0 ? 1 : 0;
-        gSpecialVar.Result = yesNoResult;
-        // Cleanup yesno window.
-        const wid = GetYesNoWindowId();
-        if (wid >= 0) {
-          ClearStdWindowAndFrame(wid, true);
-          RemoveWindow(wid);
-        }
-        // Release dialog + NPC 1:1 STRICT via UnfreezeObjectEvent (= restore
-        // sprite.animPaused = backup, sinon anim stuck pause).
-        HideFieldMessageBox();
-        const npc = getSelectedNpc();
-        if (npc) UnfreezeObjectEvent(npc);
-        return true;
-      }
-    }
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
+// `msgbox` extrait vers `./script-opcodes-message` (= 1:1 décomp std_msgbox.inc state machine).
 
 // 1:1 décomp scrcmd.c:1353-1370 ScrCmd_multichoice(left, top, multichoiceId, ignoreBPress) :
 //   ScriptMenu_Multichoice(left, top, multichoiceId, ignoreBPress) → TRUE
@@ -504,433 +332,23 @@ registerOpcode('msgbox', (ctx, args) => {
 //
 // Variantes : multichoicedefault (= same + initial cursor pos), multichoicegrid
 // (= 2D grid layout).
-// ─── Multichoice menus 1:1 décomp `script_menu.c` ──────────────────────────
-// Audit session 126 LOT D2 : avant stubs `VAR_RESULT = 0` → maintenant vraie
-// UI window verticale + cursor + A/B input. Data depuis `multichoice-data.ts`
-// (= extraite de `src/data/script_menu.h` via `extract-multichoice-lists.mjs`).
-
-let _multichoiceWindowId = -1;
-
-function _spawnMultichoiceMenu(left: number, top: number, items: string[], cursorPos: number): void {
-  const count = items.length;
-  if (count === 0) return;
-  // Estimate width : max len of items * 0.5 tile + 2 tiles margin (= rough).
-  // 1:1 décomp utilise `DisplayTextAndGetWidth` + `ConvertPixelWidthToTileWidth`.
-  // MVP : approximation par char count (= 6 px par char en FONT_NORMAL).
-  let maxChars = 4;
-  for (const t of items) {
-    const len = (t ?? '').length;
-    if (len > maxChars) maxChars = len;
-  }
-  const width = Math.max(5, Math.min(28, Math.ceil(maxChars * 0.7) + 2));
-  const tmpl: WindowTemplate = {
-    bg: 0,
-    tilemapLeft: left,
-    tilemapTop: top,
-    width,
-    height: count * 2,
-    paletteNum: 15,
-    baseBlock: 0x125,
-  };
-  _multichoiceWindowId = AddWindow(tmpl);
-  DrawStdFrameWithCustomTileAndPalette(_multichoiceWindowId, true, 0x214, 14);
-  // Print each item sur ligne i (= y = 1 + i * 16).
-  for (let i = 0; i < count; i++) {
-    AddTextPrinterParameterized3(
-      _multichoiceWindowId, 1, 8, 1 + i * 16, [1, 2, 3], 255, items[i] ?? '',
-    );
-  }
-  PutWindowTilemap(_multichoiceWindowId);
-  CopyWindowToVram(_multichoiceWindowId, 3 /* COPYWIN_FULL */);
-  // 1:1 décomp `InitMenuInUpperLeftCornerNormal(windowId, count, cursorPos)`.
-  InitMenuInUpperLeftCornerNormal(_multichoiceWindowId, count, cursorPos);
-}
-
-function _cleanupMultichoiceMenu(): void {
-  if (_multichoiceWindowId >= 0) {
-    ClearStdWindowAndFrame(_multichoiceWindowId, true);
-    RemoveWindow(_multichoiceWindowId);
-    _multichoiceWindowId = -1;
-  }
-}
-
-/** 1:1 décomp `ScrCmd_multichoice(left, top, multichoiceId, ignoreBPress)` :
- *    ScriptMenu_Multichoice(...) → spawn menu + waitstate.
- *    User picks → VAR_RESULT = cursor pos (0..N-1) ou MULTI_B_PRESSED (= 0x7F)
- *    si B pressed et !ignoreBPress, ou cursor pos final si ignoreBPress. */
-registerOpcode('multichoice', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');  // resolves MULTI_X → number
-  const ignoreBPress = parseValue(args[3] ?? '0') !== 0;
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    // Fallback : pas de data → set VAR_RESULT = 0 (= 1st option) + log.
-    console.warn(`[opcode multichoice] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=0`);
-    gSpecialVar.Result = 0;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, 0);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;  // MENU_NOTHING_CHOSEN
-    if (result === -1) {
-      // B pressed
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F /* MULTI_B_PRESSED */;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
-
-/** 1:1 décomp `ScrCmd_multichoicedefault` : multichoice avec cursor à
- *  defaultChoice initial. */
-registerOpcode('multichoicedefault', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');
-  const defaultChoice = parseValue(args[3] ?? '0');
-  const ignoreBPress = parseValue(args[4] ?? '0') !== 0;
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    console.warn(`[opcode multichoicedefault] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=${defaultChoice}`);
-    gSpecialVar.Result = defaultChoice;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, defaultChoice);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;
-    if (result === -1) {
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
-
-/** 1:1 décomp `ScrCmd_multichoicegrid` : grille NxM au lieu d'une colonne.
- *  MVP : on utilise multichoice vertical (= ignore perRow). À améliorer si
- *  on rencontre des cas qui nécessitent vraiment grid layout. */
-registerOpcode('multichoicegrid', (ctx, args) => {
-  const left = parseValue(args[0] ?? '0');
-  const top = parseValue(args[1] ?? '0');
-  const multichoiceId = VarGet(args[2] ?? '0');
-  const perRow = parseValue(args[3] ?? '1');
-  const ignoreBPress = parseValue(args[4] ?? '0') !== 0;
-  void perRow;  // TODO grid layout
-  const items = getMultichoiceList(multichoiceId, args[2]);
-  if (items.length === 0) {
-    console.warn(`[opcode multichoicegrid] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=0`);
-    gSpecialVar.Result = 0;
-    return false;
-  }
-  _spawnMultichoiceMenu(left, top, items, 0);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2) return false;
-    if (result === -1) {
-      gSpecialVar.Result = ignoreBPress ? items.length - 1 : 0x7F;
-    } else {
-      gSpecialVar.Result = result;
-    }
-    _cleanupMultichoiceMenu();
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
-
-// 1:1 décomp scrcmd.c:1337-1351 ScrCmd_yesnobox(left, top) :
-//   ScriptMenu_YesNo(left, top) → returns TRUE → ScriptContext_Stop
-//   Wait until Menu_ProcessInputNoWrapClearOnChoose returns choice :
-//     0 (OUI) → VAR_RESULT = 0
-//     1 (NON) → VAR_RESULT = 1
-//     -1 (B_PRESSED) → VAR_RESULT = 1 (= NON, 1:1 décomp menu.c)
-//
-// Window template 1:1 décomp menu.c:98-107 sYesNo_WindowTemplates :
-//   { bg: 0, tilemapLeft: ?, tilemapTop: ?, width: 5, height: 4,
-//     paletteNum: 15, baseBlock: 0x125 }
-function _spawnYesNoMenu(left: number, top: number): void {
-  // 1:1 décomp menu.c:1623 CreateYesNoMenu(window, baseTileNum, paletteNum, initialCursorPos).
-  // STD_WINDOW_BASE_TILE_NUM=0x214, STD_WINDOW_PALETTE_NUM=14 (= cf. menu.c:25-27).
-  const tmpl: WindowTemplate = {
-    bg: 0,
-    tilemapLeft: left,
-    tilemapTop: top,
-    width: 5,
-    height: 4,
-    paletteNum: 15,    // DLG_WINDOW_PALETTE_NUM
-    baseBlock: 0x125,
-  };
-  CreateYesNoMenu(tmpl, 0x214, 14, 0);
-}
-
-registerOpcode('yesnobox', (ctx, args) => {
-  const left = parseValue(args[0]);
-  const top = parseValue(args[1]);
-  _spawnYesNoMenu(left, top);
-  let menuActive = true;
-  const tick = (): boolean => {
-    if (!menuActive) return true;
-    const result = Menu_ProcessInputNoWrapClearOnChoose();
-    if (result === -2 /* MENU_NOTHING_CHOSEN */) return false;
-    // 1:1 décomp `script_menu.c:Task_HandleYesNoInput` :
-    //   case 0 (OUI top) → VAR_RESULT = 1 (= YES enum, event.inc:1932)
-    //   case 1 / B_PRESSED → VAR_RESULT = 0 (= NO enum)
-    // Avant ce fix on inversait → goto_if_eq VAR_RESULT, YES failed silent.
-    const yesNoResult = result === 0 ? 1 : 0;
-    gSpecialVar.Result = yesNoResult;
-    // Cleanup yesno window (= 1:1 décomp EraseYesNoWindow déjà fait par
-    // Menu_ProcessInputNoWrapClearOnChoose en interne).
-    const wid = GetYesNoWindowId();
-    if (wid >= 0) {
-      ClearStdWindowAndFrame(wid, true);
-      RemoveWindow(wid);
-    }
-    menuActive = false;
-    return true;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
+// Multichoice menus + yesnobox extraits vers `./script-opcodes-menu`
+// (= 1:1 décomp menu.c + script_menu.c). `spawnYesNoMenu` exporté pour msgbox.
 
 // ─── Misc ────────────────────────────────────────────────────────────────────
 // `delay` / `gettime` extraits vers `./script-opcodes-rtc-clock`.
 
-// Session 124 fix Bug 4 : signal generic pour UI flows (= wallclock, starter,
-// future MartUI, etc.). Le décomp `waitstate` poll `ScriptContext_Stop` cleared
-// par `ScriptContext_Enable()` appelé par le UI flow quand il finit. Notre
-// equivalent : un latch booleen set par `SignalWaitState()`.
-let _waitStateSignaled = false;
-export function SignalWaitState(): void {
-  _waitStateSignaled = true;
-}
-
-registerOpcode('waitstate', (ctx) => {
-  // 1:1 décomp ScrCmd_waitstate (scrcmd.c:ScrCmd_waitstate) : ScriptContext_Stop
-  // jusqu'à ce qu'une autre routine (= warp completion, multichoice result,
-  // UI flow done) call ScriptContext_Enable. Utilisé après `warpsilent`,
-  // après `special X waitstate=1` (= wallclock, starter choose), etc.
-  //
-  // Notre impl : poll signal latch + warp completion + map switch (= 3
-  // sources possibles de release). Si signaled UPSTREAM (= UI flow déjà
-  // terminé avant waitstate dispatch), consume + continue immédiat.
-  if (_waitStateSignaled) {
-    _waitStateSignaled = false;
-    return false;
-  }
-  const startMapId = gMapHeader?.id;
-  const tick = (): boolean => {
-    if (_waitStateSignaled) {
-      _waitStateSignaled = false;
-      return true;
-    }
-    // Warp path : poll warp consume + map switch (= 1:1 session 122 fix).
-    if (getPendingWarp()) return false;
-    const currentMapId = gMapHeader?.id;
-    if (currentMapId && currentMapId !== startMapId) return true;
-    return false;
-  };
-  SetupNativeScript(ctx, tick);
-  return true;
-});
+// `waitstate` + `SignalWaitState` extraits vers `./script-opcodes-special`
+// (= 1:1 décomp ScrCmd_waitstate). Re-export ci-dessous preserve les imports
+// externes (bedroom-pc/wallclock-flow/region-map).
 
 // ─── Special opcode dispatcher (= 1:1 décomp ScrCmd_special) ────────────────
-//
-// Audit Opus §4 minor : `special X` était no-op pour tous → beaucoup de
-// scripts dépendent de specials (e.g. Special_BookendObjectEventTextScript,
-// HealPlayerParty, PlayCryThenChooseUnown, etc.). Sans dispatch, scripts
-// branchent vers nulle part.
-//
-// Décomp `scrcmd.c:ScrCmd_special` :
-//   ```c
-//   bool8 ScrCmd_special(struct ScriptContext *ctx) {
-//     u16 specialId = ScriptReadHalfword(ctx);
-//     gSpecials[specialId]();  // = function pointer table
-//     return FALSE;
-//   }
-//   ```
-//
-// `gSpecials[]` (data/specials.inc) est une table de ~250 function pointers
-// qui sont appelés par leur index ou par leur nom symbolique.
-//
-// Notre version : registry name-based. Scripts JSON pré-extraits ont les
-// noms (= e.g. "HealPlayerParty"). On wire les specials nécessaires au fur
-// et à mesure. Special inconnu → log warning + continue (= 1:1 décomp ferait
-// un crash car function pointer invalide).
-
-/** 1:1 décomp `gSpecials[]` table (data/specials.inc, 527 entries).
- *  Décomp : array de function pointers indexés par SPECIAL_xxx. Notre version
- *  string-keyed pour matcher les script JSON pré-extraits. */
-type SpecialHandler = () => number | void;
-const _specialHandlers: Record<string, SpecialHandler> = {};
-
-/** Register un special handler. Le handler peut return un u16 qui est stored
- *  par opcode `specialvar` dans une variable. À call par les modules qui
- *  implémentent un special spécifique (= battle module → `HealPlayerParty`). */
-export function registerSpecial(name: string, handler: SpecialHandler): void {
-  _specialHandlers[name] = handler;
-}
-
-/** Internal : invoke un special handler. Returns 0 si pas registered + log
- *  warning. Utilisé par opcodes `special` et `specialvar`. */
-function _invokeSpecial(name: string): number {
-  const handler = _specialHandlers[name];
-  if (!handler) {
-    // Log les specials manquants pour wire au fur et à mesure.
-    console.log(`[opcode special] '${name}' not registered yet — wire dans specials-registry.ts`);
-    return 0;
-  }
-  return handler() ?? 0;
-}
-
-/** 1:1 décomp `ScrCmd_special` (scrcmd.c:118-124).
- *  ```c
- *  bool8 ScrCmd_special(struct ScriptContext *ctx) {
- *      u16 index = ScriptReadHalfword(ctx);
- *      gSpecials[index]();
- *      return FALSE;
- *  }
- *  ``` */
-registerOpcode('special', (ctx, args) => {
-  const name = args[0] as string;
-  // Phase 5.5 : ChooseStarter UI INLINE dans l'overworld via state machine
-  // utilisant nos systèmes engine (= ShowFieldMessage + CreateYesNoMenu, no scene switch).
-  // 1:1 décomp Task_StarterChoose flow + Task_AskConfirmStarter.
-  // Dynamic import : avoid circular dependency at load time.
-  if (name === 'ChooseStarter') {
-    let flowReady = false;
-    let flow: { tick: () => boolean } | null = null;
-    void import('./starter-choose-flow').then((mod) => {
-      flow = mod.startChooseStarterFlow();
-      flowReady = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!flowReady) return false;
-      return flow!.tick();
-    });
-    return true;
-  }
-  // Phase 5.6 : Birch tutorial wild battle flow.
-  // 1:1 décomp battle_setup.c:CB2_GiveStarter chains starter give → CB2_StartFirstBattle
-  // (= BATTLE_TYPE_FIRST_BATTLE vs SPECIES_ZIGZAGOON Lv 2). Notre version :
-  // inline state machine via SetupNativeScript (= block script, no scene switch).
-  // Custom special name (= NOT in décomp directly — décomp uses CB2 chain
-  // through ChooseStarter. Exposed here for explicit script wiring + debug).
-  if (name === 'StartBirchTutorialBattle') {
-    let flowReady = false;
-    let flow: { tick: () => boolean } | null = null;
-    void import('./battle-flow').then((mod) => {
-      flow = mod.startBirchTutorialBattle();
-      flowReady = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!flowReady) return false;
-      return flow!.tick();
-    });
-    return true;
-  }
-  // 1:1 décomp port `wallclock.c` (session 2026-05-20) : CB2 swap via
-  // SetMainCallback2(CB2_InitWallClock). Aiguilles affines via SetOamMatrix +
-  // sClockHandCoords pivot offsets. Tilemap BG3 clock_start/clock_view depuis
-  // graphics/wallclock/. AM/PM indicator anime entre 2 positions selon période.
-  // `Special_ViewWallClock` = mode VIEW (RTC live + A/B = close).
-  // `StartWallClock` = mode SET (D-pad ajuste hours/minutes, A = confirm via
-  // RtcInitLocalTimeOffset, sauvegarde).
-  // 1:1 décomp `FieldShowRegionMap` (field_specials.c:973) : CB2 swap vers
-  // worldmap HOENN. Notre version utilise un overlay HTML (= region-map.ts)
-  // qui se dessine au-dessus du field. Le special est `waitstate=1`
-  // dans specials.inc:279 donc on bloque le script via SetupNativeScript
-  // jusqu'à ce que la carte se ferme (= IsRegionMapOpen() false).
-  if (name === 'FieldShowRegionMap') {
-    let opened = false;
-    let isOpenChecker: (() => boolean) | null = null;
-    void import('./region-map').then(async (mod) => {
-      await mod.OpenRegionMap();
-      isOpenChecker = mod.IsRegionMapOpen;
-      opened = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!opened) return false;
-      return !isOpenChecker!();
-    });
-    return true;
-  }
-  // 1:1 décomp player_pc.c (= BedroomPC + PlayerPC). Pattern overlay (= pas
-  // de CB2 swap car le PC dessine au-dessus de l'overworld). OpenBedroomPC()
-  // ouvre le main menu UI ; TickBedroomPC() est polled chaque frame depuis
-  // TestOverworldScene main loop pour drive l'input. Le special est `waitstate=1`
-  // dans specials.inc:277-278 donc on bloque le script via SetupNativeScript
-  // jusqu'à ce que le PC se ferme (= IsBedroomPCOpen() false).
-  if (name === 'BedroomPC' || name === 'PlayerPC') {
-    const isBedroom = (name === 'BedroomPC');
-    let opened = false;
-    let isOpenChecker: (() => boolean) | null = null;
-    void import('./bedroom-pc').then((mod) => {
-      mod.OpenBedroomPC(isBedroom);
-      isOpenChecker = mod.IsBedroomPCOpen;
-      opened = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!opened) return false;
-      return !isOpenChecker!();
-    });
-    return true;
-  }
-  if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
-    const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
-    let opened = false;
-    let isOpenChecker: (() => boolean) | null = null;
-    void import('./wallclock').then((mod) => {
-      mod.OpenWallClock(mode);
-      isOpenChecker = mod.IsWallClockOpen;
-      opened = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!opened) return false;
-      // Wait until wallclock closes (= Task_*_Exit restored savedCallback).
-      return !isOpenChecker!();
-    });
-    return true;
-  }
-  _invokeSpecial(name);
-  return false;
-});
-
-/** 1:1 décomp `ScrCmd_specialvar` (scrcmd.c:126-132).
- *  ```c
- *  bool8 ScrCmd_specialvar(struct ScriptContext *ctx) {
- *      u16 *var = GetVarPointer(ScriptReadHalfword(ctx));
- *      *var = gSpecials[ScriptReadHalfword(ctx)]();
- *      return FALSE;
- *  }
- *  ```
- *  Format args : args[0] = varId (= "VAR_RESULT" etc.), args[1] = special name. */
-registerOpcode('specialvar', (_ctx, args) => {
-  const varId = args[0] as string;
-  const specialName = args[1] as string;
-  const result = _invokeSpecial(specialName);
-  VarSet(varId, result);
-  return false;
-});
+// Extraits vers `./script-opcodes-special` (= ScrCmd_special + ScrCmd_specialvar
+// + dispatchers UI ChooseStarter/StartBirchTutorialBattle/FieldShowRegionMap/
+// BedroomPC/PlayerPC/Special_ViewWallClock/StartWallClock).
+// `invokeSpecial` (anciennement `_invokeSpecial`) est désormais exporté depuis
+// script-opcodes-special.ts pour que les sections frontier/seteventmon puissent
+// l'appeler via import.
 
 // Sound opcodes (playse/playbgm/savebgm/fadedefaultbgm/fadenewbgm/fadeoutbgm/
 // fadeinbgm/playfanfare/waitfanfare) extraits vers `./script-opcodes-sound`
@@ -1207,8 +625,7 @@ registerOpcode('turnvobject', (_ctx, _args) => false);
 // Alias setdoor_opened/setdoor_closed → versions handled par setdooropen/setdoorclosed.
 // 1:1 décomp scrcmd : these are just naming variants.
 // `setdoor_opened` / `setdoor_closed` extraits vers `./script-opcodes-door`.
-registerOpcode('addelevmenuitem', (_ctx, _args) => false);
-registerOpcode('showelevmenu', (_ctx, _args) => false);
+// `addelevmenuitem` / `showelevmenu` early stubs extraits vers `./script-opcodes-menu`.
 // `checkcoins` / `takecoins` extraits vers `./script-opcodes-money-coins`.
 // ─── Buffer opcodes extraits vers `./script-opcodes-string`
 // (= 1:1 décomp string_util.c). Tous les buffer* + vbuffer + preparemsg. ─────
@@ -1219,8 +636,7 @@ registerOpcode('showelevmenu', (_ctx, _args) => false);
 // 1:1 décomp `ScrCmd_vmessage / vmsgbox / vbufferstring` (scrcmd.c) :
 // Versions "v" prennent un VAR_X qui contient une string offset (= multi-language
 // dynamic). Notre runtime est FR-only → traite comme alias des versions normales.
-registerOpcode('vmessage', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
-registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args) ?? false);
+// `vmessage` / `vmsgbox` extraits vers `./script-opcodes-message`.
 // `vbufferstring` extrait vers `./script-opcodes-string`.
 
 // 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : gSaveBlock1Ptr.coins += amount, cap 9999.
@@ -1228,7 +644,7 @@ registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args)
 
 // 1:1 décomp `ScrCmd_messageinstant` (scrcmd.c) : msgbox sans typewriter effect
 // (= text appears all at once instead of char-by-char). MVP : alias message.
-registerOpcode('messageinstant', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
+// `messageinstant` extrait vers `./script-opcodes-message`.
 
 // `warpwhitefade` extrait vers `./script-opcodes-warp`.
 // `checkpartymove` / `countpokemon` extraits vers `./script-opcodes-player-avatar`.
@@ -1287,23 +703,8 @@ registerOpcode('setbyte', (_ctx, _args) => false);
 
 // `setberrytree` stub → real impl 1:1 décomp `berry.c` — voir `./script-opcodes-berry`.
 
-// 1:1 décomp `ScrCmd_braillemsgbox` — message in braille font. 48x usage.
-//   MVP : log + skip (= no braille font yet).
-registerOpcode('braillemsgbox', (_ctx, args) => {
-  console.log(`[opcode braillemsgbox] '${args[0]}' — TODO braille font`);
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_braillemessage` / `brailleformat` — braille only. No-op.
-registerOpcode('braillemessage', (_ctx, _args) => false);
-registerOpcode('brailleformat', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_messageautoscroll` — message that auto-scrolls.
-//   MVP : log + skip (= would need msgbox + auto-advance timer).
-registerOpcode('messageautoscroll', (_ctx, args) => {
-  console.log(`[opcode messageautoscroll] '${args[0]}' — TODO autoscroll`);
-  return false;
-});
+// `braillemsgbox` / `braillemessage` / `brailleformat` / `messageautoscroll`
+// extraits vers `./script-opcodes-message`.
 
 // `dofieldeffect` extrait vers `./script-opcodes-fieldeffect` (= 1:1 décomp field_effect.c).
 
@@ -1354,14 +755,7 @@ registerOpcode('gotostd_if', (_ctx, _args) => false);
 // `goto_if_not_defeated` / `call_if_defeated` / `goto_if_defeated` extraits vers
 // `./script-opcodes-battle`.
 
-// 1:1 décomp `ScrCmd_showmonpic` / `hidemonpic` — show/hide a Pokemon front
-//   sprite in a window. 10x usage in Birch lab + cinematic moments.
-//   MVP : log + skip (= would integrate with starter-choose-flow style sprite).
-registerOpcode('showmonpic', (_ctx, args) => {
-  console.log(`[opcode showmonpic] species=${args[0]} x=${args[1]} y=${args[2]} — TODO mon pic UI`);
-  return false;
-});
-registerOpcode('hidemonpic', (_ctx, _args) => false);
+// `showmonpic` / `hidemonpic` extraits vers `./script-opcodes-menu` (= 1:1 décomp menu.c).
 
 // 1:1 décomp `ScrCmd_givemon` — gives a Pokemon to player party. 3x usage in
 //   early-game (= starter choose alternate path, gift Pokemon).
@@ -1395,13 +789,7 @@ registerOpcode('copyobjectxytoperm', (_ctx, args) => {
 //   Pseudo-op equivalent (= movement script element, not real opcode).
 registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => false);
 
-// 1:1 décomp `ScrCmd_pokenavcall` — initiates a PokéNav call.
-//   2x usage in early-game (= Birch wakes you for ChooseStarter).
-//   MVP : log + skip (= no PokéNav UI).
-registerOpcode('pokenavcall', (_ctx, args) => {
-  console.log(`[opcode pokenavcall] '${args[0]}' — TODO PokeNav UI`);
-  return false;
-});
+// `pokenavcall` extrait vers `./script-opcodes-message`.
 
 // 1:1 décomp `ScrCmd_pokemartlistend` — data terminator for pokemart lists.
 //   4x usage (= each shop has a list ending with this).
@@ -1493,25 +881,8 @@ registerOpcode('vcall_if_set', (_ctx, _args) => false);
 
 // More post-game / battle facility stubs (= further audit findings)
 // `removecoins` early stub extrait vers `./script-opcodes-money-coins`.
-registerOpcode('seteventmon', (_ctx, _args) => false);
-registerOpcode('frontier_settrainers', (_ctx, _args) => false);
-registerOpcode('frontier_resetsketch', (_ctx, _args) => false);
-registerOpcode('frontier_restorehelditems', (_ctx, _args) => false);
-registerOpcode('dome_resolvewinners', (_ctx, _args) => false);
-registerOpcode('dome_save', (_ctx, _args) => false);
-registerOpcode('tower_dopartnermsg', (_ctx, _args) => false);
-registerOpcode('tower_getopponentintro', (_ctx, _args) => false);
-registerOpcode('tower_init', (_ctx, _args) => false);
-registerOpcode('factory_save', (_ctx, _args) => false);
-registerOpcode('factory_setswapped', (_ctx, _args) => false);
-registerOpcode('pike_save', (_ctx, _args) => false);
-registerOpcode('pike_gettrainerintro', (_ctx, _args) => false);
-registerOpcode('pyramid_save', (_ctx, _args) => false);
-registerOpcode('palace_getopponentintro', (_ctx, _args) => false);
-registerOpcode('arena_save', (_ctx, _args) => false);
-registerOpcode('fallarbortent_save', (_ctx, _args) => false);
-registerOpcode('slateporttent_save', (_ctx, _args) => false);
-registerOpcode('verdanturftent_save', (_ctx, _args) => false);
+// seteventmon / frontier_*/tower_*/dome_*/factory_*/pike_*/palace_*/arena_*/
+// pyramid_*/tents early stubs extraits vers `./script-opcodes-frontier`.
 // `adddecoration` extrait vers `./script-opcodes-decoration`.
 // `setwarp` extrait vers `./script-opcodes-warp`.
 registerOpcode('init_affine_anim', (_ctx, _args) => false);
@@ -1829,23 +1200,7 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;
 });
 
-// ─── Pokemon picture (1:1 décomp ScrCmd_showmonpic/hidemonpic) ──────────────
-
-registerOpcode('hidemonpic', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_hidemonpic (scrcmd.c:1622) :
-  //   func = ScriptMenu_HidePokemonPic() ;  // returns fn ptr
-  //   if (func == NULL) return FALSE ;
-  //   SetupNativeScript(ctx, func) ; return TRUE
-  // Notre port : pour l'instant le mon pic est fire-and-forget. Wait 8 frames
-  // (= petit délai pour fade out hypothétique).
-  let framesWaited = 0;
-  const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 8;
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
+// ─── Pokemon picture extraits vers `./script-opcodes-menu`. ─────────────────
 
 // `selectapproachingtrainer` / `lockfortrainer` real impls extraits vers `./script-opcodes-lock`.
 
@@ -1965,22 +1320,7 @@ registerOpcode('turnvobject', (_ctx, args) => {
 // `pokemartdecoration` / `pokemartdecoration2` / `pokemartlistend` extraits vers
 // `./script-opcodes-shop` (= 1:1 décomp shop.c).
 
-// ─── Braille (1:1 décomp ScrCmd_braillemessage + macros) ────────────────────
-
-registerOpcode('braillemessage', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_braillemessage (scrcmd.c) : affiche un message en braille
-  // dans une fenêtre dimensionnée auto. Utilisé par Sealed Chamber, Regis caves.
-  // Notre port : pas encore de font BRAILLE — déjà délégué à braillemsgbox qui
-  // gère le wait. Real impl future = font BRAILLE + window dimensions calc.
-  return false;
-});
-
-registerOpcode('brailleformat', (_ctx, _args) => {
-  // 1:1 décomp event.inc:1024 macro brailleformat — c'est un DATA marker dans
-  // le braille text payload, pas un opcode (= 6 bytes data avant le texte
-  // braille). Notre extracteur peut le passer comme opcode mais c'est no-op.
-  return false;
-});
+// `braillemessage` / `brailleformat` real impls extraits vers `./script-opcodes-message`.
 
 // ─── Rotating tile puzzles (Mossdeep Gym + Trick House) ─────────────────────
 
@@ -1988,34 +1328,12 @@ registerOpcode('brailleformat', (_ctx, _args) => {
 // vers `./script-opcodes-rotating-tile-puzzle` / `./script-opcodes-slot-machine` /
 // `./script-opcodes-contest`.
 
-registerOpcode('addelevmenuitem', (_ctx, _args) => {
-  // 1:1 décomp : stubbed in Emerald (= RS-only feature, non-functional).
-  return false;
-});
-
-registerOpcode('showelevmenu', (_ctx, _args) => {
-  // 1:1 décomp : stubbed in Emerald.
-  return false;
-});
+// `addelevmenuitem` / `showelevmenu` extraits vers `./script-opcodes-menu`.
 
 // ─── Wild battles real impls extraits vers `./script-opcodes-battle` ───────
 // (Real impl dowildbattle extrait vers `./script-opcodes-battle`.)
 
-// ─── Event Mon (1:1 décomp seteventmon macro) ───────────────────────────────
-
-registerOpcode('seteventmon', (_ctx, args) => {
-  // 1:1 décomp event.inc:1989 macro seteventmon species, level, item :
-  //   setvar VAR_0x8004, species ; setvar VAR_0x8005, level ;
-  //   setvar VAR_0x8006, item ; special CreateEnemyEventMon.
-  const species = parseValue(args[0] ?? '0');
-  const level = parseValue(args[1] ?? '5');
-  const item = parseValue(args[2] ?? 'ITEM_NONE');
-  VarSet('VAR_0x8004', species);
-  VarSet('VAR_0x8005', level);
-  VarSet('VAR_0x8006', item);
-  _invokeSpecial('CreateEnemyEventMon');
-  return false;
-});
+// ─── Event Mon (= seteventmon) extrait vers `./script-opcodes-frontier`.
 
 // ─── Disable jump landing ground effect ─────────────────────────────────────
 
@@ -2064,276 +1382,10 @@ registerOpcode('hideobjectat', (_ctx, args) => {
 // l'instant, futurs full implementations).
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Expand un macro 'facility' opcode : set vars + call special. */
-function _facilityCall(specialFn: string, funcId: number, dataVal?: number | string, val?: number | string): void {
-  VarSet('VAR_0x8004', funcId);
-  if (dataVal !== undefined) {
-    const v = typeof dataVal === 'string' ? parseValue(dataVal) : dataVal;
-    VarSet('VAR_0x8005', v);
-  }
-  if (val !== undefined) {
-    const v = typeof val === 'string' ? parseValue(val) : val;
-    VarSet('VAR_0x8006', v);
-  }
-  _invokeSpecial(specialFn);
-}
+// Frontier opcodes (= frontier_util.c) extraits vers `./script-opcodes-frontier`.
 
-// ─── Frontier util (frontier_get/set/etc.) ──────────────────────────────────
-// Source : asm/macros/battle_frontier/frontier_util.inc
-// All map to FRONTIER_UTIL_FUNC_* and CallFrontierUtilFunc.
-
-registerOpcode('frontier_getstatus', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 0 /* FRONTIER_UTIL_FUNC_GET_STATUS */);
-  return false;
-});
-
-registerOpcode('frontier_get', (_ctx, args) => {
-  _facilityCall('CallFrontierUtilFunc', 1 /* FRONTIER_UTIL_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('frontier_set', (_ctx, args) => {
-  _facilityCall('CallFrontierUtilFunc', 2 /* FRONTIER_UTIL_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('frontier_reset', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 3 /* FRONTIER_UTIL_FUNC_RESET */);
-  return false;
-});
-
-registerOpcode('frontier_setpartyorder', (_ctx, args) => {
-  _facilityCall('CallFrontierUtilFunc', 4 /* FRONTIER_UTIL_FUNC_SET_PARTY_ORDER */, args[0]);
-  return false;
-});
-
-registerOpcode('frontier_results', (_ctx, args) => {
-  _facilityCall('CallFrontierUtilFunc', 5 /* FRONTIER_UTIL_FUNC_SHOW_RESULTS */, args[0]);
-  return false;
-});
-
-registerOpcode('frontier_getsymbols', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 6 /* FRONTIER_UTIL_FUNC_GET_SYMBOLS */);
-  return false;
-});
-
-registerOpcode('frontier_givesymbol', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 7 /* FRONTIER_UTIL_FUNC_GIVE_SYMBOL */);
-  return false;
-});
-
-registerOpcode('frontier_checkairshow', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 8 /* FRONTIER_UTIL_FUNC_CHECK_AIR_SHOW */);
-  return false;
-});
-
-registerOpcode('frontier_checkineligible', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 9 /* FRONTIER_UTIL_FUNC_CHECK_INELIGIBLE */);
-  return false;
-});
-
-registerOpcode('frontier_getbrainstatus', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 10 /* FRONTIER_UTIL_FUNC_GET_BRAIN_STATUS */);
-  return false;
-});
-
-registerOpcode('frontier_isbrain', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 11 /* FRONTIER_UTIL_FUNC_IS_BRAIN */);
-  return false;
-});
-
-registerOpcode('frontier_givepoints', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 12 /* FRONTIER_UTIL_FUNC_GIVE_BATTLE_POINTS */);
-  return false;
-});
-
-registerOpcode('frontier_settrainers', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 13 /* FRONTIER_UTIL_FUNC_SET_TRAINERS */);
-  return false;
-});
-
-registerOpcode('frontier_resetsketch', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 14 /* FRONTIER_UTIL_FUNC_RESET_SKETCH_MOVES */);
-  return false;
-});
-
-registerOpcode('frontier_restorehelditems', (_ctx, _args) => {
-  _facilityCall('CallFrontierUtilFunc', 15 /* FRONTIER_UTIL_FUNC_RESTORE_HELD_ITEMS */);
-  return false;
-});
-
-// ─── Battle Tower (tower_*) ─────────────────────────────────────────────────
-// Source : asm/macros/battle_frontier/battle_tower.inc → CallBattleTowerFunc.
-
-registerOpcode('tower_set', (_ctx, args) => {
-  _facilityCall('CallBattleTowerFunc', 0 /* BATTLE_TOWER_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('tower_get', (_ctx, args) => {
-  _facilityCall('CallBattleTowerFunc', 1 /* BATTLE_TOWER_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('tower_save', (_ctx, args) => {
-  _facilityCall('CallBattleTowerFunc', 2 /* BATTLE_TOWER_FUNC_SAVE_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('tower_setopponent', (_ctx, _args) => {
-  _facilityCall('CallBattleTowerFunc', 3 /* BATTLE_TOWER_FUNC_SET_OPPONENT */);
-  return false;
-});
-
-registerOpcode('tower_dopartnermsg', (_ctx, _args) => {
-  _facilityCall('CallBattleTowerFunc', 4 /* BATTLE_TOWER_FUNC_DO_PARTNER_MSG */);
-  return false;
-});
-
-registerOpcode('tower_getopponentintro', (_ctx, _args) => {
-  _facilityCall('CallBattleTowerFunc', 5 /* BATTLE_TOWER_FUNC_GET_OPPONENT_INTRO */);
-  return false;
-});
-
-registerOpcode('tower_init', (_ctx, _args) => {
-  _facilityCall('CallBattleTowerFunc', 6 /* BATTLE_TOWER_FUNC_INIT */);
-  return false;
-});
-
-// ─── Battle Dome (dome_*) ───────────────────────────────────────────────────
-
-registerOpcode('dome_set', (_ctx, args) => {
-  _facilityCall('CallBattleDomeFunction', 0 /* BATTLE_DOME_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('dome_get', (_ctx, args) => {
-  _facilityCall('CallBattleDomeFunction', 1 /* BATTLE_DOME_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('dome_save', (_ctx, _args) => {
-  _facilityCall('CallBattleDomeFunction', 2 /* BATTLE_DOME_FUNC_SAVE */);
-  return false;
-});
-
-registerOpcode('dome_resolvewinners', (_ctx, _args) => {
-  _facilityCall('CallBattleDomeFunction', 3 /* BATTLE_DOME_FUNC_RESOLVE_WINNERS */);
-  return false;
-});
-
-// ─── Battle Factory (factory_*) ─────────────────────────────────────────────
-
-registerOpcode('factory_set', (_ctx, args) => {
-  _facilityCall('CallBattleFactoryFunction', 0 /* BATTLE_FACTORY_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('factory_get', (_ctx, args) => {
-  _facilityCall('CallBattleFactoryFunction', 1 /* BATTLE_FACTORY_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('factory_save', (_ctx, _args) => {
-  _facilityCall('CallBattleFactoryFunction', 2 /* BATTLE_FACTORY_FUNC_SAVE */);
-  return false;
-});
-
-registerOpcode('factory_setswapped', (_ctx, _args) => {
-  _facilityCall('CallBattleFactoryFunction', 3 /* BATTLE_FACTORY_FUNC_SET_SWAPPED */);
-  return false;
-});
-
-// ─── Battle Pike (pike_*) ───────────────────────────────────────────────────
-
-registerOpcode('pike_set', (_ctx, args) => {
-  _facilityCall('CallBattlePikeFunction', 0 /* BATTLE_PIKE_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('pike_get', (_ctx, args) => {
-  _facilityCall('CallBattlePikeFunction', 1 /* BATTLE_PIKE_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('pike_save', (_ctx, _args) => {
-  _facilityCall('CallBattlePikeFunction', 2 /* BATTLE_PIKE_FUNC_SAVE */);
-  return false;
-});
-
-registerOpcode('pike_gettrainerintro', (_ctx, _args) => {
-  _facilityCall('CallBattlePikeFunction', 3 /* BATTLE_PIKE_FUNC_GET_TRAINER_INTRO */);
-  return false;
-});
-
-// ─── Battle Palace (palace_*) ───────────────────────────────────────────────
-
-registerOpcode('palace_set', (_ctx, args) => {
-  _facilityCall('CallBattlePalaceFunction', 0 /* BATTLE_PALACE_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('palace_get', (_ctx, args) => {
-  _facilityCall('CallBattlePalaceFunction', 1 /* BATTLE_PALACE_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('palace_getopponentintro', (_ctx, _args) => {
-  _facilityCall('CallBattlePalaceFunction', 2 /* BATTLE_PALACE_FUNC_GET_OPPONENT_INTRO */);
-  return false;
-});
-
-// ─── Battle Arena (arena_*) ─────────────────────────────────────────────────
-
-registerOpcode('arena_set', (_ctx, args) => {
-  _facilityCall('CallBattleArenaFunction', 0 /* BATTLE_ARENA_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('arena_get', (_ctx, args) => {
-  _facilityCall('CallBattleArenaFunction', 1 /* BATTLE_ARENA_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('arena_save', (_ctx, _args) => {
-  _facilityCall('CallBattleArenaFunction', 2 /* BATTLE_ARENA_FUNC_SAVE */);
-  return false;
-});
-
-// ─── Battle Pyramid (pyramid_*) ─────────────────────────────────────────────
-
-registerOpcode('pyramid_set', (_ctx, args) => {
-  _facilityCall('CallBattlePyramidFunction', 0 /* BATTLE_PYRAMID_FUNC_SET_DATA */, args[0], args[1]);
-  return false;
-});
-
-registerOpcode('pyramid_get', (_ctx, args) => {
-  _facilityCall('CallBattlePyramidFunction', 1 /* BATTLE_PYRAMID_FUNC_GET_DATA */, args[0]);
-  return false;
-});
-
-registerOpcode('pyramid_save', (_ctx, _args) => {
-  _facilityCall('CallBattlePyramidFunction', 2 /* BATTLE_PYRAMID_FUNC_SAVE */);
-  return false;
-});
-
-// ─── Battle Tents (verdanturf/fallarbor/slateport) ──────────────────────────
-// Source : asm/macros/battle_tent.inc → CallVerdanturfTentFunction / etc.
-
-registerOpcode('verdanturftent_save', (_ctx, args) => {
-  _facilityCall('CallVerdanturfTentFunction', 4 /* VERDANTURF_TENT_FUNC_SAVE */, args[0]);
-  return false;
-});
-
-registerOpcode('fallarbortent_save', (_ctx, args) => {
-  _facilityCall('CallFallarborTentFunction', 3 /* FALLARBOR_TENT_FUNC_SAVE */, args[0]);
-  return false;
-});
-
-registerOpcode('slateporttent_save', (_ctx, args) => {
-  _facilityCall('CallSlateportTentFunction', 3 /* SLATEPORT_TENT_FUNC_SAVE */, args[0]);
-  return false;
-});
+// Battle Tower/Dome/Factory/Pike/Palace/Arena/Pyramid/Tents opcodes extraits
+// vers `./script-opcodes-frontier`.
 
 // ─── Movement actions (slide_face / walk_*_affine / init_affine_anim) ───────
 // 1:1 décomp NOTE : ce ne sont PAS des opcodes script, mais des MOVEMENT
@@ -2449,9 +1501,7 @@ registerOpcode('addobjectat', (ctx, args) => {
 
 // ─── Box drawing (RS-era, removed in Emerald — all nop1) ────────────────────
 
-registerOpcode('drawbox', (_ctx, _args) => false);
-registerOpcode('erasebox', (_ctx, _args) => false);
-registerOpcode('drawboxtext', (_ctx, _args) => false);
+// `drawbox` / `erasebox` / `drawboxtext` extraits vers `./script-opcodes-menu`.
 
 // `setmonmove` / `setmonmetlocation` extraits vers `./script-opcodes-party`
 // (= 1:1 décomp party_menu.c + script_pokemon_util.c).
@@ -2466,11 +1516,7 @@ registerOpcode('drawboxtext', (_ctx, _args) => false);
 
 // ─── Braille extras ─────────────────────────────────────────────────────────
 
-registerOpcode('closebraillemessage', (_ctx, _args) => {
-  // 1:1 décomp ScrCmd_closebraillemessage : CloseBrailleWindow().
-  // Notre port : braille window non implémenté → no-op safe.
-  return false;
-});
+// `closebraillemessage` extrait vers `./script-opcodes-message`.
 
 // `vbuffermessage` extrait vers `./script-opcodes-string`.
 
@@ -2946,6 +1992,10 @@ import './script-opcodes-flag-var';
 import './script-opcodes-screen-fx';
 import './script-opcodes-lock';
 import './script-opcodes-battle';
+import './script-opcodes-special';
+import './script-opcodes-frontier';
+import './script-opcodes-menu';
+import './script-opcodes-message';
 
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
