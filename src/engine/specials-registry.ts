@@ -697,7 +697,17 @@ registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op */ });
 registerSpecial('InterviewBefore', () => 0);
 
 /** Berries. */
-registerSpecial('PlayerHasBerries', () => 0);
+/** 1:1 décomp `PlayerHasBerries` (berry.c:1315-1318).
+ *  Retourne IsBagPocketNonEmpty(POCKET_BERRIES). Notre projet check
+ *  gSaveBlock1Ptr.bagPocket_Berries (= 1:1 décomp 5e pocket sac). */
+registerSpecial('PlayerHasBerries', () => {
+  const sb1 = gSaveBlock1Ptr as unknown as { bagPocket_Berries?: Array<{ itemId?: string; quantity?: number }> };
+  const berries = sb1.bagPocket_Berries ?? [];
+  for (const slot of berries) {
+    if (slot.itemId && (slot.quantity ?? 0) > 0) return 1;
+  }
+  return 0;
+});
 registerSpecial('GetFirstFreePokeblockSlot', () => 0);
 registerSpecial('ObjectEventInteractionGetBerryName', () => { /* no-op */ });
 
