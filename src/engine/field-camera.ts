@@ -639,6 +639,8 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // gPlayerAvatar.x/y via Proxy + getter dynamique).
 
   SaveMapView();  // 1:1 décomp no-args, lit gSaveBlock1Ptr.pos directement.
+  // DETTE 1:1 décomp fieldmap.c:664 : ClearMirageTowerPulseBlendEffect() pas
+  // porté (= effet visuel post-game Mirage Tower, pas critique démo).
 
   const oldX = _camPos.x;
   const oldY = _camPos.y;
