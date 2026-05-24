@@ -1395,11 +1395,18 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
   // state=6.
   const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
   SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
-  const tpl = _findTemplateByLocalId(localIdRaw);
-  if (tpl) {
-    tpl.x = x;
-    tpl.y = y;
-  }
+  // 1:1 STRICT décomp : NE PAS muter `gMapHeader.events.objectEvents` (= ROM
+  // read-only dans le décomp). Seul `gSaveBlock1Ptr.objectEventTemplates` est
+  // muté via SetObjEventTemplateCoords (= writable saveblock memory).
+  //
+  // Bug 2026-05-24 : la mutation `tpl.x = x; tpl.y = y;` du mapHeader
+  // s'accumulait cross-map. Quand on quittait 1F + LoadObjEventTemplatesFrom
+  // Header(1F, header.events.objectEvents) appelait, le header.events.object
+  // Events était déjà muté (x=4 setobjectxyperm précédent) au lieu du fresh
+  // map.json (x=2 chair). Le saveblock 1F était reset MAIS avec valeurs
+  // mutées → MOM restait à devant TV cross-warp.
+  //
+  // Fix : mapHeader reste pristine, seul saveblock mutable.
   const npc = _findNpcByLocalId(args[0] ?? '');
   if (npc) {
     // Post R3 refactor : initialCoords/currentCoords INTERNAL (= +MAP_OFFSET).
