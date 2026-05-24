@@ -144,10 +144,21 @@ registerSpecial('GetBattleOutcome', () => {
   return typeof out === 'number' ? out : 1;  // BATTLE_OUTCOME_WIN default
 });
 
-/** 1:1 décomp `CalculatePlayerPartyCount` (pokemon_util.c:CalculatePlayerPartyCount).
- *  Returns gPlayerPartyCount (= number of party slots filled, 0..6). */
+/** 1:1 décomp `CalculatePlayerPartyCount` (pokemon.c) :
+ *    gPlayerPartyCount = 0;
+ *    while (gPlayerPartyCount < PARTY_SIZE
+ *           && GetMonData(&gPlayerParty[gPlayerPartyCount], MON_DATA_SPECIES, NULL) != SPECIES_NONE)
+ *        gPlayerPartyCount++;
+ *    return gPlayerPartyCount;
+ *  Recompute + sync cache. Évite la dérive si le cache n'a pas été update. */
 registerSpecial('CalculatePlayerPartyCount', () => {
-  return gSaveBlock1Ptr.playerPartyCount;
+  const party = gSaveBlock1Ptr.playerParty;
+  let count = 0;
+  while (count < 6 && party[count] && party[count].speciesId !== 0) {
+    count++;
+  }
+  gSaveBlock1Ptr.playerPartyCount = count;
+  return count;
 });
 
 /** 1:1 décomp `ShouldTryRematchBattle` (rematch_setup.c).
