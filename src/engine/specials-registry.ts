@@ -911,7 +911,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'IsContestWithRSPlayer',
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
-  'IsFavorLadyThresholdMet', 'IsGabbyAndTyShowOnTheAir',
+  'IsFavorLadyThresholdMet',
+  // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
@@ -1134,6 +1135,12 @@ registerSpecial('HasAtLeastOneBerry', () => {
  *  Return FALSE — toujours (= contest debug n'a jamais été enabled in shipping
  *  Emerald). 1:1 strict justifié. */
 registerSpecial('IsContestDebugActive', () => 0);
+
+/** 1:1 décomp `IsGabbyAndTyShowOnTheAir` (tv.c:1004-1007).
+ *  Return gSaveBlock1Ptr->gabbyAndTyData.onAir. */
+registerSpecial('IsGabbyAndTyShowOnTheAir', () => {
+  return gSaveBlock1Ptr.gabbyAndTyData?.onAir ?? 0;
+});
 
 /** 1:1 décomp `GetWirelessCommType` (link.c:1846-1849).
  *  Return gWirelessCommType (= 0 si pas link, non-zero si Wireless).
