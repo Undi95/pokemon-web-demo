@@ -53,11 +53,14 @@ import type { DecompTask } from './decomp-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
+// FONT_NORMAL/NARROW pas extraits dans decomp-data (= enum FontIds local
+// text.h, hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;
 /** 1:1 décomp text.h enum FontIds : FONT_NARROW = 7 (pas 2 !).
  *  sItemListMenu.fontId = FONT_NARROW = glyph data narrow différent de FONT_NORMAL. */
 const FONT_NARROW = 7;
-const TEXT_SKIP_DRAW = 255;
+// TEXT_SKIP_DRAW importé depuis decomp-data (= A8 audit).
+import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
 /** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
  *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
  *  Mapping paletteNum=1 (= sub-palette 1 de menu_male.pal) :
