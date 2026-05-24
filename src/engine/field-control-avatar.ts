@@ -73,7 +73,9 @@ import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,
   GetObjectEventIdByPosition,
+  ELEVATION_TRANSITION,
 } from './object-events';
+import { MapGridGetElevationAt } from './map-loader';
 import { LOCALID_PLAYER } from './decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
 import { ScriptContext_SetupScript } from './script-runtime';
@@ -153,13 +155,13 @@ const T_TILE_CENTER      = 2;
 // 1:1 décomp PLAYER_SPEED_FASTEST (= include/constants/...).
 const PLAYER_SPEED_FASTEST = 4;
 
-/** 1:1 décomp `GetPlayerCurMetatileBehavior` (field_control_avatar.c:?).
- *  Returns le behavior du tile sous le player en tenant compte de son state
- *  (= mid-step ou stable). Stub : query direct via MapGridGet pour notre impl. */
+/** 1:1 STRICT décomp `GetPlayerCurMetatileBehavior` (field_control_avatar.c:212-218) :
+ *    PlayerGetDestCoords(&x, &y);
+ *    return MapGridGetMetatileBehaviorAt(x, y);
+ *  Note : décomp ignore le `runningState` arg dans le body (= leftover). */
 function GetPlayerCurMetatileBehavior(_runningState: number): number {
-  return MapGridGetMetatileBehaviorAt(
-    gSaveBlock1Ptr.pos.x + MAP_OFFSET,
-    gSaveBlock1Ptr.pos.y + MAP_OFFSET);
+  const pos = PlayerGetDestCoords();  // INTERNAL coords 1:1 décomp.
+  return MapGridGetMetatileBehaviorAt(pos.x, pos.y);
 }
 
 /** 1:1 décomp `GetPlayerSpeed` (field_player_avatar.c).
@@ -242,49 +244,53 @@ export function GetPlayerPosition(position: MapPosition): void {
   position.elevation = PlayerGetElevation();
 }
 
-/** 1:1 décomp `GetInFrontOfPlayerPosition` (field_control_avatar.c:200-210).
+/** 1:1 STRICT décomp `GetInFrontOfPlayerPosition` (field_control_avatar.c:200-210) :
+ *    GetXYCoordsOneStepInFrontOfPlayer(&position->x, &position->y);
+ *    PlayerGetDestCoords(&x, &y);
+ *    if (MapGridGetElevationAt(x, y) != ELEVATION_TRANSITION)
+ *        position->elevation = PlayerGetElevation();
+ *    else
+ *        position->elevation = ELEVATION_TRANSITION;
  *
- *  Body décomp :
- *  ```c
- *  s16 x, y;
- *  GetXYCoordsOneStepInFrontOfPlayer(&position->x, &position->y);
- *  PlayerGetDestCoords(&x, &y);
- *  if (MapGridGetElevationAt(x, y) != ELEVATION_TRANSITION)
- *      position->elevation = PlayerGetElevation();
- *  else
- *      position->elevation = ELEVATION_TRANSITION;
- *  ```
- *
- *  Stores position 1 tile DEVANT le player + elevation (= preserved si dest
- *  tile a ELEVATION_TRANSITION, sinon = player current elevation).
+ *  Stores position 1 tile DEVANT le player + elevation (= preserved si player
+ *  source tile a ELEVATION_TRANSITION, sinon = player previousElevation).
  *  Used pour A-button interaction + push-door check. */
 export function GetInFrontOfPlayerPosition(position: MapPosition): void {
   const inFront = GetXYCoordsOneStepInFrontOfPlayer();
-  // Post R3 refactor : GetXYCoords... return INTERNAL coords (= 1:1 décomp).
   position.x = inFront.x;
   position.y = inFront.y;
-  // 1:1 décomp ELEVATION_TRANSITION = 0xF check. Skip pour MVP (= notre impl
-  // ne tracks pas ELEVATION_TRANSITION par tile). Default = player elevation.
-  position.elevation = PlayerGetElevation();
+  // 1:1 STRICT : read elevation au tile SOURCE (= player current pos).
+  const src = PlayerGetDestCoords();
+  if (MapGridGetElevationAt(src.x, src.y) !== ELEVATION_TRANSITION) {
+    position.elevation = PlayerGetElevation();
+  } else {
+    position.elevation = ELEVATION_TRANSITION;
+  }
 }
 
 // ─── Warp event lookup helpers 1:1 décomp ──────────────────────────────────
 
-/** 1:1 décomp `GetWarpEventAtPosition` (field_control_avatar.c:?).
- *  Recherche un warp event dans le mapHeader à la position (x, y) +
- *  elevation matching. Returns warpEventId ou -1 (WARP_ID_NONE). */
+/** 1:1 STRICT décomp `GetWarpEventAtPosition` (field_control_avatar.c:860-875) :
+ *    for (i = 0; i < warpCount; i++) {
+ *        if (warpEvent->x == x && warpEvent->y == y) {
+ *            if (warpEvent->elevation == elevation || warpEvent->elevation == ELEVATION_TRANSITION)
+ *                return i;
+ *        }
+ *    }
+ *    return WARP_ID_NONE;
+ */
 export function GetWarpEventAtPosition(
   mapHeader: typeof gMapHeader,
-  x: number, y: number, _elevation: number,
+  x: number, y: number, elevation: number,
 ): number {
   if (!mapHeader) return -1;
   const warps = mapHeader.events.warps as WarpEvent[];
   for (let i = 0; i < warps.length; i++) {
     const w = warps[i];
     if (w.x === x && w.y === y) {
-      // 1:1 décomp : elevation check (= w.elevation == 0 OR elevation match).
-      // Skip for now (= our WarpEvent doesn't store elevation).
-      return i;
+      if (w.elevation === elevation || w.elevation === ELEVATION_TRANSITION) {
+        return i;
+      }
     }
   }
   return -1;
