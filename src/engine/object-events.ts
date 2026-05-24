@@ -2970,10 +2970,16 @@ async function _respawnNpcSpriteForReturnToField(
 export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promise<void> {
   if (!_graphicsCatalog) return;
   const catalog = _graphicsCatalog;
+  // DETTE 1:1 décomp (event_object_movement.c:1715-1726) :
+  //   - ClearPlayerAvatarInfo() (= memset gPlayerAvatar=0) PAS appelé.
+  //   - Player slot skip (= notre archi délègue le re-spawn player à
+  //     InitPlayerAvatar). Décomp re-spawn player aussi via SpawnObjectEvent
+  //     OnReturnToField + SetPlayerAvatarObjectEventIdAndObjectId (1779-1783).
+  //   - CreateReflectionEffectSprites() (= reflexion sur eau pour NPCs) pas
+  //     porté (notre port n'a pas le reflection sprite system).
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
-    // Skip player slot (= preserved by InitPlayerAvatar already).
-    if (npc.isPlayer) continue;
+    if (npc.isPlayer) continue;  // Voir DETTE ci-dessus.
     const ok = await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
     if (!ok) continue;
     // 1:1 STRICT décomp event_object_movement.c:1773 :
@@ -2988,8 +2994,6 @@ export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promi
     const logicalY = npc.currentCoordsY - MAP_OFFSET;
     SetObjectEventSpritePosToMapCoords(npc, logicalX, logicalY);
   }
-  // Note : CreateReflectionEffectSprites (= 1:1 décomp) port différé (= notre
-  // port n'a pas de reflection sprite system pour les NPCs).
 }
 
 /** 1:1 décomp `TrySpawnObjectEvent(u8 localId, u8 mapNum, u8 mapGroup)`
@@ -3156,18 +3160,25 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
   }
 }
 
-/** 1:1 décomp `SetObjectEventSpritePosByLocalIdAndMap` (field_camera.c).
+/** 1:1 décomp `SetObjectEventSpritePosByLocalIdAndMap`
+ *  (event_object_movement.c:1995-2006) :
  *  ```c
  *  void SetObjectEventSpritePosByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y) {
- *      u8 objId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
- *      if (objId != OBJECT_EVENTS_COUNT) {
- *          gSprites[gObjectEvents[objId].spriteId].x2 = x;
- *          gSprites[gObjectEvents[objId].spriteId].y2 = y;
+ *      u8 objectEventId;
+ *      if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId)) {
+ *          sprite = &gSprites[gObjectEvents[objectEventId].spriteId];
+ *          sprite->x2 = x;
+ *          sprite->y2 = y;
  *      }
  *  }
  *  ```
  *  Used par Task_Truck1/2 pour box bouncing. Trouve le NPC par localIdRaw
- *  + set ses visualOffsetX/Y (= notre équivalent de sprite.x2/y2). */
+ *  + set ses visualOffsetX/Y (= notre équivalent de sprite.x2/y2).
+ *
+ *  DETTE 1:1 : signature TS prend (localIdRaw, x, y) au lieu de
+ *  (localId, mapNum, mapGroup, x, y). Notre itération direct sur gObjectEvents
+ *  remplace TryGetObjectEventIdByLocalIdAndMap (pas portée en TS). Fonctionne
+ *  pour les call-sites mono-map (= Task_Truck1/2 sur ELM_LAB_FRONT). */
 export function SetObjectEventSpritePosByLocalIdAndMap(
   localIdRaw: string,
   x: number,
@@ -3279,16 +3290,24 @@ _registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
  *    top = cam.y - 7, bottom = cam.y + 9. */
 export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
   if (!gMapHeader) return;
-  const cam = GetCameraTopLeftCoords();
-  // Post R3 refactor : npc.currentCoords/initialCoords stockés INTERNAL → bounds
-  // alignés INTERNAL (= cam.x LOGICAL + MAP_OFFSET).
-  const left = cam.x - 9 + MAP_OFFSET;
-  const right = cam.x + 10 + MAP_OFFSET;
-  const top = cam.y - 7 + MAP_OFFSET;
-  const bottom = cam.y + 9 + MAP_OFFSET;
+  // 1:1 STRICT décomp event_object_movement.c:1699-1713 RemoveObjectEventIfOutsideView :
+  //   left   = gSaveBlock1Ptr->pos.x - 2
+  //   right  = gSaveBlock1Ptr->pos.x + 17 = MAP_OFFSET_W + 2
+  //   top    = gSaveBlock1Ptr->pos.y
+  //   bottom = gSaveBlock1Ptr->pos.y + 16 = MAP_OFFSET_H + 2
+  // → compare avec currentCoords.x (INTERNAL = +MAP_OFFSET) donc en LOGICAL frame
+  //   ça équivaut à `template.x` ∈ [pos.x - 9, pos.x + 10] (cf. TrySpawnObjectEvents).
+  const posX = gSaveBlock1Ptr.pos.x;
+  const posY = gSaveBlock1Ptr.pos.y;
+  const left = posX - 2 + MAP_OFFSET;
+  const right = posX + 17 + MAP_OFFSET;
+  const top = posY + MAP_OFFSET;
+  const bottom = posY + 16 + MAP_OFFSET;
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
+    // 1:1 STRICT décomp 1693 : skip player (= jamais removed par cette fonction).
+    if (npc.isPlayer) continue;
     const inViewCurrent = npc.currentCoordsX >= left && npc.currentCoordsX <= right
       && npc.currentCoordsY >= top && npc.currentCoordsY <= bottom;
     const inViewInitial = npc.initialCoordsX >= left && npc.initialCoordsX <= right
