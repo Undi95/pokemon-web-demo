@@ -1067,33 +1067,45 @@ export function build_sPicTable_MauvilleOldMan2(gObjectEventPic_MauvilleOldMan2:
   ];
 }
 
-export function build_sPicTable_UnusedNatuDoll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedNatuDoll(gObjectEventPic_UnusedNatuDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedNatuDoll).
   return [
+    { data: gObjectEventPic_UnusedNatuDoll, size: gObjectEventPic_UnusedNatuDoll.length },
   ];
 }
 
-export function build_sPicTable_UnusedMagnemiteDoll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedMagnemiteDoll(gObjectEventPic_UnusedMagnemiteDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedMagnemiteDoll).
   return [
+    { data: gObjectEventPic_UnusedMagnemiteDoll, size: gObjectEventPic_UnusedMagnemiteDoll.length },
   ];
 }
 
-export function build_sPicTable_UnusedSquirtleDoll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedSquirtleDoll(gObjectEventPic_UnusedSquirtleDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedSquirtleDoll).
   return [
+    { data: gObjectEventPic_UnusedSquirtleDoll, size: gObjectEventPic_UnusedSquirtleDoll.length },
   ];
 }
 
-export function build_sPicTable_UnusedWooperDoll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedWooperDoll(gObjectEventPic_UnusedWooperDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedWooperDoll).
   return [
+    { data: gObjectEventPic_UnusedWooperDoll, size: gObjectEventPic_UnusedWooperDoll.length },
   ];
 }
 
-export function build_sPicTable_UnusedPikachuDoll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedPikachuDoll(gObjectEventPic_UnusedPikachuDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedPikachuDoll).
   return [
+    { data: gObjectEventPic_UnusedPikachuDoll, size: gObjectEventPic_UnusedPikachuDoll.length },
   ];
 }
 
-export function build_sPicTable_UnusedPorygon2Doll(): SpriteFrameImage[] {
+export function build_sPicTable_UnusedPorygon2Doll(gObjectEventPic_UnusedPorygon2Doll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_UnusedPorygon2Doll).
   return [
+    { data: gObjectEventPic_UnusedPorygon2Doll, size: gObjectEventPic_UnusedPorygon2Doll.length },
   ];
 }
 
@@ -1157,8 +1169,10 @@ export function build_sPicTable_BreakableRock(gObjectEventPic_BreakableRock: Uin
   ];
 }
 
-export function build_sPicTable_PushableBoulder(): SpriteFrameImage[] {
+export function build_sPicTable_PushableBoulder(gObjectEventPic_PushableBoulder: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_PushableBoulder).
   return [
+    { data: gObjectEventPic_PushableBoulder, size: gObjectEventPic_PushableBoulder.length },
   ];
 }
 
@@ -1176,8 +1190,10 @@ export function build_sPicTable_MrBrineysBoat(gObjectEventPic_MrBrineysBoat: Uin
   ];
 }
 
-export function build_sPicTable_Truck(): SpriteFrameImage[] {
+export function build_sPicTable_Truck(gObjectEventPic_Truck: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_Truck).
   return [
+    { data: gObjectEventPic_Truck, size: gObjectEventPic_Truck.length },
   ];
 }
 
@@ -1209,8 +1225,10 @@ export function build_sPicTable_VigorothFacingAway(gObjectEventPic_Vigoroth: Uin
   ];
 }
 
-export function build_sPicTable_BirchsBag(): SpriteFrameImage[] {
+export function build_sPicTable_BirchsBag(gObjectEventPic_BirchsBag: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BirchsBag).
   return [
+    { data: gObjectEventPic_BirchsBag, size: gObjectEventPic_BirchsBag.length },
   ];
 }
 
@@ -1380,13 +1398,17 @@ export function build_sPicTable_Cameraman(gObjectEventPic_Cameraman: Uint8Array)
   ];
 }
 
-export function build_sPicTable_MovingBox(): SpriteFrameImage[] {
+export function build_sPicTable_MovingBox(gObjectEventPic_MovingBox: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_MovingBox).
   return [
+    { data: gObjectEventPic_MovingBox, size: gObjectEventPic_MovingBox.length },
   ];
 }
 
-export function build_sPicTable_CableCar(): SpriteFrameImage[] {
+export function build_sPicTable_CableCar(gObjectEventPic_CableCar: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_CableCar).
   return [
+    { data: gObjectEventPic_CableCar, size: gObjectEventPic_CableCar.length },
   ];
 }
 
@@ -1746,238 +1768,331 @@ export function build_sPicTable_HotSpringsOldWoman(gObjectEventPic_HotSpringsOld
   ];
 }
 
-export function build_sPicTable_SSTidal(): SpriteFrameImage[] {
+export function build_sPicTable_SSTidal(gObjectEventPic_SSTidal: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp : 9× obj_frame_tiles(gObjectEventPic_SSTidal) (= 9 frames identical
+  // car SS Tidal n'a pas d'anim). Sprite static utilisé pour toutes les anim slots.
+  const entry = { data: gObjectEventPic_SSTidal, size: gObjectEventPic_SSTidal.length };
+  return [entry, entry, entry, entry, entry, entry, entry, entry, entry];
+}
+
+export function build_sPicTable_SubmarineShadow(gObjectEventPic_SubmarineShadow: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp : 9× obj_frame_tiles(gObjectEventPic_SubmarineShadow).
+  const entry = { data: gObjectEventPic_SubmarineShadow, size: gObjectEventPic_SubmarineShadow.length };
+  return [entry, entry, entry, entry, entry, entry, entry, entry, entry];
+}
+
+export function build_sPicTable_PichuDoll(gObjectEventPic_PichuDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_PichuDoll).
   return [
+    { data: gObjectEventPic_PichuDoll, size: gObjectEventPic_PichuDoll.length },
   ];
 }
 
-export function build_sPicTable_SubmarineShadow(): SpriteFrameImage[] {
+export function build_sPicTable_PikachuDoll(gObjectEventPic_PikachuDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_PikachuDoll).
   return [
+    { data: gObjectEventPic_PikachuDoll, size: gObjectEventPic_PikachuDoll.length },
   ];
 }
 
-export function build_sPicTable_PichuDoll(): SpriteFrameImage[] {
+export function build_sPicTable_MarillDoll(gObjectEventPic_MarillDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_MarillDoll).
   return [
+    { data: gObjectEventPic_MarillDoll, size: gObjectEventPic_MarillDoll.length },
   ];
 }
 
-export function build_sPicTable_PikachuDoll(): SpriteFrameImage[] {
+export function build_sPicTable_TogepiDoll(gObjectEventPic_TogepiDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_TogepiDoll).
   return [
+    { data: gObjectEventPic_TogepiDoll, size: gObjectEventPic_TogepiDoll.length },
   ];
 }
 
-export function build_sPicTable_MarillDoll(): SpriteFrameImage[] {
+export function build_sPicTable_CyndaquilDoll(gObjectEventPic_CyndaquilDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_CyndaquilDoll).
   return [
+    { data: gObjectEventPic_CyndaquilDoll, size: gObjectEventPic_CyndaquilDoll.length },
   ];
 }
 
-export function build_sPicTable_TogepiDoll(): SpriteFrameImage[] {
+export function build_sPicTable_ChikoritaDoll(gObjectEventPic_ChikoritaDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_ChikoritaDoll).
   return [
+    { data: gObjectEventPic_ChikoritaDoll, size: gObjectEventPic_ChikoritaDoll.length },
   ];
 }
 
-export function build_sPicTable_CyndaquilDoll(): SpriteFrameImage[] {
+export function build_sPicTable_TotodileDoll(gObjectEventPic_TotodileDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_TotodileDoll).
   return [
+    { data: gObjectEventPic_TotodileDoll, size: gObjectEventPic_TotodileDoll.length },
   ];
 }
 
-export function build_sPicTable_ChikoritaDoll(): SpriteFrameImage[] {
+export function build_sPicTable_JigglypuffDoll(gObjectEventPic_JigglypuffDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_JigglypuffDoll).
   return [
+    { data: gObjectEventPic_JigglypuffDoll, size: gObjectEventPic_JigglypuffDoll.length },
   ];
 }
 
-export function build_sPicTable_TotodileDoll(): SpriteFrameImage[] {
+export function build_sPicTable_MeowthDoll(gObjectEventPic_MeowthDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_MeowthDoll).
   return [
+    { data: gObjectEventPic_MeowthDoll, size: gObjectEventPic_MeowthDoll.length },
   ];
 }
 
-export function build_sPicTable_JigglypuffDoll(): SpriteFrameImage[] {
+export function build_sPicTable_ClefairyDoll(gObjectEventPic_ClefairyDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_ClefairyDoll).
   return [
+    { data: gObjectEventPic_ClefairyDoll, size: gObjectEventPic_ClefairyDoll.length },
   ];
 }
 
-export function build_sPicTable_MeowthDoll(): SpriteFrameImage[] {
+export function build_sPicTable_DittoDoll(gObjectEventPic_DittoDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_DittoDoll).
   return [
+    { data: gObjectEventPic_DittoDoll, size: gObjectEventPic_DittoDoll.length },
   ];
 }
 
-export function build_sPicTable_ClefairyDoll(): SpriteFrameImage[] {
+export function build_sPicTable_SmoochumDoll(gObjectEventPic_SmoochumDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_SmoochumDoll).
   return [
+    { data: gObjectEventPic_SmoochumDoll, size: gObjectEventPic_SmoochumDoll.length },
   ];
 }
 
-export function build_sPicTable_DittoDoll(): SpriteFrameImage[] {
+export function build_sPicTable_TreeckoDoll(gObjectEventPic_TreeckoDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_TreeckoDoll).
   return [
+    { data: gObjectEventPic_TreeckoDoll, size: gObjectEventPic_TreeckoDoll.length },
   ];
 }
 
-export function build_sPicTable_SmoochumDoll(): SpriteFrameImage[] {
+export function build_sPicTable_TorchicDoll(gObjectEventPic_TorchicDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_TorchicDoll).
   return [
+    { data: gObjectEventPic_TorchicDoll, size: gObjectEventPic_TorchicDoll.length },
   ];
 }
 
-export function build_sPicTable_TreeckoDoll(): SpriteFrameImage[] {
+export function build_sPicTable_MudkipDoll(gObjectEventPic_MudkipDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_MudkipDoll).
   return [
+    { data: gObjectEventPic_MudkipDoll, size: gObjectEventPic_MudkipDoll.length },
   ];
 }
 
-export function build_sPicTable_TorchicDoll(): SpriteFrameImage[] {
+export function build_sPicTable_DuskullDoll(gObjectEventPic_DuskullDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_DuskullDoll).
   return [
+    { data: gObjectEventPic_DuskullDoll, size: gObjectEventPic_DuskullDoll.length },
   ];
 }
 
-export function build_sPicTable_MudkipDoll(): SpriteFrameImage[] {
+export function build_sPicTable_WynautDoll(gObjectEventPic_WynautDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_WynautDoll).
   return [
+    { data: gObjectEventPic_WynautDoll, size: gObjectEventPic_WynautDoll.length },
   ];
 }
 
-export function build_sPicTable_DuskullDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BaltoyDoll(gObjectEventPic_BaltoyDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BaltoyDoll).
   return [
+    { data: gObjectEventPic_BaltoyDoll, size: gObjectEventPic_BaltoyDoll.length },
   ];
 }
 
-export function build_sPicTable_WynautDoll(): SpriteFrameImage[] {
+export function build_sPicTable_KecleonDoll(gObjectEventPic_KecleonDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_KecleonDoll).
   return [
+    { data: gObjectEventPic_KecleonDoll, size: gObjectEventPic_KecleonDoll.length },
   ];
 }
 
-export function build_sPicTable_BaltoyDoll(): SpriteFrameImage[] {
+export function build_sPicTable_AzurillDoll(gObjectEventPic_AzurillDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_AzurillDoll).
   return [
+    { data: gObjectEventPic_AzurillDoll, size: gObjectEventPic_AzurillDoll.length },
   ];
 }
 
-export function build_sPicTable_KecleonDoll(): SpriteFrameImage[] {
+export function build_sPicTable_SkittyDoll(gObjectEventPic_SkittyDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_SkittyDoll).
   return [
+    { data: gObjectEventPic_SkittyDoll, size: gObjectEventPic_SkittyDoll.length },
   ];
 }
 
-export function build_sPicTable_AzurillDoll(): SpriteFrameImage[] {
+export function build_sPicTable_SwabluDoll(gObjectEventPic_SwabluDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_SwabluDoll).
   return [
+    { data: gObjectEventPic_SwabluDoll, size: gObjectEventPic_SwabluDoll.length },
   ];
 }
 
-export function build_sPicTable_SkittyDoll(): SpriteFrameImage[] {
+export function build_sPicTable_GulpinDoll(gObjectEventPic_GulpinDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_GulpinDoll).
   return [
+    { data: gObjectEventPic_GulpinDoll, size: gObjectEventPic_GulpinDoll.length },
   ];
 }
 
-export function build_sPicTable_SwabluDoll(): SpriteFrameImage[] {
+export function build_sPicTable_LotadDoll(gObjectEventPic_LotadDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_LotadDoll).
   return [
+    { data: gObjectEventPic_LotadDoll, size: gObjectEventPic_LotadDoll.length },
   ];
 }
 
-export function build_sPicTable_GulpinDoll(): SpriteFrameImage[] {
+export function build_sPicTable_SeedotDoll(gObjectEventPic_SeedotDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_SeedotDoll).
   return [
+    { data: gObjectEventPic_SeedotDoll, size: gObjectEventPic_SeedotDoll.length },
   ];
 }
 
-export function build_sPicTable_LotadDoll(): SpriteFrameImage[] {
+export function build_sPicTable_PikaCushion(gObjectEventPic_PikaCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_PikaCushion).
   return [
+    { data: gObjectEventPic_PikaCushion, size: gObjectEventPic_PikaCushion.length },
   ];
 }
 
-export function build_sPicTable_SeedotDoll(): SpriteFrameImage[] {
+export function build_sPicTable_RoundCushion(gObjectEventPic_RoundCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_RoundCushion).
   return [
+    { data: gObjectEventPic_RoundCushion, size: gObjectEventPic_RoundCushion.length },
   ];
 }
 
-export function build_sPicTable_PikaCushion(): SpriteFrameImage[] {
+export function build_sPicTable_KissCushion(gObjectEventPic_KissCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_KissCushion).
   return [
+    { data: gObjectEventPic_KissCushion, size: gObjectEventPic_KissCushion.length },
   ];
 }
 
-export function build_sPicTable_RoundCushion(): SpriteFrameImage[] {
+export function build_sPicTable_ZigzagCushion(gObjectEventPic_ZigzagCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_ZigzagCushion).
   return [
+    { data: gObjectEventPic_ZigzagCushion, size: gObjectEventPic_ZigzagCushion.length },
   ];
 }
 
-export function build_sPicTable_KissCushion(): SpriteFrameImage[] {
+export function build_sPicTable_SpinCushion(gObjectEventPic_SpinCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_SpinCushion).
   return [
+    { data: gObjectEventPic_SpinCushion, size: gObjectEventPic_SpinCushion.length },
   ];
 }
 
-export function build_sPicTable_ZigzagCushion(): SpriteFrameImage[] {
+export function build_sPicTable_DiamondCushion(gObjectEventPic_DiamondCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_DiamondCushion).
   return [
+    { data: gObjectEventPic_DiamondCushion, size: gObjectEventPic_DiamondCushion.length },
   ];
 }
 
-export function build_sPicTable_SpinCushion(): SpriteFrameImage[] {
+export function build_sPicTable_BallCushion(gObjectEventPic_BallCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BallCushion).
   return [
+    { data: gObjectEventPic_BallCushion, size: gObjectEventPic_BallCushion.length },
   ];
 }
 
-export function build_sPicTable_DiamondCushion(): SpriteFrameImage[] {
+export function build_sPicTable_GrassCushion(gObjectEventPic_GrassCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_GrassCushion).
   return [
+    { data: gObjectEventPic_GrassCushion, size: gObjectEventPic_GrassCushion.length },
   ];
 }
 
-export function build_sPicTable_BallCushion(): SpriteFrameImage[] {
+export function build_sPicTable_FireCushion(gObjectEventPic_FireCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_FireCushion).
   return [
+    { data: gObjectEventPic_FireCushion, size: gObjectEventPic_FireCushion.length },
   ];
 }
 
-export function build_sPicTable_GrassCushion(): SpriteFrameImage[] {
+export function build_sPicTable_WaterCushion(gObjectEventPic_WaterCushion: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_WaterCushion).
   return [
+    { data: gObjectEventPic_WaterCushion, size: gObjectEventPic_WaterCushion.length },
   ];
 }
 
-export function build_sPicTable_FireCushion(): SpriteFrameImage[] {
+export function build_sPicTable_BigSnorlaxDoll(gObjectEventPic_BigSnorlaxDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigSnorlaxDoll).
   return [
+    { data: gObjectEventPic_BigSnorlaxDoll, size: gObjectEventPic_BigSnorlaxDoll.length },
   ];
 }
 
-export function build_sPicTable_WaterCushion(): SpriteFrameImage[] {
+export function build_sPicTable_BigRhydonDoll(gObjectEventPic_BigRhydonDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigRhydonDoll).
   return [
+    { data: gObjectEventPic_BigRhydonDoll, size: gObjectEventPic_BigRhydonDoll.length },
   ];
 }
 
-export function build_sPicTable_BigSnorlaxDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigLaprasDoll(gObjectEventPic_BigLaprasDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigLaprasDoll).
   return [
+    { data: gObjectEventPic_BigLaprasDoll, size: gObjectEventPic_BigLaprasDoll.length },
   ];
 }
 
-export function build_sPicTable_BigRhydonDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigVenusaurDoll(gObjectEventPic_BigVenusaurDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigVenusaurDoll).
   return [
+    { data: gObjectEventPic_BigVenusaurDoll, size: gObjectEventPic_BigVenusaurDoll.length },
   ];
 }
 
-export function build_sPicTable_BigLaprasDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigCharizardDoll(gObjectEventPic_BigCharizardDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigCharizardDoll).
   return [
+    { data: gObjectEventPic_BigCharizardDoll, size: gObjectEventPic_BigCharizardDoll.length },
   ];
 }
 
-export function build_sPicTable_BigVenusaurDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigBlastoiseDoll(gObjectEventPic_BigBlastoiseDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigBlastoiseDoll).
   return [
+    { data: gObjectEventPic_BigBlastoiseDoll, size: gObjectEventPic_BigBlastoiseDoll.length },
   ];
 }
 
-export function build_sPicTable_BigCharizardDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigWailmerDoll(gObjectEventPic_BigWailmerDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigWailmerDoll).
   return [
+    { data: gObjectEventPic_BigWailmerDoll, size: gObjectEventPic_BigWailmerDoll.length },
   ];
 }
 
-export function build_sPicTable_BigBlastoiseDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigRegirockDoll(gObjectEventPic_BigRegirockDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigRegirockDoll).
   return [
+    { data: gObjectEventPic_BigRegirockDoll, size: gObjectEventPic_BigRegirockDoll.length },
   ];
 }
 
-export function build_sPicTable_BigWailmerDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigRegiceDoll(gObjectEventPic_BigRegiceDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigRegiceDoll).
   return [
+    { data: gObjectEventPic_BigRegiceDoll, size: gObjectEventPic_BigRegiceDoll.length },
   ];
 }
 
-export function build_sPicTable_BigRegirockDoll(): SpriteFrameImage[] {
+export function build_sPicTable_BigRegisteelDoll(gObjectEventPic_BigRegisteelDoll: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BigRegisteelDoll).
   return [
-  ];
-}
-
-export function build_sPicTable_BigRegiceDoll(): SpriteFrameImage[] {
-  return [
-  ];
-}
-
-export function build_sPicTable_BigRegisteelDoll(): SpriteFrameImage[] {
-  return [
+    { data: gObjectEventPic_BigRegisteelDoll, size: gObjectEventPic_BigRegisteelDoll.length },
   ];
 }
 
@@ -2051,13 +2166,17 @@ export function build_sPicTable_MayWatering(gObjectEventPic_MayWatering: Uint8Ar
   ];
 }
 
-export function build_sPicTable_BrendanDecorating(): SpriteFrameImage[] {
+export function build_sPicTable_BrendanDecorating(gObjectEventPic_BrendanDecorating: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BrendanDecorating).
   return [
+    { data: gObjectEventPic_BrendanDecorating, size: gObjectEventPic_BrendanDecorating.length },
   ];
 }
 
-export function build_sPicTable_MayDecorating(): SpriteFrameImage[] {
+export function build_sPicTable_MayDecorating(gObjectEventPic_MayDecorating: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_MayDecorating).
   return [
+    { data: gObjectEventPic_MayDecorating, size: gObjectEventPic_MayDecorating.length },
   ];
 }
 
@@ -2145,14 +2264,17 @@ export function build_sPicTable_GroudonSide(gObjectEventPic_Groudon: Uint8Array)
   ];
 }
 
-export function build_sPicTable_Fossil(): SpriteFrameImage[] {
+export function build_sPicTable_Fossil(gObjectEventPic_Fossil: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_Fossil).
   return [
+    { data: gObjectEventPic_Fossil, size: gObjectEventPic_Fossil.length },
   ];
 }
 
-export function build_sPicTable_Regi(): SpriteFrameImage[] {
-  return [
-  ];
+export function build_sPicTable_Regi(gObjectEventPic_Regi: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp : 9× obj_frame_tiles(gObjectEventPic_Regi).
+  const entry = { data: gObjectEventPic_Regi, size: gObjectEventPic_Regi.length };
+  return [entry, entry, entry, entry, entry, entry, entry, entry, entry];
 }
 
 export function build_sPicTable_Skitty(gObjectEventPic_Skitty: Uint8Array): SpriteFrameImage[] {
@@ -2193,9 +2315,10 @@ export function build_sPicTable_Rayquaza(gObjectEventPic_Rayquaza: Uint8Array): 
   ];
 }
 
-export function build_sPicTable_RayquazaStill(): SpriteFrameImage[] {
-  return [
-  ];
+export function build_sPicTable_RayquazaStill(gObjectEventPic_RayquazaStill: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp : 9× obj_frame_tiles(gObjectEventPic_RayquazaStill).
+  const entry = { data: gObjectEventPic_RayquazaStill, size: gObjectEventPic_RayquazaStill.length };
+  return [entry, entry, entry, entry, entry, entry, entry, entry, entry];
 }
 
 export function build_sPicTable_Zigzagoon(gObjectEventPic_Zigzagoon: Uint8Array): SpriteFrameImage[] {
@@ -2338,8 +2461,10 @@ export function build_sPicTable_MysteryEventDeliveryman(gObjectEventPic_MysteryE
   ];
 }
 
-export function build_sPicTable_Statue(): SpriteFrameImage[] {
+export function build_sPicTable_Statue(gObjectEventPic_Statue: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_Statue).
   return [
+    { data: gObjectEventPic_Statue, size: gObjectEventPic_Statue.length },
   ];
 }
 
@@ -2455,8 +2580,10 @@ export function build_sPicTable_Deoxys(gObjectEventPic_Deoxys: Uint8Array): Spri
   ];
 }
 
-export function build_sPicTable_BirthIslandStone(): SpriteFrameImage[] {
+export function build_sPicTable_BirthIslandStone(gObjectEventPic_BirthIslandStone: Uint8Array): SpriteFrameImage[] {
+  // 1:1 décomp obj_frame_tiles(gObjectEventPic_BirthIslandStone).
   return [
+    { data: gObjectEventPic_BirthIslandStone, size: gObjectEventPic_BirthIslandStone.length },
   ];
 }
 
@@ -3918,7 +4045,7 @@ export function build_gObjectEventGraphicsInfo_HexManiac(gObjectEventPic_HexMani
   };
 }
 
-export function build_gObjectEventGraphicsInfo_RayquazaStill(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_RayquazaStill(gObjectEventPic_RayquazaStill: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -3934,7 +4061,7 @@ export function build_gObjectEventGraphicsInfo_RayquazaStill(): ObjectEventGraph
     oam: gObjectEventBaseOam_64x64,
     subspriteTables: sOamTables_64x64 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_RayquazaStill(),
+    images: build_sPicTable_RayquazaStill(gObjectEventPic_RayquazaStill),
     affineAnims: null,
   };
 }
@@ -4632,7 +4759,7 @@ export function build_gObjectEventGraphicsInfo_UnusedMauvilleOldMan2(gObjectEven
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedNatuDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedNatuDoll(gObjectEventPic_UnusedNatuDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -4648,12 +4775,12 @@ export function build_gObjectEventGraphicsInfo_UnusedNatuDoll(): ObjectEventGrap
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedNatuDoll(),
+    images: build_sPicTable_UnusedNatuDoll(gObjectEventPic_UnusedNatuDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedMagnemiteDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedMagnemiteDoll(gObjectEventPic_UnusedMagnemiteDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -4669,12 +4796,12 @@ export function build_gObjectEventGraphicsInfo_UnusedMagnemiteDoll(): ObjectEven
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedMagnemiteDoll(),
+    images: build_sPicTable_UnusedMagnemiteDoll(gObjectEventPic_UnusedMagnemiteDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedSquirtleDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedSquirtleDoll(gObjectEventPic_UnusedSquirtleDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -4690,12 +4817,12 @@ export function build_gObjectEventGraphicsInfo_UnusedSquirtleDoll(): ObjectEvent
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedSquirtleDoll(),
+    images: build_sPicTable_UnusedSquirtleDoll(gObjectEventPic_UnusedSquirtleDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedWooperDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedWooperDoll(gObjectEventPic_UnusedWooperDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -4711,12 +4838,12 @@ export function build_gObjectEventGraphicsInfo_UnusedWooperDoll(): ObjectEventGr
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedWooperDoll(),
+    images: build_sPicTable_UnusedWooperDoll(gObjectEventPic_UnusedWooperDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedPikachuDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedPikachuDoll(gObjectEventPic_UnusedPikachuDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -4732,12 +4859,12 @@ export function build_gObjectEventGraphicsInfo_UnusedPikachuDoll(): ObjectEventG
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedPikachuDoll(),
+    images: build_sPicTable_UnusedPikachuDoll(gObjectEventPic_UnusedPikachuDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_UnusedPorygon2Doll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_UnusedPorygon2Doll(gObjectEventPic_UnusedPorygon2Doll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -4753,7 +4880,7 @@ export function build_gObjectEventGraphicsInfo_UnusedPorygon2Doll(): ObjectEvent
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_UnusedPorygon2Doll(),
+    images: build_sPicTable_UnusedPorygon2Doll(gObjectEventPic_UnusedPorygon2Doll),
     affineAnims: null,
   };
 }
@@ -4863,7 +4990,7 @@ export function build_gObjectEventGraphicsInfo_BreakableRock(gObjectEventPic_Bre
   };
 }
 
-export function build_gObjectEventGraphicsInfo_PushableBoulder(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_PushableBoulder(gObjectEventPic_PushableBoulder: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -4879,7 +5006,7 @@ export function build_gObjectEventGraphicsInfo_PushableBoulder(): ObjectEventGra
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_PushableBoulder(),
+    images: build_sPicTable_PushableBoulder(gObjectEventPic_PushableBoulder),
     affineAnims: null,
   };
 }
@@ -5010,7 +5137,7 @@ export function build_gObjectEventGraphicsInfo_MayFieldMove(gObjectEventPic_MayF
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Truck(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Truck(gObjectEventPic_Truck: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_TRUCK,
@@ -5026,7 +5153,7 @@ export function build_gObjectEventGraphicsInfo_Truck(): ObjectEventGraphicsInfo 
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_48x48 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_Truck(),
+    images: build_sPicTable_Truck(gObjectEventPic_Truck),
     affineAnims: null,
   };
 }
@@ -5073,7 +5200,7 @@ export function build_gObjectEventGraphicsInfo_VigorothFacingAway(gObjectEventPi
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BirchsBag(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BirchsBag(gObjectEventPic_BirchsBag: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -5089,7 +5216,7 @@ export function build_gObjectEventGraphicsInfo_BirchsBag(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BirchsBag(),
+    images: build_sPicTable_BirchsBag(gObjectEventPic_BirchsBag),
     affineAnims: null,
   };
 }
@@ -5430,7 +5557,7 @@ export function build_gObjectEventGraphicsInfo_MayUnderwater(gObjectEventPic_May
   };
 }
 
-export function build_gObjectEventGraphicsInfo_MovingBox(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_MovingBox(gObjectEventPic_MovingBox: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_MOVING_BOX,
@@ -5446,12 +5573,12 @@ export function build_gObjectEventGraphicsInfo_MovingBox(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_MovingBox(),
+    images: build_sPicTable_MovingBox(gObjectEventPic_MovingBox),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_CableCar(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_CableCar(gObjectEventPic_CableCar: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_CABLE_CAR,
@@ -5467,7 +5594,7 @@ export function build_gObjectEventGraphicsInfo_CableCar(): ObjectEventGraphicsIn
     oam: gObjectEventBaseOam_64x64,
     subspriteTables: sOamTables_64x64 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_CableCar(),
+    images: build_sPicTable_CableCar(gObjectEventPic_CableCar),
     affineAnims: null,
   };
 }
@@ -5997,7 +6124,7 @@ export function build_gObjectEventGraphicsInfo_HotSpringsOldWoman(gObjectEventPi
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SSTidal(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SSTidal(gObjectEventPic_SSTidal: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_SSTIDAL,
@@ -6013,12 +6140,12 @@ export function build_gObjectEventGraphicsInfo_SSTidal(): ObjectEventGraphicsInf
     oam: gObjectEventBaseOam_8x8,
     subspriteTables: sOamTables_96x40 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_SSTidal(),
+    images: build_sPicTable_SSTidal(gObjectEventPic_SSTidal),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SubmarineShadow(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SubmarineShadow(gObjectEventPic_SubmarineShadow: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW,
@@ -6034,12 +6161,12 @@ export function build_gObjectEventGraphicsInfo_SubmarineShadow(): ObjectEventGra
     oam: gObjectEventBaseOam_8x8,
     subspriteTables: sOamTables_88x32 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_SubmarineShadow(),
+    images: build_sPicTable_SubmarineShadow(gObjectEventPic_SubmarineShadow),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_PichuDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_PichuDoll(gObjectEventPic_PichuDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6055,12 +6182,12 @@ export function build_gObjectEventGraphicsInfo_PichuDoll(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_PichuDoll(),
+    images: build_sPicTable_PichuDoll(gObjectEventPic_PichuDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_PikachuDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_PikachuDoll(gObjectEventPic_PikachuDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6076,12 +6203,12 @@ export function build_gObjectEventGraphicsInfo_PikachuDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_PikachuDoll(),
+    images: build_sPicTable_PikachuDoll(gObjectEventPic_PikachuDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_MarillDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_MarillDoll(gObjectEventPic_MarillDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6097,12 +6224,12 @@ export function build_gObjectEventGraphicsInfo_MarillDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_MarillDoll(),
+    images: build_sPicTable_MarillDoll(gObjectEventPic_MarillDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_TogepiDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_TogepiDoll(gObjectEventPic_TogepiDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6118,12 +6245,12 @@ export function build_gObjectEventGraphicsInfo_TogepiDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_TogepiDoll(),
+    images: build_sPicTable_TogepiDoll(gObjectEventPic_TogepiDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_CyndaquilDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_CyndaquilDoll(gObjectEventPic_CyndaquilDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6139,12 +6266,12 @@ export function build_gObjectEventGraphicsInfo_CyndaquilDoll(): ObjectEventGraph
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_CyndaquilDoll(),
+    images: build_sPicTable_CyndaquilDoll(gObjectEventPic_CyndaquilDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_ChikoritaDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_ChikoritaDoll(gObjectEventPic_ChikoritaDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6160,12 +6287,12 @@ export function build_gObjectEventGraphicsInfo_ChikoritaDoll(): ObjectEventGraph
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_ChikoritaDoll(),
+    images: build_sPicTable_ChikoritaDoll(gObjectEventPic_ChikoritaDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_TotodileDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_TotodileDoll(gObjectEventPic_TotodileDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6181,12 +6308,12 @@ export function build_gObjectEventGraphicsInfo_TotodileDoll(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_TotodileDoll(),
+    images: build_sPicTable_TotodileDoll(gObjectEventPic_TotodileDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_JigglypuffDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_JigglypuffDoll(gObjectEventPic_JigglypuffDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6202,12 +6329,12 @@ export function build_gObjectEventGraphicsInfo_JigglypuffDoll(): ObjectEventGrap
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_JigglypuffDoll(),
+    images: build_sPicTable_JigglypuffDoll(gObjectEventPic_JigglypuffDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_MeowthDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_MeowthDoll(gObjectEventPic_MeowthDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6223,12 +6350,12 @@ export function build_gObjectEventGraphicsInfo_MeowthDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_MeowthDoll(),
+    images: build_sPicTable_MeowthDoll(gObjectEventPic_MeowthDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_ClefairyDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_ClefairyDoll(gObjectEventPic_ClefairyDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6244,12 +6371,12 @@ export function build_gObjectEventGraphicsInfo_ClefairyDoll(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_ClefairyDoll(),
+    images: build_sPicTable_ClefairyDoll(gObjectEventPic_ClefairyDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_DittoDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_DittoDoll(gObjectEventPic_DittoDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6265,12 +6392,12 @@ export function build_gObjectEventGraphicsInfo_DittoDoll(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_DittoDoll(),
+    images: build_sPicTable_DittoDoll(gObjectEventPic_DittoDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SmoochumDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SmoochumDoll(gObjectEventPic_SmoochumDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6286,12 +6413,12 @@ export function build_gObjectEventGraphicsInfo_SmoochumDoll(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_SmoochumDoll(),
+    images: build_sPicTable_SmoochumDoll(gObjectEventPic_SmoochumDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_TreeckoDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_TreeckoDoll(gObjectEventPic_TreeckoDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6307,12 +6434,12 @@ export function build_gObjectEventGraphicsInfo_TreeckoDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_TreeckoDoll(),
+    images: build_sPicTable_TreeckoDoll(gObjectEventPic_TreeckoDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_TorchicDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_TorchicDoll(gObjectEventPic_TorchicDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6328,12 +6455,12 @@ export function build_gObjectEventGraphicsInfo_TorchicDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_TorchicDoll(),
+    images: build_sPicTable_TorchicDoll(gObjectEventPic_TorchicDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_MudkipDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_MudkipDoll(gObjectEventPic_MudkipDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6349,12 +6476,12 @@ export function build_gObjectEventGraphicsInfo_MudkipDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_MudkipDoll(),
+    images: build_sPicTable_MudkipDoll(gObjectEventPic_MudkipDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_DuskullDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_DuskullDoll(gObjectEventPic_DuskullDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6370,12 +6497,12 @@ export function build_gObjectEventGraphicsInfo_DuskullDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_DuskullDoll(),
+    images: build_sPicTable_DuskullDoll(gObjectEventPic_DuskullDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_WynautDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_WynautDoll(gObjectEventPic_WynautDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6391,12 +6518,12 @@ export function build_gObjectEventGraphicsInfo_WynautDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_WynautDoll(),
+    images: build_sPicTable_WynautDoll(gObjectEventPic_WynautDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BaltoyDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BaltoyDoll(gObjectEventPic_BaltoyDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6412,12 +6539,12 @@ export function build_gObjectEventGraphicsInfo_BaltoyDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BaltoyDoll(),
+    images: build_sPicTable_BaltoyDoll(gObjectEventPic_BaltoyDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_KecleonDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_KecleonDoll(gObjectEventPic_KecleonDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6433,12 +6560,12 @@ export function build_gObjectEventGraphicsInfo_KecleonDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_KecleonDoll(),
+    images: build_sPicTable_KecleonDoll(gObjectEventPic_KecleonDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_AzurillDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_AzurillDoll(gObjectEventPic_AzurillDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6454,12 +6581,12 @@ export function build_gObjectEventGraphicsInfo_AzurillDoll(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_AzurillDoll(),
+    images: build_sPicTable_AzurillDoll(gObjectEventPic_AzurillDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SkittyDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SkittyDoll(gObjectEventPic_SkittyDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6475,12 +6602,12 @@ export function build_gObjectEventGraphicsInfo_SkittyDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_SkittyDoll(),
+    images: build_sPicTable_SkittyDoll(gObjectEventPic_SkittyDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SwabluDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SwabluDoll(gObjectEventPic_SwabluDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6496,12 +6623,12 @@ export function build_gObjectEventGraphicsInfo_SwabluDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_SwabluDoll(),
+    images: build_sPicTable_SwabluDoll(gObjectEventPic_SwabluDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_GulpinDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_GulpinDoll(gObjectEventPic_GulpinDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6517,12 +6644,12 @@ export function build_gObjectEventGraphicsInfo_GulpinDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_GulpinDoll(),
+    images: build_sPicTable_GulpinDoll(gObjectEventPic_GulpinDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_LotadDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_LotadDoll(gObjectEventPic_LotadDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6538,12 +6665,12 @@ export function build_gObjectEventGraphicsInfo_LotadDoll(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_LotadDoll(),
+    images: build_sPicTable_LotadDoll(gObjectEventPic_LotadDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SeedotDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SeedotDoll(gObjectEventPic_SeedotDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6559,12 +6686,12 @@ export function build_gObjectEventGraphicsInfo_SeedotDoll(): ObjectEventGraphics
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_SeedotDoll(),
+    images: build_sPicTable_SeedotDoll(gObjectEventPic_SeedotDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_PikaCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_PikaCushion(gObjectEventPic_PikaCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6580,12 +6707,12 @@ export function build_gObjectEventGraphicsInfo_PikaCushion(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_PikaCushion(),
+    images: build_sPicTable_PikaCushion(gObjectEventPic_PikaCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_RoundCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_RoundCushion(gObjectEventPic_RoundCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6601,12 +6728,12 @@ export function build_gObjectEventGraphicsInfo_RoundCushion(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_RoundCushion(),
+    images: build_sPicTable_RoundCushion(gObjectEventPic_RoundCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_KissCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_KissCushion(gObjectEventPic_KissCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6622,12 +6749,12 @@ export function build_gObjectEventGraphicsInfo_KissCushion(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_KissCushion(),
+    images: build_sPicTable_KissCushion(gObjectEventPic_KissCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_ZigzagCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_ZigzagCushion(gObjectEventPic_ZigzagCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6643,12 +6770,12 @@ export function build_gObjectEventGraphicsInfo_ZigzagCushion(): ObjectEventGraph
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_ZigzagCushion(),
+    images: build_sPicTable_ZigzagCushion(gObjectEventPic_ZigzagCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_SpinCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_SpinCushion(gObjectEventPic_SpinCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6664,12 +6791,12 @@ export function build_gObjectEventGraphicsInfo_SpinCushion(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_SpinCushion(),
+    images: build_sPicTable_SpinCushion(gObjectEventPic_SpinCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_DiamondCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_DiamondCushion(gObjectEventPic_DiamondCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6685,12 +6812,12 @@ export function build_gObjectEventGraphicsInfo_DiamondCushion(): ObjectEventGrap
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_DiamondCushion(),
+    images: build_sPicTable_DiamondCushion(gObjectEventPic_DiamondCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BallCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BallCushion(gObjectEventPic_BallCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6706,12 +6833,12 @@ export function build_gObjectEventGraphicsInfo_BallCushion(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BallCushion(),
+    images: build_sPicTable_BallCushion(gObjectEventPic_BallCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_GrassCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_GrassCushion(gObjectEventPic_GrassCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6727,12 +6854,12 @@ export function build_gObjectEventGraphicsInfo_GrassCushion(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_GrassCushion(),
+    images: build_sPicTable_GrassCushion(gObjectEventPic_GrassCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_FireCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_FireCushion(gObjectEventPic_FireCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6748,12 +6875,12 @@ export function build_gObjectEventGraphicsInfo_FireCushion(): ObjectEventGraphic
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_FireCushion(),
+    images: build_sPicTable_FireCushion(gObjectEventPic_FireCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_WaterCushion(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_WaterCushion(gObjectEventPic_WaterCushion: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6769,12 +6896,12 @@ export function build_gObjectEventGraphicsInfo_WaterCushion(): ObjectEventGraphi
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_WaterCushion(),
+    images: build_sPicTable_WaterCushion(gObjectEventPic_WaterCushion),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigSnorlaxDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigSnorlaxDoll(gObjectEventPic_BigSnorlaxDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6790,12 +6917,12 @@ export function build_gObjectEventGraphicsInfo_BigSnorlaxDoll(): ObjectEventGrap
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigSnorlaxDoll(),
+    images: build_sPicTable_BigSnorlaxDoll(gObjectEventPic_BigSnorlaxDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigRhydonDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigRhydonDoll(gObjectEventPic_BigRhydonDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6811,12 +6938,12 @@ export function build_gObjectEventGraphicsInfo_BigRhydonDoll(): ObjectEventGraph
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigRhydonDoll(),
+    images: build_sPicTable_BigRhydonDoll(gObjectEventPic_BigRhydonDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigLaprasDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigLaprasDoll(gObjectEventPic_BigLaprasDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6832,12 +6959,12 @@ export function build_gObjectEventGraphicsInfo_BigLaprasDoll(): ObjectEventGraph
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigLaprasDoll(),
+    images: build_sPicTable_BigLaprasDoll(gObjectEventPic_BigLaprasDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigVenusaurDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigVenusaurDoll(gObjectEventPic_BigVenusaurDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6853,12 +6980,12 @@ export function build_gObjectEventGraphicsInfo_BigVenusaurDoll(): ObjectEventGra
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigVenusaurDoll(),
+    images: build_sPicTable_BigVenusaurDoll(gObjectEventPic_BigVenusaurDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigCharizardDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigCharizardDoll(gObjectEventPic_BigCharizardDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -6874,12 +7001,12 @@ export function build_gObjectEventGraphicsInfo_BigCharizardDoll(): ObjectEventGr
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigCharizardDoll(),
+    images: build_sPicTable_BigCharizardDoll(gObjectEventPic_BigCharizardDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigBlastoiseDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigBlastoiseDoll(gObjectEventPic_BigBlastoiseDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6895,12 +7022,12 @@ export function build_gObjectEventGraphicsInfo_BigBlastoiseDoll(): ObjectEventGr
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigBlastoiseDoll(),
+    images: build_sPicTable_BigBlastoiseDoll(gObjectEventPic_BigBlastoiseDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigWailmerDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigWailmerDoll(gObjectEventPic_BigWailmerDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6916,12 +7043,12 @@ export function build_gObjectEventGraphicsInfo_BigWailmerDoll(): ObjectEventGrap
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigWailmerDoll(),
+    images: build_sPicTable_BigWailmerDoll(gObjectEventPic_BigWailmerDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigRegirockDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigRegirockDoll(gObjectEventPic_BigRegirockDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -6937,12 +7064,12 @@ export function build_gObjectEventGraphicsInfo_BigRegirockDoll(): ObjectEventGra
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigRegirockDoll(),
+    images: build_sPicTable_BigRegirockDoll(gObjectEventPic_BigRegirockDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigRegiceDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigRegiceDoll(gObjectEventPic_BigRegiceDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -6958,12 +7085,12 @@ export function build_gObjectEventGraphicsInfo_BigRegiceDoll(): ObjectEventGraph
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigRegiceDoll(),
+    images: build_sPicTable_BigRegiceDoll(gObjectEventPic_BigRegiceDoll),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BigRegisteelDoll(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BigRegisteelDoll(gObjectEventPic_BigRegisteelDoll: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -6979,7 +7106,7 @@ export function build_gObjectEventGraphicsInfo_BigRegisteelDoll(): ObjectEventGr
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BigRegisteelDoll(),
+    images: build_sPicTable_BigRegisteelDoll(gObjectEventPic_BigRegisteelDoll),
     affineAnims: null,
   };
 }
@@ -7110,7 +7237,7 @@ export function build_gObjectEventGraphicsInfo_MayWatering(gObjectEventPic_MayWa
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BrendanDecorating(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BrendanDecorating(gObjectEventPic_BrendanDecorating: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_BRENDAN,
@@ -7126,12 +7253,12 @@ export function build_gObjectEventGraphicsInfo_BrendanDecorating(): ObjectEventG
     oam: gObjectEventBaseOam_16x32,
     subspriteTables: sOamTables_16x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BrendanDecorating(),
+    images: build_sPicTable_BrendanDecorating(gObjectEventPic_BrendanDecorating),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_MayDecorating(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_MayDecorating(gObjectEventPic_MayDecorating: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_MAY,
@@ -7147,7 +7274,7 @@ export function build_gObjectEventGraphicsInfo_MayDecorating(): ObjectEventGraph
     oam: gObjectEventBaseOam_16x32,
     subspriteTables: sOamTables_16x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_MayDecorating(),
+    images: build_sPicTable_MayDecorating(gObjectEventPic_MayDecorating),
     affineAnims: null,
   };
 }
@@ -7278,7 +7405,7 @@ export function build_gObjectEventGraphicsInfo_GroudonSide(gObjectEventPic_Groud
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Fossil(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Fossil(gObjectEventPic_Fossil: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_1,
@@ -7294,12 +7421,12 @@ export function build_gObjectEventGraphicsInfo_Fossil(): ObjectEventGraphicsInfo
     oam: gObjectEventBaseOam_16x16,
     subspriteTables: sOamTables_16x16 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_Fossil(),
+    images: build_sPicTable_Fossil(gObjectEventPic_Fossil),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Regirock(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Regirock(gObjectEventPic_Regi: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_2,
@@ -7315,12 +7442,12 @@ export function build_gObjectEventGraphicsInfo_Regirock(): ObjectEventGraphicsIn
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_Regi(),
+    images: build_sPicTable_Regi(gObjectEventPic_Regi),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Regice(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Regice(gObjectEventPic_Regi: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_3,
@@ -7336,12 +7463,12 @@ export function build_gObjectEventGraphicsInfo_Regice(): ObjectEventGraphicsInfo
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_Regi(),
+    images: build_sPicTable_Regi(gObjectEventPic_Regi),
     affineAnims: null,
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Registeel(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Registeel(gObjectEventPic_Regi: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -7357,7 +7484,7 @@ export function build_gObjectEventGraphicsInfo_Registeel(): ObjectEventGraphicsI
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Standard as unknown as unknown[],
-    images: build_sPicTable_Regi(),
+    images: build_sPicTable_Regi(gObjectEventPic_Regi),
     affineAnims: null,
   };
 }
@@ -7740,7 +7867,7 @@ export function build_gObjectEventGraphicsInfo_MysteryEventDeliveryman(gObjectEv
   };
 }
 
-export function build_gObjectEventGraphicsInfo_Statue(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_Statue(gObjectEventPic_Statue: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_NPC_4,
@@ -7756,7 +7883,7 @@ export function build_gObjectEventGraphicsInfo_Statue(): ObjectEventGraphicsInfo
     oam: gObjectEventBaseOam_16x32,
     subspriteTables: sOamTables_16x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_Statue(),
+    images: build_sPicTable_Statue(gObjectEventPic_Statue),
     affineAnims: null,
   };
 }
@@ -7929,7 +8056,7 @@ export function build_gObjectEventGraphicsInfo_Deoxys(gObjectEventPic_Deoxys: Ui
   };
 }
 
-export function build_gObjectEventGraphicsInfo_BirthIslandStone(): ObjectEventGraphicsInfo {
+export function build_gObjectEventGraphicsInfo_BirthIslandStone(gObjectEventPic_BirthIslandStone: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
     paletteTag: OBJ_EVENT_PAL_TAG_BIRTH_ISLAND_STONE,
@@ -7945,7 +8072,7 @@ export function build_gObjectEventGraphicsInfo_BirthIslandStone(): ObjectEventGr
     oam: gObjectEventBaseOam_32x32,
     subspriteTables: sOamTables_32x32 as unknown as unknown[],
     anims: sAnimTable_Inanimate as unknown as unknown[],
-    images: build_sPicTable_BirthIslandStone(),
+    images: build_sPicTable_BirthIslandStone(gObjectEventPic_BirthIslandStone),
     affineAnims: null,
   };
 }
