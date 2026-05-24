@@ -629,7 +629,32 @@ registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
 /** Battle Frontier party. */
 registerSpecial('ChoosePartyForBattleFrontier', () => 0);
 registerSpecial('ChooseHalfPartyForBattle', () => 0);
-registerSpecial('HasEnoughMonsForDoubleBattle', () => 1);
+
+/** 1:1 décomp `HasEnoughMonsForDoubleBattle` (script_pokemon_util.c:99-113).
+ *  Switch sur GetMonsStateToDoubles() : retourne 0=TWO_USABLE, 1=ONE_MON,
+ *  2=ONE_USABLE (via gSpecialVar_Result). 1:1 décomp pokemon.c:4494-4512 :
+ *    aliveCount = count partyMons non-egg non-empty avec HP != 0.
+ *    Si gPlayerPartyCount == 1 → PLAYER_HAS_ONE_MON.
+ *    Sinon aliveCount > 1 → PLAYER_HAS_TWO_USABLE_MONS, else PLAYER_HAS_ONE_USABLE_MON. */
+registerSpecial('HasEnoughMonsForDoubleBattle', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp pokemon.c:4498 CalculatePlayerPartyCount() — count slots non-empty.
+  let partyCount = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0) partyCount++;
+  }
+  if (partyCount === 1) return 1;  // PLAYER_HAS_ONE_MON
+  // 1:1 :4503-4509 aliveCount.
+  let aliveCount = 0;
+  for (let i = 0; i < partyCount; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) {
+      aliveCount++;
+    }
+  }
+  return aliveCount > 1 ? 0 : 2;  // 0 = TWO_USABLE, 2 = ONE_USABLE
+});
 
 /** Casino. */
 registerSpecial('GetSlotMachineId', () => 0);
