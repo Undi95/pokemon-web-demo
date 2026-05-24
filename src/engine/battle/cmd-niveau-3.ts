@@ -7,7 +7,8 @@
  * Opcodes inclus (= tous "jumpif*", read args + check condition + jump ou advance) :
  *   0x1C Cmd_jumpifstatus           full (= check status1 mask + hp > 0)
  *   0x1D Cmd_jumpifstatus2          full (= check status2 mask + hp > 0)
- *   0x1E Cmd_jumpifability          partial (= path direct battler ; ATTACKER_SIDE/NOT_ATTACKER_SIDE = stubs)
+
+ *   0x1E Cmd_jumpifability          FULL 1:1 (= direct + ATTACKER_SIDE + NOT_ATTACKER_SIDE via _abilityCheckSide)
  *   0x1F Cmd_jumpifsideaffecting    full (= check gSideStatuses[side] & flags)
  *   0x20 Cmd_jumpifstat              full (= CMP_* compare statStages[statId] vs value)
  *   0x21 Cmd_jumpifstatus3condition full (= check gStatuses3[battler] & status, with negate flag)
@@ -133,15 +134,16 @@ function Cmd_jumpifstatus2(ctx: BattleScriptContext): boolean {
 
 // ─── Cmd_jumpifability (0x1E) ──────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_jumpifability` (battle_script_commands.c:3105-3156).
+/** 1:1 STRICT décomp `Cmd_jumpifability` (battle_script_commands.c:3105-3156).
  *
  *  Args : 1 byte battler/side + 1 byte ability + 4 byte ptr. Total 7 bytes.
  *
  *  3 modes :
  *  - BS_ATTACKER_SIDE : check tous les mons attacker side (= AbilityBattleEffects
- *    CHECK_BATTLER_SIDE). Stub : skip.
- *  - BS_NOT_ATTACKER_SIDE : idem mais other side. Stub : skip.
- *  - default : check single battler. */
+ *    CHECK_BATTLER_SIDE). Porté 1:1 via _abilityCheckSide().
+ *  - BS_NOT_ATTACKER_SIDE : idem mais other side. Porté 1:1 via _abilityCheckSide().
+ *  - default : check single battler.
+ *  Tous les 3 modes 1:1 strict décomp. */
 function Cmd_jumpifability(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const abilityId = readByte(ctx);

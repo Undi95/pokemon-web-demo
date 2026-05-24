@@ -3,7 +3,7 @@
  * 1:1 décomp `src/battle_script_commands.c`.
  *
  * Opcodes :
- *   0x57 endlinkbattle           (1 byte — EmitEndLinkBattle stub + Mark)
+ *   0x57 endlinkbattle           (1 byte — EmitEndLinkBattle 1:1 wire + Mark ; controller emit no-op Phase 1.4)
  *   0xC0 recoverbasedonsunlight  (5 bytes — Synthesis/Moonlight/MorningSun, weather-based)
  *   0xCA setforcedtarget         (1 byte — Follow Me)
  *   0xD0 settaunt                (5 bytes — Taunt, 2-turn timer)

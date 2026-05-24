@@ -74,8 +74,8 @@ import { GetItemHoldEffect as _ghe21, GetItemHoldEffectParam as _ghep21 } from '
 function _getItemHoldEffect(item: number): number { return _ghe21(item); }
 function _getItemHoldEffectParam(item: number): number { return _ghep21(item); }
 
-/** 1:1 stub `RecordItemEffectBattle(battler, holdEffect)`. AI tracking — no-op. */
-// 1:1 décomp `RecordItemEffectBattle` + `RecordAbilityBattle` — wired via util.ts.
+// 1:1 STRICT décomp `RecordItemEffectBattle` + `RecordAbilityBattle` (battle_util.c)
+// — wired via util.ts. PORTÉS 1:1, plus de stub.
 import {
   RecordAbilityBattle as _recordAbilityBattleFullN21,
   RecordItemEffectBattle as _recordItemEffectBattleFullN21,
