@@ -29,8 +29,8 @@
 import { gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop } from './decomp-globals';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
 
-const DISPLAY_WIDTH = 240;
-const DISPLAY_HEIGHT = 160;
+// 1:1 strict A8 audit : import depuis decomp-data.
+import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './decomp-data/include/gba/defines-data';
 
 // 1:1 décomp `RGB(11, 11, 11)` (= gris du flash d'intro transition).
 // RGB15 little : r | g<<5 | b<<10.

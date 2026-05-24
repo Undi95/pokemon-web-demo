@@ -78,12 +78,13 @@ import { FreeSpriteTilesByTag } from './decomp-globals';
 import { FreeSpritePaletteByTag } from './sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
+// A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).
+import { A_BUTTON, B_BUTTON } from './decomp-data/include/gba/io_reg-data';
+// TEXT_SKIP_DRAW import depuis decomp-data.
+import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
 
-const A_BUTTON = 0x01;
-const B_BUTTON = 0x02;
-
+// FONT_NORMAL = text.h enum local (= pas extrait decomp-data, hardcode 1:1 justifié).
 const FONT_NORMAL = 1;
-const TEXT_SKIP_DRAW = 255;
 
 // 1:1 décomp menu.c:25-27. Cf. start-menu.ts.
 const STD_WINDOW_PALETTE_NUM = 14;
