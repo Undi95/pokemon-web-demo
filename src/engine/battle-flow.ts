@@ -110,13 +110,11 @@ import { IsBattleSceneOff } from './gba-menu-system';
 import { setBattleTypeFlags, gBattleTypeFlags } from './battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from './battle/constants';
 
-// ─── GBA input keys (= 1:1 décomp gba/key.h) ─────────────────────────────────
-const A_BUTTON   = 0x01;
-const B_BUTTON   = 0x02;
-const DPAD_RIGHT = 0x10;
-const DPAD_LEFT  = 0x20;
-const DPAD_UP    = 0x40;
-const DPAD_DOWN  = 0x80;
+// ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
+// (= A8 audit, pas hardcode).
+import {
+  A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
+} from './decomp-data/include/gba/io_reg-data';
 
 // ─── Battle outcome constants (= 1:1 décomp include/constants/battle.h) ────
 export const BATTLE_OUTCOME_WIN     = 1;
