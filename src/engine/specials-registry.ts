@@ -411,15 +411,44 @@ registerSpecial('Special_StartLegendaryBattle', () => {
   return 1;
 });
 
-/** 1:1 décomp `IsLastMonThatKnowsSurf` etc. — HM forget guards. Returns 0. */
-registerSpecial('IsLastMonThatKnowsSurf', () => 0);
-registerSpecial('IsLastMonThatKnowsCut', () => 0);
-registerSpecial('IsLastMonThatKnowsDive', () => 0);
-registerSpecial('IsLastMonThatKnowsRockSmash', () => 0);
-registerSpecial('IsLastMonThatKnowsFly', () => 0);
-registerSpecial('IsLastMonThatKnowsWaterfall', () => 0);
-registerSpecial('IsLastMonThatKnowsStrength', () => 0);
-registerSpecial('IsLastMonThatKnowsFlash', () => 0);
+/** 1:1 décomp `IsLastMonThatKnows*` (party_menu.c:6407-6429 IsLastMonThatKnowsSurf
+ *  + 8 dérivées). HM forget guards : check si le mon var0x8004 a le HM-move,
+ *  loop autres mons party + check chacun (= si trouvé, FALSE). Si aucun autre
+ *  mon n'a le move, check storage (PC boxes). Set result = TRUE seulement si
+ *  c'est le dernier qui sait le HM-move. */
+function _isLastMonThatKnowsMove(moveIdString: string): number {
+  const slot = VarGet('VAR_0x8004');
+  const moveSlot = VarGet('VAR_0x8005');
+  const mon = gSaveBlock1Ptr.playerParty[slot];
+  if (!mon || !mon.moves[moveSlot]) return 0;
+  if (mon.moves[moveSlot].id !== moveIdString) return 0;
+  // Loop other party slots, check si autre mon a le même move
+  const party = gSaveBlock1Ptr.playerParty;
+  let partyCount = 0;
+  for (let i = 0; i < 6; i++) {
+    if (party[i] && party[i].speciesId !== 0) partyCount++;
+  }
+  for (let i = 0; i < partyCount; i++) {
+    if (i === slot) continue;
+    const m = party[i];
+    if (!m) continue;
+    for (let j = 0; j < 4; j++) {
+      if (m.moves[j] && m.moves[j].id === moveIdString) return 0;
+    }
+  }
+  // Dette R3 : check storage PC (AnyStorageMonWithMove). Notre projet :
+  // skip car AnyStorageMonWithMove pas porté → return TRUE (= safe :
+  // permet pas de deleter HM si dernier party, même si user a un dans PC).
+  return 1;
+}
+registerSpecial('IsLastMonThatKnowsSurf', () => _isLastMonThatKnowsMove('surf'));
+registerSpecial('IsLastMonThatKnowsCut', () => _isLastMonThatKnowsMove('cut'));
+registerSpecial('IsLastMonThatKnowsDive', () => _isLastMonThatKnowsMove('dive'));
+registerSpecial('IsLastMonThatKnowsRockSmash', () => _isLastMonThatKnowsMove('rocksmash'));
+registerSpecial('IsLastMonThatKnowsFly', () => _isLastMonThatKnowsMove('fly'));
+registerSpecial('IsLastMonThatKnowsWaterfall', () => _isLastMonThatKnowsMove('waterfall'));
+registerSpecial('IsLastMonThatKnowsStrength', () => _isLastMonThatKnowsMove('strength'));
+registerSpecial('IsLastMonThatKnowsFlash', () => _isLastMonThatKnowsMove('flash'));
 
 /** 1:1 décomp `Special_ViewLottery` etc. — lottery / casino. Stubs. */
 registerSpecial('Special_ViewLottery', () => { /* no-op */ });
@@ -1094,6 +1123,9 @@ registerSpecial('HasAtLeastOneBerry', () => {
   VarSet('VAR_RESULT', 0);
   return 0;
 });
+
+// `IsSelectedMonEgg` déjà porté ligne 741 (= duplicate skip).
+// `IsLastMonThatKnowsSurf` real body ajouté ligne 415 (= remplace stub).
 
 /** 1:1 décomp `DoesPlayerHaveNoDecorations` (trader.c:145-158).
  *  Loop sur DECORCAT_COUNT (= 8 catégories). Return TRUE si aucune category
