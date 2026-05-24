@@ -696,6 +696,22 @@ registerSpecial('TryGetWallpaperWithWaldaPhrase', () => 0);
 registerSpecial('ResetSSTidalFlag', () => {
   FlagClear('FLAG_SYS_CRUISE_MODE');
 });
+
+/** 1:1 décomp `SetPlayerGotFirstFans` (field_specials.c:4271-4274).
+ *  SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7). */
+registerSpecial('SetPlayerGotFirstFans', () => {
+  const setFanClubFlag = (globalThis as { __game_bridge?: {
+    SET_TRAINER_FAN_CLUB_FLAG?: (flag: number) => void;
+  } }).__game_bridge?.SET_TRAINER_FAN_CLUB_FLAG;
+  if (setFanClubFlag) setFanClubFlag(7);  // FANCLUB_GOT_FIRST_FANS = 7.
+  // Fallback : direct flags manipulation si bridge pas wire.
+  else {
+    const sb1 = gSaveBlock1Ptr as unknown as { trainerFanClub?: { flags?: number } };
+    if (sb1.trainerFanClub) {
+      sb1.trainerFanClub.flags = (sb1.trainerFanClub.flags ?? 0) | (1 << 7);
+    }
+  }
+});
 registerSpecial('SetSSTidalFlag', () => { /* no-op */ });
 
 /** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
@@ -1083,7 +1099,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetFavorLadyState_Complete', 'SetHiddenItemFlag', 'SetHipsterTaughtWord',
   'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
   'SetMauvilleOldManObjEventGfx', 'SetMirageTowerVisibility',
-  'SetPlayerGotFirstFans', 'SetPlayerSecretBase',
+  // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
+  'SetPlayerSecretBase',
   'SetQuizLadyState_Complete', 'SetQuizLadyState_GivePrize',
   'SetRoute119Weather', 'SetRoute123Weather', 'SetSecretBaseOwnerGfxId',
   'SetSootopolisGymCrackedIceMetatiles', 'SetTrickHouseNuggetFlag',
