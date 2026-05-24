@@ -1314,11 +1314,10 @@ function _tickPCQuantityRolling(newKeys: number): void {
   }
 }
 
-const DPAD_UP    = 0x40;
-const DPAD_DOWN  = 0x80;
-const DPAD_LEFT  = 0x20;
-const DPAD_RIGHT = 0x10;
-const SELECT_BUTTON = 0x04;
+// 1:1 strict A8 audit : import GBA keys depuis decomp-data.
+import {
+  DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, SELECT_BUTTON,
+} from './decomp-data/include/gba/io_reg-data';
 
 /** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444) :
  *    CopyItemName(itemId, gStringVar1);

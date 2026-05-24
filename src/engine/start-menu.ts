@@ -134,11 +134,10 @@ const SE_WIN_OPEN_FALLBACK = 6;
 // 1:1 décomp `include/constants/songs.h` SE_SAVE = 55. Joué par
 // SaveSuccessCallback (start_menu.c:1116) après le message "X a sauvegardé".
 const SE_SAVE = 55;
-const A_BUTTON = 0x01;
-const B_BUTTON = 0x02;
-const START_BUTTON = 0x08;
-const DPAD_UP = 0x40;
-const DPAD_DOWN = 0x80;
+// 1:1 strict A8 audit : import GBA keys depuis decomp-data.
+import {
+  A_BUTTON, B_BUTTON, START_BUTTON, DPAD_UP, DPAD_DOWN,
+} from './decomp-data/include/gba/io_reg-data';
 
 // 1:1 décomp menu.c:25-27 :
 //   #define STD_WINDOW_PALETTE_NUM 14   ← border palette (cadre du menu)

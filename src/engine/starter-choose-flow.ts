@@ -116,11 +116,10 @@ const STARTER_LABEL_TEMPLATE_BASE: Omit<WindowTemplate, 'tilemapLeft' | 'tilemap
   baseBlock: 0x0274,
 };
 
-// GBA key masks (= 1:1 décomp gba/key.h).
-const A_BUTTON   = 0x01;
-const B_BUTTON   = 0x02;
-const DPAD_RIGHT = 0x10;
-const DPAD_LEFT  = 0x20;
+// GBA key masks (= 1:1 décomp gba/io_reg.h). Import depuis decomp-data (= A8 audit).
+import {
+  A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT,
+} from './decomp-data/include/gba/io_reg-data';
 
 // Asset URLs (= public/decomp/em/starter_choose/).
 // Runtime LoadCompressedSpriteSheet expects palette PNG (= 4bpp indexed avec

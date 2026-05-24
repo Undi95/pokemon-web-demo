@@ -54,8 +54,10 @@ import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '.
 import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 
+// FONT_NORMAL = text.h enum local (= pas extrait decomp-data).
 const FONT_NORMAL = 1;
-const TEXT_SKIP_DRAW = 255;
+// 1:1 strict A8 audit : import depuis decomp-data.
+import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 

@@ -76,11 +76,10 @@ const MOVE_FORWARD = 2;
 /** Window IDs (= wallclock.c:69-72). */
 const WIN_MSG = 0;
 const WIN_BUTTON_LABEL = 1;
-/** Joy keys (= 1:1 gba/key.h). */
-const A_BUTTON   = 0x0001;
-const B_BUTTON   = 0x0002;
-const DPAD_LEFT  = 0x0020;
-const DPAD_RIGHT = 0x0010;
+/** Joy keys (= 1:1 gba/io_reg.h). Import depuis decomp-data (= A8 audit). */
+import {
+  A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
+} from './decomp-data/include/gba/io_reg-data';
 /** Font / text colors. */
 const FONT_NORMAL = 1;
 const STD_FRAME_TILE = 0x250;

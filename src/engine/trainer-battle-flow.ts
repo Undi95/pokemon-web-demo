@@ -46,8 +46,8 @@ interface TrainerBattleFlow {
   getState(): string;
 }
 
-const A_BUTTON = 0x01;
-const B_BUTTON = 0x02;
+// 1:1 strict A8 audit : import GBA keys depuis decomp-data.
+import { A_BUTTON, B_BUTTON } from './decomp-data/include/gba/io_reg-data';
 
 // Lazy-loaded trainer data.
 let _trainerDataCache: Record<string, TrainerData> | null = null;
