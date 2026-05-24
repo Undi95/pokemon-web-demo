@@ -2388,28 +2388,39 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   const currentMapId = gMapHeader.id;
   const catalog = await loadGraphicsCatalog();
 
-  // 1:1 décomp `gObjectEventTemplates[]` overlay : `setobjectxyperm` opcode
-  // (script-opcodes.ts:1068) modifie aussi gameState.__objectPositions pour
-  // persister cross map-reload. Apply the overlay BEFORE spawning so NPCs
-  // appear at their persisted position. Required pour ?nointro qui set Mom
-  // à (4, 5) post-MoveMomToTV même si la map.json default est (2, 6).
-  for (const template of templates) {
-    const idKey = template.localIdRaw || `idx_${template.localId}`;
-    const pos = GetObjEventTemplateCoords(currentMapId, idKey);
-    if (pos) {
-      template.x = pos.x;
-      template.y = pos.y;
-    }
-  }
+  // 1:1 STRICT décomp event_object_movement.c:1666 :
+  //   struct ObjectEventTemplate *template = &gSaveBlock1Ptr->objectEventTemplates[i];
+  // Le decomp itère le SAVEBLOCK (= persistent, muté par setobjectxyperm).
+  // Le gMapHeader.events.objectEvents reste pristine (= ROM read-only).
+  //
+  // Notre port itère le mapHeader pour le tour iteration (= structure logique),
+  // mais lit la pos effective DEPUIS le saveblock overlay au spawn time SANS
+  // muter le mapHeader (= 1:1 strict pristine).
+  //
+  // Bug 2026-05-24 : avant on faisait `template.x = pos.x` qui mutait le
+  // mapHeader → au prochain LoadObjEventTemplatesFromHeader, le saveblock
+  // était reset depuis le mapHeader DÉJÀ MUTÉ → MOM bloquée à (4, 5)
+  // post-event cross-warp.
 
   // PARALLEL preload (= élimine sequential await + matches décomp instant
   // spawn). Templates qui referencent une PNG manquante après preload sont
   // loggées (= via _spawnSingleNpcFromTemplate which checks cache).
   await preloadNpcGraphicsForMap(gMapHeader);
 
-  // SYNC iteration spawn.
+  // SYNC iteration spawn. Passer overlay pos (= saveblock) au lieu de muter.
   for (const template of templates) {
-    _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
+    const idKey = template.localIdRaw || `idx_${template.localId}`;
+    const overlayPos = GetObjEventTemplateCoords(currentMapId, idKey);
+    // 1:1 STRICT : on passe la pos effective (saveblock overlay si exists,
+    // sinon mapHeader pristine) au spawn. Le mapHeader n'est PAS muté.
+    if (overlayPos) {
+      // Construire un template-like avec overlay pos pour le spawn (= copie
+      // shallow, le mapHeader original reste pristine).
+      const overlayTemplate = { ...template, x: overlayPos.x, y: overlayPos.y };
+      _spawnSingleNpcFromTemplate(overlayTemplate, currentMapId, rt, catalog);
+    } else {
+      _spawnSingleNpcFromTemplate(template, currentMapId, rt, catalog);
+    }
   }
 }
 
