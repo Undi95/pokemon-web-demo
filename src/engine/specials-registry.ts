@@ -216,15 +216,31 @@ registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
   // No weather effects in early game.
 });
 
-/** 1:1 décomp `IsLeadMonNicknamed` (pokemon_util.c).
- *  Returns 1 if first party mon has a nickname (= different from species name).
- *  For starter, name == species (= "ARCKO"), so returns 0 (= not nicknamed). */
+/** 1:1 décomp `IsLeadMonNicknamedOrNotEnglish` (tv.c:3024-3027) →
+ *  `IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex())` (tv.c:3010-3022) :
+ *    GetMonData(NICKNAME, gStringVar1)
+ *    language = GetMonData(LANGUAGE)
+ *    if (language == GAME_LANGUAGE && !StringCompare(speciesName, nickname))
+ *        return FALSE
+ *    return TRUE
+ *
+ *  Notre projet : FR-only (= tous mons GAME_LANGUAGE). Compare nickname vs
+ *  speciesNameFr. Si match → FALSE (= pas renommé), sinon TRUE. */
 registerSpecial('IsLeadMonNicknamed', () => {
-  const lead = gSaveBlock1Ptr.playerParty[0];
+  // GetLeadMonIndex = 1st non-egg non-empty slot.
+  const party = gSaveBlock1Ptr.playerParty;
+  let leadIdx = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg) {
+      leadIdx = i;
+      break;
+    }
+  }
+  const lead = party[leadIdx];
   if (!lead) return 0;
-  // Nickname is set via createPokemonInstance default = species name FR.
-  // Real check : compare nickname to species name. Stub : assume not nicknamed.
-  return 0;
+  // Compare nickname vs speciesNameFr (= GAME_LANGUAGE assumed).
+  return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
 /** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
