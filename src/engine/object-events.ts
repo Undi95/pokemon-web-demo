@@ -24,6 +24,12 @@ import type { DecompRuntime } from './decomp-runtime';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import type { LoadedPng } from './gba/png-loader';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from './sprite';
+// 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
+// 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
+// *template->oam` qui set shape/size/priority depuis ce template. Notre port
+// dérive le template depuis frameWidth/frameHeight catalog (= équivalent
+// fonctionnel à `graphicsInfo->oam`).
+import { GetBaseOamForDimensions } from './object-event-base-oam';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -2229,17 +2235,29 @@ function _spawnSingleNpcFromTemplate(
   }
   npc.directionSeqIdx = 0;
 
+  // 1:1 STRICT décomp event_object_movement.c:1487 :
+  //   graphicsInfo = GetObjectEventGraphicsInfo(template->graphicsId);
+  //   MakeSpriteTemplateFromObjectEventTemplate(template, &spriteTemplate, ...);
+  //   spriteTemplate.oam = graphicsInfo->oam;  ← shape/size/priority source
+  // Au CreateSpriteAt : sprite->oam = *template->oam (= struct copy).
+  //
+  // Notre port dérive `graphicsInfo->oam` depuis frameWidth/frameHeight via
+  // GetBaseOamForDimensions (= équivalent fonctionnel : MOM 16x32 → base_oam_
+  // 16x32 → shape=2 size=2 priority=2 ; Vigoroth 32x32 → base_oam_32x32 →
+  // shape=0 size=2 priority=2 ; etc.). Aucune divergence de valeurs vs décomp.
+  const oamTemplate = GetBaseOamForDimensions(graphics.frameWidth, graphics.frameHeight);
+
   if (is48x48) {
-    // Primary sprite = placeholder logique pour le subsprite system. shape=2
-    // size=2 (= 16×32) hidden après SetSubspriteTables. tileBase = objTileBase
-    // utilisé par syncSubspriteOam pour calculer child tileId = tileBase +
-    // sub.tileOffset.
+    // Primary sprite = placeholder logique pour le subsprite system. Décomp
+    // gObjectEventGraphicsInfo_Truck utilise gObjectEventBaseOam_16x32 +
+    // sOamTables_48x48 (= 12 child OAMs rendent le 48×48). shape/size depuis
+    // base oam 16x32 (= MAPPED par GetBaseOamForDimensions pour 48x48 → 16x32).
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,
       x: 0, y: 0,
-      shape: 2, size: 2,
-      priority: 2,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority,
       paletteMode: 0,
       affineMode: 0,
     });
@@ -2272,12 +2290,15 @@ function _spawnSingleNpcFromTemplate(
     const inRange = template.elevation >= 0 && template.elevation < 16;
     const elevPriority = inRange ? ELEV_PRIORITY[template.elevation] : 2;
     const subspriteNum = inRange ? ELEV_SUBSPRITE_NUM[template.elevation] : 1;
+    // 1:1 STRICT décomp : shape/size depuis base oam 16x16 template (= équivalent
+    // `graphicsInfo->oam = &gObjectEventBaseOam_16x16`). Priority overridé par
+    // elevation (= 1:1 décomp UpdateObjectEventElevationAndPriority).
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,
       x: 0, y: 0,
-      shape: 0 /* square */, size: 1 /* 16×16 */,
-      priority: elevPriority,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: elevPriority,  // 1:1 décomp ELEV_PRIORITY override
       paletteMode: 0,
       affineMode: 0,
     });
@@ -2304,12 +2325,14 @@ function _spawnSingleNpcFromTemplate(
     // 16×32 frame layout invalide qui produisait du garbage).
     npc.useSubsprites = false;
     npc.is32x32 = true;
+    // 1:1 STRICT décomp : shape/size depuis base oam 32x32 template (= équivalent
+    // `graphicsInfo->oam = &gObjectEventBaseOam_32x32`).
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,
       x: 0, y: 0,
-      shape: 0 /* square */, size: 2 /* 32×32 */,
-      priority: 2,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority,
       paletteMode: 0,
       affineMode: 0,
     });
@@ -2320,12 +2343,16 @@ function _spawnSingleNpcFromTemplate(
   } else {
     npc.useSubsprites = false;
     const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
+    // 1:1 STRICT décomp default branch (NPC 16x32) : shape/size depuis base
+    // oam 16x32 template (= équivalent `graphicsInfo->oam = &gObjectEventBase
+    // Oam_16x32` pour MOM + plupart NPCs people). Aucune valeur hardcoded
+    // — tout provient du base template 1:1.
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
       paletteBank,
       x: 0, y: 0,
-      shape: 2, size: 2,
-      priority: 2,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority,
       paletteMode: 0,
       affineMode: 0,
     });
