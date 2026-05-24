@@ -240,12 +240,11 @@ function _recordAbilityBattle(battler: number, ability: number): void {
 const _WEATHER_HAS_EFFECT = true;
 
 // ─── Overworld WEATHER_* (constants/weather.h) — 1:1 décomp ─────────────────
-const WEATHER_NONE              = 0;
-const WEATHER_RAIN              = 3;
-const WEATHER_RAIN_THUNDERSTORM = 5;
-const WEATHER_SANDSTORM         = 8;
-const WEATHER_DROUGHT           = 12;
-const WEATHER_DOWNPOUR          = 13;
+// 1:1 strict A8 audit : import depuis decomp-data au lieu de hardcode.
+import {
+  WEATHER_NONE, WEATHER_RAIN, WEATHER_RAIN_THUNDERSTORM,
+  WEATHER_SANDSTORM, WEATHER_DROUGHT, WEATHER_DOWNPOUR,
+} from '../decomp-data/include/constants/weather-data';
 
 /** 1:1 stub `GetCurrentWeather(void)` (field_weather.c:1032).
  *  Retourne `gWeatherPtr->currWeather`. Pas wired battle-side dans notre
