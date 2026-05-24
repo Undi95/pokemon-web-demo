@@ -514,9 +514,29 @@ registerSpecial('GetRivalSonDaughterString', () => {
 registerSpecial('SavePlayerParty', () => { /* mem-to-mem, no SRAM write */ });
 registerSpecial('LoadPlayerParty', () => { /* loaded at boot already */ });
 
-/** 1:1 décomp `IsStarterInParty` — checks if starter is still in party. */
+/** 1:1 décomp `IsStarterInParty` (field_specials.c:1437-1448).
+ *  Loop party, return TRUE si starter (= GetStarterPokemon(VAR_STARTER_MON))
+ *  est encore là. */
 registerSpecial('IsStarterInParty', () => {
-  return gSaveBlock1Ptr.playerPartyCount > 0 ? 1 : 0;
+  // 1:1 décomp `GetStarterPokemon` (starter_choose.c) :
+  //   sStarterMon[3] = { SPECIES_TREECKO, SPECIES_TORCHIC, SPECIES_MUDKIP }
+  //   return sStarterMon[index] (default index 0 = Treecko si invalide).
+  const STARTER_BY_INDEX = [277 /* TREECKO */, 280 /* TORCHIC */, 283 /* MUDKIP */];
+  const starterIdx = VarGet('VAR_STARTER_MON') ?? 0;
+  const starter = STARTER_BY_INDEX[starterIdx] ?? STARTER_BY_INDEX[0];
+  const party = gSaveBlock1Ptr.playerParty;
+  let partyCount = 0;
+  for (let i = 0; i < 6; i++) {
+    if (party[i] && party[i].speciesId !== 0) partyCount++;
+  }
+  for (let i = 0; i < partyCount; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesId === 0) continue;
+    // MON_DATA_SPECIES_OR_EGG : si egg retourne SPECIES_EGG (412), pas le species.
+    if (mon.isEgg) continue;
+    if (mon.speciesId === starter) return 1;
+  }
+  return 0;
 });
 
 /** 1:1 décomp `InitBirchState` — initializes Birch lab state machine. */
