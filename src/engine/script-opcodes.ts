@@ -31,7 +31,7 @@ import {
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
-import { GetCurrentMap } from './load_save';
+import { GetCurrentMap, SetObjEventTemplateCoords } from './load_save';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
 import {
@@ -1365,13 +1365,26 @@ registerOpcode('setobjectxy', (_ctx, args) => {
 });
 
 registerOpcode('setobjectxyperm', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_setobjectxyperm` (scrcmd.c) :
-  //   modifie le TEMPLATE dans gObjectEventTemplates pour que le NPC respawn
-  //   à la new position (= survit au cross-border / map reload).
-  // On modifie aussi le NPC actif si présent (= sync immédiate).
+  // 1:1 STRICT décomp `ScrCmd_setobjectxyperm` (scrcmd-engine.ts:1189) :
+  //   u16 localId = VarGet(ScriptReadHalfword(ctx));
+  //   u16 x = VarGet(ScriptReadHalfword(ctx));
+  //   u16 y = VarGet(ScriptReadHalfword(ctx));
+  //   SetObjEventTemplateCoords(localId, x, y);
+  //
+  // Et SetObjEventTemplateCoords (overworld.c:490) écrit dans
+  // `gSaveBlock1Ptr->objectEventTemplates[]` (= PERSISTENT cross-map reload).
+  //
+  // Notre port avant : modifie juste `gMapHeader.events.objectEvents[i].x/y`
+  // en mémoire (= perdu au map reload car re-loaded depuis map.json). Bug user
+  // 2026-05-24 : sortir de la maison + rentrer → MOM revient à template initial
+  // au lieu de la position post-event setobjectxyperm.
+  // Fix 1:1 : appeler SetObjEventTemplateCoords qui persiste dans le saveblock.
   const x = parseValue(args[1]);
   const y = parseValue(args[2]);
-  const tpl = _findTemplateByLocalId(args[0] ?? '');
+  const localIdRaw = args[0] ?? '';
+  const currentMapId = GetCurrentMap()?.name ?? (gMapHeader?.id ?? '');
+  SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
+  const tpl = _findTemplateByLocalId(localIdRaw);
   if (tpl) {
     tpl.x = x;
     tpl.y = y;
