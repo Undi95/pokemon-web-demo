@@ -2728,6 +2728,79 @@ async function _respawnNpcSpriteForReturnToField(
     return false;
   }
 
+  // ─── C8 — 1:1 STRICT flow unified (= match _spawnSingleNpcFromTemplate) ────
+  //
+  // Pré-convert PNG row-major → 1D OBJ frames consec + lookup graphicsInfo via
+  // factory + wire sprite.images/anims. Sans ça, _respawnNpcSpriteForReturnToField
+  // utilisait le LEGACY branch by-size → sprite.anims=null → updateNpcSpriteFrame
+  // legacy path → tileId cycle bug (= "PokeBall tourne sur elle-même" user-flag
+  // post WallClock close).
+  const _pic1dObj = pngTo1dObjLayoutAllFrames(
+    png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
+  );
+  const _factory = gObjectEventGraphicsInfoPointers[npc.graphicsId];
+  const _numPicsExpected = _factory ? _factory.length : 1;
+  const _picsArgs: Uint8Array[] = [_pic1dObj];
+  if (_numPicsExpected > 1) {
+    const secondaryRelPath = MULTI_PNG_SECONDARY_PATHS[npc.graphicsId];
+    const secondaryPng = secondaryRelPath ? _npcPngCache.get(`${BASE}/${secondaryRelPath}`) : undefined;
+    if (secondaryPng) {
+      const sec1dObj = pngTo1dObjLayoutAllFrames(
+        secondaryPng.charData, secondaryPng.widthTiles, graphics.frameWidth, graphics.frameHeight,
+      );
+      _picsArgs.push(sec1dObj);
+    } else {
+      _picsArgs.push(_pic1dObj);
+    }
+  }
+  const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(npc.graphicsId, ..._picsArgs);
+  const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
+
+  if (_hasNewFlow && _graphicsInfo_1to1) {
+    // Copy frame 0 in VRAM (= état initial).
+    rt.gba.objVram.set(_graphicsInfo_1to1.images[0].data, objTileBase * 32);
+
+    const oamTpl = _graphicsInfo_1to1.oam;
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase,
+      paletteBank,
+      x: 0, y: 0,
+      shape: oamTpl.shape, size: oamTpl.size,
+      priority: oamTpl.priority,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.tileBase = objTileBase;
+      // Wire 1:1 strict décomp sprite.c:CreateSpriteAt + event_object_movement.c:1461-1471.
+      sprite.images = _graphicsInfo_1to1.images;
+      sprite.anims = _graphicsInfo_1to1.anims as ReadonlyArray<ReadonlyArray<unknown>> | null;
+      sprite.usingSheet = false;
+      sprite.sheetTileStart = 0;
+      sprite.centerToCornerVecX = -(_graphicsInfo_1to1.width >> 1);
+      sprite.centerToCornerVecY = -(_graphicsInfo_1to1.height >> 1);
+      sprite.y2 = 16 + sprite.centerToCornerVecY;
+      if (!_graphicsInfo_1to1.inanimate && sprite.anims && sprite.anims.length > 0) {
+        sprite.animNum = GetFaceDirectionAnimNum(npc.facingDirection);
+        sprite.animBeginning = true;
+        sprite.animEnded = false;
+        sprite.animCmdIndex = 0;
+        sprite.animDelayCounter = 0;
+      }
+    }
+    rt.gba.oam[result.oamIndex].flipH = false;
+    rt.gba.oam[result.oamIndex].priority = oamTpl.priority;
+    npc.useSubsprites = false;
+    npc.is32x32 = false;
+    npc.is16x16 = false;
+    npc.inanimate = _graphicsInfo_1to1.inanimate === 1;
+    npc.objTileBase = objTileBase;
+    npc.paletteBank = paletteBank;
+    return true;
+  }
+
   // Copie tile data en VRAM (= équivalent décomp RequestSpriteFrameImageCopy au
   // 1er frame, simplifié pour pré-charger tous les frames consécutifs).
   if (is48x48) {
