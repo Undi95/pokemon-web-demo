@@ -806,7 +806,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
   'DoTVShowInSearchOfTrainers', 'DoTrainerApproach', 'DoWateringBerryTreeAnim',
   'DoesContestCategoryHaveMuseumPainting', 'DoesPartyHaveEnigmaBerry',
-  'DoesPlayerHaveNoDecorations', 'DrewSecretBaseBattle', 'EggHatch',
+  // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
+  'DrewSecretBaseBattle', 'EggHatch',
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
   'EnterSafariMode', 'EnterSecretBase', 'ExitLinkRoom', 'ExitSafariMode',
   'FavorLadyGetPrize',
@@ -1067,6 +1068,30 @@ registerSpecial('HasAtLeastOneBerry', () => {
   }
   VarSet('VAR_RESULT', 0);
   return 0;
+});
+
+/** 1:1 décomp `DoesPlayerHaveNoDecorations` (trader.c:145-158).
+ *  Loop sur DECORCAT_COUNT (= 8 catégories). Return TRUE si aucune category
+ *  n'a de decoration ownéee. Set gSpecialVar_Result. */
+registerSpecial('DoesPlayerHaveNoDecorations', () => {
+  // 1:1 décomp constants/decorations.h DECORCAT_COUNT = 8.
+  // Import dynamique pour éviter cycle ESM.
+  const { GetNumOwnedDecorationsInCategory } = (globalThis as { __game_decoration?: {
+    GetNumOwnedDecorationsInCategory?: (cat: number) => number;
+  } }).__game_decoration ?? {};
+  if (!GetNumOwnedDecorationsInCategory) {
+    // Fallback : aucune decoration system loaded → return TRUE.
+    VarSet('VAR_RESULT', 1);
+    return 1;
+  }
+  for (let i = 0; i < 8; i++) {
+    if (GetNumOwnedDecorationsInCategory(i) > 0) {
+      VarSet('VAR_RESULT', 0);
+      return 0;
+    }
+  }
+  VarSet('VAR_RESULT', 1);
+  return 1;
 });
 
 /** 1:1 décomp `IsDodrioInParty` (dodrio_berry_picking.c:2908-2922).
