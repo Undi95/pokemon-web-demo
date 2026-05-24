@@ -167,10 +167,20 @@ registerSpecial('ShouldTryRematchBattle', () => {
   return 0;
 });
 
-/** 1:1 décomp `IsEnoughForCostInVar0x8005` (field_specials.c).
- *  Check si player a assez d'argent. Stub return 0 (= pas assez). */
+/** 1:1 décomp `IsEnoughForCostInVar0x8005` (money.c:123-126).
+ *  Return IsEnoughMoney(saveBlock1.money, gSpecialVar_0x8005). */
 registerSpecial('IsEnoughForCostInVar0x8005', () => {
-  return 0;
+  const cost = VarGet('VAR_0x8005');
+  // Notre IsEnoughMoney lit directement saveBlock1.money (= encrypted u32).
+  // Import dynamic pour éviter cycle ESM.
+  const { IsEnoughMoney } = (globalThis as { __game_money?: {
+    IsEnoughMoney?: (cost: number) => boolean;
+  } }).__game_money ?? {};
+  if (IsEnoughMoney) return IsEnoughMoney(cost) ? 1 : 0;
+  // Fallback inline 1:1 décomp money.c:18 IsEnoughMoney : money >= cost.
+  const sb1 = gSaveBlock1Ptr as unknown as { money?: number };
+  const money = sb1.money ?? 0;
+  return money >= cost ? 1 : 0;
 });
 
 /** 1:1 décomp `SetCableClubWarp` / `DoCableClubWarp` (cable_club.c).
