@@ -23,19 +23,42 @@
  * actuel fait dans _spawnSingleNpcFromTemplate, divergence 1:1 strict).
  */
 
-/** 1:1 décomp `struct OamData` (include/gba/types.h) — fields utilisés par les
- *  graphicsInfo OAM templates. Le décomp utilise une struct complète mais
- *  les `base_oam.h` templates ne définissent que shape/size/priority (= autres
- *  fields = 0 par défaut, set au runtime via CreateSpriteAt).
+/** 1:1 STRICT décomp `struct OamData` (include/gba/types.h:55-72).
+ *  Tous les fields encodés tels qu'ils existent dans le hardware GBA OAM
+ *  (= 8 bytes par sprite, bitfield-packed). Les `base_oam.h` templates
+ *  initialisent shape/size/priority + laissent les autres à 0 (= default
+ *  C aggregate init).
  *
- *  Notre type local n'est PAS le full struct GBA — c'est juste le subset que
- *  les templates exposent. Le full OamData runtime est dans `gba/types.ts:OamEntry`. */
-export interface OamTemplate {
-  shape: 0 | 1 | 2;
-  size: 0 | 1 | 2 | 3;
-  priority: number;
-  /** Optional : la plupart des base_oam templates laissent paletteNum=0 default. */
-  paletteNum?: number;
+ *  Notre TS représente la struct comme un objet avec tous les fields explicites
+ *  (= pas de bitfield-packing TS, l'engine GPU rendering désérialise depuis
+ *  les valeurs JS). Field ranges 1:1 décomp via les bitfield widths :
+ *    y:8       → 0..255
+ *    affineMode:2 → 0..3
+ *    objMode:2 → 0..3
+ *    mosaic:1  → 0|1
+ *    bpp:1     → 0|1
+ *    shape:2   → 0|1|2 (3 réservé)
+ *    x:9       → 0..511
+ *    matrixNum:5 → 0..31 (ou flip bits hors affine)
+ *    size:2    → 0..3
+ *    tileNum:10 → 0..1023
+ *    priority:2 → 0..3
+ *    paletteNum:4 → 0..15
+ *    affineParam:16 → 0..65535 */
+export interface OamData {
+  /*0x00*/ y: number;             // u32:8
+  /*0x01*/ affineMode: 0 | 1 | 2 | 3;  // u32:2 — ST_OAM_AFFINE_OFF/NORMAL/HIDDEN/DOUBLE
+           objMode: 0 | 1 | 2;          // u32:2 — ST_OAM_OBJ_NORMAL/BLEND/WINDOW
+           mosaic: 0 | 1;               // u32:1
+           bpp: 0 | 1;                  // u32:1 — ST_OAM_4BPP / ST_OAM_8BPP
+           shape: 0 | 1 | 2;            // u32:2 — ST_OAM_SQUARE/H_RECTANGLE/V_RECTANGLE
+  /*0x02*/ x: number;             // u32:9
+           matrixNum: number;     // u32:5 (= bit 3-4 = h/v flip si !affineMode)
+           size: 0 | 1 | 2 | 3;   // u32:2
+  /*0x04*/ tileNum: number;       // u16:10
+           priority: 0 | 1 | 2 | 3;  // u16:2
+           paletteNum: number;    // u16:4 — 0..15
+  /*0x06*/ affineParam: number;   // u16:16
 }
 
 // ─── Constants SPRITE_SHAPE / SPRITE_SIZE 1:1 décomp ───────────────────────
@@ -54,36 +77,57 @@ export const ST_OAM_V_RECTANGLE = 2;
 // `sprite->oam = *template->oam` (= struct copy en C). Notre port doit faire
 // pareil (= shallow copy au lieu de partager la reference).
 
+/** Default values pour les fields non-initialisés explicitement dans base_oam.h.
+ *  1:1 STRICT C aggregate init : tout field non-listé dans `{ .shape = ..., .size
+ *  = ..., .priority = ... }` est zero-initialisé. */
+const _BASE_DEFAULTS = {
+  y: 0,
+  affineMode: 0 as 0 | 1 | 2 | 3,    // ST_OAM_AFFINE_OFF
+  objMode: 0 as 0 | 1 | 2,           // ST_OAM_OBJ_NORMAL
+  mosaic: 0 as 0 | 1,
+  bpp: 0 as 0 | 1,                   // ST_OAM_4BPP
+  x: 0,
+  matrixNum: 0,
+  tileNum: 0,
+  paletteNum: 0,
+  affineParam: 0,
+} as const;
+
 /** 1:1 décomp `gObjectEventBaseOam_8x8` (base_oam.h:1-5). */
-export const gObjectEventBaseOam_8x8: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_8x8: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_SQUARE,    // SPRITE_SHAPE(8x8) = 0
   size: 0,                 // SPRITE_SIZE(8x8) = 0
   priority: 2,
 });
 
 /** 1:1 décomp `gObjectEventBaseOam_16x8` (base_oam.h:7-11). */
-export const gObjectEventBaseOam_16x8: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_16x8: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_H_RECTANGLE,  // SPRITE_SHAPE(16x8) = 1
   size: 0,                    // SPRITE_SIZE(16x8) = 0
   priority: 2,
 });
 
 /** 1:1 décomp `gObjectEventBaseOam_16x16` (base_oam.h:13-17). */
-export const gObjectEventBaseOam_16x16: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_16x16: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_SQUARE,    // SPRITE_SHAPE(16x16) = 0
   size: 1,                 // SPRITE_SIZE(16x16) = 1
   priority: 2,
 });
 
 /** 1:1 décomp `gObjectEventBaseOam_32x8` (base_oam.h:19-23). */
-export const gObjectEventBaseOam_32x8: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_32x8: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_H_RECTANGLE,  // SPRITE_SHAPE(32x8) = 1
   size: 1,                    // SPRITE_SIZE(32x8) = 1
   priority: 2,
 });
 
 /** 1:1 décomp `gObjectEventBaseOam_64x32` (base_oam.h:25-29). */
-export const gObjectEventBaseOam_64x32: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_64x32: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_H_RECTANGLE,  // SPRITE_SHAPE(64x32) = 1
   size: 3,                    // SPRITE_SIZE(64x32) = 3
   priority: 2,
@@ -91,7 +135,8 @@ export const gObjectEventBaseOam_64x32: Readonly<OamTemplate> = Object.freeze({
 
 /** 1:1 décomp `gObjectEventBaseOam_16x32` (base_oam.h:31-35).
  *  USED BY : MOM + plupart NPCs people 16x32 (= sprite walking 16×32). */
-export const gObjectEventBaseOam_16x32: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_16x32: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_V_RECTANGLE,  // SPRITE_SHAPE(16x32) = 2
   size: 2,                    // SPRITE_SIZE(16x32) = 2
   priority: 2,
@@ -99,7 +144,8 @@ export const gObjectEventBaseOam_16x32: Readonly<OamTemplate> = Object.freeze({
 
 /** 1:1 décomp `gObjectEventBaseOam_32x32` (base_oam.h:37-41).
  *  USED BY : Vigoroth carrying box, Latios, Latias, sprites Pokémon 32x32. */
-export const gObjectEventBaseOam_32x32: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_32x32: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_SQUARE,    // SPRITE_SHAPE(32x32) = 0
   size: 2,                 // SPRITE_SIZE(32x32) = 2
   priority: 2,
@@ -108,7 +154,8 @@ export const gObjectEventBaseOam_32x32: Readonly<OamTemplate> = Object.freeze({
 /** 1:1 décomp `gObjectEventBaseOam_64x64` (base_oam.h:43-47).
  *  USED BY : Truck (= 48x48 utilise subspriteTables, mais base sprite est
  *  parfois 64x64 OamData primary). */
-export const gObjectEventBaseOam_64x64: Readonly<OamTemplate> = Object.freeze({
+export const gObjectEventBaseOam_64x64: Readonly<OamData> = Object.freeze({
+  ..._BASE_DEFAULTS,
   shape: ST_OAM_SQUARE,    // SPRITE_SHAPE(64x64) = 0
   size: 3,                 // SPRITE_SIZE(64x64) = 3
   priority: 2,
@@ -122,7 +169,7 @@ export const gObjectEventBaseOam_64x64: Readonly<OamTemplate> = Object.freeze({
  *  pas le `oam` field — on infère via dimensions. C'est une déviation
  *  documentée mais fonctionnellement équivalente (= mêmes shape/size que
  *  les graphicsInfo décomp pour les NPCs standard). */
-export function GetBaseOamForDimensions(frameWidth: number, frameHeight: number): Readonly<OamTemplate> {
+export function GetBaseOamForDimensions(frameWidth: number, frameHeight: number): Readonly<OamData> {
   if (frameWidth === 8 && frameHeight === 8) return gObjectEventBaseOam_8x8;
   if (frameWidth === 16 && frameHeight === 8) return gObjectEventBaseOam_16x8;
   if (frameWidth === 16 && frameHeight === 16) return gObjectEventBaseOam_16x16;
