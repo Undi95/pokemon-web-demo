@@ -79,195 +79,8 @@ const _findTemplateByLocalId = findTemplateByLocalId;
 const _resolveObjectLocalIdRaw = resolveObjectLocalIdRaw;
 const _isPlayerStepFinished = isPlayerStepFinished;
 
-// ─── Control flow ────────────────────────────────────────────────────────────
-
-registerOpcode('end', (ctx) => {
-  StopScript(ctx);
-  return false;  // run loop sees mode === STOPPED, exits
-});
-
-registerOpcode('return', (ctx) => {
-  ScriptReturn(ctx);
-  return false;
-});
-
-registerOpcode('goto', (ctx, args) => {
-  const label = args[0];
-  const target = getScript(label);
-  if (!target) {
-    console.warn(`[opcode goto] target '${label}' not found`);
-    StopScript(ctx);
-    return false;
-  }
-  ScriptJump(ctx, target);
-  return false;
-});
-
-registerOpcode('call', (ctx, args) => {
-  const label = args[0];
-  const target = getScript(label);
-  if (!target) {
-    console.warn(`[opcode call] target '${label}' not found`);
-    return false;
-  }
-  ScriptCall(ctx, target);
-  return false;
-});
-
-// ─── Conditional branches ────────────────────────────────────────────────────
-
-/** `goto_if_eq A, B, label` — A et B peuvent être var noms, immediates, OU
- *  constantes nommées (MALE/FEMALE/LOCALID_X/etc.).
- *
- *  1:1 décomp event_data.c:VarGet : retourne le var value si id < SPECIAL_VARS,
- *  sinon retourne id (= immediate constants are passed-through). Notre VarGet
- *  TS ne gérait que VAR_* + nombres → 'MALE'/'FEMALE' returned 0 → bug critique
- *  où `goto_if_eq VAR_RESULT, FEMALE` ne branchait jamais (= la cause racine
- *  du "j'arrive toujours côté Brendan" si user pick May).
- *
- *  Fix : utiliser parseValue qui résout MALE/FEMALE/LOCALID_X/VAR_*-noms/numbers.
- *  Pattern shared avec call_if_X. */
-registerOpcode('goto_if_eq', (ctx, args) => {
-  const a = parseValue(args[0]);
-  const b = parseValue(args[1]);
-  if (a === b) {
-    const label = args[2];
-    const target = getScript(label);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_ne', (ctx, args) => {
-  const a = parseValue(args[0]);
-  const b = parseValue(args[1]);
-  if (a !== b) {
-    const label = args[2];
-    const target = getScript(label);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_lt', (ctx, args) => {
-  if (parseValue(args[0]) < parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_gt', (ctx, args) => {
-  if (parseValue(args[0]) > parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_set', (ctx, args) => {
-  const flag = args[0];
-  const label = args[1];
-  if (FlagGet(flag)) {
-    const target = getScript(label);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_unset', (ctx, args) => {
-  const flag = args[0];
-  const label = args[1];
-  if (!FlagGet(flag)) {
-    const target = getScript(label);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_eq', (ctx, args) => {
-  if (parseValue(args[0]) === parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_ne', (ctx, args) => {
-  if (parseValue(args[0]) !== parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_set', (ctx, args) => {
-  if (FlagGet(args[0])) {
-    const target = getScript(args[1]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_unset', (ctx, args) => {
-  if (!FlagGet(args[0])) {
-    const target = getScript(args[1]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-// 1:1 décomp scrcmd.c ScrCmd_callstdif / ScrCmd_gotostdif via cond comparators.
-// _le / _ge complètent _lt / _gt + _eq / _ne déjà implémentés. Usage typique :
-// `call_if_lt VAR_LITTLEROOT_INTRO_STATE, 6, ...` (BrendansHouse_1F_OnLoad).
-
-registerOpcode('goto_if_le', (ctx, args) => {
-  if (parseValue(args[0]) <= parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('goto_if_ge', (ctx, args) => {
-  if (parseValue(args[0]) >= parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptJump(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_lt', (ctx, args) => {
-  if (parseValue(args[0]) < parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_gt', (ctx, args) => {
-  if (parseValue(args[0]) > parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_le', (ctx, args) => {
-  if (parseValue(args[0]) <= parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
-
-registerOpcode('call_if_ge', (ctx, args) => {
-  if (parseValue(args[0]) >= parseValue(args[1])) {
-    const target = getScript(args[2]);
-    if (target) ScriptCall(ctx, target);
-  }
-  return false;
-});
+// ─── Control flow / Conditional branches extraits vers `./script-opcodes-control-flow`
+// (= 1:1 décomp script.c). end/return/goto/call/goto_if_*/call_if_*. ─────────
 
 // ─── Variables / flags extraits vers `./script-opcodes-flag-var`
 // (= 1:1 décomp event_data.c). setvar/addvar/subvar/copyvar.
@@ -363,203 +176,10 @@ registerOpcode('call_if_ge', (ctx, args) => {
 // `_findNpcByLocalId` + `_findTemplateByLocalId` sont maintenant importés depuis
 // `./script-opcodes/helpers` (= 1:1 décomp event_object_movement.c).
 
-registerOpcode('setobjectxy', (_ctx, args) => {
-  const x = parseValue(args[1]);
-  const y = parseValue(args[2]);
-  const npc = _findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    // Post R3 refactor : currentCoords INTERNAL (= +MAP_OFFSET) 1:1 décomp.
-    npc.currentCoordsX = x + MAP_OFFSET;
-    npc.currentCoordsY = y + MAP_OFFSET;
-    npc.previousCoordsX = x + MAP_OFFSET;
-    npc.previousCoordsY = y + MAP_OFFSET;
-  }
-  return false;
-});
-
-registerOpcode('setobjectxyperm', (_ctx, args) => {
-  // 1:1 STRICT décomp `ScrCmd_setobjectxyperm` (scrcmd-engine.ts:1189) :
-  //   u16 localId = VarGet(ScriptReadHalfword(ctx));
-  //   u16 x = VarGet(ScriptReadHalfword(ctx));
-  //   u16 y = VarGet(ScriptReadHalfword(ctx));
-  //   SetObjEventTemplateCoords(localId, x, y);
-  //
-  // Et SetObjEventTemplateCoords (overworld.c:490) écrit dans
-  // `gSaveBlock1Ptr->objectEventTemplates[]` (= PERSISTENT cross-map reload).
-  //
-  // Notre port avant : modifie juste `gMapHeader.events.objectEvents[i].x/y`
-  // en mémoire (= perdu au map reload car re-loaded depuis map.json). Bug user
-  // 2026-05-24 : sortir de la maison + rentrer → MOM revient à template initial
-  // au lieu de la position post-event setobjectxyperm.
-  // Fix 1:1 : appeler SetObjEventTemplateCoords qui persiste dans le saveblock.
-  const x = parseValue(args[1]);
-  const y = parseValue(args[2]);
-  const localIdRaw = args[0] ?? '';
-  // 1:1 STRICT décomp event_object_movement.c:1666 utilise gSaveBlock1Ptr->
-  // objectEventTemplates qui correspond à la map COURANTE (= en cours de
-  // load via LoadObjEventTemplatesFromHeader). Priorité à gMapHeader.id
-  // (= la map en cours de load via OnTransition) sur GetCurrentMap (= lit
-  // saveblock1.location qui n'est pas update avant ApplyCurrentWarp).
-  //
-  // Bug 2026-05-24 : setobjectxyperm fire dans OnTransition AVANT le commit
-  // saveblock location → GetCurrentMap retourne map précédente (= 2F si on
-  // descend en 1F) → SetObjEventTemplateCoords écrit dans le mauvais saveblock
-  // → template 1F reste à chair initial map.json → MOM ne va PAS à TV au
-  // state=6.
-  const currentMapId = gMapHeader?.id ?? GetCurrentMap()?.name ?? '';
-  SetObjEventTemplateCoords(currentMapId, localIdRaw, x, y);
-  // 1:1 STRICT décomp : NE PAS muter `gMapHeader.events.objectEvents` (= ROM
-  // read-only dans le décomp). Seul `gSaveBlock1Ptr.objectEventTemplates` est
-  // muté via SetObjEventTemplateCoords (= writable saveblock memory).
-  //
-  // Bug 2026-05-24 : la mutation `tpl.x = x; tpl.y = y;` du mapHeader
-  // s'accumulait cross-map. Quand on quittait 1F + LoadObjEventTemplatesFrom
-  // Header(1F, header.events.objectEvents) appelait, le header.events.object
-  // Events était déjà muté (x=4 setobjectxyperm précédent) au lieu du fresh
-  // map.json (x=2 chair). Le saveblock 1F était reset MAIS avec valeurs
-  // mutées → MOM restait à devant TV cross-warp.
-  //
-  // Fix : mapHeader reste pristine, seul saveblock mutable.
-  const npc = _findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    // Post R3 refactor : initialCoords/currentCoords INTERNAL (= +MAP_OFFSET).
-    npc.initialCoordsX = x + MAP_OFFSET;
-    npc.initialCoordsY = y + MAP_OFFSET;
-    // Audit session 126 C6 : aussi sync `currentCoordsX/Y` + `previousCoordsX/Y`.
-    // 1:1 décomp `setobjectxyperm` ne touche QUE le template — le NPC actif
-    // reste à sa position courante. MAIS notre runtime spawn déjà actifs au
-    // load → si le script change perm coords après spawn (= cas LittlerootTown
-    // SetMomInFrontOfDoor → setobjectxyperm Mom 5,9), Mom reste à sa position
-    // initiale au lieu de bouger. Pour 1:1 visuel sur les changements en cours
-    // de game, on sync les coords actuelles aussi. Sans ça : NPC visuellement
-    // figé à son spawn pos même si template a changé.
-    npc.currentCoordsX = x + MAP_OFFSET;
-    npc.currentCoordsY = y + MAP_OFFSET;
-    npc.previousCoordsX = x + MAP_OFFSET;
-    npc.previousCoordsY = y + MAP_OFFSET;
-    // Sync world coords (= pixel pos) — worldX/Y restent en LOGICAL pixel.
-    npc.worldX = x * 16;
-    npc.worldY = y * 16;
-  }
-  return false;
-});
-
-registerOpcode('setobjectmovementtype', (_ctx, args) => {
-  const movementType = args[1];
-  // 1:1 décomp : modifie le TEMPLATE pour que le NPC respawn avec ce movement.
-  const tpl = _findTemplateByLocalId(args[0] ?? '');
-  if (tpl) tpl.movementTypeRaw = movementType;
-  const npc = _findNpcByLocalId(args[0] ?? '');
-  if (npc) {
-    npc.movementType = movementType;
-    npc.movementStep = 0;
-    // 1:1 décomp : update facingDirection en sync avec movement type pour que
-    // FACE_UP/DOWN/LEFT/RIGHT applique son facing IMMÉDIATEMENT, même quand
-    // le NPC est `frozen` (= lockall) et ne tick pas son movement handler.
-    // Sans cette sync : Mom OnTransition `setobjectmovementtype FACE_UP`
-    // garde son ancien facing (= SOUTH par défaut spawn) → user voit Mom
-    // facing DOWN au lieu de UP pendant le dialog "C'est joli ici, non?".
-    if (movementType) {
-      const m = movementType.toUpperCase();
-      let newFacing = 0;
-      if (m.endsWith('_FACE_UP') || m === 'MOVEMENT_TYPE_FACE_UP') newFacing = 2;       // DIR_NORTH
-      else if (m.endsWith('_FACE_DOWN') || m === 'MOVEMENT_TYPE_FACE_DOWN') newFacing = 1; // DIR_SOUTH
-      else if (m.endsWith('_FACE_LEFT') || m === 'MOVEMENT_TYPE_FACE_LEFT') newFacing = 3; // DIR_WEST
-      else if (m.endsWith('_FACE_RIGHT') || m === 'MOVEMENT_TYPE_FACE_RIGHT') newFacing = 4; // DIR_EAST
-      else if (m.includes('WALK_IN_PLACE_DOWN')) newFacing = 1;
-      else if (m.includes('WALK_IN_PLACE_UP')) newFacing = 2;
-      else if (m.includes('WALK_IN_PLACE_LEFT')) newFacing = 3;
-      else if (m.includes('WALK_IN_PLACE_RIGHT')) newFacing = 4;
-      if (newFacing > 0) npc.facingDirection = newFacing;
-    }
-  }
-  return false;
-});
-
-// ─── Movement (= Phase 4.10 wired vers movement-system) ─────────────────────
-
-registerOpcode('applymovement', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_applymovement` (scrcmd.c) : enqueue movement actions
-  // pour l'object event ciblé (= localId arg). Movement label arg est résolu
-  // via le movement label resolver setté par script-runtime.
-  const localId = args[0] ?? '';
-  const movementLabel = args[1] ?? '';
-  if (!localId || !movementLabel) {
-    console.warn(`[opcode applymovement] bad args : ${args.join(',')}`);
-    return false;
-  }
-  applyMovement(localId, movementLabel);
-  return false;  // Continue script tick — waitmovement bloque si nécessaire.
-});
-
-registerOpcode('waitmovement', (ctx, args) => {
-  // 1:1 décomp `ScrCmd_waitmovement` (scrcmd.c) : SetupNativeScript callback
-  // qui returns TRUE quand movements done → script resume.
-  //   waitmovement 0 = wait pour TOUTES les queues actives.
-  //   waitmovement LOCALID_X = wait pour cette queue specific.
-  const target = args[0] ?? '0';
-  if (target === '0' || target === '') {
-    SetupNativeScript(ctx, isAllMovementsDone);
-  } else {
-    SetupNativeScript(ctx, () => isMovementDone(target));
-  }
-  return true;  // pause script ; SetupNativeScript reprendra quand done.
-});
-
-// ─── Map scripts triggers (= map_script + map_script_2) ──────────────────────
-// Ces opcodes apparaissent dans les tables OnTransition / OnFrame, pas dans
-// les scripts exécutables. Les ignorer si rencontrés pendant une exécution.
-registerOpcode('map_script', () => false);
-registerOpcode('map_script_2', () => false);
-
-// ─── Object event manipulation (= 1:1 décomp ScrCmd_addobject etc.) ─────────
-
-// `_resolveObjectLocalIdRaw` est maintenant importé depuis `./script-opcodes/helpers`.
-
-registerOpcode('addobject', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_addobject` (scrcmd.c) :
-  //   TrySpawnObjectEvent(localId, mapNum, mapGroup)
-  // qui ClearFlag + spawn directement le NPC. Sans le spawn immédiat, le NPC
-  // attendrait le prochain tile cross pour apparaitre — mais pendant un script
-  // lockall le player ne bouge pas → NPC jamais visible.
-  const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
-  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  if (tpl?.flagId) FlagClear(tpl.flagId);
-  // Spawn immédiat (= 1:1 décomp behavior).
-  const rt = getRuntime();
-  if (rt) {
-    const ok = TrySpawnObjectEvent(localIdRaw, rt);
-    console.log(`[opcode addobject] ${args[0]} → ${localIdRaw} → ${ok ? 'spawned' : 'failed'}`);
-  }
-  return false;
-});
-
-registerOpcode('removeobject', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_removeobject` : SetFlag(flagId) + remove sprite.
-  // Audit session 126 (post-test user) : avant on set juste npc.active=false
-  // mais le SPRITE OAM restait visible → Mom restait collée à l'écran après
-  // qu'elle quitte (= post-clock 2F). 1:1 décomp `RemoveObjectEvent` aussi
-  // destroy le sprite via FreeAndDestroyObjectEventSprite.
-  const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
-  const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
-  if (tpl?.flagId) FlagSet(tpl.flagId);
-  // Find active NPC + destroy sprite + mark inactive.
-  const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
-  if (npc) {
-    if (npc.spriteId >= 0) {
-      try {
-        const rt = getRuntime();
-        rt.DestroySprite(npc.spriteId);
-      } catch (e) {
-        console.warn(`[opcode removeobject] DestroySprite ${npc.spriteId} threw:`, e);
-      }
-      npc.spriteId = -1;
-    }
-    npc.active = false;
-    npc.invisible = true;
-  }
-  return false;
-});
+// Object events / movement opcodes (setobjectxy/setobjectxyperm/
+// setobjectmovementtype/applymovement/waitmovement/map_script/addobject/
+// removeobject) extraits vers `./script-opcodes-movement` (= 1:1 décomp
+// event_object_movement.c + script_movement.c).
 
 // `hideobject` / `showobject` / `hideplayer` / `showplayer` extraits vers
 // `./script-opcodes-player-avatar` (= 1:1 décomp field_player_avatar.c).
@@ -606,16 +226,14 @@ registerOpcode('removeobject', (_ctx, args) => {
 // `checkmoney` extrait vers `./script-opcodes-money-coins`.
 
 /** 1:1 décomp `startminigame_*` etc. Stubs no-op. */
-registerOpcode('cmd5e', (_ctx, _args) => false);
+// `cmd5e` extrait vers `./script-opcodes-control-flow`.
 
 // `setweather` / `resetweather` / `doweather` extraits vers `./script-opcodes-weather`
 // (= 1:1 décomp field_weather.c).
 
 // `setstepcallback` / `setmaplayoutindex` extraits vers `./script-opcodes-fieldmap`.
-registerOpcode('setobjectsubpriority', (_ctx, _args) => false);
-registerOpcode('resetobjectsubpriority', (_ctx, _args) => false);
-registerOpcode('createvobject', (_ctx, _args) => false);
-registerOpcode('turnvobject', (_ctx, _args) => false);
+// setobjectsubpriority / resetobjectsubpriority / createvobject / turnvobject
+// early stubs extraits vers `./script-opcodes-movement`.
 // HOTFIX 2026-05-09 : opendoor/closedoor/waitdooranim sont déjà registered avec
 // les vraies implementations plus haut dans le fichier (lignes 1277-1313).
 // Les stubs no-op qui étaient ici écrasaient les vraies fonctions → portes ne
@@ -665,7 +283,7 @@ registerOpcode('turnvobject', (_ctx, _args) => false);
 
 // 1:1 décomp `ScrCmd_setbyte` (scrcmd.c) — set a byte var. Le decomp utilise ça
 // rarement directement (= surtout pour battle script land). MVP no-op.
-registerOpcode('setbyte', (_ctx, _args) => false);
+// `setbyte` extrait vers `./script-opcodes-control-flow`.
 
 // `pause` extrait vers `./script-opcodes-rtc-clock`.
 
@@ -708,43 +326,12 @@ registerOpcode('setbyte', (_ctx, _args) => false);
 
 // `dofieldeffect` extrait vers `./script-opcodes-fieldeffect` (= 1:1 décomp field_effect.c).
 
-// 1:1 décomp `ScrCmd_setfieldeffectargument` — sets args for next field effect.
-registerOpcode('setfieldeffectargument', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_waitfieldeffect` — wait for field effect to finish.
-registerOpcode('waitfieldeffect', (_ctx, _args) => false);
+// `setfieldeffectargument` / `waitfieldeffect` early stubs extraits vers `./script-opcodes-fieldeffect`.
 
 // 1:1 décomp `ScrCmd_jumpargeq` / `jumpifbyte` / `jumpifbytewasset` etc. —
 //   alternate cond jumps. Treat as no-op fall-through.
-registerOpcode('jumpargeq', (_ctx, _args) => false);
-registerOpcode('jumpifbyte', (_ctx, _args) => false);
-registerOpcode('jumpifbytewasset', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_setarg` — sets script arg. MVP no-op.
-registerOpcode('setarg', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_endall` — like end but bypasses cleanup. Same effect.
-registerOpcode('endall', (ctx) => {
-  StopScript(ctx);
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_end2` — alternate end (= same semantic).
-registerOpcode('end2', (ctx) => {
-  StopScript(ctx);
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_loadword` — load text address into ctx slot. MVP no-op.
-registerOpcode('loadword', (_ctx, _args) => false);
-
-// 1:1 décomp `ScrCmd_callstd` / `gotostd` — call/jump to a stdscript handler.
-//   Le décomp dispatches via gStdScripts[id]. MVP no-op (= we use string-named
-//   scripts, not numeric IDs).
-registerOpcode('callstd', (_ctx, _args) => false);
-registerOpcode('gotostd', (_ctx, _args) => false);
-registerOpcode('callstd_if', (_ctx, _args) => false);
-registerOpcode('gotostd_if', (_ctx, _args) => false);
+// jumpargeq / jumpifbyte / jumpifbytewasset / setarg / endall / end2 / loadword /
+// callstd / gotostd / callstd_if / gotostd_if extraits vers `./script-opcodes-control-flow`.
 
 // `settrainerflag` / `cleartrainerflag` / `checktrainerflag` extraits vers `./script-opcodes-battle`.
 
@@ -773,21 +360,7 @@ registerOpcode('gotostd_if', (_ctx, _args) => false);
  *  pleine ⇒ MON_GIVEN_TO_PC(1), jamais CANT(2) (= 1:1 comportement). */
 // `givemon` extrait vers `./script-opcodes-party`.
 
-// 1:1 décomp `ScrCmd_copyobjectxytoperm` — persist NPC current XY to template
-//   (= so NPC doesn't reset on map reload). 3x usage.
-registerOpcode('copyobjectxytoperm', (_ctx, args) => {
-  const npc = _findNpcByLocalId(args[0] ?? '');
-  const tmpl = _findTemplateByLocalId(args[0] ?? '');
-  if (npc && tmpl) {
-    tmpl.x = npc.currentCoordsX - MAP_OFFSET;
-    tmpl.y = npc.currentCoordsY - MAP_OFFSET;
-  }
-  return false;
-});
-
-// 1:1 décomp `ScrCmd_disable_jump_landing_ground_effect` — movement modifier.
-//   Pseudo-op equivalent (= movement script element, not real opcode).
-registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => false);
+// `copyobjectxytoperm` / `disable_jump_landing_ground_effect` extraits vers `./script-opcodes-movement`.
 
 // `pokenavcall` extrait vers `./script-opcodes-message`.
 
@@ -801,12 +374,7 @@ registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => false);
 
 // `warpdoor` extrait vers `./script-opcodes-warp`.
 
-// 1:1 décomp `ScrCmd_showobjectat` — alt showobject with explicit map id.
-registerOpcode('showobjectat', (_ctx, args) => {
-  const npc = _findNpcByLocalId(args[0] ?? '');
-  if (npc) npc.invisible = false;
-  return false;
-});
+// `showobjectat` extrait vers `./script-opcodes-movement`.
 
 // `getplayerxy` / `getpartysize` extraits vers `./script-opcodes-player-avatar`.
 
@@ -819,38 +387,8 @@ registerOpcode('showobjectat', (_ctx, args) => {
 // Casino, Secret Bases, etc.). Stubs prevent warnings if the user manages to
 // reach those maps before we ship full implementations.
 
-// Battle Frontier (= post-game) — 159+ usages combined
-registerOpcode('frontier_set', (_ctx, _args) => false);
-registerOpcode('frontier_get', (_ctx, _args) => false);
-registerOpcode('frontier_setpartyorder', (_ctx, _args) => false);
-registerOpcode('frontier_getsymbols', (_ctx, _args) => false);
-registerOpcode('frontier_givesymbol', (_ctx, _args) => false);
-registerOpcode('frontier_results', (_ctx, _args) => false);
-registerOpcode('frontier_getstatus', (_ctx, _args) => false);
-registerOpcode('frontier_checkairshow', (_ctx, _args) => false);
-registerOpcode('frontier_checkineligible', (_ctx, _args) => false);
-registerOpcode('frontier_getbrainstatus', (_ctx, _args) => false);
-registerOpcode('frontier_reset', (_ctx, _args) => false);
-registerOpcode('frontier_isbrain', (_ctx, _args) => false);
-registerOpcode('frontier_givepoints', (_ctx, _args) => false);
-
-// Battle Tower / Dome / Factory / Pike (= specific facilities) :
-registerOpcode('tower_set', (_ctx, _args) => false);
-registerOpcode('tower_get', (_ctx, _args) => false);
-registerOpcode('tower_save', (_ctx, _args) => false);
-registerOpcode('tower_setopponent', (_ctx, _args) => false);
-registerOpcode('dome_set', (_ctx, _args) => false);
-registerOpcode('dome_get', (_ctx, _args) => false);
-registerOpcode('factory_set', (_ctx, _args) => false);
-registerOpcode('factory_get', (_ctx, _args) => false);
-registerOpcode('pike_set', (_ctx, _args) => false);
-registerOpcode('pike_get', (_ctx, _args) => false);
-registerOpcode('palace_set', (_ctx, _args) => false);
-registerOpcode('palace_get', (_ctx, _args) => false);
-registerOpcode('arena_set', (_ctx, _args) => false);
-registerOpcode('arena_get', (_ctx, _args) => false);
-registerOpcode('pyramid_set', (_ctx, _args) => false);
-registerOpcode('pyramid_get', (_ctx, _args) => false);
+// Battle Frontier + Tower/Dome/Factory/Pike/Palace/Arena/Pyramid early stubs
+// extraits vers `./script-opcodes-frontier`.
 
 // Money / Coin UI :
 // *moneybox / *coinsbox / removemoney early stubs extraits vers `./script-opcodes-money-coins`.
@@ -864,20 +402,13 @@ registerOpcode('pyramid_get', (_ctx, _args) => false);
 
 // Other late-game / minigames :
 // `setdivewarp` / `setholewarp` extraits vers `./script-opcodes-warp`.
-registerOpcode('dofieldeffectsparkle', (_ctx, _args) => false);
+// `dofieldeffectsparkle` early stub extrait vers `./script-opcodes-fieldeffect`.
 // `setwildbattle` / `dowildbattle` early stubs extraits vers `./script-opcodes-battle`.
 // `dotimebasedevents` / `initclock` extraits vers `./script-opcodes-rtc-clock`.
 // `showcontestpainting` extrait vers `./script-opcodes-contest`.
 // `playslotmachine` extrait vers `./script-opcodes-slot-machine`.
-registerOpcode('setvaddress', (_ctx, _args) => false);
-registerOpcode('vgoto', (_ctx, _args) => false);
-registerOpcode('vcall', (_ctx, _args) => false);
-registerOpcode('vgoto_if_eq', (_ctx, _args) => false);
-registerOpcode('vgoto_if_unset', (_ctx, _args) => false);
-registerOpcode('vgoto_if_set', (_ctx, _args) => false);
-registerOpcode('vcall_if_eq', (_ctx, _args) => false);
-registerOpcode('vcall_if_unset', (_ctx, _args) => false);
-registerOpcode('vcall_if_set', (_ctx, _args) => false);
+// setvaddress / vgoto / vcall / vgoto_if_* / vcall_if_* extraits vers
+// `./script-opcodes-control-flow`.
 
 // More post-game / battle facility stubs (= further audit findings)
 // `removecoins` early stub extrait vers `./script-opcodes-money-coins`.
@@ -885,19 +416,12 @@ registerOpcode('vcall_if_set', (_ctx, _args) => false);
 // pyramid_*/tents early stubs extraits vers `./script-opcodes-frontier`.
 // `adddecoration` extrait vers `./script-opcodes-decoration`.
 // `setwarp` extrait vers `./script-opcodes-warp`.
-registerOpcode('init_affine_anim', (_ctx, _args) => false);
-registerOpcode('walk_down_affine', (_ctx, _args) => false);
-registerOpcode('walk_up_affine', (_ctx, _args) => false);
-registerOpcode('slide_face_up', (_ctx, _args) => false);
-registerOpcode('slide_face_down', (_ctx, _args) => false);
-registerOpcode('slide_face_left', (_ctx, _args) => false);
-registerOpcode('slide_face_right', (_ctx, _args) => false);
+// init_affine_anim / walk_*_affine / slide_face_* early stubs extraits vers
+// `./script-opcodes-movement`.
 
 // ════════════════════════════════════════════════════════════════════════════
-// SESSION 131 — 1:1 décomp opcode completion. User wants "tout les opcodes du
-// jeu, pas de MVP". Re-registers les stubs ci-dessus avec real implementations
-// 1:1 décomp (= registerOpcode last-write-wins, donc les enregistrements ici
-// override les stubs `(_ctx, _args) => false` plus haut).
+// SESSION 131 — 1:1 décomp opcode completion. Reste à extraire :
+// control-flow / setvaddress / loadword / setbyte / setarg / jump* / endall / end2.
 //
 // Source de vérité 1:1 :
 //   - `D:/Projet 1/decomps/pokeemeraude/src/scrcmd.c` (= field opcodes)
@@ -913,13 +437,7 @@ registerOpcode('slide_face_right', (_ctx, _args) => false);
  *  qui pointent vers du bytecode RAM relatif à un base addr. */
 let _sAddressOffset = 0;
 
-/** 1:1 décomp `sFieldEffectScriptId` (scrcmd.c:50). Set par `waitfieldeffect`. */
-let _sFieldEffectScriptId = 0;
-
-/** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:gFieldEffectArguments).
- *  Buffer s16 utilisé pour passer params aux field effects. Set par
- *  `setfieldeffectargument` opcode + utilisé par `dofieldeffect`. */
-const _gFieldEffectArguments: number[] = new Array(8).fill(0);
+// `_sFieldEffectScriptId` + `_gFieldEffectArguments` extraits vers `./script-opcodes-fieldeffect`.
 
 // `_gFlashLevel` extrait vers `./script-opcodes-screen-fx`.
 
@@ -1020,275 +538,27 @@ function _runStdScript(ctx: ScriptContext, stdIndex: number, isCall: boolean): b
   return false;
 }
 
-registerOpcode('gotostd', (ctx, args) => {
-  // 1:1 décomp ScrCmd_gotostd (scrcmd.c:171). Resolve std index → dispatch.
-  const stdIndex = parseValue(args[0] ?? '0');
-  return _runStdScript(ctx, stdIndex, false);
-});
+// Std scripts dispatch / virtual address / native function calls extraits vers
+// `./script-opcodes-control-flow`.
 
-registerOpcode('callstd', (ctx, args) => {
-  // 1:1 décomp ScrCmd_callstd (scrcmd.c:181).
-  const stdIndex = parseValue(args[0] ?? '0');
-  return _runStdScript(ctx, stdIndex, true);
-});
-
-registerOpcode('gotostd_if', (ctx, args) => {
-  // 1:1 décomp ScrCmd_gotostd_if (scrcmd.c:191). Condition vs comparisonResult.
-  // Notre compare opcode store le résultat dans ctx, mais pas en COMPARE_LT/EQ/GT.
-  // Pour le moment : ne fire que si condition=0 (toujours vrai = goto inconditionnel).
-  const _condition = parseValue(args[0] ?? '0');
-  const stdIndex = parseValue(args[1] ?? '0');
-  return _runStdScript(ctx, stdIndex, false);
-});
-
-registerOpcode('callstd_if', (ctx, args) => {
-  // 1:1 décomp ScrCmd_callstd_if (scrcmd.c:203).
-  const _condition = parseValue(args[0] ?? '0');
-  const stdIndex = parseValue(args[1] ?? '0');
-  return _runStdScript(ctx, stdIndex, true);
-});
-
-// ─── Virtual address scripts (Mystery Event) ─────────────────────────────────
-
-registerOpcode('setvaddress', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setvaddress (scrcmd.c). Pour scripts WonderCard / RAM
-  // qui contiennent du bytecode chargé dynamiquement avec addr relative.
-  // Notre port : scripts sont label-based (string), pas pointer-based. On
-  // stocke l'offset pour cohérence mais ne l'utilise pas en pratique.
-  _sAddressOffset = parseInt(args[0] ?? '0', 10);
-  return false;
-});
-
-registerOpcode('vgoto', (ctx, args) => {
-  // 1:1 décomp ScrCmd_vgoto : ScriptJump(ctx, addr - sAddressOffset).
-  // Notre port : args[0] est un label string, le offset ne s'applique pas.
-  // → comportement équivalent à un `goto`.
-  return getOpcodeHandler('goto')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vcall', (ctx, args) => {
-  // 1:1 décomp ScrCmd_vcall : ScriptCall(ctx, addr - sAddressOffset).
-  return getOpcodeHandler('call')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vgoto_if_eq', (ctx, args) => {
-  return getOpcodeHandler('goto_if_eq')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vgoto_if_set', (ctx, args) => {
-  return getOpcodeHandler('goto_if_set')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vgoto_if_unset', (ctx, args) => {
-  return getOpcodeHandler('goto_if_unset')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vcall_if_eq', (ctx, args) => {
-  return getOpcodeHandler('call_if_eq')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vcall_if_set', (ctx, args) => {
-  return getOpcodeHandler('call_if_set')?.(ctx, args) ?? false;
-});
-
-registerOpcode('vcall_if_unset', (ctx, args) => {
-  return getOpcodeHandler('call_if_unset')?.(ctx, args) ?? false;
-});
-
-// `vbuffer` extrait vers `./script-opcodes-string`.
-
-// ─── Native function calls (callnative/gotonative) ──────────────────────────
-
-registerOpcode('callnative', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_callnative (scrcmd.c:329). Called function pointer
-  // directement avec aucun arg. Dans notre port, args[0] est le nom de la
-  // fonction (e.g., "CleanupVariableScripts"). Dispatch via specials registry.
-  const funcName = args[0] ?? '';
-  if (!funcName) return false;
-  _invokeSpecial(funcName);
-  return false;
-});
-
-registerOpcode('gotonative', (ctx, args) => {
-  // 1:1 décomp ScrCmd_gotonative (scrcmd.c:336). SetupNativeScript(ctx, addr).
-  // Native fn polled every frame jusqu'à return TRUE. Notre port : dispatch
-  // au specials registry, set up native polling.
-  const funcName = args[0] ?? '';
-  if (!funcName) return false;
-  let done = false;
-  const poll = (): boolean => {
-    if (!done) {
-      done = true;
-      _invokeSpecial(funcName);
-    }
-    return true;  // resume after 1 frame
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
-
-// ─── RAM ops (loadword / setbyte / setarg / loadbyte / setptr / etc.) ───────
-// Note : ctx->data[8] (u32 array) n'existe pas dans notre ScriptContext (= on
-// est label-based, pas pointer-based). Ces opcodes deviennent largely no-ops
-// safe. setarg/setbyte/jumpargeq/jumpifbyte/waitplaysewithpan sont en réalité
-// des battle_anim_script opcodes (= différent VM, pas le field VM) — ils
-// apparaissent dans nos extracted scripts via battle anim data.
-
-registerOpcode('loadword', (_ctx, _args) => false);
-registerOpcode('setbyte', (_ctx, _args) => false);
-registerOpcode('setarg', (_ctx, _args) => false);
-
-registerOpcode('jumpargeq', (_ctx, _args) => false);
-registerOpcode('jumpifbyte', (_ctx, _args) => false);
-registerOpcode('jumpifbytewasset', (_ctx, _args) => false);
+// ─── RAM ops + battle anim opcodes extraits vers `./script-opcodes-control-flow` ─
+// (loadword/setarg/jumpargeq/jumpifbyte/jumpifbytewasset/setptr/setptrbyte/
+//  loadbyte/loadbytefromptr/copybyte/copylocal + battle anim _safeStubOpcodes).
 
 // `preparemsg` extrait vers `./script-opcodes-string`.
 
 // ─── Waits (1:1 décomp ScrCmd_wait*) ────────────────────────────────────────
 // `waitse` / `waitplaysewithpan` / `waitmoncry` extraits vers `./script-opcodes-sound`.
 
-registerOpcode('waitfieldeffect', (ctx, args) => {
-  // 1:1 décomp ScrCmd_waitfieldeffect (scrcmd.c) :
-  //   sFieldEffectScriptId = VarGet(arg);
-  //   SetupNativeScript(ctx, WaitForFieldEffectFinish) ; return TRUE
-  // WaitForFieldEffectFinish : return !FieldEffectActiveListContains(sFieldEffectScriptId).
-  // Session 132 : real tracking via field-effect-active-list.ts.
-  _sFieldEffectScriptId = _vget(args[0]);
-  const poll = (): boolean => {
-    const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListContains?: (id: number) => boolean } }).__fieldEffectActiveList;
-    return !(fa?.FieldEffectActiveListContains?.(_sFieldEffectScriptId) ?? false);
-  };
-  SetupNativeScript(ctx, poll);
-  return true;
-});
-
-// ─── Field effects (1:1 décomp ScrCmd_setfieldeffectargument + dofieldeffectsparkle) ─
-
-registerOpcode('setfieldeffectargument', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setfieldeffectargument (scrcmd.c) :
-  //   gFieldEffectArguments[argNum] = (s16)VarGet(value).
-  const argNum = parseValue(args[0] ?? '0');
-  const value = _vget(args[1]);
-  if (argNum >= 0 && argNum < 8) {
-    // s16 cast (sign extension du 16-bit)
-    let v = value & 0xFFFF;
-    if (v & 0x8000) v -= 0x10000;
-    _gFieldEffectArguments[argNum] = v;
-  }
-  // Expose pour le rendering field-effect.
-  (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
-  return false;
-});
-
-registerOpcode('dofieldeffectsparkle', (ctx, args) => {
-  // 1:1 décomp macro `dofieldeffectsparkle x, y, priority` (event.inc:1974) :
-  //   setfieldeffectargument 0, x ; setfieldeffectargument 1, y ;
-  //   setfieldeffectargument 2, priority ; dofieldeffect FLDEFF_SPARKLE
-  // Session 132 : trigger active list add pour tracking via waitfieldeffect.
-  const x = _vget(args[0]);
-  const y = _vget(args[1]);
-  const priority = _vget(args[2]);
-  _gFieldEffectArguments[0] = x;
-  _gFieldEffectArguments[1] = y;
-  _gFieldEffectArguments[2] = priority;
-  (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
-  // FLDEFF_SPARKLE = 36 (= 1:1 décomp include/constants/field_effects.h).
-  const FLDEFF_SPARKLE = 36;
-  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number, dur?: number) => void } }).__fieldEffectActiveList;
-  // Sparkle dure ~30 frames = ~500ms.
-  fa?.FieldEffectActiveListAdd?.(FLDEFF_SPARKLE, 500);
-  return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;
-});
+// waitfieldeffect / setfieldeffectargument / dofieldeffectsparkle real impls
+// extraits vers `./script-opcodes-fieldeffect`.
 
 // ─── Pokemon picture extraits vers `./script-opcodes-menu`. ─────────────────
 
 // `selectapproachingtrainer` / `lockfortrainer` real impls extraits vers `./script-opcodes-lock`.
 
-// ─── Object subpriority (1:1 décomp ScrCmd_setobjectsubpriority) ────────────
-
-registerOpcode('setobjectsubpriority', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_setobjectsubpriority (scrcmd.c) :
-  //   SetObjectSubpriority(localId, mapNum, mapGroup, priority + 83).
-  // event_object_movement.c:SetObjectSubpriority :
-  //   sprite = &gSprites[objectEvent->spriteId];
-  //   sprite->subpriority = priority + 83;
-  //   sprite->coordOffsetEnabled = TRUE;  // = fixedPriority flag
-  // Session 132 : wire à decomp-runtime.gSprites pour que syncSpritesToOam
-  // propage subpriority → OAM.
-  const localId = _vget(args[0]);
-  const _mapGroup = parseValue(args[1] ?? '0');
-  const _mapNum = parseValue(args[2] ?? '0');
-  const priority = parseValue(args[3] ?? '0');
-  const effective = (priority + 83) & 0xFF;
-  // Find object event by localId (= localIdRaw match).
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) {
-    (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = effective;
-    (obj as unknown as { fixedPriority?: boolean }).fixedPriority = true;
-    // Propage au Sprite via spriteId (= decomp-runtime.gSprites Map).
-    const rt = getRuntime();
-    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
-    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites.get(spriteId);
-      if (spr) spr.subpriority = effective;
-    }
-  }
-  return false;
-});
-
-registerOpcode('resetobjectsubpriority', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_resetobjectsubpriority : ResetObjectSubpriority(localId, mapNum, mapGroup).
-  // event_object_movement.c:ResetObjectSubpriority :
-  //   sprite = &gSprites[objectEvent->spriteId];
-  //   sprite->subpriority = 0;  // reset to default elevation-based
-  //   sprite->coordOffsetEnabled = FALSE;
-  const localId = _vget(args[0]);
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) {
-    (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = undefined;
-    (obj as unknown as { fixedPriority?: boolean }).fixedPriority = false;
-    // Reset Sprite subpriority à default (= calculé par elevation, 1:1 décomp).
-    const rt = getRuntime();
-    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
-    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
-      const spr = rt.gSprites.get(spriteId);
-      // Reset subpriority à 0xFF (= default CreateSprite, lowest priority slot).
-      if (spr) spr.subpriority = 0xFF;
-    }
-  }
-  return false;
-});
-
-// ─── Virtual objects (createvobject / turnvobject) ──────────────────────────
-
-registerOpcode('createvobject', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_createvobject (scrcmd.c:1900) :
-  //   CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction).
-  // Session 132 : real sprite create via virtual-objects.ts (= load gfx +
-  // CreateObjectGraphicsSprite + StartSpriteAnim).
-  const graphicsId = parseValue(args[0] ?? '0');
-  const virtualObjId = parseValue(args[1] ?? '0');
-  const x = _vget(args[2]);
-  const y = _vget(args[3]);
-  const elevation = parseValue(args[4] ?? '0');
-  const direction = parseValue(args[5] ?? '0');
-  void (async () => {
-    const vo = (globalThis as { __virtualObjects?: { CreateVirtualObject?: (g: number, id: number, x: number, y: number, e: number, d: number) => Promise<number> } }).__virtualObjects;
-    if (vo?.CreateVirtualObject) {
-      await vo.CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction);
-    }
-  })();
-  return false;
-});
-
-registerOpcode('turnvobject', (_ctx, args) => {
-  // 1:1 décomp ScrCmd_turnvobject : TurnVirtualObject(virtualObjId, direction).
-  const virtualObjId = parseValue(args[0] ?? '0');
-  const direction = parseValue(args[1] ?? '0');
-  const vo = (globalThis as { __virtualObjects?: { TurnVirtualObject?: (id: number, d: number) => void } }).__virtualObjects;
-  vo?.TurnVirtualObject?.(virtualObjId, direction);
-  return false;
-});
+// `setobjectsubpriority` / `resetobjectsubpriority` / `createvobject` /
+// `turnvobject` real impls extraits vers `./script-opcodes-movement`.
 
 // `setflashlevel` / `animateflash` real impls extraits vers `./script-opcodes-screen-fx`.
 
@@ -1335,37 +605,8 @@ registerOpcode('turnvobject', (_ctx, args) => {
 
 // ─── Event Mon (= seteventmon) extrait vers `./script-opcodes-frontier`.
 
-// ─── Disable jump landing ground effect ─────────────────────────────────────
-
-registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => {
-  // 1:1 décomp : flag sur ObjectEvent qui empêche le dust effect au landing
-  // après jump. Set sur le SELECTED object.
-  const npc = getSelectedNpc();
-  if (npc) {
-    (npc as unknown as { disableJumpLandingGroundEffect?: boolean }).disableJumpLandingGroundEffect = true;
-  }
-  return false;
-});
-
-// ─── Hide object at (1:1 décomp ScrCmd_hideobjectat) ─────────────────────────
-
-registerOpcode('hideobjectat', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_hideobjectat` (scrcmd.c) :
-  //   SetObjectInvisibility(localId, mapNum, mapGroup, TRUE);
-  // `SetObjectInvisibility` (event_object_movement.c:1939) :
-  //   if (!TryGetObjectEventIdByLocalIdAndMap(...,&id))  // = SI TROUVÉ
-  //     gObjectEvents[id].invisible = invisible;
-  // (TryGet… renvoie TRUE si NON trouvé → `!` = trouvé). Donc :
-  // objet chargé → invisible=TRUE ; non chargé → NO-OP. Surtout PAS
-  // de `active=false` (= ça c'est removeobject) ni FlagSet (= pas de
-  // persistance ici ; ScrCmd_removeobject lui-même ne FlagSet pas).
-  // Audit dupes : l'ancienne impl (active=false) + le dup mort plus
-  // haut (FlagSet+deactivate) divergeaient du décomp → corrigé 1:1.
-  const localId = _vget(args[0]);
-  const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
-  if (obj) obj.invisible = true;  // 1:1 SetObjectInvisibility(...,TRUE) ; objet reste actif
-  return false;
-});
+// `disable_jump_landing_ground_effect` / `hideobjectat` real impls extraits vers
+// `./script-opcodes-movement`.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BATTLE FRONTIER / TENT MACROS (1:1 décomp expansion)
@@ -1394,101 +635,21 @@ registerOpcode('hideobjectat', (_ctx, args) => {
 // opcodes no-op pour éviter les warnings (= leur effet réel est dans le
 // movement system géré via applymovement + waitmovement).
 
-registerOpcode('slide_face_up', (_ctx, _args) => false);
-registerOpcode('slide_face_down', (_ctx, _args) => false);
-registerOpcode('slide_face_left', (_ctx, _args) => false);
-registerOpcode('slide_face_right', (_ctx, _args) => false);
-registerOpcode('walk_up_affine', (_ctx, _args) => false);
-registerOpcode('walk_down_affine', (_ctx, _args) => false);
-registerOpcode('init_affine_anim', (_ctx, _args) => false);
+// `slide_face_*` / `walk_*_affine` / `init_affine_anim` movement actions
+// extraites vers `./script-opcodes-movement`.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MISSING DECOMP OPCODES (= toutes les entries de gScriptCmdTable manquantes)
 // Source : `data/script_cmd_table.inc` (227 opcodes total, 0x00-0xE2).
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ─── No-ops (1:1 décomp ScrCmd_nop/nop1) ────────────────────────────────────
-registerOpcode('nop', (_ctx, _args) => false);
-registerOpcode('nop1', (_ctx, _args) => false);
-
-// ─── RAM scripts (returnram, endram) ────────────────────────────────────────
-
-registerOpcode('returnram', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_returnram (scrcmd.c) :
-  //   ScriptJump(ctx, gRamScriptRetAddr).
-  // gRamScriptRetAddr set par trywondercardscript. Notre port : pas de RAM
-  // script bytecode → équivalent à end (= stop script).
-  StopScript(ctx);
-  return false;
-});
-
-registerOpcode('endram', (ctx, _args) => {
-  // 1:1 décomp ScrCmd_endram : RamScript_StopAndClear() + ScriptContext_Stop.
-  StopScript(ctx);
-  return false;
-});
-
-// `setmysteryeventstatus` extrait vers `./script-opcodes-mystery-event`
-// (= 1:1 décomp mystery_event_script.c).
-
-// ─── RAM ops (setptr / setptrbyte / loadbyte / loadbytefromptr / copybyte / copylocal) ─
-
-registerOpcode('loadbyte', (_ctx, _args) => false);
-registerOpcode('setptr', (_ctx, _args) => false);
-registerOpcode('setptrbyte', (_ctx, _args) => false);
-registerOpcode('loadbytefromptr', (_ctx, _args) => false);
-registerOpcode('copybyte', (_ctx, _args) => false);
-registerOpcode('copylocal', (_ctx, _args) => false);
-
-// ─── Compare variants (1:1 décomp ScrCmd_compare_*) ────────────────────────
-// Notre opcode `compare` gère `var → value`. Les 6 autres variants existent
-// pour comparer local-to-local, local-to-ptr, etc. Pour notre extracteur, seul
-// `compare var value` est utilisé en pratique. Stub les autres safely.
-registerOpcode('compare_local_to_local', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_local_to_value', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_local_to_ptr', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_ptr_to_local', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_ptr_to_value', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_ptr_to_ptr', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_var_to_value', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-registerOpcode('compare_var_to_var', (ctx, args) => getOpcodeHandler('compare')?.(ctx, args) ?? false);
-
-// ─── Goto/call if (single condition byte, used internally by gotostd_if) ────
-registerOpcode('goto_if', (ctx, args) => {
-  // 1:1 décomp ScrCmd_goto_if : depends sur ctx->comparisonResult + condition byte.
-  // condition: 0=LT, 1=EQ, 2=GT, 3=LE, 4=GE, 5=NE.
-  // Notre extracteur emet goto_if_eq/_ne/etc. directement → cette forme générique
-  // rarely used. Safe stub.
-  void ctx; void args;
-  return false;
-});
-registerOpcode('call_if', (ctx, args) => {
-  void ctx; void args;
-  return false;
-});
+// nop/nop1/returnram/endram/RAM ops/compare_variants/goto_if/call_if extraits
+// vers `./script-opcodes-control-flow`.
 
 // ─── Movement at (variant avec mapGroup/mapNum) ─────────────────────────────
 
-registerOpcode('applymovementat', (ctx, args) => {
-  // 1:1 décomp ScrCmd_applymovementat : applymovement mais sur object dans
-  // (mapGroup, mapNum). Notre port : si même map → delegate à applymovement.
-  return getOpcodeHandler('applymovement')?.(ctx, args) ?? false;
-});
-
-registerOpcode('waitmovementat', (ctx, args) => {
-  // 1:1 décomp ScrCmd_waitmovementat : waitmovement mais sur map spécifique.
-  return getOpcodeHandler('waitmovement')?.(ctx, args) ?? false;
-});
-
-registerOpcode('removeobjectat', (ctx, args) => {
-  // 1:1 décomp ScrCmd_removeobjectat : removeobject sur map spécifique.
-  return getOpcodeHandler('removeobject')?.(ctx, args) ?? false;
-});
-
-registerOpcode('addobjectat', (ctx, args) => {
-  // 1:1 décomp ScrCmd_addobjectat : addobject sur map spécifique.
-  return getOpcodeHandler('addobject')?.(ctx, args) ?? false;
-});
+// `applymovementat` / `waitmovementat` / `removeobjectat` / `addobjectat` extraits
+// vers `./script-opcodes-movement`.
 
 // `dotrainerbattle` / `gotopostbattlescript` / `gotobeatenscript` extraits vers
 // `./script-opcodes-battle`.
@@ -1520,13 +681,18 @@ registerOpcode('addobjectat', (ctx, args) => {
 
 // `vbuffermessage` extrait vers `./script-opcodes-string`.
 
-// ─── Rotating tile script_cmd_table_entry ───────────────────────────────────
-// (Le script_cmd_table_entry est un marker, pas un opcode actif).
-registerOpcode('script_cmd_table_entry', (_ctx, _args) => false);
+// `script_cmd_table_entry` extrait vers `./script-opcodes-control-flow`.
 
-// ─── Battle anim / other rare opcodes vus dans nos extracted scripts ─────────
-// Ces opcodes apparaissent à cause de l'extracteur qui collecte aussi les
-// battle anim scripts. Stubs safe pour éviter les warnings.
+// NOTE : les opcodes ci-dessous (= `_safeStubOpcodes` + `_otherVmStubs`) ne sont
+// PAS dans scrcmd.c — ce sont d'autres VMs (battle_anim_script.inc, battle_script.inc,
+// battle_ai_script.inc, contest_ai.inc, fldeff.inc, movement.inc, etc.). Notre
+// extracteur les collecte par regex (= via `scripts/extract-opcodes.mjs`) mais
+// ils ne sont jamais exécutés par le field script VM. Le `for` loop ci-dessous
+// les registre comme no-op safe pour éviter les warnings `[script-runtime] opcode
+// 'X' not implemented`. Garder dans script-opcodes.ts (= pas de fichier décomp
+// scrcmd.c à mapper). À porter dans leur runtime respectif (= battle-flow.ts,
+// battle-anim.ts, etc.) en session dédiée si besoin.
+
 const _safeStubOpcodes = [
   // Battle anim primitives (= battle_anim_script.inc) — différent VM.
   'createsprite', 'createvisualtask', 'step_end', 'waitforvisualfinish',
@@ -1996,6 +1162,8 @@ import './script-opcodes-special';
 import './script-opcodes-frontier';
 import './script-opcodes-menu';
 import './script-opcodes-message';
+import './script-opcodes-movement';
+import './script-opcodes-control-flow';
 
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
