@@ -122,7 +122,7 @@ export function LoadGameSave(): number {
     // 1:1 décomp load_save.c:80 : SetBagItemsPointers() après le swap du
     // SaveBlock1 (= wire gBagPockets vers les nouveaux pointers).
     // Migration ancien format (= block1.bag composite) → 5 fields séparés.
-    const block1 = migrateBlock1BagFormat(blocks.saveBlock1 as SaveBlock1);
+    const block1 = migrateBlock1BagFormat(blocks.saveBlock1 as SaveBlock1) as SaveBlock1;
     SetSaveBlock1(block1);
     SetSaveBlock2(blocks.saveBlock2 as SaveBlock2);
     SetBagItemsPointers();
@@ -171,12 +171,14 @@ export async function SaveGame(): Promise<boolean> {
   // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
     const lsMod = await import('./load_save');
+    const mapMod = await import('./map-loader');
     // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
     // SyncPlayerPositionToBlock = notre helper port (le décomp update
     // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save
     // pour pragmatisme — comportement identique au save).
     lsMod.SyncPlayerPositionToBlock();
-    lsMod.SaveMapView();
+    // 1:1 décomp `SaveMapView` (= map-loader.ts port de fieldmap.c).
+    mapMod.SaveMapView();
     // 1:1 décomp CopyPartyAndObjectsToSave (load_save.c) = SavePlayerParty +
     // SaveObjectEvents.
     lsMod.CopyPartyAndObjectsToSave();
