@@ -27,7 +27,7 @@
  */
 
 import { registerSpecial } from './script-opcodes';
-import { FlagSet, VarSet, VarGet } from './script-vars';
+import { FlagSet, FlagClear, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
@@ -691,7 +691,11 @@ registerSpecial('TryGetWallpaperWithWaldaPhrase', () => 0);
 
 /** 1:1 décomp `ResetSSTidalFlag` / `SetSSTidalFlag` (event_data.c) — ferry
  *  state for SS Tidal cruise. */
-registerSpecial('ResetSSTidalFlag', () => { /* no-op */ });
+/** 1:1 décomp `ResetSSTidalFlag` (field_specials.c:282-285).
+ *  Clear FLAG_SYS_CRUISE_MODE (= player no longer on SS Tidal cruise). */
+registerSpecial('ResetSSTidalFlag', () => {
+  FlagClear('FLAG_SYS_CRUISE_MODE');
+});
 registerSpecial('SetSSTidalFlag', () => { /* no-op */ });
 
 /** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
