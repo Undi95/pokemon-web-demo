@@ -35,7 +35,7 @@ import { GetBaseOamForDimensions } from './object-event-base-oam';
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
 // depuis base_oam template authoritative). Fallback dimensions-based pour les
 // rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
-import { GetObjectEventGraphicsInfo } from './object-event-graphics-info-data';
+import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers } from './object-event-graphics-info-data';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -2201,7 +2201,16 @@ function _spawnSingleNpcFromTemplate(
   const _pic1dObj = pngTo1dObjLayoutAllFrames(
     png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
   );
-  const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(graphicsKey, _pic1dObj);
+  // C1.3 fix : certains factories (= BrendanNormal/MayNormal/RivalMayNormal/
+  // RivalBrendanNormal) attendent 2 buffers (normalPic + runningPic). Notre
+  // preload ne charge qu'1 PNG par graphicsKey. Détection via Function.length :
+  // duplique le buffer pour les frames running (= dette : visuels running
+  // incorrects mais évite crash subarray undefined).
+  const _factory = gObjectEventGraphicsInfoPointers[graphicsKey];
+  const _numPicsExpected = _factory ? _factory.length : 1;
+  const _picsArgs: Uint8Array[] = [];
+  for (let i = 0; i < _numPicsExpected; i++) _picsArgs.push(_pic1dObj);
+  const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(graphicsKey, ..._picsArgs);
   const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
   if (_hasNewFlow) {
     // Flow 1:1 strict : copie SEULEMENT frame 0 en VRAM (= état initial).
