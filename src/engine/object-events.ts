@@ -74,6 +74,37 @@ export const OBJECT_EVENTS_COUNT = 16;
 const sMovementDelaysMedium = [32, 64, 96, 128];
 const gStandardDirections = [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST];
 
+// 1:1 STRICT décomp `sFaceDirectionAnimNums` (event_object_movement.c:715-725).
+// Maps direction → animNum dans sAnimTable_Standard. ANIM_STD_FACE_SOUTH=0, etc.
+// Utilisé par GetFaceDirectionAnimNum (= 1:1 décomp event_object_movement.c:4495).
+const sFaceDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 0,   // ANIM_STD_FACE_SOUTH
+  [DIR_SOUTH]: 0,  // ANIM_STD_FACE_SOUTH
+  [DIR_NORTH]: 1,  // ANIM_STD_FACE_NORTH
+  [DIR_WEST]: 2,   // ANIM_STD_FACE_WEST
+  [DIR_EAST]: 3,   // ANIM_STD_FACE_EAST
+};
+
+/** 1:1 décomp `u8 GetFaceDirectionAnimNum(u8 direction)` (event_object_movement.c:4495-4498). */
+function GetFaceDirectionAnimNum(direction: number): number {
+  return sFaceDirectionAnimNums[direction] ?? 0;
+}
+
+// 1:1 STRICT décomp `sMoveDirectionAnimNums` (event_object_movement.c:726-736).
+// Maps direction → animNum walking. ANIM_STD_GO_SOUTH=4, etc.
+const sMoveDirectionAnimNums: Readonly<Record<number, number>> = {
+  [DIR_NONE]: 4,   // ANIM_STD_GO_SOUTH
+  [DIR_SOUTH]: 4,  // ANIM_STD_GO_SOUTH
+  [DIR_NORTH]: 5,  // ANIM_STD_GO_NORTH
+  [DIR_WEST]: 6,   // ANIM_STD_GO_WEST
+  [DIR_EAST]: 7,   // ANIM_STD_GO_EAST
+};
+
+/** 1:1 décomp `u8 GetMoveDirectionAnimNum(u8 direction)`. */
+export function GetMoveDirectionAnimNum(direction: number): number {
+  return sMoveDirectionAnimNums[direction] ?? 4;
+}
+
 // ─── Object event graphics catalog ──────────────────────────────────────────
 
 interface GraphicsInfo {
@@ -956,6 +987,40 @@ function pngTo1dObjLayoutSingleFrame(
   return out;
 }
 
+/**
+ * Convertit un PNG entier (row-major, multi-frames horizontaux) → format 1D OBJ
+ * frames consécutifs (= ce que `gObjectEventPic_*` est en décomp ROM).
+ *
+ * Pour un PNG 144x16 = 18 tiles wide, frames 16x16 (= 2 tiles wide) :
+ *   Input  (row-major)    : row 0 = [F0.TL, F0.TR, F1.TL, F1.TR, ...]
+ *                            row 1 = [F0.BL, F0.BR, F1.BL, F1.BR, ...]
+ *   Output (frames consec) : frame 0 = [F0.TL, F0.TR, F0.BL, F0.BR]
+ *                            frame 1 = [F1.TL, F1.TR, F1.BL, F1.BR]
+ *                            ...
+ *
+ * Utilisé pour pré-convertir le PNG avant d'appeler `GetObjectEventGraphicsInfo`
+ * (= les factories pic_table assument frames consec via `subarray(N*sz, (N+1)*sz)`).
+ *
+ * 1:1 STRICT : le format frames consec est ce que décomp ROM stocke (= INCBIN
+ * `gObjectEventPic_X` du build pipeline). Notre PNG row-major est un artefact
+ * de notre asset loader → reformater à load time pour matcher décomp.
+ */
+function pngTo1dObjLayoutAllFrames(
+  pngCharData: Uint8Array, pngWidthTiles: number,
+  framePxW: number, framePxH: number,
+): Uint8Array {
+  const TILE_BYTES = 32;
+  const FRAME_W_TILES = framePxW / 8;
+  const TILES_PER_FRAME = FRAME_W_TILES * (framePxH / 8);
+  const numFrames = Math.floor(pngWidthTiles / FRAME_W_TILES);
+  const out = new Uint8Array(numFrames * TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < numFrames; f++) {
+    const frame = pngTo1dObjLayoutSingleFrame(pngCharData, f, pngWidthTiles, framePxW, framePxH);
+    out.set(frame, f * TILES_PER_FRAME * TILE_BYTES);
+  }
+  return out;
+}
+
 // ─── Sprite frame layout 1:1 player-avatar.ts ───────────────────────────────
 
 const NPC_SPRITE_FRAMES: Record<number, { face: number; walk1: number; walk2: number; hFlip: boolean }> = {
@@ -1557,6 +1622,10 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.useSubsprites) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite) return;
+  // C1.3 — 1:1 STRICT décomp : si sprite.anims est wired (= flow 1:1 par
+  // graphicsInfo + AnimateSprite tick), on skip ce legacy updateNpcSpriteFrame
+  // pour ne pas conflict avec le AnimCmd dispatch qui drive déjà oam.tileNum.
+  if (sprite.anims) return;
   const oam = rt.gba.oam[sprite.oamIndex];
   const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
 
@@ -2105,7 +2174,22 @@ function _spawnSingleNpcFromTemplate(
     return false;
   }
 
-  if (is48x48) {
+  // ─── C1.3 — 1:1 STRICT décomp flow unified (TrySpawnObjectEventTemplate) ───
+  //
+  // Pré-convert PNG row-major → 1D OBJ frames consécutifs (= format ROM décomp
+  // gObjectEventPic_*). Sans ça les `subarray(N*sz, (N+1)*sz)` des pic_table
+  // factories mélangent les frames (= bug "2 têtes empilées").
+  const _pic1dObj = pngTo1dObjLayoutAllFrames(
+    png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
+  );
+  const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(graphicsKey, _pic1dObj);
+  const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
+  if (_hasNewFlow) {
+    // Flow 1:1 strict : copie SEULEMENT frame 0 en VRAM (= état initial).
+    // AnimateSprite + RequestSpriteFrameImageCopy → ProcessSpriteCopyRequests
+    // recopie images[N].data dans le slot VRAM à chaque anim cmd.
+    rt.gba.objVram.set(_graphicsInfo_1to1.images[0].data, objTileBase * 32);
+  } else if (is48x48) {
     // 48×48 truck : 36 tiles row-major sequential (= matches sOamTable_48x48
     // tileOffsets 0, 4, 6, 10, ... 34). PNG layout : 6×6 tiles row-major.
     // Just copy the 36 tiles directly into OBJ VRAM at objTileBase.
@@ -2278,8 +2362,74 @@ function _spawnSingleNpcFromTemplate(
   // object-event-graphics-info-data.ts). Si trouvé, utilise graphicsInfo.oam
   // (= source authoritative décomp). Sinon fallback à GetBaseOamForDimensions
   // qui dérive depuis dimensions PNG (= cas OBJ_EVENT_GFX_VAR_* dynamiques).
-  const graphicsInfo = GetObjectEventGraphicsInfo(graphicsKey, png.charData);
+  const graphicsInfo = _graphicsInfo_1to1;
   const oamTemplate = graphicsInfo?.oam ?? GetBaseOamForDimensions(graphics.frameWidth, graphics.frameHeight);
+
+  // ─── C1.3 — 1:1 STRICT décomp CreateSprite unified ────────────────────────
+  //
+  // Si graphicsInfo + images sont disponibles (= 245 entries patchées), on
+  // utilise le flow 1:1 strict décomp (event_object_movement.c:1418-1499) :
+  //   CreateSprite(spriteTemplate) → sprite.images = graphicsInfo.images
+  //   sprite.centerToCornerVecX = -(width >> 1);
+  //   sprite.centerToCornerVecY = -(height >> 1);
+  //   sprite.x += 8;
+  //   sprite.y += 16 + ctcvY;
+  //   StartSpriteAnim(sprite, GetFaceDirectionAnimNum(facing));
+  if (_hasNewFlow && graphicsInfo) {
+    const result = rt.CreateSpriteAtOam({
+      tileId: objTileBase,
+      paletteBank,
+      x: 0, y: 0,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority,
+      paletteMode: 0,
+      affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.tileBase = objTileBase;
+      // 1:1 STRICT décomp sprite.c:CreateSpriteAt — branch tileTag==TAG_NONE :
+      //   sprite->images = template->images;
+      //   sprite->usingSheet = FALSE;
+      sprite.images = graphicsInfo.images;
+      // 1:1 décomp `sprite->anims = template->anims` (sprite.c:544).
+      sprite.anims = graphicsInfo.anims as ReadonlyArray<ReadonlyArray<unknown>> | null;
+      sprite.usingSheet = false;
+      sprite.sheetTileStart = 0;
+      // 1:1 décomp event_object_movement.c:1461-1464 :
+      //   sprite->centerToCornerVecX = -(graphicsInfo->width >> 1);
+      //   sprite->centerToCornerVecY = -(graphicsInfo->height >> 1);
+      //   sprite->x += 8;
+      //   sprite->y += 16 + sprite->centerToCornerVecY;
+      sprite.centerToCornerVecX = -(graphicsInfo.width >> 1);
+      sprite.centerToCornerVecY = -(graphicsInfo.height >> 1);
+      // sprite.x += 8 → on l'a déjà via worldX = (col - cam.x) * 16 + 8 + dx.
+      // sprite.y += 16 + ctcvY → on l'applique via sprite.y2.
+      sprite.y2 = 16 + sprite.centerToCornerVecY;
+      // 1:1 décomp event_object_movement.c:1470-1471 :
+      //   if (!objectEvent->inanimate)
+      //       StartSpriteAnim(sprite, GetFaceDirectionAnimNum(facingDirection));
+      if (!graphicsInfo.inanimate && sprite.anims && sprite.anims.length > 0) {
+        sprite.animNum = GetFaceDirectionAnimNum(npc.facingDirection);
+        sprite.animBeginning = true;
+        sprite.animEnded = false;
+        sprite.animCmdIndex = 0;
+        sprite.animDelayCounter = 0;
+      }
+    }
+    rt.gba.oam[result.oamIndex].flipH = false;
+    rt.gba.oam[result.oamIndex].priority = oamTemplate.priority;
+    // useSubsprites = false dans le nouveau path car AnimateSprite tick gère.
+    // Subsprite tables = port différé honnête (= cases elevation 4/6/8/10/12
+    // qui split en 2 OAMs avec priorities différentes — bug "1-pixel artifact"
+    // user-flag camion mais pas bloquant pour NPCs standard elevation 3).
+    npc.useSubsprites = false;
+    npc.is32x32 = false;
+    npc.is16x16 = false;
+    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} (1:1 flow) at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET}) animNum=${GetFaceDirectionAnimNum(npc.facingDirection)}`);
+    return true;
+  }
 
   if (is48x48) {
     // Primary sprite = placeholder logique pour le subsprite system. Décomp
