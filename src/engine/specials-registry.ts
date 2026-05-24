@@ -627,7 +627,29 @@ registerSpecial('IsEnigmaBerryValid', () => {
 });
 
 /** 1:1 décomp `HasAllHoennMons` (pokedex.c) — pokedex completion check. */
-registerSpecial('HasAllHoennMons', () => 0);
+/** 1:1 décomp `HasAllHoennMons` (pokedex.c:4331-4342).
+ *  Loop HOENN_DEX_COUNT-2 (= exclude Jirachi+Deoxys), check GetSetPokedexFlag
+ *  caught pour chaque. Si un mon n'est pas caught → FALSE. */
+registerSpecial('HasAllHoennMons', () => {
+  // Import dynamic pour éviter cycle ESM specials-registry → pokedex-flags.
+  const pokedexMod = (globalThis as { __game_pokedex?: {
+    HOENN_DEX_COUNT?: number;
+    HoennToNationalOrder?: (n: number) => number;
+    GetSetPokedexFlag?: (dexNum: number, caseId: number) => number;
+    FLAG_GET_CAUGHT?: number;
+  } }).__game_pokedex;
+  if (!pokedexMod || !pokedexMod.HOENN_DEX_COUNT || !pokedexMod.HoennToNationalOrder
+      || !pokedexMod.GetSetPokedexFlag || pokedexMod.FLAG_GET_CAUGHT === undefined) {
+    // Fallback : pokedex pas wired → return FALSE 1:1 strict (= pas tous attrapés).
+    return 0;
+  }
+  const flagGetCaught = pokedexMod.FLAG_GET_CAUGHT;
+  for (let i = 0; i < pokedexMod.HOENN_DEX_COUNT - 2; i++) {
+    const natDex = pokedexMod.HoennToNationalOrder(i + 1);
+    if (!pokedexMod.GetSetPokedexFlag(natDex, flagGetCaught)) return 0;
+  }
+  return 1;
+});
 
 /** 1:1 décomp `ResetHealLocationFromDewford`. */
 registerSpecial('ResetHealLocationFromDewford', () => { /* no-op */ });
