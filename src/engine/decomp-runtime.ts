@@ -34,6 +34,7 @@ import {
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from './decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1 } from './sprite-animation';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from './save-block-state';
@@ -431,6 +432,37 @@ export interface DecompSprite {
   tileBase: number;
   /** OAM mode (1:1 décomp sprite->oam.objMode : NORMAL/BLEND/OBJ_WINDOW). */
   objMode: 0 | 1 | 2;
+  // ─── 1:1 STRICT décomp sprite.h anim fields (C1.1 import) ──────────────
+  /** 1:1 décomp `sprite->animNum` (sprite.h:209) — index dans anims[][]. */
+  animNum: number;
+  /** 1:1 décomp `sprite->animCmdIndex` (sprite.h:210) — frame courante dans
+   *  l'animCmd[] table. Incrémenté par ContinueAnim quand delayCounter=0. */
+  animCmdIndex: number;
+  /** 1:1 décomp `sprite->animDelayCounter` (sprite.h:211, 6-bit) — frames
+   *  restantes avant prochain cmd dispatch. */
+  animDelayCounter: number;
+  /** 1:1 décomp `sprite->animLoopCounter` (sprite.h:214) — loop counter pour
+   *  ANIMCMD_LOOP (= reste boucles à exécuter). 0 = pas en loop. */
+  animLoopCounter: number;
+  /** 1:1 décomp `sprite->animBeginning` (sprite.h:229, 1-bit) — dispatch flag
+   *  AnimateSprite: true → BeginAnim (init), false → ContinueAnim (tick). */
+  animBeginning: boolean;
+  /** 1:1 décomp `sprite->animPaused` (sprite.h:212, 1-bit) — pause flag : si
+   *  true, ContinueAnim skip l'advance. */
+  animPaused: boolean;
+  /** 1:1 décomp `sprite->images` (sprite.h:198) — array de SpriteFrameImage
+   *  pour anim sans sheet (= tileTag == TAG_NONE). null si sprite uses sheet. */
+  images: ReadonlyArray<{ data: Uint8Array; size: number }> | null;
+  /** 1:1 décomp `sprite->anims` (sprite.h:197) — array d'AnimCmd[][] tables.
+   *  Chaque entry[animNum] est un AnimCmd[] terminé par END. */
+  anims: ReadonlyArray<ReadonlyArray<unknown>> | null;
+  /** 1:1 décomp `sprite->usingSheet` (sprite.h:233, 1-bit) — flag distingue
+   *  sheet sprite (tile data déjà en VRAM, just change tileNum) vs
+   *  individual images (frame copy from images[N].data per frame). */
+  usingSheet: boolean;
+  /** 1:1 décomp `sprite->sheetTileStart` (sprite.h:236) — tile base pour
+   *  sheet sprites. oam.tileNum = sheetTileStart + frame.imageValue. */
+  sheetTileStart: number;
 }
 
 // ─── Task mock minimal ───────────────────────────────────────────────────────
@@ -1429,6 +1461,12 @@ export class DecompRuntime {
       shape: cfg.shape, size: cfg.size,
       affineMode: (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3,
       subpriority: cfg.subpriority ?? 0xFF,
+      // C1.1 — 1:1 STRICT défauts sprite anim fields (sprite.h:209-236).
+      animNum: 0, animCmdIndex: 0, animDelayCounter: 0, animLoopCounter: 0,
+      animBeginning: true,    // 1:1 décomp : nouveau sprite démarre par BeginAnim
+      animPaused: false,
+      images: null, anims: null,
+      usingSheet: false, sheetTileStart: 0,
     };
     this.gSprites.set(spriteId, sprite);
     return { spriteId, oamIndex };
@@ -2033,6 +2071,19 @@ export class DecompRuntime {
    *  SPRITE_ANIMS auto-generated. Cette double lookup permet d'enregistrer
    *  des anims dynamiques sans modifier le auto-generated. */
   private tickSpriteAnims(): void {
+    // C1.1 — 1:1 STRICT décomp sprite.c AnimateSprites + ProcessSpriteCopy
+    // Requests : pour chaque sprite avec .anims configurées (= via le nouveau
+    // SpriteTemplate flow Phase 3), tick BeginAnim/ContinueAnim + drain queue.
+    // Les sprites legacy (= anims === null) sont skip par AnimateSprite (=
+    // early-return interne) et restent driven par le path SPRITE_ANIMS plus
+    // bas (= legacy state machine via spriteAnimStates).
+    for (const sprite of this.gSprites.values()) {
+      if (!sprite.inUse) continue;
+      if (sprite.anims === null) continue;  // skip legacy path
+      _AnimateSprite_1to1(this, sprite as never);
+    }
+    _ProcessSpriteCopyRequests_1to1(this);
+    // ─── Legacy SPRITE_ANIMS state machine (gardé pour migration progressive) ──
     for (const [spriteId, state] of this.spriteAnimStates) {
       if (state.framesRemaining > 1) {
         state.framesRemaining--;
