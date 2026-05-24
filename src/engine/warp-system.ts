@@ -144,12 +144,21 @@ export function getPendingWarp(): { warp: WarpEvent; kind: WarpKind } | null {
 /** 1:1 décomp `GetWarpEventAtMapPosition` (field_control_avatar.c:875).
  *  Find warp event à n'importe quelle position de la map courante.
  *  @returns Le WarpEvent trouvé, ou null. */
-export function findWarpEventAt(x: number, y: number): WarpEvent | null {
+/** 1:1 STRICT décomp `GetWarpEventAtPosition` (field_control_avatar.c:860-875) :
+ *  filtre par (x, y) ET elevation (= warpEvent->elevation == elevation OR
+ *  warpEvent->elevation == ELEVATION_TRANSITION).
+ *
+ *  @param elevation Default 0 (= ELEVATION_TRANSITION) matche toutes les elevations
+ *                   (= safe default pour les call-sites qui n'ont pas d'elevation contextuelle). */
+export function findWarpEventAt(x: number, y: number, elevation: number = 0): WarpEvent | null {
   if (!gMapHeader) return null;
   const warps = gMapHeader.events.warps;
   for (const warp of warps) {
     if (warp.x === x && warp.y === y) {
-      return warp;
+      // 1:1 strict décomp ligne 870 : check elevation match OR ELEVATION_TRANSITION.
+      if (warp.elevation === elevation || warp.elevation === 0) {
+        return warp;
+      }
     }
   }
   return null;
