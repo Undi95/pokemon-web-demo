@@ -631,15 +631,20 @@ registerOpcode('msgbox', (ctx, args) => {
       case 0: {
         // Lock + face NPC selon msgbox type.
         if (isSign) {
-          // 1:1 décomp Std_MsgboxSign : lockall (= freeze TOUS les NPCs).
-          for (const n of gObjectEvents) if (n.active) n.frozen = true;
+          // 1:1 STRICT décomp Std_MsgboxSign : lockall (= FreezeObjectEvents).
+          // FreezeObjectEvent set frozen + pause sprite.animPaused (= sinon
+          // anim continue à cycler face/walk visuellement malgré frozen).
+          for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
         } else if (isNpc) {
-          // 1:1 décomp Std_MsgboxNPC : lock (= freeze the SELECTED NPC) + faceplayer.
-          // faceplayer = NPC tourne vers player (= opposite direction du player.facing).
-          const npc = getSelectedNpc();
-          if (npc) {
-            npc.frozen = true;
-            npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+          // 1:1 décomp Std_MsgboxNPC : lock (= freeze TOUS sauf player+selected)
+          // + faceplayer (= selected NPC tourne vers player).
+          const selected = getSelectedNpc();
+          for (const n of gObjectEvents) {
+            if (n.active && n !== selected) FreezeObjectEvent(n);
+          }
+          if (selected) {
+            FreezeObjectEvent(selected);
+            selected.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
           }
         }
         // MSGBOX_DEFAULT / MSGBOX_AUTOCLOSE / MSGBOX_YESNO : pas de lock/face.
@@ -663,12 +668,12 @@ registerOpcode('msgbox', (ctx, args) => {
           void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));
           // Autoclose: close + release. Sinon (NPC/SIGN/DEFAULT) : juste close.
           HideFieldMessageBox();
-          // Release frozen NPCs UNIQUEMENT pour les types qui les avaient lock.
+          // Release frozen NPCs 1:1 STRICT via UnfreezeObjectEvent qui restore
+          // sprite.animPaused = backup (= reverse du FreezeObjectEvent).
           if (isSign) {
-            for (const n of gObjectEvents) if (n.active) n.frozen = false;
+            for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
           } else if (isNpc) {
-            const npc = getSelectedNpc();
-            if (npc) npc.frozen = false;
+            for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
           }
           // MSGBOX_DEFAULT : pas de lock à release. NB: si le script appelait
           // explicitement `lockall` avant le msgbox (= comme dans
