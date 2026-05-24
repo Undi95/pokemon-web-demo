@@ -2382,8 +2382,20 @@ export function FadeOutBGM(speed: number): void {
 export function FadeInBGM(speed: number): void {
   void import('./m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
 }
+/** 1:1 STRICT décomp `CanResetRTC()` (event_data.c:156-162) :
+ *    if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
+ *        return TRUE;
+ *    else
+ *        return FALSE;
+ *  Used par title screen (= A+B+SELECT combo pour reset RTC offset). */
 export function CanResetRTC(): boolean {
-  return false; // stub
+  // Lazy import pour éviter cycle (script-vars import decomp-globals).
+  // Lecture directe via gSaveBlock1Ptr.flags/vars (= source unique 1:1 décomp).
+  const sb1 = (globalThis as { gSaveBlock1Ptr?: { flags?: Record<string, boolean>; vars?: Record<string, number> } }).gSaveBlock1Ptr;
+  if (!sb1) return false;
+  const flagOn = !!sb1.flags?.['FLAG_SYS_RESET_RTC_ENABLE'];
+  const varVal = sb1.vars?.['VAR_RESET_RTC_ENABLE'] ?? 0;
+  return flagOn && varVal === 0x920;
 }
 export let gBattle_BG1_X = 0;
 export let gBattle_BG1_Y = 0;

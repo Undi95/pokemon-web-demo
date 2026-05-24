@@ -306,6 +306,50 @@ const _gPlayerAvatarBase = {
 
 export const gPlayerAvatar: PlayerAvatar = _gPlayerAvatarBase;
 
+/** 1:1 STRICT décomp `ClearPlayerAvatarInfo(void)` (field_player_avatar.c:1320-1323) :
+ *    memset(&gPlayerAvatar, 0, sizeof(struct PlayerAvatar));
+ *
+ *  Reset COMPLET gPlayerAvatar fields. Appelé par SpawnObjectEventsOnReturnToField
+ *  AVANT de re-spawn les NPCs (= 1:1 décomp event_object_movement.c:1719).
+ *  Le décomp réinit gPlayerAvatar.objectEventId/spriteId via
+ *  SetPlayerAvatarObjectEventIdAndObjectId dans SpawnObjectEventOnReturnToField
+ *  juste après.
+ *
+ *  Notre archi : le player ObjectEvent slot 0 est préservé (= InitPlayerAvatar
+ *  délégué à l'appel ReturnToField scene). Donc nous appelons ClearPlayerAvatarInfo
+ *  mais SKIP les fields critiques (objectEventId, spriteId) pour ne pas casser
+ *  notre flow scene Phaser. */
+export function ClearPlayerAvatarInfo(): void {
+  // 1:1 décomp memset 0 — preserve les fields critiques notre archi.
+  const savedObjectEventId = gPlayerAvatar.objectEventId;
+  const savedSpriteId = gPlayerAvatar.spriteId;
+  gPlayerAvatar.flags = 0;
+  gPlayerAvatar.transitionFlags = 0;
+  gPlayerAvatar.preventStep = false;
+  gPlayerAvatar.runningState = NOT_MOVING;
+  gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
+  gPlayerAvatar.stepFramesLeft = 0;
+  gPlayerAvatar.stepDirection = DIR_NONE;
+  gPlayerAvatar.turnFramesLeft = 0;
+  gPlayerAvatar.collideFramesLeft = 0;
+  gPlayerAvatar.forceMovement = DIR_NONE;
+  gPlayerAvatar.currentElevation = 3;
+  gPlayerAvatar.walkAnimAlt = 0;
+  gPlayerAvatar.dashing = false;
+  gPlayerAvatar.jumpFramesLeft = 0;
+  gPlayerAvatar.acroBikeState = 0;
+  gPlayerAvatar.newDirBackup = 0;
+  gPlayerAvatar.bikeFrameCounter = 0;
+  gPlayerAvatar.bikeSpeed = 0;
+  gPlayerAvatar.directionHistory = 0;
+  gPlayerAvatar.abStartSelectHistory = 0;
+  gPlayerAvatar.dirTimerHistory = [0, 0, 0, 0, 0, 0, 0, 0];
+  gPlayerAvatar.abStartSelectTimerHistory = [0, 0, 0, 0, 0, 0, 0, 0];
+  // Preserve objectEventId/spriteId (= notre archi délègue re-init à InitPlayerAvatar).
+  gPlayerAvatar.objectEventId = savedObjectEventId;
+  gPlayerAvatar.spriteId = savedSpriteId;
+}
+
 // ─── 1:1 décomp helpers `field_player_avatar.c` ─────────────────────────────
 
 /** 1:1 décomp `GetPlayerFacingDirection` (field_player_avatar.c:1165-1168) :

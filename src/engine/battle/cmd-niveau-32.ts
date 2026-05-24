@@ -255,8 +255,9 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 1:1 stub `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
- *  (battle_util.c). Retourne TRUE si pas de mon disponible. */
+/** 1:1 STRICT décomp `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
+ *  (battle_util.c). Itère le party, retourne TRUE si aucun mon switchable
+ *  (= species != 0 + hp > 0 + !isEgg). 1:1 strict porté. */
 function _hasNoMonsToSwitch_HBT(battler: number, _p1: number, _p2: number): boolean {
   const bs = (globalThis as { __battleState?: {
     gBattlerPartyIndexes?: number[];
@@ -587,9 +588,9 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `IsMonGettingExpSentOut(void)` (battle_script_commands.c).
+/** 1:1 STRICT décomp `IsMonGettingExpSentOut(void)` (battle_script_commands.c:6198-6206).
  *  Check si gBattleStruct.expGetterMonId match gBattlerPartyIndexes[player_left]
- *  (= mon in-battle). */
+ *  ou _right en double (= mon in-battle qui gagne exp). 1:1 strict porté. */
 function _isMonGettingExpSentOutHBT(): boolean {
   // 1:1 décomp battle_script_commands.c:6198-6206.
   const bs = _gBattleStruct32;

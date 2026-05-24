@@ -2974,8 +2974,11 @@ async function _respawnNpcSpriteForReturnToField(
 export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promise<void> {
   if (!_graphicsCatalog) return;
   const catalog = _graphicsCatalog;
-  // DETTE 1:1 décomp (event_object_movement.c:1715-1726) :
-  //   - ClearPlayerAvatarInfo() (= memset gPlayerAvatar=0) PAS appelé.
+  // 1:1 STRICT décomp event_object_movement.c:1719 ClearPlayerAvatarInfo().
+  // Reset gPlayerAvatar fields (preserve objectEventId/spriteId pour notre archi).
+  const { ClearPlayerAvatarInfo } = await import('./player-avatar');
+  ClearPlayerAvatarInfo();
+  // DETTE 1:1 décomp restante (event_object_movement.c:1715-1726) :
   //   - Player slot skip (= notre archi délègue le re-spawn player à
   //     InitPlayerAvatar). Décomp re-spawn player aussi via SpawnObjectEvent
   //     OnReturnToField + SetPlayerAvatarObjectEventIdAndObjectId (1779-1783).

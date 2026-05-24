@@ -584,6 +584,30 @@ export function clearPendingConnection(): void {
  *
  *  Returns true si une connexion a été traversée (= équivalent gCamera.active=TRUE
  *  dans décomp). */
+/** 1:1 STRICT décomp `ClearMirageTowerPulseBlendEffect` (mirage_tower.c:303-317) :
+ *    if (gSaveBlock1Ptr->location.mapGroup != MAP_GROUP(MAP_ROUTE111)
+ *     || gSaveBlock1Ptr->location.mapNum   != MAP_NUM(MAP_ROUTE111)
+ *     || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE)
+ *     || sMirageTowerPulseBlend == NULL)
+ *        return;
+ *    [DestroyTask + Unmark/Unload palettes]
+ *
+ *  Notre port : early-return strict 1:1. Le PulseBlend palette system + tasks
+ *  Mirage Tower ne sont pas implémentés (= post-démo, Route 111 only). Comme
+ *  `sMirageTowerPulseBlend` est toujours NULL dans notre engine, le décomp
+ *  early-return aussi. Comportement 1:1 strict. */
+function _clearMirageTowerPulseBlendEffect(): void {
+  // 1:1 décomp : check map = MAP_ROUTE111. Notre mapId est string.
+  const sb1 = (globalThis as { gSaveBlock1Ptr?: { location?: { mapId?: string } } }).gSaveBlock1Ptr;
+  const mapId = sb1?.location?.mapId ?? '';
+  if (mapId !== 'MAP_ROUTE111') return;
+  // 1:1 décomp : check FLAG_MIRAGE_TOWER_VISIBLE.
+  const flags = (globalThis as { gSaveBlock1Ptr?: { flags?: Record<string, boolean> } }).gSaveBlock1Ptr?.flags;
+  if (!flags?.['FLAG_MIRAGE_TOWER_VISIBLE']) return;
+  // 1:1 décomp : check sMirageTowerPulseBlend != NULL. Notre engine = toujours NULL.
+  // → return (no-op). Si Mirage Tower port futur, ajouter DestroyTask + Unmark/Unload.
+}
+
 function CameraMove(deltaX: number, deltaY: number): boolean {
   // 1:1 décomp `gCamera.active = FALSE;` (fieldmap.c:654) — reset chaque tile
   // boundary. Set TRUE seulement si cross-border détecté.
@@ -639,8 +663,14 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   // gPlayerAvatar.x/y via Proxy + getter dynamique).
 
   SaveMapView();  // 1:1 décomp no-args, lit gSaveBlock1Ptr.pos directement.
-  // DETTE 1:1 décomp fieldmap.c:664 : ClearMirageTowerPulseBlendEffect() pas
-  // porté (= effet visuel post-game Mirage Tower, pas critique démo).
+  // 1:1 STRICT décomp fieldmap.c:664 : ClearMirageTowerPulseBlendEffect().
+  // Body 1:1 (mirage_tower.c:303-317) : check Route 111 + FLAG_MIRAGE_TOWER_VISIBLE
+  // + sMirageTowerPulseBlend non-null → DestroyTask + Unmark/Unload palettes.
+  // Notre port : early-return (= condition Route 111 jamais true depuis démo
+  // Littleroot, et PulseBlend palette system pas porté = jamais initialisé).
+  // Conforme 1:1 strict : skip si conditions non remplies (= identique au décomp
+  // qui early-return aussi).
+  _clearMirageTowerPulseBlendEffect();
 
   const oldX = _camPos.x;
   const oldY = _camPos.y;
