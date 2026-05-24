@@ -30,6 +30,12 @@ import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from './sprite'
 // dérive le template depuis frameWidth/frameHeight catalog (= équivalent
 // fonctionnel à `graphicsInfo->oam`).
 import { GetBaseOamForDimensions } from './object-event-base-oam';
+// 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
+// Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
+// 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
+// depuis base_oam template authoritative). Fallback dimensions-based pour les
+// rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
+import { GetObjectEventGraphicsInfo } from './object-event-graphics-info-data';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -2241,11 +2247,12 @@ function _spawnSingleNpcFromTemplate(
   //   spriteTemplate.oam = graphicsInfo->oam;  ← shape/size/priority source
   // Au CreateSpriteAt : sprite->oam = *template->oam (= struct copy).
   //
-  // Notre port dérive `graphicsInfo->oam` depuis frameWidth/frameHeight via
-  // GetBaseOamForDimensions (= équivalent fonctionnel : MOM 16x32 → base_oam_
-  // 16x32 → shape=2 size=2 priority=2 ; Vigoroth 32x32 → base_oam_32x32 →
-  // shape=0 size=2 priority=2 ; etc.). Aucune divergence de valeurs vs décomp.
-  const oamTemplate = GetBaseOamForDimensions(graphics.frameWidth, graphics.frameHeight);
+  // Lookup graphicsInfo dans le pointer table porté 1:1 (= 245 records dans
+  // object-event-graphics-info-data.ts). Si trouvé, utilise graphicsInfo.oam
+  // (= source authoritative décomp). Sinon fallback à GetBaseOamForDimensions
+  // qui dérive depuis dimensions PNG (= cas OBJ_EVENT_GFX_VAR_* dynamiques).
+  const graphicsInfo = GetObjectEventGraphicsInfo(graphicsKey, png.charData);
+  const oamTemplate = graphicsInfo?.oam ?? GetBaseOamForDimensions(graphics.frameWidth, graphics.frameHeight);
 
   if (is48x48) {
     // Primary sprite = placeholder logique pour le subsprite system. Décomp
