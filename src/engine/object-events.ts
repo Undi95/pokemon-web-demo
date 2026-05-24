@@ -2040,17 +2040,24 @@ function _spawnSingleNpcFromTemplate(
   if (!is48x48 && !is32x32 && !is16x32 && !is16x16) return false;
   if (graphics.displayWidth !== graphics.frameWidth || graphics.displayHeight !== graphics.frameHeight) return false;
 
-  // 1:1 décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
-  // dedup par (localId, mapId). Notre loader set localId=0 pour templates
-  // avec local_id JSON (= placeholder, pas encore résolu), donc unreliable.
-  // Fallback : dedup via (mapId, initialCoordsX, initialCoordsY) uniques.
-  // Post R3 refactor : initialCoords INTERNAL → compare avec template.x + MAP_OFFSET.
-  const existing = gObjectEvents.findIndex(
-    o => o.active
-      && o.mapId === currentMapId
-      && o.initialCoordsX === template.x + MAP_OFFSET
-      && o.initialCoordsY === template.y + MAP_OFFSET,
-  );
+  // 1:1 STRICT décomp `GetAvailableObjectEventId` (event_object_movement.c:1263) :
+  // dedup par (localId, mapId). Si template a un localId > 0 (= localId résolu
+  // depuis localIdRaw défini), on dedup PAR LOCALID. Sinon fallback aux coords.
+  //
+  // Bug 2026-05-24 : dedup uniquement par coords créait des duplicates quand
+  // l'overlay (saveblock setobjectxyperm) modifie x/y → 2 MOMs spawnés (= 1 à
+  // mapHeader pristine x=2 + 1 à overlay x=4). Fix : dedup par localId d'abord
+  // (= 1:1 décomp), fallback coords pour templates avec localId=0 (= généric NPCs).
+  const existing = gObjectEvents.findIndex(o => {
+    if (!o.active || o.mapId !== currentMapId) return false;
+    // Dedup par localIdRaw si défini (= 1:1 décomp localId).
+    if (template.localIdRaw && o.localIdRaw === template.localIdRaw) return true;
+    // Fallback coords pour anonymous templates (localId=0, no localIdRaw).
+    if (!template.localIdRaw
+        && o.initialCoordsX === template.x + MAP_OFFSET
+        && o.initialCoordsY === template.y + MAP_OFFSET) return true;
+    return false;
+  });
   if (existing >= 0) return false;
 
   const slot = gObjectEvents.findIndex(o => !o.active);
