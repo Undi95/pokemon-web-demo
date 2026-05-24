@@ -103,14 +103,12 @@ const ACTION_GIVE_FAVOR_LADY = 12;
 const ACTION_CONFIRM_QUIZ_LADY = 13;
 const ACTION_DUMMY = 14;
 
-// 1:1 décomp constants/items.h — pockets.
-const ITEMS_POCKET = 0;
-const BALLS_POCKET = 1;
-const TMHM_POCKET = 2;
-const BERRIES_POCKET = 3;
-const KEYITEMS_POCKET = 4;
+// 1:1 décomp constants/item.h — pockets. Import depuis decomp-data (= A8 audit).
+import {
+  ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
+} from './decomp-data/include/constants/item-data';
 
-// 1:1 décomp item_menu.h — ITEMMENULOCATION_*.
+// 1:1 décomp item_menu.h — ITEMMENULOCATION_* (pas extrait decomp-data, hardcode 1:1 justifié).
 const ITEMMENULOCATION_FIELD = 0;
 const ITEMMENULOCATION_BATTLE = 1;
 const RGB_BLACK = 0;
