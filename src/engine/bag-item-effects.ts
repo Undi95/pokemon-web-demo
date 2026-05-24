@@ -57,12 +57,11 @@ import { MOVE_IS_PERMANENT } from './decomp-bridge';
 const ITEM3_STATUS_ALL =
   ITEM3_CONFUSION | ITEM3_PARALYSIS | ITEM3_FREEZE | ITEM3_BURN | ITEM3_POISON | ITEM3_SLEEP;
 
-// 1:1 décomp constants/pokemon.h
-const MAX_LEVEL = 100;
-const MAX_TOTAL_EVS = 510;
-const EV_ITEM_RAISE_LIMIT = 100;
-const MAX_MON_MOVES = 4;
-const _MAX_PP_BONUS = 3;  // 1:1 décomp pokemon.c: PP Up max = 3 (= +60% PP).
+// 1:1 décomp constants/pokemon.h — utilise les imports decomp-data au lieu de
+// hardcode (= 1:1 strict pattern A8 audit).
+import { MAX_LEVEL, MAX_TOTAL_EVS, EV_ITEM_RAISE_LIMIT } from './decomp-data/include/constants/pokemon-data';
+import { MAX_MON_MOVES } from './decomp-data/include/constants/global-data';
+const _MAX_PP_BONUS = 3;  // 1:1 décomp pokemon.c: PP Up max = 3 (= +60% PP). Pas de constante extraite.
 
 // 1:1 décomp `sGetMonDataEVConstants` (pokemon.c). Ordre des accès EV dans
 // la boucle ITEM4 (cases 0-1) puis ITEM5 (cases 0-3 → +2 offset).
