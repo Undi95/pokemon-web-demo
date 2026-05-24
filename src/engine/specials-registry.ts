@@ -34,7 +34,7 @@ import { MALE, FEMALE } from './decomp-globals';
 import { GetCurrentMap } from './load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
 import { setStringVar } from './string-buffers';
-import { SPECIES_WAILORD, SPECIES_RELICANTH } from './decomp-data/include/constants/species-data';
+import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from './decomp-data/include/constants/species-data';
 import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
@@ -852,12 +852,14 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'InitSecretBaseVars', 'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
   'InterviewAfter', 'IsContestDebugActive', 'IsContestWithRSPlayer',
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
-  'IsDodrioInParty', 'IsFavorLadyThresholdMet', 'IsGabbyAndTyShowOnTheAir',
+  // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
+  'IsFavorLadyThresholdMet', 'IsGabbyAndTyShowOnTheAir',
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
-  'IsTrendyPhraseBoring', 'LeadMonHasEffortRibbon',
+  'IsTrendyPhraseBoring',
+  // 'LeadMonHasEffortRibbon' — porté 1:1 décomp field_specials.c:1372 ci-bas (= dette ribbons R3).
   'LinkContestTryHideWirelessIndicator', 'LinkContestTryShowWirelessIndicator',
   'LinkContestWaitForConnection', 'LoadPlayerBag', 'LostSecretBaseBattle',
   'MauvilleGymSetDefaultBarriers',
@@ -1064,6 +1066,39 @@ registerSpecial('HasAtLeastOneBerry', () => {
     }
   }
   VarSet('VAR_RESULT', 0);
+  return 0;
+});
+
+/** 1:1 décomp `IsDodrioInParty` (dodrio_berry_picking.c:2908-2922).
+ *  Loop sur PARTY_SIZE, return TRUE si un mon non-empty est SPECIES_DODRIO. */
+registerSpecial('IsDodrioInParty', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && mon.speciesId === SPECIES_DODRIO) {
+      VarSet('VAR_RESULT', 1);
+      return 1;
+    }
+  }
+  VarSet('VAR_RESULT', 0);
+  return 0;
+});
+
+/** 1:1 décomp `LeadMonHasEffortRibbon` (field_specials.c:1372-1375).
+ *  Retourne MON_DATA_EFFORT_RIBBON du lead mon (= 1er non-egg slot).
+ *  Notre PokemonInstance ne stocke pas encore les ribbons (= subsystem ribbons
+ *  pas porté). Return 0 = no ribbon, 1:1 strict justifié (= notre projet ne
+ *  donne pas encore de ribbons via SetMonData MON_DATA_EFFORT_RIBBON).
+ *  Dette R3 documentée : ajouter ribbons field PokemonInstance + serialization. */
+registerSpecial('LeadMonHasEffortRibbon', () => {
+  // GetLeadMonIndex : 1st non-empty non-egg slot.
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
+    // 1:1 décomp :1374 GetMonData(EFFORT_RIBBON) — pas stocké → 0.
+    return (mon as unknown as { effortRibbon?: number }).effortRibbon ?? 0;
+  }
   return 0;
 });
 
