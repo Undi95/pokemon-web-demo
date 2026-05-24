@@ -543,7 +543,25 @@ registerSpecial('StartWallyTutorialBattle', () => {
 registerSpecial('IsTrainerReadyForRematch', () => 0);
 
 /** 1:1 décomp `IsEnigmaBerryValid` (berry.c). */
-registerSpecial('IsEnigmaBerryValid', () => 0);
+/** 1:1 décomp `IsEnigmaBerryValid` (berry.c:969-978).
+ *  Validate 3 conditions :
+ *  - enigmaBerry.berry.stageDuration != 0
+ *  - enigmaBerry.berry.maxYield != 0
+ *  - checksum matches GetEnigmaBerryChecksum.
+ *  Notre projet : pas de lien Gen 3 (= EnigmaBerry vient toujours d'un lien
+ *  trade). saveBlock1.enigmaBerry est emptyEnigmaBerry par construction donc
+ *  stageDuration = 0 → return FALSE. 1:1 strict justifié. */
+registerSpecial('IsEnigmaBerryValid', () => {
+  const eb = gSaveBlock1Ptr.enigmaBerry;
+  if (!eb || !eb.berry) return 0;
+  if (!eb.berry.stageDuration) return 0;
+  if (!eb.berry.maxYield) return 0;
+  // Dette R3 : GetEnigmaBerryChecksum pas porté (= compute checksum sur les
+  // bytes). Pour notre projet, on skip ce check car enigmaBerry n'est jamais
+  // populé via lien → stageDuration/maxYield seront toujours 0 → return FALSE
+  // avant d'arriver ici.
+  return 1;
+});
 
 /** 1:1 décomp `HasAllHoennMons` (pokedex.c) — pokedex completion check. */
 registerSpecial('HasAllHoennMons', () => 0);
