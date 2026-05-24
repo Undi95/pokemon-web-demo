@@ -16,7 +16,7 @@ import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpre
 import { readByte } from './script-interpreter';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
-  setActiveBattler,
+  setActiveBattler, setBattlerInMenuId,
   gHitMarker, setHitMarker,
   gBattleMoveDamage, setBattleMoveDamage,
   gSideStatuses, gSideTimers, gStatuses3,
@@ -26,7 +26,11 @@ import {
   gDisableStructs,
   gBattlersCount, gBattlerByTurnOrder, gActionsByTurnOrder,
   gSentPokesToOpponent, gAbsentBattlerFlags, gBattlerPartyIndexes,
+  gLastUsedItem,
 } from './state';
+import { gEnemyParty } from './party-storage';
+import { PokemonUseItemEffects } from '../bag-item-effects';
+import type { PokemonInstance } from '../pokemon';
 import {
   SIDE_STATUS_SPIKES, SIDE_STATUS_SPIKES_DAMAGED,
   STATUS2_WRAPPED, STATUS2_DESTINY_BOND,
@@ -79,16 +83,8 @@ function _updateSentPokesToOpponentValue(battler: number): void {
   gSentPokesToOpponent[flank] = bits;
 }
 
-/** 1:1 stub `PokemonUseItemEffects(mon, item, partyIdx, moveIdx, usedByAI)`
- *  (pokemon.c:4742-, ~500 lignes). Applique l'effet d'un item (Potion, X Attack,
- *  Rare Candy, EV item, etc.) via lookup `gItemEffectTable[item - ITEM_POTION]`.
- *
- *  Port différé Phase 1.4 (= gItemEffectTable + 7-byte effect bitmask format
- *  complet). Pour Wally tut spécifiquement, Cmd_handleballthrow (= 0xEF) handle
- *  le pokéball anim direct sans appel à _pokemonUseItemEffects, donc Phase 1 OK. */
-function _pokemonUseItemEffects(_battlerIdx: number, _item: number): void {
-  // Deferred Phase 1.4 (= post item_use.c port + gItemEffectTable port).
-}
+// PokemonUseItemEffects 1:1 décomp (pokemon.c:4742-5291) maintenant porté dans
+// bag-item-effects.ts. Cmd_useitemonopponent appelle directement la fonction.
 
 // ─── 0x52 switchineffects ─────────────────────────────────────────────────
 
@@ -219,11 +215,22 @@ function Cmd_updatebattlermoves(ctx: BattleScriptContext): boolean {
 
 // ─── 0x75 useitemonopponent ───────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_useitemonopponent. 1 byte. */
+/** 1:1 décomp Cmd_useitemonopponent (battle_script_commands.c:6314-6319). 1 byte.
+ *  Flow décomp :
+ *    gBattlerInMenuId = gBattlerAttacker;
+ *    PokemonUseItemEffects(&gEnemyParty[gBattlerPartyIndexes[gBattlerAttacker]],
+ *                          gLastUsedItem,
+ *                          gBattlerPartyIndexes[gBattlerAttacker],
+ *                          0,
+ *                          TRUE);
+ *    gBattlescriptCurrInstr++;  // 1 byte opcode, déjà advance par readByte. */
 function Cmd_useitemonopponent(_ctx: BattleScriptContext): boolean {
-  // 1:1 décomp : PokemonUseItemEffects(gEnemyParty[partyIdx], gLastUsedItem,
-  //   partyIdx, 0, TRUE). Notre stub : no-op.
-  _pokemonUseItemEffects(gBattlerAttacker, 0);
+  setBattlerInMenuId(gBattlerAttacker);
+  const partyIdx = gBattlerPartyIndexes[gBattlerAttacker];
+  const mon = gEnemyParty[partyIdx] as unknown as PokemonInstance;
+  if (mon) {
+    PokemonUseItemEffects(mon, gLastUsedItem, partyIdx, 0, true);
+  }
   return false;
 }
 

@@ -20,6 +20,9 @@
 import type { PokemonInstance } from './pokemon';
 import { getItemEffectBytes, GetItemEffectParamOffset } from './battle/data/item-effects';
 import {
+  ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM0_INFATUATION,
+  ITEM1_X_DEFEND, ITEM1_X_SPEED,
+  ITEM2_X_ACCURACY, ITEM2_X_SPATK,
   ITEM3_CONFUSION, ITEM3_PARALYSIS, ITEM3_FREEZE, ITEM3_BURN, ITEM3_POISON,
   ITEM3_SLEEP, ITEM3_LEVEL_UP, ITEM3_GUARD_SPEC,
   ITEM4_EV_HP, ITEM4_EV_ATK, ITEM4_HEAL_HP, ITEM4_HEAL_PP, ITEM4_HEAL_PP_ONE,
@@ -27,6 +30,28 @@ import {
   ITEM5_EV_DEF, ITEM5_EV_SPEED, ITEM5_EV_SPDEF, ITEM5_EV_SPATK, ITEM5_PP_MAX,
   ITEM5_FRIENDSHIP_LOW, ITEM5_FRIENDSHIP_MID, ITEM5_FRIENDSHIP_HIGH,
 } from './decomp-data/include/constants/item_effects-data';
+// 1:1 décomp battle state (pour branches usedByAI=TRUE / gMain.inBattle=TRUE).
+// Notre flag `gMain.inBattle` : on utilise gBattleTypeFlags !== 0 + battler != MAX.
+import {
+  gBattleMons, gBattlerInMenuId, gActiveBattler,
+  gBattleTypeFlags, gSideTimers, gBattleResults,
+  gAbsentBattlerFlags, setAbsentBattlerFlags,
+  setBattleMoveDamage,
+  gBattlersCount, gBattlerPartyIndexes,
+  setPotentialItemEffectBattler, setActiveBattler,
+  MAX_BATTLERS_COUNT,
+} from './battle/state';
+import {
+  STAT_ATK, STAT_DEF, STAT_SPEED, STAT_ACC, STAT_SPATK,
+  MAX_STAT_STAGE,
+  STATUS1_SLEEP, STATUS1_POISON, STATUS1_BURN, STATUS1_FREEZE,
+  STATUS1_PARALYSIS, STATUS1_TOXIC_POISON, STATUS1_TOXIC_COUNTER,
+  STATUS2_INFATUATION, STATUS2_FOCUS_ENERGY, STATUS2_CONFUSION, STATUS2_NIGHTMARE,
+  GET_BATTLER_SIDE,
+  B_SIDE_PLAYER,
+} from './battle/constants';
+import { gBitTable } from './battle/battle-controllers';
+import { MOVE_IS_PERMANENT } from './decomp-bridge';
 
 // 1:1 décomp ITEM3_STATUS_ALL_EXPR
 const ITEM3_STATUS_ALL =
@@ -232,36 +257,124 @@ const ITEM6_HEAL_HP_FULL = 0xFF;
 const ITEM6_HEAL_HP_HALF = 0xFE;
 const ITEM6_HEAL_HP_LVL_UP = 0xFD;
 
-/** 1:1-sem `PokemonUseItemEffects(mon, item, partyIndex, moveIndex, FALSE)`
- *  (= ExecuteTableBasedItemEffect_ in field). Mute `mon` en place.
- *  Battle stuff skip (gMain.inBattle=FALSE en field). */
+/** 1:1 décomp `PokemonUseItemEffects(mon, item, partyIndex, moveIndex, usedByAI)`
+ *  (pokemon.c:4742-5291). Applique l'effet d'un item Medicine/PPRecovery/PPUp/
+ *  RareCandy/ReduceEV/EvolutionStone/X-Item/Dire Hit + cures status sur un mon.
+ *  Mute `mon` en place (= field). En battle (usedByAI=true OU gBattleTypeFlags
+ *  !== 0), mute aussi `gBattleMons[battler]` selon le path.
+ *
+ *  Retour : `result.cannotUse` ≡ retVal décomp (TRUE = rien fait, FALSE = effet).
+ *  Note 1:1 : tous les détails (hpHealed, evDelta, etc.) sont des EXTENSIONS
+ *  TS pour permettre au caller de construire le message FR correct. Le décomp
+ *  ne retourne que retVal — il dérive les détails via re-read GetMonData. */
 export function PokemonUseItemEffects(
   mon: PokemonInstance,
   itemId: number,
+  partyIndex: number,
   moveIndex: number,
+  usedByAI: boolean = false,
 ): ItemEffectResult {
   const result = _makeResult();
   const bytes = getItemEffectBytes(itemId);
   if (!bytes) return result;  // cannotUse=true par défaut
+
+  // 1:1 :4775-4795 — battler resolve setup.
+  // gMain.inBattle ≡ notre `gBattleTypeFlags !== 0` (= en battle si flags set).
+  const inBattle = gBattleTypeFlags !== 0;
+  let battler = MAX_BATTLERS_COUNT;
+  setPotentialItemEffectBattler(gBattlerInMenuId);
+  if (inBattle) {
+    setActiveBattler(gBattlerInMenuId);
+    let i = (GET_BATTLER_SIDE(gActiveBattler) !== B_SIDE_PLAYER) ? 1 : 0;
+    while (i < gBattlersCount) {
+      if (gBattlerPartyIndexes[i] === partyIndex) {
+        battler = i;
+        break;
+      }
+      i += 2;
+    }
+  } else {
+    setActiveBattler(0);
+    battler = MAX_BATTLERS_COUNT;
+  }
 
   // 1:1 :4817 main loop sur les 6 first bytes (ITEM0..ITEM5).
   for (let i = 0; i < 6; i++) {
     const b = bytes[i] ?? 0;
     switch (i) {
       case 0:
-        // 1:1 :4823-4849 — battle-only (Dire Hit, X Attack). Skip silent.
-        // Note : ITEM0_SACRED_ASH (= b0 bit 7) traitée en party_menu.c
-        // (= notre SacredAsh handler dans item-use-callbacks). Ici aussi.
-        // ITEM0_INFATUATION = battle-only (status2 du battler). Skip.
+        // 1:1 :4823-4849 — battle effects ITEM0 (X Attack, Dire Hit, Infatuation cure).
+        if (inBattle) {
+          // 1:1 :4825-4830 Cure infatuation
+          if ((b & ITEM0_INFATUATION)
+              && battler !== MAX_BATTLERS_COUNT
+              && (gBattleMons[battler].status2 & STATUS2_INFATUATION)) {
+            gBattleMons[battler].status2 &= ~STATUS2_INFATUATION;
+            result.cureInfatuation = true;
+            result.cannotUse = false;
+          }
+          // 1:1 :4833-4838 Dire Hit (= FOCUS_ENERGY)
+          if ((b & ITEM0_DIRE_HIT)
+              && !(gBattleMons[gActiveBattler].status2 & STATUS2_FOCUS_ENERGY)) {
+            gBattleMons[gActiveBattler].status2 |= STATUS2_FOCUS_ENERGY;
+            result.cannotUse = false;
+          }
+          // 1:1 :4841-4848 X Attack
+          if ((b & ITEM0_X_ATTACK)
+              && gBattleMons[gActiveBattler].statStages[STAT_ATK] < MAX_STAT_STAGE) {
+            gBattleMons[gActiveBattler].statStages[STAT_ATK] += b & ITEM0_X_ATTACK;
+            if (gBattleMons[gActiveBattler].statStages[STAT_ATK] > MAX_STAT_STAGE)
+              gBattleMons[gActiveBattler].statStages[STAT_ATK] = MAX_STAT_STAGE;
+            result.cannotUse = false;
+          }
+        }
+        // Note : ITEM0_SACRED_ASH (b0 bit 6 = 0x40) handled in party_menu.c.
         break;
       case 1:
+        // 1:1 :4851-4872 — battle X_DEFEND / X_SPEED.
+        if (inBattle) {
+          if ((b & ITEM1_X_DEFEND)
+              && gBattleMons[gActiveBattler].statStages[STAT_DEF] < MAX_STAT_STAGE) {
+            gBattleMons[gActiveBattler].statStages[STAT_DEF] += (b & ITEM1_X_DEFEND) >> 4;
+            if (gBattleMons[gActiveBattler].statStages[STAT_DEF] > MAX_STAT_STAGE)
+              gBattleMons[gActiveBattler].statStages[STAT_DEF] = MAX_STAT_STAGE;
+            result.cannotUse = false;
+          }
+          if ((b & ITEM1_X_SPEED)
+              && gBattleMons[gActiveBattler].statStages[STAT_SPEED] < MAX_STAT_STAGE) {
+            gBattleMons[gActiveBattler].statStages[STAT_SPEED] += b & ITEM1_X_SPEED;
+            if (gBattleMons[gActiveBattler].statStages[STAT_SPEED] > MAX_STAT_STAGE)
+              gBattleMons[gActiveBattler].statStages[STAT_SPEED] = MAX_STAT_STAGE;
+            result.cannotUse = false;
+          }
+        }
+        break;
       case 2:
-        // 1:1 :4851-4894 — battle-only X_DEFEND/X_SPEED/X_ACC/X_SPATK. Skip.
+        // 1:1 :4874-4894 — battle X_ACCURACY / X_SPATK.
+        if (inBattle) {
+          if ((b & ITEM2_X_ACCURACY)
+              && gBattleMons[gActiveBattler].statStages[STAT_ACC] < MAX_STAT_STAGE) {
+            gBattleMons[gActiveBattler].statStages[STAT_ACC] += (b & ITEM2_X_ACCURACY) >> 4;
+            if (gBattleMons[gActiveBattler].statStages[STAT_ACC] > MAX_STAT_STAGE)
+              gBattleMons[gActiveBattler].statStages[STAT_ACC] = MAX_STAT_STAGE;
+            result.cannotUse = false;
+          }
+          if ((b & ITEM2_X_SPATK)
+              && gBattleMons[gActiveBattler].statStages[STAT_SPATK] < MAX_STAT_STAGE) {
+            gBattleMons[gActiveBattler].statStages[STAT_SPATK] += b & ITEM2_X_SPATK;
+            if (gBattleMons[gActiveBattler].statStages[STAT_SPATK] > MAX_STAT_STAGE)
+              gBattleMons[gActiveBattler].statStages[STAT_SPATK] = MAX_STAT_STAGE;
+            result.cannotUse = false;
+          }
+        }
         break;
       case 3:
         // 1:1 :4896-4938 ITEM3 effects.
-        if ((b & ITEM3_GUARD_SPEC) /* battle-only */) {
-          // skip silent
+        // 1:1 :4898-4904 Guard Spec (= mistTimer side effect, battle-only).
+        if (inBattle && (b & ITEM3_GUARD_SPEC)
+            && gSideTimers[GET_BATTLER_SIDE(gActiveBattler)].mistTimer === 0) {
+          gSideTimers[GET_BATTLER_SIDE(gActiveBattler)].mistTimer = 5;
+          result.cannotUse = false;
         }
         if ((b & ITEM3_LEVEL_UP) && mon.level !== MAX_LEVEL) {
           // 1:1 :4906-4914 Rare Candy : SetMonData(EXP, exp[level+1]).
@@ -296,16 +409,37 @@ export function PokemonUseItemEffects(
             }
           }
         }
-        // 1:1 :4917-4937 cure status (SLEEP/POISON/BURN/FREEZE/PARALYSIS).
+        // 1:1 :4917-4931 cure status (SLEEP/POISON/BURN/FREEZE/PARALYSIS).
+        // 1:1 décomp HealStatusConditions (pokemon.c:5293-5309) :
+        //   si status1 & healMask : clear bits, set mon, et si en battle aussi
+        //   clear gBattleMons[battler].status1.
         if ((b & ITEM3_STATUS_ALL) && mon.status && _STATUS_TO_ITEM3[mon.status]) {
           const monBit = _STATUS_TO_ITEM3[mon.status];
           if (b & monBit) {
+            const wasSleep = mon.status === 'SLP';
             mon.status = null;
             result.statusCured = true;
             result.cannotUse = false;
+            // 1:1 décomp HealStatusConditions :5301-5302 sync gBattleMons.
+            if (inBattle && battler !== MAX_BATTLERS_COUNT) {
+              // healMask = SLEEP/POISON+TOXIC_COUNTER/BURN/FREEZE/PARALYSIS
+              if (b & ITEM3_SLEEP) gBattleMons[battler].status1 &= ~STATUS1_SLEEP;
+              if (b & ITEM3_POISON) gBattleMons[battler].status1 &= ~(STATUS1_POISON | STATUS1_TOXIC_POISON | STATUS1_TOXIC_COUNTER);
+              if (b & ITEM3_BURN) gBattleMons[battler].status1 &= ~STATUS1_BURN;
+              if (b & ITEM3_FREEZE) gBattleMons[battler].status1 &= ~STATUS1_FREEZE;
+              if (b & ITEM3_PARALYSIS) gBattleMons[battler].status1 &= ~STATUS1_PARALYSIS;
+              // 1:1 :4920-4921 : si SLEEP cure + en battle, clear NIGHTMARE
+              if (wasSleep && (b & ITEM3_SLEEP)) gBattleMons[battler].status2 &= ~STATUS2_NIGHTMARE;
+            }
           }
         }
-        // 1:1 :4932-4937 cure confusion (battle-only via STATUS2). Skip field.
+        // 1:1 :4932-4937 cure confusion (battle-only via STATUS2).
+        if ((b & ITEM3_CONFUSION) && inBattle && battler !== MAX_BATTLERS_COUNT
+            && (gBattleMons[battler].status2 & STATUS2_CONFUSION)) {
+          gBattleMons[battler].status2 &= ~STATUS2_CONFUSION;
+          result.statusCured = true;  // CONFUSION counted as a cure for our result
+          result.cannotUse = false;
+        }
         break;
       case 4: {
         // 1:1 :4940-5180 ITEM4 effects. Loop bits.
@@ -374,32 +508,88 @@ export function PokemonUseItemEffects(
                 break;
               }
               case 2: { // ITEM4_HEAL_HP
+                // 1:1 :5017-5103.
                 const isRevive = (effectFlags & (ITEM4_REVIVE >> 2)) !== 0;
                 if (isRevive) {
+                  // 1:1 :5019-5042 — Revive uniquement si mon a 0 HP.
                   if (mon.currentHp !== 0) { paramOffset++; break; }
+                  // 1:1 :5026-5042 — in-battle revive : update gAbsentBattlerFlags
+                  //   + CopyPlayerPartyMonToBattleData + bump numRevivesUsed.
+                  if (inBattle) {
+                    if (battler !== MAX_BATTLERS_COUNT) {
+                      setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[battler]);
+                      // CopyPlayerPartyMonToBattleData : pas porté ici (= ce serait
+                      // recopier les fields gPlayerParty→gBattleMons), notre layer
+                      // bridge sync auto. Le call resync se fera via cmd-niveau-28
+                      // EmitGetMonData ci-dessous quand !usedByAI.
+                      if (GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER
+                          && gBattleResults.numRevivesUsed < 255) {
+                        gBattleResults.numRevivesUsed++;
+                      }
+                    } else {
+                      // gActiveBattler ^ 2 = battler partner side (= autre slot)
+                      setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[gActiveBattler ^ 2]);
+                      if (GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER
+                          && gBattleResults.numRevivesUsed < 255) {
+                        gBattleResults.numRevivesUsed++;
+                      }
+                    }
+                  }
                 } else {
+                  // 1:1 :5045-5049 — heal seulement si mon HP != 0
                   if (mon.currentHp === 0) { paramOffset++; break; }
                 }
+                // 1:1 :5053-5067 — compute amount.
                 let amount = bytes[paramOffset++] ?? 0;
                 if (amount === ITEM6_HEAL_HP_FULL)
                   amount = mon.maxHp - mon.currentHp;
-                else if (amount === ITEM6_HEAL_HP_HALF)
-                  amount = Math.max(1, Math.floor(mon.maxHp / 2));
-                else if (amount === ITEM6_HEAL_HP_LVL_UP)
-                  amount = 0;  // gBattleScripting.levelUpHP (= battle-only)
+                else if (amount === ITEM6_HEAL_HP_HALF) {
+                  amount = Math.floor(mon.maxHp / 2);
+                  if (amount === 0) amount = 1;
+                } else if (amount === ITEM6_HEAL_HP_LVL_UP) {
+                  // 1:1 :5065 gBattleScripting.levelUpHP — battle-only. Si pas
+                  // en battle, fallback 0 (= no effect).
+                  amount = inBattle ? 0 : 0;
+                  // Note 1:1 strict : gBattleScripting.levelUpHP est computed
+                  // par level-up sequence battle. Pas porté ici (= future work
+                  // Cmd_drawlvlupbox path).
+                }
+                // 1:1 :5070-5102 — apply HP heal.
                 if (mon.currentHp !== mon.maxHp) {
-                  const newHp = Math.min(mon.currentHp + amount, mon.maxHp);
-                  result.hpHealed = newHp - mon.currentHp;
-                  mon.currentHp = newHp;
+                  if (!usedByAI) {
+                    // Restore HP direct.
+                    const newHp = Math.min(mon.currentHp + amount, mon.maxHp);
+                    result.hpHealed = newHp - mon.currentHp;
+                    mon.currentHp = newHp;
+                    // 1:1 :5081-5095 — battle sync.
+                    if (inBattle && battler !== MAX_BATTLERS_COUNT) {
+                      gBattleMons[battler].hp = newHp;
+                      if (!(effectFlags & (ITEM4_REVIVE >> 2))
+                          && GET_BATTLER_SIDE(gActiveBattler) === B_SIDE_PLAYER) {
+                        if (gBattleResults.numHealingItemsUsed < 255) {
+                          gBattleResults.numHealingItemsUsed++;
+                        }
+                        // 1:1 :5089-5093 — EmitGetMonData(REQUEST_ALL_BATTLE) +
+                        // MarkBattlerForControllerExec(battler). Notre projet
+                        // sync gBattleMons direct via batch C bridge, donc cet
+                        // emit n'est nécessaire que pour link multi-battles
+                        // (= deferred Phase 1.4+). Le mon battler is now synced.
+                      }
+                    }
+                  } else {
+                    // 1:1 :5098-5100 — AI : store amount as negative damage.
+                    setBattleMoveDamage(-amount);
+                  }
                   result.cannotUse = false;
                 }
                 effectFlags = effectFlags & ~(ITEM4_REVIVE >> 2) & 0xFF;
                 break;
               }
               case 3: { // ITEM4_HEAL_PP
+                // 1:1 :5106-5159.
                 const isPpOne = (effectFlags & (ITEM4_HEAL_PP_ONE >> 3)) !== 0;
                 if (!isPpOne) {
-                  // Heal PP for all moves
+                  // 1:1 :5108-5134 Heal PP for all moves
                   const ppBonuses = _getPpBonuses(mon);
                   const healAmount = bytes[paramOffset] ?? 0;
                   for (let m = 0; m < MAX_MON_MOVES; m++) {
@@ -410,12 +600,17 @@ export function PokemonUseItemEffects(
                       const newPp = Math.min(move.pp + healAmount, totalPP);
                       result.ppRecoveredBySlot[m] = newPp - move.pp;
                       move.pp = newPp;
+                      // 1:1 :5127-5128 sync battler PP if applicable.
+                      if (inBattle && battler !== MAX_BATTLERS_COUNT
+                          && MOVE_IS_PERMANENT(battler, m)) {
+                        gBattleMons[battler].pp[m] = newPp;
+                      }
                       result.cannotUse = false;
                     }
                   }
                   paramOffset++;
                 } else {
-                  // Heal PP for one move
+                  // 1:1 :5136-5158 Heal PP for one move
                   const move = mon.moves[moveIndex];
                   if (move) {
                     const ppBonuses = _getPpBonuses(mon);
@@ -425,6 +620,11 @@ export function PokemonUseItemEffects(
                       const newPp = Math.min(move.pp + healAmount, totalPP);
                       result.ppRecoveredBySlot[moveIndex] = newPp - move.pp;
                       move.pp = newPp;
+                      // 1:1 :5153-5154 sync battler PP if applicable.
+                      if (inBattle && battler !== MAX_BATTLERS_COUNT
+                          && MOVE_IS_PERMANENT(battler, moveIndex)) {
+                        gBattleMons[battler].pp[moveIndex] = newPp;
+                      }
                       result.cannotUse = false;
                     }
                   }
@@ -575,7 +775,8 @@ export interface MedicineResult {
 }
 
 export function ApplyMedicineEffect(itemId: number, mon: PokemonInstance): MedicineResult {
-  const r = PokemonUseItemEffects(mon, itemId, 0);
+  // Back-compat : assume slot 0 + moveIndex 0 + field (usedByAI=false).
+  const r = PokemonUseItemEffects(mon, itemId, 0, 0, false);
   return {
     hpHealed: r.hpHealed,
     statusCured: r.statusCured,

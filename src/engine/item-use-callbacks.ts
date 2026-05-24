@@ -324,7 +324,7 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, 0 /* moveIndex */);
+  const result = PokemonUseItemEffects(mon, itemId, slotId, 0 /* moveIndex */, false);
   if (result.cannotUse) {
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
@@ -345,7 +345,7 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, 0);
+  const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
@@ -364,7 +364,7 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, 0);
+  const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
@@ -391,7 +391,7 @@ export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTa
   const mon = party[slotId];
   if (!mon) return;
   const itemId = gSpecialVar.ItemId;
-  const result = PokemonUseItemEffects(mon, itemId, 0);
+  const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
@@ -426,7 +426,7 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
   for (let i = 0; i < party.length; i++) {
     const mon = party[i];
     if (!mon) continue;
-    const r = PokemonUseItemEffects(mon, itemId, 0);
+    const r = PokemonUseItemEffects(mon, itemId, i, 0, false);
     if (!r.cannotUse) anyEffect = true;
   }
   if (!anyEffect) {

@@ -108,6 +108,11 @@ export let gActiveBattler = 0;
 export let gEffectBattler = 0;
 export let gBattlerFainted = 0;
 export let gPotentialItemEffectBattler = 0;
+/** 1:1 décomp `gBattlerInMenuId` (battle.h). Battler qui interagit avec le menu
+ *  bag/party — set par battle_controller_player avant ouverture menus, et lu
+ *  par PokemonUseItemEffects pour identifier le mon ciblé. Aussi set par
+ *  Cmd_useitemonopponent = gBattlerAttacker. */
+export let gBattlerInMenuId = 0;
 
 /** 1:1 décomp `gBattlersCount` (= 2 single, 4 double). */
 export let gBattlersCount = 2;
@@ -807,6 +812,7 @@ export function setActiveBattler(v: number) { gActiveBattler = v; }
 export function setEffectBattler(v: number) { gEffectBattler = v; }
 export function setBattlerFainted(v: number) { gBattlerFainted = v; }
 export function setPotentialItemEffectBattler(v: number) { gPotentialItemEffectBattler = v; }
+export function setBattlerInMenuId(v: number) { gBattlerInMenuId = v; }
 export function setBattlersCount(v: number) { gBattlersCount = v; }
 export function setCurrentMove(v: number) { gCurrentMove = v; }
 export function setChosenMove(v: number) { gChosenMove = v; }
