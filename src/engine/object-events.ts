@@ -241,6 +241,12 @@ export interface ObjectEvent {
   /** 1:1 décomp `heldMovementActive:1`. True quand `ObjectEventSetHeldMovement`
    *  a queued un movement action (= used par scripted walks + door warps). */
   heldMovementActive: boolean;
+  /** 1:1 décomp `spriteAnimPausedBackup:1` (global.fieldmap.h ObjectEvent struct).
+   *  Backup de sprite.animPaused au FreezeObjectEvent ; restored par UnfreezeObject
+   *  Event. Permet de pause les anims pendant lockall + reprendre proprement. */
+  spriteAnimPausedBackup: boolean;
+  /** 1:1 décomp `spriteAffineAnimPausedBackup:1`. Backup affineAnimPaused. */
+  spriteAffineAnimPausedBackup: boolean;
   /** 1:1 décomp `heldMovementFinished:1`. True quand le held movement vient
    *  de finir (= read par `ObjectEventClearHeldMovementIfFinished`). */
   heldMovementFinished: boolean;
@@ -429,6 +435,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   disableCoveringGroundEffects: false,
   landingJump: false,
   heldMovementActive: false,
+  spriteAnimPausedBackup: false,
+  spriteAffineAnimPausedBackup: false,
   heldMovementFinished: false,
   facingDirectionLocked: false,
   disableAnim: false,
@@ -1069,7 +1077,7 @@ const TILES_PER_FRAME_16x32 = 8;
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
 import type { NamingSubsprite } from './decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables } from './decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from './decomp-globals';
 
 /**
  * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour
@@ -1575,30 +1583,74 @@ function canWalk(npc: ObjectEvent, direction: number): boolean {
   return true;
 }
 
-/** Un-freeze tous les NPCs (= appelé quand player commence à walker, =
- *  exit interaction). 1:1 décomp pattern : ScriptUnlockAll fait équivalent. */
-export function UnfreezeAllNpcs(): void {
-  for (const npc of gObjectEvents) {
-    if (npc.active) npc.frozen = false;
+/** 1:1 STRICT décomp `FreezeObjectEvent(struct ObjectEvent *objectEvent)`
+ *  (event_object_movement.c:8142-8156) :
+ *    if (objectEvent->heldMovementActive || objectEvent->frozen) return TRUE;
+ *    objectEvent->frozen = TRUE;
+ *    objectEvent->spriteAnimPausedBackup = gSprites[id].animPaused;
+ *    objectEvent->spriteAffineAnimPausedBackup = gSprites[id].affineAnimPaused;
+ *    gSprites[id].animPaused = TRUE;
+ *    gSprites[id].affineAnimPaused = TRUE;
+ *    return FALSE;
+ *
+ *  Sans ça l'anim sprite continue à cycler malgré frozen → NPC "marche à
+ *  l'infini" visuellement même en lockall. */
+export function FreezeObjectEvent(npc: ObjectEvent): boolean {
+  if (npc.heldMovementActive || npc.frozen) return true;
+  npc.frozen = true;
+  const rt = getRuntime();
+  if (rt && npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      npc.spriteAnimPausedBackup = sprite.animPaused;
+      npc.spriteAffineAnimPausedBackup = sprite.affineAnimPaused;
+      sprite.animPaused = true;
+      sprite.affineAnimPaused = true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 STRICT décomp `UnfreezeObjectEvent(struct ObjectEvent *objectEvent)`
+ *  (event_object_movement.c:8175-8183) :
+ *    if (objectEvent->active && objectEvent->frozen) {
+ *        objectEvent->frozen = 0;
+ *        gSprites[id].animPaused = objectEvent->spriteAnimPausedBackup;
+ *        gSprites[id].affineAnimPaused = objectEvent->spriteAffineAnimPausedBackup;
+ *    } */
+export function UnfreezeObjectEvent(npc: ObjectEvent): void {
+  if (!npc.active || !npc.frozen) return;
+  npc.frozen = false;
+  const rt = getRuntime();
+  if (rt && npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.animPaused = npc.spriteAnimPausedBackup;
+      sprite.affineAnimPaused = npc.spriteAffineAnimPausedBackup;
+    }
   }
 }
 
-/** 1:1 décomp event_object_movement.c:8159 FreezeObjectEvents :
+/** Un-freeze tous les NPCs 1:1 décomp `UnfreezeObjectEvents`
+ *  (event_object_movement.c:8185-8191). */
+export function UnfreezeAllNpcs(): void {
+  for (const npc of gObjectEvents) {
+    if (npc.active) UnfreezeObjectEvent(npc);
+  }
+}
+
+/** 1:1 décomp event_object_movement.c:8159-8164 FreezeObjectEvents :
  *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
  *        if (gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
  *            FreezeObjectEvent(&gObjectEvents[i]);
  *
- *  Set frozen=true sur tous les NPCs actifs (skip player). Le tick movement
- *  state machine check `if (npc.frozen) continue;` → NPC reste à sa position
- *  même mid-step. Appelé par `ShowStartMenu` quand l'user appuie START dans
- *  l'overworld pour ouvrir le menu. */
+ *  Set frozen=true + pause anim sprite (= 1:1 strict). Skip player. */
 export function FreezeObjectEvents(): void {
   for (let i = 0; i < gObjectEvents.length; i++) {
     const npc = gObjectEvents[i];
     if (!npc.active) continue;
-    // Skip player (= localId 0xFF ou similar). On freeze juste les NPCs.
     if (npc.localIdRaw === 'LOCALID_PLAYER') continue;
-    npc.frozen = true;
+    FreezeObjectEvent(npc);
   }
 }
 // Phase 4.6 audit Opus §5 : back-compat globalThis + register field-globals.

@@ -27,7 +27,7 @@ import {
 import { PlaySE } from './decomp-globals';
 import * as Songs from './decomp-data/include/constants/songs-data';
 import {
-  gObjectEvents, type ObjectEvent, TrySpawnObjectEvent,
+  gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
 } from './object-events';
 import type { ObjectEventTemplate } from './map-loader';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
@@ -464,46 +464,46 @@ registerOpcode('lock', (ctx) => {
   // Freeze tous les NPCs sauf player + selected NPC. Player + selected sont
   // freeze APRÈS leur step courant termine.
   const npc = getSelectedNpc();
-  // Freeze immediately tous sauf player/selected.
+  // Freeze immediately tous sauf player/selected — 1:1 strict via FreezeObjectEvent
+  // qui pause aussi sprite.animPaused (= sinon anim continue malgré frozen).
   for (const n of gObjectEvents) {
-    if (n.active && n !== npc) n.frozen = true;
+    if (n.active && n !== npc) FreezeObjectEvent(n);
   }
   // Wait pour player step end. Le selected NPC était déjà frozen ou en step ;
   // on freeze le selected aussi à la fin du wait.
   SetupNativeScript(ctx, () => {
     if (!_isPlayerStepFinished()) return false;
-    // Player step done : freeze player + selected NPC, return true (= resume script).
-    if (npc) npc.frozen = true;
+    if (npc) FreezeObjectEvent(npc);
     return true;
   });
   return true;  // tells script-runtime to wait
 });
 
 registerOpcode('lockall', (ctx) => {
-  // 1:1 décomp `ScrCmd_lockall` (scrcmd.c:1199-1213) :
+  // 1:1 STRICT décomp `ScrCmd_lockall` (scrcmd.c:1199-1213) :
   //   FreezeObjects_WaitForPlayer();
   //   SetupNativeScript(ctx, IsFreezePlayerFinished);
-  // Freeze tous les NPCs immediately. Player est freeze APRÈS son step courant.
+  // → FreezeObjectEvents() qui appelle FreezeObjectEvent par NPC, qui set
+  //   frozen=true ET pause sprite.animPaused (= sinon anim cycle malgré frozen).
   for (const npc of gObjectEvents) {
-    if (npc.active) npc.frozen = true;
+    if (npc.active) FreezeObjectEvent(npc);
   }
   SetupNativeScript(ctx, () => _isPlayerStepFinished());
   return true;
 });
 
 registerOpcode('release', (_ctx) => {
-  // 1:1 décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
+  // 1:1 STRICT décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
   //   HideFieldMessageBox();
   //   ObjectEventClearHeldMovementIfFinished(selected);
   //   ObjectEventClearHeldMovementIfFinished(player);
   //   ScriptMovement_UnfreezeObjectEvents();
-  //   UnfreezeObjectEvents();   ← unfreeze TOUS les NPCs, pas juste le selected.
-  // Ancienne impl unfreezait SEULEMENT le selected → user-flag : parler à
-  // Vigoroth1 freeze Vigoroth2 indéfiniment (= release du script Vigoroth1
-  // ne libérait pas Vigoroth2 qui était frozen par lock).
+  //   UnfreezeObjectEvents();   ← unfreeze TOUS les NPCs via UnfreezeObjectEvent
+  //   qui restore sprite.animPaused = spriteAnimPausedBackup (= reverse du
+  //   FreezeObjectEvent qui avait pause les anims).
   HideFieldMessageBox();
   for (const npc of gObjectEvents) {
-    if (npc.active) npc.frozen = false;
+    if (npc.active) UnfreezeObjectEvent(npc);
   }
   return false;
 });
@@ -511,7 +511,7 @@ registerOpcode('release', (_ctx) => {
 registerOpcode('releaseall', (_ctx) => {
   HideFieldMessageBox();
   for (const npc of gObjectEvents) {
-    if (npc.active) npc.frozen = false;
+    if (npc.active) UnfreezeObjectEvent(npc);
   }
   return false;
 });
