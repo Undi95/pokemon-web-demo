@@ -75,6 +75,7 @@ import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events'
 import { CopyPartyAndObjectsFromSave, SetCurrentMap } from '../engine/load_save';
 import {
   SpawnObjectEventsOnMap,
+  SpawnObjectEventsOnReturnToField,
   UpdateObjectEvents,
   TickObjectEventMovements,
   resetObjectEventAllocations,
@@ -635,7 +636,11 @@ export class TestOverworldScene extends Phaser.Scene {
         // re-init field et reprend exactement où il était. No-op si aucun
         // script en vol (option menu/sac : status SHUTDOWN).
         const _scriptSnap = ScriptContext_Snapshot();
-        await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
+        // 1:1 STRICT décomp `ReturnToFieldLocal` (overworld.c:1961) — utilise
+        // SpawnObjectEventsOnReturnToField au lieu de TrySpawnObjectEvents.
+        // returnToField=true preserve gObjectEvents (= currentCoords post-
+        // script comme MOM-à-chair après PetalburgGymReport).
+        await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection(), false, true);
         ScriptContext_Restore(_scriptSnap);
         // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
         // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
@@ -706,6 +711,20 @@ export class TestOverworldScene extends Phaser.Scene {
   private async loadAndInitMap(
     mapId: string, spawnX: number, spawnY: number, spawnDir: number,
     initFromSavedGame = false,
+    /** 1:1 STRICT décomp `ReturnToFieldLocal` (overworld.c:1961) vs
+     *  `LoadMapInStepsLocal` (overworld.c) : ReturnToFieldLocal preserve
+     *  gObjectEvents (= positions courantes des NPCs post-script) ; Load
+     *  MapInStepsLocal reset + spawn from templates.
+     *
+     *  returnToField=true : utilise SpawnObjectEventsOnReturnToField (= 1:1
+     *  décomp event_object_movement.c:1715) qui itère gObjectEvents[i].active
+     *  et re-crée les sprites OAM à currentCoords (= preserve positions post-
+     *  script comme applymovement MomReturnToSeat). Utilisé au bag/menu/options
+     *  close (= same map refresh).
+     *
+     *  returnToField=false : flow LoadMapInStepsLocal = destroy + reset + spawn
+     *  from templates. Utilisé au warp inter-map (= 1:1 décomp). */
+    returnToField = false,
   ): Promise<MapHeader> {
     this.statusText?.setText(`Loading ${mapId}...`);
     const header = await loadMapByName(mapId);
@@ -788,12 +807,19 @@ export class TestOverworldScene extends Phaser.Scene {
     // gPaletteFade.bufferTransferDisabled (= set TRUE par executeWarp Phase 3
     // start, FALSE après FillPalBufferBlack en Phase 4).
 
-    // Phase 4.4.a : destroy old NPC sprites first (= 1:1 décomp ResetObjectEvents).
-    destroyAllNpcSprites(this.rt);
-    resetObjectEventAllocations();
-    // Phase 4.10 : reset movement queues au map switch (= old map's queues
-    // pourraient référencer des NPCs de l'ancienne map).
-    resetMovementQueues();
+    // 1:1 STRICT décomp branch : LoadMapInStepsLocal (= warp inter-map, reset
+    // tout) vs ReturnToFieldLocal (= bag/menu close, preserve gObjectEvents).
+    if (!returnToField) {
+      // Phase 4.4.a : destroy old NPC sprites first (= 1:1 décomp ResetObjectEvents).
+      destroyAllNpcSprites(this.rt);
+      resetObjectEventAllocations();
+      // Phase 4.10 : reset movement queues au map switch (= old map's queues
+      // pourraient référencer des NPCs de l'ancienne map).
+      resetMovementQueues();
+    }
+    // returnToField=true : on ne touche PAS gObjectEvents. Au cycle bag close,
+    // gObjectEvents.currentCoords est préservé (= MOM reste à sa position post-
+    // applymovement chair, plutôt qu'au template.x/y = 4,5 devant TV).
     // 1:1 décomp `RotatingGate_InitPuzzle` (rotating_gate.c:933-940) call par
     // `RotatingGate_InitPuzzleAndGraphics` (= overworld.c LoadMap step). Init
     // puzzle config + reset gate orientations à VAR_TEMP_0. No-op si current
@@ -842,17 +868,29 @@ export class TestOverworldScene extends Phaser.Scene {
     DrawWholeMapView();
     flushOverworldTilemaps(this.rt);
 
-    // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
-    await SpawnObjectEventsOnMap(this.rt);
+    // 1:1 STRICT décomp branch : LoadMapInStepsLocal (= warp) appelle
+    // TrySpawnObjectEvents (= spawn from templates), ReturnToFieldLocal (= bag
+    // close) appelle SpawnObjectEventsOnReturnToField (= preserve gObjectEvents).
+    if (!returnToField) {
+      // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
+      await SpawnObjectEventsOnMap(this.rt);
 
-    // 1:1 décomp `CopyPartyAndObjectsFromSave` (= LoadObjectEvents). Apply les
-    // saved NPC positions ON TOP des templates default. Sans ça les NPCs spawn
-    // toujours à leur position initiale, même si le user a déplacé un NPC via
-    // setobjectxy ou si une cinematic l'a déplacé puis user a save (= le décomp
-    // sauvegarde l'état des objectEvents et le restore au resume). Critique
-    // pour le resume : l'animation du Mom dialog dans la maison déplace Mom
-    // → user save → reload → Mom doit rester à sa nouvelle position.
-    CopyPartyAndObjectsFromSave();
+      // 1:1 décomp `CopyPartyAndObjectsFromSave` (= LoadObjectEvents). Apply les
+      // saved NPC positions ON TOP des templates default. Sans ça les NPCs spawn
+      // toujours à leur position initiale, même si le user a déplacé un NPC via
+      // setobjectxy ou si une cinematic l'a déplacé puis user a save (= le décomp
+      // sauvegarde l'état des objectEvents et le restore au resume). Critique
+      // pour le resume : l'animation du Mom dialog dans la maison déplace Mom
+      // → user save → reload → Mom doit rester à sa nouvelle position.
+      CopyPartyAndObjectsFromSave();
+    } else {
+      // 1:1 STRICT décomp event_object_movement.c:1715-1726
+      // `SpawnObjectEventsOnReturnToField` : itère gObjectEvents[i].active et
+      // re-crée juste les sprites OAM (= ResetSpriteData a clear gSprites +
+      // OAMs). gObjectEvents memory (currentCoords/facing/etc.) preservés
+      // depuis avant le bag open → MOM reste à sa position post-script.
+      await SpawnObjectEventsOnReturnToField(this.rt);
+    }
 
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
     // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran

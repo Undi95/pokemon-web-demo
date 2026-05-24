@@ -2413,6 +2413,190 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   }
 }
 
+// ─── 1:1 STRICT décomp event_object_movement.c:1715-1796 ──────────────────
+// SpawnObjectEventsOnReturnToField + SpawnObjectEventOnReturnToField :
+// re-crée les sprites OAM des NPCs DÉJÀ actifs (= preserve gObjectEvents[i]
+// .currentCoords, graphicsId, etc.). Utilisé par ReturnToFieldLocal au bag/
+// menu close (= 1:1 décomp overworld.c:1961 ReturnToFieldLocal → ResumeMap
+// → InitObjectEventsReturnToField).
+//
+// Différence avec SpawnObjectEventsOnMap (= TrySpawnObjectEvents) :
+// - SpawnObjectEventsOnMap itère gMapHeader.events.objectEvents (= templates)
+//   et spawn NEW NPCs à template.x/y (= position initiale map).
+// - SpawnObjectEventsOnReturnToField itère gObjectEvents[i].active (= NPCs
+//   déjà en mémoire) et re-crée juste les sprites visuels à leur position
+//   courante (= preserve mouvements faits durant le jeu : applymovement,
+//   etc.).
+//
+// Au bag close (= ResetSpriteData a clear gSprites + OAMs), on doit re-créer
+// les sprites visuels MAIS sans toucher gObjectEvents memory (= currentCoords,
+// facing, etc. preservés).
+
+/** 1:1 décomp `SpawnObjectEventOnReturnToField` (event_object_movement.c:1728-1797).
+ *
+ *  Re-crée le sprite OAM d'un NPC déjà actif (= gObjectEvents[id].active=true).
+ *  Lit graphicsInfo via graphicsId, alloue tiles + palette, crée OAM à la
+ *  position courante (= currentCoords, NON template). Préserve npc fields.
+ *
+ *  Décomp utilise SpriteTemplate + CreateSprite. Notre port simplifié réutilise
+ *  le branch logic de _spawnSingleNpcFromTemplate pour le sprite creation, mais
+ *  source les coords depuis npc.currentCoords. */
+async function _respawnNpcSpriteForReturnToField(
+  npc: ObjectEvent,
+  rt: DecompRuntime,
+  catalog: Record<string, GraphicsInfo>,
+): Promise<boolean> {
+  const graphics = catalog[npc.graphicsId];
+  if (!graphics) return false;
+
+  // Detect type 1:1 décomp via dimensions (= equivalent graphicsInfo->oam lookup).
+  const is48x48 = graphics.frameWidth === 48 && graphics.frameHeight === 48;
+  const is32x32 = graphics.frameWidth === 32 && graphics.frameHeight === 32;
+  const is16x32 = graphics.frameWidth === 16 && graphics.frameHeight === 32;
+  const is16x16 = graphics.frameWidth === 16 && graphics.frameHeight === 16;
+  if (!is48x48 && !is32x32 && !is16x32 && !is16x16) return false;
+
+  // Load PNG depuis cache (= preload au boot field).
+  const pngPath = `${BASE}/${graphics.png}`;
+  const png = _npcPngCache.get(pngPath);
+  if (!png) return false;
+
+  // 1:1 STRICT décomp sprite.c:562-575 (CreateSpriteAt branch tileTag==TAG_NONE) :
+  // alloue tiles bitmap-based + tile data en VRAM.
+  const objTileBase = AllocSpriteTiles(TILES_PER_NPC);
+  if (objTileBase < 0) return false;
+
+  // Palette via tag system (= dedup si même graphicsId).
+  const paletteTag = `NPC_PAL_${npc.graphicsId}`;
+  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
+  if (paletteBank === 0xFF) {
+    MarkObjTilesFree(objTileBase * 32, TILES_PER_NPC * 32);
+    return false;
+  }
+
+  // Copie tile data en VRAM (= équivalent décomp RequestSpriteFrameImageCopy au
+  // 1er frame, simplifié pour pré-charger tous les frames consécutifs).
+  if (is48x48) {
+    rt.gba.objVram.set(png.charData.subarray(0, 36 * 32), objTileBase * 32);
+  } else if (is32x32) {
+    let faceFrame = 0;
+    let walk1Frame = 1;
+    let walk2Frame = 2;
+    if (npc.graphicsId === 'OBJ_EVENT_GFX_VIGOROTH_FACING_AWAY') {
+      faceFrame = 3; walk1Frame = 4; walk2Frame = 4;
+    }
+    const faceTiles = pngTo1dObjLayoutSingleFrame(png.charData, faceFrame, png.widthTiles, 32, 32);
+    const walk1Tiles = pngTo1dObjLayoutSingleFrame(png.charData, walk1Frame, png.widthTiles, 32, 32);
+    const walk2Tiles = pngTo1dObjLayoutSingleFrame(png.charData, walk2Frame, png.widthTiles, 32, 32);
+    rt.gba.objVram.set(faceTiles, objTileBase * 32);
+    rt.gba.objVram.set(walk1Tiles, (objTileBase + 16) * 32);
+    rt.gba.objVram.set(walk2Tiles, (objTileBase + 32) * 32);
+  } else if (is16x16) {
+    const numTiles = png.widthTiles * png.heightTiles;
+    rt.gba.objVram.set(png.charData.subarray(0, numTiles * 32), objTileBase * 32);
+  } else {
+    const numFrames = (png.widthTiles * png.heightTiles) / TILES_PER_FRAME_16x32;
+    const reordered = pngTo1dObjLayout(png.charData, numFrames, png.widthTiles, 16, 32);
+    rt.gba.objVram.set(reordered, objTileBase * 32);
+  }
+  const paletteSlot = 256 + paletteBank * 16;
+  for (let i = 0; i < Math.min(16, png.palette.length); i++) {
+    rt.gPlttBufferFaded.set(paletteSlot + i, png.palette[i]);
+    rt.gPlttBufferUnfaded.set(paletteSlot + i, png.palette[i]);
+  }
+
+  // Lookup oam template via graphicsInfo (= 1:1 décomp record).
+  const graphicsInfo = GetObjectEventGraphicsInfo(npc.graphicsId, png.charData);
+  const oamTemplate = graphicsInfo?.oam ?? GetBaseOamForDimensions(graphics.frameWidth, graphics.frameHeight);
+
+  // Create OAM sprite. 1:1 STRICT décomp branch selon type.
+  let result: { spriteId: number; oamIndex: number };
+  if (is48x48) {
+    result = rt.CreateSpriteAtOam({
+      tileId: objTileBase, paletteBank,
+      x: 0, y: 0,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+    SetSubspriteTables(npc.spriteId, sOamTable_48x48);
+    npc.useSubsprites = true;
+  } else if (is16x16) {
+    const ELEV_PRIORITY      = [2,2,2,2,1,2,1,2,1,2,1,2,1,0,0,2];
+    const ELEV_SUBSPRITE_NUM = [1,1,1,1,2,1,2,1,2,1,2,1,2,0,0,1];
+    const inRange = (npc as { elevation?: number }).elevation !== undefined &&
+                    ((npc as { elevation?: number }).elevation ?? 0) >= 0 &&
+                    ((npc as { elevation?: number }).elevation ?? 0) < 16;
+    const elev = inRange ? ((npc as { elevation?: number }).elevation ?? 0) : 0;
+    const elevPriority = inRange ? ELEV_PRIORITY[elev] : 2;
+    const subspriteNum = inRange ? ELEV_SUBSPRITE_NUM[elev] : 1;
+    result = rt.CreateSpriteAtOam({
+      tileId: objTileBase, paletteBank,
+      x: 0, y: 0,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: elevPriority, paletteMode: 0, affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+    if (subspriteNum === 2) SetSubspriteTables(npc.spriteId, sOamTable_16x16_2);
+  } else if (is32x32) {
+    result = rt.CreateSpriteAtOam({
+      tileId: objTileBase, paletteBank,
+      x: 0, y: 0,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.tileBase = objTileBase;
+  } else {
+    const cfg = NPC_SPRITE_FRAMES[npc.facingDirection] ?? NPC_SPRITE_FRAMES[DIR_SOUTH];
+    result = rt.CreateSpriteAtOam({
+      tileId: objTileBase + cfg.face * TILES_PER_FRAME_16x32,
+      paletteBank,
+      x: 0, y: 0,
+      shape: oamTemplate.shape, size: oamTemplate.size,
+      priority: oamTemplate.priority, paletteMode: 0, affineMode: 0,
+    });
+    npc.spriteId = result.spriteId;
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.hFlip = cfg.hFlip;
+    rt.gba.oam[result.oamIndex].flipH = cfg.hFlip;
+  }
+
+  // 1:1 STRICT : update tile/palette fields for anim cycling later.
+  npc.objTileBase = objTileBase;
+  npc.paletteBank = paletteBank;
+  return true;
+}
+
+/** 1:1 décomp `SpawnObjectEventsOnReturnToField(s16 x, s16 y)`
+ *  (event_object_movement.c:1715-1726) :
+ *
+ *    ClearPlayerAvatarInfo();
+ *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+ *      if (gObjectEvents[i].active)
+ *        SpawnObjectEventOnReturnToField(i, x, y);
+ *    CreateReflectionEffectSprites();
+ *
+ *  Re-crée tous les sprites OAM des NPCs déjà actifs depuis leur currentCoords.
+ *  PRÉSERVE gObjectEvents memory (= positions/facing post-script intacts). */
+export async function SpawnObjectEventsOnReturnToField(rt: DecompRuntime): Promise<void> {
+  if (!_graphicsCatalog) return;
+  const catalog = _graphicsCatalog;
+  for (const npc of gObjectEvents) {
+    if (!npc.active) continue;
+    // Skip player slot (= preserved by InitPlayerAvatar already).
+    if (npc.isPlayer) continue;
+    await _respawnNpcSpriteForReturnToField(npc, rt, catalog);
+  }
+  // Note : CreateReflectionEffectSprites (= 1:1 décomp) port différé (= notre
+  // port n'a pas de reflection sprite system pour les NPCs).
+}
+
 /** 1:1 décomp `TrySpawnObjectEvent(u8 localId, u8 mapNum, u8 mapGroup)`
  *  (event_object_movement.c). Spawn UN seul NPC par localId — appelé par
  *  ScrCmd_addobject après ClearFlag. Ne fait pas de bounds check (= le script
