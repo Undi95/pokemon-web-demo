@@ -77,7 +77,7 @@ import {
 } from './object-events';
 import { MapGridGetElevationAt } from './map-loader';
 import { LOCALID_PLAYER } from './decomp-bridge';
-import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
+import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from './script-vars';
 import { ScriptContext_SetupScript } from './script-runtime';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 
@@ -646,19 +646,91 @@ export function TryStartInteractionScript(
 
 // ─── Step counter helpers 1:1 décomp ───────────────────────────────────────
 
-/** 1:1 décomp `UpdateFriendshipStepCounter` (field_control_avatar.c:614-635).
- *  Incrémente le step counter friendship dans gSaveBlock. Une fois 128 steps
- *  atteints, raise friendship de chaque pokemon du party par 1. */
+/** 1:1 STRICT décomp `UpdateFriendshipStepCounter` (field_control_avatar.c:614-630) :
+ *    u16 *ptr = GetVarPointer(VAR_FRIENDSHIP_STEP_COUNTER);
+ *    (*ptr)++;
+ *    (*ptr) %= 128;
+ *    if (*ptr == 0) {
+ *        struct Pokemon *mon = gPlayerParty;
+ *        for (i = 0; i < PARTY_SIZE; i++) {
+ *            AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING);
+ *            mon++;
+ *        }
+ *    }
+ */
 export function UpdateFriendshipStepCounter(): void {
-  // TODO Phase 2 : port body complet (= access gSaveBlock1Ptr->vars[VAR_STEP_COUNTER_FRIENDSHIP]).
-  // Pour MVP : no-op (= friendship grinding pas critique démo).
+  // 1:1 décomp GetVarPointer + increment + modulo.
+  const counter = ((VarGet('VAR_FRIENDSHIP_STEP_COUNTER') + 1) & 0xFFFF) % 128;
+  VarSet('VAR_FRIENDSHIP_STEP_COUNTER', counter);
+  if (counter === 0) {
+    // 1:1 décomp : pour chaque mon du party, AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING).
+    void import('./battle/party-storage').then(({ AdjustFriendship }) => {
+      const party = gSaveBlock1Ptr.playerParty;
+      const FRIENDSHIP_EVENT_WALKING = 5;  // 1:1 décomp include/constants/pokemon.h:179.
+      for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+        const mon = party[i];
+        if (mon) {
+          // AdjustFriendship attend un Pokemon décomp struct ; notre PokemonInstance
+          // a friendship field optional. Cast via unknown pour bypass type guard.
+          AdjustFriendship(mon as unknown as Parameters<typeof AdjustFriendship>[0], FRIENDSHIP_EVENT_WALKING);
+        }
+      }
+    });
+  }
 }
 
-/** 1:1 décomp `UpdatePoisonStepCounter` (field_control_avatar.c:637-666).
- *  Si party member poisoned, decrement HP toutes les 4 steps. Si HP atteint 0,
- *  fait fainted + trigger Hall of Fade. */
+/** 1:1 STRICT décomp `UpdatePoisonStepCounter` (field_control_avatar.c:637-660) :
+ *    if (gMapHeader.mapType != MAP_TYPE_SECRET_BASE) {
+ *        ptr = GetVarPointer(VAR_POISON_STEP_COUNTER);
+ *        (*ptr)++;
+ *        (*ptr) %= 4;
+ *        if (*ptr == 0) {
+ *            switch (DoPoisonFieldEffect()) {
+ *            case FLDPSN_NONE: return FALSE;
+ *            case FLDPSN_PSN:  return FALSE;
+ *            case FLDPSN_FNT:  return TRUE;
+ *            }
+ *        }
+ *    }
+ *    return FALSE;
+ *
+ *  DoPoisonFieldEffect 1:1 décomp field_poison.c:120-154 : decrement HP des
+ *  party mons poisoned ; return FLDPSN_FNT si tous fainted, FLDPSN_PSN si
+ *  encore en vie, FLDPSN_NONE si aucun poisoned. */
 export function UpdatePoisonStepCounter(): boolean {
-  // TODO Phase 2 : port body complet.
+  // 1:1 décomp : skip pour Secret Base.
+  const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.
+  if (gMapHeader && (gMapHeader as unknown as { mapType?: number }).mapType === MAP_TYPE_SECRET_BASE) {
+    return false;
+  }
+  const counter = ((VarGet('VAR_POISON_STEP_COUNTER') + 1) & 0xFFFF) % 4;
+  VarSet('VAR_POISON_STEP_COUNTER', counter);
+  if (counter !== 0) return false;
+  // 1:1 décomp DoPoisonFieldEffect (field_poison.c:120-154) :
+  //   iter party, decrement HP des poisoned mons, return FNT si tous KO.
+  const FLDPSN_FNT = 2;  // 1:1 décomp include/constants/pokemon.h.
+  const party = gSaveBlock1Ptr.playerParty;
+  let numFainted = 0;
+  let numPoisoned = 0;
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const mon = party[i];
+    if (!mon) continue;
+    // 1:1 décomp : check status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON).
+    // Notre PokemonInstance.status est 'PSN' | 'TOX' | etc.
+    if (mon.status === 'PSN' || mon.status === 'TOX') {
+      let hp = mon.currentHp;
+      if (hp === 0 || --hp === 0) numFainted++;
+      mon.currentHp = hp;
+      numPoisoned++;
+    }
+  }
+  // DoPoisonFieldEffect screen flash via FldEffPoison_Start — non porté (= UI).
+  void numPoisoned;  // mark used pour conformer au décomp.
+  if (numFainted !== 0) {
+    // 1:1 décomp : return FLDPSN_FNT === 2 → caller wraps en boolean.
+    void FLDPSN_FNT;
+    return true;
+  }
   return false;
 }
 
