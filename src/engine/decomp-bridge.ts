@@ -1940,15 +1940,39 @@ export function FindCameraSprite(): any {
   return rt?.cameraSprite ?? null;
 }
 
-/** 1:1 décomp `event_object_movement.c GetBaseTemplateForObjectEvent(template)`. */
-export function GetBaseTemplateForObjectEvent(_template: any): any {
-  return _template;
+/** 1:1 décomp `event_object_movement.c:2462-2476 GetBaseTemplateForObjectEvent`.
+ *  Return template du save block 1 matching localId, OR null si :
+ *  (a) objectEvent.mapNum/mapGroup != current map, ou
+ *  (b) aucun template avec ce localId. */
+export function GetBaseTemplateForObjectEvent(objectEvent: any): any {
+  const rt: any = _getRT();
+  const sb1 = rt?.gSaveBlock1Ptr;
+  if (!sb1 || !objectEvent) return null;
+  // 1:1 décomp :2466-2468 : check map match.
+  if (objectEvent.mapNum !== sb1.location?.mapNum
+      || objectEvent.mapGroup !== sb1.location?.mapGroup) {
+    return null;
+  }
+  // 1:1 décomp :2470-2474 : loop templates, match localId.
+  const templates = sb1.objectEventTemplates ?? [];
+  for (const tpl of templates) {
+    if (objectEvent.localId === tpl.localId) {
+      return tpl;
+    }
+  }
+  return null;
 }
 
-/** 1:1 décomp `fieldmap.c AreCoordsWithinMapGridBounds(x, y)`. */
-export function AreCoordsWithinMapGridBounds(_x: number, _y: number): boolean {
-  // TODO : check vs gMapHeader.mapLayout dims. Approximate true for now.
-  return true;
+/** 1:1 décomp `fieldmap.c:62` macro :
+ *    #define AreCoordsWithinMapGridBounds(x, y)
+ *      (x >= 0 && x < gBackupMapLayout.width
+ *       && y >= 0 && y < gBackupMapLayout.height)
+ *  Map layout dims = INTERNAL coords (= LOGICAL + MAP_OFFSET). */
+export function AreCoordsWithinMapGridBounds(x: number, y: number): boolean {
+  const rt: any = _getRT();
+  const bml = rt?.gBackupMapLayout;
+  if (!bml) return false;
+  return x >= 0 && x < bml.width && y >= 0 && y < bml.height;
 }
 
 /** 1:1 décomp `event_object_movement.c GetWalkSlowMovementAction(direction)`. */
