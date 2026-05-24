@@ -225,6 +225,11 @@ interface WallClockState {
   initState: number;
   graphicsLoaded: boolean;
   graphicsLoading: boolean;
+  // C5 fix : snapshot du gSprites size AVANT open pour destroy au close TOUS
+  // les sprites créés par le UI WallClock (= pas juste les 4 tracked dans
+  // spriteIds, mais aussi tous les sprites créés indirectement via task
+  // anim handlers etc.).
+  preOpenSpriteIds: number[];
 }
 
 const _state: WallClockState = {
@@ -245,6 +250,7 @@ const _state: WallClockState = {
   initState: 0,
   graphicsLoaded: false,
   graphicsLoading: false,
+  preOpenSpriteIds: [],
 };
 
 let _assetsCache: WallClockAssets | null = null;
@@ -927,20 +933,34 @@ export function VBlankCB_WallClock(): void { /* runtime auto-transferts */ }
 function _freeWallClock(): void {
   const rt = getRuntime();
   if (!rt) return;
-  // Hide all 4 sprites.
-  for (const key of ['minute', 'hour', 'am', 'pm'] as const) {
-    const id = _state.spriteIds[key];
-    if (id >= 0) {
-      const spr = rt.gSprites.get(id);
-      if (spr) {
-        spr.inUse = false;
-        const oam = rt.gba.oam[spr.oamIndex];
-        if (oam) oam.visible = false;
-      }
-      rt.gSprites.delete(id);
+  // C5 fix : destroy TOUS les sprites créés par WallClock UI (= pas juste les
+  // 4 tracked). Sweep gSprites et destroy ceux qui n'étaient PAS actifs avant
+  // OpenWallClock (= snapshot preOpenSpriteIds).
+  // Sans ce sweep total, 60+ OAM zombies à (-8,-8) saturent gba.oam[] et
+  // overwrite les NPCs OAM → ItemBall + Rival invisible visuellement post-close.
+  const preOpenSet = new Set(_state.preOpenSpriteIds);
+  const toDestroy: number[] = [];
+  for (const [k, s] of rt.gSprites) {
+    if (!s.inUse) continue;
+    if (preOpenSet.has(k)) continue;  // était actif avant → préserver
+    toDestroy.push(k);
+  }
+  for (const k of toDestroy) {
+    const spr = rt.gSprites.get(k);
+    if (spr) {
+      spr.inUse = false;
+      spr.invisible = true;
+      const oam = rt.gba.oam[spr.oamIndex];
+      if (oam) oam.visible = false;
     }
+    rt.gSprites.delete(k);
+  }
+  console.log(`[wallclock] _freeWallClock destroyed ${toDestroy.length} sprites (preOpen=${_state.preOpenSpriteIds.length})`);
+  // Reset tracked sprite ids.
+  for (const key of ['minute', 'hour', 'am', 'pm'] as const) {
     _state.spriteIds[key] = -1;
   }
+  _state.preOpenSpriteIds = [];
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
   if (_labelWid >= 0) { RemoveWindow(_labelWid); _labelWid = -1; }
   // Clear BG3 (= wallclock tilemap + tiles) avant return-to-field. Sans ça,
@@ -993,6 +1013,12 @@ export function OpenWallClock(mode: Mode): void {
   _state.initState = 0;
   _state.graphicsLoaded = false;
   _state.graphicsLoading = false;
+  // C5 fix : snapshot des sprites actifs AVANT WallClock open. Au close,
+  // tous sprites créés depuis sont destroyed (= cleanup leak OAM zombies).
+  _state.preOpenSpriteIds = [];
+  for (const [k, s] of rt.gSprites) {
+    if (s.inUse) _state.preOpenSpriteIds.push(k);
+  }
   // 1:1 décomp `SetMainCallback2(CB2_StartWallClock)` pattern : savedCallback
   // pointe vers le return-to-field handler qui ré-init les BG/palettes/sprites
   // de l'OW (= CB2_ReturnToFieldLocal_Manual, équivalent décomp
