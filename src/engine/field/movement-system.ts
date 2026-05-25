@@ -226,6 +226,30 @@ function _onQueueDone(key: string): void {
   if (key === 'PLAYER' || key === 'LOCALID_PLAYER' || key === '255') {
     gFieldCamera.movementSpeedX = 0;
     gFieldCamera.movementSpeedY = 0;
+    return;
+  }
+  // G6 — 1:1 STRICT post-applymovement : décomp `MovementType_FaceDirection_Step0`
+  // (event_object_movement.c:3033) tick chaque frame quand NPC pas en
+  // heldMovement → ObjectEventSetSingleMovement(GetFaceDirectionMovementAction)
+  // → MovementAction_FaceDown/Up/Left/Right_Step0 → FaceDirection (5048) :
+  //   SetObjectEventDirection(objectEvent, direction);
+  //   StartSpriteAnim(sprite, GetFaceDirectionAnimNum(direction));
+  //
+  // Notre TS n'a pas de MovementType tick continuous (= notre dispatcher
+  // appelle MOVEMENT_HANDLERS uniquement pour Wander/Look). Pour les NPCs en
+  // MOVEMENT_TYPE_FACE_X qui viennent de finir un scripted movement, on
+  // doit reset animNum = FACE_X manuellement (= equivalent à
+  // MovementType_FaceDirection_Step0 tick après la queue done).
+  //
+  // Sans ça, le NPC reste avec animNum = GO_X frozen (animPaused=TRUE) après
+  // la queue done → user bug "PNJ ne revienne jamais à leur frame de base et
+  // freeze en marche".
+  if (_activeRt) {
+    const target = _resolveTarget(key);
+    if (target && target.npc && target.npc.spriteId >= 0) {
+      const setFace = _getAnimHelper('__npcSetFaceAnim');
+      if (setFace) setFace(_activeRt, target.npc);
+    }
   }
 }
 
