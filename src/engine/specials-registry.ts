@@ -1464,6 +1464,86 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
  *  → 1:1 strict justifié : return 1 toujours. */
 registerSpecial('GetMartEmployeeObjectEventId', () => 1);
 
+// ─── Session B3 batch — Buffer* specials 1:1 strict ────────────────────────
+
+/** 1:1 décomp `BufferFavorLadyItemName` (lilycove_lady.c:198-202) :
+ *  ```c
+ *  void BufferFavorLadyItemName(void) {
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      BufferItemName(gStringVar2, sFavorLadyPtr->itemId);
+ *  }
+ *  ```
+ *  BufferItemName = StringCopy(dest, GetItemName(itemId)). */
+registerSpecial('BufferFavorLadyItemName', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor') {
+    // 1:1 décomp string_util.c StringCopy via setStringVar.
+    const helpers = (globalThis as { __game_bridge?: {
+      GetItemName?: (id: number) => string;
+    } }).__game_bridge;
+    const name = helpers?.GetItemName?.(lady.itemId ?? 0) ?? '';
+    setStringVar(2, name);
+  }
+});
+
+/** 1:1 décomp `BufferFavorLadyPlayerName` (lilycove_lady.c:210-215) :
+ *  ```c
+ *  void BufferFavorLadyPlayerName(void) {
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      SetFavorLadyPlayerName(sFavorLadyPtr->playerName, gStringVar3);
+ *      ConvertInternationalString(gStringVar3, sFavorLadyPtr->language);
+ *  }
+ *  ```
+ *  SetFavorLadyPlayerName = memset EOS + StringCopy_PlayerName(dest, src).
+ *  Notre projet FR-only → ConvertInternationalString = no-op. */
+registerSpecial('BufferFavorLadyPlayerName', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor') {
+    setStringVar(3, lady.playerName ?? '');
+  }
+});
+
+/** 1:1 décomp `BufferQuizPrizeName` (lilycove_lady.c:452-455) :
+ *  ```c
+ *  void BufferQuizPrizeName(void) {
+ *      StringCopy(gStringVar1, GetItemName(sQuizLadyPtr->prize));
+ *  }
+ *  ``` */
+registerSpecial('BufferQuizPrizeName', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    const helpers = (globalThis as { __game_bridge?: {
+      GetItemName?: (id: number) => string;
+    } }).__game_bridge;
+    const name = helpers?.GetItemName?.(lady.prize ?? 0) ?? '';
+    setStringVar(1, name);
+  }
+});
+
+/** 1:1 décomp `BufferQuizPrizeItem` (lilycove_lady.c:487-491) :
+ *  ```c
+ *  void BufferQuizPrizeItem(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      gSpecialVar_0x8005 = sQuizLadyPtr->prize;
+ *  }
+ *  ``` */
+registerSpecial('BufferQuizPrizeItem', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    VarSet('VAR_0x8005', lady.prize ?? 0);
+  }
+});
+
+/** 1:1 décomp `BufferLottoTicketNumber` (field_specials.c:1585-1617) :
+ *  Pad le VAR_RESULT à 5 chiffres avec leading zeros, puis convert decimal.
+ *  Branche par range >= 10000 / >= 1000 / >= 100 / >= 10 / < 10. 1:1 strict :
+ *  équivalent à `String(value).padStart(5, '0')` (5 chars total). */
+registerSpecial('BufferLottoTicketNumber', () => {
+  const value = VarGet('VAR_RESULT');
+  // 1:1 décomp : pad-zero à 5 chars total.
+  setStringVar(1, String(value).padStart(5, '0'));
+});
+
 /** 1:1 décomp `ShouldDistributeEonTicket` (field_specials.c:3640-3646) :
  *  ```c
  *  bool32 ShouldDistributeEonTicket(void) {
@@ -1836,9 +1916,13 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'BattleTowerReconnectLink', 'BufferBattleFrontierTutorMoveName',
   'BufferBattleTowerElevatorFloors', 'BufferContestTrainerAndMonNames',
   'BufferContestWinnerTrainerName', 'BufferDeepLinkPhrase',
-  'BufferFavorLadyItemName', 'BufferFavorLadyPlayerName',
-  'BufferLottoTicketNumber', 'BufferQuizAuthorNameAndCheckIfLady',
-  'BufferQuizCorrectAnswer', 'BufferQuizPrizeItem', 'BufferQuizPrizeName',
+  // 'BufferFavorLadyItemName' — porté 1:1 décomp lilycove_lady.c:198 ci-bas.
+  // 'BufferFavorLadyPlayerName' — porté 1:1 décomp lilycove_lady.c:210 ci-bas.
+  // 'BufferLottoTicketNumber' — porté 1:1 décomp field_specials.c:1585 ci-bas.
+  // 'BufferQuizPrizeItem' — porté 1:1 décomp lilycove_lady.c:487 ci-bas.
+  // 'BufferQuizPrizeName' — porté 1:1 décomp lilycove_lady.c:452 ci-bas.
+  'BufferQuizAuthorNameAndCheckIfLady',
+  'BufferQuizCorrectAnswer',
   // 'BufferTMHMMoveName' — porté 1:1 décomp field_specials.c:1638 ci-bas.
   'BufferTrendyPhraseString',
   'BufferUnionRoomPlayerName', 'BufferVarsForIVRater',
