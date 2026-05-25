@@ -19,6 +19,7 @@ import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
+import { getRuntime } from '../system/decomp-globals';
 
 /** 1:1 décomp `sCurrentApproachingTrainerObjectEventId` (trainer_see.c).
  *  Set par `selectapproachingtrainer` à l'object event ID du trainer en
@@ -95,16 +96,31 @@ registerOpcode('releaseall', (_ctx) => {
 });
 
 registerOpcode('faceplayer', (_ctx) => {
-  // 1:1 décomp ScrCmd_faceplayer : NPC tourne face au player (= direction
-  // opposée à la direction face du player).
+  // 1:1 décomp `ScrCmd_faceplayer` (scrcmd.c:1152-1156) :
+  //   if (gObjectEvents[gSelectedObjectEvent].active)
+  //       ObjectEventFaceOppositeDirection(&gObjectEvents[gSelectedObjectEvent], GetPlayerFacingDirection());
+  //
+  // `ObjectEventFaceOppositeDirection` (event_object_movement.c:4975) chain :
+  //   → ObjectEventSetHeldMovement(GetFaceDirectionMovementAction(GetOppositeDirection(direction)))
+  //   → exec MovementAction_FaceX_Step0 → FaceDirection (5048) :
+  //       SetObjectEventDirection(obj, dir)
+  //       StartSpriteAnim(sprite, GetFaceDirectionAnimNum(dir))
+  //
+  // Notre port simplifié = équivalent à `ObjectEventTurn` (1867) qui fait
+  // SetObjectEventDirection + StartSpriteAnim + SeekSpriteAnim(0). Sans
+  // StartSpriteAnim, sprite.animNum reste sur l'anim précédent (= bug user
+  // G8+ "PNJ ne se tournent pas vers nous quand on leur parle").
   const npc = getSelectedNpc();
   if (!npc) return false;
   npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+  _npcTurnAnim(npc);
   return false;
 });
 
 registerOpcode('turnobject', (_ctx, args) => {
-  // turnobject LOCALID, DIRECTION. Trouve NPC par localId, set facing.
+  // 1:1 décomp `ScrCmd_turnobject` (scrcmd.c:1159-1166) :
+  //   ObjectEventTurnByLocalIdAndMap(localId, mapNum, mapGroup, direction)
+  //   → ObjectEventTurn (1867) → SetObjectEventDirection + StartSpriteAnim
   const localId = parseInt(args[0], 10) || 0;
   const dirArg = args[1];
   let dir = DIR_SOUTH;
@@ -115,11 +131,26 @@ registerOpcode('turnobject', (_ctx, args) => {
   for (const npc of gObjectEvents) {
     if (npc.active && npc.localId === localId) {
       npc.facingDirection = dir;
+      _npcTurnAnim(npc);
       break;
     }
   }
   return false;
 });
+
+/** 1:1 décomp `ObjectEventTurn` (event_object_movement.c:1867-1875) :
+ *    SetObjectEventDirection(obj, dir);   ← caller fait déjà
+ *    if (!obj->inanimate) {
+ *        StartSpriteAnim(sprite, GetFaceDirectionAnimNum(dir));
+ *        SeekSpriteAnim(sprite, 0);
+ *    }
+ *  Utilise le helper __npcSetFaceAnim exposé via globalThis par object-events.ts. */
+function _npcTurnAnim(npc: { facingDirection: number; spriteId: number; inanimate: boolean }): void {
+  const setFace = (globalThis as Record<string, unknown>).__npcSetFaceAnim as
+    ((rt: unknown, npc: unknown) => void) | undefined;
+  if (!setFace) return;
+  try { setFace(getRuntime(), npc); } catch { /* rt not ready */ }
+}
 
 // ─── Trainers (1:1 décomp ScrCmd_selectapproachingtrainer + lockfortrainer) ──
 
