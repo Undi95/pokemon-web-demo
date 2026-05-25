@@ -581,33 +581,103 @@ export function TintPalette_CustomTone(
 // BLEND PALETTES GRADUALLY (palette.c:955-1042)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** 1:1 décomp src/palette.c:955-981 BlendPalettesGradually.
- *  Crée un task qui blend gradually les palettes sélectionnées vers `color`,
- *  step par `coeff` jusqu'à `coeffTarget`, avec délai `delay` frames entre steps.
+/** 1:1 décomp `BlendPalettesGradually` (palette.c:955-981) + `Task_BlendPalettesGradually`
+ *  (palette.c:1009-1042). Crée un task qui blend gradually les palettes sélectionnées
+ *  vers `color`, step par `coeff` jusqu'à `coeffTarget`, avec délai `delay` frames entre steps.
  *
- *  Note : utilisé uniquement par Kyogre/Groudon battle intro pour flash lightning.
- *  Non critique en dehors du combat boss. Task helper déféré à un port futur de
- *  la task system 1:1 (= notre runtime gTasks utilise déjà un modèle équivalent). */
+ *  Task data aliases (palette.c:943-950) :
+ *    tCoeff       = data[0]
+ *    tCoeffTarget = data[1]
+ *    tCoeffDelta  = data[2]
+ *    tDelay       = data[3]
+ *    tDelayTimer  = data[4]
+ *    tPalettes    = data[5] + data[6] (= 32-bit packed via Set/GetWordTaskArg)
+ *    tColor       = data[7]
+ *    tId          = data[8]
+ *
+ *  Use case : Kyogre/Groudon battle intro lightning flash. Notre task system
+ *  (CreateTask + DestroyTask + gTasks Map) supporte ce pattern 1:1. */
 export function BlendPalettesGradually(
   selectedPalettes: number, delay: number, coeff: number, coeffTarget: number,
   color: number, priority: number, id: number,
 ): void {
-  // STUB minimal : applique BlendPalettes direct au coeffTarget sans graduation.
-  // 1:1 décomp utilise un task qui anime sur N frames. Pour le moment on saute
-  // à l'état final — visuellement le flash est juste instantané au lieu de progressif.
-  // TODO : port complet Task_BlendPalettesGradually (palette.c:1009-1042) pour
-  // l'animation graduelle authentique (= seulement utilisé Kyogre/Groudon intro).
-  void delay; void coeff; void priority; void id;
-  const r = _rt();
-  // Apply final state (= équivalent du target step).
-  let mask = selectedPalettes >>> 0;
-  let paletteOffset = 0;
-  while (mask) {
-    if (mask & 1) {
-      _blendPalette(r, paletteOffset, 16, coeffTarget, color);
+  // 1:1 décomp :957-963 : taskId = CreateTask(Task_BlendPalettesGradually, priority).
+  const rt = _rt();
+  if (!rt.CreateTask || !rt.gTasks) {
+    // Substrat absent : fallback final-state (= ancien comportement).
+    let mask = selectedPalettes >>> 0;
+    let paletteOffset = 0;
+    while (mask) {
+      if (mask & 1) _blendPalette(rt, paletteOffset, 16, coeffTarget, color);
+      mask = mask >>> 1;
+      paletteOffset += 16;
     }
-    mask = mask >>> 1;
-    paletteOffset += 16;
+    return;
+  }
+  const taskId = rt.CreateTask(_taskBlendPalettesGradually as unknown as (task: import('./decomp-runtime').DecompTask) => void, priority);
+  const task = rt.gTasks.get(taskId);
+  if (!task) return;
+  task.data[0] = coeff;          // tCoeff
+  task.data[1] = coeffTarget;    // tCoeffTarget
+  // 1:1 :963-972 : delay handling. Si delay >= 0 : tDelay = delay + tCoeffDelta = 1.
+  // Sinon : tDelay = 0 + tCoeffDelta = -delay + 1 (= multi-step par frame).
+  if (delay >= 0) {
+    task.data[3] = delay;        // tDelay
+    task.data[2] = 1;            // tCoeffDelta
+  } else {
+    task.data[3] = 0;
+    task.data[2] = -delay + 1;
+  }
+  // 1:1 :974-975 : si coeffTarget < coeff (= fade out), tCoeffDelta *= -1.
+  if (coeffTarget < coeff) task.data[2] *= -1;
+  // 1:1 :977 : SetWordTaskArg(taskId, tPalettes, selectedPalettes) = stocker u32
+  // dans data[5..6] (= lo/hi halfwords).
+  task.data[5] = selectedPalettes & 0xFFFF;
+  task.data[6] = (selectedPalettes >>> 16) & 0xFFFF;
+  task.data[7] = color;          // tColor
+  task.data[8] = id;             // tId
+  task.data[4] = 0;              // tDelayTimer (= init explicit, le décomp use ++)
+  // 1:1 :980 : call task func immediately (= synchronous first tick).
+  _taskBlendPalettesGradually(task);
+}
+
+/** 1:1 décomp `static void Task_BlendPalettesGradually(u8 taskId)` (palette.c:1009-1042). */
+function _taskBlendPalettesGradually(task: { data: number[] }): void {
+  // 1:1 :1015-1016 : palettes = GetWordTaskArg(taskId, tPalettes).
+  const palettes = ((task.data[5] & 0xFFFF) | ((task.data[6] & 0xFFFF) << 16)) >>> 0;
+  // 1:1 :1018 : if (++tDelayTimer > tDelay).
+  task.data[4]++;  // tDelayTimer++
+  if (task.data[4] > task.data[3]) {
+    task.data[4] = 0;  // tDelayTimer = 0
+    // 1:1 :1021 : BlendPalettes(palettes, tCoeff, tColor).
+    const rt = _rt();
+    let mask = palettes;
+    let paletteOffset = 0;
+    while (mask) {
+      if (mask & 1) _blendPalette(rt, paletteOffset, 16, task.data[0], task.data[7]);
+      mask = mask >>> 1;
+      paletteOffset += 16;
+    }
+    // 1:1 :1022-1041 : check fin / advance tCoeff.
+    const target = task.data[1];  // tCoeffTarget
+    if (task.data[0] === target) {
+      // 1:1 :1025 : DestroyTask(taskId).
+      const rtAny = rt as { gTasks?: Map<number, unknown> };
+      if (rtAny.gTasks) {
+        for (const [taskId, t] of rtAny.gTasks) {
+          if (t === task) { rtAny.gTasks.delete(taskId); break; }
+        }
+      }
+    } else {
+      task.data[0] += task.data[2];  // tCoeff += tCoeffDelta
+      // 1:1 :1030-1039 : check overshoot.
+      if (task.data[2] >= 0) {
+        if (task.data[0] < target) return;
+      } else if (task.data[0] > target) {
+        return;
+      }
+      task.data[0] = target;  // tCoeff = target (= clamp final step)
+    }
   }
 }
 
