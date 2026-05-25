@@ -1140,12 +1140,13 @@ export function SET_BATTLER_TYPE(battler: number, type: number): void {
 
 // ─── Berry (1:1 décomp `src/berry.c:980 GetBerryInfo`) ────────────────────────
 
-/** 1:1 décomp `src/berry.c:980 GetBerryInfo(berry)` — returns const Berry*. Need
- *  full berry table port + enigmaBerry handling. Stub returns null (= berry tree
- *  code will skip rendering). */
-export function GetBerryInfo(_berry: number): any {
-  // TODO 1:1 : need gBerries[] table from berry.c.
-  return null;
+/** 1:1 décomp `src/berry.c:980 GetBerryInfo(berry)` — returns const Berry*.
+ *  Wire vers berry.ts port complet (= gBerries[43] + EnigmaBerry handling). */
+export function GetBerryInfo(berry: number): unknown {
+  // Lazy import pour éviter cycle decomp-bridge ↔ berry.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('./berry') as { GetBerryInfo?: (b: number) => unknown };
+  return mod.GetBerryInfo ? mod.GetBerryInfo(berry) : null;
 }
 
 /** 1:1 décomp `src/berry.c:992 GetBerryTreeInfo(id)` — read save block berry trees. */

@@ -21,6 +21,7 @@
 
 import { RtcGetMinuteCount } from './rtc';
 import { gSaveBlock1Ptr } from './save-block-state';
+import { CalcBerryYield } from './berry';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -69,36 +70,42 @@ const _gBlankBerryTree: BerryTree = {
   stopGrowth: 0,
 };
 
-/** 1:1 décomp `BerryTreeGrow(tree)` (berry.c:1029) : advance le tree d'un stage.
- *  Returns FALSE si on arrive à une stage terminal qu'on devrait stopper. */
+/** 1:1 décomp `BerryTreeGrow(tree)` (berry.c:1046-1074) : advance le tree d'un
+ *  stage. Returns FALSE si on arrive à une stage terminal qu'on devrait stopper.
+ *
+ *  Structure 1:1 stricte avec fallthrough décomp (FLOWERING → PLANTED/SPROUTED/
+ *  TALLER unified stage++) :
+ *      case NO_BERRY: return FALSE
+ *      case FLOWERING: tree->berryYield = CalcBerryYield(tree)
+ *      case PLANTED/SPROUTED/TALLER: tree->stage++; break  // fallthrough cible
+ *      case BERRIES: clear watered + reset to SPROUTED + regrowth++ */
 function _BerryTreeGrow(tree: BerryTree): boolean {
   if (tree.stopGrowth) return false;
   switch (tree.stage) {
-    case BERRY_STAGE_PLANTED:
-      tree.stage = BERRY_STAGE_SPROUTED;
-      break;
-    case BERRY_STAGE_SPROUTED:
-      tree.stage = BERRY_STAGE_TALLER;
-      break;
-    case BERRY_STAGE_TALLER:
-      tree.stage = BERRY_STAGE_FLOWER;
-      break;
+    case BERRY_STAGE_NO_BERRY:
+      return false;
     case BERRY_STAGE_FLOWER:
-      tree.stage = BERRY_STAGE_BERRIES;
-      // berryYield computed via CalcBerryYield(tree) en décomp.
-      // MVP : 2 berries par défaut (= moyenne ROM).
-      tree.berryYield = 2;
+      // 1:1 décomp :1055-1056 : berryYield calc à la transition FLOWERING → BERRIES.
+      // Décomp use fallthrough vers case PLANTED/SPROUTED/TALLER `tree->stage++`.
+      // En TS strict (noFallthroughCasesInSwitch=true) on ne peut pas fallthrough
+      // direct → duplique `tree.stage++` ici. Sémantique 1:1 préservée.
+      tree.berryYield = CalcBerryYield(tree);
+      tree.stage++;
+      break;
+    case BERRY_STAGE_PLANTED:
+    case BERRY_STAGE_SPROUTED:
+    case BERRY_STAGE_TALLER:
+      tree.stage++;
       break;
     case BERRY_STAGE_BERRIES:
-      // Withering → reset à SPROUTED OU clear si regrowthCount maxed.
+      // 1:1 :1062-1071 : withering → clear watered + back to SPROUTED + regrowth++.
       tree.watered1 = 0;
       tree.watered2 = 0;
       tree.watered3 = 0;
       tree.watered4 = 0;
       tree.berryYield = 0;
       tree.stage = BERRY_STAGE_SPROUTED;
-      tree.regrowthCount++;
-      if (tree.regrowthCount === 10) {
+      if (++tree.regrowthCount === 10) {
         Object.assign(tree, _gBlankBerryTree);
       }
       break;
