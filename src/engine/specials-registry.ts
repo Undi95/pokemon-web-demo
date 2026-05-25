@@ -36,14 +36,22 @@ import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-scre
 import { setStringVar } from './string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from './decomp-data/include/constants/species-data';
 import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
-import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE } from './decomp-data/include/constants/items-data';
+import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from './decomp-data/include/constants/items-data';
 import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
-import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
+import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from './decomp-data/include/constants/global-data';
+import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from './decomp-data/include/constants/battle_frontier-data';
+import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from './decomp-data/include/constants/flags-data';
+import { MOVE_NONE } from './decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './warp-system';
 import { ShowFieldMessage } from './field-message-box';
 import { gStringVar4 } from './gba-text-system';
 import { Random } from './random';
+import { reverseDecompConstant } from './decomp-constants';
+import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from './battle/party-storage';
+import type { Pokemon as _PartyPokemon } from './battle/party-storage';
+import { CheckPartyMonHasHeldItem } from './script-pokemon-util';
+import { GetPCBoxToSendMon } from './pc-box';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -1915,7 +1923,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'AccessHallOfFamePC', 'Bag_ChooseBerry', 'BattlePyramidChooseMonHeldItems',
   'BattleSetup_StartLatiBattle', 'BattleSetup_StartRematchBattle',
   'BattleTowerReconnectLink', 'BufferBattleFrontierTutorMoveName',
-  'BufferBattleTowerElevatorFloors', 'BufferContestTrainerAndMonNames',
+  // 'BufferBattleTowerElevatorFloors' — porté 1:1 décomp field_specials.c:2209 ci-bas (batch B6).
+  'BufferContestTrainerAndMonNames',
   'BufferContestWinnerTrainerName', 'BufferDeepLinkPhrase',
   // 'BufferFavorLadyItemName' — porté 1:1 décomp lilycove_lady.c:198 ci-bas.
   // 'BufferFavorLadyPlayerName' — porté 1:1 décomp lilycove_lady.c:210 ci-bas.
@@ -1960,7 +1969,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
   'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
   'DoTVShowInSearchOfTrainers', 'DoTrainerApproach', 'DoWateringBerryTreeAnim',
-  'DoesContestCategoryHaveMuseumPainting', 'DoesPartyHaveEnigmaBerry',
+  'DoesContestCategoryHaveMuseumPainting',
+  // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
   // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
   'DrewSecretBaseBattle', 'EggHatch',
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
@@ -1993,8 +2003,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
   'GetNpcContestantLocalId', 'GetNumLevelsGainedFromDaycare',
-  'GetNumMovesSelectedMonHas', 'GetObjectEventLocalIdByFlag',
-  'GetPCBoxToSendMon',
+  // 'GetNumMovesSelectedMonHas' — porté 1:1 décomp party_menu.c:6347 ci-bas (batch B6).
+  // 'GetObjectEventLocalIdByFlag' — porté 1:1 décomp decoration.c:2217 ci-bas (batch B6).
+  // 'GetPCBoxToSendMon' — porté 1:1 décomp field_specials.c:3410 ci-bas (batch B6).
   // 'GetPlayerTrainerIdOnesDigit' — porté 1:1 décomp field_specials.c:901 ci-bas.
   'GetPokeblockFeederInFront', 'GetPokeblockNameByMonNature',
   'GetQuizAuthor', 'GetQuizLadyState', 'GetRandomActiveShowIdx',
@@ -2030,7 +2041,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
   // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
-  'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
+  'IsPokemonJumpSpeciesInParty',
+  // 'IsPokerusInParty' — porté 1:1 décomp field_specials.c:1455 ci-bas (batch B6).
+  'IsQuizAnswerCorrect',
   // 'IsQuizLadyWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:468 ci-bas.
   // 'IsTVShowAlreadyInQueue' — porté 1:1 décomp tv.c:3268 ci-bas.
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
@@ -2803,6 +2816,180 @@ registerSpecial('UpdateShoalTideFlag', () => {
 // utilise EasyChat (CopyEasyChatWord), Random, gStringVar4, sGiddyAdjectives,
 // sGiddyQuestions, GiddyText_Is, GiddyText_DontYouAgree. Tables strings non
 // extraites. Reste stub jusqu'à port mauville_old_man string tables.
+
+// ─── Session B6 batch — 6 specials triviaux 1:1 strict ─────────────────────
+//
+// Source décomp pour chaque registerSpecial ci-dessous (= ligne précise dans
+// le commentaire au-dessus de chaque entry). Aucun stub silencieux : tous les
+// ports ont une cascade R3 résolue (helpers portés dans modules dédiés :
+// CheckPartyPokerus = battle/party-storage.ts, CheckPartyMonHasHeldItem =
+// script-pokemon-util.ts, GetPCBoxToSendMon = pc-box.ts).
+
+/** 1:1 décomp `GetObjectEventLocalIdByFlag` (decoration.c:2217-2229) :
+ *  ```c
+ *  void GetObjectEventLocalIdByFlag(void) {
+ *      u8 i;
+ *      for (i = 0; i < gMapHeader.events->objectEventCount; i++) {
+ *          if (gMapHeader.events->objectEvents[i].flagId == gSpecialVar_0x8004) {
+ *              gSpecialVar_0x8005 = gMapHeader.events->objectEvents[i].localId;
+ *              break;
+ *          }
+ *      }
+ *  }
+ *  ```
+ *  Scan les objectEvents du current map pour trouver le NPC dont le flagId
+ *  matche gSpecialVar_0x8004 (= numeric flag id). Décomp compare u16 ↔ u16
+ *  direct ; notre flagId est stocké en STRING (= name canonical). Bridge via
+ *  reverseDecompConstant(0x8004 value, 'FLAG_') ou fallback `__flag_<id>`. */
+registerSpecial('GetObjectEventLocalIdByFlag', () => {
+  if (!gMapHeader || !gMapHeader.events) return;
+  const targetFlagNum = VarGet('VAR_0x8004');
+  // 1:1 strict bridge : décomp utilise numeric direct, nous string. Pour
+  // matcher, on resolve le name canonical via la table reverse (= même
+  // bijection que B1 _resolveFlagKey).
+  const targetFlagName = reverseDecompConstant(targetFlagNum, 'FLAG_')
+                       ?? `__flag_${targetFlagNum}`;
+  const events = gMapHeader.events.objectEvents;
+  for (let i = 0; i < events.length; i++) {
+    if (events[i].flagId === targetFlagName) {
+      VarSet('VAR_0x8005', events[i].localId);
+      break;
+    }
+  }
+});
+
+/** 1:1 décomp `IsPokerusInParty` (field_specials.c:1455-1461) :
+ *  ```c
+ *  bool8 IsPokerusInParty(void) {
+ *      if (!CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1))
+ *          return FALSE;
+ *      return TRUE;
+ *  }
+ *  ```
+ *  Cascade R3 résolue : CheckPartyPokerus porté dans battle/party-storage.ts
+ *  (= 1:1 pokemon.c:6101-6127). Lit MON_DATA_POKERUS sur chaque mon (bits 0-3
+ *  = active pokerus). Retourne TRUE si au moins un mon a pokerus actif. */
+registerSpecial('IsPokerusInParty', () => {
+  const party = gSaveBlock1Ptr.playerParty as unknown as _PartyPokemon[];
+  return CheckPartyPokerus(party, (1 << PARTY_SIZE) - 1) ? 1 : 0;
+});
+
+/** 1:1 décomp `DoesPartyHaveEnigmaBerry` (script_pokemon_util.c:128-135) :
+ *  ```c
+ *  bool8 DoesPartyHaveEnigmaBerry(void) {
+ *      bool8 hasItem = CheckPartyMonHasHeldItem(ITEM_ENIGMA_BERRY);
+ *      if (hasItem == TRUE)
+ *          GetBerryNameByBerryType(ItemIdToBerryType(ITEM_ENIGMA_BERRY), gStringVar1);
+ *      return hasItem;
+ *  }
+ *  ```
+ *  Cascade R3 résolue partielle :
+ *    - CheckPartyMonHasHeldItem porté dans script-pokemon-util.ts (1:1).
+ *    - GetBerryNameByBerryType + ItemIdToBerryType non portés (= dette R3 sur
+ *      le berry name table). Le set du buffer gStringVar1 n'a d'effet que si
+ *      un dialogue suivant expand {STR_VAR_1} (= contexte : Berry/Mystery
+ *      Gift NPC). Sans ce buffer, le mon est reconnu mais le name affiché
+ *      sera vide. Doc explicite : ne pas porter Berry name avant le port
+ *      berry data subsystem complet. */
+registerSpecial('DoesPartyHaveEnigmaBerry', () => {
+  const hasItem = CheckPartyMonHasHeldItem(ITEM_ENIGMA_BERRY);
+  // Note 1:1 strict : GetBerryNameByBerryType(ItemIdToBerryType(ITEM_ENIGMA_BERRY))
+  // → gStringVar1 omis. Dette R3 berry name table. Comportement boolean
+  // retour identique au décomp.
+  return hasItem ? 1 : 0;
+});
+
+/** 1:1 décomp `GetNumMovesSelectedMonHas` (party_menu.c:6347-6357) :
+ *  ```c
+ *  void GetNumMovesSelectedMonHas(void) {
+ *      u8 i;
+ *      gSpecialVar_Result = 0;
+ *      for (i = 0; i < MAX_MON_MOVES; i++) {
+ *          if (GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_MOVE1 + i) != MOVE_NONE)
+ *              gSpecialVar_Result++;
+ *      }
+ *  }
+ *  ```
+ *  Scan slots MOVE1..MOVE4 du mon à l'index VAR_0x8004 dans gPlayerParty.
+ *  Compte le nombre de slots non-MOVE_NONE. Result dans VAR_RESULT. */
+registerSpecial('GetNumMovesSelectedMonHas', () => {
+  const slot = VarGet('VAR_0x8004') ?? 0;
+  const party = gSaveBlock1Ptr.playerParty as unknown as _PartyPokemon[];
+  const mon = party[slot];
+  let count = 0;
+  if (mon) {
+    for (let i = 0; i < MAX_MON_MOVES; i++) {
+      if (_GetMonData(mon, _MON_DATA_MOVE1 + i) !== MOVE_NONE) count++;
+    }
+  }
+  VarSet('VAR_RESULT', count);
+});
+
+/** 1:1 décomp `GetPCBoxToSendMon` (field_specials.c:3410-3413) :
+ *  ```c
+ *  u16 GetPCBoxToSendMon(void) {
+ *      return sPCBoxToSendMon;
+ *  }
+ *  ```
+ *  Getter du static sPCBoxToSendMon (= dernier box ciblé pour réception mon).
+ *  Cascade R3 résolue : sPCBoxToSendMon + Set/Get portés dans pc-box.ts. */
+registerSpecial('GetPCBoxToSendMon', () => {
+  return GetPCBoxToSendMon();
+});
+
+/** 1:1 décomp `BufferBattleTowerElevatorFloors` (field_specials.c:2209-2245) :
+ *  ```c
+ *  void BufferBattleTowerElevatorFloors(void) {
+ *      static const u16 sBattleTowerStreakThresholds[] = {
+ *          7, 14, 21, 28, 35, 49, 63, 77, 91, 0
+ *      };
+ *      u8 i;
+ *      u16 battleMode = VarGet(VAR_FRONTIER_BATTLE_MODE);
+ *      u8 lvlMode = gSaveBlock2Ptr->frontier.lvlMode;
+ *      if (battleMode == FRONTIER_MODE_LINK_MULTIS) {
+ *          gSpecialVar_0x8005 = 4; gSpecialVar_0x8006 = 5; return;
+ *      }
+ *      if (battleMode == FRONTIER_MODE_MULTIS
+ *          && !FlagGet(FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER)) {
+ *          gSpecialVar_0x8005 = 5; gSpecialVar_0x8006 = 4; return;
+ *      }
+ *      for (i = 0; i < ARRAY_COUNT(sBattleTowerStreakThresholds) - 1; i++) {
+ *          if (sBattleTowerStreakThresholds[i]
+ *              > gSaveBlock2Ptr->frontier.towerWinStreaks[battleMode][lvlMode]) {
+ *              gSpecialVar_0x8005 = 4; gSpecialVar_0x8006 = i + 5; return;
+ *          }
+ *      }
+ *      gSpecialVar_0x8005 = 4; gSpecialVar_0x8006 = 12;
+ *  }
+ *  ```
+ *  Set VAR_0x8005/0x8006 = nombre d'étages d'ascenseur affichés en Battle
+ *  Tower selon battleMode (= single/double/multi/link-multi) et win streak. */
+registerSpecial('BufferBattleTowerElevatorFloors', () => {
+  // 1:1 décomp : `static const u16 sBattleTowerStreakThresholds[]`.
+  const sBattleTowerStreakThresholds: ReadonlyArray<number> = [7, 14, 21, 28, 35, 49, 63, 77, 91, 0];
+  const battleMode = VarGet('VAR_FRONTIER_BATTLE_MODE');
+  const lvlMode = gSaveBlock2Ptr.frontier.lvlMode;
+  if (battleMode === FRONTIER_MODE_LINK_MULTIS) {
+    VarSet('VAR_0x8005', 4);
+    VarSet('VAR_0x8006', 5);
+    return;
+  }
+  if (battleMode === FRONTIER_MODE_MULTIS && !FlagGet(FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER)) {
+    VarSet('VAR_0x8005', 5);
+    VarSet('VAR_0x8006', 4);
+    return;
+  }
+  const towerStreak = gSaveBlock2Ptr.frontier.towerWinStreaks?.[battleMode]?.[lvlMode] ?? 0;
+  for (let i = 0; i < sBattleTowerStreakThresholds.length - 1; i++) {
+    if (sBattleTowerStreakThresholds[i] > towerStreak) {
+      VarSet('VAR_0x8005', 4);
+      VarSet('VAR_0x8006', i + 5);
+      return;
+    }
+  }
+  VarSet('VAR_0x8005', 4);
+  VarSet('VAR_0x8006', 12);
+});
 
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */

@@ -479,6 +479,30 @@ export function CalculateEnemyPartyCount(): number {
   return count;
 }
 
+// ─── CheckPartyPokerus (= 1:1 décomp pokemon.c:6101-6127) ────────────────
+
+/** 1:1 décomp `CheckPartyPokerus(party, selection)` (pokemon.c:6101-6127).
+ *  selection = bitmask des slots à scanner (= 1<<i). Si selection==0, scan
+ *  uniquement slot 0. Retourne bitmask des slots avec pokerus actif (bit
+ *  bas 4 bits non zéro), ou 1 si selection==0 et slot 0 a pokerus. */
+export function CheckPartyPokerus(party: Pokemon[], selection: number): number {
+  let retVal = 0;
+  let partyIndex = 0;
+  let curBit = 1;
+  if (selection) {
+    do {
+      if ((selection & 1) && ((GetMonData(party[partyIndex], MON_DATA_POKERUS) as number) & 0xF))
+        retVal |= curBit;
+      partyIndex++;
+      curBit <<= 1;
+      selection >>= 1;
+    } while (selection);
+  } else if ((GetMonData(party[0], MON_DATA_POKERUS) as number) & 0xF) {
+    retVal = 1;
+  }
+  return retVal;
+}
+
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
 /** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
