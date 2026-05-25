@@ -110,6 +110,10 @@ import {
   // Hitmarker bits
   HITMARKER_NO_ATTACKSTRING,
   HITMARKER_NO_PPDEDUCT,
+  HITMARKER_IGNORE_SUBSTITUTE,
+  HITMARKER_IGNORE_ON_AIR,
+  HITMARKER_IGNORE_UNDERGROUND,
+  HITMARKER_IGNORE_UNDERWATER,
   HITMARKER_UNABLE_TO_USE_MOVE,
   HITMARKER_OBEYS,
   HITMARKER_ALLOW_NO_PP,
@@ -492,10 +496,9 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
 
     // 1:1 décomp : Substitute path. Si SUBSTITUTE actif + substituteHP > 0 +
     // !IGNORE_SUBSTITUTE → damage va au substitute, pas au mon.
-    const HITMARKER_IGNORE_SUBSTITUTE_LOCAL = 1 << 8;
     if ((mon.status2 & STATUS2_SUBSTITUTE)
         && gDisableStructs[activeBattler].substituteHP > 0
-        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE_LOCAL)) {
+        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE)) {
       // 1:1 décomp battle_script_commands.c:1866-1882 — wirage strict.
       const subHP = gDisableStructs[activeBattler].substituteHP;
       if (subHP >= gBattleMoveDamage) {
@@ -830,31 +833,31 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   }
 
   // ON_AIR (Fly) : miss sauf si IGNORE_ON_AIR set.
-  if (!(gHitMarker & HITMARKER_IGNORE_ON_AIR_LOCAL)
+  if (!(gHitMarker & HITMARKER_IGNORE_ON_AIR)
       && (gStatuses3[gBattlerTarget] & STATUS3_ON_AIR)) {
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
     return true;
   }
-  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_ON_AIR_LOCAL);
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_ON_AIR);
 
   // UNDERGROUND (Dig) : miss sauf si IGNORE_UNDERGROUND.
-  if (!(gHitMarker & HITMARKER_IGNORE_UNDERGROUND_LOCAL)
+  if (!(gHitMarker & HITMARKER_IGNORE_UNDERGROUND)
       && (gStatuses3[gBattlerTarget] & STATUS3_UNDERGROUND)) {
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
     return true;
   }
-  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERGROUND_LOCAL);
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERGROUND);
 
   // UNDERWATER (Dive) : miss sauf si IGNORE_UNDERWATER.
-  if (!(gHitMarker & HITMARKER_IGNORE_UNDERWATER_LOCAL)
+  if (!(gHitMarker & HITMARKER_IGNORE_UNDERWATER)
       && (gStatuses3[gBattlerTarget] & STATUS3_UNDERWATER)) {
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
     return true;
   }
-  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERWATER_LOCAL);
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERWATER);
 
   // 1:1 décomp : Thunder en Rain = hit (no acc check) si WEATHER_HAS_EFFECT.
   // WEATHER_HAS_EFFECT = !ABILITY_ON_FIELD(CloudNine/AirLock).
@@ -882,10 +885,7 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   return false;
 }
 
-// HITMARKER_IGNORE_* values from constants (1 << 16/17/18).
-const HITMARKER_IGNORE_ON_AIR_LOCAL      = 1 << 16;
-const HITMARKER_IGNORE_UNDERGROUND_LOCAL = 1 << 17;
-const HITMARKER_IGNORE_UNDERWATER_LOCAL  = 1 << 18;
+// HITMARKER_IGNORE_* values from constants (1 << 16/17/18) — imported above.
 
 /** 1:1 décomp `Cmd_accuracycheck` (battle_script_commands.c:1099-1189).
  *
@@ -1429,10 +1429,9 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
 
     // 1:1 décomp battle_script_commands.c:3133-3158 : substitute check + emit.
     const mon = gBattleMons[activeBattler];
-    const HITMARKER_IGNORE_SUBSTITUTE_LOCAL = 1 << 8;
     if ((mon.status2 & STATUS2_SUBSTITUTE)
         && gDisableStructs[activeBattler].substituteHP > 0
-        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE_LOCAL)) {
+        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE)) {
       // 1:1 décomp : PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED=199, active).
       _PrepareStringBattle_N1(199 /* STRINGID_SUBSTITUTEDAMAGED */, activeBattler);
     } else {

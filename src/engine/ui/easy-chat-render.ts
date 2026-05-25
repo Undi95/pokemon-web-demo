@@ -844,10 +844,12 @@ function StringLength(str: Uint8Array | string): number {
 //       *dest = color;  dest++;
 //       return dest;
 //   }
-const EXT_CTRL_CODE_BEGIN_LOCAL     = 0xFC;
-const EXT_CTRL_CODE_COLOR_LOCAL     = 0x01;
-const EXT_CTRL_CODE_HIGHLIGHT_LOCAL = 0x02;
-const EXT_CTRL_CODE_SHADOW_LOCAL    = 0x03;
+import {
+  EXT_CTRL_CODE_BEGIN as EXT_CTRL_CODE_BEGIN_LOCAL,
+  EXT_CTRL_CODE_COLOR as EXT_CTRL_CODE_COLOR_LOCAL,
+  EXT_CTRL_CODE_HIGHLIGHT as EXT_CTRL_CODE_HIGHLIGHT_LOCAL,
+  EXT_CTRL_CODE_SHADOW as EXT_CTRL_CODE_SHADOW_LOCAL,
+} from '../decomp-data/include/constants/characters-data';
 
 function WriteColorChangeControlCode(dest: Uint8Array, colorType: number, color: number): Uint8Array {
   if (dest.length < 1) return dest;

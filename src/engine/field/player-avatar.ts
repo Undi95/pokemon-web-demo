@@ -112,7 +112,7 @@ import {
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
-import { GAME_STAT_JUMPED_DOWN_LEDGES } from '../decomp-data/include/constants/game_stat-data';
+import { GAME_STAT_JUMPED_DOWN_LEDGES, NUM_USED_GAME_STATS } from '../decomp-data/include/constants/game_stat-data';
 import { OBJ_EVENT_GFX_PUSHABLE_BOULDER } from '../decomp-data/include/constants/event_objects-data';
 import { NUM_ACRO_BIKE_COLLISIONS } from '../decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
@@ -897,8 +897,7 @@ function StartStrengthAnim(objectEventId: number, direction: number): void {
  *  est XOR'd avec gSaveBlock2Ptr.encryptionKey (= save protection).
  *  Cap 0xFFFFFF (16M) car compteur 24-bit dans le save format. */
 function IncrementGameStat(index: number): void {
-  const NUM_USED_GAME_STATS_LOCAL = 52;
-  if (index < NUM_USED_GAME_STATS_LOCAL) {
+  if (index < NUM_USED_GAME_STATS) {
     let statVal = GetGameStat(index);
     if (statVal < 0xFFFFFF) statVal++;
     else statVal = 0xFFFFFF;
@@ -908,8 +907,7 @@ function IncrementGameStat(index: number): void {
 
 /** 1:1 décomp `GetGameStat(u8 index)` (overworld.c:447-453). */
 function GetGameStat(index: number): number {
-  const NUM_USED_GAME_STATS_LOCAL = 52;
-  if (index >= NUM_USED_GAME_STATS_LOCAL) return 0;
+  if (index >= NUM_USED_GAME_STATS) return 0;
   const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
   const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
   return (stats[index] | 0) ^ key;
@@ -917,8 +915,7 @@ function GetGameStat(index: number): number {
 
 /** 1:1 décomp `SetGameStat(u8 index, u32 value)` (overworld.c:455-459). */
 function SetGameStat(index: number, value: number): void {
-  const NUM_USED_GAME_STATS_LOCAL = 52;
-  if (index < NUM_USED_GAME_STATS_LOCAL) {
+  if (index < NUM_USED_GAME_STATS) {
     const stats = (gSaveBlock1Ptr.gameStats as number[]) || [];
     const key = (gSaveBlock2Ptr.encryptionKey as number) | 0;
     stats[index] = (value | 0) ^ key;
