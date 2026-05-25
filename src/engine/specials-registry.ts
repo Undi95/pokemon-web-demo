@@ -2012,7 +2012,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetPCBoxToSendMon' — porté 1:1 décomp field_specials.c:3410 ci-bas (batch B6).
   // 'GetPlayerTrainerIdOnesDigit' — porté 1:1 décomp field_specials.c:901 ci-bas.
   'GetPokeblockFeederInFront', 'GetPokeblockNameByMonNature',
-  'GetQuizAuthor', 'GetQuizLadyState', 'GetRandomActiveShowIdx',
+  'GetQuizAuthor',
+  // 'GetQuizLadyState' — porté 1:1 décomp lilycove_lady.c:347 ci-bas (batch B10).
+  'GetRandomActiveShowIdx',
   'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
   'GetSecretBaseOwnerAndState', 'GetSecretBaseTypeInFrontOfPlayer',
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
@@ -3064,6 +3066,28 @@ registerSpecial('FavorLadyGetPrize', () => {
   setStringVar(2, name);
   lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
   return prize;
+});
+
+// ─── Session B10 batch — 1 special Quiz Lady 1:1 strict ───────────────────
+
+/** 1:1 décomp `GetQuizLadyState` (lilycove_lady.c:347-356) :
+ *  ```c
+ *  u8 GetQuizLadyState(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      if (sQuizLadyPtr->state == LILYCOVE_LADY_STATE_PRIZE) return LILYCOVE_LADY_STATE_PRIZE;
+ *      else if (sQuizLadyPtr->state == LILYCOVE_LADY_STATE_COMPLETED) return LILYCOVE_LADY_STATE_COMPLETED;
+ *      else return LILYCOVE_LADY_STATE_READY;
+ *  }
+ *  ```
+ *  Retourne state clamped à PRIZE/COMPLETED/READY (= 2/1/0). Identique
+ *  pattern GetFavorLadyState (= aligned discriminated union access). */
+registerSpecial('GetQuizLadyState', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    if (lady.state === 2) return 2;  // LILYCOVE_LADY_STATE_PRIZE
+    if (lady.state === 1) return 1;  // LILYCOVE_LADY_STATE_COMPLETED
+  }
+  return 0;  // LILYCOVE_LADY_STATE_READY
 });
 
 /** Boot marker — confirme que le registry a été importé au boot.
