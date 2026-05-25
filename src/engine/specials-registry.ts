@@ -1446,6 +1446,26 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `IsTVShowAlreadyInQueue` (tv.c:3268-3278) :
+ *  ```c
+ *  bool8 IsTVShowAlreadyInQueue(void) {
+ *      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS; i++)
+ *          if (gSaveBlock1Ptr->tvShows[i].common.kind == gSpecialVar_0x8004)
+ *              return TRUE;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Loop sur 5 slots NORMAL_TVSHOW + check kind match VAR_0x8004. */
+registerSpecial('IsTVShowAlreadyInQueue', () => {
+  const targetKind = VarGet('VAR_0x8004');
+  const tvShows = gSaveBlock1Ptr.tvShows ?? [];
+  // 1:1 décomp constants/tv.h : NUM_NORMAL_TVSHOW_SLOTS = 5.
+  for (let i = 0; i < 5; i++) {
+    if ((tvShows[i]?.kind ?? 0) === targetKind) return 1;
+  }
+  return 0;
+});
+
 /** 1:1 décomp `IsQuizLadyWaitingForChallenger` (lilycove_lady.c:468-472) :
  *  ```c
  *  bool8 IsQuizLadyWaitingForChallenger(void) {
@@ -1895,7 +1915,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   // 'IsQuizLadyWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:468 ci-bas.
-  'IsTVShowAlreadyInQueue',
+  // 'IsTVShowAlreadyInQueue' — porté 1:1 décomp tv.c:3268 ci-bas.
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
   // 'LeadMonHasEffortRibbon' — porté 1:1 décomp field_specials.c:1372 ci-bas (= dette ribbons R3).
   // 'LinkContestTryHideWirelessIndicator' — porté 1:1 décomp contest_util.c:2753 ci-bas (= no link).
