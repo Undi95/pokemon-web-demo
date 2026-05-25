@@ -447,6 +447,12 @@ export interface ObjectEvent {
    *  Différent de actionTimer (= sprite.data[3] timer générique) pour préserver
    *  le state machine 1:1 décomp. */
   walkSlowNumSteps: number;
+  /** 1:1 décomp `sprite->data[6]` pour Figure8 anim (event_object_movement.c:8385).
+   *  Index dans sFigure8XOffsets/YOffsets (= 0..71 = FIGURE_8_LENGTH-1). */
+  figure8Idx: number;
+  /** 1:1 décomp `sprite->data[7]` pour Figure8 anim. Phase courante (0..4).
+   *  Phase 0/1/2/3 = 4 quarts du 8. Phase 4 = finished. */
+  figure8Phase: number;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -532,6 +538,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   jumpType: 0,
   walkSpeed: 0,
   walkSlowNumSteps: 0,
+  figure8Idx: 0,
+  figure8Phase: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -4031,17 +4039,137 @@ function _MovementAction_StopLevitateAtTop_Step0(rt: DecompRuntime, npc: ObjectE
   return false;
 }
 
-/** 1:1 décomp `MovementAction_Figure8_Step0` :
- *    InitFigure8Anim(obj, sprite);
- *    sActionFuncId = 1;
- *    return MovementAction_Figure8_Step1;
- *
- *  DETTE H3 cascade : InitFigure8Anim + DoFigure8Anim (= path 16-pt parcourant
- *  un 8 horizontal). Notre TS pas étendu pour Figure8 path. */
-function _MovementAction_Figure8_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : InitFigure8Anim + DoFigure8Anim cascade.
-  npc.actionStep = 1;
-  return true;
+// ─── Figure8Anim 1:1 strict port (H3.3) ──────────────────────────────────────
+// Source : event_object_movement.c:6810 InitFigure8Anim + 6816 DoFigure8Anim +
+// 8349 sFigure8XOffsets[72] + 8361 sFigure8YOffsets[72] + 8383
+// InitSpriteForFigure8Anim + 8389 AnimateSpriteInFigure8.
+
+/** 1:1 décomp `FIGURE_8_LENGTH` = 72 (event_object_movement.c). */
+const FIGURE_8_LENGTH = 72;
+
+/** 1:1 décomp `sFigure8XOffsets[72]` (event_object_movement.c:8349). */
+const _sFigure8XOffsets: readonly number[] = [
+   1, 2, 2, 2, 2, 2, 2, 2,
+   2, 2, 2, 1, 2, 2, 1, 2,
+   2, 1, 2, 2, 1, 2, 1, 1,
+   2, 1, 1, 2, 1, 1, 2, 1,
+   1, 2, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1,
+   0, 1, 1, 1, 0, 1, 1, 0,
+   1, 0, 1, 0, 1, 0, 0, 0,
+   0, 1, 0, 0, 0, 0, 0, 0,
+];
+
+/** 1:1 décomp `sFigure8YOffsets[72]` (event_object_movement.c:8361). */
+const _sFigure8YOffsets: readonly number[] = [
+   0,  0,  1,  0,  0,  1,  0,  0,
+   1,  0,  1,  1,  0,  1,  1,  0,
+   1,  1,  0,  1,  1,  0,  1,  1,
+   0,  0,  1,  0,  0,  1,  0,  0,
+   1,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0, -1,  0,  0, -1,  0,  0,
+  -1,  0, -1, -1,  0, -1, -1,  0,
+  -1, -1, -1, -1, -1, -1, -1, -2,
+];
+
+/** 1:1 décomp `InitSpriteForFigure8Anim` (event_object_movement.c:8383) :
+ *    sprite->data[6] = 0;
+ *    sprite->data[7] = 0; */
+function _InitSpriteForFigure8Anim(npc: ObjectEvent): void {
+  npc.figure8Idx = 0;
+  npc.figure8Phase = 0;
+}
+
+/** 1:1 décomp `InitFigure8Anim` (event_object_movement.c:6810) :
+ *    InitSpriteForFigure8Anim(sprite);
+ *    sprite->animPaused = FALSE; */
+function _InitFigure8Anim(rt: DecompRuntime, npc: ObjectEvent): void {
+  _InitSpriteForFigure8Anim(npc);
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.animPaused = false;
+  }
+}
+
+/** 1:1 décomp `AnimateSpriteInFigure8(sprite)` (event_object_movement.c:8389) :
+ *    switch (sprite->data[7]) {  // = npc.figure8Phase
+ *      case 0: sprite->x2 += GetFigure8XOffset(data[6]); y2 += GetFigure8YOffset(data[6]); break;
+ *      case 1: sprite->x2 -= GetFigure8XOffset((FIGURE_8_LENGTH-1) - data[6]); y2 += GetFigure8YOffset(...); break;
+ *      case 2: sprite->x2 -= GetFigure8XOffset(data[6]); y2 += GetFigure8YOffset(data[6]); break;
+ *      case 3: sprite->x2 += GetFigure8XOffset((FIGURE_8_LENGTH-1) - data[6]); y2 += GetFigure8YOffset(...); break;
+ *    }
+ *    if (++data[6] == FIGURE_8_LENGTH) { data[6]=0; data[7]++; }
+ *    if (data[7] == 4) { y2=0; x2=0; finished=TRUE; } */
+function _AnimateSpriteInFigure8(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId < 0) return true;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite) return true;
+
+  // x2 field — notre DecompSprite a x2 (cf. decomp-runtime.ts).
+  const idx = npc.figure8Idx;
+  const idxReverse = (FIGURE_8_LENGTH - 1) - idx;
+  switch (npc.figure8Phase) {
+    case 0:
+      sprite.x2 += _sFigure8XOffsets[idx] ?? 0;
+      sprite.y2 += _sFigure8YOffsets[idx] ?? 0;
+      break;
+    case 1:
+      sprite.x2 -= _sFigure8XOffsets[idxReverse] ?? 0;
+      sprite.y2 += _sFigure8YOffsets[idxReverse] ?? 0;
+      break;
+    case 2:
+      sprite.x2 -= _sFigure8XOffsets[idx] ?? 0;
+      sprite.y2 += _sFigure8YOffsets[idx] ?? 0;
+      break;
+    case 3:
+      sprite.x2 += _sFigure8XOffsets[idxReverse] ?? 0;
+      sprite.y2 += _sFigure8YOffsets[idxReverse] ?? 0;
+      break;
+  }
+  npc.figure8Idx++;
+  if (npc.figure8Idx === FIGURE_8_LENGTH) {
+    npc.figure8Idx = 0;
+    npc.figure8Phase++;
+  }
+  if (npc.figure8Phase === 4) {
+    sprite.x2 = 0;
+    sprite.y2 = 0;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `DoFigure8Anim` (event_object_movement.c:6816) :
+ *    if (AnimateSpriteInFigure8) {
+ *      ShiftStillObjectEventCoords + triggerGroundEffectsOnStop +
+ *      sprite->animPaused = TRUE; return TRUE;
+ *    }
+ *    return FALSE; */
+function _DoFigure8Anim(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (_AnimateSpriteInFigure8(rt, npc)) {
+    ShiftStillObjectEventCoords(npc);
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite) sprite.animPaused = true;
+    }
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_Figure8_Step0` (event_object_movement.c:6828) +
+ *  Step1 (6835). Step0 init + chain to Step1. Step1 tick DoFigure8Anim. */
+function _MovementAction_Figure8(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.actionStep === 0) {
+    _InitFigure8Anim(rt, npc);
+    npc.actionStep = 1;
+  }
+  if (_DoFigure8Anim(rt, npc)) {
+    npc.actionStep = 2;
+    return true;
+  }
+  return false;
 }
 
 // H3.1 : `_makeWalkDownAffineAction` retiré (= utilisait MOVE_SPEED_SLOWER hack).
@@ -4481,7 +4609,7 @@ gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_AFFINE_ANIM] = _MovementAction_ClearA
 gMovementActionFuncs[MOVEMENT_ACTION_LEVITATE]            = _MovementAction_Levitate_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE]       = _MovementAction_StopLevitate_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP] = _MovementAction_StopLevitateAtTop_Step0;
-gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figure8_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figure8;
 // H1.24 + H3.1 fix : WALK_DOWN_START_AFFINE (98) + WALK_DOWN_AFFINE (99) +
 // REVEAL_TRAINER (89). WALK_DOWN_AFFINE utilise InitWalkSlow path (= 1:1 strict).
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_START_AFFINE] = _makeWalkDownAffineActionStrict(0);
