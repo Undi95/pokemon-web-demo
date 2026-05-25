@@ -2841,6 +2841,8 @@ import {
   MOVEMENT_ACTION_JUMP_2_LEFT, MOVEMENT_ACTION_JUMP_2_RIGHT,
   MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN, MOVEMENT_ACTION_JUMP_IN_PLACE_UP,
   MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT,
+  MOVEMENT_ACTION_JUMP_SPECIAL_DOWN, MOVEMENT_ACTION_JUMP_SPECIAL_UP,
+  MOVEMENT_ACTION_JUMP_SPECIAL_LEFT, MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3359,6 +3361,79 @@ function _makeJumpAction(dir: number, distance: number, type: number): MovementA
   };
 }
 
+/** 1:1 décomp `DoJumpSpecialSpriteMovement` (event_object_movement.c:8497).
+ *  distanceToTime doublé (32/32/64) + distanceToShift doublé (1/1/2).
+ *  Visual shift seulement on even sTimer (= half speed). */
+function _DoJumpSpecialSpriteMovement(rt: DecompRuntime, npc: ObjectEvent): number {
+  const distanceToTime = [32, 32, 64];
+  const distanceToShift = [1, 1, 2];
+  const dist = npc.jumpDistance;
+  const type = npc.jumpType;
+  // Visual shift sur even sTimer seulement (= ralenti par 2 vs DoJumpSpriteMovement).
+  if (dist !== JUMP_DISTANCE_IN_PLACE && (npc.actionTimer & 1) === 0) {
+    const dx = DIR_TO_DX[npc.walkDirection] ?? 0;
+    const dy = DIR_TO_DY[npc.walkDirection] ?? 0;
+    npc.worldX += dx;
+    npc.worldY += dy;
+  }
+  // 1:1 décomp sprite->y2 = sJumpY[type][sTimer >> shift].
+  const shift = distanceToShift[dist] ?? 1;
+  const yIdx = Math.min(15, npc.actionTimer >> shift);
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.y2 = _sJumpYTable[type][yIdx] ?? 0;
+  }
+  npc.actionTimer++;
+  const halfTime = (distanceToTime[dist] ?? 32) >> 1;
+  if (npc.actionTimer === halfTime) return JUMP_HALFWAY;
+  if (npc.actionTimer >= (distanceToTime[dist] ?? 32)) {
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite) sprite.y2 = 0;
+    }
+    return JUMP_FINISHED;
+  }
+  return 0;
+}
+
+/** 1:1 décomp `UpdateJumpAnim` (= via DoJumpSpecialSpriteMovement callback). */
+function _UpdateJumpSpecialAnim(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const result = _DoJumpSpecialSpriteMovement(rt, npc);
+  if (result === JUMP_HALFWAY) {
+    const halfDist = _sJumpDisplacements[npc.jumpDistance] ?? 0;
+    if (halfDist !== 0) {
+      const dx = (DIR_TO_DX[npc.walkDirection] ?? 0) * halfDist;
+      const dy = (DIR_TO_DY[npc.walkDirection] ?? 0) * halfDist;
+      ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
+    }
+  } else if (result === JUMP_FINISHED) {
+    ShiftStillObjectEventCoords(npc);
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `InitJumpSpecial` (event_object_movement.c) :
+ *    InitJump(obj, sprite, direction, JUMP_DISTANCE_NORMAL, JUMP_TYPE_HIGH);
+ *    StartSpriteAnim(sprite, GetJumpSpecialDirectionAnimNum(direction));
+ *
+ *  Dette R3 : GetJumpSpecialDirectionAnimNum (= ANIM_JUMP_SPECIAL_X). Notre
+ *  _InitJump utilise _npcStartWalkAnim (= GetMoveDirectionAnimNum). Pour 1:1
+ *  strict full il faudrait ANIM_JUMP_SPECIAL. */
+function _makeJumpSpecialAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitJump(rt, npc, dir, JUMP_DISTANCE_NORMAL, JUMP_TYPE_HIGH);
+    }
+    if (_UpdateJumpSpecialAnim(rt, npc)) {
+      npc.actionStep = 2;
+      _npcEndWalkAnim(rt, npc);
+      return true;
+    }
+    return false;
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3562,6 +3637,11 @@ gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN]  = _makeJumpAction(DIR_
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_UP]    = _makeJumpAction(DIR_NORTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT]  = _makeJumpAction(DIR_WEST,  JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT] = _makeJumpAction(DIR_EAST,  JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+// H1.16 : JUMP_SPECIAL_X (58-61) = NORMAL distance, HIGH type, doubled time (32f).
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_DOWN]  = _makeJumpSpecialAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_UP]    = _makeJumpSpecialAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_LEFT]  = _makeJumpSpecialAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT] = _makeJumpSpecialAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
