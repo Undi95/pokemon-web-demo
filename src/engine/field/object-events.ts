@@ -2858,6 +2858,7 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN,
   MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN,
   MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_INIT_AFFINE_ANIM, MOVEMENT_ACTION_CLEAR_AFFINE_ANIM,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3718,6 +3719,40 @@ function _makeAcroWheelieMoveAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `MovementAction_InitAffineAnim_Step0` (event_object_movement.c) :
+ *    sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;
+ *    InitSpriteAffineAnim(sprite);
+ *    sprite->affineAnimPaused = TRUE;
+ *    sprite->subspriteMode = SUBSPRITES_OFF;
+ *    return TRUE;
+ *
+ *  DETTE H3 cascade : sprite affine system (= InitSpriteAffineAnim + matrix
+ *  alloc + affineMode oam). Notre TS pas étendu pour sprite affine.
+ *  State machine porté avec subspriteMode = 'off' qui est compatible G14. */
+function _MovementAction_InitAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      // DETTE H3 : sprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE.
+      // DETTE H3 : InitSpriteAffineAnim cascade.
+      sprite.subspriteMode = 'off';
+    }
+  }
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_ClearAffineAnim_Step0` :
+ *    FreeOamMatrix(sprite->oam.matrixNum);
+ *    sprite->oam.affineMode = ST_OAM_AFFINE_OFF;
+ *    CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, sprite->oam.affineMode);
+ *    return TRUE;
+ *
+ *  DETTE H3 cascade : FreeOamMatrix + affineMode reset + CalcCenterToCornerVec. */
+function _MovementAction_ClearAffineAnim_Step0(_rt: DecompRuntime, _npc: ObjectEvent): boolean {
+  // DETTE H3 : sprite affine system cleanup.
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3975,6 +4010,9 @@ gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN]     = _makeAcroWhee
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 1] = _makeAcroWheelieMoveAction(DIR_NORTH);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 2] = _makeAcroWheelieMoveAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 3] = _makeAcroWheelieMoveAction(DIR_EAST);
+// H1.22 : INIT_AFFINE_ANIM (94) + CLEAR_AFFINE_ANIM (95). Dette H3 sprite affine cascade.
+gMovementActionFuncs[MOVEMENT_ACTION_INIT_AFFINE_ANIM]  = _MovementAction_InitAffineAnim_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_AFFINE_ANIM] = _MovementAction_ClearAffineAnim_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
