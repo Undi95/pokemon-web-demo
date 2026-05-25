@@ -958,7 +958,19 @@ registerSpecial('GetNumFansOfPlayerInTrainerFanClub', () => {
 registerSpecial('Script_TryGainNewFanFromCounter', () => 0);
 
 /** Special trainer battles (= legendary, gym leaders specifics, Rayquaza). */
-registerSpecial('SetBattledOwnerFromResult', () => { /* no-op */ });
+/** 1:1 décomp `SetBattledOwnerFromResult` (secret_base.c:1171-1174) :
+ *  ```c
+ *  void SetBattledOwnerFromResult(void) {
+ *      gSaveBlock1Ptr->secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].battledOwnerToday
+ *          = gSpecialVar_Result;
+ *  }
+ *  ```
+ *  Set battle outcome bool sur secretBase[CURRENT]. */
+registerSpecial('SetBattledOwnerFromResult', () => {
+  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
+  const base = gSaveBlock1Ptr.secretBases?.[idx];
+  if (base) base.battledOwnerToday = gSpecialVar.Result;
+});
 registerSpecial('DoSpecialTrainerBattle', () => 0);
 registerSpecial('BattleSetup_StartLegendaryBattle', () => 0);
 registerSpecial('PlayTrainerEncounterMusic', () => { /* no-op */ });
