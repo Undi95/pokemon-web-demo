@@ -2866,6 +2866,7 @@ import {
   MOVEMENT_ACTION_WALK_LEFT_AFFINE, MOVEMENT_ACTION_WALK_RIGHT_AFFINE,
   MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
   MOVEMENT_ACTION_LOCK_ANIM, MOVEMENT_ACTION_UNLOCK_ANIM,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3982,6 +3983,28 @@ function _MovementAction_UnlockAnim_Step0(_rt: DecompRuntime, npc: ObjectEvent):
   return true;
 }
 
+/** 1:1 décomp `InitAcroEndWheelie` (event_object_movement.c) :
+ *    InitNpcForMovement(obj, sprite, dir, speed);
+ *    StartSpriteAnim(GetAcroEndWheelieDirectionAnimNum(facingDirection));
+ *    SeekSpriteAnim(sprite, 0);
+ *
+ *  MovementAction_AcroEndWheelieMoveX_Step0 = InitAcroEndWheelie + Step1. */
+function _makeAcroEndWheelieMoveAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite && sprite.anims) {
+          // 1:1 décomp : StartSpriteAnim(standing wheelie back wheel anim) + SeekSpriteAnim(0).
+          StartSpriteAnim(sprite as never, sAcroEndWheelieDirectionAnimNums[dir] ?? 0);
+        }
+      }
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -4260,6 +4283,11 @@ gMovementActionFuncs[MOVEMENT_ACTION_FLY_DOWN] = _makeFlyDownAction();
 // H1.26 : LOCK_ANIM (148) + UNLOCK_ANIM (149).
 gMovementActionFuncs[MOVEMENT_ACTION_LOCK_ANIM]   = _MovementAction_LockAnim_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_UNLOCK_ANIM] = _MovementAction_UnlockAnim_Step0;
+// H1.27 : ACRO_END_WHEELIE_MOVE_X (136-139) = walk speed FAST_1 + standing wheelie back wheel anim.
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN]     = _makeAcroEndWheelieMoveAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 1] = _makeAcroEndWheelieMoveAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 2] = _makeAcroEndWheelieMoveAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 3] = _makeAcroEndWheelieMoveAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
