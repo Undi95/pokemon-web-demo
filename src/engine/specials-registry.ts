@@ -2284,7 +2284,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'StorytellerStoryListMenu', 'StorytellerUpdateStat',
   // 'SwapRegisteredBike' — porté 1:1 décomp item.c:577 ci-bas.
   // 'SubtractMoneyFromVar0x8005' — porté 1:1 décomp money.c:128 ci-bas.
-  'TakeBerryPowder',
+  // 'TakeBerryPowder' — porté 1:1 décomp berry_powder.c:188 ci-bas (batch B38).
   'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
   // 'ToggleCurSecretBaseRegistry' — porté 1:1 décomp secret_base.c:891 ci-bas.
   'TraderDoDecorationTrade',
@@ -3371,6 +3371,28 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B38 batch — 1 special Berry Powder 1:1 strict ───────────────
+
+/** 1:1 décomp `TakeBerryPowder` (berry_powder.c:188-196) :
+ *  ```c
+ *  bool8 TakeBerryPowder(void) {
+ *      u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;
+ *      if (!HasEnoughBerryPowder_(gSpecialVar_0x8004)) return FALSE;
+ *      SetBerryPowder(powder, DecryptBerryPowder(powder) - gSpecialVar_0x8004);
+ *      return TRUE;
+ *  }
+ *  ```
+ *  Cascade R3 simplifiée : DecryptBerryPowder/SetBerryPowder = identity dans
+ *  notre projet (= berryPowderAmount cleartext, pattern aligné B18 HasEnoughBerryPowder). */
+registerSpecial('TakeBerryPowder', () => {
+  const berryCrush = gSaveBlock2Ptr.berryCrush;
+  if (!berryCrush) return 0;
+  const required = VarGet('VAR_0x8004');
+  if ((berryCrush.berryPowderAmount ?? 0) < required) return 0;
+  berryCrush.berryPowderAmount = (berryCrush.berryPowderAmount ?? 0) - required;
+  return 1;
 });
 
 // ─── Session B37 batch — 1 special Mauville Bard 1:1 strict ──────────────
