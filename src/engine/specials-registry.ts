@@ -1895,7 +1895,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
   'GetSelectedMonNicknameAndSpecies',
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
-  'GetTrainerBattleMode', 'GetTrainerFlag',
+  // 'GetTrainerFlag' — porté 1:1 décomp battle_setup.c:1235 ci-bas (refactor B1).
+  'GetTrainerBattleMode',
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
   // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
@@ -1976,7 +1977,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetContestLadyGivenPokeblock', 'SetContestTrainerGfxIds',
   'SetDaycareCompatibilityString', 'SetDecoration',
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
-  'SetFavorLadyState_Complete', 'SetHiddenItemFlag', 'SetHipsterTaughtWord',
+  // 'SetHiddenItemFlag' — porté 1:1 décomp field_specials.c:935 ci-bas (refactor B1).
+  'SetFavorLadyState_Complete', 'SetHipsterTaughtWord',
   // 'SetHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:246 ci-bas.
   'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
   // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
@@ -2064,12 +2066,36 @@ registerSpecial('CheckRelicanthWailord', () => {
   return (last && last.speciesId === SPECIES_RELICANTH) ? 1 : 0;
 });
 
-// `GetTrainerFlag` (battle_setup.c:1235-1243) — dette R3 architecturale documentée :
-// notre FlagGet prend string name, décomp utilise computed numeric id
-// (opponent_A + TRAINER_FLAGS_START). Demande mapping TRAINER_ID → FLAG_NAME
-// (= ~854 entries) ou refactor FlagGet pour accepter numeric id. Reste stub
-// return 0 jusqu'à port mapping ou refactor. Frontier paths (Pyramid/Hill) sont
-// U-tier U1.
+/** 1:1 décomp `GetTrainerFlag` (battle_setup.c:1235-1243) :
+ *  ```c
+ *  bool8 GetTrainerFlag(void) {
+ *      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+ *          return GetBattlePyramidTrainerFlag(gSelectedObjectEvent);
+ *      else if (InTrainerHill())
+ *          return GetHillTrainerFlag(gSelectedObjectEvent);
+ *      else
+ *          return FlagGet(GetTrainerAFlag());
+ *  }
+ *  ```
+ *  `GetTrainerAFlag` (battle_setup.c) = TRAINER_FLAGS_START + gTrainerBattleOpponent_A.
+ *  TRAINER_FLAGS_START = 1280.
+ *
+ *  Notre projet : pas de Pyramid (= return PYRAMID_LOCATION_NONE 1:1 justified),
+ *  pas de TrainerHill (= return FALSE 1:1 justified). Donc branch else exclusivement.
+ *  FlagGet accepte maintenant numeric (= refactor B1) → no-op fallback `__flag_<id>`. */
+registerSpecial('GetTrainerFlag', () => {
+  // 1:1 décomp guard Pyramid/Hill : notre projet n'a pas ces subsystems →
+  // CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE et InTrainerHill() == FALSE.
+  // Le code prend donc le `else` branch.
+  // Bridge via __battleStateMutators (= set par battle/state.ts au load).
+  const mutators = (globalThis as { __battleStateMutators?: {
+    getTrainerBattleOpponent_A?: () => number;
+  } }).__battleStateMutators;
+  const opponentA = mutators?.getTrainerBattleOpponent_A?.() ?? 0;
+  // 1:1 décomp constants/flags.h : TRAINER_FLAGS_START = 1280.
+  const flagId = 1280 + opponentA;
+  return FlagGet(flagId) ? 1 : 0;
+});
 
 /** 1:1 décomp `CountPartyNonEggMons` (pokemon_storage_system.c:1424-1438).
  *  Count non-empty + non-egg party slots. Used par scripts daycare/PC switch. */
@@ -2601,12 +2627,19 @@ registerSpecial('LinkContestTryHideWirelessIndicator', () => {
 // utilise sCurSecretBaseId (= static, set par EnterNewlyCreatedSecretBase).
 // SecretBase subsystem U-tier (cf. ROADMAP U-tier).
 
-// `SetHiddenItemFlag` (field_specials.c:935-938) — dette R3 architecturale :
-// `FlagSet(gSpecialVar_0x8004)` lit un id numérique stocké par script (`setvar
-// VAR_0x8004, FLAG_HIDDEN_ITEM_X`). Notre FlagSet/Clear prend un name string,
-// pas un id numérique. Demande mapping inverse FLAG_ID → FLAG_NAME (= ~3000
-// entries) ou refactor FlagSet pour accepter id numérique. Reste stub `() => 0`
-// jusqu'à port mapping. Pattern identique à GetTrainerFlag (ligne 1192).
+/** 1:1 décomp `SetHiddenItemFlag` (field_specials.c:935-938) :
+ *  ```c
+ *  void SetHiddenItemFlag(void) {
+ *      FlagSet(gSpecialVar_0x8004);
+ *  }
+ *  ```
+ *  VAR_0x8004 contient le numeric id du flag (set par script `setvar VAR_0x8004,
+ *  FLAG_HIDDEN_ITEM_X`). Notre FlagSet accepte maintenant string | number
+ *  (= refactor B1). reverseDecompConstant(numId, 'FLAG_') mappe au name string. */
+registerSpecial('SetHiddenItemFlag', () => {
+  const flagId = VarGet('VAR_0x8004');
+  FlagSet(flagId);
+});
 
 // `UpdateShoalTideFlag` (time_events.c:54-92) — dette R3 cascade :
 // utilise IsMapTypeOutdoors(GetLastUsedWarpMapType()) + RtcCalcLocalTime +

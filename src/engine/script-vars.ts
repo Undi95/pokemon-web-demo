@@ -19,24 +19,50 @@
 
 import { gSaveBlock1Ptr } from './save-block-state';
 import { ResetSaveBlocks } from './save-system';
-import { resolveDecompConstant } from './decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
 
 // ─── Flag API (1:1 décomp event_data.c:206-233) ──────────────────────────────
+
+/** Helper 1:1 strict : resolve un flag id numeric → name string. Notre projet
+ *  stocke les flags dans `gSaveBlock1Ptr.flags: Record<string, boolean>` indexé
+ *  par name (= équivalent comportemental du bitfield u8 array décomp où chaque
+ *  bit `id` correspond à un name `FLAG_X`). Quand un caller passe un NUMERIC id
+ *  (= e.g. `FlagSet(gSpecialVar_0x8004)` avec une var qui stocke FLAG_X numeric
+ *  resolved par parseValue), on doit le mapper inverse au nom canonical.
+ *
+ *  1:1 strict bridge : le décomp utilise le numeric id direct pour indexer le
+ *  bitfield ; notre port utilise le name string comme clé. Ce helper rend les
+ *  2 paradigmes interopérables sans casser l'invariant 1 bit = 1 flag. */
+function _resolveFlagKey(flagIdOrName: string | number): string {
+  if (typeof flagIdOrName === 'number') {
+    // Lookup inverse via _constantsTable (= reverse de FLAG_X = numeric_id).
+    const name = reverseDecompConstant(flagIdOrName, 'FLAG_');
+    if (name) return name;
+    // Fallback : flag id non mappé → stocker par id stringifié.
+    // 1:1 strict : le décomp utiliserait le bit `id & 7` du byte `id / 8` ;
+    // ici on utilise un key namespace dédié `__flag_<id>`. Comportementalement
+    // équivalent (= 1 bit ↔ 1 entry).
+    return `__flag_${flagIdOrName}`;
+  }
+  return flagIdOrName;
+}
 
 /** 1:1 décomp `FlagSet(id)` (event_data.c:206-212) :
  *    u8 *ptr = GetFlagPointer(id);
  *    if (ptr) *ptr |= 1 << (id & 7);
  *  Notre port : `gSaveBlock1Ptr->flags` est `Record<string, boolean>` indexé
- *  par name de flag (= u8 array bitfield indexé par id/8 dans ROM). */
-export function FlagSet(flag: string): void {
-  gSaveBlock1Ptr.flags[flag] = true;
+ *  par name de flag (= u8 array bitfield indexé par id/8 dans ROM). Accepte
+ *  string name OU numeric id (= ScrCmd_setflag use string, mais SetHiddenItemFlag
+ *  et autres specials passent un numeric via gSpecialVar_0x8004). */
+export function FlagSet(flag: string | number): void {
+  gSaveBlock1Ptr.flags[_resolveFlagKey(flag)] = true;
 }
 
 /** 1:1 décomp `FlagClear(id)` (event_data.c:214-220) :
  *    u8 *ptr = GetFlagPointer(id);
  *    if (ptr) *ptr &= ~(1 << (id & 7)); */
-export function FlagClear(flag: string): void {
-  delete gSaveBlock1Ptr.flags[flag];
+export function FlagClear(flag: string | number): void {
+  delete gSaveBlock1Ptr.flags[_resolveFlagKey(flag)];
 }
 
 /** 1:1 décomp `FlagGet(id)` (event_data.c:222-233) :
@@ -44,8 +70,8 @@ export function FlagClear(flag: string): void {
  *    if (!ptr) return FALSE;
  *    if (!(((*ptr) >> (id & 7)) & 1)) return FALSE;
  *    return TRUE; */
-export function FlagGet(flag: string): boolean {
-  return !!gSaveBlock1Ptr.flags[flag];
+export function FlagGet(flag: string | number): boolean {
+  return !!gSaveBlock1Ptr.flags[_resolveFlagKey(flag)];
 }
 
 // ─── Var API (1:1 décomp event_data.c:164-189) ───────────────────────────────

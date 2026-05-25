@@ -27,14 +27,17 @@
 
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript, ScriptJump, ScriptCall, getScript } from './script-runtime';
-import { FlagSet, VarSet, gSpecialVar } from './script-vars';
+import { FlagSet, FlagClear, FlagGet, VarSet, gSpecialVar } from './script-vars';
 import { reverseDecompConstant } from './decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
 
 function _stubTrainerBattle(trainerArg: string): void {
   console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
   gSpecialVar.Result = 1;
-  FlagSet(`__defeated_${trainerArg}`);
+  // 1:1 strict (B1) : FlagSet(TRAINER_FLAGS_START + trainerId) aligned avec
+  // settrainerflag opcode.
+  const trainerId = parseValue(trainerArg);
+  FlagSet(1280 + trainerId);
 }
 
 /** 1:1 décomp `ScrCmd_trainerbattle` (scrcmd.c:1821-1825) : real trainer battle
@@ -96,38 +99,50 @@ registerOpcode('trainerbattle_no_intro', (ctx, args) => {
 
 // 1:1 décomp `ScrCmd_settrainerflag` (scrcmd.c:1853-1859) :
 //   FlagSet(TRAINER_FLAGS_START + ScriptReadHalfword(ctx)).
-// Notre port : Set globalThis.__defeatedTrainers (= Set<string>).
+// 1:1 strict (refactor B1) : FlagSet accepte un numeric id → on peut wire
+// directement avec TRAINER_FLAGS_START + parseValue(trainerName).
+// constants/flags.h : TRAINER_FLAGS_START = 1280.
 registerOpcode('settrainerflag', (_ctx, args) => {
   const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  if (!g.__defeatedTrainers) g.__defeatedTrainers = new Set<string>();
-  (g.__defeatedTrainers as Set<string>).add(trainer);
+  const trainerId = parseValue(trainer);
+  FlagSet(1280 + trainerId);
   return false;
 });
 
+// 1:1 décomp `ScrCmd_cleartrainerflag` (scrcmd.c:1861-1867) :
+//   FlagClear(TRAINER_FLAGS_START + ScriptReadHalfword(ctx)).
 registerOpcode('cleartrainerflag', (_ctx, args) => {
   const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  if (g.__defeatedTrainers) (g.__defeatedTrainers as Set<string>).delete(trainer);
+  const trainerId = parseValue(trainer);
+  FlagClear(1280 + trainerId);
   return false;
 });
 
+// 1:1 décomp `ScrCmd_checktrainerflag` (scrcmd.c:1869-1875) :
+//   ctx->comparisonResult = FlagGet(TRAINER_FLAGS_START + ScriptReadHalfword(ctx));
+//   (= set VAR_RESULT comme le décomp set comparisonResult, qui est read par goto_if).
 registerOpcode('checktrainerflag', (_ctx, args) => {
   const trainer = args[0] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const has = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
+  const trainerId = parseValue(trainer);
+  const has = FlagGet(1280 + trainerId);
   VarSet('VAR_RESULT', has ? 1 : 0);
   return false;
 });
+
+// Helper 1:1 strict : check trainer defeated via FlagGet(TRAINER_FLAGS_START + id).
+// constants/flags.h : TRAINER_FLAGS_START = 1280. Aligned avec settrainerflag/
+// cleartrainerflag/checktrainerflag (= refactor B1 numeric IDs).
+function _isTrainerDefeated(trainerArg: string): boolean {
+  const trainerId = parseValue(trainerArg);
+  return FlagGet(1280 + trainerId);
+}
 
 // 1:1 décomp `ScrCmd_goto_if_not_defeated` (= macro event.inc) :
 //   branch if trainer NOT defeated. Used 10x in early-game scripts.
 registerOpcode('goto_if_not_defeated', (ctx, args) => {
   const trainer = args[0] ?? '';
   const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (!defeated) {
+  if (!_isTrainerDefeated(trainer)) {
     const sub = getScript(target);
     if (sub) ScriptJump(ctx, sub);
   }
@@ -138,9 +153,7 @@ registerOpcode('goto_if_not_defeated', (ctx, args) => {
 registerOpcode('call_if_defeated', (ctx, args) => {
   const trainer = args[0] ?? '';
   const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (defeated) {
+  if (_isTrainerDefeated(trainer)) {
     const sub = getScript(target);
     if (sub) ScriptCall(ctx, sub);
   }
@@ -151,9 +164,7 @@ registerOpcode('call_if_defeated', (ctx, args) => {
 registerOpcode('goto_if_defeated', (ctx, args) => {
   const trainer = args[0] ?? '';
   const target = args[1] ?? '';
-  const g = globalThis as Record<string, unknown>;
-  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
-  if (defeated) {
+  if (_isTrainerDefeated(trainer)) {
     const sub = getScript(target);
     if (sub) ScriptJump(ctx, sub);
   }

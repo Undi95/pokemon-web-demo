@@ -92,6 +92,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { SetDynamicWarp } from './warp-system';
 import { MALE, FEMALE } from './decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
+import { resolveDecompConstant } from './decomp-constants';
 import { setStringVar } from './string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
@@ -402,7 +403,11 @@ export async function runScript(
       if (ctx.runTrainerBattle && trainerId?.startsWith('TRAINER_')) {
         const result = await ctx.runTrainerBattle(trainerId);
         vars['__lastBattleResult'] = result === 'win' ? 1 : 0;
-        if (result === 'win') FlagSet(`__defeated_${trainerId}`); // proxy trainer flag
+        // 1:1 strict (B1) : FlagSet(TRAINER_FLAGS_START=1280 + trainerNumId).
+        if (result === 'win') {
+          const numId = resolveDecompConstant(trainerId) ?? 0;
+          FlagSet(1280 + numId);
+        }
       }
       continue;
     }
@@ -432,14 +437,23 @@ export async function runScript(
       }
       continue;
     }
-    // Trainer flag opcodes (proxy via gameState flags)
+    // Trainer flag opcodes — 1:1 strict (B1) : FlagSet/Get/Clear(TRAINER_FLAGS_START=1280 + id).
     if (op === 'checktrainerflag') {
-      vars['VAR_RESULT'] = FlagGet(`__defeated_${tokens[1]}`) ? 1 : 0;
+      const numId = resolveDecompConstant(tokens[1] ?? '') ?? 0;
+      vars['VAR_RESULT'] = FlagGet(1280 + numId) ? 1 : 0;
       VarSet('VAR_RESULT', vars['VAR_RESULT']);
       continue;
     }
-    if (op === 'settrainerflag') { FlagSet(`__defeated_${tokens[1]}`); continue; }
-    if (op === 'cleartrainerflag') { FlagClear(`__defeated_${tokens[1]}`); continue; }
+    if (op === 'settrainerflag') {
+      const numId = resolveDecompConstant(tokens[1] ?? '') ?? 0;
+      FlagSet(1280 + numId);
+      continue;
+    }
+    if (op === 'cleartrainerflag') {
+      const numId = resolveDecompConstant(tokens[1] ?? '') ?? 0;
+      FlagClear(1280 + numId);
+      continue;
+    }
 
     if (op === 'checkplayergender') {
       vars['VAR_RESULT'] = gSaveBlock2Ptr.playerGender === MALE ? 0 : 1;

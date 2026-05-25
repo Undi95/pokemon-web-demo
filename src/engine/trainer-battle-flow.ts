@@ -233,7 +233,9 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
         ShowFieldMessage(`${name} a perdu!`);
         VarSet('VAR_RESULT', 1);
         VarSet('VAR_RESULT', 1);
-        FlagSet(`__defeated_${trainerId}`);
+        // 1:1 strict (B1) : FlagSet(TRAINER_FLAGS_START + trainerId numeric).
+        // constants/flags.h : TRAINER_FLAGS_START = 1280.
+        FlagSet(1280 + _resolveTrainerNumId(trainerId));
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = BATTLE_OUTCOME_WIN;
         state = 'WIN_WAIT';
         return false;
