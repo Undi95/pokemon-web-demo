@@ -89,6 +89,7 @@ import {
 } from '../engine/field/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../engine/field/script-movement';
+import { SetFieldEffectRuntime } from '../engine/field/field-effect';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
@@ -250,6 +251,8 @@ export class TestOverworldScene extends Phaser.Scene {
     resetObjAllocations();
     exposeGbaGlobals();
     InitKeys(this.rt);
+    // H3.4 : capture runtime pour FieldEffectStart dispatcher.
+    SetFieldEffectRuntime(this.rt);
 
     // Audit session 126 (post-test) : 1:1 décomp `CB2_NewGame:1144 + CB2_
     // ContinueSavedGame:1340` → `PlayTimeCounter_Start()`. Sans ça, le state

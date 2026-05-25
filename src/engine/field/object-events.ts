@@ -71,6 +71,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../system/decom
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSaveBlock1 } from '../save/save-system';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../pokemon/berry';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE } from './field-effect';
 
 const BASE = '/decomp/em';
 
@@ -2659,11 +2660,15 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (mt === 'MOVEMENT_TYPE_TREE_DISGUISE'
    || mt === 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE') {
     if (npc.directionSeqIdx === 0 || (npc.directionSeqIdx === 1 && !npc.disguiseStarted)) {
-      // ObjectEventGetLocalIdAndMap : pas besoin pour FieldEffect (= stub explicit).
-      // gFieldEffectArguments[0..2] = localId, mapNum, mapGroup.
-      // fieldEffectSpriteId = FieldEffectStart(FLDEFF_TREE_DISGUISE / MOUNTAIN_DISGUISE).
-      // DETTE H3 cascade : FieldEffect system.
-      npc.fieldEffectSpriteId = MAX_SPRITES;  // = pas de field effect sprite (= sentinel none).
+      // 1:1 strict décomp event_object_movement.c:4361-4364 :
+      //   ObjectEventGetLocalIdAndMap(obj, &gFieldEffectArguments[0..2]);
+      //   objectEvent->fieldEffectSpriteId = FieldEffectStart(FLDEFF_X_DISGUISE);
+      gFieldEffectArguments[0] = npc.localId;
+      gFieldEffectArguments[1] = npc.mapNum;
+      gFieldEffectArguments[2] = npc.mapGroup;
+      const effectId = (mt === 'MOVEMENT_TYPE_TREE_DISGUISE')
+        ? FLDEFF_TREE_DISGUISE : FLDEFF_MOUNTAIN_DISGUISE;
+      npc.fieldEffectSpriteId = FieldEffectStart(effectId);
       npc.directionSeqIdx = 1;
       npc.disguiseStarted = true;
     }
@@ -3399,23 +3404,31 @@ function _MovementAction_FaceAwayPlayer_Step0(rt: DecompRuntime, npc: ObjectEven
  *    FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
  *    sActionFuncId = 1; return TRUE;
  *
- *  DETTE H3 cascade : FieldEffect system (= sprite emote spawn). Action state
- *  machine retourne TRUE imm (= heldMovementFinished), donc le NPC ne reste pas
- *  bloqué. Le visuel emote sprite manque tant que FieldEffect non porté. */
+ *  H3.4 fix : wire FieldEffectStart vers le port field-effect.ts (= spawn
+ *  emote sprite via SpawnEmoteSprite). */
 function _MovementAction_EmoteExclamationMark_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON).
+  gFieldEffectArguments[0] = npc.localId;
+  gFieldEffectArguments[1] = npc.mapNum;
+  gFieldEffectArguments[2] = npc.mapGroup;
+  FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
   npc.actionStep = 1;
   return true;
 }
 
 function _MovementAction_EmoteQuestionMark_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : FieldEffectStart(FLDEFF_QUESTION_MARK_ICON).
+  gFieldEffectArguments[0] = npc.localId;
+  gFieldEffectArguments[1] = npc.mapNum;
+  gFieldEffectArguments[2] = npc.mapGroup;
+  FieldEffectStart(FLDEFF_QUESTION_MARK_ICON);
   npc.actionStep = 1;
   return true;
 }
 
 function _MovementAction_EmoteHeart_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : FieldEffectStart(FLDEFF_HEART_ICON).
+  gFieldEffectArguments[0] = npc.localId;
+  gFieldEffectArguments[1] = npc.mapNum;
+  gFieldEffectArguments[2] = npc.mapGroup;
+  FieldEffectStart(FLDEFF_HEART_ICON);
   npc.actionStep = 1;
   return true;
 }
