@@ -55,6 +55,8 @@ import { GetPCBoxToSendMon } from './pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from './map-name-popup';
 import { SetCameraPanning, SetCameraPanningCallback } from './field-camera';
 import { gSpecialVar } from './script-vars';
+import { gDecorations } from './decoration-data';
+import { GetFirstEmptyDecorSlot } from './decoration-inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -2160,7 +2162,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'HasBardSongBeenChanged' — porté 1:1 décomp mauville_old_man.c:151 ci-bas.
   // 'HasHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:241 ci-bas.
   'HasMonWonThisContestBefore', 'HasPlayerGivenContestLadyPokeblock',
-  'HasStorytellerAlreadyRecorded', 'HideContestEntryMonPic',
+  // 'HasStorytellerAlreadyRecorded' — porté 1:1 décomp mauville_old_man.c:1467 ci-bas (batch B25).
+  'HideContestEntryMonPic',
   'HipsterTryTeachWord',
   // 'IncrementDailyPickedBerries' — porté 1:1 décomp tv.c:2528 ci-bas.
   // 'IncrementDailyPlantedBerries' — porté 1:1 décomp tv.c:2523 ci-bas.
@@ -2171,7 +2174,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
   // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
   // 'IsCurSecretBaseOwnedByAnotherPlayer' — porté 1:1 décomp secret_base.c:720 dans secret-base.ts (batch B23).
-  'IsDecorationCategoryFull',
+  // 'IsDecorationCategoryFull' — porté 1:1 décomp trader.c:160 ci-bas (batch B26).
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
   // 'IsFavorLadyThresholdMet' — porté 1:1 décomp lilycove_lady.c:264 ci-bas (batch B9).
   // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
@@ -3325,6 +3328,56 @@ registerSpecial('GetQuizLadyState', () => {
     if (lady.state === 1) return 1;  // LILYCOVE_LADY_STATE_COMPLETED
   }
   return 0;  // LILYCOVE_LADY_STATE_READY
+});
+
+// ─── Session B25 batch — 1 special Storyteller 1:1 strict ────────────────
+
+/** 1:1 décomp `HasStorytellerAlreadyRecorded` (mauville_old_man.c:1467-1475) :
+ *  ```c
+ *  bool8 HasStorytellerAlreadyRecorded(void) {
+ *      sStorytellerPtr = &gSaveBlock1Ptr->oldMan.storyteller;
+ *      if (sStorytellerPtr->alreadyRecorded == FALSE) return FALSE;
+ *      else return TRUE;
+ *  }
+ *  ```
+ *  Discriminated union access sur gSaveBlock1Ptr.oldMan.kind === 'storyteller'. */
+registerSpecial('HasStorytellerAlreadyRecorded', () => {
+  const oldMan = gSaveBlock1Ptr.oldMan;
+  if (oldMan && oldMan.kind === 'storyteller') {
+    return oldMan.alreadyRecorded ? 1 : 0;
+  }
+  return 0;
+});
+
+// ─── Session B26 batch — 1 special Decoration 1:1 strict ──────────────────
+
+/** 1:1 décomp `IsDecorationCategoryFull` (trader.c:160-169) :
+ *  ```c
+ *  void IsDecorationCategoryFull(void) {
+ *      gSpecialVar_Result = FALSE;
+ *      if (gDecorations[gSpecialVar_0x8004].category != gDecorations[gSpecialVar_0x8006].category
+ *          && GetFirstEmptyDecorSlot(gDecorations[gSpecialVar_0x8004].category) == -1) {
+ *          CopyDecorationCategoryName(gStringVar2, gDecorations[gSpecialVar_0x8004].category);
+ *          gSpecialVar_Result = TRUE;
+ *      }
+ *  }
+ *  ```
+ *  Cascade R3 résolue : gDecorations existe + GetFirstEmptyDecorSlot porté.
+ *  sDecorationCategoryNames FR : ['BUREAU', 'CHAISE', 'PLANTE', 'ORNEMENT',
+ *  'TAPIS', 'POSTER', 'POUPÉE', 'COUSSIN'] (= 1:1 strings.c:545-552 FR). */
+registerSpecial('IsDecorationCategoryFull', () => {
+  gSpecialVar.Result = 0;
+  const newDecorId = VarGet('VAR_0x8004');
+  const oldDecorId = VarGet('VAR_0x8006');
+  const newDecor = gDecorations[newDecorId];
+  const oldDecor = gDecorations[oldDecorId];
+  if (newDecor && oldDecor && newDecor.category !== oldDecor.category
+      && GetFirstEmptyDecorSlot(newDecor.category) === -1) {
+    // 1:1 décomp CopyDecorationCategoryName : StringCopy(gStringVar2, sDecorationCategoryNames[category]).
+    const sDecorationCategoryNames = ['BUREAU', 'CHAISE', 'PLANTE', 'ORNEMENT', 'TAPIS', 'POSTER', 'POUPÉE', 'COUSSIN'];
+    setStringVar(2, sDecorationCategoryNames[newDecor.category] ?? '???');
+    gSpecialVar.Result = 1;
+  }
 });
 
 // ─── Session B22 batch — 1 special Secret Base 1:1 strict ─────────────────
