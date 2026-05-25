@@ -2068,6 +2068,42 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
 // (= ex. UP_RIGHT_LEFT_DOWN cycle DIR_NORTH → DIR_EAST → DIR_WEST → DIR_SOUTH).
 // Décomp MovementType_WalkSequence_Step0/1/2 + MoveNextDirectionInSequence.
 
+// 1:1 décomp `MovementType_WalkSequence*_Step1` guards mid-cycle
+// (event_object_movement.c:3871-4155). Chaque variante WALK_SEQUENCE a un
+// guard spécifique :
+//   if (seqIdx == checkIdx && initialCoords.<axis> == currentCoords.<axis>)
+//       seqIdx = targetIdx;
+// Force le saut à l'étape suivante quand le NPC est revenu à sa position
+// initiale sur l'axe spécifique. Utilisé pour les patterns de patrouille
+// où l'NPC doit pivoter sur certaines positions.
+type WalkSequenceGuard = { checkIdx: number; axis: 'x' | 'y'; targetIdx: number };
+const WALK_SEQUENCE_GUARDS: Record<string, WalkSequenceGuard> = {
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_RIGHT_LEFT_DOWN': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_LEFT_DOWN_UP': { checkIdx: 1, axis: 'x', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_UP_RIGHT_LEFT': { checkIdx: 1, axis: 'y', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_DOWN_UP_RIGHT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_LEFT_RIGHT_DOWN': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_RIGHT_DOWN_UP': { checkIdx: 1, axis: 'x', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_UP_LEFT_RIGHT': { checkIdx: 1, axis: 'y', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_DOWN_UP_LEFT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_UP_DOWN_RIGHT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_DOWN_RIGHT_LEFT': { checkIdx: 1, axis: 'y', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_LEFT_UP_DOWN': { checkIdx: 1, axis: 'x', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_RIGHT_LEFT_UP': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_UP_DOWN_LEFT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_DOWN_LEFT_RIGHT': { checkIdx: 1, axis: 'y', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_RIGHT_UP_DOWN': { checkIdx: 1, axis: 'x', targetIdx: 2 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_LEFT_RIGHT_UP': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_LEFT_DOWN_RIGHT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_RIGHT_UP_LEFT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_DOWN_RIGHT_UP': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_UP_LEFT_DOWN': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_RIGHT_DOWN_LEFT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_LEFT_UP_RIGHT': { checkIdx: 2, axis: 'y', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_UP_RIGHT_DOWN': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_DOWN_LEFT_UP': { checkIdx: 2, axis: 'x', targetIdx: 3 },
+};
+
 const WALK_SEQUENCE_DIRECTIONS: Record<string, ReadonlyArray<number>> = {
   'MOVEMENT_TYPE_WALK_SEQUENCE_UP_RIGHT_LEFT_DOWN': [DIR_NORTH, DIR_EAST, DIR_WEST, DIR_SOUTH],
   'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_LEFT_DOWN_UP': [DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH],
@@ -2115,7 +2151,20 @@ const WALK_SEQUENCE_DIRECTIONS: Record<string, ReadonlyArray<number>> = {
  *  Notre port skip ces guards (= rare edge cases pour NPCs en
  *  WALK_SEQUENCE_X qui hit la border de leur movement range). Le pattern
  *  principal reste correct. */
-function tickWalkSequence(rt: DecompRuntime, npc: ObjectEvent, route: ReadonlyArray<number>): void {
+function tickWalkSequence(rt: DecompRuntime, npc: ObjectEvent, route: ReadonlyArray<number>, guard?: WalkSequenceGuard): void {
+  // 1:1 décomp `MovementType_WalkSequence*_Step1` guards mid-cycle :
+  //   if (seqIdx == checkIdx && initialCoords.<axis> == currentCoords.<axis>)
+  //       seqIdx = targetIdx;
+  // Force le saut à l'étape suivante quand le NPC revient à initialCoords
+  // sur l'axe spécifique. Variant-specific guard appliqué AVANT MoveNextDirectionInSequence.
+  if (guard) {
+    const initial = guard.axis === 'x' ? npc.initialCoordsX : npc.initialCoordsY;
+    const current = guard.axis === 'x' ? npc.currentCoordsX : npc.currentCoordsY;
+    if (npc.directionSeqIdx === guard.checkIdx && initial === current) {
+      npc.directionSeqIdx = guard.targetIdx;
+    }
+  }
+
   // 1:1 décomp `MovementType_WalkSequence_Step0` (3824) inline-collapsed :
   // ClearObjectEventMovement + sTypeFuncId=1 + return TRUE qui re-call dans
   // la même frame → bascule directement à case 1.
@@ -2349,7 +2398,7 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (mt.startsWith('MOVEMENT_TYPE_WALK_SEQUENCE_')) {
     const directions = WALK_SEQUENCE_DIRECTIONS[mt];
     if (directions) {
-      tickWalkSequence(rt, npc, directions);
+      tickWalkSequence(rt, npc, directions, WALK_SEQUENCE_GUARDS[mt]);
     }
     return true;
   }
