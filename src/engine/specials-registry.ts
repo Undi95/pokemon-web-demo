@@ -220,15 +220,46 @@ registerSpecial('DoCableClubWarp', () => { /* no-op stub */ });
 // inline overlay). Pas de stub à enregistrer ici, car le dispatch ne tombe
 // jamais dans `_invokeSpecial`. Cf. session 124 fix Bug 4.
 
-/** 1:1 décomp `ResetCyclingRoadChallengeData` (field_specials.c). Stub. */
+/** 1:1 décomp `ResetCyclingRoadChallengeData` (field_specials.c:154-159) :
+ *  ```c
+ *  void ResetCyclingRoadChallengeData(void) {
+ *      gBikeCyclingChallenge = FALSE;
+ *      gBikeCollisions = 0;
+ *      sBikeCyclingTimer = 0;
+ *  }
+ *  ```
+ *  Globals EWRAM_DATA `gBikeCyclingChallenge=bool8` (= field_specials.c:78),
+ *  `gBikeCollisions=u8`, `sBikeCyclingTimer=u32`. Stockés ici comme statics
+ *  module-level (= EWRAM_DATA équivalent). */
 registerSpecial('ResetCyclingRoadChallengeData', () => {
-  // No cycling road in early game.
+  _gBikeCyclingChallenge = 0;
+  _gBikeCollisions = 0;
+  _sBikeCyclingTimer = 0;
 });
 
-/** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c). Stub. */
+/** 1:1 décomp `Special_BeginCyclingRoadChallenge` (field_specials.c:161-166) :
+ *  ```c
+ *  void Special_BeginCyclingRoadChallenge(void) {
+ *      gBikeCyclingChallenge = TRUE;
+ *      gBikeCollisions = 0;
+ *      sBikeCyclingTimer = gMain.vblankCounter1;
+ *  }
+ *  ```
+ *  vblankCounter1 = frame counter ; notre équivalent = performance.now() | 0
+ *  pour granularité comparable (= timer monotonic). */
 registerSpecial('Special_BeginCyclingRoadChallenge', () => {
-  // No cycling road in early game.
+  _gBikeCyclingChallenge = 1;
+  _gBikeCollisions = 0;
+  _sBikeCyclingTimer = (performance.now() | 0) >>> 0;
 });
+
+// 1:1 décomp EWRAM_DATA static globals (field_specials.c:78-80).
+let _gBikeCyclingChallenge = 0;
+let _gBikeCollisions = 0;
+let _sBikeCyclingTimer = 0;
+// Reference to suppress unused vars warning ; appelants futurs accéderont via
+// helpers exportés si cycling road code ported (= cf. roadmap C7 task).
+void _gBikeCyclingChallenge; void _gBikeCollisions; void _sBikeCyclingTimer;
 
 /** 1:1 décomp `Special_ShowDiploma` (field_specials.c). Stub. */
 registerSpecial('Special_ShowDiploma', () => {
