@@ -1054,8 +1054,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'HasHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:241 ci-bas.
   'HasMonWonThisContestBefore', 'HasPlayerGivenContestLadyPokeblock',
   'HasStorytellerAlreadyRecorded', 'HideContestEntryMonPic',
-  'HipsterTryTeachWord', 'IncrementDailyPickedBerries',
-  'IncrementDailyPlantedBerries', 'InitSecretBaseDecorationSprites',
+  'HipsterTryTeachWord',
+  // 'IncrementDailyPickedBerries' — porté 1:1 décomp tv.c:2528 ci-bas.
+  // 'IncrementDailyPlantedBerries' — porté 1:1 décomp tv.c:2523 ci-bas.
+  'InitSecretBaseDecorationSprites',
   'InitSecretBaseVars', 'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
   'InterviewAfter',
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
@@ -1101,7 +1103,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ScriptMenu_CreatePCMultichoice',
   'Script_BufferContestLadyCategoryAndMonName',
   'Script_DoesFavorLadyLikeItem', 'Script_FadeOutMapMusic',
-  'Script_FavorLadyOpenBagMenu', 'Script_GetCurrentMauvilleMan',
+  // 'Script_GetCurrentMauvilleMan' — porté 1:1 décomp mauville_old_man.c:146 ci-bas.
+  'Script_FavorLadyOpenBagMenu',
   'Script_GetLilycoveLadyId', 'Script_QuizLadyOpenBagMenu',
   'Script_ResetUnionRoomTrade', 'Script_ShowLinkTrainerCard',
   'Script_StartWiredTrade', 'Script_StorytellerDisplayStory',
@@ -1109,11 +1112,13 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ScrollRankingHallRecordsWindow', 'ScrollableMultichoice_ClosePersistentMenu',
   'ScrollableMultichoice_RedrawPersistentMenu',
   'ScrollableMultichoice_TryReturnToList', 'SetCB2WhiteOut',
-  'SetChampionSaveWarp', 'SetContestCategoryStringVarForInterview',
+  // 'SetChampionSaveWarp' — porté 1:1 décomp save_location.c:136 ci-bas.
+  'SetContestCategoryStringVarForInterview',
   'SetContestLadyGivenPokeblock', 'SetContestTrainerGfxIds',
   'SetDaycareCompatibilityString', 'SetDecoration',
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
   'SetFavorLadyState_Complete', 'SetHiddenItemFlag', 'SetHipsterTaughtWord',
+  // 'SetHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:246 ci-bas.
   'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
   // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
   'SetMirageTowerVisibility',
@@ -1571,6 +1576,78 @@ registerSpecial('GiddyShouldTellAnotherTale', () => {
   VarSet('VAR_RESULT', 1);
   return 1;
 });
+
+// ─── Session A2.25 batch — 5 specials triviaux 1:1 strict ──────────────────
+
+/** 1:1 décomp `Script_GetCurrentMauvilleMan` (mauville_old_man.c:146-149) :
+ *  ```c
+ *  void Script_GetCurrentMauvilleMan(void) {
+ *      gSpecialVar_Result = GetCurrentMauvilleOldMan();
+ *  }
+ *  ```
+ *  Et `GetCurrentMauvilleOldMan` :142 retourne `gSaveBlock1Ptr->oldMan.common.id`. */
+registerSpecial('Script_GetCurrentMauvilleMan', () => {
+  const id = gSaveBlock1Ptr.oldMan?.id ?? 0;
+  VarSet('VAR_RESULT', id);
+  return id;
+});
+
+/** 1:1 décomp `SetHipsterTaughtWord` (mauville_old_man.c:246-249) :
+ *  ```c
+ *  void SetHipsterTaughtWord(void) {
+ *      (&gSaveBlock1Ptr->oldMan.hipster)->taughtWord = TRUE;
+ *  }
+ *  ```
+ *  Set hipster.taughtWord = 1. */
+registerSpecial('SetHipsterTaughtWord', () => {
+  const om = gSaveBlock1Ptr.oldMan;
+  if (om && om.kind === 'hipster') {
+    om.taughtWord = 1;
+  }
+  // 1:1 strict : si pas hipster, le décomp écrirait quand même via le union
+  // pointer (= behavior wrt union puis ré-init). Notre discriminated union
+  // empêche d'écrire sur le mauvais variant ; aligné avec le savegame quand
+  // hipster est actif (= seul cas où ce special est appelé via scripts).
+});
+
+/** 1:1 décomp `IncrementDailyPlantedBerries` (tv.c:2523-2526) :
+ *  ```c
+ *  void IncrementDailyPlantedBerries(void) {
+ *      VarSet(VAR_DAILY_PLANTED_BERRIES, VarGet(VAR_DAILY_PLANTED_BERRIES) + 1);
+ *  }
+ *  ```
+ *  Stat daily : +1 berry planted. */
+registerSpecial('IncrementDailyPlantedBerries', () => {
+  VarSet('VAR_DAILY_PLANTED_BERRIES', (VarGet('VAR_DAILY_PLANTED_BERRIES') + 1) & 0xFFFF);
+});
+
+/** 1:1 décomp `IncrementDailyPickedBerries` (tv.c:2528-2531) :
+ *  ```c
+ *  void IncrementDailyPickedBerries(void) {
+ *      VarSet(VAR_DAILY_PICKED_BERRIES, VarGet(VAR_DAILY_PICKED_BERRIES) + gSpecialVar_0x8006);
+ *  }
+ *  ```
+ *  Stat daily : +X berries picked (X = gSpecialVar_0x8006 = nb harvest). */
+registerSpecial('IncrementDailyPickedBerries', () => {
+  const delta = VarGet('VAR_0x8006');
+  VarSet('VAR_DAILY_PICKED_BERRIES', (VarGet('VAR_DAILY_PICKED_BERRIES') + delta) & 0xFFFF);
+});
+
+/** 1:1 décomp `SetChampionSaveWarp` (save_location.c:136-139) :
+ *  ```c
+ *  void SetChampionSaveWarp(void) {
+ *      gSaveBlock2Ptr->specialSaveWarpFlags |= CHAMPION_SAVEWARP;
+ *  }
+ *  ```
+ *  Set le flag respawn after Champion battle. CHAMPION_SAVEWARP = (1 << 7). */
+registerSpecial('SetChampionSaveWarp', () => {
+  // 1:1 décomp save_location.h:13 CHAMPION_SAVEWARP = (1 << 7) = 128.
+  gSaveBlock2Ptr.specialSaveWarpFlags = (gSaveBlock2Ptr.specialSaveWarpFlags | (1 << 7)) & 0xFF;
+});
+
+// `IsCurSecretBaseOwnedByAnotherPlayer` (secret_base.c:720-726) — dette R3 :
+// utilise sCurSecretBaseId (= static, set par EnterNewlyCreatedSecretBase).
+// SecretBase subsystem U-tier (cf. ROADMAP U-tier).
 
 // `SetHiddenItemFlag` (field_specials.c:935-938) — dette R3 architecturale :
 // `FlagSet(gSpecialVar_0x8004)` lit un id numérique stocké par script (`setvar
