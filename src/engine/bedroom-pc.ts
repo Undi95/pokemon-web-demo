@@ -70,6 +70,7 @@ import {
   type ListMenuTemplate, type ListMenuItem,
 } from './list-menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag';
+import { reverseDecompConstant } from './decomp-constants';
 import { getItemNameFr } from './data-tables';
 import { GetItemDescription } from './decomp-bridge';
 import {
@@ -1583,14 +1584,14 @@ function _mailboxDoMailMoveToBag(): void {
     return;
   }
   const mail = gSaveBlock1Ptr.mail[mailIdx];
-  // 1:1 AddBagItem avec itemId du mail (= ITEM_ORANGE_MAIL etc.).
-  // Notre AddBagItem prend itemKey string ; le mail.itemId est un number.
-  // Conversion via auto-data → STUB pour l'instant.
-  // 1:1 TODO : convert mail.itemId number → itemKey string via auto-data.
-  console.warn('[bedroom-pc] _mailboxDoMailMoveToBag : AddBagItem stub (mail.itemId number → itemKey string conversion à câbler)');
-  // STUB : on simule succes (= mail erased + cleanup, sans add réel dans le bag).
-  // Quand le mapping itemId→itemKey sera porté, decommenter la vraie logique.
-  const success = true;  // STUB
+  // 1:1 décomp player_pc.c:860 : `if (!AddBagItem(mail->itemId, 1))`.
+  // mail.itemId est u16 ITEM_* enum value (= 121 = ITEM_ORANGE_MAIL, etc.).
+  // Notre AddBagItem prend itemKey string : conversion via reverseDecompConstant.
+  const itemKey = reverseDecompConstant(mail.itemId, 'ITEM_');
+  // Si l'itemId n'est pas mappable (= mail.itemId = 0 = ITEM_NONE, mail slot
+  // vide, ou itemId hors range), considérer l'add comme échec (= bag full
+  // équivalent côté flow utilisateur).
+  const success = itemKey ? AddBagItem(itemKey, 1) : false;
   if (!success) {
     // 1:1 gText_BagIsFull
     _showSticky(getString('gText_BagIsFull'));
