@@ -2859,6 +2859,8 @@ import {
   MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN,
   MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN,
   MOVEMENT_ACTION_INIT_AFFINE_ANIM, MOVEMENT_ACTION_CLEAR_AFFINE_ANIM,
+  MOVEMENT_ACTION_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE,
+  MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3753,6 +3755,64 @@ function _MovementAction_ClearAffineAnim_Step0(_rt: DecompRuntime, _npc: ObjectE
   return true;
 }
 
+/** 1:1 décomp `MovementAction_Levitate_Step0` (event_object_movement.c:7292) :
+ *    CreateLevitateMovementTask(objectEvent);
+ *    sprite->sActionFuncId = 1;
+ *    return TRUE;
+ *
+ *  DETTE H3 cascade : CreateLevitateMovementTask (= task Phaser qui anime
+ *  sprite.y2 oscillation pour effet flottant). */
+function _MovementAction_Levitate_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : CreateLevitateMovementTask.
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_StopLevitate_Step0` :
+ *    DestroyLevitateMovementTask(objectEvent->warpArrowSpriteId);
+ *    sprite->y2 = 0;
+ *    sActionFuncId = 1; return TRUE; */
+function _MovementAction_StopLevitate_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : DestroyLevitateMovementTask.
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.y2 = 0;
+  }
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_StopLevitateAtTop_Step0` :
+ *    if (sprite->y2 == 0) {
+ *        DestroyLevitateMovementTask(objectEvent->warpArrowSpriteId);
+ *        sActionFuncId = 1; return TRUE;
+ *    }
+ *    return FALSE; */
+function _MovementAction_StopLevitateAtTop_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite && sprite.y2 === 0) {
+      // DETTE H3 : DestroyLevitateMovementTask.
+      npc.actionStep = 1;
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_Figure8_Step0` :
+ *    InitFigure8Anim(obj, sprite);
+ *    sActionFuncId = 1;
+ *    return MovementAction_Figure8_Step1;
+ *
+ *  DETTE H3 cascade : InitFigure8Anim + DoFigure8Anim (= path 16-pt parcourant
+ *  un 8 horizontal). Notre TS pas étendu pour Figure8 path. */
+function _MovementAction_Figure8_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : InitFigure8Anim + DoFigure8Anim cascade.
+  npc.actionStep = 1;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -4013,6 +4073,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 3] = _makeAcroWhee
 // H1.22 : INIT_AFFINE_ANIM (94) + CLEAR_AFFINE_ANIM (95). Dette H3 sprite affine cascade.
 gMovementActionFuncs[MOVEMENT_ACTION_INIT_AFFINE_ANIM]  = _MovementAction_InitAffineAnim_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_AFFINE_ANIM] = _MovementAction_ClearAffineAnim_Step0;
+// H1.23 : LEVITATE (152) + STOP_LEVITATE (153) + STOP_LEVITATE_AT_TOP (154) + FIGURE_8 (155).
+// State machine porté ; dette H3 cascade tasks (LevitateMovementTask, Figure8Anim).
+gMovementActionFuncs[MOVEMENT_ACTION_LEVITATE]            = _MovementAction_Levitate_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE]       = _MovementAction_StopLevitate_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP] = _MovementAction_StopLevitateAtTop_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figure8_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
