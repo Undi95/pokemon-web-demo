@@ -2237,7 +2237,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ScrollableMultichoice_TryReturnToList', 'SetCB2WhiteOut',
   // 'SetChampionSaveWarp' — porté 1:1 décomp save_location.c:136 ci-bas.
   'SetContestCategoryStringVarForInterview',
-  'SetContestLadyGivenPokeblock', 'SetContestTrainerGfxIds',
+  // 'SetContestLadyGivenPokeblock' — porté 1:1 décomp lilycove_lady.c:769 ci-bas (batch B29).
+  'SetContestTrainerGfxIds',
   'SetDaycareCompatibilityString', 'SetDecoration',
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
   // 'SetHiddenItemFlag' — porté 1:1 décomp field_specials.c:935 ci-bas (refactor B1).
@@ -3348,6 +3349,23 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B29 batch — 1 special Contest Lady 1:1 strict ────────────────
+
+/** 1:1 décomp `SetContestLadyGivenPokeblock` (lilycove_lady.c:769-773) :
+ *  ```c
+ *  void SetContestLadyGivenPokeblock(void) {
+ *      sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;
+ *      sContestLadyPtr->givenPokeblock = TRUE;
+ *  }
+ *  ```
+ *  Discriminated union access sur kind === 'contest'. */
+registerSpecial('SetContestLadyGivenPokeblock', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'contest') {
+    lady.givenPokeblock = 1;
+  }
 });
 
 // ─── Session B28 batch — 1 special TV Gabby/Ty Before Interview 1:1 strict ────
