@@ -426,10 +426,32 @@ registerSpecial('GetMomOrDadStringForTVMessage', () => {
   }
 });
 
-/** 1:1 décomp `EnableNationalPokedex` (pokedex_data.c) : unlock National Pokedex.
- *  Used post-Hall of Fame. MVP : just set a flag. */
+/** 1:1 décomp `EnableNationalPokedex` (event_data.c:63-72) :
+ *  ```c
+ *  void EnableNationalPokedex(void) {
+ *      u16 *nationalDexVar = GetVarPointer(VAR_NATIONAL_DEX);
+ *      gSaveBlock2Ptr->pokedex.nationalMagic = 0xDA;
+ *      *nationalDexVar = 0x302;
+ *      FlagSet(FLAG_SYS_NATIONAL_DEX);
+ *      gSaveBlock2Ptr->pokedex.mode = DEX_MODE_NATIONAL;
+ *      gSaveBlock2Ptr->pokedex.order = 0;
+ *      ResetPokedexScrollPositions();
+ *  }
+ *  ```
+ *  Avant : juste FlagSet('FLAG_RECEIVED_POKEDEX_FROM_BIRCH') (= WRONG flag).
+ *  Maintenant : 1:1 strict — set pokedex.nationalMagic=0xDA + VAR_NATIONAL_DEX=0x302
+ *  + FlagSet(FLAG_SYS_NATIONAL_DEX) + mode=DEX_MODE_NATIONAL + order=0.
+ *  ResetPokedexScrollPositions skip (= cascade R3 pokedex UI subsystem). */
 registerSpecial('EnableNationalPokedex', () => {
-  FlagSet('FLAG_RECEIVED_POKEDEX_FROM_BIRCH');
+  VarSet('VAR_NATIONAL_DEX', 0x302);
+  const sb2 = gSaveBlock2Ptr as { pokedex?: { nationalMagic: number; mode: number; order: number } };
+  if (sb2.pokedex) {
+    sb2.pokedex.nationalMagic = 0xDA;
+    sb2.pokedex.mode = 1;  // DEX_MODE_NATIONAL (= include/pokedex.h:10 enum local)
+    sb2.pokedex.order = 0;
+  }
+  FlagSet('FLAG_SYS_NATIONAL_DEX');
+  // ResetPokedexScrollPositions : dette R3 cascade pokedex UI subsystem.
 });
 
 /** 1:1 décomp `SetUnlockedPokedexFlags` (pokedex_data.c) : when player gets PokeDex,
