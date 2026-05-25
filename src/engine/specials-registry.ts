@@ -39,6 +39,7 @@ import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE } from './decomp-data/include/constants/items-data';
 import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
 import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
+import { gLocalTime } from './rtc';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -728,7 +729,18 @@ registerSpecial('SetPlayerGotFirstFans', () => {
     }
   }
 });
-registerSpecial('SetSSTidalFlag', () => { /* no-op */ });
+/** 1:1 décomp `SetSSTidalFlag` (field_specials.c:276-280) :
+ *  ```c
+ *  void SetSSTidalFlag(void) {
+ *      FlagSet(FLAG_SYS_CRUISE_MODE);
+ *      *GetVarPointer(VAR_CRUISE_STEP_COUNT) = 0;
+ *  }
+ *  ```
+ *  Set cruise mode flag + reset step counter (= board SS Tidal). */
+registerSpecial('SetSSTidalFlag', () => {
+  FlagSet('FLAG_SYS_CRUISE_MODE');
+  VarSet('VAR_CRUISE_STEP_COUNT', 0);
+});
 
 /** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
 registerSpecial('LoadLinkContestPlayerPalettes', () => 0);
@@ -860,7 +872,37 @@ registerSpecial('ColosseumPlayerSpotTriggered', () => { /* no-op */ });
 registerSpecial('RecordMixingPlayerSpotTriggered', () => { /* no-op */ });
 registerSpecial('ShowFrontierExchangeCornerItemIconWindow', () => { /* no-op */ });
 registerSpecial('CloseFrontierExchangeCornerItemIconWindow', () => { /* no-op */ });
-registerSpecial('GetLeadMonFriendshipScore', () => 0);
+/** 1:1 décomp `GetLeadMonFriendshipScore` (field_specials.c:949-966) :
+ *  ```c
+ *  u8 GetLeadMonFriendshipScore(void) {
+ *      struct Pokemon *pokemon = &gPlayerParty[GetLeadMonIndex()];
+ *      if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) == MAX_FRIENDSHIP) return FRIENDSHIP_MAX;
+ *      if (... >= 200) return FRIENDSHIP_200_TO_254;
+ *      ... (5 brackets : 0..1..49..50..99..100..149..150..199..200..254..255 max)
+ *      return FRIENDSHIP_NONE;
+ *  }
+ *  ```
+ *  Retourne le bucket de friendship du lead mon (= 7 valeurs 0..6 → enum). */
+registerSpecial('GetLeadMonFriendshipScore', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp GetLeadMonIndex = 1st non-egg non-empty slot.
+  let leadIdx = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg) { leadIdx = i; break; }
+  }
+  const mon = party[leadIdx];
+  // 1:1 décomp constants/pokemon.h : MAX_FRIENDSHIP=255, FRIENDSHIP_MAX=6,
+  // FRIENDSHIP_NONE=0 etc.
+  const friendship = mon?.friendship ?? 0;
+  if (friendship === 255) return 6;        // FRIENDSHIP_MAX
+  if (friendship >= 200) return 5;         // FRIENDSHIP_200_TO_254
+  if (friendship >= 150) return 4;         // FRIENDSHIP_150_TO_199
+  if (friendship >= 100) return 3;         // FRIENDSHIP_100_TO_149
+  if (friendship >= 50) return 2;          // FRIENDSHIP_50_TO_99
+  if (friendship >= 1) return 1;           // FRIENDSHIP_1_TO_49
+  return 0;                                 // FRIENDSHIP_NONE
+});
 registerSpecial('WaitWeather', () => 0);
 registerSpecial('MauvilleGymPressSwitch', () => { /* no-op */ });
 registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
@@ -948,14 +990,64 @@ const _STUB_RETURN_0_SPECIALS = [
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
   'DoOrbEffect', 'FadeOutOrbEffect', 'MauvilleGymDeactivatePuzzle',
-  'GetWeekCount', 'ReducePlayerPartyToSelectedMons', 'CableCarWarp', 'CableCar',
-  'LoopWingFlapSE', 'GetDaysUntilPacifidlogTMAvailable', 'SetPacifidlogTMReceivedDay',
+  // 'GetWeekCount' — porté 1:1 décomp field_specials.c:940 ci-bas.
+  'ReducePlayerPartyToSelectedMons', 'CableCarWarp', 'CableCar',
+  'LoopWingFlapSE',
+  // 'GetDaysUntilPacifidlogTMAvailable' — porté 1:1 décomp field_specials.c:1555 ci-bas.
+  // 'SetPacifidlogTMReceivedDay' — porté 1:1 décomp field_specials.c:1566 ci-bas.
   'IsMirageIslandPresent', 'HasEnoughBerryPowder',
   'GetSeedotSizeRecordInfo', 'GetLotadSizeRecordInfo',
 ];
 for (const name of _STUB_RETURN_0_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// ─── Session A2.27 batch — time/clock specials 1:1 strict ───────────────────
+
+/** 1:1 décomp `GetWeekCount` (field_specials.c:940-947) :
+ *  ```c
+ *  u16 GetWeekCount(void) {
+ *      u16 weekCount = gLocalTime.days / 7;
+ *      if (weekCount > 9999) weekCount = 9999;
+ *      return weekCount;
+ *  }
+ *  ```
+ *  Retourne le nombre de semaines depuis le début (cap 9999). */
+registerSpecial('GetWeekCount', () => {
+  let weekCount = Math.floor(gLocalTime.days / 7);
+  if (weekCount > 9999) weekCount = 9999;
+  return weekCount & 0xFFFF;
+});
+
+/** 1:1 décomp `GetDaysUntilPacifidlogTMAvailable` (field_specials.c:1555-1564) :
+ *  ```c
+ *  u16 GetDaysUntilPacifidlogTMAvailable(void) {
+ *      u16 tmReceivedDay = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+ *      if (gLocalTime.days - tmReceivedDay >= 7) return 0;
+ *      else if (gLocalTime.days < 0) return 8;
+ *      return 7 - (gLocalTime.days - tmReceivedDay);
+ *  }
+ *  ```
+ *  Days restants pour récupérer la TM hebdo de Pacifidlog (= 0 si available). */
+registerSpecial('GetDaysUntilPacifidlogTMAvailable', () => {
+  const tmReceivedDay = VarGet('VAR_PACIFIDLOG_TM_RECEIVED_DAY');
+  if (gLocalTime.days - tmReceivedDay >= 7) return 0;
+  if (gLocalTime.days < 0) return 8;
+  return (7 - (gLocalTime.days - tmReceivedDay)) & 0xFFFF;
+});
+
+/** 1:1 décomp `SetPacifidlogTMReceivedDay` (field_specials.c:1566-1569) :
+ *  ```c
+ *  u16 SetPacifidlogTMReceivedDay(void) {
+ *      VarSet(VAR_PACIFIDLOG_TM_RECEIVED_DAY, gLocalTime.days);
+ *      return gLocalTime.days;
+ *  }
+ *  ```
+ *  Mark le day de réception → bloque la TM 7j. */
+registerSpecial('SetPacifidlogTMReceivedDay', () => {
+  VarSet('VAR_PACIFIDLOG_TM_RECEIVED_DAY', gLocalTime.days);
+  return gLocalTime.days & 0xFFFF;
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SESSION 131 — bulk register tous les specials décomp restants (= 411 specials
