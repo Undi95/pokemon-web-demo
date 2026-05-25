@@ -66,13 +66,15 @@ const HIGHLIGHT_X_RIGHT = 240 - 16;
 const HIGHLIGHT_Y_OFFSET = 40;
 const HIGHLIGHT_ROW_HEIGHT = 16;
 
-// 1:1 décomp option_menu.c:380-396 DrawOptionMenuChoice color codes
-const TEXT_COLOR_TRANSPARENT = 0;
-const TEXT_COLOR_DARK_GRAY = 2;
-const TEXT_COLOR_WHITE = 1;
-const TEXT_COLOR_LIGHT_GRAY = 3;
-const TEXT_COLOR_RED = 4;
-const TEXT_COLOR_LIGHT_RED = 5;
+// 1:1 décomp option_menu.c:380-396 DrawOptionMenuChoice color codes — importés
+// depuis decomp-data (= 1:1 décomp constants/characters.h:234+).
+import {
+  TEXT_COLOR_WHITE,
+  TEXT_COLOR_DARK_GRAY,
+  TEXT_COLOR_LIGHT_GRAY,
+  TEXT_COLOR_RED,
+  TEXT_COLOR_LIGHT_RED,
+} from './decomp-data/include/constants/characters-data';
 
 /** 1:1 décomp option_menu.c FONT_NORMAL default :
  *  [bgColor, fgColor, shadowColor] = [WHITE, DARK_GRAY, LIGHT_GRAY] = [1, 2, 3]
