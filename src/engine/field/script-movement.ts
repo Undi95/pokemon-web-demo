@@ -266,3 +266,252 @@ export function ConvertMovementActionsToIds(actions: ReadonlyArray<string>): Uin
   }
   return ids;
 }
+
+// ─── ScriptMovement task port 1:1 strict décomp script_movement.c ────────────
+
+import {
+  gObjectEvents,
+  ObjectEventIsHeldMovementActive,
+  ObjectEventClearHeldMovementIfFinished,
+  ObjectEventSetHeldMovement,
+  FreezeObjectEvent,
+  UnfreezeObjectEvent,
+} from './object-events';
+
+/** 1:1 décomp `OBJECT_EVENTS_COUNT` (= include/constants/global.h) : max 16
+ *  NPCs simultanés. La task data stocke 16 entries (objEventId per slot). */
+const OBJECT_EVENTS_COUNT = 16;
+
+/** 1:1 décomp `LOCALID_NONE` (= 0xFF sentinel). */
+const LOCALID_NONE = 0xFF;
+
+/** 1:1 décomp `LOCALID_PLAYER` (= constants/event_objects.h). */
+const LOCALID_PLAYER = 0xFF;
+void LOCALID_PLAYER;
+
+/** 1:1 décomp `sMovementScripts[OBJECT_EVENTS_COUNT]` (script_movement.c:19).
+ *  Array de pointers vers les scripts ASM (= numeric IDs). Notre TS : array
+ *  de pointers vers Uint8Array action ID sequences. */
+const _sMovementScripts: (Uint8Array | null)[] = new Array(OBJECT_EVENTS_COUNT).fill(null);
+
+/** 1:1 décomp `sMovementScriptPositions[OBJECT_EVENTS_COUNT]` (= notre extension,
+ *  car décomp avance le pointer C `movementScript++` directement, mais notre TS
+ *  utilise un index dans Uint8Array). */
+const _sMovementScriptPositions: number[] = new Array(OBJECT_EVENTS_COUNT).fill(0);
+
+/** 1:1 décomp task data structure (script_movement.c:65) :
+ *    data[0] = bitmask `movementScriptFinished` (16 bits, 1 per slot)
+ *    data[1..16] = objEventId per slot (0xFF = empty)
+ *
+ *  Notre TS : tableau de 17 u16 (= NUM_TASK_DATA). */
+const _scriptMovementTaskData = new Uint16Array(17);
+_scriptMovementTaskData[0] = 0;  // movementScriptFinished bitmask
+for (let i = 1; i < 17; i++) _scriptMovementTaskData[i] = 0xFFFF;  // empty slots
+
+let _scriptMovementTaskActive = false;
+
+/** 1:1 décomp `gBitTable[]` (= include/util.h). gBitTable[i] = 1 << i. */
+function _bitTable(i: number): number { return 1 << i; }
+
+/** 1:1 décomp `ScriptMovement_StartMoveObjects(priority)` (script_movement.c:59) :
+ *    taskId = CreateTask(ScriptMovement_MoveObjects, priority);
+ *    for (i = 1; i < NUM_TASK_DATA; i++) gTasks[taskId].data[i] = 0xFFFF;
+ *
+ *  Notre TS : reset _scriptMovementTaskData[1..16] = 0xFFFF. */
+function _ScriptMovement_StartMoveObjects(): void {
+  _scriptMovementTaskActive = true;
+  _scriptMovementTaskData[0] = 0;
+  for (let i = 1; i < 17; i++) _scriptMovementTaskData[i] = 0xFFFF;
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    _sMovementScripts[i] = null;
+    _sMovementScriptPositions[i] = 0;
+  }
+}
+
+/** 1:1 décomp `GetMovementScriptIdFromObjectEventId(taskId, objEventId)`
+ *  (script_movement.c:104) : loop sur task.data[1..16], return slot i ou
+ *  OBJECT_EVENTS_COUNT (= 16) si pas trouvé. */
+function _GetMovementScriptIdFromObjectEventId(objEventId: number): number {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    if ((_scriptMovementTaskData[1 + i] & 0xFF) === objEventId) return i;
+  }
+  return OBJECT_EVENTS_COUNT;
+}
+
+/** 1:1 décomp `ClearMovementScriptFinished(taskId, moveScrId)` (script_movement.c:143). */
+function _ClearMovementScriptFinished(moveScrId: number): void {
+  _scriptMovementTaskData[0] &= ~_bitTable(moveScrId) & 0xFFFF;
+}
+
+/** 1:1 décomp `SetMovementScriptFinished(taskId, moveScrId)` (script_movement.c:150). */
+function _SetMovementScriptFinished(moveScrId: number): void {
+  _scriptMovementTaskData[0] |= _bitTable(moveScrId);
+}
+
+/** 1:1 décomp `IsMovementScriptFinished(taskId, moveScrId)` (script_movement.c:155). */
+function _IsMovementScriptFinishedBitmask(moveScrId: number): boolean {
+  return (_scriptMovementTaskData[0] & _bitTable(moveScrId)) !== 0;
+}
+
+/** 1:1 décomp `ScriptMovement_AddNewMovement(taskId, moveScrId, objEventId, script)`
+ *  (script_movement.c:175) : clear finished + store script + set objEventId. */
+function _ScriptMovement_AddNewMovement(moveScrId: number, objEventId: number, script: Uint8Array): void {
+  _ClearMovementScriptFinished(moveScrId);
+  _sMovementScripts[moveScrId] = script;
+  _sMovementScriptPositions[moveScrId] = 0;
+  _scriptMovementTaskData[1 + moveScrId] = objEventId;
+}
+
+/** 1:1 décomp `ScriptMovement_TryAddNewMovement(taskId, objEventId, script)`
+ *  (script_movement.c:75) : si déjà active queue → return TRUE (= refused) ou
+ *  add new. Sinon trouve slot libre (= player slot fallback). */
+function _ScriptMovement_TryAddNewMovement(objEventId: number, script: Uint8Array): boolean {
+  let moveScrId = _GetMovementScriptIdFromObjectEventId(objEventId);
+  if (moveScrId !== OBJECT_EVENTS_COUNT) {
+    // Déjà une queue active pour ce NPC.
+    if (!_IsMovementScriptFinishedBitmask(moveScrId)) {
+      // Pas finished — refuser (= return TRUE).
+      return true;
+    }
+    // Finished — overwrite avec nouveau script.
+    _ScriptMovement_AddNewMovement(moveScrId, objEventId, script);
+    return false;
+  }
+  // Pas de queue active pour ce NPC — trouver slot libre via player slot
+  // (= 1:1 décomp utilise LOCALID_PLAYER comme sentinel "slot vide").
+  moveScrId = _GetMovementScriptIdFromObjectEventId(0xFF);  // = LOCALID_NONE (slot vide marker)
+  if (moveScrId === OBJECT_EVENTS_COUNT) return true;  // no free slot
+  _ScriptMovement_AddNewMovement(moveScrId, objEventId, script);
+  return false;
+}
+
+/** 1:1 décomp `ScriptMovement_TakeStep(taskId, moveScrId, objEventId, script)`
+ *  (script_movement.c:208) :
+ *    if (ObjectEventIsHeldMovementActive && !ObjectEventClearHeldMovementIfFinished)
+ *      return;  // wait
+ *    nextActionId = *script;
+ *    if (nextActionId == MOVEMENT_ACTION_STEP_END) {
+ *      SetMovementScriptFinished(moveScrId);
+ *      FreezeObjectEvent(npc);
+ *    } else {
+ *      if (!ObjectEventSetHeldMovement(npc, nextActionId)) {
+ *        movementScript++;
+ *        SetMovementScript(moveScrId, movementScript);
+ *      }
+ *    } */
+function _ScriptMovement_TakeStep(moveScrId: number, objEventId: number): void {
+  const npc = gObjectEvents[objEventId];
+  if (!npc || !npc.active) return;
+
+  // 1:1 décomp : wait pour held movement complete.
+  if (ObjectEventIsHeldMovementActive(npc) && !ObjectEventClearHeldMovementIfFinished(npc)) {
+    return;
+  }
+
+  const script = _sMovementScripts[moveScrId];
+  if (!script) {
+    _SetMovementScriptFinished(moveScrId);
+    return;
+  }
+
+  const pos = _sMovementScriptPositions[moveScrId];
+  if (pos >= script.length) {
+    _SetMovementScriptFinished(moveScrId);
+    FreezeObjectEvent(npc);
+    return;
+  }
+
+  const nextActionId = script[pos];
+  if (nextActionId === MOVEMENT_ACTION_STEP_END) {
+    _SetMovementScriptFinished(moveScrId);
+    FreezeObjectEvent(npc);
+  } else {
+    if (!ObjectEventSetHeldMovement(npc, nextActionId)) {
+      _sMovementScriptPositions[moveScrId] = pos + 1;
+    }
+  }
+}
+
+/** 1:1 décomp `ScriptMovement_MoveObjects(taskId)` (script_movement.c:195) :
+ *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+ *      LoadObjectEventIdFromMovementScript(taskId, i, &objEventId);
+ *      if (objEventId != 0xFF)
+ *        ScriptMovement_TakeStep(taskId, i, objEventId, GetMovementScript(i));
+ *    }
+ *
+ *  À appeler chaque frame depuis le main loop (= co-located avec
+ *  TickObjectEventMovements). */
+export function ScriptMovement_MoveObjects(): void {
+  if (!_scriptMovementTaskActive) return;
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const objEventId = _scriptMovementTaskData[1 + i] & 0xFF;
+    if (objEventId !== 0xFF) {
+      _ScriptMovement_TakeStep(i, objEventId);
+    }
+  }
+}
+
+/** 1:1 décomp `ScriptMovement_StartObjectMovementScript(localId, mapNum, mapGroup, script)`
+ *  (script_movement.c:21) :
+ *    if (TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objEventId))
+ *      return TRUE;
+ *    if (!FuncIsActiveTask(ScriptMovement_MoveObjects))
+ *      ScriptMovement_StartMoveObjects(50);
+ *    return ScriptMovement_TryAddNewMovement(taskId, objEventId, script);
+ *
+ *  Notre TS : `objEventId` passé direct (= caller a déjà résolu). Returns
+ *  TRUE si refused / failed, FALSE si accepté. */
+export function ScriptMovement_StartObjectMovementScript(objEventId: number, script: Uint8Array): boolean {
+  if (objEventId < 0 || objEventId >= gObjectEvents.length) return true;
+  const npc = gObjectEvents[objEventId];
+  if (!npc || !npc.active) return true;
+  if (!_scriptMovementTaskActive) {
+    _ScriptMovement_StartMoveObjects();
+  }
+  return _ScriptMovement_TryAddNewMovement(objEventId, script);
+}
+
+/** 1:1 décomp `ScriptMovement_IsObjectMovementFinished(localId, mapNum, mapGroup)`
+ *  (script_movement.c:32) :
+ *    if (TryGetObjectEventIdByLocalIdAndMap) return TRUE;  // NPC absent → finished
+ *    moveScrId = GetMovementScriptIdFromObjectEventId;
+ *    if (moveScrId == OBJECT_EVENTS_COUNT) return TRUE;  // pas de queue → finished
+ *    return IsMovementScriptFinished(taskId, moveScrId); */
+export function ScriptMovement_IsObjectMovementFinished(objEventId: number): boolean {
+  if (objEventId < 0 || objEventId >= gObjectEvents.length) return true;
+  const npc = gObjectEvents[objEventId];
+  if (!npc || !npc.active) return true;
+  if (!_scriptMovementTaskActive) return true;
+  const moveScrId = _GetMovementScriptIdFromObjectEventId(objEventId);
+  if (moveScrId === OBJECT_EVENTS_COUNT) return true;
+  return _IsMovementScriptFinishedBitmask(moveScrId);
+}
+
+/** 1:1 décomp `ScriptMovement_UnfreezeObjectEvents` (script_movement.c:47) :
+ *    Unfreeze tous les NPCs actifs + DestroyTask. */
+export function ScriptMovement_UnfreezeObjectEvents(): void {
+  if (!_scriptMovementTaskActive) return;
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const objEventId = _scriptMovementTaskData[1 + i] & 0xFF;
+    if (objEventId !== 0xFF) {
+      const npc = gObjectEvents[objEventId];
+      if (npc && npc.active) UnfreezeObjectEvent(npc);
+    }
+  }
+  _scriptMovementTaskActive = false;
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    _sMovementScripts[i] = null;
+    _sMovementScriptPositions[i] = 0;
+  }
+  _scriptMovementTaskData[0] = 0;
+  for (let i = 1; i < 17; i++) _scriptMovementTaskData[i] = 0xFFFF;
+}
+
+/** Reset complet du ScriptMovement task — call au map switch / scene reset. */
+export function ScriptMovement_Reset(): void {
+  ScriptMovement_UnfreezeObjectEvents();
+}
+
+/** Debug : expose task data. */
+(globalThis as Record<string, unknown>).__scriptMovementTaskData = _scriptMovementTaskData;
+(globalThis as Record<string, unknown>).__scriptMovementScripts = _sMovementScripts;

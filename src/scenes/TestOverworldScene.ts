@@ -86,6 +86,7 @@ import {
   UnfreezeAllNpcs as UnfreezeObjectEvents,
 } from '../engine/field/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
+import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../engine/field/script-movement';
 import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
@@ -528,6 +529,12 @@ export class TestOverworldScene extends Phaser.Scene {
             flushOverworldTilemaps(self.rt);
           }
         }
+        // H2 — 1:1 strict script_movement.c task tick : tick chaque NPC actif
+        // dans le ScriptMovement task, advance le script ptr via ObjectEventSet
+        // HeldMovement(actionId) + check heldMovementFinished. Doit être appelé
+        // AVANT TickObjectEventMovements pour que le held movement set ici soit
+        // exécuté par _execHeldMovementAction dans le même tick.
+        ScriptMovement_MoveObjects();
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
         // NB : tickMovementQueues a déjà run avant CameraUpdate. Pour les NPCs
         // en script-driven movement, leur walkFramesLeft non-zéro empêche le
@@ -833,6 +840,9 @@ export class TestOverworldScene extends Phaser.Scene {
       // Phase 4.10 : reset movement queues au map switch (= old map's queues
       // pourraient référencer des NPCs de l'ancienne map).
       resetMovementQueues();
+      // H2 : reset ScriptMovement task data (= 1:1 décomp Script_ResetTask au
+      // map switch, sinon objEventIds stale référencent ancienne map NPCs).
+      ScriptMovement_Reset();
     }
     // returnToField=true : on ne touche PAS gObjectEvents. Au cycle bag close,
     // gObjectEvents.currentCoords est préservé (= MOM reste à sa position post-
