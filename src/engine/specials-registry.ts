@@ -1446,6 +1446,30 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `HasAnotherPlayerGivenFavorLadyItem` (lilycove_lady.c:181-191) :
+ *  ```c
+ *  bool8 HasAnotherPlayerGivenFavorLadyItem(void) {
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      if (sFavorLadyPtr->playerName[0] != EOS) {
+ *          StringCopy_PlayerName(gStringVar3, sFavorLadyPtr->playerName);
+ *          ConvertInternationalString(gStringVar3, sFavorLadyPtr->language);
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Check si un autre joueur a donné un item à la Favor Lady (= record-mixed).
+ *  Notre projet FR-only → ConvertInternationalString = no-op. */
+registerSpecial('HasAnotherPlayerGivenFavorLadyItem', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor' && lady.playerName && lady.playerName.length > 0) {
+    // 1:1 décomp StringCopy_PlayerName(gStringVar3, sFavorLadyPtr->playerName).
+    setStringVar(3, lady.playerName);
+    return 1;
+  }
+  return 0;
+});
+
 /** 1:1 décomp `ScriptGetPokedexInfo` (birch_pc.c:7-21) :
  *  ```c
  *  bool16 ScriptGetPokedexInfo(void) {
@@ -1768,7 +1792,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
   // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
-  'HasAnotherPlayerGivenFavorLadyItem',
+  // 'HasAnotherPlayerGivenFavorLadyItem' — porté 1:1 décomp lilycove_lady.c:181 ci-bas.
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
   // 'HasBardSongBeenChanged' — porté 1:1 décomp mauville_old_man.c:151 ci-bas.
   // 'HasHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:241 ci-bas.
