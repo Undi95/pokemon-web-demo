@@ -2825,6 +2825,8 @@ import {
   MOVEMENT_ACTION_HIDE_REFLECTION, MOVEMENT_ACTION_SHOW_REFLECTION,
   MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION,
   MOVEMENT_ACTION_FACE_PLAYER, MOVEMENT_ACTION_FACE_AWAY_PLAYER,
+  MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK, MOVEMENT_ACTION_EMOTE_QUESTION_MARK,
+  MOVEMENT_ACTION_EMOTE_HEART,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3137,6 +3139,32 @@ function _MovementAction_FaceAwayPlayer_Step0(rt: DecompRuntime, npc: ObjectEven
   return true;
 }
 
+/** 1:1 décomp `MovementAction_EmoteExclamationMark_Step0` (event_object_movement.c:6479) :
+ *    ObjectEventGetLocalIdAndMap(obj, &gFieldEffectArguments[0..2]);
+ *    FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
+ *    sActionFuncId = 1; return TRUE;
+ *
+ *  DETTE H3 cascade : FieldEffect system (= sprite emote spawn). Action state
+ *  machine retourne TRUE imm (= heldMovementFinished), donc le NPC ne reste pas
+ *  bloqué. Le visuel emote sprite manque tant que FieldEffect non porté. */
+function _MovementAction_EmoteExclamationMark_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON).
+  npc.actionStep = 1;
+  return true;
+}
+
+function _MovementAction_EmoteQuestionMark_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : FieldEffectStart(FLDEFF_QUESTION_MARK_ICON).
+  npc.actionStep = 1;
+  return true;
+}
+
+function _MovementAction_EmoteHeart_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // DETTE H3 : FieldEffectStart(FLDEFF_HEART_ICON).
+  npc.actionStep = 1;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3309,6 +3337,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION]  = _MovementAction
 // de faceplayer opcode dans certains cas).
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_PLAYER]      = _MovementAction_FacePlayer_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_AWAY_PLAYER] = _MovementAction_FaceAwayPlayer_Step0;
+// H1.13 : EMOTE_X (= dette H3 cascade FieldEffect spawn emote sprite).
+// State machine porté 1:1 (= retourne TRUE imm, NPC pas bloqué) mais visuel
+// emote sprite manque tant que FieldEffectStart(FLDEFF_X_ICON) non porté.
+gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK] = _MovementAction_EmoteExclamationMark_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_QUESTION_MARK]   = _MovementAction_EmoteQuestionMark_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_HEART]           = _MovementAction_EmoteHeart_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
