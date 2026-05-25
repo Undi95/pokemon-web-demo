@@ -14,12 +14,16 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../field/object-events';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement } from '../field/object-events';
 import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { getRuntime } from '../system/decomp-globals';
+import {
+  MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
+  MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
+} from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `sCurrentApproachingTrainerObjectEventId` (trainer_see.c).
  *  Set par `selectapproachingtrainer` à l'object event ID du trainer en
@@ -95,32 +99,57 @@ registerOpcode('releaseall', (_ctx) => {
   return false;
 });
 
+/** 1:1 décomp `GetFaceDirectionMovementAction(direction)` :
+ *  retourne MOVEMENT_ACTION_FACE_X selon direction. */
+function _getFaceDirectionMovementAction(dir: number): number {
+  switch (dir) {
+    case DIR_SOUTH: return MOVEMENT_ACTION_FACE_DOWN;
+    case DIR_NORTH: return MOVEMENT_ACTION_FACE_UP;
+    case DIR_WEST:  return MOVEMENT_ACTION_FACE_LEFT;
+    case DIR_EAST:  return MOVEMENT_ACTION_FACE_RIGHT;
+    default:        return MOVEMENT_ACTION_FACE_DOWN;
+  }
+}
+
 registerOpcode('faceplayer', (_ctx) => {
-  // 1:1 décomp `ScrCmd_faceplayer` (scrcmd.c:1152-1156) :
+  // 1:1 STRICT décomp `ScrCmd_faceplayer` (scrcmd.c:1152-1156) :
   //   if (gObjectEvents[gSelectedObjectEvent].active)
   //       ObjectEventFaceOppositeDirection(&gObjectEvents[gSelectedObjectEvent], GetPlayerFacingDirection());
   //
-  // `ObjectEventFaceOppositeDirection` (event_object_movement.c:4975) chain :
-  //   → ObjectEventSetHeldMovement(GetFaceDirectionMovementAction(GetOppositeDirection(direction)))
-  //   → exec MovementAction_FaceX_Step0 → FaceDirection (5048) :
-  //       SetObjectEventDirection(obj, dir)
-  //       StartSpriteAnim(sprite, GetFaceDirectionAnimNum(dir))
+  // `ObjectEventFaceOppositeDirection` (event_object_movement.c:4975) :
+  //   return ObjectEventSetHeldMovement(objectEvent,
+  //       GetFaceDirectionMovementAction(GetOppositeDirection(direction)));
   //
-  // Notre port simplifié = équivalent à `ObjectEventTurn` (1867) qui fait
-  // SetObjectEventDirection + StartSpriteAnim + SeekSpriteAnim(0). Sans
-  // StartSpriteAnim, sprite.animNum reste sur l'anim précédent (= bug user
-  // G8+ "PNJ ne se tournent pas vers nous quand on leur parle").
+  // `ObjectEventSetHeldMovement` (4870) :
+  //   UnfreezeObjectEvent(objectEvent);
+  //   objectEvent->movementActionId = movementActionId;
+  //   objectEvent->heldMovementActive = TRUE;
+  //   objectEvent->heldMovementFinished = FALSE;
+  //
+  // Le prochain `UpdateObjectEventCurrentMovement` tick check
+  // `ObjectEventIsHeldMovementActive` → exec `ObjectEventExecHeldMovementAction`
+  // → dispatch sur `gMovementActionFuncs[movementActionId]` → exec
+  // `MovementAction_FaceX_Step0` → `FaceDirection` → `SetObjectEventDirection`
+  // + `StartSpriteAnim(GetFaceDirectionAnimNum(dir))`.
+  //
+  // Notre port full 1:1 G15 : heldMovement system dispatchable via
+  // TickObjectEventMovements (object-events.ts:_execHeldMovementAction).
   const npc = getSelectedNpc();
   if (!npc) return false;
-  npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
-  _npcTurnAnim(npc);
+  const oppositeDir = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+  ObjectEventSetHeldMovement(npc, _getFaceDirectionMovementAction(oppositeDir));
   return false;
 });
 
 registerOpcode('turnobject', (_ctx, args) => {
-  // 1:1 décomp `ScrCmd_turnobject` (scrcmd.c:1159-1166) :
+  // 1:1 STRICT décomp `ScrCmd_turnobject` (scrcmd.c:1159-1166) :
   //   ObjectEventTurnByLocalIdAndMap(localId, mapNum, mapGroup, direction)
   //   → ObjectEventTurn (1867) → SetObjectEventDirection + StartSpriteAnim
+  //   + SeekSpriteAnim(0)
+  //
+  // Note : `ScrCmd_turnobject` utilise `ObjectEventTurn` DIRECT (= pas held
+  // movement). C'est immediate. Notre port appelle SetObjectEventDirection
+  // via _npcSetFaceAnim wrapped helper (= équivalent fonctionnel).
   const localId = parseInt(args[0], 10) || 0;
   const dirArg = args[1];
   let dir = DIR_SOUTH;

@@ -2368,7 +2368,30 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
     if (!npc.active) continue;
-    // Frozen NPCs (= en interact) skip leur state machine.
+
+    // 1:1 STRICT décomp `UpdateObjectEventCurrentMovement`
+    // (event_object_movement.c:4929-4944) :
+    //   DoGroundEffects_OnSpawn(objectEvent, sprite);
+    //   TryEnableObjectEventAnim(objectEvent, sprite);
+    //
+    //   if (ObjectEventIsHeldMovementActive(objectEvent))
+    //       ObjectEventExecHeldMovementAction(objectEvent, sprite);
+    //   else if (!objectEvent->frozen)
+    //       while (callback(objectEvent, sprite));
+    //
+    //   DoGroundEffects_OnBeginStep ... + UpdateObjectEventSpriteAnimPause ...
+    //
+    // Le check `heldMovementActive` est CRUCIAL : si scrcmd `faceplayer`,
+    // `applymovement` etc. set heldMovementActive=TRUE via ObjectEventSetHeldMovement,
+    // on exec ce held movement AU LIEU du MovementType callback. Sans ce
+    // dispatch, faceplayer sur NPCs WANDER/LOOK ne tourne PAS visuellement
+    // (= user G15 bug "NPCs dehors ne se tournent pas").
+    if (ObjectEventIsHeldMovementActive(npc)) {
+      _execHeldMovementAction(rt, npc);
+      continue;
+    }
+    // Frozen NPCs (= en interact, mais sans heldMovement actif) skip leur
+    // state machine.
     if (npc.frozen) continue;
 
     const handler = MOVEMENT_HANDLERS[npc.movementType];
@@ -2382,9 +2405,76 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
     }
     // Try special handlers (= ROTATE, WALK_*_AND_*, WALK_IN_PLACE_*, INVISIBLE).
     dispatchSpecialMovement(rt, npc);
-    // Movement types non-supportés (BERRY_TREE_GROWTH, TREE_DISGUISE,
-    // COPY_PLAYER_*, MOUNTAIN_DISGUISE, WALK_SLOWLY_IN_PLACE_*, WALK_SEQUENCE_*) :
-    // statiques pour Phase 4.4.f. Implémentation future si besoin.
+    // Movement types non-supportés documentés : BERRY_TREE_GROWTH,
+    // TREE/MOUNTAIN/SAND_DISGUISE, COPY_PLAYER_* (= subsystem-locked).
+  }
+}
+
+// ─── G15 — 1:1 STRICT heldMovement system (= ObjectEventExecHeldMovementAction) ──
+//
+// Source décomp : event_object_movement.c + data/object_events/movement_action_func_tables.h
+//
+// Dispatch table 1:1 décomp `gMovementActionFuncs[]` (= 256 entries pour
+// chaque MOVEMENT_ACTION_X). Chaque entry est un Step0/1/2 callback.
+// Pour la démo, on porte les actions critiques (FACE_X, WALK_X, etc.).
+// Les autres sont stub no-op qui retournent done immédiatement.
+
+import {
+  MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
+  MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
+} from '../decomp-data/include/constants/event_object_movement-data';
+
+/** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
+ *    SetObjectEventDirection(objectEvent, direction);
+ *    if (!objectEvent->inanimate) {
+ *        StartSpriteAnim(sprite, GetFaceDirectionAnimNum(direction));
+ *    } */
+function _FaceDirection(rt: DecompRuntime, npc: ObjectEvent, dir: number): void {
+  SetObjectEventDirection(npc, dir);
+  _npcSetFaceAnim(rt, npc);
+}
+
+/** 1:1 décomp `MovementAction_FaceDown_Step0` + variantes UP/LEFT/RIGHT.
+ *  Chacune appelle FaceDirection(dir) + return TRUE (= done en 1 step). */
+function _MovementAction_FaceDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _FaceDirection(rt, npc, DIR_SOUTH);
+  return true;
+}
+function _MovementAction_FaceUp_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _FaceDirection(rt, npc, DIR_NORTH);
+  return true;
+}
+function _MovementAction_FaceLeft_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _FaceDirection(rt, npc, DIR_WEST);
+  return true;
+}
+function _MovementAction_FaceRight_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _FaceDirection(rt, npc, DIR_EAST);
+  return true;
+}
+
+/** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
+ *  dispatch sur movementActionId → MovementAction_X_StepN. Quand action done
+ *  (= return TRUE), set heldMovementFinished = TRUE. */
+function _execHeldMovementAction(rt: DecompRuntime, npc: ObjectEvent): void {
+  if (npc.heldMovementFinished) return;  // already done, wait pour clear
+  let done = false;
+  switch (npc.movementActionId) {
+    case MOVEMENT_ACTION_FACE_DOWN:  done = _MovementAction_FaceDown_Step0(rt, npc);  break;
+    case MOVEMENT_ACTION_FACE_UP:    done = _MovementAction_FaceUp_Step0(rt, npc);    break;
+    case MOVEMENT_ACTION_FACE_LEFT:  done = _MovementAction_FaceLeft_Step0(rt, npc);  break;
+    case MOVEMENT_ACTION_FACE_RIGHT: done = _MovementAction_FaceRight_Step0(rt, npc); break;
+    // DETTE 1:1 : autres MOVEMENT_ACTION_X (= WALK_X, JUMP_X, etc.) — pas
+    // utilisés via ObjectEventSetHeldMovement dans la démo (= applymovement
+    // utilise notre _tickWalk dispatcher en parallèle). À étendre quand
+    // d'autres scrcmds appellent ObjectEventSetHeldMovement.
+    default:
+      // Action inconnue : marquer done pour ne pas freeze.
+      done = true;
+      break;
+  }
+  if (done) {
+    npc.heldMovementFinished = true;
   }
 }
 
