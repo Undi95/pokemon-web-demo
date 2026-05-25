@@ -2131,7 +2131,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetGabbyAndTyLocalIds' — porté 1:1 décomp tv.c:1038 ci-bas.
   'GenerateGiddyLine',
   'GetAbnormalWeatherMapNameAndType', 'GetBattleFrontierTutorMoveIndex',
-  'GetBattlePyramidHint', 'GetBattleTowerSinglesStreak',
+  'GetBattlePyramidHint',
+  // 'GetBattleTowerSinglesStreak' — porté 1:1 décomp field_specials.c:1279 ci-bas (batch B43).
   // 'GetContestLadyCategory' — porté 1:1 décomp lilycove_lady.c:781 ci-bas (batch B30).
   // 'GetContestLadyMonSpecies' — porté 1:1 décomp lilycove_lady.c:775 ci-bas (batch B30).
   'GetContestMonCondition', 'GetContestMonConditionRanking',
@@ -2154,7 +2155,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetQuizAuthor',
   // 'GetQuizLadyState' — porté 1:1 décomp lilycove_lady.c:347 ci-bas (batch B10).
   'GetRandomActiveShowIdx',
-  'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
+  'GetRecordedCyclingRoadResults',
+  // 'GetSecretBaseNearbyMapName' — porté 1:1 décomp field_specials.c:1274 ci-bas (batch B43).
   // 'GetSecretBaseOwnerAndState' — porté 1:1 décomp secret_base.c:1176 ci-bas (batch B22).
   'GetSecretBaseTypeInFrontOfPlayer',
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
@@ -3378,6 +3380,38 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B43 batch — 2 specials Battle Tower stat / Secret Base 1:1 strict ─
+
+/** 1:1 décomp `GetBattleTowerSinglesStreak` (field_specials.c:1279-1282) :
+ *  ```c
+ *  u16 GetBattleTowerSinglesStreak(void) {
+ *      return GetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK);
+ *  }
+ *  ```
+ *  GAME_STAT_BATTLE_TOWER_SINGLES_STREAK=32. Notre projet stocke gameStats
+ *  cleartext (= aligné GetGameStat porté). */
+registerSpecial('GetBattleTowerSinglesStreak', () => {
+  return (gSaveBlock1Ptr.gameStats?.[32] ?? 0) & 0xFFFF;
+});
+
+/** 1:1 décomp `GetSecretBaseNearbyMapName` (field_specials.c:1274-1277) :
+ *  ```c
+ *  void GetSecretBaseNearbyMapName(void) {
+ *      GetMapName(gStringVar1, VarGet(VAR_SECRET_BASE_MAP), 0);
+ *  }
+ *  ```
+ *  Cascade R3 partielle : GetMapName demande mapSec → name lookup table
+ *  (= region_map.c). Notre VAR_SECRET_BASE_MAP est numeric MAPSEC_*.
+ *  Bridge via __game_bridge.GetMapNameByMapSecId si dispo (= pattern aligné). */
+registerSpecial('GetSecretBaseNearbyMapName', () => {
+  const mapsecId = VarGet('VAR_SECRET_BASE_MAP');
+  const bridge = (globalThis as { __game_bridge?: {
+    GetMapNameByMapSecId?: (id: number) => string;
+  } }).__game_bridge;
+  const mapName = bridge?.GetMapNameByMapSecId?.(mapsecId) ?? '';
+  setStringVar(1, mapName);
 });
 
 // ─── Session B41 batch — 2 specials Lilycove Lady 1:1 strict ─────────────
