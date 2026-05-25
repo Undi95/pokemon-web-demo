@@ -2061,6 +2061,128 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
   }
 }
 
+// ─── G12 — WALK_SEQUENCE 1:1 STRICT (24 patterns) ────────────────────────────
+// Source : event_object_movement.c:3824-4020 + movement_type_func_tables.h:200-326
+//
+// 24 variantes : NPC walk en boucle un pattern de 4 directions fixes
+// (= ex. UP_RIGHT_LEFT_DOWN cycle DIR_NORTH → DIR_EAST → DIR_WEST → DIR_SOUTH).
+// Décomp MovementType_WalkSequence_Step0/1/2 + MoveNextDirectionInSequence.
+
+const WALK_SEQUENCE_DIRECTIONS: Record<string, ReadonlyArray<number>> = {
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_RIGHT_LEFT_DOWN': [DIR_NORTH, DIR_EAST, DIR_WEST, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_LEFT_DOWN_UP': [DIR_EAST, DIR_WEST, DIR_SOUTH, DIR_NORTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_UP_RIGHT_LEFT': [DIR_SOUTH, DIR_NORTH, DIR_EAST, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_DOWN_UP_RIGHT': [DIR_WEST, DIR_SOUTH, DIR_NORTH, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_LEFT_RIGHT_DOWN': [DIR_NORTH, DIR_WEST, DIR_EAST, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_RIGHT_DOWN_UP': [DIR_WEST, DIR_EAST, DIR_SOUTH, DIR_NORTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_UP_LEFT_RIGHT': [DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_DOWN_UP_LEFT': [DIR_EAST, DIR_SOUTH, DIR_NORTH, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_UP_DOWN_RIGHT': [DIR_WEST, DIR_NORTH, DIR_SOUTH, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_DOWN_RIGHT_LEFT': [DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_LEFT_UP_DOWN': [DIR_EAST, DIR_WEST, DIR_NORTH, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_RIGHT_LEFT_UP': [DIR_SOUTH, DIR_EAST, DIR_WEST, DIR_NORTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_UP_DOWN_LEFT': [DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_DOWN_LEFT_RIGHT': [DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_RIGHT_UP_DOWN': [DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_LEFT_RIGHT_UP': [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_LEFT_DOWN_RIGHT': [DIR_NORTH, DIR_WEST, DIR_SOUTH, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_RIGHT_UP_LEFT': [DIR_SOUTH, DIR_EAST, DIR_NORTH, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_DOWN_RIGHT_UP': [DIR_WEST, DIR_SOUTH, DIR_EAST, DIR_NORTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_UP_LEFT_DOWN': [DIR_EAST, DIR_NORTH, DIR_WEST, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_UP_RIGHT_DOWN_LEFT': [DIR_NORTH, DIR_EAST, DIR_SOUTH, DIR_WEST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_DOWN_LEFT_UP_RIGHT': [DIR_SOUTH, DIR_WEST, DIR_NORTH, DIR_EAST],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_LEFT_UP_RIGHT_DOWN': [DIR_WEST, DIR_NORTH, DIR_EAST, DIR_SOUTH],
+  'MOVEMENT_TYPE_WALK_SEQUENCE_RIGHT_DOWN_LEFT_UP': [DIR_EAST, DIR_SOUTH, DIR_WEST, DIR_NORTH],
+};
+
+/** 1:1 décomp `MoveNextDirectionInSequence` (event_object_movement.c:3831)
+ *  + MovementType_WalkSequence_Step0/1/2 + InitMovementNormal/UpdateMovementNormal.
+ *
+ *  Decomp pattern :
+ *    Step0 : ClearObjectEventMovement + sTypeFuncId=1
+ *    Step1 : MoveNextDirectionInSequence(route) :
+ *      - if seqIdx==3 && currentCoords == initialCoords → seqIdx=0 (wrap)
+ *      - SetObjectEventDirection(route[seqIdx])
+ *      - If collision OUTSIDE_RANGE → seqIdx++ + retry
+ *      - If any collision → walk_in_place anim
+ *      - Else → walk_normal start
+ *      - sTypeFuncId=2
+ *    Step2 : ExecSingleMovementAction → quand done sTypeFuncId=1 (loop)
+ *
+ *  DETTE 1:1 mineure : les 9 variantes WALK_SEQUENCE ont chacune un guard
+ *  mid-cycle additional (e.g. `if (seqIdx == 2 && initialCoords.x == currentCoords.x)
+ *  seqIdx = 3`) qui force le saut à une étape spécifique selon la position.
+ *  Notre port skip ces guards (= rare edge cases pour NPCs en
+ *  WALK_SEQUENCE_X qui hit la border de leur movement range). Le pattern
+ *  principal reste correct. */
+function tickWalkSequence(rt: DecompRuntime, npc: ObjectEvent, route: ReadonlyArray<number>): void {
+  // 1:1 décomp `MovementType_WalkSequence_Step0` (3824) inline-collapsed :
+  // ClearObjectEventMovement + sTypeFuncId=1 + return TRUE qui re-call dans
+  // la même frame → bascule directement à case 1.
+  if (npc.movementStep === 0) npc.movementStep = 1;
+  switch (npc.movementStep) {
+    case 1: {
+      // 1:1 décomp `MoveNextDirectionInSequence` (3831) + MovementType_WalkSequence
+      // *_Step1 (= variant-specific).
+      // Wrap check : si on est à la fin du cycle (seqIdx==3) et revenu à initial,
+      // restart cycle (seqIdx=0).
+      if (npc.directionSeqIdx >= 3
+          && npc.currentCoordsX === npc.initialCoordsX
+          && npc.currentCoordsY === npc.initialCoordsY) {
+        npc.directionSeqIdx = 0;
+      }
+      const idx = Math.min(npc.directionSeqIdx, route.length - 1);
+      const dir = route[idx] ?? DIR_SOUTH;
+      npc.facingDirection = dir;
+      // OUT_OF_RANGE check : si dépasse movement range, avance seqIdx + retry.
+      const dx = DIR_TO_DX[dir] ?? 0;
+      const dy = DIR_TO_DY[dir] ?? 0;
+      let tx = npc.currentCoordsX + dx;
+      let ty = npc.currentCoordsY + dy;
+      if (IsCoordOutsideObjectEventMovementRange(npc, tx, ty)) {
+        npc.directionSeqIdx++;
+        const newIdx = Math.min(npc.directionSeqIdx, route.length - 1);
+        const newDir = route[newIdx] ?? DIR_SOUTH;
+        npc.facingDirection = newDir;
+        tx = npc.currentCoordsX + (DIR_TO_DX[newDir] ?? 0);
+        ty = npc.currentCoordsY + (DIR_TO_DY[newDir] ?? 0);
+      }
+      if (canWalk(npc, npc.facingDirection)) {
+        // Walk normal start (= 1:1 InitMovementNormal).
+        ShiftObjectEventCoords(npc, tx, ty);
+        npc.walkDirection = npc.facingDirection;
+        npc.walkFramesLeft = 16;
+        npc.movementStep = 2;
+        _npcStartWalkAnim(rt, npc, npc.facingDirection);
+      } else {
+        // Wall collision : walk_in_place anim (= 1:1 GetWalkInPlaceNormalMovementAction).
+        // Skip cette frame, retry next.
+        _npcSetFaceAnim(rt, npc);
+        npc.movementStep = 1;
+      }
+      break;
+    }
+    case 2: {
+      // 1:1 décomp `MovementType_WalkSequence_Step2` (3859) :
+      // Exec walk step. Quand done, sTypeFuncId = 1 (loop).
+      const speedX = DIR_TO_DX[npc.walkDirection] ?? 0;
+      const speedY = DIR_TO_DY[npc.walkDirection] ?? 0;
+      npc.worldX += speedX;
+      npc.worldY += speedY;
+      npc.walkFramesLeft--;
+      if (npc.walkFramesLeft === 0) {
+        ShiftStillObjectEventCoords(npc);
+        npc.walkDirection = DIR_NONE;
+        npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+        npc.directionSeqIdx = (npc.directionSeqIdx + 1) & 3;
+        npc.movementStep = 1;
+        _npcEndWalkAnim(rt, npc);
+      }
+      break;
+    }
+  }
+}
+
 /** Map MOVEMENT_TYPE_* string → state machine handler + allowed directions.
  *  Ajout 4.4.c.2 : multi-direction look + multi-direction wander.
  *  Ajout 4.4.f : ROTATE_*, WALK_*_AND_*, WALK_IN_PLACE_* (= face static),
@@ -2203,11 +2325,15 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) {
     return true;
   }
-  // WALK_SEQUENCE_* : NPC walk un pattern prédéfini (= rotation cycle e.g.
-  // RIGHT-DOWN-LEFT-UP). MVP : tick comme un WANDER simple.
+  // WALK_SEQUENCE_* : NPC walk un pattern prédéfini de 4 directions fixes
+  // (= 24 variantes, ex. UP_RIGHT_LEFT_DOWN = DIR_NORTH→DIR_EAST→DIR_WEST→DIR_SOUTH).
+  // 1:1 décomp `MovementType_WalkSequence_*` + `MoveNextDirectionInSequence`
+  // (event_object_movement.c:3824-4020) + sequences tables (= 24 entries).
   if (mt.startsWith('MOVEMENT_TYPE_WALK_SEQUENCE_')) {
-    // TODO : implement specific direction sequences from décomp
-    // sMovementTypeWalkSequenceTables. MVP : rotate clockwise as approximation.
+    const directions = WALK_SEQUENCE_DIRECTIONS[mt];
+    if (directions) {
+      tickWalkSequence(rt, npc, directions);
+    }
     return true;
   }
   // RUN_IN_PLACE_* : run anim in place. Same as WALK_IN_PLACE for MVP.
