@@ -66,6 +66,7 @@ import {
 } from './pc-items';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
+  ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
 } from './list-menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag';
@@ -1672,12 +1673,8 @@ const sSwapArrowTextColors: readonly number[] = [1, 3, 2];
 /** 1:1 décomp `static void ItemStorage_SetSwapArrow(u8 listTaskId, u8 b, u8 speed)`
  *  (player_pc.c:1082-1085) :
  *      ItemStorage_DrawSwapArrow(ListMenuGetYCoordForPrintingArrowCursor(listTaskId), b, speed); */
-function ItemStorage_SetSwapArrow(_listTaskId: number, b: number, speed: number): void {
-  // 1:1 ListMenuGetYCoordForPrintingArrowCursor(listTaskId) — calcul y du curseur
-  // dans la list-menu. STUB simple : y = cursorPos * 16 (= 1 row par item).
-  // Notre list-menu n'expose pas ce helper direct ; fallback acceptable car
-  // l'arrow swap est cosmétique.
-  const y = 0;  // 1:1 TODO : importer ListMenuGetYCoordForPrintingArrowCursor depuis list-menu.ts.
+function ItemStorage_SetSwapArrow(listTaskId: number, b: number, speed: number): void {
+  const y = ListMenuGetYCoordForPrintingArrowCursor(listTaskId);
   ItemStorage_DrawSwapArrow(y, b, speed);
 }
 
