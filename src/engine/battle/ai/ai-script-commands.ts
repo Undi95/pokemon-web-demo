@@ -141,7 +141,7 @@ import {
 } from '../../decomp-data/include/constants/battle_move_effects-data';
 import { gBitTable } from '../battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
-import { FlagGet } from '../../script-vars';
+import { FlagGet } from '../../script/script-vars';
 import { GetGenderFromSpeciesAndPersonality } from '../data/species-runtime';
 import { CheckMoveLimitations } from '../move-limitations';
 import {

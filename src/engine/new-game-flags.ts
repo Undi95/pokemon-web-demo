@@ -18,7 +18,7 @@
  * controlle leur visibilité).
  */
 
-import { FlagSet } from './script-vars';
+import { FlagSet } from './script/script-vars';
 import { Random, GetGeneratedTrainerIdLower } from './random';
 import { gSaveBlock2Ptr } from './save-block-state';
 

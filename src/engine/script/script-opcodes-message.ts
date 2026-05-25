@@ -23,13 +23,13 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { gSpecialVar } from './script-vars';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from './object-events';
-import { GetPlayerFacingDirection, DIR_SOUTH } from './player-avatar';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../object-events';
+import { GetPlayerFacingDirection, DIR_SOUTH } from '../player-avatar';
 import {
   Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from './gba-menu-system';
-import { ClearStdWindowAndFrame, RemoveWindow } from './gba-window-system';
+} from '../gba-menu-system';
+import { ClearStdWindowAndFrame, RemoveWindow } from '../gba-window-system';
 import { getSelectedNpc, isAOrBNewlyPressed, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { spawnYesNoMenu } from './script-opcodes-menu';
 
@@ -142,7 +142,7 @@ registerOpcode('msgbox', (ctx, args) => {
         // qui PlaySE(SE_SELECT) sur A/B press → match comportement ROM.
         if (isAOrBNewlyPressed()) {
           // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
-          void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));
+          void import('../decomp-globals').then(({ PlaySE }) => PlaySE(5));
           HideFieldMessageBox();
           // Release frozen NPCs 1:1 STRICT via UnfreezeObjectEvent qui restore
           // sprite.animPaused = backup (= reverse du FreezeObjectEvent).

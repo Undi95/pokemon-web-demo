@@ -21,8 +21,8 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarSet } from './script-vars';
-import { setPendingWarp, SetDynamicWarp } from './warp-system';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { setPendingWarp, SetDynamicWarp } from '../warp-system';
+import { gSaveBlock1Ptr } from '../save-block-state';
 import { parseValue } from './script-opcodes-helpers';
 
 /**

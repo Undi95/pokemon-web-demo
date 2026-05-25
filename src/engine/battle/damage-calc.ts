@@ -182,7 +182,7 @@ function shouldGetStatBadgeBoost(badgeFlag: number, battler: number): boolean {
 }
 
 // Import direct (= disobedience.ts utilise le même pattern).
-import { FlagGet as _FlagGetN0 } from '../script-vars';
+import { FlagGet as _FlagGetN0 } from '../script/script-vars';
 // Flash Fire flags (= gBattleResources->flags->flags 1:1 décomp).
 import { gBattleResourcesFlags as gBattleResourcesFlagsDC } from './state';
 function _flagGetN0(flagName: string): boolean {

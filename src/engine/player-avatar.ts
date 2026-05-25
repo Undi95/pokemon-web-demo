@@ -65,8 +65,8 @@ import {
   ArePlayerFieldControlsLocked,
   TryRunCoordEventScript,
   LockPlayerFieldControls,
-} from './script-runtime';
-import { FlagGet } from './script-vars';
+} from './script/script-runtime';
+import { FlagGet } from './script/script-vars';
 import { B_BUTTON } from './gba-menu-system';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {

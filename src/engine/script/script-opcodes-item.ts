@@ -15,9 +15,9 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet, gSpecialVar } from './script-vars';
-import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './bag';
-import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
-import { getItem } from './data-tables';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from '../bag';
+import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
+import { getItem } from '../data-tables';
 import { parseValue, resolveCount } from './script-opcodes-helpers';
 
 /** 1:1 décomp `giveitem` macro = additem + msgbox + fanfare. On ne porte que

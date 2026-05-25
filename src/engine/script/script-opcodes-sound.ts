@@ -22,10 +22,10 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet } from './script-vars';
-import { PlaySE } from './decomp-globals';
-import { gMapHeader } from './map-loader';
-import { resolveDecompConstant } from './decomp-constants';
-import * as Songs from './decomp-data/include/constants/songs-data';
+import { PlaySE } from '../decomp-globals';
+import { gMapHeader } from '../map-loader';
+import { resolveDecompConstant } from '../decomp-constants';
+import * as Songs from '../decomp-data/include/constants/songs-data';
 
 registerOpcode('playse', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_playse` (scrcmd.c) : PlaySE avec le SE constant string.
@@ -48,7 +48,7 @@ registerOpcode('playfanfare', (_ctx, args) => {
   const songName = args[0] ?? '';
   const songId = (Songs as unknown as Record<string, number>)[songName];
   if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ PlayFanfare }) => {
+    void import('../decomp-globals').then(({ PlayFanfare }) => {
       PlayFanfare(songId);
     });
   } else {
@@ -75,7 +75,7 @@ registerOpcode('playbgm', (_ctx, args) => {
   const songName = args[0] ?? '';
   const songId = (Songs as unknown as Record<string, number>)[songName];
   if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
+    void import('../decomp-globals').then(({ m4aSongNumStart }) => {
       m4aSongNumStart(songId, true);
     });
   } else {
@@ -106,7 +106,7 @@ registerOpcode('fadedefaultbgm', (_ctx, _args) => {
     songId = (Songs as unknown as Record<string, number>)[mapMusic];
   }
   if (typeof songId === 'number' && songId > 0) {
-    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
+    void import('../decomp-globals').then(({ m4aSongNumStart }) => {
       m4aSongNumStart(songId!, true);
     });
   }
@@ -118,7 +118,7 @@ registerOpcode('fadenewbgm', (_ctx, args) => {
   const songName = args[0] ?? '';
   const songId = (Songs as unknown as Record<string, number>)[songName];
   if (typeof songId === 'number') {
-    void import('./decomp-globals').then(({ m4aSongNumStart, FadeOutBGM }) => {
+    void import('../decomp-globals').then(({ m4aSongNumStart, FadeOutBGM }) => {
       FadeOutBGM(4);
       setTimeout(() => m4aSongNumStart(songId, true), 200);
     });
@@ -129,14 +129,14 @@ registerOpcode('fadenewbgm', (_ctx, args) => {
 /** 1:1 décomp `ScrCmd_fadeoutbgm` (scrcmd.c) : fade out current BGM. */
 registerOpcode('fadeoutbgm', (_ctx, args) => {
   const speed = parseInt(args[0] ?? '4', 10) || 4;
-  void import('./decomp-globals').then(({ FadeOutBGM }) => FadeOutBGM(speed));
+  void import('../decomp-globals').then(({ FadeOutBGM }) => FadeOutBGM(speed));
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_fadeinbgm` (scrcmd.c) : fade in current BGM. */
 registerOpcode('fadeinbgm', (_ctx, args) => {
   const speed = parseInt(args[0] ?? '4', 10) || 4;
-  void import('./decomp-globals').then(({ FadeInBGM }) => FadeInBGM(speed));
+  void import('../decomp-globals').then(({ FadeInBGM }) => FadeInBGM(speed));
   return false;
 });
 
@@ -147,7 +147,7 @@ registerOpcode('playmoncry', (_ctx, args) => {
   const speciesId = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
     ? VarGet(speciesArg)
     : (resolveDecompConstant(speciesArg) ?? 0);
-  void import('./decomp-globals').then(({ PlayCryInternal }) => {
+  void import('../decomp-globals').then(({ PlayCryInternal }) => {
     PlayCryInternal(speciesId, 0, 64, 0, 0);
   }).catch(() => {});
   return false;

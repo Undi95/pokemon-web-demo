@@ -18,8 +18,8 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarSet } from './script-vars';
-import { gMapHeader } from './map-loader';
-import { getPendingWarp } from './warp-system';
+import { gMapHeader } from '../map-loader';
+import { getPendingWarp } from '../warp-system';
 
 // ─── waitstate / SignalWaitState ────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'ChooseStarter') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('./starter-choose-flow').then((mod) => {
+    void import('../starter-choose-flow').then((mod) => {
       flow = mod.startChooseStarterFlow();
       flowReady = true;
     });
@@ -145,7 +145,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'StartBirchTutorialBattle') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('./battle-flow').then((mod) => {
+    void import('../battle-flow').then((mod) => {
       flow = mod.startBirchTutorialBattle();
       flowReady = true;
     });
@@ -162,7 +162,7 @@ registerOpcode('special', (ctx, args) => {
   // jusqu'à ce que la carte se ferme (= IsRegionMapOpen() false).
   if (name === 'FieldShowRegionMap') {
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('./region-map');
+      const mod = await import('../region-map');
       await mod.OpenRegionMap();
       return { isOpen: mod.IsRegionMapOpen };
     });
@@ -176,7 +176,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'BedroomPC' || name === 'PlayerPC') {
     const isBedroom = (name === 'BedroomPC');
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('./bedroom-pc');
+      const mod = await import('../bedroom-pc');
       mod.OpenBedroomPC(isBedroom);
       return { isOpen: mod.IsBedroomPCOpen };
     });
@@ -191,7 +191,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
     const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('./wallclock');
+      const mod = await import('../wallclock');
       mod.OpenWallClock(mode);
       return { isOpen: mod.IsWallClockOpen };
     });

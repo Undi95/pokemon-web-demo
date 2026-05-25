@@ -8,7 +8,7 @@
  * SaveGame, ResetSaveBlocks, gSaveBlock1Ptr.playerParty).
  */
 
-import { FlagSet, VarSet } from '../script-vars';
+import { FlagSet, VarSet } from '../script/script-vars';
 import { SaveGame, ResetSaveBlocks } from '../save-system';
 import { gSaveBlock1Ptr } from '../save-block-state';
 import type { PokemonInstance } from '../pokemon';

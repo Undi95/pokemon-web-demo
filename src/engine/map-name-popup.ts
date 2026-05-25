@@ -28,7 +28,7 @@
 
 import { getRuntime } from './decomp-globals';
 import { REG_OFFSET_BG0VOFS } from './decomp-runtime';
-import { FlagGet } from './script-vars';
+import { FlagGet } from './script/script-vars';
 import { gMapHeader } from './map-loader';
 import type { DecompTask } from './decomp-runtime';
 import {

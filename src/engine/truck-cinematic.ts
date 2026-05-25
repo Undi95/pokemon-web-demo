@@ -46,7 +46,7 @@ import {
 } from './decomp-data/include/constants/metatile_labels-data';
 import { MAP_OFFSET, MapGridSetMetatileIdAt, gMapHeader } from './map-loader';
 import { DrawWholeMapView, SetCameraPanning } from './field/field-camera';
-import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script-runtime';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script/script-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SetObjectEventSpritePosByLocalIdAndMap } from './object-events';
 

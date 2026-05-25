@@ -51,7 +51,7 @@ import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
   getText,
-} from './script-runtime';
+} from './script/script-runtime';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
   FIELD_MESSAGE_BOX_HIDDEN,
@@ -69,7 +69,7 @@ import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { FlagGet } from './script-vars';
+import { FlagGet } from './script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
 import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './decomp-data/src/option_menu-callbacks-auto';
 // Le callback signature est (rt) => void, on adapte vers () => void pour

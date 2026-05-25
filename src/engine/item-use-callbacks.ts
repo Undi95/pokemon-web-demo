@@ -40,7 +40,7 @@
  *  Module leaf : importé par bag-menu-ctx (Medicine handler), pas l'inverse.
  */
 
-import { gSpecialVar } from './script-vars';
+import { gSpecialVar } from './script/script-vars';
 import {
   ApplyMedicineEffect, PokemonUseItemEffects, GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_HEAL_PP,

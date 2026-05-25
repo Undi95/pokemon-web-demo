@@ -84,7 +84,7 @@ function _IsOtherTrainer(otId: number, _otName: string): boolean {
 }
 
 // 1:1 décomp `FlagGet(flag)` — wired via script-vars.ts (gameState.hasFlag).
-import { FlagGet as _FlagGetFull } from '../script-vars';
+import { FlagGet as _FlagGetFull } from '../script/script-vars';
 function _FlagGet(flagId: string): boolean {
   return _FlagGetFull(flagId);
 }

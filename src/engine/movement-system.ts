@@ -34,7 +34,7 @@ import { SpawnJumpLandingDust } from './field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field/field-effect-shadow';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { VarGet } from './script-vars';
+import { VarGet } from './script/script-vars';
 import { MAP_OFFSET } from './map-loader';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,

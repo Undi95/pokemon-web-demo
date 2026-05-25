@@ -39,8 +39,8 @@ import { FlagGet } from './script-vars';
 import {
   parseValue, getSelectedNpc, OPPOSITE_DIR,
 } from './script-opcodes-helpers';
-import { GetPlayerFacingDirection, DIR_SOUTH } from './player-avatar';
-import { FreezeObjectEvent } from './object-events';
+import { GetPlayerFacingDirection, DIR_SOUTH } from '../player-avatar';
+import { FreezeObjectEvent } from '../object-events';
 import { invokeSpecial } from './script-opcodes-special';
 
 // ─── Control flow ────────────────────────────────────────────────────────────

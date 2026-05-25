@@ -45,7 +45,7 @@ import './bag';
 import './save-system';
 import './load_save';
 import './save-block-state';
-import './script-vars';
+import './script/script-vars';
 import './warp-system';
 
 import { gSaveBlock1Ptr } from './save-block-state';

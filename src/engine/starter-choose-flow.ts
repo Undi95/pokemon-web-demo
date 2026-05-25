@@ -37,7 +37,7 @@ import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
-import { VarSet } from './script-vars';
+import { VarSet } from './script/script-vars';
 import { Sin } from './decomp-helpers';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map-loader';

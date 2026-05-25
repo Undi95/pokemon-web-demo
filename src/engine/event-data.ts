@@ -8,7 +8,7 @@
  */
 
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { FlagGet, VarGet } from './script-vars';
+import { FlagGet, VarGet } from './script/script-vars';
 
 /** 1:1 décomp `bool32 IsNationalPokedexEnabled(void)` (event_data.c:74-80) :
  *  ```c

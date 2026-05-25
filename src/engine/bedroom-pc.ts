@@ -50,8 +50,8 @@ import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
 } from './gba-menu-system';
 import { getRuntime, PlaySE } from './decomp-globals';
-import { SignalWaitState } from './script-opcodes';
-import { ScriptContext_SetupScript } from './script-runtime';
+import { SignalWaitState } from './script/script-opcodes';
+import { ScriptContext_SetupScript } from './script/script-runtime';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MAIL_COUNT, PARTY_SIZE } from './save-blocks';
 import { ReadMail } from './mail';

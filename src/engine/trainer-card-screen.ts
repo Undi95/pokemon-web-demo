@@ -38,7 +38,7 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { FlagGet } from './script-vars';
+import { FlagGet } from './script/script-vars';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from './decomp-globals';

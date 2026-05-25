@@ -17,9 +17,9 @@
  * script-vars → game-state.
  */
 
-import { gSaveBlock1Ptr } from './save-block-state';
-import { ResetSaveBlocks } from './save-system';
-import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
+import { gSaveBlock1Ptr } from '../save-block-state';
+import { ResetSaveBlocks } from '../save-system';
+import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 
 // ─── Flag API (1:1 décomp event_data.c:206-233) ──────────────────────────────
 

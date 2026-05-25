@@ -249,7 +249,7 @@ export {
   COMPARE_LT,
   COMPARE_EQ,
   COMPARE_GT,
-} from './script-vars';
+} from './script/script-vars';
 
 // ─── Re-exports : script runtime (script-runtime.ts) ──────────────────────────
 
@@ -258,7 +258,7 @@ export {
   InitScriptContext,
   SetupBytecodeScript,
   ScriptJump,
-} from './script-runtime';
+} from './script/script-runtime';
 
 // ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
 

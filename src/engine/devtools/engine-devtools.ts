@@ -509,7 +509,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
     const mod = await import('../battle-flow');
-    const scriptMod = await import('../script-runtime');
+    const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
     const sbsMod = await import('../save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
@@ -525,7 +525,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   };
   battleNs.startWild = async (species: string, level: number): Promise<string> => {
     const mod = await import('../battle-flow');
-    const scriptMod = await import('../script-runtime');
+    const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty.
     const sbsMod2 = await import('../save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
@@ -556,7 +556,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
     const flowMod = await import('../starter-choose-flow');
-    const scriptMod = await import('../script-runtime');
+    const scriptMod = await import('../script/script-runtime');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'starter choose UI triggered — Birch BG should appear after async loads';

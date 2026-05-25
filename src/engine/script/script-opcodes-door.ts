@@ -13,7 +13,7 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
-import { PlaySE } from './decomp-globals';
+import { PlaySE } from '../decomp-globals';
 import { parseValue } from './script-opcodes-helpers';
 
 /** 1:1 décomp `sDoorAnimActive` (field_door.c interne, exposé via
@@ -34,7 +34,7 @@ registerOpcode('opendoor', (_ctx, args) => {
   const y = parseValue(args[1]);
   void (async () => {
     try {
-      const fdoor = await import('./field/field-door');
+      const fdoor = await import('../field/field-door');
       const seId = fdoor.GetDoorSoundEffect(x, y);
       PlaySE(seId);
       _doorAnimActive = true;
@@ -57,7 +57,7 @@ registerOpcode('closedoor', (_ctx, args) => {
   const y = parseValue(args[1]);
   void (async () => {
     try {
-      const fdoor = await import('./field/field-door');
+      const fdoor = await import('../field/field-door');
       _doorAnimActive = true;
       await fdoor.FieldAnimateDoorClose(x, y);
       _doorAnimActive = false;
@@ -87,7 +87,7 @@ registerOpcode('setdooropen', (_ctx, args) => {
   const y = parseValue(args[1]);
   void (async () => {
     try {
-      const fdoor = await import('./field/field-door');
+      const fdoor = await import('../field/field-door');
       await fdoor.FieldSetDoorOpened(x, y);
     } catch (e) { console.warn('[opcode setdooropen] failed', e); }
   })();

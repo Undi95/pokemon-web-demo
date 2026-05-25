@@ -20,44 +20,44 @@ import {
 } from './script-vars';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox,
-} from './field/field-message-box';
+} from '../field/field-message-box';
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
-} from './movement-system';
-import { PlaySE } from './decomp-globals';
-import * as Songs from './decomp-data/include/constants/songs-data';
+} from '../movement-system';
+import { PlaySE } from '../decomp-globals';
+import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
-} from './object-events';
-import type { ObjectEventTemplate } from './map-loader';
-import { setPendingWarp, getPendingWarp, SetDynamicWarp } from './warp-system';
-import { GetCurrentMap, SetObjEventTemplateCoords } from './load_save';
-import { GetSaveBlock1 } from './save-system';
-import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from './map-loader';
-import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
+} from '../object-events';
+import type { ObjectEventTemplate } from '../map-loader';
+import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../warp-system';
+import { GetCurrentMap, SetObjEventTemplateCoords } from '../load_save';
+import { GetSaveBlock1 } from '../save-system';
+import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../map-loader';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from './gba-menu-system';
-import type { WindowTemplate } from './gba-window-system';
+} from '../gba-menu-system';
+import type { WindowTemplate } from '../gba-window-system';
 import {
   ClearStdWindowAndFrame, RemoveWindow, AddWindow, PutWindowTilemap, CopyWindowToVram,
   DrawStdFrameWithCustomTileAndPalette,
-} from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { InitMenuInUpperLeftCornerNormal } from './gba-menu-system';
-import { getMultichoiceList } from './multichoice-data';
+} from '../gba-window-system';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
+import { InitMenuInUpperLeftCornerNormal } from '../gba-menu-system';
+import { getMultichoiceList } from '../multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
-} from './player-avatar';
-import { gSaveBlock1Ptr } from './save-block-state';
-import { getRuntime } from './decomp-globals';
-import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
-import { setStringVar } from './string-buffers';
+} from '../player-avatar';
+import { gSaveBlock1Ptr } from '../save-block-state';
+import { getRuntime } from '../decomp-globals';
+import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';
+import { setStringVar } from '../string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
   getTrainerClassNameFr, getTrainer,
-} from './data-tables';
+} from '../data-tables';
 import {
   OPPOSITE_DIR, MALE_GENDER, FEMALE_GENDER,
   getSelectedNpc, isAOrBNewlyPressed, parseValue, resolveCount,

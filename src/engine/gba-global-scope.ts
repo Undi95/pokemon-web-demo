@@ -11,7 +11,7 @@
  */
 import * as _dg from './decomp-globals';
 import * as _cb from './copyright-boot';
-import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script/script-vars';
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,

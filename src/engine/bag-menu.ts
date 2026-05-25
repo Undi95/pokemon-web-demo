@@ -113,7 +113,7 @@ import type { DecompTask } from './decomp-runtime';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';
-import { gSpecialVar } from './script-vars';
+import { gSpecialVar } from './script/script-vars';
 import { RemoveBagItem } from './bag';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement

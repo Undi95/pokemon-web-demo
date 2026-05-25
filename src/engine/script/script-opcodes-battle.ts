@@ -28,7 +28,7 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript, ScriptJump, ScriptCall, getScript } from './script-runtime';
 import { FlagSet, FlagClear, FlagGet, VarSet, gSpecialVar } from './script-vars';
-import { reverseDecompConstant } from './decomp-constants';
+import { reverseDecompConstant } from '../decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
 
 function _stubTrainerBattle(trainerArg: string): void {
@@ -51,7 +51,7 @@ function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
   // Dynamic import : avoid circular deps at load.
   let flowReady = false;
   let flow: { tick: () => boolean } | null = null;
-  void import('./trainer-battle-flow').then((mod) => {
+  void import('../trainer-battle-flow').then((mod) => {
     flow = mod.startTrainerBattle(trainerArg);
     flowReady = true;
   }).catch(() => {
@@ -201,7 +201,7 @@ registerOpcode('dowildbattle', (ctx, _args) => {
       const mon = (globalThis as Record<string, unknown>).gScriptedWildMon as
         { species?: number; level?: number; item?: number } | undefined;
       if (mon) {
-        const { startWildBattle } = await import('./battle-flow').catch(() => ({ startWildBattle: undefined }));
+        const { startWildBattle } = await import('../battle-flow').catch(() => ({ startWildBattle: undefined }));
         if (typeof startWildBattle === 'function') {
           const enumName = reverseDecompConstant(mon.species ?? 0, 'SPECIES_') ?? `SPECIES_${mon.species ?? 0}`;
           startWildBattle({

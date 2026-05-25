@@ -38,7 +38,7 @@
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_COLLISION_MASK } from './map-loader';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
-import { FlagSet, FlagClear, FlagGet } from './script-vars';
+import { FlagSet, FlagClear, FlagGet } from './script/script-vars';
 import { DrawWholeMapView } from './field/field-camera';
 import {
   METATILE_Building_TV_On,

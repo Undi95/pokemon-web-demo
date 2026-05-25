@@ -89,7 +89,7 @@ import {
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './gba-text-system';
 import { getString } from './gba-strings';
-import { FlagGet } from './script-vars';
+import { FlagGet } from './script/script-vars';
 import { SE_SELECT as _SE_SELECT } from './decomp-data/include/constants/songs-data';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.

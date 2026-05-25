@@ -18,8 +18,8 @@
  * Pas d'unit conversion impérial (= #ifdef UNITS_IMPERIAL pas activé en FR).
  */
 
-import { registerSpecial } from './script-opcodes';
-import { VarSet, VarGet, gSpecialVar } from './script-vars';
+import { registerSpecial } from './script/script-opcodes';
+import { VarSet, VarGet, gSpecialVar } from './script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import {
   GetMonData, MON_DATA_PERSONALITY,

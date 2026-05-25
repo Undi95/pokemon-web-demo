@@ -57,7 +57,7 @@ import { getString } from './gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from './decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
-import { FlagSet, VarGet } from './script-vars';
+import { FlagSet, VarGet } from './script/script-vars';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { SetOamMatrix } from './decomp-helpers';

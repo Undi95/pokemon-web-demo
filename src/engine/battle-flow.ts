@@ -100,7 +100,7 @@ import {
   syncBattleMonsHpToInstances,
   chooseOpponentMoveViaAI,
 } from './battle/wire-bytecode-bridge';
-import { VarSet } from './script-vars';
+import { VarSet } from './script/script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import { Random } from './random';

@@ -10,8 +10,8 @@
  * cascade lourde et reste U-tier.
  */
 
-import { registerSpecial } from './script-opcodes';
-import { VarGet, VarSet, gSpecialVar } from './script-vars';
+import { registerSpecial } from './script/script-opcodes';
+import { VarGet, VarSet, gSpecialVar } from './script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { SECRET_BASES_COUNT, TRAINER_ID_LENGTH, LANGUAGE_FRENCH } from './decomp-data/include/constants/global-data';
 import { gMapHeader } from './map-loader';

@@ -55,7 +55,7 @@ import {
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field/field-globals';
-import { FlagGet, VarGet } from './script-vars';
+import { FlagGet, VarGet } from './script/script-vars';
 import { Random } from './random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
 import { reverseDecompConstant as _reverseDecompConstant } from './decomp-constants';

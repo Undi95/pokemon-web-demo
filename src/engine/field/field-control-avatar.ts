@@ -77,8 +77,8 @@ import {
 } from '../object-events';
 import { MapGridGetElevationAt } from '../map-loader';
 import { LOCALID_PLAYER } from '../decomp-bridge';
-import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script-vars';
-import { ScriptContext_SetupScript } from '../script-runtime';
+import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
+import { ScriptContext_SetupScript } from '../script/script-runtime';
 import { DIR_TO_DX, DIR_TO_DY } from '../direction-coords';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────

@@ -17,7 +17,7 @@
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
 import { SetSaveLocked } from './save-system';
-import { FlagSet, VarSet } from './script-vars';
+import { FlagSet, VarSet } from './script/script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
 import { SetDynamicWarp } from './warp-system';
 import { GetCurrentMap } from './load_save';

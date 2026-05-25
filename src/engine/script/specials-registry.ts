@@ -28,36 +28,36 @@
 
 import { registerSpecial } from './script-opcodes';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
-import { gMapHeader } from './map-loader';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
-import { MALE, FEMALE } from './decomp-globals';
-import { GetCurrentMap } from './load_save';
-import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-screen';
-import { setStringVar } from './string-buffers';
-import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from './decomp-data/include/constants/species-data';
-import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
-import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from './decomp-data/include/constants/items-data';
-import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
-import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from './decomp-data/include/constants/global-data';
-import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from './decomp-data/include/constants/battle_frontier-data';
-import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from './decomp-data/include/constants/flags-data';
-import { MOVE_NONE } from './decomp-data/include/constants/moves-data';
-import { gLocalTime, RtcCalcLocalTime } from './rtc';
-import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './warp-system';
-import { ShowFieldMessage } from './field/field-message-box';
-import { gStringVar4 } from './gba-text-system';
-import { Random } from './random';
-import { reverseDecompConstant } from './decomp-constants';
-import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from './battle/party-storage';
-import type { Pokemon as _PartyPokemon } from './battle/party-storage';
-import { CheckPartyMonHasHeldItem } from './script-pokemon-util';
-import { GetPCBoxToSendMon } from './pc-box';
-import { ShowMapNamePopup as _ShowMapNamePopupImpl } from './map-name-popup';
-import { SetCameraPanning, SetCameraPanningCallback } from './field/field-camera';
+import { gMapHeader } from '../map-loader';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save-block-state';
+import { MALE, FEMALE } from '../decomp-globals';
+import { GetCurrentMap } from '../load_save';
+import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../tv-screen';
+import { setStringVar } from '../string-buffers';
+import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
+import { TYPE_GRASS } from '../decomp-data/include/constants/pokemon-data';
+import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';
+import { OBJ_EVENT_GFX_BARD } from '../decomp-data/include/constants/event_objects-data';
+import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../decomp-data/include/constants/global-data';
+import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../decomp-data/include/constants/battle_frontier-data';
+import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/constants/flags-data';
+import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
+import { gLocalTime, RtcCalcLocalTime } from '../rtc';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../warp-system';
+import { ShowFieldMessage } from '../field/field-message-box';
+import { gStringVar4 } from '../gba-text-system';
+import { Random } from '../random';
+import { reverseDecompConstant } from '../decomp-constants';
+import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from '../battle/party-storage';
+import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
+import { CheckPartyMonHasHeldItem } from '../script-pokemon-util';
+import { GetPCBoxToSendMon } from '../pc-box';
+import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../map-name-popup';
+import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
 import { gSpecialVar } from './script-vars';
-import { gDecorations } from './decoration-data';
-import { GetFirstEmptyDecorSlot } from './decoration-inventory';
-import { DecorationAdd, DecorationRemove } from './decoration-inventory';
+import { gDecorations } from '../decoration-data';
+import { GetFirstEmptyDecorSlot } from '../decoration-inventory';
+import { DecorationAdd, DecorationRemove } from '../decoration-inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -342,7 +342,7 @@ registerSpecial('ChangePokemonNickname', () => {
   // Lazy import pour avoid circular.
   void (async () => {
     try {
-      const { getRuntime } = await import('./decomp-globals');
+      const { getRuntime } = await import('../decomp-globals');
       getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
     } catch { /* */ }
   })();
@@ -372,7 +372,7 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
  *
  *  PC est TOUJOURS au-dessus du player (dy = -1) selon la direction face. */
 registerSpecial('DoPCTurnOnEffect', () => {
-  void import('./pc-anim').then(({ StartPCTurnOnEffect }) => {
+  void import('../pc-anim').then(({ StartPCTurnOnEffect }) => {
     StartPCTurnOnEffect();
   });
 });
@@ -380,7 +380,7 @@ registerSpecial('DoPCTurnOnEffect', () => {
 /** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
  *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
 registerSpecial('DoPCTurnOffEffect', () => {
-  void import('./pc-anim').then(({ DoPCTurnOffEffect }) => {
+  void import('../pc-anim').then(({ DoPCTurnOffEffect }) => {
     DoPCTurnOffEffect();
   });
 });
@@ -392,7 +392,7 @@ registerSpecial('DoPCTurnOffEffect', () => {
  *  → Set TOUS les MB_TELEVISION metatiles à TV_On + refresh BG → TV cycle
  *  via TilesetAnim_Building (tile 496..499). */
 registerSpecial('TurnOnTVScreen', () => {
-  void import('./tv-screen').then(({ TurnOnTVScreen }) => {
+  void import('../tv-screen').then(({ TurnOnTVScreen }) => {
     TurnOnTVScreen();
   });
 });
@@ -400,7 +400,7 @@ registerSpecial('TurnOnTVScreen', () => {
 /** 1:1 décomp `TurnOffTVScreen` (tv.c:869-873). Identique à TurnOnTVScreen
  *  mais avec METATILE_Building_TV_Off (= TV statique noir). */
 registerSpecial('TurnOffTVScreen', () => {
-  void import('./tv-screen').then(({ TurnOffTVScreen }) => {
+  void import('../tv-screen').then(({ TurnOffTVScreen }) => {
     TurnOffTVScreen();
   });
 });
@@ -431,11 +431,11 @@ registerSpecial('CheckForPlayersHouseNews', () => _CheckForPlayersHouseNews());
  *  false → script reprend après. Fade-from-black géré au open (= ouverture
  *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
 registerSpecial('FieldShowRegionMap', () => {
-  void import('./region-map').then(async ({ OpenRegionMap }) => {
+  void import('../region-map').then(async ({ OpenRegionMap }) => {
     await OpenRegionMap();
     // Fade-from-black aussi pour que l'overlay carte soit visible (= sinon
     // l'écran noir GPU reste derrière l'overlay HTML).
-    void import('./decomp-globals').then(({ getRuntime }) => {
+    void import('../decomp-globals').then(({ getRuntime }) => {
       getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
     });
   });
@@ -620,7 +620,7 @@ registerSpecial('PutZigzagoonInPlayerParty', () => {
   // empty (= dev test), add a Zigzagoon.
   if (gSaveBlock1Ptr.playerPartyCount === 0) {
     void (async () => {
-      const { createPokemonInstance, GiveMonToPlayer } = await import('./pokemon');
+      const { createPokemonInstance, GiveMonToPlayer } = await import('../pokemon');
       const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
       GiveMonToPlayer(zig);
     })();
@@ -1433,7 +1433,7 @@ registerSpecial('GetDaycareState', () => 0);
 // 161 specials missing détectés via scripts/find-missing-specials.mjs. La plupart
 // sont post-game (Frontier/Tower/Museum). Voici les wired pour le path normal :
 
-import { resolveDecompConstant } from './decomp-constants';
+import { resolveDecompConstant } from '../decomp-constants';
 
 /** 1:1 décomp `BufferMonNickname` (pokemon_util.c) :
  *    GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, dest);
@@ -3673,7 +3673,7 @@ registerSpecial('DoBattlePyramidMonsHaveHeldItem', () => {
 registerSpecial('CableClubSaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('./save-system');
+      const mod = await import('../save-system');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special CableClubSaveGame] async wrap failed', e);
@@ -3696,7 +3696,7 @@ registerSpecial('QuizLadyTakePrizeForCustomQuiz', () => {
   const itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? `__item_${itemId}`;
   void (async () => {
     try {
-      const mod = await import('./bag');
+      const mod = await import('../bag');
       mod.RemoveBagItem(itemKey, 1);
     } catch { /* fallback no-op */ }
   })();
@@ -3914,7 +3914,7 @@ registerSpecial('SetLilycoveLadyGfx', () => {
 registerSpecial('SaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('./save-system');
+      const mod = await import('../save-system');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special SaveGame] async wrap failed', e);

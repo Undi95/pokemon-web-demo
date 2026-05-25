@@ -100,7 +100,7 @@ import {
   RunOnTransitionMapScript,
   TryRunOnFrameMapScript,
   TryRunOnWarpIntoMapScript,
-} from '../engine/script-runtime';
+} from '../engine/script/script-runtime';
 import {
   getPendingWarp,
   setPendingWarp,
@@ -167,9 +167,9 @@ import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from '../engine/fade-screen';
 import * as Songs from '../engine/decomp-data/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
-import '../engine/script-opcodes';
+import '../engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
-import '../engine/specials-registry';
+import '../engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
 import '../engine/pokemon-size-record';
 // Side-effect import : registers secret_base specials (cur base helpers).

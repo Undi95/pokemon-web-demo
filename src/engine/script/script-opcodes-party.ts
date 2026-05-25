@@ -13,9 +13,9 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { gSaveBlock1Ptr } from './save-block-state';
-import { reverseDecompConstant } from './decomp-constants';
-import { getMoveNameFr } from './data-tables';
+import { gSaveBlock1Ptr } from '../save-block-state';
+import { reverseDecompConstant } from '../decomp-constants';
+import { getMoveNameFr } from '../data-tables';
 import { parseValue } from './script-opcodes-helpers';
 
 /** _vget = VarGet avec fallback '0'. Local au fichier (= 1:1 décomp inline read). */
@@ -45,7 +45,7 @@ registerOpcode('givemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon');
       const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;
@@ -71,7 +71,7 @@ registerOpcode('givepokemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('./pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon');
       const mon = createPokemonInstance(speciesName, level);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;

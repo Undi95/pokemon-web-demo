@@ -13,7 +13,7 @@
  * avec le msgbox fix de session 126).
  */
 
-import { getText } from './script-runtime';
+import { getText } from './script/script-runtime';
 import { reverseDecompConstant } from './decomp-constants';
 import { getString } from './gba-strings';
 
