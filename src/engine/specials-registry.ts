@@ -2126,7 +2126,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GenerateGiddyLine',
   'GetAbnormalWeatherMapNameAndType', 'GetBattleFrontierTutorMoveIndex',
   'GetBattlePyramidHint', 'GetBattleTowerSinglesStreak',
-  'GetContestLadyCategory', 'GetContestLadyMonSpecies',
+  // 'GetContestLadyCategory' — porté 1:1 décomp lilycove_lady.c:781 ci-bas (batch B30).
+  // 'GetContestLadyMonSpecies' — porté 1:1 décomp lilycove_lady.c:775 ci-bas (batch B30).
   'GetContestMonCondition', 'GetContestMonConditionRanking',
   'GetContestPlayerId', 'GetContestantNamesAtRank',
   // 'GetCurSecretBaseRegistrationValidity' — porté 1:1 décomp secret_base.c:881 dans secret-base.ts (batch B24).
@@ -3351,7 +3352,47 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
   return 0;
 });
 
-// ─── Session B29 batch — 1 special Contest Lady 1:1 strict ────────────────
+// ─── Session B30 batch — 2 specials Contest Lady 1:1 strict ───────────────
+
+/** 1:1 décomp `GetContestLadyMonSpecies` (lilycove_lady.c:775-779) :
+ *  ```c
+ *  void GetContestLadyMonSpecies(void) {
+ *      sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;
+ *      gSpecialVar_0x8005 = sContestLadyMonSpecies[sContestLadyPtr->category];
+ *  }
+ *  ```
+ *  sContestLadyMonSpecies 1:1 décomp data/lilycove_lady.h:461 :
+ *    [COOL=0]=ZIGZAGOON, [BEAUTY=1]=SKITTY, [CUTE=2]=POOCHYENA,
+ *    [SMART=3]=KECLEON, [TOUGH=4]=PIKACHU. */
+registerSpecial('GetContestLadyMonSpecies', () => {
+  const sContestLadyMonSpecies: ReadonlyArray<number> = [
+    288,  // SPECIES_ZIGZAGOON  COOL=0
+    315,  // SPECIES_SKITTY     BEAUTY=1
+    286,  // SPECIES_POOCHYENA  CUTE=2
+    317,  // SPECIES_KECLEON    SMART=3
+    25,   // SPECIES_PIKACHU    TOUGH=4
+  ];
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'contest') {
+    const species = sContestLadyMonSpecies[lady.category] ?? 0;
+    VarSet('VAR_0x8005', species);
+  }
+});
+
+/** 1:1 décomp `GetContestLadyCategory` (lilycove_lady.c:781-785) :
+ *  ```c
+ *  u8 GetContestLadyCategory(void) {
+ *      sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;
+ *      return sContestLadyPtr->category;
+ *  }
+ *  ``` */
+registerSpecial('GetContestLadyCategory', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'contest') {
+    return lady.category & 0xFF;
+  }
+  return 0;
+});
 
 /** 1:1 décomp `SetContestLadyGivenPokeblock` (lilycove_lady.c:769-773) :
  *  ```c
