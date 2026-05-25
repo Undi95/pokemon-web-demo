@@ -2805,27 +2805,76 @@ function _MovementAction_FaceRight_Step0(rt: DecompRuntime, npc: ObjectEvent): b
   return true;
 }
 
+// ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
+// 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
+// :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
+// entries indexed par MOVEMENT_ACTION_*, chaque entry étant un tableau de
+// pointers Step0/Step1/Step2 callbacks. Notre TS simplifie en une seule
+// fonction par action qui gère son state via npc.movementStep (= sActionFuncId).
+//
+// Source du dispatch : `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
+//   bool8 ObjectEventExecHeldMovementAction(struct ObjectEvent *objectEvent, struct Sprite *sprite)
+//   {
+//       u8 actionId = ObjectEventGetHeldMovementActionId(objectEvent);
+//       if (actionId != MOVEMENT_ACTION_NONE) {
+//           if (gMovementActionFuncs_X[actionId][sprite->data[2]](objectEvent, sprite))
+//               return TRUE;
+//       }
+//       return FALSE;
+//   }
+//
+// Notre infra : `gMovementActionFuncs[movementActionId]` returns le callback
+// qui peut être multi-step (= track via npc.movementStep). Quand action done,
+// callback returns TRUE → set heldMovementFinished = TRUE.
+//
+// État du port (= 4/160 actions full strict portées) :
+//   ✅ FACE_DOWN/UP/LEFT/RIGHT (G15)
+//   ⏳ WALK_NORMAL/SLOW/FAST/FASTER_X (= _tickWalk path string-based reste actif)
+//   ⏳ JUMP/JUMP_2/JUMP_SPECIAL/JUMP_IN_PLACE_X
+//   ⏳ DELAY_1/2/4/8/16
+//   ⏳ ~150 autres actions (LOCK_FACING, EXCLAIM_EMOTE, ROCK_SMASH_BREAK, etc.)
+//
+// Migration incremental : les actions non encore portées via numeric dispatch
+// retournent done=TRUE immédiatement (= safe no-op) ; le system applymovement
+// string-based _tickWalk continue de gérer la majorité des cas en parallèle.
+
+/** 1:1 décomp `MovementActionFunc` = bool8 (*)(struct ObjectEvent*, struct Sprite*).
+ *  Returns TRUE quand l'action est done (= multi-step terminé). */
+type MovementActionFunc = (rt: DecompRuntime, npc: ObjectEvent) => boolean;
+
+/** Sentinel no-op : marque l'action done imm pour éviter freeze + signaler
+ *  que l'action n'est pas (encore) portée 1:1 strict. */
+const _movementActionNoOp: MovementActionFunc = (_rt, _npc) => true;
+
+/** 1:1 décomp `gMovementActionFuncs[256]` array. Indexed par MOVEMENT_ACTION_*.
+ *  Actions non portées = `_movementActionNoOp` (= safe done immédiat).
+ *  Dette H1.X : migration progressive vers numeric dispatch full 1:1 strict
+ *  (= ~160 actions à porter, multi-batch). */
+const gMovementActionFuncs: MovementActionFunc[] = new Array(256).fill(_movementActionNoOp);
+// H1.1 : FACE_X actions (= déjà portées via G15).
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_DOWN]  = _MovementAction_FaceDown_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_UP]    = _MovementAction_FaceUp_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_LEFT]  = _MovementAction_FaceLeft_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_RIGHT] = _MovementAction_FaceRight_Step0;
+
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
- *  dispatch sur movementActionId → MovementAction_X_StepN. Quand action done
- *  (= return TRUE), set heldMovementFinished = TRUE. */
+ *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
+ *  Quand action done (= return TRUE), set heldMovementFinished = TRUE.
+ *
+ *  Notre dispatch via array index est 1:1 strict architecture vs switch ad-hoc. */
 function _execHeldMovementAction(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.heldMovementFinished) return;  // already done, wait pour clear
-  let done = false;
-  switch (npc.movementActionId) {
-    case MOVEMENT_ACTION_FACE_DOWN:  done = _MovementAction_FaceDown_Step0(rt, npc);  break;
-    case MOVEMENT_ACTION_FACE_UP:    done = _MovementAction_FaceUp_Step0(rt, npc);    break;
-    case MOVEMENT_ACTION_FACE_LEFT:  done = _MovementAction_FaceLeft_Step0(rt, npc);  break;
-    case MOVEMENT_ACTION_FACE_RIGHT: done = _MovementAction_FaceRight_Step0(rt, npc); break;
-    // DETTE 1:1 : autres MOVEMENT_ACTION_X (= WALK_X, JUMP_X, etc.) — pas
-    // utilisés via ObjectEventSetHeldMovement dans la démo (= applymovement
-    // utilise notre _tickWalk dispatcher en parallèle). À étendre quand
-    // d'autres scrcmds appellent ObjectEventSetHeldMovement.
-    default:
-      // Action inconnue : marquer done pour ne pas freeze.
-      done = true;
-      break;
+  const actionId = npc.movementActionId;
+  if (actionId === 0xFF) {  // MOVEMENT_ACTION_NONE
+    npc.heldMovementFinished = true;
+    return;
   }
-  if (done) {
+  if (actionId < 0 || actionId >= gMovementActionFuncs.length) {
+    npc.heldMovementFinished = true;
+    return;
+  }
+  const fn = gMovementActionFuncs[actionId];
+  if (fn(rt, npc)) {
     npc.heldMovementFinished = true;
   }
 }
