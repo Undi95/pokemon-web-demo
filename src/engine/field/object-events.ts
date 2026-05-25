@@ -53,7 +53,7 @@ import {
 } from './map-loader';
 import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
 import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from '../field/field-camera';
-import { gPlayerAvatar } from './player-avatar';
+import { gPlayerAvatar, GetPlayerFacingDirection } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
@@ -2637,18 +2637,52 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.movementActionId = 0xFF;
     return true;
   }
-  // COPY_PLAYER_* : NPC qui copie le movement du player (= mirror puzzles
-  // dans Trick House). 1:1 décomp `MovementType_CopyPlayer_Step0/1/2` (4159) +
-  // `gCopyPlayerMovementFuncs[]` (6 callbacks : None, FaceDirection,
-  // WalkNormal, etc.) + `GetCopyDirection` (= mapping selon
-  // gInitialMovementTypeFacingDirections + seqIdx + playerDir).
+  // ─── MOVEMENT_TYPE_COPY_PLAYER* (H4) ────────────────────────────────────────
+  // 1:1 strict décomp `MovementType_CopyPlayer_Step0/1/2` (event_object_movement.c
+  // :4159-4184) :
+  //   Step0 : ClearObjectEventMovement;
+  //           if (directionSequenceIndex == 0) directionSequenceIndex = GetPlayerFacingDirection();
+  //           sTypeFuncId = 1; return TRUE;
+  //   Step1 : if (player->movementActionId == MOVEMENT_ACTION_NONE ||
+  //               gPlayerAvatar.tileTransitionState == T_TILE_CENTER) return FALSE;
+  //           return gCopyPlayerMovementFuncs[PlayerGetCopyableMovement()](
+  //                     obj, sprite, GetPlayerMovementDirection(), NULL);
+  //   Step2 : if (ObjectEventExecSingleMovementAction(obj, sprite)) {
+  //               singleMovementActive = FALSE;
+  //               sTypeFuncId = 1;
+  //           }
+  //           return FALSE;
   //
-  // DETTE 1:1 STRICT : full port nécessite state machine CopyPlayer +
-  // PlayerGetCopyableMovement tracking + GetCopyDirection. Notre TS skip
-  // — NPC en COPY_PLAYER_X garde sa facingDirection initiale. Visual OK
-  // car ces NPCs ne sont pas dans la démo Littleroot (= Trick House content).
-  // Implémentation Phase Trick House future.
+  // DETTES H1 cascade explicits :
+  //   - gCopyPlayerMovementFuncs[6] (None/FaceDirection/WalkNormal/WalkFast/
+  //     WalkFaster/Slide/JumpInPlace/Jump/Jump2) chacune calls
+  //     ObjectEventSetSingleMovement + GetWalkNormal/Fast/.../MovementAction.
+  //   - PlayerGetCopyableMovement (= retourne COPY_MOVE_* selon player
+  //     runningState + tileTransitionState).
+  //   - GetCopyDirection(initialFacing, seqIdx, playerDir) = mapping selon
+  //     gInitialMovementTypeFacingDirections + COPY_PLAYER_OPPOSITE/CCW/CW.
+  //   - ObjectEventSetSingleMovement / ObjectEventExecSingleMovementAction.
+  //   - ObjectEventIsFarawayIslandMew + GetMewMoveDirection (= subsystem
+  //     Faraway Island Mystery Event).
+  //   - GetCollisionAtCoords + MetatileBehavior_IsPokeGrass (= COPY_PLAYER_IN_GRASS).
+  //
+  // Port partial : Step0 init directionSequenceIndex 1:1 strict. Step1/2 idle
+  // (= no-op sans gCopyPlayerMovementFuncs cascade). NPCs en COPY_PLAYER_X
+  // garderont leur facingDirection initiale + ne copieront pas player.
+  // Implémentation cascade complète attend H1 refactor.
   if (mt.startsWith('MOVEMENT_TYPE_COPY_PLAYER')) {
+    if (npc.movementStep === 0) {
+      // Step0 : ClearObjectEventMovement + init directionSequenceIndex.
+      npc.singleMovementActive = false;
+      npc.heldMovementActive = false;
+      npc.heldMovementFinished = false;
+      npc.movementActionId = 0xFF;
+      if (npc.directionSeqIdx === 0) {
+        npc.directionSeqIdx = GetPlayerFacingDirection();
+      }
+      npc.movementStep = 1;
+    }
+    // Step 1+ : idle sans gCopyPlayerMovementFuncs dispatch (= dette H1).
     return true;
   }
   // WALK_SLOWLY_IN_PLACE_* : facing static + slower in-place walk anim.
