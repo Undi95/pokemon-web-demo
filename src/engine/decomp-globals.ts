@@ -1149,7 +1149,7 @@ export function IsFanfareTaskInactive(): boolean {
 import './flash-mask';
 // field-effect-active-list.ts auto-register __fieldEffectActiveList pour
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
-import './field-effect-active-list';
+import './field/field-effect-active-list';
 // money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
 import './money-box-ui';
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
