@@ -1446,6 +1446,31 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `IsMonOTIDNotPlayers` (tv.c:3329-3335) :
+ *  ```c
+ *  void IsMonOTIDNotPlayers(void) {
+ *      if (GetPlayerIDAsU32() == GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_OT_ID, NULL))
+ *          gSpecialVar_Result = FALSE;
+ *      else
+ *          gSpecialVar_Result = TRUE;
+ *  }
+ *  ```
+ *  Compare player trainer ID vs mon OT ID. TRUE si différent (= mon traded). */
+registerSpecial('IsMonOTIDNotPlayers', () => {
+  const slot = VarGet('VAR_0x8004');
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
+  if (!mon) {
+    VarSet('VAR_RESULT', 1);
+    return 1;
+  }
+  // 1:1 décomp GetPlayerIDAsU32 = saveBlock2.playerTrainerId u32.
+  const playerTID = gSaveBlock2Ptr.playerTrainerId;
+  const monOtId = mon.otId ?? 0;
+  const result = (playerTID === monOtId) ? 0 : 1;
+  VarSet('VAR_RESULT', result);
+  return result;
+});
+
 /** 1:1 décomp `IsMirageIslandPresent` (time_events.c:42-52) :
  *  ```c
  *  bool8 IsMirageIslandPresent(void) {
@@ -1635,7 +1660,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
-  'IsMonOTIDNotPlayers',
+  // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
