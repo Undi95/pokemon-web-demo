@@ -1853,6 +1853,18 @@ function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
   if (npc.spriteId < 0) return;
   const sprite = rt.gSprites.get(npc.spriteId);
   if (!sprite || !sprite.anims) return;
+  // H4.1 fix : à la fin d'un walk action, le décomp via MovementAction_Pause
+  // SpriteAnim Step2 set animPaused=TRUE seulement. Le sprite reste sur la
+  // dernière anim cmd qui peut être une step frame (= jambes en mouvement)
+  // selon timing exact des anim cmds. Le ROM gère ça via StepAnimTable +
+  // SeekSpriteAnim qui aligne animCmdIndex pour finir sur face frame.
+  //
+  // Notre TS n'a pas porté le StepAnimTable system complet — fix pragmatique
+  // 1:1 strict architectural : set animNum = FACE_X explicit avant pause pour
+  // que le sprite revienne à face frame (= comportement ROM observable).
+  if (!npc.inanimate) {
+    StartSpriteAnim(sprite as never, GetFaceDirectionAnimNum(npc.facingDirection));
+  }
   sprite.animPaused = true;
 }
 
