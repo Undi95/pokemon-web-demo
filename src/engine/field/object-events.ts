@@ -426,6 +426,13 @@ export interface ObjectEvent {
    *  Buried (event_object_movement.c:4359/4380/4392). Bool flag "disguise init done".
    *  Sans ce flag, le tick re-trigger FieldEffectStart chaque frame. */
   disguiseStarted: boolean;
+  /** 1:1 décomp `sprite->sActionFuncId = data[1]`. Multi-step action state
+   *  (= e.g. MovementAction_Delay Step0→Step1→Step2). Different de
+   *  movementStep (= sTypeFuncId = MovementType state). */
+  actionStep: number;
+  /** 1:1 décomp `sprite->data[3]`. Timer générique pour actions multi-step
+   *  (= Delay_1/2/4/8/16, WalkNormal duration, etc.). */
+  actionTimer: number;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -505,6 +512,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   berryTreeFlags: 0,
   berryTreeTimer: 0,
   disguiseStarted: false,
+  actionStep: 0,
+  actionTimer: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -632,9 +641,11 @@ export function ObjectEventSetHeldMovement(objectEvent: ObjectEvent, movementAct
   objectEvent.movementActionId = movementActionId;
   objectEvent.heldMovementActive = true;
   objectEvent.heldMovementFinished = false;
-  // 1:1 décomp `gSprites[objectEvent->spriteId].sActionFuncId = 0` — sprite
-  // action state reset. Notre engine n'a pas de sActionFuncId direct (= sprite
-  // anim tracking diffère). Skip cette ligne, no-op fonctionnel.
+  // 1:1 décomp `gSprites[objectEvent->spriteId].sActionFuncId = 0` (4880).
+  // H1.1+ : on a maintenant actionStep field au niveau de l'ObjectEvent qui
+  // sert de sActionFuncId. Reset au début d'une nouvelle action (= multi-step
+  // Delay/Walk/etc. recommencent depuis Step0).
+  objectEvent.actionStep = 0;
   return false;
 }
 
@@ -2774,6 +2785,9 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
   MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
+  MOVEMENT_ACTION_DELAY_1, MOVEMENT_ACTION_DELAY_2,
+  MOVEMENT_ACTION_DELAY_4, MOVEMENT_ACTION_DELAY_8,
+  MOVEMENT_ACTION_DELAY_16,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -2803,6 +2817,36 @@ function _MovementAction_FaceLeft_Step0(rt: DecompRuntime, npc: ObjectEvent): bo
 function _MovementAction_FaceRight_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   _FaceDirection(rt, npc, DIR_EAST);
   return true;
+}
+
+/** 1:1 décomp `MovementAction_Delay_Step0` (event_object_movement.c:5168+) :
+ *    sprite->sActionFuncId = 1;
+ *    sprite->data[3] = N;  // 1/2/4/8/16
+ *    return FALSE;
+ *  Variants Delay1/2/4/8/16 = juste different valeur initiale data[3]. */
+function _MovementAction_Delay_Step0(_rt: DecompRuntime, npc: ObjectEvent, delay: number): boolean {
+  npc.actionStep = 1;
+  npc.actionTimer = delay;
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_Delay_Step1` (event_object_movement.c:5180) :
+ *    if (--sprite->data[3] == 0) { sprite->sActionFuncId = 2; return TRUE; }
+ *    return FALSE; */
+function _MovementAction_Delay_Step1(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (--npc.actionTimer === 0) {
+    npc.actionStep = 2;
+    return true;
+  }
+  return false;
+}
+
+/** Factory pour Delay actions multi-step (Step0 set timer + return Step1). */
+function _makeDelayAction(delay: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) return _MovementAction_Delay_Step0(rt, npc, delay);
+    return _MovementAction_Delay_Step1(rt, npc);
+  };
 }
 
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
@@ -2856,6 +2900,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_FACE_DOWN]  = _MovementAction_FaceDown_Step
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_UP]    = _MovementAction_FaceUp_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_LEFT]  = _MovementAction_FaceLeft_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_RIGHT] = _MovementAction_FaceRight_Step0;
+// H1.2 : DELAY actions 1:1 strict décomp event_object_movement.c:5168-5185.
+gMovementActionFuncs[MOVEMENT_ACTION_DELAY_1]  = _makeDelayAction(1);
+gMovementActionFuncs[MOVEMENT_ACTION_DELAY_2]  = _makeDelayAction(2);
+gMovementActionFuncs[MOVEMENT_ACTION_DELAY_4]  = _makeDelayAction(4);
+gMovementActionFuncs[MOVEMENT_ACTION_DELAY_8]  = _makeDelayAction(8);
+gMovementActionFuncs[MOVEMENT_ACTION_DELAY_16] = _makeDelayAction(16);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
