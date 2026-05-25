@@ -2546,11 +2546,24 @@ function _spawnSingleNpcFromTemplate(
     }
     rt.gba.oam[result.oamIndex].flipH = false;
     rt.gba.oam[result.oamIndex].priority = oamTemplate.priority;
-    // useSubsprites = false dans le nouveau path car AnimateSprite tick gère.
-    // Subsprite tables = port différé honnête (= cases elevation 4/6/8/10/12
-    // qui split en 2 OAMs avec priorities différentes — bug "1-pixel artifact"
-    // user-flag camion mais pas bloquant pour NPCs standard elevation 3).
-    npc.useSubsprites = false;
+    // 1:1 STRICT décomp event_object_movement.c:1494-1496 :
+    //   gSprites[gObjectEvents[objectEventId].spriteId].images = graphicsInfo->images;
+    //   if (subspriteTables)
+    //       SetSubspriteTables(&gSprites[..].spriteId], subspriteTables);
+    // Le truck (= 48x48) a `graphicsInfo->subspriteTables = sOamTables_48x48`
+    // qui contient 6 entries identiques pointant vers sOamTable_48x48 (12 entries).
+    // subspriteTableNum default = 0 → utilise subspriteTables[0].subsprites
+    // (= les 12 child OAMs qui rendent le 48×48 visualement).
+    // AUDIT FIX G2 : précédemment `useSubsprites = false` skip le call →
+    // truck rendu seulement avec primary OAM 32x32 (= bug "case bleue").
+    const subspriteTablesData = graphicsInfo.subspriteTables as
+      ReadonlyArray<{ subspriteCount: number; subsprites: ReadonlyArray<NamingSubsprite> }> | null;
+    if (subspriteTablesData && subspriteTablesData.length > 0) {
+      SetSubspriteTables(npc.spriteId, subspriteTablesData[0].subsprites);
+      npc.useSubsprites = true;
+    } else {
+      npc.useSubsprites = false;
+    }
     npc.is32x32 = false;
     npc.is16x16 = false;
     // 1:1 STRICT décomp event_object_movement.c:1469 :
@@ -2558,7 +2571,7 @@ function _spawnSingleNpcFromTemplate(
     // Stocker le flag pour updateNpcSpriteFrame qui skip le sync animNum quand
     // inanimate (= sAnimTable_Inanimate n'a qu'1 entry index 0).
     npc.inanimate = graphicsInfo.inanimate === 1;
-    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} (1:1 flow) at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET}) animNum=${GetFaceDirectionAnimNum(npc.facingDirection)} inanimate=${npc.inanimate}`);
+    console.log(`[object-events] spawn slot=${slot} ${graphicsKey} (1:1 flow) at (${npc.currentCoordsX - MAP_OFFSET}, ${npc.currentCoordsY - MAP_OFFSET}) animNum=${GetFaceDirectionAnimNum(npc.facingDirection)} inanimate=${npc.inanimate} useSubsprites=${npc.useSubsprites}`);
     return true;
   }
 
