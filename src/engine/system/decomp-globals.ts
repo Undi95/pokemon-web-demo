@@ -2080,8 +2080,15 @@ export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArr
     childOamIndices.push(oamIdx);
   }
   _spriteSubsprites.set(spriteId, { childOamIndices, subsprites: [...subspriteTable] });
-  // Hide the primary sprite's OAM slot — subsprites take over rendering.
-  // The primary sprite remains the "logical" sprite for callbacks, x/y manip.
+  // 1:1 décomp `SetSubspriteTables` (sprite.c:1659) :
+  //   sprite->subspriteTables = subspriteTables;
+  //   sprite->subspriteTableNum = 0;
+  //   sprite->subspriteMode = SUBSPRITES_ON;
+  // Set le flag pour que syncSpritesToOam skip le primary OAM (= 1:1
+  // BuildOamBuffer 1671 check). Sans ça, syncSpritesToOam re-affiche le
+  // primary OAM chaque frame → "bout bleu" qui dépasse (= user G14 truck bug).
+  sprite.subspriteMode = 'on';
+  // Hide immédiatement (= avant le next syncSpritesToOam) pour visual.
   r.gba.oam[sprite.oamIndex].visible = false;
 }
 

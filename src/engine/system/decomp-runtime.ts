@@ -463,6 +463,18 @@ export interface DecompSprite {
   /** 1:1 décomp `sprite->sheetTileStart` (sprite.h:236) — tile base pour
    *  sheet sprites. oam.tileNum = sheetTileStart + frame.imageValue. */
   sheetTileStart: number;
+  /** 1:1 décomp `sprite->subspriteMode` (sprite.h:225, 2-bit) — flag indique
+   *  si le sprite utilise subspriteTables pour rendering :
+   *    'off' (SUBSPRITES_OFF, default) : render primary OAM normalement.
+   *    'on'  (SUBSPRITES_ON) : skip primary OAM (= hide), render via
+   *      subspriteTables[subspriteTableNum] child OAMs.
+   *  Décomp `BuildOamBuffer` (sprite.c:1671) :
+   *    if (!sprite->subspriteTables || sprite->subspriteMode == SUBSPRITES_OFF)
+   *        copy sprite->oam to buffer
+   *    else AddSubspritesToOamBuffer(sprite, ...);
+   *  Notre TS port : syncSpritesToOam check ce flag pour force oam.visible=false
+   *  quand 'on' (= équivalent fonctionnel au "skip primary copy"). */
+  subspriteMode: 'off' | 'on';
 }
 
 // ─── Task mock minimal ───────────────────────────────────────────────────────
@@ -1467,6 +1479,7 @@ export class DecompRuntime {
       animPaused: false,
       images: null, anims: null,
       usingSheet: false, sheetTileStart: 0,
+      subspriteMode: 'off',
     };
     this.gSprites.set(spriteId, sprite);
     return { spriteId, oamIndex };
@@ -2357,7 +2370,12 @@ export class DecompRuntime {
       // on scanlines 0-17). The real GBA stores oam.x/y as signed 9-bit / 8-bit.
       oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
       oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
-      oam.visible = !sprite.invisible;
+      // 1:1 décomp `BuildOamBuffer` (sprite.c:1671) : si subspriteMode == ON,
+      // skip primary OAM (= les child OAMs subsprites rendent à sa place).
+      // Sans ce check : truck primary OAM 32×32 visible par-dessus les 12
+      // subsprites → "bout bleu en haut-gauche" qui dépasse (= user G14 bug
+      // post-G2).
+      oam.visible = !sprite.invisible && sprite.subspriteMode !== 'on';
       oam.flipH = sprite.hFlip;
       oam.flipV = sprite.vFlip;
       oam.affineParamIndex = sprite.matrixNum;
