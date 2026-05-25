@@ -2300,7 +2300,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'TryUpdateRusturfTunnelState', 'Unused_SetWeatherSunny',
   // 'UpdateShoalTideFlag' — porté 1:1 décomp time_events.c:54 ci-bas (B4 refactor).
   'UpdateCyclingRoadState',
-  'UpdateTrainerFanClubGameClear', 'ValidateEReaderTrainer',
+  // 'UpdateTrainerFanClubGameClear' — porté 1:1 décomp field_specials.c:3994 ci-bas (batch B36).
+  'ValidateEReaderTrainer',
   'ValidateMixingGameLanguage', 'ValidateSavedWonderCard',
   // 'WonSecretBaseBattle' — porté 1:1 décomp secret_base.c:1856 ci-bas.
   'WonderNews_GetRewardInfo',
@@ -3369,6 +3370,48 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B36 batch — 1 special Trainer Fan Club 1:1 strict ───────────
+
+/** 1:1 décomp `UpdateTrainerFanClubGameClear` (field_specials.c:3994-4008) :
+ *  ```c
+ *  void UpdateTrainerFanClubGameClear(void) {
+ *      if (!GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS)) {
+ *          SetPlayerGotFirstFans();
+ *          SetInitialFansOfPlayer();
+ *          gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr->playTimeHours;
+ *          FlagClear(FLAG_HIDE_FANCLUB_OLD_LADY);
+ *          FlagClear(FLAG_HIDE_FANCLUB_BOY);
+ *          FlagClear(FLAG_HIDE_FANCLUB_LITTLE_BOY);
+ *          FlagClear(FLAG_HIDE_FANCLUB_LADY);
+ *          FlagClear(FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER);
+ *          VarSet(VAR_LILYCOVE_FAN_CLUB_STATE, 1);
+ *      }
+ *  }
+ *  ```
+ *  FANCLUB_GOT_FIRST_FANS=7, FANCLUB_MEMBER1=8, MEMBER3=10, MEMBER6=13.
+ *  SetInitialFansOfPlayer (= field_specials.c:4173) : SET bits 6, 1, 3
+ *  (= bits 13, 8, 10 dans counter). Inline ici.
+ *  SetPlayerGotFirstFans (= déjà porté A2.22) : SET bit 7. Recall direct. */
+registerSpecial('UpdateTrainerFanClubGameClear', () => {
+  let counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  // 1:1 décomp GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS=7).
+  if ((counter >> 7) & 1) return;  // Déjà fait, skip.
+  // 1:1 décomp SetPlayerGotFirstFans : SET bit FANCLUB_GOT_FIRST_FANS=7.
+  counter |= (1 << 7);
+  // 1:1 décomp SetInitialFansOfPlayer (field_specials.c:4173-4178) :
+  //   SET bits FANCLUB_MEMBER6=13, MEMBER1=8, MEMBER3=10.
+  counter |= (1 << 13) | (1 << 8) | (1 << 10);
+  VarSet('VAR_FANCLUB_FAN_COUNTER', counter & 0xFFFF);
+  // VarSet VAR_FANCLUB_LOSE_FAN_TIMER = playTimeHours.
+  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', gSaveBlock2Ptr.playTimeHours ?? 0);
+  FlagClear('FLAG_HIDE_FANCLUB_OLD_LADY');
+  FlagClear('FLAG_HIDE_FANCLUB_BOY');
+  FlagClear('FLAG_HIDE_FANCLUB_LITTLE_BOY');
+  FlagClear('FLAG_HIDE_FANCLUB_LADY');
+  FlagClear('FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER');
+  VarSet('VAR_LILYCOVE_FAN_CLUB_STATE', 1);
 });
 
 // ─── Session B33 batch — 1 special Contest Museum 1:1 strict ─────────────
