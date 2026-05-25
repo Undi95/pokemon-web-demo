@@ -2070,7 +2070,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'BufferQuizCorrectAnswer',
   // 'BufferTMHMMoveName' — porté 1:1 décomp field_specials.c:1638 ci-bas.
   'BufferTrendyPhraseString',
-  'BufferUnionRoomPlayerName', 'BufferVarsForIVRater',
+  'BufferUnionRoomPlayerName',
+  // 'BufferVarsForIVRater' — porté 1:1 décomp field_specials.c:1969 ci-bas (batch B44).
   'CableClubSaveGame', 'CallApprenticeFunction', 'CallBattleArenaFunction',
   'CallBattleDomeFunction', 'CallBattleFactoryFunction',
   'CallBattlePalaceFunction', 'CallBattlePikeFunction',
@@ -3380,6 +3381,59 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B44 batch — 1 special IV Rater 1:1 strict ───────────────────
+
+/** 1:1 décomp `BufferVarsForIVRater` (field_specials.c:1969-2006) :
+ *  ```c
+ *  void BufferVarsForIVRater(void) {
+ *      u8 i;
+ *      u32 ivStorage[NUM_STATS];
+ *      ivStorage[STAT_HP] = GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_HP_IV);
+ *      // ... idem ATK, DEF, SPEED, SPATK, SPDEF
+ *      gSpecialVar_0x8005 = sum of all 6 IVs;
+ *      gSpecialVar_0x8006 = stat idx max;
+ *      gSpecialVar_0x8007 = max IV value;
+ *      // Random tiebreak si égalité.
+ *  }
+ *  ```
+ *  IV Rater à Lavaridge ; le NPC parle de la stat avec le plus haut IV. */
+registerSpecial('BufferVarsForIVRater', () => {
+  const slot = VarGet('VAR_0x8004') ?? 0;
+  const mon = gSaveBlock1Ptr.playerParty?.[slot];
+  if (!mon) return;
+  // 1:1 décomp ivStorage[NUM_STATS=6].
+  // Notre PokemonInstance has hpIV/attackIV/defenseIV/speedIV/spAttackIV/spDefenseIV.
+  const ivStorage: number[] = [
+    (mon as { hpIV?: number }).hpIV ?? 0,
+    (mon as { attackIV?: number }).attackIV ?? 0,
+    (mon as { defenseIV?: number }).defenseIV ?? 0,
+    (mon as { speedIV?: number }).speedIV ?? 0,
+    (mon as { spAttackIV?: number }).spAttackIV ?? 0,
+    (mon as { spDefenseIV?: number }).spDefenseIV ?? 0,
+  ];
+  // VAR_0x8005 = sum.
+  let sum = 0;
+  for (let i = 0; i < 6; i++) sum += ivStorage[i];
+  VarSet('VAR_0x8005', sum & 0xFFFF);
+  // VAR_0x8006/0x8007 = max stat idx + value (Random tiebreak).
+  let maxIdx = 0;
+  let maxVal = ivStorage[0];
+  for (let i = 1; i < 6; i++) {
+    if (maxVal < ivStorage[i]) {
+      maxIdx = i;
+      maxVal = ivStorage[i];
+    } else if (maxVal === ivStorage[i]) {
+      // 1:1 décomp Random() & 1 tiebreak.
+      if (Random() & 1) {
+        maxIdx = i;
+        maxVal = ivStorage[i];
+      }
+    }
+  }
+  VarSet('VAR_0x8006', maxIdx);
+  VarSet('VAR_0x8007', maxVal & 0xFFFF);
 });
 
 // ─── Session B43 batch — 2 specials Battle Tower stat / Secret Base 1:1 strict ─
