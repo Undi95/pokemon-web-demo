@@ -826,15 +826,25 @@ registerSpecial('DoInGameTradeScene', () => 0);
 registerSpecial('ChoosePartyMon', () => 0);
 
 /** 1:1 décomp `LookThroughPorthole` (cinematic). Stub. */
-registerSpecial('LookThroughPorthole', () => { /* no-op */ });
+/** 1:1 décomp `LookThroughPorthole` (field_special_scene.c:377) :
+ *  cinematic SS Tidal porthole avec CB2 swap. Notre projet : ferry cinematic
+ *  non porté → no-op 1:1 strict justifié. */
+registerSpecial('LookThroughPorthole', () => { /* 1:1 justified : ferry cinematic non porté */ });
 
-/** 1:1 décomp `RunUnionRoom` (link). Stub. */
-registerSpecial('RunUnionRoom', () => { /* no-op */ });
+/** 1:1 décomp `RunUnionRoom` (union_room.c:2423) : link multi-player room
+ *  entrance. Notre projet web : pas de link adapter → no-op 1:1 strict justifié. */
+registerSpecial('RunUnionRoom', () => { /* 1:1 justified : no link subsystem */ });
 
 // ─── Iter10 — bulk stubs for top global specials (post-game heavy) ──────────
 
-/** GBA-link cleanup (post-game, 56x usage). */
-registerSpecial('CloseLink', () => { /* no-op */ });
+/** 1:1 décomp `CloseLink` (link.c:400) : `gReceivedRemoteLinkPlayers = FALSE;
+ *  if (gWirelessCommType) LinkRfu_Shutdown(); sLinkOpen = FALSE; DisableSerial();`
+ *  Notre projet : pas de link wireless/serial → no-op 1:1 strict justifié. */
+registerSpecial('CloseLink', () => { /* 1:1 justified : no link subsystem */ });
+
+/** 1:1 décomp `IsWirelessAdapterConnected` (link.c:237) : `SetWirelessCommType1();
+ *  InitRFUAPI(); if (rfu_LMAN_REQBN_softReset_and_checkID() == RFU_ID) return TRUE;`
+ *  Notre projet : pas de RFU (wireless adapter SDK) → return FALSE 1:1 strict justifié. */
 registerSpecial('IsWirelessAdapterConnected', () => 0);
 
 /** Cinematic camera (= e.g. Rayquaza scene, Steven battle). */
@@ -1454,6 +1464,19 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
  *  → 1:1 strict justifié : return 1 toujours. */
 registerSpecial('GetMartEmployeeObjectEventId', () => 1);
 
+/** 1:1 décomp `ShouldDistributeEonTicket` (field_specials.c:3640-3646) :
+ *  ```c
+ *  bool32 ShouldDistributeEonTicket(void) {
+ *      if (!VarGet(VAR_DISTRIBUTE_EON_TICKET)) return FALSE;
+ *      return TRUE;
+ *  }
+ *  ```
+ *  Commentaire décomp ligne 3639 : "Always returns FALSE" (= var jamais set
+ *  dans le jeu, c'était pour event eShop distribution). */
+registerSpecial('ShouldDistributeEonTicket', () => {
+  return VarGet('VAR_DISTRIBUTE_EON_TICKET') !== 0 ? 1 : 0;
+});
+
 /** 1:1 décomp `IsTVShowAlreadyInQueue` (tv.c:3268-3278) :
  *  ```c
  *  bool8 IsTVShowAlreadyInQueue(void) {
@@ -1990,7 +2013,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetRoute119Weather', 'SetRoute123Weather', 'SetSecretBaseOwnerGfxId',
   // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
   'SetSootopolisGymCrackedIceMetatiles',
-  'ShouldContestLadyShowGoOnAir', 'ShouldDistributeEonTicket',
+  // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
+  'ShouldContestLadyShowGoOnAir',
   'ShouldDoBrailleRegirockEffectOld', 'ShouldHideFanClubInterviewer',
   'ShouldReadyContestArtist', 'ShouldShowBoxWasFullMessage',
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
