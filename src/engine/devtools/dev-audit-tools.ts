@@ -30,12 +30,12 @@
  * je perdais 5+ tool calls juste pour lire 3 fichiers et grep une valeur.
  */
 
-import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from './save-system';
-import { GetPlayerFacingDirection } from './player-avatar';
-import { gSaveBlock1Ptr } from './save-block-state';
-import { assetCache, getRuntime } from './decomp-globals';
-import { gMapHeader } from './map-loader';
-import { bagContents } from './bag';
+import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../save-system';
+import { GetPlayerFacingDirection } from '../player-avatar';
+import { gSaveBlock1Ptr } from '../save-block-state';
+import { assetCache, getRuntime } from '../decomp-globals';
+import { gMapHeader } from '../map-loader';
+import { bagContents } from '../bag';
 
 interface DevAudit {
   help: () => string;

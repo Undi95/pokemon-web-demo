@@ -20,7 +20,7 @@
  * Cf. `memory/audit-2026-05-09-total-1to1.md` + `memory/helper-bridge-manifest.md`.
  */
 
-import { __bridgedHelpers__, __notImplementedHelpers__ } from './decomp-bridge';
+import { __bridgedHelpers__, __notImplementedHelpers__ } from '../decomp-bridge';
 
 interface DevBridge {
   help: () => string;

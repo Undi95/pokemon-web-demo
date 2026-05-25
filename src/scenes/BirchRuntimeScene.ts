@@ -65,7 +65,7 @@ import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../engine/decomp-runtime';
-import { installEngineDevtools } from '../engine/engine-devtools';
+import { installEngineDevtools } from '../engine/devtools/engine-devtools';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 
 export class BirchRuntimeScene extends Phaser.Scene {

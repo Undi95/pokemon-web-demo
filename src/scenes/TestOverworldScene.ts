@@ -88,7 +88,7 @@ import {
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/movement-system';
 import { decideBootMode, preloadBootData } from '../engine/boot-mode';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
-import { installEngineDevtools } from '../engine/engine-devtools';
+import { installEngineDevtools } from '../engine/devtools/engine-devtools';
 import {
   loadMapScripts,
   ScriptContext_RunScript,

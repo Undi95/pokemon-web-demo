@@ -21,8 +21,8 @@
  * persistant, passe `{ once: false }`.
  */
 
-import { gMapHeader } from './map-loader';
-import { gObjectEvents } from './object-events';
+import { gMapHeader } from '../map-loader';
+import { gObjectEvents } from '../object-events';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Rt = any;

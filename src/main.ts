@@ -34,7 +34,7 @@ import { TestOverworldScene } from './scenes/TestOverworldScene';
 import { createAudioDevtool } from './util/audio-devtool';
 import './util/remap-modal'; // exposes window.openRemapModal for the topbar button
 // Side-effect : install window.cheat debug helpers (= skipIntro/heal/resetSave).
-import './engine/dev-cheat';
+import './engine/devtools/dev-cheat';
 import { setMasterVolume } from './engine/m4a/audio-context';
 
 // Audio devtool panel (top-right corner). Dev only. Disable via
@@ -56,13 +56,13 @@ import { SetSaveFileStatus } from './engine/gba-menu-system';
 import { SeedRngAndSetTrainerId } from './engine/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
-import './engine/dev-audit-tools';
+import './engine/devtools/dev-audit-tools';
 // Side-effect import : pose window.dev.breakpoint.* helpers (= pause-on-event
 // pour debugging frame-precise : fade-out/fade-in/map-change/palette-leak/etc.).
-import './engine/dev-breakpoint-tools';
+import './engine/devtools/dev-breakpoint-tools';
 // Side-effect import : pose window.dev.bridge.* helpers (= coverage du
 // decomp-bridge.ts + tracking helpers manquants par module auto-généré).
-import './engine/dev-bridge-audit-tools';
+import './engine/devtools/dev-bridge-audit-tools';
 // Side-effect import : pose window.dev.movementDispatch.* — bridge string
 // action names → MovementAction_*_StepN auto-fonctions.
 import './engine/movement-action-dispatch';
@@ -99,7 +99,7 @@ void loadMultichoiceLists();
 
 // Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit
 // avancé via console JS uniquement. window.scope.help() pour usage.
-import { installScopeDevtools } from './engine/dev-scope';
+import { installScopeDevtools } from './engine/devtools/dev-scope';
 installScopeDevtools();
 
 // Session 127 : preload bag screen graphics (sprite sac + dots + button).

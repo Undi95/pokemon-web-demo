@@ -56,7 +56,7 @@ import {
 } from '../engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
 import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
 import { InitKeys } from '../engine/decomp-runtime';
-import { installEngineDevtools } from '../engine/engine-devtools';
+import { installEngineDevtools } from '../engine/devtools/engine-devtools';
 import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
 
 export class GameScene extends Phaser.Scene {

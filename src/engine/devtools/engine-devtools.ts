@@ -84,7 +84,7 @@
  * Aucune dépendance circulaire avec decomp-globals/runtime — accède à `rt`
  * via la référence passée à installEngineDevtools(rt, opts).
  */
-import type { DecompRuntime } from './decomp-runtime';
+import type { DecompRuntime } from '../decomp-runtime';
 
 interface SaveState {
   vram: Uint8Array;
@@ -399,7 +399,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     startY: rt.gPaletteFade.startY,
   });
   dev.printers = async (): Promise<unknown> => {
-    const m = await import('./gba-text-system');
+    const m = await import('../gba-text-system');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return m._debugGetTextPrinters().map((ap: any, i: number) => ({
       slot: i, windowId: ap.windowId, finished: ap.finished,
@@ -508,12 +508,12 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
-    const mod = await import('./battle-flow');
-    const scriptMod = await import('./script-runtime');
+    const mod = await import('../battle-flow');
+    const scriptMod = await import('../script-runtime');
     // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
-    const sbsMod = await import('./save-block-state');
+    const sbsMod = await import('../save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('./pokemon');
+      const pokeMod = await import('../pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 5);
       pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startBirchTutorial] auto-added Treecko Lv5 (party était vide)');
@@ -524,12 +524,12 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     return 'Birch tutorial battle started — flow ticked via script engine';
   };
   battleNs.startWild = async (species: string, level: number): Promise<string> => {
-    const mod = await import('./battle-flow');
-    const scriptMod = await import('./script-runtime');
+    const mod = await import('../battle-flow');
+    const scriptMod = await import('../script-runtime');
     // Auto-add Treecko if party is empty.
-    const sbsMod2 = await import('./save-block-state');
+    const sbsMod2 = await import('../save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('./pokemon');
+      const pokeMod = await import('../pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', Math.max(5, level - 1));
       pokeMod.GiveMonToPlayer(starter);
       console.log(`[dev.battle.startWild] auto-added Treecko Lv${starter.level} (party était vide)`);
@@ -555,8 +555,8 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
-    const flowMod = await import('./starter-choose-flow');
-    const scriptMod = await import('./script-runtime');
+    const flowMod = await import('../starter-choose-flow');
+    const scriptMod = await import('../script-runtime');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'starter choose UI triggered — Birch BG should appear after async loads';

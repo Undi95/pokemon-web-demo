@@ -37,7 +37,7 @@ import {
   GetCurrentFieldMessageText,
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
-} from './field-message-box';
+} from '../field-message-box';
 import {
   gCamera as _gCamera,
   gFieldCamera as _gFieldCamera,
@@ -46,17 +46,17 @@ import {
   GetCameraTopLeftCoords as _GetCameraTopLeftCoords,
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
-} from './field-camera';
-import { ScriptContext_SetupInlineBytecode } from './script-runtime';
-import { buildBattleDevtools } from './battle/battle-devtools';
-import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
-import { setHeldKeysOverride, clearHeldKeysOverride } from './input-handler';
-import type { DecompRuntime } from './decomp-runtime';
-import * as decompBridge from './decomp-bridge';
+} from '../field-camera';
+import { ScriptContext_SetupInlineBytecode } from '../script-runtime';
+import { buildBattleDevtools } from '../battle/battle-devtools';
+import { GBA_BUTTON_MASKS, type GbaButton } from '../../util/key-bindings';
+import { setHeldKeysOverride, clearHeldKeysOverride } from '../input-handler';
+import type { DecompRuntime } from '../decomp-runtime';
+import * as decompBridge from '../decomp-bridge';
 // Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
 // gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
-import { gSaveBlock1Ptr as _sb1 } from './save-block-state';
-import { MAP_OFFSET } from './decomp-data/include/fieldmap-data';
+import { gSaveBlock1Ptr as _sb1 } from '../save-block-state';
+import { MAP_OFFSET } from '../decomp-data/include/fieldmap-data';
 
 // 1:1 décomp `MAP_OFFSET = 7` (include/fieldmap.h:9).
 // Migré vers import decomp-data fieldmap-data.ts (cleanup B7).
