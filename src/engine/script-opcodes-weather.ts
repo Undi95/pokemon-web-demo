@@ -41,8 +41,19 @@ registerOpcode('resetweather', (_ctx) => {
 
 /** 1:1 décomp `ScrCmd_doweather` (scrcmd.c) :
  *    DoCurrentWeather();  // active le weather sauvegardé
- *  Pour MVP on log + no-op (= sans repro live d'un cas qui en a besoin). */
+ *
+ *  Dette R3 documentée : DoCurrentWeather (field_weather_effect.c:2541) demande
+ *  cascade weather subsystem entier non porté :
+ *   - GetSavedWeather (lit gSaveBlock1Ptr.weather)
+ *   - Task_DoAbnormalWeather + CreateAbnormalWeatherTask (= alternance random
+ *     downpour/sandstorm pour WEATHER_ABNORMAL)
+ *   - SetNextWeather (transition fade vers le weather state)
+ *   - sCurrentAbnormalWeather global static
+ *
+ *  Notre engine n'affiche aucun weather VFX runtime (= rain/snow/sandstorm
+ *  particles). doweather est donc un no-op honnête tant que ce subsystem
+ *  reste U-tier. Le var gSaveBlock1Ptr.weather est synchronisé par
+ *  setweather/resetweather opcodes pour persistance state. */
 registerOpcode('doweather', (_ctx, _args) => {
-  // TODO : appeler le système weather pour appliquer la weather courante.
   return false;
 });

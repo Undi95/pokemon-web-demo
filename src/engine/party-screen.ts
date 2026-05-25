@@ -47,6 +47,8 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from './save-block-state';
+import { ItemIsMail } from './mail-data';
+import { resolveDecompConstant } from './decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated } from './sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
@@ -1514,17 +1516,60 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
  *    MENU_SUMMARY (= "RESUME") - gText_Summary5
  *    MENU_ITEM    (= "OBJET")  - gText_Item
  *    MENU_CANCEL1 (= "RETOUR") - gText_Cancel2 */
-/** 1:1 décomp action keys (party_menu.h:660-678) — MENU_* values. */
-const MENU_SUMMARY = 0;
-const MENU_SWITCH  = 1;  // = "ORDRE" FR (gText_Switch2)
-const MENU_ITEM    = 3;
-const MENU_CANCEL1 = 2;
+/** 1:1 décomp action keys (party_menu.c:76-97) — MENU_* enum values. */
+const MENU_SUMMARY      = 0;
+const MENU_SWITCH       = 1;  // = "ORDRE" FR (gText_Switch2)
+const MENU_CANCEL1      = 2;
+const MENU_ITEM         = 3;
+const MENU_GIVE         = 4;
+const MENU_TAKE_ITEM    = 5;
+const MENU_MAIL         = 6;
+const MENU_TAKE_MAIL    = 7;
+const MENU_READ         = 8;
+const MENU_CANCEL2      = 9;
+const MENU_FIELD_MOVES  = 19;
+
+/** 1:1 décomp `sFieldMoves[]` (data/party_menu.h:745-764). Notre format :
+ *  ids "kebab" canonique = MOVE_X → "x" lowercase no-underscore (= pokemon.ts:241). */
+const sFieldMoves: readonly string[] = [
+  'cut',          // FIELD_MOVE_CUT (= MOVE_CUT)
+  'flash',        // FIELD_MOVE_FLASH
+  'rocksmash',    // FIELD_MOVE_ROCK_SMASH
+  'strength',     // FIELD_MOVE_STRENGTH
+  'surf',         // FIELD_MOVE_SURF
+  'fly',          // FIELD_MOVE_FLY
+  'dive',         // FIELD_MOVE_DIVE
+  'waterfall',    // FIELD_MOVE_WATERFALL
+  'teleport',     // FIELD_MOVE_TELEPORT
+  'dig',          // FIELD_MOVE_DIG
+  'secretpower',  // FIELD_MOVE_SECRET_POWER
+  'milkdrink',    // FIELD_MOVE_MILK_DRINK
+  'softboiled',   // FIELD_MOVE_SOFT_BOILED
+  'sweetscent',   // FIELD_MOVE_SWEET_SCENT
+];
+
 const ACTION_MENU_STRINGS_FR: Record<number, string> = {
-  [MENU_SUMMARY]: 'RESUME',
-  [MENU_SWITCH]:  'ORDRE',
-  [MENU_ITEM]:    'OBJET',
-  [MENU_CANCEL1]: 'RETOUR',
+  [MENU_SUMMARY]:    'RESUME',
+  [MENU_SWITCH]:     'ORDRE',
+  [MENU_ITEM]:       'OBJET',
+  [MENU_GIVE]:       'DONNER',
+  [MENU_TAKE_ITEM]:  'PRENDRE',
+  [MENU_MAIL]:       'MAIL',
+  [MENU_TAKE_MAIL]:  'PRENDRE',
+  [MENU_READ]:       'LIRE',
+  [MENU_CANCEL1]:    'RETOUR',
+  [MENU_CANCEL2]:    'RETOUR',
+  // MENU_FIELD_MOVES + j (= field move name FR from gMoveNames).
+  // Résolution dynamique dans _renderActionMenuContents (= pas table statique).
 };
+
+/** Field move names FR — sMovesNamesFR mapped via sFieldMoves order. */
+const FIELD_MOVE_NAMES_FR: readonly string[] = [
+  'COUPE', 'FLASH', 'EBOULEMENT', 'FORCE',
+  'SURF', 'VOL', 'PLONGEE', 'CASCADE',
+  'TELEPORT', 'TUNNEL', 'POUVOIRSECRET', 'BUVECLAIR',
+  'DOUXFOYER', 'DOUXPARFUM',  // 1:1 ordering decomp
+];
 
 /** Re-render action menu contents (= called au open + après cursor move).
  *  Le cursor "▶" est blit devant l'item selected. 1:1 décomp pattern
@@ -1541,7 +1586,13 @@ function _renderActionMenuContents(): void {
   FillWindowPixelBuffer(_actionWindowId, 0x11);  // = palette idx 1 (= white bg)
   PutWindowTilemap(_actionWindowId);
   for (let i = 0; i < numActions; i++) {
-    const str = ACTION_MENU_STRINGS_FR[_actionList[i]] ?? '';
+    // 1:1 décomp party_menu.c:2556 : `if (action >= MENU_FIELD_MOVES) → font color 4`.
+    // Notre rendu garde la même police, mais résout le nom du move FR depuis
+    // FIELD_MOVE_NAMES_FR[j] où j = action - MENU_FIELD_MOVES.
+    const actionKey = _actionList[i];
+    const str = actionKey >= MENU_FIELD_MOVES
+      ? (FIELD_MOVE_NAMES_FR[actionKey - MENU_FIELD_MOVES] ?? '')
+      : (ACTION_MENU_STRINGS_FR[actionKey] ?? '');
     const isSelected = i === _actionCursor;
     // Cursor arrow ▶ devant le selected item à x=0, text à x=8 (= cursorDim).
     if (isSelected) {
@@ -1574,13 +1625,38 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
   //   if (item is mail) AppendToList(MENU_MAIL); else AppendToList(MENU_ITEM);
   //   AppendToList(MENU_CANCEL1);
   _actionList = [MENU_SUMMARY];
-  // TODO : add field moves (CUT/FLASH/SURF/etc.) si mon les connait.
+  // 1:1 décomp party_menu.c:2615-2625 : iterate party[slotId].moves (= 4 slots) ;
+  // pour chaque move, chercher dans sFieldMoves[] ; si trouvé : push MENU_FIELD_MOVES + j.
   const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const mon = party[_slotId];  // 1:1 décomp `mons[slotId]` (party_menu.c:2619).
+  if (mon && mon.moves) {
+    for (let i = 0; i < mon.moves.length && i < 4; i++) {
+      const moveId = mon.moves[i]?.id;
+      if (!moveId) continue;
+      for (let j = 0; j < sFieldMoves.length; j++) {
+        if (moveId === sFieldMoves[j]) {
+          _actionList.push(MENU_FIELD_MOVES + j);
+          break;
+        }
+      }
+    }
+  }
+  // 1:1 décomp :2629-2630 : if (mons[1].species != SPECIES_NONE) push MENU_SWITCH.
   if (party.length > 1 && party[1] && party[1].speciesEnum !== 'SPECIES_NONE') {
     _actionList.push(MENU_SWITCH);  // ORDRE - si plus de 1 mon
   }
-  // TODO : check si held item est mail → MENU_MAIL, sinon MENU_ITEM.
-  _actionList.push(MENU_ITEM);
+  // 1:1 décomp :2631-2634 : if (ItemIsMail(heldItem)) push MENU_MAIL else MENU_ITEM.
+  // Notre heldItem est string EN canonique (= 'orangemail' format) ; check via
+  // resolveDecompConstant pour bridge string→u16 puis ItemIsMail.
+  const heldItemKey = mon?.heldItem
+    ? 'ITEM_' + mon.heldItem.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '')
+    : '';
+  const heldItemId = heldItemKey ? (resolveDecompConstant(heldItemKey) ?? 0) : 0;
+  if (heldItemId !== 0 && ItemIsMail(heldItemId)) {
+    _actionList.push(MENU_MAIL);
+  } else {
+    _actionList.push(MENU_ITEM);
+  }
   _actionList.push(MENU_CANCEL1);
   _actionCursor = 0;
   const numActions = _actionList.length;
