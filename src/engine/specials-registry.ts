@@ -894,7 +894,60 @@ registerSpecial('HasEnoughMonsForDoubleBattle', () => {
 });
 
 /** Casino. */
-registerSpecial('GetSlotMachineId', () => 0);
+/** 1:1 décomp `GetSlotMachineId` (field_specials.c:1289-1326) :
+ *  ```c
+ *  u16 GetSlotMachineId(void) {
+ *      static const u8 sSlotMachineRandomSeeds[12] = {12,2,4,5,1,8,7,11,3,10,9,6};
+ *      static const u8 sSlotMachineIds[12] = { UNLUCKIEST, UNLUCKIER×2, UNLUCKY×3,
+ *          LUCKY×3, LUCKIER×2, LUCKIEST };
+ *      static const u8 sSlotMachineServiceDayIds[12] = { LUCKY×6, LUCKIER×4,
+ *          LUCKIEST×2 };
+ *      u32 rnd = dewfordTrends[0].trendiness + dewfordTrends[0].rand
+ *              + sSlotMachineRandomSeeds[VAR_0x8004];
+ *      if (IsPokeNewsActive(POKENEWS_GAME_CORNER))
+ *          return sSlotMachineServiceDayIds[rnd % 12];
+ *      return sSlotMachineIds[rnd % 12];
+ *  }
+ *  ```
+ *  Notre projet sans PokeNews subsystem actif → toujours branch sSlotMachineIds. */
+registerSpecial('GetSlotMachineId', () => {
+  // 1:1 décomp constants/slot_machine.h enums.
+  const UNLUCKIEST = 0, UNLUCKIER = 1, UNLUCKY = 2;
+  const LUCKY = 3, LUCKIER = 4, LUCKIEST = 5;
+  const seeds = [12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6];
+  const ids = [
+    UNLUCKIEST, UNLUCKIER, UNLUCKIER,
+    UNLUCKY, UNLUCKY, UNLUCKY,
+    LUCKY, LUCKY, LUCKY,
+    LUCKIER, LUCKIER, LUCKIEST,
+  ];
+  const serviceDayIds = [
+    LUCKY, LUCKY, LUCKY, LUCKY, LUCKY, LUCKY,
+    LUCKIER, LUCKIER, LUCKIER, LUCKIER,
+    LUCKIEST, LUCKIEST,
+  ];
+  const slot = VarGet('VAR_0x8004');
+  const trends = gSaveBlock1Ptr.dewfordTrends?.[0];
+  if (!trends) return UNLUCKIEST;
+  const rnd = ((trends.trendiness ?? 0) + (trends.rand ?? 0)
+             + (seeds[slot] ?? 0)) >>> 0;
+  // 1:1 décomp IsPokeNewsActive(POKENEWS_GAME_CORNER) :
+  // notre pokeNews[] reste empty (= news subsystem pas porté). Retourne FALSE.
+  // ShouldApplyPokeNewsEffect(POKENEWS_GAME_CORNER) = TRUE par défaut switch
+  // (cf. tv.c:2693), donc si pokeNews[i].kind = GAME_CORNER + state = ACTIVE,
+  // alors service-day path. Sans entries → toujours regular path.
+  const pokeNews = gSaveBlock1Ptr.pokeNews ?? [];
+  let pokeNewsActive = false;
+  // 1:1 constants/tv.h : POKENEWS_GAME_CORNER = 2, POKENEWS_STATE_ACTIVE = 2.
+  for (let i = 0; i < 16; i++) {
+    const news = pokeNews[i];
+    if (news?.kind === 2 && news?.state === 2) { pokeNewsActive = true; break; }
+  }
+  if (pokeNewsActive) {
+    return (serviceDayIds[rnd % 12] ?? 0) & 0xFFFF;
+  }
+  return (ids[rnd % 12] ?? 0) & 0xFFFF;
+});
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
@@ -1124,7 +1177,26 @@ registerSpecial('PlayerHasBerries', () => {
   }
   return 0;
 });
-registerSpecial('GetFirstFreePokeblockSlot', () => 0);
+/** 1:1 décomp `GetFirstFreePokeblockSlot` (pokeblock.c:1346-1357) :
+ *  ```c
+ *  s8 GetFirstFreePokeblockSlot(void) {
+ *      u8 i;
+ *      for (i = 0; i < POKEBLOCKS_COUNT; i++) {
+ *          if (gSaveBlock1Ptr->pokeblocks[i].color == PBLOCK_CLR_NONE)
+ *              return i;
+ *      }
+ *      return -1;
+ *  }
+ *  ```
+ *  Retourne le premier slot vide (color=PBLOCK_CLR_NONE=0) ou -1 si rempli. */
+registerSpecial('GetFirstFreePokeblockSlot', () => {
+  const pokeblocks = gSaveBlock1Ptr.pokeblocks ?? [];
+  // 1:1 décomp constants : POKEBLOCKS_COUNT = 40, PBLOCK_CLR_NONE = 0.
+  for (let i = 0; i < 40; i++) {
+    if ((pokeblocks[i]?.color ?? 0) === 0) return i;
+  }
+  return 0xFFFF;  // -1 cast u16 = 0xFFFF (= s8 -1 mais return type u16).
+});
 registerSpecial('ObjectEventInteractionGetBerryName', () => { /* no-op */ });
 
 /** Contests. */
