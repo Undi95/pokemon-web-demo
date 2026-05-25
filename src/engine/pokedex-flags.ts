@@ -21,7 +21,7 @@
  * `GetPokedexHeightWeight` (data table à extraire).
  */
 
-import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
+import { GetSaveBlock1, GetSaveBlock2 } from './save/save-system';
 import {
   ENUM_NATIONAL_0, ENUM_HOENN_1,
   NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,

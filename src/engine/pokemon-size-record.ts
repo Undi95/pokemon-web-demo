@@ -20,7 +20,7 @@
 
 import { registerSpecial } from './script/script-opcodes';
 import { VarSet, VarGet, gSpecialVar } from './script/script-vars';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import {
   GetMonData, MON_DATA_PERSONALITY,
   MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV,

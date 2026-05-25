@@ -12,7 +12,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
 
 /** _vget = VarGet avec fallback '0'. Local au fichier (= 1:1 décomp inline read). */

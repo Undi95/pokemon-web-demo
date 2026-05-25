@@ -17,8 +17,8 @@ import { registerOpcode } from './script-runtime';
 import { VarSet, gSpecialVar } from './script-vars';
 import { gObjectEvents } from '../object-events';
 import { gPlayerAvatar } from '../player-avatar';
-import { gSaveBlock1Ptr } from '../save-block-state';
-import { GetCurrentMap } from '../load_save';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { GetCurrentMap } from '../save/load_save';
 import { getRuntime } from '../decomp-globals';
 import { MALE_GENDER, FEMALE_GENDER } from './script-opcodes-helpers';
 

@@ -16,7 +16,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   gBattleMons, setCurrentMove, gCurrentMove,
   setActiveBattler,

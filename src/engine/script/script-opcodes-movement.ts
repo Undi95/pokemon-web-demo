@@ -33,7 +33,7 @@ import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-ru
 import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent } from '../object-events';
 import { gMapHeader, MAP_OFFSET } from '../map-loader';
-import { GetCurrentMap, SetObjEventTemplateCoords } from '../load_save';
+import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../movement-system';
 import {

@@ -16,15 +16,15 @@
  * Phase 4.10 démo : indispensable pour tester rapidement le post-intro state
  * sans rejouer le truck cinematic à chaque session (= user feedback session 117).
  */
-import { SetSaveLocked } from './save-system';
+import { SetSaveLocked } from './save/save-system';
 import { FlagSet, VarSet } from './script/script-vars';
-import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save-system';
+import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save/save-system';
 import { SetDynamicWarp } from './warp-system';
-import { GetCurrentMap } from './load_save';
-import { SetObjEventTemplateCoords } from './load_save';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { GetCurrentMap } from './save/load_save';
+import { SetObjEventTemplateCoords } from './save/load_save';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
-import { NewGameInit } from './new-game-flags';
+import { NewGameInit } from './save/new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';

@@ -38,7 +38,7 @@
  *     asset loader). Voir `decoration-data.ts` pour les détails.
  */
 
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { DECOR_NONE } from './decomp-data/include/constants/decorations-data';
 import {
   ENUM_DecorationCategory,

@@ -37,7 +37,7 @@
 // Cause root non identifiée — investigation déférée. Voir bagFix.ts pour
 // détails complets de la dette.
 import './bagFix';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { getItem } from './data-tables';
 import {
   type ItemSlot,

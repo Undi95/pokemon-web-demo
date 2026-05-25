@@ -15,7 +15,7 @@
 
 import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { setStringVar } from '../string-buffers';
 import { parseValue } from './script-opcodes-helpers';
 

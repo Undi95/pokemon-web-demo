@@ -42,13 +42,13 @@
 // ─── Side-effect imports : préservent l'init ESM eager chain ────────────────
 import './pokemon';
 import './bag';
-import './save-system';
-import './load_save';
-import './save-block-state';
+import './save/save-system';
+import './save/load_save';
+import './save/save-block-state';
 import './script/script-vars';
 import './warp-system';
 
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import type { ItemSlot, Bag } from './bag';
 
 // ─── Debug compat : `window.gameState.bag` ──────────────────────────────────

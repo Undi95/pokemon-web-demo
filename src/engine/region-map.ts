@@ -33,7 +33,7 @@
 
 import type Phaser from 'phaser';
 import { SignalWaitState } from './script/script-opcodes';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock2Ptr } from './save/save-block-state';
 import { MALE } from './decomp-globals';
 import { FlagGet } from './script/script-vars';
 import { gMapHeader } from './map-loader';

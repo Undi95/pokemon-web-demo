@@ -18,8 +18,8 @@
  * controlle leur visibilité).
  */
 
-import { FlagSet } from './script/script-vars';
-import { Random, GetGeneratedTrainerIdLower } from './random';
+import { FlagSet } from '../script/script-vars';
+import { Random, GetGeneratedTrainerIdLower } from '../random';
 import { gSaveBlock2Ptr } from './save-block-state';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).
@@ -206,7 +206,7 @@ export function NewGameInit(): void {
   //   NewGameInitPCItems();
   // ⇒ ajoute 1× POTION dans le PC du joueur. Sans ça, le PC est vide au boot
   // alors que le décomp officiel donne toujours 1 POTION en stockage.
-  void import('./pc-items').then(({ NewGameInitPCItems }) => {
+  void import('../pc-items').then(({ NewGameInitPCItems }) => {
     NewGameInitPCItems();
   });
   console.log(`[new-game-flags] InitPlayerTrainerId : trainerId=0x${trainerId.toString(16).padStart(8, '0')}`);

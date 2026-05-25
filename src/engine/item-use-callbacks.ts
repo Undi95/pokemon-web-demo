@@ -75,7 +75,7 @@ import type { PokemonInstance } from './pokemon';
 import { getRuntime, PlaySE } from './decomp-globals';
 import { SE_USE_ITEM } from './decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`

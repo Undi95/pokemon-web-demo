@@ -16,7 +16,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readWord, Random } from './script-interpreter';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   gBattleMons, gBattlerAttacker,
   gBattleScripting, gBattleCommunication,

@@ -75,7 +75,7 @@ import {
 } from './decomp-data/include/constants/characters-data';
 import { BG_PLTT_ID } from './decomp-runtime';
 import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import { MALE } from './decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,

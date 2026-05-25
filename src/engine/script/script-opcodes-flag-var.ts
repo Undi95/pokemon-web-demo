@@ -23,7 +23,7 @@
 
 import { registerOpcode, ScriptJump, getScript } from './script-runtime';
 import { VarSet, VarGet, FlagSet, FlagClear, FlagGet, Compare, gSpecialVar } from './script-vars';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
 
 // ─── Variables ──────────────────────────────────────────────────────────────

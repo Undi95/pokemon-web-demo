@@ -37,7 +37,7 @@ import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './de
 import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1 } from './sprite-animation';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock2Ptr } from './save/save-block-state';
 
 /** HOTFIX 2026-05-09 : auto-extracted SPRITE_ANIMS data has tileNum stored
  *  as STRING for unresolved constants (= "VERSION_BANNER_RIGHT_TILEOFFSET").

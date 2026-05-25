@@ -23,7 +23,7 @@
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
 import { gMapHeader } from '../map-loader';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   gBattleMons, setActiveBattler,
   gBattleTypeFlags,

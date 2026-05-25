@@ -88,7 +88,7 @@ export type ScriptContext = {
   markItemBallTaken?: (scriptLabel: string) => void;
 };
 
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SetDynamicWarp } from '../warp-system';
 import { MALE, FEMALE } from '../decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';

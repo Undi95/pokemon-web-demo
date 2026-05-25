@@ -73,7 +73,7 @@ import { GET_BATTLER_SIDE as _GET_BATTLER_SIDE, B_SIDE_OPPONENT as B_SIDE_OPPONE
 /** 1:1 décomp `IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c). Compare le
  *  trainerId du mon avec `gSaveBlock2Ptr->playerTrainerId` ET le name (= 7
  *  chars). Si different → other trainer (= traded/event mon). */
-import { gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 function _IsOtherTrainer(otId: number, _otName: string): boolean {
   // 1:1 décomp : retourne 1 si TID OU OT name diffèrent, 0 si match.
   const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;

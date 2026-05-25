@@ -19,8 +19,8 @@
  * flash sectors réels (= contrainte hardware GBA non applicable).
  */
 
-import type { PokemonInstance } from './pokemon';
-import type { ItemSlot, Bag } from './bag';
+import type { PokemonInstance } from '../pokemon';
+import type { ItemSlot, Bag } from '../bag';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 // Cf. include/constants/global.h, vars.h, flags.h, berry.h, tv.h, etc.

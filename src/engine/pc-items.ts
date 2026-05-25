@@ -21,7 +21,7 @@
  * traite la chaîne vide '' comme ITEM_NONE.
  */
 
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import type { ItemSlot } from './bag';
 
 /** 1:1 décomp `include/constants/global.h:PC_ITEMS_COUNT`. */

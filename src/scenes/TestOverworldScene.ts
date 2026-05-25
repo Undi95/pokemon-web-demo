@@ -70,9 +70,9 @@ import {
   T_NOT_MOVING,
   gPlayerAvatar,
 } from '../engine/player-avatar';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
 import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
-import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/load_save';
+import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/save/load_save';
 import {
   SpawnObjectEventsOnMap,
   SpawnObjectEventsOnReturnToField,

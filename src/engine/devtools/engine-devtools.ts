@@ -511,7 +511,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const mod = await import('../battle-flow');
     const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
-    const sbsMod = await import('../save-block-state');
+    const sbsMod = await import('../save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 5);
@@ -527,7 +527,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const mod = await import('../battle-flow');
     const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty.
-    const sbsMod2 = await import('../save-block-state');
+    const sbsMod2 = await import('../save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', Math.max(5, level - 1));

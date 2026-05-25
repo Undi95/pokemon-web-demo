@@ -46,7 +46,7 @@ import {
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from './decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated } from './sprite';

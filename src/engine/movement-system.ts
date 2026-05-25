@@ -33,7 +33,7 @@ import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from './field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from './field/field-effect-shadow';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { VarGet } from './script/script-vars';
 import { MAP_OFFSET } from './map-loader';
 import {

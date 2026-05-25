@@ -27,7 +27,7 @@
 import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet } from './script-vars';
 import { setStringVar } from '../string-buffers';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../decomp-constants';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,

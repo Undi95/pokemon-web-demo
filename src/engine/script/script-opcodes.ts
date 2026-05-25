@@ -31,8 +31,8 @@ import {
 } from '../object-events';
 import type { ObjectEventTemplate } from '../map-loader';
 import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../warp-system';
-import { GetCurrentMap, SetObjEventTemplateCoords } from '../load_save';
-import { GetSaveBlock1 } from '../save-system';
+import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
+import { GetSaveBlock1 } from '../save/save-system';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../map-loader';
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag';
 import {
@@ -49,7 +49,7 @@ import { getMultichoiceList } from '../multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from '../player-avatar';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { getRuntime } from '../decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';

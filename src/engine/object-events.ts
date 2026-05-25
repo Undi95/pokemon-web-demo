@@ -63,8 +63,8 @@ import { reverseDecompConstant as _reverseDecompConstant } from './decomp-consta
 // (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
-import { gSaveBlock1Ptr } from './save-block-state';
-import { GetSaveBlock1 } from './save-system';
+import { gSaveBlock1Ptr } from './save/save-block-state';
+import { GetSaveBlock1 } from './save/save-system';
 
 const BASE = '/decomp/em';
 

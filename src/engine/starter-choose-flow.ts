@@ -35,7 +35,7 @@ import { getRuntime, LoadPalette } from './decomp-globals';
 import { LoadSpritePalette } from './sprite';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
 import { VarSet } from './script/script-vars';
 import { Sin } from './decomp-helpers';

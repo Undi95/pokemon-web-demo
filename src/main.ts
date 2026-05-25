@@ -50,7 +50,7 @@ if (typeof window !== 'undefined') {
 // 1:1 décomp main.c `LoadGameSave` au boot AVANT que MainMenu se launch.
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
 // HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
-import { LoadGameSave } from './engine/save-system';
+import { LoadGameSave } from './engine/save/save-system';
 import { SetSaveFileStatus } from './engine/gba-menu-system';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
 import { SeedRngAndSetTrainerId } from './engine/random';

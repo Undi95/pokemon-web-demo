@@ -26,7 +26,7 @@ import {
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 // 1:1 décomp `gSaveBlock1Ptr->money/coins` (= struct SaveBlock1 fields). Foundation
 // `save-block-state` permet l'import direct (= élimine pattern globalThis non-1:1).
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 
 const FONT_NORMAL = 0;
 const FONT_SMALL = 1;

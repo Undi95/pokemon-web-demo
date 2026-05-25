@@ -431,7 +431,7 @@ async function prepareTestBattle(opts?: {
 
   // 1:1 décomp : gPlayerParty[] = gSaveBlock1Ptr->playerParty. Lazy import
   // pour break circular deps de battle-devtools.
-  const sbsMod = await import('../save-block-state');
+  const sbsMod = await import('../save/save-block-state');
   const party = sbsMod.gSaveBlock1Ptr.playerParty;
   if (!party) return { ok: false, reason: 'no gSaveBlock1Ptr.playerParty' };
   const realParty = (party as Array<unknown>).filter((m): m is { speciesEnum: string } => !!m);
@@ -500,7 +500,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
         attacker = pokemonMod.createPokemonInstance(opts.attackerSpecies, opts.attackerLevel ?? 50) as never;
       } else {
         // Use real gSaveBlock1Ptr.playerParty[0] for attacker (= 1:1 décomp).
-        const sbsMod = await import('../save-block-state');
+        const sbsMod = await import('../save/save-block-state');
         const realParty = (sbsMod.gSaveBlock1Ptr.playerParty as Array<typeof attacker> | undefined)?.filter(m => !!m);
         if (!realParty?.length) return { error: 'no party (specify attackerSpecies)' };
         attacker = realParty[0];

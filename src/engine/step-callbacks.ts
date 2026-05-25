@@ -21,7 +21,7 @@
  */
 
 import { FlagSet } from './script/script-vars';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 
 // ─── Callback IDs 1:1 décomp event_objects.h ────────────────────────────────
 

@@ -314,7 +314,7 @@ export function PlayBGM(songNum: number): void {
 //
 // Pas de cycle d'import : save-system ne dépend PAS de gba-menu-system
 // (vérifié via grep). On peut donc importer GetSaveBlock2 statiquement.
-import { GetSaveBlock2 as _GetSaveBlock2, GetSaveBlock1 as _GetSaveBlock1 } from './save-system';
+import { GetSaveBlock2 as _GetSaveBlock2, GetSaveBlock1 as _GetSaveBlock1 } from './save/save-system';
 
 const LEGACY_SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
 
@@ -359,7 +359,7 @@ _migrateLegacySaveBlock2();
  *  Foundation qui permet l'import direct depuis n'importe quel module du port
  *  sans cycle ESM). Re-export ici pour préserver les call-sites existants
  *  qui font `import { gSaveBlock1Ptr } from './gba-menu-system'`. */
-import { gSaveBlock1Ptr as _gSaveBlock1PtrFoundation, gSaveBlock2Ptr as _gSaveBlock2PtrFoundation } from './save-block-state';
+import { gSaveBlock1Ptr as _gSaveBlock1PtrFoundation, gSaveBlock2Ptr as _gSaveBlock2PtrFoundation } from './save/save-block-state';
 export const gSaveBlock1Ptr = _gSaveBlock1PtrFoundation;
 export const gSaveBlock2Ptr = _gSaveBlock2PtrFoundation;
 

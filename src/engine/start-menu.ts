@@ -46,7 +46,7 @@ import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
-import { IsNationalPokedexEnabled } from './event-data';
+import { IsNationalPokedexEnabled } from './save/event-data';
 import {
   LockPlayerFieldControls, UnlockPlayerFieldControls, ScriptContext_IsEnabled,
   ArePlayerFieldControlsLocked,
@@ -61,14 +61,14 @@ import {
 } from './gba-menu-system';
 import { PlaySE, getRuntime, gMain } from './decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from './decomp-data/include/constants/songs-data';
-import { HasValidSave } from './save-system';
+import { HasValidSave } from './save/save-system';
 import { bagContents } from './bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
 import { GetStringRightAlignXOffset } from './gba-text-system';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
-import { gSaveBlock1Ptr } from './save-block-state';
+import { gSaveBlock1Ptr } from './save/save-block-state';
 import { FlagGet } from './script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
 import { CB2_InitOptionMenu as _CB2_InitOptionMenu_callback } from './decomp-data/src/option_menu-callbacks-auto';
@@ -963,7 +963,7 @@ function _tickSaveSavingMsg(): void {
   // Gate 1:1 RunSaveCallback : wait printer done.
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // TrySavingData (= notre persist).
-  void (async () => { const { SaveGame } = await import('./save-system'); await SaveGame(); })();
+  void (async () => { const { SaveGame } = await import('./save/save-system'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
   const text = getText('gText_PlayerSavedGame') ?? '{PLAYER} a sauvegardé la partie.';
   ShowFieldMessage(text + '$');

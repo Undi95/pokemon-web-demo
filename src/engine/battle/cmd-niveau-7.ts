@@ -21,7 +21,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   gMultiHitCounter, setMultiHitCounter,
   gBattlerAttacker, gBattlerTarget, gBattlersCount,

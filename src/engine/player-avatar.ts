@@ -118,7 +118,7 @@ import { NUM_ACRO_BIKE_COLLISIONS } from './decomp-data/src/field_player_avatar-
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 // 1:1 décomp `field_control_avatar.c` interaction chain. ESM cycle safe :
 // field-control-avatar importe player-avatar (gPlayerAvatar/GetXY...) au top-level,
 // nous l'importons ici aussi mais ses fonctions sont appelées uniquement DANS

@@ -29,8 +29,8 @@ import {
   emptyPokemonStorage,
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
-import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from './bag';
-import { SetDecorationInventoriesPointers } from './decoration-inventory';
+import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag';
+import { SetDecorationInventoriesPointers } from '../decoration-inventory';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,
   __flashClear, type BlockKey,
@@ -140,7 +140,7 @@ export function LoadGameSave(): number {
     console.log('[save-system] loaded (sector engine, counter max slot)');
     // 1:1 RTC : offset dans gSaveBlock2.localTimeOffset (struct Time),
     // déjà restauré ci-dessus. Rafraîchir gLocalTime (rtc.c RtcCalcLocalTime).
-    void import('./rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
+    void import('../rtc').then(({ RtcCalcLocalTime }) => { RtcCalcLocalTime(); });
     return SAVE_STATUS_OK;
   }
   // EMPTY/CORRUPT : pas de save valide → blocs par défaut (le boot 1:1
@@ -171,7 +171,7 @@ export async function SaveGame(): Promise<boolean> {
   // 1:1 décomp HandleSavingData : sync states runtime → blocks avant write.
   try {
     const lsMod = await import('./load_save');
-    const mapMod = await import('./map-loader');
+    const mapMod = await import('../map-loader');
     // 1:1 décomp start_menu.c InitSave : SaveMapView avant le dialog.
     // SyncPlayerPositionToBlock = notre helper port (le décomp update
     // gSaveBlock1Ptr->pos via CameraMove à chaque step ; ici on sync au save

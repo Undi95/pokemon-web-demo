@@ -9,7 +9,7 @@
  */
 
 import { registerOpcode } from './script-runtime';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
 
 /** Accès au tableau gSaveBlock1Ptr->berryTrees (1:1 décomp save_block.h). */

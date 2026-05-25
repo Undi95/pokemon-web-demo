@@ -19,7 +19,7 @@
  */
 
 import type { PokemonInstance } from '../pokemon';
-import { gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId,
 } from '../pokemon';

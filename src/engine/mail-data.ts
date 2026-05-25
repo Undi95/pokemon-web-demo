@@ -25,9 +25,9 @@
  * réexporte le type pour les callers.
  */
 
-import type { Mail } from './save-blocks';
-import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './save-blocks';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import type { Mail } from './save/save-blocks';
+import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './save/save-blocks';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import {
   GetMonData, SetMonData,
   MON_DATA_HELD_ITEM, MON_DATA_MAIL, MON_DATA_SPECIES, MON_DATA_PERSONALITY,

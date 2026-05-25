@@ -21,7 +21,7 @@
 
 import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
 
 /** 1:1 décomp `ScrCmd_givecoins` (scrcmd.c) :

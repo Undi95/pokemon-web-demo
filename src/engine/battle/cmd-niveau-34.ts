@@ -19,7 +19,7 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte } from './script-interpreter';
-import { gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   gBattleControllerExecFlags, gBattleMons, gBattlerAttacker, gBattlerTarget,
   gActiveBattler, setActiveBattler, setBattlerAttacker, setBattlerTarget,

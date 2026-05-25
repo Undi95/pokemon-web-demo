@@ -251,14 +251,14 @@ export class BirchRuntimeScene extends Phaser.Scene {
     // NamingScreen + Birch dialog "Garçon ou Fille?" via les auto modules.
     // Plus de sync vers `gameState.*` (= éliminé : gameState lit direct
     // gSaveBlock2Ptr maintenant).
-    const { gSaveBlock2Ptr } = await import('../engine/save-block-state');
+    const { gSaveBlock2Ptr } = await import('../engine/save/save-block-state');
     console.log(`[BirchRuntime] post-NamingScreen : name='${gSaveBlock2Ptr.playerName ?? ''}' gender=${gSaveBlock2Ptr.playerGender === 1 ? 'FEMALE' : 'MALE'}`);
 
     // Clear current map pour forcer le truck cinematic flow (= 1:1 décomp
     // WarpToTruck post-Birch). Sans ce clear, si une save précédente a un
     // `location` field set, decideBootMode triggers le resume mode qui spawn
     // à la saved position au lieu du truck.
-    const { SetCurrentMap } = await import('../engine/load_save');
+    const { SetCurrentMap } = await import('../engine/save/load_save');
     SetCurrentMap(undefined);
     // BUG FIX user 2026-05-20 : NE PAS auto-save ici. 1:1 décomp : la save
     // SRAM persiste tant que user n'appuie pas explicitement sur SAUVEGARDER

@@ -35,7 +35,7 @@ import {
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
 import { getRuntime } from './decomp-globals';
-import { gSaveBlock2Ptr } from './save-block-state';
+import { gSaveBlock2Ptr } from './save/save-block-state';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
 

@@ -29,9 +29,9 @@
 import { registerSpecial } from './script-opcodes';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../map-loader';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../decomp-globals';
-import { GetCurrentMap } from '../load_save';
+import { GetCurrentMap } from '../save/load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../tv-screen';
 import { setStringVar } from '../string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
@@ -3673,7 +3673,7 @@ registerSpecial('DoBattlePyramidMonsHaveHeldItem', () => {
 registerSpecial('CableClubSaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('../save-system');
+      const mod = await import('../save/save-system');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special CableClubSaveGame] async wrap failed', e);
@@ -3914,7 +3914,7 @@ registerSpecial('SetLilycoveLadyGfx', () => {
 registerSpecial('SaveGame', () => {
   void (async () => {
     try {
-      const mod = await import('../save-system');
+      const mod = await import('../save/save-system');
       await mod.SaveGame();
     } catch (e) {
       console.warn('[special SaveGame] async wrap failed', e);

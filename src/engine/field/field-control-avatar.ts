@@ -33,7 +33,7 @@ import {
   PlayerGetDestCoords,
   GetXYCoordsOneStepInFrontOfPlayer,
 } from '../player-avatar';
-import { gSaveBlock1Ptr } from '../save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,

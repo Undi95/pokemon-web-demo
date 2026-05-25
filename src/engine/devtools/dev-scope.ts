@@ -55,7 +55,7 @@ import type { DecompRuntime } from '../decomp-runtime';
 import * as decompBridge from '../decomp-bridge';
 // Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
 // gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
-import { gSaveBlock1Ptr as _sb1 } from '../save-block-state';
+import { gSaveBlock1Ptr as _sb1 } from '../save/save-block-state';
 import { MAP_OFFSET } from '../decomp-data/include/fieldmap-data';
 
 // 1:1 décomp `MAP_OFFSET = 7` (include/fieldmap.h:9).
