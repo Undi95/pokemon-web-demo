@@ -441,6 +441,12 @@ export interface ObjectEvent {
   /** 1:1 décomp `sprite->data[4] sSpeed` pour walk movement (event_object_movement.c:8223).
    *  MOVE_SPEED_NORMAL/FAST_1/FAST_2/FASTER/FASTEST/SLOWER. */
   walkSpeed: number;
+  /** 1:1 décomp `sprite->sNumSteps` pour WalkSlow path (event_object_movement.c
+   *  :5152 UpdateWalkSlowAnim). Counter de px shifts effectués (= 16 px = 1 tile
+   *  done). Path WalkSlow utilise pattern "1 px every 2 frames" sur 32 frames.
+   *  Différent de actionTimer (= sprite.data[3] timer générique) pour préserver
+   *  le state machine 1:1 décomp. */
+  walkSlowNumSteps: number;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -525,6 +531,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   jumpDistance: 0,
   jumpType: 0,
   walkSpeed: 0,
+  walkSlowNumSteps: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -2928,27 +2935,30 @@ function _makeDelayAction(delay: number): MovementActionFunc {
   };
 }
 
-/** 1:1 décomp `MOVE_SPEED_*` (event_object_movement.c:5092-5097).
+/** 1:1 décomp `MOVE_SPEED_*` (event_object_movement.c:5092-5097) — enum strict.
  *  0=NORMAL, 1=FAST_1 (run/surf/slide), 2=FAST_2 (current/acro bike),
  *  3=FASTER (mach bike), 4=FASTEST.
- *  Slot 5 = SLOWER custom pour WALK_SLOW (path InitNpcForWalkSlow). */
+ *  H3.1 cleanup : SLOWER slot retiré (= n'existe pas dans décomp enum). WALK_SLOW
+ *  utilise path SÉPARÉ via InitWalkSlow + UpdateWalkSlow (= 1:1 strict architectural). */
 const MOVE_SPEED_NORMAL = 0;
 const MOVE_SPEED_FAST_1 = 1;
 const MOVE_SPEED_FAST_2 = 2;
 const MOVE_SPEED_FASTER = 3;
 const MOVE_SPEED_FASTEST = 4;
-const MOVE_SPEED_SLOWER = 5;
+void MOVE_SPEED_FASTER; void MOVE_SPEED_FASTEST; void MOVE_SPEED_FAST_2;
 
 /** 1:1 décomp `sStepTimes` (event_object_movement.c:8294) : frames-per-tile par speed.
- *  NORMAL=16, FAST_1=8, FAST_2=6, FASTER=4, FASTEST=2. SLOWER=32 (WALK_SLOW path). */
-const _sStepTimes = [16, 8, 6, 4, 2, 32];
+ *  NORMAL=16, FAST_1=8, FAST_2=6, FASTER=4, FASTEST=2. */
+const _sStepTimes = [16, 8, 6, 4, 2];
 
 /** 1:1 décomp step patterns par speed (event_object_movement.c:8235-8284).
  *  Per-frame px increment : sStep1Funcs (= Step1 = 1px) × 16f for NORMAL,
  *  sStep2Funcs (= Step2 = 2px) × 8f for FAST_1, sStep3Funcs (= Step2/Step3 pattern
  *  totalisant 16px) × 6f for FAST_2, sStep4Funcs (= Step4 = 4px) × 4f for FASTER,
  *  sStep8Funcs (= Step8 = 8px) × 2f for FASTEST.
- *  Total = 16 px par tile, sub-pixel exact. */
+ *  Total = 16 px par tile, sub-pixel exact.
+ *  H3.1 cleanup : slot SLOWER retiré (= n'existe pas dans décomp). WALK_SLOW
+ *  utilise path séparé InitWalkSlow + UpdateWalkSlow (= 1:1 strict architectural). */
 const _sStepFuncTables: readonly (readonly number[])[] = [
   // NORMAL (16f × 1px = 16px)
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -2960,9 +2970,6 @@ const _sStepFuncTables: readonly (readonly number[])[] = [
   [4, 4, 4, 4],
   // FASTEST (2f × 8px = 16px)
   [8, 8],
-  // SLOWER (32f WALK_SLOW path : 1px every 2 frames = 16px total)
-  // = même pattern alternance 0/1/0/1/... répété
-  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
 ];
 
 /** 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081-5092) :
@@ -3047,6 +3054,152 @@ function _makeWalkAction(dir: number, speed: number): MovementActionFunc {
   return (rt, npc) => {
     if (npc.actionStep === 0) return _MovementAction_WalkNormal_Step0(rt, npc, dir, speed);
     return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
+// ─── WALK_SLOW path séparé 1:1 strict décomp ─────────────────────────────────
+// Source : event_object_movement.c:5128-5160 (= path DISTINCT de
+// InitMovementNormal + UpdateMovementNormal qui utilise NpcTakeStep + step
+// pattern tables). WalkSlow path utilise UpdateWalkSlowAnim qui shift 1 px
+// every 2 frames sur 32 frames totales = 16 px par tile, identique math mais
+// path architectural séparé pour conformité 1:1 strict.
+
+/** 1:1 décomp `SetWalkSlowSpriteData(sprite, direction)` (event_object_movement.c) :
+ *    sprite->sDirection = direction;
+ *    sprite->sTimer = 0;
+ *    sprite->sNumSteps = 0; */
+function _SetWalkSlowSpriteData(npc: ObjectEvent, direction: number): void {
+  npc.walkDirection = direction;     // sDirection (data[3])
+  npc.actionTimer = 0;                // sTimer (data[?])
+  npc.walkSlowNumSteps = 0;           // sNumSteps
+}
+
+/** 1:1 décomp `InitNpcForWalkSlow(obj, sprite, direction)` (event_object_movement.c
+ *  :5128) :
+ *    x = currentCoords.x;
+ *    y = currentCoords.y;
+ *    SetObjectEventDirection(direction);
+ *    MoveCoords(direction, &x, &y);
+ *    ShiftObjectEventCoords(obj, x, y);
+ *    SetWalkSlowSpriteData(sprite, direction);
+ *    sprite->animPaused = FALSE;
+ *    objectEvent->triggerGroundEffectsOnMove = TRUE;
+ *    sprite->sActionFuncId = 1; */
+function _InitNpcForWalkSlow(rt: DecompRuntime, npc: ObjectEvent, direction: number): void {
+  const dx = DIR_TO_DX[direction] ?? 0;
+  const dy = DIR_TO_DY[direction] ?? 0;
+  SetObjectEventDirection(npc, direction);
+  ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
+  _SetWalkSlowSpriteData(npc, direction);
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.animPaused = false;
+  }
+  npc.actionStep = 1;
+}
+
+/** 1:1 décomp `InitWalkSlow(obj, sprite, direction)` (event_object_movement.c:5144) :
+ *    InitNpcForWalkSlow(obj, sprite, direction);
+ *    SetStepAnimHandleAlternation(obj, sprite, GetMoveDirectionAnimNum(facingDirection)); */
+function _InitWalkSlow(rt: DecompRuntime, npc: ObjectEvent, direction: number): void {
+  _InitNpcForWalkSlow(rt, npc, direction);
+  // 1:1 décomp : SetStepAnimHandleAlternation = StartSpriteAnim avec walk anim
+  // + animPaused=FALSE (= _npcStartWalkAnim gère ça via GetMoveDirectionAnimNum).
+  _npcStartWalkAnim(rt, npc, npc.facingDirection);
+}
+
+/** 1:1 décomp `UpdateWalkSlowAnim(sprite)` (event_object_movement.c:5152) :
+ *    if (!(sprite->sTimer & 1)) {
+ *      Step1(sprite, sprite->sDirection);  // shift 1 px in direction
+ *      sprite->sNumSteps++;
+ *    }
+ *    sprite->sTimer++;
+ *    if (sprite->sNumSteps > 15) return TRUE;
+ *    return FALSE;
+ *
+ *  Step1(sprite, dir) = sprite.x/y += sDirectionToVectors[dir].x/y * 1 (= 1 px). */
+function _UpdateWalkSlowAnim(npc: ObjectEvent): boolean {
+  if ((npc.actionTimer & 1) === 0) {
+    // Step1 1:1 décomp : shift 1 px in direction.
+    const dx = DIR_TO_DX[npc.walkDirection] ?? 0;
+    const dy = DIR_TO_DY[npc.walkDirection] ?? 0;
+    npc.worldX += dx;
+    npc.worldY += dy;
+    npc.walkSlowNumSteps++;
+  }
+  npc.actionTimer++;
+  return npc.walkSlowNumSteps > 15;
+}
+
+/** 1:1 décomp `UpdateWalkSlow(obj, sprite)` (event_object_movement.c:5160) :
+ *    if (UpdateWalkSlowAnim(sprite)) {
+ *      ShiftStillObjectEventCoords(obj);
+ *      objectEvent->triggerGroundEffectsOnStop = TRUE;
+ *      sprite->animPaused = TRUE;
+ *      return TRUE;
+ *    }
+ *    return FALSE; */
+function _UpdateWalkSlow(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (_UpdateWalkSlowAnim(npc)) {
+    ShiftStillObjectEventCoords(npc);
+    npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite) sprite.animPaused = true;
+    }
+    return true;
+  }
+  return false;
+}
+
+/** Factory pour MovementAction_WalkSlow_X 1:1 strict décomp path séparé
+ *  (= InitWalkSlow + UpdateWalkSlow). Différent de _makeWalkAction qui utilise
+ *  InitMovementNormal + UpdateMovementNormal path. */
+function _makeWalkSlowAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitWalkSlow(rt, npc, dir);
+      // 1:1 décomp : Step0 chain to Step1.
+      if (_UpdateWalkSlow(rt, npc)) {
+        npc.actionStep = 2;
+        return true;
+      }
+      return false;
+    }
+    // Step1 : UpdateWalkSlow check done.
+    if (_UpdateWalkSlow(rt, npc)) {
+      npc.actionStep = 2;
+      return true;
+    }
+    return false;
+  };
+}
+
+/** Factory pour MovementAction_WalkDown(Start)Affine 1:1 strict :
+ *    InitWalkSlow(DIR_SOUTH);
+ *    sprite->affineAnimPaused = FALSE;
+ *    StartSpriteAffineAnimIfDifferent(sprite, affineAnimId);
+ *    return Step1;
+ *  Step1 : UpdateWalkSlow + affineAnimPaused=TRUE quand done. */
+function _makeWalkDownAffineActionStrict(affineAnimId: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitWalkSlow(rt, npc, DIR_SOUTH);
+      // DETTE H3.5 cascade : sprite.affineAnimPaused = FALSE +
+      // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
+      void affineAnimId;
+      if (_UpdateWalkSlow(rt, npc)) {
+        npc.actionStep = 2;
+        return true;
+      }
+      return false;
+    }
+    if (_UpdateWalkSlow(rt, npc)) {
+      // DETTE H3.5 : affineAnimPaused = TRUE quand done.
+      npc.actionStep = 2;
+      return true;
+    }
+    return false;
   };
 }
 
@@ -3819,26 +3972,9 @@ function _MovementAction_Figure8_Step0(_rt: DecompRuntime, npc: ObjectEvent): bo
   return true;
 }
 
-/** 1:1 décomp `MovementAction_WalkDownStartAffine_Step0` :
- *    InitWalkSlow(obj, sprite, DIR_SOUTH);
- *    sprite->affineAnimPaused = FALSE;
- *    StartSpriteAffineAnimIfDifferent(sprite, 0);
- *    return MovementAction_WalkDownStartAffine_Step1;
- *
- *  Step1 : UpdateWalkSlow → affineAnimPaused=TRUE quand done.
- *
- *  Dette H3 : sprite affine system. WalkSlow path via _makeWalkAction speed 5. */
-function _makeWalkDownAffineAction(affineAnimId: number): MovementActionFunc {
-  return (rt, npc) => {
-    if (npc.actionStep === 0) {
-      _InitNpcForMovement(rt, npc, DIR_SOUTH, MOVE_SPEED_SLOWER);
-      // DETTE H3 : sprite.affineAnimPaused = FALSE +
-      // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
-      void affineAnimId;
-    }
-    return _MovementAction_WalkNormal_Step1(rt, npc);
-  };
-}
+// H3.1 : `_makeWalkDownAffineAction` retiré (= utilisait MOVE_SPEED_SLOWER hack).
+// Remplacé par `_makeWalkDownAffineActionStrict` qui utilise InitWalkSlow path
+// 1:1 strict architectural. Cf. defs supra.
 
 /** 1:1 décomp `MovementAction_RevealTrainer_Step0` (event_object_movement.c) :
  *    if (objectEvent->movementType == MOVEMENT_TYPE_BURIED) {
@@ -4084,13 +4220,14 @@ gMovementActionFuncs[MOVEMENT_ACTION_DELAY_2]  = _makeDelayAction(2);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_4]  = _makeDelayAction(4);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_8]  = _makeDelayAction(8);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_16] = _makeDelayAction(16);
-// H1.3 : WALK_NORMAL/SLOW/FAST/FASTER actions 1:1 strict (= MOVE_SPEED_NORMAL=0,
-// FAST_1=1, FAST_2=2, FASTER=3, FASTEST=4, SLOWER=5).
-// WALK_SLOW = MOVE_SPEED_SLOWER (= 32 frames/tile = 0.5 px/frame).
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DOWN]    = _makeWalkAction(DIR_SOUTH, 5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_UP]      = _makeWalkAction(DIR_NORTH, 5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_LEFT]    = _makeWalkAction(DIR_WEST,  5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_RIGHT]   = _makeWalkAction(DIR_EAST,  5);
+// H1.3 + H3.1 fix : WALK_NORMAL/FAST/FASTER actions 1:1 strict via
+// InitMovementNormal path (= MOVE_SPEED_NORMAL=0, FAST_1=1, FAST_2=2,
+// FASTER=3, FASTEST=4). WALK_SLOW_X path SÉPARÉ via InitWalkSlow + UpdateWalkSlow
+// (= H3.1 fix architectural, plus de hack speed=SLOWER=5 dans MOVE_SPEED).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DOWN]    = _makeWalkSlowAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_UP]      = _makeWalkSlowAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_LEFT]    = _makeWalkSlowAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_RIGHT]   = _makeWalkSlowAction(DIR_EAST);
 // WALK_NORMAL = MOVE_SPEED_NORMAL (= 16 frames/tile = 1 px/frame).
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DOWN]  = _makeWalkAction(DIR_SOUTH, 0);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_UP]    = _makeWalkAction(DIR_NORTH, 0);
@@ -4163,10 +4300,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT]    = _makeWal
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_RIGHT]   = _makeWalkAction(DIR_NORTHEAST, 0);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT]  = _makeWalkAction(DIR_SOUTHWEST, 0);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT] = _makeWalkAction(DIR_SOUTHEAST, 0);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT]      = _makeWalkAction(DIR_NORTHWEST, 5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT]     = _makeWalkAction(DIR_NORTHEAST, 5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT]    = _makeWalkAction(DIR_SOUTHWEST, 5);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT]   = _makeWalkAction(DIR_SOUTHEAST, 5);
+// H3.1 fix : WALK_SLOW_DIAGONAL_X utilisent aussi InitWalkSlow path (= 1:1 décomp
+// MovementAction_WalkSlowDiagonalX_Step0 → InitWalkSlow + UpdateWalkSlow).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT]      = _makeWalkSlowAction(DIR_NORTHWEST);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT]     = _makeWalkSlowAction(DIR_NORTHEAST);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT]    = _makeWalkSlowAction(DIR_SOUTHWEST);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT]   = _makeWalkSlowAction(DIR_SOUTHEAST);
 // H1.11 : DISABLE/RESTORE_ANIMATION + HIDE/SHOW_REFLECTION + FACE_ORIGINAL_DIRECTION.
 gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_ANIMATION]        = _MovementAction_DisableAnimation_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_RESTORE_ANIMATION]        = _MovementAction_RestoreAnimation_Step0;
@@ -4271,9 +4410,10 @@ gMovementActionFuncs[MOVEMENT_ACTION_LEVITATE]            = _MovementAction_Levi
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE]       = _MovementAction_StopLevitate_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP] = _MovementAction_StopLevitateAtTop_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figure8_Step0;
-// H1.24 : WALK_DOWN_START_AFFINE (98) + WALK_DOWN_AFFINE (99) + REVEAL_TRAINER (89).
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_START_AFFINE] = _makeWalkDownAffineAction(0);
-gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_AFFINE]      = _makeWalkDownAffineAction(1);
+// H1.24 + H3.1 fix : WALK_DOWN_START_AFFINE (98) + WALK_DOWN_AFFINE (99) +
+// REVEAL_TRAINER (89). WALK_DOWN_AFFINE utilise InitWalkSlow path (= 1:1 strict).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_START_AFFINE] = _makeWalkDownAffineActionStrict(0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_AFFINE]      = _makeWalkDownAffineActionStrict(1);
 gMovementActionFuncs[MOVEMENT_ACTION_REVEAL_TRAINER]        = _MovementAction_RevealTrainer_Step0;
 // H1.25 : WALK_LEFT_AFFINE (150) + WALK_RIGHT_AFFINE (151) + FLY_UP (156) + FLY_DOWN (157).
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_LEFT_AFFINE]  = _makeWalkAffineAction(DIR_WEST, 2);
