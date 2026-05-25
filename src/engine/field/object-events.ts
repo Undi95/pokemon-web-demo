@@ -2796,6 +2796,7 @@ import {
   MOVEMENT_ACTION_WALK_FAST_LEFT, MOVEMENT_ACTION_WALK_FAST_RIGHT,
   MOVEMENT_ACTION_WALK_FASTER_DOWN, MOVEMENT_ACTION_WALK_FASTER_UP,
   MOVEMENT_ACTION_WALK_FASTER_LEFT, MOVEMENT_ACTION_WALK_FASTER_RIGHT,
+  MOVEMENT_ACTION_LOCK_FACING_DIRECTION, MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -2925,6 +2926,24 @@ function _makeWalkAction(dir: number, speed: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `MovementAction_LockFacingDirection_Step0` (event_object_movement.c) :
+ *    objectEvent->facingDirectionLocked = TRUE;
+ *    sprite->sActionFuncId = 1; return TRUE; */
+function _MovementAction_LockFacingDirection_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.facingDirectionLocked = true;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_UnlockFacingDirection_Step0` (event_object_movement.c) :
+ *    objectEvent->facingDirectionLocked = FALSE;
+ *    sprite->sActionFuncId = 1; return TRUE; */
+function _MovementAction_UnlockFacingDirection_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.facingDirectionLocked = false;
+  npc.actionStep = 1;
+  return true;
+}
+
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
 // 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
 // :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
@@ -3004,6 +3023,9 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_DOWN]  = _makeWalkAction(DIR_SO
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_UP]    = _makeWalkAction(DIR_NORTH, 2);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_LEFT]  = _makeWalkAction(DIR_WEST,  2);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_RIGHT] = _makeWalkAction(DIR_EAST,  2);
+// H1.4 : LOCK_FACING_DIRECTION / UNLOCK_FACING_DIRECTION (= scripted face lock).
+gMovementActionFuncs[MOVEMENT_ACTION_LOCK_FACING_DIRECTION]   = _MovementAction_LockFacingDirection_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION] = _MovementAction_UnlockFacingDirection_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
