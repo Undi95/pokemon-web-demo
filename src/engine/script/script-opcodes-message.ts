@@ -24,14 +24,31 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { gSpecialVar } from './script-vars';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../field/object-events';
-import { GetPlayerFacingDirection, DIR_SOUTH } from '../field/player-avatar';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement } from '../field/object-events';
+import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
+import {
+  MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
+  MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
+} from '../decomp-data/include/constants/event_object_movement-data';
 import {
   Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from '../ui/gba-menu-system';
 import { ClearStdWindowAndFrame, RemoveWindow } from '../ui/gba-window-system';
 import { getSelectedNpc, isAOrBNewlyPressed, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { spawnYesNoMenu } from './script-opcodes-menu';
+
+/** 1:1 décomp `GetFaceDirectionMovementAction(direction)` :
+ *  retourne MOVEMENT_ACTION_FACE_X selon direction. Same helper que dans
+ *  script-opcodes-lock.ts (= dupliqué pour éviter cycle ESM via lock import). */
+function _getFaceDirectionMovementAction(dir: number): number {
+  switch (dir) {
+    case DIR_SOUTH: return MOVEMENT_ACTION_FACE_DOWN;
+    case DIR_NORTH: return MOVEMENT_ACTION_FACE_UP;
+    case DIR_WEST:  return MOVEMENT_ACTION_FACE_LEFT;
+    case DIR_EAST:  return MOVEMENT_ACTION_FACE_RIGHT;
+    default:        return MOVEMENT_ACTION_FACE_DOWN;
+  }
+}
 
 // ─── Message ─────────────────────────────────────────────────────────────────
 
@@ -114,15 +131,37 @@ registerOpcode('msgbox', (ctx, args) => {
           // anim continue à cycler face/walk visuellement malgré frozen).
           for (const n of gObjectEvents) if (n.active) FreezeObjectEvent(n);
         } else if (isNpc) {
-          // 1:1 décomp Std_MsgboxNPC : lock (= freeze TOUS sauf player+selected)
-          // + faceplayer (= selected NPC tourne vers player).
+          // 1:1 STRICT décomp `Std_MsgboxNPC` (data/scripts/std_msgbox.inc:1) :
+          //   lock
+          //   faceplayer
+          //   message NULL
+          //   ...
+          //
+          // `lock` (ScrCmd_lock scrcmd.c) : LockSelectedObjectEvent ; mais en
+          // pratique le décomp `FreezeObjectEvents()` freeze ALL puis l'opcode
+          // `release` les unfreeze. Notre TS freeze tous + select.
+          //
+          // `faceplayer` (ScrCmd_faceplayer scrcmd.c:1152) :
+          //   ObjectEventFaceOppositeDirection(selected, playerFacing)
+          //   → ObjectEventSetHeldMovement(selected,
+          //       GetFaceDirectionMovementAction(GetOppositeDirection(playerFacing)))
+          //   → UnfreezeObjectEvent(selected) + set heldMovementActive=TRUE
+          //
+          // Le prochain UpdateObjectEventCurrentMovement (= TickObjectEventMovements)
+          // exec le heldMovement → MovementAction_FaceX_Step0 → FaceDirection
+          // → SetObjectEventDirection + StartSpriteAnim(FACE_X).
+          //
+          // Sans ce path 1:1 (= G15 + G16) : NPCs WANDER/LOOK ne tournent pas
+          // visuellement post-msgbox MSGBOX_NPC car set facingDirection direct
+          // ne wire pas sprite.animNum (= user G16 bug "2 mecs sur la map ne
+          // se tournent pas pendant le dialogue").
           const selected = getSelectedNpc();
           for (const n of gObjectEvents) {
             if (n.active && n !== selected) FreezeObjectEvent(n);
           }
           if (selected) {
-            FreezeObjectEvent(selected);
-            selected.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+            const oppositeDir = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
+            ObjectEventSetHeldMovement(selected, _getFaceDirectionMovementAction(oppositeDir));
           }
         }
         // MSGBOX_DEFAULT / MSGBOX_AUTOCLOSE / MSGBOX_YESNO : pas de lock/face.
