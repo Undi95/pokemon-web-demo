@@ -2814,6 +2814,8 @@ import {
   MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT, MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT,
   MOVEMENT_ACTION_SLIDE_DOWN, MOVEMENT_ACTION_SLIDE_UP,
   MOVEMENT_ACTION_SLIDE_LEFT, MOVEMENT_ACTION_SLIDE_RIGHT,
+  MOVEMENT_ACTION_PLAYER_RUN_DOWN, MOVEMENT_ACTION_PLAYER_RUN_UP,
+  MOVEMENT_ACTION_PLAYER_RUN_LEFT, MOVEMENT_ACTION_PLAYER_RUN_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3188,6 +3190,15 @@ gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_DOWN]  = _makeWalkAction(DIR_SOUTH, 4
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_UP]    = _makeWalkAction(DIR_NORTH, 4);
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_LEFT]  = _makeWalkAction(DIR_WEST,  4);
 gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_RIGHT] = _makeWalkAction(DIR_EAST,  4);
+// H1.9 : PLAYER_RUN_X (= speed FAST_1, 12 frames/tile, running).
+// Source : MovementAction_PlayerRunDown_Step0 (StartRunningAnim = InitNpcForMovement + MOVE_SPEED_FAST_1).
+// Dette R3 : décomp utilise GetRunningDirectionAnimNum (= ANIM_RUN_X), notre
+// _npcStartWalkAnim utilise GetMoveDirectionAnimNum (= ANIM_WALK_X).
+// Anim running vs walking = sprite frames différents. Acceptable visual partial.
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_DOWN]  = _makeWalkAction(DIR_SOUTH, 1);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_UP]    = _makeWalkAction(DIR_NORTH, 1);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_LEFT]  = _makeWalkAction(DIR_WEST,  1);
+gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_RIGHT] = _makeWalkAction(DIR_EAST,  1);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
