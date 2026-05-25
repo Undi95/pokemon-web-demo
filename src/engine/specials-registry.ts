@@ -53,6 +53,8 @@ import type { Pokemon as _PartyPokemon } from './battle/party-storage';
 import { CheckPartyMonHasHeldItem } from './script-pokemon-util';
 import { GetPCBoxToSendMon } from './pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from './map-name-popup';
+import { SetCameraPanning, SetCameraPanningCallback } from './field-camera';
+import { gSpecialVar } from './script-vars';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -1435,10 +1437,13 @@ const _STUB_RETURN_0_SPECIALS = [
   'StartRegiBattle', 'MoveElevator', 'GetFrontierBattlePoints', 'UpdateBattlePointsWindow',
   'CountPlayerMuseumPaintings', 'CloseDeptStoreElevatorWindow',
   'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
-  'RemoveBerryPowderVendorMenu', 'OffsetCameraForBattle', 'DoBattlePyramidMonsHaveHeldItem',
+  'RemoveBerryPowderVendorMenu',
+  // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
+  'DoBattlePyramidMonsHaveHeldItem',
   'SaveForBattleTowerLink', 'SetBattleTowerLinkPlayerGfx', 'LinkRetireStatusWithBattleTowerPartner',
   'ShowFrontierGamblerGoMessage', 'GiveFrontierBattlePoints', 'CloseBattleFrontierTutorWindow',
-  'GetDewfordHallPaintingNameIndex', 'GameClear', 'SetMewAboveGrass',
+  // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
+  'GameClear', 'SetMewAboveGrass',
   'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics', 'ShouldDoBrailleRegicePuzzle',
   'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
   'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
@@ -3155,6 +3160,39 @@ registerSpecial('FavorLadyGetPrize', () => {
   setStringVar(2, name);
   lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
   return prize;
+});
+
+// ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
+
+/** 1:1 décomp `OffsetCameraForBattle` (field_specials.c:1672-1676) :
+ *  ```c
+ *  void OffsetCameraForBattle(void) {
+ *      SetCameraPanningCallback(NULL);
+ *      SetCameraPanning(8, 0);
+ *  }
+ *  ```
+ *  Set camera offset (8, 0) avant battle (= shake centering pre-anim). */
+registerSpecial('OffsetCameraForBattle', () => {
+  SetCameraPanningCallback(null);
+  SetCameraPanning(8, 0);
+});
+
+/** 1:1 décomp `GetDewfordHallPaintingNameIndex` (dewford_trend.c:320-323) :
+ *  ```c
+ *  void GetDewfordHallPaintingNameIndex(void) {
+ *      gSpecialVar_Result = (gSaveBlock1Ptr->dewfordTrends[0].words[0]
+ *                          + gSaveBlock1Ptr->dewfordTrends[0].words[1]) & 7;
+ *  }
+ *  ```
+ *  Returns 0..7 index pour painting name dans Dewford Hall (= picked from
+ *  current trendy phrase words). */
+registerSpecial('GetDewfordHallPaintingNameIndex', () => {
+  const trend = gSaveBlock1Ptr.dewfordTrends?.[0];
+  if (!trend?.words || trend.words.length < 2) {
+    gSpecialVar.Result = 0;
+    return;
+  }
+  gSpecialVar.Result = (trend.words[0] + trend.words[1]) & 7;
 });
 
 // ─── Session B11 batch — 1 special Trainer Card stars 1:1 strict ──────────
