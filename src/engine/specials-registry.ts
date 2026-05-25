@@ -981,7 +981,7 @@ registerSpecial('PlayTrainerEncounterMusic', () => { /* no-op */ });
 registerSpecial('RemoveRecordsWindow', () => { /* no-op */ });
 registerSpecial('CloseBattlePointsWindow', () => { /* no-op */ });
 registerSpecial('ShowBattlePointsWindow', () => { /* no-op */ });
-registerSpecial('TakeFrontierBattlePoints', () => { /* no-op */ });
+// TakeFrontierBattlePoints — porté 1:1 décomp field_specials.c:2946 (batch B39).
 
 /** Scrollable multichoice (= shop with many items). */
 registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
@@ -1470,7 +1470,9 @@ registerSpecial('StorePlayerCoordsInVars', () => {
 /** Misc post-game stubs (= return 0/no-op pour éviter NaN VAR_RESULT) :
  *  Battle Frontier, Museum, Mirage Island, Painting, etc. */
 const _STUB_RETURN_0_SPECIALS = [
-  'StartRegiBattle', 'MoveElevator', 'GetFrontierBattlePoints', 'UpdateBattlePointsWindow',
+  'StartRegiBattle', 'MoveElevator',
+  // 'GetFrontierBattlePoints' — porté 1:1 décomp field_specials.c:2962 ci-bas (batch B39).
+  'UpdateBattlePointsWindow',
   // 'CountPlayerMuseumPaintings' — porté 1:1 décomp contest_util.c:2380 ci-bas (batch B33).
   'CloseDeptStoreElevatorWindow',
   'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
@@ -1478,7 +1480,9 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
   'DoBattlePyramidMonsHaveHeldItem',
   'SaveForBattleTowerLink', 'SetBattleTowerLinkPlayerGfx', 'LinkRetireStatusWithBattleTowerPartner',
-  'ShowFrontierGamblerGoMessage', 'GiveFrontierBattlePoints', 'CloseBattleFrontierTutorWindow',
+  'ShowFrontierGamblerGoMessage',
+  // 'GiveFrontierBattlePoints' — porté 1:1 décomp field_specials.c:2954 ci-bas (batch B39).
+  'CloseBattleFrontierTutorWindow',
   // 'GetDewfordHallPaintingNameIndex' — porté 1:1 décomp dewford_trend.c:320 ci-bas (batch B17).
   'GameClear', 'SetMewAboveGrass',
   'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics', 'ShouldDoBrailleRegicePuzzle',
@@ -3371,6 +3375,51 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B39 batch — 3 specials Frontier Battle Points 1:1 strict ────
+
+/** 1:1 décomp `TakeFrontierBattlePoints` (field_specials.c:2946-2952) :
+ *  ```c
+ *  void TakeFrontierBattlePoints(void) {
+ *      if (gSaveBlock2Ptr->frontier.battlePoints < gSpecialVar_0x8004)
+ *          gSaveBlock2Ptr->frontier.battlePoints = 0;
+ *      else
+ *          gSaveBlock2Ptr->frontier.battlePoints -= gSpecialVar_0x8004;
+ *  }
+ *  ``` */
+registerSpecial('TakeFrontierBattlePoints', () => {
+  const required = VarGet('VAR_0x8004');
+  const cur = gSaveBlock2Ptr.frontier?.battlePoints ?? 0;
+  if (!gSaveBlock2Ptr.frontier) return;
+  gSaveBlock2Ptr.frontier.battlePoints = cur < required ? 0 : cur - required;
+});
+
+/** 1:1 décomp `GiveFrontierBattlePoints` (field_specials.c:2954-2960) :
+ *  ```c
+ *  void GiveFrontierBattlePoints(void) {
+ *      if (gSaveBlock2Ptr->frontier.battlePoints + gSpecialVar_0x8004 > MAX_BATTLE_FRONTIER_POINTS)
+ *          gSaveBlock2Ptr->frontier.battlePoints = MAX_BATTLE_FRONTIER_POINTS;
+ *      else
+ *          gSaveBlock2Ptr->frontier.battlePoints += gSpecialVar_0x8004;
+ *  }
+ *  ```
+ *  MAX_BATTLE_FRONTIER_POINTS = 9999. */
+registerSpecial('GiveFrontierBattlePoints', () => {
+  const add = VarGet('VAR_0x8004');
+  const cur = gSaveBlock2Ptr.frontier?.battlePoints ?? 0;
+  if (!gSaveBlock2Ptr.frontier) return;
+  gSaveBlock2Ptr.frontier.battlePoints = (cur + add) > 9999 ? 9999 : (cur + add);
+});
+
+/** 1:1 décomp `GetFrontierBattlePoints` (field_specials.c:2962-2964) :
+ *  ```c
+ *  u16 GetFrontierBattlePoints(void) {
+ *      return gSaveBlock2Ptr->frontier.battlePoints;
+ *  }
+ *  ``` */
+registerSpecial('GetFrontierBattlePoints', () => {
+  return gSaveBlock2Ptr.frontier?.battlePoints ?? 0;
 });
 
 // ─── Session B38 batch — 1 special Berry Powder 1:1 strict ───────────────
