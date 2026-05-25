@@ -898,6 +898,20 @@ registerSpecial('GetSlotMachineId', () => 0);
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
+/** 1:1 décomp `GetSelectedTVShow` (tv.c:882-885) :
+ *  ```c
+ *  u8 GetSelectedTVShow(void) {
+ *      return gSaveBlock1Ptr->tvShows[gSpecialVar_0x8004].common.kind;
+ *  }
+ *  ```
+ *  Retourne le kind du TV show à slot VAR_0x8004. */
+registerSpecial('GetSelectedTVShow', () => {
+  const slot = VarGet('VAR_0x8004');
+  const tvShows = gSaveBlock1Ptr.tvShows;
+  if (!tvShows || slot < 0 || slot >= tvShows.length) return 0;
+  return tvShows[slot]?.kind ?? 0;
+});
+
 /** 1:1 décomp `SubtractMoneyFromVar0x8005` (money.c:128-131) :
  *  ```c
  *  void SubtractMoneyFromVar0x8005(void) {
@@ -1521,7 +1535,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetQuizAuthor', 'GetQuizLadyState', 'GetRandomActiveShowIdx',
   'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
   'GetSecretBaseOwnerAndState', 'GetSecretBaseTypeInFrontOfPlayer',
-  'GetSelectedMonNicknameAndSpecies', 'GetSelectedTVShow',
+  // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
+  'GetSelectedMonNicknameAndSpecies',
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
   'GetTrainerBattleMode', 'GetTrainerFlag',
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
