@@ -2861,6 +2861,8 @@ import {
   MOVEMENT_ACTION_INIT_AFFINE_ANIM, MOVEMENT_ACTION_CLEAR_AFFINE_ANIM,
   MOVEMENT_ACTION_LEVITATE, MOVEMENT_ACTION_STOP_LEVITATE,
   MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
+  MOVEMENT_ACTION_WALK_DOWN_START_AFFINE, MOVEMENT_ACTION_WALK_DOWN_AFFINE,
+  MOVEMENT_ACTION_REVEAL_TRAINER,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3813,6 +3815,45 @@ function _MovementAction_Figure8_Step0(_rt: DecompRuntime, npc: ObjectEvent): bo
   return true;
 }
 
+/** 1:1 décomp `MovementAction_WalkDownStartAffine_Step0` :
+ *    InitWalkSlow(obj, sprite, DIR_SOUTH);
+ *    sprite->affineAnimPaused = FALSE;
+ *    StartSpriteAffineAnimIfDifferent(sprite, 0);
+ *    return MovementAction_WalkDownStartAffine_Step1;
+ *
+ *  Step1 : UpdateWalkSlow → affineAnimPaused=TRUE quand done.
+ *
+ *  Dette H3 : sprite affine system. WalkSlow path via _makeWalkAction speed 5. */
+function _makeWalkDownAffineAction(affineAnimId: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, DIR_SOUTH, MOVE_SPEED_SLOWER);
+      // DETTE H3 : sprite.affineAnimPaused = FALSE +
+      // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
+      void affineAnimId;
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
+/** 1:1 décomp `MovementAction_RevealTrainer_Step0` (event_object_movement.c) :
+ *    if (objectEvent->movementType == MOVEMENT_TYPE_BURIED) {
+ *      SetBuriedTrainerMovement(objectEvent); return FALSE;
+ *    }
+ *    sActionFuncId = 1; return MovementAction_RevealTrainer_Step1.
+ *
+ *  Step1 : if (UpdateRevealDisguise) { sActionFuncId=2; return TRUE; }
+ *  return FALSE.
+ *
+ *  Dette H3 cascade : SetBuriedTrainerMovement + UpdateRevealDisguise +
+ *  Disguise/Buried sub-systems. State machine porté partial. */
+function _MovementAction_RevealTrainer_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // 1:1 décomp : if movementType BURIED, SetBuriedTrainerMovement.
+  // DETTE H3 : SetBuriedTrainerMovement + UpdateRevealDisguise cascade.
+  npc.actionStep = 1;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -4079,6 +4120,10 @@ gMovementActionFuncs[MOVEMENT_ACTION_LEVITATE]            = _MovementAction_Levi
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE]       = _MovementAction_StopLevitate_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP] = _MovementAction_StopLevitateAtTop_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figure8_Step0;
+// H1.24 : WALK_DOWN_START_AFFINE (98) + WALK_DOWN_AFFINE (99) + REVEAL_TRAINER (89).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_START_AFFINE] = _makeWalkDownAffineAction(0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_AFFINE]      = _makeWalkDownAffineAction(1);
+gMovementActionFuncs[MOVEMENT_ACTION_REVEAL_TRAINER]        = _MovementAction_RevealTrainer_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
