@@ -69,6 +69,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../system/decom
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSaveBlock1 } from '../save/save-system';
+import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../pokemon/berry';
 
 const BASE = '/decomp/em';
 
@@ -413,6 +414,14 @@ export interface ObjectEvent {
    *  movement type est "copyable" par les NPCs avec MOVEMENT_TYPE_COPY_*
    *  (= NPCs qui imitent le player). Cf. `COPY_MOVE_*` enum. */
   playerCopyableMovement: number;
+  /** 1:1 décomp `sprite->data[7] sBerryTreeFlags`
+   *  (event_object_movement.c:3069). Bits BERRY_FLAG_SET_GFX (1<<0) /
+   *  BERRY_FLAG_SPARKLING (1<<1) / BERRY_FLAG_JUST_PICKED (1<<2).
+   *  Used par MovementType_BerryTreeGrowth state machine. */
+  berryTreeFlags: number;
+  /** 1:1 décomp `sprite->data[2] sTimer` (event_object_movement.c:3068).
+   *  Used par BERRYTREEFUNC_SPARKLE / SPARKLE_END counter (64 frames). */
+  berryTreeTimer: number;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -489,6 +498,8 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   fieldEffectSpriteId: MAX_SPRITES,
   warpArrowSpriteId: MAX_SPRITES,
   playerCopyableMovement: 0,
+  berryTreeFlags: 0,
+  berryTreeTimer: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -2232,6 +2243,154 @@ function tickWalkSequence(rt: DecompRuntime, npc: ObjectEvent, route: ReadonlyAr
   }
 }
 
+// ─── BerryTreeGrowth state machine 1:1 décomp ────────────────────────────────
+// Source : event_object_movement.c:3060-3182.
+
+/** 1:1 décomp `BERRY_FLAG_SET_GFX` (event_object_movement.c:3071). */
+const BERRY_FLAG_SET_GFX     = 1 << 0;
+/** 1:1 décomp `BERRY_FLAG_SPARKLING` (event_object_movement.c:3072). */
+const BERRY_FLAG_SPARKLING   = 1 << 1;
+/** 1:1 décomp `BERRY_FLAG_JUST_PICKED` (event_object_movement.c:3073). */
+const BERRY_FLAG_JUST_PICKED = 1 << 2;
+
+/** 1:1 décomp BERRYTREEFUNC_* enum (event_object_movement.c:3060-3066). */
+const BERRYTREEFUNC_NORMAL        = 0;
+const BERRYTREEFUNC_MOVE          = 1;
+const BERRYTREEFUNC_SPARKLE_START = 2;
+const BERRYTREEFUNC_SPARKLE       = 3;
+const BERRYTREEFUNC_SPARKLE_END   = 4;
+
+/** 1:1 décomp `SetBerryTreeGraphics` (event_object_movement.c:1890).
+ *  Dette R3 cascade : ObjectEventSetGraphicsId (1820) swap graphics_id + palette.
+ *  Port partial : visibility + animNum sync. Sprite garde son spawn-time graphicsId.
+ *  Pour 1:1 strict full : porter ObjectEventSetGraphicsId (H1+H3 cascade)
+ *  + gBerryTreePicTablePointers (43 entries × 9 frames) + paletteSlotTablePointers. */
+function setBerryTreeGraphics(rt: DecompRuntime, npc: ObjectEvent): void {
+  npc.invisible = true;
+  const berryStage = GetStageByBerryTreeId(npc.trainerRange_berryTreeId);
+  if (berryStage !== BERRY_STAGE_NO_BERRY) {
+    npc.invisible = false;
+    void GetBerryTypeByBerryTreeId(npc.trainerRange_berryTreeId);  // dette R3 graphics swap
+    const animNumForStage = berryStage - 1;  // 1:1 décomp : berryStage-- avant lookup.
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite && sprite.anims) {
+        // 1:1 décomp `StartSpriteAnim(sprite, berryStage)`.
+        sprite.animNum = animNumForStage;
+        sprite.animBeginning = true;
+        sprite.animEnded = false;
+        sprite.animCmdIndex = 0;
+        sprite.animDelayCounter = 0;
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth_Normal` (event_object_movement.c:3093). */
+function berryTreeNormal(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // ClearObjectEventMovement (4486) : reset state.
+  npc.singleMovementActive = false;
+  npc.heldMovementActive = false;
+  npc.heldMovementFinished = false;
+  npc.movementActionId = 0xFF;
+  npc.invisible = true;
+  const berryStage = GetStageByBerryTreeId(npc.trainerRange_berryTreeId);
+  if (berryStage === BERRY_STAGE_NO_BERRY) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite && !(npc.berryTreeFlags & BERRY_FLAG_JUST_PICKED) && sprite.animNum === BERRY_STAGE_FLOWERING) {
+      // 1:1 décomp : just picked → trigger FieldEffect sparkle + set animNum = berryStage.
+      // DETTE H3 : FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE) cascade FieldEffect system.
+      sprite.animNum = berryStage;
+    }
+    return false;
+  }
+  npc.invisible = false;
+  const berryStageMinusOne = berryStage - 1;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite && sprite.animNum !== berryStageMinusOne) {
+    // Stage changed → sparkle anim.
+    npc.movementStep = BERRYTREEFUNC_SPARKLE_START;
+    return true;
+  }
+  // Same stage → ObjectEventSetSingleMovement(MOVEMENT_ACTION_START_ANIM_IN_DIRECTION).
+  // DETTE H1 : gMovementActionFuncs[MOVEMENT_ACTION_START_ANIM_IN_DIRECTION] dispatch.
+  setBerryTreeGraphics(rt, npc);
+  npc.movementStep = BERRYTREEFUNC_MOVE;
+  return true;
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth_Move` (event_object_movement.c:3128). */
+function berryTreeMove(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // 1:1 : if (ObjectEventExecSingleMovementAction) { sTypeFuncId = NORMAL; return TRUE; }
+  // DETTE H1 : ObjectEventExecSingleMovementAction dispatch. Port partial :
+  // assume action done imm → retour NORMAL.
+  npc.movementStep = BERRYTREEFUNC_NORMAL;
+  return true;
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth_SparkleStart` (event_object_movement.c:3139). */
+function berryTreeSparkleStart(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.singleMovementActive = true;
+  npc.movementStep = BERRYTREEFUNC_SPARKLE;
+  npc.berryTreeTimer = 0;
+  npc.berryTreeFlags |= BERRY_FLAG_SPARKLING;
+  // DETTE H3 : FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE) cascade FieldEffect system.
+  // gFieldEffectArguments[0..3] = coords + subpriority + oam.priority.
+  return true;
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth_Sparkle` (event_object_movement.c:3154). */
+function berryTreeSparkle(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.berryTreeTimer++;
+  npc.invisible = ((npc.berryTreeTimer & 2) >> 1) === 1;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite) sprite.animPaused = true;
+  if (npc.berryTreeTimer > 64) {
+    setBerryTreeGraphics(rt, npc);
+    npc.movementStep = BERRYTREEFUNC_SPARKLE_END;
+    npc.berryTreeTimer = 0;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth_SparkleEnd` (event_object_movement.c:3170). */
+function berryTreeSparkleEnd(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.berryTreeTimer++;
+  npc.invisible = ((npc.berryTreeTimer & 2) >> 1) === 1;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite) sprite.animPaused = true;
+  if (npc.berryTreeTimer > 64) {
+    npc.movementStep = BERRYTREEFUNC_NORMAL;
+    npc.berryTreeFlags &= ~BERRY_FLAG_SPARKLING;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementType_BerryTreeGrowth` (event_object_movement.c:3075) +
+ *  `ObjectEventCB2_BerryTree` (3087). Loop while callback returns TRUE. */
+function tickBerryTreeGrowth(rt: DecompRuntime, npc: ObjectEvent): void {
+  if (!(npc.berryTreeFlags & BERRY_FLAG_SET_GFX)) {
+    setBerryTreeGraphics(rt, npc);
+    npc.berryTreeFlags |= BERRY_FLAG_SET_GFX;
+  }
+  // UpdateObjectEventCurrentMovement loop : while callback returns TRUE, re-dispatch.
+  // Safety bound 8 iterations (= state machine n'a que 5 states, never plus de 5 transitions/frame).
+  for (let i = 0; i < 8; i++) {
+    let cont = false;
+    switch (npc.movementStep) {
+      case BERRYTREEFUNC_NORMAL:        cont = berryTreeNormal(rt, npc); break;
+      case BERRYTREEFUNC_MOVE:          cont = berryTreeMove(rt, npc); break;
+      case BERRYTREEFUNC_SPARKLE_START: cont = berryTreeSparkleStart(rt, npc); break;
+      case BERRYTREEFUNC_SPARKLE:       cont = berryTreeSparkle(rt, npc); break;
+      case BERRYTREEFUNC_SPARKLE_END:   cont = berryTreeSparkleEnd(rt, npc); break;
+      default: return;
+    }
+    if (!cont) break;
+  }
+}
+
 /** Map MOVEMENT_TYPE_* string → state machine handler + allowed directions.
  *  Ajout 4.4.c.2 : multi-direction look + multi-direction wander.
  *  Ajout 4.4.f : ROTATE_*, WALK_*_AND_*, WALK_IN_PLACE_* (= face static),
@@ -2383,17 +2542,36 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.invisible = true;
     return true;
   }
-  // BERRY_TREE_GROWTH : berry tree state machine (= grows over time).
-  // 1:1 décomp `MovementType_BerryTreeGrowth` (event_object_movement.c:3075)
-  // gère l'état du berry (= seed/sprout/sapling/full/berry stages) via le
-  // berry data (= gSaveBlock1Ptr->berryTrees[treeId]).
+  // ─── MOVEMENT_TYPE_BERRY_TREE_GROWTH (H2) ───────────────────────────────────
+  // 1:1 strict décomp `MovementType_BerryTreeGrowth` (event_object_movement.c:3075)
+  // + gMovementTypeFuncs_BerryTreeGrowth[5] (3060-3066) :
+  //   BERRYTREEFUNC_NORMAL (0)        : check stage + decide grow/sparkle
+  //   BERRYTREEFUNC_MOVE (1)          : exec sprite anim until done
+  //   BERRYTREEFUNC_SPARKLE_START (2) : trigger FLDEFF_BERRY_TREE_GROWTH_SPARKLE
+  //   BERRYTREEFUNC_SPARKLE (3)       : blink invisible 64 frames
+  //   BERRYTREEFUNC_SPARKLE_END (4)   : blink invisible 64 frames + back to NORMAL
   //
-  // DETTE 1:1 STRICT : full port nécessite berry tree state machine + sprite
-  // graphics_id swap par stage (= 5 graphics_ids différents par berry type).
-  // Notre TS skip ce tick — sprite reste à sa graphics_id de spawn. Le block
-  // spawn 2882-2887 a set animNum = FACE_X, donc visual idle correct.
-  // À porter ensemble quand Phase berry planted state est wired.
+  // sTypeFuncId = notre npc.movementStep. sBerryTreeFlags = npc.berryTreeFlags.
+  // sTimer = npc.berryTreeTimer.
+  //
+  // BERRY_FLAG_SET_GFX = (1<<0)  : sprite graphics initialisé via SetBerryTreeGraphics.
+  // BERRY_FLAG_SPARKLING = (1<<1) : sparkling anim en cours.
+  // BERRY_FLAG_JUST_PICKED = (1<<2): berry vient d'être ramassée → skip sparkle.
+  //
+  // DETTES R3 1:1 strict cascade :
+  //   - ObjectEventSetGraphicsId (1820) : palette swap + oam shape + images swap.
+  //     Cascade vers PatchObjectPalette + LoadSpecialObjectReflectionPalette +
+  //     SetSpritePosToMapCoords + CameraObjectReset.
+  //   - FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE) : H3 FieldEffect system.
+  //   - ObjectEventSetSingleMovement(MOVEMENT_ACTION_START_ANIM_IN_DIRECTION) +
+  //     ObjectEventExecSingleMovementAction : H1 gMovementActionFuncs[].
+  //   - gBerryTreePicTablePointers + gBerryTreePaletteSlotTablePointers (43 entries
+  //     × 9 image structs) : data extraction lourde, lazy port (= dette R3).
+  //
+  // Port partial : state machine porté + visibility/animNum sync 1:1. Le sprite
+  // swap (= graphics_id EARLY→LATE stages) + sparkle FieldEffect = stub explicit.
   if (mt === 'MOVEMENT_TYPE_BERRY_TREE_GROWTH') {
+    tickBerryTreeGrowth(rt, npc);
     return true;
   }
   // TREE_DISGUISE / MOUNTAIN_DISGUISE / SAND_DISGUISE : NPC se déguise en
