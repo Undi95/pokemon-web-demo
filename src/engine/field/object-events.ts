@@ -2865,6 +2865,7 @@ import {
   MOVEMENT_ACTION_REVEAL_TRAINER,
   MOVEMENT_ACTION_WALK_LEFT_AFFINE, MOVEMENT_ACTION_WALK_RIGHT_AFFINE,
   MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
+  MOVEMENT_ACTION_LOCK_ANIM, MOVEMENT_ACTION_UNLOCK_ANIM,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3958,6 +3959,29 @@ function _makeFlyDownAction(): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp struct `sLockedAnimObjectEvents` (event_object_movement.c).
+ *  Tracks localIds of NPCs ayant anim locked. AllocZeroed dans LockAnim_Step0,
+ *  freed quand count=0 dans UnlockAnim_Step0. */
+const _sLockedAnimLocalIds: Set<number> = new Set();
+
+/** 1:1 décomp `MovementAction_LockAnim_Step0` (event_object_movement.c) :
+ *    Track localId dans sLockedAnimObjectEvents + sActionFuncId = 1.
+ *    Return TRUE. */
+function _MovementAction_LockAnim_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _sLockedAnimLocalIds.add(npc.localId);
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_UnlockAnim_Step0` (event_object_movement.c) :
+ *    Remove localId de sLockedAnimObjectEvents + sActionFuncId = 1.
+ *    Free sLockedAnimObjectEvents si count == 0. */
+function _MovementAction_UnlockAnim_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _sLockedAnimLocalIds.delete(npc.localId);
+  npc.actionStep = 1;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -4233,6 +4257,9 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_LEFT_AFFINE]  = _makeWalkAffineAction(
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_RIGHT_AFFINE] = _makeWalkAffineAction(DIR_EAST, 3);
 gMovementActionFuncs[MOVEMENT_ACTION_FLY_UP]   = _makeFlyUpAction();
 gMovementActionFuncs[MOVEMENT_ACTION_FLY_DOWN] = _makeFlyDownAction();
+// H1.26 : LOCK_ANIM (148) + UNLOCK_ANIM (149).
+gMovementActionFuncs[MOVEMENT_ACTION_LOCK_ANIM]   = _MovementAction_LockAnim_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_UNLOCK_ANIM] = _MovementAction_UnlockAnim_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
