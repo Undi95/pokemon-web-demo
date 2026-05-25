@@ -862,9 +862,43 @@ registerSpecial('SpawnCameraObject', () => 0);
 registerSpecial('RemoveCameraObject', () => { /* no-op */ });
 
 /** Trainer Fan Club (Lilycove, post-game). */
-registerSpecial('IsFanClubMemberFanOfPlayer', () => 0);
+/** 1:1 décomp `IsFanClubMemberFanOfPlayer` (field_specials.c:4117-4124) :
+ *  ```c
+ *  bool8 IsFanClubMemberFanOfPlayer(void) {
+ *      u16 idx = gSpecialVar_0x8004;
+ *      if (GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]))
+ *          return TRUE;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  sFanClubMemberIds[NUM_TRAINER_FAN_CLUB_MEMBERS=8] = [FANCLUB_MEMBER1..8 =
+ *  8..15]. FANCLUB_BITFIELD = vars[VAR_FANCLUB_FAN_COUNTER]. Bit shift+mask. */
+registerSpecial('IsFanClubMemberFanOfPlayer', () => {
+  const idx = VarGet('VAR_0x8004');
+  if (idx >= 8) return 0;  // NUM_TRAINER_FAN_CLUB_MEMBERS
+  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  return ((counter >> (idx + 8)) & 1) ? 1 : 0;  // FANCLUB_MEMBER1 = 8
+});
 registerSpecial('BufferFanClubTrainerName', () => { /* no-op */ });
-registerSpecial('GetNumFansOfPlayerInTrainerFanClub', () => 0);
+/** 1:1 décomp `GetNumFansOfPlayerInTrainerFanClub` (field_specials.c:4126-4138) :
+ *  ```c
+ *  u16 GetNumFansOfPlayerInTrainerFanClub(void) {
+ *      u8 i, numFans = 0;
+ *      for (i = 0; i < NUM_TRAINER_FAN_CLUB_MEMBERS; i++) {
+ *          if (GET_TRAINER_FAN_CLUB_FLAG(i + FANCLUB_MEMBER1)) numFans++;
+ *      }
+ *      return numFans;
+ *  }
+ *  ```
+ *  NUM_TRAINER_FAN_CLUB_MEMBERS=8, FANCLUB_MEMBER1=8. */
+registerSpecial('GetNumFansOfPlayerInTrainerFanClub', () => {
+  const counter = VarGet('VAR_FANCLUB_FAN_COUNTER');
+  let numFans = 0;
+  for (let i = 0; i < 8; i++) {
+    if ((counter >> (i + 8)) & 1) numFans++;
+  }
+  return numFans;
+});
 registerSpecial('Script_TryGainNewFanFromCounter', () => 0);
 
 /** Special trainer battles (= legendary, gym leaders specifics, Rayquaza). */
@@ -1309,10 +1343,23 @@ registerSpecial('ScriptGetPartyMonSpecies', () => {
     : mon.speciesId ?? 0;
 });
 
-/** 1:1 décomp `GetPlayerAvatarBike` (= field_player_avatar.c) :
- *    return PlayerGetAvatarFlags() & PLAYER_AVATAR_FLAG_*BIKE;
- *  Pour MVP (no bike yet), retourne 0 (= pas en vélo). */
-registerSpecial('GetPlayerAvatarBike', () => 0);
+/** 1:1 décomp `GetPlayerAvatarBike` (field_specials.c:168-175) :
+ *  ```c
+ *  u16 GetPlayerAvatarBike(void) {
+ *      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE)) return 1;
+ *      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE)) return 2;
+ *      return 0;
+ *  }
+ *  ```
+ *  Read direct gPlayerAvatar.flags bits ACRO=(1<<2), MACH=(1<<1).
+ *  Migré stub → port 1:1 (cleanup B12). */
+registerSpecial('GetPlayerAvatarBike', () => {
+  const pa = (globalThis as { gPlayerAvatar?: { flags?: number } }).gPlayerAvatar;
+  const flags = pa?.flags ?? 0;
+  if (flags & (1 << 2)) return 1;  // PLAYER_AVATAR_FLAG_ACRO_BIKE
+  if (flags & (1 << 1)) return 2;  // PLAYER_AVATAR_FLAG_MACH_BIKE
+  return 0;
+});
 
 /** 1:1 décomp `ShowMapNamePopup` (= map_name_popup.c) :
  *    Show the map name popup at top-left for ~2s. */
