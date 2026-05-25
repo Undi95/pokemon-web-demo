@@ -113,6 +113,8 @@ import {
 } from './metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
 import { GAME_STAT_JUMPED_DOWN_LEDGES } from './decomp-data/include/constants/game_stat-data';
+import { OBJ_EVENT_GFX_PUSHABLE_BOULDER } from './decomp-data/include/constants/event_objects-data';
+import { NUM_ACRO_BIKE_COLLISIONS } from './decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
@@ -789,12 +791,11 @@ const COLLISION_HORIZONTAL_RAIL            = 13;
 /** 1:1 décomp `PLAYER_AVATAR_FLAG_SURFING = (1 << 3)` (global.fieldmap.h:51). */
 const PLAYER_AVATAR_FLAG_SURFING = 1 << 3;
 
-/** 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87`
- *  (include/constants/event_objects.h:99). */
-const OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87;
+// 1:1 décomp `OBJ_EVENT_GFX_PUSHABLE_BOULDER = 87` (include/constants/event_objects.h:99).
+// Migré vers import decomp-data event_objects-data.ts (cleanup B7).
 
-/** 1:1 décomp `NUM_ACRO_BIKE_COLLISIONS = 5` (field_player_avatar.c:34). */
-const NUM_ACRO_BIKE_COLLISIONS = 5;
+// 1:1 décomp `NUM_ACRO_BIKE_COLLISIONS = 5` (field_player_avatar.c:34).
+// Migré vers import decomp-data field_player_avatar-data.ts (cleanup B7).
 
 /** 1:1 décomp `sAcroBikeTrickMetatiles[NUM_ACRO_BIKE_COLLISIONS]`
  *  (field_player_avatar.c:197-204). Functions appliquées au metatileBehavior

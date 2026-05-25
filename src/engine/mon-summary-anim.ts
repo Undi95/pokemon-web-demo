@@ -22,6 +22,7 @@ import { SpriteCallbackDummy, BlendPalette } from './decomp-globals';
 import { Sin, Cos, gSineTable, SetOamMatrix, CalcCenterToCornerVec } from './decomp-helpers';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { RAW_MON_FRONT_ANIM_IDS, RAW_MON_ANIM_DELAYS } from './decomp-data/src/mon-anim-tables-data';
+import { ENUM_BattlerId } from './decomp-data/include/constants/battle-data';
 
 /* ── RGB (1:1 include/constants/rgb.h) ───────────────────────────────────── */
 const RGB = (r: number, g: number, b: number) => (r | (g << 5) | (b << 10));
@@ -94,7 +95,9 @@ const ANIM: Record<string, number> = {
 
 /* ── sAnims (1:1 struct PokemonAnimData sAnims[MAX_BATTLERS_COUNT]) ───────── */
 interface PokemonAnimData { delay: number; speed: number; runs: number; rotation: number; data: number }
-const MAX_BATTLERS_COUNT = 4;
+// 1:1 décomp `MAX_BATTLERS_COUNT` (constants/battle.h) — extracted as
+// ENUM_BattlerId.MAX_BATTLERS_COUNT dans decomp-data battle-data.ts.
+const MAX_BATTLERS_COUNT = ENUM_BattlerId.MAX_BATTLERS_COUNT;
 const sAnims: PokemonAnimData[] = Array.from({ length: MAX_BATTLERS_COUNT },
   () => ({ delay: 0, speed: 0, runs: 1, rotation: 0, data: 0 }));
 let sAnimIdx = 0;

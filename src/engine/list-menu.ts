@@ -62,6 +62,7 @@ import {
 } from './decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from './sprite';
 import { gSineTable } from './decomp-helpers';
+import { SE_SELECT as _SE_SELECT } from './decomp-data/include/constants/songs-data';
 
 // ─── Constantes 1:1 list_menu.h:6-28 ────────────────────────────────────────
 
@@ -418,8 +419,9 @@ const CURSOR_OBJECT_START = CURSOR_RED_OUTLINE;
 const COPYWIN_GFX = 2;
 const COPYWIN_MAP = 1;
 
-/** 1:1 décomp `include/constants/songs.h SE_SELECT` = 5. */
-const SE_SELECT = 5;
+/** 1:1 décomp `include/constants/songs.h SE_SELECT` = 5.
+ *  Migré vers import decomp-data songs-data.ts (cleanup B7). */
+const SE_SELECT = _SE_SELECT;
 
 /** 1:1 décomp `src/strings.c:215 const u8 gText_SelectorArrow2[] = _("▶")`
  *  (curseur CURSOR_BLACK_ARROW = texte, pas un sprite). */

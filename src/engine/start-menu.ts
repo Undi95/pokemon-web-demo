@@ -60,7 +60,7 @@ import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './gba-menu-system';
 import { PlaySE, getRuntime, gMain } from './decomp-globals';
-import * as Songs from './decomp-data/include/constants/songs-data';
+import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from './decomp-data/include/constants/songs-data';
 import { HasValidSave } from './save-system';
 import { bagContents } from './bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
@@ -129,11 +129,10 @@ let sPendingScreenAction: (() => void) | null = null;
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
-const SE_SELECT_FALLBACK = 5;
-const SE_WIN_OPEN_FALLBACK = 6;
-// 1:1 décomp `include/constants/songs.h` SE_SAVE = 55. Joué par
-// SaveSuccessCallback (start_menu.c:1116) après le message "X a sauvegardé".
-const SE_SAVE = 55;
+// 1:1 décomp `include/constants/songs.h` SE_SELECT = 5, SE_WIN_OPEN = 6,
+// SE_SAVE = 55. Migré vers imports decomp-data songs-data.ts (cleanup B7).
+// SE_SAVE est joué par SaveSuccessCallback (start_menu.c:1116) après le
+// message "X a sauvegardé".
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   A_BUTTON, B_BUTTON, START_BUTTON, DPAD_UP, DPAD_DOWN,
@@ -187,12 +186,10 @@ const CURSOR_X = 0;
 const CURSOR_Y_TOP = 9;        // 1:1 décomp menu.c:927 InitMenuNormal `top` arg
 const CURSOR_Y_PER_ROW = 16;
 
-function _seSelect(): number {
-  return (Songs as unknown as Record<string, number>).SE_SELECT ?? SE_SELECT_FALLBACK;
-}
-function _seWinOpen(): number {
-  return (Songs as unknown as Record<string, number>).SE_WIN_OPEN ?? SE_WIN_OPEN_FALLBACK;
-}
+// 1:1 strict B7 : import SE_SELECT/SE_WIN_OPEN direct depuis songs-data.
+// Helpers _seSelect/_seWinOpen retirés (= legacy défensif fallback).
+const _seSelect = (): number => SE_SELECT;
+const _seWinOpen = (): number => SE_WIN_OPEN;
 
 function drawCursor(): void {
   if (sWindowId < 0) return;

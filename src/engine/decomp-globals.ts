@@ -32,6 +32,7 @@ import {
 } from './decomp-runtime';
 import { G_SINE_TABLE } from './decomp-data/src/sine-table';
 import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/src/song-table';
+import { MUS_NONE as _MUS_NONE } from './decomp-data/include/constants/songs-data';
 import { setReverb as _staticSetReverb } from './m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
@@ -826,8 +827,9 @@ export function FillPalBufferWhite(): void {
  *  Wrapper qui dispatch vers notre m4aSongNumStart (= slot bgm via M4A engine
  *  custom). Avant ce wrapper, les `PlayBGM(MUS_X)` des auto-callbacks tombaient
  *  en undefined → BGM silence partout dans menus. */
-/** 1:1 décomp constants/songs.h : `#define MUS_NONE 0xFFFF`. */
-const MUS_NONE = 0xFFFF;
+/** 1:1 décomp constants/songs.h : `#define MUS_NONE 0xFFFF`.
+ *  Migré vers import decomp-data songs-data.ts (cleanup B7). */
+const MUS_NONE = _MUS_NONE;
 let _gDisableMusic = false;
 export function PlayBGM(songNum: number): void {
   if (_gDisableMusic) return;

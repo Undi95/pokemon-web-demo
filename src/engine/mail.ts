@@ -95,6 +95,7 @@ import { TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2 } fr
 import { PIXEL_FILL } from './decomp-globals';
 import { A_BUTTON, B_BUTTON } from './gba-menu-system';
 import type { Mail } from './save-blocks';
+import { DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_WIDTH, TILE_HEIGHT } from './decomp-data/include/gba/defines-data';
 import {
   ITEM_ORANGE_MAIL, ITEM_HARBOR_MAIL, ITEM_GLITTER_MAIL, ITEM_MECH_MAIL,
   ITEM_WOOD_MAIL, ITEM_WAVE_MAIL, ITEM_BEAD_MAIL, ITEM_SHADOW_MAIL,
@@ -111,9 +112,9 @@ export type MainCallback = (() => void) | null;
 
 // ─── Constantes locales 1:1 décomp ───────────────────────────────────────────
 
-/** 1:1 décomp `gba/defines.h:75-76` — `DISPLAY_WIDTH / TILE_WIDTH = 240/8`. */
-const DISPLAY_TILE_WIDTH = 30;
-const DISPLAY_TILE_HEIGHT = 20;
+/** 1:1 décomp `gba/defines.h:75-76` — `DISPLAY_TILE_WIDTH = (DISPLAY_WIDTH / TILE_WIDTH)`. */
+const DISPLAY_TILE_WIDTH = DISPLAY_WIDTH / TILE_WIDTH;    // = 240/8 = 30
+const DISPLAY_TILE_HEIGHT = DISPLAY_HEIGHT / TILE_HEIGHT; // = 160/8 = 20
 
 /** 1:1 décomp `window.h:24` — `enum { COPYWIN_NONE, COPYWIN_MAP, COPYWIN_GFX, COPYWIN_FULL }`. */
 const COPYWIN_FULL = 3;

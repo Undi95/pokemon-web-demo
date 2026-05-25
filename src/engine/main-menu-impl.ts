@@ -90,9 +90,11 @@ import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWi
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './gba-text-system';
 import { getString } from './gba-strings';
 import { FlagGet } from './script-vars';
+import { SE_SELECT as _SE_SELECT } from './decomp-data/include/constants/songs-data';
 
 // 1:1 décomp include/constants/songs.h:11 → SE_SELECT = 5.
-const SE_SELECT = 5;
+// Migré vers import decomp-data songs-data.ts (cleanup B7).
+const SE_SELECT = _SE_SELECT;
 const HAS_MYSTERY_EVENTS = ENUM_HAS_0.HAS_MYSTERY_EVENTS;
 
 // A2 fix : 1:1 décomp `include/bg.h:24-28` enum BG_COORD_*. Utilisés par

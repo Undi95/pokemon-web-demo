@@ -20,6 +20,7 @@ import { PLTT_SIZE_4BPP } from './decomp-bridge';
 import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
+import { SE_SELECT } from './decomp-data/include/constants/songs-data';
 
 /** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfo
  *  Elements{1,2,3}_Pal → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP).
@@ -45,7 +46,8 @@ export function ListMenuLoadStdPalAt(palOffset: number, palId: number): void {
 }
 
 // 1:1 décomp include/constants/songs.h:11 : SE_SELECT = 5.
-const SE_SELECT_KEY = 5;
+// Migré vers import decomp-data songs-data.ts (cleanup B7).
+const SE_SELECT_KEY = SE_SELECT;
 // 1:1 décomp src/menu.c:945 : `gText_SelectorArrow3 = _("▶")` — cursor glyph.
 const CURSOR_CHAR = '▶';
 // Constantes layout cursor :

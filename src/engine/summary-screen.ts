@@ -62,6 +62,8 @@ import { moveDexIdToEnum } from './battle/data/move-name-resolve';
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
+import { MAX_MON_MOVES } from './decomp-data/include/constants/global-data';
+import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from './decomp-data/include/constants/songs-data';
 
 /* ============================================================================
  * Constantes 1:1 décomp
@@ -436,7 +438,8 @@ interface SummaryState {
 }
 
 const SUMMARY_MODE_NORMAL = 0;
-const MAX_MON_MOVES = 4;
+// 1:1 décomp `MAX_MON_MOVES` (include/constants/global.h) — extracted in
+// decomp-data global-data.ts. Replaces local hardcode = 4.
 
 function _emptySummary(): SummaryData {
   return {
@@ -2247,8 +2250,10 @@ function _waitSlideThenResumeInput(): void {
  * curseur 10-sprites + PrintMoveDetails + réordre + B/ANNULE retour.
  * ========================================================================== */
 
-const SE_SELECT = 5;            // include/constants/songs.h:11
-const SE_FAILURE = 32;          // include/constants/songs.h:38
+// 1:1 décomp `include/constants/songs.h` SE_SELECT = 5, SE_FAILURE = 32.
+// Migré vers imports decomp-data songs-data.ts (cleanup B7).
+const SE_SELECT = _SE_SELECT;
+const SE_FAILURE = _SE_FAILURE;
 
 /** 1:1 décomp `struct SlidingWindow` (pokemon_summary_screen.c:359). gfx =
  *  tilemap u16 (effect_battle/contest.bin) ; defaultTile rempli hors gfx. */
