@@ -1446,6 +1446,78 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `ScriptGetPokedexInfo` (birch_pc.c:7-21) :
+ *  ```c
+ *  bool16 ScriptGetPokedexInfo(void) {
+ *      if (gSpecialVar_0x8004 == 0) {
+ *          gSpecialVar_0x8005 = GetHoennPokedexCount(FLAG_GET_SEEN);
+ *          gSpecialVar_0x8006 = GetHoennPokedexCount(FLAG_GET_CAUGHT);
+ *      } else {
+ *          gSpecialVar_0x8005 = GetNationalPokedexCount(FLAG_GET_SEEN);
+ *          gSpecialVar_0x8006 = GetNationalPokedexCount(FLAG_GET_CAUGHT);
+ *      }
+ *      return IsNationalPokedexEnabled();
+ *  }
+ *  ```
+ *  Get Hoenn or National pokedex counts (seen + caught). Used by Birch's PC. */
+registerSpecial('ScriptGetPokedexInfo', () => {
+  // Import dynamique pour éviter cycle ESM (= pokedex-flags + event-data
+  // import gSaveBlock state aussi).
+  const helpers = (globalThis as { __game_pokedex?: {
+    GetHoennPokedexCount?: (op: number) => number;
+    GetNationalPokedexCount?: (op: number) => number;
+    IsNationalPokedexEnabled?: () => boolean;
+  } }).__game_pokedex;
+  const useNational = VarGet('VAR_0x8004') !== 0;
+  // 1:1 décomp constants/pokedex.h : FLAG_GET_SEEN=0, FLAG_GET_CAUGHT=1.
+  const FLAG_GET_SEEN = 0, FLAG_GET_CAUGHT = 1;
+  if (useNational) {
+    VarSet('VAR_0x8005', helpers?.GetNationalPokedexCount?.(FLAG_GET_SEEN) ?? 0);
+    VarSet('VAR_0x8006', helpers?.GetNationalPokedexCount?.(FLAG_GET_CAUGHT) ?? 0);
+  } else {
+    VarSet('VAR_0x8005', helpers?.GetHoennPokedexCount?.(FLAG_GET_SEEN) ?? 0);
+    VarSet('VAR_0x8006', helpers?.GetHoennPokedexCount?.(FLAG_GET_CAUGHT) ?? 0);
+  }
+  return helpers?.IsNationalPokedexEnabled?.() ? 1 : 0;
+});
+
+/** 1:1 décomp `SetMirageTowerVisibility` (mirage_tower.c:319-344) :
+ *  ```c
+ *  void SetMirageTowerVisibility(void) {
+ *      if (VarGet(VAR_MIRAGE_TOWER_STATE)) {
+ *          FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);
+ *          return;
+ *      }
+ *      rand = Random();
+ *      visible = rand & 1;
+ *      if (FlagGet(FLAG_FORCE_MIRAGE_TOWER_VISIBLE) == TRUE) visible = TRUE;
+ *      if (visible) {
+ *          FlagSet(FLAG_MIRAGE_TOWER_VISIBLE);
+ *          TryStartMirageTowerPulseBlendEffect();
+ *          return;
+ *      }
+ *      FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);
+ *  }
+ *  ```
+ *  Dette R3 documentée : TryStartMirageTowerPulseBlendEffect (= pulse blend
+ *  palette anim) non porté ; le flag visibility est wired, l'effet visuel
+ *  sera porté avec le mirage tower disintegration séquence. */
+registerSpecial('SetMirageTowerVisibility', () => {
+  if (VarGet('VAR_MIRAGE_TOWER_STATE')) {
+    FlagClear('FLAG_MIRAGE_TOWER_VISIBLE');
+    return;
+  }
+  const rand = Random();
+  let visible = (rand & 1) !== 0;
+  if (FlagGet('FLAG_FORCE_MIRAGE_TOWER_VISIBLE')) visible = true;
+  if (visible) {
+    FlagSet('FLAG_MIRAGE_TOWER_VISIBLE');
+    // Dette R3 : TryStartMirageTowerPulseBlendEffect — pulse blend visual.
+    return;
+  }
+  FlagClear('FLAG_MIRAGE_TOWER_VISIBLE');
+});
+
 /** 1:1 décomp `WonSecretBaseBattle` (secret_base.c:1856-1864) :
  *  ```c
  *  void WonSecretBaseBattle(void) {
@@ -1752,7 +1824,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom', 'RockSmashWildEncounter',
   'SaveBardSongLyrics', 'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
-  'ScriptGetPokedexInfo', 'ScriptHatchMon',
+  // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
+  'ScriptHatchMon',
   'ScriptMenu_CreatePCMultichoice',
   'Script_BufferContestLadyCategoryAndMonName',
   'Script_DoesFavorLadyLikeItem', 'Script_FadeOutMapMusic',
@@ -1774,7 +1847,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:246 ci-bas.
   'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
   // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
-  'SetMirageTowerVisibility',
+  // 'SetMirageTowerVisibility' — porté 1:1 décomp mirage_tower.c:319 ci-bas.
   // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
   'SetPlayerSecretBase',
   'SetQuizLadyState_Complete', 'SetQuizLadyState_GivePrize',
