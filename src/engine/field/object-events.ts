@@ -2821,6 +2821,9 @@ import {
   MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT, MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT,
   MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT, MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT,
   MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT, MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT,
+  MOVEMENT_ACTION_DISABLE_ANIMATION, MOVEMENT_ACTION_RESTORE_ANIMATION,
+  MOVEMENT_ACTION_HIDE_REFLECTION, MOVEMENT_ACTION_SHOW_REFLECTION,
+  MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3052,6 +3055,47 @@ function _MovementAction_ClearFixedPriority_Step0(_rt: DecompRuntime, npc: Objec
   return true;
 }
 
+/** 1:1 décomp `MovementAction_DisableAnimation_Step0` :
+ *    objectEvent->inanimate = TRUE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_DisableAnimation_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.inanimate = true;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_RestoreAnimation_Step0` :
+ *    objectEvent->inanimate = GetObjectEventGraphicsInfo(objectEvent->graphicsId)->inanimate;
+ *    sActionFuncId = 1; return TRUE; */
+function _MovementAction_RestoreAnimation_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const graphicsInfo = GetObjectEventGraphicsInfo(npc.graphicsId);
+  npc.inanimate = !!graphicsInfo?.inanimate;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_HideReflection_Step0` :
+ *    objectEvent->hideReflection = TRUE; return TRUE; */
+function _MovementAction_HideReflection_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.hideReflection = true;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_ShowReflection_Step0` :
+ *    objectEvent->hideReflection = FALSE; return TRUE; */
+function _MovementAction_ShowReflection_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.hideReflection = false;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_FaceOriginalDirection_Step0` :
+ *    FaceDirection(obj, sprite, gInitialMovementTypeFacingDirections[movementType]);
+ *    return TRUE;
+ *  Notre TS : movementTypeToInitialFacing(movementType) équivaut au table. */
+function _MovementAction_FaceOriginalDirection_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  _FaceDirection(rt, npc, movementTypeToInitialFacing(npc.movementType));
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3214,6 +3258,12 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT]      = _makeWal
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT]     = _makeWalkAction(DIR_NORTHEAST, 5);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT]    = _makeWalkAction(DIR_SOUTHWEST, 5);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT]   = _makeWalkAction(DIR_SOUTHEAST, 5);
+// H1.11 : DISABLE/RESTORE_ANIMATION + HIDE/SHOW_REFLECTION + FACE_ORIGINAL_DIRECTION.
+gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_ANIMATION]        = _MovementAction_DisableAnimation_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_RESTORE_ANIMATION]        = _MovementAction_RestoreAnimation_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_HIDE_REFLECTION]          = _MovementAction_HideReflection_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_SHOW_REFLECTION]          = _MovementAction_ShowReflection_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION]  = _MovementAction_FaceOriginalDirection_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
