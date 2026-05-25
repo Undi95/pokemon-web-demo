@@ -22,7 +22,7 @@ import { readWord, Random, getBattleScriptOffset, getMoveEffectScriptOffset } fr
 import {
   SpeciesToNationalPokedexNum, GetSetPokedexFlag, HandleSetPokedexFlag,
   FLAG_GET_CAUGHT, FLAG_SET_CAUGHT,
-} from '../pokedex-flags';
+} from '../ui/pokedex-flags';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   setCurrentMove, gCurrentMove,

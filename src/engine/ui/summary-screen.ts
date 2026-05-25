@@ -29,41 +29,41 @@
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
-} from './gba-window-system';
+} from '../gba-window-system';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
-} from './gba-text-system';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { FEMALE } from './decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from './sprite';
+} from '../gba-text-system';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { FEMALE } from '../decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
   getExperienceForLevel,
-} from './data/game-data';
+} from '../data/game-data';
 import {
   DynamicPlaceholderTextUtil_Reset,
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
-} from './dynamic-placeholder-text-util';
-import { GetMapNameHandleAquaHideout } from './decomp-bridge';
+} from '../dynamic-placeholder-text-util';
+import { GetMapNameHandleAquaHideout } from '../decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
-} from './decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
-import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
-import { getString } from './gba-strings';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { OBJ_PLTT_ID, BG_PLTT_ID } from './decomp-runtime';
-import { pokemonInstanceToPokemon } from './battle/party-storage';
-import { moveDexIdToEnum } from './battle/data/move-name-resolve';
+} from '../decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../decomp-bridge';
+import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
+import { getString } from '../gba-strings';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { OBJ_PLTT_ID, BG_PLTT_ID } from '../decomp-runtime';
+import { pokemonInstanceToPokemon } from '../battle/party-storage';
+import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
-import type { DecompTask, DecompSprite } from './decomp-runtime';
-import type { PokemonInstance } from './pokemon';
-import { MAX_MON_MOVES } from './decomp-data/include/constants/global-data';
-import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from './decomp-data/include/constants/songs-data';
+import type { DecompTask, DecompSprite } from '../decomp-runtime';
+import type { PokemonInstance } from '../pokemon';
+import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
+import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../decomp-data/include/constants/songs-data';
 
 /* ============================================================================
  * Constantes 1:1 décomp
@@ -2002,7 +2002,7 @@ function _playMonCryOnce(): void {
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
     const sp = sMon.currentMon.speciesName;
-    void import('./music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+    void import('../music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).

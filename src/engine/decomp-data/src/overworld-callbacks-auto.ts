@@ -84,7 +84,7 @@ export const CB2_Overworld: CB2Callback = (rt) => {
 // VBlank callback). Pas implémenté → on délègue à un placeholder welcome
 // scene qui affiche "BIENVENUE EN HOENN!" + BGM Littleroot. Sera remplacé
 // par la vraie impl quand engine overworld sera porté.
-import { CB2_OverworldWelcomePlaceholder } from '../../overworld-welcome-impl';
+import { CB2_OverworldWelcomePlaceholder } from '../../ui/overworld-welcome-impl';
 
 /** Source: overworld.c → CB2_NewGame (MANUAL FIX → placeholder welcome). */
 export const CB2_NewGame: CB2Callback = (_rt) => {

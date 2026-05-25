@@ -110,7 +110,7 @@ import {
 } from '../decomp-data/include/menu-data';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
 import type { DecompTask } from '../decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from '../option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from '../ui/option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';
 import { gSpecialVar } from '../script/script-vars';

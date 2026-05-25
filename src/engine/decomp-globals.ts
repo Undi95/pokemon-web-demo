@@ -2437,7 +2437,7 @@ export * from './gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans
 // `main-menu-impl.ts` (= split du gba-menu-system.ts pour respecter directive
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.
-export * from './main-menu-impl';
+export * from './ui/main-menu-impl';
 export * from './gba-strings';
 export * from './decomp-data/src/sprite-system-flat';
 export * from './decomp-data/src/intro-c-data-auto';

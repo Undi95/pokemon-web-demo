@@ -21,18 +21,18 @@
  * `GetPokedexHeightWeight` (data table à extraire).
  */
 
-import { GetSaveBlock1, GetSaveBlock2 } from './save/save-system';
+import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
 import {
   ENUM_NATIONAL_0, ENUM_HOENN_1,
   NATIONAL_DEX_COUNT_EXPR, KANTO_DEX_COUNT_EXPR, HOENN_DEX_COUNT_EXPR,
-} from './decomp-data/include/constants/pokedex-data';
+} from '../decomp-data/include/constants/pokedex-data';
 import {
   sSpeciesToNationalPokedexNum, sSpeciesToHoennPokedexNum, sHoennToNationalOrder,
-} from './decomp-data/pokedex-order-tables';
-import { SPECIES_UNOWN, SPECIES_SPINDA } from './decomp-data/include/constants/species-data';
-import { gPokedexEntries } from './decomp-data/pokedex-entries-table';
-export type { PokedexEntryData } from './decomp-data/pokedex-entries-table';
-export { gPokedexEntries } from './decomp-data/pokedex-entries-table';
+} from '../decomp-data/pokedex-order-tables';
+import { SPECIES_UNOWN, SPECIES_SPINDA } from '../decomp-data/include/constants/species-data';
+import { gPokedexEntries } from '../decomp-data/pokedex-entries-table';
+export type { PokedexEntryData } from '../decomp-data/pokedex-entries-table';
+export { gPokedexEntries } from '../decomp-data/pokedex-entries-table';
 
 // ─── Constantes 1:1 (résolues depuis décomp-data, AUCUN hardcode) ───────────
 // décomp `include/constants/pokedex.h` :

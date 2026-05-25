@@ -795,7 +795,7 @@ import {
   CalculatePlayerPartyCount as _CalculatePlayerPartyCountHBT,
 } from './party-storage';
 // 1:1 décomp `GetSetPokedexFlag` — vraie impl 1:1 strict dans pokedex-flags.ts.
-import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../pokedex-flags';
+import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../ui/pokedex-flags';
 import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';
 import { speciesNumberToEnum as _speciesNumberToEnumHBT } from './data/species-runtime';
 // 1:1 décomp BtlController_EmitBallThrowAnim + Mark — wired pour les ball anim.

@@ -28,7 +28,7 @@ import {
   MON_DATA_IS_EGG, MON_DATA_SPECIES,
 } from './battle/party-storage';
 import type { Pokemon } from './battle/party-storage';
-import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './pokedex-flags';
+import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './ui/pokedex-flags';
 import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from './decomp-bridge';
 import { setStringVar } from './string-buffers';
 import {

@@ -19,19 +19,19 @@
  *   - `gSaveBlock2Ptr` augmenté avec optionsTextSpeed/Sound/etc.
  *   - Helpers exposés sur globalThis pour l'auto file (= ts-nocheck eval scope).
  */
-import { getRuntime as _getRt, getAsset, assetCache } from './decomp-globals';
+import { getRuntime as _getRt, getAsset, assetCache } from '../decomp-globals';
 import {
   LoadBgTiles, LoadPalette, FillBgTilemapBufferRect, CopyWindowToVram, PutWindowTilemap,
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
-} from './decomp-globals';
-import { FillWindowPixelRect } from './gba-window-system';
-import { GetStringRightAlignXOffset } from './gba-text-system';
-import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from './gba-text-window';
-import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from './decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
-import { JOY_NEW } from './decomp-globals';
-import { gSaveBlock2Ptr, SetPokemonCryStereo } from './gba-menu-system';
-import { loadGbaPal } from './gba/png-loader';
+} from '../decomp-globals';
+import { FillWindowPixelRect } from '../gba-window-system';
+import { GetStringRightAlignXOffset } from '../gba-text-system';
+import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../gba-text-window';
+import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../decomp-runtime';
+import { PLTT_SIZE_4BPP, WIN_RANGE } from '../decomp-helpers';
+import { JOY_NEW } from '../decomp-globals';
+import { gSaveBlock2Ptr, SetPokemonCryStereo } from '../gba-menu-system';
+import { loadGbaPal } from '../gba/png-loader';
 
 // ─── State globals ───────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export function setSArrowPressed(v: boolean): void { sArrowPressed = v; }
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 const WIN_HEADER = 0;
 const WIN_OPTIONS = 1;
 
@@ -74,7 +74,7 @@ import {
   TEXT_COLOR_LIGHT_GRAY,
   TEXT_COLOR_RED,
   TEXT_COLOR_LIGHT_RED,
-} from './decomp-data/include/constants/characters-data';
+} from '../decomp-data/include/constants/characters-data';
 
 /** 1:1 décomp option_menu.c FONT_NORMAL default :
  *  [bgColor, fgColor, shadowColor] = [WHITE, DARK_GRAY, LIGHT_GRAY] = [1, 2, 3]
@@ -135,7 +135,7 @@ export async function preloadOptionMenuAssets(): Promise<void> {
   // gText_* strings (= si pas déjà loadés par un autre boot path comme
   // GameScene/BirchRuntime). Les modes test type `?nointro=1` n'en font pas.
   if (typeof (globalThis as { gText_Option?: string }).gText_Option === 'undefined') {
-    const { initStringsFromDecomp } = await import('./gba-strings');
+    const { initStringsFromDecomp } = await import('../gba-strings');
     tasks.push(initStringsFromDecomp());
   }
   await Promise.all(tasks);
@@ -492,10 +492,10 @@ export function getOptionMenuTextPal(): Uint16Array {
 // Phase D-cleanup audit session 83 : retiré les stubs no-op locaux qui
 // dupliquaient (en cassant la sémantique) les vrais DmaClearLarge16/DmaClear32
 // de decomp-globals.ts. Ces helpers font le bon dispatch sur VRAM/OAM/PLTT.
-import { DmaClearLarge16, DmaClear32 } from './decomp-globals';
+import { DmaClearLarge16, DmaClear32 } from '../decomp-globals';
 
 // Import templates depuis option_menu-data.ts (auto-générés)
-import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/src/option_menu-data';
+import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from '../decomp-data/src/option_menu-data';
 
 // Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
 // fichier). On les expose sur globalThis pour matcher le scope C où ces
@@ -505,7 +505,7 @@ import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/s
 // `decomp-data/src/option_menu-callbacks-auto.ts` (= structure TS propre) + helpers
 // 1:1 strict ce fichier-ci.
 const autoOptionMenu: Record<string, unknown> = {};
-// Phase 14b purge : `import * as allAutoBarrel from './decomp-data/auto/src-all/_barrel'`
+// Phase 14b purge : `import * as allAutoBarrel from '../decomp-data/auto/src-all/_barrel'`
 // retiré — les fichiers `*-all-auto.ts` du barrel sont @ts-nocheck C-style cassés
 // (= cf. AUTO-FILES-AUDIT). Les vraies impls 1:1 strict sont importées
 // directement dans les call-sites. flattenBarrelOnGlobalThis() ci-dessous devient no-op.
@@ -518,7 +518,7 @@ import {
   TransferPlttBuffer, ProcessSpriteCopyRequests, LoadOam,
   CopyBgTilemapBufferToVram,
   GetStringWidth,
-} from './decomp-globals';
+} from '../decomp-globals';
 // SetPokemonCryStereo : importé depuis ./gba-menu-system (ligne 33).
 
 /** AddTextPrinterParameterized — wrapper signature 1:1 décomp text.c :

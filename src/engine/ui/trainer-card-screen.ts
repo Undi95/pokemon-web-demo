@@ -35,29 +35,29 @@ import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { FlagGet } from './script/script-vars';
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { gSaveBlock2Ptr } from './gba-menu-system';
-import { FEMALE } from './decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
+} from '../gba-window-system';
+import { LoadUserWindowBorderGfx } from '../gba-text-window';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../gba-text-system';
+import { FlagGet } from '../script/script-vars';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { FEMALE } from '../decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from './decomp-globals';
-import { ResetSpriteData } from './decomp-bridge';
+} from '../decomp-globals';
+import { ResetSpriteData } from '../decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { getString } from './gba-strings';
-import type { DecompTask } from './decomp-runtime';
+import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { getString } from '../gba-strings';
+import type { DecompTask } from '../decomp-runtime';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).
 const FONT_NORMAL = 1;
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 

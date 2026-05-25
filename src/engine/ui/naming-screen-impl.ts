@@ -19,15 +19,15 @@
  * État global : `sNamingScreen` exposé sur `globalThis` pour que les
  * auto-callbacks y accèdent.
  */
-import { OBJ_PLTT_ID } from './decomp-runtime';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from './sprite';
+import { OBJ_PLTT_ID } from '../decomp-runtime';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
   FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
-} from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+} from '../gba-window-system';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
 import {
   getRuntime,
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,
@@ -40,17 +40,17 @@ import {
   CpuFill32, CpuFill16,
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
-} from './decomp-globals';
-import { gSaveBlock2Ptr } from './gba-menu-system';
-import { loadGbaPal, loadTileBin, loadTilemapBin } from './gba/png-loader';
-import type { DecompSprite, DecompTask } from './decomp-runtime';
-import { gKeyRepeat } from './decomp-runtime';
+} from '../decomp-globals';
+import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { loadGbaPal, loadTileBin, loadTilemapBin } from '../gba/png-loader';
+import type { DecompSprite, DecompTask } from '../decomp-runtime';
+import { gKeyRepeat } from '../decomp-runtime';
 import {
   OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
   ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,
   GetRivalAvatarGraphicsIdByStateIdAndGender,
   loadObjectEventGraphicsInfo, CreateObjectGraphicsSprite,
-} from './object-event-graphics';
+} from '../object-event-graphics';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //

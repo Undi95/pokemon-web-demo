@@ -45,7 +45,7 @@ import {
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
 } from '../decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes } from '../decomp-bridge';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { getString } from '../gba-strings';

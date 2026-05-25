@@ -68,7 +68,7 @@ import {
   ShowPartyMenuItemMessage,
   RefreshPartySlot,
   PartyMenuAnimateHP,
-} from './party-screen';
+} from './ui/party-screen';
 import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';

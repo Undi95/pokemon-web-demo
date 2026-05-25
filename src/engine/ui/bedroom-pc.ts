@@ -42,48 +42,48 @@ import {
   LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillBgTilemapBufferRect,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './gba-text-system';
+} from '../gba-window-system';
+import { LoadUserWindowBorderGfx } from '../gba-text-window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from '../gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './gba-menu-system';
-import { getRuntime, PlaySE } from './decomp-globals';
-import { SignalWaitState } from './script/script-opcodes';
-import { ScriptContext_SetupScript } from './script/script-runtime';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { MAIL_COUNT, PARTY_SIZE } from './save/save-blocks';
+} from '../gba-menu-system';
+import { getRuntime, PlaySE } from '../decomp-globals';
+import { SignalWaitState } from '../script/script-opcodes';
+import { ScriptContext_SetupScript } from '../script/script-runtime';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
 import { ReadMail } from './mail';
 import { ITEM_NONE, ClearMail } from './mail-data';
-import { FEMALE } from './decomp-globals';
-import { getString } from './gba-strings';
-import { setStringVar } from './string-buffers';
-import { StringExpandPlaceholders } from './gba-text-system';
-import * as Songs from './decomp-data/include/constants/songs-data';
+import { FEMALE } from '../decomp-globals';
+import { getString } from '../gba-strings';
+import { setStringVar } from '../string-buffers';
+import { StringExpandPlaceholders } from '../gba-text-system';
+import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
-} from './pc-items';
+} from '../pc-items';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
-} from './list-menu';
-import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag/bag';
-import { reverseDecompConstant } from './decomp-constants';
-import { getItemNameFr } from './data-tables';
-import { GetItemDescription } from './decomp-bridge';
+} from '../list-menu';
+import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
+import { reverseDecompConstant } from '../decomp-constants';
+import { getItemNameFr } from '../data-tables';
+import { GetItemDescription } from '../decomp-bridge';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
-} from './item-icon';
-import { FreeSpriteTilesByTag } from './decomp-globals';
-import { FreeSpritePaletteByTag } from './sprite';
+} from '../item-icon';
+import { FreeSpriteTilesByTag } from '../decomp-globals';
+import { FreeSpritePaletteByTag } from '../sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).
-import { A_BUTTON, B_BUTTON } from './decomp-data/include/gba/io_reg-data';
+import { A_BUTTON, B_BUTTON } from '../decomp-data/include/gba/io_reg-data';
 // TEXT_SKIP_DRAW import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data, hardcode 1:1 justifié).
 const FONT_NORMAL = 1;
@@ -617,7 +617,7 @@ function _itemStorageDeposit(): void {
   // `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`).
   // Le exitCallback = re-open PC menu après close du bag (= 1:1 décomp
   // `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu`).
-  void import('./bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
+  void import('../bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
     OpenBagScreen(undefined, BAG_LOCATION_ITEMPC, () => {
       // Re-open le PC menu — switch directement vers RETIRER (= user-flag
       // "dès qu'on depose on est switch vers le retrait").
@@ -1319,7 +1319,7 @@ function _tickPCQuantityRolling(newKeys: number): void {
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
 import {
   DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, SELECT_BUTTON,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 
 /** 1:1 décomp `ItemStorage_DoItemWithdraw` (player_pc.c:1424-1444) :
  *    CopyItemName(itemId, gStringVar1);

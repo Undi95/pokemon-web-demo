@@ -25,14 +25,14 @@
  * réexporte le type pour les callers.
  */
 
-import type { Mail } from './save/save-blocks';
-import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from './save/save-blocks';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
+import type { Mail } from '../save/save-blocks';
+import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from '../save/save-blocks';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   GetMonData, SetMonData,
   MON_DATA_HELD_ITEM, MON_DATA_MAIL, MON_DATA_SPECIES, MON_DATA_PERSONALITY,
   type Pokemon,
-} from './battle/party-storage';
+} from '../battle/party-storage';
 // 1:1 décomp `GetBoxMonData` n'a PAS d'équivalent TS : notre `GetMonData` couvre
 // le pattern (= party Pokemon, format non-Box). `mail.c::GiveMailToMon` opère
 // sur un `struct Pokemon *` (= party), pas BoxPokemon → `GetMonData` 1:1 valide.
@@ -391,7 +391,7 @@ function PadNameString(name: string, charPadding: number): string {
   const padded = name.length >= PLAYER_NAME_LENGTH
     ? name.slice(0, PLAYER_NAME_LENGTH)
     : name + pad.repeat(PLAYER_NAME_LENGTH - name.length);
-  // 1:1 TODO : import PadNameString from './string-util' when ported.
+  // 1:1 TODO : import PadNameString from '../string-util' when ported.
   // eslint-disable-next-line no-console
   if (typeof console !== 'undefined' && (globalThis as any).__MAIL_DATA_WARN_PAD_NAME__ !== true) {
     (globalThis as any).__MAIL_DATA_WARN_PAD_NAME__ = true;

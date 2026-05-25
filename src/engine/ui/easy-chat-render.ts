@@ -126,7 +126,7 @@ import {
   SetGpuReg,
   GetBgTilemapBuffer,
   WIN_RANGE,
-} from './decomp-bridge';
+} from '../decomp-bridge';
 
 import {
   InitWindows,
@@ -147,7 +147,7 @@ import {
   CopyToBgTilemapBuffer,
   type WindowTemplate,
   type BgTemplate,
-} from './gba-window-system';
+} from '../gba-window-system';
 
 import {
   AddTextPrinterParameterized3,
@@ -155,38 +155,38 @@ import {
   GetStringCenterAlignXOffset,
   GetStringWidth,
   TEXT_SKIP_DRAW,
-} from './gba-text-system';
+} from '../gba-text-system';
 
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
 import {
   AddTextPrinterParameterized,
-} from './gba-text-system';
+} from '../gba-text-system';
 
 import {
   LoadUserWindowBorderGfx,
   DrawTextBorderOuter,
-} from './gba-text-window';
+} from '../gba-text-window';
 
 import {
   CreateYesNoMenu,
-} from './gba-menu-system';
+} from '../gba-menu-system';
 
 import {
   getRuntime,
   SpriteCallbackDummy,
   LoadSpritePalettes,
-} from './decomp-globals';
+} from '../decomp-globals';
 
 // DecompSprite interface vit dans decomp-runtime.ts (= source de vÃ©ritÃ© Sprite).
-import type { DecompSprite } from './decomp-runtime';
+import type { DecompSprite } from '../decomp-runtime';
 import {
   DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 
 import {
   CreateObjectGraphicsSprite,
-} from './object-event-graphics';
+} from '../object-event-graphics';
 
 import {
   TEXT_COLOR_TRANSPARENT,
@@ -196,7 +196,7 @@ import {
   TEXT_COLOR_LIGHT_RED,
   FONT_NORMAL,
   PIXEL_FILL,
-} from './battle-windows';
+} from '../battle-windows';
 
 import {
   CHAR_HYPHEN,
@@ -204,7 +204,7 @@ import {
   CHAR_NEWLINE,
   CHAR_PROMPT_SCROLL,
   EOS,
-} from './decomp-data/_common-constants';
+} from '../decomp-data/_common-constants';
 
 import {
   BG_PLTT_ID,
@@ -214,17 +214,17 @@ import {
   REG_OFFSET_WININ,
   REG_OFFSET_WINOUT,
   DISPCNT_MODE_0,
-} from './decomp-runtime';
+} from '../decomp-runtime';
 
 import {
   PLTT_SIZE_4BPP,
-} from './decomp-bridge';
+} from '../decomp-bridge';
 
 import {
   BG_SCREEN_SIZE,
   OAM,
   OAM_SIZE,
-} from './decomp-globals';
+} from '../decomp-globals';
 
 // â”€â”€â”€ Constantes locales 1:1 decomp (cf. easy_chat.c:229-403) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -396,7 +396,7 @@ const BG_COORD_ADD = 1;
 
 // MAX_SPRITES (decomp include/sprite.h MAX_SPRITES = 64).
 // Migré vers import decomp-data sprite-data.ts (cleanup B7).
-import { MAX_SPRITES } from './decomp-data/include/sprite-data';
+import { MAX_SPRITES } from '../decomp-data/include/sprite-data';
 
 // EC_ constants (1:1 decomp include/constants/easy_chat.h).
 const EC_MASK_BITS  = 9;

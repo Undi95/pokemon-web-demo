@@ -176,7 +176,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'BedroomPC' || name === 'PlayerPC') {
     const isBedroom = (name === 'BedroomPC');
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('../bedroom-pc');
+      const mod = await import('../ui/bedroom-pc');
       mod.OpenBedroomPC(isBedroom);
       return { isOpen: mod.IsBedroomPCOpen };
     });
@@ -191,7 +191,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'Special_ViewWallClock' || name === 'StartWallClock') {
     const mode: 'VIEW' | 'SET' = name === 'StartWallClock' ? 'SET' : 'VIEW';
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('../wallclock');
+      const mod = await import('../ui/wallclock');
       mod.OpenWallClock(mode);
       return { isOpen: mod.IsWallClockOpen };
     });

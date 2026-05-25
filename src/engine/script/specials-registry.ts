@@ -32,7 +32,7 @@ import { gMapHeader } from '../map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../decomp-globals';
 import { GetCurrentMap } from '../save/load_save';
-import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../tv-screen';
+import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
 import { setStringVar } from '../string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
 import { TYPE_GRASS } from '../decomp-data/include/constants/pokemon-data';
@@ -392,7 +392,7 @@ registerSpecial('DoPCTurnOffEffect', () => {
  *  → Set TOUS les MB_TELEVISION metatiles à TV_On + refresh BG → TV cycle
  *  via TilesetAnim_Building (tile 496..499). */
 registerSpecial('TurnOnTVScreen', () => {
-  void import('../tv-screen').then(({ TurnOnTVScreen }) => {
+  void import('../ui/tv-screen').then(({ TurnOnTVScreen }) => {
     TurnOnTVScreen();
   });
 });
@@ -400,7 +400,7 @@ registerSpecial('TurnOnTVScreen', () => {
 /** 1:1 décomp `TurnOffTVScreen` (tv.c:869-873). Identique à TurnOnTVScreen
  *  mais avec METATILE_Building_TV_Off (= TV statique noir). */
 registerSpecial('TurnOffTVScreen', () => {
-  void import('../tv-screen').then(({ TurnOffTVScreen }) => {
+  void import('../ui/tv-screen').then(({ TurnOffTVScreen }) => {
     TurnOffTVScreen();
   });
 });

@@ -43,38 +43,38 @@ import {
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gSaveBlock1Ptr } from './save/save-block-state';
+} from '../gba-window-system';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from '../gba-text-system';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
-import { resolveDecompConstant } from './decomp-constants';
-import { LoadSpritePalette, MarkObjTilesAllocated } from './sprite';
-import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
+import { resolveDecompConstant } from '../decomp-constants';
+import { LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
+import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from './decomp-globals';
-import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from './decomp-bridge';
+} from '../decomp-globals';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
+import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
-import { getString } from './gba-strings';
-import { MON_ICON_PALETTE_INDICES } from './pokemon-icon-palettes';
-import type { DecompTask } from './decomp-runtime';
-import type { PokemonInstance } from './pokemon';
+import { getString } from '../gba-strings';
+import { MON_ICON_PALETTE_INDICES } from '../pokemon-icon-palettes';
+import type { DecompTask } from '../decomp-runtime';
+import type { PokemonInstance } from '../pokemon';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).
 const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
   PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING,
-} from './decomp-data/include/constants/party_menu-data';
+} from '../decomp-data/include/constants/party_menu-data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;

@@ -21,7 +21,7 @@ import { readByte, readWord } from './script-interpreter';
 // "éviter import circulaire 27→24" est moot, les 2 importent le module partagé).
 import {
   SpeciesToNationalPokedexNum, HandleSetPokedexFlag, FLAG_SET_SEEN,
-} from '../pokedex-flags';
+} from '../ui/pokedex-flags';
 import {
   gBattleMons, gBattlersCount,
   setActiveBattler,

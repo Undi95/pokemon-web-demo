@@ -40,29 +40,29 @@ import {
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
-} from './gba-window-system';
+} from '../gba-window-system';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
-} from './decomp-globals';
-import { ResetSpriteData, GetOverworldTextboxPalettePtr } from './decomp-bridge';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
-import { loadIndexedPngStrict } from './gba/png-loader';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+} from '../decomp-globals';
+import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../decomp-bridge';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-window';
+import { loadIndexedPngStrict } from '../gba/png-loader';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from './gba-menu-system';
-import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
-import { getString } from './gba-strings';
+} from '../gba-menu-system';
+import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from '../gba-window-system';
+import { getString } from '../gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
-import { FEMALE } from './decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
-import { FlagSet, VarGet } from './script/script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from './rtc';
-import { loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { SetOamMatrix } from './decomp-helpers';
+import { FEMALE } from '../decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
+import { FlagSet, VarGet } from '../script/script-vars';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';
+import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { SetOamMatrix } from '../decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
-import type { DecompTask, DecompSprite, DecompRuntime } from './decomp-runtime';
+import type { DecompTask, DecompSprite, DecompRuntime } from '../decomp-runtime';
 
 // ─── Constants 1:1 décomp (= wallclock.c:54-72, wallclock-data.ts) ─────────
 
@@ -79,7 +79,7 @@ const WIN_BUTTON_LABEL = 1;
 /** Joy keys (= 1:1 gba/io_reg.h). Import depuis decomp-data (= A8 audit). */
 import {
   A_BUTTON, B_BUTTON, DPAD_LEFT, DPAD_RIGHT,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 /** Font / text colors. */
 const FONT_NORMAL = 1;
 const STD_FRAME_TILE = 0x250;
