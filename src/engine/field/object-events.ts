@@ -2824,6 +2824,7 @@ import {
   MOVEMENT_ACTION_DISABLE_ANIMATION, MOVEMENT_ACTION_RESTORE_ANIMATION,
   MOVEMENT_ACTION_HIDE_REFLECTION, MOVEMENT_ACTION_SHOW_REFLECTION,
   MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION,
+  MOVEMENT_ACTION_FACE_PLAYER, MOVEMENT_ACTION_FACE_AWAY_PLAYER,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3096,6 +3097,46 @@ function _MovementAction_FaceOriginalDirection_Step0(rt: DecompRuntime, npc: Obj
   return true;
 }
 
+/** 1:1 décomp `GetDirectionToFace` (event_object_movement.c) :
+ *    if (x > targetX) return DIR_WEST;
+ *    if (x < targetX) return DIR_EAST;
+ *    if (y > targetY) return DIR_NORTH;
+ *    return DIR_SOUTH; */
+function _GetDirectionToFace(x: number, y: number, targetX: number, targetY: number): number {
+  if (x > targetX) return DIR_WEST;
+  if (x < targetX) return DIR_EAST;
+  if (y > targetY) return DIR_NORTH;
+  return DIR_SOUTH;
+}
+
+/** 1:1 décomp `MovementAction_FacePlayer_Step0` (event_object_movement.c) :
+ *    if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0, &playerId))
+ *      FaceDirection(obj, sprite, GetDirectionToFace(npc.x, npc.y, player.x, player.y));
+ *    sActionFuncId = 1; return TRUE; */
+function _MovementAction_FacePlayer_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // Notre TS : gObjectEvents[0] = player (= convention slot 0 player avatar).
+  const playerNpc = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (playerNpc && playerNpc.active) {
+    const dir = _GetDirectionToFace(npc.currentCoordsX, npc.currentCoordsY, playerNpc.currentCoordsX, playerNpc.currentCoordsY);
+    _FaceDirection(rt, npc, dir);
+  }
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_FaceAwayPlayer_Step0` :
+ *    FaceDirection(obj, sprite, GetOppositeDirection(GetDirectionToFace(...))); */
+function _MovementAction_FaceAwayPlayer_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const playerNpc = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (playerNpc && playerNpc.active) {
+    const dirToPlayer = _GetDirectionToFace(npc.currentCoordsX, npc.currentCoordsY, playerNpc.currentCoordsX, playerNpc.currentCoordsY);
+    const dirAway = OPPOSITE_DIR[dirToPlayer] ?? DIR_SOUTH;
+    _FaceDirection(rt, npc, dirAway);
+  }
+  npc.actionStep = 1;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3264,6 +3305,10 @@ gMovementActionFuncs[MOVEMENT_ACTION_RESTORE_ANIMATION]        = _MovementAction
 gMovementActionFuncs[MOVEMENT_ACTION_HIDE_REFLECTION]          = _MovementAction_HideReflection_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_SHOW_REFLECTION]          = _MovementAction_ShowReflection_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_FACE_ORIGINAL_DIRECTION]  = _MovementAction_FaceOriginalDirection_Step0;
+// H1.12 : FACE_PLAYER / FACE_AWAY_PLAYER (= scripts utilisent ces actions au lieu
+// de faceplayer opcode dans certains cas).
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_PLAYER]      = _MovementAction_FacePlayer_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_FACE_AWAY_PLAYER] = _MovementAction_FaceAwayPlayer_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
