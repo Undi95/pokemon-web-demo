@@ -69,7 +69,7 @@ import {
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
 } from './list-menu';
-import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag';
+import { AddBagItem, gBagPockets, ITEMS_POCKET } from './bag/bag';
 import { reverseDecompConstant } from './decomp-constants';
 import { getItemNameFr } from './data-tables';
 import { GetItemDescription } from './decomp-bridge';
@@ -617,7 +617,7 @@ function _itemStorageDeposit(): void {
   // `GoToBagMenu(ITEMMENULOCATION_ITEMPC, POCKETS_COUNT, CB2_PlayerPCExitBagMenu)`).
   // Le exitCallback = re-open PC menu après close du bag (= 1:1 décomp
   // `CB2_PlayerPCExitBagMenu` → `ItemStorage_ReshowAfterBagMenu`).
-  void import('./bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
+  void import('./bag/bag-screen').then(({ OpenBagScreen, BAG_LOCATION_ITEMPC }) => {
     OpenBagScreen(undefined, BAG_LOCATION_ITEMPC, () => {
       // Re-open le PC menu — switch directement vers RETIRER (= user-flag
       // "dès qu'on depose on est switch vers le retrait").

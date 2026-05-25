@@ -28,9 +28,9 @@ import {
   getRuntime, ResetPaletteFade, ResetTasks,
   FreeAllSpritePalettes, ScanlineEffect_Stop, LoadPalette, PIXEL_FILL,
   assetCache, PlaySE,
-} from './decomp-globals';
-import { ResetSpriteData, PLTT_SIZE_4BPP } from './decomp-bridge';
-import { ListMenuLoadStdPalAt } from './gba-menu-system';
+} from '../decomp-globals';
+import { ResetSpriteData, PLTT_SIZE_4BPP } from '../decomp-bridge';
+import { ListMenuLoadStdPalAt } from '../gba-menu-system';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
   CompactItemsInBagPocket, SortBerriesOrTMHMs,
@@ -38,22 +38,22 @@ import {
 } from './bag-pockets';
 import {
   SetCursorWithinListBounds, SetCursorScrollWithinListBounds, type ListPos,
-} from './menu-helpers';
+} from '../menu-helpers';
 import {
   gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
   CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND,
   gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
-} from './list-menu';
-import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from './data-tables';
-import { ItemIdToBattleMoveId } from './tmhm-moves';
-import { getMoveName, getMove } from './data/game-data';
+} from '../list-menu';
+import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../data-tables';
+import { ItemIdToBattleMoveId } from '../tmhm-moves';
+import { getMoveName, getMove } from '../data/game-data';
 import {
   GetItemName, GetItemDescription, GetItemImportance,
   StringCopy, ConvertIntToDecimalStringN,
   STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
-} from './decomp-bridge';
+} from '../decomp-bridge';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
   LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
@@ -61,59 +61,59 @@ import {
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
   ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
+} from '../gba-window-system';
+import { LoadUserWindowBorderGfx } from '../gba-text-window';
 import {
   DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
   FONT_NORMAL, AddTextPrinterParameterized4, GetMenuCursorDimensionByFont,
   GetStringRightAlignXOffset, TEXT_SKIP_DRAW,
-} from './gba-text-system';
+} from '../gba-text-system';
 import {
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
   TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_5,
-} from './decomp-data/include/constants/characters-data';
-import { BG_PLTT_ID } from './decomp-runtime';
-import { loadTileBin, loadTilemapBin, loadGbaPal } from './gba/png-loader';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { MALE } from './decomp-globals';
+} from '../decomp-data/include/constants/characters-data';
+import { BG_PLTT_ID } from '../decomp-runtime';
+import { loadTileBin, loadTilemapBin, loadGbaPal } from '../gba/png-loader';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { MALE } from '../decomp-globals';
 import {
   ENUM_ITEMMENULOCATION_0, ENUM_ITEMWIN_1, ENUM_ITEMMENUSPRITE_2,
   ITEMMENU_SWAP_LINE_LENGTH,
-} from './decomp-data/include/item_menu-data';
+} from '../decomp-data/include/item_menu-data';
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET,
   KEYITEMS_POCKET, POCKETS_COUNT,
-} from './decomp-data/include/constants/item-data';
-import { BG_SCREEN_SIZE } from './decomp-data/include/gba/defines-data';
+} from '../decomp-data/include/constants/item-data';
+import { BG_SCREEN_SIZE } from '../decomp-data/include/gba/defines-data';
 import {
   ITEM_LIST_END, ITEM_HM01, ITEM_HM08, ITEM_TM01,
   ITEM_CHERI_BERRY, BAG_ITEM_CAPACITY_DIGITS, BERRY_CAPACITY_DIGITS,
-} from './decomp-data/include/constants/items-data';
-import { SE_SELECT } from './decomp-data/include/constants/songs-data';
+} from '../decomp-data/include/constants/items-data';
+import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
 // ─── Phase 1 (sac ouvrable) — input task + fade + retour terrain 1:1 ─────────
-import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from './decomp-globals';
+import { JOY_NEW, BlendPalettes, PALETTES_ALL, LoadCompressedSpriteSheet, LoadSpritePalette } from '../decomp-globals';
 import {
   CreateTask, DestroyTask, BeginNormalPaletteFade,
   SetTaskFuncWithFollowupFunc, SwitchTaskToFollowupFunc,
-} from './decomp-bridge';
+} from '../decomp-bridge';
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
-} from './list-menu';
-import { GetStringCenterAlignXOffset } from './gba-text-system';
+} from '../list-menu';
+import { GetStringCenterAlignXOffset } from '../gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
-} from './decomp-data/include/menu_helpers-data';
+} from '../decomp-data/include/menu_helpers-data';
 import {
   MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_RIGHT,
-} from './decomp-data/include/menu-data';
-import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from './decomp-data/include/gba/io_reg-data';
-import type { DecompTask } from './decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+} from '../decomp-data/include/menu-data';
+import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
+import type { DecompTask } from '../decomp-runtime';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from '../option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';
-import { gSpecialVar } from './script/script-vars';
+import { gSpecialVar } from '../script/script-vars';
 import { RemoveBagItem } from './bag';
 // Phase 2 (sprites) — icône objet 1:1 (item_menu_icons.c → item_icon.c).
 // Arête bag-menu ↔ bag-menu-icons : usage en corps de fn uniquement
@@ -128,18 +128,18 @@ import {
   preloadSwapLineAssets, LoadListMenuSwapLineGfx,
   CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
   SWAP_LINE_HAS_MARGIN,
-} from './swap-line';
-import { preloadItemIconAssets } from './item-icon';
+} from '../swap-line';
+import { preloadItemIconAssets } from '../item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
   SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
-} from './list-menu';
+} from '../list-menu';
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
-} from './decomp-data/src/item_menu-data';
+} from '../decomp-data/src/item_menu-data';
 // 1:1 décomp item_menu_icons.c:15 — TAG_BAG_GFX=100 (sprite sheet du sac).
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/src/item_menu_icons-data';
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;
 
 // ─── Constantes 1:1 (importées decomp-data/auto sauf dérivées documentées) ───

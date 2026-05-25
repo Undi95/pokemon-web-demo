@@ -52,7 +52,7 @@ import {
   ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS,
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
-} from './bag-item-effects';
+} from './bag/bag-item-effects';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { GetItemType } from './decomp-bridge';
 import {
@@ -60,7 +60,7 @@ import {
   Task_FadeAndCloseBagMenu,
   GoToBagMenu,
   ITEMMENULOCATION_LAST,
-} from './bag-menu';
+} from './bag/bag-menu';
 import {
   OpenPartyScreenForItemUse,
   GetPartyScreenSlotId,

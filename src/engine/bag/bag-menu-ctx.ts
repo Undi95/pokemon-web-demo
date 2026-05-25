@@ -31,22 +31,22 @@
  * Task_BagMenu_HandleInput. À implémenter type-d'item-par-type-d'item dans
  * un follow-up.
  */
-import type { DecompTask } from './decomp-runtime';
+import type { DecompTask } from '../decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
-import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script/script-vars';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { reverseDecompConstant } from './decomp-constants';
-import { getItem as _getItem, getItemKeyById } from './data-tables';
+import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { reverseDecompConstant } from '../decomp-constants';
+import { getItem as _getItem, getItemKeyById } from '../data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   setItemUseCB, SetUpItemUseCallback,
   ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp,
   ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
-} from './item-use-callbacks';
-import { getString } from './gba-strings';
-import { GetSaveBlock1, GetSaveBlock2 } from './save/save-system';
-import { gMapHeader } from './map-loader';
+} from '../item-use-callbacks';
+import { getString } from '../gba-strings';
+import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
+import { gMapHeader } from '../map-loader';
 import {
   GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_CURE_POISON, ITEM_EFFECT_CURE_SLEEP,
@@ -61,22 +61,22 @@ import {
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
   FillBgTilemapBufferRect_Palette0, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
-} from './gba-window-system';
-import { JOY_NEW, PALETTES_ALL, getRuntime } from './decomp-globals';
+} from '../gba-window-system';
+import { JOY_NEW, PALETTES_ALL, getRuntime } from '../decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
-} from './gba-text-system';
-import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from './decomp-bridge';
+} from '../gba-text-system';
+import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from '../decomp-bridge';
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
-import { PIXEL_FILL } from './decomp-globals';
-import { ENUM_ITEMWIN_1 } from './decomp-data/include/item_menu-data';
+import { PIXEL_FILL } from '../decomp-globals';
+import { ENUM_ITEMWIN_1 } from '../decomp-data/include/item_menu-data';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
-} from './decomp-data/include/gba/io_reg-data';
-import { SE_SELECT } from './decomp-data/include/constants/songs-data';
-import { PlaySE } from './decomp-globals';
+} from '../decomp-data/include/gba/io_reg-data';
+import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
+import { PlaySE } from '../decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────
 
@@ -107,7 +107,7 @@ const ACTION_DUMMY = 14;
 // 1:1 décomp constants/item.h — pockets. Import depuis decomp-data (= A8 audit).
 import {
   ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET,
-} from './decomp-data/include/constants/item-data';
+} from '../decomp-data/include/constants/item-data';
 
 // 1:1 décomp item_menu.h — ITEMMENULOCATION_* (pas extrait decomp-data, hardcode 1:1 justifié).
 const ITEMMENULOCATION_FIELD = 0;

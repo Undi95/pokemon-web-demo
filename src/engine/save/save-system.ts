@@ -29,7 +29,7 @@ import {
   emptyPokemonStorage,
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
-import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag';
+import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag/bag';
 import { SetDecorationInventoriesPointers } from '../decoration-inventory';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,

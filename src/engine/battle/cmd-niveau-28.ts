@@ -29,7 +29,7 @@ import {
   gLastUsedItem,
 } from './state';
 import { gEnemyParty } from './party-storage';
-import { PokemonUseItemEffects } from '../bag-item-effects';
+import { PokemonUseItemEffects } from '../bag/bag-item-effects';
 import type { PokemonInstance } from '../pokemon';
 import {
   SIDE_STATUS_SPIKES, SIDE_STATUS_SPIKES_DAMAGED,

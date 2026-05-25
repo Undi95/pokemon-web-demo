@@ -35,7 +35,7 @@ import { GetPlayerFacingDirection } from '../player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { assetCache, getRuntime } from '../decomp-globals';
 import { gMapHeader } from '../map-loader';
-import { bagContents } from '../bag';
+import { bagContents } from '../bag/bag';
 
 interface DevAudit {
   help: () => string;

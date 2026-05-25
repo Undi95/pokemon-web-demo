@@ -25,7 +25,7 @@ import { SetObjEventTemplateCoords } from './save/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './save/new-game-flags';
-import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
+import { AddBagItem, DEBUG_ExpandBagToFit } from './bag/bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
 import { createPokemonInstance, GiveMonToPlayer } from './pokemon';

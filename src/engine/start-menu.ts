@@ -62,7 +62,7 @@ import {
 import { PlaySE, getRuntime, gMain } from './decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from './decomp-data/include/constants/songs-data';
 import { HasValidSave } from './save/save-system';
-import { bagContents } from './bag';
+import { bagContents } from './bag/bag';
 import { HideMapNamePopUpWindow } from './map-name-popup';
 import { GetStringRightAlignXOffset } from './gba-text-system';
 import { gMapHeader } from './map-loader';
@@ -80,7 +80,7 @@ import { preloadOptionMenuAssets } from './option-menu-impl';
 // SAC : recâblé vers la réécriture propre bag-menu.ts (= ÉTAPE 9 du plan
 // maillon ; remplace le foam bag-screen.ts reverted cddfcfee). Pattern
 // IDENTIQUE à OpenPartyScreen/pokemonAction (CB2-swap prouvé A/B).
-import { OpenBagScreen } from './bag-menu';
+import { OpenBagScreen } from './bag/bag-menu';
 import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';

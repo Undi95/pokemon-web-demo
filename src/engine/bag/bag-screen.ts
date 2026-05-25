@@ -29,28 +29,28 @@ import {
   CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg,
   InitWindows,
   type WindowTemplate,
-} from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { resolveDecompConstant } from './decomp-constants';
-import { FEMALE } from './decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
-import { setStringVar } from './string-buffers';
-import { StringExpandPlaceholders } from './gba-text-system';
-import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
+} from '../gba-window-system';
+import { LoadUserWindowBorderGfx } from '../gba-text-window';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../gba-text-system';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { resolveDecompConstant } from '../decomp-constants';
+import { FEMALE } from '../decomp-globals';
+import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
+import { setStringVar } from '../string-buffers';
+import { StringExpandPlaceholders } from '../gba-text-system';
+import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets } from './bag';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from './decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes } from './decomp-bridge';
-import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
-import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './fade-screen';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { getString } from './gba-strings';
-import { gSineTable, SetOamMatrix } from './decomp-helpers';
-import type { DecompTask } from './decomp-runtime';
+} from '../decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes } from '../decomp-bridge';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../option-menu-return';
+import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../fade-screen';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
+import { getString } from '../gba-strings';
+import { gSineTable, SetOamMatrix } from '../decomp-helpers';
+import type { DecompTask } from '../decomp-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ const FONT_NORMAL = 1;
  *  sItemListMenu.fontId = FONT_NARROW = glyph data narrow différent de FONT_NORMAL. */
 const FONT_NARROW = 7;
 // TEXT_SKIP_DRAW importé depuis decomp-data (= A8 audit).
-import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
+import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 /** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
  *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
  *  Mapping paletteNum=1 (= sub-palette 1 de menu_male.pal) :
@@ -2512,7 +2512,7 @@ function _tickItemPCDepositQty(newKeys: number, KEY_A: number, KEY_B: number, KE
 
 /** 1:1 décomp `TryDepositItem` (item_menu.c:2248-2274). */
 async function _tryDepositItem(): Promise<void> {
-  const { AddPCItem } = await import('./pc-items');
+  const { AddPCItem } = await import('../pc-items');
   if (AddPCItem(_depositItemKey, _depositQtySelected)) {
     // success → remove from bag (= 1:1 RemoveBagItem qui retire du pocket courant).
     const slots = _getBagPocketSlots();

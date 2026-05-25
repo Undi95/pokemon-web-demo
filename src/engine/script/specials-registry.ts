@@ -3696,7 +3696,7 @@ registerSpecial('QuizLadyTakePrizeForCustomQuiz', () => {
   const itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? `__item_${itemId}`;
   void (async () => {
     try {
-      const mod = await import('../bag');
+      const mod = await import('../bag/bag');
       mod.RemoveBagItem(itemKey, 1);
     } catch { /* fallback no-op */ }
   })();

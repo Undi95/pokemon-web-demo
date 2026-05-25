@@ -17,8 +17,8 @@
  * status), (4) friendship sub-states.
  */
 
-import type { PokemonInstance } from './pokemon';
-import { getItemEffectBytes, GetItemEffectParamOffset } from './battle/data/item-effects';
+import type { PokemonInstance } from '../pokemon';
+import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
   ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM0_INFATUATION,
   ITEM1_X_DEFEND, ITEM1_X_SPEED,
@@ -29,7 +29,7 @@ import {
   ITEM4_PP_UP, ITEM4_REVIVE, ITEM4_EVO_STONE,
   ITEM5_EV_DEF, ITEM5_EV_SPEED, ITEM5_EV_SPDEF, ITEM5_EV_SPATK, ITEM5_PP_MAX,
   ITEM5_FRIENDSHIP_LOW, ITEM5_FRIENDSHIP_MID, ITEM5_FRIENDSHIP_HIGH,
-} from './decomp-data/include/constants/item_effects-data';
+} from '../decomp-data/include/constants/item_effects-data';
 // 1:1 décomp battle state (pour branches usedByAI=TRUE / gMain.inBattle=TRUE).
 // Notre flag `gMain.inBattle` : on utilise gBattleTypeFlags !== 0 + battler != MAX.
 import {
@@ -40,7 +40,7 @@ import {
   gBattlersCount, gBattlerPartyIndexes,
   setPotentialItemEffectBattler, setActiveBattler,
   MAX_BATTLERS_COUNT,
-} from './battle/state';
+} from '../battle/state';
 import {
   STAT_ATK, STAT_DEF, STAT_SPEED, STAT_ACC, STAT_SPATK,
   MAX_STAT_STAGE,
@@ -49,9 +49,9 @@ import {
   STATUS2_INFATUATION, STATUS2_FOCUS_ENERGY, STATUS2_CONFUSION, STATUS2_NIGHTMARE,
   GET_BATTLER_SIDE,
   B_SIDE_PLAYER,
-} from './battle/constants';
-import { gBitTable } from './battle/battle-controllers';
-import { MOVE_IS_PERMANENT } from './decomp-bridge';
+} from '../battle/constants';
+import { gBitTable } from '../battle/battle-controllers';
+import { MOVE_IS_PERMANENT } from '../decomp-bridge';
 
 // 1:1 décomp ITEM3_STATUS_ALL_EXPR
 const ITEM3_STATUS_ALL =
@@ -59,8 +59,8 @@ const ITEM3_STATUS_ALL =
 
 // 1:1 décomp constants/pokemon.h — utilise les imports decomp-data au lieu de
 // hardcode (= 1:1 strict pattern A8 audit).
-import { MAX_LEVEL, MAX_TOTAL_EVS, EV_ITEM_RAISE_LIMIT } from './decomp-data/include/constants/pokemon-data';
-import { MAX_MON_MOVES } from './decomp-data/include/constants/global-data';
+import { MAX_LEVEL, MAX_TOTAL_EVS, EV_ITEM_RAISE_LIMIT } from '../decomp-data/include/constants/pokemon-data';
+import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
 const _MAX_PP_BONUS = 3;  // 1:1 décomp pokemon.c: PP Up max = 3 (= +60% PP). Pas de constante extraite.
 
 // 1:1 décomp `sGetMonDataEVConstants` (pokemon.c). Ordre des accès EV dans

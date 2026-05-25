@@ -10,24 +10,24 @@
  * → pas de TDZ malgré l'arête bag-menu ↔ bag-menu-icons (cf. leçon
  * feedback-map-loader-var-tdz : le danger = usage AU TOP-LEVEL d'un hub).
  */
-import { AddItemIconSprite, MAX_SPRITES } from './item-icon';
+import { AddItemIconSprite, MAX_SPRITES } from '../item-icon';
 import { gBagMenu } from './bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from './sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
   LoadCompressedSpriteSheet,
   LoadSpritePalette,
-} from './decomp-globals';
-import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from './decomp-bridge';
-import { getItemKeyById } from './data-tables';
-import { ENUM_ITEMMENUSPRITE_2 } from './decomp-data/include/item_menu-data';
-import { ITEM_LIST_END } from './decomp-data/include/constants/items-data';
-import { ENUM_TAG_0 as ENUM_BAG_TAG } from './decomp-data/src/item_menu_icons-data';
+} from '../decomp-globals';
+import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../decomp-bridge';
+import { getItemKeyById } from '../data-tables';
+import { ENUM_ITEMMENUSPRITE_2 } from '../decomp-data/include/item_menu-data';
+import { ITEM_LIST_END } from '../decomp-data/include/constants/items-data';
+import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../decomp-data/src/item_menu_icons-data';
 const TAG_BAG_GFX = ENUM_BAG_TAG.TAG_BAG_GFX;                       // 100, sprite sheet sac
 const TAG_ROTATING_BALL_GFX = ENUM_BAG_TAG.TAG_ROTATING_BALL_GFX;   // 101, ball rotative pocket-switch
-import { registerAffineAnim, registerAffineAnimTable } from './decomp-impls/sprite-affine-extras';
-import type { DecompSprite, DecompRuntime } from './decomp-runtime';
+import { registerAffineAnim, registerAffineAnimTable } from '../decomp-impls/sprite-affine-extras';
+import type { DecompSprite, DecompRuntime } from '../decomp-runtime';
 
 // 1:1 décomp `SPRITE_NONE` (sprite.h:6 TAIL_SENTINEL 0xFF).
 const SPRITE_NONE = 0xFF;

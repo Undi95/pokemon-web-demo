@@ -34,7 +34,7 @@ import { setPendingWarp, getPendingWarp, SetDynamicWarp } from '../warp-system';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../map-loader';
-import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag/bag';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from '../gba-menu-system';
