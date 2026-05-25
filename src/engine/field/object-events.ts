@@ -2291,27 +2291,44 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.invisible = true;
     return true;
   }
-  // BERRY_TREE_GROWTH : berry tree state machine (= grows over time). MVP :
-  // static visible, pas de growth tick. 1:1 décomp `MovementType_BerryTreeGrowth_*`
-  // gère l'état du berry (= seed/sprout/sapling/full/berry). Plus complexe que MVP
-  // peut gérer ; on traite comme INVISIBLE pour pas planter (= berry tree NPC
-  // disparait du flow normal jusqu'à implementation Phase berry future).
+  // BERRY_TREE_GROWTH : berry tree state machine (= grows over time).
+  // 1:1 décomp `MovementType_BerryTreeGrowth` (event_object_movement.c:3075)
+  // gère l'état du berry (= seed/sprout/sapling/full/berry stages) via le
+  // berry data (= gSaveBlock1Ptr->berryTrees[treeId]).
+  //
+  // DETTE 1:1 STRICT : full port nécessite berry tree state machine + sprite
+  // graphics_id swap par stage (= 5 graphics_ids différents par berry type).
+  // Notre TS skip ce tick — sprite reste à sa graphics_id de spawn. Le block
+  // spawn 2882-2887 a set animNum = FACE_X, donc visual idle correct.
+  // À porter ensemble quand Phase berry planted state est wired.
   if (mt === 'MOVEMENT_TYPE_BERRY_TREE_GROWTH') {
-    // Pour l'instant : static visible — laisser le sprite tel quel sans tick.
-    // Quand on implémentera le berry growth, on forkera ce branch.
     return true;
   }
   // TREE_DISGUISE / MOUNTAIN_DISGUISE / SAND_DISGUISE : NPC se déguise en
-  // tree/mountain/sand jusqu'à interact. MVP : static visible (= sprite reste
-  // sa forme déguisée, pas de "reveal" anim).
+  // tree/mountain/sand jusqu'à interact (= reveal anim).
+  // 1:1 décomp `MovementType_TreeDisguise` (4354), `MountainDisguise` (4375)
+  // appellent `FieldEffectStart(FLDEFF_TREE_DISGUISE / FLDEFF_MOUNTAIN_DISGUISE)`
+  // qui spawn un nouveau sprite tree/mountain par-dessus le NPC.
+  //
+  // DETTE 1:1 STRICT : full port nécessite FieldEffect system (= FLDEFF_*
+  // dispatch + sprite spawn + anim reveal). Notre TS skip — sprite garde sa
+  // graphics_id de spawn (= probably le sprite "déguisé"). Visual OK pour
+  // l'instant car ces NPCs ne sont pas dans la démo Littleroot.
   if (mt === 'MOVEMENT_TYPE_TREE_DISGUISE'
    || mt === 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE'
    || mt === 'MOVEMENT_TYPE_SAND_DISGUISE') {
     return true;
   }
   // COPY_PLAYER_* : NPC qui copie le movement du player (= mirror puzzles
-  // dans Trick House). MVP : static facing per movement_type initial.
-  // 1:1 décomp `MovementType_CopyPlayer_*` (= shift coords selon player.facing).
+  // dans Trick House). 1:1 décomp `MovementType_CopyPlayer_Step0/1/2` (4159) +
+  // `gCopyPlayerMovementFuncs[]` (6 callbacks : None, FaceDirection,
+  // WalkNormal, etc.) + `GetCopyDirection` (= mapping selon
+  // gInitialMovementTypeFacingDirections + seqIdx + playerDir).
+  //
+  // DETTE 1:1 STRICT : full port nécessite state machine CopyPlayer +
+  // PlayerGetCopyableMovement tracking + GetCopyDirection. Notre TS skip
+  // — NPC en COPY_PLAYER_X garde sa facingDirection initiale. Visual OK
+  // car ces NPCs ne sont pas dans la démo Littleroot (= Trick House content).
   // Implémentation Phase Trick House future.
   if (mt.startsWith('MOVEMENT_TYPE_COPY_PLAYER')) {
     return true;
