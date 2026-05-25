@@ -2810,6 +2810,10 @@ import {
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
   MOVEMENT_ACTION_SET_FIXED_PRIORITY, MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY,
   MOVEMENT_ACTION_START_ANIM_IN_DIRECTION,
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN, MOVEMENT_ACTION_RIDE_WATER_CURRENT_UP,
+  MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT, MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT,
+  MOVEMENT_ACTION_SLIDE_DOWN, MOVEMENT_ACTION_SLIDE_UP,
+  MOVEMENT_ACTION_SLIDE_LEFT, MOVEMENT_ACTION_SLIDE_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3172,6 +3176,18 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT] = _makeWalkInPl
 gMovementActionFuncs[MOVEMENT_ACTION_SET_FIXED_PRIORITY]      = _MovementAction_SetFixedPriority_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY]    = _MovementAction_ClearFixedPriority_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_START_ANIM_IN_DIRECTION] = _MovementAction_StartAnimInDirection_Step0;
+// H1.8 : RIDE_WATER_CURRENT_X (= speed FAST_2, 8 frames/tile).
+// Source : MovementAction_RideWaterCurrentDown_Step0 (InitMovementNormal + MOVE_SPEED_FAST_2).
+gMovementActionFuncs[MOVEMENT_ACTION_RIDE_WATER_CURRENT_DOWN]  = _makeWalkAction(DIR_SOUTH, 2);
+gMovementActionFuncs[MOVEMENT_ACTION_RIDE_WATER_CURRENT_UP]    = _makeWalkAction(DIR_NORTH, 2);
+gMovementActionFuncs[MOVEMENT_ACTION_RIDE_WATER_CURRENT_LEFT]  = _makeWalkAction(DIR_WEST,  2);
+gMovementActionFuncs[MOVEMENT_ACTION_RIDE_WATER_CURRENT_RIGHT] = _makeWalkAction(DIR_EAST,  2);
+// H1.8 : SLIDE_X (= speed FASTEST, 4 frames/tile, ice tiles).
+// Source : MovementAction_SlideDown_Step0 (InitMovementNormal + MOVE_SPEED_FASTEST).
+gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_DOWN]  = _makeWalkAction(DIR_SOUTH, 4);
+gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_UP]    = _makeWalkAction(DIR_NORTH, 4);
+gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_LEFT]  = _makeWalkAction(DIR_WEST,  4);
+gMovementActionFuncs[MOVEMENT_ACTION_SLIDE_RIGHT] = _makeWalkAction(DIR_EAST,  4);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
