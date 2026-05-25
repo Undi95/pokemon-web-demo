@@ -898,6 +898,28 @@ registerSpecial('GetSlotMachineId', () => 0);
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
+/** 1:1 décomp `SubtractMoneyFromVar0x8005` (money.c:128-131) :
+ *  ```c
+ *  void SubtractMoneyFromVar0x8005(void) {
+ *      RemoveMoney(&gSaveBlock1Ptr->money, gSpecialVar_0x8005);
+ *  }
+ *  ```
+ *  Soustrait `VAR_0x8005` du solde du joueur (= cost de l'item après achat). */
+registerSpecial('SubtractMoneyFromVar0x8005', () => {
+  // Note 1:1 strict : import dynamique pour éviter cycle ESM specials-registry
+  // ↔ money.ts (= money.ts importe gSaveBlock1Ptr aussi).
+  const moneyMod = (globalThis as { __game_money?: {
+    RemoveMoney?: (toSub: number) => void;
+  } }).__game_money;
+  const cost = VarGet('VAR_0x8005');
+  if (moneyMod?.RemoveMoney) {
+    moneyMod.RemoveMoney(cost);
+  } else {
+    // Fallback : direct manipulation (= safe vu que money est un simple u32 dans saveBlock1).
+    gSaveBlock1Ptr.money = Math.max(0, (gSaveBlock1Ptr.money ?? 0) - cost);
+  }
+});
+
 /** 1:1 décomp `GabbyAndTyGetBattleNum` (tv.c:996-1002) :
  *  ```c
  *  u8 GabbyAndTyGetBattleNum(void) {
@@ -1610,7 +1632,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'StoreSelectedPokemonInDaycare', 'StorytellerGetFreeStorySlot',
   'StorytellerStoryListMenu', 'StorytellerUpdateStat',
   // 'SwapRegisteredBike' — porté 1:1 décomp item.c:577 ci-bas.
-  'SubtractMoneyFromVar0x8005', 'TakeBerryPowder',
+  // 'SubtractMoneyFromVar0x8005' — porté 1:1 décomp money.c:128 ci-bas.
+  'TakeBerryPowder',
   'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
   'ToggleCurSecretBaseRegistry', 'TraderDoDecorationTrade',
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
