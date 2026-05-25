@@ -3914,25 +3914,97 @@ function _MovementAction_ClearAffineAnim_Step0(_rt: DecompRuntime, _npc: ObjectE
   return true;
 }
 
+// ─── LevitateMovementTask 1:1 strict port (H3.2) ────────────────────────────
+// Source : event_object_movement.c:8897-8932 + ApplyLevitateMovement (8907).
+// Task data structure :
+//   data[0..1] = objEventId pointer (= notre TS : just objEventId number)
+//   data[2] = timer (counter)
+//   data[3] = direction (initialement 0xFFFF = -1 signé, toggle ±1)
+
+interface _LevitateTaskState {
+  objEventId: number;
+  timer: number;       // task.data[2]
+  direction: number;   // task.data[3] : -1 ou +1
+}
+
+/** 1:1 décomp tasks levitate registry. Keyed par objEventId (= notre TS proxy
+ *  pour task ID, stored dans npc.warpArrowSpriteId). */
+const _sLevitateTasksByObjEventId: Map<number, _LevitateTaskState> = new Map();
+
+/** 1:1 décomp `CreateLevitateMovementTask(objectEvent)` (event_object_movement.c:8897) :
+ *    taskId = CreateTask(ApplyLevitateMovement, 0xFF);
+ *    StoreWordInTwoHalfwords(&task->data[0], (u32)objectEvent);
+ *    objectEvent->warpArrowSpriteId = taskId;
+ *    task->data[3] = 0xFFFF;  // = -1 signed */
+function _CreateLevitateMovementTask(npc: ObjectEvent): void {
+  // Trouver objEventId via lookup dans gObjectEvents.
+  let objEventId = -1;
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    if (gObjectEvents[i] === npc) { objEventId = i; break; }
+  }
+  if (objEventId < 0) return;
+  _sLevitateTasksByObjEventId.set(objEventId, {
+    objEventId,
+    timer: 0,
+    direction: -1,  // 0xFFFF = -1 signed
+  });
+  npc.warpArrowSpriteId = objEventId;  // = task ID proxy
+}
+
+/** 1:1 décomp `DestroyLevitateMovementTask(taskId)` (event_object_movement.c:8925) :
+ *    DestroyTask(taskId). */
+function _DestroyLevitateMovementTask(taskId: number): void {
+  _sLevitateTasksByObjEventId.delete(taskId);
+}
+
+/** 1:1 décomp `ApplyLevitateMovement(taskId)` (event_object_movement.c:8907) :
+ *    sprite = &gSprites[objectEvent->spriteId];
+ *    if (!(task->data[2] & 3)) sprite->y2 += task->data[3];
+ *    if (!(task->data[2] & 15)) task->data[3] = -task->data[3];
+ *    task->data[2]++;
+ *
+ *  Called per-frame depuis `ApplyLevitateMovement_TickAll`. */
+function _ApplyLevitateMovement(rt: DecompRuntime, state: _LevitateTaskState): void {
+  const npc = gObjectEvents[state.objEventId];
+  if (!npc || !npc.active) return;
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite) return;
+
+  if ((state.timer & 3) === 0) sprite.y2 += state.direction;
+  if ((state.timer & 15) === 0) state.direction = -state.direction;
+  state.timer++;
+}
+
+/** Tick all active levitate tasks per-frame. À appeler depuis le scene tick
+ *  loop (= TestOverworldScene). */
+export function ApplyLevitateMovement_TickAll(rt: DecompRuntime): void {
+  for (const state of _sLevitateTasksByObjEventId.values()) {
+    _ApplyLevitateMovement(rt, state);
+  }
+}
+
+/** Reset complet du levitate task registry — call au map switch / scene reset. */
+export function ResetLevitateMovementTasks(): void {
+  _sLevitateTasksByObjEventId.clear();
+}
+
 /** 1:1 décomp `MovementAction_Levitate_Step0` (event_object_movement.c:7292) :
  *    CreateLevitateMovementTask(objectEvent);
  *    sprite->sActionFuncId = 1;
- *    return TRUE;
- *
- *  DETTE H3 cascade : CreateLevitateMovementTask (= task Phaser qui anime
- *  sprite.y2 oscillation pour effet flottant). */
+ *    return TRUE; */
 function _MovementAction_Levitate_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : CreateLevitateMovementTask.
+  _CreateLevitateMovementTask(npc);
   npc.actionStep = 1;
   return true;
 }
 
-/** 1:1 décomp `MovementAction_StopLevitate_Step0` :
+/** 1:1 décomp `MovementAction_StopLevitate_Step0` (event_object_movement.c:7299) :
  *    DestroyLevitateMovementTask(objectEvent->warpArrowSpriteId);
  *    sprite->y2 = 0;
  *    sActionFuncId = 1; return TRUE; */
 function _MovementAction_StopLevitate_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // DETTE H3 : DestroyLevitateMovementTask.
+  _DestroyLevitateMovementTask(npc.warpArrowSpriteId);
   if (npc.spriteId >= 0) {
     const sprite = rt.gSprites.get(npc.spriteId);
     if (sprite) sprite.y2 = 0;
@@ -3941,7 +4013,7 @@ function _MovementAction_StopLevitate_Step0(rt: DecompRuntime, npc: ObjectEvent)
   return true;
 }
 
-/** 1:1 décomp `MovementAction_StopLevitateAtTop_Step0` :
+/** 1:1 décomp `MovementAction_StopLevitateAtTop_Step0` (event_object_movement.c:7307) :
  *    if (sprite->y2 == 0) {
  *        DestroyLevitateMovementTask(objectEvent->warpArrowSpriteId);
  *        sActionFuncId = 1; return TRUE;
@@ -3951,7 +4023,7 @@ function _MovementAction_StopLevitateAtTop_Step0(rt: DecompRuntime, npc: ObjectE
   if (npc.spriteId >= 0) {
     const sprite = rt.gSprites.get(npc.spriteId);
     if (sprite && sprite.y2 === 0) {
-      // DETTE H3 : DestroyLevitateMovementTask.
+      _DestroyLevitateMovementTask(npc.warpArrowSpriteId);
       npc.actionStep = 1;
       return true;
     }

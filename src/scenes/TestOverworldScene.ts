@@ -84,6 +84,8 @@ import {
   preloadNpcGraphicsForMap,
   FreezeObjectEvents,
   UnfreezeAllNpcs as UnfreezeObjectEvents,
+  ApplyLevitateMovement_TickAll,
+  ResetLevitateMovementTasks,
 } from '../engine/field/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../engine/field/script-movement';
@@ -535,6 +537,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // AVANT TickObjectEventMovements pour que le held movement set ici soit
         // exécuté par _execHeldMovementAction dans le même tick.
         ScriptMovement_MoveObjects();
+        // H3.2 — 1:1 strict ApplyLevitateMovement task tick : sprite.y2 oscille
+        // ±1 every 4 frames, toggle direction every 16 frames. Used par NPCs en
+        // LEVITATE state (Mt. Pyre Castform, etc.).
+        ApplyLevitateMovement_TickAll(rt);
         // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
         // NB : tickMovementQueues a déjà run avant CameraUpdate. Pour les NPCs
         // en script-driven movement, leur walkFramesLeft non-zéro empêche le
@@ -843,6 +849,8 @@ export class TestOverworldScene extends Phaser.Scene {
       // H2 : reset ScriptMovement task data (= 1:1 décomp Script_ResetTask au
       // map switch, sinon objEventIds stale référencent ancienne map NPCs).
       ScriptMovement_Reset();
+      // H3.2 : reset LevitateMovementTask registry.
+      ResetLevitateMovementTasks();
     }
     // returnToField=true : on ne touche PAS gObjectEvents. Au cycle bag close,
     // gObjectEvents.currentCoords est préservé (= MOM reste à sa position post-
