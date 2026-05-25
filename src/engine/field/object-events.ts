@@ -2849,6 +2849,9 @@ import {
   MOVEMENT_ACTION_JUMP_SPECIAL_LEFT, MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT,
   MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP, MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN,
   MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT,
+  MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN,
+  MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3245,9 +3248,45 @@ function _MovementAction_EmoteHeart_Step0(_rt: DecompRuntime, npc: ObjectEvent):
  *  Used par RockSmashBreak + CutTree pour anim destruction obstacle. */
 const ANIM_REMOVE_OBSTACLE = 1;
 
-/** 1:1 décomp `ANIM_NURSE_BOW = ANIM_STD_COUNT + 0` (event_object_movement.h).
- *  Used par NurseJoyBowDown. */
-const ANIM_NURSE_BOW = 4;  // ANIM_STD_COUNT (= 4 standard anims) + 0.
+/** 1:1 décomp `ANIM_STD_COUNT = 20` (event_object_movement.h:175). */
+const ANIM_STD_COUNT = 20;
+
+/** 1:1 décomp `ANIM_NURSE_BOW = ANIM_STD_COUNT + 0 = 20` (event_object_movement.h). */
+const ANIM_NURSE_BOW = ANIM_STD_COUNT + 0;
+
+/** 1:1 décomp ANIM_BUNNY_HOP_BACK_WHEEL_X (= ANIM_STD_COUNT + 0..3 = 20..23). */
+const ANIM_BUNNY_HOP_BACK_WHEEL = [
+  ANIM_STD_COUNT + 0,  // SOUTH
+  ANIM_STD_COUNT + 1,  // NORTH
+  ANIM_STD_COUNT + 2,  // WEST
+  ANIM_STD_COUNT + 3,  // EAST
+];
+const sAcroWheelieDirectionAnimNums: readonly number[] = [
+  ANIM_STD_COUNT + 0,  // DIR_NONE / SOUTH fallback
+  ANIM_STD_COUNT + 0,  // DIR_SOUTH
+  ANIM_STD_COUNT + 1,  // DIR_NORTH
+  ANIM_STD_COUNT + 2,  // DIR_WEST
+  ANIM_STD_COUNT + 3,  // DIR_EAST
+];
+
+/** 1:1 décomp ANIM_STANDING_WHEELIE_BACK_WHEEL_X (= ANIM_STD_COUNT + 8..11). */
+const sAcroEndWheelieDirectionAnimNums: readonly number[] = [
+  ANIM_STD_COUNT + 8,
+  ANIM_STD_COUNT + 8,
+  ANIM_STD_COUNT + 9,
+  ANIM_STD_COUNT + 10,
+  ANIM_STD_COUNT + 11,
+];
+
+/** 1:1 décomp ANIM_MOVING_WHEELIE_X (= ANIM_STD_COUNT + 16..19). */
+const sAcroWheeliePedalDirectionAnimNums: readonly number[] = [
+  ANIM_STD_COUNT + 16,
+  ANIM_STD_COUNT + 16,
+  ANIM_STD_COUNT + 17,
+  ANIM_STD_COUNT + 18,
+  ANIM_STD_COUNT + 19,
+];
+void ANIM_BUNNY_HOP_BACK_WHEEL;
 
 /** 1:1 décomp `MovementAction_NurseJoyBowDown_Step0` :
  *    StartSpriteAnimInDirection(obj, sprite, DIR_SOUTH, ANIM_NURSE_BOW);
@@ -3529,6 +3568,60 @@ function _makeJumpInPlaceAlternatingAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `AcroWheelieFaceDirection` (event_object_movement.c) :
+ *    SetObjectEventDirection(direction);
+ *    ShiftStillObjectEventCoords;
+ *    SetStepAnim(GetAcroWheeliePedalDirectionAnimNum(direction));
+ *    sprite->animPaused = TRUE;
+ *    sActionFuncId = 1; */
+function _makeAcroWheelieFaceAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    SetObjectEventDirection(npc, dir);
+    ShiftStillObjectEventCoords(npc);
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite && sprite.anims) {
+        StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
+        sprite.animPaused = true;
+      }
+    }
+    npc.actionStep = 1;
+    return true;
+  };
+}
+
+/** 1:1 décomp `MovementAction_AcroPopWheelieX_Step0` :
+ *    StartSpriteAnimInDirection(obj, sprite, dir, GetAcroWheelieDirectionAnimNum(dir));
+ *    return FALSE; */
+function _makeAcroPopWheelieAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    SetObjectEventDirection(npc, dir);
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite && sprite.anims) {
+        StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
+      }
+    }
+    return false;
+  };
+}
+
+/** 1:1 décomp `MovementAction_AcroEndWheelieFaceX_Step0` :
+ *    StartSpriteAnimInDirection(obj, sprite, dir, GetAcroEndWheelieDirectionAnimNum(dir));
+ *    return FALSE; */
+function _makeAcroEndWheelieFaceAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    SetObjectEventDirection(npc, dir);
+    if (npc.spriteId >= 0) {
+      const sprite = rt.gSprites.get(npc.spriteId);
+      if (sprite && sprite.anims) {
+        StartSpriteAnim(sprite as never, sAcroEndWheelieDirectionAnimNums[dir] ?? 0);
+      }
+    }
+    return false;
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3742,6 +3835,20 @@ gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP]    = _makeJumpInPlac
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN]    = _makeJumpInPlaceAlternatingAction(DIR_NORTH);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT] = _makeJumpInPlaceAlternatingAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT] = _makeJumpInPlaceAlternatingAction(DIR_EAST);
+// H1.19 : ACRO_WHEELIE_FACE_X (100-103) / ACRO_POP_WHEELIE_X (104-107) /
+// ACRO_END_WHEELIE_FACE_X (108-111). Bike wheelie state actions.
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN]      = _makeAcroWheelieFaceAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN + 1]  = _makeAcroWheelieFaceAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN + 2]  = _makeAcroWheelieFaceAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN + 3]  = _makeAcroWheelieFaceAction(DIR_EAST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN]       = _makeAcroPopWheelieAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN + 1]   = _makeAcroPopWheelieAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN + 2]   = _makeAcroPopWheelieAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN + 3]   = _makeAcroPopWheelieAction(DIR_EAST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN]     = _makeAcroEndWheelieFaceAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 1] = _makeAcroEndWheelieFaceAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 2] = _makeAcroEndWheelieFaceAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 3] = _makeAcroEndWheelieFaceAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
