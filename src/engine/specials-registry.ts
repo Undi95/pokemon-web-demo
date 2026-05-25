@@ -2224,10 +2224,12 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'PrintPlayerBerryPowderAmount',
   'PutAwayDecorationIteration', 'PutFanClubSpecialOnTheAir',
   'PutLilycoveContestLadyShowOnTheAir', 'QuizLadyGetPlayerAnswer',
-  'QuizLadyPickNewQuestion', 'QuizLadyRecordCustomQuizData',
+  'QuizLadyPickNewQuestion',
+  // 'QuizLadyRecordCustomQuizData' — porté 1:1 décomp lilycove_lady.c:547 ci-bas (batch B46).
   // 'QuizLadySetWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:559 ci-bas.
   'QuizLadySetCustomQuestion',
-  'QuizLadyShowQuizQuestion', 'QuizLadyTakePrizeForCustomQuiz',
+  'QuizLadyShowQuizQuestion',
+  // 'QuizLadyTakePrizeForCustomQuiz' — porté 1:1 décomp lilycove_lady.c:542 ci-bas (batch B46).
   // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
   'RejectEggFromDayCare', 'ResetTVShowState',
@@ -3383,6 +3385,52 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B46 batch — 2 specials Quiz Lady custom 1:1 strict ──────────
+
+/** 1:1 décomp `QuizLadyTakePrizeForCustomQuiz` (lilycove_lady.c:542-545) :
+ *  ```c
+ *  void QuizLadyTakePrizeForCustomQuiz(void) {
+ *      RemoveBagItem(gSpecialVar_ItemId, 1);
+ *  }
+ *  ```
+ *  Notre RemoveBagItem demande itemKey string ; gSpecialVar.ItemId est number.
+ *  Bridge via reverseDecompConstant 'ITEM_'. */
+registerSpecial('QuizLadyTakePrizeForCustomQuiz', () => {
+  const itemId = gSpecialVar.ItemId;
+  const itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? `__item_${itemId}`;
+  void (async () => {
+    try {
+      const mod = await import('./bag');
+      mod.RemoveBagItem(itemKey, 1);
+    } catch { /* fallback no-op */ }
+  })();
+});
+
+/** 1:1 décomp `QuizLadyRecordCustomQuizData` (lilycove_lady.c:547-557) :
+ *  ```c
+ *  void QuizLadyRecordCustomQuizData(void) {
+ *      u8 i;
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      sQuizLadyPtr->prize = gSpecialVar_ItemId;
+ *      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+ *          sQuizLadyPtr->playerTrainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];
+ *      StringCopy_PlayerName(sQuizLadyPtr->playerName, gSaveBlock2Ptr->playerName);
+ *      sQuizLadyPtr->language = gGameLanguage;
+ *  }
+ *  ```
+ *  TRAINER_ID_LENGTH=4, gGameLanguage=LANGUAGE_FRENCH=3 chez nous. */
+registerSpecial('QuizLadyRecordCustomQuizData', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (!lady || lady.kind !== 'quiz') return;
+  lady.prize = gSpecialVar.ItemId;
+  if (!lady.playerTrainerId) lady.playerTrainerId = [0, 0, 0, 0];
+  for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
+    lady.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
+  }
+  lady.playerName = gSaveBlock2Ptr.playerName ?? '';
+  lady.language = 3;  // LANGUAGE_FRENCH
 });
 
 // ─── Session B45 batch — 2 specials Quiz Lady clear 1:1 strict ───────────
