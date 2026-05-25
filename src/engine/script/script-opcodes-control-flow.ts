@@ -36,11 +36,7 @@ import {
   SetupNativeScript, getScript, getOpcodeHandler,
 } from './script-runtime';
 import { FlagGet } from './script-vars';
-import {
-  parseValue, getSelectedNpc, OPPOSITE_DIR,
-} from './script-opcodes-helpers';
-import { GetPlayerFacingDirection, DIR_SOUTH } from '../field/player-avatar';
-import { FreezeObjectEvent } from '../field/object-events';
+import { parseValue } from './script-opcodes-helpers';
 import { invokeSpecial } from './script-opcodes-special';
 
 // ─── Control flow ────────────────────────────────────────────────────────────
@@ -315,47 +311,71 @@ registerOpcode('call_if', (ctx, args) => {
 
 // ─── Std scripts dispatch (1:1 décomp gStdScripts) ──────────────────────────
 // gStdScripts[] (= event_scripts.s:95-107) :
-//   STD_OBTAIN_ITEM (0)  → Std_ObtainItem
-//   STD_FIND_ITEM (1)    → Std_FindItem
-//   MSGBOX_NPC (2)       → Std_MsgboxNPC
-//   MSGBOX_SIGN (3)      → Std_MsgboxSign
-//   MSGBOX_DEFAULT (4)   → Std_MsgboxDefault
-//   MSGBOX_YESNO (5)     → Std_MsgboxYesNo
-//   MSGBOX_AUTOCLOSE (6) → Std_MsgboxAutoclose (= n'existe pas en décomp,
-//                          alias de MSGBOX_DEFAULT)
-//   STD_OBTAIN_DECORATION (7) → Std_ObtainDecoration
+//   STD_OBTAIN_ITEM (0)         → Std_ObtainItem
+//   STD_FIND_ITEM (1)           → Std_FindItem
+//   MSGBOX_NPC (2)              → Std_MsgboxNPC
+//   MSGBOX_SIGN (3)             → Std_MsgboxSign
+//   MSGBOX_DEFAULT (4)          → Std_MsgboxDefault
+//   MSGBOX_YESNO (5)            → Std_MsgboxYesNo
+//   MSGBOX_AUTOCLOSE (6)        → Std_MsgboxAutoclose (= trainer_battle.inc)
+//   STD_OBTAIN_DECORATION (7)   → Std_ObtainDecoration
 //   STD_REGISTER_MATCH_CALL (8) → Std_RegisteredInMatchCall
-//   MSGBOX_GETPOINTS (9) → Std_MsgboxGetPoints
-//   MSGBOX_POKENAV (10)  → Std_MsgboxPokenav (unused, alias de pokenavcall)
+//   MSGBOX_GETPOINTS (9)        → Std_MsgboxGetPoints
+//   MSGBOX_POKENAV (10)         → Std_MsgboxPokenav (unused — pokenavcall direct)
+//
+// 1:1 strict scrcmd.c:236-253 FetchScriptStdPointer + ScrCmd_gotostd/callstd :
+//   const u8 *FetchScriptStdPointer(ctx, index) {
+//     if (index >= NELEMS(gStdScripts)) return NULL;
+//     return gStdScripts[index];
+//   }
+//   static bool8 ScrCmd_gotostd(ctx) {
+//     u8 index = ScriptReadByte(ctx);
+//     const u8 *script = FetchScriptStdPointer(ctx, index);
+//     if (script != NULL) ScriptJump(ctx, script);
+//     return FALSE;
+//   }
+//   ScrCmd_callstd idem avec ScriptCall.
+
+const gStdScripts: readonly string[] = [
+  'Std_ObtainItem',             // 0 STD_OBTAIN_ITEM
+  'Std_FindItem',               // 1 STD_FIND_ITEM
+  'Std_MsgboxNPC',              // 2 MSGBOX_NPC
+  'Std_MsgboxSign',             // 3 MSGBOX_SIGN
+  'Std_MsgboxDefault',          // 4 MSGBOX_DEFAULT
+  'Std_MsgboxYesNo',            // 5 MSGBOX_YESNO
+  'Std_MsgboxAutoclose',        // 6 MSGBOX_AUTOCLOSE
+  'Std_ObtainDecoration',       // 7 STD_OBTAIN_DECORATION
+  'Std_RegisteredInMatchCall',  // 8 STD_REGISTER_MATCH_CALL
+  'Std_MsgboxGetPoints',        // 9 MSGBOX_GETPOINTS
+  'Std_MsgboxPokenav',          // 10 MSGBOX_POKENAV
+] as const;
+
+/** 1:1 décomp scrcmd.c:236 `FetchScriptStdPointer`. */
+function _fetchScriptStdPointer(stdIndex: number): string | null {
+  if (stdIndex < 0 || stdIndex >= gStdScripts.length) return null;
+  return gStdScripts[stdIndex];
+}
 
 function _runStdScript(ctx: ScriptContext, stdIndex: number, isCall: boolean): boolean {
-  void ctx;
-  void isCall;
-  switch (stdIndex) {
-    case 0: case 7: case 8: case 9: case 10: {
-      // STD_OBTAIN_ITEM/OBTAIN_DECORATION/REGISTER_MATCH_CALL/GETPOINTS/POKENAV.
-      console.log(`[opcode std] dispatch ${stdIndex} (no text ctx — likely OK for 0-usage opcodes)`);
+  // 1:1 décomp scrcmd.c:238 ScrCmd_gotostd / 248 ScrCmd_callstd.
+  const label = _fetchScriptStdPointer(stdIndex);
+  if (!label) return false;
+  const target = getScript(label);
+  if (!target) {
+    // Notre extracteur emet `msgbox TEXT, TYPE` direct (= macro expansion
+    // partielle) au lieu de `loadword + callstd MSGBOX_X`. Le `msgbox`
+    // opcode inline tout pour MSGBOX_NPC/SIGN/DEFAULT/YESNO/AUTOCLOSE.
+    // Si on arrive ici sans label extrait pour un MSGBOX_*, c'est OK — log.
+    if (stdIndex >= 2 && stdIndex <= 6) {
+      // MSGBOX_* sans loadword préalable = comportement undefined dans décomp
+      // (= message NULL). Notre msgbox inline les couvre.
       return false;
     }
-    case 1: {
-      // STD_FIND_ITEM : lock + faceplayer 1:1 STRICT via FreezeObjectEvent
-      // (= sinon anim sprite continue à cycler pendant le pickup).
-      const npc = getSelectedNpc();
-      if (npc) {
-        FreezeObjectEvent(npc);
-        npc.facingDirection = OPPOSITE_DIR[GetPlayerFacingDirection()] ?? DIR_SOUTH;
-      }
-      console.log('[opcode std] STD_FIND_ITEM dispatch');
-      return false;
-    }
-    case 2: case 3: case 4: case 5: case 6: {
-      // MSGBOX_NPC/SIGN/DEFAULT/YESNO/AUTOCLOSE : behaviour gérée par notre
-      // opcode `msgbox` directement (= scripts emit `msgbox TEXT, TYPE` au lieu
-      // de `loadword + callstd`). Log only.
-      console.log(`[opcode std] MSGBOX_* dispatch (handled inline by msgbox opcode)`);
-      return false;
-    }
+    console.warn(`[opcode std] script ${label} (index=${stdIndex}) not extracted`);
+    return false;
   }
+  if (isCall) ScriptCall(ctx, target);
+  else ScriptJump(ctx, target);
   return false;
 }
 
