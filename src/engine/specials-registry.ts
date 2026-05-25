@@ -2095,7 +2095,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.
   // 'CountPartyNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1424 ci-bas.
   // 'CountPlayerTrainerStars' — porté 1:1 décomp trainer_card.c:663 ci-bas (batch B11).
-  'CreateAbnormalWeatherEvent', 'CreateEnemyEventMon',
+  // 'CreateAbnormalWeatherEvent' — porté 1:1 décomp field_specials.c:3453 ci-bas (batch B32).
+  'CreateEnemyEventMon',
   'DestroyMewEmergingGrassSprite',
   // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
@@ -3351,6 +3352,47 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B32 batch — 1 special Abnormal Weather 1:1 strict ────────────
+
+/** 1:1 décomp `CreateAbnormalWeatherEvent` (field_specials.c:3453-3476) :
+ *  ```c
+ *  void CreateAbnormalWeatherEvent(void) {
+ *      u16 randomValue = Random();
+ *      VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, 0);
+ *      if (FlagGet(FLAG_DEFEATED_KYOGRE) == TRUE)
+ *          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);
+ *      else if (FlagGet(FLAG_DEFEATED_GROUDON) == TRUE)
+ *          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);
+ *      else if ((randomValue & 1) == 0) {
+ *          randomValue = Random();
+ *          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);
+ *      } else {
+ *          randomValue = Random();
+ *          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);
+ *      }
+ *  }
+ *  ```
+ *  Cascade R3 résolue : constants/weather.h:44-65 — TERRA_CAVE_LOCATIONS_START=1,
+ *  TERRA_CAVE_LOCATIONS=8, MARINE_CAVE_LOCATIONS_START=9, MARINE_CAVE_LOCATIONS=8. */
+registerSpecial('CreateAbnormalWeatherEvent', () => {
+  let randomValue = Random() & 0xFFFF;
+  VarSet('VAR_ABNORMAL_WEATHER_STEP_COUNTER', 0);
+  // 1:1 décomp constants/weather.h.
+  const TERRA_START = 1, TERRA_LOC = 8;
+  const MARINE_START = 9, MARINE_LOC = 8;
+  if (FlagGet('FLAG_DEFEATED_KYOGRE')) {
+    VarSet('VAR_ABNORMAL_WEATHER_LOCATION', (randomValue % TERRA_LOC) + TERRA_START);
+  } else if (FlagGet('FLAG_DEFEATED_GROUDON')) {
+    VarSet('VAR_ABNORMAL_WEATHER_LOCATION', (randomValue % MARINE_LOC) + MARINE_START);
+  } else if ((randomValue & 1) === 0) {
+    randomValue = Random() & 0xFFFF;
+    VarSet('VAR_ABNORMAL_WEATHER_LOCATION', (randomValue % TERRA_LOC) + TERRA_START);
+  } else {
+    randomValue = Random() & 0xFFFF;
+    VarSet('VAR_ABNORMAL_WEATHER_LOCATION', (randomValue % MARINE_LOC) + MARINE_START);
+  }
 });
 
 // ─── Session B31 batch — 2 specials Contest Lady 1:1 strict ───────────────
