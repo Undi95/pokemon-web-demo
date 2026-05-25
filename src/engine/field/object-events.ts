@@ -2260,6 +2260,49 @@ const MOVEMENT_HANDLERS: Record<string, { tick: 'look' | 'wander'; dirs: Readonl
  *  un huge map literal. */
 function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   const mt = npc.movementType;
+  // ─── MOVEMENT_TYPE_FACE_DOWN/UP/LEFT/RIGHT (H5) ─────────────────────────────
+  // 1:1 strict décomp `MovementType_FaceDirection_Step0/1/2`
+  // (event_object_movement.c:3031-3055) :
+  //   Step0 : ClearObjectEventMovement(obj, sprite);
+  //           ObjectEventSetSingleMovement(GetFaceDirectionMovementAction(facingDirection));
+  //           sprite->sTypeFuncId = 1;
+  //           return TRUE;
+  //   Step1 : if (ObjectEventExecSingleMovementAction(obj, sprite)) {
+  //               sprite->sTypeFuncId = 2;
+  //               return TRUE;
+  //           }
+  //           return FALSE;
+  //   Step2 : objectEvent->singleMovementActive = FALSE;
+  //           return FALSE;
+  //
+  // FaceDirection action est instant (MovementAction_FaceDown/Up/Left/Right_Step0
+  // ne fait que StartSpriteAnim → return TRUE imm). Step0+Step1 collapsent dans
+  // une frame, puis Step2 idle indéfini. sTypeFuncId = notre npc.movementStep.
+  //
+  // Sans H1 (gMovementActionFuncs) refactor, on inline FaceDirection action
+  // direct via _npcSetFaceAnim (= StartSpriteAnim(GetFaceDirectionAnimNum)).
+  if (mt === 'MOVEMENT_TYPE_FACE_DOWN'
+   || mt === 'MOVEMENT_TYPE_FACE_UP'
+   || mt === 'MOVEMENT_TYPE_FACE_LEFT'
+   || mt === 'MOVEMENT_TYPE_FACE_RIGHT') {
+    if (npc.movementStep === 0) {
+      // Step0 : ClearObjectEventMovement (event_object_movement.c:4486) :
+      //   singleMovementActive=FALSE + heldMovementActive=FALSE +
+      //   heldMovementFinished=FALSE + movementActionId=MOVEMENT_ACTION_NONE +
+      //   sTypeFuncId=0. Step0 puis overwrite sTypeFuncId=1.
+      npc.singleMovementActive = false;
+      npc.heldMovementActive = false;
+      npc.heldMovementFinished = false;
+      npc.movementActionId = 0xFF;  // MOVEMENT_ACTION_NONE (= event_object_movement.h:265)
+      // Step1 collapse : FaceDirection action instant → StartSpriteAnim FACE_X.
+      _npcSetFaceAnim(rt, npc);
+      // Step2 : singleMovementActive déjà FALSE via ClearObjectEventMovement.
+      npc.movementStep = 2;
+    }
+    // Step2 idle : return FALSE dans décomp, return true dans notre TS pour
+    // signaler "handled" au dispatcher (= sinon skip puis re-tick = boucle).
+    return true;
+  }
   // ROTATE_CLOCKWISE / COUNTERCLOCKWISE
   if (mt === 'MOVEMENT_TYPE_ROTATE_CLOCKWISE') {
     tickRotate(rt, npc, true);
