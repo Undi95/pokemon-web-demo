@@ -3015,6 +3015,8 @@ function _InitNpcForMovement(rt: DecompRuntime, npc: ObjectEvent, dir: number, s
   npc.walkFramesLeft = duration;
   npc.actionTimer = 0;  // sTimer
   npc.actionStep = 1;
+  // H4.3 fix : 1:1 strict décomp InitNpcForMovement set triggerGroundEffectsOnMove=TRUE.
+  npc.triggerGroundEffectsOnMove = true;
   _npcStartWalkAnim(rt, npc, dir);
 }
 
@@ -3061,10 +3063,12 @@ function _NpcTakeStep(npc: ObjectEvent): boolean {
 function _MovementAction_WalkNormal_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (_NpcTakeStep(npc)) {
     // 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162) +
-    // sprite->animPaused = TRUE.
+    // triggerGroundEffectsOnStop = TRUE + sprite->animPaused = TRUE.
     ShiftStillObjectEventCoords(npc);
     npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
     npc.walkFramesLeft = 0;
+    // H4.3 fix : 1:1 strict décomp UpdateMovementNormal set triggerGroundEffectsOnStop=TRUE.
+    npc.triggerGroundEffectsOnStop = true;
     npc.actionStep = 2;
     _npcEndWalkAnim(rt, npc);
     return true;
@@ -3120,6 +3124,8 @@ function _InitNpcForWalkSlow(rt: DecompRuntime, npc: ObjectEvent, direction: num
     const sprite = rt.gSprites.get(npc.spriteId);
     if (sprite) sprite.animPaused = false;
   }
+  // H4.3 fix : 1:1 strict décomp InitNpcForWalkSlow set triggerGroundEffectsOnMove=TRUE.
+  npc.triggerGroundEffectsOnMove = true;
   npc.actionStep = 1;
 }
 
@@ -3168,10 +3174,9 @@ function _UpdateWalkSlow(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (_UpdateWalkSlowAnim(npc)) {
     ShiftStillObjectEventCoords(npc);
     npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
-    if (npc.spriteId >= 0) {
-      const sprite = rt.gSprites.get(npc.spriteId);
-      if (sprite) sprite.animPaused = true;
-    }
+    // H4.3 fix : 1:1 strict décomp UpdateWalkSlow (5160) set triggerGroundEffectsOnStop=TRUE.
+    npc.triggerGroundEffectsOnStop = true;
+    _npcEndWalkAnim(rt, npc);
     return true;
   }
   return false;
@@ -3598,6 +3603,10 @@ function _InitJump(rt: DecompRuntime, npc: ObjectEvent, dir: number, distance: n
   npc.jumpType = type;
   npc.actionTimer = 0;  // sTimer
   npc.actionStep = 1;  // sActionFuncId
+  // H4.3 fix : 1:1 strict décomp InitJump set triggerGroundEffectsOnMove +
+  // disableCoveringGroundEffects = TRUE (event_object_movement.c:5442-5443).
+  npc.triggerGroundEffectsOnMove = true;
+  npc.disableCoveringGroundEffects = true;
   _npcStartWalkAnim(rt, npc, dir);
   // Visual : worldX/Y reflect previousCoords (= source position), npc walks vers dest.
   // Sans shift visuel direct (= y2 anim parabolic handle ça).
@@ -3648,9 +3657,17 @@ function _UpdateJumpAnim(rt: DecompRuntime, npc: ObjectEvent): boolean {
       const dx = (DIR_TO_DX[npc.walkDirection] ?? 0) * halfDist;
       const dy = (DIR_TO_DY[npc.walkDirection] ?? 0) * halfDist;
       ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
+      // H4.3 fix : 1:1 strict UpdateJumpAnim (5470-5471) set triggerGroundEffectsOnMove +
+      // disableCoveringGroundEffects = TRUE au halfway.
+      npc.triggerGroundEffectsOnMove = true;
+      npc.disableCoveringGroundEffects = true;
     }
   } else if (result === JUMP_FINISHED) {
     ShiftStillObjectEventCoords(npc);
+    // H4.3 fix : 1:1 strict UpdateJumpAnim (5476-5478) set triggerGroundEffectsOnStop +
+    // landingJump = TRUE au finish.
+    npc.triggerGroundEffectsOnStop = true;
+    npc.landingJump = true;
     return true;
   }
   return false;
