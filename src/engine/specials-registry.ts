@@ -57,6 +57,7 @@ import { SetCameraPanning, SetCameraPanningCallback } from './field-camera';
 import { gSpecialVar } from './script-vars';
 import { gDecorations } from './decoration-data';
 import { GetFirstEmptyDecorSlot } from './decoration-inventory';
+import { DecorationAdd, DecorationRemove } from './decoration-inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -2333,7 +2334,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'TakeBerryPowder' — porté 1:1 décomp berry_powder.c:188 ci-bas (batch B38).
   'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
   // 'ToggleCurSecretBaseRegistry' — porté 1:1 décomp secret_base.c:891 ci-bas.
-  'TraderDoDecorationTrade',
+  // 'TraderDoDecorationTrade' — porté 1:1 décomp trader.c:199 ci-bas (batch D5).
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
   'TryBecomeLinkLeader', 'TryBerryBlenderLinkup', 'TryContestEModeLinkup',
   'TryContestGModeLinkup', 'TryEnterContestMon', 'TryFieldPoisonWhiteOut',
@@ -4173,6 +4174,46 @@ registerSpecial('IsDecorationCategoryFull', () => {
     setStringVar(2, sDecorationCategoryNames[newDecor.category] ?? '???');
     gSpecialVar.Result = 1;
   }
+});
+
+/** 1:1 décomp `TraderDoDecorationTrade(void)` (trader.c:199-209) :
+ *  ```c
+ *  void TraderDoDecorationTrade(void) {
+ *      struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;
+ *      DecorationRemove(gSpecialVar_0x8006);  // remove player's decor at slot
+ *      DecorationAdd(gSpecialVar_0x8004);     // add trader's decor
+ *      StringCopy(trader->playerNames[gSpecialVar_0x8005], gSaveBlock2Ptr->playerName);
+ *      trader->decorations[gSpecialVar_0x8005] = gSpecialVar_0x8006;
+ *      trader->language[gSpecialVar_0x8005] = GAME_LANGUAGE;
+ *      trader->alreadyTraded = TRUE;
+ *  }
+ *  ```
+ *  VAR_0x8004 = decor à ADD (= depuis trader).
+ *  VAR_0x8005 = trader slot idx (0..3).
+ *  VAR_0x8006 = decor à REMOVE (= player's old decor swap'd to trader). */
+registerSpecial('TraderDoDecorationTrade', () => {
+  const oldMan = gSaveBlock1Ptr.oldMan;
+  if (oldMan.kind !== 'trader') return 0;
+  const decorToReceive = VarGet('VAR_0x8004');
+  const slotIdx = VarGet('VAR_0x8005');
+  const decorToGive = VarGet('VAR_0x8006');
+  // 1:1 :203 : DecorationRemove + DecorationAdd.
+  DecorationRemove(decorToGive);
+  DecorationAdd(decorToReceive);
+  // 1:1 :205 : StringCopy(trader->playerNames[slot], gSaveBlock2Ptr->playerName).
+  if (slotIdx >= 0 && slotIdx < oldMan.playerNames.length) {
+    oldMan.playerNames[slotIdx] = gSaveBlock2Ptr.playerName ?? '';
+  }
+  if (slotIdx >= 0 && slotIdx < oldMan.decorations.length) {
+    oldMan.decorations[slotIdx] = decorToGive;
+  }
+  // 1:1 :207 : language = GAME_LANGUAGE (= LANGUAGE_FRENCH = 5 chez nous).
+  if (slotIdx >= 0 && slotIdx < oldMan.language.length) {
+    oldMan.language[slotIdx] = 5;  // LANGUAGE_FRENCH
+  }
+  // 1:1 :208 : alreadyTraded = TRUE.
+  oldMan.alreadyTraded = 1;
+  return 0;
 });
 
 // ─── Session B22 batch — 1 special Secret Base 1:1 strict ─────────────────
