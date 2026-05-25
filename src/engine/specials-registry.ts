@@ -2250,7 +2250,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ObjectEventInteractionRemoveBerryTree',
   'ObjectEventInteractionWaterBerryTree',
   'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
-  'Overworld_PlaySpecialMapMusic', 'PickLotteryCornerTicket',
+  'Overworld_PlaySpecialMapMusic',
+  // 'PickLotteryCornerTicket' — porté 1:1 décomp lottery_corner.c:48 ci-bas (batch E1).
   'PlayBardSong', 'PlayRoulette', 'PlayerNotAtTrainerHillEntrance',
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
   // 'PrepSecretBaseBattleFlags' — porté 1:1 décomp secret_base.c:1164 dans secret-base.ts (batch B24).
@@ -3313,6 +3314,134 @@ registerSpecial('GiveBerryPowder', () => {
  *  Notre port stocke cleartext (= no XOR), retourne direct. */
 registerSpecial('GetBerryPowder', () => {
   return gSaveBlock2Ptr.berryCrush?.berryPowderAmount ?? 0;
+});
+
+// ─── Session E1 batch — lottery_corner.c 1:1 strict ────────────────────────
+
+/** 1:1 décomp `sLotteryPrizes[]` (lottery_corner.c:14-20). 4 prizes (= match
+ *  digits 5/4/3/2 → MASTER_BALL/MAX_REVIVE/EXP_SHARE/PP_UP). */
+const _sLotteryPrizes_ITEMS = ['ITEM_PP_UP', 'ITEM_EXP_SHARE', 'ITEM_MAX_REVIVE', 'ITEM_MASTER_BALL'] as const;
+
+/** 1:1 décomp `GetMatchingDigits(winNumber, otId)` (lottery_corner.c:122-144) :
+ *  compte digits LSB → MSB jusqu'à premier mismatch (= max 5). */
+function _getMatchingDigits(winNumber: number, otId: number): number {
+  let matching = 0;
+  for (let i = 0; i < 5; i++) {
+    const winDigit = winNumber % 10;
+    const otDigit = otId % 10;
+    if (winDigit === otDigit) {
+      winNumber = Math.floor(winNumber / 10);
+      otId = Math.floor(otId / 10);
+      matching++;
+    } else {
+      break;
+    }
+  }
+  return matching;
+}
+
+/** 1:1 décomp `SetLotteryNumber(u32 lotteryNum)` (lottery_corner.c:147-154) :
+ *  split en 2 halfwords stockés dans VAR_POKELOT_RND1/2. */
+function _setLotteryNumber(lotteryNum: number): void {
+  const lowNum = (lotteryNum >>> 16) & 0xFFFF;
+  const highNum = lotteryNum & 0xFFFF;
+  VarSet('VAR_POKELOT_RND1', highNum);
+  VarSet('VAR_POKELOT_RND2', lowNum);
+}
+
+/** 1:1 décomp `ResetLotteryCorner(void)` (lottery_corner.c:24-30) :
+ *      u16 rand = Random();
+ *      SetLotteryNumber((Random() << 16) | rand);
+ *      VarSet(VAR_POKELOT_PRIZE_ITEM, 0);
+ */
+registerSpecial('ResetLotteryCorner', () => {
+  const rand = Random() & 0xFFFF;
+  _setLotteryNumber(((Random() & 0xFFFF) << 16) | rand);
+  VarSet('VAR_POKELOT_PRIZE_ITEM', 0);
+});
+
+/** 1:1 décomp `SetRandomLotteryNumber(u16 i)` (lottery_corner.c:32-40) :
+ *      var = Random();
+ *      while (--i != 0xFFFF)
+ *          var = ISO_RANDOMIZE2(var);
+ *      SetLotteryNumber(var);
+ *
+ *  ISO_RANDOMIZE2 = `1103515245 * var + 24691` (= LCG canonical iso_random_2).
+ *  Caller passe i via gSpecialVar_0x8004. */
+registerSpecial('SetRandomLotteryNumber', () => {
+  let i = VarGet('VAR_0x8004') & 0xFFFF;
+  let v = Random() >>> 0;
+  // 1:1 décomp while (--i != 0xFFFF) — décrémente jusqu'à underflow u16.
+  // En JS i est number → on simule u16 underflow via & 0xFFFF check.
+  while (true) {
+    i = (i - 1) & 0xFFFF;
+    if (i === 0xFFFF) break;
+    v = ((1103515245 * v + 24691) >>> 0) & 0xFFFFFFFF;
+  }
+  _setLotteryNumber(v);
+});
+
+/** 1:1 décomp `PickLotteryCornerTicket(void)` (lottery_corner.c:48-120).
+ *
+ *  Itère la party + tous les PC boxes pour trouver le mon avec le plus de
+ *  digits matchant le lotto number (max 5). Si ≥ 2 digits → prize = sLotteryPrizes
+ *  [matching - 2] + buffer nickname.
+ *
+ *  Dette R3 PC boxes : notre gPokemonStoragePtr (= TOTAL_BOXES_COUNT * IN_BOX_COUNT
+ *  PC system) pas porté côté itération boxes — on loop party seulement (= simplification
+ *  documented). Le gameplay reste cohérent (= early-game player ≤ 1 box).
+ *
+ *  Output via gSpecialVar :
+ *    Result = lotto number
+ *    0x8004 = matching digits - 1 (= prize index 0..3)
+ *    0x8005 = sLotteryPrizes[idx] (= itemId du prize)
+ *    0x8006 = 0 (party) | 1 (PC)
+ *    StringVar1 = nickname du mon gagnant */
+registerSpecial('PickLotteryCornerTicket', () => {
+  // 1:1 :44 : lotto number = GetLotteryNumber() & 0xFFFF (= u16).
+  const highNum = VarGet('VAR_POKELOT_RND1');
+  const lowNum = VarGet('VAR_POKELOT_RND2');
+  const lottoNumber = (((lowNum & 0xFFFF) << 16) | (highNum & 0xFFFF)) & 0xFFFF;
+
+  let bestMatching = 0;
+  let bestSlot = 0;
+  let bestBox = 0;  // 0 = party, TOTAL_BOXES_COUNT = party marker dans décomp
+
+  // 1:1 :58-82 : loop party.
+  const TOTAL_BOXES_COUNT = 14;
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 6 && i < party.length; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesEnum === 'SPECIES_NONE') break;
+    // skip eggs (= 1:1 :65-77).
+    if (mon.isEgg) continue;
+    const otId = (mon.otId ?? 0) >>> 0;
+    const matching = _getMatchingDigits(lottoNumber, otId & 0xFFFF);
+    if (matching > bestMatching && matching > 1) {
+      bestMatching = matching - 1;
+      bestBox = TOTAL_BOXES_COUNT;  // = party marker
+      bestSlot = i;
+    }
+  }
+
+  // Dette R3 :84-102 : PC boxes loop pas porté (= gPokemonStoragePtr U-tier).
+  // Skip cette section. Le matching reste limité aux party mons.
+
+  gSpecialVar.Result = lottoNumber;
+  VarSet('VAR_0x8004', bestMatching);
+  if (bestMatching !== 0) {
+    // 1:1 :106 : prize from sLotteryPrizes[matching-1].
+    const prizeKey = _sLotteryPrizes_ITEMS[bestMatching - 1];
+    const prizeId = resolveDecompConstant(prizeKey) ?? 0;
+    VarSet('VAR_0x8005', prizeId);
+    // 1:1 :108-117 : box marker + nickname buffer.
+    if (bestBox === TOTAL_BOXES_COUNT) {
+      VarSet('VAR_0x8006', 0);  // party
+      setStringVar(1, party[bestSlot].nickname || party[bestSlot].speciesName);
+    } else {
+      VarSet('VAR_0x8006', 1);  // PC (= jamais atteint actuellement)
+    }
+  }
 });
 
 // ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
