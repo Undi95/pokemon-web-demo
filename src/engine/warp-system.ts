@@ -31,6 +31,12 @@
 
 import type { WarpEvent, MapHeader } from './map-loader';
 import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
+import type { WarpData } from './save-blocks';
+import {
+  MAP_TYPE_TOWN, MAP_TYPE_CITY, MAP_TYPE_ROUTE,
+  MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE,
+} from './decomp-data/include/constants/map_types-data';
+import { Overworld_GetMapHeaderByGroupAndId } from './decomp-bridge';
 import { GetPlayerFacingDirection, DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST } from './player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
 import {
@@ -394,6 +400,66 @@ export function GetDynamicWarp(): { mapId: string; x: number; y: number } | unde
   const mapId = (gSaveBlock1Ptr as unknown as Record<string, string>).__dynamicWarpMapId;
   if (!mapId || !w) return undefined;
   return { mapId, x: w.x, y: w.y };
+}
+
+// ─── Map type helpers (1:1 décomp overworld.c:1334-1364) ────────────────────
+
+/** 1:1 décomp `EWRAM_DATA struct WarpData gLastUsedWarp = {0}` (overworld.c:193).
+ *  Mémorise la map source d'où le player vient d'arriver. Set par ApplyCurrentWarp
+ *  (overworld.c:542) AVANT le swap location → dest.
+ *
+ *  Notre port : init à gSaveBlock1Ptr.location au boot (= "venu de la même map
+ *  qu'on est"). À jour via setLastUsedWarp() au moment du warp. Tant que le
+ *  wire complet ApplyCurrentWarp n'est pas porté, les Get*MapType helpers
+ *  retourneront le type de la map courante = OK pour overworld stable, peut
+ *  être faux dans cas spécifique de check "où ai-je été précédemment".
+ *  Dette R3 documentée : wire setLastUsedWarp dans tous les flow Do*Warp. */
+export const gLastUsedWarp: WarpData = { mapGroup: 0, mapNum: 0, warpId: 0, x: 0, y: 0 };
+
+/** 1:1 décomp ApplyCurrentWarp prelude (overworld.c:542) :
+ *  `gLastUsedWarp = gSaveBlock1Ptr->location;`. Doit être appelé AVANT que
+ *  gSaveBlock1Ptr.location soit overwrite par le swap warp. */
+export function setLastUsedWarp(w: WarpData): void {
+  gLastUsedWarp.mapGroup = w.mapGroup;
+  gLastUsedWarp.mapNum = w.mapNum;
+  gLastUsedWarp.warpId = w.warpId;
+  gLastUsedWarp.x = w.x;
+  gLastUsedWarp.y = w.y;
+}
+
+/** 1:1 décomp `u8 GetMapTypeByGroupAndId(s8 mapGroup, s8 mapNum)` (overworld.c:1334) :
+ *  `return Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum)->mapType;`. */
+export function GetMapTypeByGroupAndId(mapGroup: number, mapNum: number): number {
+  const hdr = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
+  return (hdr?.mapType ?? 0) & 0xFF;
+}
+
+/** 1:1 décomp `u8 GetMapTypeByWarpData(struct WarpData *warp)` (overworld.c:1339) :
+ *  `return GetMapTypeByGroupAndId(warp->mapGroup, warp->mapNum);`. */
+export function GetMapTypeByWarpData(warp: WarpData): number {
+  return GetMapTypeByGroupAndId(warp.mapGroup, warp.mapNum);
+}
+
+/** 1:1 décomp `u8 GetCurrentMapType(void)` (overworld.c:1344) :
+ *  `return GetMapTypeByWarpData(&gSaveBlock1Ptr->location);`. */
+export function GetCurrentMapType(): number {
+  return GetMapTypeByWarpData(gSaveBlock1Ptr.location);
+}
+
+/** 1:1 décomp `u8 GetLastUsedWarpMapType(void)` (overworld.c:1349) :
+ *  `return GetMapTypeByWarpData(&gLastUsedWarp);`. */
+export function GetLastUsedWarpMapType(): number {
+  return GetMapTypeByWarpData(gLastUsedWarp);
+}
+
+/** 1:1 décomp `bool8 IsMapTypeOutdoors(u8 mapType)` (overworld.c:1354) :
+ *  `return mapType == ROUTE || TOWN || UNDERWATER || CITY || OCEAN_ROUTE;`. */
+export function IsMapTypeOutdoors(mapType: number): boolean {
+  return mapType === MAP_TYPE_ROUTE
+      || mapType === MAP_TYPE_TOWN
+      || mapType === MAP_TYPE_UNDERWATER
+      || mapType === MAP_TYPE_CITY
+      || mapType === MAP_TYPE_OCEAN_ROUTE;
 }
 
 // Re-exports pour back-compat avec ancien API (= player-avatar import).

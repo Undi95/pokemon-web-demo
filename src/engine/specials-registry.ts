@@ -39,7 +39,8 @@ import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE } from './decomp-data/include/constants/items-data';
 import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
 import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
-import { gLocalTime } from './rtc';
+import { gLocalTime, RtcCalcLocalTime } from './rtc';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './warp-system';
 import { ShowFieldMessage } from './field-message-box';
 import { gStringVar4 } from './gba-text-system';
 import { Random } from './random';
@@ -2094,7 +2095,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetPlayerSecretBase',
   // 'SetQuizLadyState_Complete' — porté 1:1 décomp lilycove_lady.c:493 ci-bas.
   // 'SetQuizLadyState_GivePrize' — porté 1:1 décomp lilycove_lady.c:499 ci-bas.
-  'SetRoute119Weather', 'SetRoute123Weather', 'SetSecretBaseOwnerGfxId',
+  // 'SetRoute119Weather' — porté 1:1 décomp field_specials.c:1519 ci-bas (B4 refactor).
+  // 'SetRoute123Weather' — porté 1:1 décomp field_specials.c:1525 ci-bas (B4 refactor).
+  'SetSecretBaseOwnerGfxId',
   // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
   'SetSootopolisGymCrackedIceMetatiles',
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
@@ -2135,7 +2138,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'TryRecordMixLinkup', 'TrySetBattleTowerLinkType',
   'TryStoreHeldItemsInPyramidBag', 'TryTradeLinkup',
   'TryUpdateRusturfTunnelState', 'Unused_SetWeatherSunny',
-  'UpdateCyclingRoadState', 'UpdateShoalTideFlag',
+  // 'UpdateShoalTideFlag' — porté 1:1 décomp time_events.c:54 ci-bas (B4 refactor).
+  'UpdateCyclingRoadState',
   'UpdateTrainerFanClubGameClear', 'ValidateEReaderTrainer',
   'ValidateMixingGameLanguage', 'ValidateSavedWonderCard',
   // 'WonSecretBaseBattle' — porté 1:1 décomp secret_base.c:1856 ci-bas.
@@ -2749,11 +2753,51 @@ registerSpecial('SetHiddenItemFlag', () => {
   FlagSet(flagId);
 });
 
-// `UpdateShoalTideFlag` (time_events.c:54-92) — dette R3 cascade :
-// utilise IsMapTypeOutdoors(GetLastUsedWarpMapType()) + RtcCalcLocalTime +
-// gLocalTime.hours + FlagSet/Clear FLAG_SYS_SHOAL_TIDE. gLastUsedWarp non
-// porté (= EWRAM_DATA struct WarpData), GetMapTypeByWarpData non porté.
-// Demande port helpers cascade. Reste stub jusqu'à port complet (3-4 fns).
+/** 1:1 décomp `SetRoute119Weather` (field_specials.c:1519-1523) :
+ *  ```c
+ *  void SetRoute119Weather(void) {
+ *      if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE)
+ *          SetSavedWeather(WEATHER_ROUTE119_CYCLE);
+ *  }
+ *  ```
+ *  WEATHER_ROUTE119_CYCLE = 20. SetSavedWeather = gSaveBlock1Ptr.weather = N. */
+registerSpecial('SetRoute119Weather', () => {
+  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    gSaveBlock1Ptr.weather = 20;  // WEATHER_ROUTE119_CYCLE
+  }
+});
+
+/** 1:1 décomp `SetRoute123Weather` (field_specials.c:1525-1529) :
+ *  Same pattern with WEATHER_ROUTE123_CYCLE = 21. */
+registerSpecial('SetRoute123Weather', () => {
+  if (!IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    gSaveBlock1Ptr.weather = 21;  // WEATHER_ROUTE123_CYCLE
+  }
+});
+
+/** 1:1 décomp `UpdateShoalTideFlag` (time_events.c:54-92) :
+ *  ```c
+ *  void UpdateShoalTideFlag(void) {
+ *      static const u8 tide[24] = {1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1};
+ *      if (IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+ *          RtcCalcLocalTime();
+ *          if (tide[gLocalTime.hours]) FlagSet(FLAG_SYS_SHOAL_TIDE);
+ *          else FlagClear(FLAG_SYS_SHOAL_TIDE);
+ *      }
+ *  }
+ *  ```
+ *  Marée Shoal Cave : low tide 03:00-08:00 + 15:00-20:00, sinon high tide.
+ *  B4 refactor débloqué : helpers GetLastUsedWarpMapType + IsMapTypeOutdoors
+ *  portés dans warp-system.ts. */
+registerSpecial('UpdateShoalTideFlag', () => {
+  // 1:1 décomp static const u8 tide[24].
+  const tide = [1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1];
+  if (IsMapTypeOutdoors(GetLastUsedWarpMapType())) {
+    RtcCalcLocalTime();
+    if (tide[gLocalTime.hours]) FlagSet('FLAG_SYS_SHOAL_TIDE');
+    else FlagClear('FLAG_SYS_SHOAL_TIDE');
+  }
+});
 
 // `GenerateGiddyLine` (mauville_old_man.c:282-315) — dette R3 cascade :
 // utilise EasyChat (CopyEasyChatWord), Random, gStringVar4, sGiddyAdjectives,
