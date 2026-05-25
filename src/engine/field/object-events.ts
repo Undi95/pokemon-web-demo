@@ -2808,6 +2808,8 @@ import {
   MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT,
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP,
   MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
+  MOVEMENT_ACTION_SET_FIXED_PRIORITY, MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY,
+  MOVEMENT_ACTION_START_ANIM_IN_DIRECTION,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3023,6 +3025,44 @@ function _makeWalkInPlaceAction(dir: number, duration: number): MovementActionFu
   };
 }
 
+/** 1:1 décomp `MovementAction_SetFixedPriority_Step0` :
+ *    objectEvent->fixedPriority = TRUE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_SetFixedPriority_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.fixedPriority = true;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_ClearFixedPriority_Step0` :
+ *    objectEvent->fixedPriority = FALSE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_ClearFixedPriority_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.fixedPriority = false;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
+ *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
+ *    return FALSE;
+ *
+ *  StartSpriteAnimInDirection (3958) : SetObjectEventDirection + StartSpriteAnim. */
+function _MovementAction_StartAnimInDirection_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // 1:1 décomp : utilise sprite->animNum existant (= continue l'anim courante).
+  // Used par BerryTreeGrowth_Normal (= continue le berry stage anim).
+  SetObjectEventDirection(npc, npc.movementDirection);
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      // 1:1 décomp StartSpriteAnim(sprite, sprite->animNum) — re-start current anim.
+      sprite.animBeginning = true;
+      sprite.animEnded = false;
+      sprite.animCmdIndex = 0;
+      sprite.animDelayCounter = 0;
+    }
+  }
+  return false;  // 1:1 décomp : return FALSE (= continue dispatch).
+}
+
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
 // 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
 // :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
@@ -3128,6 +3168,10 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN]  = _makeWalkInPl
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP]    = _makeWalkInPlaceAction(DIR_NORTH, 4);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  4);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  4);
+// H1.7 : SET_FIXED_PRIORITY / CLEAR_FIXED_PRIORITY / START_ANIM_IN_DIRECTION.
+gMovementActionFuncs[MOVEMENT_ACTION_SET_FIXED_PRIORITY]      = _MovementAction_SetFixedPriority_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_CLEAR_FIXED_PRIORITY]    = _MovementAction_ClearFixedPriority_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_START_ANIM_IN_DIRECTION] = _MovementAction_StartAnimInDirection_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
