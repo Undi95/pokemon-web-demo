@@ -3198,17 +3198,30 @@ function _makeWalkDownAffineActionStrict(affineAnimId: number): MovementActionFu
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitWalkSlow(rt, npc, DIR_SOUTH);
-      // DETTE H3.5 cascade : sprite.affineAnimPaused = FALSE +
+      // H3.5 1:1 strict : sprite.affineAnimPaused = FALSE +
       // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
-      void affineAnimId;
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite) sprite.affineAnimPaused = false;
+      }
+      _ChangeSpriteAffineAnimIfDifferent(rt, npc, affineAnimId);
       if (_UpdateWalkSlow(rt, npc)) {
+        // H3.5 1:1 strict : affineAnimPaused = TRUE quand done.
+        if (npc.spriteId >= 0) {
+          const sprite = rt.gSprites.get(npc.spriteId);
+          if (sprite) sprite.affineAnimPaused = true;
+        }
         npc.actionStep = 2;
         return true;
       }
       return false;
     }
     if (_UpdateWalkSlow(rt, npc)) {
-      // DETTE H3.5 : affineAnimPaused = TRUE quand done.
+      // H3.5 1:1 strict : affineAnimPaused = TRUE quand done.
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite) sprite.affineAnimPaused = true;
+      }
       npc.actionStep = 2;
       return true;
     }
@@ -3901,6 +3914,29 @@ function _makeAcroWheelieMoveAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `ST_OAM_AFFINE_*` (gba/oam.h) : affineMode values. */
+const ST_OAM_AFFINE_OFF    = 0;
+const ST_OAM_AFFINE_NORMAL = 1;
+const ST_OAM_AFFINE_DOUBLE = 3;
+void ST_OAM_AFFINE_NORMAL;
+
+/** 1:1 décomp `ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimNum)` (sprite.c) :
+ *    if (sprite->affineAnims[sprite->affineAnimNum] != sprite->affineAnims[affineAnimNum])
+ *        ChangeSpriteAffineAnim(sprite, affineAnimNum);
+ *
+ *  Notre TS : set affineAnimNum + reset cmd index. */
+function _ChangeSpriteAffineAnimIfDifferent(rt: DecompRuntime, npc: ObjectEvent, affineAnimNum: number): void {
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite) return;
+  if (sprite.affineAnimNum !== affineAnimNum) {
+    sprite.affineAnimNum = affineAnimNum;
+    sprite.affineAnimCmdIndex = 0;
+    sprite.affineAnimBeginning = true;
+    sprite.affineAnimDelayCounter = 0;
+  }
+}
+
 /** 1:1 décomp `MovementAction_InitAffineAnim_Step0` (event_object_movement.c) :
  *    sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;
  *    InitSpriteAffineAnim(sprite);
@@ -3908,16 +3944,17 @@ function _makeAcroWheelieMoveAction(dir: number): MovementActionFunc {
  *    sprite->subspriteMode = SUBSPRITES_OFF;
  *    return TRUE;
  *
- *  DETTE H3 cascade : sprite affine system (= InitSpriteAffineAnim + matrix
- *  alloc + affineMode oam). Notre TS pas étendu pour sprite affine.
- *  State machine porté avec subspriteMode = 'off' qui est compatible G14. */
+ *  H3.5 fix : wire fields sprite.affineMode + affineAnimPaused + subspriteMode
+ *  1:1 strict. DETTE R3 mineure : InitSpriteAffineAnim cascade (= matrix alloc
+ *  GBA OAM), pas critique pour le state machine. */
 function _MovementAction_InitAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
   if (npc.spriteId >= 0) {
     const sprite = rt.gSprites.get(npc.spriteId);
     if (sprite) {
-      // DETTE H3 : sprite.oam.affineMode = ST_OAM_AFFINE_DOUBLE.
-      // DETTE H3 : InitSpriteAffineAnim cascade.
+      sprite.affineMode = ST_OAM_AFFINE_DOUBLE;
+      sprite.affineAnimPaused = true;
       sprite.subspriteMode = 'off';
+      // DETTE R3 mineure : InitSpriteAffineAnim matrix alloc (= AllocOamMatrix).
     }
   }
   return true;
@@ -3929,9 +3966,16 @@ function _MovementAction_InitAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEven
  *    CalcCenterToCornerVec(sprite, sprite->oam.shape, sprite->oam.size, sprite->oam.affineMode);
  *    return TRUE;
  *
- *  DETTE H3 cascade : FreeOamMatrix + affineMode reset + CalcCenterToCornerVec. */
-function _MovementAction_ClearAffineAnim_Step0(_rt: DecompRuntime, _npc: ObjectEvent): boolean {
-  // DETTE H3 : sprite affine system cleanup.
+ *  H3.5 fix : wire affineMode = OFF 1:1 strict. DETTE R3 mineure : FreeOamMatrix
+ *  + CalcCenterToCornerVec cascade. */
+function _MovementAction_ClearAffineAnim_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.affineMode = ST_OAM_AFFINE_OFF;
+      // DETTE R3 : FreeOamMatrix(matrixNum) + CalcCenterToCornerVec.
+    }
+  }
   return true;
 }
 
@@ -4216,9 +4260,13 @@ function _makeWalkAffineAction(dir: number, affineAnimId: number): MovementActio
   return (rt, npc) => {
     if (npc.actionStep === 0) {
       _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
-      // DETTE H3 : sprite.affineAnimPaused = FALSE +
+      // H3.5 1:1 strict : sprite.affineAnimPaused = FALSE +
       // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
-      void affineAnimId;
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite) sprite.affineAnimPaused = false;
+      }
+      _ChangeSpriteAffineAnimIfDifferent(rt, npc, affineAnimId);
     }
     return _MovementAction_WalkNormal_Step1(rt, npc);
   };
