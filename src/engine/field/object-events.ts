@@ -2843,6 +2843,8 @@ import {
   MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT,
   MOVEMENT_ACTION_JUMP_SPECIAL_DOWN, MOVEMENT_ACTION_JUMP_SPECIAL_UP,
   MOVEMENT_ACTION_JUMP_SPECIAL_LEFT, MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT,
+  MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP, MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN,
+  MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT, MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3434,6 +3436,41 @@ function _makeJumpSpecialAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `DoJumpInPlaceAnim` (event_object_movement.c) :
+ *    switch (DoJumpAnimStep) {
+ *      case JUMP_FINISHED: return TRUE;
+ *      case JUMP_HALFWAY:
+ *        SetObjectEventDirection(GetOppositeDirection(movementDirection));
+ *        SetStepAnim(GetMoveDirectionAnimNum(facingDirection));
+ *      default: return FALSE;
+ *    } */
+function _UpdateJumpInPlaceAnim(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const result = _DoJumpSpriteMovement(rt, npc);
+  if (result === JUMP_FINISHED) return true;
+  if (result === JUMP_HALFWAY) {
+    // Swap to opposite direction au halfway.
+    SetObjectEventDirection(npc, OPPOSITE_DIR[npc.movementDirection] ?? DIR_SOUTH);
+    _npcStartWalkAnim(rt, npc, npc.facingDirection);
+  }
+  return false;
+}
+
+/** Factory pour JumpInPlaceX_Y (alternating direction au halfway). */
+function _makeJumpInPlaceAlternatingAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitJump(rt, npc, dir, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+    }
+    if (_UpdateJumpInPlaceAnim(rt, npc)) {
+      npc.hasShadow = false;
+      npc.actionStep = 2;
+      _npcEndWalkAnim(rt, npc);
+      return true;
+    }
+    return false;
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3642,6 +3679,11 @@ gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_DOWN]  = _makeJumpSpecialActio
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_UP]    = _makeJumpSpecialAction(DIR_NORTH);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_LEFT]  = _makeJumpSpecialAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT] = _makeJumpSpecialAction(DIR_EAST);
+// H1.17 : JUMP_IN_PLACE_X_Y (74-77) = jump in place + switch direction au halfway.
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN_UP]    = _makeJumpInPlaceAlternatingAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_UP_DOWN]    = _makeJumpInPlaceAlternatingAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT_RIGHT] = _makeJumpInPlaceAlternatingAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT_LEFT] = _makeJumpInPlaceAlternatingAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
