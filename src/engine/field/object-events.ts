@@ -2797,6 +2797,9 @@ import {
   MOVEMENT_ACTION_WALK_FASTER_DOWN, MOVEMENT_ACTION_WALK_FASTER_UP,
   MOVEMENT_ACTION_WALK_FASTER_LEFT, MOVEMENT_ACTION_WALK_FASTER_RIGHT,
   MOVEMENT_ACTION_LOCK_FACING_DIRECTION, MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION,
+  MOVEMENT_ACTION_SET_INVISIBLE, MOVEMENT_ACTION_SET_VISIBLE,
+  MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT,
+  MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -2944,6 +2947,38 @@ function _MovementAction_UnlockFacingDirection_Step0(_rt: DecompRuntime, npc: Ob
   return true;
 }
 
+/** 1:1 décomp `MovementAction_SetInvisible_Step0` :
+ *    objectEvent->invisible = TRUE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_SetInvisible_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.invisible = true;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_SetVisible_Step0` :
+ *    objectEvent->invisible = FALSE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_SetVisible_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.invisible = false;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_EnableJumpLandingGroundEffect_Step0` :
+ *    objectEvent->disableJumpLandingGroundEffect = FALSE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_EnableJumpLandingGroundEffect_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.disableJumpLandingGroundEffect = false;
+  npc.actionStep = 1;
+  return true;
+}
+
+/** 1:1 décomp `MovementAction_DisableJumpLandingGroundEffect_Step0` :
+ *    objectEvent->disableJumpLandingGroundEffect = TRUE; sActionFuncId = 1; return TRUE; */
+function _MovementAction_DisableJumpLandingGroundEffect_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
+  npc.disableJumpLandingGroundEffect = true;
+  npc.actionStep = 1;
+  return true;
+}
+
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
 // 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
 // :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
@@ -3026,6 +3061,11 @@ gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_RIGHT] = _makeWalkAction(DIR_EA
 // H1.4 : LOCK_FACING_DIRECTION / UNLOCK_FACING_DIRECTION (= scripted face lock).
 gMovementActionFuncs[MOVEMENT_ACTION_LOCK_FACING_DIRECTION]   = _MovementAction_LockFacingDirection_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_UNLOCK_FACING_DIRECTION] = _MovementAction_UnlockFacingDirection_Step0;
+// H1.5 : SET_INVISIBLE / SET_VISIBLE / ENABLE/DISABLE_JUMP_LANDING_GROUND_EFFECT.
+gMovementActionFuncs[MOVEMENT_ACTION_SET_INVISIBLE] = _MovementAction_SetInvisible_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_SET_VISIBLE]   = _MovementAction_SetVisible_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT]  = _MovementAction_EnableJumpLandingGroundEffect_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT] = _MovementAction_DisableJumpLandingGroundEffect_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
