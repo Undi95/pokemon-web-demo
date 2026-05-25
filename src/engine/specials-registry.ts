@@ -2072,7 +2072,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'BufferTrendyPhraseString',
   'BufferUnionRoomPlayerName',
   // 'BufferVarsForIVRater' — porté 1:1 décomp field_specials.c:1969 ci-bas (batch B44).
-  'CableClubSaveGame', 'CallApprenticeFunction', 'CallBattleArenaFunction',
+  // 'CableClubSaveGame' — porté 1:1 décomp cable_club.c:806 ci-bas (batch B47).
+  'CallApprenticeFunction', 'CallBattleArenaFunction',
   'CallBattleDomeFunction', 'CallBattleFactoryFunction',
   'CallBattlePalaceFunction', 'CallBattlePikeFunction',
   'CallBattlePyramidFunction', 'CallBattleTowerFunc',
@@ -3385,6 +3386,26 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B47 batch — 1 special CableClubSaveGame 1:1 strict ──────────
+
+/** 1:1 décomp `CableClubSaveGame` (cable_club.c:806-809) :
+ *  ```c
+ *  void CableClubSaveGame(void) {
+ *      SaveGame();
+ *  }
+ *  ```
+ *  Wrapper sur SaveGame() (porté B40). */
+registerSpecial('CableClubSaveGame', () => {
+  void (async () => {
+    try {
+      const mod = await import('./save-system');
+      await mod.SaveGame();
+    } catch (e) {
+      console.warn('[special CableClubSaveGame] async wrap failed', e);
+    }
+  })();
 });
 
 // ─── Session B46 batch — 2 specials Quiz Lady custom 1:1 strict ──────────
