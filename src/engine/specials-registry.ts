@@ -2126,7 +2126,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetContestLadyCategory', 'GetContestLadyMonSpecies',
   'GetContestMonCondition', 'GetContestMonConditionRanking',
   'GetContestPlayerId', 'GetContestantNamesAtRank',
-  'GetCurSecretBaseRegistrationValidity', 'GetDaycareCost',
+  // 'GetCurSecretBaseRegistrationValidity' — porté 1:1 décomp secret_base.c:881 dans secret-base.ts (batch B24).
+  'GetDaycareCost',
   'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
   // 'GetFavorLadyState' — porté 1:1 décomp lilycove_lady.c:159 ci-bas.
   'GetLinkPartnerNames',
@@ -2202,7 +2203,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'Overworld_PlaySpecialMapMusic', 'PickLotteryCornerTicket',
   'PlayBardSong', 'PlayRoulette', 'PlayerNotAtTrainerHillEntrance',
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
-  'PrepSecretBaseBattleFlags', 'PrintPlayerBerryPowderAmount',
+  // 'PrepSecretBaseBattleFlags' — porté 1:1 décomp secret_base.c:1164 dans secret-base.ts (batch B24).
+  'PrintPlayerBerryPowderAmount',
   'PutAwayDecorationIteration', 'PutFanClubSpecialOnTheAir',
   'PutLilycoveContestLadyShowOnTheAir', 'QuizLadyGetPlayerAnswer',
   'QuizLadyPickNewQuestion', 'QuizLadyRecordCustomQuizData',

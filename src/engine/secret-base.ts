@@ -85,3 +85,81 @@ registerSpecial('TrySetCurSecretBaseIndex', () => {
 registerSpecial('SetCurSecretBaseId', () => {
   sCurSecretBaseId = VarGet('VAR_0x8004') & 0xFF;
 });
+
+/** 1:1 décomp `IsSecretBaseRegistered` (secret_base.c:752-758) :
+ *  ```c
+ *  static bool8 IsSecretBaseRegistered(u8 secretBaseIdx) {
+ *      if (gSaveBlock1Ptr->secretBases[secretBaseIdx].registryStatus) return TRUE;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Helper interne, exporté pour reuse par d'autres specials. */
+function _isSecretBaseRegistered(idx: number): boolean {
+  return !!gSaveBlock1Ptr.secretBases?.[idx]?.registryStatus;
+}
+
+/** 1:1 décomp `GetNumRegisteredSecretBases` (secret_base.c:868-879) :
+ *  ```c
+ *  static u8 GetNumRegisteredSecretBases(void) {
+ *      s16 i; u8 count = 0;
+ *      for (i = 1; i < SECRET_BASES_COUNT; i++) {
+ *          if (IsSecretBaseRegistered(i) == TRUE) count++;
+ *      }
+ *      return count;
+ *  }
+ *  ```
+ *  Loop i=1..SECRET_BASES_COUNT (= 1..20 exclu base[0] qui est player's). */
+function _getNumRegisteredSecretBases(): number {
+  let count = 0;
+  for (let i = 1; i < SECRET_BASES_COUNT; i++) {
+    if (_isSecretBaseRegistered(i)) count++;
+  }
+  return count;
+}
+
+/** 1:1 décomp `GetCurSecretBaseRegistrationValidity` (secret_base.c:881-889) :
+ *  ```c
+ *  void GetCurSecretBaseRegistrationValidity(void) {
+ *      if (IsSecretBaseRegistered(VarGet(VAR_CURRENT_SECRET_BASE)) == TRUE)
+ *          gSpecialVar_Result = 1;
+ *      else if (GetNumRegisteredSecretBases() >= 10)
+ *          gSpecialVar_Result = 2;
+ *      else
+ *          gSpecialVar_Result = 0;
+ *  }
+ *  ```
+ *  Result : 1 = already registered, 2 = max 10 atteint, 0 = peut register. */
+registerSpecial('GetCurSecretBaseRegistrationValidity', () => {
+  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
+  if (_isSecretBaseRegistered(idx)) {
+    gSpecialVar.Result = 1;
+  } else if (_getNumRegisteredSecretBases() >= 10) {
+    gSpecialVar.Result = 2;
+  } else {
+    gSpecialVar.Result = 0;
+  }
+});
+
+/** 1:1 décomp `PrepSecretBaseBattleFlags` (secret_base.c:1164-1168) :
+ *  ```c
+ *  void PrepSecretBaseBattleFlags(void) {
+ *      TryGainNewFanFromCounter(FANCOUNTER_BATTLED_AT_BASE);
+ *      gTrainerBattleOpponent_A = TRAINER_SECRET_BASE;
+ *      gBattleTypeFlags = BATTLE_TYPE_TRAINER | BATTLE_TYPE_SECRET_BASE;
+ *  }
+ *  ```
+ *  Dette R3 partielle : TryGainNewFanFromCounter cascade fan club. Notre
+ *  port set juste gTrainerBattleOpponent_A + gBattleTypeFlags via globalThis
+ *  bridge (= battle state mutators).
+ *  TRAINER_SECRET_BASE = 0x400 (= include/constants/trainers.h).
+ *  BATTLE_TYPE_TRAINER = 0x8, BATTLE_TYPE_SECRET_BASE = 0x80000. */
+registerSpecial('PrepSecretBaseBattleFlags', () => {
+  const bridge = (globalThis as { __battleStateMutators?: {
+    setTrainerBattleOpponentA?: (v: number) => void;
+    setBattleTypeFlags?: (v: number) => void;
+  } }).__battleStateMutators;
+  if (bridge?.setTrainerBattleOpponentA) bridge.setTrainerBattleOpponentA(0x400);
+  if (bridge?.setBattleTypeFlags) bridge.setBattleTypeFlags(0x8 | 0x80000);
+  // TryGainNewFanFromCounter : dette R3 (= cascade FANCOUNTER_BATTLED_AT_BASE
+  // pas porté).
+});
