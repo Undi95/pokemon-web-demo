@@ -28,19 +28,19 @@
  *   surf, ride water, slide, etc.) à étendre si besoin.
  */
 
-import type { DecompRuntime } from './decomp-runtime';
+import type { DecompRuntime } from '../decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
-import { SpawnJumpLandingDust } from './field/field-effect-jump-dust';
-import { CreateShadowSprite, DestroyShadowSprite } from './field/field-effect-shadow';
+import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
+import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { VarGet } from './script/script-vars';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { VarGet } from '../script/script-vars';
 import { MAP_OFFSET } from './map-loader';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
 } from './direction-coords';
-import { gFieldCamera } from './field/field-camera';
+import { gFieldCamera } from '../field/field-camera';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -337,7 +337,7 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
       // `LOCALID_PLAYER`. Pour NPC, on lit `target.npc.localIdRaw`.
       const npcLocalIdRaw = target.isPlayer ? 'LOCALID_PLAYER' : (target.npc?.localIdRaw ?? '');
       if (npcLocalIdRaw) {
-        void import('./field/field-effect-emotes').then(({ SpawnEmoteSprite }) => {
+        void import('../field/field-effect-emotes').then(({ SpawnEmoteSprite }) => {
           const emoteType = action === 'emote_exclamation_mark' ? 'exclamation'
                           : action === 'emote_question_mark'    ? 'question'
                           : 'heart';

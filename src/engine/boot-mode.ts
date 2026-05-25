@@ -19,14 +19,14 @@
 import { SetSaveLocked } from './save/save-system';
 import { FlagSet, VarSet } from './script/script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from './save/save-system';
-import { SetDynamicWarp } from './warp-system';
+import { SetDynamicWarp } from './field/warp-system';
 import { GetCurrentMap } from './save/load_save';
 import { SetObjEventTemplateCoords } from './save/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
 import { NewGameInit } from './save/new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag/bag';
-import { DIR_SOUTH } from './direction-coords';
+import { DIR_SOUTH } from './field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
 import { createPokemonInstance, GiveMonToPlayer } from './pokemon/pokemon';
 

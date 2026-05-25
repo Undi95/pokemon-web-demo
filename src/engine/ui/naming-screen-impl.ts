@@ -50,7 +50,7 @@ import {
   ANIM_STD_GO_SOUTH, PLAYER_AVATAR_STATE_NORMAL,
   GetRivalAvatarGraphicsIdByStateIdAndGender,
   loadObjectEventGraphicsInfo, CreateObjectGraphicsSprite,
-} from '../object-event-graphics';
+} from '../field/object-event-graphics';
 
 // ─── Constants 1:1 décomp src/naming_screen.c ────────────────────────────────
 //

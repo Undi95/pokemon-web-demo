@@ -11,7 +11,7 @@
 // @ts-nocheck
 
 import type { DecompRuntime, DecompSprite } from '../../decomp-runtime';
-import type { ObjectEvent } from '../../object-events';
+import type { ObjectEvent } from '../../field/object-events';
 
 // NB : la signature décomp est
 //   bool8 MovementAction_X_StepN(struct ObjectEvent *objectEvent, struct Sprite *sprite)

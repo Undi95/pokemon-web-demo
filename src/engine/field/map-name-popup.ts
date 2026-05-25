@@ -26,20 +26,20 @@
  *  inside window). Window stays plain white. Frame border + palette = fonctionnel.
  */
 
-import { getRuntime } from './decomp-globals';
-import { REG_OFFSET_BG0VOFS } from './decomp-runtime';
-import { FlagGet } from './script/script-vars';
+import { getRuntime } from '../decomp-globals';
+import { REG_OFFSET_BG0VOFS } from '../decomp-runtime';
+import { FlagGet } from '../script/script-vars';
 import { gMapHeader } from './map-loader';
-import type { DecompTask } from './decomp-runtime';
+import type { DecompTask } from '../decomp-runtime';
 import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
-} from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { LoadBgTiles } from './decomp-globals';
-import { LoadPalette } from './decomp-globals';
-import { loadIndexedPngStrict } from './gba/png-loader';
+} from '../gba-window-system';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
+import { LoadBgTiles } from '../decomp-globals';
+import { LoadPalette } from '../decomp-globals';
+import { loadIndexedPngStrict } from '../gba/png-loader';
 
 // ─── 1:1 décomp constants (map_name_popup.c:212-229, menu.c:521-526) ────────
 
@@ -186,7 +186,7 @@ export async function preloadMapNames(): Promise<void> {
   // Aussi charger dans le module partagé src/data/map-names-fr.ts (= utilisé
   // par start-menu.ts ShowSaveInfoWindow + autres consumers via getMapNameFr).
   try {
-    const { loadMapNamesFr } = await import('../data/map-names-fr');
+    const { loadMapNamesFr } = await import('../../data/map-names-fr');
     loadMapNamesFr(_mapNamesFr);
   } catch (e) {
     console.warn('[map-name-popup] failed to bridge to map-names-fr module:', e);

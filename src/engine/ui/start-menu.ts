@@ -63,9 +63,9 @@ import { PlaySE, getRuntime, gMain } from '../decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
 import { HasValidSave } from '../save/save-system';
 import { bagContents } from '../bag/bag';
-import { HideMapNamePopUpWindow } from '../map-name-popup';
+import { HideMapNamePopUpWindow } from '../field/map-name-popup';
 import { GetStringRightAlignXOffset } from '../gba-text-system';
-import { gMapHeader } from '../map-loader';
+import { gMapHeader } from '../field/map-loader';
 import { getMapNameFr } from '../../data/map-names-fr';
 import { gSaveBlock2Ptr } from '../gba-menu-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -631,7 +631,7 @@ export function OpenStartMenu(): void {
   // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
   // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
   // menu ET ses sous-menus, même mid-step."
-  void import('../object-events').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
+  void import('../field/object-events').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
   // 1:1 décomp : PlaySE(SE_WIN_OPEN) est joué dans `field_control_avatar.c:184`
   // au press START field, AVANT ShowStartMenu(). `ShowStartMenu` lui-même
@@ -665,7 +665,7 @@ export function CloseStartMenu(): void {
   // 1:1 inverse de FreezeObjectEvents au open : tous les NPCs reprennent leur
   // mouvement normal au close du menu. Le player a déjà UnlockPlayerFieldControls
   // donc reprend ses inputs.
-  void import('../object-events').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
+  void import('../field/object-events').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
   sIsOpen = false;
   sSubState = 'menu';
   console.log('[start-menu] closed');

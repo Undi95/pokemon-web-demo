@@ -50,9 +50,9 @@ import {
   TransitionToConnection,
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
-} from '../map-loader';
-import { gPlayerAvatar } from '../player-avatar';
-import type { MapConnection } from '../map-loader';
+} from './map-loader';
+import { gPlayerAvatar } from './player-avatar';
+import type { MapConnection } from './map-loader';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,

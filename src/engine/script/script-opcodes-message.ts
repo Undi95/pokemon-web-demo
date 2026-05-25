@@ -24,8 +24,8 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { gSpecialVar } from './script-vars';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../object-events';
-import { GetPlayerFacingDirection, DIR_SOUTH } from '../player-avatar';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../field/object-events';
+import { GetPlayerFacingDirection, DIR_SOUTH } from '../field/player-avatar';
 import {
   Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from '../gba-menu-system';

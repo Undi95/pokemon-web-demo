@@ -10,7 +10,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
-import { gMapHeader } from '../map-loader';
+import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../decomp-constants';
 

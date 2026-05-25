@@ -15,8 +15,8 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarSet, gSpecialVar } from './script-vars';
-import { gObjectEvents } from '../object-events';
-import { gPlayerAvatar } from '../player-avatar';
+import { gObjectEvents } from '../field/object-events';
+import { gPlayerAvatar } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetCurrentMap } from '../save/load_save';
 import { getRuntime } from '../decomp-globals';

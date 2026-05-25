@@ -28,7 +28,7 @@
 
 import { registerSpecial } from './script-opcodes';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
-import { gMapHeader } from '../map-loader';
+import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../decomp-globals';
 import { GetCurrentMap } from '../save/load_save';
@@ -43,7 +43,7 @@ import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../decomp-data/
 import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/constants/flags-data';
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from '../rtc';
-import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../warp-system';
+import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
 import { ShowFieldMessage } from '../field/field-message-box';
 import { gStringVar4 } from '../gba-text-system';
 import { Random } from '../random';
@@ -52,7 +52,7 @@ import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DA
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
-import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../map-name-popup';
+import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
 import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
 import { gSpecialVar } from './script-vars';
 import { gDecorations } from '../decoration-data';
@@ -431,7 +431,7 @@ registerSpecial('CheckForPlayersHouseNews', () => _CheckForPlayersHouseNews());
  *  false → script reprend après. Fade-from-black géré au open (= ouverture
  *  immédiate, l'écran noir précédent FADE_TO_BLACK est remplacé par la carte). */
 registerSpecial('FieldShowRegionMap', () => {
-  void import('../region-map').then(async ({ OpenRegionMap }) => {
+  void import('../field/region-map').then(async ({ OpenRegionMap }) => {
     await OpenRegionMap();
     // Fade-from-black aussi pour que l'overlay carte soit visible (= sinon
     // l'écran noir GPU reste derrière l'overlay HTML).

@@ -8,14 +8,14 @@
  * partagés entre les fichiers `script-opcodes-<section>.ts`.
  */
 
-import type { ObjectEvent } from '../object-events';
-import { gObjectEvents } from '../object-events';
-import type { ObjectEventTemplate } from '../map-loader';
-import { gMapHeader, MAP_OFFSET } from '../map-loader';
+import type { ObjectEvent } from '../field/object-events';
+import { gObjectEvents } from '../field/object-events';
+import type { ObjectEventTemplate } from '../field/map-loader';
+import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap } from '../save/load_save';
 import { GetSaveBlock1 } from '../save/save-system';
 import { VarGet, gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../player-avatar';
+import { gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { getRuntime } from '../decomp-globals';
 

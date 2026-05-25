@@ -186,7 +186,7 @@ import {
 
 import {
   CreateObjectGraphicsSprite,
-} from '../object-event-graphics';
+} from '../field/object-event-graphics';
 
 import {
   TEXT_COLOR_TRANSPARENT,

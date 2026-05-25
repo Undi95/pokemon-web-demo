@@ -27,12 +27,12 @@
  */
 
 import { CreateObjectGraphicsSprite, loadObjectEventGraphicsInfo } from './object-event-graphics';
-import { getRuntime } from './decomp-globals';
-import { gFieldCamera } from './field/field-camera';
+import { getRuntime } from '../decomp-globals';
+import { gFieldCamera } from '../field/field-camera';
 
 // ─── Directions → anim index (1:1 décomp sAnimTable_Standard) ───────────────
 // Migré vers imports decomp-data global-data.ts (cleanup B7).
-import { DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './decomp-data/include/constants/global-data';
+import { DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../decomp-data/include/constants/global-data';
 
 /** 1:1 décomp `sFaceDirectionAnimNums` (event_object_movement.c). */
 function _directionToAnimIdx(direction: number): number {

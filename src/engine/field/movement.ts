@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../main';
+import { TILE_SIZE } from '../../main';
 import { setIdleFrame, playSingleStep, type Facing } from './character-anims';
 
 /**

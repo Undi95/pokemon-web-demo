@@ -38,8 +38,8 @@
 import type { DecompRuntime } from '../decomp-runtime';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, IndexOfSpritePaletteTag } from '../sprite';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
-import { gObjectEvents, type ObjectEvent } from '../object-events';
-import { gPlayerAvatar } from '../player-avatar';
+import { gObjectEvents, type ObjectEvent } from './object-events';
+import { gPlayerAvatar } from './player-avatar';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
 // Équivalent décomp `static const u8 sEmotion_*Gfx[] = INCGFX_U8(...)` (= byte

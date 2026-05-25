@@ -24,7 +24,7 @@
  *  scattered par `ProcessPlayerFieldInput`) est progressif.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from '../map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from './map-loader';
 import {
   gPlayerAvatar,
   DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
@@ -32,7 +32,7 @@ import {
   PlayerGetElevation,
   PlayerGetDestCoords,
   GetXYCoordsOneStepInFrontOfPlayer,
-} from '../player-avatar';
+} from './player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
   IsWarpMetatileBehavior,
@@ -68,18 +68,18 @@ import {
   MetatileBehavior_IsCableBoxResults2,
   MetatileBehavior_IsQuestionnaire,
   MetatileBehavior_IsTrainerHillTimer,
-} from '../metatile-behavior';
+} from './metatile-behavior';
 import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,
   GetObjectEventIdByPosition,
   ELEVATION_TRANSITION,
-} from '../object-events';
-import { MapGridGetElevationAt } from '../map-loader';
+} from './object-events';
+import { MapGridGetElevationAt } from './map-loader';
 import { LOCALID_PLAYER } from '../decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
 import { ScriptContext_SetupScript } from '../script/script-runtime';
-import { DIR_TO_DX, DIR_TO_DY } from '../direction-coords';
+import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 

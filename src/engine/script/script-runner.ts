@@ -89,7 +89,7 @@ export type ScriptContext = {
 };
 
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { SetDynamicWarp } from '../warp-system';
+import { SetDynamicWarp } from '../field/warp-system';
 import { MALE, FEMALE } from '../decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { resolveDecompConstant } from '../decomp-constants';

@@ -31,11 +31,11 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
-import { gObjectEvents, TrySpawnObjectEvent } from '../object-events';
-import { gMapHeader, MAP_OFFSET } from '../map-loader';
+import { gObjectEvents, TrySpawnObjectEvent } from '../field/object-events';
+import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../decomp-globals';
-import { applyMovement, isAllMovementsDone, isMovementDone } from '../movement-system';
+import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';
 import {
   parseValue, findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,
   getSelectedNpc,

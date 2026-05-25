@@ -27,15 +27,15 @@
  *     Les caisses LOCALID_TRUCK_BOX_TOP/BOTTOM_L/R sont statiques. Le camera shake
  *     les fait visuellement bouger avec le reste de la scène.
  */
-import type { DecompRuntime, DecompTask } from './decomp-runtime';
-import { PlaySE } from './decomp-globals';
-import { stopPrerenderedSE, preloadPrerenderedSEs } from './m4a/se-noise-prerendered';
+import type { DecompRuntime, DecompTask } from '../decomp-runtime';
+import { PlaySE } from '../decomp-globals';
+import { stopPrerenderedSE, preloadPrerenderedSEs } from '../m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
   SE_TRUCK_UNLOAD,
   SE_TRUCK_DOOR,
-} from './decomp-data/include/constants/songs-data';
+} from '../decomp-data/include/constants/songs-data';
 import {
   METATILE_InsideOfTruck_DoorClosedFloor_Top,
   METATILE_InsideOfTruck_DoorClosedFloor_Mid,
@@ -43,10 +43,10 @@ import {
   METATILE_InsideOfTruck_ExitLight_Top,
   METATILE_InsideOfTruck_ExitLight_Mid,
   METATILE_InsideOfTruck_ExitLight_Bottom,
-} from './decomp-data/include/constants/metatile_labels-data';
+} from '../decomp-data/include/constants/metatile_labels-data';
 import { MAP_OFFSET, MapGridSetMetatileIdAt, gMapHeader } from './map-loader';
-import { DrawWholeMapView, SetCameraPanning } from './field/field-camera';
-import { LockPlayerFieldControls, UnlockPlayerFieldControls } from './script/script-runtime';
+import { DrawWholeMapView, SetCameraPanning } from '../field/field-camera';
+import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SetObjectEventSpritePosByLocalIdAndMap } from './object-events';
 

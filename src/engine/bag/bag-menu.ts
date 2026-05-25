@@ -128,7 +128,7 @@ import {
   preloadSwapLineAssets, LoadListMenuSwapLineGfx,
   CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
   SWAP_LINE_HAS_MARGIN,
-} from '../swap-line';
+} from '../field/swap-line';
 import { preloadItemIconAssets } from '../item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,

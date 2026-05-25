@@ -21,7 +21,7 @@
  *   }
  *   ```
  */
-// Phase 14b purge : `* as eom from './decomp-data/auto/src-all/event_object_movement-all-auto'`
+// Phase 14b purge : `* as eom from '../decomp-data/auto/src-all/event_object_movement-all-auto'`
 // retiré — le fichier auto est @ts-nocheck C-style cassé (703 fonctions). Le bridge
 // devient no-op (= fallback désactivé). Les step functions seront portées 1:1
 // strict depuis decomps/pokeemeraude/src/event_object_movement.c au besoin

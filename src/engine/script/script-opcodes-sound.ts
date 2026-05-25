@@ -23,7 +23,7 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet } from './script-vars';
 import { PlaySE } from '../decomp-globals';
-import { gMapHeader } from '../map-loader';
+import { gMapHeader } from '../field/map-loader';
 import { resolveDecompConstant } from '../decomp-constants';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 

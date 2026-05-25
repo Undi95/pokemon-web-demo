@@ -288,7 +288,7 @@ import { CHAR_SPACER_STR } from './gba-text-system';
 // les re-exports `export { Xxx } from './xxx'` situés plus bas dans ce fichier.
 
 import { Random as _Random } from './random';
-import { getObjectEventGraphicsInfo as _getOEGI } from './object-event-graphics';
+import { getObjectEventGraphicsInfo as _getOEGI } from './field/object-event-graphics';
 import {
   getItemNameFr as _getItemNameFr,
   getItem as _getItem,
@@ -3231,7 +3231,7 @@ export {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
-} from './map-loader';
+} from './field/map-loader';
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 
@@ -3279,7 +3279,7 @@ export {
   MetatileBehavior_IsJumpSouth,
   MetatileBehavior_IsPacifidlogLog,
   MetatileBehavior_IsRunningDisallowed,
-} from './metatile-behavior-helpers';
+} from './field/metatile-behavior-helpers';
 
 // Other metatile predicates (= 1:1 décomp `metatile_behavior.c`).
 // Hand-portés dans metatile-behavior-helpers.ts pour éviter le circular import
@@ -3298,7 +3298,7 @@ export {
   MetatileBehavior_IsFootprints,
   MetatileBehavior_HasRipples,
   MetatileBehavior_IsDeepSand,
-} from './metatile-behavior-helpers';
+} from './field/metatile-behavior-helpers';
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 

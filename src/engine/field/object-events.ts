@@ -20,10 +20,10 @@
  * Phase suivante :
  *   - 4.5 : script engine + dialogue
  */
-import type { DecompRuntime } from './decomp-runtime';
-import { loadIndexedPngStrict } from './gba/png-loader';
-import type { LoadedPng } from './gba/png-loader';
-import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from './sprite';
+import type { DecompRuntime } from '../decomp-runtime';
+import { loadIndexedPngStrict } from '../gba/png-loader';
+import type { LoadedPng } from '../gba/png-loader';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../sprite';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
 // 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port
@@ -48,23 +48,23 @@ import {
   CanCameraMoveInDirection,
 } from './map-loader';
 import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
-import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from './field/field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from '../field/field-camera';
 import { gPlayerAvatar } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
-import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from './field/field-globals';
-import { FlagGet, VarGet } from './script/script-vars';
-import { Random } from './random';
+import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from '../field/field-globals';
+import { FlagGet, VarGet } from '../script/script-vars';
+import { Random } from '../random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
-import { reverseDecompConstant as _reverseDecompConstant } from './decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstant } from '../decomp-constants';
 // 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`
 // (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
 // cycle ESM (= avant on passait par gameState.getVar qui créait
 // `object-events → game-state → load_save → object-events`).
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { GetSaveBlock1 } from './save/save-system';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { GetSaveBlock1 } from '../save/save-system';
 
 const BASE = '/decomp/em';
 
@@ -1085,8 +1085,8 @@ const TILES_PER_FRAME_16x32 = 8;
 //   - size : 0..3 selon dimensions (cf. oamShapeSizeFromWH)
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
-import type { NamingSubsprite } from './decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from './decomp-globals';
+import type { NamingSubsprite } from '../decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../decomp-globals';
 
 /**
  * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour

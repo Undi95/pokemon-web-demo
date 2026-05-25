@@ -46,22 +46,22 @@
  * Ce module n'est PAS asynchrone à l'exécution : les fonctions InitMap +
  * MapGridGet* sont synchrones après loadMapByName() async qui pré-fetch tout.
  */
-import type { DecompRuntime } from './decomp-runtime';
-import { LoadBgTiles, LoadPalette } from './decomp-globals';
-import { extractPngPlte, loadIndexedPngStrict } from './gba/png-loader';
+import type { DecompRuntime } from '../decomp-runtime';
+import { LoadBgTiles, LoadPalette } from '../decomp-globals';
+import { extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset-anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]
 // utilisé par SaveMapView/LoadSavedMapView/MoveMapViewToBackup ; 1:1 décomp).
-import { GetSaveBlock1 } from './save/save-system';
+import { GetSaveBlock1 } from '../save/save-system';
 // Chantier OW 1:1 — `gSaveBlock1Ptr->pos` (= Coords16, global.h:992) source unique
 // pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
 // Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
 // args (= élimine désync historique cam.x ≠ player.x).
-import { gSaveBlock1Ptr } from './gba-menu-system';
+import { gSaveBlock1Ptr } from '../gba-menu-system';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,
-} from './decomp-data/include/constants/global-data';
+} from '../decomp-data/include/constants/global-data';
 import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
@@ -80,7 +80,7 @@ import {
   METATILE_SecretBase_SandOrnament_Base1,
   METATILE_SecretBase_BreakableDoor_TopClosed,
   METATILE_SecretBase_BreakableDoor_BottomClosed,
-} from './decomp-data/include/constants/metatile_labels-data';
+} from '../decomp-data/include/constants/metatile_labels-data';
 
 // ─── Hook registry RunOnLoadMapScript (HOISTÉ — anti-TDZ) ───────────────────
 //

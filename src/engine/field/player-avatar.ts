@@ -32,8 +32,8 @@
  *     6=face_right, 7=walk_right1, 8=walk_right2 (= mirror H pour left)
  *   - Loaded en OBJ 1D map mode (= 8 tiles sequential per frame)
  */
-import type { DecompRuntime } from './decomp-runtime';
-import { loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
+import type { DecompRuntime } from '../decomp-runtime';
+import { loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
@@ -41,9 +41,9 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import { SpawnTallGrassEffect } from './field/field-effect-grass';
-import { SpawnJumpLandingDust } from './field/field-effect-jump-dust';
-import { CreateShadowSprite, DestroyShadowSprite } from './field/field-effect-shadow';
+import { SpawnTallGrassEffect } from '../field/field-effect-grass';
+import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
+import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventUpdateMetatileBehaviors,
@@ -60,14 +60,14 @@ import {
   GetCameraTopLeftCoords,
   GetCameraPanX,
   GetCameraPanY,
-} from './field/field-camera';
+} from '../field/field-camera';
 import {
   ArePlayerFieldControlsLocked,
   TryRunCoordEventScript,
   LockPlayerFieldControls,
-} from './script/script-runtime';
-import { FlagGet } from './script/script-vars';
-import { B_BUTTON } from './gba-menu-system';
+} from '../script/script-runtime';
+import { FlagGet } from '../script/script-vars';
+import { B_BUTTON } from '../gba-menu-system';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,
@@ -81,13 +81,13 @@ import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
 } from './rotating-gate';
-import { PlaySE } from './decomp-globals';
+import { PlaySE } from '../decomp-globals';
 import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,
   setReservedSpritePaletteCount as setReservedSpritePaletteCount_helper,
-} from './sprite';
-import { SE_WALL_HIT, SE_LEDGE } from './decomp-data/include/constants/songs-data';
+} from '../sprite';
+import { SE_WALL_HIT, SE_LEDGE } from '../decomp-data/include/constants/songs-data';
 import {
   getWarpAtPlayerPos,
   findWarpEventAt,
@@ -112,13 +112,13 @@ import {
   ShouldJumpLedge,
 } from './metatile-behavior-helpers';
 // 1:1 décomp `include/constants/game_stat.h` enum values.
-import { GAME_STAT_JUMPED_DOWN_LEDGES } from './decomp-data/include/constants/game_stat-data';
-import { OBJ_EVENT_GFX_PUSHABLE_BOULDER } from './decomp-data/include/constants/event_objects-data';
-import { NUM_ACRO_BIKE_COLLISIONS } from './decomp-data/src/field_player_avatar-data';
+import { GAME_STAT_JUMPED_DOWN_LEDGES } from '../decomp-data/include/constants/game_stat-data';
+import { OBJ_EVENT_GFX_PUSHABLE_BOULDER } from '../decomp-data/include/constants/event_objects-data';
+import { NUM_ACRO_BIKE_COLLISIONS } from '../decomp-data/src/field_player_avatar-data';
 // 1:1 décomp `gSaveBlock1/2Ptr` (= pointers EWRAM, global.h:990). Source unique
 // dans le module Foundation `save-block-state.ts` (= permet l'import direct
 // depuis player-avatar sans tirer la chaîne lourde de gba-menu-system).
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 // 1:1 décomp `field_control_avatar.c` interaction chain. ESM cycle safe :
 // field-control-avatar importe player-avatar (gPlayerAvatar/GetXY...) au top-level,
 // nous l'importons ici aussi mais ses fonctions sont appelées uniquement DANS
@@ -127,7 +127,7 @@ import {
   TryStartInteractionScript,
   GetInFrontOfPlayerPosition,
   type MapPosition,
-} from './field/field-control-avatar';
+} from '../field/field-control-avatar';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -1237,7 +1237,7 @@ const getInputDirection = _getInputDirection;
  */
 /** GBA A button mask. 1:1 décomp `A_BUTTON` (gba/io_reg.h). Import depuis
  *  decomp-data (= A8 audit). */
-import { A_BUTTON } from './decomp-data/include/gba/io_reg-data';
+import { A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
 
 /** 1:1 décomp `ProcessPlayerFieldInput` snippet lines 170-173 :
  *  ```c

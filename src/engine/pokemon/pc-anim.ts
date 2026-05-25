@@ -17,8 +17,8 @@
  * -1 si WEST, +1 si EAST.
  */
 
-import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../map-loader';
-import { GetPlayerFacingDirection } from '../player-avatar';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../field/map-loader';
+import { GetPlayerFacingDirection } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { VarGet } from '../script/script-vars';
 import { DrawWholeMapView } from '../field/field-camera';
@@ -30,7 +30,7 @@ import {
 import {
   PC_LOCATION_OTHER, PC_LOCATION_BRENDANS_HOUSE, PC_LOCATION_MAYS_HOUSE,
 } from '../decomp-data/include/constants/field_specials-data';
-import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../direction-coords';
+import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/direction-coords';
 
 /** 1:1 décomp `include/fieldmap.h:24` :
  *    #define MAPGRID_IMPASSABLE 0x800

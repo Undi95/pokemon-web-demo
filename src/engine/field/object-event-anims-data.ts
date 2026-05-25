@@ -17,7 +17,7 @@
  *     event_object_movement.h. Les trous sparse sont remplis avec
  *     sAnim_StayStill (= placeholder honnête) + commentaire `// [ANIM_STD_FOO]`.
  */
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from './sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../sprite-animation';
 
 // ─── 101 sAnim_* arrays — 1:1 décomp object_event_anims.h ─────────────────────
 

@@ -34,11 +34,11 @@ import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
-} from '../object-events';
-import { GetPlayerFacingDirection } from '../player-avatar';
+} from '../field/object-events';
+import { GetPlayerFacingDirection } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
 import { GetCameraTopLeftCoords } from '../field/field-camera';
-import { SaveMapView, MAP_OFFSET } from '../map-loader';
+import { SaveMapView, MAP_OFFSET } from '../field/map-loader';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 

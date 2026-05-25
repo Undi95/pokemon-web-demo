@@ -14,10 +14,10 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../object-events';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../field/object-events';
 import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
-import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../player-avatar';
+import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
 
 /** 1:1 décomp `sCurrentApproachingTrainerObjectEventId` (trainer_see.c).

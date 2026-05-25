@@ -221,7 +221,7 @@ export function getMovement(label: string): string[] | undefined {
 // Phase 4.10 : register movement label resolver vers movement-system.
 // Hook au chargement de ce module (= side-effect import side dans
 // TestOverworldScene → script-opcodes → movement-system).
-import { setMovementLabelResolver } from '../movement-system';
+import { setMovementLabelResolver } from '../field/movement-system';
 setMovementLabelResolver((label: string) => _movementsByLabel.get(label) ?? null);
 
 // ─── Lock / Unlock 1:1 décomp ────────────────────────────────────────────────
@@ -766,7 +766,7 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 }
 
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
-import { setOnLoadMapScriptHook, gMapHeader } from '../map-loader';
+import { setOnLoadMapScriptHook, gMapHeader } from '../field/map-loader';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
 
 // ─── Expose pour debug ───────────────────────────────────────────────────────

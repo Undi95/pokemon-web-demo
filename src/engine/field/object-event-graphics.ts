@@ -38,16 +38,16 @@
  *   - src/event_object_movement.c:CreateObjectGraphicsSprite (factory)
  */
 
-import type { DecompRuntime, DecompSprite } from './decomp-runtime';
-import { getRuntime } from './decomp-globals';
+import type { DecompRuntime, DecompSprite } from '../decomp-runtime';
+import { getRuntime } from '../decomp-globals';
 import {
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,
   LoadSpritePalette as _LoadSpritePalette_1to1,
   IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag_1to1,
   GetSpriteTileStartByTag as _GetSpriteTileStartByTag_1to1,
-} from './sprite';
-import { loadGbaPal, loadTileBin } from './gba/png-loader';
+} from '../sprite';
+import { loadGbaPal, loadTileBin } from '../gba/png-loader';
 
 // ─── OBJ_EVENT_GFX_* constants (= subset; 1:1 décomp include/event_object_movement.h) ─
 

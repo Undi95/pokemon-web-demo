@@ -18,8 +18,8 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarSet } from './script-vars';
-import { gMapHeader } from '../map-loader';
-import { getPendingWarp } from '../warp-system';
+import { gMapHeader } from '../field/map-loader';
+import { getPendingWarp } from '../field/warp-system';
 
 // ─── waitstate / SignalWaitState ────────────────────────────────────────────
 
@@ -162,7 +162,7 @@ registerOpcode('special', (ctx, args) => {
   // jusqu'à ce que la carte se ferme (= IsRegionMapOpen() false).
   if (name === 'FieldShowRegionMap') {
     return _runUIOverlay(ctx, async () => {
-      const mod = await import('../region-map');
+      const mod = await import('../field/region-map');
       await mod.OpenRegionMap();
       return { isOpen: mod.IsRegionMapOpen };
     });

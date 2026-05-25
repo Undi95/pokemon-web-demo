@@ -13,7 +13,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
-import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../map-loader';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } from '../field/map-loader';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp scrcmd.c:ScrCmd_setmetatile (lignes 2034-2048).
@@ -58,7 +58,7 @@ registerOpcode('setmaplayoutindex', (_ctx, args) => {
 registerOpcode('setstepcallback', (_ctx, args) => {
   const callbackId = parseValue(args[0] ?? '0');
   void (async () => {
-    const { ActivatePerStepCallback } = await import('../step-callbacks');
+    const { ActivatePerStepCallback } = await import('../field/step-callbacks');
     ActivatePerStepCallback(callbackId);
   })();
   return false;

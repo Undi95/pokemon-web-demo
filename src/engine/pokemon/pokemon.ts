@@ -20,7 +20,7 @@ import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } 
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
-import { gMapHeader } from '../map-loader';
+import { gMapHeader } from '../field/map-loader';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {
