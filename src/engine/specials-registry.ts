@@ -2224,7 +2224,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'RejectEggFromDayCare', 'ResetTVShowState',
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom', 'RockSmashWildEncounter',
-  'SaveBardSongLyrics', 'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
+  // 'SaveBardSongLyrics' — porté 1:1 décomp mauville_old_man.c:156 ci-bas (batch B37).
+  'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
   'ScriptHatchMon',
   'ScriptMenu_CreatePCMultichoice',
@@ -3370,6 +3371,38 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B37 batch — 1 special Mauville Bard 1:1 strict ──────────────
+
+/** 1:1 décomp `SaveBardSongLyrics` (mauville_old_man.c:156-170) :
+ *  ```c
+ *  void SaveBardSongLyrics(void) {
+ *      u16 i;
+ *      struct MauvilleManBard *bard = &gSaveBlock1Ptr->oldMan.bard;
+ *      StringCopy(bard->playerName, gSaveBlock2Ptr->playerName);
+ *      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+ *          bard->playerTrainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];
+ *      for (i = 0; i < NUM_BARD_SONG_WORDS; i++)
+ *          bard->songLyrics[i] = bard->newSongLyrics[i];
+ *      bard->hasChangedSong = TRUE;
+ *  }
+ *  ```
+ *  TRAINER_ID_LENGTH=4, NUM_BARD_SONG_WORDS=6. */
+registerSpecial('SaveBardSongLyrics', () => {
+  const oldMan = gSaveBlock1Ptr.oldMan;
+  if (!oldMan || oldMan.kind !== 'bard') return;
+  oldMan.playerName = gSaveBlock2Ptr.playerName ?? '';
+  if (!oldMan.playerTrainerId) oldMan.playerTrainerId = [0, 0, 0, 0];
+  for (let i = 0; i < 4; i++) {  // TRAINER_ID_LENGTH
+    oldMan.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
+  }
+  if (!oldMan.songLyrics) oldMan.songLyrics = new Array(6).fill(0);
+  if (!oldMan.newSongLyrics) oldMan.newSongLyrics = new Array(6).fill(0);
+  for (let i = 0; i < 6; i++) {  // NUM_BARD_SONG_WORDS
+    oldMan.songLyrics[i] = oldMan.newSongLyrics[i];
+  }
+  oldMan.hasChangedSong = 1;
 });
 
 // ─── Session B36 batch — 1 special Trainer Fan Club 1:1 strict ───────────
