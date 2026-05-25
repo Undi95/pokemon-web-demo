@@ -2163,7 +2163,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
   // 'HasBardSongBeenChanged' — porté 1:1 décomp mauville_old_man.c:151 ci-bas.
   // 'HasHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:241 ci-bas.
-  'HasMonWonThisContestBefore', 'HasPlayerGivenContestLadyPokeblock',
+  'HasMonWonThisContestBefore',
+  // 'HasPlayerGivenContestLadyPokeblock' — porté 1:1 décomp lilycove_lady.c:739 ci-bas (batch B31).
   // 'HasStorytellerAlreadyRecorded' — porté 1:1 décomp mauville_old_man.c:1467 ci-bas (batch B25).
   'HideContestEntryMonPic',
   'HipsterTryTeachWord',
@@ -2258,7 +2259,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
   'SetSootopolisGymCrackedIceMetatiles',
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
-  'ShouldContestLadyShowGoOnAir',
+  // 'ShouldContestLadyShowGoOnAir' — porté 1:1 décomp lilycove_lady.c:747 ci-bas (batch B31).
   'ShouldDoBrailleRegirockEffectOld', 'ShouldHideFanClubInterviewer',
   'ShouldReadyContestArtist', 'ShouldShowBoxWasFullMessage',
   'ShowBerryBlenderRecordWindow', 'ShowBerryCrushRankings',
@@ -3348,6 +3349,47 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
   const oldMan = gSaveBlock1Ptr.oldMan;
   if (oldMan && oldMan.kind === 'storyteller') {
     return oldMan.alreadyRecorded ? 1 : 0;
+  }
+  return 0;
+});
+
+// ─── Session B31 batch — 2 specials Contest Lady 1:1 strict ───────────────
+
+/** 1:1 décomp `HasPlayerGivenContestLadyPokeblock` (lilycove_lady.c:739-745) :
+ *  ```c
+ *  bool8 HasPlayerGivenContestLadyPokeblock(void) {
+ *      sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;
+ *      if (sContestLadyPtr->givenPokeblock == TRUE) return TRUE;
+ *      return FALSE;
+ *  }
+ *  ``` */
+registerSpecial('HasPlayerGivenContestLadyPokeblock', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'contest') {
+    return lady.givenPokeblock ? 1 : 0;
+  }
+  return 0;
+});
+
+/** 1:1 décomp `ShouldContestLadyShowGoOnAir` (lilycove_lady.c:747-757) :
+ *  ```c
+ *  bool8 ShouldContestLadyShowGoOnAir(void) {
+ *      bool8 putOnAir = FALSE;
+ *      sContestLadyPtr = &gSaveBlock1Ptr->lilycoveLady.contest;
+ *      if (sContestLadyPtr->numGoodPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD
+ *       || sContestLadyPtr->numOtherPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD)
+ *          putOnAir = TRUE;
+ *      return putOnAir;
+ *  }
+ *  ```
+ *  LILYCOVE_LADY_GIFT_THRESHOLD = 5. */
+registerSpecial('ShouldContestLadyShowGoOnAir', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'contest') {
+    if ((lady.numGoodPokeblocksGiven ?? 0) >= 5
+        || (lady.numOtherPokeblocksGiven ?? 0) >= 5) {
+      return 1;
+    }
   }
   return 0;
 });
