@@ -2144,7 +2144,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'GetQuizLadyState' — porté 1:1 décomp lilycove_lady.c:347 ci-bas (batch B10).
   'GetRandomActiveShowIdx',
   'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
-  'GetSecretBaseOwnerAndState', 'GetSecretBaseTypeInFrontOfPlayer',
+  // 'GetSecretBaseOwnerAndState' — porté 1:1 décomp secret_base.c:1176 ci-bas (batch B22).
+  'GetSecretBaseTypeInFrontOfPlayer',
   // 'GetSelectedTVShow' — porté 1:1 décomp tv.c:882 ci-bas.
   'GetSelectedMonNicknameAndSpecies',
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
@@ -3321,6 +3322,40 @@ registerSpecial('GetQuizLadyState', () => {
     if (lady.state === 1) return 1;  // LILYCOVE_LADY_STATE_COMPLETED
   }
   return 0;  // LILYCOVE_LADY_STATE_READY
+});
+
+// ─── Session B22 batch — 1 special Secret Base 1:1 strict ─────────────────
+
+/** 1:1 décomp `GetSecretBaseOwnerAndState` (secret_base.c:1176-1191) :
+ *  ```c
+ *  void GetSecretBaseOwnerAndState(void) {
+ *      u16 secretBaseIdx = VarGet(VAR_CURRENT_SECRET_BASE);
+ *      if (!FlagGet(FLAG_DAILY_SECRET_BASE)) {
+ *          for (i = 0; i < SECRET_BASES_COUNT; i++)
+ *              gSaveBlock1Ptr->secretBases[i].battledOwnerToday = FALSE;
+ *          FlagSet(FLAG_DAILY_SECRET_BASE);
+ *      }
+ *      gSpecialVar_0x8004 = GetSecretBaseOwnerType(secretBaseIdx);
+ *      gSpecialVar_Result = secretBases[secretBaseIdx].battledOwnerToday;
+ *  }
+ *  ```
+ *  GetSecretBaseOwnerType (secret_base.c:1133) = (trainerId[0] % 5) + (gender * 5). */
+registerSpecial('GetSecretBaseOwnerAndState', () => {
+  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
+  if (!FlagGet('FLAG_DAILY_SECRET_BASE')) {
+    for (let i = 0; i < 20; i++) {  // SECRET_BASES_COUNT = 20
+      const b = gSaveBlock1Ptr.secretBases?.[i];
+      if (b) b.battledOwnerToday = 0;
+    }
+    FlagSet('FLAG_DAILY_SECRET_BASE');
+  }
+  const base = gSaveBlock1Ptr.secretBases?.[idx];
+  if (base) {
+    // 1:1 décomp `GetSecretBaseOwnerType` (secret_base.c:1133).
+    const ownerType = ((base.trainerId?.[0] ?? 0) % 5) + ((base.gender ?? 0) * 5);
+    VarSet('VAR_0x8004', ownerType);
+    gSpecialVar.Result = base.battledOwnerToday ?? 0;
+  }
 });
 
 /** Boot marker — confirme que le registry a été importé au boot.
