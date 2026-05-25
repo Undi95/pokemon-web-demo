@@ -1061,7 +1061,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'InitSecretBaseVars', 'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
   'InterviewAfter',
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
-  'IsContestWithRSPlayer',
+  // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
   'IsFavorLadyThresholdMet',
@@ -1070,9 +1070,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
-  'IsTrendyPhraseBoring',
+  // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
   // 'LeadMonHasEffortRibbon' — porté 1:1 décomp field_specials.c:1372 ci-bas (= dette ribbons R3).
-  'LinkContestTryHideWirelessIndicator', 'LinkContestTryShowWirelessIndicator',
+  // 'LinkContestTryHideWirelessIndicator' — porté 1:1 décomp contest_util.c:2753 ci-bas (= no link).
+  // 'LinkContestTryShowWirelessIndicator' — porté 1:1 décomp contest_util.c:2741 ci-bas (= no link).
   'LinkContestWaitForConnection', 'LoadPlayerBag', 'LostSecretBaseBattle',
   'MauvilleGymSetDefaultBarriers',
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
@@ -1095,6 +1096,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'QuizLadySetCustomQuestion', 'QuizLadySetWaitingForChallenger',
   'QuizLadyShowQuizQuestion', 'QuizLadyTakePrizeForCustomQuiz',
   // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
+  // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
   'RejectEggFromDayCare', 'ResetTVShowState',
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom', 'RockSmashWildEncounter',
@@ -1643,6 +1645,95 @@ registerSpecial('IncrementDailyPickedBerries', () => {
 registerSpecial('SetChampionSaveWarp', () => {
   // 1:1 décomp save_location.h:13 CHAMPION_SAVEWARP = (1 << 7) = 128.
   gSaveBlock2Ptr.specialSaveWarpFlags = (gSaveBlock2Ptr.specialSaveWarpFlags | (1 << 7)) & 0xFF;
+});
+
+// ─── Session A2.26 batch — 5 specials triviaux 1:1 strict ──────────────────
+
+/** 1:1 décomp `ResetFanClub` (field_specials.c:3979-3983) :
+ *  ```c
+ *  void ResetFanClub(void) {
+ *      gSaveBlock1Ptr->vars[VAR_FANCLUB_FAN_COUNTER - VARS_START] = 0;
+ *      gSaveBlock1Ptr->vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = 0;
+ *  }
+ *  ```
+ *  Reset fan club state (= counter + lose-fan timer). */
+registerSpecial('ResetFanClub', () => {
+  VarSet('VAR_FANCLUB_FAN_COUNTER', 0);
+  VarSet('VAR_FANCLUB_LOSE_FAN_TIMER', 0);
+});
+
+/** 1:1 décomp `IsTrendyPhraseBoring` (dewford_trend.c:296-314) :
+ *  ```c
+ *  void IsTrendyPhraseBoring(void) {
+ *      bool16 result = FALSE;
+ *      do {
+ *          if (gSaveBlock1Ptr->dewfordTrends[0].trendiness - gSaveBlock1Ptr->dewfordTrends[1].trendiness > 1)
+ *              break;
+ *          if (gSaveBlock1Ptr->dewfordTrends[0].gainingTrendiness)
+ *              break;
+ *          if (!gSaveBlock1Ptr->dewfordTrends[1].gainingTrendiness)
+ *              break;
+ *          result = TRUE;
+ *      } while (0);
+ *      gSpecialVar_Result = result;
+ *  }
+ *  ```
+ *  Determine si la phrase trendy courante (slot 0) est "boring" (= peu plus
+ *  trendy que slot 1, et pas gagne pas, mais slot 1 gagne). */
+registerSpecial('IsTrendyPhraseBoring', () => {
+  const trends = gSaveBlock1Ptr.dewfordTrends;
+  let result = 0;
+  do {
+    if ((trends[0].trendiness - trends[1].trendiness) > 1) break;
+    if (trends[0].gainingTrendiness) break;
+    if (!trends[1].gainingTrendiness) break;
+    result = 1;
+  } while (false);
+  VarSet('VAR_RESULT', result);
+  return result;
+});
+
+/** 1:1 décomp `IsContestWithRSPlayer` (contest_util.c:2762-2768) :
+ *  ```c
+ *  bool8 IsContestWithRSPlayer(void) {
+ *      if (gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER)
+ *          return TRUE;
+ *      else
+ *          return FALSE;
+ *  }
+ *  ```
+ *  Notre projet : pas de link wireless (= gLinkContestFlags toujours 0).
+ *  1:1 strict justifié (pas RS link). */
+registerSpecial('IsContestWithRSPlayer', () => 0);
+
+/** 1:1 décomp `LinkContestTryShowWirelessIndicator` (contest_util.c:2741-2751) :
+ *  ```c
+ *  void LinkContestTryShowWirelessIndicator(void) {
+ *      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS) {
+ *          if (gReceivedRemoteLinkPlayers) {
+ *              LoadWirelessStatusIndicatorSpriteGfx();
+ *              CreateWirelessStatusIndicatorSprite(8, 8);
+ *          }
+ *      }
+ *  }
+ *  ```
+ *  Notre projet : gLinkContestFlags == 0 → guard fail → no-op 1:1 strict justifié. */
+registerSpecial('LinkContestTryShowWirelessIndicator', () => {
+  // 1:1 décomp guard fail (gLinkContestFlags == 0) → no-op.
+});
+
+/** 1:1 décomp `LinkContestTryHideWirelessIndicator` (contest_util.c:2753-2759) :
+ *  ```c
+ *  void LinkContestTryHideWirelessIndicator(void) {
+ *      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS) {
+ *          if (gReceivedRemoteLinkPlayers)
+ *              DestroyWirelessStatusIndicatorSprite();
+ *      }
+ *  }
+ *  ```
+ *  Same pattern, no-op 1:1 strict justifié. */
+registerSpecial('LinkContestTryHideWirelessIndicator', () => {
+  // 1:1 décomp guard fail (gLinkContestFlags == 0) → no-op.
 });
 
 // `IsCurSecretBaseOwnedByAnotherPlayer` (secret_base.c:720-726) — dette R3 :
