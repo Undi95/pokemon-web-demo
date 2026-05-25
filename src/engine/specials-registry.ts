@@ -1061,7 +1061,8 @@ const _STUB_RETURN_0_SPECIALS = [
   'LoopWingFlapSE',
   // 'GetDaysUntilPacifidlogTMAvailable' — porté 1:1 décomp field_specials.c:1555 ci-bas.
   // 'SetPacifidlogTMReceivedDay' — porté 1:1 décomp field_specials.c:1566 ci-bas.
-  'IsMirageIslandPresent', 'HasEnoughBerryPowder',
+  // 'IsMirageIslandPresent' — porté 1:1 décomp time_events.c:42 ci-bas.
+  'HasEnoughBerryPowder',
   'GetSeedotSizeRecordInfo', 'GetLotadSizeRecordInfo',
 ];
 for (const name of _STUB_RETURN_0_SPECIALS) {
@@ -1138,6 +1139,57 @@ registerSpecial('BufferTMHMMoveName', () => {
 });
 
 // ─── Session A2.29 batch — Abandoned Ship + Game stats + Contest random ────
+
+/** 1:1 décomp `IsLeadMonNicknamedOrNotEnglish` (tv.c:3024-3027) →
+ *  `IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex())` (tv.c:3010-3022) :
+ *  ```c
+ *  bool8 IsLeadMonNicknamedOrNotEnglish(void) {
+ *      return IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex());
+ *  }
+ *  ```
+ *  Notre projet FR-only → équivalent à IsLeadMonNicknamed (= compare nickname
+ *  vs speciesNameFr). Comportement 1:1 strict identique vu que langage match. */
+registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
+  const party = gSaveBlock1Ptr.playerParty;
+  let leadIdx = 0;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (mon && mon.speciesId !== 0 && !mon.isEgg) {
+      leadIdx = i;
+      break;
+    }
+  }
+  const lead = party[leadIdx];
+  if (!lead) return 0;
+  // 1:1 décomp tv.c:3018 : compare gSpeciesNames[species] vs nickname.
+  // Notre FR-only : speciesNameFr est le species name affiché.
+  return lead.nickname === lead.speciesNameFr ? 0 : 1;
+});
+
+/** 1:1 décomp `IsMirageIslandPresent` (time_events.c:42-52) :
+ *  ```c
+ *  bool8 IsMirageIslandPresent(void) {
+ *      u16 rnd = GetMirageRnd() >> 16;
+ *      for (i = 0; i < PARTY_SIZE; i++)
+ *          if (GetMonData(SPECIES) && (GetMonData(PERSONALITY) & 0xFFFF) == rnd)
+ *              return TRUE;
+ *      return FALSE;
+ *  }
+ *  ```
+ *  `GetMirageRnd` (time_events.c:12-17) = (VAR_MIRAGE_RND_H << 16) | VAR_MIRAGE_RND_L.
+ *  rnd = result >> 16 = VAR_MIRAGE_RND_H (= high 16 bits).
+ *  Mirage Island apparait si un mon de party a `(personality & 0xFFFF) == rnd_high`. */
+registerSpecial('IsMirageIslandPresent', () => {
+  const rnd = VarGet('VAR_MIRAGE_RND_H');
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (!mon || mon.speciesId === 0) continue;
+    const personality = mon.personality ?? 0;
+    if ((personality & 0xFFFF) === rnd) return 1;
+  }
+  return 0;
+});
 
 /** 1:1 décomp `FoundAbandonedShipRoom1Key` (field_specials.c:1328-1337).
  *  Pattern uniforme : set gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_N_KEY
@@ -1296,7 +1348,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'IsFavorLadyThresholdMet',
   // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
-  'IsLeadMonNicknamedOrNotEnglish', 'IsMonOTIDNotPlayers',
+  // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
+  'IsMonOTIDNotPlayers',
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
   'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
