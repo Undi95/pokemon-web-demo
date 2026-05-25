@@ -27,8 +27,9 @@ const GATE_ARM_MAX_LENGTH = 2;
 const GATE_ROT_NONE = 255;
 
 /** MAX_SPRITES sentinel (= rotating_gate.c:621 sRotatingGate_GateSpriteIds default).
- *  Notre impl : valeur sentinel "pas de sprite" pour gateSpriteIds. */
-const MAX_SPRITES = 64;
+ *  Notre impl : valeur sentinel "pas de sprite" pour gateSpriteIds.
+ *  Migré vers import decomp-data sprite-data.ts (cleanup B7). */
+import { MAX_SPRITES } from './decomp-data/include/sprite-data';
 
 /** 1:1 décomp `enum` (rotating_gate.c:25-121) GATE_SHAPE_*. */
 const GATE_SHAPE_L1           = 0;

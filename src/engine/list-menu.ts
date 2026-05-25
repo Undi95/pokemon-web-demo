@@ -1047,8 +1047,8 @@ const TAG_NONE = 0xFFFF;
 function OBJ_PLTT_ID(n: number): number { return 256 + n * 16; }
 
 /** 1:1 décomp `include/palette.h PLTT_SIZE_4BPP = 16 * sizeof(u16) = 32`
- *  (= decomp-bridge.ts:375 parité). */
-const PLTT_SIZE_4BPP = 32;
+ *  (= decomp-bridge.ts:375 parité). Migré vers import direct (cleanup B7). */
+import { PLTT_SIZE_4BPP } from './decomp-bridge';
 
 /** 1:1 décomp symboles assets (list_menu.c:289-292) — `INCGFX` graphics/
  *  interface/{red.pal,outline_cursor.png,arrow_cursor.png}. Passés tels quels

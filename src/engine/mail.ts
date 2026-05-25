@@ -96,6 +96,7 @@ import { PIXEL_FILL } from './decomp-globals';
 import { A_BUTTON, B_BUTTON } from './gba-menu-system';
 import type { Mail } from './save-blocks';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_WIDTH, TILE_HEIGHT } from './decomp-data/include/gba/defines-data';
+import { GENDER_COUNT, LANGUAGE_FRENCH } from './decomp-data/include/constants/global-data';
 import {
   ITEM_ORANGE_MAIL, ITEM_HARBOR_MAIL, ITEM_GLITTER_MAIL, ITEM_MECH_MAIL,
   ITEM_WOOD_MAIL, ITEM_WAVE_MAIL, ITEM_BEAD_MAIL, ITEM_SHADOW_MAIL,
@@ -124,12 +125,13 @@ const ICON_TYPE_NONE = 0;
 const ICON_TYPE_BEAD = 1;
 const ICON_TYPE_DREAM = 2;
 
-/** 1:1 décomp `include/constants/global.h:25` — `#define GENDER_COUNT 2`. */
-const GENDER_COUNT = 2;
+/** 1:1 décomp `include/constants/global.h:25` — `#define GENDER_COUNT 2`.
+ *  Migré vers import decomp-data global-data.ts (cleanup B7). */
 
 /** 1:1 décomp `include/constants/global.h:8` — `#define GAME_LANGUAGE LANGUAGE_FRENCH (=3)`.
- *  Notre port FR : on aligne 1:1 sur GAME_LANGUAGE = LANGUAGE_FRENCH = 3. */
-const GAME_LANGUAGE = 3;
+ *  Notre port FR : on aligne 1:1 sur GAME_LANGUAGE = LANGUAGE_FRENCH = 3.
+ *  Migré vers import decomp-data global-data.ts (cleanup B7). */
+const GAME_LANGUAGE = LANGUAGE_FRENCH;
 
 // ─── Types internes 1:1 décomp ───────────────────────────────────────────────
 

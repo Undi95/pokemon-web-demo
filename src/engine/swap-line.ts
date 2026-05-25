@@ -34,7 +34,9 @@ const TAG_SWAP_LINE = 109;
 export const SWAP_LINE_HAS_MARGIN = 1 << 7;
 
 const SPRITE_NONE = 0xFF;
-const MAX_SPRITES = 64;
+// MAX_SPRITES = 64 (decomp include/sprite.h).
+// Migré vers import decomp-data sprite-data.ts (cleanup B7).
+import { MAX_SPRITES } from './decomp-data/include/sprite-data';
 
 // 1:1 décomp menu_helpers.c:47-69 — anims du swap line sprite.
 const ANIM_TABLE_NAME = 'sAnims_SwapLine';

@@ -395,7 +395,8 @@ const BG_COORD_SET = 0;
 const BG_COORD_ADD = 1;
 
 // MAX_SPRITES (decomp include/sprite.h MAX_SPRITES = 64).
-const MAX_SPRITES = 64;
+// Migré vers import decomp-data sprite-data.ts (cleanup B7).
+import { MAX_SPRITES } from './decomp-data/include/sprite-data';
 
 // EC_ constants (1:1 decomp include/constants/easy_chat.h).
 const EC_MASK_BITS  = 9;
