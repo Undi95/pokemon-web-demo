@@ -30,6 +30,10 @@ import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system
 // dérive le template depuis frameWidth/frameHeight catalog (= équivalent
 // fonctionnel à `graphicsInfo->oam`).
 import { GetBaseOamForDimensions } from './object-event-base-oam';
+// G6 — 1:1 STRICT décomp anim helpers pour MovementType callbacks
+// (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
+// pour alterner walk1/walk2 entre 2 steps consécutifs.
+import { SeekSpriteAnim, StartSpriteAnim } from '../system/sprite-animation';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
@@ -1712,21 +1716,19 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
   // simplifié ici en StartSpriteAnimIfDifferent (= équivalent fonctionnel sans
   // alternation tracking inanimate-aware).
   if (sprite.anims) {
-    // 1:1 STRICT décomp event_object_movement.c:1470-1471 : si inanimate, on
-    // ne touche PAS sprite.animNum (= reste 0 = sAnimTable_Inanimate single
-    // entry). Sinon corruption visuelle car animNum 4..7 hors range table.
-    if (!npc.inanimate) {
-      const targetAnimNum = npc.walkFramesLeft > 0
-        ? GetMoveDirectionAnimNum(npc.walkDirection !== DIR_NONE ? npc.walkDirection : npc.facingDirection)
-        : GetFaceDirectionAnimNum(npc.facingDirection);
-      if (sprite.animNum !== targetAnimNum) {
-        sprite.animNum = targetAnimNum;
-        sprite.animBeginning = true;
-        sprite.animEnded = false;
-        sprite.animCmdIndex = 0;
-        sprite.animDelayCounter = 0;
-      }
-    }
+    // G6 — 1:1 STRICT décomp : sprite.animNum/animCmdIndex/animPaused sont
+    // managés par les MovementActions (= 1:1 décomp pattern) :
+    //   - Step start : InitMovementNormal → SetStepAnimHandleAlternation
+    //     (= sprite->animNum = GO_X + alterne cmdIdx 1↔2 / 3↔0) + animPaused=FALSE
+    //   - Step end : UpdateMovementNormal → animPaused=TRUE (= freeze cycle)
+    //   - face_X action : FaceDirection → StartSpriteAnim(FACE_X)
+    //
+    // updateNpcSpriteFrame ne touche PLUS animNum/animCmdIndex (= bug user
+    // "lévite" pré-G6 : écrasement chaque frame reset cmdIdx=0 → toujours
+    // left foot frame 7 → pas d'alternance walk1↔walk2 entre 2 steps).
+    //
+    // Wire MovementActions : voir movement-system.ts (_tickWalk frame 0/end,
+    // _setFacing) et object-events.ts tickWanderAround/tickLookAround.
     return;
   }
   const oam = rt.gba.oam[sprite.oamIndex];
@@ -1761,6 +1763,58 @@ _registerNpcHelpers(
   UnfreezeAllNpcs,
 );
 
+// ─── G6 — 1:1 STRICT anim helpers pour MovementType callbacks ───────────────
+//
+// Source décomp : event_object_movement.c + sprite.c
+//   SetStepAnimHandleAlternation (4582-4598) : alterne animCmdIndex 1↔2 / 3↔0
+//     selon `sStepAnimTables[Standard].animPos = {1, 3, 0, 2}`. Permet cycle
+//     walk1↔neutral↔walk2↔neutral sur 2 steps consécutifs.
+//   InitNpcForMovement (5081-5099) : sprite->animPaused = FALSE au step start.
+//   UpdateMovementNormal (5116-5126) : sprite->animPaused = TRUE au step end.
+//   FaceDirection (5048) : StartSpriteAnim(GetFaceDirectionAnimNum).
+
+function _npcSetStepAnim(rt: DecompRuntime, npc: ObjectEvent, animNum: number): void {
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite || !sprite.anims) return;
+  if (npc.inanimate) return;
+  sprite.animNum = animNum;
+  // 1:1 SetStepAnimHandleAlternation animPos = {1, 3, 0, 2}.
+  if (sprite.animCmdIndex === 1) sprite.animCmdIndex = 2;
+  else if (sprite.animCmdIndex === 3) sprite.animCmdIndex = 0;
+  // SeekSpriteAnim : back up 1, ContinueAnim advance + apply frame.
+  SeekSpriteAnim(rt, sprite as never, sprite.animCmdIndex);
+}
+
+function _npcStartWalkAnim(rt: DecompRuntime, npc: ObjectEvent, dir: number): void {
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite || !sprite.anims) return;
+  if (npc.inanimate) return;
+  sprite.animPaused = false;
+  _npcSetStepAnim(rt, npc, GetMoveDirectionAnimNum(dir));
+}
+
+function _npcEndWalkAnim(rt: DecompRuntime, npc: ObjectEvent): void {
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite || !sprite.anims) return;
+  sprite.animPaused = true;
+}
+
+function _npcSetFaceAnim(rt: DecompRuntime, npc: ObjectEvent): void {
+  if (npc.spriteId < 0) return;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (!sprite || !sprite.anims) return;
+  if (npc.inanimate) return;
+  StartSpriteAnim(sprite as never, GetFaceDirectionAnimNum(npc.facingDirection));
+}
+
+// Expose pour movement-system.ts (= éviter cycle ESM en passant via globalThis).
+(globalThis as Record<string, unknown>).__npcStartWalkAnim = _npcStartWalkAnim;
+(globalThis as Record<string, unknown>).__npcEndWalkAnim = _npcEndWalkAnim;
+(globalThis as Record<string, unknown>).__npcSetFaceAnim = _npcSetFaceAnim;
+
 // ─── Movement state machines 1:1 décomp ─────────────────────────────────────
 
 /** 1:1 décomp `MovementType_LookAround_Step*`. */
@@ -1782,9 +1836,12 @@ function tickLookAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections: 
     case 4:
       npc.facingDirection = pickRandomDirection(allowedDirections);
       npc.movementStep = 1;
+      // G6 — 1:1 STRICT FaceDirection (event_object_movement.c:5048) :
+      // StartSpriteAnim(sprite, GetFaceDirectionAnimNum(direction)) pour sync
+      // animNum = FACE_X après changement de facing.
+      _npcSetFaceAnim(rt, npc);
       break;
   }
-  void rt;  // updateNpcSpriteFrame called from UpdateObjectEvents each frame
 }
 
 /** 1:1 décomp `MovementType_WanderAround_Step*`. */
@@ -1817,6 +1874,10 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 6;
+        // G6 — 1:1 STRICT InitMovementNormal (event_object_movement.c:5101-5108) :
+        // sprite->animPaused = FALSE + SetStepAnimHandleAlternation(GO_X) au
+        // step start. Sinon NPC reste sur FACE_X anim → "glisse" (= TWIN bug).
+        _npcStartWalkAnim(rt, npc, dir);
       }
       break;
     }
@@ -1834,6 +1895,8 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         npc.movementStep = 1;
+        // G6 — 1:1 STRICT UpdateMovementNormal step end : animPaused = TRUE.
+        _npcEndWalkAnim(rt, npc);
       }
       break;
     }

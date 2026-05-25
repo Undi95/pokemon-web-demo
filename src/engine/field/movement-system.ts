@@ -42,6 +42,13 @@ import {
 } from './direction-coords';
 import { gFieldCamera } from '../field/field-camera';
 
+// G6 — 1:1 STRICT anim helpers exposés via globalThis depuis object-events.ts
+// pour éviter cycle ESM. Voir object-events.ts pour la doc 1:1 décomp.
+type AnimHelper = (rt: DecompRuntime, npc: ObjectEvent, dir?: number) => void;
+function _getAnimHelper(name: '__npcStartWalkAnim' | '__npcEndWalkAnim' | '__npcSetFaceAnim'): AnimHelper | undefined {
+  return (globalThis as Record<string, unknown>)[name] as AnimHelper | undefined;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 /** State per-target : queue d'actions + frame counter pour action courante. */
@@ -522,6 +529,13 @@ function _setFacing(target: MovementTarget, dir: number): void {
     SetObjectEventDirection(gObjectEvents[gPlayerAvatar.objectEventId], dir);
   } else if (target.npc) {
     target.npc.facingDirection = dir;
+    // G6 — 1:1 STRICT FaceDirection (event_object_movement.c:5048) :
+    // StartSpriteAnim(sprite, GetFaceDirectionAnimNum(direction)) pour sync
+    // animNum = FACE_X. Sans ça, l'animNum reste sur le précédent.
+    if (_activeRt) {
+      const setFace = _getAnimHelper('__npcSetFaceAnim');
+      if (setFace) setFace(_activeRt, target.npc);
+    }
     // 1:1 décomp Audit BIG #2.2 fix : pour les NPCs en MOVEMENT_TYPE_LOOK_AROUND,
     // WANDER_AROUND, etc., le movementStep peut être à 4 (= "pick random
     // direction" prochain tick). Si on set facing ici (= via face_player ou autre
@@ -563,6 +577,14 @@ function _tickWalk(
     // Init walk : set direction, advance logical coords.
     _setFacing(target, dir);
     _initWalk(target, dir);
+    // G6 — 1:1 STRICT InitMovementNormal (event_object_movement.c:5101-5108) :
+    // appel SetStepAnimHandleAlternation(sprite, GetMoveDirectionAnimNum(dir))
+    // au step start pour alterner walk1/walk2 (= cmd 0/2) entre 2 steps
+    // consécutifs. sprite->animPaused = FALSE pour enable anim cycle.
+    if (!target.isPlayer && target.npc && _activeRt) {
+      const startWalk = _getAnimHelper('__npcStartWalkAnim');
+      if (startWalk) startWalk(_activeRt, target.npc, dir);
+    }
   }
 
   // Tick : advance worldX/Y by pxPerFrame * direction.
@@ -637,6 +659,14 @@ function _tickWalk(
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
       target.npc.walkAnimAlt = (target.npc.walkAnimAlt ^ 1) as 0 | 1;
+      // G6 — 1:1 STRICT UpdateMovementNormal (event_object_movement.c:5122) :
+      // sprite->animPaused = TRUE au step end. Freeze l'anim sur la frame
+      // courante (= neutral après walk1 ou walk2). Next step start unfreeze
+      // via __npcStartWalkAnim + SetStepAnimHandleAlternation alterne.
+      if (_activeRt) {
+        const endWalk = _getAnimHelper('__npcEndWalkAnim');
+        if (endWalk) endWalk(_activeRt, target.npc);
+      }
       // 1:1 décomp `previousMovementDirection = movementDirection` (= save direction
       // pour PlayerAllowForcedMovementIfMovingSameDirection check, even for NPCs).
       target.npc.previousMovementDirection = target.npc.movementDirection;
