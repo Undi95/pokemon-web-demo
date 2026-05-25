@@ -2800,6 +2800,14 @@ import {
   MOVEMENT_ACTION_SET_INVISIBLE, MOVEMENT_ACTION_SET_VISIBLE,
   MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT,
   MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT,
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP,
+  MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT,
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP,
+  MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT,
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP,
+  MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT,
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP,
+  MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT, MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -2979,6 +2987,42 @@ function _MovementAction_DisableJumpLandingGroundEffect_Step0(_rt: DecompRuntime
   return true;
 }
 
+/** 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) :
+ *    SetObjectEventDirection + SetStepAnimHandleAlternation(animNum) +
+ *    sprite->animPaused = FALSE + sprite->sActionFuncId = 1 + data[3] = duration. */
+function _InitMoveInPlace(rt: DecompRuntime, npc: ObjectEvent, dir: number, duration: number): void {
+  SetObjectEventDirection(npc, dir);
+  // 1:1 décomp : SetStepAnimHandleAlternation. _npcStartWalkAnim fait :
+  //   sprite->animPaused = FALSE + StartSpriteAnim(GetMoveDirectionAnimNum).
+  _npcStartWalkAnim(rt, npc, dir);
+  npc.actionStep = 1;
+  npc.actionTimer = duration;
+}
+
+/** 1:1 décomp `MovementAction_WalkInPlace_Step1` (event_object_movement.c:5713) :
+ *    if (--sprite->data[3] == 0) {
+ *      sActionFuncId = 2; sprite->animPaused = TRUE; return TRUE;
+ *    }
+ *    return FALSE; */
+function _MovementAction_WalkInPlace_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (--npc.actionTimer === 0) {
+    npc.actionStep = 2;
+    _npcEndWalkAnim(rt, npc);
+    return true;
+  }
+  return false;
+}
+
+/** Factory pour WalkInPlace actions (= duration selon SLOW/NORMAL/FAST/FASTER). */
+function _makeWalkInPlaceAction(dir: number, duration: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitMoveInPlace(rt, npc, dir, duration);
+    }
+    return _MovementAction_WalkInPlace_Step1(rt, npc);
+  };
+}
+
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
 // 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
 // :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
@@ -3066,6 +3110,24 @@ gMovementActionFuncs[MOVEMENT_ACTION_SET_INVISIBLE] = _MovementAction_SetInvisib
 gMovementActionFuncs[MOVEMENT_ACTION_SET_VISIBLE]   = _MovementAction_SetVisible_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_ENABLE_JUMP_LANDING_GROUND_EFFECT]  = _MovementAction_EnableJumpLandingGroundEffect_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_DISABLE_JUMP_LANDING_GROUND_EFFECT] = _MovementAction_DisableJumpLandingGroundEffect_Step0;
+// H1.6 : WALK_IN_PLACE_SLOW/NORMAL/FAST/FASTER_X (16 actions, durations 32/16/8/4).
+// 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) + WalkInPlace_Step1 (5713).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, 32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_UP]      = _makeWalkInPlaceAction(DIR_NORTH, 32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  32);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, 16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_UP]    = _makeWalkInPlaceAction(DIR_NORTH, 16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  16);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_DOWN]    = _makeWalkInPlaceAction(DIR_SOUTH, 8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_UP]      = _makeWalkInPlaceAction(DIR_NORTH, 8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_LEFT]    = _makeWalkInPlaceAction(DIR_WEST,  8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FAST_RIGHT]   = _makeWalkInPlaceAction(DIR_EAST,  8);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_DOWN]  = _makeWalkInPlaceAction(DIR_SOUTH, 4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_UP]    = _makeWalkInPlaceAction(DIR_NORTH, 4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_LEFT]  = _makeWalkInPlaceAction(DIR_WEST,  4);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT] = _makeWalkInPlaceAction(DIR_EAST,  4);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
