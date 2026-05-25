@@ -204,21 +204,26 @@ registerOpcode('vmessage', (ctx, args) => getOpcodeHandler('message')?.(ctx, arg
 registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args) ?? false);
 
 // 1:1 décomp `ScrCmd_messageinstant` (scrcmd.c) : msgbox sans typewriter effect
-// (= text appears all at once instead of char-by-char). MVP : alias message.
+// (= text appears all at once instead of char-by-char). Dette R3 doc : substrat
+// msgbox actuel n'expose pas le flag "instant" → alias message (= typewriter
+// effect quand-même). Pas critique gameplay (= seulement cosmétique typewriter
+// speed).
 registerOpcode('messageinstant', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
 
 // 1:1 décomp `ScrCmd_pokenavcall` (scrcmd.c:1275-1283) — initiates a PokéNav call.
 //   2x usage in early-game (= Birch wakes you for ChooseStarter).
-//   MVP : log + skip (= no PokéNav UI). Dette : porter ShowPokenavFieldMessage.
+//   Dette R3 doc : ShowPokenavFieldMessage demande PokeNav UI subsystem entier
+//   non porté (= avatar caller + frame + voice icon). Log + skip honnête.
 registerOpcode('pokenavcall', (_ctx, args) => {
-  console.log(`[opcode pokenavcall] '${args[0]}' — TODO PokeNav UI`);
+  console.log(`[opcode pokenavcall] '${args[0]}' — dette R3 (cascade PokeNav UI U-tier)`);
   return false;
 });
 
 // 1:1 décomp `ScrCmd_messageautoscroll` (scrcmd.c:1285-1296) — message that
-// auto-scrolls. MVP : log + skip (= would need msgbox + auto-advance timer).
+// auto-scrolls. Dette R3 doc : demande msgbox + auto-advance timer (= sans
+// A-press, frame counter cycle).
 registerOpcode('messageautoscroll', (_ctx, args) => {
-  console.log(`[opcode messageautoscroll] '${args[0]}' — TODO autoscroll`);
+  console.log(`[opcode messageautoscroll] '${args[0]}' — dette R3 (cascade autoscroll timer U-tier)`);
   return false;
 });
 
@@ -226,9 +231,10 @@ registerOpcode('messageautoscroll', (_ctx, args) => {
 
 /** 1:1 décomp `ScrCmd_braillemsgbox` (= macro user-level event.inc) :
  *    affiche un message en braille font. 48x usage (Sealed Chamber, Regis caves).
- *  Notre port : log + skip (= no braille font yet). */
+ *  Dette R3 doc : braille font (= graphics/fonts/braille_font.4bpp) pas extrait
+ *  côté assets ; demande font glyph rendering custom. Non critique démo Littleroot. */
 registerOpcode('braillemsgbox', (_ctx, args) => {
-  console.log(`[opcode braillemsgbox] '${args[0]}' — TODO braille font`);
+  console.log(`[opcode braillemsgbox] '${args[0]}' — dette R3 (cascade braille font assets U-tier)`);
   return false;
 });
 

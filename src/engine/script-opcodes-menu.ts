@@ -148,16 +148,19 @@ registerOpcode('multichoicedefault', (ctx, args) => {
   return true;
 });
 
-/** 1:1 décomp `ScrCmd_multichoicegrid` : grille NxM au lieu d'une colonne.
- *  MVP : on utilise multichoice vertical (= ignore perRow). À améliorer si
- *  on rencontre des cas qui nécessitent vraiment grid layout. */
+/** 1:1 décomp `ScrCmd_multichoicegrid` (scrcmd.c:1401) :
+ *    ScriptMenu_MultichoiceGrid(left, top, multichoiceId, ignoreBPress, numColumns)
+ *  Dette R3 doc : ScriptMenu_MultichoiceGrid (script_menu.c) demande grid layout
+ *  N×M rendu (= au lieu de vertical), cascade UI substrate. Non critique démo
+ *  (= seulement utilisé Fortree gym puzzle + elevator menus). Notre port fallback
+ *  vertical multichoice (= perRow ignoré → 1 colonne au lieu de N). */
 registerOpcode('multichoicegrid', (ctx, args) => {
   const left = parseValue(args[0] ?? '0');
   const top = parseValue(args[1] ?? '0');
   const multichoiceId = VarGet(args[2] ?? '0');
   const perRow = parseValue(args[3] ?? '1');
   const ignoreBPress = parseValue(args[4] ?? '0') !== 0;
-  void perRow;  // TODO grid layout
+  void perRow;  // dette R3 doc grid layout (= ignored, fallback vertical)
   const items = getMultichoiceList(multichoiceId, args[2]);
   if (items.length === 0) {
     console.warn(`[opcode multichoicegrid] no items for id=${args[2]} (${multichoiceId}) — fallback VAR_RESULT=0`);
@@ -245,7 +248,7 @@ registerOpcode('yesnobox', (ctx, args) => {
  *  cinematic moments. Notre port : log + skip (= would integrate with
  *  starter-choose-flow style sprite). Dette : porter ScriptMenu_ShowPokemonPic. */
 registerOpcode('showmonpic', (_ctx, args) => {
-  console.log(`[opcode showmonpic] species=${args[0]} x=${args[1]} y=${args[2]} — TODO mon pic UI`);
+  console.log(`[opcode showmonpic] species=${args[0]} x=${args[1]} y=${args[2]} — dette R3 (cascade ScriptMenu_ShowPokemonPic U-tier sprite mon front)`);
   return false;
 });
 
