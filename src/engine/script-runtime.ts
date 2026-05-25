@@ -615,6 +615,56 @@ export function RunOnTransitionMapScript(): void {
   RunScriptImmediately(label);
 }
 
+/** 1:1 décomp `RunOnResumeMapScript()` (script.c:338) :
+ *      MapHeaderRunScriptType(MAP_SCRIPT_ON_RESUME);
+ *  Appelé sur retour à l'overworld depuis menu/battle (= overworld.c:820/2150).
+ *  Dette R3 wire : nos CB2 swap (= LoadMapFromCameraTransition équivalent) ne
+ *  call pas encore cet hook. Exposé pour wire futur. */
+export function RunOnResumeMapScript(): void {
+  if (!gMapHeader?.mapScripts) return;
+  const label = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_RESUME');
+  if (!label) return;
+  console.log(`[script-runtime] RunOnResumeMapScript : ${label}`);
+  RunScriptImmediately(label);
+}
+
+/** 1:1 décomp `RunOnReturnToFieldMapScript()` (script.c:343) :
+ *      MapHeaderRunScriptType(MAP_SCRIPT_ON_RETURN_TO_FIELD);
+ *  Appelé sur retour au field post-CB2 swap (= overworld.c:2184).
+ *  Dette R3 wire : non wired actuellement. Exposé pour wire futur. */
+export function RunOnReturnToFieldMapScript(): void {
+  if (!gMapHeader?.mapScripts) return;
+  const label = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_RETURN_TO_FIELD');
+  if (!label) return;
+  console.log(`[script-runtime] RunOnReturnToFieldMapScript : ${label}`);
+  RunScriptImmediately(label);
+}
+
+/** 1:1 décomp `RunOnDiveWarpMapScript()` (script.c:348) :
+ *      MapHeaderRunScriptType(MAP_SCRIPT_ON_DIVE_WARP);
+ *  Appelé lors d'un dive warp (= overworld.c:766).
+ *  Dette R3 wire : Dive subsystem non porté côté field. Exposé pour wire futur. */
+export function RunOnDiveWarpMapScript(): void {
+  if (!gMapHeader?.mapScripts) return;
+  const label = findMapScriptLabel(gMapHeader.mapScripts, 'MAP_SCRIPT_ON_DIVE_WARP');
+  if (!label) return;
+  console.log(`[script-runtime] RunOnDiveWarpMapScript : ${label}`);
+  RunScriptImmediately(label);
+}
+
+/** 1:1 décomp `MapHeaderRunScriptType(u8 tag)` (script.c:292-297) :
+ *      u8 *ptr = MapHeaderGetScriptTable(tag);
+ *      if (ptr) RunScriptImmediately(ptr);
+ *  Notre port : tag est une string ('MAP_SCRIPT_ON_LOAD' etc.) car `findMapScriptLabel`
+ *  travaille avec des opcodes string-encoded. Exposé pour callers décomp qui
+ *  utilisent ce nom direct. */
+export function MapHeaderRunScriptType(tag: string): void {
+  if (!gMapHeader?.mapScripts) return;
+  const label = findMapScriptLabel(gMapHeader.mapScripts, tag);
+  if (!label) return;
+  RunScriptImmediately(label);
+}
+
 /** 1:1 décomp `MapHeaderCheckScriptTable(MAP_SCRIPT_ON_FRAME_TABLE)`
  *  (script.c:299). Iterate les entries `map_script_2 VAR_X, value, scriptLabel`
  *  du table. Pour chaque entry : si VarGet(VAR_X) === value → SetupScript +
