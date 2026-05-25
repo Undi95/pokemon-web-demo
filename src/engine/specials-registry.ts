@@ -1471,7 +1471,8 @@ registerSpecial('StorePlayerCoordsInVars', () => {
  *  Battle Frontier, Museum, Mirage Island, Painting, etc. */
 const _STUB_RETURN_0_SPECIALS = [
   'StartRegiBattle', 'MoveElevator', 'GetFrontierBattlePoints', 'UpdateBattlePointsWindow',
-  'CountPlayerMuseumPaintings', 'CloseDeptStoreElevatorWindow',
+  // 'CountPlayerMuseumPaintings' — porté 1:1 décomp contest_util.c:2380 ci-bas (batch B33).
+  'CloseDeptStoreElevatorWindow',
   'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
   'RemoveBerryPowderVendorMenu',
   // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
@@ -3306,10 +3307,16 @@ registerSpecial('CountPlayerTrainerStars', () => {
     }
     if (allCaught) stars++;
   }
-  // CountPlayerMuseumPaintings >= CONTEST_CATEGORIES_COUNT : 0 < 5 → no star.
-  //   Dette R3 Contest subsystem absent.
+  // CountPlayerMuseumPaintings >= CONTEST_CATEGORIES_COUNT=5 → +1 star.
+  // 1:1 décomp contest_util.c:2380 ; porté B33 → utilise contestWinners[8..12].
+  let museumCount = 0;
+  for (let i = 0; i < 5; i++) {
+    if (gSaveBlock1Ptr.contestWinners?.[8 + i]?.species) museumCount++;
+  }
+  if (museumCount >= 5) stars++;  // CONTEST_CATEGORIES_COUNT = 5
   // HasAllFrontierSymbols : FALSE → no star.
-  //   Dette R3 Frontier subsystem absent.
+  //   Dette R3 Frontier subsystem absent (= gSaveBlock2Ptr.frontier.battleSymbols
+  //   non porté complet, demande check sur 7 facilités).
   return stars;
 });
 
@@ -3352,6 +3359,29 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B33 batch — 1 special Contest Museum 1:1 strict ─────────────
+
+/** 1:1 décomp `CountPlayerMuseumPaintings` (contest_util.c:2380-2392) :
+ *  ```c
+ *  u8 CountPlayerMuseumPaintings(void) {
+ *      int i; u8 count = 0;
+ *      for (i = 0; i < NUM_CONTEST_WINNERS - MUSEUM_CONTEST_WINNERS_START; i++) {
+ *          if (gSaveBlock1Ptr->contestWinners[MUSEUM_CONTEST_WINNERS_START + i].species)
+ *              count++;
+ *      }
+ *      return count;
+ *  }
+ *  ```
+ *  NUM_CONTEST_WINNERS=13, MUSEUM_CONTEST_WINNERS_START=8 (=CONTEST_WINNER_MUSEUM_COOL-1).
+ *  Loop i=0..4 → check contestWinners[8..12].species. */
+registerSpecial('CountPlayerMuseumPaintings', () => {
+  let count = 0;
+  for (let i = 0; i < 5; i++) {  // NUM_CONTEST_WINNERS - MUSEUM_CONTEST_WINNERS_START = 13 - 8 = 5
+    if (gSaveBlock1Ptr.contestWinners?.[8 + i]?.species) count++;
+  }
+  return count;
 });
 
 // ─── Session B32 batch — 1 special Abnormal Weather 1:1 strict ────────────
