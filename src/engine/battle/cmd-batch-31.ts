@@ -28,9 +28,9 @@ import {
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
 import { SetMoveEffect } from './set-move-effect';
-
-// ─── ABILITY_SERENE_GRACE (abilities.h:31) ─────────────────────────────────
-const ABILITY_SERENE_GRACE = 32;
+import {
+  ABILITY_SERENE_GRACE, ABILITY_PICKUP,
+} from '../decomp-data/include/constants/abilities-data';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -225,7 +225,7 @@ function Cmd_pickup(_ctx: BattleScriptContext): boolean {
     const abilityNum = _GetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_ABILITY_NUM_PK) as number;
     const ability = _getSpeciesAbilityPK(species, abilityNum);
 
-    if (ability === ABILITY_PICKUP_PK
+    if (ability === ABILITY_PICKUP
         && species !== 0 /* SPECIES_NONE */
         && species !== 412 /* SPECIES_EGG */
         && heldItem === 0 /* ITEM_NONE */
@@ -275,7 +275,6 @@ function _abilityNameToNumberPK(abilityName: string): number {
   return typeof val === 'number' ? val : 0;
 }
 
-const ABILITY_PICKUP_PK = 53;  // 1:1 décomp constants/abilities.h.
 
 // ─── 0xF0 givecaughtmon ───────────────────────────────────────────────────
 

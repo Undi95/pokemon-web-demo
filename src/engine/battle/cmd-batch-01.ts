@@ -101,7 +101,9 @@ import { MOVE_PAIN_SPLIT } from '../decomp-data/include/constants/moves-data';
 import {
   EFFECT_SKULL_BASH, EFFECT_RAZOR_WIND,
   EFFECT_SOLAR_BEAM, EFFECT_SEMI_INVULNERABLE, EFFECT_BIDE,
+  EFFECT_ALWAYS_HIT, EFFECT_VITAL_THROW,
 } from '../decomp-data/include/constants/battle_move_effects-data';
+import { FLAG_PROTECT_AFFECTED } from '../decomp-data/include/constants/pokemon-data';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
@@ -783,11 +785,6 @@ const sAccuracyStageRatios: ReadonlyArray<readonly [number, number]> = [
   [133, 100], [166, 100], [  2,   1], [233, 100], [133,  50], [  3,   1],
 ];
 
-// 1:1 décomp `FLAG_PROTECT_AFFECTED` — defined in pokemon.h flags.
-const FLAG_PROTECT_AFFECTED_LOCAL = 1 << 1;
-// EFFECT_* values pour AccuracyCalcHelper (= depuis auto-data, vérifiées).
-const _EFFECT_ALWAYS_HIT_LOCAL = 17;
-const _EFFECT_VITAL_THROW_LOCAL = 78;
 // HITMARKER_IGNORE_* bits (1 << 16/17/18) déjà importés.
 
 /** 1:1 décomp `DEFENDER_IS_PROTECTED` (battle.h macro) :
@@ -796,7 +793,7 @@ function _DEFENDER_IS_PROTECTED(move: number): boolean {
   // Lazy lookup gProtectStructs from globalThis to avoid heavier imports.
   const targetProtectStructs = gProtectStructs[gBattlerTarget];
   if (!targetProtectStructs.protected) return false;
-  return (getBattleMove(move).flags & FLAG_PROTECT_AFFECTED_LOCAL) !== 0;
+  return (getBattleMove(move).flags & FLAG_PROTECT_AFFECTED) !== 0;
 }
 
 /** 1:1 décomp `JumpIfMoveAffectedByProtect(move)`
@@ -877,8 +874,8 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   // AUDIT BUG FIX : était `& 1` (= TEMPORARY seul) → manquait DOWNPOUR/PERMANENT.
   const B_WEATHER_RAIN_ALL = 0x7; // bits 0|1|2
   if ((weatherActive && (gBattleWeather & B_WEATHER_RAIN_ALL) && moveEff === EFFECT_THUNDER)
-      || moveEff === _EFFECT_ALWAYS_HIT_LOCAL
-      || moveEff === _EFFECT_VITAL_THROW_LOCAL) {
+      || moveEff === EFFECT_ALWAYS_HIT
+      || moveEff === EFFECT_VITAL_THROW) {
     return true;  // hit, no acc check
   }
 
@@ -1595,7 +1592,7 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
 // Helpers pour Cmd_attackcanceler (= éviter dups import).
 import { PressurePPLose as PressurePPLoseAtkCanceler, CancelMultiTurnMoves as _cancelMultiTurnMovesAC, RecordAbilityBattle as _recordAbilityBattleAC } from './util';
 import { gBattlerByTurnOrder as gBattlerByTurnOrderAC } from './state';
-import { FLAG_MAGIC_COAT_AFFECTED, FLAG_SNATCH_AFFECTED, FLAG_PROTECT_AFFECTED } from './constants';
+import { FLAG_MAGIC_COAT_AFFECTED, FLAG_SNATCH_AFFECTED } from './constants';
 import { MOVE_MAGIC_COAT as MOVE_MAGIC_COAT_ATKCANCELER, MOVE_SNATCH as MOVE_SNATCH_ATKCANCELER, MOVE_CURSE as MOVE_CURSE_ATKCANCELER } from '../decomp-data/include/constants/moves-data';
 // B_MSG_PROTECTED = 0 (= "X protected itself") dans le table sProtectSuccessStringIds.
 const B_MSG_PROTECTED_ATKCANCELER = 0;

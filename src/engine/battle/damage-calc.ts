@@ -55,6 +55,9 @@ import {
   SPECIES_CUBONE as SPECIES_CUBONE_LOCAL,
   SPECIES_MAROWAK as SPECIES_MAROWAK_LOCAL,
 } from '../decomp-data/include/constants/species-data';
+import {
+  ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK,
+} from '../decomp-data/include/constants/abilities-data';
 
 // 1:1 décomp `BATTLE_TYPE_FRONTIER` mask — utilisé pour ignore Soul Dew boost.
 // Valeurs vraies de constants.ts : TOWER 1<<8, DOME 1<<16, PALACE 1<<17,
@@ -118,6 +121,7 @@ import {
   ABILITY_TORRENT,
   ABILITY_SWARM,
   MOVE_SOLAR_BEAM,
+  MOVE_TARGET_BOTH,
   EFFECT_EXPLOSION,
   IS_TYPE_PHYSICAL,
   IS_TYPE_SPECIAL,
@@ -149,12 +153,8 @@ function applyStatMod(mon: BattleMon, stat: number, statIndex: number): number {
 function weatherHasEffect(): boolean {
   const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
   if (!checkFn) return true;  // pas wired = no field block
-  // AUDIT BUG FIX : ABILITYEFFECT_CHECK_ON_FIELD était 12 (= CHECK_OTHER_SIDE!)
-  // → 19 correct (1:1 décomp battle_util.h:36).
+  // 1:1 décomp battle_util.h:36 ABILITYEFFECT_CHECK_ON_FIELD = 19.
   const ABILITYEFFECT_CHECK_ON_FIELD = 19;
-  const ABILITY_CLOUD_NINE = 13;
-  // 1:1 décomp abilities.h:81. AUDIT BUG FIX : AIR_LOCK était 76 → 77.
-  const ABILITY_AIR_LOCK = 77;
   const cloudNine = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_CLOUD_NINE, 0, 0);
   const airLock = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_AIR_LOCK, 0, 0);
   return !cloudNine && !airLock;
@@ -436,7 +436,6 @@ export function CalculateBaseDamage(
     }
 
     // Moves hitting both ÷2 in doubles.
-    const MOVE_TARGET_BOTH = 0x08;
     if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && getBattleMove(move).target === MOVE_TARGET_BOTH && countAliveMonsInBattle(BATTLE_ALIVE_DEF_SIDE) === 2) {
       damage = Math.floor(damage / 2);
     }

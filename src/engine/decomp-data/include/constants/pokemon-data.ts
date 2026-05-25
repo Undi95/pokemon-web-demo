@@ -175,6 +175,8 @@ export const EV_ITEM_RAISE_LIMIT = 100;
 export const FLAG_MAKES_CONTACT_EXPR = "(1 << 0)";
 /** Raw expr: `(1 << 1)` */
 export const FLAG_PROTECT_AFFECTED_EXPR = "(1 << 1)";
+/** 1:1 décomp pokemon.h flags : si set, le move est bloqué par Detect/Protect. */
+export const FLAG_PROTECT_AFFECTED = (1 << 1);
 /** Raw expr: `(1 << 2)` */
 export const FLAG_MAGIC_COAT_AFFECTED_EXPR = "(1 << 2)";
 /** Raw expr: `(1 << 3)` */

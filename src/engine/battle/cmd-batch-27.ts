@@ -52,6 +52,9 @@ import {
   EFFECT_SEMI_INVULNERABLE as _EFFECT_SEMI_INVULNERABLE,
   EFFECT_BIDE as _EFFECT_BIDE,
 } from '../decomp-data/include/constants/battle_move_effects-data';
+import {
+  MOVE_ASSIST, MOVE_MIRROR_MOVE, MOVE_METRONOME, MOVE_SLEEP_TALK,
+} from '../decomp-data/include/constants/moves-data';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -68,15 +71,11 @@ function _getGenderFromSpeciesAndPersonality(species: number, personality: numbe
  *  Note décomp Em ne check pas STRUGGLE, FOCUS_PUNCH, UPROAR, 2-turn moves
  *  (= ceux-ci sont check ailleurs dans Cmd_trychoosesleeptalkmove). */
 function _isInvalidForSleepTalkOrAssist(move: number): boolean {
-  const MOVE_ASSIST_LOCAL = 274;
-  const MOVE_MIRROR_MOVE_LOCAL = 119;
-  const MOVE_METRONOME_LOCAL = 118;
-  const MOVE_SLEEP_TALK_LOCAL = 214;
   return move === MOVE_NONE
-      || move === MOVE_SLEEP_TALK_LOCAL
-      || move === MOVE_ASSIST_LOCAL
-      || move === MOVE_MIRROR_MOVE_LOCAL
-      || move === MOVE_METRONOME_LOCAL;
+      || move === MOVE_SLEEP_TALK
+      || move === MOVE_ASSIST
+      || move === MOVE_MIRROR_MOVE
+      || move === MOVE_METRONOME;
 }
 
 /** 1:1 décomp `IsTwoTurnsMove(move)` (battle_script_commands.c:8199-8210).

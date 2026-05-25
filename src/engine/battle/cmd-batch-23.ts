@@ -16,6 +16,8 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord, Random } from './script-interpreter';
+import { MOVE_IMPRISON } from '../decomp-data/include/constants/moves-data';
+import { ABILITY_PRESSURE } from '../decomp-data/include/constants/abilities-data';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerAttacker,
   setActiveBattler,
@@ -96,26 +98,21 @@ const PRIMARY_STATUS_MOVE_EFFECT = MOVE_EFFECT_TOXIC;
  *
  *  Lazy lookup via globalThis pour éviter circular import avec state.ts. */
 function _pressurePPLoseOnUsingImprison(attacker: number): void {
-  // ABILITY_PRESSURE = 46, MOVE_IMPRISON = 286 (= auto-data).
-  const ABILITY_PRESSURE_LOCAL = 46;
-  const MOVE_IMPRISON_LOCAL = 286;
-  const MAX_MON_MOVES_LOCAL = 4;
-
   const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gBattleMons?: { ability: number; moves: number[]; pp: number[] }[] } }).__battleState;
   const battlersCount = stateMod?.gBattlersCount ?? 2;
   const battleMons = stateMod?.gBattleMons;
   if (!battleMons) return;
 
   const atkSide = attacker & 1;
-  let imprisonPos = MAX_MON_MOVES_LOCAL;
+  let imprisonPos = MAX_MON_MOVES;
 
   for (let i = 0; i < battlersCount; i++) {
-    if (atkSide !== (i & 1) && battleMons[i].ability === ABILITY_PRESSURE_LOCAL) {
+    if (atkSide !== (i & 1) && battleMons[i].ability === ABILITY_PRESSURE) {
       let j: number;
-      for (j = 0; j < MAX_MON_MOVES_LOCAL; j++) {
-        if (battleMons[attacker].moves[j] === MOVE_IMPRISON_LOCAL) break;
+      for (j = 0; j < MAX_MON_MOVES; j++) {
+        if (battleMons[attacker].moves[j] === MOVE_IMPRISON) break;
       }
-      if (j !== MAX_MON_MOVES_LOCAL) {
+      if (j !== MAX_MON_MOVES) {
         imprisonPos = j;
         if (battleMons[attacker].pp[j] !== 0) {
           battleMons[attacker].pp[j]--;
@@ -125,7 +122,7 @@ function _pressurePPLoseOnUsingImprison(attacker: number): void {
   }
   // 1:1 décomp battle_util.c:791-796 : si MOVE_IS_PERMANENT, emit SetMonData
   // REQUEST_PPMOVE1_BATTLE + imprisonPos pour persist au save block.
-  if (imprisonPos !== MAX_MON_MOVES_LOCAL && _moveIsPermanent_N23(attacker, imprisonPos)) {
+  if (imprisonPos !== MAX_MON_MOVES && _moveIsPermanent_N23(attacker, imprisonPos)) {
     _setActiveBattler_N23(attacker);
     _BtlController_EmitSetMonData_N23(0 /* B_COMM_TO_CONTROLLER */,
       9 + imprisonPos /* REQUEST_PPMOVE1_BATTLE + idx */,
