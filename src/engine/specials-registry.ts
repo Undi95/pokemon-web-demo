@@ -1965,7 +1965,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CountPartyAliveNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1440 ci-bas.
   // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.
   // 'CountPartyNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1424 ci-bas.
-  'CountPlayerTrainerStars', 'CreateAbnormalWeatherEvent', 'CreateEnemyEventMon',
+  // 'CountPlayerTrainerStars' — porté 1:1 décomp trainer_card.c:663 ci-bas (batch B11).
+  'CreateAbnormalWeatherEvent', 'CreateEnemyEventMon',
   'DestroyMewEmergingGrassSprite',
   // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
@@ -3066,6 +3067,58 @@ registerSpecial('FavorLadyGetPrize', () => {
   setStringVar(2, name);
   lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
   return prize;
+});
+
+// ─── Session B11 batch — 1 special Trainer Card stars 1:1 strict ──────────
+
+/** 1:1 décomp `CountPlayerTrainerStars` (trainer_card.c:663-677) :
+ *  ```c
+ *  u32 CountPlayerTrainerStars(void) {
+ *      u8 stars = 0;
+ *      if (GetGameStat(GAME_STAT_ENTERED_HOF)) stars++;
+ *      if (HasAllHoennMons()) stars++;
+ *      if (CountPlayerMuseumPaintings() >= CONTEST_CATEGORIES_COUNT) stars++;
+ *      if (HasAllFrontierSymbols()) stars++;
+ *      return stars;
+ *  }
+ *  ```
+ *  Max stars = 4. Notre projet :
+ *    - HOF check : direct gameStats[GAME_STAT_ENTERED_HOF=10]
+ *    - HasAllHoennMons : via __game_pokedex bridge (= pattern aligné notre
+ *      port HasAllHoennMons specials)
+ *    - CountPlayerMuseumPaintings : 0 (= dette R3 Contest subsystem absent,
+ *      doc explicite)
+ *    - HasAllFrontierSymbols : 0 (= dette R3 Frontier subsystem absent)
+ *
+ *  Max effectif notre projet = 2/4 stars jusqu'à ports Contest + Frontier. */
+registerSpecial('CountPlayerTrainerStars', () => {
+  let stars = 0;
+  // GAME_STAT_ENTERED_HOF = 10 (= include/constants/game_stat.h).
+  if ((gSaveBlock1Ptr.gameStats?.[10] ?? 0) > 0) stars++;
+  // HasAllHoennMons : delegate via __game_pokedex bridge.
+  const pokedexMod = (globalThis as { __game_pokedex?: {
+    HOENN_DEX_COUNT?: number;
+    HoennToNationalOrder?: (n: number) => number;
+    GetSetPokedexFlag?: (dexNum: number, caseId: number) => number;
+    FLAG_GET_CAUGHT?: number;
+  } }).__game_pokedex;
+  if (pokedexMod?.HOENN_DEX_COUNT && pokedexMod.HoennToNationalOrder
+      && pokedexMod.GetSetPokedexFlag && pokedexMod.FLAG_GET_CAUGHT !== undefined) {
+    let allCaught = true;
+    for (let i = 0; i < (pokedexMod.HOENN_DEX_COUNT - 2); i++) {
+      const dexNum = pokedexMod.HoennToNationalOrder(i + 1);
+      if (!pokedexMod.GetSetPokedexFlag(dexNum, pokedexMod.FLAG_GET_CAUGHT)) {
+        allCaught = false;
+        break;
+      }
+    }
+    if (allCaught) stars++;
+  }
+  // CountPlayerMuseumPaintings >= CONTEST_CATEGORIES_COUNT : 0 < 5 → no star.
+  //   Dette R3 Contest subsystem absent.
+  // HasAllFrontierSymbols : FALSE → no star.
+  //   Dette R3 Frontier subsystem absent.
+  return stars;
 });
 
 // ─── Session B10 batch — 1 special Quiz Lady 1:1 strict ───────────────────
