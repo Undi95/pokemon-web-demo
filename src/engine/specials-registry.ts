@@ -2238,7 +2238,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'Script_DoesFavorLadyLikeItem', 'Script_FadeOutMapMusic',
   // 'Script_GetCurrentMauvilleMan' — porté 1:1 décomp mauville_old_man.c:146 ci-bas.
   'Script_FavorLadyOpenBagMenu',
-  'Script_GetLilycoveLadyId', 'Script_QuizLadyOpenBagMenu',
+  // 'Script_GetLilycoveLadyId' — porté 1:1 décomp lilycove_lady.c:115 ci-bas (batch B41).
+  'Script_QuizLadyOpenBagMenu',
   'Script_ResetUnionRoomTrade', 'Script_ShowLinkTrainerCard',
   'Script_StartWiredTrade', 'Script_StorytellerDisplayStory',
   'Script_StorytellerInitializeRandomStat',
@@ -2254,7 +2255,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetHiddenItemFlag' — porté 1:1 décomp field_specials.c:935 ci-bas (refactor B1).
   'SetFavorLadyState_Complete', 'SetHipsterTaughtWord',
   // 'SetHipsterTaughtWord' — porté 1:1 décomp mauville_old_man.c:246 ci-bas.
-  'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
+  // 'SetLilycoveLadyGfx' — porté 1:1 décomp lilycove_lady.c:44 ci-bas (batch B41).
+  'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
   // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
   // 'SetMirageTowerVisibility' — porté 1:1 décomp mirage_tower.c:319 ci-bas.
   // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
@@ -3376,6 +3378,55 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B41 batch — 2 specials Lilycove Lady 1:1 strict ─────────────
+
+/** 1:1 décomp `Script_GetLilycoveLadyId` (lilycove_lady.c:115-118) :
+ *  ```c
+ *  void Script_GetLilycoveLadyId(void) {
+ *      gSpecialVar_Result = GetLilycoveLadyId();
+ *  }
+ *  u8 GetLilycoveLadyId(void) {
+ *      return gSaveBlock1Ptr->lilycoveLady.id;
+ *  }
+ *  ```
+ *  LILYCOVE_LADY_QUIZ=0, _FAVOR=1, _CONTEST=2 dans le id. */
+registerSpecial('Script_GetLilycoveLadyId', () => {
+  gSpecialVar.Result = gSaveBlock1Ptr.lilycoveLady?.id ?? 0;
+});
+
+/** 1:1 décomp `SetLilycoveLadyGfx` (lilycove_lady.c:44-59) :
+ *  ```c
+ *  void SetLilycoveLadyGfx(void) {
+ *      VarSet(VAR_OBJ_GFX_ID_0, sLilycoveLadyGfxId[GetLilycoveLadyId()]);
+ *      if (GetLilycoveLadyId() == LILYCOVE_LADY_CONTEST) {
+ *          VarSet(VAR_OBJ_GFX_ID_1, sContestLadyMonGfxId[lilycoveLady->contest.category]);
+ *          gSpecialVar_Result = TRUE;
+ *      } else {
+ *          gSpecialVar_Result = FALSE;
+ *      }
+ *  }
+ *  ```
+ *  sLilycoveLadyGfxId 1:1 décomp data/lilycove_lady.h:14 = [WOMAN_4=26, WOMAN_2=20, GIRL_2=10]
+ *  indexed par lady id (= QUIZ=0, FAVOR=1, CONTEST=2).
+ *  sContestLadyMonGfxId 1:1 décomp data/lilycove_lady.h:5 =
+ *  [ZIGZAGOON_1=98, SKITTY=203, POOCHYENA=220, KECLEON=204, PIKACHU=209]
+ *  indexed par contest category (= COOL/BEAUTY/CUTE/SMART/TOUGH). */
+registerSpecial('SetLilycoveLadyGfx', () => {
+  const sLilycoveLadyGfxId: ReadonlyArray<number> = [26, 20, 10];  // WOMAN_4, WOMAN_2, GIRL_2
+  const ladyId = gSaveBlock1Ptr.lilycoveLady?.id ?? 0;
+  VarSet('VAR_OBJ_GFX_ID_0', sLilycoveLadyGfxId[ladyId] ?? 0);
+  // LILYCOVE_LADY_CONTEST = 2 (= include/constants/lilycove_lady.h).
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (ladyId === 2 && lady && lady.kind === 'contest') {
+    const sContestLadyMonGfxId: ReadonlyArray<number> = [98, 203, 220, 204, 209];
+    // COOL=0, BEAUTY=1, CUTE=2, SMART=3, TOUGH=4
+    VarSet('VAR_OBJ_GFX_ID_1', sContestLadyMonGfxId[lady.category] ?? 0);
+    gSpecialVar.Result = 1;
+  } else {
+    gSpecialVar.Result = 0;
+  }
 });
 
 // ─── Session B40 batch — 1 special SaveGame 1:1 strict ───────────────────
