@@ -2788,6 +2788,14 @@ import {
   MOVEMENT_ACTION_DELAY_1, MOVEMENT_ACTION_DELAY_2,
   MOVEMENT_ACTION_DELAY_4, MOVEMENT_ACTION_DELAY_8,
   MOVEMENT_ACTION_DELAY_16,
+  MOVEMENT_ACTION_WALK_NORMAL_DOWN, MOVEMENT_ACTION_WALK_NORMAL_UP,
+  MOVEMENT_ACTION_WALK_NORMAL_LEFT, MOVEMENT_ACTION_WALK_NORMAL_RIGHT,
+  MOVEMENT_ACTION_WALK_SLOW_DOWN, MOVEMENT_ACTION_WALK_SLOW_UP,
+  MOVEMENT_ACTION_WALK_SLOW_LEFT, MOVEMENT_ACTION_WALK_SLOW_RIGHT,
+  MOVEMENT_ACTION_WALK_FAST_DOWN, MOVEMENT_ACTION_WALK_FAST_UP,
+  MOVEMENT_ACTION_WALK_FAST_LEFT, MOVEMENT_ACTION_WALK_FAST_RIGHT,
+  MOVEMENT_ACTION_WALK_FASTER_DOWN, MOVEMENT_ACTION_WALK_FASTER_UP,
+  MOVEMENT_ACTION_WALK_FASTER_LEFT, MOVEMENT_ACTION_WALK_FASTER_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -2849,6 +2857,74 @@ function _makeDelayAction(delay: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `MOVE_SPEED_*` (event_object_movement.h:218-223).
+ *  0=NORMAL (16f), 1=FAST_1 (12f), 2=FAST_2 (8f), 3=FASTER (6f), 4=FASTEST (4f),
+ *  5=SLOWER (32f). */
+const _MOVE_SPEED_DURATIONS = [16, 12, 8, 6, 4, 32];
+
+/** 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081-5092) :
+ *    SetObjectEventDirection + MoveCoords + ShiftObjectEventCoords +
+ *    SetSpriteDataForNormalStep (= sActionFuncId=1, walkFramesLeft=duration) +
+ *    sprite->animPaused = FALSE + triggerGroundEffectsOnMove = TRUE. */
+function _InitNpcForMovement(rt: DecompRuntime, npc: ObjectEvent, dir: number, speed: number): void {
+  const dx = DIR_TO_DX[dir] ?? 0;
+  const dy = DIR_TO_DY[dir] ?? 0;
+  SetObjectEventDirection(npc, dir);
+  ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
+  npc.walkDirection = dir;
+  const duration = _MOVE_SPEED_DURATIONS[speed] ?? 16;
+  npc.walkFramesLeft = duration;
+  npc.actionStep = 1;
+  _npcStartWalkAnim(rt, npc, dir);
+}
+
+/** 1:1 décomp `MovementAction_WalkNormalX_Step0` (event_object_movement.c:5278+) :
+ *    InitMovementNormal(obj, sprite, DIR_X, MOVE_SPEED_NORMAL);
+ *    return MovementAction_WalkNormalX_Step1(obj, sprite). */
+function _MovementAction_WalkNormal_Step0(rt: DecompRuntime, npc: ObjectEvent, dir: number, speed: number): boolean {
+  _InitNpcForMovement(rt, npc, dir, speed);
+  return _MovementAction_WalkNormal_Step1(rt, npc);
+}
+
+/** 1:1 décomp `MovementAction_WalkNormalX_Step1` (event_object_movement.c:5284) :
+ *    if (UpdateMovementNormal(obj, sprite)) {
+ *      sprite->sActionFuncId = 2; return TRUE;
+ *    }
+ *    return FALSE;
+ *
+ *  UpdateMovementNormal (5116) : NpcTakeStep + ShiftStillObjectEventCoords +
+ *  animPaused=TRUE quand done. */
+function _MovementAction_WalkNormal_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  const dx = DIR_TO_DX[npc.walkDirection] ?? 0;
+  const dy = DIR_TO_DY[npc.walkDirection] ?? 0;
+  // Visual tick : worldX/Y += DIR_TO_D{X,Y} (= 1 px/frame at NORMAL speed).
+  // Total déplacement = 16 px = 1 tile sur 16 frames. Pour speeds plus rapides,
+  // increment > 1 px/frame.
+  const dur = npc.walkFramesLeft;
+  void dur;
+  npc.worldX += dx;
+  npc.worldY += dy;
+  npc.walkFramesLeft--;
+  if (npc.walkFramesLeft <= 0) {
+    // 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162) +
+    // sprite->animPaused = TRUE.
+    ShiftStillObjectEventCoords(npc);
+    npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+    npc.actionStep = 2;
+    _npcEndWalkAnim(rt, npc);
+    return true;
+  }
+  return false;
+}
+
+/** Factory pour Walk actions multi-step à speed donné. */
+function _makeWalkAction(dir: number, speed: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) return _MovementAction_WalkNormal_Step0(rt, npc, dir, speed);
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
 // ─── gMovementActionFuncs[256] dispatch table (H1) ──────────────────────────
 // 1:1 strict décomp `gMovementActionFuncs_X` arrays (event_object_movement.c
 // :5101+) + `MovementAction_X_StepN` callbacks. Le décomp a une table de 256
@@ -2906,6 +2982,28 @@ gMovementActionFuncs[MOVEMENT_ACTION_DELAY_2]  = _makeDelayAction(2);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_4]  = _makeDelayAction(4);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_8]  = _makeDelayAction(8);
 gMovementActionFuncs[MOVEMENT_ACTION_DELAY_16] = _makeDelayAction(16);
+// H1.3 : WALK_NORMAL/SLOW/FAST/FASTER actions 1:1 strict (= MOVE_SPEED_NORMAL=0,
+// FAST_1=1, FAST_2=2, FASTER=3, FASTEST=4, SLOWER=5).
+// WALK_SLOW = MOVE_SPEED_SLOWER (= 32 frames/tile = 0.5 px/frame).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DOWN]    = _makeWalkAction(DIR_SOUTH, 5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_UP]      = _makeWalkAction(DIR_NORTH, 5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_LEFT]    = _makeWalkAction(DIR_WEST,  5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_RIGHT]   = _makeWalkAction(DIR_EAST,  5);
+// WALK_NORMAL = MOVE_SPEED_NORMAL (= 16 frames/tile = 1 px/frame).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DOWN]  = _makeWalkAction(DIR_SOUTH, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_UP]    = _makeWalkAction(DIR_NORTH, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_LEFT]  = _makeWalkAction(DIR_WEST,  0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_RIGHT] = _makeWalkAction(DIR_EAST,  0);
+// WALK_FAST = MOVE_SPEED_FAST_1 (= 12 frames/tile).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FAST_DOWN]    = _makeWalkAction(DIR_SOUTH, 1);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FAST_UP]      = _makeWalkAction(DIR_NORTH, 1);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FAST_LEFT]    = _makeWalkAction(DIR_WEST,  1);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FAST_RIGHT]   = _makeWalkAction(DIR_EAST,  1);
+// WALK_FASTER = MOVE_SPEED_FAST_2 (= 8 frames/tile).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_DOWN]  = _makeWalkAction(DIR_SOUTH, 2);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_UP]    = _makeWalkAction(DIR_NORTH, 2);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_LEFT]  = _makeWalkAction(DIR_WEST,  2);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_FASTER_RIGHT] = _makeWalkAction(DIR_EAST,  2);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
