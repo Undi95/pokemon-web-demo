@@ -3314,9 +3314,19 @@ registerSpecial('CountPlayerTrainerStars', () => {
     if (gSaveBlock1Ptr.contestWinners?.[8 + i]?.species) museumCount++;
   }
   if (museumCount >= 5) stars++;  // CONTEST_CATEGORIES_COUNT = 5
-  // HasAllFrontierSymbols : FALSE → no star.
-  //   Dette R3 Frontier subsystem absent (= gSaveBlock2Ptr.frontier.battleSymbols
-  //   non porté complet, demande check sur 7 facilités).
+  // 1:1 décomp `HasAllFrontierSymbols` (trainer_card.c:652-661) :
+  //   loop NUM_FRONTIER_FACILITIES=7, check FlagGet(FLAG_SYS_TOWER_SILVER+2i)
+  //   && FlagGet(FLAG_SYS_TOWER_GOLD+2i). +1 star si tous.
+  //   Cascade R3 résolue : 7 facilités = TOWER/DOME/PALACE/ARENA/FACTORY/PIKE/PYRAMID.
+  const facilities = ['TOWER', 'DOME', 'PALACE', 'ARENA', 'FACTORY', 'PIKE', 'PYRAMID'];
+  let allSymbols = true;
+  for (const f of facilities) {
+    if (!FlagGet(`FLAG_SYS_${f}_SILVER`) || !FlagGet(`FLAG_SYS_${f}_GOLD`)) {
+      allSymbols = false;
+      break;
+    }
+  }
+  if (allSymbols) stars++;
   return stars;
 });
 
