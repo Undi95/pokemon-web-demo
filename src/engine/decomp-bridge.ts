@@ -1826,14 +1826,31 @@ export const STAT_BUFF_NEGATIVE = 0x80;
 
 // ─── Battle util macros (1:1 décomp `include/battle_util.h`) ─────────────────
 
-/** 1:1 décomp `battle_util.h:36` ABILITY_ON_OPPOSING_FIELD — wraps AbilityBattleEffects.
- *  Need full ability system port ; placeholder returns 0 (= no effect). */
-export function ABILITY_ON_OPPOSING_FIELD(_battler: number, _abilityId: number): number {
-  return 0;
+/** 1:1 décomp `battle_util.h:36-38` ability macros — wrap AbilityBattleEffects.
+ *    ABILITY_ON_OPPOSING_FIELD(battler, abilityId) =
+ *        AbilityBattleEffects(ABILITYEFFECT_CHECK_OTHER_SIDE=12, battler, abilityId, 0, 0)
+ *    ABILITY_ON_FIELD(abilityId) =
+ *        AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD=19, 0, abilityId, 0, 0)
+ *    ABILITY_ON_FIELD2(abilityId) =
+ *        AbilityBattleEffects(ABILITYEFFECT_FIELD_SPORT=14, 0, abilityId, 0, 0)
+ *  Wire via import dynamique pour casser cycle decomp-bridge↔battle/. */
+export function ABILITY_ON_OPPOSING_FIELD(battler: number, abilityId: number): number {
+  return _callAbilityBattleEffects(12 /* ABILITYEFFECT_CHECK_OTHER_SIDE */, battler, abilityId, 0, 0);
 }
-/** 1:1 décomp `battle_util.h:38` ABILITY_ON_FIELD2(abilityId). */
-export function ABILITY_ON_FIELD2(_abilityId: number): number {
-  return 0;
+export function ABILITY_ON_FIELD(abilityId: number): number {
+  return _callAbilityBattleEffects(19 /* ABILITYEFFECT_CHECK_ON_FIELD */, 0, abilityId, 0, 0);
+}
+export function ABILITY_ON_FIELD2(abilityId: number): number {
+  return _callAbilityBattleEffects(14 /* ABILITYEFFECT_FIELD_SPORT */, 0, abilityId, 0, 0);
+}
+/** Wrapper qui dispatch lazy vers AbilityBattleEffects pour éviter cycle import.
+ *  Le module battle/ability-battle-effects.ts expose `__abilityBattleEffectsCheck`
+ *  via globalThis au module load. */
+function _callAbilityBattleEffects(caseId: number, battler: number, abilityId: number, arg3: number, arg4: number): number {
+  const fn = (globalThis as { __abilityBattleEffectsCheck?: (c: number, b: number, a: number, x: number, y: number) => number })
+    .__abilityBattleEffectsCheck;
+  if (fn) return fn(caseId, battler, abilityId, arg3, arg4);
+  return 0;  // Fallback safe : substrat absent au boot très early.
 }
 
 // ─── PREPARE_*_BUFFER additions (battle_message.h) ────────────────────────────
