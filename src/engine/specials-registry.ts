@@ -262,9 +262,17 @@ let _sBikeCyclingTimer = 0;
 // helpers exportés si cycling road code ported (= cf. roadmap C7 task).
 void _gBikeCyclingChallenge; void _gBikeCollisions; void _sBikeCyclingTimer;
 
-/** 1:1 décomp `Special_ShowDiploma` (field_specials.c). Stub. */
+/** 1:1 décomp `Special_ShowDiploma` (field_specials.c:3739) :
+ *  ```c
+ *  void Special_ShowDiploma(void) {
+ *      SetMainCallback2(CB2_ShowDiploma);
+ *      LockPlayerFieldControls();
+ *  }
+ *  ```
+ *  Dette R3 doc : CB2_ShowDiploma demande diploma screen UI subsystem entier
+ *  U-tier (= sprite player + banner + pokedex completion check). */
 registerSpecial('Special_ShowDiploma', () => {
-  console.log('[special Special_ShowDiploma] stub — diploma UI not yet implemented');
+  console.log('[special Special_ShowDiploma] dette R3 (cascade CB2_ShowDiploma diploma UI U-tier)');
 });
 
 /** 1:1 décomp `BufferStreaksAndRecords` (battle_factory.c). Stub. */
@@ -696,16 +704,19 @@ registerSpecial('InitBirchState', () => {
 });
 
 /** 1:1 décomp `LoadWallyZigzagoon` (wally_tutorial.c) — preps Wally's catch
- *  tutorial battle setup. */
+ *  tutorial battle setup. Dette R3 doc : Wally tutorial subsystem entier U-tier
+ *  (= Wally avatar transition + battle setup CreateMon WALLY_OT + PARTNER_FLAG
+ *  + scripted POKE_BALL throw). */
 registerSpecial('LoadWallyZigzagoon', () => {
-  console.log('[special LoadWallyZigzagoon] stub — TODO Wally tutorial');
+  console.log('[special LoadWallyZigzagoon] dette R3 (cascade Wally tutorial U-tier)');
   return 0;
 });
 
 /** 1:1 décomp `StartWallyTutorialBattle` (wally_tutorial.c) — starts Wally's
- *  catch tutorial. */
+ *  catch tutorial. Dette R3 doc : cascade BattleSetup_StartWallyTutorialBattle
+ *  + setup gPartnerTrainerId + BattleTransition U-tier. */
 registerSpecial('StartWallyTutorialBattle', () => {
-  console.log('[special StartWallyTutorialBattle] stub — TODO Wally tutorial');
+  console.log('[special StartWallyTutorialBattle] dette R3 (cascade Wally tutorial U-tier)');
   return 0;
 });
 
@@ -801,15 +812,18 @@ registerSpecial('FoundBlackGlasses', () => {
 });
 
 /** 1:1 décomp `ScriptMenu_CreateStartMenuForPokenavTutorial` (start_menu.c) —
- *  open special start menu only with PokeNav for tutorial. */
+ *  open special start menu only with PokeNav for tutorial. Dette R3 doc :
+ *  cascade PokeNav UI subsystem U-tier. */
 registerSpecial('ScriptMenu_CreateStartMenuForPokenavTutorial', () => {
-  console.log('[special PokenavTutorialMenu] stub — TODO PokeNav UI');
+  console.log('[special PokenavTutorialMenu] dette R3 (cascade PokeNav UI U-tier)');
   return 0;
 });
 
-/** 1:1 décomp `OpenPokenavForTutorial` (pokenav.c). */
+/** 1:1 décomp `OpenPokenavForTutorial` (pokenav.c).
+ *  Dette R3 doc : PokeNav UI subsystem entier U-tier (= map + match call +
+ *  ribbons + matchcall trainer card). */
 registerSpecial('OpenPokenavForTutorial', () => {
-  console.log('[special OpenPokenavForTutorial] stub — TODO PokeNav UI');
+  console.log('[special OpenPokenavForTutorial] dette R3 (cascade PokeNav UI U-tier)');
   return 0;
 });
 

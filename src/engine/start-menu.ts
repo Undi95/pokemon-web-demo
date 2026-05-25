@@ -561,7 +561,8 @@ function buildItems(): MenuItem[] {
   return items;
 }
 
-/** POKéNAV action : stub — le PokéNav n'est pas implémenté MVP. */
+/** 1:1 décomp `StartMenu_Pokenav` (start_menu.c) — dette R3 doc : cascade
+ *  PokeNav UI subsystem entier U-tier. Show transient message en fallback. */
 function pokenavAction(): boolean {
   return showMessageThenReturn('Le POKéNAV n\'est pas\nencore disponible.');
 }
