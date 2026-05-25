@@ -1362,7 +1362,8 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'SetPacifidlogTMReceivedDay' — porté 1:1 décomp field_specials.c:1566 ci-bas.
   // 'IsMirageIslandPresent' — porté 1:1 décomp time_events.c:42 ci-bas.
   'HasEnoughBerryPowder',
-  'GetSeedotSizeRecordInfo', 'GetLotadSizeRecordInfo',
+  // 'GetSeedotSizeRecordInfo' — porté 1:1 décomp pokemon_size_record.c:157 (batch B8).
+  // 'GetLotadSizeRecordInfo' — porté 1:1 décomp pokemon_size_record.c:176 (batch B8).
 ];
 for (const name of _STUB_RETURN_0_SPECIALS) {
   registerSpecial(name, () => 0);
@@ -1957,7 +1958,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame', 'ChooseSendDaycareMon',
   'CleanupLinkRoomState', 'ClearAndLeaveSecretBase', 'ClearQuizLadyPlayerAnswer',
   'ClearQuizLadyQuestionAndAnswer', 'CloseBattlePikeCurtain',
-  'CompareLotadSize', 'CompareSeedotSize', 'CopyCurSecretBaseOwnerName_StrVar1',
+  // 'CompareLotadSize' — porté 1:1 décomp pokemon_size_record.c:183 (batch B8).
+  // 'CompareSeedotSize' — porté 1:1 décomp pokemon_size_record.c:164 (batch B8).
+  'CopyCurSecretBaseOwnerName_StrVar1',
   'CopyEReaderTrainerGreeting',
   // 'CountPartyAliveNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1440 ci-bas.
   // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.

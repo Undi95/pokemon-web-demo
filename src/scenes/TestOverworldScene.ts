@@ -170,6 +170,8 @@ import * as Songs from '../engine/decomp-data/include/constants/songs-data';
 import '../engine/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../engine/specials-registry';
+// Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
+import '../engine/pokemon-size-record';
 import { ShowMapNamePopup, preloadMapNames } from '../engine/map-name-popup';
 import { loadGameData, installDexDevtools } from '../engine/data/game-data';
 import {
