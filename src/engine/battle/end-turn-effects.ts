@@ -41,7 +41,7 @@ import {
 import { gBitTable } from './battle-controllers';
 import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from './text-buffers';
 import {
-  MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST,
+  MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST, MOVE_FUTURE_SIGHT,
 } from '../decomp-data/include/constants/moves-data';
 
 // 1:1 décomp battle_string_ids.h:445-447 + 450-451.
@@ -876,11 +876,10 @@ export function HandleWishPerishSongOnTurnEnd(): EndTurnFieldResult {
           if (gWishFutureKnock.futureSightCounter[active] !== 0
               && --gWishFutureKnock.futureSightCounter[active] === 0
               && gBattleMons[active].hp !== 0) {
-            // MOVE_FUTURE_SIGHT = 248, MOVE_DOOM_DESIRE = 353 (= magie noir vs lumière).
             const fsMove = gWishFutureKnock.futureSightMove[active];
             const B_MSG_FUTURE_SIGHT = 0;
             const B_MSG_DOOM_DESIRE = 1;
-            gBattleCommunication[MULTISTRING_CHOOSER] = (fsMove === 248)
+            gBattleCommunication[MULTISTRING_CHOOSER] = (fsMove === MOVE_FUTURE_SIGHT)
               ? B_MSG_FUTURE_SIGHT : B_MSG_DOOM_DESIRE;
             PREPARE_MOVE_BUFFER(gBattleTextBuff1, fsMove);
             setBattlerTarget(active);

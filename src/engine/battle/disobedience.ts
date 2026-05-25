@@ -29,6 +29,7 @@ import {
   gBattleMoveDamage, setBattleMoveDamage,
   gBattleTypeFlags, gBattlersCount,
 } from './state';
+import { SPECIES_MEW, SPECIES_DEOXYS } from '../decomp-data/include/constants/species-data';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED_LINK,
   GET_BATTLER_SIDE, B_SIDE_OPPONENT,
@@ -59,8 +60,7 @@ function _IsBattlerModernFatefulEncounter(battler: number): boolean {
   const partyIdx = gBattlerPartyIndexes_DSO[battler];
   if (!gPlayerParty_DSO[partyIdx]) return true;
   const species = GetMonData_DSO(gPlayerParty_DSO[partyIdx], MON_DATA_SPECIES_DSO) as number;
-  // SPECIES_MEW = 151, SPECIES_DEOXYS = 410 (= auto-data).
-  if (species !== 151 && species !== 410) return true;
+  if (species !== SPECIES_MEW && species !== SPECIES_DEOXYS) return true;
   // MON_DATA_MODERN_FATEFUL_ENCOUNTER deferred (= pas pertinent web port).
   return true;
 }

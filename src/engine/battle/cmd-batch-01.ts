@@ -98,6 +98,10 @@ import {
   HITMARKER_PASSIVE_HP_UPDATE,
 } from './constants';
 import { MOVE_PAIN_SPLIT } from '../decomp-data/include/constants/moves-data';
+import {
+  EFFECT_SKULL_BASH, EFFECT_RAZOR_WIND,
+  EFFECT_SOLAR_BEAM, EFFECT_SEMI_INVULNERABLE, EFFECT_BIDE,
+} from '../decomp-data/include/constants/battle_move_effects-data';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
@@ -1603,12 +1607,8 @@ function _isBattlerOfTypeAC(battler: number, type: number): boolean {
 function _isTwoTurnsMoveAC(move: number): boolean {
   const eff = getBattleMove(move).effect;
   // 1:1 décomp battle_script_commands.c:8199 IsTwoTurnsMove — 6 effects.
-  // EFFECT_SKULL_BASH=145, RAZOR_WIND=39, SKY_ATTACK=75, SOLAR_BEAM=151,
-  // SEMI_INVULNERABLE=155, BIDE=26.
-  // AUDIT FIX session 144 : EFFECT_SKY_ATTACK=75 manquait (= dans cmd-batch-01
-  // seulement ; cmd-batch-27/30 portaient bien les 6 valeurs).
-  return eff === 145 || eff === 39 || eff === 75
-      || eff === 151 || eff === 155 || eff === 26;
+  return eff === EFFECT_SKULL_BASH || eff === EFFECT_RAZOR_WIND || eff === EFFECT_SKY_ATTACK
+      || eff === EFFECT_SOLAR_BEAM || eff === EFFECT_SEMI_INVULNERABLE || eff === EFFECT_BIDE;
 }
 
 // ─── Install handlers in dispatch table ─────────────────────────────────────

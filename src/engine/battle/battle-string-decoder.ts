@@ -23,6 +23,9 @@
  */
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
+import {
+  STRINGID_STATSHARPLY, STRINGID_STATHARSHLY,
+} from '../decomp-data/include/constants/battle_string_ids-data';
 import { getString } from '../ui/gba-strings';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
@@ -353,8 +356,7 @@ function _decodeTextBuff(buf: Uint8Array): string {
         // 1:1 décomp battle_message.c:2861-2864 : si STATSHARPLY/STATHARSHLY,
         // skip 3 bytes additional (= ignore next B_BUFF_STRING entry STATROSE/
         // STATFELL puisque "sharply" + "rose!" est combiné en "baisse beaucoup!").
-        // STRINGID_STATSHARPLY = 209, STATHARSHLY = 211.
-        if (stringId === 209 || stringId === 211) {
+        if (stringId === STRINGID_STATSHARPLY || stringId === STRINGID_STATHARSHLY) {
           i += 3;  // skip next B_BUFF_STRING entry [tag, lo, hi]
         }
         const sTextName = BATTLE_STRINGS_TABLE[stringId];

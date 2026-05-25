@@ -42,6 +42,11 @@ import {
   IS_BATTLER_OF_TYPE,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
+import {
+  EFFECT_SKULL_BASH, EFFECT_RAZOR_WIND, EFFECT_SKY_ATTACK,
+  EFFECT_SOLAR_BEAM, EFFECT_SEMI_INVULNERABLE, EFFECT_BIDE,
+  EFFECT_BATON_PASS,
+} from '../decomp-data/include/constants/battle_move_effects-data';
 import { gBitTable } from './battle-controllers';
 import {
   gTypeEffectiveness, TYPE_ENDTABLE, TYPE_FORESIGHT,
@@ -69,10 +74,9 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
  *  Wiring via local check (= éviter import circulaire avec cmd-batch-27). */
 function _isTwoTurnsMove(move: number): boolean {
   const effect = getBattleMove(move).effect;
-  // EFFECT_SKULL_BASH=145, RAZOR_WIND=39, SKY_ATTACK=75, SOLAR_BEAM=151,
-  // SEMI_INVULNERABLE=155, BIDE=26. Valeurs auto-data battle_move_effects-data.ts.
-  return effect === 145 || effect === 39 || effect === 75
-      || effect === 151 || effect === 155 || effect === 26;
+  return effect === EFFECT_SKULL_BASH || effect === EFFECT_RAZOR_WIND
+      || effect === EFFECT_SKY_ATTACK || effect === EFFECT_SOLAR_BEAM
+      || effect === EFFECT_SEMI_INVULNERABLE || effect === EFFECT_BIDE;
 }
 
 /** 1:1 décomp `SwitchInClearSetData()` (battle_main.c:3152-3262). Reset effect
@@ -84,9 +88,8 @@ function _switchInClearSetData(active: number): void {
   // 1:1 décomp : snapshot disableStruct (= sera reset à la fin, sauf Baton Pass).
   const disableCopy = { ...gDisableStructs[active] };
 
-  // EFFECT_BATON_PASS = 127 (= constants/battle_move_effects).
   const isBatonPass = (globalThis as { __getBattleMoveEffect?: (m: number) => number })
-    .__getBattleMoveEffect?.(_gCurrentMove30()) === 127;
+    .__getBattleMoveEffect?.(_gCurrentMove30()) === EFFECT_BATON_PASS;
 
   // 1:1 décomp 3158-3171 : si non-Baton-Pass, reset statStages + clear
   // ESCAPE_PREVENTION/ALWAYS_HITS qui pointent vers cet active.

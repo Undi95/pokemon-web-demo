@@ -903,13 +903,11 @@ export function MetatileBehavior_IsSecretBaseShrub(mb: number): boolean {
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBasePC` (metatile_behavior.c:549-555). */
 export function MetatileBehavior_IsSecretBasePC(mb: number): boolean {
-  // Decomp bridge MB_SECRET_BASE_PC = 0xB0.
-  return mb === 0xB0;
+  return mb === MBC.MB_SECRET_BASE_PC;
 }
 /** 1:1 décomp `MetatileBehavior_IsRecordMixingSecretBasePC` (metatile_behavior.c:557-563). */
 export function MetatileBehavior_IsRecordMixingSecretBasePC(mb: number): boolean {
-  // Decomp bridge MB_SECRET_BASE_REGISTER_PC = 0xB1.
-  return mb === 0xB1;
+  return mb === MBC.MB_SECRET_BASE_REGISTER_PC;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseScenery1` (metatile_behavior.c:566-572).
  *  Used by rock/grass floor spaces (= NOT where trainer stands). */
@@ -934,8 +932,7 @@ export function MetatileBehavior_IsSecretBasePoster(mb: number): boolean {
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseNorthWall` (metatile_behavior.c:615-621). */
 export function MetatileBehavior_IsSecretBaseNorthWall(mb: number): boolean {
-  // MB_SECRET_BASE_NORTH_WALL = 0xB7 (= in decomp-bridge).
-  return mb === 0xB7;
+  return mb === MBC.MB_SECRET_BASE_NORTH_WALL;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseScenery2` (metatile_behavior.c:623-629). */
 export function MetatileBehavior_IsSecretBaseScenery2(mb: number): boolean {
@@ -943,28 +940,23 @@ export function MetatileBehavior_IsSecretBaseScenery2(mb: number): boolean {
 }
 /** 1:1 décomp `MetatileBehavior_HoldsSmallDecoration` (metatile_behavior.c:631-637). */
 export function MetatileBehavior_HoldsSmallDecoration(mb: number): boolean {
-  // MB_HOLDS_SMALL_DECORATION = 0xB5 (= in decomp-bridge).
-  return mb === 0xB5;
+  return mb === MBC.MB_HOLDS_SMALL_DECORATION;
 }
 /** 1:1 décomp `MetatileBehavior_HoldsLargeDecoration` (metatile_behavior.c:639-645). */
 export function MetatileBehavior_HoldsLargeDecoration(mb: number): boolean {
-  // MB_HOLDS_LARGE_DECORATION = 0xC3.
-  return mb === 0xC3;
+  return mb === MBC.MB_HOLDS_LARGE_DECORATION;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseHole` (metatile_behavior.c:647-653). */
 export function MetatileBehavior_IsSecretBaseHole(mb: number): boolean {
-  // MB_SECRET_BASE_HOLE = 0xC2.
-  return mb === 0xC2;
+  return mb === MBC.MB_SECRET_BASE_HOLE;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseBalloon` (metatile_behavior.c:655-661). */
 export function MetatileBehavior_IsSecretBaseBalloon(mb: number): boolean {
-  // MB_SECRET_BASE_BALLOON = 0xB8.
-  return mb === 0xB8;
+  return mb === MBC.MB_SECRET_BASE_BALLOON;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseBreakableDoor` (metatile_behavior.c:663-669). */
 export function MetatileBehavior_IsSecretBaseBreakableDoor(mb: number): boolean {
-  // MB_SECRET_BASE_BREAKABLE_DOOR = 0xBE.
-  return mb === 0xBE;
+  return mb === MBC.MB_SECRET_BASE_BREAKABLE_DOOR;
 }
 /** 1:1 décomp `MetatileBehavior_IsSecretBaseSoundMat` (metatile_behavior.c:671-677). */
 export function MetatileBehavior_IsSecretBaseSoundMat(mb: number): boolean {
