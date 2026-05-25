@@ -297,6 +297,7 @@ import {
 import { sTMHMMoves as _sTMHMMoves } from './tmhm-moves';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
+import { gBattleMons as _gBattleMonsBridge } from './battle/state';
 
 // ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
 
@@ -484,10 +485,16 @@ export function DmaCopy32(_channel: number, src: any, dst: any, sizeBytes: numbe
   CpuCopy32(src, dst, sizeBytes);
 }
 
-/** 1:1 décomp `include/battle.h IS_BATTLER_OF_TYPE(battler, type)` macro.
- *  Need pokemon.c port. */
-export function IS_BATTLER_OF_TYPE(_battler: number, _type: number): boolean {
-  throw new Error('[bridge] IS_BATTLER_OF_TYPE not yet 1:1 ported. See pokemon.c.');
+/** 1:1 décomp `include/battle.h:471 IS_BATTLER_OF_TYPE(battler, type)` :
+ *  ```c
+ *  #define IS_BATTLER_OF_TYPE(battler, type) \
+ *      ((gBattleMons[battler].types[0] == type || gBattleMons[battler].types[1] == type))
+ *  ```
+ *  Notre port : gBattleMons[battler].type1/type2 (= alias 1:1 décomp types[2]). */
+export function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
+  const mon = _gBattleMonsBridge[battler];
+  if (!mon) return false;
+  return mon.type1 === type || mon.type2 === type;
 }
 
 // ─── Battle macros (1:1 décomp `include/battle.h` + `battle_message.h`) ───────
@@ -3481,7 +3488,7 @@ export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'GetBgTilemapBuffer',
   'DecompressAndCopyTileDataToVram',
   'LZ77UnCompWram',
-  'IS_BATTLER_OF_TYPE',
+  // 'IS_BATTLER_OF_TYPE' — porté 1:1 décomp battle.h:471 (batch B19).
   'CopyEasyChatWord',
   // Phase B.5 added : these throw NotImpl but are counted in __bridgedHelpers__
   // so we still track them. Bridge resolver will fail-fast on these when called.
