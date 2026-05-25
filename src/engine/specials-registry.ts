@@ -2117,7 +2117,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'FoundAbandonedShipRoom2Key' — porté 1:1 décomp field_specials.c:1339 ci-bas.
   // 'FoundAbandonedShipRoom4Key' — porté 1:1 décomp field_specials.c:1350 ci-bas.
   // 'FoundAbandonedShipRoom6Key' — porté 1:1 décomp field_specials.c:1361 ci-bas.
-  'GabbyAndTyAfterInterview', 'GabbyAndTyBeforeInterview',
+  // 'GabbyAndTyAfterInterview' — porté 1:1 décomp tv.c:979 ci-bas (batch B27).
+  'GabbyAndTyBeforeInterview',
   // 'GabbyAndTyGetLastBattleTrivia' — porté 1:1 décomp tv.c:1020 ci-bas.
   // 'GabbyAndTyGetBattleNum' — porté 1:1 décomp tv.c:996 ci-bas.
   // 'GabbyAndTyGetLastQuote' — porté 1:1 décomp tv.c:1009 ci-bas.
@@ -3347,6 +3348,45 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B27 batch — 1 special TV Gabby/Ty 1:1 strict ────────────────
+
+/** 1:1 décomp `GabbyAndTyAfterInterview` (tv.c:979-988) :
+ *  ```c
+ *  void GabbyAndTyAfterInterview(void) {
+ *      gSaveBlock1Ptr->gabbyAndTyData.battleTookMoreThanOneTurn2 = battleTookMoreThanOneTurn;
+ *      gSaveBlock1Ptr->gabbyAndTyData.playerLostAMon2 = playerLostAMon;
+ *      gSaveBlock1Ptr->gabbyAndTyData.playerUsedHealingItem2 = playerUsedHealingItem;
+ *      gSaveBlock1Ptr->gabbyAndTyData.playerThrewABall2 = playerThrewABall;
+ *      gSaveBlock1Ptr->gabbyAndTyData.onAir = TRUE;
+ *      gSaveBlock1Ptr->gabbyAndTyData.mapnum = gMapHeader.regionMapSectionId;
+ *      IncrementGameStat(GAME_STAT_GOT_INTERVIEWED);
+ *  }
+ *  ```
+ *  Promote interview data + set onAir + increment game stat.
+ *  Dette R3 partielle : mapnum stocke MAPSEC_* numeric ; nous avons le string,
+ *  on resolve via reverseDecompConstant MAPSEC_ ou skip si non extracted. */
+registerSpecial('GabbyAndTyAfterInterview', () => {
+  const data = gSaveBlock1Ptr.gabbyAndTyData;
+  if (data) {
+    data.battleTookMoreThanOneTurn2 = data.battleTookMoreThanOneTurn;
+    data.playerLostAMon2 = data.playerLostAMon;
+    data.playerUsedHealingItem2 = data.playerUsedHealingItem;
+    data.playerThrewABall2 = data.playerThrewABall;
+    data.onAir = 1;
+    // 1:1 strict mapnum = gMapHeader.regionMapSectionId (= u16 décomp).
+    // Notre regionMapSectionId est STRING MAPSEC_X. Bridge via reverseDecompConstant.
+    const mapsecName = gMapHeader?.regionMapSectionId;
+    if (mapsecName) {
+      const numericId = resolveDecompConstant(mapsecName);
+      if (numericId !== undefined) data.mapnum = numericId & 0xFF;
+    }
+  }
+  // IncrementGameStat(GAME_STAT_GOT_INTERVIEWED=20) = gSaveBlock1Ptr.gameStats[20]++.
+  if (gSaveBlock1Ptr.gameStats) {
+    gSaveBlock1Ptr.gameStats[20] = (gSaveBlock1Ptr.gameStats[20] ?? 0) + 1;
+  }
 });
 
 // ─── Session B26 batch — 1 special Decoration 1:1 strict ──────────────────
