@@ -180,6 +180,9 @@ import {
 
 // DecompSprite interface vit dans decomp-runtime.ts (= source de vÃ©ritÃ© Sprite).
 import type { DecompSprite } from './decomp-runtime';
+import {
+  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
+} from './decomp-data/include/gba/io_reg-data';
 
 import {
   CreateObjectGraphicsSprite,
@@ -368,11 +371,8 @@ const MODEWINDOW_ANIM_TO_ALPHABET  = 2;
 const MODEWINDOW_ANIM_TO_HIDDEN    = 3;
 const MODEWINDOW_ANIM_TRANSITION   = 4;
 
-// GBA window/dispcnt bits â€” 1:1 dÃ©fini local pour ne pas dÃ©pendre de gba-io-regs.
-// Valeurs alignÃ©es sur include/gba/io_reg.h decomp.
-const DISPCNT_OBJ_1D_MAP = 0x40;
-const DISPCNT_OBJ_ON     = 0x1000;
-const DISPCNT_WIN0_ON    = 0x2000;
+// GBA window/dispcnt bits — 1:1 décomp `include/gba/io_reg.h`.
+// Migrés vers imports decomp-data io_reg-data.ts (cleanup B7).
 const WININ_WIN0_BG0     = 0x01;
 const WININ_WIN0_BG1     = 0x02;
 const WININ_WIN0_BG2     = 0x04;

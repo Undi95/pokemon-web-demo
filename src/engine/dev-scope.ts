@@ -56,8 +56,10 @@ import * as decompBridge from './decomp-bridge';
 // Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
 // gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
 import { gSaveBlock1Ptr as _sb1 } from './save-block-state';
+import { MAP_OFFSET } from './decomp-data/include/fieldmap-data';
 
-const MAP_OFFSET = 7;  // 1:1 décomp constants/global.h
+// 1:1 décomp `MAP_OFFSET = 7` (include/fieldmap.h:9).
+// Migré vers import decomp-data fieldmap-data.ts (cleanup B7).
 
 /** Reverse map metatileBehavior value → name (= 'MB_LONG_GRASS' pour 3).
  *  Construit au boot par scan de decomp-bridge exports. */

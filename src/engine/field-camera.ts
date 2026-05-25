@@ -61,6 +61,7 @@ import {
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { getRuntime } from './decomp-globals';
 import { gSaveBlock1Ptr } from './gba-menu-system';
+import { CONNECTION_NONE, CONNECTION_INVALID } from './decomp-data/include/constants/global-data';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 
@@ -625,8 +626,9 @@ function CameraMove(deltaX: number, deltaY: number): boolean {
   const predictedPlayerGBY = _camPos.y + 7 + deltaY;
   const direction = GetMapBorderIdAt(predictedPlayerGBX, predictedPlayerGBY);
 
-  // CONNECTION_NONE (0) ou CONNECTION_INVALID (0xFF) : pas de border cross.
-  if (direction === 0 || direction === 0xFF) {
+  // CONNECTION_NONE (0) ou CONNECTION_INVALID (-1) : pas de border cross.
+  // Migré vers imports decomp-data global-data.ts (cleanup B7).
+  if (direction === CONNECTION_NONE || direction === CONNECTION_INVALID) {
     // 1:1 décomp `pos += delta` (fieldmap.c:658-659).
     _camPos.x += deltaX;
     _camPos.y += deltaY;

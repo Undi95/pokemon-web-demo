@@ -31,11 +31,8 @@ import { getRuntime } from './decomp-globals';
 import { gFieldCamera } from './field-camera';
 
 // ─── Directions → anim index (1:1 décomp sAnimTable_Standard) ───────────────
-
-const DIR_SOUTH = 1;
-const DIR_NORTH = 2;
-const DIR_WEST = 3;
-const DIR_EAST = 4;
+// Migré vers imports decomp-data global-data.ts (cleanup B7).
+import { DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './decomp-data/include/constants/global-data';
 
 /** 1:1 décomp `sFaceDirectionAnimNums` (event_object_movement.c). */
 function _directionToAnimIdx(direction: number): number {

@@ -60,6 +60,9 @@ import { GetSaveBlock1 } from './save-system';
 import { gSaveBlock1Ptr } from './gba-menu-system';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 import {
+  CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,
+} from './decomp-data/include/constants/global-data';
+import {
   MetatileBehavior_IsLongGrass_Duplicate,
   MetatileBehavior_IsLongGrassSouthEdge,
 } from './metatile-behavior-helpers';
@@ -993,9 +996,8 @@ function IsPosInConnectingMap(connection: MapConnection, x: number, y: number): 
  *  vers la connection map.
  *
  *  Le décomp utilise `CONNECTION_DIVE = 5` et `CONNECTION_EMERGE = 6` pour
- *  surf/dive. Notre port skip ces directions (= pas de surf/dive supportés). */
-const CONNECTION_DIVE = 5;
-const CONNECTION_EMERGE = 6;
+ *  surf/dive. Notre port skip ces directions (= pas de surf/dive supportés).
+ *  Migré vers imports decomp-data global-data.ts (cleanup B7). */
 export function GetMapConnectionAtPos(x: number, y: number): MapConnection | null {
   if (!gMapHeader || !gMapHeader.connections) return null;
   for (const connection of gMapHeader.connections) {
@@ -1039,8 +1041,11 @@ export function GetMapBorderIdAt(x: number, y: number): number {
   }
 }
 
-const CONNECTION_NONE = 0;
-const CONNECTION_INVALID = 0xFF;
+// 1:1 décomp `CONNECTION_NONE = 0` et `CONNECTION_INVALID = -1` (include/constants/global.h:147-148).
+// Migré vers imports decomp-data global-data.ts (cleanup B7).
+// FIX BUG : décomp utilise -1 signed (= 0xFF dans u8 cast), nous utilisons
+// directement -1 number TS. Les `=== CONNECTION_INVALID` compares restent
+// strict mais valent maintenant `=== -1` (= match le décomp s32 return).
 
 // ─── 1:1 décomp camera focus / coords helpers (fieldmap.c:792-814) ──────────
 //

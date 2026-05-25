@@ -37,15 +37,11 @@ export const ANIM_STD_GO_FASTEST_EAST  = 15;
 // Diagonal directions reuse 4-cardinal anims in décomp.
 
 // Direction enum offsets (= 1:1 décomp `include/constants/global.h`).
-const DIR_NONE = 0;
-const DIR_SOUTH = 1;
-const DIR_NORTH = 2;
-const DIR_WEST = 3;
-const DIR_EAST = 4;
-const DIR_SOUTHWEST = 5;
-const DIR_SOUTHEAST = 6;
-const DIR_NORTHWEST = 7;
-const DIR_NORTHEAST = 8;
+// Migré vers imports decomp-data global-data.ts (cleanup B7).
+import {
+  DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
+  DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
+} from './decomp-data/include/constants/global-data';
 
 // ─── sMoveDirectionAnimNums (= event_object_movement.c) ─────────────────────
 /** 1:1 décomp `event_object_movement.c sMoveDirectionAnimNums[]`.

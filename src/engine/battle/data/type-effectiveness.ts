@@ -23,24 +23,13 @@ export const TYPE_FORESIGHT = 0xFE;
 export const TYPE_ENDTABLE  = 0xFF;
 
 // 1:1 décomp constants `include/constants/pokemon.h` TYPE_*.
-const TYPE_NORMAL   = 0;
-const TYPE_FIGHTING = 1;
-const TYPE_FLYING   = 2;
-const TYPE_POISON   = 3;
-const TYPE_GROUND   = 4;
-const TYPE_ROCK     = 5;
-const TYPE_BUG      = 6;
-const TYPE_GHOST    = 7;
-const TYPE_STEEL    = 8;
-// TYPE_MYSTERY = 9 — pas dans le chart
-const TYPE_FIRE     = 10;
-const TYPE_WATER    = 11;
-const TYPE_GRASS    = 12;
-const TYPE_ELECTRIC = 13;
-const TYPE_PSYCHIC  = 14;
-const TYPE_ICE      = 15;
-const TYPE_DRAGON   = 16;
-const TYPE_DARK     = 17;
+// Migré vers imports decomp-data pokemon-data.ts (cleanup B7).
+// TYPE_MYSTERY = 9 — pas dans le chart.
+import {
+  TYPE_NORMAL, TYPE_FIGHTING, TYPE_FLYING, TYPE_POISON, TYPE_GROUND,
+  TYPE_ROCK, TYPE_BUG, TYPE_GHOST, TYPE_STEEL, TYPE_FIRE, TYPE_WATER,
+  TYPE_GRASS, TYPE_ELECTRIC, TYPE_PSYCHIC, TYPE_ICE, TYPE_DRAGON, TYPE_DARK,
+} from '../../decomp-data/include/constants/pokemon-data';
 
 /** 1:1 décomp `gTypeEffectiveness[336]` (battle_main.c:335-449). */
 export const gTypeEffectiveness: ReadonlyArray<number> = [
