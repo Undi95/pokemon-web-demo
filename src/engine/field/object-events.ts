@@ -30,10 +30,6 @@ import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system
 // dérive le template depuis frameWidth/frameHeight catalog (= équivalent
 // fonctionnel à `graphicsInfo->oam`).
 import { GetBaseOamForDimensions } from './object-event-base-oam';
-// 1:1 STRICT décomp `SeekSpriteAnim` (sprite.c:1359) : utilisé par notre port
-// G5 de SetStepAnimHandleAlternation pour alterner walk1↔walk2 entre 2 steps
-// consécutifs (= mère voisin "lévitait" sans alternance des pieds).
-import { SeekSpriteAnim } from '../system/sprite-animation';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
@@ -1720,42 +1716,15 @@ function updateNpcSpriteFrame(rt: DecompRuntime, npc: ObjectEvent): void {
     // ne touche PAS sprite.animNum (= reste 0 = sAnimTable_Inanimate single
     // entry). Sinon corruption visuelle car animNum 4..7 hors range table.
     if (!npc.inanimate) {
-      const isWalking = npc.walkFramesLeft > 0;
-      const targetAnimNum = isWalking
+      const targetAnimNum = npc.walkFramesLeft > 0
         ? GetMoveDirectionAnimNum(npc.walkDirection !== DIR_NONE ? npc.walkDirection : npc.facingDirection)
         : GetFaceDirectionAnimNum(npc.facingDirection);
       if (sprite.animNum !== targetAnimNum) {
         sprite.animNum = targetAnimNum;
+        sprite.animBeginning = true;
         sprite.animEnded = false;
-        if (isWalking) {
-          // 1:1 STRICT décomp `SetStepAnimHandleAlternation`
-          // (event_object_movement.c:4582-4598) pour `sAnimTable_Standard`
-          // (= sStepAnimTables[1].animPos = {1, 3, 0, 2}) :
-          //   if (animCmdIndex == 1) animCmdIndex = 2;   // post-left → right foot
-          //   else if (animCmdIndex == 3) animCmdIndex = 0;   // post-right → left foot
-          //   SeekSpriteAnim(sprite, animCmdIndex);
-          //
-          // Sans cette alternance, chaque nouveau step reset animCmdIndex à 0
-          // (= toujours left foot frame 7) → le NPC paraît "léviter" car il
-          // n'alterne pas les pieds entre 2 steps consécutifs (user G5).
-          //
-          // Note : applicable à TOUS les NPCs avec sAnimTable_Standard /
-          // sAnimTable_QuintyPlump / sAnimTable_BrendanMayNormal / etc. qui ont
-          // animPos = {1, 3, 0, 2} (= 6 des 7 entries de sStepAnimTables).
-          // sAnimTable_Inanimate skip car !npc.inanimate gate au-dessus.
-          let targetCmdIdx = sprite.animCmdIndex;
-          if (sprite.animCmdIndex === 1) targetCmdIdx = 2;
-          else if (sprite.animCmdIndex === 3) targetCmdIdx = 0;
-          // 1:1 décomp `SeekSpriteAnim` (sprite.c:1359-1371) :
-          //   animBeginning = FALSE; animDelayCounter = 0;
-          //   animCmdIndex = idx - 1; ContinueAnim → +1 + ApplyAnimFrame.
-          SeekSpriteAnim(rt, sprite as never, targetCmdIdx);
-        } else {
-          // Standing / face direction : reset normal à cmd 0 (= face frame).
-          sprite.animBeginning = true;
-          sprite.animCmdIndex = 0;
-          sprite.animDelayCounter = 0;
-        }
+        sprite.animCmdIndex = 0;
+        sprite.animDelayCounter = 0;
       }
     }
     return;
