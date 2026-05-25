@@ -69,6 +69,10 @@ const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { TEXT_SKIP_DRAW } from './decomp-data/include/text-data';
+import {
+  PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
+  PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING,
+} from './decomp-data/include/constants/party_menu-data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
 const STD_FRAME_TILE = 0x4F;
@@ -345,11 +349,9 @@ let _lastSelectedSlot = 0;
  *  PARTY_ACTION_CHOOSE_MON = défaut ; PARTY_ACTION_SWITCH = on choisit le
  *  2e mon pour la permutation (option ORDRE) ; SWITCHING = anim slide en
  *  cours (incrément 2). */
-const PARTY_ACTION_CHOOSE_MON = 0;   // 1:1 constants/party_menu.h:68
-const PARTY_ACTION_USE_ITEM = 3;     // 1:1 constants/party_menu.h:71 (item-use mode)
-const PARTY_ACTION_SWITCH = 8;       // 1:1 constants/party_menu.h:76 (PAS 4 = ABILITY_PREVENTS)
-const PARTY_ACTION_SWITCHING = 9;    // 1:1 constants/party_menu.h:77 (anim slide en cours)
-let _partyAction = PARTY_ACTION_CHOOSE_MON;
+// 1:1 décomp constants/party_menu.h:67-77 — importé depuis decomp-data au top
+// (= PARTY_ACTION_CHOOSE_MON/USE_ITEM/SWITCH/SWITCHING + reste de l'enum).
+let _partyAction: number = PARTY_ACTION_CHOOSE_MON;
 /** 1:1 décomp `gPartyMenu.slotId2` (= 1er mon mémorisé pour la permutation). */
 let _slotId2 = 0;
 let _graphicsReady = false;

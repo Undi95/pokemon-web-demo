@@ -143,14 +143,15 @@ import {
   START_BUTTON, SELECT_BUTTON, A_BUTTON, B_BUTTON,
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
 } from './decomp-data/include/gba/io_reg-data';
+import { ENUM_PLAYER_0 } from './decomp-data/include/bike-data';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;
 const T_TILE_TRANSITION  = 1;
 const T_TILE_CENTER      = 2;
 
-// 1:1 décomp PLAYER_SPEED_FASTEST (= include/constants/...).
-const PLAYER_SPEED_FASTEST = 4;
+// 1:1 décomp PLAYER_SPEED_FASTEST (= bike.h enum).
+const PLAYER_SPEED_FASTEST = ENUM_PLAYER_0.PLAYER_SPEED_FASTEST;
 
 /** 1:1 STRICT décomp `GetPlayerCurMetatileBehavior` (field_control_avatar.c:212-218) :
  *    PlayerGetDestCoords(&x, &y);
