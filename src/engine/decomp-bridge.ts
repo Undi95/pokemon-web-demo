@@ -860,12 +860,13 @@ export function SET_TILE(ptr: any, posY: number, posX: number, tile: number): vo
   }
 }
 
-/** 1:1 décomp `src/intro.c:VINE_STATE_TIMER` macro :
- *    Custom intro task data accessor — used in intro.c to read task state.
- *    Specific to intro1 cinematic. Bridge as identity until intro is refactored. */
-export function VINE_STATE_TIMER(_taskData: any): number {
-  // TODO 1:1 : need gTasks[].data layout from intro.c. Placeholder.
-  return 0;
+/** 1:1 décomp `src/pokemon_jump.c:112` macro `VINE_STATE_TIMER(vineState)` :
+ *      #define VINE_STATE_TIMER(vineState) (((vineState) << 8) | 0xFF)
+ *  (Note : ancien commentaire mentionnait intro.c — c'est pokemon_jump.c.
+ *  Bridge mémorisé ici pour callers décomp du minigame ; le subsystem complet
+ *  Pokemon Jump est U-tier. Le macro est portable triviallement.) */
+export function VINE_STATE_TIMER(vineState: number): number {
+  return ((vineState << 8) | 0xFF) >>> 0;
 }
 
 // ─── CRC / multiboot (1:1 décomp `include/multiboot.h`) ───────────────────────
@@ -2124,11 +2125,38 @@ export function GetQuestionnaireWordsPtr(): any { return null; }
 /** 1:1 décomp `src/script.c GetObjectEventScriptPointerPlayerFacing()`. */
 export function GetObjectEventScriptPointerPlayerFacing(): any { return null; }
 
-/** 1:1 décomp `src/battle_main.c CALC_STAT(base, iv, ev, level, statIndex, nature)`.
- *  Compute a pokemon stat 1:1 from base + IVs + EVs + level + nature.
- *  Need full nature table. Stub returns base for now. */
-export function CALC_STAT(base: number, _iv: number, _ev: number, _level: number, _statIndex: number, _nature?: number): number {
-  return base;
+/** 1:1 décomp `src/pokemon.c:2815` macro CALC_STAT(base, iv, ev, statIndex, field).
+ *  Notre signature explicite : `(base, iv, ev, level, statIndex, nature?)`.
+ *
+ *  Formule 1:1 décomp :
+ *      n = (((2 * baseStat + iv + ev / 4) * level) / 100) + 5;
+ *      n = ModifyStatByNature(nature, n, statIndex);
+ *
+ *  ModifyStatByNature (pokemon.c:5865) skip si statIndex == STAT_HP (= 0) ou
+ *  > NUM_NATURE_STATS (= 5). Sinon +10% / -10% / no-op selon gNatureStatTable.
+ *  Table portée 1:1 dans battle/party-storage.ts:_NATURE_STAT_TABLE (= privé) ;
+ *  ce helper duplique la même formule (= callers OW vs battle ont leur version
+ *  inline ; ce bridge sert aux callers décomp génériques). */
+export function CALC_STAT(base: number, iv: number, ev: number, level: number, statIndex: number, nature?: number): number {
+  // 1:1 pokemon.c:2818 — careful integer division order (= n+= ev/4 BEFORE *level).
+  let n = Math.floor(((2 * base + iv + Math.floor(ev / 4)) * level) / 100) + 5;
+  // 1:1 pokemon.c:5879-5894 — only modify ATK/DEF/SPEED/SPATK/SPDEF (= statIndex 1..5).
+  if (nature !== undefined && statIndex > 0 && statIndex <= 5) {
+    // gNatureStatTable indexé 0..24 × 0..4 (= statIndex - 1 car HP skip).
+    const NATURE_TABLE: ReadonlyArray<ReadonlyArray<number>> = [
+      [ 0,  0,  0,  0,  0],[+1, -1,  0,  0,  0],[+1,  0, -1,  0,  0],[+1,  0,  0, -1,  0],[+1,  0,  0,  0, -1],
+      [-1, +1,  0,  0,  0],[ 0,  0,  0,  0,  0],[ 0, +1, -1,  0,  0],[ 0, +1,  0, -1,  0],[ 0, +1,  0,  0, -1],
+      [-1,  0, +1,  0,  0],[ 0, -1, +1,  0,  0],[ 0,  0,  0,  0,  0],[ 0,  0, +1, -1,  0],[ 0,  0, +1,  0, -1],
+      [-1,  0,  0, +1,  0],[ 0, -1,  0, +1,  0],[ 0,  0, -1, +1,  0],[ 0,  0,  0,  0,  0],[ 0,  0,  0, +1, -1],
+      [-1,  0,  0,  0, +1],[ 0, -1,  0,  0, +1],[ 0,  0, -1,  0, +1],[ 0,  0,  0, -1, +1],[ 0,  0,  0,  0,  0],
+    ];
+    if (nature >= 0 && nature < 25) {
+      const mod = NATURE_TABLE[nature][statIndex - 1];
+      if (mod > 0) n = Math.floor(n * 110 / 100);
+      else if (mod < 0) n = Math.floor(n * 90 / 100);
+    }
+  }
+  return n & 0xFFFF;  // u16 truncation 1:1 décomp.
 }
 
 /** 1:1 décomp `src/battle_dome.c BUFFER_PARTY_VS_SCREEN_STATUS(...)`. */
