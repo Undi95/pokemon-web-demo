@@ -53,6 +53,9 @@ import { GBA_BUTTON_MASKS, type GbaButton } from '../util/key-bindings';
 import { setHeldKeysOverride, clearHeldKeysOverride } from './input-handler';
 import type { DecompRuntime } from './decomp-runtime';
 import * as decompBridge from './decomp-bridge';
+// Devtools post-refactor 2026-05-23 : flags/vars vivent direct dans
+// gSaveBlock1Ptr (= class GameState éliminée). Import direct pour _flags()/_vars().
+import { gSaveBlock1Ptr as _sb1 } from './save-block-state';
 
 const MAP_OFFSET = 7;  // 1:1 décomp constants/global.h
 
@@ -106,30 +109,44 @@ function _g<T = unknown>(name: string): T | undefined {
   return (globalThis as Record<string, unknown>)[name] as T | undefined;
 }
 
+/** Helper 1:1 strict (post R3 refactor) : lit position player depuis le bon
+ *  endroit. Décomp `gPlayerAvatar` struct contient flags/runningState/etc.
+ *  MAIS pas les coords ; celles-ci vivent sur `gObjectEvents[pa.objectEventId]
+ *  .currentCoords{X,Y}`. Facing aussi sur l'objectEvent.
+ *  Notre projet : `gSaveBlock1Ptr.pos.{x,y}` est la source unique LOGIQUE
+ *  (= map JSON coords, sync via Proxy). __facing aussi web-stocké sur sb1. */
+function _readPlayerPos(): { x?: number; y?: number; facing?: number } {
+  const sb1 = _sb1 as { pos?: { x?: number; y?: number }; __facing?: number };
+  return {
+    x: sb1.pos?.x,
+    y: sb1.pos?.y,
+    facing: sb1.__facing,
+  };
+}
+
 /** Returns "MAP_X (col, row) facing DIR" string. */
 function _where(): string {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
   // Session 133 fix : `gMapHeader.id` est synced après traversal de connection
-  // (= aller Littleroot → Route101 via exit nord). Les `gameState.map.name` /
-  // `gSaveBlock1Ptr.location.mapName` restent figés sur la map primaire du
-  // warp (= "MAP_LITTLEROOT_TOWN" même quand on est physiquement sur Route 101).
+  // (= aller Littleroot → Route101 via exit nord). `gSaveBlock1Ptr.location.mapName`
+  // reste figé sur la map primaire du warp.
+  // Refactor 2026-05-23 : gameState éliminé → fallback __mapId direct sb1.
   const hdr = _g<{ id?: string }>('gMapHeader');
-  const gs = _g<{
-    data?: { location?: { __mapId?: string; mapName?: string } };
-    map?: { name?: string };
-    location?: { mapName?: string };
-  }>('gameState');
+  const sb1 = _sb1 as { __mapId?: string; location?: { mapName?: string } };
   const mapId = hdr?.id
-    ?? gs?.map?.name
-    ?? gs?.location?.mapName
-    ?? gs?.data?.location?.__mapId
-    ?? gs?.data?.location?.mapName
+    ?? sb1.__mapId
+    ?? sb1.location?.mapName
     ?? '?';
   if (!pa) return `${mapId} (no avatar)`;
-  return `${mapId} (${pa.x},${pa.y}) facing ${_DIR_NAMES[pa.facing ?? 0]}`;
+  // Refactor 2026-05-23 : coords/facing depuis sb1.pos + __facing (= source
+  // unique LOGIQUE post R3 cleanup), pas gPlayerAvatar.x/y (qui n'existent pas).
+  const pos = _readPlayerPos();
+  return `${mapId} (${pos.x},${pos.y}) facing ${_DIR_NAMES[pos.facing ?? 0]}`;
 }
 
-/** Session 133 add : version objet structurée pour query précis. */
+/** Session 133 add : version objet structurée pour query précis.
+ *  Post refactor 2026-05-23 : coords/facing depuis sb1.pos/__facing (source
+ *  unique LOGIQUE) ; pa = state machine bits seulement. */
 function _whereObj(): Record<string, unknown> {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
   const hdr = _g<{
@@ -138,12 +155,13 @@ function _whereObj(): Record<string, unknown> {
     regionMapSectionId?: string;
     music?: string;
   }>('gMapHeader');
-  const sb1 = _g<{ location?: { mapGroup?: number; mapNum?: number } }>('gSaveBlock1Ptr');
+  const sb1 = _sb1 as { location?: { mapGroup?: number; mapNum?: number } };
+  const pos = _readPlayerPos();
   return {
     map: hdr?.id ?? '?',
-    x: pa?.x,
-    y: pa?.y,
-    facing: _DIR_NAMES[pa?.facing ?? 0],
+    x: pos.x,
+    y: pos.y,
+    facing: _DIR_NAMES[pos.facing ?? 0],
     layoutId: hdr?.mapLayoutId,
     regionMapSection: hdr?.regionMapSectionId,
     music: hdr?.music,
@@ -154,16 +172,19 @@ function _whereObj(): Record<string, unknown> {
   };
 }
 
-/** Snapshot complet de l'état overworld pour comparaison frame-by-frame. */
+/** Snapshot complet de l'état overworld pour comparaison frame-by-frame.
+ *  Post refactor 2026-05-23 : flags/vars/party lus direct depuis gSaveBlock1Ptr
+ *  (= 1:1 décomp gSaveBlock1Ptr deref pattern). class GameState éliminée. */
 function _see(): Record<string, unknown> {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
-  const gs = _g<{
-    data?: { location?: Record<string, unknown> };
-    party?: unknown[];
-    getAllFlagNames?: () => string[];
-    getAllVars?: () => Record<string, number>;
-    playerName?: string;
-  }>('gameState');
+  const sb1 = _sb1 as {
+    location?: Record<string, unknown>;
+    playerParty?: unknown[];
+    flags?: Record<string, boolean>;
+    vars?: Record<string, number>;
+  };
+  const flags = sb1.flags ?? {};
+  const vars = sb1.vars ?? {};
   const objs = _g<ObjectEvent[]>('__gObjectEvents') ?? [];
   const activeNpcs = objs.filter(o => o?.active).map(o => ({
     localId: o.localIdRaw ?? `id${o.localId}`,
@@ -175,22 +196,23 @@ function _see(): Record<string, unknown> {
     visible: !o.invisible,
     walking: (o.walkFramesLeft ?? 0) > 0,
   }));
+  const playerPos = _readPlayerPos();
   return {
     where: _where(),
     player: pa
-      ? { x: pa.x, y: pa.y, facing: _DIR_NAMES[pa.facing ?? 0],
+      ? { x: playerPos.x, y: playerPos.y, facing: _DIR_NAMES[playerPos.facing ?? 0],
           gender: pa.gender, walking: (pa.stepFramesLeft ?? 0) > 0,
           elevation: pa.currentElevation }
       : null,
-    location: gs?.data?.location,
+    location: sb1.location,
     activeNpcs: activeNpcs.length,
     npcsList: activeNpcs,
-    partyCount: gs?.party?.length ?? 0,
-    flagsCount: gs?.getAllFlagNames?.().length ?? 0,
-    introState: gs?.getAllVars?.()['VAR_LITTLEROOT_INTRO_STATE'] ?? 0,
-    routeState: gs?.getAllVars?.()['VAR_ROUTE101_STATE'] ?? 0,
-    rivalState: gs?.getAllVars?.()['VAR_LITTLEROOT_RIVAL_STATE'] ?? 0,
-    birchLabState: gs?.getAllVars?.()['VAR_BIRCH_LAB_STATE'] ?? 0,
+    partyCount: sb1.playerParty?.length ?? 0,
+    flagsCount: Object.keys(flags).filter(k => flags[k]).length,
+    introState: vars['VAR_LITTLEROOT_INTRO_STATE'] ?? 0,
+    routeState: vars['VAR_ROUTE101_STATE'] ?? 0,
+    rivalState: vars['VAR_LITTLEROOT_RIVAL_STATE'] ?? 0,
+    birchLabState: vars['VAR_BIRCH_LAB_STATE'] ?? 0,
   };
 }
 
@@ -229,8 +251,10 @@ function _dialog(): { open: boolean; text?: string; mode?: string } {
 }
 
 function _party(): Array<Record<string, unknown>> {
-  const gs = _g<{ party?: unknown[] }>('gameState');
-  return (gs?.party ?? []).map((m: unknown, i: number) => {
+  // 1:1 strict refactor 2026-05-23 : party vit direct dans gSaveBlock1Ptr.playerParty
+  // (= 1:1 décomp gPlayerParty[6]).
+  const sb1 = _sb1 as { playerParty?: unknown[] };
+  return (sb1.playerParty ?? []).map((m: unknown, i: number) => {
     // Session 127 fix : essayer plusieurs aliases pour HP / moves.name (la
     // structure interne stocke `currentHp`/`hpCurrent` au lieu de `hp`,
     // et les moves ont parfois `move`/`id`/`moveId` au lieu de `name`).
@@ -260,17 +284,29 @@ function _party(): Array<Record<string, unknown>> {
 }
 
 function _bag(): Record<string, Array<{ item: string; qty: number }>> {
-  const gs = _g<{ bag?: Record<string, Array<{ itemKey?: string; quantity?: number }>> }>('gameState');
-  const bag = gs?.bag ?? {};
+  // 1:1 strict refactor 2026-05-23 : bag vit direct dans gSaveBlock1Ptr.bagPocket_*
+  // (= 1:1 décomp gBagPockets[5] avec 5 fields nommés). class GameState éliminée.
+  const sb1 = _sb1 as {
+    bagPocket_Items?: Array<{ itemId?: string; itemKey?: string; quantity?: number }>;
+    bagPocket_KeyItems?: Array<{ itemId?: string; itemKey?: string; quantity?: number }>;
+    bagPocket_PokeBalls?: Array<{ itemId?: string; itemKey?: string; quantity?: number }>;
+    bagPocket_TMHM?: Array<{ itemId?: string; itemKey?: string; quantity?: number }>;
+    bagPocket_Berries?: Array<{ itemId?: string; itemKey?: string; quantity?: number }>;
+  };
+  const pockets: Record<string, Array<{ itemId?: string; itemKey?: string; quantity?: number }>> = {
+    Items: sb1.bagPocket_Items ?? [],
+    KeyItems: sb1.bagPocket_KeyItems ?? [],
+    PokeBalls: sb1.bagPocket_PokeBalls ?? [],
+    TMHM: sb1.bagPocket_TMHM ?? [],
+    Berries: sb1.bagPocket_Berries ?? [],
+  };
   const out: Record<string, Array<{ item: string; qty: number }>> = {};
-  for (const [pocket, items] of Object.entries(bag)) {
-    if (!Array.isArray(items)) continue;
-    // Session 127 fix : filter pour ne montrer QUE les slots non-vides (avant on
-    // retournait 16-30 slots vides par pocket = bruit énorme dans la console).
+  for (const [pocket, items] of Object.entries(pockets)) {
+    // Filter pour ne montrer QUE les slots non-vides.
     out[pocket] = items
-      .filter((it) => it?.itemKey && (it.quantity ?? 0) > 0)
+      .filter((it) => (it?.itemId || it?.itemKey) && (it.quantity ?? 0) > 0)
       .map((it) => ({
-        item: it?.itemKey?.replace(/^ITEM_/, '') ?? '?',
+        item: (it?.itemId ?? it?.itemKey ?? '?').replace(/^ITEM_/, ''),
         qty: it?.quantity ?? 0,
       }));
   }
@@ -278,15 +314,18 @@ function _bag(): Record<string, Array<{ item: string; qty: number }>> {
 }
 
 function _flags(filterPrefix?: string): string[] {
-  const gs = _g<{ getAllFlagNames?: () => string[] }>('gameState');
-  const all = gs?.getAllFlagNames?.() ?? [];
+  // 1:1 strict (session 2026-05-23 refactor) : flags vivent direct dans
+  // gSaveBlock1Ptr.flags (= Record<string, boolean>). Ancien `gameState.getAllFlagNames`
+  // wrapper éliminé. Iter direct sur les keys.
+  const flags = (_sb1 as { flags?: Record<string, boolean> }).flags ?? {};
+  const all = Object.keys(flags).filter(k => flags[k]);
   if (filterPrefix) return all.filter(f => f.startsWith(filterPrefix));
   return all;
 }
 
 function _vars(): Record<string, number> {
-  const gs = _g<{ getAllVars?: () => Record<string, number> }>('gameState');
-  const all = gs?.getAllVars?.() ?? {};
+  // 1:1 strict : vars vivent direct dans gSaveBlock1Ptr.vars.
+  const all = (_sb1 as { vars?: Record<string, number> }).vars ?? {};
   // Filter out zero-value vars to reduce noise.
   const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(all)) {
