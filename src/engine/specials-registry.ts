@@ -709,11 +709,15 @@ registerSpecial('PetalburgGymUnlockRoomDoors', () => { /* no-op */ });
 
 // ─── Iter8 — extended-game (Rustboro, Devon Corp) gap fillers ──────────────
 
-/** 1:1 décomp `FoundBlackGlasses` (item.c) — flag check pour Black Glasses
- *  trouvées (= early-game item find on Route 116 cave). */
+/** 1:1 décomp `FoundBlackGlasses` (field_specials.c:1514-1517) :
+ *  ```c
+ *  bool8 FoundBlackGlasses(void) {
+ *      return FlagGet(FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES);
+ *  }
+ *  ```
+ *  Simple FlagGet sur flag hidden item Route 116 cave. */
 registerSpecial('FoundBlackGlasses', () => {
-  // Stub : returns 0 (= not found yet) for early-game flow.
-  return 0;
+  return FlagGet('FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES') ? 1 : 0;
 });
 
 /** 1:1 décomp `ScriptMenu_CreateStartMenuForPokenavTutorial` (start_menu.c) —
