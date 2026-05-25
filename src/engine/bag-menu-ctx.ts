@@ -35,6 +35,7 @@ import type { DecompTask } from './decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { reverseDecompConstant } from './decomp-constants';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
@@ -770,9 +771,30 @@ function ItemMenu_Toss(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** STUB ItemMenu_Register — toggle gSaveBlock1.registeredItem. */
+/** 1:1 décomp `ItemMenu_Register(u8 taskId)` (item_menu.c:1916-1931) :
+ *      if (gSaveBlock1Ptr->registeredItem == gSpecialVar_ItemId)
+ *          gSaveBlock1Ptr->registeredItem = ITEM_NONE;
+ *      else
+ *          gSaveBlock1Ptr->registeredItem = gSpecialVar_ItemId;
+ *      DestroyListMenuTask + LoadBagItemListBuffers + ListMenuInit + return list.
+ *  Notre port : update saveBlock1.registeredItem direct + sync bridge string
+ *  __registeredItemKey + retour liste via _returnToList. */
 function ItemMenu_Register(task: DecompTask): void {
   RemoveContextWindow();
+  const itemId = gSpecialVar.ItemId;
+  if (gSaveBlock1Ptr.registeredItem === itemId) {
+    gSaveBlock1Ptr.registeredItem = 0;  // ITEM_NONE
+    gSaveBlock1Ptr.__registeredItemKey = '';
+  } else {
+    gSaveBlock1Ptr.registeredItem = itemId;
+    // Bridge web-port string key sync.
+    if (itemId !== 0) {
+      const itemKey = reverseDecompConstant(itemId, 'ITEM_');
+      gSaveBlock1Ptr.__registeredItemKey = itemKey ?? '';
+    } else {
+      gSaveBlock1Ptr.__registeredItemKey = '';
+    }
+  }
   _returnToList(task);
 }
 
