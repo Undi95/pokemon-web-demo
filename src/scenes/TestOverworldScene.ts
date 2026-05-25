@@ -16,9 +16,9 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations } from '../engine/decomp-globals';
-import { exposeGbaGlobals } from '../engine/gba-global-scope';
+import { DecompRuntime, InitKeys, REG_OFFSET_DISPCNT } from '../engine/system/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations } from '../engine/system/decomp-globals';
+import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
 import {
   loadMapByName,
   InitMap,
@@ -35,8 +35,8 @@ import {
   CONNECTION_WEST,
   CONNECTION_EAST,
   gMapHeader,
-} from '../engine/map-loader';
-import type { MapHeader, WarpEvent } from '../engine/map-loader';
+} from '../engine/field/map-loader';
+import type { MapHeader, WarpEvent } from '../engine/field/map-loader';
 import {
   DrawWholeMapView,
   ResetFieldCamera,
@@ -69,9 +69,9 @@ import {
   NOT_MOVING,
   T_NOT_MOVING,
   gPlayerAvatar,
-} from '../engine/player-avatar';
+} from '../engine/field/player-avatar';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../engine/save/save-block-state';
-import { SetObjectEventDirection, gObjectEvents } from '../engine/object-events';
+import { SetObjectEventDirection, gObjectEvents } from '../engine/field/object-events';
 import { CopyPartyAndObjectsFromSave, SetCurrentMap, LoadObjEventTemplatesFromHeader } from '../engine/save/load_save';
 import {
   SpawnObjectEventsOnMap,
@@ -84,10 +84,10 @@ import {
   preloadNpcGraphicsForMap,
   FreezeObjectEvents,
   UnfreezeAllNpcs as UnfreezeObjectEvents,
-} from '../engine/object-events';
-import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/movement-system';
-import { decideBootMode, preloadBootData } from '../engine/boot-mode';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
+} from '../engine/field/object-events';
+import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
+import { decideBootMode, preloadBootData } from '../engine/boot/boot-mode';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
 import {
   loadMapScripts,
@@ -109,8 +109,8 @@ import {
   getPlayerCoordsFromWarp,
   GetAdjustedInitialDirection,
   GetDynamicWarp,
-} from '../engine/warp-system';
-import type { WarpKind } from '../engine/warp-system';
+} from '../engine/field/warp-system';
+import type { WarpKind } from '../engine/field/warp-system';
 import {
   GetDoorSoundEffect,
   FieldAnimateDoorOpen,
@@ -129,7 +129,7 @@ import {
   tickEmoteSprites,
   DestroyAllEmoteSprites,
 } from '../engine/field/field-effect-emotes';
-import { UpdateTVScreensOnMap } from '../engine/tv-screen';
+import { UpdateTVScreensOnMap } from '../engine/ui/tv-screen';
 import {
   preloadTallGrassEffect,
   UpdateTallGrassEffects,
@@ -146,7 +146,7 @@ import {
   UpdateShadowSprite,
   DestroyShadowSprite,
 } from '../engine/field/field-effect-shadow';
-import { PlaySE } from '../engine/decomp-globals';
+import { PlaySE } from '../engine/system/decomp-globals';
 import {
   SE_EXIT,
   SE_WARP_IN,
@@ -156,31 +156,31 @@ import {
   TickFieldMessageBox,
   preloadStandardMenuPalette,
 } from '../engine/field/field-message-box';
-import { TickStartMenu } from '../engine/start-menu';
-import { TickBedroomPC } from '../engine/bedroom-pc';
-import { TickPCAnim } from '../engine/pc-anim';
-import { TickRegionMap } from '../engine/region-map';
-import { syncSubspriteOam } from '../engine/object-events';
-import { preloadFontData } from '../engine/gba-text-system';
-import { preloadTextWindowFrames } from '../engine/gba-text-window';
-import { PlayBGM, FillPalBufferBlack } from '../engine/decomp-globals';
-import { FadeScreen, FADE_FROM_BLACK } from '../engine/fade-screen';
+import { TickStartMenu } from '../engine/ui/start-menu';
+import { TickBedroomPC } from '../engine/ui/bedroom-pc';
+import { TickPCAnim } from '../engine/pokemon/pc-anim';
+import { TickRegionMap } from '../engine/field/region-map';
+import { syncSubspriteOam } from '../engine/field/object-events';
+import { preloadFontData } from '../engine/ui/gba-text-system';
+import { preloadTextWindowFrames } from '../engine/ui/gba-text-window';
+import { PlayBGM, FillPalBufferBlack } from '../engine/system/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from '../engine/system/fade-screen';
 import * as Songs from '../engine/decomp-data/include/constants/songs-data';
 // Side-effect import : registers Phase 4.5 opcode handlers.
 import '../engine/script/script-opcodes';
 // Side-effect import : registers gSpecials[] stubs (1:1 décomp scrcmd ScrCmd_special).
 import '../engine/script/specials-registry';
 // Side-effect import : registers pokemon_size_record specials (Seedot/Lotad).
-import '../engine/pokemon-size-record';
+import '../engine/pokemon/pokemon-size-record';
 // Side-effect import : registers secret_base specials (cur base helpers).
-import '../engine/secret-base';
-import { ShowMapNamePopup, preloadMapNames } from '../engine/map-name-popup';
+import '../engine/pokemon/secret-base';
+import { ShowMapNamePopup, preloadMapNames } from '../engine/field/map-name-popup';
 import { loadGameData, installDexDevtools } from '../engine/data/game-data';
 import {
   InitTilesetAnimations,
   UpdateTilesetAnimations,
   TransferTilesetAnimsBuffer,
-} from '../engine/tileset-anims';
+} from '../engine/field/tileset-anims';
 
 /** 1:1 décomp `GetWalkNormalMovementAction` (event_object_movement.c:4959,
  *  via `dirn_to_anim` macro). Map direction → walk_normal movement action
@@ -253,7 +253,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
     // → DUREE JEU "0:00" toujours. À call AU BOOT overworld pour que le tick
     // dans decomp-runtime.tickFixed soit actif.
-    void import('../engine/play-time-counter').then(({ PlayTimeCounter_Start }) => {
+    void import('../engine/pokemon/play-time-counter').then(({ PlayTimeCounter_Start }) => {
       PlayTimeCounter_Start();
       console.log('[TestOverworld] PlayTimeCounter_Start invoked');
     });
@@ -392,7 +392,7 @@ export class TestOverworldScene extends Phaser.Scene {
       // + camera wobble + door tile open). Lock player controls le temps que
       // le task soit terminé. Cf. truck-cinematic.ts pour les détails 1:1.
       if (boot.mode === 'newgame' && boot.mapId === 'MAP_INSIDE_OF_TRUCK') {
-        const { ExecuteTruckSequence } = await import('../engine/truck-cinematic');
+        const { ExecuteTruckSequence } = await import('../engine/field/truck-cinematic');
         ExecuteTruckSequence(this.rt);
       } else if (boot.mode === 'resume') {
         // 1:1 décomp `CB2_ContinueSavedGame` (overworld.c:1750) :
@@ -670,6 +670,19 @@ export class TestOverworldScene extends Phaser.Scene {
 
       this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = walk)`);
       this.booted = true;
+
+      // Devtool : expose __devGotoMap pour `scope.gotoMap(mapId, x, y)` (dev-scope.ts:959).
+      // Trigger un step-warp explicit via le warp-system (= 1:1 effects map switch).
+      // CRITIQUE : le MainCB2_Overworld consomme getPendingWarp() chaque frame
+      // (ligne 450) → setPendingWarp() suffit pour démarrer le warp. Pas 1:1
+      // décomp (= juste un devtool, le décomp n'a pas d'équivalent).
+      (globalThis as Record<string, unknown>).__devGotoMap = (
+        mapId: string, x: number, y: number,
+      ): void => {
+        setPendingWarp({ destMap: mapId, x, y, elevation: 0, warpId: -1 }, 'step');
+        console.log(`[__devGotoMap] pending warp → ${mapId} (${x}, ${y})`);
+      };
+
       console.log('[TestOverworld] boot done');
     } catch (e) {
       console.error('[TestOverworld] bootOverworld failed:', e);
@@ -828,7 +841,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // `RotatingGate_InitPuzzleAndGraphics` (= overworld.c LoadMap step). Init
     // puzzle config + reset gate orientations à VAR_TEMP_0. No-op si current
     // map n'a pas de rotating gate puzzle (= démo maps).
-    void import('../engine/rotating-gate').then(m => m.RotatingGate_InitPuzzle());
+    void import('../engine/field/rotating-gate').then(m => m.RotatingGate_InitPuzzle());
 
     // Phase 4.5 : preload font + scripts (fonts cached, scripts re-fetched).
     // Le scriptsBaseName est dérivé de header.mapScripts (= e.g.
