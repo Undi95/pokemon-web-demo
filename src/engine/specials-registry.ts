@@ -1454,7 +1454,7 @@ const _STUB_RETURN_0_SPECIALS = [
   // 'GetDaysUntilPacifidlogTMAvailable' — porté 1:1 décomp field_specials.c:1555 ci-bas.
   // 'SetPacifidlogTMReceivedDay' — porté 1:1 décomp field_specials.c:1566 ci-bas.
   // 'IsMirageIslandPresent' — porté 1:1 décomp time_events.c:42 ci-bas.
-  'HasEnoughBerryPowder',
+  // 'HasEnoughBerryPowder' — porté 1:1 décomp berry_powder.c:153 ci-bas (batch B18).
   // 'GetSeedotSizeRecordInfo' — porté 1:1 décomp pokemon_size_record.c:157 (batch B8).
   // 'GetLotadSizeRecordInfo' — porté 1:1 décomp pokemon_size_record.c:176 (batch B8).
 ];
@@ -3160,6 +3160,26 @@ registerSpecial('FavorLadyGetPrize', () => {
   setStringVar(2, name);
   lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
   return prize;
+});
+
+// ─── Session B18 batch — 1 special Berry Powder 1:1 strict ────────────────
+
+/** 1:1 décomp `HasEnoughBerryPowder` (berry_powder.c:153-160) :
+ *  ```c
+ *  bool8 HasEnoughBerryPowder(void) {
+ *      u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;
+ *      if (DecryptBerryPowder(powder) < gSpecialVar_0x8004) return FALSE;
+ *      else return TRUE;
+ *  }
+ *  ```
+ *  Cascade R3 simplifiée : DecryptBerryPowder (= `*powder ^ encryptionKey`)
+ *  retourne le powder direct chez nous (= notre projet stocke cleartext
+ *  sans XOR encryption, pattern aligné GetGameStat). berryPowderAmount
+ *  existe dans gSaveBlock2Ptr.berryCrush 1:1 strict. */
+registerSpecial('HasEnoughBerryPowder', () => {
+  const powder = gSaveBlock2Ptr.berryCrush?.berryPowderAmount ?? 0;
+  const required = VarGet('VAR_0x8004');
+  return powder < required ? 0 : 1;
 });
 
 // ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
