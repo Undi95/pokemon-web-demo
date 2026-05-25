@@ -3278,6 +3278,43 @@ registerSpecial('HasEnoughBerryPowder', () => {
   return powder < required ? 0 : 1;
 });
 
+/** 1:1 décomp `GiveBerryPowder(u32 amountToAdd)` (berry_powder.c:162-176) :
+ *  ```c
+ *  bool8 GiveBerryPowder(u32 amountToAdd) {
+ *      u32 *powder = &gSaveBlock2Ptr->berryCrush.berryPowderAmount;
+ *      u32 amount = DecryptBerryPowder(powder) + amountToAdd;
+ *      if (amount > MAX_BERRY_POWDER) {
+ *          SetBerryPowder(powder, MAX_BERRY_POWDER);
+ *          return FALSE;
+ *      } else {
+ *          SetBerryPowder(powder, amount);
+ *          return TRUE;
+ *      }
+ *  }
+ *  ```
+ *  MAX_BERRY_POWDER = 99999 (= berry_crush.h:36).
+ *  Special bridge : amountToAdd passed via gSpecialVar_0x8004 (= pattern décomp). */
+registerSpecial('GiveBerryPowder', () => {
+  if (!gSaveBlock2Ptr.berryCrush) return 0;
+  const MAX_BERRY_POWDER = 99999;
+  const amountToAdd = VarGet('VAR_0x8004');
+  const current = gSaveBlock2Ptr.berryCrush.berryPowderAmount ?? 0;
+  const total = current + amountToAdd;
+  if (total > MAX_BERRY_POWDER) {
+    gSaveBlock2Ptr.berryCrush.berryPowderAmount = MAX_BERRY_POWDER;
+    return 0;  // FALSE (= cap reached, not all added)
+  }
+  gSaveBlock2Ptr.berryCrush.berryPowderAmount = total;
+  return 1;  // TRUE
+});
+
+/** 1:1 décomp `GetBerryPowder(void)` (berry_powder.c:198-202) :
+ *      return DecryptBerryPowder(powder).
+ *  Notre port stocke cleartext (= no XOR), retourne direct. */
+registerSpecial('GetBerryPowder', () => {
+  return gSaveBlock2Ptr.berryCrush?.berryPowderAmount ?? 0;
+});
+
 // ─── Session B17 batch — 2 specials triviaux 1:1 strict ───────────────────
 
 /** 1:1 décomp `OffsetCameraForBattle` (field_specials.c:1672-1676) :
