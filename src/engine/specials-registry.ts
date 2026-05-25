@@ -1446,6 +1446,46 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `WonSecretBaseBattle` (secret_base.c:1856-1864) :
+ *  ```c
+ *  void WonSecretBaseBattle(void) {
+ *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0) {
+ *          LOW_TV &= ~(WON | LOST | DECLINED);
+ *          HIGH_TV &= ~(DRAW);
+ *          LOW_TV |= WON;
+ *      }
+ *  }
+ *  ``` */
+registerSpecial('WonSecretBaseBattle', () => {
+  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
+    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
+    const DRAW = 1 << 0;
+    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
+    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
+    low = low & ~(WON | LOST | DECLINED);
+    high = high & ~DRAW;
+    low = low | WON;
+    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
+    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
+  }
+});
+
+/** 1:1 décomp `LostSecretBaseBattle` (secret_base.c:1866-1874).
+ *  Same pattern WonSecretBaseBattle mais set LOST flag au lieu de WON. */
+registerSpecial('LostSecretBaseBattle', () => {
+  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
+    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
+    const DRAW = 1 << 0;
+    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
+    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
+    low = low & ~(WON | LOST | DECLINED);
+    high = high & ~DRAW;
+    low = low | LOST;
+    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
+    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
+  }
+});
+
 /** 1:1 décomp `ToggleCurSecretBaseRegistry` (secret_base.c:891-895) :
  *  ```c
  *  void ToggleCurSecretBaseRegistry(void) {
@@ -1684,7 +1724,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'LeadMonHasEffortRibbon' — porté 1:1 décomp field_specials.c:1372 ci-bas (= dette ribbons R3).
   // 'LinkContestTryHideWirelessIndicator' — porté 1:1 décomp contest_util.c:2753 ci-bas (= no link).
   // 'LinkContestTryShowWirelessIndicator' — porté 1:1 décomp contest_util.c:2741 ci-bas (= no link).
-  'LinkContestWaitForConnection', 'LoadPlayerBag', 'LostSecretBaseBattle',
+  // 'LostSecretBaseBattle' — porté 1:1 décomp secret_base.c:1866 ci-bas.
+  'LinkContestWaitForConnection', 'LoadPlayerBag',
   'MauvilleGymSetDefaultBarriers',
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
@@ -1780,7 +1821,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'UpdateCyclingRoadState', 'UpdateShoalTideFlag',
   'UpdateTrainerFanClubGameClear', 'ValidateEReaderTrainer',
   'ValidateMixingGameLanguage', 'ValidateSavedWonderCard',
-  'WonSecretBaseBattle', 'WonderNews_GetRewardInfo',
+  // 'WonSecretBaseBattle' — porté 1:1 décomp secret_base.c:1856 ci-bas.
+  'WonderNews_GetRewardInfo',
 ];
 
 for (const name of _SESSION_131_DECOMP_SPECIALS) {
