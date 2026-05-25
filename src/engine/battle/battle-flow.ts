@@ -64,7 +64,7 @@ import {
   HideFieldMessageBox,
 } from '../field/field-message-box';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
-import { LoadSpritePalette } from '../sprite';
+import { LoadSpritePalette } from '../system/sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -1299,7 +1299,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
         // Avec nickname FR → medhyena.wav 404 → "cry fail EncodingError".
-        void import('../music').then(({ playCry }) => {
+        void import('../system/music').then(({ playCry }) => {
           playCry(opponentMon!.speciesName);
         });
         state = 'INTRO_WAIT';
@@ -1320,7 +1320,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // visually "comes out" of its ball). Only once per battle.
         if (!_playerCryPlayed) {
           _playerCryPlayed = true;
-          void import('../music').then(({ playCry }) => {
+          void import('../system/music').then(({ playCry }) => {
             playCry(playerMon!.speciesName);  // EN canonique, PAS nickname FR
           });
         }

@@ -30,7 +30,7 @@ import {
 import type { Pokemon } from '../battle/party-storage';
 import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from '../ui/pokedex-flags';
 import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from '../system/decomp-bridge';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
 } from '../decomp-data/include/constants/species-data';

@@ -16,7 +16,7 @@
  */
 
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';

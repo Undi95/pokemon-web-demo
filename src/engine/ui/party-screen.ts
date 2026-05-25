@@ -49,7 +49,7 @@ import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from '../system/decomp-constants';
-import { LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated } from '../system/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -57,7 +57,7 @@ import {
 } from '../system/decomp-globals';
 import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
-import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';

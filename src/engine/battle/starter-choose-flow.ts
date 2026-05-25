@@ -32,7 +32,7 @@ import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId
 import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { getRuntime, LoadPalette } from '../system/decomp-globals';
-import { LoadSpritePalette } from '../sprite';
+import { LoadSpritePalette } from '../system/sprite';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -44,7 +44,7 @@ import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../fi
 import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';
 import { setFieldCameraSuspended } from '../field/field-camera';
 import { getString, initStringsFromDecomp } from '../ui/gba-strings';
-import { getSpeciesNameFr, loadTextTables, type TextTables } from '../data-tables';
+import { getSpeciesNameFr, loadTextTables, type TextTables } from '../system/data-tables';
 // Audit session 126 (post-test user) : wire le first wild battle Zigzagoon
 // après starter pick. 1:1 décomp `battle_setup.c:CB2_GiveStarter:917-928` →
 // `CB2_StartFirstBattle:930-948` set BATTLE_TYPE_FIRST_BATTLE puis CB2_InitBattle.
@@ -650,7 +650,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           // Session 124 Bug 5b : 1:1 décomp Task_AskConfirmStarter
           // PlayCry_Normal(GetStarterPokemon(task.data[0]), 0).
           const cryName = speciesEnum.replace('SPECIES_', '').toLowerCase();
-          void import('../music').then(({ playCry }) => playCry(cryName));
+          void import('../system/music').then(({ playCry }) => playCry(cryName));
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }

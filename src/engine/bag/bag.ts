@@ -38,7 +38,7 @@
 // détails complets de la dette.
 import '../bagFix';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { getItem } from '../data-tables';
+import { getItem } from '../system/data-tables';
 import {
   type ItemSlot,
   type BagPocket,

@@ -20,7 +20,7 @@
  *     (= sync to VRAM).
  */
 
-import type { DecompRuntime } from './system/decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 
 // ─── struct AnimCmd union 1:1 décomp sprite.h:74-80 ─────────────────────────
 /**

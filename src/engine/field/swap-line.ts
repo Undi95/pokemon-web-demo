@@ -25,7 +25,7 @@ import {
 } from '../system/decomp-globals';
 import { DestroySprite, StartSpriteAnim } from '../system/decomp-bridge';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../system/sprite';
 
 // 1:1 décomp menu_helpers.c:20 — TAG_SWAP_LINE 109.
 const TAG_SWAP_LINE = 109;

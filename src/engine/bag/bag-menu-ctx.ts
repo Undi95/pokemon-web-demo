@@ -36,7 +36,7 @@ import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxR
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../system/decomp-constants';
-import { getItem as _getItem, getItemKeyById } from '../data-tables';
+import { getItem as _getItem, getItemKeyById } from '../system/data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
   setItemUseCB, SetUpItemUseCallback,

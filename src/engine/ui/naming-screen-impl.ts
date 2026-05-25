@@ -20,7 +20,7 @@
  * auto-callbacks y accèdent.
  */
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
-import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTileRange } from '../system/sprite';
 import {
   AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,

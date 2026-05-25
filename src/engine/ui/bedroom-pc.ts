@@ -58,7 +58,7 @@ import { ReadMail } from './mail';
 import { ITEM_NONE, ClearMail } from './mail-data';
 import { FEMALE } from '../system/decomp-globals';
 import { getString } from './gba-strings';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import { StringExpandPlaceholders } from './gba-text-system';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
@@ -71,13 +71,13 @@ import {
 } from './list-menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
 import { reverseDecompConstant } from '../system/decomp-constants';
-import { getItemNameFr } from '../data-tables';
+import { getItemNameFr } from '../system/data-tables';
 import { GetItemDescription } from '../system/decomp-bridge';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
 } from './item-icon';
 import { FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { FreeSpritePaletteByTag } from '../sprite';
+import { FreeSpritePaletteByTag } from '../system/sprite';
 
 // ─── Constantes 1:1 décomp ──────────────────────────────────────────────────
 // A_BUTTON/B_BUTTON imports depuis decomp-data (= A8 audit).

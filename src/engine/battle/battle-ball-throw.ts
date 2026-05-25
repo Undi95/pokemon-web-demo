@@ -28,7 +28,7 @@
  */
 
 import { getRuntime } from '../system/decomp-globals';
-import { LoadSpritePalette } from '../sprite';
+import { LoadSpritePalette } from '../system/sprite';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';

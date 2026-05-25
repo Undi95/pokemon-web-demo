@@ -15,7 +15,7 @@
  */
 
 import { registerOpcode } from './script-runtime';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp `sContestNames[]` (data/lilycove_lady.h:452, indexé

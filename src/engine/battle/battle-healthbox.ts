@@ -38,7 +38,7 @@
 
 import { getRuntime } from '../system/decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
-import { MarkObjTilesAllocated } from '../sprite';
+import { MarkObjTilesAllocated } from '../system/sprite';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
  *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé

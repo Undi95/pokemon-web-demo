@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../system/sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
@@ -46,14 +46,14 @@ import {
   DynamicPlaceholderTextUtil_Reset,
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
-} from '../dynamic-placeholder-text-util';
+} from '../system/dynamic-placeholder-text-util';
 import { GetMapNameHandleAquaHideout } from '../system/decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
 } from '../system/decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
-import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
+import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
@@ -2002,7 +2002,7 @@ function _playMonCryOnce(): void {
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
     const sp = sMon.currentMon.speciesName;
-    void import('../music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
+    void import('../system/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
   // egg/front.png) ; oneFrame = isEgg (skip StartSpriteAnim 2e frame).

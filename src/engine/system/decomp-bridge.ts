@@ -294,7 +294,7 @@ import {
   getItem as _getItem,
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
-} from '../data-tables';
+} from './data-tables';
 import { sTMHMMoves as _sTMHMMoves } from '../pokemon/tmhm-moves';
 import { getMapNameFr } from '../../data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
@@ -3263,7 +3263,7 @@ export {
   gWalkFastMovementActions,
   // Lazy table fetcher
   getStaticTable,
-} from '../static-data-tables';
+} from './static-data-tables';
 
 // ─── Re-exports : metatile behavior predicates ────────────────────────────────
 

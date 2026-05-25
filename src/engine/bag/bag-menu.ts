@@ -46,7 +46,7 @@ import {
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
 } from '../ui/list-menu';
-import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../data-tables';
+import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../system/data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
 import {

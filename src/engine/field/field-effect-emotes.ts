@@ -36,7 +36,7 @@
  */
 
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, IndexOfSpritePaletteTag } from '../sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, IndexOfSpritePaletteTag } from '../system/sprite';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { gPlayerAvatar } from './player-avatar';

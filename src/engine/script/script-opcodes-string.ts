@@ -26,13 +26,13 @@
 
 import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet } from './script-vars';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
   getTrainerClassNameFr, getTrainer,
-} from '../data-tables';
+} from '../system/data-tables';
 import { parseValue } from './script-opcodes-helpers';
 
 /** 1:1 décomp `ScrCmd_bufferspeciesname` (scrcmd.c) :

@@ -49,7 +49,7 @@ import { BeginAffineAnim as _BeginAffineAnim } from '../decomp-impls/sprite-engi
 import {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
   SetUpForReleaseAffineAnim, BALL_POKE,
-} from '../pokeball-effects';
+} from './pokeball-effects';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -72,7 +72,7 @@ import {
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
-} from '../sprite';
+} from './sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
   IndexOfSpriteTileTag, GetSpriteTileTagByTileStart,
@@ -82,9 +82,9 @@ export {
   ResetOamRange,
   // Sprite geometry (sprite.c:687-700)
   CalcCenterToCornerVec,
-} from '../sprite';
+} from './sprite';
 // LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
-import { _setPaletteRuntimeGetter } from '../palette';
+import { _setPaletteRuntimeGetter } from './palette';
 export {
   LoadCompressedPalette, FillPalette,
   InvertPlttBuffer, TintPlttBuffer, UnfadePlttBuffer,
@@ -93,7 +93,7 @@ export {
   IsSoftwarePaletteFadeFinishing,
   TintPalette_GrayScale, TintPalette_GrayScale2, TintPalette_SepiaTone, TintPalette_CustomTone,
   BlendPalettesGradually,
-} from '../palette';
+} from './palette';
 
 let _rt: DecompRuntime | null = null;
 
@@ -489,7 +489,7 @@ export function LoadIntroPart2Graphics(scenery: number): void {
 
 /** 1:1 décomp src/sprite.c:1581-1587 — délégué à `src/engine/sprite.ts`
  *  (= source de vérité 1:1 strict du palette tag system). */
-export { FreeAllSpritePalettes } from '../sprite';
+export { FreeAllSpritePalettes } from './sprite';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)
@@ -1065,7 +1065,7 @@ export function PlayCryInternal(
   // waitmoncry. Durée approximée à 1 sec par défaut (= moy. cri Émeraude),
   // overridée par la vraie durée du WAV via _markCryActive depuis music.playCry.
   _audioEndTimeMs.cry = performance.now() + 1000;
-  void import('../music').then(({ playCry }) => {
+  void import('./music').then(({ playCry }) => {
     console.log('[PlayCryInternal] calling playCry(', name, ')');
     playCry(name);
   }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
@@ -1146,7 +1146,7 @@ export function IsFanfareTaskInactive(): boolean {
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
 // flash-mask.ts auto-register __applyFlashMask pour phaser-bridge post-process.
-import '../flash-mask';
+import './flash-mask';
 // field-effect-active-list.ts auto-register __fieldEffectActiveList pour
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
 import '../field/field-effect-active-list';
@@ -2449,7 +2449,7 @@ export {
   BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
   BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER,
   POKEBALL_COUNT,
-} from '../pokeball-effects';
+} from './pokeball-effects';
 
 // Audit V2 (session 90) — foundational mon-front-sprite animation system.
 // 1:1 décomp src/pokemon.c:6779 DoMonFrontSpriteAnimation +

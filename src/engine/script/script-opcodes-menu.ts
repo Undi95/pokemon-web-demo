@@ -28,7 +28,7 @@ import {
   CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette,
 } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
-import { getMultichoiceList } from '../multichoice-data';
+import { getMultichoiceList } from '../system/multichoice-data';
 import { parseValue } from './script-opcodes-helpers';
 
 // ─── Multichoice menus 1:1 décomp `script_menu.c` ──────────────────────────

@@ -33,7 +33,7 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../system/decomp-globals';
 import { GetCurrentMap } from '../save/load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
 import { TYPE_GRASS } from '../decomp-data/include/constants/pokemon-data';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';

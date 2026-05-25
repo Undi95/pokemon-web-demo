@@ -23,7 +23,7 @@ import type { DecompRuntime } from '../system/decomp-runtime';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
-import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 
 const SHADOW_PNG = '/decomp/em/field_effects/shadow_medium.png';
 

@@ -60,7 +60,7 @@ import {
   LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, SetSubspriteTables,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
 } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from '../sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag, FreeSpritePaletteByTag as _spriteFreeSpritePaletteByTag } from '../system/sprite';
 import { gSineTable } from '../system/decomp-helpers';
 import { SE_SELECT as _SE_SELECT } from '../decomp-data/include/constants/songs-data';
 

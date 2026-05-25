@@ -25,7 +25,7 @@
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../sprite';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../system/sprite';
 import { GetWindowFrameTilesPal } from './gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,

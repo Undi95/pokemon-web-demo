@@ -27,7 +27,7 @@
  */
 
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadTileBin } from '../gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';

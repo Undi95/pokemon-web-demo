@@ -53,7 +53,7 @@ import {
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from '../bag/bag-item-effects';
-import { getItem as _getItem, getItemKeyById } from '../data-tables';
+import { getItem as _getItem, getItemKeyById } from '../system/data-tables';
 import { GetItemType } from '../system/decomp-bridge';
 import {
   gBagMenu,

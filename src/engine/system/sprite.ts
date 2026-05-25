@@ -30,8 +30,8 @@
  *   au lieu d'importer getRuntime depuis decomp-globals.ts. decomp-globals.ts
  *   appelle le setter au boot via setGlobalRuntime. Évite TDZ cycle.
  */
-import type { DecompRuntime } from './system/decomp-runtime';
-import { OBJ_PLTT_ID } from './system/decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
+import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 
 // ─── Constantes 1:1 décomp include/sprite.h + include/gba/defines.h ─────────
 

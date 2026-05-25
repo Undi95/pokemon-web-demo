@@ -23,7 +23,7 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
-import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../sprite';
+import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system/sprite';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
 // 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port

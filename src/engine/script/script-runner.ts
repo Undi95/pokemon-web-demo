@@ -93,11 +93,11 @@ import { SetDynamicWarp } from '../field/warp-system';
 import { MALE, FEMALE } from '../system/decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { resolveDecompConstant } from '../system/decomp-constants';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
   getItemNameFr, getTrainer, getTrainerNameFr,
-} from '../data-tables';
+} from '../system/data-tables';
 import { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from '../pokemon/pokemon';
 
 // Constantes décomp `include/constants/items.h` enum starters (Hoenn).

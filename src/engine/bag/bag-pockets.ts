@@ -17,7 +17,7 @@
  * slot.quantity`. Comportement identique (0 = slot vide).
  */
 import { gBagPockets, ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from './bag';
-import { getItemId } from '../data-tables';
+import { getItemId } from '../system/data-tables';
 import { sTMHMMoves } from '../pokemon/tmhm-moves';
 import type { ItemSlot } from './bag';
 

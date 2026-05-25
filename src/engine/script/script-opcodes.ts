@@ -45,7 +45,7 @@ import {
 } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { InitMenuInUpperLeftCornerNormal } from '../ui/gba-menu-system';
-import { getMultichoiceList } from '../multichoice-data';
+import { getMultichoiceList } from '../system/multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from '../field/player-avatar';
@@ -53,11 +53,11 @@ import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { getRuntime } from '../system/decomp-globals';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
-import { setStringVar } from '../string-buffers';
+import { setStringVar } from '../system/string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
   getTrainerClassNameFr, getTrainer,
-} from '../data-tables';
+} from '../system/data-tables';
 import {
   OPPOSITE_DIR, MALE_GENDER, FEMALE_GENDER,
   getSelectedNpc, isAOrBNewlyPressed, parseValue, resolveCount,

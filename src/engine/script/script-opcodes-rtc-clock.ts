@@ -81,7 +81,7 @@ registerOpcode('initclock', (_ctx, args) => {
 registerOpcode('dotimebasedevents', (_ctx, _args) => {
   void (async () => {
     try {
-      const { DoTimeBasedEvents } = await import('../time-based-events');
+      const { DoTimeBasedEvents } = await import('../system/time-based-events');
       DoTimeBasedEvents();
     } catch (e) {
       console.warn('[opcode dotimebasedevents] failed:', e);

@@ -12,7 +12,7 @@
  */
 import { AddItemIconSprite, MAX_SPRITES } from '../ui/item-icon';
 import { gBagMenu } from './bag-menu';
-import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../sprite';
+import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../system/sprite';
 import {
   getRuntime,
   FreeSpriteTilesByTag as _rtFreeSpriteTilesByTag,
@@ -20,7 +20,7 @@ import {
   LoadSpritePalette,
 } from '../system/decomp-globals';
 import { DestroySprite, StartSpriteAnim, StartSpriteAffineAnim } from '../system/decomp-bridge';
-import { getItemKeyById } from '../data-tables';
+import { getItemKeyById } from '../system/data-tables';
 import { ENUM_ITEMMENUSPRITE_2 } from '../decomp-data/include/item_menu-data';
 import { ITEM_LIST_END } from '../decomp-data/include/constants/items-data';
 import { ENUM_TAG_0 as ENUM_BAG_TAG } from '../decomp-data/src/item_menu_icons-data';

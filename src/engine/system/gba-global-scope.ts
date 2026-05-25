@@ -10,7 +10,7 @@
  * auto-générés pour éviter les cycles de dépendance.
  */
 import * as _dg from './decomp-globals';
-import * as _cb from '../copyright-boot';
+import * as _cb from '../boot/copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
 import {
