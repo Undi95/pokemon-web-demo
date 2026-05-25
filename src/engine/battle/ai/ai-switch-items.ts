@@ -149,6 +149,10 @@ import {
 /** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). Import
  *  depuis decomp-data au lieu de hardcode (= A8 audit). */
 import { B_FLANK_LEFT } from '../../decomp-data/include/constants/battle-data';
+/** 1:1 décomp `enum` battle_ai_switch_items.h:4-32 — AI_ITEM_* / AI_HEAL_* / AI_X_*. */
+import {
+  ENUM_AI_0, ENUM_AI_1, ENUM_AI_2,
+} from '../../decomp-data/include/battle_ai_switch_items-data';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
 function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
@@ -568,29 +572,24 @@ export function ShouldSwitch(): boolean {
 
 // ─── ShouldUseItem / GetAI_ItemType — port 1:1 (792-944) ───────────────────
 
-/** 1:1 décomp `enum` battle_ai_switch_items.h:4-12. */
-const AI_ITEM_FULL_RESTORE = 1;
-const AI_ITEM_HEAL_HP = 2;
-const AI_ITEM_CURE_CONDITION = 3;
-const AI_ITEM_X_STAT = 4;
-const AI_ITEM_GUARD_SPEC = 5;
-const AI_ITEM_NOT_RECOGNIZABLE = 6;
+/** 1:1 décomp `enum` battle_ai_switch_items.h:4-12 — importé depuis decomp-data. */
+const {
+  AI_ITEM_FULL_RESTORE, AI_ITEM_HEAL_HP, AI_ITEM_CURE_CONDITION,
+  AI_ITEM_X_STAT, AI_ITEM_GUARD_SPEC, AI_ITEM_NOT_RECOGNIZABLE,
+} = ENUM_AI_0;
 
-/** 1:1 décomp `enum` battle_ai_switch_items.h:14-21. */
-const AI_HEAL_CONFUSION = 0;
-const AI_HEAL_PARALYSIS = 1;
-const AI_HEAL_FREEZE = 2;
-const AI_HEAL_BURN = 3;
-const AI_HEAL_POISON = 4;
-const AI_HEAL_SLEEP = 5;
+/** 1:1 décomp `enum` battle_ai_switch_items.h:14-21 — importé depuis decomp-data. */
+const {
+  AI_HEAL_CONFUSION, AI_HEAL_PARALYSIS, AI_HEAL_FREEZE,
+  AI_HEAL_BURN, AI_HEAL_POISON, AI_HEAL_SLEEP,
+} = ENUM_AI_1;
 
-/** 1:1 décomp `enum` battle_ai_switch_items.h:23-32 (SPDEF/EVASION inutilisés). */
-const AI_X_ATTACK = 0;
-const AI_X_DEFEND = 1;
-const AI_X_SPEED = 2;
-const AI_X_SPATK = 3;
-const AI_X_ACCURACY = 5;
-const AI_DIRE_HIT = 7;
+/** 1:1 décomp `enum` battle_ai_switch_items.h:23-32 — importé depuis decomp-data
+ *  (SPDEF/EVASION inutilisés ici). */
+const {
+  AI_X_ATTACK, AI_X_DEFEND, AI_X_SPEED, AI_X_SPATK,
+  AI_X_ACCURACY, AI_DIRE_HIT,
+} = ENUM_AI_2;
 
 /** 1:1 décomp `#define MAX_TRAINER_ITEMS 4` (include/data.h:8). */
 const MAX_TRAINER_ITEMS = 4;
