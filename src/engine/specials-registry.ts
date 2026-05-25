@@ -1446,6 +1446,23 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `ToggleCurSecretBaseRegistry` (secret_base.c:891-895) :
+ *  ```c
+ *  void ToggleCurSecretBaseRegistry(void) {
+ *      gSaveBlock1Ptr->secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].registryStatus ^= 1;
+ *      FlagSet(FLAG_SECRET_BASE_REGISTRY_ENABLED);
+ *  }
+ *  ```
+ *  Toggle registry status pour la base courante + set flag global. */
+registerSpecial('ToggleCurSecretBaseRegistry', () => {
+  const baseIdx = VarGet('VAR_CURRENT_SECRET_BASE');
+  const base = gSaveBlock1Ptr.secretBases?.[baseIdx];
+  if (base) {
+    base.registryStatus = (base.registryStatus ?? 0) ^ 1;
+  }
+  FlagSet('FLAG_SECRET_BASE_REGISTRY_ENABLED');
+});
+
 /** 1:1 décomp `IsMonOTIDNotPlayers` (tv.c:3329-3335) :
  *  ```c
  *  void IsMonOTIDNotPlayers(void) {
@@ -1747,7 +1764,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SubtractMoneyFromVar0x8005' — porté 1:1 décomp money.c:128 ci-bas.
   'TakeBerryPowder',
   'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
-  'ToggleCurSecretBaseRegistry', 'TraderDoDecorationTrade',
+  // 'ToggleCurSecretBaseRegistry' — porté 1:1 décomp secret_base.c:891 ci-bas.
+  'TraderDoDecorationTrade',
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
   'TryBecomeLinkLeader', 'TryBerryBlenderLinkup', 'TryContestEModeLinkup',
   'TryContestGModeLinkup', 'TryEnterContestMon', 'TryFieldPoisonWhiteOut',
