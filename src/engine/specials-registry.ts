@@ -898,6 +898,99 @@ registerSpecial('GetSlotMachineId', () => 0);
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
+/** 1:1 décomp `GabbyAndTyGetBattleNum` (tv.c:996-1002) :
+ *  ```c
+ *  u8 GabbyAndTyGetBattleNum(void) {
+ *      if (gSaveBlock1Ptr->gabbyAndTyData.battleNum > 5)
+ *          return (gSaveBlock1Ptr->gabbyAndTyData.battleNum % 3) + 6;
+ *      return gSaveBlock1Ptr->gabbyAndTyData.battleNum;
+ *  }
+ *  ```
+ *  Rotation cyclique 1..8 sur battles répétés. */
+registerSpecial('GabbyAndTyGetBattleNum', () => {
+  const battleNum = gSaveBlock1Ptr.gabbyAndTyData?.battleNum ?? 0;
+  if (battleNum > 5) return ((battleNum % 3) + 6) & 0xFF;
+  return battleNum & 0xFF;
+});
+
+/** 1:1 décomp `GabbyAndTyGetLastQuote` (tv.c:1009-1018) :
+ *  ```c
+ *  bool8 GabbyAndTyGetLastQuote(void) {
+ *      if (gSaveBlock1Ptr->gabbyAndTyData.quote[0] == EC_EMPTY_WORD) return FALSE;
+ *      CopyEasyChatWord(gStringVar1, gSaveBlock1Ptr->gabbyAndTyData.quote[0]);
+ *      gSaveBlock1Ptr->gabbyAndTyData.quote[0] = -1;
+ *      return TRUE;
+ *  }
+ *  ```
+ *  Note 1:1 strict : EC_EMPTY_WORD = 0xFFFF (= -1 unsigned). Reset à -1 (0xFFFF)
+ *  après lecture. CopyEasyChatWord deps EasyChat subsystem — dette R3 documentée. */
+registerSpecial('GabbyAndTyGetLastQuote', () => {
+  const data = gSaveBlock1Ptr.gabbyAndTyData;
+  if (!data) return 0;
+  const quote0 = data.quote[0];
+  // 1:1 décomp constants/easy_chat.h : EC_EMPTY_WORD = 0xFFFF.
+  if (quote0 === 0xFFFF || quote0 === -1) return 0;
+  // Note 1:1 R3 : CopyEasyChatWord(gStringVar1, quote0) — déferé (= EasyChat
+  // expand to string demande tables. Le reset à -1 est porté pour idempotence.
+  data.quote[0] = 0xFFFF;
+  return 1;
+});
+
+/** 1:1 décomp `GetGabbyAndTyLocalIds` (tv.c:1038-1075) :
+ *  Set gSpecialVar_0x8004/0x8005 selon battleNum cyclique 1..8 :
+ *    1 → ROUTE111_GABBY_1 / TY_1
+ *    2 → ROUTE118_GABBY_1 / TY_1
+ *    3 → ROUTE120_GABBY_1 / TY_1
+ *    4 → ROUTE111_GABBY_2 / TY_2
+ *    5 → ROUTE118_GABBY_2 / TY_2
+ *    6 → ROUTE120_GABBY_2 / TY_2
+ *    7 → ROUTE111_GABBY_3 / TY_3
+ *    8 → ROUTE118_GABBY_3 / TY_3
+ *  Note 1:1 strict : nos LOCALID_X sont string names dans le bytecode (= parseValue
+ *  les resolve via map templates). Pour ce special on stocke le NAME dans VAR
+ *  car aucun lookup numeric pré-fixé. */
+registerSpecial('GetGabbyAndTyLocalIds', () => {
+  // 1:1 décomp call cascade GabbyAndTyGetBattleNum().
+  const battleNum = gSaveBlock1Ptr.gabbyAndTyData?.battleNum ?? 0;
+  const effective = battleNum > 5 ? ((battleNum % 3) + 6) : battleNum;
+  // Mapping table — LOCALID names string resolus runtime par parseValue
+  // (= dépend de la map active). Notre VarSet stocke u16 numerics ; ici on stocke
+  // le placeholder via constant resolution pour préserver le pattern décomp.
+  const mapping: Record<number, [string, string]> = {
+    1: ['LOCALID_ROUTE111_GABBY_1', 'LOCALID_ROUTE111_TY_1'],
+    2: ['LOCALID_ROUTE118_GABBY_1', 'LOCALID_ROUTE118_TY_1'],
+    3: ['LOCALID_ROUTE120_GABBY_1', 'LOCALID_ROUTE120_TY_1'],
+    4: ['LOCALID_ROUTE111_GABBY_2', 'LOCALID_ROUTE111_TY_2'],
+    5: ['LOCALID_ROUTE118_GABBY_2', 'LOCALID_ROUTE118_TY_2'],
+    6: ['LOCALID_ROUTE120_GABBY_2', 'LOCALID_ROUTE120_TY_2'],
+    7: ['LOCALID_ROUTE111_GABBY_3', 'LOCALID_ROUTE111_TY_3'],
+    8: ['LOCALID_ROUTE118_GABBY_3', 'LOCALID_ROUTE118_TY_3'],
+  };
+  const ids = mapping[effective];
+  if (ids) {
+    VarSet('VAR_0x8004', VarGet(ids[0]));
+    VarSet('VAR_0x8005', VarGet(ids[1]));
+  }
+});
+
+/** 1:1 décomp `GetTraderTradedFlag` (trader.c:139-143) :
+ *  ```c
+ *  void GetTraderTradedFlag(void) {
+ *      struct MauvilleOldManTrader *trader = &gSaveBlock1Ptr->oldMan.trader;
+ *      gSpecialVar_Result = trader->alreadyTraded;
+ *  }
+ *  ```
+ *  Set VAR_RESULT = oldMan.trader.alreadyTraded (0/1). */
+registerSpecial('GetTraderTradedFlag', () => {
+  const om = gSaveBlock1Ptr.oldMan;
+  if (om && om.kind === 'trader') {
+    VarSet('VAR_RESULT', om.alreadyTraded ?? 0);
+    return om.alreadyTraded ?? 0;
+  }
+  VarSet('VAR_RESULT', 0);
+  return 0;
+});
+
 /** 1:1 décomp `CheckInteractedWithFriendsDollDecor` (secret_base.c:1834-1838) :
  *  ```c
  *  void CheckInteractedWithFriendsDollDecor(void) {
@@ -1382,8 +1475,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'FoundAbandonedShipRoom6Key' — porté 1:1 décomp field_specials.c:1361 ci-bas.
   'GabbyAndTyAfterInterview', 'GabbyAndTyBeforeInterview',
   // 'GabbyAndTyGetLastBattleTrivia' — porté 1:1 décomp tv.c:1020 ci-bas.
-  'GabbyAndTyGetBattleNum',
-  'GabbyAndTyGetLastQuote', 'GenerateGiddyLine',
+  // 'GabbyAndTyGetBattleNum' — porté 1:1 décomp tv.c:996 ci-bas.
+  // 'GabbyAndTyGetLastQuote' — porté 1:1 décomp tv.c:1009 ci-bas.
+  // 'GetGabbyAndTyLocalIds' — porté 1:1 décomp tv.c:1038 ci-bas.
+  'GenerateGiddyLine',
   'GetAbnormalWeatherMapNameAndType', 'GetBattleFrontierTutorMoveIndex',
   'GetBattlePyramidHint', 'GetBattleTowerSinglesStreak',
   'GetContestLadyCategory', 'GetContestLadyMonSpecies',
@@ -1391,7 +1486,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetContestPlayerId', 'GetContestantNamesAtRank',
   'GetCurSecretBaseRegistrationValidity', 'GetDaycareCost',
   'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
-  'GetFavorLadyState', 'GetGabbyAndTyLocalIds', 'GetLinkPartnerNames',
+  'GetFavorLadyState', 'GetLinkPartnerNames',
   'GetMartEmployeeObjectEventId',
   // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
@@ -1405,7 +1500,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetRecordedCyclingRoadResults', 'GetSecretBaseNearbyMapName',
   'GetSecretBaseOwnerAndState', 'GetSecretBaseTypeInFrontOfPlayer',
   'GetSelectedMonNicknameAndSpecies', 'GetSelectedTVShow',
-  'GetTraderTradedFlag', 'GetTrainerBattleMode', 'GetTrainerFlag',
+  // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
+  'GetTrainerBattleMode', 'GetTrainerFlag',
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
   // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
