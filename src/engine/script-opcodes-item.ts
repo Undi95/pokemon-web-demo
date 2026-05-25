@@ -15,8 +15,9 @@
 
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet, gSpecialVar } from './script-vars';
-import { AddBagItem, RemoveBagItem, CheckBagHasItem } from './bag';
-import { resolveDecompConstant } from './decomp-constants';
+import { AddBagItem, RemoveBagItem, CheckBagHasItem, CheckBagHasSpace } from './bag';
+import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
+import { getItem } from './data-tables';
 import { parseValue, resolveCount } from './script-opcodes-helpers';
 
 /** 1:1 décomp `giveitem` macro = additem + msgbox + fanfare. On ne porte que
@@ -62,21 +63,49 @@ registerOpcode('checkitem', (_ctx, args) => {
 
 /** 1:1 décomp `ScrCmd_checkitemspace` (scrcmd.c:505-512) :
  *    gSpecialVar_Result = CheckBagHasSpace(item, qty);
- *  Notre port : retourne toujours true (= bag rarely full en démo).
- *  Dette : porter `CheckBagHasSpace` 1:1 item.c en session dédiée. */
-registerOpcode('checkitemspace', (_ctx) => {
-  VarSet('VAR_RESULT', 1);
+ *  CheckBagHasSpace porté 1:1 item.c:179 dans bag.ts. */
+registerOpcode('checkitemspace', (_ctx, args) => {
+  const itemArg = args[0] ?? '';
+  const count = resolveCount(args[1] ?? '1');
+  // Resolve itemArg → itemKey (= si VAR_X, lookup vers ITEM_X).
+  let itemKey = itemArg;
+  if (!itemKey.startsWith('ITEM_')) {
+    const itemId = VarGet(itemArg);
+    itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? '';
+  }
+  VarSet('VAR_RESULT', CheckBagHasSpace(itemKey, count) ? 1 : 0);
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_checkitemtype` (scrcmd.c:523-529) :
- *    gSpecialVar_Result = GetPocketByItemId(item).
- *  POCKET_ITEMS=1, KEY_ITEMS=2, POKE_BALLS=3, TM_HM=4, BERRIES=5.
- *  Notre port : retourne toujours POCKET_ITEMS (= MVP, item→pocket lookup à porter). */
+ *    gSpecialVar_Result = GetPocketByItemId(itemId);
+ *  Source POCKET_* enum (item.h:5-10) — 1-based :
+ *    POCKET_NONE=0, POCKET_ITEMS=1, POCKET_POKE_BALLS=2, POCKET_TM_HM=3,
+ *    POCKET_BERRIES=4, POCKET_KEY_ITEMS=5. */
 registerOpcode('checkitemtype', (_ctx, args) => {
   const itemArg = args[0] ?? '';
-  void itemArg;
-  VarSet('VAR_RESULT', 1);
+  // Resolve itemArg : si literal ITEM_X → direct itemKey ; sinon VarGet → reverseDecompConstant.
+  let itemKey = itemArg;
+  if (!itemKey.startsWith('ITEM_')) {
+    const itemId = VarGet(itemArg);
+    itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? '';
+  }
+  let pocketResult = 0;  // POCKET_NONE par défaut
+  if (itemKey) {
+    const item = getItem(itemKey);
+    if (item && item.pocket) {
+      // 1:1 mapping items.json pocket string → POCKET_* enum 1-based (item.h:5-10).
+      switch (item.pocket) {
+        case 'POCKET_ITEMS':       pocketResult = 1; break;
+        case 'POCKET_POKE_BALLS':  pocketResult = 2; break;
+        case 'POCKET_TM_HM':       pocketResult = 3; break;
+        case 'POCKET_BERRIES':     pocketResult = 4; break;
+        case 'POCKET_KEY_ITEMS':   pocketResult = 5; break;
+        // POCKET_NONE → 0 (= default)
+      }
+    }
+  }
+  VarSet('VAR_RESULT', pocketResult);
   return false;
 });
 

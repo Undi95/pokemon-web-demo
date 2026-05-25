@@ -262,6 +262,52 @@ export function AddBagItem(itemKey: string, count: number): boolean {
   return true;
 }
 
+/** 1:1 décomp `bool8 CheckBagHasSpace(u16 itemId, u16 count)` (item.c:179-241).
+ *
+ *  Vérifie sans muter si le bag peut accueillir `count` items du type `itemKey`.
+ *  Returns true si OK, false si pas assez de place. */
+export function CheckBagHasSpace(itemKey: string, count: number): boolean {
+  if (!itemKey) return false;
+  const pocketId = _getPocketIdForItem(itemKey);
+  if (pocketId < 0) return false;
+  // 1:1 décomp :189-191 : if (Pyramid bag mode) return CheckPyramidBagHasSpace.
+  // Pyramid bag U-tier (Battle Pyramid subsystem) — skip ici. Dette R3 documentée.
+  const pocket = gBagPockets[pocketId];
+  const slotCap = _slotCapacity(pocketId);
+  const noDup = (pocketId === TMHM_POCKET || pocketId === BERRIES_POCKET);
+  let remaining = count;
+  // 1:1 :200-214 : check space dans slots existants du même item.
+  for (let i = 0; i < pocket.capacity; i++) {
+    const slot = pocket.itemSlots[i];
+    if (!slot) continue;
+    if (slot.itemKey === itemKey && slot.quantity > 0) {
+      const ownedCount = slot.quantity;
+      if (ownedCount + remaining <= slotCap) return true;
+      if (noDup) return false;
+      remaining -= (slotCap - ownedCount);
+      if (remaining === 0) break;  // :212 (= should be return TRUE but matches décomp)
+    }
+  }
+  // 1:1 :217-237 : check space dans empty slots.
+  if (remaining > 0) {
+    for (let i = 0; i < pocket.capacity; i++) {
+      const slot = pocket.itemSlots[i];
+      if (!slot) continue;
+      if (!slot.itemKey || slot.quantity === 0) {
+        if (remaining > slotCap) {
+          if (noDup) return false;
+          remaining -= slotCap;
+        } else {
+          remaining = 0;
+          break;
+        }
+      }
+    }
+    if (remaining > 0) return false;  // :237 bag full.
+  }
+  return true;
+}
+
 /** 1:1 décomp `bool8 RemoveBagItem(u16 itemId, u16 count)` (item.c:350-441). */
 export function RemoveBagItem(itemKey: string, count: number): boolean {
   if (!CheckBagHasItem(itemKey, count)) return false;

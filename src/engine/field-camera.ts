@@ -778,7 +778,11 @@ export function CameraUpdate(): void {
         void e;
       }
     }
-    // SetBerryTreesSeen();                                // TODO Phase 4.7
+    // Dette R3 doc : 1:1 décomp `SetBerryTreesSeen()` (berry.c:1322) cross-border :
+    // iter gObjectEvents avec movementType MOVEMENT_TYPE_BERRY_TREE_GROWTH dans
+    // rect cam (left .. left+14, top+3 .. top+3+8) → AllowBerryTreeGrowth(treeId).
+    // Demande wire BERRY_TREE_GROWTH movement type + helper AllowBerryTreeGrowth
+    // (stopGrowth = false). Pas critique démo Littleroot (= zéro berry tree).
     AddCameraTileOffset(sFieldCameraOffset, deltaX * 2, deltaY * 2);
     _trace('boundary_cross', {
       deltaX, deltaY,
