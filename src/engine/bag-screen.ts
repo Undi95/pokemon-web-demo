@@ -2290,8 +2290,10 @@ export function TickBagScreen(newKeys: number): void {
     CloseBagScreen();
     return;
   }
-  // 1:1 décomp menu_helpers.c GetLRKeysPressed : si optionsButtonMode == LR
-  // alors L/R = switch pocket. Pour simplifier, on accept L/R toujours.
+  // 1:1 décomp menu_helpers.c GetLRKeysPressed : si gSaveBlock2Ptr.optionsButtonMode
+  // == OPTIONS_BUTTON_MODE_LR alors L/R = switch pocket. Notre port accept L/R
+  // toujours (= dette R3 doc : optionsButtonMode check pas wire, le switch
+  // visible dans les 2 modes au lieu d'1 — pas critique gameplay).
   if (repeatedKeys & (KEY_RIGHT | KEY_R)) {
     _startPocketSwitchAnim(1);
     return;
