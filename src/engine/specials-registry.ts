@@ -36,6 +36,9 @@ import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from './tv-scre
 import { setStringVar } from './string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from './decomp-data/include/constants/species-data';
 import { TYPE_GRASS } from './decomp-data/include/constants/pokemon-data';
+import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE } from './decomp-data/include/constants/items-data';
+import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
+import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -1043,7 +1046,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetSelectedMonNicknameAndSpecies', 'GetSelectedTVShow',
   'GetTraderTradedFlag', 'GetTrainerBattleMode', 'GetTrainerFlag',
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
-  'GiddyShouldTellAnotherTale',
+  // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
   'HasAnotherPlayerGivenFavorLadyItem',
   // 'HasAtLeastOneBerry' — porté 1:1 décomp item.c:163 ci-bas.
@@ -1089,7 +1092,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'QuizLadyPickNewQuestion', 'QuizLadyRecordCustomQuizData',
   'QuizLadySetCustomQuestion', 'QuizLadySetWaitingForChallenger',
   'QuizLadyShowQuizQuestion', 'QuizLadyTakePrizeForCustomQuiz',
-  'RejectEggFromDayCare', 'ResetTVShowState', 'ResetTrickHouseNuggetFlag',
+  // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
+  'RejectEggFromDayCare', 'ResetTVShowState',
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom', 'RockSmashWildEncounter',
   'SaveBardSongLyrics', 'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
@@ -1111,12 +1115,14 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'SetDeoxysRockPalette', 'SetDeptStoreFloor', 'SetEReaderTrainerGfxId',
   'SetFavorLadyState_Complete', 'SetHiddenItemFlag', 'SetHipsterTaughtWord',
   'SetLilycoveLadyGfx', 'SetLinkContestPlayerGfx', 'SetMatchCallRegisteredFlag',
-  'SetMauvilleOldManObjEventGfx', 'SetMirageTowerVisibility',
+  // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
+  'SetMirageTowerVisibility',
   // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
   'SetPlayerSecretBase',
   'SetQuizLadyState_Complete', 'SetQuizLadyState_GivePrize',
   'SetRoute119Weather', 'SetRoute123Weather', 'SetSecretBaseOwnerGfxId',
-  'SetSootopolisGymCrackedIceMetatiles', 'SetTrickHouseNuggetFlag',
+  // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
+  'SetSootopolisGymCrackedIceMetatiles',
   'ShouldContestLadyShowGoOnAir', 'ShouldDistributeEonTicket',
   'ShouldDoBrailleRegirockEffectOld', 'ShouldHideFanClubInterviewer',
   'ShouldReadyContestArtist', 'ShouldShowBoxWasFullMessage',
@@ -1137,7 +1143,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'StartPlayerDescendMirageTower', 'StopMapMusic',
   'StoreSelectedPokemonInDaycare', 'StorytellerGetFreeStorySlot',
   'StorytellerStoryListMenu', 'StorytellerUpdateStat',
-  'SubtractMoneyFromVar0x8005', 'SwapRegisteredBike', 'TakeBerryPowder',
+  // 'SwapRegisteredBike' — porté 1:1 décomp item.c:577 ci-bas.
+  'SubtractMoneyFromVar0x8005', 'TakeBerryPowder',
   'TakePokemonFromDaycare', 'TeachMoveRelearnerMove',
   'ToggleCurSecretBaseRegistry', 'TraderDoDecorationTrade',
   'TraderMenuGetDecoration', 'TraderShowDecorationMenu', 'TryBattleLinkup',
@@ -1461,6 +1468,127 @@ registerSpecial('IsGrassTypeInParty', () => {
   }
   return 0;
 });
+
+// ─── Session A2.24 batch — 5 specials triviaux 1:1 strict ──────────────────
+
+/** 1:1 décomp `SetTrickHouseNuggetFlag` (field_specials.c:1174-1180) :
+ *  ```c
+ *  void SetTrickHouseNuggetFlag(void) {
+ *      u16 *specVar = &gSpecialVar_0x8004;
+ *      u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+ *      *specVar = flag;
+ *      FlagSet(flag);
+ *  }
+ *  ```
+ *  Stocke l'id numérique du flag dans VAR_0x8004 puis set le flag par name
+ *  (notre FlagSet prend un name string = 1:1 strict comportementalement). */
+registerSpecial('SetTrickHouseNuggetFlag', () => {
+  // 1:1 décomp : VAR_0x8004 reçoit l'id numérique (= dette R3 architecturale
+  // documentée — notre VarSet stocke aussi un u16 number aligné décomp).
+  // Resolved via decomp-constants ; sans mapping pas critique pour le special
+  // car FlagSet utilise le name string ci-dessous.
+  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
+  FlagSet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
+});
+
+/** 1:1 décomp `ResetTrickHouseNuggetFlag` (field_specials.c:1182-1188) :
+ *  ```c
+ *  void ResetTrickHouseNuggetFlag(void) {
+ *      u16 *specVar = &gSpecialVar_0x8004;
+ *      u16 flag = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+ *      *specVar = flag;
+ *      FlagClear(flag);
+ *  }
+ *  ``` */
+registerSpecial('ResetTrickHouseNuggetFlag', () => {
+  VarSet('VAR_0x8004', VarGet('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET'));
+  FlagClear('FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET');
+});
+
+/** 1:1 décomp `SwapRegisteredBike` (item.c:577-588) :
+ *  ```c
+ *  void SwapRegisteredBike(void) {
+ *      switch (gSaveBlock1Ptr->registeredItem) {
+ *      case ITEM_MACH_BIKE: gSaveBlock1Ptr->registeredItem = ITEM_ACRO_BIKE; break;
+ *      case ITEM_ACRO_BIKE: gSaveBlock1Ptr->registeredItem = ITEM_MACH_BIKE; break;
+ *      }
+ *  }
+ *  ```
+ *  Toggle entre Mach Bike et Acro Bike enregistré au L button. */
+registerSpecial('SwapRegisteredBike', () => {
+  const sb1 = gSaveBlock1Ptr as unknown as { registeredItem: number; __registeredItemKey?: string };
+  switch (sb1.registeredItem) {
+    case ITEM_MACH_BIKE:
+      sb1.registeredItem = ITEM_ACRO_BIKE;
+      // Web-port : maintenir le bridge __registeredItemKey 1:1 (cf. save-blocks.ts:1201).
+      sb1.__registeredItemKey = 'ITEM_ACRO_BIKE';
+      break;
+    case ITEM_ACRO_BIKE:
+      sb1.registeredItem = ITEM_MACH_BIKE;
+      sb1.__registeredItemKey = 'ITEM_MACH_BIKE';
+      break;
+  }
+});
+
+/** 1:1 décomp `SetMauvilleOldManObjEventGfx` (mauville_old_man.c:746-749) :
+ *  ```c
+ *  void SetMauvilleOldManObjEventGfx(void) {
+ *      VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BARD);
+ *  }
+ *  ```
+ *  Force le sprite Mauville Old Man en BARD (= old man par défaut). */
+registerSpecial('SetMauvilleOldManObjEventGfx', () => {
+  VarSet('VAR_OBJ_GFX_ID_0', OBJ_EVENT_GFX_BARD);
+});
+
+/** 1:1 décomp `GiddyShouldTellAnotherTale` (mauville_old_man.c:267-280) :
+ *  ```c
+ *  void GiddyShouldTellAnotherTale(void) {
+ *      struct MauvilleManGiddy *giddy = &gSaveBlock1Ptr->oldMan.giddy;
+ *      if (giddy->taleCounter == GIDDY_MAX_TALES) {
+ *          gSpecialVar_Result = FALSE;
+ *          giddy->taleCounter = 0;
+ *      } else {
+ *          gSpecialVar_Result = TRUE;
+ *      }
+ *  }
+ *  ```
+ *  Décide si Giddy continue à raconter (= TRUE) ou s'arrête (= FALSE) après
+ *  avoir atteint GIDDY_MAX_TALES (= 10) racontes. */
+registerSpecial('GiddyShouldTellAnotherTale', () => {
+  const om = gSaveBlock1Ptr.oldMan;
+  if (om && om.kind === 'giddy') {
+    if (om.taleCounter === GIDDY_MAX_TALES) {
+      om.taleCounter = 0;
+      VarSet('VAR_RESULT', 0);
+      return 0;
+    }
+    VarSet('VAR_RESULT', 1);
+    return 1;
+  }
+  // 1:1 strict : si pas en mode giddy, le décomp accède quand même au struct
+  // (union) — retourne TRUE par défaut comportementalement (= taleCounter=0).
+  VarSet('VAR_RESULT', 1);
+  return 1;
+});
+
+// `SetHiddenItemFlag` (field_specials.c:935-938) — dette R3 architecturale :
+// `FlagSet(gSpecialVar_0x8004)` lit un id numérique stocké par script (`setvar
+// VAR_0x8004, FLAG_HIDDEN_ITEM_X`). Notre FlagSet/Clear prend un name string,
+// pas un id numérique. Demande mapping inverse FLAG_ID → FLAG_NAME (= ~3000
+// entries) ou refactor FlagSet pour accepter id numérique. Reste stub `() => 0`
+// jusqu'à port mapping. Pattern identique à GetTrainerFlag (ligne 1192).
+
+// `UpdateShoalTideFlag` (time_events.c:54-92) — dette R3 cascade :
+// utilise IsMapTypeOutdoors(GetLastUsedWarpMapType()) + RtcCalcLocalTime +
+// gLocalTime.hours + FlagSet/Clear FLAG_SYS_SHOAL_TIDE. gLastUsedWarp non
+// porté (= EWRAM_DATA struct WarpData), GetMapTypeByWarpData non porté.
+// Demande port helpers cascade. Reste stub jusqu'à port complet (3-4 fns).
+
+// `GenerateGiddyLine` (mauville_old_man.c:282-315) — dette R3 cascade :
+// utilise EasyChat (CopyEasyChatWord), Random, gStringVar4, sGiddyAdjectives,
+// sGiddyQuestions, GiddyText_Is, GiddyText_DontYouAgree. Tables strings non
+// extraites. Reste stub jusqu'à port mauville_old_man string tables.
 
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
