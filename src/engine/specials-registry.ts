@@ -1446,6 +1446,14 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `GetMartEmployeeObjectEventId` (field_specials.c:3598-3626) :
+ *  Lookup table de 12 marts. Tous les LOCALID_X_MART_CLERK valent 1 (= 1er
+ *  objectEvent du map.json). Le commentaire décomp ligne 3597 confirme :
+ *  > // All mart employees have a local id of 1, so function always returns 1
+ *  Fallback `return 1` si non trouvé.
+ *  → 1:1 strict justifié : return 1 toujours. */
+registerSpecial('GetMartEmployeeObjectEventId', () => 1);
+
 /** 1:1 décomp `IsTVShowAlreadyInQueue` (tv.c:3268-3278) :
  *  ```c
  *  bool8 IsTVShowAlreadyInQueue(void) {
@@ -1872,7 +1880,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
   // 'GetFavorLadyState' — porté 1:1 décomp lilycove_lady.c:159 ci-bas.
   'GetLinkPartnerNames',
-  'GetMartEmployeeObjectEventId',
+  // 'GetMartEmployeeObjectEventId' — porté 1:1 décomp field_specials.c:3598 ci-bas.
   // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
   'GetMysteryGiftCardStat', 'GetNextActiveShowIfMassOutbreak',
