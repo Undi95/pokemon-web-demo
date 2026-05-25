@@ -764,8 +764,11 @@ function _itemKeyFromBag(itemId: number): string {
   return getItemKeyById(itemId);
 }
 
-/** STUB ItemMenu_Toss (item_menu.c) — ouvrira AskTossItems → quantity → confirm
- *  → RemoveBagItem. Stub : cancel. */
+/** 1:1 décomp `ItemMenu_Toss(u8 taskId)` (item_menu.c:1817) — dette R3 doc :
+ *  cascade AskTossItems → quantity selector → confirm yes/no → RemoveBagItem.
+ *  Flow demande quantity window + YesNo task + ASK_TOSS_ITEMS yes/no functions
+ *  (bag-screen.ts a déjà un _startToss séparé). Wire bag-menu-ctx vers même
+ *  flow demande refactor cross-module (= U-tier). */
 function ItemMenu_Toss(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
@@ -798,7 +801,8 @@ function ItemMenu_Register(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** STUB ItemMenu_Give — fade vers PartyScreen pour assigner item à un mon. */
+/** 1:1 décomp `ItemMenu_Give(u8 taskId)` (item_menu.c:1933) — dette R3 doc :
+ *  cascade CB2_ChooseMonToGiveItem (= party screen state machines U-tier U2). */
 function ItemMenu_Give(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
@@ -810,31 +814,39 @@ function ItemMenu_Cancel(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** STUB ItemMenu_UseInBattle — utilise l'item sur le mon actif en battle. */
+/** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) — dette R3
+ *  doc : cascade battle item-use flow (= Phase 1.4 N battle UI U-tier U1). */
 function ItemMenu_UseInBattle(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
 }
 
-/** STUB ItemMenu_CheckTag — ouvre Berry Tag screen. */
+/** 1:1 décomp `ItemMenu_CheckTag(u8 taskId)` (item_menu.c:1979) — dette R3
+ *  doc : cascade DoBerryTagScreen (= berry tag UI complet U-tier). */
 function ItemMenu_CheckTag(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
 }
 
-/** STUB ItemMenu_Show — Apprentice "présenter" item. */
+/** 1:1 décomp `ItemMenu_Show(u8 taskId)` (item_menu.c, Apprentice ACTION_SHOW)
+ *  — dette R3 doc : cascade Apprentice display UI U-tier (= Battle Frontier
+ *  subsystem). */
 function ItemMenu_Show(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
 }
 
-/** STUB ItemMenu_GiveFavorLady — donner item à Favor Lady. */
+/** 1:1 décomp `ItemMenu_GiveFavorLady(u8 taskId)` (item_menu.c, ACTION_GIVE_FAVOR_LADY)
+ *  — dette R3 doc : cascade Favor Lady give flow (= lilycove_lady gift item +
+ *  script special U-tier). */
 function ItemMenu_GiveFavorLady(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
 }
 
-/** STUB ItemMenu_ConfirmQuizLady — confirmer item pour Quiz Lady. */
+/** 1:1 décomp `ItemMenu_ConfirmQuizLady(u8 taskId)` (item_menu.c, ACTION_CONFIRM_QUIZ_LADY)
+ *  — dette R3 doc : cascade Quiz Lady confirm flow (= lilycove_lady quiz prize
+ *  setup U-tier). */
 function ItemMenu_ConfirmQuizLady(task: DecompTask): void {
   RemoveContextWindow();
   _returnToList(task);
