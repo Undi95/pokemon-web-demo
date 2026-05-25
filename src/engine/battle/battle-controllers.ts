@@ -9,7 +9,7 @@
  *   - `D:/Projet 1/decomps/pokeemeraude/src/util.c:7` (= `gBitTable[]`)
  *   - `D:/Projet 1/decomps/pokeemeraude/include/battle.h:9` (= MAX_BATTLERS_COUNT=4)
  *
- * Rationale : les opcodes Niveau 4 (attackanimation/printstring/waitmessage/etc.)
+ * Rationale : les opcodes Batch 04 (attackanimation/printstring/waitmessage/etc.)
  * appellent `BtlController_Emit*` puis `MarkBattlerForControllerExec`. Cela set
  * un bit dans `gBattleControllerExecFlags`. Les opcodes `waitanimation` et
  * `waitmessage` pause jusqu'à ce que le flag soit 0.
@@ -543,7 +543,7 @@ export const DPAD_DOWN     = 1 << 7;
 export const R_BUTTON      = 1 << 8;
 export const L_BUTTON      = 1 << 9;
 
-// ─── SE_* constants (constants/songs.h) — subset utilisé Niveau 4 ──────────
+// ─── SE_* constants (constants/songs.h) — subset utilisé Batch 04 ──────────
 export const SE_SELECT = 5; // 1:1 décomp constants/songs.h
 
 // ─── Sanity check : MAX_BATTLERS_COUNT match ────────────────────────────────

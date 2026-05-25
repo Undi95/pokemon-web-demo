@@ -97,7 +97,7 @@ import {
   ALL_MOVES_MASK as _ALL_MOVES_MASK,
   BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER,
 } from './constants';
-import { _GetMoveTarget } from './cmd-niveau-34';
+import { _GetMoveTarget } from './cmd-batch-34';
 import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from './ai/ai-script-commands';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';

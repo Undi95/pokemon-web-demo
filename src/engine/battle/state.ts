@@ -6,11 +6,11 @@
  * singleton accessible via `battleState`. Les opcodes lisent/écrivent directement
  * dessus (= 1:1 décomp pattern, pas d'abstraction).
  *
- * Pour Phase 1 niveau 1 (= damage flow basic), seuls les states utilisés par
+ * Pour Phase 1 Batch 01 (= damage flow basic), seuls les states utilisés par
  * Cmd_attackcanceler/accuracycheck/ppreduce/critcalc/damagecalc/typecalc/
  * adjustnormaldamage/healthbarupdate/datahpupdate/tryfaintmon/moveend sont
  * définis. Les autres seront ajoutés au fur et à mesure que les opcodes
- * Niveau 2+ sont portés.
+ * Batch 02+ sont portés.
  *
  * Cf. `D:/Projet 1/pokemon-web-demo/memory/SESSION-132-BACKING-SYSTEMS.md`
  * pour la roadmap complète Phase 1.

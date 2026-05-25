@@ -48,7 +48,7 @@ import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../system/random';
 import { getBattleMove } from './data/battle-moves';
-import { _GetMoveTarget as _GetMoveTargetForBide } from './cmd-niveau-34';
+import { _GetMoveTarget as _GetMoveTargetForBide } from './cmd-batch-34';
 
 // ─── CANCELER_* enum (battle_util.c:1966-1983) — 1:1 décomp ──────────────
 export const CANCELER_FLAGS      = 0;
@@ -436,7 +436,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
 }
 
 /** 1:1 décomp `CancelMultiTurnMoves(battler)` (battle_util.c:864-875).
- *  Privé pour éviter dépendance cyclique avec cmd-niveau-34.
+ *  Privé pour éviter dépendance cyclique avec cmd-batch-34.
  *  AUDIT BUG FIX : 4 constantes status2/3 hardcoded fausses → utilise les bonnes
  *  values 1:1 battle.h. */
 function _CancelMultiTurnMoves(battler: number): void {
