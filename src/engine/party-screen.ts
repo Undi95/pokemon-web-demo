@@ -2021,8 +2021,28 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
     } else if (action === MENU_SWITCH /* ORDRE */) {
       _cursorCbSwitch();
     } else if (action === MENU_ITEM /* OBJET */) {
-      // TODO : ouvrir bag pour give/swap item
-      console.log('[party-screen] TODO : OBJET → bag give/swap');
+      // Dette R3 documentée : 1:1 décomp `CursorCb_Item` (party_menu.c:2786)
+      // cascade vers DisplaySelectionWindow(ACTIONS_ITEM) → MENU_GIVE/MENU_TAKE_ITEM
+      // sub-menu → CB2 swap vers bag-screen filtré. Demande wire CB2 swap
+      // bag-screen + sub-action handlers (= TakeMail/TakeItem/Give item from bag).
+      console.log('[party-screen] OBJET → dette R3 (cascade CursorCb_Item U-tier)');
+      _closeActionMenu();
+    } else if (action === MENU_MAIL /* MAIL */) {
+      // Dette R3 documentée : 1:1 décomp `CursorCb_Mail` (party_menu.c:2807)
+      // cascade vers DisplaySelectionWindow(ACTIONS_MAIL) → READ/TAKE_MAIL.
+      // Demande CB2 swap vers ReadMail screen + bag-add flow équivalent.
+      console.log('[party-screen] MAIL → dette R3 (cascade CursorCb_Mail U-tier)');
+      _closeActionMenu();
+    } else if (action >= MENU_FIELD_MOVES) {
+      // Dette R3 documentée : 1:1 décomp `CursorCb_FieldMove` (party_menu.c:3702)
+      // cascade vers :
+      //  1. Check badge requis (= FLAG_BADGE01..08 pour field moves 0..7).
+      //  2. Si badge OK → trigger sFieldMoveCursorCallbacks[j].cursorCb + setup
+      //     gPostMenuFieldCallback → fade screen + close party + run field move.
+      //  3. Si pas badge → afficher "Pas la marque pour utiliser X".
+      // Demande wire field-effect.c subsystem + flag check + script setup.
+      const fieldMoveIdx = action - MENU_FIELD_MOVES;
+      console.log(`[party-screen] FIELD_MOVE[${fieldMoveIdx}=${FIELD_MOVE_NAMES_FR[fieldMoveIdx] ?? '?'}] → dette R3 (cascade CursorCb_FieldMove U-tier)`);
       _closeActionMenu();
     }
   } else if (newKeys & KEY_B) {
