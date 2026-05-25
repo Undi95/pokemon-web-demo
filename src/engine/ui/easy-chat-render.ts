@@ -196,7 +196,7 @@ import {
   TEXT_COLOR_LIGHT_RED,
   FONT_NORMAL,
   PIXEL_FILL,
-} from '../battle-windows';
+} from '../battle/battle-windows';
 
 import {
   CHAR_HYPHEN,

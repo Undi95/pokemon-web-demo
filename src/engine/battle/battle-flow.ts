@@ -56,15 +56,15 @@ import {
   ShowBg,
   HideBg,
   type WindowTemplate,
-} from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+} from '../gba-window-system';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
 import {
   ShowFieldMessage,
   IsFieldMessageBoxHidden,
   HideFieldMessageBox,
-} from './field/field-message-box';
-import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
-import { LoadSpritePalette } from './sprite';
+} from '../field/field-message-box';
+import { getRuntime, BlendPalettes, PALETTES_ALL } from '../decomp-globals';
+import { LoadSpritePalette } from '../sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -74,10 +74,10 @@ import { LoadSpritePalette } from './sprite';
 function _restorePalettesFromUnfaded(): void {
   BlendPalettes(PALETTES_ALL, 0, 0 /* RGB_BLACK */);
 }
-import { OBJ_PLTT_ID } from './decomp-runtime';
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon/pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
+import { OBJ_PLTT_ID } from '../decomp-runtime';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from '../pokemon/pokemon';
+import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -92,29 +92,29 @@ import {
   updateHealthboxExpBar,
   type HealthboxHandle,
 } from './battle-healthbox';
-import { getExperienceForLevel } from './data/game-data';
+import { getExperienceForLevel } from '../data/game-data';
 import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
   runHandleFaintedMonActionsViaBytecode,
   syncBattleMonsHpToInstances,
   chooseOpponentMoveViaAI,
-} from './battle/wire-bytecode-bridge';
-import { VarSet } from './script/script-vars';
-import { getMove, getMoveName, loadGameData } from './data/game-data';
-import { moveDexIdToEnum } from './battle/data/move-name-resolve';
-import { Random } from './random';
-import { IsBattleSceneOff } from './gba-menu-system';
+} from '../battle/wire-bytecode-bridge';
+import { VarSet } from '../script/script-vars';
+import { getMove, getMoveName, loadGameData } from '../data/game-data';
+import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
+import { Random } from '../random';
+import { IsBattleSceneOff } from '../gba-menu-system';
 // E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
-import { setBattleTypeFlags, gBattleTypeFlags } from './battle/state';
-import { BATTLE_TYPE_FIRST_BATTLE } from './battle/constants';
+import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
+import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
 import {
   A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 
 // ─── Battle outcome constants (= 1:1 décomp include/constants/battle.h) ────
 export const BATTLE_OUTCOME_WIN     = 1;
@@ -818,7 +818,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  consomment ce résultat (= PLAYER_USES_MOVE / OPPONENT_USES_MOVE) de
    *  inspecter si un CONTROLLER_HITANIMATION a été émis (= sprite shake 1:1
    *  décomp piloté par le bytecode au lieu de hardcoded `damage > 0`). */
-  let _lastBytecodeEvents: import('./battle/battle-event-queue').BattleEvent[] = [];
+  let _lastBytecodeEvents: import('../battle/battle-event-queue').BattleEvent[] = [];
 
   /** Helper : check si le dernier bytecode run a émis un CONTROLLER_HITANIMATION
    *  (= 0x29). Renvoie true pour les moves qui hit le defender (= excluant
@@ -1055,7 +1055,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // dispatch via song table). Loop=true car MUS_VS_WILD a des loop markers
         // dans le .mid. `playMidiLoop` ne marchait pas car nécessite primeAudio
         // qui n'est pas appelé par notre code overworld (= m4aPrime suffit).
-        import('./decomp-globals').then(({ m4aSongNumStart }) => {
+        import('../decomp-globals').then(({ m4aSongNumStart }) => {
           m4aSongNumStart(474 /* MUS_VS_WILD */, true);
         });
         // 1:1 décomp `Task_BattleTransition` (battle_transition.c:1063) :
@@ -1120,7 +1120,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               // Ensure game-data is loaded (= moves table for damage calc).
               await loadGameData();
               // Expose getSpeciesInfo via global for getSpeciesStats lookup.
-              const gameData = await import('./data/game-data');
+              const gameData = await import('../data/game-data');
               (globalThis as { __game_data?: unknown }).__game_data = gameData;
               // Load player back sprite.
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
@@ -1299,7 +1299,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
         // Avec nickname FR → medhyena.wav 404 → "cry fail EncodingError".
-        void import('./music').then(({ playCry }) => {
+        void import('../music').then(({ playCry }) => {
           playCry(opponentMon!.speciesName);
         });
         state = 'INTRO_WAIT';
@@ -1320,7 +1320,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // visually "comes out" of its ball). Only once per battle.
         if (!_playerCryPlayed) {
           _playerCryPlayed = true;
-          void import('./music').then(({ playCry }) => {
+          void import('../music').then(({ playCry }) => {
             playCry(playerMon!.speciesName);  // EN canonique, PAS nickname FR
           });
         }

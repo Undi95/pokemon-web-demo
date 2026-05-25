@@ -36,14 +36,14 @@
  * step/frame Task) car ce tick est polled ~5-6×/frame par le battle-flow.
  */
 
-import { getRuntime } from './decomp-globals';
+import { getRuntime } from '../decomp-globals';
 import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
-} from './decomp-runtime';
+} from '../decomp-runtime';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
-import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from './decomp-data/include/gba/defines-data';
+import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
 
 // 1:1 décomp `WIN_RANGE(a, b)` (io_reg.h:584) = `(a << 8) | b`.
 function WIN_RANGE(a: number, b: number): number { return ((a & 0xFF) << 8) | (b & 0xFF); }

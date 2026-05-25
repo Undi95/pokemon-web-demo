@@ -508,7 +508,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
-    const mod = await import('../battle-flow');
+    const mod = await import('../battle/battle-flow');
     const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
     const sbsMod = await import('../save/save-block-state');
@@ -524,7 +524,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     return 'Birch tutorial battle started — flow ticked via script engine';
   };
   battleNs.startWild = async (species: string, level: number): Promise<string> => {
-    const mod = await import('../battle-flow');
+    const mod = await import('../battle/battle-flow');
     const scriptMod = await import('../script/script-runtime');
     // Auto-add Treecko if party is empty.
     const sbsMod2 = await import('../save/save-block-state');
@@ -555,7 +555,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
   starterNs.choose = async (): Promise<string> => {
-    const flowMod = await import('../starter-choose-flow');
+    const flowMod = await import('../battle/starter-choose-flow');
     const scriptMod = await import('../script/script-runtime');
     const flow = flowMod.startChooseStarterFlow();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);

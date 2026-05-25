@@ -27,24 +27,24 @@
  *
  * Cf. memory/upd2-progress.md.
  */
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
-import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { getRuntime, LoadPalette } from './decomp-globals';
-import { LoadSpritePalette } from './sprite';
-import { BG_PLTT_ID, OBJ_PLTT_ID } from './decomp-runtime';
-import { GetOverworldTextboxPalettePtr } from './decomp-bridge';
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { createPokemonInstance, GiveMonToPlayer } from './pokemon/pokemon';
-import { VarSet } from './script/script-vars';
-import { Sin } from './decomp-helpers';
-import { loadTileBin, loadGbaPal } from './gba/png-loader';
-import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './field/map-loader';
-import { pauseTilesetAnimations, resumeTilesetAnimations } from './field/tileset-anims';
-import { setFieldCameraSuspended } from './field/field-camera';
-import { getString, initStringsFromDecomp } from './gba-strings';
-import { getSpeciesNameFr, loadTextTables, type TextTables } from './data-tables';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from '../gba-menu-system';
+import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from '../gba-window-system';
+import { AddTextPrinterParameterized3 } from '../gba-text-system';
+import { getRuntime, LoadPalette } from '../decomp-globals';
+import { LoadSpritePalette } from '../sprite';
+import { BG_PLTT_ID, OBJ_PLTT_ID } from '../decomp-runtime';
+import { GetOverworldTextboxPalettePtr } from '../decomp-bridge';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { createPokemonInstance, GiveMonToPlayer } from '../pokemon/pokemon';
+import { VarSet } from '../script/script-vars';
+import { Sin } from '../decomp-helpers';
+import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../field/map-loader';
+import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';
+import { setFieldCameraSuspended } from '../field/field-camera';
+import { getString, initStringsFromDecomp } from '../gba-strings';
+import { getSpeciesNameFr, loadTextTables, type TextTables } from '../data-tables';
 // Audit session 126 (post-test user) : wire le first wild battle Zigzagoon
 // après starter pick. 1:1 décomp `battle_setup.c:CB2_GiveStarter:917-928` →
 // `CB2_StartFirstBattle:930-948` set BATTLE_TYPE_FIRST_BATTLE puis CB2_InitBattle.
@@ -119,7 +119,7 @@ const STARTER_LABEL_TEMPLATE_BASE: Omit<WindowTemplate, 'tilemapLeft' | 'tilemap
 // GBA key masks (= 1:1 décomp gba/io_reg.h). Import depuis decomp-data (= A8 audit).
 import {
   A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT,
-} from './decomp-data/include/gba/io_reg-data';
+} from '../decomp-data/include/gba/io_reg-data';
 
 // Asset URLs (= public/decomp/em/starter_choose/).
 // Runtime LoadCompressedSpriteSheet expects palette PNG (= 4bpp indexed avec
@@ -650,7 +650,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           // Session 124 Bug 5b : 1:1 décomp Task_AskConfirmStarter
           // PlayCry_Normal(GetStarterPokemon(task.data[0]), 0).
           const cryName = speciesEnum.replace('SPECIES_', '').toLowerCase();
-          void import('./music').then(({ playCry }) => playCry(cryName));
+          void import('../music').then(({ playCry }) => playCry(cryName));
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }

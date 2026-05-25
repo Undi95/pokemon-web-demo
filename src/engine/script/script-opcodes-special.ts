@@ -128,7 +128,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'ChooseStarter') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('../starter-choose-flow').then((mod) => {
+    void import('../battle/starter-choose-flow').then((mod) => {
       flow = mod.startChooseStarterFlow();
       flowReady = true;
     });
@@ -145,7 +145,7 @@ registerOpcode('special', (ctx, args) => {
   if (name === 'StartBirchTutorialBattle') {
     let flowReady = false;
     let flow: { tick: () => boolean } | null = null;
-    void import('../battle-flow').then((mod) => {
+    void import('../battle/battle-flow').then((mod) => {
       flow = mod.startBirchTutorialBattle();
       flowReady = true;
     });

@@ -43,7 +43,7 @@
 
 import {
   sStandardBattleWindowTemplates as _autoStdBattleWinTemplates,
-} from './decomp-data/src/battle_bg-data';
+} from '../decomp-data/src/battle_bg-data';
 
 // ─── B_WIN_TYPE (battle.h:341-342) ──────────────────────────────────────────
 export const B_WIN_TYPE_NORMAL = 0;

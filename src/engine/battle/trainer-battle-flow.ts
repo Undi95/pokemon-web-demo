@@ -22,10 +22,10 @@
  * Future Phase 5.8 : multi-mon trainers (= gym leaders, etc.).
  */
 import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
-import { getRuntime } from './decomp-globals';
-import { FlagSet, VarSet } from './script/script-vars';
-import { ShowBg, HideBg } from './gba-window-system';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
+import { getRuntime } from '../decomp-globals';
+import { FlagSet, VarSet } from '../script/script-vars';
+import { ShowBg, HideBg } from '../gba-window-system';
 
 interface TrainerPartyMember {
   species: string;
@@ -47,7 +47,7 @@ interface TrainerBattleFlow {
 }
 
 // 1:1 strict A8 audit : import GBA keys depuis decomp-data.
-import { A_BUTTON, B_BUTTON } from './decomp-data/include/gba/io_reg-data';
+import { A_BUTTON, B_BUTTON } from '../decomp-data/include/gba/io_reg-data';
 
 // Lazy-loaded trainer data.
 let _trainerDataCache: Record<string, TrainerData> | null = null;
@@ -81,7 +81,7 @@ let _trainerKeyToNum: Record<string, number> | null = null;
 void (async function _loadTrainerNumIds(): Promise<void> {
   if (_trainerKeyToNum) return;
   try {
-    const mod = await import('./decomp-data/include/constants/opponents-data');
+    const mod = await import('../decomp-data/include/constants/opponents-data');
     const map: Record<string, number> = {};
     for (const [k, v] of Object.entries(mod)) {
       if (k.startsWith('TRAINER_') && typeof v === 'number') map[k] = v;
@@ -303,9 +303,9 @@ if (typeof window !== 'undefined') {
   dev.battle = dev.battle ?? {};
   dev.battle.startTrainer = async (trainerId: string) => {
     // Auto-add starter Pokemon if party is empty (= dev convenience).
-    const sbsMod = await import('./save/save-block-state');
+    const sbsMod = await import('../save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('./pokemon/pokemon');
+      const pokeMod = await import('../pokemon/pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
       pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startTrainer] auto-added Treecko Lv8 (party était vide)');

@@ -36,9 +36,9 @@
  * D6 (gender symbols) sont des sous-modules suivants.
  */
 
-import { getRuntime } from './decomp-globals';
-import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
-import { MarkObjTilesAllocated } from './sprite';
+import { getRuntime } from '../decomp-globals';
+import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
+import { MarkObjTilesAllocated } from '../sprite';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
  *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé
