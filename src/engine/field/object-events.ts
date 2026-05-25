@@ -3335,18 +3335,30 @@ _registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
 export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
   if (!gMapHeader) return;
   // 1:1 STRICT décomp event_object_movement.c:1699-1713 RemoveObjectEventIfOutsideView :
-  //   left   = gSaveBlock1Ptr->pos.x - 2
-  //   right  = gSaveBlock1Ptr->pos.x + 17 = MAP_OFFSET_W + 2
-  //   top    = gSaveBlock1Ptr->pos.y
-  //   bottom = gSaveBlock1Ptr->pos.y + 16 = MAP_OFFSET_H + 2
-  // → compare avec currentCoords.x (INTERNAL = +MAP_OFFSET) donc en LOGICAL frame
-  //   ça équivaut à `template.x` ∈ [pos.x - 9, pos.x + 10] (cf. TrySpawnObjectEvents).
+  //   s16 left   = gSaveBlock1Ptr->pos.x - 2;
+  //   s16 right  = gSaveBlock1Ptr->pos.x + 17;
+  //   s16 top    = gSaveBlock1Ptr->pos.y;
+  //   s16 bottom = gSaveBlock1Ptr->pos.y + 16;
+  //   if (objectEvent->currentCoords.x >= left && objectEvent->currentCoords.x <= right ...)
+  //
+  // CRITICAL : le décomp mélange volontairement les frames. `gSaveBlock1Ptr->pos.x`
+  // est en LOGICAL frame (= cf. SetCameraFocusCoords fieldmap.c:794 `pos.x = x - MAP_OFFSET`).
+  // Mais `objectEvent->currentCoords.x` est en INTERNAL frame (= template.x + MAP_OFFSET).
+  // → bounds effectif en NPC INTERNAL frame est [pos.x - 2 + 7, pos.x + 17 + 7]
+  //   en LOGICAL équivalent NPC.x ∈ [pos.x - 9, pos.x + 10] (= large 19 tiles).
+  //
+  // AUDIT BUG FIX G4 (régression non commitée) : l'ancien code ajoutait
+  // `+ MAP_OFFSET` aux bounds (= bug), ce qui SHRINK la zone effective :
+  // [pos.x + 5, pos.x + 24] en LOGICAL → NPC à 4 tiles left de player removed.
+  // → MOM à world (4, 5), player à (8, 3) : NPC.x INTERNAL 11 < left 15 = removed
+  // alors que le décomp garde MOM visible (= 11 >= 6 = TRUE).
+  // Fix : utiliser les bounds DIRECTEMENT comme dans le décomp.
   const posX = gSaveBlock1Ptr.pos.x;
   const posY = gSaveBlock1Ptr.pos.y;
-  const left = posX - 2 + MAP_OFFSET;
-  const right = posX + 17 + MAP_OFFSET;
-  const top = posY + MAP_OFFSET;
-  const bottom = posY + 16 + MAP_OFFSET;
+  const left = posX - 2;
+  const right = posX + 17;
+  const top = posY;
+  const bottom = posY + 16;
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
