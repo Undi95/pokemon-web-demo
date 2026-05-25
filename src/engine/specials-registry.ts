@@ -2118,7 +2118,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'FoundAbandonedShipRoom4Key' — porté 1:1 décomp field_specials.c:1350 ci-bas.
   // 'FoundAbandonedShipRoom6Key' — porté 1:1 décomp field_specials.c:1361 ci-bas.
   // 'GabbyAndTyAfterInterview' — porté 1:1 décomp tv.c:979 ci-bas (batch B27).
-  'GabbyAndTyBeforeInterview',
+  // 'GabbyAndTyBeforeInterview' — porté 1:1 décomp tv.c:935 ci-bas (batch B28).
   // 'GabbyAndTyGetLastBattleTrivia' — porté 1:1 décomp tv.c:1020 ci-bas.
   // 'GabbyAndTyGetBattleNum' — porté 1:1 décomp tv.c:996 ci-bas.
   // 'GabbyAndTyGetLastQuote' — porté 1:1 décomp tv.c:1009 ci-bas.
@@ -3348,6 +3348,67 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B28 batch — 1 special TV Gabby/Ty Before Interview 1:1 strict ────
+
+/** 1:1 décomp `GabbyAndTyBeforeInterview` (tv.c:935-977) :
+ *  ```c
+ *  void GabbyAndTyBeforeInterview(void) {
+ *      gabbyAndTyData.mon1 = gBattleResults.playerMon1Species;
+ *      gabbyAndTyData.mon2 = gBattleResults.playerMon2Species;
+ *      gabbyAndTyData.lastMove = gBattleResults.lastUsedMovePlayer;
+ *      if (gabbyAndTyData.battleNum != 0xFF) gabbyAndTyData.battleNum++;
+ *      gabbyAndTyData.battleTookMoreThanOneTurn = gBattleResults.playerMonWasDamaged;
+ *      gabbyAndTyData.playerLostAMon = gBattleResults.playerFaintCounter != 0;
+ *      gabbyAndTyData.playerUsedHealingItem = gBattleResults.numHealingItemsUsed != 0;
+ *      if (!gBattleResults.usedMasterBall) {
+ *          for (i = 0; i < POKEBALL_COUNT - 1; i++) {
+ *              if (gBattleResults.catchAttempts[i]) { playerThrewABall = TRUE; break; }
+ *          }
+ *      } else playerThrewABall = TRUE;
+ *      TakeGabbyAndTyOffTheAir();  // onAir = FALSE
+ *      if (lastMove == MOVE_NONE) FlagSet(FLAG_TEMP_SKIP_GABBY_INTERVIEW);
+ *  }
+ *  ```
+ *  POKEBALL_COUNT=12 (pokeball.h:18) → loop 11 catchAttempts.
+ *  FLAG_TEMP_SKIP_GABBY_INTERVIEW = alias FLAG_TEMP_1. */
+registerSpecial('GabbyAndTyBeforeInterview', () => {
+  const data = gSaveBlock1Ptr.gabbyAndTyData;
+  if (!data) return;
+  const bridge = (globalThis as { __game_bridge?: {
+    gBattleResults?: {
+      playerMon1Species?: number; playerMon2Species?: number;
+      lastUsedMovePlayer?: number; playerMonWasDamaged?: number;
+      playerFaintCounter?: number; numHealingItemsUsed?: number;
+      usedMasterBall?: number; catchAttempts?: number[];
+    };
+  } }).__game_bridge;
+  const br = bridge?.gBattleResults;
+  data.mon1 = br?.playerMon1Species ?? 0;
+  data.mon2 = br?.playerMon2Species ?? 0;
+  data.lastMove = br?.lastUsedMovePlayer ?? 0;
+  if (data.battleNum !== 0xFF) data.battleNum = (data.battleNum ?? 0) + 1;
+  data.battleTookMoreThanOneTurn = br?.playerMonWasDamaged ?? 0;
+  data.playerLostAMon = (br?.playerFaintCounter ?? 0) !== 0 ? 1 : 0;
+  data.playerUsedHealingItem = (br?.numHealingItemsUsed ?? 0) !== 0 ? 1 : 0;
+  if (!br?.usedMasterBall) {
+    // 1:1 décomp loop POKEBALL_COUNT-1 = 11 (= exclude Master Ball).
+    for (let i = 0; i < 11; i++) {
+      if (br?.catchAttempts?.[i]) {
+        data.playerThrewABall = 1;
+        break;
+      }
+    }
+  } else {
+    data.playerThrewABall = 1;  // Master Ball case.
+  }
+  // TakeGabbyAndTyOffTheAir : onAir = FALSE.
+  data.onAir = 0;
+  // FLAG_TEMP_SKIP_GABBY_INTERVIEW = FLAG_TEMP_1 alias.
+  if (data.lastMove === 0) {  // MOVE_NONE
+    FlagSet('FLAG_TEMP_1');
+  }
 });
 
 // ─── Session B27 batch — 1 special TV Gabby/Ty 1:1 strict ────────────────
