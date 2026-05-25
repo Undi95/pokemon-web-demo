@@ -2091,8 +2091,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CheckRelicanthWailord' — porté 1:1 décomp braille_puzzles.c:92 ci-bas.
   'ChooseItemsToTossFromPyramidBag', 'ChooseMonForMoveRelearner',
   'ChooseMonForMoveTutor', 'ChooseMonForWirelessMinigame', 'ChooseSendDaycareMon',
-  'CleanupLinkRoomState', 'ClearAndLeaveSecretBase', 'ClearQuizLadyPlayerAnswer',
-  'ClearQuizLadyQuestionAndAnswer', 'CloseBattlePikeCurtain',
+  'CleanupLinkRoomState', 'ClearAndLeaveSecretBase',
+  // 'ClearQuizLadyPlayerAnswer' — porté 1:1 décomp lilycove_lady.c:505 ci-bas (batch B45).
+  // 'ClearQuizLadyQuestionAndAnswer' — porté 1:1 décomp lilycove_lady.c:526 ci-bas (batch B45).
+  'CloseBattlePikeCurtain',
   // 'CompareLotadSize' — porté 1:1 décomp pokemon_size_record.c:183 (batch B8).
   // 'CompareSeedotSize' — porté 1:1 décomp pokemon_size_record.c:164 (batch B8).
   'CopyCurSecretBaseOwnerName_StrVar1',
@@ -3381,6 +3383,43 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B45 batch — 2 specials Quiz Lady clear 1:1 strict ───────────
+
+/** 1:1 décomp `ClearQuizLadyPlayerAnswer` (lilycove_lady.c:505-509) :
+ *  ```c
+ *  void ClearQuizLadyPlayerAnswer(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      sQuizLadyPtr->playerAnswer = EC_EMPTY_WORD;
+ *  }
+ *  ```
+ *  EC_EMPTY_WORD = 0xFFFF (= constants/easy_chat.h). */
+registerSpecial('ClearQuizLadyPlayerAnswer', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    lady.playerAnswer = 0xFFFF;  // EC_EMPTY_WORD
+  }
+});
+
+/** 1:1 décomp `ClearQuizLadyQuestionAndAnswer` (lilycove_lady.c:526-534) :
+ *  ```c
+ *  void ClearQuizLadyQuestionAndAnswer(void) {
+ *      u8 i;
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      for (i = 0; i < QUIZ_QUESTION_LEN; i++)
+ *          sQuizLadyPtr->question[i] = EC_EMPTY_WORD;
+ *      sQuizLadyPtr->correctAnswer = EC_EMPTY_WORD;
+ *  }
+ *  ```
+ *  QUIZ_QUESTION_LEN = 9. */
+registerSpecial('ClearQuizLadyQuestionAndAnswer', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    if (!lady.question) lady.question = new Array(9).fill(0);
+    for (let i = 0; i < 9; i++) lady.question[i] = 0xFFFF;
+    lady.correctAnswer = 0xFFFF;
+  }
 });
 
 // ─── Session B44 batch — 1 special IV Rater 1:1 strict ───────────────────
