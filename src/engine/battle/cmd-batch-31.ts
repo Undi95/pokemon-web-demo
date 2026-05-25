@@ -25,7 +25,9 @@ import {
 import {
   MOVE_EFFECT_BYTE, MOVE_EFFECT_CERTAIN,
   MOVE_RESULT_NO_EFFECT,
+  BATTLE_TYPE_TRAINER, BATTLE_TYPE_DOUBLE,
 } from './constants';
+import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
 import { getBattleMove } from './data/battle-moves';
 import { SetMoveEffect } from './set-move-effect';
 import {
@@ -95,15 +97,13 @@ function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
     getTarget?: () => number;
   } }).__battleStateMutators;
   const gBattleTypeFlags_local = stateMod?.getBattleTypeFlags?.() ?? 0;
-  const BATTLE_TYPE_TRAINER_LOCAL = 1 << 3;
-  const BATTLE_TYPE_DOUBLE_LOCAL = 1 << 0;
 
-  if (!(gBattleTypeFlags_local & BATTLE_TYPE_TRAINER_LOCAL)) {
+  if (!(gBattleTypeFlags_local & BATTLE_TYPE_TRAINER)) {
     // Wild battle : TryDoForceSwitchOut deferred (= no-op, fail-through).
     return false;
   }
 
-  if (gBattleTypeFlags_local & BATTLE_TYPE_DOUBLE_LOCAL) {
+  if (gBattleTypeFlags_local & BATTLE_TYPE_DOUBLE) {
     // Double/Multi/Link battle : pas porté. Fail.
     ctx.scriptPtr = failJump;
     return false;
@@ -113,10 +113,9 @@ function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
   // 1:1 décomp 7313-7325 :
   //   firstMonId = 0; lastMonId = PARTY_SIZE - 1; monsCount = PARTY_SIZE; minNeeded = 1;
   //   battler2PartyId = battler1PartyId = gBattlerPartyIndexes[gBattlerTarget];
-  const PARTY_SIZE_LOCAL = 6;
   const firstMonId = 0;
-  const lastMonId = PARTY_SIZE_LOCAL - 1;  // BUGFIX 1:1 : -1 (= valid party slots 0..4)
-  const monsCount = PARTY_SIZE_LOCAL;
+  const lastMonId = PARTY_SIZE - 1;  // BUGFIX 1:1 : -1 (= valid party slots 0..4)
+  const monsCount = PARTY_SIZE;
   const minNeeded = 1;
 
   const target = stateMod?.getTarget?.() ?? 1;

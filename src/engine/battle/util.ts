@@ -31,6 +31,7 @@ import {
   STATUS2_ESCAPE_PREVENTION, STATUS2_WRAPPED,
   STATUS2_INFATUATION,
   GET_BATTLER_SIDE,
+  ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK,
 } from './constants';
 import {
   BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
@@ -415,14 +416,11 @@ export function GetDefaultMoveTarget(battler: number): number {
  *  `((!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK)))`.
  *  Retourne TRUE sauf si Cloud Nine ou Air Lock est on field (= ability bloque weather). */
 export function WEATHER_HAS_EFFECT(): boolean {
-  // 1:1 décomp abilities.h:17,81. AUDIT BUG FIX : AIR_LOCK était 76 (= TRACE!) → 77.
-  const ABILITY_CLOUD_NINE_LOCAL = 13;
-  const ABILITY_AIR_LOCK_LOCAL = 77;
   for (let i = 0; i < gBattlersCount; i++) {
     const mon = gBattleMons[i];
     if (!mon) continue;
-    if ((mon.ability === ABILITY_CLOUD_NINE_LOCAL
-         || mon.ability === ABILITY_AIR_LOCK_LOCAL)
+    if ((mon.ability === ABILITY_CLOUD_NINE
+         || mon.ability === ABILITY_AIR_LOCK)
         && mon.hp > 0) {
       return false;
     }

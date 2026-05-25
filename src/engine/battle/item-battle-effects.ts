@@ -40,7 +40,7 @@ import {
   IGNORE_SHELL_BELL,
   GET_BATTLER_SIDE, B_SIDE_PLAYER,
   STATUS1_PARALYSIS, STATUS1_BURN, STATUS1_FREEZE, STATUS1_SLEEP, STATUS1_ANY,
-  STATUS1_POISON, STATUS1_TOXIC_POISON,
+  STATUS1_POISON, STATUS1_TOXIC_POISON, STATUS1_TOXIC_COUNTER,
   STATUS2_CONFUSION, STATUS2_NIGHTMARE, STATUS2_INFATUATION, STATUS2_FOCUS_ENERGY,
   STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF,
   MAX_STAT_STAGE,
@@ -139,7 +139,6 @@ function _writeStatusFrToBuffIBE(buf: Uint8Array, status1: number, status2: numb
 
 // ─── Helpers : status1 masks ─────────────────────────────────────────────
 const STATUS1_PSN_ANY = STATUS1_POISON | STATUS1_TOXIC_POISON;
-const STATUS1_TOXIC_COUNTER = 0xF00; // 1:1 décomp battle.h:128.
 
 // ─── ITEM_* return codes 1:1 décomp ──────────────────────────────────────
 const ITEM_HP_CHANGE     = 2;

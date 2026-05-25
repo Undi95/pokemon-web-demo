@@ -56,8 +56,8 @@ import {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 import { getTrainerMoneyValue, gTrainerMoneyTable } from './data/trainer-money-table';
+import { TRAINER_SECRET_BASE } from '../decomp-data/include/constants/trainers-data';
 
-const TRAINER_SECRET_BASE_LOCAL = 1024;  // 1:1 constants/trainers.h.
 const F_TRAINER_PARTY_CUSTOM_MOVESET = 1 << 0;
 const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
 
@@ -67,7 +67,7 @@ const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
  *  default classId=0xFF (=5) et lastMonLevel=party adversaire last entry. */
 function _getTrainerMoneyToGive(trainerId: number): number {
   // 1:1 décomp : Secret Base path (= 20 × levels[0] × moneyMultiplier).
-  if (trainerId === TRAINER_SECRET_BASE_LOCAL) {
+  if (trainerId === TRAINER_SECRET_BASE) {
     const sb = (globalThis as { gBattleResources?: { secretBase?: { party?: { levels: number[] } } } })
       .gBattleResources?.secretBase?.party;
     const lvl0 = sb?.levels?.[0] ?? 1;
