@@ -21,7 +21,7 @@
  * Module NON wiré au controller action-choice = zéro risque gameplay.
  */
 
-import { Random } from '../../random';
+import { Random } from '../../system/random';
 import {
   gActiveBattler,
   gBattleMons,

@@ -10,7 +10,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../../system/decomp-runtime';
 import type { ObjectEvent } from '../../field/object-events';
 
 // NB : la signature décomp est

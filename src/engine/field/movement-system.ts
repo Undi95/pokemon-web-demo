@@ -28,7 +28,7 @@
  *   surf, ride water, slide, etc.) à étendre si besoin.
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
 import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';

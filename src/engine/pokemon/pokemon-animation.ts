@@ -20,7 +20,7 @@
  * known bug. We expose both sentinels.
  */
 
-import type { DecompRuntime, DecompSprite } from '../decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { getMonAnimFunc, getMonFrontAnimId } from './pokemon-anim-funcs';
 
 // ─── Sentinel callbacks ─────────────────────────────────────────────────────

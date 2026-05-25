@@ -12,7 +12,7 @@ import { registerOpcode } from './script-runtime';
 import { VarGet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 
 /** 1:1 décomp `ScrCmd_setweather` (scrcmd.c) :
  *    SetSavedWeather(VarGet(weather));

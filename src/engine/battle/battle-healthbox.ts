@@ -36,7 +36,7 @@
  * D6 (gender symbols) sont des sous-modules suivants.
  */
 
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
 import { MarkObjTilesAllocated } from '../sprite';
 

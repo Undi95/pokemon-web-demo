@@ -46,8 +46,8 @@
  * Ce module n'est PAS asynchrone à l'exécution : les fonctions InitMap +
  * MapGridGet* sont synchrones après loadMapByName() async qui pré-fetch tout.
  */
-import type { DecompRuntime } from '../decomp-runtime';
-import { LoadBgTiles, LoadPalette } from '../decomp-globals';
+import type { DecompRuntime } from '../system/decomp-runtime';
+import { LoadBgTiles, LoadPalette } from '../system/decomp-globals';
 import { extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
 import { setPrimaryTilesetAnimCallback, setSecondaryTilesetAnimCallback } from './tileset-anims';
 // Étape 5 SAVE-SYSTEM-1TO1 : `gSaveBlock1Ptr->mapView` (= le SEUL array u16[256]

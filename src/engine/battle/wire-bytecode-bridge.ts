@@ -53,7 +53,7 @@ import {
   setBattleTypeFlags,
   setTrainerBattleOpponentA,
 } from './state';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import {
   BattleAI_SetupAIData,
   BattleAI_ChooseMoveOrAction,
@@ -91,7 +91,7 @@ import {
   ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,
   consumeItemWantedScript as consumeItemWantedScript_static,
 } from './item-battle-effects';
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import { getMove } from '../data/game-data';
 import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';
 import {

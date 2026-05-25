@@ -25,7 +25,7 @@
  *   - Default → sBattleEnvironmentTable[gBattleEnvironment]
  */
 
-import { getRuntime, LoadPalette, LoadBgTiles } from '../decomp-globals';
+import { getRuntime, LoadPalette, LoadBgTiles } from '../system/decomp-globals';
 import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
 import { rgba8ToRgb15 } from '../gba/types';
 import {

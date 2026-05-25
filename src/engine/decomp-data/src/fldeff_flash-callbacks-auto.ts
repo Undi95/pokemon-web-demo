@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -20,8 +20,8 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../decomp-helpers';
-import { gbaIoRegs } from '../../gba-io-regs';
+} from '../../system/decomp-helpers';
+import { gbaIoRegs } from '../../system/gba-io-regs';
 import {
   DmaFill16,
   DmaFill32,
@@ -37,7 +37,7 @@ import {
   UpdatePaletteFade,
   VRAM,
   VRAM_SIZE,
-} from '../../decomp-globals';
+} from '../../system/decomp-globals';
 // Unresolved constants (auto-stub at 0; replace with real values when needed) :
 const _UNDEFINED = 0;
 

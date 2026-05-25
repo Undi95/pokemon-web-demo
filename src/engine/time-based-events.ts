@@ -19,7 +19,7 @@
  * Most berries : stageDuration = 3 hours = 180 minutes per stage (data/berry.h).
  */
 
-import { RtcGetMinuteCount } from './rtc';
+import { RtcGetMinuteCount } from './system/rtc';
 import { gSaveBlock1Ptr } from './save/save-block-state';
 import { CalcBerryYield } from './pokemon/berry';
 

@@ -33,14 +33,14 @@ import {
   UpdatePaletteFade,
   DmaFill16, DmaFill32,
   VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
-} from '../decomp-globals';
+} from '../system/decomp-globals';
 import {
   REG_OFFSET_DISPCNT, REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   DISPCNT_BG0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../decomp-runtime';
+} from '../system/decomp-runtime';
 import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, AddWindow, DrawStdFrameWithCustomTileAndPalette } from '../gba-window-system';
 import { AddTextPrinterParameterized3 } from '../gba-text-system';
 import { gSaveBlock2Ptr } from '../gba-menu-system';

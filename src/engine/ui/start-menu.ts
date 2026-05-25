@@ -59,7 +59,7 @@ import {
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from '../gba-menu-system';
-import { PlaySE, getRuntime, gMain } from '../decomp-globals';
+import { PlaySE, getRuntime, gMain } from '../system/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
 import { HasValidSave } from '../save/save-system';
 import { bagContents } from '../bag/bag';
@@ -89,7 +89,7 @@ import { FadeScreen, FADE_TO_BLACK } from '../fade-screen';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
 // pour éviter le globalThis lookup qui pourrait résoudre vers la version
 // auto-transpilée broken (= sound-all-auto.ts:561, gMPlayInfo_SE1 undefined).
-import { IsSEPlaying as _isSEPlaying } from '../decomp-globals';
+import { IsSEPlaying as _isSEPlaying } from '../system/decomp-globals';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -981,7 +981,7 @@ function _tickSaveDone(newKeys: number): void {
   if (GetFieldMessageBoxMode() !== FIELD_MESSAGE_BOX_HIDDEN) return;
   // Étape 1 : `SaveSuccessCallback` — PlaySE(SE_SAVE) une fois quand printer done.
   if (!_saveDoneSeStarted) {
-    void import('../decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
+    void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(SE_SAVE));
     _saveDoneSeStarted = true;
     return;  // décomp switche le callback à SaveReturnSuccessCallback ; on attend next frame.
   }

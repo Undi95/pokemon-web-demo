@@ -24,7 +24,7 @@
  *   - NewGameBirchSpeech_* stubs (8 fonctions, à implémenter Phase D)
  *   - sBirch* templates (= placeholders extraits via main-menu-data Phase D)
  */
-import { getRuntime, assetCache } from '../decomp-globals';
+import { getRuntime, assetCache } from '../system/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../sprite';
 import { GetWindowFrameTilesPal } from '../gba-text-window';
 import {
@@ -48,7 +48,7 @@ import {
   VRAM, VRAM_SIZE, OAM, OAM_SIZE, PLTT, PLTT_SIZE,
   LoadSpritePalette,
   LoadCompressedSpriteSheet,
-} from '../decomp-globals';
+} from '../system/decomp-globals';
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
@@ -63,8 +63,8 @@ import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   DISPCNT_WIN0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../decomp-runtime';
-import { PLTT_SIZE_4BPP, WIN_RANGE } from '../decomp-helpers';
+} from '../system/decomp-runtime';
+import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
 import { sMainMenuBgTemplates, sWindowTemplates_MainMenu, sNewGameBirchSpeechTextWindows, MAIN_MENU_BORDER_TILE, ENUM_HAS_0 } from '../decomp-data/main-menu-data';
 import {
   Task_MainMenuCheckSaveFile,
@@ -648,7 +648,7 @@ export function NewGameBirchSpeech_SetDefaultPlayerName(nameId: number): void {
   if (!Number.isInteger(validIdx) || validIdx < 0 || validIdx >= NUM_PRESET_NAMES) {
     // Fallback : Random() % 20 (= 1:1 décomp main_menu.c:1604).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    void import('../random').then(({ Random }) => {
+    void import('../system/random').then(({ Random }) => {
       validIdx = Random() % NUM_PRESET_NAMES;
       _applyPresetName(validIdx);
     });

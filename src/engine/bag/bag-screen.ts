@@ -33,8 +33,8 @@ import {
 import { LoadUserWindowBorderGfx } from '../gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { resolveDecompConstant } from '../decomp-constants';
-import { FEMALE } from '../decomp-globals';
+import { resolveDecompConstant } from '../system/decomp-constants';
+import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
 import { setStringVar } from '../string-buffers';
 import { StringExpandPlaceholders } from '../gba-text-system';
@@ -43,14 +43,14 @@ import { RemoveBagItem, UpdatePocketItemList, gBagPockets } from './bag';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from '../decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes } from '../decomp-bridge';
+} from '../system/decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldLocal_Manual } from '../ui/option-menu-return';
 import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { getString } from '../gba-strings';
-import { gSineTable, SetOamMatrix } from '../decomp-helpers';
-import type { DecompTask } from '../decomp-runtime';
+import { gSineTable, SetOamMatrix } from '../system/decomp-helpers';
+import type { DecompTask } from '../system/decomp-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

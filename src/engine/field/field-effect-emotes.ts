@@ -35,7 +35,7 @@
  *     de slot fixe hardcoded (= dynamique mais idempotent via IndexOfSpritePaletteTag).
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette, IndexOfSpritePaletteTag } from '../sprite';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';

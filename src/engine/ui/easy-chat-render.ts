@@ -126,7 +126,7 @@ import {
   SetGpuReg,
   GetBgTilemapBuffer,
   WIN_RANGE,
-} from '../decomp-bridge';
+} from '../system/decomp-bridge';
 
 import {
   InitWindows,
@@ -176,10 +176,10 @@ import {
   getRuntime,
   SpriteCallbackDummy,
   LoadSpritePalettes,
-} from '../decomp-globals';
+} from '../system/decomp-globals';
 
 // DecompSprite interface vit dans decomp-runtime.ts (= source de vÃ©ritÃ© Sprite).
-import type { DecompSprite } from '../decomp-runtime';
+import type { DecompSprite } from '../system/decomp-runtime';
 import {
   DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
 } from '../decomp-data/include/gba/io_reg-data';
@@ -214,17 +214,17 @@ import {
   REG_OFFSET_WININ,
   REG_OFFSET_WINOUT,
   DISPCNT_MODE_0,
-} from '../decomp-runtime';
+} from '../system/decomp-runtime';
 
 import {
   PLTT_SIZE_4BPP,
-} from '../decomp-bridge';
+} from '../system/decomp-bridge';
 
 import {
   BG_SCREEN_SIZE,
   OAM,
   OAM_SIZE,
-} from '../decomp-globals';
+} from '../system/decomp-globals';
 
 // â”€â”€â”€ Constantes locales 1:1 decomp (cf. easy_chat.c:229-403) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

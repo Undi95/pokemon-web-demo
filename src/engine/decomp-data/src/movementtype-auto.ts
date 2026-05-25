@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime } from '../../decomp-runtime';
+import type { DecompRuntime } from '../../system/decomp-runtime';
 
 // ─── Function exports ──────────────────────────────────────────────────────
 

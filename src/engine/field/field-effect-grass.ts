@@ -28,7 +28,7 @@
  *     fast through grass, plusieurs effects actifs simultanément).
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';

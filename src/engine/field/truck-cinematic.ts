@@ -27,8 +27,8 @@
  *     Les caisses LOCALID_TRUCK_BOX_TOP/BOTTOM_L/R sont statiques. Le camera shake
  *     les fait visuellement bouger avec le reste de la scène.
  */
-import type { DecompRuntime, DecompTask } from '../decomp-runtime';
-import { PlaySE } from '../decomp-globals';
+import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
+import { PlaySE } from '../system/decomp-globals';
 import { stopPrerenderedSE, preloadPrerenderedSEs } from '../m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,

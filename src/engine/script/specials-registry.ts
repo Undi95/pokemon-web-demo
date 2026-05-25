@@ -30,7 +30,7 @@ import { registerSpecial } from './script-opcodes';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE, FEMALE } from '../decomp-globals';
+import { MALE, FEMALE } from '../system/decomp-globals';
 import { GetCurrentMap } from '../save/load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
 import { setStringVar } from '../string-buffers';
@@ -42,12 +42,12 @@ import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../decomp-data/inclu
 import { FRONTIER_MODE_LINK_MULTIS, FRONTIER_MODE_MULTIS } from '../decomp-data/include/constants/battle_frontier-data';
 import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from '../decomp-data/include/constants/flags-data';
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
-import { gLocalTime, RtcCalcLocalTime } from '../rtc';
+import { gLocalTime, RtcCalcLocalTime } from '../system/rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
 import { ShowFieldMessage } from '../field/field-message-box';
 import { gStringVar4 } from '../gba-text-system';
-import { Random } from '../random';
-import { reverseDecompConstant } from '../decomp-constants';
+import { Random } from '../system/random';
+import { reverseDecompConstant } from '../system/decomp-constants';
 import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
@@ -342,7 +342,7 @@ registerSpecial('ChangePokemonNickname', () => {
   // Lazy import pour avoid circular.
   void (async () => {
     try {
-      const { getRuntime } = await import('../decomp-globals');
+      const { getRuntime } = await import('../system/decomp-globals');
       getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
     } catch { /* */ }
   })();
@@ -435,7 +435,7 @@ registerSpecial('FieldShowRegionMap', () => {
     await OpenRegionMap();
     // Fade-from-black aussi pour que l'overlay carte soit visible (= sinon
     // l'écran noir GPU reste derrière l'overlay HTML).
-    void import('../decomp-globals').then(({ getRuntime }) => {
+    void import('../system/decomp-globals').then(({ getRuntime }) => {
       getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
     });
   });
@@ -1433,7 +1433,7 @@ registerSpecial('GetDaycareState', () => 0);
 // 161 specials missing détectés via scripts/find-missing-specials.mjs. La plupart
 // sont post-game (Frontier/Tower/Museum). Voici les wired pour le path normal :
 
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 
 /** 1:1 décomp `BufferMonNickname` (pokemon_util.c) :
  *    GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, dest);

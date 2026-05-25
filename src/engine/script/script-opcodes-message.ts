@@ -142,7 +142,7 @@ registerOpcode('msgbox', (ctx, args) => {
         // qui PlaySE(SE_SELECT) sur A/B press → match comportement ROM.
         if (isAOrBNewlyPressed()) {
           // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
-          void import('../decomp-globals').then(({ PlaySE }) => PlaySE(5));
+          void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(5));
           HideFieldMessageBox();
           // Release frozen NPCs 1:1 STRICT via UnfreezeObjectEvent qui restore
           // sprite.animPaused = backup (= reverse du FreezeObjectEvent).

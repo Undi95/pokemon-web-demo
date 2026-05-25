@@ -14,7 +14,7 @@
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { reverseDecompConstant } from '../decomp-constants';
+import { reverseDecompConstant } from '../system/decomp-constants';
 import { getMoveNameFr } from '../data-tables';
 import { parseValue } from './script-opcodes-helpers';
 

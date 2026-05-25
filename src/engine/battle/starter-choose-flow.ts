@@ -31,14 +31,14 @@ import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from '../gba-menu-system';
 import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from '../gba-window-system';
 import { AddTextPrinterParameterized3 } from '../gba-text-system';
-import { getRuntime, LoadPalette } from '../decomp-globals';
+import { getRuntime, LoadPalette } from '../system/decomp-globals';
 import { LoadSpritePalette } from '../sprite';
-import { BG_PLTT_ID, OBJ_PLTT_ID } from '../decomp-runtime';
-import { GetOverworldTextboxPalettePtr } from '../decomp-bridge';
+import { BG_PLTT_ID, OBJ_PLTT_ID } from '../system/decomp-runtime';
+import { GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, GiveMonToPlayer } from '../pokemon/pokemon';
 import { VarSet } from '../script/script-vars';
-import { Sin } from '../decomp-helpers';
+import { Sin } from '../system/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../field/map-loader';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';

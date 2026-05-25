@@ -20,7 +20,7 @@
  * Phase suivante :
  *   - 4.5 : script engine + dialogue
  */
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../sprite';
@@ -56,9 +56,9 @@ import {
 } from './direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from '../field/field-globals';
 import { FlagGet, VarGet } from '../script/script-vars';
-import { Random } from '../random';
+import { Random } from '../system/random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
-import { reverseDecompConstant as _reverseDecompConstant } from '../decomp-constants';
+import { reverseDecompConstant as _reverseDecompConstant } from '../system/decomp-constants';
 // 1:1 décomp : accès direct aux vars via `gSaveBlock1Ptr->vars[id - VARS_START]`
 // (event_data.c:164-180). Foundation `save-block-state` permet l'import sans
 // cycle ESM (= avant on passait par gameState.getVar qui créait
@@ -1085,8 +1085,8 @@ const TILES_PER_FRAME_16x32 = 8;
 //   - size : 0..3 selon dimensions (cf. oamShapeSizeFromWH)
 //     32×8 → shape=1 (wide) size=1
 //     16×8 → shape=1 (wide) size=0
-import type { NamingSubsprite } from '../decomp-globals';
-import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../decomp-globals';
+import type { NamingSubsprite } from '../system/decomp-globals';
+import { SetSubspriteTables, syncSubspriteOam, clearAllSubspriteTables, getRuntime } from '../system/decomp-globals';
 
 /**
  * 1:1 décomp `sOamTable_16x16_2` (object_event_subsprites.h:38-58). Used pour

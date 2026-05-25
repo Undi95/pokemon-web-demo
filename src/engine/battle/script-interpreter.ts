@@ -49,7 +49,7 @@
  *     200+ effects + battle controllers + stat stages sont portés.
  */
 
-import { Random } from '../random';
+import { Random } from '../system/random';
 import { tickBattleControllers } from './battle-controllers';
 import { BATTLE_SCRIPTS_FOR_MOVE_EFFECTS } from '../decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table';
 import { OPCODE_NAMES, getOpcodeName } from './opcode-names';

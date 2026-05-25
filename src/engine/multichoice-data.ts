@@ -14,7 +14,7 @@
  */
 
 import { getText } from './script/script-runtime';
-import { reverseDecompConstant } from './decomp-constants';
+import { reverseDecompConstant } from './system/decomp-constants';
 import { getString } from './gba-strings';
 
 interface RawMultichoiceData {

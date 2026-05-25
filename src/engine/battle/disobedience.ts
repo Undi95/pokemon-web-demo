@@ -44,7 +44,7 @@ import {
 } from './constants';
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitations';
 
 /** 1:1 décomp `IsBattlerModernFatefulEncounter(battler)` (battle_util.c:3890-3898).

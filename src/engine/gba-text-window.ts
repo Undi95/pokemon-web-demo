@@ -15,7 +15,7 @@
  * Asset paths : `/decomp/em/ui/text_window/{N}.png` (= PNG indexed avec PLTE).
  */
 
-import { assetCache, getAsset, getRuntime, LoadBgTiles } from './decomp-globals';
+import { assetCache, getAsset, getRuntime, LoadBgTiles } from './system/decomp-globals';
 import { loadIndexedPngStrict } from './gba/png-loader';
 import { gSaveBlock2Ptr } from './save/save-block-state';
 import {

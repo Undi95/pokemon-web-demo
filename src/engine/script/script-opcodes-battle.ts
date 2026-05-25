@@ -28,7 +28,7 @@
 import type { ScriptContext } from './script-runtime';
 import { registerOpcode, SetupNativeScript, ScriptJump, ScriptCall, getScript } from './script-runtime';
 import { FlagSet, FlagClear, FlagGet, VarSet, gSpecialVar } from './script-vars';
-import { reverseDecompConstant } from '../decomp-constants';
+import { reverseDecompConstant } from '../system/decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
 
 function _stubTrainerBattle(trainerArg: string): void {

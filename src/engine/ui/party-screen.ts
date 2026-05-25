@@ -48,21 +48,21 @@ import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-wi
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from '../gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
-} from '../decomp-globals';
-import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../decomp-bridge';
+} from '../system/decomp-globals';
+import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from '../gba-strings';
 import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
-import type { DecompTask } from '../decomp-runtime';
+import type { DecompTask } from '../system/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,

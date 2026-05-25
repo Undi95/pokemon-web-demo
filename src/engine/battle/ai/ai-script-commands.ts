@@ -13,7 +13,7 @@
  * avance manuellement (setAiScriptPtr). T1_READ_PTR = u32 LE = offset absolu.
  */
 
-import { Random } from '../../random';
+import { Random } from '../../system/random';
 import {
   gBattleMons,
   gBattlerTarget,

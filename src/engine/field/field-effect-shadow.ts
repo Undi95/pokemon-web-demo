@@ -19,7 +19,7 @@
  * Pas de hide quand sur grass/water (= future). Pas d'anim multi-frame.
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
 import { MAP_OFFSET } from './map-loader';

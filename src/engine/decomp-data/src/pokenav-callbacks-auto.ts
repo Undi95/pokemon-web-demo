@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -20,12 +20,12 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../decomp-helpers';
+} from '../../system/decomp-helpers';
 import {
   FreeAllSpritePalettes,
   ResetTasks,
   UpdatePaletteFade,
-} from '../../decomp-globals';
+} from '../../system/decomp-globals';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const LT_CONTINUE = 3;
 const LT_FINISH = 4;

@@ -10,12 +10,12 @@
  * auto-générés pour éviter les cycles de dépendance.
  */
 import * as _dg from './decomp-globals';
-import * as _cb from './copyright-boot';
-import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script/script-vars';
+import * as _cb from '../copyright-boot';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
-} from './pokemon/play-time-counter';
+} from '../pokemon/play-time-counter';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
@@ -23,7 +23,7 @@ import {
   MapGridGetMetatileIdAt,
   GetMapBorderIdAt,
   GetMetatileAttributesById,
-} from './field/map-loader';
+} from '../field/map-loader';
 const dg = _dg as any;
 const cb = _cb as any;
 

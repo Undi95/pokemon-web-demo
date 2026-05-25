@@ -32,8 +32,8 @@
  * `include/siirtc.h` (struct SiiRtcInfo), `include/global.h` (struct Time).
  */
 
-import type { Time } from './save/save-blocks';
-import { GetSaveBlock2 } from './save/save-system';
+import type { Time } from '../save/save-blocks';
+import { GetSaveBlock2 } from '../save/save-system';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 

@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -20,7 +20,7 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../decomp-helpers';
+} from '../../system/decomp-helpers';
 import {
   BIRCH_DLG_BASE_TILE_NUM,
   MAIN_MENU_BORDER_TILE,
@@ -28,11 +28,11 @@ import {
   sNewGameBirchSpeechTextWindows,
   sWindowTemplates_MainMenu,
 } from '../main-menu-data';
-import { AddBirchSpeechObjects, AddScrollIndicatorArrowPair, AddTextPrinterForMessage, AddTextPrinterParameterized3, AddTextPrinterWithCallbackForMessage, ChangeBgY, ClearMainMenuWindowTilemap, ClearStdWindowAndFrame, ClearWindowTilemap, CopyWindowToVram, CreateMainMenuErrorWindow, CreatePokeballSpriteToReleaseMon, CreateYesNoMenuParameterized, DmaFill16, DmaFill32, DoNamingScreen, DrawMainMenuWindowBorder, FEMALE, FadeOutBGM, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, HandleMainMenuInput, HighlightSelectedMainMenuItem, InitBgFromTemplate, InitBgsFromTemplates, InitMainMenu, InitSpriteAffineAnim, InitWindows, IsMysteryGiftEnabled, IsTextPrinterActive, IsWirelessAdapterConnected, JOY_NEW, LZ77UnCompVram, LoadMainMenuWindowFrameTiles, LoadMessageBoxGfx, LoadPalette, MALE, MainMenu_FormatSavegameText, Menu_GetCursorPos, Menu_ProcessInputNoWrapClearOnChoose, NewGameBirchSpeech_ClearGenderWindow, NewGameBirchSpeech_ClearWindow, NewGameBirchSpeech_ProcessGenderMenuInput, NewGameBirchSpeech_SetDefaultPlayerName, NewGameBirchSpeech_ShowDialogueWindow, NewGameBirchSpeech_ShowGenderMenu, NewGameBirchSpeech_StartFadeInTarget1OutTarget2, NewGameBirchSpeech_StartFadeOutTarget1InTarget2, NewGameBirchSpeech_StartFadePlatformIn, NewGameBirchSpeech_StartFadePlatformOut, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PlayBGM, PutWindowTilemap, RemoveScrollIndicatorArrowPair, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetTasks, RunTasks, AnimateSprites, BuildOamBuffer, RtcGetErrorStatus, RunTextPrinters, RunTextPrintersAndIsPrinter0Active, ScanlineEffect_Stop, ShowBg, StringExpandPlaceholders, Task_ScrollIndicatorArrowPairOnMainMenu, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_OBJ, WINOUT_WIN01_CLR, WINOUT_WIN01_OBJ, gMain, gPlttBufferUnfaded, gSaveBlock2Ptr, gSaveFileStatus, gStringVar4, m4aSongNumStart, sBirchBgTemplate, sBirchSpeechBgGradientPal, sBirchSpeechBgMap, sBirchSpeechBgPals, sBirchSpeechPlatformBlackPal, sScrollArrowsTemplate_MainMenu, sSpriteAffineAnimTable_PlayerShrink, sTextColor_Headers, PIXEL_FILL, PALETTES_BG, SpriteCallbackDummy } from '../../decomp-globals';
+import { AddBirchSpeechObjects, AddScrollIndicatorArrowPair, AddTextPrinterForMessage, AddTextPrinterParameterized3, AddTextPrinterWithCallbackForMessage, ChangeBgY, ClearMainMenuWindowTilemap, ClearStdWindowAndFrame, ClearWindowTilemap, CopyWindowToVram, CreateMainMenuErrorWindow, CreatePokeballSpriteToReleaseMon, CreateYesNoMenuParameterized, DmaFill16, DmaFill32, DoNamingScreen, DrawMainMenuWindowBorder, FEMALE, FadeOutBGM, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, HandleMainMenuInput, HighlightSelectedMainMenuItem, InitBgFromTemplate, InitBgsFromTemplates, InitMainMenu, InitSpriteAffineAnim, InitWindows, IsMysteryGiftEnabled, IsTextPrinterActive, IsWirelessAdapterConnected, JOY_NEW, LZ77UnCompVram, LoadMainMenuWindowFrameTiles, LoadMessageBoxGfx, LoadPalette, MALE, MainMenu_FormatSavegameText, Menu_GetCursorPos, Menu_ProcessInputNoWrapClearOnChoose, NewGameBirchSpeech_ClearGenderWindow, NewGameBirchSpeech_ClearWindow, NewGameBirchSpeech_ProcessGenderMenuInput, NewGameBirchSpeech_SetDefaultPlayerName, NewGameBirchSpeech_ShowDialogueWindow, NewGameBirchSpeech_ShowGenderMenu, NewGameBirchSpeech_StartFadeInTarget1OutTarget2, NewGameBirchSpeech_StartFadeOutTarget1InTarget2, NewGameBirchSpeech_StartFadePlatformIn, NewGameBirchSpeech_StartFadePlatformOut, OAM, OAM_SIZE, PLTT, PLTT_SIZE, PlayBGM, PutWindowTilemap, RemoveScrollIndicatorArrowPair, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetTasks, RunTasks, AnimateSprites, BuildOamBuffer, RtcGetErrorStatus, RunTextPrinters, RunTextPrintersAndIsPrinter0Active, ScanlineEffect_Stop, ShowBg, StringExpandPlaceholders, Task_ScrollIndicatorArrowPairOnMainMenu, UpdatePaletteFade, VRAM, VRAM_SIZE, WININ_WIN0_OBJ, WINOUT_WIN01_CLR, WINOUT_WIN01_OBJ, gMain, gPlttBufferUnfaded, gSaveBlock2Ptr, gSaveFileStatus, gStringVar4, m4aSongNumStart, sBirchBgTemplate, sBirchSpeechBgGradientPal, sBirchSpeechBgMap, sBirchSpeechBgPals, sBirchSpeechPlatformBlackPal, sScrollArrowsTemplate_MainMenu, sSpriteAffineAnimTable_PlayerShrink, sTextColor_Headers, PIXEL_FILL, PALETTES_BG, SpriteCallbackDummy } from '../../system/decomp-globals';
 import { CB2_InitTitleScreen } from './title_screen-callbacks-auto';
 import { CB2_NewGame, CB2_ContinueSavedGame } from './overworld-callbacks-auto';
 import { CB2_InitOptionMenu } from './option_menu-callbacks-auto';
-import { gbaIoRegs } from '../../gba-io-regs';
+import { gbaIoRegs } from '../../system/gba-io-regs';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const A_BUTTON = 1;
 const ACTION_CONTINUE = 1;

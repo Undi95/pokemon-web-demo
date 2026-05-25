@@ -32,7 +32,7 @@
  *     6=face_right, 7=walk_right1, 8=walk_right2 (= mirror H pour left)
  *   - Loaded en OBJ 1D map mode (= 8 tiles sequential per frame)
  */
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
 import {
   MapGridGetCollisionAt,
@@ -81,7 +81,7 @@ import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
 } from './rotating-gate';
-import { PlaySE } from '../decomp-globals';
+import { PlaySE } from '../system/decomp-globals';
 import {
   LoadSpriteSheet, LoadSpritePalette,
   setReservedSpriteTileCount,

@@ -83,7 +83,7 @@ import {
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
-import { reverseDecompConstant } from '../decomp-constants';
+import { reverseDecompConstant } from '../system/decomp-constants';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_ABE,
   gBattleTextBuff2 as _gBattleTextBuff2_ABE,

@@ -14,9 +14,9 @@
  *   - CpuCopy16 : libgcnmultiboot equivalent (= memcpy en pratique)
  *   - gPlttBufferFaded/Unfaded : 256+256 entries u16 (BG + OBJ palette buffers)
  */
-import { Gba } from './gba/gba';
-import { rgba8ToRgb15 } from './gba/types';
-import { G_SINE_TABLE } from './decomp-data/src/sine-table';
+import { Gba } from '../gba/gba';
+import { rgba8ToRgb15 } from '../gba/types';
+import { G_SINE_TABLE } from '../decomp-data/src/sine-table';
 import { getRuntime } from './decomp-globals';
 
 // ─── Sine/Cosine via gSineTable (Q.8 fixed) ──────────────────────────────────

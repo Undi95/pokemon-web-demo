@@ -138,7 +138,7 @@ import {
 } from './util';
 import { getBattleMove } from './data/battle-moves';
 import { GetItemHoldEffect } from './data/item-hold-effects';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import {
   AbilityBattleEffects, ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER,
   ABILITYEFFECT_COUNT_OTHER_SIDE,

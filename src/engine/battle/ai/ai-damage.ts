@@ -56,7 +56,7 @@ import {
 } from '../constants';
 import { CalculateBaseDamage } from '../damage-calc';
 import { getSpeciesInfo } from '../../data/game-data';
-import { reverseDecompConstant, resolveDecompConstant } from '../../decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../../system/decomp-constants';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:472). */
 function isBattlerOfType(battlerIdx: number, type: number): boolean {

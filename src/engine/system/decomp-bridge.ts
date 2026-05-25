@@ -249,7 +249,7 @@ export {
   COMPARE_LT,
   COMPARE_EQ,
   COMPARE_GT,
-} from './script/script-vars';
+} from '../script/script-vars';
 
 // ─── Re-exports : script runtime (script-runtime.ts) ──────────────────────────
 
@@ -258,7 +258,7 @@ export {
   InitScriptContext,
   SetupBytecodeScript,
   ScriptJump,
-} from './script/script-runtime';
+} from '../script/script-runtime';
 
 // ─── Re-exports : text system (gba-text-system.ts) ────────────────────────────
 
@@ -275,8 +275,8 @@ export {
   DeactivateAllTextPrinters,
   RunTextPrintersAndIsPrinter0Active,
   CHAR_SPACER_STR,
-} from './gba-text-system';
-import { CHAR_SPACER_STR } from './gba-text-system';
+} from '../gba-text-system';
+import { CHAR_SPACER_STR } from '../gba-text-system';
 
 // ─── Local-use imports (hoisted from scattered scope) ────────────────────────
 //
@@ -285,20 +285,20 @@ import { CHAR_SPACER_STR } from './gba-text-system';
 // quand l'eager-init chain change (= ex. save-system → bag → game-state →
 // load_save → object-events → metatile-behavior → decomp-bridge). Ces imports
 // sont utilisés localement avec des alias `_xxx` pour éviter la collision avec
-// les re-exports `export { Xxx } from './xxx'` situés plus bas dans ce fichier.
+// les re-exports `export { Xxx } from '../xxx'` situés plus bas dans ce fichier.
 
 import { Random as _Random } from './random';
-import { getObjectEventGraphicsInfo as _getOEGI } from './field/object-event-graphics';
+import { getObjectEventGraphicsInfo as _getOEGI } from '../field/object-event-graphics';
 import {
   getItemNameFr as _getItemNameFr,
   getItem as _getItem,
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
-} from './data-tables';
-import { sTMHMMoves as _sTMHMMoves } from './pokemon/tmhm-moves';
-import { getMapNameFr } from '../data/map-names-fr';
+} from '../data-tables';
+import { sTMHMMoves as _sTMHMMoves } from '../pokemon/tmhm-moves';
+import { getMapNameFr } from '../../data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
-import { gBattleMons as _gBattleMonsBridge } from './battle/state';
+import { gBattleMons as _gBattleMonsBridge } from '../battle/state';
 
 // ─── Inline macros (= include/macro.h + include/gba/macro.h) ──────────────────
 
@@ -928,7 +928,7 @@ export {
   LoadWindowGfx,
   LoadUserWindowBorderGfx,
   LoadUserWindowBorderGfx_,
-} from './gba-text-window';
+} from '../gba-text-window';
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //
@@ -3231,7 +3231,7 @@ export {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
-} from './field/map-loader';
+} from '../field/map-loader';
 
 // ─── Re-exports : static const data tables (= ports manuels) ─────────────────
 
@@ -3263,7 +3263,7 @@ export {
   gWalkFastMovementActions,
   // Lazy table fetcher
   getStaticTable,
-} from './static-data-tables';
+} from '../static-data-tables';
 
 // ─── Re-exports : metatile behavior predicates ────────────────────────────────
 
@@ -3279,7 +3279,7 @@ export {
   MetatileBehavior_IsJumpSouth,
   MetatileBehavior_IsPacifidlogLog,
   MetatileBehavior_IsRunningDisallowed,
-} from './field/metatile-behavior-helpers';
+} from '../field/metatile-behavior-helpers';
 
 // Other metatile predicates (= 1:1 décomp `metatile_behavior.c`).
 // Hand-portés dans metatile-behavior-helpers.ts pour éviter le circular import
@@ -3298,7 +3298,7 @@ export {
   MetatileBehavior_IsFootprints,
   MetatileBehavior_HasRipples,
   MetatileBehavior_IsDeepSand,
-} from './field/metatile-behavior-helpers';
+} from '../field/metatile-behavior-helpers';
 
 // ─── Bridge metadata for dev tools ────────────────────────────────────────────
 

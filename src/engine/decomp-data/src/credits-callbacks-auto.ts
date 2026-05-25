@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -20,12 +20,12 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../decomp-helpers';
+} from '../../system/decomp-helpers';
 import {
   NUM_MON_SLIDES,
   TIMER_STOP,
 } from '../credits-data';
-import { CopyWindowToVram, CycleSceneryPalette, EnableInterrupts, FadeOutBGM, FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAndDestroyMonPicSprite, INTR_FLAG_VBLANK, JOY_HELD, LZ77UnCompVram, LoadPalette, LoadSpritePalette, ResetAllPicSprites, ResetPaletteFade, ResetTasks, UpdatePaletteFade, VRAM, gMain, m4aSongNumStart, sSpritePalette_MonBg } from '../../decomp-globals';
+import { CopyWindowToVram, CycleSceneryPalette, EnableInterrupts, FadeOutBGM, FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAndDestroyMonPicSprite, INTR_FLAG_VBLANK, JOY_HELD, LZ77UnCompVram, LoadPalette, LoadSpritePalette, ResetAllPicSprites, ResetPaletteFade, ResetTasks, UpdatePaletteFade, VRAM, gMain, m4aSongNumStart, sSpritePalette_MonBg } from '../../system/decomp-globals';
 // Constants resolved from decomp #defines / enums / TS data modules :
 const B_BUTTON = 2;
 const COPYWIN_GFX = 2;

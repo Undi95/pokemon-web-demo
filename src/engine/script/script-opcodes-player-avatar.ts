@@ -19,7 +19,7 @@ import { gObjectEvents } from '../field/object-events';
 import { gPlayerAvatar } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetCurrentMap } from '../save/load_save';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { MALE_GENDER, FEMALE_GENDER } from './script-opcodes-helpers';
 
 // 1:1 décomp `ScrCmd_checkplayergender` (scrcmd.c:2013-2017) :

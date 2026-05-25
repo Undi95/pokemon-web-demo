@@ -35,7 +35,7 @@ import {
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
 } from '../gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { FEMALE } from '../decomp-globals';
+import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
@@ -47,20 +47,20 @@ import {
   DynamicPlaceholderTextUtil_SetPlaceholderPtr,
   DynamicPlaceholderTextUtil_ExpandPlaceholders,
 } from '../dynamic-placeholder-text-util';
-import { GetMapNameHandleAquaHideout } from '../decomp-bridge';
+import { GetMapNameHandleAquaHideout } from '../system/decomp-bridge';
 import {
   PlaySE, LoadPalette, getRuntime,
   BlendPalettes, ResetPaletteFade, ResetTasks,
-} from '../decomp-globals';
-import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../decomp-bridge';
+} from '../system/decomp-globals';
+import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
 import { getString } from '../gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
-import { OBJ_PLTT_ID, BG_PLTT_ID } from '../decomp-runtime';
+import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
 import { pokemonInstanceToPokemon } from '../battle/party-storage';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
-import type { DecompTask, DecompSprite } from '../decomp-runtime';
+import type { DecompTask, DecompSprite } from '../system/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
 import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
 import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../decomp-data/include/constants/songs-data';

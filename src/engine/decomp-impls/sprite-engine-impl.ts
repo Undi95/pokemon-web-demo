@@ -19,8 +19,8 @@
  *   - Type cmd : décomp utilise s16 type avec valeurs spéciales 32765 (LOOP), 32766 (JUMP),
  *     32767 (END). Notre extracteur a normalisé : terminator string 'END'/'LOOP'/'JUMP'.
  */
-import { DecompRuntime, type DecompSprite } from '../decomp-runtime';
-import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../decomp-helpers';
+import { DecompRuntime, type DecompSprite } from '../system/decomp-runtime';
+import { SetOamMatrix, ST_OAM_AFFINE_ON_MASK, gSineTable } from '../system/decomp-helpers';
 import {
   SPRITE_AFFINE_ANIM_TABLES, SPRITE_AFFINE_ANIMS,
 } from '../decomp-data/src/sprite-system';

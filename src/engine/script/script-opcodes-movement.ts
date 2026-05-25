@@ -34,7 +34,7 @@ import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent } from '../field/object-events';
 import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { applyMovement, isAllMovementsDone, isMovementDone } from '../field/movement-system';
 import {
   parseValue, findNpcByLocalId, findTemplateByLocalId, resolveObjectLocalIdRaw,

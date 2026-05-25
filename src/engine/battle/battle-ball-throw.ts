@@ -27,7 +27,7 @@
  * tant que l'anim est active, et l'outcome quand done.
  */
 
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { LoadSpritePalette } from '../sprite';
 
 // 1:1 strict A8 audit : import depuis decomp-data.

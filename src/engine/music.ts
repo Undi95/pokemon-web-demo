@@ -167,7 +167,7 @@ export function playCry(species: string): void {
       src.start();
       // 1:1 décomp : track cry end time pour IsCryPlaying. Override le 1s
       // default set par PlayCryInternal avec la vraie durée du WAV.
-      void import('./decomp-globals').then(({ _markAudioSlotActive }) => {
+      void import('./system/decomp-globals').then(({ _markAudioSlotActive }) => {
         _markAudioSlotActive('cry', audioBuf.duration * 1000);
       });
     })

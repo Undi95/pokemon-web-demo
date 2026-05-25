@@ -72,7 +72,7 @@ import {
 import { getBattleMove } from './data/battle-moves';
 import { getMoveEffectScriptOffset, getBattleScriptOffset } from './script-interpreter';
 import type { BattleScriptContext } from './script-interpreter';
-import { Random } from '../random';
+import { Random } from '../system/random';
 
 const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
 

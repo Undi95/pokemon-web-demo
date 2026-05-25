@@ -31,11 +31,11 @@
  * Task_BagMenu_HandleInput. À implémenter type-d'item-par-type-d'item dans
  * un follow-up.
  */
-import type { DecompTask } from '../decomp-runtime';
+import type { DecompTask } from '../system/decomp-runtime';
 import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
-import { reverseDecompConstant } from '../decomp-constants';
+import { reverseDecompConstant } from '../system/decomp-constants';
 import { getItem as _getItem, getItemKeyById } from '../data-tables';
 import { ApplyMedicineEffect } from './bag-item-effects';
 import {
@@ -62,21 +62,21 @@ import {
   FillBgTilemapBufferRect_Palette0, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
 } from '../gba-window-system';
-import { JOY_NEW, PALETTES_ALL, getRuntime } from '../decomp-globals';
+import { JOY_NEW, PALETTES_ALL, getRuntime } from '../system/decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
 } from '../gba-text-system';
-import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from '../decomp-bridge';
+import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from '../system/decomp-bridge';
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On
 // utilise directement gSaveBlock1Ptr.playerParty.length qui est la source de vérité.
-import { PIXEL_FILL } from '../decomp-globals';
+import { PIXEL_FILL } from '../system/decomp-globals';
 import { ENUM_ITEMWIN_1 } from '../decomp-data/include/item_menu-data';
 import {
   A_BUTTON, B_BUTTON, DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,
 } from '../decomp-data/include/gba/io_reg-data';
 import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
-import { PlaySE } from '../decomp-globals';
+import { PlaySE } from '../system/decomp-globals';
 
 // ─── Constantes 1:1 décomp (item_menu.h + item_menu.c) ───────────────────────
 

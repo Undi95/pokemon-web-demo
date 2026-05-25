@@ -15,7 +15,7 @@
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { parseValue } from './script-opcodes-helpers';
 
 // 1:1 décomp `ScrCmd_delay` (scrcmd.c:674-679) :

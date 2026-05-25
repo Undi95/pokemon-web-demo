@@ -44,8 +44,8 @@ import {
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
-} from '../decomp-globals';
-import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../decomp-bridge';
+} from '../system/decomp-globals';
+import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-window';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { AddTextPrinterParameterized3 } from '../gba-text-system';
@@ -55,14 +55,14 @@ import {
 import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from '../gba-window-system';
 import { getString } from '../gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
-import { FEMALE } from '../decomp-globals';
+import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
 import { FlagSet, VarGet } from '../script/script-vars';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
-import { SetOamMatrix } from '../decomp-helpers';
+import { SetOamMatrix } from '../system/decomp-helpers';
 import { CB2_ReturnToFieldLocal_Manual } from './option-menu-return';
-import type { DecompTask, DecompSprite, DecompRuntime } from '../decomp-runtime';
+import type { DecompTask, DecompSprite, DecompRuntime } from '../system/decomp-runtime';
 
 // ─── Constants 1:1 décomp (= wallclock.c:54-72, wallclock-data.ts) ─────────
 

@@ -23,7 +23,7 @@ import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId,
 } from '../pokemon/pokemon';
-import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { getSpeciesInfo } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).

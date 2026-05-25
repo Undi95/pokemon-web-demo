@@ -19,7 +19,7 @@
 
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ResetSaveBlocks } from '../save/save-system';
-import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 
 // ─── Flag API (1:1 décomp event_data.c:206-233) ──────────────────────────────
 

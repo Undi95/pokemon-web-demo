@@ -33,7 +33,7 @@
 import { GetSaveBlock1, GetSaveBlock2, GetSaveFileStatus, HasValidSave } from '../save/save-system';
 import { GetPlayerFacingDirection } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { assetCache, getRuntime } from '../decomp-globals';
+import { assetCache, getRuntime } from '../system/decomp-globals';
 import { gMapHeader } from '../field/map-loader';
 import { bagContents } from '../bag/bag';
 

@@ -19,7 +19,7 @@
  */
 
 import { FlagSet } from '../script/script-vars';
-import { Random, GetGeneratedTrainerIdLower } from '../random';
+import { Random, GetGeneratedTrainerIdLower } from '../system/random';
 import { gSaveBlock2Ptr } from './save-block-state';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).

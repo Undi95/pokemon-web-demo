@@ -15,7 +15,7 @@
  * Palette : general_0.pal (= déjà chargée par field-effect-arrow).
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';

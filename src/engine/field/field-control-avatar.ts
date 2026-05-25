@@ -76,7 +76,7 @@ import {
   ELEVATION_TRANSITION,
 } from './object-events';
 import { MapGridGetElevationAt } from './map-loader';
-import { LOCALID_PLAYER } from '../decomp-bridge';
+import { LOCALID_PLAYER } from '../system/decomp-bridge';
 import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script/script-vars';
 import { ScriptContext_SetupScript } from '../script/script-runtime';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';

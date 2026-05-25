@@ -22,9 +22,9 @@ import {
   DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_BG0_ON,
   BGCNT_PRIORITY, BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_16COLOR, BGCNT_TXT256x256,
   INTR_FLAG_VBLANK,
-} from './decomp-globals';
+} from './system/decomp-globals';
 import { MainCB2_EndIntro, Task_Scene1_Load } from './decomp-data/src/intro-callbacks-auto';
-import type { CB2Callback } from './decomp-runtime';
+import type { CB2Callback } from './system/decomp-runtime';
 
 const RGB_WHITE = 0x7FFF;
 const COPYRIGHT_INITIALIZE = 0;

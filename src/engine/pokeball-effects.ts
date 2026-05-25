@@ -23,8 +23,8 @@
  *     for affine emerge/return (= alloc matrixNum + set affineMode + table).
  */
 
-import type { DecompRuntime, DecompSprite } from './decomp-runtime';
-import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from './decomp-helpers';
+import type { DecompRuntime, DecompSprite } from './system/decomp-runtime';
+import { ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF } from './system/decomp-helpers';
 import {
   MarkObjTilesAllocated, MarkObjPaletteAllocated,
   IndexOfSpritePaletteTag, GetSpriteTileStartByTag, AllocSpriteTileRange,

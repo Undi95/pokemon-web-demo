@@ -149,14 +149,14 @@ import {
   MB_CLOSED_SOOTOPOLIS_DOOR,
   MB_SKY_PILLAR_CLOSED_DOOR,
   MB_TRICK_HOUSE_PUZZLE_DOOR,
-} from '../decomp-bridge';
+} from '../system/decomp-bridge';
 
 // Secret base spot constants — re-exported depuis decomp-bridge si présentes.
 // 1:1 décomp `MetatileBehavior_IsOpenSecretBaseDoor` (metatile_behavior.c:507).
 // Couvre 7 secret base spot "open" variants. Si certains MB n'existent pas dans
 // notre decomp-bridge.ts, le check sera `false` constant → safe (= jeu ne croise
 // jamais ces tiles hors secret base content qui n'est pas dans démo).
-import * as MBC from '../decomp-bridge';
+import * as MBC from '../system/decomp-bridge';
 
 // ─── Door behaviors ─────────────────────────────────────────────────────────
 

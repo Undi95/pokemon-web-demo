@@ -84,7 +84,7 @@
  * Aucune dépendance circulaire avec decomp-globals/runtime — accède à `rt`
  * via la référence passée à installEngineDevtools(rt, opts).
  */
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 
 interface SaveState {
   vram: Uint8Array;

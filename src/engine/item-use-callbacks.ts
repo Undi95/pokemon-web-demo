@@ -54,7 +54,7 @@ import {
   ITEM_EFFECT_CURE_ALL_STATUS,
 } from './bag/bag-item-effects';
 import { getItem as _getItem, getItemKeyById } from './data-tables';
-import { GetItemType } from './decomp-bridge';
+import { GetItemType } from './system/decomp-bridge';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
@@ -70,9 +70,9 @@ import {
   PartyMenuAnimateHP,
 } from './ui/party-screen';
 import { getString } from './gba-strings';
-import type { DecompTask } from './decomp-runtime';
+import type { DecompTask } from './system/decomp-runtime';
 import type { PokemonInstance } from './pokemon/pokemon';
-import { getRuntime, PlaySE } from './decomp-globals';
+import { getRuntime, PlaySE } from './system/decomp-globals';
 import { SE_USE_ITEM } from './decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from './save/save-block-state';

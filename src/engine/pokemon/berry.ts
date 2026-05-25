@@ -22,7 +22,7 @@
  */
 
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { Random } from '../random';
+import { Random } from '../system/random';
 
 // ─── Constants 1:1 décomp `include/constants/berry.h` ───────────────────────
 

@@ -34,7 +34,7 @@ import {
   EOS,
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
-import { getRuntime } from './decomp-globals';
+import { getRuntime } from './system/decomp-globals';
 import { gSaveBlock2Ptr } from './save/save-block-state';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
@@ -476,7 +476,7 @@ export function RunTextPrinters(): void {
     if (aPressed && ap.printer.state === RENDER_STATE_CLEAR) {
       // 1:1 décomp text.c:874-879 TextPrinterWaitWithDownArrow : JOY_NEW(A|B) →
       // PlaySE(SE_SELECT). Notre impl manquait cet appel → silence sur dialog advance.
-      void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));  // SE_SELECT = 5
+      void import('./system/decomp-globals').then(({ PlaySE }) => PlaySE(5));  // SE_SELECT = 5
       // 1:1 décomp text.c:1174-1177 : FillWindowPixelBuffer(bgColor) + cursor (x, y).
       fillWindowPixelBuffer(ap.printer.window, (ap.printer.bgColor << 4) | ap.printer.bgColor);
       ap.printer.currentX = ap.printer.x;
@@ -484,7 +484,7 @@ export function RunTextPrinters(): void {
       ap.printer.state = RENDER_STATE_HANDLE_CHAR;
     } else if (aPressed && ap.printer.state === RENDER_STATE_SCROLL_START) {
       // 1:1 décomp text.c:874-879 : same SE_SELECT on scroll page break.
-      void import('./decomp-globals').then(({ PlaySE }) => PlaySE(5));
+      void import('./system/decomp-globals').then(({ PlaySE }) => PlaySE(5));
       // 1:1 décomp text.c:1181-1187 : TextPrinterClearDownArrow → init scroll
       // + cursor.x reset (Y reste). Sans clear de l'❤️ AVANT le scroll, l'ancien
       // ❤️ shift up avec le content → 2 ❤️ visibles à la fin.

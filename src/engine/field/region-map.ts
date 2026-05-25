@@ -34,12 +34,12 @@
 import type Phaser from 'phaser';
 import { SignalWaitState } from '../script/script-opcodes';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
-import { MALE } from '../decomp-globals';
+import { MALE } from '../system/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../../data/map-names-fr';
 import { getString } from '../gba-strings';
-import { getRuntime, getAsset, PlaySE } from '../decomp-globals';
+import { getRuntime, getAsset, PlaySE } from '../system/decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
 import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from '../bitmap-font';
 import {

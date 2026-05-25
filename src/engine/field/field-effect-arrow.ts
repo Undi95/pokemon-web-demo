@@ -26,7 +26,7 @@
  * FLDEFF_PAL_TAG_GENERAL_0). 16 colors RGB15.
  */
 
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
 import { loadTileBin } from '../gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';

@@ -15,8 +15,8 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from './decomp-globals';
-import { PLTT_SIZE_4BPP } from './decomp-bridge';
+import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from './system/decomp-globals';
+import { PLTT_SIZE_4BPP } from './system/decomp-bridge';
 import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';

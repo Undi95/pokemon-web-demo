@@ -13,7 +13,7 @@
 import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
 } from '../data-tables';
-import { Random, Random32 } from '../random';
+import { Random, Random32 } from '../system/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).

@@ -53,7 +53,7 @@
  */
 
 import { loadTileBin } from '../gba/png-loader';
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

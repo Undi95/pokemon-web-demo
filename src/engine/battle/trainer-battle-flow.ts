@@ -23,7 +23,7 @@
  */
 import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { FlagSet, VarSet } from '../script/script-vars';
 import { ShowBg, HideBg } from '../gba-window-system';
 

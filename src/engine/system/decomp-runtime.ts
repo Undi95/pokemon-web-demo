@@ -18,26 +18,26 @@
  *   - decomp pokeemerald include/gba/io_reg.h pour REG_OFFSET_*
  *   - decomp engine/palette_fade.c pour BeginNormalPaletteFade
  */
-import { Gba } from './gba/gba';
+import { Gba } from '../gba/gba';
 
 /** Debug flag — true uniquement si `localStorage.rtDebug = '1'`. Sans ça, tous
  *  les console.log spam (CreateSprite, palette, sheet) sont silenced. */
 const RT_DEBUG = typeof window !== 'undefined' && window.localStorage?.getItem('rtDebug') === '1';
-import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from './gba/types';
+import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../gba/types';
 import {
   loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
   loadIndexedPngStrict,
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
-} from './gba/png-loader';
+} from '../gba/png-loader';
 import {
   SPRITE_TEMPLATES, OAM_DATAS, SPRITE_ANIM_TABLES, SPRITE_ANIMS,
   SPRITE_PALETTES, SPRITE_SHEETS,
-} from './decomp-data/src/sprite-system';
+} from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1 } from './sprite-animation';
-import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1 } from '../sprite-animation';
+import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
-import { gSaveBlock2Ptr } from './save/save-block-state';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 
 /** HOTFIX 2026-05-09 : auto-extracted SPRITE_ANIMS data has tileNum stored
  *  as STRING for unresolved constants (= "VERSION_BANNER_RIGHT_TILEOFFSET").

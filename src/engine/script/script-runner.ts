@@ -90,9 +90,9 @@ export type ScriptContext = {
 
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { SetDynamicWarp } from '../field/warp-system';
-import { MALE, FEMALE } from '../decomp-globals';
+import { MALE, FEMALE } from '../system/decomp-globals';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import { setStringVar } from '../string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
@@ -148,7 +148,7 @@ const SPECIALS: Record<string, SpecialFn> = {
   // 366-day du décomp).
   StartWallClock: () => { /* legacy fallback : skip UI, offset reste 0 */ },
   Special_ViewWallClock: async (ctx) => {
-    const { RtcCalcLocalTime, gLocalTime } = await import('../rtc');
+    const { RtcCalcLocalTime, gLocalTime } = await import('../system/rtc');
     RtcCalcLocalTime();
     const h12 = gLocalTime.hours < 12 ? (gLocalTime.hours === 0 ? 12 : gLocalTime.hours) : (gLocalTime.hours === 12 ? 12 : gLocalTime.hours - 12);
     const period = gLocalTime.hours < 12 ? 'AM' : 'PM';

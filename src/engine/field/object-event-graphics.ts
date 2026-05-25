@@ -38,8 +38,8 @@
  *   - src/event_object_movement.c:CreateObjectGraphicsSprite (factory)
  */
 
-import type { DecompRuntime, DecompSprite } from '../decomp-runtime';
-import { getRuntime } from '../decomp-globals';
+import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
+import { getRuntime } from '../system/decomp-globals';
 import {
   AllocSpriteTiles as _AllocSpriteTiles_1to1,
   AllocSpriteTileRange as _AllocSpriteTileRange_1to1,

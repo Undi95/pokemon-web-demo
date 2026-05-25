@@ -33,7 +33,7 @@ import {
 } from './constants';
 import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../decomp-data/include/constants/hold_effects-data';
 import { GetItemHoldEffect } from './data/item-hold-effects';
-import { Random } from '../random';
+import { Random } from '../system/random';
 
 // ─── Stubs externes 1:1 décomp ──────────────────────────────────────────
 

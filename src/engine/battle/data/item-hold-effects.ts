@@ -14,7 +14,7 @@
  *     (= HOLD_EFFECT_* enum 0..51)
  */
 
-import { resolveDecompConstant } from '../../decomp-constants';
+import { resolveDecompConstant } from '../../system/decomp-constants';
 
 interface RawItem {
   holdEffect?: string;

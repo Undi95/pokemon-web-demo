@@ -63,7 +63,7 @@ import {
   IsFieldMessageBoxHidden,
   HideFieldMessageBox,
 } from '../field/field-message-box';
-import { getRuntime, BlendPalettes, PALETTES_ALL } from '../decomp-globals';
+import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
 import { LoadSpritePalette } from '../sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
@@ -74,7 +74,7 @@ import { LoadSpritePalette } from '../sprite';
 function _restorePalettesFromUnfaded(): void {
   BlendPalettes(PALETTES_ALL, 0, 0 /* RGB_BLACK */);
 }
-import { OBJ_PLTT_ID } from '../decomp-runtime';
+import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from '../pokemon/pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from '../battle/party-storage';
@@ -103,7 +103,7 @@ import {
 import { VarSet } from '../script/script-vars';
 import { getMove, getMoveName, loadGameData } from '../data/game-data';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import { IsBattleSceneOff } from '../gba-menu-system';
 // E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
@@ -1055,7 +1055,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // dispatch via song table). Loop=true car MUS_VS_WILD a des loop markers
         // dans le .mid. `playMidiLoop` ne marchait pas car nécessite primeAudio
         // qui n'est pas appelé par notre code overworld (= m4aPrime suffit).
-        import('../decomp-globals').then(({ m4aSongNumStart }) => {
+        import('../system/decomp-globals').then(({ m4aSongNumStart }) => {
           m4aSongNumStart(474 /* MUS_VS_WILD */, true);
         });
         // 1:1 décomp `Task_BattleTransition` (battle_transition.c:1063) :

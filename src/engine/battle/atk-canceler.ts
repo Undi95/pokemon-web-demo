@@ -46,7 +46,7 @@ import {
 } from './constants';
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import { getBattleMove } from './data/battle-moves';
 import { _GetMoveTarget as _GetMoveTargetForBide } from './cmd-niveau-34';
 

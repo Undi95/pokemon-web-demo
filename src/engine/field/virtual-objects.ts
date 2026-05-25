@@ -27,7 +27,7 @@
  */
 
 import { CreateObjectGraphicsSprite, loadObjectEventGraphicsInfo } from './object-event-graphics';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { gFieldCamera } from '../field/field-camera';
 
 // ─── Directions → anim index (1:1 décomp sAnimTable_Standard) ───────────────

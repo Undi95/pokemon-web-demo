@@ -32,7 +32,7 @@
  *   - "tile" = BG tile (= 8x8 px)
  *   - 1 metatile = 2x2 BG tiles
  */
-import type { DecompRuntime } from '../decomp-runtime';
+import type { DecompRuntime } from '../system/decomp-runtime';
 import {
   type MapLayout,
   DrawMetatile,
@@ -57,9 +57,9 @@ import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-} from '../decomp-runtime';
+} from '../system/decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 import { gSaveBlock1Ptr } from '../gba-menu-system';
 import { CONNECTION_NONE, CONNECTION_INVALID } from '../decomp-data/include/constants/global-data';
 

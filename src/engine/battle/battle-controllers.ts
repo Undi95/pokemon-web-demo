@@ -79,7 +79,7 @@ import {
   buildBattleMsgDataSnapshot,
   type BattleMsgData,
 } from './battle-event-queue';
-import { resolveDecompConstant } from '../decomp-constants';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import type { BattleScriptContext } from './script-interpreter';
 
 // ─── Helper : snapshot BattleMsgData for PrintString events ─────────────────

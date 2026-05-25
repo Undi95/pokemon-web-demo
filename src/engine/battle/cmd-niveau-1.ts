@@ -56,7 +56,7 @@ import {
   setBattlerAttacker,
   setBattlerTarget,
 } from './state';
-import { Random } from '../random';
+import { Random } from '../system/random';
 import { getBattleMove } from './data/battle-moves';
 import { runDamagecalc } from './damage-calc';
 import { Cmd_typecalc as TypecalcImpl } from './type-calc';

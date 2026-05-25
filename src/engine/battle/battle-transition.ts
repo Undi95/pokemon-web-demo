@@ -26,8 +26,8 @@
  * de `tickBattleTransitionSlice` puisque pas de DMA timing.
  */
 
-import { gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop } from '../decomp-globals';
-import { getRuntime, BlendPalettes, PALETTES_ALL } from '../decomp-globals';
+import { gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop } from '../system/decomp-globals';
+import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';

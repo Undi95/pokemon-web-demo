@@ -24,7 +24,7 @@ import {
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from '../field/movement-system';
-import { PlaySE } from '../decomp-globals';
+import { PlaySE } from '../system/decomp-globals';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   gObjectEvents, type ObjectEvent, TrySpawnObjectEvent, FreezeObjectEvent, UnfreezeObjectEvent,
@@ -50,9 +50,9 @@ import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from '../field/player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { getRuntime } from '../decomp-globals';
-import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
-import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../rtc';
+import { getRuntime } from '../system/decomp-globals';
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+import { RtcCalcLocalTime, gLocalTime, RtcInitLocalTimeOffset } from '../system/rtc';
 import { setStringVar } from '../string-buffers';
 import {
   getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,

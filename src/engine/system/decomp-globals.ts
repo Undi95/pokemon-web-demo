@@ -30,26 +30,26 @@ import {
   DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
   DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_ON,
 } from './decomp-runtime';
-import { G_SINE_TABLE } from './decomp-data/src/sine-table';
-import { SONG_ID_TO_NAME, getSongConfig } from './decomp-data/src/song-table';
-import { MUS_NONE as _MUS_NONE } from './decomp-data/include/constants/songs-data';
-import { setReverb as _staticSetReverb } from './m4a/audio-context';
+import { G_SINE_TABLE } from '../decomp-data/src/sine-table';
+import { SONG_ID_TO_NAME, getSongConfig } from '../decomp-data/src/song-table';
+import { MUS_NONE as _MUS_NONE } from '../decomp-data/include/constants/songs-data';
+import { setReverb as _staticSetReverb } from '../m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from './m4a/player';
-import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from './m4a/se-noise-prerendered';
-import { stopAllActiveNotes as _staticStopAllNotes } from './m4a/synth';
+import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
+import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
+import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
 // Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
 // in the affine extras registry consumed by sprite-engine-impl. Required for
 // EVERY mon release/return/emerge across battles, Birch, eggs, evolutions.
-import './decomp-impls/sprite-affine-extras';
-import { BeginAffineAnim as _BeginAffineAnim } from './decomp-impls/sprite-engine-impl';
+import '../decomp-impls/sprite-affine-extras';
+import { BeginAffineAnim as _BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 // Foundational pokeball release effects (sparkles + flash + emerge affine setup).
 import {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
   SetUpForReleaseAffineAnim, BALL_POKE,
-} from './pokeball-effects';
+} from '../pokeball-effects';
 
 // ─── Singleton runtime + asset cache ──────────────────────────────────────────
 
@@ -72,7 +72,7 @@ import {
   sSpriteTileRangeTags as _sSpriteTileRangeTags,
   sSpriteTileRanges as _sSpriteTileRanges,
   sSpriteTileAllocBitmap as _sSpriteTileAllocBitmap,
-} from './sprite';
+} from '../sprite';
 export {
   // Tile tag system helpers (sprite.c:1509-1579)
   IndexOfSpriteTileTag, GetSpriteTileTagByTileStart,
@@ -82,9 +82,9 @@ export {
   ResetOamRange,
   // Sprite geometry (sprite.c:687-700)
   CalcCenterToCornerVec,
-} from './sprite';
+} from '../sprite';
 // LoadOam : decomp-globals.ts a déjà sa version (no-op équivalent) — pas de re-export.
-import { _setPaletteRuntimeGetter } from './palette';
+import { _setPaletteRuntimeGetter } from '../palette';
 export {
   LoadCompressedPalette, FillPalette,
   InvertPlttBuffer, TintPlttBuffer, UnfadePlttBuffer,
@@ -93,7 +93,7 @@ export {
   IsSoftwarePaletteFadeFinishing,
   TintPalette_GrayScale, TintPalette_GrayScale2, TintPalette_SepiaTone, TintPalette_CustomTone,
   BlendPalettesGradually,
-} from './palette';
+} from '../palette';
 
 let _rt: DecompRuntime | null = null;
 
@@ -489,7 +489,7 @@ export function LoadIntroPart2Graphics(scenery: number): void {
 
 /** 1:1 décomp src/sprite.c:1581-1587 — délégué à `src/engine/sprite.ts`
  *  (= source de vérité 1:1 strict du palette tag system). */
-export { FreeAllSpritePalettes } from './sprite';
+export { FreeAllSpritePalettes } from '../sprite';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCENE 2 STUBS (Phase 0b minimum viable — no-op pour ne pas crasher)
@@ -695,9 +695,9 @@ let _songVoicegroups: Record<string, string> | null = null;
  *  que les premiers PlaySE n'aient PAS de latence cold-init (~1-2s SF2 load). */
 async function m4aPrime(): Promise<void> {
   if (_m4aPrimed) return;
-  const { getAudioContext } = await import('./m4a/audio-context');
-  const { preloadAllSlots } = await import('./m4a/player');
-  const { lookupVoicegroup } = await import('./m4a/voicegroups-data/_all-voicegroups-index');
+  const { getAudioContext } = await import('../m4a/audio-context');
+  const { preloadAllSlots } = await import('../m4a/player');
+  const { lookupVoicegroup } = await import('../m4a/voicegroups-data/_all-voicegroups-index');
   // Init AudioContext (requires user gesture — déjà eu via click TestGba→GameScene)
   getAudioContext();
   // Load song → voicegroup mapping (gardé pour les warnings PlaySE qui filtrent
@@ -711,7 +711,7 @@ async function m4aPrime(): Promise<void> {
   // Pre-load the list of pre-rendered SE so first PlaySE() is correctly routed
   await preloadPrerenderedList();
   // Warm-up AudioContext + DAC pour éviter "PTCH" sur le 1er SE après page load.
-  const { primeAudioContext } = await import('./m4a/audio-context');
+  const { primeAudioContext } = await import('../m4a/audio-context');
   await primeAudioContext();
   _m4aPrimed = true;
   console.log('[decomp-globals] audio engine ready (spessasynth_lib + emerald.sf2, 3 slots préchargés)');
@@ -791,7 +791,7 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
 /** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE).
  *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2). */
 export function m4aMPlayAllStop(): void {
-  void import('./m4a/player').then(({ stopAllSongs }) => stopAllSongs());
+  void import('../m4a/player').then(({ stopAllSongs }) => stopAllSongs());
 }
 
 /** 1:1 décomp `FillPalBufferBlack()` (field_screen_effect.c:69-72) :
@@ -948,7 +948,7 @@ export function PlaySE(seId: number): void {
         _staticStopSong(slot);  // = sécurité, stop any spessasynth song
         // 1:1 décomp : track end time pour IsSEPlaying (= waitse opcode).
         // Durée connue via getPrerenderedSEDuration si déjà cached (sinon ~600ms default).
-        const { getPrerenderedSEDuration } = await import('./m4a/se-noise-prerendered');
+        const { getPrerenderedSEDuration } = await import('../m4a/se-noise-prerendered');
         const durSec = getPrerenderedSEDuration(name);
         _markAudioSlotActive(slot, (durSec ?? 0.6) * 1000);
         await playPrerenderedSE(name, slot, seSongVol);
@@ -1020,7 +1020,7 @@ export async function loadSpeciesNamesAsync(): Promise<void> {
       // species-data.ts exporte tous les `SPECIES_X = N`. Module import = sync
       // après bundling, mais on dynamic-import pour rester async-safe.
       const [speciesData, criesResp] = await Promise.all([
-        import('./decomp-data/include/constants/species-data'),
+        import('../decomp-data/include/constants/species-data'),
         fetch('/decomp/em/cries.json'),
       ]);
       const cries = await criesResp.json() as Record<string, string>;
@@ -1065,7 +1065,7 @@ export function PlayCryInternal(
   // waitmoncry. Durée approximée à 1 sec par défaut (= moy. cri Émeraude),
   // overridée par la vraie durée du WAV via _markCryActive depuis music.playCry.
   _audioEndTimeMs.cry = performance.now() + 1000;
-  void import('./music').then(({ playCry }) => {
+  void import('../music').then(({ playCry }) => {
     console.log('[PlayCryInternal] calling playCry(', name, ')');
     playCry(name);
   }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
@@ -1146,16 +1146,16 @@ export function IsFanfareTaskInactive(): boolean {
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
 // flash-mask.ts auto-register __applyFlashMask pour phaser-bridge post-process.
-import './flash-mask';
+import '../flash-mask';
 // field-effect-active-list.ts auto-register __fieldEffectActiveList pour
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
-import './field/field-effect-active-list';
+import '../field/field-effect-active-list';
 // money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
-import './money-box-ui';
+import '../money-box-ui';
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
-import './field/virtual-objects';
+import '../field/virtual-objects';
 // map-layout-swap.ts auto-register __mapLayoutSwap pour setmaplayoutindex opcode.
-import './field/map-layout-swap';
+import '../field/map-layout-swap';
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;
@@ -2377,12 +2377,12 @@ export function UpdateLegendaryMarkingColor(frameNum: number): void {
  *  via setMasterParameter('masterGain') en N steps, puis stopSong à la fin
  *  pour libérer le slot. */
 export function FadeOutBGM(speed: number): void {
-  void import('./m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
+  void import('../m4a/player').then(({ fadeOutBgm }) => fadeOutBgm(speed));
 }
 
 /** 1:1 décomp src/sound.c:285 — `m4aMPlayFadeIn(&gMPlayInfo_BGM, speed)`. */
 export function FadeInBGM(speed: number): void {
-  void import('./m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
+  void import('../m4a/player').then(({ fadeInBgm }) => fadeInBgm(speed));
 }
 /** 1:1 STRICT décomp `CanResetRTC()` (event_data.c:156-162) :
  *    if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
@@ -2430,17 +2430,17 @@ for (const [k, d] of Object.entries(_mutableGlobals)) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // UI SYSTEM EXPORTS (window.c + text.c + menu.c adapters)
 // ═══════════════════════════════════════════════════════════════════════════════
-export * from './decomp-data/main-menu-data';
-export * from './gba-window-system';
-export * from './gba-text-system';
-export * from './gba-menu-system';
+export * from '../decomp-data/main-menu-data';
+export * from '../gba-window-system';
+export * from '../gba-text-system';
+export * from '../gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans
 // `main-menu-impl.ts` (= split du gba-menu-system.ts pour respecter directive
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.
-export * from './ui/main-menu-impl';
-export * from './gba-strings';
-export * from './decomp-data/src/sprite-system-flat';
-export * from './decomp-data/src/intro-c-data-auto';
+export * from '../ui/main-menu-impl';
+export * from '../gba-strings';
+export * from '../decomp-data/src/sprite-system-flat';
+export * from '../decomp-data/src/intro-c-data-auto';
 // Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).
 export {
   LaunchBallFadeMonTask, AnimateBallOpenParticles,
@@ -2449,7 +2449,7 @@ export {
   BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER, BALL_NET,
   BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER,
   POKEBALL_COUNT,
-} from './pokeball-effects';
+} from '../pokeball-effects';
 
 // Audit V2 (session 90) — foundational mon-front-sprite animation system.
 // 1:1 décomp src/pokemon.c:6779 DoMonFrontSpriteAnimation +
@@ -2462,7 +2462,7 @@ import {
   HasTwoFramesAnimation as _HasTwoFramesAnimation,
   ResetAllMonAnimations as _ResetAllMonAnimations,
   StopMonFrontSpriteAnimation as _StopMonFrontSpriteAnimation,
-} from './pokemon/pokemon-animation';
+} from '../pokemon/pokemon-animation';
 
 // Re-export pour usage par auto callbacks (= LaunchAnimationTaskForFrontSprite
 // est un symbol décomp standard utilisé par battle/Pokedex/etc).

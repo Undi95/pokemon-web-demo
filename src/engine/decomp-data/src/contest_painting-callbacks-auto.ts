@@ -9,7 +9,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { DecompRuntime, DecompSprite, DecompTask } from '../../decomp-runtime';
+import type { DecompRuntime, DecompSprite, DecompTask } from '../../system/decomp-runtime';
 import {
   Sin, Cos, Q_8_8_TO_INT, SetOamMatrix, CalcCenterToCornerVec,
   ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE,
@@ -20,13 +20,13 @@ import {
   OBJ_PLTT_ID_FADED, BG_PLTT_ID_FADED,
   BLDALPHA_BLEND, WIN_RANGE, GET_TRUE_SPRITE_INDEX, ANIM_SPRITES_START,
   gSineTable, PaletteBuffer, FreeAllSpritePalettes,
-} from '../../decomp-helpers';
+} from '../../system/decomp-helpers';
 import {
   FreeMonSpritesGfx,
   RemoveWindow,
   RunTextPrinters,
   UpdatePaletteFade,
-} from '../../decomp-globals';
+} from '../../system/decomp-globals';
 // Unresolved constants (auto-stub at 0; replace with real values when needed) :
 const _UNDEFINED = 0;
 const FREE_AND_SET_NULL: any = _UNDEFINED; // TODO : not found in decomp /include or auto/src — possibly dynamic

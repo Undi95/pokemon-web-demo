@@ -32,7 +32,7 @@ import {
   StringExpandPlaceholders,
 } from '../gba-text-system';
 import { gTextFlags } from '../gba-text-printer';
-import { getRuntime } from '../decomp-globals';
+import { getRuntime } from '../system/decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
