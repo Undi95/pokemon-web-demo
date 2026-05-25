@@ -898,7 +898,86 @@ registerSpecial('GetSlotMachineId', () => 0);
 registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
 
 /** Secret Base. */
-registerSpecial('DeclinedSecretBaseBattle', () => { /* no-op */ });
+/** 1:1 décomp `CheckInteractedWithFriendsDollDecor` (secret_base.c:1834-1838) :
+ *  ```c
+ *  void CheckInteractedWithFriendsDollDecor(void) {
+ *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+ *          VarSet(HIGH_TV, HIGH_TV | SECRET_BASE_USED_DOLL);
+ *  }
+ *  ```
+ *  SECRET_BASE_USED_DOLL = (1 << 11). */
+registerSpecial('CheckInteractedWithFriendsDollDecor', () => {
+  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
+    const high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
+    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', (high | (1 << 11)) & 0xFFFF);
+  }
+});
+
+/** 1:1 décomp `CheckInteractedWithFriendsCushionDecor` (secret_base.c:1840-1844) :
+ *  ```c
+ *  void CheckInteractedWithFriendsCushionDecor(void) {
+ *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+ *          VarSet(LOW_TV, LOW_TV | SECRET_BASE_USED_CUSHION);
+ *  }
+ *  ```
+ *  SECRET_BASE_USED_CUSHION = (1 << 10). */
+registerSpecial('CheckInteractedWithFriendsCushionDecor', () => {
+  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
+    const low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
+    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', (low | (1 << 10)) & 0xFFFF);
+  }
+});
+
+/** 1:1 décomp `InitSecretBaseVars` (secret_base.c:1805-1817) :
+ *  ```c
+ *  void InitSecretBaseVars(void) {
+ *      VarSet(VAR_SECRET_BASE_STEP_COUNTER, 0);
+ *      VarSet(VAR_SECRET_BASE_LAST_ITEM_USED, 0);
+ *      VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, 0);
+ *      VarSet(VAR_SECRET_BASE_HIGH_TV_FLAGS, 0);
+ *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0)
+ *          VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, TRUE);
+ *      else
+ *          VarSet(VAR_SECRET_BASE_IS_NOT_LOCAL, FALSE);
+ *      sInFriendSecretBase = FALSE;
+ *  }
+ *  ```
+ *  Note 1:1 : sInFriendSecretBase est un static C ; non porté → flag implicite
+ *  géré par notre system de secret base ultérieurement. */
+registerSpecial('InitSecretBaseVars', () => {
+  VarSet('VAR_SECRET_BASE_STEP_COUNTER', 0);
+  VarSet('VAR_SECRET_BASE_LAST_ITEM_USED', 0);
+  VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', 0);
+  VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', 0);
+  const isInOtherBase = VarGet('VAR_CURRENT_SECRET_BASE') !== 0;
+  VarSet('VAR_SECRET_BASE_IS_NOT_LOCAL', isInOtherBase ? 1 : 0);
+});
+
+/** 1:1 décomp `DeclinedSecretBaseBattle` (secret_base.c:1846-1853) :
+ *  ```c
+ *  void DeclinedSecretBaseBattle(void) {
+ *      if (VarGet(VAR_CURRENT_SECRET_BASE) != 0) {
+ *          VarSet(LOW_TV, LOW_TV & ~(WON | LOST | DECLINED));
+ *          VarSet(HIGH_TV, HIGH_TV & ~(DRAW));
+ *          VarSet(LOW_TV, LOW_TV | DECLINED);
+ *      }
+ *  }
+ *  ```
+ *  Flags : SECRET_BASE_BATTLED_WON=1<<11, _LOST=1<<12, _DECLINED=1<<13,
+ *  _DRAW=1<<0 (high). */
+registerSpecial('DeclinedSecretBaseBattle', () => {
+  if (VarGet('VAR_CURRENT_SECRET_BASE') !== 0) {
+    const WON = 1 << 11, LOST = 1 << 12, DECLINED = 1 << 13;
+    const DRAW = 1 << 0;
+    let low = VarGet('VAR_SECRET_BASE_LOW_TV_FLAGS');
+    let high = VarGet('VAR_SECRET_BASE_HIGH_TV_FLAGS');
+    low = low & ~(WON | LOST | DECLINED);
+    high = high & ~DRAW;
+    low = low | DECLINED;
+    VarSet('VAR_SECRET_BASE_LOW_TV_FLAGS', low & 0xFFFF);
+    VarSet('VAR_SECRET_BASE_HIGH_TV_FLAGS', high & 0xFFFF);
+  }
+});
 registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op */ });
 
 /** Interview / TV. */
@@ -1264,7 +1343,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'CallVerdanturfTentFunction', 'ChangeBoxPokemonNickname',
   'CheckDaycareMonReceivedMail',
   // 'CheckForPlayersHouseNews' — handler concret enregistré supra (= TV path dispatch 1:1).
-  'CheckInteractedWithFriendsCushionDecor', 'CheckInteractedWithFriendsDollDecor',
+  // 'CheckInteractedWithFriendsCushionDecor' — porté 1:1 décomp secret_base.c:1840 ci-bas.
+  // 'CheckInteractedWithFriendsDollDecor' — porté 1:1 décomp secret_base.c:1834 ci-bas.
   'CheckInteractedWithFriendsFurnitureBottom', 'CheckInteractedWithFriendsFurnitureMiddle',
   'CheckInteractedWithFriendsFurnitureTop', 'CheckInteractedWithFriendsPosterDecor',
   'CheckInteractedWithFriendsSandOrnament', 'CheckLeadMonBeauty',
@@ -1339,7 +1419,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IncrementDailyPickedBerries' — porté 1:1 décomp tv.c:2528 ci-bas.
   // 'IncrementDailyPlantedBerries' — porté 1:1 décomp tv.c:2523 ci-bas.
   'InitSecretBaseDecorationSprites',
-  'InitSecretBaseVars', 'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
+  // 'InitSecretBaseVars' — porté 1:1 décomp secret_base.c:1805 ci-bas.
+  'InitUnionRoom', 'InteractWithShieldOrTVDecoration',
   'InterviewAfter',
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
   // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
