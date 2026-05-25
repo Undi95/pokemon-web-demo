@@ -2547,20 +2547,44 @@ function _spawnSingleNpcFromTemplate(
     rt.gba.oam[result.oamIndex].flipH = false;
     rt.gba.oam[result.oamIndex].priority = oamTemplate.priority;
     // 1:1 STRICT décomp event_object_movement.c:1494-1496 :
-    //   gSprites[gObjectEvents[objectEventId].spriteId].images = graphicsInfo->images;
+    //   gSprites[..spriteId].images = graphicsInfo->images;
     //   if (subspriteTables)
     //       SetSubspriteTables(&gSprites[..].spriteId], subspriteTables);
-    // Le truck (= 48x48) a `graphicsInfo->subspriteTables = sOamTables_48x48`
-    // qui contient 6 entries identiques pointant vers sOamTable_48x48 (12 entries).
-    // subspriteTableNum default = 0 → utilise subspriteTables[0].subsprites
-    // (= les 12 child OAMs qui rendent le 48×48 visualement).
-    // AUDIT FIX G2 : précédemment `useSubsprites = false` skip le call →
-    // truck rendu seulement avec primary OAM 32x32 (= bug "case bleue").
-    const subspriteTablesData = graphicsInfo.subspriteTables as
-      ReadonlyArray<{ subspriteCount: number; subsprites: ReadonlyArray<NamingSubsprite> }> | null;
-    if (subspriteTablesData && subspriteTablesData.length > 0) {
-      SetSubspriteTables(npc.spriteId, subspriteTablesData[0].subsprites);
-      npc.useSubsprites = true;
+    //
+    // Mais : le décomp `SetSubspriteTables` (sprite.c:1659-1664) ne hide PAS le
+    // primary OAM. C'est le rendering qui décide selon `subspriteTableNum`
+    // (= sElevationToSubspriteTableNum[elevation]) ET `subspriteCount > 0`.
+    //
+    // Notre TS `SetSubspriteTables(spriteId, subsprites)` hide le primary
+    // unconditionnellement. Donc si on passe subspriteTables[0].subsprites
+    // pour un 16x32 (= placeholder vide `[]`), le primary est hidden + 0
+    // child OAM → NPC INVISIBLE (bug G3 sur Maman).
+    //
+    // Le décomp 1:1 strict = TOUS NPCs setupent subspriteTables, et le
+    // rendering choisit subspriteTableNum via elevation. Notre rendering
+    // (= updateNpcSpriteFrame) gère DÉJÀ les NPCs standard 16x16/16x32/32x32
+    // via le sprite system normal (= tile copy par frame anim). Le subsprite
+    // mode TS n'est utile QUE pour le truck 48x48 (= 12 child OAMs qui
+    // composent l'image visuellement).
+    //
+    // Décision : limiter le wire SetSubspriteTables au CAS 48x48 strict, où
+    // le décomp utilise sOamTables_48x48 qui a 6 entries TOUTES identiques
+    // pointant vers les 12 subsprites de sOamTable_48x48 (= subspriteTableNum
+    // n'importe lequel donne le même résultat 48x48).
+    //
+    // AUDIT FIX G3 : G2 avait passé subspriteTables[0] pour TOUS les NPCs →
+    // 16x32 Mom hit `sOamTables_16x32[0] = { subspriteCount: 0, subsprites: [] }`
+    // → primary hidden + 0 child → invisible. Le truck 48x48 marche car
+    // sOamTables_48x48[0] = real 12 subsprites.
+    if (is48x48) {
+      const subspriteTablesData = graphicsInfo.subspriteTables as
+        ReadonlyArray<{ subspriteCount: number; subsprites: ReadonlyArray<NamingSubsprite> }> | null;
+      if (subspriteTablesData && subspriteTablesData.length > 0 && subspriteTablesData[0].subspriteCount > 0) {
+        SetSubspriteTables(npc.spriteId, subspriteTablesData[0].subsprites);
+        npc.useSubsprites = true;
+      } else {
+        npc.useSubsprites = false;
+      }
     } else {
       npc.useSubsprites = false;
     }
