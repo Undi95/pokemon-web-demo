@@ -1446,6 +1446,35 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `IsQuizLadyWaitingForChallenger` (lilycove_lady.c:468-472) :
+ *  ```c
+ *  bool8 IsQuizLadyWaitingForChallenger(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      return sQuizLadyPtr->waitingForChallenger;
+ *  }
+ *  ``` */
+registerSpecial('IsQuizLadyWaitingForChallenger', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    return lady.waitingForChallenger ?? 0;
+  }
+  return 0;
+});
+
+/** 1:1 décomp `QuizLadySetWaitingForChallenger` (lilycove_lady.c:559-563) :
+ *  ```c
+ *  void QuizLadySetWaitingForChallenger(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      sQuizLadyPtr->waitingForChallenger = TRUE;
+ *  }
+ *  ``` */
+registerSpecial('QuizLadySetWaitingForChallenger', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    lady.waitingForChallenger = 1;
+  }
+});
+
 /** 1:1 décomp `GetFavorLadyState` (lilycove_lady.c:159-168) :
  *  ```c
  *  u8 GetFavorLadyState(void) {
@@ -1865,7 +1894,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
   // 'IsMonOTIDNotPlayers' — porté 1:1 décomp tv.c:3329 ci-bas.
   'IsPokemonJumpSpeciesInParty', 'IsPokerusInParty', 'IsQuizAnswerCorrect',
-  'IsQuizLadyWaitingForChallenger', 'IsTVShowAlreadyInQueue',
+  // 'IsQuizLadyWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:468 ci-bas.
+  'IsTVShowAlreadyInQueue',
   // 'IsTrendyPhraseBoring' — porté 1:1 décomp dewford_trend.c:296 ci-bas.
   // 'LeadMonHasEffortRibbon' — porté 1:1 décomp field_specials.c:1372 ci-bas (= dette ribbons R3).
   // 'LinkContestTryHideWirelessIndicator' — porté 1:1 décomp contest_util.c:2753 ci-bas (= no link).
@@ -1890,7 +1920,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'PutAwayDecorationIteration', 'PutFanClubSpecialOnTheAir',
   'PutLilycoveContestLadyShowOnTheAir', 'QuizLadyGetPlayerAnswer',
   'QuizLadyPickNewQuestion', 'QuizLadyRecordCustomQuizData',
-  'QuizLadySetCustomQuestion', 'QuizLadySetWaitingForChallenger',
+  // 'QuizLadySetWaitingForChallenger' — porté 1:1 décomp lilycove_lady.c:559 ci-bas.
+  'QuizLadySetCustomQuestion',
   'QuizLadyShowQuizQuestion', 'QuizLadyTakePrizeForCustomQuiz',
   // 'ResetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1182 ci-bas.
   // 'ResetFanClub' — porté 1:1 décomp field_specials.c:3979 ci-bas.
