@@ -2169,7 +2169,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'InterviewAfter',
   // 'IsContestDebugActive' — porté 1:1 décomp contest_util.c:2571 ci-bas (= toujours FALSE).
   // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
-  'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
+  // 'IsCurSecretBaseOwnedByAnotherPlayer' — porté 1:1 décomp secret_base.c:720 dans secret-base.ts (batch B23).
+  'IsDecorationCategoryFull',
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
   // 'IsFavorLadyThresholdMet' — porté 1:1 décomp lilycove_lady.c:264 ci-bas (batch B9).
   // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
