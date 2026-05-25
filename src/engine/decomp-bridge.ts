@@ -144,6 +144,7 @@ export {
   gSineTable,
   PaletteBuffer,
 } from './decomp-helpers';
+import { gSineTable as _gSineTable } from './decomp-helpers';
 
 // ─── Re-exports : GPU register / BG constants (decomp-runtime.ts) ─────────────
 
@@ -1586,12 +1587,70 @@ export function AddTextPrinterAndCreateWindowOnHealthbox(...args: any[]): any {
 
 // ─── Sprite affine matrix (1:1 décomp `include/gba/syscall.h`) ────────────────
 
-/** 1:1 décomp BIOS syscall ObjAffineSet — generates affine matrix from (sx, sy, rotation).
- *  Need to implement matrix math (= sin/cos rotation + scale). Stubbed for now. */
-export function ObjAffineSet(_src: any, _dst: any, _count: number, _stride: number): void {
-  // TODO 1:1 : implement affine matrix calculation. Until then, no-op.
-  // Without this, any rotating sprite (battle anim, moving title screen) will
-  // be visually wrong but won't crash.
+/** 1:1 décomp BIOS syscall `ObjAffineSet(src, dst, count, stride)` — generates
+ *  OAM affine matrices from (xScale, yScale, rotation) src structs.
+ *
+ *  Algorithme 1:1 BIOS (libagbsyscall) :
+ *    rotIdx = (rotation >> 8) & 0xFF
+ *    sin = gSineTable[rotIdx]                       // s16 in [-256, 256]
+ *    cos = gSineTable[(rotIdx + 64) & 0xFF]         // s16
+ *    pa =  (xScale * cos) >> 8
+ *    pb = -(xScale * sin) >> 8
+ *    pc =  (yScale * sin) >> 8
+ *    pd =  (yScale * cos) >> 8
+ *
+ *  Sortie dst format = 4 s16 (pa, pb, pc, pd) par matrix. stride = espacement
+ *  entre matrices (= bytes). En GBA, stride=2 = 2 halfwords (= 4 bytes) entre
+ *  les fields pa/pb/... pour skipper OAM attributes, ou stride=8 (= packed).
+ *  Le décomp use `ObjAffineSet(&src, &matrix, 1, 2)` (= 1 matrix, stride 2 bytes
+ *  entre chaque field, packed dans la struct matrix).
+ *
+ *  Note : nos callers ports inline (bag-screen, sprite-engine-impl, mon-summary-anim)
+ *  recalculent eux-mêmes pa/pb/pc/pd via la même formule. Ce wrapper sert
+ *  pour callers futurs qui appelleraient le syscall direct. */
+interface ObjAffineSrcData {
+  xScale: number;
+  yScale: number;
+  rotation: number;
+}
+export function ObjAffineSet(
+  src: ObjAffineSrcData | ObjAffineSrcData[],
+  dst: number[] | { pa: number; pb: number; pc: number; pd: number }[] | DataView,
+  count: number,
+  stride: number,
+): void {
+  const arr = Array.isArray(src) ? src : [src];
+  for (let i = 0; i < count; i++) {
+    const s = arr[Math.min(i, arr.length - 1)];
+    const rotIdx = (s.rotation >> 8) & 0xFF;
+    const sin = _gSineTable(rotIdx);
+    const cos = _gSineTable((rotIdx + 64) & 0xFF);
+    const pa =  (s.xScale * cos) >> 8;
+    const pb = -(s.xScale * sin) >> 8;
+    const pc =  (s.yScale * sin) >> 8;
+    const pd =  (s.yScale * cos) >> 8;
+    if (dst instanceof DataView) {
+      // GBA layout : 4 s16 packed @ offset i*stride*4 (stride=2 → 8 bytes per matrix).
+      const off = i * stride * 4;
+      dst.setInt16(off + 0, pa & 0xFFFF, true);
+      dst.setInt16(off + 2, pb & 0xFFFF, true);
+      dst.setInt16(off + 4, pc & 0xFFFF, true);
+      dst.setInt16(off + 6, pd & 0xFFFF, true);
+    } else if (Array.isArray(dst)) {
+      const elem = (dst as Array<unknown>)[i];
+      if (typeof elem === 'object' && elem !== null && 'pa' in (elem as object)) {
+        const m = elem as { pa: number; pb: number; pc: number; pd: number };
+        m.pa = pa; m.pb = pb; m.pc = pc; m.pd = pd;
+      } else {
+        const numArr = dst as number[];
+        const base = i * 4;
+        numArr[base + 0] = pa;
+        numArr[base + 1] = pb;
+        numArr[base + 2] = pc;
+        numArr[base + 3] = pd;
+      }
+    }
+  }
 }
 
 /** 1:1 décomp BIOS syscall BgAffineSet. */
