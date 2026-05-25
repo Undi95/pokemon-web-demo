@@ -64,7 +64,13 @@ import {
   AI_CHOICE_FLEE,
   AI_CHOICE_WATCH,
 } from './ai/ai-state';
-import { ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE } from './constants';
+import {
+  ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE,
+  BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,
+} from './constants';
+import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
+import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
+import { MAX_BATTLERS_COUNT } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { TurnValuesCleanUp } from './util';
@@ -770,15 +776,12 @@ export function runBattleTurnPassedViaBytecode(): {
   // Step 12 : reset chosen actions/moves.
   const battlersCount = gs?.gBattlersCount ?? 2;
   const B_ACTION_NONE = 0xFF;
-  const MOVE_NONE_LOCAL = 0;
   for (let i = 0; i < battlersCount; i++) {
     gChosenActionByBattler[i] = B_ACTION_NONE;
-    gChosenMoveByBattler[i] = MOVE_NONE_LOCAL;
+    gChosenMoveByBattler[i] = MOVE_NONE;
   }
 
   // Step 13 : reset gBattleStruct.monToSwitchIntoId.
-  const MAX_BATTLERS_COUNT = 4;
-  const PARTY_SIZE = 6;
   if (gBattleStruct.monToSwitchIntoId) {
     for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
       gBattleStruct.monToSwitchIntoId[i] = PARTY_SIZE;
@@ -789,14 +792,11 @@ export function runBattleTurnPassedViaBytecode(): {
   gBattleStruct.absentBattlerFlags = gs?.gAbsentBattlerFlags ?? 0;
 
   // Step 15-16 : Palace/Arena special scripts.
-  // AUDIT BUG FIX : BATTLE_TYPE_PALACE était 1 << 13 (= LEGENDARY) au lieu de 1 << 17.
-  const BATTLE_TYPE_PALACE = 1 << 17;
-  const BATTLE_TYPE_ARENA_LOCAL = 1 << 18;
   const tf = gs?.gBattleTypeFlags ?? 0;
   if (tf & BATTLE_TYPE_PALACE) {
     phases.push({ phase: 'special', label: 'BattleScript_PalacePrintFlavorText' });
     _runScriptSync('BattleScript_PalacePrintFlavorText');
-  } else if ((tf & BATTLE_TYPE_ARENA_LOCAL) && gs?.gBattleStruct?.arenaTurnCounter === 0) {
+  } else if ((tf & BATTLE_TYPE_ARENA) && gs?.gBattleStruct?.arenaTurnCounter === 0) {
     phases.push({ phase: 'special', label: 'BattleScript_ArenaTurnBeginning' });
     _runScriptSync('BattleScript_ArenaTurnBeginning');
   }

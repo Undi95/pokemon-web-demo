@@ -23,10 +23,9 @@ const _typeNameToNumber: Record<string, number> = {
   TYPE_DARK: 17,
 };
 
-// MON_* gender sentinels (constants/pokemon.h:171-173)
-const MON_MALE_LOCAL       = 0x00;
-const MON_FEMALE_LOCAL     = 0xFE;
-const MON_GENDERLESS_LOCAL = 0xFF;
+import {
+  MON_MALE, MON_FEMALE, MON_GENDERLESS,
+} from '../../decomp-data/include/constants/pokemon-data';
 
 let _numberToEnum: Record<number, string> = {};
 let _built = false;
@@ -127,10 +126,10 @@ export function getSpeciesGenderRatio(species: number): number {
  */
 export function GetGenderFromSpeciesAndPersonality(species: number, personality: number): number {
   const ratio = getSpeciesGenderRatio(species);
-  if (ratio === MON_MALE_LOCAL || ratio === MON_FEMALE_LOCAL || ratio === MON_GENDERLESS_LOCAL) {
+  if (ratio === MON_MALE || ratio === MON_FEMALE || ratio === MON_GENDERLESS) {
     return ratio;
   }
   // PERCENT_FEMALE numerical : compare avec personality lo byte.
-  if (ratio > (personality & 0xFF)) return MON_FEMALE_LOCAL;
-  return MON_MALE_LOCAL;
+  if (ratio > (personality & 0xFF)) return MON_FEMALE;
+  return MON_MALE;
 }

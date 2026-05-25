@@ -21,6 +21,10 @@ import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpre
 import { readByte } from './script-interpreter';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
+  MAX_PER_STAT_EVS, MAX_TOTAL_EVS,
+} from '../decomp-data/include/constants/pokemon-data';
+import { MON_DATA_POKERUS } from './party-storage';
+import {
   gBattleControllerExecFlags, gBattleMons, gBattlerAttacker, gBattlerTarget,
   gActiveBattler, setActiveBattler, setBattlerAttacker, setBattlerTarget,
   gBattleTypeFlags, gBattleOutcome, setBattleOutcome,
@@ -612,28 +616,23 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-// MAX_PER_STAT_EVS = 255 et MAX_TOTAL_EVS = 510 — 1:1 décomp (constants/pokemon.h:203-204).
-const MAX_TOTAL_EVS_LOCAL    = 510;
-const MAX_PER_STAT_EVS_LOCAL = 255;
-
 /** 1:1 décomp `CheckPartyHasHadPokerus(party, selection)` (pokemon.c:6129).
  *  Check si un mon courant (selection=0 → party[0]) a contracté Pokerus
  *  (= MON_DATA_POKERUS != 0). Notre port utilise un array d'1 mon = [mon]. */
 function _CheckPartyHasHadPokerus(party: Pokemon[], selection: number): number {
-  const MON_DATA_POKERUS_LOCAL = 34;
   let retVal = 0;
   let partyIndex = 0;
   let curBit = 1;
 
   if (selection) {
     do {
-      if ((selection & 1) && GetMonData(party[partyIndex], MON_DATA_POKERUS_LOCAL))
+      if ((selection & 1) && GetMonData(party[partyIndex], MON_DATA_POKERUS))
         retVal |= curBit;
       partyIndex++;
       curBit <<= 1;
       selection >>= 1;
     } while (selection);
-  } else if (GetMonData(party[0], MON_DATA_POKERUS_LOCAL)) {
+  } else if (GetMonData(party[0], MON_DATA_POKERUS)) {
     retVal = 1;
   }
   return retVal;
@@ -668,7 +667,7 @@ function _MonGainEVs(monId: number, defeatedSpecies: number): void {
   const holdEffect = GetItemHoldEffect(heldItem);
 
   for (let i = 0; i < 6 /* NUM_STATS */; i++) {
-    if (totalEVs >= MAX_TOTAL_EVS_LOCAL) break;
+    if (totalEVs >= MAX_TOTAL_EVS) break;
 
     let evIncrease = evYield[i] * multiplier;
 
@@ -677,12 +676,12 @@ function _MonGainEVs(monId: number, defeatedSpecies: number): void {
     }
 
     // 1:1 décomp : cap total EVs à 510.
-    if (totalEVs + evIncrease > MAX_TOTAL_EVS_LOCAL) {
-      evIncrease = (evIncrease + MAX_TOTAL_EVS_LOCAL) - (totalEVs + evIncrease);
+    if (totalEVs + evIncrease > MAX_TOTAL_EVS) {
+      evIncrease = (evIncrease + MAX_TOTAL_EVS) - (totalEVs + evIncrease);
     }
     // 1:1 décomp : cap per-stat EVs à 255 (= 100 selon BUGFIX, mais retro Em = 255).
-    if (evs[i] + evIncrease > MAX_PER_STAT_EVS_LOCAL) {
-      const val1 = evIncrease + MAX_PER_STAT_EVS_LOCAL;
+    if (evs[i] + evIncrease > MAX_PER_STAT_EVS) {
+      const val1 = evIncrease + MAX_PER_STAT_EVS;
       const val2 = evs[i] + evIncrease;
       evIncrease = val1 - val2;
     }
