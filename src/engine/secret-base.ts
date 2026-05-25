@@ -12,8 +12,10 @@
 
 import { registerSpecial } from './script-opcodes';
 import { VarGet, VarSet, gSpecialVar } from './script-vars';
-import { gSaveBlock1Ptr } from './save-block-state';
-import { SECRET_BASES_COUNT } from './decomp-data/include/constants/global-data';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { SECRET_BASES_COUNT, TRAINER_ID_LENGTH, LANGUAGE_FRENCH } from './decomp-data/include/constants/global-data';
+import { gMapHeader } from './map-loader';
+import { resolveDecompConstant } from './decomp-constants';
 
 /** 1:1 décomp `static EWRAM_DATA u8 sCurSecretBaseId = 0` (secret_base.c:78). */
 let sCurSecretBaseId = 0;
@@ -162,4 +164,47 @@ registerSpecial('PrepSecretBaseBattleFlags', () => {
   if (bridge?.setBattleTypeFlags) bridge.setBattleTypeFlags(0x8 | 0x80000);
   // TryGainNewFanFromCounter : dette R3 (= cascade FANCOUNTER_BATTLED_AT_BASE
   // pas porté).
+});
+
+/** 1:1 décomp `SetPlayerSecretBase` (secret_base.c:365-377) :
+ *  ```c
+ *  void SetPlayerSecretBase(void) {
+ *      u16 i;
+ *      gSaveBlock1Ptr->secretBases[0].secretBaseId = sCurSecretBaseId;
+ *      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+ *          gSaveBlock1Ptr->secretBases[0].trainerId[i] = gSaveBlock2Ptr->playerTrainerId[i];
+ *      VarSet(VAR_CURRENT_SECRET_BASE, 0);
+ *      StringCopyN(gSaveBlock1Ptr->secretBases[0].trainerName,
+ *                  gSaveBlock2Ptr->playerName, GetNameLength(playerName));
+ *      gSaveBlock1Ptr->secretBases[0].gender = gSaveBlock2Ptr->playerGender;
+ *      gSaveBlock1Ptr->secretBases[0].language = GAME_LANGUAGE;
+ *      VarSet(VAR_SECRET_BASE_MAP, gMapHeader.regionMapSectionId);
+ *  }
+ *  ```
+ *  Setup player's secret base avec données player + cur map.
+ *  Cascade R3 : mapSec stored numeric ; nous resolve via reverseDecompConstant
+ *  (= notre regionMapSectionId est MAPSEC_* string). GetNameLength inline. */
+registerSpecial('SetPlayerSecretBase', () => {
+  const base = gSaveBlock1Ptr.secretBases?.[0];
+  if (!base) return;
+  base.secretBaseId = sCurSecretBaseId;
+  // 1:1 décomp loop TRAINER_ID_LENGTH=4 copy.
+  if (!base.trainerId) base.trainerId = [0, 0, 0, 0];
+  for (let i = 0; i < TRAINER_ID_LENGTH; i++) {
+    base.trainerId[i] = gSaveBlock2Ptr.playerTrainerId?.[i] ?? 0;
+  }
+  VarSet('VAR_CURRENT_SECRET_BASE', 0);
+  // 1:1 décomp StringCopyN + GetNameLength (= EOS=0xFF search).
+  const playerName = gSaveBlock2Ptr.playerName ?? '';
+  base.trainerName = playerName;
+  base.gender = gSaveBlock2Ptr.playerGender ?? 0;
+  base.language = LANGUAGE_FRENCH;  // 1:1 décomp GAME_LANGUAGE = LANGUAGE_FRENCH=3 (FR).
+  // 1:1 décomp VarSet(VAR_SECRET_BASE_MAP, gMapHeader.regionMapSectionId).
+  const mapsecName = gMapHeader?.regionMapSectionId;
+  if (mapsecName) {
+    const numericId = resolveDecompConstant(mapsecName);
+    if (numericId !== undefined) {
+      VarSet('VAR_SECRET_BASE_MAP', numericId);
+    }
+  }
 });

@@ -2252,7 +2252,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetMauvilleOldManObjEventGfx' — porté 1:1 décomp mauville_old_man.c:746 ci-bas.
   // 'SetMirageTowerVisibility' — porté 1:1 décomp mirage_tower.c:319 ci-bas.
   // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
-  'SetPlayerSecretBase',
+  // 'SetPlayerSecretBase' — porté 1:1 décomp secret_base.c:365 dans secret-base.ts (batch B35).
   // 'SetQuizLadyState_Complete' — porté 1:1 décomp lilycove_lady.c:493 ci-bas.
   // 'SetQuizLadyState_GivePrize' — porté 1:1 décomp lilycove_lady.c:499 ci-bas.
   // 'SetRoute119Weather' — porté 1:1 décomp field_specials.c:1519 ci-bas (B4 refactor).
