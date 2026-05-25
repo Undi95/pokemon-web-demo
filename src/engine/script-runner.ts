@@ -699,8 +699,11 @@ export async function runScript(
         ? itemTok.replace(/^ITEM_/, '').toLowerCase().replace(/_/g, '')
         : '';
       const mon = createPokemonInstance(species, level, heldItem ? { heldItem } : undefined);
-      const ok = GiveMonToPlayer(mon) === MON_GIVEN_TO_PARTY;
-      const result = ok ? 0 : 1; // MVP : si pas de place → faux PC (= 1), pas d'erreur
+      // 1:1 décomp ScriptGiveMon : VarSet(VAR_RESULT, GiveMonToPlayer(...)) directe.
+      // GiveMonToPlayer retourne MON_GIVEN_TO_PARTY=0 | MON_GIVEN_TO_PC=1 | MON_CANT_GIVE=2.
+      // Notre GiveMonToPlayer port retourne actuellement MON_GIVEN_TO_PARTY ou MON_CANT_GIVE
+      // (= dette R3 : CopyMonToPC pas porté, party-full → CANT_GIVE au lieu de PC).
+      const result = GiveMonToPlayer(mon);
       vars['VAR_RESULT'] = result;
       VarSet('VAR_RESULT', result);
       console.log(`[givemon] ${species} L${level} → party (size=${gSaveBlock1Ptr.playerPartyCount}, result=${result})`);
