@@ -37,7 +37,7 @@
 
 import { getRuntime, gMain, ResetTasks, ResetPaletteFade, FillPalBufferBlack } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
-import { InitFieldMessageBox } from './field-message-box';
+import { InitFieldMessageBox } from './field/field-message-box';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 
 /** 1:1 décomp `bool8 FieldCB_ReturnToFieldOpenStartMenu(void)`

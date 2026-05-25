@@ -19,11 +19,11 @@
  * Pas de hide quand sur grass/water (= future). Pas d'anim multi-frame.
  */
 
-import type { DecompRuntime } from './decomp-runtime';
-import { loadIndexedPngStrict } from './gba/png-loader';
+import type { DecompRuntime } from '../decomp-runtime';
+import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
-import { MAP_OFFSET } from './map-loader';
-import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
+import { MAP_OFFSET } from '../map-loader';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
 
 const SHADOW_PNG = '/decomp/em/field_effects/shadow_medium.png';
 

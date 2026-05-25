@@ -37,7 +37,7 @@ import {
 } from './object-events';
 import { GetPlayerFacingDirection } from './player-avatar';
 import { gSaveBlock1Ptr } from './save-block-state';
-import { GetCameraTopLeftCoords } from './field-camera';
+import { GetCameraTopLeftCoords } from './field/field-camera';
 import { SaveMapView, MAP_OFFSET } from './map-loader';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────

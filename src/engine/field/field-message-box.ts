@@ -23,16 +23,16 @@ import {
   DrawDialogueFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
-} from './gba-window-system';
+} from '../gba-window-system';
 import {
   AddTextPrinterParameterized3,
   IsTextPrinterActive,
   setStringVar4,
   gStringVar4,
   StringExpandPlaceholders,
-} from './gba-text-system';
-import { gTextFlags } from './gba-text-printer';
-import { getRuntime } from './decomp-globals';
+} from '../gba-text-system';
+import { gTextFlags } from '../gba-text-printer';
+import { getRuntime } from '../decomp-globals';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

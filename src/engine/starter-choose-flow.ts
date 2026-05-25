@@ -27,7 +27,7 @@
  *
  * Cf. memory/upd2-progress.md.
  */
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
 import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
@@ -42,7 +42,7 @@ import { Sin } from './decomp-helpers';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map-loader';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims';
-import { setFieldCameraSuspended } from './field-camera';
+import { setFieldCameraSuspended } from './field/field-camera';
 import { getString, initStringsFromDecomp } from './gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from './data-tables';
 // Audit session 126 (post-test user) : wire le first wild battle Zigzagoon

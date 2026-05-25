@@ -20,7 +20,7 @@ import {
 } from './script-vars';
 import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox,
-} from './field-message-box';
+} from './field/field-message-box';
 import {
   applyMovement, isAllMovementsDone, isMovementDone,
 } from './movement-system';

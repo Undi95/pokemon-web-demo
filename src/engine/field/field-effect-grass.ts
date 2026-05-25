@@ -28,11 +28,11 @@
  *     fast through grass, plusieurs effects actifs simultanément).
  */
 
-import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from './sprite';
-import { loadIndexedPngStrict } from './gba/png-loader';
+import type { DecompRuntime } from '../decomp-runtime';
+import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../sprite';
+import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
-import { MAP_OFFSET } from './map-loader';
+import { MAP_OFFSET } from '../map-loader';
 
 const TALL_GRASS_PNG = '/decomp/em/field_effects/tall_grass.png';
 const GENERAL_1_PAL  = '/decomp/em/field_effects/general_1.pal';

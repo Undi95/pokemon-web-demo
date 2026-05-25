@@ -62,7 +62,7 @@ import {
   ShowFieldMessage,
   IsFieldMessageBoxHidden,
   HideFieldMessageBox,
-} from './field-message-box';
+} from './field/field-message-box';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from './decomp-globals';
 import { LoadSpritePalette } from './sprite';
 

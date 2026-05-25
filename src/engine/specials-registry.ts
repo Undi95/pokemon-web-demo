@@ -44,7 +44,7 @@ import { FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER } from './decomp-data/include/cons
 import { MOVE_NONE } from './decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from './rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from './warp-system';
-import { ShowFieldMessage } from './field-message-box';
+import { ShowFieldMessage } from './field/field-message-box';
 import { gStringVar4 } from './gba-text-system';
 import { Random } from './random';
 import { reverseDecompConstant } from './decomp-constants';
@@ -53,7 +53,7 @@ import type { Pokemon as _PartyPokemon } from './battle/party-storage';
 import { CheckPartyMonHasHeldItem } from './script-pokemon-util';
 import { GetPCBoxToSendMon } from './pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from './map-name-popup';
-import { SetCameraPanning, SetCameraPanningCallback } from './field-camera';
+import { SetCameraPanning, SetCameraPanningCallback } from './field/field-camera';
 import { gSpecialVar } from './script-vars';
 import { gDecorations } from './decoration-data';
 import { GetFirstEmptyDecorSlot } from './decoration-inventory';

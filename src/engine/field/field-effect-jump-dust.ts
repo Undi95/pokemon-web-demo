@@ -15,11 +15,11 @@
  * Palette : general_0.pal (= déjà chargée par field-effect-arrow).
  */
 
-import type { DecompRuntime } from './decomp-runtime';
-import { LoadSpriteSheet, IndexOfSpriteTileTag } from './sprite';
-import { loadIndexedPngStrict } from './gba/png-loader';
+import type { DecompRuntime } from '../decomp-runtime';
+import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../sprite';
+import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
-import { MAP_OFFSET } from './map-loader';
+import { MAP_OFFSET } from '../map-loader';
 
 const DUST_PNG = '/decomp/em/field_effects/ground_impact_dust.png';
 

@@ -53,8 +53,8 @@ import {
   ClearBgRedrawPending,
   getPendingConnection,
   clearPendingConnection,
-} from '../engine/field-camera';
-import type { PendingConnection } from '../engine/field-camera';
+} from '../engine/field/field-camera';
+import type { PendingConnection } from '../engine/field/field-camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
@@ -117,35 +117,35 @@ import {
   FieldAnimateDoorClose,
   FieldSetDoorOpened,
   preloadDoorTiles,
-} from '../engine/field-door';
+} from '../engine/field/field-door';
 import {
   CreateWarpArrowSprite,
   DestroyWarpArrowSprite,
   HideShowWarpArrow,
   UpdateWarpArrowSprite,
-} from '../engine/field-effect-arrow';
+} from '../engine/field/field-effect-arrow';
 import {
   LoadEmoteAssets,
   tickEmoteSprites,
   DestroyAllEmoteSprites,
-} from '../engine/field-effect-emotes';
+} from '../engine/field/field-effect-emotes';
 import { UpdateTVScreensOnMap } from '../engine/tv-screen';
 import {
   preloadTallGrassEffect,
   UpdateTallGrassEffects,
   DestroyAllTallGrassEffects,
-} from '../engine/field-effect-grass';
+} from '../engine/field/field-effect-grass';
 import {
   preloadJumpDustEffect,
   UpdateJumpDustEffects,
   DestroyAllJumpDustEffects,
-} from '../engine/field-effect-jump-dust';
+} from '../engine/field/field-effect-jump-dust';
 import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
   DestroyShadowSprite,
-} from '../engine/field-effect-shadow';
+} from '../engine/field/field-effect-shadow';
 import { PlaySE } from '../engine/decomp-globals';
 import {
   SE_EXIT,
@@ -155,7 +155,7 @@ import {
   InitFieldMessageBox,
   TickFieldMessageBox,
   preloadStandardMenuPalette,
-} from '../engine/field-message-box';
+} from '../engine/field/field-message-box';
 import { TickStartMenu } from '../engine/start-menu';
 import { TickBedroomPC } from '../engine/bedroom-pc';
 import { TickPCAnim } from '../engine/pc-anim';

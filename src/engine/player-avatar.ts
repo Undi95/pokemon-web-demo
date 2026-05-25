@@ -41,9 +41,9 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import { SpawnTallGrassEffect } from './field-effect-grass';
-import { SpawnJumpLandingDust } from './field-effect-jump-dust';
-import { CreateShadowSprite, DestroyShadowSprite } from './field-effect-shadow';
+import { SpawnTallGrassEffect } from './field/field-effect-grass';
+import { SpawnJumpLandingDust } from './field/field-effect-jump-dust';
+import { CreateShadowSprite, DestroyShadowSprite } from './field/field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventUpdateMetatileBehaviors,
@@ -60,7 +60,7 @@ import {
   GetCameraTopLeftCoords,
   GetCameraPanX,
   GetCameraPanY,
-} from './field-camera';
+} from './field/field-camera';
 import {
   ArePlayerFieldControlsLocked,
   TryRunCoordEventScript,
@@ -127,7 +127,7 @@ import {
   TryStartInteractionScript,
   GetInFrontOfPlayerPosition,
   type MapPosition,
-} from './field-control-avatar';
+} from './field/field-control-avatar';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

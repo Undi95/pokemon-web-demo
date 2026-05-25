@@ -22,7 +22,7 @@
  * Future Phase 5.8 : multi-mon trainers (= gym leaders, etc.).
  */
 import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
 import { getRuntime } from './decomp-globals';
 import { FlagSet, VarSet } from './script-vars';
 import { ShowBg, HideBg } from './gba-window-system';

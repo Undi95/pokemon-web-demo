@@ -24,7 +24,7 @@
  *  scattered par `ProcessPlayerFieldInput`) est progressif.
  */
 
-import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from './map-loader';
+import { gMapHeader, MapGridGetMetatileBehaviorAt, MAP_OFFSET, type WarpEvent, type BgEvent } from '../map-loader';
 import {
   gPlayerAvatar,
   DIR_NORTH, DIR_SOUTH, DIR_EAST, DIR_WEST, MOVING,
@@ -32,8 +32,8 @@ import {
   PlayerGetElevation,
   PlayerGetDestCoords,
   GetXYCoordsOneStepInFrontOfPlayer,
-} from './player-avatar';
-import { gSaveBlock1Ptr } from './save-block-state';
+} from '../player-avatar';
+import { gSaveBlock1Ptr } from '../save-block-state';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -68,18 +68,18 @@ import {
   MetatileBehavior_IsCableBoxResults2,
   MetatileBehavior_IsQuestionnaire,
   MetatileBehavior_IsTrainerHillTimer,
-} from './metatile-behavior';
+} from '../metatile-behavior';
 import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,
   GetObjectEventIdByPosition,
   ELEVATION_TRANSITION,
-} from './object-events';
-import { MapGridGetElevationAt } from './map-loader';
-import { LOCALID_PLAYER } from './decomp-bridge';
-import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from './script-vars';
-import { ScriptContext_SetupScript } from './script-runtime';
-import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
+} from '../object-events';
+import { MapGridGetElevationAt } from '../map-loader';
+import { LOCALID_PLAYER } from '../decomp-bridge';
+import { gSpecialVar, gSelectedObjectEvent, VarGet, VarSet } from '../script-vars';
+import { ScriptContext_SetupScript } from '../script-runtime';
+import { DIR_TO_DX, DIR_TO_DY } from '../direction-coords';
 
 // ─── State globals 1:1 décomp ───────────────────────────────────────────────
 
@@ -142,8 +142,8 @@ export function FieldClearPlayerInput(input: FieldInput): void {
 import {
   START_BUTTON, SELECT_BUTTON, A_BUTTON, B_BUTTON,
   DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN,
-} from './decomp-data/include/gba/io_reg-data';
-import { ENUM_PLAYER_0 } from './decomp-data/include/bike-data';
+} from '../decomp-data/include/gba/io_reg-data';
+import { ENUM_PLAYER_0 } from '../decomp-data/include/bike-data';
 
 // 1:1 décomp tileTransitionState values (= include/global.fieldmap.h).
 const T_NOT_MOVING       = 0;
@@ -662,7 +662,7 @@ export function UpdateFriendshipStepCounter(): void {
   VarSet('VAR_FRIENDSHIP_STEP_COUNTER', counter);
   if (counter === 0) {
     // 1:1 décomp : pour chaque mon du party, AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING).
-    void import('./battle/party-storage').then(({ AdjustFriendship }) => {
+    void import('../battle/party-storage').then(({ AdjustFriendship }) => {
       const party = gSaveBlock1Ptr.playerParty;
       const FRIENDSHIP_EVENT_WALKING = 5;  // 1:1 décomp include/constants/pokemon.h:179.
       for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {

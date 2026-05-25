@@ -32,7 +32,7 @@
  *   - "tile" = BG tile (= 8x8 px)
  *   - 1 metatile = 2x2 BG tiles
  */
-import type { DecompRuntime } from './decomp-runtime';
+import type { DecompRuntime } from '../decomp-runtime';
 import {
   type MapLayout,
   DrawMetatile,
@@ -50,18 +50,18 @@ import {
   TransitionToConnection,
   MoveMapViewToBackup,
   setRedrawWholeMapViewHook,
-} from './map-loader';
-import { gPlayerAvatar } from './player-avatar';
-import type { MapConnection } from './map-loader';
+} from '../map-loader';
+import { gPlayerAvatar } from '../player-avatar';
+import type { MapConnection } from '../map-loader';
 import {
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-} from './decomp-runtime';
+} from '../decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
-import { getRuntime } from './decomp-globals';
-import { gSaveBlock1Ptr } from './gba-menu-system';
-import { CONNECTION_NONE, CONNECTION_INVALID } from './decomp-data/include/constants/global-data';
+import { getRuntime } from '../decomp-globals';
+import { gSaveBlock1Ptr } from '../gba-menu-system';
+import { CONNECTION_NONE, CONNECTION_INVALID } from '../decomp-data/include/constants/global-data';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────
 

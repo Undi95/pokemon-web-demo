@@ -23,7 +23,7 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { gSpecialVar } from './script-vars';
-import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
+import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field/field-message-box';
 import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from './object-events';
 import { GetPlayerFacingDirection, DIR_SOUTH } from './player-avatar';
 import {

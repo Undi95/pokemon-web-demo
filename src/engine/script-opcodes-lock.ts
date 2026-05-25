@@ -15,7 +15,7 @@
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from './object-events';
-import { HideFieldMessageBox } from './field-message-box';
+import { HideFieldMessageBox } from './field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './player-avatar';
 import { getSelectedNpc, isPlayerStepFinished, OPPOSITE_DIR } from './script-opcodes-helpers';
