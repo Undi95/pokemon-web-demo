@@ -28,7 +28,7 @@ import { NewGameInit } from './save/new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag/bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
-import { createPokemonInstance, GiveMonToPlayer } from './pokemon';
+import { createPokemonInstance, GiveMonToPlayer } from './pokemon/pokemon';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 

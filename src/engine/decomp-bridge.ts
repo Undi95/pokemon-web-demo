@@ -295,7 +295,7 @@ import {
   getItemDescriptionFr as _getItemDescFr,
   getItemKeyById as _getItemKeyById,
 } from './data-tables';
-import { sTMHMMoves as _sTMHMMoves } from './tmhm-moves';
+import { sTMHMMoves as _sTMHMMoves } from './pokemon/tmhm-moves';
 import { getMapNameFr } from '../data/map-names-fr';
 import { getRuntime as _getRT } from './decomp-globals';
 import { gBattleMons as _gBattleMonsBridge } from './battle/state';

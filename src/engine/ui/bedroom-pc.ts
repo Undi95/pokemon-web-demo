@@ -63,7 +63,7 @@ import { StringExpandPlaceholders } from '../gba-text-system';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
-} from '../pc-items';
+} from '../pokemon/pc-items';
 import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,

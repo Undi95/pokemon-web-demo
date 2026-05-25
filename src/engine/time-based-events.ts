@@ -21,7 +21,7 @@
 
 import { RtcGetMinuteCount } from './rtc';
 import { gSaveBlock1Ptr } from './save/save-block-state';
-import { CalcBerryYield } from './berry';
+import { CalcBerryYield } from './pokemon/berry';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 

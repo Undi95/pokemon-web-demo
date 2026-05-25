@@ -98,7 +98,7 @@ import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
   getItemNameFr, getTrainer, getTrainerNameFr,
 } from '../data-tables';
-import { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from '../pokemon';
+import { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from '../pokemon/pokemon';
 
 // Constantes décomp `include/constants/items.h` enum starters (Hoenn).
 // `sStarterMon[]` dans starter_choose.c : index 0/1/2 → species enum.

@@ -305,7 +305,7 @@ if (typeof window !== 'undefined') {
     // Auto-add starter Pokemon if party is empty (= dev convenience).
     const sbsMod = await import('./save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
-      const pokeMod = await import('./pokemon');
+      const pokeMod = await import('./pokemon/pokemon');
       const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
       pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startTrainer] auto-added Treecko Lv8 (party était vide)');

@@ -61,7 +61,7 @@ import { pokemonInstanceToPokemon } from '../battle/party-storage';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from '../decomp-runtime';
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
 import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../decomp-data/include/constants/songs-data';
 

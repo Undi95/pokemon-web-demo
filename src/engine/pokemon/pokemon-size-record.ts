@@ -18,23 +18,23 @@
  * Pas d'unit conversion impérial (= #ifdef UNITS_IMPERIAL pas activé en FR).
  */
 
-import { registerSpecial } from './script/script-opcodes';
-import { VarSet, VarGet, gSpecialVar } from './script/script-vars';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
+import { registerSpecial } from '../script/script-opcodes';
+import { VarSet, VarGet, gSpecialVar } from '../script/script-vars';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   GetMonData, MON_DATA_PERSONALITY,
   MON_DATA_HP_IV, MON_DATA_ATK_IV, MON_DATA_DEF_IV,
   MON_DATA_SPEED_IV, MON_DATA_SPATK_IV, MON_DATA_SPDEF_IV,
   MON_DATA_IS_EGG, MON_DATA_SPECIES,
-} from './battle/party-storage';
-import type { Pokemon } from './battle/party-storage';
-import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from './ui/pokedex-flags';
-import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from './decomp-bridge';
-import { setStringVar } from './string-buffers';
+} from '../battle/party-storage';
+import type { Pokemon } from '../battle/party-storage';
+import { GetPokedexHeightWeight, SpeciesToNationalPokedexNum } from '../ui/pokedex-flags';
+import { ConvertIntToDecimalStringN, StringAppend, StringCopy, STR_CONV_MODE_LEFT_ALIGN } from '../decomp-bridge';
+import { setStringVar } from '../string-buffers';
 import {
   SPECIES_SEEDOT, SPECIES_LOTAD,
-} from './decomp-data/include/constants/species-data';
-import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from './decomp-data/include/constants/vars-data';
+} from '../decomp-data/include/constants/species-data';
+import { VAR_SEEDOT_SIZE_RECORD, VAR_LOTAD_SIZE_RECORD } from '../decomp-data/include/constants/vars-data';
 
 // 1:1 décomp pokemon_size_record.c:12 — `#define DEFAULT_MAX_SIZE 0x8000`.
 const DEFAULT_MAX_SIZE = 0x8000;

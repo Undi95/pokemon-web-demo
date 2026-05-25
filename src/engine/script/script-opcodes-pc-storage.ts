@@ -22,7 +22,7 @@ registerOpcode('addpcitem', (_ctx, args) => {
   const itemKey = args[0] ?? '';
   const qty = parseValue(args[1]);
   // Lazy import to avoid circular dep with bedroom-pc → script-runtime → script-opcodes.
-  void import('../pc-items').then(({ AddPCItem }) => {
+  void import('../pokemon/pc-items').then(({ AddPCItem }) => {
     const ok = AddPCItem(itemKey, qty);
     VarSet('VAR_RESULT', ok ? 1 : 0);
   });

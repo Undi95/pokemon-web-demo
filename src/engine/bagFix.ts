@@ -40,7 +40,7 @@
  */
 
 // ─── Side-effect imports : préservent l'init ESM eager chain ────────────────
-import './pokemon';
+import './pokemon/pokemon';
 import './bag/bag';
 import './save/save-system';
 import './save/load_save';

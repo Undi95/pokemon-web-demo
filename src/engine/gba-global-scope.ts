@@ -15,7 +15,7 @@ import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script/script-var
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
 import {
   PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
-} from './play-time-counter';
+} from './pokemon/play-time-counter';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,

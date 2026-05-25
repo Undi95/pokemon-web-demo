@@ -18,7 +18,7 @@
  */
 import { gBagPockets, ITEMS_POCKET, BALLS_POCKET, TMHM_POCKET, BERRIES_POCKET, KEYITEMS_POCKET } from './bag';
 import { getItemId } from '../data-tables';
-import { sTMHMMoves } from '../tmhm-moves';
+import { sTMHMMoves } from '../pokemon/tmhm-moves';
 import type { ItemSlot } from './bag';
 
 /** pocketId décomp (0..4) → tableau live `ItemSlot[]` du pocket. 1:1 strict

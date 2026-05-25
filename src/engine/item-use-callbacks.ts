@@ -71,7 +71,7 @@ import {
 } from './ui/party-screen';
 import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
-import type { PokemonInstance } from './pokemon';
+import type { PokemonInstance } from './pokemon/pokemon';
 import { getRuntime, PlaySE } from './decomp-globals';
 import { SE_USE_ITEM } from './decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.

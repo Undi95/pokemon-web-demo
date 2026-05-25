@@ -438,7 +438,7 @@ async function prepareTestBattle(opts?: {
   if (realParty.length === 0) return { ok: false, reason: 'empty party' };
 
   // Use module-level imports (= same instance as Cmd_attackcanceler).
-  const pokemonMod = await import('../pokemon');
+  const pokemonMod = await import('../pokemon/pokemon');
   const enemyMon = pokemonMod.createPokemonInstance(enemySpecies, enemyLevel);
   setupPartyForBattle(realParty as never[], [enemyMon]);
   fillActiveBattleMonsForBattleStart();
@@ -494,7 +494,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  Usage : scope.bytecode.testMoveBridge() — create un combat ad-hoc et exec
      *  Pound via bytecode, return damage measured. */
     testMoveBridge: async (opts?: { moveId?: string; enemy?: string; enemyLevel?: number; attackerSpecies?: string; attackerLevel?: number; persistMons?: boolean; }) => {
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       let attacker: { speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; };
       if (opts?.attackerSpecies) {
         attacker = pokemonMod.createPokemonInstance(opts.attackerSpecies, opts.attackerLevel ?? 50) as never;
@@ -588,7 +588,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
      *  un matchup ad-hoc en mode TRAINER. Retourne le move choisi + scores. */
     aiChooseMove: async (opts?: { attackerSpecies?: string; attackerLevel?: number; enemy?: string; enemyLevel?: number; trainerId?: number; }) => {
       await ensureAiBytecodeLoaded();
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 10);
       const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_POOCHYENA', opts?.enemyLevel ?? 7);
       setupPartyForBattle([attacker] as never, [enemyMon]);
@@ -623,7 +623,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
         else scriptsResolved++;
       }
       try {
-        const pokemonMod = await import('../pokemon');
+        const pokemonMod = await import('../pokemon/pokemon');
         const attacker = pokemonMod.createPokemonInstance('SPECIES_TREECKO', 12);
         const enemyMon = pokemonMod.createPokemonInstance('SPECIES_POOCHYENA', 7);
         setupPartyForBattle([attacker] as never, [enemyMon]);
@@ -650,7 +650,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
     aiDoubles: async (opts?: { seed?: number }) => {
       await ensureAiBytecodeLoaded();
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
@@ -708,7 +708,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       isFirstTurn?: number; mistTimer?: number;
     }) => {
       await loadItemEffects();
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const items = opts?.items ?? [13]; // 13 = ITEM_POTION
       const run = () => {
         const enemyMon = pokemonMod.createPokemonInstance(opts?.species ?? 'SPECIES_POOCHYENA', opts?.level ?? 10);
@@ -774,7 +774,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       seed?: number;
     }) => {
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
@@ -840,7 +840,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       double?: boolean; absent?: number[]; seed?: number;
     }) => {
       const seed = opts?.seed ?? 0;
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
@@ -931,7 +931,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
         _debugResetRng();
         SeedRng(seed);
         _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
-        const pokemonMod = await import('../pokemon');
+        const pokemonMod = await import('../pokemon/pokemon');
         const attacker = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, { ivs: fixedIvs, evs: fixedEvs });
         const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2, { ivs: fixedIvs, evs: fixedEvs });
         if (opts?.moveId) attacker.moves = [{ id: opts.moveId, nameFr: opts.moveId, pp: 35, ppMax: 35 }, ...attacker.moves.slice(1)];
@@ -977,7 +977,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
     }) => {
       const seed = opts?.seed ?? 0;
       const fix = { ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } };
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const run = () => {
         _debugResetRng();
         SeedRng(seed);
@@ -1085,7 +1085,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       const ev = opts?.evs ?? { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
       _debugResetRng();
       SeedRng(seed);
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const mon = pokemonMod.createPokemonInstance(speciesEnum, level, { ivs: iv, evs: ev });
       setupPartyForBattle([mon] as never, [pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 2)]);
       fillActiveBattleMonsForBattleStart();
@@ -1166,7 +1166,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
       _debugResetRng();
       SeedRng(seed);
       _resetBattleState();  // 1:1 : scénario = combat frais (cf. precisePipeline).
-      const pokemonMod = await import('../pokemon');
+      const pokemonMod = await import('../pokemon/pokemon');
       const atkMon = pokemonMod.createPokemonInstance(opts?.attackerSpecies ?? 'SPECIES_TREECKO', opts?.attackerLevel ?? 5, fix);
       const defMon = pokemonMod.createPokemonInstance(opts?.defenderSpecies ?? 'SPECIES_GEODUDE', opts?.defenderLevel ?? 14, fix);
       // player slot=defMon → gBattleMons[0] ; enemy slot=atkMon → gBattleMons[1].

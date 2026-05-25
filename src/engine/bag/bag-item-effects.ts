@@ -17,7 +17,7 @@
  * status), (4) friendship sub-states.
  */
 
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
   ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM0_INFATUATION,

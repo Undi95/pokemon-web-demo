@@ -50,7 +50,7 @@ import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from '../decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
-import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon';
+import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -61,9 +61,9 @@ import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from '../gba-strings';
-import { MON_ICON_PALETTE_INDICES } from '../pokemon-icon-palettes';
+import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
 import type { DecompTask } from '../decomp-runtime';
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).

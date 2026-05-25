@@ -19,7 +19,7 @@
  * wired les controllers UI à des callbacks réels.
  */
 
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 import {
   gBattleMons,
   gBattleMoveDamage,

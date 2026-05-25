@@ -11,7 +11,7 @@
 import { FlagSet, VarSet } from '../script/script-vars';
 import { SaveGame, ResetSaveBlocks } from '../save/save-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 
 // ─── Cheat helpers (= dev convenience) ───────────────────────────────────────
 

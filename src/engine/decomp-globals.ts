@@ -2462,7 +2462,7 @@ import {
   HasTwoFramesAnimation as _HasTwoFramesAnimation,
   ResetAllMonAnimations as _ResetAllMonAnimations,
   StopMonFrontSpriteAnimation as _StopMonFrontSpriteAnimation,
-} from './pokemon-animation';
+} from './pokemon/pokemon-animation';
 
 // Re-export pour usage par auto callbacks (= LaunchAnimationTaskForFrontSprite
 // est un symbol décomp standard utilisé par battle/Pokedex/etc).

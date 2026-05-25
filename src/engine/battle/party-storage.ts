@@ -18,11 +18,11 @@
  *     de combat, et inverse à la fin pour persist HP/status/exp.
  */
 
-import type { PokemonInstance } from '../pokemon';
+import type { PokemonInstance } from '../pokemon/pokemon';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   speciesEnumToDexId, moveEnumToDexId,
-} from '../pokemon';
+} from '../pokemon/pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { getSpeciesInfo } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export

@@ -12,15 +12,15 @@
  */
 import {
   getSpeciesId, getSpeciesNameFr, getMoveNameFr,
-} from './data-tables';
-import { Random, Random32 } from './random';
-import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save/save-block-state';
-import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from './data/game-data';
+} from '../data-tables';
+import { Random, Random32 } from '../random';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
+import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
-import { moveDexIdToEnum } from './battle/data/move-name-resolve';
+import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
-import { gMapHeader } from './map-loader';
+import { gMapHeader } from '../map-loader';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id runtime sans séparateur). */
 export function speciesEnumToDexId(speciesEnum: string): string {

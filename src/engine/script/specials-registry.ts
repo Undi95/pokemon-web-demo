@@ -50,8 +50,8 @@ import { Random } from '../random';
 import { reverseDecompConstant } from '../decomp-constants';
 import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
-import { CheckPartyMonHasHeldItem } from '../script-pokemon-util';
-import { GetPCBoxToSendMon } from '../pc-box';
+import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
+import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../map-name-popup';
 import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
 import { gSpecialVar } from './script-vars';
@@ -372,7 +372,7 @@ registerSpecial('BufferLeadMonSpeciesName', () => {
  *
  *  PC est TOUJOURS au-dessus du player (dy = -1) selon la direction face. */
 registerSpecial('DoPCTurnOnEffect', () => {
-  void import('../pc-anim').then(({ StartPCTurnOnEffect }) => {
+  void import('../pokemon/pc-anim').then(({ StartPCTurnOnEffect }) => {
     StartPCTurnOnEffect();
   });
 });
@@ -380,7 +380,7 @@ registerSpecial('DoPCTurnOnEffect', () => {
 /** 1:1 décomp `DoPCTurnOffEffect` (field_specials.c:1073-1111).
  *  Pas de flicker — set directement le metatile à PC_OFF + DrawWholeMapView. */
 registerSpecial('DoPCTurnOffEffect', () => {
-  void import('../pc-anim').then(({ DoPCTurnOffEffect }) => {
+  void import('../pokemon/pc-anim').then(({ DoPCTurnOffEffect }) => {
     DoPCTurnOffEffect();
   });
 });
@@ -620,7 +620,7 @@ registerSpecial('PutZigzagoonInPlayerParty', () => {
   // empty (= dev test), add a Zigzagoon.
   if (gSaveBlock1Ptr.playerPartyCount === 0) {
     void (async () => {
-      const { createPokemonInstance, GiveMonToPlayer } = await import('../pokemon');
+      const { createPokemonInstance, GiveMonToPlayer } = await import('../pokemon/pokemon');
       const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
       GiveMonToPlayer(zig);
     })();

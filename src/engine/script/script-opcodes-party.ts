@@ -45,7 +45,7 @@ registerOpcode('givemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
       const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;
@@ -71,7 +71,7 @@ registerOpcode('givepokemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon');
+      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
       const mon = createPokemonInstance(speciesName, level);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;

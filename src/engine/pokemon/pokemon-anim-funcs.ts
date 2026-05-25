@@ -26,8 +26,8 @@
  * trade, Pokedex, battle, egg hatch) uses these anims.
  */
 
-import type { DecompRuntime, DecompSprite } from './decomp-runtime';
-import { Sin } from './decomp-helpers';
+import type { DecompRuntime, DecompSprite } from '../decomp-runtime';
+import { Sin } from '../decomp-helpers';
 
 // ─── ANIM_* constants (1:1 décomp include/pokemon_animation.h) ──────────────
 export const ANIM_V_SQUISH_AND_BOUNCE = 0;
@@ -105,8 +105,8 @@ const ANIM_NAME_TO_ID: Readonly<Record<string, number>> = {
 async function _hydrateFromGeneratedData(): Promise<void> {
   try {
     const [tablesMod, speciesMod] = await Promise.all([
-      import('./decomp-data/src/mon-anim-tables-data'),
-      import('./decomp-data/include/constants/species-data'),
+      import('../decomp-data/src/mon-anim-tables-data'),
+      import('../decomp-data/include/constants/species-data'),
     ]);
     const speciesNameToId = speciesMod as unknown as Record<string, number>;
     // Front anim ids

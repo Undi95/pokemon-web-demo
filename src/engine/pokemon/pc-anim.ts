@@ -17,20 +17,20 @@
  * -1 si WEST, +1 si EAST.
  */
 
-import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from './map-loader';
-import { GetPlayerFacingDirection } from './player-avatar';
-import { gSaveBlock1Ptr } from './save/save-block-state';
-import { VarGet } from './script/script-vars';
-import { DrawWholeMapView } from './field/field-camera';
+import { MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../map-loader';
+import { GetPlayerFacingDirection } from '../player-avatar';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { VarGet } from '../script/script-vars';
+import { DrawWholeMapView } from '../field/field-camera';
 import {
   METATILE_Building_PC_On, METATILE_Building_PC_Off,
   METATILE_BrendansMaysHouse_BrendanPC_On, METATILE_BrendansMaysHouse_BrendanPC_Off,
   METATILE_BrendansMaysHouse_MayPC_On, METATILE_BrendansMaysHouse_MayPC_Off,
-} from './decomp-data/include/constants/metatile_labels-data';
+} from '../decomp-data/include/constants/metatile_labels-data';
 import {
   PC_LOCATION_OTHER, PC_LOCATION_BRENDANS_HOUSE, PC_LOCATION_MAYS_HOUSE,
-} from './decomp-data/include/constants/field_specials-data';
-import { DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
+} from '../decomp-data/include/constants/field_specials-data';
+import { DIR_NORTH, DIR_WEST, DIR_EAST } from '../direction-coords';
 
 /** 1:1 décomp `include/fieldmap.h:24` :
  *    #define MAPGRID_IMPASSABLE 0x800
