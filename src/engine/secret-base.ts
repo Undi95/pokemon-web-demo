@@ -166,6 +166,29 @@ registerSpecial('PrepSecretBaseBattleFlags', () => {
   // pas porté).
 });
 
+/** 1:1 décomp `SetSecretBaseOwnerGfxId` (secret_base.c:654-657) :
+ *  ```c
+ *  void SetSecretBaseOwnerGfxId(void) {
+ *      VarSet(VAR_OBJ_GFX_ID_F, sSecretBaseOwnerGfxIds[GetSecretBaseOwnerType(VarGet(VAR_CURRENT_SECRET_BASE))]);
+ *  }
+ *  ```
+ *  sSecretBaseOwnerGfxIds 1:1 décomp secret_base.c:162-176 — table[10] : male
+ *  0..4 = YOUNGSTER/BUG_CATCHER/RICH_BOY/CAMPER/MAN_3, female 5..9 = LASS/
+ *  GIRL_3/WOMAN_2/PICNICKER/WOMAN_5. GetSecretBaseOwnerType (= already
+ *  inline B22) = (trainerId[0] % 5) + (gender * 5). */
+registerSpecial('SetSecretBaseOwnerGfxId', () => {
+  const sSecretBaseOwnerGfxIds: ReadonlyArray<number> = [
+    35, 36, 15, 31, 33,  // Male : YOUNGSTER/BUG_CATCHER/RICH_BOY/CAMPER/MAN_3
+    47, 14, 20, 32, 34,  // Female : LASS/GIRL_3/WOMAN_2/PICNICKER/WOMAN_5
+  ];
+  const idx = VarGet('VAR_CURRENT_SECRET_BASE');
+  const base = gSaveBlock1Ptr.secretBases?.[idx];
+  if (!base) return;
+  // 1:1 décomp `GetSecretBaseOwnerType` (secret_base.c:1133).
+  const ownerType = ((base.trainerId?.[0] ?? 0) % 5) + ((base.gender ?? 0) * 5);
+  VarSet('VAR_OBJ_GFX_ID_F', sSecretBaseOwnerGfxIds[ownerType] ?? 0);
+});
+
 /** 1:1 décomp `SetPlayerSecretBase` (secret_base.c:365-377) :
  *  ```c
  *  void SetPlayerSecretBase(void) {

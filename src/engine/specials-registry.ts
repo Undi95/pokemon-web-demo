@@ -2265,7 +2265,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetQuizLadyState_GivePrize' — porté 1:1 décomp lilycove_lady.c:499 ci-bas.
   // 'SetRoute119Weather' — porté 1:1 décomp field_specials.c:1519 ci-bas (B4 refactor).
   // 'SetRoute123Weather' — porté 1:1 décomp field_specials.c:1525 ci-bas (B4 refactor).
-  'SetSecretBaseOwnerGfxId',
+  // 'SetSecretBaseOwnerGfxId' — porté 1:1 décomp secret_base.c:654 dans secret-base.ts (batch B42).
   // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
   'SetSootopolisGymCrackedIceMetatiles',
   // 'ShouldDistributeEonTicket' — porté 1:1 décomp field_specials.c:3640 ci-bas.
