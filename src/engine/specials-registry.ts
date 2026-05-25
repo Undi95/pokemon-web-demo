@@ -52,6 +52,7 @@ import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DA
 import type { Pokemon as _PartyPokemon } from './battle/party-storage';
 import { CheckPartyMonHasHeldItem } from './script-pokemon-util';
 import { GetPCBoxToSendMon } from './pc-box';
+import { ShowMapNamePopup as _ShowMapNamePopupImpl } from './map-name-popup';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -1366,11 +1367,20 @@ registerSpecial('GetPlayerAvatarBike', () => {
   return 0;
 });
 
-/** 1:1 décomp `ShowMapNamePopup` (= map_name_popup.c) :
- *    Show the map name popup at top-left for ~2s. */
+/** 1:1 décomp `ShowMapNamePopup` (map_name_popup.c:231-256) :
+ *  ```c
+ *  void ShowMapNamePopup(void) {
+ *      if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE) {
+ *          if (!FuncIsActiveTask(Task_MapNamePopUpWindow)) {
+ *              sPopupTaskId = CreateTask(Task_MapNamePopUpWindow, 90);
+ *              ...
+ *          }
+ *      }
+ *  }
+ *  ```
+ *  Wire vers notre port direct ShowMapNamePopup dans map-name-popup.ts. */
 registerSpecial('ShowMapNamePopup', () => {
-  // Notre runtime affiche déjà le popup via overworld → handled. No-op safe.
-  return 0;
+  _ShowMapNamePopupImpl();
 });
 
 /** 1:1 décomp `IsSelectedMonEgg` :
