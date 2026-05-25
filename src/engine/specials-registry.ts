@@ -40,6 +40,8 @@ import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE } from './decomp-data/include/constants/
 import { OBJ_EVENT_GFX_BARD } from './decomp-data/include/constants/event_objects-data';
 import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
 import { gLocalTime } from './rtc';
+import { ShowFieldMessage } from './field-message-box';
+import { gStringVar4 } from './gba-text-system';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -906,7 +908,16 @@ registerSpecial('GetLeadMonFriendshipScore', () => {
 registerSpecial('WaitWeather', () => 0);
 registerSpecial('MauvilleGymPressSwitch', () => { /* no-op */ });
 registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
-registerSpecial('ShowFieldMessageStringVar4', () => { /* no-op */ });
+/** 1:1 décomp `ShowFieldMessageStringVar4` (field_specials.c:890-893) :
+ *  ```c
+ *  void ShowFieldMessageStringVar4(void) {
+ *      ShowFieldMessage(gStringVar4);
+ *  }
+ *  ```
+ *  Affiche le contenu courant de gStringVar4 en field message. */
+registerSpecial('ShowFieldMessageStringVar4', () => {
+  ShowFieldMessage(gStringVar4);
+});
 registerSpecial('Script_FacePlayer', () => { /* no-op */ });
 registerSpecial('Script_ClearHeldMovement', () => { /* no-op */ });
 registerSpecial('SetTrainerFacingDirection', () => { /* no-op */ });
@@ -1036,6 +1047,41 @@ registerSpecial('GetDaysUntilPacifidlogTMAvailable', () => {
   return (7 - (gLocalTime.days - tmReceivedDay)) & 0xFFFF;
 });
 
+/** 1:1 décomp `BufferTMHMMoveName` (field_specials.c:1638-1647) :
+ *  ```c
+ *  bool8 BufferTMHMMoveName(void) {
+ *      if (gSpecialVar_0x8004 >= ITEM_TM01 && gSpecialVar_0x8004 <= ITEM_HM08) {
+ *          StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(gSpecialVar_0x8004)]);
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *  }
+ *  ```
+ *  Buffer le nom de move correspondant à un TM/HM item dans gStringVar2. */
+registerSpecial('BufferTMHMMoveName', () => {
+  const itemId = VarGet('VAR_0x8004');
+  if (itemId >= 289 /* ITEM_TM01 */ && itemId <= 346 /* ITEM_HM08 */) {
+    // 1:1 décomp : utiliser ItemIdToBattleMoveId (= already ported tmhm-moves.ts)
+    // + getMoveName (= bag-menu.ts pattern). Import dynamique via globalThis pour
+    // éviter cycle ESM specials-registry ↔ tmhm-moves.
+    const tmhmFn = (globalThis as { __game_tmhm?: {
+      ItemIdToBattleMoveId?: (itemId: number) => string;
+    } }).__game_tmhm?.ItemIdToBattleMoveId;
+    const getMoveNameFn = (globalThis as { __game_data?: {
+      getMoveName?: (moveId: string | number) => string;
+    } }).__game_data?.getMoveName;
+    if (tmhmFn && getMoveNameFn) {
+      const moveId = tmhmFn(itemId);
+      const moveName = getMoveNameFn(moveId);
+      setStringVar(2, moveName || '');
+    }
+    VarSet('VAR_RESULT', 1);
+    return 1;
+  }
+  VarSet('VAR_RESULT', 0);
+  return 0;
+});
+
 /** 1:1 décomp `SetPacifidlogTMReceivedDay` (field_specials.c:1566-1569) :
  *  ```c
  *  u16 SetPacifidlogTMReceivedDay(void) {
@@ -1066,7 +1112,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'BufferFavorLadyItemName', 'BufferFavorLadyPlayerName',
   'BufferLottoTicketNumber', 'BufferQuizAuthorNameAndCheckIfLady',
   'BufferQuizCorrectAnswer', 'BufferQuizPrizeItem', 'BufferQuizPrizeName',
-  'BufferTMHMMoveName', 'BufferTrendyPhraseString',
+  // 'BufferTMHMMoveName' — porté 1:1 décomp field_specials.c:1638 ci-bas.
+  'BufferTrendyPhraseString',
   'BufferUnionRoomPlayerName', 'BufferVarsForIVRater',
   'CableClubSaveGame', 'CallApprenticeFunction', 'CallBattleArenaFunction',
   'CallBattleDomeFunction', 'CallBattleFactoryFunction',
