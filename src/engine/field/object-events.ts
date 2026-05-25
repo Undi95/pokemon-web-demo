@@ -1952,10 +1952,14 @@ function tickRotate(rt: DecompRuntime, npc: ObjectEvent, clockwise: boolean): vo
       const table = clockwise ? NEXT_DIR_CW : NEXT_DIR_CCW;
       npc.facingDirection = table[npc.facingDirection] ?? DIR_SOUTH;
       npc.movementStep = 1;
+      // 1:1 décomp `MovementType_RotateCounterclockwise_Step3/Clockwise_Step3`
+      // (event_object_movement.c) appelle ObjectEventSetSingleMovement avec
+      // GetFaceDirectionMovementAction(newDir) → FaceDirection (5048) →
+      // StartSpriteAnim(FACE_X).
+      _npcSetFaceAnim(rt, npc);
       break;
     }
   }
-  void rt;
 }
 
 /** 1:1 décomp `MovementType_WalkBackAndForth_Step*` (event_object_movement.c
@@ -1981,6 +1985,10 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
     const dir = npc.directionSeqIdx === 0 ? primaryDir : (OPPOSITE_DIR[primaryDir] ?? primaryDir);
     npc.facingDirection = dir;
     npc.movementStep = 2;
+    // 1:1 décomp `MovementType_WalkBackAndForth_Step1` (event_object_movement.c
+    // :3766) appelle FaceDirection (5048) → StartSpriteAnim(FACE_X). Sans ça,
+    // le NPC freeze sur GO_X frame entre 2 walks back-and-forth.
+    _npcSetFaceAnim(rt, npc);
   }
   switch (npc.movementStep) {
     case 2: {
@@ -2020,6 +2028,8 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 3;
+        // 1:1 décomp `InitMovementNormal` : animPaused=FALSE + SetStepAnimHandleAlt.
+        _npcStartWalkAnim(rt, npc, dir);
       } else {
         // Wall/NPC collision : pas de progression cette frame, retry next.
         // NE PAS toucher seq (1:1 décomp Step2 garde la même direction quand
@@ -2043,11 +2053,12 @@ function tickWalkBackAndForth(rt: DecompRuntime, npc: ObjectEvent, primaryDir: n
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         npc.movementStep = 1;
+        // 1:1 décomp `UpdateMovementNormal` step end : animPaused=TRUE.
+        _npcEndWalkAnim(rt, npc);
       }
       break;
     }
   }
-  void rt;
 }
 
 /** Map MOVEMENT_TYPE_* string → state machine handler + allowed directions.
