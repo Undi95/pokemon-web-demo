@@ -2827,6 +2827,8 @@ import {
   MOVEMENT_ACTION_FACE_PLAYER, MOVEMENT_ACTION_FACE_AWAY_PLAYER,
   MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK, MOVEMENT_ACTION_EMOTE_QUESTION_MARK,
   MOVEMENT_ACTION_EMOTE_HEART,
+  MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN,
+  MOVEMENT_ACTION_ROCK_SMASH_BREAK, MOVEMENT_ACTION_CUT_TREE,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3165,6 +3167,56 @@ function _MovementAction_EmoteHeart_Step0(_rt: DecompRuntime, npc: ObjectEvent):
   return true;
 }
 
+/** 1:1 décomp `ANIM_REMOVE_OBSTACLE = 1` (event_object_movement.h).
+ *  Used par RockSmashBreak + CutTree pour anim destruction obstacle. */
+const ANIM_REMOVE_OBSTACLE = 1;
+
+/** 1:1 décomp `ANIM_NURSE_BOW = ANIM_STD_COUNT + 0` (event_object_movement.h).
+ *  Used par NurseJoyBowDown. */
+const ANIM_NURSE_BOW = 4;  // ANIM_STD_COUNT (= 4 standard anims) + 0.
+
+/** 1:1 décomp `MovementAction_NurseJoyBowDown_Step0` :
+ *    StartSpriteAnimInDirection(obj, sprite, DIR_SOUTH, ANIM_NURSE_BOW);
+ *    return FALSE; */
+function _MovementAction_NurseJoyBowDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  SetObjectEventDirection(npc, DIR_SOUTH);
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite && sprite.anims) {
+      // 1:1 décomp StartSpriteAnim(sprite, ANIM_NURSE_BOW).
+      StartSpriteAnim(sprite as never, ANIM_NURSE_BOW);
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_RockSmashBreak_Step0` :
+ *    SetAndStartSpriteAnim(sprite, ANIM_REMOVE_OBSTACLE, 0);
+ *    sActionFuncId = 1; return FALSE; */
+function _MovementAction_RockSmashBreak_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite && sprite.anims) {
+      // 1:1 décomp SetAndStartSpriteAnim = StartSpriteAnim + sub-anim frame 0.
+      StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE);
+    }
+  }
+  npc.actionStep = 1;
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_CutTree_Step0` : idem RockSmashBreak. */
+function _MovementAction_CutTree_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite && sprite.anims) {
+      StartSpriteAnim(sprite as never, ANIM_REMOVE_OBSTACLE);
+    }
+  }
+  npc.actionStep = 1;
+  return false;
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3343,6 +3395,13 @@ gMovementActionFuncs[MOVEMENT_ACTION_FACE_AWAY_PLAYER] = _MovementAction_FaceAwa
 gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_EXCLAMATION_MARK] = _MovementAction_EmoteExclamationMark_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_QUESTION_MARK]   = _MovementAction_EmoteQuestionMark_Step0;
 gMovementActionFuncs[MOVEMENT_ACTION_EMOTE_HEART]           = _MovementAction_EmoteHeart_Step0;
+// H1.14 : NURSE_JOY_BOW_DOWN + ROCK_SMASH_BREAK + CUT_TREE.
+// Tous utilisent StartSpriteAnim avec animNum dédié (= ANIM_NURSE_BOW/REMOVE_OBSTACLE).
+// Dette R3 : SetAndStartSpriteAnim sub-anim frame param skipped (= ramène anim
+// à frame 0, ce qu'on fait via StartSpriteAnim normal).
+gMovementActionFuncs[MOVEMENT_ACTION_NURSE_JOY_BOW_DOWN] = _MovementAction_NurseJoyBowDown_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_ROCK_SMASH_BREAK]   = _MovementAction_RockSmashBreak_Step0;
+gMovementActionFuncs[MOVEMENT_ACTION_CUT_TREE]           = _MovementAction_CutTree_Step0;
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
