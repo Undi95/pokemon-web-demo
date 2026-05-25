@@ -2856,6 +2856,8 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN,
   MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN,
   MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN,
+  MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3677,6 +3679,45 @@ function _makeAcroWheelieInPlaceAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `InitAcroPopWheelie` (event_object_movement.c) :
+ *    InitNpcForMovement(obj, sprite, dir, speed);
+ *    StartSpriteAnim(GetAcroWheelieDirectionAnimNum(facingDirection));
+ *    SeekSpriteAnim(sprite, 0); */
+function _makeAcroPopWheelieMoveAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite && sprite.anims) {
+          // 1:1 décomp : StartSpriteAnim(wheelie back wheel) + SeekSpriteAnim(0).
+          StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
+        }
+      }
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
+/** 1:1 décomp `InitAcroWheelieMove` (event_object_movement.c) :
+ *    InitNpcForMovement(obj, sprite, dir, speed);
+ *    SetStepAnimHandleAlternation(GetAcroWheeliePedalDirectionAnimNum(facingDirection)); */
+function _makeAcroWheelieMoveAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite && sprite.anims) {
+          // 1:1 décomp : SetStepAnim(moving wheelie pedal).
+          StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
+        }
+      }
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3924,6 +3965,16 @@ gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN]     = _makeAcro
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 1] = _makeAcroWheelieInPlaceAction(DIR_NORTH);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 2] = _makeAcroWheelieInPlaceAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 3] = _makeAcroWheelieInPlaceAction(DIR_EAST);
+// H1.21 : ACRO_POP_WHEELIE_MOVE_X (128-131) = walk speed FAST_1 + wheelie back wheel anim.
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN]     = _makeAcroPopWheelieMoveAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN + 1] = _makeAcroPopWheelieMoveAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN + 2] = _makeAcroPopWheelieMoveAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_POP_WHEELIE_MOVE_DOWN + 3] = _makeAcroPopWheelieMoveAction(DIR_EAST);
+// ACRO_WHEELIE_MOVE_X (132-135) = walk speed FAST_1 + wheelie pedal anim.
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN]     = _makeAcroWheelieMoveAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 1] = _makeAcroWheelieMoveAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 2] = _makeAcroWheelieMoveAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_MOVE_DOWN + 3] = _makeAcroWheelieMoveAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
