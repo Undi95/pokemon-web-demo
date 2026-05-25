@@ -422,6 +422,10 @@ export interface ObjectEvent {
   /** 1:1 décomp `sprite->data[2] sTimer` (event_object_movement.c:3068).
    *  Used par BERRYTREEFUNC_SPARKLE / SPARKLE_END counter (64 frames). */
   berryTreeTimer: number;
+  /** 1:1 décomp `sprite->data[7]` pour MovementType_TreeDisguise/MountainDisguise/
+   *  Buried (event_object_movement.c:4359/4380/4392). Bool flag "disguise init done".
+   *  Sans ce flag, le tick re-trigger FieldEffectStart chaque frame. */
+  disguiseStarted: boolean;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -500,6 +504,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   playerCopyableMovement: 0,
   berryTreeFlags: 0,
   berryTreeTimer: 0,
+  disguiseStarted: false,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -2535,11 +2540,36 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     npc.invisible = true;
     return true;
   }
-  // BURIED : NPC enterré (= visible only via emote/interact). MVP : invisible.
-  // 1:1 décomp `MovementType_Buried_Step0` (event_object_movement.c) : SetSprite
-  // Visibility(FALSE) + idle. Notre invisible flag fait pareil.
-  if (mt === 'MOVEMENT_TYPE_BURIED' || mt === 'MOVEMENT_TYPE_HIDDEN') {
-    npc.invisible = true;
+  // ─── MOVEMENT_TYPE_BURIED (H3) ──────────────────────────────────────────────
+  // 1:1 strict décomp `MovementType_Buried` (event_object_movement.c:4390-4411) :
+  //   if (!sprite->data[7]) {
+  //     gObjectEvents[sprite->sObjEventId].fixedPriority = TRUE;
+  //     sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY;
+  //     sprite->oam.priority = 3;
+  //     sprite->data[7]++;
+  //   }
+  //   UpdateObjectEventCurrentMovement(...);  // Buried_Step0 = ClearObjectEventMovement, idle.
+  //
+  // DETTE H3 cascade : subspriteMode = SUBSPRITES_IGNORE_PRIORITY (= notre G14
+  // subspriteMode est 'off' | 'on', pas étendu à IGNORE_PRIORITY).
+  if (mt === 'MOVEMENT_TYPE_BURIED') {
+    if (!npc.disguiseStarted) {
+      npc.fixedPriority = true;
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite) {
+          // 1:1 décomp `sprite->oam.priority = 3` (= behind tiles) via oamIndex.
+          rt.gba.oam[sprite.oamIndex].priority = 3;
+          // DETTE H3 : sprite->subspriteMode = SUBSPRITES_IGNORE_PRIORITY.
+        }
+      }
+      npc.disguiseStarted = true;
+    }
+    // Buried_Step0 : ClearObjectEventMovement (4486) + return FALSE.
+    npc.singleMovementActive = false;
+    npc.heldMovementActive = false;
+    npc.heldMovementFinished = false;
+    npc.movementActionId = 0xFF;
     return true;
   }
   // ─── MOVEMENT_TYPE_BERRY_TREE_GROWTH (H2) ───────────────────────────────────
@@ -2574,19 +2604,37 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     tickBerryTreeGrowth(rt, npc);
     return true;
   }
-  // TREE_DISGUISE / MOUNTAIN_DISGUISE / SAND_DISGUISE : NPC se déguise en
-  // tree/mountain/sand jusqu'à interact (= reveal anim).
-  // 1:1 décomp `MovementType_TreeDisguise` (4354), `MountainDisguise` (4375)
-  // appellent `FieldEffectStart(FLDEFF_TREE_DISGUISE / FLDEFF_MOUNTAIN_DISGUISE)`
-  // qui spawn un nouveau sprite tree/mountain par-dessus le NPC.
+  // ─── MOVEMENT_TYPE_TREE_DISGUISE / MOUNTAIN_DISGUISE (H3) ───────────────────
+  // 1:1 strict décomp `MovementType_TreeDisguise` (4354) / `MountainDisguise` (4375) :
+  //   if (directionSequenceIndex == 0 ||
+  //       (directionSequenceIndex == 1 && !sprite->data[7])) {
+  //     ObjectEventGetLocalIdAndMap(obj, &gFieldEffectArguments[0..2]);
+  //     fieldEffectSpriteId = FieldEffectStart(FLDEFF_TREE_DISGUISE / MOUNTAIN_DISGUISE);
+  //     directionSequenceIndex = 1;
+  //     sprite->data[7]++;
+  //   }
+  //   UpdateObjectEventCurrentMovement(..., MovementType_Disguise_Callback);
   //
-  // DETTE 1:1 STRICT : full port nécessite FieldEffect system (= FLDEFF_*
-  // dispatch + sprite spawn + anim reveal). Notre TS skip — sprite garde sa
-  // graphics_id de spawn (= probably le sprite "déguisé"). Visual OK pour
-  // l'instant car ces NPCs ne sont pas dans la démo Littleroot.
+  // MovementType_Disguise_Callback (4369) : ClearObjectEventMovement + return FALSE.
+  //
+  // DETTE H3 cascade : FieldEffect system (FLDEFF_TREE_DISGUISE / MOUNTAIN_DISGUISE).
+  // Sans ça, le sprite "déguisé" n'est pas spawned par-dessus le NPC.
   if (mt === 'MOVEMENT_TYPE_TREE_DISGUISE'
-   || mt === 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE'
-   || mt === 'MOVEMENT_TYPE_SAND_DISGUISE') {
+   || mt === 'MOVEMENT_TYPE_MOUNTAIN_DISGUISE') {
+    if (npc.directionSeqIdx === 0 || (npc.directionSeqIdx === 1 && !npc.disguiseStarted)) {
+      // ObjectEventGetLocalIdAndMap : pas besoin pour FieldEffect (= stub explicit).
+      // gFieldEffectArguments[0..2] = localId, mapNum, mapGroup.
+      // fieldEffectSpriteId = FieldEffectStart(FLDEFF_TREE_DISGUISE / MOUNTAIN_DISGUISE).
+      // DETTE H3 cascade : FieldEffect system.
+      npc.fieldEffectSpriteId = MAX_SPRITES;  // = pas de field effect sprite (= sentinel none).
+      npc.directionSeqIdx = 1;
+      npc.disguiseStarted = true;
+    }
+    // MovementType_Disguise_Callback : ClearObjectEventMovement + return FALSE.
+    npc.singleMovementActive = false;
+    npc.heldMovementActive = false;
+    npc.heldMovementFinished = false;
+    npc.movementActionId = 0xFF;
     return true;
   }
   // COPY_PLAYER_* : NPC qui copie le movement du player (= mirror puzzles
