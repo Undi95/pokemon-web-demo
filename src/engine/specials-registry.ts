@@ -625,10 +625,15 @@ registerSpecial('IsStarterInParty', () => {
   return 0;
 });
 
-/** 1:1 décomp `InitBirchState` — initializes Birch lab state machine. */
+/** 1:1 décomp `InitBirchState` (time_events.c:108-111) :
+ *  ```c
+ *  void InitBirchState(void) {
+ *      *GetVarPointer(VAR_BIRCH_STATE) = 0;
+ *  }
+ *  ```
+ *  Reset VAR_BIRCH_STATE = 0 (= state machine birch lab tutorial). */
 registerSpecial('InitBirchState', () => {
-  // Stub : Birch state already managed by VAR_BIRCH_LAB_STATE in script flow.
-  return 0;
+  VarSet('VAR_BIRCH_STATE', 0);
 });
 
 /** 1:1 décomp `LoadWallyZigzagoon` (wally_tutorial.c) — preps Wally's catch
