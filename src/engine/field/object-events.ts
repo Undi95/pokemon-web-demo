@@ -2852,6 +2852,10 @@ import {
   MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN,
   MOVEMENT_ACTION_ACRO_POP_WHEELIE_DOWN,
   MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN,
+  MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3622,6 +3626,57 @@ function _makeAcroEndWheelieFaceAction(dir: number): MovementActionFunc {
   };
 }
 
+/** 1:1 décomp `InitAcroWheelieJump` (event_object_movement.c) :
+ *    InitJump(obj, sprite, dir, distance, type);
+ *    StartSpriteAnimIfDifferent(sprite, GetAcroWheelieDirectionAnimNum(dir));
+ *    DoShadowFieldEffect(obj);
+ *
+ *  Pour 1:1 strict, utilise _InitJump (= déjà porté) + StartSpriteAnim avec
+ *  ANIM_BUNNY_HOP_BACK_WHEEL_X. */
+function _makeAcroWheelieJumpAction(dir: number, distance: number, type: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitJump(rt, npc, dir, distance, type);
+      // 1:1 décomp : StartSpriteAnim wheelie au lieu de walk anim.
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite && sprite.anims) {
+          StartSpriteAnim(sprite as never, sAcroWheelieDirectionAnimNums[dir] ?? 0);
+        }
+      }
+      // DETTE H3 : DoShadowFieldEffect cascade.
+    }
+    if (_UpdateJumpAnim(rt, npc)) {
+      npc.hasShadow = false;
+      npc.actionStep = 2;
+      _npcEndWalkAnim(rt, npc);
+      return true;
+    }
+    return false;
+  };
+}
+
+/** 1:1 décomp `MovementAction_AcroWheelieInPlaceX_Step0` :
+ *    InitMoveInPlace(obj, sprite, dir, GetAcroWheeliePedalDirectionAnimNum(dir), 8);
+ *    return MovementAction_WalkInPlace_Step1; */
+function _makeAcroWheelieInPlaceAction(dir: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      // InitMoveInPlace avec wheelie pedal anim au lieu de walk anim.
+      SetObjectEventDirection(npc, dir);
+      if (npc.spriteId >= 0) {
+        const sprite = rt.gSprites.get(npc.spriteId);
+        if (sprite && sprite.anims) {
+          StartSpriteAnim(sprite as never, sAcroWheeliePedalDirectionAnimNums[dir] ?? 0);
+        }
+      }
+      npc.actionStep = 1;
+      npc.actionTimer = 8;  // 1:1 décomp duration 8.
+    }
+    return _MovementAction_WalkInPlace_Step1(rt, npc);
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -3849,6 +3904,26 @@ gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN]     = _makeAcro
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 1] = _makeAcroEndWheelieFaceAction(DIR_NORTH);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 2] = _makeAcroEndWheelieFaceAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_DOWN + 3] = _makeAcroEndWheelieFaceAction(DIR_EAST);
+// H1.20 : ACRO_WHEELIE_HOP_FACE_X (112-115) = wheelie jump IN_PLACE type LOW.
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN]     = _makeAcroWheelieJumpAction(DIR_SOUTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN + 1] = _makeAcroWheelieJumpAction(DIR_NORTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN + 2] = _makeAcroWheelieJumpAction(DIR_WEST,  JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_FACE_DOWN + 3] = _makeAcroWheelieJumpAction(DIR_EAST,  JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+// ACRO_WHEELIE_HOP_X (116-119) = wheelie jump NORMAL type LOW (1 tile hop).
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN]     = _makeAcroWheelieJumpAction(DIR_SOUTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN + 1] = _makeAcroWheelieJumpAction(DIR_NORTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN + 2] = _makeAcroWheelieJumpAction(DIR_WEST,  JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_HOP_DOWN + 3] = _makeAcroWheelieJumpAction(DIR_EAST,  JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+// ACRO_WHEELIE_JUMP_X (120-123) = wheelie jump FAR type HIGH (2 tiles big jump).
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN]     = _makeAcroWheelieJumpAction(DIR_SOUTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN + 1] = _makeAcroWheelieJumpAction(DIR_NORTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN + 2] = _makeAcroWheelieJumpAction(DIR_WEST,  JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_JUMP_DOWN + 3] = _makeAcroWheelieJumpAction(DIR_EAST,  JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+// ACRO_WHEELIE_IN_PLACE_X (124-127) = wheelie in place anim (duration 8 frames).
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN]     = _makeAcroWheelieInPlaceAction(DIR_SOUTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 1] = _makeAcroWheelieInPlaceAction(DIR_NORTH);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 2] = _makeAcroWheelieInPlaceAction(DIR_WEST);
+gMovementActionFuncs[MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN + 3] = _makeAcroWheelieInPlaceAction(DIR_EAST);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
