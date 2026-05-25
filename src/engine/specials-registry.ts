@@ -27,7 +27,7 @@
  */
 
 import { registerSpecial } from './script-opcodes';
-import { FlagSet, FlagClear, VarSet, VarGet } from './script-vars';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { gMapHeader } from './map-loader';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
 import { MALE, FEMALE } from './decomp-globals';
@@ -42,6 +42,7 @@ import { GIDDY_MAX_TALES } from './decomp-data/include/constants/global-data';
 import { gLocalTime } from './rtc';
 import { ShowFieldMessage } from './field-message-box';
 import { gStringVar4 } from './gba-text-system';
+import { Random } from './random';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 
@@ -520,7 +521,21 @@ registerSpecial('Special_BeginRouletteGame', () => { /* no-op */ });
 registerSpecial('BufferEReaderTrainerName', () => { /* no-op */ });
 
 /** 1:1 décomp `GetGameStat` (pokemon_util.c). Returns 0 for any stat. */
-registerSpecial('GetGameStat', () => 0);
+/** 1:1 décomp `GetGameStat(u8 index)` (overworld.c:447-453) :
+ *  ```c
+ *  u32 GetGameStat(u8 index) {
+ *      if (index >= NUM_USED_GAME_STATS) return 0;
+ *      return gSaveBlock1Ptr->gameStats[index] ^ gSaveBlock2Ptr->encryptionKey;
+ *  }
+ *  ```
+ *  Notre projet stocke gameStats cleartext (= IncrementGameStat fait `+= 1`,
+ *  pas XOR'd). Donc on retourne direct sans XOR (= 1:1 strict justifié vu
+ *  que le décomp encrypte juste pour anti-cheat ROM Gen3 inutile en web). */
+registerSpecial('GetGameStat', () => {
+  const index = VarGet('VAR_0x8004');
+  if (index >= 52 /* NUM_USED_GAME_STATS */) return 0;
+  return (gSaveBlock1Ptr.gameStats?.[index] ?? 0) & 0xFFFF;
+});
 
 /** 1:1 décomp `PutZigzagoonInPlayerParty` (battle_setup.c) : adds Zigzagoon
  *  for Birch tutorial battle if party is empty. */
@@ -746,8 +761,48 @@ registerSpecial('SetSSTidalFlag', () => {
 
 /** 1:1 décomp link-contest specials. Stubs (= no contests yet). */
 registerSpecial('LoadLinkContestPlayerPalettes', () => 0);
-registerSpecial('GetContestMultiplayerId', () => 0);
-registerSpecial('GenerateContestRand', () => 0);
+/** 1:1 décomp `GetContestMultiplayerId` (contest_util.c:2669-2677) :
+ *  ```c
+ *  void GetContestMultiplayerId(void) {
+ *      if ((gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+ *          && gNumLinkContestPlayers == CONTESTANT_COUNT
+ *          && !(gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS))
+ *          gSpecialVar_Result = GetMultiplayerId();
+ *      else
+ *          gSpecialVar_Result = MAX_LINK_PLAYERS;
+ *  }
+ *  ```
+ *  Notre projet : pas de link → branch else → MAX_LINK_PLAYERS (= 4). */
+registerSpecial('GetContestMultiplayerId', () => {
+  // 1:1 décomp constants link.h MAX_LINK_PLAYERS = 4.
+  VarSet('VAR_RESULT', 4);
+  return 4;
+});
+/** 1:1 décomp `GenerateContestRand` (contest_util.c:2679-2696) :
+ *  ```c
+ *  void GenerateContestRand(void) {
+ *      u16 random;
+ *      u16 *result;
+ *      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK) {
+ *          gContestRngValue = ISO_RANDOMIZE1(gContestRngValue);
+ *          random = gContestRngValue >> 16;
+ *      } else {
+ *          random = Random();
+ *      }
+ *      result = &gSpecialVar_Result;
+ *      *result = random % *result;
+ *  }
+ *  ```
+ *  Notre projet : pas de link → branch else (= random = Random()).
+ *  Modulo VAR_RESULT (= input ; sortie même var). */
+registerSpecial('GenerateContestRand', () => {
+  // 1:1 décomp branch else : gLinkContestFlags == 0.
+  const random = Random();
+  const divisor = VarGet('VAR_RESULT');
+  const result = divisor === 0 ? 0 : (random % divisor) & 0xFFFF;
+  VarSet('VAR_RESULT', result);
+  return result;
+});
 registerSpecial('IsWirelessContest', () => 0);
 registerSpecial('ClearLinkContestFlags', () => { /* no-op */ });
 
@@ -1082,6 +1137,39 @@ registerSpecial('BufferTMHMMoveName', () => {
   return 0;
 });
 
+// ─── Session A2.29 batch — Abandoned Ship + Game stats + Contest random ────
+
+/** 1:1 décomp `FoundAbandonedShipRoom1Key` (field_specials.c:1328-1337).
+ *  Pattern uniforme : set gSpecialVar_0x8004 = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_N_KEY
+ *  + return FlagGet(flag). Note 1:1 strict : FlagSet/Get prend un name string,
+ *  donc VarSet stocke le numeric flag id résolu via parseValue. */
+registerSpecial('FoundAbandonedShipRoom1Key', () => {
+  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY';
+  VarSet('VAR_0x8004', VarGet(flag));
+  return FlagGet(flag) ? 1 : 0;
+});
+
+/** 1:1 décomp `FoundAbandonedShipRoom2Key` (field_specials.c:1339-1348). */
+registerSpecial('FoundAbandonedShipRoom2Key', () => {
+  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY';
+  VarSet('VAR_0x8004', VarGet(flag));
+  return FlagGet(flag) ? 1 : 0;
+});
+
+/** 1:1 décomp `FoundAbandonedShipRoom4Key` (field_specials.c:1350-1359). */
+registerSpecial('FoundAbandonedShipRoom4Key', () => {
+  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY';
+  VarSet('VAR_0x8004', VarGet(flag));
+  return FlagGet(flag) ? 1 : 0;
+});
+
+/** 1:1 décomp `FoundAbandonedShipRoom6Key` (field_specials.c:1361-1370). */
+registerSpecial('FoundAbandonedShipRoom6Key', () => {
+  const flag = 'FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY';
+  VarSet('VAR_0x8004', VarGet(flag));
+  return FlagGet(flag) ? 1 : 0;
+});
+
 /** 1:1 décomp `SetPacifidlogTMReceivedDay` (field_specials.c:1566-1569) :
  *  ```c
  *  u16 SetPacifidlogTMReceivedDay(void) {
@@ -1156,8 +1244,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'FieldShowRegionMap' — handler concret enregistré infra (= fade-from-black
   // jusqu'au port 1:1 worldmap UI region_map.c).
   'FinishCyclingRoadChallenge',
-  'FoundAbandonedShipRoom1Key', 'FoundAbandonedShipRoom2Key',
-  'FoundAbandonedShipRoom4Key', 'FoundAbandonedShipRoom6Key',
+  // 'FoundAbandonedShipRoom1Key' — porté 1:1 décomp field_specials.c:1328 ci-bas.
+  // 'FoundAbandonedShipRoom2Key' — porté 1:1 décomp field_specials.c:1339 ci-bas.
+  // 'FoundAbandonedShipRoom4Key' — porté 1:1 décomp field_specials.c:1350 ci-bas.
+  // 'FoundAbandonedShipRoom6Key' — porté 1:1 décomp field_specials.c:1361 ci-bas.
   'GabbyAndTyAfterInterview', 'GabbyAndTyBeforeInterview',
   // 'GabbyAndTyGetLastBattleTrivia' — porté 1:1 décomp tv.c:1020 ci-bas.
   'GabbyAndTyGetBattleNum',
