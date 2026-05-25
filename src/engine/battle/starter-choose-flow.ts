@@ -28,9 +28,9 @@
  * Cf. memory/upd2-progress.md.
  */
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
-import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from '../gba-menu-system';
-import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from '../ui/gba-menu-system';
+import { AddWindow, ClearStdWindowAndFrame, ClearWindowTilemap, FillWindowPixelBuffer, PutWindowTilemap, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { getRuntime, LoadPalette } from '../system/decomp-globals';
 import { LoadSpritePalette } from '../sprite';
 import { BG_PLTT_ID, OBJ_PLTT_ID } from '../system/decomp-runtime';
@@ -43,7 +43,7 @@ import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../field/map-loader';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';
 import { setFieldCameraSuspended } from '../field/field-camera';
-import { getString, initStringsFromDecomp } from '../gba-strings';
+import { getString, initStringsFromDecomp } from '../ui/gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from '../data-tables';
 // Audit session 126 (post-test user) : wire le first wild battle Zigzagoon
 // après starter pick. 1:1 décomp `battle_setup.c:CB2_GiveStarter:917-928` →

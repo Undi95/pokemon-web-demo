@@ -40,20 +40,20 @@ import {
   InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ClearWindowTilemap,
   type WindowTemplate,
-} from '../gba-window-system';
+} from './gba-window-system';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from '../system/decomp-globals';
 import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
 import { loadIndexedPngStrict } from '../gba/png-loader';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from '../gba-menu-system';
-import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from '../gba-window-system';
-import { getString } from '../gba-strings';
+} from './gba-menu-system';
+import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame } from './gba-window-system';
+import { getString } from './gba-strings';
 // gSaveBlock2Ptr supprimé (= remplacé par VAR_0x8004 1:1 strict décomp).
 import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';

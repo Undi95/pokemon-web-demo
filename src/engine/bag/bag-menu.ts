@@ -30,7 +30,7 @@ import {
   assetCache, PlaySE,
 } from '../system/decomp-globals';
 import { ResetSpriteData, PLTT_SIZE_4BPP } from '../system/decomp-bridge';
-import { ListMenuLoadStdPalAt } from '../gba-menu-system';
+import { ListMenuLoadStdPalAt } from '../ui/gba-menu-system';
 import {
   getBagPocketSlots, getBagPocketCapacity, slotItemId, MoveItemSlotInList,
   CompactItemsInBagPocket, SortBerriesOrTMHMs,
@@ -38,14 +38,14 @@ import {
 } from './bag-pockets';
 import {
   SetCursorWithinListBounds, SetCursorScrollWithinListBounds, type ListPos,
-} from '../menu-helpers';
+} from '../ui/menu-helpers';
 import {
   gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
   CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND,
   gText_SelectorArrow2, ListMenuGetYCoordForPrintingArrowCursor,
   ListMenuSetTemplateField,
   type ListMenuTemplate, type ListMenu,
-} from '../list-menu';
+} from '../ui/list-menu';
 import { getItemKeyById, loadConstantsTable, isConstantsLoaded } from '../data-tables';
 import { ItemIdToBattleMoveId } from '../pokemon/tmhm-moves';
 import { getMoveName, getMove } from '../data/game-data';
@@ -61,13 +61,13 @@ import {
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
   ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
-} from '../gba-window-system';
-import { LoadUserWindowBorderGfx } from '../gba-text-window';
+} from '../ui/gba-window-system';
+import { LoadUserWindowBorderGfx } from '../ui/gba-text-window';
 import {
   DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
   FONT_NORMAL, AddTextPrinterParameterized4, GetMenuCursorDimensionByFont,
   GetStringRightAlignXOffset, TEXT_SKIP_DRAW,
-} from '../gba-text-system';
+} from '../ui/gba-text-system';
 import {
   TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY,
   TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED, TEXT_COLOR_GREEN,
@@ -100,8 +100,8 @@ import {
 import {
   ListMenuInit, ListMenu_ProcessInput, ListMenuGetScrollAndRow,
   DestroyListMenuTask, LIST_NOTHING_CHOSEN, DPAD_LEFT, DPAD_RIGHT,
-} from '../list-menu';
-import { GetStringCenterAlignXOffset } from '../gba-text-system';
+} from '../ui/list-menu';
+import { GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import {
   MENU_L_PRESSED, MENU_R_PRESSED,
 } from '../decomp-data/include/menu_helpers-data';
@@ -129,12 +129,12 @@ import {
   CreateSwapLineSprites, SetSwapLineSpritesInvisibility, UpdateSwapLineSpritesPos,
   SWAP_LINE_HAS_MARGIN,
 } from '../field/swap-line';
-import { preloadItemIconAssets } from '../item-icon';
+import { preloadItemIconAssets } from '../ui/item-icon';
 import {
   AddScrollIndicatorArrowPair, AddScrollIndicatorArrowPairParameterized,
   RemoveScrollIndicatorArrowPair, SCROLL_ARROW_UP, SCROLL_ARROW_LEFT,
   SCROLL_ARROW_RIGHT, type ScrollArrowsTemplate,
-} from '../list-menu';
+} from '../ui/list-menu';
 import {
   TAG_POCKET_SCROLL_ARROW, TAG_BAG_SCROLL_ARROW,
 } from '../decomp-data/src/item_menu-data';

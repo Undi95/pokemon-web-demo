@@ -30,7 +30,7 @@ import {
   TOTAL_BOXES_COUNT,
 } from './save-blocks';
 import { emptyBag, SetBagItemsPointers, migrateBlock1BagFormat } from '../bag/bag';
-import { SetDecorationInventoriesPointers } from '../decoration-inventory';
+import { SetDecorationInventoriesPointers } from '../ui/decoration-inventory';
 import {
   WriteSaveSlot, TryLoadSaveSlot, GetSaveValidStatus, Save_ResetSaveCounters,
   __flashClear, type BlockKey,

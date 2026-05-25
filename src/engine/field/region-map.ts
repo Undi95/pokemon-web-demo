@@ -38,10 +38,10 @@ import { MALE } from '../system/decomp-globals';
 import { FlagGet } from '../script/script-vars';
 import { gMapHeader } from './map-loader';
 import { getMapNameFr } from '../../data/map-names-fr';
-import { getString } from '../gba-strings';
+import { getString } from '../ui/gba-strings';
 import { getRuntime, getAsset, PlaySE } from '../system/decomp-globals';
 import { LockPlayerFieldControls, UnlockPlayerFieldControls } from '../script/script-runtime';
-import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from '../bitmap-font';
+import { renderTextToCanvas, preloadBitmapFont, setupBitmapFont } from '../ui/bitmap-font';
 import {
   preloadRegionMapData,
   getRegionMapEntries,

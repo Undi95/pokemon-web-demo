@@ -28,8 +28,8 @@ import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent } from '../field/
 import { GetPlayerFacingDirection, DIR_SOUTH } from '../field/player-avatar';
 import {
   Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from '../gba-menu-system';
-import { ClearStdWindowAndFrame, RemoveWindow } from '../gba-window-system';
+} from '../ui/gba-menu-system';
+import { ClearStdWindowAndFrame, RemoveWindow } from '../ui/gba-window-system';
 import { getSelectedNpc, isAOrBNewlyPressed, OPPOSITE_DIR } from './script-opcodes-helpers';
 import { spawnYesNoMenu } from './script-opcodes-menu';
 

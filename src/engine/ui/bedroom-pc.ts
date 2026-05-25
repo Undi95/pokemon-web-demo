@@ -42,13 +42,13 @@ import {
   LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillBgTilemapBufferRect,
   type WindowTemplate,
-} from '../gba-window-system';
-import { LoadUserWindowBorderGfx } from '../gba-text-window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from '../gba-text-system';
+} from './gba-window-system';
+import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose,
-} from '../gba-menu-system';
+} from './gba-menu-system';
 import { getRuntime, PlaySE } from '../system/decomp-globals';
 import { SignalWaitState } from '../script/script-opcodes';
 import { ScriptContext_SetupScript } from '../script/script-runtime';
@@ -57,9 +57,9 @@ import { MAIL_COUNT, PARTY_SIZE } from '../save/save-blocks';
 import { ReadMail } from './mail';
 import { ITEM_NONE, ClearMail } from './mail-data';
 import { FEMALE } from '../system/decomp-globals';
-import { getString } from '../gba-strings';
+import { getString } from './gba-strings';
 import { setStringVar } from '../string-buffers';
-import { StringExpandPlaceholders } from '../gba-text-system';
+import { StringExpandPlaceholders } from './gba-text-system';
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
@@ -68,14 +68,14 @@ import {
   ListMenuInit, ListMenu_ProcessInput, DestroyListMenuTask,
   ListMenuGetYCoordForPrintingArrowCursor,
   type ListMenuTemplate, type ListMenuItem,
-} from '../list-menu';
+} from './list-menu';
 import { AddBagItem, gBagPockets, ITEMS_POCKET } from '../bag/bag';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { getItemNameFr } from '../data-tables';
 import { GetItemDescription } from '../system/decomp-bridge';
 import {
   AddItemIconSprite, MAX_SPRITES, preloadItemIconAssets,
-} from '../item-icon';
+} from './item-icon';
 import { FreeSpriteTilesByTag } from '../system/decomp-globals';
 import { FreeSpritePaletteByTag } from '../sprite';
 

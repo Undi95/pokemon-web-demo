@@ -19,7 +19,7 @@
  *   - IsEnoughMoney : compare avec coût
  */
 
-import { gSaveBlock1Ptr } from './save/save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 
 /** 1:1 décomp `#define MAX_MONEY 999999` (money.c:13). */
 export const MAX_MONEY = 999999;

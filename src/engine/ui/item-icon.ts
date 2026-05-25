@@ -26,10 +26,10 @@
  * CreateSpriteAtOam(tileId=tag→tileStart, paletteBank=tag→slot). Net-1:1
  * (gItemIconSpriteTemplate = oam 32×32 4bpp prio1, anim 1 frame, cb dummy).
  */
-import { assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette } from './system/decomp-globals';
-import { CpuCopy16 } from './system/decomp-bridge';
-import { loadTileBin, loadGbaPal } from './gba/png-loader';
-import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from './sprite';
+import { assetCache, getRuntime, LoadCompressedSpriteSheet, LoadSpritePalette } from '../system/decomp-globals';
+import { CpuCopy16 } from '../system/decomp-bridge';
+import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../sprite';
 
 // 1:1 décomp `#define MAX_SPRITES 64` (sprite.h) — retour échec AddItemIcon.
 export const MAX_SPRITES = 64;

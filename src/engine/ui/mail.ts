@@ -78,22 +78,22 @@ import {
   CopyWindowToVram,
   FreeAllWindowBuffers,
   type WindowTemplate,
-} from '../gba-window-system';
-import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from '../gba-window-system';
+} from './gba-window-system';
+import { ShowBg, FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, CopyBgTilemapBufferToVram, ResetBgsAndClearDma3BusyFlags, InitBgsFromTemplates } from './gba-window-system';
 import {
   AddTextPrinterParameterized3,
   RunTextPrinters,
   DeactivateAllTextPrinters,
   FONT_NORMAL,
   GetStringCenterAlignXOffset,
-} from '../gba-text-system';
+} from './gba-text-system';
 import { StringCopy, StringLength } from '../system/decomp-bridge';
 import { RGB, RGB_BLACK, RGB_WHITE, PLTT_SIZE_4BPP } from '../system/decomp-helpers';
 import { BG_PLTT_ID, REG_OFFSET_DISPCNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP } from '../system/decomp-runtime';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2 } from '../battle/battle-windows';
 import { PIXEL_FILL } from '../system/decomp-globals';
-import { A_BUTTON, B_BUTTON } from '../gba-menu-system';
+import { A_BUTTON, B_BUTTON } from './gba-menu-system';
 import type { Mail } from '../save/save-blocks';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, TILE_WIDTH, TILE_HEIGHT } from '../decomp-data/include/gba/defines-data';
 import { GENDER_COUNT, LANGUAGE_FRENCH } from '../decomp-data/include/constants/global-data';

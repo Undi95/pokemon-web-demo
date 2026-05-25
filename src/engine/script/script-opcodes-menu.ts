@@ -21,13 +21,13 @@ import { VarGet, gSpecialVar } from './script-vars';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
   InitMenuInUpperLeftCornerNormal,
-} from '../gba-menu-system';
-import type { WindowTemplate } from '../gba-window-system';
+} from '../ui/gba-menu-system';
+import type { WindowTemplate } from '../ui/gba-window-system';
 import {
   ClearStdWindowAndFrame, RemoveWindow, AddWindow, PutWindowTilemap,
   CopyWindowToVram, DrawStdFrameWithCustomTileAndPalette,
-} from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { getMultichoiceList } from '../multichoice-data';
 import { parseValue } from './script-opcodes-helpers';
 

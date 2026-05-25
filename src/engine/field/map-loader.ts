@@ -57,7 +57,7 @@ import { GetSaveBlock1 } from '../save/save-system';
 // pour camera focus + player logical position. Refactor SaveMapView/MoveMapViewTo
 // Backup/CameraMove 1:1 strict décomp lit/écrit cette pos au lieu de prendre des
 // args (= élimine désync historique cam.x ≠ player.x).
-import { gSaveBlock1Ptr } from '../gba-menu-system';
+import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,

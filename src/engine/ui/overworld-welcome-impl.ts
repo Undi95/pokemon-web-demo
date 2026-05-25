@@ -41,9 +41,9 @@ import {
   REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
   DISPCNT_BG0_ON, DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
 } from '../system/decomp-runtime';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, AddWindow, DrawStdFrameWithCustomTileAndPalette } from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
-import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, AddWindow, DrawStdFrameWithCustomTileAndPalette } from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { gSaveBlock2Ptr } from './gba-menu-system';
 import { MUS_LITTLEROOT as _MUS_LITTLEROOT } from '../decomp-data/include/constants/songs-data';
 
 // 1:1 décomp include/constants/songs.h:336 — MUS_LITTLEROOT (Littleroot Town BGM).

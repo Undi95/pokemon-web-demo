@@ -40,7 +40,7 @@
  *  Module leaf : importé par bag-menu-ctx (Medicine handler), pas l'inverse.
  */
 
-import { gSpecialVar } from './script/script-vars';
+import { gSpecialVar } from '../script/script-vars';
 import {
   ApplyMedicineEffect, PokemonUseItemEffects, GetItemEffectType,
   ITEM_EFFECT_HEAL_HP, ITEM_EFFECT_RAISE_LEVEL, ITEM_EFFECT_HEAL_PP,
@@ -52,15 +52,15 @@ import {
   ITEM_EFFECT_CURE_FREEZE, ITEM_EFFECT_CURE_PARALYSIS,
   ITEM_EFFECT_CURE_CONFUSION, ITEM_EFFECT_CURE_INFATUATION,
   ITEM_EFFECT_CURE_ALL_STATUS,
-} from './bag/bag-item-effects';
-import { getItem as _getItem, getItemKeyById } from './data-tables';
-import { GetItemType } from './system/decomp-bridge';
+} from '../bag/bag-item-effects';
+import { getItem as _getItem, getItemKeyById } from '../data-tables';
+import { GetItemType } from '../system/decomp-bridge';
 import {
   gBagMenu,
   Task_FadeAndCloseBagMenu,
   GoToBagMenu,
   ITEMMENULOCATION_LAST,
-} from './bag/bag-menu';
+} from '../bag/bag-menu';
 import {
   OpenPartyScreenForItemUse,
   GetPartyScreenSlotId,
@@ -68,14 +68,14 @@ import {
   ShowPartyMenuItemMessage,
   RefreshPartySlot,
   PartyMenuAnimateHP,
-} from './ui/party-screen';
+} from '../ui/party-screen';
 import { getString } from './gba-strings';
-import type { DecompTask } from './system/decomp-runtime';
-import type { PokemonInstance } from './pokemon/pokemon';
-import { getRuntime, PlaySE } from './system/decomp-globals';
-import { SE_USE_ITEM } from './decomp-data/include/constants/songs-data';
+import type { DecompTask } from '../system/decomp-runtime';
+import type { PokemonInstance } from '../pokemon/pokemon';
+import { getRuntime, PlaySE } from '../system/decomp-globals';
+import { SE_USE_ITEM } from '../decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
-import { gSaveBlock1Ptr } from './save/save-block-state';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
 
 // ─── gItemUseCB registry global (1:1 décomp party_menu.c:234) ────────────────
 // `COMMON_DATA void (*gItemUseCB)(u8, TaskFunc) = NULL;`

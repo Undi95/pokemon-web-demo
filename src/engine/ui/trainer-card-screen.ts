@@ -35,12 +35,12 @@ import {
   AddWindow, InitWindows, RemoveWindow, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, ShowBg, HideBg,
   type WindowTemplate,
-} from '../gba-window-system';
-import { LoadUserWindowBorderGfx } from '../gba-text-window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../gba-text-system';
+} from './gba-window-system';
+import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../sprite';
 import {
@@ -51,7 +51,7 @@ import { ResetSpriteData } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
-import { getString } from '../gba-strings';
+import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
 
 // FONT_NORMAL = text.h enum local (= pas extrait decomp-data).

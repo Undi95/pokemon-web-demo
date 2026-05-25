@@ -31,9 +31,9 @@ import { rgba8ToRgb15 } from '../gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
-} from '../gba-window-system';
+} from '../ui/gba-window-system';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
-import { DeactivateAllTextPrinters } from '../gba-text-system';
+import { DeactivateAllTextPrinters } from '../ui/gba-text-system';
 // gBattleBgTemplates auto-extrait du décomp (battle_bg.c:123-161) — JAMAIS
 // retapé main (règle feedback-no-hardcoded-decomp-values).
 import { gBattleBgTemplates as _autoBattleBgTemplates } from '../decomp-data/src/battle_bg-data';

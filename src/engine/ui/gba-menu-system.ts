@@ -15,12 +15,12 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from './system/decomp-globals';
-import { PLTT_SIZE_4BPP } from './system/decomp-bridge';
+import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from '../system/decomp-globals';
+import { PLTT_SIZE_4BPP } from '../system/decomp-bridge';
 import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { getString } from './gba-strings';
-import { SE_SELECT } from './decomp-data/include/constants/songs-data';
+import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
 
 /** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfo
  *  Elements{1,2,3}_Pal → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP).
@@ -314,7 +314,7 @@ export function PlayBGM(songNum: number): void {
 //
 // Pas de cycle d'import : save-system ne dépend PAS de gba-menu-system
 // (vérifié via grep). On peut donc importer GetSaveBlock2 statiquement.
-import { GetSaveBlock2 as _GetSaveBlock2, GetSaveBlock1 as _GetSaveBlock1 } from './save/save-system';
+import { GetSaveBlock2 as _GetSaveBlock2, GetSaveBlock1 as _GetSaveBlock1 } from '../save/save-system';
 
 const LEGACY_SAVEBLOCK2_LSKEY = 'pokemon-web-demo:saveBlock2';
 
@@ -359,7 +359,7 @@ _migrateLegacySaveBlock2();
  *  Foundation qui permet l'import direct depuis n'importe quel module du port
  *  sans cycle ESM). Re-export ici pour préserver les call-sites existants
  *  qui font `import { gSaveBlock1Ptr } from './gba-menu-system'`. */
-import { gSaveBlock1Ptr as _gSaveBlock1PtrFoundation, gSaveBlock2Ptr as _gSaveBlock2PtrFoundation } from './save/save-block-state';
+import { gSaveBlock1Ptr as _gSaveBlock1PtrFoundation, gSaveBlock2Ptr as _gSaveBlock2PtrFoundation } from '../save/save-block-state';
 export const gSaveBlock1Ptr = _gSaveBlock1PtrFoundation;
 export const gSaveBlock2Ptr = _gSaveBlock2PtrFoundation;
 

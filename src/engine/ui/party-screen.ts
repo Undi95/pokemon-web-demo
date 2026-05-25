@@ -43,9 +43,9 @@ import {
   CopyToBufferFromBgTilemap, CopyRectToBgTilemapBufferRect,
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
-} from '../gba-window-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../gba-text-window';
-import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from '../gba-text-system';
+} from './gba-window-system';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from '../system/decomp-constants';
@@ -60,7 +60,7 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
-import { getString } from '../gba-strings';
+import { getString } from './gba-strings';
 import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
 import type { DecompTask } from '../system/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';

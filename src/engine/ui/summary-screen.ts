@@ -29,11 +29,11 @@
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap,
   CopyWindowToVram, RemoveWindow, ShowBg, HideBg, BlitBitmapToWindow, ClearWindowTilemap,
-} from '../gba-window-system';
+} from './gba-window-system';
 import {
   AddTextPrinterParameterized3, GetStringWidth, GetStringRightAlignXOffset,
   GetStringCenterAlignXOffset, FONT_NORMAL, TEXT_SKIP_DRAW,
-} from '../gba-text-system';
+} from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../sprite';
@@ -54,7 +54,7 @@ import {
 } from '../system/decomp-globals';
 import { ResetSpriteData, FreeAllSpritePalettes, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { FadeScreen, FADE_FROM_BLACK } from '../fade-screen';
-import { getString } from '../gba-strings';
+import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
 import { pokemonInstanceToPokemon } from '../battle/party-storage';

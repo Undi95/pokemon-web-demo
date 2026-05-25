@@ -37,14 +37,14 @@ import { gMapHeader, MapGridSetMetatileIdAt, MAP_OFFSET, MAPGRID_IMPASSABLE } fr
 import { AddBagItem, RemoveBagItem, CheckBagHasItem } from '../bag/bag';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from '../gba-menu-system';
-import type { WindowTemplate } from '../gba-window-system';
+} from '../ui/gba-menu-system';
+import type { WindowTemplate } from '../ui/gba-window-system';
 import {
   ClearStdWindowAndFrame, RemoveWindow, AddWindow, PutWindowTilemap, CopyWindowToVram,
   DrawStdFrameWithCustomTileAndPalette,
-} from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
-import { InitMenuInUpperLeftCornerNormal } from '../gba-menu-system';
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
+import { InitMenuInUpperLeftCornerNormal } from '../ui/gba-menu-system';
 import { getMultichoiceList } from '../multichoice-data';
 import {
   gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,

@@ -23,7 +23,7 @@
  */
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
-import { getString } from '../gba-strings';
+import { getString } from '../ui/gba-strings';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
 import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../data-tables';

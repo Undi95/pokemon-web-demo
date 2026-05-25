@@ -41,9 +41,9 @@ import {
   ClearStdWindowAndFrame,
   LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
-} from '../gba-window-system';
-import { LoadUserWindowBorderGfx } from '../gba-text-window';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+} from './gba-window-system';
+import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
 import { IsNationalPokedexEnabled } from '../save/event-data';
@@ -58,16 +58,16 @@ import {
 } from '../field/field-message-box';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
-} from '../gba-menu-system';
+} from './gba-menu-system';
 import { PlaySE, getRuntime, gMain } from '../system/decomp-globals';
 import { SE_SELECT, SE_WIN_OPEN, SE_SAVE } from '../decomp-data/include/constants/songs-data';
 import { HasValidSave } from '../save/save-system';
 import { bagContents } from '../bag/bag';
 import { HideMapNamePopUpWindow } from '../field/map-name-popup';
-import { GetStringRightAlignXOffset } from '../gba-text-system';
+import { GetStringRightAlignXOffset } from './gba-text-system';
 import { gMapHeader } from '../field/map-loader';
 import { getMapNameFr } from '../../data/map-names-fr';
-import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { gSaveBlock2Ptr } from './gba-menu-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { FlagGet } from '../script/script-vars';
 // 1:1 décomp option_menu.c CB2_InitOptionMenu — via callbacks-auto state machine.
@@ -84,7 +84,7 @@ import { OpenBagScreen } from '../bag/bag-menu';
 import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
-import { getString } from '../gba-strings';
+import { getString } from './gba-strings';
 import { FadeScreen, FADE_TO_BLACK } from '../fade-screen';
 // 1:1 décomp IsSEPlaying (sound.c:577) — direct import depuis decomp-globals
 // pour éviter le globalThis lookup qui pourrait résoudre vers la version

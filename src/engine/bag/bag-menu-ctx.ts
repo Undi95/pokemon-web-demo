@@ -43,8 +43,8 @@ import {
   ItemUseCB_Medicine, ItemUseCB_PPRecovery, ItemUseCB_PPUp,
   ItemUseCB_RareCandy, ItemUseCB_ReduceEV, ItemUseCB_SacredAsh,
   ItemUseCB_EvolutionStone, ItemUseCB_TMHM,
-} from '../item-use-callbacks';
-import { getString } from '../gba-strings';
+} from '../ui/item-use-callbacks';
+import { getString } from '../ui/gba-strings';
 import { GetSaveBlock1, GetSaveBlock2 } from '../save/save-system';
 import { gMapHeader } from '../field/map-loader';
 import {
@@ -61,11 +61,11 @@ import {
   PutWindowTilemap, ClearWindowTilemap, CopyWindowToVram, ScheduleBgCopyTilemapToVram,
   FillBgTilemapBufferRect_Palette0, DrawStdFrameWithCustomTileAndPalette,
   type WindowTemplate,
-} from '../gba-window-system';
+} from '../ui/gba-window-system';
 import { JOY_NEW, PALETTES_ALL, getRuntime } from '../system/decomp-globals';
 import {
   AddTextPrinterParameterized4, FONT_NARROW, TEXT_SKIP_DRAW,
-} from '../gba-text-system';
+} from '../ui/gba-text-system';
 import { BeginNormalPaletteFade, GetItemFieldFunc, GetItemType, GetItemName } from '../system/decomp-bridge';
 // CalculatePlayerPartyCount() lit `gPlayerParty[i].species` qui peut être 0
 // si la party n'est pas synchronisée depuis gameState (= bug observé). On

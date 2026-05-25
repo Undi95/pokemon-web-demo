@@ -67,7 +67,7 @@ import {
   LockPlayerFieldControls,
 } from '../script/script-runtime';
 import { FlagGet } from '../script/script-vars';
-import { B_BUTTON } from '../gba-menu-system';
+import { B_BUTTON } from '../ui/gba-menu-system';
 import { IsRunningDisallowed } from './metatile-behavior-helpers';
 import {
   MetatileBehavior_IsBumpySlope,

@@ -147,7 +147,7 @@ import {
   CopyToBgTilemapBuffer,
   type WindowTemplate,
   type BgTemplate,
-} from '../gba-window-system';
+} from './gba-window-system';
 
 import {
   AddTextPrinterParameterized3,
@@ -155,22 +155,22 @@ import {
   GetStringCenterAlignXOffset,
   GetStringWidth,
   TEXT_SKIP_DRAW,
-} from '../gba-text-system';
+} from './gba-text-system';
 
 // 1:1 STRICT décomp text.c:251-269 AddTextPrinterParameterized — vraie impl
 // dans gba-text-system.ts (wrapper sur P3 avec colors par défaut du font).
 import {
   AddTextPrinterParameterized,
-} from '../gba-text-system';
+} from './gba-text-system';
 
 import {
   LoadUserWindowBorderGfx,
   DrawTextBorderOuter,
-} from '../gba-text-window';
+} from './gba-text-window';
 
 import {
   CreateYesNoMenu,
-} from '../gba-menu-system';
+} from './gba-menu-system';
 
 import {
   getRuntime,

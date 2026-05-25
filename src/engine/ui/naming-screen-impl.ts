@@ -26,8 +26,8 @@ import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags,
   FillBgTilemapBufferRect_Palette0, CopyToBgTilemapBuffer, type WindowTemplate,
   ShowBg as ShowBgWin, HideBg as HideBgWin,
-} from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+} from './gba-window-system';
+import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
   getRuntime,
   ResetPaletteFade, FreeAllSpritePalettes, ResetTasks,
@@ -41,7 +41,7 @@ import {
   VRAM, OAM, PLTT, VRAM_SIZE, OAM_SIZE, PLTT_SIZE,
   type NamingSubsprite,
 } from '../system/decomp-globals';
-import { gSaveBlock2Ptr } from '../gba-menu-system';
+import { gSaveBlock2Ptr } from './gba-menu-system';
 import { loadGbaPal, loadTileBin, loadTilemapBin } from '../gba/png-loader';
 import type { DecompSprite, DecompTask } from '../system/decomp-runtime';
 import { gKeyRepeat } from '../system/decomp-runtime';

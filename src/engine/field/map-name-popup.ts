@@ -35,8 +35,8 @@ import {
   AddWindow, RemoveWindow, FillWindowPixelBuffer, CopyWindowToVram,
   ClearStdWindowAndFrame, FillBgTilemapBufferRect, PutWindowTilemap,
   BlitBitmapToWindow,
-} from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import { LoadBgTiles } from '../system/decomp-globals';
 import { LoadPalette } from '../system/decomp-globals';
 import { loadIndexedPngStrict } from '../gba/png-loader';

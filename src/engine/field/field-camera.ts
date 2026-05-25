@@ -60,7 +60,7 @@ import {
 } from '../system/decomp-runtime';
 import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
 import { getRuntime } from '../system/decomp-globals';
-import { gSaveBlock1Ptr } from '../gba-menu-system';
+import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { CONNECTION_NONE, CONNECTION_INVALID } from '../decomp-data/include/constants/global-data';
 
 // ─── 1:1 décomp `struct FieldCameraOffset` (field_camera.c:17-24) ───────────

@@ -45,7 +45,7 @@ import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { gLocalTime, RtcCalcLocalTime } from '../system/rtc';
 import { GetLastUsedWarpMapType, IsMapTypeOutdoors } from '../field/warp-system';
 import { ShowFieldMessage } from '../field/field-message-box';
-import { gStringVar4 } from '../gba-text-system';
+import { gStringVar4 } from '../ui/gba-text-system';
 import { Random } from '../system/random';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from '../battle/party-storage';
@@ -55,9 +55,9 @@ import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
 import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
 import { gSpecialVar } from './script-vars';
-import { gDecorations } from '../decoration-data';
-import { GetFirstEmptyDecorSlot } from '../decoration-inventory';
-import { DecorationAdd, DecorationRemove } from '../decoration-inventory';
+import { gDecorations } from '../ui/decoration-data';
+import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
+import { DecorationAdd, DecorationRemove } from '../ui/decoration-inventory';
 
 // ─── Phase 4.9 stubs minimaux (= early-game specials) ──────────────────────
 

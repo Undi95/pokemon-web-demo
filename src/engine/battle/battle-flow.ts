@@ -56,8 +56,8 @@ import {
   ShowBg,
   HideBg,
   type WindowTemplate,
-} from '../gba-window-system';
-import { AddTextPrinterParameterized3 } from '../gba-text-system';
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
 import {
   ShowFieldMessage,
   IsFieldMessageBoxHidden,
@@ -104,7 +104,7 @@ import { VarSet } from '../script/script-vars';
 import { getMove, getMoveName, loadGameData } from '../data/game-data';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { Random } from '../system/random';
-import { IsBattleSceneOff } from '../gba-menu-system';
+import { IsBattleSceneOff } from '../ui/gba-menu-system';
 // E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';

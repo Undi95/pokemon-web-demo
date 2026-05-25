@@ -15,7 +15,7 @@
 
 import { getText } from './script/script-runtime';
 import { reverseDecompConstant } from './system/decomp-constants';
-import { getString } from './gba-strings';
+import { getString } from './ui/gba-strings';
 
 interface RawMultichoiceData {
   lists: Record<string, string[]>;     // MultichoiceList_X → [gText_A, gText_B, ...]

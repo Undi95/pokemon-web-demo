@@ -399,7 +399,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     startY: rt.gPaletteFade.startY,
   });
   dev.printers = async (): Promise<unknown> => {
-    const m = await import('../gba-text-system');
+    const m = await import('../ui/gba-text-system');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return m._debugGetTextPrinters().map((ap: any, i: number) => ({
       slot: i, windowId: ap.windowId, finished: ap.finished,

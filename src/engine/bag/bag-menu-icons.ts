@@ -10,7 +10,7 @@
  * → pas de TDZ malgré l'arête bag-menu ↔ bag-menu-icons (cf. leçon
  * feedback-map-loader-var-tdz : le danger = usage AU TOP-LEVEL d'un hub).
  */
-import { AddItemIconSprite, MAX_SPRITES } from '../item-icon';
+import { AddItemIconSprite, MAX_SPRITES } from '../ui/item-icon';
 import { gBagMenu } from './bag-menu';
 import { IndexOfSpritePaletteTag, FreeSpritePaletteByTag as _spFreeSpritePaletteByTag, GetSpriteTileStartByTag as _spGetSpriteTileStartByTag } from '../sprite';
 import {

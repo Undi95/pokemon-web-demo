@@ -6,7 +6,7 @@
  * et fournit CopyWindowToVram / PutWindowTilemap qui transfèrent vers
  * l'engine GBA hardware (VRAM + tilemap) pour rendu par le compositor.
  */
-import { getRuntime, assetCache, LoadBgTiles } from './system/decomp-globals';
+import { getRuntime, assetCache, LoadBgTiles } from '../system/decomp-globals';
 import {
   type Window,
   createWindow,

@@ -24,13 +24,13 @@ import {
   LoadBgTiles, LoadPalette, FillBgTilemapBufferRect, CopyWindowToVram, PutWindowTilemap,
   AddTextPrinterParameterized3, FillWindowPixelBuffer,
 } from '../system/decomp-globals';
-import { FillWindowPixelRect } from '../gba-window-system';
-import { GetStringRightAlignXOffset } from '../gba-text-system';
-import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from '../gba-text-window';
+import { FillWindowPixelRect } from './gba-window-system';
+import { GetStringRightAlignXOffset } from './gba-text-system';
+import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } from './gba-text-window';
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from '../system/decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from '../system/decomp-helpers';
 import { JOY_NEW } from '../system/decomp-globals';
-import { gSaveBlock2Ptr, SetPokemonCryStereo } from '../gba-menu-system';
+import { gSaveBlock2Ptr, SetPokemonCryStereo } from './gba-menu-system';
 import { loadGbaPal } from '../gba/png-loader';
 
 // ─── State globals ───────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ export async function preloadOptionMenuAssets(): Promise<void> {
   // gText_* strings (= si pas déjà loadés par un autre boot path comme
   // GameScene/BirchRuntime). Les modes test type `?nointro=1` n'en font pas.
   if (typeof (globalThis as { gText_Option?: string }).gText_Option === 'undefined') {
-    const { initStringsFromDecomp } = await import('../gba-strings');
+    const { initStringsFromDecomp } = await import('./gba-strings');
     tasks.push(initStringsFromDecomp());
   }
   await Promise.all(tasks);

@@ -32,7 +32,7 @@ import { loadTileBin } from '../gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
 import { gTotalCamera, gFieldCamera, gSpriteCoordOffset } from './field-camera';
-import { gSaveBlock1Ptr } from '../gba-menu-system';
+import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { ENUM_MB_0 as MB } from '../decomp-data/include/constants/metatile_behaviors-data';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────

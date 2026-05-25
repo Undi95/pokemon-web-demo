@@ -26,7 +26,7 @@
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../sprite';
-import { GetWindowFrameTilesPal } from '../gba-text-window';
+import { GetWindowFrameTilesPal } from './gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -52,7 +52,7 @@ import {
 import {
   FillBgTilemapBufferRect,
   CopyBgTilemapBufferToVram,
-} from '../gba-window-system';
+} from './gba-window-system';
 import {
   BG_PLTT_ID,
   REG_OFFSET_DISPCNT,
@@ -85,10 +85,10 @@ import {
   Menu_ProcessInputNoWrap,
   InitMenuInUpperLeftCornerNormal,
   gSaveBlock2Ptr,
-} from '../gba-menu-system';
-import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from '../gba-window-system';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from '../gba-text-system';
-import { getString } from '../gba-strings';
+} from './gba-menu-system';
+import { CreateWindowTemplate, FillWindowPixelBuffer, FillWindowPixelRect, PutWindowTilemap, CopyWindowToVram, ClearStdWindowAndFrame } from './gba-window-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, sTextColor_MenuInfo } from './gba-text-system';
+import { getString } from './gba-strings';
 import { FlagGet } from '../script/script-vars';
 import { SE_SELECT as _SE_SELECT } from '../decomp-data/include/constants/songs-data';
 

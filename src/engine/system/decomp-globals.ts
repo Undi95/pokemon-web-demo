@@ -1151,7 +1151,7 @@ import '../flash-mask';
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
 import '../field/field-effect-active-list';
 // money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
-import '../money-box-ui';
+import '../ui/money-box-ui';
 // virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
 import '../field/virtual-objects';
 // map-layout-swap.ts auto-register __mapLayoutSwap pour setmaplayoutindex opcode.
@@ -2431,14 +2431,14 @@ for (const [k, d] of Object.entries(_mutableGlobals)) {
 // UI SYSTEM EXPORTS (window.c + text.c + menu.c adapters)
 // ═══════════════════════════════════════════════════════════════════════════════
 export * from '../decomp-data/main-menu-data';
-export * from '../gba-window-system';
-export * from '../gba-text-system';
-export * from '../gba-menu-system';
+export * from '../ui/gba-window-system';
+export * from '../ui/gba-text-system';
+export * from '../ui/gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans
 // `main-menu-impl.ts` (= split du gba-menu-system.ts pour respecter directive
 // #1 "foundations unifiées + 1:1 décomp"). Re-export pour les auto callbacks.
 export * from '../ui/main-menu-impl';
-export * from '../gba-strings';
+export * from '../ui/gba-strings';
 export * from '../decomp-data/src/sprite-system-flat';
 export * from '../decomp-data/src/intro-c-data-auto';
 // Foundational pokeball/release effects (used by Birch, battles, eggs, evolutions).

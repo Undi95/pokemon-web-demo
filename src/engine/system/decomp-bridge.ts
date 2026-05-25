@@ -275,8 +275,8 @@ export {
   DeactivateAllTextPrinters,
   RunTextPrintersAndIsPrinter0Active,
   CHAR_SPACER_STR,
-} from '../gba-text-system';
-import { CHAR_SPACER_STR } from '../gba-text-system';
+} from '../ui/gba-text-system';
+import { CHAR_SPACER_STR } from '../ui/gba-text-system';
 
 // ─── Local-use imports (hoisted from scattered scope) ────────────────────────
 //
@@ -928,7 +928,7 @@ export {
   LoadWindowGfx,
   LoadUserWindowBorderGfx,
   LoadUserWindowBorderGfx_,
-} from '../gba-text-window';
+} from '../ui/gba-text-window';
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //

@@ -118,7 +118,7 @@ function _getTrainerMoneyToGive(trainerId: number): number {
 // 1:1 STRICT décomp `AddMoney(money_ptr, amount)` (money.c:90-108) — vraie
 // impl dans engine/money.ts. Notre AddMoney opère direct sur gSaveBlock1Ptr
 // .money (= pas d'encryption XOR ; signature simplifiée sans pointer).
-import { AddMoney as _AddMoneyFull } from '../money';
+import { AddMoney as _AddMoneyFull } from '../ui/money';
 function _addMoney(amount: number): void {
   _AddMoneyFull(amount);
 }
