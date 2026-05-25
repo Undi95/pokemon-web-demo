@@ -56,6 +56,7 @@ import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsB
 import { gPlayerAvatar, GetPlayerFacingDirection } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
+  DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
 import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from '../field/field-globals';
@@ -2816,6 +2817,10 @@ import {
   MOVEMENT_ACTION_SLIDE_LEFT, MOVEMENT_ACTION_SLIDE_RIGHT,
   MOVEMENT_ACTION_PLAYER_RUN_DOWN, MOVEMENT_ACTION_PLAYER_RUN_UP,
   MOVEMENT_ACTION_PLAYER_RUN_LEFT, MOVEMENT_ACTION_PLAYER_RUN_RIGHT,
+  MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT, MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_RIGHT,
+  MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT, MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT,
+  MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT, MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT,
+  MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT, MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3199,6 +3204,16 @@ gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_DOWN]  = _makeWalkAction(DIR_SOU
 gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_UP]    = _makeWalkAction(DIR_NORTH, 1);
 gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_LEFT]  = _makeWalkAction(DIR_WEST,  1);
 gMovementActionFuncs[MOVEMENT_ACTION_PLAYER_RUN_RIGHT] = _makeWalkAction(DIR_EAST,  1);
+// H1.10 : WALK_NORMAL_DIAGONAL_X / WALK_SLOW_DIAGONAL_X (8 actions).
+// Source : MovementAction_WalkNormalDiagonalUpLeft_Step0 (InitMovementNormal + DIR_NORTHWEST).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_LEFT]    = _makeWalkAction(DIR_NORTHWEST, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_UP_RIGHT]   = _makeWalkAction(DIR_NORTHEAST, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_LEFT]  = _makeWalkAction(DIR_SOUTHWEST, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_NORMAL_DIAGONAL_DOWN_RIGHT] = _makeWalkAction(DIR_SOUTHEAST, 0);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_LEFT]      = _makeWalkAction(DIR_NORTHWEST, 5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_UP_RIGHT]     = _makeWalkAction(DIR_NORTHEAST, 5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_LEFT]    = _makeWalkAction(DIR_SOUTHWEST, 5);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_SLOW_DIAGONAL_DOWN_RIGHT]   = _makeWalkAction(DIR_SOUTHEAST, 5);
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
