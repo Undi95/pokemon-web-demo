@@ -2863,6 +2863,8 @@ import {
   MOVEMENT_ACTION_STOP_LEVITATE_AT_TOP, MOVEMENT_ACTION_FIGURE_8,
   MOVEMENT_ACTION_WALK_DOWN_START_AFFINE, MOVEMENT_ACTION_WALK_DOWN_AFFINE,
   MOVEMENT_ACTION_REVEAL_TRAINER,
+  MOVEMENT_ACTION_WALK_LEFT_AFFINE, MOVEMENT_ACTION_WALK_RIGHT_AFFINE,
+  MOVEMENT_ACTION_FLY_UP, MOVEMENT_ACTION_FLY_DOWN,
 } from '../decomp-data/include/constants/event_object_movement-data';
 
 /** 1:1 décomp `FaceDirection` (event_object_movement.c:5048-5057) :
@@ -3854,6 +3856,108 @@ function _MovementAction_RevealTrainer_Step0(_rt: DecompRuntime, npc: ObjectEven
   return true;
 }
 
+/** 1:1 décomp `MovementAction_WalkLeftAffine_Step0` / `_WalkRightAffine_Step0` :
+ *    InitMovementNormal(obj, sprite, DIR_WEST/EAST, MOVE_SPEED_FAST_1);
+ *    sprite->affineAnimPaused = FALSE;
+ *    ChangeSpriteAffineAnimIfDifferent(sprite, 2 or 3);
+ *    return Step1; */
+function _makeWalkAffineAction(dir: number, affineAnimId: number): MovementActionFunc {
+  return (rt, npc) => {
+    if (npc.actionStep === 0) {
+      _InitNpcForMovement(rt, npc, dir, MOVE_SPEED_FAST_1);
+      // DETTE H3 : sprite.affineAnimPaused = FALSE +
+      // ChangeSpriteAffineAnimIfDifferent(sprite, affineAnimId).
+      void affineAnimId;
+    }
+    return _MovementAction_WalkNormal_Step1(rt, npc);
+  };
+}
+
+/** 1:1 décomp `DISPLAY_HEIGHT = 160` (gba/io_reg.h). */
+const DISPLAY_HEIGHT = 160;
+
+/** 1:1 décomp `MovementAction_FlyUp_Step0` :
+ *    sprite->y2 = 0; sprite->sActionFuncId++; return FALSE; */
+function _MovementAction_FlyUp_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.y2 = 0;
+  }
+  npc.actionStep = 1;
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_FlyUp_Step1` :
+ *    sprite->y2 -= 8;
+ *    if (sprite->y2 == -DISPLAY_HEIGHT) sActionFuncId++;
+ *    return FALSE; */
+function _MovementAction_FlyUp_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.y2 -= 8;
+      if (sprite.y2 === -DISPLAY_HEIGHT) {
+        npc.actionStep = 2;
+      }
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_FlyDown_Step0` :
+ *    sprite->y2 = -DISPLAY_HEIGHT; sActionFuncId++; return FALSE; */
+function _MovementAction_FlyDown_Step0(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) sprite.y2 = -DISPLAY_HEIGHT;
+  }
+  npc.actionStep = 1;
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_FlyDown_Step1` :
+ *    sprite->y2 += 8; if (!sprite->y2) sActionFuncId++; return FALSE; */
+function _MovementAction_FlyDown_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  if (npc.spriteId >= 0) {
+    const sprite = rt.gSprites.get(npc.spriteId);
+    if (sprite) {
+      sprite.y2 += 8;
+      if (sprite.y2 === 0) {
+        npc.actionStep = 2;
+      }
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `MovementAction_Fly_Finish` :
+ *    return TRUE (= action done sentinel). */
+function _MovementAction_Fly_Finish(_rt: DecompRuntime, _npc: ObjectEvent): boolean {
+  return true;
+}
+
+/** Factory FlyUp combinant Step0+Step1+Finish (= sActionFuncId dispatcher). */
+function _makeFlyUpAction(): MovementActionFunc {
+  return (rt, npc) => {
+    switch (npc.actionStep) {
+      case 0: return _MovementAction_FlyUp_Step0(rt, npc);
+      case 1: return _MovementAction_FlyUp_Step1(rt, npc);
+      default: return _MovementAction_Fly_Finish(rt, npc);
+    }
+  };
+}
+
+/** Factory FlyDown combinant Step0+Step1+Finish. */
+function _makeFlyDownAction(): MovementActionFunc {
+  return (rt, npc) => {
+    switch (npc.actionStep) {
+      case 0: return _MovementAction_FlyDown_Step0(rt, npc);
+      case 1: return _MovementAction_FlyDown_Step1(rt, npc);
+      default: return _MovementAction_Fly_Finish(rt, npc);
+    }
+  };
+}
+
 /** 1:1 décomp `MovementAction_StartAnimInDirection_Step0` (event_object_movement.c) :
  *    StartSpriteAnimInDirection(obj, sprite, movementDirection, sprite->animNum);
  *    return FALSE;
@@ -4124,6 +4228,11 @@ gMovementActionFuncs[MOVEMENT_ACTION_FIGURE_8]            = _MovementAction_Figu
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_START_AFFINE] = _makeWalkDownAffineAction(0);
 gMovementActionFuncs[MOVEMENT_ACTION_WALK_DOWN_AFFINE]      = _makeWalkDownAffineAction(1);
 gMovementActionFuncs[MOVEMENT_ACTION_REVEAL_TRAINER]        = _MovementAction_RevealTrainer_Step0;
+// H1.25 : WALK_LEFT_AFFINE (150) + WALK_RIGHT_AFFINE (151) + FLY_UP (156) + FLY_DOWN (157).
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_LEFT_AFFINE]  = _makeWalkAffineAction(DIR_WEST, 2);
+gMovementActionFuncs[MOVEMENT_ACTION_WALK_RIGHT_AFFINE] = _makeWalkAffineAction(DIR_EAST, 3);
+gMovementActionFuncs[MOVEMENT_ACTION_FLY_UP]   = _makeFlyUpAction();
+gMovementActionFuncs[MOVEMENT_ACTION_FLY_DOWN] = _makeFlyDownAction();
 
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
