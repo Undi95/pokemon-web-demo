@@ -17,6 +17,9 @@
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
 import {
+  B_ANIM_STATS_CHANGE, B_ANIM_SUBSTITUTE_FADE, B_ANIM_SNATCH_MOVE,
+} from '../decomp-data/include/constants/battle_anim-data';
+import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setChosenMove,
   setActiveBattler,
   gHitMarker,
@@ -64,11 +67,11 @@ function _isWeatherContinuesAnim(animId: number): boolean {
 }
 
 /** B_ANIM_STATS_CHANGE/SNATCH_MOVE/SUBSTITUTE_FADE — always play.
- *  AUDIT BUG FIX : valeurs étaient 0/5/6 → vraies = 1/17/2 (battle_anim.h:358,374). */
+ *  1:1 décomp battle_anim.h (= 358,374). */
 function _isAlwaysPlayAnim(animId: number): boolean {
-  // 1:1 décomp battle_anim.h :
-  //   B_ANIM_STATS_CHANGE=1, B_ANIM_SUBSTITUTE_FADE=2, B_ANIM_SNATCH_MOVE=17.
-  return animId === 1 || animId === 2 || animId === 17;
+  return animId === B_ANIM_STATS_CHANGE
+      || animId === B_ANIM_SUBSTITUTE_FADE
+      || animId === B_ANIM_SNATCH_MOVE;
 }
 
 // ─── 0x45 playanimation ───────────────────────────────────────────────────

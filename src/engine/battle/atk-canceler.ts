@@ -39,7 +39,8 @@ import {
   B_MSG_WOKE_UP, B_MSG_WOKE_UP_UPROAR,
   B_MSG_LOAFING, B_MSG_DEFROSTED, B_MSG_DEFROSTED_BY_MOVE,
   MOVE_RESULT_MISSED,
-  ABILITY_EARLY_BIRD, ABILITY_TRUANT,
+  STATUS2_UPROAR,
+  ABILITY_EARLY_BIRD, ABILITY_TRUANT, ABILITY_SOUNDPROOF,
   EFFECT_THAW_HIT,
   MOVE_POUND, MOVE_BIDE, MOVE_SNORE, MOVE_SLEEP_TALK,
   MOVE_TARGET_SELECTED,
@@ -79,27 +80,24 @@ export const CANCELER_END        = 14;
  *   - Set MULTISTRING_CHOOSER = CANT_SLEEP_UPROAR ou UPROAR_KEPT_AWAKE selon.
  */
 function _UproarWakeUpCheck(battler: number): boolean {
-  // 1:1 décomp battle.h:132 : STATUS2_UPROAR = (1<<4|1<<5|1<<6) = 0x70.
-  // AUDIT BUG FIX : était `1 << 13 = 0x2000` (faux, jamais fire).
-  const STATUS2_UPROAR_LOCAL = 0x70;
-  const ABILITY_SOUNDPROOF_LOCAL = 43;
+  // 1:1 décomp battle_script_commands.c:6804 UproarWakeUpCheck.
   const B_MSG_CANT_SLEEP_UPROAR = 0;
   const B_MSG_UPROAR_KEPT_AWAKE = 1;
   let i: number;
   for (i = 0; i < _gBattlersCountForUproar(); i++) {
-    if (!(gBattleMons[i].status2 & STATUS2_UPROAR_LOCAL)
-        || gBattleMons[battler].ability === ABILITY_SOUNDPROOF_LOCAL) {
+    if (!(gBattleMons[i].status2 & STATUS2_UPROAR)
+        || gBattleMons[battler].ability === ABILITY_SOUNDPROOF) {
       continue;
     }
     gBattleScripting.battler = i;
+    // 1:1 décomp battle_script_commands.c:6815 : sentinel 0xFF = "target pas
+    // encore set par un précédent move targeting".
     if (gBattlerTarget === 0xFF) {
-      // 1:1 décomp battle_util.c:UproarWakeUpCheck — set target = i pour
-      // suite du flow. setBattlerTarget importé en haut du fichier.
       setBattlerTarget(i);
     } else if (gBattlerTarget === i) {
-      gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = B_MSG_CANT_SLEEP_UPROAR;
+      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CANT_SLEEP_UPROAR;
     } else {
-      gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = B_MSG_UPROAR_KEPT_AWAKE;
+      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_UPROAR_KEPT_AWAKE;
     }
     break;
   }

@@ -162,6 +162,8 @@ export const BIT_ACC_EXPR = "(1 << 6)";
 export const BIT_EVASION_EXPR = "(1 << 7)";
 /** Raw expr: `(1 << 7)` */
 export const PARTY_SCREEN_OPTIONAL_EXPR = "(1 << 7)";
+/** 1:1 décomp battle_script_commands.h:390 (= bit 7 du first arg de openpartyscreen). */
+export const PARTY_SCREEN_OPTIONAL = (1 << 7);
 export const MOVEEND_RAGE = 0;
 export const MOVEEND_DEFROST = 1;
 export const MOVEEND_SYNCHRONIZE_TARGET = 2;

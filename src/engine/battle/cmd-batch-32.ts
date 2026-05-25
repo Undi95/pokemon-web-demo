@@ -22,6 +22,10 @@
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
+import {
+  BS_FAINTED_LINK_MULTIPLE_1, BS_FAINTED_LINK_MULTIPLE_2,
+  PARTY_SCREEN_OPTIONAL,
+} from '../decomp-data/include/constants/battle_script_commands-data';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import {
@@ -182,14 +186,15 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const jumpPtr = readWord(ctx);
 
-  // PARTY_SCREEN_OPTIONAL = 0x80 (= bit 7 of battler arg).
-  const PARTY_SCREEN_OPTIONAL = 0x80;
+  // 1:1 décomp battle_script_commands.h:390 : PARTY_SCREEN_OPTIONAL = bit 7.
   const isOptional = (battlerArg & PARTY_SCREEN_OPTIONAL) !== 0;
   const battlerArgClean = battlerArg & ~PARTY_SCREEN_OPTIONAL;
 
-  // BS_FAINTED_LINK_MULTIPLE_1 / _2 : multi link battle (= 0x09 / 0x0A).
+  // 1:1 décomp battle_script_commands.h:309-310 BS_FAINTED_LINK_MULTIPLE_1/2.
+  // AUDIT FIX session F2 : valeurs étaient hardcoded 0x09/0x0A (= BS_NOT_ATTACKER_SIDE/
+  // BS_SCRIPTING) → divergence décomp. Vraies valeurs = 5/6.
   // Pour Phase 1, on traite single-battle. Multi cases : just advance.
-  if (battlerArgClean === 0x09 || battlerArgClean === 0x0A) {
+  if (battlerArgClean === BS_FAINTED_LINK_MULTIPLE_1 || battlerArgClean === BS_FAINTED_LINK_MULTIPLE_2) {
     // Frontier multi link battle path — deferred post Phase 1.
     return false;
   }
