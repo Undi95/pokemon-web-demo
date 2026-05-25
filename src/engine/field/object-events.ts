@@ -2136,16 +2136,24 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
     if (mt.startsWith('MOVEMENT_TYPE_WALK_SLOWLY_IN_PLACE_')) duration = 32;
     else if (mt.startsWith('MOVEMENT_TYPE_JOG_IN_PLACE_')) duration = 8;
     else if (mt.startsWith('MOVEMENT_TYPE_RUN_IN_PLACE_')) duration = 4;
+    // 1:1 décomp `InitMoveInPlace` (event_object_movement.c:5704) au start :
+    //   SetObjectEventDirection(direction);
+    //   SetStepAnimHandleAlternation(animNum);   ← alterne walk1/walk2
+    //   sprite->animPaused = FALSE;              ← enable anim cycle
     // Init le cycle au premier tick (= mimic Step0 ObjectEventSetSingleMovement).
     if (npc.walkFramesLeft === 0) {
       npc.walkFramesLeft = duration;
       npc.walkDirection = npc.facingDirection;
+      _npcStartWalkAnim(rt, npc, npc.facingDirection);
     }
     npc.walkFramesLeft--;
-    // Quand fini → toggle walkAnimAlt (= mimic ExecSingleMovementAction
-    // return TRUE → Step1 re-Step0 loop), reset cycle next frame.
+    // 1:1 décomp `MovementAction_WalkInPlace_Step1` (5713) :
+    //   if (--data[3] == 0) { sprite->animPaused = TRUE; return TRUE; }
+    // Toggle walkAnimAlt + animPaused=TRUE quand duration expire. Next frame
+    // re-init cycle via walkFramesLeft==0 check.
     if (npc.walkFramesLeft === 0) {
       npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+      _npcEndWalkAnim(rt, npc);
     }
     return true;
   }
