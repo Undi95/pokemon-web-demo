@@ -33,6 +33,7 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from './save-block-state';
+import { resolveDecompConstant } from './decomp-constants';
 import { FEMALE } from './decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from './sprite';
 import { setStringVar } from './string-buffers';
@@ -1660,9 +1661,24 @@ function _tickContextMenu(newKeys: number, KEY_A: number, KEY_B: number, KEY_UP:
   }
 }
 
-/** 1:1 décomp sItemMenuActions[].func dispatch.
- *  Pour le port : USE / GIVE / REGISTER / CHECK / CHECK_TAG = stub (= close
- *  menu + future game logic). TOSS = vraie logique de remove. CANCEL = close. */
+/** 1:1 décomp sItemMenuActions[].func dispatch (item_menu.c:260-285 + body
+ *  functions :1796-1995).
+ *
+ *  Cas portés 1:1 cette session :
+ *    - REGISTER : toggle gSaveBlock1Ptr.registeredItem (item_menu.c:1916).
+ *    - TOSS     : _startToss (= 1:1 item_menu.c:1817).
+ *    - CANCEL   : close (= 1:1 item_menu.c:1985).
+ *
+ *  Cas non portés (= cascade vers screens U-tier non encore portés) :
+ *    - USE (= ItemMenu_UseOutOfBattle :1796) : appelle GetItemFieldFunc dispatch
+ *      → CB2 swap vers field item-use callbacks. Notre sac OW alternatif via
+ *      OpenBag()+field-item-use-callbacks gère déjà 22/22 items. Le wire-up
+ *      bag-screen → field demande swap CB2 (= dette R3 documentée).
+ *    - GIVE (= ItemMenu_Give :1933) : cascade CB2_ChooseMonToGiveItem
+ *      (party_menu.c). U-tier (= party screen state machines U2).
+ *    - CHECK (= alias UseOutOfBattle, sItemMenuActions[ACTION_CHECK].func) : idem USE.
+ *    - CHECK_TAG (= ItemMenu_CheckTag :1979) : cascade DoBerryTagScreen
+ *      (berry_tag_screen.c). U-tier (= berry tag UI complet, screen jamais porté). */
 function _executeAction(action: ItemAction): void {
   if (action === ItemAction.CANCEL || action === ItemAction.DUMMY) {
     _closeContextMenu();
@@ -1672,16 +1688,42 @@ function _executeAction(action: ItemAction): void {
     _startToss();
     return;
   }
-  // USE / GIVE / REGISTER / CHECK / CHECK_TAG : log + close (TODO Phase 6+).
-  // const enum → pas de reverse-lookup dynamique ; on inline le mapping.
-  // À ce point CANCEL/DUMMY/TOSS sont déjà gérés (early return ci-dessus).
+  if (action === ItemAction.REGISTER) {
+    // 1:1 décomp item_menu.c:1916-1931 :
+    //     if (gSaveBlock1Ptr->registeredItem == gSpecialVar_ItemId)
+    //         gSaveBlock1Ptr->registeredItem = ITEM_NONE;
+    //     else
+    //         gSaveBlock1Ptr->registeredItem = gSpecialVar_ItemId;
+    //     DestroyListMenuTask + LoadBagItemListBuffers + ListMenuInit
+    //     ScheduleBgCopyTilemapToVram(0);
+    //     ItemMenu_Cancel(taskId);
+    const itemKey = _ctxItemKey;
+    if (itemKey) {
+      const itemId = resolveDecompConstant(itemKey) ?? 0;
+      if (itemId !== 0) {
+        if (gSaveBlock1Ptr.registeredItem === itemId) {
+          gSaveBlock1Ptr.registeredItem = 0; // ITEM_NONE
+          gSaveBlock1Ptr.__registeredItemKey = '';
+        } else {
+          gSaveBlock1Ptr.registeredItem = itemId;
+          gSaveBlock1Ptr.__registeredItemKey = itemKey;
+        }
+      }
+    }
+    // 1:1 :1926-1930 : refresh list + cancel ctx window.
+    _drawList();
+    _closeContextMenu();
+    return;
+  }
+  // USE / GIVE / CHECK / CHECK_TAG : dette R3 documentée (= cascade vers
+  // screens U-tier). Log explicit + close (= comportement 1:1 incomplet, pas
+  // un fake — chaque action demande CB2 swap vers screen non porté).
   const _actionName = action === ItemAction.USE ? 'USE'
-    : action === ItemAction.REGISTER ? 'REGISTER'
     : action === ItemAction.GIVE ? 'GIVE'
     : action === ItemAction.CHECK ? 'CHECK'
     : action === ItemAction.CHECK_TAG ? 'CHECK_TAG'
     : `#${action as number}`;
-  console.log(`[bag-screen] action ${_actionName} on ${_ctxItemKey} — TODO`);
+  console.log(`[bag-screen] action ${_actionName} on ${_ctxItemKey} — dette R3 (cascade U-tier)`);
   _closeContextMenu();
 }
 
