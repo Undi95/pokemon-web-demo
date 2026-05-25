@@ -2144,7 +2144,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
   'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
   'DoTVShowInSearchOfTrainers', 'DoTrainerApproach', 'DoWateringBerryTreeAnim',
-  'DoesContestCategoryHaveMuseumPainting',
+  // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
   // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
   // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
   'DrewSecretBaseBattle', 'EggHatch',
@@ -3417,6 +3417,36 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B50 batch — 1 special Contest Museum painting check 1:1 strict ─
+
+/** 1:1 décomp `DoesContestCategoryHaveMuseumPainting` (contest_util.c:2332-2359) :
+ *  ```c
+ *  void DoesContestCategoryHaveMuseumPainting(void) {
+ *      int contestWinner;
+ *      switch (gSpecialVar_ContestCategory) {
+ *          case CONTEST_CATEGORY_COOL:   contestWinner = CONTEST_WINNER_MUSEUM_COOL - 1; break;
+ *          case CONTEST_CATEGORY_BEAUTY: contestWinner = CONTEST_WINNER_MUSEUM_BEAUTY - 1; break;
+ *          case CONTEST_CATEGORY_CUTE:   contestWinner = CONTEST_WINNER_MUSEUM_CUTE - 1; break;
+ *          case CONTEST_CATEGORY_SMART:  contestWinner = CONTEST_WINNER_MUSEUM_SMART - 1; break;
+ *          case CONTEST_CATEGORY_TOUGH:
+ *          default:                       contestWinner = CONTEST_WINNER_MUSEUM_TOUGH - 1; break;
+ *      }
+ *      if (gSaveBlock1Ptr->contestWinners[contestWinner].species == SPECIES_NONE)
+ *          gSpecialVar_0x8004 = FALSE;
+ *      else
+ *          gSpecialVar_0x8004 = TRUE;
+ *  }
+ *  ```
+ *  CONTEST_WINNER_MUSEUM_COOL=9 → idx 8. BEAUTY=10→9, CUTE=11→10, SMART=12→11,
+ *  TOUGH=13→12. Donc idx = 8 + category (clamp 0..4). */
+registerSpecial('DoesContestCategoryHaveMuseumPainting', () => {
+  const category = VarGet('VAR_CONTEST_CATEGORY');
+  const clamped = (category >= 0 && category <= 3) ? category : 4;  // TOUGH default
+  const contestWinnerIdx = 8 + clamped;  // CONTEST_WINNER_MUSEUM_* - 1
+  const species = gSaveBlock1Ptr.contestWinners?.[contestWinnerIdx]?.species ?? 0;
+  VarSet('VAR_0x8004', species === 0 ? 0 : 1);
 });
 
 // ─── Session B49 batch — 1 special Battle Pyramid held item check 1:1 strict ─
