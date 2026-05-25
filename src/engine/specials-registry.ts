@@ -2229,7 +2229,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'RetrieveLotteryNumber' — porté 1:1 décomp lottery_corner.c:42 ci-bas.
   'ReturnFromLinkRoom', 'RockSmashWildEncounter',
   // 'SaveBardSongLyrics' — porté 1:1 décomp mauville_old_man.c:156 ci-bas (batch B37).
-  'SaveGame', 'ScriptCheckFreePokemonStorageSpace',
+  // 'SaveGame' — porté 1:1 décomp start_menu.c:896 ci-bas (batch B40).
+  'ScriptCheckFreePokemonStorageSpace',
   // 'ScriptGetPokedexInfo' — porté 1:1 décomp birch_pc.c:7 ci-bas.
   'ScriptHatchMon',
   'ScriptMenu_CreatePCMultichoice',
@@ -3375,6 +3376,30 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B40 batch — 1 special SaveGame 1:1 strict ───────────────────
+
+/** 1:1 décomp `SaveGame` (start_menu.c:896-900) :
+ *  ```c
+ *  void SaveGame(void) {
+ *      InitSave();
+ *      CreateTask(SaveGameTask, 0x50);
+ *  }
+ *  ```
+ *  Cascade R3 : Notre SaveGame est async Promise<boolean>. Décomp utilise un
+ *  task qui fire-and-forget. On wrap async dans un IIFE.
+ *  InitSave équivalent : notre SaveGame fait le full flow (init + write).
+ *  Wire dynamic import pour éviter cycle ESM (= save-system.ts → bag → ...). */
+registerSpecial('SaveGame', () => {
+  void (async () => {
+    try {
+      const mod = await import('./save-system');
+      await mod.SaveGame();
+    } catch (e) {
+      console.warn('[special SaveGame] async wrap failed', e);
+    }
+  })();
 });
 
 // ─── Session B39 batch — 3 specials Frontier Battle Points 1:1 strict ────
