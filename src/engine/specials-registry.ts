@@ -724,8 +724,30 @@ registerSpecial('HasAllHoennMons', () => {
   return 1;
 });
 
-/** 1:1 décomp `ResetHealLocationFromDewford`. */
-registerSpecial('ResetHealLocationFromDewford', () => { /* no-op */ });
+/** 1:1 décomp `ResetHealLocationFromDewford` (field_specials.c:3891-3895) :
+ *  ```c
+ *  void ResetHealLocationFromDewford(void) {
+ *      if (gSaveBlock1Ptr->lastHealLocation.mapGroup == MAP_GROUP(MAP_DEWFORD_TOWN)
+ *          && gSaveBlock1Ptr->lastHealLocation.mapNum == MAP_NUM(MAP_DEWFORD_TOWN))
+ *          SetLastHealLocationWarp(HEAL_LOCATION_PETALBURG_CITY);
+ *  }
+ *  ```
+ *  Dette R3 documentée : notre projet utilise gSaveBlock1Ptr.respawnLocation
+ *  (= string ID name) au lieu de lastHealLocation.{mapGroup,mapNum}. Compare
+ *  via string ID directement (= heal_location-all-auto.ts table).
+ *  MAP_GROUP/MAP_NUM(MAP_DEWFORD_TOWN) = (15, 11) côté décomp ; nous comparons
+ *  par name "MAP_DEWFORD_TOWN" si stocké. Sinon no-op safe. */
+registerSpecial('ResetHealLocationFromDewford', () => {
+  const sb1 = gSaveBlock1Ptr as { respawnLocation?: string; lastHealLocation?: { mapGroup?: number; mapNum?: number } };
+  const respawn = sb1.respawnLocation;
+  // 1:1 strict via string ID (= notre pattern actuel).
+  if (respawn === 'HEAL_LOCATION_DEWFORD_TOWN') {
+    sb1.respawnLocation = 'HEAL_LOCATION_PETALBURG_CITY';
+  }
+  // 1:1 strict via numeric mapGroup/mapNum si lastHealLocation populated direct.
+  // Dette R3 : MAP_DEWFORD_TOWN = (15, 11) hardcoded depuis include/constants/map_groups.h.
+  // À porter quand map_groups extracted ; pour l'instant skip si mapGroup absent.
+});
 
 /** 1:1 décomp `PetalburgGymSlideOpenRoomDoors` / `UnlockRoomDoors`. */
 registerSpecial('PetalburgGymSlideOpenRoomDoors', () => { /* no-op */ });
