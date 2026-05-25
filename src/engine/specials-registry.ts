@@ -1509,7 +1509,7 @@ const _STUB_RETURN_0_SPECIALS = [
   'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
   'RemoveBerryPowderVendorMenu',
   // 'OffsetCameraForBattle' — porté 1:1 décomp field_specials.c:1672 ci-bas (batch B17).
-  'DoBattlePyramidMonsHaveHeldItem',
+  // 'DoBattlePyramidMonsHaveHeldItem' — porté 1:1 décomp party_menu.c:6307 ci-bas (batch B49).
   'SaveForBattleTowerLink', 'SetBattleTowerLinkPlayerGfx', 'LinkRetireStatusWithBattleTowerPartner',
   'ShowFrontierGamblerGoMessage',
   // 'GiveFrontierBattlePoints' — porté 1:1 décomp field_specials.c:2954 ci-bas (batch B39).
@@ -3417,6 +3417,37 @@ registerSpecial('HasStorytellerAlreadyRecorded', () => {
     return oldMan.alreadyRecorded ? 1 : 0;
   }
   return 0;
+});
+
+// ─── Session B49 batch — 1 special Battle Pyramid held item check 1:1 strict ─
+
+/** 1:1 décomp `DoBattlePyramidMonsHaveHeldItem` (party_menu.c:6307-6320) :
+ *  ```c
+ *  void DoBattlePyramidMonsHaveHeldItem(void) {
+ *      u8 i;
+ *      gSpecialVar_Result = FALSE;
+ *      for (i = 0; i < FRONTIER_PARTY_SIZE; i++) {
+ *          if (GetMonData(&gPlayerParty[i], MON_DATA_HELD_ITEM) != ITEM_NONE) {
+ *              gSpecialVar_Result = TRUE;
+ *              break;
+ *          }
+ *      }
+ *  }
+ *  ```
+ *  FRONTIER_PARTY_SIZE=3. Loop check held item != ITEM_NONE=0. */
+registerSpecial('DoBattlePyramidMonsHaveHeldItem', () => {
+  gSpecialVar.Result = 0;
+  const party = gSaveBlock1Ptr.playerParty;
+  for (let i = 0; i < 3; i++) {  // FRONTIER_PARTY_SIZE
+    const mon = party?.[i];
+    if (!mon) continue;
+    // 1:1 décomp GetMonData(mon, MON_DATA_HELD_ITEM) != ITEM_NONE=0.
+    // Notre PokemonInstance utilise `heldItem` field (= alias canonical).
+    if ((mon as { heldItem?: number }).heldItem) {
+      gSpecialVar.Result = 1;
+      break;
+    }
+  }
 });
 
 // ─── Session B47 batch — 1 special CableClubSaveGame 1:1 strict ──────────
