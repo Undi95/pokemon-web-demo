@@ -1966,7 +1966,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'CountPartyAliveNonEggMons_IgnoreVar0x8004Slot' — porté 1:1 ci-bas.
   // 'CountPartyNonEggMons' — porté 1:1 décomp pokemon_storage_system.c:1424 ci-bas.
   'CountPlayerTrainerStars', 'CreateAbnormalWeatherEvent', 'CreateEnemyEventMon',
-  'DestroyMewEmergingGrassSprite', 'DidFavorLadyLikeItem',
+  'DestroyMewEmergingGrassSprite',
+  // 'DidFavorLadyLikeItem' — porté 1:1 décomp lilycove_lady.c:218 ci-bas (batch B9).
   'DisplayBerryPowderVendorMenu', 'DoBerryBlending', 'DoDeoxysRockInteraction',
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
@@ -1978,7 +1979,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DrewSecretBaseBattle', 'EggHatch',
   'EndLotteryCornerComputerEffect', 'EnterNewlyCreatedSecretBase',
   'EnterSafariMode', 'EnterSecretBase', 'ExitLinkRoom', 'ExitSafariMode',
-  'FavorLadyGetPrize',
+  // 'FavorLadyGetPrize' — porté 1:1 décomp lilycove_lady.c:278 ci-bas (batch B9).
   // 'FieldShowRegionMap' — handler concret enregistré infra (= fade-from-black
   // jusqu'au port 1:1 worldmap UI region_map.c).
   'FinishCyclingRoadChallenge',
@@ -2039,7 +2040,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'IsContestWithRSPlayer' — porté 1:1 décomp contest_util.c:2762 ci-bas (= no link).
   'IsCurSecretBaseOwnedByAnotherPlayer', 'IsDecorationCategoryFull',
   // 'IsDodrioInParty' — porté 1:1 décomp dodrio_berry_picking.c:2908 ci-bas.
-  'IsFavorLadyThresholdMet',
+  // 'IsFavorLadyThresholdMet' — porté 1:1 décomp lilycove_lady.c:264 ci-bas (batch B9).
   // 'IsGabbyAndTyShowOnTheAir' — porté 1:1 décomp tv.c:1004 ci-bas.
   // 'IsGrassTypeInParty' — porté 1:1 décomp field_specials.c:1230 ci-bas.
   // 'IsLeadMonNicknamedOrNotEnglish' — porté 1:1 décomp tv.c:3024 ci-bas (= alias FR-only sur IsLeadMonNicknamed).
@@ -2992,6 +2993,77 @@ registerSpecial('BufferBattleTowerElevatorFloors', () => {
   }
   VarSet('VAR_0x8005', 4);
   VarSet('VAR_0x8006', 12);
+});
+
+// ─── Session B9 batch — 3 specials Favor Lady 1:1 strict ───────────────────
+
+/** 1:1 décomp `DidFavorLadyLikeItem` (lilycove_lady.c:218-222) :
+ *  ```c
+ *  bool8 DidFavorLadyLikeItem(void) {
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      return sFavorLadyPtr->likedItem ? TRUE : FALSE;
+ *  }
+ *  ``` */
+registerSpecial('DidFavorLadyLikeItem', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor') {
+    return lady.likedItem ? 1 : 0;
+  }
+  return 0;
+});
+
+/** 1:1 décomp `IsFavorLadyThresholdMet` (lilycove_lady.c:264-271) :
+ *  ```c
+ *  bool8 IsFavorLadyThresholdMet(void) {
+ *      u8 numItemsGiven;
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      numItemsGiven = sFavorLadyPtr->numItemsGiven;
+ *      return numItemsGiven < LILYCOVE_LADY_GIFT_THRESHOLD ? FALSE : TRUE;
+ *  }
+ *  ```
+ *  LILYCOVE_LADY_GIFT_THRESHOLD = 5 (= lilycove_lady-data.ts). */
+registerSpecial('IsFavorLadyThresholdMet', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor') {
+    return (lady.numItemsGiven ?? 0) < 5 ? 0 : 1;  // LILYCOVE_LADY_GIFT_THRESHOLD
+  }
+  return 0;
+});
+
+/** 1:1 décomp `FavorLadyGetPrize` (lilycove_lady.c:278-287) :
+ *  ```c
+ *  u16 FavorLadyGetPrize(void) {
+ *      u16 prize;
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      prize = sFavorLadyPrizes[sFavorLadyPtr->favorId];
+ *      FavorLadyBufferPrizeName(prize);
+ *      sFavorLadyPtr->state = LILYCOVE_LADY_STATE_PRIZE;
+ *      return prize;
+ *  }
+ *  ```
+ *  sFavorLadyPrizes 1:1 décomp data/lilycove_lady.h:423-431 (6 items).
+ *  LILYCOVE_LADY_STATE_PRIZE = 2. */
+registerSpecial('FavorLadyGetPrize', () => {
+  // 1:1 décomp `static const u16 sFavorLadyPrizes[]`.
+  const sFavorLadyPrizes: ReadonlyArray<number> = [
+    11,   // ITEM_LUXURY_BALL
+    110,  // ITEM_NUGGET
+    64,   // ITEM_PROTEIN
+    111,  // ITEM_HEART_SCALE
+    68,   // ITEM_RARE_CANDY
+    71,   // ITEM_PP_MAX
+  ];
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (!lady || lady.kind !== 'favor') return 0;
+  const prize = sFavorLadyPrizes[lady.favorId ?? 0] ?? 0;
+  // 1:1 décomp `FavorLadyBufferPrizeName` → `BufferItemName(gStringVar2, prize)`.
+  const helpers = (globalThis as { __game_bridge?: {
+    GetItemName?: (id: number) => string;
+  } }).__game_bridge;
+  const name = helpers?.GetItemName?.(prize) ?? '';
+  setStringVar(2, name);
+  lady.state = 2;  // LILYCOVE_LADY_STATE_PRIZE
+  return prize;
 });
 
 /** Boot marker — confirme que le registry a été importé au boot.
