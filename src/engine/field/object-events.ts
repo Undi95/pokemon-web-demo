@@ -438,6 +438,9 @@ export interface ObjectEvent {
   jumpDistance: number;
   /** 1:1 décomp `sprite->data[5] sJumpType`. Jump type (HIGH/LOW/NORMAL). */
   jumpType: number;
+  /** 1:1 décomp `sprite->data[4] sSpeed` pour walk movement (event_object_movement.c:8223).
+   *  MOVE_SPEED_NORMAL/FAST_1/FAST_2/FASTER/FASTEST/SLOWER. */
+  walkSpeed: number;
 }
 
 /** MAX_SPRITES sentinel value 1:1 décomp src/sprite.c. = 64 (= gSprites array
@@ -521,6 +524,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   actionTimer: 0,
   jumpDistance: 0,
   jumpType: 0,
+  walkSpeed: 0,
   objTileBase: 0,
   paletteBank: 0,
   worldX: 0,
@@ -2906,23 +2910,60 @@ function _makeDelayAction(delay: number): MovementActionFunc {
   };
 }
 
-/** 1:1 décomp `MOVE_SPEED_*` (event_object_movement.h:218-223).
- *  0=NORMAL (16f), 1=FAST_1 (12f), 2=FAST_2 (8f), 3=FASTER (6f), 4=FASTEST (4f),
- *  5=SLOWER (32f). */
-const _MOVE_SPEED_DURATIONS = [16, 12, 8, 6, 4, 32];
+/** 1:1 décomp `MOVE_SPEED_*` (event_object_movement.c:5092-5097).
+ *  0=NORMAL, 1=FAST_1 (run/surf/slide), 2=FAST_2 (current/acro bike),
+ *  3=FASTER (mach bike), 4=FASTEST.
+ *  Slot 5 = SLOWER custom pour WALK_SLOW (path InitNpcForWalkSlow). */
+const MOVE_SPEED_NORMAL = 0;
+const MOVE_SPEED_FAST_1 = 1;
+const MOVE_SPEED_FAST_2 = 2;
+const MOVE_SPEED_FASTER = 3;
+const MOVE_SPEED_FASTEST = 4;
+const MOVE_SPEED_SLOWER = 5;
+
+/** 1:1 décomp `sStepTimes` (event_object_movement.c:8294) : frames-per-tile par speed.
+ *  NORMAL=16, FAST_1=8, FAST_2=6, FASTER=4, FASTEST=2. SLOWER=32 (WALK_SLOW path). */
+const _sStepTimes = [16, 8, 6, 4, 2, 32];
+
+/** 1:1 décomp step patterns par speed (event_object_movement.c:8235-8284).
+ *  Per-frame px increment : sStep1Funcs (= Step1 = 1px) × 16f for NORMAL,
+ *  sStep2Funcs (= Step2 = 2px) × 8f for FAST_1, sStep3Funcs (= Step2/Step3 pattern
+ *  totalisant 16px) × 6f for FAST_2, sStep4Funcs (= Step4 = 4px) × 4f for FASTER,
+ *  sStep8Funcs (= Step8 = 8px) × 2f for FASTEST.
+ *  Total = 16 px par tile, sub-pixel exact. */
+const _sStepFuncTables: readonly (readonly number[])[] = [
+  // NORMAL (16f × 1px = 16px)
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  // FAST_1 (8f × 2px = 16px)
+  [2, 2, 2, 2, 2, 2, 2, 2],
+  // FAST_2 (6f pattern Step2/Step3 = 16px total : 2+3+3+2+3+3=16)
+  [2, 3, 3, 2, 3, 3],
+  // FASTER (4f × 4px = 16px)
+  [4, 4, 4, 4],
+  // FASTEST (2f × 8px = 16px)
+  [8, 8],
+  // SLOWER (32f WALK_SLOW path : 1px every 2 frames = 16px total)
+  // = même pattern alternance 0/1/0/1/... répété
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+];
 
 /** 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081-5092) :
  *    SetObjectEventDirection + MoveCoords + ShiftObjectEventCoords +
- *    SetSpriteDataForNormalStep (= sActionFuncId=1, walkFramesLeft=duration) +
- *    sprite->animPaused = FALSE + triggerGroundEffectsOnMove = TRUE. */
+ *    SetSpriteDataForNormalStep (= sActionFuncId=1, sSpeed=speed, sTimer=0) +
+ *    sprite->animPaused = FALSE + triggerGroundEffectsOnMove = TRUE.
+ *
+ *  Notre TS : walkSpeed (= sSpeed) + actionTimer (= sTimer) + walkDirection.
+ *  walkFramesLeft compatibilité ascendante avec ancien code MovementType callbacks. */
 function _InitNpcForMovement(rt: DecompRuntime, npc: ObjectEvent, dir: number, speed: number): void {
   const dx = DIR_TO_DX[dir] ?? 0;
   const dy = DIR_TO_DY[dir] ?? 0;
   SetObjectEventDirection(npc, dir);
   ShiftObjectEventCoords(npc, npc.currentCoordsX + dx, npc.currentCoordsY + dy);
   npc.walkDirection = dir;
-  const duration = _MOVE_SPEED_DURATIONS[speed] ?? 16;
+  npc.walkSpeed = speed;
+  const duration = _sStepTimes[speed] ?? 16;
   npc.walkFramesLeft = duration;
+  npc.actionTimer = 0;  // sTimer
   npc.actionStep = 1;
   _npcStartWalkAnim(rt, npc, dir);
 }
@@ -2935,6 +2976,30 @@ function _MovementAction_WalkNormal_Step0(rt: DecompRuntime, npc: ObjectEvent, d
   return _MovementAction_WalkNormal_Step1(rt, npc);
 }
 
+/** 1:1 décomp `NpcTakeStep` (event_object_movement.c:8460) :
+ *    if (sTimer >= sStepTimes[sSpeed]) return FALSE;
+ *    sNpcStepFuncTables[sSpeed][sTimer](sprite, sDirection);
+ *    sTimer++;
+ *    if (sTimer < sStepTimes[sSpeed]) return FALSE;
+ *    return TRUE;
+ *
+ *  Notre TS : appel patterns via _sStepFuncTables[speed][timer] qui donne le
+ *  px increment pour la frame. Total cumulatif = 16 px par tile. */
+function _NpcTakeStep(npc: ObjectEvent): boolean {
+  const speed = npc.walkSpeed;
+  const stepTime = _sStepTimes[speed] ?? 16;
+  if (npc.actionTimer >= stepTime) return false;  // safety
+  const pattern = _sStepFuncTables[speed];
+  const px = pattern?.[npc.actionTimer] ?? 0;
+  const dx = DIR_TO_DX[npc.walkDirection] ?? 0;
+  const dy = DIR_TO_DY[npc.walkDirection] ?? 0;
+  npc.worldX += dx * px;
+  npc.worldY += dy * px;
+  npc.actionTimer++;
+  if (npc.actionTimer < stepTime) return false;
+  return true;
+}
+
 /** 1:1 décomp `MovementAction_WalkNormalX_Step1` (event_object_movement.c:5284) :
  *    if (UpdateMovementNormal(obj, sprite)) {
  *      sprite->sActionFuncId = 2; return TRUE;
@@ -2944,25 +3009,18 @@ function _MovementAction_WalkNormal_Step0(rt: DecompRuntime, npc: ObjectEvent, d
  *  UpdateMovementNormal (5116) : NpcTakeStep + ShiftStillObjectEventCoords +
  *  animPaused=TRUE quand done. */
 function _MovementAction_WalkNormal_Step1(rt: DecompRuntime, npc: ObjectEvent): boolean {
-  const dx = DIR_TO_DX[npc.walkDirection] ?? 0;
-  const dy = DIR_TO_DY[npc.walkDirection] ?? 0;
-  // Visual tick : worldX/Y += DIR_TO_D{X,Y} (= 1 px/frame at NORMAL speed).
-  // Total déplacement = 16 px = 1 tile sur 16 frames. Pour speeds plus rapides,
-  // increment > 1 px/frame.
-  const dur = npc.walkFramesLeft;
-  void dur;
-  npc.worldX += dx;
-  npc.worldY += dy;
-  npc.walkFramesLeft--;
-  if (npc.walkFramesLeft <= 0) {
+  if (_NpcTakeStep(npc)) {
     // 1:1 décomp `ShiftStillObjectEventCoords` (event_object_movement.c:2162) +
     // sprite->animPaused = TRUE.
     ShiftStillObjectEventCoords(npc);
     npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
+    npc.walkFramesLeft = 0;
     npc.actionStep = 2;
     _npcEndWalkAnim(rt, npc);
     return true;
   }
+  // Sync walkFramesLeft pour MovementType callbacks compatibility.
+  npc.walkFramesLeft = (_sStepTimes[npc.walkSpeed] ?? 16) - npc.actionTimer;
   return false;
 }
 
