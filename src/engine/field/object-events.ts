@@ -1849,6 +1849,13 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
   switch (npc.movementStep) {
     case 0:
     case 1:
+      // 1:1 décomp `MovementType_WanderAround_Step1` (event_object_movement.c:2573) :
+      //   ObjectEventSetSingleMovement(GetFaceDirectionMovementAction(facingDirection))
+      //   → MovementAction_FaceX_Step0 → FaceDirection (5048) :
+      //     StartSpriteAnim(sprite, GetFaceDirectionAnimNum(direction))
+      // G7+ fix : sans ça, le NPC reste avec animNum=GO_X frozen sur la
+      // dernière frame walking (= user bug "PNJ freeze sur frame de marche").
+      _npcSetFaceAnim(rt, npc);
       // 1:1 décomp : step 0 → step 1 instantané, puis pickRandomDelay + step 3.
       npc.movementDelay = pickRandomDelay();
       npc.movementStep = 3;
