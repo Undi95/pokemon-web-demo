@@ -1446,6 +1446,55 @@ registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
   return lead.nickname === lead.speciesNameFr ? 0 : 1;
 });
 
+/** 1:1 décomp `GetFavorLadyState` (lilycove_lady.c:159-168) :
+ *  ```c
+ *  u8 GetFavorLadyState(void) {
+ *      sFavorLadyPtr = &gSaveBlock1Ptr->lilycoveLady.favor;
+ *      if (sFavorLadyPtr->state == LILYCOVE_LADY_STATE_PRIZE) return LILYCOVE_LADY_STATE_PRIZE;
+ *      else if (sFavorLadyPtr->state == LILYCOVE_LADY_STATE_COMPLETED) return LILYCOVE_LADY_STATE_COMPLETED;
+ *      else return LILYCOVE_LADY_STATE_READY;
+ *  }
+ *  ```
+ *  Retourne state clamped à PRIZE/COMPLETED/READY (= 2/1/0). */
+registerSpecial('GetFavorLadyState', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'favor') {
+    if (lady.state === 2) return 2;
+    if (lady.state === 1) return 1;
+  }
+  return 0;
+});
+
+/** 1:1 décomp `SetQuizLadyState_Complete` (lilycove_lady.c:493-497) :
+ *  ```c
+ *  void SetQuizLadyState_Complete(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      sQuizLadyPtr->state = LILYCOVE_LADY_STATE_COMPLETED;
+ *  }
+ *  ```
+ *  LILYCOVE_LADY_STATE_COMPLETED = 1. */
+registerSpecial('SetQuizLadyState_Complete', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    lady.state = 1;
+  }
+});
+
+/** 1:1 décomp `SetQuizLadyState_GivePrize` (lilycove_lady.c:499-503) :
+ *  ```c
+ *  void SetQuizLadyState_GivePrize(void) {
+ *      sQuizLadyPtr = &gSaveBlock1Ptr->lilycoveLady.quiz;
+ *      sQuizLadyPtr->state = LILYCOVE_LADY_STATE_PRIZE;
+ *  }
+ *  ```
+ *  LILYCOVE_LADY_STATE_PRIZE = 2. */
+registerSpecial('SetQuizLadyState_GivePrize', () => {
+  const lady = gSaveBlock1Ptr.lilycoveLady;
+  if (lady && lady.kind === 'quiz') {
+    lady.state = 2;
+  }
+});
+
 /** 1:1 décomp `HasAnotherPlayerGivenFavorLadyItem` (lilycove_lady.c:181-191) :
  *  ```c
  *  bool8 HasAnotherPlayerGivenFavorLadyItem(void) {
@@ -1772,7 +1821,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetContestPlayerId', 'GetContestantNamesAtRank',
   'GetCurSecretBaseRegistrationValidity', 'GetDaycareCost',
   'GetDaycareMonNicknames', 'GetDeptStoreDefaultFloorChoice',
-  'GetFavorLadyState', 'GetLinkPartnerNames',
+  // 'GetFavorLadyState' — porté 1:1 décomp lilycove_lady.c:159 ci-bas.
+  'GetLinkPartnerNames',
   'GetMartEmployeeObjectEventId',
   // 'GetMomOrDadStringForTVMessage' — handler concret enregistré supra (1:1 décomp).
   // 'PlayerPC' — dispatcher direct dans script-opcodes.ts (= bedroom-pc.ts UI).
@@ -1874,7 +1924,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'SetMirageTowerVisibility' — porté 1:1 décomp mirage_tower.c:319 ci-bas.
   // 'SetPlayerGotFirstFans' — porté 1:1 décomp field_specials.c:4271 ci-bas.
   'SetPlayerSecretBase',
-  'SetQuizLadyState_Complete', 'SetQuizLadyState_GivePrize',
+  // 'SetQuizLadyState_Complete' — porté 1:1 décomp lilycove_lady.c:493 ci-bas.
+  // 'SetQuizLadyState_GivePrize' — porté 1:1 décomp lilycove_lady.c:499 ci-bas.
   'SetRoute119Weather', 'SetRoute123Weather', 'SetSecretBaseOwnerGfxId',
   // 'SetTrickHouseNuggetFlag' — porté 1:1 décomp field_specials.c:1174 ci-bas.
   'SetSootopolisGymCrackedIceMetatiles',
