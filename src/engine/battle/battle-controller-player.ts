@@ -1170,16 +1170,128 @@ function PlayerHandleChooseMove(): void {
   }
 }
 
-/** 1:1 décomp `PlayerHandleChooseItem()`. */
+/** 1:1 décomp `PlayerHandleChooseItem()` (battle_controller_player.c:2653-2663).
+ *  BeginNormalPaletteFade + install OpenBagAndChooseItem + set
+ *  gBattlerInMenuId + copy gBattlePartyCurrentOrder depuis bufferA[1+i]. */
 function PlayerHandleChooseItem(): void {
-  // Dette R3 Phase B : bag UI item select. Pour now : assume 0 (= cancel).
+  _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0, 0x10, _RGB_BLACK);
+  gBattlerControllerFuncs[gActiveBattler] = _OpenBagAndChooseItem;
+  _setBattlerInMenuId(gActiveBattler);
+
+  // 1:1 décomp : copy 3 bytes depuis bufferA[1..3] → gBattlePartyCurrentOrder[0..2].
+  for (let i = 0; i < 3; i++) {
+    _setBattlePartyCurrentOrder(i, gBattleBufferA[gActiveBattler][1 + i]);
+  }
+}
+
+/** 1:1 décomp `PlayerHandleChoosePokemon()` (battle_controller_player.c:2665-2688).
+ *  Copy gBattlePartyCurrentOrder depuis bufferA[4..] (3 bytes) + branche
+ *  Arena → EmitChosenMonReturnValue ; default → BeginNormalPaletteFade +
+ *  install OpenPartyMenuToChooseMon + setup gBattleStruct slot fields. */
+function PlayerHandleChoosePokemon(): void {
+  // 1:1 décomp : copy 3 bytes bufferA[4..6] → gBattlePartyCurrentOrder[0..2].
+  for (let i = 0; i < 3; i++) {
+    _setBattlePartyCurrentOrder(i, gBattleBufferA[gActiveBattler][4 + i]);
+  }
+
+  // 1:1 décomp : BATTLE_TYPE_ARENA branch (= Frontier subsystem, user "Report").
+  if ((gBattleTypeFlags & _BATTLE_TYPE_ARENA) && (gBattleBufferA[gActiveBattler][1] & 0xF) !== _PARTY_ACTION_CANT_SWITCH) {
+    _BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, _getPartyIdx(gActiveBattler) + 1, _getBattlePartyCurrentOrderSlice());
+    PlayerBufferExecCompleted();
+  } else {
+    // 1:1 décomp : create dummy task + setup gBattleStruct slots + fade out
+    // + install OpenPartyMenuToChooseMon.
+    _setBattleControllerData(gActiveBattler, _CreateTask_TaskDummy(0xFF));
+    _setTaskData(gActiveBattler, 0, gBattleBufferA[gActiveBattler][1] & 0xF);
+    _setBattleStructField('battlerPreventingSwitchout', gBattleBufferA[gActiveBattler][1] >> 4);
+    _setBattleStructField('prevSelectedPartySlot', gBattleBufferA[gActiveBattler][2]);
+    _setBattleStructField('abilityPreventingSwitchout', gBattleBufferA[gActiveBattler][3]);
+    _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0, 0x10, _RGB_BLACK);
+    gBattlerControllerFuncs[gActiveBattler] = _OpenPartyMenuToChooseMon;
+    _setBattlerInMenuId(gActiveBattler);
+  }
+}
+
+/** 1:1 décomp `BATTLE_TYPE_ARENA` = 1 << 19. */
+const _BATTLE_TYPE_ARENA = 1 << 19;
+
+/** 1:1 décomp `PARTY_ACTION_CANT_SWITCH` (party_menu.h). */
+const _PARTY_ACTION_CANT_SWITCH = 5;
+
+/** 1:1 décomp `PALETTES_ALL` = 0xFFFFFFFF (palette.h). */
+const _PALETTES_ALL = 0xFFFFFFFF;
+
+/** 1:1 décomp `RGB_BLACK` = 0 (gba/rgb.h). */
+const _RGB_BLACK = 0;
+
+/** Wires globalThis lazy lookup. */
+function _BeginNormalPaletteFade(_palettes: number, _delay: number, _startY: number, _endY: number, _color: number): void {
+  const g = globalThis as { __rt?: { BeginNormalPaletteFade?: (p: number, d: number, sy: number, ey: number, c: number) => void } };
+  g.__rt?.BeginNormalPaletteFade?.(_palettes, _delay, _startY, _endY, _color);
+}
+
+function _OpenBagAndChooseItem(): void {
+  // Dette R3 : bag UI in-battle scene swap (= cascade UI).
+  // Pour now : exec complete (= cancel) tant que bag-in-battle pas wirée.
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleChoosePokemon()`. */
-function PlayerHandleChoosePokemon(): void {
-  // Dette R3 Phase B : party menu mon select. Pour now : assume PARTY_SIZE (= cancel).
+function _OpenPartyMenuToChooseMon(): void {
+  // Dette R3 : party menu in-battle scene swap (= cascade UI).
+  // Pour now : exec complete (= cancel) tant que party-menu-in-battle pas wirée.
   PlayerBufferExecCompleted();
+}
+
+function _setBattlerInMenuId(battler: number): void {
+  const g = globalThis as { __battleMenu?: { gBattlerInMenuId?: number } };
+  if (g.__battleMenu) g.__battleMenu.gBattlerInMenuId = battler;
+}
+
+function _setBattlePartyCurrentOrder(idx: number, val: number): void {
+  const g = globalThis as { __battleMenu?: { gBattlePartyCurrentOrder?: number[] } };
+  if (!g.__battleMenu) g.__battleMenu = {};
+  if (!g.__battleMenu.gBattlePartyCurrentOrder) g.__battleMenu.gBattlePartyCurrentOrder = [0, 0, 0];
+  g.__battleMenu.gBattlePartyCurrentOrder[idx] = val;
+}
+
+function _getBattlePartyCurrentOrderSlice(): number[] {
+  const g = globalThis as { __battleMenu?: { gBattlePartyCurrentOrder?: number[] } };
+  return g.__battleMenu?.gBattlePartyCurrentOrder ?? [0, 0, 0];
+}
+
+function _getPartyIdx(battler: number): number {
+  return gBattlerPartyIndexes[battler];
+}
+
+function _BtlController_EmitChosenMonReturnValue(bufferId: number, partyId: number, order: number[]): void {
+  // 1:1 décomp battle_controllers.c:1381-1390 : setup CONTROLLER_CHOSENMON
+  // RETURNVALUE + partyId + order[0..2] → buffer.
+  const CONTROLLER_CHOSENMONRETURNVALUE = 0x22;
+  const buf = new Uint8Array(8);
+  buf[0] = CONTROLLER_CHOSENMONRETURNVALUE;
+  buf[1] = partyId;
+  for (let i = 0; i < 3; i++) buf[2 + i] = order[i] ?? 0;
+  PrepareBufferDataTransfer(bufferId, buf, 5);
+}
+
+function _setBattleControllerData(_battler: number, _v: number): void {
+  // Dette R3 : gBattleControllerData[battler] = taskId.
+  const g = globalThis as { __battleSpritesData?: { gBattleControllerData?: number[] } };
+  if (g.__battleSpritesData?.gBattleControllerData) g.__battleSpritesData.gBattleControllerData[_battler] = _v;
+}
+
+function _CreateTask_TaskDummy(_priority: number): number {
+  // Dette R3 : full Task system port. Pour now : return 0 (= dummy id).
+  return 0;
+}
+
+function _setTaskData(_taskId: number, _idx: number, _v: number): void {
+  // Dette R3 : gTasks[taskId].data[idx] = v.
+}
+
+function _setBattleStructField(field: string, v: number): void {
+  const g = globalThis as { __battleState?: { gBattleStruct?: Record<string, unknown> } };
+  if (g.__battleState?.gBattleStruct) g.__battleState.gBattleStruct[field] = v;
 }
 
 /** 1:1 décomp `PlayerHandleCmd23()`. */
@@ -1580,4 +1692,6 @@ void MarkBattlerForControllerExec;
   PlayerHandleStatusIconUpdate,
   // L9/L10 wires exposés pour tests déterministes SwitchIn/Faint anims.
   PlayerHandleSwitchInAnim, PlayerHandleFaintAnimation,
+  // L3/L4 wires exposés pour tests déterministes party/bag in-battle.
+  PlayerHandleChoosePokemon, PlayerHandleChooseItem,
 };
