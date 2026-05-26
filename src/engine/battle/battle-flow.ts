@@ -127,6 +127,7 @@ import './battle-faint-anim';
 import './battle-anim-normal';
 import './battle-anim-throw';
 import './battle-levelup-box';
+import './battle-trainer-party';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
