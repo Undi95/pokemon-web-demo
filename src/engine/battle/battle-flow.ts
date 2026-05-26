@@ -1468,9 +1468,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           const chooser = _gBattleCommunication()[5 /* MULTISTRING_CHOOSER */] ?? 0;
           let msg: string;
           if (chooser === 2 /* B_MSG_DONT_LEAVE_BIRCH */) {
-            // 1:1 décomp gText_DontLeaveBirch : "Ne sois pas lâche! Ne perds
-            // pas contre ce POKéMON!" (= bypass tutorial).
-            msg = 'Ne sois pas lâche, ne perds pas contre ce POKéMON !';
+            // 1:1 décomp `sText_DontLeaveBirch` (battle_message.c:333) :
+            // "PROF. SEKO: Ne me laisse pas\ncomme ça!\p".
+            msg = 'PROF. SEKO: Ne me laisse pas\ncomme ça!';
           } else if (chooser === 1 /* B_MSG_CANT_ESCAPE */) {
             msg = 'Impossible de fuir !';
           } else {
