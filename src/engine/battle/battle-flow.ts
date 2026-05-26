@@ -155,6 +155,7 @@ import './battle-setup-helpers';
 import './battle-vblank-helpers';
 import './battle-sprite-callbacks';
 import './battle-turn-dispatch';
+import './battle-cb2';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
