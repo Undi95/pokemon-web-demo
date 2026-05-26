@@ -108,7 +108,10 @@ function _gTasks(taskId: number): { data: Int16Array | number[]; func: ((id: num
   const rt = getRuntime();
   if (!rt) return _DUMMY_TASK;
   const t = rt.gTasks?.get(taskId);
-  return t ?? _DUMMY_TASK;
+  // DecompTask.func a signature (task: DecompTask) => void ; on adapte au
+  // wrapper compatible (taskId: number) => void via cast (le caller bridge
+  // utilise un wire ad-hoc dans le tick loop).
+  return (t ?? _DUMMY_TASK) as unknown as { data: Int16Array | number[]; func: ((id: number) => void) | null };
 }
 const _DUMMY_TASK = { data: new Int16Array(16) as Int16Array | number[], func: null };
 

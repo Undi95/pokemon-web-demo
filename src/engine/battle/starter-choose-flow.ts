@@ -571,7 +571,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
       if (mNum >= 0) {
         circleSprite.matrixNum = mNum;
         const oam = rt.gba.oam[circleSprite.oamIndex];
-        if (oam) { oam.affineParamIndex = mNum; oam.matrixNum = mNum; }
+        if (oam) { oam.affineParamIndex = mNum; ((oam as unknown) as { matrixNum?: number }).matrixNum = mNum; }
         circleSprite.affineAnimBeginning = true;
       }
     }
@@ -591,7 +591,7 @@ function Task_HandleStarterChooseInput(taskId: number): void {
       if (mNum >= 0) {
         pkmnSprite.matrixNum = mNum;
         const oam = rt.gba.oam[pkmnSprite.oamIndex];
-        if (oam) { oam.affineParamIndex = mNum; oam.matrixNum = mNum; }
+        if (oam) { oam.affineParamIndex = mNum; ((oam as unknown) as { matrixNum?: number }).matrixNum = mNum; }
       }
       StartSpriteAffineAnim(pkmnSprite as never, 0);
       pkmnSprite.callback = (s) => SpriteCB_StarterPokemon(s);
@@ -868,7 +868,7 @@ function CreatePokemonFrontSprite(species: string, x: number, y: number): number
   });
   // Décomp : gSprites[spriteId].oam.priority = 0 (override après return CreatePokemonFrontSprite).
   const sprite = rt.gSprites.get(result.spriteId);
-  if (sprite) sprite.priority = 0;
+  if (sprite) ((sprite as unknown) as { priority?: number }).priority = 0;
   return result.spriteId;
 }
 

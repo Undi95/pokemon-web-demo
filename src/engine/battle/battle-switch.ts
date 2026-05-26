@@ -102,8 +102,8 @@ export function SwitchInClearSetData(): void {
   // pour pouvoir restorer les Baton Pass fields.
   const disableStructCopy = { ...gDisableStructs[gActiveBattler] };
 
-  const currentMoveEffect = getMove(gCurrentMove)?.effect ?? 0;
-  const isBatonPass = currentMoveEffect === EFFECT_BATON_PASS;
+  const currentMoveEffect = getMove(`MOVE_${gCurrentMove}` as never)?.effect ?? 0;
+  const isBatonPass = currentMoveEffect === (EFFECT_BATON_PASS as unknown as typeof currentMoveEffect);
 
   // 1:1 décomp ll.3158-3172 : non-BatonPass → reset stat stages + clear
   // escape prevention/sureHit set by THIS battler on autres.
@@ -167,7 +167,7 @@ export function SwitchInClearSetData(): void {
   // 1:1 décomp ll.3206-3208 : clear DisableStruct entièrement.
   const ds = gDisableStructs[gActiveBattler];
   for (const key of Object.keys(ds) as Array<keyof typeof ds>) {
-    if (typeof ds[key] === 'number') (ds as Record<string, number>)[key as string] = 0;
+    if (typeof ds[key] === 'number') ((ds as unknown) as Record<string, number>)[key as string] = 0;
   }
 
   // 1:1 décomp ll.3210-3217 : Baton Pass preserve certains DisableStruct fields.

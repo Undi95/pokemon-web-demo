@@ -1087,7 +1087,7 @@ export class TestOverworldScene extends Phaser.Scene {
     const connections = currentHeader.connections ?? [];
     for (const conn of connections) {
       // Skip dive/emerge (= cross-dimension, séparé du cross-border standard).
-      if (conn.direction === 'dive' || conn.direction === 'emerge') continue;
+      if ((conn.direction as unknown) === 'dive' || (conn.direction as unknown) === 'emerge') continue;
       const connMapId = (conn as { map?: string; mapId?: string }).map
                      ?? (conn as { mapId?: string }).mapId;
       if (!connMapId) continue;

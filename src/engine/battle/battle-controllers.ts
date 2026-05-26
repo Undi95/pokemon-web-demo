@@ -75,6 +75,10 @@ import {
   CONTROLLER_UNKNOWNYESNOBOX,
   CONTROLLER_RESETACTIONMOVESELECTION,
   CONTROLLER_ENDLINKBATTLE,
+  CONTROLLER_INTROSLIDE,
+  CONTROLLER_INTROTRAINERBALLTHROW,
+  CONTROLLER_DRAWTRAINERPIC,
+  CONTROLLER_LOADMONSPRITE,
   enqueueBattleEvent,
   buildBattleMsgDataSnapshot,
   type BattleMsgData,
@@ -379,6 +383,49 @@ export function BtlController_EmitTrainerSlide(_bufferId: number): void {
     type: CONTROLLER_TRAINERSLIDE,
     battler: gActiveBattler,
   });
+}
+
+/** 1:1 signature décomp `BtlController_EmitIntroSlide(buf, terrainId)`
+ *  (battle_controllers.c:1141-1146). Démarre l'animation slide-in du
+ *  background battle (= WIN0V split central). Enqueue event pour
+ *  battle-intro.ts consume. */
+export function BtlController_EmitIntroSlide(_bufferId: number, terrainId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_INTROSLIDE as never,
+    battler: gActiveBattler,
+    terrainId,
+  } as never);
+}
+
+/** 1:1 signature décomp `BtlController_EmitIntroTrainerBallThrow(buf)`
+ *  (battle_controllers.c:1148-1153). Lance le ball throw animation du
+ *  trainer (= player ou opponent) suivi de l'emerge du Pokemon. Enqueue
+ *  event pour battle-ball-throw.ts + sprite emerge consume. */
+export function BtlController_EmitIntroTrainerBallThrow(_bufferId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_INTROTRAINERBALLTHROW as never,
+    battler: gActiveBattler,
+  } as never);
+}
+
+/** 1:1 signature décomp `BtlController_EmitDrawTrainerPic(buf)`
+ *  (battle_controllers.c:986-990). Charge + display le sprite trainer
+ *  (= player back ou opponent face). Enqueue event pour battle UI consume. */
+export function BtlController_EmitDrawTrainerPic(_bufferId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_DRAWTRAINERPIC as never,
+    battler: gActiveBattler,
+  } as never);
+}
+
+/** 1:1 signature décomp `BtlController_EmitLoadMonSprite(buf)`
+ *  (battle_controllers.c:973-977). Charge le sprite du Pokemon (= wild ou
+ *  opp send-out). Enqueue event pour battle UI consume. */
+export function BtlController_EmitLoadMonSprite(_bufferId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_LOADMONSPRITE as never,
+    battler: gActiveBattler,
+  } as never);
 }
 
 /** 1:1 signature décomp `BtlController_EmitBallThrowAnim(buf, caseId)`

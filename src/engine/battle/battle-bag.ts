@@ -48,7 +48,7 @@ const gText_DadsAdvice_FR = "C'est pas le moment d'utiliser ça!";
 function IsPlayerPartyAndPokemonStorageFull(): boolean {
   // Check si party full ET PC boxes full.
   const party = gSaveBlock1Ptr.playerParty;
-  if (!party || party.length < 6 || party.some(m => !m || (m as { species?: string }).species === undefined)) {
+  if (!party || party.length < 6 || party.some((m: unknown) => !m || (m as { species?: string }).species === undefined)) {
     return false;  // party has empty slot
   }
   // Check PC boxes — pour now assume non-full (= can always catch).
@@ -106,7 +106,7 @@ export function ItemUseInBattle_StatIncrease(itemId: string | number): BattleBag
   // Returns true si NO EFFECT (= matches inverted convention décomp).
   const noEffect = PokemonUseItemEffects(
     playerParty[partyId] as never,
-    typeof itemId === 'string' ? itemId : `ITEM_${itemId}`,
+    (typeof itemId === 'string' ? itemId : `ITEM_${itemId}`) as never,
     partyId, 0, true,  // usedByAI=true → battle path
   );
   if (noEffect) {
