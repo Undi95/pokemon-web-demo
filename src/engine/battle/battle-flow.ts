@@ -109,7 +109,12 @@ import { IsBattleSceneOff } from '../ui/gba-menu-system';
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
-import { TryRunFromBattle as _TryRunFromBattle } from './try-run-from-battle';
+import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
+import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr } from './state';
+
+// Wrapper helper pour accès à gBattleCommunication (= éviter capture closure
+// du let import vs const array). Returns le reference array global.
+function _gBattleCommunication(): readonly number[] { return _gBattleCommunicationArr; }
 
 // K8 + K10 + K12 + K13 side-effect imports : expose devtools globals
 // (= window.__battleMainFunctions / __battleHpBar / __battleFaintAnim /
@@ -803,7 +808,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  Rollback réversible : `window.__USE_BYTECODE_FOR_DAMAGE__ = false`
    *  OU `localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__','0')` →
    *  chemin legacy MVP. Si l'AI renvoie -1 (indispo) → fallback legacy. */
+  /** Tracks AI flee decision (= Zigzagoon Birch tutorial veut fuir à 1HP). */
+  let _opponentAiWantsToFlee = false;
   const pickOpponentMove = (): number => {
+    _opponentAiWantsToFlee = false;
     if (!opponentMon || opponentMon.moves.length === 0) return 0;
     const useBytecode = isBytecodeDamageEnabled();
     if (useBytecode) {
@@ -814,6 +822,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         isTrainer: params.isTrainerBattle ?? false,
         trainerId: params.trainerNumId,
       });
+      // 1:1 décomp AI_FirstBattle : tutorial flag set BATTLE_TYPE_FIRST_BATTLE
+      // → AI_SCRIPT_FIRST_BATTLE → check if_hp_less_than 20 → flee.
+      // Si l'AI retourne action 'flee', on bypass le move et le state machine
+      // route vers WILD_MON_FLED (= "Le Zigzagton sauvage a fui !").
+      if (r.action === 'flee') {
+        _opponentAiWantsToFlee = true;
+        return 0;  // No move chosen (= caller will check _opponentAiWantsToFlee).
+      }
       if (r.index >= 0 && r.index < opponentMon.moves.length) return r.index;
       // index -1 (indispo) → fallback legacy ci-dessous.
     }
@@ -1417,22 +1433,42 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       // ─── ACTION_RUN : fuite (= 1:1 décomp HandleAction_Run + TryRunFromBattle) ──
       case 'ACTION_RUN_TEXT': {
-        // K4 — 1:1 strict décomp : delegate à TryRunFromBattle qui fait :
+        // K4 + K8 — 1:1 strict décomp : check IsRunningFromBattleImpossible
+        // d'abord (= block Birch tutorial via BATTLE_TYPE_FIRST_BATTLE +
+        // Shadow Tag/Arena Trap/Magnet Pull + status escape prevention).
+        // Si SUCCESS → TryRunFromBattle qui fait :
         //   - holdEffect HOLD_EFFECT_CAN_ALWAYS_RUN → always escape (Smoke Ball)
         //   - ability ABILITY_RUN_AWAY → always escape (sauf Pyramid)
         //   - speed comparison + runTries multiplier → random check
-        //   - trainer battles bloqués par decomp via Cmd_jumpifcantrunfrombattle
-        //     (= gestion via cmd-batch-20 bytecode), trainer ne peut pas appuyer
-        //     RUN dans le menu (= HandleInputChooseAction filtre l'option).
         // Pour wild Zigzagoon LV2 vs starter LV5 : speed faster → always escape.
-        const tryRunResult = _TryRunFromBattle(0);  // 0 = player battler
-        if (tryRunResult) {
-          // gBattleStringEscape "Got away safely!" → "Vous prenez la fuite!".
-          ShowFieldMessage(`Vous prenez la fuite!`);
-          outcome = BATTLE_OUTCOME_RAN;
+        // Pour Birch tutorial : forbidden → "Don't be a coward!".
+        setActiveBattlerForRun(0);  // 1:1 décomp : check actif sur player.
+        const runImpossible = _IsRunningFromBattleImpossible();
+        if (runImpossible !== 0 /* BATTLE_RUN_SUCCESS */) {
+          // Birch tutorial : message FR "Ne sois pas lâche!".
+          // STATUS escape : "Impossible de fuir!".
+          // Shadow Tag/Arena Trap : "X de Y empêche la fuite!".
+          const chooser = _gBattleCommunication()[5 /* MULTISTRING_CHOOSER */] ?? 0;
+          let msg: string;
+          if (chooser === 2 /* B_MSG_DONT_LEAVE_BIRCH */) {
+            // 1:1 décomp gText_DontLeaveBirch : "Ne sois pas lâche! Ne perds
+            // pas contre ce POKéMON!" (= bypass tutorial).
+            msg = 'Ne sois pas lâche, ne perds pas contre ce POKéMON !';
+          } else if (chooser === 1 /* B_MSG_CANT_ESCAPE */) {
+            msg = 'Impossible de fuir !';
+          } else {
+            msg = "L'évasion est empêchée !";
+          }
+          ShowFieldMessage(msg);
         } else {
-          // gBattleStringCantEscape "Can't escape!".
-          ShowFieldMessage(`Impossible de fuir!`);
+          // Run permitted : roll TryRunFromBattle.
+          const tryRunResult = _TryRunFromBattle(0);
+          if (tryRunResult) {
+            ShowFieldMessage(`Vous prenez la fuite!`);
+            outcome = BATTLE_OUTCOME_RAN;
+          } else {
+            ShowFieldMessage(`Impossible de fuir!`);
+          }
         }
         state = 'ACTION_RUN_WAIT';
         return false;
@@ -1441,10 +1477,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'ACTION_RUN_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          if (outcome === BATTLE_OUTCOME_RAN) {
+          if (outcome === BATTLE_OUTCOME_RAN || outcome === BATTLE_OUTCOME_MON_FLED) {
+            // Player ran ou wild mon fui (= K8 AI_FirstBattle tutorial bypass).
             state = 'CLEANUP_FADE_OUT';
           } else {
-            // Run failed → retour au menu pour re-choisir.
+            // Run failed (= tutorial bypass + Birch message) → retour menu.
             state = 'ACTION_MENU_INIT';
           }
         }
@@ -1661,6 +1698,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'OPPONENT_USES_MOVE': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
         const oppMoveIdx = pickOpponentMove();
+        // K8 + Birch tutorial : si l'AI a décidé de fuir (= AI_FirstBattle
+        // check HP_TARGET <= 20 → flee), wild mon fuit au lieu d'attaquer.
+        // 1:1 décomp HandleEndTurn_MonFled : message FR "Le X sauvage a fui !" +
+        // outcome = B_OUTCOME_MON_FLED.
+        if (_opponentAiWantsToFlee) {
+          const monName = opponentMon.nickname.toUpperCase();
+          ShowFieldMessage(`Le ${monName} sauvage a fui !`);
+          outcome = 6 /* BATTLE_OUTCOME_MON_FLED */;
+          state = 'ACTION_RUN_WAIT';  // reuse pour fade-out
+          return false;
+        }
         // Phase 1.4 J : bytecode mode → applyMoveDamage immédiat + drain via
         // OPPONENT_BYTECODE_MSG. Sinon : legacy hardcoded.
         const useBytecodeMsgs =
