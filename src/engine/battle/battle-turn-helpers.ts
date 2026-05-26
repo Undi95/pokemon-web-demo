@@ -43,6 +43,19 @@ import { GetWhoStrikesFirst } from './ai/ai-script-commands';
 /** 1:1 décomp `STATE_WAIT_ACTION_CONFIRMED` (battle_main.c:4123). */
 const STATE_WAIT_ACTION_CONFIRMED = 5;
 
+/** Wire vers K21 CheckFocusPunch_ClearVarsBeforeTurnStarts + K8 setBattleMainFunc. */
+function _setBattleMainFunc_CheckFocusPunch(): void {
+  const td = (globalThis as Record<string, unknown>).__battleTurnDispatch as {
+    CheckFocusPunch_ClearVarsBeforeTurnStarts?: () => void;
+  } | undefined;
+  const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    setBattleMainFunc?: (fn: () => void) => void;
+  } | undefined;
+  if (td?.CheckFocusPunch_ClearVarsBeforeTurnStarts && bm?.setBattleMainFunc) {
+    bm.setBattleMainFunc(td.CheckFocusPunch_ClearVarsBeforeTurnStarts);
+  }
+}
+
 /** 1:1 décomp `gBattlePartyCurrentOrder[3]` — buffer temp pour party switch. */
 const gBattlePartyCurrentOrder: number[] = [0, 0, 0];
 
@@ -201,7 +214,8 @@ export function SetActionsAndBattlersTurnOrder(): void {
           turnOrderId++;
         }
       }
-      // Dette R3 : gBattleMainFunc = CheckFocusPunch_ClearVarsBeforeTurnStarts.
+      // 1:1 décomp wire : gBattleMainFunc = CheckFocusPunch_ClearVarsBeforeTurnStarts (= K21).
+      _setBattleMainFunc_CheckFocusPunch();
       gBattleStruct.focusPunchBattlerId = 0;
       return;
     } else {
