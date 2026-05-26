@@ -24,8 +24,11 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
 import { gSpecialVar } from './script-vars';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement } from '../field/object-events';
-import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
+import {
+  gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement,
+  ObjectEventClearHeldMovementIfFinished,
+} from '../field/object-events';
+import { GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST, gPlayerAvatar } from '../field/player-avatar';
 import {
   MOVEMENT_ACTION_FACE_DOWN, MOVEMENT_ACTION_FACE_UP,
   MOVEMENT_ACTION_FACE_LEFT, MOVEMENT_ACTION_FACE_RIGHT,
@@ -183,11 +186,26 @@ registerOpcode('msgbox', (ctx, args) => {
           // SE_SELECT = 5 (= 1:1 décomp constants/songs.h).
           void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(5));
           HideFieldMessageBox();
-          // Release frozen NPCs 1:1 STRICT via UnfreezeObjectEvent qui restore
-          // sprite.animPaused = backup (= reverse du FreezeObjectEvent).
+          // 1:1 STRICT décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
+          //   HideFieldMessageBox()
+          //   ObjectEventClearHeldMovementIfFinished(selected)
+          //   ObjectEventClearHeldMovementIfFinished(player)
+          //   UnfreezeObjectEvents()
+          //
+          // ⚠️ BUG FIX J19 : on faisait seulement UnfreezeObjectEvent (= clear
+          // frozen flag), mais PAS ObjectEventClearHeldMovementIfFinished.
+          // Du coup le NPC selected qui avait faceplayer set heldMovementActive=true
+          // n'était jamais cleared → NPC stuck en "held face dir" → MovementType
+          // WANDER_AROUND tick skip (= bloqué par ObjectEventIsHeldMovementActive
+          // check dans TickObjectEventMovements). User bug : parler à FAT_MAN/BOY
+          // → NPC se tourne + dialog + close → NPC freeze pour toujours.
           if (isSign) {
             for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
           } else if (isNpc) {
+            const selected = getSelectedNpc();
+            if (selected && selected.active) ObjectEventClearHeldMovementIfFinished(selected);
+            const playerNpc = gObjectEvents[gPlayerAvatar.objectEventId];
+            if (playerNpc) ObjectEventClearHeldMovementIfFinished(playerNpc);
             for (const n of gObjectEvents) if (n.active) UnfreezeObjectEvent(n);
           }
           void isAutoclose;  // future: AUTOCLOSE pourrait avoir comportement différent
@@ -222,9 +240,13 @@ registerOpcode('msgbox', (ctx, args) => {
         }
         // Release dialog + NPC 1:1 STRICT via UnfreezeObjectEvent (= restore
         // sprite.animPaused = backup, sinon anim stuck pause).
+        // J19 FIX : aussi ClearHeldMovementIfFinished pour éviter NPC stuck post-yesno.
         HideFieldMessageBox();
         const npc = getSelectedNpc();
-        if (npc) UnfreezeObjectEvent(npc);
+        if (npc && npc.active) {
+          ObjectEventClearHeldMovementIfFinished(npc);
+          UnfreezeObjectEvent(npc);
+        }
         return true;
       }
     }
