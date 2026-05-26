@@ -123,22 +123,64 @@ function GetBattlePalettesMask(
   return 0;
 }
 
-/** 1:1 décomp `InvertPlttBuffer(palettes)`. */
-function _InvertPlttBuffer(palettes: number): void {
-  void palettes;
-  // Dette R3 : palette buffer invert via runtime.gPlttBuffer manipulation.
+/** 1:1 décomp `InvertPlttBuffer(selectedPalettes)` (palette.c:494-509).
+ *  Invert chaque pixel des palettes sélectionnées dans gPlttBufferFaded. */
+function _InvertPlttBuffer(selectedPalettes: number): void {
+  const rt = getRuntime();
+  if (!rt?.gPlttBufferFaded) return;
+  const faded = rt.gPlttBufferFaded as unknown as Uint16Array;
+  let paletteOffset = 0;
+  while (selectedPalettes) {
+    if (selectedPalettes & 1) {
+      for (let i = 0; i < 16; i++) {
+        faded[paletteOffset + i] = (~faded[paletteOffset + i]) & 0xFFFF;
+      }
+    }
+    selectedPalettes >>>= 1;
+    paletteOffset += 16;
+  }
 }
 
-/** 1:1 décomp `TintPlttBuffer(palettes, r, g, b)`. */
-function _TintPlttBuffer(palettes: number, r: number, g: number, b: number): void {
-  void palettes; void r; void g; void b;
-  // Dette R3 : tint palette buffer (= multiply RGB par color).
+/** 1:1 décomp `TintPlttBuffer(selectedPalettes, r, g, b)` (palette.c:511-531).
+ *  Ajoute r/g/b à chaque PlttData component (= R bits 0-4, G bits 5-9, B bits 10-14).
+ *  Note : décomp utilise s8 r/g/b → cast à signed pour add négatif. */
+function _TintPlttBuffer(selectedPalettes: number, r: number, g: number, b: number): void {
+  const rt = getRuntime();
+  if (!rt?.gPlttBufferFaded) return;
+  const faded = rt.gPlttBufferFaded as unknown as Uint16Array;
+  let paletteOffset = 0;
+  while (selectedPalettes) {
+    if (selectedPalettes & 1) {
+      for (let i = 0; i < 16; i++) {
+        const px = faded[paletteOffset + i];
+        const cr = ((px & 0x1F) + r) & 0x1F;
+        const cg = (((px >> 5) & 0x1F) + g) & 0x1F;
+        const cb = (((px >> 10) & 0x1F) + b) & 0x1F;
+        faded[paletteOffset + i] = (cr | (cg << 5) | (cb << 10)) & 0x7FFF;
+      }
+    }
+    selectedPalettes >>>= 1;
+    paletteOffset += 16;
+  }
 }
 
-/** 1:1 décomp `UnfadePlttBuffer(palettes)`. */
-function _UnfadePlttBuffer(palettes: number): void {
-  void palettes;
-  // Dette R3 : restore palettes depuis Unfaded buffer.
+/** 1:1 décomp `UnfadePlttBuffer(selectedPalettes)` (palette.c:533-548).
+ *  Restore les palettes sélectionnées depuis gPlttBufferUnfaded. */
+function _UnfadePlttBuffer(selectedPalettes: number): void {
+  const rt = getRuntime();
+  if (!rt?.gPlttBufferFaded || !rt?.gPlttBufferUnfaded) return;
+  const faded = rt.gPlttBufferFaded as unknown as Uint16Array;
+  const unfaded = rt.gPlttBufferUnfaded as unknown as Uint16Array;
+  let paletteOffset = 0;
+  while (selectedPalettes) {
+    if (selectedPalettes & 1) {
+      for (let i = 0; i < 16; i++) {
+        faded[paletteOffset + i] = unfaded[paletteOffset + i];
+      }
+    }
+    selectedPalettes >>>= 1;
+    paletteOffset += 16;
+  }
 }
 
 // ─── AnimTask_BlendColorCycle (battle_anim_normal.c:447) — 1:1 décomp ──────

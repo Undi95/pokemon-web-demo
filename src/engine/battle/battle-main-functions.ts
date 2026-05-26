@@ -115,6 +115,8 @@ import { Random } from '../system/random';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getRuntime, FreeMonSpritesGfx, BeginFastPaletteFade } from '../system/decomp-globals';
 import { getSpeciesInfo } from '../data/game-data';
+import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../ui/pokedex-flags';
+import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './ai/ai-script-commands';
 import { GetMonData, PARTY_SIZE } from './party-storage';
 
 // Inline constants 1:1 décomp (= éviter export-clutter sur ces specifics) :
@@ -371,24 +373,28 @@ const BattleScript_FocusPunchSetUp = {} as unknown;
 
 let gBattlescriptCurrInstr: unknown = null;
 
-/** 1:1 décomp `IsMonShiny(mon)` (pokemon.c). */
-function IsMonShiny(_mon: unknown): number {
-  // Dette R3 : compute shiny depuis personality+otId. Notre port : not yet.
-  return 0;
+/** 1:1 décomp `IsMonShiny(mon)` (pokemon.c). Compute shinyValue depuis
+ *  personality + otId : XOR des 2 halves chacun → shinyValue < SHINY_ODDS (8). */
+function IsMonShiny(mon: unknown): number {
+  const m = mon as { personality?: number; otId?: number } | null;
+  if (!m) return 0;
+  const otId = m.otId ?? 0;
+  const personality = m.personality ?? 0;
+  const shinyValue = ((otId >>> 16) ^ (otId & 0xFFFF)
+                    ^ (personality >>> 16) ^ (personality & 0xFFFF)) & 0xFFFF;
+  return shinyValue < 8 ? 1 : 0;
 }
 
-/** 1:1 décomp `SpeciesToNationalPokedexNum(species)` (pokedex.c). */
+/** 1:1 décomp `SpeciesToNationalPokedexNum(species)` (pokedex.c).
+ *  Wire direct vers ui/pokedex-flags.ts (= existing 1:1 port). */
 function SpeciesToNationalPokedexNum(species: number): number {
-  // Dette R3 : table SPECIES_X → NATIONAL_DEX_X. Pour species Hoenn ≤ 386 :
-  // identity OK pour les ports actuels. Wire complet via pokedex-data.
-  return species;
+  return _SpeciesToNationalPokedexNum(species);
 }
 
-/** 1:1 décomp `HandleSetPokedexFlag(nationalDexNum, caseId, personality)`. */
-function HandleSetPokedexFlag(nationalDexNum: number, caseId: number, _personality: number): void {
-  // Wire vers pokedex-flags.ts si existe. Sinon dette R3.
-  void nationalDexNum;
-  void caseId;
+/** 1:1 décomp `HandleSetPokedexFlag(nationalDexNum, caseId, personality)`.
+ *  Wire direct vers ui/pokedex-flags.ts (= existing 1:1 port). */
+function HandleSetPokedexFlag(nationalDexNum: number, caseId: number, personality: number): void {
+  _HandleSetPokedexFlag(nationalDexNum, caseId, personality);
 }
 
 /** 1:1 décomp `GetAbilityBySpecies(species, abilityNum)` (pokemon.c). */
@@ -486,11 +492,10 @@ function GetBattleSceneInRecordedBattle(): boolean {
   return false; // Pas de recorded battles dans notre port.
 }
 
-/** 1:1 décomp `GetWhoStrikesFirst(b1, b2, ignoreChosen)` (battle_main.c:4595). */
-function GetWhoStrikesFirst(_b1: number, _b2: number, _ignoreChosen: boolean): number {
-  // Dette R3 : full speed comparison. Pour Phase 1.4 N : wired vers
-  // util.ts ou wire-bytecode-bridge. Pour now : 0 (= b1 first).
-  return 0;
+/** 1:1 décomp `GetWhoStrikesFirst(b1, b2, ignoreChosen)` (battle_main.c:4595).
+ *  Wire direct vers ai/ai-script-commands.ts (= existing 1:1 port). */
+function GetWhoStrikesFirst(b1: number, b2: number, ignoreChosen: boolean): number {
+  return _GetWhoStrikesFirst(b1, b2, ignoreChosen);
 }
 
 /** 1:1 décomp `SwapTurnOrder(id1, id2)` (battle_main.c:4587). */
@@ -1610,6 +1615,8 @@ export function ReturnFromBattleToOverworld(): void {
   HandleEndTurn_FinishBattle, FreeResetData_ReturnToOvOrDoEvolutions,
   TryEvolvePokemon, WaitForEvoSceneToFinish, ReturnFromBattleToOverworld,
   getBattleMainFunc, setBattleMainFunc,
+  IsMonShiny, SpeciesToNationalPokedexNum, HandleSetPokedexFlag,
+  GetWhoStrikesFirst, SwapTurnOrder,
 };
 
 // Suppress unused warnings (= imports utilisés indirectly via stubs/setters).
