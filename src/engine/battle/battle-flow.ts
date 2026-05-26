@@ -362,6 +362,17 @@ export interface BattleFlow {
    *  + CopyWindowToVram). Permet aux Controller IPC handlers (= L1..L14) de
    *  réutiliser le rendering existant battle-flow.ts state machine. */
   printText(windowId: number, text: string): void;
+  /** R2 Controller IPC bridge : set action menu cursor position (0..3) +
+   *  trigger re-render menu avec `>` au bon spot. Wire pour
+   *  ActionSelectionCreateCursorAt. */
+  setActionCursor(pos: number): void;
+  /** R2 Controller IPC bridge : set move menu cursor position (0..3) +
+   *  trigger re-render. Wire pour MoveSelectionCreateCursorAt. */
+  setMoveCursor(pos: number): void;
+  /** R2 Controller IPC bridge : trigger HP bar drain animation pour battler.
+   *  Wire pour PlayerHandleHealthBarUpdate (= L6) qui appelle K10
+   *  SetBattleBarStruct. */
+  scheduleHpBarUpdate(battler: number, deltaHp: number): void;
 }
 
 interface BattleParams {
@@ -2116,10 +2127,41 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     _printToWindow(localWinId, text);
   };
 
+  /** R2 Controller IPC bridge : set action cursor + refresh menu. */
+  const _setActionCursorAndRefresh = (pos: number): void => {
+    actionMenuCursor = (pos | 0) & 3;
+    if (typeof refreshActionMenu === 'function') refreshActionMenu();
+  };
+
+  /** R2 Controller IPC bridge : set move cursor + refresh move menu. */
+  const _setMoveCursorAndRefresh = (pos: number): void => {
+    moveMenuCursor = (pos | 0) & 3;
+    if (typeof refreshMoveNames === 'function') refreshMoveNames();
+    if (typeof refreshMovePpNumber === 'function') refreshMovePpNumber();
+    if (typeof refreshMoveType === 'function') refreshMoveType();
+  };
+
+  /** R2 Controller IPC bridge : trigger HP bar drain (= K10 cascade).
+   *  Dette R3 : full progressive K10 animation drive. Pour now : direct HP
+   *  apply + redraw via drawHpBar(winId, x, y, hp, maxHp). */
+  const _scheduleHpBarUpdate = (battler: number, deltaHp: number): void => {
+    // Battler 0 = player, 1 = opponent (single battle).
+    if (battler === 0 && playerMon) {
+      playerMon.currentHp = Math.max(0, Math.min(playerMon.maxHp, playerMon.currentHp + deltaHp));
+      drawHpBar(playerHpWindowId, 0, 0, playerMon.currentHp, playerMon.maxHp);
+    } else if (battler === 1 && opponentMon) {
+      opponentMon.currentHp = Math.max(0, Math.min(opponentMon.maxHp, opponentMon.currentHp + deltaHp));
+      drawHpBar(oppHpWindowId, 0, 0, opponentMon.currentHp, opponentMon.maxHp);
+    }
+  };
+
   const flow: BattleFlow = {
     tick,
     getState: () => state,
     printText: _printTextToBattleWindow,
+    setActionCursor: _setActionCursorAndRefresh,
+    setMoveCursor: _setMoveCursorAndRefresh,
+    scheduleHpBarUpdate: _scheduleHpBarUpdate,
   };
   // Expose pour devtools introspection (= scope.battle.state() / window.__activeBattleFlow.getState()).
   // Évite d'avoir à toucher chaque call site (script-opcodes / starter-choose-flow / etc.).
