@@ -356,6 +356,12 @@ export interface BattleFlow {
   tick(): boolean;
   /** Public for debug : current state name. */
   getState(): string;
+  /** R2 Controller IPC bridge : print text dans une window battle (= action
+   *  prompt, action menu, message box, move names, etc.). Wire vers le
+   *  rendering Phaser réel (= FillWindowPixelBuffer + AddTextPrinterParameterized3
+   *  + CopyWindowToVram). Permet aux Controller IPC handlers (= L1..L14) de
+   *  réutiliser le rendering existant battle-flow.ts state machine. */
+  printText(windowId: number, text: string): void;
 }
 
 interface BattleParams {
@@ -2082,9 +2088,38 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return false;
   };
 
+  /** R2 Controller IPC bridge : map battle window ID (B_WIN_*) → notre
+   *  closure-local window id (actionMenuWindowId, actionPromptWindowId, etc.).
+   *  Permet à BattlePutTextOnWindow(decoded, B_WIN_MSG) de toucher la bonne
+   *  window. */
+  const _printTextToBattleWindow = (windowId: number, text: string): void => {
+    // 1:1 décomp battle.h B_WIN_* mapping :
+    //   B_WIN_MSG (0)            → message box bottom
+    //   B_WIN_ACTION_PROMPT (1)  → "Que doit faire X?"
+    //   B_WIN_ACTION_MENU (2)    → ATTAQUE/SAC/POKéMON/FUITE
+    //   B_WIN_MOVE_NAME_1..4 (3..6) → 4 noms moves
+    //   B_WIN_PP (7) / B_WIN_PP_REMAINING (9) / B_WIN_MOVE_TYPE (10)
+    let localWinId = -1;
+    switch (windowId) {
+      case 0:  /* B_WIN_MSG */ /* dette R3 : pas de winId message box exposé */ break;
+      case 1:  /* B_WIN_ACTION_PROMPT */ localWinId = actionPromptWindowId; break;
+      case 2:  /* B_WIN_ACTION_MENU */ localWinId = actionMenuWindowId; break;
+      case 3:  /* B_WIN_MOVE_NAME_1 */ localWinId = moveName1WinId; break;
+      case 4:  /* B_WIN_MOVE_NAME_2 */ localWinId = moveName2WinId; break;
+      case 5:  /* B_WIN_MOVE_NAME_3 */ localWinId = moveName3WinId; break;
+      case 6:  /* B_WIN_MOVE_NAME_4 */ localWinId = moveName4WinId; break;
+      case 7:  /* B_WIN_PP */ localWinId = movePpWinId; break;
+      case 9:  /* B_WIN_PP_REMAINING */ localWinId = movePpRemainingWinId; break;
+      case 10: /* B_WIN_MOVE_TYPE */ localWinId = moveTypeWinId; break;
+    }
+    if (localWinId < 0) return;  // window pas allouée encore
+    _printToWindow(localWinId, text);
+  };
+
   const flow: BattleFlow = {
     tick,
     getState: () => state,
+    printText: _printTextToBattleWindow,
   };
   // Expose pour devtools introspection (= scope.battle.state() / window.__activeBattleFlow.getState()).
   // Évite d'avoir à toucher chaque call site (script-opcodes / starter-choose-flow / etc.).

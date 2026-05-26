@@ -550,21 +550,27 @@ export function HandleBattleWindow(
 }
 
 /** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`
- *  (battle_message.c:1957-1961). Notre port L5 : store decoded text dans
- *  globalThis.__battleDisplayedText[windowId] (= gDisplayedStringBattle
- *  équivalent) + set __textPrinterState[windowId] = true (= signal "printer
- *  active") + schedule clear après N frames simulating GBA typewriter.
- *  Cascade UI scene pickup via __battleDisplayedText. */
+ *  (battle_message.c:1957-1961). R2 wire : delegate au battle-flow.ts
+ *  printText(windowId, text) si __activeBattleFlow exposé (= combat actif).
+ *  Sinon fallback : store dans __battleDisplayedText pour scene pickup futur.
+ *  Maintient aussi le __textPrinterState pour CompleteOnInactiveTextPrinter2. */
 export function BattlePutTextOnWindow(text: number | string, windowId: number): void {
   const g = globalThis as Record<string, unknown>;
+  const txt = typeof text === 'string' ? text : String(text);
+
+  // R2 : delegate au battle-flow rendering réel si combat actif.
+  const flow = (g.__activeBattleFlow as { printText?: (winId: number, t: string) => void } | undefined);
+  if (flow?.printText) {
+    flow.printText(windowId, txt);
+  }
+
+  // Stash aussi dans __battleDisplayedText (= debug + scene pickup futur).
   if (!g.__battleDisplayedText) g.__battleDisplayedText = {};
   if (!g.__textPrinterState) g.__textPrinterState = {};
   if (!g.__textPrinterTimers) g.__textPrinterTimers = {};
   (g.__battleDisplayedText as Record<number, string | number>)[windowId] = text;
   (g.__textPrinterState as Record<number, boolean>)[windowId] = true;
-  // Simulate typewriter : ~length * 2 frames + 60 frame pause for read
-  // (= 1:1 décomp options text speed default = 2 frames/char + display pause).
-  const txt = typeof text === 'string' ? text : String(text);
+  // Simulate typewriter : ~length * 2 frames + 60 frame pause for read.
   const frames = Math.max(60, txt.length * 2 + 60);
   const timers = g.__textPrinterTimers as Record<number, number>;
   if (timers[windowId]) clearTimeout(timers[windowId]);
