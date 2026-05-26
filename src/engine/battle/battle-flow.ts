@@ -350,6 +350,7 @@ type State =
   | 'ACTION_FALLBACK_TEXT' | 'ACTION_FALLBACK_WAIT'
   | 'ACTION_RUN_TEXT' | 'ACTION_RUN_WAIT'
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
+  | 'MOVE_EMIT_CHOOSE' | 'MOVE_WAIT_CHOOSE_RESPONSE'
   | 'PLAYER_USES_MOVE' | 'PLAYER_USES_MOVE_WAIT'
   | 'PLAYER_BYTECODE_MSG' | 'PLAYER_BYTECODE_MSG_WAIT'
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
@@ -1652,7 +1653,69 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'MOVE_MENU_INIT': {
         moveMenuCursor = 0;
         initMoveMenu();
-        state = 'MOVE_MENU_INPUT';
+        // R4 — route vers Controller IPC dispatch au lieu de l'input loop inline.
+        state = 'MOVE_EMIT_CHOOSE';
+        return false;
+      }
+
+      // R4 — Emit CONTROLLER_CHOOSEMOVE + setup ChooseMoveStruct dans
+      // bufferA[4..23]. Le tick R1 va appeler PlayerHandleChooseMove (= L2)
+      // qui setup le menu via R2 wires + install HandleInputChooseMove loop
+      // chaque frame jusqu'à A_BUTTON (= emit moveIdx) ou B_BUTTON (= 0xFFFF cancel).
+      case 'MOVE_EMIT_CHOOSE': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = true;
+        ipcSetActiveBattler(0);
+        ipcSetControllerToPlayer();
+        const buf = ipcBufferA[0];
+        buf[0] = 0x14; // CONTROLLER_CHOOSEMOVE
+        buf[1] = 0;    // not double battle
+        buf[2] = 0;    // showPpDisplay = false (= ChooseMoveStruct[2] = 0)
+        buf[3] = 0;    // dontDisplayCurrentMove (= 0)
+        // ChooseMoveStruct dans bufferA[4..23] :
+        //   moves[4] u16 LE at offset 4..11
+        //   currentPp[4] u8 at 12..15
+        //   maxPp[4] u8 at 16..19
+        //   species u16 at 20..21 (= pas utilisé pour HandleInputChooseMove)
+        //   monTypes[2] u8 at 22..23 (= TYPE_GHOST check Curse only)
+        for (let i = 0; i < 4; i++) {
+          const mv = playerMon.moves[i];
+          const moveId = mv ? (typeof mv.id === 'number' ? mv.id : 0) : 0;
+          buf[4 + i * 2] = moveId & 0xFF;
+          buf[5 + i * 2] = (moveId >> 8) & 0xFF;
+          buf[12 + i] = mv ? (mv.pp ?? 0) : 0;
+          buf[16 + i] = mv ? (mv.ppMax ?? 0) : 0;
+        }
+        // Species + monTypes (Birch tutorial Mudkip/Treecko/Torchic = pas GHOST).
+        buf[20] = (playerMon.speciesId ?? 0) & 0xFF;
+        buf[21] = ((playerMon.speciesId ?? 0) >> 8) & 0xFF;
+        buf[22] = 0; // TYPE_NORMAL (= placeholder, pas critique sauf Curse)
+        buf[23] = 0;
+        ipcSetExecFlags(ipcExecFlags | ipcBitTable[0]);
+        for (let i = 0; i < 4; i++) ipcBufferB[0][i] = 0;
+        state = 'MOVE_WAIT_CHOOSE_RESPONSE';
+        return false;
+      }
+
+      case 'MOVE_WAIT_CHOOSE_RESPONSE': {
+        if (ipcExecFlags & ipcBitTable[0]) return false;
+        // Response bufferB[0..3] :
+        //   [0] = CONTROLLER_TWORETURNVALUES (0x21)
+        //   [1] = B_ACTION_EXEC_SCRIPT (10)
+        //   [2..3] = ret16 = moveIdx | (target << 8) ; 0xFFFF = cancel.
+        const ret16 = ipcBufferB[0][2] | (ipcBufferB[0][3] << 8);
+        (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = false;
+        if (ret16 === 0xFFFF) {
+          // B_BUTTON cancel → retour ACTION_MENU.
+          closeMoveMenu();
+          state = 'ACTION_MENU_INIT';
+          return false;
+        }
+        const moveIdx = ret16 & 0xFF;
+        chosenMoveIndex = moveIdx;
+        closeMoveMenu();
+        HideFieldMessageBox();
+        state = 'PLAYER_USES_MOVE';
         return false;
       }
 
