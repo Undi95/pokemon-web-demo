@@ -176,6 +176,9 @@ import {
   gBattleBufferA as ipcBufferA, gBattleBufferB as ipcBufferB,
 } from './battle-controllers-ipc';
 import { gBitTable as ipcBitTable } from './battle-controllers';
+// R3 fix : install PlayerBufferRunCommand comme gBattlerControllerFuncs[player]
+// avant emit (= SetControllerToPlayer 1:1 décomp battle_controller_player.c:193).
+import { SetControllerToPlayer as ipcSetControllerToPlayer } from './battle-controller-player';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
@@ -1471,6 +1474,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = true;
         // Set active battler = player (= 1:1 décomp gActiveBattler = 0).
         ipcSetActiveBattler(0);
+        // R3 FIX : install PlayerBufferRunCommand comme controller func du
+        // battler player (= 1:1 décomp SetControllerToPlayer
+        // battle_controller_player.c:193-198). Sans ça gBattlerControllerFuncs[0]
+        // est null et tick R1 ne peut pas dispatch les handlers.
+        ipcSetControllerToPlayer();
         // Setup bufferA[0] = CONTROLLER_CHOOSEACTION (0x12). PlayerBufferRunCommand
         // (= L1 dispatcher) dispatcher to PlayerHandleChooseAction.
         const buf = ipcBufferA[0];
