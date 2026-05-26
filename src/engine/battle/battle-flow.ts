@@ -1121,6 +1121,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
     switch (state) {
       case 'INIT': {
+        // R3 fix : reset field-message-box state au début de chaque combat.
+        // Sans ça, sWindowId persistant cross-combat pointe vers un window id
+        // obsolète (= effacé par battle VRAM init au battle start) → AddText
+        // PrinterParameterized3 warn "window X not found" + text invisible.
+        // 1:1 décomp partial : InitFieldMessageBox reset sFieldMessageBoxMode
+        // = HIDDEN + sStateStep = 0 + sWindowId = -1 (= force re-AddWindow au
+        // prochain ShowFieldMessage).
+        void import('../field/field-message-box').then(({ InitFieldMessageBox }) => {
+          InitFieldMessageBox();
+        });
         // Pick player Pokemon : first non-fainted from party.
         const party = gSaveBlock1Ptr.playerParty;
         playerMon = params.playerMon
