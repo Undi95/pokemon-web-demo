@@ -164,6 +164,7 @@ import './battle-controllers-ipc';
 import './handle-action';
 import './battle-controller-player';
 import './battle-controller-opponent';
+import './battle-controller-tick';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
