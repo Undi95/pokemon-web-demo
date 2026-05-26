@@ -577,3 +577,18 @@ export const handleActionTable: ReadonlyArray<(ctx?: BattleScriptContext) => voi
   HandleAction_ActionFinished,     // 12 B_ACTION_FINISHED
   HandleAction_NothingIsFainted,   // 13 B_ACTION_NOTHING_FAINTED
 ];
+
+// Expose globalThis pour K21 battle-turn-dispatch lazy lookup (= éviter cycle ESM).
+(globalThis as Record<string, unknown>).__handleAction = {
+  HandleAction_UseMove, HandleAction_UseItem, HandleAction_Switch,
+  HandleAction_Run, HandleAction_RunBattleScript,
+  HandleAction_TryFinish, HandleAction_ActionFinished,
+  HandleAction_NothingIsFainted,
+  // Safari + Wally aliases vers HandleAction_RunBattleScript (dette R3 Safari/Wally).
+  HandleAction_WatchesCarefully: HandleAction_RunBattleScript,
+  HandleAction_SafariZoneBallThrow: HandleAction_RunBattleScript,
+  HandleAction_ThrowPokeblock: HandleAction_RunBattleScript,
+  HandleAction_GoNear: HandleAction_RunBattleScript,
+  HandleAction_SafariZoneRun: HandleAction_RunBattleScript,
+  HandleAction_WallyBallThrow: HandleAction_RunBattleScript,
+};

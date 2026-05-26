@@ -442,10 +442,18 @@ export const OPTIONS_BATTLE_STYLE_SET   = 1;
 
 /** Returns true si battle animations doivent être SKIPPED (= optionsBattleSceneOff
  *  set par user dans option menu → set `gHitMarker |= HITMARKER_NO_ANIMATIONS`
- *  dans battle init, cf. battle_main.c). Future-proof : appelable depuis
- *  battle-flow.ts au battle init. */
+ *  dans battle init, cf. battle_main.c).
+ *
+ *  **OVERRIDE TEMPORAIRE (user 2026-05-26)** : tant que la cascade visuelle K1
+ *  (= battle_anim_*.c per-move 50k+ lignes) n'est pas portée, force le retour
+ *  TRUE peu importe l'option user. Le menu Options affiche "OUI" sans effet,
+ *  l'engine se comporte comme "NON" (= skip toutes les anims, shake placeholder
+ *  uniquement). À retirer quand K1 cascade portée + A/B validation. */
 export function IsBattleSceneOff(): boolean {
-  return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
+  // Override : toujours OFF en attendant K1 cascade visuelle complète.
+  return true;
+  // 1:1 décomp original (= activé quand K1 cascade portée) :
+  // return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
 }
 
 /** Returns le battle style courant : 0 = SHIFT (= ask user before switch
