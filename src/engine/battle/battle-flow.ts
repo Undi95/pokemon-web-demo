@@ -112,7 +112,11 @@ import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
 import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr } from './state';
 import { decodeBattleString } from './battle-string-decoder';
-import { STRINGID_DONTLEAVEBIRCH, STRINGID_CANTESCAPE, STRINGID_PREVENTSESCAPE, STRINGID_NORUNNINGFROMTRAINERS } from '../decomp-data/include/constants/battle_string_ids-data';
+import {
+  STRINGID_DONTLEAVEBIRCH, STRINGID_CANTESCAPE, STRINGID_PREVENTSESCAPE,
+  STRINGID_NORUNNINGFROMTRAINERS, STRINGID_SUPEREFFECTIVE, STRINGID_NOTVERYEFFECTIVE,
+  STRINGID_GOTAWAYSAFELY, STRINGID_ITDOESNTAFFECT,
+} from '../decomp-data/include/constants/battle_string_ids-data';
 
 // Wrapper helper pour accès à gBattleCommunication (= éviter capture closure
 // du let import vs const array). Returns le reference array global.
@@ -1501,10 +1505,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // Run permitted : roll TryRunFromBattle.
           const tryRunResult = _TryRunFromBattle(0);
           if (tryRunResult) {
-            ShowFieldMessage(`Vous prenez la fuite!`);
+            // 1:1 décomp `BattleScript_GotAwaySafely` (battle_scripts_1.s) :
+            // STRINGID_GOTAWAYSAFELY = "Vous prenez la fuite !" via decoder.
+            ShowFieldMessage(_resolveBattleString(STRINGID_GOTAWAYSAFELY));
             outcome = BATTLE_OUTCOME_RAN;
           } else {
-            ShowFieldMessage(`Impossible de fuir!`);
+            // 1:1 décomp : STRINGID_CANTESCAPE via decoder.
+            ShowFieldMessage(_resolveBattleString(STRINGID_CANTESCAPE));
           }
         }
         state = 'ACTION_RUN_WAIT';
@@ -1631,13 +1638,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (damage > 0) {
           // Iter19 : type effectiveness messages.
           if (typeMul === 0) {
-            ShowFieldMessage(`Ça n'a aucun effet sur\n${opponentMon.nickname}...`);
+            // 1:1 décomp STRINGID_ITDOESNTAFFECT (= "Ça n'a aucun effet !")
+            // via decoder. Note : décomp utilise placeholder pour target nick
+            // mais le decoder gère le pattern via gBattleTextBuff (= dette R3
+            // pour le full wire ; pour now decoder text seul).
+            ShowFieldMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else if (typeMul >= 2) {
-            ShowFieldMessage(`C'est super efficace!`);
+            // 1:1 décomp STRINGID_SUPEREFFECTIVE = "C'est super efficace !"
+            ShowFieldMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else if (typeMul > 0 && typeMul < 1) {
-            ShowFieldMessage(`Ce n'est pas\ntrès efficace...`);
+            // 1:1 décomp STRINGID_NOTVERYEFFECTIVE = "Ce n'est pas très efficace…"
+            ShowFieldMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else {
             // Neutral 1× damage — straight to fainted check.
@@ -1812,13 +1825,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (damage > 0) {
           // Iter19 : type effectiveness messages (= same as player turn).
           if (typeMul === 0) {
-            ShowFieldMessage(`Ça n'a aucun effet sur\n${playerMon.nickname}...`);
+            // 1:1 décomp STRINGID_ITDOESNTAFFECT via decoder.
+            ShowFieldMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else if (typeMul >= 2) {
-            ShowFieldMessage(`C'est super efficace!`);
+            ShowFieldMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else if (typeMul > 0 && typeMul < 1) {
-            ShowFieldMessage(`Ce n'est pas\ntrès efficace...`);
+            ShowFieldMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else {
             state = 'CHECK_PLAYER_FAINTED';
