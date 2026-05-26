@@ -1132,6 +1132,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../field/field-message-box').then(({ InitFieldMessageBox }) => {
           InitFieldMessageBox();
         });
+        // User feedback : "fond vers transparent du sac = vide" = entre
+        // cleanupScene ChooseStarter et SPAWN_SPRITES battle, l'écran montre
+        // OW pendant plusieurs frames. Fix 1:1 décomp `CB2_InitBattle` :
+        // BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK) = fade
+        // vers noir instant (delay=0, startY=0, endY=16). L'écran reste noir
+        // pendant LOAD_ASSETS, puis SPAWN_SPRITES setup BG3 grass + sprites
+        // puis fade-in via tickShake/tickFaint flow.
+        try {
+          rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
+        } catch { /* fallthrough */ }
         // Pick player Pokemon : first non-fainted from party.
         const party = gSaveBlock1Ptr.playerParty;
         playerMon = params.playerMon
