@@ -111,6 +111,15 @@ import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle } from './try-run-from-battle';
 
+// K8 + K10 + K13 side-effect imports : expose devtools globals
+// (= window.__battleMainFunctions / __battleHpBar / __battleFaintAnim)
+// et garantit le load au boot via battle-flow.ts qui est notre entry. Le wire
+// fonctionnel complet (= K14) suit progressivement en remplaçant les states
+// pragmatic actuels par les fns 1:1 strict portées.
+import './battle-main-functions';
+import './battle-hp-bar';
+import './battle-faint-anim';
+
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
 import {
