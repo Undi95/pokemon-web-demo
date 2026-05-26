@@ -549,10 +549,29 @@ export function HandleBattleWindow(
   // Phase 1.4 UI : draw/clear window au framework UI.
 }
 
-/** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`. Phase 1 stub. */
-export function BattlePutTextOnWindow(_text: number | string, _windowId: number): void {
-  //  Phase 1.4 UI : print text to battle window via gBattleScripting.windowsType
-  //        + sBattleTextOnWindowsInfo.
+/** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`
+ *  (battle_message.c:1957-1961). Notre port L5 : store decoded text dans
+ *  globalThis.__battleDisplayedText[windowId] (= gDisplayedStringBattle
+ *  équivalent) + set __textPrinterState[windowId] = true (= signal "printer
+ *  active") + schedule clear après N frames simulating GBA typewriter.
+ *  Cascade UI scene pickup via __battleDisplayedText. */
+export function BattlePutTextOnWindow(text: number | string, windowId: number): void {
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__battleDisplayedText) g.__battleDisplayedText = {};
+  if (!g.__textPrinterState) g.__textPrinterState = {};
+  if (!g.__textPrinterTimers) g.__textPrinterTimers = {};
+  (g.__battleDisplayedText as Record<number, string | number>)[windowId] = text;
+  (g.__textPrinterState as Record<number, boolean>)[windowId] = true;
+  // Simulate typewriter : ~length * 2 frames + 60 frame pause for read
+  // (= 1:1 décomp options text speed default = 2 frames/char + display pause).
+  const txt = typeof text === 'string' ? text : String(text);
+  const frames = Math.max(60, txt.length * 2 + 60);
+  const timers = g.__textPrinterTimers as Record<number, number>;
+  if (timers[windowId]) clearTimeout(timers[windowId]);
+  timers[windowId] = (setTimeout(() => {
+    (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
+    delete timers[windowId];
+  }, frames * (1000 / 60)) as unknown) as number;
 }
 
 /** 1:1 signature décomp `BattleCreateYesNoCursorAt(cursorPosition)`. Phase 1 stub. */
@@ -630,3 +649,8 @@ if (MAX_BATTLERS_COUNT !== 4) {
 // gBattleScripting est ré-exporté pour les opcodes qui en ont besoin sans
 // recharger le module state.
 export { gBattleScripting };
+
+// Expose pour battle-controller-player lazy lookup (= éviter cycle ESM).
+(globalThis as { __battleControllers?: object }).__battleControllers = {
+  snapshotMsgData: _snapshotMsgData,
+};

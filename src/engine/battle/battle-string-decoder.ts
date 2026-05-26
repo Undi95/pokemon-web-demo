@@ -547,6 +547,12 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
+// Expose pour battle-controller-player lazy lookup (= éviter cycle ESM).
+// Lazy via getter pour résolution au call time (= module fully initialized).
+(globalThis as { __battleStringDecoderApi?: object }).__battleStringDecoderApi = {
+  get decodeBattleString() { return decodeBattleString; },
+};
+
 /** Décode stringId + msgData → French text 1:1 décomp `BufferStringBattle`
  *  (battle_message.c:1968-2950) — partial port Phase 1.4 J first pass.
  *

@@ -73,7 +73,7 @@ import {
   DoBounceEffect, BOUNCE_HEALTHBOX, BOUNCE_MON,
 } from './battle-sprite-callbacks';
 import {
-  B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU,
+  B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU, B_WIN_MSG,
   B_WIN_MOVE_NAME_1, B_WIN_PP, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE,
 } from './battle-windows';
 import { SELECT_BUTTON } from './battle-controllers';
@@ -806,18 +806,75 @@ function PlayerHandleMoveAnimation(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandlePrintString()`. */
+/** 1:1 décomp `PlayerHandlePrintString()` (battle_controller_player.c:2543-2555).
+ *  Reset BG0 scroll + BufferStringBattle (= decodeBattleString) +
+ *  BattlePutTextOnWindow B_WIN_MSG + install CompleteOnInactiveTextPrinter2 +
+ *  BattleTv_SetDataBasedOnString + BattleArena_DeductSkillPoints. */
 function PlayerHandlePrintString(): void {
+  _setBattleBG0(0, 0);
   const stringId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
-  _PlayerHandlePrintString_decode(stringId);
-  PlayerBufferExecCompleted();
+  const decoded = _BufferStringBattle(stringId);
+  BattlePutTextOnWindow(decoded, B_WIN_MSG);
+  gBattlerControllerFuncs[gActiveBattler] = CompleteOnInactiveTextPrinter2;
+  _BattleTv_SetDataBasedOnString(stringId);
+  _BattleArena_DeductSkillPoints(gActiveBattler, stringId);
 }
 
-/** 1:1 décomp `PlayerHandlePrintSelectionString()`. */
+/** 1:1 décomp `PlayerHandlePrintSelectionString()` (battle_controller_player.c:2557-2563).
+ *  Si battler côté player → PlayerHandlePrintString, sinon ExecCompleted. */
 function PlayerHandlePrintSelectionString(): void {
-  const stringId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
-  _PlayerHandlePrintString_decode(stringId);
-  PlayerBufferExecCompleted();
+  if (GET_BATTLER_SIDE(gActiveBattler) === 0 /* B_SIDE_PLAYER */) {
+    PlayerHandlePrintString();
+  } else {
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `BufferStringBattle(stringId)` (battle_message.c:1968-2950).
+ *  Decode stringId + msgData snapshot → French text. Wired vers
+ *  decodeBattleString existant via globalThis lookup pour éviter cycle ESM. */
+function _BufferStringBattle(stringId: number): string {
+  const api = (globalThis as { __battleStringDecoderApi?: { decodeBattleString?: (id: number, msgData: unknown) => string } }).__battleStringDecoderApi;
+  if (!api?.decodeBattleString) {
+    console.warn('[L5] BufferStringBattle : decoder API not exposed');
+    return `[stringId=${stringId}]`;
+  }
+  // Snapshot msgData via globalThis battle-controllers _snapshotMsgData
+  // (= 1:1 décomp battle_controllers.c:1147-1166 build).
+  const snap = (globalThis as { __battleControllers?: { snapshotMsgData?: () => unknown } }).__battleControllers;
+  const msgData = snap?.snapshotMsgData?.() ?? {};
+  return api.decodeBattleString(stringId, msgData);
+}
+
+/** 1:1 décomp `CompleteOnInactiveTextPrinter2()` (battle_controller_player.c:1339-1343).
+ *  Poll IsTextPrinterActive(B_WIN_MSG) → quand done, ExecCompleted.
+ *  Wire vers state global compteur de printer + A_BUTTON skip
+ *  (= comportement décomp 1:1). */
+function CompleteOnInactiveTextPrinter2(): void {
+  if (!_IsTextPrinterActive(B_WIN_MSG)) {
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `IsTextPrinterActive(windowId)` (text.c). Returns true si le
+ *  printer typewriter pour ce window est actif (= en cours de typer le texte).
+ *  Notre port : wire vers globalThis.__textPrinterState (= un hash windowId →
+ *  active flag) qui sera set par BattlePutTextOnWindow / BattleStringExpand. */
+function _IsTextPrinterActive(windowId: number): boolean {
+  const m = (globalThis as { __textPrinterState?: Record<number, boolean> }).__textPrinterState;
+  return !!(m?.[windowId]);
+}
+
+/** 1:1 décomp `BattleTv_SetDataBasedOnString(stringId)` (battle_tv.c).
+ *  Dette R3 : recorded battle TV stats (= user "Report jusqu'à fin projet"). */
+function _BattleTv_SetDataBasedOnString(_stringId: number): void {
+  // No-op : recorded battle/TV stats non porté.
+}
+
+/** 1:1 décomp `BattleArena_DeductSkillPoints(battler, stringId)`
+ *  (battle_arena.c). Dette R3 : Frontier Arena subsystem. */
+function _BattleArena_DeductSkillPoints(_battler: number, _stringId: number): void {
+  // No-op : Frontier subsystem non porté.
 }
 
 /** 1:1 décomp `PlayerHandleChooseAction()` (battle_controller_player.c:2575-2589).
@@ -1259,4 +1316,7 @@ void MarkBattlerForControllerExec;
   HandleInputChooseMove, HandleChooseMoveAfterDma3,
   MoveSelectionCreateCursorAt, MoveSelectionDestroyCursorAt,
   InitMoveSelectionsVarsAndStrings, PlayerHandleChooseMove,
+  // L5 wires exposés pour tests déterministes PrintString decoder + window.
+  PlayerHandlePrintString, PlayerHandlePrintSelectionString,
+  CompleteOnInactiveTextPrinter2,
 };
