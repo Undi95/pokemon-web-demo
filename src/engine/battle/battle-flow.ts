@@ -109,6 +109,7 @@ import { IsBattleSceneOff } from '../ui/gba-menu-system';
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
+import { TryRunFromBattle as _TryRunFromBattle } from './try-run-from-battle';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
@@ -526,12 +527,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
-  /** 1:1 décomp battle_interface.c gender symbol (♂ male / ♀ female / blank si genderless). */
+  /** 1:1 décomp battle_interface.c gender symbol (♂ male / ♀ female / blank si genderless).
+   *  K6 : utilise GetGenderFromSpeciesAndPersonality + mon.monGender (déjà computed
+   *  au createPokemonInstance). MON_MALE=0 → ♂, MON_FEMALE=254 → ♀, MON_GENDERLESS=255 → blank.
+   *  Source : pokemon.c:3448-3469 GetMonGender. */
   const _genderSymbol = (mon: PokemonInstance | null): string => {
     if (!mon) return '';
-    // PokemonInstance n'expose pas directement le gender (= dérivé du personality).
-    // Pour MVP, deferred. Décomp utilise GetMonGender(mon) qui lit MON_DATA_PERSONALITY.
-    return '';
+    // mon.monGender est set par createPokemonInstance (pokemon.ts:GetGenderFromSpeciesAndPersonality).
+    const g = (mon as { monGender?: number }).monGender;
+    if (g === 0) return ' ♂';        // MON_MALE
+    if (g === 254) return ' ♀';      // MON_FEMALE
+    return '';                       // MON_GENDERLESS or undefined
   };
 
   const renderHpWindows = (): void => {
@@ -1399,13 +1405,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         return false;
       }
 
-      // ─── ACTION_RUN : fuite simple (= wild battle uniquement, trainer skip) ──
+      // ─── ACTION_RUN : fuite (= 1:1 décomp HandleAction_Run + TryRunFromBattle) ──
       case 'ACTION_RUN_TEXT': {
-        // 1:1 décomp : trainer battles can't run (= sText_CantEscape).
-        // Pour wild : success immediate (= MVP simple, full TryRunFromBattle
-        // avec speed math wired session ultérieure).
-        ShowFieldMessage(`Vous prenez la fuite!`);
-        outcome = BATTLE_OUTCOME_RAN;
+        // K4 — 1:1 strict décomp : delegate à TryRunFromBattle qui fait :
+        //   - holdEffect HOLD_EFFECT_CAN_ALWAYS_RUN → always escape (Smoke Ball)
+        //   - ability ABILITY_RUN_AWAY → always escape (sauf Pyramid)
+        //   - speed comparison + runTries multiplier → random check
+        //   - trainer battles bloqués par decomp via Cmd_jumpifcantrunfrombattle
+        //     (= gestion via cmd-batch-20 bytecode), trainer ne peut pas appuyer
+        //     RUN dans le menu (= HandleInputChooseAction filtre l'option).
+        // Pour wild Zigzagoon LV2 vs starter LV5 : speed faster → always escape.
+        const tryRunResult = _TryRunFromBattle(0);  // 0 = player battler
+        if (tryRunResult) {
+          // gBattleStringEscape "Got away safely!" → "Vous prenez la fuite!".
+          ShowFieldMessage(`Vous prenez la fuite!`);
+          outcome = BATTLE_OUTCOME_RAN;
+        } else {
+          // gBattleStringCantEscape "Can't escape!".
+          ShowFieldMessage(`Impossible de fuir!`);
+        }
         state = 'ACTION_RUN_WAIT';
         return false;
       }
@@ -1413,7 +1431,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'ACTION_RUN_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          state = 'CLEANUP_FADE_OUT';
+          if (outcome === BATTLE_OUTCOME_RAN) {
+            state = 'CLEANUP_FADE_OUT';
+          } else {
+            // Run failed → retour au menu pour re-choisir.
+            state = 'ACTION_MENU_INIT';
+          }
         }
         return false;
       }

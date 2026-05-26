@@ -1525,5 +1525,47 @@ EX :
   scope.bytecode.dispatchStats()
   scope.bytecode.lastBug()
 `.trim(),
+
+    // ─── K7 Battle Anim Interpreter devtools ──────────────────────────────
+    /** État courant du battle anim runner (= 1:1 décomp battle_anim.c).
+     *  Retourne { active, pc, framesToWait, visualTasks, soundTasks, attacker, target }. */
+    animState: async () => {
+      const anim = await import('./battle-anim-interpreter');
+      return {
+        active: anim.IsAnimRunning(),
+        pc: anim.GetCurrentPC(),
+        framesToWait: anim.GetAnimFramesToWait(),
+        visualTasks: anim.GetVisualTaskCount(),
+        soundTasks: anim.GetSoundTaskCount(),
+        attacker: anim.gBattleAnimAttacker,
+        target: anim.gBattleAnimTarget,
+        bytecodeSize: anim.ANIM_BYTECODE_SIZE,
+        args: Array.from(anim.gBattleAnimArgs),
+      };
+    },
+    /** Lance une battle anim depuis un move ID (= e.g. 33 STRENGTH).
+     *  Pour test : dev.battle.animPlay(33). */
+    animPlay: async (moveId: number) => {
+      const anim = await import('./battle-anim-interpreter');
+      anim.DoMoveAnim(moveId);
+      return { launched: true, moveId, pc: anim.GetCurrentPC() };
+    },
+    /** Tick le runner manuellement (= pour debug step-by-step).
+     *  Returns état après le tick. */
+    animTick: async () => {
+      const anim = await import('./battle-anim-interpreter');
+      anim.TickBattleAnim();
+      return {
+        active: anim.IsAnimRunning(),
+        pc: anim.GetCurrentPC(),
+        framesToWait: anim.GetAnimFramesToWait(),
+      };
+    },
+    /** Clear state + stop anim (= utilisé en cleanup post-test). */
+    animClear: async () => {
+      const anim = await import('./battle-anim-interpreter');
+      anim.ClearBattleAnimationVars();
+      return 'cleared';
+    },
   };
 }
