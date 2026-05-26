@@ -1114,39 +1114,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // Iter16 : during battle, re-hide overworld sprites each frame because
     // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
     // INIT/LOAD_ASSETS (= our battle sprites not yet spawned) and CLEANUP.
-    // R3 enhance : également hide les NEW sprites OW spawned pendant battle
-    // (= script-spawned NPCs, emote bubbles). Build whitelist battle sprites
-    // explicitement (player + opponent + healthbox handles) pour pas hide eux.
     const stashedSprites = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
     if (stashedSprites && state !== 'CLEANUP' && state !== 'DONE' && state !== 'INIT' && state !== 'LOAD_ASSETS' && state !== 'WAIT_LOAD') {
-      const battleWhitelist = new Set<number>();
-      if (playerSpriteId >= 0) battleWhitelist.add(playerSpriteId);
-      if (opponentSpriteId >= 0) battleWhitelist.add(opponentSpriteId);
-      if (playerHealthbox) {
-        battleWhitelist.add(playerHealthbox.leftSpriteId);
-        battleWhitelist.add(playerHealthbox.rightSpriteId);
-        battleWhitelist.add(playerHealthbox.healthbarLeftSpriteId);
-        battleWhitelist.add(playerHealthbox.healthbarRightSpriteId);
-      }
-      if (opponentHealthbox) {
-        battleWhitelist.add(opponentHealthbox.leftSpriteId);
-        battleWhitelist.add(opponentHealthbox.rightSpriteId);
-        battleWhitelist.add(opponentHealthbox.healthbarLeftSpriteId);
-        battleWhitelist.add(opponentHealthbox.healthbarRightSpriteId);
-      }
-      // Re-hide stashed sprites (= OW NPCs/player that were visible pre-battle).
       for (const id of stashedSprites) {
         const sprite = rt.gSprites.get(id);
         if (sprite) sprite.invisible = true;
-      }
-      // Hide NEW sprites spawned during battle that are not battle sprites
-      // (= ex emote bubbles, script-spawned NPCs). Add to stash for cleanup restore.
-      for (const [spriteId, sprite] of rt.gSprites) {
-        if (!sprite || sprite.invisible) continue;
-        if (battleWhitelist.has(spriteId)) continue;
-        if (stashedSprites.has(spriteId)) continue;
-        sprite.invisible = true;
-        stashedSprites.add(spriteId);
       }
     }
 
