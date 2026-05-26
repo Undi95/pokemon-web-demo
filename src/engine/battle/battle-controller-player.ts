@@ -675,10 +675,23 @@ function _SetPlayerMonData(monId: number): void {
   void monId;
 }
 
-/** 1:1 décomp `StartSendOutAnim(battler, dontClearSubstituteBit)`. */
-function _StartSendOutAnim(_battler: number, _dontClearSubstituteBit: boolean): void {
-  // Dette R3 : ball send-out animation (= cascade visuels K9).
+/** 1:1 décomp `StartSendOutAnim(battler, dontClearSubstituteBit)`
+ *  (battle_controller_player.c:2196-2225). Setup sprite invisible callback +
+ *  CreateSprite mon + DoPokeballSendOutAnimation. Wire vers __battleBallThrow
+ *  hook (= K9 cascade visuels) — pour now appelle hook si dispo. */
+function _StartSendOutAnim(battler: number, dontClearSubstituteBit: boolean): void {
+  _ClearTemporarySpeciesSpriteData(battler, dontClearSubstituteBit);
+  gBattlerPartyIndexes[battler] = gBattleBufferA[battler][1];
+  const mon = gPlayerParty[gBattlerPartyIndexes[battler]];
+  const species = GetMonData(mon, MON_DATA_SPECIES_LOCAL) as number;
+  // Dette R3 : full CreateInvisibleSpriteWithCallback + CreateSprite cascade.
+  // Wire vers __battleBallThrow.doPokeballSendOutAnimation si exposé.
+  const m = (globalThis as { __battleBallThrow?: { doPokeballSendOutAnimation?: (b: number, species: number) => void } }).__battleBallThrow;
+  if (m?.doPokeballSendOutAnimation) m.doPokeballSendOutAnimation(battler, species);
 }
+
+/** 1:1 décomp `MON_DATA_SPECIES` = 11. */
+const MON_DATA_SPECIES_LOCAL = 11;
 
 /** Helper : wire vers battle-string-decoder pour text msgs. */
 function _PlayerHandlePrintString_decode(stringId: number): void {
@@ -744,13 +757,38 @@ function PlayerHandleLoadMonSprite(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleSwitchInAnim()`. */
+/** 1:1 décomp `PlayerHandleSwitchInAnim()` (battle_controller_player.c:2185-2194).
+ *  ClearTemporarySpeciesSpriteData + set gBattlerPartyIndexes + load sprite
+ *  gfx + reset cursors + StartSendOutAnim + install Switch_TryShinyHealthbox. */
 function PlayerHandleSwitchInAnim(): void {
-  const partyId = gBattleBufferA[gActiveBattler][1];
-  const dontClearSubstituteBit = gBattleBufferA[gActiveBattler][2] !== 0;
-  // 1:1 décomp : gBattlerPartyIndexes[active] = partyId + StartSendOutAnim.
-  void partyId;
-  _StartSendOutAnim(gActiveBattler, dontClearSubstituteBit);
+  _ClearTemporarySpeciesSpriteData(gActiveBattler, gBattleBufferA[gActiveBattler][2] !== 0);
+  gBattlerPartyIndexes[gActiveBattler] = gBattleBufferA[gActiveBattler][1];
+  _BattleLoadPlayerMonSpriteGfx(gBattlerPartyIndexes[gActiveBattler], gActiveBattler);
+  gActionSelectionCursor[gActiveBattler] = 0;
+  gMoveSelectionCursor[gActiveBattler] = 0;
+  _StartSendOutAnim(gActiveBattler, gBattleBufferA[gActiveBattler][2] !== 0);
+  gBattlerControllerFuncs[gActiveBattler] = _SwitchIn_TryShinyAnimShowHealthbox;
+}
+
+/** 1:1 décomp `ClearTemporarySpeciesSpriteData(battler, dontClearSubstituteBit)`. */
+function _ClearTemporarySpeciesSpriteData(_battler: number, _dontClear: boolean): void {
+  // Dette R3 : gBattleSpritesDataPtr.battlerData[battler] cleanup
+  // (= cascade sprite engine GBA). Wire vers globalThis __battleSpritesData.
+  const m = (globalThis as { __battleSpritesData?: { clearTemporarySpeciesSpriteData?: (b: number, c: boolean) => void } }).__battleSpritesData;
+  if (m?.clearTemporarySpeciesSpriteData) m.clearTemporarySpeciesSpriteData(_battler, _dontClear);
+}
+
+/** 1:1 décomp `BattleLoadPlayerMonSpriteGfx(mon, battler)`. */
+function _BattleLoadPlayerMonSpriteGfx(_partyIdx: number, _battler: number): void {
+  // Dette R3 : load sprite gfx + palette from species data.
+  const m = (globalThis as { __battleBg?: { battleLoadPlayerMonSpriteGfx?: (p: number, b: number) => void } }).__battleBg;
+  if (m?.battleLoadPlayerMonSpriteGfx) m.battleLoadPlayerMonSpriteGfx(_partyIdx, _battler);
+}
+
+/** 1:1 décomp `SwitchIn_TryShinyAnimShowHealthbox()` (battle_controller_player.c).
+ *  Wait sprite invisible cleared + shiny anim play + healthbox display.
+ *  Dette R3 : full state machine. Pour now : immediate complete. */
+function _SwitchIn_TryShinyAnimShowHealthbox(): void {
   PlayerBufferExecCompleted();
 }
 
@@ -778,9 +816,89 @@ function PlayerHandleTrainerSlideBack(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleFaintAnimation()`. */
+/** 1:1 décomp `PlayerHandleFaintAnimation()` (battle_controller_player.c:2408-2429).
+ *  State machine 2-step :
+ *    State 0 : check substitute → InitAndLaunchSpecialAnimation SUBSTITUTE_TO_MON
+ *      → animationState++
+ *    State 1 : si specialAnimActive done → HandleLowHpMusicChange + PlaySE12
+ *      SE_FAINT panning + setup sprite speedY=5 + callback SpriteCB_FaintSlideAnim
+ *      (= K13) + install FreeMonSpriteAfterFaintAnim. */
 function PlayerHandleFaintAnimation(): void {
-  // Dette R3 : faint slide anim (= cascade vers K13 battle-faint-anim).
+  const animState = _getHealthBoxAnimationState(gActiveBattler);
+  if (animState === 0) {
+    if (_isBehindSubstitute(gActiveBattler)) {
+      _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, _B_ANIM_SUBSTITUTE_TO_MON);
+    }
+    _setHealthBoxAnimationState(gActiveBattler, animState + 1);
+  } else {
+    if (!_isSpecialAnimActive(gActiveBattler)) {
+      _setHealthBoxAnimationState(gActiveBattler, 0);
+      _HandleLowHpMusicChange(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
+      _PlaySE12WithPanning(_SE_FAINT, _SOUND_PAN_ATTACKER);
+      // 1:1 décomp : trigger K13 SpriteCB_FaintSlideAnim avec speedY=5.
+      _triggerFaintSlideAnim(gActiveBattler);
+      gBattlerControllerFuncs[gActiveBattler] = _FreeMonSpriteAfterFaintAnim;
+    }
+  }
+}
+
+/** 1:1 décomp `B_ANIM_SUBSTITUTE_TO_MON` (battle_anim.h). */
+const _B_ANIM_SUBSTITUTE_TO_MON = 6;
+
+/** 1:1 décomp `SE_FAINT` (constants/songs.h). */
+const _SE_FAINT = 21; // 1:1 décomp gba songs.h SE_FAINT
+
+/** 1:1 décomp `SOUND_PAN_ATTACKER` (battle.h). */
+const _SOUND_PAN_ATTACKER = -64;
+
+/** Helpers state machine healthbox animationState (= gBattleSpritesDataPtr). */
+function _getHealthBoxAnimationState(battler: number): number {
+  const m = (globalThis as { __battleSpritesData?: { getHealthBoxAnimationState?: (b: number) => number } }).__battleSpritesData;
+  return m?.getHealthBoxAnimationState?.(battler) ?? 0;
+}
+function _setHealthBoxAnimationState(battler: number, v: number): void {
+  const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: (b: number, v: number) => void } }).__battleSpritesData;
+  m?.setHealthBoxAnimationState?.(battler, v);
+}
+function _isBehindSubstitute(battler: number): boolean {
+  const m = (globalThis as { __battleSpritesData?: { isBehindSubstitute?: (b: number) => boolean } }).__battleSpritesData;
+  return !!m?.isBehindSubstitute?.(battler);
+}
+function _isSpecialAnimActive(battler: number): boolean {
+  const m = (globalThis as { __battleSpritesData?: { isSpecialAnimActive?: (b: number) => boolean } }).__battleSpritesData;
+  return !!m?.isSpecialAnimActive?.(battler);
+}
+
+/** 1:1 décomp `InitAndLaunchSpecialAnimation(active, attacker, target, animId)`. */
+function _InitAndLaunchSpecialAnimation(_active: number, _attacker: number, _target: number, _animId: number): void {
+  const m = (globalThis as { __battleAnim?: { initAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleAnim;
+  m?.initAndLaunchSpecialAnimation?.(_active, _attacker, _target, _animId);
+}
+
+/** 1:1 décomp `HandleLowHpMusicChange(mon, battler)`. */
+function _HandleLowHpMusicChange(_mon: unknown, _battler: number): void {
+  const m = (globalThis as { __battleHealthbox?: { handleLowHpMusicChange?: (mon: unknown, b: number) => void } }).__battleHealthbox;
+  m?.handleLowHpMusicChange?.(_mon, _battler);
+}
+
+/** 1:1 décomp `PlaySE12WithPanning(seId, pan)`. */
+function _PlaySE12WithPanning(seId: number, _pan: number): void {
+  // Pour now : appel PlaySE simple via __PlaySE (= pas de pan stereo).
+  const g = globalThis as { __PlaySE?: (id: number) => void };
+  if (g.__PlaySE) g.__PlaySE(seId);
+}
+
+/** Trigger K13 SpriteCB_FaintSlideAnim sur le sprite mon battler.
+ *  Wire vers __battleFaintAnim si exposé (= K13 cascade). */
+function _triggerFaintSlideAnim(battler: number): void {
+  const m = (globalThis as { __battleFaintAnim?: { triggerFaintSlide?: (b: number) => void } }).__battleFaintAnim;
+  m?.triggerFaintSlide?.(battler);
+}
+
+/** 1:1 décomp `FreeMonSpriteAfterFaintAnim()` (battle_controller_player.c).
+ *  Wait sprite Y > screen height → free sprite + healthbox → exec complete.
+ *  Pour now : immediate complete tant que K13 anim wire pas fait. */
+function _FreeMonSpriteAfterFaintAnim(): void {
   PlayerBufferExecCompleted();
 }
 
@@ -1460,4 +1578,6 @@ void MarkBattlerForControllerExec;
   PlayerHandleHealthBarUpdate, CompleteOnHealthbarDone,
   PlayerHandleExpUpdate,
   PlayerHandleStatusIconUpdate,
+  // L9/L10 wires exposés pour tests déterministes SwitchIn/Faint anims.
+  PlayerHandleSwitchInAnim, PlayerHandleFaintAnimation,
 };
