@@ -42,13 +42,15 @@
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
-  gActionSelectionCursor, gAbsentBattlerFlags,
+  gActionSelectionCursor, gMoveSelectionCursor, gAbsentBattlerFlags,
   gPlayerDpadHoldFrames, setPlayerDpadHoldFrames, incPlayerDpadHoldFrames,
+  gNumberOfMovesToChoose, setNumberOfMovesToChoose,
+  gMultiUsePlayerCursor, setMultiUsePlayerCursor,
 } from './state';
 import {
-  BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI,
+  BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI, BATTLE_TYPE_PALACE,
   B_ACTION_USE_MOVE, B_ACTION_USE_ITEM, B_ACTION_SWITCH, B_ACTION_RUN,
-  B_ACTION_CANCEL_PARTNER,
+  B_ACTION_CANCEL_PARTNER, B_ACTION_EXEC_SCRIPT,
 } from './constants';
 import {
   gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE,
@@ -72,11 +74,22 @@ import {
 } from './battle-sprite-callbacks';
 import {
   B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU,
+  B_WIN_MOVE_NAME_1, B_WIN_PP, B_WIN_PP_REMAINING, B_WIN_MOVE_TYPE,
 } from './battle-windows';
+import { SELECT_BUTTON } from './battle-controllers';
 import {
   GetBattlerPosition, GetBattlerAtPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
+  GetDefaultMoveTarget,
 } from './util';
+import {
+  TYPE_GHOST, MOVE_NONE, MAX_MON_MOVES, MOVE_CURSE,
+  MOVE_TARGET_USER, MOVE_TARGET_USER_OR_SELECTED, MOVE_TARGET_SELECTED,
+  MOVE_TARGET_RANDOM, MOVE_TARGET_BOTH, MOVE_TARGET_DEPENDS,
+  MOVE_TARGET_FOES_AND_ALLY, MOVE_TARGET_OPPONENTS_FIELD,
+  BATTLE_ALIVE_EXCEPT_ACTIVE,
+  GET_BATTLER_SIDE, BATTLE_OPPOSITE,
+} from './constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
@@ -306,6 +319,335 @@ function _IsDma3ManagerBusyWithBgCopy(): boolean {
  *  Dette R3 Phase B : double battles target selection. Single battle = pas appelé. */
 function HandleInputChooseTarget(): void {
   // Dette R3 : double battle target selection (= Phase B post-L1).
+}
+
+// ─── L2 — Move Selection helpers (battle_controller_player.c) ──────────────
+
+/** 1:1 décomp `MoveSelectionCreateCursorAt(cursorPosition, baseTileNum)`
+ *  (battle_controller_player.c:1510-1518). Place le move cursor sprite à
+ *  9*(cursor & 1)+1 col, 55+(cursor & 2) row du BG0 tilemap, palette 0x11. */
+export function MoveSelectionCreateCursorAt(cursorPosition: number, baseTileNum: number): void {
+  const src = new Uint16Array([baseTileNum + 1, baseTileNum + 2]);
+  _CopyToBgTilemapBufferRect_ChangePalette(
+    0, src,
+    9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2),
+    1, 2, 0x11,
+  );
+  _CopyBgTilemapBufferToVram(0);
+}
+
+/** 1:1 décomp `MoveSelectionDestroyCursorAt(cursorPosition)`
+ *  (battle_controller_player.c:1520-1528). */
+export function MoveSelectionDestroyCursorAt(cursorPosition: number): void {
+  const src = new Uint16Array([0x1016, 0x1016]);
+  _CopyToBgTilemapBufferRect_ChangePalette(
+    0, src,
+    9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2),
+    1, 2, 0x11,
+  );
+  _CopyBgTilemapBufferToVram(0);
+}
+
+/** 1:1 décomp `struct ChooseMoveStruct` (battle_controllers.h). Mapped sur
+ *  `gBattleBufferA[active][4..]`. Layout :
+ *    - offset 4..11 : moves[4] (u16 each)
+ *    - offset 12..15 : currentPp[4] (u8 each)
+ *    - offset 16..19 : maxPp[4] (u8 each)
+ *    - offset 20..21 : species (u16) — pas utilisé ici
+ *    - offset 22..23 : monTypes[2] (u8 each) — TYPE_GHOST check Curse */
+interface ChooseMoveStruct {
+  moves: number[];      // 4 entries
+  currentPp: number[];  // 4 entries
+  maxPp: number[];      // 4 entries
+  monTypes: number[];   // 2 entries (mon's primary+secondary type)
+}
+
+/** Helper : read ChooseMoveStruct depuis gBattleBufferA[battler][4..]. */
+function _readChooseMoveStruct(battler: number): ChooseMoveStruct {
+  const buf = gBattleBufferA[battler];
+  const moves: number[] = [];
+  const currentPp: number[] = [];
+  const maxPp: number[] = [];
+  const monTypes: number[] = [];
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    moves[i] = buf[4 + i * 2] | (buf[5 + i * 2] << 8);
+    currentPp[i] = buf[12 + i];
+    maxPp[i] = buf[16 + i];
+  }
+  monTypes[0] = buf[22];
+  monTypes[1] = buf[23];
+  return { moves, currentPp, maxPp, monTypes };
+}
+
+/** 1:1 décomp `gMoveNames[move]` lookup. Wire vers gameData via globalThis. */
+function _getMoveName(move: number): string {
+  const dt = (globalThis as { gameDataMoves?: Record<string, { name?: string; nameFr?: string }> }).gameDataMoves;
+  if (!dt) return String(move);
+  // Cherche entry par numericId.
+  for (const k of Object.keys(dt)) {
+    const e = dt[k];
+    const idMatch = parseInt(k, 10);
+    if (idMatch === move) return (e?.nameFr ?? e?.name ?? k);
+  }
+  return String(move);
+}
+
+/** 1:1 décomp `gTypeNames[type]` lookup. */
+function _getTypeName(type: number): string {
+  // 1:1 décomp include/data/text/type_names.h FR.
+  const FR_TYPES = ['NORMAL', 'COMBAT', 'VOL', 'POISON', 'SOL', 'ROCHE', 'INSECTE',
+    'SPECTRE', 'ACIER', '???', 'FEU', 'EAU', 'PLANTE', 'ÉLECTRIK', 'PSY',
+    'GLACE', 'DRAGON', 'TÉNÈBRES'];
+  return FR_TYPES[type] ?? 'NORMAL';
+}
+
+/** 1:1 décomp `gBattleMoves[move].target`. Wire vers gameDataMoves.target. */
+function _getMoveTarget(move: number): number {
+  const dt = (globalThis as { gameDataMoves?: Record<string, { target?: number }> }).gameDataMoves;
+  if (!dt) return MOVE_TARGET_SELECTED;
+  for (const k of Object.keys(dt)) {
+    if (parseInt(k, 10) === move) return (dt[k]?.target ?? MOVE_TARGET_SELECTED);
+  }
+  return MOVE_TARGET_SELECTED;
+}
+
+/** 1:1 décomp `MoveSelectionDisplayMoveNames()` (1456-1471). */
+function MoveSelectionDisplayMoveNames(): void {
+  const moveInfo = _readChooseMoveStruct(gActiveBattler);
+  setNumberOfMovesToChoose(0);
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    MoveSelectionDestroyCursorAt(i);
+    BattlePutTextOnWindow(_getMoveName(moveInfo.moves[i]), i + B_WIN_MOVE_NAME_1);
+    if (moveInfo.moves[i] !== MOVE_NONE) {
+      setNumberOfMovesToChoose(gNumberOfMovesToChoose + 1);
+    }
+  }
+}
+
+/** 1:1 décomp `MoveSelectionDisplayPpString()` (1473-1477). */
+function MoveSelectionDisplayPpString(): void {
+  BattlePutTextOnWindow('PP', B_WIN_PP);
+}
+
+/** 1:1 décomp `MoveSelectionDisplayPpNumber()` (1479-1494). */
+function MoveSelectionDisplayPpNumber(): void {
+  // 1:1 décomp : early return si bufferA[2] (= no PP display flag) set.
+  if (gBattleBufferA[gActiveBattler][2] === 1 /* TRUE */) return;
+
+  _SetPpNumbersPaletteInMoveSelection();
+  const moveInfo = _readChooseMoveStruct(gActiveBattler);
+  const cur = gMoveSelectionCursor[gActiveBattler];
+  // Format "XX/YY" right-aligned 2 chars each.
+  const cp = String(moveInfo.currentPp[cur]).padStart(2, ' ');
+  const mp = String(moveInfo.maxPp[cur]).padStart(2, ' ');
+  BattlePutTextOnWindow(`${cp}/${mp}`, B_WIN_PP_REMAINING);
+}
+
+/** 1:1 décomp `MoveSelectionDisplayMoveType()` (1496-1508). */
+function MoveSelectionDisplayMoveType(): void {
+  const moveInfo = _readChooseMoveStruct(gActiveBattler);
+  const cur = gMoveSelectionCursor[gActiveBattler];
+  // 1:1 décomp : "TYPE/" + typeName du move courant via gBattleMoves[move].type.
+  const move = moveInfo.moves[cur];
+  const moveType = _getMoveType(move);
+  BattlePutTextOnWindow(`TYPE/${_getTypeName(moveType)}`, B_WIN_MOVE_TYPE);
+}
+
+/** 1:1 décomp `gBattleMoves[move].type`. */
+function _getMoveType(move: number): number {
+  const dt = (globalThis as { gameDataMoves?: Record<string, { type?: number }> }).gameDataMoves;
+  if (!dt) return 0;
+  for (const k of Object.keys(dt)) {
+    if (parseInt(k, 10) === move) return (dt[k]?.type ?? 0);
+  }
+  return 0;
+}
+
+/** 1:1 décomp `SetPpNumbersPaletteInMoveSelection()` (battle_controller_player.c).
+ *  Dette R3 : palette color PP number selon current/max ratio (vert/orange/rouge). */
+function _SetPpNumbersPaletteInMoveSelection(): void {
+  // Dette R3 : palette PP number color cascade.
+}
+
+/** 1:1 décomp `InitMoveSelectionsVarsAndStrings()` (2643-2651). Setup move UI. */
+export function InitMoveSelectionsVarsAndStrings(): void {
+  MoveSelectionDisplayMoveNames();
+  setMultiUsePlayerCursor(0xFF);
+  MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+  MoveSelectionDisplayPpString();
+  MoveSelectionDisplayPpNumber();
+  MoveSelectionDisplayMoveType();
+}
+
+/** 1:1 décomp `HandleChooseMoveAfterDma3()` (2607-2615). Wait DMA3 + reset
+ *  BG0 scroll à (0, DISPLAY_HEIGHT * 2) + install HandleInputChooseMove. */
+function HandleChooseMoveAfterDma3(): void {
+  if (!_IsDma3ManagerBusyWithBgCopy()) {
+    _setBattleBG0(0, DISPLAY_HEIGHT * 2);
+    gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
+  }
+}
+
+/** 1:1 décomp `PlayerChooseMoveInBattlePalace()` (2619-2627). Battle Palace
+ *  variant : RNG-driven move pick. Dette R3 : Frontier subsystem (= user
+ *  "Report jusqu'à fin projet"). Pour now : stub R3 immediate complete. */
+function PlayerChooseMoveInBattlePalace(): void {
+  // Dette R3 : Battle Palace move selection. Skip pour non-Frontier.
+  PlayerBufferExecCompleted();
+}
+
+/** 1:1 décomp `HandleInputChooseMove()` (battle_controller_player.c:471-615).
+ *  Controller func active pendant le menu MOVE select. Loop frame :
+ *    - JOY_NEW(A_BUTTON) → calc moveTarget (= MOVE_CURSE special TYPE_GHOST,
+ *      else gBattleMoves[move].target) + canSelectTarget logic (single vs
+ *      double) → EmitTwoReturnValues(B_ACTION_EXEC_SCRIPT, moveIdx | cursor<<8)
+ *      ou install HandleInputChooseTarget pour double battle.
+ *    - JOY_NEW(B_BUTTON) | dpad-hold-59 → EmitTwoReturnValues(B_ACTION_EXEC_SCRIPT,
+ *      0xFFFF) (= cancel back to ChooseAction).
+ *    - JOY_NEW(DPAD_*) → toggle cursor bit 0 / bit 1 + Destroy/Create cursor +
+ *      DisplayPpNumber + DisplayMoveType.
+ *    - JOY_NEW(SELECT_BUTTON) → switch moves (HandleMoveSwitching) — dette R3. */
+function HandleInputChooseMove(): void {
+  let canSelectTarget: number = 0;
+  const moveInfo = _readChooseMoveStruct(gActiveBattler);
+
+  if (JOY_REPEAT(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode === OPTIONS_BUTTON_MODE_L_EQUALS_A) {
+    incPlayerDpadHoldFrames();
+  } else {
+    setPlayerDpadHoldFrames(0);
+  }
+
+  if (JOY_NEW(A_BUTTON)) {
+    let moveTarget: number;
+
+    PlaySE(SE_SELECT);
+    const curMove = moveInfo.moves[gMoveSelectionCursor[gActiveBattler]];
+    if (curMove === MOVE_CURSE) {
+      // 1:1 décomp : Curse cible auto USER si mon n'est pas GHOST.
+      if (moveInfo.monTypes[0] !== TYPE_GHOST && moveInfo.monTypes[1] !== TYPE_GHOST) {
+        moveTarget = MOVE_TARGET_USER;
+      } else {
+        moveTarget = MOVE_TARGET_SELECTED;
+      }
+    } else {
+      moveTarget = _getMoveTarget(curMove);
+    }
+
+    if (moveTarget & MOVE_TARGET_USER) {
+      setMultiUsePlayerCursor(gActiveBattler);
+    } else {
+      setMultiUsePlayerCursor(GetBattlerAtPosition(BATTLE_OPPOSITE(GET_BATTLER_SIDE(gActiveBattler))));
+    }
+
+    if (!gBattleBufferA[gActiveBattler][1]) { // not a double battle
+      if ((moveTarget & MOVE_TARGET_USER_OR_SELECTED) && !gBattleBufferA[gActiveBattler][2]) {
+        canSelectTarget++;
+      }
+    } else { // double battle
+      if (!(moveTarget & (MOVE_TARGET_RANDOM | MOVE_TARGET_BOTH | MOVE_TARGET_DEPENDS | MOVE_TARGET_FOES_AND_ALLY | MOVE_TARGET_OPPONENTS_FIELD | MOVE_TARGET_USER))) {
+        canSelectTarget++; // either selected or user
+      }
+
+      if (moveInfo.currentPp[gMoveSelectionCursor[gActiveBattler]] === 0) {
+        canSelectTarget = 0;
+      } else if (!(moveTarget & (MOVE_TARGET_USER | MOVE_TARGET_USER_OR_SELECTED))
+                 && _countAliveMonsInBattle(BATTLE_ALIVE_EXCEPT_ACTIVE) <= 1) {
+        setMultiUsePlayerCursor(GetDefaultMoveTarget(gActiveBattler));
+        canSelectTarget = 0;
+      }
+    }
+
+    if (!canSelectTarget) {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
+      PlayerBufferExecCompleted();
+    } else {
+      gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseTarget;
+
+      if (moveTarget & (MOVE_TARGET_USER | MOVE_TARGET_USER_OR_SELECTED)) {
+        setMultiUsePlayerCursor(gActiveBattler);
+      } else if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT)]) {
+        setMultiUsePlayerCursor(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
+      } else {
+        setMultiUsePlayerCursor(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
+      }
+      _SpriteCB_ShowAsMoveTarget(gMultiUsePlayerCursor);
+    }
+  } else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59) {
+    PlaySE(SE_SELECT);
+    BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, 0xFFFF);
+    PlayerBufferExecCompleted();
+  } else if (JOY_NEW(DPAD_LEFT)) {
+    if (gMoveSelectionCursor[gActiveBattler] & 1) {
+      MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
+      gMoveSelectionCursor[gActiveBattler] ^= 1;
+      PlaySE(SE_SELECT);
+      MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+      MoveSelectionDisplayPpNumber();
+      MoveSelectionDisplayMoveType();
+    }
+  } else if (JOY_NEW(DPAD_RIGHT)) {
+    if (!(gMoveSelectionCursor[gActiveBattler] & 1)
+        && (gMoveSelectionCursor[gActiveBattler] ^ 1) < gNumberOfMovesToChoose) {
+      MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
+      gMoveSelectionCursor[gActiveBattler] ^= 1;
+      PlaySE(SE_SELECT);
+      MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+      MoveSelectionDisplayPpNumber();
+      MoveSelectionDisplayMoveType();
+    }
+  } else if (JOY_NEW(DPAD_UP)) {
+    if (gMoveSelectionCursor[gActiveBattler] & 2) {
+      MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
+      gMoveSelectionCursor[gActiveBattler] ^= 2;
+      PlaySE(SE_SELECT);
+      MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+      MoveSelectionDisplayPpNumber();
+      MoveSelectionDisplayMoveType();
+    }
+  } else if (JOY_NEW(DPAD_DOWN)) {
+    if (!(gMoveSelectionCursor[gActiveBattler] & 2)
+        && (gMoveSelectionCursor[gActiveBattler] ^ 2) < gNumberOfMovesToChoose) {
+      MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
+      gMoveSelectionCursor[gActiveBattler] ^= 2;
+      PlaySE(SE_SELECT);
+      MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+      MoveSelectionDisplayPpNumber();
+      MoveSelectionDisplayMoveType();
+    }
+  } else if (JOY_NEW(SELECT_BUTTON)) {
+    // 1:1 décomp : move switching mode (HandleMoveSwitching). Dette R3 :
+    // swap moves + PP persisté via SetMonData (= ~150l C). Phase L2+ ou L3.
+    void _HandleMoveSwitching_stub;
+  }
+}
+
+/** 1:1 décomp `HandleMoveSwitching()` (battle_controller_player.c:667-810).
+ *  Dette R3 : SELECT_BUTTON swap moves + persist via SetMonData. Non critique
+ *  pour Birch tutorial (= mon a 2 moves Tackle+Growl, pas de swap UI). */
+function _HandleMoveSwitching_stub(): void {
+  // Dette R3 : full move swap UI + persist Phase L2+ post-tutorial.
+}
+
+/** 1:1 décomp `B_POSITION_OPPONENT_LEFT/RIGHT` (battle.h). */
+const B_POSITION_OPPONENT_LEFT = 1;
+const B_POSITION_OPPONENT_RIGHT = 3;
+
+/** 1:1 décomp `SpriteCB_ShowAsMoveTarget(battler)`. Dette R3 : target sprite
+ *  highlight via gSprites[gBattlerSpriteIds[battler]].callback. */
+function _SpriteCB_ShowAsMoveTarget(_battler: number): void {
+  // Dette R3 : sprite callback highlight target.
+}
+
+/** 1:1 décomp `CountAliveMonsInBattle(caseId)` local port pour HandleInput
+ *  ChooseMove. Cf damage-calc.ts copy (= éviter re-export cycle). */
+function _countAliveMonsInBattle(caseId: number): number {
+  let retVal = 0;
+  if (caseId === BATTLE_ALIVE_EXCEPT_ACTIVE /* 0 */) {
+    for (let i = 0; i < 4; i++) {
+      if (i !== gActiveBattler && !(gAbsentBattlerFlags & (1 << i))) retVal++;
+    }
+  }
+  return retVal;
 }
 
 // ─── Cascade helpers (= K8/K27/K28/K29 wires) ──────────────────────────────
@@ -630,14 +972,19 @@ function PlayerHandleYesNoBox(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleChooseMove()`. */
+/** 1:1 décomp `PlayerHandleChooseMove()` (battle_controller_player.c:2629-2641).
+ *  Setup move selection menu : si Battle Palace → install
+ *  PlayerChooseMoveInBattlePalace ; sinon → InitMoveSelectionsVarsAndStrings +
+ *  install HandleChooseMoveAfterDma3. */
 function PlayerHandleChooseMove(): void {
-  // 1:1 décomp : setup move menu + install HandleInputChooseMove loop.
-  // Dette R3 Phase B : HandleInputChooseMove cursor + display (~200l).
-  // Pour now : assume first move.
-  const tmpData = new Uint8Array([10 /* B_ACTION_EXEC_SCRIPT */, 0, 0, 0]);
-  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, tmpData, 4);
-  PlayerBufferExecCompleted();
+  if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+    // 1:1 décomp : arenaMindPoints[battler] = 8 + install Palace handler.
+    // Dette R3 : Frontier subsystem (= user "Report jusqu'à fin projet").
+    gBattlerControllerFuncs[gActiveBattler] = PlayerChooseMoveInBattlePalace;
+  } else {
+    InitMoveSelectionsVarsAndStrings();
+    gBattlerControllerFuncs[gActiveBattler] = HandleChooseMoveAfterDma3;
+  }
 }
 
 /** 1:1 décomp `PlayerHandleChooseItem()`. */
@@ -908,4 +1255,8 @@ void MarkBattlerForControllerExec;
   HandleInputChooseAction, HandleChooseActionAfterDma3,
   ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt,
   PlayerHandleChooseAction,
+  // L2 wires exposés pour tests déterministes Move selection input loop.
+  HandleInputChooseMove, HandleChooseMoveAfterDma3,
+  MoveSelectionCreateCursorAt, MoveSelectionDestroyCursorAt,
+  InitMoveSelectionsVarsAndStrings, PlayerHandleChooseMove,
 };

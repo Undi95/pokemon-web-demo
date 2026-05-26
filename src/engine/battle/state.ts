@@ -750,6 +750,17 @@ export let gPlayerDpadHoldFrames = 0;
 export function setPlayerDpadHoldFrames(v: number): void { gPlayerDpadHoldFrames = v; }
 export function incPlayerDpadHoldFrames(): void { gPlayerDpadHoldFrames++; }
 
+/** 1:1 décomp `gNumberOfMovesToChoose` (battle_main.c). Counter du nombre de
+ *  moves !=MOVE_NONE dans la party UI. Setup par MoveSelectionDisplayMoveNames
+ *  + utilisé par HandleInputChooseMove pour clamp DPAD navigation. */
+export let gNumberOfMovesToChoose = 0;
+export function setNumberOfMovesToChoose(v: number): void { gNumberOfMovesToChoose = v; }
+
+/** 1:1 décomp `gMultiUsePlayerCursor` (battle_main.c). Cursor secondaire utilisé
+ *  par HandleInputChooseMove (target select / move switching) + YesNo input. */
+export let gMultiUsePlayerCursor = 0;
+export function setMultiUsePlayerCursor(v: number): void { gMultiUsePlayerCursor = v; }
+
 /** 1:1 décomp `gBattleStruct->lastTakenMove[MAX_BATTLERS_COUNT]` — dernier
  *  move subi par chaque battler (= utilisé par Mirror Move).
  *  Note : ce field map sur les premiers 4 entries de `gBattleStruct.lastTakenMove`
@@ -1059,6 +1070,10 @@ if (!(globalThis as Record<string, unknown>).__battleState) {
   get gPlayerDpadHoldFrames() { return gPlayerDpadHoldFrames; },
   setPlayerDpadHoldFrames,
   incPlayerDpadHoldFrames,
+  get gNumberOfMovesToChoose() { return gNumberOfMovesToChoose; },
+  setNumberOfMovesToChoose,
+  get gMultiUsePlayerCursor() { return gMultiUsePlayerCursor; },
+  setMultiUsePlayerCursor,
   get gActiveBattler() { return gActiveBattler; },
   setActiveBattler,
   // Setters pour memory-map writes (= opcodes natifs setbyte/addbyte/orbyte).
