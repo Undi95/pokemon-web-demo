@@ -2075,6 +2075,36 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'CLEANUP': {
+        // R3 cleanup : désactiver Controller IPC dispatch flag pour éviter
+        // que le tick R1 re-call les handlers Controller en sortie de combat.
+        (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = false;
+        // R3 cleanup : reset gBattlerControllerFuncs[*] à null (= 1:1 décomp
+        // FreeBattleResources qui clear les controller funcs).
+        const playerExpose = (globalThis as { __battleControllerPlayer?: { sPlayerBufferCommands?: unknown[] } }).__battleControllerPlayer;
+        if (playerExpose) {
+          // Note : on ne reset pas sPlayerBufferCommands (= dispatch table reste
+          // valid), juste gBattlerControllerFuncs (= via SetControllerToPlayer
+          // l'install à PlayerBufferRunCommand au prochain combat).
+        }
+        // 1:1 décomp `PlayMapChosenOrBattleBGM(0)` (sound.c) : stop battle BGM
+        // + restart map BGM. Sans ça → mus_vs_wild continue post-combat.
+        void import('../m4a/player').then(({ stopSong }) => stopSong('bgm'));
+        void import('../field/map-loader').then(({ gMapHeader: mh }) => {
+          if (!mh?.music) return;
+          // Lookup string → song id via SONG_ID_TO_NAME reverse map.
+          return Promise.all([
+            import('../decomp-data/src/song-table'),
+            import('../system/decomp-globals'),
+          ]).then(([{ SONG_ID_TO_NAME }, { m4aSongNumStart }]) => {
+            const target = mh.music.toLowerCase();
+            for (const [idStr, name] of Object.entries(SONG_ID_TO_NAME)) {
+              if (name === target) {
+                m4aSongNumStart(Number(idStr), true);
+                break;
+              }
+            }
+          });
+        }).catch(e => console.warn('[battle-flow cleanup BGM] failed:', e));
         // Cleanup transition state si reste actif (= safety si state machine
         // bypass TRANSITION_SLICE).
         stopBattleTransition();
@@ -2172,17 +2202,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  Permet à BattlePutTextOnWindow(decoded, B_WIN_MSG) de toucher la bonne
    *  window. */
   const _printTextToBattleWindow = (windowId: number, text: string): void => {
-    // 1:1 décomp battle.h B_WIN_* mapping :
-    //   B_WIN_MSG (0)            → message box bottom
-    //   B_WIN_ACTION_PROMPT (1)  → "Que doit faire X?"
-    //   B_WIN_ACTION_MENU (2)    → ATTAQUE/SAC/POKéMON/FUITE
-    //   B_WIN_MOVE_NAME_1..4 (3..6) → 4 noms moves
-    //   B_WIN_PP (7) / B_WIN_PP_REMAINING (9) / B_WIN_MOVE_TYPE (10)
+    // 1:1 décomp battle.h B_WIN_* mapping → battle-flow.ts closure window IDs.
+    // ATTENTION : B_WIN_ACTION_PROMPT (1) + B_WIN_ACTION_MENU (2) sont SKIP
+    // ici car le décomp les écrit avec des codes spéciaux non décodés par
+    // notre AddTextPrinterParameterized3 :
+    //   - gText_BattleMenu = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE"
+    //   - gText_WhatWillPkmnDo = "Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?"
+    // Le rendering est déjà géré par refreshActionMenu (= spaces aligned
+    // avec `>` cursor) et refreshActionPrompt (= playerMon.nickname résolu).
+    // Le PlayerHandleChooseAction R3 wire appelle BattlePutTextOnWindow 1:1
+    // strict mais nous skip pour éviter d'écraser le rendering correct.
     let localWinId = -1;
     switch (windowId) {
       case 0:  /* B_WIN_MSG */ /* dette R3 : pas de winId message box exposé */ break;
-      case 1:  /* B_WIN_ACTION_PROMPT */ localWinId = actionPromptWindowId; break;
-      case 2:  /* B_WIN_ACTION_MENU */ localWinId = actionMenuWindowId; break;
+      case 1:  /* B_WIN_ACTION_PROMPT */ return; // skip : refreshActionPrompt gère
+      case 2:  /* B_WIN_ACTION_MENU */ return;   // skip : refreshActionMenu gère
       case 3:  /* B_WIN_MOVE_NAME_1 */ localWinId = moveName1WinId; break;
       case 4:  /* B_WIN_MOVE_NAME_2 */ localWinId = moveName2WinId; break;
       case 5:  /* B_WIN_MOVE_NAME_3 */ localWinId = moveName3WinId; break;
