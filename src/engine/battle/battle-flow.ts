@@ -1873,6 +1873,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (opponentSpriteId >= 0) {
           startFaintAnim(opponentSpriteId, true /* isOpponent */);
         }
+        // 1:1 décomp `battle_main.c:HandleEndTurn_BattleWon` (= wild) :
+        // BattleStopLowHpSound + PlayBGM(MUS_VICTORY_WILD). User feedback :
+        // "faudra mettre la musique de victoire avant le cut vers l'OW".
+        // MUS_VICTORY_WILD = 353 (= 1:1 songs-data.ts). Trainer battle = 412
+        // (MUS_VICTORY_TRAINER) → routera quand trainer-battle-flow porté.
+        void import('../system/decomp-globals').then(({ m4aSongNumStart }) => {
+          m4aSongNumStart(353 /* MUS_VICTORY_WILD */, true);
+        });
         return false;
       }
 
