@@ -111,10 +111,27 @@ import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
 import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr } from './state';
+import { decodeBattleString } from './battle-string-decoder';
+import { STRINGID_DONTLEAVEBIRCH, STRINGID_CANTESCAPE, STRINGID_PREVENTSESCAPE, STRINGID_NORUNNINGFROMTRAINERS } from '../decomp-data/include/constants/battle_string_ids-data';
 
 // Wrapper helper pour accès à gBattleCommunication (= éviter capture closure
 // du let import vs const array). Returns le reference array global.
 function _gBattleCommunication(): readonly number[] { return _gBattleCommunicationArr; }
+
+/** Helper : resolve battle string via decoder (= 1:1 décomp pattern
+ *  PrepareStringBattle → BufferStringBattle → decoded FR text). Évite
+ *  les hardcodes en utilisant la table gBattleStringsTable existante. */
+function _resolveBattleString(stringId: number): string {
+  // msgData minimal (= les buffs ne sont pas utilisés pour DONTLEAVEBIRCH etc.).
+  const msgData = {
+    currentMove: 0, originallyUsedMove: 0, lastItem: 0, lastAbility: 0,
+    scrActive: 0, bakScriptPartyIdx: 0, hpScale: 0, itemEffectBattler: 0,
+    moveType: 0, abilities: [0, 0, 0, 0],
+    textBuffs: [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)] as
+      [Uint8Array, Uint8Array, Uint8Array],
+  };
+  return decodeBattleString(stringId, msgData);
+}
 
 // K8 + K10 + K12 + K13 side-effect imports : expose devtools globals
 // (= window.__battleMainFunctions / __battleHpBar / __battleFaintAnim /
@@ -1446,7 +1463,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // BattleScript_PrintCantRunFromTrainer = STRINGID_NORUNNINGFROMTRAINERS.
         if ((gBattleTypeFlags & 0x8 /* BATTLE_TYPE_TRAINER */)
             && !(gBattleTypeFlags & 0x4 /* BATTLE_TYPE_LINK */)) {
-          ShowFieldMessage('Pas de fuite face à un dresseur !');
+          // 1:1 décomp `BattleScript_PrintCantRunFromTrainer` :
+          // STRINGID_NORUNNINGFROMTRAINERS via decoder → texte FR officiel.
+          ShowFieldMessage(_resolveBattleString(STRINGID_NORUNNINGFROMTRAINERS));
           state = 'ACTION_RUN_WAIT';
           return false;
         }
@@ -1466,17 +1485,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // STATUS escape : "Impossible de fuir!".
           // Shadow Tag/Arena Trap : "X de Y empêche la fuite!".
           const chooser = _gBattleCommunication()[5 /* MULTISTRING_CHOOSER */] ?? 0;
-          let msg: string;
+          // 1:1 décomp `gNoEscapeStringIds[chooser]` (battle_message.c) →
+          // [PreventsEscape, CantEscape, DontLeaveBirch, AttackerCantEscape] →
+          // via decoder pour texte FR officiel (= pas de hardcode).
+          let stringId: number;
           if (chooser === 2 /* B_MSG_DONT_LEAVE_BIRCH */) {
-            // 1:1 décomp `sText_DontLeaveBirch` (battle_message.c:333) :
-            // "PROF. SEKO: Ne me laisse pas\ncomme ça!\p".
-            msg = 'PROF. SEKO: Ne me laisse pas\ncomme ça!';
+            stringId = STRINGID_DONTLEAVEBIRCH;
           } else if (chooser === 1 /* B_MSG_CANT_ESCAPE */) {
-            msg = 'Impossible de fuir !';
+            stringId = STRINGID_CANTESCAPE;
           } else {
-            msg = "L'évasion est empêchée !";
+            stringId = STRINGID_PREVENTSESCAPE;
           }
-          ShowFieldMessage(msg);
+          ShowFieldMessage(_resolveBattleString(stringId));
         } else {
           // Run permitted : roll TryRunFromBattle.
           const tryRunResult = _TryRunFromBattle(0);
