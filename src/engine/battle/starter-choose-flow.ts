@@ -681,6 +681,20 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     GiveMonToPlayer(mon);
     void mon;
 
+    // 1:1 décomp C:546 `ResetAllPicSprites()` : destroy circle + pkmn sprites
+    // explicitement (= sinon ils persistent over battle scene + repop labo
+    // post-tutorial avec ombre visible et couleurs résiduelles).
+    // User feedback : "il reste l'ombre du pokémon choisi + ses couleur quand
+    // on repop au labo".
+    const circleId = task.data[T_CIRCLE_SPRITE_ID];
+    const pkmnId = task.data[T_PKMN_SPRITE_ID];
+    if (pkmnId >= 0) {
+      try { rt.DestroySprite(pkmnId); } catch (e) { void e; }
+    }
+    if (circleId >= 0) {
+      try { rt.DestroySprite(circleId); } catch (e) { void e; }
+    }
+
     // Cleanup task — we don't return to ROM callback ; the next CB2 tick will
     // chain into StartBirchTutorialBattle.
     task.func = null;
