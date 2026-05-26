@@ -158,6 +158,7 @@ import './battle-turn-dispatch';
 import './battle-cb2';
 import './battle-link-end';
 import './battle-link-start';
+import './battle-init';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
