@@ -1051,6 +1051,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     const rt = getRuntime();
     if (!rt) return false;
 
+    // R1 — Controller IPC tick : drive gBattlerControllerFuncs[i] chaque frame
+    // si Controller IPC dispatch activé (= __USE_CONTROLLER_DISPATCH__). Pour
+    // chaque battler dont gBattleControllerExecFlags bit set, call handler.
+    // Permet les handlers L1..L14 (HandleInputChooseAction/Move, PlayerHandle
+    // PrintString, HealthBar K10, etc.) d'être effectivement déclenchés quand
+    // emit+flag set par engine.
+    const tickModule = (globalThis as { __battleControllerTick?: { tickActiveBattlerController?: () => void } }).__battleControllerTick;
+    tickModule?.tickActiveBattlerController?.();
+
     // Tick shake animation (= run regardless of state, so shake survives
     // text waits + transitions).
     tickShake();
