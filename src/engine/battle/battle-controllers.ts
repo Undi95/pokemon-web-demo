@@ -570,12 +570,37 @@ export function PlaySE(_seId: number): void {
   // Phase 1.4 UI : trigger SE via audio engine.
 }
 
-/** 1:1 signature décomp `JOY_NEW(button)` (= io_reg.h macro). Returns true si
- *  le bouton vient d.être pressé ce frame. Phase 1 stub : pas d.input wired,
- *  return false. Pour yesnobox : on auto-confirme YES (= cursor=0) via auto-press hack en
- *  override de cette fonction (cf. cmd-niveau-4.ts Cmd_yesnobox). */
-export function JOY_NEW(_button: number): boolean {
-  return false;
+/** 1:1 signature décomp `JOY_NEW(button)` (= include/global.h:134 macro
+ *  `TEST_BUTTON(gMain.newKeys, button)`). Returns truthy si `button` mask
+ *  intersecte newKeys ce frame. Wired vers `getRuntime().gMain.newKeys`
+ *  via lazy lookup pour éviter cycle ESM avec decomp-globals. */
+export function JOY_NEW(button: number): number {
+  const rt = _getRuntimeLazy();
+  return rt ? (rt.gMain.newKeys & button) : 0;
+}
+
+/** 1:1 signature décomp `JOY_REPEAT(button)` (= include/global.h:137 macro
+ *  `TEST_BUTTON(gMain.newAndRepeatedKeys, button)`). */
+export function JOY_REPEAT(button: number): number {
+  const rt = _getRuntimeLazy();
+  return rt ? (rt.gMain.newAndRepeatedKeys & button) : 0;
+}
+
+/** 1:1 signature décomp `JOY_HELD(button)` (= include/global.h:131 macro
+ *  `TEST_BUTTON(gMain.heldKeys, button)`). */
+export function JOY_HELD(button: number): number {
+  const rt = _getRuntimeLazy();
+  return rt ? (rt.gMain.heldKeys & button) : 0;
+}
+
+/** Lazy lookup runtime via globalThis.__rt (exposé par decomp-globals
+ *  ligne ~109). Évite cycle ESM avec decomp-globals → gba-global-scope. */
+type _RtShape = { gMain: { newKeys: number; newAndRepeatedKeys: number; heldKeys: number } };
+function _getRuntimeLazy(): _RtShape | null {
+  const g = globalThis as { __rt?: unknown };
+  const r = g.__rt as _RtShape | undefined;
+  if (r && r.gMain) return r;
+  return null;
 }
 
 // ─── Button constants (io_reg.h) — 1:1 décomp ──────────────────────────────
@@ -589,6 +614,9 @@ export const DPAD_UP       = 1 << 6;
 export const DPAD_DOWN     = 1 << 7;
 export const R_BUTTON      = 1 << 8;
 export const L_BUTTON      = 1 << 9;
+
+/** 1:1 décomp `DPAD_ANY` (gba/io_reg.h:713) = OR de DPAD_LEFT/RIGHT/UP/DOWN. */
+export const DPAD_ANY      = DPAD_RIGHT | DPAD_LEFT | DPAD_UP | DPAD_DOWN;
 
 // ─── SE_* constants (constants/songs.h) — subset utilisé Batch 04 ──────────
 export const SE_SELECT = 5; // 1:1 décomp constants/songs.h

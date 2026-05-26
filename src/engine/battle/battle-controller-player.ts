@@ -42,10 +42,42 @@
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
+  gActionSelectionCursor, gAbsentBattlerFlags,
+  gPlayerDpadHoldFrames, setPlayerDpadHoldFrames, incPlayerDpadHoldFrames,
 } from './state';
-import { BATTLE_TYPE_LINK } from './constants';
-import { gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE, PrepareBufferDataTransfer } from './battle-controllers-ipc';
-import { gBitTable, MarkBattlerForControllerExec } from './battle-controllers';
+import {
+  BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI,
+  B_ACTION_USE_MOVE, B_ACTION_USE_ITEM, B_ACTION_SWITCH, B_ACTION_RUN,
+  B_ACTION_CANCEL_PARTNER,
+} from './constants';
+import {
+  gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE,
+  PrepareBufferDataTransfer, BtlController_EmitTwoReturnValues,
+} from './battle-controllers-ipc';
+import {
+  gBitTable, MarkBattlerForControllerExec, BattlePutTextOnWindow,
+  JOY_NEW, JOY_REPEAT,
+  A_BUTTON, B_BUTTON, START_BUTTON,
+  DPAD_LEFT, DPAD_RIGHT, DPAD_UP, DPAD_DOWN, DPAD_ANY,
+  SE_SELECT,
+} from './battle-controllers';
+// PlaySE wired via globalThis.__PlaySE (exposé par decomp-globals ligne ~722) —
+// évite cycle ESM avec import direct.
+function PlaySE(seId: number): void {
+  const g = globalThis as { __PlaySE?: (id: number) => void };
+  if (g.__PlaySE) g.__PlaySE(seId);
+}
+import {
+  DoBounceEffect, BOUNCE_HEALTHBOX, BOUNCE_MON,
+} from './battle-sprite-callbacks';
+import {
+  B_WIN_ACTION_PROMPT, B_WIN_ACTION_MENU,
+} from './battle-windows';
+import {
+  GetBattlerPosition, GetBattlerAtPosition,
+  B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
+} from './util';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -164,11 +196,117 @@ export function PlayerBufferRunCommand(): void {
 export function SetControllerToPlayer(): void {
   gBattlerControllerFuncs[gActiveBattler] = PlayerBufferRunCommand;
   _gDoingBattleAnim = false;
-  _gPlayerDpadHoldFrames = 0;
+  setPlayerDpadHoldFrames(0);
 }
 
 let _gDoingBattleAnim = false;
-let _gPlayerDpadHoldFrames = 0;
+
+// ─── Constants 1:1 décomp (= include/constants/* + battle_message.c text) ──
+
+/** 1:1 décomp `OPTIONS_BUTTON_MODE_L_EQUALS_A` = 2 (include/constants/global.h:125). */
+const OPTIONS_BUTTON_MODE_L_EQUALS_A = 2;
+
+/** 1:1 décomp `LAST_BALL` = ITEM_PREMIER_BALL (= dernier ItemBall enum).
+ *  include/constants/items.h : ITEM_PREMIER_BALL = 12 dans Emerald. */
+const LAST_BALL = 12;
+
+/** 1:1 décomp `gText_BattleMenu` (battle_message.c:1276) = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE". */
+const gText_BattleMenu = 'ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE';
+
+/** 1:1 décomp `gText_WhatWillPkmnDo` (battle_message.c:1272) = "Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?". */
+const gText_WhatWillPkmnDo = 'Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?';
+
+// ─── Cascade helpers — 1:1 strict ports ────────────────────────────────────
+
+/** 1:1 décomp `ActionSelectionCreateCursorAt(cursorPosition, baseTileNum)`
+ *  (battle_controller_player.c:1530-1538). Place le cursor sprite (tile baseTileNum+1
+ *  et +2) à la position 7*(cursor & 1) + 16 col, 35 + (cursor & 2) row du BG0
+ *  tilemap, palette 0x11. Puis CopyBgTilemapBufferToVram(0). */
+export function ActionSelectionCreateCursorAt(cursorPosition: number, baseTileNum: number): void {
+  const src = new Uint16Array([baseTileNum + 1, baseTileNum + 2]);
+  _CopyToBgTilemapBufferRect_ChangePalette(
+    0, src,
+    7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2),
+    1, 2, 0x11,
+  );
+  _CopyBgTilemapBufferToVram(0);
+}
+
+/** 1:1 décomp `ActionSelectionDestroyCursorAt(cursorPosition)`
+ *  (battle_controller_player.c:1540-1548). Same que Create mais avec tile = 0x1016
+ *  (= tile invisible / fond uniforme). */
+export function ActionSelectionDestroyCursorAt(cursorPosition: number): void {
+  const src = new Uint16Array([0x1016, 0x1016]);
+  _CopyToBgTilemapBufferRect_ChangePalette(
+    0, src,
+    7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2),
+    1, 2, 0x11,
+  );
+  _CopyBgTilemapBufferToVram(0);
+}
+
+/** 1:1 signature décomp `CopyToBgTilemapBufferRect_ChangePalette(bg, src, x, y,
+ *  w, h, palette)` (bg.c). Copie un rect au BG tilemap buffer + change palette.
+ *  Dette R3 : full BG tilemap manip GBA-specific cascade vers gba-window-system /
+ *  Phaser BG. Pour now : route vers globalThis hook pour brancher UI plus tard. */
+function _CopyToBgTilemapBufferRect_ChangePalette(
+  bg: number, src: Uint16Array, x: number, y: number, w: number, h: number, palette: number,
+): void {
+  const hook = (globalThis as { __bgTilemap?: {
+    copyToBufferRectChangePalette?: (bg: number, src: Uint16Array, x: number, y: number, w: number, h: number, palette: number) => void;
+  } }).__bgTilemap;
+  if (hook?.copyToBufferRectChangePalette) {
+    hook.copyToBufferRectChangePalette(bg, src, x, y, w, h, palette);
+  }
+}
+
+/** 1:1 décomp `CopyBgTilemapBufferToVram(bg)` (bg.c). Flush tilemap buffer
+ *  → VRAM. Wire vers gba-window-system équivalent. */
+function _CopyBgTilemapBufferToVram(bg: number): void {
+  const hook = (globalThis as { __bgTilemap?: {
+    copyBufferToVram?: (bg: number) => void;
+  } }).__bgTilemap;
+  if (hook?.copyBufferToVram) hook.copyBufferToVram(bg);
+}
+
+/** 1:1 décomp `BattleTv_ClearExplosionFaintCause()` (battle_tv.c).
+ *  Dette R3 : recorded battle TV stats (= user "Report jusqu'à fin projet"). */
+function _BattleTv_ClearExplosionFaintCause(): void {
+  // No-op : recorded battle/TV stats non porté.
+}
+
+/** 1:1 signature décomp `BattleStringExpandPlaceholdersToDisplayedString(src)`
+ *  (battle_message.c). Equivalent `BattleStringExpandPlaceholders(src,
+ *  gDisplayedStringBattle)`. Pour now : route vers le decoder/string-expand
+ *  existant via globalThis hook (battle-string-decoder). */
+function _BattleStringExpandPlaceholdersToDisplayedString(src: string): string {
+  const m = (globalThis as Record<string, unknown>).__battleStringDecoder as {
+    expandPlaceholders?: (src: string) => string;
+  } | undefined;
+  if (m?.expandPlaceholders) return m.expandPlaceholders(src);
+  // Fallback : retourner src tel quel (= no expansion). Phase L1 suffisant.
+  return src;
+}
+
+/** 1:1 décomp `SwapHpBarsWithHpText()` (battle_interface.c). Toggle entre
+ *  affichage HP bar et affichage HP texte (= START_BUTTON in battle).
+ *  Dette R3 : full HP bar/text toggle cascade dans battle-healthbox. */
+function _SwapHpBarsWithHpText(): void {
+  // Dette R3 : healthbox swap HP bar ↔ text display.
+}
+
+/** 1:1 décomp `IsDma3ManagerBusyWithBgCopy()` (dma3_manager.c). GBA-specific
+ *  DMA queue check pour la copy tilemap → VRAM. Pour notre port web :
+ *  return false (= jamais busy, copies sont synchrones via Phaser). */
+function _IsDma3ManagerBusyWithBgCopy(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `HandleInputChooseTarget()` (battle_controller_player.c:339-468).
+ *  Dette R3 Phase B : double battles target selection. Single battle = pas appelé. */
+function HandleInputChooseTarget(): void {
+  // Dette R3 : double battle target selection (= Phase B post-L1).
+}
 
 // ─── Cascade helpers (= K8/K27/K28/K29 wires) ──────────────────────────────
 
@@ -340,16 +478,150 @@ function PlayerHandlePrintSelectionString(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleChooseAction()`. */
+/** 1:1 décomp `PlayerHandleChooseAction()` (battle_controller_player.c:2575-2589).
+ *  Setup action menu + install HandleChooseActionAfterDma3 qui chain ensuite
+ *  HandleInputChooseAction quand DMA3 idle. */
 function PlayerHandleChooseAction(): void {
-  // 1:1 décomp : setup action menu + install HandleInputChooseAction loop.
-  // Dette R3 Phase B : HandleInputChooseAction cursor + JOY input loop (~100l).
-  // Pour now : assume B_ACTION_USE_MOVE (= défaut combat tutorial).
-  const tmpData = new Uint8Array([2 /* B_ACTION_USE_MOVE */, 0, 0, 0]);
-  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, tmpData, 4);
-  // BtlController_EmitTwoReturnValues equivalent.
-  void gBattleBufferB;
-  PlayerBufferExecCompleted();
+  let i: number;
+  gBattlerControllerFuncs[gActiveBattler] = HandleChooseActionAfterDma3;
+  _BattleTv_ClearExplosionFaintCause();
+  BattlePutTextOnWindow(gText_BattleMenu, B_WIN_ACTION_MENU);
+
+  for (i = 0; i < 4; i++) {
+    ActionSelectionDestroyCursorAt(i);
+  }
+  ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+  // 1:1 décomp : BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo);
+  // BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_ACTION_PROMPT);
+  const expanded = _BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo);
+  BattlePutTextOnWindow(expanded, B_WIN_ACTION_PROMPT);
+}
+
+/** 1:1 décomp `HandleChooseActionAfterDma3()` (battle_controller_player.c:2565-2573).
+ *  Wait DMA3 idle puis reset BG0 scroll à (0, DISPLAY_HEIGHT) (= révèle section
+ *  ACTION du BG0 tilemap vertical) et install HandleInputChooseAction comme
+ *  controller func du battler actif. */
+function HandleChooseActionAfterDma3(): void {
+  if (!_IsDma3ManagerBusyWithBgCopy()) {
+    _setBattleBG0(0, DISPLAY_HEIGHT);
+    gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseAction;
+  }
+}
+
+/** 1:1 décomp `DISPLAY_HEIGHT` = 160 (gba/defines.h). GBA screen height. */
+const DISPLAY_HEIGHT = 160;
+
+/** Helper interne : set gBattle_BG0_X/Y via battleVBlankState (= 1:1 décomp
+ *  gBattle_BG0_X = x / gBattle_BG0_Y = y). Le VBlank handler push aux registers
+ *  REG_OFFSET_BG0HOFS/VOFS chaque frame. */
+function _setBattleBG0(x: number, y: number): void {
+  // Lazy lookup via globalThis car battle-vblank-helpers n'est pas import directement.
+  const m = (globalThis as { __battleVBlankHelpers?: { battleVBlankState?: { bg0_x: number; bg0_y: number } } }).__battleVBlankHelpers;
+  if (m?.battleVBlankState) {
+    m.battleVBlankState.bg0_x = x;
+    m.battleVBlankState.bg0_y = y;
+  }
+}
+
+/** 1:1 décomp `HandleInputChooseAction()` (battle_controller_player.c:233-330).
+ *  Controller func active pendant le menu ATTAQUE/SAC/POKéMON/FUITE. Loop frame-
+ *  par-frame qui :
+ *    - DoBounceEffect healthbox + mon (= bounce visuel actif battler)
+ *    - JOY_NEW(A_BUTTON) → EmitTwoReturnValues(B_ACTION_USE_MOVE/USE_ITEM/SWITCH/RUN)
+ *      selon cursor 2x2 ; PlaySE + PlayerBufferExecCompleted
+ *    - JOY_NEW(DPAD_*) → toggle cursor bit (L/R = bit 0, U/D = bit 1) +
+ *      Destroy/Create cursor sprite + PlaySE
+ *    - JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59 → CANCEL_PARTNER (double
+ *      battles uniquement)
+ *    - JOY_NEW(START_BUTTON) → SwapHpBarsWithHpText (toggle HP bar/text)
+ */
+function HandleInputChooseAction(): void {
+  const itemId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
+
+  DoBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX, 7, 1);
+  DoBounceEffect(gActiveBattler, BOUNCE_MON, 7, 1);
+
+  if (JOY_REPEAT(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode === OPTIONS_BUTTON_MODE_L_EQUALS_A) {
+    incPlayerDpadHoldFrames();
+  } else {
+    setPlayerDpadHoldFrames(0);
+  }
+
+  if (JOY_NEW(A_BUTTON)) {
+    PlaySE(SE_SELECT);
+
+    switch (gActionSelectionCursor[gActiveBattler]) {
+      case 0: // Top left
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_MOVE, 0);
+        break;
+      case 1: // Top right
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_ITEM, 0);
+        break;
+      case 2: // Bottom left
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SWITCH, 0);
+        break;
+      case 3: // Bottom right
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_RUN, 0);
+        break;
+    }
+    PlayerBufferExecCompleted();
+  } else if (JOY_NEW(DPAD_LEFT)) {
+    if (gActionSelectionCursor[gActiveBattler] & 1) { // if is B_ACTION_USE_ITEM or B_ACTION_RUN
+      PlaySE(SE_SELECT);
+      ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
+      gActionSelectionCursor[gActiveBattler] ^= 1;
+      ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+    }
+  } else if (JOY_NEW(DPAD_RIGHT)) {
+    if (!(gActionSelectionCursor[gActiveBattler] & 1)) { // if is B_ACTION_USE_MOVE or B_ACTION_SWITCH
+      PlaySE(SE_SELECT);
+      ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
+      gActionSelectionCursor[gActiveBattler] ^= 1;
+      ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+    }
+  } else if (JOY_NEW(DPAD_UP)) {
+    if (gActionSelectionCursor[gActiveBattler] & 2) { // if is B_ACTION_SWITCH or B_ACTION_RUN
+      PlaySE(SE_SELECT);
+      ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
+      gActionSelectionCursor[gActiveBattler] ^= 2;
+      ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+    }
+  } else if (JOY_NEW(DPAD_DOWN)) {
+    if (!(gActionSelectionCursor[gActiveBattler] & 2)) { // if is B_ACTION_USE_MOVE or B_ACTION_USE_ITEM
+      PlaySE(SE_SELECT);
+      ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
+      gActionSelectionCursor[gActiveBattler] ^= 2;
+      ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+    }
+  } else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59) {
+    if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+        && GetBattlerPosition(gActiveBattler) === B_POSITION_PLAYER_RIGHT
+        && !(gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)])
+        && !(gBattleTypeFlags & BATTLE_TYPE_MULTI)) {
+      if (gBattleBufferA[gActiveBattler][1] === B_ACTION_USE_ITEM) {
+        // Add item to bag if it is a ball
+        if (itemId <= LAST_BALL) {
+          _AddBagItem_battle(itemId, 1);
+        } else {
+          return;
+        }
+      }
+      PlaySE(SE_SELECT);
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_CANCEL_PARTNER, 0);
+      PlayerBufferExecCompleted();
+    }
+  } else if (JOY_NEW(START_BUTTON)) {
+    _SwapHpBarsWithHpText();
+  }
+  // Unused but suppress lint : HandleInputChooseTarget référencé pour cascade.
+  void HandleInputChooseTarget;
+}
+
+/** 1:1 signature décomp `AddBagItem(itemId, count)` (item.c). Wire lazy vers
+ *  bag.ts existant via globalThis pour éviter cycle ESM massif. */
+function _AddBagItem_battle(itemId: number, count: number): void {
+  const m = (globalThis as { __bagApi?: { AddBagItem?: (id: string, c: number) => boolean } }).__bagApi;
+  if (m?.AddBagItem) m.AddBagItem(String(itemId), count);
 }
 
 /** 1:1 décomp `PlayerHandleYesNoBox()`. */
@@ -475,7 +747,7 @@ function PlayerHandleCantSwitch(): void {
 /** 1:1 décomp `PlayerHandlePlaySE()`. */
 function PlayerHandlePlaySE(): void {
   const seId = gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8);
-  void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(seId));
+  PlaySE(seId);
   PlayerBufferExecCompleted();
 }
 
@@ -632,4 +904,8 @@ void MarkBattlerForControllerExec;
   sPlayerBufferCommands,
   SetControllerToPlayer, PlayerBufferRunCommand,
   getBattlerControllerFunc,
+  // L1 wires exposés pour tests déterministes A_BUTTON cursor input loop.
+  HandleInputChooseAction, HandleChooseActionAfterDma3,
+  ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt,
+  PlayerHandleChooseAction,
 };

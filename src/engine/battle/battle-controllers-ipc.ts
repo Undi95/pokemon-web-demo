@@ -213,6 +213,24 @@ export function PrepareBufferDataTransfer(bufferId: number, data: Uint8Array, si
   }
 }
 
+// ─── BtlController_Emit* (battle_controllers.c:1180-1500) — 1:1 strict ────
+
+/** 1:1 décomp `CONTROLLER_TWORETURNVALUES` (battle_controllers.h:35). */
+const CONTROLLER_TWORETURNVALUES = 0x21;
+
+/** 1:1 décomp `BtlController_EmitTwoReturnValues(bufferId, ret8, ret16)`
+ *  (battle_controllers.c:1372-1379). Setup CONTROLLER_TWORETURNVALUES command
+ *  + ret8 + ret16 (low/high bytes) dans transfer staging buffer puis flush
+ *  vers gBattleBufferA ou B selon bufferId. Utilisé par les input handlers
+ *  (HandleInputChooseAction/Move/Target) pour signaler engine du choix joueur. */
+export function BtlController_EmitTwoReturnValues(bufferId: number, ret8: number, ret16: number): void {
+  sBattleBuffersTransferData[0] = CONTROLLER_TWORETURNVALUES;
+  sBattleBuffersTransferData[1] = ret8 & 0xFF;
+  sBattleBuffersTransferData[2] = ret16 & 0xFF;
+  sBattleBuffersTransferData[3] = (ret16 & 0xFF00) >> 8;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+}
+
 // ─── Init helpers (battle_controllers.c:81-111) ────────────────────────────
 
 /** 1:1 décomp `InitBattleControllers()` (battle_controllers.c:81-111). */
@@ -314,5 +332,6 @@ if (battleStateMod) {
   PrepareBufferDataTransfer, SetBattlePartyIds,
   InitBattleControllers, InitSinglePlayerBtlControllers,
   readBattleBufferA, readBattleBufferB, writeBattleBufferB,
+  BtlController_EmitTwoReturnValues,
   B_COMM_TO_CONTROLLER, B_COMM_TO_ENGINE,
 };

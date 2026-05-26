@@ -742,6 +742,14 @@ export const gActionSelectionCursor: number[] = [0, 0, 0, 0];
  *  cursor position dans le menu move (0..3). Reset à 0 sur faint. */
 export const gMoveSelectionCursor: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gPlayerDpadHoldFrames` (battle_main.c). Counter incrementé
+ *  pendant que DPAD est held + OPTIONS_BUTTON_MODE_L_EQUALS_A actif. Sert
+ *  de "long-hold to cancel" pour HandleInputChooseAction/Move (= si > 59
+ *  frames, équivalent appui B_BUTTON). Reset à 0 sur SetControllerToPlayer. */
+export let gPlayerDpadHoldFrames = 0;
+export function setPlayerDpadHoldFrames(v: number): void { gPlayerDpadHoldFrames = v; }
+export function incPlayerDpadHoldFrames(): void { gPlayerDpadHoldFrames++; }
+
 /** 1:1 décomp `gBattleStruct->lastTakenMove[MAX_BATTLERS_COUNT]` — dernier
  *  move subi par chaque battler (= utilisé par Mirror Move).
  *  Note : ce field map sur les premiers 4 entries de `gBattleStruct.lastTakenMove`
@@ -1045,6 +1053,14 @@ if (!(globalThis as Record<string, unknown>).__battleState) {
   gBattleStruct,
   gBattlerByTurnOrder,
   gHitMarker,
+  // L1 UI input cursor + dpad state (= battle-controller-player tests).
+  gActionSelectionCursor,
+  gMoveSelectionCursor,
+  get gPlayerDpadHoldFrames() { return gPlayerDpadHoldFrames; },
+  setPlayerDpadHoldFrames,
+  incPlayerDpadHoldFrames,
+  get gActiveBattler() { return gActiveBattler; },
+  setActiveBattler,
   // Setters pour memory-map writes (= opcodes natifs setbyte/addbyte/orbyte).
   setBattlerTarget,
   setBattlerAttacker,
