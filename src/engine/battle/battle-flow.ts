@@ -126,6 +126,7 @@ import './battle-hp-bar';
 import './battle-faint-anim';
 import './battle-anim-normal';
 import './battle-anim-throw';
+import './battle-levelup-box';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
@@ -1434,6 +1435,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       // ─── ACTION_RUN : fuite (= 1:1 décomp HandleAction_Run + TryRunFromBattle) ──
       case 'ACTION_RUN_TEXT': {
+        // K14b — 1:1 strict décomp battle_main.c:4332-4346 : check trainer
+        // battle FIRST (= No running from trainer battles!), puis Birch
+        // tutorial via IsRunningFromBattleImpossible.
+        // 1:1 décomp ll. 4332-4337 : BATTLE_TYPE_TRAINER && !LINK →
+        // BattleScript_PrintCantRunFromTrainer = STRINGID_NORUNNINGFROMTRAINERS.
+        if ((gBattleTypeFlags & 0x8 /* BATTLE_TYPE_TRAINER */)
+            && !(gBattleTypeFlags & 0x4 /* BATTLE_TYPE_LINK */)) {
+          ShowFieldMessage('Pas de fuite face à un dresseur !');
+          state = 'ACTION_RUN_WAIT';
+          return false;
+        }
         // K4 + K8 — 1:1 strict décomp : check IsRunningFromBattleImpossible
         // d'abord (= block Birch tutorial via BATTLE_TYPE_FIRST_BATTLE +
         // Shadow Tag/Arena Trap/Magnet Pull + status escape prevention).
