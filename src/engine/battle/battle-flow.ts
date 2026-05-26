@@ -166,6 +166,17 @@ import './battle-controller-player';
 import './battle-controller-opponent';
 import './battle-controller-tick';
 
+// R3 — IPC dispatch APIs pour replace state machine inline.
+import {
+  gBattleControllerExecFlags as ipcExecFlags,
+  setBattleControllerExecFlags as ipcSetExecFlags,
+  setActiveBattler as ipcSetActiveBattler,
+} from './state';
+import {
+  gBattleBufferA as ipcBufferA, gBattleBufferB as ipcBufferB,
+} from './battle-controllers-ipc';
+import { gBitTable as ipcBitTable } from './battle-controllers';
+
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
 import {
@@ -332,6 +343,7 @@ type State =
   | 'INTRO_TEXT' | 'INTRO_WAIT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
   | 'ACTION_MENU_INIT' | 'ACTION_MENU_INPUT'
+  | 'ACTION_EMIT_CHOOSE' | 'ACTION_WAIT_CHOOSE_RESPONSE'
   | 'ACTION_FALLBACK_TEXT' | 'ACTION_FALLBACK_WAIT'
   | 'ACTION_RUN_TEXT' | 'ACTION_RUN_WAIT'
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
@@ -1438,22 +1450,77 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       // ─── ACTION MENU 1:1 décomp battle_controller_player.c:233 ──────────
+      // R3 refactor : state machine inline replaced by Controller IPC dispatch.
+      // ACTION_MENU_INIT init windows (= reuse infra battle-flow) puis emit
+      // CONTROLLER_CHOOSEACTION (= PlayerHandleChooseAction L1 triggered via R1 tick).
       case 'ACTION_MENU_INIT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
         actionMenuCursor = 0;  // 1:1 décomp : reset cursor au début de chaque tour.
         initActionMenu();
-        state = 'ACTION_MENU_INPUT';
+        state = 'ACTION_EMIT_CHOOSE';
+        return false;
+      }
+
+      // R3 — Emit CONTROLLER_CHOOSEACTION + MarkBattlerForControllerExec.
+      // Le tick R1 (= battle-controller-tick.ts) appellera PlayerHandleChooseAction
+      // (= L1) qui setup le rendering via R2 wires (setActionCursor) + install
+      // HandleInputChooseAction loop chaque frame jusqu'à A_BUTTON pressé.
+      case 'ACTION_EMIT_CHOOSE': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        // Activer Controller IPC dispatch (= R1 tick va appeler les handlers).
+        (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = true;
+        // Set active battler = player (= 1:1 décomp gActiveBattler = 0).
+        ipcSetActiveBattler(0);
+        // Setup bufferA[0] = CONTROLLER_CHOOSEACTION (0x12). PlayerBufferRunCommand
+        // (= L1 dispatcher) dispatcher to PlayerHandleChooseAction.
+        const buf = ipcBufferA[0];
+        buf[0] = 0x12; // CONTROLLER_CHOOSEACTION
+        buf[1] = 0;    // not double battle
+        buf[2] = 0; buf[3] = 0; // itemId (= 0 single battle)
+        // Set exec flag bit 0 (= player battler) (= 1:1 décomp MarkBattlerForControllerExec).
+        ipcSetExecFlags(ipcExecFlags | ipcBitTable[0]);
+        // Clear response buffer.
+        for (let i = 0; i < 4; i++) ipcBufferB[0][i] = 0;
+        state = 'ACTION_WAIT_CHOOSE_RESPONSE';
+        return false;
+      }
+
+      // R3 — Wait controller exec done = response disponible dans bufferB.
+      // Quand PlayerHandleChooseAction termine via PlayerBufferExecCompleted,
+      // gBattleControllerExecFlags bit cleared → on lit la réponse.
+      case 'ACTION_WAIT_CHOOSE_RESPONSE': {
+        if (ipcExecFlags & ipcBitTable[0]) {
+          // Controller encore active (= HandleInputChooseAction loop, attend input).
+          return false;
+        }
+        // Controller done : read response bufferB[0..3] :
+        //   bufferB[0] = CONTROLLER_TWORETURNVALUES (0x21)
+        //   bufferB[1] = action (B_ACTION_USE_MOVE=0/USE_ITEM=1/SWITCH=2/RUN=3)
+        const action = ipcBufferB[0][1];
+        // R3 désactiver flag pour les autres states pas encore refactor.
+        (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = false;
+        closeActionMenu();
+        // 1:1 décomp dispatch selon action :
+        switch (action) {
+          case 0 /* B_ACTION_USE_MOVE */: state = 'MOVE_MENU_INIT';      break;
+          case 1 /* B_ACTION_USE_ITEM */: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'SAC'; break;
+          case 2 /* B_ACTION_SWITCH */:   state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
+          case 3 /* B_ACTION_RUN */:      state = 'ACTION_RUN_TEXT';      break;
+          default:
+            // Cas inattendu : retour menu input direct (fallback safety).
+            console.warn('[battle-flow R3] unexpected action response:', action);
+            state = 'ACTION_MENU_INPUT';
+            break;
+        }
         return false;
       }
 
       case 'ACTION_MENU_INPUT': {
+        // R3 LEGACY state — désormais non atteint en flow normal (= ACTION_EMIT_
+        // CHOOSE + ACTION_WAIT_CHOOSE_RESPONSE remplace). Conservé pour fallback
+        // safety + rollback éventuel via __USE_CONTROLLER_DISPATCH__ = false.
         if (!playerMon) { state = 'CLEANUP'; return false; }
         const newKeys = rt.gMain.newKeys;
-        // 1:1 décomp battle_controller_player.c:266-305 :
-        // - DPAD_LEFT  : toggle bit 0 SI cursor & 1 (= right column → left)
-        // - DPAD_RIGHT : toggle bit 0 SI !(cursor & 1) (= left column → right)
-        // - DPAD_UP    : toggle bit 1 SI cursor & 2 (= bottom row → top)
-        // - DPAD_DOWN  : toggle bit 1 SI !(cursor & 2) (= top row → bottom)
         if (newKeys & DPAD_LEFT) {
           if (actionMenuCursor & 1) { actionMenuCursor ^= 1; refreshActionMenu(); }
         } else if (newKeys & DPAD_RIGHT) {
@@ -1463,11 +1530,6 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         } else if (newKeys & DPAD_DOWN) {
           if (!(actionMenuCursor & 2)) { actionMenuCursor ^= 2; refreshActionMenu(); }
         } else if (newKeys & A_BUTTON) {
-          // 1:1 décomp : dispatch selon cursor :
-          // 0 = B_ACTION_USE_MOVE   → MOVE_MENU_INIT
-          // 1 = B_ACTION_USE_ITEM   → fallback msg (bag in-battle deferred)
-          // 2 = B_ACTION_SWITCH     → fallback msg (party switch in-battle deferred)
-          // 3 = B_ACTION_RUN        → run logic via TryRunFromBattle
           closeActionMenu();
           switch (actionMenuCursor) {
             case 0: state = 'MOVE_MENU_INIT';      break;
@@ -1476,8 +1538,6 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             case 3: state = 'ACTION_RUN_TEXT';      break;
           }
         }
-        // No B-cancel for single battle (= 1:1 décomp ll. 306-325 only fires
-        // en double battle PLAYER_RIGHT pour annuler partner choice).
         return false;
       }
 
