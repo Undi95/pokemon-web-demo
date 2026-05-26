@@ -179,6 +179,8 @@ import { gBitTable as ipcBitTable } from './battle-controllers';
 // R3 fix : install PlayerBufferRunCommand comme gBattlerControllerFuncs[player]
 // avant emit (= SetControllerToPlayer 1:1 décomp battle_controller_player.c:193).
 import { SetControllerToPlayer as ipcSetControllerToPlayer } from './battle-controller-player';
+// R4 fix : resolve mv.id string → numeric MOVE_X id pour ChooseMoveStruct.
+import { resolveMoveDexId as _resolveMoveDexId } from './data/move-name-resolve';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
@@ -1704,6 +1706,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (!playerMon) { state = 'CLEANUP'; return false; }
         (globalThis as { __USE_CONTROLLER_DISPATCH__?: boolean }).__USE_CONTROLLER_DISPATCH__ = true;
         ipcSetActiveBattler(0);
+        // R4 FIX : re-install PlayerBufferRunCommand (= ACTION_EMIT_CHOOSE l'a
+        // fait, mais HandleInputChooseAction install HandleChooseActionAfterDma3
+        // + HandleInputChooseAction. Quand le combat passe en MOVE_MENU_INIT,
+        // gBattlerControllerFuncs[0] pointe encore vers HandleInputChooseAction
+        // qui ne sait pas dispatch CONTROLLER_CHOOSEMOVE → tick noop infini.
+        // Reset à PlayerBufferRunCommand pour dispatch correct du opcode 0x14.
         ipcSetControllerToPlayer();
         const buf = ipcBufferA[0];
         buf[0] = 0x14; // CONTROLLER_CHOOSEMOVE
@@ -1718,7 +1726,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         //   monTypes[2] u8 at 22..23 (= TYPE_GHOST check Curse only)
         for (let i = 0; i < 4; i++) {
           const mv = playerMon.moves[i];
-          const moveId = mv ? (typeof mv.id === 'number' ? mv.id : 0) : 0;
+          // R4 FIX : mv.id est string ("tackle"), pas number. Convert via
+          // resolveMoveDexId qui retourne le u16 id décomp (MOVE_TACKLE=33).
+          // Sans ça tous les moveIds étaient 0 (= MOVE_NONE) → L2 voyait
+          // 0 moves disponibles → cursor MOVE_MENU bloqué.
+          const moveId = mv ? _resolveMoveDexId(String(mv.id)) : 0;
           buf[4 + i * 2] = moveId & 0xFF;
           buf[5 + i * 2] = (moveId >> 8) & 0xFF;
           buf[12 + i] = mv ? (mv.pp ?? 0) : 0;
