@@ -1843,3 +1843,11 @@ export function BattleAI_ChooseMoveOrAction(): number {
   setCurrentMove(savedCurrentMove);
   return ret;
 }
+
+// Expose pour battle-controller-opponent lazy lookup (= éviter cycle ESM).
+// AI_TrySwitchOrUseItem est dans ai-switch-items.ts, set par celui-ci.
+(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi = {
+  ...(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi,
+  BattleAI_SetupAIData,
+  BattleAI_ChooseMoveOrAction,
+};

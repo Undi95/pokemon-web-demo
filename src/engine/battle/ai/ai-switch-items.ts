@@ -928,3 +928,9 @@ export function GetMostSuitableMonToSwitchInto(): number {
   }
   return bestMonId;
 }
+
+// Expose pour battle-controller-opponent lazy lookup (= L11 wire).
+(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi = {
+  ...(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi,
+  AI_TrySwitchOrUseItem,
+};

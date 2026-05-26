@@ -36,10 +36,25 @@
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
+  gAbsentBattlerFlags, gBattlerTarget, setBattlerTarget,
 } from './state';
-import { BATTLE_TYPE_LINK } from './constants';
-import { gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE, PrepareBufferDataTransfer } from './battle-controllers-ipc';
+import {
+  BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE,
+  BATTLE_TYPE_TRAINER, BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_SAFARI,
+  BATTLE_TYPE_ROAMER,
+  B_ACTION_EXEC_SCRIPT, B_ACTION_RUN,
+  B_ACTION_SAFARI_WATCH_CAREFULLY,
+  MOVE_TARGET_USER, MOVE_TARGET_USER_OR_SELECTED, MOVE_TARGET_BOTH,
+  MAX_MON_MOVES, MOVE_NONE,
+} from './constants';
+import {
+  gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE,
+  PrepareBufferDataTransfer, BtlController_EmitTwoReturnValues,
+} from './battle-controllers-ipc';
 import { gBitTable } from './battle-controllers';
+import {
+  GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
+} from './util';
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -169,12 +184,102 @@ function OpponentHandleGetRawMonData(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSetMonData(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSetRawMonData(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleLoadMonSprite(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleSwitchInAnim(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `OpponentHandleSwitchInAnim()` (battle_controller_opponent.c:1160-1166).
+ *  Set gBattleStruct.monToSwitchIntoId = PARTY_SIZE + set party index +
+ *  StartSendOutAnim opponent + install SwitchIn_TryShinyAnim. */
+function OpponentHandleSwitchInAnim(): void {
+  _setMonToSwitchIntoId(gActiveBattler, _PARTY_SIZE);
+  _setBattlerPartyIndex(gActiveBattler, gBattleBufferA[gActiveBattler][1]);
+  _StartSendOutAnim_Opponent(gActiveBattler, gBattleBufferA[gActiveBattler][2] !== 0);
+  _installSwitchInTryShinyAnim(gActiveBattler);
+}
+
+/** 1:1 décomp `PARTY_SIZE` = 6. */
+const _PARTY_SIZE = 6;
+
+/** Wire helpers via globalThis. */
+function _setMonToSwitchIntoId(_battler: number, _v: number): void {
+  // Dette R3 : gBattleStruct.monToSwitchIntoId[battler] = v.
+  const m = (globalThis as { __battleState?: { gBattleStruct?: { monToSwitchIntoId?: number[] } } }).__battleState;
+  if (m?.gBattleStruct?.monToSwitchIntoId) m.gBattleStruct.monToSwitchIntoId[_battler] = _v;
+}
+
+function _setBattlerPartyIndex(battler: number, idx: number): void {
+  const m = (globalThis as { __battleState?: { gBattlerPartyIndexes?: number[] } }).__battleState;
+  if (m?.gBattlerPartyIndexes) m.gBattlerPartyIndexes[battler] = idx;
+}
+
+function _StartSendOutAnim_Opponent(battler: number, dontClearSubstituteBit: boolean): void {
+  // Dette R3 : full sprite cascade + DoPokeballSendOutAnimation POKEBALL_OPPONENT.
+  const m = (globalThis as { __battleBallThrow?: { doPokeballSendOutAnimationOpponent?: (b: number, c: boolean) => void } }).__battleBallThrow;
+  m?.doPokeballSendOutAnimationOpponent?.(battler, dontClearSubstituteBit);
+}
+
+function _installSwitchInTryShinyAnim(_battler: number): void {
+  // Dette R3 : full shiny anim controller. Pour now : immediate.
+  // Note : called via gBattlerControllerFuncs install par controller dispatch,
+  // mais nous appelons via le hook qui mappe vers OpponentBufferExecCompleted.
+  OpponentBufferExecCompleted();
+}
 function OpponentHandleReturnMonToBall(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleDrawTrainerPic(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleTrainerSlide(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleTrainerSlideBack(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleFaintAnimation(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `OpponentHandleFaintAnimation()` (battle_controller_opponent.c:1408-1426).
+ *  State machine 2-step symétrique au PlayerHandleFaintAnimation :
+ *    State 0 : behindSubstitute check + animationState++
+ *    State 1 : !specialAnimActive → reset state + PlaySE12 SE_FAINT TARGET pan
+ *      + sprite callback SpriteCB_FaintOpponentMon + install HideHealthboxAfterMonFaint. */
+function OpponentHandleFaintAnimation(): void {
+  const animState = _getHealthBoxAnimationState(gActiveBattler);
+  if (animState === 0) {
+    if (_isBehindSubstitute(gActiveBattler)) {
+      _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, _B_ANIM_SUBSTITUTE_TO_MON);
+    }
+    _setHealthBoxAnimationState(gActiveBattler, animState + 1);
+  } else {
+    if (!_isSpecialAnimActive(gActiveBattler)) {
+      _setHealthBoxAnimationState(gActiveBattler, 0);
+      _PlaySE12WithPanning(_SE_FAINT_OP, _SOUND_PAN_TARGET);
+      _triggerFaintSlideAnim_Opponent(gActiveBattler);
+      // Install HideHealthboxAfterMonFaint (dette R3 hide healthbox).
+      OpponentBufferExecCompleted();
+    }
+  }
+}
+
+const _B_ANIM_SUBSTITUTE_TO_MON = 6;
+const _SE_FAINT_OP = 21;
+const _SOUND_PAN_TARGET = 63;
+
+function _getHealthBoxAnimationState(battler: number): number {
+  const m = (globalThis as { __battleSpritesData?: { getHealthBoxAnimationState?: (b: number) => number } }).__battleSpritesData;
+  return m?.getHealthBoxAnimationState?.(battler) ?? 0;
+}
+function _setHealthBoxAnimationState(battler: number, v: number): void {
+  const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: (b: number, v: number) => void } }).__battleSpritesData;
+  m?.setHealthBoxAnimationState?.(battler, v);
+}
+function _isBehindSubstitute(battler: number): boolean {
+  const m = (globalThis as { __battleSpritesData?: { isBehindSubstitute?: (b: number) => boolean } }).__battleSpritesData;
+  return !!m?.isBehindSubstitute?.(battler);
+}
+function _isSpecialAnimActive(battler: number): boolean {
+  const m = (globalThis as { __battleSpritesData?: { isSpecialAnimActive?: (b: number) => boolean } }).__battleSpritesData;
+  return !!m?.isSpecialAnimActive?.(battler);
+}
+function _InitAndLaunchSpecialAnimation(_a: number, _at: number, _t: number, _aid: number): void {
+  const m = (globalThis as { __battleAnim?: { initAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleAnim;
+  m?.initAndLaunchSpecialAnimation?.(_a, _at, _t, _aid);
+}
+function _PlaySE12WithPanning(seId: number, _pan: number): void {
+  const g = globalThis as { __PlaySE?: (id: number) => void };
+  if (g.__PlaySE) g.__PlaySE(seId);
+}
+function _triggerFaintSlideAnim_Opponent(battler: number): void {
+  const m = (globalThis as { __battleFaintAnim?: { triggerFaintSlide?: (b: number) => void } }).__battleFaintAnim;
+  m?.triggerFaintSlide?.(battler);
+}
 function OpponentHandlePaletteFade(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSuccessBallThrowAnim(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleBallThrowAnim(): void { OpponentBufferExecCompleted(); }
@@ -188,23 +293,141 @@ function OpponentHandlePrintString(): void {
 }
 function OpponentHandlePrintSelectionString(): void { OpponentBufferExecCompleted(); }
 
+/** 1:1 décomp `OpponentHandleChooseAction()` (battle_controller_opponent.c:1540-1544).
+ *  AI_TrySwitchOrUseItem + OpponentBufferExecCompleted (= AI decide switch/item
+ *  ou use move). */
 function OpponentHandleChooseAction(): void {
-  // 1:1 décomp : Opponent ne choisit pas via UI, c'est l'AI bytecode (= K1).
-  // EmitTwoReturnValues(B_ACTION_USE_MOVE).
-  const tmpData = new Uint8Array([2 /* B_ACTION_USE_MOVE */, 0, 0, 0]);
-  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, tmpData, 4);
+  _AI_TrySwitchOrUseItem();
   OpponentBufferExecCompleted();
 }
 
 function OpponentHandleYesNoBox(): void { OpponentBufferExecCompleted(); }
 
+/** 1:1 décomp `OpponentHandleChooseMove()` (battle_controller_opponent.c:1551-1613).
+ *  PALACE → ChooseMoveAndTargetInBattlePalace (dette R3 Frontier) ; sinon
+ *  if (TRAINER | FIRST_BATTLE | SAFARI | ROAMER) → AI bytecode K1 :
+ *    - BattleAI_SetupAIData(ALL_MOVES_MASK) + BattleAI_ChooseMoveOrAction
+ *    - switch chosenMoveId : AI_CHOICE_WATCH=SAFARI_WATCH ; AI_CHOICE_FLEE=
+ *      B_ACTION_RUN ; 6=B_ACTION_UNK_15 ; default=EXEC_SCRIPT moveIdx + target
+ *      avec moveTarget USER/USER_OR_SELECTED override gActiveBattler + BOTH
+ *      override player_left/right.
+ *  sinon (= wild non-trainer) → random move pick + target single/double. */
 function OpponentHandleChooseMove(): void {
-  // 1:1 décomp : Opponent ChooseMove = appel AI BattleAI_ChooseMoveOrAction
-  // (= ai-script-commands.ts existing) puis EmitTwoReturnValues avec move idx.
-  // Dette R3 Phase B : wire complet vers AI bytecode.
-  const tmpData = new Uint8Array([10 /* B_ACTION_EXEC_SCRIPT */, 0, 0, 0]);
-  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, tmpData, 4);
-  OpponentBufferExecCompleted();
+  if (gBattleTypeFlags & BATTLE_TYPE_PALACE) {
+    // Dette R3 : Frontier subsystem (user "Report").
+    BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, _ChooseMoveAndTargetInBattlePalace());
+    OpponentBufferExecCompleted();
+    return;
+  }
+
+  // Read ChooseMoveStruct depuis bufferA[4..] : moves[4] u16.
+  const buf = gBattleBufferA[gActiveBattler];
+  const moves: number[] = [];
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    moves[i] = buf[4 + i * 2] | (buf[5 + i * 2] << 8);
+  }
+
+  if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_FIRST_BATTLE | BATTLE_TYPE_SAFARI | BATTLE_TYPE_ROAMER)) {
+    // AI bytecode path (= notre K1 BattleAI_ChooseMoveOrAction).
+    _BattleAI_SetupAIData(_ALL_MOVES_MASK);
+    const chosenMoveId = _BattleAI_ChooseMoveOrAction();
+
+    switch (chosenMoveId) {
+      case _AI_CHOICE_WATCH:
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_WATCH_CAREFULLY, 0);
+        break;
+      case _AI_CHOICE_FLEE:
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_RUN, 0);
+        break;
+      case 6:
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, _B_ACTION_UNK_15, gBattlerTarget);
+        break;
+      default: {
+        const moveTarget = _getMoveTarget(moves[chosenMoveId]);
+        if (moveTarget & (MOVE_TARGET_USER_OR_SELECTED | MOVE_TARGET_USER)) {
+          setBattlerTarget(gActiveBattler);
+        }
+        if (moveTarget & MOVE_TARGET_BOTH) {
+          let target = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+          if (gAbsentBattlerFlags & gBitTable[target]) {
+            target = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
+          }
+          setBattlerTarget(target);
+        }
+        BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, chosenMoveId | (gBattlerTarget << 8));
+        break;
+      }
+    }
+    OpponentBufferExecCompleted();
+  } else {
+    // Wild non-trainer non-first : random move pick.
+    let chosenMoveId: number;
+    let move: number;
+    do {
+      chosenMoveId = _MOD(_Random(), MAX_MON_MOVES);
+      move = moves[chosenMoveId];
+    } while (move === MOVE_NONE);
+
+    const moveTarget = _getMoveTarget(move);
+    if (moveTarget & (MOVE_TARGET_USER_OR_SELECTED | MOVE_TARGET_USER)) {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, chosenMoveId | (gActiveBattler << 8));
+    } else if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, chosenMoveId | (GetBattlerAtPosition(_Random() & 2) << 8));
+    } else {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, chosenMoveId | (GetBattlerAtPosition(B_POSITION_PLAYER_LEFT) << 8));
+    }
+    OpponentBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `ALL_MOVES_MASK` = 0xF (battle_ai.h). */
+const _ALL_MOVES_MASK = 0xF;
+
+/** 1:1 décomp `AI_CHOICE_WATCH` = 5 (ai-state.ts). */
+const _AI_CHOICE_WATCH = 5;
+
+/** 1:1 décomp `AI_CHOICE_FLEE` = 4 (ai-state.ts). */
+const _AI_CHOICE_FLEE = 4;
+
+/** 1:1 décomp `B_ACTION_UNK_15` = 15 (battle.h:43). */
+const _B_ACTION_UNK_15 = 15;
+
+/** Wire AI APIs via globalThis lazy lookup (= éviter cycle ESM). */
+function _AI_TrySwitchOrUseItem(): void {
+  const m = (globalThis as { __battleAi?: { AI_TrySwitchOrUseItem?: () => void } }).__battleAi;
+  m?.AI_TrySwitchOrUseItem?.();
+}
+function _BattleAI_SetupAIData(mask: number): void {
+  const m = (globalThis as { __battleAi?: { BattleAI_SetupAIData?: (m: number) => void } }).__battleAi;
+  m?.BattleAI_SetupAIData?.(mask);
+}
+function _BattleAI_ChooseMoveOrAction(): number {
+  const m = (globalThis as { __battleAi?: { BattleAI_ChooseMoveOrAction?: () => number } }).__battleAi;
+  return m?.BattleAI_ChooseMoveOrAction?.() ?? 0;
+}
+function _ChooseMoveAndTargetInBattlePalace(): number {
+  // Dette R3 : Frontier subsystem.
+  return 0;
+}
+
+/** 1:1 décomp `gBattleMoves[move].target` lookup. */
+function _getMoveTarget(move: number): number {
+  const dt = (globalThis as { gameDataMoves?: Record<string, { target?: number }> }).gameDataMoves;
+  if (!dt) return 0;
+  for (const k of Object.keys(dt)) {
+    if (parseInt(k, 10) === move) return (dt[k]?.target ?? 0);
+  }
+  return 0;
+}
+
+/** 1:1 décomp `MOD(a, b)` = a % b (gba/macro.h). */
+function _MOD(a: number, b: number): number { return a % b; }
+
+/** 1:1 décomp `Random()` (random.c). Wire vers RNG global. */
+function _Random(): number {
+  const m = (globalThis as { __rng?: { random?: () => number } }).__rng;
+  if (m?.random) return m.random() & 0xFFFF;
+  return Math.floor(Math.random() * 0x10000);
 }
 
 function OpponentHandleChooseItem(): void { OpponentBufferExecCompleted(); }
