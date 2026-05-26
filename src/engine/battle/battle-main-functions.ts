@@ -117,6 +117,7 @@ import { getRuntime, FreeMonSpritesGfx, BeginFastPaletteFade } from '../system/d
 import { getSpeciesInfo } from '../data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../ui/pokedex-flags';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './ai/ai-script-commands';
+import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../system/decomp-globals';
 import { GetMonData, PARTY_SIZE } from './party-storage';
 
 // Inline constants 1:1 décomp (= éviter export-clutter sur ces specifics) :
@@ -290,16 +291,22 @@ function PartySpreadPokerus(_party: unknown): void {
   // Dette R3 : spread infection adjacent slots party.
 }
 
-/** 1:1 décomp `FadeOutMapMusic(speed)` (sound.c). */
-function FadeOutMapMusic(_speed: number): void {
-  // Dette R3 : fade BGM volume sur N frames. Notre audio web n'a pas
-  // fade granular yet. Pour now : log warn.
-  console.warn('[battle-main-functions] FadeOutMapMusic — fade BGM not yet implemented (dette R3)');
+/** 1:1 décomp `FadeOutMapMusic(speed)` (sound.c). Wire vers FadeOutBGM existing.
+ *  Notre runtime supporte FadeOutBGM(speed) (= m4aMPlayFadeOut sound.c:290). */
+function FadeOutMapMusic(speed: number): void {
+  _FadeOutBGM_rt(speed);
 }
 
-/** 1:1 décomp `m4aSongNumStop(songId)` (m4a.c). Stop le SE/BGM specified. */
-function m4aSongNumStop(_songId: number): void {
-  // Dette R3 : stop audio par songId. Pour now : noop.
+/** 1:1 décomp `m4aSongNumStop(songId)` (m4a.c). Stop le SE/BGM specified.
+ *  Wire vers m4a/player stopSong selon mapping songId → slot. */
+function m4aSongNumStop(songId: number): void {
+  // 1:1 décomp : songId 287 = SE_LOW_HEALTH (= loop SE). Stop SE1/SE2.
+  // Pour BGM (songId variant), stop 'bgm' slot.
+  void songId;
+  void import('../m4a/player').then(({ stopSong }) => {
+    stopSong('se1' as never);
+    stopSong('se2' as never);
+  });
 }
 
 /** 1:1 décomp `BattleStopLowHpSound()` (battle_main.c). Stop le low-HP
@@ -476,10 +483,9 @@ function _getTrainerBattleOpponentA(): number {
   return stateMod.gTrainerBattleOpponent_A ?? 0;
 }
 
-/** 1:1 décomp `PlayBGM(songId)` (sound.c). */
+/** 1:1 décomp `PlayBGM(songId)` (sound.c). Wire vers decomp-globals existing. */
 function PlayBGM(songId: number): void {
-  // Wire vers audio engine si exist. Pour now : log.
-  void songId;
+  _PlayBGM_rt(songId);
 }
 
 /** 1:1 décomp `PREPARE_MON_NICK_BUFFER(buffer, battler, partyIdx)` macro. */

@@ -29,7 +29,12 @@ import {
   setBattleOutcome, setActiveBattler,
 } from './state';
 import { BATTLE_TYPE_RECORDED } from './constants';
-import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
+import {
+  getRuntime, BlendPalettes, PALETTES_ALL,
+  AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
+  UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
+} from '../system/decomp-globals';
+import { RunTextPrinters as _RunTextPrinters_rt } from '../ui/gba-text-system';
 /** 1:1 décomp `B_BUTTON` (io_reg.h) = 1 << 1. */
 const B_BUTTON = 1 << 1;
 /** 1:1 décomp `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */
@@ -56,33 +61,29 @@ function _runBattlerController(_battler: number): void {
   // sont géré via state machine direct dans battle-flow.ts).
 }
 
-/** 1:1 décomp `AnimateSprites()` (sprite.c). */
+/** 1:1 décomp `AnimateSprites()` (sprite.c). Wire vers decomp-globals existing. */
 function _AnimateSprites(): void {
-  // Dette R3 : runtime gère anim sprites implicitement.
+  _AnimateSprites_rt();
 }
 
-/** 1:1 décomp `BuildOamBuffer()`. */
+/** 1:1 décomp `BuildOamBuffer()`. Wire vers decomp-globals existing. */
 function _BuildOamBuffer(): void {
-  // Dette R3 : runtime build OAM implicitement.
+  _BuildOamBuffer_rt();
 }
 
-/** 1:1 décomp `RunTextPrinters()`. */
+/** 1:1 décomp `RunTextPrinters()`. Wire vers ui/gba-text-system existing. */
 function _RunTextPrinters(): void {
-  // Dette R3 : runtime text engine.
+  _RunTextPrinters_rt();
 }
 
-/** 1:1 décomp `UpdatePaletteFade()`. */
+/** 1:1 décomp `UpdatePaletteFade()`. Wire vers decomp-globals existing. */
 function _UpdatePaletteFade(): void {
-  // Wire vers runtime gPaletteFade.
-  const rt = getRuntime();
-  if (rt && typeof (rt as { UpdatePaletteFade?: () => void }).UpdatePaletteFade === 'function') {
-    (rt as { UpdatePaletteFade: () => void }).UpdatePaletteFade();
-  }
+  _UpdatePaletteFade_rt();
 }
 
-/** 1:1 décomp `RunTasks()`. */
+/** 1:1 décomp `RunTasks()`. Wire vers decomp-globals existing. */
 function _RunTasks(): void {
-  // Dette R3 : runtime tasks dispatcher.
+  _RunTasks_rt();
 }
 
 /** 1:1 décomp `JOY_HELD(button)`. */
@@ -103,14 +104,27 @@ function _ResetPaletteFadeControl(): void {
   // Dette R3 : palette fade reset.
 }
 
-/** 1:1 décomp `m4aMPlayStop(playerInfo)`. */
-function _m4aMPlayStop(_playerInfo: unknown): void {
-  // Dette R3 : audio engine stop.
+/** 1:1 décomp `m4aMPlayStop(playerInfo)`. Wire vers m4a/player stopSong. */
+function _m4aMPlayStop(playerInfo: unknown): void {
+  // 1:1 décomp : stop le music player (= BGM ou SE1/SE2 selon ptr passé).
+  // Notre m4a/player a stopSong(slot). On extrapole le slot depuis le ptr.
+  // Pour gMPlayInfo_SE1 → 'se1', gMPlayInfo_SE2 → 'se2', gMPlayInfo_BGM → 'bgm'.
+  // Stub par défaut : stop SE1+SE2 (= cas dominant CB2_QuitRecordedBattle).
+  void playerInfo;
+  void import('../m4a/player').then(({ stopSong }) => {
+    stopSong('se1' as never);
+    stopSong('se2' as never);
+  });
 }
 
-/** 1:1 décomp `m4aSongNumStop(songId)`. */
+/** 1:1 décomp `m4aSongNumStop(songId)`. Wire vers m4a/player stopSong. */
 function _m4aSongNumStop(_songId: number): void {
-  // Dette R3 : stop SE par songId.
+  // 1:1 décomp : stop song par songId. SE_LOW_HEALTH = 287.
+  // Notre m4a/player utilise des slots fixes. Stop SE1+SE2 (= contexte HP low SE).
+  void import('../m4a/player').then(({ stopSong }) => {
+    stopSong('se1' as never);
+    stopSong('se2' as never);
+  });
 }
 
 /** 1:1 décomp `FreeMonSpritesGfx()`. */
