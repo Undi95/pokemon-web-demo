@@ -254,6 +254,23 @@ export class TestOverworldScene extends Phaser.Scene {
     // H3.4 : capture runtime pour FieldEffectStart dispatcher.
     SetFieldEffectRuntime(this.rt);
 
+    // 1:1 décomp `wild_encounter.c` : init gWildMonHeaders depuis le json
+    // extrait (= 519 maps avec land/water/rock_smash/fishing slots + encounter
+    // rates 1:1 décomp wild_encounters.json). Wire StandardWildEncounter au
+    // PlayerStep step-end via CheckStandardWildEncounter (= 4-step immunity
+    // counter + prevBehavior track 1:1 field_control_avatar.c:668-686).
+    void (async () => {
+      const { InitWildEncountersFromJson, ResetWildEncounterImmunity } = await import('../engine/field/wild-encounter');
+      try {
+        const res = await fetch('/decomp/em/wild-encounters.json');
+        const data = await res.json();
+        InitWildEncountersFromJson(data);
+        ResetWildEncounterImmunity();
+      } catch (e) {
+        console.warn('[TestOverworld] wild-encounters.json load failed:', e);
+      }
+    })();
+
     // Audit session 126 (post-test) : 1:1 décomp `CB2_NewGame:1144 + CB2_
     // ContinueSavedGame:1340` → `PlayTimeCounter_Start()`. Sans ça, le state
     // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
@@ -943,14 +960,20 @@ export class TestOverworldScene extends Phaser.Scene {
       // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
       await SpawnObjectEventsOnMap(this.rt);
 
-      // 1:1 décomp `CopyPartyAndObjectsFromSave` (= LoadObjectEvents). Apply les
-      // saved NPC positions ON TOP des templates default. Sans ça les NPCs spawn
-      // toujours à leur position initiale, même si le user a déplacé un NPC via
-      // setobjectxy ou si une cinematic l'a déplacé puis user a save (= le décomp
-      // sauvegarde l'état des objectEvents et le restore au resume). Critique
-      // pour le resume : l'animation du Mom dialog dans la maison déplace Mom
-      // → user save → reload → Mom doit rester à sa nouvelle position.
-      CopyPartyAndObjectsFromSave();
+      // 1:1 STRICT décomp : `CopyPartyAndObjectsFromSave` (= LoadObjectEvents)
+      // est appelé UNIQUEMENT au RESUME d'une save (= CB2_ContinueSavedGame
+      // → load_save.c:LoadGameSave → CopyPartyAndObjectsFromSave). Pas à chaque
+      // warp. Si on l'applique à chaque warp, le snap player slot0 (= persisté
+      // avec mapId vide ou stale) ÉCRASE le slot0 fraîchement init par
+      // InitPlayerAvatar(destX, destY), gardant le player au position du DERNIER
+      // save (= TRUCK initial pour new game). Symptôme : slot0.initialCoords =
+      // (9, 9) INTERNAL = (2, 2) LOGICAL = position truck spawn, alors que
+      // sb1.pos = (8, 7) = position warp dest → PlayerStep voit collision (=
+      // mur autour de (2, 1)) → bloqué. Fix : gate par `initFromSavedGame` qui
+      // est true uniquement au resume.
+      if (initFromSavedGame) {
+        CopyPartyAndObjectsFromSave();
+      }
     } else {
       // 1:1 STRICT décomp event_object_movement.c:1715-1726
       // `SpawnObjectEventsOnReturnToField` : itère gObjectEvents[i].active et
@@ -1042,7 +1065,39 @@ export class TestOverworldScene extends Phaser.Scene {
     // l'overworld n'auto-save pas, c'est le menu Save qui appelle TrySavingData).
     SetCurrentMap({ name: mapId, x: sx, y: sy, facing: spawnDir });
 
+    // J — 1:1 STRICT cross-border : précharger les PNGs des NPCs des maps
+    // CONNECTÉES en background. Équivalent ROM toujours disponible :
+    //   - Décomp : graphics sprites en ROM (= sync access toujours)
+    //   - Notre TS : PNGs via fetch (= async)
+    //   - Solution : pre-cache les maps voisines pendant que la map courante
+    //     joue ; quand player cross-border, preloadNpcGraphicsForMap est instant
+    //     car _npcPngCache.has() = true pour tous les NPCs → spawn sync.
+    // Fire-and-forget : on n'attend pas (= le rest du loadAndInitMap continue).
+    this._preloadConnectedMapsNpcGraphicsBackground(header);
+
     return header;
+  }
+
+  /** 1:1 strict cross-border safety : pre-cache les PNGs des NPCs des maps
+   *  connectées à `currentHeader`. Permet à `handleConnectionTransition` de
+   *  spawn sync (= comme ROM décomp) sans attendre un fetch async.
+   *
+   *  Fire-and-forget. Failures sont logguées (= ne bloquent pas le scene). */
+  private _preloadConnectedMapsNpcGraphicsBackground(currentHeader: MapHeader): void {
+    const connections = currentHeader.connections ?? [];
+    for (const conn of connections) {
+      // Skip dive/emerge (= cross-dimension, séparé du cross-border standard).
+      if (conn.direction === 'dive' || conn.direction === 'emerge') continue;
+      const connMapId = (conn as { map?: string; mapId?: string }).map
+                     ?? (conn as { mapId?: string }).mapId;
+      if (!connMapId) continue;
+      // Async fire-and-forget : load + preload, ne bloque pas.
+      loadMapByName(connMapId)
+        .then(connHeader => preloadNpcGraphicsForMap(connHeader))
+        .catch(e => {
+          console.warn(`[scene] background preload connected map ${connMapId} failed:`, e);
+        });
+    }
   }
 
   /** Phase 4.6 1:1 décomp warp dispatch : `DoWarp` / `DoDoorWarp` / etc. selon
@@ -1435,10 +1490,54 @@ export class TestOverworldScene extends Phaser.Scene {
       RunOnTransitionMapScript();
     });
 
+    // 1:1 STRICT décomp `LoadMapFromCameraTransition` (overworld.c:796) :
+    //   LoadObjEventTemplatesFromHeader();
+    // → charge les ObjectEventTemplates de la NEW map dans gSaveBlock1Ptr->
+    //   objectEventTemplates. Sans ça, TrySpawnObjectEvents filter
+    //   `t.mapId === currentMapId` retourne 0 templates → NPCs de la NEW map
+    //   (= Birch, Zigzagoon, Bag, etc. sur Route101) ne sont JAMAIS spawned.
+    //
+    // BUG observé : cross-border LittlerootTown → Route101, l'OnFrame coord
+    // event Birch run mais setobjectxy LOCALID_ROUTE101_BIRCH fail silently
+    // car aucun NPC Route101 dans gObjectEvents (= jamais spawn from missing
+    // templates). Fix : charger les templates AVANT UpdateObjectEvents.
+    if (newHeader.events?.objectEvents) {
+      const headerTemplates = newHeader.events.objectEvents.map(t => ({
+        localId: (t as { localId?: number }).localId ?? 0,
+        localIdRaw: (t as { localIdRaw?: string }).localIdRaw ?? '',
+        graphicsId: (t as { graphicsId?: number | string }).graphicsId ?? 0,
+        graphicsIdRaw: (t as { graphicsIdRaw?: string }).graphicsIdRaw ?? '',
+        kind: (t as { kind?: number }).kind ?? 0,
+        x: t.x,
+        y: t.y,
+        elevation: (t as { elevation?: number }).elevation ?? 0,
+        movementType: (t as { movementType?: number | string }).movementType ?? 0,
+        movementTypeRaw: (t as { movementTypeRaw?: string }).movementTypeRaw ?? '',
+        movementRangeX: (t as { movementRangeX?: number }).movementRangeX ?? 0,
+        movementRangeY: (t as { movementRangeY?: number }).movementRangeY ?? 0,
+        trainerType: (t as { trainerType?: number }).trainerType ?? 0,
+        trainerRange_berryTreeId: (t as { trainerRange_berryTreeId?: number }).trainerRange_berryTreeId ?? 0,
+        script: (t as { script?: string }).script ?? '',
+        flagId: (t as { flagId?: number | string }).flagId ?? 0,
+      }));
+      LoadObjEventTemplatesFromHeader(newHeader.id, headerTemplates);
+    }
+
     // 1:1 décomp NPC orchestrator post-cross.
-    void preloadNpcGraphicsForMap(newHeader);
-    UpdateObjectEventsForCameraUpdate(this.rt, pending.deltaX, pending.deltaY);
-    UpdateObjectEvents(this.rt);
+    // J — BUG FIX (2026-05-26) : sync preload BEFORE spawn. Avant : `void preloadNpcGraphicsForMap`
+    // (= fire-and-forget async) + `UpdateObjectEventsForCameraUpdate` immediate → TrySpawn
+    // appelait `_npcPngCache.get(pngPath)` qui returnait undefined (= preload pas fini) →
+    // spawn skip silently → NPCs cross-map invisibles (= ex. ZIGZAGOON_1 absent sur
+    // Route101 alors que PROF_BIRCH apparaît car son PNG est déjà cached depuis LittlerootTown).
+    // Fix : await preload puis spawn dans le .then() callback. Le rest du handleConnection
+    // (BGM, popup, etc.) continue immédiat — independent du spawn timing.
+    void preloadNpcGraphicsForMap(newHeader).then(() => {
+      // Re-check gMapHeader (= user n'a pas cross une autre border entretemps).
+      const curHeader = (globalThis as Record<string, unknown>).gMapHeader as MapHeader | undefined;
+      if (curHeader !== newHeader) return;
+      UpdateObjectEventsForCameraUpdate(this.rt, pending.deltaX, pending.deltaY);
+      UpdateObjectEvents(this.rt);
+    });
 
     // BGM transition. 1:1 décomp `TransitionMapMusic`.
     const songId = (Songs as unknown as Record<string, number>)[newHeader.music] ?? 0;

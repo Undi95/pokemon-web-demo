@@ -229,11 +229,21 @@ export function composeFrame(
 
     // Compute pixel layer mask + blend gate via windows pour chaque scanline.
     // Si aucune window active → tous layers visibles, blend partout (default GBA).
+    // 1:1 GBATEK : si Y1>Y2 (idem X1>X2), le hardware wrap-around → window
+    // covers [y1, screen_h) ∪ [0, y2). Cas du décomp starter_choose ARCKO
+    // (labelLeft = 0*8 - 4 = -4 → u8 wraps to 252, x1=252 > x2=108 → box visible
+    // sur [0, 108) via wrap). Avant : strict y1<y2 → ARCKO box invisible.
     const windowsActive = windows && !windowsAreOff(windows);
-    const yInWin0 = windowsActive && windows.win0.enabled
-      && y >= windows.win0.y1 && y < windows.win0.y2;
-    const yInWin1 = windowsActive && windows.win1.enabled
-      && y >= windows.win1.y1 && y < windows.win1.y2;
+    const yInWin0 = windowsActive && windows.win0.enabled && (
+      windows.win0.y1 <= windows.win0.y2
+        ? (y >= windows.win0.y1 && y < windows.win0.y2)
+        : (y >= windows.win0.y1 || y < windows.win0.y2)
+    );
+    const yInWin1 = windowsActive && windows.win1.enabled && (
+      windows.win1.y1 <= windows.win1.y2
+        ? (y >= windows.win1.y1 && y < windows.win1.y2)
+        : (y >= windows.win1.y1 || y < windows.win1.y2)
+    );
 
     // Compose pixel par pixel + tracking des top 2 layers par pixel pour blend.
     for (let x = 0; x < SCREEN_W; x++) {
@@ -252,10 +262,17 @@ export function composeFrame(
       let layerMask = 0x3F;       // 0x3F = tous layers visibles
       let blendAllowed = true;    // peut appliquer le blend
       if (windowsActive) {
-        const xInWin0 = yInWin0
-          && x >= windows.win0.x1 && x < windows.win0.x2;
-        const xInWin1 = yInWin1
-          && x >= windows.win1.x1 && x < windows.win1.x2;
+        // 1:1 GBATEK wrap-around X1>X2 → window covers [x1, screen_w) ∪ [0, x2).
+        const xInWin0 = yInWin0 && (
+          windows.win0.x1 <= windows.win0.x2
+            ? (x >= windows.win0.x1 && x < windows.win0.x2)
+            : (x >= windows.win0.x1 || x < windows.win0.x2)
+        );
+        const xInWin1 = yInWin1 && (
+          windows.win1.x1 <= windows.win1.x2
+            ? (x >= windows.win1.x1 && x < windows.win1.x2)
+            : (x >= windows.win1.x1 || x < windows.win1.x2)
+        );
         const xInWinObj = winObjMask && winObjMask[x] !== 0;
         // Priority : WIN0 > WIN1 > WINOBJ > WINOUT
         if (xInWin0) {

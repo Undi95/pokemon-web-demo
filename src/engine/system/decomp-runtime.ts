@@ -26,7 +26,7 @@ const RT_DEBUG = typeof window !== 'undefined' && window.localStorage?.getItem('
 import { LAYER_BG0, LAYER_BG1, LAYER_BG2, LAYER_BG3, LAYER_OBJ, LAYER_BD } from '../gba/types';
 import {
   loadIndexedPng, loadIndexedPngWithPal, loadIndexedPng8bppWithPal,
-  loadIndexedPngStrict,
+  loadIndexedPngStrict, extractPngPlte,
   loadGbaPal, loadTilemapBin, loadAffineTilemapBin,
 } from '../gba/png-loader';
 import {
@@ -1860,8 +1860,10 @@ export class DecompRuntime {
         console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: cannot resolve URL for ${entry.paletteName}`);
         continue;
       }
+      // J — fix extracteur : entry.tag = ".tag = TAG_X" → strip préfixe.
+      const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
       // 1:1 décomp LoadSpritePalette early return : si tag déjà chargé, skip.
-      if (sp?.IndexOfSpritePaletteTag?.(entry.tag) !== 0xFF) continue;
+      if (sp?.IndexOfSpritePaletteTag?.(cleanTag) !== 0xFF) continue;
       // 1:1 décomp AllocSpritePalette = IndexOfSpritePaletteTag(TAG_NONE) =
       // scan first-free dans [gReservedSpritePaletteCount, 16) via array primary.
       const reserved = ((globalThis as Record<string, unknown>).gReservedSpritePaletteCount as number) ?? 0;
@@ -1872,14 +1874,23 @@ export class DecompRuntime {
         }
       }
       if (slot < 0) {
-        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${entry.tag}`);
+        console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: OBJ palette saturated (16/16), skipping ${cleanTag}`);
         break;
       }
       try {
         if (url.endsWith('.png')) {
-          // Load PNG-embedded PLTE (used quand pal name pointe vers un .png)
-          const png = await loadIndexedPng(url);
-          this.LoadPaletteObj(png.palette, OBJ_PLTT_ID(slot));
+          // J — fix 1:1 strict : loadIndexedPng rebuild palette par ordre
+          // d'apparition pixel ; mismatch avec tile data écrit via
+          // loadIndexedPngStrict (= PLTE order). Le décomp utilise
+          // INCGFX_U16("xxx.png", ".gbapal") = PLTE chunk extracted en RGB15.
+          // → lire le PLTE direct (= 1:1 strict décomp .gbapal sibling).
+          const plte = await extractPngPlte(url);
+          if (!plte) {
+            console.warn(`[runtime] LoadSpritePalettesFromTable ${tableName}: no PLTE in ${url}`);
+          } else {
+            const pal16 = plte.subarray(0, 16);
+            this.LoadPaletteObj(pal16, OBJ_PLTT_ID(slot));
+          }
         } else {
           await this.LoadPaletteObjFromFile(url, OBJ_PLTT_ID(slot));
         }
@@ -1887,8 +1898,8 @@ export class DecompRuntime {
         const markPal = (globalThis as Record<string, unknown>).__sprite as {
           MarkObjPaletteAllocated?: (slot: number, tag: string | number) => void;
         } | undefined;
-        markPal?.MarkObjPaletteAllocated?.(slot, entry.tag);
-        if (RT_DEBUG) console.log(`[runtime] palette ${entry.tag} → OBJ slot ${slot}`);
+        markPal?.MarkObjPaletteAllocated?.(slot, cleanTag);
+        if (RT_DEBUG) console.log(`[runtime] palette ${cleanTag} → OBJ slot ${slot}`);
       } catch (e) {
         console.error(`[runtime] LoadSpritePalettesFromTable ${tableName}: load failed for ${entry.paletteName}:`, e);
       }
@@ -1931,8 +1942,13 @@ export class DecompRuntime {
         }
         const byteOffset = tileStart << 5;
         this._writeToObjVram(png.charData, byteOffset);
-        sp?.AllocSpriteTileRange?.(entry.tag, tileStart, tileCount);
-        if (RT_DEBUG) console.log(`[runtime] sheet ${entry.tag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
+        // J — fix extracteur : entry.tag = ".tag = TAG_X" (= full assignment string)
+        // au lieu de "TAG_X" (= juste la valeur). Strip le préfixe pour que la
+        // clé de registration matche celle utilisée par CreateSpriteFromTemplate
+        // (= tpl.tileTag = "TAG_X" sans préfixe).
+        const cleanTag = String(entry.tag).replace(/^\s*\.tag\s*=\s*/, '').trim();
+        sp?.AllocSpriteTileRange?.(cleanTag, tileStart, tileCount);
+        if (RT_DEBUG) console.log(`[runtime] sheet ${cleanTag} → tileStart ${tileStart} (size ${png.charData.length}B)`);
       } catch (e) {
         console.error(`[runtime] LoadCompressedSpriteSheetsFromTable ${tableName}: load failed for ${entry.gfxName}:`, e);
       }

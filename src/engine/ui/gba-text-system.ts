@@ -103,13 +103,14 @@ export function preloadFontData(): Promise<void> {
  *  Phase B audit session 83 : remplace l'approximation `~6px/char` qu'on
  *  avait dans option-menu-impl.ts (= rightAlignX). Maintenant le right-align
  *  des choices "FAST" / "OFF" / "STÉRÉO" / etc. matche exactement le décomp. */
-export function GetStringWidth(str: string): number {
+export function GetStringWidth(str: string, fontId: number = FONT_NORMAL): number {
   ensureFontLoaded();
-  // 1:1 décomp text.c:GetStringWidth — on encode la string COMPLÈTE (pas un
-  // strip regex naïf) puis on walk les bytes : les EXT_CTRL (0xFC) = 0 px
-  // (3 bytes), les EXTRA_SYMBOL (0xF9) = glyphWidths[0x100|sym] (2 bytes,
-  // cf. text.c:1454-1456 `func(*++str | 0x100)`), le reste = glyphWidths[b].
-  // Avant : `{NO}`/`{LV_2}` étaient stripés → width 0 → right-align ID faux.
+  // 1:1 décomp text.c:GetStringWidth(fontId, str, letterSpacing=0) — utilise
+  // glyphWidths[fontId] (= différent pour FONT_NORMAL vs FONT_NARROW vs FONT_SHORT).
+  // On encode la string COMPLÈTE (pas un strip regex naïf) puis on walk les bytes :
+  // les EXT_CTRL (0xFC) = 0 px (3 bytes), les EXTRA_SYMBOL (0xF9) = glyphWidths[0x100|sym]
+  // (2 bytes, cf. text.c:1454-1456 `func(*++str | 0x100)`), le reste = glyphWidths[b].
+  const fontGlyphs = _resolveFont(fontId);
   const encoded = encodeStringForFont(str, charmap!);
   let width = 0;
   for (let i = 0; i < encoded.length; i++) {
@@ -118,20 +119,20 @@ export function GetStringWidth(str: string): number {
     if (b === EXT_CTRL_CODE_BEGIN) { i += 2; continue; } // BEGIN+sub+param = 0 px
     if (b === CHAR_EXTRA_SYMBOL) {
       const sym = encoded[i + 1] ?? 0;
-      width += glyphWidths![0x100 | sym] ?? 0;
+      width += fontGlyphs.glyphWidths[0x100 | sym] ?? 0;
       i += 1;
       continue;
     }
     if (b === CHAR_NEWLINE || b === CHAR_PROMPT_SCROLL || b === CHAR_PROMPT_CLEAR) continue;
-    width += glyphWidths![b] ?? 0;
+    width += fontGlyphs.glyphWidths[b] ?? 0;
   }
   return width;
 }
 
-/** 1:1 décomp src/text.c `GetStringRightAlignXOffset(FONT_NORMAL, str, rightX)`.
+/** 1:1 décomp src/text.c `GetStringRightAlignXOffset(fontId, str, rightX)`.
  *  Retourne la X offset où placer le START de `str` pour qu'il finisse à `rightX`. */
-export function GetStringRightAlignXOffset(str: string, rightX: number): number {
-  return rightX - GetStringWidth(str);
+export function GetStringRightAlignXOffset(str: string, rightX: number, fontId: number = FONT_NORMAL): number {
+  return rightX - GetStringWidth(str, fontId);
 }
 
 /** 1:1 décomp src/text.c `GetStringCenterAlignXOffset(fontId, str, totalWidth)`.
@@ -143,8 +144,8 @@ export function GetStringRightAlignXOffset(str: string, rightX: number): number 
  *  pour OBJETS/BAIES/OBJ. RARES dans le bag). AddTextPrinterParameterized3
  *  ne render PAS le texte avec un offset fractionnaire (= header pocket
  *  vide pour ces 3 strings dans le SAC). Floor pour 1:1 C. */
-export function GetStringCenterAlignXOffset(str: string, totalWidth: number): number {
-  return Math.floor((totalWidth - GetStringWidth(str)) / 2);
+export function GetStringCenterAlignXOffset(str: string, totalWidth: number, fontId: number = FONT_NORMAL): number {
+  return Math.floor((totalWidth - GetStringWidth(str, fontId)) / 2);
 }
 
 /** 1:1 décomp `CHAR_SPACER` (= byte 0x77 dans charmap, charmap.txt:280).
@@ -304,14 +305,17 @@ function _addTextPrinterParameterizedCore(
     downArrowPixels: downArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
-  // 1:1 décomp src/text.c:AddTextPrinter — quand speed === TEXT_SKIP_DRAW (255),
-  // le printer rend la string entière de façon synchrone et marque
-  // `sTextPrinters[id].active = FALSE`. RunTextPrinters skip ensuite, donc le
-  // down arrow n'est JAMAIS drawn (= comportement attendu pour menu items).
-  // Sans ce flush, le printer reste en RENDER_STATE_WAIT_WITH_DOWN_ARROW et
-  // RunTextPrinters() draw la flèche rouge à la fin de NOUVELLE PARTIE / OPTIONS.
+  // 1:1 décomp src/text.c:AddTextPrinter (text.c:91-117) :
+  //   if (speed != TEXT_SKIP_DRAW && speed != 0)
+  //       sTextPrinters[windowId] = sTempTextPrinter;     // animated print
+  //   else
+  //       for (i = 0; i < 0x400; ++i) RenderFont(...);    // sync render
+  //       CopyWindowToVram(...);
+  //       sTextPrinters[windowId].active = 0;             // mark inactive
+  // → speed=0 ET speed=255 (TEXT_SKIP_DRAW) = render full synchronous instant.
+  //   speed > 0 (animated) = laisser RunTextPrinters() iterer par frame.
   let finished = false;
-  if (speed === 255) {
+  if (speed === 255 || speed === 0) {
     // Boucle borne (= équivalent décomp `for (j = 0; j < 0x400; ++j)`).
     for (let j = 0; j < 0x400; j++) {
       runTextPrinter(printer);

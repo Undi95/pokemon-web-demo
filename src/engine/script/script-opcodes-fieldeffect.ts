@@ -107,8 +107,17 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
   // FLDEFF_SPARKLE = 36 (= 1:1 décomp include/constants/field_effects.h).
   const FLDEFF_SPARKLE = 36;
-  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number, dur?: number) => void } }).__fieldEffectActiveList;
-  // Sparkle dure ~30 frames = ~500ms.
-  fa?.FieldEffectActiveListAdd?.(FLDEFF_SPARKLE, 500);
+  const fa = (globalThis as {
+    __fieldEffectActiveList?: {
+      FieldEffectActiveListAdd?: (id: number) => void;
+      FieldEffectActiveListRemove?: (id: number) => void;
+    };
+  }).__fieldEffectActiveList;
+  fa?.FieldEffectActiveListAdd?.(FLDEFF_SPARKLE);
+  // Dette R3 : sprite callback `FldEff_Sparkle` (= field_effect_helpers.c) pas
+  // encore porté. Le décomp wire la sprite anim auto-remove via FieldEffectStop
+  // → FieldEffectActiveListRemove à fin d'anim. En attendant, scheduler local
+  // setTimeout 500ms (~30 frames) pour matcher la durée visuelle attendue.
+  setTimeout(() => fa?.FieldEffectActiveListRemove?.(FLDEFF_SPARKLE), 500);
   return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;
 });

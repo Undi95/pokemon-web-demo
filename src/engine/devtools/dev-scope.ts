@@ -47,7 +47,7 @@ import {
   GetCameraPanX as _GetCameraPanX,
   GetCameraPanY as _GetCameraPanY,
 } from '../field/field-camera';
-import { ScriptContext_SetupInlineBytecode } from '../script/script-runtime';
+import { ScriptContext_SetupInlineBytecode, ArePlayerFieldControlsLocked } from '../script/script-runtime';
 import { buildBattleDevtools } from '../battle/battle-devtools';
 import { GBA_BUTTON_MASKS, type GbaButton } from '../../util/key-bindings';
 import { setHeldKeysOverride, clearHeldKeysOverride } from '../system/input-handler';
@@ -745,6 +745,11 @@ OW INSPECTION (post R3 INTERNAL/LOGICAL coords audit) :
   scope.map(opts?)        Map ASCII (15×11 par défaut) avec player + NPCs + collision
   scope.movement()        State machine MovementAction_* du player + NPCs
 
+DIAGNOSTIC INPUT (= debug "je peux plus marcher") :
+  scope.canWalk()         Liste des 9 gates PlayerStep + 🔴/✅ par gate
+  scope.diag()            Diagnostic complet : blockers + coords drift + pa state
+  scope.locks()           Tous les locks/freeze actifs (sLockFieldControls, fade, frozenNpcs)
+
 SCRIPT :
   scope.scriptHistory(n)  N derniers opcodes exécutés (ring buffer 256)
   scope.scriptHistoryClear() Reset ring buffer
@@ -1168,6 +1173,134 @@ function _movement(): Record<string, unknown> {
   return { player, npcs };
 }
 
+// ─── Diagnostic player input gates (= scope.canWalk() / scope.locks()) ───────
+//
+// PlayerStep (field_player_avatar.c:332) gate l'input par plusieurs flags :
+//   1. spriteId < 0                          (sprite invalide)
+//   2. ArePlayerFieldControlsLocked()        (sLockFieldControls = TRUE)
+//   3. gPaletteFade.active                   (fade en cours)
+//   4. preventStep                           (forceStop, surfing setup, etc.)
+//   5. collideFramesLeft > 0                 (anim bump active)
+//   6. forceMovement != DIR_NONE             (warp exit task drive le step)
+//   7. runningState === MOVING && stepFramesLeft > 0  (step en cours)
+//   8. ScriptContext SHUTDOWN? RUNNING?
+//   9. message box ouvert ?
+//
+// `scope.canWalk()` retourne la première raison qui bloque l'input, ou null si
+// l'input devrait passer. Utile quand le user dit "je peux pas bouger".
+
+interface CanWalkGate { blocked: boolean; reason: string; details?: Record<string, unknown> }
+
+function _canWalk(): CanWalkGate[] {
+  const gates: CanWalkGate[] = [];
+  const pa = _g<PlayerAvatar & {
+    spriteId?: number; preventStep?: boolean; runningState?: number;
+    forceMovement?: number; collideFramesLeft?: number; objectEventId?: number;
+    flags?: number; turnFramesLeft?: number;
+  }>('gPlayerAvatar');
+  if (!pa) return [{ blocked: true, reason: 'gPlayerAvatar undefined' }];
+
+  // Gate 1 : spriteId
+  gates.push({ blocked: (pa.spriteId ?? -1) < 0, reason: `spriteId=${pa.spriteId}` });
+
+  // Gate 2 : ArePlayerFieldControlsLocked
+  try {
+    const locked = ArePlayerFieldControlsLocked();
+    gates.push({ blocked: locked, reason: `sLockFieldControls=${locked}` });
+  } catch (e) {
+    gates.push({ blocked: false, reason: `ArePlayerFieldControlsLocked threw: ${(e as Error).message}` });
+  }
+
+  // Gate 3 : gPaletteFade.active
+  const pf = _g<{ active?: boolean; brightness?: number; mode?: number }>('gPaletteFade')
+    ?? (_g<{ _rt?: { gPaletteFade?: { active?: boolean } } }>('dev'))?._rt?.gPaletteFade;
+  gates.push({ blocked: pf?.active === true, reason: `gPaletteFade.active=${pf?.active}` });
+
+  // Gate 4 : preventStep
+  gates.push({ blocked: pa.preventStep === true, reason: `preventStep=${pa.preventStep}` });
+
+  // Gate 5 : collideFramesLeft (= bump anim active, input skip)
+  gates.push({ blocked: (pa.collideFramesLeft ?? 0) > 0, reason: `collideFramesLeft=${pa.collideFramesLeft}` });
+
+  // Gate 6 : forceMovement (= warp exit drive le step)
+  gates.push({ blocked: (pa.forceMovement ?? 0) !== 0, reason: `forceMovement=${_DIR_NAMES[pa.forceMovement ?? 0]}` });
+
+  // Gate 7 : runningState MOVING + stepFramesLeft
+  const moving = (pa.runningState ?? 0) === 2 && (pa.stepFramesLeft ?? 0) > 0;
+  gates.push({ blocked: moving, reason: `runningState=MOVING stepFramesLeft=${pa.stepFramesLeft}` });
+
+  // Gate 8 : script status
+  const sc = _script() as { status?: number; statusName?: string };
+  gates.push({ blocked: sc.status === 0, reason: `scriptContext=${sc.statusName ?? '?'}(${sc.status})` });
+
+  // Gate 9 : dialog open
+  const dlg = _dialog() as { open?: boolean };
+  gates.push({ blocked: dlg.open === true, reason: `dialog.open=${dlg.open}` });
+
+  return gates;
+}
+
+/** Diagnostic complet : list TOUS les gates qui bloquent l'input + montre
+ *  les drift entre slot0 / sb1.pos / gPlayerAvatar. */
+function _diag(): Record<string, unknown> {
+  const gates = _canWalk();
+  const blockers = gates.filter(g => g.blocked);
+  const pa = _g<PlayerAvatar & {
+    spriteId?: number; preventStep?: boolean; runningState?: number;
+    forceMovement?: number; collideFramesLeft?: number; objectEventId?: number;
+    flags?: number; tileTransitionState?: number;
+  }>('gPlayerAvatar');
+  const objs = _g<ObjectEventMovementFields[]>('__gObjectEvents') ?? [];
+  const slot0 = objs[0];
+  const sb1pos = _readPlayerPos();
+  const slot0LogicalX = (slot0?.currentCoordsX ?? MAP_OFFSET) - MAP_OFFSET;
+  const slot0LogicalY = (slot0?.currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET;
+  const drift = (sb1pos.x !== undefined && slot0LogicalX !== sb1pos.x)
+             || (sb1pos.y !== undefined && slot0LogicalY !== sb1pos.y);
+  return {
+    blockers: blockers.length === 0
+      ? 'AUCUN — input DEVRAIT passer'
+      : blockers.map(b => b.reason),
+    allGates: gates.map(g => `${g.blocked ? '🔴' : '✅'} ${g.reason}`),
+    coords: {
+      sb1pos,
+      slot0_LOGICAL: { x: slot0LogicalX, y: slot0LogicalY, facing: _DIR_NAMES[slot0?.facingDirection ?? 0] },
+      slot0_INTERNAL: { x: slot0?.currentCoordsX, y: slot0?.currentCoordsY },
+      slot0_initial_LOGICAL: slot0 ? { x: (slot0 as { initialCoordsX?: number }).initialCoordsX! - MAP_OFFSET, y: (slot0 as { initialCoordsY?: number }).initialCoordsY! - MAP_OFFSET } : null,
+      drift: drift ? '🔴 slot0 ≠ sb1.pos — DESYNC' : '✅ slot0 == sb1.pos',
+    },
+    pa: {
+      flags: pa?.flags?.toString(2).padStart(8, '0'),
+      runningState: pa?.runningState,
+      tileTransitionState: pa?.tileTransitionState,
+      stepFramesLeft: pa?.stepFramesLeft,
+      objectEventId: pa?.objectEventId,
+      spriteId: pa?.spriteId,
+    },
+  };
+}
+
+/** Show TOUS les locks/freeze states actifs. */
+function _locks(): Record<string, unknown> {
+  let sLock: boolean | string;
+  try { sLock = ArePlayerFieldControlsLocked(); } catch (e) { sLock = `err: ${(e as Error).message}`; }
+  const pa = _g<{ preventStep?: boolean }>('gPlayerAvatar');
+  const pf = _g<{ active?: boolean; brightness?: number; mode?: number; bufferTransferDisabled?: boolean }>('gPaletteFade')
+    ?? (_g<{ _rt?: { gPaletteFade?: { active?: boolean } } }>('dev'))?._rt?.gPaletteFade;
+  const objs = _g<ObjectEventMovementFields[]>('__gObjectEvents') ?? [];
+  const frozenNpcs = objs.map((o, i) => ({ slot: i, frozen: (o as { frozen?: boolean })?.frozen, active: o?.active }))
+    .filter(o => o.frozen);
+  return {
+    sLockFieldControls: sLock,
+    gPaletteFade_active: pf?.active,
+    gPaletteFade_bufferTransferDisabled: (pf as { bufferTransferDisabled?: boolean })?.bufferTransferDisabled,
+    player_preventStep: pa?.preventStep,
+    frozenNpcs: frozenNpcs.length === 0 ? 'none' : frozenNpcs,
+    script: _script(),
+    dialog: _dialog(),
+  };
+}
+
 // ─── Pathfinder simple (= scope.go(x, y) target LOGICAL) ─────────────────────
 // A* basique sur la grille de collision visible. Drive via setHeldKeysOverride.
 // Pas optimal pour les longues distances ni les obstacles dynamiques (= NPCs
@@ -1537,6 +1670,10 @@ function _buildScopeApi(): Record<string, unknown> {
     findNpc: _findNpc,
     map: _map,
     movement: _movement,
+    // Diagnostic input gates (= scope.canWalk / diag / locks)
+    canWalk: _canWalk,
+    diag: _diag,
+    locks: _locks,
     // Script
     scriptHistory: _scriptHistory,
     scriptHistoryClear: _scriptHistoryClear,

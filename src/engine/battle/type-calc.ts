@@ -18,10 +18,17 @@ import {
   gLastLandedMoves,
   gLastHitByType,
   gBattleCommunication,
+  gBattleWeather,
+  gHitMarker,
   setMoveResultFlags,
   setBattleMoveDamage,
   setLastUsedAbility,
 } from './state';
+import { B_WEATHER_SUN, HITMARKER_CHARGING } from './constants';
+import {
+  EFFECT_SOLAR_BEAM, EFFECT_SKULL_BASH, EFFECT_RAZOR_WIND, EFFECT_SKY_ATTACK,
+  EFFECT_SEMI_INVULNERABLE, EFFECT_BIDE,
+} from '../decomp-data/include/constants/battle_move_effects-data';
 import { getBattleMove } from './data/battle-moves';
 import {
   gTypeEffectiveness,
@@ -99,10 +106,45 @@ function getMoveType(move: number): number {
   return getBattleMove(move).type;
 }
 
-/** Stub : 1:1 décomp `AttacksThisTurn(attacker, move)` retourne 2 si
- *  un move multi-hit a hit son target déjà ce tour, sinon le hit principal.
- *  Notre port : retourne 2 (= treat all moves comme "first hit"). */
-function attacksThisTurn(_attacker: number, _move: number): number { return 2; }
+/** 1:1 décomp `AttacksThisTurn(u8 battler, u16 move)` (battle_script_commands.c:8224-8242) :
+ *  ```c
+ *  static u8 AttacksThisTurn(u8 battler, u16 move) // returns 1 if charging turn, otherwise 2
+ *  {
+ *      // first argument is unused
+ *      if (gBattleMoves[move].effect == EFFECT_SOLAR_BEAM
+ *          && (gBattleWeather & B_WEATHER_SUN))
+ *          return 2;
+ *      if (gBattleMoves[move].effect == EFFECT_SKULL_BASH
+ *       || gBattleMoves[move].effect == EFFECT_RAZOR_WIND
+ *       || gBattleMoves[move].effect == EFFECT_SKY_ATTACK
+ *       || gBattleMoves[move].effect == EFFECT_SOLAR_BEAM
+ *       || gBattleMoves[move].effect == EFFECT_SEMI_INVULNERABLE
+ *       || gBattleMoves[move].effect == EFFECT_BIDE)
+ *      {
+ *          if ((gHitMarker & HITMARKER_CHARGING))
+ *              return 1;
+ *      }
+ *      return 2;
+ *  }
+ *  ```
+ *  Wonder Guard check (= `AttacksThisTurn() == 2`) skip si charging turn. */
+function attacksThisTurn(_battler: number, move: number): number {
+  const effect = getBattleMove(move).effect;
+  if (effect === EFFECT_SOLAR_BEAM && (gBattleWeather & B_WEATHER_SUN)) {
+    return 2;
+  }
+  if (effect === EFFECT_SKULL_BASH
+   || effect === EFFECT_RAZOR_WIND
+   || effect === EFFECT_SKY_ATTACK
+   || effect === EFFECT_SOLAR_BEAM
+   || effect === EFFECT_SEMI_INVULNERABLE
+   || effect === EFFECT_BIDE) {
+    if (gHitMarker & HITMARKER_CHARGING) {
+      return 1;
+    }
+  }
+  return 2;
+}
 
 // ─── Cmd_typecalc ───────────────────────────────────────────────────────────
 

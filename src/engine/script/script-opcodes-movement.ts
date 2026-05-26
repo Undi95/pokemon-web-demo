@@ -31,7 +31,7 @@
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
-import { gObjectEvents, TrySpawnObjectEvent } from '../field/object-events';
+import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../field/object-events';
 import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../system/decomp-globals';
@@ -53,11 +53,22 @@ registerOpcode('setobjectxy', (_ctx, args) => {
   const y = parseValue(args[2]);
   const npc = findNpcByLocalId(args[0] ?? '');
   if (npc) {
-    // Post R3 refactor : currentCoords INTERNAL (= +MAP_OFFSET) 1:1 décomp.
+    // 1:1 STRICT décomp `MoveObjectEventToMapCoords` (event_object_movement.c:2133) :
+    //   SetObjectEventCoords(objectEvent, x, y);    ← update coords logiques
+    //   SetSpritePosToMapCoords(...);                ← update sprite pixel pos
+    //   sprite->centerToCornerVecX/Y = -(graphicsInfo->width/height >> 1);
+    //   sprite->x += 8; sprite->y += 16 + ctcv;
+    //   ResetObjectEventFldEffData(objectEvent);
+    //
+    // Sans le 2e step (sprite pixel pos), le SPRITE reste à sa position template
+    // visuel même si les coords logiques changent → bug user "Birch spawn pas
+    // au bon endroit" (= script setobjectxy LOCALID_ROUTE101_BIRCH, 0, 15 mais
+    // sprite resta à (9, 13) = template visuel jusqu'au prochain walk).
     npc.currentCoordsX = x + MAP_OFFSET;
     npc.currentCoordsY = y + MAP_OFFSET;
     npc.previousCoordsX = x + MAP_OFFSET;
     npc.previousCoordsY = y + MAP_OFFSET;
+    SetObjectEventSpritePosToMapCoords(npc, x, y);
   }
   return false;
 });
@@ -90,8 +101,10 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
     npc.currentCoordsY = y + MAP_OFFSET;
     npc.previousCoordsX = x + MAP_OFFSET;
     npc.previousCoordsY = y + MAP_OFFSET;
-    npc.worldX = x * 16;
-    npc.worldY = y * 16;
+    // 1:1 STRICT décomp `MoveObjectEventToMapCoords` (event_object_movement.c:2133) :
+    // sprite pixel pos doit être recalculé avec camera offset, PAS un simple `x * 16`
+    // qui ignore gFieldCamera/gTotalCamera/sFieldCameraOffset.
+    SetObjectEventSpritePosToMapCoords(npc, x, y);
   }
   return false;
 });

@@ -15,7 +15,7 @@
  * Volume persisté dans localStorage.audioDevtoolVolume (0.0–1.0).
  */
 import { SONG_ID_TO_NAME } from '../engine/decomp-data/src/song-table';
-import { m4aSongNumStart, PlaySE, m4aMPlayAllStop, pauseBgm, resumeBgm, isBgmPaused } from '../engine/decomp-globals';
+import { m4aSongNumStart, PlaySE, m4aMPlayAllStop, pauseBgm, resumeBgm, isBgmPaused } from '../engine/system/decomp-globals';
 import { setMasterVolume } from '../engine/m4a/audio-context';
 
 interface SongEntry { id: number; name: string; }

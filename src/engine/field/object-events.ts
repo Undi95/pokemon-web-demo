@@ -829,7 +829,12 @@ export function InitPlayerObjectEvent(
                                          // archi : loadAndInitMap call DestroyWarp +
                                          // CreateWarpArrowSprite).
   npc.playerCopyableMovement = 0;
-  npc.mapId = '';  // Set par caller au current map.
+  // 1:1 web port : set mapId = current map pour que SaveObjectEvents persist
+  // le snap player avec son mapId. Sans ça, snap.mapId='' → LoadObjectEvents
+  // filter `if (snap.mapId && currentMapId && snap.mapId !== currentMapId)`
+  // est fail-open (mapId vide) → snap player TRUCK ré-appliqué sur warps
+  // subséquents → slot0 reset à init coords TRUCK = (2, 2) → player bloqué.
+  npc.mapId = gMapHeader?.id ?? '';
   npc.mapNum = 0;
   npc.mapGroup = 0;
   // Bit flags reset.
@@ -5689,39 +5694,158 @@ export function TrySpawnObjectEvents(rt: DecompRuntime): void {
 
 // ─── Re-anchor sprite pixel pos depuis coords logiques (resume save) ────────
 
-/** 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
- *  Recalcule `npc.worldX/worldY` (= ancre pixel du sprite) depuis des coords
- *  LOGIQUES tile (x,y), avec la MÊME formule que le spawn (object-events.ts
- *  ~1205-1237 ; garder les deux synchronisés = 1:1).
- *
- *  ⚠️ Étape 5 SAVE-SYSTEM-1TO1 — fix bug "pnj reset mais pas leur hitbox" :
- *  la collision NPC lit `currentCoords` (isOtherNpcAt:566) mais le sprite est
- *  driven par `worldX/worldY` (UpdateObjectEvents:1506). Au resume d'une save,
- *  applySnapshotToObjectEvent restaure `currentCoords` (→ hitbox à la pos
- *  sauvée) mais PAS `worldX/worldY` → le sprite reste à la pos template
- *  (= "reset" visuel) tandis que la hitbox est ailleurs. Ré-ancrer ici remet
- *  sprite ET hitbox à la pos sauvée (1:1 décomp : LoadObjectEvents copie la
- *  struct ENTIÈRE puis le sprite est repositionné depuis les coords). */
-export function SetObjectEventSpritePosToMapCoords(npc: ObjectEvent, x: number, y: number): void {
-  const cam = GetCameraTopLeftCoords();
-  const npcGBackupCol = x + MAP_OFFSET;
-  const npcGBackupRow = y + MAP_OFFSET;
+/** 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801) ligne-par-ligne :
+ *  ```c
+ *  void SetSpritePosToMapCoords(s32 mapX, s32 mapY, s16 *destX, s16 *destY) {
+ *      s16 dx = -gTotalCameraPixelOffsetX - gFieldCamera.x;
+ *      s16 dy = -gTotalCameraPixelOffsetY - gFieldCamera.y;
+ *      if (gFieldCamera.x > 0) dx += 0x10;
+ *      if (gFieldCamera.x < 0) dx -= 0x10;
+ *      if (gFieldCamera.y > 0) dy += 0x10;
+ *      if (gFieldCamera.y < 0) dy -= 0x10;
+ *      *destX = ((mapX - gSaveBlock1Ptr->pos.x) << 4) + dx;
+ *      *destY = ((mapY - gSaveBlock1Ptr->pos.y) << 4) + dy;
+ *  }
+ *  ```
+ *  mapX/Y = INTERNAL frame (= +MAP_OFFSET). Returns sprite pixel pos relative
+ *  to screen top-left. */
+function _SetSpritePosToMapCoords(mapX: number, mapY: number): { destX: number; destY: number } {
   let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
   let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
-  if (gFieldCamera.x > 0) dx += 16;
-  if (gFieldCamera.x < 0) dx -= 16;
-  if (gFieldCamera.y > 0) dy += 16;
-  if (gFieldCamera.y < 0) dy -= 16;
-  npc.worldX = (npcGBackupCol - cam.x) * 16 + 8 + dx;
-  npc.worldY = (npcGBackupRow - cam.y) * 16 + dy;
-  // NPC restauré = au repos sur sa tile (pas mid-walk) : couper toute
-  // progression de marche résiduelle pour que UpdateObjectEvents le dessine
-  // statique à worldX/Y (= 1:1 spawn qui set walkFramesLeft=0/DIR_NONE).
+  if (gFieldCamera.x > 0) dx += 0x10;
+  if (gFieldCamera.x < 0) dx -= 0x10;
+  if (gFieldCamera.y > 0) dy += 0x10;
+  if (gFieldCamera.y < 0) dy -= 0x10;
+  const destX = ((mapX - gSaveBlock1Ptr.pos.x) << 4) + dx;
+  const destY = ((mapY - gSaveBlock1Ptr.pos.y) << 4) + dy;
+  return { destX, destY };
+}
+
+/** 1:1 décomp `SetObjectEventCoords` (event_object_movement.c) :
+ *  ```c
+ *  void SetObjectEventCoords(struct ObjectEvent *objectEvent, s16 x, s16 y) {
+ *      objectEvent->previousCoords.x = objectEvent->currentCoords.x;
+ *      objectEvent->previousCoords.y = objectEvent->currentCoords.y;
+ *      objectEvent->currentCoords.x = x;
+ *      objectEvent->currentCoords.y = y;
+ *  }
+ *  ```
+ *  x, y = INTERNAL frame. */
+function _SetObjectEventCoords(npc: ObjectEvent, x: number, y: number): void {
+  npc.previousCoordsX = npc.currentCoordsX;
+  npc.previousCoordsY = npc.currentCoordsY;
+  npc.currentCoordsX = x;
+  npc.currentCoordsY = y;
+}
+
+/** 1:1 décomp `MoveObjectEventToMapCoords` (event_object_movement.c:2133) ligne-par-ligne :
+ *  ```c
+ *  void MoveObjectEventToMapCoords(struct ObjectEvent *objectEvent, s16 x, s16 y) {
+ *      struct Sprite *sprite = &gSprites[objectEvent->spriteId];
+ *      const struct ObjectEventGraphicsInfo *graphicsInfo = GetObjectEventGraphicsInfo(objectEvent->graphicsId);
+ *      SetObjectEventCoords(objectEvent, x, y);
+ *      SetSpritePosToMapCoords(currentCoords.x, currentCoords.y, &sprite->x, &sprite->y);
+ *      sprite->centerToCornerVecX = -(graphicsInfo->width >> 1);
+ *      sprite->centerToCornerVecY = -(graphicsInfo->height >> 1);
+ *      sprite->x += 8;
+ *      sprite->y += 16 + sprite->centerToCornerVecY;
+ *      ResetObjectEventFldEffData(objectEvent);
+ *      if (objectEvent->trackedByCamera) CameraObjectReset();
+ *  }
+ *  ```
+ *  Notre TS : sprite.x/y = npc.worldX/worldY. centerToCornerVec stocké sur npc.
+ *  x, y = INTERNAL frame (= +MAP_OFFSET, caller fait l'add).
+ *  trackedByCamera + CameraObjectReset : dette R3 (hors-démo). */
+export function MoveObjectEventToMapCoords(npc: ObjectEvent, x: number, y: number): void {
+  _SetObjectEventCoords(npc, x, y);
+  const { destX, destY } = _SetSpritePosToMapCoords(npc.currentCoordsX, npc.currentCoordsY);
+  // 1:1 décomp ligne 2142 : sprite->x += 8; sprite->y += 16 + ctcvY;
+  //
+  // Notre TS architecture : sprite.y2 absorbe déjà le `16 + ctcvY` au SPAWN
+  // (= ligne 5125 `sprite.y2 = 16 + sprite.centerToCornerVecY`). Donc :
+  //   sprite render position = worldY + sprite.y2
+  //                          = worldY + (16 + ctcvY)
+  // Pour matcher décomp `sprite.y = destY + 16 + ctcvY`, on a 2 options :
+  //   A) worldY = destY + 16 + ctcvY ET sprite.y2 = 0  ← 1:1 décomp exact
+  //   B) worldY = destY ET sprite.y2 = 16 + ctcvY      ← architecture spawn legacy
+  //
+  // Choix B (= preserve compat avec spawn template + load_save) : worldY = destY
+  // direct, le offset `+ 16 + ctcvY` reste dans sprite.y2 (= settled at spawn).
+  // Cela évite régression sur tous les NPCs déjà spawned.
+  npc.worldX = destX + 8;
+  npc.worldY = destY;
+  // 1:1 décomp `ResetObjectEventFldEffData` (event_object_movement.c).
+  npc.singleMovementActive = false;
+  npc.triggerGroundEffectsOnMove = true;
+  npc.triggerGroundEffectsOnStop = true;
+  npc.disableCoveringGroundEffects = false;
+  npc.landingJump = false;
+  npc.facingDirectionLocked = false;
+  // 1:1 décomp `ObjectEventClearHeldMovementIfActive` (event_object_movement.c).
+  if (npc.heldMovementActive) {
+    npc.heldMovementActive = false;
+    npc.heldMovementFinished = false;
+    npc.movementActionId = MOVEMENT_ACTION_NONE;
+  }
+  // Dette R3 : CameraObjectReset si trackedByCamera (= rarely used, hors-démo).
+  // Notre TS : reset walk progression résiduelle pour que UpdateObjectEvents
+  // le dessine statique à worldX/Y. Pas dans le décomp (= geree autrement)
+  // mais nécessaire pour notre tick model qui caches walk state.
   npc.walkFramesLeft = 0;
   npc.walkDirection = DIR_NONE;
   npc.movementStep = 0;
   npc.visualOffsetX = 0;
   npc.visualOffsetY = 0;
+}
+
+/** 1:1 décomp `TryMoveObjectEventToMapCoords` (event_object_movement.c:2151) :
+ *  ```c
+ *  void TryMoveObjectEventToMapCoords(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y) {
+ *      u8 objectEventId;
+ *      if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup, &objectEventId)) {
+ *          x += MAP_OFFSET;
+ *          y += MAP_OFFSET;
+ *          MoveObjectEventToMapCoords(&gObjectEvents[objectEventId], x, y);
+ *      }
+ *  }
+ *  ```
+ *  Note : `TryGetObjectEventIdByLocalIdAndMap` returns FALSE (= 0) si trouvé
+ *  donc `if (!...)` = if found. localId 0xFF (= LOCALID_PLAYER) → player slot.
+ *  x, y arrivent en LOGICAL (= script args) → +MAP_OFFSET inside. */
+export function TryMoveObjectEventToMapCoords(localId: number, mapNum: number, mapGroup: number, x: number, y: number): void {
+  // Find NPC par localId numeric + mapNum + mapGroup. LOCALID_PLAYER = 0xFF.
+  let found: ObjectEvent | null = null;
+  if (localId === 0xFF) {
+    found = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT] ?? null;
+  } else {
+    for (const npc of gObjectEvents) {
+      if (!npc.active) continue;
+      if (npc.localId === localId && npc.mapNum === mapNum && npc.mapGroup === mapGroup) {
+        found = npc;
+        break;
+      }
+    }
+    // Fallback : si pas trouvé via mapNum+mapGroup (= notre TS use mapId string),
+    // match par localId+mapId match.
+    if (!found) {
+      for (const npc of gObjectEvents) {
+        if (!npc.active) continue;
+        if (npc.localId === localId) {
+          found = npc;
+          break;
+        }
+      }
+    }
+  }
+  if (!found) return;
+  MoveObjectEventToMapCoords(found, x + MAP_OFFSET, y + MAP_OFFSET);
+}
+
+/** Legacy wrapper : `SetObjectEventSpritePosToMapCoords` (TS shim).
+ *  Wraps `MoveObjectEventToMapCoords` mais accepte x, y en LOGICAL (= script API).
+ *  Used par load_save (resume) + script-opcodes-movement (setobjectxy) + spawn. */
+export function SetObjectEventSpritePosToMapCoords(npc: ObjectEvent, x: number, y: number): void {
+  MoveObjectEventToMapCoords(npc, x + MAP_OFFSET, y + MAP_OFFSET);
 }
 
 // ─── Update sprite positions + frame each frame ────────────────────────────
@@ -5745,7 +5869,21 @@ export function SetObjectEventSpritePosToMapCoords(npc: ObjectEvent, x: number, 
  *  Phase 4.10 v2 : pour éviter la dérive, on snap pixelOffsetX/Y au step end
  *  avec stop dans player-avatar.ts. Avec snap, pixelOffsetX = exact multiple
  *  de 16 pour static state → sprite.x_NPC + offX aligné avec player. */
+/** 1:1 décomp `ResetSpriteData()` equivalent : quand un scene comme ChooseStarter
+ *  swap le CB2 via SetMainCallback2(CB2_StarterChoose), l'OW tick s'arrête et les
+ *  sprites OW ne sont plus rendus. Notre TS inline garde l'OW scene actif, donc
+ *  les OAM des NPCs sont re-shown chaque frame par UpdateObjectEvents. Ce flag
+ *  émule le décomp comportement : quand TRUE, UpdateObjectEvents skip tout (= sprites
+ *  invisibles restent invisibles, NPCs effectivement hidden). 1:1 strict cf.
+ *  starter_choose.c:CB2_ChooseStarter qui replace le main callback. */
+let _objectEventsSuspended = false;
+
+export function setObjectEventsSuspended(suspended: boolean): void {
+  _objectEventsSuspended = suspended;
+}
+
 export function UpdateObjectEvents(rt: DecompRuntime): void {
+  if (_objectEventsSuspended) return;
   const cam = GetCameraTopLeftCoords();
   const offX = gTotalCamera.pixelOffsetX;
   const offY = gTotalCamera.pixelOffsetY;

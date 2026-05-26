@@ -17,7 +17,7 @@ import {
   setPotentialItemEffectBattler,
 } from './state';
 import {
-  STATUS2_TORMENT,
+  STATUS2_TORMENT, STATUS3_IMPRISONED_OTHERS,
   MOVE_NONE, MOVE_UNAVAILABLE,
   MAX_MON_MOVES,
   HOLD_EFFECT_CHOICE_BAND,
@@ -35,20 +35,18 @@ import { getBattleMove } from './data/battle-moves';
  *  leur moveset. Si > 0 le caller doit bloquer l'usage du move. */
 function _GetImprisonedMovesCount(battlerId: number, move: number): number {
   let imprisonedMoves = 0;
-  // STATUS3_IMPRISONED_OTHERS = 1 << 13.
-  const STATUS3_IMPRISONED_OTHERS_LOCAL = 1 << 13;
-  // Lazy lookup gBattlersCount + gStatuses3 via globalThis.
+  // Lazy lookup gBattlersCount + gStatuses3 via globalThis (= avoid ESM cycle).
   const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gStatuses3?: number[]; gBattleMons?: { moves: number[] }[] } }).__battleState;
   const battlersCount = stateMod?.gBattlersCount ?? 2;
   const statuses3 = stateMod?.gStatuses3;
   const battleMons = stateMod?.gBattleMons;
   if (!statuses3 || !battleMons) return 0;
 
-  // BATTLE_OPPOSITE side check = (id ^ 1).
+  // 1:1 décomp `GetBattlerSide(battlerId)` (= battlerId & BIT_SIDE = battlerId & 1).
   const battlerSide = battlerId & 1;
   for (let i = 0; i < battlersCount; i++) {
     if (battlerSide !== (i & 1)
-        && (statuses3[i] & STATUS3_IMPRISONED_OTHERS_LOCAL)) {
+        && (statuses3[i] & STATUS3_IMPRISONED_OTHERS)) {
       for (let j = 0; j < MAX_MON_MOVES; j++) {
         if (move === battleMons[i].moves[j]) {
           imprisonedMoves++;

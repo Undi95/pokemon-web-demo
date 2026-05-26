@@ -39,12 +39,12 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, InitKeys } from '../engine/decomp-runtime';
-import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../engine/decomp-globals';
-import { exposeGbaGlobals } from '../engine/gba-global-scope';
-import { preloadFontData } from '../engine/gba-text-system';
-import { preloadBirchSpeechAssets } from '../engine/intro-asset-loader';
-import { preloadTextWindowFrames } from '../engine/gba-text-window';
+import { DecompRuntime, InitKeys } from '../engine/system/decomp-runtime';
+import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '../engine/system/decomp-globals';
+import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
+import { preloadFontData } from '../engine/ui/gba-text-system';
+import { preloadBirchSpeechAssets } from '../engine/boot/intro-asset-loader';
+import { preloadTextWindowFrames } from '../engine/ui/gba-text-window';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -52,7 +52,7 @@ import {
   ResetTasks,
   FreeAllSpritePalettes,
   ScanlineEffect_Stop,
-} from '../engine/decomp-globals';
+} from '../engine/system/decomp-globals';
 import { sMainMenuBgTemplates } from '../engine/decomp-data/src/main_menu-data';
 import {
   Task_NewGameBirchSpeech_Init,
@@ -64,9 +64,9 @@ import { CB2_NewGame } from '../engine/decomp-data/src/overworld-callbacks-auto'
 import {
   REG_OFFSET_DISPCNT,
   DISPCNT_OBJ_ON, DISPCNT_OBJ_1D_MAP,
-} from '../engine/decomp-runtime';
+} from '../engine/system/decomp-runtime';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 
 export class BirchRuntimeScene extends Phaser.Scene {
   private gba!: Gba;
@@ -132,22 +132,22 @@ export class BirchRuntimeScene extends Phaser.Scene {
   private async bootBirch(): Promise<void> {
     try {
       // 1. Strings FR (= gText_Birch_Welcome, gText_ThisIsAPokemon, etc.)
-      const { initStringsFromDecomp } = await import('../engine/gba-strings');
+      const { initStringsFromDecomp } = await import('../engine/ui/gba-strings');
       await initStringsFromDecomp();
 
       // 2. Side-effect import : naming-screen-impl pose DoNamingScreen +
       //    CB2_LoadNamingScreen + naming screen helpers sur globalThis. Sans ce
       //    import, Task_NewGameBirchSpeech_StartNamingScreen → DoNamingScreen
       //    serait undefined (cf. globalThis dispatch).
-      await import('../engine/naming-screen-impl');
+      await import('../engine/ui/naming-screen-impl');
 
       // 3. Side-effect import : main-menu-impl pose AddBirchSpeechObjects,
       //    NewGameBirchSpeech_StartFadeInTarget1OutTarget2, etc. sur globalThis.
-      await import('../engine/main-menu-impl');
+      await import('../engine/ui/main-menu-impl');
 
       // 4. Side-effect import : pokeball-effects pose LaunchBallFadeMonTask +
       //    SetUpForReleaseAffineAnim (= release Lotad sequence).
-      await import('../engine/pokeball-effects');
+      await import('../engine/system/pokeball-effects');
 
       // 5. Assets : Birch sprite, Lotad anim_front 2-frame, pokeball, particles,
       //    BG tilemap shadow, palettes bg0/bg1/bg2 gradient, trainer pics.

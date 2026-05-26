@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getRuntime } from '../engine/decomp-globals';
+import { getRuntime } from '../engine/system/decomp-globals';
 
 /**
  * Overlay debug affiché sur TOUTES les scènes.

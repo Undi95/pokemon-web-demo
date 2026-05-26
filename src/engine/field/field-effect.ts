@@ -73,11 +73,16 @@ export function FieldEffectStart(id: number): number {
     let emoteType: EmoteType = 'exclamation';
     if (id === FLDEFF_QUESTION_MARK_ICON) emoteType = 'question';
     else if (id === FLDEFF_HEART_ICON) emoteType = 'heart';
-    // localId numeric — lookup localIdRaw via gObjectEvents.
-    // Notre TS SpawnEmoteSprite prend localIdRaw string. On passe "LOCALID_<n>"
-    // ou "LOCALID_PLAYER" pour 0xFF.
-    const localIdRaw = localId === 0xFF ? 'LOCALID_PLAYER' : `LOCALID_${localId}`;
-    SpawnEmoteSprite(rt, localIdRaw, emoteType);
+    // 1:1 décomp `TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], ...)` :
+    // match par numeric localId. Notre SpawnEmoteSprite accepte string | number ;
+    // passer le numeric pour matcher les NPCs avec localIdRaw spécifique (=
+    // `LOCALID_PLAYERS_HOUSE_1F_MOM` etc., dont notre construct `LOCALID_<n>`
+    // jamais ne matchait avant). 0xFF reste LOCALID_PLAYER (sentinel).
+    if (localId === 0xFF) {
+      SpawnEmoteSprite(rt, 'LOCALID_PLAYER', emoteType);
+    } else {
+      SpawnEmoteSprite(rt, localId, emoteType);
+    }
     return 64;  // emote sprite has its own management
   }
 

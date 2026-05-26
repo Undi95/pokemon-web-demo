@@ -543,8 +543,8 @@ export const sAnims_PlayerBicycle: ReadonlyArray<unknown> = [];
  *  link les via sPlayerSpriteId pour que SpriteCB_Bicycle synchronise position. */
 export function CreateIntroBrendanSprite(x: number, y: number): number {
   const r = rt();
-  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_Brendan', x, y);
-  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_BrendanBicycle', x, y + 8);
+  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_Brendan', x, y, 2);
+  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_BrendanBicycle', x, y + 8, 3);
   // 1:1 décomp : `gSprites[bicycleSpriteId].sPlayerSpriteId = playerSpriteId;`
   // `sPlayerSpriteId = data[0]` (alias bicycle data field)
   const bicycle = r.getSprite(bicycleSpriteId);
@@ -555,8 +555,8 @@ export function CreateIntroBrendanSprite(x: number, y: number): number {
 /** 1:1 décomp src/intro_credits_graphics.c:1126 — crée May + bicycle sprites. */
 export function CreateIntroMaySprite(x: number, y: number): number {
   const r = rt();
-  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_May', x, y);
-  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_MayBicycle', x, y + 8);
+  const playerSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_May', x, y, 2);
+  const bicycleSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_MayBicycle', x, y + 8, 3);
   const bicycle = r.getSprite(bicycleSpriteId);
   if (bicycle) bicycle.data[0] = playerSpriteId;
   return playerSpriteId;
@@ -567,8 +567,8 @@ export function CreateIntroMaySprite(x: number, y: number): number {
  *  utilise StartSpriteAnim 1 + SpriteCB_FlygonRightHalf pour sync avec left. */
 export function CreateIntroFlygonSprite(x: number, y: number): number {
   const r = rt();
-  const leftSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x - 32, y);
-  const rightSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x + 32, y);
+  const leftSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x - 32, y, 5);
+  const rightSpriteId = r.CreateSpriteFromTemplate('sSpriteTemplate_FlygonLatias', x + 32, y, 6);
   const right = r.getSprite(rightSpriteId);
   if (right) right.data[0] = leftSpriteId;  // sLeftSpriteId = data[0]
   r.StartSpriteAnim(rightSpriteId, 1);

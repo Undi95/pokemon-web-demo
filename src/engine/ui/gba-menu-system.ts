@@ -103,6 +103,8 @@ function _processMenuInput(eraseOnSelect: boolean): number {
   const newKeys = getRuntime()?.gMain.newKeys ?? 0;
 
   if (newKeys & A_BUTTON) {
+    // 1:1 décomp menu.c:1017-1022 — PlaySE(SE_SELECT) sur A_BUTTON (sauf APressMuted).
+    PlaySE(SE_SELECT_KEY);
     if (eraseOnSelect) {
       menuActive = false;
       clearMenuCursor();
@@ -111,6 +113,7 @@ function _processMenuInput(eraseOnSelect: boolean): number {
     return menuCursorPos;
   }
   if (newKeys & B_BUTTON) {
+    // 1:1 décomp menu.c:1023-1026 — B_BUTTON pas de SE (silent return).
     if (eraseOnSelect) {
       menuActive = false;
       clearMenuCursor();

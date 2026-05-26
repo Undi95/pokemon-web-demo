@@ -14,7 +14,8 @@
  */
 
 import { registerOpcode, SetupNativeScript } from './script-runtime';
-import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement } from '../field/object-events';
+import { gObjectEvents, FreezeObjectEvent, UnfreezeObjectEvent, ObjectEventSetHeldMovement, ObjectEventClearHeldMovementIfFinished } from '../field/object-events';
+import { ScriptMovement_UnfreezeObjectEvents } from '../field/script-movement';
 import { HideFieldMessageBox } from '../field/field-message-box';
 import { gSelectedObjectEvent } from './script-vars';
 import { gPlayerAvatar, GetPlayerFacingDirection, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from '../field/player-avatar';
@@ -78,13 +79,18 @@ registerOpcode('lockall', (ctx) => {
 registerOpcode('release', (_ctx) => {
   // 1:1 STRICT décomp `ScrCmd_release` (scrcmd.c:1251-1263) :
   //   HideFieldMessageBox();
-  //   ObjectEventClearHeldMovementIfFinished(selected);
-  //   ObjectEventClearHeldMovementIfFinished(player);
+  //   if (gObjectEvents[gSelectedObjectEvent].active)
+  //       ObjectEventClearHeldMovementIfFinished(&gObjectEvents[gSelectedObjectEvent]);
+  //   playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+  //   ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);
   //   ScriptMovement_UnfreezeObjectEvents();
-  //   UnfreezeObjectEvents();   ← unfreeze TOUS les NPCs via UnfreezeObjectEvent
-  //   qui restore sprite.animPaused = spriteAnimPausedBackup (= reverse du
-  //   FreezeObjectEvent qui avait pause les anims).
+  //   UnfreezeObjectEvents();
   HideFieldMessageBox();
+  const selected = gObjectEvents[gSelectedObjectEvent.index];
+  if (selected && selected.active) ObjectEventClearHeldMovementIfFinished(selected);
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (player) ObjectEventClearHeldMovementIfFinished(player);
+  ScriptMovement_UnfreezeObjectEvents();
   for (const npc of gObjectEvents) {
     if (npc.active) UnfreezeObjectEvent(npc);
   }
@@ -92,7 +98,16 @@ registerOpcode('release', (_ctx) => {
 });
 
 registerOpcode('releaseall', (_ctx) => {
+  // 1:1 STRICT décomp `ScrCmd_releaseall` (scrcmd.c:1239-1249) :
+  //   HideFieldMessageBox();
+  //   playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+  //   ObjectEventClearHeldMovementIfFinished(&gObjectEvents[playerObjectId]);
+  //   ScriptMovement_UnfreezeObjectEvents();
+  //   UnfreezeObjectEvents();
   HideFieldMessageBox();
+  const player = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (player) ObjectEventClearHeldMovementIfFinished(player);
+  ScriptMovement_UnfreezeObjectEvents();
   for (const npc of gObjectEvents) {
     if (npc.active) UnfreezeObjectEvent(npc);
   }

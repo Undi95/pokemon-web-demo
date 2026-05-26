@@ -51,9 +51,9 @@ if (typeof window !== 'undefined') {
 // Set `gSaveFileStatus` pour que `Task_MainMenuCheckSaveFile` puisse choisir
 // HAS_SAVED_GAME vs HAS_NO_SAVED_GAME au menu screen.
 import { LoadGameSave } from './engine/save/save-system';
-import { SetSaveFileStatus } from './engine/gba-menu-system';
+import { SetSaveFileStatus } from './engine/ui/gba-menu-system';
 // Side-effect import : pose window.rng debug helpers (= dev console access).
-import { SeedRngAndSetTrainerId } from './engine/random';
+import { SeedRngAndSetTrainerId } from './engine/system/random';
 // Side-effect import : pose window.dev.audit.* helpers (= state inspection,
 // asset cache, save slots, tile preview, audit reports). Cf. dev-audit-tools.ts.
 import './engine/devtools/dev-audit-tools';
@@ -65,14 +65,14 @@ import './engine/devtools/dev-breakpoint-tools';
 import './engine/devtools/dev-bridge-audit-tools';
 // Side-effect import : pose window.dev.movementDispatch.* — bridge string
 // action names → MovementAction_*_StepN auto-fonctions.
-import './engine/movement-action-dispatch';
+import './engine/field/movement-action-dispatch';
 // Side-effect import : pose window.dev.battle.startTrainer (= trainer battle
 // flow registered au boot pour debug). Sans ça, le devtool n'est registered
 // qu'après le premier dynamic import depuis _runTrainerBattle opcode.
-import './engine/trainer-battle-flow';
+import './engine/battle/trainer-battle-flow';
 // Side-effect import : init RTC core (= PC time as source) + register
 // `globalThis.__rtcModule` pour save sync. Cf. session 124 fix Bug 4.
-import { exposeRtcDevApi } from './engine/rtc';
+import { exposeRtcDevApi } from './engine/system/rtc';
 exposeRtcDevApi();
 
 // Audit session 126 fix Bug #3 : expose les bridge fns (gMain, FlagSet,
@@ -85,7 +85,7 @@ exposeRtcDevApi();
 // → ReferenceError → boot crash. L'expose au boot main.ts garantit dispo sur globalThis
 // avant tout tick. Idempotent : ré-appel par les scenes ne fait que re-set les mêmes
 // valeurs (pas de side-effect négatif).
-import { exposeGbaGlobals } from './engine/gba-global-scope';
+import { exposeGbaGlobals } from './engine/system/gba-global-scope';
 exposeGbaGlobals();
 
 // Audit session 126 LOT D2 : preload multichoice lists data depuis
@@ -94,7 +94,7 @@ exposeGbaGlobals();
 // Async, idempotent. Sans ça : `multichoice` opcode fallback "VAR_RESULT=0" =
 // 1st option auto, dialogues à choix cassés (Latias TV broadcast, contests,
 // PC menus, etc.).
-import { loadMultichoiceLists } from './engine/multichoice-data';
+import { loadMultichoiceLists } from './engine/system/multichoice-data';
 void loadMultichoiceLists();
 
 // Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit
@@ -104,7 +104,7 @@ installScopeDevtools();
 
 // Session 127 : preload bag screen graphics (sprite sac + dots + button).
 // Async, idempotent. Au 1er Open du bag, les assets sont déjà cached.
-import { preloadBagAssets, initItemIconMap } from './engine/bag-screen';
+import { preloadBagAssets, initItemIconMap } from './engine/bag/bag-screen';
 preloadBagAssets();
 void initItemIconMap();
 
@@ -112,7 +112,7 @@ void initItemIconMap();
 // FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen
 // affiché AVANT starter-choose (= ?nointro avec save advanced) tombe sur des
 // descriptions vides. Maintenant les tables sont disponibles dès boot.
-import { loadTextTables, type TextTables } from './engine/data-tables';
+import { loadTextTables, type TextTables } from './engine/system/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/text-tables.json');
@@ -132,7 +132,7 @@ void (async () => {
 // getItemId/getSpeciesId/getMoveId = 0 partout dans la boucle réelle (bug
 // systémique exposé par le sac : liste vide). Aligné sur les autres tables
 // préchargées ici. Idempotent (OverworldScene legacy re-set = même data).
-import { loadConstantsTable, type ConstantsTable } from './engine/data-tables';
+import { loadConstantsTable, type ConstantsTable } from './engine/system/data-tables';
 void (async () => {
   try {
     const resp = await fetch('/decomp/em/constants.json');
@@ -148,7 +148,7 @@ void (async () => {
 // Session 127 : preload strings.json AU BOOT (= gText_* du décomp).
 // Sans ça, les screens qui appellent getString() voient "[MISSING:gText_...]".
 // Pattern 1:1 ABSOLU ZÉRO HARDCODE : tous les textes FR viennent du décomp.
-import { initStringsFromDecomp } from './engine/gba-strings';
+import { initStringsFromDecomp } from './engine/ui/gba-strings';
 void initStringsFromDecomp();
 
 // Session 136 audit fix : preload battle moves data + battle script bytecode

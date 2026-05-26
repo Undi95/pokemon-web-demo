@@ -77,6 +77,7 @@ import {
   MetatileBehavior_IsHorizontalRail,
   MetatileBehavior_IsNonAnimDoor,
 } from './metatile-behavior';
+import { CheckStandardWildEncounter } from './wild-encounter';
 import {
   CheckForRotatingGatePuzzleCollision,
   CheckForRotatingGatePuzzleCollisionWithoutAnimation,
@@ -1481,6 +1482,17 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // qui match VAR_X = value, run le script. Used par truck SetIntroFlags.
       if (TryRunCoordEventScript(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y)) {
         // Script triggered : freeze player + return (= no keypad).
+        updateSpriteFrame(rt);
+        return;
+      }
+      // 1:1 décomp `CheckStandardWildEncounter` (field_control_avatar.c:162).
+      // Called au step-end APRÈS TryStartStepBasedScript (= coord/warp/misc/step/repel)
+      // ET AVANT TryArrowWarp. Si le player a stepped sur une tile encounter
+      // (= tall grass / long grass / cave / water surf / etc.) ET les checks
+      // (encounterRate * 16, 4-step immunity, prevBehavior change, etc.) passent
+      // → setup gEnemyParty + start wild battle scene swap. Returns true =
+      // encounter triggered, freeze player + skip keypad.
+      if (CheckStandardWildEncounter(newTileBehavior)) {
         updateSpriteFrame(rt);
         return;
       }

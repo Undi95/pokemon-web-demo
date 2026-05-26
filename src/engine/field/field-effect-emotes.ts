@@ -155,7 +155,7 @@ function _ensureEmotePaletteLoaded(): number {
  *  Returns true si spawn OK, false sinon (= assets pas loadés OU OBJ VRAM
  *  saturé OU NPC introuvable). Le caller (= movement-system) ne re-essaie pas.
  */
-export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type: EmoteType): boolean {
+export function SpawnEmoteSprite(rt: DecompRuntime, npcQuery: string | number, type: EmoteType): boolean {
   if (!_gfxExclamation || !_gfxQuestion || !_gfxHeart || !_palData) {
     // Lazy load + skip cette frame (= défensif web, le décomp n'a pas ce cas
     // car les assets sont compilés dans le ROM).
@@ -209,10 +209,10 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
 
   // Position initiale = sprite NPC déjà synchronisé (= 1:1 décomp `sprite->x =
   // objEventSprite->x; sprite->y = objEventSprite->y - 16`).
-  const npc = _findNpc(npcLocalIdRaw);
+  const npc = _findNpc(npcQuery);
   if (!npc) {
     MarkObjTilesFree(tileStart * TILE_SIZE_4BPP, TILES_PER_EMOTE * TILE_SIZE_4BPP);
-    console.warn(`[field-effect-emotes] SpawnEmoteSprite: NPC ${npcLocalIdRaw} not found`);
+    console.warn(`[field-effect-emotes] SpawnEmoteSprite: NPC ${npcQuery} not found`);
     return false;
   }
   const npcSprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
@@ -241,7 +241,9 @@ export function SpawnEmoteSprite(rt: DecompRuntime, npcLocalIdRaw: string, type:
   _activeEmotes.push({
     spriteId: result.spriteId,
     tileStart,
-    npcLocalIdRaw,
+    npcLocalIdRaw: npc.localIdRaw,  // 1:1 décomp `sLocalId` field — stocke le raw
+                                     // ID résolu (= LOCALID_PLAYER ou LOCALID_X de la NPC)
+                                     // pour que tickEmoteSprites retrouve la NPC par raw.
     framesRemaining: EMOTE_FRAMES_TTL,  // 1:1 décomp ANIMCMD_FRAME(0, 60) → 60 frames.
     yVelocity: -5,                       // 1:1 décomp sprite->sYVelocity = -5.
     yOffset: 0,
@@ -313,16 +315,27 @@ export function DestroyAllEmoteSprites(rt: DecompRuntime): void {
  *  pointe vers un slot dans gObjectEvents, mais notre TS player utilise une
  *  struct `gPlayerAvatar` séparée). On wrap `gPlayerAvatar` en mini-ObjectEvent
  *  pour que tickEmoteSprites puisse lire spriteId. */
-function _findNpc(localIdRaw: string): ObjectEvent | null {
-  if (localIdRaw === 'LOCALID_PLAYER') {
+function _findNpc(query: string | number): ObjectEvent | null {
+  // 1:1 décomp : `TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup)`
+  // utilise numeric localId. Notre runtime expose aussi `localIdRaw` (= string ID
+  // `LOCALID_PLAYERS_HOUSE_1F_MOM`) pour les scripts. Accept les deux.
+  if (query === 'LOCALID_PLAYER' || query === 0xFF) {
     return {
       active: true,
       spriteId: gPlayerAvatar.spriteId,
       localIdRaw: 'LOCALID_PLAYER',
     } as unknown as ObjectEvent;
   }
+  // Si caller passe un numeric (= 1:1 décomp via gFieldEffectArguments[0]),
+  // match par `npc.localId` (= field numeric). Sinon match par localIdRaw string
+  // (= legacy path pour les scripts qui construisent un raw).
+  const numeric = typeof query === 'number'
+    ? query
+    : /^LOCALID_\d+$/.test(query) ? parseInt(query.replace('LOCALID_', ''), 10) : -1;
   for (const npc of gObjectEvents) {
-    if (npc.active && npc.localIdRaw === localIdRaw) return npc;
+    if (!npc.active) continue;
+    if (numeric >= 0 && npc.localId === numeric) return npc;
+    if (typeof query === 'string' && npc.localIdRaw === query) return npc;
   }
   return null;
 }

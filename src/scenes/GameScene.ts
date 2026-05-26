@@ -29,12 +29,12 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../main';
 import { Gba } from '../engine/gba/gba';
 import { GbaPhaserBridge } from '../engine/gba/phaser-bridge';
-import { DecompRuntime, type CB2Callback } from '../engine/decomp-runtime';
+import { DecompRuntime, type CB2Callback } from '../engine/system/decomp-runtime';
 import { CB2_NewGame, CB2_ContinueSavedGame } from '../engine/decomp-data/src/overworld-callbacks-auto';
-import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/decomp-globals';
-import { preloadFontData } from '../engine/gba-text-system';
-import { exposeGbaGlobals } from '../engine/gba-global-scope';
-import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets, preloadBirchSpeechAssets } from '../engine/intro-asset-loader';
+import { setGlobalRuntime, resetObjAllocations, lz77Trace, assetCache } from '../engine/system/decomp-globals';
+import { preloadFontData } from '../engine/ui/gba-text-system';
+import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
+import { preloadScene1Assets, preloadScene2Assets, preloadScene3Assets, preloadTitleAssets, preloadBirchSpeechAssets } from '../engine/boot/intro-asset-loader';
 import {
   Task_Scene1_Load, MainCB2_EndIntro,
   SpriteCB_Sparkle, SpriteCB_Volbeat, SpriteCB_Torchic, SpriteCB_Manectric,
@@ -54,10 +54,10 @@ import {
 import {
   SpriteCB_Bicycle, SpriteCB_FlygonRightHalf, Task_BicycleBgAnimation,
 } from '../engine/decomp-data/src/intro_credits_graphics-callbacks-auto';
-import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/copyright-boot';
-import { InitKeys } from '../engine/decomp-runtime';
+import { CB2_InitCopyrightScreenAfterBootup, MainCB2_Intro } from '../engine/boot/copyright-boot';
+import { InitKeys } from '../engine/system/decomp-runtime';
 import { installEngineDevtools } from '../engine/devtools/engine-devtools';
-import { installInputHandlers, setHeldKeysOverride } from '../engine/input-handler';
+import { installInputHandlers, setHeldKeysOverride } from '../engine/system/input-handler';
 
 export class GameScene extends Phaser.Scene {
   private gba!: Gba;
@@ -308,14 +308,14 @@ export class GameScene extends Phaser.Scene {
     try {
       // Charge les strings FR 1:1 décomp AVANT toute Task qui pourrait référencer
       // gText_* (= main menu, Birch speech, default names, etc.).
-      const { initStringsFromDecomp } = await import('../engine/gba-strings');
+      const { initStringsFromDecomp } = await import('../engine/ui/gba-strings');
       await initStringsFromDecomp();
 
       // Side-effect import : populate globalThis avec les helpers option_menu
       // (DrawHeaderText, HighlightOptionMenuItem, *_DrawChoices, *_ProcessInput,
       //  GetWindowFrameTilesPal, sArrowPressed). Nécessaire AVANT que l'auto file
       // CB2_InitOptionMenu s'exécute (= il les résout via globalThis scope).
-      const { preloadOptionMenuAssets } = await import('../engine/option-menu-impl');
+      const { preloadOptionMenuAssets } = await import('../engine/ui/option-menu-impl');
 
       await preloadScene1Assets();
       await preloadScene2Assets();
@@ -329,7 +329,7 @@ export class GameScene extends Phaser.Scene {
       // Au boot pour que PlayCryInternal(SPECIES_X) fonctionne pour TOUS les
       // species (Lotad release Birch, evolutions, battles, etc.), pas juste
       // les 3 hardcodés (Kyogre/Groudon/Rayquaza intro).
-      const { loadSpeciesNamesAsync } = await import('../engine/decomp-globals');
+      const { loadSpeciesNamesAsync } = await import('../engine/system/decomp-globals');
       await loadSpeciesNamesAsync();
 
       // Pré-charge les MIDIs intro/title + cris légendaires pour éliminer le
@@ -490,7 +490,7 @@ export class GameScene extends Phaser.Scene {
     }
     // Force Faded full black (= 1:1 décomp FillPalBufferBlack pattern) pour
     // garantir aucun pixel non-noir avant scene swap. Idempotent si déjà black.
-    const { FillPalBufferBlack } = await import('../engine/decomp-globals');
+    const { FillPalBufferBlack } = await import('../engine/system/decomp-globals');
     FillPalBufferBlack();
     const waitFrames = 0;
     console.log(`[GameScene] fade complete after ${waitFrames} frames → starting TestOverworldScene`);
