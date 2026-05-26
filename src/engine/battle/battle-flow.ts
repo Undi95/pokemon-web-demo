@@ -130,6 +130,7 @@ import './battle-levelup-box';
 import './battle-trainer-party';
 import './battle-intro-events';
 import './battle-turn-helpers';
+import './battle-setup-helpers';
 
 // ─── GBA input keys (= 1:1 décomp gba/io_reg.h) — import depuis decomp-data
 // (= A8 audit, pas hardcode).
