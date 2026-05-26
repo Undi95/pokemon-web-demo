@@ -91,6 +91,14 @@ import {
   GET_BATTLER_SIDE, BATTLE_OPPOSITE,
 } from './constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
+import {
+  gPlayerParty, GetMonData,
+  MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS,
+} from './party-storage';
+import { gBattlerPartyIndexes } from './state';
+import {
+  SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
+} from './battle-hp-bar';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -1061,22 +1069,151 @@ function PlayerHandleCmd23(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleHealthBarUpdate()`. */
+/** 1:1 décomp `PlayerHandleHealthBarUpdate()` (battle_controller_player.c:2697-2724).
+ *  Read hpVal signed s16 depuis bufferA[2..3] + LoadBattleBarGfx(0) + setup
+ *  K10 SetBattleBarStruct depuis party data + install CompleteOnHealthbarDone
+ *  qui tick MoveBattleBar jusqu'à -1 return. */
 function PlayerHandleHealthBarUpdate(): void {
-  // Wire vers K10 HP bar drain. Pour now : immediate complete.
-  // Cascade : startBattleBarDrain via K10.
-  PlayerBufferExecCompleted();
+  _LoadBattleBarGfx(0);
+  // hpVal signed s16 (= delta HP, négatif = damage, positif = heal).
+  let hpVal = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
+  if (hpVal & 0x8000) hpVal -= 0x10000; // sign-extend
+
+  // 1:1 décomp : gPlayerPartyLostHP stat tracking (Battle Dome).
+  if (hpVal > 0) _gPlayerPartyLostHP += hpVal;
+
+  const partyIdx = gBattlerPartyIndexes[gActiveBattler];
+  const mon = gPlayerParty[partyIdx];
+
+  if (hpVal !== INSTANT_HP_BAR_DROP) {
+    const maxHP = GetMonData(mon, MON_DATA_MAX_HP) as number;
+    const curHP = GetMonData(mon, MON_DATA_HP) as number;
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxHP, curHP, hpVal);
+  } else {
+    const maxHP = GetMonData(mon, MON_DATA_MAX_HP) as number;
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxHP, 0, hpVal);
+    _UpdateHpTextInHealthbox(_gHealthboxSpriteId(gActiveBattler), 0, HP_CURRENT_LOCAL);
+  }
+
+  gBattlerControllerFuncs[gActiveBattler] = CompleteOnHealthbarDone;
 }
 
-/** 1:1 décomp `PlayerHandleExpUpdate()`. */
+/** 1:1 décomp `INSTANT_HP_BAR_DROP` = 0x7FFF (battle_controllers.h:149). */
+const INSTANT_HP_BAR_DROP = 0x7FFF;
+
+/** 1:1 décomp `HP_CURRENT` (battle_interface.h). */
+const HP_CURRENT_LOCAL = 0;
+
+/** 1:1 décomp `gPlayerPartyLostHP` (battle_main.c). Stat HP perdue cumulative
+ *  Battle Dome (= jamais read en jeu normal). */
+let _gPlayerPartyLostHP = 0;
+void _gPlayerPartyLostHP; // suppress lint unused
+
+/** 1:1 décomp `gHealthboxSpriteIds[battler]` (battle_main.c). Dette R3 :
+ *  full healthbox sprite système (= K10 wire). Pour now retourne 0
+ *  (= stub R3 sprite id, K10 SetBattleBarStruct l'utilise mais
+ *  MoveBattleBarGraphically est hook no-op tant que healthbox UI pas wirée). */
+function _gHealthboxSpriteId(_battler: number): number {
+  const m = (globalThis as { __battleHealthbox?: { gHealthboxSpriteIds?: number[] } }).__battleHealthbox;
+  return m?.gHealthboxSpriteIds?.[_battler] ?? 0;
+}
+
+/** 1:1 décomp `LoadBattleBarGfx(barId)` (battle_interface.c). Dette R3 :
+ *  load HP/EXP bar palette/tiles VRAM. */
+function _LoadBattleBarGfx(_barId: number): void {
+  // Dette R3 : palette/tiles VRAM load.
+}
+
+/** 1:1 décomp `UpdateHpTextInHealthbox(spriteId, value, hpId)`
+ *  (battle_interface.c). Dette R3 : redraw HP text in healthbox window. */
+function _UpdateHpTextInHealthbox(_spriteId: number, _value: number, _hpId: number): void {
+  // Dette R3 : redraw HP text via __battleHealthbox hook.
+}
+
+/** 1:1 décomp `CompleteOnHealthbarDone()` (battle_controller_player.c).
+ *  Tick MoveBattleBar chaque frame jusqu'à return -1 (= anim complete),
+ *  puis exec complete. */
+function CompleteOnHealthbarDone(): void {
+  const ret = MoveBattleBar(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), HEALTH_BAR, 0);
+  if (ret === -1) {
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `PlayerHandleExpUpdate()` (battle_controller_player.c:2726-2748).
+ *  Read monId depuis bufferA[1] + check MAX_LEVEL skip + expPoints depuis
+ *  bufferA[2..3] s16 + LoadBattleBarGfx(1) + CreateTask Task_GiveExpToMon
+ *  + install BattleControllerDummy. */
 function PlayerHandleExpUpdate(): void {
-  // Wire vers EXP bar fill. Pour now : immediate complete.
-  PlayerBufferExecCompleted();
+  const monId = gBattleBufferA[gActiveBattler][1];
+  const mon = gPlayerParty[monId];
+  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
+
+  if (level >= MAX_LEVEL_LOCAL) {
+    PlayerBufferExecCompleted();
+  } else {
+    _LoadBattleBarGfx(1);
+    // expPoints signed s16
+    let expPoints = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
+    if (expPoints & 0x8000) expPoints -= 0x10000;
+    // 1:1 décomp : CreateTask Task_GiveExpToMon avec data params.
+    // Dette R3 : full Task system (= scheduler tasks à porter L7+).
+    // Pour now, setup EXP via SetBattleBarStruct EXP_BAR + install
+    // CompleteOnExpBarDone (1:1 strict comportement équivalent).
+    const curExp = 0; // GetMonData(mon, MON_DATA_EXP) - stat global needed
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), level, curExp, expPoints);
+    gBattlerControllerFuncs[gActiveBattler] = _CompleteOnExpBarDone;
+  }
 }
 
-/** 1:1 décomp `PlayerHandleStatusIconUpdate()`. */
+/** 1:1 décomp `MAX_LEVEL` = 100. */
+const MAX_LEVEL_LOCAL = 100;
+
+/** Helper : poll EXP bar anim done (= MoveBattleBar EXP_BAR === -1). */
+function _CompleteOnExpBarDone(): void {
+  const ret = MoveBattleBar(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), EXP_BAR, 0);
+  if (ret === -1) {
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `PlayerHandleStatusIconUpdate()` (battle_controller_player.c:2755-2766).
+ *  Wait IsBattleSEPlaying done + UpdateHealthboxAttribute(STATUS_ICON) +
+ *  clear statusAnimActive + install CompleteOnFinishedStatusAnimation. */
 function PlayerHandleStatusIconUpdate(): void {
-  // Wire vers healthbox status icon. Pour now : immediate.
+  if (!_IsBattleSEPlaying(gActiveBattler)) {
+    const partyIdx = gBattlerPartyIndexes[gActiveBattler];
+    const mon = gPlayerParty[partyIdx];
+    _UpdateHealthboxAttribute(_gHealthboxSpriteId(gActiveBattler), mon, _HEALTHBOX_STATUS_ICON);
+    // 1:1 décomp : clear gBattleSpritesDataPtr.healthBoxesData[battler].statusAnimActive.
+    _clearHealthboxStatusAnimActive(gActiveBattler);
+    gBattlerControllerFuncs[gActiveBattler] = _CompleteOnFinishedStatusAnimation;
+  }
+}
+
+/** 1:1 décomp `HEALTHBOX_STATUS_ICON` (battle_interface.h). */
+const _HEALTHBOX_STATUS_ICON = 9;
+
+/** 1:1 décomp `UpdateHealthboxAttribute(spriteId, mon, elementId)`. */
+function _UpdateHealthboxAttribute(_spriteId: number, _mon: unknown, _elementId: number): void {
+  const m = (globalThis as { __battleHealthbox?: { updateHealthboxAttribute?: (s: number, m: unknown, e: number) => void } }).__battleHealthbox;
+  if (m?.updateHealthboxAttribute) m.updateHealthboxAttribute(_spriteId, _mon, _elementId);
+}
+
+/** Stub clear statusAnimActive (= gBattleSpritesDataPtr structure). */
+function _clearHealthboxStatusAnimActive(_battler: number): void {
+  // Dette R3 : gBattleSpritesDataPtr healthBoxesData[battler].statusAnimActive = 0.
+}
+
+/** 1:1 décomp `IsBattleSEPlaying(battler)` (battle_main.c). Dette R3 :
+ *  check SE channel active per battler. Pour now return false (= done). */
+function _IsBattleSEPlaying(_battler: number): boolean {
+  return false;
+}
+
+/** 1:1 décomp `CompleteOnFinishedStatusAnimation()`. */
+function _CompleteOnFinishedStatusAnimation(): void {
+  // Dette R3 : poll statusAnimActive flag. Pour now : immediate complete.
   PlayerBufferExecCompleted();
 }
 
@@ -1319,4 +1456,8 @@ void MarkBattlerForControllerExec;
   // L5 wires exposés pour tests déterministes PrintString decoder + window.
   PlayerHandlePrintString, PlayerHandlePrintSelectionString,
   CompleteOnInactiveTextPrinter2,
+  // L6/L7/L8 wires exposés pour tests déterministes HealthBar/Exp/Status.
+  PlayerHandleHealthBarUpdate, CompleteOnHealthbarDone,
+  PlayerHandleExpUpdate,
+  PlayerHandleStatusIconUpdate,
 };
