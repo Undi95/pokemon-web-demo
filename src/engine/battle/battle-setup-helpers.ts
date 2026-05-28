@@ -29,6 +29,14 @@ import {
 } from './state';
 import { BATTLE_TYPE_FIRST_BATTLE } from './constants';
 import { gBattlerPositions } from './util';
+// E1 : MetatileBehavior_Is* sont des fonctions PURES (metatile-behavior.ts
+// n'importe que des constantes MB_*, ZÉRO cycle avec battle). Import direct safe.
+import {
+  MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass,
+  MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsIndoorEncounter,
+  MetatileBehavior_IsSurfableWaterOrUnderwater,
+  MetatileBehavior_IsDeepOrOceanWater, MetatileBehavior_IsMountain,
+} from '../field/metatile-behavior';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -183,29 +191,48 @@ export function SetUpBattleVarsAndBirchZigzagoon(): void {
 
 // ─── BattleSetup_GetEnvironmentId (battle_setup.c:636) ─────────────────────
 
-/** Cascade helpers : metatile behavior + map type access. */
+/** E1 wire 1:1 strict : `PlayerGetDestCoords` (field_player_avatar.c) lit
+ *  gObjectEvents[playerObjId].currentCoords (= coords INTERNAL avec MAP_OFFSET).
+ *  Lazy lookup via globalThis.__gObjectEvents pour éviter cycle ESM avec
+ *  player-avatar/object-events (= hubs field). */
 function _PlayerGetDestCoords(): { x: number; y: number } {
-  // Cascade : player-avatar.ts coords lookup.
-  const pa = (globalThis as { __playerAvatar?: { x?: number; y?: number } }).__playerAvatar;
-  return { x: pa?.x ?? 0, y: pa?.y ?? 0 };
+  const oes = (globalThis as { __gObjectEvents?: Array<{ active?: boolean; isPlayer?: boolean; currentCoordsX?: number; currentCoordsY?: number }> }).__gObjectEvents;
+  if (oes) {
+    // gObjectEvents[0] = player en single. Cherche le 1er actif isPlayer pour robustesse.
+    for (const oe of oes) {
+      if (oe?.active && oe.isPlayer) {
+        return { x: oe.currentCoordsX ?? 0, y: oe.currentCoordsY ?? 0 };
+      }
+    }
+    // Fallback slot 0.
+    const p = oes[0];
+    if (p) return { x: p.currentCoordsX ?? 0, y: p.currentCoordsY ?? 0 };
+  }
+  return { x: 0, y: 0 };
 }
 
-function _MapGridGetMetatileBehaviorAt(_x: number, _y: number): number {
-  // Cascade : metatile-behavior.ts. Pour now : default 0 (= no special).
-  return 0;
+/** E1 wire : `MapGridGetMetatileBehaviorAt(x, y)` (map-loader.ts:1721) exposé
+ *  global. Prend coords INTERNAL. */
+function _MapGridGetMetatileBehaviorAt(x: number, y: number): number {
+  const fn = (globalThis as { MapGridGetMetatileBehaviorAt?: (x: number, y: number) => number }).MapGridGetMetatileBehaviorAt;
+  return fn ? fn(x, y) : 0;
 }
 
-function _isTallGrass(behavior: number): boolean { return behavior === 2; }
-function _isLongGrass(behavior: number): boolean { return behavior === 3; }
-function _isSandOrDeepSand(behavior: number): boolean { return behavior === 4 || behavior === 5; }
-function _isIndoorEncounter(behavior: number): boolean { return behavior === 8; }
-function _isSurfableWaterOrUnderwater(behavior: number): boolean { return behavior === 16 || behavior === 17; }
-function _isDeepOrOceanWater(behavior: number): boolean { return behavior === 18; }
-function _isMountain(behavior: number): boolean { return behavior === 32; }
-
+/** E1 wire : `gMapHeader.mapType` (= STRING "MAP_TYPE_ROUTE" dans notre port)
+ *  → number 1:1 décomp enum. */
+const _MAP_TYPE_STR_TO_NUM: Record<string, number> = {
+  MAP_TYPE_TOWN: MAP_TYPE_TOWN, MAP_TYPE_CITY: MAP_TYPE_CITY,
+  MAP_TYPE_ROUTE: MAP_TYPE_ROUTE, MAP_TYPE_UNDERGROUND: MAP_TYPE_UNDERGROUND,
+  MAP_TYPE_UNDERWATER: MAP_TYPE_UNDERWATER, MAP_TYPE_OCEAN_ROUTE: MAP_TYPE_OCEAN_ROUTE,
+  MAP_TYPE_UNKNOWN: MAP_TYPE_UNKNOWN, MAP_TYPE_INDOOR: MAP_TYPE_INDOOR,
+  MAP_TYPE_SECRET_BASE: MAP_TYPE_SECRET_BASE,
+};
 function _getMapType(): number {
-  const mh = (globalThis as { __mapHeader?: { mapType?: number } }).__mapHeader;
-  return mh?.mapType ?? MAP_TYPE_TOWN;
+  const mh = (globalThis as { gMapHeader?: { mapType?: number | string } }).gMapHeader;
+  const mt = mh?.mapType;
+  if (typeof mt === 'number') return mt;
+  if (typeof mt === 'string') return _MAP_TYPE_STR_TO_NUM[mt] ?? MAP_TYPE_TOWN;
+  return MAP_TYPE_TOWN;
 }
 
 /** 1:1 décomp `BattleSetup_GetEnvironmentId()` (battle_setup.c:636-).
@@ -214,9 +241,9 @@ export function BattleSetup_GetEnvironmentId(): number {
   const { x, y } = _PlayerGetDestCoords();
   const tileBehavior = _MapGridGetMetatileBehaviorAt(x, y);
 
-  if (_isTallGrass(tileBehavior)) return BATTLE_ENVIRONMENT_GRASS;
-  if (_isLongGrass(tileBehavior)) return BATTLE_ENVIRONMENT_LONG_GRASS;
-  if (_isSandOrDeepSand(tileBehavior)) return BATTLE_ENVIRONMENT_SAND;
+  if (MetatileBehavior_IsTallGrass(tileBehavior)) return BATTLE_ENVIRONMENT_GRASS;
+  if (MetatileBehavior_IsLongGrass(tileBehavior)) return BATTLE_ENVIRONMENT_LONG_GRASS;
+  if (MetatileBehavior_IsSandOrDeepSand(tileBehavior)) return BATTLE_ENVIRONMENT_SAND;
 
   const mapType = _getMapType();
   switch (mapType) {
@@ -225,8 +252,8 @@ export function BattleSetup_GetEnvironmentId(): number {
     case MAP_TYPE_ROUTE:
       break;
     case MAP_TYPE_UNDERGROUND:
-      if (_isIndoorEncounter(tileBehavior)) return BATTLE_ENVIRONMENT_BUILDING;
-      if (_isSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_POND;
+      if (MetatileBehavior_IsIndoorEncounter(tileBehavior)) return BATTLE_ENVIRONMENT_BUILDING;
+      if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_POND;
       return BATTLE_ENVIRONMENT_CAVE;
     case MAP_TYPE_INDOOR:
     case MAP_TYPE_SECRET_BASE:
@@ -234,13 +261,13 @@ export function BattleSetup_GetEnvironmentId(): number {
     case MAP_TYPE_UNDERWATER:
       return BATTLE_ENVIRONMENT_UNDERWATER;
     case MAP_TYPE_OCEAN_ROUTE:
-      if (_isSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_WATER;
+      if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_WATER;
       return BATTLE_ENVIRONMENT_PLAIN;
   }
 
-  if (_isDeepOrOceanWater(tileBehavior)) return BATTLE_ENVIRONMENT_WATER;
-  if (_isSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_POND;
-  if (_isMountain(tileBehavior)) return BATTLE_ENVIRONMENT_MOUNTAIN;
+  if (MetatileBehavior_IsDeepOrOceanWater(tileBehavior)) return BATTLE_ENVIRONMENT_WATER;
+  if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior)) return BATTLE_ENVIRONMENT_POND;
+  if (MetatileBehavior_IsMountain(tileBehavior)) return BATTLE_ENVIRONMENT_MOUNTAIN;
 
   return BATTLE_ENVIRONMENT_PLAIN;
 }

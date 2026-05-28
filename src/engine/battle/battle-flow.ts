@@ -1311,12 +1311,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
                 oppSpriteSize  = sized.size;
               }
               // 1:1 décomp `LoadBattleTextboxAndBackground` (battle_bg.c:859-867).
-              // Charge BG0 textbox + BG2 terrain (= GRASS par défaut).
-              // Fix B1-bis : helper dédié `_loadBattleTerrainTiles` qui supporte
-              // 3 sub-palettes 48-color (= bug racine `loadIndexedPngStrict` ne
-              // prend que 16 colors → pixels sub-pal 1/2 mappés à transparent).
+              // Charge BG0 textbox + BG3 terrain selon l'environnement.
+              // E1 fix : utiliser BattleSetup_GetEnvironmentId() 1:1 décomp
+              // (= metatile behavior position player + mapType) au lieu du
+              // hardcode GRASS. → terrain correct par lieu (grass/sand/water/
+              // cave/building/etc). 1:1 décomp CB2_InitBattleInternal ll.672
+              // `gBattleEnvironment = BattleSetup_GetEnvironmentId()`.
               const bgMod = await import('./battle-bg');
-              await bgMod.loadBattleTextboxAndBackground(bgMod.BATTLE_ENVIRONMENT_GRASS);
+              const setupMod = await import('./battle-setup-helpers');
+              const env = setupMod.BattleSetup_GetEnvironmentId();
+              console.log('[battle-flow E1] BattleSetup_GetEnvironmentId →', env);
+              await bgMod.loadBattleTextboxAndBackground(env);
               loadDone = true;
             } catch (e) {
               console.error('[battle-flow] sprite load failed', e);
