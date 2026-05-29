@@ -45,6 +45,7 @@ import { Random } from '../system/random';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader } from './map-loader';
 import { startWildBattle } from '../battle/battle-flow';
+import { ScriptContext_SetupInlineNative } from '../script/script-runtime';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
@@ -279,7 +280,16 @@ function CreateWildMon(species: string, level: number): void {
   // Dette R3 : Cute Charm gender bias check (lignes 394-412).
   // Notre TS : startWildBattle accepte (opponentSpecies, opponentLevel).
   // PickWildMonNature (= dette R3) est aussi géré internally par startWildBattle.
-  startWildBattle({ opponentSpecies: species, opponentLevel: level });
+  const flow = startWildBattle({ opponentSpecies: species, opponentLevel: level });
+  // 1:1 équivalent inline du décomp `BattleSetup_StartWildBattle` (battle_setup.c)
+  // → `SetMainCallback2(CB2_InitBattle)` : le combat DOIT être piloté chaque frame.
+  // Notre combat tourne inline (pas de swap CB2), donc on enregistre son tick comme
+  // script natif (= SetupNativeScript décomp) → ScriptContext_RunScript le tick chaque
+  // frame jusqu'à la fin du combat. SANS ça le flow reste bloqué à INIT (jamais tické)
+  // = bug "marcher dans l'herbe ne lance pas vraiment le combat". Identique au chemin
+  // devtool dev.battle.startWild (engine-devtools.ts).
+  (globalThis as { __activeBattleFlow?: unknown }).__activeBattleFlow = flow;
+  ScriptContext_SetupInlineNative(flow.tick);
 }
 
 /** 1:1 décomp `TryGenerateWildMon` (wild_encounter.c:422-456) minimal.
