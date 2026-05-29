@@ -53,18 +53,25 @@ import {
   FillWindowPixelBuffer,
   FillWindowPixelRect,
   CopyWindowToVram,
+  PutWindowTilemap,
+  ClearWindowTilemap,
   ShowBg,
   HideBg,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
+import { AddTextPrinterParameterized3, IsTextPrinterActive } from '../ui/gba-text-system';
 import {
-  ShowFieldMessage,
-  IsFieldMessageBoxHidden,
   HideFieldMessageBox,
 } from '../field/field-message-box';
+// RB2 : message box battle 1:1 — B_WIN_MSG (baseBlock 0x90, sans chevauchement
+// avec le menu action 0x190) + couleurs/font décomp (sTextOnWindowsInfo_Normal).
+import {
+  B_WIN_MSG,
+  sStandardBattleWindowTemplates,
+  sTextOnWindowsInfo_Normal,
+} from './battle-windows';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
-import { LoadSpritePalette } from '../system/sprite';
+import { LoadSpritePalette, FreeAllSpritePalettes } from '../system/sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -239,10 +246,63 @@ const OPPONENT_PALETTE_SLOT = 14;  // legacy fallback
 // crée via CreateSprite. On soustrait directement ici pour alignement 1:1.
 // Y player a +8 bonus 1:1 décomp GetBattlerSpriteFinal_Y (ll. 286-287) car
 // player side a un offset visuel pour "élever" sur la plateforme.
-const OPPONENT_X = 176 - 32;       // = 144
-const OPPONENT_Y = 40 - 32;        // = 8
-const PLAYER_X   = 72 - 32;        // = 40
-const PLAYER_Y   = 80 - 32 + 8;    // = 56 (+8 player side bonus 1:1 décomp)
+// E1b : sBattlerCoords CENTRE (battle_anim_mons.c:38) single battle.
+// X fixe par position (= sBattlerCoords center X) ; Y dépend du y_offset PAR
+// ESPÈCE (= GetBattlerSpriteDefault_Y). 1:1 décomp battle_controller_*.c :
+//   CreateSprite(tpl, GetBattlerSpriteCoord(BATTLER_COORD_X_2),
+//                GetBattlerSpriteDefault_Y(battler), subpriority)
+// → sprite.x/y = CENTRE. Notre `syncSpritesToOam` applique centerToCornerVec
+//   (= -32 pour un 64x64) chaque frame : oam corner = center - 32. On passe donc
+//   le CENTRE à CreateSpriteAtOam (surtout PAS le top-left, sinon double
+//   soustraction → sprite 32px trop à gauche + trop haut).
+const SBATTLER_COORD_X_OPPONENT = 176;  // sBattlerCoords[single][OPPONENT_LEFT].x
+const SBATTLER_COORD_Y_OPPONENT = 40;   // sBattlerCoords[single][OPPONENT_LEFT].y
+const SBATTLER_COORD_X_PLAYER   = 72;   // sBattlerCoords[single][PLAYER_LEFT].x
+const SBATTLER_COORD_Y_PLAYER   = 80;   // sBattlerCoords[single][PLAYER_LEFT].y
+
+// ─── E1b : mon-pic-coords loader (= gMonFrontPicCoords/gMonBackPicCoords) ──
+/** 1:1 décomp `gMonFrontPicCoords[]` + `gMonBackPicCoords[]`
+ *  (data/pokemon_graphics/{front,back}_pic_coordinates.h) : par espèce,
+ *  { w, h, yOffset }. yOffset = pixels entre le bas des pixels dessinés et le
+ *  bord bas du frame 64x64. Utilisé par GetBattlerSpriteFinal_Y pour aligner
+ *  les pieds du pokémon sur la plateforme. */
+interface MonPicCoord { w: number; h: number; yOffset: number; }
+interface MonPicCoords { front: MonPicCoord; back: MonPicCoord; }
+let _monPicCoords: Record<string, MonPicCoords> | null = null;
+async function loadMonPicCoords(): Promise<Record<string, MonPicCoords>> {
+  if (_monPicCoords) return _monPicCoords;
+  const resp = await fetch('/decomp/em/mon-pic-coords.json');
+  if (!resp.ok) throw new Error(`mon-pic-coords fetch failed: ${resp.status}`);
+  _monPicCoords = await resp.json() as Record<string, MonPicCoords>;
+  return _monPicCoords;
+}
+
+/** 1:1 décomp `GetBattlerSpriteDefault_Y(battler)` (battle_anim_mons.c:327-330)
+ *  = `GetBattlerSpriteFinal_Y(battler, species, FALSE)` (ll. 269-292). C'est la
+ *  fonction utilisée À LA CRÉATION du sprite battler (battle_controller_*.c :
+ *  `CreateSprite(tpl, GetBattlerSpriteCoord(X_2), GetBattlerSpriteDefault_Y(), …)`).
+ *  Retourne le Y CENTRE du sprite (= sprite.y ; l'OAM applique ensuite
+ *  centerToCornerVec -32) :
+ *    offset = yOffset (front opponent / back player)
+ *    opponent : offset -= elevation (gEnemyMonElevation — dette R3 : 0 sauf
+ *      gros pokémon Wailord/etc, à extraire de enemy_mon_elevation.h)
+ *    y = offset + sBattlerCoords.y
+ *  ⚠️ a3=FALSE : PAS de `+8` player ni de clamp (ceux-ci ne s'appliquent qu'à
+ *  `BATTLER_COORD_Y_PIC_OFFSET` = animations, PAS au spawn). */
+function _getBattlerSpriteFinalY(speciesEnum: string, isPlayer: boolean): number {
+  const coords = _monPicCoords?.[speciesEnum];
+  const baseY = isPlayer ? SBATTLER_COORD_Y_PLAYER : SBATTLER_COORD_Y_OPPONENT;
+  if (!coords) {
+    // Fallback : pas de pic-coords → centre sBattlerCoords (= offset 0).
+    return baseY;
+  }
+  const yOffset = isPlayer ? coords.back.yOffset : coords.front.yOffset;
+  // Dette R3 : elevation = 0 (gEnemyMonElevation non extrait — 0 pour ~99%
+  // des espèces, seuls Wailord/legendaires gros ont >0). À extraire pour 1:1
+  // complet des gros pokémon.
+  const elevation = 0;
+  return yOffset + baseY - (isPlayer ? 0 : elevation);
+}
 
 // ─── HP windows (= top-left for opp, bottom-right for player) ──────────────
 const OPPONENT_HP_WINDOW: WindowTemplate = {
@@ -259,22 +319,24 @@ const PLAYER_HP_WINDOW: WindowTemplate = {
   paletteNum: 15,
   baseBlock: 0x130,
 };
-// 1:1 décomp battle_bg.c:174-191 B_WIN_ACTION_PROMPT + B_WIN_ACTION_MENU.
-// `B_WIN_ACTION_PROMPT` est la window gauche bas qui affiche "Que doit faire X?"
-// pendant que le user choisit (= tilemapLeft=1, top=15 dans notre adapt).
-// `B_WIN_ACTION_MENU` est la grille 2x2 ATTAQUE/SAC/POKéMON/FUITE droite bas.
+// 1:1 décomp `sStandardBattleWindowTemplates` B_WIN_ACTION_PROMPT + B_WIN_ACTION_MENU.
+// `B_WIN_ACTION_PROMPT` = box VERTE gauche bas "Que doit faire X?" (paletteNum=0
+// = palette textbox, couleurs comme B_WIN_MSG). `B_WIN_ACTION_MENU` = grille 2x2
+// ATTAQUE/SAC/POKéMON/FUITE droite bas, cadre custom (paletteNum=5 = gBattleWindowTextPalette).
+// VALEURS DÉCOMP STRICTES : top=35 (= révélé par scroll gBattle_BG0_Y=160 ; le
+// graphisme textbox a les boxes prompt+menu à ces rows). baseBlock 0x1C0/0x190.
 const ACTION_PROMPT_WINDOW: WindowTemplate = {
   bg: 0,
-  tilemapLeft: 1, tilemapTop: 15,
+  tilemapLeft: 1, tilemapTop: 35,
   width: 14, height: 4,
-  paletteNum: 15,
+  paletteNum: 0,
   baseBlock: 0x1C0,
 };
 const ACTION_MENU_WINDOW: WindowTemplate = {
   bg: 0,
-  tilemapLeft: 17, tilemapTop: 15,
+  tilemapLeft: 17, tilemapTop: 35,
   width: 12, height: 4,
-  paletteNum: 15,
+  paletteNum: 5,
   baseBlock: 0x190,
 };
 /** FLIP option 2 : le bytecode interpreter 1:1 décomp est le moteur de
@@ -546,6 +608,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let movePpWinId = -1;
   let movePpRemainingWinId = -1;
   let moveTypeWinId = -1;
+  // RB2 : window message box battle (= B_WIN_MSG 0x90). Lazy-créée au 1er message.
+  let msgWindowId = -1;
+  // Track si un message battle est en cours d'affichage (= équivalent
+  // sFieldMessageBoxMode != HIDDEN). Passe à false quand le printer a fini.
+  let _msgActive = false;
 
   // Async asset load tracking.
   let loadStarted = false;
@@ -813,6 +880,61 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
+  // ─── RB2 : message box battle 1:1 (B_WIN_MSG, baseBlock 0x90) ───────────
+  // Remplace ShowFieldMessage (= overworld field box 0x194 qui chevauchait le
+  // menu action 0x190 → garbling). 1:1 décomp `BattlePutTextOnWindow(text,
+  // B_WIN_MSG)` (battle_message.c:3035) : FillWindowPixelBuffer(fillValue) +
+  // AddTextPrinter avec font/couleurs de sTextOnWindowsInfo_Normal[B_WIN_MSG]
+  // (fg=WHITE, bg=DYN_6, shadow=GREEN). Le fond box vert/rouge vient du graphisme
+  // textbox chargé sur BG0 (loadBattleTextbox) ; la window pose le texte dessus.
+  const _b = sStandardBattleWindowTemplates[B_WIN_MSG];
+  const B_WIN_MSG_TEMPLATE: WindowTemplate = {
+    bg: _b.bg, tilemapLeft: _b.tilemapLeft, tilemapTop: _b.tilemapTop,
+    width: _b.width, height: _b.height, paletteNum: _b.paletteNum, baseBlock: _b.baseBlock,
+  };
+  /** 1:1 décomp `gBattle_BG0_Y` : scroll vertical BG0 pour révéler le bon groupe
+   *  de boxes au bas de l'écran (0 = MSG, 160 = ACTION, 320 = MOVE). */
+  const setBg0Scroll = (y: number): void => {
+    const r = getRuntime();
+    if (r) r.gba.bg(0).config.vofs = y;
+  };
+  const showBattleMessage = (text: string): void => {
+    if (msgWindowId < 0) msgWindowId = AddWindow(B_WIN_MSG_TEMPLATE);
+    const info = sTextOnWindowsInfo_Normal[B_WIN_MSG];
+    // 1:1 décomp : box MSG révélée par scroll BG0_Y=0.
+    setBg0Scroll(0);
+    // Pose les entries tilemap (= cells rows 15-18 → tiles window baseBlock 0x90).
+    PutWindowTilemap(msgWindowId);
+    // 1:1 décomp : FillWindowPixelBuffer(fillValue) puis AddTextPrinter.
+    FillWindowPixelBuffer(msgWindowId, info.fillValue);
+    // colorArray [bg, fg, shadow] (cf. gba-text-system). speed 255 = sync
+    // (TEXT_SKIP_DRAW) : rendu instant lisible ; isBattleMessageHidden attend
+    // ensuite l'appui A/B (= 1:1 lecture joueur).
+    AddTextPrinterParameterized3(
+      msgWindowId, info.fontId, info.x, info.y,
+      [info.bgColor, info.fgColor, info.shadowColor],
+      255, text.replace(/\$$/, ''),
+    );
+    CopyWindowToVram(msgWindowId, 3);
+    _msgActive = true;
+  };
+  /** Drop-in 1:1 de IsFieldMessageBoxHidden : true quand le message a fini de
+   *  s'imprimer (= printer plus actif), comme field_message_box.c state 2. */
+  const isBattleMessageHidden = (): boolean => {
+    if (msgWindowId < 0 || !_msgActive) return true;
+    if (!IsTextPrinterActive(msgWindowId)) { _msgActive = false; return true; }
+    return false;
+  };
+  /** Clear la message box (= 1:1 HideFieldMessageBox avant d'ouvrir le menu). */
+  const hideBattleMessage = (): void => {
+    if (msgWindowId >= 0) {
+      FillWindowPixelBuffer(msgWindowId, 0);
+      ClearWindowTilemap(msgWindowId);
+      CopyWindowToVram(msgWindowId, 3);
+    }
+    _msgActive = false;
+  };
+
   // ─── Action menu (= FIGHT/BAG/POKEMON/RUN grille 2x2) 1:1 décomp ─────────
   // Source : battle_controller_player.c:HandleInputChooseAction + battle_message.c:1276
   // gText_BattleMenu = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE"
@@ -821,7 +943,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   /** Refresh action menu window with cursor `>` at the active 2x2 cell. */
   const refreshActionMenu = (): void => {
     if (actionMenuWindowId < 0) return;
-    FillWindowPixelBuffer(actionMenuWindowId, 0x11);
+    // 1:1 décomp B_WIN_ACTION_MENU : fillValue=PIXEL_FILL(0xE)=0xEE, couleurs
+    // [bg=DYN_5(14), fg=DYN_4(13), shadow=DYN_6(15)] (paletteNum 5 = gBattleWindowTextPalette).
+    FillWindowPixelBuffer(actionMenuWindowId, 0xEE);
     // Layout grille 2x2 :
     //   row 0 : [>]ATTAQUE   [>]SAC
     //   row 1 : [>]POKéMON   [>]FUITE
@@ -834,7 +958,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     const br = (c === 3 ? '>' : ' ') + 'FUITE';
     const menuText = pad(tl, 9) + tr + '\n' + pad(bl, 9) + br;
     AddTextPrinterParameterized3(
-      actionMenuWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
+      actionMenuWindowId, 1, 0, 1, [14, 13, 15], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
     );
     CopyWindowToVram(actionMenuWindowId, 2);
   };
@@ -842,37 +966,52 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   /** Refresh action prompt window with "Que doit faire X?". */
   const refreshActionPrompt = (): void => {
     if (actionPromptWindowId < 0 || !playerMon) return;
-    FillWindowPixelBuffer(actionPromptWindowId, 0x11);
+    // 1:1 décomp B_WIN_ACTION_PROMPT : fillValue=0xFF, couleurs [bg=DYN_6(15),
+    // fg=WHITE(1), shadow=GREEN(6)] (paletteNum 0 = palette textbox = box verte).
+    FillWindowPixelBuffer(actionPromptWindowId, 0xFF);
     const promptText = `Que doit faire\n${playerMon.nickname.toUpperCase()}?`;
     AddTextPrinterParameterized3(
-      actionPromptWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, promptText,
+      actionPromptWindowId, 1, 0, 1, [15, 1, 6], 255 /* TEXT_SKIP_DRAW */, promptText,
     );
     CopyWindowToVram(actionPromptWindowId, 2);
   };
 
-  /** Init action menu + prompt windows simultanément. Called au début du turn. */
+  /** Init action menu + prompt windows. 1:1 décomp PlayerHandleChooseAction :
+   *  les boxes (prompt vert G + menu custom D) viennent du graphisme textbox aux
+   *  rows 35-38, révélées par scroll BG0_Y=160. Pas de DrawStdFrame : la window
+   *  pose juste le texte par-dessus la box du graphisme. */
   const initActionMenu = (): void => {
     if (!playerMon) return;
+    // Clear la box message (= passe du mode message au mode action).
+    hideBattleMessage();
     if (actionPromptWindowId < 0) actionPromptWindowId = AddWindow(ACTION_PROMPT_WINDOW);
     if (actionMenuWindowId < 0)   actionMenuWindowId   = AddWindow(ACTION_MENU_WINDOW);
-    DrawStdFrameWithCustomTileAndPalette(actionPromptWindowId, true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(actionMenuWindowId,   true, 0x214, 14);
+    // Pose les entries tilemap (cells rows 35-38 → tiles window). PAS de frame :
+    // le graphisme textbox fournit les bordures box (prompt vert + menu custom).
+    PutWindowTilemap(actionPromptWindowId);
+    PutWindowTilemap(actionMenuWindowId);
+    // 1:1 décomp gBattle_BG0_Y = DISPLAY_HEIGHT(160) : révèle les boxes action.
+    setBg0Scroll(160);
     refreshActionPrompt();
     refreshActionMenu();
   };
 
-  /** Close both windows action menu + prompt. */
+  /** Close both windows action menu + prompt + re-scroll vers la box message. */
   const closeActionMenu = (): void => {
     if (actionMenuWindowId >= 0) {
-      ClearStdWindowAndFrame(actionMenuWindowId, true);
+      ClearWindowTilemap(actionMenuWindowId);
+      CopyWindowToVram(actionMenuWindowId, 3);
       RemoveWindow(actionMenuWindowId);
       actionMenuWindowId = -1;
     }
     if (actionPromptWindowId >= 0) {
-      ClearStdWindowAndFrame(actionPromptWindowId, true);
+      ClearWindowTilemap(actionPromptWindowId);
+      CopyWindowToVram(actionPromptWindowId, 3);
       RemoveWindow(actionPromptWindowId);
       actionPromptWindowId = -1;
     }
+    // Retour scroll position message (= 1:1 gBattle_BG0_Y = 0).
+    setBg0Scroll(0);
   };
 
   /** 1:1 décomp `OpponentHandleChooseMove` (battle_controller_opponent.c:1551).
@@ -1162,6 +1301,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../field/field-message-box').then(({ InitFieldMessageBox }) => {
           InitFieldMessageBox();
         });
+        // E1c : 1:1 décomp `CB2_InitBattleInternal` (battle_main.c:663-670) reset
+        // gBattle_BG0/1/2/3_X/Y = 0. CRITIQUE : le combat tourne INLINE dans la
+        // GameScene overworld, donc `FieldUpdateBgTilemapScroll` (field-camera.c)
+        // ré-applique le scroll caméra (= vofs≈40) sur BG1/2/3 CHAQUE frame et
+        // clobber le terrain battle (BG3) → plateformes décalées + tiles vides
+        // (noir) en bas. Le décomp évite ça via SetMainCallback2(CB2_InitBattle)
+        // qui swap le main callback (bypass FieldUpdateBgTilemapScroll). Notre
+        // équivalent = setFieldCameraSuspended(true) (pattern ChooseStarter).
+        // Réactivé au CLEANUP (retour overworld).
+        for (let i = 0; i < 4; i++) { const c = rt.gba.bg(i as 0 | 1 | 2 | 3).config; c.hofs = 0; c.vofs = 0; }
+        void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
+          setFieldCameraSuspended(true);
+        });
         // User feedback : "fond vers transparent du sac = vide" = entre
         // cleanupScene ChooseStarter et SPAWN_SPRITES battle, l'écran montre
         // OW pendant plusieurs frames. Fix 1:1 décomp `CB2_InitBattle` :
@@ -1283,9 +1435,22 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             try {
               // Ensure game-data is loaded (= moves table for damage calc).
               await loadGameData();
+              // E1b : charger mon-pic-coords (y_offset par espèce) pour
+              // positionner les sprites 1:1 (GetBattlerSpriteFinal_Y).
+              await loadMonPicCoords().catch(e => console.warn('[battle-flow E1b] mon-pic-coords load failed:', e));
               // Expose getSpeciesInfo via global for getSpeciesStats lookup.
               const gameData = await import('../data/game-data');
               (globalThis as { __game_data?: unknown }).__game_data = gameData;
+              // 1:1 décomp `CB2_InitBattleInternal` (battle_main.c:681) :
+              // FreeAllSpritePalettes(). CRITIQUE : l'overworld occupe les OBJ
+              // palette slots 0-3. Sans free, LoadSpritePalette(player/opponent)
+              // alloue les 1ers slots libres = 4 et 5. Or le healthbox utilise les
+              // slots FIXES 5/6 → l'ennemi (slot 5) prend la palette healthbox →
+              // sprite ennemi GARBLED. Free → mon sprites prennent 0/1, healthbox
+              // 5/6, zéro collision. (Le décomp set ensuite gReservedSpritePaletteCount
+              // = MAX_BATTLERS mais nos mon sprites passent par LoadSpritePalette,
+              // donc on laisse reserved=0 pour qu'ils prennent 0/1.)
+              FreeAllSpritePalettes();
               // Load player back sprite.
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
@@ -1375,25 +1540,29 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const playerTileId   = PLAYER_SPRITE_BYTE_OFFSET   / 32;
         const opponentTileId = OPPONENT_SPRITE_BYTE_OFFSET / 32;
 
-        // Sprite x/y are CENTER coords in our engine, then CalcCenterToCornerVec
-        // applies offset. We pass top-left here with adjustment.
-        // Looking at CreateSpriteAtOam : it uses x/y as input directly to oam.x/y
-        // (no auto-adjustment for non-affine sprites in our path?). Reading code
-        // shows CalcCenterToCornerVec is computed but for OAM we keep x/y direct.
-        // Practical : use top-left coords.
+        // 1:1 décomp battle_controller_*.c : on passe les coords CENTRE à
+        // CreateSpriteAtOam (= sprite.x/y). `syncSpritesToOam` applique ensuite
+        // centerToCornerVec (-32 pour 64x64) chaque frame → oam corner = center-32.
+        //   X = GetBattlerSpriteCoord(BATTLER_COORD_X_2) = sBattlerCoords.x (centre)
+        //   Y = GetBattlerSpriteDefault_Y(battler) = _getBattlerSpriteFinalY (centre)
+        // E1b : force 64x64 (= tous les mon sprites sont des frames 64x64 dans le
+        // décomp ; detectImageWH lisait la hauteur du SPRITESHEET 64x256/128 →
+        // shape/size faux + affichage de tous les frames empilés).
+        const oppCenterY = opponentMon ? _getBattlerSpriteFinalY(opponentMon.speciesEnum, false) : SBATTLER_COORD_Y_OPPONENT;
+        const playerCenterY = playerMon ? _getBattlerSpriteFinalY(playerMon.speciesEnum, true) : SBATTLER_COORD_Y_PLAYER;
         const opp = rt.CreateSpriteAtOam({
           tileId: opponentTileId,
           paletteBank: _battleOpponentPalSlot,
-          x: OPPONENT_X, y: OPPONENT_Y,
-          shape: oppSpriteShape, size: oppSpriteSize,
+          x: SBATTLER_COORD_X_OPPONENT, y: oppCenterY,
+          shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE,
           priority: 0,
         });
         opponentSpriteId = opp.spriteId;
         const player = rt.CreateSpriteAtOam({
           tileId: playerTileId,
           paletteBank: _battlePlayerPalSlot,
-          x: PLAYER_X, y: PLAYER_Y,
-          shape: playerSpriteShape, size: playerSpriteSize,
+          x: SBATTLER_COORD_X_PLAYER, y: playerCenterY,
+          shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE,
           priority: 0,
         });
         playerSpriteId = player.spriteId;
@@ -1463,7 +1632,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'INTRO_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        ShowFieldMessage(`Un ${opponentMon.nickname} sauvage\napparaît!`);
+        showBattleMessage(`Un ${opponentMon.nickname} sauvage\napparaît!`);
         // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
@@ -1476,7 +1645,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'INTRO_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'PLAYER_TURN_PROMPT';
         }
@@ -1608,13 +1777,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       // ─── ACTION_FALLBACK : SAC / POKéMON pas encore implémentés en combat ──
       case 'ACTION_FALLBACK_TEXT': {
         // Message gracieux qui ramène le user au menu action.
-        ShowFieldMessage(`${_lastFallbackKind} pas encore\ndisponible en combat!`);
+        showBattleMessage(`${_lastFallbackKind} pas encore\ndisponible en combat!`);
         state = 'ACTION_FALLBACK_WAIT';
         return false;
       }
 
       case 'ACTION_FALLBACK_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'ACTION_MENU_INIT';  // retour au menu pour re-choisir
         }
@@ -1632,7 +1801,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             && !(gBattleTypeFlags & 0x4 /* BATTLE_TYPE_LINK */)) {
           // 1:1 décomp `BattleScript_PrintCantRunFromTrainer` :
           // STRINGID_NORUNNINGFROMTRAINERS via decoder → texte FR officiel.
-          ShowFieldMessage(_resolveBattleString(STRINGID_NORUNNINGFROMTRAINERS));
+          showBattleMessage(_resolveBattleString(STRINGID_NORUNNINGFROMTRAINERS));
           state = 'ACTION_RUN_WAIT';
           return false;
         }
@@ -1663,18 +1832,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           } else {
             stringId = STRINGID_PREVENTSESCAPE;
           }
-          ShowFieldMessage(_resolveBattleString(stringId));
+          showBattleMessage(_resolveBattleString(stringId));
         } else {
           // Run permitted : roll TryRunFromBattle.
           const tryRunResult = _TryRunFromBattle(0);
           if (tryRunResult) {
             // 1:1 décomp `BattleScript_GotAwaySafely` (battle_scripts_1.s) :
             // STRINGID_GOTAWAYSAFELY = "Vous prenez la fuite !" via decoder.
-            ShowFieldMessage(_resolveBattleString(STRINGID_GOTAWAYSAFELY));
+            showBattleMessage(_resolveBattleString(STRINGID_GOTAWAYSAFELY));
             outcome = BATTLE_OUTCOME_RAN;
           } else {
             // 1:1 décomp : STRINGID_CANTESCAPE via decoder.
-            ShowFieldMessage(_resolveBattleString(STRINGID_CANTESCAPE));
+            showBattleMessage(_resolveBattleString(STRINGID_CANTESCAPE));
           }
         }
         state = 'ACTION_RUN_WAIT';
@@ -1682,7 +1851,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'ACTION_RUN_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           if (outcome === BATTLE_OUTCOME_RAN || outcome === BATTLE_OUTCOME_MON_FLED) {
             // Player ran ou wild mon fui (= K8 AI_FirstBattle tutorial bypass).
@@ -1822,13 +1991,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Legacy path : message hardcoded puis damage state.
         const mv = playerMon.moves[chosenMoveIndex];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
-        ShowFieldMessage(`${playerMon.nickname} utilise\n${moveName}!`);
+        showBattleMessage(`${playerMon.nickname} utilise\n${moveName}!`);
         state = 'PLAYER_USES_MOVE_WAIT';
         return false;
       }
 
       case 'PLAYER_USES_MOVE_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'PLAYER_DAMAGE_OPP';
         }
@@ -1845,13 +2014,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           return false;
         }
         const msg = _pendingBytecodeMessages.shift()!;
-        ShowFieldMessage(msg);
+        showBattleMessage(msg);
         state = 'PLAYER_BYTECODE_MSG_WAIT';
         return false;
       }
 
       case 'PLAYER_BYTECODE_MSG_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'PLAYER_BYTECODE_MSG';
         }
@@ -1877,15 +2046,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             // via decoder. Note : décomp utilise placeholder pour target nick
             // mais le decoder gère le pattern via gBattleTextBuff (= dette R3
             // pour le full wire ; pour now decoder text seul).
-            ShowFieldMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
+            showBattleMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else if (typeMul >= 2) {
             // 1:1 décomp STRINGID_SUPEREFFECTIVE = "C'est super efficace !"
-            ShowFieldMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
+            showBattleMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else if (typeMul > 0 && typeMul < 1) {
             // 1:1 décomp STRINGID_NOTVERYEFFECTIVE = "Ce n'est pas très efficace…"
-            ShowFieldMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
+            showBattleMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
             state = 'PLAYER_DAMAGE_OPP_WAIT';
           } else {
             // Neutral 1× damage — straight to fainted check.
@@ -1893,14 +2062,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           }
         } else {
           // Status move (= Growl). Just acknowledge.
-          ShowFieldMessage(`${opponentMon.nickname}\nest affaibli!`);
+          showBattleMessage(`${opponentMon.nickname}\nest affaibli!`);
           state = 'PLAYER_DAMAGE_OPP_WAIT';
         }
         return false;
       }
 
       case 'PLAYER_DAMAGE_OPP_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'CHECK_OPP_FAINTED';
         }
@@ -1919,7 +2088,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPP_FAINTED_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        ShowFieldMessage(`Le ${opponentMon.nickname} sauvage\nest K.O.!`);
+        showBattleMessage(`Le ${opponentMon.nickname} sauvage\nest K.O.!`);
         outcome = BATTLE_OUTCOME_WIN;
         state = 'OPP_FAINTED_WAIT';
         // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
@@ -1940,7 +2109,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPP_FAINTED_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           // Session 124 Bug 5 : EXP gain post-K.O. (= 1:1 décomp Gen 3 formula).
           state = 'EXP_AWARD_TEXT';
@@ -1956,13 +2125,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const result = applyExpAward(playerMon, gained);
         // Stash level-up flag for next state.
         chosenMoveIndex = result.leveledUp ? 1 : 0;  // reuse var as flag
-        ShowFieldMessage(`${playerMon.nickname} gagne\n${gained} POINTS D'EXP.!`);
+        showBattleMessage(`${playerMon.nickname} gagne\n${gained} POINTS D'EXP.!`);
         state = 'EXP_AWARD_WAIT';
         return false;
       }
 
       case 'EXP_AWARD_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup si pas de level up.
           state = chosenMoveIndex === 1 ? 'LEVEL_UP_TEXT' : 'CLEANUP_FADE_OUT';
@@ -1972,7 +2141,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'LEVEL_UP_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        ShowFieldMessage(`${playerMon.nickname} monte au\nniveau ${playerMon.level}!`);
+        showBattleMessage(`${playerMon.nickname} monte au\nniveau ${playerMon.level}!`);
         // Refresh HP window pour refleter nouveau maxHp.
         renderHpWindows();
         state = 'LEVEL_UP_WAIT';
@@ -1980,7 +2149,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'LEVEL_UP_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup propre (= no visual snap).
           state = 'CLEANUP_FADE_OUT';
@@ -1997,7 +2166,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // outcome = B_OUTCOME_MON_FLED.
         if (_opponentAiWantsToFlee) {
           const monName = opponentMon.nickname.toUpperCase();
-          ShowFieldMessage(`Le ${monName} sauvage a fui !`);
+          showBattleMessage(`Le ${monName} sauvage a fui !`);
           outcome = 6 /* BATTLE_OUTCOME_MON_FLED */;
           state = 'ACTION_RUN_WAIT';  // reuse pour fade-out
           return false;
@@ -2022,7 +2191,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         }
         const mv = opponentMon.moves[oppMoveIdx];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
-        ShowFieldMessage(`Le ${opponentMon.nickname} sauvage\nutilise ${moveName}!`);
+        showBattleMessage(`Le ${opponentMon.nickname} sauvage\nutilise ${moveName}!`);
         chosenMoveIndex = oppMoveIdx;
         state = 'OPPONENT_USES_MOVE_WAIT';
         return false;
@@ -2034,13 +2203,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           return false;
         }
         const msg = _pendingBytecodeMessages.shift()!;
-        ShowFieldMessage(msg);
+        showBattleMessage(msg);
         state = 'OPPONENT_BYTECODE_MSG_WAIT';
         return false;
       }
 
       case 'OPPONENT_BYTECODE_MSG_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'OPPONENT_BYTECODE_MSG';
         }
@@ -2048,7 +2217,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_USES_MOVE_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'OPPONENT_DAMAGE_PLAYER';
         }
@@ -2069,13 +2238,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // Iter19 : type effectiveness messages (= same as player turn).
           if (typeMul === 0) {
             // 1:1 décomp STRINGID_ITDOESNTAFFECT via decoder.
-            ShowFieldMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
+            showBattleMessage(_resolveBattleString(STRINGID_ITDOESNTAFFECT));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else if (typeMul >= 2) {
-            ShowFieldMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
+            showBattleMessage(_resolveBattleString(STRINGID_SUPEREFFECTIVE));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else if (typeMul > 0 && typeMul < 1) {
-            ShowFieldMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
+            showBattleMessage(_resolveBattleString(STRINGID_NOTVERYEFFECTIVE));
             state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
           } else {
             state = 'CHECK_PLAYER_FAINTED';
@@ -2087,7 +2256,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_DAMAGE_PLAYER_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'CHECK_PLAYER_FAINTED';
         }
@@ -2115,7 +2284,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_FAINTED_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        ShowFieldMessage(`${playerMon.nickname} est K.O.!`);
+        showBattleMessage(`${playerMon.nickname} est K.O.!`);
         outcome = BATTLE_OUTCOME_LOST;
         state = 'PLAYER_FAINTED_WAIT';
         // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
@@ -2127,7 +2296,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'PLAYER_FAINTED_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup propre.
           state = 'CLEANUP_FADE_OUT';
@@ -2182,13 +2351,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           return false;
         }
         const msg = _pendingBytecodeMessages.shift()!;
-        ShowFieldMessage(msg);
+        showBattleMessage(msg);
         state = 'END_TURN_MSG_WAIT';
         return false;
       }
 
       case 'END_TURN_MSG_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'END_TURN_MSG';
         }
@@ -2247,6 +2416,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp : reset WIN0 (= la fente d'intro) avant retour overworld.
         // Sinon la fente WIN0V resterait active → overworld masqué/clippé.
         resetBattleIntroWindow();
+        // E1c : réactiver le scroll caméra overworld (suspendu au battle INIT).
+        // Équivalent du retour de CB2_InitBattle → CB2_ReturnToField décomp.
+        void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
+          setFieldCameraSuspended(false);
+        });
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);
         if (opponentSpriteId >= 0) rt.DestroySprite(opponentSpriteId);
@@ -2350,7 +2524,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // strict mais nous skip pour éviter d'écraser le rendering correct.
     let localWinId = -1;
     switch (windowId) {
-      case 0:  /* B_WIN_MSG */ /* dette R3 : pas de winId message box exposé */ break;
+      case 0:  /* B_WIN_MSG */ showBattleMessage(text); return;  // RB2 : route 1:1 vers la box message
       case 1:  /* B_WIN_ACTION_PROMPT */ return; // skip : refreshActionPrompt gère
       case 2:  /* B_WIN_ACTION_MENU */ return;   // skip : refreshActionMenu gère
       case 3:  /* B_WIN_MOVE_NAME_1 */ localWinId = moveName1WinId; break;

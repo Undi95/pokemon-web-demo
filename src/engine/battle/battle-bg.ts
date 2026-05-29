@@ -31,6 +31,7 @@ import { rgba8ToRgb15 } from '../gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
+  LoadMessageBoxGfx, DLG_WINDOW_PALETTE_NUM,
 } from '../ui/gba-window-system';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
 import { DeactivateAllTextPrinters } from '../ui/gba-text-system';
@@ -233,6 +234,17 @@ export function configureBattleBgs(): void {
   const rt = getRuntime();
   if (!rt) return;
 
+  // BG0 : textbox/windows. 1:1 décomp `gBattleBgTemplates[0]` charBaseIndex=0.
+  // CRITIQUE : l'overworld laisse BG0 charBaseIndex=2 (= 0x8000). Les windows
+  // battle (move menu) ont des baseBlock élevés (0x290-0x330) ; copyPixelBufferToVram
+  // écrit le tile data à bg(0).vram[baseBlock*32]. À char base 2, baseBlock 0x290
+  // → 0x8000 + 0x5200 = 0xD200 = la région TILEMAP de BG3 (map base 26 = 0xD000) →
+  // écrase le terrain = carrés noirs pendant le menu move. Le décomp évite ça avec
+  // BG0 char base 0 (= les tiles windows vont en 0x0000+, région char base 0/1 que
+  // BG1/2 cachés n'utilisent pas pendant le combat). On force la valeur 1:1 décomp.
+  const bg0c = rt.gba.bg(0).config;
+  bg0c.charBaseIndex = 0;
+
   // BG3 : terrain background.
   const bg3c = rt.gba.bg(3).config;
   bg3c.charBaseIndex = 2; bg3c.mapBaseIndex = 26; bg3c.screenSize = 1;
@@ -353,10 +365,38 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   // Cf. cleanup state du battle-flow.ts qui re-show les BGs.
   rt.gba.vram.fill(0);
 
+  // 1:1 décomp `BattleInitBgsAndWindows` (battle_bg.c:731) → DeactivateAllTextPrinters().
+  // CRITIQUE : sans ça, un printer texte résiduel de l'overworld (= window stale,
+  // p.ex. dialog/HP) reste actif et RunTextPrinters le tick chaque frame → il
+  // écrase les tiles des windows battle (prompt/menu) → garbling sur les lignes.
+  DeactivateAllTextPrinters();
+
   configureBattleBgs();
-  // Charge le frame beige standard (= 1:1 décomp LoadUserWindowBorderGfx call
-  // dans LoadBattleMenuWindowGfx).
+  // RB1 : BG0 = 64-tall (screenSize=2) + mapBase=24, 1:1 `gBattleBgTemplates[0]`.
+  // Le textbox graphic est un tilemap 32×64 (textbox_map.bin = 4096 bytes) :
+  // MSG box @ rows 15-18 (visible @ scroll BG0_Y=0), ACTION @ 35-38, MOVE @ 55-58.
+  // On charge le vrai graphisme (box verte/bord rouge) ; les menus custom (frame
+  // beige 0x214) restent dessinés par-dessus au même endroit écran (scroll=0).
+  const bg0 = rt.gba.bg(0).config;
+  bg0.charBaseIndex = 0; bg0.mapBaseIndex = 24; bg0.screenSize = 2;
+  bg0.priority = 0; bg0.visible = true; bg0.hofs = 0; bg0.vofs = 0;
+  // 1:1 décomp ll. 861-864 : textbox tiles → BG_CHAR_ADDR(0), tilemap → mapBase 24,
+  // palette → BG_PLTT_ID(0). Le tilemap 32×64 contient TOUTES les boxes du combat :
+  //   - MSG box verte/bord rouge      @ rows 15-18 (scroll BG0_Y=0)
+  //   - ACTION : box verte prompt (G) + box cadre custom menu (D) @ rows 35-38 (scroll=160)
+  //   - MOVE : 4 boxes noms + PP + type @ rows 55-58 (scroll=320)
+  // Les windows (B_WIN_*) posent le TEXTE dans ces boxes ; le scroll révèle le bon
+  // groupe au même endroit écran (= bas). 1:1 décomp gBattle_BG0_Y.
+  await loadBattleTextbox();
+  // Charge le frame beige standard (= 1:1 décomp LoadUserWindowBorderGfx).
   await loadBattleStdFrame();
+  // Palette texte menu/move (= gBattleWindowTextPalette → BG_PLTT_ID(5), 1:1 décomp
+  // LoadBattleMenuWindowGfx ll.407). Les windows ACTION_MENU/MOVE_* (paletteNum=5)
+  // l'utilisent pour fg=DYN_4/bg=DYN_5/shadow=DYN_6.
+  const textPal5 = await loadGbaPal(`${'/decomp/em/battle_interface'}/text.pal`);
+  LoadPalette(textPal5, 5 * 16, 32);
+  // Palette message box (slot 15) — gardée pour compat field-message-box résiduel.
+  LoadMessageBoxGfx(0, 0x220, DLG_WINDOW_PALETTE_NUM * 16);
   // BG3 terrain.
   await drawMainBattleBackground(env);
 }
