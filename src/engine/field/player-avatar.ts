@@ -765,22 +765,6 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const panY = GetCameraPanY();
   sprite.x = 120 - panX;
   sprite.y = 72 + jumpY - panY;
-  // 1:1 décomp : le sprite player est un OBJET libre positionné relativement à la
-  // caméra (gSaveBlock1Ptr->pos = focus), PAS verrouillé au centre écran. En jeu
-  // normal coords == pos (player centré → delta 0). Mais un setobjectxy scripté
-  // (ex tutorial Birch : setobjectxy LOCALID_PLAYER, 6, 13 sous fadescreen) déplace
-  // l'object event SANS toucher pos → la caméra reste sur la position d'avant et le
-  // player apparaît DÉCENTRÉ (1:1 ROM : player en haut-gauche, caméra figée sur le
-  // point de déclenchement du sac). On applique le delta tile UNIQUEMENT quand le
-  // player est STATIQUE (pas de step → pas de jitter sous-pixel ; coords == pos en
-  // marche normale → delta 0, aucune régression de scroll).
-  if (gPlayerAvatar.runningState === NOT_MOVING && gPlayerAvatar.stepFramesLeft === 0) {
-    const pe = gObjectEvents[PLAYER_OBJECT_EVENT_SLOT];
-    if (pe && pe.active) {
-      sprite.x += (pe.currentCoordsX - (gSaveBlock1Ptr.pos.x + MAP_OFFSET)) * 16;
-      sprite.y += (pe.currentCoordsY - (gSaveBlock1Ptr.pos.y + MAP_OFFSET)) * 16;
-    }
-  }
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
