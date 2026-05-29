@@ -27,6 +27,7 @@
 
 import { getRuntime, LoadPalette, LoadBgTiles } from '../system/decomp-globals';
 import { loadTilemapBin, loadTileBin, loadGbaPal, extractPngPlte, loadIndexedPngStrict } from '../gba/png-loader';
+import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { rgba8ToRgb15 } from '../gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
@@ -333,20 +334,19 @@ export async function drawMainBattleBackground(env: number = BATTLE_ENVIRONMENT_
 export async function loadBattleStdFrame(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
-  // Load 24x24 PNG → 9 tiles 4bpp = 288 bytes.
-  const png = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
-  if (png.charData.length < 288) {
-    console.warn('[battle-bg] frame1.png charData too short:', png.charData.length);
-  }
-  // 1:1 décomp pattern : LoadBgTiles(bg=0, frame1_gfx, 0x120, 0x214).
-  // CRUCIAL : utilise `bg(0).vram` qui applique le charBase offset automatiquement
-  // (= VRAM byte base = charBaseIndex * 0x4000). Sinon `rt.gba.vram.set` écrirait
-  // à raw byte 0x4280 ce qui ne match pas où le compositor lit (= charBase*0x4000
-  // + tile*32). BG0 charBase peut être set par overworld → faut utiliser le view.
-  rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x214 * 32);
-  // Load palette à BG slot 14 (= entry offset 14*16=224, 32 bytes).
-  // 1:1 décomp : LoadPalette(frame1_pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP=32).
-  LoadPalette(png.palette, 14 * 16, 32);
+  // 1:1 décomp `LoadBattleMenuWindowGfx` → `LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1))`
+  // + `(.., 0x22, ..)` → `LoadWindowGfx(2, gSaveBlock2Ptr->optionsWindowFrameType, …)`.
+  // Le frame n'est PAS hardcodé : il dépend du choix user (OPTIONS > FENETRE TYPE N).
+  // sWindowFrames[type] = `(type+1).png` (type 0 = 1.png simple ; type 2 = 3.png ; etc).
+  // Les boxes menu/move du graphisme textbox référencent tiles 0x12/0x22 (paletteNum=1)
+  // pour leur bordure → c'est CE frame qui s'affiche. Défaut new-game = type 0 (simple).
+  const frameType = ((gSaveBlock2Ptr.optionsWindowFrameType ?? 0) % 20 + 20) % 20;
+  const png = await loadIndexedPngStrict(`/decomp/em/ui/text_window/${frameType + 1}.png`, 4);
+  // 1:1 LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1)) + (2, 0x22, BG_PLTT_ID(1)).
+  rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x12 * 32);
+  rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x22 * 32);
+  // 1:1 LoadPalette(sWindowFrames[type].pal, BG_PLTT_ID(1), 32) — slot 1.
+  LoadPalette(png.palette, 1 * 16, 32);
 }
 
 export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
@@ -388,7 +388,9 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   // Les windows (B_WIN_*) posent le TEXTE dans ces boxes ; le scroll révèle le bon
   // groupe au même endroit écran (= bas). 1:1 décomp gBattle_BG0_Y.
   await loadBattleTextbox();
-  // Charge le frame beige standard (= 1:1 décomp LoadUserWindowBorderGfx).
+  // 1:1 LoadBattleMenuWindowGfx : cadre user (1.png = rouge/bleu) → tiles 0x12/0x22
+  // + palette slot 1. Les boxes menu/move du graphisme textbox référencent ces tiles
+  // pour leur bordure (sinon = bordure grise vide).
   await loadBattleStdFrame();
   // Palette texte menu/move (= gBattleWindowTextPalette → BG_PLTT_ID(5), 1:1 décomp
   // LoadBattleMenuWindowGfx ll.407). Les windows ACTION_MENU/MOVE_* (paletteNum=5)
