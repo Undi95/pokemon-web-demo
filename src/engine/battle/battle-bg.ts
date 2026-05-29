@@ -197,7 +197,14 @@ async function _loadTerrainPaletteJson(url: string): Promise<Uint16Array> {
 async function loadBattleTerrainAssets(env: number): Promise<TerrainAssets> {
   const dir = ENV_TO_DIR[env];
   if (!dir) throw new Error(`unknown battle environment ${env}`);
-  if (_terrainCache.has(dir)) return _terrainCache.get(dir)!;
+  // 1:1 décomp sBattleEnvironmentTable[PLAIN] (battle_bg.c:685-692) : PLAIN partage
+  // le tileset/tilemap 'building' MAIS utilise la palette `gBattleEnvironmentPalette_Plain`
+  // (≠ `_Building`). Sans ce split, PLAIN chargeait la palette Building (beige/intérieur)
+  // → BG combat "desert" alors que la palette Plain colore le tileset Building en
+  // champ herbeux vert (= le vrai fond des combats de route, env 9).
+  const paletteDir = (env === BATTLE_ENVIRONMENT_PLAIN) ? 'plain' : dir;
+  const cacheKey = `${dir}|${paletteDir}`;
+  if (_terrainCache.has(cacheKey)) return _terrainCache.get(cacheKey)!;
   const base = `/decomp/em/battle_terrains/${dir}`;
   // Use le helper spécialisé qui supporte 3 sub-palettes (= 48 colors total).
   // `loadTileBin` 4bpp ne supporterait que 16 colors → mapping wrong pour
@@ -205,10 +212,10 @@ async function loadBattleTerrainAssets(env: number): Promise<TerrainAssets> {
   const [tiles, tilemap, palette] = await Promise.all([
     _loadBattleTerrainTiles(`${base}/tiles.png`),
     loadTilemapBin(`${base}/map.bin`),
-    _loadTerrainPaletteJson(`${base}/palette.json`),
+    _loadTerrainPaletteJson(`/decomp/em/battle_terrains/${paletteDir}/palette.json`),
   ]);
   const assets: TerrainAssets = { tiles, tilemap, palette };
-  _terrainCache.set(dir, assets);
+  _terrainCache.set(cacheKey, assets);
   return assets;
 }
 
