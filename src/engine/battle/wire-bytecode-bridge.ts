@@ -67,6 +67,7 @@ import {
 import {
   ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE,
   BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,
+  BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_SAFARI, BATTLE_TYPE_ROAMER,
 } from './constants';
 import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
@@ -1006,7 +1007,16 @@ export function chooseOpponentMoveViaAI(opts: {
       return !m || !m.id;
     };
 
-    if (!opts.isTrainer) {
+    // 1:1 décomp OpponentHandleChooseMove (battle_controller_opponent.c:1563) :
+    // l'AI est lancée pour TRAINER | FIRST_BATTLE | SAFARI | ROAMER ; sinon (vrai
+    // combat sauvage) = move aléatoire. Le tutorial Birch est FIRST_BATTLE (sauvage)
+    // → DOIT exécuter l'AI (AI_SCRIPT_FIRST_BATTLE → script AI_FirstBattle : fuit si
+    // les PV de la CIBLE AI = NOTRE mon ≤ 20% — if_hp_equal/less_than AI_TARGET 20).
+    const tf = gBattleTypeFlags >>> 0;
+    const aiDriven = opts.isTrainer
+      || (tf & (BATTLE_TYPE_FIRST_BATTLE | BATTLE_TYPE_SAFARI | BATTLE_TYPE_ROAMER)) !== 0;
+
+    if (!aiDriven) {
       // 1:1 décomp branche wild : move aléatoire, skip MOVE_NONE.
       let idx = 0;
       let tries = 0;
@@ -1018,7 +1028,7 @@ export function chooseOpponentMoveViaAI(opts: {
       return { action: 'move', index: idx };
     }
 
-    // 1:1 décomp branche trainer : nécessite le bytecode AI chargé.
+    // 1:1 décomp branche AI : nécessite le bytecode AI chargé (boot main.ts:170).
     if (!aiBytecodeLoaded()) return { action: 'move', index: -1 };
 
     _refreshBattleMonFromInstance(oppBId, opts.opponent);
@@ -1027,7 +1037,11 @@ export function chooseOpponentMoveViaAI(opts: {
     setBattlerTarget(pBId);
 
     const prevTF = gBattleTypeFlags;
-    setBattleTypeFlags((prevTF | BATTLE_TYPE_TRAINER) >>> 0);
+    // Dresseur réel → forcer TRAINER (BattleAI_SetupAIData lit gTrainers[id].aiFlags).
+    // FIRST_BATTLE/SAFARI/ROAMER : leur flag est déjà dans gBattleTypeFlags et a
+    // PRIORITÉ dans BattleAI_SetupAIData (checké AVANT le fallback trainer) → ne PAS
+    // l'écraser, sinon on perdrait AI_SCRIPT_FIRST_BATTLE (→ le Zigzaton ne fuirait pas).
+    if (opts.isTrainer) setBattleTypeFlags((prevTF | BATTLE_TYPE_TRAINER) >>> 0);
     if (opts.trainerId != null) setTrainerBattleOpponentA(opts.trainerId);
 
     BattleAI_SetupAIData(ALL_MOVES_MASK);
