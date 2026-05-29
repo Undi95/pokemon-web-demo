@@ -802,13 +802,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     if (i1 >= 0 && i1 < tm.length) tm[i1] = (bot & 0x3FF) | (pal << 12);
   };
 
-  /** Helper : print text dans une window avec clear avant. */
-  const _printToWindow = (winId: number, text: string): void => {
+  /** Helper : print text dans une window move (paletteNum 5) avec clear avant.
+   *  1:1 décomp sTextOnWindowsInfo_Normal : fillValue=PIXEL_FILL(0xE)=0xEE.
+   *  fontId/colors par window (défaut = MOVE_NAME/MOVE_TYPE : FONT_NARROW +
+   *  [bg=DYN_5(14), fg=DYN_4(13), shadow=DYN_6(15)] ; les windows PP passent
+   *  FONT_NORMAL pour PP_REMAINING + couleurs PP [14, 12, 11]). */
+  const _printToWindow = (
+    winId: number, text: string,
+    fontId: number = 7 /* FONT_NARROW */, colors: readonly number[] = [14, 13, 15],
+  ): void => {
     if (winId < 0) return;
-    // 1:1 décomp move windows (paletteNum 5) : fillValue=PIXEL_FILL(0xE)=0xEE,
-    // couleurs [bg=DYN_5(14), fg=DYN_4(13), shadow=DYN_6(15)].
     FillWindowPixelBuffer(winId, 0xEE);
-    AddTextPrinterParameterized3(winId, 7 /* FONT_NARROW */, 0, 1, [14, 13, 15], 255, text);
+    AddTextPrinterParameterized3(winId, fontId, 0, 1, colors, 255, text);
     CopyWindowToVram(winId, 2);
   };
 
@@ -822,25 +827,30 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     for (let i = 0; i < 4; i++) {
       const mv = moves[i];
       const name = mv ? mv.nameFr.toUpperCase() : '-';
-      _printToWindow(wins[i], name);
+      // 1:1 décomp sTextOnWindowsInfo_Normal[B_WIN_MOVE_NAME_*].fontId = FONT_NARROW
+      // (battle_message.c:1513). Pas de défaut : on passe explicitement 7.
+      _printToWindow(wins[i], name, 7 /* FONT_NARROW */);
     }
     for (let p = 0; p < 4; p++) {
       _drawCursorTile(9 * (p & 1) + 1, 55 + (p & 2), p === moveMenuCursor);
     }
   };
 
-  /** 1:1 décomp MoveSelectionDisplayPpString (= "PP" label fixed). */
+  /** 1:1 décomp MoveSelectionDisplayPpString (= "PP" label). B_WIN_PP : FONT_NARROW,
+   *  couleurs [bg=DYN_5(14), fg=DYN_3(12), shadow=DYN_2(11)]. */
   const refreshMovePpLabel = (): void => {
-    _printToWindow(movePpWinId, _MOVE_INTERFACE_PP_LABEL);
+    _printToWindow(movePpWinId, _MOVE_INTERFACE_PP_LABEL, 7 /* FONT_NARROW */, [14, 12, 11]);
   };
 
-  /** 1:1 décomp MoveSelectionDisplayPpNumber (= currentPp/maxPp). */
+  /** 1:1 décomp MoveSelectionDisplayPpNumber (= currentPp/maxPp). B_WIN_PP_REMAINING :
+   *  FONT_NORMAL (≠ les autres windows move), couleurs [bg=DYN_5(14), fg=DYN_3(12),
+   *  shadow=DYN_2(11)]. */
   const refreshMovePpNumber = (): void => {
     if (!playerMon) return;
     const mv = playerMon.moves[moveMenuCursor];
     const cur = mv ? mv.pp : 0;
     const max = mv ? mv.ppMax : 0;
-    _printToWindow(movePpRemainingWinId, `${String(cur).padStart(2, ' ')}/${String(max).padStart(2, ' ')}`);
+    _printToWindow(movePpRemainingWinId, `${String(cur).padStart(2, ' ')}/${String(max).padStart(2, ' ')}`, 1 /* FONT_NORMAL */, [14, 12, 11]);
   };
 
   /** 1:1 décomp MoveSelectionDisplayMoveType (= "TYPE/<TypeName>"). */
@@ -854,7 +864,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // '_')` donnait MOVE_QUICKATTACK (introuvable) → type affiché "???".
     const moveData = getMove(moveDexIdToEnum(mv.id));
     const typeFr = _typeNameFr(moveData?.type);
-    _printToWindow(moveTypeWinId, _MOVE_INTERFACE_TYPE_LABEL + typeFr);
+    // 1:1 décomp MoveSelectionDisplayMoveType : "TYPE/" (label, font window NARROW)
+    // + EXT_CTRL_CODE_FONT FONT_NORMAL + nom du type (en FONT_NORMAL). Base = NARROW
+    // pour le label "TYPE/" ; {FONT NORMAL} bascule le glyph-set pour le nom du type.
+    _printToWindow(moveTypeWinId, `${_MOVE_INTERFACE_TYPE_LABEL}{FONT NORMAL}${typeFr}`, 7 /* FONT_NARROW base */, [14, 13, 15]);
   };
 
   /** Refresh tout le move menu (= cursor + names + PP + type). */
@@ -2577,7 +2590,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 10: /* B_WIN_MOVE_TYPE */ localWinId = moveTypeWinId; break;
     }
     if (localWinId < 0) return;  // window pas allouée encore
-    _printToWindow(localWinId, text);
+    // 1:1 décomp BattlePutTextOnWindow (battle_message.c:3035-3108) : font / x / y /
+    // letterSpacing / lineSpacing / fgColor / bgColor / shadowColor / fillValue / speed
+    // sont LUS PAR FENÊTRE depuis sTextOnWindowsInfo_Normal[windowId] — PAS des
+    // défauts globaux. C'est ce qui distingue B_WIN_PP_REMAINING (FONT_NORMAL, x=2,
+    // couleurs PP) des labels B_WIN_PP / B_WIN_MOVE_* (FONT_NARROW). colorArray
+    // d'AddTextPrinterParameterized3 = [bg, fg, shadow].
+    const info = sTextOnWindowsInfo_Normal[windowId];
+    FillWindowPixelBuffer(localWinId, info.fillValue);
+    AddTextPrinterParameterized3(
+      localWinId, info.fontId, info.x, info.y,
+      [info.bgColor, info.fgColor, info.shadowColor], info.speed, text,
+    );
+    CopyWindowToVram(localWinId, 2);
   };
 
   /** R2 Controller IPC bridge : set action cursor + refresh menu. */

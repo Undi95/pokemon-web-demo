@@ -216,6 +216,9 @@ export interface TextPrinter {
   // Données glyph
   glyphData: number[][];   // [256][128] depuis latfont.json
   glyphWidths: Uint8Array; // [256] depuis font-widths.json
+  /** 1:1 décomp EXT_CTRL_CODE_FONT : switch glyph-set mid-string ({FONT NORMAL}
+   *  dans "TYPE/"). Résout glyphData+widths par fontId (= _resolveFont du text-system). */
+  resolveFont?: (fontId: number) => { glyphData: number[][]; glyphWidths: Uint8Array };
 
   // Down arrow asset (reusable)
   downArrowPixels?: number[][]; // rows of cols, idx 0-3 (depuis down_arrow.json)
@@ -461,13 +464,21 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
         // les naming screen keyboard strings perdaient TOUS leurs CLEAR codes →
         // lettres collées (= bug visuel ABCDEFGH crammed in left half).
         // Fix : étendre regex à tous les ctrl codes valides.
-        const m = inner.match(/^(COLOR|SHADOW|HIGHLIGHT|PAUSE|CLEAR_TO|CLEAR|SKIP|MIN_LETTER_SPACING)\s+(\S+)$/);
+        const m = inner.match(/^(COLOR|SHADOW|HIGHLIGHT|PAUSE|CLEAR_TO|CLEAR|SKIP|MIN_LETTER_SPACING|FONT)\s+(\S+)$/);
         if (m) {
           const cmd = m[1];
           const param = m[2];
           let subCode: number | null = null;
           let value: number | null = null;
-          if (cmd === 'COLOR') { subCode = EXT_CTRL_CODE_COLOR; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
+          // 1:1 décomp EXT_CTRL_CODE_FONT (0x06) : switch font mid-string (= move
+          // interface "TYPE/"{FONT NORMAL}<type>). Notre engine a 1 seul glyph-set,
+          // donc ça ne change que le letterSpacing du font (cf. render handler).
+          if (cmd === 'FONT') {
+            subCode = EXT_CTRL_CODE_FONT;
+            const fontMap: Record<string, number> = { SMALL: 0, NORMAL: 1, SHORT: 2, NARROW: 7, SMALL_NARROW: 8, BOLD: 9 };
+            value = fontMap[param] ?? parseInt(param, 10);
+          }
+          else if (cmd === 'COLOR') { subCode = EXT_CTRL_CODE_COLOR; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
           else if (cmd === 'SHADOW') { subCode = EXT_CTRL_CODE_SHADOW; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
           else if (cmd === 'HIGHLIGHT') { subCode = EXT_CTRL_CODE_HIGHLIGHT; value = (TEXT_COLOR as Record<string, number>)[param] ?? null; }
           else if (cmd === 'PAUSE') { subCode = EXT_CTRL_CODE_PAUSE; value = parseInt(param, 10); }
@@ -515,6 +526,8 @@ export interface AddTextPrinterOpts {
   encodedString: Uint8Array;
   glyphData: number[][];
   glyphWidths: Uint8Array;
+  /** Switch glyph-set mid-string pour {FONT N} (1:1 EXT_CTRL_CODE_FONT). */
+  resolveFont?: (fontId: number) => { glyphData: number[][]; glyphWidths: Uint8Array };
   x?: number;
   y?: number;
   fgColor?: number;
@@ -592,6 +605,7 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     hasPrintBeenSpedUp: false,
     glyphData: opts.glyphData,
     glyphWidths: opts.glyphWidths,
+    resolveFont: opts.resolveFont,
     downArrowPixels: opts.downArrowPixels,
     onCharRendered: opts.onCharRendered,
   };
@@ -767,6 +781,20 @@ export function runTextPrinter(printer: TextPrinter): number {
       if (subCode === EXT_CTRL_CODE_MIN_LETTER_SPACING) {
         const n = printer.encodedString[printer.currentChar + 2] ?? 0;
         printer.letterSpacing = n;
+        printer.currentChar += 3;
+        continue;
+      }
+      // FONT : switch glyph-set mid-string (1:1 décomp EXT_CTRL_CODE_FONT, 3 bytes).
+      // Utilisé par MoveSelectionDisplayMoveType : "TYPE/"{FONT NORMAL}<type> →
+      // le label "TYPE/" reste dans le font de la window (NARROW), le nom du type
+      // passe en FONT_NORMAL. Notre engine a des glyph-sets séparés par font.
+      if (subCode === EXT_CTRL_CODE_FONT) {
+        const fontId = printer.encodedString[printer.currentChar + 2] ?? 1;
+        if (printer.resolveFont) {
+          const r = printer.resolveFont(fontId);
+          printer.glyphData = r.glyphData;
+          printer.glyphWidths = r.glyphWidths;
+        }
         printer.currentChar += 3;
         continue;
       }

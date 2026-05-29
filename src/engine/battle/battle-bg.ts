@@ -39,6 +39,14 @@ import { DeactivateAllTextPrinters } from '../ui/gba-text-system';
 // retapé main (règle feedback-no-hardcoded-decomp-values).
 import { gBattleBgTemplates as _autoBattleBgTemplates } from '../decomp-data/src/battle_bg-data';
 
+/** 1:1 décomp `gPPTextPalette` (graphics/battle_interface/text_pp.pal, 16 u16).
+ *  Const ROM dans le décomp ; ici chargé une fois pendant le setup BG combat
+ *  (loadBattleTextboxAndBackground) car `SetPpNumbersPaletteInMoveSelection`
+ *  (battle_message.c:3110) le lit pour recolorer slot 5 entries 11/12 selon
+ *  l'état PP courant. Exposé via getter pour battle-controller-player.ts. */
+let _gPPTextPalette: Uint16Array | null = null;
+export function getPPTextPalette(): Uint16Array | null { return _gPPTextPalette; }
+
 /** 1:1 décomp battle terrain tiles loader avec 3 sub-palettes support.
  *
  *  Les battle terrains GBA utilisent **3 sub-palettes 16-color** (= 48 colors
@@ -396,6 +404,9 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   // l'utilisent pour fg=DYN_4/bg=DYN_5/shadow=DYN_6.
   const textPal5 = await loadGbaPal(`${'/decomp/em/battle_interface'}/text.pal`);
   LoadPalette(textPal5, 5 * 16, 32);
+  // 1:1 décomp gPPTextPalette (text_pp.pal) : préchargé pour
+  // SetPpNumbersPaletteInMoveSelection (recolore slot 5 entries 11/12 selon PP).
+  _gPPTextPalette = await loadGbaPal(`${'/decomp/em/battle_interface'}/text_pp.pal`);
   // BG3 terrain.
   await drawMainBattleBackground(env);
 }

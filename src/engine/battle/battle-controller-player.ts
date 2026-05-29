@@ -99,6 +99,8 @@ import { gBattlerPartyIndexes } from './state';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
 } from './battle-hp-bar';
+import { LoadPalette, BG_PLTT_ID } from '../system/decomp-globals';
+import { getPPTextPalette } from './battle-bg';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -475,7 +477,11 @@ function MoveSelectionDisplayMoveType(): void {
   // 1:1 décomp : "TYPE/" + typeName du move courant via gBattleMoves[move].type.
   const move = moveInfo.moves[cur];
   const moveType = _getMoveType(move);
-  BattlePutTextOnWindow(`TYPE/${_getTypeName(moveType)}`, B_WIN_MOVE_TYPE);
+  // 1:1 décomp MoveSelectionDisplayMoveType (battle_controller_player.c:1496-1508) :
+  // "TYPE/" (label, rendu dans le font de la fenêtre B_WIN_MOVE_TYPE = FONT_NARROW)
+  // PUIS EXT_CTRL_CODE_FONT + FONT_NORMAL avant le nom du type → le type lui-même
+  // passe en FONT_NORMAL. {FONT NORMAL} = notre encodage de ces 3 bytes.
+  BattlePutTextOnWindow(`TYPE/{FONT NORMAL}${_getTypeName(moveType)}`, B_WIN_MOVE_TYPE);
 }
 
 /** 1:1 décomp `gBattleMoves[move].type`. */
@@ -488,10 +494,37 @@ function _getMoveType(move: number): number {
   return 0;
 }
 
-/** 1:1 décomp `SetPpNumbersPaletteInMoveSelection()` (battle_controller_player.c).
- *  Dette R3 : palette color PP number selon current/max ratio (vert/orange/rouge). */
+/** 1:1 décomp `GetCurrentPpToMaxPpState` (battle_message.c:3124-3155). Retourne
+ *  0..3 = sélecteur de paire de couleurs dans gPPTextPalette selon le ratio
+ *  currentPp/maxPp (3 = plein, 1/2 = bas/vide). */
+function GetCurrentPpToMaxPpState(currentPp: number, maxPp: number): number {
+  if (maxPp === currentPp) return 3;
+  else if (maxPp <= 2) return currentPp > 1 ? 3 : 2 - currentPp;
+  else if (maxPp <= 7) return currentPp > 2 ? 3 : 2 - currentPp;
+  else {
+    if (currentPp === 0) return 2;
+    if (currentPp <= Math.floor(maxPp / 4)) return 1;
+    if (currentPp > Math.floor(maxPp / 2)) return 3;
+  }
+  return 0;
+}
+
+/** 1:1 décomp `SetPpNumbersPaletteInMoveSelection()` (battle_message.c:3110-3122).
+ *  Recolore le slot palette BG 5 — entry 12 (fg = TEXT_DYNAMIC_COLOR_3) et entry
+ *  11 (shadow = TEXT_DYNAMIC_COLOR_2) — depuis gPPTextPalette[var*2 + {0,1}] selon
+ *  l'état PP du move sous le curseur. Sans ça les chiffres PP gardaient les
+ *  couleurs par défaut du slot 5 (= bug couleur PP signalé user). */
 function _SetPpNumbersPaletteInMoveSelection(): void {
-  // Dette R3 : palette PP number color cascade.
+  const palPtr = getPPTextPalette();
+  if (!palPtr) return;  // gPPTextPalette pas encore préchargé (hors setup combat)
+  const moveInfo = _readChooseMoveStruct(gActiveBattler);
+  const cur = gMoveSelectionCursor[gActiveBattler];
+  const v = GetCurrentPpToMaxPpState(moveInfo.currentPp[cur], moveInfo.maxPp[cur]);
+  // 1:1 décomp : gPlttBuffer[BG_PLTT_ID(5)+12] = palPtr[v*2+0] ;
+  //              gPlttBuffer[BG_PLTT_ID(5)+11] = palPtr[v*2+1].
+  // entries 11 & 12 contiguës → un LoadPalette (src[0]→11, src[1]→12) qui écrit
+  // gPlttBufferUnfaded + Faded (≡ le CpuCopy16 unfaded→faded du décomp).
+  LoadPalette(new Uint16Array([palPtr[v * 2 + 1], palPtr[v * 2 + 0]]), BG_PLTT_ID(5) + 11, 4);
 }
 
 /** 1:1 décomp `InitMoveSelectionsVarsAndStrings()` (2643-2651). Setup move UI. */

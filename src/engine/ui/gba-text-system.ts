@@ -279,6 +279,7 @@ function _addTextPrinterParameterizedCore(
     encodedString: encoded,
     glyphData: fnt.glyphData,
     glyphWidths: fnt.glyphWidths,
+    resolveFont: _resolveFont,  // {FONT N} mid-string switch (1:1 EXT_CTRL_CODE_FONT)
     x: left,
     y: top,
     // 1:1 décomp menu.c:1931-1933 : `color` array layout = [bgColor=color[0],
