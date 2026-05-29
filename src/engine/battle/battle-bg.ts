@@ -32,7 +32,6 @@ import { rgba8ToRgb15 } from '../gba/types';
 import {
   InitBgsFromTemplates, ResetBgsAndClearDma3BusyFlags, InitWindows,
   GetWindowAttribute, WINDOW_BG, type BgTemplate,
-  LoadMessageBoxGfx, DLG_WINDOW_PALETTE_NUM,
 } from '../ui/gba-window-system';
 import { getBattleWindowTemplates, B_WIN_ACTION_MENU } from './battle-windows';
 import { DeactivateAllTextPrinters } from '../ui/gba-text-system';
@@ -374,9 +373,9 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   configureBattleBgs();
   // RB1 : BG0 = 64-tall (screenSize=2) + mapBase=24, 1:1 `gBattleBgTemplates[0]`.
   // Le textbox graphic est un tilemap 32×64 (textbox_map.bin = 4096 bytes) :
-  // MSG box @ rows 15-18 (visible @ scroll BG0_Y=0), ACTION @ 35-38, MOVE @ 55-58.
-  // On charge le vrai graphisme (box verte/bord rouge) ; les menus custom (frame
-  // beige 0x214) restent dessinés par-dessus au même endroit écran (scroll=0).
+  // MSG box @ rows 15-18 (visible @ scroll BG0_Y=0), ACTION @ 35-38 (scroll=160),
+  // MOVE @ 55-58 (scroll=320). Le scroll gBattle_BG0_Y révèle le bon groupe au bas
+  // de l'écran ; les windows B_WIN_* posent juste le texte dans ces boxes.
   const bg0 = rt.gba.bg(0).config;
   bg0.charBaseIndex = 0; bg0.mapBaseIndex = 24; bg0.screenSize = 2;
   bg0.priority = 0; bg0.visible = true; bg0.hofs = 0; bg0.vofs = 0;
@@ -388,17 +387,15 @@ export async function loadBattleTextboxAndBackground(env: number = BATTLE_ENVIRO
   // Les windows (B_WIN_*) posent le TEXTE dans ces boxes ; le scroll révèle le bon
   // groupe au même endroit écran (= bas). 1:1 décomp gBattle_BG0_Y.
   await loadBattleTextbox();
-  // 1:1 LoadBattleMenuWindowGfx : cadre user (1.png = rouge/bleu) → tiles 0x12/0x22
-  // + palette slot 1. Les boxes menu/move du graphisme textbox référencent ces tiles
-  // pour leur bordure (sinon = bordure grise vide).
+  // 1:1 LoadBattleMenuWindowGfx : cadre user (optionsWindowFrameType → (type+1).png)
+  // → tiles 0x12/0x22 + palette slot 1. Les boxes menu/move du graphisme textbox
+  // référencent ces tiles pour leur bordure. Défaut type 0 = simple.
   await loadBattleStdFrame();
   // Palette texte menu/move (= gBattleWindowTextPalette → BG_PLTT_ID(5), 1:1 décomp
   // LoadBattleMenuWindowGfx ll.407). Les windows ACTION_MENU/MOVE_* (paletteNum=5)
   // l'utilisent pour fg=DYN_4/bg=DYN_5/shadow=DYN_6.
   const textPal5 = await loadGbaPal(`${'/decomp/em/battle_interface'}/text.pal`);
   LoadPalette(textPal5, 5 * 16, 32);
-  // Palette message box (slot 15) — gardée pour compat field-message-box résiduel.
-  LoadMessageBoxGfx(0, 0x220, DLG_WINDOW_PALETTE_NUM * 16);
   // BG3 terrain.
   await drawMainBattleBackground(env);
 }
