@@ -980,6 +980,18 @@ export class TestOverworldScene extends Phaser.Scene {
       // re-crée juste les sprites OAM (= ResetSpriteData a clear gSprites +
       // OAMs). gObjectEvents memory (currentCoords/facing/etc.) preservés
       // depuis avant le bag open → MOM reste à sa position post-script.
+      //
+      // CRITIQUE : SpawnObjectEventsOnReturnToField CRÉE de nouveaux sprites OAM
+      // (CreateSprite + reassign npc.spriteId) en SUPPOSANT que les anciens ont
+      // été clearés (= ResetSpriteData dans le décomp). Notre port skippait ce
+      // clear pour returnToField → les ANCIENS sprites NPC (ré-affichés par le
+      // stash restore post-combat) restaient inUse → DOUBLONS qui s'accumulent à
+      // chaque combat (user-flag 2026-05-29 "duplication des PNJ à chaque combat").
+      // Fix 1:1 : destroyAllNpcSprites détruit les sprites + libère les tiles +
+      // reset npc.spriteId=-1, MAIS préserve gObjectEvents data (npc.active/
+      // currentCoords). Équivalent du ResetSpriteData décomp, scoped aux NPCs
+      // (player géré par DestroyPlayerAvatar, sprites combat par battle cleanup).
+      destroyAllNpcSprites(this.rt);
       await SpawnObjectEventsOnReturnToField(this.rt);
     }
 
