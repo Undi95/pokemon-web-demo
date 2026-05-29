@@ -163,6 +163,14 @@ let _assetsLoaded = false;
 // OBJ pal HEALTHBOX/HEALTHBAR sont effacées (battle-init/transition) → healthbox noir.
 let _hbPalette: Uint16Array | null = null;
 let _hbarPalette: Uint16Array | null = null;
+// Cache des tiles box healthbox (player/opp). Re-blittées à CHAQUE combat (cf.
+// ensureHealthboxAssets cache-hit) : le battle-init wipe la VRAM + l'allocateur
+// OBJ se reset au restore du champ entre combats → la région VRAM healthbox est
+// écrasée par les tiles NPC → healthbox CORROMPUE dès le 2e combat consécutif
+// (user-flag 2026-05-29 : "healthbox garbled combat 2+"). Cache hit ré-applique
+// palette + re-blit ces tiles pour restaurer la région.
+let _hbPlayerTiles: Uint8Array | null = null;
+let _hbOppTiles: Uint8Array | null = null;
 
 // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358-370) cache pour les
 // 3 tiers de couleur HP bar. Chaque tier = 9 tiles (= 0..8 pixels remplis).
@@ -256,13 +264,34 @@ export async function ensureHealthboxAssets(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   if (_assetsLoaded) {
-    // Cache hit : les tiles OBJ VRAM survivent, MAIS les palettes OBJ healthbox
-    // (HEALTHBOX/HEALTHBAR slots) peuvent avoir été remises à zéro par le
-    // battle-init (fade) ou une transition pré-combat → healthbox rendu NOIR en
-    // vrai flow (devtool OK car premier load). On les ré-applique à chaque appel.
+    // Cache hit : on a déjà fetch+converti les PNG (= pas de re-fetch). MAIS contrairement
+    // à l'ancienne hypothèse, la VRAM OBJ NE SURVIT PAS entre combats : le battle-init
+    // wipe la VRAM + l'allocateur OBJ se reset au restore du champ → la région VRAM
+    // healthbox est écrasée par les tiles NPC → healthbox NOIRE (palette) ET CORROMPUE
+    // (tiles) dès le 2e combat consécutif (user-flag 2026-05-29 : "garbled combat 2+").
+    // On ré-applique donc palettes + RE-BLIT les tiles box+hpbar à chaque appel.
     // createBattlerHealthboxSprites() appelle ceci au spawn (= APRÈS le clear init).
     if (_hbPalette) rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
     if (_hbarPalette) rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+    if (_hbPlayerTiles) {
+      rt.gba.objVram.set(_hbPlayerTiles, HEALTHBOX_PLAYER_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, _hbPlayerTiles.length);
+    }
+    if (_hbOppTiles) {
+      rt.gba.objVram.set(_hbOppTiles, HEALTHBOX_OPPONENT_VRAM);
+      MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, _hbOppTiles.length);
+    }
+    if (_hpBarTilesGreen && _hpBarBaseTiles) {
+      const fullGreen = _hpBarTilesGreen.subarray(8 * TILE_BYTES, 9 * TILE_BYTES);
+      for (let i = 2; i < 8; i++) {
+        rt.gba.objVram.set(fullGreen, HPBAR_PLAYER_LEFT_VRAM + i * TILE_BYTES);
+        rt.gba.objVram.set(fullGreen, HPBAR_OPP_LEFT_VRAM + i * TILE_BYTES);
+      }
+      rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_PLAYER_LEFT_VRAM);
+      rt.gba.objVram.set(_hpBarBaseTiles.subarray(1 * TILE_BYTES, 3 * TILE_BYTES), HPBAR_OPP_LEFT_VRAM);
+      MarkObjTilesAllocated(HPBAR_PLAYER_LEFT_VRAM, 8 * TILE_BYTES);
+      MarkObjTilesAllocated(HPBAR_OPP_LEFT_VRAM, 8 * TILE_BYTES);
+    }
     return;
   }
 
@@ -279,6 +308,7 @@ export async function ensureHealthboxAssets(): Promise<void> {
     playerPng.charData, playerPng.widthTiles, playerPng.heightTiles, 8, 8,
   );
   rt.gba.objVram.set(playerTiles, HEALTHBOX_PLAYER_VRAM);
+  _hbPlayerTiles = playerTiles;  // cache pour re-blit cache-hit (cf. ensureHealthboxAssets)
   // 1:1 STRICT bitmap allocator sync : ces tiles healthbox sont hardcodées
   // au début d'OBJ VRAM (= 0x0000..) → si on ne marque pas, AllocSpriteTiles
   // les voit free et les re-attribue (= corruption).
@@ -293,6 +323,7 @@ export async function ensureHealthboxAssets(): Promise<void> {
     oppPng.charData, oppPng.widthTiles, oppPng.heightTiles, 8, 4,
   );
   rt.gba.objVram.set(oppTiles, HEALTHBOX_OPPONENT_VRAM);
+  _hbOppTiles = oppTiles;  // cache pour re-blit cache-hit (cf. ensureHealthboxAssets)
   MarkObjTilesAllocated(HEALTHBOX_OPPONENT_VRAM, oppTiles.length);
 
   // ─── HP bar widget tile data ────────────────────────────────────────────
