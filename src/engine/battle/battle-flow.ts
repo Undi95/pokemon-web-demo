@@ -1071,7 +1071,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  Rollback réversible : `window.__USE_BYTECODE_FOR_DAMAGE__ = false`
    *  OU `localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__','0')` →
    *  chemin legacy MVP. Si l'AI renvoie -1 (indispo) → fallback legacy. */
-  /** Tracks AI flee decision (= Zigzagoon Birch tutorial veut fuir à 1HP). */
+  /** Tracks AI flee decision. Birch tutorial : le Zigzaton fuit quand les PV de
+   *  NOTRE mon (= AI_TARGET) sont ≤ 20% — PAS les siens (1:1 AI_FirstBattle :
+   *  if_hp_equal/less_than AI_TARGET 20 → flee). C'est ce qui empêche la défaite. */
   let _opponentAiWantsToFlee = false;
   const pickOpponentMove = (): number => {
     _opponentAiWantsToFlee = false;
@@ -2212,8 +2214,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'OPPONENT_USES_MOVE': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
         const oppMoveIdx = pickOpponentMove();
-        // K8 + Birch tutorial : si l'AI a décidé de fuir (= AI_FirstBattle
-        // check HP_TARGET <= 20 → flee), wild mon fuit au lieu d'attaquer.
+        // K8 + Birch tutorial : si l'AI a décidé de fuir (= AI_FirstBattle :
+        // PV de NOTRE mon = AI_TARGET ≤ 20% → flee), wild mon fuit au lieu
+        // d'attaquer → empêche la défaite du joueur.
         // 1:1 décomp HandleEndTurn_MonFled : message FR "Le X sauvage a fui !" +
         // outcome = B_OUTCOME_MON_FLED.
         if (_opponentAiWantsToFlee) {
