@@ -280,6 +280,14 @@ export async function loadBattleTextbox(): Promise<void> {
   // → palettes slot 0 + 1 (= 32 entries 0..31).
   LoadPalette(assets.palette0, 0, 32);
   LoadPalette(assets.palette1, 16, 32);
+  // Backdrop combat = couleur d'ombre des boxes (textbox palette index 9 =
+  // #484050), PAS le noir (index 0). La ROM officielle montre #484050 dans les
+  // pixels transparents AUTOUR/ENTRE les boxes menu (= ces pixels tombent sur le
+  // backdrop BG palette[0]). Les données STATIQUES du décomp ont textbox[0]=noir,
+  // donc un mécanisme runtime met le backdrop à cette teinte ; on réplique le
+  // RÉSULTAT visible avec la propre couleur décomp (textbox[9]). Seules les zones
+  // transparentes du combat sont affectées (la scène est couverte par BG3).
+  LoadPalette(new Uint16Array([assets.palette0[9]]), 0, 2);
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge
