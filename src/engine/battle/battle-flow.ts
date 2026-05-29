@@ -784,6 +784,24 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return map[typeStr] ?? typeStr.replace('TYPE_', '');
   };
 
+  /** 1:1 décomp ActionSelection/MoveSelectionCreateCursorAt + DestroyCursorAt :
+   *  dessine le curseur ▶ (2 tiles verticales) DIRECTEMENT en tilemap BG0, séparé
+   *  du texte → le curseur bouge SANS décaler le texte. `active` → ▶ (textbox tiles
+   *  1 haut + 2 bas, palette 0) ; sinon → erase = tile 0x16 pal 1 (= décomp 0x1016,
+   *  = la tile box bg de la position curseur, confirmée par le tilemap). */
+  const _drawCursorTile = (col: number, row: number, active: boolean): void => {
+    const r = getRuntime();
+    if (!r) return;
+    const tm = r.gba.bg(0).tilemap;
+    const idxOf = (rr: number): number => (rr >= 32 ? 1024 : 0) + (rr % 32) * 32 + col;
+    const top = active ? 1 : 0x16;
+    const bot = active ? 2 : 0x16;
+    const pal = active ? 0 : 1;
+    const i0 = idxOf(row), i1 = idxOf(row + 1);
+    if (i0 >= 0 && i0 < tm.length) tm[i0] = (top & 0x3FF) | (pal << 12);
+    if (i1 >= 0 && i1 < tm.length) tm[i1] = (bot & 0x3FF) | (pal << 12);
+  };
+
   /** Helper : print text dans une window avec clear avant. */
   const _printToWindow = (winId: number, text: string): void => {
     if (winId < 0) return;
@@ -794,16 +812,20 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     CopyWindowToVram(winId, 2);
   };
 
-  /** 1:1 décomp MoveSelectionDisplayMoveNames (= 4 noms moves + cursor sur active). */
+  /** 1:1 décomp MoveSelectionDisplayMoveNames + MoveSelectionCreateCursorAt :
+   *  4 noms (SANS ">", positions fixes) + curseur ▶ dessiné séparément en tilemap
+   *  (col 9*(pos&1)+1, row 55+(pos&2)) → bouge sans décaler les noms. */
   const refreshMoveNames = (): void => {
     if (!playerMon) return;
     const moves = playerMon.moves;
     const wins = [moveName1WinId, moveName2WinId, moveName3WinId, moveName4WinId];
     for (let i = 0; i < 4; i++) {
       const mv = moves[i];
-      const cursorMark = i === moveMenuCursor ? '>' : ' ';
       const name = mv ? mv.nameFr.toUpperCase() : '-';
-      _printToWindow(wins[i], cursorMark + name);
+      _printToWindow(wins[i], name);
+    }
+    for (let p = 0; p < 4; p++) {
+      _drawCursorTile(9 * (p & 1) + 1, 55 + (p & 2), p === moveMenuCursor);
     }
   };
 
@@ -955,27 +977,26 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // gText_BattleMenu = "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE"
   // gText_WhatWillPkmnDo = "Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?"
 
-  /** Refresh action menu window with cursor `>` at the active 2x2 cell. */
+  /** Refresh action menu : texte 2x2 FIXE (1:1 gText_BattleMenu avec CLEAR_TO 56)
+   *  + curseur ▶ dessiné séparément en tilemap (ne décale PAS le texte). */
   const refreshActionMenu = (): void => {
     if (actionMenuWindowId < 0) return;
     // 1:1 décomp B_WIN_ACTION_MENU : fillValue=PIXEL_FILL(0xE)=0xEE, couleurs
     // [bg=DYN_5(14), fg=DYN_4(13), shadow=DYN_6(15)] (paletteNum 5 = gBattleWindowTextPalette).
     FillWindowPixelBuffer(actionMenuWindowId, 0xEE);
-    // Layout grille 2x2 :
-    //   row 0 : [>]ATTAQUE   [>]SAC
-    //   row 1 : [>]POKéMON   [>]FUITE
-    // cursor pos : 0=TL, 1=TR, 2=BL, 3=BR. CLEAR_TO 56 → pad ~7 chars.
-    const c = actionMenuCursor;
-    const pad = (s: string, n: number): string => s + ' '.repeat(Math.max(0, n - s.length));
-    const tl = (c === 0 ? '>' : ' ') + 'ATTAQUE';
-    const tr = (c === 1 ? '>' : ' ') + 'SAC';
-    const bl = (c === 2 ? '>' : ' ') + 'POKéMON';
-    const br = (c === 3 ? '>' : ' ') + 'FUITE';
-    const menuText = pad(tl, 9) + tr + '\n' + pad(bl, 9) + br;
+    // 1:1 gText_BattleMenu : "ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE".
+    // PAS de ">" : le curseur est une tile ▶ séparée (cf. _drawCursorTile).
     AddTextPrinterParameterized3(
-      actionMenuWindowId, 1, 0, 1, [14, 13, 15], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
+      actionMenuWindowId, 1, 0, 1, [14, 13, 15], 255 /* TEXT_SKIP_DRAW = sync */,
+      'ATTAQUE{CLEAR_TO 56}SAC\nPOKéMON{CLEAR_TO 56}FUITE',
     );
     CopyWindowToVram(actionMenuWindowId, 2);
+    // 1:1 ActionSelectionCreateCursorAt/DestroyCursorAt : curseur ▶ col 7*(c&1)+16,
+    // row 35+(c&2). Dessiné APRÈS le texte, en tilemap → ne décale pas le texte.
+    const c = actionMenuCursor;
+    for (let p = 0; p < 4; p++) {
+      _drawCursorTile(7 * (p & 1) + 16, 35 + (p & 2), p === c);
+    }
   };
 
   /** Refresh action prompt window with "Que doit faire X?". */
