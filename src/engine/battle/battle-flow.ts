@@ -63,6 +63,12 @@ import { AddTextPrinterParameterized3, IsTextPrinterActive } from '../ui/gba-tex
 import {
   HideFieldMessageBox,
 } from '../field/field-message-box';
+// Combat inline dans GameScene (pas de CB2 swap) → MainCB2_Overworld continue de
+// tourner et TransferTilesetAnimsBuffer re-blit l'anim EAU du tileset general à
+// VRAM byte 0x3600-0x39C0 chaque frame, écrasant la tile 448 (= window action
+// prompt, byte 0x3800) → texte remplacé par des pixels d'eau. On pause l'anim
+// pendant le combat (= émule le CB2 swap décomp), comme starter-choose-flow.
+import { pauseTilesetAnimations, resumeTilesetAnimations } from '../field/tileset-anims';
 // RB2 : message box battle 1:1 — B_WIN_MSG (baseBlock 0x90, sans chevauchement
 // avec le menu action 0x190) + couleurs/font décomp (sTextOnWindowsInfo_Normal).
 import {
@@ -1314,6 +1320,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
           setFieldCameraSuspended(true);
         });
+        // Stoppe l'anim EAU du tileset overworld (TransferTilesetAnimsBuffer re-blit
+        // byte 0x3600+ chaque frame → écrase la tile 448 = window action prompt).
+        pauseTilesetAnimations();
         // User feedback : "fond vers transparent du sac = vide" = entre
         // cleanupScene ChooseStarter et SPAWN_SPRITES battle, l'écran montre
         // OW pendant plusieurs frames. Fix 1:1 décomp `CB2_InitBattle` :
@@ -2421,6 +2430,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
           setFieldCameraSuspended(false);
         });
+        // Relance l'anim EAU du tileset overworld (= retour overworld).
+        resumeTilesetAnimations();
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);
         if (opponentSpriteId >= 0) rt.DestroySprite(opponentSpriteId);
