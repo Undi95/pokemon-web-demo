@@ -1365,6 +1365,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
           setFieldCameraSuspended(true);
         });
+        // Combat inline : MainCB2_Overworld continue de tick UpdateObjectEvents()
+        // chaque frame APRÈS le tick battle (= ScriptContext_RunScript en amont).
+        // UpdateObjectEvents re-sync `sprite.invisible = npc.invisible` (= false
+        // pour Birch + son sac) → ré-affiche les sprites OW par-dessus le combat
+        // (silhouette noire + objet flottant) malgré le stash hide. Le décomp évite
+        // ça via le CB2 swap qui stoppe tout le champ. Notre équivalent 1:1 :
+        // setObjectEventsSuspended(true) (= UpdateObjectEvents early-return). NB :
+        // cleanupScene() du starter flow remet (false) juste avant le combat, donc
+        // le combat doit le re-suspendre lui-même. Réactivé au CLEANUP.
+        void import('../field/object-events').then(({ setObjectEventsSuspended }) => {
+          setObjectEventsSuspended(true);
+        });
         // Stoppe l'anim EAU du tileset overworld (TransferTilesetAnimsBuffer re-blit
         // byte 0x3600+ chaque frame → écrase la tile 448 = window action prompt).
         pauseTilesetAnimations();
@@ -2475,6 +2487,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Équivalent du retour de CB2_InitBattle → CB2_ReturnToField décomp.
         void import('../field/field-camera').then(({ setFieldCameraSuspended }) => {
           setFieldCameraSuspended(false);
+        });
+        // Réactiver UpdateObjectEvents (suspendu au battle INIT). DOIT être (false)
+        // AVANT _restoreOverworldFromMenu (= re-init field + UpdateObjectEvents),
+        // sinon le restore early-return → champ pas re-rendu.
+        void import('../field/object-events').then(({ setObjectEventsSuspended }) => {
+          setObjectEventsSuspended(false);
         });
         // Relance l'anim EAU du tileset overworld (= retour overworld).
         resumeTilesetAnimations();
