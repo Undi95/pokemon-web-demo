@@ -48,7 +48,6 @@
 import {
   AddWindow,
   RemoveWindow,
-  DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame,
   FillWindowPixelBuffer,
   FillWindowPixelRect,
@@ -382,28 +381,30 @@ const MOVE_MENU_WINDOW: WindowTemplate = {
 //   +--------+--------+----+-------+
 //   | MOVE3  | MOVE4  | TYPE/Type  |   (= MOVE_NAME_3/_4/MOVE_TYPE)
 //   +--------+--------+----+-------+
-// Décomp coords adapt : on remappe le tilemapTop=55-57 (= hors-visible BG-scrolled
-// dans GBA) à tilemapTop=15-17 (= zone visible). Width/positions identiques.
+// 1:1 décomp sStandardBattleWindowTemplates : top=55/57 (révélé par scroll
+// gBattle_BG0_Y=320), paletteNum=5 (gBattleWindowTextPalette). baseBlock/left/width
+// = valeurs décomp strictes. Les boxes (4 noms G + PP/type D) viennent du graphisme
+// textbox aux rows 55-58 ; les windows posent le texte dessus (pas de DrawStdFrame).
 const MOVE_NAME_1_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 2, tilemapTop: 15, width: 8, height: 2, paletteNum: 15, baseBlock: 0x300,
+  bg: 0, tilemapLeft: 2, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 0x300,
 };
 const MOVE_NAME_2_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 11, tilemapTop: 15, width: 8, height: 2, paletteNum: 15, baseBlock: 0x310,
+  bg: 0, tilemapLeft: 11, tilemapTop: 55, width: 8, height: 2, paletteNum: 5, baseBlock: 0x310,
 };
 const MOVE_NAME_3_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 2, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x320,
+  bg: 0, tilemapLeft: 2, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 0x320,
 };
 const MOVE_NAME_4_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 11, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x330,
+  bg: 0, tilemapLeft: 11, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 0x330,
 };
 const MOVE_PP_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 21, tilemapTop: 15, width: 4, height: 2, paletteNum: 15, baseBlock: 0x290,
+  bg: 0, tilemapLeft: 21, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 0x290,
 };
 const MOVE_PP_REMAINING_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 25, tilemapTop: 15, width: 4, height: 2, paletteNum: 15, baseBlock: 0x298,
+  bg: 0, tilemapLeft: 25, tilemapTop: 55, width: 4, height: 2, paletteNum: 5, baseBlock: 0x298,
 };
 const MOVE_TYPE_WINDOW: WindowTemplate = {
-  bg: 0, tilemapLeft: 21, tilemapTop: 17, width: 8, height: 2, paletteNum: 15, baseBlock: 0x2A0,
+  bg: 0, tilemapLeft: 21, tilemapTop: 57, width: 8, height: 2, paletteNum: 5, baseBlock: 0x2A0,
 };
 
 // ─── Battle state ────────────────────────────────────────────────────────────
@@ -786,8 +787,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   /** Helper : print text dans une window avec clear avant. */
   const _printToWindow = (winId: number, text: string): void => {
     if (winId < 0) return;
-    FillWindowPixelBuffer(winId, 0x11);
-    AddTextPrinterParameterized3(winId, 1, 0, 1, [1, 2, 3], 255, text);
+    // 1:1 décomp move windows (paletteNum 5) : fillValue=PIXEL_FILL(0xE)=0xEE,
+    // couleurs [bg=DYN_5(14), fg=DYN_4(13), shadow=DYN_6(15)].
+    FillWindowPixelBuffer(winId, 0xEE);
+    AddTextPrinterParameterized3(winId, 7 /* FONT_NARROW */, 0, 1, [14, 13, 15], 255, text);
     CopyWindowToVram(winId, 2);
   };
 
@@ -850,14 +853,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     if (movePpWinId < 0)           movePpWinId           = AddWindow(MOVE_PP_WINDOW);
     if (movePpRemainingWinId < 0)  movePpRemainingWinId  = AddWindow(MOVE_PP_REMAINING_WINDOW);
     if (moveTypeWinId < 0)         moveTypeWinId         = AddWindow(MOVE_TYPE_WINDOW);
-    // Draw frame autour de chaque window (= 1:1 décomp standard battle frame).
-    DrawStdFrameWithCustomTileAndPalette(moveName1WinId,       true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(moveName2WinId,       true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(moveName3WinId,       true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(moveName4WinId,       true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(movePpWinId,          true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(movePpRemainingWinId, true, 0x214, 14);
-    DrawStdFrameWithCustomTileAndPalette(moveTypeWinId,        true, 0x214, 14);
+    // Pose les entries tilemap (cells rows 55-58 → tiles window). PAS de DrawStdFrame :
+    // le graphisme textbox fournit les boxes move (révélées par scroll BG0_Y=320).
+    PutWindowTilemap(moveName1WinId);
+    PutWindowTilemap(moveName2WinId);
+    PutWindowTilemap(moveName3WinId);
+    PutWindowTilemap(moveName4WinId);
+    PutWindowTilemap(movePpWinId);
+    PutWindowTilemap(movePpRemainingWinId);
+    PutWindowTilemap(moveTypeWinId);
+    // 1:1 décomp gBattle_BG0_Y = DISPLAY_HEIGHT*2(320) : révèle les boxes move.
+    setBg0Scroll(320);
     refreshMoveMenu();
   };
 
@@ -867,17 +873,20 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     refreshMoveMenu();
   };
 
-  /** Close all 7 move menu windows. */
+  /** Close all 7 move menu windows + re-scroll vers la position action/message. */
   const closeMoveMenu = (): void => {
     const wins = [moveName1WinId, moveName2WinId, moveName3WinId, moveName4WinId, movePpWinId, movePpRemainingWinId, moveTypeWinId];
     for (const w of wins) {
       if (w >= 0) {
-        ClearStdWindowAndFrame(w, true);
+        ClearWindowTilemap(w);
+        CopyWindowToVram(w, 3);
         RemoveWindow(w);
       }
     }
     moveName1WinId = moveName2WinId = moveName3WinId = moveName4WinId = -1;
     movePpWinId = movePpRemainingWinId = moveTypeWinId = -1;
+    // Retour position action menu (= 1:1 gBattle_BG0_Y = 160).
+    setBg0Scroll(160);
     // Legacy : si l'ancien MOVE_MENU_WINDOW est encore actif (= fallback path), close.
     if (moveMenuWindowId >= 0) {
       ClearStdWindowAndFrame(moveMenuWindowId, true);
