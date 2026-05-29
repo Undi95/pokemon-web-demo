@@ -158,6 +158,11 @@ const HEALTHBAR_PALETTE_SLOT = 6;
 // ─── Asset loading (idempotent) ─────────────────────────────────────────────
 
 let _assetsLoaded = false;
+// Cache des 2 palettes OBJ healthbox (vues 16-color). Ré-appliquées à CHAQUE
+// combat même sur cache hit (cf. ensureHealthboxAssets) : en vrai flow OW→combat,
+// OBJ pal HEALTHBOX/HEALTHBAR sont effacées (battle-init/transition) → healthbox noir.
+let _hbPalette: Uint16Array | null = null;
+let _hbarPalette: Uint16Array | null = null;
 
 // 1:1 décomp `gHealthboxElementsGfxTable[]` (graphics.c:358-370) cache pour les
 // 3 tiers de couleur HP bar. Chaque tier = 9 tiles (= 0..8 pixels remplis).
@@ -248,9 +253,18 @@ function _rearrangeToMetatileOrder(
  *    - sSpriteSheets_HealthBar[1] = (gBlankGfxCompressed, 0x120, TAG_HEALTHBAR_OPPONENT1_TILE)
  *    - sSpritePalettes_HealthBoxHealthBar = palettes HEALTHBOX + HEALTHBAR */
 export async function ensureHealthboxAssets(): Promise<void> {
-  if (_assetsLoaded) return;
   const rt = getRuntime();
   if (!rt) return;
+  if (_assetsLoaded) {
+    // Cache hit : les tiles OBJ VRAM survivent, MAIS les palettes OBJ healthbox
+    // (HEALTHBOX/HEALTHBAR slots) peuvent avoir été remises à zéro par le
+    // battle-init (fade) ou une transition pré-combat → healthbox rendu NOIR en
+    // vrai flow (devtool OK car premier load). On les ré-applique à chaque appel.
+    // createBattlerHealthboxSprites() appelle ceci au spawn (= APRÈS le clear init).
+    if (_hbPalette) rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
+    if (_hbarPalette) rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+    return;
+  }
 
   // ─── Player healthbox tile data ─────────────────────────────────────────
   // PNG 64×128 = 8w × 16t tiles. `-mwidth 8 -mheight 8` → 2 metatiles 8×8.
@@ -352,12 +366,14 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // HEALTHBOX palette = ball_status_bar.png .gbapal (= 16 colors).
   const ballStatusBarPlte = await extractPngPlte(BALL_STATUS_BAR_PNG);
   if (!ballStatusBarPlte) throw new Error(`PLTE missing: ${BALL_STATUS_BAR_PNG}`);
-  rt.LoadPaletteObj(ballStatusBarPlte.subarray(0, 16), 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
+  _hbPalette = ballStatusBarPlte.subarray(0, 16);
+  rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
 
   // HEALTHBAR palette = ball_display.png .gbapal.
   const ballDisplayPlte = await extractPngPlte(BALL_DISPLAY_PNG);
   if (!ballDisplayPlte) throw new Error(`PLTE missing: ${BALL_DISPLAY_PNG}`);
-  rt.LoadPaletteObj(ballDisplayPlte.subarray(0, 16), 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+  _hbarPalette = ballDisplayPlte.subarray(0, 16);
+  rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
 
   _assetsLoaded = true;
 }
