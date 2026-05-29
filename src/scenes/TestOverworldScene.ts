@@ -677,8 +677,27 @@ export class TestOverworldScene extends Phaser.Scene {
         // SpawnObjectEventsOnReturnToField au lieu de TrySpawnObjectEvents.
         // returnToField=true preserve gObjectEvents (= currentCoords post-
         // script comme MOM-à-chair après PetalburgGymReport).
+        // 1:1 décomp : le retour au champ PRÉSERVE l'object event player (currentCoords).
+        // Notre loadAndInitMap DÉTRUIT+RE-SPAWN le player à gSaveBlock1Ptr.pos (= focus
+        // caméra), ce qui PERD un décalage player≠caméra créé par un setobjectxy scripté
+        // (ex tutorial Birch : player obj=(6,13), pos=trigger du sac). On snapshot les
+        // coords de l'object event player AVANT et on les ré-applique APRÈS, SANS toucher
+        // pos → le player reste décentré (caméra figée, 1:1 décomp). No-op en jeu normal
+        // (player obj == pos → ré-application identique). Le warp suivant re-synchronise.
+        const _peBefore = gObjectEvents[gPlayerAvatar.objectEventId];
+        const _peX = (_peBefore && _peBefore.active) ? _peBefore.currentCoordsX : null;
+        const _peY = (_peBefore && _peBefore.active) ? _peBefore.currentCoordsY : null;
         await self.loadAndInitMap(gMapHeader.id, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection(), false, true);
         ScriptContext_Restore(_scriptSnap);
+        if (_peX !== null && _peY !== null) {
+          const _peAfter = gObjectEvents[gPlayerAvatar.objectEventId];
+          if (_peAfter && _peAfter.active) {
+            _peAfter.currentCoordsX = _peX;
+            _peAfter.currentCoordsY = _peY;
+            _peAfter.previousCoordsX = _peX;
+            _peAfter.previousCoordsY = _peY;
+          }
+        }
         // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
         // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
         // dans BG0 mapBase 31 (= bg=0, baseBlock=0x36, 26×14 tiles). Au close,

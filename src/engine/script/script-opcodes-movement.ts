@@ -32,7 +32,6 @@
 import { registerOpcode, getOpcodeHandler, SetupNativeScript } from './script-runtime';
 import { VarGet, FlagSet, FlagClear } from './script-vars';
 import { gObjectEvents, TrySpawnObjectEvent, SetObjectEventSpritePosToMapCoords } from '../field/object-events';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader, MAP_OFFSET } from '../field/map-loader';
 import { GetCurrentMap, SetObjEventTemplateCoords } from '../save/load_save';
 import { getRuntime } from '../system/decomp-globals';
@@ -70,20 +69,13 @@ registerOpcode('setobjectxy', (_ctx, args) => {
     npc.previousCoordsX = x + MAP_OFFSET;
     npc.previousCoordsY = y + MAP_OFFSET;
     SetObjectEventSpritePosToMapCoords(npc, x, y);
-    // Architecture web : gSaveBlock1Ptr.pos est la source UNIQUE de la position
-    // player (caméra + collision isPlayerAt + re-spawn return-to-field via
-    // InitPlayerAvatar). Le décomp garde pos et l'object event séparés (setobjectxy
-    // ne touche pas pos ; le return-to-field PRÉSERVE l'object event), mais on a
-    // unifié sur pos (CHANTIER-OW source unique). Donc un setobjectxy ciblant le
-    // PLAYER doit AUSSI mettre pos à jour, sinon pos reste stale → post-combat
-    // InitPlayerAvatar(pos) re-spawn le player à l'ancienne pos (bug Birch tutorial :
-    // setobjectxy LOCALID_PLAYER, 6, 13 puis combat → player re-spawn au lieu de
-    // déclenchement du sac au lieu de (6,13) devant le prof). La caméra se re-sync
-    // au prochain frame stable (MainCB2_Overworld défensif cam≠pos → DrawWholeMapView).
-    if (npc.isPlayer) {
-      gSaveBlock1Ptr.pos.x = x;
-      gSaveBlock1Ptr.pos.y = y;
-    }
+    // 1:1 STRICT décomp `ScrCmd_setobjectxy` → `TryMoveObjectEventToMapCoords` →
+    // `MoveObjectEventToMapCoords` : déplace SEULEMENT l'object event, JAMAIS
+    // gSaveBlock1Ptr->pos (= caméra/focus). Donc setobjectxy LOCALID_PLAYER bouge
+    // le sprite player mais la caméra reste où elle était (cf. tutorial Birch :
+    // player tp en (6,13) sous fadescreen, caméra figée sur le point de
+    // déclenchement → player rendu décentré, géré par updateSpriteFrame). pos est
+    // re-synchronisé au prochain warp (= warp labo après le dialogue).
   }
   return false;
 });
