@@ -414,9 +414,10 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     status: null,
     currentExp,
     growthRate,
-    // 1:1 décomp CreateBoxMon : SetBoxMonData(MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].friendship)
-    // = bonheur de base de l'espèce. ⚠️ DETTE : species-info.json a friendship=0 (non extrait) →
-    // `|| 70` stopgap (défaut commun) jusqu'à extraction (légendaires=35, etc. seront alors 1:1).
+    // 1:1 décomp CreateBoxMon : SetBoxMonData(MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].friendship).
+    // En Emerald TOUTES les espèces (sauf SPECIES_NONE) = STANDARD_FRIENDSHIP (70) — vérifié
+    // species_info.h (387 entrées, aucune à 35). species-info.json a 0 (macro pas résolue à
+    // l'extraction ; corrigé côté script extract-pokemon-data.mjs) donc `|| 70` = exactement 1:1.
     friendship: (sInfo as { friendship?: number } | undefined)?.friendship || 70,
     personality,
     isShiny,

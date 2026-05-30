@@ -129,7 +129,10 @@ function parseSpeciesInfo() {
       expYield:     parseInt10(parseField(body, 'expYield')),
       genderRatio:  parseField(body, 'genderRatio') ?? 'MON_MALE',
       eggCycles:    parseInt10(parseField(body, 'eggCycles')),
-      friendship:   parseInt10(parseField(body, 'friendship')),
+      // 1:1 #define STANDARD_FRIENDSHIP 70 (constants/pokemon.h) : toutes les espèces
+      // Emerald utilisent cette macro (sauf SPECIES_NONE=0). parseInt10 ne resout pas
+      // la macro -> on la mappe explicitement, sinon valeur numerique litterale.
+      friendship:   (parseField(body, 'friendship') === 'STANDARD_FRIENDSHIP') ? 70 : parseInt10(parseField(body, 'friendship')),
       growthRate:   parseField(body, 'growthRate') ?? 'GROWTH_MEDIUM_FAST',
       itemCommon:   parseField(body, 'itemCommon') ?? 'ITEM_NONE',
       itemRare:     parseField(body, 'itemRare') ?? 'ITEM_NONE',
