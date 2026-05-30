@@ -428,15 +428,18 @@ function _coords(): Record<string, unknown> {
   const slot0 = objs[0];
   if (!pa) return { error: 'no gPlayerAvatar' };
   if (!slot0) return { error: 'no slot 0 (= runtime not ready)' };
-  const paX = pa.x ?? 0;
-  const paY = pa.y ?? 0;
+  // Post R3 : coords LOGIQUES depuis gSaveBlock1Ptr.pos (source unique). pa.x/y
+  // n'existent plus sur le struct gPlayerAvatar → lisait 0 → drift faux-positif.
+  const _pp = _readPlayerPos();
+  const paX = _pp.x ?? 0;
+  const paY = _pp.y ?? 0;
   const expectedSlotX = paX + MAP_OFFSET;
   const expectedSlotY = paY + MAP_OFFSET;
   const slotCurX = (slot0 as { currentCoordsX?: number }).currentCoordsX ?? -1;
   const slotCurY = (slot0 as { currentCoordsY?: number }).currentCoordsY ?? -1;
   const drift = slotCurX !== expectedSlotX || slotCurY !== expectedSlotY;
   return {
-    gPlayerAvatar_LOGICAL: { x: paX, y: paY, facing: _DIR_NAMES[pa.facing ?? 0] },
+    gPlayerAvatar_LOGICAL: { x: paX, y: paY, facing: _DIR_NAMES[_pp.facing ?? 0] },
     slot0_INTERNAL: {
       cur: [slotCurX, slotCurY],
       prev: [(slot0 as { previousCoordsX?: number }).previousCoordsX,
@@ -611,8 +614,11 @@ async function _walk(dir: 'up' | 'down' | 'left' | 'right', steps = 1): Promise<
   if (!pa) return { ok: false, walked: 0, blocked: false, reason: 'no gPlayerAvatar' };
   setHeldKeysOverride(rt, mask);
   let walked = 0;
-  let lastX = pa.x ?? 0;
-  let lastY = pa.y ?? 0;
+  // Post R3 : coords LOGIQUES depuis gSaveBlock1Ptr.pos (pa.x/y n'existent plus,
+  // lisaient 0 → la détection de mouvement échouait → "stuck" faux-positif).
+  const _pp0 = _readPlayerPos();
+  let lastX = _pp0.x ?? 0;
+  let lastY = _pp0.y ?? 0;
   let stuckTicks = 0;
   const tickMs = 25;
   const maxStuckTicks = Math.ceil(800 / tickMs);  // ~800ms de patience avant déclarer bloqué
@@ -620,8 +626,9 @@ async function _walk(dir: 'up' | 'down' | 'left' | 'right', steps = 1): Promise<
   const startMs = performance.now();
   while (walked < steps && performance.now() - startMs < maxTotalMs) {
     await _sleep(tickMs);
-    const curX = pa.x ?? 0;
-    const curY = pa.y ?? 0;
+    const _ppc = _readPlayerPos();
+    const curX = _ppc.x ?? 0;
+    const curY = _ppc.y ?? 0;
     const dx = Math.abs(curX - lastX);
     const dy = Math.abs(curY - lastY);
     if (dx + dy > 0) {
@@ -1022,8 +1029,11 @@ function _map(opts?: { width?: number; height?: number; centerX?: number; center
   const height = opts?.height ?? 11;
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
   if (!pa) return 'no gPlayerAvatar';
-  const cx = opts?.centerX ?? pa.x ?? 0;
-  const cy = opts?.centerY ?? pa.y ?? 0;
+  // Post R3 : centre par défaut sur la position LOGIQUE du player (sb1.pos),
+  // pas pa.x/y (qui n'existent plus → centrait la map sur (0,0)).
+  const _pp = _readPlayerPos();
+  const cx = opts?.centerX ?? _pp.x ?? 0;
+  const cy = opts?.centerY ?? _pp.y ?? 0;
   const collFn = _g<(x: number, y: number) => number>('MapGridGetCollisionAt');
   const behFn = _g<(x: number, y: number) => number>('MapGridGetMetatileBehaviorAt');
   if (!collFn || !behFn) return 'no MapGrid* fns exposed (= map not loaded ?)';
@@ -1039,7 +1049,7 @@ function _map(opts?: { width?: number; height?: number; centerX?: number; center
     const slot0Y = ((slot0 as { currentCoordsY?: number }).currentCoordsY ?? MAP_OFFSET) - MAP_OFFSET;
     overlays.set(`${slot0X},${slot0Y}`, _FACING_SYMBOL[(slot0 as { facingDirection?: number }).facingDirection ?? 0] ?? '@');
   } else {
-    overlays.set(`${pa.x},${pa.y}`, _FACING_SYMBOL[pa.facing ?? 0] ?? '@');
+    overlays.set(`${_pp.x},${_pp.y}`, _FACING_SYMBOL[_pp.facing ?? 0] ?? '@');
   }
   // NPCs at slot 1..N.
   for (let i = 1; i < objs.length; i++) {
@@ -1132,9 +1142,11 @@ function _movement(): Record<string, unknown> {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
   const objs = _g<ObjectEventMovementFields[]>('__gObjectEvents') ?? [];
   const slot0 = objs[0];
+  // Post R3 : coords/facing LOGIQUES depuis sb1.pos (pa.x/y/facing n'existent plus).
+  const _pp = _readPlayerPos();
   const player: Record<string, unknown> = pa ? {
-    x: pa.x, y: pa.y,
-    facing: _DIR_NAMES[pa.facing ?? 0],
+    x: _pp.x, y: _pp.y,
+    facing: _DIR_NAMES[_pp.facing ?? 0],
     stepFramesLeft: pa.stepFramesLeft,
     tileTransitionState: pa.tileTransitionState,
     elevation: pa.currentElevation,
@@ -1362,8 +1374,10 @@ async function _go(targetX: number, targetY: number, opts?: { maxSteps?: number 
 }> {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
   if (!pa) return { ok: false, walked: 0, reason: 'no gPlayerAvatar' };
-  const sx = pa.x ?? 0;
-  const sy = pa.y ?? 0;
+  // Post R3 : départ depuis la position LOGIQUE (sb1.pos), pas pa.x/y (= 0).
+  const _startPp = _readPlayerPos();
+  const sx = _startPp.x ?? 0;
+  const sy = _startPp.y ?? 0;
   if (sx === targetX && sy === targetY) return { ok: true, walked: 0, reason: 'already at target' };
   const path = _findPathAStar(sx, sy, targetX, targetY);
   if (!path) return { ok: false, walked: 0, reason: 'no path (= goal unreachable or collision blocks)' };
@@ -1384,8 +1398,9 @@ async function _go(targetX: number, targetY: number, opts?: { maxSteps?: number 
     }
     walked++;
   }
-  const arrivedX = pa.x ?? 0;
-  const arrivedY = pa.y ?? 0;
+  const _arrPp = _readPlayerPos();
+  const arrivedX = _arrPp.x ?? 0;
+  const arrivedY = _arrPp.y ?? 0;
   const arrived = arrivedX === targetX && arrivedY === targetY;
   return {
     ok: arrived,
@@ -1511,7 +1526,8 @@ const _recorder = {
       intervalId: null,
       lastMask: -1,
       startMap: hdr?.id,
-      startPos: pa ? [pa.x ?? 0, pa.y ?? 0] : undefined,
+      // Post R3 : position LOGIQUE depuis sb1.pos (pa.x/y n'existent plus).
+      startPos: pa ? [_readPlayerPos().x ?? 0, _readPlayerPos().y ?? 0] : undefined,
     };
     const tick = (): void => {
       if (!_recordingState.active) return;
