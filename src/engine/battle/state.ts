@@ -61,7 +61,10 @@ function _makeBlankMon(): BattleMon {
     hpIV: 0, attackIV: 0, defenseIV: 0,
     speedIV: 0, spAttackIV: 0, spDefenseIV: 0,
     isEgg: false, abilityNum: 0,
-    statStages: [0, 0, 0, 0, 0, 0, 0],
+    // 1:1 décomp : NUM_BATTLE_STATS = 8 (HP, ATK, DEF, SPEED, SPATK, SPDEF, ACC, EVASION).
+    // STAT_EVASION = 7 → l'array DOIT avoir 8 slots, sinon statStages[7] = undefined →
+    // NaN dans ChangeStatBuffs (Mimi-Queue/Reflet cassés + corrompt l'accuracy).
+    statStages: [0, 0, 0, 0, 0, 0, 0, 0],
     ability: 0,
     type1: 0, type2: 0,
     pp: [0, 0, 0, 0],

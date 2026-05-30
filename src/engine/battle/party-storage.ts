@@ -451,7 +451,16 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
     const mapped = _STATUS_TO_STATUS1[inst.status] ?? 0;
     mon.status = mapped >>> 0;
   }
-  mon.abilityNum = 0; // 1:1 décomp : ability slot bridge depuis PokemonInstance.abilityNum (= deferred)
+  // 1:1 décomp `CreateBoxMon` (pokemon.c:2297-2300) : abilityNum = personality & 1
+  // UNIQUEMENT si l'espèce a une 2e ability (abilities[1] != ABILITY_NONE) ; sinon 0.
+  // `GetAbilityBySpecies` (pokemon.c:4533) ne fait PAS de fallback → poser slot 1 sur
+  // une espèce mono-ability donnerait ABILITY_NONE. AVANT : codé en dur 0.
+  {
+    const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_');
+    const sinfo = speciesEnum ? getSpeciesInfo(speciesEnum) : null;
+    const has2ndAbility = !!(sinfo && sinfo.abilities[1] && sinfo.abilities[1] !== 'ABILITY_NONE');
+    mon.abilityNum = has2ndAbility ? ((mon.personality & 1) >>> 0) : 0;
+  }
   // 1:1 décomp `CalculateMonStats(mon)` — calculate atk/def/spe/spa/spd/maxHP
   // depuis baseStats + IVs + EVs + level + nature.
   CalculateMonStats(mon);
@@ -830,8 +839,8 @@ export function fillBattleMonFromParty(
   }
   dst.ability = GetAbilityBySpecies(src.species, src.abilityNum);
 
-  // Reset stat stages to base (= 6, neutral). Battle main does 8 entries
-  // (NUM_BATTLE_STATS=6 + accuracy + evasion). Notre struct utilise 7 entries.
+  // Reset stat stages à 6 (neutre). 1:1 décomp NUM_BATTLE_STATS = 8 (HP, ATK, DEF,
+  // SPEED, SPATK, SPDEF, ACC, EVASION) → 8 slots (STAT_EVASION=7 inclus, sinon NaN).
   for (let i = 0; i < dst.statStages.length; i++) {
     dst.statStages[i] = 6;
   }

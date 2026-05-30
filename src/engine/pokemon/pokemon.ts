@@ -295,7 +295,11 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
       ppMax: pp,
     };
   });
-  const ability = opts?.ability ?? (sInfo?.abilities?.[0] || '');
+  // 1:1 décomp `CreateBoxMon` (pokemon.c:2297) : slot d'ability = personality & 1
+  // SEULEMENT si l'espèce a une 2e ability réelle (abilities[1] != NONE) ; sinon slot 0.
+  const _has2ndAbility = !!(sInfo?.abilities?.[1] && sInfo.abilities[1] !== 'ABILITY_NONE');
+  const _abilitySlot = _has2ndAbility ? (personality & 1) : 0;
+  const ability = opts?.ability ?? (sInfo?.abilities?.[_abilitySlot] || '');
   // Session 124 : EXP/growth init via species data + experienceTables.
   const speciesInfo = (() => {
     try {
