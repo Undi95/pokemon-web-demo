@@ -36,7 +36,7 @@ import {
 } from './gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
-import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated } from '../system/sprite';
+import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag } from '../system/sprite';
 import {
   getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
   getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
@@ -912,6 +912,12 @@ function _flushWin(wid: number): void {
 async function _loadMonFrontPic(
   r: NonNullable<ReturnType<typeof getRuntime>>, mon: PokemonInstance,
 ): Promise<void> {
+  // 1:1 fix : LoadSpritePalette (décomp:1591) renvoie le slot existant SANS recharger
+  // les data si le tag existe déjà → en switchant de Pokémon dans le summary, le slot
+  // garde l'ANCIENNE palette (ex JIRACHI affiché avec la palette d'ARCKO ; quitter/
+  // rentrer réparait). On free le tag d'abord → LoadSpritePalette recharge les data du
+  // nouveau mon. No-op au 1er load (tag absent). Le sprite est re-créé via _createMonSprite.
+  FreeSpritePaletteByTag(TAG_MON_PIC_PAL);
   const isEgg = !!mon.isEgg;
   const dexId = isEgg ? 'egg' : mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
   const twoFrame = !isEgg && HasTwoFramesAnimation(mon.speciesEnum);

@@ -337,6 +337,17 @@ export function FreeSpritePaletteByTag(tag: string | number): void {
   sSpritePaletteTags[slot] = TAG_NONE;
 }
 
+/** Réserve un slot de palette OBJ SPÉCIFIQUE (= associe son tag sans charger de
+ *  data). Pas dans le décomp tel quel, mais nécessaire pour les écrans qui chargent
+ *  certaines palettes EN DIRECT (`LoadPaletteObj` vers un bank fixe, ex les icônes
+ *  Pokémon du party screen) et veulent empêcher l'allocateur `LoadSpritePalette`
+ *  de réutiliser ce bank → sinon collision palette. À libérer via
+ *  `FreeSpritePaletteByTag(tag)` au teardown de l'écran. */
+export function ReserveSpritePaletteSlot(slot: number, tag: string | number): void {
+  if (slot < 0 || slot >= 16) return;
+  sSpritePaletteTags[slot] = _tagToU16(tag);
+}
+
 /** 1:1 décomp src/sprite.c:1618-1621 :
  *  ```c
  *  void DoLoadSpritePalette(const u16 *src, u16 paletteOffset) {

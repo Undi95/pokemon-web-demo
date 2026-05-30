@@ -49,7 +49,7 @@ import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from '../system/decomp-constants';
-import { LoadSpritePalette, MarkObjTilesAllocated } from '../system/sprite';
+import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag } from '../system/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
@@ -152,7 +152,13 @@ const PARTY_BG_MAP_BASE = 30;      // BG1 bg.bin
 const PARTY_OVERLAY_MAP_BASE = 28; // BG2 empty
 
 /** OAM offsets. */
-const ICON_OBJ_PAL_BASE = 5;       // palette 5..7 (= per icon pal index)
+const ICON_OBJ_PAL_BASE = 5;       // palette 5..10 (= 1 bank par slot, 6 slots)
+/** Tags pour RÉSERVER les 6 banks d'icônes (ICON_OBJ_PAL_BASE..+5) dans l'allocateur
+ *  de palettes OBJ. Les icônes chargent en DIRECT vers ces banks fixes (LoadPaletteObj)
+ *  sans passer par LoadSpritePalette → l'allocateur les croit libres et pioche dedans
+ *  pour pokeball/status/helditem → collision palette (icônes corrompues). On réserve
+ *  ces banks au case 13 + libère au teardown. */
+const TAG_ICON_PAL_RESERVE = 0x7E10;
 const ICON_OBJ_TILE_OFFSET = 0;    // OBJ VRAM offset 0 = base for icons
 /** 1:1 STRICT décomp `LoadSpritePalette(sPokeballPalette)` : slot dynamique. */
 let _pokeballPalSlot = -1;
@@ -1252,6 +1258,9 @@ async function _spawnIconOams(): Promise<void> {
 
 function _freePartyMenu(): void {
   const rt = getRuntime();
+  // 1:1 fix : libérer les banks de palette OBJ réservés pour les icônes (cf. case 13)
+  // → l'allocateur pourra les réutiliser pour le prochain écran.
+  for (let b = 0; b < 6; b++) FreeSpritePaletteByTag(TAG_ICON_PAL_RESERVE + b);
   const freeOam = (id: number) => {
     if (!rt || id < 0) return;
     const spr = rt.gSprites.get(id);
@@ -2195,6 +2204,13 @@ export function CB2_InitPartyMenu(): void {
       _bounceTaskId = rt.CreateTask(Task_PartyMenu_BounceIcon, 1);
       rt.gMain.state++; break;
     case 13:
+      // 1:1 fix (bug palette icônes party screen) : réserver SYNCHRONEMENT les banks
+      // de palette OBJ des icônes (ICON_OBJ_PAL_BASE..+5) AVANT les LoadSpritePalette
+      // async (pokeball/status/helditem). Les icônes chargent en DIRECT (LoadPaletteObj)
+      // vers ces banks fixes ; sans cette réservation l'allocateur les croit libres et
+      // les pioche pour le pokeball/status (selon l'état OW/sac antérieur) → collision
+      // palette (icônes corrompues, réparées en passant par un summary qui réalloue).
+      for (let b = 0; b < 6; b++) ReserveSpritePaletteSlot(ICON_OBJ_PAL_BASE + b, TAG_ICON_PAL_RESERVE + b);
       // Spawn icon OAMs + cancel button + slot pokeballs async, advance immédiatement.
       void _spawnIconOams();
       // Sequence : _spawnCancelButtonOam load tiles → then _spawnSlotPokeballOams réutilise.
