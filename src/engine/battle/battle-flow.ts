@@ -91,7 +91,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from '../pokemon/pokemon';
+import { createPokemonInstance, calculateExpGain, applyExpAward, getLevelUpMovesAtLevel, makeMoveSlot, type PokemonInstance } from '../pokemon/pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
@@ -442,6 +442,7 @@ type State =
   | 'OPP_FAINTED_TEXT' | 'OPP_FAINTED_WAIT'
   | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT' | 'EXP_BAR_FILL_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
+  | 'LEARN_MOVE_CHECK' | 'LEARN_MOVE_MSG_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
@@ -670,6 +671,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // mons valides). _switchLoad* = tracking du chargement async du nouveau back sprite.
   let _activePlayerSlot = 0;
   let _pendingSwitchSlot = -1;
+  // Lot 3 : moves (enums MOVE_X) appris au level-up courant, à traiter un par un.
+  let _movesToLearn: string[] = [];
   let _switchLoadStarted = false;
   let _switchLoadDone = false;
   let _switchLoadFailed = false;
@@ -2656,14 +2659,46 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'LEVEL_UP_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // 1:1 décomp case 5 : s'il reste de l'exp (= level-up cross), boucle pour
-          // donner le reste (barre re-remplit depuis 0% du nouveau niveau). Sinon
-          // fade-out (= no visual snap).
-          if (_expToGive > 0 && beginExpChunk()) {
-            state = 'EXP_BAR_FILL_WAIT';
+          // 1:1 décomp : après "monte au niveau N", apprentissage des moves du nouveau
+          // niveau (Cmd_handlelearnnewmove). LEARN_MOVE_CHECK gère la file PUIS la
+          // continuation (exp restante / fin). playerMon.level = nouveau niveau ici.
+          _movesToLearn = playerMon ? getLevelUpMovesAtLevel(playerMon.speciesEnum, playerMon.level) : [];
+          state = 'LEARN_MOVE_CHECK';
+        }
+        return false;
+      }
+
+      case 'LEARN_MOVE_CHECK': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        // 1:1 décomp Cmd_handlelearnnewmove : traite chaque move appris. Skip ceux déjà
+        // connus ; si <4 capacités → apprend (message) ; si 4 → message (le choix MANUEL
+        // d'oublier une capacité = polish UI à venir, on garde les 4 actuelles pour l'instant).
+        while (_movesToLearn.length > 0) {
+          const moveEnum = _movesToLearn.shift()!;
+          const slot = makeMoveSlot(moveEnum);
+          if (playerMon.moves.some(m => m.id === slot.id)) continue;   // déjà connu
+          if (playerMon.moves.length < 4) {
+            playerMon.moves.push(slot);
+            showBattleMessage(`${playerMon.nickname} apprend\n${slot.nameFr.toUpperCase()}!`);
           } else {
-            state = 'CLEANUP_FADE_OUT';
+            showBattleMessage(`${playerMon.nickname} veut apprendre\n${slot.nameFr.toUpperCase()}, mais connaît\ndéjà 4 capacités!`);
           }
+          state = 'LEARN_MOVE_MSG_WAIT';
+          return false;
+        }
+        // File vide → continuation 1:1 case 5 (exp restante → fill, sinon fin).
+        if (_expToGive > 0 && beginExpChunk()) {
+          state = 'EXP_BAR_FILL_WAIT';
+        } else {
+          state = 'CLEANUP_FADE_OUT';
+        }
+        return false;
+      }
+
+      case 'LEARN_MOVE_MSG_WAIT': {
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          state = 'LEARN_MOVE_CHECK';
         }
         return false;
       }

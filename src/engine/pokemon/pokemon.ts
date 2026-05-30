@@ -252,6 +252,24 @@ function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
   return ['tackle', 'growl'];
 }
 
+/** 1:1 décomp : moves appris à EXACTEMENT `level` (gLevelUpLearnsets[species] filtré).
+ *  Renvoie les enums MOVE_X. Utilisé par le flow d'apprentissage au level-up. */
+export function getLevelUpMovesAtLevel(speciesEnum: string, level: number): string[] {
+  const dataMod = (globalThis as { __game_data?: {
+    getLevelUpLearnset?: (k: string) => Array<{ level: number; move: string }> | undefined;
+  } }).__game_data;
+  const learnset = dataMod?.getLevelUpLearnset?.(speciesEnum);
+  if (!learnset) return [];
+  return learnset.filter(e => e.level === level && e.level > 0).map(e => e.move);
+}
+
+/** Construit un slot de move (id dexId + nom FR + PP) depuis un enum MOVE_X. */
+export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp: number; ppMax: number } {
+  const id = moveEnumToDexId(moveEnum);
+  const pp = (gameDataGetMove(moveEnum)?.pp ?? 0) || 30;
+  return { id, nameFr: getMoveNameFr(moveEnum) || id, pp, ppMax: pp };
+}
+
 /** Crée une instance Pokémon prête à être ajoutée à la party. */
 export function createPokemonInstance(speciesEnum: string, level: number, opts?: {
   moves?: string[]; nickname?: string; nature?: string; ivs?: StatSpread; evs?: StatSpread;
