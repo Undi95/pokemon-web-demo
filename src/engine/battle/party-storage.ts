@@ -755,6 +755,10 @@ export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonIns
  *  arrays. */
 export function teardownPartyAfterBattle(player: PokemonInstance[]): void {
   for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
+    // Skip les slots de combat VIDES (species 0) : un mon ajouté à l'équipe APRÈS le setup
+    // (= mon capturé via GiveMonToPlayer) n'a pas de copie de combat dans gPlayerParty →
+    // sans ce guard, syncPokemonToInstance écraserait son HP/exp avec une struct vide (0/0).
+    if (gPlayerParty[i].species === 0) continue;
     syncPokemonToInstance(gPlayerParty[i], player[i]);
   }
 }

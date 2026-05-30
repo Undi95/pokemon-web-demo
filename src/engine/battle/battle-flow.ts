@@ -91,7 +91,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, type PokemonInstance } from '../pokemon/pokemon';
+import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, type PokemonInstance } from '../pokemon/pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
@@ -455,6 +455,7 @@ type State =
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
+  | 'BALL_THROW_INIT' | 'BALL_THROW_WAIT' | 'BALL_THROW_RESULT_WAIT'
   | 'PLAYER_SWITCH_LOAD' | 'PLAYER_SWITCH_SPAWN' | 'PLAYER_SWITCH_WAIT'
   | 'SWITCH_IN_EVENTS'
   | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
@@ -628,6 +629,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Phase 1.4 N7 : ball throw outcome stash (= set par tickBallThrow quand done).
   let _ballThrowOutcome: 'caught' | 'escaped' | null = null;
   let _ballThrowMessage: string | null = null;
+  // Capture : HP de combat de l'adversaire snapshot au lancer (pour le préserver sur le
+  // mon capturé — sinon il est remis à 0 par un sync pendant la séquence de capture).
+  let _captureHp = 0;
   let moveMenuWindowId = -1;
   // 1:1 décomp Phase 1.4 N4 : 7 windows pour le move menu (= MOVE_NAME_1..4
   // + PP label + PP digits + MOVE_TYPE display).
@@ -1646,6 +1650,32 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     _offfieldMsgs = msgs;
   };
 
+  /** 1:1 décomp Cmd_handleballthrow (battle_script_commands.c:9985-10056) pour une POKé BALL
+   *  (ballMultiplier=10) : calcule si la capture réussit (odds + shakes). */
+  const computePokeBallWillCatch = (mon: PokemonInstance): boolean => {
+    const dataMod = (globalThis as { __game_data?: {
+      getSpeciesInfo: (k: string) => { catchRate?: number } | undefined;
+    } }).__game_data;
+    const catchRate = dataMod?.getSpeciesInfo(mon.speciesEnum)?.catchRate ?? 45;
+    const ballMultiplier = 10;   // POKé BALL (sBallCatchBonuses[ITEM_POKE_BALL])
+    const maxHp = mon.maxHp || 1, hp = mon.currentHp;
+    // 1:1 ll.9990-9994 : odds = catchRate * ballMult/10 * (3*maxHP - 2*HP) / (3*maxHP).
+    let odds = Math.floor(Math.floor(catchRate * ballMultiplier / 10) * (maxHp * 3 - hp * 2) / (3 * maxHp));
+    // 1:1 ll.9995-9997 : bonus statut.
+    if (mon.status === 'SLP' || mon.status === 'FRZ') odds *= 2;
+    else if (mon.status === 'PSN' || mon.status === 'BRN' || mon.status === 'PAR' || mon.status === 'TOX') odds = Math.floor((odds * 15) / 10);
+    if (odds <= 0) return false;
+    if (odds > 254) return true;   // 1:1 l.10012 : capture automatique.
+    // 1:1 ll.10025-10027 : odds = Sqrt(Sqrt(16711680/odds)) ; odds = 1048560/odds ; 4 shakes.
+    let x = Math.floor(16711680 / odds);
+    x = Math.floor(Math.sqrt(x));
+    x = Math.floor(Math.sqrt(x));
+    odds = Math.floor(1048560 / Math.max(1, x));
+    let shakes = 0;
+    for (; shakes < 4 && Random() < odds; shakes++);
+    return shakes === 4;
+  };
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
@@ -2219,7 +2249,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp dispatch selon action :
         switch (action) {
           case 0 /* B_ACTION_USE_MOVE */: state = 'MOVE_MENU_INIT';      break;
-          case 1 /* B_ACTION_USE_ITEM */: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'SAC'; break;
+          case 1 /* B_ACTION_USE_ITEM */: state = 'BALL_THROW_INIT'; break;  // SAC → lance une POKé BALL (UI sac complète = différée)
           case 2 /* B_ACTION_SWITCH */:   state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
           case 3 /* B_ACTION_RUN */:      state = 'ACTION_RUN_TEXT';      break;
           default:
@@ -2249,7 +2279,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           closeActionMenu();
           switch (actionMenuCursor) {
             case 0: state = 'MOVE_MENU_INIT';      break;
-            case 1: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'SAC'; break;
+            case 1: state = 'BALL_THROW_INIT'; break;  // SAC → lance une POKé BALL
             case 2: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
             case 3: state = 'ACTION_RUN_TEXT';      break;
           }
@@ -2269,6 +2299,66 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'ACTION_MENU_INIT';  // retour au menu pour re-choisir
+        }
+        return false;
+      }
+
+      // ─── Capture (SAC → POKé BALL ; 1:1 Cmd_handleballthrow + GiveMonToPlayer) ──
+      case 'BALL_THROW_INIT': {
+        if (!opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 : pas de capture en combat dresseur (BattleScript_TrainerBallBlock).
+        if (gBattleTypeFlags & 0x8 /* BATTLE_TYPE_TRAINER */) {
+          showBattleMessage(`On ne peut pas voler les\nPOKéMON des autres !`);
+          state = 'ACTION_FALLBACK_WAIT';   // → retour menu
+          return false;
+        }
+        // 1:1 calc de capture (POKé BALL) ; l'anim joue les shakes selon willCatch.
+        const willCatch = computePokeBallWillCatch(opponentMon);
+        _captureHp = opponentMon.currentHp;   // snapshot HP de combat (préservé sur le mon capturé)
+        _ballThrowOutcome = null;
+        _ballThrowMessage = null;
+        void startBallThrow({
+          opponentSpriteId,
+          opponentMonNickname: opponentMon.nickname,
+          willCatch,
+        });
+        showBattleMessage(`Vous lancez\nune POKé BALL !`);
+        state = 'BALL_THROW_WAIT';
+        return false;
+      }
+
+      case 'BALL_THROW_WAIT': {
+        // Anim ball tickée par le tick central ; _ballThrowOutcome posé à la fin.
+        if (_ballThrowOutcome === null) return false;
+        if (_ballThrowMessage) showBattleMessage(_ballThrowMessage);  // "Bravo! X capturé!" / "Oh non!..."
+        state = 'BALL_THROW_RESULT_WAIT';
+        return false;
+      }
+
+      case 'BALL_THROW_RESULT_WAIT': {
+        if (!messageWaitDone()) return false;
+        HideFieldMessageBox();
+        if (_ballThrowOutcome === 'caught') {
+          // 1:1 : GiveMonToPlayer (équipe, ou PC si pleine) + BATTLE_OUTCOME_CAUGHT.
+          if (opponentMon) {
+            // Préserve l'état du mon capturé : HP de combat (snapshot au lancer) + exp du
+            // niveau (un sync de fin de capture remettait currentHp/currentExp à 0 sur l'instance).
+            opponentMon.currentHp = _captureHp > 0 ? _captureHp : opponentMon.maxHp;
+            if (opponentMon.growthRate) {
+              opponentMon.currentExp = getExperienceForLevel(opponentMon.growthRate, opponentMon.level);
+            }
+            GiveMonToPlayer(opponentMon);
+          }
+          outcome = BATTLE_OUTCOME_CAUGHT;
+          state = 'CLEANUP_FADE_OUT';
+        } else {
+          // Échec : la POKé BALL (objet) a CONSOMMÉ le tour → l'adversaire attaque (1:1,
+          // comme la fuite ratée : USE_ITEM = action de tour, l'ennemi joue ensuite).
+          _ballThrowOutcome = null;
+          opponentMoveIndex = pickOpponentMove();
+          _turnOrder = [0, 1];
+          _turnPhase = 1;   // créneau 0 (lancer) déjà joué → reste l'adversaire.
+          state = 'OPPONENT_USES_MOVE';
         }
         return false;
       }
