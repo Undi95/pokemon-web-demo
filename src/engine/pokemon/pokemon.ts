@@ -270,6 +270,42 @@ export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp
   return { id, nameFr: getMoveNameFr(moveEnum) || id, pp, ppMax: pp };
 }
 
+/** 1:1 décomp `GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL)` (cas level-up) :
+ *  renvoie l'espèce cible (enum SPECIES_X) si le mon remplit une évolution EVO_LEVEL
+ *  (level >= param), sinon null. (Autres méthodes : pierre/échange/amitié = hors level-up.) */
+export function getEvolutionTargetForLevelUp(speciesEnum: string, level: number): string | null {
+  const dataMod = (globalThis as { __game_data?: {
+    getEvolutions?: (k: string) => Array<{ method: string; param: number; target: string }> | undefined;
+  } }).__game_data;
+  const evos = dataMod?.getEvolutions?.(speciesEnum) ?? [];
+  const evo = evos.find(e => e.method === 'EVO_LEVEL' && level >= e.param);
+  return evo?.target ?? null;
+}
+
+/** 1:1 décomp évolution : change l'espèce d'une instance (garde PID/IVs/EVs/exp/moves/
+ *  niveau), recalcule maxHP (currentHp += diff, comme Gen3) + nom + ability + growthRate. */
+export function evolveInstance(inst: PokemonInstance, newSpeciesEnum: string): void {
+  const oldMaxHp = inst.maxHp;
+  const oldNameFr = inst.speciesNameFr;
+  const sInfo = gameDataGetSpeciesInfo(newSpeciesEnum);
+  const dexId = speciesEnumToDexId(newSpeciesEnum) || inst.speciesName.toLowerCase();
+  inst.speciesEnum = newSpeciesEnum;
+  inst.speciesId = getSpeciesId(newSpeciesEnum) || inst.speciesId;
+  inst.speciesName = dexId.charAt(0).toUpperCase() + dexId.slice(1);
+  inst.speciesNameFr = getSpeciesNameFr(newSpeciesEnum) || inst.speciesNameFr;
+  // Recalcul maxHP (base de la nouvelle espèce) ; currentHp augmente de la diff (1:1 Gen3).
+  const baseHp = sInfo?.stats?.hp ?? 50;
+  inst.maxHp = calcHp(baseHp, inst.ivs.hp, inst.evs.hp, inst.level);
+  inst.currentHp = Math.min(inst.maxHp, inst.currentHp + (inst.maxHp - oldMaxHp));
+  // Ability au même slot (personality&1 si 2 abilities) pour la nouvelle espèce.
+  const has2nd = !!(sInfo?.abilities?.[1] && sInfo.abilities[1] !== 'ABILITY_NONE');
+  const slot = has2nd ? (inst.personality & 1) : 0;
+  inst.ability = sInfo?.abilities?.[slot] || inst.ability;
+  if (sInfo?.growthRate) inst.growthRate = sInfo.growthRate;
+  // Surnom : si pas de surnom custom (= ancien nom d'espèce), suivre la nouvelle espèce.
+  if (inst.nickname === oldNameFr) inst.nickname = inst.speciesNameFr;
+}
+
 /** Crée une instance Pokémon prête à être ajoutée à la party. */
 export function createPokemonInstance(speciesEnum: string, level: number, opts?: {
   moves?: string[]; nickname?: string; nature?: string; ivs?: StatSpread; evs?: StatSpread;

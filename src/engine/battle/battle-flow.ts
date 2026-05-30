@@ -91,7 +91,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, getLevelUpMovesAtLevel, makeMoveSlot, type PokemonInstance } from '../pokemon/pokemon';
+import { createPokemonInstance, calculateExpGain, applyExpAward, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, type PokemonInstance } from '../pokemon/pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
@@ -443,6 +443,7 @@ type State =
   | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT' | 'EXP_BAR_FILL_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'LEARN_MOVE_CHECK' | 'LEARN_MOVE_MSG_WAIT'
+  | 'EVOLUTION_CHECK' | 'EVOLUTION_TEXT' | 'EVOLUTION_WAIT' | 'EVOLUTION_DONE_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
@@ -673,6 +674,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let _pendingSwitchSlot = -1;
   // Lot 3 : moves (enums MOVE_X) appris au level-up courant, à traiter un par un.
   let _movesToLearn: string[] = [];
+  // Lot 3 évolution : le mon actif a-t-il monté de niveau ce combat (→ check évo en fin),
+  // + l'espèce cible si évolution en cours.
+  let _activeMonLeveledUp = false;
+  let _evolutionTarget: string | null = null;
   let _switchLoadStarted = false;
   let _switchLoadDone = false;
   let _switchLoadFailed = false;
@@ -2637,14 +2642,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'EXP_AWARD_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // Bug 5e session 124 : fade-out avant cleanup.
-          state = 'CLEANUP_FADE_OUT';
+          // 1:1 : point de fin d'exp → check évolution (puis fade-out/cleanup).
+          state = 'EVOLUTION_CHECK';
         }
         return false;
       }
 
       case 'LEVEL_UP_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
+        _activeMonLeveledUp = true;   // Lot 3 : marque pour le check d'évolution en fin de combat.
         // 1:1 décomp `BattleScript_LevelUp` (battle_scripts_1 ll. 3144) : `fanfare
         // MUS_LEVEL_UP` joue le jingle de montée de niveau AVANT le message. Slot
         // 'fanfare' dédié → ne coupe pas le BGM de victoire (MUS_VICTORY_WILD).
@@ -2686,12 +2692,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           state = 'LEARN_MOVE_MSG_WAIT';
           return false;
         }
-        // File vide → continuation 1:1 case 5 (exp restante → fill, sinon fin).
+        // File vide → continuation 1:1 case 5 (exp restante → fill, sinon check évolution).
         if (_expToGive > 0 && beginExpChunk()) {
           state = 'EXP_BAR_FILL_WAIT';
         } else {
-          state = 'CLEANUP_FADE_OUT';
+          state = 'EVOLUTION_CHECK';
         }
+        return false;
+      }
+
+      case 'EVOLUTION_CHECK': {
+        // 1:1 décomp TryEvolvePokemon : POINT DE FIN d'exp (atteint depuis LEARN_MOVE_CHECK
+        // OU EXP_AWARD_WAIT). Si le mon actif a monté de niveau ce combat ET remplit une
+        // évolution EVO_LEVEL au niveau final → évolution. Sinon → fin de combat.
+        const evoTarget = (_activeMonLeveledUp && playerMon)
+          ? getEvolutionTargetForLevelUp(playerMon.speciesEnum, playerMon.level) : null;
+        if (evoTarget) { _evolutionTarget = evoTarget; state = 'EVOLUTION_TEXT'; }
+        else state = 'CLEANUP_FADE_OUT';
         return false;
       }
 
@@ -2699,6 +2716,35 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'LEARN_MOVE_CHECK';
+        }
+        return false;
+      }
+
+      case 'EVOLUTION_TEXT': {
+        // 1:1 décomp EvolutionScene (version message ; le morph animé pixel = polish A/B).
+        if (!playerMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
+        showBattleMessage(`Quoi ?\n${playerMon.nickname} évolue !`);
+        state = 'EVOLUTION_WAIT';
+        return false;
+      }
+
+      case 'EVOLUTION_WAIT': {
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          if (!playerMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
+          const oldNick = playerMon.nickname;
+          evolveInstance(playerMon, _evolutionTarget);   // change l'espèce + recalcule
+          showBattleMessage(`${oldNick} est devenu\n${playerMon.speciesNameFr.toUpperCase()} !`);
+          state = 'EVOLUTION_DONE_WAIT';
+        }
+        return false;
+      }
+
+      case 'EVOLUTION_DONE_WAIT': {
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          _evolutionTarget = null;
+          state = 'CLEANUP_FADE_OUT';
         }
         return false;
       }
