@@ -780,6 +780,9 @@ function _encodeStringForBuff(s: string): Uint8Array {
 export function stripGbaControlCodes(text: string): string {
   return text
     .replace(/\{WAIT_SE\}/g, '')
+    .replace(/\{PLAY_SE [A-Z0-9_]+\}/g, '')   // déclencheur sonore (SE joué ailleurs, pas affiché)
+    .replace(/\{PLAY_BGM [A-Z0-9_]+\}/g, '')
+    .replace(/\{PAUSE_UNTIL_PRESS\}/g, '')
     .replace(/\{PAUSE \d+\}/g, '')
     .replace(/\{COLOR [A-Z_]+\}/g, '')
     .replace(/\\p/g, '\n')   // line break + pause

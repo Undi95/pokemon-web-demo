@@ -56,10 +56,12 @@ export const BATTLE_RUN_FORBIDDEN = 2;
 /** 1:1 décomp `MULTISTRING_CHOOSER` index dans gBattleCommunication = 5. */
 const MULTISTRING_CHOOSER = 5;
 
-/** 1:1 décomp `B_MSG_*` indices (battle_message.h sStringIds_PreventsEscape). */
-const B_MSG_PREVENTS_ESCAPE = 0;
-const B_MSG_CANT_ESCAPE = 1;
-const B_MSG_DONT_LEAVE_BIRCH = 2;
+/** 1:1 décomp `B_MSG_*` indices (include/constants/battle_string_ids.h:565-569).
+ *  Ces valeurs indexent gNoEscapeStringIds[] (battle_message.c:900) :
+ *  [0]=CANTESCAPE, [1]=DONTLEAVEBIRCH, [2]=PREVENTSESCAPE. */
+const B_MSG_CANT_ESCAPE = 0;
+const B_MSG_DONT_LEAVE_BIRCH = 1;
+const B_MSG_PREVENTS_ESCAPE = 2;
 
 // ─── Stubs externes 1:1 décomp ──────────────────────────────────────────
 

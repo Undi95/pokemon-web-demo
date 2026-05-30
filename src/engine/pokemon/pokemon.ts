@@ -18,6 +18,11 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
+// 1:1 décomp `GetItemHoldEffect` (item.c) — pour le blocage d'évolution par
+// Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE). Leaf data (battle/data) déjà
+// dépendance de ce module (cf. move-name-resolve) → pas de cycle.
+import { GetItemHoldEffect } from '../battle/data/item-hold-effects';
+import { resolveDecompConstant } from '../system/decomp-constants';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
 import { gMapHeader } from '../field/map-loader';
@@ -272,8 +277,23 @@ export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp
 
 /** 1:1 décomp `GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL)` (cas level-up) :
  *  renvoie l'espèce cible (enum SPECIES_X) si le mon remplit une évolution EVO_LEVEL
- *  (level >= param), sinon null. (Autres méthodes : pierre/échange/amitié = hors level-up.) */
-export function getEvolutionTargetForLevelUp(speciesEnum: string, level: number): string | null {
+ *  (level >= param), sinon null. (Autres méthodes : pierre/échange/amitié = hors level-up.)
+ *  `heldItem` (id runtime EN, ex. "everstone") : 1:1 décomp pokemon.c:5503-5510, un objet
+ *  tenu dont le hold effect est HOLD_EFFECT_PREVENT_EVOLVE (Pierre Stase) bloque l'évolution. */
+export function getEvolutionTargetForLevelUp(speciesEnum: string, level: number, heldItem?: string): string | null {
+  // 1:1 décomp GetEvolutionTargetSpecies (pokemon.c:5503-5510) :
+  //   holdEffect = GetItemHoldEffect(heldItem);
+  //   if (holdEffect == HOLD_EFFECT_PREVENT_EVOLVE && mode != EVO_MODE_ITEM_CHECK) return SPECIES_NONE;
+  // (au level-up mode = EVO_MODE_NORMAL → le garde s'applique).
+  if (heldItem) {
+    const itemKey = 'ITEM_' + heldItem.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '');
+    const itemId = resolveDecompConstant(itemKey);
+    const preventEvolve = resolveDecompConstant('HOLD_EFFECT_PREVENT_EVOLVE');
+    if (typeof itemId === 'number' && itemId > 0 && typeof preventEvolve === 'number'
+        && GetItemHoldEffect(itemId) === preventEvolve) {
+      return null;
+    }
+  }
   const dataMod = (globalThis as { __game_data?: {
     getEvolutions?: (k: string) => Array<{ method: string; param: number; target: string }> | undefined;
   } }).__game_data;
@@ -299,7 +319,7 @@ export function evolveInstance(inst: PokemonInstance, newSpeciesEnum: string): v
   inst.currentHp = Math.min(inst.maxHp, inst.currentHp + (inst.maxHp - oldMaxHp));
   // Ability au même slot (personality&1 si 2 abilities) pour la nouvelle espèce.
   const has2nd = !!(sInfo?.abilities?.[1] && sInfo.abilities[1] !== 'ABILITY_NONE');
-  const slot = has2nd ? (inst.personality & 1) : 0;
+  const slot = has2nd ? ((inst.personality ?? 0) & 1) : 0;
   inst.ability = sInfo?.abilities?.[slot] || inst.ability;
   if (sInfo?.growthRate) inst.growthRate = sInfo.growthRate;
   // Surnom : si pas de surnom custom (= ancien nom d'espèce), suivre la nouvelle espèce.
@@ -454,6 +474,41 @@ export function applyExpAward(mon: PokemonInstance, gained: number): {
     if (hpDelta > 0) mon.currentHp += hpDelta;
   }
   return { gained, leveledUp, newLevel: mon.level, newMaxHp: mon.maxHp };
+}
+
+/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)` (pokemon.c:5975-6052) sur PokemonInstance.
+ *  Award des EVs depuis l'evYield de l'espèce vaincue ; cap 510 total + 255/stat.
+ *  ORDRE d'itération 1:1 STRICT : [hp, atk, def, SPEED, SPATK, spdef] (= STAT_HP..STAT_SPDEF
+ *  décomp → vitesse AVANT atq.spé ; cf. party-storage.ts:586). Pokérus ×2 + Macho Brace ×2
+ *  = différés (champ pokérus absent de l'instance + objet hors tutorial). */
+export function monGainEVs(mon: PokemonInstance, defeatedSpeciesEnum: string): void {
+  const dataMod = (globalThis as { __game_data?: {
+    getSpeciesInfo: (k: string) => { evYield?: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number } } | undefined;
+  } }).__game_data;
+  const evYield = dataMod?.getSpeciesInfo(defeatedSpeciesEnum)?.evYield;
+  if (!evYield) return;
+  const MAX_TOTAL_EVS = 510, MAX_PER_STAT_EVS = 255;
+  // Ordre décomp : hp, atk, def, speed, spAtk, spDef.
+  const evs = [mon.evs.hp, mon.evs.atk, mon.evs.def, mon.evs.spe, mon.evs.spa, mon.evs.spd];
+  const yields = [evYield.hp, evYield.atk, evYield.def, evYield.spe, evYield.spa, evYield.spd];
+  let totalEVs = evs.reduce((s, v) => s + v, 0);
+  for (let i = 0; i < 6; i++) {
+    if (totalEVs >= MAX_TOTAL_EVS) break;
+    const multiplier = 1;   // Pokérus/Macho Brace ×2 différés
+    let evIncrease = yields[i] * multiplier;
+    // 1:1 décomp ll.6038-6046 : cap à MAX_TOTAL_EVS puis MAX_PER_STAT_EVS.
+    if (totalEVs + evIncrease > MAX_TOTAL_EVS) {
+      evIncrease = (evIncrease + MAX_TOTAL_EVS) - (totalEVs + evIncrease);
+    }
+    if (evs[i] + evIncrease > MAX_PER_STAT_EVS) {
+      evIncrease = (evIncrease + MAX_PER_STAT_EVS) - (evs[i] + evIncrease);
+    }
+    if (evIncrease < 0) evIncrease = 0;
+    evs[i] += evIncrease;
+    totalEVs += evIncrease;
+  }
+  mon.evs.hp = evs[0]; mon.evs.atk = evs[1]; mon.evs.def = evs[2];
+  mon.evs.spe = evs[3]; mon.evs.spa = evs[4]; mon.evs.spd = evs[5];
 }
 
 // (Retiré : `pokemonToShowdownSet` — packeur set Showdown pour @pkmn/sim,

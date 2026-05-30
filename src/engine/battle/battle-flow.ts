@@ -91,8 +91,8 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, type PokemonInstance } from '../pokemon/pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty } from '../battle/party-storage';
+import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, type PokemonInstance } from '../pokemon/pokemon';
+import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -130,13 +130,15 @@ import { Random } from '../system/random';
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
-import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr } from './state';
-import { decodeBattleString } from './battle-string-decoder';
+import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr, setRandomTurnNumber } from './state';
+import { decodeBattleString, stripGbaControlCodes } from './battle-string-decoder';
 import {
-  STRINGID_DONTLEAVEBIRCH, STRINGID_CANTESCAPE, STRINGID_PREVENTSESCAPE,
+  STRINGID_CANTESCAPE, STRINGID_CANTESCAPE2,
   STRINGID_NORUNNINGFROMTRAINERS, STRINGID_SUPEREFFECTIVE, STRINGID_NOTVERYEFFECTIVE,
   STRINGID_GOTAWAYSAFELY, STRINGID_ITDOESNTAFFECT,
 } from '../decomp-data/include/constants/battle_string_ids-data';
+// 1:1 décomp `gNoEscapeStringIds[]` (battle_message.c:900) pour `printfromtable`.
+import { BATTLE_STRING_ID_TABLES } from '../decomp-data/battle-string-id-tables';
 
 // Wrapper helper pour accès à gBattleCommunication (= éviter capture closure
 // du let import vs const array). Returns le reference array global.
@@ -155,7 +157,10 @@ function _resolveBattleString(stringId: number): string {
     textBuffs: [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)] as
       [Uint8Array, Uint8Array, Uint8Array],
   };
-  return decodeBattleString(stringId, msgData);
+  // 1:1 décomp : la string décodée contient des codes de contrôle bruts ({PLAY_SE},
+  // \p, etc.). Le text printer ne traite que les bytes 0xFC, pas ces codes string-form
+  // → on les nettoie (stripGbaControlCodes) sinon ils s'affichent littéralement.
+  return stripGbaControlCodes(decodeBattleString(stringId, msgData));
 }
 
 // K8 + K10 + K12 + K13 side-effect imports : expose devtools globals
@@ -440,6 +445,7 @@ type State =
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
   | 'CHECK_OPP_FAINTED'
   | 'OPP_FAINTED_TEXT' | 'OPP_FAINTED_WAIT'
+  | 'EXP_LOOP_NEXT' | 'EXP_LOOP_DONE' | 'EXP_OFFFIELD_MSG_WAIT'
   | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT' | 'EXP_BAR_FILL_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'LEARN_MOVE_CHECK' | 'LEARN_MOVE_MSG_WAIT'
@@ -672,12 +678,30 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // mons valides). _switchLoad* = tracking du chargement async du nouveau back sprite.
   let _activePlayerSlot = 0;
   let _pendingSwitchSlot = -1;
+  // Point 1 (1:1 Cmd_getexp) : slots party ayant PARTICIPÉ au combat (= envoyés, sentIn /
+  // gSentPokesToOpponent) → reçoivent l'XP partagée + les EVs. + slots ayant monté de niveau
+  // (= gLeveledUpInBattle) → testés pour l'évolution post-combat (TryEvolvePokemon).
+  const _participants = new Set<number>();
+  const _leveledUpSlots = new Set<number>();
   // Lot 3 : moves (enums MOVE_X) appris au level-up courant, à traiter un par un.
   let _movesToLearn: string[] = [];
-  // Lot 3 évolution : le mon actif a-t-il monté de niveau ce combat (→ check évo en fin),
-  // + l'espèce cible si évolution en cours.
-  let _activeMonLeveledUp = false;
+  // Lot 3 : messages d'apprentissage en file (cas "4 capacités" = 2 strings décomp à
+  // afficher l'un après l'autre via LEARN_MOVE_MSG_WAIT avant de reprendre la file).
+  let _pendingLearnMsgs: string[] = [];
+  // Fuite : roll TryRunFromBattle raté (≠ fuite impossible Birch/piégé). 1:1 décomp
+  // HandleAction_Run (battle_util.c:516-522) : le tour est consommé → l'adversaire attaque.
+  let _runRollFailed = false;
+  // Lot 3 évolution : espèce cible + mon en cours d'évolution (peut être off-field).
   let _evolutionTarget: string | null = null;
+  let _evoMon: PokemonInstance | null = null;
+  let _evoScanSlot = 0;   // slot courant dans le scan d'évolution multi-mon (1:1 boucle TryEvolvePokemon).
+  // Point 1 — boucle Cmd_getexp (cases 1-5) sur les participants :
+  let _expGetterSlot = 0;        // slot party courant (= expGetterMonId).
+  let _expBaseValue = 0;         // exp/participant (= gBattleStruct->expValue, case 1).
+  let _expMonGained = 0;         // exp pour le mon courant (= gBattleMoveDamage).
+  let _expFaintedSpecies = '';   // espèce vaincue (split + monGainEVs).
+  let _expFaintedLevel = 0;
+  let _offfieldMsgs: string[] = [];  // file de messages level-up/apprentissage pour un mon off-field.
   let _switchLoadStarted = false;
   let _switchLoadDone = false;
   let _switchLoadFailed = false;
@@ -1577,6 +1601,51 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return true;
   };
 
+  /** 1:1 décomp Cmd_getexp case 1 (battle_script_commands.c:3287-3333) : calcule l'exp
+   *  PAR PARTICIPANT = (expYield × faintedLevel / 7) / nb participants vivants (viaSentIn).
+   *  Exp Share (HOLD_EFFECT_EXP_SHARE → split séparé /viaExpShare) = DIFFÉRÉ (aucun porteur
+   *  en pratique ; branche else 1:1 ll.3322-3328). Résultat dans _expBaseValue. */
+  const computeExpSplit = (): void => {
+    const party = gSaveBlock1Ptr.playerParty;
+    const base = calculateExpGain(_expFaintedSpecies, _expFaintedLevel);
+    let viaSentIn = 0;
+    for (let i = 0; i < 6; i++) {
+      const m = party[i] as PokemonInstance | null;
+      if (!m || m.currentHp <= 0) continue;     // 1:1 : SPECIES_NONE || HP == 0 → skip
+      if (_participants.has(i)) viaSentIn++;
+    }
+    if (viaSentIn < 1) viaSentIn = 1;            // 1:1 SAFE_DIV guard (le vainqueur actif est tjs vivant)
+    _expBaseValue = Math.max(1, Math.floor(base / viaSentIn));   // 1:1 : *exp = SAFE_DIV(calc, viaSentIn), min 1
+  };
+
+  /** Point 1 — applique l'XP+level-up à un mon OFF-FIELD (pas de barre animée) et construit
+   *  la file de messages 1:1 (monte au N. + apprend/4-capacités), par niveau franchi.
+   *  Le mon ON-FIELD passe par le chemin animé EXP_AWARD_TEXT → EXP_BAR_FILL_WAIT. */
+  const awardExpOffField = (mon: PokemonInstance, slot: number, gained: number): void => {
+    const oldLevel = mon.level;
+    applyExpAward(mon, gained);   // applique XP + level-up (loop interne) + recalc maxHp
+    const msgs: string[] = [];
+    if (mon.level > oldLevel) {
+      _leveledUpSlots.add(slot);   // 1:1 gLeveledUpInBattle |= bit (→ évolution post-combat)
+      // 1:1 BattleScript_LevelUp par niveau franchi : "monte au N." + moves du niveau.
+      for (let lv = oldLevel + 1; lv <= mon.level; lv++) {
+        msgs.push(`${mon.nickname} monte au\nN. ${lv}!`);
+        for (const moveEnum of getLevelUpMovesAtLevel(mon.speciesEnum, lv)) {
+          const moveSlot = makeMoveSlot(moveEnum);
+          if (mon.moves.some(m => m.id === moveSlot.id)) continue;
+          if (mon.moves.length < 4) {
+            mon.moves.push(moveSlot);
+            msgs.push(`${mon.nickname} apprend\n${moveSlot.nameFr.toUpperCase()}!`);
+          } else {
+            msgs.push(`${mon.nickname} tente d'apprendre\n${moveSlot.nameFr.toUpperCase()}.`);
+            msgs.push(`Mais ${mon.nickname} ne peut pas\navoir plus de quatre capacités.`);
+          }
+        }
+      }
+    }
+    _offfieldMsgs = msgs;
+  };
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
@@ -1686,6 +1755,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           ?? null;
         _activePlayerSlot = params.playerMon ? party.indexOf(params.playerMon) : _initSlot;
         if (_activePlayerSlot < 0) _activePlayerSlot = 0;
+        // Point 1 : le mon envoyé en 1er a participé (1:1 sentIn). Reset des trackers.
+        _participants.clear();
+        _participants.add(_activePlayerSlot);
+        _leveledUpSlots.clear();
         if (!playerMon) {
           console.warn('[battle-flow] no player Pokemon — auto-defeat');
           outcome = BATTLE_OUTCOME_LOST;
@@ -2231,17 +2304,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // STATUS escape : "Impossible de fuir!".
           // Shadow Tag/Arena Trap : "X de Y empêche la fuite!".
           const chooser = _gBattleCommunication()[5 /* MULTISTRING_CHOOSER */] ?? 0;
-          // 1:1 décomp `gNoEscapeStringIds[chooser]` (battle_message.c) →
-          // [PreventsEscape, CantEscape, DontLeaveBirch, AttackerCantEscape] →
-          // via decoder pour texte FR officiel (= pas de hardcode).
-          let stringId: number;
-          if (chooser === 2 /* B_MSG_DONT_LEAVE_BIRCH */) {
-            stringId = STRINGID_DONTLEAVEBIRCH;
-          } else if (chooser === 1 /* B_MSG_CANT_ESCAPE */) {
-            stringId = STRINGID_CANTESCAPE;
-          } else {
-            stringId = STRINGID_PREVENTSESCAPE;
-          }
+          // 1:1 décomp `BattleScript_PrintCantEscapeFromBattle` → `printfromtable gNoEscapeStringIds` :
+          // le MULTISTRING_CHOOSER (posé par IsRunningFromBattleImpossible avec les vraies constantes
+          // B_MSG_CANT_ESCAPE=0 / B_MSG_DONT_LEAVE_BIRCH=1 / B_MSG_PREVENTS_ESCAPE=2) indexe directement
+          // gNoEscapeStringIds = [CANTESCAPE, DONTLEAVEBIRCH, PREVENTSESCAPE, CANTESCAPE2, ATTACKERCANTESCAPE].
+          const stringId = BATTLE_STRING_ID_TABLES.gNoEscapeStringIds[chooser] ?? STRINGID_CANTESCAPE;
           showBattleMessage(_resolveBattleString(stringId));
         } else {
           // Run permitted : roll TryRunFromBattle.
@@ -2252,8 +2319,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             showBattleMessage(_resolveBattleString(STRINGID_GOTAWAYSAFELY));
             outcome = BATTLE_OUTCOME_RAN;
           } else {
-            // 1:1 décomp : STRINGID_CANTESCAPE via decoder.
-            showBattleMessage(_resolveBattleString(STRINGID_CANTESCAPE));
+            // 1:1 décomp HandleAction_Run (battle_util.c:516-520) : roll de fuite RATÉ →
+            // gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CANT_ESCAPE_2 →
+            // BattleScript_PrintFailedToRunString = STRINGID_CANTESCAPE2 ("Fuite impossible!").
+            // ET le tour est CONSOMMÉ (≠ fuite impossible = re-choix) → l'adversaire attaque.
+            showBattleMessage(_resolveBattleString(STRINGID_CANTESCAPE2));
+            _runRollFailed = true;
           }
         }
         state = 'ACTION_RUN_WAIT';
@@ -2266,8 +2337,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           if (outcome === BATTLE_OUTCOME_RAN || outcome === BATTLE_OUTCOME_MON_FLED) {
             // Player ran ou wild mon fui (= K8 AI_FirstBattle tutorial bypass).
             state = 'CLEANUP_FADE_OUT';
+          } else if (_runRollFailed) {
+            // 1:1 décomp HandleAction_Run : le roll de fuite raté est l'ACTION du joueur
+            // (placée en position 0 par SetActionsAndBattlersTurnOrder) ; elle ne termine
+            // PAS le tour → on enchaîne sur l'action adverse (position 1) puis fin de tour.
+            // pickOpponentMove() choisit son move (le joueur garde le 1er créneau, déjà "joué").
+            _runRollFailed = false;
+            opponentMoveIndex = pickOpponentMove();
+            _turnOrder = [0, 1];
+            _turnPhase = 1;   // créneau 0 = fuite ratée (déjà joué) → reste l'adversaire.
+            state = 'OPPONENT_USES_MOVE';
           } else {
-            // Run failed (= tutorial bypass + Birch message) → retour menu.
+            // Fuite IMPOSSIBLE (dresseur / Birch tutorial / piégé / statut) : re-choix,
+            // AUCUN tour consommé (1:1 — message géré à la sélection, pas une action de tour).
             state = 'ACTION_MENU_INIT';
           }
         }
@@ -2384,6 +2466,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'DETERMINE_TURN_ORDER': {
         if (!playerMon || !opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 décomp battle_main.c:4013 : `gRandomTurnNumber = Random()` rafraîchi à CHAQUE
+        // tour AVANT le calcul d'ordre (lu par GetWhoStrikesFirst pour le proc Quick Claw).
+        // Sans ça la valeur restait figée à 0 → Quick Claw aurait proc à 100% chaque tour.
+        setRandomTurnNumber(Random());
         // 1:1 décomp : le move adverse (AI) est choisi MAINTENANT (les 2 moves
         // connus), puis `GetWhoStrikesFirst` décide qui frappe en premier (priorité
         // du move > vitesse × stage/météo/badge, paralysie ÷4, Quick Claw). pickOpponentMove
@@ -2588,23 +2674,54 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'OPP_FAINTED_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // Session 124 Bug 5 : EXP gain post-K.O. (= 1:1 décomp Gen 3 formula).
+          if (!opponentMon) { state = 'CLEANUP'; return false; }
+          // Point 1 (1:1 Cmd_getexp) : init de la boucle XP/EVs sur TOUS les participants.
+          _expFaintedSpecies = opponentMon.speciesEnum;
+          _expFaintedLevel = opponentMon.level;
+          computeExpSplit();           // exp/participant (split selon viaSentIn)
+          _expGetterSlot = 0;
+          state = 'EXP_LOOP_NEXT';
+        }
+        return false;
+      }
+
+      case 'EXP_LOOP_NEXT': {
+        // 1:1 Cmd_getexp case 2 + looper case 5 : pour chaque slot party, donner XP+EVs
+        // s'il a PARTICIPÉ (sentIn), est vivant et pas niveau max.
+        if (_expGetterSlot >= 6) { state = 'EXP_LOOP_DONE'; return false; }
+        const mon = gSaveBlock1Ptr.playerParty[_expGetterSlot] as PokemonInstance | null;
+        const isParticipant = _participants.has(_expGetterSlot);
+        // 1:1 skip (ll.3345-3356) : absent/K.O., OU (pas Exp Share ET pas sentIn), OU niveau max.
+        if (!mon || mon.currentHp <= 0 || !isParticipant || mon.level >= 100) {
+          _expGetterSlot++;
+          state = 'EXP_LOOP_NEXT';
+          return false;
+        }
+        // 1:1 exp de ce mon (ll.3367-3393) : base si sentIn ; +Exp Share/Lucky Egg/échangé = différés.
+        let exp = isParticipant ? _expBaseValue : 0;
+        if (gBattleTypeFlags & 0x8 /* BATTLE_TYPE_TRAINER */) exp = Math.floor((exp * 150) / 100);  // 1:1 dresseur ×1.5
+        _expMonGained = exp;
+        monGainEVs(mon, _expFaintedSpecies);   // 1:1 ll.3423 MonGainEVs (chaque participant)
+        if (_expGetterSlot === _activePlayerSlot) {
+          // Mon ON-FIELD → message + barre EXP animée (chemin existant inchangé).
           state = 'EXP_AWARD_TEXT';
+        } else {
+          // Mon OFF-FIELD → message + application instantanée + file level-up/apprentissage.
+          showBattleMessage(`${mon.nickname} gagne\n${_expMonGained} POINTS D'EXP.!`);
+          awardExpOffField(mon, _expGetterSlot, _expMonGained);
+          state = 'EXP_OFFFIELD_MSG_WAIT';
         }
         return false;
       }
 
       case 'EXP_AWARD_TEXT': {
-        if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
-        // 1:1 décomp Cmd_getexp case 1-2 : calc exp (= baseExp × defeatedLevel / 7)
-        // + message STRINGID_PKMNGAINEDEXP.
-        const gained = calculateExpGain(opponentMon.speciesEnum, opponentMon.level);
-        showBattleMessage(`${playerMon.nickname} gagne\n${gained} POINTS D'EXP.!`);
-        // 1:1 décomp case 3 : la barre EXP s'anime (EmitExpUpdate) pendant que le
-        // message s'affiche. On distribue l'exp par CHUNK (jusqu'au seuil de niveau) ;
-        // applyExpAward applique l'exp + le level-up à la fin de chaque chunk (cf.
-        // EXP_BAR_FILL_WAIT). N'applique PLUS instantanément (= anti-saut de barre).
-        _expToGive = gained;
+        // Mon ON-FIELD (= _activePlayerSlot → playerMon). _expMonGained calculé en EXP_LOOP_NEXT.
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        showBattleMessage(`${playerMon.nickname} gagne\n${_expMonGained} POINTS D'EXP.!`);
+        // 1:1 décomp case 3 : la barre EXP s'anime (EmitExpUpdate) pendant que le message
+        // s'affiche. Distribution par CHUNK (jusqu'au seuil de niveau) ; applyExpAward applique
+        // l'exp + le level-up à la fin de chaque chunk (cf. EXP_BAR_FILL_WAIT).
+        _expToGive = _expMonGained;
         if (beginExpChunk()) {
           state = 'EXP_BAR_FILL_WAIT';
         } else {
@@ -2642,22 +2759,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'EXP_AWARD_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // 1:1 : point de fin d'exp → check évolution (puis fade-out/cleanup).
-          state = 'EVOLUTION_CHECK';
+          // 1:1 case 5 looper : mon on-field traité → mon suivant de la boucle.
+          _expGetterSlot++;
+          state = 'EXP_LOOP_NEXT';
         }
         return false;
       }
 
       case 'LEVEL_UP_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        _activeMonLeveledUp = true;   // Lot 3 : marque pour le check d'évolution en fin de combat.
+        _leveledUpSlots.add(_activePlayerSlot);   // 1:1 gLeveledUpInBattle |= bit (→ évolution post-combat)
         // 1:1 décomp `BattleScript_LevelUp` (battle_scripts_1 ll. 3144) : `fanfare
         // MUS_LEVEL_UP` joue le jingle de montée de niveau AVANT le message. Slot
         // 'fanfare' dédié → ne coupe pas le BGM de victoire (MUS_VICTORY_WILD).
         void import('../system/decomp-globals').then(({ PlayFanfare }) => {
           PlayFanfare(367 /* MUS_LEVEL_UP */);
         });
-        showBattleMessage(`${playerMon.nickname} monte au\nniveau ${playerMon.level}!`);
+        // 1:1 décomp sText_PkmnGrewToLv (battle_message.c:60) : "{nom} monte au\nN. {niveau}!"
+        // ("N." = abréviation officielle FR de "Niveau", PAS "niveau {N}").
+        showBattleMessage(`${playerMon.nickname} monte au\nN. ${playerMon.level}!`);
         state = 'LEVEL_UP_WAIT';
         return false;
       }
@@ -2684,46 +2804,108 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           const slot = makeMoveSlot(moveEnum);
           if (playerMon.moves.some(m => m.id === slot.id)) continue;   // déjà connu
           if (playerMon.moves.length < 4) {
+            // 1:1 décomp sText_PkmnLearnedMove (battle_message.c:61) : "{nom} apprend\n{MOVE}!".
             playerMon.moves.push(slot);
             showBattleMessage(`${playerMon.nickname} apprend\n${slot.nameFr.toUpperCase()}!`);
           } else {
-            showBattleMessage(`${playerMon.nickname} veut apprendre\n${slot.nameFr.toUpperCase()}, mais connaît\ndéjà 4 capacités!`);
+            // 1:1 décomp sText_TryToLearnMove1 + sText_TryToLearnMove2 (battle_message.c:62-63),
+            // affichés l'un après l'autre. Le prompt d'oubli (sText_TryToLearnMove3 "Effacer une
+            // ancienne capacité..." + yes/no box + summary screen de sélection) = différé UI (A/B).
+            // Sans ce prompt, le move n'est PAS appris (= équivalent au choix "NON" → DidNotLearnMove).
+            showBattleMessage(`${playerMon.nickname} tente d'apprendre\n${slot.nameFr.toUpperCase()}.`);
+            _pendingLearnMsgs = [`Mais ${playerMon.nickname} ne peut pas\navoir plus de quatre capacités.`];
           }
           state = 'LEARN_MOVE_MSG_WAIT';
           return false;
         }
-        // File vide → continuation 1:1 case 5 (exp restante → fill, sinon check évolution).
+        // File vide → 1:1 case 5 : exp restante cross-level → re-fill ; sinon mon suivant.
         if (_expToGive > 0 && beginExpChunk()) {
           state = 'EXP_BAR_FILL_WAIT';
         } else {
-          state = 'EVOLUTION_CHECK';
+          _expGetterSlot++;
+          state = 'EXP_LOOP_NEXT';
+        }
+        return false;
+      }
+
+      case 'EXP_LOOP_DONE': {
+        // 1:1 Cmd_getexp case 6 : fin de distribution XP/EVs → évolutions post-combat.
+        // FIX persistance : le flow inline écrit l'exp sur l'INSTANCE (applyExpAward), mais
+        // gPlayerParty (copie de combat) n'est pas touché par l'XP (≠ hp/pp que le bytecode
+        // met à jour). Sans ça, teardownPartyAfterBattle (gPlayerParty→instance) réverterait
+        // l'exp gagnée au post-combat. On recopie donc l'exp finale dans gPlayerParty pour
+        // que le teardown la préserve. (Les niveaux/EVs/espèce ne sont pas sync par teardown
+        // → persistent depuis l'instance.)
+        {
+          const party = gSaveBlock1Ptr.playerParty;
+          for (const slot of _participants) {
+            const inst = party[slot] as PokemonInstance | null;
+            if (inst && gPlayerParty[slot] && inst.currentExp !== undefined) {
+              gPlayerParty[slot].experience = inst.currentExp;
+            }
+          }
+        }
+        _evoScanSlot = 0;
+        state = 'EVOLUTION_CHECK';
+        return false;
+      }
+
+      case 'EXP_OFFFIELD_MSG_WAIT': {
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          // File des messages level-up/apprentissage du mon off-field, puis mon suivant.
+          if (_offfieldMsgs.length > 0) {
+            showBattleMessage(_offfieldMsgs.shift()!);
+          } else {
+            _expGetterSlot++;
+            state = 'EXP_LOOP_NEXT';
+          }
         }
         return false;
       }
 
       case 'EVOLUTION_CHECK': {
-        // 1:1 décomp TryEvolvePokemon : POINT DE FIN d'exp (atteint depuis LEARN_MOVE_CHECK
-        // OU EXP_AWARD_WAIT). Si le mon actif a monté de niveau ce combat ET remplit une
-        // évolution EVO_LEVEL au niveau final → évolution. Sinon → fin de combat.
-        const evoTarget = (_activeMonLeveledUp && playerMon)
-          ? getEvolutionTargetForLevelUp(playerMon.speciesEnum, playerMon.level) : null;
-        if (evoTarget) { _evolutionTarget = evoTarget; state = 'EVOLUTION_TEXT'; }
-        else state = 'CLEANUP_FADE_OUT';
+        // 1:1 décomp TryEvolvePokemon (post-combat) : itère TOUS les mons ayant monté de niveau
+        // (_leveledUpSlots = gLeveledUpInBattle) et évolue ceux éligibles, un par un (chaînés
+        // via EVOLUTION_DONE_WAIT → re-EVOLUTION_CHECK avec _evoScanSlot avancé).
+        const party = gSaveBlock1Ptr.playerParty;
+        while (_evoScanSlot < 6) {
+          const slot = _evoScanSlot;
+          const mon = party[slot] as PokemonInstance | null;
+          if (_leveledUpSlots.has(slot) && mon) {
+            const evoTarget = getEvolutionTargetForLevelUp(mon.speciesEnum, mon.level, mon.heldItem);
+            if (evoTarget) {
+              _evoMon = mon;
+              _evolutionTarget = evoTarget;
+              state = 'EVOLUTION_TEXT';
+              return false;
+            }
+          }
+          _evoScanSlot++;
+        }
+        state = 'CLEANUP_FADE_OUT';
         return false;
       }
 
       case 'LEARN_MOVE_MSG_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          state = 'LEARN_MOVE_CHECK';
+          // Messages d'apprentissage en file (cas "4 capacités" = 2 strings) : afficher
+          // le suivant avant de reprendre la file de moves.
+          if (_pendingLearnMsgs.length > 0) {
+            showBattleMessage(_pendingLearnMsgs.shift()!);
+          } else {
+            state = 'LEARN_MOVE_CHECK';
+          }
         }
         return false;
       }
 
       case 'EVOLUTION_TEXT': {
         // 1:1 décomp EvolutionScene (version message ; le morph animé pixel = polish A/B).
-        if (!playerMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
-        showBattleMessage(`Quoi ?\n${playerMon.nickname} évolue !`);
+        // _evoMon peut être off-field (un participant qui a monté + remplit une évolution).
+        if (!_evoMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
+        showBattleMessage(`Quoi ?\n${_evoMon.nickname} évolue !`);
         state = 'EVOLUTION_WAIT';
         return false;
       }
@@ -2731,10 +2913,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'EVOLUTION_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          if (!playerMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
-          const oldNick = playerMon.nickname;
-          evolveInstance(playerMon, _evolutionTarget);   // change l'espèce + recalcule
-          showBattleMessage(`${oldNick} est devenu\n${playerMon.speciesNameFr.toUpperCase()} !`);
+          if (!_evoMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
+          const oldNick = _evoMon.nickname;
+          evolveInstance(_evoMon, _evolutionTarget);   // change l'espèce + recalcule
+          showBattleMessage(`${oldNick} est devenu\n${_evoMon.speciesNameFr.toUpperCase()} !`);
           state = 'EVOLUTION_DONE_WAIT';
         }
         return false;
@@ -2744,7 +2926,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (messageWaitDone()) {
           HideFieldMessageBox();
           _evolutionTarget = null;
-          state = 'CLEANUP_FADE_OUT';
+          _evoMon = null;
+          _evoScanSlot++;             // 1:1 : continuer le scan vers le prochain mon éligible.
+          state = 'EVOLUTION_CHECK';
         }
         return false;
       }
@@ -2965,6 +3149,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         _activePlayerSlot = newSlot;
         playerMon = newMon;
         _pendingSwitchSlot = -1;
+        // Point 1 : un mon envoyé au combat PARTICIPE (1:1 sentIn) → part de l'XP/EVs.
+        _participants.add(newSlot);
         // Re-fill gBattleMons[0] (player) depuis le nouveau slot battle-side.
         fillBattleMonFromParty(0, 'player', newSlot);
         // Détruire l'ancien sprite (mon K.O.) + créer celui du nouveau mon (back sprite
