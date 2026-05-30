@@ -76,7 +76,7 @@ import {
   sTextOnWindowsInfo_Normal,
 } from './battle-windows';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
-import { LoadSpritePalette, FreeAllSpritePalettes } from '../system/sprite';
+import { LoadSpritePalette, FreeAllSpritePalettes, FreeSpritePaletteByTag } from '../system/sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -92,7 +92,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from '../pokemon/pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from '../battle/party-storage';
+import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -446,6 +446,7 @@ type State =
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
+  | 'PLAYER_SWITCH_LOAD' | 'PLAYER_SWITCH_SPAWN' | 'PLAYER_SWITCH_WAIT'
   | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
   | 'CLEANUP'
   | 'DONE';
@@ -662,6 +663,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // moves sont choisis ; ADVANCE_TURN avance la phase entre les 2 movers.
   let _turnOrder: [number, number] = [0, 1];
   let _turnPhase = 0;
+  // #10 faint→switch : slot party (index gSaveBlock1Ptr.playerParty) du mon joueur
+  // actif + slot vers lequel switcher quand l'actif tombe K.O. (et qu'il reste des
+  // mons valides). _switchLoad* = tracking du chargement async du nouveau back sprite.
+  let _activePlayerSlot = 0;
+  let _pendingSwitchSlot = -1;
+  let _switchLoadStarted = false;
+  let _switchLoadDone = false;
+  let _switchLoadFailed = false;
 
   // Final outcome.
   let outcome = BATTLE_OUTCOME_WIN;
@@ -1660,9 +1669,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         } catch { /* fallthrough */ }
         // Pick player Pokemon : first non-fainted from party.
         const party = gSaveBlock1Ptr.playerParty;
+        // Slot du 1er mon non-KO = mon actif initial (1:1 : premier mon valide envoyé).
+        const _initSlot = party.findIndex((m: PokemonInstance | null) => !!m && m.currentHp > 0);
         playerMon = params.playerMon
-          ?? party.find((m: PokemonInstance | null) => m && m.currentHp > 0)
+          ?? (_initSlot >= 0 ? party[_initSlot] : null)
           ?? null;
+        _activePlayerSlot = params.playerMon ? party.indexOf(params.playerMon) : _initSlot;
+        if (_activePlayerSlot < 0) _activePlayerSlot = 0;
         if (!playerMon) {
           console.warn('[battle-flow] no player Pokemon — auto-defeat');
           outcome = BATTLE_OUTCOME_LOST;
@@ -2776,7 +2789,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'PLAYER_FAINTED_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
         showBattleMessage(`${playerMon.nickname} est K.O.!`);
-        outcome = BATTLE_OUTCOME_LOST;
+        // #10 1:1 décomp : si la party a un AUTRE mon valide → switch forcé (le combat
+        // continue, pas de défaite). Sinon → défaite (whiteout). Le choix MANUEL via
+        // l'écran party (Cmd_openpartyscreen PARTY_ACTION_SEND_OUT) = couche suivante ;
+        // ici on prend le 1er mon valide suivant (switch-in fonctionnel + re-spawn 1:1).
+        const _party = gSaveBlock1Ptr.playerParty;
+        _pendingSwitchSlot = _party.findIndex(
+          (m: PokemonInstance | null, i: number) => i !== _activePlayerSlot && !!m && m.currentHp > 0,
+        );
+        if (_pendingSwitchSlot < 0) {
+          outcome = BATTLE_OUTCOME_LOST;   // plus aucun mon valide → défaite
+        }
         state = 'PLAYER_FAINTED_WAIT';
         // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
         // sprite descend (y2 += 5/frame) hors écran avec SpriteCB_FaintSlideAnim.
@@ -2789,8 +2812,85 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'PLAYER_FAINTED_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // Bug 5e session 124 : fade-out avant cleanup propre.
-          state = 'CLEANUP_FADE_OUT';
+          if (_pendingSwitchSlot >= 0) {
+            // #10 : il reste un mon valide → switch-in (charge le sprite du nouveau).
+            _switchLoadStarted = false;
+            _switchLoadDone = false;
+            _switchLoadFailed = false;
+            state = 'PLAYER_SWITCH_LOAD';
+          } else {
+            // Plus aucun mon → défaite (fade-out avant cleanup propre).
+            state = 'CLEANUP_FADE_OUT';
+          }
+        }
+        return false;
+      }
+
+      case 'PLAYER_SWITCH_LOAD': {
+        // Charge le back sprite + palette du nouveau mon (async). FreeSpritePaletteByTag
+        // AVANT le load : LoadSpritePalette renvoie le slot existant sans recharger les
+        // data si le tag existe → le nouveau mon prendrait la palette de l'ancien.
+        if (!_switchLoadStarted) {
+          _switchLoadStarted = true;
+          const newMon = gSaveBlock1Ptr.playerParty[_pendingSwitchSlot];
+          if (!newMon) { _switchLoadFailed = true; return false; }
+          (async () => {
+            try {
+              const dexId = newMon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+              const url = `/decomp/em/pokemon/${dexId}/back.png`;
+              const loaded = await rt.LoadCompressedSpriteSheet(url, PLAYER_SPRITE_BYTE_OFFSET);
+              FreeSpritePaletteByTag(TAG_BATTLE_PLAYER_PAL);
+              _battlePlayerPalSlot = LoadSpritePalette({ data: loaded.palette, tag: TAG_BATTLE_PLAYER_PAL });
+              _switchLoadDone = true;
+            } catch (e) {
+              console.error('[battle-flow] switch sprite load failed', e);
+              _switchLoadFailed = true;
+            }
+          })();
+        }
+        if (_switchLoadFailed) { outcome = BATTLE_OUTCOME_LOST; state = 'CLEANUP_FADE_OUT'; return false; }
+        if (_switchLoadDone) state = 'PLAYER_SWITCH_SPAWN';
+        return false;
+      }
+
+      case 'PLAYER_SWITCH_SPAWN': {
+        const newSlot = _pendingSwitchSlot;
+        const newMon = gSaveBlock1Ptr.playerParty[newSlot];
+        if (!newMon) { state = 'CLEANUP'; return false; }
+        // 1:1 switch : le nouveau mon devient l'actif.
+        _activePlayerSlot = newSlot;
+        playerMon = newMon;
+        _pendingSwitchSlot = -1;
+        // Re-fill gBattleMons[0] (player) depuis le nouveau slot battle-side.
+        fillBattleMonFromParty(0, 'player', newSlot);
+        // Détruire l'ancien sprite (mon K.O.) + créer celui du nouveau mon (back sprite
+        // fraîchement chargé à PLAYER_SPRITE_BYTE_OFFSET).
+        if (playerSpriteId >= 0) { rt.DestroySprite(playerSpriteId); playerSpriteId = -1; }
+        const playerCenterY = _getBattlerSpriteFinalY(newMon.speciesEnum, true);
+        const p = rt.CreateSpriteAtOam({
+          tileId: PLAYER_SPRITE_BYTE_OFFSET / 32,
+          paletteBank: _battlePlayerPalSlot,
+          x: SBATTLER_COORD_X_PLAYER, y: playerCenterY,
+          shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE,
+          priority: 2,
+        });
+        playerSpriteId = p.spriteId;
+        // Update healthbox content (surnom/genre + HP/level/exp) pour le nouveau mon.
+        if (playerHealthbox) {
+          updateHealthboxNick(playerHealthbox, newMon.nickname, (newMon as { monGender?: number }).monGender ?? 255);
+        }
+        renderHpWindows();
+        // 1:1 STRINGID_GOPKMN : "En avant, {NAME}!" (envoi du mon).
+        showBattleMessage(`En avant,\n${newMon.nickname.toUpperCase()}!`);
+        state = 'PLAYER_SWITCH_WAIT';
+        return false;
+      }
+
+      case 'PLAYER_SWITCH_WAIT': {
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          // Le switch a consommé le tour → tour suivant (sélection d'action).
+          state = 'PLAYER_TURN_PROMPT';
         }
         return false;
       }
