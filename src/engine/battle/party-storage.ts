@@ -724,9 +724,12 @@ export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void
   // Status decode (= masque sur les bits stables, sleep turns ignored).
   const baseStatus = mon.status & 0xF8;
   inst.status = _STATUS1_TO_STATUS[baseStatus] ?? (mon.status & 0x07 ? 'SLP' : null);
-  // Sync PP via moves array.
+  // Sync PP via moves array. GUARD `mon.moves[i] !== 0` : ne synchronise le PP QUE pour
+  // les moves que la copie de combat possédait. Un move APPRIS pendant le combat (slot vide
+  // en début de combat → mon.moves[i]===0) garde son PP plein (posé par makeMoveSlot) au lieu
+  // d'être écrasé à 0 par la copie périmée. Corrige l'apprentissage on-field ET off-field.
   for (let i = 0; i < MAX_MON_MOVES_PARTY; i++) {
-    if (inst.moves[i]) inst.moves[i].pp = mon.pp[i];
+    if (inst.moves[i] && mon.moves[i] !== 0) inst.moves[i].pp = mon.pp[i];
   }
 }
 
