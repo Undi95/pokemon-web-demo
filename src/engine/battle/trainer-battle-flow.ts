@@ -116,18 +116,9 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
     const rt = getRuntime();
     if (!rt) return false;
 
-    // Iter17 : re-hide stashed overworld sprites each tick during all states
-    // BETWEEN INTRO_TEXT and DONE (= UpdateObjectEvents un-hides them per
-    // frame). startWildBattle's tick also does this when delegated.
-    if (state !== 'WAIT_DATA' && state !== 'DONE') {
-      const stashTick = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
-      if (stashTick) {
-        for (const id of stashTick) {
-          const sprite = rt.gSprites.get(id);
-          if (sprite) sprite.invisible = true;
-        }
-      }
-    }
+    // NB : plus de re-hide per-tick des sprites OW. Ils sont DÉTRUITS à INTRO_TEXT
+    // (1:1 ResetSpriteData) et re-spawnés au CLEANUP de l'inner battle → rien à
+    // re-cacher.
 
     switch (state) {
       case 'WAIT_DATA': {
@@ -146,23 +137,29 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'INTRO_TEXT': {
-        // Iter17 : hide overworld BGs + sprites already AT INTRO_TEXT (= avant
-        // le startWildBattle qui les cache aussi). Sinon le user voit le
-        // overworld pendant l'intro "BRICE veut combattre!".
+        // Hide overworld BGs pour l'intro "X veut combattre!".
         HideBg(1);
         HideBg(2);
         HideBg(3);
-        const stash: Set<number> = new Set();
-        const rt2 = getRuntime();
-        if (rt2) {
-          for (const [id, sprite] of rt2.gSprites) {
-            if (sprite && !sprite.invisible) {
-              stash.add(id);
-              sprite.invisible = true;
-            }
-          }
-        }
-        (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = stash;
+        // 1:1 décomp ResetSpriteData (cf. battle-flow LOAD_ASSETS) : on DÉTRUIT les
+        // sprites OW (player avatar + NPCs) pour l'intro trainer plutôt que de les
+        // stasher (ancien hack invisible + per-tick re-hide, source des bugs de
+        // corruption healthbox). Les structs gObjectEvents/gPlayerAvatar persistent
+        // → re-spawn au CLEANUP de l'inner battle (_restoreOverworldFromMenu).
+        // setObjectEventsSuspended(true) empêche UpdateObjectEvents de tiquer les
+        // sprites détruits pendant INTRO_WAIT (l'inner battle CLEANUP le remet false).
+        void Promise.all([
+          import('../field/object-events'),
+          import('../field/player-avatar'),
+          import('../system/sprite-animation'),
+        ]).then(([oe, pa, sa]) => {
+          const rt2 = getRuntime();
+          if (!rt2) return;
+          oe.setObjectEventsSuspended(true);
+          oe.destroyAllNpcSprites(rt2);
+          pa.DestroyPlayerAvatar(rt2);
+          sa.ResetSpriteCopyRequests();
+        });
         const name = trainerData!.trainerName ?? 'Adversaire';
         ShowFieldMessage(`${name} veut combattre!`);
         state = 'INTRO_WAIT';
@@ -267,24 +264,12 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'DONE': {
-        // Iter17 : restore BGs + sprites (= might have been hidden by trainer
-        // INTRO_TEXT but not yet restored if startWildBattle was never called
-        // due to early WIN_TEXT/LOSE_TEXT). Idempotent — startWildBattle's
-        // CLEANUP also does this.
+        // Re-show BGs (idempotent — l'inner battle CLEANUP les a déjà re-montrés
+        // via _restoreOverworldFromMenu, qui a aussi re-spawné les sprites OW
+        // détruits à INTRO_TEXT). Plus de stash sprite à restaurer.
         ShowBg(1);
         ShowBg(2);
         ShowBg(3);
-        const stash = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
-        if (stash) {
-          const rt3 = getRuntime();
-          if (rt3) {
-            for (const id of stash) {
-              const sprite = rt3.gSprites.get(id);
-              if (sprite) sprite.invisible = false;
-            }
-          }
-          (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = undefined;
-        }
         return true;
       }
     }

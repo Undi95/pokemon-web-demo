@@ -434,7 +434,7 @@ type State =
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
   | 'CHECK_OPP_FAINTED'
   | 'OPP_FAINTED_TEXT' | 'OPP_FAINTED_WAIT'
-  | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT'
+  | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT' | 'EXP_BAR_FILL_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
@@ -1350,12 +1350,24 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // 1:1 décomp : MoveBattleBarGraphically lit battleBars[battler].currValue. Notre
   // hook mappe battler → handle + convertit currValue (Q24.8 si maxValue<48) → PV réel.
   setMoveBattleBarGraphicallyHook((battler: number, whichBar: number) => {
-    if (whichBar !== HEALTH_BAR) return;
-    const handle = battler === 0 ? playerHealthbox : opponentHealthbox;
-    if (!handle) return;
-    const bar = battleBars[battler];
-    const realHp = bar.maxValue < 48 ? bar.currValue / 256 : bar.currValue;
-    updateHealthboxHpBar(handle, realHp, bar.maxValue);
+    if (whichBar === HEALTH_BAR) {
+      const handle = battler === 0 ? playerHealthbox : opponentHealthbox;
+      if (!handle) return;
+      const bar = battleBars[battler];
+      const realHp = bar.maxValue < 48 ? bar.currValue / 256 : bar.currValue;
+      updateHealthboxHpBar(handle, realHp, bar.maxValue);
+      return;
+    }
+    if (whichBar === EXP_BAR) {
+      // 1:1 décomp MoveBattleBarGraphically EXP_BAR : player only (battler 0).
+      // currValue = exp DANS le niveau courant ; Q24.8 si expForLevel < 64
+      // (= EXP scale 8*8), sinon entier (cf. CalcNewBarValue). updateHealthboxExpBar
+      // re-blitte les 8 tiles fill au % interpolé.
+      if (!playerHealthbox || !playerMon) return;
+      const bar = battleBars[0];
+      const realExp = bar.maxValue < 64 ? bar.currValue / 256 : bar.currValue;
+      updateHealthboxExpBar(playerHealthbox, realExp, bar.maxValue, playerMon.level);
+    }
   });
   /** Démarre le drain HP gradué (1:1 SetBattleBarStruct). `battler` 0/1 ; le hook
    *  graphique anime ensuite via tickHpDrain. Rendu immédiat à oldHp (anti-flash). */
@@ -1376,6 +1388,47 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   const isHpDraining = (battler?: number): boolean =>
     battler === undefined ? _hpDrainBattlers.size > 0 : _hpDrainBattlers.has(battler);
 
+  // ─── EXP bar fill animation 1:1 décomp MoveBattleBar EXP_BAR + Cmd_getexp ──
+  // 1:1 décomp `Cmd_getexp` (battle_script_commands.c:3255) case 3/4/5 loop :
+  // `BtlController_EmitExpUpdate` anime la barre EXP vers le seuil de niveau ; si
+  // level-up, le controller renvoie le reste d'exp → boucle pour donner le reste
+  // (barre reset à 0% pour le nouveau niveau). Notre port inline (pas de Controller
+  // IPC) : on remplit la barre par CHUNK (1 chunk = jusqu'au prochain seuil de
+  // niveau) via MoveBattleBar(EXP_BAR), puis applyExpAward(chunk) applique l'exp +
+  // le level-up + recompute les stats. Player only (single mon, pas d'Exp.Share).
+  let _expFilling = false;
+  let _expToGive = 0;        // exp restante à distribuer (animée par chunk).
+  let _expFillPending = 0;   // chunk en cours d'animation (appliqué à la fin du tick).
+  const startExpFill = (maxExpInLevel: number, oldExpInLevel: number, newExpInLevel: number): void => {
+    if (!playerHealthbox || newExpInLevel === oldExpInLevel) { _expFilling = false; return; }
+    // receivedValue = old - new < 0 → CalcNewBarValue remplit la barre vers la droite (gain).
+    SetBattleBarStruct(0, 0, maxExpInLevel, oldExpInLevel, oldExpInLevel - newExpInLevel);
+    _expFilling = true;
+    if (playerMon) updateHealthboxExpBar(playerHealthbox, oldExpInLevel, maxExpInLevel, playerMon.level);
+  };
+  const tickExpFill = (): void => {
+    if (!_expFilling) return;
+    const ret = MoveBattleBar(0, 0, EXP_BAR, 0);  // avance currValue + appelle le hook graphique
+    if (ret === -1) _expFilling = false;
+  };
+  const isExpFilling = (): boolean => _expFilling;
+  /** Démarre l'animation du prochain chunk d'exp (jusqu'au seuil de niveau courant).
+   *  Retourne false si plus rien à animer (= reste 0, ou MAX_LEVEL). */
+  const beginExpChunk = (): boolean => {
+    if (!playerMon || _expToGive <= 0 || playerMon.level >= 100) return false;
+    if (!playerMon.growthRate || playerMon.currentExp === undefined) return false;
+    const currLevelExp = getExperienceForLevel(playerMon.growthRate, playerMon.level);
+    const nextLevelExp = getExperienceForLevel(playerMon.growthRate, playerMon.level + 1);
+    const currExpInLevel = playerMon.currentExp - currLevelExp;
+    const expForLevel = nextLevelExp - currLevelExp;
+    const expToNext = nextLevelExp - playerMon.currentExp;
+    const chunk = Math.min(_expToGive, expToNext);
+    if (chunk <= 0 || expForLevel <= 0) return false;
+    _expFillPending = chunk;
+    startExpFill(expForLevel, currExpInLevel, currExpInLevel + chunk);
+    return true;
+  };
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
@@ -1395,6 +1448,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     tickFaint();
     tickBounce();
     tickHpDrain();
+    tickExpFill();
     // 1:1 décomp `Task_DoPokeballSendOutAnim` polling via sprite callback chain.
     // Notre tick centralisé invoke tickBallThrow() chaque frame ; le state machine
     // BALL_THROW polle l'outcome pour transition.
@@ -1407,89 +1461,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
     }
 
-    // Iter16 : during battle, re-hide overworld sprites each frame because
-    // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
-    // INIT/LOAD_ASSETS (= our battle sprites not yet spawned) and CLEANUP.
-    // R3 enhance : également hide les NEW sprites OW spawned pendant battle
-    // (= script-spawned NPCs, emote bubbles). Build whitelist battle sprites
-    // explicitement (player + opponent + healthbox handles) pour pas hide eux.
-    const stashedSprites = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
-    const animPauseBackupTick = (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup;
-    const animsBackupTick = (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup;
-    if (stashedSprites && state !== 'CLEANUP' && state !== 'DONE' && state !== 'INIT' && state !== 'LOAD_ASSETS' && state !== 'WAIT_LOAD') {
-      const battleWhitelist = new Set<number>();
-      if (playerSpriteId >= 0) battleWhitelist.add(playerSpriteId);
-      if (opponentSpriteId >= 0) battleWhitelist.add(opponentSpriteId);
-      if (playerHealthbox) {
-        battleWhitelist.add(playerHealthbox.leftSpriteId);
-        battleWhitelist.add(playerHealthbox.rightSpriteId);
-        battleWhitelist.add(playerHealthbox.healthbarSpriteId);
-      }
-      if (opponentHealthbox) {
-        battleWhitelist.add(opponentHealthbox.leftSpriteId);
-        battleWhitelist.add(opponentHealthbox.rightSpriteId);
-        battleWhitelist.add(opponentHealthbox.healthbarSpriteId);
-      }
-      // Whitelist robuste : TOUTE barre combat (subspriteMode 'on'). Protège contre
-      // la race async où la barre HP est créée (createBattlerHealthboxSprites await
-      // ensureHealthboxAssets) AVANT l'assignation du handle → sinon la boucle "hide
-      // NEW" la voit visible + non-whitelistée → la stashe + cache à vie → enfants
-      // subsprites cachés (syncSubspriteOam: oam.visible = !sprite.invisible) → "barre
-      // adverse vide au spawn après quelques combats" (user-flag 2026-05-30, le cache
-      // hit d'ensureHealthboxAssets change le timing). En combat les seuls sprites
-      // subMode 'on' sont les barres HP (player+adverse) ; les sprites OW sont 'off'.
-      for (const [id, s] of rt.gSprites) {
-        if (s && s.inUse && s.subspriteMode === 'on') battleWhitelist.add(id);
-      }
-      // Re-hide stashed sprites (= OW NPCs/player visibles pré-combat). MAIS si un
-      // sprite combat (whitelist) a été stashé par erreur (race ci-dessus), on le
-      // RETIRE du stash + ré-affiche (sinon il reste caché à vie → barre vide).
-      for (const id of [...stashedSprites]) {
-        if (battleWhitelist.has(id)) {
-          stashedSprites.delete(id);
-          const sp = rt.gSprites.get(id);
-          if (sp) sp.invisible = false;
-          continue;
-        }
-        const sprite = rt.gSprites.get(id);
-        if (sprite) sprite.invisible = true;
-      }
-      // Ré-assert l'anim pause sur les sprites OW pré-combat chaque frame : si
-      // un update OW (qui re-montre les sprites, cf. commentaire ci-dessus) les
-      // ré-anime, on ré-stoppe leur copy-request VRAM. Skip les sprites combat.
-      if (animPauseBackupTick) {
-        for (const id of animPauseBackupTick.keys()) {
-          if (battleWhitelist.has(id)) continue;
-          const sprite = rt.gSprites.get(id);
-          // anims=null : SKIP total du sprite par tickSpriteAnims (fix définitif, cf.
-          // SPAWN_SPRITES) — un task OW re-dé-pausait l'avatar, donc animPaused seul
-          // ne suffisait pas. animPaused/animBeginning = défense additionnelle.
-          if (sprite && sprite.inUse) {
-            sprite.animPaused = true;
-            sprite.animBeginning = false;
-            sprite.anims = null;
-          }
-        }
-      }
-      // Hide NEW sprites spawned during battle that are not battle sprites
-      // (= ex emote bubbles, script-spawned NPCs). Add to stash for cleanup restore.
-      for (const [spriteId, sprite] of rt.gSprites) {
-        if (!sprite || sprite.invisible) continue;
-        if (battleWhitelist.has(spriteId)) continue;
-        if (stashedSprites.has(spriteId)) continue;
-        sprite.invisible = true;
-        stashedSprites.add(spriteId);
-        // Pause aussi son anim (avec backup) pour stopper toute copy-request VRAM
-        // qui pourrait écraser la région healthbox. animBeginning=false : stoppe AUSSI
-        // BeginAnim (qui ignore animPaused).
-        if (animPauseBackupTick && !animPauseBackupTick.has(spriteId)) animPauseBackupTick.set(spriteId, sprite.animPaused);
-        sprite.animPaused = true;
-        sprite.animBeginning = false;
-        // Backup + clear anims (fix définitif : skip total par tickSpriteAnims).
-        if (animsBackupTick && !animsBackupTick.has(spriteId)) animsBackupTick.set(spriteId, sprite.anims);
-        sprite.anims = null;
-      }
-    }
+    // NB : plus de re-hide/re-pause per-frame des sprites OW. Ils sont DÉTRUITS
+    // au battle entry (LOAD_ASSETS, 1:1 ResetSpriteData) → ils n'existent plus
+    // pendant le combat, donc UpdateObjectEvents (suspendu via
+    // setObjectEventsSuspended au INIT) n'a rien à re-montrer et aucune
+    // copy-request VRAM ne peut corrompre la healthbox.
 
     switch (state) {
       case 'INIT': {
@@ -1704,6 +1680,29 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               const env = setupMod.BattleSetup_GetEnvironmentId();
               console.log('[battle-flow E1] BattleSetup_GetEnvironmentId →', env);
               await bgMod.loadBattleTextboxAndBackground(env);
+              // 1:1 décomp `CB2_InitBattleInternal` (battle_main.c:678) :
+              // `ResetSpriteData()` détruit TOUS les sprites juste après
+              // LoadBattleTextboxAndBackground. Notre combat tourne INLINE (pas de
+              // SetMainCallback2(CB2_InitBattle)), donc les sprites object-event OW
+              // (player avatar + NPCs) survivaient au combat et partageaient la VRAM
+              // OBJ avec les sprites combat : un sprite OW animé ré-écrivait sa VRAM
+              // (ex avatar tile 144 = 0x1200) via RequestSpriteFrameImageCopy, ce qui
+              // chevauche la région hardcodée healthbox → corruption "fleur" du groove
+              // de la box adverse (user-flag 2026-05-30). FIX 1:1 : on détruit
+              // explicitement les sprites OW ici. Les STRUCTS gObjectEvents[]/
+              // gPlayerAvatar persistent (EWRAM) → re-spawn au retour OW via
+              // `_restoreOverworldFromMenu` (= ResetSpriteData côté décomp, sprites
+              // transients). ResetSpriteCopyRequests vide la queue de copy-requests
+              // en attente (sinon une copy déjà queuée par un sprite détruit
+              // s'exécuterait au VBlank et corromprait quand même la VRAM healthbox).
+              const [oeMod, paMod, saMod] = await Promise.all([
+                import('../field/object-events'),
+                import('../field/player-avatar'),
+                import('../system/sprite-animation'),
+              ]);
+              oeMod.destroyAllNpcSprites(rt);
+              paMod.DestroyPlayerAvatar(rt);
+              saMod.ResetSpriteCopyRequests();
               loadDone = true;
             } catch (e) {
               console.error('[battle-flow] sprite load failed', e);
@@ -1740,49 +1739,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Reset BG3 vofs/hofs qui pourraient avoir été set par overworld.
         rt.gba.bg(3).config.hofs = 0;
         rt.gba.bg(3).config.vofs = 0;
-        // Iter16 : hide overworld OAM sprites (= player + NPCs) so they don't
-        //   show on top of the battle. Stash their visibility for restore on
-        //   cleanup. Iterate sprites par spriteId (= gSprites map) AVANT le
-        //   spawn de nos sprites battle (= ceux-ci seront ajoutés ensuite).
-        const stashSprites: Set<number> = new Set();
-        // 1:1 décomp : CB2_InitBattle appelle ResetSpriteData() qui DÉTRUIT tous les
-        // sprites overworld avant de créer ceux du combat. Notre combat inline les
-        // garde vivants + stashés (invisible) pour restore rapide au retour OW. MAIS
-        // un sprite OW object-event (player/NPC) avec une anim de marche active reste
-        // tické par tickSpriteAnims (invisible ou non) → sa RequestSpriteFrameImageCopy
-        // ré-écrit sa VRAM (allouée par l'OBJ allocator AVANT le combat) CHAQUE FRAME.
-        // Cette VRAM chevauche la région hardcodée des healthbox combat
-        // (0x0000/0x1000/0x2000) → le groove de la box adverse (tiles 144-151 = 0x1200)
-        // se fait écraser par la frame de marche du player, lue avec la palette
-        // healthbox → "bout de fleur OW à palette random" (bug user 2026-05-29). Fix
-        // 1:1 (pattern FreezeObjectEvents / sprite->animPaused) : on PAUSE l'anim de
-        // TOUS les sprites pré-combat (backup pour restore) afin de stopper leurs
-        // copy-requests VRAM. Le blit gfx healthbox (INIT_HP_WINDOWS) arrive APRÈS →
-        // toute corruption résiduelle est recouverte.
-        const animPauseBackup: Map<number, boolean> = new Map();
-        // Backup + clear de `sprite.anims` : c'est LE fix définitif. animPaused/animBeginning
-        // ne suffisaient pas — un task/mouvement OW re-dé-pausait l'avatar (animPaused=false)
-        // chaque frame, et tickSpriteAnims l'animait → RequestSpriteFrameImageCopy copiait sa
-        // frame de marche dans la VRAM healthbox (tile 144, qui chevauche le groove de la box
-        // adverse) → "fleur" colorée. Avec anims=null, tickSpriteAnims SKIP entièrement le
-        // sprite (sprite.c:`if (anims === null) continue`) → aucune copy possible, quel que
-        // soit l'état animPaused. Restauré au CLEANUP (user-flag 2026-05-30, vérifié runtime).
-        const animsBackup: Map<number, unknown> = new Map();
-        for (const [spriteId, sprite] of rt.gSprites) {
-          if (!sprite) continue;
-          animPauseBackup.set(spriteId, sprite.animPaused);
-          sprite.animPaused = true;
-          sprite.animBeginning = false;
-          animsBackup.set(spriteId, sprite.anims);
-          sprite.anims = null;
-          if (!sprite.invisible) {
-            stashSprites.add(spriteId);
-            sprite.invisible = true;
-          }
-        }
-        (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = stashSprites;
-        (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup = animPauseBackup;
-        (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup = animsBackup;
+        // NB : les sprites OW (player avatar + NPCs) ont DÉJÀ été détruits à
+        // LOAD_ASSETS (1:1 décomp ResetSpriteData, cf. commentaire là-bas). Plus
+        // aucun stash/hide/animPaused : les sprites n'existent plus pendant le
+        // combat → zéro corruption VRAM possible, re-spawn au CLEANUP.
 
         // Compute tileId for each sprite (= byteOffset / 32 bytes per tile).
         const playerTileId   = PLAYER_SPRITE_BYTE_OFFSET   / 32;
@@ -2194,6 +2154,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const moveIdx = ret16 & 0xFF;
         chosenMoveIndex = moveIdx;
         closeMoveMenu();
+        // 1:1 fix : fermer AUSSI le menu d'action (= scroll BG0 → 0 = MSG). Sinon
+        // closeMoveMenu remet le scroll à 160 (= position ACTION) et le menu d'action
+        // vide reste visible pendant le HP drain (PLAYER_BYTECODE_MSG attend la fin du
+        // drain avant showBattleMessage, qui seul re-scroll à 0) → flash de boîtes vides.
+        closeActionMenu();
         HideFieldMessageBox();
         state = 'PLAYER_USES_MOVE';
         return false;
@@ -2215,7 +2180,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           if (moveMenuCursor < numMoves) {
             chosenMoveIndex = moveMenuCursor;
             closeMoveMenu();
-            HideFieldMessageBox();
+            closeActionMenu();  // 1:1 fix : scroll BG0 → 0 (MSG) ; évite le flash du menu d'action vide pendant le HP drain (cf. MOVE_WAIT_CHOOSE_RESPONSE).
             state = 'PLAYER_USES_MOVE';
           }
         }
@@ -2228,16 +2193,27 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Phase 1.4 J : si bytecode mode, applyMoveDamage immédiat → fills
         // queue + apply damage + shake → drain queue séquentiellement via
         // PLAYER_BYTECODE_MSG state. Sinon : hardcoded ShowFieldMessage legacy.
-        const useBytecodeMsgs =
-          (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
-          || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+        // 1:1 fix : gating aligné sur isBytecodeDamageEnabled() (bytecode = moteur
+        // PAR DÉFAUT, cf. applyMoveDamage). Avant, ce check inline défaut-FALSE
+        // divergeait du check damage défaut-TRUE → les vrais messages bytecode
+        // (textes + effets, 1:1 décodés des PRINTSTRING) étaient calculés puis JETÉS
+        // au profit des messages legacy hardcodés. Aligné → affiche le 1:1 décomp.
+        const useBytecodeMsgs = isBytecodeDamageEnabled();
         if (useBytecodeMsgs && opponentMon) {
           _pendingBytecodeMessages = [];
           const oppOldHp = opponentMon.currentHp;
           applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
-          // 1:1 décomp `Cmd_healthbarupdate` : drain gradué oldHp→newHp (gaté par
-          // PLAYER_BYTECODE_MSG = waitforhealthbar). startHpDrain AVANT renderHpWindows
-          // pour que renderHpWindows skip le blit barre (anti-saut).
+          // 1:1 décomp ordre `BattleScript_EffectHit` : `attackstring` ("X utilise
+          // MOVE!") AVANT `attackanimation`/`healthbarupdate` (drain). On affiche donc
+          // le 1er message (USEDMOVE) AVANT de démarrer le drain → la boîte message
+          // montre "X utilise MOVE!" PENDANT le drain au lieu d'être VIDE (le drain dure
+          // plusieurs frames ; sans ça PLAYER_BYTECODE_MSG gate isHpDraining avant tout
+          // message → boîte vide visible, bug user 2026-05-30).
+          if (_pendingBytecodeMessages.length > 0) {
+            showBattleMessage(_pendingBytecodeMessages.shift()!);
+          }
+          // 1:1 décomp `Cmd_healthbarupdate` : drain gradué oldHp→newHp. startHpDrain
+          // AVANT renderHpWindows pour que renderHpWindows skip le blit barre (anti-saut).
           startHpDrain(1, opponentHealthbox, opponentMon.maxHp, oppOldHp, opponentMon.currentHp);
           renderHpWindows();
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
@@ -2246,7 +2222,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0 && !IsBattleSceneOff()) {
             startShake(opponentSpriteId);
           }
-          state = 'PLAYER_BYTECODE_MSG';
+          // 1er message affiché → _WAIT attend (fin du drain + A). Les messages suivants
+          // (efficacité/effets) sont drainés ensuite par PLAYER_BYTECODE_MSG.
+          state = 'PLAYER_BYTECODE_MSG_WAIT';
           return false;
         }
         // Legacy path : message hardcoded puis damage state.
@@ -2284,6 +2262,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'PLAYER_BYTECODE_MSG_WAIT': {
+        // 1:1 `waitforhealthbar` : ne PAS dismisser le message ("X utilise MOVE!")
+        // tant que le drain HP n'est pas fini → le message reste affiché PENDANT le
+        // drain (au lieu d'une boîte vide), l'efficacité/effet suit après.
+        if (isHpDraining()) return false;
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'PLAYER_BYTECODE_MSG';
@@ -2391,31 +2373,67 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'EXP_AWARD_TEXT': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
-        // 1:1 décomp `pokemon.c:GiveMonExperience` formula :
-        //   exp = (baseExp × defeatedLevel) / 7
+        // 1:1 décomp Cmd_getexp case 1-2 : calc exp (= baseExp × defeatedLevel / 7)
+        // + message STRINGID_PKMNGAINEDEXP.
         const gained = calculateExpGain(opponentMon.speciesEnum, opponentMon.level);
-        const result = applyExpAward(playerMon, gained);
-        // Stash level-up flag for next state.
-        chosenMoveIndex = result.leveledUp ? 1 : 0;  // reuse var as flag
         showBattleMessage(`${playerMon.nickname} gagne\n${gained} POINTS D'EXP.!`);
-        state = 'EXP_AWARD_WAIT';
+        // 1:1 décomp case 3 : la barre EXP s'anime (EmitExpUpdate) pendant que le
+        // message s'affiche. On distribue l'exp par CHUNK (jusqu'au seuil de niveau) ;
+        // applyExpAward applique l'exp + le level-up à la fin de chaque chunk (cf.
+        // EXP_BAR_FILL_WAIT). N'applique PLUS instantanément (= anti-saut de barre).
+        _expToGive = gained;
+        if (beginExpChunk()) {
+          state = 'EXP_BAR_FILL_WAIT';
+        } else {
+          // MAX_LEVEL / rien à animer : apply instant + wait final.
+          applyExpAward(playerMon, _expToGive);
+          _expToGive = 0;
+          renderHpWindows();
+          state = 'EXP_AWARD_WAIT';
+        }
+        return false;
+      }
+
+      case 'EXP_BAR_FILL_WAIT': {
+        // 1:1 `waitforexpbar` : attendre la fin de l'anim de remplissage du chunk
+        // avant d'appliquer l'exp + checker le level-up.
+        if (isExpFilling()) return false;
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        // Chunk animé fini → applique l'exp (+ level-up éventuel via applyExpAward).
+        const r = applyExpAward(playerMon, _expFillPending);
+        _expToGive -= _expFillPending;
+        _expFillPending = 0;
+        if (r.leveledUp) {
+          // 1:1 décomp case 4 : level-up → message BattleScript_LevelUp + refresh HP
+          // window (nouveau maxHp + level). La barre EXP reset à 0% du nouveau niveau,
+          // re-remplie par le prochain chunk (LEVEL_UP_WAIT → beginExpChunk).
+          renderHpWindows();
+          state = 'LEVEL_UP_TEXT';
+        } else {
+          // Plus de level-up : chunk final consommé → wait A (sur le message "gagne EXP").
+          state = 'EXP_AWARD_WAIT';
+        }
         return false;
       }
 
       case 'EXP_AWARD_WAIT': {
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          // Bug 5e session 124 : fade-out avant cleanup si pas de level up.
-          state = chosenMoveIndex === 1 ? 'LEVEL_UP_TEXT' : 'CLEANUP_FADE_OUT';
+          // Bug 5e session 124 : fade-out avant cleanup.
+          state = 'CLEANUP_FADE_OUT';
         }
         return false;
       }
 
       case 'LEVEL_UP_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
+        // 1:1 décomp `BattleScript_LevelUp` (battle_scripts_1 ll. 3144) : `fanfare
+        // MUS_LEVEL_UP` joue le jingle de montée de niveau AVANT le message. Slot
+        // 'fanfare' dédié → ne coupe pas le BGM de victoire (MUS_VICTORY_WILD).
+        void import('../system/decomp-globals').then(({ PlayFanfare }) => {
+          PlayFanfare(367 /* MUS_LEVEL_UP */);
+        });
         showBattleMessage(`${playerMon.nickname} monte au\nniveau ${playerMon.level}!`);
-        // Refresh HP window pour refleter nouveau maxHp.
-        renderHpWindows();
         state = 'LEVEL_UP_WAIT';
         return false;
       }
@@ -2423,8 +2441,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'LEVEL_UP_WAIT': {
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
-          // Bug 5e session 124 : fade-out avant cleanup propre (= no visual snap).
-          state = 'CLEANUP_FADE_OUT';
+          // 1:1 décomp case 5 : s'il reste de l'exp (= level-up cross), boucle pour
+          // donner le reste (barre re-remplit depuis 0% du nouveau niveau). Sinon
+          // fade-out (= no visual snap).
+          if (_expToGive > 0 && beginExpChunk()) {
+            state = 'EXP_BAR_FILL_WAIT';
+          } else {
+            state = 'CLEANUP_FADE_OUT';
+          }
         }
         return false;
       }
@@ -2446,14 +2470,24 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         }
         // Phase 1.4 J : bytecode mode → applyMoveDamage immédiat + drain via
         // OPPONENT_BYTECODE_MSG. Sinon : legacy hardcoded.
-        const useBytecodeMsgs =
-          (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
-          || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+        // 1:1 fix : gating aligné sur isBytecodeDamageEnabled() (bytecode = moteur
+        // PAR DÉFAUT, cf. applyMoveDamage). Avant, ce check inline défaut-FALSE
+        // divergeait du check damage défaut-TRUE → les vrais messages bytecode
+        // (textes + effets, 1:1 décodés des PRINTSTRING) étaient calculés puis JETÉS
+        // au profit des messages legacy hardcodés. Aligné → affiche le 1:1 décomp.
+        const useBytecodeMsgs = isBytecodeDamageEnabled();
         if (useBytecodeMsgs) {
           _pendingBytecodeMessages = [];
           const plOldHp = playerMon.currentHp;
           applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
-          // 1:1 `Cmd_healthbarupdate` : drain gradué player (gaté OPPONENT_BYTECODE_MSG).
+          // 1:1 décomp ordre BattleScript : `attackstring` ("L'ennemi X utilise MOVE!")
+          // AVANT `healthbarupdate` (drain). Afficher le 1er message AVANT startHpDrain
+          // → boîte message non-vide pendant le drain (cf. PLAYER_USES_MOVE, bug user
+          // 2026-05-30).
+          if (_pendingBytecodeMessages.length > 0) {
+            showBattleMessage(_pendingBytecodeMessages.shift()!);
+          }
+          // 1:1 `Cmd_healthbarupdate` : drain gradué player.
           startHpDrain(0, playerHealthbox, playerMon.maxHp, plOldHp, playerMon.currentHp);
           renderHpWindows();
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
@@ -2462,7 +2496,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             startShake(playerSpriteId);
           }
           chosenMoveIndex = oppMoveIdx;
-          state = 'OPPONENT_BYTECODE_MSG';
+          state = 'OPPONENT_BYTECODE_MSG_WAIT';
           return false;
         }
         const mv = opponentMon.moves[oppMoveIdx];
@@ -2486,6 +2520,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_BYTECODE_MSG_WAIT': {
+        // 1:1 `waitforhealthbar` : garder le message ("L'ennemi X utilise MOVE!")
+        // affiché tant que le drain HP player n'est pas fini (au lieu d'une boîte vide).
+        if (isHpDraining()) return false;
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'OPPONENT_BYTECODE_MSG';
@@ -2556,9 +2593,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // per-battler, wish/perish, special Palace/Arena) puis reset turn vars.
           // En mode bytecode, on route via le wrapper full ; en mode legacy on
           // skip directement à PLAYER_TURN_PROMPT (= comportement tutorial actuel).
-          const useBytecode =
-            (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
-            || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+          // 1:1 fix : aligné sur isBytecodeDamageEnabled() (défaut TRUE) comme le
+          // reste du flow — avant, ce check défaut-FALSE skippait BattleTurnPassed
+          // (end-of-turn effects : poison/burn tick, etc.) hors opt-out explicite.
+          const useBytecode = isBytecodeDamageEnabled();
           state = useBytecode ? 'END_TURN_PROCESS' : 'PLAYER_TURN_PROMPT';
         }
         return false;
@@ -2739,38 +2777,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         }
         closeMoveMenu();
         closeActionMenu();  // Phase 1.4 N : cleanup action menu windows si encore actives
-        // Iter16 : restore overworld sprites that were hidden at battle start.
-        const stashRestore = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
-        if (stashRestore) {
-          for (const id of stashRestore) {
-            const sprite = rt.gSprites.get(id);
-            if (sprite) sprite.invisible = false;
-          }
-          (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = undefined;
-        }
-        // Restore l'état animPaused pré-combat des sprites OW (pattern
-        // UnfreezeObjectEvents) — le combat les avait pausés pour stopper leurs
-        // copy-requests VRAM (cf. SPAWN_SPRITES). Le système de mouvement OW
-        // re-drivera animPaused au besoin ensuite.
-        const animPauseRestore = (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup;
-        if (animPauseRestore) {
-          for (const [id, paused] of animPauseRestore) {
-            const sprite = rt.gSprites.get(id);
-            if (sprite && sprite.inUse) sprite.animPaused = paused;
-          }
-          (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup = undefined;
-        }
-        // Restore les `anims` des sprites OW (clearés au combat pour les sortir
-        // totalement de tickSpriteAnims — cf. SPAWN_SPRITES). Le sprite ré-animera
-        // normalement en OW une fois ses anims rétablies.
-        const animsRestore = (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup;
-        if (animsRestore) {
-          for (const [id, anims] of animsRestore) {
-            const sprite = rt.gSprites.get(id);
-            if (sprite && sprite.inUse) (sprite as { anims: unknown }).anims = anims;
-          }
-          (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup = undefined;
-        }
+        // NB : plus de stash-restore des sprites OW. Ils ont été DÉTRUITS au battle
+        // entry (LOAD_ASSETS, 1:1 ResetSpriteData) et sont RE-SPAWNÉS ci-dessous par
+        // `_restoreOverworldFromMenu` (= loadAndInitMap returnToField → InitPlayerAvatar
+        // + SpawnObjectEventsOnReturnToField, 1:1 InitObjectEventsReturnToField).
         // Set outcome vars (= 1:1 décomp battle_main.c gBattleOutcome + VAR_RESULT).
         VarSet('VAR_RESULT', outcome);
         VarSet('VAR_RESULT', outcome);
@@ -2782,14 +2792,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
         // 1:1 décomp `CB2_EndWildBattle` (battle_setup.c:602-616) →
         // `SetMainCallback2(CB2_ReturnToField)` + `gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic`.
-        // CRITIQUE : on a fait `rt.gba.vram.fill(0)` au INIT (= 1:1 décomp
-        // `CB2_InitBattleInternal` ll. 626). Donc l'overworld VRAM est WIPED.
-        // Le décomp re-init l'overworld FULL via CB2_ReturnToField (= re-load
-        // tilesets/palettes/tilemaps/NPCs). Notre équivalent =
-        // `globalThis._restoreOverworldFromMenu()` (exposé par TestOverworldScene,
-        // 1:1 décomp `ReturnToFieldLocal` : reconfig BG0-3 sOverworldBgTemplates
-        // + loadAndInitMap + InitObjectEventsReturnToField).
-        // Sans ce restore → écran noir / crash post-battle (VRAM vide).
+        // CRITIQUE : `CB2_InitBattleInternal` (battle_main.c:677-678) fait
+        // `LoadBattleTextboxAndBackground()` qui charge le BG combat dans la VRAM,
+        // écrasant les tilesets/tilemaps overworld + `ResetSpriteData()` qui détruit
+        // les sprites OW (qu'on a portés au battle entry LOAD_ASSETS). Donc au retour
+        // il faut RE-LOAD le field complet : le décomp le fait via CB2_ReturnToField,
+        // notre équivalent = `globalThis._restoreOverworldFromMenu()` (exposé par
+        // TestOverworldScene, 1:1 `ReturnToFieldLocal` : reconfig BG0-3
+        // sOverworldBgTemplates + loadAndInitMap returnToField → re-load tilesets/
+        // palettes/tilemaps + InitPlayerAvatar + SpawnObjectEventsOnReturnToField =
+        // 1:1 InitObjectEventsReturnToField). Sans ce restore → écran noir post-combat
+        // + aucun sprite OW re-spawné.
         {
           const restoreFn = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
           if (typeof restoreFn === 'function') {
