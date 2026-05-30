@@ -342,7 +342,7 @@ export function getNatureFromPersonality(personality: number): string {
 /** Crée une instance Pokémon prête à être ajoutée à la party. */
 export function createPokemonInstance(speciesEnum: string, level: number, opts?: {
   moves?: string[]; nickname?: string; nature?: string; ivs?: StatSpread; evs?: StatSpread;
-  ability?: string; heldItem?: string; pokeball?: string;
+  ability?: string; heldItem?: string; pokeball?: string; personality?: number;
 }): PokemonInstance {
   const speciesId = getSpeciesId(speciesEnum) || 1; // fallback bulbasaur
   const dexId = speciesEnumToDexId(speciesEnum) || 'bulbasaur';
@@ -358,7 +358,9 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   //   personality = Random32();   ← 2× Random() calls
   //   value = playerTrainerId;    (= no RNG)
   //   ... ivs = randomIVs();      ← 2× Random() calls
-  const personality = Random32();
+  // 1:1 : PID = Random32() (généré par le jeu). opts.personality permet un PID IMPOSÉ
+  // (cadeaux/events scriptés à PID fixe) sans casser l'ordre RNG du chemin standard.
+  const personality = (opts?.personality !== undefined) ? (opts.personality >>> 0) : Random32();
   const otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
   const isShiny = isShinyFromOtIdPersonality(otId, personality);
   // 1:1 décomp `GetGenderFromSpeciesAndPersonality` (pokemon.c:6080) :
@@ -412,6 +414,10 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     status: null,
     currentExp,
     growthRate,
+    // 1:1 décomp CreateBoxMon : SetBoxMonData(MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].friendship)
+    // = bonheur de base de l'espèce. ⚠️ DETTE : species-info.json a friendship=0 (non extrait) →
+    // `|| 70` stopgap (défaut commun) jusqu'à extraction (légendaires=35, etc. seront alors 1:1).
+    friendship: (sInfo as { friendship?: number } | undefined)?.friendship || 70,
     personality,
     isShiny,
     monGender,

@@ -310,8 +310,8 @@ function applyNoIntroPreset(): void {
       evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
       moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],
     });
-    // Jirachi est MON_GENDERLESS (= mythical) — pas de symbol affiché.
-    jirachi.monGender = 255;  // MON_GENDERLESS
+    // Jirachi est MON_GENDERLESS : le gender dérive du PID+espèce (genderRatio 255) — override
+    // explicite retiré (redondant + 1:1 : tout dérive du PID, pas l'inverse).
     // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
     jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
     GiveMonToPlayer(jirachi);

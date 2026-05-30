@@ -410,7 +410,7 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
   mon.hasSpecies = mon.species ? 1 : 0;
   mon.heldItem = inst.heldItem ? (resolveDecompConstant('ITEM_' + inst.heldItem.toUpperCase().replace(/-/g, '_')) as number | undefined ?? 0) : 0;
   mon.experience = inst.currentExp ?? 0;
-  mon.friendship = 70;
+  mon.friendship = inst.friendship ?? 70;   // 1:1 : bonheur de base de l'espèce (createPokemonInstance)
   mon.level = inst.level;
   mon.hp = inst.currentHp;
   mon.maxHP = inst.maxHp;
