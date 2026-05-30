@@ -415,9 +415,11 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     currentExp,
     growthRate,
     // 1:1 décomp CreateBoxMon : SetBoxMonData(MON_DATA_FRIENDSHIP, &gSpeciesInfo[species].friendship).
-    // En Emerald TOUTES les espèces (sauf SPECIES_NONE) = STANDARD_FRIENDSHIP (70) — vérifié
-    // species_info.h (387 entrées, aucune à 35). species-info.json a 0 (macro pas résolue à
-    // l'extraction ; corrigé côté script extract-pokemon-data.mjs) donc `|| 70` = exactement 1:1.
+    // species_info.h : 326× STANDARD_FRIENDSHIP (70), 43× 35 (RALTS, bébés…), 5× 140, 3× 100,
+    // 2× 90, 8× 0 (placeholders jamais créés). species-info.json extrait les LITTÉRAUX (35/140/…)
+    // mais STANDARD apparaît comme 0 (macro non résolue ; corrigé côté extract-pokemon-data.mjs).
+    // `|| 70` : STANDARD(0)→70 ✓, littéraux passent tels quels (RALTS=35 ✓), placeholders(0)→70
+    // (jamais créés). = 1:1 pour toute espèce réelle. (Régén JSON depuis checkout principal = data pure.)
     friendship: (sInfo as { friendship?: number } | undefined)?.friendship || 70,
     personality,
     isShiny,
