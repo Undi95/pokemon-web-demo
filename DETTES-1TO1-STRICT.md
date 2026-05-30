@@ -512,3 +512,49 @@ pas dans le scope du chantier PC Player original.
 
 Pour reprendre une dette spécifique : référer la section + son fichier:ligne
 + source décomp + solution proposée. Pas besoin de re-fouiller le contexte.
+
+---
+
+## 9. CHIFFREMENT / CHECKSUM / MAUVAIS ŒUF (BoxPokemon) — ⚖️ DÉCISION USER 2026-05-31 : DETTE ASSUMÉE
+
+**Statut : NON porté, volontairement, neutre gameplay.** Décision user explicite
+(AskUserQuestion 2026-05-31) : **dette documentée** + **jamais de chargement de
+`.sav` Emerald réelles / éditeur de save** → le Mauvais Œuf n'a structurellement
+rien à protéger dans notre modèle.
+
+### Ce que fait la décomp (`src/pokemon.c`)
+- `struct BoxPokemon` = 80 octets : `personality` (PID), `otId`, nickname, …, `checksum` (2o),
+  puis `secure.substructs[4]` = 48 octets **chiffrés** (XOR avec `otId ^ personality`).
+- Les 4 substructs (Growth / Attacks / EVs+Condition / Misc) sont **ordonnés par `personality % 24`**
+  (`GetSubstruct`, table `sSubstructSelections[24]`).
+- `CalculateBoxMonChecksum` (`pokemon.c:2791`) = somme 16-bit des substructs déchiffrés.
+- `EncryptBoxMon`/`DecryptBoxMon` (`pokemon.c:3537/3547`) = XOR in-place.
+- `GetBoxMonData` (`pokemon.c:3734`) / `SetBoxMonData` (`pokemon.c:4152`) : déchiffre →
+  **si `CalculateBoxMonChecksum != boxMon->checksum` → `boxMon->isBadEgg = TRUE` + `isEgg = TRUE`** →
+  affiché « Mauv. ŒUF » (`gText_BadEgg`), inutilisable.
+- C'est l'unique déclencheur du Mauvais Œuf : un **checksum invalide** (= corruption SRAM
+  ou triche save-editing). Il n'existe PAS de « validation de PID » séparée — le PID est
+  toujours accepté tel quel ; c'est le checksum global qui rejette les données trafiquées.
+
+### Pourquoi c'est neutre gameplay dans NOTRE modèle
+- `PokemonInstance` (`pokemon.ts`) = objet plat à champs nommés = **la vue déchiffrée**.
+  On ne stocke jamais de blob chiffré → rien à corrompre → checksum toujours « valide ».
+- Tous les PID sont générés par le jeu (`Random32()`), valides par construction. Aucun
+  point d'entrée pour des données externes (pas de `.sav` importée, pas d'éditeur).
+- La struct combat `Pokemon` (`party-storage.ts:141`) a **déjà** le champ `isBadEgg` +
+  l'accès `MON_DATA_SANITY_IS_BAD_EGG` (`:221/:310`) 1:1, mais il reste toujours à 0.
+
+### Ce qu'il faudrait pour le porter 1:1 (SI un jour `.sav` réelles / éditeur)
+1. Stocker chaque mon en blob 80 octets (4 substructs) + chiffrement XOR `otId^personality`.
+2. `GetSubstruct` + table `sSubstructSelections[24]` (ordre `personality % 24`).
+3. `CalculateBoxMonChecksum` + `Encrypt/DecryptBoxMon`.
+4. Déchiffrer/rechiffrer à **chaque** `GetMonData`/`SetMonData` (centaines de sites).
+5. Brancher le flag `isBadEgg` sur le mismatch + l'affichage `gText_BadEgg`.
+- **Complexité : élevée** (re-architecture du stockage Pokémon), **risque élevé** (touche
+  tout l'accès aux données du combat qui marche), **gain gameplay = nul** sans `.sav` externe.
+- **Source décomp** : `pokemon.c:66-69, 2248-2250, 2791, 3537-3560, 3725-3742, 4152-4160, 4400-4403`.
+
+### Note « fonction que tu as retiré »
+Vérifié (git log -S isBadEgg/BadEgg) : **aucune** fonction Mauvais Œuf n'a jamais existé
+dans le runtime vivant. Seuls des fichiers auto-générés morts (`decomp-data/auto/`) en
+contenaient et ont été purgés (commit `7951ea00`). Le runtime n'a rien perdu.
