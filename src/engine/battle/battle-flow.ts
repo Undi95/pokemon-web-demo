@@ -114,6 +114,7 @@ import {
   runMoveScriptViaBytecode,
   runBattleTurnPassedViaBytecode,
   runHandleFaintedMonActionsViaBytecode,
+  runSwitchInEventsViaBytecode,
   syncBattleMonsHpToInstances,
   chooseOpponentMoveViaAI,
 } from '../battle/wire-bytecode-bridge';
@@ -447,6 +448,7 @@ type State =
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
   | 'PLAYER_SWITCH_LOAD' | 'PLAYER_SWITCH_SPAWN' | 'PLAYER_SWITCH_WAIT'
+  | 'SWITCH_IN_EVENTS'
   | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
   | 'CLEANUP'
   | 'DONE';
@@ -2026,6 +2028,27 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'INTRO_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
+          // 1:1 décomp : abilities/objets de SWITCH-IN (Intimidation, Crachin, Trace…)
+          // se déclenchent après l'entrée des mons, avant le 1er tour.
+          state = 'SWITCH_IN_EVENTS';
+        }
+        return false;
+      }
+
+      case 'SWITCH_IN_EVENTS': {
+        // 1:1 décomp TryDoEventsBeforeFirstTurn : weather + ON_SWITCHIN (ordre vitesse)
+        // + INTIMIDATE1/TRACE + objets switch-in. Les messages FR sont drainés via
+        // END_TURN_MSG (qui finit à PLAYER_TURN_PROMPT). Gaté bytecode (défaut TRUE).
+        if (isBytecodeDamageEnabled()) {
+          const r = runSwitchInEventsViaBytecode();
+          if (r.ok && r.messages && r.messages.length > 0) {
+            _pendingBytecodeMessages = [..._pendingBytecodeMessages, ...r.messages];
+          }
+          // renderHpWindows : Intimidate baisse l'Atk (stat stage) — pas d'effet HP, mais
+          // au cas où un objet switch-in (baie) soignerait, refléter l'état.
+          renderHpWindows();
+          state = _pendingBytecodeMessages.length > 0 ? 'END_TURN_MSG' : 'PLAYER_TURN_PROMPT';
+        } else {
           state = 'PLAYER_TURN_PROMPT';
         }
         return false;

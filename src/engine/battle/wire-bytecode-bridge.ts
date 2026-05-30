@@ -91,13 +91,17 @@ import {
   ABILITYEFFECT_INTIMIDATE1,
   ABILITYEFFECT_TRACE,
   ABILITYEFFECT_FORECAST,
+  ABILITYEFFECT_ON_SWITCHIN,
+  ABILITYEFFECT_SWITCH_IN_WEATHER,
   consumeAbilityWantedScript as consumeAbilityWantedScript_static,
 } from './ability-battle-effects';
 import {
   ItemBattleEffects as ItemBattleEffects_static,
   ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,
+  ITEMEFFECT_ON_SWITCH_IN as ITEMEFFECT_ON_SWITCH_IN_static,
   consumeItemWantedScript as consumeItemWantedScript_static,
 } from './item-battle-effects';
+import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from './ai/ai-script-commands';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { getMove } from '../data/game-data';
 import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';
@@ -669,6 +673,48 @@ export function runHandleFaintedMonActionsViaBytecode(): {
  *
  *  Retourne `{ phases, messages, events, outcome, battleEnded }` pour le caller.
  *  Si `battleEnded === true`, le caller doit appeler la cleanup post-battle. */
+
+/** 1:1 décomp `TryDoEventsBeforeFirstTurn` (battle_main.c:3845) réimplémenté inline
+ *  (comme runHandleFaintedMonActionsViaBytecode) : exécute les abilities + objets de
+ *  SWITCH-IN à l'entrée en combat — météo (Crachin/Sécheresse/Tempête de Sable), puis
+ *  ON_SWITCHIN (Intimidation, Trace, Prévision…) dans l'ordre de vitesse, puis
+ *  INTIMIDATE1/TRACE, puis les objets de switch-in (Herbe Blanche…). Chaque effet pose
+ *  un "wanted script" consommé + run via _runScriptSync ; les messages FR sont drainés
+ *  pour la state machine. À appeler une fois à l'entrée (avant le 1er tour). */
+export function runSwitchInEventsViaBytecode(): {
+  ok: boolean; messages: string[]; events: BattleEvent[]; eventsCount: number;
+} {
+  clearBattleEventQueue();
+  const gs = (globalThis as { __battleState?: { gBattlersCount?: number } }).__battleState;
+  const battlersCount = gs?.gBattlersCount ?? 2;
+
+  // Ordre de vitesse (le plus rapide d'abord) — 1:1 décomp insertion sort ll.3854-3862.
+  const order: number[] = [];
+  for (let i = 0; i < battlersCount; i++) order.push(i);
+  for (let i = 0; i < order.length - 1; i++) {
+    for (let j = i + 1; j < order.length; j++) {
+      if (GetWhoStrikesFirst_static(order[i], order[j], true) !== 0) {
+        const t = order[i]; order[i] = order[j]; order[j] = t;
+      }
+    }
+  }
+
+  const runWanted = (): void => {
+    const ab = consumeAbilityWantedScript_static(); if (ab) _runScriptSync(ab);
+    const it = consumeItemWantedScript_static();    if (it) _runScriptSync(it);
+  };
+
+  // 1:1 séquence TryDoEventsBeforeFirstTurn.
+  AbilityBattleEffects_static(ABILITYEFFECT_SWITCH_IN_WEATHER, 0, 0, 0, 0); runWanted();
+  for (const b of order) { AbilityBattleEffects_static(ABILITYEFFECT_ON_SWITCHIN, b, 0, 0, 0); runWanted(); }
+  AbilityBattleEffects_static(ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0); runWanted();
+  AbilityBattleEffects_static(ABILITYEFFECT_TRACE, 0, 0, 0, 0); runWanted();
+  for (const b of order) { ItemBattleEffects_static(ITEMEFFECT_ON_SWITCH_IN_static, b, false); runWanted(); }
+
+  const drained = drainBattleEventsAsText();
+  return { ok: true, messages: drained.messages, events: drained.events, eventsCount: drained.eventsCount };
+}
+
 export function runBattleTurnPassedViaBytecode(): {
   ok: boolean;
   phases: { phase: 'field' | 'battler' | 'wishperish' | 'special'; label: string }[];
