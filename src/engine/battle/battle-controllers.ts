@@ -35,6 +35,8 @@ import {
   gBattleControllerExecFlags,
   setActiveBattler,
   gActiveBattler,
+  gBattlerAttacker,
+  gBattlerTarget,
   gCurrentMove,
   gChosenMove,
   gBattleOutcome,
@@ -103,6 +105,8 @@ function _snapshotMsgData(): BattleMsgData {
     gLastUsedItem,
     gLastUsedAbility,
     gBattleScripting: { battler: gBattleScripting.battler },
+    gBattlerAttacker,
+    gBattlerTarget,
     gBattleStruct: {
       scriptPartyIdx: gBattleStruct.scriptPartyIdx ?? 0,
       hpScale: gBattleStruct.hpScale ?? 0,

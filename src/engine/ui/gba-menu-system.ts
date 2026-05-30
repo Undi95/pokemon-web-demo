@@ -456,6 +456,20 @@ export function IsBattleSceneOff(): boolean {
   // return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
 }
 
+/** Returns true si les ANIMATIONS DE HIT (sprite blink + healthbox jiggle quand
+ *  un mon prend des dégâts) doivent être SKIPPÉES. C'est la VRAIE option user
+ *  `optionsBattleSceneOff` (1:1 décomp : `HITMARKER_NO_ANIMATIONS` est posé
+ *  depuis cette option, et `Cmd_hitanimation` skip l'anim si le marker est set).
+ *
+ *  Découplé de `IsBattleSceneOff()` ci-dessus qui, lui, reste forcé TRUE pour
+ *  masquer les MOVE animations (cascade K1 `battle_anim_*.c` non portée). Le hit
+ *  blink, lui, EST porté 1:1 (`DoHitAnimBlinkSpriteEffect`) → on le pilote par la
+ *  vraie option : scène ON (défaut 0) → blink joué ; scène OFF → skip. À fusionner
+ *  avec `IsBattleSceneOff()` quand la cascade K1 sera portée + l'override retiré. */
+export function IsHitAnimDisabled(): boolean {
+  return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
+}
+
 /** Returns le battle style courant : 0 = SHIFT (= ask user before switch
  *  pokemon when enemy faints), 1 = SET (= no prompt). Future-proof : utilisé
  *  par battle-flow au moment du switch après KO ennemi. */
@@ -469,6 +483,7 @@ export function GetBattleStyle(): number {
 (globalThis as Record<string, unknown>).IsStereoSound = IsStereoSound;
 (globalThis as Record<string, unknown>).SetPokemonCryStereo = SetPokemonCryStereo;
 (globalThis as Record<string, unknown>).IsBattleSceneOff = IsBattleSceneOff;
+(globalThis as Record<string, unknown>).IsHitAnimDisabled = IsHitAnimDisabled;
 (globalThis as Record<string, unknown>).GetBattleStyle = GetBattleStyle;
 
 // Synchronise gSaveFileStatus mutable export sur globalThis pour les

@@ -96,6 +96,7 @@ import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForB
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
+import { ComputeSingleBattleTurnOrder } from './ai/ai-script-commands';
 import {
   createBattlerHealthboxSprites,
   destroyHealthboxSprite,
@@ -120,7 +121,9 @@ import { VarSet } from '../script/script-vars';
 import { getMove, getMoveName, loadGameData } from '../data/game-data';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { Random } from '../system/random';
-import { IsBattleSceneOff } from '../ui/gba-menu-system';
+// Note : le hit blink (scintillement dégâts) N'EST PAS gaté par l'option
+// battle-scene-off — 1:1 décomp/user : le scintillement est gardé même anims OFF,
+// seules les MOVE animations sont coupées. (cf. battle-fixes-expboot-blink-textauto)
 // E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
@@ -145,7 +148,8 @@ function _resolveBattleString(stringId: number): string {
   // msgData minimal (= les buffs ne sont pas utilisés pour DONTLEAVEBIRCH etc.).
   const msgData = {
     currentMove: 0, originallyUsedMove: 0, lastItem: 0, lastAbility: 0,
-    scrActive: 0, bakScriptPartyIdx: 0, hpScale: 0, itemEffectBattler: 0,
+    scrActive: 0, battlerAttacker: 0, battlerTarget: 0,
+    bakScriptPartyIdx: 0, hpScale: 0, itemEffectBattler: 0,
     moveType: 0, abilities: [0, 0, 0, 0],
     textBuffs: [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)] as
       [Uint8Array, Uint8Array, Uint8Array],
@@ -429,6 +433,7 @@ type State =
   | 'ACTION_RUN_TEXT' | 'ACTION_RUN_WAIT'
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
   | 'MOVE_EMIT_CHOOSE' | 'MOVE_WAIT_CHOOSE_RESPONSE'
+  | 'DETERMINE_TURN_ORDER' | 'ADVANCE_TURN'
   | 'PLAYER_USES_MOVE' | 'PLAYER_USES_MOVE_WAIT'
   | 'PLAYER_BYTECODE_MSG' | 'PLAYER_BYTECODE_MSG_WAIT'
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
@@ -627,6 +632,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Track si un message battle est en cours d'affichage (= équivalent
   // sFieldMessageBoxMode != HIDDEN). Passe à false quand le printer a fini.
   let _msgActive = false;
+  // 1:1 décomp `Cmd_waitmessage` (battle_script_commands.c:2159) : compteur
+  // d'auto-avance du message. `gPauseCounterBattle` côté décomp. Une fois le
+  // texte affiché, on attend B_WAIT_TIME_LONG frames PUIS on avance tout seul
+  // (le joueur peut presser A/B pour avancer immédiatement). Reset à chaque
+  // nouveau message (showBattleMessage).
+  let _msgWaitCounter = 0;
+  const B_WAIT_TIME_LONG = 64;   // include/constants/battle.h:322
 
   // Async asset load tracking.
   let loadStarted = false;
@@ -640,8 +652,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Move menu cursor (= 0..moves.length-1).
   let moveMenuCursor = 0;
 
-  // Selected move for current turn (set by move menu).
+  // Selected move for current turn (set by move menu). chosenMoveIndex = PLAYER's
+  // move ; opponentMoveIndex = OPPONENT's move (séparés pour l'ordre du tour : si
+  // l'adversaire frappe en premier, son move s'exécute avant celui du joueur).
   let chosenMoveIndex = 0;
+  let opponentMoveIndex = 0;
+  // 1:1 décomp turn order (GetWhoStrikesFirst) : file [premier, second] (0=player,
+  // 1=opponent) + phase courante. Calculée à DETERMINE_TURN_ORDER après que les 2
+  // moves sont choisis ; ADVANCE_TURN avance la phase entre les 2 movers.
+  let _turnOrder: [number, number] = [0, 1];
+  let _turnPhase = 0;
 
   // Final outcome.
   let outcome = BATTLE_OUTCOME_WIN;
@@ -976,6 +996,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     );
     CopyWindowToVram(msgWindowId, 3);
     _msgActive = true;
+    _msgWaitCounter = 0;   // 1:1 Cmd_waitmessage : reset gPauseCounterBattle au nouveau message.
+    // Devtool : log des messages affichés (réutilisable pour vérif — texte décodé final).
+    {
+      const g = globalThis as { __battleMsgLog?: string[] };
+      g.__battleMsgLog = [...(g.__battleMsgLog ?? []), text].slice(-12);
+    }
   };
   /** Drop-in 1:1 de IsFieldMessageBoxHidden : true quand le message a fini de
    *  s'imprimer (= printer plus actif), comme field_message_box.c state 2. */
@@ -992,6 +1018,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       CopyWindowToVram(msgWindowId, 3);
     }
     _msgActive = false;
+  };
+  /** 1:1 décomp `Cmd_waitmessage` (battle_script_commands.c:2159) : un message
+   *  de combat s'auto-avance APRÈS que le texte est affiché (`isBattleMessageHidden`)
+   *  + B_WAIT_TIME_LONG (64) frames écoulées — le joueur N'A PAS à presser un
+   *  bouton (« du texte qui se passe tous seul »). Il PEUT presser A/B pour avancer
+   *  immédiatement (skip du timer, via JOY_NEW pour éviter qu'un appui résiduel du
+   *  menu ne saute le message). Remplace l'ancienne attente bloquante sur A/B à
+   *  chaque message. */
+  const messageWaitDone = (): boolean => {
+    if (!isBattleMessageHidden()) { _msgWaitCounter = 0; return false; }
+    const rt2 = getRuntime();
+    const buttonSkip = rt2 ? (rt2.gMain.newKeys & (A_BUTTON | B_BUTTON)) !== 0 : false;
+    if (buttonSkip) return true;
+    if (++_msgWaitCounter >= B_WAIT_TIME_LONG) return true;
+    return false;
   };
 
   // ─── Action menu (= FIGHT/BAG/POKEMON/RUN grille 2x2) 1:1 décomp ─────────
@@ -1207,29 +1248,117 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return { damage, typeMul };
   };
 
-  // Session 124 Bug 5c : shake state pour feedback visuel "hit" damage.
-  // 1:1 décomp pattern : `sprite.x2` / `sprite.y2` offsets temporaires.
-  let _shakeSpriteId = -1;
-  let _shakeFramesLeft = 0;
-  const startShake = (spriteId: number, frames = 14) => {
-    _shakeSpriteId = spriteId;
-    _shakeFramesLeft = frames;
+  // ─── Hit animation 1:1 décomp (CONTROLLER_HITANIMATION) ─────────────────
+  // 1:1 décomp `PlayerHandleHitAnimation` (battle_controller_player.c:2877).
+  // Déclenché par l'event CONTROLLER_HITANIMATION (0x29) émis par le bytecode
+  // quand un move hit le defender. Deux effets SIMULTANÉS :
+  //  1. Sprite blink (`DoHitAnimBlinkSpriteEffect`, ibid:1401) : data[1] compte
+  //     0→32 ; toggle `invisible ^= 1` tous les 4 frames → le sprite SCINTILLE ;
+  //     à 32 reset + invisible=false (re-visible). Skip si déjà invisible.
+  //  2. Healthbox jiggle (`DoHitAnimHealthboxEffect`/`SpriteCB_HitAnimHealthox`
+  //     Effect`, pokeball.c:1284) : y2 alterne +1/-1 chaque frame sur 21 frames
+  //     → la healthbox tremble verticalement, puis x2/y2 reset à 0.
+  // (Remplace l'ancien shake horizontal ad-hoc qui n'était PAS 1:1.)
+  let _hitAnimSpriteId = -1;
+  let _hitAnimData1 = 0;                              // sprite blink counter 0→32
+  let _hitAnimHealthbox: HealthboxHandle | null = null;
+  let _hitAnimHbY2 = 1;                               // healthbox data[0] : +1/-1
+  let _hitAnimHbCount = 0;                            // healthbox counter 0→21
+  const startHitAnim = (spriteId: number, healthbox: HealthboxHandle | null) => {
+    const rt2 = getRuntime();
+    const s = rt2 ? rt2.gSprites.get(spriteId) : null;
+    // 1:1 décomp PlayerHandleHitAnimation : si le sprite est déjà invisible
+    // (= ex. KO), aucun effet (ni blink ni healthbox).
+    if (!s || s.invisible) return;
+    _hitAnimSpriteId = spriteId;
+    _hitAnimData1 = 0;
+    _hitAnimHealthbox = healthbox;
+    _hitAnimHbY2 = 1;
+    _hitAnimHbCount = 0;
   };
-  const tickShake = (): void => {
-    if (_shakeFramesLeft <= 0) return;
+  const _setHealthboxY2 = (rt2: ReturnType<typeof getRuntime>, hb: HealthboxHandle, y2: number, x2?: number): void => {
+    if (!rt2) return;
+    for (const id of [hb.leftSpriteId, hb.rightSpriteId, hb.healthbarSpriteId]) {
+      const s = rt2.gSprites.get(id);
+      if (s) { s.y2 = y2; if (x2 !== undefined) s.x2 = x2; }
+    }
+  };
+  const tickHitAnim = (): void => {
     const rt2 = getRuntime();
     if (!rt2) return;
-    const sprite = rt2.gSprites.get(_shakeSpriteId);
-    if (!sprite) { _shakeFramesLeft = 0; return; }
-    // Oscillation horizontale décroissante (= 4px → 0).
-    const decay = _shakeFramesLeft / 14;
-    const offset = Math.sin(_shakeFramesLeft * 1.2) * 4 * decay;
-    sprite.x2 = Math.round(offset);
-    _shakeFramesLeft--;
-    if (_shakeFramesLeft === 0) {
-      sprite.x2 = 0;
-      sprite.y2 = 0;
-      _shakeSpriteId = -1;
+    // 1. Sprite blink (DoHitAnimBlinkSpriteEffect).
+    if (_hitAnimSpriteId >= 0) {
+      const s = rt2.gSprites.get(_hitAnimSpriteId);
+      if (!s) {
+        _hitAnimSpriteId = -1;
+      } else if (_hitAnimData1 === 32) {
+        _hitAnimData1 = 0;
+        s.invisible = false;
+        _hitAnimSpriteId = -1;
+      } else {
+        if (_hitAnimData1 % 4 === 0) s.invisible = !s.invisible;
+        _hitAnimData1++;
+      }
+    }
+    // 2. Healthbox jiggle (SpriteCB_HitAnimHealthoxEffect).
+    if (_hitAnimHealthbox) {
+      _setHealthboxY2(rt2, _hitAnimHealthbox, _hitAnimHbY2);
+      _hitAnimHbY2 = -_hitAnimHbY2;
+      _hitAnimHbCount++;
+      if (_hitAnimHbCount === 21) {
+        _setHealthboxY2(rt2, _hitAnimHealthbox, 0, 0);
+        _hitAnimHealthbox = null;
+        _hitAnimHbCount = 0;
+      }
+    }
+  };
+
+  // ─── Mon intro animation (1:1 décomp SpriteCB_WildMonAnimate) ────────────
+  // 1:1 décomp `SpriteCB_WildMonAnimate` (battle_main.c:2698) → `BattleAnimateFrontSprite`
+  // joue l'animation du sprite front du mon sauvage à son entrée. Notre version porte
+  // l'alternance 2-frames (`HasTwoFramesAnimation` : le front pic anim_front.png a 2
+  // poses ; frame 0 = tileBase, frame 1 = tileBase + 64 tiles 8x8 pour un sprite 64x64),
+  // jouée quelques cycles à l'apparition puis settle sur frame 0. (L'anim scriptée
+  // per-species `gMonFrontAnimsPtrTable` = port plus large, à venir ; le 2-frame donne
+  // déjà la "vie" GBA à l'entrée du mon.)
+  let _monAnimSpriteId = -1;
+  let _monAnimBaseTile = 0;
+  let _monAnimTimer = 0;
+  let _monAnimElapsed = 0;
+  const MON_ANIM_FRAME_TILES = 64;    // 64x64 sprite = 64 tiles 8x8
+  const MON_ANIM_SWAP_INTERVAL = 8;   // frames par pose
+  const MON_ANIM_DURATION = 64;       // durée totale (frames) de l'anim d'entrée
+  const _setMonTile = (rt2: ReturnType<typeof getRuntime>, spriteId: number, tile: number): void => {
+    if (!rt2) return;
+    const s = rt2.gSprites.get(spriteId);
+    if (!s) return;
+    s.tileBase = tile;
+    const oam = rt2.gba.oam[s.oamIndex];
+    if (oam) oam.tileId = tile;
+  };
+  const startMonIntroAnim = (spriteId: number, baseTile: number): void => {
+    if (spriteId < 0) return;
+    _monAnimSpriteId = spriteId;
+    _monAnimBaseTile = baseTile;
+    _monAnimTimer = 0;
+    _monAnimElapsed = 0;
+  };
+  const tickMonIntroAnim = (): void => {
+    if (_monAnimSpriteId < 0) return;
+    const rt2 = getRuntime();
+    if (!rt2) { _monAnimSpriteId = -1; return; }
+    _monAnimElapsed++;
+    if (_monAnimElapsed >= MON_ANIM_DURATION) {
+      _setMonTile(rt2, _monAnimSpriteId, _monAnimBaseTile);   // settle frame 0
+      _monAnimSpriteId = -1;
+      return;
+    }
+    if (++_monAnimTimer >= MON_ANIM_SWAP_INTERVAL) {
+      _monAnimTimer = 0;
+      const s = rt2.gSprites.get(_monAnimSpriteId);
+      const cur = s ? s.tileBase : _monAnimBaseTile;
+      const next = (cur === _monAnimBaseTile) ? _monAnimBaseTile + MON_ANIM_FRAME_TILES : _monAnimBaseTile;
+      _setMonTile(rt2, _monAnimSpriteId, next);
     }
   };
 
@@ -1442,13 +1571,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     const tickModule = (globalThis as { __battleControllerTick?: { tickActiveBattlerController?: () => void } }).__battleControllerTick;
     tickModule?.tickActiveBattlerController?.();
 
-    // Tick shake animation (= run regardless of state, so shake survives
-    // text waits + transitions).
-    tickShake();
+    // Tick hit animation (= run regardless of state, so le blink/jiggle survit
+    // aux text waits + transitions).
+    tickHitAnim();
+    tickMonIntroAnim();
     tickFaint();
     tickBounce();
     tickHpDrain();
     tickExpFill();
+    // Devtool : expose l'état combat visuel (sprite ids + anims actives) pour
+    // inspection (= dev.battle.* / probes). Rafraîchi chaque frame.
+    (globalThis as { __battleDbg?: unknown }).__battleDbg = {
+      playerSpriteId, opponentSpriteId,
+      hitAnimActive: _hitAnimSpriteId >= 0,
+      hitAnimData1: _hitAnimData1,
+      hbJiggleActive: _hitAnimHealthbox !== null,
+      hpDraining: isHpDraining(),
+      expFilling: isExpFilling(),
+      state,
+    };
     // 1:1 décomp `Task_DoPokeballSendOutAnim` polling via sprite callback chain.
     // Notre tick centralisé invoke tickBallThrow() chaque frame ; le state machine
     // BALL_THROW polle l'outcome pour transition.
@@ -1513,7 +1654,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK) = fade
         // vers noir instant (delay=0, startY=0, endY=16). L'écran reste noir
         // pendant LOAD_ASSETS, puis SPAWN_SPRITES setup BG3 grass + sprites
-        // puis fade-in via tickShake/tickFaint flow.
+        // puis fade-in via tickHitAnim/tickFaint flow.
         try {
           rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 0, 16, 'RGB_BLACK');
         } catch { /* fallthrough */ }
@@ -1659,10 +1800,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
               // Load opponent front sprite.
               const oppDexId = opponentMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
-              const oppUrl = `/decomp/em/pokemon/${oppDexId}/front.png`;
+              // 1:1 décomp : le mon sauvage utilise son front pic ANIMÉ (anim_front.png =
+              // 2 poses 64x64 empilées, pour HasTwoFramesAnimation). detectImageWH renvoie
+              // null si 404 → fallback front.png (statique) pour les espèces sans anim_front.
+              const oppAnimUrl = `/decomp/em/pokemon/${oppDexId}/anim_front.png`;
+              const oppStaticUrl = `/decomp/em/pokemon/${oppDexId}/front.png`;
+              const oppAnimWH = await detectImageWH(oppAnimUrl);
+              const oppUrl = oppAnimWH ? oppAnimUrl : oppStaticUrl;
               const oppLoaded = await rt.LoadCompressedSpriteSheet(oppUrl, OPPONENT_SPRITE_BYTE_OFFSET);
               _battleOpponentPalSlot = LoadSpritePalette({ data: oppLoaded.palette, tag: TAG_BATTLE_OPPONENT_PAL });
-              const oppWH = await detectImageWH(oppUrl);
+              const oppWH = oppAnimWH ?? await detectImageWH(oppUrl);
               if (oppWH) {
                 const sized = oamShapeSizeFromWH(oppWH.w, oppWH.h);
                 oppSpriteShape = sized.shape;
@@ -1856,12 +2003,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         void import('../system/music').then(({ playCry }) => {
           playCry(opponentMon!.speciesName);
         });
+        // 1:1 décomp SpriteCB_WildMonAnimate : anim du front sprite du mon sauvage
+        // à l'entrée (2-frames anim_front.png), jouée en même temps que le cri.
+        startMonIntroAnim(opponentSpriteId, OPPONENT_SPRITE_BYTE_OFFSET / 32);
         state = 'INTRO_WAIT';
         return false;
       }
 
       case 'INTRO_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'PLAYER_TURN_PROMPT';
         }
@@ -1999,7 +2149,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'ACTION_FALLBACK_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'ACTION_MENU_INIT';  // retour au menu pour re-choisir
         }
@@ -2067,7 +2217,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'ACTION_RUN_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           if (outcome === BATTLE_OUTCOME_RAN || outcome === BATTLE_OUTCOME_MON_FLED) {
             // Player ran ou wild mon fui (= K8 AI_FirstBattle tutorial bypass).
@@ -2160,7 +2310,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // drain avant showBattleMessage, qui seul re-scroll à 0) → flash de boîtes vides.
         closeActionMenu();
         HideFieldMessageBox();
-        state = 'PLAYER_USES_MOVE';
+        state = 'DETERMINE_TURN_ORDER';
         return false;
       }
 
@@ -2181,10 +2331,40 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             chosenMoveIndex = moveMenuCursor;
             closeMoveMenu();
             closeActionMenu();  // 1:1 fix : scroll BG0 → 0 (MSG) ; évite le flash du menu d'action vide pendant le HP drain (cf. MOVE_WAIT_CHOOSE_RESPONSE).
-            state = 'PLAYER_USES_MOVE';
+            state = 'DETERMINE_TURN_ORDER';
           }
         }
         // No B-cancel for tutorial (= can't run from Birch tutorial battle).
+        return false;
+      }
+
+      case 'DETERMINE_TURN_ORDER': {
+        if (!playerMon || !opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 décomp : le move adverse (AI) est choisi MAINTENANT (les 2 moves
+        // connus), puis `GetWhoStrikesFirst` décide qui frappe en premier (priorité
+        // du move > vitesse × stage/météo/badge, paralysie ÷4, Quick Claw). pickOpponentMove
+        // pose aussi `_opponentAiWantsToFlee` (Birch tutorial), géré à OPPONENT_USES_MOVE.
+        opponentMoveIndex = pickOpponentMove();
+        const playerFirst = ComputeSingleBattleTurnOrder(chosenMoveIndex, opponentMoveIndex);
+        _turnOrder = playerFirst ? [0, 1] : [1, 0];
+        _turnPhase = 0;
+        state = _turnOrder[0] === 0 ? 'PLAYER_USES_MOVE' : 'OPPONENT_USES_MOVE';
+        return false;
+      }
+
+      case 'ADVANCE_TURN': {
+        // 1:1 décomp : après qu'un mover a agi (+ check faint du défenseur passé),
+        // passer au mover suivant. Quand les 2 ont joué → end-of-turn `BattleTurnPassed`
+        // (battle_main.c:3956 : field/per-battler effects, poison/burn tick, reset vars).
+        // Mode bytecode → END_TURN_PROCESS (wrapper full) ; legacy → PLAYER_TURN_PROMPT.
+        _turnPhase++;
+        if (_turnPhase >= 2) {
+          turnCount++;
+          state = isBytecodeDamageEnabled() ? 'END_TURN_PROCESS' : 'PLAYER_TURN_PROMPT';
+        } else {
+          const nextMover = _turnOrder[_turnPhase];
+          state = nextMover === 0 ? 'PLAYER_USES_MOVE' : 'OPPONENT_USES_MOVE';
+        }
         return false;
       }
 
@@ -2219,8 +2399,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
           // émis par le bytecode (= move hit avec damage applied), pas par check
           // `damage > 0` hardcoded (= manque les status moves qui shake aussi).
-          if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0 && !IsBattleSceneOff()) {
-            startShake(opponentSpriteId);
+          if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0) {
+            startHitAnim(opponentSpriteId, opponentHealthbox);
           }
           // 1er message affiché → _WAIT attend (fin du drain + A). Les messages suivants
           // (efficacité/effets) sont drainés ensuite par PLAYER_BYTECODE_MSG.
@@ -2236,7 +2416,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'PLAYER_USES_MOVE_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'PLAYER_DAMAGE_OPP';
         }
@@ -2266,7 +2446,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // tant que le drain HP n'est pas fini → le message reste affiché PENDANT le
         // drain (au lieu d'une boîte vide), l'efficacité/effet suit après.
         if (isHpDraining()) return false;
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'PLAYER_BYTECODE_MSG';
         }
@@ -2282,12 +2462,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         startHpDrain(1, opponentHealthbox, opponentMon.maxHp, oppOldHp, opponentMon.currentHp);
         renderHpWindows();
         if (damage > 0) {
-          // Bug 5c : shake opp sprite on damage.
-          // 1:1 décomp battle_main.c:1073 : `if (gSaveBlock2Ptr->optionsBattleSceneOff == TRUE)
-          //   gHitMarker |= HITMARKER_NO_ANIMATIONS` set au battle init. Notre simplification :
-          // check IsBattleSceneOff() directement au site d'anim (= move shake équivalent
-          // visuel des battle anims du décomp). User option ANIMAT. COMBAT = NON skip anims.
-          if (opponentSpriteId >= 0 && !IsBattleSceneOff()) startShake(opponentSpriteId);
+          // Hit blink (legacy path) : 1:1 DoHitAnimBlinkSpriteEffect. NON gaté par
+          // l'option scene-off — le scintillement est gardé même anims OFF (user).
+          if (opponentSpriteId >= 0) startHitAnim(opponentSpriteId, opponentHealthbox);
         }
         if (damage > 0) {
           // Iter19 : type effectiveness messages.
@@ -2320,7 +2497,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_DAMAGE_OPP_WAIT': {
         if (isHpDraining()) return false;  // 1:1 waitforhealthbar : barre vidée avant d'avancer
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'CHECK_OPP_FAINTED';
         }
@@ -2335,7 +2512,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (opponentMon.currentHp <= 0) {
           state = 'OPP_FAINTED_TEXT';
         } else {
-          state = 'OPPONENT_USES_MOVE';
+          // 1:1 décomp : l'adversaire survit → c'est au mover SUIVANT de jouer
+          // (ADVANCE_TURN décide selon l'ordre calculé, plus de joueur-toujours-1er).
+          state = 'ADVANCE_TURN';
         }
         return false;
       }
@@ -2363,7 +2542,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPP_FAINTED_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           // Session 124 Bug 5 : EXP gain post-K.O. (= 1:1 décomp Gen 3 formula).
           state = 'EXP_AWARD_TEXT';
@@ -2417,7 +2596,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'EXP_AWARD_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup.
           state = 'CLEANUP_FADE_OUT';
@@ -2439,7 +2618,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'LEVEL_UP_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           // 1:1 décomp case 5 : s'il reste de l'exp (= level-up cross), boucle pour
           // donner le reste (barre re-remplit depuis 0% du nouveau niveau). Sinon
@@ -2455,7 +2634,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPPONENT_USES_MOVE': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
-        const oppMoveIdx = pickOpponentMove();
+        // Move adverse déjà choisi à DETERMINE_TURN_ORDER (pour l'ordre du tour).
+        const oppMoveIdx = opponentMoveIndex;
         // K8 + Birch tutorial : si l'AI a décidé de fuir (= AI_FirstBattle :
         // PV de NOTRE mon = AI_TARGET ≤ 20% → flee), wild mon fuit au lieu
         // d'attaquer → empêche la défaite du joueur.
@@ -2492,17 +2672,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           renderHpWindows();
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
           // émis par le bytecode au lieu de hardcoded `damage > 0`.
-          if (_bytecodeWantsHitAnim() && playerSpriteId >= 0 && !IsBattleSceneOff()) {
-            startShake(playerSpriteId);
+          if (_bytecodeWantsHitAnim() && playerSpriteId >= 0) {
+            startHitAnim(playerSpriteId, playerHealthbox);
           }
-          chosenMoveIndex = oppMoveIdx;
+          // (Plus de clobber de chosenMoveIndex : c'est le move du JOUEUR. Le move
+          // adverse est dans opponentMoveIndex, utilisé par OPPONENT_DAMAGE_PLAYER.)
           state = 'OPPONENT_BYTECODE_MSG_WAIT';
           return false;
         }
         const mv = opponentMon.moves[oppMoveIdx];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
         showBattleMessage(`Le ${opponentMon.nickname} sauvage\nutilise ${moveName}!`);
-        chosenMoveIndex = oppMoveIdx;
         state = 'OPPONENT_USES_MOVE_WAIT';
         return false;
       }
@@ -2523,7 +2703,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 `waitforhealthbar` : garder le message ("L'ennemi X utilise MOVE!")
         // affiché tant que le drain HP player n'est pas fini (au lieu d'une boîte vide).
         if (isHpDraining()) return false;
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'OPPONENT_BYTECODE_MSG';
         }
@@ -2531,7 +2711,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_USES_MOVE_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'OPPONENT_DAMAGE_PLAYER';
         }
@@ -2541,15 +2721,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'OPPONENT_DAMAGE_PLAYER': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
         const plOldHp = playerMon.currentHp;
-        const { damage, typeMul } = applyMoveDamage(opponentMon, playerMon, chosenMoveIndex);
+        const { damage, typeMul } = applyMoveDamage(opponentMon, playerMon, opponentMoveIndex);
         // 1:1 `Cmd_healthbarupdate` : drain gradué player (gaté _WAIT + CHECK_PLAYER_FAINTED).
         startHpDrain(0, playerHealthbox, playerMon.maxHp, plOldHp, playerMon.currentHp);
         renderHpWindows();
         if (damage > 0) {
-          // Bug 5c : shake player sprite on damage.
-          // 1:1 décomp HITMARKER_NO_ANIMATIONS check via IsBattleSceneOff() — cf
-          // sibling PLAYER_DAMAGE_OPP case ci-dessus pour explanation.
-          if (playerSpriteId >= 0 && !IsBattleSceneOff()) startShake(playerSpriteId);
+          // Hit blink (legacy path) : 1:1 DoHitAnimBlinkSpriteEffect. NON gaté par
+          // l'option scene-off (scintillement gardé même anims OFF, user).
+          if (playerSpriteId >= 0) startHitAnim(playerSpriteId, playerHealthbox);
         }
         if (damage > 0) {
           // Iter19 : type effectiveness messages (= same as player turn).
@@ -2574,7 +2753,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPPONENT_DAMAGE_PLAYER_WAIT': {
         if (isHpDraining()) return false;  // 1:1 waitforhealthbar
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'CHECK_PLAYER_FAINTED';
         }
@@ -2587,17 +2766,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (playerMon.currentHp <= 0) {
           state = 'PLAYER_FAINTED_TEXT';
         } else {
-          turnCount++;
-          // 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019) : appelé
-          // après les 2 moves du turn pour run end-of-turn effects (= field,
-          // per-battler, wish/perish, special Palace/Arena) puis reset turn vars.
-          // En mode bytecode, on route via le wrapper full ; en mode legacy on
-          // skip directement à PLAYER_TURN_PROMPT (= comportement tutorial actuel).
-          // 1:1 fix : aligné sur isBytecodeDamageEnabled() (défaut TRUE) comme le
-          // reste du flow — avant, ce check défaut-FALSE skippait BattleTurnPassed
-          // (end-of-turn effects : poison/burn tick, etc.) hors opt-out explicite.
-          const useBytecode = isBytecodeDamageEnabled();
-          state = useBytecode ? 'END_TURN_PROCESS' : 'PLAYER_TURN_PROMPT';
+          // 1:1 décomp : le joueur survit → on passe au mover SUIVANT (ADVANCE_TURN
+          // décide selon l'ordre du tour ; end-of-turn quand les 2 ont joué).
+          state = 'ADVANCE_TURN';
         }
         return false;
       }
@@ -2616,7 +2787,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'PLAYER_FAINTED_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           // Bug 5e session 124 : fade-out avant cleanup propre.
           state = 'CLEANUP_FADE_OUT';
@@ -2677,7 +2848,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'END_TURN_MSG_WAIT': {
-        if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+        if (messageWaitDone()) {
           HideFieldMessageBox();
           state = 'END_TURN_MSG';
         }

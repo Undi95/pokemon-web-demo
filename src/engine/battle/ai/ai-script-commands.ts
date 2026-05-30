@@ -426,6 +426,20 @@ export function GetWhoStrikesFirst(battler1: number, battler2: number, ignoreCho
   return strikesFirst;
 }
 
+/** Ordre du tour pour un combat 1v1 inline (battler 0 = player, 1 = opponent).
+ *  Pose les chosen moves + actions (= ce que lit `GetWhoStrikesFirst` pour la
+ *  priorité) puis renvoie `true` si le JOUEUR frappe en premier (GetWhoStrikesFirst
+ *  === 0), `false` sinon (opponent premier ; inclut l'égalité de vitesse tranchée
+ *  au hasard, codée par le retour 1/2 du décomp). 1:1 décomp : priorité du move
+ *  > vitesse (× stage, météo, badge, paralysie ÷4, Quick Claw). */
+export function ComputeSingleBattleTurnOrder(playerMoveIdx: number, opponentMoveIdx: number): boolean {
+  gBattleStruct.chosenMovePositions[0] = playerMoveIdx & 0xFF;
+  gBattleStruct.chosenMovePositions[1] = opponentMoveIdx & 0xFF;
+  gChosenActionByBattler[0] = B_ACTION_USE_MOVE;
+  gChosenActionByBattler[1] = B_ACTION_USE_MOVE;
+  return GetWhoStrikesFirst(0, 1, false) === 0;
+}
+
 // ─── Helpers décomp ─────────────────────────────────────────────────────────
 
 /** 1:1 décomp `BattleAI_GetWantedBattler(u8 wantedBattler)` (1140-1154). */

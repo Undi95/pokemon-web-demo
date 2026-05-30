@@ -48,7 +48,7 @@ import {
   B_BUFF_NEGATIVE_FLAVOR,
 } from './text-buffers';
 import {
-  gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting, gEffectBattler, gActiveBattler,
+  gBattleMons, gBattleScripting, gEffectBattler, gActiveBattler,
   gBattleTypeFlags, gTrainerBattleOpponent_A, gBattleStruct,
 } from './state';
 import {
@@ -459,8 +459,8 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'BUFF1':       return _decodeTextBuff(msgData.textBuffs[0]);
       case 'BUFF2':       return _decodeTextBuff(msgData.textBuffs[1]);
       case 'BUFF3':       return _decodeTextBuff(msgData.textBuffs[2]);
-      case 'ATK_NAME_WITH_PREFIX': return _monNicknameWithPrefix(gBattlerAttacker);
-      case 'DEF_NAME_WITH_PREFIX': return _monNicknameWithPrefix(gBattlerTarget);
+      case 'ATK_NAME_WITH_PREFIX': return _monNicknameWithPrefix(msgData.battlerAttacker);
+      case 'DEF_NAME_WITH_PREFIX': return _monNicknameWithPrefix(msgData.battlerTarget);
       case 'SCR_ACTIVE_NAME_WITH_PREFIX':
         // 1:1 décomp battle_message.c:2533-2534 : utilise gBattleScripting.battler.
         return _monNicknameWithPrefix(msgData.scrActive);
@@ -471,14 +471,14 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         // 1:1 décomp battle_message.c:2527-2528 : utilise gEffectBattler,
         // PAS gPotentialItemEffectBattler (= 2 globals distincts).
         return _monNicknameWithPrefix(gEffectBattler);
-      case 'ATK_NAME':    return _monNickname(gBattlerAttacker);
-      case 'DEF_NAME':    return _monNickname(gBattlerTarget);
+      case 'ATK_NAME':    return _monNickname(msgData.battlerAttacker);
+      case 'DEF_NAME':    return _monNickname(msgData.battlerTarget);
       case 'CURRENT_MOVE':return _moveName(msgData.currentMove);
       case 'LAST_MOVE':   return _moveName(msgData.originallyUsedMove);
       case 'LAST_ITEM':   return _itemName(msgData.lastItem);
       case 'LAST_ABILITY':return _abilityName(msgData.lastAbility);
-      case 'ATK_ABILITY': return _abilityName(msgData.abilities[gBattlerAttacker] ?? 0);
-      case 'DEF_ABILITY': return _abilityName(msgData.abilities[gBattlerTarget] ?? 0);
+      case 'ATK_ABILITY': return _abilityName(msgData.abilities[msgData.battlerAttacker] ?? 0);
+      case 'DEF_ABILITY': return _abilityName(msgData.abilities[msgData.battlerTarget] ?? 0);
       case 'SCR_ACTIVE_ABILITY':
         return _abilityName(msgData.abilities[msgData.scrActive] ?? 0);
       case 'EFF_ABILITY':
@@ -514,8 +514,8 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'LINK_OPPONENT_MON2_NAME':
         // Link multi-battle Phase 1 deferred — fallback à single-battle équivalent.
         return _monNickname(name.includes('OPPONENT') ? (name.includes('MON2') ? 3 : 1) : (name.includes('MON2') ? 2 : 0));
-      case 'ATK_NAME_WITH_PREFIX_MON1': return _monNicknameWithPrefix(gBattlerAttacker);
-      case 'ATK_PARTNER_NAME':    return _monNickname((gBattlerAttacker & ~1) | 2);
+      case 'ATK_NAME_WITH_PREFIX_MON1': return _monNicknameWithPrefix(msgData.battlerAttacker);
+      case 'ATK_PARTNER_NAME':    return _monNickname((msgData.battlerAttacker & ~1) | 2);
       // Trainer string templates (1:1 décomp B_TXT_TRAINER1_LOSE_TEXT/WIN_TEXT etc.)
       case 'TRAINER1_LOSE_TEXT':
       case 'TRAINER1_WIN_TEXT':
@@ -536,9 +536,9 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       // - OPPONENT side → "ennemi" (= sText_FoePkmnPrefix2/3/4)
       // Templates utilisent pour différencier "du POKéMON ami" vs "du POKéMON ennemi".
       case 'ATK_PREFIX1': case 'ATK_PREFIX2': case 'ATK_PREFIX3':
-        return (gBattlerAttacker & 1) === 0 ? 'ami' : 'ennemi';
+        return (msgData.battlerAttacker & 1) === 0 ? 'ami' : 'ennemi';
       case 'DEF_PREFIX1': case 'DEF_PREFIX2': case 'DEF_PREFIX3':
-        return (gBattlerTarget & 1) === 0 ? 'ami' : 'ennemi';
+        return (msgData.battlerTarget & 1) === 0 ? 'ami' : 'ennemi';
       default:
         return `{B_${name}}`;
     }

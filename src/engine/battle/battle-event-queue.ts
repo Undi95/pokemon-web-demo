@@ -115,6 +115,12 @@ export interface BattleMsgData {
   lastItem: number;
   lastAbility: number;
   scrActive: number;
+  // 1:1 décomp : gBattlerAttacker/gBattlerTarget capturés AU MOMENT de l'emit.
+  // CRITIQUE pour les messages décodés en différé (fin de tour : DoBattlerEndTurnEffects
+  // avance gBattlerAttacker au dernier battler avant que drainBattleEventsAsText ne
+  // décode) → le decoder doit lire CE snapshot, pas les globals live (sinon nom faux).
+  battlerAttacker: number;
+  battlerTarget: number;
   bakScriptPartyIdx: number;
   hpScale: number;
   itemEffectBattler: number;
@@ -375,6 +381,8 @@ export function buildBattleMsgDataSnapshot(state: {
   gLastUsedItem: number;
   gLastUsedAbility: number;
   gBattleScripting: { battler: number };
+  gBattlerAttacker: number;
+  gBattlerTarget: number;
   gBattleStruct: { scriptPartyIdx: number; hpScale: number };
   gPotentialItemEffectBattler: number;
   gBattleMoveType: number;
@@ -394,6 +402,8 @@ export function buildBattleMsgDataSnapshot(state: {
     lastItem: state.gLastUsedItem,
     lastAbility: state.gLastUsedAbility,
     scrActive: state.gBattleScripting.battler,
+    battlerAttacker: state.gBattlerAttacker,
+    battlerTarget: state.gBattlerTarget,
     bakScriptPartyIdx: state.gBattleStruct.scriptPartyIdx,
     hpScale: state.gBattleStruct.hpScale,
     itemEffectBattler: state.gPotentialItemEffectBattler,
