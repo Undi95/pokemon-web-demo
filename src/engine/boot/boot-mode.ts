@@ -282,14 +282,13 @@ function applyNoIntroPreset(): void {
     const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
       heldItem: 'miracleseed',  // DEBUG fixture (= ITEM_MIRACLE_SEED)
       ability: 'Overgrow',
-      nature: 'Hardy',
+      // nature retirée : dérivée du PID 1:1 (getNatureFromPersonality), comme tout mon.
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['pound', 'leer', 'absorb', 'quickattack'],
     });
-    // ⚠️ DEBUG ONLY : force gender FEMALE pour Arcko (= test gender symbol ♀
-    // bleu dans party screen). Override le calc personality-based 1:1 décomp.
-    arcko.monGender = 254;  // MON_FEMALE
+    // gender retiré (était forcé FEMALE pour tester le symbole ♀) : il DOIT dériver du
+    // PID 1:1 (GetGenderFromSpeciesAndPersonality), comme tout le reste. Le PID est canonique.
     // ⚠️ DEBUG ONLY : mons valides (user : "ball + lieu, qu'ils soient
     // valide"). Starter Treecko 1:1 = reçu à la ROUTE 101 niv.5 (sauvetage
     // Birch). pokeball déjà = ITEM_POKE_BALL (createPokemonInstance 1:1).
@@ -306,7 +305,7 @@ function applyNoIntroPreset(): void {
     const jirachi = createPokemonInstance('SPECIES_JIRACHI', 100, {
       heldItem: 'starpiece',
       ability: 'Serene Grace',
-      nature: 'Modest',
+      // nature retirée : dérivée du PID 1:1 (getNatureFromPersonality), comme tout mon.
       ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
       evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
       moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],

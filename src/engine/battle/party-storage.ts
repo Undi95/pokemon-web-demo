@@ -655,7 +655,7 @@ function _getNatureFromPersonality(personality: number): number {
 
 /** 1:1 décomp `ModifyStatByNature(nature, stat, statIndex)` (pokemon.c:1894-1922).
  *  Applique +10% / -10% / no-op selon table. */
-function _modifyStatByNature(nature: number, stat: number, statIndex: number): number {
+export function _modifyStatByNature(nature: number, stat: number, statIndex: number): number {
   if (nature < 0 || nature >= 25 || statIndex < 0 || statIndex >= 5) return stat;
   const mod = _NATURE_STAT_TABLE[nature][statIndex];
   if (mod === 0) return stat;

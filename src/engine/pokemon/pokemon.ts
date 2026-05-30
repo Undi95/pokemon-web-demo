@@ -326,6 +326,19 @@ export function evolveInstance(inst: PokemonInstance, newSpeciesEnum: string): v
   if (inst.nickname === oldNameFr) inst.nickname = inst.speciesNameFr;
 }
 
+/** 1:1 décomp ordre enum NATURE_HARDY=0 … NATURE_QUIRKY=24 (constants/pokemon.h).
+ *  `GetNatureFromPersonality(pid) = pid % NUM_NATURES`. Noms EN title-case (= format
+ *  du champ `nature` de l'instance, cohérent avec les fixtures 'Modest' etc.). */
+const NATURE_NAMES: readonly string[] = [
+  'Hardy', 'Lonely', 'Brave', 'Adamant', 'Naughty', 'Bold', 'Docile', 'Relaxed',
+  'Impish', 'Lax', 'Timid', 'Hasty', 'Serious', 'Jolly', 'Naive', 'Modest',
+  'Mild', 'Quiet', 'Bashful', 'Rash', 'Calm', 'Gentle', 'Sassy', 'Careful', 'Quirky',
+];
+/** 1:1 décomp `GetNatureFromPersonality` (pokemon.c) : nature dérivée du PID. */
+export function getNatureFromPersonality(personality: number): string {
+  return NATURE_NAMES[(personality >>> 0) % 25];
+}
+
 /** Crée une instance Pokémon prête à être ajoutée à la party. */
 export function createPokemonInstance(speciesEnum: string, level: number, opts?: {
   moves?: string[]; nickname?: string; nature?: string; ivs?: StatSpread; evs?: StatSpread;
@@ -394,7 +407,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     level, currentHp: maxHp, maxHp,
     moves, ability,
     heldItem: opts?.heldItem ?? '',
-    nature: opts?.nature ?? 'Hardy',
+    nature: opts?.nature ?? getNatureFromPersonality(personality),   // 1:1 : nature dérivée du PID
     ivs, evs,
     status: null,
     currentExp,

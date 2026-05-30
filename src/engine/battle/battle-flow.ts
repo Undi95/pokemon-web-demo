@@ -92,7 +92,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, type PokemonInstance } from '../pokemon/pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty } from '../battle/party-storage';
+import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -534,10 +534,13 @@ function calculateBaseDamage(
   return damage;
 }
 
-/** Compute Atk stat at this level. 1:1 décomp pokemon.c CalcStat formula
- *  (Gen 3) : ((2*base + iv + ev/4) * level / 100) + 5 */
-function calcStat(base: number, iv: number, ev: number, level: number): number {
-  return Math.floor((2 * base + iv + Math.floor(ev / 4)) * level / 100) + 5;
+/** Compute stat at this level. 1:1 décomp pokemon.c CalcStat formula
+ *  (Gen 3) : ((2*base + iv + ev/4) * level / 100) + 5, puis ModifyStatByNature.
+ *  natureIdx (= pid % 25) + statIdx (0=ATK,1=DEF,2=SPE,3=SPA,4=SPD) → modif ±10%. */
+function calcStat(base: number, iv: number, ev: number, level: number, natureIdx?: number, statIdx?: number): number {
+  let stat = Math.floor((2 * base + iv + Math.floor(ev / 4)) * level / 100) + 5;
+  if (natureIdx !== undefined && statIdx !== undefined) stat = _modifyStatByNature(natureIdx, stat, statIdx);
+  return stat;
 }
 
 /** Build species runtime stats for damage formula. Reads from
@@ -1276,8 +1279,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // Stats : we recompute Atk/Def from species + level + IVs.
     const attackerStats = getSpeciesStats(attacker.speciesEnum);
     const defenderStats = getSpeciesStats(defender.speciesEnum);
-    const attackerAtk = calcStat(attackerStats.atk, attacker.ivs.atk, attacker.evs.atk, attacker.level);
-    const defenderDef = calcStat(defenderStats.def, defender.ivs.def, defender.evs.def, defender.level);
+    // 1:1 : la nature (= pid % 25) modifie l'ATQUE (STAT_ATK=0) de l'attaquant et la
+    // DÉFENSE (STAT_DEF=1) du défenseur de ±10% (gNatureStatTable, comme CalculateMonStats).
+    const attackerAtk = calcStat(attackerStats.atk, attacker.ivs.atk, attacker.evs.atk, attacker.level, (attacker.personality ?? 0) % 25, 0);
+    const defenderDef = calcStat(defenderStats.def, defender.ivs.def, defender.evs.def, defender.level, (defender.personality ?? 0) % 25, 1);
     let damage = calculateBaseDamage(attackerAtk, defenderDef, attacker.level, power);
     // Iter19 : STAB (Same Type Attack Bonus) — 1.5× if move type matches attacker type.
     const moveType = moveData?.type ?? 'TYPE_NORMAL';
