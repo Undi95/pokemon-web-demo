@@ -351,6 +351,95 @@ export async function extractPngPlte(url: string): Promise<Uint16Array | null> {
 }
 
 /**
+ * Parse un PNG indexed (color type 3) et retourne les indices palette RAW
+ * (= IDAT zlib-décompressé + défiltré), SANS passer par le canvas browser.
+ *
+ * Pourquoi : la voie canvas (drawImage + getImageData → reverse-lookup RGB→PLTE)
+ * échoue sur les PNG multi-sub-palettes quand 2 sous-palettes ont des couleurs
+ * RGB identiques (collision → mauvais index) ou quand le canvas resample/round
+ * légèrement (→ index fallback transparent ou faux). Pour `status.png` (80-color
+ * PLTE = 5 sous-pal), chaque status icon utilise raw {2,3,12+16*row} ; la voie
+ * raw préserve l'index réel (→ %16 = {2,3,12} = 1:1 `status.4bpp` décomp), alors
+ * que le canvas produisait un spread d'indices faux → "BRU bleu / couleurs status fausses".
+ *
+ * Supporte bitDepth 8 (1 byte/pixel) et 4 (nibbles). colorType 3 (indexed) only.
+ * Retourne `indices[y*widthPx + x]` = index PLTE brut 0..255.
+ */
+export async function loadIndexedPngRawIndices(
+  url: string,
+): Promise<{ widthPx: number; heightPx: number; bitDepth: number; indices: Uint8Array }> {
+  const buf = await fetchAssetArrayBuffer(url);
+  const view = new Uint8Array(buf);
+  if (view[0] !== 137 || view[1] !== 80) throw new Error(`not a PNG: ${url}`);
+  let off = 8;
+  let widthPx = 0, heightPx = 0, bitDepth = 0, colorType = -1;
+  const idatParts: Uint8Array[] = [];
+  while (off + 8 <= view.length) {
+    const length = (view[off] * 0x1000000) + (view[off+1] << 16) + (view[off+2] << 8) + view[off+3];
+    const type = String.fromCharCode(view[off+4], view[off+5], view[off+6], view[off+7]);
+    const dataStart = off + 8;
+    if (type === 'IHDR') {
+      widthPx = (view[dataStart] * 0x1000000) + (view[dataStart+1] << 16) + (view[dataStart+2] << 8) + view[dataStart+3];
+      heightPx = (view[dataStart+4] * 0x1000000) + (view[dataStart+5] << 16) + (view[dataStart+6] << 8) + view[dataStart+7];
+      bitDepth = view[dataStart+8];
+      colorType = view[dataStart+9];
+    } else if (type === 'IDAT') {
+      idatParts.push(view.subarray(dataStart, dataStart + length));
+    } else if (type === 'IEND') {
+      break;
+    }
+    off += 12 + length;
+  }
+  if (colorType !== 3) throw new Error(`PNG ${url}: colorType ${colorType} not indexed (expected 3)`);
+  if (bitDepth !== 8 && bitDepth !== 4) throw new Error(`PNG ${url}: bitDepth ${bitDepth} unsupported (expected 4/8)`);
+
+  // Concat IDAT
+  let totalLen = 0; for (const p of idatParts) totalLen += p.length;
+  const idat = new Uint8Array(totalLen);
+  { let w = 0; for (const part of idatParts) { idat.set(part, w); w += part.length; } }
+
+  // Inflate (IDAT = zlib RFC 1950 = DecompressionStream 'deflate').
+  const inflatedBuf = await new Response(
+    new Response(idat).body!.pipeThrough(new DecompressionStream('deflate')),
+  ).arrayBuffer();
+  const raw = new Uint8Array(inflatedBuf);
+
+  // Défiltrage scanlines (PNG filter types 0..4 ; unité = 1 byte pour bitDepth ≤ 8).
+  const rowBytes = Math.ceil(widthPx * bitDepth / 8);
+  const out = new Uint8Array(heightPx * rowBytes);
+  const bpp = 1;
+  let p = 0;
+  for (let y = 0; y < heightPx; y++) {
+    const filter = raw[p++];
+    for (let x = 0; x < rowBytes; x++) {
+      const rb = raw[p++];
+      const a = x >= bpp ? out[y*rowBytes + x - bpp] : 0;
+      const b = y > 0 ? out[(y-1)*rowBytes + x] : 0;
+      const c = (x >= bpp && y > 0) ? out[(y-1)*rowBytes + x - bpp] : 0;
+      let v: number;
+      if (filter === 0) v = rb;
+      else if (filter === 1) v = rb + a;
+      else if (filter === 2) v = rb + b;
+      else if (filter === 3) v = rb + ((a + b) >> 1);
+      else { const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2*c); v = rb + ((pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c)); }
+      out[y*rowBytes + x] = v & 0xFF;
+    }
+  }
+
+  // Extraction index par pixel.
+  const indices = new Uint8Array(widthPx * heightPx);
+  for (let y = 0; y < heightPx; y++) {
+    for (let x = 0; x < widthPx; x++) {
+      let v: number;
+      if (bitDepth === 8) v = out[y*rowBytes + x];
+      else { const byteVal = out[y*rowBytes + (x >> 1)]; v = (x & 1) ? (byteVal & 0xF) : (byteVal >> 4); }
+      indices[y*widthPx + x] = v;
+    }
+  }
+  return { widthPx, heightPx, bitDepth, indices };
+}
+
+/**
  * Variante "strict" : utilise le PLTE PNG embedded comme palette canonique.
  * Garantit que les indices résultants matchent l'ordre PLTE original (= ce que
  * le décomp gbagfx produit dans les .4bpp.lz).

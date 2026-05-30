@@ -87,6 +87,9 @@ function _restorePalettesFromUnfaded(): void {
   BlendPalettes(PALETTES_ALL, 0, 0 /* RGB_BLACK */);
 }
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
+// gSineTable : 1:1 décomp `Sin(index, amplitude) = (gSineTable[index] * amplitude) >> 8`.
+// Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
+import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from '../pokemon/pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from '../battle/party-storage';
@@ -102,6 +105,7 @@ import {
   updateHealthboxHpDigits,
   updateHealthboxStatus,
   updateHealthboxExpBar,
+  updateHealthboxNick,
   type HealthboxHandle,
 } from './battle-healthbox';
 import { getExperienceForLevel } from '../data/game-data';
@@ -155,7 +159,10 @@ function _resolveBattleString(stringId: number): string {
 // est notre entry. Le wire fonctionnel complet (= K14) suit progressivement
 // en remplaçant les states pragmatic actuels par les fns 1:1 strict portées.
 import './battle-main-functions';
-import './battle-hp-bar';
+import {
+  SetBattleBarStruct, MoveBattleBar, setMoveBattleBarGraphicallyHook,
+  battleBars, HEALTH_BAR, EXP_BAR,
+} from './battle-hp-bar';
 import './battle-faint-anim';
 import './battle-anim-normal';
 import './battle-anim-throw';
@@ -733,14 +740,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // écrit même si les sprites sont invisibles (= prêt pour le D6 final qui
     // les rendra visible). Color tier GREEN > 50%, YELLOW > 20%, else RED.
     if (opponentHealthbox && opponentMon) {
-      updateHealthboxHpBar(opponentHealthbox, opponentMon.currentHp, opponentMon.maxHp);
+      // Skip le blit de la barre si un drain est en cours pour ce battler (= le
+      // tickHpDrain pilote la barre frame par frame ; sinon on la ferait sauter).
+      if (!isHpDraining(1)) updateHealthboxHpBar(opponentHealthbox, opponentMon.currentHp, opponentMon.maxHp);
       // Phase 1.4 N Q3 D3 : Lv display (1:1 décomp UpdateLvlInHealthbox).
       updateHealthboxLevel(opponentHealthbox, opponentMon.level);
       // Phase 1.4 N Q3 D4 : status icon (1:1 décomp UpdateStatusIconInHealthbox).
       updateHealthboxStatus(opponentHealthbox, opponentMon.status);
     }
     if (playerHealthbox && playerMon) {
-      updateHealthboxHpBar(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
+      if (!isHpDraining(0)) updateHealthboxHpBar(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
       // Phase 1.4 N Q3 D3 : Lv + HP digits (1:1 décomp UpdateLvlInHealthbox + UpdateHpTextInHealthbox).
       updateHealthboxLevel(playerHealthbox, playerMon.level);
       updateHealthboxHpDigits(playerHealthbox, playerMon.currentHp, playerMon.maxHp);
@@ -1272,6 +1281,101 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
+  // ─── Bounce healthbox + mon player 1:1 décomp ───────────────────────────
+  // 1:1 décomp `DoBounceEffect`/`SpriteCB_BounceEffect` (battle_main.c:2899-2979) +
+  // `HandleInputChooseAction` (battle_controller_player.c:233-238) : pendant que le
+  // JOUEUR choisit (menu action/attaque), son healthbox (box+barre) ET son Pokémon
+  // bobblent verticalement de ~1px via une onde sinus. L'adversaire NE bobble PAS.
+  //   - DoBounceEffect(BOUNCE_HEALTHBOX, delta=7, amplitude=1) → sinIndex init 128
+  //   - DoBounceEffect(BOUNCE_MON, delta=7, amplitude=1)       → sinIndex init 192
+  //   - chaque frame : sprite.y2 = Sin(sinIndex, amplitude) + amplitude ;
+  //                    sinIndex = (sinIndex + delta) & 0xFF
+  //   - Sin(i, amp) = (gSineTable[i] * amp) >> 8  → amplitude 1 ⇒ y2 ∈ [0,2].
+  // EndBounceEffect (= sortie de la phase de sélection) remet y2 = 0 (figé).
+  // Notre combat inline : on pilote le bounce par l'ÉTAT (= states de sélection).
+  // Le y2 du sprite barre se propage à ses subsprites via syncSubspriteOam
+  // (oam.y = sprite.y + sprite.y2 + sub.y), donc box+barre bobblent ensemble.
+  const BOUNCE_DELTA = 7;
+  const BOUNCE_AMPLITUDE = 1;
+  const _bounceSelectionStates = new Set<State>([
+    'ACTION_MENU_INIT', 'ACTION_MENU_INPUT', 'ACTION_EMIT_CHOOSE', 'ACTION_WAIT_CHOOSE_RESPONSE',
+    'MOVE_MENU_INIT', 'MOVE_MENU_INPUT', 'MOVE_EMIT_CHOOSE', 'MOVE_WAIT_CHOOSE_RESPONSE',
+  ]);
+  let _bounceActive = false;
+  let _hbSinIndex = 128;
+  let _monSinIndex = 192;
+  const _bounceSinY2 = (sinIndex: number): number =>
+    ((gSineTable(sinIndex) * BOUNCE_AMPLITUDE) >> 8) + BOUNCE_AMPLITUDE;
+  const _setPlayerHealthboxY2 = (rt2: ReturnType<typeof getRuntime>, y2: number): void => {
+    if (!rt2 || !playerHealthbox) return;
+    for (const id of [playerHealthbox.leftSpriteId, playerHealthbox.rightSpriteId, playerHealthbox.healthbarSpriteId]) {
+      const s = rt2.gSprites.get(id);
+      if (s) s.y2 = y2;
+    }
+  };
+  const tickBounce = (): void => {
+    const rt2 = getRuntime();
+    if (!rt2) return;
+    const shouldBounce = _bounceSelectionStates.has(state);
+    if (shouldBounce && !_bounceActive) {
+      // DoBounceEffect start : reset sinIndex (1:1 décomp : 128 healthbox / 192 mon).
+      _bounceActive = true;
+      _hbSinIndex = 128;
+      _monSinIndex = 192;
+    } else if (!shouldBounce && _bounceActive) {
+      // EndBounceEffect : y2 = 0 (figé).
+      _bounceActive = false;
+      _setPlayerHealthboxY2(rt2, 0);
+      if (playerSpriteId >= 0) { const s = rt2.gSprites.get(playerSpriteId); if (s) s.y2 = 0; }
+      return;
+    }
+    if (!_bounceActive) return;
+    // SpriteCB_BounceEffect : oscille y2 + avance sinIndex.
+    _setPlayerHealthboxY2(rt2, _bounceSinY2(_hbSinIndex));
+    if (playerSpriteId >= 0) { const s = rt2.gSprites.get(playerSpriteId); if (s) s.y2 = _bounceSinY2(_monSinIndex); }
+    _hbSinIndex = (_hbSinIndex + BOUNCE_DELTA) & 0xFF;
+    _monSinIndex = (_monSinIndex + BOUNCE_DELTA) & 0xFF;
+  };
+
+  // ─── HP bar drain animation 1:1 décomp MoveBattleBar ────────────────────
+  // 1:1 décomp `MoveBattleBar`/`CalcNewBarValue`/`MoveBattleBarGraphically`
+  // (battle_interface.c:2238-2330) + `Cmd_healthbarupdate`/`Cmd_datahpupdate`.
+  // Au lieu de faire SAUTER la barre HP au nouveau PV (renderHpWindows instantané),
+  // on l'anime ~1px/frame de oldHp → newHp. Le hook graphique (= MoveBattleBarGraphically)
+  // re-blitte les 6 tiles fill au `currValue` interpolé chaque frame (Q24.8 quand
+  // maxHP < 48, cf. CalcNewBarValue). La progression du combat (messages d'efficacité,
+  // check faint) est GATÉE tant que la barre se vide (= `waitforhealthbar` décomp).
+  // battler 0 = player, 1 = opponent (single).
+  const _hpDrainBattlers = new Set<number>();
+  // 1:1 décomp : MoveBattleBarGraphically lit battleBars[battler].currValue. Notre
+  // hook mappe battler → handle + convertit currValue (Q24.8 si maxValue<48) → PV réel.
+  setMoveBattleBarGraphicallyHook((battler: number, whichBar: number) => {
+    if (whichBar !== HEALTH_BAR) return;
+    const handle = battler === 0 ? playerHealthbox : opponentHealthbox;
+    if (!handle) return;
+    const bar = battleBars[battler];
+    const realHp = bar.maxValue < 48 ? bar.currValue / 256 : bar.currValue;
+    updateHealthboxHpBar(handle, realHp, bar.maxValue);
+  });
+  /** Démarre le drain HP gradué (1:1 SetBattleBarStruct). `battler` 0/1 ; le hook
+   *  graphique anime ensuite via tickHpDrain. Rendu immédiat à oldHp (anti-flash). */
+  const startHpDrain = (battler: number, handle: HealthboxHandle | null, maxHp: number, oldHp: number, newHp: number): void => {
+    if (!handle || oldHp === newHp) return;
+    SetBattleBarStruct(battler, 0, maxHp, oldHp, oldHp - newHp);
+    _hpDrainBattlers.add(battler);
+    updateHealthboxHpBar(handle, oldHp, maxHp);  // évite le flash 1-frame au newHp
+  };
+  const tickHpDrain = (): void => {
+    if (_hpDrainBattlers.size === 0) return;
+    for (const battler of [..._hpDrainBattlers]) {
+      // MoveBattleBar avance currValue d'1px ET appelle le hook graphique. -1 = fini.
+      const ret = MoveBattleBar(battler, 0, HEALTH_BAR, 0);
+      if (ret === -1) _hpDrainBattlers.delete(battler);
+    }
+  };
+  const isHpDraining = (battler?: number): boolean =>
+    battler === undefined ? _hpDrainBattlers.size > 0 : _hpDrainBattlers.has(battler);
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
@@ -1289,6 +1393,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // text waits + transitions).
     tickShake();
     tickFaint();
+    tickBounce();
+    tickHpDrain();
     // 1:1 décomp `Task_DoPokeballSendOutAnim` polling via sprite callback chain.
     // Notre tick centralisé invoke tickBallThrow() chaque frame ; le state machine
     // BALL_THROW polle l'outcome pour transition.
@@ -1308,6 +1414,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // (= script-spawned NPCs, emote bubbles). Build whitelist battle sprites
     // explicitement (player + opponent + healthbox handles) pour pas hide eux.
     const stashedSprites = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
+    const animPauseBackupTick = (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup;
+    const animsBackupTick = (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup;
     if (stashedSprites && state !== 'CLEANUP' && state !== 'DONE' && state !== 'INIT' && state !== 'LOAD_ASSETS' && state !== 'WAIT_LOAD') {
       const battleWhitelist = new Set<number>();
       if (playerSpriteId >= 0) battleWhitelist.add(playerSpriteId);
@@ -1315,19 +1423,53 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       if (playerHealthbox) {
         battleWhitelist.add(playerHealthbox.leftSpriteId);
         battleWhitelist.add(playerHealthbox.rightSpriteId);
-        battleWhitelist.add(playerHealthbox.healthbarLeftSpriteId);
-        battleWhitelist.add(playerHealthbox.healthbarRightSpriteId);
+        battleWhitelist.add(playerHealthbox.healthbarSpriteId);
       }
       if (opponentHealthbox) {
         battleWhitelist.add(opponentHealthbox.leftSpriteId);
         battleWhitelist.add(opponentHealthbox.rightSpriteId);
-        battleWhitelist.add(opponentHealthbox.healthbarLeftSpriteId);
-        battleWhitelist.add(opponentHealthbox.healthbarRightSpriteId);
+        battleWhitelist.add(opponentHealthbox.healthbarSpriteId);
       }
-      // Re-hide stashed sprites (= OW NPCs/player that were visible pre-battle).
-      for (const id of stashedSprites) {
+      // Whitelist robuste : TOUTE barre combat (subspriteMode 'on'). Protège contre
+      // la race async où la barre HP est créée (createBattlerHealthboxSprites await
+      // ensureHealthboxAssets) AVANT l'assignation du handle → sinon la boucle "hide
+      // NEW" la voit visible + non-whitelistée → la stashe + cache à vie → enfants
+      // subsprites cachés (syncSubspriteOam: oam.visible = !sprite.invisible) → "barre
+      // adverse vide au spawn après quelques combats" (user-flag 2026-05-30, le cache
+      // hit d'ensureHealthboxAssets change le timing). En combat les seuls sprites
+      // subMode 'on' sont les barres HP (player+adverse) ; les sprites OW sont 'off'.
+      for (const [id, s] of rt.gSprites) {
+        if (s && s.inUse && s.subspriteMode === 'on') battleWhitelist.add(id);
+      }
+      // Re-hide stashed sprites (= OW NPCs/player visibles pré-combat). MAIS si un
+      // sprite combat (whitelist) a été stashé par erreur (race ci-dessus), on le
+      // RETIRE du stash + ré-affiche (sinon il reste caché à vie → barre vide).
+      for (const id of [...stashedSprites]) {
+        if (battleWhitelist.has(id)) {
+          stashedSprites.delete(id);
+          const sp = rt.gSprites.get(id);
+          if (sp) sp.invisible = false;
+          continue;
+        }
         const sprite = rt.gSprites.get(id);
         if (sprite) sprite.invisible = true;
+      }
+      // Ré-assert l'anim pause sur les sprites OW pré-combat chaque frame : si
+      // un update OW (qui re-montre les sprites, cf. commentaire ci-dessus) les
+      // ré-anime, on ré-stoppe leur copy-request VRAM. Skip les sprites combat.
+      if (animPauseBackupTick) {
+        for (const id of animPauseBackupTick.keys()) {
+          if (battleWhitelist.has(id)) continue;
+          const sprite = rt.gSprites.get(id);
+          // anims=null : SKIP total du sprite par tickSpriteAnims (fix définitif, cf.
+          // SPAWN_SPRITES) — un task OW re-dé-pausait l'avatar, donc animPaused seul
+          // ne suffisait pas. animPaused/animBeginning = défense additionnelle.
+          if (sprite && sprite.inUse) {
+            sprite.animPaused = true;
+            sprite.animBeginning = false;
+            sprite.anims = null;
+          }
+        }
       }
       // Hide NEW sprites spawned during battle that are not battle sprites
       // (= ex emote bubbles, script-spawned NPCs). Add to stash for cleanup restore.
@@ -1337,6 +1479,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (stashedSprites.has(spriteId)) continue;
         sprite.invisible = true;
         stashedSprites.add(spriteId);
+        // Pause aussi son anim (avec backup) pour stopper toute copy-request VRAM
+        // qui pourrait écraser la région healthbox. animBeginning=false : stoppe AUSSI
+        // BeginAnim (qui ignore animPaused).
+        if (animPauseBackupTick && !animPauseBackupTick.has(spriteId)) animPauseBackupTick.set(spriteId, sprite.animPaused);
+        sprite.animPaused = true;
+        sprite.animBeginning = false;
+        // Backup + clear anims (fix définitif : skip total par tickSpriteAnims).
+        if (animsBackupTick && !animsBackupTick.has(spriteId)) animsBackupTick.set(spriteId, sprite.anims);
+        sprite.anims = null;
       }
     }
 
@@ -1594,13 +1745,44 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         //   cleanup. Iterate sprites par spriteId (= gSprites map) AVANT le
         //   spawn de nos sprites battle (= ceux-ci seront ajoutés ensuite).
         const stashSprites: Set<number> = new Set();
+        // 1:1 décomp : CB2_InitBattle appelle ResetSpriteData() qui DÉTRUIT tous les
+        // sprites overworld avant de créer ceux du combat. Notre combat inline les
+        // garde vivants + stashés (invisible) pour restore rapide au retour OW. MAIS
+        // un sprite OW object-event (player/NPC) avec une anim de marche active reste
+        // tické par tickSpriteAnims (invisible ou non) → sa RequestSpriteFrameImageCopy
+        // ré-écrit sa VRAM (allouée par l'OBJ allocator AVANT le combat) CHAQUE FRAME.
+        // Cette VRAM chevauche la région hardcodée des healthbox combat
+        // (0x0000/0x1000/0x2000) → le groove de la box adverse (tiles 144-151 = 0x1200)
+        // se fait écraser par la frame de marche du player, lue avec la palette
+        // healthbox → "bout de fleur OW à palette random" (bug user 2026-05-29). Fix
+        // 1:1 (pattern FreezeObjectEvents / sprite->animPaused) : on PAUSE l'anim de
+        // TOUS les sprites pré-combat (backup pour restore) afin de stopper leurs
+        // copy-requests VRAM. Le blit gfx healthbox (INIT_HP_WINDOWS) arrive APRÈS →
+        // toute corruption résiduelle est recouverte.
+        const animPauseBackup: Map<number, boolean> = new Map();
+        // Backup + clear de `sprite.anims` : c'est LE fix définitif. animPaused/animBeginning
+        // ne suffisaient pas — un task/mouvement OW re-dé-pausait l'avatar (animPaused=false)
+        // chaque frame, et tickSpriteAnims l'animait → RequestSpriteFrameImageCopy copiait sa
+        // frame de marche dans la VRAM healthbox (tile 144, qui chevauche le groove de la box
+        // adverse) → "fleur" colorée. Avec anims=null, tickSpriteAnims SKIP entièrement le
+        // sprite (sprite.c:`if (anims === null) continue`) → aucune copy possible, quel que
+        // soit l'état animPaused. Restauré au CLEANUP (user-flag 2026-05-30, vérifié runtime).
+        const animsBackup: Map<number, unknown> = new Map();
         for (const [spriteId, sprite] of rt.gSprites) {
-          if (sprite && !sprite.invisible) {
+          if (!sprite) continue;
+          animPauseBackup.set(spriteId, sprite.animPaused);
+          sprite.animPaused = true;
+          sprite.animBeginning = false;
+          animsBackup.set(spriteId, sprite.anims);
+          sprite.anims = null;
+          if (!sprite.invisible) {
             stashSprites.add(spriteId);
             sprite.invisible = true;
           }
         }
         (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = stashSprites;
+        (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup = animPauseBackup;
+        (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup = animsBackup;
 
         // Compute tileId for each sprite (= byteOffset / 32 bytes per tile).
         const playerTileId   = PLAYER_SPRITE_BYTE_OFFSET   / 32;
@@ -1621,7 +1803,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           paletteBank: _battleOpponentPalSlot,
           x: SBATTLER_COORD_X_OPPONENT, y: oppCenterY,
           shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE,
-          priority: 0,
+          // 1:1 décomp gOamData_BattleSpriteOpponentSide.priority = 2 : les sprites
+          // pokémon sont DERRIÈRE les healthboxes (prio 1) → la box dessine par-dessus
+          // (sinon le sprite ennemi cache le surnom/genre de la box joueur).
+          priority: 2,
         });
         opponentSpriteId = opp.spriteId;
         const player = rt.CreateSpriteAtOam({
@@ -1629,7 +1814,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           paletteBank: _battlePlayerPalSlot,
           x: SBATTLER_COORD_X_PLAYER, y: playerCenterY,
           shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE,
-          priority: 0,
+          // 1:1 décomp gOamData_BattleSpritePlayerSide.priority = 2 (cf. opponent).
+          priority: 2,
         });
         playerSpriteId = player.spriteId;
         // 1:1 décomp : après spawn des sprites + healthbox, le battle screen
@@ -1659,6 +1845,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             if (handle) {
               setHealthboxVisible(handle, true);  // 1:1 décomp : visible après init
               renderHpWindows();  // populate tile data dynamique immédiatement
+              // 1:1 décomp UpdateHealthboxAttribute : surnom + genre (1 fois à l'init).
+              if (opponentMon) updateHealthboxNick(handle, opponentMon.nickname, (opponentMon as { monGender?: number }).monGender ?? 255);
             }
           }).catch(e => console.warn('[battle-flow] opp healthbox create failed:', e));
         }
@@ -1668,6 +1856,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             if (handle) {
               setHealthboxVisible(handle, true);
               renderHpWindows();
+              // 1:1 décomp UpdateHealthboxAttribute : surnom + genre (1 fois à l'init).
+              if (playerMon) updateHealthboxNick(handle, playerMon.nickname, (playerMon as { monGender?: number }).monGender ?? 255);
             }
           }).catch(e => console.warn('[battle-flow] player healthbox create failed:', e));
         }
@@ -2043,7 +2233,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
         if (useBytecodeMsgs && opponentMon) {
           _pendingBytecodeMessages = [];
+          const oppOldHp = opponentMon.currentHp;
           applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
+          // 1:1 décomp `Cmd_healthbarupdate` : drain gradué oldHp→newHp (gaté par
+          // PLAYER_BYTECODE_MSG = waitforhealthbar). startHpDrain AVANT renderHpWindows
+          // pour que renderHpWindows skip le blit barre (anti-saut).
+          startHpDrain(1, opponentHealthbox, opponentMon.maxHp, oppOldHp, opponentMon.currentHp);
           renderHpWindows();
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
           // émis par le bytecode (= move hit avec damage applied), pas par check
@@ -2075,6 +2270,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       // CHECK_OPP_FAINTED. Préserve l'ordre 1:1 émis par le bytecode (= USEDMOVE
       // → effectiveness → status applied → etc.).
       case 'PLAYER_BYTECODE_MSG': {
+        // 1:1 décomp `waitforhealthbar` : attendre la fin du drain barre AVANT
+        // d'afficher le 1er message (efficacité) ou de checker le faint.
+        if (isHpDraining()) return false;
         if (_pendingBytecodeMessages.length === 0) {
           state = 'CHECK_OPP_FAINTED';
           return false;
@@ -2095,7 +2293,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_DAMAGE_OPP': {
         if (!playerMon || !opponentMon) { state = 'CLEANUP'; return false; }
+        const oppOldHp = opponentMon.currentHp;
         const { damage, typeMul } = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
+        // 1:1 décomp `Cmd_healthbarupdate` : drain gradué (gaté par CHECK_OPP_FAINTED
+        // + _WAIT = waitforhealthbar). startHpDrain AVANT renderHpWindows (anti-saut).
+        startHpDrain(1, opponentHealthbox, opponentMon.maxHp, oppOldHp, opponentMon.currentHp);
         renderHpWindows();
         if (damage > 0) {
           // Bug 5c : shake opp sprite on damage.
@@ -2135,6 +2337,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'PLAYER_DAMAGE_OPP_WAIT': {
+        if (isHpDraining()) return false;  // 1:1 waitforhealthbar : barre vidée avant d'avancer
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'CHECK_OPP_FAINTED';
@@ -2143,6 +2346,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'CHECK_OPP_FAINTED': {
+        // 1:1 décomp `waitforhealthbar` : la barre doit FINIR de se vider avant le
+        // check faint (= sinon l'anim de faint démarre avec une barre encore pleine).
+        if (isHpDraining()) return false;
         if (!opponentMon) { state = 'CLEANUP'; return false; }
         if (opponentMon.currentHp <= 0) {
           state = 'OPP_FAINTED_TEXT';
@@ -2245,7 +2451,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
         if (useBytecodeMsgs) {
           _pendingBytecodeMessages = [];
+          const plOldHp = playerMon.currentHp;
           applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
+          // 1:1 `Cmd_healthbarupdate` : drain gradué player (gaté OPPONENT_BYTECODE_MSG).
+          startHpDrain(0, playerHealthbox, playerMon.maxHp, plOldHp, playerMon.currentHp);
           renderHpWindows();
           // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
           // émis par le bytecode au lieu de hardcoded `damage > 0`.
@@ -2265,6 +2474,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_BYTECODE_MSG': {
+        if (isHpDraining()) return false;  // 1:1 waitforhealthbar
         if (_pendingBytecodeMessages.length === 0) {
           state = 'CHECK_PLAYER_FAINTED';
           return false;
@@ -2293,7 +2503,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPPONENT_DAMAGE_PLAYER': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
+        const plOldHp = playerMon.currentHp;
         const { damage, typeMul } = applyMoveDamage(opponentMon, playerMon, chosenMoveIndex);
+        // 1:1 `Cmd_healthbarupdate` : drain gradué player (gaté _WAIT + CHECK_PLAYER_FAINTED).
+        startHpDrain(0, playerHealthbox, playerMon.maxHp, plOldHp, playerMon.currentHp);
         renderHpWindows();
         if (damage > 0) {
           // Bug 5c : shake player sprite on damage.
@@ -2323,6 +2536,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPPONENT_DAMAGE_PLAYER_WAIT': {
+        if (isHpDraining()) return false;  // 1:1 waitforhealthbar
         if (isBattleMessageHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'CHECK_PLAYER_FAINTED';
@@ -2331,6 +2545,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'CHECK_PLAYER_FAINTED': {
+        if (isHpDraining()) return false;  // 1:1 waitforhealthbar : barre vidée avant faint
         if (!playerMon) { state = 'CLEANUP'; return false; }
         if (playerMon.currentHp <= 0) {
           state = 'PLAYER_FAINTED_TEXT';
@@ -2532,6 +2747,29 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             if (sprite) sprite.invisible = false;
           }
           (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = undefined;
+        }
+        // Restore l'état animPaused pré-combat des sprites OW (pattern
+        // UnfreezeObjectEvents) — le combat les avait pausés pour stopper leurs
+        // copy-requests VRAM (cf. SPAWN_SPRITES). Le système de mouvement OW
+        // re-drivera animPaused au besoin ensuite.
+        const animPauseRestore = (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup;
+        if (animPauseRestore) {
+          for (const [id, paused] of animPauseRestore) {
+            const sprite = rt.gSprites.get(id);
+            if (sprite && sprite.inUse) sprite.animPaused = paused;
+          }
+          (globalThis as { __battleAnimPauseBackup?: Map<number, boolean> }).__battleAnimPauseBackup = undefined;
+        }
+        // Restore les `anims` des sprites OW (clearés au combat pour les sortir
+        // totalement de tickSpriteAnims — cf. SPAWN_SPRITES). Le sprite ré-animera
+        // normalement en OW une fois ses anims rétablies.
+        const animsRestore = (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup;
+        if (animsRestore) {
+          for (const [id, anims] of animsRestore) {
+            const sprite = rt.gSprites.get(id);
+            if (sprite && sprite.inUse) (sprite as { anims: unknown }).anims = anims;
+          }
+          (globalThis as { __battleAnimsBackup?: Map<number, unknown> }).__battleAnimsBackup = undefined;
         }
         // Set outcome vars (= 1:1 décomp battle_main.c gBattleOutcome + VAR_RESULT).
         VarSet('VAR_RESULT', outcome);

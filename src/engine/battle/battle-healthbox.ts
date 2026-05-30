@@ -36,15 +36,26 @@
  * D6 (gender symbols) sont des sous-modules suivants.
  */
 
-import { getRuntime } from '../system/decomp-globals';
-import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte } from '../gba/png-loader';
+import { getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite } from '../system/decomp-globals';
+import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte, loadIndexedPngRawIndices } from '../gba/png-loader';
 import { MarkObjTilesAllocated } from '../system/sprite';
+// Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
+// UI modules bas-niveau (une seule direction d'import : battle-healthbox → ui/*),
+// déjà dans le graphe d'import early via battle-flow → pas de cycle/TDZ nouveau.
+import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from '../ui/gba-window-system';
+import { AddTextPrinterParameterized4, FONT_SMALL, TEXT_SKIP_DRAW } from '../ui/gba-text-system';
 
 /** RGB888 → RGB555 (= GBA palette format). Inline pour ÉVITER l'import de
  *  `./gba/types` qui introduit un cycle de modules (battle-healthbox est importé
  *  tôt via battle-flow → TDZ `BG_SCREEN_SIZE before initialization` au HMR). */
 function _rgba8ToRgb15(r: number, g: number, b: number): number {
   return ((r >> 3) & 0x1F) | (((g >> 3) & 0x1F) << 5) | (((b >> 3) & 0x1F) << 10);
+}
+
+/** 1:1 décomp macro `RGB(r,g,b)` : composantes 0..31 → u16 RGB555 (= GBA palette).
+ *  Utilisé pour `sStatusIconColors` (battle_interface.c:751-757). */
+function _rgb555(r: number, g: number, b: number): number {
+  return (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
 }
 
 /** Charge un PNG indexed multi-sub-palette en tile data 4bpp avec indices LOCAUX
@@ -60,45 +71,16 @@ function _rgba8ToRgb15(r: number, g: number, b: number): number {
  *  `loadIndexedPngStrict` ne prend que les 16 premières PLTE colors → les pixels
  *  sub-pal 1..4 (439 px) non mappés → transparent (warning + icônes invisibles). */
 async function _loadMultiSubPalTiles(url: string): Promise<Uint8Array> {
-  const fullPlte = await extractPngPlte(url);
-  if (!fullPlte) throw new Error(`multi-sub-pal PLTE missing: ${url}`);
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const el = new Image();
-    el.crossOrigin = 'anonymous';
-    el.onload = () => resolve(el);
-    el.onerror = (e) => reject(new Error(`PNG load failed: ${url}: ${e}`));
-    el.src = url;
-  });
-  const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error(`canvas ctx failed: ${url}`);
-  ctx.drawImage(img, 0, 0);
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  const widthPx = canvas.width;
-  const heightPx = canvas.height;
+  // Lecture des indices PNG RAW (= parse IDAT, PAS le canvas). La voie canvas
+  // (drawImage → getImageData → reverse-lookup RGB→PLTE) échouait sur status.png :
+  // les couleurs des 5 sous-palettes (PSN/PRZ/SLP/FRZ/BRN) entrent en collision RGB
+  // ou le canvas resample → indices faux (spread) → icône status rendue avec des
+  // couleurs healthbox arbitraires ("BRU bleu", user 2026-05-30). La voie raw
+  // préserve l'index réel : status.png utilise raw {2,3,12+16*row} → %16 = {2,3,12}
+  // (1:1 `status.4bpp` décomp : index 12 = couleur status remplie par FillPalette).
+  const { widthPx, heightPx, indices } = await loadIndexedPngRawIndices(url);
   const widthTiles = widthPx / 8;
   const heightTiles = heightPx / 8;
-
-  // Reverse lookup full PLTE (80 colors) → idx.
-  const palLookup = new Map<number, number>();
-  for (let i = 0; i < fullPlte.length; i++) {
-    const key = fullPlte[i];
-    if (!palLookup.has(key)) palLookup.set(key, i);
-  }
-
-  const idxMap = new Uint8Array(widthPx * heightPx);
-  for (let i = 0; i < widthPx * heightPx; i++) {
-    const off = i * 4;
-    const a = data[off + 3];
-    if (a < 128) { idxMap[i] = 0; continue; }
-    const rgb15 = _rgba8ToRgb15(data[off], data[off + 1], data[off + 2]);
-    const idx = palLookup.get(rgb15);
-    idxMap[i] = idx === undefined ? 0 : (idx % 16);  // local sub-pal index 0..15
-  }
 
   const charData = new Uint8Array(widthTiles * heightTiles * 32);
   for (let ty = 0; ty < heightTiles; ty++) {
@@ -106,8 +88,9 @@ async function _loadMultiSubPalTiles(url: string): Promise<Uint8Array> {
       const tileBaseOffset = (ty * widthTiles + tx) * 32;
       for (let row = 0; row < 8; row++) {
         for (let pairCol = 0; pairCol < 4; pairCol++) {
-          const px1 = idxMap[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2)];
-          const px2 = idxMap[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2 + 1)];
+          // %16 = index LOCAL dans la sous-palette (= 1:1 décomp .4bpp).
+          const px1 = indices[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2)] % 16;
+          const px2 = indices[(ty * 8 + row) * widthPx + (tx * 8 + pairCol * 2 + 1)] % 16;
           charData[tileBaseOffset + row * 4 + pairCol] = (px1 & 0xF) | ((px2 & 0xF) << 4);
         }
       }
@@ -125,6 +108,7 @@ const HPBAR_ANIM_PNG         = '/decomp/em/battle_interface/hpbar_anim.png';   /
 const NUMBERS1_PNG           = '/decomp/em/battle_interface/numbers1.png';     // 11 tiles : [blank, 0..9]
 const NUMBERS2_PNG           = '/decomp/em/battle_interface/numbers2.png';     // 12 tiles : [0..9, blank, slash/Lv]
 const STATUS_PNG             = '/decomp/em/battle_interface/status.png';       // 15 tiles : PSN/PRZ/SLP/FRZ/BRN (3 tiles each)
+const MISC_PNG               = '/decomp/em/battle_interface/misc.png';         // 11 tiles : GFX_36..46 ; tile 3 = GFX_39 "blank health window" (= groove cream)
 const EXPBAR_PNG             = '/decomp/em/battle_interface/expbar.png';       // 9 tiles : exp bar levels 0..8 pixels filled
 const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png';  // = palette HEALTHBOX
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
@@ -154,6 +138,28 @@ const HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // 4 tiles
 //   - TAG_HEALTHBAR_PAL ← `gBattleInterface_BallDisplayPal`   (= ball_display.png .gbapal)
 const HEALTHBOX_PALETTE_SLOT = 5;
 const HEALTHBAR_PALETTE_SLOT = 6;
+
+// ─── HP bar subsprite tables : 1:1 décomp sHealthBar_Subsprites_* (battle_interface.c:467-531) ─
+// Le décomp rend la barre HP comme UN sprite avec une table de sous-sprites :
+// chaque pièce devient une entrée OAM à `sprite.x + sub.x`, `sprite.y + sub.y`,
+// SANS center-to-corner (cf. AddSubspritesToOamBuffer : baseX = oam.x - ctcvX =
+// sprite.x). Conséquence : le TOP des pièces est à sprite.y (=88), et non
+// sprite.y-4 comme un sprite 32×8 normal via ctcv → c'était le résidu de 4px
+// "barre trop haute". `tileOffset` indexe dans la région VRAM barre (= tileBase
+// du sprite) : pièce 0 = tiles 0..3 (label "PV" + 2 fill), pièce 1 = tiles 4..7.
+const HEALTHBAR_SUBSPRITES_PLAYER: readonly NamingSubsprite[] = [
+  { x: -16, y: 0, shape: 1, size: 1, tileOffset: 0, priority: 1 },  // 32×8 ; décomp .x=DISPLAY_WIDTH→s8 -16
+  { x: 16, y: 0, shape: 1, size: 1, tileOffset: 4, priority: 1 },   // 32×8 ; décomp .x=16
+];
+// 1:1 décomp sHealthBar_Subsprites_Opponent = 2×32×8 + 1×8×8 (frame-end à x=-32,
+// tileOffset 8). La 3e pièce 8×8 nécessite une 9e tile de gfx dans la région
+// HPBAR_OPP (non chargée actuellement) → DIFFÉRÉE ; on garde les 2 pièces 32×8
+// (= rendu adverse inchangé + le fix de hauteur). TODO 1:1 : charger la tile
+// frame-end + ajouter `{ x:-32, y:0, shape:0, size:0, tileOffset:8, priority:1 }`.
+const HEALTHBAR_SUBSPRITES_OPPONENT: readonly NamingSubsprite[] = [
+  { x: -16, y: 0, shape: 1, size: 1, tileOffset: 0, priority: 1 },
+  { x: 16, y: 0, shape: 1, size: 1, tileOffset: 4, priority: 1 },
+];
 
 // ─── Asset loading (idempotent) ─────────────────────────────────────────────
 
@@ -198,6 +204,13 @@ let _numbers2Tiles: Uint8Array | null = null;
 // For opp single nous utilisons status.png aussi (= les tile data sont identiques,
 // la palette utilisée change la couleur d'affichage).
 let _statusTiles: Uint8Array | null = null;
+
+// 1:1 décomp `misc.4bpp` (= gHealthboxElementsGfxTable GFX_36..46). On cache le
+// bloc entier ; le tile 3 (= HEALTHBOX_GFX_39 "blank health window") est le fond
+// du groove (= tout index 2 = cream) que UpdateStatusIconInHealthbox recopie sur
+// l'emplacement de l'icône status quand il n'y a PAS de status (= efface l'icône
+// précédente SANS laisser un trou transparent qui laisserait voir le BG combat).
+let _miscTiles: Uint8Array | null = null;
 
 // 1:1 décomp `expbar.4bpp` : 9 tiles avec 9 niveaux "0..8 pixels remplis".
 // Player single only (= opp single n'affiche pas d'exp bar).
@@ -382,6 +395,13 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // ne prendrait que sub-pal 0 → 439 px (sub-pal 1..4) unmapped → transparent.
   _statusTiles = await _loadMultiSubPalTiles(STATUS_PNG);
 
+  // ─── misc tile data (= GFX_36..46) ──────────────────────────────────────
+  // 1:1 décomp `misc.4bpp` (88×8 = 11 tiles, palette HEALTHBOX simple 16-color).
+  // On a besoin du tile 3 (= HEALTHBOX_GFX_39) pour le "no status" fill (cf.
+  // updateHealthboxStatus). loadIndexedPngStrict suffit (PNG mono-sub-palette).
+  const miscPng = await loadIndexedPngStrict(MISC_PNG, 4);
+  _miscTiles = miscPng.charData;
+
   // ─── EXP bar tile data ──────────────────────────────────────────────────
   // 1:1 décomp `expbar.4bpp` 72×8 = 9 tiles avec progressive fill 0..8 pixels.
   const expbarPng = await loadIndexedPngStrict(EXPBAR_PNG, 4);
@@ -421,12 +441,10 @@ export interface HealthboxHandle {
   leftSpriteId: number;
   /** Sprite ID `healthboxRightSpriteId` (= 64×64 SQUARE player, 64×32 WIDE opp). */
   rightSpriteId: number;
-  /** Sprite ID `healthbarLeftSpriteId` (= 32×8 sub-sprite gauche du bar widget).
-   *  1:1 décomp `sHealthBar_Subsprites_*[0]` = tiles 0..3. */
-  healthbarLeftSpriteId: number;
-  /** Sprite ID `healthbarRightSpriteId` (= 32×8 sub-sprite droite du bar widget).
-   *  1:1 décomp `sHealthBar_Subsprites_*[1]` = tiles 4..7. */
-  healthbarRightSpriteId: number;
+  /** Sprite ID du `healthbarSprite` = UN sprite à sous-sprites (1:1 décomp
+   *  `sHealthBar_SubspriteTables`). Les pièces (2 joueur / 2 adverse) sont des
+   *  child OAM gérés par `SetSubspriteTables` (positionnés sans ctcv). */
+  healthbarSpriteId: number;
   /** Quel side : 'player' / 'opponent'. */
   side: 'player' | 'opponent';
   /** Position center du sprite left (= UpdateSpritePos `sprite.x`, `sprite.y`).
@@ -450,62 +468,71 @@ export async function createBattlerHealthboxSprites(
   const rt = getRuntime();
   if (!rt) return null;
 
+  // 1:1 décomp CreateBattlerHealthboxSprites (battle_interface.c:880-886) : le
+  // player healthbox est créé avec le template WIDE (`sOamData_64x32`), donc
+  // `CalcCenterToCornerVec` calcule ctcv pour 64×32 = (-32, -16). PUIS le décomp
+  // force `gSprites[id].oam.shape = ST_OAM_SQUARE` (→ 64×64) SANS recalculer le
+  // ctcv (sprite.c ne recompute PAS le ctcv sur un set direct de oam.shape).
+  // Donc le sprite s'affiche en 64×64 mais reste positionné avec ctcvY = -16.
+  // CRITIQUE : créer directement en SQUARE donnerait ctcvY = -32 → box 16px trop
+  // haute (= bug user 2026-05-29 "barres de vie décalées" : box recess 12px au-
+  // dessus de la barre). Ce helper reproduit l'override 1:1.
+  const forceSquareKeepWideCtcv = (h: { spriteId: number; oamIndex: number }): void => {
+    const oam = rt.gba.oam[h.oamIndex];
+    if (oam) oam.shape = 0;  // ST_OAM_SQUARE (64×64 render), size reste 3
+    const sp = rt.gSprites.get(h.spriteId);
+    if (sp) sp.shape = 0;    // garde centerToCornerVec calculé pour WIDE
+  };
+
   if (side === 'player') {
     // 1:1 décomp ll. 880-887 player single :
-    //   left  = CreateSprite(template[0], (DISPLAY_WIDTH=240, DISPLAY_HEIGHT=160), priority=1)
-    //   right = CreateSpriteAtEnd(template[0], 240, 160, priority=1)
-    //   left.shape  = ST_OAM_SQUARE (= override WIDE→SQUARE, keep size 3 → 64×64)
-    //   right.shape = ST_OAM_SQUARE
-    //   right.tileNum += 64
-    //
-    // Notre runtime CreateSpriteAtOam fait CalcCenterToCornerVec → l'oam.x
-    // sera décalé de -32 par rapport à sprite.x (= center → top-left).
-    // Position initiale décomp = (240, 160) puis UpdateSpritePos déplace à
-    // (158, 88) plus tard. On créé directement à (158, 88).
+    //   left  = CreateSprite(template WIDE sOamData_64x32, …, priority=1)
+    //   right = CreateSpriteAtEnd(template WIDE, …, priority=1)
+    //   left.oam.shape  = ST_OAM_SQUARE  (override sans recalc ctcv)
+    //   right.oam.shape = ST_OAM_SQUARE
+    //   right.tileNum  += 64
+    // Position décomp (240,160) puis UpdateSpritePos → (158, 88) ; on crée direct.
     const centerX = 158;
     const centerY = 88;
     const left = rt.CreateSpriteAtOam({
       tileId: HEALTHBOX_PLAYER_VRAM / 32,
       paletteBank: HEALTHBOX_PALETTE_SLOT,
       x: centerX, y: centerY,
-      shape: 0,  // = SQUARE (override SHAPE_WIDE du template)
-      size: 3,   // = size 3 (SQUARE+size3 = 64×64)
+      shape: 1,  // WIDE (= template sOamData_64x32) → ctcv (-32, -16)
+      size: 3,   // 64×32
       priority: 1,
     });
+    forceSquareKeepWideCtcv(left);  // → render 64×64, ctcvY conservé à -16
     const right = rt.CreateSpriteAtOam({
       tileId: HEALTHBOX_PLAYER_VRAM / 32 + 64,  // tileNum += 64 (= second 64x64 metatile)
       paletteBank: HEALTHBOX_PALETTE_SLOT,
-      // `SpriteCB_HealthBoxOther` → sprite.x = leftSprite.x + 64. Donc oam.x
-      // top-left = (158+64) - 32 = 190. On positionne directement.
+      // `SpriteCB_HealthBoxOther` → sprite.x = leftSprite.x + 64.
       x: centerX + 64, y: centerY,
-      shape: 0, size: 3,
+      shape: 1, size: 3,  // WIDE → ctcv (-32, -16)
       priority: 1,
     });
-    // 1:1 décomp ll. 932 + `sHealthBar_Subsprites_Player[]` = 2 subsprites
-    // 32×8 adjacents formant 64×8 total bar. Pour notre port, on crée 2 sprites
-    // séparés au lieu de subsprite (= simpler, runtime sync manuel via setHealthboxPosition).
-    //   - left sprite  : tiles 0..3 du bar VRAM (= "H/P" labels + first 2 fill tiles)
-    //   - right sprite : tiles 4..7 du bar VRAM (= last 4 fill tiles)
-    // Position décomp `SpriteCB_HealthBar` player : sprite.x = healthboxLeft.x + 16.
-    const barLeft = rt.CreateSpriteAtOam({
+    forceSquareKeepWideCtcv(right);
+    // 1:1 décomp ll. 932-947 + `sHealthBar_SubspriteTables[B_SIDE_PLAYER]` : la
+    // barre HP = UN sprite (`healthbarSprite`) avec table de sous-sprites (2 pièces
+    // 32×8). SpriteCB_HealthBar player (data6=0) → sprite.x = healthbox.x + 16.
+    // Les pièces sont posées à sprite.x+sub.x, sprite.y+sub.y SANS ctcv → top à
+    // sprite.y=88 (et non 84). `tileBase` = région VRAM barre ; les pièces lisent
+    // tileBase+tileOffset, et le fill (updateHealthboxHpBar) écrit dans cette
+    // même région (tiles 2..7).
+    const bar = rt.CreateSpriteAtOam({
       tileId: HPBAR_PLAYER_LEFT_VRAM / 32,
       paletteBank: HEALTHBAR_PALETTE_SLOT,
       x: centerX + 16, y: centerY,
-      shape: 1, size: 1,  // WIDE+size1 = 32×8 = 4 tiles
+      shape: 1, size: 1,  // primary oam (caché en mode subsprite)
       priority: 1,
     });
-    const barRight = rt.CreateSpriteAtOam({
-      tileId: HPBAR_PLAYER_LEFT_VRAM / 32 + 4,  // continuous tile range
-      paletteBank: HEALTHBAR_PALETTE_SLOT,
-      x: centerX + 16 + 32, y: centerY,  // 32 px à droite du sprite gauche
-      shape: 1, size: 1,
-      priority: 1,
-    });
+    const barSp = rt.gSprites.get(bar.spriteId);
+    if (barSp) barSp.tileBase = HPBAR_PLAYER_LEFT_VRAM / 32;
+    SetSubspriteTables(bar.spriteId, HEALTHBAR_SUBSPRITES_PLAYER);
     return {
       leftSpriteId: left.spriteId,
       rightSpriteId: right.spriteId,
-      healthbarLeftSpriteId: barLeft.spriteId,
-      healthbarRightSpriteId: barRight.spriteId,
+      healthbarSpriteId: bar.spriteId,
       side: 'player',
       centerX, centerY,
     };
@@ -533,43 +560,32 @@ export async function createBattlerHealthboxSprites(
       shape: 1, size: 3,
       priority: 1,
     });
-    // Healthbar opp = `sHealthBar_Subsprites_Opponent[]` = 2 subsprites 32×8 + 1 sprite 8×8
-    // décomp (= 8 + 1 px séparé pour le frame end). Pour D2 on simplifie à 2 sprites 32×8
-    // adjacents (= 64×8). Le frame end +8px viendra peut-être en polish ultérieur.
-    // SpriteCB_HealthBar.x = mainSprite.x + 8 pour opp (data6 == 2 default).
-    const barLeft = rt.CreateSpriteAtOam({
+    // 1:1 décomp `sHealthBar_SubspriteTables[B_SIDE_OPPONENT]` : barre = UN sprite
+    // à sous-sprites. SpriteCB_HealthBar opp (data6=2) → sprite.x = healthbox.x + 8.
+    const bar = rt.CreateSpriteAtOam({
       tileId: HPBAR_OPP_LEFT_VRAM / 32,
       paletteBank: HEALTHBAR_PALETTE_SLOT,
       x: centerX + 8, y: centerY,
-      shape: 1, size: 1,  // WIDE+size1 = 32×8
-      priority: 1,
-    });
-    const barRight = rt.CreateSpriteAtOam({
-      tileId: HPBAR_OPP_LEFT_VRAM / 32 + 4,
-      paletteBank: HEALTHBAR_PALETTE_SLOT,
-      x: centerX + 8 + 32, y: centerY,
       shape: 1, size: 1,
       priority: 1,
     });
+    const barSp = rt.gSprites.get(bar.spriteId);
+    if (barSp) barSp.tileBase = HPBAR_OPP_LEFT_VRAM / 32;
+    SetSubspriteTables(bar.spriteId, HEALTHBAR_SUBSPRITES_OPPONENT);
     return {
       leftSpriteId: left.spriteId,
       rightSpriteId: right.spriteId,
-      healthbarLeftSpriteId: barLeft.spriteId,
-      healthbarRightSpriteId: barRight.spriteId,
+      healthbarSpriteId: bar.spriteId,
       side: 'opponent',
       centerX, centerY,
     };
   }
 }
 
-/** Tous les sprite IDs d'un healthbox handle (4 sprites = left/right/barLeft/barRight). */
+/** Sprite IDs d'un healthbox handle (3 gSprites = box left/right + barre). Les
+ *  pièces de la barre sont des child OAM (pas des gSprites) gérés à part. */
 function _allSpriteIds(handle: HealthboxHandle): number[] {
-  return [
-    handle.leftSpriteId,
-    handle.rightSpriteId,
-    handle.healthbarLeftSpriteId,
-    handle.healthbarRightSpriteId,
-  ];
+  return [handle.leftSpriteId, handle.rightSpriteId, handle.healthbarSpriteId];
 }
 
 /** 1:1 décomp `SetHealthboxSpriteVisible/Invisible` (ll. 1024-1036) :
@@ -591,6 +607,9 @@ export function setHealthboxVisible(handle: HealthboxHandle, visible: boolean): 
 export function destroyHealthboxSprite(handle: HealthboxHandle): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1 : libère d'abord les child OAM des sous-sprites de la barre (sinon ils
+  // fuient = OAM visibles orphelins au combat suivant).
+  clearSubspriteTable(handle.healthbarSpriteId);
   for (const spriteId of _allSpriteIds(handle)) rt.DestroySprite(spriteId);
 }
 
@@ -717,27 +736,108 @@ function _writeTilesToVram(vramByteOffset: number, tileIndices: number[], tileSo
   }
 }
 
+// ─── Pipeline texte → healthbox OBJ : 1:1 décomp (battle_interface.c:2551-2604) ─
+//
+// Le décomp ne dessine PAS le texte healthbox (nickname / "N." niveau / "cur/max"
+// PV) avec des tiles pré-cuits : il rend le texte via le système de POLICE dans une
+// window temporaire (FONT_SMALL), puis copie les tiles glyphes obtenus dans l'OBJ
+// VRAM du sprite healthbox. C'est le port de ce pipeline ("D6b text-to-tiles renderer"
+// déféré historiquement). Débloque surnom + préfixe niveau "N." + slash PV.
+
+/** 1:1 décomp `sHealthboxWindowTemplate` (battle_interface.c:760-768) : window temp
+ *  8×2 tiles (= 64×16 px) servant de canvas glyphes. */
+const sHealthboxWindowTemplate = {
+  bg: 0, tilemapLeft: 0, tilemapTop: 0, width: 8, height: 2, paletteNum: 0, baseBlock: 0,
+} as const;
+
+/** 1:1 décomp `AddTextPrinterAndCreateWindowOnHealthbox` (battle_interface.c:2551).
+ *  Crée la window temp, fond = PIXEL_FILL(bgColor), rend `str` en FONT_SMALL avec
+ *  color = [bgColor, 1, 3]. TEXT_SKIP_DRAW = render synchrone dans le pixelBuffer. */
+function _addTextPrinterAndCreateWindowOnHealthbox(str: string, x: number, y: number, bgColor: number): number {
+  const winId = AddWindow(sHealthboxWindowTemplate);
+  FillWindowPixelBuffer(winId, (bgColor << 4) | bgColor);  // = PIXEL_FILL(bgColor)
+  AddTextPrinterParameterized4(winId, FONT_SMALL, x, y, 0, 0, [bgColor, 1, 3], TEXT_SKIP_DRAW, str);
+  return winId;
+}
+
+/** Convertit le pixelBuffer linéaire (1 byte/pixel idx 0-15) de la window en tile
+ *  data 4bpp tile-packed GBA — soit l'équivalent de ce que renvoie côté décomp
+ *  `GetWindowAttribute(winId, WINDOW_TILE_DATA)`. Layout : tiles row-major, 32
+ *  bytes/tile, 4 bytes/row, low nibble = pixel gauche. Window 8×2 → 512 bytes.
+ *  Permet d'appliquer les `CpuCopy32` du décomp (offsets +256 / +20) à l'identique
+ *  vers l'OBJ VRAM (qui est lui aussi 4bpp tile-packed). */
+function _windowTextDataTo4bpp(winId: number): Uint8Array {
+  const widthTiles = sHealthboxWindowTemplate.width;
+  const heightTiles = sHealthboxWindowTemplate.height;
+  const widthPx = widthTiles * 8;
+  const out = new Uint8Array(widthTiles * heightTiles * TILE_BYTES);
+  const pb = GetWindowPixelBuffer(winId);
+  if (!pb) return out;
+  for (let ty = 0; ty < heightTiles; ty++) {
+    for (let tx = 0; tx < widthTiles; tx++) {
+      const tileBase = (ty * widthTiles + tx) * TILE_BYTES;
+      for (let row = 0; row < 8; row++) {
+        const srcRow = (ty * 8 + row) * widthPx + tx * 8;
+        for (let pc = 0; pc < 4; pc++) {
+          const px1 = pb[srcRow + pc * 2] & 0xF;
+          const px2 = pb[srcRow + pc * 2 + 1] & 0xF;
+          out[tileBase + row * 4 + pc] = px1 | (px2 << 4);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** 1:1 décomp `TextIntoHealthboxObject` (battle_interface.c:2585-2598).
+ *  Copie le bottom tile-row (windowData @ src+256) → dest+256 (windowWidth tiles),
+ *  puis pour chaque tile du top-row, 12 bytes @ +20 → dest+20 (dé-interleave qui
+ *  évite de copier les 4 lignes de pixels vides du haut du sHealthboxWindowTemplate). */
+function _textIntoHealthboxObject(destOff: number, windowData: Uint8Array, srcOff: number, windowWidth: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const vram = rt.gba.objVram;
+  vram.set(windowData.subarray(srcOff + 256, srcOff + 256 + windowWidth * TILE_BYTES), destOff + 256);
+  for (let i = 0; i < windowWidth; i++) {
+    vram.set(windowData.subarray(srcOff + i * 32 + 20, srcOff + i * 32 + 32), destOff + i * 32 + 20);
+  }
+}
+
+/** 1:1 décomp `HpTextIntoHealthboxObject` (battle_interface.c:2580-2583).
+ *  Copie SEULEMENT le bottom tile-row (windowData @ src+256) → dest (pas de +256). */
+function _hpTextIntoHealthboxObject(destOff: number, windowData: Uint8Array, srcOff: number, windowWidth: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.objVram.set(windowData.subarray(srcOff + 256, srcOff + 256 + windowWidth * TILE_BYTES), destOff);
+}
+
+/** 1:1 décomp `ConvertIntToDecimalStringN(buf, n, STR_CONV_MODE_RIGHT_ALIGN, width)`
+ *  côté chaîne : nombre right-aligned padé d'espaces à `width`. */
+function _convIntRightAlign(num: number, width: number): string {
+  return String(Math.max(0, Math.min(num, 999))).padStart(width, ' ');
+}
+
 /** 1:1 décomp `UpdateLvlInHealthbox` (battle_interface.c:1105-1137).
  *
- *  Display "Lv NN" (= up to 3 digits 0..100) dans le sprite OAM healthbox.
+ *  Rend "{LV_2}NN" (= glyphe niveau "N." FR + chiffres left-align) via la police,
+ *  puis copie 3 tiles dans le sprite OAM healthbox.
  *
- *  Offsets décomp (= relative à sprite tile data byte start) :
- *    - Player single : objVram += spriteTileNum + 0x820  (= byte 0x820 from healthbox left)
- *    - Opp single    : objVram += spriteTileNum + 0x400  (= byte 0x400 from healthbox left)
- *
- *  Notre layout : healthbox left sprite tileNum = HEALTHBOX_PLAYER_VRAM/32 = 0.
- *  Donc objVram absolu = HEALTHBOX_PLAYER_VRAM + 0x820 = byte 0x820 in OBJ VRAM.
- *  3 tiles consécutifs (= 3 digits max). */
+ *  Offsets décomp (relative à spriteTileNum) : player += 0x820, opp += 0x400 (single).
+ *  Notre layout : spriteTileNum = HEALTHBOX_*_VRAM (tileNum * 32). */
 export function updateHealthboxLevel(handle: HealthboxHandle, level: number): void {
-  if (!_numbers1Tiles) return;
-  const digits = _digitsToNumbers1Tiles(level, 3);
-  if (handle.side === 'player') {
-    // 1:1 décomp ll. 1126 : objVram += spriteTileNum + 0x820
-    _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0x820, digits, _numbers1Tiles);
-  } else {
-    // 1:1 décomp ll. 1133 : objVram += spriteTileNum + 0x400
-    _writeTilesToVram(HEALTHBOX_OPPONENT_VRAM + 0x400, digits, _numbers1Tiles);
-  }
+  // 1:1 décomp ll.1113-1117 : text = CHAR_EXTRA_SYMBOL + CHAR_LV_2 + left-align(lvl,3).
+  // {LV_2} encode CHAR_EXTRA_SYMBOL(0xF9)+0x05 = le glyphe niveau "N." du décomp FR.
+  const lvStr = String(Math.max(0, Math.min(level, 999)));
+  const text = `{LV_2}${lvStr}`;
+  const xPos = 5 * (3 - lvStr.length);  // 1:1 décomp l.1117.
+  const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, xPos, 3, 2);
+  const windowData = _windowTextDataTo4bpp(winId);
+  // 1:1 décomp ll.1122-1134 : player += 0x820, opp += 0x400.
+  const destOff = handle.side === 'player'
+    ? HEALTHBOX_PLAYER_VRAM + 0x820
+    : HEALTHBOX_OPPONENT_VRAM + 0x400;
+  _textIntoHealthboxObject(destOff, windowData, 0, 3);
+  RemoveWindow(winId);
 }
 
 /** 1:1 décomp `UpdateHpTextInHealthbox` (battle_interface.c:1139-1172) player single.
@@ -781,27 +881,65 @@ export function updateHealthboxStatus(handle: HealthboxHandle, status: string | 
   // Notre PokemonInstance.status format : 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX'
   // (TOX = STATUS1_PSN_ANY = same icon PSN).
   let statusTileStart: number;
+  // 1:1 décomp `sStatusIconColors[]` (battle_interface.c:751-757) : couleur RGB555
+  // appliquée à l'entrée palette de l'icône status via FillPalette (cf. plus bas).
+  let statusPalColor: number;
   switch (status) {
-    case 'PSN': case 'TOX': statusTileStart = 0;  break;   // PSN
-    case 'PAR':             statusTileStart = 3;  break;   // PRZ
-    case 'SLP':             statusTileStart = 6;  break;   // SLP
-    case 'FRZ':             statusTileStart = 9;  break;   // FRZ
-    case 'BRN':             statusTileStart = 12; break;   // BRN
+    case 'PSN': case 'TOX': statusTileStart = 0;  statusPalColor = _rgb555(24, 12, 24); break; // PSN
+    case 'PAR':             statusTileStart = 3;  statusPalColor = _rgb555(23, 23, 3);  break; // PRZ
+    case 'SLP':             statusTileStart = 6;  statusPalColor = _rgb555(20, 20, 17); break; // SLP
+    case 'FRZ':             statusTileStart = 9;  statusPalColor = _rgb555(17, 22, 28); break; // FRZ
+    case 'BRN':             statusTileStart = 12; statusPalColor = _rgb555(28, 14, 10); break; // BRN
     default: {
-      // 1:1 décomp ll. 2044-2054 : no status → fill 3 tiles avec HEALTHBOX_GFX_39
-      // (= blank tile). On simule en écrivant des tiles "vides" (= zéros 4bpp).
-      const blankTile = new Uint8Array(TILE_BYTES);  // tile rempli à 0 = transparent
+      // 1:1 décomp ll. 2043-2048 : no status → copie HEALTHBOX_GFX_39 (= misc.4bpp
+      // tile 3) sur les 3 tiles de l'emplacement de l'icône status. GFX_39 =
+      // "blank health window" = tout index 2 = FOND du groove (cream), PAS un tile
+      // transparent. L'emplacement status (tileNumAdder 0x11 côté opp) chevauche la
+      // rangée groove de la box (tile-row 2, tiles 17..19 du sprite box-left) : avec
+      // des zéros (ancien bug), ces tiles devenaient transparentes → aux rangées
+      // transparentes haut/bas de la barre HP on voyait le BG combat (vert) au lieu
+      // du cream du groove (user-flag 2026-05-30 "vert au lieu de cream, ultra subtil").
+      if (!_miscTiles) return;
+      const blankWindowTile = _miscTiles.subarray(3 * TILE_BYTES, 4 * TILE_BYTES); // = HEALTHBOX_GFX_39
       for (let i = 0; i < 3; i++) {
-        rt.gba.objVram.set(blankTile, destVram + i * TILE_BYTES);
+        rt.gba.objVram.set(blankWindowTile, destVram + i * TILE_BYTES);
       }
       return;
     }
   }
 
+  // 1:1 décomp ll. 2057-2062 : la couleur de l'icône status est appliquée via
+  // FillPalette sur l'entrée OBJ palette slot 5 index (12 + battler). Le gfx
+  // status.4bpp utilise l'index LOCAL 12 (cf. _loadMultiSubPalTiles : raw {2,3,12}).
+  // Sans ce fill, l'icône rend avec l'index 12 = placeholder BLEU de la palette
+  // healthbox → "BRU bleu" (user 2026-05-30). Décomp = pltAdder = paletteNum*16 +
+  // battler + 12 → index 12 (player) / 13 (opponent), SÉPARÉS pour permettre 2
+  // status simultanés de couleurs différentes. Côté adverse on remap donc le gfx
+  // 12→13 pour matcher l'entrée 13 (sinon il lirait l'entrée 12 = couleur joueur).
+  const battlerIndex = handle.side === 'player' ? 0 : 1;
+  const palColorIndex = 12 + battlerIndex;  // index LOCAL dans slot 5 (12 player / 13 opp)
+
+  let tileData: Uint8Array = _statusTiles.subarray(
+    statusTileStart * TILE_BYTES, (statusTileStart + 3) * TILE_BYTES,
+  );
+  if (palColorIndex !== 12) {
+    const remapped = new Uint8Array(tileData);
+    for (let i = 0; i < remapped.length; i++) {
+      let lo = remapped[i] & 0xF;
+      let hi = (remapped[i] >> 4) & 0xF;
+      if (lo === 12) lo = palColorIndex;
+      if (hi === 12) hi = palColorIndex;
+      remapped[i] = lo | (hi << 4);
+    }
+    tileData = remapped;
+  }
   // Copy 3 tiles consécutifs (= 96 bytes = 3 × 32) à OBJ VRAM.
-  rt.gba.objVram.set(
-    _statusTiles.subarray(statusTileStart * TILE_BYTES, (statusTileStart + 3) * TILE_BYTES),
-    destVram,
+  rt.gba.objVram.set(tileData, destVram);
+
+  // FillPalette (= 1:1 décomp FillPalette + CpuCopy16 sur OBJ_PLTT) : 1 couleur.
+  rt.LoadPaletteObj(
+    new Uint16Array([statusPalColor]),
+    0x100 + HEALTHBOX_PALETTE_SLOT * 16 + palColorIndex,
   );
 }
 
@@ -862,17 +1000,52 @@ export function updateHealthboxExpBar(
   }
 }
 
+/** 1:1 décomp `UpdateHpTextInHealthbox` (battle_interface.c:1139-1172) player single.
+ *  Rend "cur/max" via la police (RIGHT_ALIGN 3 + CHAR_SLASH) puis copie dans l'OBJ
+ *  VRAM. Opp single n'affiche PAS le PV numérique (= juste bar + status). */
 export function updateHealthboxHpDigits(handle: HealthboxHandle, currHp: number, maxHp: number): void {
-  if (handle.side !== 'player') return;  // Opp single doesn't display HP digits
-  if (!_numbers1Tiles) return;
-  const currDigits = _digitsToNumbers1Tiles(currHp, 3);
-  const maxDigits  = _digitsToNumbers1Tiles(maxHp, 3);
-  // HP current split : 1 tile @ 0x3E0 + 2 tiles @ 0xB00.
-  // 1:1 décomp split for visual reasons (= the 3 digits span 2 sprite tile rows
-  // due to the HP bar position between them).
-  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0x3E0, [currDigits[0]], _numbers1Tiles);
-  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0xB00, currDigits.slice(1), _numbers1Tiles);
-  // HP max : 2 tiles (= dropping the leading digit for visual fit, decomp does
-  // same with `windowTileData + 0x20` offset which skips first 32-byte chunk).
-  _writeTilesToVram(HEALTHBOX_PLAYER_VRAM + 0xB40, maxDigits.slice(1), _numbers1Tiles);
+  if (handle.side !== 'player') return;  // 1:1 décomp l.1146 : player single only.
+  const baseVram = HEALTHBOX_PLAYER_VRAM;
+  // ── HP courant : 1:1 décomp ll.1158-1170 (RIGHT_ALIGN 3 + CHAR_SLASH, x=4). ──
+  {
+    const text = `${_convIntRightAlign(currHp, 3)}/`;
+    const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, 4, 5, 2);
+    const windowData = _windowTextDataTo4bpp(winId);
+    _hpTextIntoHealthboxObject(baseVram + 0x3E0, windowData, 0, 1);     // 1 tile @ 0x3E0
+    _hpTextIntoHealthboxObject(baseVram + 0xB00, windowData, 0x20, 2);  // 2 tiles @ 0xB00 (windowData+0x20)
+    RemoveWindow(winId);
+  }
+  // ── HP max : 1:1 décomp ll.1149-1156 (RIGHT_ALIGN 3, x=0). ──
+  {
+    const text = _convIntRightAlign(maxHp, 3);
+    const winId = _addTextPrinterAndCreateWindowOnHealthbox(text, 0, 5, 2);
+    const windowData = _windowTextDataTo4bpp(winId);
+    _hpTextIntoHealthboxObject(baseVram + 0xB40, windowData, 0, 2);     // 2 tiles @ 0xB40
+    RemoveWindow(winId);
+  }
+}
+
+/** 1:1 décomp `UpdateHealthboxAttribute` branche nickname (battle_interface.c:1910-1968).
+ *  Rend "{HIGHLIGHT 2}<nick><gender>" via la police puis copie dans l'OBJ VRAM.
+ *  - gender 0 (MON_MALE) → "{COLOR 11}♂" (bleu) ; 254 (MON_FEMALE) → "{COLOR 10}♀"
+ *    (rose) ; sinon (genderless / Nidoran ambigu = 100) → "{COLOR 11}" sans symbole.
+ *  - player single : 6 tiles @ 0x40 + 1 tile @ 0x800 (windowData+0xC0).
+ *  - opponent single : 7 tiles @ 0x20. */
+export function updateHealthboxNick(handle: HealthboxHandle, nickname: string, gender: number): void {
+  let genderSuffix: string;
+  if (gender === 0) genderSuffix = '{COLOR DYNAMIC_COLOR_2}♂';        // MON_MALE → idx 11 (bleu)
+  else if (gender === 254) genderSuffix = '{COLOR DYNAMIC_COLOR_1}♀'; // MON_FEMALE → idx 10 (rose)
+  else genderSuffix = '{COLOR DYNAMIC_COLOR_2}';                      // None / genderless
+  const str = `{HIGHLIGHT DARK_GRAY}${nickname}${genderSuffix}`;
+  const winId = _addTextPrinterAndCreateWindowOnHealthbox(str, 0, 3, 2);
+  const windowData = _windowTextDataTo4bpp(winId);
+  if (handle.side === 'player') {
+    // 1:1 décomp ll.1954-1960 : player single (6 tiles @ 0x40 + 1 tile @ 0x800).
+    _textIntoHealthboxObject(HEALTHBOX_PLAYER_VRAM + 0x40, windowData, 0, 6);
+    _textIntoHealthboxObject(HEALTHBOX_PLAYER_VRAM + 0x800, windowData, 0xC0, 1);
+  } else {
+    // 1:1 décomp l.1964 : opponent single (7 tiles @ 0x20).
+    _textIntoHealthboxObject(HEALTHBOX_OPPONENT_VRAM + 0x20, windowData, 0, 7);
+  }
+  RemoveWindow(winId);
 }

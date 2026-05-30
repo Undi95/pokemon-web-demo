@@ -2129,6 +2129,23 @@ export function clearAllSubspriteTables(): void {
   _spriteSubsprites.clear();
 }
 
+/** Cleanup d'UN seul sprite à sous-sprites (= 1:1 destroy du healthbar bar entre
+ *  combats). Cache les child OAM, libère leurs slots, repasse le primary en mode
+ *  normal. Sans ça, les pièces de barre fuient (OAM visibles orphelins) à chaque
+ *  combat. */
+export function clearSubspriteTable(spriteId: number): void {
+  const r = rt();
+  const info = _spriteSubsprites.get(spriteId);
+  if (!info) return;
+  for (const idx of info.childOamIndices) {
+    const oam = r.gba.oam[idx];
+    if (oam) oam.visible = false;
+  }
+  _spriteSubsprites.delete(spriteId);
+  const sprite = r.gSprites.get(spriteId);
+  if (sprite) sprite.subspriteMode = 'off';
+}
+
 /** Returns the set of OAM slot indices currently allocated to subsprite
  *  children (= reserved for the multi-OAM expansion of sprites with subsprite
  *  tables). `CreateSpriteAtOam` must skip these slots when picking a free OAM
