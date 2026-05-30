@@ -29,6 +29,7 @@ import { AddBagItem, DEBUG_ExpandBagToFit } from '../bag/bag';
 import { DIR_SOUTH } from '../field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../system/data-tables';
 import { createPokemonInstance, GiveMonToPlayer } from '../pokemon/pokemon';
+import { loadGameData } from '../data/game-data';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -52,6 +53,20 @@ export interface BootSpawn {
  * effect via getItem returning a known item id).
  */
 export async function preloadBootData(): Promise<void> {
+  // Pré-charge les game-data (= species info + experienceTables) AVANT
+  // `decideBootMode`. CRITIQUE pour la party `?nointro`/`?debug` injectée dans
+  // le preset synchrone (= createPokemonInstance lit `globalThis.__game_data`
+  // pour `getExperienceForLevel(growthRate, level)` → currentExp initial 1:1
+  // décomp `CreateMon`/`CalculateMonStats`). Sans ça la party de boot naît avec
+  // currentExp=0 (= barre d'XP figée en combat/summary) + growthRate fallback.
+  // Même exposition que battle-flow.ts (CB2_InitBattleInternal).
+  try {
+    await loadGameData();
+    const gameData = await import('../data/game-data');
+    (globalThis as { __game_data?: unknown }).__game_data = gameData;
+  } catch (e) {
+    console.warn('[boot-mode] preloadBootData: game-data load failed', e);
+  }
   try {
     const resp = await fetch(ITEMS_JSON_URL);
     if (!resp.ok) {
