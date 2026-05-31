@@ -108,6 +108,7 @@ import {
   updateHealthboxStatus,
   updateHealthboxExpBar,
   updateHealthboxNick,
+  resetHealthboxAllocation,
   type HealthboxHandle,
 } from './battle-healthbox';
 import { getExperienceForLevel } from '../data/game-data';
@@ -1927,10 +1928,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               // = MAX_BATTLERS mais nos mon sprites passent par LoadSpritePalette,
               // donc on laisse reserved=0 pour qu'ils prennent 0/1.)
               FreeAllSpritePalettes();
-              // #VRAM 1:1 (étape 2b) : healthbox encore en dur (tiles 0-271) → réservé ; les
-              // mons s'ALLOUENT via AllocSpriteTiles (qui respecte les tiles OW marquées + le
-              // reserve) → zéro collision, comme la décomp. (Étape 2c convertira le healthbox.)
-              setReservedSpriteTileCount(272);
+              // #VRAM 1:1 (étape 2c) : TOUT le combat passe par l'allocateur OBJ
+              // (AllocSpriteTiles) — mons ICI, healthbox dans ensureHealthboxAssets.
+              // Plus de réserve hardcodée (l'ancien setReservedSpriteTileCount(272)
+              // protégeait le healthbox en dur 0-271, désormais alloué dynamiquement) :
+              // les tiles OW restantes sont marquées (MarkObjTilesAllocated) donc
+              // l'allocateur les respecte → zéro chevauchement, comme la décomp.
               // Load player back sprite (alloué).
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
@@ -3484,6 +3487,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // re-réservera ses tiles au retour OW). Tout le combat repasse par l'allocateur.
         FreeSpriteTilesByTag(TAG_BATTLE_PLAYER_MON);
         FreeSpriteTilesByTag(TAG_BATTLE_OPPONENT_MON);
+        // #VRAM 1:1 (étape 2c) : libère les 4 régions healthbox (par tag) + arme la
+        // ré-allocation au combat suivant (l'allocateur OBJ se reset entre combats).
+        resetHealthboxAllocation();
         setReservedSpriteTileCount(0);
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);

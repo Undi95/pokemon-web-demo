@@ -36,9 +36,9 @@
  * D6 (gender symbols) sont des sous-modules suivants.
  */
 
-import { getRuntime, SetSubspriteTables, clearSubspriteTable, type NamingSubsprite } from '../system/decomp-globals';
+import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByTag, type NamingSubsprite } from '../system/decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte, loadIndexedPngRawIndices } from '../gba/png-loader';
-import { MarkObjTilesAllocated } from '../system/sprite';
+import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle-healthbox → ui/*),
 // déjà dans le graphe d'import early via battle-flow → pas de cycle/TDZ nouveau.
@@ -114,22 +114,40 @@ const BALL_STATUS_BAR_PNG    = '/decomp/em/battle_interface/ball_status_bar.png'
 const BALL_DISPLAY_PNG       = '/decomp/em/battle_interface/ball_display.png';     // = palette HEALTHBAR
 
 // ─── VRAM byte offsets (= OBJ VRAM, allocations pour healthbox tile data) ───
-
-// Ces offsets correspondent à un LoadCompressedSpriteSheet style allocation
-// dans notre runtime. Cohérent avec le layout existant :
-//   - ball throw : tiles à 0x4000 (= tileId 512)
-//   - player sprite : généralement OBJ VRAM "tiles dynamiques" allocated par notre
-//     runtime au load. On choisit des offsets fixes qui n'entrent pas en conflit.
-const HEALTHBOX_PLAYER_VRAM   = 0x0000;  // 0x1000 bytes = 128 tiles
-const HEALTHBOX_OPPONENT_VRAM = 0x1000;  // 0x1000 bytes alloc (= 128 tiles, 64 used)
-// 1:1 décomp : sSpriteSheets_HealthBar[player] alloc 0x100 bytes = 8 tiles.
-// On utilise 8 tiles consécutifs pour 2 sprites adjacents 32×8 = 64×8 total bar.
-// Layout : tiles 0..3 = bar left half (sub0), tiles 4..7 = bar right half (sub1).
-// Update HP bar copy 6 fill tiles à offset tileNum+2..tileNum+7 (= 1:1 décomp).
-const HPBAR_PLAYER_LEFT_VRAM   = 0x2000;  // 4 tiles
-const HPBAR_PLAYER_RIGHT_VRAM  = 0x2080;  // 4 tiles (= continuous from LEFT)
-const HPBAR_OPP_LEFT_VRAM      = 0x2100;  // 4 tiles
-const HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // 4 tiles
+//
+// #VRAM 1:1 (étape 2c) : ALLOUÉS via le tile allocator OBJ (AllocSpriteTiles),
+// exactement comme la décomp (LoadCompressedSpriteSheet → AllocTilesForSpriteSheet
+// → AllocSpriteTiles). Fini les offsets EN DUR 0x0000-0x2200 (qui imposaient un
+// setReservedSpriteTileCount(272) côté battle-flow + risquaient le chevauchement
+// si le combat ré-utilisait la VRAM). Ces `let` sont (re)calculés à CHAQUE combat
+// dans ensureHealthboxAssets (= byte offset du 1er tile alloué). TOUS les sites
+// lecteurs (tileId = VRAM/32, offsets VRAM+0xNN) marchent INCHANGÉS car ils lisent
+// ces variables au runtime (après l'allocation).
+//
+// Tailles 1:1 décomp (battle_gfx_sfx_util.c:45-78, champ `size` des sprite sheets) :
+//   - sSpriteSheet_SinglesPlayerHealthbox   = 0x1000 → 128 tiles
+//   - sSpriteSheet_SinglesOpponentHealthbox = 0x1000 → 128 tiles (64 utilisés, 1:1 réserve 128)
+//   - sSpriteSheets_HealthBar[player]        = 0x100  → 8 tiles
+//   - sSpriteSheets_HealthBar[opponent]      = 0x120  → 9 tiles (la 9e = frame-end, différée)
+const HEALTHBOX_PLAYER_TILE_COUNT   = 0x1000 / 32;  // 128
+const HEALTHBOX_OPPONENT_TILE_COUNT = 0x1000 / 32;  // 128
+const HPBAR_PLAYER_TILE_COUNT       = 0x100 / 32;   // 8
+const HPBAR_OPP_TILE_COUNT          = 0x120 / 32;   // 9
+// Tags allocateur (= 1:1 TAG_HEALTHBOX_*1_TILE / TAG_HEALTHBAR_*1_TILE décomp).
+const TAG_HB_PLAYER    = 'BATTLE_HB_PLAYER';
+const TAG_HB_OPP       = 'BATTLE_HB_OPP';
+const TAG_HPBAR_PLAYER = 'BATTLE_HPBAR_PLAYER';
+const TAG_HPBAR_OPP    = 'BATTLE_HPBAR_OPP';
+let HEALTHBOX_PLAYER_VRAM   = 0x0000;  // = AllocSpriteTiles(128) * 32  (recalculé /combat)
+let HEALTHBOX_OPPONENT_VRAM = 0x1000;  // = AllocSpriteTiles(128) * 32
+// 1:1 décomp : sSpriteSheets_HealthBar[player] alloc 0x100 = 8 tiles. La barre HP
+// est UN sprite à sous-sprites (tileOffset 0 & 4) → LEFT = base. *_RIGHT_VRAM (=
+// LEFT+0x80, +4 tiles) gardés pour doc/sécurité (plus lus : la table subsprite
+// indexe via tileOffset). Update HP bar copie 6 fill tiles à tileNum+2..+7 (1:1).
+let HPBAR_PLAYER_LEFT_VRAM   = 0x2000;  // = AllocSpriteTiles(8) * 32
+let HPBAR_PLAYER_RIGHT_VRAM  = 0x2080;  // = LEFT + 0x80
+let HPBAR_OPP_LEFT_VRAM      = 0x2100;  // = AllocSpriteTiles(9) * 32
+let HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // = LEFT + 0x80
 
 // ─── OBJ palette slots ──────────────────────────────────────────────────────
 
@@ -164,6 +182,25 @@ const HEALTHBAR_SUBSPRITES_OPPONENT: readonly NamingSubsprite[] = [
 // ─── Asset loading (idempotent) ─────────────────────────────────────────────
 
 let _assetsLoaded = false;
+// #VRAM 1:1 (étape 2c) : garde-fou d'allocation PAR COMBAT. ensureHealthboxAssets
+// est appelé 2× par combat (player + opp via createBattlerHealthboxSprites) mais
+// les 4 régions VRAM healthbox ne doivent être allouées qu'1× ; reset à false au
+// teardown (resetHealthboxAllocation) pour que le combat SUIVANT ré-alloue —
+// l'allocateur OBJ se reset entre combats (decomp-runtime FreeSpriteTileRanges).
+let _hbAllocatedThisBattle = false;
+
+/** #VRAM 1:1 (étape 2c) : libère les 4 régions VRAM healthbox (par tag) + arme la
+ *  ré-allocation au combat suivant. À appeler au teardown du combat (battle-flow),
+ *  à côté des FreeSpriteTilesByTag des mons. Les offsets du prochain combat seront
+ *  potentiellement différents (allocateur dynamique) — tous les sites les relisent. */
+export function resetHealthboxAllocation(): void {
+  FreeSpriteTilesByTag(TAG_HB_PLAYER);
+  FreeSpriteTilesByTag(TAG_HB_OPP);
+  FreeSpriteTilesByTag(TAG_HPBAR_PLAYER);
+  FreeSpriteTilesByTag(TAG_HPBAR_OPP);
+  _hbAllocatedThisBattle = false;
+}
+
 // Cache des 2 palettes OBJ healthbox (vues 16-color). Ré-appliquées à CHAQUE
 // combat même sur cache hit (cf. ensureHealthboxAssets) : en vrai flow OW→combat,
 // OBJ pal HEALTHBOX/HEALTHBAR sont effacées (battle-init/transition) → healthbox noir.
@@ -276,6 +313,36 @@ function _rearrangeToMetatileOrder(
 export async function ensureHealthboxAssets(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
+
+  // ─── Allocation VRAM healthbox (1× PAR COMBAT) ──────────────────────────
+  // 1:1 décomp : LoadBattleSpritesGfx charge les sprite sheets healthbox via
+  // LoadCompressedSpriteSheet → le tile allocator OBJ (AllocSpriteTiles). On
+  // réplique : on alloue les 4 régions et on fixe les byte offsets dynamiques.
+  // Ordre décomp (battle_gfx_sfx_util.c:747-760) : player box → opp box →
+  // HealthBar[player] → HealthBar[opp]. Garde-fou `_hbAllocatedThisBattle` :
+  // l'appel #2 (opp) + le re-blit cache-hit réutilisent ces mêmes offsets.
+  if (!_hbAllocatedThisBattle) {
+    const hbPlayerStart = AllocSpriteTiles(HEALTHBOX_PLAYER_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_PLAYER, hbPlayerStart, HEALTHBOX_PLAYER_TILE_COUNT);
+    HEALTHBOX_PLAYER_VRAM = hbPlayerStart * TILE_BYTES;
+
+    const hbOppStart = AllocSpriteTiles(HEALTHBOX_OPPONENT_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HB_OPP, hbOppStart, HEALTHBOX_OPPONENT_TILE_COUNT);
+    HEALTHBOX_OPPONENT_VRAM = hbOppStart * TILE_BYTES;
+
+    const hpbarPlayerStart = AllocSpriteTiles(HPBAR_PLAYER_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HPBAR_PLAYER, hpbarPlayerStart, HPBAR_PLAYER_TILE_COUNT);
+    HPBAR_PLAYER_LEFT_VRAM  = hpbarPlayerStart * TILE_BYTES;
+    HPBAR_PLAYER_RIGHT_VRAM = HPBAR_PLAYER_LEFT_VRAM + 0x80;
+
+    const hpbarOppStart = AllocSpriteTiles(HPBAR_OPP_TILE_COUNT);
+    AllocSpriteTileRange(TAG_HPBAR_OPP, hpbarOppStart, HPBAR_OPP_TILE_COUNT);
+    HPBAR_OPP_LEFT_VRAM  = hpbarOppStart * TILE_BYTES;
+    HPBAR_OPP_RIGHT_VRAM = HPBAR_OPP_LEFT_VRAM + 0x80;
+
+    _hbAllocatedThisBattle = true;
+  }
+
   if (_assetsLoaded) {
     // Cache hit : on a déjà fetch+converti les PNG (= pas de re-fetch). MAIS contrairement
     // à l'ancienne hypothèse, la VRAM OBJ NE SURVIT PAS entre combats : le battle-init
