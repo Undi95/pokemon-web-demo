@@ -27,19 +27,20 @@
  * tant que l'anim est active, et l'outcome quand done.
  */
 
-import { getRuntime } from '../system/decomp-globals';
-import { LoadSpritePalette } from '../system/sprite';
+import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
 
 // Sprite Poke Ball asset 16x16 (= 4 tiles 8x8 = 4*32=128 bytes 4bpp).
 const POKE_BALL_URL = '/decomp/em/balls/poke.png';
-// VRAM offset pour ball OBJ tiles (= choisir loin player/opp 64x64=2KB each).
-// Player utilise byte 0x0000, opp byte 0x2000 (= ~4KB each pour 64x64 4bpp).
-// On met ball à byte 0x4000 = tileId 512 (= 0x4000/32). OBJ VRAM total 32KB,
-// donc shape 0 size 1 (= 16x16 = 4 tiles) fits OK à tileId 512..515.
-const BALL_SPRITE_BYTE_OFFSET = 0x4000;
+// VRAM via l'ALLOCATEUR 1:1 décomp (`AllocSpriteTiles`) — PLUS d'offset en dur. L'ancien
+// 0x4000 = le mon JOUEUR (PLAYER_SPRITE_BYTE_OFFSET) → écrasait ses tiles (même bug que le
+// send-out, fixé). Tiles allouées dans l'espace libre (mons+healthbox réservés par battle-flow).
+const BALL_THROW_TILE_COUNT = 4;   // 16×16 = 4 tiles 8×8
+const TAG_BALL_THROW = 'BATTLE_BALL_THROW';
+let _ballTileStart = -1;           // tile alloué (= tileId base de la ball)
 /** 1:1 STRICT décomp `LoadSpritePalette` : slot dynamiquement alloué. */
 const TAG_BALL_THROW_PAL = 'BATTLE_BALL_THROW_PAL';
 let _ballPaletteSlot = -1;
@@ -90,7 +91,10 @@ async function _ensureBallAsset(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   try {
-    const loaded = await rt.LoadCompressedSpriteSheet(POKE_BALL_URL, BALL_SPRITE_BYTE_OFFSET);
+    _ballTileStart = AllocSpriteTiles(BALL_THROW_TILE_COUNT);
+    if (_ballTileStart < 0) { console.warn('[ball-throw] pas de tiles VRAM libres pour la ball'); return; }
+    AllocSpriteTileRange(TAG_BALL_THROW, _ballTileStart, BALL_THROW_TILE_COUNT);
+    const loaded = await rt.LoadCompressedSpriteSheet(POKE_BALL_URL, _ballTileStart * 32);
     _ballPaletteSlot = LoadSpritePalette({ data: loaded.palette, tag: TAG_BALL_THROW_PAL });
     _ballAssetLoaded = true;
   } catch (e) {
@@ -129,7 +133,7 @@ export async function startBallThrow(opts: {
 
   // Spawn ball sprite. 1:1 décomp sBallOamData : shape SQUARE size 16x16 = shape 0 size 1.
   const ball = rt.CreateSpriteAtOam({
-    tileId: BALL_SPRITE_BYTE_OFFSET / 32,
+    tileId: _ballTileStart,
     paletteBank: _ballPaletteSlot,
     x: startX, y: startY,
     shape: 0, size: 1,  // = 16x16 (= 4 tiles 8x8)
@@ -331,6 +335,8 @@ export function tickBallThrow(): { done: boolean; outcome: BallThrowResult | nul
       // Hold for 20 frames so the user can read the result, puis destroy ball.
       if (_bt.frame >= 20) {
         rt.DestroySprite(_bt.ballSpriteId);
+        // 1:1 : libère les tiles VRAM allouées (le prochain throw ré-allouera).
+        if (_ballTileStart >= 0) { FreeSpriteTilesByTag(TAG_BALL_THROW); _ballTileStart = -1; _ballAssetLoaded = false; }
         const outcome = _bt.outcome;
         const msg = _bt.resultMessage;
         _bt = null;
@@ -350,6 +356,7 @@ export function stopBallThrow(): void {
     const rt = getRuntime();
     if (rt) {
       try { rt.DestroySprite(_bt.ballSpriteId); } catch { /* ok */ }
+      if (_ballTileStart >= 0) { try { FreeSpriteTilesByTag(TAG_BALL_THROW); } catch { /* ok */ } _ballTileStart = -1; _ballAssetLoaded = false; }
     }
     _bt = null;
   }

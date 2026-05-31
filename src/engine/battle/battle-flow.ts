@@ -75,8 +75,8 @@ import {
   sStandardBattleWindowTemplates,
   sTextOnWindowsInfo_Normal,
 } from './battle-windows';
-import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
-import { LoadSpritePalette, FreeAllSpritePalettes, FreeSpritePaletteByTag } from '../system/sprite';
+import { getRuntime, BlendPalettes, PALETTES_ALL, FreeSpriteTilesByTag } from '../system/decomp-globals';
+import { LoadSpritePalette, FreeAllSpritePalettes, FreeSpritePaletteByTag, setReservedSpriteTileCount, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -96,6 +96,7 @@ import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForB
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
+import { tickSendOut, stopSendOut, getSendOutStatus, resetSendOutStatus, showTrainerBackSprite, destroyTrainerBackSprite, startTrainerThrow, tickTrainerThrow, stopTrainerThrow, getTrainerThrowStatus, resetTrainerThrowStatus, startIntroSlideIn, tickIntroSlideIn, getIntroSlideInStatus, stopIntroSlideIn, resetSendOutAssets } from './battle-sendout-anim';
 import { ComputeSingleBattleTurnOrder } from './ai/ai-script-commands';
 import {
   createBattlerHealthboxSprites,
@@ -236,11 +237,15 @@ const POKEMON_SPRITE_SIZE: 0 | 1 | 2 | 3 = 3;
 
 // Battle sprite OBJ VRAM byte offsets. Picked to NOT collide with overworld
 // sprites loaded earlier (= overworld uses early offsets via TrySpawnObjectEvent).
-// We park the battle sprites at offset 0x4000 (= ~halfway through 32 KiB OBJ VRAM).
-// This is a pragmatic MVP — Phase 5.7 BattleScene will do proper VRAM management.
-const BATTLE_OBJ_VRAM_BASE_BYTES = 0x4000;
-const PLAYER_SPRITE_BYTE_OFFSET   = BATTLE_OBJ_VRAM_BASE_BYTES;
-const OPPONENT_SPRITE_BYTE_OFFSET = BATTLE_OBJ_VRAM_BASE_BYTES + POKEMON_SPRITE_BYTES;
+// #VRAM 1:1 : les sprites mon passent par l'ALLOCATEUR (AllocSpriteTiles), comme la décomp
+// + comme notre field/system. Ces offsets sont DYNAMIQUES (= tileStart alloué × 32), posés à
+// LOAD_ASSETS. Tous les sites les lisent (load initial, switch-reload l.~3256, tileId) → OK
+// inchangés. Free par tag au teardown. (Healthbox = dernière région en dur, étape 2c.)
+const BATTLE_OBJ_VRAM_BASE_BYTES = 0x4000;   // fallback init (écrasé par l'alloc à LOAD_ASSETS)
+let PLAYER_SPRITE_BYTE_OFFSET   = BATTLE_OBJ_VRAM_BASE_BYTES;
+let OPPONENT_SPRITE_BYTE_OFFSET = BATTLE_OBJ_VRAM_BASE_BYTES + POKEMON_SPRITE_BYTES;
+const TAG_BATTLE_PLAYER_MON = 'BATTLE_PLAYER_MON';
+const TAG_BATTLE_OPPONENT_MON = 'BATTLE_OPPONENT_MON';
 
 // OBJ palette slots for battle sprites (chosen high-end to avoid overworld clash).
 /** 1:1 STRICT décomp `LoadSpritePalette` : slots dynamiquement alloués. */
@@ -431,7 +436,7 @@ type State =
   | 'POST_SPAWN_FADE_IN' | 'POST_SPAWN_FADE_WAIT'
   | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
   | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS' | 'BATTLE_INTRO_SLIDE'
-  | 'INTRO_TEXT' | 'INTRO_WAIT'
+  | 'INTRO_TEXT' | 'INTRO_WAIT' | 'PLAYER_SENDOUT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
   | 'ACTION_MENU_INIT' | 'ACTION_MENU_INPUT'
   | 'ACTION_EMIT_CHOOSE' | 'ACTION_WAIT_CHOOSE_RESPONSE'
@@ -1724,6 +1729,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         _ballThrowMessage = r.message;
       }
     }
+    // 1:1 décomp intro send-out : le dresseur lance (anim 4 frames + slide), à 31f
+    // la ball part + le mon émerge via affine. tickTrainerThrow pilote le dresseur +
+    // déclenche tickSendOut (ball+emerge). No-op si pas actifs (poll par PLAYER_SENDOUT).
+    tickIntroSlideIn();
+    tickTrainerThrow();
+    tickSendOut();
 
     // NB : plus de re-hide/re-pause per-frame des sprites OW. Ils sont DÉTRUITS
     // au battle entry (LOAD_ASSETS, 1:1 ResetSpriteData) → ils n'existent plus
@@ -1916,18 +1927,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               // = MAX_BATTLERS mais nos mon sprites passent par LoadSpritePalette,
               // donc on laisse reserved=0 pour qu'ils prennent 0/1.)
               FreeAllSpritePalettes();
-              // Load player back sprite.
+              // #VRAM 1:1 (étape 2b) : healthbox encore en dur (tiles 0-271) → réservé ; les
+              // mons s'ALLOUENT via AllocSpriteTiles (qui respecte les tiles OW marquées + le
+              // reserve) → zéro collision, comme la décomp. (Étape 2c convertira le healthbox.)
+              setReservedSpriteTileCount(272);
+              // Load player back sprite (alloué).
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
-              const playerLoaded = await rt.LoadCompressedSpriteSheet(playerUrl, PLAYER_SPRITE_BYTE_OFFSET);
-              _battlePlayerPalSlot = LoadSpritePalette({ data: playerLoaded.palette, tag: TAG_BATTLE_PLAYER_PAL });
-              // Detect actual sprite dimensions (back sprite often 64x64 but can vary).
+              // Detect dims AVANT l'alloc (back sprite souvent 64x64 mais peut varier).
               const playerWH = await detectImageWH(playerUrl);
               if (playerWH) {
                 const sized = oamShapeSizeFromWH(playerWH.w, playerWH.h);
                 playerSpriteShape = sized.shape;
                 playerSpriteSize  = sized.size;
               }
+              const playerMonTiles = playerWH ? (playerWH.w >> 3) * (playerWH.h >> 3) : 64;
+              PLAYER_SPRITE_BYTE_OFFSET = AllocSpriteTiles(playerMonTiles) * 32;
+              AllocSpriteTileRange(TAG_BATTLE_PLAYER_MON, PLAYER_SPRITE_BYTE_OFFSET / 32, playerMonTiles);
+              const playerLoaded = await rt.LoadCompressedSpriteSheet(playerUrl, PLAYER_SPRITE_BYTE_OFFSET);
+              _battlePlayerPalSlot = LoadSpritePalette({ data: playerLoaded.palette, tag: TAG_BATTLE_PLAYER_PAL });
 
               // Load opponent front sprite.
               const oppDexId = opponentMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
@@ -1938,14 +1956,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               const oppStaticUrl = `/decomp/em/pokemon/${oppDexId}/front.png`;
               const oppAnimWH = await detectImageWH(oppAnimUrl);
               const oppUrl = oppAnimWH ? oppAnimUrl : oppStaticUrl;
-              const oppLoaded = await rt.LoadCompressedSpriteSheet(oppUrl, OPPONENT_SPRITE_BYTE_OFFSET);
-              _battleOpponentPalSlot = LoadSpritePalette({ data: oppLoaded.palette, tag: TAG_BATTLE_OPPONENT_PAL });
               const oppWH = oppAnimWH ?? await detectImageWH(oppUrl);
               if (oppWH) {
                 const sized = oamShapeSizeFromWH(oppWH.w, oppWH.h);
                 oppSpriteShape = sized.shape;
                 oppSpriteSize  = sized.size;
               }
+              // Alloué : tile count depuis le SHEET (anim_front = 2 frames 64×128 = 128 tiles).
+              const oppMonTiles = oppWH ? (oppWH.w >> 3) * (oppWH.h >> 3) : 128;
+              OPPONENT_SPRITE_BYTE_OFFSET = AllocSpriteTiles(oppMonTiles) * 32;
+              AllocSpriteTileRange(TAG_BATTLE_OPPONENT_MON, OPPONENT_SPRITE_BYTE_OFFSET / 32, oppMonTiles);
+              const oppLoaded = await rt.LoadCompressedSpriteSheet(oppUrl, OPPONENT_SPRITE_BYTE_OFFSET);
+              _battleOpponentPalSlot = LoadSpritePalette({ data: oppLoaded.palette, tag: TAG_BATTLE_OPPONENT_PAL });
               // 1:1 décomp `LoadBattleTextboxAndBackground` (battle_bg.c:859-867).
               // Charge BG0 textbox + BG3 terrain selon l'environnement.
               // E1 fix : utiliser BattleSetup_GetEnvironmentId() 1:1 décomp
@@ -2056,6 +2078,22 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           priority: 2,
         });
         playerSpriteId = player.spriteId;
+        // #4 send-out d'intro : le mon joueur SORT de sa ball à PLAYER_SENDOUT
+        // (après "Un X sauvage apparaît!"). On le cache ici ; startSendOut le révèle
+        // via l'affine emerge. Fallback intégré (si l'asset ball échoue → reveal direct).
+        { const _ps = rt.gSprites.get(playerSpriteId); if (_ps) _ps.invisible = true; }
+        // #4 scroll : afficher le sprite de DOS du dresseur (Brendan/May selon genre,
+        // 1:1 trainerPicId = playerGender + TRAINER_BACK_PIC_BRENDAN) à la place du mon
+        // pendant l'intro. Au lancer (PLAYER_SENDOUT) il disparaît et le mon émerge.
+        // #VRAM 1:1 : mons ALLOUÉS + healthbox réservé (272) à LOAD_ASSETS → l'allocateur gère
+        // tout. Le dresseur/ball s'allouent dans l'espace libre (après les mons) = zéro collision.
+        {
+          const _g = ((globalThis as { gSaveBlock2Ptr?: { playerGender?: number } }).gSaveBlock2Ptr?.playerGender) ?? 0;
+          void showTrainerBackSprite(_g, SBATTLER_COORD_X_PLAYER, playerCenterY);
+        }
+        // #4 SCROLL (1:1) : l'adverse (mon sauvage) entre par la GAUCHE (x2=-240, +2/frame),
+        // le dresseur joueur par la DROITE (x2=+240, -2/frame). Les 2 convergent (~120f).
+        startIntroSlideIn(opponentSpriteId);
         // 1:1 décomp : après spawn des sprites + healthbox, le battle screen
         // est révélé par l'OUVERTURE de la fente WIN0V (`BattleIntroSlide`),
         // PAS par un fade palette. → INIT_HP_WINDOWS (créé healthbox, encore
@@ -2116,9 +2154,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'BATTLE_INTRO_SLIDE': {
         // 1:1 décomp `BattleIntroSlide1` (battle_intro.c:154-237) : la fente
-        // WIN0V s'ouvre du centre (state 2 lent -0xFF/frame jusqu'à top=48,
-        // state 3 rapide -0x3FC/frame jusqu'à top=0) → battle screen révélé.
-        if (tickBattleIntroSlide()) {
+        // WIN0V s'ouvre du centre → battle screen révélé. PENDANT ce temps, les
+        // sprites SCROLLENT (slide-in : adverse depuis la gauche, dresseur depuis la
+        // droite). On attend la fente ET le scroll avant "Un X sauvage apparaît!".
+        if (tickBattleIntroSlide() && getIntroSlideInStatus() === 'done') {
           state = 'INTRO_TEXT';
         }
         return false;
@@ -2144,10 +2183,37 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'INTRO_WAIT': {
         if (messageWaitDone()) {
           HideFieldMessageBox();
-          // 1:1 décomp : abilities/objets de SWITCH-IN (Intimidation, Crachin, Trace…)
-          // se déclenchent après l'entrée des mons, avant le 1er tour.
-          state = 'SWITCH_IN_EVENTS';
+          // 1:1 décomp : après "Un X sauvage apparaît!", le joueur envoie son mon
+          // (le dresseur lance sa ball → le mon émerge), PUIS les abilities/objets
+          // de SWITCH-IN (Intimidation, Crachin, Trace…) avant le 1er tour.
+          state = 'PLAYER_SENDOUT';
         }
+        return false;
+      }
+
+      case 'PLAYER_SENDOUT': {
+        // 1:1 décomp Player1SendsOutMonAnimation → PlayerHandleIntroTrainerBallThrow
+        // (battle_controller_player.c:2946) : le dresseur joue l'anim de lancer (4 frames
+        // sAnimCmd_Brendan_1) + glisse à gauche ; à la frame 31 (Task_StartSendOutAnim) la
+        // ball part (24,68 → mon) + le mon émerge via affine ; à 50f le dresseur est libéré.
+        // tickTrainerThrow + tickSendOut tournent au tick central.
+        if (getTrainerThrowStatus() === 'idle' && getSendOutStatus() === 'idle') {
+          const ps = rt.gSprites.get(playerSpriteId);
+          if (!playerMon || !ps) { state = 'SWITCH_IN_EVENTS'; return false; }
+          startTrainerThrow({
+            monSpriteId: playerSpriteId,
+            side: 'player',
+            monPalNum: _battlePlayerPalSlot,
+            species: playerMon.speciesName,
+            endX: ps.x, endY: ps.y,
+          });
+          return false;
+        }
+        // Attendre que le lancer dresseur (throw+slide+free) ET la ball/émergence soient finis.
+        if (getTrainerThrowStatus() !== 'done' || getSendOutStatus() !== 'done') return false;
+        resetTrainerThrowStatus();
+        resetSendOutStatus();
+        state = 'SWITCH_IN_EVENTS';
         return false;
       }
 
@@ -3405,6 +3471,20 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         });
         // Relance l'anim EAU du tileset overworld (= retour overworld).
         resumeTilesetAnimations();
+        // #4 : stopper scroll / lancer dresseur / send-out en cours + nettoyer la ball
+        // + le sprite dresseur (safety teardown, reset des statuts pour le combat suivant).
+        stopIntroSlideIn();
+        stopTrainerThrow();
+        stopSendOut();
+        destroyTrainerBackSprite();
+        // #3 : forcer le rechargement asset+palette ball/dresseur au prochain combat
+        // (FreeAllSpritePalettes du prochain LOAD_ASSETS invalide les slots cachés).
+        resetSendOutAssets();
+        // #VRAM : libère les tiles mons alloués (par tag) + reset le reserve (le field
+        // re-réservera ses tiles au retour OW). Tout le combat repasse par l'allocateur.
+        FreeSpriteTilesByTag(TAG_BATTLE_PLAYER_MON);
+        FreeSpriteTilesByTag(TAG_BATTLE_OPPONENT_MON);
+        setReservedSpriteTileCount(0);
         // Destroy sprites.
         if (playerSpriteId >= 0) rt.DestroySprite(playerSpriteId);
         if (opponentSpriteId >= 0) rt.DestroySprite(opponentSpriteId);
