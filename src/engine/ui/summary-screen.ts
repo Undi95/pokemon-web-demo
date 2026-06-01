@@ -62,6 +62,7 @@ import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from '../system/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
+import { sTMHMMoves } from '../pokemon/tmhm-moves';
 import { MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
 import { SE_SELECT as _SE_SELECT, SE_FAILURE as _SE_FAILURE } from '../decomp-data/include/constants/songs-data';
 
@@ -270,6 +271,7 @@ let gText_BattleMoves = '';
 let gText_ContestMoves = '';
 let gText_Cancel = '';     // "SORTIR" (slot 5 move-select)
 let gText_Cancel2 = '';    // "RETOUR" (prompt bouton A/B)
+let gText_HMMovesCantBeForgotten2 = '';  // "Impossible d'oublier les\ncapacités CS maintenant."
 let gText_Info = '';
 let gText_Switch = '';
 let gText_RentalPkmn = '';
@@ -350,6 +352,10 @@ function _initSummaryStrings(): void {
   gText_EggNickname = getString('gText_EggNickname');
   gText_FiveMarks = getString('gText_FiveMarks');
   gText_EggWillTakeALongTime = getString('gText_EggWillTakeALongTime');
+  // 1:1 décomp strings.c:517 (gText_HMMovesCantBeForgotten2). Fallback = texte FR
+  // décomp littéral si l'extracteur ne fournit pas le label.
+  gText_HMMovesCantBeForgotten2 = getString('gText_HMMovesCantBeForgotten2')
+    || "Impossible d'oublier les\ncapacités CS maintenant.";
   gText_EggWillTakeSomeTime = getString('gText_EggWillTakeSomeTime');
   gText_EggWillHatchSoon = getString('gText_EggWillHatchSoon');
   gText_EggAboutToHatch = getString('gText_EggAboutToHatch');
@@ -435,11 +441,31 @@ interface SummaryState {
   /** 1:1 décomp `sMonSummaryScreen->lockMovesFlag` — FALSE en mode NORMAL
    *  (TRUE = contexte interdisant le réordre, ex. Battle Factory). */
   lockMovesFlag: boolean;
+  /** 1:1 décomp `sMonSummaryScreen->lockMonFlag` — TRUE en mode SELECT_MOVE
+   *  (interdit de changer de Pokémon avec ▲▼ pendant le choix d'oubli). */
+  lockMonFlag: boolean;
 }
 
+// 1:1 décomp enum (include/pokemon_summary_screen.h:20-25) :
+//   SUMMARY_MODE_NORMAL=0, LOCK_MOVES=1, BOX=2, SELECT_MOVE=3.
 const SUMMARY_MODE_NORMAL = 0;
+const SUMMARY_MODE_SELECT_MOVE = 3;
 // 1:1 décomp `MAX_MON_MOVES` (include/constants/global.h) — extracted in
 // decomp-data global-data.ts. Replaces local hardcode = 4.
+
+/** 1:1 décomp `sMoveSlotToReplace` (pokemon_summary_screen.c:160). Slot de
+ *  capacité à oublier choisi en mode SELECT_MOVE (0..3), ou MAX_MON_MOVES (4)
+ *  si annulé. Lu par `GetMoveSlotToReplace()` après fermeture. */
+let _moveSlotToReplace = 0;
+
+/** 1:1 décomp `GetMoveSlotToReplace(void)` (:2333). */
+export function GetMoveSlotToReplace(): number {
+  return _moveSlotToReplace;
+}
+
+/** Temp pour Task_PrintBattleMoves case 6→7 (le décomp stocke le move ID dans
+ *  data[1] ; nos moves = enums string → temp module). */
+let _pbmPendingMove = '';
 
 function _emptySummary(): SummaryData {
   return {
@@ -458,7 +484,7 @@ const sMon: SummaryState = {
   currPageIndex: 0, minPageIndex: 0, maxPageIndex: 3, bgDisplayOrder: 0,
   windowIds: [WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE],
   switchCounter: 0,
-  firstMoveIndex: 0, secondMoveIndex: 0, newMove: '', lockMovesFlag: false,
+  firstMoveIndex: 0, secondMoveIndex: 0, newMove: '', lockMovesFlag: false, lockMonFlag: false,
 };
 
 let _isOpen = false;
@@ -1445,10 +1471,19 @@ function _drawContestMoveHearts(move: string): void {
   }
 }
 
-/** 1:1 décomp `PrintBattleMoves` (:3460). Mode NORMAL = juste les 4 moves. */
+/** 1:1 décomp `PrintBattleMoves` (:3460). Mode SELECT_MOVE = + 5e ligne (new
+ *  move ou "ANNULE") + détails du move pointé. */
 function _printBattleMoves(): void {
   _printMoveNameAndPP(0); _printMoveNameAndPP(1);
   _printMoveNameAndPP(2); _printMoveNameAndPP(3);
+  if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+    _printNewMoveDetailsOrCancelText();
+    if (sMon.firstMoveIndex === MAX_MON_MOVES) {
+      if (sMon.newMove) _printMoveDetails(sMon.newMove);
+    } else {
+      _printMoveDetails(sMon.summary.moves[sMon.firstMoveIndex]);
+    }
+  }
 }
 /** 1:1 décomp `PrintContestMoves` (:3595) — mode NORMAL = juste les 4 moves.
  *  Les cœurs CHARME/BLOCAGE (`DrawContestMoveHearts`) font partie de la
@@ -1519,7 +1554,18 @@ function _taskPrintBattleMoves(task: DecompTask): void {
     case 2: _printMoveNameAndPP(1); break;
     case 3: _printMoveNameAndPP(2); break;
     case 4: _printMoveNameAndPP(3); break;
-    case 5: case 6: case 7: break;   // SELECT_MOVE only (1:1 :3501-3518)
+    // 1:1 :3500-3518 — SELECT_MOVE : 5e ligne (new move/ANNULE) + détails du move pointé.
+    case 5: if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) _printNewMoveDetailsOrCancelText(); break;
+    case 6:
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) {
+        _pbmPendingMove = sMon.firstMoveIndex === MAX_MON_MOVES ? sMon.newMove : sMon.summary.moves[sMon.firstMoveIndex];
+      }
+      break;
+    case 7:
+      if (sMon.mode === SUMMARY_MODE_SELECT_MOVE && (sMon.newMove || sMon.firstMoveIndex !== MAX_MON_MOVES)) {
+        _printMoveDetails(_pbmPendingMove);
+      }
+      break;
     case 8: rt?.DestroyTask(task.taskId); return;
   }
   task.data[0]++;
@@ -1532,7 +1578,12 @@ function _taskPrintContestMoves(task: DecompTask): void {
     case 2: _printMoveNameAndPP(1); break;
     case 3: _printMoveNameAndPP(2); break;
     case 4: _printMoveNameAndPP(3); break;
-    case 5: case 6: break;   // SELECT_MOVE only (1:1 :3627-3637)
+    // 1:1 :3627-3637 — SELECT_MOVE : 5e ligne (new move/ANNULE). case 6 décomp =
+    // PrintContestMoveDescription (= description concours du move pointé) : NON porté
+    // ici (même en NORMAL `_printContestMoves` n'imprime pas la description — gap
+    // pré-existant page concours, hors scope 0x5A ; le flux learn-move est sur BATTLE_MOVES).
+    case 5: if (sMon.mode === SUMMARY_MODE_SELECT_MOVE) _printNewMoveDetailsOrCancelText(); break;
+    case 6: break;
     case 7: rt?.DestroyTask(task.taskId); return;
   }
   task.data[0]++;
@@ -1723,14 +1774,27 @@ function _drawPokerusCuredSymbol(): void {
   _scheduleBgCopy(3);
 }
 
-/** 1:1 décomp `SetDefaultTilemaps` (:1474) — branche non-moves (page INFO au
- *  boot = notre cas party→résumé). Cache EFFET combat+concours + STATUT
- *  (mon sain) + symbole pokérus. La branche moves-page (TilemapFiveMoves
- *  Display etc.) = pages moves initiales (berry/etc.), pas notre flux. */
+/** 1:1 décomp `SetDefaultTilemaps` (:1474). Branche non-moves (page INFO) =
+ *  party→résumé. Branche moves-page (BATTLE_MOVES/CONTEST_MOVES) = ouverture
+ *  directe sur une page de capacités (mode SELECT_MOVE / 0x5A) : affiche le
+ *  5-move display + place BATTLE_MOVES sur BG2 (hofs 256 = SC1 contenu) +
+ *  CONTEST_MOVES sur BG1, cache les fenêtres portrait/statut. */
 function _setDefaultTilemaps(): void {
   if (sMon.currPageIndex !== PSS_PAGE_BATTLE_MOVES && sMon.currPageIndex !== PSS_PAGE_CONTEST_MOVES) {
     _hidePowerAccSlidingWindow();
     _hideAppealJamSlidingWindow();
+  } else {
+    // 1:1 :1481-1491 — branche pages capacités.
+    _drawContestMoveHearts(sMon.summary.moves[sMon.firstMoveIndex]);
+    _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], 3, false);
+    _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], 1, false);
+    _setBgTilemapBuffer(1, PSS_PAGE_CONTEST_MOVES);
+    _setBgTilemapBuffer(2, PSS_PAGE_BATTLE_MOVES);
+    _changeBgX(2, 0x10000, BG_COORD_ADD);   // BG2 hofs += 256 → montre SC1 (contenu BATTLE_MOVES)
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    _scheduleBgCopy(1);
+    _scheduleBgCopy(2);
   }
   // summary.ailment == AILMENT_NONE → hide status sliding window ; sinon
   // (page non-moves) PutWindowTilemap(SKILLS_STATUS) (= géré au render skills).
@@ -2127,7 +2191,17 @@ function _changePage(delta: number): void {
 function _resumeInput(): void {
   const rt = getRuntime();
   if (!rt) return;
-  if (_inputTaskId < 0) _inputTaskId = rt.CreateTask(Task_Summary_HandleInput, 0);
+  // 1:1 décomp : ChangePage utilise SetTaskFuncWithFollowupFunc(PssScroll, currentFunc)
+  // → le scroll-end RESTAURE le handler d'input COURANT (followup). En SELECT_MOVE,
+  // le handler courant est Task_HandleReplaceMoveInput (oubli de capacité), PAS
+  // Task_Summary_HandleInput (navigation page/mon NORMALE). Sans ça, changer de page
+  // (◄►) en mode SELECT_MOVE rebascule en mode NORMAL → ▼ change de Pokémon + A entre
+  // en réordre de capacités (bug user 2026-06-01).
+  if (_inputTaskId < 0) {
+    _inputTaskId = sMon.mode === SUMMARY_MODE_SELECT_MOVE
+      ? rt.CreateTask(Task_HandleReplaceMoveInput, 0)
+      : rt.CreateTask(Task_Summary_HandleInput, 0);
+  }
 }
 
 /** 1:1 décomp `ChangeSummaryPokemon` (:1578) + `Task_ChangeSummaryMon` (:1628)
@@ -2833,6 +2907,167 @@ function _swapMonMoves(mon: PokemonInstance, i1: number, i2: number): void {
   const spm = sum.ppMax[i1]; sum.ppMax[i1] = sum.ppMax[i2]; sum.ppMax[i2] = spm;
 }
 
+/* ---- 1:1 décomp mode SELECT_MOVE : oublier une capacité (learn-move) ----- */
+
+/** 1:1 décomp `IsMoveHm` (party_menu.c:4694) — les 8 dernières entrées de
+ *  sTMHMMoves (NUM_HIDDEN_MACHINES) sont des CS (HM01-08). */
+function _isMoveHm(move: string): boolean {
+  const NUM_HIDDEN_MACHINES = 8;
+  for (let i = 0; i < NUM_HIDDEN_MACHINES; i++) {
+    if (sTMHMMoves[sTMHMMoves.length - NUM_HIDDEN_MACHINES + i] === move) return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `CanReplaceMove` (:2246) — FALSE seulement si on pointe une
+ *  capacité existante (≠ slot new-move) qui est une CS. */
+function _canReplaceMove(): boolean {
+  return sMon.firstMoveIndex === MAX_MON_MOVES
+    || !sMon.newMove
+    || !_isMoveHm(sMon.summary.moves[sMon.firstMoveIndex]);
+}
+
+/** 1:1 décomp `PrintHMMovesCantBeForgotten` (:3735). */
+function _printHMMovesCantBeForgotten(): void {
+  const wid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
+  FillWindowPixelBuffer(wid, 0 /* PIXEL_FILL(0) */);
+  _printTextOnWindow(wid, gText_HMMovesCantBeForgotten2, 6, 1, 0, 0);
+}
+
+/** 1:1 décomp `ShowCantForgetHMsWindow` (:2256). */
+function _showCantForgetHMsWindow(task: DecompTask): void {
+  ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+  ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+  _scheduleBgCopy(0);
+  _positionPowerAccSlidingWindow(0, 3);
+  _positionAppealJamSlidingWindow(0, 3, '');
+  _printHMMovesCantBeForgotten();
+  task.func = Task_HandleInputCantForgetHMsMoves;
+}
+
+/** 1:1 décomp `Task_SetHandleReplaceMoveInput` (:2185). */
+function Task_SetHandleReplaceMoveInput(task: DecompTask): void {
+  _setNewMoveTypeIcon();
+  _createMoveSelectorSprites(SEL1);
+  task.func = Task_HandleReplaceMoveInput;
+}
+
+/** 1:1 décomp `Task_HandleReplaceMoveInput` (:2192). ▲▼ navigue (slot new-move
+ *  inclus), ◄► change de page, A = oublier (si pas CS) → close + sMoveSlotToReplace,
+ *  B = annuler → sMoveSlotToReplace = MAX_MON_MOVES + close. */
+function Task_HandleReplaceMoveInput(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_R = 0x0100, KEY_L = 0x0200;
+  const KEY_UP = 0x0040, KEY_DOWN = 0x0080, KEY_LEFT = 0x0020, KEY_RIGHT = 0x0010;
+  if (newKeys & KEY_UP) {
+    task.data[0] = 4;
+    _changeSelectedMove(task, -1, 'first');
+  } else if (newKeys & KEY_DOWN) {
+    task.data[0] = 4;
+    _changeSelectedMove(task, 1, 'first');
+  } else if (newKeys & (KEY_LEFT | KEY_L)) {
+    _changePage(-1);
+  } else if (newKeys & (KEY_RIGHT | KEY_R)) {
+    _changePage(1);
+  } else if (newKeys & KEY_A) {
+    if (_canReplaceMove()) {
+      PlaySE(SE_SELECT);
+      // 1:1 : StopPokemonAnimations est fait par _beginCloseSummaryScreen.
+      _moveSlotToReplace = sMon.firstMoveIndex;
+      _beginCloseSummaryScreen();
+    } else {
+      PlaySE(SE_FAILURE);
+      _showCantForgetHMsWindow(task);
+    }
+  } else if (newKeys & KEY_B) {
+    PlaySE(SE_SELECT);
+    _moveSlotToReplace = MAX_MON_MOVES;
+    _beginCloseSummaryScreen();
+  }
+}
+
+/** 1:1 décomp `Task_HandleInputCantForgetHMsMoves` (:2268). Redessine la fenêtre
+ *  power/acc quand on quitte le message "CS impossible à oublier" et revient à
+ *  Task_HandleReplaceMoveInput. (Notre slide power/acc est synchrone → pas de
+ *  garde FuncIsActiveTask(Task_SlidePowerAccWindow).) */
+function Task_HandleInputCantForgetHMsMoves(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_R = 0x0100, KEY_L = 0x0200;
+  const KEY_UP = 0x0040, KEY_DOWN = 0x0080, KEY_LEFT = 0x0020, KEY_RIGHT = 0x0010;
+  if (newKeys & KEY_UP) {
+    task.data[1] = 1; task.data[0] = 4;
+    _changeSelectedMove(task, -1, 'first');
+    task.data[1] = 0;
+    task.func = Task_HandleReplaceMoveInput;
+  } else if (newKeys & KEY_DOWN) {
+    task.data[1] = 1; task.data[0] = 4;
+    _changeSelectedMove(task, 1, 'first');
+    task.data[1] = 0;
+    task.func = Task_HandleReplaceMoveInput;
+  } else if ((newKeys & (KEY_LEFT | KEY_L)) && sMon.currPageIndex !== PSS_PAGE_BATTLE_MOVES) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    if (_statusSpriteId >= 0) ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    const move = sMon.summary.moves[sMon.firstMoveIndex];
+    task.func = Task_HandleReplaceMoveInput;
+    _changePage(-1);
+    _positionPowerAccSlidingWindow(9, -2);
+    _positionAppealJamSlidingWindow(9, -2, move);
+  } else if ((newKeys & (KEY_RIGHT | KEY_R)) && sMon.currPageIndex !== PSS_PAGE_CONTEST_MOVES) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    if (_statusSpriteId >= 0) ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    const move = sMon.summary.moves[sMon.firstMoveIndex];
+    task.func = Task_HandleReplaceMoveInput;
+    _changePage(1);
+    _positionPowerAccSlidingWindow(9, -2);
+    _positionAppealJamSlidingWindow(9, -2, move);
+  } else if (newKeys & (KEY_A | KEY_B)) {
+    ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+    if (_statusSpriteId >= 0) ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+    const move = sMon.summary.moves[sMon.firstMoveIndex];
+    _printMoveDetails(move);
+    _scheduleBgCopy(0);
+    _positionPowerAccSlidingWindow(9, -3);
+    _positionAppealJamSlidingWindow(9, -3, move);
+    task.func = Task_HandleReplaceMoveInput;
+  }
+}
+
+/** 1:1 décomp `ShowSelectMovePokemonSummaryScreen` (:1142). Ouvre le summary en
+ *  mode SELECT_MOVE sur la page BATTLE_MOVES, avec `newMove` comme 5e capacité. */
+export function ShowSelectMovePokemonSummaryScreen(
+  monList: PokemonInstance[], monIndex: number, maxMonIndex: number,
+  callback: (() => void) | null, newMove: string,
+): void {
+  if (_isOpen) return;
+  _monList = monList;
+  sMon.curMonIndex = monIndex;
+  sMon.maxMonIndex = maxMonIndex;
+  sMon.currentMon = monList[monIndex] ?? null;
+  // 1:1 :1126-1130 — SELECT_MOVE : pages BATTLE_MOVES..CONTEST_MOVES, lockMonFlag.
+  sMon.mode = SUMMARY_MODE_SELECT_MOVE;
+  sMon.minPageIndex = PSS_PAGE_BATTLE_MOVES;
+  sMon.maxPageIndex = PSS_PAGE_CONTEST_MOVES;
+  sMon.currPageIndex = PSS_PAGE_BATTLE_MOVES;
+  sMon.bgDisplayOrder = 0;
+  sMon.lockMonFlag = true;
+  sMon.lockMovesFlag = false;
+  sMon.firstMoveIndex = 0;
+  sMon.secondMoveIndex = 0;
+  sMon.newMove = newMove;
+  sMon.callback = callback ?? null;
+  _moveSlotToReplace = 0;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.SetMainCallback2(CB2_InitSummaryScreen);
+  }).catch((e) => { console.error('[summary] select-move preload failed', e); });
+}
+
 /* ============================================================================
  * 1:1 décomp `Task_HandleInput` (:1532) + close
  * ========================================================================== */
@@ -3026,7 +3261,12 @@ export function CB2_InitSummaryScreen(): void {
       _setTypeIcons();
       rt.gMain.state++; break;
     case 22:
-      _inputTaskId = rt.CreateTask(Task_Summary_HandleInput, 0);
+      // 1:1 décomp :1279-1282 : SELECT_MOVE → Task_SetHandleReplaceMoveInput
+      // (new-move type icon + sprites curseur + Task_HandleReplaceMoveInput) ;
+      // sinon le handler d'input page normal.
+      _inputTaskId = sMon.mode === SUMMARY_MODE_SELECT_MOVE
+        ? rt.CreateTask(Task_SetHandleReplaceMoveInput, 0)
+        : rt.CreateTask(Task_Summary_HandleInput, 0);
       rt.gMain.state++; break;
     case 23:
       BlendPalettes(0xFFFFFFFF, 16, 0);
@@ -3110,6 +3350,7 @@ export function __summaryDebugState(): Record<string, unknown> {
   };
   return {
     currPageIndex: sMon.currPageIndex, bgDisplayOrder: sMon.bgDisplayOrder,
+    mode: sMon.mode, newMove: sMon.newMove, firstMoveIndex: sMon.firstMoveIndex, lockMonFlag: sMon.lockMonFlag,
     bgBufRef: [..._bgBufRef], bgX: [..._bgX], scrollData: { ..._scrollData },
     scrollTaskId: _scrollTaskId, inputTaskId: _inputTaskId, phase: _phase,
     windowIds: [...sMon.windowIds],
@@ -3122,6 +3363,7 @@ export function __summaryDebugState(): Record<string, unknown> {
   const _g: Record<string, unknown> = {
     CB2_InitSummaryScreen, OpenSummaryScreen, CloseSummaryScreen, IsSummaryScreenOpen,
     GetSummaryLastMonIndex, __summaryDebugState,
+    ShowSelectMovePokemonSummaryScreen, GetMoveSlotToReplace,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

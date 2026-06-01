@@ -143,6 +143,8 @@ import {
   STRINGID_TARGETFAINTED, STRINGID_PKMNGREWTOLV, STRINGID_PKMNLEARNEDMOVE, STRINGID_WILDPKMNFLED,
   STRINGID_PKMNGAINEDEXP, STRINGID_SWITCHINMON, STRINGID_TRYTOLEARNMOVE1, STRINGID_TRYTOLEARNMOVE2,
   STRINGID_TRAINERBLOCKEDBALL, STRINGID_PLAYERUSEDITEM, STRINGID_RETURNMON,
+  STRINGID_TRYTOLEARNMOVE3, STRINGID_STOPLEARNINGMOVE, STRINGID_DIDNOTLEARNMOVE,
+  STRINGID_123POOF, STRINGID_PKMNFORGOTMOVE, STRINGID_ANDELLIPSIS,
 } from '../decomp-data/include/constants/battle_string_ids-data';
 import { ITEM_POKE_BALL } from '../decomp-data/include/constants/items-data';
 // 1:1 décomp `gNoEscapeStringIds[]` (battle_message.c:900) pour `printfromtable`.
@@ -205,6 +207,8 @@ import './battle-anim-normal';
 import './battle-anim-throw';
 import './battle-levelup-box';
 import { lvlUpBoxOpenPage1, lvlUpBoxDrawPage2, lvlUpBoxClose } from './battle-levelup-box';
+import './battle-yesno-box';
+import { battleYesNoBoxOpen, battleYesNoBoxInput, battleYesNoBoxClose, type YesNoResult } from './battle-yesno-box';
 import './battle-trainer-party';
 import './battle-intro-events';
 import './battle-turn-helpers';
@@ -482,6 +486,12 @@ type State =
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'LEVEL_UP_BOX_PG1' | 'LEVEL_UP_BOX_PG2' | 'LEVEL_UP_BOX_CLOSE'
   | 'LEARN_MOVE_CHECK' | 'LEARN_MOVE_MSG_WAIT'
+  // 0x5A yesnoboxlearnmove (4 capacités → oublier ?) : séquence messages + 2 boîtes
+  // OUI/NON + summary move-select. 1:1 BattleScript_AskToLearnMove.
+  | 'LEARN_SEQ_WAIT'
+  | 'ASK_LEARN_BEGIN' | 'ASK_LEARN_SHOW3' | 'ASK_LEARN_OPENBOX' | 'ASK_LEARN_INPUT'
+  | 'STOP_LEARN_SHOW' | 'STOP_LEARN_OPENBOX' | 'STOP_LEARN_INPUT'
+  | 'OPEN_MOVE_SELECT'
   | 'EVOLUTION_CHECK' | 'EVOLUTION_TEXT' | 'EVOLUTION_WAIT' | 'EVOLUTION_DONE_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
@@ -759,6 +769,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Lot 3 : messages d'apprentissage en file (cas "4 capacités" = 2 strings décomp à
   // afficher l'un après l'autre via LEARN_MOVE_MSG_WAIT avant de reprendre la file).
   let _pendingLearnMsgs: string[] = [];
+  // 0x5A yesnoboxlearnmove : flux "oublier une capacité" quand 4 capacités connues.
+  // _learnNewEnum/_learnNewSlot = capacité à apprendre (stashée car le while shift) ;
+  // _learnForgotName = nom de la capacité oubliée (PkmnForgotMove) ; _seqMsgs = file de
+  // messages \p générique → état _seqThen une fois drainée (LEARN_SEQ_WAIT).
+  let _learnNewEnum = '';
+  let _learnNewSlot: { id: string; nameFr: string; pp: number; ppMax: number } | null = null;
+  let _learnForgotName = '';
+  let _seqMsgs: string[] = [];
+  let _seqThen: State = 'LEARN_MOVE_CHECK';
   // Fuite : roll TryRunFromBattle raté (≠ fuite impossible Birch/piégé). 1:1 décomp
   // HandleAction_Run (battle_util.c:516-522) : le tour est consommé → l'adversaire attaque.
   let _runRollFailed = false;
@@ -800,10 +819,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // exitCallback (= _onSubScreenClose) reconstruit la scène (reshowBattleScene,
   // 1:1 CB2_ReshowBattleScreenAfterMenu) puis restaure gMain.callback2 = l'OW CB2
   // sauvé → le script context reprend → flow.tick repart dans WAIT_SUBSCREEN.
-  let _subScreenKind: 'bag' | 'party-switch' | 'party-faint' | null = null;
+  let _subScreenKind: 'bag' | 'party-switch' | 'party-faint' | 'move-select' | null = null;
   let _subScreenReturned = false;         // posé par le pump reshow quand prêt à reprendre
   let _subScreenItemId = 0;               // item choisi au sac (gSpecialVar_ItemId ; 0 = annulé)
   let _subScreenMonSlot = -1;             // slot mon choisi au party (-1 = annulé)
+  let _subScreenMoveSlot = 0;             // slot move à oublier (GetMoveSlotToReplace ; MAX=annulé)
   let _savedOverworldCb: ((rt: ReturnType<typeof getRuntime>) => void) | null = null;
   let _reshowStarted = false;
   let _reshowFinished = false;
@@ -2581,6 +2601,30 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             console.log('[battle-flow étape3] item non-ball choisi en combat (3b à venir):', itemId);
             state = 'ACTION_MENU_INIT';
           }
+        } else if (kind === 'move-select') {
+          // 0x5A case 4 : slot d'oubli choisi dans le summary (0..3) ou MAX_MON_MOVES (4 = annulé).
+          const slot = _subScreenMoveSlot;
+          if (slot >= 4 || !playerMon || !_learnNewSlot) {
+            // 1:1 : GetMoveSlotToReplace == MAX_MON_MOVES → state 5 = « Arrêter d'apprendre ? ».
+            state = 'STOP_LEARN_SHOW';
+          } else {
+            // 1:1 : RemoveMonPPBonus + SetMonMoveSlot(party[expGetter], gMoveToLearn, slot).
+            // makeMoveSlot crée un slot frais (PP=max, aucun PP-up bonus) = combinaison 1:1.
+            // (Le summary garde déjà contre l'oubli d'une CS → slot jamais une CS ici.)
+            _learnForgotName = (playerMon.moves[slot]?.nameFr ?? '').toUpperCase();
+            playerMon.moves[slot] = makeMoveSlot(_learnNewEnum);
+            // 1:1 BattleScript_ForgotAndLearnedNewMove : 123POOF → PkmnForgotMove
+            // (B_BUFF2 = ancien move) → AndEllipsis → PkmnLearnedMove (B_BUFF2 = nouveau).
+            const E = new Uint8Array(0);
+            showBattleMessage(_battleMsgEx(STRINGID_123POOF, { textBuffs: [E, E, E] }));
+            _seqMsgs = [
+              _battleMsgEx(STRINGID_PKMNFORGOTMOVE, { textBuffs: [buildMonNickBuff(0), buildStringBuff(_learnForgotName), E] }),
+              _battleMsgEx(STRINGID_ANDELLIPSIS, { textBuffs: [E, E, E] }),
+              _battleMsgEx(STRINGID_PKMNLEARNEDMOVE, { textBuffs: [buildMonNickBuff(0), buildStringBuff((_learnNewSlot.nameFr).toUpperCase()), E] }),
+            ];
+            _seqThen = 'LEARN_MOVE_CHECK';
+            state = 'LEARN_SEQ_WAIT';
+          }
         } else {
           state = 'ACTION_MENU_INIT';
         }
@@ -3245,20 +3289,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             showBattleMessage(_battleMsgEx(STRINGID_PKMNLEARNEDMOVE, {
               textBuffs: [buildMonNickBuff(0), buildStringBuff(slot.nameFr.toUpperCase()), new Uint8Array(0)],
             }));
-          } else {
-            // 1:1 décomp sText_TryToLearnMove1 + sText_TryToLearnMove2 (battle_message.c:62-63),
-            // affichés l'un après l'autre. Le prompt d'oubli (sText_TryToLearnMove3 "Effacer une
-            // ancienne capacité..." + yes/no box + summary screen de sélection) = différé UI (A/B).
-            // Sans ce prompt, le move n'est PAS appris (= équivalent au choix "NON" → DidNotLearnMove).
-            // 1:1 décomp `sText_TryToLearnMove1` + `sText_TryToLearnMove2`.
-            showBattleMessage(_battleMsgEx(STRINGID_TRYTOLEARNMOVE1, {
-              textBuffs: [buildMonNickBuff(0), buildStringBuff(slot.nameFr.toUpperCase()), new Uint8Array(0)],
-            }));
-            _pendingLearnMsgs = [_battleMsgEx(STRINGID_TRYTOLEARNMOVE2, {
-              textBuffs: [buildMonNickBuff(0), new Uint8Array(0), new Uint8Array(0)],
-            })];
+            state = 'LEARN_MOVE_MSG_WAIT';
+            return false;
           }
-          state = 'LEARN_MOVE_MSG_WAIT';
+          // 1:1 décomp BattleScript_AskToLearnMove : 4 capacités connues → demander
+          // d'en oublier une (TryToLearnMove1/2/3 + yes/no box + summary move-select).
+          // On stashe la capacité à apprendre (le while a déjà shift _movesToLearn) puis
+          // on entre dans le sous-flux à ASK_LEARN_BEGIN.
+          _learnNewEnum = moveEnum;
+          _learnNewSlot = slot;
+          state = 'ASK_LEARN_BEGIN';
           return false;
         }
         // File vide → 1:1 case 5 : exp restante cross-level → re-fill ; sinon mon suivant.
@@ -3341,6 +3381,105 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             state = 'LEARN_MOVE_CHECK';
           }
         }
+        return false;
+      }
+
+      // ─── 0x5A yesnoboxlearnmove : oublier une capacité (4 connues) ──────────
+      // 1:1 décomp BattleScript_AskToLearnMove (battle_scripts_1.s:3164-3190) +
+      // Cmd_yesnoboxlearnmove / Cmd_yesnoboxstoplearningmove (battle_script_commands.c:5398-5559).
+      case 'ASK_LEARN_BEGIN': {
+        // 1:1 : printstring TRYTOLEARNMOVE1 + TRYTOLEARNMOVE2 (\p, attend A), puis MSG3 + box.
+        const newName = buildStringBuff((_learnNewSlot?.nameFr ?? '').toUpperCase());
+        const E = new Uint8Array(0);
+        showBattleMessage(_battleMsgEx(STRINGID_TRYTOLEARNMOVE1, { textBuffs: [buildMonNickBuff(0), newName, E] }));
+        _seqMsgs = [_battleMsgEx(STRINGID_TRYTOLEARNMOVE2, { textBuffs: [buildMonNickBuff(0), E, E] })];
+        _seqThen = 'ASK_LEARN_SHOW3';
+        state = 'LEARN_SEQ_WAIT';
+        return false;
+      }
+
+      case 'LEARN_SEQ_WAIT': {
+        // File générique de messages \p (chacun attend A via le printer) → état _seqThen.
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          if (_seqMsgs.length > 0) {
+            showBattleMessage(_seqMsgs.shift()!);
+          } else {
+            state = _seqThen;
+          }
+        }
+        return false;
+      }
+
+      case 'ASK_LEARN_SHOW3': {
+        // 1:1 printstring STRINGID_TRYTOLEARNMOVE3 (« Effacer une ancienne capacité pour X ? »,
+        // pas de \p) → reste affiché ; la box OUI/NON s'ouvre par-dessus. B_BUFF2 = nouveau move.
+        const newName = buildStringBuff((_learnNewSlot?.nameFr ?? '').toUpperCase());
+        showBattleMessage(_battleMsgEx(STRINGID_TRYTOLEARNMOVE3, { textBuffs: [new Uint8Array(0), newName, new Uint8Array(0)] }));
+        state = 'ASK_LEARN_OPENBOX';
+        return false;
+      }
+
+      case 'ASK_LEARN_OPENBOX': {
+        // 1:1 waitstate : attendre la fin d'affichage du texte, puis ouvrir la box OUI/NON
+        // (case 0 : HandleBattleWindow + curseur à 0). Le message reste visible dessous.
+        if (!isBattleMessageHidden()) return false;
+        battleYesNoBoxOpen(0);
+        state = 'ASK_LEARN_INPUT';
+        return false;
+      }
+
+      case 'ASK_LEARN_INPUT': {
+        // 1:1 Cmd_yesnoboxlearnmove case 1 : OUI (curseur 0) → summary move-select ;
+        // NON (curseur 1) / B → « Arrêter d'apprendre ? ».
+        const r: YesNoResult | null = battleYesNoBoxInput();
+        if (r === null) return false;
+        battleYesNoBoxClose();
+        state = r === 'yes' ? 'OPEN_MOVE_SELECT' : 'STOP_LEARN_SHOW';
+        return false;
+      }
+
+      case 'STOP_LEARN_SHOW': {
+        // 1:1 printstring STRINGID_STOPLEARNINGMOVE (« Arrêter d'apprendre X ? », pas de \p).
+        const newName = buildStringBuff((_learnNewSlot?.nameFr ?? '').toUpperCase());
+        showBattleMessage(_battleMsgEx(STRINGID_STOPLEARNINGMOVE, { textBuffs: [new Uint8Array(0), newName, new Uint8Array(0)] }));
+        state = 'STOP_LEARN_OPENBOX';
+        return false;
+      }
+
+      case 'STOP_LEARN_OPENBOX': {
+        if (!isBattleMessageHidden()) return false;
+        battleYesNoBoxOpen(0);
+        state = 'STOP_LEARN_INPUT';
+        return false;
+      }
+
+      case 'STOP_LEARN_INPUT': {
+        // 1:1 Cmd_yesnoboxstoplearningmove case 1 : OUI (curseur 0) → confirme l'arrêt →
+        // DidNotLearnMove (capacité suivante) ; NON (curseur 1) / B → re-demande l'oubli.
+        const r: YesNoResult | null = battleYesNoBoxInput();
+        if (r === null) return false;
+        battleYesNoBoxClose();
+        HideFieldMessageBox();
+        if (r === 'yes') {
+          showBattleMessage(_battleMsgEx(STRINGID_DIDNOTLEARNMOVE, {
+            textBuffs: [buildMonNickBuff(0), buildStringBuff((_learnNewSlot?.nameFr ?? '').toUpperCase()), new Uint8Array(0)],
+          }));
+          _seqMsgs = [];
+          _seqThen = 'LEARN_MOVE_CHECK';
+          state = 'LEARN_SEQ_WAIT';
+        } else {
+          state = 'ASK_LEARN_BEGIN';
+        }
+        return false;
+      }
+
+      case 'OPEN_MOVE_SELECT': {
+        // 1:1 décomp case 2-3 : fade + ShowSelectMovePokemonSummaryScreen (summary en
+        // mode SELECT_MOVE). SetMainCallback2 gèle flow.tick ; le retour passe par
+        // _onSubScreenClose → reshow → WAIT_SUBSCREEN (kind 'move-select' lit le slot).
+        _openMoveSelectScreen();
+        state = 'WAIT_SUBSCREEN';
         return false;
       }
 
@@ -4161,6 +4300,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         _subScreenItemId = gSpecialVar.ItemId ?? 0;
       } else if (_subScreenKind === 'party-switch' || _subScreenKind === 'party-faint') {
         _subScreenMonSlot = (globalThis as { __battleSwitchResultSlot?: number }).__battleSwitchResultSlot ?? -1;
+      } else if (_subScreenKind === 'move-select') {
+        // 1:1 décomp : GetMoveSlotToReplace() = slot choisi (0..3) ou MAX_MON_MOVES (4) si annulé.
+        const getSlot = (globalThis as { GetMoveSlotToReplace?: () => number }).GetMoveSlotToReplace;
+        _subScreenMoveSlot = getSlot ? getSlot() : 4;
       }
       _subScreenReturned = true;
       if (r && _savedOverworldCb) r.SetMainCallback2(_savedOverworldCb);
@@ -4208,6 +4351,26 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     _savedOverworldCb = r.gMain.callback2 as typeof _savedOverworldCb;
     void import('../bag/bag-menu').then(({ GoToBagMenu, ITEMMENULOCATION_BATTLE, POCKETS_COUNT }) => {
       GoToBagMenu(ITEMMENULOCATION_BATTLE, POCKETS_COUNT, _onSubScreenClose);
+    });
+  };
+
+  // 0x5A : ouvre le summary en mode SELECT_MOVE (choisir quelle capacité oublier).
+  // 1:1 décomp Cmd_yesnoboxlearnmove case 2 : ShowSelectMovePokemonSummaryScreen(
+  //   gPlayerParty, expGetterMonId, gPlayerPartyCount-1, ReshowBattleScreenAfterMenu, gMoveToLearn).
+  const _openMoveSelectScreen = (): void => {
+    const r = getRuntime();
+    if (!r) return;
+    _subScreenKind = 'move-select';
+    _subScreenReturned = false;
+    _subScreenMoveSlot = 4;   // MAX_MON_MOVES par défaut (= annulé si échec d'ouverture)
+    _savedOverworldCb = r.gMain.callback2 as typeof _savedOverworldCb;
+    const party = gSaveBlock1Ptr.playerParty as (PokemonInstance | null)[];
+    const partyCount = party.filter(Boolean).length;
+    void import('../ui/summary-screen').then(({ ShowSelectMovePokemonSummaryScreen }) => {
+      ShowSelectMovePokemonSummaryScreen(
+        party as PokemonInstance[], _activePlayerSlot, Math.max(0, partyCount - 1),
+        _onSubScreenClose, _learnNewEnum,
+      );
     });
   };
 

@@ -15,9 +15,8 @@
  * pilote le flux 2-pages (A → page 2 → A → close) ; on expose l'API inline
  * `lvlUpBoxOpenPage1 / lvlUpBoxDrawPage2 / lvlUpBoxClose`.
  *
- * DETTE : le CADRE décoratif (HandleBattleWindow, battle_bg.c) n'est pas dessiné
- * (stub). La box a son FOND rempli (FillWindowPixelBuffer bgClr) + le texte ; il
- * manque la bordure tuilée — raffinement à venir.
+ * Le CADRE est dessiné via `HandleBattleWindow` (partagé, battle-window-frame.ts,
+ * tuiles 0x022-0x02A palette 1 sur BG1) — 1:1 Cmd_drawlvlupbox.
  */
 
 import {
@@ -27,9 +26,9 @@ import {
   PutWindowTilemap,
   ClearWindowTilemap,
   RemoveWindow,
-  FillBgTilemapBufferRect,
 } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
+import { HandleBattleWindow, WINDOW_BG1, WINDOW_CLEAR } from './battle-window-frame';
 import { B_WIN_LEVEL_UP_BOX } from './battle-windows';
 import { sStandardBattleWindowTemplates } from '../decomp-data/src/battle_bg-data';
 import { getRuntime } from '../system/decomp-globals';
@@ -187,29 +186,6 @@ function _hideLevelUpBg(): void {
  *  Le cadre entoure la fenêtre B_WIN_LEVEL_UP_BOX (tuiles 19,8 → 28,18). */
 const LVLUP_FRAME_X1 = 18, LVLUP_FRAME_Y1 = 7, LVLUP_FRAME_X2 = 29, LVLUP_FRAME_Y2 = 19;
 
-/** 1:1 décomp `HandleBattleWindow(xStart, yStart, xEnd, yEnd, flags)`
- *  (battle_script_commands.c:10155). Écrit les tuiles de cadre (coins/bords/centre,
- *  IDs 0x022-0x02A palette 1) dans le tilemap BG1 autour de la zone. `clear` = efface
- *  (tile 0). Les tuiles cadre sont chargées dans le tileset BG1 (vérifié runtime). */
-function HandleBattleWindow(xStart: number, yStart: number, xEnd: number, yEnd: number, clear: boolean): void {
-  for (let destY = yStart; destY <= yEnd; destY++) {
-    for (let destX = xStart; destX <= xEnd; destX++) {
-      let tile: number;
-      if (destY === yStart) {
-        tile = destX === xStart ? 0x022 : destX === xEnd ? 0x024 : 0x023; // haut : ╔ ═ ╗
-      } else if (destY === yEnd) {
-        tile = destX === xStart ? 0x028 : destX === xEnd ? 0x02a : 0x029; // bas : ╚ ═ ╝
-      } else {
-        tile = destX === xStart ? 0x025 : destX === xEnd ? 0x027 : 0x026; // milieu : ║ · ║
-      }
-      if (clear) tile = 0;
-      // 1:1 décomp : CopyToBgTilemapBufferRect_ChangePalette(BG1, &var, x, y, 1, 1, 0x11)
-      // — palette embarquée = 1 (var = 0x1022…). 0x11 (>15) = garder la palette embarquée.
-      FillBgTilemapBufferRect(1, tile, destX, destY, 1, 1, 1);
-    }
-  }
-}
-
 /** Ouvre la box + dessine la page 1 (deltas). `before`/`after` = stats
  *  STAT_-indexées (cf. lvlUpBoxStatsOf). 1:1 décomp case 3+4 (HandleBattleWindow
  *  cadre + DrawLevelUpWindow1 + CopyWindowToVram) + ShowBg(1). */
@@ -219,7 +195,8 @@ export function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
   _lvlUpBoxWinId = AddWindow(tpl);
   // 1:1 décomp case 3 : dessine le cadre AVANT le texte (PutWindowTilemap écrase
   // ensuite l'intérieur avec les tuiles de texte de la fenêtre).
-  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, false);
+  // 1:1 décomp Cmd_drawlvlupbox : HandleBattleWindow(18, 7, 29, 19, WINDOW_BG1).
+  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, WINDOW_BG1);
   PutWindowTilemap(_lvlUpBoxWinId);
   DrawLevelUpWindowPg1(_lvlUpBoxWinId, before, after);
   CopyWindowToVram(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
@@ -240,8 +217,8 @@ export function lvlUpBoxClose(): void {
   FillWindowPixelBuffer(_lvlUpBoxWinId, 0);
   ClearWindowTilemap(_lvlUpBoxWinId);
   CopyWindowToVram(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
-  // 1:1 décomp case 8 : HandleBattleWindow(..., WINDOW_CLEAR) efface le cadre.
-  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, true);
+  // 1:1 décomp case 8 : HandleBattleWindow(18, 7, 29, 19, WINDOW_BG1 | WINDOW_CLEAR).
+  HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, WINDOW_BG1 | WINDOW_CLEAR);
   RemoveWindow(_lvlUpBoxWinId);
   _lvlUpBoxWinId = -1;
   _hideLevelUpBg();
