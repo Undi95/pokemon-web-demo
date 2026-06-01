@@ -546,6 +546,13 @@ interface BattleParams {
   /** Id numérique du dresseur (= gTrainerBattleOpponent_A), pour résoudre
    *  gTrainers[id].aiFlags dans BattleAI_SetupAIData. */
   trainerNumId?: number;
+  /** 1:1 décomp `CreateMon` (combat dresseur) : données DÉTERMINISTES du mon
+   *  adverse, calculées par trainer-battle-flow depuis gTrainers/JSON.
+   *  Sans elles (combat sauvage), createPokemonInstance génère PID/IVs aléatoires. */
+  opponentPersonality?: number;     // PID imposé (name-hash) → nature/gender/ability 1:1
+  opponentFixedIV?: number;         // IV fixe 0..31 appliqué aux 6 stats (= fixedIV décomp)
+  opponentMoves?: string[];         // moveset custom (F_TRAINER_PARTY_CUSTOM_MOVESET)
+  opponentHeldItem?: string;        // objet tenu (F_TRAINER_PARTY_HELD_ITEM)
 }
 
 /** 1:1 décomp battle_util.c CalculateBaseDamage simplified.
@@ -1946,7 +1953,26 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Build opponent Pokemon (= 1:1 décomp battle_controllers.c
         // SetUpBattleVarsAndBirchZigzagoon : CreateMon SPECIES_ZIGZAGOON, 2).
         try {
-          opponentMon = createPokemonInstance(params.opponentSpecies, params.opponentLevel);
+          // 1:1 décomp CreateMon : combat dresseur → données déterministes (PID name-hash,
+          // IV fixe, moveset custom, objet tenu) si fournies par trainer-battle-flow ;
+          // sinon (sauvage) createPokemonInstance génère PID/IVs aléatoires 1:1 CreateBoxMon.
+          const oppOpts: Parameters<typeof createPokemonInstance>[2] = {};
+          if (params.opponentPersonality !== undefined) oppOpts.personality = params.opponentPersonality >>> 0;
+          if (params.opponentFixedIV !== undefined) {
+            const iv = params.opponentFixedIV & 31;
+            oppOpts.ivs = { hp: iv, atk: iv, def: iv, spa: iv, spd: iv, spe: iv };
+          }
+          // 1:1 : moveset custom (filtre MOVE_NONE). Sinon createPokemonInstance pose le
+          // moveset par défaut du niveau (GiveBoxMonInitialMoveset).
+          if (params.opponentMoves && params.opponentMoves.length > 0) {
+            const customMoves = params.opponentMoves.filter((m) => m && m !== 'MOVE_NONE');
+            if (customMoves.length > 0) oppOpts.moves = customMoves;
+          }
+          if (params.opponentHeldItem && params.opponentHeldItem !== 'ITEM_NONE') {
+            oppOpts.heldItem = params.opponentHeldItem;
+          }
+          opponentMon = createPokemonInstance(params.opponentSpecies, params.opponentLevel,
+            Object.keys(oppOpts).length > 0 ? oppOpts : undefined);
         } catch (e) {
           console.error('[battle-flow] failed to create opponent', e);
           outcome = BATTLE_OUTCOME_LOST;

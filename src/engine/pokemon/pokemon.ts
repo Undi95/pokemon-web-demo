@@ -372,6 +372,14 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const maxHp = calcHp(baseHp, ivs.hp, evs.hp, level);
   const moveIds = opts?.moves ?? pickLevelUpMoves(dexId, level);
   const moves = moveIds.slice(0, 4).map(id => {
+    // opts.moves = enums décomp ("MOVE_DIG", ex. moveset custom dresseur) → makeMoveSlot
+    // (moveEnumToDexId → id runtime "dig" + PP 1:1). pickLevelUpMoves = ids runtime
+    // ("quickattack") → moveDexIdToEnum pour le PP/nom. SANS ce split, un moveset enum
+    // restait stocké brut ("MOVE_DIG") + PP 30 fallback → le battle ne reconnaît pas
+    // les capacités → l'adversaire dresseur ne peut pas attaquer (bug 2026-06-01).
+    if (typeof id === 'string' && id.startsWith('MOVE_')) {
+      return makeMoveSlot(id);
+    }
     // 1:1 décomp : id runtime ("quickattack") → enum ("MOVE_QUICK_ATTACK")
     // via le résolveur leaf décomp (zéro @pkmn/dex). PP depuis moves-data
     // (= include/constants/moves.h gBattleMoves[].pp), nom FR via text-tables.

@@ -22,6 +22,7 @@
  * Future Phase 5.8 : multi-mon trainers (= gym leaders, etc.).
  */
 import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
+import { getSpeciesNameFr } from '../system/data-tables';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
 import { getRuntime } from '../system/decomp-globals';
 import { FlagSet, VarSet } from '../script/script-vars';
@@ -31,13 +32,23 @@ interface TrainerPartyMember {
   species: string;
   level: number;
   iv?: number;
+  /** 1:1 F_TRAINER_PARTY_CUSTOM_MOVESET : moveset imposé (sinon défaut niveau). */
+  moves?: string[];
+  /** 1:1 F_TRAINER_PARTY_HELD_ITEM : objet tenu. */
+  heldItem?: string;
 }
 
 interface TrainerData {
   trainerClass: string;
-  trainerName: string;
+  /** JSON : champ `name` (nom du dresseur, peut être vide). */
+  name?: string;
+  trainerName?: string;
   trainerPic: string;
   encounterMusic: string;
+  /** 1:1 partyFlags : NO_ITEM_DEFAULT_MOVES / NO_ITEM_CUSTOM_MOVES /
+   *  ITEM_DEFAULT_MOVES / ITEM_CUSTOM_MOVES. */
+  partyType?: string | null;
+  doubleBattle?: boolean;
   party: TrainerPartyMember[];
 }
 
@@ -94,6 +105,39 @@ void (async function _loadTrainerNumIds(): Promise<void> {
 
 function _resolveTrainerNumId(trainerKey: string): number {
   return _trainerKeyToNum?.[trainerKey] ?? 0;
+}
+
+/** 1:1 décomp `CreateNPCTrainerParty` (battle_main.c:1993-2069) : calcule les
+ *  données DÉTERMINISTES d'un mon dresseur (PID name-hash, IV fixe, moveset
+ *  custom, objet tenu) à passer à createPokemonInstance (= CreateMon).
+ *
+ *  PID (1:1 :1993-2001) : `personalityValue = base + (nameHash << 8)` où
+ *  base = doubleBattle?0x80 : female?0x78 : 0x88 (TOUJOURS pair → ability slot 0
+ *  1:1 + gender dérivé de `base` 1:1) et nameHash = somme des octets du nom
+ *  dresseur + du nom d'espèce. DETTE : on somme les codes FR (pas l'encodage gba
+ *  exact, faute d'encodeur) → la NATURE (pid%25) est déterministe mais peut
+ *  différer du ROM ; ability(slot0)+gender restent byte-exact (déterminés par base). */
+function _computeTrainerMonData(td: TrainerData, member: TrainerPartyMember): {
+  personality: number; fixedIV: number; moves?: string[]; heldItem?: string;
+} {
+  const isFemale = (td.encounterMusic ?? '').includes('FEMALE');
+  const base = td.doubleBattle ? 0x80 : (isFemale ? 0x78 : 0x88);
+  let nameHash = 0;
+  const tname = td.name ?? td.trainerName ?? '';
+  for (let i = 0; i < tname.length; i++) nameHash += tname.charCodeAt(i);
+  const sname = getSpeciesNameFr(member.species) ?? '';
+  for (let i = 0; i < sname.length; i++) nameHash += sname.charCodeAt(i);
+  const personality = (base + (nameHash << 8)) >>> 0;
+  // 1:1 :2009 fixedIV = iv * MAX_PER_STAT_IVS(31) / 255.
+  const fixedIV = Math.floor(((member.iv ?? 0) * 31) / 255);
+
+  const out: { personality: number; fixedIV: number; moves?: string[]; heldItem?: string } =
+    { personality, fixedIV };
+  const pt = td.partyType ?? '';
+  // partyType : *_CUSTOM_MOVES → moveset imposé ; ITEM_* (≠ NO_ITEM_*) → objet tenu.
+  if (pt.includes('CUSTOM_MOVES') && member.moves && member.moves.length > 0) out.moves = member.moves;
+  if (pt.startsWith('ITEM_') && member.heldItem) out.heldItem = member.heldItem;
+  return out;
 }
 
 /** Start trainer battle for given trainer ID. Reads party from JSON.
@@ -181,12 +225,18 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
           return false;
         }
         const member = trainerData!.party[partyIndex];
+        // 1:1 CreateMon : données déterministes du mon dresseur (PID/IV/moves/objet).
+        const monData = _computeTrainerMonData(trainerData!, member);
         currentBattle = startWildBattle({
           opponentSpecies: member.species,
           opponentLevel: member.level,
           // 1:1 décomp : combat dresseur → BattleAI scripts (pas wild random).
           isTrainerBattle: true,
           trainerNumId: _resolveTrainerNumId(trainerId),
+          opponentPersonality: monData.personality,
+          opponentFixedIV: monData.fixedIV,
+          opponentMoves: monData.moves,
+          opponentHeldItem: monData.heldItem,
         });
         state = 'IN_BATTLE';
         return false;
