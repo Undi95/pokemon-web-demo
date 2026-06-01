@@ -126,3 +126,50 @@ registerAffineAnimTable('gAffineAnims_BattleSpriteContest', {
     'sAffineAnim_Battler_Return',
   ],
 });
+
+// ─── Poké Ball rotation (1:1 décomp src/pokeball.c:166-203) ─────────────────
+// Toutes les anims sont des FRAME(0,0,Δrot,1) + JUMP(0) → la rotation s'accumule
+// de Δrot/frame INDÉFINIMENT (boucle). Le mode OAM de la ball = ST_OAM_AFFINE_DOUBLE
+// (sBallOamData) → la zone de rendu est 2× (32×32) pour qu'une rotation 360° d'un
+// sprite 16×16 ne soit PAS clippée à son cadre. ⚠️ Ces anims ont duration=1 → elles
+// dépendent du fix ApplyAffineAnimFrame (branche relative, pas absolue) — voir
+// sprite-engine-impl.ts. La ball du SEND-OUT utilise l'index 0 (statique) puis 4
+// (spin) à l'apex de l'arc (pokeball.c:939), reset à 0 en fin d'arc (pokeball.c:975).
+
+// pokeball.c:166 — sAffineAnim_BallRotate_0 : FRAME(0,0,0,1) + JUMP(0) = statique (rot += 0).
+registerAffineAnim('sAffineAnim_BallRotate_0', {
+  frames: [{ xScale: 0, yScale: 0, rotation: 0, duration: 1 }],
+  terminator: 'JUMP',
+});
+// pokeball.c:172 — sAffineAnim_BallRotate_Right : FRAME(0,0,-3,1) + JUMP(0) = rot -3/frame.
+registerAffineAnim('sAffineAnim_BallRotate_Right', {
+  frames: [{ xScale: 0, yScale: 0, rotation: -3, duration: 1 }],
+  terminator: 'JUMP',
+});
+// pokeball.c:178 — sAffineAnim_BallRotate_Left : FRAME(0,0,3,1) + JUMP(0) = rot +3/frame.
+registerAffineAnim('sAffineAnim_BallRotate_Left', {
+  frames: [{ xScale: 0, yScale: 0, rotation: 3, duration: 1 }],
+  terminator: 'JUMP',
+});
+// pokeball.c:184 — sAffineAnim_BallRotate_3 : FRAME(256,256,0,0) + END = identité one-shot.
+registerAffineAnim('sAffineAnim_BallRotate_3', {
+  frames: [{ xScale: 0x100, yScale: 0x100, rotation: 0, duration: 0 }],
+  terminator: 'END',
+});
+// pokeball.c:190 — sAffineAnim_BallRotate_4 : FRAME(0,0,25,1) + JUMP(0) = rot +25/frame (= le SPIN
+// rapide du send-out, ~1 tour / 10 frames). C'est l'anim lancée à l'apex de l'arc.
+registerAffineAnim('sAffineAnim_BallRotate_4', {
+  frames: [{ xScale: 0, yScale: 0, rotation: 25, duration: 1 }],
+  terminator: 'JUMP',
+});
+
+// pokeball.c:196 — sAffineAnim_BallRotate[] : indexé par BALL_AFFINE_ANIM_0(0)/RIGHT(1)/LEFT(2)/3/4.
+registerAffineAnimTable('sAffineAnim_BallRotate', {
+  affineAnims: [
+    'sAffineAnim_BallRotate_0',      // BALL_AFFINE_ANIM_0
+    'sAffineAnim_BallRotate_Right',  // BALL_ROTATE_RIGHT
+    'sAffineAnim_BallRotate_Left',   // BALL_ROTATE_LEFT
+    'sAffineAnim_BallRotate_3',      // BALL_AFFINE_ANIM_3
+    'sAffineAnim_BallRotate_4',      // BALL_AFFINE_ANIM_4
+  ],
+});

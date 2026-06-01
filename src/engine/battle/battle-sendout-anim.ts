@@ -34,13 +34,16 @@ import {
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
 } from '../system/pokeball-effects';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
-import { gSineTable } from '../system/decomp-helpers';
+import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
+import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 
 // Asset Poke Ball 16x16. VRAM via l'ALLOCATEUR 1:1 décomp (`AllocSpriteTiles`) — PLUS
 // d'offset en dur (l'ancien 0x4000 écrasait les tiles du mon joueur ; 0x5800 était un
 // patch fragile). Les tiles sont allouées dynamiquement dans l'espace libre → zéro
 // collision possible, comme la décomp (LoadBallGfx → sheet tag → AllocSpriteTiles).
 const POKE_BALL_URL = '/decomp/em/balls/poke.png';
+// On charge l'asset INDEXÉ (.4bpp.bin + .gbapal), PAS le PNG RGB — cf. _ensureBallAsset.
+const POKE_BALL_PAL_URL = '/decomp/em/balls/poke.gbapal';
 const BALL_TILE_COUNT = 4;   // 16×16 = 4 tiles 8×8
 const TAG_SENDOUT_BALL = 'BATTLE_SENDOUT_BALL';
 const TAG_SENDOUT_BALL_PAL = 'BATTLE_SENDOUT_BALL_PAL';
@@ -131,11 +134,24 @@ async function _ensureBallAsset(): Promise<void> {
     _ballTileStart = AllocSpriteTiles(BALL_TILE_COUNT);
     if (_ballTileStart < 0) { console.warn('[sendout] pas de tiles VRAM libres pour la ball'); return; }
     AllocSpriteTileRange(TAG_SENDOUT_BALL, _ballTileStart, BALL_TILE_COUNT);
-    const loaded = await rt.LoadCompressedSpriteSheet(POKE_BALL_URL, _ballTileStart * 32);
-    _ballPaletteSlot = LoadSpritePalette({ data: loaded.palette, tag: TAG_SENDOUT_BALL_PAL });
+    // ⚠️ On charge l'asset INDEXÉ (poke.4bpp.bin + poke.gbapal), PAS le PNG RGB.
+    // poke.png a un FOND BLANC (255,255,255) identique au blanc du ball → la conversion
+    // RGB→4bpp keye le blanc en index 0 (transparent) → les parties claires du ball
+    // deviennent transparentes = des TROUS (surtout visibles quand la ball tourne).
+    // Le .4bpp.bin préserve les indices d'origine : index 0 = coins transparents,
+    // index 5 = blanc OPAQUE du ball (même RGB 248,248,248 mais index ≠ 0). 1:1 décomp
+    // gBallGfx_Poke (poke.4bpp.bin) + gBallPal_Poke (poke.gbapal).
+    const binBytes = await loadTileBin(POKE_BALL_URL, 4);
+    const palColors = await loadGbaPal(POKE_BALL_PAL_URL);
+    // N'écrit QUE frame 0 (16×16 = 4 tiles = 128 octets). poke.4bpp.bin a 3 frames
+    // (fermée/mi-ouverte/ouverte) mais le send-out n'ouvre pas la ball par anim de frame
+    // (elle disparaît), donc les frames 1-2 sont inutiles. Écriture directe objVram
+    // (= ce que fait LoadCompressedSpriteSheet, mais sans re-quantifier les indices).
+    rt.gba.objVram.set(binBytes.subarray(0, BALL_TILE_COUNT * 32), _ballTileStart * 32);
+    _ballPaletteSlot = LoadSpritePalette({ data: palColors, tag: TAG_SENDOUT_BALL_PAL });
     _ballAssetLoaded = true;
   } catch (e) {
-    console.warn('[sendout] failed to load poke.png:', e);
+    console.warn('[sendout] failed to load poke ball asset:', e);
   }
 }
 
@@ -181,17 +197,42 @@ export async function startSendOut(opts: {
     paletteBank: _ballPaletteSlot,
     x: startX, y: startY,
     shape: 0, size: 1,   // 16x16 (= 4 tiles 8x8)
-    priority: 0,         // devant les mons (prio 2)
+    // 1:1 sBallOamData (pokeball.c:104) priority=2 + CreateSprite(...,29) subpriority=29.
+    // Priorité 2 = MÊME plan que les mons (prio 2), donc DERRIÈRE les BG de priorité 0/1
+    // (la boîte de dialogue = BG0 prio 0) → la ball "tombe derrière la textbox" (retour user)
+    // au lieu de passer devant (l'ancien priority:0 la mettait devant tout).
+    priority: 2,
+    subpriority: 29,
   });
 
   // Cache le mon jusqu'à l'émergence (1:1 : il sort de la ball).
   mon.invisible = true;
 
-  // ⚠️ SPIN DE LA BALL DÉSACTIVÉ (régression user 2026-06-01 "ball couleur transparente") :
-  // le compositeur rend mal la ROTATION affine d'un petit OBJ 16×16 (clip/wrap + la moitié
-  // blanche → sombre/transparente). Le SCALE affine du mon, lui, marche. → ball laissée
-  // NON-affine = opaque + correcte (mais fixe). DETTE : redonner le spin via AFFINE_DOUBLE
-  // (zone de rendu 2× = pas de clip) ou un fix compositeur affine-rotation (cf. roadmap).
+  // 1:1 sBallOamData (pokeball.c:92-107) : la ball est en ST_OAM_AFFINE_DOUBLE → sa zone de
+  // rendu est 2× (32×32) pour qu'une rotation 360° du sprite 16×16 ne soit PAS clippée à son
+  // cadre (= le bug "couleur transparente / coins coupés" de la version NORMAL session passée).
+  // + table d'anim sAffineAnim_BallRotate. On démarre à l'anim 0 (statique) ; le SPIN (anim 4)
+  // se lance à l'apex de l'arc (tickSendOut, 1:1 pokeball.c:939) puis reset à 0 en fin d'arc
+  // (pokeball.c:975). La rotation tourne via le système affine anim partagé (= comme le mon
+  // qui scale) : tickAllAffineAnims accumule +25/frame (sAffineAnim_BallRotate_4, duration=1).
+  const ballSprite = rt.gSprites.get(ball.spriteId);
+  if (ballSprite) {
+    const _m = rt.AllocOamMatrix();
+    if (_m >= 0) {
+      ballSprite.matrixNum = _m;
+      ballSprite.affineMode = ST_OAM_AFFINE_DOUBLE as 0 | 1 | 2 | 3;
+      // -wPx/2, -hPx/2 : recentre la bbox doublée (16×16 → 32×32) pour que la ball reste
+      // visuellement au même point (1:1 CalcCenterToCornerVec quand le flag DOUBLE est posé).
+      ballSprite.centerToCornerVecX = -8;
+      ballSprite.centerToCornerVecY = -8;
+      ballSprite.affineAnimsTableName = 'sAffineAnim_BallRotate';
+      const _oam = rt.gba.oam[ball.oamIndex];
+      if (_oam) { _oam.affineMode = ST_OAM_AFFINE_DOUBLE; _oam.affineParamIndex = _m; }
+      rt.StartSpriteAffineAnim(ball.spriteId, 0);   // BALL_AFFINE_ANIM_0 (statique, 1:1 CreateSprite)
+      BeginAffineAnim(ballSprite, rt);              // applique frame 0 (identité) immédiatement
+    }
+  }
+
   let _arc: ArcState | null = null;
   if (opts.side === 'player') {
     // 1:1 SpriteCB_PlayerMonSendOut_1 + InitAnimArcTranslation (pokeball.c:911 + battle_anim_mons.c:785) :
@@ -258,6 +299,8 @@ export function tickSendOut(): void {
             const r6 = a.d1 & 1, r7 = a.d2 & 1;
             a.d1 = (((a.d1 / 3) | 0) & ~1) | r6;
             a.d2 = (((a.d2 / 3) | 0) & ~1) | r7;
+            // 1:1 pokeball.c:939 : la ball commence à TOURNER à l'apex (anim 4 = +25/frame).
+            rt.StartSpriteAffineAnim(_so.ballSpriteId, 4);
           }
           const r4 = a.d0;
           _animLinear(a, ball);
@@ -277,6 +320,8 @@ export function tickSendOut(): void {
           if (_translateArc(a, ball)) {
             // 1:1 pokeball.c:962 : arc fini → fige la position (x += x2 ; y += y2) puis release.
             ball.x += ball.x2; ball.y += ball.y2; ball.x2 = 0; ball.y2 = 0;
+            // 1:1 pokeball.c:975 : reset l'anim affine à 0 (arrête le spin) avant le release.
+            rt.StartSpriteAffineAnim(_so.ballSpriteId, 0);
             _so.phase = 2; _so.frame = 0;
           }
         }
@@ -292,9 +337,17 @@ export function tickSendOut(): void {
       const _bx = ball ? Math.round(ball.x) : _so.endX;
       const _by = (ball ? Math.round(ball.y) : _so.endY) - 5;
       AnimateBallOpenParticles(rt, _bx, _by, 1, 28, BALL_POKE);
-      // 1:1 pokeball.c:758 LaunchBallFadeMonTask(TRUE, ...) : silhouette blanche→couleur
-      // sur la palette OBJ du mon (= bit (16+palNum) du masque sélectionné).
-      const selectedPalettes = (1 << (16 + _so.monPalNum)) >>> 0;
+      // 1:1 pokeball.c:758 `LaunchBallFadeMonTask(TRUE, sprite->sBattler, 14, ballId)`.
+      // DEUX effets distincts (cf. battle_anim_throw.c:2033) :
+      //  (a) le MON blanchit (BlendPalette sur sa palette OBJ = `spritePalNum`, puis fade
+      //      blanc→couleur en 16f). C'est piloté par le 3ᵉ arg `_so.monPalNum`.
+      //  (b) le DÉCOR flashe blanc (BeginNormalPaletteFade sur `selectedPalettes`). La décomp
+      //      passe la CONSTANTE 14 = palettes BG 1,2,3 (= le terrain de combat). Chez nous le
+      //      terrain visible (BG3) est sur le bank 2 → 14 le flashe ; banks 1,3 = BG cachés
+      //      (aucun effet visible) ; on ne touche NI la textbox (bank 0) NI les sprites (OBJ).
+      //      ⚠️ AVANT : je passais le bit OBJ du mon → re-blanchissait le mon (redondant avec
+      //      (a)) au lieu de flasher le décor → "pas de flash écran" (retour user). 14 = 1:1.
+      const selectedPalettes = 0x0000000E;  // 1:1 décomp : BG palettes 1,2,3
       _so.fadeTaskId = LaunchBallFadeMonTask(rt, true, _so.monPalNum, selectedPalettes, BALL_POKE);
       // 1:1 pokeball.c:815-823 (cf. Birch decomp-globals:2684-2694) : reveal + emerge.
       mon.invisible = false;

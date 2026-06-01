@@ -159,23 +159,29 @@ function applyMatrixFromAffineState(sprite: DecompSprite, rt: DecompRuntime): vo
  *  re-écrit la matrix sans modifier state (= dummy frame add 0,0,0,0). Ça
  *  garantit que applyMatrixFromAffineState s'exécute (= matrix update). */
 export function ApplyAffineAnimFrame(sprite: DecompSprite, frame: AffineAnimFrameCmd, rt: DecompRuntime): void {
+  // 1:1 décomp ApplyAffineAnimFrame (sprite.c:1330) : teste la duration ORIGINALE et
+  // décrémente DEDANS. ⚠️ FIX 2026-06-01 : avant, les callers (Begin/ContinueAffineAnim)
+  // pré-décrémentaient (`if (duration!==0) duration--`) AVANT cet appel, qui re-testait
+  // `duration !== 0` → une frame duration=1 devenait 0 et tombait dans la branche ABSOLUE
+  // au lieu de RELATIVE → les anims de rotation à duration=1 (sAffineAnim_BallRotate_4 =
+  // FRAME(0,0,25,1)) restaient FIGÉES à l'angle absolu 25 au lieu d'accumuler +25/frame
+  // (la ball ne tournait pas). Les anims existantes (Emerge/Return = duration 0/12/15/18)
+  // sont INCHANGÉES : duration 0 → absolu, duration ≥2 → relatif (idem qu'avant).
   if (frame.duration !== 0) {
-    // Path duration > 0 : relative add + update matrix (= 1er tick d'une frame
-    // multi-tick). Caller utilise duration-1 pour delayCounter.
+    // 1:1 décomp 1336-1337 : duration-- puis relative add + update matrix. Le caller lit
+    // `frame.duration` APRÈS (post-décrément, muté en place) pour delayCounter.
+    frame.duration--;
     ApplyAffineAnimFrameRelative(sprite, frame, rt);
   } else {
-    // Path duration == 0 : absolute set (l.1282-1287) — sans `& ~0xFF`.
+    // 1:1 décomp 1341-1342 : ApplyAffineAnimFrameAbsolute (rotation = frame.rotation<<8,
+    // SANS mask l.1286) PUIS ApplyAffineAnimFrameRelativeAndUpdateMatrix(dummy={0}) qui
+    // applique le `& ~0xFF` sur rotation (l.1308) + ré-écrit la matrice (ObjAffineSet).
     sprite.xScale = frame.xScale;
     sprite.yScale = frame.yScale;
-    // Wrap s16 : `frame.rotation << 8` peut dépasser s16 (ex. 0x80 << 8 =
-    // 0x8000 → -32768 en s16 ; JS le garde positif sans wrap). 1:1 le
-    // décomp simule en s16.
+    // Wrap s16 : `frame.rotation << 8` peut dépasser s16 (ex. 0x80 << 8 = 0x8000).
     sprite.rotation = _wrapS16(frame.rotation << 8);
-    // Puis ApplyAffineAnimFrameRelativeAndUpdateMatrix(dummyFrame) — dummy = 0
-    // partout, donc juste applyMatrix. Mais le décomp applique le `& ~0xFF` ICI
-    // (= clamp rotation au byte high). On le fait équivalent en séparant.
-    sprite.rotation = _wrapS16(sprite.rotation & ~0xFF);
-    applyMatrixFromAffineState(sprite, rt);
+    // Dummy relative ({0,0,0,0}) = 1:1 décomp 1342 : +0 partout, mask rotation, update matrix.
+    ApplyAffineAnimFrameRelative(sprite, { xScale: 0, yScale: 0, rotation: 0, duration: 0 }, rt);
   }
 }
 
@@ -228,17 +234,16 @@ export function BeginAffineAnim(sprite: DecompSprite, rt: DecompRuntime): void {
   // Local copy of frame 0 (= frameCmd in decomp). ApplyAffineAnimFrame decrements
   // duration in place if > 0.
   const frame0 = anim.frames[0];
+  // 1:1 décomp BeginAffineAnim (sprite.c:1067) : GetAffineAnimFrame copie la frame ;
+  // ApplyAffineAnimFrame la décrémente DEDANS (si duration>0) — PAS de pré-décrément ici.
   const frameCmd: AffineAnimFrameCmd = {
     xScale: frame0.xScale,
     yScale: frame0.yScale,
     rotation: frame0.rotation,
     duration: frame0.duration,
   };
-  // Simulate decomp `frameCmd.duration--` inside duration>0 branch BEFORE calling
-  // applyRelative. ApplyAffineAnimFrame writes matrix.
-  if (frameCmd.duration !== 0) frameCmd.duration--;
   ApplyAffineAnimFrame(sprite, frameCmd, rt);
-  // 1:1 décomp l.1078 : delayCounter = frameCmd.duration (post-decrement value).
+  // 1:1 décomp l.1078 : delayCounter = frameCmd.duration (post-décrément par ApplyAffineAnimFrame).
   sprite.affineAnimDelayCounter = frameCmd.duration;
 }
 
@@ -321,14 +326,14 @@ export function ContinueAffineAnim(sprite: DecompSprite, rt: DecompRuntime): voi
 
   const frame = anim.frames[sprite.affineAnimCmdIndex];
   if (frame) {
-    // Match decomp pattern: frame.duration may be decremented by ApplyAffineAnimFrame.
+    // 1:1 décomp AffineAnimCmd_frame/jump (sprite.c:1180/1163) : GetAffineAnimFrame +
+    // ApplyAffineAnimFrame (décrémente la duration DEDANS) + delayCounter = duration post.
     const frameCmd: AffineAnimFrameCmd = {
       xScale: frame.xScale,
       yScale: frame.yScale,
       rotation: frame.rotation,
       duration: frame.duration,
     };
-    if (frameCmd.duration !== 0) frameCmd.duration--;
     ApplyAffineAnimFrame(sprite, frameCmd, rt);
     sprite.affineAnimDelayCounter = frameCmd.duration;
   }
