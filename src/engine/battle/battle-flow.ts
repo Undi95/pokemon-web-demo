@@ -130,8 +130,8 @@ import { Random } from '../system/random';
 // seules les MOVE animations sont coupées. (cf. battle-fixes-expboot-blink-textauto)
 // E1 fix : flag BATTLE_TYPE_FIRST_BATTLE pour startBirchTutorialBattle (= 1:1
 // décomp battle_setup.c:937 CB2_StartFirstBattle).
-import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
-import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
+import { setBattleTypeFlags, gBattleTypeFlags, setTrainerBattleOpponentA } from '../battle/state';
+import { BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_TRAINER } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
 import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr, setRandomTurnNumber } from './state';
 import { decodeBattleString, stripGbaControlCodes, battleStringToPrinterText, buildMonNickBuff, buildNumberBuff, buildMoveBuff, buildStringBuff } from './battle-string-decoder';
@@ -1883,6 +1883,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
     switch (state) {
       case 'INIT': {
+        // 1:1 combat dresseur : BATTLE_TYPE_TRAINER + gTrainerBattleOpponent_A posés
+        // AVANT l'intro → le décodeur STRINGID_INTROMSG/INTROSENDOUT produit le texte
+        // dresseur ("Un combat est lancé par CLASSE NOM!" / "MON est envoyé par CLASSE
+        // NOM!") au lieu de "Un X sauvage apparaît!". Sauvage → on retire le flag (un
+        // combat sauvage après un dresseur ne doit pas en hériter ; FIRST_BATTLE intact).
+        if (params.isTrainerBattle) {
+          setBattleTypeFlags((gBattleTypeFlags | BATTLE_TYPE_TRAINER) >>> 0);
+          setTrainerBattleOpponentA((params.trainerNumId ?? 0) & 0xffff);
+        } else {
+          setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);
+        }
         // R3 fix : reset field-message-box state au début de chaque combat.
         // Sans ça, sWindowId persistant cross-combat pointe vers un window id
         // obsolète (= effacé par battle VRAM init au battle start) → AddText
@@ -2329,11 +2340,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'INTRO_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        // 1:1 décomp `BattleIntroPrintWildMonAttacked` → `PrepareStringBattle(STRINGID_INTROMSG)`
-        // = `sText_WildPkmnAppeared` ("Un {B_OPPONENT_MON1_NAME} sauvage apparaît!\p").
-        // Le `\p` final → ▼ + ATTENTE A (puis clear), 1:1. AVANT : texte hardcodé
-        // "...sauvage\napparaît!" (2 lignes, sans `\p`) → auto-avance sans ▼ (user 2026-05-31).
-        showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
+        // 1:1 décomp : combat DRESSEUR → l'adversaire envoie son mon
+        // (`STRINGID_INTROSENDOUT` côté adversaire = `sText_Trainer1SentOutPkmn`,
+        // "{MON} est envoyé par {CLASSE} {NOM}!"). Combat SAUVAGE → `STRINGID_INTROMSG`
+        // (`sText_WildPkmnAppeared`, "Un {MON} sauvage apparaît!\p"). gActiveBattler =
+        // adversaire (1) pour que le décodeur résolve les buffers dresseur (le défi
+        // "Un combat est lancé par..." est affiché en amont par trainer-battle-flow).
+        if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
+          ipcSetActiveBattler(1);
+          showBattleMessage(_resolveBattleString(STRINGID_INTROSENDOUT));
+        } else {
+          showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
+        }
         // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).

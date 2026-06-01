@@ -107,6 +107,15 @@ function _resolveTrainerNumId(trainerKey: string): number {
   return _trainerKeyToNum?.[trainerKey] ?? 0;
 }
 
+/** "CLASSE NOM" FR (ex. "RUINEMANIAC ARMAND") — classe via gameDataTrainerClassesFr,
+ *  nom via le champ JSON. Utilisé pour le défi 1:1 (sText_Trainer1WantsToBattle). */
+function _trainerDisplayName(td: TrainerData): string {
+  const classFr = (globalThis as { gameDataTrainerClassesFr?: Record<string, string> })
+    .gameDataTrainerClassesFr?.[td.trainerClass] ?? '';
+  const tn = td.name ?? td.trainerName ?? '';
+  return (classFr ? classFr + ' ' : '') + tn;
+}
+
 /** 1:1 décomp `CreateNPCTrainerParty` (battle_main.c:1993-2069) : calcule les
  *  données DÉTERMINISTES d'un mon dresseur (PID name-hash, IV fixe, moveset
  *  custom, objet tenu) à passer à createPokemonInstance (= CreateMon).
@@ -204,8 +213,8 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
           pa.DestroyPlayerAvatar(rt2);
           sa.ResetSpriteCopyRequests();
         });
-        const name = trainerData!.trainerName ?? 'Adversaire';
-        ShowFieldMessage(`${name} veut combattre!`);
+        // 1:1 décomp sText_Trainer1WantsToBattle ("Un combat est lancé\npar {CLASSE} {NOM}!").
+        ShowFieldMessage(`Un combat est lancé par\n${_trainerDisplayName(trainerData!)}!`);
         state = 'INTRO_WAIT';
         return false;
       }
