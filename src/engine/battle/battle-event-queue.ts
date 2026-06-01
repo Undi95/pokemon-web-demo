@@ -276,7 +276,9 @@ export interface BattleEvent_ChoosePokemon {
   caseId: number;
   monToSwitchIntoId: number;
   ability: number;
-  partyOrder: number;
+  // 1:1 décomp : battlerPartyOrders[battler] = u8[PARTY_SIZE/2] (ordre party). Un
+  // `number` simple est aussi accepté (chemins qui n'en passent pas).
+  partyOrder: number | readonly number[];
 }
 
 export interface BattleEvent_LinkStandbyMsg {

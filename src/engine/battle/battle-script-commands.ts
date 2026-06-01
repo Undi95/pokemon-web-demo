@@ -173,6 +173,8 @@ import {
   DPAD_UP,
   HandleBattleWindow,
   JOY_NEW,
+  BtlController_EmitChoosePokemon,
+  BtlController_EmitLinkStandbyMsg,
   MarkBattlerForControllerExec,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_HBT,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N1,
@@ -9955,11 +9957,8 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   } }).__battleState;
   if (!bs) return false;
 
-  let battler = battlerArgClean;
-  if (battlerArgClean === 0) battler = bs.gBattlerTarget ?? 0;
-  else if (battlerArgClean === 1) battler = bs.gBattlerAttacker ?? 0;
-  else if (battlerArgClean === 0x08 /* BS_FAINTED */) battler = bs.gBattlerFainted ?? 0;
-  // Sinon raw battler index.
+  // 1:1 décomp 5104 : battler = GetBattlerForBattleScript(arg & ~PARTY_SCREEN_OPTIONAL).
+  const battler = getBattlerForBattleScript(battlerArgClean);
 
   // 1:1 décomp 5105-5107 : si déjà replacement, advance.
   const ss = bs.gSpecialStatuses?.[battler];
@@ -9982,21 +9981,47 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   }
 
   // 1:1 décomp 5117-5126 : init monToSwitchIntoId = PARTY_SIZE + emit ChoosePokemon.
+  const PARTY_SIZE = 6;
+  const PARTY_ACTION_CHOOSE_MON = 0, PARTY_ACTION_SEND_OUT = 1;  // party_menu.h:68-69
+  const LINK_STANDBY_MSG_ONLY = 2;                                // battle_controllers.h:146
+  // 1:1 5099-5102 : caseId pour EmitChoosePokemon.
+  const caseId = isOptional ? PARTY_ACTION_CHOOSE_MON : PARTY_ACTION_SEND_OUT;
   setActiveBattler(battler);
-  if (_gBattleStruct32.battlerPartyIndexes) {
-    _gBattleStruct32.battlerPartyIndexes[battler] = bs.gBattlerPartyIndexes?.[battler] ?? 0;
-  }
-  if (_gBattleStruct32.monToSwitchIntoId) {
-    _gBattleStruct32.monToSwitchIntoId[battler] = 6 /* PARTY_SIZE */;
-  }
-  // 1:1 décomp : gBattleStruct.field_93 &= ~bit (= bitmask de battlers traités,
-  // rare debug tracking deferred).
-  // UI Phase 1.4 deferred : BtlController_EmitChoosePokemon (= ouvre party menu UI).
-  void isOptional;  // hitmarkerFaintBits = isOptional ? CHOOSE_MON : SEND_OUT.
+  gBattleStruct.battlerPartyIndexes[battler] = gBattlerPartyIndexes[battler];
+  gBattleStruct.monToSwitchIntoId[battler] = PARTY_SIZE;
+  // 1:1 5121 : gBattleStruct->field_93 &= ~(gBitTable[battler]).
+  gBattleStruct.field_93 &= ~gBitTable[battler];
+  // 1:1 5123-5124 : EmitChoosePokemon(caseId, monToSwitchIntoId[PARTNER], ABILITY_NONE,
+  // battlerPartyOrders[battler]) + MarkBattlerForControllerExec. (Enfile l'event
+  // CONTROLLER_CHOOSEPOKEMON ; le chemin LIVE faint→switch passe par la machine d'états
+  // battle-flow OPEN_PARTY_FAINT/SWITCH — cet opcode = complétude bytecode 1:1.)
+  BtlController_EmitChoosePokemon(
+    B_COMM_TO_CONTROLLER, caseId,
+    gBattleStruct.monToSwitchIntoId[BATTLE_PARTNER(battler)] ?? PARTY_SIZE,
+    ABILITY_NONE, gBattleStruct.battlerPartyOrders[battler],
+  );
+  MarkBattlerForControllerExec(battler);
 
-  // 1:1 décomp : si player_left active, increment playerSwitchesCounter.
-  if (battler === 0 && bs.gBattleResults && (bs.gBattleResults.playerSwitchesCounter ?? 0) < 255) {
-    bs.gBattleResults.playerSwitchesCounter = (bs.gBattleResults.playerSwitchesCounter ?? 0) + 1;
+  // 1:1 5128-5129 : player-left → playerSwitchesCounter++.
+  if (GetBattlerPosition(battler) === 0 /* B_POSITION_PLAYER_LEFT */ && gBattleResults.playerSwitchesCounter < 255) {
+    gBattleResults.playerSwitchesCounter++;
+  }
+
+  // 1:1 5131-5150 : MULTI → LinkStandby aux autres battlers ; sinon → adversaire opposé.
+  if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+    for (let i = 0; i < gBattlersCount; i++) {
+      if (i !== battler) {
+        setActiveBattler(i);
+        BtlController_EmitLinkStandbyMsg(B_COMM_TO_CONTROLLER, LINK_STANDBY_MSG_ONLY, false);
+        MarkBattlerForControllerExec(i);
+      }
+    }
+  } else {
+    let opp = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(battler)));
+    if (gAbsentBattlerFlags & gBitTable[opp]) opp ^= BIT_FLANK;
+    setActiveBattler(opp);
+    BtlController_EmitLinkStandbyMsg(B_COMM_TO_CONTROLLER, LINK_STANDBY_MSG_ONLY, false);
+    MarkBattlerForControllerExec(opp);
   }
   return false;
 }

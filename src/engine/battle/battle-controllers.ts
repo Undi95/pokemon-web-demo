@@ -458,7 +458,8 @@ export function BtlController_EmitExpUpdate(_bufferId: number, partyId: number, 
 /** 1:1 signature décomp `BtlController_EmitChoosePokemon(buf, caseId,
  *  monToSwitchIntoId_partner, ability, partyOrder)`. */
 export function BtlController_EmitChoosePokemon(
-  _bufferId: number, caseId: number, monToSwitchIntoId: number, ability: number, partyOrder: number,
+  _bufferId: number, caseId: number, monToSwitchIntoId: number, ability: number,
+  partyOrder: number | readonly number[],
 ): void {
   enqueueBattleEvent({
     type: CONTROLLER_CHOOSEPOKEMON,
