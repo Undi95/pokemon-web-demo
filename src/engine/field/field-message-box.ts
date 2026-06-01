@@ -206,9 +206,14 @@ export function TickFieldMessageBox(): void {
       // 1:1 décomp `DrawDialogueFrame(0, TRUE)` (= menu.c:216) — réutilise
       // l'helper foundationnel partagé avec Birch speech + autres scenes.
       DrawDialogueFrame(sWindowId, true);
-      // 1:1 décomp `AddTextPrinterForMessage(TRUE)` qui lit gStringVar4 :
+      // 1:1 décomp `AddTextPrinterForMessage(TRUE)` (field_message_box.c) qui lit gStringVar4 :
+      //   gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress (= TRUE) ;
       //   AddTextPrinterParameterized2 avec FONT_NORMAL, color=[1,2,3] (= bg/fg/shadow),
       //   speed=playerOption (= 1 frame/char en FAST).
+      // ⚠️ Le `canABSpeedUpPrint = true` était OMIS : InitFieldMessageBox le met FALSE
+      // (global), et sans le remettre TRUE par message, MAINTENIR A n'accélère plus AUCUN
+      // texte (field + combat, car gTextFlags est global). 1:1 strict = le set ici.
+      gTextFlags.canABSpeedUpPrint = true;
       // Notre AddTextPrinterParameterized3 prend speed négatif pour player option.
       AddTextPrinterParameterized3(sWindowId, 1 /* FONT_NORMAL = 1 */, 0, 1,
         [1, 2, 3], -1 /* = player option speed */, gStringVar4);

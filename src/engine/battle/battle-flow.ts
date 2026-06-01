@@ -77,7 +77,7 @@ import {
   sTextOnWindowsInfo_Normal,
 } from './battle-windows';
 import { getRuntime, BlendPalettes, PALETTES_ALL, FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { LoadSpritePalette, FreeAllSpritePalettes, FreeSpritePaletteByTag, setReservedSpriteTileCount, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
+import { LoadSpritePalette, FreeAllSpritePalettes, FreeSpritePaletteByTag, setReservedSpriteTileCount, AllocSpriteTiles, AllocSpriteTileRange, FreeSpriteTileRanges } from '../system/sprite';
 
 /** Restaure gPlttBufferFaded ← gPlttBufferUnfaded INSTANT (= annule un
  *  FadeScreenBlack persistant sans fade progressif). 1:1 décomp équivalent :
@@ -97,7 +97,7 @@ import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForB
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
-import { startSendOut, tickSendOut, stopSendOut, getSendOutStatus, resetSendOutStatus, startReturnToBall, tickReturnToBall, getReturnToBallStatus, resetReturnToBallStatus, showTrainerBackSprite, destroyTrainerBackSprite, startTrainerThrow, tickTrainerThrow, stopTrainerThrow, getTrainerThrowStatus, resetTrainerThrowStatus, startIntroSlideIn, tickIntroSlideIn, getIntroSlideInStatus, stopIntroSlideIn, resetSendOutAssets } from './battle-sendout-anim';
+import { startSendOut, tickSendOut, stopSendOut, getSendOutStatus, resetSendOutStatus, startReturnToBall, tickReturnToBall, getReturnToBallStatus, resetReturnToBallStatus, showTrainerBackSprite, destroyTrainerBackSprite, startTrainerThrow, tickTrainerThrow, stopTrainerThrow, getTrainerThrowStatus, resetTrainerThrowStatus, startIntroSlideIn, tickIntroSlideIn, getIntroSlideInStatus, stopIntroSlideIn, resetSendOutAssets, showOpponentTrainerSprite, destroyOpponentTrainerSprite, startOpponentTrainerThrow, tickOpponentTrainerThrow, getOpponentTrainerThrowStatus, resetOpponentTrainerThrowStatus, stopOpponentTrainerThrow } from './battle-sendout-anim';
 import { ComputeSingleBattleTurnOrder } from './ai/ai-script-commands';
 import {
   createBattlerHealthboxSprites,
@@ -145,8 +145,10 @@ import {
   STRINGID_TRAINERBLOCKEDBALL, STRINGID_PLAYERUSEDITEM, STRINGID_RETURNMON,
   STRINGID_TRYTOLEARNMOVE3, STRINGID_STOPLEARNINGMOVE, STRINGID_DIDNOTLEARNMOVE,
   STRINGID_123POOF, STRINGID_PKMNFORGOTMOVE, STRINGID_ANDELLIPSIS,
+  STRINGID_PLAYERGOTMONEY, STRINGID_PLAYERDEFEATEDTRAINER1,
 } from '../decomp-data/include/constants/battle_string_ids-data';
 import { ITEM_POKE_BALL } from '../decomp-data/include/constants/items-data';
+import { AddMoney } from '../ui/money';
 // 1:1 décomp `gNoEscapeStringIds[]` (battle_message.c:900) pour `printfromtable`.
 import { BATTLE_STRING_ID_TABLES } from '../decomp-data/battle-string-id-tables';
 
@@ -468,6 +470,10 @@ type State =
   | 'CLEANUP_FADE_OUT' | 'CLEANUP_FADE_WAIT'
   | 'SPAWN_SPRITES' | 'INIT_HP_WINDOWS' | 'BATTLE_INTRO_SLIDE'
   | 'INTRO_TEXT' | 'INTRO_WAIT' | 'PLAYER_SENDOUT'
+  | 'TRAINER_WANTS_BATTLE' | 'TRAINER_WANTS_WAIT'
+  | 'OPP_SENDOUT_TEXT' | 'OPP_SENDOUT_TEXT_WAIT' | 'OPP_SENDOUT_ANIM'
+  | 'TRAINER_WON_DEFEAT_TEXT' | 'TRAINER_WON_DEFEAT_WAIT'
+  | 'TRAINER_WON_MONEY_TEXT' | 'TRAINER_WON_MONEY_WAIT'
   | 'PLAYER_TURN_PROMPT' | 'PLAYER_TURN_PROMPT_WAIT'
   | 'ACTION_MENU_INIT' | 'ACTION_MENU_INPUT'
   | 'ACTION_EMIT_CHOOSE' | 'ACTION_WAIT_CHOOSE_RESPONSE'
@@ -553,6 +559,15 @@ interface BattleParams {
   opponentFixedIV?: number;         // IV fixe 0..31 appliqué aux 6 stats (= fixedIV décomp)
   opponentMoves?: string[];         // moveset custom (F_TRAINER_PARTY_CUSTOM_MOVESET)
   opponentHeldItem?: string;        // objet tenu (F_TRAINER_PARTY_HELD_ITEM)
+  /** 1:1 OpponentHandleDrawTrainerPic : enum TRAINER_PIC_X (= gTrainers[id].trainerPic)
+   *  → sprite FRONT du dresseur adverse (slide-in + lancer de ball à l'intro). */
+  opponentTrainerPic?: string;
+  /** Combat dresseur multi-mon : skip le "Un combat est lancé par CLASSE NOM!"
+   *  (1:1 BattleIntroPrintTrainerWantsToBattle = 1 seule fois, au 1er mon). True pour mon 2+. */
+  trainerIntroSuppressWants?: boolean;
+  /** 1:1 Cmd_getmoneyreward : argent gagné à la victoire (4*lastMonLevel*moneyMult*value).
+   *  Défini SEULEMENT sur le DERNIER mon du dresseur → déclenche la séquence défaite+argent. */
+  trainerWinPrize?: number;
 }
 
 /** 1:1 décomp battle_util.c CalculateBaseDamage simplified.
@@ -1161,6 +1176,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // terrain (idx 0/2/4) dans la palette combat → rouge mal placé (bleu+contour rouge).
     // InitFieldMessageBox remet FALSE pour les dialogues terrain (1:1 field_message_box.c:18).
     gTextFlags.useAlternateDownArrow = true;
+    // 1:1 décomp `BattlePutTextOnWindow` (battle_message.c:3084-3093) : pour B_WIN_MSG,
+    // `gTextFlags.canABSpeedUpPrint = 1` → MAINTENIR A/B accélère le texte (speed max).
+    // InitFieldMessageBox le met FALSE (global) → sans le remettre TRUE ici, le hold-A
+    // n'accélérait plus rien (régression). autoScroll FALSE (single-player, pas link).
+    gTextFlags.canABSpeedUpPrint = true;
+    gTextFlags.autoScroll = false;
     AddTextPrinterParameterized3(
       msgWindowId, info.fontId, info.x, info.y,
       [info.bgColor, info.fgColor, info.shadowColor],
@@ -1872,6 +1893,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // déclenche tickSendOut (ball+emerge). No-op si pas actifs (poll par PLAYER_SENDOUT).
     tickIntroSlideIn();
     tickTrainerThrow();
+    tickOpponentTrainerThrow();   // combat dresseur : slide-off + lancer du dresseur adverse
     tickSendOut();
     tickReturnToBall();   // anim recall (mon sortant → ball, switch volontaire)
 
@@ -2086,22 +2108,37 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               // Expose getSpeciesInfo via global for getSpeciesStats lookup.
               const gameData = await import('../data/game-data');
               (globalThis as { __game_data?: unknown }).__game_data = gameData;
-              // 1:1 décomp `CB2_InitBattleInternal` (battle_main.c:681) :
-              // FreeAllSpritePalettes(). CRITIQUE : l'overworld occupe les OBJ
-              // palette slots 0-3. Sans free, LoadSpritePalette(player/opponent)
-              // alloue les 1ers slots libres = 4 et 5. Or le healthbox utilise les
-              // slots FIXES 5/6 → l'ennemi (slot 5) prend la palette healthbox →
-              // sprite ennemi GARBLED. Free → mon sprites prennent 0/1, healthbox
-              // 5/6, zéro collision. (Le décomp set ensuite gReservedSpritePaletteCount
-              // = MAX_BATTLERS mais nos mon sprites passent par LoadSpritePalette,
-              // donc on laisse reserved=0 pour qu'ils prennent 0/1.)
+              // 1:1 décomp `CB2_InitBattleInternal` : ResetSpriteData() (battle_main.c:678)
+              // est appelé AVANT LoadBattleSpritesGfx → il DÉTRUIT tous les sprites OW
+              // (player avatar + NPCs) ET réinitialise l'allocateur OBJ (FreeSpriteTileRanges
+              // + gReservedSpriteTileCount=0 + AllocSpriteTiles(0) = libère TOUTES les tiles).
+              // On reproduit ICI (avant les allocs battle) : sinon les tiles OW restent
+              // MARQUÉES (squat) → la VRAM OBJ sature → AllocSpriteTiles(healthbox) renvoie -1
+              // → `objVram.set(data, -32)` crash (healthbox absente). Les structs gObjectEvents/
+              // gPlayerAvatar persistent (EWRAM) → re-spawn au retour OW (_restoreOverworldFromMenu).
+              // ResetSpriteCopyRequests vide la queue de copy (sinon un sprite détruit corromprait
+              // la VRAM au VBlank).
+              {
+                const [oeMod, paMod, saMod] = await Promise.all([
+                  import('../field/object-events'),
+                  import('../field/player-avatar'),
+                  import('../system/sprite-animation'),
+                ]);
+                oeMod.destroyAllNpcSprites(rt);
+                paMod.DestroyPlayerAvatar(rt);
+                saMod.ResetSpriteCopyRequests();
+              }
+              // 1:1 décomp `CB2_InitBattleInternal:681` FreeAllSpritePalettes(). CRITIQUE :
+              // l'overworld occupe les OBJ palette slots 0-3 ; sans free, le healthbox (slots
+              // FIXES 5/6) entrerait en collision → sprite ennemi GARBLED. Free → mons 0/1,
+              // healthbox 5/6. On laisse reserved=0 (mons via LoadSpritePalette prennent 0/1).
               FreeAllSpritePalettes();
-              // #VRAM 1:1 (étape 2c) : TOUT le combat passe par l'allocateur OBJ
-              // (AllocSpriteTiles) — mons ICI, healthbox dans ensureHealthboxAssets.
-              // Plus de réserve hardcodée (l'ancien setReservedSpriteTileCount(272)
-              // protégeait le healthbox en dur 0-271, désormais alloué dynamiquement) :
-              // les tiles OW restantes sont marquées (MarkObjTilesAllocated) donc
-              // l'allocateur les respecte → zéro chevauchement, comme la décomp.
+              // 1:1 ResetSpriteData (sprite.c:300-303) : FreeSpriteTileRanges + reserved=0 +
+              // AllocSpriteTiles(0) → slate OBJ propre pour le combat (mons/back/dresseur/
+              // healthbox allouent depuis 0, zéro squat OW). TOUT le combat passe par l'allocateur.
+              FreeSpriteTileRanges();
+              setReservedSpriteTileCount(0);
+              AllocSpriteTiles(0);
               // Load player back sprite (alloué).
               const playerDexId = playerMon!.speciesEnum.replace('SPECIES_', '').toLowerCase();
               const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
@@ -2151,29 +2188,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               const env = setupMod.BattleSetup_GetEnvironmentId();
               console.log('[battle-flow E1] BattleSetup_GetEnvironmentId →', env);
               await bgMod.loadBattleTextboxAndBackground(env);
-              // 1:1 décomp `CB2_InitBattleInternal` (battle_main.c:678) :
-              // `ResetSpriteData()` détruit TOUS les sprites juste après
-              // LoadBattleTextboxAndBackground. Notre combat tourne INLINE (pas de
-              // SetMainCallback2(CB2_InitBattle)), donc les sprites object-event OW
-              // (player avatar + NPCs) survivaient au combat et partageaient la VRAM
-              // OBJ avec les sprites combat : un sprite OW animé ré-écrivait sa VRAM
-              // (ex avatar tile 144 = 0x1200) via RequestSpriteFrameImageCopy, ce qui
-              // chevauche la région hardcodée healthbox → corruption "fleur" du groove
-              // de la box adverse (user-flag 2026-05-30). FIX 1:1 : on détruit
-              // explicitement les sprites OW ici. Les STRUCTS gObjectEvents[]/
-              // gPlayerAvatar persistent (EWRAM) → re-spawn au retour OW via
-              // `_restoreOverworldFromMenu` (= ResetSpriteData côté décomp, sprites
-              // transients). ResetSpriteCopyRequests vide la queue de copy-requests
-              // en attente (sinon une copy déjà queuée par un sprite détruit
-              // s'exécuterait au VBlank et corromprait quand même la VRAM healthbox).
-              const [oeMod, paMod, saMod] = await Promise.all([
-                import('../field/object-events'),
-                import('../field/player-avatar'),
-                import('../system/sprite-animation'),
-              ]);
-              oeMod.destroyAllNpcSprites(rt);
-              paMod.DestroyPlayerAvatar(rt);
-              saMod.ResetSpriteCopyRequests();
+              // NB : la destruction des sprites OW + le reset de l'allocateur OBJ
+              // (= 1:1 ResetSpriteData) ont été faits PLUS HAUT, avant les allocs battle
+              // (sinon les tiles OW squattent la VRAM → healthbox AllocSpriteTiles -1 → crash).
+              // Précharge les étincelles d'ouverture de ball (AnimateBallOpenParticles) :
+              // sans passer par l'intro Birch (dev / save chargée), l'asset n'est pas caché
+              // → `gBattleAnimSpriteGfx_Particles not in cache` + pas d'étincelles. Idempotent.
+              await import('../boot/intro-asset-loader').then(m => m.ensureBallParticlesLoaded()).catch(() => {});
               loadDone = true;
             } catch (e) {
               console.error('[battle-flow] sprite load failed', e);
@@ -2262,9 +2283,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           const _g = ((globalThis as { gSaveBlock2Ptr?: { playerGender?: number } }).gSaveBlock2Ptr?.playerGender) ?? 0;
           void showTrainerBackSprite(_g, SBATTLER_COORD_X_PLAYER, playerCenterY);
         }
-        // #4 SCROLL (1:1) : l'adverse (mon sauvage) entre par la GAUCHE (x2=-240, +2/frame),
-        // le dresseur joueur par la DROITE (x2=+240, -2/frame). Les 2 convergent (~120f).
-        startIntroSlideIn(opponentSpriteId);
+        // #4 SCROLL (1:1) : le dresseur joueur (dos) entre par la DROITE (x2=+240, -2/frame).
+        // Côté adverse :
+        //  - SAUVAGE : le MON entre par la GAUCHE (x2=-240, +2/frame).
+        //  - DRESSEUR (1:1 OpponentHandleDrawTrainerPic) : le mon est CACHÉ (il émergera de
+        //    la ball), et c'est le sprite FRONT du dresseur qui entre par la gauche.
+        if (params.isTrainerBattle && params.opponentTrainerPic) {
+          { const _os = rt.gSprites.get(opponentSpriteId); if (_os) _os.invisible = true; }
+          void showOpponentTrainerSprite(params.opponentTrainerPic, SBATTLER_COORD_X_OPPONENT, SBATTLER_COORD_Y_OPPONENT);
+          startIntroSlideIn();   // pas de slide du mon ; le front dresseur slide via _oppTrainerSpriteId
+        } else {
+          startIntroSlideIn(opponentSpriteId);
+        }
         // 1:1 décomp : après spawn des sprites + healthbox, le battle screen
         // est révélé par l'OUVERTURE de la fente WIN0V (`BattleIntroSlide`),
         // PAS par un fade palette. → INIT_HP_WINDOWS (créé healthbox, encore
@@ -2290,7 +2320,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           void createBattlerHealthboxSprites('opponent').then(handle => {
             opponentHealthbox = handle;
             if (handle) {
-              setHealthboxVisible(handle, true);  // 1:1 décomp : visible après init
+              // 1:1 : combat SAUVAGE → healthbox adverse visible avec le mon. Combat
+              // DRESSEUR → cachée jusqu'à l'émergence du mon (révélée en OPP_SENDOUT_ANIM,
+              // 1:1 Intro_TryShinyAnimShowHealthbox) — sinon elle s'affiche sur le sprite dresseur.
+              setHealthboxVisible(handle, !(gBattleTypeFlags & BATTLE_TYPE_TRAINER));
               renderHpWindows();  // populate tile data dynamique immédiatement
               // 1:1 décomp UpdateHealthboxAttribute : surnom + genre (1 fois à l'init).
               if (opponentMon) updateHealthboxNick(handle, opponentMon.nickname, (opponentMon as { monGender?: number }).monGender ?? 255);
@@ -2333,34 +2366,26 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // sprites SCROLLENT (slide-in : adverse depuis la gauche, dresseur depuis la
         // droite). On attend la fente ET le scroll avant "Un X sauvage apparaît!".
         if (tickBattleIntroSlide() && getIntroSlideInStatus() === 'done') {
-          state = 'INTRO_TEXT';
+          // 1:1 BattleIntroDrawTrainersOrMonsSprites → (trainer) DrawPartySummaryScreens
+          // → BattleIntroPrintTrainerWantsToBattle ; (wild) → BattleIntroPrintWildMonAttacked.
+          state = (gBattleTypeFlags & BATTLE_TYPE_TRAINER) ? 'TRAINER_WANTS_BATTLE' : 'INTRO_TEXT';
         }
         return false;
       }
 
       case 'INTRO_TEXT': {
+        // SAUVAGE uniquement (1:1 BattleIntroPrintWildMonAttacked). Le combat DRESSEUR
+        // passe par TRAINER_WANTS_BATTLE → OPP_SENDOUT_TEXT → OPP_SENDOUT_ANIM (séquencé).
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        // 1:1 décomp : combat DRESSEUR → l'adversaire envoie son mon
-        // (`STRINGID_INTROSENDOUT` côté adversaire = `sText_Trainer1SentOutPkmn`,
-        // "{MON} est envoyé par {CLASSE} {NOM}!"). Combat SAUVAGE → `STRINGID_INTROMSG`
-        // (`sText_WildPkmnAppeared`, "Un {MON} sauvage apparaît!\p"). gActiveBattler =
-        // adversaire (1) pour que le décodeur résolve les buffers dresseur (le défi
-        // "Un combat est lancé par..." est affiché en amont par trainer-battle-flow).
-        if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
-          ipcSetActiveBattler(1);
-          showBattleMessage(_resolveBattleString(STRINGID_INTROSENDOUT));
-        } else {
-          showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
-        }
+        // 1:1 `STRINGID_INTROMSG` (`sText_WildPkmnAppeared`, "Un {MON} sauvage apparaît!\p").
+        showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
         // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
-        // Avec nickname FR → medhyena.wav 404 → "cry fail EncodingError".
         void import('../system/music').then(({ playCry }) => {
           playCry(opponentMon!.speciesName);
         });
-        // 1:1 décomp SpriteCB_WildMonAnimate : anim du front sprite du mon sauvage
-        // à l'entrée (2-frames anim_front.png), jouée en même temps que le cri.
+        // 1:1 décomp SpriteCB_WildMonAnimate : anim du front sprite du mon sauvage à l'entrée.
         startMonIntroAnim(opponentSpriteId, OPPONENT_SPRITE_BYTE_OFFSET / 32);
         state = 'INTRO_WAIT';
         return false;
@@ -2374,6 +2399,75 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // de SWITCH-IN (Intimidation, Crachin, Trace…) avant le 1er tour.
           state = 'PLAYER_SENDOUT';
         }
+        return false;
+      }
+
+      // ─── Intro DRESSEUR séquencée (1:1 BattleIntroPrint* avec waits) ─────────
+      case 'TRAINER_WANTS_BATTLE': {
+        if (!opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 BattleIntroPrintTrainerWantsToBattle : PrepareStringBattle(STRINGID_INTROMSG,
+        // opponent) → le décodeur résout sText_Trainer1WantsToBattle ("Un combat est lancé
+        // par {CLASSE} {NOM}!"). Sauté pour les mons 2+ (suppressWants, 1:1 = 1 seule fois).
+        if (params.trainerIntroSuppressWants) { state = 'OPP_SENDOUT_TEXT'; return false; }
+        ipcSetActiveBattler(1);
+        showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
+        state = 'TRAINER_WANTS_WAIT';
+        return false;
+      }
+
+      case 'TRAINER_WANTS_WAIT': {
+        // 1:1 : BattleIntroPrintOpponentSendsOut attend gBattleControllerExecFlags==0
+        // (= message "veut se battre" fini) avant d'imprimer le send-out. Pas de hide :
+        // showBattleMessage (= HandlePrintString) écrase la fenêtre en place (FillWindowPixelBuffer).
+        if (messageWaitDone()) state = 'OPP_SENDOUT_TEXT';
+        return false;
+      }
+
+      case 'OPP_SENDOUT_TEXT': {
+        if (!opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 BattleIntroPrintOpponentSendsOut : PrepareStringBattle(STRINGID_INTROSENDOUT,
+        // opponent) = sText_Trainer1SentOutPkmn ("{MON} est envoyé par {CLASSE} {NOM}!").
+        ipcSetActiveBattler(1);
+        showBattleMessage(_resolveBattleString(STRINGID_INTROSENDOUT));
+        state = 'OPP_SENDOUT_TEXT_WAIT';
+        return false;
+      }
+
+      case 'OPP_SENDOUT_TEXT_WAIT': {
+        // 1:1 : BattleIntroOpponent1SendsOutMonAnimation attend gBattleControllerExecFlags==0
+        // (= le message "envoie" est FINI) AVANT d'émettre le lancer (BtlController_EmitIntro
+        // TrainerBallThrow). Le texte reste affiché pendant l'émergence (pas de hide explicite
+        // dans la décomp — il sera écrasé par "Y! Go!" au PLAYER_SENDOUT).
+        if (messageWaitDone()) state = 'OPP_SENDOUT_ANIM';
+        return false;
+      }
+
+      case 'OPP_SENDOUT_ANIM': {
+        if (!opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 OpponentHandleIntroTrainerBallThrow : le sprite front du dresseur glisse à
+        // DROITE (hors écran) + lance la ball → le mon adverse émerge (affine). Le cri joue
+        // à l'émergence (tickSendOut phase 2). Démarré 1 fois (idle → active).
+        if (getOpponentTrainerThrowStatus() === 'idle' && getSendOutStatus() === 'idle') {
+          const _os = rt.gSprites.get(opponentSpriteId);
+          if (!_os) { state = 'PLAYER_SENDOUT'; return false; }
+          startOpponentTrainerThrow({
+            monSpriteId: opponentSpriteId,
+            side: 'opponent',
+            monPalNum: _battleOpponentPalSlot,
+            species: opponentMon.speciesName,
+            endX: _os.x, endY: _os.y,
+          });
+          return false;
+        }
+        // Attendre la fin du lancer (slide-off 35f) ET de l'émergence (ball+affine).
+        if (getOpponentTrainerThrowStatus() !== 'done' || getSendOutStatus() !== 'done') return false;
+        resetOpponentTrainerThrowStatus();
+        resetSendOutStatus();
+        // 1:1 Intro_TryShinyAnimShowHealthbox : la healthbox adverse est révélée APRÈS
+        // l'émergence du mon (cachée pendant la phase sprite-dresseur).
+        if (opponentHealthbox) setHealthboxVisible(opponentHealthbox, true);
+        renderHpWindows();
+        state = 'PLAYER_SENDOUT';
         return false;
       }
 
@@ -3373,7 +3467,57 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           }
         }
         _evoScanSlot = 0;
-        state = 'EVOLUTION_CHECK';
+        // 1:1 HandleEndTurn_FinishBattle → BattleScript_LocalTrainerBattleWon : après l'XP,
+        // AVANT le retour OW (l'évolution est post-OW), un combat DRESSEUR gagné affiche
+        // "Vous avez battu CLASSE NOM!" + l'argent gagné. trainerWinPrize n'est défini que
+        // sur le DERNIER mon du dresseur → la séquence ne joue qu'une fois.
+        if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER) && params.trainerWinPrize !== undefined && outcome === BATTLE_OUTCOME_WIN) {
+          state = 'TRAINER_WON_DEFEAT_TEXT';
+        } else {
+          state = 'EVOLUTION_CHECK';
+        }
+        return false;
+      }
+
+      // ─── Victoire DRESSEUR (1:1 BattleScript_LocalTrainerBattleWon) ─────────
+      case 'TRAINER_WON_DEFEAT_TEXT': {
+        // 1:1 printstring STRINGID_PLAYERDEFEATEDTRAINER1 = "Vous avez battu {CLASSE} {NOM}!\p".
+        // gActiveBattler = adversaire (1) → le décodeur résout {B_TRAINER1_CLASS/NAME}.
+        // (Le lose-text perso du dresseur STRINGID_TRAINER1LOSETEXT + le trainerslidein =
+        // déférés : data dialogue par-dresseur non fournie en lancement via dev.)
+        ipcSetActiveBattler(1);
+        showBattleMessage(_resolveBattleString(STRINGID_PLAYERDEFEATEDTRAINER1));
+        state = 'TRAINER_WON_DEFEAT_WAIT';
+        return false;
+      }
+
+      case 'TRAINER_WON_DEFEAT_WAIT': {
+        // 1:1 : printstring bloque jusqu'à la fin du message. Pas de hide (le printstring
+        // suivant écrase la fenêtre en place).
+        if (messageWaitDone()) state = 'TRAINER_WON_MONEY_TEXT';
+        return false;
+      }
+
+      case 'TRAINER_WON_MONEY_TEXT': {
+        // 1:1 getmoneyreward (AddMoney + PREPARE_WORD_NUMBER_BUFFER(buff1, money)) +
+        // printstring STRINGID_PLAYERGOTMONEY = "{B_PLAYER_NAME} remporte {B_BUFF1}¥!\p".
+        const prize = params.trainerWinPrize ?? 0;
+        AddMoney(prize);
+        showBattleMessage(_battleMsgEx(STRINGID_PLAYERGOTMONEY, {
+          textBuffs: [buildNumberBuff(prize), new Uint8Array(0), new Uint8Array(0)],
+        }));
+        state = 'TRAINER_WON_MONEY_WAIT';
+        return false;
+      }
+
+      case 'TRAINER_WON_MONEY_WAIT': {
+        // 1:1 waitmessage B_WAIT_TIME_LONG → suite (givepaydaymoney/pickup = no-op chez nous)
+        // → retour OW (évolutions post-combat via EVOLUTION_CHECK ; le fade du CLEANUP nettoie
+        // la fenêtre message, comme ReturnFromBattleToOverworld).
+        if (messageWaitDone()) {
+          _evoScanSlot = 0;
+          state = 'EVOLUTION_CHECK';
+        }
         return false;
       }
 
@@ -4027,8 +4171,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // + le sprite dresseur (safety teardown, reset des statuts pour le combat suivant).
         stopIntroSlideIn();
         stopTrainerThrow();
+        stopOpponentTrainerThrow();
         stopSendOut();
         destroyTrainerBackSprite();
+        destroyOpponentTrainerSprite();
         // #3 : forcer le rechargement asset+palette ball/dresseur au prochain combat
         // (FreeAllSpritePalettes du prochain LOAD_ASSETS invalide les slots cachés).
         resetSendOutAssets();

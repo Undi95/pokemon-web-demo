@@ -119,9 +119,12 @@ export async function startSendOut(opts: {
     return;
   }
 
-  // 1:1 décomp pokeball.c:376 CreateSprite(template, 32,80,29) puis 385-386 player (24,68).
-  const startX = opts.startX ?? 24;
-  const startY = opts.startY ?? 68;
+  // 1:1 décomp pokeball.c:376 CreateSprite(template, 32,80,29) puis :
+  //  - POKEBALL_PLAYER_SENDOUT (385-386) : ball à (24,68), arc parabolique vers le mon.
+  //  - POKEBALL_OPPONENT_SENDOUT (390-391) : ball à (monX, monY+24), SANS arc (data[0]=0),
+  //    elle attend ~16f puis s'ouvre (SpriteCB_OpponentMonSendOut → ReleaseMonFromBall).
+  const startX = opts.startX ?? (opts.side === 'opponent' ? opts.endX : 24);
+  const startY = opts.startY ?? (opts.side === 'opponent' ? opts.endY + 24 : 68);
   const ball = rt.CreateSpriteAtOam({
     tileId: _ballTileStart,
     paletteBank: _ballPaletteSlot,
@@ -166,13 +169,22 @@ export function tickSendOut(): void {
   _so.frame++;
 
   switch (_so.phase) {
-    case 1: {  // ARC THROW — 1:1 SpriteCB_PlayerMonSendOut_1/2 (InitAnimArcTranslation)
-      const t = Math.min(1, _so.frame / _so.arcFrames);
-      const x = _so.startX + (_so.endX - _so.startX) * t;
-      const yLin = _so.startY + (_so.endY - _so.startY) * t;
-      const yArc = -_so.arcHeight * Math.sin(Math.PI * t);
-      if (ball) { ball.x = Math.round(x); ball.y = Math.round(yLin + yArc); }
-      if (t >= 1) { _so.phase = 2; _so.frame = 0; }
+    case 1: {  // THROW — player = arc, opponent = hold (1:1 SpriteCB_OpponentMonSendOut)
+      if (_so.side === 'opponent') {
+        // 1:1 SpriteCB_OpponentMonSendOut (pokeball.c:991) : la ball apparaît à la
+        // position du mon (+24y), NE bouge PAS, attend `data[0] > 15` frames, puis
+        // SpriteCB_ReleaseMonFromBall. Pas d'arc de lancer côté adverse.
+        if (ball) { ball.x = _so.startX; ball.y = _so.startY; }
+        if (_so.frame > 15) { _so.phase = 2; _so.frame = 0; }
+      } else {
+        // 1:1 SpriteCB_PlayerMonSendOut_1/2 (InitAnimArcTranslation) : arc parabolique.
+        const t = Math.min(1, _so.frame / _so.arcFrames);
+        const x = _so.startX + (_so.endX - _so.startX) * t;
+        const yLin = _so.startY + (_so.endY - _so.startY) * t;
+        const yArc = -_so.arcHeight * Math.sin(Math.PI * t);
+        if (ball) { ball.x = Math.round(x); ball.y = Math.round(yLin + yArc); }
+        if (t >= 1) { _so.phase = 2; _so.frame = 0; }
+      }
       break;
     }
     case 2: {  // RELEASE — 1:1 SpriteCB_ReleaseMonFromBall (pokeball.c:750-823)
@@ -345,6 +357,94 @@ export function destroyTrainerBackSprite(): void {
   if (_trainerTileStart >= 0) { FreeSpriteTilesByTag(TAG_TRAINER_BACK); _trainerTileStart = -1; _trainerBackLoaded = false; }
 }
 
+// ─── Sprite FRONT du dresseur ADVERSE (combat dresseur : slide-in + lancer) ──
+// 1:1 décomp OpponentHandleDrawTrainerPic (battle_controller_opponent.c:1240) :
+// trainerPicId = gTrainers[gTrainerBattleOpponent_A].trainerPic ; front pic 64×64,
+// posé à (176, (8-size)*4+40 = 40), x2=-DISPLAY_WIDTH, sSpeedX=2 → slide-in gauche.
+// Au lancer (OpponentHandleIntroTrainerBallThrow), slide-off DROITE (destX=280) + free.
+const OPP_TRAINER_TILE_COUNT = 64;   // front pic 64×64 = 64 tiles 8×8 (TRAINER_SPRITE 0x800)
+const TAG_OPP_TRAINER = 'BATTLE_OPP_TRAINER';
+const TAG_OPP_TRAINER_PAL = 'BATTLE_OPP_TRAINER_PAL';
+let _oppTrainerPicMap: Record<string, { png: string }> | null = null;
+let _oppTrainerPicMapLoading: Promise<void> | null = null;
+let _oppTrainerTileStart = -1;
+let _oppTrainerLoaded = false;
+let _oppTrainerPalSlot = -1;
+let _oppTrainerSpriteId = -1;
+let _oppTrainerPending = false;   // asset en cours de chargement (garde la slide active)
+
+/** Charge la map TRAINER_PIC_X → {png} (= gTrainerFrontPicTable, 1 fois). */
+async function _ensureOppTrainerPicMap(): Promise<void> {
+  if (_oppTrainerPicMap) return;
+  if (!_oppTrainerPicMapLoading) {
+    _oppTrainerPicMapLoading = (async () => {
+      try {
+        const resp = await fetch('/decomp/em/trainer-pics.json');
+        _oppTrainerPicMap = await resp.json() as Record<string, { png: string }>;
+      } catch (e) {
+        console.warn('[sendout] failed to load trainer-pics.json:', e);
+        _oppTrainerPicMap = {};
+      }
+    })();
+  }
+  await _oppTrainerPicMapLoading;
+}
+
+/** Charge le front pic du dresseur adverse 1 fois (= DecompressTrainerFrontPic). */
+async function _ensureOppTrainerAsset(picEnum: string): Promise<void> {
+  if (_oppTrainerLoaded) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  await _ensureOppTrainerPicMap();
+  const entry = _oppTrainerPicMap?.[picEnum];
+  if (!entry) { console.warn('[sendout] trainer pic introuvable:', picEnum); return; }
+  try {
+    // 1:1 décomp : alloue des tiles LIBRES puis charge le front pic dedans.
+    _oppTrainerTileStart = AllocSpriteTiles(OPP_TRAINER_TILE_COUNT);
+    if (_oppTrainerTileStart < 0) { console.warn('[sendout] pas de tiles VRAM libres pour le dresseur adverse'); return; }
+    AllocSpriteTileRange(TAG_OPP_TRAINER, _oppTrainerTileStart, OPP_TRAINER_TILE_COUNT);
+    const loaded = await rt.LoadCompressedSpriteSheet('/decomp/em/' + entry.png, _oppTrainerTileStart * 32);
+    _oppTrainerPalSlot = LoadSpritePalette({ data: loaded.palette, tag: TAG_OPP_TRAINER_PAL });
+    _oppTrainerLoaded = true;
+  } catch (e) {
+    console.warn('[sendout] failed to load opp trainer front pic:', e);
+  }
+}
+
+/** Charge + affiche le sprite FRONT du dresseur adverse à (x,y), off-screen GAUCHE
+ *  (x2=-DISPLAY_WIDTH) pour le slide-in. 1:1 OpponentHandleDrawTrainerPic. */
+export async function showOpponentTrainerSprite(picEnum: string, x: number, y: number): Promise<number> {
+  _oppTrainerPending = true;
+  await _ensureOppTrainerAsset(picEnum);
+  const rt = getRuntime();
+  if (!rt || !_oppTrainerLoaded || _oppTrainerPalSlot < 0) { _oppTrainerPending = false; return -1; }
+  const t = rt.CreateSpriteAtOam({
+    tileId: _oppTrainerTileStart,
+    paletteBank: _oppTrainerPalSlot,
+    x, y,
+    shape: 0, size: 3,   // 64×64 (SQUARE, size 3)
+    priority: 2,         // même plan que les mons
+  });
+  _oppTrainerSpriteId = t.spriteId;
+  // 1:1 OpponentHandleDrawTrainerPic : démarre off-screen GAUCHE (x2=-DISPLAY_WIDTH),
+  // sSpeedX=2 → tickIntroSlideIn le glisse vers x2=0.
+  const _ts = rt.gSprites.get(_oppTrainerSpriteId);
+  if (_ts) _ts.x2 = -DISPLAY_WIDTH;
+  _oppTrainerPending = false;
+  return _oppTrainerSpriteId;
+}
+
+export function getOpponentTrainerSpriteId(): number { return _oppTrainerSpriteId; }
+
+/** Détruit le sprite front du dresseur adverse (= au lancer / teardown).
+ *  1:1 SpriteCB_FreeOpponentSprite (FreeTrainerFrontPicPalette + DestroySprite). */
+export function destroyOpponentTrainerSprite(): void {
+  const rt = getRuntime();
+  if (rt && _oppTrainerSpriteId >= 0) rt.DestroySprite(_oppTrainerSpriteId);
+  _oppTrainerSpriteId = -1;
+  if (_oppTrainerTileStart >= 0) { FreeSpriteTilesByTag(TAG_OPP_TRAINER); _oppTrainerTileStart = -1; _oppTrainerLoaded = false; }
+}
+
 // ─── Scroll d'entrée (slide-in 1:1) ─────────────────────────────────────────
 // 1:1 décomp : le JOUEUR (dresseur) entre par la DROITE (x2=+DISPLAY_WIDTH,
 // SpriteCB_TrainerSlideIn sSpeedX=-2 → x2 vers 0) ; l'ADVERSE (mon sauvage) entre
@@ -360,17 +460,24 @@ export function getIntroSlideInStatus(): 'idle' | 'active' | 'done' { return _sl
 export function resetIntroSlideInStatus(): void { _slideInStatus = 'idle'; }
 
 /** Démarre le scroll : adverse off-screen gauche, dresseur off-screen droite (posé
- *  par showTrainerBackSprite). Les deux glissent vers x2=0. */
-export function startIntroSlideIn(oppSpriteId: number): void {
-  const rt = getRuntime();
-  const opp = rt?.gSprites.get(oppSpriteId);
-  if (opp) opp.x2 = -DISPLAY_WIDTH;   // 1:1 OpponentHandleLoadMonSprite : x2 = -DISPLAY_WIDTH
-  _slideInOppId = oppSpriteId;
+ *  par showTrainerBackSprite). Les deux glissent vers x2=0. En combat DRESSEUR,
+ *  `oppSpriteId` est omis (le mon ne slide pas — c'est le sprite dresseur FRONT,
+ *  géré par `_oppTrainerSpriteId`, qui slide via showOpponentTrainerSprite). */
+export function startIntroSlideIn(oppSpriteId?: number): void {
+  if (oppSpriteId !== undefined) {
+    const rt = getRuntime();
+    const opp = rt?.gSprites.get(oppSpriteId);
+    if (opp) opp.x2 = -DISPLAY_WIDTH;   // 1:1 OpponentHandleLoadMonSprite : x2 = -DISPLAY_WIDTH
+    _slideInOppId = oppSpriteId;
+  } else {
+    _slideInOppId = -1;   // combat dresseur : pas de mon à slider (le front dresseur slide)
+  }
   _slideInStatus = 'active';
   _slideInLastFc = -1;
 }
 
-/** Tick per-frame (gated ~60fps). Glisse adverse (+2) et dresseur (-2) vers x2=0. */
+/** Tick per-frame (gated ~60fps). Glisse adverse (mon OU dresseur front, +2) et
+ *  dresseur joueur (-2) vers x2=0. */
 export function tickIntroSlideIn(): void {
   if (_slideInStatus !== 'active') return;
   const rt = getRuntime();
@@ -379,12 +486,22 @@ export function tickIntroSlideIn(): void {
   if (fc === _slideInLastFc) return;
   _slideInLastFc = fc;
 
-  let oppDone = true, trDone = true;
-  const opp = rt.gSprites.get(_slideInOppId);
-  if (opp && (opp.x2 ?? 0) < 0) { opp.x2 = Math.min(0, (opp.x2 ?? 0) + SLIDE_IN_SPEED); oppDone = opp.x2 === 0; }
+  let oppDone = true, trDone = true, oppTrDone = true;
+  // Côté adverse SAUVAGE : le mon slide depuis la gauche (+2).
+  const opp = _slideInOppId >= 0 ? rt.gSprites.get(_slideInOppId) : null;
+  if (opp && (opp.x2 ?? 0) < 0) { opp.x2 = Math.min(0, (opp.x2 ?? 0) + SLIDE_IN_SPEED); }
+  oppDone = !opp || (opp.x2 ?? 0) >= 0;
+  // Côté adverse DRESSEUR : le sprite front slide depuis la gauche (1:1 sSpeedX=2).
+  // `_oppTrainerPending` = l'asset est en cours de chargement (async) → la slide
+  // reste 'active' jusqu'à ce qu'il apparaisse (sinon done prématuré = sprite figé off-screen).
+  const oppTr = _oppTrainerSpriteId >= 0 ? rt.gSprites.get(_oppTrainerSpriteId) : null;
+  if (oppTr && (oppTr.x2 ?? 0) < 0) { oppTr.x2 = Math.min(0, (oppTr.x2 ?? 0) + SLIDE_IN_SPEED); }
+  oppTrDone = !_oppTrainerPending && (!oppTr || (oppTr.x2 ?? 0) >= 0);
+  // Dresseur JOUEUR (dos) : slide depuis la droite (-2).
   const tr = _trainerSpriteId >= 0 ? rt.gSprites.get(_trainerSpriteId) : null;
-  if (tr && (tr.x2 ?? 0) > 0) { tr.x2 = Math.max(0, (tr.x2 ?? 0) - SLIDE_IN_SPEED); trDone = tr.x2 === 0; }
-  if (oppDone && trDone) { _slideInStatus = 'done'; _slideInLastFc = -1; }
+  if (tr && (tr.x2 ?? 0) > 0) { tr.x2 = Math.max(0, (tr.x2 ?? 0) - SLIDE_IN_SPEED); }
+  trDone = !tr || (tr.x2 ?? 0) <= 0;
+  if (oppDone && trDone && oppTrDone) { _slideInStatus = 'done'; _slideInLastFc = -1; }
 }
 
 export function stopIntroSlideIn(): void { _slideInOppId = -1; _slideInStatus = 'idle'; _slideInLastFc = -1; }
@@ -397,9 +514,11 @@ export function resetSendOutAssets(): void {
   // 1:1 décomp : libère les tiles VRAM allouées (FreeSpriteTilesByTag) sinon fuite cross-combat.
   if (_ballTileStart >= 0) FreeSpriteTilesByTag(TAG_SENDOUT_BALL);
   if (_trainerTileStart >= 0) FreeSpriteTilesByTag(TAG_TRAINER_BACK);
-  _ballTileStart = -1; _trainerTileStart = -1;
+  if (_oppTrainerTileStart >= 0) FreeSpriteTilesByTag(TAG_OPP_TRAINER);
+  _ballTileStart = -1; _trainerTileStart = -1; _oppTrainerTileStart = -1;
   _ballAssetLoaded = false; _ballPaletteSlot = -1;
   _trainerBackLoaded = false; _trainerBackPalSlot = -1;
+  _oppTrainerLoaded = false; _oppTrainerPalSlot = -1; _oppTrainerPending = false;
 }
 
 // ─── Lancer du dresseur (1:1 PlayerHandleIntroTrainerBallThrow) ──────────────
@@ -491,6 +610,73 @@ export function stopTrainerThrow(): void {
   _tt = null;
   _ttStatus = 'idle';
   _ttLastFc = -1;
+}
+
+// ─── Lancer du dresseur ADVERSE (1:1 OpponentHandleIntroTrainerBallThrow) ────
+// 1:1 décomp (battle_controller_opponent.c:1867) : le sprite front du dresseur GLISSE
+// à DROITE hors écran (data[0]=35 frames, data[2]=280 destX, StartAnimLinearTranslation)
+// puis est libéré (SpriteCB_FreeOpponentSprite). EN MÊME TEMPS (Task_StartSendOutAnim créé
+// au même instant → StartSendOutAnim immédiat) la ball part côté adverse (POKEBALL_OPPONENT_
+// SENDOUT : ball à la position du mon, attend 16f, s'ouvre → le mon émerge via affine).
+// Pas d'anim de pose (le front pic est statique, contrairement au dos joueur 4-frames).
+const OPP_TRAINER_SLIDE_FRAMES = 35;   // 1:1 data[0]=35
+const OPP_TRAINER_SLIDE_DEST_X = 280;  // 1:1 data[2]=280 (hors écran droite, DISPLAY_WIDTH=240)
+
+interface OppTrainerThrowState {
+  frame: number;
+  slideStartX: number;
+}
+let _ott: OppTrainerThrowState | null = null;
+let _ottStatus: 'idle' | 'active' | 'done' = 'idle';
+let _ottLastFc = -1;
+
+export function getOpponentTrainerThrowStatus(): 'idle' | 'active' | 'done' { return _ottStatus; }
+export function resetOpponentTrainerThrowStatus(): void { _ottStatus = 'idle'; }
+
+/** Démarre le lancer du dresseur adverse : slide-off droite (35f) + ball send-out
+ *  concurrente (le mon émerge). 1:1 OpponentHandleIntroTrainerBallThrow + Task_StartSendOutAnim. */
+export function startOpponentTrainerThrow(opts: BallSendOpts): void {
+  _ottStatus = 'active';
+  const rt = getRuntime();
+  const t = _oppTrainerSpriteId >= 0 ? rt?.gSprites.get(_oppTrainerSpriteId) : null;
+  // 1:1 SetSpritePrimaryCoordsFromSecondaryCoords : intègre x2 dans x (fige la position).
+  if (t) { t.x += (t.x2 ?? 0); t.x2 = 0; }
+  _ott = { frame: 0, slideStartX: t ? t.x : 0 };
+  // 1:1 Task_StartSendOutAnim : le send-out (ball) démarre IMMÉDIATEMENT (concurrent au slide).
+  void startSendOut(opts);
+}
+
+/** Tick per-frame (gated ~60fps). No-op si pas actif. */
+export function tickOpponentTrainerThrow(): void {
+  if (_ottStatus !== 'active' || !_ott) return;
+  const rt = getRuntime();
+  if (!rt) { _ott = null; _ottStatus = 'done'; return; }
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === _ottLastFc) return;
+  _ottLastFc = fc;
+
+  _ott.frame++;
+  const t = _oppTrainerSpriteId >= 0 ? rt.gSprites.get(_oppTrainerSpriteId) : null;
+  if (t) {
+    // Slide linéaire startX → destX=280 (hors écran droite) sur 35 frames (AnimTranslateLinear).
+    const p = Math.min(1, _ott.frame / OPP_TRAINER_SLIDE_FRAMES);
+    t.x = Math.round(_ott.slideStartX + (OPP_TRAINER_SLIDE_DEST_X - _ott.slideStartX) * p);
+  }
+  // Free dresseur à la fin du slide (35f) — SpriteCB_FreeOpponentSprite. NB : la ball/
+  // émergence continue (poll séparé via getSendOutStatus) — le slide finit avant l'émergence.
+  if (_ott.frame >= OPP_TRAINER_SLIDE_FRAMES) {
+    destroyOpponentTrainerSprite();
+    _ott = null;
+    _ottStatus = 'done';
+    _ottLastFc = -1;
+  }
+}
+
+/** Annule le lancer dresseur adverse en cours (= teardown combat). */
+export function stopOpponentTrainerThrow(): void {
+  _ott = null;
+  _ottStatus = 'idle';
+  _ottLastFc = -1;
 }
 
 /** Annule un send-out en cours (= teardown combat). */

@@ -26,7 +26,7 @@ import { getSpeciesNameFr } from '../system/data-tables';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
 import { getRuntime } from '../system/decomp-globals';
 import { FlagSet, VarSet } from '../script/script-vars';
-import { ShowBg, HideBg } from '../ui/gba-window-system';
+import { ShowBg } from '../ui/gba-window-system';
 
 interface TrainerPartyMember {
   species: string;
@@ -107,15 +107,6 @@ function _resolveTrainerNumId(trainerKey: string): number {
   return _trainerKeyToNum?.[trainerKey] ?? 0;
 }
 
-/** "CLASSE NOM" FR (ex. "RUINEMANIAC ARMAND") — classe via gameDataTrainerClassesFr,
- *  nom via le champ JSON. Utilisé pour le défi 1:1 (sText_Trainer1WantsToBattle). */
-function _trainerDisplayName(td: TrainerData): string {
-  const classFr = (globalThis as { gameDataTrainerClassesFr?: Record<string, string> })
-    .gameDataTrainerClassesFr?.[td.trainerClass] ?? '';
-  const tn = td.name ?? td.trainerName ?? '';
-  return (classFr ? classFr + ' ' : '') + tn;
-}
-
 /** 1:1 décomp `CreateNPCTrainerParty` (battle_main.c:1993-2069) : calcule les
  *  données DÉTERMINISTES d'un mon dresseur (PID name-hash, IV fixe, moveset
  *  custom, objet tenu) à passer à createPokemonInstance (= CreateMon).
@@ -149,14 +140,48 @@ function _computeTrainerMonData(td: TrainerData, member: TrainerPartyMember): {
   return out;
 }
 
+// 1:1 décomp `gTrainerMoneyTable` (battle_main.c:474-532) : facteur d'argent par classe.
+// Toute classe absente → 5 (sentinelle {0xFF, 5}).
+const TRAINER_MONEY_TABLE: Record<string, number> = {
+  TRAINER_CLASS_TEAM_AQUA: 5, TRAINER_CLASS_AQUA_ADMIN: 10, TRAINER_CLASS_AQUA_LEADER: 20,
+  TRAINER_CLASS_AROMA_LADY: 10, TRAINER_CLASS_RUIN_MANIAC: 15, TRAINER_CLASS_INTERVIEWER: 12,
+  TRAINER_CLASS_TUBER_F: 1, TRAINER_CLASS_TUBER_M: 1, TRAINER_CLASS_SIS_AND_BRO: 3,
+  TRAINER_CLASS_COOLTRAINER: 12, TRAINER_CLASS_HEX_MANIAC: 6, TRAINER_CLASS_LADY: 50,
+  TRAINER_CLASS_BEAUTY: 20, TRAINER_CLASS_RICH_BOY: 50, TRAINER_CLASS_POKEMANIAC: 15,
+  TRAINER_CLASS_SWIMMER_M: 2, TRAINER_CLASS_BLACK_BELT: 8, TRAINER_CLASS_GUITARIST: 8,
+  TRAINER_CLASS_KINDLER: 8, TRAINER_CLASS_CAMPER: 4, TRAINER_CLASS_OLD_COUPLE: 10,
+  TRAINER_CLASS_BUG_MANIAC: 15, TRAINER_CLASS_PSYCHIC: 6, TRAINER_CLASS_GENTLEMAN: 20,
+  TRAINER_CLASS_ELITE_FOUR: 25, TRAINER_CLASS_LEADER: 25, TRAINER_CLASS_SCHOOL_KID: 5,
+  TRAINER_CLASS_SR_AND_JR: 4, TRAINER_CLASS_POKEFAN: 20, TRAINER_CLASS_EXPERT: 10,
+  TRAINER_CLASS_YOUNGSTER: 4, TRAINER_CLASS_CHAMPION: 50, TRAINER_CLASS_FISHERMAN: 10,
+  TRAINER_CLASS_TRIATHLETE: 10, TRAINER_CLASS_DRAGON_TAMER: 12, TRAINER_CLASS_BIRD_KEEPER: 8,
+  TRAINER_CLASS_NINJA_BOY: 3, TRAINER_CLASS_BATTLE_GIRL: 6, TRAINER_CLASS_PARASOL_LADY: 10,
+  TRAINER_CLASS_SWIMMER_F: 2, TRAINER_CLASS_PICNICKER: 4, TRAINER_CLASS_TWINS: 3,
+  TRAINER_CLASS_SAILOR: 8, TRAINER_CLASS_COLLECTOR: 15, TRAINER_CLASS_RIVAL: 15,
+  TRAINER_CLASS_PKMN_BREEDER: 10, TRAINER_CLASS_PKMN_RANGER: 12, TRAINER_CLASS_TEAM_MAGMA: 5,
+  TRAINER_CLASS_MAGMA_ADMIN: 10, TRAINER_CLASS_MAGMA_LEADER: 20, TRAINER_CLASS_LASS: 4,
+  TRAINER_CLASS_BUG_CATCHER: 4, TRAINER_CLASS_HIKER: 10, TRAINER_CLASS_YOUNG_COUPLE: 8,
+  TRAINER_CLASS_WINSTRATE: 10,
+};
+
+/** 1:1 décomp `GetTrainerMoneyToGive` (single battle) + `Cmd_getmoneyreward` :
+ *  `4 * lastMonLevel * moneyMultiplier(=1) * value[class]`. lastMonLevel = niveau du
+ *  DERNIER mon de la party. moneyMultiplier = 1 (Pièce Rune non gérée = dette documentée). */
+function _computeTrainerPrize(td: TrainerData): number {
+  if (!td.party || td.party.length === 0) return 0;
+  const lastMonLevel = td.party[td.party.length - 1].level;
+  const value = TRAINER_MONEY_TABLE[td.trainerClass] ?? 5;
+  return 4 * lastMonLevel * 1 * value;
+}
+
 /** Start trainer battle for given trainer ID. Reads party from JSON.
  *  Falls back to stub VAR_RESULT=1 if trainer not found. */
 export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
   // Eagerly start the data load.
   void _ensureTrainerDataLoaded();
 
-  type State = 'WAIT_DATA' | 'INTRO_TEXT' | 'INTRO_WAIT' | 'NEXT_BATTLE'
-             | 'IN_BATTLE' | 'BETWEEN_BATTLES' | 'WIN_TEXT' | 'WIN_WAIT'
+  type State = 'WAIT_DATA' | 'NEXT_BATTLE'
+             | 'IN_BATTLE' | 'BETWEEN_BATTLES' | 'WIN_TEXT'
              | 'LOSE_TEXT' | 'LOSE_WAIT' | 'DONE';
 
   let state: State = 'WAIT_DATA';
@@ -185,45 +210,11 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
           state = 'DONE';
           return false;
         }
-        state = 'INTRO_TEXT';
-        return false;
-      }
-
-      case 'INTRO_TEXT': {
-        // Hide overworld BGs pour l'intro "X veut combattre!".
-        HideBg(1);
-        HideBg(2);
-        HideBg(3);
-        // 1:1 décomp ResetSpriteData (cf. battle-flow LOAD_ASSETS) : on DÉTRUIT les
-        // sprites OW (player avatar + NPCs) pour l'intro trainer plutôt que de les
-        // stasher (ancien hack invisible + per-tick re-hide, source des bugs de
-        // corruption healthbox). Les structs gObjectEvents/gPlayerAvatar persistent
-        // → re-spawn au CLEANUP de l'inner battle (_restoreOverworldFromMenu).
-        // setObjectEventsSuspended(true) empêche UpdateObjectEvents de tiquer les
-        // sprites détruits pendant INTRO_WAIT (l'inner battle CLEANUP le remet false).
-        void Promise.all([
-          import('../field/object-events'),
-          import('../field/player-avatar'),
-          import('../system/sprite-animation'),
-        ]).then(([oe, pa, sa]) => {
-          const rt2 = getRuntime();
-          if (!rt2) return;
-          oe.setObjectEventsSuspended(true);
-          oe.destroyAllNpcSprites(rt2);
-          pa.DestroyPlayerAvatar(rt2);
-          sa.ResetSpriteCopyRequests();
-        });
-        // 1:1 décomp sText_Trainer1WantsToBattle ("Un combat est lancé\npar {CLASSE} {NOM}!").
-        ShowFieldMessage(`Un combat est lancé par\n${_trainerDisplayName(trainerData!)}!`);
-        state = 'INTRO_WAIT';
-        return false;
-      }
-
-      case 'INTRO_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
-          HideFieldMessageBox();
-          state = 'NEXT_BATTLE';
-        }
+        // 1:1 : le combat commence EN COMBAT (transition + scène), PAS sur l'OW. Plus de
+        // field message ici : battle-flow fait la transition (flash/fente), détruit les
+        // sprites OW (LOAD_ASSETS = ResetSpriteData) et affiche "Un combat est lancé par
+        // CLASSE NOM!" DANS le combat (TRAINER_WANTS_BATTLE) après le slide-in des dresseurs.
+        state = 'NEXT_BATTLE';
         return false;
       }
 
@@ -246,6 +237,14 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
           opponentFixedIV: monData.fixedIV,
           opponentMoves: monData.moves,
           opponentHeldItem: monData.heldItem,
+          // 1:1 OpponentHandleDrawTrainerPic : sprite FRONT du dresseur (slide-in + lancer).
+          opponentTrainerPic: trainerData!.trainerPic,
+          // 1:1 BattleIntroPrintTrainerWantsToBattle = 1 seule fois (1er mon) ; les suivants
+          // (multi-mon) skippent "veut se battre" (chemin chaîné = dette connue).
+          trainerIntroSuppressWants: partyIndex > 0,
+          // 1:1 Cmd_getmoneyreward : argent gagné, affiché à la victoire du DERNIER mon.
+          trainerWinPrize: (partyIndex === trainerData!.party.length - 1)
+            ? _computeTrainerPrize(trainerData!) : undefined,
         });
         state = 'IN_BATTLE';
         return false;
@@ -285,23 +284,14 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'WIN_TEXT': {
-        const name = trainerData!.trainerName ?? 'Adversaire';
-        ShowFieldMessage(`${name} a perdu!`);
+        // 1:1 : la défaite ("Vous avez battu CLASSE NOM!") + l'argent gagné sont affichés
+        // DANS le combat (battle-flow TRAINER_WON_*), plus ici. Ce state ne fait que finaliser
+        // le résultat + poser le flag dresseur-battu (1:1 B1 : TRAINER_FLAGS_START=1280),
+        // puis retour OW (la scène combat a déjà fait son CLEANUP).
         VarSet('VAR_RESULT', 1);
-        VarSet('VAR_RESULT', 1);
-        // 1:1 strict (B1) : FlagSet(TRAINER_FLAGS_START + trainerId numeric).
-        // constants/flags.h : TRAINER_FLAGS_START = 1280.
         FlagSet(1280 + _resolveTrainerNumId(trainerId));
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = BATTLE_OUTCOME_WIN;
-        state = 'WIN_WAIT';
-        return false;
-      }
-
-      case 'WIN_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
-          HideFieldMessageBox();
-          state = 'DONE';
-        }
+        state = 'DONE';
         return false;
       }
 

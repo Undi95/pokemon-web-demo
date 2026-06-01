@@ -44,6 +44,29 @@ async function loadIndexedPngPreserveIndices(url: string): Promise<{ charData: U
   return loadIndexedPngStrict(url, 4);
 }
 
+/** Précharge les étincelles d'ouverture de ball (= AnimateBallOpenParticles,
+ *  1:1 sBallParticleSpriteSheets[BALL_POKE] = gBattleAnimSpriteGfx_Particles).
+ *  Idempotent. Appelé par le preload Birch ET par battle-flow LOAD_ASSETS — sinon,
+ *  en lançant un combat sans passer par l'intro Birch (= dev / save chargée),
+ *  l'asset n'est jamais caché → `not in cache` warning + pas d'étincelles/flash. */
+let _ballParticlesPreloaded = false;
+export async function ensureBallParticlesLoaded(): Promise<void> {
+  if (_ballParticlesPreloaded) return;
+  if (assetCache.has('gBattleAnimSpriteGfx_Particles') && assetCache.has('gBattleAnimSpritePal_Particles')) {
+    _ballParticlesPreloaded = true;
+    return;
+  }
+  try {
+    const particlesGfx = await loadTileBin('/decomp/em/battle_anims/particles.png', 4);
+    assetCache.set('gBattleAnimSpriteGfx_Particles', particlesGfx);
+    const particlesPal = await loadIndexedPngStrict('/decomp/em/battle_anims/particles.png', 4);
+    assetCache.set('gBattleAnimSpritePal_Particles', particlesPal.palette);
+    _ballParticlesPreloaded = true;
+  } catch (e) {
+    console.warn('[intro-asset-loader] Ball particles load failed:', e);
+  }
+}
+
 /** Convertit un GFX_SOURCES path "graphics/intro/scene_1/bg.pal" → URL public. */
 function urlFor(decompPath: string): string {
   return '/decomp/em/' + decompPath.replace(/^graphics\//, '');
@@ -603,17 +626,10 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
 
   // ─── Ball-open particle sparkles (= AnimateBallOpenParticles) ─────────────
   // 1:1 décomp src/battle_anim_throw.c:143 sBallParticleSpriteSheets[BALL_POKE]
-  // = gBattleAnimSpriteGfx_Particles. Indexed 8x64 PNG = 8 tiles 8x8 4bpp.
-  // Used by EVERY pokeball release (Birch, battles, eggs, evolutions). Loaded
-  // once at boot; pokeball-effects.ts copies into OBJ VRAM on first use.
-  try {
-    const particlesGfx = await loadTileBin('/decomp/em/battle_anims/particles.png', 4);
-    assetCache.set('gBattleAnimSpriteGfx_Particles', particlesGfx);
-    const particlesPal = await loadIndexedPngStrict('/decomp/em/battle_anims/particles.png', 4);
-    assetCache.set('gBattleAnimSpritePal_Particles', particlesPal.palette);
-  } catch (e) {
-    console.warn('[intro-asset-loader] Ball particles load failed:', e);
-  }
+  // = gBattleAnimSpriteGfx_Particles. Used by EVERY pokeball release (Birch,
+  // battles, eggs, evolutions). Extrait en fonction réutilisable (= aussi appelée
+  // par battle-flow LOAD_ASSETS pour les combats hors-intro).
+  await ensureBallParticlesLoaded();
 
   console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);
 }
