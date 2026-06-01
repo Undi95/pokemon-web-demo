@@ -59,6 +59,7 @@ import {
   type WindowTemplate,
 } from '../ui/gba-window-system';
 import { AddTextPrinterParameterized3, IsTextPrinterActive } from '../ui/gba-text-system';
+import { gTextFlags } from '../ui/gba-text-printer';
 import {
   HideFieldMessageBox,
 } from '../field/field-message-box';
@@ -96,7 +97,7 @@ import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForB
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
-import { tickSendOut, stopSendOut, getSendOutStatus, resetSendOutStatus, showTrainerBackSprite, destroyTrainerBackSprite, startTrainerThrow, tickTrainerThrow, stopTrainerThrow, getTrainerThrowStatus, resetTrainerThrowStatus, startIntroSlideIn, tickIntroSlideIn, getIntroSlideInStatus, stopIntroSlideIn, resetSendOutAssets } from './battle-sendout-anim';
+import { startSendOut, tickSendOut, stopSendOut, getSendOutStatus, resetSendOutStatus, startReturnToBall, tickReturnToBall, getReturnToBallStatus, resetReturnToBallStatus, showTrainerBackSprite, destroyTrainerBackSprite, startTrainerThrow, tickTrainerThrow, stopTrainerThrow, getTrainerThrowStatus, resetTrainerThrowStatus, startIntroSlideIn, tickIntroSlideIn, getIntroSlideInStatus, stopIntroSlideIn, resetSendOutAssets } from './battle-sendout-anim';
 import { ComputeSingleBattleTurnOrder } from './ai/ai-script-commands';
 import {
   createBattlerHealthboxSprites,
@@ -120,7 +121,7 @@ import {
   syncBattleMonsHpToInstances,
   chooseOpponentMoveViaAI,
 } from '../battle/wire-bytecode-bridge';
-import { VarSet } from '../script/script-vars';
+import { VarSet, gSpecialVar } from '../script/script-vars';
 import { getMove, getMoveName, loadGameData } from '../data/game-data';
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 import { Random } from '../system/random';
@@ -133,12 +134,17 @@ import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
 import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr, setRandomTurnNumber } from './state';
-import { decodeBattleString, stripGbaControlCodes } from './battle-string-decoder';
+import { decodeBattleString, stripGbaControlCodes, battleStringToPrinterText, buildMonNickBuff, buildNumberBuff, buildMoveBuff, buildStringBuff } from './battle-string-decoder';
+import { getString as _getGlobalString } from '../ui/gba-strings';
 import {
   STRINGID_CANTESCAPE, STRINGID_CANTESCAPE2,
   STRINGID_NORUNNINGFROMTRAINERS, STRINGID_SUPEREFFECTIVE, STRINGID_NOTVERYEFFECTIVE,
-  STRINGID_GOTAWAYSAFELY, STRINGID_ITDOESNTAFFECT,
+  STRINGID_GOTAWAYSAFELY, STRINGID_ITDOESNTAFFECT, STRINGID_INTROMSG, STRINGID_INTROSENDOUT,
+  STRINGID_TARGETFAINTED, STRINGID_PKMNGREWTOLV, STRINGID_PKMNLEARNEDMOVE, STRINGID_WILDPKMNFLED,
+  STRINGID_PKMNGAINEDEXP, STRINGID_SWITCHINMON, STRINGID_TRYTOLEARNMOVE1, STRINGID_TRYTOLEARNMOVE2,
+  STRINGID_TRAINERBLOCKEDBALL, STRINGID_PLAYERUSEDITEM, STRINGID_RETURNMON,
 } from '../decomp-data/include/constants/battle_string_ids-data';
+import { ITEM_POKE_BALL } from '../decomp-data/include/constants/items-data';
 // 1:1 décomp `gNoEscapeStringIds[]` (battle_message.c:900) pour `printfromtable`.
 import { BATTLE_STRING_ID_TABLES } from '../decomp-data/battle-string-id-tables';
 
@@ -159,10 +165,29 @@ function _resolveBattleString(stringId: number): string {
     textBuffs: [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)] as
       [Uint8Array, Uint8Array, Uint8Array],
   };
-  // 1:1 décomp : la string décodée contient des codes de contrôle bruts ({PLAY_SE},
-  // \p, etc.). Le text printer ne traite que les bytes 0xFC, pas ces codes string-form
-  // → on les nettoie (stripGbaControlCodes) sinon ils s'affichent littéralement.
-  return stripGbaControlCodes(decodeBattleString(stringId, msgData));
+  // 1:1 décomp : la string décodée contient des codes de contrôle bruts. On PRÉSERVE
+  // ceux que le text printer animé interprète (`\p` = ▼ + attente A, `\l`, `{PAUSE N}`)
+  // et on strip seulement les non-gérés (sons/BGM/color). `\p` était auparavant
+  // converti en `\n` par stripGbaControlCodes → plus de ▼ ni d'attente A (user 2026-05-31).
+  return battleStringToPrinterText(decodeBattleString(stringId, msgData));
+}
+
+/** Comme `_resolveBattleString` mais avec un msgData POPULÉ (battler indices +
+ *  buffers {B_BUFF1/2/3}) pour les strings à placeholders (faint, level-up, move
+ *  appris…). 1:1 décomp : le script combat fait `PREPARE_*_BUFFER` + `printstring`.
+ *  Single battle : battler joueur = 0, adverse = 1. */
+function _battleMsgEx(stringId: number, opts: {
+  battlerAttacker?: number; battlerTarget?: number; scrActive?: number;
+  currentMove?: number; lastItem?: number; textBuffs?: [Uint8Array, Uint8Array, Uint8Array];
+} = {}): string {
+  return battleStringToPrinterText(decodeBattleString(stringId, {
+    currentMove: opts.currentMove ?? 0, originallyUsedMove: 0, lastItem: opts.lastItem ?? 0, lastAbility: 0,
+    scrActive: opts.scrActive ?? 0, battlerAttacker: opts.battlerAttacker ?? 0,
+    battlerTarget: opts.battlerTarget ?? 0,
+    bakScriptPartyIdx: 0, hpScale: 0, itemEffectBattler: 0,
+    moveType: 0, abilities: [0, 0, 0, 0],
+    textBuffs: opts.textBuffs ?? [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)],
+  }));
 }
 
 // K8 + K10 + K12 + K13 side-effect imports : expose devtools globals
@@ -179,6 +204,7 @@ import './battle-faint-anim';
 import './battle-anim-normal';
 import './battle-anim-throw';
 import './battle-levelup-box';
+import { lvlUpBoxOpenPage1, lvlUpBoxDrawPage2, lvlUpBoxClose } from './battle-levelup-box';
 import './battle-trainer-party';
 import './battle-intro-events';
 import './battle-turn-helpers';
@@ -454,6 +480,7 @@ type State =
   | 'EXP_LOOP_NEXT' | 'EXP_LOOP_DONE' | 'EXP_OFFFIELD_MSG_WAIT'
   | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT' | 'EXP_BAR_FILL_WAIT'
   | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
+  | 'LEVEL_UP_BOX_PG1' | 'LEVEL_UP_BOX_PG2' | 'LEVEL_UP_BOX_CLOSE'
   | 'LEARN_MOVE_CHECK' | 'LEARN_MOVE_MSG_WAIT'
   | 'EVOLUTION_CHECK' | 'EVOLUTION_TEXT' | 'EVOLUTION_WAIT' | 'EVOLUTION_DONE_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
@@ -462,8 +489,12 @@ type State =
   | 'CHECK_PLAYER_FAINTED'
   | 'PLAYER_FAINTED_TEXT' | 'PLAYER_FAINTED_WAIT'
   | 'BALL_THROW_INIT' | 'BALL_THROW_WAIT' | 'BALL_THROW_RESULT_WAIT'
+  | 'PLAYER_RECALL_MSG' | 'PLAYER_RECALL_WAIT'
   | 'PLAYER_SWITCH_LOAD' | 'PLAYER_SWITCH_SPAWN' | 'PLAYER_SWITCH_WAIT'
   | 'SWITCH_IN_EVENTS'
+  // Sous-écrans CB2 (sac / party) ouverts depuis le combat inline. L'ouverture
+  // (SetMainCallback2) gèle flow.tick ; le retour reshow la scène puis reprend.
+  | 'OPEN_PARTY_SWITCH' | 'OPEN_PARTY_FAINT' | 'OPEN_BAG' | 'WAIT_SUBSCREEN'
   | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
   | 'CLEANUP'
   | 'DONE';
@@ -547,6 +578,24 @@ function calcStat(base: number, iv: number, ev: number, level: number, natureIdx
   let stat = Math.floor((2 * base + iv + Math.floor(ev / 4)) * level / 100) + 5;
   if (natureIdx !== undefined && statIdx !== undefined) stat = _modifyStatByNature(natureIdx, stat, statIdx);
   return stat;
+}
+
+/** Stats STAT_-indexées d'une instance pour la box de level-up : [HP, ATK, DEF,
+ *  SPEED, SPATK, SPDEF]. 1:1 décomp GetMonLevelUpWindowStats (lit les stats finales).
+ *  HP = mon.maxHp (déjà recalc par applyExpAward) ; les 5 autres via calcStat +
+ *  getSpeciesStats + nature (= pid%25 ; statIdx ATK=0/DEF=1/SPE=2/SPA=3/SPD=4). */
+function _computeLvlUpStats(mon: PokemonInstance): number[] {
+  const b = getSpeciesStats(mon.speciesEnum);
+  const nat = (mon.personality ?? 0) % 25;
+  const lv = mon.level;
+  return [
+    mon.maxHp,                                                  // STAT_HP
+    calcStat(b.atk, mon.ivs.atk, mon.evs.atk, lv, nat, 0),      // STAT_ATK
+    calcStat(b.def, mon.ivs.def, mon.evs.def, lv, nat, 1),      // STAT_DEF
+    calcStat(b.spe, mon.ivs.spe, mon.evs.spe, lv, nat, 2),      // STAT_SPEED
+    calcStat(b.spa, mon.ivs.spa, mon.evs.spa, lv, nat, 3),      // STAT_SPATK
+    calcStat(b.spd, mon.ivs.spd, mon.evs.spd, lv, nat, 4),      // STAT_SPDEF
+  ];
 }
 
 /** Build species runtime stats for damage formula. Reads from
@@ -653,9 +702,18 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let moveTypeWinId = -1;
   // RB2 : window message box battle (= B_WIN_MSG 0x90). Lazy-créée au 1er message.
   let msgWindowId = -1;
+  // 0x6C drawlvlupbox : stats STAT_-indexées avant/après le level-up (la box montre
+  // les deltas page 1 + les totaux page 2). _lvlUpBeforeStats capturé avant applyExpAward.
+  let _lvlUpBeforeStats: number[] = [];
+  let _lvlUpAfterStats: number[] = [];
   // Track si un message battle est en cours d'affichage (= équivalent
   // sFieldMessageBoxMode != HIDDEN). Passe à false quand le printer a fini.
   let _msgActive = false;
+  // Track si le message courant contient un prompt `\p`/`\l` (= CHAR_PROMPT_CLEAR/SCROLL
+  // → le printer affiche le ▼ + attend A lui-même). Si oui, l'attente A du printer EST
+  // l'attente du message (1:1 intro `BattleIntroPrintWildMonAttacked` qui n'a pas de
+  // Cmd_waitmessage timer) → on avance dès que le printer a fini (pas de timer 64f en plus).
+  let _msgHadPrompt = false;
   // 1:1 décomp `Cmd_waitmessage` (battle_script_commands.c:2159) : compteur
   // d'auto-avance du message. `gPauseCounterBattle` côté décomp. Une fois le
   // texte affiché, on attend B_WAIT_TIME_LONG frames PUIS on avance tout seul
@@ -731,6 +789,27 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Phase 1.4 N Q3 : flag async `_restoreOverworldFromMenu()` terminé au cleanup.
   // 1:1 décomp `CB2_ReturnToField` re-init overworld après le VRAM wipe battle.
   let _overworldRestoreDone = false;
+
+  // ─── Sous-écrans CB2 ouverts depuis le combat (sac / party) ────────────────
+  // Archi (validée) : le combat tourne en inline-native du script context, sous
+  // gMain.callback2 = MainCB2_Overworld2. Ouvrir un écran CB2 (GoToBagMenu /
+  // OpenPartyScreen) fait SetMainCallback2(CB2_Bag/party) → MainCB2_Overworld2
+  // n'est plus appelé → le script context ne tourne plus → flow.tick GELÉ (le
+  // status RUNNING reste, juste plus tické). L'écran détruit la scène combat
+  // (ResetSpriteData + FreeAllSpritePalettes + ResetTasks). À sa fermeture, son
+  // exitCallback (= _onSubScreenClose) reconstruit la scène (reshowBattleScene,
+  // 1:1 CB2_ReshowBattleScreenAfterMenu) puis restaure gMain.callback2 = l'OW CB2
+  // sauvé → le script context reprend → flow.tick repart dans WAIT_SUBSCREEN.
+  let _subScreenKind: 'bag' | 'party-switch' | 'party-faint' | null = null;
+  let _subScreenReturned = false;         // posé par le pump reshow quand prêt à reprendre
+  let _subScreenItemId = 0;               // item choisi au sac (gSpecialVar_ItemId ; 0 = annulé)
+  let _subScreenMonSlot = -1;             // slot mon choisi au party (-1 = annulé)
+  let _savedOverworldCb: ((rt: ReturnType<typeof getRuntime>) => void) | null = null;
+  let _reshowStarted = false;
+  let _reshowFinished = false;
+  // Switch volontaire (SAC POKéMON) : consomme le tour → l'adversaire attaque ensuite
+  // (≠ switch après faint = tour neuf). Posé avant PLAYER_SWITCH_LOAD.
+  let _switchIsVoluntary = false;
 
   /** Refresh both HP windows with current HP text.
    *  IMPORTANT : doit appeler CopyWindowToVram après le draw pour pousser
@@ -1042,13 +1121,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     PutWindowTilemap(msgWindowId);
     // 1:1 décomp : FillWindowPixelBuffer(fillValue) puis AddTextPrinter.
     FillWindowPixelBuffer(msgWindowId, info.fillValue);
-    // colorArray [bg, fg, shadow] (cf. gba-text-system). speed 255 = sync
-    // (TEXT_SKIP_DRAW) : rendu instant lisible ; isBattleMessageHidden attend
-    // ensuite l'appui A/B (= 1:1 lecture joueur).
+    // colorArray [bg, fg, shadow] (cf. gba-text-system). speed = -1 (= vitesse texte
+    // joueur, GetPlayerTextSpeedDelay) → rendu ANIMÉ char-par-char + le printer est
+    // tické par RunTextPrinters → il interprète `\p` (CHAR_PROMPT_CLEAR) = ▼ + attente A
+    // (mécanisme field existant) 1:1 décomp. AVANT : speed 255 (TEXT_SKIP_DRAW) marquait
+    // le printer `finished` immédiatement → le `\p` n'était jamais traité (pas de ▼/wait-A).
+    _msgHadPrompt = /\\p|\\l/.test(text);
+    // 1:1 décomp BattlePutTextOnWindow (battle_message.c:3074-3077) : en combat
+    // (windowId != ARENA_WIN_JUDGMENT_TEXT) `gTextFlags.useAlternateDownArrow = TRUE`
+    // → la flèche ▼ de fin de texte utilise sDarkDownArrowTiles (down_arrow_alt,
+    // idx authored pour textbox_0.pal : rouge à idx2). Sans ça on blittait la flèche
+    // terrain (idx 0/2/4) dans la palette combat → rouge mal placé (bleu+contour rouge).
+    // InitFieldMessageBox remet FALSE pour les dialogues terrain (1:1 field_message_box.c:18).
+    gTextFlags.useAlternateDownArrow = true;
     AddTextPrinterParameterized3(
       msgWindowId, info.fontId, info.x, info.y,
       [info.bgColor, info.fgColor, info.shadowColor],
-      255, text.replace(/\$$/, ''),
+      -1, text.replace(/\$$/, ''),
     );
     CopyWindowToVram(msgWindowId, 3);
     _msgActive = true;
@@ -1084,9 +1173,16 @@ export function startWildBattle(params: BattleParams): BattleFlow {
    *  chaque message. */
   const messageWaitDone = (): boolean => {
     if (!isBattleMessageHidden()) { _msgWaitCounter = 0; return false; }
-    const rt2 = getRuntime();
-    const buttonSkip = rt2 ? (rt2.gMain.newKeys & (A_BUTTON | B_BUTTON)) !== 0 : false;
-    if (buttonSkip) return true;
+    // Message avec prompt `\p`/`\l` : le printer a DÉJÀ affiché le ▼ + attendu l'appui A
+    // (mécanisme field, 1:1) → l'attente est faite, on avance dès qu'il a fini (= intro
+    // décomp `BattleIntroPrintWildMonAttacked` sans Cmd_waitmessage timer).
+    if (_msgHadPrompt) return true;
+    // Sinon (message sans prompt) : 1:1 `Cmd_waitmessage toWait` = auto-avance après
+    // B_WAIT_TIME_LONG frames. NON-SKIPPABLE : le décomp ne checke AUCUN bouton ici
+    // (le pace du move/statut est fixe) → on tient la pause complète. AVANT : un appui
+    // A/B skippait le timer → les pauses « disparaissaient » en tapotant (user 2026-05-31).
+    // (Les messages `\p`/`{PAUSE_UNTIL_PRESS}` restent « skippables » via l'attente A du
+    // printer — c'est leur comportement 1:1 ; gérés par `_msgHadPrompt` au-dessus.)
     if (++_msgWaitCounter >= B_WAIT_TIME_LONG) return true;
     return false;
   };
@@ -1652,8 +1748,13 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             mon.moves.push(moveSlot);
             msgs.push(`${mon.nickname} apprend\n${moveSlot.nameFr.toUpperCase()}!`);
           } else {
-            msgs.push(`${mon.nickname} tente d'apprendre\n${moveSlot.nameFr.toUpperCase()}.`);
-            msgs.push(`Mais ${mon.nickname} ne peut pas\navoir plus de quatre capacités.`);
+            // 1:1 `sText_TryToLearnMove1`/`2` — mon de banc → nom via buffer string.
+            msgs.push(_battleMsgEx(STRINGID_TRYTOLEARNMOVE1, {
+              textBuffs: [buildStringBuff(mon.nickname.toUpperCase()), buildStringBuff(moveSlot.nameFr.toUpperCase()), new Uint8Array(0)],
+            }));
+            msgs.push(_battleMsgEx(STRINGID_TRYTOLEARNMOVE2, {
+              textBuffs: [buildStringBuff(mon.nickname.toUpperCase()), new Uint8Array(0), new Uint8Array(0)],
+            }));
           }
         }
       }
@@ -1663,12 +1764,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
   /** 1:1 décomp Cmd_handleballthrow (battle_script_commands.c:9985-10056) pour une POKé BALL
    *  (ballMultiplier=10) : calcule si la capture réussit (odds + shakes). */
-  const computePokeBallWillCatch = (mon: PokemonInstance): boolean => {
+  const computePokeBallWillCatch = (mon: PokemonInstance, ballId: number = ITEM_POKE_BALL): boolean => {
+    // 1:1 : la MASTER BALL (1) capture toujours (Cmd_handleballthrow ll.9962-9966).
+    if (ballId === 1 /* ITEM_MASTER_BALL */) return true;
     const dataMod = (globalThis as { __game_data?: {
       getSpeciesInfo: (k: string) => { catchRate?: number } | undefined;
     } }).__game_data;
     const catchRate = dataMod?.getSpeciesInfo(mon.speciesEnum)?.catchRate ?? 45;
-    const ballMultiplier = 10;   // POKé BALL (sBallCatchBonuses[ITEM_POKE_BALL])
+    // 1:1 `sBallCatchBonuses` (pokeball.c) : GREAT=15, ULTRA=20, SAFARI=15, POKE=10.
+    // Net/Dive/Nest/Repeat/Timer = conditionnels (espèce/lieu/niveau/tour) → 10 par
+    // défaut ici (raffinage 1:1 de ces conditions = dette documentée).
+    const ballMultiplier =
+      ballId === 3 /* GREAT_BALL */  ? 15 :
+      ballId === 2 /* ULTRA_BALL */  ? 20 :
+      ballId === 5 /* SAFARI_BALL */ ? 15 :
+      10;   // POKE_BALL + balls conditionnelles (sBallCatchBonuses[ITEM_POKE_BALL])
     const maxHp = mon.maxHp || 1, hp = mon.currentHp;
     // 1:1 ll.9990-9994 : odds = catchRate * ballMult/10 * (3*maxHP - 2*HP) / (3*maxHP).
     let odds = Math.floor(Math.floor(catchRate * ballMultiplier / 10) * (maxHp * 3 - hp * 2) / (3 * maxHp));
@@ -1736,6 +1846,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     tickIntroSlideIn();
     tickTrainerThrow();
     tickSendOut();
+    tickReturnToBall();   // anim recall (mon sortant → ball, switch volontaire)
 
     // NB : plus de re-hide/re-pause per-frame des sprites OW. Ils sont DÉTRUITS
     // au battle entry (LOAD_ASSETS, 1:1 ResetSpriteData) → ils n'existent plus
@@ -2133,7 +2244,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           void createBattlerHealthboxSprites('player').then(handle => {
             playerHealthbox = handle;
             if (handle) {
-              setHealthboxVisible(handle, true);
+              // 1:1 décomp : la healthbox JOUEUR reste INVISIBLE pendant l'intro
+              // (le mon n'est pas encore envoyé) → révélée seulement après le send-out
+              // (PLAYER_SENDOUT, 1:1 Intro_TryShinyAnimShowHealthbox). On prépare juste
+              // son contenu (HP/surnom) ici. (L'adverse, lui, est visible avec le mon sauvage.)
+              setHealthboxVisible(handle, false);
               renderHpWindows();
               // 1:1 décomp UpdateHealthboxAttribute : surnom + genre (1 fois à l'init).
               if (playerMon) updateHealthboxNick(handle, playerMon.nickname, (playerMon as { monGender?: number }).monGender ?? 255);
@@ -2168,7 +2283,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'INTRO_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        showBattleMessage(`Un ${opponentMon.nickname} sauvage\napparaît!`);
+        // 1:1 décomp `BattleIntroPrintWildMonAttacked` → `PrepareStringBattle(STRINGID_INTROMSG)`
+        // = `sText_WildPkmnAppeared` ("Un {B_OPPONENT_MON1_NAME} sauvage apparaît!\p").
+        // Le `\p` final → ▼ + ATTENTE A (puis clear), 1:1. AVANT : texte hardcodé
+        // "...sauvage\napparaît!" (2 lignes, sans `\p`) → auto-avance sans ▼ (user 2026-05-31).
+        showBattleMessage(_resolveBattleString(STRINGID_INTROMSG));
         // Iter18 : play opponent cry on appear (= 1:1 décomp behavior).
         // FIX : utiliser speciesName EN canonique (= "Poochyena"), PAS nickname FR
         // ("MEDHYENA"). Les fichiers cri sont `/cries/<speciesName>.wav` (= EN).
@@ -2203,6 +2322,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (getTrainerThrowStatus() === 'idle' && getSendOutStatus() === 'idle') {
           const ps = rt.gSprites.get(playerSpriteId);
           if (!playerMon || !ps) { state = 'SWITCH_IN_EVENTS'; return false; }
+          // 1:1 décomp `BattleIntroPrintPlayerSendsOut` → `PrepareStringBattle(STRINGID_INTROSENDOUT)`
+          // = `sText_GoPkmn` ("{B_PLAYER_MON1_NAME}! Go!"). Affiché AVANT/pendant le lancer
+          // (= ce message MANQUAIT, box vide chez nous ; user A/B 2026-05-31). gActiveBattler=0.
+          ipcSetActiveBattler(0);
+          showBattleMessage(_resolveBattleString(STRINGID_INTROSENDOUT));
           startTrainerThrow({
             monSpriteId: playerSpriteId,
             side: 'player',
@@ -2216,6 +2340,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (getTrainerThrowStatus() !== 'done' || getSendOutStatus() !== 'done') return false;
         resetTrainerThrowStatus();
         resetSendOutStatus();
+        // 1:1 décomp `Intro_TryShinyAnimShowHealthbox` : la healthbox JOUEUR est révélée
+        // APRÈS l'émergence du mon (pas avant — fix user A/B "barre de vie trop tôt").
+        if (playerHealthbox) setHealthboxVisible(playerHealthbox, true);
+        renderHpWindows();
+        HideFieldMessageBox();
         state = 'SWITCH_IN_EVENTS';
         return false;
       }
@@ -2323,8 +2452,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp dispatch selon action :
         switch (action) {
           case 0 /* B_ACTION_USE_MOVE */: state = 'MOVE_MENU_INIT';      break;
-          case 1 /* B_ACTION_USE_ITEM */: state = 'BALL_THROW_INIT'; break;  // SAC → lance une POKé BALL (UI sac complète = différée)
-          case 2 /* B_ACTION_SWITCH */:   state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
+          case 1 /* B_ACTION_USE_ITEM */: state = 'OPEN_BAG'; break;  // étape 3 : ouvre le VRAI sac (fini la pokéball auto)
+          case 2 /* B_ACTION_SWITCH */:   state = 'OPEN_PARTY_SWITCH'; break;  // étape 4 : ouvre le party screen (switch volontaire)
           case 3 /* B_ACTION_RUN */:      state = 'ACTION_RUN_TEXT';      break;
           default:
             // Cas inattendu : retour menu input direct (fallback safety).
@@ -2353,8 +2482,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           closeActionMenu();
           switch (actionMenuCursor) {
             case 0: state = 'MOVE_MENU_INIT';      break;
-            case 1: state = 'BALL_THROW_INIT'; break;  // SAC → lance une POKé BALL
-            case 2: state = 'ACTION_FALLBACK_TEXT'; _lastFallbackKind = 'POKéMON'; break;
+            case 1: state = 'OPEN_BAG'; break;  // étape 3 : ouvre le vrai sac
+            case 2: state = 'OPEN_PARTY_SWITCH'; break;  // étape 4
             case 3: state = 'ACTION_RUN_TEXT';      break;
           }
         }
@@ -2377,17 +2506,102 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         return false;
       }
 
+      // ─── Étape 4 : POKéMON → party screen + switch en combat ───────────────
+      case 'OPEN_PARTY_SWITCH': {
+        // Ouvre l'écran party (CB2) en mode SEND_OUT → SetMainCallback2 gèle
+        // flow.tick. Le retour passe par _onSubScreenClose → reshowBattleScene →
+        // WAIT_SUBSCREEN (qui lit le slot choisi).
+        _openPartySwitchScreen('party-switch');
+        state = 'WAIT_SUBSCREEN';
+        return false;
+      }
+
+      // ─── Étape 3 : SAC → vrai sac en combat (fini la pokéball auto) ────────
+      case 'OPEN_BAG': {
+        _openBattleBag();
+        state = 'WAIT_SUBSCREEN';
+        return false;
+      }
+
+      // ─── Étape 4b : faint → choix MANUEL du mon suivant (party SEND_OUT) ────
+      case 'OPEN_PARTY_FAINT': {
+        _openPartySwitchScreen('party-faint');
+        state = 'WAIT_SUBSCREEN';
+        return false;
+      }
+
+      case 'WAIT_SUBSCREEN': {
+        // Gelé tant que l'écran CB2 est ouvert (flow.tick pas tické par l'OW CB2).
+        // Reprend ICI après reshow (le pump a posé _subScreenReturned + résultat).
+        if (!_subScreenReturned) return false;
+        _subScreenReturned = false;
+        const kind = _subScreenKind;
+        _subScreenKind = null;
+        if (kind === 'party-switch') {
+          // Mon choisi (≠ actif, vivant) → switch volontaire (consomme le tour).
+          const _party = gSaveBlock1Ptr.playerParty;
+          const slot = _subScreenMonSlot;
+          const mon = slot >= 0 ? _party[slot] : null;
+          if (slot >= 0 && slot !== _activePlayerSlot && mon && mon.currentHp > 0) {
+            _pendingSwitchSlot = slot;
+            _switchIsVoluntary = true;
+            // 1:1 : RAPPEL du mon sortant ("Reviens, X!" + retour ball) AVANT le
+            // send-out du nouveau (≠ faint : le mon K.O. n'est pas rappelé).
+            state = 'PLAYER_RECALL_MSG';
+          } else {
+            // Annulé (B) ou choix invalide → retour menu action (1:1 cancel switch).
+            state = 'ACTION_MENU_INIT';
+          }
+        } else if (kind === 'party-faint') {
+          // Choix forcé après K.O. : le mon choisi devient l'actif (tour neuf).
+          const slot = _subScreenMonSlot;
+          if (slot >= 0) {
+            _pendingSwitchSlot = slot;
+            _switchIsVoluntary = false;
+            _switchLoadStarted = false; _switchLoadDone = false; _switchLoadFailed = false;
+            state = 'PLAYER_SWITCH_LOAD';
+          } else {
+            outcome = BATTLE_OUTCOME_LOST;   // pas de choix valide → défaite (garde-fou)
+            state = 'CLEANUP_FADE_OUT';
+          }
+        } else if (kind === 'bag') {
+          // Étape 3 : item choisi dans le sac en combat.
+          const itemId = _subScreenItemId;
+          if (itemId === 0) {
+            // Annulé (B / SORTIR) → retour menu action, aucun tour consommé.
+            state = 'ACTION_MENU_INIT';
+          } else if (_isBallItem(itemId)) {
+            // Poké Ball (ou variante) → séquence de capture (1:1 BALL_THROW_INIT).
+            // Le tour est consommé (échec → l'adversaire attaque, géré dans
+            // BALL_THROW_RESULT_WAIT, comme la fuite ratée).
+            state = 'BALL_THROW_INIT';
+          } else {
+            // Medicine / X-items / autres en combat = étape 3b (à câbler :
+            // PokemonUseItemEffects flag combat + message + consomme le tour).
+            console.log('[battle-flow étape3] item non-ball choisi en combat (3b à venir):', itemId);
+            state = 'ACTION_MENU_INIT';
+          }
+        } else {
+          state = 'ACTION_MENU_INIT';
+        }
+        return false;
+      }
+
       // ─── Capture (SAC → POKé BALL ; 1:1 Cmd_handleballthrow + GiveMonToPlayer) ──
       case 'BALL_THROW_INIT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
         // 1:1 : pas de capture en combat dresseur (BattleScript_TrainerBallBlock).
         if (gBattleTypeFlags & 0x8 /* BATTLE_TYPE_TRAINER */) {
-          showBattleMessage(`On ne peut pas voler les\nPOKéMON des autres !`);
+          // 1:1 décomp `sText_TrainerBlockedBall` / STRINGID_TRAINERBLOCKEDBALL.
+          showBattleMessage(_resolveBattleString(STRINGID_TRAINERBLOCKEDBALL));
           state = 'ACTION_FALLBACK_WAIT';   // → retour menu
           return false;
         }
-        // 1:1 calc de capture (POKé BALL) ; l'anim joue les shakes selon willCatch.
-        const willCatch = computePokeBallWillCatch(opponentMon);
+        // Étape 3 : la ball lancée = celle choisie dans le sac (_subScreenItemId).
+        // Fallback POKé BALL si on arrive ici hors sac (sécurité).
+        const _ballId = _isBallItem(_subScreenItemId) ? _subScreenItemId : ITEM_POKE_BALL;
+        // 1:1 calc de capture selon la ball ; l'anim joue les shakes selon willCatch.
+        const willCatch = computePokeBallWillCatch(opponentMon, _ballId);
         _captureHp = opponentMon.currentHp;   // snapshot HP de combat (préservé sur le mon capturé)
         _ballThrowOutcome = null;
         _ballThrowMessage = null;
@@ -2396,7 +2610,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           opponentMonNickname: opponentMon.nickname,
           willCatch,
         });
-        showBattleMessage(`Vous lancez\nune POKé BALL !`);
+        // 1:1 : lancer une ball CONSOMME l'objet du sac (RemoveBagItem). Async
+        // fire-and-forget (le décrément n'a pas à bloquer le tick).
+        void import('../system/data-tables').then(({ getItemKeyById }) =>
+          import('../bag/bag').then(({ RemoveBagItem }) => {
+            const k = getItemKeyById(_ballId);
+            if (k) RemoveBagItem(k, 1);
+          }),
+        ).catch(() => { /* noop */ });
+        // 1:1 décomp `sText_PlayerUsedItem` = "{B_PLAYER_NAME} utilise\n{B_LAST_ITEM}!"
+        // (lancer une ball = utiliser un objet) ; B_LAST_ITEM = la ball choisie.
+        showBattleMessage(_battleMsgEx(STRINGID_PLAYERUSEDITEM, { lastItem: _ballId }));
         state = 'BALL_THROW_WAIT';
         return false;
       }
@@ -2815,7 +3039,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPP_FAINTED_TEXT': {
         if (!opponentMon) { state = 'CLEANUP'; return false; }
-        showBattleMessage(`Le ${opponentMon.nickname} sauvage\nest K.O.!`);
+        // 1:1 : le message de K.O. adverse est affiché par le BYTECODE
+        // (BattleScript_FaintTarget → STRINGID_TARGETFAINTED, ▼ + attente A) pendant la
+        // résolution du move — PAS en double ici. L'inline ne fait que l'anim de chute +
+        // l'outcome (user 2026-05-31 : "est K.O." s'affichait 2× = inline + bytecode).
         outcome = BATTLE_OUTCOME_WIN;
         state = 'OPP_FAINTED_WAIT';
         // 1:1 décomp `PlayerHandleFaintAnimation` (battle_controller_player.c:2408) :
@@ -2871,7 +3098,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           state = 'EXP_AWARD_TEXT';
         } else {
           // Mon OFF-FIELD → message + application instantanée + file level-up/apprentissage.
-          showBattleMessage(`${mon.nickname} gagne\n${_expMonGained} POINTS D'EXP.!`);
+          // 1:1 `sText_PkmnGainedEXP` — mon de banc (pas un battler) → nom via buffer string.
+          showBattleMessage(_battleMsgEx(STRINGID_PKMNGAINEDEXP, {
+            textBuffs: [buildStringBuff(mon.nickname.toUpperCase()), new Uint8Array(0), buildNumberBuff(_expMonGained)],
+          }));
           awardExpOffField(mon, _expGetterSlot, _expMonGained);
           state = 'EXP_OFFFIELD_MSG_WAIT';
         }
@@ -2881,7 +3111,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       case 'EXP_AWARD_TEXT': {
         // Mon ON-FIELD (= _activePlayerSlot → playerMon). _expMonGained calculé en EXP_LOOP_NEXT.
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        showBattleMessage(`${playerMon.nickname} gagne\n${_expMonGained} POINTS D'EXP.!`);
+        // 1:1 décomp `sText_PkmnGainedEXP` ("{B_BUFF1} a gagné{B_BUFF2}\n{B_BUFF3} points EXP.!\p") :
+        // B_BUFF1 = nom (battler 0), B_BUFF2 = boost (vide en normal), B_BUFF3 = nombre d'EXP.
+        showBattleMessage(_battleMsgEx(STRINGID_PKMNGAINEDEXP, {
+          textBuffs: [buildMonNickBuff(0), new Uint8Array(0), buildNumberBuff(_expMonGained)],
+        }));
         // 1:1 décomp case 3 : la barre EXP s'anime (EmitExpUpdate) pendant que le message
         // s'affiche. Distribution par CHUNK (jusqu'au seuil de niveau) ; applyExpAward applique
         // l'exp + le level-up à la fin de chaque chunk (cf. EXP_BAR_FILL_WAIT).
@@ -2904,10 +3138,14 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (isExpFilling()) return false;
         if (!playerMon) { state = 'CLEANUP'; return false; }
         // Chunk animé fini → applique l'exp (+ level-up éventuel via applyExpAward).
+        // 1:1 décomp Cmd_getexp (3436-3441) : snapshot des stats AVANT le level-up
+        // (gBattleResources->beforeLvlUp->stats) pour la box (deltas de la page 1).
+        const _beforeLvlUpSnapshot = _computeLvlUpStats(playerMon);
         const r = applyExpAward(playerMon, _expFillPending);
         _expToGive -= _expFillPending;
         _expFillPending = 0;
         if (r.leveledUp) {
+          _lvlUpBeforeStats = _beforeLvlUpSnapshot;
           // 1:1 décomp case 4 : level-up → message BattleScript_LevelUp + refresh HP
           // window (nouveau maxHp + level). La barre EXP reset à 0% du nouveau niveau,
           // re-remplie par le prochain chunk (LEVEL_UP_WAIT → beginExpChunk).
@@ -2941,7 +3179,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         });
         // 1:1 décomp sText_PkmnGrewToLv (battle_message.c:60) : "{nom} monte au\nN. {niveau}!"
         // ("N." = abréviation officielle FR de "Niveau", PAS "niveau {N}").
-        showBattleMessage(`${playerMon.nickname} monte au\nN. ${playerMon.level}!`);
+        // 1:1 décomp `sText_PkmnGrewToLv` ("{B_BUFF1} monte au\nN. {B_BUFF2}!\p") :
+        // BUFF1 = nom du mon (battler 0), BUFF2 = niveau.
+        showBattleMessage(_battleMsgEx(STRINGID_PKMNGREWTOLV, {
+          textBuffs: [buildMonNickBuff(0), buildNumberBuff(playerMon.level), new Uint8Array(0)],
+        }));
         state = 'LEVEL_UP_WAIT';
         return false;
       }
@@ -2953,6 +3195,34 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           // niveau (Cmd_handlelearnnewmove). LEARN_MOVE_CHECK gère la file PUIS la
           // continuation (exp restante / fin). playerMon.level = nouveau niveau ici.
           _movesToLearn = playerMon ? getLevelUpMovesAtLevel(playerMon.speciesEnum, playerMon.level) : [];
+          // 1:1 décomp BattleScript_LevelUp : drawlvlupbox (0x6C) AVANT handlelearnnewmove.
+          state = 'LEVEL_UP_BOX_PG1';
+        }
+        return false;
+      }
+
+      case 'LEVEL_UP_BOX_PG1': {
+        // 1:1 décomp Cmd_drawlvlupbox case 3+4 : ouvre la box + dessine la page 1 (deltas).
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        _lvlUpAfterStats = _computeLvlUpStats(playerMon);
+        lvlUpBoxOpenPage1(_lvlUpBeforeStats, _lvlUpAfterStats);
+        state = 'LEVEL_UP_BOX_PG2';
+        return false;
+      }
+
+      case 'LEVEL_UP_BOX_PG2': {
+        // 1:1 décomp case 6 : attend une pression (gMain.newKeys != 0) → page 2 (totaux).
+        if (rt.gMain.newKeys !== 0) {
+          lvlUpBoxDrawPage2(_lvlUpAfterStats);
+          state = 'LEVEL_UP_BOX_CLOSE';
+        }
+        return false;
+      }
+
+      case 'LEVEL_UP_BOX_CLOSE': {
+        // 1:1 décomp case 8 : attend une pression → ferme la box → apprentissage des moves.
+        if (rt.gMain.newKeys !== 0) {
+          lvlUpBoxClose();
           state = 'LEARN_MOVE_CHECK';
         }
         return false;
@@ -2970,14 +3240,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           if (playerMon.moves.length < 4) {
             // 1:1 décomp sText_PkmnLearnedMove (battle_message.c:61) : "{nom} apprend\n{MOVE}!".
             playerMon.moves.push(slot);
-            showBattleMessage(`${playerMon.nickname} apprend\n${slot.nameFr.toUpperCase()}!`);
+            // 1:1 décomp `sText_PkmnLearnedMove` ("{B_BUFF1} apprend\n{B_BUFF2}!\p") :
+            // BUFF1 = nom du mon (battler 0), BUFF2 = capacité (slot.id).
+            showBattleMessage(_battleMsgEx(STRINGID_PKMNLEARNEDMOVE, {
+              textBuffs: [buildMonNickBuff(0), buildStringBuff(slot.nameFr.toUpperCase()), new Uint8Array(0)],
+            }));
           } else {
             // 1:1 décomp sText_TryToLearnMove1 + sText_TryToLearnMove2 (battle_message.c:62-63),
             // affichés l'un après l'autre. Le prompt d'oubli (sText_TryToLearnMove3 "Effacer une
             // ancienne capacité..." + yes/no box + summary screen de sélection) = différé UI (A/B).
             // Sans ce prompt, le move n'est PAS appris (= équivalent au choix "NON" → DidNotLearnMove).
-            showBattleMessage(`${playerMon.nickname} tente d'apprendre\n${slot.nameFr.toUpperCase()}.`);
-            _pendingLearnMsgs = [`Mais ${playerMon.nickname} ne peut pas\navoir plus de quatre capacités.`];
+            // 1:1 décomp `sText_TryToLearnMove1` + `sText_TryToLearnMove2`.
+            showBattleMessage(_battleMsgEx(STRINGID_TRYTOLEARNMOVE1, {
+              textBuffs: [buildMonNickBuff(0), buildStringBuff(slot.nameFr.toUpperCase()), new Uint8Array(0)],
+            }));
+            _pendingLearnMsgs = [_battleMsgEx(STRINGID_TRYTOLEARNMOVE2, {
+              textBuffs: [buildMonNickBuff(0), new Uint8Array(0), new Uint8Array(0)],
+            })];
           }
           state = 'LEARN_MOVE_MSG_WAIT';
           return false;
@@ -3069,7 +3348,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp EvolutionScene (version message ; le morph animé pixel = polish A/B).
         // _evoMon peut être off-field (un participant qui a monté + remplit une évolution).
         if (!_evoMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
-        showBattleMessage(`Quoi ?\n${_evoMon.nickname} évolue !`);
+        // 1:1 décomp `gText_PkmnIsEvolving` = "Quoi?\n{B_COPY_VAR_1} évolue!" (evolution_scene).
+        showBattleMessage(battleStringToPrinterText(
+          _getGlobalString('gText_PkmnIsEvolving').replace('{B_COPY_VAR_1}', _evoMon.nickname),
+        ));
         state = 'EVOLUTION_WAIT';
         return false;
       }
@@ -3080,7 +3362,12 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           if (!_evoMon || !_evolutionTarget) { state = 'CLEANUP_FADE_OUT'; return false; }
           const oldNick = _evoMon.nickname;
           evolveInstance(_evoMon, _evolutionTarget);   // change l'espèce + recalcule
-          showBattleMessage(`${oldNick} est devenu\n${_evoMon.speciesNameFr.toUpperCase()} !`);
+          // 1:1 décomp `gText_CongratsPkmnEvolved` = "Félicitations! Votre {B_COPY_VAR_1}\névolue en {B_COPY_VAR_2}!\p".
+          showBattleMessage(battleStringToPrinterText(
+            _getGlobalString('gText_CongratsPkmnEvolved')
+              .replace('{B_COPY_VAR_1}', oldNick)
+              .replace('{B_COPY_VAR_2}', _evoMon.speciesNameFr.toUpperCase()),
+          ));
           state = 'EVOLUTION_DONE_WAIT';
         }
         return false;
@@ -3108,7 +3395,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // outcome = B_OUTCOME_MON_FLED.
         if (_opponentAiWantsToFlee) {
           const monName = opponentMon.nickname.toUpperCase();
-          showBattleMessage(`Le ${monName} sauvage a fui !`);
+          // 1:1 décomp `sText_WildPkmnFled` = "{B_BUFF1} sauvage fuit!" (B_BUFF1 = adverse, battler 1).
+          showBattleMessage(_battleMsgEx(STRINGID_WILDPKMNFLED, {
+            textBuffs: [buildMonNickBuff(1), new Uint8Array(0), new Uint8Array(0)],
+          }));
           outcome = 6 /* BATTLE_OUTCOME_MON_FLED */;
           state = 'ACTION_RUN_WAIT';  // reuse pour fade-out
           return false;
@@ -3240,7 +3530,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_FAINTED_TEXT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        showBattleMessage(`${playerMon.nickname} est K.O.!`);
+        // 1:1 : le message de K.O. du mon joueur est affiché par le BYTECODE
+        // (BattleScript_FaintTarget) pendant la résolution du move adverse — PAS en
+        // double ici (user 2026-05-31 : "X est K.O." s'affichait 2× = inline + bytecode).
         // #10 1:1 décomp : si la party a un AUTRE mon valide → switch forcé (le combat
         // continue, pas de défaite). Sinon → défaite (whiteout). Le choix MANUEL via
         // l'écran party (Cmd_openpartyscreen PARTY_ACTION_SEND_OUT) = couche suivante ;
@@ -3265,15 +3557,48 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (messageWaitDone()) {
           HideFieldMessageBox();
           if (_pendingSwitchSlot >= 0) {
-            // #10 : il reste un mon valide → switch-in (charge le sprite du nouveau).
-            _switchLoadStarted = false;
-            _switchLoadDone = false;
-            _switchLoadFailed = false;
-            state = 'PLAYER_SWITCH_LOAD';
+            // #10 + étape 4b : il reste un mon valide → CHOIX MANUEL du remplaçant
+            // via l'écran party (1:1 Cmd_openpartyscreen PARTY_ACTION_SEND_OUT, non
+            // annulable). Le slot choisi (≠ actif K.O., vivant) revient via WAIT_SUBSCREEN.
+            state = 'OPEN_PARTY_FAINT';
           } else {
             // Plus aucun mon → défaite (fade-out avant cleanup propre).
             state = 'CLEANUP_FADE_OUT';
           }
+        }
+        return false;
+      }
+
+      // ─── Étape 4 : RAPPEL du mon sortant (switch volontaire) ───────────────
+      case 'PLAYER_RECALL_MSG': {
+        // 1:1 décomp STRINGID_RETURNMON : "Ça suffit/Reviens/OK/Bien, {X}!" (variante
+        // selon hpScale du mon rappelé). gActiveBattler=0 → le decoder prend la branche
+        // joueur. Le mon sortant (= playerMon, encore l'actif courant) rentre dans sa ball.
+        if (!playerMon) { _switchLoadStarted = false; _switchLoadDone = false; _switchLoadFailed = false; state = 'PLAYER_SWITCH_LOAD'; return false; }
+        ipcSetActiveBattler(0);
+        showBattleMessage(_battleMsgEx(STRINGID_RETURNMON, {
+          textBuffs: [buildStringBuff(playerMon.nickname.toUpperCase()), new Uint8Array(0), new Uint8Array(0)],
+        }));
+        // Anim retour-ball : le mon sortant est aspiré dans sa Poké Ball.
+        if (playerSpriteId >= 0) {
+          void startReturnToBall({
+            monSpriteId: playerSpriteId,
+            side: 'player',
+            monPalNum: _battlePlayerPalSlot,
+          });
+        }
+        state = 'PLAYER_RECALL_WAIT';
+        return false;
+      }
+
+      case 'PLAYER_RECALL_WAIT': {
+        // Attendre la fin de l'anim retour-ball + le message AVANT d'envoyer le nouveau.
+        if (getReturnToBallStatus() === 'active') return false;
+        if (messageWaitDone()) {
+          resetReturnToBallStatus();
+          HideFieldMessageBox();
+          _switchLoadStarted = false; _switchLoadDone = false; _switchLoadFailed = false;
+          state = 'PLAYER_SWITCH_LOAD';
         }
         return false;
       }
@@ -3320,6 +3645,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Détruire l'ancien sprite (mon K.O.) + créer celui du nouveau mon (back sprite
         // fraîchement chargé à PLAYER_SPRITE_BYTE_OFFSET).
         if (playerSpriteId >= 0) { rt.DestroySprite(playerSpriteId); playerSpriteId = -1; }
+        // Sûreté : stoppe toute anim faint résiduelle (le mon K.O. précédent) pour
+        // que le nouveau sprite ne soit pas re-ciblé par tickFaint (slide hors écran).
+        _faintFramesLeft = 0; _faintSpriteId = -1;
         const playerCenterY = _getBattlerSpriteFinalY(newMon.speciesEnum, true);
         const p = rt.CreateSpriteAtOam({
           tileId: PLAYER_SPRITE_BYTE_OFFSET / 32,
@@ -3332,19 +3660,57 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // Update healthbox content (surnom/genre + HP/level/exp) pour le nouveau mon.
         if (playerHealthbox) {
           updateHealthboxNick(playerHealthbox, newMon.nickname, (newMon as { monGender?: number }).monGender ?? 255);
+          // Re-montre la healthbox joueur : si on vient d'un faint→party→reshow, le
+          // reshow l'avait masquée (mon précédent K.O.). Le nouveau mon est vivant.
+          setHealthboxVisible(playerHealthbox, true);
+        }
+        // Re-assure la box adverse visible + ré-écrit son surnom (sûreté après un
+        // reshow : le re-blit des tiles box healthbox peut avoir effacé le surnom).
+        if (opponentHealthbox && opponentMon) {
+          setHealthboxVisible(opponentHealthbox, true);
+          updateHealthboxNick(opponentHealthbox, opponentMon.nickname, (opponentMon as { monGender?: number }).monGender ?? 255);
         }
         renderHpWindows();
-        // 1:1 STRINGID_GOPKMN : "En avant, {NAME}!" (envoi du mon).
-        showBattleMessage(`En avant,\n${newMon.nickname.toUpperCase()}!`);
+        // Étape 4/4b : anim SEND-OUT 1:1 — le mon entrant SORT de sa Poké Ball
+        // (ball depuis (24,68) → arc vers le mon → s'ouvre → émergence affine), comme
+        // l'intro mais SANS le dresseur (mid-combat). startSendOut cache le mon puis
+        // le révèle à l'émergence. tickSendOut est tické au tick central.
+        void startSendOut({
+          monSpriteId: playerSpriteId,
+          side: 'player',
+          monPalNum: _battlePlayerPalSlot,
+          species: newMon.speciesName,
+          endX: SBATTLER_COORD_X_PLAYER, endY: playerCenterY,
+        });
+        // 1:1 décomp `sText_GoPkmn2`/`STRINGID_SWITCHINMON` = "{B_BUFF1}! Go!" (le décomp FR
+        // dit littéralement "X! Go!", PAS "En avant, X!"). B_BUFF1 = le mon envoyé.
+        showBattleMessage(_battleMsgEx(STRINGID_SWITCHINMON, {
+          textBuffs: [buildStringBuff(newMon.nickname.toUpperCase()), new Uint8Array(0), new Uint8Array(0)],
+        }));
         state = 'PLAYER_SWITCH_WAIT';
         return false;
       }
 
       case 'PLAYER_SWITCH_WAIT': {
+        // Attendre la fin de l'anim send-out (le mon a émergé de la ball) AVANT
+        // de poursuivre — sinon le mon resterait invisible/mi-émergé.
+        if (getSendOutStatus() === 'active') return false;
         if (messageWaitDone()) {
+          resetSendOutStatus();
           HideFieldMessageBox();
-          // Le switch a consommé le tour → tour suivant (sélection d'action).
-          state = 'PLAYER_TURN_PROMPT';
+          if (_switchIsVoluntary) {
+            // Switch VOLONTAIRE (SAC POKéMON) = l'action du tour → l'adversaire
+            // attaque ensuite (1:1 : le switch s'exécute, puis le move adverse).
+            // Même schéma que la fuite ratée / la POKé BALL échouée.
+            _switchIsVoluntary = false;
+            opponentMoveIndex = pickOpponentMove();
+            _turnOrder = [0, 1];
+            _turnPhase = 1;   // créneau joueur (switch) joué → reste l'adversaire.
+            state = 'OPPONENT_USES_MOVE';
+          } else {
+            // Switch après K.O. = tour neuf (le faint a déjà consommé le tour).
+            state = 'PLAYER_TURN_PROMPT';
+          }
         }
         return false;
       }
@@ -3646,6 +4012,207 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       drawHpBar(oppHpWindowId, 0, 0, opponentMon.currentHp, opponentMon.maxHp);
     }
   };
+
+  // ─── reshowBattleScene — 1:1 décomp `CB2_ReshowBattleScreenAfterMenu` ────────
+  // (reshow_battle_screen.c) adapté au combat INLINE. Un écran CB2 (sac/party)
+  // ouvert depuis le combat a détruit la scène (ResetSpriteData +
+  // FreeAllSpritePalettes + ResetTasks + InitWindows de l'écran + vram). On la
+  // RECONSTRUIT intégralement depuis l'état COURANT (mon actif + adversaire + HP
+  // courants) : windowing battle, textbox+terrain, 2 sprites mon, 2 healthbox.
+  // Async (load PNG) → piloté frame-par-frame par `_reshowPumpCB2`.
+  const reshowBattleScene = async (): Promise<void> => {
+    const r = getRuntime();
+    if (!r || !playerMon || !opponentMon) return;
+    // Stoppe toute anim faint en cours : le mon K.O. (faint→party) a un slide
+    // gelé (_faintFramesLeft>0) ; le reshow recrée un sprite qui réutilise le slot
+    // → tickFaint ferait glisser le NOUVEAU mon hors écran (bug "JIRACHI absent").
+    _faintFramesLeft = 0; _faintSpriteId = -1;
+    // Re-assert les suspends OW (sûreté : le terrain ne doit pas re-dessiner).
+    try {
+      const [oeMod, fcMod] = await Promise.all([
+        import('../field/object-events'),
+        import('../field/field-camera'),
+      ]);
+      oeMod.setObjectEventsSuspended(true);
+      fcMod.setFieldCameraSuspended(true);
+    } catch { /* noop */ }
+    pauseTilesetAnimations();
+    for (let i = 0; i < 4; i++) { const c = r.gba.bg(i as 0 | 1 | 2 | 3).config; c.hofs = 0; c.vofs = 0; }
+
+    // 1:1 reshow case 0+2 : ré-init le windowing battle (InitWindows remet
+    // gWindows aux templates B_WIN_* — l'écran CB2 l'avait remplacé) PUIS
+    // recharge textbox + terrain (vram.fill interne wipe l'écran).
+    const bgMod = await import('./battle-bg');
+    const setupMod = await import('./battle-setup-helpers');
+    bgMod.BattleInitBgsAndWindows();
+    const env = setupMod.BattleSetup_GetEnvironmentId();
+    await bgMod.loadBattleTextboxAndBackground(env);
+
+    // 1:1 reshow case 4 : FreeAllSpritePalettes → mons reprennent slots OBJ 0/1,
+    // healthbox 5/6 (comme LOAD_ASSETS).
+    FreeAllSpritePalettes();
+    // L'écran CB2 (sac/party) a wipé la VRAM OBJ → le ball asset send-out (chargé
+    // à l'intro) est stale. On le réinitialise pour qu'il se recharge proprement
+    // (tiles fraîches, après les mons/healthbox) au prochain startSendOut (switch-in).
+    resetSendOutAssets();
+
+    // 1:1 reshow case 7-14 : reload + recreate les sprites des 2 battlers depuis
+    // l'état courant. Le player = mon ACTIF courant (peut avoir changé via switch).
+    const playerDexId = playerMon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+    const playerUrl = `/decomp/em/pokemon/${playerDexId}/back.png`;
+    const playerWH = await detectImageWH(playerUrl);
+    if (playerWH) { const s = oamShapeSizeFromWH(playerWH.w, playerWH.h); playerSpriteShape = s.shape; playerSpriteSize = s.size; }
+    const playerMonTiles = playerWH ? (playerWH.w >> 3) * (playerWH.h >> 3) : 64;
+    PLAYER_SPRITE_BYTE_OFFSET = AllocSpriteTiles(playerMonTiles) * 32;
+    AllocSpriteTileRange(TAG_BATTLE_PLAYER_MON, PLAYER_SPRITE_BYTE_OFFSET / 32, playerMonTiles);
+    const playerLoaded = await r.LoadCompressedSpriteSheet(playerUrl, PLAYER_SPRITE_BYTE_OFFSET);
+    FreeSpritePaletteByTag(TAG_BATTLE_PLAYER_PAL);
+    _battlePlayerPalSlot = LoadSpritePalette({ data: playerLoaded.palette, tag: TAG_BATTLE_PLAYER_PAL });
+
+    const oppDexId = opponentMon.speciesEnum.replace('SPECIES_', '').toLowerCase();
+    const oppAnimUrl = `/decomp/em/pokemon/${oppDexId}/anim_front.png`;
+    const oppStaticUrl = `/decomp/em/pokemon/${oppDexId}/front.png`;
+    const oppAnimWH = await detectImageWH(oppAnimUrl);
+    const oppUrl = oppAnimWH ? oppAnimUrl : oppStaticUrl;
+    const oppWH = oppAnimWH ?? await detectImageWH(oppUrl);
+    if (oppWH) { const s = oamShapeSizeFromWH(oppWH.w, oppWH.h); oppSpriteShape = s.shape; oppSpriteSize = s.size; }
+    const oppMonTiles = oppWH ? (oppWH.w >> 3) * (oppWH.h >> 3) : 128;
+    OPPONENT_SPRITE_BYTE_OFFSET = AllocSpriteTiles(oppMonTiles) * 32;
+    AllocSpriteTileRange(TAG_BATTLE_OPPONENT_MON, OPPONENT_SPRITE_BYTE_OFFSET / 32, oppMonTiles);
+    const oppLoaded = await r.LoadCompressedSpriteSheet(oppUrl, OPPONENT_SPRITE_BYTE_OFFSET);
+    FreeSpritePaletteByTag(TAG_BATTLE_OPPONENT_PAL);
+    _battleOpponentPalSlot = LoadSpritePalette({ data: oppLoaded.palette, tag: TAG_BATTLE_OPPONENT_PAL });
+
+    HideBg(1); HideBg(2); ShowBg(3);
+    r.gba.bg(3).config.hofs = 0; r.gba.bg(3).config.vofs = 0;
+
+    // 1:1 reshow case 11-14 CreateBattlerSprite (coords centre, prio 2 = derrière box).
+    if (opponentSpriteId >= 0) { r.DestroySprite(opponentSpriteId); opponentSpriteId = -1; }
+    if (playerSpriteId >= 0) { r.DestroySprite(playerSpriteId); playerSpriteId = -1; }
+    const oppCenterY = _getBattlerSpriteFinalY(opponentMon.speciesEnum, false);
+    const playerCenterY = _getBattlerSpriteFinalY(playerMon.speciesEnum, true);
+    const opp = r.CreateSpriteAtOam({
+      tileId: OPPONENT_SPRITE_BYTE_OFFSET / 32, paletteBank: _battleOpponentPalSlot,
+      x: SBATTLER_COORD_X_OPPONENT, y: oppCenterY,
+      shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE, priority: 2,
+    });
+    opponentSpriteId = opp.spriteId;
+    // Reshow : recrée le sprite du mon joueur courant. (Note : sur le chemin
+    // faint→party→reshow le mon courant est encore le K.O. ; PLAYER_SWITCH_SPAWN
+    // le remplace juste après par le mon choisi. On le recrée quand même pour
+    // garder le chemin reshow IDENTIQUE au switch volontaire — masquer ici le
+    // sprite/box du K.O. régressait la box adverse.)
+    {
+      const player = r.CreateSpriteAtOam({
+        tileId: PLAYER_SPRITE_BYTE_OFFSET / 32, paletteBank: _battlePlayerPalSlot,
+        x: SBATTLER_COORD_X_PLAYER, y: playerCenterY,
+        shape: POKEMON_SPRITE_SHAPE, size: POKEMON_SPRITE_SIZE, priority: 2,
+      });
+      playerSpriteId = player.spriteId;
+    }
+
+    // 1:1 reshow case 15-18 CreateHealthboxSprite + UpdateHealthboxAttribute(HEALTHBOX_ALL).
+    resetHealthboxAllocation();
+    opponentHealthbox = null; playerHealthbox = null;
+    const oppHb = await createBattlerHealthboxSprites('opponent');
+    opponentHealthbox = oppHb;
+    if (oppHb) setHealthboxVisible(oppHb, true);
+    const plHb = await createBattlerHealthboxSprites('player');
+    playerHealthbox = plHb;
+    if (plHb) setHealthboxVisible(plHb, true);
+    // Surnoms APRÈS les 2 créations : la 2e `ensureHealthboxAssets` (cache-hit)
+    // RE-BLIT les tiles box des DEUX healthbox → un surnom écrit trop tôt (avant
+    // cette re-blit) serait effacé (bug observé : surnom adverse manquant au reshow).
+    if (oppHb && opponentMon) updateHealthboxNick(oppHb, opponentMon.nickname, (opponentMon as { monGender?: number }).monGender ?? 255);
+    if (plHb && playerMon) updateHealthboxNick(plHb, playerMon.nickname, (playerMon as { monGender?: number }).monGender ?? 255);
+    renderHpWindows();
+
+    // Les windows battle (lazy AddWindow) sont invalidées par l'InitWindows de
+    // l'écran CB2 → forcer leur ré-création au prochain usage.
+    msgWindowId = -1;
+    actionMenuWindowId = -1; actionPromptWindowId = -1;
+    moveMenuWindowId = -1; moveName1WinId = -1; moveName2WinId = -1; moveName3WinId = -1; moveName4WinId = -1;
+    movePpWinId = -1; movePpRemainingWinId = -1; moveTypeWinId = -1;
+    try {
+      const { InitFieldMessageBox } = await import('../field/field-message-box');
+      InitFieldMessageBox();
+    } catch { /* noop */ }
+
+    // Palettes battle visibles instant (l'écran a pu laisser gPlttBufferFaded
+    // sombre via son fade de fermeture). Stoppe le fade + force faded←unfaded.
+    try { r.gPaletteFade.active = false; } catch { /* noop */ }
+    _restorePalettesFromUnfaded();
+  };
+
+  // _reshowPumpCB2 — CB2 transitoire posé comme gMain.callback2 à la fermeture
+  // d'un sous-écran. Lance reshowBattleScene (async), puis quand fini lit le
+  // résultat (item/mon) et restaure l'OW CB2 sauvé → script context reprend →
+  // flow.tick repart dans WAIT_SUBSCREEN.
+  const _reshowPumpCB2 = (): void => {
+    if (!_reshowStarted) {
+      _reshowStarted = true;
+      reshowBattleScene()
+        .then(() => { _reshowFinished = true; })
+        .catch((e) => { console.error('[battle-flow] reshowBattleScene failed', e); _reshowFinished = true; });
+    }
+    if (_reshowFinished) {
+      const r = getRuntime();
+      if (_subScreenKind === 'bag') {
+        _subScreenItemId = gSpecialVar.ItemId ?? 0;
+      } else if (_subScreenKind === 'party-switch' || _subScreenKind === 'party-faint') {
+        _subScreenMonSlot = (globalThis as { __battleSwitchResultSlot?: number }).__battleSwitchResultSlot ?? -1;
+      }
+      _subScreenReturned = true;
+      if (r && _savedOverworldCb) r.SetMainCallback2(_savedOverworldCb);
+    }
+  };
+
+  // _onSubScreenClose — exitCallback passé à GoToBagMenu / OpenPartyScreen*. Appelé
+  // (comme gMain.callback2) à la fermeture de l'écran → arme le pump reshow.
+  const _onSubScreenClose = (): void => {
+    _reshowStarted = false;
+    _reshowFinished = false;
+    const r = getRuntime();
+    if (r) r.SetMainCallback2(_reshowPumpCB2);
+  };
+
+  // Ouvre l'écran party en mode choix-de-mon-combat (SEND_OUT). kind = 'party-switch'
+  // (switch volontaire, annulable) ou 'party-faint' (après K.O., NON annulable).
+  const _openPartySwitchScreen = (kind: 'party-switch' | 'party-faint'): void => {
+    const r = getRuntime();
+    if (!r) return;
+    _subScreenKind = kind;
+    _subScreenReturned = false;
+    _subScreenMonSlot = -1;
+    _savedOverworldCb = r.gMain.callback2 as typeof _savedOverworldCb;
+    (globalThis as { __battleSwitchResultSlot?: number }).__battleSwitchResultSlot = -1;
+    void import('../ui/party-screen').then(({ OpenPartyScreenForBattleSwitch }) => {
+      OpenPartyScreenForBattleSwitch(_onSubScreenClose, {
+        activeSlot: _activePlayerSlot,
+        allowCancel: kind === 'party-switch',
+      });
+    });
+  };
+
+  // Étape 3 : ouvre le VRAI sac en combat (ITEMMENULOCATION_BATTLE). gSpecialVar.ItemId
+  // est pré-posé à 0 → si le joueur annule (B), le pump lira 0 (= rien choisi). Sur
+  // "UTILIS." d'un item, ItemMenu_UseInBattle (bag-menu-ctx) ferme le sac en laissant
+  // gSpecialVar.ItemId = l'item sélectionné (posé à la sélection A, bag-menu.ts:1964).
+  const _openBattleBag = (): void => {
+    const r = getRuntime();
+    if (!r) return;
+    _subScreenKind = 'bag';
+    _subScreenReturned = false;
+    _subScreenItemId = 0;
+    gSpecialVar.ItemId = 0;
+    _savedOverworldCb = r.gMain.callback2 as typeof _savedOverworldCb;
+    void import('../bag/bag-menu').then(({ GoToBagMenu, ITEMMENULOCATION_BATTLE, POCKETS_COUNT }) => {
+      GoToBagMenu(ITEMMENULOCATION_BATTLE, POCKETS_COUNT, _onSubScreenClose);
+    });
+  };
+
+  // Gen 3 (Hoenn) : les Poké Balls sont les items 1..12 (MASTER_BALL=1 … PREMIER_BALL=12).
+  const _isBallItem = (itemId: number): boolean => itemId >= 1 && itemId <= 12;
 
   const flow: BattleFlow = {
     tick,

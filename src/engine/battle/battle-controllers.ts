@@ -287,12 +287,13 @@ export function BtlController_EmitSpriteInvisibility(_bufferId: number, isInvisi
  *  bitmask (= sur Emit de plusieurs mons). Pour single mon, on flush via
  *  gActiveBattler. Pour bitmask, on itère. */
 export function BtlController_EmitSetMonData(
-  _bufferId: number, requestId: number, _monToCheck: number, _bytes: number, data: unknown,
+  _bufferId: number, requestId: number, monToCheck: number, _bytes: number, data: unknown,
 ): void {
   // Lazy import pour éviter circular deps via party-storage → state.
-  const ps = (globalThis as { __batPSetMonByActive?: (req: number, data: unknown) => void })
+  // 1:1 décomp : monToCheck (bitmask, 0 = mon actif) propagé pour le multi-mon (Heal Bell).
+  const ps = (globalThis as { __batPSetMonByActive?: (req: number, data: unknown, monToCheck?: number) => void })
     .__batPSetMonByActive;
-  if (ps) ps(requestId, data);
+  if (ps) ps(requestId, data, monToCheck);
 }
 
 /** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`

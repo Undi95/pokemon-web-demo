@@ -479,7 +479,10 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       }
       const eff = gBattleCommunication[MOVE_EFFECT_BYTE_IDX];
       if (eff === 2 /* POISON */ || eff === 6 /* TOXIC */ || eff === 5 /* PARALYSIS */ || eff === 3 /* BURN */) {
-        // gBattleStruct->synchronizeMoveEffect = eff. Notre port : skip (= AbilityBattleEffects ATK_SYNCHRONIZE wired).
+        // 1:1 décomp l.2508-2510 : écrire synchronizeMoveEffect PUIS poser le HITMARKER.
+        // Synchro (ability-battle-effects.ts) LIT gBattleStruct.synchronizeMoveEffect pour
+        // rejouer le statut sur l'attaquant — sans cette écriture il lisait 0 (statut faux/aucun).
+        gBattleStruct.synchronizeMoveEffect = eff;
         setHitMarker(gHitMarker | HITMARKER_SYNCHRONIZE_EFFECT);
       }
       return;
@@ -750,7 +753,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         } else {
           // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         }
-      } else if (eff === 55 /* SP_ATK_TWO_DOWN (NOTHING_37) */) {
+      } else if (eff === 59 /* MOVE_EFFECT_SP_ATK_TWO_DOWN (battle.h:304) = Surchauffe/Overheat ; 55=NOTHING_37 (no-op) */) {
         ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_SAtkDown2');
         if (off >= 0) ctx.scriptPtr = off;

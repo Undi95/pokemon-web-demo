@@ -287,14 +287,13 @@ export async function loadBattleTextbox(): Promise<void> {
   // → palettes slot 0 + 1 (= 32 entries 0..31).
   LoadPalette(assets.palette0, 0, 32);
   LoadPalette(assets.palette1, 16, 32);
-  // Backdrop combat = couleur d'ombre des boxes (textbox palette index 9 =
-  // #484050), PAS le noir (index 0). La ROM officielle montre #484050 dans les
-  // pixels transparents AUTOUR/ENTRE les boxes menu (= ces pixels tombent sur le
-  // backdrop BG palette[0]). Les données STATIQUES du décomp ont textbox[0]=noir,
-  // donc un mécanisme runtime met le backdrop à cette teinte ; on réplique le
-  // RÉSULTAT visible avec la propre couleur décomp (textbox[9]). Seules les zones
-  // transparentes du combat sont affectées (la scène est couverte par BG3).
-  LoadPalette(new Uint16Array([assets.palette0[9]]), 0, 2);
+  // NB (2026-05-31, A/B user couleurs) : on NE force PLUS le backdrop BG palette[0]
+  // à #484050 (= textbox[9], couleur de FOND de la box menu). C'était une erreur :
+  // la ROM montre #000000 (NOIR) dans le backdrop + les cadres de textbox ; le
+  // #484050 n'est QUE le fond de la box menu d'action (rendu par les TILES textbox,
+  // donc inchangé). Forcer palette[0]=#484050 polluait le NOIR de la transition
+  // d'intro (split-slide) → violet, + les cadres. On laisse palette[0]=textbox[0]
+  // (= noir statique décomp, chargé par le LoadPalette ci-dessus).
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge

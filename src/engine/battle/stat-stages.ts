@@ -33,6 +33,8 @@ import {
   gMoveResultFlags,
   gBattleCommunication,
   gSideTimers,
+  gSpecialStatuses,
+  gBattleScripting,
   setMoveResultFlags,
   setActiveBattler,
   setLastUsedAbility,
@@ -74,6 +76,25 @@ const STRINGID_STATROSE = 210;
 const STRINGID_STATHARSHLY = 211;
 const STRINGID_STATFELL = 212;
 
+/** Deps script-context injectées par le wrapper Cmd_statbuffchange. Les fonctions
+ *  qui ont besoin du BattleScriptContext (push/jump/protect/record) vivent dans
+ *  battle-script-commands.ts / battle-controllers.ts → import direct = cycle ESM.
+ *  On les injecte donc à l'appel (pattern setter-injection). 1:1 décomp :
+ *  BattleScriptPush + gBattlescriptCurrInstr + JumpIfMoveAffectedByProtect(0)
+ *  + getBattleScriptOffset + RecordAbilityBattle. */
+export interface StatBuffScriptDeps {
+  /** BattleScriptPush(ctx, offset) — push l'adresse de retour (BS_ptr). */
+  pushReturnPtr: (offset: number) => void;
+  /** gBattlescriptCurrInstr = offset. */
+  setScriptPtr: (offset: number) => void;
+  /** getBattleScriptOffset(label) — résout BattleScript_* → offset bytecode. */
+  offsetOf: (label: string) => number;
+  /** JumpIfMoveAffectedByProtect(0) — true si bloqué par Abri/Détection. */
+  isAffectedByProtect: () => boolean;
+  /** RecordAbilityBattle(battler, ability) — tracking IA. */
+  recordAbility: (battler: number, ability: number) => void;
+}
+
 /** 1:1 décomp `ChangeStatBuffs(s8 statValue, u8 statId, u8 flags, const u8 *BS_ptr)`
  *  (battle_script_commands.c:6940-7110).
  *
@@ -81,12 +102,15 @@ const STRINGID_STATFELL = 212;
  *              Magnitude encoded via GET_STAT_BUFF_VALUE (= bits 4-6).
  *  statId    : STAT_ATK..STAT_EVASION.
  *  flags     : STAT_CHANGE_* + MOVE_EFFECT_* bits.
- *  BS_ptr    : jump target si STAT_CHANGE_ALLOW_PTR et fail (= push script + jump). */
+ *  BS_ptr    : jump target (offset bytecode) si STAT_CHANGE_ALLOW_PTR et fail.
+ *  deps      : si fourni (chemin opcode), active les push+jumps vers les scripts de
+ *              message des protections (Brume/Clear Body/etc.) + la branche Protect. */
 export function ChangeStatBuffs(
   statValue: number,
   statId: number,
   flags: number,
-  _BS_ptr: number,  // bytecode offset; pour now non utilisé (= BattleScriptPush deferred ici)
+  BS_ptr: number,
+  deps?: StatBuffScriptDeps,
 ): number {
   let certain = false;
   let notProtectAffected = false;
@@ -119,43 +143,73 @@ export function ChangeStatBuffs(
   let appliedDelta = isDecrease ? -magnitude : magnitude;
 
   if (isDecrease) {
-    // 1:1 décomp battle_script_commands.c:6965 :
-    // Mist (gSideTimers[side].mistTimer) bloque stat drops sauf si certain ou MOVE_CURSE.
+    // 1:1 décomp battle_script_commands.c:6965-7041. Chaîne else-if (= comme décomp) :
+    // Mist → Protect → Clear Body/White Smoke → Keen Eye → Hyper Cutter → Shield Dust.
+    // Quand flags === STAT_CHANGE_ALLOW_PTR (chemin opcode) + `deps` fournis : on push
+    // BS_ptr + jump au script de message (qui finit par `return` → repop BS_ptr).
     if (
       gSideTimers[GET_BATTLER_SIDE(activeBattler)].mistTimer
       && !certain && gCurrentMove !== MOVE_CURSE
     ) {
-      // STAT_CHANGE_ALLOW_PTR path : push BS_ptr puis jump à BattleScript_MistProtected.
-      // Pour now : on retourne DIDNT_WORK (= same result que decomp).
-      // Deferred : si ALLOW_PTR + ptr stack, push BattleScript_MistProtected pour le message UI.
+      // 1:1 décomp 6968-6981 : Brume (Mist).
+      if (deps && flags === STAT_CHANGE_ALLOW_PTR) {
+        if (gSpecialStatuses[activeBattler].statLowered) {
+          deps.setScriptPtr(BS_ptr);
+        } else {
+          deps.pushReturnPtr(BS_ptr);
+          gBattleScripting.battler = activeBattler;
+          deps.setScriptPtr(deps.offsetOf('BattleScript_MistProtected'));
+          gSpecialStatuses[activeBattler].statLowered = 1;
+        }
+      }
       return STAT_CHANGE_DIDNT_WORK;
-    }
-
-    // Skip JumpIfMoveAffectedByProtect — port partial session 138 (= bloque si target Protect+).
-
-    // Clear Body / White Smoke block all stat drops (sauf si certain ou MOVE_CURSE).
-    if (
+    } else if (
+      // 1:1 décomp 6984-6989 : bloqué par Abri/Détection (Protect).
+      gCurrentMove !== MOVE_CURSE && !notProtectAffected
+      && deps !== undefined && deps.isAffectedByProtect()
+    ) {
+      deps.setScriptPtr(deps.offsetOf('BattleScript_ButItFailed'));
+      return STAT_CHANGE_DIDNT_WORK;
+    } else if (
       (mon.ability === ABILITY_CLEAR_BODY || mon.ability === ABILITY_WHITE_SMOKE)
       && !certain && gCurrentMove !== MOVE_CURSE
     ) {
-      setLastUsedAbility(mon.ability);
+      // 1:1 décomp 6990-7011 : Clear Body / White Smoke (toutes les baisses).
+      if (deps && flags === STAT_CHANGE_ALLOW_PTR) {
+        if (gSpecialStatuses[activeBattler].statLowered) {
+          deps.setScriptPtr(BS_ptr);
+        } else {
+          deps.pushReturnPtr(BS_ptr);
+          gBattleScripting.battler = activeBattler;
+          deps.setScriptPtr(deps.offsetOf('BattleScript_AbilityNoStatLoss'));
+          setLastUsedAbility(mon.ability);
+          deps.recordAbility(activeBattler, mon.ability);
+          gSpecialStatuses[activeBattler].statLowered = 1;
+        }
+      }
       return STAT_CHANGE_DIDNT_WORK;
-    }
-
-    // Keen Eye blocks ACC drop.
-    if (mon.ability === ABILITY_KEEN_EYE && !certain && statId === STAT_ACC) {
-      setLastUsedAbility(mon.ability);
+    } else if (mon.ability === ABILITY_KEEN_EYE && !certain && statId === STAT_ACC) {
+      // 1:1 décomp 7012-7024 : Keen Eye bloque la baisse de PRÉCISION.
+      if (deps && flags === STAT_CHANGE_ALLOW_PTR) {
+        deps.pushReturnPtr(BS_ptr);
+        gBattleScripting.battler = activeBattler;
+        deps.setScriptPtr(deps.offsetOf('BattleScript_AbilityNoSpecificStatLoss'));
+        setLastUsedAbility(mon.ability);
+        deps.recordAbility(activeBattler, mon.ability);
+      }
       return STAT_CHANGE_DIDNT_WORK;
-    }
-
-    // Hyper Cutter blocks ATK drop.
-    if (mon.ability === ABILITY_HYPER_CUTTER && !certain && statId === STAT_ATK) {
-      setLastUsedAbility(mon.ability);
+    } else if (mon.ability === ABILITY_HYPER_CUTTER && !certain && statId === STAT_ATK) {
+      // 1:1 décomp 7025-7037 : Hyper Cutter bloque la baisse d'ATTAQUE.
+      if (deps && flags === STAT_CHANGE_ALLOW_PTR) {
+        deps.pushReturnPtr(BS_ptr);
+        gBattleScripting.battler = activeBattler;
+        deps.setScriptPtr(deps.offsetOf('BattleScript_AbilityNoSpecificStatLoss'));
+        setLastUsedAbility(mon.ability);
+        deps.recordAbility(activeBattler, mon.ability);
+      }
       return STAT_CHANGE_DIDNT_WORK;
-    }
-
-    // Shield Dust blocks if flags == 0 (= secondary effect from move).
-    if (mon.ability === ABILITY_SHIELD_DUST && flags === 0) {
+    } else if (mon.ability === ABILITY_SHIELD_DUST && flags === 0) {
+      // 1:1 décomp 7038-7041 : Shield Dust bloque les effets secondaires (flags == 0).
       return STAT_CHANGE_DIDNT_WORK;
     }
 

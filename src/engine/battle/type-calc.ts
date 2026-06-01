@@ -128,7 +128,7 @@ function getMoveType(move: number): number {
  *  }
  *  ```
  *  Wonder Guard check (= `AttacksThisTurn() == 2`) skip si charging turn. */
-function attacksThisTurn(_battler: number, move: number): number {
+export function attacksThisTurn(_battler: number, move: number): number {
   const effect = getBattleMove(move).effect;
   if (effect === EFFECT_SOLAR_BEAM && (gBattleWeather & B_WEATHER_SUN)) {
     return 2;

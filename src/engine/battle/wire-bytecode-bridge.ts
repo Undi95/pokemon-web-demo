@@ -113,7 +113,7 @@ import {
   CONTROLLER_PRINTSTRINGPLAYERONLY,
   type BattleEvent,
 } from './battle-event-queue';
-import { decodeBattleString, stripGbaControlCodes } from './battle-string-decoder';
+import { decodeBattleString, battleStringToPrinterText } from './battle-string-decoder';
 
 // ─── Move result decoding (= 1:1 décomp battle.h MOVE_RESULT_*) ──────────
 
@@ -366,7 +366,10 @@ export function runMoveScriptViaBytecode(opts: {
     allEvents.push(ev);
     if (ev.type === CONTROLLER_PRINTSTRING || ev.type === CONTROLLER_PRINTSTRINGPLAYERONLY) {
       const decoded = decodeBattleString(ev.stringId, ev.msgData);
-      const clean = stripGbaControlCodes(decoded);
+      // #textes 1:1 : préserve `\p`/`\l`/`{PAUSE N}` (= ▼ + attente A / timer selon
+      // le code de fin de message décomp) au lieu de tout stripper. Le caller affiche
+      // via showBattleMessage qui interprète ces codes (printer animé).
+      const clean = battleStringToPrinterText(decoded);
       if (clean.length > 0) messages.push(clean.trim());
     }
   }
@@ -396,7 +399,10 @@ export function drainBattleEventsAsText(): { messages: string[]; eventsCount: nu
     events.push(ev);
     if (ev.type === CONTROLLER_PRINTSTRING || ev.type === CONTROLLER_PRINTSTRINGPLAYERONLY) {
       const decoded = decodeBattleString(ev.stringId, ev.msgData);
-      const clean = stripGbaControlCodes(decoded);
+      // #textes 1:1 : préserve `\p`/`\l`/`{PAUSE N}` (= ▼ + attente A / timer selon
+      // le code de fin de message décomp) au lieu de tout stripper. Le caller affiche
+      // via showBattleMessage qui interprète ces codes (printer animé).
+      const clean = battleStringToPrinterText(decoded);
       if (clean.length > 0) messages.push(clean.trim());
     }
   }

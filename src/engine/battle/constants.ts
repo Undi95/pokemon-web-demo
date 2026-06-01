@@ -519,6 +519,7 @@ export const SE_SUPER_EFFECTIVE    = 14;
 export const REQUEST_ALL_BATTLE      = 0;
 export const REQUEST_SPECIES_BATTLE  = 1;
 export const REQUEST_HELDITEM_BATTLE = 2;
+export const REQUEST_MOVES_PP_BATTLE = 3;
 export const REQUEST_STATUS_BATTLE   = 40;
 export const REQUEST_LEVEL_BATTLE    = 41;
 export const REQUEST_HP_BATTLE       = 42;

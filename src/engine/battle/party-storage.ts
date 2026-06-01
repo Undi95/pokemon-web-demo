@@ -938,15 +938,9 @@ const REQUEST_MAX_HP_BATTLE_PSC     = 43;
  *
  *  Cette fn est appelée par BtlController_EmitSetMonData via globalThis bridge
  *  (= éviter circular deps). */
-function _setMonByActiveBattler(requestId: number, data: unknown): void {
-  const active = gActiveBattler;
-  const side = GET_BATTLER_SIDE(active);
-  const party = side === 0 ? gPlayerParty : gEnemyParty;
-  const partyIdx = gBattlerPartyIndexes[active];
-  if (partyIdx < 0 || partyIdx >= 6) return;
-  const mon = party[partyIdx];
-  if (!mon) return;
-
+// 1:1 décomp SetPlayerMonData (battle_controller_player.c:1949) : applique UNE requête
+// SetMonData à UN mon donné. Extrait pour permettre l'itération multi-mon (Heal Bell).
+function _applySetMonData(mon: Parameters<typeof SetMonData>[0], requestId: number, data: unknown, active: number): void {
   // Decode data : peut être un nombre direct, ou un Uint8Array/array.
   const value = typeof data === 'number' ? data : 0;
 
@@ -1013,6 +1007,28 @@ function _setMonByActiveBattler(requestId: number, data: unknown): void {
     default:
       // Other requests (cool, charm, etc.) — deferred Phase 1.4+.
       return;
+  }
+}
+
+/** 1:1 décomp PlayerHandleSetMonData (battle_controller_player.c:1927-1947) :
+ *  monToCheck=0 → mon ACTIF ; sinon BITMASK → itère les 6 slots de la party
+ *  (Heal Bell / Aromathérapie effacent le statut des mons du BANC sélectionnés). */
+function _setMonByActiveBattler(requestId: number, data: unknown, monToCheck = 0): void {
+  const active = gActiveBattler;
+  const side = GET_BATTLER_SIDE(active);
+  const party = side === 0 ? gPlayerParty : gEnemyParty;
+  if (monToCheck === 0) {
+    const partyIdx = gBattlerPartyIndexes[active];
+    if (partyIdx < 0 || partyIdx >= 6) return;
+    const mon = party[partyIdx];
+    if (mon) _applySetMonData(mon, requestId, data, active);
+  } else {
+    for (let i = 0; i < 6; i++) {
+      if (monToCheck & (1 << i)) {
+        const mon = party[i];
+        if (mon) _applySetMonData(mon, requestId, data, active);
+      }
+    }
   }
 }
 

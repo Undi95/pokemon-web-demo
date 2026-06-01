@@ -221,7 +221,13 @@ export interface TextPrinter {
   resolveFont?: (fontId: number) => { glyphData: number[][]; glyphWidths: Uint8Array };
 
   // Down arrow asset (reusable)
-  downArrowPixels?: number[][]; // rows of cols, idx 0-3 (depuis down_arrow.json)
+  downArrowPixels?: number[][]; // rows of cols, idx 0/2/4 (depuis down_arrow.json) — terrain/menus
+  /** 1:1 décomp text.c:72 `sDarkDownArrowTiles` (down_arrow_alt.png) : flèche de
+   *  fin de texte ALTERNATIVE blittée quand `gTextFlags.useAlternateDownArrow`
+   *  (= COMBAT, evolution, Pokenav). Indices 1/2/10 authored pour la palette
+   *  textbox COMBAT (idx1=contour blanc, idx2=rouge, idx10=fond box) — vs
+   *  0/2/4 de la flèche terrain authored pour gMessageBox_Pal. */
+  darkDownArrowPixels?: number[][];
 
   // PAUSE state counter (frames restant avant continuation)
   pauseCounter: number;
@@ -458,6 +464,14 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
       const closeIdx = str.indexOf('}', i + 1);
       if (closeIdx > 0) {
         const inner = str.slice(i + 1, closeIdx).trim();
+        // 1:1 décomp `{PAUSE_UNTIL_PRESS}` (EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, 2 bytes,
+        // SANS param) = attend l'appui A (▼) sans clear. Traité AVANT le regex param
+        // ci-dessous (qui exige `\s+(\S+)` → ne matche pas un code sans argument).
+        if (inner === 'PAUSE_UNTIL_PRESS') {
+          bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
+          i = closeIdx + 1;
+          continue;
+        }
         // Bug session 96 : ce regex ne matchait QUE COLOR/SHADOW/HIGHLIGHT/PAUSE.
         // Du coup `{CLEAR N}` / `{SKIP N}` / `{CLEAR_TO N}` / `{MIN_LETTER_SPACING N}`
         // tombaient dans le fallback "skip silencieusement" (= ligne 421), et
@@ -542,6 +556,7 @@ export interface AddTextPrinterOpts {
   lineSpacing?: number;
   textSpeed?: number;
   downArrowPixels?: number[][];
+  darkDownArrowPixels?: number[][];  // 1:1 sDarkDownArrowTiles (down_arrow_alt) — combat
   onCharRendered?: (printer: TextPrinter, lastByte: number) => void;
 }
 
@@ -607,6 +622,7 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
     glyphWidths: opts.glyphWidths,
     resolveFont: opts.resolveFont,
     downArrowPixels: opts.downArrowPixels,
+    darkDownArrowPixels: opts.darkDownArrowPixels,
     onCharRendered: opts.onCharRendered,
   };
 }
@@ -884,7 +900,18 @@ export function runTextPrinter(printer: TextPrinter): number {
  * Cf. décomp `TextPrinterDrawDownArrow` (text.c:787-836).
  */
 export function textPrinterDrawDownArrow(printer: TextPrinter): void {
-  if (!printer.downArrowPixels) return;
+  // 1:1 décomp text.c:808-817 — `switch (gTextFlags.useAlternateDownArrow)` :
+  //   FALSE (terrain/menus) → sDownArrowTiles     (down_arrow.png,     idx 0/2/4)
+  //   TRUE  (COMBAT/evo)    → sDarkDownArrowTiles (down_arrow_alt.png, idx 1/2/10)
+  // Le flag est posé par BattlePutTextOnWindow (TRUE, battle_message.c:3074-3077)
+  // / InitFieldMessageBox (FALSE, field_message_box.c:18). Lecture au DRAW time
+  // (par-frame) = 1:1 strict. La flèche alt a des INDICES différents authored pour
+  // la palette textbox COMBAT — c'est pourquoi GF maintient deux graphismes (la
+  // flèche terrain rendue dans la palette combat donnait bleu+contour-rouge).
+  const arrowPixels = gTextFlags.useAlternateDownArrow
+    ? (printer.darkDownArrowPixels ?? printer.downArrowPixels)
+    : printer.downArrowPixels;
+  if (!arrowPixels) return;
 
   if (printer.downArrowDelay !== 0) {
     printer.downArrowDelay--;
@@ -905,7 +932,7 @@ export function textPrinterDrawDownArrow(printer: TextPrinter): void {
   const srcYOffset = DOWN_ARROW_Y_COORDS[printer.downArrowYPosIdx & 3];
   blitArrowAt(
     printer.window,
-    printer.downArrowPixels,
+    arrowPixels,
     printer.currentX,
     printer.currentY,
     srcYOffset,
@@ -920,14 +947,20 @@ export function textPrinterDrawDownArrow(printer: TextPrinter): void {
  * Blit l'arrow 8×16 à (dstX, dstY) en samplant src à (0, srcY).
  * L'arrow PNG fait 8×48 — srcY offset 0/1/2 pour bobbing.
  *
- * Le PNG `down_arrow.png` utilise les MÊMES idx que `gMessageBox_Pal`
- * (convention Pokemon GBA : idx 0=BG, 2=dark gray outline, 4=RED fill).
- * Donc on écrit les idx PNG directement dans le pixel buffer SANS remap —
- * le copyWindowToCanvas appliquera la palette runtime qui mappera idx 4
- * vers (224,8,8) rouge comme attendu.
+ * On écrit les idx PNG 4bpp DIRECTEMENT dans le pixel buffer SANS remap : le
+ * copyWindowToCanvas appliquera la palette runtime de la fenêtre. Les deux
+ * graphismes sont authored par idx pour leur palette cible :
+ *   - down_arrow.png     (terrain) : idx 0=BG, 2=contour, 4=rouge → gMessageBox_Pal
+ *   - down_arrow_alt.png (combat)  : idx 10=fond box, 1=contour blanc, 2=rouge → textbox_0.pal
  *
- * Cf. décomp `text.c:919` `arrowTiles = sDownArrowTiles` chargé en 4bpp raw
- * → values 0-15 = palette idx directs.
+ * `if (srcIdx === 0) continue` = 1:1 décomp `BlitBitmapRectToWindow` qui passe
+ * `colorKey = 0` (window.c:411 → blit.c:61 `if (toOrr != colorKey)`) : l'idx 0
+ * est la couleur-clé transparente. La flèche terrain a son surround en idx 0
+ * (sauté → fond box dessous visible) ; la flèche alt n'a AUCUN idx 0 (surround
+ * en idx 10) → tous ses pixels sont écrits, exactement comme le décomp.
+ *
+ * Cf. décomp `text.c:812/815` `arrowTiles = sDownArrowTiles | sDarkDownArrowTiles`
+ * chargé en 4bpp raw → values 0-15 = palette idx directs.
  */
 function blitArrowAt(
   w: Window,
@@ -947,7 +980,7 @@ function blitArrowAt(
     const rowStart = dstRowY * w.widthPx;
     for (let px = 0; px < arrowW; px++) {
       const srcIdx = srcRow[px] ?? 0;
-      if (srcIdx === 0) continue; // BG transparent
+      if (srcIdx === 0) continue; // colorKey 0 = transparent (1:1 BlitBitmapRectToWindow)
       const colX = dstX + px;
       if (colX < 0 || colX >= w.widthPx) continue;
       w.pixelBuffer[rowStart + colX] = srcIdx & 0x0F;

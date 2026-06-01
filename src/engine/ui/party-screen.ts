@@ -73,7 +73,7 @@ const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/le
 import { TEXT_SKIP_DRAW } from '../decomp-data/include/text-data';
 import {
   PARTY_ACTION_CHOOSE_MON, PARTY_ACTION_USE_ITEM,
-  PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING,
+  PARTY_ACTION_SWITCH, PARTY_ACTION_SWITCHING, PARTY_ACTION_SEND_OUT,
 } from '../decomp-data/include/constants/party_menu-data';
 /** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
  *  baseTile=0x4F, paletteNum=13. */
@@ -360,6 +360,11 @@ let _lastSelectedSlot = 0;
 // 1:1 décomp constants/party_menu.h:67-77 — importé depuis decomp-data au top
 // (= PARTY_ACTION_CHOOSE_MON/USE_ITEM/SWITCH/SWITCHING + reste de l'enum).
 let _partyAction: number = PARTY_ACTION_CHOOSE_MON;
+// Étape 4 (switch en combat, mode PARTY_ACTION_SEND_OUT) : slot du mon ACTIF
+// (interdit de le re-choisir) + si l'annulation B est permise (switch volontaire
+// = oui ; choix forcé après K.O. = non). Lus par les handlers A/B SEND_OUT.
+let _battleSwitchActiveSlot = -1;
+let _battleSwitchAllowCancel = true;
 /** 1:1 décomp `gPartyMenu.slotId2` (= 1er mon mémorisé pour la permutation). */
 let _slotId2 = 0;
 let _graphicsReady = false;
@@ -2132,6 +2137,32 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         const taskId = _inputTaskId;
         cb(taskId, null);  // 1:1 :1316 gItemUseCB(taskId, Task_ClosePartyMenuAfterText)
       }
+    } else if (_partyAction === PARTY_ACTION_SEND_OUT) {
+      // Étape 4 (combat) : choix du mon à envoyer (switch volontaire / après K.O.).
+      // 1:1 décomp Task_HandleChooseMonInput case PARTY_ACTION_SEND_OUT →
+      // CursorCb_Switch-like : valide le mon puis ferme via gMain.savedCallback.
+      const PARTY_SIZE = 6;
+      const CANCEL = PARTY_SIZE + 1; // = 7
+      if (_slotId === CANCEL) {
+        // CANCEL : autorisé seulement en switch volontaire (pas après K.O.).
+        if (_battleSwitchAllowCancel) {
+          PlaySE(5);
+          (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
+          ClosePartyScreen();
+        }
+        return;
+      }
+      const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+      const mon = party[_slotId];
+      // 1:1 : interdit le mon DÉJÀ au combat (= actif) ou un mon K.O. (les messages
+      // FR "déjà en plein combat" / "plus d'énergie" = polish ultérieur ; ici no-op).
+      if (_slotId === _battleSwitchActiveSlot || !mon || mon.currentHp <= 0) {
+        PlaySE(5);
+        return;  // reste sur la sélection
+      }
+      PlaySE(5);
+      (globalThis as Record<string, unknown>).__battleSwitchResultSlot = _slotId;
+      ClosePartyScreen();
     } else {
       // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
       _openActionMenu(rt);
@@ -2142,6 +2173,13 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       // 1:1 net : B / Cancel pendant SWITCH = annule (= SwitchSelectedMons
       // slot2==slot1 → FinishTwoMonAction, party_menu.c:2827-2830).
       _finishTwoMonAction();
+    } else if (_partyAction === PARTY_ACTION_SEND_OUT) {
+      // Étape 4 (combat) : B = annule le switch (volontaire seulement). Après
+      // K.O. (allowCancel=false) le choix est obligatoire → B ignoré (juste SE).
+      if (_battleSwitchAllowCancel) {
+        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
+        ClosePartyScreen();
+      }
     } else {
       // PARTY_ACTION_USE_ITEM : B → retour bag via savedCallback
       // (= CB2_ReturnToBagMenu défini par OpenPartyScreenForItemUse).
@@ -2313,6 +2351,36 @@ export function OpenPartyScreenForItemUse(returnBagCb: () => void): void {
     rt.SetMainCallback2(CB2_InitPartyMenu);
   }).catch((e) => {
     console.error('[party-screen] preload failed', e);
+  });
+}
+
+/** Étape 4 (combat) : ouvre l'écran party en mode PARTY_ACTION_SEND_OUT pour
+ *  choisir le Pokémon à envoyer au combat. 1:1 décomp `OpenPartyMenuInBattle` →
+ *  `InitPartyMenu(PARTY_MENU_TYPE_IN_BATTLE, …, PARTY_ACTION_SEND_OUT, …,
+ *  Task_HandleChooseMonInput, CB2_SetUpReshowBattleScreenAfterMenu)` (party_menu.c:5776).
+ *
+ *  - `returnCb` = exitCallback (= le combat reconstruit la scène puis reprend).
+ *  - `opts.activeSlot` = slot du mon actif (interdit de le re-choisir, 1:1).
+ *  - `opts.allowCancel` = B annule (switch volontaire) ou non (choix forcé K.O.).
+ *
+ *  Le slot choisi (ou -1 = annulé) est posé sur `globalThis.__battleSwitchResultSlot`,
+ *  lu par le combat au retour (le bridge globalThis évite un cycle d'import). */
+export function OpenPartyScreenForBattleSwitch(
+  returnCb: () => void,
+  opts: { activeSlot: number; allowCancel: boolean },
+): void {
+  if (_isOpen) return;
+  _partyAction = PARTY_ACTION_SEND_OUT;
+  _battleSwitchActiveSlot = opts.activeSlot;
+  _battleSwitchAllowCancel = opts.allowCancel;
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = returnCb;
+    rt.SetMainCallback2(CB2_InitPartyMenu);
+  }).catch((e) => {
+    console.error('[party-screen] battle-switch preload failed', e);
   });
 }
 

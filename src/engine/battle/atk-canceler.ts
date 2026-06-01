@@ -49,7 +49,7 @@ import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../system/random';
 import { getBattleMove } from './data/battle-moves';
-import { _GetMoveTarget as _GetMoveTargetForBide } from './cmd-batch-34';
+import { _GetMoveTarget as _GetMoveTargetForBide } from './battle-script-commands';
 
 // ─── CANCELER_* enum (battle_util.c:1966-1983) — 1:1 décomp ──────────────
 export const CANCELER_FLAGS      = 0;

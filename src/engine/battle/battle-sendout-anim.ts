@@ -31,7 +31,7 @@ import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
-  LaunchBallFadeMonTask, BALL_POKE,
+  LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
 } from '../system/pokeball-effects';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 
@@ -176,10 +176,14 @@ export function tickSendOut(): void {
       break;
     }
     case 2: {  // RELEASE — 1:1 SpriteCB_ReleaseMonFromBall (pokeball.c:750-823)
-      // 1:1 pokeball.c:757 AnimateBallOpenParticles : DIFFÉRÉ. L'asset particules
-      // (gBattleAnimSpriteGfx_Particles) n'est PAS préchargé en combat → la fonction
-      // crée des sprites garbage NON nettoyés (= les symboles au-dessus du mon, corruption
-      // signalée user). À restaurer 1:1 quand on préchargera l'asset + vérifiera le cleanup.
+      // 1:1 pokeball.c:757 `AnimateBallOpenParticles(sprite->x, sprite->y - 5, 1, 28, ballId)`
+      // = le FLASH + les ÉTINCELLES à l'ouverture de la ball (user A/B 2026-05-31 :
+      // "pas de flash ni d'étincelles"). La fonction charge elle-même son asset
+      // (loadParticlesAssets) + les sprites s'auto-détruisent (radius→50). Position =
+      // celle de la ball (fin d'arc = position du mon).
+      const _bx = ball ? Math.round(ball.x) : _so.endX;
+      const _by = (ball ? Math.round(ball.y) : _so.endY) - 5;
+      AnimateBallOpenParticles(rt, _bx, _by, 1, 28, BALL_POKE);
       // 1:1 pokeball.c:758 LaunchBallFadeMonTask(TRUE, ...) : silhouette blanche→couleur
       // sur la palette OBJ du mon (= bit (16+palNum) du masque sélectionné).
       const selectedPalettes = (1 << (16 + _so.monPalNum)) >>> 0;
@@ -219,6 +223,59 @@ function _cleanup(rt: DecompRuntime): void {
   _so = null;
   _status = 'done';
   _lastFrameCounter = -1;
+}
+
+// ─── Retour à la ball (RECALL — switch volontaire) ───────────────────────────
+// Miroir simplifié de startSendOut : une Poké Ball apparaît à la position du mon,
+// le mon est "aspiré" (disparaît), la ball reste brièvement puis disparaît.
+// (Le shrink affine + le beam 1:1 décomp ReturnPokeToBall = raffinage documenté.)
+interface ReturnState { ballSpriteId: number; monSpriteId: number; frame: number; }
+let _rtb: ReturnState | null = null;
+let _rtbStatus: 'idle' | 'active' | 'done' = 'idle';
+let _rtbLastFc = -1;
+export function getReturnToBallStatus(): 'idle' | 'active' | 'done' { return _rtbStatus; }
+export function resetReturnToBallStatus(): void { _rtbStatus = 'idle'; }
+
+export async function startReturnToBall(opts: {
+  monSpriteId: number; side: 'player' | 'opponent'; monPalNum: number;
+}): Promise<void> {
+  _rtbStatus = 'active';   // SYNC : la state machine voit 'active' immédiatement.
+  await _ensureBallAsset();
+  const rt = getRuntime();
+  const mon = rt?.gSprites.get(opts.monSpriteId);
+  // Fallback : si l'asset n'a pas chargé, on cache le mon directement (le recall
+  // a quand même lieu côté logique) pour ne jamais bloquer.
+  if (!rt || !_ballAssetLoaded || _ballPaletteSlot < 0 || !mon) {
+    if (mon) mon.invisible = true;
+    _rtb = null; _rtbStatus = 'done';
+    return;
+  }
+  const ball = rt.CreateSpriteAtOam({
+    tileId: _ballTileStart, paletteBank: _ballPaletteSlot,
+    x: Math.round(mon.x), y: Math.round(mon.y),
+    shape: 0, size: 1,   // 16×16
+    priority: 0,         // devant le mon
+  });
+  _rtb = { ballSpriteId: ball.spriteId, monSpriteId: opts.monSpriteId, frame: 0 };
+}
+
+export function tickReturnToBall(): void {
+  if (_rtbStatus !== 'active' || !_rtb) return;
+  const rt = getRuntime();
+  if (!rt) { _rtb = null; _rtbStatus = 'done'; return; }
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === _rtbLastFc) return;
+  _rtbLastFc = fc;
+  const mon = rt.gSprites.get(_rtb.monSpriteId);
+  const ball = rt.gSprites.get(_rtb.ballSpriteId);
+  _rtb.frame++;
+  // Le mon est aspiré dans la ball (~frame 4).
+  if (_rtb.frame >= 4 && mon) mon.invisible = true;
+  // Fin du recall (~frame 18) : la ball disparaît.
+  if (_rtb.frame >= 18) {
+    if (ball) rt.DestroySprite(_rtb.ballSpriteId);
+    _rtb = null; _rtbStatus = 'done'; _rtbLastFc = -1;
+  }
 }
 
 // ─── Sprite de dos du dresseur (intro scroll + lancer) ───────────────────────

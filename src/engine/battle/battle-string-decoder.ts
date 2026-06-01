@@ -445,6 +445,38 @@ function _decodeTextBuff(buf: Uint8Array): string {
   return out;
 }
 
+// ─── Buffer ENCODERS (= 1:1 décomp PREPARE_*_BUFFER macros) ────────────────
+// Construisent un gBattleTextBuff{1,2,3} (mini-format) pour les messages à
+// placeholders {B_BUFF1/2/3}. Inverse exact de `_decodeTextBuff` ci-dessus.
+
+/** 1:1 décomp `PREPARE_MON_NICK_BUFFER(buff, battler, partyId)` → {B_BUFFn} = nom du mon
+ *  (résolu live via `_monNickname(battler)` au décodage). */
+export function buildMonNickBuff(battler: number): Uint8Array {
+  return new Uint8Array([B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_MON_NICK, battler & 0xFF, 0, B_BUFF_EOS]);
+}
+
+/** 1:1 décomp `PREPARE_*_NUMBER_BUFFER(buff, n, maxDigits)` → {B_BUFFn} = nombre
+ *  (EXP, niveau…). 3 bytes LE (max 16M, > tout gain d'EXP ; pas de bit de signe). */
+export function buildNumberBuff(value: number, maxDigits = 0): Uint8Array {
+  const v = Math.max(0, Math.floor(value));
+  return new Uint8Array([
+    B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_NUMBER, 3, maxDigits & 0xFF,
+    v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF,
+    B_BUFF_EOS,
+  ]);
+}
+
+/** 1:1 décomp `PREPARE_MOVE_BUFFER(buff, move)` → {B_BUFFn} = nom de la capacité (par ID). */
+export function buildMoveBuff(moveId: number): Uint8Array {
+  return new Uint8Array([B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_MOVE, moveId & 0xFF, (moveId >> 8) & 0xFF, B_BUFF_EOS]);
+}
+
+/** Buffer raw-string (= 1:1 décomp StringCopy dans un gBattleTextBuff) → {B_BUFFn}
+ *  = la string telle quelle (utile quand on a le NOM FR direct, pas l'ID numérique). */
+export function buildStringBuff(s: string): Uint8Array {
+  return _encodeStringForBuff(s);
+}
+
 // ─── Placeholder substitution (= `{B_X}` markers dans strings.json) ─────────
 
 /** Map placeholder name → resolver function. 1:1 décomp `BattleStringExpand`
@@ -789,4 +821,28 @@ export function stripGbaControlCodes(text: string): string {
     .replace(/\\n/g, '\n')   // line break
     .replace(/\\l/g, '\n')   // scroll line
     .replace(/\\$/g, '');
+}
+
+/** Comme `stripGbaControlCodes` MAIS pour le rendu via le text printer animé du
+ *  combat : PRÉSERVE les codes que `encodeStringForFont` interprète et qui pilotent
+ *  le timing 1:1 du message :
+ *    - `\p` → CHAR_PROMPT_CLEAR  = affiche le ▼ + ATTEND A (puis clear) — 1:1 décomp
+ *             (ex: `sText_WildPkmnAppeared = "...apparaît!\p"`, battle_message.c:382).
+ *    - `\l` → CHAR_PROMPT_SCROLL = ▼ + attend A + scroll.
+ *    - `{PAUSE N}` → EXT_CTRL_CODE_PAUSE = auto-avance après N frames (PAS d'attente A,
+ *             ex: `sText_WildPkmnAppearedPause`).
+ *    - `\n` → newline.
+ *  Strip uniquement les codes NON gérés par l'encodeur (sons/BGM/color/pause-until-press)
+ *  qui s'afficheraient littéralement. C'est le `stripGbaControlCodes` qui jetait le
+ *  comportement `\p` (→ `\n`) → plus de ▼ ni d'attente A (user 2026-05-31). */
+export function battleStringToPrinterText(text: string): string {
+  return text
+    .replace(/\{WAIT_SE\}/g, '')
+    .replace(/\{PLAY_SE [A-Z0-9_]+\}/g, '')
+    .replace(/\{PLAY_BGM [A-Z0-9_]+\}/g, '')
+    .replace(/\{COLOR [A-Z_]+\}/g, '')
+    // PRÉSERVÉ aussi : {PAUSE_UNTIL_PRESS} (= attente A, ▼) — l'encodeur du printer
+    // le gère désormais (EXT_CTRL_CODE_PAUSE_UNTIL_PRESS) ; le stripper rendait
+    // ces messages auto-avancés à tort (user 2026-05-31 : "des textes non auto").
+    .replace(/\\$/g, '');   // backslash résiduel en fin (≠ \p qui est \\+p, préservé)
 }

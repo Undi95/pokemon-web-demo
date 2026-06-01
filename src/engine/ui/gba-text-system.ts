@@ -43,6 +43,9 @@ let glyphData: number[][] | null = null;
 let glyphWidths: Uint8Array | null = null;
 let charmap: Record<string, number> | null = null;
 let downArrowPixels: number[][] | null = null;
+// 1:1 décomp text.c:72 sDarkDownArrowTiles (down_arrow_alt.png) — flèche de fin
+// de texte ALT utilisée quand gTextFlags.useAlternateDownArrow (combat/evo/Pokenav).
+let darkDownArrowPixels: number[][] | null = null;
 
 /** 1:1 décomp text.h enum FontIds : FONT_SMALL=0, FONT_NORMAL=1, FONT_SHORT=2,
  *  FONT_SHORT_COPY_{1,2,3}=3,4,5, FONT_NARROW=7, FONT_SMALL_NARROW=8. */
@@ -59,11 +62,12 @@ let glyphWidthsByFont: Record<string, Uint8Array> | null = null;
 
 async function loadFontData(): Promise<void> {
   if (glyphData) return;
-  const [fontRes, widthsRes, charmapRes, arrowRes] = await Promise.all([
+  const [fontRes, widthsRes, charmapRes, arrowRes, arrowAltRes] = await Promise.all([
     fetch('/decomp/em/ui/fonts/latin.latfont.json').then((r) => r.json()),
     fetch('/decomp/em/ui/font-widths.json').then((r) => r.json()),
     fetch('/decomp/em/ui/charmap.json').then((r) => r.json()),
     fetch('/decomp/em/ui/fonts/down_arrow.json').then((r) => r.json()),
+    fetch('/decomp/em/ui/fonts/down_arrow_alt.json').then((r) => r.json()),
   ]);
   // 1:1 décomp : load TOUS les fonts (normal, short, narrow, small, smallnarrow).
   // sItemListMenu.fontId = FONT_NARROW (=7) → glyph data différent de FONT_NORMAL.
@@ -79,6 +83,8 @@ async function loadFontData(): Promise<void> {
   charmap = charmapRes as Record<string, number>;
   const arrow = arrowRes as { width: number; height: number; pixels: number[][] };
   downArrowPixels = arrow.pixels;
+  const arrowAlt = arrowAltRes as { width: number; height: number; pixels: number[][] };
+  darkDownArrowPixels = arrowAlt.pixels;
 }
 
 /** Résout glyph data + widths selon fontId. Fallback à FONT_NORMAL si inconnu. */
@@ -304,6 +310,7 @@ function _addTextPrinterParameterizedCore(
       : speed < 0 ? _getPlayerTextSpeedDelay()
       : speed,
     downArrowPixels: downArrowPixels ?? undefined,
+    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
   // 1:1 décomp src/text.c:AddTextPrinter (text.c:91-117) :
@@ -418,6 +425,7 @@ export function AddTextPrinterForMessage(_allowSkipping: boolean): void {
     y: 1,
     textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
     downArrowPixels: downArrowPixels ?? undefined,
+    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
   };
   const printer = addTextPrinter(opts);
   // 1:1 décomp slot fixe : retire les anciens printers du même windowId.
@@ -445,6 +453,7 @@ export function AddTextPrinterWithCallbackForMessage(
     y: 1,
     textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
     downArrowPixels: downArrowPixels ?? undefined,
+    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
     onCharRendered: callback,
   };
   const printer = addTextPrinter(opts);

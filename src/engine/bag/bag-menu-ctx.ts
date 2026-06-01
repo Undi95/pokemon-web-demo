@@ -32,7 +32,7 @@
  * un follow-up.
  */
 import type { DecompTask } from '../system/decomp-runtime';
-import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
+import { gBagMenu, gBagPosition, ITEMMENULOCATION_WALLY, Task_FadeAndCloseBagMenu, _CtxReturnToList, _CtxReturnToListWithRebuild, _CtxRemoveUsedItem, _CtxPrintItemSelected, _CtxShowTMHMPanel, _CtxPrintItemMessage } from './bag-menu';
 import { gSpecialVar, FlagSet, FlagClear, FlagGet, VarSet, VarGet } from '../script/script-vars';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { reverseDecompConstant } from '../system/decomp-constants';
@@ -814,11 +814,15 @@ function ItemMenu_Cancel(task: DecompTask): void {
   _returnToList(task);
 }
 
-/** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) — dette R3
- *  doc : cascade battle item-use flow (= Phase 1.4 N battle UI U-tier U1). */
+/** 1:1 décomp `ItemMenu_UseInBattle(u8 taskId)` (item_menu.c:1997) :
+ *  `if (GetItemBattleFunc(item)) { RemoveContextWindow(); GetItemBattleFunc(item)(taskId); }`.
+ *  Notre combat tourne INLINE (≠ controller CB2), donc le sac n'a pas à dispatcher
+ *  l'effet : il ferme simplement (Task_FadeAndCloseBagMenu → exitCallback), et le
+ *  combat lit `gSpecialVar.ItemId` (déjà posé à la sélection A de l'item, bag-menu.ts:1964)
+ *  pour appliquer l'effet (capture / soin / X-item) côté battle-flow. */
 function ItemMenu_UseInBattle(task: DecompTask): void {
   RemoveContextWindow();
-  _returnToList(task);
+  Task_FadeAndCloseBagMenu(task);
 }
 
 /** 1:1 décomp `ItemMenu_CheckTag(u8 taskId)` (item_menu.c:1979) — dette R3
