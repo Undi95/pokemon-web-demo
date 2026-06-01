@@ -1,6 +1,6 @@
 # CARTE DE COUVERTURE 1:1 GLOBALE — décomp `src/*.c` ↔ notre port
 
-Généré : 2026-06-01T19:02:53.284Z
+Généré : 2026-06-01T19:18:58.577Z
 
 > Signal "couvert" = une citation `1:1 décomp file.c:N` pointe dans la fonction.
 > ⚠️ Prouve la COUVERTURE/traçabilité, **PAS le comportement** (bugs runtime = ROM-diff séparé).
@@ -429,4 +429,38 @@ Généré : 2026-06-01T19:02:53.284Z
 - `Task_OptionMenuProcessInput` @ L264-350
 - `Task_OptionMenuSave` @ L351-363
 - `Task_OptionMenuFadeOut` @ L364-373
+
+## 🧩 Axe SCRIPTS (.s) — bytecode COMPILÉ (pas cité)
+
+> Les scripts décomp (combat/anim/event/field-effect/ai) sont compilés en masse → `decomp-data/auto-asm-bytecode/`. "Présent" = le label décomp existe dans la sortie compilée.
+> ⚠️ Que les OPCODES utilisés soient implémentés est un AUTRE axe : `npm run audit:opcodes` / `audit:specials` / `audit:scrcmd` / `audit:move-effect-scripts`.
+
+| Fichier .s | labels présents/total | % |
+|---|---|---|
+| `battle_scripts_1.s` | 619/619 | 100% |
+| `battle_scripts_2.s` | 26/26 | 100% |
+| `battle_anim_scripts.s` | 658/658 | 100% |
+| `battle_ai_scripts.s` | 555/555 | 100% |
+| `event_scripts.s` | 72/72 | 100% |
+| `field_effect_scripts.s` | 68/68 | 100% |
+
+_(les events par map = `data/maps/*/scripts.inc`, 519 maps, compilés en masse dans `auto-asm-bytecode/maps`+`/scripts`.)_
+
+## 🗃️ Axe DATA (.h tables + constantes) — EXTRAIT, pas cité
+
+> Les tables de data (`src/data/*.h` : species/moves/items/trainers/learnsets…) et les
+> constantes (`include/constants/*.h`) ne sont PAS transcrites : elles sont EXTRAITES en JSON
+> (`npm run extract:*` → `public/decomp/em/*.json`) puis vérifiées par :
+> `npm run audit:combat` (base stats, moves, type-chart, learnsets, trainer parties, item/hold effects, evolutions, exp, stat-ratios)
+> et `npm run audit:overworld` (opcodes, specials, scrcmd, movement, collision). Mesurer leur
+> "couverture par citation" serait FAUX (elles ne sont pas censées être citées).
+
+## 📐 Le tableau complet des axes
+
+| Type décomp | Comment porté | Outil de mesure |
+|---|---|---|
+| `.c` fonctions | transcrit + cité `1:1 décomp` | **ce rapport** (`coverage:1to1`) |
+| `.s`/`.inc` scripts | compilé (bytecode) | section SCRIPTS ci-dessus + `audit:opcodes/specials/scrcmd` |
+| `.h` data tables | extrait JSON | `audit:combat` / `audit:overworld` / `audit:graphics` |
+| `.h` constantes | extrait (constants.json) | `extract:constants` |
 

@@ -205,6 +205,49 @@ const DEFERRED_RE = [
 ];
 const isDeferred = (f) => DEFERRED_RE.some((re) => re.test(f));
 
+// ─── AXE SCRIPTS (.s) : labels décomp présents dans le bytecode COMPILÉ ───────
+// Les `.c` ne sont qu'UN axe. Les scripts (combat/anim/event/field-effect/ai) sont
+// du BYTECODE : on ne les transcrit/cite pas, on les COMPILE en masse (transpileur →
+// src/engine/decomp-data/auto-asm-bytecode/). Le signal de couverture est donc
+// différent : le label décomp existe-t-il dans notre sortie compilée ?
+//   ⚠️ "présent" = le script est COMPILÉ/disponible. Que les OPCODES qu'il utilise
+//   soient tous implémentés est un AUTRE axe (npm run audit:opcodes / audit:specials /
+//   audit:scrcmd / audit:move-effect-scripts).
+const SCRIPT_FILES = [
+  'battle_scripts_1.s', 'battle_scripts_2.s', 'battle_anim_scripts.s',
+  'battle_ai_scripts.s', 'event_scripts.s', 'field_effect_scripts.s',
+];
+const decompDataDir = join(decompPath, 'data');
+let _compiledStr = '';
+function _collectCompiled(dir) {
+  if (!existsSync(dir)) return;
+  for (const ent of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, ent.name);
+    if (ent.isDirectory()) _collectCompiled(full);
+    // skip *-bytecode.ts (gros tableaux de nombres, zéro label) → on lit les
+    // jump-tables/data qui PORTENT les labels.
+    else if (ent.name.endsWith('.ts') && !ent.name.endsWith('-bytecode.ts')) _compiledStr += readFileSync(full, 'utf8');
+  }
+}
+_collectCompiled(join(projectRoot, 'src/engine/decomp-data/auto-asm-bytecode'));
+_collectCompiled(join(projectRoot, 'src/engine/decomp-data/auto-asm'));
+function parseScriptLabels(content) {
+  const labels = [];
+  for (const line of content.split('\n')) {
+    const m = line.match(/^([A-Za-z_]\w*)::?\s*(@.*)?$/);   // label seul (ou + commentaire @)
+    if (m) labels.push(m[1]);
+  }
+  return labels;
+}
+const scriptRows = [];
+for (const sf of SCRIPT_FILES) {
+  const abs = join(decompDataDir, sf);
+  if (!existsSync(abs)) continue;
+  const labels = parseScriptLabels(readFileSync(abs, 'utf8'));
+  const missing = labels.filter((l) => !_compiledStr.includes(l));
+  scriptRows.push({ file: sf, total: labels.length, present: labels.length - missing.length, missing, pct: labels.length ? Math.round(((labels.length - missing.length) / labels.length) * 100) : 0 });
+}
+
 // ─── 3. Catégorisation + tri ──────────────────────────────────────────────────
 const allEligible = rows.filter((r) => r.totalFuncs >= minFuncs);
 allEligible.forEach((r) => { r.deferred = isDeferred(r.file); });
@@ -258,6 +301,30 @@ if (almostDone.length) {
   }
 } else md += '_(aucun)_\n\n';
 
+// ─── Section AXE SCRIPTS (.s → bytecode compilé) ──────────────────────────────
+md += `## 🧩 Axe SCRIPTS (.s) — bytecode COMPILÉ (pas cité)\n\n`;
+md += `> Les scripts décomp (combat/anim/event/field-effect/ai) sont compilés en masse → `;
+md += `\`decomp-data/auto-asm-bytecode/\`. "Présent" = le label décomp existe dans la sortie compilée.\n`;
+md += `> ⚠️ Que les OPCODES utilisés soient implémentés est un AUTRE axe : \`npm run audit:opcodes\` / \`audit:specials\` / \`audit:scrcmd\` / \`audit:move-effect-scripts\`.\n\n`;
+md += `| Fichier .s | labels présents/total | % |\n|---|---|---|\n`;
+for (const s of scriptRows) md += `| \`${s.file}\` | ${s.present}/${s.total} | ${s.pct}% |\n`;
+md += '\n_(les events par map = `data/maps/*/scripts.inc`, 519 maps, compilés en masse dans `auto-asm-bytecode/maps`+`/scripts`.)_\n\n';
+
+// ─── Section AXE DATA (.h → extrait JSON, pas cité) ───────────────────────────
+md += `## 🗃️ Axe DATA (.h tables + constantes) — EXTRAIT, pas cité\n\n`;
+md += `> Les tables de data (\`src/data/*.h\` : species/moves/items/trainers/learnsets…) et les\n`;
+md += `> constantes (\`include/constants/*.h\`) ne sont PAS transcrites : elles sont EXTRAITES en JSON\n`;
+md += `> (\`npm run extract:*\` → \`public/decomp/em/*.json\`) puis vérifiées par :\n`;
+md += `> \`npm run audit:combat\` (base stats, moves, type-chart, learnsets, trainer parties, item/hold effects, evolutions, exp, stat-ratios)\n`;
+md += `> et \`npm run audit:overworld\` (opcodes, specials, scrcmd, movement, collision). Mesurer leur\n`;
+md += `> "couverture par citation" serait FAUX (elles ne sont pas censées être citées).\n\n`;
+md += `## 📐 Le tableau complet des axes\n\n`;
+md += `| Type décomp | Comment porté | Outil de mesure |\n|---|---|---|\n`;
+md += `| \`.c\` fonctions | transcrit + cité \`1:1 décomp\` | **ce rapport** (\`coverage:1to1\`) |\n`;
+md += `| \`.s\`/\`.inc\` scripts | compilé (bytecode) | section SCRIPTS ci-dessus + \`audit:opcodes/specials/scrcmd\` |\n`;
+md += `| \`.h\` data tables | extrait JSON | \`audit:combat\` / \`audit:overworld\` / \`audit:graphics\` |\n`;
+md += `| \`.h\` constantes | extrait (constants.json) | \`extract:constants\` |\n\n`;
+
 writeFileSync(join(outputDir, 'COVERAGE-GLOBAL.md'), md);
 
 // ─── 5. Résumé stdout ───────────────────────────────────────────────────────────
@@ -273,6 +340,9 @@ console.log('  ' + 'fichier'.padEnd(34) + 'couv/tot   %    gaps  cites');
 for (const r of byGap.slice(0, topN)) {
   console.log(`  ${r.file.padEnd(34)}${String(r.covered + '/' + r.totalFuncs).padEnd(10)} ${String(r.pct + '%').padEnd(5)}${String(r.uncovered.length).padEnd(6)}${r.cites}`);
 }
+console.log(`\nAXE SCRIPTS (.s → bytecode compilé ; impl. opcodes = audit:opcodes) :`);
+for (const s of scriptRows) console.log(`  ${s.file.padEnd(28)} ${String(s.present + '/' + s.total).padEnd(11)} ${s.pct}%`);
+console.log(`AXE DATA (.h tables/constantes) = EXTRAIT JSON, vérifié par audit:combat / audit:overworld (pas par citation).`);
 console.log(`\nRapport complet : audit-reports/1to1/COVERAGE-GLOBAL.md`);
 console.log(`Détail d'un fichier : node scripts/audit-coverage-global.mjs --file=<nom>.c`);
 console.log('══════════════════════════════════════════════════════════════════');

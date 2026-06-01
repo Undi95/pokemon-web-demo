@@ -20,11 +20,21 @@
 ⚠️ **Tous ces audits prouvent la COUVERTURE/data/traçabilité, PAS le comportement.**
 Les bugs runtime (timing, fade, sprite, anim) se voient à l'œil / ROM-diff, pas en statique.
 
-## 📊 Couverture (snapshot `coverage:1to1`, 2026-06-01)
+## 📊 Couverture — 3 AXES (le décomp n'est pas que des `.c`)
 
-Hors sous-systèmes déférés : **2778/11228 fonctions citées (25%)** sur 221 `.c`.
-Le 25% est bas surtout à cause des grosses traînes (anims de move, movement OW,
-PC boxes) — le **chemin de jeu principal** (boot → OW → combat → menus) tourne.
+Le port a **trois types de contenu**, chacun porté + mesuré différemment. Ne pas
+lire le "25%" comme l'état global — c'est UN seul axe (le code transcrit) :
+
+| Type décomp | Comment porté | Mesure | État (2026-06-01) |
+|---|---|---|---|
+| **`.c` fonctions** | transcrit à la main + cité `1:1 décomp` | `coverage:1to1` | **2778/11228 (25%)** core |
+| **`.s`/`.inc` scripts** (combat/anim/event/field-fx/ai) | **compilé** en bytecode (transpileur) | `coverage:1to1` (axe SCRIPTS) + `audit:opcodes` | **100% compilés** ; gap = impl. opcodes |
+| **`.h` data** (species/moves/items/trainers/learnsets) + **constantes** | **extrait** en JSON | `audit:combat` / `audit:overworld` / `extract:*` | extrait + audité ✓ |
+
+Donc : data **extraite**, scripts **compilés** (100%), et le 25% = uniquement les
+fonctions C transcrites. Le 25% est bas surtout à cause des grosses traînes (anims de
+move, movement OW, PC boxes) — le **chemin de jeu principal** (boot → OW → combat →
+menus) tourne. `npm run coverage:1to1` affiche les 3 axes.
 
 ## ✅ Mûr (porté + vérifié, tourne bout-en-bout)
 
