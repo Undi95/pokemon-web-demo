@@ -670,6 +670,66 @@ export function setHealthboxVisible(handle: HealthboxHandle, visible: boolean): 
   }
 }
 
+// ─── Slide-in du healthbox (1:1 StartHealthboxSlideIn pokeball.c:1241) ──────
+// La box (left/right = sprites normaux) suit son x2 via syncSpritesToOam ; la
+// barre HP (subsprite) suit le x2 du parent via syncSubspriteOam (oam.x = x+x2+sub.x,
+// déjà câblé pour le bounce y2). Donc poser x2 sur les 3 sprites + décrémenter
+// jusqu'à 0 fait glisser tout le healthbox d'un bloc.
+interface _HbSlideState { handle: HealthboxHandle; speedX: number; }
+const _hbSlides: _HbSlideState[] = [];
+let _hbSlideLastFc = -1;
+
+/** 1:1 StartHealthboxSlideIn(battler) : x2 = 0x73 (115), sSpeedX = 5 ; côté
+ *  ADVERSE (non-player) négativés (x2 = -115, sSpeedX = -5 → entre par la gauche).
+ *  Rend le healthbox visible + lance le slide (tickHealthboxSlideIn fait x2 -= sSpeedX). */
+export function startHealthboxSlideIn(handle: HealthboxHandle): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const isPlayer = handle.side === 'player';
+  const startX2 = isPlayer ? 0x73 : -0x73;   // 1:1 : x2 = 0x73, négativé côté opp
+  const speedX = isPlayer ? 5 : -5;          // 1:1 : sSpeedX = 5, négativé côté opp
+  for (const spriteId of _allSpriteIds(handle)) {
+    const sprite = rt.gSprites.get(spriteId);
+    if (!sprite) continue;
+    sprite.x2 = startX2;
+    sprite.y2 = 0;
+    sprite.invisible = false;
+    const oam = rt.gba.oam[sprite.oamIndex];
+    if (oam) oam.visible = true;
+  }
+  // Remplace une éventuelle slide en cours sur le même handle.
+  const i = _hbSlides.findIndex(s => s.handle === handle);
+  if (i >= 0) _hbSlides.splice(i, 1);
+  _hbSlides.push({ handle, speedX });
+}
+
+/** Tick per-frame (gated ~60fps). 1:1 SpriteCB_HealthboxSlideIn : x2 -= sSpeedX
+ *  jusqu'à x2 == 0 (= ~23 frames à 5px). No-op si aucune slide active. */
+export function tickHealthboxSlideIn(): void {
+  if (_hbSlides.length === 0) return;
+  const rt = getRuntime();
+  if (!rt) { _hbSlides.length = 0; return; }
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === _hbSlideLastFc) return;
+  _hbSlideLastFc = fc;
+  for (let s = _hbSlides.length - 1; s >= 0; s--) {
+    const { handle, speedX } = _hbSlides[s];
+    let done = false;
+    for (const spriteId of _allSpriteIds(handle)) {
+      const sprite = rt.gSprites.get(spriteId);
+      if (!sprite) continue;
+      let x2 = (sprite.x2 ?? 0) - speedX;   // 1:1 : x2 -= sSpeedX
+      // clamp au passage par 0 (évite l'overshoot avec un pas de 5).
+      if ((speedX > 0 && x2 <= 0) || (speedX < 0 && x2 >= 0)) { x2 = 0; done = true; }
+      sprite.x2 = x2;
+    }
+    if (done) _hbSlides.splice(s, 1);
+  }
+}
+
+/** Annule toutes les slides en cours (= teardown combat). */
+export function stopHealthboxSlideIn(): void { _hbSlides.length = 0; _hbSlideLastFc = -1; }
+
 /** 1:1 décomp `DestoryHealthboxSprite` (ll. 1044-1049) : destroy tous les sprites. */
 export function destroyHealthboxSprite(handle: HealthboxHandle): void {
   const rt = getRuntime();

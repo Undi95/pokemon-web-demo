@@ -103,6 +103,9 @@ import {
   createBattlerHealthboxSprites,
   destroyHealthboxSprite,
   setHealthboxVisible,
+  startHealthboxSlideIn,
+  tickHealthboxSlideIn,
+  stopHealthboxSlideIn,
   updateHealthboxHpBar,
   updateHealthboxLevel,
   updateHealthboxHpDigits,
@@ -1895,6 +1898,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     tickTrainerThrow();
     tickOpponentTrainerThrow();   // combat dresseur : slide-off + lancer du dresseur adverse
     tickSendOut();
+    tickHealthboxSlideIn();   // slide-in des healthboxes (1:1 SpriteCB_HealthboxSlideIn)
     tickReturnToBall();   // anim recall (mon sortant → ball, switch volontaire)
 
     // NB : plus de re-hide/re-pause per-frame des sprites OW. Ils sont DÉTRUITS
@@ -2320,10 +2324,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           void createBattlerHealthboxSprites('opponent').then(handle => {
             opponentHealthbox = handle;
             if (handle) {
-              // 1:1 : combat SAUVAGE → healthbox adverse visible avec le mon. Combat
-              // DRESSEUR → cachée jusqu'à l'émergence du mon (révélée en OPP_SENDOUT_ANIM,
-              // 1:1 Intro_TryShinyAnimShowHealthbox) — sinon elle s'affiche sur le sprite dresseur.
-              setHealthboxVisible(handle, !(gBattleTypeFlags & BATTLE_TYPE_TRAINER));
+              // 1:1 Intro_TryShinyAnimShowHealthbox : la healthbox adverse est CACHÉE à
+              // l'init puis SLIDE-IN (StartHealthboxSlideIn) quand le mon apparaît — sauvage
+              // à INTRO_TEXT, dresseur à OPP_SENDOUT_ANIM (après émergence de la ball).
+              setHealthboxVisible(handle, false);
               renderHpWindows();  // populate tile data dynamique immédiatement
               // 1:1 décomp UpdateHealthboxAttribute : surnom + genre (1 fois à l'init).
               if (opponentMon) updateHealthboxNick(handle, opponentMon.nickname, (opponentMon as { monGender?: number }).monGender ?? 255);
@@ -2387,6 +2391,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         });
         // 1:1 décomp SpriteCB_WildMonAnimate : anim du front sprite du mon sauvage à l'entrée.
         startMonIntroAnim(opponentSpriteId, OPPONENT_SPRITE_BYTE_OFFSET / 32);
+        // 1:1 Intro_TryShinyAnimShowHealthbox : la healthbox adverse SLIDE-IN quand le mon
+        // sauvage apparaît (depuis la gauche, StartHealthboxSlideIn). Cachée jusqu'ici.
+        if (opponentHealthbox) startHealthboxSlideIn(opponentHealthbox);
         state = 'INTRO_WAIT';
         return false;
       }
@@ -2463,9 +2470,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (getOpponentTrainerThrowStatus() !== 'done' || getSendOutStatus() !== 'done') return false;
         resetOpponentTrainerThrowStatus();
         resetSendOutStatus();
-        // 1:1 Intro_TryShinyAnimShowHealthbox : la healthbox adverse est révélée APRÈS
+        // 1:1 Intro_TryShinyAnimShowHealthbox : la healthbox adverse SLIDE-IN APRÈS
         // l'émergence du mon (cachée pendant la phase sprite-dresseur).
-        if (opponentHealthbox) setHealthboxVisible(opponentHealthbox, true);
+        if (opponentHealthbox) startHealthboxSlideIn(opponentHealthbox);
         renderHpWindows();
         state = 'PLAYER_SENDOUT';
         return false;
@@ -2498,9 +2505,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (getTrainerThrowStatus() !== 'done' || getSendOutStatus() !== 'done') return false;
         resetTrainerThrowStatus();
         resetSendOutStatus();
-        // 1:1 décomp `Intro_TryShinyAnimShowHealthbox` : la healthbox JOUEUR est révélée
-        // APRÈS l'émergence du mon (pas avant — fix user A/B "barre de vie trop tôt").
-        if (playerHealthbox) setHealthboxVisible(playerHealthbox, true);
+        // 1:1 décomp `Intro_TryShinyAnimShowHealthbox` : la healthbox JOUEUR SLIDE-IN
+        // APRÈS l'émergence du mon (depuis la droite, StartHealthboxSlideIn).
+        if (playerHealthbox) startHealthboxSlideIn(playerHealthbox);
         renderHpWindows();
         HideFieldMessageBox();
         state = 'SWITCH_IN_EVENTS';
@@ -4173,6 +4180,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         stopTrainerThrow();
         stopOpponentTrainerThrow();
         stopSendOut();
+        stopHealthboxSlideIn();
         destroyTrainerBackSprite();
         destroyOpponentTrainerSprite();
         // #3 : forcer le rechargement asset+palette ball/dresseur au prochain combat
