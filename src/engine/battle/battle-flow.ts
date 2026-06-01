@@ -485,7 +485,7 @@ type State =
   | 'MOVE_MENU_INIT' | 'MOVE_MENU_INPUT'
   | 'MOVE_EMIT_CHOOSE' | 'MOVE_WAIT_CHOOSE_RESPONSE'
   | 'DETERMINE_TURN_ORDER' | 'ADVANCE_TURN'
-  | 'PLAYER_USES_MOVE' | 'PLAYER_USES_MOVE_WAIT'
+  | 'PLAYER_USES_MOVE' | 'PLAYER_MOVE_ANIM_WAIT' | 'PLAYER_USES_MOVE_WAIT'
   | 'PLAYER_BYTECODE_MSG' | 'PLAYER_BYTECODE_MSG_WAIT'
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
   | 'CHECK_OPP_FAINTED'
@@ -502,7 +502,7 @@ type State =
   | 'STOP_LEARN_SHOW' | 'STOP_LEARN_OPENBOX' | 'STOP_LEARN_INPUT'
   | 'OPEN_MOVE_SELECT'
   | 'EVOLUTION_CHECK' | 'EVOLUTION_TEXT' | 'EVOLUTION_WAIT' | 'EVOLUTION_DONE_WAIT'
-  | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
+  | 'OPPONENT_USES_MOVE' | 'OPPONENT_MOVE_ANIM_WAIT' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_BYTECODE_MSG' | 'OPPONENT_BYTECODE_MSG_WAIT'
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
@@ -828,7 +828,6 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let turnCount = 0;
 
   // Iter18 : track if player cry was played this battle (= once-only on first turn).
-  let _playerCryPlayed = false;
 
   // Phase 1.4 N Q3 : flag async `_restoreOverworldFromMenu()` terminé au cleanup.
   // 1:1 décomp `CB2_ReturnToField` re-init overworld après le VRAM wipe battle.
@@ -1671,6 +1670,51 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     _monSinIndex = (_monSinIndex + BOUNCE_DELTA) & 0xFF;
   };
 
+  // ─── Move anim PLACEHOLDER : "lunge" de l'attaquant (1:1 attackanimation) ──
+  // PLACEHOLDER (user 2026-06-01) : l'interpréteur d'anim de move ne peut PAS
+  // produire de visuel (Cmd_createsprite/createvisualtask = stubs ; résolution
+  // template/task-func déférée). En attendant les ~350 anims per-move (longue
+  // traîne), on joue pour CHAQUE move un "lunge" générique : le sprite attaquant
+  // fonce vers la cible puis revient (≈ le mouvement de Charge/Tackle) → feedback
+  // visuel testable bout-en-bout. Le blink/jiggle de la CIBLE = startHitAnim (déjà
+  // câblé, task #2). Ordre 1:1 BattleScript_EffectHit : attackanimation (CE lunge)
+  // → waitanimation → healthbarupdate (drain) : on insère donc le lunge AVANT
+  // startHpDrain (cf. PLAYER_MOVE_ANIM_WAIT / OPPONENT_MOVE_ANIM_WAIT). Avance 1×/
+  // frame logique (appelé 1× par flow.tick, comme tickHitAnim) via x2/y2 (= 0 hors
+  // intro/move, restauré à 0 en fin). Pas de gating perf.now (1:1 timing batch 1).
+  let _lungeSpriteId = -1;
+  let _lungeFrame = 0;
+  let _lungeDX = 0;
+  let _lungeDY = 0;
+  let _moveDrainOldHp = 0;   // HP cible avant dégâts : drain démarré APRÈS le lunge
+  const LUNGE_FRAMES = 16;   // aller-retour (≈ durée d'un Tackle court)
+  const LUNGE_DIST = 16;     // amplitude px vers la cible
+  const startMoveLunge = (spriteId: number, side: 'player' | 'opponent'): void => {
+    const rt2 = getRuntime();
+    const s = spriteId >= 0 ? rt2?.gSprites.get(spriteId) : null;
+    if (!s) { _lungeSpriteId = -1; return; }
+    _lungeSpriteId = spriteId;
+    _lungeFrame = 0;
+    // player (bas-gauche) fonce vers l'adversaire (haut-droite) ; opponent l'inverse.
+    _lungeDX = side === 'player' ? LUNGE_DIST : -LUNGE_DIST;
+    _lungeDY = side === 'player' ? -LUNGE_DIST : LUNGE_DIST;
+    s.x2 = 0; s.y2 = 0;
+  };
+  const _lungeActive = (): boolean => _lungeSpriteId >= 0;
+  const tickMoveLunge = (): void => {
+    if (_lungeSpriteId < 0) return;
+    const rt2 = getRuntime();
+    const s = rt2?.gSprites.get(_lungeSpriteId);
+    if (!s) { _lungeSpriteId = -1; return; }
+    _lungeFrame++;
+    // sin(pi*t) : 0 → pic à mi-course → 0 (aller-retour doux), 1× par frame logique.
+    const t = Math.min(1, _lungeFrame / LUNGE_FRAMES);
+    const k = Math.sin(Math.PI * t);
+    s.x2 = Math.round(_lungeDX * k);
+    s.y2 = Math.round(_lungeDY * k);
+    if (_lungeFrame >= LUNGE_FRAMES) { s.x2 = 0; s.y2 = 0; _lungeSpriteId = -1; }
+  };
+
   // ─── HP bar drain animation 1:1 décomp MoveBattleBar ────────────────────
   // 1:1 décomp `MoveBattleBar`/`CalcNewBarValue`/`MoveBattleBarGraphically`
   // (battle_interface.c:2238-2330) + `Cmd_healthbarupdate`/`Cmd_datahpupdate`.
@@ -1864,6 +1908,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     // Tick hit animation (= run regardless of state, so le blink/jiggle survit
     // aux text waits + transitions).
     tickHitAnim();
+    tickMoveLunge();   // placeholder lunge attaquant (1:1 attackanimation, tous moves)
     tickMonIntroAnim();
     tickFaint();
     tickBounce();
@@ -2285,7 +2330,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // tout. Le dresseur/ball s'allouent dans l'espace libre (après les mons) = zéro collision.
         {
           const _g = ((globalThis as { gSaveBlock2Ptr?: { playerGender?: number } }).gSaveBlock2Ptr?.playerGender) ?? 0;
-          void showTrainerBackSprite(_g, SBATTLER_COORD_X_PLAYER, playerCenterY);
+          // 1:1 PlayerHandleDrawTrainerPic (battle_controller_player.c:2316-2318) : le sprite
+          // de DOS du dresseur a SA PROPRE position (xPos=80, yPos=(8-size)*4+80 = 80 pour un
+          // back-pic 64×64), DISTINCTE de la coord battler du mon (72, playerCenterY) — le mon
+          // utilisait 72 → dresseur 8px trop à gauche (retour user "mal placé de quelques px").
+          void showTrainerBackSprite(_g, 80, SBATTLER_COORD_Y_PLAYER);
         }
         // #4 SCROLL (1:1) : le dresseur joueur (dos) entre par la DROITE (x2=+240, -2/frame).
         // Côté adverse :
@@ -2535,14 +2584,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_TURN_PROMPT': {
         if (!playerMon) { state = 'CLEANUP'; return false; }
-        // Iter18 : play player cry on first turn prompt (= when player mon
-        // visually "comes out" of its ball). Only once per battle.
-        if (!_playerCryPlayed) {
-          _playerCryPlayed = true;
-          void import('../system/music').then(({ playCry }) => {
-            playCry(playerMon!.speciesName);  // EN canonique, PAS nickname FR
-          });
-        }
+        // 1:1 : le cri du mon joueur est joué à l'OUVERTURE DE LA BALL (sendout
+        // phase 2 = Task_PlayCryWhenReleasedFromBall, pokeball.c:804), PAS ici.
+        // Ce 2e appel (relique d'avant le send-out anim) doublait le cri → retiré
+        // (retour user 2026-06-01 "le mon joue son cri 2×").
         // 1:1 décomp Phase 1.4 N : passage direct au menu action (FIGHT/BAG/
         // POKEMON/RUN) au lieu de ShowFieldMessage + wait input. Le prompt
         // "Que doit faire X?" est now dessiné dans sa propre window à côté du
@@ -3088,37 +3133,45 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const useBytecodeMsgs = isBytecodeDamageEnabled();
         if (useBytecodeMsgs && opponentMon) {
           _pendingBytecodeMessages = [];
-          const oppOldHp = opponentMon.currentHp;
+          _moveDrainOldHp = opponentMon.currentHp;
           applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
           // 1:1 décomp ordre `BattleScript_EffectHit` : `attackstring` ("X utilise
           // MOVE!") AVANT `attackanimation`/`healthbarupdate` (drain). On affiche donc
-          // le 1er message (USEDMOVE) AVANT de démarrer le drain → la boîte message
-          // montre "X utilise MOVE!" PENDANT le drain au lieu d'être VIDE (le drain dure
-          // plusieurs frames ; sans ça PLAYER_BYTECODE_MSG gate isHpDraining avant tout
-          // message → boîte vide visible, bug user 2026-05-30).
+          // le 1er message (USEDMOVE) AVANT l'anim → la boîte message montre "X utilise
+          // MOVE!" PENDANT le lunge + le drain au lieu d'être VIDE (bug user 2026-05-30).
           if (_pendingBytecodeMessages.length > 0) {
             showBattleMessage(_pendingBytecodeMessages.shift()!);
           }
-          // 1:1 décomp `Cmd_healthbarupdate` : drain gradué oldHp→newHp. startHpDrain
-          // AVANT renderHpWindows pour que renderHpWindows skip le blit barre (anti-saut).
-          startHpDrain(1, opponentHealthbox, opponentMon.maxHp, oppOldHp, opponentMon.currentHp);
-          renderHpWindows();
-          // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
-          // émis par le bytecode (= move hit avec damage applied), pas par check
-          // `damage > 0` hardcoded (= manque les status moves qui shake aussi).
-          if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0) {
-            startHitAnim(opponentSpriteId, opponentHealthbox);
-          }
-          // 1er message affiché → _WAIT attend (fin du drain + A). Les messages suivants
-          // (efficacité/effets) sont drainés ensuite par PLAYER_BYTECODE_MSG.
-          state = 'PLAYER_BYTECODE_MSG_WAIT';
+          // 1:1 `attackanimation` : lunge de l'attaquant (placeholder tous moves) PENDANT
+          // que le message est affiché. Le drain (healthbarupdate) + le blink cible sont
+          // déclenchés à la FIN du lunge (PLAYER_MOVE_ANIM_WAIT) — ordre 1:1.
+          if (playerSpriteId >= 0) startMoveLunge(playerSpriteId, 'player');
+          state = 'PLAYER_MOVE_ANIM_WAIT';
           return false;
         }
         // Legacy path : message hardcoded puis damage state.
         const mv = playerMon.moves[chosenMoveIndex];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
         showBattleMessage(`${playerMon.nickname} utilise\n${moveName}!`);
+        if (playerSpriteId >= 0) startMoveLunge(playerSpriteId, 'player');
         state = 'PLAYER_USES_MOVE_WAIT';
+        return false;
+      }
+
+      case 'PLAYER_MOVE_ANIM_WAIT': {
+        // 1:1 `waitanimation` : attendre la fin du lunge attaquant avant le drain.
+        if (_lungeActive()) return false;
+        if (!opponentMon) { state = 'CLEANUP'; return false; }
+        // 1:1 `Cmd_healthbarupdate` : drain gradué oldHp→newHp (HP déjà appliqué par
+        // applyMoveDamage). startHpDrain AVANT renderHpWindows (anti-saut barre).
+        startHpDrain(1, opponentHealthbox, opponentMon.maxHp, _moveDrainOldHp, opponentMon.currentHp);
+        renderHpWindows();
+        // 1:1 `hitanimation` : blink/jiggle cible (piloté par le bytecode = inclut les
+        // status moves qui shake aussi, pas seulement damage>0).
+        if (_bytecodeWantsHitAnim() && opponentSpriteId >= 0) {
+          startHitAnim(opponentSpriteId, opponentHealthbox);
+        }
+        state = 'PLAYER_BYTECODE_MSG_WAIT';
         return false;
       }
 
@@ -3747,32 +3800,41 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const useBytecodeMsgs = isBytecodeDamageEnabled();
         if (useBytecodeMsgs) {
           _pendingBytecodeMessages = [];
-          const plOldHp = playerMon.currentHp;
+          _moveDrainOldHp = playerMon.currentHp;
           applyMoveDamage(opponentMon, playerMon, oppMoveIdx);
           // 1:1 décomp ordre BattleScript : `attackstring` ("L'ennemi X utilise MOVE!")
-          // AVANT `healthbarupdate` (drain). Afficher le 1er message AVANT startHpDrain
-          // → boîte message non-vide pendant le drain (cf. PLAYER_USES_MOVE, bug user
-          // 2026-05-30).
+          // AVANT `attackanimation`/`healthbarupdate`. Afficher le 1er message AVANT le
+          // lunge → boîte non-vide pendant l'anim + le drain (cf. PLAYER_USES_MOVE).
           if (_pendingBytecodeMessages.length > 0) {
             showBattleMessage(_pendingBytecodeMessages.shift()!);
           }
-          // 1:1 `Cmd_healthbarupdate` : drain gradué player.
-          startHpDrain(0, playerHealthbox, playerMon.maxHp, plOldHp, playerMon.currentHp);
-          renderHpWindows();
-          // 1:1 décomp : sprite shake piloté par CONTROLLER_HITANIMATION event
-          // émis par le bytecode au lieu de hardcoded `damage > 0`.
-          if (_bytecodeWantsHitAnim() && playerSpriteId >= 0) {
-            startHitAnim(playerSpriteId, playerHealthbox);
-          }
+          // 1:1 `attackanimation` : lunge de l'attaquant ADVERSE AVANT le drain. Le drain
+          // (player) + le blink player sont déclenchés à la fin du lunge (OPPONENT_MOVE_ANIM_WAIT).
+          if (opponentSpriteId >= 0) startMoveLunge(opponentSpriteId, 'opponent');
           // (Plus de clobber de chosenMoveIndex : c'est le move du JOUEUR. Le move
           // adverse est dans opponentMoveIndex, utilisé par OPPONENT_DAMAGE_PLAYER.)
-          state = 'OPPONENT_BYTECODE_MSG_WAIT';
+          state = 'OPPONENT_MOVE_ANIM_WAIT';
           return false;
         }
         const mv = opponentMon.moves[oppMoveIdx];
         const moveName = mv?.nameFr.toUpperCase() ?? '?';
         showBattleMessage(`Le ${opponentMon.nickname} sauvage\nutilise ${moveName}!`);
+        if (opponentSpriteId >= 0) startMoveLunge(opponentSpriteId, 'opponent');
         state = 'OPPONENT_USES_MOVE_WAIT';
+        return false;
+      }
+
+      case 'OPPONENT_MOVE_ANIM_WAIT': {
+        // 1:1 `waitanimation` : attendre la fin du lunge adverse avant le drain.
+        if (_lungeActive()) return false;
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        // 1:1 `Cmd_healthbarupdate` : drain gradué player (HP déjà appliqué).
+        startHpDrain(0, playerHealthbox, playerMon.maxHp, _moveDrainOldHp, playerMon.currentHp);
+        renderHpWindows();
+        if (_bytecodeWantsHitAnim() && playerSpriteId >= 0) {
+          startHitAnim(playerSpriteId, playerHealthbox);
+        }
+        state = 'OPPONENT_BYTECODE_MSG_WAIT';
         return false;
       }
 

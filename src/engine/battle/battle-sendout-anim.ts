@@ -34,6 +34,7 @@ import {
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
 } from '../system/pokeball-effects';
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
+import { gSineTable } from '../system/decomp-helpers';
 
 // Asset Poke Ball 16x16. VRAM via l'ALLOCATEUR 1:1 décomp (`AllocSpriteTiles`) — PLUS
 // d'offset en dur (l'ancien 0x4000 écrasait les tiles du mon joueur ; 0x5800 était un
@@ -51,6 +52,55 @@ let _ballAssetLoaded = false;
 const BATTLER_AFFINE_NORMAL = 0;
 const BATTLER_AFFINE_EMERGE = 1;   // = sAffineAnim_Battler_Emerge
 
+// ─── Port 1:1 de l'arc de lancer JOUEUR (battle_anim_mons.c) ────────────────
+// SpriteCB_PlayerMonSendOut_2 n'est PAS un simple sinus : l'arc a une phase APEX
+// (HIBYTE(data[7]) ∈ [35,80)) où la translation ralentit à 1/3 (deltas /3 + data[0]
+// décrémente 1 frame sur 3) + la ball spin → elle PLANE au sommet, puis redescend
+// jusqu'à monY+24 (= LE SOL, pas le centre). ~42 frames total (vs 25 d'un arc plat).
+// On porte fidèlement InitAnimLinearTranslation / AnimTranslateLinear /
+// TranslateAnimHorizontalArc (battle_anim_mons.c:1065/1111/794) + InitAnimArcTranslation:785.
+interface ArcState {
+  d0: number; d1: number; d2: number; d3: number; d4: number;
+  d5: number; d6: number; d7: number; affineParam: number;
+}
+/** 1:1 Sin(index, amplitude) = (gSineTable[index] * amplitude) >> 8. */
+function _arcSin(index: number, amplitude: number): number {
+  return (gSineTable(index & 0xFF) * amplitude) >> 8;
+}
+/** 1:1 InitAnimLinearTranslation (1065) : d1=startX,d2=destX,d3=startY,d4=destY en entrée
+ *  → calcule xDelta→d1, yDelta→d2 (bit 0 = signe), d3=d4=0. */
+function _initLinear(a: ArcState): void {
+  const x = a.d2 - a.d1;
+  const y = a.d4 - a.d3;
+  const movingLeft = x < 0, movingUp = y < 0;
+  let xDelta = (Math.abs(x) << 8) & 0xFFFF;
+  let yDelta = (Math.abs(y) << 8) & 0xFFFF;
+  xDelta = (xDelta / a.d0) | 0;
+  yDelta = (yDelta / a.d0) | 0;
+  xDelta = movingLeft ? (xDelta | 1) : (xDelta & ~1);
+  yDelta = movingUp ? (yDelta | 1) : (yDelta & ~1);
+  a.d1 = xDelta & 0xFFFF; a.d2 = yDelta & 0xFFFF; a.d3 = 0; a.d4 = 0;
+}
+/** 1:1 AnimTranslateLinear (1111) : pose ball.x2/y2 depuis les deltas ; true quand d0=0. */
+function _animLinear(a: ArcState, ball: { x2: number; y2: number }): boolean {
+  if (!a.d0) return true;
+  const v1 = a.d1, v2 = a.d2;
+  const x = (a.d3 + v1) & 0xFFFF;
+  const y = (a.d4 + v2) & 0xFFFF;
+  ball.x2 = (v1 & 1) ? -(x >> 8) : (x >> 8);
+  ball.y2 = (v2 & 1) ? -(y >> 8) : (y >> 8);
+  a.d3 = x; a.d4 = y;
+  a.d0--;
+  return false;
+}
+/** 1:1 TranslateAnimHorizontalArc (794) : translation linéaire + bosse sinus sur y2. */
+function _translateArc(a: ArcState, ball: { x2: number; y2: number }): boolean {
+  if (_animLinear(a, ball)) return true;
+  a.d7 = (a.d7 + a.d6) & 0xFFFF;
+  ball.y2 += _arcSin((a.d7 >> 8) & 0xFF, a.d5);
+  return false;
+}
+
 interface SendOutState {
   phase: number;        // 1=arc throw, 2=release(once), 3=emerge wait
   frame: number;
@@ -61,9 +111,10 @@ interface SendOutState {
   species: string;
   startX: number; startY: number;
   endX: number; endY: number;
-  arcFrames: number;    // 1:1 SpriteCB_PlayerMonSendOut_1 data[0]=25
-  arcHeight: number;    // 1:1 data[5]=-30
+  arc: ArcState | null; // 1:1 arc de lancer JOUEUR (null côté adverse = pose sans arc)
   emergeWaitFrames: number;
+  ballRotation: number; // 1:1 sAffineAnim_BallRotate_4 : rotation s16 (<<8) accumulée
+  fadeTaskId: number;   // task du flash blanc (LaunchBallFadeMonTask) — on attend sa fin
 }
 
 let _so: SendOutState | null = null;
@@ -136,6 +187,21 @@ export async function startSendOut(opts: {
   // Cache le mon jusqu'à l'émergence (1:1 : il sort de la ball).
   mon.invisible = true;
 
+  // ⚠️ SPIN DE LA BALL DÉSACTIVÉ (régression user 2026-06-01 "ball couleur transparente") :
+  // le compositeur rend mal la ROTATION affine d'un petit OBJ 16×16 (clip/wrap + la moitié
+  // blanche → sombre/transparente). Le SCALE affine du mon, lui, marche. → ball laissée
+  // NON-affine = opaque + correcte (mais fixe). DETTE : redonner le spin via AFFINE_DOUBLE
+  // (zone de rendu 2× = pas de clip) ou un fix compositeur affine-rotation (cf. roadmap).
+  let _arc: ArcState | null = null;
+  if (opts.side === 'player') {
+    // 1:1 SpriteCB_PlayerMonSendOut_1 + InitAnimArcTranslation (pokeball.c:911 + battle_anim_mons.c:785) :
+    // arc (startX=24, startY=68) → (monX, monY+24 = LE SOL) sur data[0]=25, amplitude data[5]=-30.
+    // data[6]=0x8000/25 = incrément de phase sinus (aussi lu comme « sBattler » dans l'apex → /3).
+    _arc = { d0: 25, d1: startX, d2: opts.endX, d3: startY, d4: opts.endY + 24, d5: -30, d6: 0, d7: 0, affineParam: 0 };
+    _initLinear(_arc);
+    _arc.d6 = (0x8000 / 25) | 0;
+  }
+
   _so = {
     phase: 1, frame: 0,
     ballSpriteId: ball.spriteId,
@@ -145,9 +211,10 @@ export async function startSendOut(opts: {
     species: opts.species,
     startX, startY,
     endX: opts.endX, endY: opts.endY,
-    arcFrames: 25,
-    arcHeight: 30,
+    arc: _arc,
     emergeWaitFrames: 0,
+    ballRotation: 0,
+    fadeTaskId: -1,
   };
 }
 
@@ -157,8 +224,11 @@ export function tickSendOut(): void {
   const rt = getRuntime();
   if (!rt) { _so = null; _status = 'done'; return; }
 
-  // Gate 1 update / frame visuelle (le flow.tick polle 5-6x/frame).
-  const fc = Math.floor(performance.now() / 16);
+  // 1:1 timing : avance ≤1 step / FRAME LOGIQUE (gIntroFrameCounter), pas sur le
+  // mur d'horloge (performance.now). tickFixed appelle flow.tick → ce tick 1×/frame
+  // logique 60Hz ; gater sur gIntroFrameCounter = lockstep avec la logique + le texte
+  // (RunTextPrinters fait pareil) + déterministe au frame-stepping devtool.
+  const fc = rt.gIntroFrameCounter;
   if (fc === _lastFrameCounter) return;
   _lastFrameCounter = fc;
 
@@ -177,13 +247,39 @@ export function tickSendOut(): void {
         if (ball) { ball.x = _so.startX; ball.y = _so.startY; }
         if (_so.frame > 15) { _so.phase = 2; _so.frame = 0; }
       } else {
-        // 1:1 SpriteCB_PlayerMonSendOut_1/2 (InitAnimArcTranslation) : arc parabolique.
-        const t = Math.min(1, _so.frame / _so.arcFrames);
-        const x = _so.startX + (_so.endX - _so.startX) * t;
-        const yLin = _so.startY + (_so.endY - _so.startY) * t;
-        const yArc = -_so.arcHeight * Math.sin(Math.PI * t);
-        if (ball) { ball.x = Math.round(x); ball.y = Math.round(yLin + yArc); }
-        if (t >= 1) { _so.phase = 2; _so.frame = 0; }
+        // 1:1 SpriteCB_PlayerMonSendOut_2 (pokeball.c:924) : arc avec APEX ralenti.
+        // La position est portée par x2/y2 (la base x/y reste à 24,68), comme la décomp.
+        const a = _so.arc;
+        if (!a || !ball) { _so.phase = 2; _so.frame = 0; break; }
+        const hi = (a.d7 >> 8) & 0xFF;
+        if (hi >= 35 && hi < 80) {
+          // APEX : 1ʳᵉ entrée → ralentit la translation à 1/3 (deltas /3). La ball PLANE.
+          if ((a.affineParam & 0xFF00) === 0) {
+            const r6 = a.d1 & 1, r7 = a.d2 & 1;
+            a.d1 = (((a.d1 / 3) | 0) & ~1) | r6;
+            a.d2 = (((a.d2 / 3) | 0) & ~1) | r7;
+          }
+          const r4 = a.d0;
+          _animLinear(a, ball);
+          a.d7 = (a.d7 + ((a.d6 / 3) | 0)) & 0xFFFF;   // 1:1 data[7] += sBattler(=data[6])/3
+          ball.y2 += _arcSin((a.d7 >> 8) & 0xFF, a.d5);
+          a.affineParam = (a.affineParam + 0x100) & 0xFFFF;
+          // data[0] ne décrémente qu'1 frame sur 3 → l'apex dure 3× plus longtemps.
+          a.d0 = ((a.affineParam >> 8) % 3 !== 0) ? r4 : (r4 - 1);
+          if (((a.d7 >> 8) & 0xFF) >= 80) {
+            // sortie d'apex → restaure la vitesse pleine (deltas ×3).
+            const r6 = a.d1 & 1, r7 = a.d2 & 1;
+            a.d1 = ((a.d1 * 3) & ~1) | r6;
+            a.d2 = ((a.d2 * 3) & ~1) | r7;
+          }
+        } else {
+          // Montée (hi<35) ou descente (hi>=80) : arc normal jusqu'à la fin (le SOL).
+          if (_translateArc(a, ball)) {
+            // 1:1 pokeball.c:962 : arc fini → fige la position (x += x2 ; y += y2) puis release.
+            ball.x += ball.x2; ball.y += ball.y2; ball.x2 = 0; ball.y2 = 0;
+            _so.phase = 2; _so.frame = 0;
+          }
+        }
       }
       break;
     }
@@ -199,13 +295,14 @@ export function tickSendOut(): void {
       // 1:1 pokeball.c:758 LaunchBallFadeMonTask(TRUE, ...) : silhouette blanche→couleur
       // sur la palette OBJ du mon (= bit (16+palNum) du masque sélectionné).
       const selectedPalettes = (1 << (16 + _so.monPalNum)) >>> 0;
-      LaunchBallFadeMonTask(rt, true, _so.monPalNum, selectedPalettes, BALL_POKE);
+      _so.fadeTaskId = LaunchBallFadeMonTask(rt, true, _so.monPalNum, selectedPalettes, BALL_POKE);
       // 1:1 pokeball.c:815-823 (cf. Birch decomp-globals:2684-2694) : reveal + emerge.
       mon.invisible = false;
       SetUpForReleaseAffineAnim(rt, _so.monSpriteId, _so.side);
       rt.StartSpriteAffineAnim(_so.monSpriteId, BATTLER_AFFINE_EMERGE);
       BeginAffineAnim(mon, rt);   // applique frame 0 immédiatement (évite 1-frame 0×0)
       mon.data[1] = 0x1000;
+      mon.y2 = mon.data[1] >> 8;   // 1:1 : le mon démarre +16px plus bas (au sol) → émerge du BAS
       // Cri du mon (1:1 Task_PlayCryWhenReleasedFromBall) — via le playCry prouvé
       // (INTRO_TEXT l'utilise). SE_BALL_OPEN/THROW différés (audio fragile, consigne user).
       const sp = _so.species;
@@ -215,11 +312,29 @@ export function tickSendOut(): void {
       _so.phase = 3; _so.frame = 0;
       break;
     }
-    case 3: {  // EMERGE WAIT — 1:1 SpriteCB_PlayerMonFromBall (battle_main.c:2987 affineAnimEnded)
+    case 3: {  // EMERGE WAIT — 1:1 HandleBallAnimEnd (pokeball.c:845) + SpriteCB_PlayerMonFromBall.
       _so.emergeWaitFrames++;
-      if (mon.affineAnimEnded || _so.emergeWaitFrames > 40) {
+      // 1:1 HandleBallAnimEnd : tant que l'affine emerge tourne, le mon descend de
+      // data[1]>>8 (16→0) → il MONTE du sol pendant qu'il grandit = il émerge DU BAS
+      // (pas du centre, retour user 2026-06-01). data[1] -= 288/frame, y2 = data[1]>>8.
+      if (!mon.affineAnimEnded && _so.emergeWaitFrames <= 40) {
+        mon.data[1] -= 288;
+        if (mon.data[1] < 0) mon.data[1] = 0;
+        mon.y2 = mon.data[1] >> 8;
+      } else {
+        mon.y2 = 0;   // 1:1 HandleBallAnimEnd : y2 = 0 à la fin de l'affine.
         rt.StartSpriteAffineAnim(_so.monSpriteId, BATTLER_AFFINE_NORMAL);
         TearDownReleaseAffineAnim(rt, _so.monSpriteId);
+        _so.phase = 4; _so.frame = 0;
+      }
+      break;
+    }
+    case 4: {  // WAIT FLASH — le send-out ne se TERMINE pas tant que le flash blanc
+      // (LaunchBallFadeMonTask : fade blanc→couleur ~32f) joue → sinon le menu/healthbox
+      // apparaît pendant que le mon est encore blanc (retour user "menu avant fin anim").
+      _so.frame++;
+      const flashRunning = (_so.fadeTaskId >= 0 && rt.gTasks.has(_so.fadeTaskId)) || rt.gPaletteFade.active;
+      if (!flashRunning || _so.frame > 64) {   // cap 64f = filet de sécurité
         _cleanup(rt);
       }
       break;
@@ -230,7 +345,11 @@ export function tickSendOut(): void {
 function _cleanup(rt: DecompRuntime): void {
   if (_so) {
     const ball = rt.gSprites.get(_so.ballSpriteId);
-    if (ball) rt.DestroySprite(_so.ballSpriteId);
+    if (ball) {
+      // Libère la matrice OAM du spin (sinon fuite d'un slot affine par combat).
+      if ((ball.matrixNum ?? 0) > 0) { rt.FreeOamMatrix(ball.matrixNum); ball.matrixNum = 0; }
+      rt.DestroySprite(_so.ballSpriteId);
+    }
   }
   _so = null;
   _status = 'done';
@@ -275,7 +394,7 @@ export function tickReturnToBall(): void {
   if (_rtbStatus !== 'active' || !_rtb) return;
   const rt = getRuntime();
   if (!rt) { _rtb = null; _rtbStatus = 'done'; return; }
-  const fc = Math.floor(performance.now() / 16);
+  const fc = rt.gIntroFrameCounter;   // 1:1 frame logique 60Hz (cf. tickSendOut)
   if (fc === _rtbLastFc) return;
   _rtbLastFc = fc;
   const mon = rt.gSprites.get(_rtb.monSpriteId);
@@ -482,7 +601,7 @@ export function tickIntroSlideIn(): void {
   if (_slideInStatus !== 'active') return;
   const rt = getRuntime();
   if (!rt) { _slideInStatus = 'done'; return; }
-  const fc = Math.floor(performance.now() / 16);
+  const fc = rt.gIntroFrameCounter;   // 1:1 frame logique 60Hz (cf. tickSendOut)
   if (fc === _slideInLastFc) return;
   _slideInLastFc = fc;
 
@@ -576,7 +695,7 @@ export function tickTrainerThrow(): void {
   if (_ttStatus !== 'active' || !_tt) return;
   const rt = getRuntime();
   if (!rt) { _tt = null; _ttStatus = 'done'; return; }
-  const fc = Math.floor(performance.now() / 16);
+  const fc = rt.gIntroFrameCounter;   // 1:1 frame logique 60Hz (cf. tickSendOut)
   if (fc === _ttLastFc) return;
   _ttLastFc = fc;
 
@@ -651,7 +770,7 @@ export function tickOpponentTrainerThrow(): void {
   if (_ottStatus !== 'active' || !_ott) return;
   const rt = getRuntime();
   if (!rt) { _ott = null; _ottStatus = 'done'; return; }
-  const fc = Math.floor(performance.now() / 16);
+  const fc = rt.gIntroFrameCounter;   // 1:1 frame logique 60Hz (cf. tickSendOut)
   if (fc === _ottLastFc) return;
   _ottLastFc = fc;
 

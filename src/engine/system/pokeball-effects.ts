@@ -459,11 +459,14 @@ function _cos(idx: number, amplitude: number): number {
   return _sin(idx + 64, amplitude);
 }
 
-// ─── Particles asset loading (synchronous after first preload) ──────────────
-let _particlesLoaded = false;
-
+// ─── Particles asset loading — 1:1 décomp LoadBallParticleGfx (battle_anim_throw.c:1568) ──
+// IDEMPOTENT PAR TAG, sans flag persistant : on (re)charge uniquement si le tag
+// n'est PAS présent (GetSpriteTileStartByTag == 0xFFFF / IndexOfSpritePaletteTag == 0xFF).
+// Le reset VRAM du combat suivant (ResetSpriteData → FreeSpriteTileRanges +
+// FreeAllSpritePalettes au LOAD_ASSETS) libère les tags → ce load les recrée → les
+// étincelles reviennent à CHAQUE combat (avant : un flag `_particlesLoaded` figé à true
+// court-circuitait le reload → plus d'étincelles dès le 2ᵉ combat).
 function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
-  if (_particlesLoaded) return;
   // LoadCompressedSpriteSheet looks up assetCache['gBattleAnimSpriteGfx_Particles']
   // which must have been preloaded by intro-asset-loader. Pal goes via the
   // same symbol (the 4bpp PNG includes its palette).
@@ -526,6 +529,4 @@ function loadParticlesAssets(rt: DecompRuntime, ballId: number): void {
       MarkObjPaletteAllocated(slot, PARTICLES_PAL_TAG);
     }
   }
-
-  _particlesLoaded = !!gfx && !!pal;
 }

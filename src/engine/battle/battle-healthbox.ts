@@ -709,7 +709,9 @@ export function tickHealthboxSlideIn(): void {
   if (_hbSlides.length === 0) return;
   const rt = getRuntime();
   if (!rt) { _hbSlides.length = 0; return; }
-  const fc = Math.floor(performance.now() / 16);
+  // 1:1 timing : avance ≤1 step / FRAME LOGIQUE (gIntroFrameCounter, 60Hz tickFixed),
+  // pas sur le mur d'horloge — lockstep avec la logique + déterministe au frame-step.
+  const fc = rt.gIntroFrameCounter;
   if (fc === _hbSlideLastFc) return;
   _hbSlideLastFc = fc;
   for (let s = _hbSlides.length - 1; s >= 0; s--) {
