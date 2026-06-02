@@ -707,11 +707,13 @@ import {
   readByte,
   readHalfword,
   readWord,
+  gBattleScriptContext,
 } from './script-interpreter';
 import { SwitchPartyOrder } from './battle-turn-helpers';
 import { BATTLE_TYPE_SECRET_BASE, ABILITY_STICKY_HOLD } from './constants';
 import { ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';
 import { fillBattleMonFromParty } from './party-storage';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import type {
   BattleOpcodeHandler,
   BattleScriptContext,
@@ -1417,8 +1419,12 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
         gBattleResults.playerFaintCounter++;
       }
       _adjustFriendshipOnFaintTFM(activeBattler);
-      // 1:1 fallback for outcome side player (= keep behavior for our test).
-      setBattleOutcome(B_OUTCOME_LOST);
+      // ⚠️ Non-1:1 (échafaudage voie V) : le vrai Cmd_tryfaintmon NE pose PAS
+      // l'outcome — c'est `checkteamslost` (dans BattleScript_HandleFaintedMon,
+      // APRÈS GiveExp) qui le fait. En voie L (ctx persistant), on laisse le flux
+      // 1:1 poser l'outcome ; sinon RunTurnActionsFunctions court-circuiterait
+      // HandleFaintedMonActions (EXP + « K.O. » sautés).
+      if (ctx !== gBattleScriptContext) setBattleOutcome(B_OUTCOME_LOST);
     } else {
       if (gBattleResults.opponentFaintCounter < 255) {
         gBattleResults.opponentFaintCounter++;
@@ -1429,9 +1435,9 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
         gBattleResults.lastOpponentSpecies =
           GetMonData_TFM(gEnemyParty_TFM[partyIdx], MON_DATA_SPECIES_TFM) as number;
       }
-      // 1:1 fallback for our test : set outcome WON (= will be overridden if more
-      // battlers left in real ROM).
-      setBattleOutcome(B_OUTCOME_WON);
+      // ⚠️ Non-1:1 (échafaudage voie V) : idem — la voie L laisse checkteamslost
+      // (dans HandleFaintedMon, après GiveExp) poser WON.
+      if (ctx !== gBattleScriptContext) setBattleOutcome(B_OUTCOME_WON);
     }
 
     // 1:1 décomp ll.3020-3026 : Destiny Bond.
@@ -7650,10 +7656,26 @@ function Cmd_trycastformdatachange(ctx: BattleScriptContext): boolean {
 const F_TRAINER_PARTY_CUSTOM_MOVESET = 1 << 0;
 const F_TRAINER_PARTY_HELD_ITEM      = 1 << 1;
 
+// id numérique (gTrainerBattleOpponent_A) → clé 'TRAINER_X' OPPONENT depuis
+// opponents-data. PAS reverseDecompConstant(id,'TRAINER_') : le préfixe 'TRAINER_'
+// est AMBIGU (matche aussi TRAINER_CLASS_/TRAINER_PIC_/TRAINER_BACK_PIC_/
+// TRAINER_ENCOUNTER_MUSIC_) → renvoyait la mauvaise clé. Cache first-wins, build
+// async au boot (= même approche éprouvée que battle-string-decoder._trainerIdToKey).
+let _trainerIdKeyCache: Map<number, string> | null = null;
+void (async () => {
+  try {
+    const mod = await import('../decomp-data/include/constants/opponents-data');
+    const m = new Map<number, string>();
+    for (const [k, v] of Object.entries(mod)) {
+      if (k.startsWith('TRAINER_') && typeof v === 'number' && !m.has(v)) m.set(v, k);
+    }
+    _trainerIdKeyCache = m;
+  } catch { /* boot ordering edge — cache reste vide jusqu'au build */ }
+})();
+
 /** 1:1 décomp `GetTrainerMoneyToGive(trainerId)` (battle_script_commands.c:5581-5636).
- *  gTrainers est lu dynamiquement depuis globalThis (= decomp-data lazy load
- *  quand le bytecode système charge ce data). Si non dispo, on retombe sur
- *  default classId=0xFF (=5) et lastMonLevel=party adversaire last entry. */
+ *  Classe via gameDataTrainers[key].trainerClass, lastMonLevel via gEnemyParty (party
+ *  dresseur chargée). `globalThis.gTrainers` n'est jamais peuplé (ancien chemin mort). */
 function _getTrainerMoneyToGive(trainerId: number): number {
   // 1:1 décomp : Secret Base path (= 20 × levels[0] × moneyMultiplier).
   if (trainerId === TRAINER_SECRET_BASE) {
@@ -7663,32 +7685,26 @@ function _getTrainerMoneyToGive(trainerId: number): number {
     return 20 * lvl0 * _getMoneyMultiplier();
   }
 
-  // 1:1 décomp : switch partyFlags → lastMonLevel = party[partySize-1].lvl.
-  const trainers = (globalThis as { gTrainers?: Array<{ partyFlags: number; partySize: number; trainerClass: number; party: { NoItemDefaultMoves?: Array<{ lvl: number }>; NoItemCustomMoves?: Array<{ lvl: number }>; ItemDefaultMoves?: Array<{ lvl: number }>; ItemCustomMoves?: Array<{ lvl: number }> } }> }).gTrainers;
-  const tr = trainers?.[trainerId];
+  // 1:1 décomp : trainerClass + lastMonLevel = party[partySize-1].lvl.
+  //  - classe : `gameDataTrainers[key].trainerClass` ("TRAINER_CLASS_X" → num via
+  //    resolveDecompConstant). `globalThis.gTrainers` n'est JAMAIS peuplé (ex-bug :
+  //    fallback classe 0xFF → value sentinelle 5).
+  //  - lastMonLevel : dernier mon NON VIDE de gEnemyParty (= la party du dresseur,
+  //    chargée par CreateNPCTrainerParty pour le combat ; équivalent 1:1 de
+  //    party[partySize-1].lvl, et seule source peuplée — trainersTable jamais chargé,
+  //    gameDataTrainers sans party). Lit via MON_DATA_LEVEL (l'ancien `6` était FAUX).
+  const trainerKey = _trainerIdKeyCache?.get(trainerId);
+  const gdt = (globalThis as { gameDataTrainers?: Record<string, { trainerClass?: string }> }).gameDataTrainers;
+  const classStr = trainerKey ? gdt?.[trainerKey]?.trainerClass : undefined;
+  const resolvedClass = classStr ? resolveDecompConstant(classStr) : undefined;
+  const trainerClass = typeof resolvedClass === 'number' ? resolvedClass : 0xFF;
+
   let lastMonLevel = 0;
-  let trainerClass = 0xFF;
-  if (tr) {
-    trainerClass = tr.trainerClass;
-    const flags = tr.partyFlags;
-    const slot = tr.partySize - 1;
-    if (flags === 0) {
-      lastMonLevel = tr.party.NoItemDefaultMoves?.[slot]?.lvl ?? 0;
-    } else if (flags === F_TRAINER_PARTY_CUSTOM_MOVESET) {
-      lastMonLevel = tr.party.NoItemCustomMoves?.[slot]?.lvl ?? 0;
-    } else if (flags === F_TRAINER_PARTY_HELD_ITEM) {
-      lastMonLevel = tr.party.ItemDefaultMoves?.[slot]?.lvl ?? 0;
-    } else if (flags === (F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM)) {
-      lastMonLevel = tr.party.ItemCustomMoves?.[slot]?.lvl ?? 0;
-    }
-  } else {
-    // Fallback : utilise party adversaire en battle pour estimer lastMonLevel.
-    // Pas 1:1 strict mais évite crashs si gTrainers pas porté.
-    for (let i = 5; i >= 0; i--) {
-      const lvl = GetMonData(gEnemyParty[i], 6 /* MON_DATA_LEVEL */) as number;
-      if (lvl > 0) { lastMonLevel = lvl; break; }
-    }
+  for (let i = 5; i >= 0; i--) {
+    const lvl = GetMonData(gEnemyParty[i], MON_DATA_LEVEL) as number;
+    if (lvl > 0) { lastMonLevel = lvl; break; }
   }
+  void F_TRAINER_PARTY_CUSTOM_MOVESET; void F_TRAINER_PARTY_HELD_ITEM;
 
   const value = getTrainerMoneyValue(trainerClass);
   void gTrainerMoneyTable;  // suppress unused warning for the import.
@@ -9528,7 +9544,10 @@ function Cmd_pickup(_ctx: BattleScriptContext): boolean {
 /** 1:1 décomp : `gSpeciesInfo[species].abilities[abilityNum ? 1 : 0]`. */
 function _getSpeciesAbilityPK(species: number, abilityNum: number): number {
   const info = _getSpeciesInfoPK(_speciesNumberToEnumPK(species));
-  if (!info) return 0;
+  // SPECIES_NONE (slots d'équipe vides, itérés par Cmd_pickup AVANT le check
+  // species != NONE) → pas de table abilities dans notre data → ABILITY_NONE.
+  // 1:1 décomp : gSpeciesInfo[SPECIES_NONE].abilities = {ABILITY_NONE, ABILITY_NONE}.
+  if (!info || !info.abilities) return 0;
   const abilityName = info.abilities[abilityNum ? 1 : 0];
   // Resolve ability name → number via auto-data lookup.
   return _abilityNameToNumberPK(abilityName);
@@ -9970,11 +9989,14 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   const hasNone = _hasNoMonsToSwitch_HBT(battler, 6, 6);
   if (hasNone) {
     setActiveBattler(battler);
-    if (bs.gAbsentBattlerFlags !== undefined && bs.gHitMarker !== undefined) {
+    {
       const bit = 1 << battler;
-      bs.gAbsentBattlerFlags = bs.gAbsentBattlerFlags | bit;
+      // BUG CORRIGÉ : `gAbsentBattlerFlags`/`gHitMarker` sont des exports getter-only
+      // → l'assignation directe throwait (TypeError) → openpartyscreen crashait dans
+      // la branche "plus de mon". Utiliser les setters.
+      setAbsentBattlerFlags(gAbsentBattlerFlags | bit);
       // Clear HITMARKER_FAINTED(battler) = (1 << (battler + 28)).
-      bs.gHitMarker = bs.gHitMarker & ~(1 << (battler + 28));
+      setHitMarker(gHitMarker & ~(1 << (battler + 28)));
     }
     ctx.scriptPtr = jumpPtr;
     return false;
@@ -10029,21 +10051,21 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
 /** 1:1 STRICT décomp `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
  *  (battle_util.c). Itère le party, retourne TRUE si aucun mon switchable
  *  (= species != 0 + hp > 0 + !isEgg). 1:1 strict porté. */
-function _hasNoMonsToSwitch_HBT(battler: number, _p1: number, _p2: number): boolean {
-  const bs = (globalThis as { __battleState?: {
-    gBattlerPartyIndexes?: number[];
-    gPlayerParty?: Array<{ species?: number; hp?: number; isEgg?: number }>;
-    gEnemyParty?: Array<{ species?: number; hp?: number; isEgg?: number }>;
-  } }).__battleState;
-  if (!bs) return true;
+function _hasNoMonsToSwitch_HBT(battler: number, p1: number, p2: number): boolean {
+  // 1:1 décomp HasNoMonsToSwitch : scan le party côté `battler`, TRUE si aucun mon
+  // switchable (species != 0, hp > 0, !isEgg), en excluant les 2 slots on-field
+  // (p1, p2). BUG CORRIGÉ : lisait `__battleState.gEnemyParty` qui n'est PAS exposé
+  // (→ undefined → `return true` à tort → faint→switch cassé : "plus de mon" alors
+  // qu'il en reste, le 2e mon dresseur n'entrait jamais). Lit le VRAI party via les
+  // alias _CTL (= ceux que Cmd_checkteamslost utilise, qui marchent).
   const side = battler & 1;  // 0 player, 1 opponent.
-  const party = side === 0 ? bs.gPlayerParty : bs.gEnemyParty;
-  if (!party) return true;
-  const curSlot = bs.gBattlerPartyIndexes?.[battler] ?? 0;
+  const party = side === 0 ? _gPlayerPartyCTL : _gEnemyPartyCTL;
   for (let i = 0; i < 6; i++) {
-    if (i === curSlot) continue;
-    const mon = party[i];
-    if (mon?.species && (mon.hp ?? 0) > 0 && !mon.isEgg) return false;
+    if (i === p1 || i === p2) continue;
+    const sp = _GetMonDataCTL(party[i], _MON_DATA_SPECIES_CTL) as number;
+    const hp = _GetMonDataCTL(party[i], _MON_DATA_HP_CTL) as number;
+    const isEgg = _GetMonDataCTL(party[i], _MON_DATA_IS_EGG_CTL) as number;
+    if (sp !== 0 && hp > 0 && !isEgg) return false;
   }
   return true;
 }
@@ -11182,6 +11204,7 @@ function _IsRunningFromBattleImpossible(): number {
 function Cmd_getexp(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : args = 1 byte battler ref. Notre opcode = 1 byte total
   // (= no jump target ; le caller utilise call/goto vers BattleScript_LevelUp etc.)
+  const opStartPtr = ctx.scriptPtr - 1;  // position de l'opcode getexp (le dispatcher a déjà consommé +1)
   const battlerArg = readByte(ctx);
   if (gBattleControllerExecFlags) {
     ctx.scriptPtr -= 2;  // back to opcode + arg
@@ -11336,7 +11359,7 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             // - B_BUFF1 = nickname avec préfixe (= "POKéMON ami" / "ennemi")
             // - B_BUFF2 = " un bonus de" (ABOOSTED) ou vide (EMPTYSTRING4) selon traded
             // - B_BUFF3 = number xp
-            const stringIdBoost = (monOtId !== playerTID) ? 53 /* STRINGID_ABOOSTED */ : 39 /* STRINGID_EMPTYSTRING4 */;
+            const stringIdBoost = (monOtId !== playerTID) ? 330 /* STRINGID_ABOOSTED */ : 329 /* STRINGID_EMPTYSTRING4 */;
             PREPARE_MON_NICK_WITH_PREFIX_BUFFER_N34(_gBattleTextBuff1_N34, gBattleStruct.expGetterBattlerId, monId);
             PREPARE_STRING_BUFFER_N34(_gBattleTextBuff2_N34, stringIdBoost);
             PREPARE_WORD_NUMBER_BUFFER_N34(_gBattleTextBuff3_N34, 5, dmg);
@@ -11446,6 +11469,14 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
     }
   }
   }  // end while allowFallThrough
+  // 1:1 décomp : `getexp` ne consomme l'opcode (gBattlescriptCurrInstr += 2) QU'au
+  // state final (case 6 → getexpState=0) ou sur un jump (case 4 level-up). Tant que
+  // la state machine tourne (getexpState != 0) et qu'aucun jump n'a bougé le ptr
+  // (= ptr encore à opStart+2 après readByte), on RESTE sur l'opcode pour ré-exécuter
+  // au prochain frame (sinon le ptr file vers end2 et la machine ne progresse pas).
+  if (gBattleScripting.getexpState !== 0 && ctx.scriptPtr === opStartPtr + 2) {
+    ctx.scriptPtr = opStartPtr;
+  }
   return false;
 }
 

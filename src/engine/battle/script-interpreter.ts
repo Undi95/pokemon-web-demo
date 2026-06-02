@@ -51,6 +51,8 @@
 
 import { Random } from '../system/random';
 import { tickBattleControllers } from './battle-controllers';
+import { setCurrentActionFuncId, setMoveResultFlags, setActiveBattler } from './state';
+import { B_ACTION_TRY_FINISH } from './constants';
 import { BATTLE_SCRIPTS_FOR_MOVE_EFFECTS } from '../decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table';
 import { OPCODE_NAMES, getOpcodeName } from './opcode-names';
 
@@ -209,14 +211,34 @@ function _Cmd_return(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 0x3D end : terminate script entirely. */
+/** 0x3D end : 1:1 décomp `Cmd_end` (battle_script_commands.c:3953-3961) — fin du
+ *  script d'action → bascule `gCurrentActionFuncId = B_ACTION_TRY_FINISH`
+ *  (= RunTurnActionsFunctions enchaîne TryFinish → ActionFinished → battler
+ *  suivant : c'est LA transition EXEC_SCRIPT → TRY_FINISH du tour décomp).
+ *  `scriptPtr = -1` aussi pour compat voie V (boucle while qui s'arrête sur
+ *  scriptPtr < 0 ; gCurrentActionFuncId y est ignoré + reset au prochain run).
+ *  (BATTLE_TYPE_ARENA → BattleArena_AddSkillPoints deferred Frontier.) */
 function _Cmd_end(ctx: BattleScriptContext): boolean {
+  // Transition EXEC_SCRIPT → TRY_FINISH : UNIQUEMENT pour la voie L (ctx persistant
+  // partagé). La voie V (ctx LOCAL) lit gMoveResultFlags APRÈS la boucle pour
+  // décoder typeMul/missed (wire-bytecode-bridge:354) → on NE doit PAS le reset
+  // ici sinon régression V. Échafaudage de transition (P6 retire la voie V).
+  if (ctx === gBattleScriptContext) {
+    setMoveResultFlags(0);
+    setActiveBattler(0);
+    setCurrentActionFuncId(B_ACTION_TRY_FINISH);
+  }
   ctx.scriptPtr = -1;
   return true;
 }
 
-/** 0x3E end2 : alias of end. */
+/** 0x3E end2 : 1:1 décomp `Cmd_end2` (battle_script_commands.c:3963-3967) — comme
+ *  end mais sans reset gMoveResultFlags. → B_ACTION_TRY_FINISH (voie L only). */
 function _Cmd_end2(ctx: BattleScriptContext): boolean {
+  if (ctx === gBattleScriptContext) {
+    setActiveBattler(0);
+    setCurrentActionFuncId(B_ACTION_TRY_FINISH);
+  }
   ctx.scriptPtr = -1;
   return true;
 }
@@ -548,6 +570,68 @@ export function runBattleScript(ctx: BattleScriptContext): boolean {
   }
   console.warn(`[battle/script-interpreter] hit MAX ${MAX} iterations — runaway script?`);
   return false;
+}
+
+/** 1:1 décomp : le contexte de script de combat PERSISTANT (= l'équivalent des
+ *  globals `gBattlescriptCurrInstr` + `gBattleResources->battleScriptsStack`).
+ *  Singleton partagé par la voie L (décomp battle loop) : `HandleAction_UseMove`
+ *  pose `scriptPtr`, `HandleAction_RunBattleScript` step une commande par frame.
+ *  La voie V (`runMoveScriptViaBytecode`) crée des ctx LOCAUX et ne touche PAS
+ *  ce singleton → 0 régression. */
+export const gBattleScriptContext: BattleScriptContext = {
+  scriptPtr: -1,
+  scriptPtrStack: [],
+  comparisonResult: 0,
+  dataPtr: [0, 0, 0, 0],
+};
+
+/** Voie L (décomp) : exécute UNE seule commande du battle script
+ *  (= 1:1 `gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]()`,
+ *  battle_util.c:3808), SANS boucle ET SANS `tickBattleControllers`.
+ *
+ *  Le pacing per-frame + la complétion des controllers sont assurés par
+ *  `HandleAction_RunBattleScript` (gated sur `gBattleControllerExecFlags`,
+ *  appelé 1×/frame par RunTurnActionsFunctions) + les controller funcs tickés
+ *  par BattleMainCB1. C'est l'OPPOSÉ de `runBattleScript` (voie V), qui déroule
+ *  en rafale + clear les flags entre chaque opcode. */
+export function stepBattleScriptCommand(ctx: BattleScriptContext): void {
+  if (!_BYTECODE) {
+    console.warn('[battle/script-interpreter] BYTECODE not loaded — call loadBattleScriptBytecode first');
+    return;
+  }
+  if (ctx.scriptPtr < 0 || ctx.scriptPtr >= _BYTECODE.length) return;
+  const opcode = _BYTECODE[ctx.scriptPtr];
+  const ptrBefore = ctx.scriptPtr;
+  ctx.scriptPtr++;
+  const handler = _commands[opcode];
+  if (!handler) {
+    console.warn(`[battle/script-interpreter] no handler for opcode 0x${opcode.toString(16)}`);
+    return;
+  }
+  const name = getOpcodeName(opcode);
+  // Devtools tracking : mêmes stats/trace/ring buffer que runBattleScript.
+  _dispatchStats[name] = (_dispatchStats[name] ?? 0) + 1;
+  _totalDispatches++;
+  _recentOpcodes.push({ opcode, name, scriptPtr: ptrBefore });
+  if (_recentOpcodes.length > _RECENT_MAX) _recentOpcodes.shift();
+  if (_tracing && _traceCount < _traceMax) {
+    console.log(`[bytecode-L] @0x${ptrBefore.toString(16).padStart(4, '0')} 0x${opcode.toString(16).padStart(2, '0')} ${name}`);
+    _traceCount++;
+  }
+  try {
+    handler(ctx);
+  } catch (e) {
+    const err = e as Error;
+    _lastBug = {
+      opcode,
+      opcodeName: name,
+      scriptPtr: ptrBefore,
+      error: err.message ?? String(e),
+      stack: err.stack,
+      at: Date.now(),
+    };
+    console.error(`[battle/script-interpreter] handler '${name}' threw at @0x${ptrBefore.toString(16)} :`, err);
+  }
 }
 
 /** Get all labels (= scripts disponibles), optionnel filter par prefix. */

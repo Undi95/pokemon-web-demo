@@ -46,6 +46,7 @@ import {
   gPlayerDpadHoldFrames, setPlayerDpadHoldFrames, incPlayerDpadHoldFrames,
   gNumberOfMovesToChoose, setNumberOfMovesToChoose,
   gMultiUsePlayerCursor, setMultiUsePlayerCursor,
+  gBattlerControllerFuncs, setBattlerControllerFunc,
 } from './state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI, BATTLE_TYPE_PALACE,
@@ -93,13 +94,16 @@ import {
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   gPlayerParty, GetMonData,
-  MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS,
+  MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS, MON_DATA_IS_EGG,
 } from './party-storage';
 import { gBattlerPartyIndexes } from './state';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
 } from './battle-hp-bar';
 import { LoadPalette, BG_PLTT_ID } from '../system/decomp-globals';
+import { reverseDecompConstant } from '../system/decomp-constants';
+import { getMoveName as _getMoveNameFrFromData } from '../data/game-data';
+import { getBattleMove } from './data/battle-moves';
 import { getPPTextPalette } from './battle-bg';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
@@ -172,9 +176,9 @@ const CONTROLLER_RESETACTIONMOVESELECTION = 0x36;
 const CONTROLLER_ENDLINKBATTLE = 0x37;
 
 // ─── gBattlerControllerFuncs (battle.h) ────────────────────────────────────
-
-/** 1:1 décomp `gBattlerControllerFuncs[MAX_BATTLERS_COUNT]`. */
-const gBattlerControllerFuncs: Array<(() => void) | null> = [null, null, null, null];
+// Table partagée unique : importée depuis state.ts (= le décomp n'a qu'UNE
+// table globale gBattlerControllerFuncs). Player/opponent/setup y écrivent,
+// BattleMainCB1 la tick.
 
 /** Helper export pour battle-flow.ts ou autres pour install controller. */
 export function getBattlerControllerFunc(battler: number): (() => void) | null {
@@ -313,11 +317,18 @@ function _BattleTv_ClearExplosionFaintCause(): void {
  *  gDisplayedStringBattle)`. Pour now : route vers le decoder/string-expand
  *  existant via globalThis hook (battle-string-decoder). */
 function _BattleStringExpandPlaceholdersToDisplayedString(src: string): string {
-  const m = (globalThis as Record<string, unknown>).__battleStringDecoder as {
-    expandPlaceholders?: (src: string) => string;
-  } | undefined;
-  if (m?.expandPlaceholders) return m.expandPlaceholders(src);
-  // Fallback : retourner src tel quel (= no expansion). Phase L1 suffisant.
+  // 1:1 décomp BattleStringExpandPlaceholdersToDisplayedString : substitue les
+  // {B_X} (dont {B_ACTIVE_NAME_WITH_PREFIX} = nom du mon actif) via le decoder.
+  // Avant : cherchait __battleStringDecoder (jamais exposé) → fallback `return src`
+  // → "Que doit faire {B_ACTIVE_NAME_WITH_PREFIX}?" brut à l'écran. Le bon objet est
+  // __battleStringDecoderApi.expandPlaceholders(src, msgData) + snapshot msgData.
+  const api = (globalThis as { __battleStringDecoderApi?: { expandPlaceholders?: (src: string, msgData: unknown) => string } }).__battleStringDecoderApi;
+  if (api?.expandPlaceholders) {
+    const snap = (globalThis as { __battleControllers?: { snapshotMsgData?: () => unknown } }).__battleControllers;
+    const msgData = snap?.snapshotMsgData?.() ?? {};
+    return api.expandPlaceholders(src, msgData);
+  }
+  // Fallback : retourner src tel quel (= no expansion).
   return src;
 }
 
@@ -406,15 +417,19 @@ function _readChooseMoveStruct(battler: number): ChooseMoveStruct {
   return { moves, currentPp, maxPp, monTypes };
 }
 
-/** 1:1 décomp `gMoveNames[move]` lookup. Wire vers gameData via globalThis. */
+/** 1:1 décomp `gMoveNames[move]` lookup. gameData expose les noms par ENUM
+ *  ("MOVE_POUND"), PAS par numéro → convertir le move id numérique en enum
+ *  (reverseDecompConstant) puis lire le nom FR via getMoveName (= même mécanisme
+ *  que le decoder de strings `_moveName`). Avant : lookup numérique sur
+ *  gameDataMoves (keyé par enum) → échouait toujours → le menu de moves affichait
+ *  l'ID brut ("1","43","71","98") au lieu des noms (bug texte menu). */
 function _getMoveName(move: number): string {
-  const dt = (globalThis as { gameDataMoves?: Record<string, { name?: string; nameFr?: string }> }).gameDataMoves;
-  if (!dt) return String(move);
-  // Cherche entry par numericId.
-  for (const k of Object.keys(dt)) {
-    const e = dt[k];
-    const idMatch = parseInt(k, 10);
-    if (idMatch === move) return (e?.nameFr ?? e?.name ?? k);
+  if (!move) return String(move);
+  const enumName = reverseDecompConstant(move, 'MOVE_');
+  if (enumName) {
+    const fr = _getMoveNameFrFromData(enumName);
+    if (fr && fr !== enumName) return fr;
+    return enumName.replace(/^MOVE_/, '');
   }
   return String(move);
 }
@@ -428,14 +443,13 @@ function _getTypeName(type: number): string {
   return FR_TYPES[type] ?? 'NORMAL';
 }
 
-/** 1:1 décomp `gBattleMoves[move].target`. Wire vers gameDataMoves.target. */
+/** 1:1 décomp `gBattleMoves[move].target`. Via getBattleMove (id numérique, .target
+ *  résolu en nombre) — même bug que _getMoveType : gameDataMoves est keyé par ENUM,
+ *  `parseInt(k,10)===move` ne matchait jamais → toujours MOVE_TARGET_SELECTED (les
+ *  moves USER comme Danse-Lames ciblaient l'adversaire au lieu du lanceur). */
 function _getMoveTarget(move: number): number {
-  const dt = (globalThis as { gameDataMoves?: Record<string, { target?: number }> }).gameDataMoves;
-  if (!dt) return MOVE_TARGET_SELECTED;
-  for (const k of Object.keys(dt)) {
-    if (parseInt(k, 10) === move) return (dt[k]?.target ?? MOVE_TARGET_SELECTED);
-  }
-  return MOVE_TARGET_SELECTED;
+  const t = getBattleMove(move).target;
+  return typeof t === 'number' ? t : MOVE_TARGET_SELECTED;
 }
 
 /** 1:1 décomp `MoveSelectionDisplayMoveNames()` (1456-1471). */
@@ -484,14 +498,13 @@ function MoveSelectionDisplayMoveType(): void {
   BattlePutTextOnWindow(`TYPE/{FONT NORMAL}${_getTypeName(moveType)}`, B_WIN_MOVE_TYPE);
 }
 
-/** 1:1 décomp `gBattleMoves[move].type`. */
+/** 1:1 décomp `gBattleMoves[move].type`. Via getBattleMove (= _moves[] indexé par
+ *  id numérique, .type résolu en nombre) — PAS gameDataMoves qui est keyé par ENUM
+ *  ("MOVE_X") : `parseInt("MOVE_EMBER",10)` = NaN → aucun match → tout retombait sur
+ *  0 = TYPE_NORMAL (le menu de move affichait "NORMAL" pour TOUS les moves). */
 function _getMoveType(move: number): number {
-  const dt = (globalThis as { gameDataMoves?: Record<string, { type?: number }> }).gameDataMoves;
-  if (!dt) return 0;
-  for (const k of Object.keys(dt)) {
-    if (parseInt(k, 10) === move) return (dt[k]?.type ?? 0);
-  }
-  return 0;
+  const t = getBattleMove(move).type;
+  return typeof t === 'number' ? t : 0;
 }
 
 /** 1:1 décomp `GetCurrentPpToMaxPpState` (battle_message.c:3124-3155). Retourne
@@ -1015,10 +1028,12 @@ function _BufferStringBattle(stringId: number): string {
     console.warn('[L5] BufferStringBattle : decoder API not exposed');
     return `[stringId=${stringId}]`;
   }
-  // Snapshot msgData via globalThis battle-controllers _snapshotMsgData
-  // (= 1:1 décomp battle_controllers.c:1147-1166 build).
-  const snap = (globalThis as { __battleControllers?: { snapshotMsgData?: () => unknown } }).__battleControllers;
-  const msgData = snap?.snapshotMsgData?.() ?? {};
+  // 1:1 décomp : le BattleMsgData est celui FIGÉ par EmitPrintString (bufferA[4..]),
+  // PAS un re-snapshot live. Sinon gBattlerAttacker/Target ont déjà changé quand le
+  // handler s'exécute → mauvais nom dans le message ("ARCKO" au lieu de "WAILMER").
+  // Fallback snapshot live si aucun EmitPrintString figé (= robustesse).
+  const ctrls = (globalThis as { __battleControllers?: { snapshotMsgData?: () => unknown; getLastPrintStringMsgData?: (b?: number) => unknown } }).__battleControllers;
+  const msgData = ctrls?.getLastPrintStringMsgData?.(gActiveBattler) ?? ctrls?.snapshotMsgData?.() ?? {};
   return api.decodeBattleString(stringId, msgData);
 }
 
@@ -1286,10 +1301,44 @@ function _OpenBagAndChooseItem(): void {
   PlayerBufferExecCompleted();
 }
 
+/** 1:1 décomp `OpenPartyMenuToChooseMon` → `WaitForMonSelection`
+ *  (battle_controller_player.c:1345-1373). Le décomp ouvre le party menu in-battle
+ *  (`OpenPartyMenuInBattle`, scene swap UI) puis `WaitForMonSelection` émet
+ *  `EmitChosenMonReturnValue(gSelectedMonPartyId)`. L'UI party-menu in-battle est
+ *  dette R3 (chantier visuel à venir, jugé A/B sur la ROM). HEADLESS = stand-in
+ *  déterministe de la sélection joueur : on choisit le 1er mon éligible (species != 0,
+ *  hp > 0, !isEgg, != mon actif K.O.) — exactement ce que le joueur fait au party
+ *  screen pour remplacer un mon tombé (PARTY_ACTION_SEND_OUT). Intégration identique
+ *  à `OpponentHandleChoosePokemon` (vérifiée) : pose `monToSwitchIntoId[battler]`
+ *  directement (notre `Cmd_switchhandleorder` case 0 est un no-op : il lit
+ *  monToSwitchIntoId déjà setté) PUIS émet `CHOSENMONRETURNVALUE`. Aucun mon trouvé
+ *  → PARTY_SIZE (= branche else de WaitForMonSelection ; ne devrait pas arriver car
+ *  `Cmd_openpartyscreen` gate l'ouverture via HasNoMonsToSwitch). */
 function _OpenPartyMenuToChooseMon(): void {
-  // Dette R3 : party menu in-battle scene swap (= cascade UI).
-  // Pour now : exec complete (= cancel) tant que party-menu-in-battle pas wirée.
+  const activePartyIdx = gBattlerPartyIndexes[gActiveBattler];
+  let chosenMonId = _PARTY_SIZE;
+  for (let i = 0; i < _PARTY_SIZE; i++) {
+    if (i === activePartyIdx) continue;
+    const mon = gPlayerParty[i];
+    if (!mon) continue;
+    const sp = GetMonData(mon, MON_DATA_SPECIES_LOCAL) as number;
+    const hp = GetMonData(mon, MON_DATA_HP) as number;
+    const isEgg = GetMonData(mon, MON_DATA_IS_EGG) as number;
+    if (sp !== 0 && hp > 0 && !isEgg) { chosenMonId = i; break; }
+  }
+  if (chosenMonId !== _PARTY_SIZE) _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
+  _BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, chosenMonId, _getBattlePartyCurrentOrderSlice());
   PlayerBufferExecCompleted();
+}
+
+/** 1:1 décomp `PARTY_SIZE` (constants/party_menu.h). */
+const _PARTY_SIZE = 6;
+
+/** Wire `gBattleStruct.monToSwitchIntoId[battler] = v` (lazy globalThis = éviter
+ *  cycle ESM). = même helper que côté opponent (battle-controller-opponent.ts:201). */
+function _setMonToSwitchIntoId(battler: number, v: number): void {
+  const m = (globalThis as { __battleState?: { gBattleStruct?: { monToSwitchIntoId?: number[] } } }).__battleState;
+  if (m?.gBattleStruct?.monToSwitchIntoId) m.gBattleStruct.monToSwitchIntoId[battler] = v;
 }
 
 function _setBattlerInMenuId(battler: number): void {
@@ -1735,7 +1784,7 @@ void MarkBattlerForControllerExec;
 (globalThis as Record<string, unknown>).__battleControllerPlayer = {
   sPlayerBufferCommands,
   SetControllerToPlayer, PlayerBufferRunCommand,
-  getBattlerControllerFunc,
+  getBattlerControllerFunc, setBattlerControllerFunc,
   // L1 wires exposés pour tests déterministes A_BUTTON cursor input loop.
   HandleInputChooseAction, HandleChooseActionAfterDma3,
   ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt,

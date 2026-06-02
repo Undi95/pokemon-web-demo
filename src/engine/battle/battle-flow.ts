@@ -136,7 +136,10 @@ import { Random } from '../system/random';
 import { setBattleTypeFlags, gBattleTypeFlags, setTrainerBattleOpponentA } from '../battle/state';
 import { BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_TRAINER } from '../battle/constants';
 import { TryRunFromBattle as _TryRunFromBattle, IsRunningFromBattleImpossible as _IsRunningFromBattleImpossible } from './try-run-from-battle';
-import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr, setRandomTurnNumber } from './state';
+import { setActiveBattler as setActiveBattlerForRun, gBattleCommunication as _gBattleCommunicationArr, setRandomTurnNumber, setBattlerInMenuId } from './state';
+// Étape 3b : usage d'item en combat (medicine/X-items). PokemonUseItemEffects 1:1
+// (pokemon.c:4742) ; setForceInBattle = override inBattle pour le combat sauvage inline.
+import { PokemonUseItemEffects, setForceInBattle } from '../bag/bag-item-effects';
 import { decodeBattleString, stripGbaControlCodes, battleStringToPrinterText, buildMonNickBuff, buildNumberBuff, buildMoveBuff, buildStringBuff } from './battle-string-decoder';
 import { getString as _getGlobalString } from '../ui/gba-strings';
 import {
@@ -225,6 +228,8 @@ import './battle-cb2';
 import './battle-link-end';
 import './battle-link-start';
 import './battle-init';
+import './battle-controllers-init';
+import './battle-decomp-loop';
 import './battle-action-selection';
 import './battle-controllers-ipc';
 import './handle-action';
@@ -514,6 +519,7 @@ type State =
   // Sous-écrans CB2 (sac / party) ouverts depuis le combat inline. L'ouverture
   // (SetMainCallback2) gèle flow.tick ; le retour reshow la scène puis reprend.
   | 'OPEN_PARTY_SWITCH' | 'OPEN_PARTY_FAINT' | 'OPEN_BAG' | 'WAIT_SUBSCREEN'
+  | 'ITEM_USE_BATTLE' | 'ITEM_USE_BATTLE_WAIT'
   | 'END_TURN_PROCESS' | 'END_TURN_MSG' | 'END_TURN_MSG_WAIT'
   | 'CLEANUP'
   | 'DONE';
@@ -846,6 +852,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   let _subScreenKind: 'bag' | 'party-switch' | 'party-faint' | 'move-select' | null = null;
   let _subScreenReturned = false;         // posé par le pump reshow quand prêt à reprendre
   let _subScreenItemId = 0;               // item choisi au sac (gSpecialVar_ItemId ; 0 = annulé)
+  let _battleItemId = 0;                   // étape 3b : item non-ball à utiliser en combat
   let _subScreenMonSlot = -1;             // slot mon choisi au party (-1 = annulé)
   let _subScreenMoveSlot = 0;             // slot move à oublier (GetMoveSlotToReplace ; MAX=annulé)
   let _savedOverworldCb: ((rt: ReturnType<typeof getRuntime>) => void) | null = null;
@@ -2786,10 +2793,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             // BALL_THROW_RESULT_WAIT, comme la fuite ratée).
             state = 'BALL_THROW_INIT';
           } else {
-            // Medicine / X-items / autres en combat = étape 3b (à câbler :
-            // PokemonUseItemEffects flag combat + message + consomme le tour).
-            console.log('[battle-flow étape3] item non-ball choisi en combat (3b à venir):', itemId);
-            state = 'ACTION_MENU_INIT';
+            // Étape 3b : medicine / X-items / cure statut → usage en combat sur le mon
+            // ACTIF (PokemonUseItemEffects 1:1) → consomme le tour.
+            _battleItemId = itemId;
+            state = 'ITEM_USE_BATTLE';
           }
         } else if (kind === 'move-select') {
           // 0x5A case 4 : slot d'oubli choisi dans le summary (0..3) ou MAX_MON_MOVES (4 = annulé).
@@ -2817,6 +2824,62 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           }
         } else {
           state = 'ACTION_MENU_INIT';
+        }
+        return false;
+      }
+
+      // ─── Étape 3b : usage d'item NON-ball en combat (medicine / X-items) ────────
+      case 'ITEM_USE_BATTLE': {
+        // 1:1 décomp HandleAction_UseItem (joueur) → BattleScript_PlayerUsesItem = `end`
+        // (aucun message côté script) : dans le décomp l'effet + le feedback sont appliqués
+        // côté sac/party-menu AVANT. Notre modèle INLINE applique ici via
+        // PokemonUseItemEffects (pokemon.c:4742) sur le mon ACTIF (la sélection d'un mon de
+        // banc = couche party-target suivante). L'usage CONSOMME le tour → l'adversaire
+        // attaque (1:1 : USE_ITEM = action de tour, comme la ball).
+        if (!playerMon || !opponentMon) { state = 'CLEANUP'; return false; }
+        const oldHp = playerMon.currentHp;
+        setBattlerInMenuId(0);        // joueur actif → résout battler 0 via gBattlerPartyIndexes
+        setForceInBattle(true);       // combat SAUVAGE inline : gBattleTypeFlags == 0
+        let r: ReturnType<typeof PokemonUseItemEffects> | undefined;
+        try {
+          r = PokemonUseItemEffects(playerMon, _battleItemId, _activePlayerSlot, 0, false);
+        } finally {
+          setForceInBattle(false);
+        }
+        if (!r || r.cannotUse) {
+          // Garde-fou : item sans effet (ex. Potion sur PV pleins) → retour menu, ni tour
+          // ni objet consommés (le sac en combat devrait pré-filtrer ; sécurité ici).
+          state = 'ACTION_MENU_INIT';
+          return false;
+        }
+        // 1:1 RemoveBagItem(item, 1) — le sac consomme 1 exemplaire (idiome chemin ball).
+        void import('../system/data-tables').then(({ getItemKeyById }) =>
+          import('../bag/bag').then(({ RemoveBagItem }) => {
+            const k = getItemKeyById(_battleItemId);
+            if (k) RemoveBagItem(k, 1);
+          }),
+        ).catch(() => { /* noop */ });
+        // 1:1 sText_PlayerUsedItem = "{B_PLAYER_NAME} utilise\n{B_LAST_ITEM}!".
+        showBattleMessage(_battleMsgEx(STRINGID_PLAYERUSEDITEM, { lastItem: _battleItemId }));
+        // Soin → anim barre PV montante (1:1 feedback ; SetBattleBarStruct delta<0 = remplit).
+        if (r.hpHealed > 0 && playerHealthbox) {
+          startHpDrain(0, playerHealthbox, playerMon.maxHp, oldHp, playerMon.currentHp);
+        }
+        renderHpWindows();
+        state = 'ITEM_USE_BATTLE_WAIT';
+        return false;
+      }
+
+      case 'ITEM_USE_BATTLE_WAIT': {
+        if (isHpDraining()) return false;       // 1:1 waitforhealthbar : barre finie avant suite
+        if (messageWaitDone()) {
+          HideFieldMessageBox();
+          // 1:1 : l'usage d'objet a consommé le créneau du joueur → l'adversaire joue
+          // (mirror du chemin ball ratée : créneau 0 déjà joué, reste l'adversaire).
+          opponentMoveIndex = pickOpponentMove();
+          _turnOrder = [0, 1];
+          _turnPhase = 1;
+          state = 'OPPONENT_USES_MOVE';
         }
         return false;
       }

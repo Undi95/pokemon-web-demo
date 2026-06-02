@@ -26,8 +26,11 @@ import {
   gBattleTypeFlags,
   setBattleControllerExecFlags, setActiveBattler,
   MAX_BATTLERS_COUNT,
+  gBattlerControllerFuncs,
 } from './state';
 import { BATTLE_TYPE_FIRST_BATTLE } from './constants';
+// Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
+import * as _stateNs from './state';
 import { gBattlerPositions } from './util';
 // E1 : MetatileBehavior_Is* sont des fonctions PURES (metatile-behavior.ts
 // n'importe que des constantes MB_*, ZÉRO cycle avec battle). Import direct safe.
@@ -77,16 +80,12 @@ const MON_DATA_HELD_ITEM = 22;
 
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
 
-/** 1:1 décomp `BattleControllerDummy` (battle_controllers.c). No-op callback. */
+/** 1:1 décomp `BattleControllerDummy` (battle_controllers.c). No-op callback.
+ *  Posé dans la table partagée `gBattlerControllerFuncs` (state.ts) par
+ *  SetUpBattleVarsAndBirchZigzagoon, remplacé ensuite par SetControllerTo* . */
 function BattleControllerDummy(): void {
-  // Dette R3 : controller dispatch system (= notre TS bypass via state machine).
+  // 1:1 : callback no-op (le battler n'a pas encore de controller assigné).
 }
-
-/** 1:1 décomp `gBattlerControllerFuncs[MAX_BATTLERS_COUNT]`. */
-const gBattlerControllerFuncs: Array<() => void> = [
-  BattleControllerDummy, BattleControllerDummy,
-  BattleControllerDummy, BattleControllerDummy,
-];
 
 /** 1:1 décomp `HandleLinkBattleSetup()`. */
 function HandleLinkBattleSetup(): void {
@@ -113,7 +112,7 @@ function BattleAI_HandleItemUseBeforeAISetup(_itemMask: number): void {
 
 /** 1:1 décomp `ZeroEnemyPartyMons()`. */
 function _ZeroEnemyPartyMons(): void {
-  const stateMod = require('./state') as { gEnemyParty?: unknown[] };
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
   if (stateMod.gEnemyParty) {
     for (let i = 0; i < 6; i++) {
       stateMod.gEnemyParty[i] = null;
@@ -126,7 +125,7 @@ function _CreateMon(
   monSlot: number, species: number, level: number, _fixedIV: number,
   _useRandomIvs: number, _personality: number, _otIdType: number, _otIdNum: number,
 ): void {
-  const stateMod = require('./state') as { gEnemyParty?: unknown[] };
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
   if (stateMod.gEnemyParty) {
     stateMod.gEnemyParty[monSlot] = {
       species, level,
@@ -138,7 +137,7 @@ function _CreateMon(
 
 /** 1:1 décomp `SetMonData(mon, field, value)`. */
 function _SetMonData(monSlot: number, field: number, value: number): void {
-  const stateMod = require('./state') as { gEnemyParty?: Array<{ heldItem?: number }> };
+  const stateMod = _stateNs as unknown as { gEnemyParty?: Array<{ heldItem?: number }> };
   if (stateMod.gEnemyParty?.[monSlot] && field === MON_DATA_HELD_ITEM) {
     stateMod.gEnemyParty[monSlot].heldItem = value;
   }

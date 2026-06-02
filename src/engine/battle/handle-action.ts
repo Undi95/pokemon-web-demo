@@ -42,6 +42,8 @@ import {
   setLastUsedAbility,
   gActionSelectionCursor, gMoveSelectionCursor,
   gBattlerPartyIndexes,
+  gBattleControllerExecFlags,
+  setBattlerFainted, setAbsentBattlerFlags,
 } from './state';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_HA,
@@ -52,7 +54,7 @@ import {
   HITMARKER_NO_PPDEDUCT,
   MOVE_NONE, MOVE_STRUGGLE,
   MOVE_TARGET_SELECTED, MOVE_TARGET_USER, MOVE_TARGET_RANDOM,
-  BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,
+  BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA, BATTLE_TYPE_SAFARI,
   GET_BATTLER_SIDE, B_SIDE_PLAYER,
   BATTLE_OPPOSITE,
   ABILITY_LIGHTNING_ROD,
@@ -70,7 +72,10 @@ import {
   RecordAbilityBattle, ClearFuryCutterDestinyBondGrudge,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
-import { getMoveEffectScriptOffset, getBattleScriptOffset } from './script-interpreter';
+import {
+  getMoveEffectScriptOffset, getBattleScriptOffset,
+  stepBattleScriptCommand, gBattleScriptContext,
+} from './script-interpreter';
 import type { BattleScriptContext } from './script-interpreter';
 import { Random } from '../system/random';
 
@@ -91,10 +96,13 @@ function _GetBattlerTurnOrderNum(battler: number): number {
 // 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
 const _RecordAbilityBattle = RecordAbilityBattle;
 
-/** Resolve gBattleStruct.moveTarget[battler] — notre port utilise gBattlerTarget
- *  inchangé (= state actuel). table dédiée deferred. */
-function _getMoveTargetForBattler(_battler: number): number {
-  return gBattlerTarget;
+/** 1:1 décomp battle_util.c : `gBattlerTarget = *(gBattleStruct->moveTarget + gBattlerAttacker)`
+ *  (branche move SELECTED normale). La table par-battler `gBattleStruct.moveTarget[]`
+ *  (state.ts:542) est posée par la sélection (SetActionsAndBattlersTurnOrder) ; le
+ *  harness la pose aussi. N'affecte QUE la voie L (HandleAction_UseMove) — la voie V
+ *  saute au script d'effet sans passer ici. */
+function _getMoveTargetForBattler(battler: number): number {
+  return gBattleStruct.moveTarget[battler];
 }
 
 function _setMoveTargetForBattler(_battler: number, _target: number): void {
@@ -325,7 +333,7 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   } else {
     // 1:1 décomp : `gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[gBattleMoves[gCurrentMove].effect]`.
     const moveEffect = getBattleMove(gCurrentMove).effect;
-    scriptPtr = getMoveEffectScriptOffset(moveEffect);
+    scriptPtr = getMoveEffectScriptOffset(moveEffect as number);
   }
 
   // Battle Arena : BattleArena_AddMindPoints. Battle Frontier deferred post-Phase 1.
@@ -336,10 +344,13 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
 
   setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
 
-  // Si ctx fourni, on set scriptPtr direct (= utilisé quand HandleAction est
-  // appelé depuis le battle main loop).
-  if (ctx && scriptPtr >= 0) {
-    ctx.scriptPtr = scriptPtr;
+  // 1:1 décomp battle_util.c:285 : `gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[effect]`.
+  // On pose le scriptPtr sur le ctx persistant (= le global gBattlescriptCurrInstr),
+  // que HandleAction_RunBattleScript steppera commande par commande (1×/frame,
+  // gated sur gBattleControllerExecFlags). La voie V passe son propre ctx local.
+  const c = ctx ?? gBattleScriptContext;
+  if (scriptPtr >= 0) {
+    c.scriptPtr = scriptPtr;
   }
 }
 
@@ -452,18 +463,159 @@ const _B_ACTION_RUN_HAR = 3;
 const _B_MSG_CANT_ESCAPE_2_HAR = 1;
 const _B_MSG_ATTACKER_CANT_ESCAPE_HAR = 0;
 
-/** 1:1 décomp `HandleAction_RunBattleScript`. No-op puisque script déjà actif. */
-export function HandleAction_RunBattleScript(_ctx?: BattleScriptContext): void {
-  // Script déjà en cours via le bytecode interpreter — rien à faire.
+/** 1:1 décomp `HandleAction_RunBattleScript` (battle_util.c:3805-3809) :
+ *  `if (gBattleControllerExecFlags == 0) gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]();`
+ *
+ *  Step UNE commande du battle script par frame, et SEULEMENT quand aucun
+ *  controller n'est en cours d'exécution (texte/anim/hp update finis). Le pacing
+ *  per-frame émerge : RunTurnActionsFunctions appelle ceci 1×/frame ; une
+ *  commande bloquante (printstring/animation/datahpupdate) fait
+ *  MarkBattlerForControllerExec → le flag bloque le prochain step ; le controller
+ *  func (tické par BattleMainCB1) clear le flag quand fini → step reprend. */
+export function HandleAction_RunBattleScript(ctx?: BattleScriptContext): void {
+  const c = ctx ?? gBattleScriptContext;
+  if (gBattleControllerExecFlags === 0) {
+    stepBattleScriptCommand(c);
+  }
 }
 
-/** 1:1 décomp `HandleAction_TryFinish` (battle_util.c:638-645). */
+/** 1:1 décomp `HandleAction_TryFinish` (battle_util.c:638-645). Appelle
+ *  HandleFaintedMonActions chaque frame ; tant que TRUE (un script EXP/faint est
+ *  en cours), on attend ; quand FALSE (tout le flow post-faint est fini) →
+ *  faintedActionsState=0 + gCurrentActionFuncId=B_ACTION_FINISHED. */
 export function HandleAction_TryFinish(_ctx?: BattleScriptContext): void {
-  // HandleFaintedMonActions partial port : retourne true tant qu'il y a faint flow,
-  // false quand done. Pour Phase 1, on assume done immédiatement.
-  // Phase 1.4 : port HandleFaintedMonActions complet deferred.
-  _gBattleStructHAF.faintedActionsState = 0;
-  setCurrentActionFuncId(B_ACTION_FINISHED);
+  if (!HandleFaintedMonActions()) {
+    gBattleStruct.faintedActionsState = 0;
+    setCurrentActionFuncId(B_ACTION_FINISHED);
+  }
+}
+
+/** 1:1 décomp `FAINTED_ACTIONS_MAX_CASE` = 7 (battle_util.c). */
+const _FAINTED_ACTIONS_MAX_CASE = 7;
+const _PARTY_SIZE_HFM = 6;
+
+/** `BattleScriptExecute(label)` via le hook globalThis (= évite le cycle
+ *  handle-action ↔ battle-main-functions ; même pattern que turn-dispatch). */
+function _BattleScriptExecuteHFM(label: string): void {
+  const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as
+    { BattleScriptExecute?: (l: string) => void } | undefined;
+  if (bm?.BattleScriptExecute) bm.BattleScriptExecute(label);
+  else console.warn('[handle-action] BattleScriptExecute hook absent (battle-main-functions pas chargé)');
+}
+
+/** 1:1 inline `HasNoMonsToSwitch(battler, …)` (battle_util.c) — true si AUCUN
+ *  autre mon vivant dans le party du battler. (= ne peut pas remplacer.) */
+function _HasNoMonsToSwitchHFM(battler: number): boolean {
+  const partyIdx = gBattlerPartyIndexes[battler] ?? 0;
+  const party = (battler & 1) === 0
+    ? (globalThis as { gPlayerParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gPlayerParty
+    : (globalThis as { gEnemyParty?: Array<{ species?: number; hp?: number; isEgg?: number }> }).gEnemyParty;
+  if (!party) return true;
+  for (let j = 0; j < _PARTY_SIZE_HFM; j++) {
+    if (j === partyIdx) continue;
+    const m = party[j];
+    if (m?.species && (m.hp ?? 0) > 0 && !m.isEgg) return false;
+  }
+  return true;
+}
+
+/** 1:1 inline `OpponentSwitchInResetSentPokesToOpponentValue(battler)`
+ *  (battle_util.c:915-932) — recompute gSentPokesToOpponent[flank]. */
+function _OpponentSwitchInResetHFM(battler: number): void {
+  if ((battler & 1) !== 1) return;  // GET_BATTLER_SIDE != B_SIDE_OPPONENT.
+  const flank = (battler & 2) >>> 1;
+  const sentPokes = (globalThis as { gSentPokesToOpponent?: number[] }).gSentPokesToOpponent;
+  if (!sentPokes) return;
+  let bits = 0;
+  for (let i = 0; i < gBattlersCount; i += 2) {
+    if (!(gAbsentBattlerFlags & gBitTable[i])) bits |= gBitTable[gBattlerPartyIndexes[i] ?? 0];
+  }
+  sentPokes[flank] = bits;
+}
+
+/** 1:1 décomp `HandleFaintedMonActions()` (battle_util.c:1877-1954). State machine
+ *  `faintedActionsState` (0..7) : EXP (GiveExp) → faint/« K.O. » (HandleFaintedMon)
+ *  → effets switch-in. Return TRUE quand un script est lancé (BattleScriptExecute
+ *  bascule gBattleMainFunc → le script tourne per-frame ; la fonction est
+ *  re-appelée par TryFinish au frame suivant) ; FALSE quand fini (state == MAX). */
+export function HandleFaintedMonActions(): boolean {
+  if (gBattleTypeFlags & BATTLE_TYPE_SAFARI) return false;
+  do {
+    switch (gBattleStruct.faintedActionsState) {
+      case 0:
+        gBattleStruct.faintedActionsBattlerId = 0;
+        gBattleStruct.faintedActionsState = 1;
+        for (let i = 0; i < gBattlersCount; i++) {
+          if ((gAbsentBattlerFlags & gBitTable[i]) && !_HasNoMonsToSwitchHFM(i)) {
+            setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[i]);
+          }
+        }
+        // décomp = fall through vers case 1 ; ici break → le do-while ré-entre
+        // au switch avec state=1 (= équivalent exact).
+        break;
+      case 1: {
+        let launched = false;
+        do {
+          const b = gBattleStruct.faintedActionsBattlerId;
+          setBattlerFainted(b);
+          setBattlerTarget(b);
+          const expBit = gBitTable[gBattlerPartyIndexes[b] ?? 0] ?? 1;
+          if (gBattleMons[b].hp === 0
+              && !(gBattleStruct.givenExpMons & expBit)
+              && !(gAbsentBattlerFlags & gBitTable[b])) {
+            _BattleScriptExecuteHFM('BattleScript_GiveExp');
+            gBattleStruct.faintedActionsState = 2;
+            launched = true;
+            break;
+          }
+        } while (++gBattleStruct.faintedActionsBattlerId !== gBattlersCount);
+        if (launched) return true;
+        gBattleStruct.faintedActionsState = 3;
+        break;
+      }
+      case 2:
+        _OpponentSwitchInResetHFM(gBattleStruct.faintedActionsBattlerId);
+        if (++gBattleStruct.faintedActionsBattlerId === gBattlersCount) gBattleStruct.faintedActionsState = 3;
+        else gBattleStruct.faintedActionsState = 1;
+        break;
+      case 3:
+        gBattleStruct.faintedActionsBattlerId = 0;
+        gBattleStruct.faintedActionsState = 4;
+        // décomp = fall through vers case 4 ; break → do-while ré-entre à state=4.
+        break;
+      case 4: {
+        let launched = false;
+        do {
+          const b = gBattleStruct.faintedActionsBattlerId;
+          setBattlerFainted(b);
+          setBattlerTarget(b);
+          if (gBattleMons[b].hp === 0 && !(gAbsentBattlerFlags & gBitTable[b])) {
+            _BattleScriptExecuteHFM('BattleScript_HandleFaintedMon');
+            gBattleStruct.faintedActionsState = 5;
+            launched = true;
+            break;
+          }
+        } while (++gBattleStruct.faintedActionsBattlerId !== gBattlersCount);
+        if (launched) return true;
+        gBattleStruct.faintedActionsState = 6;
+        break;
+      }
+      case 5:
+        if (++gBattleStruct.faintedActionsBattlerId === gBattlersCount) gBattleStruct.faintedActionsState = 6;
+        else gBattleStruct.faintedActionsState = 4;
+        break;
+      case 6:
+        // 1:1 décomp ll.1942-1947 : Intimidate/Trace/ITEMEFFECT_NORMAL(TRUE)/Forecast
+        // on switch-in. Dette ponctuelle : AbilityBattleEffects/ItemBattleEffects de
+        // switch-in différés (pas d'effet pour un KO wild simple ; les helpers
+        // existent dans wire-bytecode-bridge à brancher quand un cas le requiert).
+        gBattleStruct.faintedActionsState = 7;
+        break;
+      case _FAINTED_ACTIONS_MAX_CASE:
+        break;
+    }
+  } while (gBattleStruct.faintedActionsState !== _FAINTED_ACTIONS_MAX_CASE);
+  return false;
 }
 
 const _HM_RESET_BITS =
@@ -504,8 +656,11 @@ export function HandleAction_ActionFinished(_ctx?: BattleScriptContext): void {
   gBattleCommunication[3] = 0;  // MOVE_EFFECT_BYTE
   gBattleCommunication[4] = 0;
   gBattleScripting.multihitMoveEffect = 0;
-  // Note : gBattleResources.battleScriptsStack.size = 0 (= notre scriptPtrStack
-  // est géré par BattleScriptContext, pas ici).
+  // 1:1 décomp battle_util.c:683 : gBattleResources->battleScriptsStack->size = 0.
+  // Notre équivalent = vider le call-stack du ctx persistant pour que le tour
+  // suivant reparte propre (= évite une fuite de scriptPtrStack entre tours).
+  gBattleScriptContext.scriptPtrStack.length = 0;
+  gBattleScriptContext.comparisonResult = 0;
 }
 
 /** 1:1 décomp `SpecialStatusesClear()` (battle_util.c). Reset gSpecialStatuses

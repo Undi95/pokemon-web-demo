@@ -256,6 +256,14 @@ const ITEM6_HEAL_HP_FULL = 0xFF;
 const ITEM6_HEAL_HP_HALF = 0xFE;
 const ITEM6_HEAL_HP_LVL_UP = 0xFD;
 
+/** Override "en combat" pour l'usage d'item du JOUEUR en combat INLINE. Le proxy
+ *  `gBattleTypeFlags !== 0` vaut 0 en combat SAUVAGE (aucun flag) → les effets
+ *  battle (X-items, cure statut/infatuation, sync gBattleMons immédiat) seraient
+ *  skippés. battle-flow pose ce flag autour de l'appel (= équivalent du
+ *  `gMain.inBattle == TRUE` du décomp, qui est notre vraie sémantique). */
+let _forceInBattle = false;
+export function setForceInBattle(v: boolean): void { _forceInBattle = v; }
+
 /** 1:1 décomp `PokemonUseItemEffects(mon, item, partyIndex, moveIndex, usedByAI)`
  *  (pokemon.c:4742-5291). Applique l'effet d'un item Medicine/PPRecovery/PPUp/
  *  RareCandy/ReduceEV/EvolutionStone/X-Item/Dire Hit + cures status sur un mon.
@@ -278,8 +286,9 @@ export function PokemonUseItemEffects(
   if (!bytes) return result;  // cannotUse=true par défaut
 
   // 1:1 :4775-4795 — battler resolve setup.
-  // gMain.inBattle ≡ notre `gBattleTypeFlags !== 0` (= en battle si flags set).
-  const inBattle = gBattleTypeFlags !== 0;
+  // gMain.inBattle ≡ notre `gBattleTypeFlags !== 0` (= en battle si flags set),
+  // OU l'override _forceInBattle (combat SAUVAGE inline : gBattleTypeFlags == 0).
+  const inBattle = gBattleTypeFlags !== 0 || _forceInBattle;
   let battler = MAX_BATTLERS_COUNT;
   setPotentialItemEffectBattler(gBattlerInMenuId);
   if (inBattle) {
@@ -787,3 +796,4 @@ export function ApplyMedicineEffect(itemId: number, mon: PokemonInstance): Medic
 (globalThis as Record<string, unknown>).PokemonUseItemEffects = PokemonUseItemEffects;
 (globalThis as Record<string, unknown>).ApplyMedicineEffect = ApplyMedicineEffect;
 (globalThis as Record<string, unknown>).GetItemEffectType = GetItemEffectType;
+(globalThis as Record<string, unknown>).setForceInBattle = setForceInBattle;

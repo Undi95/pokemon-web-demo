@@ -46,6 +46,10 @@ import {
   BATTLE_TYPE_TWO_OPPONENTS,
 } from './constants';
 import { getRuntime } from '../system/decomp-globals';
+import {
+  BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1,
+  BATTLE_ENVIRONMENT_GRASS,
+} from './battle-bg';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -113,9 +117,10 @@ function _HandleLinkBattleSetup(): void {
   // Dette R3.
 }
 
-/** 1:1 décomp `SetMainCallback2(cb)`. */
-function _SetMainCallback2(_cb: (() => void) | null): void {
-  // Dette R3 : CB2 dispatch via runtime.
+/** 1:1 décomp `SetMainCallback2(cb)` : installe le callback2 sur le runtime
+ *  (= gMain.callback2, ticked chaque frame par CallCallbacks). */
+function _SetMainCallback2(cb: (() => void) | null): void {
+  getRuntime()?.SetMainCallback2?.(cb as never);
 }
 
 /** 1:1 décomp `SetHBlankCallback(cb)` + `SetVBlankCallback(cb)`. */
@@ -147,14 +152,22 @@ function _ResetPaletteFade(): void {
   // Dette R3 : palette fade state reset.
 }
 
-/** 1:1 décomp `InitBattleBgsVideo()`. */
+/** 1:1 décomp `InitBattleBgsVideo()` (battle_bg.c) → `BattleInitBgsAndWindows`.
+ *  Précédé du `CpuFill32(0, VRAM, VRAM_SIZE)` de CB2_InitBattleInternal (efface
+ *  le BG/windowing overworld → bascule visuelle vers le combat). Partie SYNC. */
 function _InitBattleBgsVideo(): void {
-  // Dette R3 : BG setup.
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.vram.fill(0);          // 1:1 CpuFill32(0, VRAM, VRAM_SIZE)
+  BattleInitBgsAndWindows();    // 1:1 InitBattleBgsVideo → BattleInitBgsAndWindows
 }
 
-/** 1:1 décomp `LoadBattleTextboxAndBackground()`. */
+/** 1:1 décomp `LoadBattleTextboxAndBackground()` (battle_bg.c:859-867).
+ *  Chargement ASSET ASYNC (PNG terrain/textbox/menu-gfx) — fire-and-forget : le
+ *  fond apparaît dès que les PNG sont chargés (= comme la voie V). env GRASS par
+ *  défaut ; la dérivation depuis gBattleEnvironment/la map est un raffinement. */
 function _LoadBattleTextboxAndBackground(): void {
-  // Dette R3.
+  void loadBattleTextboxAndBackground1to1(BATTLE_ENVIRONMENT_GRASS);
 }
 
 /** 1:1 décomp `ResetSpriteData()` + `ResetTasks()`. */

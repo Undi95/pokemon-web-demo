@@ -32,6 +32,8 @@
 import {
   gBattleTypeFlags, setBattleTypeFlags,
 } from './state';
+// Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
+import * as _stateNs from './state';
 import {
   BATTLE_TYPE_TRAINER, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_EREADER_TRAINER,
   BATTLE_TYPE_TRAINER_HILL, BATTLE_TYPE_TWO_OPPONENTS,
@@ -169,7 +171,7 @@ function _SetMonData(
 
 /** 1:1 décomp `ZeroEnemyPartyMons()`. Clear gEnemyParty[6] = 0. */
 function _ZeroEnemyPartyMons(): void {
-  const stateMod = require('./state') as { gEnemyParty?: unknown[] };
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
   if (stateMod.gEnemyParty) {
     for (let i = 0; i < PARTY_SIZE; i++) {
       stateMod.gEnemyParty[i] = {

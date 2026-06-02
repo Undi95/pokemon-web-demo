@@ -4,7 +4,10 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const SCRIPTS_DIR = 'public/decomp/em/scripts';
-const OPCODES_FILE = 'src/engine/script-opcodes.ts';
+// Les opcodes OW sont enregistrés via registerOpcode() dans les fichiers
+// src/engine/script/script-opcodes*.ts (le monolithe src/engine/script-opcodes.ts
+// a été éclaté dans le dossier script/ lors d'un refactor — fix du chemin cassé).
+const OPCODES_DIR = 'src/engine/script';
 
 // Anything in scripts/ except the explicitly post-game ones
 const POSTGAME_PATTERNS = [
@@ -93,7 +96,10 @@ for (const f of files) {
   } catch {}
 }
 
-const opSrc = readFileSync(OPCODES_FILE, 'utf8');
+let opSrc = '';
+for (const f of readdirSync(OPCODES_DIR)) {
+  if (f.endsWith('.ts')) opSrc += readFileSync(join(OPCODES_DIR, f), 'utf8') + '\n';
+}
 const re = /registerOpcode\(['"]([^'"]+)['"]/g;
 const registered = new Set();
 let m;

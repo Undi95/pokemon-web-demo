@@ -83,7 +83,17 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   gBattleMoveDamage: {
     size: 4,
     read: () => (globalThis as { __battleStateMutators?: { getBattleMoveDamage?: () => number } }).__battleStateMutators?.getBattleMoveDamage?.() ?? 0,
-    write: (v) => (globalThis as { __battleStateMutators?: { setBattleMoveDamage?: (v: number) => void } }).__battleStateMutators?.setBattleMoveDamage?.(v | 0),
+    // s32 scalaire : `setword gBattleMoveDamage, N` est décompilé en 4 `setbyte`
+    // (un par byte LE, offsets 0..3). read-modify-write par byte pour assembler le
+    // u32 — sinon chaque setbyte écrase la valeur entière et le dernier (byte 3 = 0)
+    // remet à 0 → tous les moves à dégât FIXE (Sonic Boom 20, Dragon Rage 40,
+    // Night Shade, Psywave, Super Fang…) faisaient 0 dégât.
+    write: (v, off = 0) => {
+      const m = (globalThis as { __battleStateMutators?: { getBattleMoveDamage?: () => number; setBattleMoveDamage?: (v: number) => void } }).__battleStateMutators;
+      const cur = (m?.getBattleMoveDamage?.() ?? 0) >>> 0;
+      const merged = ((cur & ~(0xFF << (off * 8))) | ((v & 0xFF) << (off * 8))) >>> 0;
+      m?.setBattleMoveDamage?.(merged | 0);
+    },
   },
   gBattleOutcome: {
     size: 1,

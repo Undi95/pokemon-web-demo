@@ -29,6 +29,9 @@ import {
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED,
 } from './constants';
+import { InitBattleControllers as _InitBattleControllersImpl } from './battle-controllers-init';
+import { getRuntime } from '../system/decomp-globals';
+import { ShowBg } from '../ui/gba-window-system';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -68,9 +71,9 @@ function _IsDma3ManagerBusyWithBgCopy(): boolean {
   return false;
 }
 
-/** 1:1 décomp `ShowBg(bgId)`. */
-function _ShowBg(_bgId: number): void {
-  // Dette R3 : wire vers gba-window-system.
+/** 1:1 décomp `ShowBg(bgId)` → active le BG dans DISPCNT (gba-window-system). */
+function _ShowBg(bgId: number): void {
+  ShowBg(bgId);
 }
 
 /** 1:1 décomp `FillAroundBattleWindows()`. */
@@ -180,9 +183,11 @@ function _TryCorrectShedinjaLanguage(_mon: unknown): void {
   m?.TryCorrectShedinjaLanguage?.(_mon);
 }
 
-/** 1:1 décomp `InitBattleControllers()` (battle_controllers.c:81). */
+/** 1:1 décomp `InitBattleControllers()` (battle_controllers.c:81).
+ *  Wire vers battle-controllers-init.ts (pose gBattleMainFunc = BeginBattleIntro
+ *  + installe SetControllerToPlayer/Opponent dans la table partagée). */
 function _InitBattleControllers(): void {
-  // Dette R3 : controller dispatch system init.
+  _InitBattleControllersImpl();
 }
 
 /** 1:1 décomp `RecordedBattle_SetTrainerInfo()`. */
@@ -224,8 +229,9 @@ function _setMainCallback1(cb: (() => void) | null): void {
   m?.setMainCallback1?.(cb);
 }
 
-function _SetMainCallback2(_cb: (() => void) | null): void {
-  // Dette R3 : CB2 dispatch.
+function _SetMainCallback2(cb: (() => void) | null): void {
+  // 1:1 décomp `SetMainCallback2(cb)` : installe le callback2 sur le runtime.
+  getRuntime()?.SetMainCallback2?.(cb as never);
 }
 
 /** 1:1 décomp `RunTasks()` + `AnimateSprites()` + `BuildOamBuffer()`. */

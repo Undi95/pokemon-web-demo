@@ -37,6 +37,7 @@ import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
   gAbsentBattlerFlags, gBattlerTarget, setBattlerTarget,
+  setBattlerControllerFunc,
 } from './state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE,
@@ -55,6 +56,8 @@ import { gBitTable } from './battle-controllers';
 import {
   GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './util';
+import { getBattleMove } from './data/battle-moves';
+import { gEnemyParty, GetMonData, MON_DATA_HP } from './party-storage';
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -122,12 +125,9 @@ const CONTROLLER_ENDLINKBATTLE = 0x37;
 // ─── gBattlerControllerFuncs lazy lookup (= shared avec K31) ───────────────
 
 function _setBattlerControllerFunc(battler: number, fn: () => void): void {
-  const pc = (globalThis as Record<string, unknown>).__battleControllerPlayer as {
-    getBattlerControllerFunc?: (b: number) => (() => void) | null;
-  } | undefined;
-  // Notre architecture : globalThis.__battleControllerFuncs[battler] = fn.
-  // Cascade dette R3 : full battler controller dispatch system.
-  void pc; void battler; void fn;
+  // 1:1 décomp `gBattlerControllerFuncs[gActiveBattler] = fn` : écrit dans la
+  // table PARTAGÉE (state.ts), la même que tick BattleMainCB1 + player.
+  setBattlerControllerFunc(battler, fn);
 }
 
 // ─── OpponentBufferRunCommand + ExecCompleted ──────────────────────────────
@@ -410,14 +410,13 @@ function _ChooseMoveAndTargetInBattlePalace(): number {
   return 0;
 }
 
-/** 1:1 décomp `gBattleMoves[move].target` lookup. */
+/** 1:1 décomp `gBattleMoves[move].target`. Via getBattleMove (id numérique, .target
+ *  résolu en nombre) — gameDataMoves est keyé par ENUM ("MOVE_X"), `parseInt(k,10)`
+ *  = NaN → ne matchait jamais → toujours 0 (l'IA ne ciblait jamais USER/BOTH
+ *  correctement pour ses moves auto-ciblés ou de zone). */
 function _getMoveTarget(move: number): number {
-  const dt = (globalThis as { gameDataMoves?: Record<string, { target?: number }> }).gameDataMoves;
-  if (!dt) return 0;
-  for (const k of Object.keys(dt)) {
-    if (parseInt(k, 10) === move) return (dt[k]?.target ?? 0);
-  }
-  return 0;
+  const t = getBattleMove(move).target;
+  return typeof t === 'number' ? t : 0;
 }
 
 /** 1:1 décomp `MOD(a, b)` = a % b (gba/macro.h). */
@@ -431,7 +430,59 @@ function _Random(): number {
 }
 
 function OpponentHandleChooseItem(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleChoosePokemon(): void { OpponentBufferExecCompleted(); }
+/** Wire switch-in choice APIs (lazy globalThis = éviter cycle ESM). */
+function _GetMostSuitableMonToSwitchInto(): number {
+  const m = (globalThis as { __battleAi?: { GetMostSuitableMonToSwitchInto?: () => number } }).__battleAi;
+  return m?.GetMostSuitableMonToSwitchInto?.() ?? _PARTY_SIZE;
+}
+function _getAiMonToSwitchIntoId(b: number): number {
+  const m = (globalThis as { __battleState?: { gBattleStruct?: { AI_monToSwitchIntoId?: number[] } } }).__battleState;
+  return m?.gBattleStruct?.AI_monToSwitchIntoId?.[b] ?? _PARTY_SIZE;
+}
+function _setAiMonToSwitchIntoId(b: number, v: number): void {
+  const m = (globalThis as { __battleState?: { gBattleStruct?: { AI_monToSwitchIntoId?: number[] } } }).__battleState;
+  if (m?.gBattleStruct?.AI_monToSwitchIntoId) m.gBattleStruct.AI_monToSwitchIntoId[b] = v;
+}
+function _getBattlerPartyIndexOpp(b: number): number {
+  const m = (globalThis as { __battleState?: { gBattlerPartyIndexes?: number[] } }).__battleState;
+  return m?.gBattlerPartyIndexes?.[b] ?? 0;
+}
+
+/** 1:1 décomp `OpponentHandleChoosePokemon()` (battle_controller_opponent.c:1621-1676).
+ *  Choisit le mon à envoyer : AI_monToSwitchIntoId pré-choisi, sinon
+ *  GetMostSuitableMonToSwitchInto, sinon fallback (1er mon non-fainté != mon actif).
+ *  Pose `gBattleStruct.monToSwitchIntoId[active]` + émet CHOSENMONRETURNVALUE
+ *  (bufferB[1]=chosenMonId, lu par l'engine → monToSwitchIntoId → getswitchedmondata
+ *  rafraîchit gBattleMons). Single battle : battler1 = gActiveBattler (l'opponent).
+ *  Était un STUB → le 2e mon dresseur n'était jamais chargé (freeze switch-in). */
+function OpponentHandleChoosePokemon(): void {
+  let chosenMonId: number;
+  if (_getAiMonToSwitchIntoId(gActiveBattler) === _PARTY_SIZE) {
+    chosenMonId = _GetMostSuitableMonToSwitchInto();
+    if (chosenMonId === _PARTY_SIZE) {
+      // 1:1 décomp 1655-1663 (chemin single) : 1er mon vivant qui n'est pas le mon actif.
+      chosenMonId = 0;
+      for (let i = 0; i < _PARTY_SIZE; i++) {
+        if ((GetMonData(gEnemyParty[i] as never, MON_DATA_HP) as number) !== 0
+            && i !== _getBattlerPartyIndexOpp(gActiveBattler)) {
+          chosenMonId = i;
+          break;
+        }
+      }
+    }
+  } else {
+    chosenMonId = _getAiMonToSwitchIntoId(gActiveBattler);
+    _setAiMonToSwitchIntoId(gActiveBattler, _PARTY_SIZE);
+  }
+  _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
+  // 1:1 BtlController_EmitChosenMonReturnValue : bufferB[0]=CONTROLLER_CHOSENMONRETURNVALUE
+  // (0x22), [1]=chosenMonId → l'engine le lit pour poser monToSwitchIntoId.
+  const buf = new Uint8Array(8);
+  buf[0] = 0x22;
+  buf[1] = chosenMonId;
+  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, buf, 5);
+  OpponentBufferExecCompleted();
+}
 function OpponentHandleCmd23(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleHealthBarUpdate(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleExpUpdate(): void { OpponentBufferExecCompleted(); }

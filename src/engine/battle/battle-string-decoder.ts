@@ -583,6 +583,11 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
 // Lazy via getter pour résolution au call time (= module fully initialized).
 (globalThis as { __battleStringDecoderApi?: object }).__battleStringDecoderApi = {
   get decodeBattleString() { return decodeBattleString; },
+  // Substitue les placeholders {B_X} d'une string template (= gText_WhatWillPkmnDo
+  // "Que doit faire {B_ACTIVE_NAME_WITH_PREFIX}?", gText_BattleMenu, etc.) en
+  // réutilisant _substitutePlaceholders. Le décodeur principal travaille par
+  // stringId ; ce wrapper accepte une string déjà connue + msgData snapshot.
+  expandPlaceholders: (src: string, msgData: BattleMsgData) => _substitutePlaceholders(src, msgData),
 };
 
 /** Décode stringId + msgData → French text 1:1 décomp `BufferStringBattle`

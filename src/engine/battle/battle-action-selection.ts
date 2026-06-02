@@ -41,7 +41,13 @@ import {
   gLastUsedItem, gLastUsedAbility,
   setActiveBattler, setBattlerAttacker, setHitMarker,
   setLastUsedItem,
+  gBattleControllerExecFlags, setBattleControllerExecFlags,
 } from './state';
+// IPC controller réel (écriture bufferA + exec flags) — remplace les stubs
+// noop locaux pour que le menu d'action interagisse VRAIMENT avec le player
+// controller (1:1 décomp battle_controllers.c). Pas de cycle : ipc n'importe
+// pas action-selection.
+import { PrepareBufferDataTransfer } from './battle-controllers-ipc';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED_LINK, BATTLE_TYPE_MULTI,
   BATTLE_TYPE_TRAINER, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_TRAINER_HILL,
@@ -95,6 +101,12 @@ const LINK_STANDBY_STOP_BOUNCE_ONLY = 1;
 const BATTLE_TYPE_FRONTIER_NO_PYRAMID = 1 << 11;
 const BATTLE_TYPE_INGAME_PARTNER = 1 << 23;
 
+// CONTROLLER_* opcodes (battle_controllers.h) — pour les emits engine→controller
+// (= bufferA[0]). Lus par PlayerBufferRunCommand → sPlayerBufferCommands[opcode].
+const CONTROLLER_CHOOSEACTION = 0x12;
+const CONTROLLER_CHOOSEMOVE = 0x14;
+const CONTROLLER_LINKSTANDBYMSG = 0x35;
+
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
 
 /** 1:1 décomp `gBitTable[i]`. */
@@ -145,14 +157,50 @@ function _RecordedBattle_CheckMovesetChanges(_mode: number): void {
   // Dette R3.
 }
 
-/** 1:1 décomp `BtlController_EmitChooseAction(buf, action, moveInfo)`. */
-function _BtlController_EmitChooseAction(_buf: number, _action: number, _moveInfo: number): void {
-  // Dette R3 : controller IPC emit choose action.
+/** 1:1 décomp `BtlController_EmitChooseAction(buf, action, itemId)`
+ *  (battle_controllers.c:1199) : écrit bufferA[0..3] = CHOOSEACTION/action/itemId.
+ *  → PlayerBufferRunCommand dispatch PlayerHandleChooseAction (installe le menu
+ *  + l'input handler). */
+function _BtlController_EmitChooseAction(buf: number, action: number, itemId: number): void {
+  PrepareBufferDataTransfer(buf,
+    new Uint8Array([CONTROLLER_CHOOSEACTION, action, itemId & 0xFF, (itemId >> 8) & 0xFF]), 4);
 }
 
-/** 1:1 décomp `BtlController_EmitChooseMove(buf, isDouble, isWally, moveInfo)`. */
-function _BtlController_EmitChooseMove(_buf: number, _isDouble: boolean, _isWally: boolean, _moveInfo: unknown): void {
-  // Dette R3 : controller IPC emit choose move.
+/** 1:1 décomp `BtlController_EmitChooseMove(buf, isDouble, NoPpNumber, movePpData)`
+ *  (battle_controllers.c:1219). Écrit bufferA[0..3]=CHOOSEMOVE+flags PUIS sérialise
+ *  le `ChooseMoveStruct` byte-par-byte à partir de bufferA[4] (= `for i<sizeof :
+ *  buffer[4+i]=((u8*)movePpData)[i]`).
+ *
+ *  Layout ChooseMoveStruct (battle.h) : moves[4] u16 @0 ; currentPp[4] u8 @8 ;
+ *  maxPp[4] u8 @12 ; species u16 @16 ; monType1/monType2 u8 @18/19. Dans bufferA,
+ *  tout est décalé de +4 (l'en-tête opcode).
+ *
+ *  CRITIQUE — ce buffer N'EST PAS optionnel : `OpponentHandleChooseMove` (branche
+ *  wild) ET `_readChooseMoveStruct` (player) LISENT les moves depuis bufferA[4..].
+ *  Sans sérialisation, moves[]=0 → le `do { } while (move == MOVE_NONE)` du random
+ *  pick wild boucle À L'INFINI (gel). (L'ancien raccourci « opcode seul » = bug.) */
+function _BtlController_EmitChooseMove(
+  buf: number, isDouble: boolean, noPp: boolean,
+  moveInfo: { species: number; monTypes: number[]; moves: number[]; currentPp: number[]; maxPp: number[] },
+): void {
+  const data = new Uint8Array(4 + 20);
+  data[0] = CONTROLLER_CHOOSEMOVE;
+  data[1] = isDouble ? 1 : 0;
+  data[2] = noPp ? 1 : 0;
+  data[3] = 0;
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    const mv = moveInfo.moves[i] ?? 0;
+    data[4 + i * 2] = mv & 0xFF;             // moves[i] lo   (@4,6,8,10)
+    data[5 + i * 2] = (mv >> 8) & 0xFF;      // moves[i] hi
+    data[12 + i] = (moveInfo.currentPp[i] ?? 0) & 0xFF;  // currentPp[i] (@12..15)
+    data[16 + i] = (moveInfo.maxPp[i] ?? 0) & 0xFF;      // maxPp[i]     (@16..19)
+  }
+  const sp = moveInfo.species ?? 0;
+  data[20] = sp & 0xFF;                       // species lo  (@20)
+  data[21] = (sp >> 8) & 0xFF;                // species hi  (@21)
+  data[22] = (moveInfo.monTypes[0] ?? 0) & 0xFF;  // monType1 (@22)
+  data[23] = (moveInfo.monTypes[1] ?? 0) & 0xFF;  // monType2 (@23)
+  PrepareBufferDataTransfer(buf, data, data.length);
 }
 
 /** 1:1 décomp `BtlController_EmitChooseItem(buf, partyOrder)`. */
@@ -167,9 +215,19 @@ function _BtlController_EmitChoosePokemon(
   // Dette R3.
 }
 
-/** 1:1 décomp `BtlController_EmitLinkStandbyMsg(buf, mode, frame)`. */
-function _BtlController_EmitLinkStandbyMsg(_buf: number, _mode: number, _frame: boolean): void {
-  // Dette R3.
+/** 1:1 décomp `BtlController_EmitLinkStandbyMsg(buf, mode, record)`
+ *  (battle_controllers.c) : écrit bufferA[0]=LINKSTANDBYMSG + mode → le controller
+ *  dispatch PlayerHandleLinkStandbyMsg/OpponentHandleLinkStandbyMsg (qui complètent
+ *  immédiatement hors-link).
+ *
+ *  CRITIQUE — STATE_WAIT_ACTION_CONFIRMED_STANDBY appelle MarkBattlerForControllerExec
+ *  (arme l'exec flag) JUSTE APRÈS cet emit. Si l'emit n'écrit PAS un nouvel opcode
+ *  (ancien stub noop), le controller re-lit l'ANCIEN bufferA[0] (= CHOOSEMOVE) → le
+ *  menu de moves se ré-ouvre en boucle, le battler ne CONFIRME jamais →
+ *  ACTIONS_CONFIRMED_COUNT bloqué < gBattlersCount → le tour ne démarre jamais. */
+function _BtlController_EmitLinkStandbyMsg(buf: number, mode: number, frame: boolean): void {
+  PrepareBufferDataTransfer(buf,
+    new Uint8Array([CONTROLLER_LINKSTANDBYMSG, mode & 0xFF, frame ? 1 : 0, 0]), 4);
 }
 
 /** 1:1 décomp `BtlController_EmitEndBounceEffect(buf)`. */
@@ -177,15 +235,20 @@ function _BtlController_EmitEndBounceEffect(_buf: number): void {
   // Dette R3.
 }
 
-/** 1:1 décomp `MarkBattlerForControllerExec(battler)`. */
-function _MarkBattlerForControllerExec(_battler: number): void {
-  // Dette R3 : controller exec flag.
+/** 1:1 décomp `MarkBattlerForControllerExec(battler)` (battle_util.c) : set le bit
+ *  battler dans gBattleControllerExecFlags → le controller s'exécute au prochain
+ *  tick de BattleMainCB1. */
+function _MarkBattlerForControllerExec(battler: number): void {
+  setBattleControllerExecFlags(gBattleControllerExecFlags | _gBitTable[battler]);
 }
 
-/** 1:1 décomp `IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(battler)`. */
-function _IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(_battler: number): boolean {
-  // Dette R3 : controller exec flag check. Pour now : assume ready.
-  return false;
+/** 1:1 décomp `IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(battler)`
+ *  (battle.h) : le controller est ENCORE actif tant que son exec flag est set.
+ *  La sélection d'action gate dessus (`if (!...) proceed`) → attend que le
+ *  controller (= input joueur) ait fini. (Avant : `return false` = auto-confirme
+ *  sans jamais attendre l'input → BUG non-1:1.) */
+function _IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE(battler: number): boolean {
+  return (gBattleControllerExecFlags & _gBitTable[battler]) !== 0;
 }
 
 /** 1:1 décomp `IsPlayerPartyAndPokemonStorageFull()`. */

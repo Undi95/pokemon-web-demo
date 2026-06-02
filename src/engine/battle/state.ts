@@ -120,6 +120,26 @@ export let gBattlerInMenuId = 0;
 /** 1:1 décomp `gBattlersCount` (= 2 single, 4 double). */
 export let gBattlersCount = 2;
 
+/** 1:1 décomp `void (*gBattlerControllerFuncs[MAX_BATTLERS_COUNT])(void)`
+ *  (battle_main.c). TABLE PARTAGÉE unique : `BattleMainCB1` la tick chaque
+ *  frame (`gBattlerControllerFuncs[i]()`), et chaque controller (player/
+ *  opponent/setup) y installe sa func via `setBattlerControllerFunc`.
+ *
+ *  Auparavant fragmentée en 3 copies locales (player/opponent-noop/setup) ;
+ *  unifiée ici (= le décomp n'a qu'UNE table globale). Init null (≈
+ *  BattleControllerDummy, posé par SetUpBattleVarsAndBirchZigzagoon). */
+export const gBattlerControllerFuncs: Array<(() => void) | null> = [null, null, null, null];
+
+/** 1:1 décomp `gBattlerControllerFuncs[battler]` read. */
+export function getBattlerControllerFunc(battler: number): (() => void) | null {
+  return gBattlerControllerFuncs[battler];
+}
+
+/** 1:1 décomp `gBattlerControllerFuncs[battler] = fn` write. */
+export function setBattlerControllerFunc(battler: number, fn: (() => void) | null): void {
+  gBattlerControllerFuncs[battler] = fn;
+}
+
 /** 1:1 décomp `gBattlerPartyIndexes[MAX_BATTLERS_COUNT]` (battle.c).
  *  Indique quel slot de la party (0..PARTY_SIZE-1) chaque battler occupe.
  *  Pour single battle : [0, 0, 0, 0] (= chaque side a son mon en slot 0).

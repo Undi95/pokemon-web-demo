@@ -87,6 +87,9 @@ import {
 } from './battle-event-queue';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import type { BattleScriptContext } from './script-interpreter';
+import {
+  PrepareBufferDataTransfer, sBattleBuffersTransferData, B_COMM_TO_CONTROLLER,
+} from './battle-controllers-ipc';
 
 // ─── Helper : snapshot BattleMsgData for PrintString events ─────────────────
 
@@ -174,10 +177,22 @@ export function tickBattleControllers(): void {
 
 // ─── BtlController_Emit* stubs ──────────────────────────────────────────────
 
-/** 1:1 signature décomp `BtlController_EmitMoveAnimation` (battle_controllers.c:1107-1135).
- *  Enqueue MoveAnimation event ; battle-flow consume + joue move anim sprite. */
+/** Helper voie L (décomp) : flush `bytes` dans gBattleBufferA[active] via
+ *  PrepareBufferDataTransfer (= 1:1 : chaque BtlController_EmitXxx écrit
+ *  sBattleBuffersTransferData[] puis flush). INDISPENSABLE : sans ça,
+ *  Player/OpponentBufferRunCommand relit un VIEUX opcode dans bufferA[0] et
+ *  dispatch le mauvais handler (ou ne clear jamais le flag → blocage du tour). */
+function _emitToBufferA(bufferId: number, bytes: number[]): void {
+  for (let i = 0; i < bytes.length; i++) sBattleBuffersTransferData[i] = bytes[i] & 0xFF;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, bytes.length);
+}
+
+/** 1:1 décomp `BtlController_EmitMoveAnimation` (battle_controllers.c:1107-1135).
+ *  Écrit bufferA (voie L) + enqueue event (compat voie V). Le disableStruct
+ *  memcpy [16..] du décomp est différé (= le handler MoveAnimation clear immédiat,
+ *  anim sprite = chantier A/B). */
 export function BtlController_EmitMoveAnimation(
-  _bufferId: number,
+  bufferId: number,
   move: number,
   turnOfMove: number,
   movePower: number,
@@ -186,6 +201,17 @@ export function BtlController_EmitMoveAnimation(
   disableStructPtr: DisableStruct,
   multihit: number,
 ): void {
+  _emitToBufferA(bufferId, [
+    CONTROLLER_MOVEANIMATION,
+    move & 0xFF, (move >> 8) & 0xFF,
+    turnOfMove & 0xFF,
+    movePower & 0xFF, (movePower >> 8) & 0xFF,
+    dmg & 0xFF, (dmg >> 8) & 0xFF, (dmg >> 16) & 0xFF, (dmg >>> 24) & 0xFF,
+    friendship & 0xFF,
+    multihit & 0xFF,
+    gBattleWeather & 0xFF, (gBattleWeather >> 8) & 0xFF,
+    0, 0,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_MOVEANIMATION,
     battler: gActiveBattler,
@@ -198,20 +224,60 @@ export function BtlController_EmitMoveAnimation(
 /** 1:1 signature décomp `BtlController_EmitPrintString` (battle_controllers.c:1137-1167).
  *  Source utilisé par `PrepareStringBattle`. Enqueue PrintString event avec
  *  snapshot complet du BattleMsgData (= 1:1 décomp build). */
-export function BtlController_EmitPrintString(_bufferId: number, stringId: number): void {
+export function BtlController_EmitPrintString(bufferId: number, stringId: number): void {
+  // 1:1 décomp battle_controllers.c:1142-1166 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_PRINTSTRING, gBattleOutcome, stringId lo, stringId hi, ...msgData].
+  // (voie L) PlayerBufferRunCommand lit bufferA[0] → PlayerHandlePrintString, qui
+  // relit stringId via bufferA[2]|bufferA[3]<<8. Le BattleMsgData [4..] du décomp
+  // est reconstruit côté handler via le snapshot globalThis, donc 4 bytes suffisent.
+  sBattleBuffersTransferData[0] = CONTROLLER_PRINTSTRING;
+  sBattleBuffersTransferData[1] = gBattleOutcome & 0xFF;
+  sBattleBuffersTransferData[2] = stringId & 0xFF;
+  sBattleBuffersTransferData[3] = (stringId & 0xFF00) >> 8;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+
+  // 1:1 décomp (battle_controllers.c:1148-1166) : le BattleMsgData (battlerAttacker/
+  // Target/Effect/scrActive/textBuffs/currentMove...) est SÉRIALISÉ dans bufferA[4..]
+  // À L'ÉMISSION (= figé). Le handler (PlayerHandlePrintString) lit CE snapshot, PAS
+  // un nouveau. CRITIQUE : sans ça, le handler re-snapshote PLUS TARD (quand le
+  // controller traite la commande) → gBattlerAttacker/Target ont déjà changé (move
+  // suivant / fin de tour) → le NOM dans le message pointe le mauvais Pokémon
+  // (ex "ARCKO est déjà paralysé" au lieu de "WAILMER"). On fige le snapshot ici.
+  // 1:1 décomp : le snapshot est sérialisé dans gBattleBufferA[active] (PAR BATTLER).
+  // On le stocke donc par gActiveBattler — un slot global serait écrasé par le
+  // printstring d'un AUTRE battler émis avant que celui-ci soit affiché (= le bug
+  // "ARCKO déjà paralysé" : le message d'ARCKO était écrasé par le SPLASH de Wailmer).
+  const snap = _snapshotMsgData();
+  _printStringMsgDataByBattler[gActiveBattler] = snap;
+
+  // Compat voie V (battle-flow.ts drain) : enqueue aussi l'event. La voie L ne
+  // draine pas cette queue (= 0 régression V, 0 double-affichage L car battle-flow
+  // est inerte flag-ON).
   enqueueBattleEvent({
     type: CONTROLLER_PRINTSTRING,
     battler: gActiveBattler,
     outcome: gBattleOutcome,
     stringId,
-    msgData: _snapshotMsgData(),
+    msgData: snap,
   });
+}
+
+/** Snapshot BattleMsgData FIGÉ au dernier EmitPrintString, PAR BATTLER (1:1 décomp =
+ *  msgData sérialisé dans bufferA[active][4..] à l'émission). Le handler du battler
+ *  `b` l'utilise au lieu de re-snapshoter (qui capturerait des battlers déjà changés,
+ *  ou d'un autre move). Indexé par battler pour ne pas être écrasé entre battlers. */
+const _printStringMsgDataByBattler: (BattleMsgData | null)[] = [null, null, null, null];
+export function getLastPrintStringMsgData(battler?: number): BattleMsgData | null {
+  const b = typeof battler === 'number' ? battler : gActiveBattler;
+  return _printStringMsgDataByBattler[b] ?? null;
 }
 
 /** 1:1 signature décomp `BtlController_EmitPlaySE(bufferId, songId)`
  *  (battle_controllers.c). Enqueue PlaySE event ; battle-flow consume +
  *  appelle audio engine. */
-export function BtlController_EmitPlaySE(_bufferId: number, songId: number): void {
+export function BtlController_EmitPlaySE(bufferId: number, songId: number): void {
+  // 1:1 décomp battle_controllers.c : [PLAYSE, songId lo, songId hi, 0].
+  _emitToBufferA(bufferId, [CONTROLLER_PLAYSE, songId & 0xFF, (songId >> 8) & 0xFF, 0]);
   enqueueBattleEvent({
     type: CONTROLLER_PLAYSE,
     battler: gActiveBattler,
@@ -239,7 +305,9 @@ export function BtlController_EmitFaintingCry(_bufferId: number): void {
 }
 
 /** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. */
-export function BtlController_EmitHitAnimation(_bufferId: number): void {
+export function BtlController_EmitHitAnimation(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c : les 4 bytes = CONTROLLER_HITANIMATION.
+  _emitToBufferA(bufferId, [CONTROLLER_HITANIMATION, CONTROLLER_HITANIMATION, CONTROLLER_HITANIMATION, CONTROLLER_HITANIMATION]);
   enqueueBattleEvent({
     type: CONTROLLER_HITANIMATION,
     battler: gActiveBattler,
@@ -336,7 +404,10 @@ export function BtlController_EmitStatusIconUpdate(_bufferId: number, status1: n
 }
 
 /** 1:1 signature décomp `BtlController_EmitHealthBarUpdate(buf, healthValue)`. */
-export function BtlController_EmitHealthBarUpdate(_bufferId: number, healthValue: number): void {
+export function BtlController_EmitHealthBarUpdate(bufferId: number, healthValue: number): void {
+  // 1:1 décomp battle_controllers.c : [HEALTHBARUPDATE, 0, hp lo, hp hi].
+  // PlayerHandleHealthBarUpdate relit hpVal via bufferA[2]|bufferA[3]<<8.
+  _emitToBufferA(bufferId, [CONTROLLER_HEALTHBARUPDATE, 0, healthValue & 0xFF, (healthValue >> 8) & 0xFF]);
   enqueueBattleEvent({
     type: CONTROLLER_HEALTHBARUPDATE,
     battler: gActiveBattler,
@@ -458,9 +529,20 @@ export function BtlController_EmitExpUpdate(_bufferId: number, partyId: number, 
 /** 1:1 signature décomp `BtlController_EmitChoosePokemon(buf, caseId,
  *  monToSwitchIntoId_partner, ability, partyOrder)`. */
 export function BtlController_EmitChoosePokemon(
-  _bufferId: number, caseId: number, monToSwitchIntoId: number, ability: number,
+  bufferId: number, caseId: number, monToSwitchIntoId: number, ability: number,
   partyOrder: number | readonly number[],
 ): void {
+  // Voie L (1:1 décomp battle_controllers.c) : écrire gBattleBufferA[active] (7 bytes) —
+  // OpponentBufferRunCommand/PlayerBufferRunCommand lisent bufferA[0]=opcode pour
+  // dispatcher le handler. SANS ça, le controller ne dispatchait JAMAIS ChoosePokemon
+  // (il ne faisait qu'enqueue l'event voie V) → switch-in dresseur cassé (le mon suivant
+  // n'entrait jamais → freeze multi-mon). bufferA[0]=opcode,[1]=caseId,[2]=monToSwitch,
+  // [3]=ability,[4..6]=partyOrder.
+  const order: readonly number[] = typeof partyOrder === 'number' ? [partyOrder, 0, 0] : partyOrder;
+  _emitToBufferA(bufferId, [
+    CONTROLLER_CHOOSEPOKEMON, caseId & 0xFF, monToSwitchIntoId & 0xFF, ability & 0xFF,
+    order[0] ?? 0, order[1] ?? 0, order[2] ?? 0,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_CHOOSEPOKEMON,
     battler: gActiveBattler,
@@ -575,11 +657,19 @@ export function BattlePutTextOnWindow(text: number | string, windowId: number): 
   if (!g.__textPrinterState) g.__textPrinterState = {};
   if (!g.__textPrinterTimers) g.__textPrinterTimers = {};
   (g.__battleDisplayedText as Record<number, string | number>)[windowId] = text;
+  const timers = g.__textPrinterTimers as Record<number, number>;
+  if (timers[windowId]) { clearTimeout(timers[windowId]); delete timers[windowId]; }
+  // Flag de TEST `__battleTextInstant` (inerte sans le flag) : marque le texte
+  // TERMINÉ *synchroniquement* (pas de setTimeout) → un harness SYNC ne reste pas
+  // bloqué sur les pollers de texte (CompleteOnInactiveTextPrinter*), qui lisent
+  // __textPrinterState. Ne touche pas le pacing 1:1 normal (branche else).
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) {
+    (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
+    return;
+  }
   (g.__textPrinterState as Record<number, boolean>)[windowId] = true;
   // Simulate typewriter : ~length * 2 frames + 60 frame pause for read.
   const frames = Math.max(60, txt.length * 2 + 60);
-  const timers = g.__textPrinterTimers as Record<number, number>;
-  if (timers[windowId]) clearTimeout(timers[windowId]);
   timers[windowId] = (setTimeout(() => {
     (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
     delete timers[windowId];
@@ -665,4 +755,5 @@ export { gBattleScripting };
 // Expose pour battle-controller-player lazy lookup (= éviter cycle ESM).
 (globalThis as { __battleControllers?: object }).__battleControllers = {
   snapshotMsgData: _snapshotMsgData,
+  getLastPrintStringMsgData,
 };

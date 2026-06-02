@@ -28,6 +28,8 @@
 
 import { getRuntime } from '../system/decomp-globals';
 import { Random } from '../system/random';
+// Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
+import * as _saveBlockNs from '../save/save-block-state';
 import { gBattleTypeFlags } from './state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_RECORDED,
@@ -237,7 +239,7 @@ function _bufferPartyVsScreenStatus(party: Array<{ species?: number; hp?: number
 
 /** 1:1 décomp `BufferPartyVsScreenHealth_AtStart()` (battle_main.c:742-751). */
 export function BufferPartyVsScreenHealth_AtStart(): void {
-  const stateMod = require('../save/save-block-state') as {
+  const stateMod = _saveBlockNs as unknown as {
     gSaveBlock1Ptr: { playerParty: unknown[] };
   };
   const playerParty = (stateMod.gSaveBlock1Ptr.playerParty ?? []) as never[];

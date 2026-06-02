@@ -112,13 +112,33 @@ import {
 } from './ability-battle-effects';
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN } from './item-battle-effects';
 import { Random } from '../system/random';
+// Voie L : end-of-turn 1:1 (BattleTurnPassed). Le wire fait les étapes 1-16
+// (cleanup + dégâts poison/brûlure/météo + wish/perish + reset) ; _BattleTurnPassed
+// pose ensuite gBattleMainFunc (= dernière ligne décomp). Usage runtime → pas de TDZ.
+import { runBattleTurnPassedViaBytecode } from './wire-bytecode-bridge';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import { getRuntime, FreeMonSpritesGfx, BeginFastPaletteFade } from '../system/decomp-globals';
+// Namespaces ESM : remplacent les `require('./state')` CommonJS (dormants, qui
+// throw « require is not defined » dans le bundle navigateur dès que la voie
+// décomp tick). Live bindings = mêmes valeurs que les imports nommés.
+import * as _stateNs from './state';
+import * as _saveBlockNs from '../save/save-block-state';
+import {
+  stepBattleScriptCommand, gBattleScriptContext, getBattleScriptOffset,
+} from './script-interpreter';
+import { fillActiveBattleMonsForBattleStart } from './party-storage';
+import {
+  B_ACTION_TRY_FINISH as _B_ACTION_TRY_FINISH_BSE,
+  B_ACTION_FINISHED as _B_ACTION_FINISHED_BSE,
+} from './constants';
 import { getSpeciesInfo } from '../data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../ui/pokedex-flags';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './ai/ai-script-commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../system/decomp-globals';
-import { GetMonData, PARTY_SIZE } from './party-storage';
+import { GetMonData, PARTY_SIZE, gEnemyParty as _gEnemyParty, GetAbilityBySpecies } from './party-storage';
+// Helpers de conversion id↔enum 1:1 (= mêmes que party-storage utilise pour
+// dériver type1/type2/ability ; getSpeciesInfo est keyé par enum string).
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 
 // Inline constants 1:1 décomp (= éviter export-clutter sur ces specifics) :
 /** 1:1 décomp `ITEM_NONE` (constants/items.h) = 0. */
@@ -138,7 +158,7 @@ const B_OUTCOME_FORFEITED = 9;
  *  gSpecialStatuses[] (= per-battler bit flags pour ce tour). Inline car
  *  pas exporté de util.ts. */
 function SpecialStatusesClear(): void {
-  const stateMod = require('./state') as {
+  const stateMod = _stateNs as unknown as {
     gSpecialStatuses: Array<Record<string, number>>;
   };
   for (let active = 0; active < gBattlersCount; active++) {
@@ -222,8 +242,18 @@ export function getMainInBattle(): boolean { return _gMain_inBattle; }
 
 /** 1:1 décomp `gMain.callback1` / `gMain.savedCallback`. */
 let _gMain_callback1: (() => void) | null = null;
-export function setMainCallback1(cb: (() => void) | null): void { _gMain_callback1 = cb; }
-export function getMainCallback1(): (() => void) | null { return _gMain_callback1; }
+export function setMainCallback1(cb: (() => void) | null): void {
+  _gMain_callback1 = cb;
+  // 1:1 décomp `gMain.callback1 = cb` : le runtime tick callback1() PUIS
+  // callback2() chaque frame (CallCallbacks, decomp-runtime.ts:2253). La source
+  // de vérité est donc le runtime — c'est ce qui pilote BattleMainCB1.
+  getRuntime()?.SetMainCallback1?.(cb as never);
+}
+export function getMainCallback1(): (() => void) | null {
+  const rt = getRuntime();
+  const cb = (rt?.gMain?.callback1 as (() => void) | null | undefined);
+  return cb ?? _gMain_callback1;
+}
 
 let _gMain_savedCallback: (() => void) | null = null;
 export function setMainSavedCallback(cb: (() => void) | null): void { _gMain_savedCallback = cb; }
@@ -354,11 +384,44 @@ function StopCryAndClearCrySongs(): void {
   // Dette R3 : stop pokemon cry SE + cleanup queue.
 }
 
-/** 1:1 décomp `BattleScriptExecute(bsPtr)` (battle_util.c). Démarre un
- *  battle script depuis un pointer code. */
-function BattleScriptExecute(_bsPtr: unknown): void {
-  // Dette R3 : wire vers script-interpreter.ts startScript().
-  console.warn('[battle-main-functions] BattleScriptExecute called — script interpreter wire needed');
+/** 1:1 décomp `gBattleResources->battleCallbackStack->function[]` (battle.h).
+ *  Stack des gBattleMainFunc sauvegardés par BattleScriptExecute (scripts
+ *  imbriqués : GiveExp, HandleFaintedMon, …). */
+const gBattleCallbackStack: BattleMainFunc[] = [];
+
+/** 1:1 décomp `RunBattleScriptCommands_PopCallbacksStack()` (battle_main.c:5251).
+ *  SI gCurrentActionFuncId == TRY_FINISH/FINISHED (= le script imbriqué a fini
+ *  via end2/end → a posé ce funcId) → pop le callback stack → restaure
+ *  gBattleMainFunc. SINON → step UNE commande du script (gated execFlags),
+ *  exactement comme HandleAction_RunBattleScript. */
+export function RunBattleScriptCommands_PopCallbacksStack(): void {
+  if (_stateNs.gCurrentActionFuncId === _B_ACTION_TRY_FINISH_BSE
+      || _stateNs.gCurrentActionFuncId === _B_ACTION_FINISHED_BSE) {
+    const fn = gBattleCallbackStack.pop();
+    if (fn) gBattleMainFunc = fn;
+  } else if (gBattleControllerExecFlags === 0) {
+    stepBattleScriptCommand(gBattleScriptContext);
+  }
+}
+
+/** 1:1 décomp `BattleScriptExecute(bsPtr)` (battle_util.c:3184). Démarre un
+ *  battle script IMBRIQUÉ : pose le scriptPtr sur le ctx persistant, push le
+ *  gBattleMainFunc courant, bascule gBattleMainFunc vers
+ *  RunBattleScriptCommands_PopCallbacksStack + gCurrentActionFuncId=0 (= mode
+ *  exécution). Le script finit par `end2` (gCurrentActionFuncId=TRY_FINISH) →
+ *  PopCallbacksStack pop → gBattleMainFunc restauré. Prend un LABEL (notre
+ *  port résout label→offset bytecode). */
+function BattleScriptExecute(scriptLabel: string): void {
+  const off = getBattleScriptOffset(scriptLabel);
+  if (off < 0) {
+    console.warn(`[battle-main-functions] BattleScriptExecute: label '${scriptLabel}' introuvable`);
+    return;
+  }
+  gBattleScriptContext.scriptPtr = off;
+  gBattleScriptContext.scriptPtrStack.length = 0;
+  gBattleCallbackStack.push(gBattleMainFunc);
+  gBattleMainFunc = RunBattleScriptCommands_PopCallbacksStack;
+  setCurrentActionFuncId(0);
 }
 
 /** 1:1 décomp `BattleScript_*` pointers. Dette R3 : script bytecode entries
@@ -404,32 +467,32 @@ function HandleSetPokedexFlag(nationalDexNum: number, caseId: number, personalit
   _HandleSetPokedexFlag(nationalDexNum, caseId, personality);
 }
 
-/** 1:1 décomp `GetAbilityBySpecies(species, abilityNum)` (pokemon.c). */
-function GetAbilityBySpecies(species: number, abilityNum: number): number {
-  // getSpeciesInfo accepte string (= "SPECIES_X"). Conversion 1:1 décomp.
-  const info = getSpeciesInfo(`SPECIES_${species}`);
-  if (!info) return 0;
-  const abilities = ((info as unknown) as { abilities?: number[] }).abilities ?? [0, 0];
-  return abilities[abilityNum & 1] ?? abilities[0] ?? 0;
-}
+// 1:1 décomp `GetAbilityBySpecies` : importé de party-storage.ts (version
+// canonique, résout abilities string→id via resolveDecompConstant). La copie
+// locale ici traitait `info.abilities` comme number[] (= bug : ce sont des
+// 'ABILITY_X' strings).
 
 /** 1:1 décomp `gBattleBufferB[gActiveBattler][4 + i]` (battle_controllers.c).
  *  Buffer rempli par BtlController_EmitGetMonData REQUEST_ALL_BATTLE.
  *  Notre port lit directement gPlayerParty[partyIdx] / gEnemyParty[partyIdx].
  *  Cette fonction simule le buffer en cas où le wire n'est pas encore complet. */
 function _readBattleMonFromBuffer(battler: number): void {
-  // Helper : copie depuis le party (player ou enemy) dans gBattleMons[battler].
-  // 1:1 décomp pattern : gBattleBufferB[4..4+sizeof(BattlePokemon)] = sérialisation
-  // de struct BattlePokemon. Notre port : copy direct gPlayerParty/gEnemyParty
-  // vers gBattleMons via le bridge existant party-storage.ts.
+  // 1:1-observable : le décomp désérialise gBattleBufferB (struct BattlePokemon
+  // sérialisée par CopyPlayerMonData) → gBattleMons[battler]. En single-player
+  // LOCAL, le buffer IPC (multi-CPU/link) est inutile : on remplit gBattleMons
+  // directement depuis le party (gPlayerParty/gEnemyParty) via le MÊME helper que
+  // la voie V — `fillActiveBattleMonsForBattleStart` (idempotent, remplit tous les
+  // battlers actifs). Résultat IDENTIQUE au décomp ; la dérivation types/ability/
+  // stat-stages qui suit l'appel (BattleIntro state) finalise gBattleMons[battler].
+  // (Voie L flag-ON : sans ça, gBattleMons reste à 0 car _CopyPlayerMonData est stub.)
   void battler;
-  // Le wire est fait via fillActiveBattleMonsForBattleStart côté battle-flow.ts.
+  fillActiveBattleMonsForBattleStart();
 }
 
 /** 1:1 décomp `ResetSentPokesToOpponentValue()` (battle_util.c). */
 function ResetSentPokesToOpponentValue(): void {
   // 1:1 décomp : clear gSentPokesToOpponent[0..1]. Notre port a cet array.
-  const stateMod = require('./state') as { gSentPokesToOpponent: number[] };
+  const stateMod = _stateNs as unknown as { gSentPokesToOpponent: number[] };
   stateMod.gSentPokesToOpponent[0] = 0;
   stateMod.gSentPokesToOpponent[1] = 0;
 }
@@ -450,8 +513,12 @@ function EvolutionScene(_mon: unknown, _species: number, _canStopEvo: boolean, _
 
 /** 1:1 décomp `gSpeciesInfo[species].catchRate`. */
 function _getSpeciesCatchRate(species: number): number {
-  const info = getSpeciesInfo(`SPECIES_${species}`);
-  return ((info as unknown) as { catchRate?: number }).catchRate ?? 45;
+  // 1:1 décomp `gSpeciesInfo[species].catchRate`. getSpeciesInfo est keyé par
+  // enum string → on passe par reverseDecompConstant (id→'SPECIES_X'), comme
+  // party-storage. species 0 / inconnu → 0 (= gSpeciesInfo[SPECIES_NONE]).
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_');
+  const info = speciesEnum ? getSpeciesInfo(speciesEnum) : undefined;
+  return info?.catchRate ?? 0;
 }
 
 /** 1:1 décomp `BattleMainCB2()` callback principal. */
@@ -479,7 +546,7 @@ function _getTrainerClass(_trainerId: number): number {
 
 /** 1:1 décomp `gTrainerBattleOpponent_A`. */
 function _getTrainerBattleOpponentA(): number {
-  const stateMod = require('./state') as { gTrainerBattleOpponent_A?: number };
+  const stateMod = _stateNs as unknown as { gTrainerBattleOpponent_A?: number };
   return stateMod.gTrainerBattleOpponent_A ?? 0;
 }
 
@@ -665,13 +732,15 @@ export function BattleStartClearSetData(): void {
 
 /** Helper : accède à gPlayerParty / gEnemyParty via gSaveBlock1Ptr. */
 function _getPlayerParty(): unknown[] {
-  const stateMod = require('../save/save-block-state') as { gSaveBlock1Ptr: { playerParty: unknown[] } };
+  const stateMod = _saveBlockNs as unknown as { gSaveBlock1Ptr: { playerParty: unknown[] } };
   return stateMod.gSaveBlock1Ptr.playerParty;
 }
 
 function _getEnemyParty(): unknown[] {
-  const stateMod = require('./state') as { gEnemyParty?: unknown[] };
-  return stateMod.gEnemyParty ?? [];
+  // 1:1 décomp `gEnemyParty` : vit dans party-storage.ts (array de PARTY_SIZE
+  // mons valides), PAS dans state.ts (l'ancien require('./state').gEnemyParty
+  // renvoyait undefined → crash dès que la voie décomp lit gEnemyParty[0]).
+  return _gEnemyParty;
 }
 
 // ─── BattleIntroGetMonsData (3357) ─────────────────────────────────────────
@@ -705,7 +774,7 @@ export function BattleIntroPrepareBackgroundSlide(): void {
   if (gBattleControllerExecFlags === 0) {
     setActiveBattler(GetBattlerAtPosition(0));
     // 1:1 décomp : BtlController_EmitIntroSlide(buf, gBattleEnvironment).
-    const stateMod = require('./state') as { gBattleEnvironment?: number };
+    const stateMod = _stateNs as unknown as { gBattleEnvironment?: number };
     BtlController_EmitIntroSlide(B_COMM_TO_CONTROLLER, stateMod.gBattleEnvironment ?? 0);
     MarkBattlerForControllerExec(gActiveBattler);
     gBattleMainFunc = BattleIntroDrawTrainersOrMonsSprites;
@@ -743,10 +812,17 @@ export function BattleIntroDrawTrainersOrMonsSprites(): void {
       // vers gBattleMons[active]. Notre port : déjà fait par fillActiveBattleMonsForBattleStart.
       _readBattleMonFromBuffer(active);
 
-      const info = getSpeciesInfo(`SPECIES_${gBattleMons[active].species}`);
-      const types = (((info as unknown) as { types?: number[] }).types) ?? [0, 0];
-      gBattleMons[active].type1 = types[0] ?? 0;
-      gBattleMons[active].type2 = types[1] ?? 0;
+      // 1:1 décomp : type1/type2 = gSpeciesInfo[species].types[0/1] ; ability =
+      // GetAbilityBySpecies. getSpeciesInfo keyé par enum + types = 'TYPE_X'
+      // strings → reverse/resolve (= MÊME dérivation que party-storage:837-844).
+      const speciesEnum = reverseDecompConstant(gBattleMons[active].species, 'SPECIES_');
+      const info = speciesEnum ? getSpeciesInfo(speciesEnum) : undefined;
+      if (info?.types) {
+        const t1 = resolveDecompConstant(info.types[0] ?? '');
+        const t2 = resolveDecompConstant(info.types[1] ?? info.types[0] ?? '');
+        gBattleMons[active].type1 = typeof t1 === 'number' ? t1 : 0;
+        gBattleMons[active].type2 = typeof t2 === 'number' ? t2 : 0;
+      }
       gBattleMons[active].ability = GetAbilityBySpecies(
         gBattleMons[active].species, gBattleMons[active].abilityNum,
       );
@@ -801,7 +877,7 @@ export function BattleIntroDrawTrainersOrMonsSprites(): void {
         BtlController_EmitLoadMonSprite(B_COMM_TO_CONTROLLER);
         MarkBattlerForControllerExec(active);
         const enemyParty = _getEnemyParty();
-        const stateMod = require('./state') as { gBattlerPartyIndexes: number[] };
+        const stateMod = _stateNs as unknown as { gBattlerPartyIndexes: number[] };
         const partyIdx = stateMod.gBattlerPartyIndexes[active] ?? 0;
         gBattleResults.lastOpponentSpecies = GetMonData(
           enemyParty[partyIdx] as never, MON_DATA_SPECIES,
@@ -1207,9 +1283,10 @@ export function TryDoEventsBeforeFirstTurn(): void {
   BattlePutTextOnWindow(gText_EmptyString3, B_WIN_MSG);
 
   // 1:1 décomp l. 3905 : gBattleMainFunc = HandleTurnActionSelectionState.
-  // Notre port : laisse battle-flow.ts state machine continuer ; ce point
-  // marque la fin de l'INTRO, début du TURN LOOP.
-  gBattleMainFunc = _HandleTurnActionSelectionStateStub;
+  // La vraie fn vit dans battle-action-selection.ts (port 1:1 complet) ;
+  // résolue via __battleActionSelection (lazy-global = évite le cycle ESM, car
+  // battle-action-selection importe setBattleMainFunc d'ici). Stub = fallback.
+  gBattleMainFunc = _getHandleTurnActionSelectionState();
   ResetSentPokesToOpponentValue();
 
   for (let i = 0; i < BATTLE_COMMUNICATION_ENTRIES_COUNT; i++) {
@@ -1233,17 +1310,25 @@ export function TryDoEventsBeforeFirstTurn(): void {
 
   if (gBattleTypeFlags & BATTLE_TYPE_ARENA) {
     StopCryAndClearCrySongs();
-    BattleScriptExecute(BattleScript_ArenaTurnBeginning);
+    BattleScriptExecute('BattleScript_ArenaTurnBeginning');
   }
 }
 
-/** 1:1 décomp `HandleTurnActionSelectionState()` (battle_main.c:4129+).
- *  Le port complet de cette fn est massif (~400l) et déjà couvert par
- *  l'état ACTION_MENU_* de battle-flow.ts. Cette stub marque le passage
- *  au turn loop ; le wire actuel se fait via battle-flow.ts. */
+/** Résout la vraie `HandleTurnActionSelectionState` (battle-action-selection.ts,
+ *  port 1:1 complet de battle_main.c:4129-4552) via le global expose, pour
+ *  éviter le cycle ESM (battle-action-selection importe setBattleMainFunc d'ici).
+ *  Fallback = stub si le module n'est pas chargé. */
+function _getHandleTurnActionSelectionState(): () => void {
+  const m = (globalThis as Record<string, unknown>).__battleActionSelection as {
+    HandleTurnActionSelectionState?: () => void;
+  } | undefined;
+  return m?.HandleTurnActionSelectionState ?? _HandleTurnActionSelectionStateStub;
+}
+
+/** Fallback uniquement (= module battle-action-selection pas chargé). La vraie
+ *  fn est `HandleTurnActionSelectionState` dans battle-action-selection.ts. */
 function _HandleTurnActionSelectionStateStub(): void {
-  // 1:1 strict : laisse le state machine actuel de battle-flow.ts gérer.
-  // Le wire complet vers une fn pure = Phase ultérieure (= K14).
+  // No-op de secours : si on est ici, le module action-selection n'a pas chargé.
 }
 
 // ─── HandleEndTurn_ContinueBattle (3932) ───────────────────────────────────
@@ -1251,7 +1336,7 @@ function _HandleTurnActionSelectionStateStub(): void {
 /** 1:1 décomp `HandleEndTurn_ContinueBattle()` (battle_main.c:3932-3954). */
 export function HandleEndTurn_ContinueBattle(): void {
   if (gBattleControllerExecFlags === 0) {
-    gBattleMainFunc = _BattleTurnPassedStub;
+    gBattleMainFunc = _BattleTurnPassed;
     for (let i = 0; i < BATTLE_COMMUNICATION_ENTRIES_COUNT; i++) {
       gBattleCommunication[i] = 0;
     }
@@ -1270,11 +1355,23 @@ export function HandleEndTurn_ContinueBattle(): void {
   }
 }
 
-/** 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956+).
- *  Déjà wired via runBattleTurnPassedViaBytecode dans wire-bytecode-bridge.ts.
- *  Cette stub marque le hook état. */
-function _BattleTurnPassedStub(): void {
-  // 1:1 strict : laisse le bytecode wire actuel gérer.
+/** 1:1 décomp `BattleTurnPassed()` (battle_main.c:3956-4019).
+ *  Étapes 1-16 (TurnValuesCleanUp, DoField/BattlerEndTurnEffects = dégâts
+ *  poison/brûlure/météo, HandleWishPerishSong, reset markers/comm/chosen/turnCounter)
+ *  exécutées par le wire 1:1 `runBattleTurnPassedViaBytecode` (rafale ; pacing
+ *  per-frame des effets end-turn = dette R3). Puis pose `gBattleMainFunc` — la
+ *  dernière ligne de la décomp, qui manquait (stub) → le tour 2 ne démarrait jamais :
+ *   - outcome == 0  → `HandleTurnActionSelectionState` (nouveau tour)
+ *   - outcome != 0  → `RunTurnActionsFunctions` (le wire a posé gCurrentActionFuncId
+ *     = B_ACTION_FINISHED → HandleAction_TryFinish → fin de combat). */
+function _BattleTurnPassed(): void {
+  const res = runBattleTurnPassedViaBytecode();
+  if (res?.battleEnded) {
+    const td = (globalThis as { __battleTurnDispatch?: { RunTurnActionsFunctions?: () => void } }).__battleTurnDispatch;
+    if (td?.RunTurnActionsFunctions) gBattleMainFunc = td.RunTurnActionsFunctions;
+    return;
+  }
+  gBattleMainFunc = _getHandleTurnActionSelectionState();
 }
 
 // ─── HandleEndTurn_BattleWon (4960) ────────────────────────────────────────
@@ -1286,7 +1383,7 @@ export function HandleEndTurn_BattleWon(): void {
 
   if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
     // 1:1 décomp ll. 4965-4970 : link battle outcome script.
-    const stateMod = require('./state') as { setSpecialVarResult?: (v: number) => void; gBattleTextBuff1: number[]; };
+    const stateMod = _stateNs as unknown as { setSpecialVarResult?: (v: number) => void; gBattleTextBuff1: number[]; };
     stateMod.setSpecialVarResult?.(gBattleOutcome);
     stateMod.gBattleTextBuff1[0] = gBattleOutcome;
     setBattlerAttacker(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
@@ -1308,7 +1405,12 @@ export function HandleEndTurn_BattleWon(): void {
   } else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER && !(gBattleTypeFlags & BATTLE_TYPE_LINK)) {
     // 1:1 décomp ll. 4983-5008 : local trainer victory + BGM par classe.
     BattleStopLowHpSound();
+    // Voie L : pose le scriptPtr sur le ctx persistant (HandleEndTurn_FinishBattle
+    // le steppe per-frame), comme la branche wild (PayDay) ci-dessous. Sans ça
+    // `gBattlescriptCurrInstr = {}` (stub) ne lançait PAS le script de victoire
+    // dresseur → ni "Vous avez battu X!" ni l'argent. (= dette #31 côté L.)
     gBattlescriptCurrInstr = BattleScript_LocalTrainerBattleWon;
+    gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_LocalTrainerBattleWon');
 
     const trainerOpponentA = _getTrainerBattleOpponentA();
     const trainerClass = _getTrainerClass(trainerOpponentA);
@@ -1345,7 +1447,10 @@ export function HandleEndTurn_BattleWon(): void {
     }
   } else {
     // 1:1 décomp ll. 5010-5013 : wild battle won → payday + pick up items script.
+    // Voie L : pose le scriptPtr sur le ctx persistant (HandleEndTurn_FinishBattle
+    // le steppe per-frame ; le vestige gBattlescriptCurrInstr est gardé pour trace).
     gBattlescriptCurrInstr = BattleScript_PayDayMoneyAndPickUpItems;
+    gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_PayDayMoneyAndPickUpItems');
   }
 
   gBattleMainFunc = HandleEndTurn_FinishBattle;
@@ -1370,14 +1475,20 @@ export function HandleEndTurn_BattleLost(): void {
         setBattleOutcome(gBattleOutcome & ~B_OUTCOME_LINK_BATTLE_RAN);
       }
     } else {
-      const stateMod = require('./state') as { gBattleTextBuff1: number[] };
+      const stateMod = _stateNs as unknown as { gBattleTextBuff1: number[] };
       stateMod.gBattleTextBuff1[0] = gBattleOutcome;
       setBattlerAttacker(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
       gBattlescriptCurrInstr = BattleScript_LinkBattleWonOrLost;
       setBattleOutcome(gBattleOutcome & ~B_OUTCOME_LINK_BATTLE_RAN);
     }
   } else {
+    // 1:1 décomp ll. 5040 : défaite LOCALE (sauvage/dresseur) → script whiteout.
+    // Voie L : pose le scriptPtr sur le ctx persistant (HandleEndTurn_FinishBattle
+    // le steppe per-frame), = MÊME fix que HandleEndTurn_BattleWon:1452-1453. Sans
+    // ça le script de défaite ne déroulait jamais (combat figé sur
+    // HandleEndTurn_FinishBattle alors que gBattleOutcome=LOST était bien posé).
     gBattlescriptCurrInstr = BattleScript_LocalBattleLost;
+    gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_LocalBattleLost');
   }
 
   gBattleMainFunc = HandleEndTurn_FinishBattle;
@@ -1399,7 +1510,7 @@ export function HandleEndTurn_RanFromBattle(): void {
     setBattleOutcome(B_OUTCOME_FORFEITED);
   } else {
     // 1:1 décomp ll. 5070-5083 : switch sur fleeType.
-    const fleeType = gBattleStruct ? (require('./state') as {
+    const fleeType = gBattleStruct ? (_stateNs as unknown as {
       gProtectStructs: Array<{ fleeType?: number }>;
     }).gProtectStructs[gBattlerAttacker].fleeType ?? 0 : 0;
     switch (fleeType) {
@@ -1424,7 +1535,7 @@ export function HandleEndTurn_RanFromBattle(): void {
 export function HandleEndTurn_MonFled(): void {
   setCurrentActionFuncId(0);
 
-  const stateMod = require('./state') as { gBattleTextBuff1: number[]; gBattlerPartyIndexes: number[] };
+  const stateMod = _stateNs as unknown as { gBattleTextBuff1: number[]; gBattlerPartyIndexes: number[] };
   PREPARE_MON_NICK_BUFFER(
     stateMod.gBattleTextBuff1, gBattlerAttacker,
     stateMod.gBattlerPartyIndexes[gBattlerAttacker],
@@ -1451,7 +1562,7 @@ export function HandleEndTurn_FinishBattle(): void {
       for (let active = 0; active < gBattlersCount; active++) {
         setActiveBattler(active);
         if (GET_BATTLER_SIDE(active) === B_SIDE_PLAYER) {
-          const stateMod = require('./state') as { gBattlerPartyIndexes: number[] };
+          const stateMod = _stateNs as unknown as { gBattlerPartyIndexes: number[] };
           const partyIdx = stateMod.gBattlerPartyIndexes[active] ?? 0;
           if (gBattleResults.playerMon1Species === SPECIES_NONE) {
             gBattleResults.playerMon1Species = GetMonData(
@@ -1498,10 +1609,13 @@ export function HandleEndTurn_FinishBattle(): void {
     gBattleMainFunc = FreeResetData_ReturnToOvOrDoEvolutions;
     _gCB2_AfterEvolution = BattleMainCB2;
   } else {
-    // 1:1 décomp ll. 5150-5152 : exec script command.
+    // 1:1 décomp ll. 5150-5152 :
+    //   `if (gBattleControllerExecFlags == 0) gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]();`
+    // Voie L : step le script (PayDay/LocalBattleWon/…) via le ctx persistant.
+    // Quand le script finit par `end` → gCurrentActionFuncId=TRY_FINISH → la branche
+    // cleanup+fade ci-dessus s'exécute au frame suivant.
     if (gBattleControllerExecFlags === 0) {
-      // Wire vers script-interpreter.ts step si bytecode actif.
-      // Notre port : battle-flow.ts handle ça via les states END_TURN_*.
+      stepBattleScriptCommand(gBattleScriptContext);
     }
   }
 }
@@ -1583,7 +1697,7 @@ export function ReturnFromBattleToOverworld(): void {
   // 1:1 décomp ll. 5225-5226 : link battle wait remote players.
   // Notre port : pas de link battle, skip.
 
-  const stateMod = require('./state') as { setSpecialVarResult?: (v: number) => void };
+  const stateMod = _stateNs as unknown as { setSpecialVarResult?: (v: number) => void };
   stateMod.setSpecialVarResult?.(gBattleOutcome);
   setMainInBattle(false);
   _gMain_callback1 = _gPreBattleCallback1;
@@ -1621,6 +1735,16 @@ export function ReturnFromBattleToOverworld(): void {
   HandleEndTurn_FinishBattle, FreeResetData_ReturnToOvOrDoEvolutions,
   TryEvolvePokemon, WaitForEvoSceneToFinish, ReturnFromBattleToOverworld,
   getBattleMainFunc, setBattleMainFunc,
+  BattleScriptExecute, RunBattleScriptCommands_PopCallbacksStack,
+  // Famille callback1 / inBattle / savedCallback : requise par battle-link-start
+  // (_setMainCallback1 case 18), battle-cb2 (FreeRestoreBattleData) et battle-init
+  // (setMainInBattle). setMainCallback1 écrit le runtime (gMain.callback1) → c'est
+  // ce qui installe BattleMainCB1 et fait tourner gBattleMainFunc.
+  setMainCallback1, getMainCallback1,
+  setMainInBattle, getMainInBattle,
+  setPreBattleCallback1, getPreBattleCallback1,
+  setMainSavedCallback, getMainSavedCallback,
+  setCB2AfterEvolution, getCB2AfterEvolution,
   IsMonShiny, SpeciesToNationalPokedexNum, HandleSetPokedexFlag,
   GetWhoStrikesFirst, SwapTurnOrder,
 };

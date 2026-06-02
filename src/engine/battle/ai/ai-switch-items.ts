@@ -180,7 +180,24 @@ let _aiDecision: AiSwitchDecision = { action: -1, data: 0 };
 
 function _aiEmit(action: number, data: number): void {
   _aiDecision = { action, data };
+  // Voie L (décomp 1:1) : AI_TrySwitchOrUseItem se termine TOUJOURS par
+  // BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, action, data) → écrit
+  // gBattleBufferB[gActiveBattler] (l'action choisie de l'IA). SANS ça,
+  // gChosenActionByBattler[opponent] garde une valeur résiduelle ≠ B_ACTION_USE_MOVE
+  // → HandleTurnActionSelectionState reste bloqué à STATE_WAIT_ACTION_CASE_CHOSEN
+  // (le tour ne démarre jamais). Le recorder _aiDecision reste pour la voie V.
+  _emitTwoReturnValues(B_COMM_TO_ENGINE, action, data);
 }
+
+/** Lazy lookup anti-cycle vers BtlController_EmitTwoReturnValues (battle-controllers-ipc).
+ *  Importé via globalThis pour ne pas créer de dépendance top-level ai/ → ipc. */
+function _emitTwoReturnValues(buf: number, ret8: number, ret16: number): void {
+  const m = (globalThis as { __battleControllersIpc?: { BtlController_EmitTwoReturnValues?: (b: number, r8: number, r16: number) => void } }).__battleControllersIpc;
+  m?.BtlController_EmitTwoReturnValues?.(buf, ret8, ret16);
+}
+
+/** 1:1 décomp `B_COMM_TO_ENGINE` (= bufferB, résultat controller→engine). */
+const B_COMM_TO_ENGINE = 1;
 
 /** Lit la dernière décision émise par AI_TrySwitchOrUseItem (devtools/wirage). */
 export function getAiSwitchDecision(): AiSwitchDecision {
@@ -933,4 +950,5 @@ export function GetMostSuitableMonToSwitchInto(): number {
 (globalThis as { __battleAi?: Record<string, unknown> }).__battleAi = {
   ...(globalThis as { __battleAi?: Record<string, unknown> }).__battleAi,
   AI_TrySwitchOrUseItem,
+  GetMostSuitableMonToSwitchInto,
 };

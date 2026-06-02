@@ -27,7 +27,10 @@
 import {
   gActiveBattler, gBattleTypeFlags, gBattlersCount,
   setBattleOutcome, setActiveBattler,
+  getBattlerControllerFunc,
 } from './state';
+// Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
+import * as _stateNs from './state';
 import { BATTLE_TYPE_RECORDED } from './constants';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL,
@@ -55,10 +58,14 @@ function _getBattleMainFunc(): (() => void) | null {
   return m?.getBattleMainFunc?.() ?? null;
 }
 
-/** 1:1 décomp `gBattlerControllerFuncs[i]()`. */
-function _runBattlerController(_battler: number): void {
-  // Dette R3 : controller dispatch system. Notre port : noop (controllers
-  // sont géré via state machine direct dans battle-flow.ts).
+/** 1:1 décomp `gBattlerControllerFuncs[gActiveBattler]()` (battle_main.c:3031).
+ *  Appel NON gaté : la func installée (SetControllerTo* / XxxBufferRunCommand /
+ *  poller CompleteOnXxx) s'auto-gate sur `gBattleControllerExecFlags`. Gater
+ *  ici casserait le 1er tick (SetControllerToPlayer doit tourner alors qu'aucun
+ *  flag n'est set). Table partagée = state.ts. */
+function _runBattlerController(battler: number): void {
+  const fn = getBattlerControllerFunc(battler);
+  if (fn) fn();
 }
 
 /** 1:1 décomp `AnimateSprites()` (sprite.c). Wire vers decomp-globals existing. */
@@ -149,7 +156,7 @@ function _FreeAllWindowBuffers(): void {
 
 /** 1:1 décomp `ZeroEnemyPartyMons()`. */
 function _ZeroEnemyPartyMons(): void {
-  const stateMod = require('./state') as { gEnemyParty?: unknown[] };
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
   if (stateMod.gEnemyParty) {
     for (let i = 0; i < 6; i++) {
       stateMod.gEnemyParty[i] = null;
@@ -157,10 +164,10 @@ function _ZeroEnemyPartyMons(): void {
   }
 }
 
-/** 1:1 décomp `SetMainCallback2(cb)`. */
-function _SetMainCallback2(_cb: (() => void) | null): void {
-  // Dette R3 : main callback dispatch (= notre runtime n'a pas CB2 layer
-  // équivalente). Pour now : noop ; le caller dispatch implicit.
+/** 1:1 décomp `SetMainCallback2(cb)` : installe le callback2 sur le runtime
+ *  (= gMain.callback2, ticked chaque frame par CallCallbacks). */
+function _SetMainCallback2(cb: (() => void) | null): void {
+  getRuntime()?.SetMainCallback2?.(cb as never);
 }
 
 // ─── BattleMainCB1 (battle_main.c:3026-3032) ───────────────────────────────
@@ -194,7 +201,7 @@ export function BattleMainCB2(): void {
       && _RecordedBattle_CanStopPlayback()) {
     // Set gSpecialVar_Result = gBattleOutcome = B_OUTCOME_PLAYER_TELEPORTED.
     setBattleOutcome(5 /* B_OUTCOME_PLAYER_TELEPORTED */);
-    const stateMod = require('./state') as { setSpecialVarResult?: (v: number) => void };
+    const stateMod = _stateNs as unknown as { setSpecialVarResult?: (v: number) => void };
     stateMod.setSpecialVarResult?.(5);
 
     _ResetPaletteFadeControl();

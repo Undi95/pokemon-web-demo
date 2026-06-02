@@ -256,8 +256,15 @@ export function SetActionsAndBattlersTurnOrder(): void {
       }
     }
   }
-  // Dette R3 : gBattleMainFunc = CheckFocusPunch_ClearVarsBeforeTurnStarts.
+  // 1:1 décomp (battle_main.c, fin de SetActionsAndBattlersTurnOrder) :
+  //   gBattleStruct->focusPunchBattlerId = 0;
+  //   gBattleMainFunc = CheckFocusPunch_ClearVarsBeforeTurnStarts;
+  // Présent sur TOUS les chemins de sortie (le early-return RUN l'appelle déjà
+  // ligne ~218). SANS cet appel ici, le chemin normal (single battle / tri par
+  // vitesse) laisse gBattleMainFunc figé sur SetActionsAndBattlersTurnOrder → la
+  // boucle de tour ne démarre JAMAIS (= le combat reste bloqué après la sélection).
   gBattleStruct.focusPunchBattlerId = 0;
+  _setBattleMainFunc_CheckFocusPunch();
 }
 
 // ─── Devtools expose ───────────────────────────────────────────────────────
