@@ -497,7 +497,12 @@ export function BtlController_EmitDrawTrainerPic(_bufferId: number): void {
 /** 1:1 signature décomp `BtlController_EmitLoadMonSprite(buf)`
  *  (battle_controllers.c:973-977). Charge le sprite du Pokemon (= wild ou
  *  opp send-out). Enqueue event pour battle UI consume. */
-export function BtlController_EmitLoadMonSprite(_bufferId: number): void {
+export function BtlController_EmitLoadMonSprite(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:973-977 : 4 bytes [LOADMONSPRITE, LOADMONSPRITE,
+  // 0, 0] → gBattleBufferA. SANS ça, OpponentBufferRunCommand lit bufferA[0] résiduel
+  // et NE dispatche PAS OpponentHandleLoadMonSprite (= le sprite mon ne se chargeait
+  // jamais). Même pattern que les autres Emit fixés (EmitChoosePokemon session 5ter).
+  _emitToBufferA(bufferId, [CONTROLLER_LOADMONSPRITE, CONTROLLER_LOADMONSPRITE, 0, 0]);
   enqueueBattleEvent({
     type: CONTROLLER_LOADMONSPRITE as never,
     battler: gActiveBattler,

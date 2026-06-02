@@ -54,10 +54,15 @@ import {
 } from './battle-controllers-ipc';
 import { gBitTable } from './battle-controllers';
 import {
-  GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
+  GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
-import { gEnemyParty, GetMonData, MON_DATA_HP } from './party-storage';
+import { gEnemyParty, GetMonData, MON_DATA_HP, MON_DATA_SPECIES } from './party-storage';
+import { reverseDecompConstant } from '../system/decomp-constants';
+import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { CreateSprite } from '../system/decomp-bridge';
+import { OBJ_PLTT_ID } from '../system/decomp-runtime';
+import { LoadPalette } from '../system/decomp-globals';
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -183,7 +188,71 @@ function OpponentHandleGetMonData(): void {
 function OpponentHandleGetRawMonData(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSetMonData(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSetRawMonData(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleLoadMonSprite(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `OpponentHandleLoadMonSprite()` (battle_controller_opponent.c:1137).
+ *  Charge le front pic du mon ennemi (gfx + palette OBJ slot battler) + spawn le
+ *  sprite via CreateSprite (template inline → keystone CreateSpriteInline). Asset
+ *  PNG = chargé ASYNC → fire-and-forget (le sprite apparaît dès le chargement).
+ *  On garde OpponentBufferExecCompleted pour ne PAS bloquer le flux vérifié (le
+ *  décomp installe TryShinyAnimAfterMonAnim ; shiny/shadow/StartSpriteAnim = raffinement). */
+function OpponentHandleLoadMonSprite(): void {
+  void _loadAndCreateBattlerMonSprite(gActiveBattler, true);
+  OpponentBufferExecCompleted();
+}
+
+/** 1:1 décomp `sBattlerCoords[Single][position]` (battle_anim_mons.c:38-45). */
+const _sBattlerCoordsSingle: ReadonlyArray<readonly [number, number]> = [
+  [72, 80],   // B_POSITION_PLAYER_LEFT
+  [176, 40],  // B_POSITION_OPPONENT_LEFT
+  [48, 40],   // B_POSITION_PLAYER_RIGHT
+  [112, 80],  // B_POSITION_OPPONENT_RIGHT
+];
+/** 1:1 `GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2)` (single battle). */
+function _GetBattlerSpriteCoordX(battler: number): number {
+  return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[0] ?? 176;
+}
+/** ~1:1 `GetBattlerSpriteDefault_Y` = base y de la table. TODO : offset y par
+ *  species (GetBattlerSpriteFinal_Y + gMonFrontPicCoords) = raffinement grounding A/B. */
+function _GetBattlerSpriteDefault_Y(battler: number): number {
+  return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[1] ?? 40;
+}
+/** Dossier asset = nom species lowercase. Le mon (gEnemyParty) n'a pas de
+ *  `speciesName` fiable → on lit le NUMÉRO (GetMonData MON_DATA_SPECIES) et on
+ *  remonte à l'enum via reverseDecompConstant (286 → 'SPECIES_POOCHYENA' →
+ *  'poochyena'), = le nom de dossier des assets /decomp/em/pokemon/<nom>/. */
+function _speciesFolderFromMon(mon: unknown): string {
+  const sp = GetMonData(mon as never, MON_DATA_SPECIES) as number;
+  if (!sp) return '';
+  const en = reverseDecompConstant(sp, 'SPECIES_');
+  if (!en) return '';
+  return en.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+/** Charge + spawn le sprite mon (front=ennemi / back=joueur). 1:1 chaîne décomp
+ *  BattleLoad{Opponent}MonSpriteGfx → SetMultiuseSpriteTemplateToPokemon → CreateSprite.
+ *  ASYNC (assets PNG /decomp/em/pokemon/<nom>/) ; fire-and-forget depuis le handler. */
+async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<void> {
+  try {
+    const partyIdx = _getBattlerPartyIndexOpp(battler);
+    const mon = gEnemyParty[partyIdx];
+    const folder = _speciesFolderFromMon(mon);
+    if (!folder) { console.warn('[opponent] sprite mon : dossier species vide'); return; }
+    const picFile = isOpponent ? 'anim_front.png' : 'back.png';
+    const tiles = await loadTileBin(`/decomp/em/pokemon/${folder}/${picFile}`, 4);
+    const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`);
+    // 1:1 BattleLoadOpponentMonSpriteGfx : LoadPalette(pal, OBJ_PLTT_ID(battler), PLTT_SIZE_4BPP).
+    LoadPalette(pal, OBJ_PLTT_ID(battler), 32);
+    const FRAME0 = 0x800;  // 64 tiles 64x64 4bpp = frame 0 (anim_front = 2 frames empilées).
+    const frame0 = tiles.subarray(0, FRAME0);
+    // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
+    // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
+    CreateSprite({
+      oam: { shape: 0, size: 3, priority: 1, paletteNum: battler, affineMode: 0 },
+      images: [{ data: frame0, size: FRAME0 }],
+      callback: null,
+    }, _GetBattlerSpriteCoordX(battler), _GetBattlerSpriteDefault_Y(battler), 2);
+  } catch (e) {
+    console.error('[opponent] _loadAndCreateBattlerMonSprite failed', e);
+  }
+}
 /** 1:1 décomp `OpponentHandleSwitchInAnim()` (battle_controller_opponent.c:1160-1166).
  *  Set gBattleStruct.monToSwitchIntoId = PARTY_SIZE + set party index +
  *  StartSendOutAnim opponent + install SwitchIn_TryShinyAnim. */
