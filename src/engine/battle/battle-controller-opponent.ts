@@ -210,31 +210,32 @@ const _sBattlerCoordsSingle: ReadonlyArray<readonly [number, number]> = [
 function _GetBattlerSpriteCoordX(battler: number): number {
   return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[0] ?? 176;
 }
-/** ~1:1 `GetBattlerSpriteDefault_Y` = base y de la table. TODO : offset y par
- *  species (GetBattlerSpriteFinal_Y + gMonFrontPicCoords) = raffinement grounding A/B. */
-function _GetBattlerSpriteDefault_Y(battler: number): number {
-  return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[1] ?? 40;
-}
-/** Dossier asset = nom species lowercase. Le mon (gEnemyParty) n'a pas de
- *  `speciesName` fiable → on lit le NUMÉRO (GetMonData MON_DATA_SPECIES) et on
- *  remonte à l'enum via reverseDecompConstant (286 → 'SPECIES_POOCHYENA' →
- *  'poochyena'), = le nom de dossier des assets /decomp/em/pokemon/<nom>/. */
-function _speciesFolderFromMon(mon: unknown): string {
-  const sp = GetMonData(mon as never, MON_DATA_SPECIES) as number;
-  if (!sp) return '';
-  const en = reverseDecompConstant(sp, 'SPECIES_');
-  if (!en) return '';
-  return en.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+/** Data décomp `gMonFrontPicCoords`/`gMonBackPicCoords` ({front,back}{w,h,yOffset}
+ *  par species enum) depuis /decomp/em/mon-pic-coords.json (cache). Sert au
+ *  grounding (aligner les pieds du mon sur la plateforme). */
+interface _MonPicCoord { w: number; h: number; yOffset: number; }
+interface _MonPicCoords { front: _MonPicCoord; back: _MonPicCoord; }
+let _monPicCoordsCache: Record<string, _MonPicCoords> | null = null;
+async function _loadMonPicCoords(): Promise<Record<string, _MonPicCoords>> {
+  if (_monPicCoordsCache) return _monPicCoordsCache;
+  const resp = await fetch('/decomp/em/mon-pic-coords.json');
+  _monPicCoordsCache = resp.ok ? (await resp.json() as Record<string, _MonPicCoords>) : {};
+  return _monPicCoordsCache;
 }
 /** Charge + spawn le sprite mon (front=ennemi / back=joueur). 1:1 chaîne décomp
- *  BattleLoad{Opponent}MonSpriteGfx → SetMultiuseSpriteTemplateToPokemon → CreateSprite.
- *  ASYNC (assets PNG /decomp/em/pokemon/<nom>/) ; fire-and-forget depuis le handler. */
+ *  BattleLoad{Opponent}MonSpriteGfx → SetMultiuseSpriteTemplateToPokemon → CreateSprite,
+ *  positionné via GetBattlerSpriteCoord(X_2)/GetBattlerSpriteFinal_Y (grounding par
+ *  species). ASYNC (assets PNG /decomp/em/pokemon/<nom>/) ; fire-and-forget. */
 async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<void> {
   try {
     const partyIdx = _getBattlerPartyIndexOpp(battler);
     const mon = gEnemyParty[partyIdx];
-    const folder = _speciesFolderFromMon(mon);
-    if (!folder) { console.warn('[opponent] sprite mon : dossier species vide'); return; }
+    const sp = GetMonData(mon as never, MON_DATA_SPECIES) as number;
+    if (!sp) { console.warn('[opponent] sprite mon : species 0'); return; }
+    // species num → enum 'SPECIES_X' (= clé dossier assets + mon-pic-coords).
+    const enumName = reverseDecompConstant(sp, 'SPECIES_');
+    if (!enumName) { console.warn('[opponent] sprite mon : enum introuvable pour species', sp); return; }
+    const folder = enumName.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const picFile = isOpponent ? 'anim_front.png' : 'back.png';
     const tiles = await loadTileBin(`/decomp/em/pokemon/${folder}/${picFile}`, 4);
     const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`);
@@ -242,13 +243,19 @@ async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boole
     LoadPalette(pal, OBJ_PLTT_ID(battler), 32);
     const FRAME0 = 0x800;  // 64 tiles 64x64 4bpp = frame 0 (anim_front = 2 frames empilées).
     const frame0 = tiles.subarray(0, FRAME0);
+    // 1:1 GetBattlerSpriteFinal_Y (battle_anim_mons.c:269) : y = yOffset + sBattlerCoords.y
+    // (ennemi front.yOffset - elevation ; elevation=0 sauf gros mons = dette R3).
+    const coords = await _loadMonPicCoords();
+    const c = coords[enumName];
+    const baseY = _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[1] ?? 40;
+    const y = (c ? (isOpponent ? c.front.yOffset : c.back.yOffset) : 0) + baseY;
     // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
     // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
     CreateSprite({
       oam: { shape: 0, size: 3, priority: 1, paletteNum: battler, affineMode: 0 },
       images: [{ data: frame0, size: FRAME0 }],
       callback: null,
-    }, _GetBattlerSpriteCoordX(battler), _GetBattlerSpriteDefault_Y(battler), 2);
+    }, _GetBattlerSpriteCoordX(battler), y, 2);
   } catch (e) {
     console.error('[opponent] _loadAndCreateBattlerMonSprite failed', e);
   }
