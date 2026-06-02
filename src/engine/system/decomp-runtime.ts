@@ -1485,6 +1485,57 @@ export class DecompRuntime {
     return { spriteId, oamIndex };
   }
 
+  /** 1:1 décomp `CreateSprite(template, x, y, subpriority)` (src/sprite.c:502) pour
+   *  les templates INLINE (tileTag == TAG_NONE + `images`) = sprites de combat
+   *  (mons/dresseur) qui n'ont pas de sheet taggée : leurs tiles viennent du buffer
+   *  `images[0].data` (décompressé par BattleLoad{Player,Opponent}MonSpriteGfx).
+   *  Alloue des tiles OBJ VRAM (AllocSpriteTiles 1:1 = le sprite n'utilise pas de
+   *  sheet), y copie la frame 0, spawn via CreateSpriteAtOam, puis attache
+   *  callback/images/anims + usingSheet=false. Le chemin par-NOM
+   *  (CreateSpriteFromTemplate, overworld) reste INCHANGÉ. */
+  CreateSpriteInline(tpl: {
+    oam: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3; priority?: number; paletteNum?: number; affineMode?: 0 | 1 | 2 | 3; paletteMode?: 0 | 1 };
+    images: ReadonlyArray<{ data: Uint8Array; size: number }>;
+    callback?: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
+    anims?: ReadonlyArray<ReadonlyArray<unknown>> | null;
+  }, x: number, y: number, subpriority = 0xFF): number {
+    const img0 = tpl.images?.[0];
+    const byteSize = img0?.size ?? img0?.data.length ?? 0;
+    const tileCount = byteSize >> 5;  // 32 bytes / tile (4bpp)
+    // 1:1 décomp src/sprite.c : un sprite sans sheet (tileTag TAG_NONE) alloue ses
+    // propres tiles OBJ VRAM via AllocSpriteTiles (marque sSpriteTileAllocBitmap).
+    const sp = (globalThis as Record<string, unknown>).__sprite as {
+      AllocSpriteTiles?: (n: number) => number;
+    } | undefined;
+    const tileStart = sp?.AllocSpriteTiles?.(tileCount) ?? -1;
+    if (tileStart < 0) {
+      console.warn('[DecompRuntime] CreateSpriteInline: AllocSpriteTiles échoué (OBJ VRAM saturé)');
+      return 64; // MAX_SPRITES (= échec 1:1)
+    }
+    if (img0) this._writeToObjVram(img0.data, tileStart * 32);
+    const { spriteId } = this.CreateSpriteAtOam({
+      tileId: tileStart,
+      paletteBank: tpl.oam.paletteNum ?? 0,
+      x, y,
+      shape: tpl.oam.shape, size: tpl.oam.size,
+      priority: tpl.oam.priority ?? 1,
+      paletteMode: tpl.oam.paletteMode ?? 0,
+      affineMode: tpl.oam.affineMode ?? 0,
+      subpriority,
+    });
+    if (spriteId >= 0 && spriteId < 64) {
+      const s = this.gSprites.get(spriteId);
+      if (s) {
+        s.callback = tpl.callback ?? null;
+        s.images = tpl.images;
+        s.anims = tpl.anims ?? null;
+        s.usingSheet = false;
+        s.tileBase = tileStart;
+      }
+    }
+    return spriteId;
+  }
+
   /** Récupère un sprite par son ID. */
   getSprite(spriteId: number): DecompSprite | undefined {
     return this.gSprites.get(spriteId);

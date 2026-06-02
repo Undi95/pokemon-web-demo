@@ -2990,6 +2990,13 @@ export function ALIGNED<T>(arg: T): T {
  *  drawn ON TOP (= GBATEK : OAM[lower index] = displayed in front). */
 export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
   const rt = _getRT();
+  // 1:1 décomp : template INLINE (tileTag=TAG_NONE + `images`, ex sprites de combat
+  // mons/dresseur) → chemin fidèle CreateSpriteInline (tiles depuis images[0].data).
+  // Sinon (string nom / objet sans images) → chemin par-NOM existant (overworld,
+  // INCHANGÉ = zéro régression OW). Branche additive.
+  if (template && typeof template === 'object' && Array.isArray(template.images) && template.images.length > 0) {
+    return rt.CreateSpriteInline(template, x, y, subpriority);
+  }
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
   return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
 }
