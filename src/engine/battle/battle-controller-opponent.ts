@@ -277,7 +277,11 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       const spr = getRuntime()?.gSprites?.get(spriteId);
       if (spr) {
         spr.x2 = -240;   // -DISPLAY_WIDTH
-        if (Array.isArray(spr.data)) { spr.data[0] = battler; spr.data[2] = sp; }
+        // sBattler=data[0], sSpeciesId=data[2] (1:1 battle_controller_opponent.c:1150-1151).
+        // ⚠️ spr.data est un Int16Array (PAS un Array JS) → ne PAS gater sur Array.isArray
+        // (faux → data jamais posés → SpriteCB_WildMonShowHealthbox lit battler=0 = mauvais
+        // healthbox). L'indexation marche sur le typed array.
+        if (spr.data) { spr.data[0] = battler; spr.data[2] = sp; }
         spr.animEnded = true;
         (spr as { callback: unknown }).callback = SpriteCB_WildMon;
       }

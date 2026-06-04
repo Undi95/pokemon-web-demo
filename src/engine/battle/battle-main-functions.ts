@@ -1016,29 +1016,13 @@ export function BattleIntroPrintTrainerWantsToBattle(): void {
 
 // ─── BattleIntroPrintWildMonAttacked (3574) ────────────────────────────────
 
-/** Voie-L : montre le(s) healthbox(es) ADVERSE(s) en combat SAUVAGE. 1:1 décomp
- *  `SpriteCB_WildMonShowHealthbox` (battle_main.c:2686) : StartHealthboxSlideIn +
- *  SetHealthboxSpriteVisible quand le mon sauvage apparaît. En combat sauvage les
- *  états send-out adverse (BattleIntroPrintOpponentSendsOut → OpponentHandleIntroTrainerBallThrow)
- *  sont SAUTÉS (le mon sauvage n'est pas « envoyé » par un dresseur) ; le décomp montre
- *  le healthbox via le callback du sprite du mon sauvage. Notre voie L ne porte pas la
- *  chaîne SpriteCB_WildMon (slide d'apparition du mon = Dette R3), donc on déclenche le
- *  show ici, à BattleIntroPrintWildMonAttacked (= moment 1:1 où le mon sauvage apparaît).
- *  Le healthbox est créé INVISIBLE au boot (case 18) → déjà prêt. Le gate
- *  `_healthboxSlideInStarted` (côté ShowHealthboxOnSendOut) rend l'appel idempotent. */
-function _ShowWildOpponentHealthboxes(): void {
-  const hb = (globalThis as { __battleHealthbox?: { ShowHealthboxOnSendOut?: (b: number) => void } }).__battleHealthbox;
-  if (!hb?.ShowHealthboxOnSendOut) return;
-  for (let b = 0; b < gBattlersCount; b++) {
-    if (GET_BATTLER_SIDE(b) === B_SIDE_OPPONENT) hb.ShowHealthboxOnSendOut(b);
-  }
-}
-
-/** 1:1 décomp `BattleIntroPrintWildMonAttacked()` (battle_main.c:3574-3581). */
+/** 1:1 décomp `BattleIntroPrintWildMonAttacked()` (battle_main.c:3574-3581).
+ *  Le healthbox du mon sauvage est désormais montré 1:1 par `SpriteCB_WildMonShowHealthbox`
+ *  (battle-sprite-callbacks.ts) à la FIN du slide du mon (StartHealthboxSlideIn +
+ *  SetHealthboxSpriteVisible). L'ancien contournement `_ShowWildOpponentHealthboxes` (qui
+ *  montrait le healthbox TÔT, ici) est RETIRÉ : la chaîne SpriteCB_WildMon est maintenant
+ *  câblée (slide + teinte + healthbox), donc le show est 1:1 (après le slide, pas au message). */
 export function BattleIntroPrintWildMonAttacked(): void {
-  // Voie-L : montre le healthbox du mon sauvage (1:1 SpriteCB_WildMonShowHealthbox ;
-  // cf. _ShowWildOpponentHealthboxes). Idempotent (gate slide-in started).
-  _ShowWildOpponentHealthboxes();
   if (gBattleControllerExecFlags === 0) {
     gBattleMainFunc = BattleIntroPrintPlayerSendsOut;
     PrepareStringBattle(STRINGID_INTROMSG, 0);
