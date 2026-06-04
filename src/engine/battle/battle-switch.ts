@@ -231,8 +231,8 @@ export function SwitchInClearSetData(): void {
  *  + `switchhandleorder` qui sont déjà portés via le battle bytecode.
  */
 export function HandleAction_Switch(_ctx?: unknown): void {
-  // ⚠️ Doublon NON appelé par le turn loop (qui dispatche via __handleAction =
-  // handle-action.ts:HandleAction_Switch). Gardé pour __battleSwitch/TriggerBattleSwitch
+  // ⚠️ Doublon NON appelé par le turn loop (qui dispatche via sTurnActionsFuncsTable =
+  // import direct de handle-action.ts:HandleAction_Switch). Gardé pour __battleSwitch/TriggerBattleSwitch
   // (devtools). Reset cursors only ; le vrai setup script est dans handle-action.ts.
   gActionSelectionCursor[gActiveBattler] = 0;
   gMoveSelectionCursor[gActiveBattler] = 0;

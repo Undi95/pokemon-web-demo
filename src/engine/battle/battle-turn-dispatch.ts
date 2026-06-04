@@ -52,6 +52,24 @@ import {
   B_OUTCOME_WON, B_OUTCOME_LOST, B_OUTCOME_DREW, B_OUTCOME_RAN,
   B_OUTCOME_PLAYER_TELEPORTED, B_OUTCOME_CAUGHT, B_OUTCOME_MON_TELEPORTED,
 } from './constants';
+// 1:1 décomp : sTurnActionsFuncsTable contient des POINTEURS DIRECTS vers les HandleAction_*
+// (battle_main.c:536). Import ESM direct — AUCUN cycle (handle-action n'importe pas
+// battle-turn-dispatch, ni rien dans sa chaîne ; vérifié) → on retire le lookup
+// globalThis.__handleAction (qui n'évitait qu'un cycle imaginaire).
+import {
+  HandleAction_UseMove, HandleAction_UseItem, HandleAction_Switch,
+  HandleAction_Run, HandleAction_RunBattleScript, HandleAction_TryFinish,
+  HandleAction_ActionFinished, HandleAction_NothingIsFainted,
+} from './handle-action';
+// 1:1 décomp : sEndTurnFuncsTable contient des pointeurs directs vers HandleEndTurn_*
+// (battle_main.c:554) ; gBattleMainFunc est posé via setBattleMainFunc. Import ESM direct
+// (battle-main-functions n'importe NI battle-turn-dispatch NI battle-flow ; vérifié) → on
+// retire le lookup/setter globalThis.__battleMainFunctions.
+import {
+  setBattleMainFunc,
+  HandleEndTurn_ContinueBattle, HandleEndTurn_BattleWon, HandleEndTurn_BattleLost,
+  HandleEndTurn_RanFromBattle, HandleEndTurn_MonFled, HandleEndTurn_FinishBattle,
+} from './battle-main-functions';
 
 // ─── Type pour HandleAction_* + HandleEndTurn_* ────────────────────────────
 
@@ -59,23 +77,6 @@ type ActionHandler = () => void;
 type EndTurnHandler = () => void;
 
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
-
-/** 1:1 décomp `HandleAction_*` (handle-action.ts already ports
- *  UseMove/UseItem/Switch). Lazy lookup via globalThis pour éviter cycle. */
-function _getHandleAction(name: string): ActionHandler {
-  const ha = (globalThis as Record<string, unknown>).__handleAction as Record<string, ActionHandler> | undefined;
-  return ha?.[name] ?? _noopHandler;
-}
-
-function _noopHandler(): void {
-  console.warn('[battle-turn-dispatch] action handler not yet wired (dette R3)');
-}
-
-/** 1:1 décomp `HandleEndTurn_*` (battle-main-functions.ts K8). */
-function _getHandleEndTurn(name: string): EndTurnHandler {
-  const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as Record<string, EndTurnHandler> | undefined;
-  return bm?.[name] ?? _noopHandler;
-}
 
 /** 1:1 décomp `TryClearRageStatuses()` (battle_util.c). */
 function _TryClearRageStatuses(): void {
@@ -105,20 +106,23 @@ const B_OUTCOME_FORFEITED_LOCAL = 9;
 export const sTurnActionsFuncsTable: ActionHandler[] = [];
 
 function _initTurnActionsFuncsTable(): void {
-  sTurnActionsFuncsTable[B_ACTION_USE_MOVE] = () => _getHandleAction('HandleAction_UseMove')();
-  sTurnActionsFuncsTable[B_ACTION_USE_ITEM] = () => _getHandleAction('HandleAction_UseItem')();
-  sTurnActionsFuncsTable[B_ACTION_SWITCH] = () => _getHandleAction('HandleAction_Switch')();
-  sTurnActionsFuncsTable[B_ACTION_RUN] = () => _getHandleAction('HandleAction_Run')();
-  sTurnActionsFuncsTable[B_ACTION_SAFARI_WATCH_CAREFULLY] = () => _getHandleAction('HandleAction_WatchesCarefully')();
-  sTurnActionsFuncsTable[B_ACTION_SAFARI_BALL] = () => _getHandleAction('HandleAction_SafariZoneBallThrow')();
-  sTurnActionsFuncsTable[B_ACTION_SAFARI_POKEBLOCK] = () => _getHandleAction('HandleAction_ThrowPokeblock')();
-  sTurnActionsFuncsTable[B_ACTION_SAFARI_GO_NEAR] = () => _getHandleAction('HandleAction_GoNear')();
-  sTurnActionsFuncsTable[B_ACTION_SAFARI_RUN] = () => _getHandleAction('HandleAction_SafariZoneRun')();
-  sTurnActionsFuncsTable[B_ACTION_WALLY_THROW] = () => _getHandleAction('HandleAction_WallyBallThrow')();
-  sTurnActionsFuncsTable[B_ACTION_EXEC_SCRIPT] = () => _getHandleAction('HandleAction_RunBattleScript')();
-  sTurnActionsFuncsTable[B_ACTION_TRY_FINISH] = () => _getHandleAction('HandleAction_TryFinish')();
-  sTurnActionsFuncsTable[B_ACTION_FINISHED] = () => _getHandleAction('HandleAction_ActionFinished')();
-  sTurnActionsFuncsTable[B_ACTION_NOTHING_FAINTED] = () => _getHandleAction('HandleAction_NothingIsFainted')();
+  sTurnActionsFuncsTable[B_ACTION_USE_MOVE] = HandleAction_UseMove;
+  sTurnActionsFuncsTable[B_ACTION_USE_ITEM] = HandleAction_UseItem;
+  sTurnActionsFuncsTable[B_ACTION_SWITCH] = HandleAction_Switch;
+  sTurnActionsFuncsTable[B_ACTION_RUN] = HandleAction_Run;
+  // [C] Dette Safari/Wally : les vrais HandleAction_WatchesCarefully / SafariZoneBallThrow /
+  // ThrowPokeblock / GoNear / SafariZoneRun / WallyBallThrow ne sont pas portés → alias vers
+  // HandleAction_RunBattleScript (= comportement actuel INCHANGÉ ; à porter séparément).
+  sTurnActionsFuncsTable[B_ACTION_SAFARI_WATCH_CAREFULLY] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_SAFARI_BALL] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_SAFARI_POKEBLOCK] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_SAFARI_GO_NEAR] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_SAFARI_RUN] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_WALLY_THROW] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_EXEC_SCRIPT] = HandleAction_RunBattleScript;
+  sTurnActionsFuncsTable[B_ACTION_TRY_FINISH] = HandleAction_TryFinish;
+  sTurnActionsFuncsTable[B_ACTION_FINISHED] = HandleAction_ActionFinished;
+  sTurnActionsFuncsTable[B_ACTION_NOTHING_FAINTED] = HandleAction_NothingIsFainted;
 }
 _initTurnActionsFuncsTable();
 
@@ -128,17 +132,17 @@ _initTurnActionsFuncsTable();
 export const sEndTurnFuncsTable: EndTurnHandler[] = [];
 
 function _initEndTurnFuncsTable(): void {
-  sEndTurnFuncsTable[0] = () => _getHandleEndTurn('HandleEndTurn_ContinueBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_WON] = () => _getHandleEndTurn('HandleEndTurn_BattleWon')();
-  sEndTurnFuncsTable[B_OUTCOME_LOST] = () => _getHandleEndTurn('HandleEndTurn_BattleLost')();
-  sEndTurnFuncsTable[B_OUTCOME_DREW] = () => _getHandleEndTurn('HandleEndTurn_BattleLost')();
-  sEndTurnFuncsTable[B_OUTCOME_RAN] = () => _getHandleEndTurn('HandleEndTurn_RanFromBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_PLAYER_TELEPORTED] = () => _getHandleEndTurn('HandleEndTurn_FinishBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_MON_FLED] = () => _getHandleEndTurn('HandleEndTurn_MonFled')();
-  sEndTurnFuncsTable[B_OUTCOME_CAUGHT] = () => _getHandleEndTurn('HandleEndTurn_FinishBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_NO_SAFARI_BALLS] = () => _getHandleEndTurn('HandleEndTurn_FinishBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_FORFEITED_LOCAL] = () => _getHandleEndTurn('HandleEndTurn_FinishBattle')();
-  sEndTurnFuncsTable[B_OUTCOME_MON_TELEPORTED] = () => _getHandleEndTurn('HandleEndTurn_FinishBattle')();
+  sEndTurnFuncsTable[0] = HandleEndTurn_ContinueBattle;
+  sEndTurnFuncsTable[B_OUTCOME_WON] = HandleEndTurn_BattleWon;
+  sEndTurnFuncsTable[B_OUTCOME_LOST] = HandleEndTurn_BattleLost;
+  sEndTurnFuncsTable[B_OUTCOME_DREW] = HandleEndTurn_BattleLost;
+  sEndTurnFuncsTable[B_OUTCOME_RAN] = HandleEndTurn_RanFromBattle;
+  sEndTurnFuncsTable[B_OUTCOME_PLAYER_TELEPORTED] = HandleEndTurn_FinishBattle;
+  sEndTurnFuncsTable[B_OUTCOME_MON_FLED] = HandleEndTurn_MonFled;
+  sEndTurnFuncsTable[B_OUTCOME_CAUGHT] = HandleEndTurn_FinishBattle;
+  sEndTurnFuncsTable[B_OUTCOME_NO_SAFARI_BALLS] = HandleEndTurn_FinishBattle;
+  sEndTurnFuncsTable[B_OUTCOME_FORFEITED_LOCAL] = HandleEndTurn_FinishBattle;
+  sEndTurnFuncsTable[B_OUTCOME_MON_TELEPORTED] = HandleEndTurn_FinishBattle;
 }
 _initEndTurnFuncsTable();
 
@@ -176,11 +180,8 @@ export function CheckFocusPunch_ClearVarsBeforeTurnStarts(): void {
   setDynamicBasePower(0);
   gBattleStruct.dynamicMoveType = 0;
 
-  // Dette R3 : gBattleMainFunc = RunTurnActionsFunctions (wire vers K8 setter).
-  const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as {
-    setBattleMainFunc?: (fn: () => void) => void;
-  } | undefined;
-  bm?.setBattleMainFunc?.(RunTurnActionsFunctions);
+  // 1:1 décomp : gBattleMainFunc = RunTurnActionsFunctions.
+  setBattleMainFunc(RunTurnActionsFunctions);
 
   gBattleCommunication[3] = 0;
   gBattleCommunication[4] = 0;
@@ -213,12 +214,8 @@ export function RunTurnActionsFunctions(): void {
 
     // 1:1 décomp : gBattleMainFunc = sEndTurnFuncsTable[outcome & 0x7F].
     const endTurnHandler = sEndTurnFuncsTable[gBattleOutcome & 0x7F];
-    if (endTurnHandler) {
-      const bm = (globalThis as Record<string, unknown>).__battleMainFunctions as {
-        setBattleMainFunc?: (fn: () => void) => void;
-      } | undefined;
-      bm?.setBattleMainFunc?.(endTurnHandler);
-    }
+    // 1:1 décomp : gBattleMainFunc = sEndTurnFuncsTable[outcome & 0x7F].
+    if (endTurnHandler) setBattleMainFunc(endTurnHandler);
   } else if (gBattleStruct.savedTurnActionNumber !== gCurrentTurnActionNumber) {
     // Action turn done → clear hitmarker bits pour next battler.
     setHitMarker(gHitMarker & ~HITMARKER_NO_ATTACKSTRING);

@@ -13,7 +13,7 @@
  *
  * Le caller (= battle main loop) :
  *  1. Set gCurrentActionFuncId = B_ACTION_USE_MOVE/SWITCH/etc. depuis action queue.
- *  2. Call le dispatch handler approprié (= handleActionTable[funcId]).
+ *  2. Call le dispatch handler approprié (= sTurnActionsFuncsTable[funcId], battle-turn-dispatch.ts).
  *  3. Handler set gBattlescriptCurrInstr = label approprié + gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT.
  *  4. Battle loop run le script via runBattleScript.
  */
@@ -726,36 +726,8 @@ import {
   HITMARKER_NEVER_SET as _HITMARKER_NEVER_SET_HAF,
 } from './constants';
 
-/** Dispatch table 1:1 décomp `sTurnActionsFuncsTable[]` (battle_main.c:536-552).
- *  Indexed par gCurrentActionFuncId (B_ACTION_*). 14 entries. */
-export const handleActionTable: ReadonlyArray<(ctx?: BattleScriptContext) => void> = [
-  HandleAction_UseMove,            // 0  B_ACTION_USE_MOVE
-  HandleAction_UseItem,            // 1  B_ACTION_USE_ITEM
-  HandleAction_Switch,             // 2  B_ACTION_SWITCH
-  HandleAction_Run,                // 3  B_ACTION_RUN
-  HandleAction_RunBattleScript,    // 4  Safari watch (deferred Phase 1.4) (= HandleAction_WatchesCarefully)
-  HandleAction_RunBattleScript,    // 5  Safari ball (deferred Phase 1.4)
-  HandleAction_RunBattleScript,    // 6  Safari pokeblock (deferred Phase 1.4)
-  HandleAction_RunBattleScript,    // 7  Safari go near (deferred Phase 1.4)
-  HandleAction_RunBattleScript,    // 8  Safari run (deferred Phase 1.4)
-  HandleAction_RunBattleScript,    // 9  Wally throw (deferred Phase 1.4)
-  HandleAction_RunBattleScript,    // 10 B_ACTION_EXEC_SCRIPT
-  HandleAction_TryFinish,          // 11 B_ACTION_TRY_FINISH
-  HandleAction_ActionFinished,     // 12 B_ACTION_FINISHED
-  HandleAction_NothingIsFainted,   // 13 B_ACTION_NOTHING_FAINTED
-];
-
-// Expose globalThis pour K21 battle-turn-dispatch lazy lookup (= éviter cycle ESM).
-(globalThis as Record<string, unknown>).__handleAction = {
-  HandleAction_UseMove, HandleAction_UseItem, HandleAction_Switch,
-  HandleAction_Run, HandleAction_RunBattleScript,
-  HandleAction_TryFinish, HandleAction_ActionFinished,
-  HandleAction_NothingIsFainted,
-  // Safari + Wally aliases vers HandleAction_RunBattleScript (dette R3 Safari/Wally).
-  HandleAction_WatchesCarefully: HandleAction_RunBattleScript,
-  HandleAction_SafariZoneBallThrow: HandleAction_RunBattleScript,
-  HandleAction_ThrowPokeblock: HandleAction_RunBattleScript,
-  HandleAction_GoNear: HandleAction_RunBattleScript,
-  HandleAction_SafariZoneRun: HandleAction_RunBattleScript,
-  HandleAction_WallyBallThrow: HandleAction_RunBattleScript,
-};
+// NB : la table de dispatch d'actions 1:1 (`sTurnActionsFuncsTable`, battle_main.c:536) vit
+// dans battle-turn-dispatch.ts (= le port de battle_main.c, là où vit aussi
+// RunTurnActionsFunctions), qui importe les HandleAction_* DIRECTEMENT (imports ESM). On ne
+// duplique donc PAS la table ici, et on n'expose plus de registre globalThis.__handleAction
+// (l'ancien `handleActionTable` + le registre étaient des duplicatas morts — retirés, B6).
