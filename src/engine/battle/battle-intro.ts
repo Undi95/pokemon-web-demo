@@ -278,11 +278,12 @@ export function startBattleIntroSlideL(environment: number): void {
   rt.SetGpuReg(REG_OFFSET_WININ, 0);
   rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
   rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
-  // ⚠️ Stries scanline (shift BG3HOFS par-scanline) DÉSACTIVÉES : le rendu était
-  // chaotique (le shift révélait des tiles garbage du tilemap terrain → barres
-  // noires + flèches, A/B user). L'effet « fond à lignes » vient déjà du fond strié
-  // BG1 lui-même qui scrolle. `_startIntroScanline` reste dispo pour re-travail 1:1.
-  // _startIntroScanline();
+  // Stries scanline 1:1 (`sIntroScanlineParams16Bit` → `&REG_BG3HOFS`, battle_main.c:252) :
+  // shift le TERRAIN (BG3) par-scanline (haut +data2 / bas -data2, data2 240→0 en case 3)
+  // = le shear « les deux moitiés du décor se rejoignent ». BG3 = 512px de large (map.bin
+  // = 64×32, rempli) → le compositor lit des tiles VALIDES (screenSize=1, 2 blocks H).
+  // L'ancien « garbage/barres noires » était un mauvais diagnostic (terrain bien rempli).
+  _startIntroScanline();
 }
 
 /** Devtools : check si la slide d'intro voie-L est active. */
