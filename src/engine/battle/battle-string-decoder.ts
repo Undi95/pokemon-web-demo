@@ -644,7 +644,11 @@ export function decodeBattleString(stringId: number, msgData: BattleMsgData): st
       // est son code point, puis 0xFF EOS) ; le decoder _decodeTextBuff lit byte
       // par byte. Pour shortcut : on ne décode pas via _decodeTextBuff mais on
       // substitue directement le moveName quand placeholder {B_BUFF2} apparaît.
-      msgData.textBuffs[1] = _encodeStringForBuff(moveName);
+      // 1:1 décomp `ChooseTypeOfMoveUsedString(gBattleTextBuff2)` (battle_message.c:2174 +
+      // 2999-3033) : append "!" APRÈS le nom du move dans BUFF2 (le template
+      // sText_AttackerUsedX:420 ne contient PAS le "!"). En FR les 5 sText_ExclamationMark*
+      // (battle_message.c:421-425) valent toutes "!" → on append "!" directement.
+      msgData.textBuffs[1] = _encodeStringForBuff(moveName + '!');
       break;
     }
     case 5: sTextName = ''; break;                              // STRINGID_BATTLEEND (= no text)

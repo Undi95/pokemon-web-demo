@@ -466,7 +466,9 @@ export function BufferStringBattle(stringID: number, msgData: BattleMsgData): nu
     case 4: { // STRINGID_USEDMOVE (battle_message.c:2166) : pre-fill BUFF2 = nom du move (raw bytes)
       sTextName = 'sText_AttackerUsedX';
       const mv = (msgData as unknown as { currentMove: number }).currentMove;
-      StringCopy_(gBattleTextBuff2, encodeChars(_moveName(mv)));
+      // 1:1 décomp `ChooseTypeOfMoveUsedString` (battle_message.c:2174) : append "!" après
+      // le nom du move (template:420 sans "!" ; sText_ExclamationMark*:421-425 = "!" en FR).
+      StringCopy_(gBattleTextBuff2, encodeChars(_moveName(mv) + '!'));
       break;
     }
     case 5: case 6: case 7: case 8: case 9: case 10: case 11:
