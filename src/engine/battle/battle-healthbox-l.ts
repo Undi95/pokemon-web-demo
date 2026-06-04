@@ -30,7 +30,7 @@
  * en tête de battle-healthbox.ts) car personne ne l'importe statiquement tôt.
  */
 
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime, syncSubspriteOam } from '../system/decomp-globals';
 import {
   createBattlerHealthboxSprites, setHealthboxVisible,
   updateHealthboxHpBar, updateHealthboxLevel, updateHealthboxStatus,
@@ -397,6 +397,14 @@ let _hbInitState = 0;
 export function initAllHealthboxes(): boolean {
   if (_hbInitState === 0) {
     _hbInitState = 1;
+    // 1:1 décomp : la barre HP est un sprite à SOUS-SPRITES (SetSubspriteTables) ; ses
+    // OAM enfants doivent être re-synchronisés (oam = sprite.x + sprite.x2 + sub.x) CHAQUE
+    // frame, sinon ils restent à leur position de CRÉATION → barre désalignée + remplissage
+    // qui ne glisse pas au slide-in. Le décomp le fait dans BuildOamBuffer
+    // (AddSubspritesToOamBuffer) ; notre runtime l'expose via le hook globalThis.
+    // _syncSubspriteOam (appelé chaque frame dans decomp-runtime:2360 après syncSpritesToOam).
+    // On l'enregistre pour le combat (= 1:1 le pattern naming-screen-impl.ts:756).
+    (globalThis as Record<string, unknown>)._syncSubspriteOam = syncSubspriteOam;
     void Promise.all([initBattlerHealthbox(0), initBattlerHealthbox(1)])
       .then(() => { _hbInitState = 2; })
       .catch((e) => { console.error('[healthbox-l] initAllHealthboxes THREW:', e); _hbInitState = 2; });
