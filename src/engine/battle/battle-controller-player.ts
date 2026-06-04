@@ -1785,6 +1785,13 @@ function PlayerHandleFaintingCry(): void {
  *  scroll terrain. Tickée par BattleMainCB2. (gIntroSlideFlags = raffinement A/B.) */
 function PlayerHandleIntroSlide(): void {
   startBattleIntroSlideL(gBattleBufferA[gActiveBattler][1]);
+  // 1:1 décomp battle_controller_player.c:2936 `gIntroSlideFlags |= 1;` : gèle les SpriteCB de
+  // slide (mon sauvage = SpriteCB_MoveWildMonToRight) pendant l'ouverture des bandes ; remis à 0
+  // par tickBattleIntroSlideL case 2 → le mon ne glisse qu'APRÈS l'ouverture (timing 1:1).
+  const bmf = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    getIntroSlideFlags?: () => number; setIntroSlideFlags?: (v: number) => void;
+  } | undefined;
+  if (bmf?.getIntroSlideFlags && bmf.setIntroSlideFlags) bmf.setIntroSlideFlags(bmf.getIntroSlideFlags() | 1);
   PlayerBufferExecCompleted();
 }
 

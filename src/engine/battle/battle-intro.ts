@@ -381,6 +381,12 @@ export function tickBattleIntroSlideL(): void {
         t.data2 = DISPLAY_WIDTH;  // 240 (largeur des stries)
         t.data3 = 32;
         t.data5 = 1;
+        // 1:1 décomp battle_intro.c:187 `gIntroSlideFlags &= ~1;` : les bandes sont ouvertes →
+        // débloque les SpriteCB de slide (le mon sauvage se met à glisser, SpriteCB_MoveWildMonToRight).
+        const bmf = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+          getIntroSlideFlags?: () => number; setIntroSlideFlags?: (v: number) => void;
+        } | undefined;
+        if (bmf?.getIntroSlideFlags && bmf.setIntroSlideFlags) bmf.setIntroSlideFlags(bmf.getIntroSlideFlags() & ~1);
       }
       break;
     case 3:

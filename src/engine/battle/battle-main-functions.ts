@@ -1838,6 +1838,10 @@ export function ReturnFromBattleToOverworld(): void {
   setCB2AfterEvolution, getCB2AfterEvolution,
   IsMonShiny, SpeciesToNationalPokedexNum, HandleSetPokedexFlag,
   GetWhoStrikesFirst, SwapTurnOrder,
+  // gIntroSlideFlags (1:1) : lu par les SpriteCB de slide (battle-sprite-callbacks.ts
+  // _getIntroSlideFlags) pour geler le slide du mon sauvage / dresseur pendant l'ouverture
+  // des bandes ; écrit par PlayerHandleIntroSlide (SET) + tickBattleIntroSlideL case 2 (CLEAR).
+  getIntroSlideFlags, setIntroSlideFlags,
 };
 
 // Suppress unused warnings (= imports utilisés indirectly via stubs/setters).
