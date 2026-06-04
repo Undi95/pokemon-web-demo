@@ -1118,31 +1118,26 @@ function _applySetMonData(mon: Parameters<typeof SetMonData>[0], requestId: numb
   }
 }
 
-/** 1:1 décomp PlayerHandleSetMonData (battle_controller_player.c:1927-1947) :
- *  monToCheck=0 → mon ACTIF ; sinon BITMASK → itère les 6 slots de la party
- *  (Heal Bell / Aromathérapie effacent le statut des mons du BANC sélectionnés). */
-function _setMonByActiveBattler(requestId: number, data: unknown, monToCheck = 0): void {
-  const active = gActiveBattler;
+/** 1:1 décomp `SetPlayerMonData(monId)` / `SetOpponentMonData(monId)`
+ *  (battle_controller_player.c:116) : le handler désérialise `gBattleBufferA[active]` =
+ *  `[SETMONDATA, requestId, monToCheck, bytes, ...dataLE]` puis `SetMonData(&party[monId],
+ *  requestId, &bufferA[4])`. Ici : reconstruit l'entier LE depuis bufferA[4..4+bytes] et
+ *  applique au mon `monId` de la party du côté du battler actif (via `_applySetMonData`).
+ *  Remplace l'ancien side-channel `__batPSetMonByActive` : la donnée passe MAINTENANT par le
+ *  round-trip bufferA comme la décomp (1:1), l'apply n'est plus court-circuité dans l'Emit.
+ *  `bufferA` est PASSÉ en arg (= pas d'import de gBattleBufferA ici → pas de cycle). */
+export function SetBattleMonDataFromBuffer(monId: number, bufferA: ArrayLike<number>, active: number): void {
+  const requestId = bufferA[1];
+  const bytes = bufferA[3];
+  let value = 0;
+  for (let i = 0; i < bytes; i++) value |= (bufferA[4 + i] & 0xFF) << (8 * i);
+  value = value >>> 0;  // entier non-signé (status1 = 4 octets, bit de poids fort possible)
   const side = GET_BATTLER_SIDE(active);
   const party = side === 0 ? gPlayerParty : gEnemyParty;
-  if (monToCheck === 0) {
-    const partyIdx = gBattlerPartyIndexes[active];
-    if (partyIdx < 0 || partyIdx >= 6) return;
-    const mon = party[partyIdx];
-    if (mon) _applySetMonData(mon, requestId, data, active);
-  } else {
-    for (let i = 0; i < 6; i++) {
-      if (monToCheck & (1 << i)) {
-        const mon = party[i];
-        if (mon) _applySetMonData(mon, requestId, data, active);
-      }
-    }
-  }
+  if (monId < 0 || monId >= 6) return;
+  const mon = party[monId];
+  if (mon) _applySetMonData(mon, requestId, value, active);
 }
-
-// Wire bridge global pour battle-controllers.ts.
-(globalThis as { __batPSetMonByActive?: typeof _setMonByActiveBattler })
-  .__batPSetMonByActive = _setMonByActiveBattler;
 
 // Wire debug : expose gPlayerParty/gEnemyParty (= la party canonique du combat, décodée)
 // pour vérif runtime (move-learning party read, EXP/level-up, etc.).

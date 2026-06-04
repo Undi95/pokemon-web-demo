@@ -390,24 +390,19 @@ export function BtlController_EmitSpriteInvisibility(bufferId: number, isInvisib
  *  bitmask (= sur Emit de plusieurs mons). Pour single mon, on flush via
  *  gActiveBattler. Pour bitmask, on itère. */
 export function BtlController_EmitSetMonData(
-  bufferId: number, requestId: number, monToCheck: number, _bytes: number, data: unknown,
+  bufferId: number, requestId: number, monToCheck: number, bytes: number, data: unknown,
 ): void {
-  // 1:1 décomp battle_controllers.c:986-996 : écrit gBattleBufferA[active] =
-  // [CONTROLLER_SETMONDATA, requestId, monToCheck, ...data]. INDISPENSABLE : sans
-  // ça, le Mark pairé (ex Cmd_ppreduce, Cmd_datahpupdate) re-dispatche bufferA[0]
-  // PÉRIMÉ → la commande controller précédente (ex PRINTSTRING « X utilise Y »)
-  // s'affiche 2× in-game. Le handler (Player/OpponentHandleSetMonData) ne fait
-  // qu'ExecCompleted (player _SetPlayerMonData = stub Dette R3) → pas de double-
-  // apply : la VRAIE persistance data passe par le shortcut __batPSetMonByActive
-  // ci-dessous (équivalent local du deserialize bufferA→party du handler décomp).
-  _emitToBufferA(bufferId, [CONTROLLER_SETMONDATA, requestId & 0xFF, monToCheck & 0xFF, 0]);
-
-  // Shortcut local (notre port) : persiste le change gBattleMons→party directement
-  // (le décomp sérialise `data` dans bufferA[3..] puis le handler SetMonData le relit ;
-  // on court-circuite car nos handlers SetMonData sont des stubs no-op).
-  const ps = (globalThis as { __batPSetMonByActive?: (req: number, data: unknown, monToCheck?: number) => void })
-    .__batPSetMonByActive;
-  if (ps) ps(requestId, data, monToCheck);
+  // 1:1 décomp battle_controllers.c:986-996 : gBattleBufferA[active] =
+  // [CONTROLLER_SETMONDATA, requestId, monToCheck, bytes, ...dataLE]. Les `bytes` octets de
+  // `data` (entier) sont sérialisés en LITTLE-ENDIAN dans bufferA[4..4+bytes]. Le Mark pairé
+  // re-dispatche bufferA[0]=SETMONDATA → Player/OpponentHandleSetMonData désérialise et
+  // applique au party (SetBattleMonDataFromBuffer). Plus de side-channel __batPSetMonByActive
+  // : la donnée passe par le round-trip bufferA comme la décomp (1:1, l'apply n'est plus
+  // court-circuité dans l'Emit).
+  const v = (typeof data === 'number' ? data : 0) >>> 0;
+  const payload = [CONTROLLER_SETMONDATA, requestId & 0xFF, monToCheck & 0xFF, bytes & 0xFF];
+  for (let i = 0; i < bytes; i++) payload.push((v >>> (8 * i)) & 0xFF);
+  _emitToBufferA(bufferId, payload);
 }
 
 /** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`

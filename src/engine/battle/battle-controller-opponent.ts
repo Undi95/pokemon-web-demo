@@ -57,7 +57,7 @@ import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
-import { gEnemyParty, gPlayerParty, GetMonData, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_SPECIES } from './party-storage';
+import { gEnemyParty, gPlayerParty, GetMonData, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_SPECIES, SetBattleMonDataFromBuffer } from './party-storage';
 import { SetBattleBarStruct, MoveBattleBar, HEALTH_BAR } from './battle-hp-bar';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
@@ -188,7 +188,24 @@ function OpponentHandleGetMonData(): void {
 }
 
 function OpponentHandleGetRawMonData(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleSetMonData(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `SetOpponentMonData(monId)` : désérialise gBattleBufferA[active] + applique au
+ *  mon `monId` de gEnemyParty via SetMonData (round-trip bufferA, plus de side-channel). */
+function _SetOpponentMonData(monId: number): void {
+  SetBattleMonDataFromBuffer(monId, gBattleBufferA[gActiveBattler], gActiveBattler);
+}
+/** 1:1 décomp `OpponentHandleSetMonData()` (battle_controller_opponent.c) : monToCheck=0 →
+ *  mon actif (gBattlerPartyIndexes), sinon bitmask → itère les slots de party. */
+function OpponentHandleSetMonData(): void {
+  const monsToCheck = gBattleBufferA[gActiveBattler][2];
+  if (monsToCheck === 0) {
+    _SetOpponentMonData(gBattlerPartyIndexes[gActiveBattler]);
+  } else {
+    for (let i = 0; i < 6; i++) {
+      if (monsToCheck & (1 << i)) _SetOpponentMonData(i);
+    }
+  }
+  OpponentBufferExecCompleted();
+}
 function OpponentHandleSetRawMonData(): void { OpponentBufferExecCompleted(); }
 /** 1:1 décomp `OpponentHandleLoadMonSprite()` (battle_controller_opponent.c:1137).
  *  Charge le front pic du mon ennemi (gfx + palette OBJ slot battler) + spawn le

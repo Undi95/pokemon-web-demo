@@ -105,6 +105,7 @@ import {
   gPlayerParty, GetMonData,
   MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS, MON_DATA_IS_EGG,
   MON_DATA_EXP, MON_DATA_SPECIES,
+  SetBattleMonDataFromBuffer,
 } from './party-storage';
 import { gBattlerPartyIndexes } from './state';
 import { startBattleIntroSlideL } from './battle-intro';
@@ -760,10 +761,10 @@ function _CopyPlayerMonData(monId: number, dst: Uint8Array): number {
   return 0;
 }
 
-/** 1:1 décomp `SetPlayerMonData(monId)` (battle_controller_player.c:116). */
+/** 1:1 décomp `SetPlayerMonData(monId)` (battle_controller_player.c:116) : désérialise
+ *  gBattleBufferA[active] + applique au mon `monId` de gPlayerParty via SetMonData. */
 function _SetPlayerMonData(monId: number): void {
-  // Dette R3 : deserialize bufferA → player party mon.
-  void monId;
+  SetBattleMonDataFromBuffer(monId, gBattleBufferA[gActiveBattler], gActiveBattler);
 }
 
 /** 1:1 décomp `StartSendOutAnim(battler, dontClearSubstituteBit)`
@@ -826,7 +827,8 @@ function PlayerHandleGetMonData(): void {
 function PlayerHandleSetMonData(): void {
   const monsToCheck = gBattleBufferA[gActiveBattler][2];
   if (monsToCheck === 0) {
-    _SetPlayerMonData(0 /* gBattlerPartyIndexes[active] */);
+    // 1:1 décomp : SetPlayerMonData(gBattlerPartyIndexes[gActiveBattler]).
+    _SetPlayerMonData(gBattlerPartyIndexes[gActiveBattler]);
   } else {
     for (let i = 0; i < 6; i++) {
       if (monsToCheck & (1 << i)) _SetPlayerMonData(i);
