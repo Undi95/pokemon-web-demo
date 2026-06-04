@@ -379,7 +379,11 @@ export async function drawBattleEntryBackground(env: number = BATTLE_ENVIRONMENT
   // Configure BG1 = entry bg, devant le terrain (priority 0), visible. Le tilemap
   // 32×32 (256×256) wrap mod 256 → le scroll BG1_X défile en boucle.
   const bg1c = rt.gba.bg(1).config;
-  bg1c.charBaseIndex = 1; bg1c.mapBaseIndex = 28; bg1c.screenSize = 0;
+  // 1:1 décomp `gBattleBgTemplates[1]` (battle_bg.c:134-142) : screenSize=2 (= 256×512,
+  // 2 blocks verticaux). L'anim_map.bin (1024 entrées = block 0 = haut 256) remplit le
+  // block 0 ; le block 1 (tileY≥32) = tile 0 transparent (VRAM 0 / hors tilemap) → montre
+  // le terrain dessous. Le scroll BG1_Y (jusqu'à -56) décale le contenu dans la fente.
+  bg1c.charBaseIndex = 1; bg1c.mapBaseIndex = 28; bg1c.screenSize = 2;
   bg1c.paletteMode = 0; bg1c.priority = 0; bg1c.visible = true;
   bg1c.hofs = 0; bg1c.vofs = 0;
 }

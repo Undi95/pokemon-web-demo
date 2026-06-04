@@ -257,15 +257,14 @@ export function startBattleIntroSlideL(environment: number): void {
   const rt = getRuntime();
   if (!rt) return;
   _introSlideL = { state: 0, data2: 0, data3: 0, environment, lastFrame: -1 };
-  // ⚠️ Fond strié d'entrée (BG1) DÉSACTIVÉ temporairement : ses tiles se rendaient
-  // en BARRES NOIRES (palette mal alignée — l'anim_tiles partage les banks palette
-  // du terrain (bank 4) mais l'index local 4bpp décodé ne matche pas la sous-palette
-  // → couleurs fausses, A/B user « les barres ont pas la bonne palette »). Baseline
-  // propre = bandes noires qui s'ouvrent sur le terrain. À reprendre : aligner la
-  // palette de l'entry bg (decode anim_tiles selon la sous-palette du tilemap).
-  // void drawBattleEntryBackground(environment);
-  rt.gba.bg(1).config.visible = false;  // BG1 ne montre rien (pas d'entry bg)
-  void drawBattleEntryBackground;       // garde l'import référencé
+  // 1:1 décomp `DrawBattleEntryBackground` (battle_bg.c:1124) : charge le fond d'entrée
+  // (brins d'herbe pour GRASS / strié pour PLAIN-building) dans BG1. Data VÉRIFIÉE 1:1
+  // (chantier transitions 2026-06-04, inspection byte-level) : anim_tiles.png PLTE = la
+  // palette terrain COMPLÈTE, le tilemap réfère bank 4 (= sous-pal 2, verts 0x3b2f/0x4b74/
+  // 0x1e8a), le compositor applique le bank par-tile + gère screenSize=2. Le décodeur
+  // produit les bons nibbles 0-3. (L'ancien « barres noires/mauvaise palette » = mauvais
+  // diagnostic.) drawBattleEntryBackground (async) rend BG1 visible ; caché en fin de slide.
+  void drawBattleEntryBackground(environment);
   // Backdrop NOIR pendant les bandes (A/B ROM user : hors-bandes = NOIR, PAS le
   // #484050 violacé du menu). Restauré pour le menu en fin de slide (case 4).
   // loadBattleTextbox a déjà tourné (CB2_InitBattle) → #484050 stocké via
