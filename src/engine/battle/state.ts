@@ -950,7 +950,12 @@ export function resetBattleState(): void {
     Object.assign(gSpecialStatuses[i], _makeBlankSpecialStatus());
   }
   gAbsentBattlerFlags = 0;
-  gBattleEnvironment = 0;
+  // 1:1 strict : `BattleStartClearSetData` (battle_main.c) ne reset PAS gBattleEnvironment
+  // (grep décomp : gBattleEnvironment seulement décl.147 + CB2_InitBattleInternal:672/674 +
+  // EmitIntroSlide:3385). Le reset ici (non-1:1) ÉCRASAIT l'env posé par
+  // setBattleEnvironment(BattleSetup_GetEnvironmentId()) à l'init → le slide/terrain
+  // retombaient toujours sur GRASS(0) même en ville/PLAIN. L'env est posé per-combat à
+  // CB2_InitBattleInternal ; pas besoin de reset ici.
   gPaydayMoney = 0;
   gBattleStruct.intimidateBattler = 0;
   gBattleStruct.formToChangeInto = 0;

@@ -171,10 +171,13 @@ function _InitBattleBgsVideo(): void {
 
 /** 1:1 décomp `LoadBattleTextboxAndBackground()` (battle_bg.c:859-867).
  *  Chargement ASSET ASYNC (PNG terrain/textbox/menu-gfx) — fire-and-forget : le
- *  fond apparaît dès que les PNG sont chargés (= comme la voie V). env GRASS par
- *  défaut ; la dérivation depuis gBattleEnvironment/la map est un raffinement. */
-function _LoadBattleTextboxAndBackground(): void {
-  void loadBattleTextboxAndBackground1to1(BATTLE_ENVIRONMENT_GRASS);
+ *  fond apparaît dès que les PNG sont chargés (= comme la voie V). 1:1 :
+ *  `DrawMainBattleBackground` lit `sBattleEnvironmentTable[gBattleEnvironment]` ;
+ *  l'env est posé JUSTE AVANT par `setBattleEnvironment(BattleSetup_GetEnvironmentId())`
+ *  (= la case du joueur : GRASS/PLAIN/SAND/WATER/…). On le passe explicitement
+ *  (l'ancien hardcode GRASS forçait toujours l'herbe, même en ville/PLAIN). */
+function _LoadBattleTextboxAndBackground(env: number): void {
+  void loadBattleTextboxAndBackground1to1(env);
 }
 
 /** 1:1 décomp `ResetSpriteData()` + `ResetTasks()`. */
@@ -353,7 +356,7 @@ export function CB2_InitBattleInternal(): void {
   setBattleEnvironment(environment);
 
   _InitBattleBgsVideo();
-  _LoadBattleTextboxAndBackground();
+  _LoadBattleTextboxAndBackground(environment);
   _ResetSpriteData();
   _ResetTasks();
   _DrawBattleEntryBackground();
