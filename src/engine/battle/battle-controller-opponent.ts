@@ -63,7 +63,7 @@ import { reverseDecompConstant } from '../system/decomp-constants';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { CreateSprite } from '../system/decomp-bridge';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
-import { LoadPalette } from '../system/decomp-globals';
+import { LoadPalette, getRuntime } from '../system/decomp-globals';
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -227,7 +227,7 @@ async function _loadMonPicCoords(): Promise<Record<string, _MonPicCoords>> {
  *  BattleLoad{Opponent}MonSpriteGfx → SetMultiuseSpriteTemplateToPokemon → CreateSprite,
  *  positionné via GetBattlerSpriteCoord(X_2)/GetBattlerSpriteFinal_Y (grounding par
  *  species). ASYNC (assets PNG /decomp/em/pokemon/<nom>/) ; fire-and-forget. */
-export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<void> {
+export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<number> {
   try {
     const partyIdx = _getBattlerPartyIndexOpp(battler);
     // 1:1 : le sprite ENNEMI lit gEnemyParty (front pic), le sprite JOUEUR lit
@@ -237,10 +237,10 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // SetMultiuseSpriteTemplateToPokemon + CreateSprite des deux côtés.
     const mon = (isOpponent ? gEnemyParty : gPlayerParty)[partyIdx];
     const sp = GetMonData(mon as never, MON_DATA_SPECIES) as number;
-    if (!sp) { console.warn('[battler-sprite] species 0'); return; }
+    if (!sp) { console.warn('[battler-sprite] species 0'); return -1; }
     // species num → enum 'SPECIES_X' (= clé dossier assets + mon-pic-coords).
     const enumName = reverseDecompConstant(sp, 'SPECIES_');
-    if (!enumName) { console.warn('[battler-sprite] enum introuvable pour species', sp); return; }
+    if (!enumName) { console.warn('[battler-sprite] enum introuvable pour species', sp); return -1; }
     const folder = enumName.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const picFile = isOpponent ? 'anim_front.png' : 'back.png';
     const tiles = await loadTileBin(`/decomp/em/pokemon/${folder}/${picFile}`, 4);
@@ -257,14 +257,80 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     const y = (c ? (isOpponent ? c.front.yOffset : c.back.yOffset) : 0) + baseY;
     // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
     // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
-    CreateSprite({
+    const spriteId = CreateSprite({
       oam: { shape: 0, size: 3, priority: 1, paletteNum: battler, affineMode: 0 },
       images: [{ data: frame0, size: FRAME0 }],
       callback: null,
     }, _GetBattlerSpriteCoordX(battler), y, 2);
+    _registerBattlerMonSprite(battler, spriteId);
+    return spriteId;
   } catch (e) {
     console.error('[battler-sprite] _loadAndCreateBattlerMonSprite failed', e);
+    return -1;
   }
+}
+
+// ─── Registre des sprites mon (voie L) + fix « sprite noir » (révélation différée) ──
+// 1:1 décomp : StartSendOutAnim crée le mon INVISIBLE (gSprites[id].invisible=TRUE,
+// battle_controller_player.c:2221) et ne le révèle qu'à HandleBallAnimEnd (pokeball.c:850),
+// APRÈS que sa palette OBJ soit chargée+live. Notre _loadAndCreateBattlerMonSprite créait le
+// mon VISIBLE alors que LoadPalette n'écrit que gPlttBufferFaded ; le flush→live
+// (TransferPlttBuffer) est gaté par bufferTransferDisabled et différé → le mon rend quelques
+// frames sur la palette live NOIRE (= « avatar noir », retour user). Fix DÉTERMINISTE (PAS
+// l'anim de ball, = chantier A/B séparé) : créer le mon invisible et le révéler quand sa
+// palette est live (transfer activé + ≥1 flush), filet de sécurité à 30f. Forcer flushTo()
+// est exclu (bypasse le gate → flash, cf. fix session-124).
+const _battlerMonSpriteIds: number[] = [-1, -1, -1, -1];
+interface _PendingReveal { battler: number; spriteId: number; frames: number; }
+const _pendingMonReveals: _PendingReveal[] = [];
+
+/** 1:1 décomp gBattlerSpriteIds[battler] (registre voie L des sprites mon). */
+export function getBattlerMonSpriteId(battler: number): number {
+  return _battlerMonSpriteIds[battler] ?? -1;
+}
+
+function _registerBattlerMonSprite(battler: number, spriteId: number): void {
+  _battlerMonSpriteIds[battler] = spriteId;
+  // Cache le sprite jusqu'à ce que sa palette OBJ soit live (anti « sprite noir »).
+  const rt = getRuntime();
+  const spr = rt?.gSprites?.get(spriteId);
+  if (spr) spr.invisible = true;
+  // Remplace toute révélation en attente pour ce battler (re-création = switch).
+  for (let i = _pendingMonReveals.length - 1; i >= 0; i--) {
+    if (_pendingMonReveals[i].battler === battler) _pendingMonReveals.splice(i, 1);
+  }
+  _pendingMonReveals.push({ battler, spriteId, frames: 0 });
+}
+
+/** Révèle chaque mon en attente dès que sa palette OBJ est live (déterministe). Appelé
+ *  1×/frame depuis BattleMainCB2 (comme tickBattleIntroSlideL). No-op si rien en attente. */
+export function tickBattlerMonReveals(): void {
+  if (_pendingMonReveals.length === 0) return;
+  const rt = getRuntime();
+  if (!rt) return;
+  // La palette OBJ du mon (gPlttBufferFaded, écrite par LoadPalette AVANT l'enregistrement)
+  // ne devient LIVE qu'au flush TransferPlttBuffer, gaté par bufferTransferDisabled. Quand
+  // transfer activé, le flush a lieu chaque frame (decomp-runtime ~2386) → la palette est live
+  // en ≤2 frames. Pendant l'intro fade (bufferTransferDisabled=TRUE) le flush est différé → le
+  // mon resterait noir : on le garde donc invisible jusqu'au déblocage du transfer.
+  const transferOk = !(rt.gPaletteFade as { bufferTransferDisabled?: boolean } | undefined)?.bufferTransferDisabled;
+  for (let i = _pendingMonReveals.length - 1; i >= 0; i--) {
+    const p = _pendingMonReveals[i];
+    p.frames++;
+    // Révèle quand le transfer palette est activé (→ la palette OBJ du mon a flushé live) ET
+    // qu'au moins 2 frames ont passé. Filet de sécurité à 30f (jamais invisible en permanence).
+    if ((transferOk && p.frames >= 2) || p.frames >= 30) {
+      const spr = rt.gSprites?.get(p.spriteId);
+      if (spr) spr.invisible = false;
+      _pendingMonReveals.splice(i, 1);
+    }
+  }
+}
+
+/** Reset le registre + révélations en attente (= teardown / nouveau combat). */
+export function resetBattlerMonSprites(): void {
+  _battlerMonSpriteIds.fill(-1);
+  _pendingMonReveals.length = 0;
 }
 /** 1:1 décomp `OpponentHandleSwitchInAnim()` (battle_controller_opponent.c:1160-1166).
  *  Set gBattleStruct.monToSwitchIntoId = PARTY_SIZE + set party index +

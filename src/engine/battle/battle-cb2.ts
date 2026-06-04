@@ -39,6 +39,7 @@ import {
 } from '../system/decomp-globals';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../ui/gba-text-system';
 import { tickBattleIntroSlideL } from './battle-intro';
+import { tickBattlerMonReveals } from './battle-controller-opponent';
 /** 1:1 décomp `B_BUTTON` (io_reg.h) = 1 << 1. */
 const B_BUTTON = 1 << 1;
 /** 1:1 décomp `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */
@@ -199,6 +200,9 @@ export function BattleMainCB2(): void {
   // de slide active. 1:1 : la slide tourne comme une task via RunTasks ; on la ticke
   // ici (BattleMainCB2 = 1×/frame, comme RunTasks).
   tickBattleIntroSlideL();
+  // Voie L : révèle les sprites mon créés invisibles (fix « sprite noir »/avatar noir) dès
+  // que leur palette OBJ est live. No-op si rien en attente. 1×/frame comme tickBattleIntroSlideL.
+  tickBattlerMonReveals();
 
   // 1:1 décomp ll. 1871-1878 : B button during recorded → quit.
   if (_JOY_HELD(B_BUTTON)
