@@ -21,7 +21,8 @@
  * Donc « activer » = poser callback2 = CB2_InitBattle ; le runtime déroule tout.
  */
 
-import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId } from '../system/decomp-globals';
+import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId, FillPalBufferBlack } from '../system/decomp-globals';
+import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
@@ -210,7 +211,29 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         // Reprend la BGM OW (sauvée par _playBattleBGM) après le re-init du field
         // (= 1:1 décomp CB2_ReturnToField → Overworld_PlaySpecialMapMusic).
         restore()
-          .then(() => { if (_savedOwSong) m4aSongNumStart(_savedOwSong, true); })
+          .then(() => {
+            // 1:1 décomp `FieldCB_ReturnToFieldNoScriptCheckMusic` (field_screen_effect.c:463),
+            // lancé par `CB2_EndWildBattle` (battle_setup.c:614) via gFieldCallback →
+            // `RunFieldCallback` au case 2 de `ReturnToFieldLocal` (overworld.c) :
+            //   1) `Overworld_PlaySpecialMapMusic()` → reprise BGM OW (ci-dessous).
+            //   2) `FadeInFromBlack()` (field_screen_effect.c:95) = `FillPalBufferBlack()` +
+            //      `FadeScreen(FADE_FROM_BLACK, 0)` → fondu DEPUIS le noir laissé par
+            //      `BeginFastPaletteFade(3)` en fin de combat (HandleEndTurn_FinishBattle).
+            //   Sans ça, `_restoreOverworldFromMenu` a réécrit gPlttBufferFaded en couleurs
+            //   vives (LoadMapTilesetPalettes) → la 1re frame MainCB2_Overworld les flush =
+            //   POP instantané. Le fade ici = ordre 1:1 (musique PUIS FadeInFromBlack).
+            // ⚠️ SPÉCIFIQUE au retour COMBAT : PAS dans `_restoreOverworldFromMenu` (partagé
+            //   bag/option-menu qui, 1:1 décomp, n'ont PAS de fade-in). Pattern identique aux
+            //   chemins resume (TestOverworldScene:436-442) / warp.
+            if (_savedOwSong) m4aSongNumStart(_savedOwSong, true);
+            const r = getRuntime();
+            if (r) {
+              FillPalBufferBlack();
+              r.gPlttBufferFaded.flushTo();
+              r.gPaletteFade.bufferTransferDisabled = false;
+              FadeScreen(FADE_FROM_BLACK, 0);
+            }
+          })
           .catch((e) => console.error('[decomp-loop] _restoreOverworldFromMenu THREW:', e));
       } else {
         console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
