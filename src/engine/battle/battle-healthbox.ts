@@ -38,7 +38,7 @@
 
 import { getRuntime, SetSubspriteTables, clearSubspriteTable, FreeSpriteTilesByTag, type NamingSubsprite } from '../system/decomp-globals';
 import { loadIndexedPng, loadIndexedPngStrict, extractPngPlte, loadIndexedPngRawIndices } from '../gba/png-loader';
-import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
+import { MarkObjTilesAllocated, MarkObjPaletteAllocated, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle-healthbox → ui/*),
 // déjà dans le graphe d'import early via battle-flow → pas de cycle/TDZ nouveau.
@@ -156,6 +156,16 @@ let HPBAR_OPP_RIGHT_VRAM     = 0x2180;  // = LEFT + 0x80
 //   - TAG_HEALTHBAR_PAL ← `gBattleInterface_BallDisplayPal`   (= ball_display.png .gbapal)
 const HEALTHBOX_PALETTE_SLOT = 5;
 const HEALTHBAR_PALETTE_SLOT = 6;
+// 1:1 décomp tags (battle_interface.h:47-48) : TAG_HEALTHBOX_PAL = TAG_HEALTHBOX_PLAYER1_TILE
+// (0xD6FF), TAG_HEALTHBAR_PAL = TAG_HEALTHBAR_PLAYER1_TILE (0xD704). On les enregistre via
+// MarkObjPaletteAllocated après chaque LoadPaletteObj → l'allocateur de palettes sprite
+// (ball/particules du send-out, LoadSpritePalette scanne sSpritePaletteTags depuis
+// gReservedSpritePaletteCount) voit les slots 5/6 OCCUPÉS et ne les réattribue plus. Sans
+// ça, ces slots restent 0xFFFF (libres) et la palette ROUGE/BLANC de la Poké Ball les
+// écrase → healthbox ROUGE (bug A/B 2026-06-04). Le décomp passe par LoadSpritePalettes
+// (tags) qui réserve+tague nativement ; ici on garde le slot fixe 5/6 + tag explicite.
+const TAG_HEALTHBOX_PAL = 0xD6FF;
+const TAG_HEALTHBAR_PAL = 0xD704;
 
 // ─── HP bar subsprite tables : 1:1 décomp sHealthBar_Subsprites_* (battle_interface.c:467-531) ─
 // Le décomp rend la barre HP comme UN sprite avec une table de sous-sprites :
@@ -351,8 +361,8 @@ export async function ensureHealthboxAssets(): Promise<void> {
     // (tiles) dès le 2e combat consécutif (user-flag 2026-05-29 : "garbled combat 2+").
     // On ré-applique donc palettes + RE-BLIT les tiles box+hpbar à chaque appel.
     // createBattlerHealthboxSprites() appelle ceci au spawn (= APRÈS le clear init).
-    if (_hbPalette) rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
-    if (_hbarPalette) rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+    if (_hbPalette) { rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16); MarkObjPaletteAllocated(HEALTHBOX_PALETTE_SLOT, TAG_HEALTHBOX_PAL); }
+    if (_hbarPalette) { rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16); MarkObjPaletteAllocated(HEALTHBAR_PALETTE_SLOT, TAG_HEALTHBAR_PAL); }
     if (_hbPlayerTiles) {
       rt.gba.objVram.set(_hbPlayerTiles, HEALTHBOX_PLAYER_VRAM);
       MarkObjTilesAllocated(HEALTHBOX_PLAYER_VRAM, _hbPlayerTiles.length);
@@ -486,12 +496,14 @@ export async function ensureHealthboxAssets(): Promise<void> {
   if (!ballStatusBarPlte) throw new Error(`PLTE missing: ${BALL_STATUS_BAR_PNG}`);
   _hbPalette = ballStatusBarPlte.subarray(0, 16);
   rt.LoadPaletteObj(_hbPalette, 0x100 + HEALTHBOX_PALETTE_SLOT * 16);
+  MarkObjPaletteAllocated(HEALTHBOX_PALETTE_SLOT, TAG_HEALTHBOX_PAL);
 
   // HEALTHBAR palette = ball_display.png .gbapal.
   const ballDisplayPlte = await extractPngPlte(BALL_DISPLAY_PNG);
   if (!ballDisplayPlte) throw new Error(`PLTE missing: ${BALL_DISPLAY_PNG}`);
   _hbarPalette = ballDisplayPlte.subarray(0, 16);
   rt.LoadPaletteObj(_hbarPalette, 0x100 + HEALTHBAR_PALETTE_SLOT * 16);
+  MarkObjPaletteAllocated(HEALTHBAR_PALETTE_SLOT, TAG_HEALTHBAR_PAL);
 
   _assetsLoaded = true;
 }

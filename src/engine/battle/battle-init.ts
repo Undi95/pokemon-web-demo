@@ -45,7 +45,7 @@ import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED, BATTLE_TYPE_MULTI,
   BATTLE_TYPE_TWO_OPPONENTS,
 } from './constants';
-import { getRuntime } from '../system/decomp-globals';
+import { getRuntime, setReservedSpritePaletteCount } from '../system/decomp-globals';
 import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1,
   BATTLE_ENVIRONMENT_GRASS,
@@ -362,7 +362,10 @@ export function CB2_InitBattleInternal(): void {
   _DrawBattleEntryBackground();
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT.
-  void MAX_BATTLERS_COUNT;
+  // Réserve les slots OBJ 0..3 (palettes des battlers, OBJ_PLTT_ID(battler)) → l'allocateur
+  // de palettes sprite (ball/particules du send-out, LoadSpritePalette) scanne depuis 4 et
+  // ne peut plus écraser une palette de mon. (Sans ça : count=1 → collisions de slots.)
+  setReservedSpritePaletteCount(MAX_BATTLERS_COUNT);
   _SetVBlankCallback(_getVBlankCB_Battle());
   _SetUpBattleVarsAndBirchZigzagoon();
 
