@@ -46,6 +46,12 @@ import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader } from './map-loader';
 import { startWildBattle } from '../battle/battle-flow';
 import { ScriptContext_SetupInlineNative } from '../script/script-runtime';
+// Aiguillage VOIE L (flag __USE_DECOMP_BATTLE_LOOP__, défaut OFF) — cf. CreateWildMon.
+import { isDecompBattleLoopEnabled, bootDecompBattleLoop } from '../battle/battle-decomp-loop';
+import { setupPartyForBattle } from '../battle/party-storage';
+import { createPokemonInstance, type PokemonInstance } from '../pokemon/pokemon';
+import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
+import { BATTLE_TYPE_TRAINER } from '../battle/constants';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
@@ -277,6 +283,20 @@ function AreLegendariesInSootopolisPreventingEncounters(): boolean {
  *  Notre TS : `startWildBattle` (battle-flow.ts) gère ZeroEnemyPartyMons +
  *  CreateMonWithNature internally. Donc on passe juste species + level. */
 function CreateWildMon(species: string, level: number): void {
+  // ── AIGUILLAGE VOIE L (flag `__USE_DECOMP_BATTLE_LOOP__`, défaut OFF) ──────────
+  // 1:1 décomp `BattleSetup_StartWildBattle` (battle_setup.c:389) → `SetMainCallback2(
+  // CB2_InitBattle)`. Peuple gPlayerParty (VRAIE party save, exactement comme la voie V
+  // battle-flow.ts:2024/2075) + gEnemyParty (mon sauvage), pose le type SAUVAGE, et boote la
+  // VRAIE boucle décomp (`bootDecompBattleLoop(true)` = transition d'entrée + BGM combat +
+  // swap CB2 réel + savedCallback de retour OW). Flag OFF (défaut) → voie V ci-dessous INCHANGÉE.
+  if (isDecompBattleLoopEnabled()) {
+    const party = gSaveBlock1Ptr.playerParty.filter((m: PokemonInstance | null): m is PokemonInstance => !!m);
+    setupPartyForBattle(party, [createPokemonInstance(species, level)]);
+    setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);  // combat SAUVAGE
+    bootDecompBattleLoop(true);
+    return;
+  }
+  // ── VOIE V (par défaut) ───────────────────────────────────────────────────────
   // Dette R3 : Cute Charm gender bias check (lignes 394-412).
   // Notre TS : startWildBattle accepte (opponentSpecies, opponentLevel).
   // PickWildMonNature (= dette R3) est aussi géré internally par startWildBattle.
