@@ -36,13 +36,16 @@
  * step/frame Task) car ce tick est polled ~5-6×/frame par le battle-flow.
  */
 
-import { getRuntime, gScanlineEffectRegBuffers } from '../system/decomp-globals';
+import { getRuntime, gScanlineEffectRegBuffers, LoadPalette } from '../system/decomp-globals';
 import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
 } from '../system/decomp-runtime';
 import { battleVBlankState } from './battle-vblank-helpers';
-import { drawBattleEntryBackground, hideBattleEntryBackground, BATTLE_ENVIRONMENT_LONG_GRASS } from './battle-bg';
+import {
+  drawBattleEntryBackground, hideBattleEntryBackground, BATTLE_ENVIRONMENT_LONG_GRASS,
+  getMenuBackdropRgb15,
+} from './battle-bg';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
@@ -254,16 +257,33 @@ export function startBattleIntroSlideL(environment: number): void {
   const rt = getRuntime();
   if (!rt) return;
   _introSlideL = { state: 0, data2: 0, data3: 0, environment, lastFrame: -1 };
-  // Charge + montre le fond strié d'entrée (BG1). Async fire-and-forget : apparaît
-  // dès chargé (PNG petit), pendant que les bandes s'ouvrent.
-  void drawBattleEntryBackground(environment);
+  // ⚠️ Fond strié d'entrée (BG1) DÉSACTIVÉ temporairement : ses tiles se rendaient
+  // en BARRES NOIRES (palette mal alignée — l'anim_tiles partage les banks palette
+  // du terrain (bank 4) mais l'index local 4bpp décodé ne matche pas la sous-palette
+  // → couleurs fausses, A/B user « les barres ont pas la bonne palette »). Baseline
+  // propre = bandes noires qui s'ouvrent sur le terrain. À reprendre : aligner la
+  // palette de l'entry bg (decode anim_tiles selon la sous-palette du tilemap).
+  // void drawBattleEntryBackground(environment);
+  rt.gba.bg(1).config.visible = false;  // BG1 ne montre rien (pas d'entry bg)
+  void drawBattleEntryBackground;       // garde l'import référencé
+  // Backdrop NOIR pendant les bandes (A/B ROM user : hors-bandes = NOIR, PAS le
+  // #484050 violacé du menu). Restauré pour le menu en fin de slide (case 4).
+  // loadBattleTextbox a déjà tourné (CB2_InitBattle) → #484050 stocké via
+  // getMenuBackdropRgb15. Régression-safe : si la slide n'aboutit pas, #484050
+  // n'est jamais écrasé (loadBattleTextbox l'a posé).
+  // sizeBytes = 2 (= 1 couleur RGB15 = palette[0]). count=1 = 0 couleur = no-op (bug).
+  LoadPalette(new Uint16Array([0]), 0, 2);
   // Active WIN0 → le slit (battleVBlankState.win0v = WIN_RANGE(80,81)) clippe
   // l'écran (≈ noir sauf 1px) jusqu'à ce que les bandes s'ouvrent. WININ=0 (rien
   // dans le slit) jusqu'au case 1.
   rt.SetGpuReg(REG_OFFSET_WININ, 0);
   rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
   rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
-  _startIntroScanline();
+  // ⚠️ Stries scanline (shift BG3HOFS par-scanline) DÉSACTIVÉES : le rendu était
+  // chaotique (le shift révélait des tiles garbage du tilemap terrain → barres
+  // noires + flèches, A/B user). L'effet « fond à lignes » vient déjà du fond strié
+  // BG1 lui-même qui scrolle. `_startIntroScanline` reste dispo pour re-travail 1:1.
+  // _startIntroScanline();
 }
 
 /** Devtools : check si la slide d'intro voie-L est active. */
@@ -345,6 +365,10 @@ export function tickBattleIntroSlideL(): void {
         rt.SetGpuReg(REG_OFFSET_WINOUT, 0x3F | (0x3F << 8));
       }
       battleVBlankState.win0v = WIN_RANGE(0, DISPLAY_HEIGHT);
+      // Restaure le backdrop du MENU (#484050) — les bandes étaient noires pendant
+      // la slide. (1:1 BattleIntroSlideEnd ne touche pas la palette ; c'est notre
+      // gestion du backdrop intro≠menu.) sizeBytes=2 = 1 couleur.
+      LoadPalette(new Uint16Array([getMenuBackdropRgb15()]), 0, 2);
       _introSlideL = null;
       break;
   }

@@ -177,6 +177,13 @@ interface TextboxAssets {
 }
 let _textboxAssets: TextboxAssets | null = null;
 
+/** Couleur de backdrop du MENU de combat (#484050) = BG palette[0] posée par
+ *  loadBattleTextbox. Stockée pour que l'anim d'entrée puisse mettre le backdrop
+ *  NOIR pendant les bandes (l'user A/B ROM : hors-bandes = NOIR) puis le restaurer
+ *  pour le menu. Voir [[battle-transitions-chantier-2026-06-04]]. */
+let _menuBackdropRgb15 = 0;
+export function getMenuBackdropRgb15(): number { return _menuBackdropRgb15; }
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** 1:1 décomp palette format JSON `tall_grass/palette.json` → RGB15 u16 array.
@@ -301,7 +308,8 @@ export async function loadBattleTextbox(): Promise<void> {
   // montrait du noir + que ça "violçait l'intro split-slide"). L'A/B 2026-06-03 + un test
   // direct (set runtime → match ROM) confirment #484050. À A/B-confirmer : l'intro (mons
   // qui slident) ne doit pas être pollué — si c'est le cas, gater ce set au post-intro.
-  LoadPalette(new Uint16Array([assets.palette0[9]]), 0, 2);
+  _menuBackdropRgb15 = assets.palette0[9];
+  LoadPalette(new Uint16Array([_menuBackdropRgb15]), 0, 2);
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge
