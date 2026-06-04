@@ -183,7 +183,7 @@ export function tickBattleIntroFlash(): boolean {
   if (!_introFlash) return true;
   const f = _introFlash;
   // Gate : 1 step par frame visuelle.
-  const fc = Math.floor(performance.now() / 16);
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;  // frame-gate (gIntroFrameCounter, pas wall-clock) = timing 1:1 décomp
   if (fc === f.lastFrame) return false;
   f.lastFrame = fc;
 
@@ -230,7 +230,7 @@ export function tickBattleTransitionSlice(): boolean {
   // terminait 5-6× trop vite → la déchirure "coupe la map en deux" était
   // quasi-instantanée donc INVISIBLE (bug rapporté user). Même pattern de
   // gate que tickBattleIntroFlash / tickBattleIntroSlide.
-  const fc = Math.floor(performance.now() / 16);
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;  // frame-gate (gIntroFrameCounter, pas wall-clock) = timing 1:1 décomp
   if (fc === _sliceLastFrame) return false;
   _sliceLastFrame = fc;
 
@@ -391,7 +391,7 @@ export function startBattleTransitionWhiteBarsFade(): void {
 export function tickBattleTransitionWhiteBarsFade(): boolean {
   if (!_whiteBars) return true;
   const w = _whiteBars;
-  const fc = Math.floor(performance.now() / 16);
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;  // frame-gate (gIntroFrameCounter, pas wall-clock) = timing 1:1 décomp
   if (fc === _whiteBarsLastFrame) return false;
   _whiteBarsLastFrame = fc;
   const rt = getRuntime();

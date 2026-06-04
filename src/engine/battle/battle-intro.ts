@@ -330,8 +330,10 @@ export function isBattleIntroSlideLActive(): boolean { return _introSlideL !== n
 export function tickBattleIntroSlideL(): void {
   if (!_introSlideL) return;
   const t = _introSlideL;
-  // Gate 1 step/frame (BattleMainCB2 = 1×/frame, mais gate par sécurité si polled +).
-  const fc = Math.floor(performance.now() / 16);
+  // Gate 1 step/frame sur le COMPTEUR DE FRAME du jeu (gIntroFrameCounter = gMain.vblankCounter1,
+  // ++1×/runOneFrame à 60Hz = exactement comme RunTasks décomp). PAS wall-clock : `performance.now()/16`
+  // dérivait (~4% + désync du texte/sprites qui sont déjà frame-gatés) → cadence d'intro non 1:1.
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
   if (fc === t.lastFrame) return;
   t.lastFrame = fc;
   const rt = getRuntime();
