@@ -55,11 +55,11 @@ interface BattleSprite {
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
-/** 1:1 décomp `sBattler` = sprite->data[5]. */
-const SPRITE_DATA_BATTLER = 5;
+/** 1:1 décomp `#define sBattler data[0]` (battle_main.c:2664). */
+const SPRITE_DATA_BATTLER = 0;
 
-/** 1:1 décomp `sSpeciesId` = sprite->data[7]. */
-const SPRITE_DATA_SPECIES = 7;
+/** 1:1 décomp `#define sSpeciesId data[2]` (battle_main.c:2665). */
+const SPRITE_DATA_SPECIES = 2;
 
 /** 1:1 décomp `sNumFlickers` = sprite->data[3], `sDelay` = sprite->data[4]. */
 const SPRITE_DATA_NUM_FLICKERS = 3;
@@ -101,10 +101,13 @@ function _getHealthBoxData(_battler: number): HealthBoxData | null {
   return null;
 }
 
-/** 1:1 décomp `gHealthboxSpriteIds[battler]`. */
-function _getHealthboxSpriteId(_battler: number): number {
-  // Dette R3 : cascade vers battle-healthbox.ts.
-  return -1;
+/** 1:1 décomp `gHealthboxSpriteIds[battler]`. Branché au registre healthbox voie-L
+ *  (battle-healthbox-l.ts) via globalThis (cycle-safe, = pattern _getIntroSlideFlags). */
+function _getHealthboxSpriteId(battler: number): number {
+  const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
+    gHealthboxSpriteIds?: number[];
+  } | undefined;
+  return hb?.gHealthboxSpriteIds?.[battler] ?? -1;
 }
 
 /** 1:1 décomp `gBattlerSpriteIds[battler]`. */
@@ -113,14 +116,21 @@ function _getBattlerSpriteId(_battler: number): number {
   return -1;
 }
 
-/** 1:1 décomp `StartHealthboxSlideIn(battler)` (battle_interface.c). */
-function _StartHealthboxSlideIn(_battler: number): void {
-  // Dette R3 : slide-in healthbox animation.
+/** 1:1 décomp `StartHealthboxSlideIn(battler)` (pokeball.c:1241). Branché à l'impl
+ *  voie-L (battle-healthbox-l.ts) via globalThis (cycle-safe). */
+function _StartHealthboxSlideIn(battler: number): void {
+  const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
+    StartHealthboxSlideIn?: (b: number) => void;
+  } | undefined;
+  hb?.StartHealthboxSlideIn?.(battler);
 }
 
-/** 1:1 décomp `SetHealthboxSpriteVisible(spriteId)`. */
-function _SetHealthboxSpriteVisible(_spriteId: number): void {
-  // Dette R3.
+/** 1:1 décomp `SetHealthboxSpriteVisible(spriteId)` (battle_interface.c:1031). */
+function _SetHealthboxSpriteVisible(spriteId: number): void {
+  const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
+    SetHealthboxSpriteVisible?: (id: number) => void;
+  } | undefined;
+  hb?.SetHealthboxSpriteVisible?.(spriteId);
 }
 
 /** 1:1 décomp `StartSpriteAnim(sprite, animNum)` / `StartSpriteAnimIfDifferent`. */

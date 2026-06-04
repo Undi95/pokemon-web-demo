@@ -64,6 +64,7 @@ import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { CreateSprite } from '../system/decomp-bridge';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { LoadPalette, getRuntime } from '../system/decomp-globals';
+import { SpriteCB_WildMon } from './battle-sprite-callbacks';
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -263,6 +264,24 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       callback: null,
     }, _GetBattlerSpriteCoordX(battler), y, 2);
     _registerBattlerMonSprite(battler, spriteId);
+    // 1:1 décomp OpponentHandleLoadMonSprite (battle_controller_opponent.c:1149-1153) : le mon
+    // SAUVAGE adverse naît HORS-ÉCRAN DROITE (x2=-DISPLAY_WIDTH) avec le callback SpriteCB_WildMon
+    // (du template gBattlerSpriteTemplates[B_POSITION_OPPONENT_LEFT], pokemon.c:1959) → il GLISSE
+    // vers la position (SpriteCB_MoveWildMonToRight: x2+=2) en TEINTE OMBRÉE (BeginNormalPaletteFade
+    // 0x20000 RGB(8,8,8)), puis healthbox slide-in + dé-teinte (SpriteCB_WildMonShowHealthbox).
+    // sBattler=data[0], sSpeciesId=data[2] (1:1 #define battle_main.c:2664-2665). animEnded=true :
+    // le mon est mono-frame (CreateSpriteInline sans anims) → sinon SpriteCB_WildMonShowHealthbox
+    // (gate sur sprite->animEnded) ne se déclencherait JAMAIS (mon glisse mais healthbox/dé-teinte
+    // jamais). Côté JOUEUR (back-sprite) : pas de slide ici (il sort d'une ball = chantier send-out).
+    if (isOpponent) {
+      const spr = getRuntime()?.gSprites?.get(spriteId);
+      if (spr) {
+        spr.x2 = -240;   // -DISPLAY_WIDTH
+        if (Array.isArray(spr.data)) { spr.data[0] = battler; spr.data[2] = sp; }
+        spr.animEnded = true;
+        (spr as { callback: unknown }).callback = SpriteCB_WildMon;
+      }
+    }
     return spriteId;
   } catch (e) {
     console.error('[battler-sprite] _loadAndCreateBattlerMonSprite failed', e);
