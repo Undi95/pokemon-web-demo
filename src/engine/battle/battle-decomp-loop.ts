@@ -26,6 +26,7 @@ import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, g
 import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
+import { startBattleIntroFlash, tickBattleIntroFlash, startBattleTransitionSlice, tickBattleTransitionSlice } from './battle-transition';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
 
@@ -105,6 +106,42 @@ function _playBattleBGM(): void {
   m4aSongNumStart(_getBattleBGM(), true);
 }
 
+/** 1:1 décomp `Task_BattleStart` (battle_setup.c) + `Task_BattleTransition`
+ *  (battle_transition.c:1063) : la TRANSITION d'entrée tourne en callback2 AVANT
+ *  CB2_InitBattle, puis bascule sur CB2_InitBattle quand elle est terminée.
+ *
+ *  PHASE 1 = flash gris RGB(11,11,11) 3 cycles (`startBattleIntroFlash`), PHASE 2 =
+ *  Slice (`startBattleTransitionSlice`) qui découpe l'OW en bandes glissantes puis
+ *  `FadeScreenBlack` (écran noir instant). Quand le slice est fini → l'OW a disparu,
+ *  l'écran est noir → SetMainCallback2(CB2_InitBattle) (= 1:1 Task_BattleStart state 1 :
+ *  IsBattleTransitionDone → CleanupOverworld + SetMainCallback2(CB2_InitBattle)).
+ *
+ *  Mirror EXACT du flow voie V (battle-flow.ts:2105-2131). Gaté in-game (returnToOverworld) :
+ *  le harness boote CB2_InitBattle direct (pas d'OW à découper). */
+function _makeBattleStartTransitionCB2(cb2InitBattle: () => void): () => void {
+  let state = 0;  // 0 = lance le flash, 1 = intro flash en cours, 2 = slice en cours
+  return function CB2_BattleStartTransition(): void {
+    switch (state) {
+      case 0:
+        startBattleIntroFlash();
+        state = 1;
+        break;
+      case 1:
+        if (tickBattleIntroFlash()) {
+          startBattleTransitionSlice();
+          state = 2;
+        }
+        break;
+      case 2:
+        if (tickBattleTransitionSlice()) {
+          // Transition terminée (écran noir via FadeScreenBlack) → boot du combat.
+          getRuntime()?.SetMainCallback2?.(cb2InitBattle as never);
+        }
+        break;
+    }
+  };
+}
+
 /** Boote la voie décomp : pose `gMain.callback2 = CB2_InitBattle`. Le runtime
  *  déroule ensuite CB2_InitBattle → CB2_HandleStartBattle → BattleMainCB1/CB2.
  *  Suppose l'état combat (gBattleTypeFlags, gPlayerParty, gEnemyParty) déjà posé
@@ -150,6 +187,11 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
       }
     });
+    // 1:1 décomp Task_BattleStart : la transition d'entrée (flash gris → Slice → écran
+    // noir) tourne AVANT CB2_InitBattle. Le harness (returnToOverworld=false) boote
+    // CB2_InitBattle direct (pas d'OW à découper) via le SetMainCallback2 ci-dessous.
+    getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb) as never);
+    return;
   }
   getRuntime()?.SetMainCallback2?.(cb as never);
 }
