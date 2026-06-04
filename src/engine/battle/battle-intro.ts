@@ -40,12 +40,31 @@ import { getRuntime, gScanlineEffectRegBuffers, LoadPalette } from '../system/de
 import {
   REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDY,
+  BLDCNT_TGT1_BG1, BLDCNT_EFFECT_BLEND, BLDCNT_TGT2_BG3, BLDCNT_TGT2_OBJ,
 } from '../system/decomp-runtime';
 import { battleVBlankState } from './battle-vblank-helpers';
 import {
-  drawBattleEntryBackground, hideBattleEntryBackground, BATTLE_ENVIRONMENT_LONG_GRASS,
+  drawBattleEntryBackground, hideBattleEntryBackground,
+  BATTLE_ENVIRONMENT_LONG_GRASS, BATTLE_ENVIRONMENT_SAND, BATTLE_ENVIRONMENT_UNDERWATER,
+  BATTLE_ENVIRONMENT_WATER, BATTLE_ENVIRONMENT_BUILDING, BATTLE_ENVIRONMENT_PLAIN,
   getMenuBackdropRgb15,
 } from './battle-bg';
+
+/** 1:1 `BLDALPHA_BLEND(eva, evb)` (io_reg.h) = eva | (evb << 8). */
+function BLDALPHA_BLEND(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+
+/** 1:1 `Cos2(angle)` approx pour le bob WATER de Slide2 (battle_intro.c:256). L'exact
+ *  utilise gSineTable (amplitude ~256) ; Math.cos×256 en est l'équivalent à <1px près
+ *  (bob de l'eau, env WATER non bootable via dev key → raffinement A/B). */
+function _Cos2(angleDeg: number): number { return Math.round(Math.cos(angleDeg * Math.PI / 180) * 256); }
+
+/** 1:1 `sBattleIntroSlideFuncs[]` (battle_intro.c:25-37) : env → slide func 1/2/3. */
+function _slideFuncForEnv(env: number): 1 | 2 | 3 {
+  if (env === BATTLE_ENVIRONMENT_SAND || env === BATTLE_ENVIRONMENT_UNDERWATER || env === BATTLE_ENVIRONMENT_WATER) return 2;
+  if (env === BATTLE_ENVIRONMENT_BUILDING || env === BATTLE_ENVIRONMENT_PLAIN) return 3;
+  return 1; // GRASS, LONG_GRASS, POND, MOUNTAIN, CAVE
+}
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
@@ -213,10 +232,19 @@ interface IntroSlideLState {
   state: number;
   /** 1:1 `data[2]` : délai (state 0-1) puis largeur des stries (state 3, 240→0). */
   data2: number;
-  /** 1:1 `data[3]` : délai 32f avant le scroll terrain (state 3). */
+  /** 1:1 `data[3]` : délai 32f avant scroll terrain (Slide1) / avant blend (Slide2/3). */
   data3: number;
-  /** 1:1 `tEnvironment` (= choix LONG_GRASS vs autre pour la vitesse BG1_Y). */
+  /** 1:1 `data[4]` : Slide2/3 = coefficient BLDALPHA (eva) appliqué chaque frame. */
+  data4: number;
+  /** 1:1 `data[5]` : Slide2/3 = compteur de délai du ramp blend. */
+  data5: number;
+  /** 1:1 `data[6]` : Slide2 WATER = angle du bob (Cos2). */
+  data6: number;
+  /** 1:1 `tEnvironment`. */
   environment: number;
+  /** 1=BattleIntroSlide1 (grass/long_grass/pond/mountain/cave), 2=Slide2 (sand/water/
+   *  underwater), 3=Slide3 (building/plain). 1:1 `sBattleIntroSlideFuncs` (battle_intro.c:25). */
+  slideFunc: 1 | 2 | 3;
   /** Gate frame (= 1 step/frame visuelle, décomp = 1 step/frame Task). */
   lastFrame: number;
 }
@@ -256,7 +284,10 @@ function _stopIntroScanline(): void {
 export function startBattleIntroSlideL(environment: number): void {
   const rt = getRuntime();
   if (!rt) return;
-  _introSlideL = { state: 0, data2: 0, data3: 0, environment, lastFrame: -1 };
+  _introSlideL = {
+    state: 0, data2: 0, data3: 0, data4: 0, data5: 0, data6: 0,
+    environment, slideFunc: _slideFuncForEnv(environment), lastFrame: -1,
+  };
   // 1:1 décomp `DrawBattleEntryBackground` (battle_bg.c:1124) : charge le fond d'entrée
   // (brins d'herbe pour GRASS / strié pour PLAIN-building) dans BG1. Data VÉRIFIÉE 1:1
   // (chantier transitions 2026-06-04, inspection byte-level) : anim_tiles.png PLTE = la
@@ -289,9 +320,13 @@ export function startBattleIntroSlideL(environment: number): void {
 /** Devtools : check si la slide d'intro voie-L est active. */
 export function isBattleIntroSlideLActive(): boolean { return _introSlideL !== null; }
 
-/** 1:1 décomp `BattleIntroSlide1` (battle_intro.c:154-237). Tickée chaque frame
- *  par BattleMainCB2 (no-op si pas de slide active). Met à jour battleVBlankState
- *  (appliqué aux registres par VBlankCB_Battle). */
+/** 1:1 décomp `BattleIntroSlide1/2/3` (battle_intro.c:154-437) selon l'env
+ *  (`sBattleIntroSlideFuncs`). Tickée chaque frame par BattleMainCB2. Met à jour
+ *  battleVBlankState (appliqué aux registres par VBlankCB_Battle).
+ *   - Slide1 (grass/long_grass/pond/mountain/cave) : BG1_X+=6, scroll terrain BG1_Y, scanline.
+ *   - Slide2 (sand/water/underwater) : BG1_X+=8/6, bob WATER (Cos2), blend BG1↔BG3 (15→0), scanline.
+ *   - Slide3 (building/PLAIN) : BG1_X+=8, blend BG1↔BG3 (cross-fade 8/8→0/16), scanline.
+ *  Les 3 partagent les bandes WIN0V (case 1-3) + la fin (case 4 = BattleIntroSlideEnd). */
 export function tickBattleIntroSlideL(): void {
   if (!_introSlideL) return;
   const t = _introSlideL;
@@ -301,51 +336,85 @@ export function tickBattleIntroSlideL(): void {
   t.lastFrame = fc;
   const rt = getRuntime();
 
-  // 1:1 l.158 : gBattle_BG1_X += 6 (scroll horizontal du fond strié, CHAQUE frame).
-  battleVBlankState.bg1_x = (battleVBlankState.bg1_x + 6) & 0xFFFF;
+  // ─── Header (avant le switch) : scroll BG1_X par slide + bob WATER (Slide2). ───
+  if (t.slideFunc === 1) {
+    battleVBlankState.bg1_x = (battleVBlankState.bg1_x + 6) & 0xFFFF;        // 1:1 Slide1 l.158
+  } else if (t.slideFunc === 2) {
+    // 1:1 Slide2 l.243-264 : BG1_X += 8 (SAND/WATER) / += 6 (UNDERWATER).
+    battleVBlankState.bg1_x = (battleVBlankState.bg1_x + (t.environment === BATTLE_ENVIRONMENT_UNDERWATER ? 6 : 8)) & 0xFFFF;
+    if (t.environment === BATTLE_ENVIRONMENT_WATER) {
+      // 1:1 l.256-263 : bob vertical Cos2(data6)/512 - 8.
+      battleVBlankState.bg1_y = (((_Cos2(t.data6) / 512 - 8) | 0)) & 0xFFFF;
+      t.data6 += (t.data6 < 180) ? 4 : 6;
+      if (t.data6 === 360) t.data6 = 0;
+    }
+  } else {
+    battleVBlankState.bg1_x = (battleVBlankState.bg1_x + 8) & 0xFFFF;        // 1:1 Slide3 l.355
+  }
 
   switch (t.state) {
     case 0:
-      // 1:1 l.167-171 : wild → data[2] = 1, state++.
-      t.data2 = 1;
+      if (t.slideFunc === 3) {
+        // 1:1 Slide3 l.359-362 : setup blend BG1↔BG3 50% (BLDALPHA(8,8)).
+        rt?.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ);
+        rt?.SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));
+        rt?.SetGpuReg(REG_OFFSET_BLDY, 0);
+        t.data4 = BLDALPHA_BLEND(8, 8);  // 0x0808
+      } else if (t.slideFunc === 2) {
+        t.data4 = 16;                    // 1:1 Slide2 l.269
+      }
+      t.data2 = 1;                       // wild (non-link) → délai 1
       t.state++;
       break;
     case 1:
-      // 1:1 l.173-178 : --data2 == 0 → state++, WININ = contenu visible DANS win0.
       if (--t.data2 === 0) {
         t.state++;
-        rt?.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL);  // 0x3F
+        rt?.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL);  // contenu visible DANS win0
       }
       break;
     case 2:
-      // 1:1 l.181-188 : WIN0V -= 0xFF (bandes lentes) jusqu'à (WIN0V & 0xFF00)==0x3000.
-      battleVBlankState.win0v = (battleVBlankState.win0v - 0xFF) & 0xFFFF;
+      battleVBlankState.win0v = (battleVBlankState.win0v - 0xFF) & 0xFFFF;  // bandes lentes
       if ((battleVBlankState.win0v & 0xFF00) === 0x3000) {
         t.state++;
-        t.data2 = DISPLAY_WIDTH;  // 240
+        t.data2 = DISPLAY_WIDTH;  // 240 (largeur des stries)
         t.data3 = 32;
+        t.data5 = 1;
       }
       break;
     case 3:
-      // 1:1 l.191-207 : scroll terrain (BG1_Y) après un délai de 32 frames.
-      if (t.data3) {
-        t.data3--;
-      } else if (t.environment === BATTLE_ENVIRONMENT_LONG_GRASS) {
-        if (battleVBlankState.bg1_y !== ((-80) & 0xFFFF)) battleVBlankState.bg1_y = (battleVBlankState.bg1_y - 2) & 0xFFFF;
+      if (t.slideFunc === 1) {
+        // 1:1 Slide1 l.191-207 : scroll terrain (BG1_Y) après délai 32f.
+        if (t.data3) t.data3--;
+        else if (t.environment === BATTLE_ENVIRONMENT_LONG_GRASS) {
+          if (battleVBlankState.bg1_y !== ((-80) & 0xFFFF)) battleVBlankState.bg1_y = (battleVBlankState.bg1_y - 2) & 0xFFFF;
+        } else {
+          if (battleVBlankState.bg1_y !== ((-56) & 0xFFFF)) battleVBlankState.bg1_y = (battleVBlankState.bg1_y - 1) & 0xFFFF;
+        }
+      } else if (t.slideFunc === 2) {
+        // 1:1 Slide2 l.300-316 : après délai 32f, ramp blend (data4 & 0x1F décrémente / 4f).
+        if (t.data3) {
+          if (--t.data3 === 0) {
+            rt?.SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ);
+            rt?.SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(15, 0));
+            rt?.SetGpuReg(REG_OFFSET_BLDY, 0);
+          }
+        } else if ((t.data4 & 0x1F) && --t.data5 === 0) {
+          t.data4 = (t.data4 + 0xFF) & 0xFFFF;  // eva--, evb++ (cross-fade BG1→BG3)
+          t.data5 = 4;
+        }
       } else {
-        if (battleVBlankState.bg1_y !== ((-56) & 0xFFFF)) battleVBlankState.bg1_y = (battleVBlankState.bg1_y - 1) & 0xFFFF;
+        // 1:1 Slide3 l.393-404 : après délai 32f, ramp blend (data4 & 0xF décrémente / 6f).
+        if (t.data3) t.data3--;
+        else if ((t.data4 & 0xF) && --t.data5 === 0) {
+          t.data4 = (t.data4 + 0xFF) & 0xFFFF;  // eva 8→0, evb 8→16 (cross-fade BG1→BG3)
+          t.data5 = 6;
+        }
       }
-      // 1:1 l.209-210 : bandes rapides.
-      if (battleVBlankState.win0v & 0xFF00) {
-        battleVBlankState.win0v = (battleVBlankState.win0v - 0x3FC) & 0xFFFF;
-      }
-      // 1:1 l.212-213 : largeur des stries data2 -= 2.
+      // 1:1 (tous) : bandes rapides + largeur stries data2 -= 2 + buffer scanline (BG3HOFS).
+      if (battleVBlankState.win0v & 0xFF00) battleVBlankState.win0v = (battleVBlankState.win0v - 0x3FC) & 0xFFFF;
       if (t.data2) t.data2 -= 2;
-      // 1:1 l.216-220 : remplit le buffer scanline (top = data2, bottom = -data2)
-      // → lu par l'HBlank pour shifter BG3HOFS (stries qui se referment).
       for (let i = 0; i < DISPLAY_HEIGHT / 2; i++) gScanlineEffectRegBuffers[0][i] = t.data2 & 0xFFFF;
       for (let i = DISPLAY_HEIGHT / 2; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[0][i] = (-t.data2) & 0xFFFF;
-      // 1:1 l.222-231 : data2 == 0 → fin du scroll, cache le fond d'entrée + stop stries.
       if (t.data2 === 0) {
         t.state++;
         hideBattleEntryBackground();
@@ -354,22 +423,24 @@ export function tickBattleIntroSlideL(): void {
       break;
     case 4:
     default:
-      // 1:1 `BattleIntroSlideEnd` (l.140-152) : reset BG offsets + WININ/WINOUT tout
-      // visible partout (= plus de clipping window) + win0v plein écran.
-      battleVBlankState.bg1_x = 0;
-      battleVBlankState.bg1_y = 0;
-      battleVBlankState.bg2_x = 0;
-      battleVBlankState.bg2_y = 0;
+      // 1:1 `BattleIntroSlideEnd` (l.140-152) : reset offsets + BLD* + WININ/WINOUT all + win0v plein.
+      battleVBlankState.bg1_x = 0; battleVBlankState.bg1_y = 0;
+      battleVBlankState.bg2_x = 0; battleVBlankState.bg2_y = 0;
       if (rt) {
+        rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);   // 1:1 l.147 (sinon le combat hérite du blend)
+        rt.SetGpuReg(REG_OFFSET_BLDALPHA, 0); // 1:1 l.148
+        rt.SetGpuReg(REG_OFFSET_BLDY, 0);     // 1:1 l.149
         rt.SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL | (WININ_WIN0_ALL << 8));
         rt.SetGpuReg(REG_OFFSET_WINOUT, 0x3F | (0x3F << 8));
       }
       battleVBlankState.win0v = WIN_RANGE(0, DISPLAY_HEIGHT);
-      // Restaure le backdrop du MENU (#484050) — les bandes étaient noires pendant
-      // la slide. (1:1 BattleIntroSlideEnd ne touche pas la palette ; c'est notre
-      // gestion du backdrop intro≠menu.) sizeBytes=2 = 1 couleur.
+      // Restaure le backdrop du MENU (#484050) — bandes noires pendant la slide.
       LoadPalette(new Uint16Array([getMenuBackdropRgb15()]), 0, 2);
       _introSlideL = null;
-      break;
+      return;  // case 4 ne ré-applique pas le BLDALPHA ci-dessous
   }
+
+  // 1:1 Slide2/3 l.347-348 / 435-436 : `if (tState != 4) SetGpuReg(BLDALPHA, BLDALPHA_BLEND(data4, 0))`.
+  // = REG_BLDALPHA = data4 brut (eva=low byte, evb=high byte → le cross-fade du ramp). Slide1 = pas de blend.
+  if (t.slideFunc !== 1) rt?.SetGpuReg(REG_OFFSET_BLDALPHA, t.data4 & 0xFFFF);
 }
