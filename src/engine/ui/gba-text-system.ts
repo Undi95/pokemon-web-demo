@@ -564,6 +564,13 @@ export function _debugGetTextPrinters(): typeof gTextPrinters {
 // Expose pour debug overworld dialog (= bundle module instance, pas dynamic import).
 (globalThis as Record<string, unknown>).__debugGetTextPrinters = _debugGetTextPrinters;
 
+// Expose le VRAI IsTextPrinterActive pour le gate de combat (CompleteOnInactiveTextPrinter*).
+// Le gate doit suivre le printer RÉEL — qui gère `\p` (CHAR_PROMPT_SCROLL) = flèche ▼ +
+// attente A/B — et NON le shim setTimeout aveugle de battle-controllers.ts (qui flippe le
+// flag après ~N frames sans connaître `\p` ni l'input → bug "le texte defile sans nous"
+// après « X apparaît »). 1:1 décomp text.c:347 IsTextPrinterActive = sTextPrinters[id].active.
+(globalThis as Record<string, unknown>).__gbaIsTextPrinterActive = IsTextPrinterActive;
+
 export function RunTextPrintersAndIsPrinter0Active(): boolean {
   RunTextPrinters();
   return IsTextPrinterActive(0);

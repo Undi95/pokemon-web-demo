@@ -1111,11 +1111,22 @@ function CompleteOnInactiveTextPrinter2(): void {
   }
 }
 
-/** 1:1 décomp `IsTextPrinterActive(windowId)` (text.c). Returns true si le
- *  printer typewriter pour ce window est actif (= en cours de typer le texte).
- *  Notre port : wire vers globalThis.__textPrinterState (= un hash windowId →
- *  active flag) qui sera set par BattlePutTextOnWindow / BattleStringExpand. */
+/** 1:1 décomp `IsTextPrinterActive(windowId)` (text.c:347 = sTextPrinters[id].active).
+ *  Returns true tant que le printer typewriter pour ce window est actif. Le gate de
+ *  combat (CompleteOnInactiveTextPrinter2) DOIT suivre le VRAI printer (gba-text-system),
+ *  qui gère `\p` (CHAR_PROMPT_SCROLL) = flèche ▼ + attente A/B. Avant, ce gate lisait un
+ *  shim setTimeout AVEUGLE (__textPrinterState) qui flippait le flag après ~N frames sans
+ *  connaître `\p` ni l'input → le message d'intro « Un X sauvage apparaît! » défilait sans
+ *  attendre le joueur (écart 1:1, retour user). */
 function _IsTextPrinterActive(windowId: number): boolean {
+  // Flag de TEST __battleTextInstant : court-circuit (les harness sync/async ne doivent pas
+  // rester bloqués sur l'attente d'input). Identique à l'ancien comportement sous ce flag
+  // (le shim retournait aussi false) → zéro régression harness. Inerte sans le flag.
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) return false;
+  // 1:1 : suit le VRAI printer (gère \p/flèche/A/B).
+  const real = (globalThis as { __gbaIsTextPrinterActive?: (w: number) => boolean }).__gbaIsTextPrinterActive;
+  if (real) return real(windowId);
+  // Fallback : shim __textPrinterState (avant chargement charmap / API indispo au 1er message).
   const m = (globalThis as { __textPrinterState?: Record<number, boolean> }).__textPrinterState;
   return !!(m?.[windowId]);
 }

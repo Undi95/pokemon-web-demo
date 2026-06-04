@@ -426,14 +426,22 @@ function OpponentHandlePrintString(): void {
 }
 
 /** 1:1 décomp `CompleteOnInactiveTextPrinter()` (opponent, battle_controller_opponent.c) :
- *  poll IsTextPrinterActive(B_WIN_MSG) → ExecCompleted quand le texte a fini de
- *  s'imprimer. Wire vers `__textPrinterState[B_WIN_MSG]` (posé par BattlePutTextOnWindow,
- *  clear après ~frames ou synchrone si `__battleTextInstant`). */
+ *  poll IsTextPrinterActive(B_WIN_MSG) → ExecCompleted quand le texte a fini de s'imprimer.
+ *  Suit le VRAI printer (gba-text-system) comme le gate joueur (cf. _IsTextPrinterActive)
+ *  → gère `\p` (CHAR_PROMPT_SCROLL) = flèche ▼ + attente A/B. Avant : shim setTimeout
+ *  aveugle `__textPrinterState` = auto-avance sans attendre le joueur. */
 function _CompleteOnInactiveTextPrinterOpp(): void {
-  const m = (globalThis as { __textPrinterState?: Record<number, boolean> }).__textPrinterState;
-  if (!(m && m[0 /* B_WIN_MSG */])) {
+  if (!_IsBattleTextPrinterActiveOpp(0 /* B_WIN_MSG */)) {
     OpponentBufferExecCompleted();
   }
+}
+function _IsBattleTextPrinterActiveOpp(windowId: number): boolean {
+  // Court-circuit harness (sync/async) — identique à l'ancien comportement sous ce flag.
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) return false;
+  const real = (globalThis as { __gbaIsTextPrinterActive?: (w: number) => boolean }).__gbaIsTextPrinterActive;
+  if (real) return real(windowId);
+  const m = (globalThis as { __textPrinterState?: Record<number, boolean> }).__textPrinterState;
+  return !!(m?.[windowId]);
 }
 function OpponentHandlePrintSelectionString(): void { OpponentBufferExecCompleted(); }
 
