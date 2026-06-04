@@ -31,7 +31,8 @@ import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-global
 // Registres fenêtre WIN0 : le Slice clippe BG **et OBJ** via WIN0 (WININ/WINOUT +
 // WIN0H par-scanline). Sans ça, le sprite joueur restait visible dans la déchirure.
 import {
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
   REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
 } from '../system/decomp-runtime';
 
@@ -318,3 +319,160 @@ export function stopBattleTransition(): void {
 export function isBattleTransitionActive(): boolean {
   return _slice !== null && _slice.state === 1;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B_TRANSITION_WHITE_BARS_FADE (battle_transition.c:3585-3754, sWhiteBarsFade_Funcs)
+// 8 bandes horizontales (20px) qui blanchissent depuis la DROITE (lighten BLDY +
+// WIN0H par-scanline) avec délais décalés → flash blanc plein écran → fondu au noir.
+// = la transition WILD par DÉFAUT (zone normale, ennemi pas plus faible que le joueur ;
+// sélectionnée p.ex. au combat dev Treecko5 vs Poochyena5 → GetWildBattleTransition=9).
+// HBlank : le compositor lit `blend.brightness` (lighten) + `windows.win0.x2` FRAIS
+// par-scanline → muter ces champs dans le HBlank applique BLDY/WIN0H par-ligne (1:1 DMA).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 1:1 décomp `RGB(31,31,31)` = blanc plein (RGB_WHITE). */
+const RGB_WHITE_TR = 31 | (31 << 5) | (31 << 10);  // 0x7FFF
+const NUM_WHITE_BARS = 8;
+/** 1:1 `sWhiteBarsFade_StartDelays` (battle_transition.c:740). */
+const WHITE_BARS_START_DELAYS = [0, 20, 15, 40, 10, 25, 35, 5];
+/** 1:1 `FADE_TARGET` (l.3585) = 16 << 8. */
+const FADE_TARGET = 16 << 8;
+
+interface WhiteBar {
+  x: number; fade: number; finished: boolean; destroyed: boolean;
+  destroyAttempts: number; delay: number; isMainSprite: boolean;
+}
+interface WhiteBarsState {
+  state: number;     // 1=bars, 2=blendToBlack (one-shot), 3=end
+  counter: number;   // sTransitionData.counter (bandes finies)
+  vblankDma: boolean;
+  bldy: number;      // phase end : BLDY 1→17
+  bars: WhiteBar[];
+}
+let _whiteBars: WhiteBarsState | null = null;
+let _whiteBarsLastFrame = -1;
+
+/** 1:1 `WhiteBarsFade_Init` (l.3592) + `WhiteBarsFade_StartBars` (l.3619) fusionnés. */
+export function startBattleTransitionWhiteBarsFade(): void {
+  ScanlineEffect_Clear();
+  _whiteBarsLastFrame = -1;
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BLDCNT, 0xBF);   // BLDCNT_TGT1_ALL(0x3F) | BLDCNT_EFFECT_LIGHTEN(2<<6)
+  rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+  rt.SetGpuReg(REG_OFFSET_WININ, 0x1E);    // WIN0 inside : BG1|BG2|BG3|OBJ (PAS BG0, PAS bit CLR → no blend)
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0x3F);   // outside : tout + CLR → le lighten BLDY s'applique
+  rt.SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[1][i] = 0;                                // BLDY
+    gScanlineEffectRegBuffers[1][i + DISPLAY_HEIGHT] = DISPLAY_WIDTH;   // WIN0H x (= 240)
+  }
+  const bars: WhiteBar[] = [];
+  for (let i = 0; i < NUM_WHITE_BARS; i++) {
+    bars.push({
+      x: DISPLAY_WIDTH, fade: 0, finished: false, destroyed: false,
+      destroyAttempts: 0, delay: WHITE_BARS_START_DELAYS[i], isMainSprite: i === NUM_WHITE_BARS - 1,
+    });
+  }
+  _whiteBars = { state: 1, counter: 0, vblankDma: false, bldy: 0, bars };
+  // 1:1 `HBlankCB_WhiteBarsFade` (REG_BLDY = buf[1][VCOUNT]) + DMA WIN0H par-scanline.
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      rt.gba.blend.brightness = gScanlineEffectRegBuffers[1][y] & 0x1F;
+      rt.gba.windows.win0.x1 = 0;
+      rt.gba.windows.win0.x2 = gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + y] & 0xFF;
+    }
+  });
+  _hblankInstalled = true;
+}
+
+/** 1:1 `sWhiteBarsFade_Funcs` state machine. Retourne true en fin (FadeScreenBlack). */
+export function tickBattleTransitionWhiteBarsFade(): boolean {
+  if (!_whiteBars) return true;
+  const w = _whiteBars;
+  const fc = Math.floor(performance.now() / 16);
+  if (fc === _whiteBarsLastFrame) return false;
+  _whiteBarsLastFrame = fc;
+  const rt = getRuntime();
+  if (!rt) return true;
+  const step = Math.floor(DISPLAY_HEIGHT / NUM_WHITE_BARS);  // 20
+
+  if (w.state === 1) {
+    // PHASE bars — 1:1 `SpriteCB_WhiteBarFade` (l.3711) par bande.
+    w.vblankDma = false;
+    for (let bi = 0; bi < w.bars.length; bi++) {
+      const s = w.bars[bi];
+      if (s.destroyed) continue;            // 1:1 DestroySprite : la bande ne tick plus
+      const baseY = bi * step;              // sprite.y posé en StartBars
+      if (s.delay) { s.delay--; if (s.isMainSprite) w.vblankDma = true; continue; }
+      for (let i = 0; i < step; i++) {      // fill buf[0] (BLDY + WIN0H x) sur les 20 lignes
+        gScanlineEffectRegBuffers[0][baseY + i] = s.fade >> 8;
+        gScanlineEffectRegBuffers[0][baseY + i + DISPLAY_HEIGHT] = s.x & 0xFF;
+      }
+      if (s.x === 0 && s.fade === FADE_TARGET) s.finished = true;
+      s.x -= 16;
+      s.fade += FADE_TARGET / 32;           // +128 (BLDY +0.5/frame sur l'octet haut)
+      if (s.x < 0) s.x = 0;
+      if (s.fade > FADE_TARGET) s.fade = FADE_TARGET;
+      if (s.isMainSprite) w.vblankDma = true;
+      if (s.finished) {
+        if (!s.isMainSprite || (w.counter >= NUM_WHITE_BARS - 1 && s.destroyAttempts++ > 7)) {
+          w.counter++;
+          s.destroyed = true;
+        }
+      }
+    }
+    // 1:1 `VBlankCB_WhiteBarsFade` : DmaCopy16(buf[0] → buf[1], 320 u16) si VBlank_DMA.
+    if (w.vblankDma) {
+      for (let i = 0; i < DISPLAY_HEIGHT * 2; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+    }
+    // 1:1 `WhiteBarsFade_WaitBars` : counter >= 8 → flash blanc plein écran.
+    if (w.counter >= NUM_WHITE_BARS) { BlendPalettes(PALETTES_ALL, 16, RGB_WHITE_TR); w.state = 2; }
+    return false;
+  }
+
+  if (w.state === 2) {
+    // PHASE blendToBlack (one-shot) — 1:1 `WhiteBarsFade_BlendToBlack` (l.3653).
+    rt.gba.setHBlankCallback(null);
+    _hblankInstalled = false;
+    rt.SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);  // fenêtre pleine
+    rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+    rt.SetGpuReg(REG_OFFSET_BLDCNT, 0xFF);          // BLDCNT_TGT1_ALL | BLDCNT_EFFECT_DARKEN
+    rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);           // WININ_WIN0_ALL
+    w.bldy = 0;
+    w.state = 3;
+    return false;
+  }
+
+  // PHASE end — 1:1 `WhiteBarsFade_End` (l.3672) : BLDY 1→17 puis FadeScreenBlack.
+  w.bldy++;
+  rt.SetGpuReg(REG_OFFSET_BLDY, w.bldy);
+  if (w.bldy > 16) {
+    BlendPalettes(PALETTES_ALL, 16, 0);  // FadeScreenBlack (RGB_BLACK = 0)
+    stopBattleTransitionWhiteBarsFade();
+    return true;
+  }
+  return false;
+}
+
+/** Cleanup WhiteBarsFade : retire le HBlank + reset BLDCNT/BLDY/WIN0 (sinon le
+ *  combat hériterait du darken/fenêtre résiduel = écran noir). */
+export function stopBattleTransitionWhiteBarsFade(): void {
+  const rt = getRuntime();
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.windows.win0.x1 = 0;
+    rt.gba.windows.win0.x2 = DISPLAY_WIDTH;
+    rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
+    rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+    rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+    rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);
+  }
+  _hblankInstalled = false;
+  ScanlineEffect_Stop();
+  _whiteBars = null;
+}
+
+/** Devtools : check si la transition WhiteBarsFade est active. */
+export function isBattleTransitionWhiteBarsFadeActive(): boolean { return _whiteBars !== null; }

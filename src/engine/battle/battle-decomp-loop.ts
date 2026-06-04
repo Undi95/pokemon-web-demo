@@ -26,7 +26,11 @@ import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, g
 import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
-import { startBattleIntroFlash, tickBattleIntroFlash, startBattleTransitionSlice, tickBattleTransitionSlice } from './battle-transition';
+import {
+  startBattleIntroFlash, tickBattleIntroFlash,
+  startBattleTransitionSlice, tickBattleTransitionSlice,
+  startBattleTransitionWhiteBarsFade, tickBattleTransitionWhiteBarsFade,
+} from './battle-transition';
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
@@ -130,15 +134,20 @@ function _playBattleBGM(): void {
  *  Mirror EXACT du flow voie V (battle-flow.ts:2105-2131). Gaté in-game (returnToOverworld) :
  *  le harness boote CB2_InitBattle direct (pas d'OW à découper). */
 function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: number): () => void {
-  let state = 0;  // 0 = lance le flash, 1 = intro flash en cours, 2 = slice en cours
-  // Dispatch 1:1 `CreateBattleStartTask(transition, …)` : le flash gris est COMMUN à
-  // toutes les transitions (CreateIntroTask), puis la transition sélectionnée s'exécute.
-  // Seul B_TRANSITION_SLICE est implémenté visuellement ; les autres (WHITE_BARS_FADE,
-  // WAVE, GRID_SQUARES…) font un fallback gracieux vers SLICE = chantier VISUEL/A/B
-  // (cf. [[battle-transitions-FULL-roadmap-2026-06-04]] Phase 4). Le warn rend visible,
-  // pour l'A/B, quelle transition le jeu sélectionne réellement pour ce combat.
-  if (transition !== B_TRANSITION.B_TRANSITION_SLICE) {
-    console.warn(`[decomp-loop] transition sélectionnée=${transition} non implémentée → fallback SLICE (visuel A/B à porter)`);
+  let state = 0;  // 0 = lance le flash, 1 = flash en cours, 2 = transition en cours
+  // Dispatch 1:1 `CreateBattleStartTask(transition, …)` (battle_setup.c) : le flash gris
+  // (CreateIntroTask) est COMMUN à toutes les transitions, puis la transition SÉLECTIONNÉE
+  // s'exécute. PORTÉES : SLICE (ennemi < joueur) + WHITE_BARS_FADE (défaut zone normale,
+  // = le cas du combat dev Treecko5/Poochyena5). Les autres (CAVE/WATER/FLASH : WAVE,
+  // GRID_SQUARES, CLOCKWISE_WIPE, BLUR, RIPPLE) font un fallback gracieux SLICE + warn
+  // (= chantier VISUEL/A/B restant). Le warn rend visible quelle transition le jeu veut.
+  let startTransition = startBattleTransitionSlice;
+  let tickTransition = tickBattleTransitionSlice;
+  if (transition === B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
+    startTransition = startBattleTransitionWhiteBarsFade;
+    tickTransition = tickBattleTransitionWhiteBarsFade;
+  } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE) {
+    console.warn(`[decomp-loop] transition=${transition} non portée → fallback SLICE (visuel A/B à porter)`);
   }
   return function CB2_BattleStartTransition(): void {
     switch (state) {
@@ -148,12 +157,12 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
         break;
       case 1:
         if (tickBattleIntroFlash()) {
-          startBattleTransitionSlice();
+          startTransition();
           state = 2;
         }
         break;
       case 2:
-        if (tickBattleTransitionSlice()) {
+        if (tickTransition()) {
           // Transition terminée (écran noir via FadeScreenBlack) → boot du combat.
           getRuntime()?.SetMainCallback2?.(cb2InitBattle as never);
         }
