@@ -212,6 +212,18 @@ const _sBattlerCoordsSingle: ReadonlyArray<readonly [number, number]> = [
 function _GetBattlerSpriteCoordX(battler: number): number {
   return _sBattlerCoordsSingle[GetBattlerPosition(battler) & 3]?.[0] ?? 176;
 }
+/** 1:1 décomp `GetBattlerSpriteSubpriority(battler)` (battle_anim_mons.c:2035, single battle).
+ *  PLAYER_LEFT=30, PLAYER_RIGHT=20, OPPONENT_LEFT=40, OPPONENT_RIGHT=50. Plus BAS = devant.
+ *  Le mon adverse (OPPONENT_LEFT=40) rend donc DERRIÈRE le dresseur/mon joueur (PLAYER_LEFT=30),
+ *  à oam.priority égal (=2, gOamData_BattleSprite{Player,Opponent}Side, battle_main.c:284/299). */
+function _GetBattlerSpriteSubpriority(battler: number): number {
+  switch (GetBattlerPosition(battler) & 3) {
+    case 0: return 30; // B_POSITION_PLAYER_LEFT
+    case 1: return 40; // B_POSITION_OPPONENT_LEFT
+    case 2: return 20; // B_POSITION_PLAYER_RIGHT
+    default: return 50; // B_POSITION_OPPONENT_RIGHT
+  }
+}
 /** Data décomp `gMonFrontPicCoords`/`gMonBackPicCoords` ({front,back}{w,h,yOffset}
  *  par species enum) depuis /decomp/em/mon-pic-coords.json (cache). Sert au
  *  grounding (aligner les pieds du mon sur la plateforme). */
@@ -259,10 +271,15 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
     // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
     const spriteId = CreateSprite({
-      oam: { shape: 0, size: 3, priority: 1, paletteNum: battler, affineMode: 0 },
+      // 1:1 décomp gOamData_BattleSprite{Player,Opponent}Side.priority = 2 (battle_main.c:284/299) ;
+      // le 4e arg CreateSprite = GetBattlerSpriteSubpriority (battle_anim_mons.c:2035) :
+      // PLAYER_LEFT=30 / OPPONENT_LEFT=40 → à priority égale, le mon adverse (40) rend DERRIÈRE
+      // le dresseur joueur (back-sprite, subpri 30). Avant : priority=1 + subpri=2 (FAUX) → le
+      // mon adverse passait DEVANT le dresseur (retour A/B 2026-06-04).
+      oam: { shape: 0, size: 3, priority: 2, paletteNum: battler, affineMode: 0 },
       images: [{ data: frame0, size: FRAME0 }],
       callback: null,
-    }, _GetBattlerSpriteCoordX(battler), y, 2);
+    }, _GetBattlerSpriteCoordX(battler), y, _GetBattlerSpriteSubpriority(battler));
     _registerBattlerMonSprite(battler, spriteId);
     // 1:1 décomp OpponentHandleLoadMonSprite (battle_controller_opponent.c:1149-1153) : le mon
     // SAUVAGE adverse naît HORS-ÉCRAN DROITE (x2=-DISPLAY_WIDTH) avec le callback SpriteCB_WildMon

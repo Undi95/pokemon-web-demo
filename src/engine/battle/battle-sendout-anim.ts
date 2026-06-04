@@ -508,6 +508,9 @@ export async function showTrainerBackSprite(gender: number, x: number, y: number
     x, y,
     shape: 0, size: 3,   // 64×64 (SQUARE, size 3)
     priority: 2,         // même plan que les mons
+    // 1:1 GetBattlerSpriteSubpriority(B_POSITION_PLAYER_LEFT)=30 (battle_anim_mons.c:2050) :
+    // le back-pic du dresseur joueur (subpri 30) rend DEVANT le mon adverse (subpri 40).
+    subpriority: 30,
   });
   _trainerSpriteId = t.spriteId;
   // 1:1 PlayerHandleDrawTrainerPic : démarre off-screen DROITE (x2 = +DISPLAY_WIDTH),
