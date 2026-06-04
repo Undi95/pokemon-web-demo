@@ -110,7 +110,18 @@ export const MON_DATA_SPECIES_OR_EGG = 65;
 export const MON_DATA_IVS = 66;
 // 1:1 décomp pokemon.h:75-87 — 13 additional ribbons (CHAMPION..UNUSED) = 67..79.
 export const MON_DATA_CHAMPION_RIBBON = 67;
-// (WINNING/VICTORY/ARTIST/EFFORT/MARINE/LAND/SKY/COUNTRY/NATIONAL/EARTH/WORLD/UNUSED_RIBBONS = 68..79)
+export const MON_DATA_WINNING_RIBBON = 68;
+export const MON_DATA_VICTORY_RIBBON = 69;
+export const MON_DATA_ARTIST_RIBBON = 70;
+export const MON_DATA_EFFORT_RIBBON = 71;
+export const MON_DATA_MARINE_RIBBON = 72;
+export const MON_DATA_LAND_RIBBON = 73;
+export const MON_DATA_SKY_RIBBON = 74;
+export const MON_DATA_COUNTRY_RIBBON = 75;
+export const MON_DATA_NATIONAL_RIBBON = 76;
+export const MON_DATA_EARTH_RIBBON = 77;
+export const MON_DATA_WORLD_RIBBON = 78;
+export const MON_DATA_UNUSED_RIBBONS = 79;
 export const MON_DATA_MODERN_FATEFUL_ENCOUNTER = 80;
 export const MON_DATA_KNOWN_MOVES = 81;
 export const MON_DATA_RIBBON_COUNT = 82;
@@ -166,6 +177,28 @@ export interface Pokemon {
   speedIV: number; spAttackIV: number; spDefenseIV: number;
   abilityNum: number;
   modernFatefulEncounter: number;
+  // Substruct3 ribbons — 1:1 décomp pokemon.h:150-167. Optionnels (= 0 par
+  // défaut via `?? 0`) pour ne casser aucun autre constructeur de Pokemon.
+  // Concours (3 bits, rang 0-4) :
+  coolRibbon?: number;
+  beautyRibbon?: number;
+  cuteRibbon?: number;
+  smartRibbon?: number;
+  toughRibbon?: number;
+  // Award (1 bit chacun, sauf unusedRibbons = 4 bits) :
+  championRibbon?: number;
+  winningRibbon?: number;
+  victoryRibbon?: number;
+  artistRibbon?: number;
+  effortRibbon?: number;
+  marineRibbon?: number;
+  landRibbon?: number;
+  skyRibbon?: number;
+  countryRibbon?: number;
+  nationalRibbon?: number;
+  earthRibbon?: number;
+  worldRibbon?: number;
+  unusedRibbons?: number;
   // Pokemon (non-box) fields
   status: number;        // u32 (STATUS1_* flags)
   level: number;         // u8
@@ -195,6 +228,10 @@ export function createEmptyPokemon(): Pokemon {
     hpIV: 0, attackIV: 0, defenseIV: 0,
     speedIV: 0, spAttackIV: 0, spDefenseIV: 0,
     abilityNum: 0, modernFatefulEncounter: 0,
+    coolRibbon: 0, beautyRibbon: 0, cuteRibbon: 0, smartRibbon: 0, toughRibbon: 0,
+    championRibbon: 0, winningRibbon: 0, victoryRibbon: 0, artistRibbon: 0, effortRibbon: 0,
+    marineRibbon: 0, landRibbon: 0, skyRibbon: 0, countryRibbon: 0, nationalRibbon: 0,
+    earthRibbon: 0, worldRibbon: 0, unusedRibbons: 0,
     status: 0, level: 0, mail: 0,
     hp: 0, maxHP: 0,
     attack: 0, defense: 0, speed: 0,
@@ -277,6 +314,25 @@ export function GetMonData(mon: Pokemon, field: number): number | string {
             | ((mon.speedIV & 0x1F) << 15)
             | ((mon.spAttackIV & 0x1F) << 20)
             | ((mon.spDefenseIV & 0x1F) << 25)) >>> 0;
+    // 1:1 décomp pokemon.c GetBoxMonData : rubans (champ direct). Concours = rang.
+    case MON_DATA_COOL_RIBBON: return mon.coolRibbon ?? 0;
+    case MON_DATA_BEAUTY_RIBBON: return mon.beautyRibbon ?? 0;
+    case MON_DATA_CUTE_RIBBON: return mon.cuteRibbon ?? 0;
+    case MON_DATA_SMART_RIBBON: return mon.smartRibbon ?? 0;
+    case MON_DATA_TOUGH_RIBBON: return mon.toughRibbon ?? 0;
+    case MON_DATA_CHAMPION_RIBBON: return mon.championRibbon ?? 0;
+    case MON_DATA_WINNING_RIBBON: return mon.winningRibbon ?? 0;
+    case MON_DATA_VICTORY_RIBBON: return mon.victoryRibbon ?? 0;
+    case MON_DATA_ARTIST_RIBBON: return mon.artistRibbon ?? 0;
+    case MON_DATA_EFFORT_RIBBON: return mon.effortRibbon ?? 0;
+    case MON_DATA_MARINE_RIBBON: return mon.marineRibbon ?? 0;
+    case MON_DATA_LAND_RIBBON: return mon.landRibbon ?? 0;
+    case MON_DATA_SKY_RIBBON: return mon.skyRibbon ?? 0;
+    case MON_DATA_COUNTRY_RIBBON: return mon.countryRibbon ?? 0;
+    case MON_DATA_NATIONAL_RIBBON: return mon.nationalRibbon ?? 0;
+    case MON_DATA_EARTH_RIBBON: return mon.earthRibbon ?? 0;
+    case MON_DATA_WORLD_RIBBON: return mon.worldRibbon ?? 0;
+    case MON_DATA_UNUSED_RIBBONS: return mon.unusedRibbons ?? 0;
     case MON_DATA_MODERN_FATEFUL_ENCOUNTER: return mon.modernFatefulEncounter;
     case MON_DATA_KNOWN_MOVES: {
       // 1:1 décomp : bitmask des 4 moves slots qui ont un move défini.
@@ -286,8 +342,39 @@ export function GetMonData(mon: Pokemon, field: number): number | string {
       }
       return mask;
     }
-    case MON_DATA_RIBBON_COUNT: return 0;
-    case MON_DATA_RIBBONS: return 0;
+    case MON_DATA_RIBBON_COUNT: {
+      // 1:1 décomp pokemon.c GetBoxMonData : somme de tous les rubans (concours
+      // = rangs additionnés + award 1 bit), uniquement si species && !egg.
+      if (!mon.species || mon.isEgg) return 0;
+      return (mon.coolRibbon ?? 0) + (mon.beautyRibbon ?? 0) + (mon.cuteRibbon ?? 0)
+           + (mon.smartRibbon ?? 0) + (mon.toughRibbon ?? 0) + (mon.championRibbon ?? 0)
+           + (mon.winningRibbon ?? 0) + (mon.victoryRibbon ?? 0) + (mon.artistRibbon ?? 0)
+           + (mon.effortRibbon ?? 0) + (mon.marineRibbon ?? 0) + (mon.landRibbon ?? 0)
+           + (mon.skyRibbon ?? 0) + (mon.countryRibbon ?? 0) + (mon.nationalRibbon ?? 0)
+           + (mon.earthRibbon ?? 0) + (mon.worldRibbon ?? 0);
+    }
+    case MON_DATA_RIBBONS: {
+      // 1:1 décomp pokemon.c GetBoxMonData : rubans packés en u32 (positions de
+      // bits exactes), uniquement si species && !egg.
+      if (!mon.species || mon.isEgg) return 0;
+      return ((mon.championRibbon ?? 0)
+            | ((mon.coolRibbon ?? 0) << 1)
+            | ((mon.beautyRibbon ?? 0) << 4)
+            | ((mon.cuteRibbon ?? 0) << 7)
+            | ((mon.smartRibbon ?? 0) << 10)
+            | ((mon.toughRibbon ?? 0) << 13)
+            | ((mon.winningRibbon ?? 0) << 16)
+            | ((mon.victoryRibbon ?? 0) << 17)
+            | ((mon.artistRibbon ?? 0) << 18)
+            | ((mon.effortRibbon ?? 0) << 19)
+            | ((mon.marineRibbon ?? 0) << 20)
+            | ((mon.landRibbon ?? 0) << 21)
+            | ((mon.skyRibbon ?? 0) << 22)
+            | ((mon.countryRibbon ?? 0) << 23)
+            | ((mon.nationalRibbon ?? 0) << 24)
+            | ((mon.earthRibbon ?? 0) << 25)
+            | ((mon.worldRibbon ?? 0) << 26)) >>> 0;
+    }
     case MON_DATA_ATK2: return mon.attack;
     case MON_DATA_DEF2: return mon.defense;
     case MON_DATA_SPEED2: return mon.speed;
@@ -356,6 +443,27 @@ export function SetMonData(mon: Pokemon, field: number, value: number | string):
     case MON_DATA_SPDEF: mon.spDefense = v & 0xFFFF; return;
     case MON_DATA_MAIL: mon.mail = v & 0xFF; return;
     case MON_DATA_MODERN_FATEFUL_ENCOUNTER: mon.modernFatefulEncounter = v ? 1 : 0; return;
+    // 1:1 décomp pokemon.c SetBoxMonData : rubans (concours 3 bits, award 1 bit,
+    // unusedRibbons 4 bits). Avant : tombaient en `default` → écriture silencieusement
+    // ignorée (= vrai trou 1:1, ex. GiveGiftRibbonToParty / Champion Ribbon no-op).
+    case MON_DATA_COOL_RIBBON: mon.coolRibbon = v & 7; return;
+    case MON_DATA_BEAUTY_RIBBON: mon.beautyRibbon = v & 7; return;
+    case MON_DATA_CUTE_RIBBON: mon.cuteRibbon = v & 7; return;
+    case MON_DATA_SMART_RIBBON: mon.smartRibbon = v & 7; return;
+    case MON_DATA_TOUGH_RIBBON: mon.toughRibbon = v & 7; return;
+    case MON_DATA_CHAMPION_RIBBON: mon.championRibbon = v & 1; return;
+    case MON_DATA_WINNING_RIBBON: mon.winningRibbon = v & 1; return;
+    case MON_DATA_VICTORY_RIBBON: mon.victoryRibbon = v & 1; return;
+    case MON_DATA_ARTIST_RIBBON: mon.artistRibbon = v & 1; return;
+    case MON_DATA_EFFORT_RIBBON: mon.effortRibbon = v & 1; return;
+    case MON_DATA_MARINE_RIBBON: mon.marineRibbon = v & 1; return;
+    case MON_DATA_LAND_RIBBON: mon.landRibbon = v & 1; return;
+    case MON_DATA_SKY_RIBBON: mon.skyRibbon = v & 1; return;
+    case MON_DATA_COUNTRY_RIBBON: mon.countryRibbon = v & 1; return;
+    case MON_DATA_NATIONAL_RIBBON: mon.nationalRibbon = v & 1; return;
+    case MON_DATA_EARTH_RIBBON: mon.earthRibbon = v & 1; return;
+    case MON_DATA_WORLD_RIBBON: mon.worldRibbon = v & 1; return;
+    case MON_DATA_UNUSED_RIBBONS: mon.unusedRibbons = v & 0xF; return;
     case MON_DATA_IVS:
       // 1:1 décomp : unpack packed 30-bit u32 vers 6 IVs.
       mon.hpIV = (v >>> 0) & 0x1F;
@@ -1035,4 +1143,10 @@ function _setMonByActiveBattler(requestId: number, data: unknown, monToCheck = 0
 // Wire bridge global pour battle-controllers.ts.
 (globalThis as { __batPSetMonByActive?: typeof _setMonByActiveBattler })
   .__batPSetMonByActive = _setMonByActiveBattler;
+
+// Wire debug : expose gPlayerParty/gEnemyParty (= la party canonique du combat, décodée)
+// pour vérif runtime (move-learning party read, EXP/level-up, etc.).
+(globalThis as { __gPlayerParty?: typeof gPlayerParty; __gEnemyParty?: typeof gEnemyParty })
+  .__gPlayerParty = gPlayerParty;
+(globalThis as { __gEnemyParty?: typeof gEnemyParty }).__gEnemyParty = gEnemyParty;
 

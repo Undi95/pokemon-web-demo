@@ -66,6 +66,7 @@ import {
   BIT_FLANK, BATTLE_PARTNER,
 } from './constants';
 import { GetBattlerPosition, GetBattlerAtPosition } from './util';
+import { getBattleMove } from './data/battle-moves';
 
 // ─── STATE enum 1:1 décomp (4116-4127) ─────────────────────────────────────
 
@@ -105,6 +106,8 @@ const BATTLE_TYPE_INGAME_PARTNER = 1 << 23;
 // (= bufferA[0]). Lus par PlayerBufferRunCommand → sPlayerBufferCommands[opcode].
 const CONTROLLER_CHOOSEACTION = 0x12;
 const CONTROLLER_CHOOSEMOVE = 0x14;
+const CONTROLLER_OPENBAG = 0x15;
+const CONTROLLER_CHOOSEPOKEMON = 0x16;
 const CONTROLLER_LINKSTANDBYMSG = 0x35;
 
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
@@ -132,10 +135,18 @@ function _setBattleBufferB(battler: number, offset: number, value: number): void
 /** 1:1 décomp `gSelectionBattleScripts[battler]`. */
 const gSelectionBattleScripts: number[] = [0, 0, 0, 0];
 
-/** 1:1 décomp `gBattlescriptCurrInstr`. */
-let gBattlescriptCurrInstr: number = 0;
-function _setBattlescriptCurrInstr(v: number): void { gBattlescriptCurrInstr = v; }
-function _getBattlescriptCurrInstr(): number { return gBattlescriptCurrInstr; }
+/** Wire vers l'interpréteur de battle-script (globalThis, évite le cycle ESM
+ *  battle-action-selection ↔ script-interpreter ↔ battle-script-commands). */
+function _scriptInterp() {
+  return (globalThis as { __scriptInterp?: { stepBattleScriptCommand: (ctx: { scriptPtr: number }) => void; gBattleScriptContext: { scriptPtr: number }; getBattleScriptOffset: (label: string) => number } }).__scriptInterp;
+}
+/** 1:1 décomp `gBattlescriptCurrInstr` = `gBattleScriptContext.scriptPtr` de l'interpréteur
+ *  (le selection-script tourne sur le MÊME ptr que le tour, exactement comme le décomp ;
+ *  le tour repose le ptr via HandleAction_UseMove ensuite → 0 corruption). */
+function _setBattlescriptCurrInstr(v: number): void { const si = _scriptInterp(); if (si) si.gBattleScriptContext.scriptPtr = v; }
+function _getBattlescriptCurrInstr(): number { const si = _scriptInterp(); return si ? si.gBattleScriptContext.scriptPtr : 0; }
+/** Résout un label de battle-script en offset bytecode (via l'interpréteur). */
+function _getBattleScriptOffset(label: string): number { const si = _scriptInterp(); return si ? si.getBattleScriptOffset(label) : -1; }
 
 /** 1:1 décomp `RecordedBattle_CopyBattlerMoves()`. */
 function _RecordedBattle_CopyBattlerMoves(): void {
@@ -203,16 +214,36 @@ function _BtlController_EmitChooseMove(
   PrepareBufferDataTransfer(buf, data, data.length);
 }
 
-/** 1:1 décomp `BtlController_EmitChooseItem(buf, partyOrder)`. */
-function _BtlController_EmitChooseItem(_buf: number, _partyOrder: number[]): void {
-  // Dette R3 : controller IPC emit choose item.
+/** 1:1 décomp `BtlController_EmitChooseItem(buf, battlePartyOrder)`
+ *  (battle_controllers.c:1232-1240) : écrit gBattleBufferA[active] = [OPENBAG,
+ *  partyOrder[0..2]] (4 bytes). INDISPENSABLE : sans ça (ancien stub vide), le
+ *  `_MarkBattlerForControllerExec` qui suit re-dispatchait le bufferA[0] PÉRIMÉ →
+ *  PlayerHandleChooseItem jamais appelé → bag jamais ouvert → SOFT-LOCK à
+ *  STATE_WAIT_ACTION_CASE_CHOSEN (= SAC, MÊME bug que le switch loop #9). */
+function _BtlController_EmitChooseItem(buf: number, partyOrder: number[]): void {
+  const data = new Uint8Array(4);
+  data[0] = CONTROLLER_OPENBAG;
+  for (let i = 0; i < 3; i++) data[1 + i] = (partyOrder[i] ?? 0) & 0xFF;
+  PrepareBufferDataTransfer(buf, data, 4);
 }
 
-/** 1:1 décomp `BtlController_EmitChoosePokemon(buf, caseId, mon, ability, partyOrder)`. */
+/** 1:1 décomp `BtlController_EmitChoosePokemon(buf, caseId, slotId, abilityId, data)`
+ *  (battle_controllers.c:1242-1253) : écrit gBattleBufferA[active] = [CHOOSEPOKEMON,
+ *  caseId, slotId, abilityId, data[0..2]] (8 bytes). INDISPENSABLE : sans ça (ancien
+ *  stub vide), le `_MarkBattlerForControllerExec` qui suit (l.515) re-dispatchait le
+ *  bufferA[0] PÉRIMÉ → PlayerHandleChoosePokemon JAMAIS appelé → party menu jamais
+ *  ouvert → SOFT-LOCK à STATE_WAIT_ACTION_CASE_CHOSEN (= bug switch volontaire loop #8/9).
+ *  MÊME classe que le fix _BtlController_EmitLinkStandbyMsg ci-dessous. */
 function _BtlController_EmitChoosePokemon(
-  _buf: number, _caseId: number, _mon: number, _ability: number, _partyOrder: number[],
+  buf: number, caseId: number, mon: number, ability: number, partyOrder: number[],
 ): void {
-  // Dette R3.
+  const data = new Uint8Array(8);
+  data[0] = CONTROLLER_CHOOSEPOKEMON;
+  data[1] = caseId & 0xFF;
+  data[2] = mon & 0xFF;
+  data[3] = ability & 0xFF;
+  for (let i = 0; i < 3; i++) data[4 + i] = (partyOrder[i] ?? 0) & 0xFF;
+  PrepareBufferDataTransfer(buf, data, 8);
 }
 
 /** 1:1 décomp `BtlController_EmitLinkStandbyMsg(buf, mode, record)`
@@ -267,9 +298,18 @@ function _TrySetCantSelectMoveBattleScript(): boolean {
   return false;
 }
 
-/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, idx)`. */
-function _CalculatePPWithBonus(_move: number, _ppBonuses: number, _idx: number): number {
-  return 35;  // default PP
+/** 1:1 décomp `gPPUpGetMask[MAX_MON_MOVES]` (pokemon.c) : masque 2 bits par slot. */
+const _gPPUpGetMask = [0x03, 0x0C, 0x30, 0xC0];
+
+/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c) :
+ *  `basePP + (basePP * 20 * nbPPUp) / 100`, nbPPUp = `(gPPUpGetMask[idx] &
+ *  ppBonuses) >> (2*idx)` (0..3), basePP = `gBattleMoves[move].pp`.
+ *  AVANT : stub → 35 fixe → max PP faux pour tout move ≠35 PP (ex Leer affiché
+ *  « 30/35 » au lieu de « 30/30 »). */
+function _CalculatePPWithBonus(move: number, ppBonuses: number, idx: number): number {
+  const basePP = getBattleMove(move).pp;
+  const ppUps = (_gPPUpGetMask[idx] & ppBonuses) >> (2 * idx);
+  return (basePP + Math.floor((basePP * 20 * ppUps) / 100)) & 0xFF;
 }
 
 /** 1:1 décomp `ABILITY_ON_OPPOSING_FIELD(battler, ability)`. */
@@ -298,14 +338,23 @@ function _IsRunningFromBattleImpossible(): number {
 /** 1:1 décomp `BATTLE_RUN_SUCCESS` = 0. */
 const BATTLE_RUN_SUCCESS = 0;
 
-/** 1:1 décomp `BattleScriptExecute(bsPtr)`. */
-function _BattleScriptExecute(_bsPtr: number): void {
-  // Dette R3 : wire vers script-interpreter.
+/** 1:1 décomp `BattleScriptExecute(label)` : démarre un battle-script IMBRIQUÉ via le
+ *  callback stack (push gBattleMainFunc → RunBattleScriptCommands_PopCallbacksStack →
+ *  step jusqu'à end2 → pop → reprend HandleTurnActionSelectionState). Wire vers
+ *  battle-main-functions (globalThis, évite le cycle ESM). Mécanisme déjà validé (fin
+ *  de combat). Utilisé ici pour PrintCantRunFromTrainer (« Pas question de fuir! »). */
+function _BattleScriptExecute(label: string): void {
+  const bmf = (globalThis as { __battleMainFunctions?: { BattleScriptExecute?: (label: string) => void } }).__battleMainFunctions;
+  if (bmf?.BattleScriptExecute) bmf.BattleScriptExecute(label);
 }
 
-/** 1:1 décomp `gBattleScriptingCommandsTable[opcode]()`. */
+/** 1:1 décomp `gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]()` : exécute UNE
+ *  commande du selection-script via l'interpréteur (sur gBattleScriptContext, dont
+ *  scriptPtr a été posé par _setBattlescriptCurrInstr). Print-only + endselectionscript
+ *  → pas de Cmd_end/B_ACTION_TRY_FINISH, ctx du tour non corrompu. */
 function _runBattleScriptingCommand(_opcode: number): void {
-  // Dette R3 : opcode dispatch.
+  const si = _scriptInterp();
+  if (si) si.stepBattleScriptCommand(si.gBattleScriptContext);
 }
 
 /** 1:1 décomp `SwitchPartyOrderInGameMulti(battler, monIdx)`. */
@@ -318,12 +367,8 @@ let _gBattlePalaceMoveSelectionRngValue = 0;
 let _gRngValue = 0;
 function _setRngValue(v: number): void { _gRngValue = v; }
 
-/** BattleScript_* placeholders (= dette R3 bytecode entries). */
-const BattleScript_ActionSelectionItemsCantBeUsed = 0;
-const BattleScript_AskIfWantsToForfeitMatch = 0;
-const BattleScript_PrintCantRunFromTrainer = 0;
-const BattleScript_PrintCantEscapeFromBattle = 0;
-const BattleScript_PrintFullBox = 0;
+// BattleScript_* offsets résolus lazily via _getBattleScriptOffset(label) au point
+// d'usage (le wire interpréteur n'est posé qu'au runtime, pas à l'import).
 
 /** Wire vers K17 helpers. */
 function _AllAtActionConfirmed(): boolean {
@@ -461,7 +506,7 @@ export function HandleTurnActionSelectionState(): void {
                                     | BATTLE_TYPE_EREADER_TRAINER
                                     | BATTLE_TYPE_RECORDED_LINK)) {
               _RecordedBattle_ClearBattlerAction(active, 1);
-              gSelectionBattleScripts[active] = BattleScript_ActionSelectionItemsCantBeUsed;
+              gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_ActionSelectionItemsCantBeUsed');
               gBattleCommunication[active] = STATE_SELECTION_SCRIPT;
               gBattleStruct.selectionScriptFinished[active] = 0;
               gBattleStruct.stateIdAfterSelScript[active] = STATE_BEFORE_ACTION_CHOSEN;
@@ -506,7 +551,7 @@ export function HandleTurnActionSelectionState(): void {
           } else if (chosenAction === B_ACTION_SAFARI_BALL) {
             // 1:1 décomp ll. 4268-4277.
             if (_IsPlayerPartyAndPokemonStorageFull()) {
-              gSelectionBattleScripts[active] = BattleScript_PrintFullBox;
+              gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_PrintFullBox');
               gBattleCommunication[active] = STATE_SELECTION_SCRIPT;
               gBattleStruct.selectionScriptFinished[active] = 0;
               gBattleStruct.stateIdAfterSelScript[active] = STATE_BEFORE_ACTION_CHOSEN;
@@ -551,7 +596,7 @@ export function HandleTurnActionSelectionState(): void {
           if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
               && (gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL))
               && _getBattleBufferB(active, 1) === B_ACTION_RUN) {
-            gSelectionBattleScripts[active] = BattleScript_AskIfWantsToForfeitMatch;
+            gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_AskIfWantsToForfeitMatch');
             gBattleCommunication[active] = STATE_SELECTION_SCRIPT_MAY_RUN;
             gBattleStruct.selectionScriptFinished[active] = 0;
             gBattleStruct.stateIdAfterSelScript[active] = STATE_BEFORE_ACTION_CHOSEN;
@@ -559,11 +604,11 @@ export function HandleTurnActionSelectionState(): void {
           } else if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
                      && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
                      && _getBattleBufferB(active, 1) === B_ACTION_RUN) {
-            _BattleScriptExecute(BattleScript_PrintCantRunFromTrainer);
+            _BattleScriptExecute('BattleScript_PrintCantRunFromTrainer');
             gBattleCommunication[active] = STATE_BEFORE_ACTION_CHOSEN;
           } else if (_IsRunningFromBattleImpossible() !== BATTLE_RUN_SUCCESS
                      && _getBattleBufferB(active, 1) === B_ACTION_RUN) {
-            gSelectionBattleScripts[active] = BattleScript_PrintCantEscapeFromBattle;
+            gSelectionBattleScripts[active] = _getBattleScriptOffset('BattleScript_PrintCantEscapeFromBattle');
             gBattleCommunication[active] = STATE_SELECTION_SCRIPT;
             gBattleStruct.selectionScriptFinished[active] = 0;
             gBattleStruct.stateIdAfterSelScript[active] = STATE_BEFORE_ACTION_CHOSEN;

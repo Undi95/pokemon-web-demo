@@ -46,12 +46,12 @@ import { AbilityBattleEffects, ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER } from '
 
 /** 1:1 décomp `BATTLE_RUN_SUCCESS` (= 0). */
 export const BATTLE_RUN_SUCCESS = 0;
-/** 1:1 décomp `BATTLE_RUN_FAILURE` (= 1). Shadow Tag/Arena Trap/Magnet Pull
- *  block ; message via gBattleCommunication[MULTISTRING_CHOOSER]. */
-export const BATTLE_RUN_FAILURE = 1;
-/** 1:1 décomp `BATTLE_RUN_FORBIDDEN` (= 2). Status (Bind/etc.), First Battle
+/** 1:1 décomp `BATTLE_RUN_FORBIDDEN` (= 1). Status (Bind/etc.), First Battle
  *  (= "Don't be a coward!") ; message direct. */
-export const BATTLE_RUN_FORBIDDEN = 2;
+export const BATTLE_RUN_FORBIDDEN = 1;
+/** 1:1 décomp `BATTLE_RUN_FAILURE` (= 2). Shadow Tag/Arena Trap/Magnet Pull
+ *  block ; message via gBattleCommunication[MULTISTRING_CHOOSER]. */
+export const BATTLE_RUN_FAILURE = 2;
 
 /** 1:1 décomp `MULTISTRING_CHOOSER` index dans gBattleCommunication = 5. */
 const MULTISTRING_CHOOSER = 5;
@@ -237,3 +237,12 @@ export function TryRunFromBattle(battler: number): boolean {
 
   return effect !== 0;
 }
+
+// ─── K14b wire — auto-enregistrement sur globalThis (convention, cf ability-battle-
+//     effects:985). La voie L action-selection (battle-action-selection.ts:596) appelle
+//     IsRunningFromBattleImpossible au choix de FUITE (battle_main.c:4322-4351) → si trap,
+//     pose STATE_SELECTION_SCRIPT + BattleScript_PrintCantEscapeFromBattle. Le sous-système
+//     selection-script est désormais PORTÉ (loop 2026-06-03 : _runBattleScriptingCommand→
+//     stepBattleScriptCommand, offsets→getBattleScriptOffset, Cmd_endselectionscript→
+//     gBattleStruct.selectionScriptFinished) → plus de soft-lock.
+(globalThis as { IsRunningFromBattleImpossible?: () => number }).IsRunningFromBattleImpossible = IsRunningFromBattleImpossible;

@@ -231,6 +231,7 @@ import {
   BATTLE_OPPOSITE as _BATTLE_OPPOSITE_HBT,
   BATTLE_PARTNER,
   BATTLE_RUN_FAILURE,
+  BATTLE_RUN_FORBIDDEN,
   BATTLE_RUN_SUCCESS,
   BATTLE_TYPE_ARENA,
   BATTLE_TYPE_BATTLE_TOWER,
@@ -284,6 +285,8 @@ import {
   B_MSG_LEECH_SEED_SET,
   B_MSG_MISSED,
   B_MSG_MIST_FAILED,
+  B_MSG_CANT_ESCAPE,
+  B_MSG_DONT_LEAVE_BIRCH,
   B_MSG_PREVENTS_ESCAPE,
   B_MSG_PROTECTED,
   B_MSG_PROTECTED_ITSELF,
@@ -570,6 +573,7 @@ import {
 import {
   MAX_LEVEL,
   getLevelFromExp,
+  getExpForLevel,
 } from './data/experience-tables';
 import {
   GetNatureFromPersonality as _getNatureFromPersonalityN34,
@@ -655,6 +659,7 @@ import {
   MON_DATA_LEVEL as MON_DATA_LEVEL_BU,
   MON_DATA_LEVEL as _MON_DATA_LEVEL_PK,
   MON_DATA_MOVE1 as _MON_DATA_MOVE1_AAS,
+  MON_DATA_PP1 as _MON_DATA_PP1_MTL,
   MON_DATA_OT_GENDER as _MON_DATA_OT_GENDER_GC,
   MON_DATA_OT_ID as _MON_DATA_OT_ID_GC,
   MON_DATA_OT_NAME as _MON_DATA_OT_NAME_GC,
@@ -3650,7 +3655,13 @@ function Cmd_printselectionstringfromtable(ctx: BattleScriptContext): boolean {
   }
   const tableOffset = readWord(ctx);
   const idx = gBattleCommunication[MULTISTRING_CHOOSER];
-  const stringId = _readU16FromBytecode(tableOffset + idx * 2);
+  // 1:1 : résout la table comme Cmd_printfromtable (SYMBOL_MARKER → table JS, sinon
+  // bytecode). _readU16FromBytecode DIRECT lisait du garbage (gNoEscapeStringIds est un
+  // SYMBOL_MARKER, pas un offset bytecode) → message de sélection jamais rendu.
+  const table = resolveStringIdTable(tableOffset);
+  const stringId = table
+    ? ((idx >= 0 && idx < table.length) ? table[idx] : 0)
+    : _readBytecodeForString(tableOffset, idx);
   setActiveBattler(gBattlerAttacker);
   BtlController_EmitPrintSelectionString(B_COMM_TO_CONTROLLER, stringId);
   MarkBattlerForControllerExec(gBattlerAttacker);
@@ -3802,7 +3813,11 @@ function Cmd_decrementmultihit(ctx: BattleScriptContext): boolean {
  *  loop voit selectionScriptFinished et break le sous-script. Notre équivalent
  *  = stay sur opcode + return true (= pause) pour laisser le caller exit. */
 function Cmd_endselectionscript(ctx: BattleScriptContext): boolean {
-  _selectionScriptFinished[gBattlerAttacker] = true;
+  // 1:1 décomp : `gBattleStruct->selectionScriptFinished[gBattlerAttacker] = TRUE`.
+  // (l'ancien `_selectionScriptFinished` local était un array MORT — jamais lu par le
+  // handler STATE_SELECTION_SCRIPT qui lit `gBattleStruct.selectionScriptFinished` → le
+  // selection-script ne se terminait jamais = soft-lock.)
+  gBattleStruct.selectionScriptFinished[gBattlerAttacker] = 1;
   return _stayOnOpcode__b07(ctx);
 }
 
@@ -9833,32 +9848,27 @@ let _sLearningMoveTableID = 0;
  *  Source learnset : (globalThis.__game_data).getLevelUpLearnset(SPECIES_X). */
 function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number {
   const partyIdx = _gBattleStruct32.expGetterMonId ?? 0;
-  // 1:1 décomp : `&gPlayerParty[gBattleStruct->expGetterMonId]` = read direct
-  // gSaveBlock1Ptr.playerParty[partyIdx] (= notre PokemonInstance avec
-  // speciesId/level/moves).
-  const mon = gSaveBlock1Ptr.playerParty[partyIdx] as {
-    speciesId?: number; speciesEnum?: string; level?: number;
-    moves?: Array<{ id?: string; pp?: number }>;
-  } | undefined;
+  // 1:1 décomp `MonTryLearningNewMove(&gPlayerParty[gBattleStruct->expGetterMonId], ...)`.
+  // CRITIQUE : lire gPlayerParty (party-storage = la party CANONIQUE du combat, comme
+  // Cmd_getexp + le décomp), PAS gSaveBlock1Ptr.playerParty (qui a DIVERGÉ chez nous →
+  // un mon par défaut → le learn touchait le mauvais mon). Format = Pokemon décodé →
+  // Get/SetMonData.
+  const mon = gPlayerParty[partyIdx];
   if (!mon) return MOVE_NONE;
+  const speciesNum = GetMonData(mon, MON_DATA_SPECIES) as number;
+  if (speciesNum === 0) return MOVE_NONE;
+  const level = GetMonData(mon, MON_DATA_LEVEL) as number;
 
-  // 1:1 décomp : species + level depuis MON_DATA_SPECIES / MON_DATA_LEVEL.
-  const speciesNum = mon.speciesId ?? 0;
-  const level = mon.level ?? 1;
-  // Resolve species enum (= SPECIES_TREECKO) via globalThis cache si number,
-  // ou directement speciesEnum si déjà string.
-  let enumKey = mon.speciesEnum;
-  if (!enumKey) {
-    const cache = (globalThis as { gameDataSpeciesNumToEnum?: Record<number, string> }).gameDataSpeciesNumToEnum;
-    enumKey = cache?.[speciesNum] ?? `SPECIES_${speciesNum}`;
-  }
+  // Resolve species enum (= SPECIES_TREECKO) via globalThis cache (speciesNum → enum).
+  const cache = (globalThis as { gameDataSpeciesNumToEnum?: Record<number, string> }).gameDataSpeciesNumToEnum;
+  const enumKey = cache?.[speciesNum] ?? `SPECIES_${speciesNum}`;
   // Lookup learnset depuis bridge globalThis (= populé au boot par game-data.ts).
   const learnsets = (globalThis as { gameDataLevelUpLearnsets?: Record<string, Array<{ level: number; move: string }>> }).gameDataLevelUpLearnsets;
   const learnset = learnsets?.[enumKey];
   if (!learnset || learnset.length === 0) return MOVE_NONE;
 
-  // 1:1 décomp pokemon.c:3025-3034 : if firstMove → reset sLearningMoveTableID
-  // et skip jusqu'au premier entry à level == mon.level.
+  // 1:1 décomp pokemon.c:3025-3034 : if firstMove → reset sLearningMoveTableID + skip
+  // jusqu'au premier entry à level == mon.level.
   if (firstMove) {
     _sLearningMoveTableID = 0;
     while (_sLearningMoveTableID < learnset.length
@@ -9867,41 +9877,39 @@ function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number 
     }
     if (_sLearningMoveTableID >= learnset.length) return MOVE_NONE;
   }
-
-  // 1:1 décomp pokemon.c:3037-3042 : check entry courante à ce level
-  // (sinon return MOVE_NONE = "no more moves at this level").
+  // 1:1 décomp pokemon.c:3037-3042 : check entry courante à ce level.
   if (_sLearningMoveTableID >= learnset.length
       || learnset[_sLearningMoveTableID].level !== level) {
     return MOVE_NONE;
   }
 
-  // Resolve move name → moveId via constants moves-data (= MOVE_POUND = 1, etc.).
-  const moveName = learnset[_sLearningMoveTableID].move;  // ex. "MOVE_POUND"
-  const moveId = (globalThis as Record<string, unknown>)[moveName] as number | undefined ?? 0;
-
-  // 1:1 décomp : `gMoveToLearn = ...` set le global pour Cmd_buffermovetolearn.
+  const moveName = learnset[_sLearningMoveTableID].move;  // ex. "MOVE_ABSORB"
+  // Resolve enum → moveId via reverse de gameDataMovesNumToEnum (les constantes MOVE_* ne
+  // sont PAS sur globalThis — l'ancien `globalThis[moveName]` donnait undefined→0=MOVE_NONE,
+  // donc aucun move appris). Reverse map caché sur globalThis (1× au boot).
+  const gMoves = globalThis as { gameDataMovesNumToEnum?: Record<number, string>; __movesEnumToNum?: Record<string, number> };
+  if (!gMoves.__movesEnumToNum && gMoves.gameDataMovesNumToEnum) {
+    gMoves.__movesEnumToNum = {};
+    for (const [num, enm] of Object.entries(gMoves.gameDataMovesNumToEnum)) gMoves.__movesEnumToNum[enm] = Number(num);
+  }
+  const moveId = gMoves.__movesEnumToNum?.[moveName] ?? 0;
+  // 1:1 décomp : `gMoveToLearn = ...` (pour Cmd_buffermovetolearn).
   const setM = (globalThis as { __battleStateMutators?: { setMoveToLearn?: (v: number) => void } })
     .__battleStateMutators?.setMoveToLearn;
   if (setM) setM(moveId);
   _sLearningMoveTableID++;
 
-  // 1:1 décomp : retval = GiveMoveToMon(mon, gMoveToLearn). GiveMoveToMon
-  // retourne :
-  //   - MOVE_NONE (= ne devrait pas arriver ici, mais safety)
-  //   - MON_HAS_MAX_MOVES (0xFFFF) si 4 slots full
-  //   - MON_ALREADY_KNOWS_MOVE (0xFFFE) si move déjà dans party
-  //   - moveId si appris dans slot vide.
-  const moves = mon.moves ?? [];
-  const moveIdLower = moveName.replace(/^MOVE_/, '').toLowerCase();
-  const alreadyKnows = moves.some(m => m?.id === moveIdLower);
-  if (alreadyKnows) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
-  // Find empty slot. Notre party format : moves is array de {id, pp}.
+  // 1:1 décomp `GiveMoveToMon` → `GiveMoveToBoxMon` (pokemon.c) : pour chaque slot, si
+  // vide (MOVE_NONE) → SetMonData(MOVE + PP) + return moveId ; si == moveId →
+  // MON_ALREADY_KNOWS_MOVE ; après les 4 → MON_HAS_MAX_MOVES. Sur gPlayerParty décodé.
   for (let i = 0; i < 4; i++) {
-    if (!moves[i] || !moves[i].id) {
-      // Insert dans le slot vide.
-      moves[i] = { id: moveIdLower, pp: 35 /* default PP, will be overwritten */ };
+    const existing = GetMonData(mon, _MON_DATA_MOVE1_AAS + i) as number;
+    if (existing === 0 /* MOVE_NONE */) {
+      SetMonData(mon, _MON_DATA_MOVE1_AAS + i, moveId);
+      SetMonData(mon, _MON_DATA_PP1_MTL + i, getBattleMove(moveId).pp);
       return moveId;
     }
+    if (existing === moveId) return 0xFFFE /* MON_ALREADY_KNOWS_MOVE */;
   }
   return 0xFFFF /* MON_HAS_MAX_MOVES */;
 }
@@ -11141,7 +11149,8 @@ export function _GetMoveTarget(move: number, setTarget: number): number {
 
 /** 1:1 décomp `IsRunningFromBattleImpossible()` (battle_main.c:4021-...).
  *  Stubs : gEnigmaBerries[] holdEffect path skipped (= rare).
- *  Returns BATTLE_RUN_SUCCESS (0) ou BATTLE_RUN_FAILURE (1). */
+ *  Returns BATTLE_RUN_SUCCESS (0), BATTLE_RUN_FORBIDDEN (1, status/first-battle)
+ *  ou BATTLE_RUN_FAILURE (2, ability trap). */
 function _IsRunningFromBattleImpossible(): number {
   const item = gBattleMons[gActiveBattler].item;
   const holdEffect = GetItemHoldEffect(item);
@@ -11181,10 +11190,27 @@ function _IsRunningFromBattleImpossible(): number {
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_PREVENTS_ESCAPE;
     return BATTLE_RUN_FAILURE;
   }
+  // 1:1 décomp battle_main.c:4072-4082 — status trap (Mean Look/Block = ESCAPE_PREVENTION,
+  // Wrap/Bind/etc. = WRAPPED, Ingrain = ROOTED) puis first battle (Birch) → FORBIDDEN.
+  if ((gBattleMons[gActiveBattler].status2 & (STATUS2_ESCAPE_PREVENTION | STATUS2_WRAPPED))
+      || (gStatuses3[gActiveBattler] & STATUS3_ROOTED)) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CANT_ESCAPE;
+    return BATTLE_RUN_FORBIDDEN;
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DONT_LEAVE_BIRCH;
+    return BATTLE_RUN_FORBIDDEN;
+  }
   return BATTLE_RUN_SUCCESS;
 }
 
 // ─── 0x23 getexp ──────────────────────────────────────────────────────────
+
+/** EXP reportée entre Cmd_getexp case 3 (remplit jusqu'au seuil de niveau+1) et
+ *  case 4 (level-up d'1 niveau + reprend le reste). 1:1 ~ gBattleBufferB[2|3] du
+ *  décomp (que le controller Task_GiveExpToMon renvoie). Module-level car case 3 et
+ *  case 4 sont des frames/appels séparés. */
+let _getexpRemaining = 0;
 
 /** 1:1 décomp Cmd_getexp (battle_script_commands.c:3255-3532). State machine
  *  6 states via gBattleScripting.getexpState 0..6. Args : 1 byte battler ref
@@ -11382,12 +11408,37 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
         const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
         if (monHp && monLevel !== MAX_LEVEL) {
-          // 1:1 décomp : SetMonData EXP + Emit ExpUpdate (= XP bar fill anim).
+          // 1:1 décomp : applique l'EXP SEGMENTÉE jusqu'au PROCHAIN seuil de niveau (le
+          // décomp laisse le controller remplir la barre 1 niveau à la fois + renvoyer le
+          // reste en bufferB ; notre port n'anime pas la barre → on segmente ici). Si le
+          // chunk franchit le seuil de niveau+1 : remplir jusqu'au seuil, reporter le reste
+          // (_getexpRemaining → case 4 → case 5 reboucle). Sinon : appliquer tout, reste=0.
+          // SANS ça : EXP appliquée PLEINE d'un coup + saut au niveau FINAL → niveaux/moves
+          // INTERMÉDIAIRES sautés (L5→L7 sans "monte au N. 6" ni son move) + EXP double-appliquée
+          // si case 5 rebouclait avec gBattleMoveDamage non réduit.
+          const expSpecies = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES) as number;
+          const expGrowthRate = getSpeciesGrowthRate(expSpecies);
           const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
-          SetMonData(gPlayerParty[monId], MON_DATA_EXP, currentExp + gBattleMoveDamage);
+          const nextLevelThreshold = getExpForLevel(expGrowthRate, monLevel + 1);
+          const expTotal = currentExp + gBattleMoveDamage;
+          if (expTotal >= nextLevelThreshold) {
+            SetMonData(gPlayerParty[monId], MON_DATA_EXP, nextLevelThreshold);
+            _getexpRemaining = expTotal - nextLevelThreshold;
+          } else {
+            SetMonData(gPlayerParty[monId], MON_DATA_EXP, expTotal);
+            _getexpRemaining = 0;
+          }
+          // 1:1 décomp battle_script_commands.c:3443 : `gActiveBattler = expGetterBattlerId`
+          // AVANT l'émit. CRITIQUE : EmitExpUpdate écrit gBattleBufferA[gActiveBattler] ;
+          // sans poser gActiveBattler, l'EXPUPDATE allait dans le buffer du MAUVAIS battler,
+          // et le Mark(expGetterBattlerId) re-dispatchait le bufferA[0] du battler 0 ENCORE
+          // = PRINTSTRING (message EXP du case 2) → le message "X a gagné N EXP" s'imprimait
+          // 2× (doublon collé signalé user). Avec gActiveBattler = expGetterBattlerId, l'emit
+          // écrit bufferA[0]=EXPUPDATE sur le bon battler → dispatch PlayerHandleExpUpdate (pas
+          // re-PRINTSTRING).
+          setActiveBattler(gBattleStruct.expGetterBattlerId);
           // 1:1 décomp : BtlController_EmitExpUpdate(B_COMM_TO_CONTROLLER,
           //   gBattleStruct->expGetterMonId, gBattleMoveDamage) + Mark.
-          // Stub Phase 1.4 UI (= XP bar anim sera réelle plus tard).
           _BtlController_EmitExpUpdate_N34(0 /* B_COMM_TO_CONTROLLER */, monId, gBattleMoveDamage);
           _MarkBattlerForControllerExec_N34(gBattleStruct.expGetterBattlerId);
         }
@@ -11407,9 +11458,12 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         const species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES) as number;
         const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
         const currentLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
-        const newLevel = getLevelFromExp(getSpeciesGrowthRate(species), currentExp);
-
-        if (newLevel > currentLevel && currentLevel < MAX_LEVEL) {
+        // 1:1 décomp : monte d'UN SEUL niveau par itération (case 3 a rempli l'EXP jusqu'au
+        // seuil de currentLevel+1 si franchi). PAS de saut au niveau FINAL (getLevelFromExp)
+        // — sinon les niveaux + moves INTERMÉDIAIRES d'un gain multi-niveaux sont sautés. Le
+        // reste est reporté via gBattleMoveDamage → case 5 reboucle case 3 → niveau suivant.
+        const newLevel = currentLevel + 1;
+        if (currentLevel < MAX_LEVEL && currentExp >= getExpForLevel(getSpeciesGrowthRate(species), newLevel)) {
           SetMonData(gPlayerParty[monId], MON_DATA_LEVEL, newLevel);
           setLeveledUpInBattle(gLeveledUpInBattle | gBitTable[monId]);
 
@@ -11425,11 +11479,25 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           // 1:1 décomp : AdjustFriendship(FRIENDSHIP_EVENT_GROW_LEVEL).
           // Wired via auto-data (= update mon.friendship +1..+3 selon location/luxury ball).
           _adjustFriendshipN34(gPlayerParty[monId], FRIENDSHIP_EVENT_GROW_LEVEL_N34);
+          // 1:1 décomp battle_script_commands.c:3459-3460 : buffer le nom (B_BUFF1) + le
+          // NIVEAU (B_BUFF2) pour `sText_PkmnGrewToLv` = "{B_BUFF1} monte au\nN. {B_BUFF2}!".
+          // SANS ça, le numéro de niveau manquait ("ARCKO monte au N. !").
+          PREPARE_MON_NICK_WITH_PREFIX_BUFFER_N34(_gBattleTextBuff1_N34, gBattleStruct.expGetterBattlerId, monId);
+          PREPARE_BYTE_NUMBER_BUFFER(_gBattleTextBuff2_N34, 3, newLevel);
           // 1:1 décomp battle_script_commands.c (Cmd_getexp case 4 LEVELED_UP path) :
           // `BattleScriptPushCursor(); gBattlescriptCurrInstr = BattleScript_LevelUp`.
-          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          // CRITIQUE : pousser `opStartPtr` (l'OPCODE getexp), PAS ctx.scriptPtr (= opStartPtr+2,
+          // APRÈS l'opcode). Le décomp ne fait PAS avancer gBattlescriptCurrInstr avant case 6,
+          // donc BattleScriptPushCursor pousse la position SUR getexp → au BattleScriptPop (fin de
+          // BattleScript_LevelUp), getexp se RÉ-EXÉCUTE → case 5 → boucle segmented (niveau suivant).
+          // Avec ctx.scriptPtr (opStartPtr+2), le pop reprenait APRÈS getexp → case 5 jamais atteinte
+          // → EXP restante perdue + niveaux/moves intermédiaires sautés.
+          ctx.scriptPtrStack.push(opStartPtr);
           const offLvlUp = _getBattleScriptOffsetN34('BattleScript_LevelUp');
           if (offLvlUp >= 0) ctx.scriptPtr = offLvlUp;
+          // 1:1 décomp:3465 : gBattleMoveDamage = EXP restante (bufferB) → case 5 reboucle
+          // case 3 pour donner le reste (niveau suivant), 1 niveau à la fois.
+          setBattleMoveDamage(_getexpRemaining);
           gBattleScripting.getexpState = 5;
         } else {
           setBattleMoveDamage(0);
@@ -11440,8 +11508,15 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
     }
 
     case 5: {
-      // 1:1 décomp : looper increment.
-      if (gBattleMoveDamage) {
+      // 1:1 décomp : looper increment. Le décomp teste gBattleMoveDamage (= reste renvoyé
+      // par le controller en bufferB), MAIS chez nous gBattleMoveDamage est clobbé entre
+      // case 4 et ici (BattleScript_LevelUp lancé en case 4 tourne entre-temps). Le décomp
+      // stocke le reste dans gBattleBufferB[2|3] (séparé de gBattleMoveDamage) — notre
+      // équivalent = `_getexpRemaining` (module var, intouchée par le script). On teste
+      // _getexpRemaining et on RESTAURE gBattleMoveDamage (= le chunk que case 3 applique).
+      // La boucle exit toujours à _getexpRemaining=0, donc pas de staleness pour le mon suivant.
+      if (_getexpRemaining > 0) {
+        setBattleMoveDamage(_getexpRemaining);
         gBattleScripting.getexpState = 3;
       } else {
         gBattleStruct.expGetterMonId = gBattleStruct.expGetterMonId + 1;

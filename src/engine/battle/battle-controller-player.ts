@@ -39,6 +39,15 @@
  *   - state.ts : gActiveBattler + gBattleTypeFlags
  */
 
+// Charge le décodeur texte BYTE-LEVEL (battle-message.ts) : son top-level pose
+// `__battleMessage` sur globalThis + déclenche loadBattleCharmap. PlayerHandlePrintString
+// (voie L) l'utilise via lookup globalThis = chemin byte-level pur 1:1 (remplace
+// l'ancien décodeur partiel JS-string pour les messages de combat).
+import './battle-message';
+// Couche healthbox VOIE L (modèle décomp : gHealthboxSpriteIds + UpdateHealthboxAttribute
+// + MoveBattleBarGraphically). Side-effect import : s'enregistre sur globalThis.__battleHealthbox
+// (que _gHealthboxSpriteId / _UpdateHealthboxAttribute lisent) + branche le hook MoveBattleBarGraphically.
+import './battle-healthbox-l';
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -95,16 +104,25 @@ import { gSaveBlock2Ptr } from '../save/save-block-state';
 import {
   gPlayerParty, GetMonData,
   MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_LEVEL, MON_DATA_STATUS, MON_DATA_IS_EGG,
+  MON_DATA_EXP, MON_DATA_SPECIES,
 } from './party-storage';
 import { gBattlerPartyIndexes } from './state';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
 } from './battle-hp-bar';
+import { getExpForLevel } from './data/experience-tables';
+import { getSpeciesGrowthRate } from './data/species-runtime';
 import { LoadPalette, BG_PLTT_ID } from '../system/decomp-globals';
 import { reverseDecompConstant } from '../system/decomp-constants';
+// Helper partagé de création de sprite de battler (gère back=joueur / front=ennemi).
+// opponent.ts n'importe PAS player.ts → pas de cycle ESM.
+import { _loadAndCreateBattlerMonSprite } from './battle-controller-opponent';
 import { getMoveName as _getMoveNameFrFromData } from '../data/game-data';
 import { getBattleMove } from './data/battle-moves';
 import { getPPTextPalette } from './battle-bg';
+// BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
+// n'importe PAS battle/ → pas de cycle.
+import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from '../ui/gba-window-system';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -282,28 +300,27 @@ export function ActionSelectionDestroyCursorAt(cursorPosition: number): void {
   _CopyBgTilemapBufferToVram(0);
 }
 
-/** 1:1 signature décomp `CopyToBgTilemapBufferRect_ChangePalette(bg, src, x, y,
- *  w, h, palette)` (bg.c). Copie un rect au BG tilemap buffer + change palette.
- *  Dette R3 : full BG tilemap manip GBA-specific cascade vers gba-window-system /
- *  Phaser BG. Pour now : route vers globalThis hook pour brancher UI plus tard. */
+/** 1:1 décomp `CopyToBgTilemapBufferRect_ChangePalette(bg, src, destX, destY,
+ *  rectWidth, rectHeight, palette)` (bg.c:946-949) :
+ *  ```c
+ *  CopyRectToBgTilemapBufferRect(bg, src, 0, 0, rectWidth, rectHeight,
+ *                                destX, destY, rectWidth, rectHeight, palette, 0, 0);
+ *  ```
+ *  C'est CE qui dessine le curseur ▶ du menu (tiles src=[baseTile+1, baseTile+2])
+ *  au BG0 tilemap, palette 0x11 (= CopyTileMapEntry case 17 → écrit src verbatim).
+ *  AVANT : routait vers le hook `__bgTilemap` JAMAIS wiré en voie L → curseur INVISIBLE
+ *  (user "je bosse à l'aveugle"). Câblé vers le vrai CopyRectToBgTilemapBufferRect
+ *  (gba-window-system) qui écrit gbaBg.tilemap (lu par le compositor chaque frame). */
 function _CopyToBgTilemapBufferRect_ChangePalette(
   bg: number, src: Uint16Array, x: number, y: number, w: number, h: number, palette: number,
 ): void {
-  const hook = (globalThis as { __bgTilemap?: {
-    copyToBufferRectChangePalette?: (bg: number, src: Uint16Array, x: number, y: number, w: number, h: number, palette: number) => void;
-  } }).__bgTilemap;
-  if (hook?.copyToBufferRectChangePalette) {
-    hook.copyToBufferRectChangePalette(bg, src, x, y, w, h, palette);
-  }
+  CopyRectToBgTilemapBufferRect(bg, src, 0, 0, w, h, x, y, w, h, palette, 0, 0);
 }
 
-/** 1:1 décomp `CopyBgTilemapBufferToVram(bg)` (bg.c). Flush tilemap buffer
- *  → VRAM. Wire vers gba-window-system équivalent. */
+/** 1:1 décomp `CopyBgTilemapBufferToVram(bg)` (bg.c). Notre compositor lit
+ *  gbaBg.tilemap chaque frame → no-op (cf. gba-window-system). */
 function _CopyBgTilemapBufferToVram(bg: number): void {
-  const hook = (globalThis as { __bgTilemap?: {
-    copyBufferToVram?: (bg: number) => void;
-  } }).__bgTilemap;
-  if (hook?.copyBufferToVram) hook.copyBufferToVram(bg);
+  CopyBgTilemapBufferToVram(bg);
 }
 
 /** 1:1 décomp `BattleTv_ClearExplosionFaintCause()` (battle_tv.c).
@@ -424,8 +441,13 @@ function _readChooseMoveStruct(battler: number): ChooseMoveStruct {
  *  gameDataMoves (keyé par enum) → échouait toujours → le menu de moves affichait
  *  l'ID brut ("1","43","71","98") au lieu des noms (bug texte menu). */
 function _getMoveName(move: number): string {
-  if (!move) return String(move);
-  const enumName = reverseDecompConstant(move, 'MOVE_');
+  // 1:1 décomp `gMoveNames[move]` : table PLATE indexée par id, MOVE_NONE inclus
+  // (gMoveNames[MOVE_NONE] = "--", cf. data/text/move_names.h:3). Avant :
+  // `if (!move) return String(move)` affichait "0" pour les slots de move vides
+  // (bug user "slots vides = 0"). On résout MOVE_NONE EXPLICITEMENT car
+  // reverseDecompConstant(0,'MOVE_') est ambigu (MOVE_TARGET_SELECTED=0 partage
+  // le préfixe 'MOVE_' → l'ordre d'itération pourrait renvoyer le mauvais enum).
+  const enumName = move === MOVE_NONE ? 'MOVE_NONE' : reverseDecompConstant(move, 'MOVE_');
   if (enumName) {
     const fr = _getMoveNameFrFromData(enumName);
     if (fr && fr !== enumName) return fr;
@@ -887,6 +909,12 @@ function PlayerHandleTrainerSlideBack(): void {
  *      SE_FAINT panning + setup sprite speedY=5 + callback SpriteCB_FaintSlideAnim
  *      (= K13) + install FreeMonSpriteAfterFaintAnim. */
 function PlayerHandleFaintAnimation(): void {
+  // __battleSpritesData (animationState) pas encore câblé → la state machine 1:1
+  // ci-dessous bouclerait en state 0 (_setHealthBoxAnimationState no-op → animState
+  // reste 0). On GARDE le port 1:1 (dormant) mais ExecComplete direct tant que le
+  // backing est absent (visuel faint via le path enqueue, Dette R3). Retirer la garde
+  // dès que __battleSpritesData sera câblé.
+  if (!_healthBoxAnimStateWired()) { PlayerBufferExecCompleted(); return; }
   const animState = _getHealthBoxAnimationState(gActiveBattler);
   if (animState === 0) {
     if (_isBehindSubstitute(gActiveBattler)) {
@@ -918,6 +946,13 @@ const _SOUND_PAN_ATTACKER = -64;
 function _getHealthBoxAnimationState(battler: number): number {
   const m = (globalThis as { __battleSpritesData?: { getHealthBoxAnimationState?: (b: number) => number } }).__battleSpritesData;
   return m?.getHealthBoxAnimationState?.(battler) ?? 0;
+}
+/** True si le backing __battleSpritesData.animationState est câblé (= les setters
+ *  persistent). Sinon les state machines basées dessus (FaintAnimation) bouclent
+ *  → on les court-circuite en ExecComplete (visuel via enqueue, Dette R3). */
+export function _healthBoxAnimStateWired(): boolean {
+  const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: unknown } }).__battleSpritesData;
+  return typeof m?.setHealthBoxAnimationState === 'function';
 }
 function _setHealthBoxAnimationState(battler: number, v: number): void {
   const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: (b: number, v: number) => void } }).__battleSpritesData;
@@ -1002,8 +1037,36 @@ function PlayerHandleMoveAnimation(): void {
 function PlayerHandlePrintString(): void {
   _setBattleBG0(0, 0);
   const stringId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
-  const decoded = _BufferStringBattle(stringId);
-  BattlePutTextOnWindow(decoded, B_WIN_MSG);
+  // Voie L : décodeur texte BYTE-LEVEL pur 1:1 (battle-message.ts) →
+  // gDisplayedStringBattle (bytes charmap) → BattlePutTextOnWindowBytes (rendu
+  // sans round-trip). Fallback sur l'ancien décodeur JS-string si indispo/erreur
+  // (charmap pas encore chargée au tout 1er message, ou bug → robustesse).
+  let usedByte = false;
+  try {
+    const bm = (globalThis as { __battleMessage?: {
+      BufferStringBattle?: (id: number, md: unknown) => number;
+      gDisplayedStringBattle?: Uint8Array;
+      getBattleCharmap?: () => Record<string, number> | null;
+    } }).__battleMessage;
+    const ctrls = (globalThis as { __battleControllers?: {
+      BattlePutTextOnWindowBytes?: (b: Uint8Array, w: number) => void;
+      getLastPrintStringMsgData?: (b?: number) => unknown;
+      snapshotMsgData?: () => unknown;
+    } }).__battleControllers;
+    if (bm?.BufferStringBattle && bm.gDisplayedStringBattle && bm.getBattleCharmap?.()
+        && ctrls?.BattlePutTextOnWindowBytes) {
+      const msgData = ctrls.getLastPrintStringMsgData?.(gActiveBattler) ?? ctrls.snapshotMsgData?.() ?? {};
+      bm.BufferStringBattle(stringId, msgData);
+      ctrls.BattlePutTextOnWindowBytes(bm.gDisplayedStringBattle, B_WIN_MSG);
+      usedByte = true;
+    }
+  } catch (e) {
+    console.warn('[L] PlayerHandlePrintString : byte path failed, fallback JS-string :', e);
+  }
+  if (!usedByte) {
+    const decoded = _BufferStringBattle(stringId);
+    BattlePutTextOnWindow(decoded, B_WIN_MSG);
+  }
   gBattlerControllerFuncs[gActiveBattler] = CompleteOnInactiveTextPrinter2;
   _BattleTv_SetDataBasedOnString(stringId);
   _BattleArena_DeductSkillPoints(gActiveBattler, stringId);
@@ -1296,8 +1359,22 @@ function _BeginNormalPaletteFade(_palettes: number, _delay: number, _startY: num
 }
 
 function _OpenBagAndChooseItem(): void {
-  // Dette R3 : bag UI in-battle scene swap (= cascade UI).
-  // Pour now : exec complete (= cancel) tant que bag-in-battle pas wirée.
+  // 1:1 décomp : attend la fin du fade-to-black (lancé par PlayerHandleChooseItem)
+  // avant d'« ouvrir » le bag. Bag-in-battle = Dette R3 (sous-écran UI à porter) →
+  // headless : on ANNULE proprement (émet itemId 0 → l'action selection voit itemValue
+  // 0 et re-affiche le menu) PUIS fade BACK vers normal (sinon écran NOIR). MÊME pattern
+  // que _OpenPartyMenuToChooseMon (switch loop #9). Empêche le SOFT-LOCK de SAC.
+  const _rt = (globalThis as { __rt?: { gPaletteFade?: { active?: boolean } } }).__rt;
+  if (_rt?.gPaletteFade?.active) return;
+  // EmitOneReturnValue(0) : bufferB[1..2]=0 → itemValue 0 = annulation (cf. décomp
+  // bag cancel B-button). L'action selection (STATE_WAIT_ACTION_CASE_CHOSEN) lit
+  // bufferB[1..2], pas l'opcode bufferB[0].
+  const CONTROLLER_ONERETURNVALUE = 0x23;
+  const buf = new Uint8Array(4);
+  buf[0] = CONTROLLER_ONERETURNVALUE;
+  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, buf, 4);
+  // Fade back du noir vers normal (équivalent fermeture du bag).
+  _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0x10, 0, _RGB_BLACK);
   PlayerBufferExecCompleted();
 }
 
@@ -1315,6 +1392,13 @@ function _OpenBagAndChooseItem(): void {
  *  → PARTY_SIZE (= branche else de WaitForMonSelection ; ne devrait pas arriver car
  *  `Cmd_openpartyscreen` gate l'ouverture via HasNoMonsToSwitch). */
 function _OpenPartyMenuToChooseMon(): void {
+  // 1:1 décomp : OpenPartyMenuToChooseMon attend `!gPaletteFade.active` (fin du
+  // fade-to-black lancé par PlayerHandleChoosePokemon) avant d'ouvrir le party menu.
+  // Headless (pas de vrai écran party) : dès le fade fini, on auto-sélectionne PUIS
+  // on relance un fade BACK vers normal — SANS ça l'écran reste NOIR (le fade-to-black
+  // n'étant jamais inversé ; bug visuel switch volontaire loop #9).
+  const _rt = (globalThis as { __rt?: { gPaletteFade?: { active?: boolean } } }).__rt;
+  if (_rt?.gPaletteFade?.active) return;
   const activePartyIdx = gBattlerPartyIndexes[gActiveBattler];
   let chosenMonId = _PARTY_SIZE;
   for (let i = 0; i < _PARTY_SIZE; i++) {
@@ -1327,6 +1411,9 @@ function _OpenPartyMenuToChooseMon(): void {
     if (sp !== 0 && hp > 0 && !isEgg) { chosenMonId = i; break; }
   }
   if (chosenMonId !== _PARTY_SIZE) _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
+  // Fade BACK : du noir (Y=0x10) vers normal (Y=0) — équivalent de la fermeture du
+  // party menu côté décomp. Sans ça l'écran reste noir après le choix.
+  _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0x10, 0, _RGB_BLACK);
   _BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, chosenMonId, _getBattlePartyCurrentOrderSlice());
   PlayerBufferExecCompleted();
 }
@@ -1466,8 +1553,22 @@ function _LoadBattleBarGfx(_barId: number): void {
 
 /** 1:1 décomp `UpdateHpTextInHealthbox(spriteId, value, hpId)`
  *  (battle_interface.c). Dette R3 : redraw HP text in healthbox window. */
-function _UpdateHpTextInHealthbox(_spriteId: number, _value: number, _hpId: number): void {
-  // Dette R3 : redraw HP text via __battleHealthbox hook.
+function _UpdateHpTextInHealthbox(spriteId: number, value: number, hpId: number): void {
+  const m = (globalThis as { __battleHealthbox?: { UpdateHpTextInHealthbox?: (s: number, v: number, h: number) => void } }).__battleHealthbox;
+  m?.UpdateHpTextInHealthbox?.(spriteId, value, hpId);
+}
+
+/** 1:1 décomp `SetHealthboxSpriteVisible(spriteId)` via __battleHealthbox. */
+function _SetHealthboxSpriteVisible(spriteId: number): void {
+  const m = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteVisible?: (s: number) => void } }).__battleHealthbox;
+  m?.SetHealthboxSpriteVisible?.(spriteId);
+}
+
+/** 1:1 décomp : montre + glisse le healthbox au send-out (Intro_TryShinyAnimShowHealthbox)
+ *  via la couche voie-L __battleHealthbox. */
+function _ShowHealthboxOnSendOut(battler: number): void {
+  const m = (globalThis as { __battleHealthbox?: { ShowHealthboxOnSendOut?: (b: number) => void } }).__battleHealthbox;
+  m?.ShowHealthboxOnSendOut?.(battler);
 }
 
 /** 1:1 décomp `CompleteOnHealthbarDone()` (battle_controller_player.c).
@@ -1475,7 +1576,13 @@ function _UpdateHpTextInHealthbox(_spriteId: number, _value: number, _hpId: numb
  *  puis exec complete. */
 function CompleteOnHealthbarDone(): void {
   const ret = MoveBattleBar(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), HEALTH_BAR, 0);
-  if (ret === -1) {
+  // 1:1 décomp `CompleteOnHealthbarDone` (battle_controller_player.c) : SetHealthboxSprite
+  // Visible + (si ret != -1) UpdateHpTextInHealthbox(ret, HP_CURRENT) → les digits PV
+  // s'animent AVEC la barre pendant le drain ; sinon ExecCompleted (anim finie).
+  _SetHealthboxSpriteVisible(_gHealthboxSpriteId(gActiveBattler));
+  if (ret !== -1) {
+    _UpdateHpTextInHealthbox(_gHealthboxSpriteId(gActiveBattler), ret, HP_CURRENT_LOCAL);
+  } else {
     PlayerBufferExecCompleted();
   }
 }
@@ -1500,8 +1607,20 @@ function PlayerHandleExpUpdate(): void {
     // Dette R3 : full Task system (= scheduler tasks à porter L7+).
     // Pour now, setup EXP via SetBattleBarStruct EXP_BAR + install
     // CompleteOnExpBarDone (1:1 strict comportement équivalent).
-    const curExp = 0; // GetMonData(mon, MON_DATA_EXP) - stat global needed
-    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), level, curExp, expPoints);
+    // 1:1 décomp : la barre EXP s'anime de currExpBarValue à currExpBarValue+expGained
+    // (cf. UpdateHealthboxAttribute EXP_BAR, battle_interface.c:2197-2204 :
+    //   currExpBarValue = exp - currLevelExp ; maxExpBarValue = nextLevelExp - currLevelExp).
+    // Cmd_getexp a déjà appliqué le SEGMENT d'exp AVANT EmitExpUpdate → on lit l'exp COURANTE
+    // (post-segment) et on recule de expPoints pour la valeur de DÉPART de l'anim. À l'instant
+    // de l'EmitExpUpdate (case 3), le niveau est encore celui du segment (level-up = case 4, après).
+    const species = GetMonData(mon, MON_DATA_SPECIES) as number;
+    const newExp = GetMonData(mon, MON_DATA_EXP) as number;
+    const gr = getSpeciesGrowthRate(species);
+    const currLevelExp = getExpForLevel(gr, level);
+    const maxExpBarValue = getExpForLevel(gr, level + 1) - currLevelExp;
+    const newExpInLevel = newExp - currLevelExp;
+    const oldExpInLevel = newExpInLevel - expPoints;
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxExpBarValue, oldExpInLevel, expPoints);
     gBattlerControllerFuncs[gActiveBattler] = _CompleteOnExpBarDone;
   }
 }
@@ -1649,9 +1768,19 @@ function PlayerHandleIntroSlide(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleIntroTrainerBallThrow()`. */
+/** 1:1 décomp `PlayerHandleIntroTrainerBallThrow()` (battle_controller_player.c).
+ *  Le décomp lance Task_StartSendOutAnim → StartSendOutAnim qui CRÉE le sprite du
+ *  mon joueur (BACK pic) via SetMultiuseSpriteTemplateToPokemon + CreateSprite, puis
+ *  joue le lancer de ball + send-out. Sans création de sprite ici, le mon du JOUEUR
+ *  n'apparaissait pas à l'écran (bug user "pas de sprite de notre mon") alors que le
+ *  mon ENNEMI est bien rendu (OpponentHandleLoadMonSprite). On crée le back-sprite via
+ *  le helper partagé (isOpponent=false → back.png + gPlayerParty). La cascade VISUELLE
+ *  du lancer de ball (DoPokeballSendOutAnimation) reste un raffinement A/B (dette R3). */
 function PlayerHandleIntroTrainerBallThrow(): void {
-  // Wire vers K16 battle-intro-events + cascade visuels K9.
+  void _loadAndCreateBattlerMonSprite(gActiveBattler, false);
+  // 1:1 décomp : à la sortie du mon, le healthbox (créé invisible à l'init) est
+  // montré + glissé en place (Intro_TryShinyAnimShowHealthbox → StartHealthboxSlideIn).
+  _ShowHealthboxOnSendOut(gActiveBattler);
   PlayerBufferExecCompleted();
 }
 

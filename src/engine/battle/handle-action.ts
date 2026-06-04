@@ -178,9 +178,15 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   setMultiHitCounter(0);
   gBattleCommunication[MISS_TYPE] = 0;  // 1:1 décomp battle_util.c:96 (MISS_TYPE=6)
 
-  // 1:1 décomp : `gCurrMovePos = gChosenMovePos = gBattleStruct->chosenMovePositions[attacker]`.
-  // Notre port : utilise gChosenMoveByBattler comme alias (chosenMovePositions[] deferred).
-  // Notre port : keep gCurrMovePos as set by action queue / UI.
+  // 1:1 décomp battle_util.c:99 : `gCurrMovePos = gChosenMovePos = gBattleStruct->chosenMovePositions[attacker]`.
+  // INDISPENSABLE : sans cette ligne, gCurrMovePos restait à 0 → TOUS les branches
+  // ci-dessous (moves[gCurrMovePos]) utilisaient moves[0] → le joueur ne pouvait JAMAIS
+  // jouer un move autre que le slot 0 (sélectionner Leer slot 1 jouait Pound slot 0).
+  // Bug masqué jusqu'ici car harness/AI/tests utilisaient toujours le slot 0.
+  // chosenMovePositions[] est posé par : in-game (battle-action-selection.ts:620 depuis
+  // gBattleBufferB[2]), AI (ai-script-commands.ts:436-437), harness (battle-decomp-loop.ts:395).
+  setCurrMovePos(gBattleStruct.chosenMovePositions[gBattlerAttacker]);
+  setChosenMovePos(gBattleStruct.chosenMovePositions[gBattlerAttacker]);
 
   // Choose move 1:1 décomp.
   if (gProtectStructs[gBattlerAttacker].noValidMoves) {
@@ -368,7 +374,13 @@ export function HandleAction_Switch(ctx?: BattleScriptContext): void {
   PREPARE_MON_NICK_BUFFER(_gBattleTextBuff1_HA, gBattlerAttacker, gBattlerPartyIndexes[gBattlerAttacker]);
   gBattleScripting.battler = gBattlerAttacker;
   const off = getBattleScriptOffset('BattleScript_ActionSwitch');
-  if (ctx && off >= 0) ctx.scriptPtr = off;
+  // ctx est undefined quand appelé via le turn dispatch (sTurnActionsFuncsTable() sans
+  // arg) → fallback sur le ctx PERSISTANT gBattleScriptContext (= celui que steppe
+  // HandleAction_RunBattleScript). Sans ce fallback le scriptPtr n'était JAMAIS posé
+  // → le mon ne swappait pas, tour figé à RunTurnActionsFunctions (bug switch loop #9).
+  // Pattern `ctx ?? gBattleScriptContext` = handle-action.ts:357/482.
+  const c = ctx ?? gBattleScriptContext;
+  if (off >= 0) c.scriptPtr = off;
   setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
   // 1:1 décomp ll.308-309 : incrémente playerSwitchesCounter (cap à 255 u8).
   if (gBattleResults.playerSwitchesCounter < 255) {

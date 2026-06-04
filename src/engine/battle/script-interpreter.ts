@@ -656,6 +656,17 @@ export function setupBattleScriptContext(label: string): BattleScriptContext | n
   };
 }
 
+// ─── Wire globalThis pour battle-action-selection.ts (selection-script runner) ──
+// 1:1 décomp : STATE_SELECTION_SCRIPT exécute `gBattleScriptingCommandsTable[op]()` sur
+// gBattlescriptCurrInstr. La voie L action-selection a besoin de stepBattleScriptCommand
+// + gBattleScriptContext + getBattleScriptOffset, mais ne peut pas les importer (cycle
+// ESM via battle-script-commands). Wire globalThis (convention, cf ability-battle-effects:985).
+(globalThis as { __scriptInterp?: { stepBattleScriptCommand: (ctx: BattleScriptContext) => void; gBattleScriptContext: BattleScriptContext; getBattleScriptOffset: (label: string) => number } }).__scriptInterp = {
+  stepBattleScriptCommand,
+  gBattleScriptContext,
+  getBattleScriptOffset,
+};
+
 // ─── Exports for use ────────────────────────────────────────────────────────
 
 /** Random helper exposed pour les opcodes qui rollent (= critcalc, damagecalc rng). */

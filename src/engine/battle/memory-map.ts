@@ -145,13 +145,29 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   // (battle.h:489-518 BattleScripting struct).
   sPAINSPLIT_HP: {
     size: 4,
-    read: () => (globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting?.painSplitHp ?? 0,
-    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting; if (bs) bs.painSplitHp = v | 0; },
+    // s32 scalaire accédé BYTE-PAR-BYTE par `copyword gBattleMoveDamage, sPAINSPLIT_HP`
+    // (BattleScript_EffectPainSplit). MÊME bug que sBIDE_DMG : read ignorant l'offset
+    // → garbage [v,v,v,v] dans gBattleMoveDamage (byte-level) → Pain Split cassé.
+    // Byte-level read/write. (sPAINSPLIT_HP n'est lu QUE par ce copyword → safe.)
+    read: (off = 0) => (((globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting?.painSplitHp ?? 0) >>> ((off | 0) * 8)) & 0xFF,
+    write: (v, off = 0) => {
+      const bs = (globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting;
+      if (bs) { const cur = (bs.painSplitHp ?? 0) >>> 0; bs.painSplitHp = (((cur & ~(0xFF << (off * 8))) | ((v & 0xFF) << (off * 8))) >>> 0) | 0; }
+    },
   },
   sBIDE_DMG: {
     size: 4,
-    read: () => (globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting?.bideDmg ?? 0,
-    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting; if (bs) bs.bideDmg = v | 0; },
+    // s32 scalaire accédé BYTE-PAR-BYTE par `copyword gBattleMoveDamage, sBIDE_DMG`
+    // (BattleScript_BideAttack). BUG CORRIGÉ : read ignorait l'offset → renvoyait la
+    // valeur ENTIÈRE pour CHAQUE byte → copyarray écrivait [v,v,v,v] (ex 80→0x50505050)
+    // dans gBattleMoveDamage (byte-level depuis le fix setword) → Bide infligeait du
+    // garbage = one-shot systématique. Byte-level read/write comme gBattleMoveDamage.
+    // (sBIDE_DMG n'est lu QUE par ce copyword → byte-level safe.)
+    read: (off = 0) => (((globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting?.bideDmg ?? 0) >>> ((off | 0) * 8)) & 0xFF,
+    write: (v, off = 0) => {
+      const bs = (globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting;
+      if (bs) { const cur = (bs.bideDmg ?? 0) >>> 0; bs.bideDmg = (((cur & ~(0xFF << (off * 8))) | ((v & 0xFF) << (off * 8))) >>> 0) | 0; }
+    },
   },
   sDMG_MULTIPLIER: {
     size: 1,

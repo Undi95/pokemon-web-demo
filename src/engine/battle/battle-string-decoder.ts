@@ -471,6 +471,20 @@ export function buildMoveBuff(moveId: number): Uint8Array {
   return new Uint8Array([B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_MOVE, moveId & 0xFF, (moveId >> 8) & 0xFF, B_BUFF_EOS]);
 }
 
+// ─── Resolvers data→nom FR réutilisés par battle-message.ts (décodeur byte-level)
+//     Ces resolvers sont 1:1 corrects (= les "bonnes" parties du décodeur) ;
+//     seul `_substitutePlaceholders` (JS-string, partiel) est remplacé par le
+//     byte-level. Réutilisés ici en attendant la fusion (retrait voie V).
+//     + les `_resolve*StringName` (logique du switch BufferStringBattle, 1:1).
+export {
+  _moveName, _abilityName, _itemName, _typeName, _speciesName,
+  _monNickname, _monNicknameWithPrefix, STAT_NAMES_FR,
+  _resolveTrainerNameFr, _resolveTrainerClassNameFr,
+  _getBattlerSide, _getTrainerOpponentB,
+  _resolveIntroMsgStringName, _resolveIntroSendoutStringName,
+  _resolveReturnmonStringName, _resolveSwitchinmonStringName,
+};
+
 /** Buffer raw-string (= 1:1 décomp StringCopy dans un gBattleTextBuff) → {B_BUFFn}
  *  = la string telle quelle (utile quand on a le NOM FR direct, pas l'ID numérique). */
 export function buildStringBuff(s: string): Uint8Array {

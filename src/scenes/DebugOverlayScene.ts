@@ -17,6 +17,9 @@ import { getRuntime } from '../engine/system/decomp-globals';
  *           uniquement quand le devmenu est visible. Bypass dans
  *           `player-avatar.checkPlayerCollision` via le flag global
  *           `__devNoclip`.
+ *   « ' » — lance un combat de TEST voie L (Treecko Lv5 vs MEDHYENA/
+ *           Poochyena Lv5) via bootDecompBattleLoop. Actif uniquement
+ *           quand le devmenu est ouvert. Pour itérer vite sur les bugs combat.
  */
 export class DebugOverlayScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
@@ -74,6 +77,51 @@ export class DebugOverlayScene extends Phaser.Scene {
         const g = globalThis as unknown as { __devNoclip?: boolean };
         g.__devNoclip = !g.__devNoclip;
         this.updateDebug();
+        return;
+      }
+      // « ' » — lance un combat de TEST voie L (Treecko Lv5 vs MEDHYENA/Poochyena
+      // Lv5) via bootDecompBattleLoop. Setup party-storage + boot via le bridge
+      // global __decompBattleLoop (= évite un import direct du module battle depuis
+      // une scène Phaser). Pour itérer vite sur les bugs combat. À utiliser depuis
+      // l'overworld (pas pendant un combat déjà en cours).
+      if (e.key === "'") {
+        const dl = (globalThis as unknown as {
+          __decompBattleLoop?: {
+            harnessSetupParties: (...a: unknown[]) => Promise<boolean>;
+            bootDecompBattleLoop: (returnToOverworld?: boolean) => void;
+          };
+        }).__decompBattleLoop;
+        if (dl) {
+          // Sync DÉFENSIF de gSaveBlock1.pos à la position courante du joueur avant
+          // de booter. Le retour post-combat (_restoreOverworldFromMenu) spawn le
+          // joueur à gSaveBlock1.pos. EN JEU NORMAL c'est déjà bon : gSaveBlock1.pos
+          // suit la marche (CameraMove, field-camera.ts:633 mute _camPos = alias
+          // gSaveBlock1Ptr.pos à chaque pas) — vérifié runtime (marche (5,9)→(5,12),
+          // retour combat → (5,12) exact). Ce sync est donc un no-op en pratique ; il
+          // garantit seulement qu'un boot déclenché EN PLEIN PAS (currentCoords en
+          // avance d'1 tuile sur pos pas-encore-commitée) ne décale pas le retour.
+          // currentCoords = logique + MAP_OFFSET(7).
+          {
+            const gg = globalThis as unknown as {
+              gSaveBlock1Ptr?: { pos: { x: number; y: number } };
+              __gObjectEvents?: Array<{ currentCoordsX: number; currentCoordsY: number } | undefined>;
+            };
+            const sb1 = gg.gSaveBlock1Ptr;
+            const player = gg.__gObjectEvents?.[0];
+            if (sb1 && player && typeof player.currentCoordsX === 'number') {
+              sb1.pos.x = player.currentCoordsX - 7; // MAP_OFFSET
+              sb1.pos.y = player.currentCoordsY - 7;
+            }
+          }
+          // bootDecompBattleLoop(true) = pose le savedCallback de retour OW (sinon
+          // freeze en fin de combat : la voie L hors encounter n'a pas de retour wiré).
+          void dl.harnessSetupParties(
+            'SPECIES_TREECKO', 5, 'SPECIES_POOCHYENA', 5,
+            { moves: ['MOVE_POUND', 'MOVE_LEER'] }, { moves: ['MOVE_TACKLE'] },
+          ).then(() => dl.bootDecompBattleLoop(true));
+        } else {
+          console.warn('[DebugOverlay] __decompBattleLoop non exposé — combat de test indisponible');
+        }
         return;
       }
     };

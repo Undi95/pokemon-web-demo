@@ -23,12 +23,14 @@ import { registerOpcode, getOpcodeHandler } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { parseValue } from './script-opcodes-helpers';
+import { GetCoins, AddCoins, RemoveCoins } from '../ui/coins';
 
-/** 1:1 décomp `ScrCmd_givecoins` (scrcmd.c) :
- *    GiveCoins(VarGet(amount));  // gSaveBlock1Ptr.coins += amount, cap 9999. */
+/** Alias non-canonique « givecoins » (la macro canonique = `addcoins`, cf. plus
+ *  bas). Délègue à `AddCoins` 1:1 (coins.c) = même résultat que l'ancien
+ *  `Math.min(MAX_COINS, …)`, sans toucher VAR_RESULT (contrat « give »). */
 registerOpcode('givecoins', (_ctx, args) => {
   const amount = VarGet(args[0] ?? '0');
-  if (gSaveBlock1Ptr) gSaveBlock1Ptr.coins = Math.min(9999, (gSaveBlock1Ptr.coins ?? 0) + amount);
+  AddCoins(amount);
   return false;
 });
 
@@ -74,10 +76,10 @@ registerOpcode('checkmoney', (_ctx, args) => {
 });
 
 /** 1:1 décomp `ScrCmd_checkcoins` (scrcmd.c:2129-2134) :
- *    *(u16 *)VarGetPtr(args[0]) = gSaveBlock1Ptr.coins;
+ *    u16 *ptr = GetVarPointer(ScriptReadHalfword(ctx)); *ptr = GetCoins();
  *  Le résultat va dans la VAR passée en arg, pas VAR_RESULT. */
 registerOpcode('checkcoins', (_ctx, args) => {
-  const coins = gSaveBlock1Ptr?.coins ?? 0;
+  const coins = GetCoins();
   const dst = args[0] ?? 'VAR_RESULT';
   if (dst.startsWith('VAR_')) VarSet(dst, coins);
   else VarSet('VAR_RESULT', coins);
@@ -92,31 +94,31 @@ registerOpcode('takecoins', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : alias de givecoins. */
-registerOpcode('addcoins', (ctx, args) => getOpcodeHandler('givecoins')?.(ctx, args) ?? false);
+/** 1:1 décomp `ScrCmd_addcoins` (scrcmd.c:2136-2145) :
+ *    u16 coins = VarGet(ScriptReadHalfword(ctx));
+ *    if (AddCoins(coins) == TRUE) gSpecialVar_Result = FALSE;
+ *    else                          gSpecialVar_Result = TRUE;
+ *  (= VAR_RESULT = !succès ; le cap MAX_COINS + le retour bool sont dans
+ *  `AddCoins` 1:1, coins.c:57-77). */
+registerOpcode('addcoins', (_ctx, args) => {
+  const count = VarGet(args[0] ?? '0');
+  VarSet('VAR_RESULT', AddCoins(count) ? 0 : 1);
+  return false;
+});
 
 /** 1:1 décomp `ScrCmd_removemoney` (scrcmd.c:1743) : alias de takemoney. */
 registerOpcode('removemoney', (ctx, args) => {
   return getOpcodeHandler('takemoney')?.(ctx, args) ?? false;
 });
 
-/** 1:1 décomp `ScrCmd_removecoins` (scrcmd.c:1830) :
- *    gSpecialVar_Result = !RemoveCoins(VarGet(coins)).
- *  (= TRUE si remove failed, FALSE si succès — comportement inverse étrange
- *     mais c'est ce que dit la décomp). */
+/** 1:1 décomp `ScrCmd_removecoins` (scrcmd.c:2147-2156) :
+ *    u16 coins = VarGet(ScriptReadHalfword(ctx));
+ *    if (RemoveCoins(coins) == TRUE) gSpecialVar_Result = FALSE;
+ *    else                             gSpecialVar_Result = TRUE;
+ *  (= VAR_RESULT = TRUE si remove a échoué, FALSE si succès). */
 registerOpcode('removecoins', (_ctx, args) => {
-  const coins = VarGet(args[0] ?? '0');
-  if (!gSaveBlock1Ptr) {
-    VarSet('VAR_RESULT', 1);  // fail
-    return false;
-  }
-  const current = gSaveBlock1Ptr.coins ?? 0;
-  if (current >= coins) {
-    gSaveBlock1Ptr.coins = current - coins;
-    VarSet('VAR_RESULT', 0);
-  } else {
-    VarSet('VAR_RESULT', 1);
-  }
+  const count = VarGet(args[0] ?? '0');
+  VarSet('VAR_RESULT', RemoveCoins(count) ? 0 : 1);
   return false;
 });
 

@@ -287,13 +287,21 @@ export async function loadBattleTextbox(): Promise<void> {
   // → palettes slot 0 + 1 (= 32 entries 0..31).
   LoadPalette(assets.palette0, 0, 32);
   LoadPalette(assets.palette1, 16, 32);
-  // NB (2026-05-31, A/B user couleurs) : on NE force PLUS le backdrop BG palette[0]
-  // à #484050 (= textbox[9], couleur de FOND de la box menu). C'était une erreur :
-  // la ROM montre #000000 (NOIR) dans le backdrop + les cadres de textbox ; le
-  // #484050 n'est QUE le fond de la box menu d'action (rendu par les TILES textbox,
-  // donc inchangé). Forcer palette[0]=#484050 polluait le NOIR de la transition
-  // d'intro (split-slide) → violet, + les cadres. On laisse palette[0]=textbox[0]
-  // (= noir statique décomp, chargé par le LoadPalette ci-dessus).
+  // BACKDROP (BG palette[0] entry 0) = couleur de FOND du menu de combat (#484050,
+  // gris-bleu/violet foncé). Le décomp charge `gBattleTextboxPalette` = textbox.gbapal
+  // (.lz, 2 palettes) ; mon port charge textbox_0.pal/_1.pal à la place — et leur idx 0
+  // est NOIR alors que la vraie palette décomp a #484050 au backdrop. Conséquence : les
+  // pixels TRANSPARENTS (index 0) des cadres de box menu (text_window, coins arrondis +
+  // bords) montraient le backdrop NOIR au lieu du panneau #484050 → "noir autour des
+  // textbox" signalé par l'user (A/B ROM 2026-06-03 : autour des boxes = panneau
+  // gris-bleu foncé uni, PAS noir). On corrige en posant le backdrop = la couleur de fond
+  // du menu, sourcée depuis la palette elle-même (textbox_0.pal idx 9 = #484050, = le
+  // fill du tile de prompt de l'action menu), pas un hardcode.
+  // ⚠️ Révise la décision A/B 2026-05-31 (qui avait reverté ce #484050 pensant que la ROM
+  // montrait du noir + que ça "violçait l'intro split-slide"). L'A/B 2026-06-03 + un test
+  // direct (set runtime → match ROM) confirment #484050. À A/B-confirmer : l'intro (mons
+  // qui slident) ne doit pas être pollué — si c'est le cas, gater ce set au post-intro.
+  LoadPalette(new Uint16Array([assets.palette0[9]]), 0, 2);
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge
@@ -481,6 +489,17 @@ export async function LoadBattleMenuWindowGfx(): Promise<void> {
   // PLTT_SIZE_4BPP=32) — idx 15 = couleurs menu ACTION/MOVE (paletteNum=5).
   const textPal = await loadGbaPal('/decomp/em/battle_interface/text.pal');
   LoadPalette(textPal, 5 * 16, 32);
+  // 1:1 décomp : `gPPTextPalette` (graphics/battle_interface/text_pp.pal) est une
+  // const ROM TOUJOURS dispo, lue par SetPpNumbersPaletteInMoveSelection pour
+  // recolorer dynamiquement la palette 5 entries 11/12 (fg/shadow des chiffres PP)
+  // selon le ratio PP du move sous le curseur. On la matérialise ICI car c'est le
+  // setup palette du menu de moves (text.pal juste au-dessus) et la VOIE L passe par
+  // LoadBattleMenuWindowGfx. SANS ce préchargement, _gPPTextPalette restait null en
+  // voie L → SetPpNumbersPaletteInMoveSelection no-op (early-return) → les PP gardaient
+  // la couleur de base text.pal (shadow idx11=131,131,131 au lieu de la couleur d'état)
+  // = "couleur des PP fausse" signalée par l'user. La voie V la charge déjà de son côté
+  // (loadBattleTextboxAndBackground), donc pas de double-emploi conflictuel.
+  _gPPTextPalette = await loadGbaPal('/decomp/em/battle_interface/text_pp.pal');
 }
 
 /** 1:1 décomp `LoadBattleTextboxAndBackground` (battle_bg.c:859-867) — strict.

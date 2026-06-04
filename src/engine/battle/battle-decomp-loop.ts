@@ -21,9 +21,11 @@
  * Donc « activer » = poser callback2 = CB2_InitBattle ; le runtime déroule tout.
  */
 
-import { getRuntime } from '../system/decomp-globals';
-import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc } from './state';
+import { getRuntime, m4aSongNumStart, m4aMPlayAllStop, getCurrentSongId } from '../system/decomp-globals';
+import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
+import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
+import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
 
@@ -71,17 +73,83 @@ function _getBattleMainFuncName(): string {
   return m?.getBattleMainFunc?.()?.name ?? '(null)';
 }
 
+function _setMainSavedCallback(cb: (() => void) | null): void {
+  const m = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    setMainSavedCallback?: (cb: (() => void) | null) => void;
+  } | undefined;
+  m?.setMainSavedCallback?.(cb);
+}
+
 // ─── Boot réel (in-game) ────────────────────────────────────────────────────
+
+// ─── BGM de combat (1:1 décomp PlayBattleBGM/GetBattleBGM, pokemon.c:6394-6464) ─
+/** Chanson OW sauvée avant le combat, pour la reprendre au retour. */
+let _savedOwSong: number | null = null;
+
+/** 1:1 décomp `GetBattleBGM()` (pokemon.c:6394) : BGM selon gBattleTypeFlags.
+ *  Wild → MUS_VS_WILD ; dresseur/link → MUS_VS_TRAINER (défaut ; les variantes
+ *  leader/champion par trainerClass = raffinement quand gTrainers sera câblé voie
+ *  L). Branches légendaires (Kyogre/Groudon/Regi) omises tant que ces combats
+ *  n'existent pas. */
+function _getBattleBGM(): number {
+  if (gBattleTypeFlags & (BATTLE_TYPE_TRAINER | BATTLE_TYPE_LINK)) return MUS_VS_TRAINER;
+  return MUS_VS_WILD;
+}
+
+/** 1:1 décomp `PlayBattleBGM()` (pokemon.c:6459) : stop la musique OW (ResetMapMusic
+ *  + m4aMPlayAllStop) puis joue la BGM de combat. On sauve d'abord la chanson OW
+ *  courante pour la reprendre au retour. loop=true (1:1 voie V, markers .mid). */
+function _playBattleBGM(): void {
+  _savedOwSong = getCurrentSongId();
+  m4aMPlayAllStop();
+  m4aSongNumStart(_getBattleBGM(), true);
+}
 
 /** Boote la voie décomp : pose `gMain.callback2 = CB2_InitBattle`. Le runtime
  *  déroule ensuite CB2_InitBattle → CB2_HandleStartBattle → BattleMainCB1/CB2.
  *  Suppose l'état combat (gBattleTypeFlags, gPlayerParty, gEnemyParty) déjà posé
  *  par le caller (= équivalent de BattleSetup_StartWildBattle côté setup data). */
-export function bootDecompBattleLoop(): void {
+export function bootDecompBattleLoop(returnToOverworld = false): void {
   const cb = _CB2_InitBattle();
   if (!cb) {
     console.warn('[decomp-loop] CB2_InitBattle indisponible (battle-init pas chargé)');
     return;
+  }
+  // Reset la couche healthbox voie-L (gHealthboxSpriteIds + _hbInitState) AU DÉBUT du
+  // boot — AVANT CB2_InitBattle → AVANT _BattleInitAllSprites (case 18) qui (re)crée le
+  // healthbox. (Mettre ce reset dans BattleStartClearSetData échouait : il tourne APRÈS
+  // case 18, donc il effaçait les ids que la création ASYNC venait de poser = course.)
+  (globalThis as { __battleHealthbox?: { resetHealthboxL?: () => void } }).__battleHealthbox?.resetHealthboxL?.();
+  // RETOUR OW : ReturnFromBattleToOverworld (battle_main.c:5249) fait
+  // `SetMainCallback2(gMain.savedCallback)`. Lancée hors encounter (touche dev '),
+  // la voie L n'a PAS de savedCallback posé → à la fin du combat, la boucle reste
+  // affichée = FREEZE (pas de retour OW, signalé user). On pose un CB2 de retour qui
+  // re-init le field via `_restoreOverworldFromMenu` (= 1:1 CB2_ReturnToField, ce que
+  // fait aussi battle-flow voie V au cleanup : re-load tilesets/palettes/sprites OW
+  // après le VRAM wipe du combat). One-shot (le restore réétablit le rendu OW).
+  // ⚠️ returnToOverworld DÉFAUT false → le harness (probe jetable qui restaure ses
+  // propres callbacks + break à ReturnFromBattleToOverworld) n'est PAS affecté.
+  if (returnToOverworld) {
+    // 1:1 décomp `BattleSetup_StartWildBattle` → `PlayBattleBGM()` AVANT la transition :
+    // stop la musique OW + joue la BGM de combat (loop). Gaté sur le boot IN-GAME
+    // (dev `'` / vraies rencontres) ; les probes harness (returnToOverworld=false) ne
+    // jouent pas de musique. Reprise OW au retour (ci-dessous).
+    _playBattleBGM();
+    let restored = false;
+    _setMainSavedCallback(() => {
+      if (restored) return;
+      restored = true;
+      const restore = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
+      if (typeof restore === 'function') {
+        // Reprend la BGM OW (sauvée par _playBattleBGM) après le re-init du field
+        // (= 1:1 décomp CB2_ReturnToField → Overworld_PlaySpecialMapMusic).
+        restore()
+          .then(() => { if (_savedOwSong) m4aSongNumStart(_savedOwSong, true); })
+          .catch((e) => console.error('[decomp-loop] _restoreOverworldFromMenu THREW:', e));
+      } else {
+        console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
+      }
+    });
   }
   getRuntime()?.SetMainCallback2?.(cb as never);
 }
@@ -327,9 +395,15 @@ export async function harnessExecuteTurnL(opts?: {
   playerSpecies?: string;
   playerLevel?: number;
   forceMoveNum?: number;      // ID NUMÉRIQUE de move forcé au slot 0 (post-fill) ; sinon moves naturels.
+  forceEnemyMoveNum?: number; // idem pour l'ENNEMI (slot 0) ; utile pour scénarios déterministes (ex. défaite joueur).
   enemySpecies?: string;
   enemyLevel?: number;
   bothTurns?: boolean;        // true = [USE_MOVE, USE_MOVE] (tour ennemi inclus, peut bloquer sur CompleteOnHealthbarDone)
+  runToTurnEnd?: boolean;     // true = continue APRÈS les actions du tour, jusqu'à BattleTurnPassed (poison/burn/météo) + le menu suivant. Pour tester les effets de FIN DE TOUR.
+  playerStatus1?: number;     // injecte gBattleMons[0].status1 (ex. STATUS1_BURN=0x10, POISON=0x08) après le setup, pour tester les effets de statut.
+  enemyStatus1?: number;      // idem gBattleMons[1].status1.
+  playerHp?: number;          // injecte gBattleMons[0].hp après le setup (ex. PV bas pour tester drain/heal).
+  enemyHp?: number;           // idem gBattleMons[1].hp.
   maxFrames?: number;
   frameDelayMs?: number;
 }): Promise<ExecuteTurnLResult> {
@@ -373,6 +447,14 @@ export async function harnessExecuteTurnL(opts?: {
     st.gBattleMons[0].moves[0] = opts.forceMoveNum;
     st.gBattleMons[0].pp[0] = 35;
   }
+  if (typeof opts?.forceEnemyMoveNum === 'number') {
+    st.gBattleMons[1].moves[0] = opts.forceEnemyMoveNum;
+    st.gBattleMons[1].pp[0] = 35;
+  }
+  if (typeof opts?.playerStatus1 === 'number') st.gBattleMons[0].status1 = opts.playerStatus1;
+  if (typeof opts?.enemyStatus1 === 'number') st.gBattleMons[1].status1 = opts.enemyStatus1;
+  if (typeof opts?.playerHp === 'number') st.gBattleMons[0].hp = opts.playerHp;
+  if (typeof opts?.enemyHp === 'number') st.gBattleMons[1].hp = opts.enemyHp;
 
   // 2. Reset state per-tour propre (= comme prepareTestBattle).
   st.setBattleOutcome(0);
@@ -385,6 +467,21 @@ export async function harnessExecuteTurnL(opts?: {
   st.gBattlerPartyIndexes[1] = 0;
   si.gBattleScriptContext.scriptPtr = -1;
   si.gBattleScriptContext.scriptPtrStack.length = 0;
+  // Reset l'état de la chaîne EXP/faint entre runs harness (= le jeu le fait via
+  // BattleStartClearSetData, NON lancé par le harness). SANS ça, `givenExpMons` reste
+  // posé d'un run précédent → GiveExp est SKIP au 2e+ run de la même session →
+  // partyExpGain=0 (artefact d'ISOLATION, pas un bug jeu : le 1er run après reload donne
+  // bien l'EXP 1:1, ex. Poochyena Lv2 → 15).
+  {
+    const bs = st.gBattleStruct as {
+      givenExpMons?: number; expGetterMonId?: number; faintedActionsState?: number; wildVictorySong?: number;
+    };
+    bs.givenExpMons = 0;
+    bs.expGetterMonId = 0;
+    bs.faintedActionsState = 0;
+    bs.wildVictorySong = 0;
+    (st.gBattleScripting as { getexpState?: number }).getexpState = 0;
+  }
 
   // 3. Installer les controllers (1:1 InitSinglePlayerBtlControllers).
   st.setActiveBattler(0); cp.SetControllerToPlayer();
@@ -432,6 +529,7 @@ export async function harnessExecuteTurnL(opts?: {
   let prevLine = '';
   let lastMsg = '';
   let reachedEnd = false;
+  let turnActionsDone = false;  // runToTurnEnd : passe à true quand les actions du tour sont finies, pour ensuite breaker au menu suivant (après BattleTurnPassed).
   let frame = 0;
   let maxMoveDamage = 0;   // diag : max de gBattleMoveDamage observé (calcul OK ?)
   let lastResultFlags = 0;
@@ -463,7 +561,12 @@ export async function harnessExecuteTurnL(opts?: {
     //  - sinon (outcome!=0) on LAISSE tourner la chaîne de fin (HandleEndTurn_BattleWon
     //    → script PayDay → HandleEndTurn_FinishBattle → cleanup+fade) jusqu'à l'état
     //    terminal (FreeResetData / retour overworld).
-    if (st.gBattleOutcome === 0 && st.gCurrentTurnActionNumber >= st.gBattlersCount) { reachedEnd = true; break; }
+    if (st.gBattleOutcome === 0 && st.gCurrentTurnActionNumber >= st.gBattlersCount) {
+      if (!opts?.runToTurnEnd) { reachedEnd = true; break; }
+      turnActionsDone = true;  // continue : laisse tourner BattleTurnPassed (effets de fin de tour)
+    }
+    // runToTurnEnd : break quand le menu du tour SUIVANT réapparaît (= BattleTurnPassed + effets de fin de tour terminés).
+    if (opts?.runToTurnEnd && turnActionsDone && mfName === 'HandleTurnActionSelectionState') { reachedEnd = true; break; }
     if (mfName === 'FreeResetData_ReturnToOvOrDoEvolutions' || mfName === 'ReturnFromBattleToOverworld') { reachedEnd = true; break; }
     await sleep(frameDelayMs);
   }

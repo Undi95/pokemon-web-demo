@@ -173,7 +173,7 @@ export const BS_OPPONENT2               = 14;
 
 // ─── Accuracycheck special move codes (battle_script_commands.h:320-326) ───
 export const NO_ACC_CALC                 = 0xFFFE;
-export const NO_ACC_CALC_CHECK_LOCK_ON   = 0xFFFD;
+export const NO_ACC_CALC_CHECK_LOCK_ON   = 0xFFFF;
 export const ACC_CURR_MOVE               = 0;
 
 // ─── CMP_* (battle_script_commands.h:326-331) — used by jumpifstat ──────────
@@ -185,7 +185,7 @@ export const CMP_COMMON_BITS    = 4;
 export const CMP_NO_COMMON_BITS = 5;
 
 // ─── B_MSG_STAYED_AWAKE_USING (battle_string_ids.h, used by jumpifcantmakeasleep) ──
-export const B_MSG_STAYED_AWAKE_USING = 1;
+export const B_MSG_STAYED_AWAKE_USING = 2;
 
 // ─── Stat indices (pokemon.h:81-92) ─────────────────────────────────────────
 export const STAT_HP      = 0;
@@ -402,9 +402,10 @@ export const B_OUTCOME_RAN               = 4;
 export const B_OUTCOME_PLAYER_TELEPORTED = 5;
 export const B_OUTCOME_MON_TELEPORTED    = 10;
 
-// ─── BATTLE_RUN_* (battle.h:337-338) — 1:1 décomp ─────────────────────────
+// ─── BATTLE_RUN_* (battle.h:337-339) — 1:1 décomp ─────────────────────────
 export const BATTLE_RUN_SUCCESS = 0;
-export const BATTLE_RUN_FAILURE = 1;
+export const BATTLE_RUN_FORBIDDEN = 1;
+export const BATTLE_RUN_FAILURE = 2;
 
 // ─── FLEE_* (battle.h ProtectStruct fleeType bits) — 1:1 décomp ─────────
 /** ProtectStruct.fleeType : 0=Normal, 1=FLEE_ITEM (= held item Smoke Ball/etc.),
@@ -419,8 +420,10 @@ export const PYRAMID_LOCATION_NONE = 0;
 // ─── NO_TARGET_OVERRIDE (battle.h:56) — 1:1 décomp ────────────────────────
 export const NO_TARGET_OVERRIDE = 0;
 
-// ─── B_MSG_PREVENTS_ESCAPE (battle_string_ids.h:567) — 1:1 décomp ────────
-export const B_MSG_PREVENTS_ESCAPE = 2;
+// ─── gPrintCantRun group (battle_string_ids.h:565-568) — 1:1 décomp ────────
+export const B_MSG_CANT_ESCAPE      = 0;
+export const B_MSG_DONT_LEAVE_BIRCH = 1;
+export const B_MSG_PREVENTS_ESCAPE  = 2;
 
 // ─── B_MSG_* AtkCanceler (battle_string_ids.h:471-583) — 1:1 décomp ──────
 export const B_MSG_WOKE_UP            = 0;

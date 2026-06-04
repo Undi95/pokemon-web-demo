@@ -109,8 +109,9 @@ import {
   AbilityBattleEffects,
   ABILITYEFFECT_SWITCH_IN_WEATHER, ABILITYEFFECT_ON_SWITCHIN,
   ABILITYEFFECT_INTIMIDATE1, ABILITYEFFECT_TRACE,
+  consumeAbilityWantedScript,
 } from './ability-battle-effects';
-import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN } from './item-battle-effects';
+import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './item-battle-effects';
 import { Random } from '../system/random';
 // Voie L : end-of-turn 1:1 (BattleTurnPassed). Le wire fait les étapes 1-16
 // (cleanup + dégâts poison/brûlure/météo + wish/perish + reset) ; _BattleTurnPassed
@@ -284,8 +285,16 @@ const _gBitTable: number[] = (() => {
  *  notify le reset. */
 function ResetSpriteData(): void {
   const r = getRuntime();
-  // 1:1 décomp `for (i = 0; i < MAX_SPRITES; i++) ResetSprite(&gSprites[i])`.
-  // Notre runtime utilise Map() — clear pour reset.
+  // 1:1 décomp `ResetSpriteData()` (sprite.c:294) = ResetOamRange(0,128) +
+  // ResetAllSprites + ClearSpriteCopyRequests + ResetAffineAnimData +
+  // FreeSpriteTileRanges. Le runtime l'implémente (rt.ResetSpriteData, = ce
+  // qu'appelle decomp-bridge.ResetSpriteData). AVANT : stub `gSprites.clear()`
+  // vidait la Map mais PAS l'OAM ni les tiles → les sprites de combat (mon +
+  // healthbox) gardaient leurs entrées OAM et RENDAIENT ENCORE dans l'OW après le
+  // retour (user-flag : sprites + palette combat qui leakent). Fix = déléguer au
+  // VRAI reset (clear OAM + tiles + sprites). Le re-spawn OW
+  // (_restoreOverworldFromMenu) re-crée ensuite les sprites OW = 1:1.
+  (r as { ResetSpriteData?: () => void }).ResetSpriteData?.();
   if (r.gSprites) r.gSprites.clear();
 }
 
@@ -399,6 +408,15 @@ export function RunBattleScriptCommands_PopCallbacksStack(): void {
       || _stateNs.gCurrentActionFuncId === _B_ACTION_FINISHED_BSE) {
     const fn = gBattleCallbackStack.pop();
     if (fn) gBattleMainFunc = fn;
+  } else if (gBattleScriptContext.scriptPtr < 0 && gBattleCallbackStack.length > 0) {
+    // 1:1 décomp `Cmd_end3` (battle_script_commands.c) : pop le callback stack.
+    // Un script lancé via BattleScriptExecute qui finit par `end3` pose scriptPtr=-1
+    // SANS poser TRY_FINISH (contrairement à end/end2 qui passent par la branche ci-dessus)
+    // → on pop ici. Nécessaire pour les talents de switch-in (BattleScript_IntimidateActivatesEnd3
+    // & co.) lancés depuis TryDoEventsBeforeFirstTurn. Ciblé : ne se déclenche que quand
+    // gBattleMainFunc EST PopCallbacksStack (= script en cours) et que le script vient de finir.
+    const fn = gBattleCallbackStack.pop();
+    if (fn) gBattleMainFunc = fn;
   } else if (gBattleControllerExecFlags === 0) {
     stepBattleScriptCommand(gBattleScriptContext);
   }
@@ -489,12 +507,20 @@ function _readBattleMonFromBuffer(battler: number): void {
   fillActiveBattleMonsForBattleStart();
 }
 
-/** 1:1 décomp `ResetSentPokesToOpponentValue()` (battle_util.c). */
+/** 1:1 décomp `ResetSentPokesToOpponentValue()` (battle_util.c:900-913). */
 function ResetSentPokesToOpponentValue(): void {
-  // 1:1 décomp : clear gSentPokesToOpponent[0..1]. Notre port a cet array.
-  const stateMod = _stateNs as unknown as { gSentPokesToOpponent: number[] };
+  // 1:1 décomp : clear [0..1] PUIS marquer les mons du joueur envoyés (bits = OR de
+  // gBitTable[gBattlerPartyIndexes[i]] côté joueur) sur le flank adverse. La 2e partie
+  // MANQUAIT → gSentPokesToOpponent restait 0 → Cmd_getexp lit sentInPokes=0 → 0 EXP
+  // → pas de level-up → pas d'apprentissage de move. (Racine du « KO sans EXP » boot path.)
+  const stateMod = _stateNs as unknown as { gSentPokesToOpponent: number[]; gBattlersCount: number; gBattlerPartyIndexes: number[] };
   stateMod.gSentPokesToOpponent[0] = 0;
   stateMod.gSentPokesToOpponent[1] = 0;
+  let bits = 0;
+  for (let i = 0; i < stateMod.gBattlersCount; i += 2)
+    bits |= _gBitTable[stateMod.gBattlerPartyIndexes[i]];
+  for (let i = 1; i < stateMod.gBattlersCount; i += 2)
+    stateMod.gSentPokesToOpponent[(i & 2 /* BIT_FLANK */) >> 1] = bits;
 }
 
 /** 1:1 décomp `GetEvolutionTargetSpecies(mon, evoMode, levelUpBits)` (pokemon.c). */
@@ -528,14 +554,15 @@ function BattleMainCB2(): void {
   if (gBattleMainFunc) gBattleMainFunc();
 }
 
-/** 1:1 décomp `SetMainCallback2(cb)`. */
+/** 1:1 décomp `SetMainCallback2(cb)` : pose gMain.callback2 du runtime (= le runtime
+ *  l'appelle chaque frame). AVANT : STUB (`void cb`) → ne posait RIEN → la SEULE
+ *  utilisation, `ReturnFromBattleToOverworld` (fin de combat voie L), ne pouvait pas
+ *  rendre la main au callback overworld → la boucle combat (_BattleMainCB2) restait =
+ *  FREEZE en fin de combat, pas de retour OW (signalé user). Câblé comme les autres
+ *  modules (battle-cb2/init `_SetMainCallback2`). Voie V utilise battle-flow (pas
+ *  ReturnFromBattleToOverworld) → pas de régression. */
 function SetMainCallback2(cb: (() => void) | null): void {
-  // Wire vers gMain.callback2 du runtime. Pour now : trigger immediate
-  // dans le frame loop si exists.
-  if (cb) {
-    // Le runtime appelle le callback dans la frame loop.
-    void cb;
-  }
+  getRuntime()?.SetMainCallback2?.(cb as never);
 }
 
 /** 1:1 décomp `gTrainers[id].trainerClass` (trainers data). */
@@ -989,8 +1016,29 @@ export function BattleIntroPrintTrainerWantsToBattle(): void {
 
 // ─── BattleIntroPrintWildMonAttacked (3574) ────────────────────────────────
 
+/** Voie-L : montre le(s) healthbox(es) ADVERSE(s) en combat SAUVAGE. 1:1 décomp
+ *  `SpriteCB_WildMonShowHealthbox` (battle_main.c:2686) : StartHealthboxSlideIn +
+ *  SetHealthboxSpriteVisible quand le mon sauvage apparaît. En combat sauvage les
+ *  états send-out adverse (BattleIntroPrintOpponentSendsOut → OpponentHandleIntroTrainerBallThrow)
+ *  sont SAUTÉS (le mon sauvage n'est pas « envoyé » par un dresseur) ; le décomp montre
+ *  le healthbox via le callback du sprite du mon sauvage. Notre voie L ne porte pas la
+ *  chaîne SpriteCB_WildMon (slide d'apparition du mon = Dette R3), donc on déclenche le
+ *  show ici, à BattleIntroPrintWildMonAttacked (= moment 1:1 où le mon sauvage apparaît).
+ *  Le healthbox est créé INVISIBLE au boot (case 18) → déjà prêt. Le gate
+ *  `_healthboxSlideInStarted` (côté ShowHealthboxOnSendOut) rend l'appel idempotent. */
+function _ShowWildOpponentHealthboxes(): void {
+  const hb = (globalThis as { __battleHealthbox?: { ShowHealthboxOnSendOut?: (b: number) => void } }).__battleHealthbox;
+  if (!hb?.ShowHealthboxOnSendOut) return;
+  for (let b = 0; b < gBattlersCount; b++) {
+    if (GET_BATTLER_SIDE(b) === B_SIDE_OPPONENT) hb.ShowHealthboxOnSendOut(b);
+  }
+}
+
 /** 1:1 décomp `BattleIntroPrintWildMonAttacked()` (battle_main.c:3574-3581). */
 export function BattleIntroPrintWildMonAttacked(): void {
+  // Voie-L : montre le healthbox du mon sauvage (1:1 SpriteCB_WildMonShowHealthbox ;
+  // cf. _ShowWildOpponentHealthboxes). Idempotent (gate slide-in started).
+  _ShowWildOpponentHealthboxes();
   if (gBattleControllerExecFlags === 0) {
     gBattleMainFunc = BattleIntroPrintPlayerSendsOut;
     PrepareStringBattle(STRINGID_INTROMSG, 0);
@@ -1213,6 +1261,30 @@ export function BattleIntroPlayer1SendsOutMonAnimation(): void {
 
 /** 1:1 décomp `TryDoEventsBeforeFirstTurn()` (battle_main.c:3841-3930).
  *  Run les switch-in abilities + items dans l'ordre de speed avant le 1er turn. */
+/** Exécute le script de talent de switch-in que `AbilityBattleEffects` vient de mettre
+ *  en file (via `consumeAbilityWantedScript`). 1:1 décomp : AbilityBattleEffects appelle
+ *  `BattleScriptPushCursorAndCallback(script)` EN INTERNE ; notre port délègue le lancement
+ *  au caller → on exécute le script via BattleScriptExecute (push gBattleMainFunc +
+ *  RunBattleScriptCommands_PopCallbacksStack ; le script finit par end3 → pop via la
+ *  branche scriptPtr<0 de PopCallbacksStack). SANS ÇA, les talents de switch-in (Intimidate,
+ *  météo, Trace) sont détectés mais leur effet/message ne s'applique JAMAIS au début de
+ *  combat (l'Attaque du joueur ne baisse pas face à un ennemi Intimidate). */
+function _ExecSwitchInAbilityScript(): void {
+  const label = consumeAbilityWantedScript();
+  if (label) BattleScriptExecute(label);
+}
+
+/** Idem pour les ITEMS de switch-in (`ItemBattleEffects(ITEMEFFECT_ON_SWITCH_IN)` →
+ *  `consumeItemWantedScript`). MÊME bug que les talents : le caller faisait `return`
+ *  sans exécuter le script. Au début de combat, seul White Herb (HOLD_EFFECT_RESTORE_STATS
+ *  → `BattleScript_WhiteHerbEnd2`) en file un — il restaure les stats baissées (ex. contre
+ *  Intimidate). Le script finit par end2 → branche TRY_FINISH de PopCallbacksStack. Garde
+ *  contre les labels placeholder `__…` (= signaux non-script d'autres itemEffects). */
+function _ExecSwitchInItemScript(): void {
+  const label = consumeItemWantedScript();
+  if (label && !label.startsWith('__')) BattleScriptExecute(label);
+}
+
 export function TryDoEventsBeforeFirstTurn(): void {
   let effect = 0;
 
@@ -1235,6 +1307,7 @@ export function TryDoEventsBeforeFirstTurn(): void {
   if (!gBattleStruct.overworldWeatherDone
       && AbilityBattleEffects(0, 0, 0, ABILITYEFFECT_SWITCH_IN_WEATHER, 0) !== 0) {
     gBattleStruct.overworldWeatherDone = 1;
+    _ExecSwitchInAbilityScript();
     return;
   }
 
@@ -1250,11 +1323,11 @@ export function TryDoEventsBeforeFirstTurn(): void {
 
     gBattleStruct.switchInAbilitiesCounter++;
 
-    if (effect !== 0) return;
+    if (effect !== 0) { _ExecSwitchInAbilityScript(); return; }
   }
 
-  if (AbilityBattleEffects(ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0) !== 0) return;
-  if (AbilityBattleEffects(ABILITYEFFECT_TRACE, 0, 0, 0, 0) !== 0) return;
+  if (AbilityBattleEffects(ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0) !== 0) { _ExecSwitchInAbilityScript(); return; }
+  if (AbilityBattleEffects(ABILITYEFFECT_TRACE, 0, 0, 0, 0) !== 0) { _ExecSwitchInAbilityScript(); return; }
 
   // 1:1 décomp ll. 3884-3894 : run switch-in items.
   while (gBattleStruct.switchInItemsCounter < gBattlersCount) {
@@ -1268,7 +1341,7 @@ export function TryDoEventsBeforeFirstTurn(): void {
 
     gBattleStruct.switchInItemsCounter++;
 
-    if (effect !== 0) return;
+    if (effect !== 0) { _ExecSwitchInItemScript(); return; }
   }
 
   for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
@@ -1502,11 +1575,13 @@ export function HandleEndTurn_RanFromBattle(): void {
 
   if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER && gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
     gBattlescriptCurrInstr = BattleScript_PrintPlayerForfeited;
+    gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_PrintPlayerForfeited');
     setBattleOutcome(B_OUTCOME_FORFEITED);
     const sb2 = gSaveBlock2Ptr as { frontier?: { disableRecordBattle?: boolean } };
     if (sb2.frontier) sb2.frontier.disableRecordBattle = true;
   } else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL) {
     gBattlescriptCurrInstr = BattleScript_PrintPlayerForfeited;
+    gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_PrintPlayerForfeited');
     setBattleOutcome(B_OUTCOME_FORFEITED);
   } else {
     // 1:1 décomp ll. 5070-5083 : switch sur fleeType.
@@ -1516,16 +1591,23 @@ export function HandleEndTurn_RanFromBattle(): void {
     switch (fleeType) {
       default:
         gBattlescriptCurrInstr = BattleScript_GotAwaySafely;
+        gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_GotAwaySafely');
         break;
       case FLEE_ITEM:
         gBattlescriptCurrInstr = BattleScript_SmokeBallEscape;
+        gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_SmokeBallEscape');
         break;
       case FLEE_ABILITY:
         gBattlescriptCurrInstr = BattleScript_RanAwayUsingMonAbility;
+        gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_RanAwayUsingMonAbility');
         break;
     }
   }
 
+  // Voie L : HandleEndTurn_FinishBattle steppe gBattleScriptContext per-frame — il
+  // FAUT poser ctx.scriptPtr sur l'offset (pas juste gBattlescriptCurrInstr=<stub>),
+  // = MÊME fix que HandleEndTurn_BattleWon:1453. Sans ça le script de fuite ne tourne
+  // jamais → freeze à FinishBattle (vérifié : FUITE bloquait l'onglet).
   gBattleMainFunc = HandleEndTurn_FinishBattle;
 }
 
@@ -1541,6 +1623,7 @@ export function HandleEndTurn_MonFled(): void {
     stateMod.gBattlerPartyIndexes[gBattlerAttacker],
   );
   gBattlescriptCurrInstr = BattleScript_WildMonFled;
+  gBattleScriptContext.scriptPtr = getBattleScriptOffset('BattleScript_WildMonFled');
 
   gBattleMainFunc = HandleEndTurn_FinishBattle;
 }
@@ -1700,7 +1783,15 @@ export function ReturnFromBattleToOverworld(): void {
   const stateMod = _stateNs as unknown as { setSpecialVarResult?: (v: number) => void };
   stateMod.setSpecialVarResult?.(gBattleOutcome);
   setMainInBattle(false);
-  _gMain_callback1 = _gPreBattleCallback1;
+  // 1:1 décomp `gMain.callback1 = gPreBattleCallback1` (battle_main.c:5230). DOIT
+  // écrire le RUNTIME (pas juste la var module) — sinon le runtime garde
+  // callback1 = BattleMainCB1 → la boucle combat continue de rappeler
+  // gBattleMainFunc = ReturnFromBattleToOverworld CHAQUE frame, qui re-pose
+  // callback2 = savedCallback (one-shot devenu no-op) → MainCB2_Overworld jamais
+  // rétabli → OW rendu mais FIGÉ (freeze signalé user). `setMainCallback1` écrit
+  // la var module ET getRuntime().SetMainCallback1. gPreBattleCallback1 = le
+  // callback1 pré-combat (sauvé case 18, battle-link-start.ts:228 — null/anon en OW).
+  setMainCallback1(_gPreBattleCallback1);
 
   if (gBattleTypeFlags & BATTLE_TYPE_ROAMER) {
     const enemyParty = _getEnemyParty();

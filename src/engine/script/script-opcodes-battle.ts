@@ -43,7 +43,7 @@ function _stubTrainerBattle(trainerArg: string): void {
 /** 1:1 décomp `ScrCmd_trainerbattle` (scrcmd.c:1821-1825) : real trainer battle
  *  via state machine + battle-flow. Reads trainer party from JSON, runs battles
  *  in sequence. Falls back to stub si trainer data n'est pas dispo. */
-function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
+function _runTrainerBattle(ctx: ScriptContext, trainerArg: string, defeatText?: string): boolean {
   if (!trainerArg) {
     _stubTrainerBattle(trainerArg);
     return false;
@@ -52,7 +52,7 @@ function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
   let flowReady = false;
   let flow: { tick: () => boolean } | null = null;
   void import('../battle/trainer-battle-flow').then((mod) => {
-    flow = mod.startTrainerBattle(trainerArg);
+    flow = mod.startTrainerBattle(trainerArg, defeatText ? { defeatText } : undefined);
     flowReady = true;
   }).catch(() => {
     // Fallback to stub if import fails.
@@ -69,30 +69,43 @@ function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
 
 // ─── Trainerbattle variants ──────────────────────────────────────────────────
 
+// Le label `defeat` (= lose_text = réplique de défaite PERSONNELLE du dresseur,
+// affichée sur l'OW après la victoire) est à une position 1:1 selon la macro
+// (cf. asm/macros/event.inc). Notre transpileur émet la forme HAUT-NIVEAU
+// (vérifié : `trainerbattle_double args:[trainer,intro,defeat,not_enough,event]`).
 registerOpcode('trainerbattle', (ctx, args) => {
-  // args = [type, trainer, localId, ptr1, ...]
-  return _runTrainerBattle(ctx, args[1] ?? '');
+  // Forme générique `trainerbattle TYPE, trainer, localId, ptr1, ptr2, ...` :
+  // ptr2 (=args[4]) = lose_text pour tous les types SAUF SINGLE_NO_INTRO_TEXT
+  // où ptr1 (=args[3]) = lose_text.
+  const type = args[0] ?? '';
+  const defeat = type === 'TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT' ? args[3] : args[4];
+  return _runTrainerBattle(ctx, args[1] ?? '', defeat);
 });
 
+// trainerbattle_single trainer, intro, lose, ...  → lose = args[2].
 registerOpcode('trainerbattle_single', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
+  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
 });
 
+// trainerbattle_double trainer, intro, lose, not_enough, ...  → lose = args[2].
 registerOpcode('trainerbattle_double', (ctx, args) => {
   // Double battles not yet supported — fallback to single.
-  return _runTrainerBattle(ctx, args[0] ?? '');
+  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
 });
 
+// trainerbattle_rematch trainer, intro, lose  → lose = args[2].
 registerOpcode('trainerbattle_rematch', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
+  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
 });
 
+// trainerbattle_rematch_double trainer, intro, lose, not_enough  → lose = args[2].
 registerOpcode('trainerbattle_rematch_double', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
+  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
 });
 
+// trainerbattle_no_intro trainer, lose_text  → lose = args[1].
 registerOpcode('trainerbattle_no_intro', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '');
+  return _runTrainerBattle(ctx, args[0] ?? '', args[1]);
 });
 
 // ─── Trainer flags ───────────────────────────────────────────────────────────

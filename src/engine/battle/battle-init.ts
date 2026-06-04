@@ -124,8 +124,15 @@ function _SetMainCallback2(cb: (() => void) | null): void {
 }
 
 /** 1:1 décomp `SetHBlankCallback(cb)` + `SetVBlankCallback(cb)`. */
-function _SetHBlankCallback(_cb: (() => void) | null): void { /* Dette R3 */ }
-function _SetVBlankCallback(_cb: (() => void) | null): void { /* Dette R3 */ }
+function _SetHBlankCallback(_cb: (() => void) | null): void { /* Dette R3 (HBlank scanline = effets healthbox, séparé) */ }
+/** 1:1 décomp `SetVBlankCallback(cb)` : installe le callback VBlank sur le
+ *  runtime (= gMain.vblankCallback, appelé chaque frame par runOneFrame). C'est
+ *  ce qui fait tourner `VBlankCB_Battle` → push gBattle_BG0_X/Y aux registres
+ *  REG_OFFSET_BG0HOFS/VOFS (scroll du tilemap 64-tall qui révèle MSG/ACTION/MOVE).
+ *  Sans ça, le menu d'action (top=35, scroll=160) reste hors écran. */
+function _SetVBlankCallback(cb: (() => void) | null): void {
+  getRuntime()?.SetVBlankCallback?.(cb);
+}
 
 /** 1:1 décomp `CpuFill32(value, dest, size)`. */
 function _CpuFill32(_value: number, _dest: unknown, _size: number): void {

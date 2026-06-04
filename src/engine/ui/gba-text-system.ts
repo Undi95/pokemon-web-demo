@@ -268,7 +268,7 @@ function _addTextPrinterParameterizedCore(
   lineSpacing: number,
   colorArray: readonly number[],
   speed: number,
-  str: string,
+  str: string | Uint8Array,
 ): number {
   ensureFontLoaded();
   const win = getWindowById(windowId);
@@ -276,7 +276,11 @@ function _addTextPrinterParameterizedCore(
     console.warn('[gba-text-system] AddTextPrinterParameterized3/4: window', windowId, 'not found');
     return 0;
   }
-  const encoded = encodeStringForFont(str, charmap!);
+  // Byte-entry (décodeur byte-level battle-message.ts) : si `str` est déjà des
+  // bytes charmap pré-encodés (gDisplayedStringBattle), on les passe DIRECTEMENT
+  // au printer SANS re-encoder (= "une seule représentation", pas de round-trip).
+  // Sinon (JS-string OW/menus) : encode via charmap comme avant (inchangé).
+  const encoded = (str instanceof Uint8Array) ? str : encodeStringForFont(str, charmap!);
   // 1:1 décomp : glyph data selon fontId (= FONT_NARROW = different glyphs
   // que FONT_NORMAL). Avant : fontId ignored, toujours FONT_NORMAL rendered.
   const fnt = _resolveFont(fontId);
@@ -401,7 +405,7 @@ export function AddTextPrinterParameterized4(
   lineSpacing: number,
   colorArray: readonly number[],
   speed: number,
-  str: string,
+  str: string | Uint8Array,
 ): number {
   return _addTextPrinterParameterizedCore(
     windowId, fontId, left, top, letterSpacing, lineSpacing, colorArray, speed, str,

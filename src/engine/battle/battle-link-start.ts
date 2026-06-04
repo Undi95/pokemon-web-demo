@@ -195,10 +195,16 @@ function _RecordedBattle_SetTrainerInfo(): void {
   // Dette R3.
 }
 
-/** 1:1 décomp `BattleInitAllSprites(ptr1, ptr2)`. */
+/** 1:1 décomp `BattleInitAllSprites(ptr1, ptr2)` (battle_gfx_sfx_util.c) — case 3 =
+ *  `gHealthboxSpriteIds[battler] = CreateBattlerHealthboxSprites(battler)`. Notre
+ *  création healthbox est ASYNC (assets) → la state machine `initAllHealthboxes`
+ *  (battle-healthbox-l, modèle décomp) kick off + retourne fini ; on relaie son bool
+ *  (= reste en case 18 tant que pas fini, comme le décomp étale la création sur
+ *  frames). Si le module healthbox n'est pas chargé → return true (pas de blocage). */
 function _BattleInitAllSprites(_ptr1: number, _ptr2: number): boolean {
-  // Dette R3 : init all battle sprites step-by-step.
-  return true;  // Complete immediate.
+  const hb = (globalThis as { __battleHealthbox?: { initAllHealthboxes?: () => boolean } }).__battleHealthbox;
+  if (!hb?.initAllHealthboxes) return true;
+  return hb.initAllHealthboxes();
 }
 
 /** 1:1 décomp `BattleMainCB1` + `BattleMainCB2` (= K22 wire). */

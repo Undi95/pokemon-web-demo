@@ -26,6 +26,7 @@ import { getSpeciesNameFr } from '../system/data-tables';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
 import { getRuntime } from '../system/decomp-globals';
 import { FlagSet, VarSet } from '../script/script-vars';
+import { getText } from '../script/script-runtime';
 import { ShowBg } from '../ui/gba-window-system';
 
 interface TrainerPartyMember {
@@ -176,12 +177,17 @@ function _computeTrainerPrize(td: TrainerData): number {
 
 /** Start trainer battle for given trainer ID. Reads party from JSON.
  *  Falls back to stub VAR_RESULT=1 if trainer not found. */
-export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
+export function startTrainerBattle(trainerId: string, opts?: { defeatText?: string }): TrainerBattleFlow {
   // Eagerly start the data load.
   void _ensureTrainerDataLoaded();
 
+  // 1:1 décomp : `lose_text` du macro trainerbattle = réplique de défaite
+  // PERSONNELLE du dresseur, affichée sur l'OW après la victoire du joueur
+  // (en plus du générique "Vous avez battu CLASSE NOM!" affiché dans le combat).
+  const defeatTextLabel = opts?.defeatText;
+
   type State = 'WAIT_DATA' | 'NEXT_BATTLE'
-             | 'IN_BATTLE' | 'BETWEEN_BATTLES' | 'WIN_TEXT'
+             | 'IN_BATTLE' | 'BETWEEN_BATTLES' | 'WIN_TEXT' | 'WIN_DEFEAT_WAIT'
              | 'LOSE_TEXT' | 'LOSE_WAIT' | 'DONE';
 
   let state: State = 'WAIT_DATA';
@@ -284,14 +290,29 @@ export function startTrainerBattle(trainerId: string): TrainerBattleFlow {
       }
 
       case 'WIN_TEXT': {
-        // 1:1 : la défaite ("Vous avez battu CLASSE NOM!") + l'argent gagné sont affichés
-        // DANS le combat (battle-flow TRAINER_WON_*), plus ici. Ce state ne fait que finaliser
-        // le résultat + poser le flag dresseur-battu (1:1 B1 : TRAINER_FLAGS_START=1280),
-        // puis retour OW (la scène combat a déjà fait son CLEANUP).
+        // 1:1 : la défaite générique ("Vous avez battu CLASSE NOM!") + l'argent gagné sont
+        // affichés DANS le combat (battle-flow TRAINER_WON_*). Ce state finalise le résultat
+        // + pose le flag dresseur-battu (1:1 B1 : TRAINER_FLAGS_START=1280), PUIS affiche la
+        // réplique de défaite PERSONNELLE du dresseur sur l'OW (lose_text du macro), 1:1 décomp.
         VarSet('VAR_RESULT', 1);
         FlagSet(1280 + _resolveTrainerNumId(trainerId));
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = BATTLE_OUTCOME_WIN;
-        state = 'DONE';
+        const defeatText = defeatTextLabel ? getText(defeatTextLabel) : undefined;
+        if (defeatText) {
+          ShowFieldMessage(defeatText);
+          state = 'WIN_DEFEAT_WAIT';
+        } else {
+          state = 'DONE';
+        }
+        return false;
+      }
+
+      case 'WIN_DEFEAT_WAIT': {
+        // Attend fin d'impression + A/B (= même pattern que LOSE_WAIT).
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'DONE';
+        }
         return false;
       }
 

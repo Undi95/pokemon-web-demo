@@ -37,7 +37,7 @@ import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
   gAbsentBattlerFlags, gBattlerTarget, setBattlerTarget,
-  setBattlerControllerFunc,
+  setBattlerControllerFunc, gBattlerPartyIndexes,
 } from './state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_PALACE,
@@ -57,7 +57,8 @@ import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
-import { gEnemyParty, GetMonData, MON_DATA_HP, MON_DATA_SPECIES } from './party-storage';
+import { gEnemyParty, gPlayerParty, GetMonData, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_SPECIES } from './party-storage';
+import { SetBattleBarStruct, MoveBattleBar, HEALTH_BAR } from './battle-hp-bar';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
 import { CreateSprite } from '../system/decomp-bridge';
@@ -226,15 +227,20 @@ async function _loadMonPicCoords(): Promise<Record<string, _MonPicCoords>> {
  *  BattleLoad{Opponent}MonSpriteGfx → SetMultiuseSpriteTemplateToPokemon → CreateSprite,
  *  positionné via GetBattlerSpriteCoord(X_2)/GetBattlerSpriteFinal_Y (grounding par
  *  species). ASYNC (assets PNG /decomp/em/pokemon/<nom>/) ; fire-and-forget. */
-async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<void> {
+export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boolean): Promise<void> {
   try {
     const partyIdx = _getBattlerPartyIndexOpp(battler);
-    const mon = gEnemyParty[partyIdx];
+    // 1:1 : le sprite ENNEMI lit gEnemyParty (front pic), le sprite JOUEUR lit
+    // gPlayerParty (back pic). _getBattlerPartyIndexOpp = gBattlerPartyIndexes[battler]
+    // (side-agnostic) → même index des deux côtés. Partagé entre OpponentHandleLoadMonSprite
+    // (ennemi) et PlayerHandleIntroTrainerBallThrow (joueur) car le décomp converge sur
+    // SetMultiuseSpriteTemplateToPokemon + CreateSprite des deux côtés.
+    const mon = (isOpponent ? gEnemyParty : gPlayerParty)[partyIdx];
     const sp = GetMonData(mon as never, MON_DATA_SPECIES) as number;
-    if (!sp) { console.warn('[opponent] sprite mon : species 0'); return; }
+    if (!sp) { console.warn('[battler-sprite] species 0'); return; }
     // species num → enum 'SPECIES_X' (= clé dossier assets + mon-pic-coords).
     const enumName = reverseDecompConstant(sp, 'SPECIES_');
-    if (!enumName) { console.warn('[opponent] sprite mon : enum introuvable pour species', sp); return; }
+    if (!enumName) { console.warn('[battler-sprite] enum introuvable pour species', sp); return; }
     const folder = enumName.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const picFile = isOpponent ? 'anim_front.png' : 'back.png';
     const tiles = await loadTileBin(`/decomp/em/pokemon/${folder}/${picFile}`, 4);
@@ -257,7 +263,7 @@ async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent: boole
       callback: null,
     }, _GetBattlerSpriteCoordX(battler), y, 2);
   } catch (e) {
-    console.error('[opponent] _loadAndCreateBattlerMonSprite failed', e);
+    console.error('[battler-sprite] _loadAndCreateBattlerMonSprite failed', e);
   }
 }
 /** 1:1 décomp `OpponentHandleSwitchInAnim()` (battle_controller_opponent.c:1160-1166).
@@ -307,6 +313,10 @@ function OpponentHandleTrainerSlideBack(): void { OpponentBufferExecCompleted();
  *    State 1 : !specialAnimActive → reset state + PlaySE12 SE_FAINT TARGET pan
  *      + sprite callback SpriteCB_FaintOpponentMon + install HideHealthboxAfterMonFaint. */
 function OpponentHandleFaintAnimation(): void {
+  // __battleSpritesData pas câblé → state machine bouclerait en state 0. On garde le
+  // port 1:1 (dormant) mais ExecComplete direct tant que le backing est absent (visuel
+  // faint via enqueue, Dette R3). Retirer la garde quand __battleSpritesData sera câblé.
+  if (!_healthBoxAnimStateWired()) { OpponentBufferExecCompleted(); return; }
   const animState = _getHealthBoxAnimationState(gActiveBattler);
   if (animState === 0) {
     if (_isBehindSubstitute(gActiveBattler)) {
@@ -336,6 +346,12 @@ function _setHealthBoxAnimationState(battler: number, v: number): void {
   const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: (b: number, v: number) => void } }).__battleSpritesData;
   m?.setHealthBoxAnimationState?.(battler, v);
 }
+/** True si __battleSpritesData.animationState est câblé (sinon la state machine
+ *  FaintAnimation boucle → ExecComplete direct, visuel via enqueue, Dette R3). */
+function _healthBoxAnimStateWired(): boolean {
+  const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: unknown } }).__battleSpritesData;
+  return typeof m?.setHealthBoxAnimationState === 'function';
+}
 function _isBehindSubstitute(battler: number): boolean {
   const m = (globalThis as { __battleSpritesData?: { isBehindSubstitute?: (b: number) => boolean } }).__battleSpritesData;
   return !!m?.isBehindSubstitute?.(battler);
@@ -363,9 +379,61 @@ function OpponentHandlePause(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleMoveAnimation(): void { OpponentBufferExecCompleted(); }
 
 function OpponentHandlePrintString(): void {
+  // 1:1 décomp `OpponentHandlePrintString` (battle_controller_opponent.c:2543-2555) :
+  // reset BG0 + BufferStringBattle + BattlePutTextOnWindow(gDisplayedStringBattle, 0)
+  // + install CompleteOnInactiveTextPrinter.
+  // BUG CORRIGÉ : c'était un STUB (`void stringId; ExecCompleted()`) → AUCUN message
+  // du CONTEXTE ENNEMI ne s'affichait (flinch « X a la trouille! », « X utilise Y »
+  // de l'ennemi, statuts pendant le tour ennemi). Le décomp REND le texte des 2 côtés
+  // (fenêtre message PARTAGÉE B_WIN_MSG=0). Port voie L = byte path (comme
+  // PlayerHandlePrintString) + fallback JS-string, via globals (évite cycle ESM).
   const stringId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
-  void stringId;
-  OpponentBufferExecCompleted();
+  const B_WIN_MSG = 0; // 1:1 décomp battle.h
+  let rendered = false;
+  try {
+    const bm = (globalThis as { __battleMessage?: {
+      BufferStringBattle?: (id: number, md: unknown) => number;
+      gDisplayedStringBattle?: Uint8Array;
+      getBattleCharmap?: () => Record<string, number> | null;
+    } }).__battleMessage;
+    const ctrls = (globalThis as { __battleControllers?: {
+      BattlePutTextOnWindowBytes?: (b: Uint8Array, w: number) => void;
+      BattlePutTextOnWindow?: (t: string | number, w: number) => void;
+      getLastPrintStringMsgData?: (b?: number) => unknown;
+      snapshotMsgData?: () => unknown;
+    } }).__battleControllers;
+    const msgData = ctrls?.getLastPrintStringMsgData?.(gActiveBattler) ?? ctrls?.snapshotMsgData?.() ?? {};
+    if (bm?.BufferStringBattle && bm.gDisplayedStringBattle && bm.getBattleCharmap?.()
+        && ctrls?.BattlePutTextOnWindowBytes) {
+      bm.BufferStringBattle(stringId, msgData);
+      ctrls.BattlePutTextOnWindowBytes(bm.gDisplayedStringBattle, B_WIN_MSG);
+      rendered = true;
+    } else if (ctrls?.BattlePutTextOnWindow) {
+      // Fallback JS-string (charmap pas encore prête au tout 1er message).
+      const api = (globalThis as { __battleStringDecoderApi?: { decodeBattleString?: (id: number, md: unknown) => string } }).__battleStringDecoderApi;
+      const decoded = api?.decodeBattleString?.(stringId, msgData) ?? `[stringId=${stringId}]`;
+      ctrls.BattlePutTextOnWindow(decoded, B_WIN_MSG);
+      rendered = true;
+    }
+  } catch (e) {
+    console.warn('[L] OpponentHandlePrintString : render failed, ExecCompleted :', e);
+  }
+  if (rendered) {
+    _setBattlerControllerFunc(gActiveBattler, _CompleteOnInactiveTextPrinterOpp);
+  } else {
+    OpponentBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `CompleteOnInactiveTextPrinter()` (opponent, battle_controller_opponent.c) :
+ *  poll IsTextPrinterActive(B_WIN_MSG) → ExecCompleted quand le texte a fini de
+ *  s'imprimer. Wire vers `__textPrinterState[B_WIN_MSG]` (posé par BattlePutTextOnWindow,
+ *  clear après ~frames ou synchrone si `__battleTextInstant`). */
+function _CompleteOnInactiveTextPrinterOpp(): void {
+  const m = (globalThis as { __textPrinterState?: Record<number, boolean> }).__textPrinterState;
+  if (!(m && m[0 /* B_WIN_MSG */])) {
+    OpponentBufferExecCompleted();
+  }
 }
 function OpponentHandlePrintSelectionString(): void { OpponentBufferExecCompleted(); }
 
@@ -560,7 +628,50 @@ function OpponentHandleChoosePokemon(): void {
   OpponentBufferExecCompleted();
 }
 function OpponentHandleCmd23(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleHealthBarUpdate(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `gHealthboxSpriteIds[battler]` via la couche healthbox voie-L
+ *  (__battleHealthbox, modèle décomp). 0 si pas encore créé. */
+function _gHealthboxSpriteId(battler: number): number {
+  const m = (globalThis as { __battleHealthbox?: { gHealthboxSpriteIds?: number[] } }).__battleHealthbox;
+  return m?.gHealthboxSpriteIds?.[battler] ?? 0;
+}
+
+/** 1:1 décomp : montre + glisse le healthbox adverse au send-out
+ *  (Intro_TryShinyAnimShowHealthbox) via la couche voie-L __battleHealthbox. */
+function _ShowHealthboxOnSendOut(battler: number): void {
+  const m = (globalThis as { __battleHealthbox?: { ShowHealthboxOnSendOut?: (b: number) => void } }).__battleHealthbox;
+  m?.ShowHealthboxOnSendOut?.(battler);
+}
+
+/** 1:1 décomp `INSTANT_HP_BAR_DROP` = 0x7FFF (battle_controllers.h). */
+const INSTANT_HP_BAR_DROP = 0x7FFF;
+
+/** 1:1 décomp `OpponentHandleHealthBarUpdate()` (battle_controller_opponent.c).
+ *  Miroir du player : hpVal (s16) depuis bufferA → SetBattleBarStruct depuis
+ *  gEnemyParty → install CompleteOnHealthbarDone qui tick MoveBattleBar (→ le hook
+ *  MoveBattleBarGraphically draîne la barre). L'adversaire n'affiche pas de digits HP. */
+function OpponentHandleHealthBarUpdate(): void {
+  let hpVal = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
+  if (hpVal & 0x8000) hpVal -= 0x10000; // sign-extend s16
+  const mon = gEnemyParty[gBattlerPartyIndexes[gActiveBattler]];
+  if (hpVal !== INSTANT_HP_BAR_DROP) {
+    const maxHP = GetMonData(mon, MON_DATA_MAX_HP) as number;
+    const curHP = GetMonData(mon, MON_DATA_HP) as number;
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxHP, curHP, hpVal);
+  } else {
+    const maxHP = GetMonData(mon, MON_DATA_MAX_HP) as number;
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxHP, 0, hpVal);
+  }
+  _setBattlerControllerFunc(gActiveBattler, OpponentCompleteOnHealthbarDone);
+}
+
+/** 1:1 décomp `CompleteOnHealthbarDone()` (opponent) : tick MoveBattleBar (HEALTH_BAR)
+ *  chaque frame jusqu'à -1 (anim finie), puis ExecCompleted. */
+function OpponentCompleteOnHealthbarDone(): void {
+  const ret = MoveBattleBar(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), HEALTH_BAR, 0);
+  if (ret === -1) {
+    OpponentBufferExecCompleted();
+  }
+}
 function OpponentHandleExpUpdate(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleStatusIconUpdate(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleStatusAnimation(): void { OpponentBufferExecCompleted(); }
@@ -589,7 +700,15 @@ function OpponentHandlePlaySE(): void {
 function OpponentHandlePlayFanfareOrBGM(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleFaintingCry(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleIntroSlide(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleIntroTrainerBallThrow(): void { OpponentBufferExecCompleted(); }
+function OpponentHandleIntroTrainerBallThrow(): void {
+  // 1:1 décomp : à la sortie du mon adverse (combat DRESSEUR), le healthbox (créé
+  // invisible à l'init) est montré + glissé en place (Intro_TryShinyAnimShowHealthbox
+  // → StartHealthboxSlideIn). NB : en combat SAUVAGE ce handler n'est pas atteint
+  // (pas de send-out adverse) ; le healthbox sauvage est montré par
+  // BattleIntroPrintWildMonAttacked (1:1 SpriteCB_WildMonShowHealthbox).
+  _ShowHealthboxOnSendOut(gActiveBattler);
+  OpponentBufferExecCompleted();
+}
 function OpponentHandleDrawPartyStatusSummary(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleHidePartyStatusSummary(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleEndBounceEffect(): void { OpponentBufferExecCompleted(); }

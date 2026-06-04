@@ -698,6 +698,14 @@ export class TestOverworldScene extends Phaser.Scene {
         // après que ReturnToFieldLocal returns TRUE.
         const _VBlankCB_Overworld_Restored: () => void = () => { /* marker */ };
         self.rt.SetVBlankCallback(_VBlankCB_Overworld_Restored);
+        // 1:1 décomp `CB2_ReturnToField` finit par `SetMainCallback2(CB2_Overworld)` :
+        // rendre la main à la boucle OW. SANS ça, callback2 reste = le savedCallback
+        // one-shot du retour combat (ReturnFromBattleToOverworld) → l'OW est rendu UNE
+        // fois mais FIGÉ (PlayerStep + CameraUpdate sont pilotés par callback2, cf.
+        // update() l.728). = le maillon manquant du retour combat voie L (la voie
+        // option-menu le fait déjà via _overworldMainCB2). La caméra se recentre alors
+        // sur le joueur (le « 2 cases en haut » = caméra figée non recentrée).
+        self.rt.gMain.callback2 = MainCB2_Overworld;
         console.log('[restoreOverworldFromMenu] done');
       };
 

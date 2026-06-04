@@ -52,6 +52,7 @@ import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from './text-buf
 import {
   CONTROLLER_PRINTSTRING,
   CONTROLLER_PRINTSTRINGPLAYERONLY,
+  CONTROLLER_SETMONDATA,
   CONTROLLER_MOVEANIMATION,
   CONTROLLER_HEALTHBARUPDATE,
   CONTROLLER_HITANIMATION,
@@ -90,6 +91,17 @@ import type { BattleScriptContext } from './script-interpreter';
 import {
   PrepareBufferDataTransfer, sBattleBuffersTransferData, B_COMM_TO_CONTROLLER,
 } from './battle-controllers-ipc';
+// ── Rendu texte RÉEL (voie L) — primitives window/text GBA + data battle 1:1.
+//    Aucun de ces modules n'importe battle/ → import statique sûr (pas de cycle).
+import {
+  FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized4 } from '../ui/gba-text-system';
+import { gTextFlags } from '../ui/gba-text-printer';
+import { GetPlayerTextSpeedDelay } from '../ui/gba-menu-system';
+import {
+  getBattleTextOnWindowsInfo, B_WIN_COPYTOVRAM, B_WIN_MSG,
+} from './battle-windows';
 
 // ─── Helper : snapshot BattleMsgData for PrintString events ─────────────────
 
@@ -287,7 +299,10 @@ export function BtlController_EmitPlaySE(bufferId: number, songId: number): void
 
 /** 1:1 signature décomp `BtlController_EmitPlayFanfareOrBGM(buf, songId, isBGM)`
  *  (battle_controllers.c). */
-export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, songId: number, isBGM: boolean): void {
+export function BtlController_EmitPlayFanfareOrBGM(bufferId: number, songId: number, isBGM: boolean): void {
+  // 1:1 décomp battle_controllers.c:1471-1478 : [PLAYFANFAREORBGM, songId lo, hi, playBGM].
+  // Écrit bufferA[0] (sinon le Mark pairé re-dispatche la commande périmée).
+  _emitToBufferA(bufferId, [CONTROLLER_PLAYFANFAREORBGM, songId & 0xFF, (songId >> 8) & 0xFF, isBGM ? 1 : 0]);
   enqueueBattleEvent({
     type: CONTROLLER_PLAYFANFAREORBGM,
     battler: gActiveBattler,
@@ -297,7 +312,9 @@ export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, songId: nu
 }
 
 /** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. */
-export function BtlController_EmitFaintingCry(_bufferId: number): void {
+export function BtlController_EmitFaintingCry(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1480-1487 : [FAINTINGCRY ×4].
+  _emitToBufferA(bufferId, [CONTROLLER_FAINTINGCRY, CONTROLLER_FAINTINGCRY, CONTROLLER_FAINTINGCRY, CONTROLLER_FAINTINGCRY]);
   enqueueBattleEvent({
     type: CONTROLLER_FAINTINGCRY,
     battler: gActiveBattler,
@@ -315,7 +332,14 @@ export function BtlController_EmitHitAnimation(bufferId: number): void {
 }
 
 /** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. */
-export function BtlController_EmitFaintAnimation(_bufferId: number): void {
+export function BtlController_EmitFaintAnimation(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1062-1068 : [FAINTANIMATION ×4]. INDISPENSABLE :
+  // `Cmd_dofaintanimation` émet ceci + Mark ; sans bufferA[0] écrit, le Mark re-
+  // dispatche bufferA[0] PÉRIMÉ (= le PRINTSTRING « X K.O.! » qui précède) → le
+  // message de K.O. s'affiche 2× in-game. Handler = state machine gardée (cf.
+  // Player/OpponentHandleFaintAnimation : ExecComplete tant que __battleSpritesData
+  // pas câblé ; visuel via enqueue).
+  _emitToBufferA(bufferId, [CONTROLLER_FAINTANIMATION, CONTROLLER_FAINTANIMATION, CONTROLLER_FAINTANIMATION, CONTROLLER_FAINTANIMATION]);
   enqueueBattleEvent({
     type: CONTROLLER_FAINTANIMATION,
     battler: gActiveBattler,
@@ -323,7 +347,9 @@ export function BtlController_EmitFaintAnimation(_bufferId: number): void {
 }
 
 /** 1:1 signature décomp `BtlController_EmitReturnMonToBall(buf, doFadeOut)`. */
-export function BtlController_EmitReturnMonToBall(_bufferId: number, doFadeOut: boolean): void {
+export function BtlController_EmitReturnMonToBall(bufferId: number, doFadeOut: boolean): void {
+  // 1:1 décomp battle_controllers.c:1028-1033 : [RETURNMONTOBALL, skipAnim] (2 bytes).
+  _emitToBufferA(bufferId, [CONTROLLER_RETURNMONTOBALL, doFadeOut ? 1 : 0]);
   enqueueBattleEvent({
     type: CONTROLLER_RETURNMONTOBALL,
     battler: gActiveBattler,
@@ -332,7 +358,16 @@ export function BtlController_EmitReturnMonToBall(_bufferId: number, doFadeOut: 
 }
 
 /** 1:1 signature décomp `BtlController_EmitSpriteInvisibility(buf, isInvisible)`. */
-export function BtlController_EmitSpriteInvisibility(_bufferId: number, isInvisible: boolean): void {
+export function BtlController_EmitSpriteInvisibility(bufferId: number, isInvisible: boolean): void {
+  // 1:1 décomp battle_controllers.c:1536-1543 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_SPRITEINVISIBILITY, isInvisible, ...]. INDISPENSABLE : Cmd_moveend
+  // (MOVEEND_ATTACKER_VISIBLE, qui fire sur CHAQUE move normal) émet ceci + Mark ;
+  // sans bufferA[0] écrit, le Mark re-dispatche bufferA[0] PÉRIMÉ (= MOVEANIMATION)
+  // → l'anim/son du move rejoue 2× in-game. Handler = ExecCompleted (visuel via enqueue).
+  _emitToBufferA(bufferId, [
+    CONTROLLER_SPRITEINVISIBILITY, isInvisible ? 1 : 0,
+    CONTROLLER_SPRITEINVISIBILITY, CONTROLLER_SPRITEINVISIBILITY,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_SPRITEINVISIBILITY,
     battler: gActiveBattler,
@@ -355,10 +390,21 @@ export function BtlController_EmitSpriteInvisibility(_bufferId: number, isInvisi
  *  bitmask (= sur Emit de plusieurs mons). Pour single mon, on flush via
  *  gActiveBattler. Pour bitmask, on itère. */
 export function BtlController_EmitSetMonData(
-  _bufferId: number, requestId: number, monToCheck: number, _bytes: number, data: unknown,
+  bufferId: number, requestId: number, monToCheck: number, _bytes: number, data: unknown,
 ): void {
-  // Lazy import pour éviter circular deps via party-storage → state.
-  // 1:1 décomp : monToCheck (bitmask, 0 = mon actif) propagé pour le multi-mon (Heal Bell).
+  // 1:1 décomp battle_controllers.c:986-996 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_SETMONDATA, requestId, monToCheck, ...data]. INDISPENSABLE : sans
+  // ça, le Mark pairé (ex Cmd_ppreduce, Cmd_datahpupdate) re-dispatche bufferA[0]
+  // PÉRIMÉ → la commande controller précédente (ex PRINTSTRING « X utilise Y »)
+  // s'affiche 2× in-game. Le handler (Player/OpponentHandleSetMonData) ne fait
+  // qu'ExecCompleted (player _SetPlayerMonData = stub Dette R3) → pas de double-
+  // apply : la VRAIE persistance data passe par le shortcut __batPSetMonByActive
+  // ci-dessous (équivalent local du deserialize bufferA→party du handler décomp).
+  _emitToBufferA(bufferId, [CONTROLLER_SETMONDATA, requestId & 0xFF, monToCheck & 0xFF, 0]);
+
+  // Shortcut local (notre port) : persiste le change gBattleMons→party directement
+  // (le décomp sérialise `data` dans bufferA[3..] puis le handler SetMonData le relit ;
+  // on court-circuite car nos handlers SetMonData sont des stubs no-op).
   const ps = (globalThis as { __batPSetMonByActive?: (req: number, data: unknown, monToCheck?: number) => void })
     .__batPSetMonByActive;
   if (ps) ps(requestId, data, monToCheck);
@@ -366,12 +412,27 @@ export function BtlController_EmitSetMonData(
 
 /** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`
  *  (battle_controllers.c:1169-1199). Enqueue PrintStringPlayerOnly event. */
-export function BtlController_EmitPrintSelectionString(_bufferId: number, stringId: number): void {
+export function BtlController_EmitPrintSelectionString(bufferId: number, stringId: number): void {
+  // 1:1 décomp battle_controllers.c : écrit gBattleBufferA[active] =
+  // [CONTROLLER_PRINTSTRINGPLAYERONLY, CONTROLLER_PRINTSTRINGPLAYERONLY, stringId lo, hi,
+  // ...msgData]. SANS cette écriture bufferA, le controller voie L ne dispatche JAMAIS
+  // PlayerHandlePrintSelectionString → les messages de sélection (« Impossible de fuir! »,
+  // sac plein, item inutilisable, forfeit...) ne rendent jamais. Le msgData est figé PAR
+  // battler (cf EmitPrintString) pour que le handler relise le bon snapshot.
+  sBattleBuffersTransferData[0] = CONTROLLER_PRINTSTRINGPLAYERONLY;
+  sBattleBuffersTransferData[1] = CONTROLLER_PRINTSTRINGPLAYERONLY;
+  sBattleBuffersTransferData[2] = stringId & 0xFF;
+  sBattleBuffersTransferData[3] = (stringId & 0xFF00) >> 8;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+
+  const snap = _snapshotMsgData();
+  _printStringMsgDataByBattler[gActiveBattler] = snap;
+
   enqueueBattleEvent({
     type: CONTROLLER_PRINTSTRINGPLAYERONLY,
     battler: gActiveBattler,
     stringId,
-    msgData: _snapshotMsgData(),
+    msgData: snap,
   });
 }
 
@@ -385,7 +446,9 @@ export function BtlController_EmitEndLinkBattle(_bufferId: number, outcome: numb
 }
 
 /** 1:1 signature décomp `BtlController_EmitBattleAnimation(buf, anim, arg)`. */
-export function BtlController_EmitBattleAnimation(_bufferId: number, animationId: number, argument: number): void {
+export function BtlController_EmitBattleAnimation(bufferId: number, animationId: number, argument: number): void {
+  // 1:1 décomp battle_controllers.c:1545-1552 : [BATTLEANIMATION, animationId, arg lo, hi].
+  _emitToBufferA(bufferId, [CONTROLLER_BATTLEANIMATION, animationId & 0xFF, argument & 0xFF, (argument >> 8) & 0xFF]);
   enqueueBattleEvent({
     type: CONTROLLER_BATTLEANIMATION,
     battler: gActiveBattler,
@@ -417,7 +480,12 @@ export function BtlController_EmitHealthBarUpdate(bufferId: number, healthValue:
 
 /** 1:1 signature décomp `BtlController_EmitStatusAnimation(buf, status2anim, status)`.
  *  status2anim = TRUE pour STATUS2_*, FALSE pour STATUS1_*. */
-export function BtlController_EmitStatusAnimation(_bufferId: number, isStatus2: boolean, status: number): void {
+export function BtlController_EmitStatusAnimation(bufferId: number, isStatus2: boolean, status: number): void {
+  // 1:1 décomp battle_controllers.c:1298-1306 : [STATUSANIMATION, status2, status u32 LE] (6 bytes).
+  _emitToBufferA(bufferId, [
+    CONTROLLER_STATUSANIMATION, isStatus2 ? 1 : 0,
+    status & 0xFF, (status >> 8) & 0xFF, (status >> 16) & 0xFF, (status >> 24) & 0xFF,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_STATUSANIMATION,
     battler: gActiveBattler,
@@ -426,9 +494,16 @@ export function BtlController_EmitStatusAnimation(_bufferId: number, isStatus2: 
 }
 
 /** 1:1 signature décomp `BtlController_EmitDrawPartyStatusSummary(buf, hpStatuses, isBattleStart)`. */
-export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, hpStatuses: unknown, arg2: number): void {
+export function BtlController_EmitDrawPartyStatusSummary(bufferId: number, hpStatuses: unknown, arg2: number): void {
   // hpStatuses 1:1 décomp = struct HpAndStatus per mon (= [species, hp, status1] tuples).
   // Notre port : accepte n'importe quelle structure, le UI consumer fera le decode.
+  // 1:1 décomp battle_controllers.c:1505-1512 : [DRAWPARTYSTATUSSUMMARY,
+  // flags & ~PARTY_SUMM_SKIP_DRAW_DELAY, (flags & 0x80)>>7, DRAWPARTYSTATUSSUMMARY, ...HpAndStatus].
+  // Le handler (ExecCompleted) ignore le payload HpAndStatus → header 4 bytes suffit
+  // pour l'invariant bufferA[0] (visuel via enqueue).
+  _emitToBufferA(bufferId, [
+    CONTROLLER_DRAWPARTYSTATUSSUMMARY, arg2 & 0x7F, (arg2 & 0x80) >> 7, CONTROLLER_DRAWPARTYSTATUSSUMMARY,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_DRAWPARTYSTATUSSUMMARY,
     battler: gActiveBattler,
@@ -438,7 +513,9 @@ export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, hpSt
 }
 
 /** 1:1 signature décomp `BtlController_EmitHidePartyStatusSummary(buf)`. */
-export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): void {
+export function BtlController_EmitHidePartyStatusSummary(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1518-1525 : [HIDEPARTYSTATUSSUMMARY ×4].
+  _emitToBufferA(bufferId, [CONTROLLER_HIDEPARTYSTATUSSUMMARY, CONTROLLER_HIDEPARTYSTATUSSUMMARY, CONTROLLER_HIDEPARTYSTATUSSUMMARY, CONTROLLER_HIDEPARTYSTATUSSUMMARY]);
   enqueueBattleEvent({
     type: CONTROLLER_HIDEPARTYSTATUSSUMMARY,
     battler: gActiveBattler,
@@ -446,7 +523,9 @@ export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): voi
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlideBack(buf)`. */
-export function BtlController_EmitTrainerSlideBack(_bufferId: number): void {
+export function BtlController_EmitTrainerSlideBack(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1053-1060 : [TRAINERSLIDEBACK ×4].
+  _emitToBufferA(bufferId, [CONTROLLER_TRAINERSLIDEBACK, CONTROLLER_TRAINERSLIDEBACK, CONTROLLER_TRAINERSLIDEBACK, CONTROLLER_TRAINERSLIDEBACK]);
   enqueueBattleEvent({
     type: CONTROLLER_TRAINERSLIDEBACK,
     battler: gActiveBattler,
@@ -454,7 +533,9 @@ export function BtlController_EmitTrainerSlideBack(_bufferId: number): void {
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlide(buf)` (= slide in). */
-export function BtlController_EmitTrainerSlide(_bufferId: number): void {
+export function BtlController_EmitTrainerSlide(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1044-1051 : [TRAINERSLIDE ×4].
+  _emitToBufferA(bufferId, [CONTROLLER_TRAINERSLIDE, CONTROLLER_TRAINERSLIDE, CONTROLLER_TRAINERSLIDE, CONTROLLER_TRAINERSLIDE]);
   enqueueBattleEvent({
     type: CONTROLLER_TRAINERSLIDE,
     battler: gActiveBattler,
@@ -465,7 +546,12 @@ export function BtlController_EmitTrainerSlide(_bufferId: number): void {
  *  (battle_controllers.c:1141-1146). Démarre l'animation slide-in du
  *  background battle (= WIN0V split central). Enqueue event pour
  *  battle-intro.ts consume. */
-export function BtlController_EmitIntroSlide(_bufferId: number, terrainId: number): void {
+export function BtlController_EmitIntroSlide(bufferId: number, terrainId: number): void {
+  // 1:1 décomp battle_controllers.c:1489-1494 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_INTROSLIDE, environmentId] (2 bytes). SANS ça, le Mark pairé (dans
+  // BattleIntroPrepareBackgroundSlide) re-dispatche le bufferA[0] PÉRIMÉ → double
+  // de la commande controller précédente in-game (cf. fix EmitLoadMonSprite).
+  _emitToBufferA(bufferId, [CONTROLLER_INTROSLIDE, terrainId & 0xFF]);
   enqueueBattleEvent({
     type: CONTROLLER_INTROSLIDE as never,
     battler: gActiveBattler,
@@ -477,7 +563,15 @@ export function BtlController_EmitIntroSlide(_bufferId: number, terrainId: numbe
  *  (battle_controllers.c:1148-1153). Lance le ball throw animation du
  *  trainer (= player ou opponent) suivi de l'emerge du Pokemon. Enqueue
  *  event pour battle-ball-throw.ts + sprite emerge consume. */
-export function BtlController_EmitIntroTrainerBallThrow(_bufferId: number): void {
+export function BtlController_EmitIntroTrainerBallThrow(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1496-1503 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_INTROTRAINERBALLTHROW ×4]. SANS ça, le Mark pairé (dans
+  // BattleIntro{Player1,Opponent1}SendsOutMonAnimation) re-dispatche bufferA[0]
+  // PÉRIMÉ (= PRINTSTRING du « Go {mon} ») → message d'envoi affiché 2× in-game.
+  _emitToBufferA(bufferId, [
+    CONTROLLER_INTROTRAINERBALLTHROW, CONTROLLER_INTROTRAINERBALLTHROW,
+    CONTROLLER_INTROTRAINERBALLTHROW, CONTROLLER_INTROTRAINERBALLTHROW,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_INTROTRAINERBALLTHROW as never,
     battler: gActiveBattler,
@@ -487,7 +581,14 @@ export function BtlController_EmitIntroTrainerBallThrow(_bufferId: number): void
 /** 1:1 signature décomp `BtlController_EmitDrawTrainerPic(buf)`
  *  (battle_controllers.c:986-990). Charge + display le sprite trainer
  *  (= player back ou opponent face). Enqueue event pour battle UI consume. */
-export function BtlController_EmitDrawTrainerPic(_bufferId: number): void {
+export function BtlController_EmitDrawTrainerPic(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1035-1042 : écrit gBattleBufferA[active] =
+  // [CONTROLLER_DRAWTRAINERPIC ×4]. SANS ça, le Mark pairé (dans
+  // BattleIntroDrawTrainersOrMonsSprites) re-dispatche bufferA[0] PÉRIMÉ.
+  _emitToBufferA(bufferId, [
+    CONTROLLER_DRAWTRAINERPIC, CONTROLLER_DRAWTRAINERPIC,
+    CONTROLLER_DRAWTRAINERPIC, CONTROLLER_DRAWTRAINERPIC,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_DRAWTRAINERPIC as never,
     battler: gActiveBattler,
@@ -513,7 +614,9 @@ export function BtlController_EmitLoadMonSprite(bufferId: number): void {
  *  (battle_controllers.c:1089-1094). caseId :
  *  0 = BALL_NO_SHAKES, 1..3 = BALL_*_SHAKES_FAIL, 4 = BALL_3_SHAKES_SUCCESS,
  *  5 = BALL_TRAINER_BLOCK, 6 = BALL_WALLY_SUCCESS_HACK. */
-export function BtlController_EmitBallThrowAnim(_bufferId: number, caseId: number): void {
+export function BtlController_EmitBallThrowAnim(bufferId: number, caseId: number): void {
+  // 1:1 décomp battle_controllers.c:1089-1094 : [BALLTHROWANIM, caseId] (2 bytes).
+  _emitToBufferA(bufferId, [CONTROLLER_BALLTHROWANIM, caseId & 0xFF]);
   enqueueBattleEvent({
     type: CONTROLLER_BALLTHROWANIM,
     battler: gActiveBattler,
@@ -523,7 +626,18 @@ export function BtlController_EmitBallThrowAnim(_bufferId: number, caseId: numbe
 
 /** 1:1 signature décomp `BtlController_EmitExpUpdate(buf, partyId, expPoints)`
  *  (battle_controllers.c:1275-1281). */
-export function BtlController_EmitExpUpdate(_bufferId: number, partyId: number, expPoints: number): void {
+export function BtlController_EmitExpUpdate(bufferId: number, partyId: number, expPoints: number): void {
+  // 1:1 décomp battle_controllers.c:1275-1281 : bufferA[0..3] = [EXPUPDATE, partyId,
+  // (s16)expPoints lo, hi]. CRITIQUE : il FAUT écrire bufferA[0]=EXPUPDATE. Cmd_getexp
+  // case 3 appelle cet emit PUIS MarkBattlerForControllerExec ; si bufferA[0] n'est pas
+  // réécrit, le dispatch re-joue le bufferA[0] PÉRIMÉ = CONTROLLER_PRINTSTRING (posé par
+  // le message "X a gagné N EXP" du case 2) → le message d'EXP s'IMPRIME 2× (doublon
+  // collé signalé user, sans level-up). MÊME classe de bug que les Emit stubs vides
+  // switch/bag/choose. PlayerHandleExpUpdate complète proprement (anim barre EXP = A/B
+  // déféré ; l'EXP est déjà posée par Cmd_getexp case 3).
+  _emitToBufferA(bufferId, [
+    CONTROLLER_EXPUPDATE, partyId & 0xFF, expPoints & 0xFF, (expPoints >> 8) & 0xFF,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_EXPUPDATE,
     battler: gActiveBattler,
@@ -565,7 +679,9 @@ export function BtlController_EmitLinkStandbyMsg(_bufferId: number, mode: number
 }
 
 /** 1:1 signature décomp `BtlController_EmitCantSwitch(buf)`. */
-export function BtlController_EmitCantSwitch(_bufferId: number): void {
+export function BtlController_EmitCantSwitch(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1453-1460 : [CANTSWITCH ×4].
+  _emitToBufferA(bufferId, [CONTROLLER_CANTSWITCH, CONTROLLER_CANTSWITCH, CONTROLLER_CANTSWITCH, CONTROLLER_CANTSWITCH]);
   enqueueBattleEvent({
     type: CONTROLLER_CANTSWITCH,
     battler: gActiveBattler,
@@ -596,7 +712,9 @@ export function BtlController_EmitGetMonData(_bufferId: number, _requestId: numb
 }
 
 /** 1:1 signature décomp `BtlController_EmitResetActionMoveSelection(buf, caseId)`. */
-export function BtlController_EmitResetActionMoveSelection(_bufferId: number, caseId: number): void {
+export function BtlController_EmitResetActionMoveSelection(bufferId: number, caseId: number): void {
+  // 1:1 décomp battle_controllers.c:1569-1574 : [RESETACTIONMOVESELECTION, caseId] (2 bytes).
+  _emitToBufferA(bufferId, [CONTROLLER_RESETACTIONMOVESELECTION, caseId & 0xFF]);
   enqueueBattleEvent({
     type: CONTROLLER_RESETACTIONMOVESELECTION,
     battler: gActiveBattler,
@@ -647,14 +765,97 @@ export function HandleBattleWindow(
  *  printText(windowId, text) si __activeBattleFlow exposé (= combat actif).
  *  Sinon fallback : store dans __battleDisplayedText pour scene pickup futur.
  *  Maintient aussi le __textPrinterState pour CompleteOnInactiveTextPrinter2. */
+/** COPYWIN_FULL — 1:1 décomp window.h:24 enum {NONE,MAP,GFX,FULL}.
+ *  (Notre CopyWindowToVram ignore le mode mais on passe la vraie valeur.) */
+const COPYWIN_FULL = 3;
+
+/** 1:1 décomp `BattlePutTextOnWindow` (battle_message.c:3035-3108) — chemin de
+ *  rendu RÉEL via le window/text system GBA. La voie V passe par
+ *  `__activeBattleFlow.printText` (rendu impératif voie-V) ; la voie L (décomp)
+ *  n'a PAS de flow → ce chemin imprime vraiment le texte dans la fenêtre.
+ *  windowsType = B_WIN_TYPE_NORMAL (wild/trainer non-Arena). Voie L = pas de
+ *  BATTLE_TYPE_LINK/RECORDED → on suit les branches non-link (autoScroll=FALSE,
+ *  speed B_WIN_MSG = GetPlayerTextSpeedDelay()). */
+function _battlePutTextOnWindowReal(text: string | Uint8Array, windowIdArg: number): void {
+  let windowId = windowIdArg;
+  let copyToVram: boolean;
+
+  // battle_message.c:3042-3051.
+  if (windowId & B_WIN_COPYTOVRAM) {
+    windowId &= ~B_WIN_COPYTOVRAM;
+    copyToVram = false;
+  } else {
+    const info0 = getBattleTextOnWindowsInfo(windowId);
+    if (!info0) return; // window hors table normal (VS/arena) — non utilisé voie L.
+    FillWindowPixelBuffer(windowId, info0.fillValue);
+    copyToVram = true;
+  }
+
+  const info = getBattleTextOnWindowsInfo(windowId);
+  if (!info) return;
+
+  // battle_message.c:3074-3077 : la flèche de fin de message (down arrow) en COMBAT
+  // utilise la variante ALTERNATIVE (sDarkDownArrowTiles = down_arrow_alt.png, idx
+  // 1/2/10 → palette 0 = textbox). Sans ce flag, le printer blitte la flèche TERRAIN
+  // (down_arrow.png, idx 0/2/4 prévus pour gMessageBox_Pal) colorisée par la palette
+  // combat → couleurs fausses (blob rouge) = bug "la arrow n'utilise pas sa seconde
+  // palette" signalé user. Seul ARENA_WIN_JUDGMENT_TEXT garde FALSE — non porté
+  // (pas d'arène en voie L) → toujours la branche else (TRUE).
+  gTextFlags.useAlternateDownArrow = true;
+
+  // battle_message.c:3053-3065 : x/y/colors du textInfo.
+  // (x===0xFF → center-align via GetStringCenterAlignXOffset : VS/arena
+  //  uniquement, jamais en B_WIN_TYPE_NORMAL → branche non portée.)
+  const x = info.x;
+  const y = info.y;
+
+  // battle_message.c:3084-3099 : speed + canABSpeedUpPrint. Pour B_WIN_MSG (boîte
+  // de message : attaque/EXP/etc.), speed = GetPlayerTextSpeedDelay() ET
+  // `gTextFlags.canABSpeedUpPrint = 1` → tenir A/B accélère le défilement du texte
+  // (= comportement ROM). Pour les autres fenêtres (noms de moves, PP…), speed fixe
+  // du textInfo ET canABSpeedUpPrint = 0. SANS poser ce flag, il gardait la valeur
+  // laissée par le field message box (FALSE, field_message_box.c:17) → A/B
+  // n'accélérait jamais le texte en combat (bug user "A/B ne défile pas vite").
+  let speed: number;
+  if (windowId === B_WIN_MSG) {
+    speed = GetPlayerTextSpeedDelay();
+    gTextFlags.canABSpeedUpPrint = true;
+  } else {
+    speed = info.speed;
+    gTextFlags.canABSpeedUpPrint = false;
+  }
+
+  // battle_message.c:3101 AddTextPrinter(&printerTemplate, speed, NULL).
+  // colorArray = [bgColor, fgColor, shadowColor] (convention text-system).
+  AddTextPrinterParameterized4(
+    windowId, info.fontId, x, y,
+    info.letterSpacing, info.lineSpacing,
+    [info.bgColor, info.fgColor, info.shadowColor],
+    speed, text,
+  );
+
+  // battle_message.c:3103-3107.
+  if (copyToVram) {
+    PutWindowTilemap(windowId);
+    CopyWindowToVram(windowId, COPYWIN_FULL);
+  }
+}
+
 export function BattlePutTextOnWindow(text: number | string, windowId: number): void {
   const g = globalThis as Record<string, unknown>;
   const txt = typeof text === 'string' ? text : String(text);
 
-  // R2 : delegate au battle-flow rendering réel si combat actif.
+  // R2 : delegate au battle-flow rendering réel si combat actif (voie V).
   const flow = (g.__activeBattleFlow as { printText?: (winId: number, t: string) => void } | undefined);
   if (flow?.printText) {
     flow.printText(windowId, txt);
+  } else {
+    // Voie L (décomp) : pas de flow voie-V → rendu RÉEL 1:1 (battle_message.c:3035).
+    try {
+      _battlePutTextOnWindowReal(txt, windowId);
+    } catch (e) {
+      console.warn('[battle/battle-controllers] BattlePutTextOnWindow real render failed:', e);
+    }
   }
 
   // Stash aussi dans __battleDisplayedText (= debug + scene pickup futur).
@@ -675,6 +876,46 @@ export function BattlePutTextOnWindow(text: number | string, windowId: number): 
   (g.__textPrinterState as Record<number, boolean>)[windowId] = true;
   // Simulate typewriter : ~length * 2 frames + 60 frame pause for read.
   const frames = Math.max(60, txt.length * 2 + 60);
+  timers[windowId] = (setTimeout(() => {
+    (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
+    delete timers[windowId];
+  }, frames * (1000 / 60)) as unknown) as number;
+}
+
+/** Variante BYTE-LEVEL de BattlePutTextOnWindow (voie L décodeur byte-level
+ *  battle-message.ts). `bytes` = string charmap déjà encodée (gDisplayedStringBattle)
+ *  → passée au printer SANS re-encoder (_battlePutTextOnWindowReal accepte
+ *  Uint8Array). Gère la complétion (__textPrinterState timer, identique à
+ *  BattlePutTextOnWindow) + stash debug lisible (decode reverse-charmap via
+ *  __battleMessage, pour ne pas casser le harness qui lit __battleDisplayedText). */
+export function BattlePutTextOnWindowBytes(bytes: Uint8Array, windowId: number): void {
+  const g = globalThis as Record<string, unknown>;
+  try {
+    _battlePutTextOnWindowReal(bytes, windowId);
+  } catch (e) {
+    console.warn('[battle/battle-controllers] BattlePutTextOnWindowBytes render failed:', e);
+  }
+  // Stash debug (harness/probes lisent __battleDisplayedText).
+  if (!g.__battleDisplayedText) g.__battleDisplayedText = {};
+  let readable = '<bytes>';
+  try {
+    const bm = (globalThis as { __battleMessage?: { decodeBytesToString?: (b: Uint8Array) => string } }).__battleMessage;
+    if (bm?.decodeBytesToString) readable = bm.decodeBytesToString(bytes);
+  } catch { /* noop */ }
+  (g.__battleDisplayedText as Record<number, string>)[windowId] = readable;
+  // Complétion : __textPrinterState[windowId] (true=actif → false après ~frames).
+  if (!g.__textPrinterState) g.__textPrinterState = {};
+  if (!g.__textPrinterTimers) g.__textPrinterTimers = {};
+  const timers = g.__textPrinterTimers as Record<number, number>;
+  if (timers[windowId]) { clearTimeout(timers[windowId]); delete timers[windowId]; }
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) {
+    (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
+    return;
+  }
+  (g.__textPrinterState as Record<number, boolean>)[windowId] = true;
+  let len = 0;
+  while (len < bytes.length && bytes[len] !== 0xFF) len++;
+  const frames = Math.max(60, len * 2 + 60);
   timers[windowId] = (setTimeout(() => {
     (g.__textPrinterState as Record<number, boolean>)[windowId] = false;
     delete timers[windowId];
@@ -761,4 +1002,6 @@ export { gBattleScripting };
 (globalThis as { __battleControllers?: object }).__battleControllers = {
   snapshotMsgData: _snapshotMsgData,
   getLastPrintStringMsgData,
+  BattlePutTextOnWindowBytes,
+  BattlePutTextOnWindow,
 };
