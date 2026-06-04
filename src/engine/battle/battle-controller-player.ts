@@ -113,11 +113,16 @@ import {
 } from './battle-hp-bar';
 import { getExpForLevel } from './data/experience-tables';
 import { getSpeciesGrowthRate } from './data/species-runtime';
-import { LoadPalette, BG_PLTT_ID } from '../system/decomp-globals';
+import { LoadPalette, BG_PLTT_ID, getRuntime } from '../system/decomp-globals';
 import { reverseDecompConstant } from '../system/decomp-constants';
 // Helper partagé de création de sprite de battler (gère back=joueur / front=ennemi).
 // opponent.ts n'importe PAS player.ts → pas de cycle ESM.
-import { _loadAndCreateBattlerMonSprite } from './battle-controller-opponent';
+import { _loadAndCreateBattlerMonSprite, setBattlerDeferReveal, getBattlerMonSpriteId } from './battle-controller-opponent';
+import {
+  showTrainerBackSprite, startIntroSlideIn, getIntroSlideInStatus,
+  startTrainerThrow, getTrainerThrowStatus, getSendOutStatus,
+} from './battle-sendout-anim';
+import { reverseDecompConstant as _reverseDecompConstantPlayer } from '../system/decomp-constants';
 import { getMoveName as _getMoveNameFrFromData } from '../data/game-data';
 import { getBattleMove } from './data/battle-moves';
 import { getPPTextPalette } from './battle-bg';
@@ -884,10 +889,35 @@ function PlayerHandleReturnMonToBall(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleDrawTrainerPic()`. */
+/** 1:1 décomp `PlayerHandleDrawTrainerPic()` (battle_controller_player.c:2270-2351).
+ *  Crée le sprite back-pic du dresseur joueur (xPos=80) off-screen DROITE (x2=+DISPLAY_WIDTH),
+ *  le fait GLISSER en place (-2/frame, SpriteCB_TrainerSlideIn), puis attend la fin du slide
+ *  (1:1 CompleteOnBattlerSpriteCallbackDummy) avant ExecCompleted → le flag exec reste SET
+ *  pendant le slide = cadence l'intro (fix « timing trop rapide » : avant = ExecCompleted immédiat). */
+let _trainerSlideStarted = false;
 function PlayerHandleDrawTrainerPic(): void {
-  // Dette R3 : trainer pic load + display.
-  PlayerBufferExecCompleted();
+  // Harness : court-circuit (le slide dépend de gIntroFrameCounter = freeze harness). Cf.
+  // PlayerHandleIntroTrainerBallThrow.
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) {
+    PlayerBufferExecCompleted();
+    return;
+  }
+  const gender = ((globalThis as { gSaveBlock2Ptr?: { playerGender?: number } }).gSaveBlock2Ptr?.playerGender) ?? 0;
+  _trainerSlideStarted = false;
+  // showTrainerBackSprite (async) charge brendan/may.png + crée le sprite à x2=+DISPLAY_WIDTH ;
+  // startIntroSlideIn le glisse vers x2=0. yPos=80 (1:1 (8-size)*4+80 pour un back-pic 64×64).
+  void showTrainerBackSprite(gender, 80, 80).then((tid) => {
+    if (tid >= 0) startIntroSlideIn();
+    _trainerSlideStarted = true;
+  }).catch(() => { _trainerSlideStarted = true; });
+  gBattlerControllerFuncs[gActiveBattler] = _CompleteOnTrainerSlideIn;
+}
+/** 1:1 CompleteOnBattlerSpriteCallbackDummy : attend la fin du slide du dresseur (le flag exec
+ *  reste set jusque-là). `_trainerSlideStarted` gate l'async (sprite créé après le chargement). */
+function _CompleteOnTrainerSlideIn(): void {
+  if (_trainerSlideStarted && getIntroSlideInStatus() !== 'active') {
+    PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `PlayerHandleTrainerSlide()`. */
@@ -1795,20 +1825,95 @@ function PlayerHandleIntroSlide(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleIntroTrainerBallThrow()` (battle_controller_player.c).
- *  Le décomp lance Task_StartSendOutAnim → StartSendOutAnim qui CRÉE le sprite du
- *  mon joueur (BACK pic) via SetMultiuseSpriteTemplateToPokemon + CreateSprite, puis
- *  joue le lancer de ball + send-out. Sans création de sprite ici, le mon du JOUEUR
- *  n'apparaissait pas à l'écran (bug user "pas de sprite de notre mon") alors que le
- *  mon ENNEMI est bien rendu (OpponentHandleLoadMonSprite). On crée le back-sprite via
- *  le helper partagé (isOpponent=false → back.png + gPlayerParty). La cascade VISUELLE
- *  du lancer de ball (DoPokeballSendOutAnimation) reste un raffinement A/B (dette R3). */
+// ─── Send-out joueur 1:1 : lancer pokéball + émergence + chaîne de WAITS (= le timing) ────
+// Le timing de l'intro vient de ces waits : tant qu'une Intro_* func est installée dans
+// gBattlerControllerFuncs[], le bit exec du battler reste SET → gBattleMainFunc gèle sur l'état
+// send-out (1:1 : c'EST le timer de l'intro). Avant, PlayerHandleIntroTrainerBallThrow faisait
+// ExecCompleted IMMÉDIAT → 0 frame → « timing trop rapide, il manque des anims » (retour user).
+// On porte : throw dresseur + ball (31f, startTrainerThrow lance la ball à la frame 31) →
+// émergence du mon (getSendOutStatus done) → healthbox slide-in (Intro_TryShinyAnimShowHealthbox)
+// → fin du slide (Intro_WaitForShinyAnimAndHealthbox) → délai 3f (Intro_DelayAndEnd) → ExecCompleted.
+let _sendOutPhase = -1;
+let _sendOutHbFrames = 0;
+let _introEndDelay = 0;
+
+/** 1:1 décomp `PlayerHandleIntroTrainerBallThrow()` (battle_controller_player.c:2946-2974). */
 function PlayerHandleIntroTrainerBallThrow(): void {
-  void _loadAndCreateBattlerMonSprite(gActiveBattler, false);
-  // 1:1 décomp : à la sortie du mon, le healthbox (créé invisible à l'init) est
-  // montré + glissé en place (Intro_TryShinyAnimShowHealthbox → StartHealthboxSlideIn).
-  _ShowHealthboxOnSendOut(gActiveBattler);
-  PlayerBufferExecCompleted();
+  const battler = gActiveBattler;
+  // Harness (__battleTextInstant) : court-circuit de l'anim de send-out (comme le wait texte) —
+  // le harness ticke callback1/2 SANS runOneFrame → gIntroFrameCounter n'avance pas → la chaîne
+  // de waits (gatée dessus via getSendOutStatus) ne finirait jamais = freeze harness. Sous le flag :
+  // mon créé + healthbox + ExecCompleted immédiat (= ancien comportement, 0 régression harness).
+  if ((globalThis as { __battleTextInstant?: boolean }).__battleTextInstant) {
+    void _loadAndCreateBattlerMonSprite(battler, false);
+    _ShowHealthboxOnSendOut(battler);
+    PlayerBufferExecCompleted();
+    return;
+  }
+  // Le mon sort d'une POKÉBALL → reste INVISIBLE jusqu'à l'émergence (deferReveal ; sinon
+  // l'anti-sprite-noir le révélerait à ~2f = double apparition).
+  setBattlerDeferReveal(battler, true);
+  void _loadAndCreateBattlerMonSprite(battler, false);
+  _sendOutPhase = 0;
+  // 1:1 : NE PAS ExecCompleted ici (gBattlerControllerFuncs reste set = le flag tient).
+  // La chaîne de waits (tickée par PlayerBufferRunCommand chaque frame) cadence + termine.
+  gBattlerControllerFuncs[battler] = _PlayerIntroSendOutWait;
+}
+
+/** Chaîne de waits du send-out joueur, 1:1 BattleControllerDummy → Task_StartSendOutAnim(31f) →
+ *  Intro_TryShinyAnimShowHealthbox → Intro_WaitForShinyAnimAndHealthbox → Intro_DelayAndEnd.
+ *  Pilotée par les statuts d'anim (battle-sendout-anim.ts) qui matérialisent les durées 1:1. */
+function _PlayerIntroSendOutWait(): void {
+  const battler = gActiveBattler;
+  const rt = getRuntime();
+  switch (_sendOutPhase) {
+    case 0: {  // attend que le sprite mon existe (création async) → lance le throw dresseur+ball
+      const monId = getBattlerMonSpriteId(battler);
+      if (monId >= 0) {
+        const mon = rt?.gSprites?.get(monId);
+        const sp = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES_LOCAL) as number;
+        const species = _reverseDecompConstantPlayer(sp, 'SPECIES_') ?? `SPECIES_${sp}`;
+        startTrainerThrow({
+          monSpriteId: monId, side: 'player', monPalNum: battler, species,
+          endX: mon ? Math.round(mon.x) : 0, endY: mon ? Math.round(mon.y) : 0,
+        });
+        _sendOutPhase = 1;
+      }
+      break;
+    }
+    case 1: {  // attend la fin du throw + de l'émergence (1:1 ballAnimActive==FALSE)
+      if (getTrainerThrowStatus() === 'done' && getSendOutStatus() === 'done') {
+        setBattlerDeferReveal(battler, false);
+        // 1:1 Intro_TryShinyAnimShowHealthbox : healthbox slide-in QUAND la ball est finie.
+        _ShowHealthboxOnSendOut(battler);
+        _sendOutHbFrames = 0;
+        _sendOutPhase = 2;
+      }
+      break;
+    }
+    case 2: {  // 1:1 Intro_WaitForShinyAnimAndHealthbox : attend la fin du slide healthbox
+      _sendOutHbFrames++;
+      const hb = (globalThis as Record<string, unknown>).__battleHealthbox as { gHealthboxSpriteIds?: number[] } | undefined;
+      const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
+      const hbSpr = hbId >= 0 ? rt?.gSprites?.get(hbId) : null;
+      const cbName = (hbSpr?.callback as { name?: string } | null | undefined)?.name;
+      const slideDone = !hbSpr || cbName !== 'SpriteCB_HealthboxSlideIn';
+      if (slideDone || _sendOutHbFrames > 40) {
+        _introEndDelay = 4;   // 1:1 introEndDelay=3 (+1 pour le pré-décrément du décomp)
+        _sendOutPhase = 3;
+      }
+      break;
+    }
+    case 3: {  // 1:1 Intro_DelayAndEnd : décompte puis ExecCompleted (clear le flag → menu)
+      if (--_introEndDelay < 0) {
+        _sendOutPhase = -1;
+        PlayerBufferExecCompleted();
+      }
+      break;
+    }
+    default:
+      PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `PlayerHandleDrawPartyStatusSummary()`. */

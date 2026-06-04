@@ -307,6 +307,17 @@ const _battlerMonSpriteIds: number[] = [-1, -1, -1, -1];
 interface _PendingReveal { battler: number; spriteId: number; frames: number; }
 const _pendingMonReveals: _PendingReveal[] = [];
 
+// 1:1 send-out JOUEUR : un mon qui sort d'une POKÉBALL reste INVISIBLE jusqu'à HandleBallAnimEnd
+// (pokeball.c:850), PAS révélé à ~2f par l'anti-sprite-noir. Quand un battler est marqué
+// `deferReveal`, _registerBattlerMonSprite le crée invisible mais NE pousse PAS de pending reveal
+// → c'est l'anim de ball (tickSendOut, battle-sendout-anim.ts) qui le révèle à l'émergence.
+// Sans ça : double apparition (pop à 2f PUIS émergence). À la palette: le throw part à 31f +
+// l'arc ~25-46f → la palette OBJ a largement flushé live d'ici l'émergence (zéro risque de noir).
+const _deferRevealBattlers = new Set<number>();
+export function setBattlerDeferReveal(battler: number, defer: boolean): void {
+  if (defer) _deferRevealBattlers.add(battler); else _deferRevealBattlers.delete(battler);
+}
+
 /** 1:1 décomp gBattlerSpriteIds[battler] (registre voie L des sprites mon). */
 export function getBattlerMonSpriteId(battler: number): number {
   return _battlerMonSpriteIds[battler] ?? -1;
@@ -322,6 +333,8 @@ function _registerBattlerMonSprite(battler: number, spriteId: number): void {
   for (let i = _pendingMonReveals.length - 1; i >= 0; i--) {
     if (_pendingMonReveals[i].battler === battler) _pendingMonReveals.splice(i, 1);
   }
+  // Send-out ball (deferReveal) : reste invisible — c'est tickSendOut qui révèle à l'émergence.
+  if (_deferRevealBattlers.has(battler)) return;
   _pendingMonReveals.push({ battler, spriteId, frames: 0 });
 }
 
