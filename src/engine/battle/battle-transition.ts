@@ -28,6 +28,12 @@
 
 import { gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop } from '../system/decomp-globals';
 import { getRuntime, BlendPalettes, PALETTES_ALL } from '../system/decomp-globals';
+// Registres fenêtre WIN0 : le Slice clippe BG **et OBJ** via WIN0 (WININ/WINOUT +
+// WIN0H par-scanline). Sans ça, le sprite joueur restait visible dans la déchirure.
+import {
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V,
+  REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
+} from '../system/decomp-runtime';
 
 // 1:1 strict A8 audit : import depuis decomp-data.
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT } from '../decomp-data/include/gba/defines-data';
@@ -115,9 +121,23 @@ export function startBattleTransitionSlice(): void {
     gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;
   }
 
-  // 1:1 décomp `SetHBlankCallback(HBlankCB_Slice)` (ll. 2752).
   const rt = getRuntime();
   if (!rt) return;
+
+  // 1:1 décomp `Slice_Init` ll. 2735-2737 + `VBlankCB_Slice` ll. 2810-2812 :
+  // WININ = WININ_WIN0_ALL (BG0-3+OBJ+CLR visibles DANS WIN0), WINOUT = 0 (RIEN
+  // hors WIN0 → backdrop seul = noir/déchirure), WIN0V = pleine hauteur. Le WIN0H
+  // est modulé par-scanline (HBlankCB ci-dessous). Notre compositor n'applique la
+  // fenêtre que si WIN0 est actif → on pose DISPCNT_WIN0_ON (= ce que la transition
+  // a sur HW). C'EST le maillon manquant : avant, ces valeurs vivaient dans
+  // `_slice.data` mais n'étaient JAMAIS envoyées aux registres → 0 clip → le sprite
+  // joueur restait visible dans la déchirure (bug A/B user).
+  rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);            // WININ_WIN0_ALL
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0);              // rien hors WIN0
+  rt.SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);  // WIN0V = WIN_RANGE(0, 160) pleine hauteur
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+
+  // 1:1 décomp `SetHBlankCallback(HBlankCB_Slice)` (ll. 2752).
   rt.gba.setHBlankCallback((y: number) => {
     // 1:1 décomp `HBlankCB_Slice` (ll. 2817-2826) : shift BG1/BG2/BG3 hofs
     // selon le buffer [1] courant (= mis à jour par VBlankCB après chaque frame).
@@ -127,6 +147,14 @@ export function startBattleTransitionSlice(): void {
       rt.gba.bg(1).config.hofs = offset;
       rt.gba.bg(2).config.hofs = offset;
       rt.gba.bg(3).config.hofs = offset;
+      // 1:1 décomp DMA Slice (`VBlankCB_Slice` l.2814 : DmaSet REG_WIN0H ←
+      // gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i], stream/scanline). Le
+      // buffer storeLoc2 encode WIN0H = (left<<8)|right (lignes paires/impaires
+      // se ferment en sens opposé → déchirure). Équivaut à SetGpuReg(WIN0H) : on
+      // mute directement windows.win0 (même pattern que bg().config.hofs ci-dessus).
+      const win0h = gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + y];
+      rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+      rt.gba.windows.win0.x2 = win0h & 0xFF;
     }
   });
   _hblankInstalled = true;
@@ -272,6 +300,13 @@ export function stopBattleTransition(): void {
       rt.gba.bg(1).config.hofs = 0;
       rt.gba.bg(2).config.hofs = 0;
       rt.gba.bg(3).config.hofs = 0;
+      // Reset la fenêtre WIN0 : plage pleine + désactive WIN0 (bypass window).
+      // Sans ça, l'écran qui suit (combat) hériterait du dernier WIN0H du slice
+      // (= fenêtre fermée → écran clippé/noir). Le combat re-pose sa propre
+      // fenêtre dans CB2_InitBattleInternal s'il en a besoin (intro slide).
+      rt.gba.windows.win0.x1 = 0;
+      rt.gba.windows.win0.x2 = DISPLAY_WIDTH;
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
     }
     _hblankInstalled = false;
   }
