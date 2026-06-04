@@ -36,17 +36,15 @@
  * par offset. Chaque move effect (= EFFECT_HIT, EFFECT_BURN_HIT, EFFECT_DRAGON_RAGE,
  * etc., total ~200) a son propre script qui se branche dans le bytecode.
  *
- * Status actuel session 132 :
- *   - Interpreter loop + dispatch table : implémenté (250 opcodes, la plupart stubs)
- *   - Opcodes implémentés réellement : ~30 (= les triviaux : nop, end, goto,
- *     pause, jumpif, etc.)
- *   - Le reste : stubs Phase 1.4 deferred + ref au C handler (port progressif au fur et à
- *     mesure du besoin gameplay)
- *
- *   - Le scenario "starter (Lv5) vs Zigzagoon (Lv2) avec Tackle" du tutorial
- *     peut être joué via battle-flow.ts qui utilise une formule de damage
- *     simplifiée. Le vrai bytecode interpreter sera utilisé une fois que les
- *     200+ effects + battle controllers + stat stages sont portés.
+ * Status (2026-06-05) — le bytecode est le MOTEUR RÉEL du combat :
+ *   - Interpreter loop + jump table 256 entrées (gBattleScriptCommandsTable) : opérationnel.
+ *   - Les opcodes Cmd_* sont portés (battle-script-commands.ts + cmd-niveau-*) ; un combat
+ *     COMPLET (move → dégâts/crit/STAB/types/talents/statuts/stat-changes → KO → EXP/level-up
+ *     → fin → retour OW) tourne dessus, vérifié 1:1. Manques = effets de niche + link/Frontier.
+ *   - La voie L lit ce bytecode DIRECTEMENT ; la voie V (battle-flow.ts, in-game) l'emprunte
+ *     pour les dégâts via wire-bytecode-bridge.ts (flag __USE_BYTECODE_FOR_DAMAGE__, ON par défaut).
+ *   ⚠️ L'ancien texte « ~30 opcodes, le reste stubs, battle-flow formule simplifiée » (session 132)
+ *     était PÉRIMÉ et trompeur — corrigé.
  */
 
 import { Random } from '../system/random';
