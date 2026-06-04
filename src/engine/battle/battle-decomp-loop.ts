@@ -27,6 +27,7 @@ import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
 import { startBattleIntroFlash, tickBattleIntroFlash, startBattleTransitionSlice, tickBattleTransitionSlice } from './battle-transition';
+import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
 
@@ -65,6 +66,16 @@ function _BattleMainCB1(): void {
     BattleMainCB1?: () => void;
   } | undefined;
   m?.BattleMainCB1?.();
+}
+
+/** 1:1 décomp `GetWildBattleTransition()` (battle_setup.c:790). Lazy via global
+ *  (= pattern anti-cycle de ce module). Défaut SLICE si le helper n'est pas chargé. */
+function _GetWildBattleTransition(): number {
+  const m = (globalThis as Record<string, unknown>).__battleSetupHelpers as {
+    GetWildBattleTransition?: () => number;
+  } | undefined;
+  const t = m?.GetWildBattleTransition?.();
+  return (typeof t === 'number') ? t : B_TRANSITION.B_TRANSITION_SLICE;
 }
 
 function _getBattleMainFuncName(): string {
@@ -118,8 +129,17 @@ function _playBattleBGM(): void {
  *
  *  Mirror EXACT du flow voie V (battle-flow.ts:2105-2131). Gaté in-game (returnToOverworld) :
  *  le harness boote CB2_InitBattle direct (pas d'OW à découper). */
-function _makeBattleStartTransitionCB2(cb2InitBattle: () => void): () => void {
+function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: number): () => void {
   let state = 0;  // 0 = lance le flash, 1 = intro flash en cours, 2 = slice en cours
+  // Dispatch 1:1 `CreateBattleStartTask(transition, …)` : le flash gris est COMMUN à
+  // toutes les transitions (CreateIntroTask), puis la transition sélectionnée s'exécute.
+  // Seul B_TRANSITION_SLICE est implémenté visuellement ; les autres (WHITE_BARS_FADE,
+  // WAVE, GRID_SQUARES…) font un fallback gracieux vers SLICE = chantier VISUEL/A/B
+  // (cf. [[battle-transitions-FULL-roadmap-2026-06-04]] Phase 4). Le warn rend visible,
+  // pour l'A/B, quelle transition le jeu sélectionne réellement pour ce combat.
+  if (transition !== B_TRANSITION.B_TRANSITION_SLICE) {
+    console.warn(`[decomp-loop] transition sélectionnée=${transition} non implémentée → fallback SLICE (visuel A/B à porter)`);
+  }
   return function CB2_BattleStartTransition(): void {
     switch (state) {
       case 0:
@@ -187,10 +207,12 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
       }
     });
-    // 1:1 décomp Task_BattleStart : la transition d'entrée (flash gris → Slice → écran
-    // noir) tourne AVANT CB2_InitBattle. Le harness (returnToOverworld=false) boote
-    // CB2_InitBattle direct (pas d'OW à découper) via le SetMainCallback2 ci-dessous.
-    getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb) as never);
+    // 1:1 décomp `BattleSetup_StartWildBattle` → `CreateBattleStartTask(GetWildBattleTransition(), 0)`
+    // (battle_setup.c:414) : la transition d'entrée tourne AVANT CB2_InitBattle. Le type est
+    // SÉLECTIONNÉ selon zone × niveau (1:1) ; l'exécuteur fait un fallback SLICE pour les
+    // visuels pas encore portés. Le harness (returnToOverworld=false) boote CB2_InitBattle direct.
+    const transition = _GetWildBattleTransition();
+    getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb, transition) as never);
     return;
   }
   getRuntime()?.SetMainCallback2?.(cb as never);

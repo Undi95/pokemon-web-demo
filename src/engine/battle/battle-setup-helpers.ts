@@ -40,6 +40,12 @@ import {
   MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsDeepOrOceanWater, MetatileBehavior_IsMountain,
 } from '../field/metatile-behavior';
+// Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
+// Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
+import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE } from './party-storage';
+// Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
+import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
+import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -271,6 +277,89 @@ export function BattleSetup_GetEnvironmentId(): number {
   return BATTLE_ENVIRONMENT_PLAIN;
 }
 
+// ─── Sélection de transition de combat (battle_setup.c:696-861) ─────────────
+//
+// 1:1 strict. Le décomp choisit le TYPE de transition (B_TRANSITION_*) à passer à
+// `CreateBattleStartTask(transition, song)` selon : type de zone (normal/grotte/flash/
+// eau) × difficulté (ennemi plus faible que le joueur ? table[0] : table[1]).
+// L'exécuteur (battle-decomp-loop.ts `_makeBattleStartTransitionCB2`) consomme l'ID
+// et fait un fallback gracieux vers SLICE pour les transitions pas encore implémentées
+// (= 100% des non-SLICE = chantier VISUEL/A/B). Ici = la LOGIQUE déterministe « chaque cas ».
+
+/** 1:1 décomp `MON_DATA_SPECIES_OR_EGG` (pokemon.h enum) = 65. */
+const MON_DATA_SPECIES_OR_EGG = 65;
+/** 1:1 décomp `MON_DATA_HP` = 39. */
+const MON_DATA_HP = 39;
+/** 1:1 décomp `MON_DATA_LEVEL` = 56. */
+const MON_DATA_LEVEL = 56;
+/** 1:1 décomp `SPECIES_NONE` = 0 / `SPECIES_EGG` = 412. */
+const SPECIES_NONE = 0;
+const SPECIES_EGG = 412;
+
+const { TRANSITION_TYPE_NORMAL, TRANSITION_TYPE_CAVE, TRANSITION_TYPE_FLASH, TRANSITION_TYPE_WATER } = ENUM_TRANSITION_0;
+
+/** 1:1 décomp `sBattleTransitionTable_Wild[][2]` (battle_setup.c:114-120). La 1re
+ *  transition est utilisée si l'ennemi est de niveau INFÉRIEUR au joueur, sinon la 2e.
+ *  (static const array — non auto-extrait ; transcrit 1:1 avec constantes ENUM_B_1.) */
+const sBattleTransitionTable_Wild: Record<number, [number, number]> = {
+  [TRANSITION_TYPE_NORMAL]: [B_TRANSITION.B_TRANSITION_SLICE,          B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE],
+  [TRANSITION_TYPE_CAVE]:   [B_TRANSITION.B_TRANSITION_CLOCKWISE_WIPE, B_TRANSITION.B_TRANSITION_GRID_SQUARES],
+  [TRANSITION_TYPE_FLASH]:  [B_TRANSITION.B_TRANSITION_BLUR,           B_TRANSITION.B_TRANSITION_GRID_SQUARES],
+  [TRANSITION_TYPE_WATER]:  [B_TRANSITION.B_TRANSITION_WAVE,           B_TRANSITION.B_TRANSITION_RIPPLE],
+};
+
+/** E1 wire : `GetFlashLevel()` (field_weather / overworld) — niveau d'obscurité Flash
+ *  (grottes sans Flash). Exposé global best-effort ; défaut 0 (= pas de flash, 1:1 hors
+ *  grotte). field-weather pas toujours câblé en voie L → défaut sûr. */
+function _GetFlashLevel(): number {
+  const fn = (globalThis as { GetFlashLevel?: () => number }).GetFlashLevel;
+  return fn ? (fn() | 0) : 0;
+}
+
+/** 1:1 décomp `GetBattleTransitionTypeByMap()` (battle_setup.c:696-719). */
+export function GetBattleTransitionTypeByMap(): number {
+  const { x, y } = _PlayerGetDestCoords();
+  const tileBehavior = _MapGridGetMetatileBehaviorAt(x, y);
+
+  if (_GetFlashLevel()) return TRANSITION_TYPE_FLASH;
+  if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior)) return TRANSITION_TYPE_WATER;
+
+  switch (_getMapType()) {
+    case MAP_TYPE_UNDERGROUND: return TRANSITION_TYPE_CAVE;
+    case MAP_TYPE_UNDERWATER:  return TRANSITION_TYPE_WATER;
+    default:                   return TRANSITION_TYPE_NORMAL;
+  }
+}
+
+/** 1:1 décomp `GetSumOfPlayerPartyLevel(numMons)` (battle_setup.c:721-738). Somme
+ *  les niveaux des `numMons` premiers mons joueur non-œuf, non-K.O. */
+export function GetSumOfPlayerPartyLevel(numMons: number): number {
+  let sum = 0;
+  let remaining = numMons;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i] as never;
+    const species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG) as number;
+    if (species !== SPECIES_EGG && species !== SPECIES_NONE && (GetMonData(mon, MON_DATA_HP) as number) !== 0) {
+      sum += GetMonData(mon, MON_DATA_LEVEL) as number;
+      if (--remaining === 0) break;
+    }
+  }
+  return sum;
+}
+
+/** 1:1 décomp `GetWildBattleTransition()` (battle_setup.c:790-810). Retourne le
+ *  `B_TRANSITION_*` pour une rencontre sauvage selon zone × niveau.
+ *  (Branche `CurrentBattlePyramidLocation()` omise : Pyramide = Battle Frontier hors
+ *  scope → équivaut toujours à PYRAMID_LOCATION_NONE.) */
+export function GetWildBattleTransition(): number {
+  const transitionType = GetBattleTransitionTypeByMap();
+  const enemyLevel = GetMonData(gEnemyParty[0] as never, MON_DATA_LEVEL) as number;
+  const playerLevel = GetSumOfPlayerPartyLevel(1);
+
+  const row = sBattleTransitionTable_Wild[transitionType] ?? sBattleTransitionTable_Wild[TRANSITION_TYPE_NORMAL];
+  return (enemyLevel < playerLevel) ? row[0] : row[1];
+}
+
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__battleSetupHelpers = {
@@ -280,6 +369,8 @@ export function BattleSetup_GetEnvironmentId(): number {
   BATTLE_ENVIRONMENT_WATER, BATTLE_ENVIRONMENT_POND,
   BATTLE_ENVIRONMENT_MOUNTAIN, BATTLE_ENVIRONMENT_CAVE,
   BATTLE_ENVIRONMENT_BUILDING, BATTLE_ENVIRONMENT_PLAIN,
+  // Sélection de transition (Phase 4) — exposé pour vérif harness déterministe.
+  GetWildBattleTransition, GetBattleTransitionTypeByMap, GetSumOfPlayerPartyLevel,
 };
 
 void MAP_TYPE_UNKNOWN;
