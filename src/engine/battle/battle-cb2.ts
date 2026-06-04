@@ -38,6 +38,7 @@ import {
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
 } from '../system/decomp-globals';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../ui/gba-text-system';
+import { tickBattleIntroSlideL } from './battle-intro';
 /** 1:1 décomp `B_BUTTON` (io_reg.h) = 1 << 1. */
 const B_BUTTON = 1 << 1;
 /** 1:1 décomp `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */
@@ -194,6 +195,10 @@ export function BattleMainCB2(): void {
   _RunTextPrinters();
   _UpdatePaletteFade();
   _RunTasks();
+  // Voie L : tick l'animation d'entrée de scène (BattleIntroSlide1). No-op si pas
+  // de slide active. 1:1 : la slide tourne comme une task via RunTasks ; on la ticke
+  // ici (BattleMainCB2 = 1×/frame, comme RunTasks).
+  tickBattleIntroSlideL();
 
   // 1:1 décomp ll. 1871-1878 : B button during recorded → quit.
   if (_JOY_HELD(B_BUTTON)

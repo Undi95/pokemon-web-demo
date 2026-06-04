@@ -107,6 +107,7 @@ import {
   MON_DATA_EXP, MON_DATA_SPECIES,
 } from './party-storage';
 import { gBattlerPartyIndexes } from './state';
+import { startBattleIntroSlideL } from './battle-intro';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
 } from './battle-hp-bar';
@@ -1762,9 +1763,17 @@ function PlayerHandleFaintingCry(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleIntroSlide()`. */
+/** 1:1 décomp `PlayerHandleIntroSlide()` (battle_controller_player.c) :
+ *  ```c
+ *  HandleIntroSlide(gBattleBufferA[gActiveBattler][1]);  // arg = terrainId (env)
+ *  gIntroSlideFlags |= 1;
+ *  PlayerBufferExecCompleted();
+ *  ```
+ *  Voie L : `startBattleIntroSlideL` = `HandleIntroSlide` (= CreateTask
+ *  BattleIntroSlide1) → charge le fond d'entrée strié + ouvre les bandes WIN0V +
+ *  scroll terrain. Tickée par BattleMainCB2. (gIntroSlideFlags = raffinement A/B.) */
 function PlayerHandleIntroSlide(): void {
-  // Wire vers K16 battle-intro-events. Pour now : immediate.
+  startBattleIntroSlideL(gBattleBufferA[gActiveBattler][1]);
   PlayerBufferExecCompleted();
 }
 

@@ -337,6 +337,54 @@ export async function drawMainBattleBackground(env: number = BATTLE_ENVIRONMENT_
   await loadBattleTerrain(env);
 }
 
+/** 1:1 décomp `DrawBattleEntryBackground` (battle_bg.c:760) — cas wild/herbe
+ *  (`MAP_BATTLE_SCENE_NORMAL`, ll. 833-836) :
+ *  ```c
+ *  LZDecompressVram(sBattleEnvironmentTable[env].entryTileset, BG_CHAR_ADDR(1));
+ *  LZDecompressVram(sBattleEnvironmentTable[env].entryTilemap, BG_SCREEN_ADDR(28));
+ *  ```
+ *  = charge l'**entry background strié** (anim_tiles/anim_map) dans BG1
+ *  (charBase 1 = VRAM 0x4000, screenBase 28 = VRAM 0xE000). C'est le « fond à
+ *  lignes » qui scrolle pendant l'intro (`BattleIntroSlide1` : `gBattle_BG1_X +=
+ *  6`/frame). Réutilise la palette terrain (slot 2, déjà chargée par
+ *  `loadBattleTerrain` — DrawBattleEntryBackground ne charge PAS de palette).
+ *  BG1 n'est pas utilisé par le combat en voie L → on le configure ici (priority 0
+ *  = devant le terrain) puis on le cache en fin de slide (`hideBattleEntryBackground`,
+ *  = 1:1 `BattleIntroSlide1` case 3 fin : CpuFill32(0, BG_SCREEN_ADDR(28))). */
+export async function drawBattleEntryBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  const dir = ENV_TO_DIR[env];
+  if (!dir) return;
+  const base = `/decomp/em/battle_environment/${dir}`;
+  // anim_tiles.png = entryTileset (même format 4bpp 48-color que le terrain) ;
+  // anim_map.bin = entryTilemap (u16 entries).
+  const [tiles, tilemap] = await Promise.all([
+    _loadBattleTerrainTiles(`${base}/anim_tiles.png`),
+    loadTilemapBin(`${base}/anim_map.bin`),
+  ]);
+  // BG1 charBase 1 → VRAM 0x4000 (région inutilisée par le combat).
+  rt.gba.vram.set(tiles, 0x4000);
+  // BG1 screenBase 28 → VRAM 28*0x800 = 0xE000.
+  const mapBytes = new Uint8Array(tilemap.buffer, tilemap.byteOffset, tilemap.byteLength);
+  rt.gba.vram.set(mapBytes, 28 * 0x800);
+  // Configure BG1 = entry bg, devant le terrain (priority 0), visible. Le tilemap
+  // 32×32 (256×256) wrap mod 256 → le scroll BG1_X défile en boucle.
+  const bg1c = rt.gba.bg(1).config;
+  bg1c.charBaseIndex = 1; bg1c.mapBaseIndex = 28; bg1c.screenSize = 0;
+  bg1c.paletteMode = 0; bg1c.priority = 0; bg1c.visible = true;
+  bg1c.hofs = 0; bg1c.vofs = 0;
+}
+
+/** Cache la couche entry bg (BG1). 1:1 `BattleIntroSlide1` case 3 fin (battle_intro.c:226 :
+ *  `CpuFill32(0, BG_SCREEN_ADDR(28), ...)` + reconfig BG1/2). En voie L, BG1 n'est pas
+ *  réutilisé par le combat → on le cache simplement (le terrain BG3 + sprites restent). */
+export function hideBattleEntryBackground(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.bg(1).config.visible = false;
+}
+
 /** 1:1 décomp `LoadBattleTextboxAndBackground` (ll. 859-867) full orchestration :
  *  textbox + main background dans le bon ordre. */
 /** 1:1 décomp `LoadUserWindowBorderGfx(windowId, 0x214, BG_PLTT_ID(14))` qui
