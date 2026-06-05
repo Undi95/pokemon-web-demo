@@ -46,11 +46,14 @@ import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE } from './party-stora
 // Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
 import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
+// SPECIES_ZIGZAGOON (= 288) depuis le leaf auto-extrait (règle [[feedback-no-hardcoded-decomp-values]]).
+import { SPECIES_ZIGZAGOON } from '../decomp-data/include/constants/species-data';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
-/** 1:1 décomp `SPECIES_ZIGZAGOON` (constants/species.h) = 287 (Gen 3 dex). */
-const SPECIES_ZIGZAGOON = 287;
+// (SPECIES_ZIGZAGOON importé du leaf species-data ci-dessus = 288. L'ancien
+//  hardcode local `= 287` était FAUX : 287 = SPECIES_MIGHTYENA → la tuto Birch
+//  spawnait un Médhyéna au lieu d'un Zigzaton. Décomp species.h:294 = 288.)
 
 /** 1:1 décomp `OT_ID_PLAYER_ID` = 0 (= utilise gSaveBlock2Ptr->playerTrainerId). */
 const OT_ID_PLAYER_ID = 0;
