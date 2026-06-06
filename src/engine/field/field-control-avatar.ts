@@ -34,6 +34,8 @@ import {
   GetXYCoordsOneStepInFrontOfPlayer,
 } from './player-avatar';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { gPlayerParty } from '../battle/party-storage';
+import { STATUS1_POISON, STATUS1_TOXIC_POISON } from '../battle/constants';
 import {
   IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior,
@@ -663,7 +665,7 @@ export function UpdateFriendshipStepCounter(): void {
   if (counter === 0) {
     // 1:1 décomp : pour chaque mon du party, AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING).
     void import('../battle/party-storage').then(({ AdjustFriendship }) => {
-      const party = gSaveBlock1Ptr.playerParty;
+      const party = gPlayerParty;
       const FRIENDSHIP_EVENT_WALKING = 5;  // 1:1 décomp include/constants/pokemon.h:179.
       for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
         const mon = party[i];
@@ -673,10 +675,10 @@ export function UpdateFriendshipStepCounter(): void {
         // de la friendship à la marche, ce qui CORROMPRAIT son compteur d'éclosion
         // (friendship = compteur d'éclosion pour un œuf, cf. pokemon.ts:105). On skip les
         // œufs ici = équivalent 1:1 strict de l'early-return œuf du décomp.
-        if (mon && !mon.isEgg) {
-          // AdjustFriendship attend un Pokemon décomp struct ; notre PokemonInstance
-          // a friendship field optional. Cast via unknown pour bypass type guard.
-          AdjustFriendship(mon as unknown as Parameters<typeof AdjustFriendship>[0], FRIENDSHIP_EVENT_WALKING);
+        // 1:1 : AdjustFriendship early-return si species==SPECIES_EGG ; nos œufs =
+        // species réel + flag isEgg → on skip explicitement (équivalent 1:1).
+        if (mon && mon.species !== 0 && !mon.isEgg) {
+          AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING);
         }
       }
     });
@@ -725,13 +727,12 @@ export function UpdatePoisonStepCounter(): boolean {
   let numPoisoned = 0;
   for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
     const mon = party[i];
-    if (!mon) continue;
-    // 1:1 décomp : check status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON).
-    // Notre PokemonInstance.status est 'PSN' | 'TOX' | etc.
-    if (mon.status === 'PSN' || mon.status === 'TOX') {
-      let hp = mon.currentHp;
+    if (!mon || mon.species === 0) continue;
+    // 1:1 décomp : status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON).
+    if ((mon.status >>> 0) & (STATUS1_POISON | STATUS1_TOXIC_POISON)) {
+      let hp = mon.hp;
       if (hp === 0 || --hp === 0) numFainted++;
-      mon.currentHp = hp;
+      mon.hp = hp;
       numPoisoned++;
     }
   }
