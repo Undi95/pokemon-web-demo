@@ -242,8 +242,11 @@ export function CreateNPCTrainerParty(
         personalityValue = 0x88;  // skew male
       }
 
-      // 1:1 décomp ll. 2000-2001 : trainerName hash sum.
-      nameHash = 0;
+      // 1:1 décomp ll. 2000-2001 : trainerName hash sum. ⚠️ FIX 1:1 : nameHash N'EST PAS
+      // reset par mon — le décomp le déclare `u32 nameHash = 0` au scope FONCTION (battle_main.c
+      // l.1962, AVANT le `for i`) et l'ACCUMULE à travers les mons (le `for j` trainerName tourne
+      // CHAQUE itération i sans reset). L'ancien `nameHash = 0` ici resettait par mon → la
+      // personality (nature/genre/ability) du 2e+ mon de dresseur était FAUSSE (≠ décomp).
       for (j = 0; trainerData.trainerName[j] !== EOS && j < trainerData.trainerName.length; j++) {
         nameHash += trainerData.trainerName[j];
       }

@@ -39,11 +39,11 @@
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, DrawDialogueFrame, ClearDialogWindowAndFrame,
-  LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
+  DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM,
   FillBgTilemapBufferRect,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset, GetStringRightAlignXOffset } from './gba-text-system';
 import {
   InitMenuInUpperLeftCornerNormal, Menu_ProcessInputNoWrap,
@@ -59,7 +59,8 @@ import { ITEM_NONE, ClearMail } from './mail-data';
 import { FEMALE } from '../system/decomp-globals';
 import { getString } from './gba-strings';
 import { setStringVar } from '../system/string-buffers';
-import { StringExpandPlaceholders } from './gba-text-system';
+import { StringExpandPlaceholders, gStringVar4 } from './gba-text-system';
+import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
 import * as Songs from '../decomp-data/include/constants/songs-data';
 import {
   CountUsedPCItemSlots, RemovePCItem, CompactPCItems, AddPCItem, PC_ITEMS_COUNT,
@@ -435,7 +436,7 @@ export function TickBedroomPC(): void {
 
 /** 1:1 décomp `DisplayItemMessageOnField` part `LoadMessageBoxAndBorderGfx`+
  *  draw frame + print str. Window sticky (= ne se ferme pas sur A press). */
-function _showSticky(text: string): void {
+function _showSticky(text: string | Uint8Array): void {
   if (sDialogueWindowId < 0) {
     sDialogueWindowId = AddWindow(WIN_DIALOGUE);
   }
@@ -779,7 +780,7 @@ function _tickDepositList(_newKeys: number): void {
   const itemName = getItemNameFr(slot.itemKey);
   setStringVar(1, itemName);
   const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
-  _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+  ItemStorage_PrintMessage(tpl);
   _itemStorageShowQuantityWindow();
   // Réutilise pc_qty_rolling via flag sPCInDepositQtyMode (= variant deposit).
   sSubState = 'pc_qty_rolling';
@@ -801,7 +802,7 @@ function _depositDoDeposit(bagIdx: number, qty: number): void {
     setStringVar(1, itemName);
     setStringVar(2, String(qty));
     const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
-    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+    ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sPCDepositJustDone = true;  // = switch vers RETIRER au prochain A press
     sPCLastActionPos = -1;
@@ -1217,7 +1218,7 @@ function _itemStorageDoItemAction(pos: number): void {
     const itemName = getItemNameFr(slot.itemKey);
     setStringVar(1, itemName);
     const tpl = getString('gText_WithdrawHowManyItems') ?? 'Vous voulez en\nretirer combien?';
-    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+    ItemStorage_PrintMessage(tpl);
   } else {
     if (slot.quantity === 1) {
       _itemStorageStartToss(pos, 1);
@@ -1230,7 +1231,7 @@ function _itemStorageDoItemAction(pos: number): void {
     const itemName = getItemNameFr(slot.itemKey);
     setStringVar(1, itemName);
     const tpl = getString('gText_TossHowManyVar1s') ?? 'En jeter combien?';
-    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+    ItemStorage_PrintMessage(tpl);
   }
   // 1:1 décomp line 1388 : ItemStorage_PrintItemQuantity dans WIN_QUANTITY.
   _itemStorageShowQuantityWindow();
@@ -1334,7 +1335,7 @@ function _itemStorageDoItemWithdraw(pos: number, qty: number): void {
     setStringVar(1, itemName);
     setStringVar(2, String(qty));
     const tpl = getString('gText_WithdrawXItems') ?? '{STR_VAR_1}:\nretiré {STR_VAR_2}.';
-    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+    ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
     // Mark pos pour remove après confirmation A_BUTTON.
@@ -1370,7 +1371,7 @@ function _itemStorageStartToss(pos: number, qty: number): void {
   setStringVar(1, itemName);
   setStringVar(2, String(qty));
   const tpl = getString('gText_ConfirmTossItems') ?? '{STR_VAR_1}:\nen jeter {STR_VAR_2}?';
-  _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+  ItemStorage_PrintMessage(tpl);
   // Spawn YesNo menu (= 1:1 décomp CreateYesNoMenuWithCallbacks).
   CreateYesNoMenu(WIN_PC_YESNO, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 1);  // default = NO
   sSubState = 'pc_toss_confirm';
@@ -1390,7 +1391,7 @@ function _tickPCTossConfirm(_newKeys: number): void {
     setStringVar(1, itemName);
     setStringVar(2, String(sPCLastActionQty));
     const tpl = getString('gText_ThrewAwayVar2Var1s') ?? '{STR_VAR_1}:\njeté {STR_VAR_2}.';
-    _itemStoragePrintWindowMessage(StringExpandPlaceholders('', tpl));
+    ItemStorage_PrintMessage(tpl);
     sPCActionMsgIsError = false;
     sSubState = 'pc_action_msg';
   } else {
@@ -1448,7 +1449,7 @@ function _tickPCActionMsg(newKeys: number): void {
 }
 
 /** Print message in WIN_PC_MESSAGE (clear + write). */
-function _itemStoragePrintWindowMessage(text: string): void {
+function _itemStoragePrintWindowMessage(text: string | Uint8Array): void {
   if (sPCMessageWindowId < 0) return;
   DrawStdFrameWithCustomTileAndPalette(
     sPCMessageWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM,
@@ -1500,10 +1501,10 @@ function ItemStorage_GetMessage(itemIdOrMsg: number): string {
  *      StringExpandPlaceholders(gStringVar4, string);
  *      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL); */
 function ItemStorage_PrintMessage(text: string): void {
-  // 1:1 : StringExpandPlaceholders pour résoudre {STR_VAR_*} placeholders.
-  const expanded = StringExpandPlaceholders('', text);
-  // Délègue au helper existant qui matche le pattern décomp (Draw frame + Print).
-  _itemStoragePrintWindowMessage(expanded);
+  // 1:1 : StringExpandPlaceholders(gStringVar4, text) résout {STR_VAR_*} (bytes 0xFD).
+  // text = source FR lisible → encodeOwText (préproc) → expand byte dans gStringVar4.
+  StringExpandPlaceholders(gStringVar4, encodeOwText(text));
+  _itemStoragePrintWindowMessage(gStringVar4);
 }
 
 /** 1:1 décomp `static void ItemStorage_PrintItemQuantity(u8 windowId, u16 value,
@@ -1519,7 +1520,8 @@ function ItemStorage_PrintItemQuantity(windowId: number, value: number, _mode: n
   const valStr = String(value).padStart(n, '0');
   setStringVar(1, valStr);
   const tpl = getString('gText_xVar1') ?? '×{STR_VAR_1}';
-  const expanded = StringExpandPlaceholders('', tpl);
+  StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
+  const expanded = gStringVar4;
   // 1:1 GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 48) → centré dans 48 px.
   const xPos = GetStringCenterAlignXOffset(expanded, 48);
   // Clear window pixel buffer + print centré.
@@ -1624,7 +1626,8 @@ function Mailbox_PrintWhatToDoWithPlayerMailText(mailIdx: number): void {
   const playerName = gSaveBlock1Ptr.mail[mailIdx].playerName || 'MAIL';
   setStringVar(1, playerName);
   const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
-  _showSticky(StringExpandPlaceholders('', tpl));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
+  _showSticky(gStringVar4);
 }
 
 /** 1:1 décomp `Mailbox_ReturnToPlayerPC(taskId)` (player_pc.c:746-756). Alias. */
@@ -1956,7 +1959,8 @@ function _tickMailboxList(_newKeys: number): void {
   const playerName = gSaveBlock1Ptr.mail[sel].playerName || 'MAIL';
   setStringVar(1, playerName);
   const tpl = getString('gText_WhatToDoWithVar1sMail') ?? 'Que faire avec\nle MAIL de {STR_VAR_1}?';
-  _showSticky(StringExpandPlaceholders('', tpl));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
+  _showSticky(gStringVar4);
   _mailboxPrintMailOptions();
 }
 

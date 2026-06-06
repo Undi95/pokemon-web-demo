@@ -112,12 +112,8 @@ const CONTROLLER_LINKSTANDBYMSG = 0x35;
 
 // ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
 
-/** 1:1 décomp `gBitTable[i]`. */
-const _gBitTable: number[] = (() => {
-  const t = new Array(32);
-  for (let i = 0; i < 32; i++) t[i] = 1 << i;
-  return t;
-})();
+// 1:1 décomp `gBitTable[i]` → consolidé sur le miroir `src/game/util.ts` (source unique).
+import { gBitTable as _gBitTable } from '../../game/include/util';
 
 /** 1:1 décomp `gBattleBufferB[battler][i]` controller IPC buffer.
  *  Pour notre port : lazy globalThis lookup (= dette R3 complete buffer). */

@@ -25,6 +25,7 @@
  * réexporte le type pour les callers.
  */
 
+import { GET_UNOWN_LETTER } from '../../game/include/pokemon';
 import type { Mail } from '../save/save-blocks';
 import { MAIL_COUNT, MAIL_WORDS_COUNT, PLAYER_NAME_LENGTH, TRAINER_ID_LENGTH, PARTY_SIZE } from '../save/save-blocks';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
@@ -400,24 +401,9 @@ function PadNameString(name: string, charPadding: number): string {
   return padded;
 }
 
-/** 1:1 TODO : `pokemon.c GetUnownLetterByPersonality(personality)`
- *  (pokemon.h:362) :
- *
- *    #define GET_UNOWN_LETTER(personality) ((            \
- *         (((personality) & 0x03000000) >> 18)           \
- *       | (((personality) & 0x00030000) >> 12)           \
- *       | (((personality) & 0x00000300) >> 6)            \
- *       |  ((personality) & 0x00000003)                  \
- *    ) % NUM_UNOWN_FORMS)
- *
- *  Inline-able 1:1 (= juste un calcul bitwise). Pas de dépendance externe :
- *  on l'inline ici. Quand pokemon.c sera porté, déplacer dans pokemon.ts. */
+/** 1:1 décomp `GetUnownLetterByPersonality` (pokemon_icon.c) = `return GET_UNOWN_LETTER(personality)`.
+ *  Délègue à la macro `GET_UNOWN_LETTER` du miroir `src/game/include/pokemon.ts`
+ *  (source unique ; le calcul bitwise était inliné ici, maintenant consolidé). */
 function GetUnownLetterByPersonality(personality: number): number {
-  const p = personality >>> 0;
-  return (
-    ((p & 0x03000000) >>> 18)
-    | ((p & 0x00030000) >>> 12)
-    | ((p & 0x00000300) >>> 6)
-    | (p & 0x00000003)
-  ) % NUM_UNOWN_FORMS;
+  return GET_UNOWN_LETTER(personality);
 }

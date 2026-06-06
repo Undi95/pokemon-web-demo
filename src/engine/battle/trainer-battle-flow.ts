@@ -24,6 +24,7 @@
 import { startWildBattle, BATTLE_OUTCOME_WIN } from './battle-flow';
 import { getSpeciesNameFr } from '../system/data-tables';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
+import { encodeOwText } from '../../game/include/text';  // préproc : littéral FR → bytes (ShowFieldMessage byte)
 import { getRuntime } from '../system/decomp-globals';
 import { FlagSet, VarSet } from '../script/script-vars';
 import { getText } from '../script/script-runtime';
@@ -317,7 +318,7 @@ export function startTrainerBattle(trainerId: string, opts?: { defeatText?: stri
       }
 
       case 'LOSE_TEXT': {
-        ShowFieldMessage('Tu as été vaincu!');
+        ShowFieldMessage(encodeOwText('Tu as été vaincu!'));
         VarSet('VAR_RESULT', 2);
         VarSet('VAR_RESULT', 2);
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = 2;

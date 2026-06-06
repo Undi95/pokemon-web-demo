@@ -30,14 +30,16 @@ import {
   InitWindows,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { LoadUserWindowBorderGfx } from '../ui/gba-text-window';
+import { LoadUserWindowBorderGfx } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../ui/gba-text-system';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette } from '../system/sprite';
 import { setStringVar } from '../system/string-buffers';
-import { StringExpandPlaceholders } from '../ui/gba-text-system';
+import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
+import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
+import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-data';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../system/data-tables';
 import { RemoveBagItem, UpdatePocketItemList, gBagPockets } from './bag';
 import {
@@ -2416,7 +2418,8 @@ function _itemContextDeposit(itemKey: string): void {
   const itemName = getItemNameFr(itemKey);
   setStringVar(1, itemName);
   const tpl = getString('gText_DepositHowManyVar1') ?? 'Déposer combien?';
-  _printDescription(StringExpandPlaceholders('', tpl));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
+  _printDescription(gStringVar4);
   // Open qty window (= 1:1 AddItemQuantityWindow).
   _qtyWid = AddWindow(QTY_WINDOW_TEMPLATE);
   DrawStdFrameWithCustomTileAndPalette(_qtyWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
@@ -2459,10 +2462,32 @@ function _drawDepositQtyWindow(): void {
   CopyWindowToVram(_qtyWid, 3);
 }
 
-function _printDescription(text: string): void {
+/** Split des bytes charmap sur CHAR_NEWLINE (0xFE), jusqu'à EOS. Chaque ligne =
+ *  Uint8Array EOS-terminée (consommable par le renderer). */
+function _splitOwLines(bytes: Uint8Array): Uint8Array[] {
+  const lines: Uint8Array[] = [];
+  let start = 0, i = 0;
+  const push = (end: number): void => {
+    const line = new Uint8Array(end - start + 1);
+    line.set(bytes.subarray(start, end));
+    line[end - start] = EOS;
+    lines.push(line);
+  };
+  for (; i < bytes.length && bytes[i] !== EOS; i++) {
+    if (bytes[i] === CHAR_NEWLINE) { push(i); start = i + 1; }
+  }
+  push(i);
+  return lines;
+}
+
+/** Affiche une description sur ≤3 lignes (espacement 16px). `text` = bytes charmap
+ *  (déjà résolus par StringExpandPlaceholders) OU source FR string (encodée ici =
+ *  préproc), comme la convention AddTextPrinterParameterized3/4. */
+function _printDescription(text: string | Uint8Array): void {
   if (_descWid < 0) return;
   FillWindowPixelBuffer(_descWid, 0x00);
-  const lines = text.split(/\\n|\n/);
+  const bytes = typeof text === 'string' ? encodeOwText(text) : text;
+  const lines = _splitOwLines(bytes);
   for (let i = 0; i < Math.min(lines.length, 3); i++) {
     AddTextPrinterParameterized3(
       _descWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
@@ -2532,7 +2557,8 @@ async function _tryDepositItem(): Promise<void> {
     setStringVar(1, itemName);
     setStringVar(2, String(_depositQtySelected));
     const tpl = getString('gText_DepositedVar2Var1s') ?? '{STR_VAR_2} {STR_VAR_1} déposé(s).';
-    _printDescription(StringExpandPlaceholders('', tpl));
+    StringExpandPlaceholders(gStringVar4, encodeOwText(tpl));
+    _printDescription(gStringVar4);
     _phase = 'itempc_deposit_msg';
   } else {
     // No room in PC.

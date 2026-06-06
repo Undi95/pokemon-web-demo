@@ -49,7 +49,7 @@ import {
   AddTextPrinterParameterized, AddTextPrinterParameterized3,
   GetStringCenterAlignXOffset, FONT_NORMAL, FONT_NARROW,
 } from '../ui/gba-text-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../ui/gba-text-window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
 import { getRuntime, LoadPalette } from '../system/decomp-globals';
 import { BG_PLTT_ID } from '../system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';

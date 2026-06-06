@@ -44,7 +44,7 @@ import { setGlobalRuntime, resetObjAllocations, loadSpeciesNamesAsync } from '..
 import { exposeGbaGlobals } from '../engine/system/gba-global-scope';
 import { preloadFontData } from '../engine/ui/gba-text-system';
 import { preloadBirchSpeechAssets } from '../engine/boot/intro-asset-loader';
-import { preloadTextWindowFrames } from '../engine/ui/gba-text-window';
+import { preloadTextWindowFrames } from '../game/text_window';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,

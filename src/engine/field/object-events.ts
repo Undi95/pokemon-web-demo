@@ -197,7 +197,7 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
     const varMatch = key.match(/^OBJ_EVENT_GFX_VAR_(\d+)$/);
     if (varMatch) {
       const n = Number(varMatch[1]);
-      const gfxIdValue = (gSaveBlock1Ptr.vars[`VAR_OBJ_GFX_ID_${n}`] as number) ?? 0;
+      const gfxIdValue = VarGet(`VAR_OBJ_GFX_ID_${n}`);
       if (gfxIdValue !== 0) {
         const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
         if (resolved) key = resolved;
@@ -4772,7 +4772,7 @@ function _spawnSingleNpcFromTemplate(
   if (varMatch) {
     const n = Number(varMatch[1]);
     const varName = `VAR_OBJ_GFX_ID_${n}`;
-    const gfxIdValue = (gSaveBlock1Ptr.vars[varName] as number) ?? 0;
+    const gfxIdValue = VarGet(varName);
     if (gfxIdValue !== 0) {
       const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
       if (resolved) {

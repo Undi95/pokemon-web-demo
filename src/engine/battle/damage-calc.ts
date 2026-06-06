@@ -36,6 +36,7 @@ import {
   gAbsentBattlerFlags,
 } from './state';
 import { getBattleMove } from './data/battle-moves';
+import { gStatStageRatios } from '../../game/include/pokemon';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from './data/item-hold-effects';
 import {
   HOLD_EFFECT_CHOICE_BAND as _HOLD_EFFECT_CHOICE_BAND,
@@ -129,11 +130,7 @@ import {
 
 // ─── Local data ────────────────────────────────────────────────────────────
 
-// 1:1 décomp `gStatStageRatios[MAX_STAT_STAGE + 1][2]` (pokemon.c:1869-1884).
-const gStatStageRatios: ReadonlyArray<readonly [number, number]> = [
-  [10, 40], [10, 35], [10, 30], [10, 25], [10, 20], [10, 15], [10, 10],
-  [15, 10], [20, 10], [25, 10], [30, 10], [35, 10], [40, 10],
-];
+// `gStatStageRatios` consolidé sur le miroir `src/game/pokemon.ts` (cf. import en tête).
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

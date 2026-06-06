@@ -15,12 +15,22 @@
  *   - gSaveBlock1Ptr / gSaveBlock2Ptr Proxy auto-persistant localStorage
  *   - gSaveFileStatus mutable global
  */
-import { getRuntime, m4aSongNumStart, PlaySE, LoadPalette } from '../system/decomp-globals';
+import { m4aSongNumStart, LoadPalette } from '../system/decomp-globals';
 import { PLTT_SIZE_4BPP } from '../system/decomp-bridge';
-import { AddWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelRect, CopyWindowToVram, ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
-import { getString } from './gba-strings';
-import { SE_SELECT } from '../decomp-data/include/constants/songs-data';
+// Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
+import { IsMysteryGiftEnabled as _MirrorIsMysteryGiftEnabled, CanResetRTC as _MirrorCanResetRTC } from '../../game/include/event_data';
+// ─── Hub : système Menu (curseur) + YesNo RELOCALISÉS dans le miroir `src/game/menu.ts`
+//     (menu.c). Ré-exportés ici pour les importeurs existants (starter-choose,
+//     script-opcodes*, start-menu…). La version simplifiée `menuCursorPos`/`menuNumItems`
+//     (cursor char, sans `sMenu`/wrap/APressMuted) est remplacée par le 1:1 `sMenu`.
+export {
+  InitMenuNormal, InitMenuInUpperLeftCorner, InitMenuInUpperLeftCornerNormal,
+  RedrawMenuCursor, Menu_MoveCursor, Menu_MoveCursorNoWrapAround, Menu_GetCursorPos,
+  Menu_ProcessInput, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose,
+  ProcessMenuInput_other, Menu_ProcessInputNoWrapAround_other,
+  CreateYesNoMenu, DisplayYesNoMenuDefaultYes, DisplayYesNoMenuWithDefault,
+  EraseYesNoWindow, GetYesNoWindowId,
+} from '../../game/menu';
 
 /** 1:1 décomp `ListMenuLoadStdPalAt` (menu.c:2077) : palId → gMenuInfo
  *  Elements{1,2,3}_Pal → LoadPalette(pal, palOffset, PLTT_SIZE_4BPP).
@@ -45,27 +55,6 @@ export function ListMenuLoadStdPalAt(palOffset: number, palId: number): void {
   LoadPalette(palette, palOffset, PLTT_SIZE_4BPP);
 }
 
-// 1:1 décomp include/constants/songs.h:11 : SE_SELECT = 5.
-// Migré vers import decomp-data songs-data.ts (cleanup B7).
-const SE_SELECT_KEY = SE_SELECT;
-// 1:1 décomp src/menu.c:945 : `gText_SelectorArrow3 = _("▶")` — cursor glyph.
-const CURSOR_CHAR = '▶';
-// Constantes layout cursor :
-//   x = 0 : aligné sur bord gauche du window (= 1:1 décomp sMenu.left).
-//   yPerRow = 16 : LINE_HEIGHT (14) + 2 (= 1:1 décomp menu.c:945 maxLetterHeight + 2).
-//   width/height = 8 / 16 : taille du glyph cursor à clear.
-const CURSOR_X = 0;
-const CURSOR_Y_PER_ROW = 16;
-const CURSOR_WIDTH = 8;
-const CURSOR_HEIGHT = 16;
-
-// ─── Menu cursor state ───────────────────────────────────────────────────────
-
-let menuCursorPos = 0;
-let menuNumItems = 0;
-let menuActive = false;
-let menuWindowId = -1;  // -1 = no menu active. Utilisé par drawMenuCursor/clearMenuCursor.
-
 // ─── Input keys (= shared with main-menu-impl.ts) ────────────────────────────
 
 export const A_BUTTON = 0x01;
@@ -73,194 +62,8 @@ export const B_BUTTON = 0x02;
 export const DPAD_UP = 0x40;
 export const DPAD_DOWN = 0x80;
 
-// ─── Menu_ProcessInputNoWrap + variants ─────────────────────────────────────
-//
-// 1:1 décomp menu.c:
-//   Menu_ProcessInputNoWrap()                  → returns selection, no cleanup
-//   Menu_ProcessInputNoWrapClearOnChoose()     → returns selection + EraseYesNoWindow
-//
-// Différence critique : ProcessInputNoWrap (sans Clear) NE TOUCHE PAS au
-// window. Caller décide quand cleanup. Utilisé par NewGameBirchSpeech_
-// ProcessGenderMenuInput où le menu gender doit RESTER visible même si
-// user press B (= no cancel from gender selection 1:1 décomp). Avant on
-// avait QUE la variante Clear → B press effaçait le gender menu → freeze.
-
-/** Internal core : process newKeys, update cursor, return selection.
- *  Param `eraseOnSelect` : si true, call EraseYesNoWindow on A/B (= Clear variant).
- *
- *  ⚠️ Décomp `Menu_ProcessInputNoWrap` ne TOUCHE PAS l'état du menu sur A/B
- *  (= juste return). Notre `menuActive=false` était une divergence qui
- *  CASSAIT le re-process : Task_NewGameBirchSpeech_ChooseGender re-call
- *  ProcessInputNoWrap chaque frame ; après B press, menuActive=false →
- *  return -1 sans process input → user ne peut plus rien faire (= softlock
- *  visible, menu reste affiché mais inerte).
- *
- *  Fix : ne set menuActive=false QUE pour la variante Clear (= window
- *  destroyed by EraseYesNoWindow → next call must abort). Pour la variante
- *  no-Clear (= gender menu), on laisse menuActive=true. */
-function _processMenuInput(eraseOnSelect: boolean): number {
-  if (!menuActive) return -1;
-  const newKeys = getRuntime()?.gMain.newKeys ?? 0;
-
-  if (newKeys & A_BUTTON) {
-    // 1:1 décomp menu.c:1017-1022 — PlaySE(SE_SELECT) sur A_BUTTON (sauf APressMuted).
-    PlaySE(SE_SELECT_KEY);
-    if (eraseOnSelect) {
-      menuActive = false;
-      clearMenuCursor();
-      EraseYesNoWindow();
-    }
-    return menuCursorPos;
-  }
-  if (newKeys & B_BUTTON) {
-    // 1:1 décomp menu.c:1023-1026 — B_BUTTON pas de SE (silent return).
-    if (eraseOnSelect) {
-      menuActive = false;
-      clearMenuCursor();
-      EraseYesNoWindow();
-    }
-    return -1; // MENU_B_PRESSED
-  }
-  if (newKeys & DPAD_UP) {
-    if (menuCursorPos > 0) {
-      // 1:1 décomp menu.c:945 ChangeListMenuPos → erase old + draw new + SE_SELECT.
-      clearMenuCursor();
-      menuCursorPos--;
-      drawMenuCursor();
-      PlaySE(SE_SELECT_KEY);
-    }
-  }
-  if (newKeys & DPAD_DOWN) {
-    if (menuCursorPos < menuNumItems - 1) {
-      clearMenuCursor();
-      menuCursorPos++;
-      drawMenuCursor();
-      PlaySE(SE_SELECT_KEY);
-    }
-  }
-  return -2; // still processing
-}
-
-/** 1:1 décomp menu.c:Menu_ProcessInputNoWrap — same as ClearOnChoose but
- *  WITHOUT auto-erase of YesNo window. Caller is responsible for cleanup.
- *  Used for menus that should persist after selection (= gender menu Birch). */
-export function Menu_ProcessInputNoWrap(): number {
-  return _processMenuInput(false);
-}
-
-export function Menu_ProcessInputNoWrapClearOnChoose(): number {
-  return _processMenuInput(true);
-}
-
-/** 1:1 décomp src/menu.c:945 Menu_PrintCursor (FONT_NORMAL, gText_SelectorArrow3="▶").
- *  Draws ▶ glyph dans le window au row courant. Couleur identique au texte
- *  (= [bgColor=1, fgColor=2, shadowColor=3] standard FONT_NORMAL). */
-function drawMenuCursor(): void {
-  if (menuWindowId < 0) return;
-  AddTextPrinterParameterized3(
-    menuWindowId,
-    1,  // FONT_NORMAL
-    CURSOR_X, 1 + menuCursorPos * CURSOR_Y_PER_ROW,
-    [1, 2, 3],
-    255,  // TEXT_SKIP_DRAW = sync render finished=true
-    CURSOR_CHAR,
-  );
-  CopyWindowToVram(menuWindowId, 2);  // COPYWIN_GFX → flush pixel buffer.
-}
-
-/** Clear le glyph cursor à la position actuelle via FillWindowPixelRect.
- *  bgColor=1 (= 1:1 décomp PIXEL_FILL(1) standard menu fill). */
-function clearMenuCursor(): void {
-  if (menuWindowId < 0) return;
-  FillWindowPixelRect(
-    menuWindowId,
-    1,  // bgColor
-    CURSOR_X, 1 + menuCursorPos * CURSOR_Y_PER_ROW,
-    CURSOR_WIDTH, CURSOR_HEIGHT,
-  );
-  CopyWindowToVram(menuWindowId, 2);  // COPYWIN_GFX = 2
-}
-
-/** 1:1 décomp src/menu.c:1219 EraseYesNoWindow.
- *    ClearStdWindowAndFrameToTransparent(sYesNoWindowId, TRUE);
- *    RemoveWindow(sYesNoWindowId);
- *  Appelé après Menu_ProcessInputNoWrapClearOnChoose pour vider le window
- *  et le retirer du registry. Sans ça → OUI/NON reste visible après choix. */
-function EraseYesNoWindow(): void {
-  if (sYesNoWindowId < 0) return;
-  // 1:1 décomp src/menu.c:1219 ClearStdWindowAndFrameToTransparent :
-  // fill pixels avec idx 0 (= transparent) + clear tilemap entries.
-  // Bug fix session 122 : précédemment async via dynamic import → cleanup
-  // happens 1+ frame APRÈS Menu_ProcessInputNoWrapClearOnChoose return → trace
-  // noire visible sur l'écran. Fix : import statique (= synchrone).
-  ClearStdWindowAndFrame(sYesNoWindowId, true);
-  RemoveWindow(sYesNoWindowId);
-  sYesNoWindowId = -1;
-}
-
-export function Menu_GetCursorPos(): number {
-  return menuCursorPos;
-}
-
-/** 1:1 décomp src/menu.c:1577 InitMenuInUpperLeftCornerNormal.
- *    InitMenu(menuStruct, windowId, ...);
- *    Menu_PrintCursor(0, FONT_NORMAL);   // ← draw initial ▶ cursor
- *  Sans le draw initial → menu sans curseur visible (= bug session 89 OUI/NON
- *  + GARÇON/FILLE silent without highlight). */
-export function InitMenuInUpperLeftCornerNormal(windowId: number, numItems: number, cursorPos: number): void {
-  menuWindowId = windowId;
-  menuNumItems = numItems;
-  menuCursorPos = cursorPos;
-  menuActive = true;
-  drawMenuCursor();  // 1:1 décomp ligne 1583 : Menu_PrintCursor(0, FONT_NORMAL) — auto-VRAM-copy.
-}
-
-// ─── Yes/No Menu (= 1:1 décomp src/menu.c:1623) ──────────────────────────────
-//
-// Phase E Step 1 : real impl 1:1 décomp. Le menu Yes/No est un window standard
-// (4 cells de large, 2 lines de haut) avec un frame border + texte "OUI/NON" +
-// cursor highlight via InitMenuInUpperLeftCornerNormal.
-//
-// Lecture input via Menu_ProcessInputNoWrapClearOnChoose() → retourne 0=OUI,
-// 1=NON, -1=B pressed (cancel).
-
-let sYesNoWindowId = -1;
-
-/** 1:1 décomp `menu.c:1623 CreateYesNoMenu(window, baseTileNum, paletteNum, initialCursorPos)`.
- *  Affiche un window standard avec frame + texte "OUI/NON" + cursor à `initialCursorPos`. */
-export function CreateYesNoMenu(
-  window: WindowTemplate,
-  baseTileNum: number,
-  paletteNum: number,
-  initialCursorPos: number,
-): void {
-  sYesNoWindowId = AddWindow(window);
-  DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, true, baseTileNum, paletteNum);
-
-  // 1:1 décomp printer setup : x=8, y=1 (= offset depuis le bord du window).
-  // colorArray = [bgColor, fgColor, shadowColor]. PIXEL_FILL(1) du DrawStdFrame
-  // remplit le pixel buffer avec idx 1, donc bgColor=1, fg=2, shadow=3 = pattern
-  // standard FONT_NORMAL.
-  const yesNoText = getString('gText_YesNo');  // "OUI\nNON" en FR
-  AddTextPrinterParameterized3(
-    sYesNoWindowId,
-    1,  // FONT_NORMAL
-    8, 1,  // x, y depuis bord du window
-    [1, 2, 3],  // [bgColor, fgColor, shadowColor]
-    255,  // TEXT_SKIP_DRAW = render synchronously, finished=true
-    yesNoText,
-  );
-
-  // 1:1 décomp ligne 1645 : InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos).
-  // 2 = numItems (OUI + NON).
-  InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos);
-}
-
-/** Helper pour les callers qui veulent l'ID du window Yes/No (= cleanup,
- *  ClearStdWindowAndFrame après fermeture). */
-export function GetYesNoWindowId(): number {
-  return sYesNoWindowId;
-}
+// (Système Menu curseur + YesNo RELOCALISÉS dans `src/game/menu.ts`, ré-exportés
+//  via le hub en tête de fichier.)
 
 // ─── Misc generic stubs ──────────────────────────────────────────────────────
 
@@ -271,12 +74,15 @@ export function IsWirelessAdapterConnected(): boolean {
   return false;
 }
 
+/** 1:1 décomp `IsMysteryGiftEnabled` — délègue au miroir `event_data.ts`
+ *  (FlagGet(FLAG_SYS_MYSTERY_GIFT_ENABLE)). Avant : stub `return false`. */
 export function IsMysteryGiftEnabled(): boolean {
-  return false;
+  return _MirrorIsMysteryGiftEnabled();
 }
 
+/** 1:1 décomp `CanResetRTC` — délègue au miroir `event_data.ts`. Avant : stub. */
 export function CanResetRTC(): boolean {
-  return false;
+  return _MirrorCanResetRTC();
 }
 
 export function RtcGetErrorStatus(): number {
@@ -393,22 +199,11 @@ export const OPTIONS_BUTTON_MODE_NORMAL    = 0;
 export const OPTIONS_BUTTON_MODE_LR        = 1;
 export const OPTIONS_BUTTON_MODE_L_EQUALS_A = 2;
 
-/** 1:1 décomp `GetPlayerTextSpeed()` — current player text speed setting. */
-export function GetPlayerTextSpeed(): number {
-  return ((gSaveBlock2Ptr.optionsTextSpeed ?? OPTIONS_TEXT_SPEED_MID) | 0) & 3;
-}
-
-/** 1:1 décomp `GetPlayerTextSpeedDelay(speed)` — frames-per-char delay.
- *  Map : SLOW=8, MID=4, FAST=1 (= verified menu.c:77 sTextSpeedFrameDelays).
- *  Hold A/B accelerates encore plus (= bypass delay entièrement, 0 frames).
- *  Donc même au max option (FAST=1), hold A/B reste plus rapide — c'est le
- *  comportement du jeu original. */
-export function GetPlayerTextSpeedDelay(speed?: number): number {
-  const s = speed ?? GetPlayerTextSpeed();
-  if (s === OPTIONS_TEXT_SPEED_SLOW) return 8;
-  if (s === OPTIONS_TEXT_SPEED_FAST) return 1;
-  return 4;  // MID default
-}
+// GetPlayerTextSpeed / GetPlayerTextSpeedDelay : RELOCALISÉS dans le miroir
+// `src/game/menu.ts` (1:1 menu.c:474/481, foyer décomp unique). Import = binding
+// local (pour l'expose global ci-dessous) + re-export pour les consommateurs.
+import { GetPlayerTextSpeed, GetPlayerTextSpeedDelay } from '../../game/menu';
+export { GetPlayerTextSpeed, GetPlayerTextSpeedDelay };
 
 /** Audio pan adjustment — applied par M4A engine quand `optionsSound` lu.
  *  MONO : tous channels mixed centered. STEREO : pan respecté.

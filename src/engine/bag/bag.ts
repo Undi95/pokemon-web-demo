@@ -206,9 +206,12 @@ export function CheckBagHasItem(itemKey: string, count: number): boolean {
  *    2. Si remaining > 0 après pass 1 : allouer un nouveau slot (= itemId vide).
  *    3. Return false si capacity insuffisante.
  *
- *  Note : le décomp utilise une copie temporaire `newItems` allouée via
- *  AllocZeroed, modifie cette copie, puis commit via memcpy à la fin (=
- *  rollback-safe en cas de full). Notre port utilise une copie JS shallow. */
+ *  1:1 décomp ROLLBACK-SAFE (item.c:262-340) : le décomp travaille sur une COPIE
+ *  (`newItems = AllocZeroed` + memcpy), et ne COMMIT (memcpy vers itemSlots) QU'EN
+ *  CAS DE SUCCÈS. Si le sac est plein (échec), il `Free(newItems)` SANS commit →
+ *  le sac reste INCHANGÉ (atomicité all-or-nothing). On reproduit ça via une copie
+ *  `work` + commit final. (Avant : mutation directe → des items partiels restaient
+ *  ajoutés même en cas d'échec = perte/dup d'item au cas-limite.) */
 export function AddBagItem(itemKey: string, count: number): boolean {
   const pocketId = _getPocketIdForItem(itemKey);
   if (pocketId < 0) return false;
@@ -216,12 +219,15 @@ export function AddBagItem(itemKey: string, count: number): boolean {
   const slotCap = _slotCapacity(pocketId);
   const noDup = (pocketId === TMHM_POCKET || pocketId === BERRIES_POCKET);
 
+  // 1:1 décomp : copie de travail (= newItems). Toutes les modifs se font dessus ;
+  // on ne commit vers pocket.itemSlots qu'au succès (les `return false` = rollback).
+  const work = pocket.itemSlots.map(s => (s ? { itemKey: s.itemKey, quantity: s.quantity } : s));
   let remaining = count;
 
   // Pass 1 : remplir les slots existants du même item (= 1:1 décomp ll.270-307).
   for (let i = 0; i < pocket.capacity; i++) {
     if (remaining === 0) break;
-    const slot = pocket.itemSlots[i];
+    const slot = work[i];
     if (!slot) continue;
     if (slot.itemKey === itemKey && slot.quantity > 0) {
       const room = slotCap - slot.quantity;
@@ -230,7 +236,7 @@ export function AddBagItem(itemKey: string, count: number): boolean {
         remaining = 0;
         break;
       } else {
-        if (noDup) return false; // TM/HM + Berries ne peuvent pas overflow vers nouveau slot
+        if (noDup) return false; // TM/HM + Berries ne peuvent pas overflow (rollback : work non commité)
         slot.quantity = slotCap;
         remaining -= room;
       }
@@ -241,7 +247,7 @@ export function AddBagItem(itemKey: string, count: number): boolean {
   if (remaining > 0) {
     for (let i = 0; i < pocket.capacity; i++) {
       if (remaining === 0) break;
-      const slot = pocket.itemSlots[i];
+      const slot = work[i];
       if (!slot) continue;
       if (!slot.itemKey || slot.quantity === 0) {
         slot.itemKey = itemKey;
@@ -258,7 +264,14 @@ export function AddBagItem(itemKey: string, count: number): boolean {
     }
   }
 
-  if (remaining > 0) return false; // No more slots, bag full
+  if (remaining > 0) return false; // sac plein → PAS de commit (rollback 1:1, sac inchangé).
+
+  // Succès : commit la copie de travail (= 1:1 décomp `memcpy(itemPocket->itemSlots, newItems)`).
+  for (let i = 0; i < pocket.capacity; i++) {
+    const dst = pocket.itemSlots[i];
+    const src = work[i];
+    if (dst && src) { dst.itemKey = src.itemKey; dst.quantity = src.quantity; }
+  }
   return true;
 }
 

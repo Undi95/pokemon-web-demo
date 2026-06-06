@@ -143,6 +143,7 @@ import { gBitTable } from '../battle-controllers';
 import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
 import { FlagGet } from '../../script/script-vars';
 import { GetGenderFromSpeciesAndPersonality } from '../data/species-runtime';
+import { gStatStageRatios } from '../../../game/include/pokemon';
 import { CheckMoveLimitations } from '../move-limitations';
 import {
   MAX_MON_MOVES,
@@ -295,24 +296,7 @@ function _trainerAiFlags(trainerId: number): number {
 
 // ─── GetWhoStrikesFirst (battle_main.c:4595-4754) ───────────────────────────
 //
-// 1:1 décomp. gStatStageRatios = pokemon.c:1869-1884 (table locale, identique
-// à damage-calc.ts qui la garde privée).
-
-const gStatStageRatios: ReadonlyArray<readonly [number, number]> = [
-  [10, 40], // -6
-  [10, 35], // -5
-  [10, 30], // -4
-  [10, 25], // -3
-  [10, 20], // -2
-  [10, 15], // -1
-  [10, 10], //  0
-  [15, 10], // +1
-  [20, 10], // +2
-  [25, 10], // +3
-  [30, 10], // +4
-  [35, 10], // +5
-  [40, 10], // +6
-];
+// `gStatStageRatios` consolidé sur le miroir `src/game/pokemon.ts` (cf. import en tête).
 
 const UINT_MAX = 0xFFFFFFFF;
 

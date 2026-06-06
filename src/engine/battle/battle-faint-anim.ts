@@ -38,6 +38,7 @@ interface FaintSprite {
   y2: number;
   x2: number;
   invisible?: boolean;
+  inUse?: boolean;
   callback?: ((sprite: FaintSprite) => void) | null;
 }
 
@@ -67,6 +68,7 @@ function DestroySprite(sprite: FaintSprite): void {
   // Trouve l'entry sprite dans gSprites Map et delete.
   for (const [id, s] of r.gSprites.entries()) {
     if (s === sprite) {
+      sprite.inUse = false;  // 1:1 décomp DestroySprite : sprite->inUse = FALSE (lu par HideHealthboxAfterMonFaint).
       r.gSprites.delete(id);
       // Set callback à null pour stop le tick.
       sprite.callback = null;

@@ -3667,7 +3667,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           const slot = _evoScanSlot;
           const mon = party[slot] as PokemonInstance | null;
           if (_leveledUpSlots.has(slot) && mon) {
-            const evoTarget = getEvolutionTargetForLevelUp(mon.speciesEnum, mon.level, mon.heldItem);
+            const evoTarget = getEvolutionTargetForLevelUp(mon);
             if (evoTarget) {
               _evoMon = mon;
               _evolutionTarget = evoTarget;

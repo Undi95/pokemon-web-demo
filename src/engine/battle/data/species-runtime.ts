@@ -23,10 +23,6 @@ const _typeNameToNumber: Record<string, number> = {
   TYPE_DARK: 17,
 };
 
-import {
-  MON_MALE, MON_FEMALE, MON_GENDERLESS,
-} from '../../decomp-data/include/constants/pokemon-data';
-
 let _numberToEnum: Record<number, string> = {};
 let _built = false;
 
@@ -118,18 +114,7 @@ export function getSpeciesGenderRatio(species: number): number {
   return 0x00;  // fallback safe
 }
 
-/** 1:1 décomp `GetGenderFromSpeciesAndPersonality(species, personality)`
- *  (pokemon.c:3472-3486).
- *
- *  - genderRatio == MON_MALE/FEMALE/GENDERLESS → return that sentinel direct
- *  - sinon : ratio > (personality & 0xFF) ? MON_FEMALE : MON_MALE
- */
-export function GetGenderFromSpeciesAndPersonality(species: number, personality: number): number {
-  const ratio = getSpeciesGenderRatio(species);
-  if (ratio === MON_MALE || ratio === MON_FEMALE || ratio === MON_GENDERLESS) {
-    return ratio;
-  }
-  // PERCENT_FEMALE numerical : compare avec personality lo byte.
-  if (ratio > (personality & 0xFF)) return MON_FEMALE;
-  return MON_MALE;
-}
+// 1:1 décomp `GetGenderFromSpeciesAndPersonality` → consolidé sur le miroir
+// `src/game/pokemon.ts` (source unique ; il importe `getSpeciesGenderRatio` ci-dessus
+// = `gSpeciesInfo[species].genderRatio`). Re-export pour les callers de ce module.
+export { GetGenderFromSpeciesAndPersonality } from '../../../game/include/pokemon';

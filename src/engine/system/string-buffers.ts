@@ -1,40 +1,52 @@
 /**
- * String buffers du décomp : `gSpecialVar_StringVarN` (N=1..4).
+ * String buffers du décomp : `gStringVar1..4` (EWRAM u8[] charmap).
  *
  * Le décomp utilise des opcodes `bufferspeciesname N, SPECIES_X`,
  * `bufferpartymonnick`, `bufferleadmonspeciesname`, etc. pour remplir des
  * buffers texte référencés ensuite dans les msgbox via `{STR_VAR_N}`.
+ * Certains `special` C font pareil (ex `GetRivalSonDaughterString`).
  *
- * Certains `special` C font la même chose (ex: `GetRivalSonDaughterString` set
- * STR_VAR_1 à "fils" ou "fille" selon le genre du rival).
- *
- * Notre runtime ne supporte pas tout, mais on a au moins l'infra pour les
- * opcodes critiques. Voir `script-runner.ts` (table SPECIALS + opcodes
- * bufferXXX) et `dialogue-box.ts` (substitution dans `{STR_VAR_N}`).
+ * Migration TEXTE byte-level (flip direct, 2026-06-06) : les buffers SONT les
+ * `gStringVar1..4` du miroir `src/game/string_util.ts` (Uint8Array charmap),
+ * source UNIQUE. `setStringVar(n, value)` reçoit la SOURCE FR lisible (nom de
+ * mon/objet, nombre…) et l'encode en bytes charmap (= notre préproc `encodeOwText`)
+ * dans le buffer byte. `StringExpandPlaceholders` (string_util) lit ces buffers
+ * pour substituer `{STR_VAR_N}` (bytes 0xFD + id).
  */
 
-const buffers: Record<number, string> = { 1: '', 2: '', 3: '', 4: '' };
+import { gStringVar1, gStringVar2, gStringVar3, gStringVar4, StringCopy } from '../../game/include/string_util';
+import { encodeOwText, decodeOwBytes } from '../../game/include/text';
+import { EOS } from '../decomp-data/include/constants/characters-data';
 
-export function setStringVar(n: number, value: string): void {
-  buffers[n] = value ?? '';
-  // Audit session 126 : sync vers `globalThis.gStringVarN` (= module-level
-  // `gStringVar1..4` dans gba-text-system.ts). `StringExpandPlaceholders`
-  // (gba-text-system.ts:430-432) lit ces gStringVarN pour substituer
-  // `{STR_VAR_N}` dans les texts décomp. Avant ce sync : opcodes bufferXXX
-  // écrivaient dans `buffers[]` mais le placeholder substitution lisait
-  // `gStringVarN` (= toujours empty) → "ton ." au lieu de "ton TREECKO".
-  if (n >= 1 && n <= 4) {
-    (globalThis as Record<string, unknown>)[`gStringVar${n}`] = value ?? '';
+/** Le buffer byte `gStringVarN` (réf. stable, contenu mutable). */
+function _buf(n: number): Uint8Array | undefined {
+  switch (n) {
+    case 1: return gStringVar1;
+    case 2: return gStringVar2;
+    case 3: return gStringVar3;
+    case 4: return gStringVar4;
+    default: return undefined;
   }
 }
 
-export function getStringVar(n: number): string {
-  return buffers[n] ?? '';
+/** Remplit `gStringVarN` : encode la source FR `value` en bytes charmap (préproc)
+ *  puis StringCopy dans le buffer byte. */
+export function setStringVar(n: number, value: string): void {
+  const buf = _buf(n);
+  if (buf) StringCopy(buf, encodeOwText(value));
 }
 
+/** Lit `gStringVarN` décodé → JS-string lisible (best-effort, devtools / callers
+ *  string non encore migrés). */
+export function getStringVar(n: number): string {
+  const buf = _buf(n);
+  return buf ? decodeOwBytes(buf) : '';
+}
+
+/** Vide les 4 buffers (pose EOS en tête). */
 export function clearStringVars(): void {
-  for (const k of Object.keys(buffers)) {
-    buffers[Number(k)] = '';
-    (globalThis as Record<string, unknown>)[`gStringVar${k}`] = '';
+  for (let n = 1; n <= 4; n++) {
+    const b = _buf(n);
+    if (b) b[0] = EOS;
   }
 }

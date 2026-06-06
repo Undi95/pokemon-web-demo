@@ -3,8 +3,11 @@
  * check-duplicate-helpers.mjs
  * ----------------------------
  * Détecte les helpers / constants / functions dupliqués entre modules
- * `src/engine/`. Une duplication = candidat à move vers `decomp-globals.ts`
- * ou un module shared.
+ * `src/engine/` ET la racine miroir `src/game/`. Une duplication = candidat
+ * à move vers `decomp-globals.ts`, un module shared, ou (depuis la vague
+ * miroir 2026-06-05) à consolider sur le miroir `src/game/X.ts` source-unique.
+ * Inclure `src/game/` ici fait que le tool surface les doublons engine↔miroir
+ * (= ce que la migration miroir doit résoudre) et garde-fou anti-re-duplication.
  *
  * Heuristiques :
  *   1. Helpers nommés identiques définis dans 2+ fichiers (= same name)
@@ -23,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const srcEngine = join(projectRoot, 'src', 'engine');
+const srcGame = join(projectRoot, 'src', 'game');   // racine miroir 1:1 (vague 2026-06-05)
 
 function walk(dir, results = []) {
   for (const f of readdirSync(dir)) {
@@ -38,7 +42,8 @@ function walk(dir, results = []) {
   return results;
 }
 
-const tsFiles = walk(srcEngine);
+// Scanne engine + miroir game (= surface aussi les doublons engine↔miroir).
+const tsFiles = [srcEngine, srcGame].flatMap((root) => walk(root));
 
 // ─── Extract definitions ─────────────────────────────────────────────────────
 

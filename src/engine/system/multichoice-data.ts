@@ -13,7 +13,7 @@
  * avec le msgbox fix de session 126).
  */
 
-import { getText } from '../script/script-runtime';
+import { getText } from '../script/script-runtime';  // bytes charmap (migration texte)
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { getString } from '../ui/gba-strings';
 
@@ -46,7 +46,7 @@ export async function loadMultichoiceLists(): Promise<void> {
  *  Args :
  *    multichoiceId : numeric ID (= MULTI_X enum value).
  *    multichoiceName : optional, name for warning logs (= "MULTI_TV_LATI"). */
-export function getMultichoiceList(multichoiceId: number, multichoiceName?: string): string[] {
+export function getMultichoiceList(multichoiceId: number, multichoiceName?: string): (string | Uint8Array)[] {
   if (!_data) {
     console.warn('[multichoice-data] not loaded — call loadMultichoiceLists() first');
     return [];
@@ -81,7 +81,7 @@ export function getMultichoiceList(multichoiceId: number, multichoiceName?: stri
   return labels.map(label => {
     const fromStrings = getString(label);
     if (fromStrings && !fromStrings.startsWith('[MISSING:')) return fromStrings;
-    const fromCommon = getText(label);
+    const fromCommon = getText(label);  // bytes charmap (migration texte)
     if (fromCommon) return fromCommon;
     return `[MISSING:${label}]`;
   });

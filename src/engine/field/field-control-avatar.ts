@@ -667,7 +667,13 @@ export function UpdateFriendshipStepCounter(): void {
       const FRIENDSHIP_EVENT_WALKING = 5;  // 1:1 décomp include/constants/pokemon.h:179.
       for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
         const mon = party[i];
-        if (mon) {
+        // 1:1 décomp : AdjustFriendship early-return si species == SPECIES_EGG. Notre
+        // PokemonInstance (œuf) a `isEgg` — PAS `species===412`, et `mon.species` est
+        // undefined sur l'instance → AdjustFriendship NE détecte PAS l'œuf → il gagnerait
+        // de la friendship à la marche, ce qui CORROMPRAIT son compteur d'éclosion
+        // (friendship = compteur d'éclosion pour un œuf, cf. pokemon.ts:105). On skip les
+        // œufs ici = équivalent 1:1 strict de l'early-return œuf du décomp.
+        if (mon && !mon.isEgg) {
           // AdjustFriendship attend un Pokemon décomp struct ; notre PokemonInstance
           // a friendship field optional. Cast via unknown pour bypass type guard.
           AdjustFriendship(mon as unknown as Parameters<typeof AdjustFriendship>[0], FRIENDSHIP_EVENT_WALKING);
@@ -694,7 +700,14 @@ export function UpdateFriendshipStepCounter(): void {
  *
  *  DoPoisonFieldEffect 1:1 décomp field_poison.c:120-154 : decrement HP des
  *  party mons poisoned ; return FLDPSN_FNT si tous fainted, FLDPSN_PSN si
- *  encore en vie, FLDPSN_NONE si aucun poisoned. */
+ *  encore en vie, FLDPSN_NONE si aucun poisoned.
+ *
+ *  ⚠️ DORMANTE (audit 2026-06-05) : AUCUN caller. Le dispatch décomp
+ *  `TryStartStepCountScript` (field_control_avatar.c:537, appelle ce compteur +
+ *  UpdateFriendshipStepCounter + IncrementRematchStepCounter) n'est PAS porté →
+ *  le poison de terrain ne retire AUCUN PV en LIVE. Câbler = cluster #13
+ *  (TryFieldPoisonWhiteOut, actuellement stub) + #15 (GetHealLocation pour le
+ *  téléport white-out). Le décrément ici est 1:1 mais inerte tant que non câblé. */
 export function UpdatePoisonStepCounter(): boolean {
   // 1:1 décomp : skip pour Secret Base.
   const MAP_TYPE_SECRET_BASE = 9;  // 1:1 décomp include/constants/map_types.h:13.

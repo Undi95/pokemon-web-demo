@@ -36,6 +36,11 @@ import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { assetCache, getRuntime } from '../system/decomp-globals';
 import { gMapHeader } from '../field/map-loader';
 import { bagContents } from '../bag/bag';
+// Migration miroir : flags/vars sont id-indexés (number[]) → on énumère via les
+// tables résolues nom→id + le bridge FlagGet/VarGet.
+import { FlagGet, VarGet } from '../script/script-vars';
+import * as FLAGS from '../../game/include/constants/flags';
+import * as VARS from '../../game/include/constants/vars';
 
 interface DevAudit {
   help: () => string;
@@ -77,10 +82,12 @@ const audit: DevAudit = {
   state(): Record<string, unknown> {
     const sb1 = GetSaveBlock1();
     const sb2 = GetSaveBlock2();
-    const flags = sb1.flags ?? {};
-    const vars = sb1.vars ?? {};
-    const flagCount = Object.keys(flags).length;
-    const varCount = Object.values(vars as Record<string, number>).filter((v) => v !== 0).length;
+    // Migration miroir : flags = bit-packé number[] → compte les bits set ;
+    // vars = number[] → compte les non-zéro.
+    const flags = (sb1.flags ?? []) as number[];
+    const vars = (sb1.vars ?? []) as number[];
+    const flagCount = flags.reduce((n, b) => { let c = 0, x = b & 0xFF; while (x) { c += x & 1; x >>= 1; } return n + c; }, 0);
+    const varCount = vars.filter((v) => v !== 0).length;
     return {
       // Player position
       mapId: gMapHeader?.id ?? 'NONE',
@@ -109,8 +116,8 @@ const audit: DevAudit = {
       flagsSet: flagCount,
       varsNonZero: varCount,
       // Game progress
-      varLittlerootIntroState: (vars as Record<string, number>).VAR_LITTLEROOT_INTRO_STATE ?? 0,
-      varLittlerootTownState: (vars as Record<string, number>).VAR_LITTLEROOT_TOWN_STATE ?? 0,
+      varLittlerootIntroState: VarGet('VAR_LITTLEROOT_INTRO_STATE'),
+      varLittlerootTownState: VarGet('VAR_LITTLEROOT_TOWN_STATE'),
     };
   },
 
@@ -162,19 +169,19 @@ const audit: DevAudit = {
   },
 
   flags(prefix?: string): string[] {
-    const sb1 = GetSaveBlock1();
-    const flags = (sb1.flags ?? {}) as Record<string, true>;
-    const keys = Object.keys(flags);
-    return prefix ? keys.filter((k) => k.includes(prefix)) : keys;
+    // Migration miroir : énumère les FLAG_* SET via les noms résolus + FlagGet (id-indexé).
+    const set = Object.keys(FLAGS)
+      .filter((n) => n.startsWith('FLAG_') && FlagGet((FLAGS as unknown as Record<string, number>)[n]));
+    return prefix ? set.filter((k) => k.includes(prefix)) : set;
   },
 
   vars(prefix?: string): Array<{ name: string; value: number }> {
-    const sb1 = GetSaveBlock1();
-    const vars = (sb1.vars ?? {}) as Record<string, number>;
     const out: Array<{ name: string; value: number }> = [];
-    for (const [name, value] of Object.entries(vars)) {
-      if (value === 0) continue;
+    for (const name of Object.keys(VARS)) {
+      if (!name.startsWith('VAR_')) continue;
       if (prefix && !name.includes(prefix)) continue;
+      const value = VarGet(name);
+      if (value === 0) continue;
       out.push({ name, value });
     }
     return out.sort((a, b) => a.name.localeCompare(b.name));

@@ -23,6 +23,8 @@
  * include/gba/macro.h (DmaClear16 macro), src/main.c (CpuFill16/32).
  */
 import type { DecompRuntime, DecompSprite } from './decomp-runtime';
+// Miroir 1:1 `event_data.ts` — délégation (source unique flags/vars number[]).
+import { CanResetRTC as _MirrorCanResetRTC } from '../../game/include/event_data';
 import {
   BG_PLTT_ID, OBJ_PLTT_ID, BG_CHAR_ADDR, BG_SCREEN_ADDR,
   REG_OFFSET_DISPCNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
@@ -2415,13 +2417,10 @@ export function FadeInBGM(speed: number): void {
  *        return FALSE;
  *  Used par title screen (= A+B+SELECT combo pour reset RTC offset). */
 export function CanResetRTC(): boolean {
-  // Lazy import pour éviter cycle (script-vars import decomp-globals).
-  // Lecture directe via gSaveBlock1Ptr.flags/vars (= source unique 1:1 décomp).
-  const sb1 = (globalThis as { gSaveBlock1Ptr?: { flags?: Record<string, boolean>; vars?: Record<string, number> } }).gSaveBlock1Ptr;
-  if (!sb1) return false;
-  const flagOn = !!sb1.flags?.['FLAG_SYS_RESET_RTC_ENABLE'];
-  const varVal = sb1.vars?.['VAR_RESET_RTC_ENABLE'] ?? 0;
-  return flagOn && varVal === 0x920;
+  // Délègue au miroir 1:1 `event_data.ts` (source unique : flags/vars number[]).
+  // (Avant : lisait globalThis.gSaveBlock1Ptr.flags['FLAG_…'] = ANCIEN format
+  //  name-keyed, cassé depuis la migration number[] → corrigé par la délégation.)
+  return _MirrorCanResetRTC();
 }
 export let gBattle_BG1_X = 0;
 export let gBattle_BG1_Y = 0;
@@ -2456,6 +2455,10 @@ for (const [k, d] of Object.entries(_mutableGlobals)) {
 // ═══════════════════════════════════════════════════════════════════════════════
 export * from '../decomp-data/main-menu-data';
 export * from '../ui/gba-window-system';
+// text_window.c (miroir 1:1) — LoadMessageBoxGfx / GetWindowFrameTilesPal /
+// GetTextWindowPalette / GetOverworldTextboxPalettePtr / DrawTextBorder* / etc.
+// Relocalisé hors de gba-window-system → réexposé ici pour le global-scope.
+export * from '../../game/text_window';
 export * from '../ui/gba-text-system';
 export * from '../ui/gba-menu-system';
 // Phase C audit session 83 : main_menu.c-specific helpers extraits dans

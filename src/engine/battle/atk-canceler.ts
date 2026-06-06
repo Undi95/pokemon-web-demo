@@ -50,6 +50,9 @@ import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../system/random';
 import { getBattleMove } from './data/battle-moves';
 import { _GetMoveTarget as _GetMoveTargetForBide } from './battle-script-commands';
+// 1:1 décomp `CalculateBaseDamage` (damage-calc) — confusion/désobéissance self-hit
+// (battle_util.c:2156/4000). damage-calc n'importe pas atk-canceler → pas de cycle.
+import { CalculateBaseDamage } from './damage-calc';
 
 // ─── CANCELER_* enum (battle_util.c:1966-1983) — 1:1 décomp ──────────────
 export const CANCELER_FLAGS      = 0;
@@ -127,18 +130,14 @@ function _CountTrailingZeroBits(value: number): number {
   return count;
 }
 
-/** Simplified `CalculateBaseDamage` pour confusion self-hit.
- *  1:1 décomp utilise CalculateBaseDamage(attacker, attacker, MOVE_POUND, 0, 40, 0, attacker, attacker).
- *  Formule de base GBA : `((2*level/5+2) * attack * power / defense / 50) + 2`.
- *  Pour confusion self-hit = damage on confused mon's own stats. */
+/** 1:1 décomp `CalculateBaseDamage(self, self, MOVE_POUND, 0, 40, 0, self, self)`
+ *  (battle_util.c:2156 confusion / 4000 désobéissance) = self-hit 40-power typeless
+ *  via les stats du mon. Appelle le VRAI CalculateBaseDamage (= inclut burn-halving
+ *  + badge boost), contrairement à l'ancienne formule simplifiée qui les omettait. */
 function _calculateConfusionDamage(battler: number): number {
-  const mon = gBattleMons[battler];
-  const level = mon.level;
-  const attack = mon.attack;
-  const defense = mon.defense;
-  const power = 40;  // confusion self-hit power
-  const baseDmg = Math.floor((Math.floor(2 * level / 5 + 2) * attack * power) / defense / 50) + 2;
-  return Math.max(1, baseDmg);
+  return CalculateBaseDamage(
+    gBattleMons[battler], gBattleMons[battler], MOVE_POUND, 0, 40, 0, battler, battler,
+  ).damage;
 }
 
 // ─── Main API ───────────────────────────────────────────────────────────────

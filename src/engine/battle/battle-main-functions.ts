@@ -271,12 +271,10 @@ export function getCB2AfterEvolution(): (() => void) | null { return _gCB2_After
 /** Function pointer type pour gBattleMainFunc. */
 export type BattleMainFunc = () => void;
 
-/** 1:1 décomp `gBitTable[]`. Inline (= éviter circular import battle-controllers). */
-const _gBitTable: number[] = (() => {
-  const t = new Array(32);
-  for (let i = 0; i < 32; i++) t[i] = 1 << i;
-  return t;
-})();
+// 1:1 décomp `gBitTable[]` → consolidé sur le miroir `src/game/util.ts` (source unique ;
+// l'import vient de src/game/, pas de battle-controllers → pas de cycle).
+import { gBitTable as _gBitTable } from '../../game/include/util';
+import { IsShinyOtIdPersonality } from '../../game/include/pokemon';
 
 // ─── Hardware/subsystem stubs (= dette R3 documentée) ──────────────────────
 
@@ -466,11 +464,8 @@ let gBattlescriptCurrInstr: unknown = null;
 function IsMonShiny(mon: unknown): number {
   const m = mon as { personality?: number; otId?: number } | null;
   if (!m) return 0;
-  const otId = m.otId ?? 0;
-  const personality = m.personality ?? 0;
-  const shinyValue = ((otId >>> 16) ^ (otId & 0xFFFF)
-                    ^ (personality >>> 16) ^ (personality & 0xFFFF)) & 0xFFFF;
-  return shinyValue < 8 ? 1 : 0;
+  // Calcul shiny consolidé sur le miroir `IsShinyOtIdPersonality` (pokemon.c).
+  return IsShinyOtIdPersonality(m.otId ?? 0, m.personality ?? 0) ? 1 : 0;
 }
 
 /** 1:1 décomp `SpeciesToNationalPokedexNum(species)` (pokedex.c).

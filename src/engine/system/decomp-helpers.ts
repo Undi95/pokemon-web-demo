@@ -16,23 +16,18 @@
  */
 import { Gba } from '../gba/gba';
 import { rgba8ToRgb15 } from '../gba/types';
-import { G_SINE_TABLE } from '../decomp-data/src/sine-table';
 import { getRuntime } from './decomp-globals';
+// Sin/Cos/gSineTable → miroir 1:1 `src/game/trig.ts` (= trig.c). L'ancien `& 0xFF`
+// d'ici était ÉQUIVALENT (table périodique mod 256), pas un bug ; on consolide sur
+// la forme décomp (sans masque). Re-export = source unique, zéro duplication.
+import { Sin as _trigSin, Cos as _trigCos, gSineTable as _gSineTable } from '../../game/trig';
 
-// ─── Sine/Cosine via gSineTable (Q.8 fixed) ──────────────────────────────────
-/** 1:1 décomp Sin(idx, amplitude) = (gSineTable[idx & 0xFF] * amplitude) >> 8.
- *  Retourne un s16 (peut être négatif). */
-export function Sin(idx: number, amplitude: number): number {
-  const i = idx & 0xFF;
-  return (G_SINE_TABLE[i] * amplitude) >> 8;
-}
-/** 1:1 décomp Cos(idx, amp) = Sin((idx + 64) & 0xFF, amp). */
-export function Cos(idx: number, amplitude: number): number {
-  return Sin(idx + 64, amplitude);
-}
-/** Lookup direct gSineTable (sans amplitude). */
+// ─── Sine/Cosine via gSineTable (Q.8 fixed) — re-export du miroir trig ───────
+export const Sin = _trigSin;
+export const Cos = _trigCos;
+/** Lookup direct gSineTable (forme fonction, compat appelants ; SANS masque, 1:1). */
 export function gSineTable(idx: number): number {
-  return G_SINE_TABLE[idx & 0xFF];
+  return _gSineTable[idx];
 }
 
 // ─── Q.8.8 fixed-point ────────────────────────────────────────────────────────

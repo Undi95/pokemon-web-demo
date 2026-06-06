@@ -23,6 +23,23 @@
  *    au moment du blit.
  */
 
+// EXT_CTRL_CODE sub-codes : SOURCE UNIQUE = `characters-data` (valeurs décomp
+// characters.h). AVANT, ce fichier les définissait localement avec PAUSE /
+// PAUSE_UNTIL_PRESS / WAIT_SE / PLAY_BGM / ESCAPE DÉCALÉS de +1 (bug 1:1) — ce
+// qui divergeait de string_util/text.ts (qui utilisent characters-data). Unifié
+// (VAGUE 2c-prep) pour que encodeur + runtime + mesure soient cohérents 1:1.
+import {
+  EXT_CTRL_CODE_COLOR, EXT_CTRL_CODE_HIGHLIGHT, EXT_CTRL_CODE_SHADOW,
+  EXT_CTRL_CODE_PAUSE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, EXT_CTRL_CODE_WAIT_SE,
+  EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_PLAY_SE,
+  EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP, EXT_CTRL_CODE_CLEAR_TO,
+  EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_FONT,
+} from '../decomp-data/include/constants/characters-data';
+// VAGUE 2c : `runTextPrinter` délègue à `RenderText` (miroir). Cycle
+// gba-text-printer↔text.ts runtime-safe (RenderText n'utilise les exports de
+// ce module que dans des fonctions, jamais au top-level).
+import { RenderText } from '../../game/text';
+
 // ─── Constantes 1:1 décomp ───────────────────────────────────────────────────
 
 /** sDownArrowYCoords (text.c:75) — Y offset cyclic pour bobbing arrow */
@@ -60,21 +77,15 @@ export const EXTRA_SYMBOL: Readonly<Record<string, number>> = Object.freeze({
   TRIANGLE: 0x16, BIG_MULT_X: 0x17,
 });
 
-// EXT_CTRL_CODE sub-codes (cf. include/characters.h)
-export const EXT_CTRL_CODE_COLOR = 0x01;
-export const EXT_CTRL_CODE_HIGHLIGHT = 0x02;
-export const EXT_CTRL_CODE_SHADOW = 0x03;
-export const EXT_CTRL_CODE_PAUSE = 0x09;
-export const EXT_CTRL_CODE_PAUSE_UNTIL_PRESS = 0x0A;
-export const EXT_CTRL_CODE_WAIT_SE = 0x0B;
-export const EXT_CTRL_CODE_PLAY_BGM = 0x0C;
-export const EXT_CTRL_CODE_ESCAPE = 0x0D;
-export const EXT_CTRL_CODE_PLAY_SE = 0x10;
-export const EXT_CTRL_CODE_CLEAR = 0x11;
-export const EXT_CTRL_CODE_SKIP = 0x12;
-export const EXT_CTRL_CODE_CLEAR_TO = 0x13;
-export const EXT_CTRL_CODE_MIN_LETTER_SPACING = 0x14;
-export const EXT_CTRL_CODE_FONT = 0x06;
+// EXT_CTRL_CODE sub-codes — ré-exportés depuis `characters-data` (source unique,
+// valeurs décomp). Les bindings sont importés en tête de fichier.
+export {
+  EXT_CTRL_CODE_COLOR, EXT_CTRL_CODE_HIGHLIGHT, EXT_CTRL_CODE_SHADOW,
+  EXT_CTRL_CODE_PAUSE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, EXT_CTRL_CODE_WAIT_SE,
+  EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_PLAY_SE,
+  EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP, EXT_CTRL_CODE_CLEAR_TO,
+  EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_FONT,
+};
 
 /** sFontInfos[FONT_NORMAL] (text.c:131) — couleurs par défaut text dialog */
 export const FONT_NORMAL_FG = 2;       // dark gray (palette[2])
@@ -122,6 +133,12 @@ export function _setTextInputState(newAB: boolean, heldAB: boolean): void {
   _heldABPressed = heldAB;
 }
 
+/** Lit l'état input texte (= JOY_NEW/JOY_HELD A|B inline du décomp). Exposé pour
+ *  `RenderText` du miroir `src/game/text.ts` (VAGUE 2c). */
+export function _getTextInputState(): { newAB: boolean; heldAB: boolean } {
+  return { newAB: _newABPressed, heldAB: _heldABPressed };
+}
+
 /** Render states 1:1 décomp `include/text.h:32-39` enum :
  *    HANDLE_CHAR, WAIT, CLEAR, SCROLL_START, SCROLL, WAIT_SE, PAUSE.
  *  RENDER_STATE_FINISH n'existe pas dans le décomp (= EOS retourne RENDER_FINISH directement). */
@@ -164,79 +181,66 @@ export interface Window {
   needsFlush: boolean;
 }
 
-export interface TextPrinter {
-  /** Bytes encodés du texte à imprimer (terminé par EOS=0xFF). */
-  encodedString: Uint8Array;
-  /** Index courant dans encodedString. */
-  currentChar: number;
-  /** Window cible. */
-  window: Window;
-
-  // Position cursor (pixels relatifs à window.pixelBuffer)
-  x: number;          // origin column (constant, reset à newline)
-  y: number;          // origin row (constant)
-  currentX: number;   // cursor courant
+/** 1:1 décomp `struct TextPrinterTemplate` (text.h:64-79) — le template reçu par
+ *  le callback (décomp : `callback(struct TextPrinterTemplate *, u16)`). NB :
+ *  décomp `currentChar` = `const u8*` (pointeur dans la string) ; chez nous = INDEX
+ *  dans `printer.encodedString` (le buffer string vit sur le printer, extension). */
+export interface TextPrinterTemplate {
+  currentChar: number;   // index (décomp: const u8* pointeur dans la string)
+  windowId: number;
+  fontId: number;        // font INITIAL (le font courant = subStruct.fontId)
+  x: number;             // origin column (constant)
+  y: number;             // origin row (constant)
+  currentX: number;      // cursor courant
   currentY: number;
-
-  // Couleurs du printer (idx 0-15 dans la palette de la window)
+  letterSpacing: number;
+  lineSpacing: number;
   fgColor: number;
   bgColor: number;
   shadowColor: number;
+}
 
-  letterSpacing: number;
-  lineSpacing: number;
-
-  // State machine
-  state: number;
-  textSpeed: number;       // frames de delay entre chars (= -1 du input 1:1 décomp AddTextPrinter:296)
-  delayCounter: number;
-  // 1:1 décomp distinction "instant render path" (= for loop 0x400 dans
-  // AddTextPrinter:303-308 quand speed==0 || speed==TEXT_SKIP_DRAW) vs.
-  // "typewriter path" (= RenderText ticked par frame via RunTextPrinters).
-  // Notre impl : runTextPrinter render plusieurs chars dans la même frame si
-  // instantPath=true (do-while continue), sinon return RENDER_PRINT après
-  // chaque char. textSpeed=0 SEUL ne suffit pas pour distinguer car FAST
-  // stored=0 après --textSpeed à l'init mais doit rendre 1 char/frame.
-  instantPath: boolean;
-
-  // Down arrow sub-state
+/** 1:1 décomp `struct TextPrinterSubStruct` (text.h:53-62). Décomp : blob
+ *  `subStructFields[7]` casté en bitfield (hack mémoire GBA) ; ici = objet nommé
+ *  (mêmes champs, pas le cast byte-blob). */
+export interface TextPrinterSubStruct {
+  fontId: number;             // font COURANT (dispatch DecompressGlyph_<font>)
+  hasPrintBeenSpedUp: boolean; // TRUE après JOY_NEW(A|B) pendant le rendu (fast-forward)
   downArrowDelay: number;
   downArrowYPosIdx: number;
+  hasFontIdBeenSet: boolean;
+  autoScrollDelay: number;     // TextPrinterWaitAutoMode (text.c:850)
+}
 
-  // 1:1 décomp text.c scrollDistance — pixels restants à scroll pendant
-  // RENDER_STATE_SCROLL (= entre `\l` et reprise du rendering).
-  scrollDistance: number;
+export interface TextPrinter {
+  // ── 1:1 décomp struct TextPrinter (text.h:81-95) ──
+  printerTemplate: TextPrinterTemplate;
+  subStruct: TextPrinterSubStruct;
+  /** 1:1 décomp `TextPrinter.active` (text.h:88) — slot actif dans sTextPrinters.
+   *  TRUE à l'ajout (typewriter) ; FALSE après rendu instantané ou RENDER_FINISH. */
+  active: boolean;
+  state: number;
+  textSpeed: number;       // frames de delay entre chars (= -1 du input, AddTextPrinter:296)
+  delayCounter: number;
+  scrollDistance: number;  // pixels restants à scroll (RENDER_STATE_SCROLL, entre `\l` et reprise)
+  minLetterSpacing: number; // EXT_CTRL_CODE_MIN_LETTER_SPACING — largeur d'avance min
+  japanese: boolean;        // EXT_CTRL_CODE_JPN — toujours false en FR/OW
 
-  // 1:1 décomp text.c subStruct->hasPrintBeenSpedUp — set TRUE après JOY_NEW(A|B)
-  // pendant le rendering. Tant que A ou B est held, delayCounter reset à 0
-  // chaque frame (= 1 char rendu/frame, fast-forward). Reset à FALSE entre
-  // 2 printers.
-  hasPrintBeenSpedUp: boolean;
-
-  // Données glyph
-  glyphData: number[][];   // [256][128] depuis latfont.json
-  glyphWidths: Uint8Array; // [256] depuis font-widths.json
-  /** 1:1 décomp EXT_CTRL_CODE_FONT : switch glyph-set mid-string ({FONT NORMAL}
-   *  dans "TYPE/"). Résout glyphData+widths par fontId (= _resolveFont du text-system). */
-  resolveFont?: (fontId: number) => { glyphData: number[][]; glyphWidths: Uint8Array };
-
-  // Down arrow asset (reusable)
-  downArrowPixels?: number[][]; // rows of cols, idx 0/2/4 (depuis down_arrow.json) — terrain/menus
-  /** 1:1 décomp text.c:72 `sDarkDownArrowTiles` (down_arrow_alt.png) : flèche de
-   *  fin de texte ALTERNATIVE blittée quand `gTextFlags.useAlternateDownArrow`
-   *  (= COMBAT, evolution, Pokenav). Indices 1/2/10 authored pour la palette
-   *  textbox COMBAT (idx1=contour blanc, idx2=rouge, idx10=fond box) — vs
-   *  0/2/4 de la flèche terrain authored pour gMessageBox_Pal. */
-  darkDownArrowPixels?: number[][];
-
-  // PAUSE state counter (frames restant avant continuation)
+  // ── Extensions (PAS dans le struct décomp ; nécessaires à notre émulation) ──
+  /** Buffer string (décomp : `printerTemplate.currentChar` EST le pointeur ; chez
+   *  nous, l'index `printerTemplate.currentChar` indexe CE buffer). */
+  encodedString: Uint8Array;
+  /** Window objet (décomp : `gWindows[printerTemplate.windowId]`). */
+  window: Window;
+  /** Render instantané vs typewriter (décomp : boucle 0x400 d'AddTextPrinter:303-308). */
+  instantPath: boolean;
+  /** Compteur PAUSE (décomp réutilise delayCounter ; séparé ici pour ne pas
+   *  interférer avec le delay typewriter). */
   pauseCounter: number;
-
-  // Callback fired après chaque char rendu OU control code traité.
-  // `lastByte` = byte qui vient d'être processed (peut être EXT_CTRL_CODE_PAUSE
-  // pour détecter sync events comme le Lotad release dans BirchSpeech).
-  // Cf. décomp `AddTextPrinterWithCallbackForMessage` (menu.c) +
-  // `NewGameBirchSpeech_WaitForThisIsPokemonText` (main_menu.c:2254).
+  downArrowPixels?: number[][];      // down_arrow.png (terrain/menus, idx 0/2/4)
+  darkDownArrowPixels?: number[][];  // 1:1 sDarkDownArrowTiles (down_arrow_alt, combat, idx 1/2/10)
+  /** Callback per-char (décomp : `callback(TextPrinterTemplate*, renderCmd)` per-frame ;
+   *  notre variante per-char + lastByte = sync Lotad du Birch speech sur EXT_CTRL_CODE_PAUSE). */
   onCharRendered?: (printer: TextPrinter, lastByte: number) => void;
 }
 
@@ -538,10 +542,12 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
 export interface AddTextPrinterOpts {
   window: Window;
   encodedString: Uint8Array;
-  glyphData: number[][];
-  glyphWidths: Uint8Array;
-  /** Switch glyph-set mid-string pour {FONT N} (1:1 EXT_CTRL_CODE_FONT). */
-  resolveFont?: (fontId: number) => { glyphData: number[][]; glyphWidths: Uint8Array };
+  /** 1:1 décomp `TextPrinterTemplate.windowId`. Notre HW utilise `window` (objet)
+   *  mais on garde l'id pour la fidélité du struct printerTemplate. */
+  windowId?: number;
+  /** 1:1 décomp `TextPrinterTemplate.fontId` — font initial. Le rendu lit la
+   *  glyph data GLOBALE getFontGlyphData(fontId) (pas de cache par-printer). */
+  fontId?: number;
   x?: number;
   y?: number;
   fgColor?: number;
@@ -597,30 +603,43 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
   //   }
   const isInstantPath = inputSpeed === TEXT_SKIP_DRAW || inputSpeed === 0;
   const normalizedSpeed = isInstantPath ? 0 : (inputSpeed - 1);
+  const fontId = opts.fontId ?? 1;  // 1 = FONT_NORMAL (défaut décomp)
   return {
-    encodedString: opts.encodedString,
-    currentChar: 0,
-    window: opts.window,
-    x, y,
-    currentX: x,
-    currentY: y,
-    fgColor: opts.fgColor ?? FONT_NORMAL_FG,
-    bgColor: opts.bgColor ?? FONT_NORMAL_BG,
-    shadowColor: opts.shadowColor ?? FONT_NORMAL_SHADOW,
-    letterSpacing: opts.letterSpacing ?? 0,
-    lineSpacing: opts.lineSpacing ?? 0,
+    // 1:1 décomp printerTemplate (le bloc rempli par AddTextPrinter*).
+    printerTemplate: {
+      currentChar: 0,
+      windowId: opts.windowId ?? 0,
+      fontId,
+      x, y,
+      currentX: x,
+      currentY: y,
+      letterSpacing: opts.letterSpacing ?? 0,
+      lineSpacing: opts.lineSpacing ?? 0,
+      fgColor: opts.fgColor ?? FONT_NORMAL_FG,
+      bgColor: opts.bgColor ?? FONT_NORMAL_BG,
+      shadowColor: opts.shadowColor ?? FONT_NORMAL_SHADOW,
+    },
+    // 1:1 décomp subStruct (zéro-init à l'ajout, text.c:285-286 ; fontId courant = initial).
+    subStruct: {
+      fontId,
+      hasPrintBeenSpedUp: false,
+      downArrowDelay: 0,
+      downArrowYPosIdx: 0,
+      hasFontIdBeenSet: true,  // fontId déjà posé (= FontFunc l'aurait set au 1er render)
+      autoScrollDelay: 0,
+    },
+    active: true,  // 1:1 décomp sTempTextPrinter.active = TRUE (text.c:279)
     state: RENDER_STATE_HANDLE_CHAR,
     textSpeed: normalizedSpeed,
-    instantPath: isInstantPath,
     delayCounter: 0,
-    downArrowDelay: 0,
-    downArrowYPosIdx: 0,
-    pauseCounter: 0,
     scrollDistance: 0,
-    hasPrintBeenSpedUp: false,
-    glyphData: opts.glyphData,
-    glyphWidths: opts.glyphWidths,
-    resolveFont: opts.resolveFont,
+    minLetterSpacing: 0,
+    japanese: false,
+    // Extensions.
+    encodedString: opts.encodedString,
+    window: opts.window,
+    instantPath: isInstantPath,
+    pauseCounter: 0,
     downArrowPixels: opts.downArrowPixels,
     darkDownArrowPixels: opts.darkDownArrowPixels,
     onCharRendered: opts.onCharRendered,
@@ -635,262 +654,12 @@ export function addTextPrinter(opts: AddTextPrinterOpts): TextPrinter {
  *          RENDER_UPDATE si state change, RENDER_REPEAT pour re-tick immédiat.
  */
 export function runTextPrinter(printer: TextPrinter): number {
-  if (printer.state === RENDER_STATE_FINISH) return RENDER_FINISH;
-  // 1:1 décomp text.c:1167-1188 — CLEAR/SCROLL_START/SCROLL/WAIT_SE/WAIT
-  // mettent le rendering en pause. Sans ça, runTextPrinter fall through au
-  // switch des chars et rend par-dessus le texte actuel pendant que le scroll
-  // ou la wait est en cours → 2 textes superposés visiblement.
-  if (printer.state === RENDER_STATE_CLEAR ||
-      printer.state === RENDER_STATE_SCROLL_START ||
-      printer.state === RENDER_STATE_SCROLL ||
-      printer.state === RENDER_STATE_WAIT) {
-    return RENDER_UPDATE;
-  }
-
-  // PAUSE state : décrémenter pauseCounter chaque frame, retour HANDLE_CHAR à 0.
-  // Cf. décomp text.c:1215-1220 EXT_CTRL_CODE_PAUSE.
-  if (printer.state === RENDER_STATE_PAUSE) {
-    if (printer.pauseCounter > 0) {
-      printer.pauseCounter--;
-      return RENDER_UPDATE;
-    }
-    printer.state = RENDER_STATE_HANDLE_CHAR;
-    return RENDER_REPEAT;
-  }
-
-  // 1:1 décomp text.c:944-945 :
-  //   if (JOY_HELD(A|B) && hasPrintBeenSpedUp) delayCounter = 0;
-  //
-  // Held A/B + already spedUp = 0 delay → 1 char/frame = 60 chars/sec.
-  // Combiné avec `delayCounter = textSpeed` (ligne 961) après char render,
-  // donne le pattern :
-  //   Frame N : held + spedUp → delayCounter=0 → skip branch → render +
-  //             delayCounter=1 (= textSpeed FAST)
-  //   Frame N+1 : held + spedUp → delayCounter=0 (= overrides 1) → skip
-  //               branch → render. Etc.
-  // → 1 char par frame.
-  //
-  // Précédent bug session 96 : on capait `if > 1: = 1` (= 1 char par 2 frames
-  // = 30 chars/sec, 2× plus lent que ROM). User feedback "speed text trop
-  // lent même en FAST + held" venait de ce cap. Fix 1:1 : `= 0` strict.
-  if (_heldABPressed && printer.hasPrintBeenSpedUp) {
-    printer.delayCounter = 0;
-  }
-
-  // textSpeed > 0 : delay entre chaque char (effet "machine à écrire").
-  if (printer.delayCounter > 0 && printer.textSpeed > 0) {
-    printer.delayCounter--;
-    // 1:1 décomp text.c:950-953 — JOY_NEW(A|B) pendant le delay → speed up.
-    if (gTextFlags.canABSpeedUpPrint && _newABPressed) {
-      printer.hasPrintBeenSpedUp = true;
-      printer.delayCounter = 0;
-    }
-    return RENDER_UPDATE;
-  }
-
-  // Process autant de chars que possible (textSpeed=0 = instantané)
-  do {
-    const byte = printer.encodedString[printer.currentChar];
-    if (byte === undefined || byte === EOS) {
-      // 1:1 décomp text.c : EOS → RENDER_FINISH (= terminé, pas de wait A).
-      // CHAR_PROMPT_CLEAR/SCROLL gérés séparément ci-dessous (= wait A page break).
-      // Phase E fix : avant on set state = WAIT_WITH_DOWN_ARROW qui bloquait
-      // IsTextPrinterActive(0) éternellement (= state jamais → FINISH).
-      printer.state = RENDER_STATE_FINISH;
-      if (printer.onCharRendered) printer.onCharRendered(printer, EOS);
-      return RENDER_FINISH;
-    }
-
-    if (byte === CHAR_NEWLINE) {
-      printer.currentChar++;
-      printer.currentX = printer.x;
-      printer.currentY += LINE_HEIGHT;
-      continue;
-    }
-
-    // 1:1 décomp text.c:1102-1109 — \p → CLEAR (clear window + reset cursor),
-    // \l → SCROLL_START (scroll up 1 line + reset X). Les 2 affichent le ❤️
-    // down arrow et attendent A press, mais le post-A behavior diffère.
-    if (byte === CHAR_PROMPT_CLEAR) {
-      printer.currentChar++;
-      printer.state = RENDER_STATE_CLEAR;
-      // TextPrinterInitDownArrowCounters (= reset bobbing animation)
-      printer.downArrowDelay = 0;
-      printer.downArrowYPosIdx = 0;
-      if (printer.onCharRendered) printer.onCharRendered(printer, byte);
-      return RENDER_UPDATE;
-    }
-    if (byte === CHAR_PROMPT_SCROLL) {
-      printer.currentChar++;
-      printer.state = RENDER_STATE_SCROLL_START;
-      printer.downArrowDelay = 0;
-      printer.downArrowYPosIdx = 0;
-      if (printer.onCharRendered) printer.onCharRendered(printer, byte);
-      return RENDER_UPDATE;
-    }
-
-    if (byte === EXT_CTRL_CODE_BEGIN) {
-      const subCode = printer.encodedString[printer.currentChar + 1];
-      // PAUSE : 3 bytes total (BEGIN + PAUSE + frames). Cf. text.c:1013.
-      if (subCode === EXT_CTRL_CODE_PAUSE) {
-        const frames = printer.encodedString[printer.currentChar + 2] ?? 0;
-        printer.currentChar += 3;
-        printer.pauseCounter = frames;
-        printer.state = RENDER_STATE_PAUSE;
-        if (printer.onCharRendered) printer.onCharRendered(printer, EXT_CTRL_CODE_PAUSE);
-        return RENDER_UPDATE;
-      }
-      // PAUSE_UNTIL_PRESS : 2 bytes (BEGIN + sub). Wait keypress.
-      if (subCode === EXT_CTRL_CODE_PAUSE_UNTIL_PRESS) {
-        printer.currentChar += 2;
-        printer.state = RENDER_STATE_WAIT_WITH_DOWN_ARROW;
-        if (printer.onCharRendered) printer.onCharRendered(printer, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
-        return RENDER_UPDATE;
-      }
-      // COLOR : set fgColor au render time. Cf. text.c:980-984. 3 bytes.
-      if (subCode === EXT_CTRL_CODE_COLOR) {
-        printer.fgColor = printer.encodedString[printer.currentChar + 2] ?? printer.fgColor;
-        printer.currentChar += 3;
-        continue;
-      }
-      // HIGHLIGHT : set bgColor. Cf. text.c:985-988. 3 bytes.
-      if (subCode === EXT_CTRL_CODE_HIGHLIGHT) {
-        printer.bgColor = printer.encodedString[printer.currentChar + 2] ?? printer.bgColor;
-        printer.currentChar += 3;
-        continue;
-      }
-      // SHADOW : set shadowColor. Cf. text.c:990-993. 3 bytes.
-      if (subCode === EXT_CTRL_CODE_SHADOW) {
-        printer.shadowColor = printer.encodedString[printer.currentChar + 2] ?? printer.shadowColor;
-        printer.currentChar += 3;
-        continue;
-      }
-      // CLEAR : advance currentX by N pixels (= horizontal kerning skip).
-      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_CLEAR). 3 bytes.
-      // Utilisé par naming_screen.c:sNamingScreenKeyboardText pour aligner chars
-      // sur sPageColumnXPos. Sans handler : currentX inchangé → chars collés.
-      if (subCode === EXT_CTRL_CODE_CLEAR) {
-        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
-        printer.currentX += n;
-        printer.currentChar += 3;
-        continue;
-      }
-      // SKIP : set currentX absolu = origin x + N. 3 bytes.
-      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_SKIP).
-      if (subCode === EXT_CTRL_CODE_SKIP) {
-        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
-        printer.currentX = printer.x + n;
-        printer.currentChar += 3;
-        continue;
-      }
-      // CLEAR_TO : pad jusqu'à ce que currentX atteigne origin x + N. 3 bytes.
-      // 1:1 décomp src/text.c (case EXT_CTRL_CODE_CLEAR_TO). Notre impl simple :
-      // set currentX = max(currentX, origin x + N) (= skip-to-target sans pad).
-      if (subCode === EXT_CTRL_CODE_CLEAR_TO) {
-        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
-        const target = printer.x + n;
-        if (printer.currentX < target) printer.currentX = target;
-        printer.currentChar += 3;
-        continue;
-      }
-      // MIN_LETTER_SPACING : set min letter spacing. 3 bytes. Affecte rendu suivant.
-      if (subCode === EXT_CTRL_CODE_MIN_LETTER_SPACING) {
-        const n = printer.encodedString[printer.currentChar + 2] ?? 0;
-        printer.letterSpacing = n;
-        printer.currentChar += 3;
-        continue;
-      }
-      // FONT : switch glyph-set mid-string (1:1 décomp EXT_CTRL_CODE_FONT, 3 bytes).
-      // Utilisé par MoveSelectionDisplayMoveType : "TYPE/"{FONT NORMAL}<type> →
-      // le label "TYPE/" reste dans le font de la window (NARROW), le nom du type
-      // passe en FONT_NORMAL. Notre engine a des glyph-sets séparés par font.
-      if (subCode === EXT_CTRL_CODE_FONT) {
-        const fontId = printer.encodedString[printer.currentChar + 2] ?? 1;
-        if (printer.resolveFont) {
-          const r = printer.resolveFont(fontId);
-          printer.glyphData = r.glyphData;
-          printer.glyphWidths = r.glyphWidths;
-        }
-        printer.currentChar += 3;
-        continue;
-      }
-      // Default : skip 3 bytes (BEGIN + sub + 1 param). TODO handler complet
-      // pour PLAY_BGM (5 bytes), COLOR_HIGHLIGHT_SHADOW (5 bytes), etc.
-      printer.currentChar += 3;
-      continue;
-    }
-
-    // 1:1 décomp text.c:1110-1112 `case CHAR_EXTRA_SYMBOL` :
-    //   currChar = *currentChar | 0x100; currentChar++;
-    // → render glyph 0x100|symByte (extra-symbol = 2e moitié de la latfont).
-    // Largeur = gFontNormalLatinGlyphWidths[glyphId] (text.c:1868). Avance de
-    // 2 bytes (CHAR_EXTRA_SYMBOL + symByte). 1 glyph = 1 RENDER_PRINT (idem
-    // char normal). Débloque `{LV_2}` (Mémo) + `{NO}` (ID) + `{PP}` (pages).
-    if (byte === CHAR_EXTRA_SYMBOL) {
-      const symByte = printer.encodedString[printer.currentChar + 1] ?? 0;
-      const exGlyphId = 0x100 | symByte;
-      const exGlyph = printer.glyphData[exGlyphId];
-      const exGlyphW = printer.glyphWidths[exGlyphId] || 3;
-      if (exGlyph) {
-        blitGlyphToWindow(
-          printer.window,
-          exGlyph,
-          printer.currentX,
-          printer.currentY,
-          exGlyphW,
-          printer.fgColor,
-          printer.bgColor,
-          printer.shadowColor,
-        );
-      }
-      printer.currentX += exGlyphW + printer.letterSpacing;
-      printer.currentChar += 2;
-      if (printer.onCharRendered) printer.onCharRendered(printer, CHAR_EXTRA_SYMBOL);
-      // 1:1 décomp text.c:961 `textPrinter->delayCounter = textPrinter->textSpeed;`
-      // après render char. textSpeed est ALREADY -1'd à l'init (= AddTextPrinter
-      // décomp ligne 296). instantPath=true distingue le mode "render all at
-      // once" (= 1:1 décomp for loop 0x400 dans AddTextPrinter:303-308) du
-      // mode typewriter classique.
-      if (!printer.instantPath) {
-        printer.delayCounter = printer.textSpeed;
-        return RENDER_PRINT;
-      }
-      continue;
-    }
-
-    // Char normal : blit glyph + advance cursor
-    const glyph = printer.glyphData[byte];
-    const glyphW = printer.glyphWidths[byte] || 3;
-    // Fix Phase E : byte 0 = espace dans le charmap. Pas de blit (= empty glyph),
-    // juste advance currentX pour préserver le whitespace entre les mots. Sans
-    // ce skip, blitGlyphToWindow peut paint du bgColor sur les pixels du glyph
-    // précédent et "manger" le rendu (= mots collés "Cemonde" au lieu de "Ce monde").
-    if (glyph && byte !== 0) {
-      blitGlyphToWindow(
-        printer.window,
-        glyph,
-        printer.currentX,
-        printer.currentY,
-        glyphW,
-        printer.fgColor,
-        printer.bgColor,
-        printer.shadowColor,
-      );
-    }
-    printer.currentX += glyphW + printer.letterSpacing;
-    printer.currentChar++;
-    if (printer.onCharRendered) printer.onCharRendered(printer, byte);
-
-    // 1:1 décomp text.c:961 — `textPrinter->delayCounter = textPrinter->textSpeed`.
-    // Le distinction "instant path" (= speed input 0 || TEXT_SKIP_DRAW) vs
-    // "typewriter path" (= speed input 1..N) se fait via instantPath, pas
-    // via `textSpeed > 0` (= FAST stored=0 mais doit return PRINT, pas continue).
-    if (!printer.instantPath) {
-      printer.delayCounter = printer.textSpeed;
-      return RENDER_PRINT;
-    }
-    continue;
-  } while (true);
+  // RELOCALISÉ (VAGUE 2c) → `RenderText` dans le miroir `src/game/text.ts`
+  // (state-machine `switch(state)` 1:1 text.c:934). Ce wrapper délègue ; la
+  // logique de rendu per-char vit désormais dans le miroir (le HW blit glyphe
+  // reste ici, importé par RenderText). Cycle gba-text-printer↔text.ts
+  // runtime-safe (usages dans des fonctions, pas au top-level).
+  return RenderText(printer);
 }
 
 /**
@@ -913,34 +682,34 @@ export function textPrinterDrawDownArrow(printer: TextPrinter): void {
     : printer.downArrowPixels;
   if (!arrowPixels) return;
 
-  if (printer.downArrowDelay !== 0) {
-    printer.downArrowDelay--;
+  if (printer.subStruct.downArrowDelay !== 0) {
+    printer.subStruct.downArrowDelay--;
     return;
   }
 
   // Clear l'ancienne arrow (rect 8×16 bg color)
   fillWindowPixelRect(
     printer.window,
-    printer.bgColor,
-    printer.currentX,
-    printer.currentY,
+    printer.printerTemplate.bgColor,
+    printer.printerTemplate.currentX,
+    printer.printerTemplate.currentY,
     8,
     16,
   );
 
   // Blit nouvelle arrow avec offset Y selon yPosIdx
-  const srcYOffset = DOWN_ARROW_Y_COORDS[printer.downArrowYPosIdx & 3];
+  const srcYOffset = DOWN_ARROW_Y_COORDS[printer.subStruct.downArrowYPosIdx & 3];
   blitArrowAt(
     printer.window,
     arrowPixels,
-    printer.currentX,
-    printer.currentY,
+    printer.printerTemplate.currentX,
+    printer.printerTemplate.currentY,
     srcYOffset,
   );
 
   // Reset delay + advance idx
-  printer.downArrowDelay = DOWN_ARROW_DELAY_FRAMES;
-  printer.downArrowYPosIdx++;
+  printer.subStruct.downArrowDelay = DOWN_ARROW_DELAY_FRAMES;
+  printer.subStruct.downArrowYPosIdx++;
 }
 
 /**
@@ -993,6 +762,6 @@ function blitArrowAt(
  * Reset state machine arrow (à appeler quand on advance la page ou hide).
  */
 export function resetDownArrow(printer: TextPrinter): void {
-  printer.downArrowDelay = 0;
-  printer.downArrowYPosIdx = 0;
+  printer.subStruct.downArrowDelay = 0;
+  printer.subStruct.downArrowYPosIdx = 0;
 }

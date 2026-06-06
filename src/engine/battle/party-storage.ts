@@ -24,6 +24,11 @@ import {
   speciesEnumToDexId, moveEnumToDexId,
 } from '../pokemon/pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+// Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
+import { GetNatureFromPersonality, ModifyStatByNature } from '../../game/include/pokemon';
+// 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
+// (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
+import { Random } from '../system/random';
 import { getSpeciesInfo } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).
@@ -643,12 +648,20 @@ const _SPECIES_EGG_VAL = 412;  // 1:1 décomp constants/species.h SPECIES_EGG.
 /** 1:1 décomp `AdjustFriendship(mon, event)` (pokemon.c:5901-5973).
  *  Adjust mon.friendship selon l'event + friendshipLevel + hold effect bonuses.
  *
- *  Notes : (= deferred sub-features pour Phase 1 wire bytecode) :
- *    - ShouldSkipFriendshipChange (= toujours false pour notre wire).
- *    - ITEM_ENIGMA_BERRY hold effect lookup (= rare, fallback GetItemHoldEffect).
- *    - HOLD_EFFECT_FRIENDSHIP_UP +50% bonus (= hold effects deferred).
- *    - ITEM_LUXURY_BALL +1 bonus (= POKEBALL field bridge deferred).
- *    - MET_LOCATION +1 bonus (= GetCurrentRegionMapSectionId bridge deferred). */
+ *  Implémenté 1:1 : friendshipLevel (>99/>199), table sFriendshipEventModifiers,
+ *  gate WALKING 50% (Random()&1), clamp 0..255.
+ *
+ *  Équivalents 1:1 (omis sans perte) :
+ *    - ShouldSkipFriendshipChange = TRUE seulement en Frontier/Pike/Pyramid (sous-
+ *      systèmes non portés) → toujours FALSE chez nous = même comportement.
+ *
+ *  Déférés (modifiers — bloqués par la fragilité du cast V/L et le risque de cycle) :
+ *    - HOLD_EFFECT_FRIENDSHIP_UP +50% (Soothe Bell) + ITEM_LUXURY_BALL +1 : nécessitent
+ *      heldItem/pokeball en NUMBER, mais le LIVE passe un PokemonInstance (string) →
+ *      câblage V/L-aware requis (cf. bug #4). N'affecte que mod>0 sur events ≠ WALKING.
+ *    - MET_LOCATION +1 : nécessite GetCurrentRegionMapSectionId (gMapHeader, field/) →
+ *      importer field dans battle/ = risque de cycle d'init ESM (cf. deadlock rtc).
+ *    - ITEM_ENIGMA_BERRY hold effect (rare) + LEAGUE_BATTLE trainer-class gate (niche). */
 export function AdjustFriendship(mon: Pokemon, event: number): void {
   if (mon.species === 0 || mon.species === _SPECIES_EGG_VAL) return;
   if (event < 0 || event >= _SFRIENDSHIP_EVENT_MODIFIERS.length) return;
@@ -657,10 +670,15 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   if (mon.friendship > 99) friendshipLevel++;
   if (mon.friendship > 199) friendshipLevel++;
 
-  // 1:1 décomp ll.5935-5939 : WALKING 50% skip — appelé only via overworld step
-  // counter, pas via wire bytecode bridge. Pour completeness :
+  // 1:1 décomp pokemon.c:5935-5939 : WALKING a 50% de chance de skip (le compteur
+  // de pas overworld appelle ceci tous les 128 pas → ~1 gain tous les 256 pas).
+  // ⚠️ État réel (audit 2026-06-05) : `UpdateFriendshipStepCounter` (field-control-
+  // avatar) qui passerait WALKING ici est elle-même DORMANTE — son dispatch
+  // `TryStartStepCountScript` n'est PAS porté → friendship-à-la-marche = 0 en LIVE
+  // pour l'instant. Ce gate est donc 1:1-correct mais SANS effet live tant que le
+  // dispatch de compteurs de pas n'est pas câblé (cf. tâches #13/#15 + rematch).
   if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
-    // Note : random skip pas appelé ici car bridge ne déclenche pas WALKING.
+    if (Random() & 1) return;
   }
   // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. Deferred
   // pour notre wire (= pas de trainer class match dispo dans bridge).
@@ -678,12 +696,17 @@ const _MAX_TOTAL_EVS = 510;
 const _MAX_PER_STAT_EVS = 255;
 
 /** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)`. Award EVs from defeated mon's
- *  evYield, cap à 510 total + 255 par stat, double si Pokerus.
+ *  evYield, cap à 510 total + 255 par stat.
  *
- *  Notes :
- *    - ITEM_ENIGMA_BERRY hold effect (= fallback no holdEffect).
- *    - HOLD_EFFECT_MACHO_BRACE x2 multiplier (= hold effects deferred).
- *    - CheckPartyHasHadPokerus (= ported via _CheckPartyHasHadPokerus). */
+ *  ⚠️ DOUBLON MORT (audit 2026-06-05) : cette fonction n'est appelée NULLE PART.
+ *  Le gain d'EV LIVE passe par `pokemon.ts:monGainEVs` (PokemonInstance) ; la voie-L
+ *  bytecode passe par `battle-script-commands.ts:_MonGainEVs` (qui, LUI, câble bien
+ *  Pokerus + Macho Brace). Cette copie-ci = candidate suppression (consolidation B1
+ *  des 3 implémentations en une seule canonique).
+ *
+ *  Différés ici (NON câblés — contrairement à ce que prétendait l'ancien commentaire) :
+ *    - Pokerus ×2 : `multiplier=1` en dur (PAS « wired via _CheckPartyHasHadPokerus »).
+ *    - HOLD_EFFECT_MACHO_BRACE ×2 + ITEM_ENIGMA_BERRY hold effect : non câblés. */
 export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
   if (mon.species === 0) return;
   const info = getSpeciesInfo(defeatedSpeciesEnum);
@@ -695,7 +718,7 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
 
   for (let i = 0; i < 6; i++) {
     if (totalEVs >= _MAX_TOTAL_EVS) break;
-    // Pokerus multiplier wired via _CheckPartyHasHadPokerus.
+    // ⚠️ Pokerus ×2 NON câblé ici (multiplier en dur = 1). Cf. JSDoc (doublon mort).
     const multiplier = 1;
     let evIncrease = yields[i] * multiplier;
     // MACHO_BRACE x2 hold effects deferred.
@@ -724,51 +747,21 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
 
 // ─── CalculateMonStats (= 1:1 décomp pokemon.c:1932-2017) ─────────────────
 
-/** 1:1 décomp `gNatureStatTable[NUM_NATURES][NUM_NATURE_STATS]`
- *  (pokemon.c:1864-1893). Index par nature (0..24) + stat (0..4). Value :
- *   +1 = +10%, -1 = -10%, 0 = neutral. */
-const _NATURE_STAT_TABLE: ReadonlyArray<ReadonlyArray<number>> = [
-  // STAT_ATTACK, STAT_DEFENSE, STAT_SPEED, STAT_SPATK, STAT_SPDEF
-  [ 0,  0,  0,  0,  0],  // HARDY
-  [+1, -1,  0,  0,  0],  // LONELY
-  [+1,  0, -1,  0,  0],  // BRAVE
-  [+1,  0,  0, -1,  0],  // ADAMANT
-  [+1,  0,  0,  0, -1],  // NAUGHTY
-  [-1, +1,  0,  0,  0],  // BOLD
-  [ 0,  0,  0,  0,  0],  // DOCILE
-  [ 0, +1, -1,  0,  0],  // RELAXED
-  [ 0, +1,  0, -1,  0],  // IMPISH
-  [ 0, +1,  0,  0, -1],  // LAX
-  [-1,  0, +1,  0,  0],  // TIMID
-  [ 0, -1, +1,  0,  0],  // HASTY
-  [ 0,  0,  0,  0,  0],  // SERIOUS
-  [ 0,  0, +1, -1,  0],  // JOLLY
-  [ 0,  0, +1,  0, -1],  // NAIVE
-  [-1,  0,  0, +1,  0],  // MODEST
-  [ 0, -1,  0, +1,  0],  // MILD
-  [ 0,  0, -1, +1,  0],  // QUIET
-  [ 0,  0,  0,  0,  0],  // BASHFUL
-  [ 0,  0,  0, +1, -1],  // RASH
-  [-1,  0,  0,  0, +1],  // CALM
-  [ 0, -1,  0,  0, +1],  // GENTLE
-  [ 0,  0, -1,  0, +1],  // SASSY
-  [ 0,  0,  0, -1, +1],  // CAREFUL
-  [ 0,  0,  0,  0,  0],  // QUIRKY
-];
+// `gNatureStatTable` + `ModifyStatByNature` + `GetNatureFromPersonality` = consolidés
+// sur le miroir `src/game/pokemon.ts` (source unique 1:1, cf. import en tête).
 
-/** 1:1 décomp `GetNature(mon)` — personality % 25 = nature index 0..24. */
+/** 1:1 décomp `GetNature(mon)` — personality % 25. Délègue au miroir
+ *  `GetNatureFromPersonality` ; nom privé conservé pour les callers de ce fichier. */
 function _getNatureFromPersonality(personality: number): number {
-  return (personality >>> 0) % 25;
+  return GetNatureFromPersonality(personality >>> 0);
 }
 
-/** 1:1 décomp `ModifyStatByNature(nature, stat, statIndex)` (pokemon.c:1894-1922).
- *  Applique +10% / -10% / no-op selon table. */
+/** Adaptateur 0-based → miroir `ModifyStatByNature` (1-based décomp : STAT_ATK=1…
+ *  STAT_SPDEF=5). Ce fichier passe un statIndex 0-based (0=ATK…4=SPDEF, hérité de
+ *  CalculateMonStats/CALC_STAT) → +1 pour la signature 1:1 du miroir. Résultat
+ *  identique. */
 export function _modifyStatByNature(nature: number, stat: number, statIndex: number): number {
-  if (nature < 0 || nature >= 25 || statIndex < 0 || statIndex >= 5) return stat;
-  const mod = _NATURE_STAT_TABLE[nature][statIndex];
-  if (mod === 0) return stat;
-  if (mod > 0) return Math.floor(stat * 110 / 100) & 0xFFFF;
-  return Math.floor(stat * 90 / 100) & 0xFFFF;
+  return ModifyStatByNature(nature, stat, statIndex + 1);
 }
 
 /** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:1932-2017).

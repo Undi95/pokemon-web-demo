@@ -1135,11 +1135,9 @@ function Overworld_IsRecvQueueAtMax(): boolean {
   return false;
 }
 
-/** 1:1 décomp `MenuHelpers_IsLinkActive()` — link mode actif. Single player
- *  port : toujours false (pattern bag-menu.ts:1645). */
-function MenuHelpers_IsLinkActive(): boolean {
-  return false;
-}
+// MenuHelpers_IsLinkActive : RELOCALISÉ dans le miroir `src/game/menu_helpers.ts`
+// (1:1 menu_helpers.c:298, single-player → false). Import hoisté.
+import { MenuHelpers_IsLinkActive } from '../../game/menu_helpers';
 
 // ─── Texte FR : gText_FromSpace = "" (1:1 décomp strings.c:1587) ─────────────
 

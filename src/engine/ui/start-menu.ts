@@ -39,10 +39,10 @@
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame,
-  LoadMessageBoxGfx, DLG_WINDOW_BASE_TILE_NUM,
+  DLG_WINDOW_BASE_TILE_NUM,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { GetNationalPokedexCount, GetHoennPokedexCount, FLAG_GET_CAUGHT } from './pokedex-flags';
 // 1:1 STRICT décomp event_data.c:74-80 — vraie impl dans engine/event-data.ts.
@@ -56,6 +56,9 @@ import {
   ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox, GetFieldMessageBoxMode,
   FIELD_MESSAGE_BOX_HIDDEN,
 } from '../field/field-message-box';
+// Migration TEXTE byte : ShowFieldMessage prend des bytes ; on encode les littéraux
+// source FR via encodeOwText (= notre préproc, strippe `$`, ajoute EOS).
+import { encodeOwText } from '../../game/include/text';
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './gba-menu-system';
@@ -204,14 +207,15 @@ function drawCursor(): void {
 
 function showMessageThenReturn(text: string): boolean {
   // Show dialog message ; sub-state msg_wait → A/B revient au menu.
-  ShowFieldMessage(text + '$');
+  // text = source FR lisible → encodeOwText (préproc : strippe `$`, → bytes + EOS).
+  ShowFieldMessage(encodeOwText(text));
   sSubState = 'msg_wait';
   return false;
 }
 
 function showMessageThenClose(text: string): boolean {
   // Show dialog message ; sub-state msg_close → A/B ferme le menu.
-  ShowFieldMessage(text + '$');
+  ShowFieldMessage(encodeOwText(text));
   sSubState = 'msg_close';
   return false;
 }
@@ -450,8 +454,8 @@ function saveAction(): boolean {
   _showSaveInfoWindow();
   // 1:1 décomp gText_ConfirmSave (= save.inc:2). Fallback hardcoded if texts
   // not loaded (= edge case before _common.json fetched).
-  const text = getText('gText_ConfirmSave') ?? 'Voulez-vous sauvegarder la partie?';
-  ShowFieldMessage(text + '$');
+  const text = getText('gText_ConfirmSave') ?? encodeOwText('Voulez-vous sauvegarder la partie?');
+  ShowFieldMessage(text);
   sSubState = 'save_confirm';
   return false;
 }
@@ -873,8 +877,8 @@ function _tickSaveYesNo(): void {
       HideFieldMessageBox();
       // 1:1 décomp gText_AlreadySavedFile (= save.inc:5-7).
       const text = getText('gText_AlreadySavedFile')
-        ?? 'Il y a déjà une partie sauvegardée.\nVoulez-vous la remplacer?';
-      ShowFieldMessage(text + '$');
+        ?? encodeOwText('Il y a déjà une partie sauvegardée.\nVoulez-vous la remplacer?');
+      ShowFieldMessage(text);
       sSubState = 'save_overwrite_msg';
     } else {
       // Pas de save existante → save direct.
@@ -924,8 +928,8 @@ function _doSave(): void {
   HideFieldMessageBox();
   // 1:1 décomp gText_SavingDontTurnOff (= save.inc).
   const text = getText('gText_SavingDontTurnOff')
-    ?? "SAUVEGARDE EN COURS…\nN'ETEIGNEZ PAS LA CONSOLE.";
-  ShowFieldMessage(text + '$');
+    ?? encodeOwText("SAUVEGARDE EN COURS…\nN'ETEIGNEZ PAS LA CONSOLE.");
+  ShowFieldMessage(text);
   sSubState = 'save_saving_msg';
 }
 
@@ -965,8 +969,8 @@ function _tickSaveSavingMsg(): void {
   // TrySavingData (= notre persist).
   void (async () => { const { SaveGame } = await import('../save/save-system'); await SaveGame(); })();
   // ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback) :
-  const text = getText('gText_PlayerSavedGame') ?? '{PLAYER} a sauvegardé la partie.';
-  ShowFieldMessage(text + '$');
+  const text = getText('gText_PlayerSavedGame') ?? encodeOwText('{PLAYER} a sauvegardé la partie.');
+  ShowFieldMessage(text);
   // SaveStartTimer : sSaveDialogTimer = 60.
   _saveTimer = 60;
   _saveDoneSeStarted = false;

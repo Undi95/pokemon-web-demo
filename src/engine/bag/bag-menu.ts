@@ -37,8 +37,8 @@ import {
   BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition,
 } from './bag-pockets';
 import {
-  SetCursorWithinListBounds, SetCursorScrollWithinListBounds, type ListPos,
-} from '../ui/menu-helpers';
+  SetCursorWithinListBounds, SetCursorScrollWithinListBounds, MenuHelpers_IsLinkActive, type ListPos,
+} from '../../game/menu_helpers';
 import {
   gMultiuseListMenuTemplate, LIST_CANCEL, LIST_NO_MULTIPLE_SCROLL,
   CURSOR_BLACK_ARROW, CURSOR_INVISIBLE, LISTFIELD_CURSORKIND,
@@ -54,15 +54,20 @@ import {
   StringCopy, ConvertIntToDecimalStringN,
   STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
 } from '../system/decomp-bridge';
+// Migration TEXTE byte : gStringVarN buffers byte via setStringVar (encode source),
+// StringExpandPlaceholders byte écrit gStringVar4, encodeOwText = préproc.
+import { setStringVar } from '../system/string-buffers';
+import { gStringVar4 } from '../ui/gba-text-system';
+import { encodeOwText } from '../../game/include/text';
 import {
   ShowBg, InitWindows, FillWindowPixelBuffer, PutWindowTilemap,
-  LoadMessageBoxGfx, ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
+  ScheduleBgCopyTilemapToVram, FillWindowPixelRect,
   FillBgTilemapBufferRect_Palette0, CopyWindowToVram, BlitBitmapToWindow,
   AddWindow, RemoveWindow, GetWindowPixelBuffer, MarkWindowDirty,
   ClearWindowTilemap, BlitBitmapRectToWindow,
   type WindowTemplate,
 } from '../ui/gba-window-system';
-import { LoadUserWindowBorderGfx } from '../ui/gba-text-window';
+import { LoadUserWindowBorderGfx, LoadMessageBoxGfx } from '../../game/text_window';
 import {
   DeactivateAllTextPrinters, StringExpandPlaceholders, FONT_NARROW,
   FONT_NORMAL, AddTextPrinterParameterized4, GetMenuCursorDimensionByFont,
@@ -792,9 +797,9 @@ const _gsv = globalThis as unknown as Record<string, string>;
 // 1:1 décomp `struct ListBuffer1{ ListMenuItem subBuffers[] }` /
 // `struct ListBuffer2{ u8 name[][] }` (item_menu.c:106/110) — alloués
 // par AllocateBagItemListBuffers, remplis par LoadBagItemListBuffers (5b).
-interface ListMenuItemRef { name: string; id: number; }
+interface ListMenuItemRef { name: string | Uint8Array; id: number; }
 let _sListBuffer1: { subBuffers: ListMenuItemRef[] } | null = null;
-let _sListBuffer2: { name: string[] } | null = null;
+let _sListBuffer2: { name: (string | Uint8Array)[] } | null = null;
 
 /** 1:1 décomp `UpdatePocketItemList` (item_menu.c:1105) : Sort/Compact la
  *  poche puis compte les slots non-vides → numItemStacks (+1 CLOSE BAG si
@@ -915,7 +920,7 @@ function _win(w: number): number { return _bagWinIds[w]; }
  *    AddTextPrinterParameterized4(windowId, fontId, left, top, letterSpacing,
  *      lineSpacing, sFontColorTable[colorIndex], speed, str). */
 function BagMenu_Print(
-  windowId: number, fontId: number, str: string, left: number, top: number,
+  windowId: number, fontId: number, str: string | Uint8Array, left: number, top: number,
   letterSpacing: number, lineSpacing: number, speed: number, colorIndex: number,
 ): void {
   AddTextPrinterParameterized4(
@@ -948,13 +953,14 @@ function BagMenu_PrintCursor(listTaskId: number, colorIndex: number): void {
  *  (string "ITEM_TM01" passée au bridge, mais items.json clé =
  *  "ITEM_TM_FOCUS_PUNCH" → desc vide). */
 function PrintItemDescription(itemIndex: number): void {
-  let str: string;
+  let str: string | Uint8Array;
   if (itemIndex !== LIST_CANCEL) {
     str = GetItemDescription(BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, itemIndex));
   } else {
     // Print 'Cancel' description
-    _gsv.gStringVar1 = StringCopy('', gBagMenu_ReturnToStrings[gBagPosition.location]);
-    str = StringExpandPlaceholders('', gText_ReturnToVar1);
+    setStringVar(1, gBagMenu_ReturnToStrings[gBagPosition.location]);
+    StringExpandPlaceholders(gStringVar4, encodeOwText(gText_ReturnToVar1));
+    str = gStringVar4;
   }
   FillWindowPixelBuffer(_win(WIN_DESCRIPTION), PIXEL_FILL(0));
   BagMenu_Print(_win(WIN_DESCRIPTION), FONT_NORMAL, str, 3, 1, 0, 0, 0, COLORID_NORMAL);
@@ -967,8 +973,9 @@ function PrintItemDescription(itemIndex: number): void {
  *    BagMenu_Print(windowId, FONT_NARROW, gStringVar4, offset, y, 0,0,
  *      TEXT_SKIP_DRAW, COLORID_NORMAL). STR_CONV_MODE_RIGHT_ALIGN importé. */
 function _bagPrintQuantity(windowId: number, itemQuantity: number, y: number, numDigits: number): void {
-  _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemQuantity, STR_CONV_MODE_RIGHT_ALIGN, numDigits);
-  const s4 = StringExpandPlaceholders('', gText_xVar1);
+  setStringVar(1, ConvertIntToDecimalStringN('', itemQuantity, STR_CONV_MODE_RIGHT_ALIGN, numDigits));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_xVar1));
+  const s4 = gStringVar4;
   const offset = GetStringRightAlignXOffset(s4, 119);
   BagMenu_Print(windowId, FONT_NARROW, s4, offset, y, 0, 0, TEXT_SKIP_DRAW, COLORID_NORMAL);
 }
@@ -979,33 +986,46 @@ function _bagPrintQuantity(windowId: number, itemQuantity: number, y: number, nu
  *  `getItemKeyById` = réalisation 1:1-sém de l'indexation `gItems[itemId]`.
  *  `StringCopy` retourne src (dst opaque, modèle string projet). */
 function CopyItemName(itemId: number): string {
-  return StringCopy('', GetItemName(getItemKeyById(itemId)));
+  // 1:1 décomp `StringCopy(dst, GetItemName(itemId))` ; modèle source-string :
+  // retourne le nom (sera encodé au point d'entrée pipeline byte via setStringVar).
+  return GetItemName(getItemKeyById(itemId));
 }
 
 /** 1:1 décomp `GetItemNameFromPocket` (item_menu.c:899). La décomp remplit
  *  `dest` (u8*) via gStringVar1/2 + StringExpandPlaceholders ; notre modèle
  *  string retourne la valeur → on RETOURNE le nom construit (= dest). Les
  *  gStringVarN sont routés via le proxy globalThis (cf. _gsv plus haut). */
-function GetItemNameFromPocket(itemId: number): string {
+/** Expand un template OW dans un buffer byte FRAIS (1 par item — 1:1 décomp
+ *  `StringCopy(sListBuffer2->name[i], gStringVar4)` qui COPIE ; sans buffer dédié
+ *  tous les name[] partageraient gStringVar4 → tous la dernière valeur). */
+function _expandItemNameLine(tpl: string): Uint8Array {
+  const buf = new Uint8Array(64);
+  StringExpandPlaceholders(buf, encodeOwText(tpl));
+  return buf;
+}
+
+// 1:1 décomp `GetItemName`/`GetItemNameFromPocket` : remplit gStringVar1/2 puis
+// StringExpandPlaceholders dans un buffer name dédié (bytes charmap).
+function GetItemNameFromPocket(itemId: number): string | Uint8Array {
   switch (gBagPosition.pocket) {
     case TMHM_POCKET:
       // StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(itemId)])
-      _gsv.gStringVar2 = StringCopy('', getMoveName(ItemIdToBattleMoveId(itemId)));
+      setStringVar(2, getMoveName(ItemIdToBattleMoveId(itemId)));
       if (itemId >= ITEM_HM01) {
         // Get HM number
-        _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - ITEM_HM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 1);
-        return StringExpandPlaceholders('', gText_NumberItem_HM);
+        setStringVar(1, ConvertIntToDecimalStringN('', itemId - ITEM_HM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 1));
+        return _expandItemNameLine(gText_NumberItem_HM);
       } else {
         // Get TM number
-        _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - ITEM_TM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
-        return StringExpandPlaceholders('', gText_NumberItem_TMBerry);
+        setStringVar(1, ConvertIntToDecimalStringN('', itemId - ITEM_TM01 + 1, STR_CONV_MODE_LEADING_ZEROS, 2));
+        return _expandItemNameLine(gText_NumberItem_TMBerry);
       }
     case BERRIES_POCKET:
-      _gsv.gStringVar1 = ConvertIntToDecimalStringN('', itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
-      _gsv.gStringVar2 = CopyItemName(itemId);
-      return StringExpandPlaceholders('', gText_NumberItem_TMBerry);
+      setStringVar(1, ConvertIntToDecimalStringN('', itemId - FIRST_BERRY_INDEX + 1, STR_CONV_MODE_LEADING_ZEROS, 2));
+      setStringVar(2, CopyItemName(itemId));
+      return _expandItemNameLine(gText_NumberItem_TMBerry);
     default:
-      return CopyItemName(itemId);
+      return CopyItemName(itemId);  // string source (list menu accepte string|byte)
   }
 }
 
@@ -1099,7 +1119,7 @@ function LoadBagItemListBuffers(pocketId: number): void {
       _sListBuffer2.name[i] = GetItemNameFromPocket(slotItemId(slots[i]));
       subBuffer[i] = { name: _sListBuffer2.name[i], id: i };
     }
-    _sListBuffer2.name[i] = StringCopy('', gText_CloseBag);
+    _sListBuffer2.name[i] = gText_CloseBag;  // string source (list menu accepte string|byte)
     subBuffer[i] = { name: _sListBuffer2.name[i], id: LIST_CANCEL };
   } else {
     for (i = 0; i < gBagMenu.numItemStacks[pocketId]; i++) {
@@ -1506,8 +1526,9 @@ function StartItemSwap(task: DecompTask): void {
   if (gBagMenu) gBagMenu.toSwapPos = pos;
   // 1:1 :1448-1451 message "Où voulez-vous placer X ?"
   const itemId = BagGetItemIdByPocketPosition(pocket + 1, pos);
-  _gsv.gStringVar1 = GetItemName(itemId);
-  const msg = StringExpandPlaceholders('', gText_MoveVar1Where);
+  setStringVar(1, GetItemName(itemId));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_MoveVar1Where));
+  const msg = gStringVar4;
   const wid = _win(WIN_DESCRIPTION);
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
   BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);
@@ -1639,12 +1660,8 @@ function GetSwitchBagPocketDirection(): number {
   return SWITCH_POCKET_NONE;
 }
 
-/** 1:1 décomp `MenuHelpers_IsLinkActive` (menu_helpers.c). Le sub-système
- *  lien n'est pas modélisé ; on respecte la convention décomp : la branche
- *  link-active est dead-code dans le sac single-player. */
-function MenuHelpers_IsLinkActive(): boolean {
-  return false;
-}
+// MenuHelpers_IsLinkActive : RELOCALISÉ dans le miroir `src/game/menu_helpers.ts`
+// (1:1 menu_helpers.c:298, single-player → false), importé en tête.
 
 // SetBagVisualPocketId : PORTÉ 1:1 Phase 2 (item_menu_icons.c:446) →
 // importé de bag-menu-icons.ts ↑. Appel SwitchBagPocket inchangé.
@@ -1821,8 +1838,9 @@ function Task_CloseBagMenu(task: DecompTask): void {
  *  description normale tant que le ctx menu est affiché). Helper exporté
  *  pour bag-menu-ctx (évite cycle d'import). */
 export function _CtxPrintItemSelected(itemId: number): void {
-  _gsv.gStringVar1 = GetItemName(itemId);
-  const msg = StringExpandPlaceholders('', gText_Var1IsSelected);
+  setStringVar(1, GetItemName(itemId));
+  StringExpandPlaceholders(gStringVar4, encodeOwText(gText_Var1IsSelected));
+  const msg = gStringVar4;
   const wid = _win(WIN_DESCRIPTION);
   FillWindowPixelBuffer(wid, PIXEL_FILL(0));
   BagMenu_Print(wid, FONT_NORMAL, msg, 3, 1, 0, 0, 0, COLORID_NORMAL);

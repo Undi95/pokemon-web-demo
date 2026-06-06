@@ -26,7 +26,8 @@
  */
 import { getRuntime, assetCache } from '../system/decomp-globals';
 import { IndexOfSpritePaletteTag, GetSpriteTileStartByTag } from '../system/sprite';
-import { GetWindowFrameTilesPal } from './gba-text-window';
+import { GetWindowFrameTilesPal } from '../../game/text_window';
+import { EXT_CTRL_CODE_PAUSE } from '../decomp-data/include/constants/characters-data';
 import {
   ResetBgsAndClearDma3BusyFlags,
   InitBgsFromTemplates,
@@ -973,8 +974,8 @@ export function NewGameBirchSpeech_StartFadePlatformOut(taskId: number, delay: n
  *  l'inner throwait silently sur asset load race condition). Direct sync ref +
  *  log explicite si erreur. */
 export function NewGameBirchSpeech_WaitForThisIsPokemonText(_printer: unknown, lastByte: number): void {
-  // EXT_CTRL_CODE_PAUSE = 0x09 (cf. gba-text-printer.ts:48)
-  const EXT_CTRL_CODE_PAUSE = 0x09;
+  // EXT_CTRL_CODE_PAUSE = 8 (1:1 characters.h ; source unifiée characters-data,
+  // VAGUE 2c-prep — était hardcodé 0x09 = valeur décalée de l'ancien gba-text-printer).
   if (lastByte !== EXT_CTRL_CODE_PAUSE) return;
   // sStartedPokeBallTask flag (= 1:1 décomp main_menu.c:204) prevents double-spawn.
   const started = (globalThis as Record<string, unknown>).sStartedPokeBallTask;

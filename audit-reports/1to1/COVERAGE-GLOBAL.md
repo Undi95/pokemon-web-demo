@@ -1,21 +1,25 @@
 # CARTE DE COUVERTURE 1:1 GLOBALE — décomp `src/*.c` ↔ notre port
 
-Généré : 2026-06-04T02:04:09.400Z
+Généré : 2026-06-05T15:54:25.656Z
 
 > Signal "couvert" = une citation `1:1 décomp file.c:N` pointe dans la fonction.
 > ⚠️ Prouve la COUVERTURE/traçabilité, **PAS le comportement** (bugs runtime = ROM-diff séparé).
-> Couverture globale (≥1 fonctions/fichier) : **2807/11228 fonctions** (25%) sur **221 fichiers .c**.
-> 7 fichiers 100% · 214 partiels · 0 jamais touchés.
+> Couverture globale (≥1 fonctions/fichier) : **2867/11228 fonctions** (26%) sur **221 fichiers .c**.
+> 11 fichiers 100% · 210 partiels · 0 jamais touchés.
 
-## 🟢 Fichiers 100% couverts (7)
+## 🟢 Fichiers 100% couverts (11)
 
 - `battle_anim.c` (79 fn)
 - `field_camera.c` (28 fn)
 - `pokemon_size_record.c` (12 fn)
 - `decoration_inventory.c` (11 fn)
 - `mail.c` (10 fn)
+- `math_util.c` (9 fn)
+- `coins.c` (7 fn)
 - `map_name_popup.c` (7 fn)
 - `random.c` (4 fn)
+- `trig.c` (4 fn)
+- `give_gift_ribbon_to_party.c` (1 fn)
 
 ## 🟡 Partiels — triés par # fonctions manquantes (les "presque finis" en bas)
 
@@ -23,11 +27,11 @@ Généré : 2026-06-04T02:04:09.400Z
 |---|---|---|---|---|
 | `event_object_movement.c` | 208/785 | 26% | **577** | 373 |
 | `pokemon_storage_system.c` | 2/380 | 1% | **378** | 73 |
-| `party_menu.c` | 83/354 | 23% | **271** | 245 |
+| `party_menu.c` | 83/354 | 23% | **271** | 246 |
 | `field_effect.c` | 8/247 | 3% | **239** | 66 |
-| `battle_transition.c` | 14/210 | 7% | **196** | 58 |
-| `overworld.c` | 36/227 | 16% | **191** | 133 |
+| `overworld.c` | 36/227 | 16% | **191** | 134 |
 | `battle_script_commands.c` | 100/287 | 35% | **187** | 251 |
+| `battle_transition.c` | 25/210 | 12% | **185** | 61 |
 | `tv.c` | 22/207 | 11% | **185** | 54 |
 | `battle_anim_effects_1.c` | 0/154 | 0% | **154** | 2 |
 | `field_player_avatar.c` | 30/177 | 17% | **147** | 72 |
@@ -37,27 +41,27 @@ Généré : 2026-06-04T02:04:09.400Z
 | `field_specials.c` | 61/191 | 32% | **130** | 132 |
 | `decoration.c` | 8/135 | 6% | **127** | 28 |
 | `battle_anim_effects_2.c` | 0/121 | 0% | **121** | 2 |
-| `battle_anim_mons.c` | 8/128 | 6% | **120** | 22 |
-| `pokemon.c` | 41/160 | 26% | **119** | 175 |
+| `battle_anim_mons.c` | 9/128 | 7% | **119** | 25 |
+| `pokemon.c` | 41/160 | 26% | **119** | 184 |
 | `field_weather_effect.c` | 1/106 | 1% | **105** | 6 |
 | `menu.c` | 21/123 | 17% | **102** | 76 |
 | `battle_ai_script_commands.c` | 15/115 | 13% | **100** | 26 |
 | `easy_chat.c` | 148/248 | 60% | **100** | 110 |
 | `naming_screen.c` | 17/117 | 15% | **100** | 72 |
 | `battle_controller_player_partner.c` | 0/93 | 0% | **93** | 10 |
-| `battle_setup.c` | 9/102 | 9% | **93** | 39 |
-| `battle_controller_player.c` | 35/124 | 28% | **89** | 72 |
+| `battle_setup.c` | 14/102 | 14% | **88** | 50 |
+| `battle_controller_player.c` | 38/124 | 31% | **86** | 83 |
 | `battle_controller_wally.c` | 0/82 | 0% | **82** | 5 |
-| `scrcmd.c` | 149/231 | 65% | **82** | 253 |
+| `scrcmd.c` | 150/231 | 65% | **81** | 252 |
 | `metatile_behavior.c` | 68/144 | 47% | **76** | 230 |
-| `battle_controller_opponent.c` | 13/88 | 15% | **75** | 30 |
 | `field_effect_helpers.c` | 6/81 | 7% | **75** | 18 |
+| `battle_controller_opponent.c` | 14/88 | 16% | **74** | 37 |
 | `battle_controller_safari.c` | 0/73 | 0% | **73** | 2 |
 | `rayquaza_scene.c` | 0/72 | 0% | **72** | 41 |
 | `daycare.c` | 0/67 | 0% | **67** | 5 |
 | `trainer_card.c` | 13/79 | 16% | **66** | 40 |
 | `m4a.c` | 7/72 | 10% | **65** | 24 |
-| `field_screen_effect.c` | 13/77 | 17% | **64** | 50 |
+| `field_screen_effect.c` | 15/77 | 19% | **62** | 52 |
 | `fldeff_misc.c` | 1/62 | 2% | **61** | 29 |
 | `main_menu.c` | 23/82 | 28% | **59** | 135 |
 | `intro.c` | 12/69 | 17% | **57** | 98 |
@@ -66,7 +70,7 @@ Généré : 2026-06-04T02:04:09.400Z
 | `bike.c` | 2/56 | 4% | **54** | 5 |
 | `menu_specialized.c` | 5/57 | 9% | **52** | 14 |
 | `battle_anim_throw.c` | 27/78 | 35% | **51** | 87 |
-| `battle_gfx_sfx_util.c` | 2/53 | 4% | **51** | 16 |
+| `battle_gfx_sfx_util.c` | 2/53 | 4% | **51** | 18 |
 | `use_pokeblock.c` | 0/51 | 0% | **51** | 13 |
 | `bg.c` | 3/52 | 6% | **49** | 25 |
 | `start_menu.c` | 31/80 | 39% | **49** | 55 |
@@ -76,12 +80,12 @@ Généré : 2026-06-04T02:04:09.400Z
 | `hall_of_fame.c` | 0/45 | 0% | **45** | 35 |
 | `region_map.c` | 15/60 | 25% | **45** | 60 |
 | `item_menu.c` | 79/122 | 65% | **43** | 222 |
-| `sprite.c` | 59/102 | 58% | **43** | 259 |
+| `sprite.c` | 59/102 | 58% | **43** | 260 |
 | `battle_anim_utility_funcs.c` | 0/42 | 0% | **42** | 2 |
 | `item_use.c` | 32/74 | 43% | **42** | 52 |
 | `recorded_battle.c` | 0/42 | 0% | **42** | 9 |
 | `sound.c` | 7/47 | 15% | **40** | 30 |
-| `text.c` | 13/53 | 25% | **40** | 91 |
+| `text.c` | 14/53 | 26% | **39** | 92 |
 | `credits.c` | 0/38 | 0% | **38** | 32 |
 | `image_processing_effects.c` | 0/38 | 0% | **38** | 2 |
 | `battle_anim_electric.c` | 0/37 | 0% | **37** | 2 |
@@ -105,18 +109,18 @@ Généré : 2026-06-04T02:04:09.400Z
 | `battle_anim_psychic.c` | 0/27 | 0% | **27** | 2 |
 | `berry_tag_screen.c` | 0/27 | 0% | **27** | 10 |
 | `window.c` | 3/30 | 10% | **27** | 21 |
-| `battle_interface.c` | 27/53 | 51% | **26** | 76 |
 | `ereader_helpers.c` | 0/26 | 0% | **26** | 2 |
 | `battle_anim_dark.c` | 0/25 | 0% | **25** | 2 |
 | `battle_anim_ground.c` | 0/25 | 0% | **25** | 2 |
+| `battle_interface.c` | 28/53 | 53% | **25** | 76 |
 | `evolution_scene.c` | 0/25 | 0% | **25** | 16 |
 | `egg_hatch.c` | 1/25 | 4% | **24** | 17 |
 | `save.c` | 11/35 | 31% | **24** | 31 |
-| `item.c` | 29/52 | 56% | **23** | 61 |
+| `item.c` | 29/52 | 56% | **23** | 62 |
 | `wild_encounter.c` | 12/35 | 34% | **23** | 22 |
 | `battle_anim_rock.c` | 0/22 | 0% | **22** | 2 |
 | `cable_car.c` | 0/22 | 0% | **22** | 17 |
-| `main.c` | 7/29 | 24% | **22** | 36 |
+| `main.c` | 7/29 | 24% | **22** | 37 |
 | `trainer_pokemon_sprites.c` | 1/23 | 4% | **22** | 7 |
 | `decompress.c` | 0/21 | 0% | **21** | 8 |
 | `pokemon_icon.c` | 2/23 | 9% | **21** | 17 |
@@ -126,13 +130,13 @@ Généré : 2026-06-04T02:04:09.400Z
 | `palette_util.c` | 0/19 | 0% | **19** | 2 |
 | `pokedex_area_screen.c` | 0/19 | 0% | **19** | 7 |
 | `reset_rtc_screen.c` | 0/19 | 0% | **19** | 14 |
-| `field_control_avatar.c` | 23/41 | 56% | **18** | 54 |
 | `international_string_util.c` | 0/18 | 0% | **18** | 4 |
 | `starter_choose.c` | 0/18 | 0% | **18** | 25 |
 | `braille_puzzles.c` | 1/18 | 6% | **17** | 7 |
+| `field_control_avatar.c` | 24/41 | 59% | **17** | 55 |
 | `menu_helpers.c` | 8/25 | 32% | **17** | 29 |
 | `safari_zone.c` | 0/17 | 0% | **17** | 6 |
-| `battle_util.c` | 36/52 | 69% | **16** | 176 |
+| `battle_util.c` | 36/52 | 69% | **16** | 182 |
 | `libisagbprn.c` | 0/16 | 0% | **16** | 2 |
 | `siirtc.c` | 0/16 | 0% | **16** | 3 |
 | `agb_flash.c` | 0/15 | 0% | **15** | 12 |
@@ -144,7 +148,7 @@ Généré : 2026-06-04T02:04:09.400Z
 | `field_message_box.c` | 3/17 | 18% | **14** | 19 |
 | `fldeff_cut.c` | 3/17 | 18% | **14** | 7 |
 | `mon_markings.c` | 1/15 | 7% | **14** | 10 |
-| `pokeball.c` | 23/37 | 62% | **14** | 97 |
+| `pokeball.c` | 23/37 | 62% | **14** | 101 |
 | `pokedex_cry_screen.c` | 0/14 | 0% | **14** | 6 |
 | `title_screen.c` | 6/20 | 30% | **14** | 34 |
 | `walda_phrase.c` | 0/14 | 0% | **14** | 6 |
@@ -161,7 +165,7 @@ Généré : 2026-06-04T02:04:09.400Z
 | `task.c` | 2/14 | 14% | **12** | 12 |
 | `wireless_communication_status_screen.c` | 0/12 | 0% | **12** | 9 |
 | `battle_anim_dragon.c` | 0/11 | 0% | **11** | 2 |
-| `battle_main.c` | 96/107 | 90% | **11** | 275 |
+| `battle_main.c` | 96/107 | 90% | **11** | 288 |
 | `ereader_screen.c` | 0/11 | 0% | **11** | 5 |
 | `fieldmap.c` | 44/55 | 80% | **11** | 99 |
 | `berry_powder.c` | 4/14 | 29% | **10** | 8 |
@@ -169,27 +173,24 @@ Généré : 2026-06-04T02:04:09.400Z
 | `diploma.c` | 0/10 | 0% | **10** | 8 |
 | `fldeff_rocksmash.c` | 0/10 | 0% | **10** | 8 |
 | `new_game.c` | 3/13 | 23% | **10** | 12 |
-| `util.c` | 1/11 | 9% | **10** | 13 |
 | `battle_anim_poison.c` | 0/9 | 0% | **9** | 2 |
-| `battle_intro.c` | 2/11 | 18% | **9** | 8 |
 | `clear_save_data_screen.c` | 0/9 | 0% | **9** | 9 |
-| `math_util.c` | 0/9 | 0% | **9** | 3 |
 | `mini_printf.c` | 0/9 | 0% | **9** | 2 |
 | `multiboot.c` | 0/9 | 0% | **9** | 2 |
 | `wonder_news.c` | 0/9 | 0% | **9** | 3 |
-| `battle_bg.c` | 4/12 | 33% | **8** | 29 |
 | `confetti_util.c` | 0/8 | 0% | **8** | 2 |
 | `fldeff_softboiled.c` | 0/8 | 0% | **8** | 9 |
 | `money.c` | 7/15 | 47% | **8** | 25 |
 | `save_location.c` | 2/10 | 20% | **8** | 5 |
 | `scanline_effect.c` | 1/9 | 11% | **8** | 5 |
 | `script_pokemon_util.c` | 5/13 | 38% | **8** | 20 |
+| `battle_bg.c` | 5/12 | 42% | **7** | 32 |
 | `field_door.c` | 16/23 | 70% | **7** | 90 |
 | `player_pc.c` | 78/85 | 92% | **7** | 104 |
-| `reshow_battle_screen.c` | 0/7 | 0% | **7** | 6 |
 | `script_movement.c` | 12/19 | 63% | **7** | 23 |
 | `tileset_anims.c` | 77/84 | 92% | **7** | 81 |
 | `battle_ai_switch_items.c` | 7/13 | 54% | **6** | 10 |
+| `battle_intro.c` | 5/11 | 45% | **6** | 16 |
 | `clock.c` | 0/6 | 0% | **6** | 3 |
 | `field_poison.c` | 1/7 | 14% | **6** | 7 |
 | `fldeff_escalator.c` | 0/6 | 0% | **6** | 5 |
@@ -205,7 +206,6 @@ Généré : 2026-06-04T02:04:09.400Z
 | `battle_util2.c` | 1/5 | 20% | **4** | 3 |
 | `berry.c` | 32/36 | 89% | **4** | 96 |
 | `blit.c` | 1/5 | 20% | **4** | 4 |
-| `coins.c` | 3/7 | 43% | **4** | 10 |
 | `dynamic_placeholder_text_util.c` | 0/4 | 0% | **4** | 6 |
 | `field_special_scene.c` | 9/13 | 69% | **4** | 22 |
 | `fldeff_dig.c` | 0/4 | 0% | **4** | 2 |
@@ -214,6 +214,7 @@ Généré : 2026-06-04T02:04:09.400Z
 | `hof_pc.c` | 0/4 | 0% | **4** | 5 |
 | `pokedex_area_region_map.c` | 0/4 | 0% | **4** | 2 |
 | `pokemon_animation.c` | 237/241 | 98% | **4** | 32 |
+| `reshow_battle_screen.c` | 3/7 | 43% | **4** | 12 |
 | `text_window.c` | 7/11 | 64% | **4** | 26 |
 | `battle_anim_smokescreen.c` | 0/3 | 0% | **3** | 6 |
 | `braille.c` | 0/3 | 0% | **3** | 2 |
@@ -221,19 +222,18 @@ Généré : 2026-06-04T02:04:09.400Z
 | `gym_leader_rematch.c` | 0/3 | 0% | **3** | 2 |
 | `heal_location.c` | 0/3 | 0% | **3** | 3 |
 | `list_menu.c` | 45/48 | 94% | **3** | 100 |
-| `trig.c` | 1/4 | 25% | **3** | 8 |
 | `agb_flash_1m.c` | 0/2 | 0% | **2** | 2 |
-| `battle_message.c` | 8/10 | 80% | **2** | 74 |
+| `battle_message.c` | 8/10 | 80% | **2** | 77 |
 | `birch_pc.c` | 1/3 | 33% | **2** | 4 |
 | `item_icon.c` | 4/6 | 67% | **2** | 13 |
 | `landmark.c` | 0/2 | 0% | **2** | 2 |
 | `lottery_corner.c` | 6/8 | 75% | **2** | 13 |
 | `post_battle_event_funcs.c` | 0/2 | 0% | **2** | 2 |
-| `give_gift_ribbon_to_party.c` | 0/1 | 0% | **1** | 2 |
 | `mail_data.c` | 11/12 | 92% | **1** | 16 |
 | `play_time.c` | 4/5 | 80% | **1** | 10 |
 | `reload_save.c` | 0/1 | 0% | **1** | 2 |
 | `rom_header_gf.c` | 0/1 | 0% | **1** | 2 |
+| `util.c` | 10/11 | 91% | **1** | 23 |
 | `wallclock.c` | 24/25 | 96% | **1** | 61 |
 
 ## 🔴 Jamais touchés (0 citation) — triés par taille (0)
@@ -242,9 +242,6 @@ Généré : 2026-06-04T02:04:09.400Z
 |---|---|---|
 
 ## ⭐ "Presque finis" (partiels avec ≤5 fonctions manquantes — candidats clôture rapide)
-
-### `give_gift_ribbon_to_party.c` — 1 manquante(s) (0%)
-- `GiveGiftRibbonToParty` @ L14-39
 
 ### `mail_data.c` — 1 manquante(s) (92%)
 - `DummyMailFunc` @ L132-136
@@ -257,6 +254,9 @@ Généré : 2026-06-04T02:04:09.400Z
 
 ### `rom_header_gf.c` — 1 manquante(s) (0%)
 - `__attribute__` @ L98-176
+
+### `util.c` — 1 manquante(s) (91%)
+- `DoBgAffineSet` @ L149-156
 
 ### `wallclock.c` — 1 manquante(s) (96%)
 - `VBlankCB_WallClock` @ L621-627
@@ -319,11 +319,6 @@ Généré : 2026-06-04T02:04:09.400Z
 - `ChangeListMenuPals` @ L481-490
 - `ChangeListMenuCoords` @ L491-499
 
-### `trig.c` — 3 manquante(s) (25%)
-- `Sin` @ L515-520
-- `Cos` @ L521-526
-- `Cos2` @ L540-544
-
 ### `battle_util2.c` — 4 manquante(s) (20%)
 - `AllocateBattleResources` @ L15-49
 - `FreeBattleResources` @ L50-76
@@ -341,12 +336,6 @@ Généré : 2026-06-04T02:04:09.400Z
 - `FillBitmapRect4Bit` @ L73-105
 - `BlitBitmapRect4BitTo8Bit` @ L106-183
 - `FillBitmapRect8Bit` @ L184-210
-
-### `coins.c` — 4 manquante(s) (43%)
-- `GetCoins` @ L47-51
-- `SetCoins` @ L52-56
-- `AddCoins` @ L57-78
-- `RemoveCoins` @ L79-89
 
 ### `dynamic_placeholder_text_util.c` — 4 manquante(s) (0%)
 - `DynamicPlaceholderTextUtil_Reset` @ L8-14
@@ -395,6 +384,12 @@ Généré : 2026-06-04T02:04:09.400Z
 - `SetPosForRotation` @ L868-884
 - `LaunchAnimationTaskForBackSprite` @ L956-978
 - `SetSpriteCB_MonAnimDummy` @ L979-983
+
+### `reshow_battle_screen.c` — 4 manquante(s) (43%)
+- `ReshowBattleScreenDummy` @ L26-30
+- `ClearBattleBgCntBaseBlocks` @ L172-182
+- `LoadBattlerSpriteGfx` @ L183-207
+- `CreateHealthboxSprite` @ L276-317
 
 ### `text_window.c` — 4 manquante(s) (64%)
 - `LoadWindowGfx` @ L104-109

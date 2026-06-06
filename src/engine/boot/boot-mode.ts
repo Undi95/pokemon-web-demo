@@ -153,13 +153,16 @@ function applyNoIntroPreset(): void {
   gSaveBlock2Ptr.optionsSound = existingOptions.sound;
   gSaveBlock2Ptr.optionsButtonMode = existingOptions.buttonMode;
   gSaveBlock2Ptr.optionsWindowFrameType = existingOptions.windowFrameType;
-  if (existingName && existingName !== 'PLAYER') {
+  if (existingName && existingName !== 'PLAYER' && existingName !== 'DEBUG') {
     gSaveBlock2Ptr.playerName = existingName;
     gSaveBlock2Ptr.playerGender = existingGender;
   } else {
-    // No prior save : default 1:1 décomp placeholder. User devrait passer par
-    // l'intro proper pour set un vrai nom.
-    gSaveBlock2Ptr.playerName = 'PLAYER';
+    // ?debug sans vrai nom (vide ou placeholder 'PLAYER') → nom de session 'DEBUG'
+    // (= simule le naming screen). En byte-level 1:1, `ExpandPlaceholder_PlayerName`
+    // retourne `gSaveBlock2Ptr->playerName` tel quel SANS fallback (la décomp n'en
+    // a pas) → un nom vide rendrait `{PLAYER}` vide. User passe par l'intro normale
+    // pour un vrai nom (préservé ci-dessus).
+    gSaveBlock2Ptr.playerName = 'DEBUG';
     gSaveBlock2Ptr.playerGender = MALE;
   }
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début

@@ -513,34 +513,11 @@ export function IS_TYPE_SPECIAL(moveType: number): boolean {
   return moveType > 9;
 }
 
-/** 1:1 décomp `include/global.h:106-109` :
- *    #define HIHALF(n) (((n) & 0xFFFF0000) >> 16)
- *    #define LOHALF(n) ((n) & 0xFFFF)
- */
-export function HIHALF(n: number): number { return (n & 0xFFFF0000) >>> 16; }
-export function LOHALF(n: number): number { return n & 0xFFFF; }
-
-/** 1:1 décomp `include/pokemon.h:371` :
- *    #define GET_SHINY_VALUE(otId, personality)
- *      (HIHALF(otId) ^ LOHALF(otId) ^ HIHALF(personality) ^ LOHALF(personality)) */
-export function GET_SHINY_VALUE(otId: number, personality: number): number {
-  return HIHALF(otId) ^ LOHALF(otId) ^ HIHALF(personality) ^ LOHALF(personality);
-}
-
-/** 1:1 décomp `include/pokemon.h:364-369` :
- *    #define GET_UNOWN_LETTER(personality) ((
- *        ((personality & 0x03000000) >> 18)
- *      | ((personality & 0x00030000) >> 12)
- *      | ((personality & 0x00000300) >> 6)
- *      | ((personality & 0x00000003) >> 0)) % NUM_UNOWN_FORMS)
- *  NUM_UNOWN_FORMS = 28. */
-export function GET_UNOWN_LETTER(personality: number): number {
-  const v = ((personality & 0x03000000) >>> 18)
-          | ((personality & 0x00030000) >>> 12)
-          | ((personality & 0x00000300) >>> 6)
-          | ((personality & 0x00000003));
-  return v % 28;
-}
+// `HIHALF`/`LOHALF` (global.h:106-109) + `GET_SHINY_VALUE`/`GET_UNOWN_LETTER`
+// (pokemon.h) = consolidés sur le miroir (src/game/include/global.ts +
+// src/game/include/pokemon.ts). Re-exports = source unique.
+export { HIHALF, LOHALF } from '../../game/include/global';
+export { GET_SHINY_VALUE, GET_UNOWN_LETTER } from '../../game/include/pokemon';
 
 /** 1:1 décomp `src/battle_anim_mons.c:19` :
  *    #define IS_DOUBLE_BATTLE() ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
@@ -921,14 +898,17 @@ export function GetObjectEventGraphicsInfo(graphicsId: number): any {
   return _getOEGI(graphicsId);
 }
 
-// ─── Re-exports : window frame tiles + palettes (gba-text-window.ts) ──────────
+// ─── Re-exports : window frame tiles + palettes (miroir src/game/text_window.ts) ──
 
 export {
   GetWindowFrameTilesPal,
   LoadWindowGfx,
   LoadUserWindowBorderGfx,
   LoadUserWindowBorderGfx_,
-} from '../ui/gba-text-window';
+  LoadMessageBoxGfx,
+  GetTextWindowPalette,
+  GetOverworldTextboxPalettePtr,
+} from '../../game/text_window';
 
 // ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
 //
@@ -1155,33 +1135,9 @@ export function GetBerryTreeInfo(_id: number): any {
   return rt?.gSaveBlock1Ptr?.berryTrees?.[_id] ?? null;
 }
 
-// ─── Text window palettes (1:1 décomp `src/text_window.c`) ────────────────────
-
-/** 1:1 décomp `src/text_window.c:162 GetTextWindowPalette(id)` :
- *    Picks 1-of-5 palette banks (offsets 0x00, 0x10, 0x20, 0x30, 0x40). Returns
- *    a u16* into sTextWindowPalettes. En TS : we don't have the asset ; return
- *    null (= caller will skip palette load). */
-export function GetTextWindowPalette(id: number): Uint16Array | null {
-  // Ideal : load `text_window.pal` asset and return slice [id*16 .. (id+1)*16].
-  // Placeholder until palette assets are wired in.
-  const rt: any = _getRT();
-  const pal = rt?.assetCache?.get?.('sTextWindowPalettes');
-  if (pal instanceof Uint16Array) {
-    const offset = (Math.min(id, 4)) * 16;
-    return pal.subarray(offset, offset + 16);
-  }
-  return null;
-}
-
-/** 1:1 décomp `src/text_window.c:187 GetOverworldTextboxPalettePtr()` :
- *    Returns gMessageBox_Pal — the 16-color palette for the standard overworld
- *    message box. */
-export function GetOverworldTextboxPalettePtr(): Uint16Array | null {
-  const rt: any = _getRT();
-  const pal = rt?.assetCache?.get?.('gMessageBox_Pal');
-  if (pal instanceof Uint16Array) return pal;
-  return null;
-}
+// ─── Text window palettes — RELOCALISÉES dans le miroir `src/game/text_window.ts`
+//     (GetTextWindowPalette / GetOverworldTextboxPalettePtr, 1:1 text_window.c).
+//     Réexportées plus haut (bloc « window frame tiles + palettes »). ────────────
 
 /** 1:1 décomp `include/battle_anim.h` :
  *    #define CMD_ARGS(...) ARGS args; ARGS
@@ -2193,8 +2149,9 @@ export function Contest_CopyStringWithColor(..._args: any[]): any {
   return null;
 }
 
-/** 1:1 décomp `src/text_window.c WriteColorChangeControlCode(...)`. */
-export function WriteColorChangeControlCode(..._args: any[]): void { /* no-op */ }
+/** 1:1 décomp `src/string_util.c WriteColorChangeControlCode(...)` — ex-stub no-op,
+ *  CONSOLIDÉ : délègue au miroir `src/game/string_util.ts` (0 dup). */
+export { WriteColorChangeControlCode } from '../../game/include/string_util';
 
 /** 1:1 décomp `src/easy_chat.c GetQuestionnaireWordsPtr()`. */
 export function GetQuestionnaireWordsPtr(): any { return null; }

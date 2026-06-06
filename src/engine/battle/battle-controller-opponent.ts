@@ -65,6 +65,8 @@ import { CreateSprite } from '../system/decomp-bridge';
 import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { LoadPalette, getRuntime } from '../system/decomp-globals';
 import { SpriteCB_WildMon } from './battle-sprite-callbacks';
+import { resetBattleSpritesData } from './battle-sprites-data';
+import './battle-faint-anim';  // enregistre globalThis.__battleFaintAnim (Trigger/SpriteCB faint) pour la voie L.
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
 
@@ -401,6 +403,7 @@ export function tickBattlerMonReveals(): void {
 export function resetBattlerMonSprites(): void {
   _battlerMonSpriteIds.fill(-1);
   _pendingMonReveals.length = 0;
+  resetBattleSpritesData();  // reset gBattleSpritesData (animationState/etc.) au nouveau combat.
 }
 /** 1:1 décomp `OpponentHandleSwitchInAnim()` (battle_controller_opponent.c:1160-1166).
  *  Set gBattleStruct.monToSwitchIntoId = PARTY_SIZE + set party index +
@@ -463,9 +466,11 @@ function OpponentHandleFaintAnimation(): void {
     if (!_isSpecialAnimActive(gActiveBattler)) {
       _setHealthBoxAnimationState(gActiveBattler, 0);
       _PlaySE12WithPanning(_SE_FAINT_OP, _SOUND_PAN_TARGET);
-      _triggerFaintSlideAnim_Opponent(gActiveBattler);
-      // Install HideHealthboxAfterMonFaint (dette R3 hide healthbox).
-      OpponentBufferExecCompleted();
+      // 1:1 décomp (battle_controller_opponent.c:1422-1423) :
+      //   gSprites[gBattlerSpriteIds[active]].callback = SpriteCB_FaintOpponentMon;
+      //   gBattlerControllerFuncs[active] = HideHealthboxAfterMonFaint;
+      _startOpponentFaintAnim(gActiveBattler);
+      _setBattlerControllerFunc(gActiveBattler, _HideHealthboxAfterMonFaint);
     }
   }
 }
@@ -504,9 +509,30 @@ function _PlaySE12WithPanning(seId: number, _pan: number): void {
   const g = globalThis as { __PlaySE?: (id: number) => void };
   if (g.__PlaySE) g.__PlaySE(seId);
 }
-function _triggerFaintSlideAnim_Opponent(battler: number): void {
-  const m = (globalThis as { __battleFaintAnim?: { triggerFaintSlide?: (b: number) => void } }).__battleFaintAnim;
-  m?.triggerFaintSlide?.(battler);
+/** 1:1 décomp (battle_controller_opponent.c:1422) : gSprites[gBattlerSpriteIds[battler]].callback
+ *  = SpriteCB_FaintOpponentMon (= le DROP : y2 += 8/step × ~8 steps puis DestroySprite). Le tick
+ *  vient d'AnimateSprites→runSpriteCallbacksPublic, appelé chaque frame par BattleMainCB2. */
+function _startOpponentFaintAnim(battler: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(battler));
+  if (!sprite) return;
+  const fa = (globalThis as { __battleFaintAnim?: { TriggerFaintOpponent?: (s: unknown, b: number, sp: number) => void } }).__battleFaintAnim;
+  // species → y_offset (front-pic coords) : _getMonFrontPicYOffset stub=8 (Dette R3) → ~8 steps
+  // quelle que soit l'espèce ; species ignorée ⇒ passe 0.
+  fa?.TriggerFaintOpponent?.(sprite, battler, 0);
+}
+
+/** 1:1 décomp `HideHealthboxAfterMonFaint` (battle_controller_opponent.c:413-420) : attend que le
+ *  sprite mon soit détruit (= drop fini → !inUse) → cache le healthbox + ExecCompleted. (TS :
+ *  DestroySprite retire le sprite de gSprites → get()===undefined.) */
+function _HideHealthboxAfterMonFaint(): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  if (!sprite || sprite.inUse === false) {
+    const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
+    hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
+    OpponentBufferExecCompleted();
+  }
 }
 function OpponentHandlePaletteFade(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSuccessBallThrowAnim(): void { OpponentBufferExecCompleted(); }
@@ -832,7 +858,29 @@ function OpponentHandleClearUnkVar(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleSetUnkVar(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleClearUnkFlag(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleToggleUnkFlag(): void { OpponentBufferExecCompleted(); }
-function OpponentHandleHitAnimation(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `OpponentHandleHitAnimation()` (battle_controller_opponent.c) : symétrique au player
+ *  (le mon adverse CLIGNOTE 32 frames quand touché). DoHitAnimHealthboxEffect = Dette R3 (déféré). */
+function OpponentHandleHitAnimation(): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  if (!sprite || sprite.invisible === true) { OpponentBufferExecCompleted(); return; }
+  sprite.data[1] = 0;
+  _setBattlerControllerFunc(gActiveBattler, _DoHitAnimBlinkSpriteEffect_Opp);
+}
+/** 1:1 décomp `DoHitAnimBlinkSpriteEffect()` (battle_controller_*.c) côté adverse. */
+function _DoHitAnimBlinkSpriteEffect_Opp(): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  if (!sprite) { OpponentBufferExecCompleted(); return; }
+  if (sprite.data[1] === 32) {
+    sprite.data[1] = 0;
+    sprite.invisible = false;
+    OpponentBufferExecCompleted();
+  } else {
+    if ((sprite.data[1] % 4) === 0) sprite.invisible = !sprite.invisible;
+    sprite.data[1]++;
+  }
+}
 function OpponentHandleCantSwitch(): void { OpponentBufferExecCompleted(); }
 
 function OpponentHandlePlaySE(): void {

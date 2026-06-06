@@ -166,7 +166,7 @@ import {
 import {
   LoadUserWindowBorderGfx,
   DrawTextBorderOuter,
-} from './gba-text-window';
+} from '../../game/text_window';
 
 import {
   CreateYesNoMenu,
@@ -830,45 +830,11 @@ function StringLength(str: Uint8Array | string): number {
   return i;
 }
 
-// 1:1 decomp string_util.c:602 — local impl pour preserver le pointer arithmetic
-// (= return ptr ON la byte qui suit le control code, comme dans le decomp).
-//
-//   u8 *WriteColorChangeControlCode(u8 *dest, u32 colorType, u8 color)
-//   {
-//       *dest = EXT_CTRL_CODE_BEGIN;  dest++;
-//       switch (colorType) {
-//         case 0: *dest = EXT_CTRL_CODE_COLOR;     dest++; break;
-//         case 1: *dest = EXT_CTRL_CODE_SHADOW;    dest++; break;
-//         case 2: *dest = EXT_CTRL_CODE_HIGHLIGHT; dest++; break;
-//       }
-//       *dest = color;  dest++;
-//       return dest;
-//   }
-import {
-  EXT_CTRL_CODE_BEGIN as EXT_CTRL_CODE_BEGIN_LOCAL,
-  EXT_CTRL_CODE_COLOR as EXT_CTRL_CODE_COLOR_LOCAL,
-  EXT_CTRL_CODE_HIGHLIGHT as EXT_CTRL_CODE_HIGHLIGHT_LOCAL,
-  EXT_CTRL_CODE_SHADOW as EXT_CTRL_CODE_SHADOW_LOCAL,
-} from '../decomp-data/include/constants/characters-data';
-
-function WriteColorChangeControlCode(dest: Uint8Array, colorType: number, color: number): Uint8Array {
-  if (dest.length < 1) return dest;
-  dest[0] = EXT_CTRL_CODE_BEGIN_LOCAL;
-  let d = dest.subarray(1);
-  switch (colorType) {
-    case 0:
-      if (d.length > 0) { d[0] = EXT_CTRL_CODE_COLOR_LOCAL; d = d.subarray(1); }
-      break;
-    case 1:
-      if (d.length > 0) { d[0] = EXT_CTRL_CODE_SHADOW_LOCAL; d = d.subarray(1); }
-      break;
-    case 2:
-      if (d.length > 0) { d[0] = EXT_CTRL_CODE_HIGHLIGHT_LOCAL; d = d.subarray(1); }
-      break;
-  }
-  if (d.length > 0) { d[0] = color; d = d.subarray(1); }
-  return d;
-}
+// 1:1 décomp `u8 *WriteColorChangeControlCode(u8 *dest, u32 colorType, u8 color)`
+// (string_util.c:602) — CONSOLIDÉ vers le miroir `src/game/string_util.ts` (0 dup).
+// NB : le miroir écrit le `EOS` final que cette impl locale OMETTAIT (vraie divergence
+// 1:1 corrigée) ; les callers ré-écrivent aussitôt cette position (CHAR_HYPHEN / StringAppend).
+import { WriteColorChangeControlCode } from '../../game/include/string_util';
 
 // â”€â”€â”€ Memory allocation 1:1 (Alloc / TRY_FREE_AND_SET_NULL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

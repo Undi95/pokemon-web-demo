@@ -166,7 +166,7 @@ import { TickPCAnim } from '../engine/pokemon/pc-anim';
 import { TickRegionMap } from '../engine/field/region-map';
 import { syncSubspriteOam } from '../engine/field/object-events';
 import { preloadFontData } from '../engine/ui/gba-text-system';
-import { preloadTextWindowFrames } from '../engine/ui/gba-text-window';
+import { preloadTextWindowFrames } from '../game/text_window';
 import { PlayBGM, FillPalBufferBlack } from '../engine/system/decomp-globals';
 import { FadeScreen, FADE_FROM_BLACK } from '../engine/system/fade-screen';
 import * as Songs from '../engine/decomp-data/include/constants/songs-data';

@@ -19,18 +19,18 @@
 import {
   AddWindow,
   ClearDialogWindowAndFrame,
-  LoadMessageBoxGfx,
   DrawDialogueFrame,
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
 } from '../ui/gba-window-system';
+import { LoadMessageBoxGfx } from '../../game/text_window';
 import {
   AddTextPrinterParameterized3,
   IsTextPrinterActive,
-  setStringVar4,
   gStringVar4,
   StringExpandPlaceholders,
 } from '../ui/gba-text-system';
+import { decodeOwBytes } from '../../game/include/text';
 import { gTextFlags } from '../ui/gba-text-printer';
 import { getRuntime } from '../system/decomp-globals';
 
@@ -64,8 +64,6 @@ let sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
 let sStateStep = 0;
 /** Window ID alloué la 1ère fois qu'on Show. Réutilisé après. */
 let sWindowId = -1;
-/** Texte courant (= déjà passé à setStringVar4). */
-let sCurrentText: string = '';
 
 // ─── Public API 1:1 décomp ───────────────────────────────────────────────────
 
@@ -102,17 +100,13 @@ export function InitFieldMessageBox(): void {
 /** 1:1 décomp `ShowFieldMessage(const u8 *str)`. Returns FALSE si déjà en cours.
  *  L'argument `str` est le texte BRUT du JSON (= avec `\n` `\p` `\l` literals).
  *  encodeStringForFont gère les escape sequences. */
-export function ShowFieldMessage(str: string): boolean {
+export function ShowFieldMessage(str: Uint8Array): boolean {
   if (sFieldMessageBoxMode !== FIELD_MESSAGE_BOX_HIDDEN) return false;
-  // 1:1 décomp `StringExpandPlaceholders(gStringVar4, str)` (= field_message_box.c).
-  // Résout les placeholders {PLAYER}, {RIVAL}, {STR_VAR_1..3} avant rendering
-  // (= expandStringVar4 est appelée à la racine ici, pas par le text printer).
-  // Sans cette expansion, le user voit "MAMAN: , on est là" (= virgule détachée
-  // car {PLAYER} reste tel quel et non substitué).
-  // Strip $ EOS terminator (= 1:1 décomp end-of-string sentinel).
-  const stripped = str.replace(/\$$/, '');
-  sCurrentText = StringExpandPlaceholders(gStringVar4, stripped);
-  setStringVar4(sCurrentText);
+  // 1:1 décomp `StringExpandPlaceholders(gStringVar4, str)` (field_message_box.c) :
+  // résout les placeholders byte (0xFD + id : {PLAYER}/{RIVAL}/{STR_VAR_1..3}) DANS
+  // gStringVar4. `str` = bytes charmap (getText), EOS-terminé (le `$` source a été
+  // strippé à l'encodage `encodeOwText`).
+  StringExpandPlaceholders(gStringVar4, str);
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;
   sStateStep = 0;
   return true;
@@ -164,17 +158,17 @@ export function StopFieldMessage(): void {
  *  par script via préparation/buffer). */
 export function ShowFieldMessageFromBuffer(): boolean {
   if (sFieldMessageBoxMode !== FIELD_MESSAGE_BOX_HIDDEN) return false;
-  // gStringVar4 contient déjà le texte (= set par caller). On capture pour debug.
-  sCurrentText = gStringVar4;
+  // gStringVar4 contient déjà le texte (bytes, = set par caller).
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_NORMAL;
   sStateStep = 0;
   return true;
 }
 
 /** Pas dans le décomp — helper devtools (= dev-scope.ts) pour lire le texte
- *  courant rendered dans la field message box. Retourne '' si box hidden. */
+ *  courant rendered dans la field message box. Retourne '' si box hidden.
+ *  Décode gStringVar4 (bytes charmap) → string lisible (best-effort, debug). */
 export function GetCurrentFieldMessageText(): string {
-  return sFieldMessageBoxMode === FIELD_MESSAGE_BOX_HIDDEN ? '' : sCurrentText;
+  return sFieldMessageBoxMode === FIELD_MESSAGE_BOX_HIDDEN ? '' : decodeOwBytes(gStringVar4);
 }
 
 // ─── Tick state machine (= 1:1 décomp Task_DrawFieldMessage) ────────────────

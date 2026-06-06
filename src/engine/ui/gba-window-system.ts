@@ -260,6 +260,33 @@ export function ClearWindowTilemap(windowId: number): void {
   writeWindowTilemap(gw, true);
 }
 
+/** 1:1 décomp `window.h` — modes de `CopyWindowToVram` (= COPYWIN_MAP | COPYWIN_GFX).
+ *  Notre engine traite GFX/MAP/FULL de façon identique (cf. CopyWindowToVram). */
+export const COPYWIN_NONE = 0;
+export const COPYWIN_MAP = 1;
+export const COPYWIN_GFX = 2;
+export const COPYWIN_FULL = 3;
+
+/** 1:1 décomp `window.c:525 CallWindowFunction(u8 windowId, void (*func)(u8,u8,u8,u8,u8,u8))` :
+ *    struct WindowTemplate window = gWindows[windowId].window;
+ *    func(window.bg, window.tilemapLeft, window.tilemapTop, window.width, window.height, window.paletteNum);
+ *
+ *  Appelle `func` avec les 6 champs du template de la fenêtre. Utilisé par toute
+ *  la famille Draw*Frame/Clear*Frame (menu.c) pour passer la géométrie du window
+ *  aux WindowFunc_* (qui posent les tiles de bordure dans le BG tilemap).
+ *
+ *  Note engine : `gWindows[windowId]` (index direct décomp) → `.find(id===windowId)`
+ *  (windowId monotone côté engine, cf. frontière documentée). */
+export function CallWindowFunction(
+  windowId: number,
+  func: (bg: number, tilemapLeft: number, tilemapTop: number, width: number, height: number, paletteNum: number) => void,
+): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const t = gw.template;
+  func(t.bg, t.tilemapLeft, t.tilemapTop, t.width, t.height, t.paletteNum);
+}
+
 /** Copie toutes les fenêtres dont le pixelBuffer a été modifié vers la VRAM.
  *  À appeler après RunTextPrinters() dans le main loop. */
 export function flushDirtyWindows(): void {
@@ -522,236 +549,51 @@ export function CreateWindowTemplate(
   return { bg, tilemapLeft, tilemapTop, width, height, paletteNum, baseBlock };
 }
 
-/** 1:1 décomp `menu.c:687 DrawStdFrameWithCustomTileAndPalette` :
- *    sTileNum = baseTileNum; sPaletteNum = paletteNum;
- *    CallWindowFunction(WindowFunc_DrawStdFrameWithCustomTileAndPalette);
- *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
- *    PutWindowTilemap(windowId);
- *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL);
- *
- *  Le `WindowFunc_DrawStdFrameWithCustomTileAndPalette` dessine 9 frame tiles
- *  (top-left/top/top-right/left/right/bot-left/bot/bot-right) en utilisant
- *  baseTileNum + 0..8 comme indices de tile dans le tilemap du BG du window.
- *  Phase E Step 1 : 1:1 décomp menu.c:710. */
-/** 1:1 décomp `DLG_WINDOW_BASE_TILE_NUM` (graphics.h) : tile 0xFC = base tile
- *  pour les frame border tiles du dialog box (= chargé via LoadMessageBoxGfx). */
-export const DLG_WINDOW_BASE_TILE_NUM = 0xFC;
+// ─── Hub de re-export : window frames (menu.c) → miroir `src/game/menu.ts` ───
+// Toute la famille bordure-de-fenêtre (Draw*Frame / Clear*Frame / WindowFunc_* /
+// SetStandardWindowBorderStyle / LoadMessageBoxAndBorderGfx / Menu_LoadStdPal /
+// Init*) + les constantes DLG_WINDOW_* ont été RELOCALISÉES dans leur foyer 1:1
+// décomp `src/game/menu.ts` (= menu.c). On les ré-exporte ici pour que les ~15
+// importeurs existants (bag, party, start-menu, bedroom-pc, wallclock, region-map,
+// money-box, pokedex, starter-choose, script-opcodes…) qui font
+// `import { DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame, … } from
+// './gba-window-system'` restent INTACTS. `CallWindowFunction` + `COPYWIN_*` (HW
+// pur window.c, lisent gWindows privé) restent définis ci-dessus.
+//
+// ⚠️ V3 : DLG_WINDOW_BASE_TILE_NUM = 0x200 (valeur décomp EXACTE) — était 0xFC.
+// Le load (LoadMessageBoxGfx) ET le draw (WindowFunc_DrawDialogueFrame) partagent
+// désormais 0x200 → auto-cohérent ; layout VRAM 1:1 (textbox window finit à 0x200).
+export {
+  DrawDialogueFrame,
+  DrawStdWindowFrame,
+  DrawStdFrameWithCustomTileAndPalette,
+  DrawDialogFrameWithCustomTileAndPalette,
+  ClearDialogWindowAndFrame,
+  ClearStdWindowAndFrame,
+  ClearStdWindowAndFrameToTransparent,
+  ClearDialogWindowAndFrameToTransparent,
+  SetStandardWindowBorderStyle,
+  LoadMessageBoxAndBorderGfx,
+  LoadMessageBoxAndFrameGfx,
+  InitStandardTextBoxWindows,
+  InitTextBoxGfxAndPrinters,
+  FreeAllOverworldWindowBuffers,
+  Menu_LoadStdPal,
+  Menu_LoadStdPalAt,
+  DLG_WINDOW_BASE_TILE_NUM,
+  DLG_WINDOW_PALETTE_NUM,
+} from '../../game/menu';
 
-/** 1:1 décomp `DLG_WINDOW_PALETTE_NUM` : palette 15 = couleurs du dialog box
- *  (= cyan/teal frame + blanc bg + dark gray text + light gray shadow). */
-export const DLG_WINDOW_PALETTE_NUM = 15;
+// LoadMessageBoxGfx — RELOCALISÉ dans le miroir `src/game/text_window.ts`
+// (1:1 décomp text_window.c:93). Importer depuis `gba-text-window` (hub
+// transitoire) ou `../../game/text_window`. Exposé au global-scope via le
+// `export * from '../../game/text_window'` de decomp-globals.
 
-/** 1:1 décomp `WindowFunc_DrawDialogueFrame` (menu.c:319-411).
- *
- *  Pose 14 frame tiles autour du window pour faire le frame border arrondi
- *  du dialog box overworld. Layout :
- *
- *    +-----------+--------+-----+--------+--+
- *    | tile +1   | tile+3 | +4… | tile+5 |+6|   ← top row (= top - 1)
- *    +-----------+--------+-----+--------+--+
- *    | tile+7    | tile +9 (= INTERIOR)  |+10|   (5 lignes : top..top+4)
- *    +-----------+--------+-----+--------+--+
- *    | V_FLIP +1 | V_FL+3 | +4 V| V_FL+5 |+6|   ← bottom row (= top + height)
- *    +-----------+--------+-----+--------+--+
- *
- *  Le window pixel buffer (= text content) recouvre l'intérieur via
- *  CopyWindowToVram et écrase tile +9 dans la zone window proprement dite. */
-export function WindowFunc_DrawDialogueFrame(
-  bg: number, tilemapLeft: number, tilemapTop: number,
-  width: number, height: number, paletteNum: number,
-): void {
-  const baseTile = DLG_WINDOW_BASE_TILE_NUM;
-  const V_FLIP = 0x800;
-  // Top row (1 row above content)
-  FillBgTilemapBufferRect(bg, baseTile + 1,  tilemapLeft - 2,         tilemapTop - 1, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 3,  tilemapLeft - 1,         tilemapTop - 1, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 4,  tilemapLeft,             tilemapTop - 1, width - 1, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 5,  tilemapLeft + width - 1, tilemapTop - 1, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 6,  tilemapLeft + width,     tilemapTop - 1, 1,         1, paletteNum);
-  // Middle rows (= 5 rows from top to top+4 inclus = window content + bottom)
-  FillBgTilemapBufferRect(bg, baseTile + 7,  tilemapLeft - 2,         tilemapTop,     1,         5, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 9,  tilemapLeft - 1,         tilemapTop,     width + 1, 5, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTile + 10, tilemapLeft + width,     tilemapTop,     1,         5, paletteNum);
-  // Bottom row (= V_FLIP des top tiles)
-  FillBgTilemapBufferRect(bg, (baseTile + 1) | V_FLIP, tilemapLeft - 2,         tilemapTop + height, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, (baseTile + 3) | V_FLIP, tilemapLeft - 1,         tilemapTop + height, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, (baseTile + 4) | V_FLIP, tilemapLeft,             tilemapTop + height, width - 1, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, (baseTile + 5) | V_FLIP, tilemapLeft + width - 1, tilemapTop + height, 1,         1, paletteNum);
-  FillBgTilemapBufferRect(bg, (baseTile + 6) | V_FLIP, tilemapLeft + width,     tilemapTop + height, 1,         1, paletteNum);
-}
-
-/** 1:1 décomp `DrawDialogueFrame(windowId, copyToVram)` (menu.c:216) :
- *    CallWindowFunction(WindowFunc_DrawDialogueFrame)
- *    FillWindowPixelBuffer(windowId, PIXEL_FILL(1))
- *    PutWindowTilemap(windowId)
- *    if (copyToVram) CopyWindowToVram(windowId, COPYWIN_FULL)
- *
- *  Foundation partagée — utilisée par field-message-box (= overworld dialog),
- *  Birch speech (= main-menu-impl), et toute autre scene qui veut un dialog box
- *  standard. baseTile 0xFC + palette 15 doivent avoir été loaded via
- *  LoadMessageBoxGfx avant l'appel. */
-export function DrawDialogueFrame(windowId: number, copyToVram: boolean): void {
-  const gw = gWindows.find((w) => w.id === windowId);
-  if (!gw) return;
-  const t = gw.template;
-  WindowFunc_DrawDialogueFrame(t.bg, t.tilemapLeft, t.tilemapTop, t.width, t.height, t.paletteNum);
-  // 1:1 décomp : FillWindowPixelBuffer(PIXEL_FILL(1)) = idx 1 (= bg = white).
-  fillWindowPixelBuffer(gw.win, 0x11);
-  writeWindowTilemap(gw, false);
-  if (copyToVram) {
-    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
-  }
-}
-
-export function DrawStdFrameWithCustomTileAndPalette(
-  windowId: number,
-  copyToVram: boolean,
-  baseTileNum: number,
-  paletteNum: number,
-): void {
-  const gw = gWindows.find((w) => w.id === windowId);
-  if (!gw) return;
-  const { bg, tilemapLeft, tilemapTop, width, height } = gw.template;
-
-  // 1:1 décomp WindowFunc_DrawStdFrameWithCustomTileAndPalette : 8 FillBgTilemapBufferRect
-  // (= corners + 4 edges, le centre du window est laissé vide pour le contenu).
-  // tile 0=TL, 1=top, 2=TR, 3=left, 5=right, 6=BL, 7=bot, 8=BR.
-  FillBgTilemapBufferRect(bg, baseTileNum + 0, tilemapLeft - 1, tilemapTop - 1, 1, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 1, tilemapLeft,     tilemapTop - 1, width, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 2, tilemapLeft + width, tilemapTop - 1, 1, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 3, tilemapLeft - 1, tilemapTop,     1, height, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 5, tilemapLeft + width, tilemapTop, 1, height, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 6, tilemapLeft - 1, tilemapTop + height, 1, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 7, tilemapLeft,     tilemapTop + height, width, 1, paletteNum);
-  FillBgTilemapBufferRect(bg, baseTileNum + 8, tilemapLeft + width, tilemapTop + height, 1, 1, paletteNum);
-
-  // FillWindowPixelBuffer(windowId, PIXEL_FILL(1)) — fill avec idx 1 (= bgColor du window).
-  // PIXEL_FILL(1) = 0x11 (= les 2 nibbles à 1).
-  fillWindowPixelBuffer(gw.win, 0x11);
-  writeWindowTilemap(gw, false);
-  if (copyToVram) {
-    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
-  }
-}
-
-/** 1:1 décomp `menu.c LoadMessageBoxGfx(bg, baseTile, paletteFlatIdx)`.
- *  Charge les message-box frame tiles + palette standard pour le dialogue.
- *  Phase E Step 4 MVP : charge une palette text inline (= 4 colors :
- *    idx 0 = transparent (RGB(0,0,0))
-/** 1:1 décomp src/text_window.c:93 LoadMessageBoxGfx(windowId, destOffset, palOffset).
- *
- *  ```c
- *  void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset) {
- *      LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), gMessageBox_Gfx, 0x1C0, destOffset);
- *      LoadPalette(GetOverworldTextboxPalettePtr(), palOffset, PLTT_SIZE_4BPP);
- *  }
- *  ```
- *
- *  - `gMessageBox_Gfx` = 14 tiles 4bpp (= 0x1C0 = 448 bytes) du frame dialog vert/cyan
- *    (= corners arrondis + edges). PNG src : graphics/text_window/message_box.png 56x16.
- *  - `gMessageBox_Pal` = 16 colors GBA palette (= cyan/vert/blanc/grey).
- *  - destOffset = baseTile (= e.g. 0xFC pour Birch dialog) → tiles loaded à
- *    BG charBase + destOffset * 32 dans VRAM.
- *  - palOffset = BG palette index (= e.g. BG_PLTT_ID(15) = 240) → 16 colors
- *    loaded à gPlttBufferFaded[palOffset..palOffset+15].
- *
- *  Préchargé via preloadTextWindowFrames() (gba-text-window.ts) au boot. */
-export function LoadMessageBoxGfx(bg: number, baseTile: number, paletteFlatIdx: number): void {
-  const rt = getRuntime();
-  if (!rt) return;
-
-  // Charge tile data → BG VRAM at (baseTile * 32) bytes offset.
-  const gfxData = assetCache.get('gMessageBox_Gfx');
-  if (gfxData instanceof Uint8Array) {
-    // 1:1 décomp LoadBgTiles(bg, gMessageBox_Gfx, 0x1C0, destOffset).
-    LoadBgTiles(bg, gfxData, 0x1C0, baseTile);
-  } else {
-    console.warn('[LoadMessageBoxGfx] gMessageBox_Gfx not preloaded (= preloadTextWindowFrames non appelé) — dialog frame border invisible');
-  }
-
-  // Charge palette → BG palette banks.
-  const palData = assetCache.get('gMessageBox_Pal');
-  if (palData instanceof Uint16Array) {
-    // 1:1 décomp LoadPalette(GetOverworldTextboxPalettePtr() = gMessageBox_Pal, palOffset, 32 bytes = 16 colors).
-    for (let i = 0; i < Math.min(16, palData.length); i++) {
-      rt.gPlttBufferUnfaded.set(paletteFlatIdx + i, palData[i]);
-      rt.gPlttBufferFaded.set(paletteFlatIdx + i, palData[i]);
-    }
-  } else {
-    console.warn('[LoadMessageBoxGfx] gMessageBox_Pal not preloaded — fallback hardcoded grey palette');
-    // Fallback : 4 couleurs basiques (préserve l'ancien comportement) si l'asset
-    // n'est pas chargé. Ne devrait pas arriver en flow normal.
-    const transparent = 0;
-    const white = (31) | (31 << 5) | (31 << 10);
-    const darkGrey = (7) | (7 << 5) | (7 << 10);
-    const lightGrey = (15) | (15 << 5) | (15 << 10);
-    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 0, transparent);
-    rt.gPlttBufferFaded.set(paletteFlatIdx + 0, transparent);
-    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 1, white);
-    rt.gPlttBufferFaded.set(paletteFlatIdx + 1, white);
-    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 2, darkGrey);
-    rt.gPlttBufferFaded.set(paletteFlatIdx + 2, darkGrey);
-    rt.gPlttBufferUnfaded.set(paletteFlatIdx + 3, lightGrey);
-    rt.gPlttBufferFaded.set(paletteFlatIdx + 3, lightGrey);
-  }
-}
-
-/** 1:1 décomp `ClearDialogWindowAndFrame` (menu.c:234) + `WindowFunc_ClearDialogWindowAndFrame`
- *  (menu.c:419). Clear large rect autour du window — couvre les 2 colonnes de
- *  frame border de chaque côté (= TL outer/inner + TR outer/inner) que
- *  ClearStdWindowAndFrame ne clear PAS.
- *
- *    FillBgTilemapBufferRect(bg, 0, tilemapLeft-3, tilemapTop-1, width+6, height+2, STD_WIN_PALETTE_NUM);
- *
- *  À utiliser pour fermer un dialog box overworld (= field-message-box). */
-export function ClearDialogWindowAndFrame(windowId: number, copyToVram: boolean): void {
-  const gw = gWindows.find((w) => w.id === windowId);
-  if (!gw) return;
-  const t = gw.template;
-  // 1:1 décomp WindowFunc_ClearDialogWindowAndFrame : tile=0 + palette=0
-  // dans toute la zone (= width+6, height+2) débordant largement du frame.
-  FillBgTilemapBufferRect(
-    t.bg, 0,
-    t.tilemapLeft - 3,
-    t.tilemapTop - 1,
-    t.width + 6,
-    t.height + 2,
-    0,
-  );
-  fillWindowPixelBuffer(gw.win, 0x11);
-  writeWindowTilemap(gw, true);
-  if (copyToVram) {
-    copyPixelBufferToVram(gw.win, gw.template.bg, gw.template.baseBlock);
-  }
-}
-
-/** 1:1 décomp src/menu.c:ClearStdWindowAndFrame.
- *  Clear le window pixel buffer + clear les BG tilemap entries du frame border.
- *
- *  Bug session 87 fix : avant on clearait juste le pixel buffer. Le frame
- *  border (= tiles placés par DrawStdFrameWithCustomTileAndPalette autour du
- *  window) restait visible après remove window → "cadre vide" leftover après
- *  OUI/NON confirm dans Birch flow + autres scenes.
- *
- *  Décomp clear toute la zone (= width+2, height+2 autour pour le frame). */
-export function ClearStdWindowAndFrame(windowId: number, _copyToVram: boolean): void {
-  const gw = gWindows.find((w) => w.id === windowId);
-  if (!gw) return;
-  fillWindowPixelBuffer(gw.win, 0);
-  writeWindowTilemap(gw, true);
-  // 1:1 décomp : clear BG tilemap rect autour du window (= frame border zone).
-  // FillBgTilemapBufferRect_Palette0(bg, tile=0, left-1, top-1, width+2, height+2).
-  const tpl = gw.template;
-  FillBgTilemapBufferRect(
-    tpl.bg,
-    0,  // tile=0 = transparent
-    tpl.tilemapLeft - 1,
-    tpl.tilemapTop - 1,
-    tpl.width + 2,
-    tpl.height + 2,
-    0,
-  );
-}
+// ClearDialogWindowAndFrame / ClearStdWindowAndFrame — RELOCALISÉS dans
+// `src/game/menu.ts` (menu.c:234/243), ré-exportés par le hub ci-dessus.
+// (Les anciennes versions engine fill=0/copyToVram-ignoré sont remplacées par
+//  le 1:1 décomp : CallWindowFunction + FillWindowPixelBuffer(PIXEL_FILL(1)) +
+//  ClearWindowTilemap + CopyWindowToVram si copyToVram.)
 
 export function FillBgTilemapBufferRect_Palette0(
   bg: number,

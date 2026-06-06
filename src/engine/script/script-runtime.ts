@@ -25,6 +25,9 @@
  */
 
 import { VarGet } from './script-vars';
+// Migration TEXTE byte-level 1:1 (flip direct) : getText retourne des bytes charmap
+// (data source lisible → encodée au 1er accès via encodeOwText = notre préproc, cache).
+import { encodeOwText, isOwCharmapReady } from '../../game/include/text';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -87,7 +90,8 @@ let sLockFieldControls = false;
 // Script library : labels → array of opcodes. Loaded au map switch.
 let _scriptsByLabel: Map<string, Opcode[]> = new Map();
 // Texts library : label → raw text string.
-let _textsByLabel: Map<string, string> = new Map();
+let _textsByLabel: Map<string, string> = new Map();   // source lisible (1:1 `_("…")`)
+let _textBytesCache: Map<string, Uint8Array> = new Map();  // encodée (notre préproc), invalidée au load
 // Movements library : extracted comme "scripts" dans le JSON, mais ce sont des
 // movement label sequences. Stockés ensemble pour simplicité ; runtime distingue.
 // e.g. "LittlerootTown_Movement_PlayerEnterHouse" → ["walk_up", "walk_up", "step_end"].
@@ -180,6 +184,7 @@ export async function loadMapScripts(mapName: string): Promise<void> {
 
   _scriptsByLabel = new Map();
   _textsByLabel = new Map();
+  _textBytesCache = new Map();   // invalide le cache d'encodage (nouvelle data map)
   _movementsByLabel = new Map();
 
   // Merge order : map-specific scripts override common ones (rare). Common load
@@ -211,8 +216,18 @@ export async function loadMapScripts(mapName: string): Promise<void> {
 export function getScript(label: string): Opcode[] | undefined {
   return _scriptsByLabel.get(label);
 }
-export function getText(label: string): string | undefined {
-  return _textsByLabel.get(label);
+/** 1:1 décomp : un script charge un `const u8 *` (bytes charmap) par label. La
+ *  data source reste lisible (`_textsByLabel`, comme `_("…")`) ; on l'encode en
+ *  bytes au 1er accès (= notre préproc, `encodeOwText`) avec cache. Si la charmap
+ *  n'est pas encore prête, on encode sans cacher (ré-encodage propre ensuite). */
+export function getText(label: string): Uint8Array | undefined {
+  const raw = _textsByLabel.get(label);
+  if (raw === undefined) return undefined;
+  const cached = _textBytesCache.get(label);
+  if (cached !== undefined) return cached;
+  const bytes = encodeOwText(raw);
+  if (isOwCharmapReady()) _textBytesCache.set(label, bytes);
+  return bytes;
 }
 export function getMovement(label: string): string[] | undefined {
   return _movementsByLabel.get(label);

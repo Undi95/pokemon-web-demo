@@ -44,7 +44,7 @@ import {
   FillBgTilemapBufferRect_Palette0, ScheduleBgCopyTilemapToVram,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { ItemIsMail } from './mail-data';

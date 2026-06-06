@@ -1022,15 +1022,28 @@ function _PlaySE12WithPanning(seId: number, _pan: number): void {
 /** Trigger K13 SpriteCB_FaintSlideAnim sur le sprite mon battler.
  *  Wire vers __battleFaintAnim si exposé (= K13 cascade). */
 function _triggerFaintSlideAnim(battler: number): void {
-  const m = (globalThis as { __battleFaintAnim?: { triggerFaintSlide?: (b: number) => void } }).__battleFaintAnim;
-  m?.triggerFaintSlide?.(battler);
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(battler));
+  if (!sprite) return;
+  const fa = (globalThis as { __battleFaintAnim?: { TriggerFaintSlide?: (s: unknown, x: number, y: number) => void } }).__battleFaintAnim;
+  // 1:1 décomp (battle_controller_player.c:2421-2423) : sSpeedX=0, sSpeedY=5,
+  // callback = SpriteCB_FaintSlideAnim (= le back-sprite GLISSE vers le bas hors-écran).
+  fa?.TriggerFaintSlide?.(sprite, 0, 5);
 }
 
-/** 1:1 décomp `FreeMonSpriteAfterFaintAnim()` (battle_controller_player.c).
- *  Wait sprite Y > screen height → free sprite + healthbox → exec complete.
- *  Pour now : immediate complete tant que K13 anim wire pas fait. */
+/** 1:1 décomp `FreeMonSpriteAfterFaintAnim()` (battle_controller_player.c:1314-1326) :
+ *  attend que le sprite mon soit sous l'écran (y + y2 > DISPLAY_HEIGHT) → DestroySprite +
+ *  SetHealthboxSpriteInvisible + ExecCompleted. Le tick de la slide vient d'AnimateSprites. */
 function _FreeMonSpriteAfterFaintAnim(): void {
-  PlayerBufferExecCompleted();
+  const rt = getRuntime();
+  const spriteId = getBattlerMonSpriteId(gActiveBattler);
+  const sprite = rt?.gSprites?.get(spriteId);
+  if (!sprite || ((sprite.y ?? 0) + (sprite.y2 ?? 0) > 160 /* DISPLAY_HEIGHT */)) {
+    if (sprite && rt?.gSprites) { sprite.inUse = false; sprite.callback = null; rt.gSprites.delete(spriteId); }
+    const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
+    hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
+    PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `PlayerHandlePaletteFade()`. */
@@ -1436,28 +1449,51 @@ function _OpenBagAndChooseItem(): void {
  *  → PARTY_SIZE (= branche else de WaitForMonSelection ; ne devrait pas arriver car
  *  `Cmd_openpartyscreen` gate l'ouverture via HasNoMonsToSwitch). */
 function _OpenPartyMenuToChooseMon(): void {
-  // 1:1 décomp : OpenPartyMenuToChooseMon attend `!gPaletteFade.active` (fin du
-  // fade-to-black lancé par PlayerHandleChoosePokemon) avant d'ouvrir le party menu.
-  // Headless (pas de vrai écran party) : dès le fade fini, on auto-sélectionne PUIS
-  // on relance un fade BACK vers normal — SANS ça l'écran reste NOIR (le fade-to-black
-  // n'étant jamais inversé ; bug visuel switch volontaire loop #9).
-  const _rt = (globalThis as { __rt?: { gPaletteFade?: { active?: boolean } } }).__rt;
-  if (_rt?.gPaletteFade?.active) return;
-  const activePartyIdx = gBattlerPartyIndexes[gActiveBattler];
-  let chosenMonId = _PARTY_SIZE;
-  for (let i = 0; i < _PARTY_SIZE; i++) {
-    if (i === activePartyIdx) continue;
-    const mon = gPlayerParty[i];
-    if (!mon) continue;
-    const sp = GetMonData(mon, MON_DATA_SPECIES_LOCAL) as number;
-    const hp = GetMonData(mon, MON_DATA_HP) as number;
-    const isEgg = GetMonData(mon, MON_DATA_IS_EGG) as number;
-    if (sp !== 0 && hp > 0 && !isEgg) { chosenMonId = i; break; }
+  // 1:1 décomp `OpenPartyMenuToChooseMon` (battle_controller_player.c:1345) : attend
+  // `!gPaletteFade.active` (fin du fade-to-black de PlayerHandleChoosePokemon), puis
+  // installe WaitForMonSelection, FreeAllWindowBuffers, OpenPartyMenuInBattle(caseId).
+  // En L : on OUVRE LE VRAI party menu (OpenPartyScreenForBattleSwitch, = l'UI portée
+  // 1:1 de party_menu.c) avec, comme exit-callback, le VRAI reshow décomp
+  // (CB2_SetUpReshowBattleScreenAfterMenu, reshow_battle_screen.ts) — PAS le reshow-pump
+  // ad-hoc non-1:1 de battle-flow (voie V).
+  if (getRuntime()?.gPaletteFade?.active) return;
+  gBattlerControllerFuncs[gActiveBattler] = _WaitForMonSelection;
+  const activeSlot = gBattlerPartyIndexes[gActiveBattler];
+  // 1:1 : caseId = action party (bufferA[1]&0xF). PARTY_ACTION_SEND_OUT(=1, remplacement
+  // après K.O.) = non-annulable ; switch volontaire = annulable.
+  const caseId = gBattleBufferA[gActiveBattler][1] & 0xF;
+  const allowCancel = caseId !== 1 /* PARTY_ACTION_SEND_OUT */;
+  (globalThis as Record<string, unknown>).__battleSwitchResultSlot = -1;
+  (globalThis as Record<string, unknown>).__battleReshowDone = false;
+  // Imports dynamiques : évitent le cycle statique controller↔party-screen/reshow
+  // (= pattern voie V battle-flow:4655) ; one-shot à l'ouverture (pas per-frame).
+  void Promise.all([
+    import('../ui/party-screen'),
+    import('./reshow-battle-screen'),
+  ]).then(([party, reshow]) => {
+    party.OpenPartyScreenForBattleSwitch(reshow.CB2_SetUpReshowBattleScreenAfterMenu, {
+      activeSlot, allowCancel,
+    });
+  });
+}
+
+/** 1:1 décomp `WaitForMonSelection` (battle_controller_player.c:1357). Attend que le
+ *  reshow soit terminé (équivalent L sync de `gMain.callback2 == BattleMainCB2`, via le
+ *  flag `__battleReshowDone` posé par le reshow) ET le fade-in fini, puis émet la
+ *  sélection : slot choisi, ou PARTY_SIZE si annulé. */
+function _WaitForMonSelection(): void {
+  const reshowDone = (globalThis as { __battleReshowDone?: boolean }).__battleReshowDone === true;
+  if (!reshowDone || getRuntime()?.gPaletteFade?.active) return;
+  const slot = (globalThis as { __battleSwitchResultSlot?: number }).__battleSwitchResultSlot ?? -1;
+  let chosenMonId: number;
+  if (slot >= 0) {
+    chosenMonId = slot;
+    // L : l'engine (Cmd_switchhandleorder) lit `monToSwitchIntoId` → on le pose depuis
+    // la sélection joueur (en plus de l'émission 1:1 ci-dessous).
+    _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
+  } else {
+    chosenMonId = _PARTY_SIZE;   // 1:1 : annulation → PARTY_SIZE (else-branch décomp)
   }
-  if (chosenMonId !== _PARTY_SIZE) _setMonToSwitchIntoId(gActiveBattler, chosenMonId);
-  // Fade BACK : du noir (Y=0x10) vers normal (Y=0) — équivalent de la fermeture du
-  // party menu côté décomp. Sans ça l'écran reste noir après le choix.
-  _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0x10, 0, _RGB_BLACK);
   _BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, chosenMonId, _getBattlePartyCurrentOrderSlice());
   PlayerBufferExecCompleted();
 }
@@ -1777,10 +1813,33 @@ function PlayerHandleSetUnkVar(): void { PlayerBufferExecCompleted(); }
 function PlayerHandleClearUnkFlag(): void { PlayerBufferExecCompleted(); }
 function PlayerHandleToggleUnkFlag(): void { PlayerBufferExecCompleted(); }
 
-/** 1:1 décomp `PlayerHandleHitAnimation()`. */
+/** 1:1 décomp `PlayerHandleHitAnimation()` (battle_controller_player.c:2877-2890) : si le sprite
+ *  mon est visible → data[1]=0 + installe DoHitAnimBlinkSpriteEffect (= clignote). Sinon ExecComplete. */
 function PlayerHandleHitAnimation(): void {
-  // Wire vers sprite shake (= startShake battle-flow). Pour now : immediate.
-  PlayerBufferExecCompleted();
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  if (!sprite || sprite.invisible === true) { PlayerBufferExecCompleted(); return; }
+  _gDoingBattleAnim = true;
+  sprite.data[1] = 0;
+  // DoHitAnimHealthboxEffect (healthbox bob, pokeball.c:1284) = Dette R3 (effet secondaire, déféré).
+  gBattlerControllerFuncs[gActiveBattler] = _DoHitAnimBlinkSpriteEffect;
+}
+
+/** 1:1 décomp `DoHitAnimBlinkSpriteEffect()` : toggle sprite.invisible tous les 4 frames sur 32
+ *  frames (= 4 clignotements) puis restore visible + ExecCompleted. Tické par le controller tick. */
+function _DoHitAnimBlinkSpriteEffect(): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(getBattlerMonSpriteId(gActiveBattler));
+  if (!sprite) { _gDoingBattleAnim = false; PlayerBufferExecCompleted(); return; }
+  if (sprite.data[1] === 32) {
+    sprite.data[1] = 0;
+    sprite.invisible = false;
+    _gDoingBattleAnim = false;
+    PlayerBufferExecCompleted();
+  } else {
+    if ((sprite.data[1] % 4) === 0) sprite.invisible = !sprite.invisible;
+    sprite.data[1]++;
+  }
 }
 
 /** 1:1 décomp `PlayerHandleCantSwitch()`. */

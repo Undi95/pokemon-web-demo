@@ -16,13 +16,19 @@ import {
 import { Random, Random32 } from '../system/random';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { getSpeciesInfo as gameDataGetSpeciesInfo, getMove as gameDataGetMove } from '../data/game-data';
+import { IsShinyOtIdPersonality } from '../../game/include/pokemon';
 // Résolution move 1:1 décomp (leaf partagé, zéro @pkmn/dex).
 import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
 // 1:1 décomp `GetItemHoldEffect` (item.c) — pour le blocage d'évolution par
 // Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE). Leaf data (battle/data) déjà
 // dépendance de ce module (cf. move-name-resolve) → pas de cycle.
 import { GetItemHoldEffect } from '../battle/data/item-hold-effects';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
+// Migration modèle Pokémon (Phase 1) : adaptateur INVERSE `Pokemon → PokemonInstance`.
+// Import TYPE-ONLY (zéro edge runtime → zéro risque de cycle ; party-storage
+// type-importe déjà PokemonInstance de ce module). On lit les champs `mon.*`
+// directement (pas besoin de GetMonData ici).
+import type { Pokemon } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
 import { gMapHeader } from '../field/map-loader';
@@ -176,8 +182,8 @@ export function getMonGenderSymbol(mon: { monGender?: number; personality?: numb
  * Probability = 8/65536 = 1/8192 (= classic Gen 3 odds).
  */
 function isShinyFromOtIdPersonality(otId: number, personality: number): boolean {
-  const shinyValue = ((otId >>> 16) ^ (otId & 0xFFFF) ^ (personality >>> 16) ^ (personality & 0xFFFF)) & 0xFFFF;
-  return shinyValue < 8;
+  // Calcul shiny consolidé sur le miroir `IsShinyOtIdPersonality` (pokemon.c:6708).
+  return IsShinyOtIdPersonality(otId, personality);
 }
 
 const ZERO_STATS: StatSpread = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
@@ -275,16 +281,29 @@ export function makeMoveSlot(moveEnum: string): { id: string; nameFr: string; pp
   return { id, nameFr: getMoveNameFr(moveEnum) || id, pp, ppMax: pp };
 }
 
-/** 1:1 décomp `GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL)` (cas level-up) :
- *  renvoie l'espèce cible (enum SPECIES_X) si le mon remplit une évolution EVO_LEVEL
- *  (level >= param), sinon null. (Autres méthodes : pierre/échange/amitié = hors level-up.)
- *  `heldItem` (id runtime EN, ex. "everstone") : 1:1 décomp pokemon.c:5503-5510, un objet
- *  tenu dont le hold effect est HOLD_EFFECT_PREVENT_EVOLVE (Pierre Stase) bloque l'évolution. */
-export function getEvolutionTargetForLevelUp(speciesEnum: string, level: number, heldItem?: string): string | null {
-  // 1:1 décomp GetEvolutionTargetSpecies (pokemon.c:5503-5510) :
-  //   holdEffect = GetItemHoldEffect(heldItem);
-  //   if (holdEffect == HOLD_EFFECT_PREVENT_EVOLVE && mode != EVO_MODE_ITEM_CHECK) return SPECIES_NONE;
-  // (au level-up mode = EVO_MODE_NORMAL → le garde s'applique).
+/** 1:1 décomp `GetEvolutionTargetSpecies(mon, EVO_MODE_NORMAL)` (cas level-up,
+ *  pokemon.c:5512-5566). Renvoie l'espèce cible (enum SPECIES_X) si le mon remplit
+ *  une méthode d'évolution AU LEVEL-UP, sinon null. Le décomp itère TOUTES les entrées
+ *  de gEvolutionTable[species] et garde la DERNIÈRE qui matche → on reproduit ça.
+ *
+ *  Méthodes gérées (1:1) :
+ *    - EVO_LEVEL (level >= param)
+ *    - EVO_FRIENDSHIP (friendship >= 220) — Crobat/Blissey/Pikachu/Clefable/Mélo/Granivol…
+ *    - EVO_LEVEL_SILCOON / _CASCOON (Wurmple : (upperPersonality % 10) <=4 / >4)
+ *    - EVO_LEVEL_NINJASK (Nincada → Ninjask, level >= param)
+ *  Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque tout (1:1 pokemon.c:5503-5510).
+ *
+ *  Déférés (Dette R3, données non triviales — à compléter pour full 1:1) :
+ *    - EVO_FRIENDSHIP_DAY/NIGHT (Eevee→Mentali/Noctali) : friendship>=220 + plage RTC
+ *      (jour 12-23 / nuit 0-11, pokemon.c:5526/5531). ⚠️ BLOQUÉ : importer rtc.ts ici
+ *      (RtcCalcLocalTime/gLocalTime) DEADLOCKE le boot — cycle d'init ESM
+ *      pokemon→rtc→save-system→…→pokemon (vérifié runtime : import présent = boot stall
+ *      sans erreur ; commenté = boot OK). Fix = cycle-break à la racine (cf. mémoire).
+ *    - EVO_LEVEL_ATK_GT/EQ/LT_DEF (Tyrogue→Kicklee/Kapoera/Tygnon) : besoin atk/def calculés.
+ *    - EVO_BEAUTY (Feebas→Milobellus) : stat beauté (contest) non trackée sur l'instance. */
+export function getEvolutionTargetForLevelUp(mon: PokemonInstance): string | null {
+  const heldItem = mon.heldItem;
+  // 1:1 décomp pokemon.c:5503-5510 : Pierre Stase (HOLD_EFFECT_PREVENT_EVOLVE) bloque.
   if (heldItem) {
     const itemKey = 'ITEM_' + heldItem.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '');
     const itemId = resolveDecompConstant(itemKey);
@@ -297,9 +316,34 @@ export function getEvolutionTargetForLevelUp(speciesEnum: string, level: number,
   const dataMod = (globalThis as { __game_data?: {
     getEvolutions?: (k: string) => Array<{ method: string; param: number; target: string }> | undefined;
   } }).__game_data;
-  const evos = dataMod?.getEvolutions?.(speciesEnum) ?? [];
-  const evo = evos.find(e => e.method === 'EVO_LEVEL' && level >= e.param);
-  return evo?.target ?? null;
+  const evos = dataMod?.getEvolutions?.(mon.speciesEnum) ?? [];
+  const level = mon.level;
+  const friendship = mon.friendship ?? 0;
+  const FRIENDSHIP_EVO_THRESHOLD = 220;                          // 1:1 décomp pokemon.c:58
+  const upperPersonality = ((mon.personality ?? 0) >>> 16) & 0xFFFF;  // 1:1 HIHALF(personality)
+  // 1:1 décomp : itère toutes les entrées, garde la dernière qui matche.
+  let target: string | null = null;
+  for (const e of evos) {
+    switch (e.method) {
+      case 'EVO_LEVEL':
+        if (level >= e.param) target = e.target;
+        break;
+      case 'EVO_FRIENDSHIP':
+        if (friendship >= FRIENDSHIP_EVO_THRESHOLD) target = e.target;
+        break;
+      case 'EVO_LEVEL_SILCOON':
+        if (level >= e.param && (upperPersonality % 10) <= 4) target = e.target;
+        break;
+      case 'EVO_LEVEL_CASCOON':
+        if (level >= e.param && (upperPersonality % 10) > 4) target = e.target;
+        break;
+      case 'EVO_LEVEL_NINJASK':
+        if (level >= e.param) target = e.target;
+        break;
+      // (EVO_FRIENDSHIP_DAY/NIGHT, EVO_LEVEL_ATK_*_DEF, EVO_BEAUTY = déférés, cf. JSDoc.)
+    }
+  }
+  return target;
 }
 
 /** 1:1 décomp évolution : change l'espèce d'une instance (garde PID/IVs/EVs/exp/moves/
@@ -444,6 +488,166 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     pokeball: opts?.pokeball ?? 'ITEM_POKE_BALL',
     isEgg: false,
   };
+}
+
+/**
+ * Migration modèle Pokémon — PHASE 1 : adaptateur INVERSE `Pokemon → PokemonInstance`.
+ *
+ * Construit une VUE `PokemonInstance` (legacy, à champs string) au-dessus d'un
+ * `Pokemon` (struct décomp à ids). C'est l'inverse de `pokemonInstanceToPokemon`
+ * (party-storage:515) : il permet de rendre `Pokemon` (BoxMon) le stockage
+ * CANONIQUE tout en laissant les ~219 appelants `PokemonInstance` (OW/party/
+ * summary/items) lire sans churn (= le pont du pivot Phase 2, façon event_data).
+ *
+ * Dérivations 1:1 réutilisées : species/move/item id→enum (`reverseDecompConstant`)
+ * → nom FR (`getSpeciesNameFr`/`getMoveNameFr`) ; ability via `gSpeciesInfo`
+ * [abilityNum] ; nature/gender/shiny (helpers purs déjà portés) ; status bitfield
+ * STATUS1_* → enum. ⚠️ Champs « edge » approximés (à affiner Phase 2/3 sous A/B) :
+ * `pokeball` (index balle→enum item ; défaut POKE_BALL), `metLocation` (MAPSEC).
+ */
+export function pokemonToPokemonInstance(mon: Pokemon): PokemonInstance {
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const dexId = speciesEnumToDexId(speciesEnum);
+  const speciesNameFr = getSpeciesNameFr(speciesEnum);
+  const sInfo = gameDataGetSpeciesInfo(speciesEnum);
+
+  // Moves : slots non-vides → {id runtime, nom FR, pp courant, pp max}.
+  const moves: PokemonInstance['moves'] = [];
+  for (let i = 0; i < 4; i++) {
+    const moveId = mon.moves[i];
+    if (!moveId) continue;
+    const moveEnum = reverseDecompConstant(moveId, 'MOVE_') ?? '';
+    const runtimeId = moveEnumToDexId(moveEnum);
+    const basePp = (gameDataGetMove(moveEnum)?.pp ?? 0) || mon.pp[i];
+    moves.push({ id: runtimeId, nameFr: getMoveNameFr(moveEnum) || runtimeId, pp: mon.pp[i], ppMax: basePp });
+  }
+
+  // Status bitfield (STATUS1_*) → enum legacy. Une seule altération à la fois.
+  const st = mon.status >>> 0;
+  let status: PokemonInstance['status'] = null;
+  if (st & 0x07) status = 'SLP';            // STATUS1_SLEEP (turns mask)
+  else if (st & 0x80) status = 'TOX';       // STATUS1_TOXIC_POISON
+  else if (st & 0x08) status = 'PSN';       // STATUS1_POISON
+  else if (st & 0x10) status = 'BRN';       // STATUS1_BURN
+  else if (st & 0x20) status = 'FRZ';       // STATUS1_FREEZE
+  else if (st & 0x40) status = 'PAR';       // STATUS1_PARALYSIS
+
+  const heldItemEnum = mon.heldItem ? (reverseDecompConstant(mon.heldItem, 'ITEM_') ?? '') : '';
+
+  return {
+    speciesEnum,
+    speciesId: mon.species,
+    speciesName: dexId ? dexId.charAt(0).toUpperCase() + dexId.slice(1) : '',
+    speciesNameFr,
+    nickname: mon.nickname || speciesNameFr,
+    level: mon.level,
+    currentHp: mon.hp,
+    maxHp: mon.maxHP,
+    moves,
+    ability: sInfo?.abilities?.[mon.abilityNum] || sInfo?.abilities?.[0] || '',
+    heldItem: heldItemEnum ? itemEnumToDexId(heldItemEnum) : '',
+    nature: getNatureFromPersonality(mon.personality),
+    ivs: { hp: mon.hpIV, atk: mon.attackIV, def: mon.defenseIV, spa: mon.spAttackIV, spd: mon.spDefenseIV, spe: mon.speedIV },
+    evs: { hp: mon.hpEV, atk: mon.attackEV, def: mon.defenseEV, spa: mon.spAttackEV, spd: mon.spDefenseEV, spe: mon.speedEV },
+    status,
+    currentExp: mon.experience,
+    growthRate: sInfo?.growthRate ?? 'GROWTH_MEDIUM_FAST',
+    personality: mon.personality >>> 0,
+    isShiny: isShinyFromOtIdPersonality(mon.otId >>> 0, mon.personality >>> 0),
+    monGender: GetGenderFromSpeciesAndPersonality(speciesEnum, mon.personality) as 0 | 254 | 255,
+    metLevel: mon.metLevel,
+    metLocation: reverseDecompConstant(mon.metLocation, 'MAPSEC_') ?? undefined,
+    pokeball: mon.pokeball ? (reverseDecompConstant(mon.pokeball, 'ITEM_') ?? 'ITEM_POKE_BALL') : 'ITEM_POKE_BALL',
+    markings: mon.markings,
+    isEgg: !!mon.isEgg,
+    friendship: mon.friendship,
+    otName: mon.otName || undefined,
+    otGender: mon.otGender,
+    otId: mon.otId >>> 0,
+  };
+}
+
+/** Status enum legacy → bitfield STATUS1_* (pour le set-trap de la vue live). */
+const _STATUS_TO_STATUS1_VIEW: Record<string, number> = {
+  PSN: 0x08, BRN: 0x10, FRZ: 0x20, PAR: 0x40, TOX: 0x88, SLP: 0x03,
+};
+
+/**
+ * Migration modèle Pokémon — PHASE 2 (enabler) : VUE LIVE `Pokemon → PokemonInstance`.
+ *
+ * Retourne un `Proxy` qui se LIT comme un `PokemonInstance` (get = dérivation via
+ * `pokemonToPokemonInstance`) et dont les ÉCRITURES de champs top-level (currentHp,
+ * status, level, currentExp, nickname, friendship, heldItem, evs/ivs, moves, …)
+ * sont RÉPERCUTÉES sur le `Pokemon` backing. → permet de rendre `gPlayerParty`
+ * (Pokemon) canonique tout en laissant les ~219 appelants `PokemonInstance` lire
+ * ET muter sans churn (= le pont du pivot Phase 2, façon event_data, mais mutable).
+ *
+ * ⚠️ Frontières (à affiner sous A/B Phase 2/3) :
+ *  - get re-dérive à chaque accès (party = 6 mons → coût négligeable ; `view.moves`
+ *    n'a pas d'identité stable → ne pas s'y fier).
+ *  - mutation NESTED `view.moves[i].pp = x` NE propage PAS (objet dérivé jetable) ;
+ *    le décrément PP en combat = voie V (retirée Phase 4) ; en OW les moves se
+ *    remplacent en bloc (`view.moves = [...]`, géré par le set-trap).
+ *  - champs dérivés (speciesNameFr/nature/isShiny/monGender/ability/growthRate) =
+ *    set ignoré (no-op) : ce sont des projections, pas du stockage.
+ */
+export function makePokemonInstanceView(mon: Pokemon): PokemonInstance {
+  return new Proxy({} as PokemonInstance, {
+    get(_t, prop: string | symbol): unknown {
+      return (pokemonToPokemonInstance(mon) as unknown as Record<string | symbol, unknown>)[prop];
+    },
+    set(_t, prop: string | symbol, value: unknown): boolean {
+      switch (prop) {
+        case 'currentHp': mon.hp = (value as number) & 0xFFFF; return true;
+        case 'maxHp': mon.maxHP = (value as number) & 0xFFFF; return true;
+        case 'level': mon.level = (value as number) & 0xFF; return true;
+        case 'currentExp': mon.experience = (value as number) >>> 0; return true;
+        case 'nickname': mon.nickname = String(value); return true;
+        case 'friendship': mon.friendship = (value as number) & 0xFF; return true;
+        case 'markings': mon.markings = (value as number) & 0xFF; return true;
+        case 'isEgg': mon.isEgg = value ? 1 : 0; return true;
+        case 'personality': mon.personality = (value as number) >>> 0; return true;
+        case 'otId': mon.otId = (value as number) >>> 0; return true;
+        case 'otName': mon.otName = String(value ?? ''); return true;
+        case 'otGender': mon.otGender = (value as number) & 1; return true;
+        case 'status': {
+          mon.status = value ? (_STATUS_TO_STATUS1_VIEW[String(value)] ?? 0) >>> 0 : 0;
+          return true;
+        }
+        case 'heldItem': {
+          const it = String(value ?? '');
+          mon.heldItem = it ? (resolveDecompConstant('ITEM_' + it.toUpperCase().replace(/-/g, '_')) as number | undefined ?? 0) : 0;
+          return true;
+        }
+        case 'ivs': {
+          const iv = value as StatSpread;
+          mon.hpIV = iv.hp & 0x1F; mon.attackIV = iv.atk & 0x1F; mon.defenseIV = iv.def & 0x1F;
+          mon.speedIV = iv.spe & 0x1F; mon.spAttackIV = iv.spa & 0x1F; mon.spDefenseIV = iv.spd & 0x1F;
+          return true;
+        }
+        case 'evs': {
+          const ev = value as StatSpread;
+          mon.hpEV = ev.hp & 0xFF; mon.attackEV = ev.atk & 0xFF; mon.defenseEV = ev.def & 0xFF;
+          mon.speedEV = ev.spe & 0xFF; mon.spAttackEV = ev.spa & 0xFF; mon.spDefenseEV = ev.spd & 0xFF;
+          return true;
+        }
+        case 'moves': {
+          const arr = (value as PokemonInstance['moves']) ?? [];
+          for (let i = 0; i < 4; i++) {
+            const m = arr[i];
+            if (m) {
+              const en = moveDexIdToEnum(m.id);
+              mon.moves[i] = (resolveDecompConstant(en) as number | undefined ?? 0) & 0xFFFF;
+              mon.pp[i] = m.pp & 0xFF;
+            } else { mon.moves[i] = 0; mon.pp[i] = 0; }
+          }
+          return true;
+        }
+        // Champs dérivés / création — set ignoré (projection, pas de stockage).
+        default: return true;
+      }
+    },
+  });
 }
 
 /**

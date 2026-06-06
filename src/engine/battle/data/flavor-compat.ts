@@ -11,7 +11,9 @@
  *   - `D:/Projet 1/decomps/pokeemeraude/src/pokemon.c:GetNatureFromPersonality`
  */
 
-const NUM_NATURES = 25;
+// 1:1 décomp `GetNatureFromPersonality` → miroir `src/game/pokemon.ts` (source unique).
+import { GetNatureFromPersonality } from '../../../game/include/pokemon';
+
 const FLAVOR_COUNT = 5;
 
 /** 1:1 décomp `gPokeblockFlavorCompatibilityTable[NUM_NATURES * FLAVOR_COUNT]`.
@@ -45,11 +47,9 @@ const gPokeblockFlavorCompatibilityTable: number[] = [
    0,  0,  0,  0,  0, // 24 Quirky
 ];
 
-/** 1:1 décomp `GetNatureFromPersonality(personality)` (pokemon.c).
- *  Returns 0..24 (nature id). */
-export function GetNatureFromPersonality(personality: number): number {
-  return (personality >>> 0) % NUM_NATURES;
-}
+// `GetNatureFromPersonality` re-exporté du miroir (cf. import en tête ; usage interne
+// par GetFlavorRelationByPersonality ci-dessous).
+export { GetNatureFromPersonality };
 
 /** 1:1 décomp `GetFlavorRelationByPersonality(personality, flavor)`
  *  (pokemon.c:6555). Returns -1 (dislike) / 0 (neutral) / +1 (like).

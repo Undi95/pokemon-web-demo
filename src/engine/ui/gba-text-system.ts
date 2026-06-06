@@ -5,37 +5,58 @@
  * Gère les TextPrinter actifs, l'encodage de strings, et les callbacks
  * de rendu texte attendues par les auto-callbacks.
  */
+// VAGUE 2 raffinement 1 : le driving texte (RenderText/RenderFont + states +
+// down-arrow + HW blit/scroll/fill) vit dans le miroir `src/game/text.ts`.
+// gba-text-system ne garde de gba-text-printer que l'état input (_setTextInputState),
+// gTextFlags (getPlayerTextSpeed) et RENDER_FINISH (boucle RunTextPrinters).
 import {
-  type Window,
-  type TextPrinter,
-  type AddTextPrinterOpts,
-  addTextPrinter,
-  runTextPrinter,
-  textPrinterDrawDownArrow,
-  encodeStringForFont,
-  fillWindowPixelBuffer,
-  fillWindowPixelRect,
-  scrollWindow,
   _setTextInputState,
-  RENDER_STATE_FINISH,
-  RENDER_STATE_HANDLE_CHAR,
-  RENDER_STATE_CLEAR,
-  RENDER_STATE_SCROLL_START,
-  RENDER_STATE_SCROLL,
-  RENDER_UPDATE,
+  gTextFlags,
   RENDER_FINISH,
-  RENDER_STATE_WAIT_WITH_DOWN_ARROW,
-  LINE_HEIGHT,
-  EXT_CTRL_CODE_BEGIN,
-  CHAR_EXTRA_SYMBOL,
-  CHAR_NEWLINE,
-  CHAR_PROMPT_SCROLL,
-  CHAR_PROMPT_CLEAR,
-  EOS,
 } from './gba-text-printer';
 import { getWindowById } from './gba-window-system';
 import { getRuntime } from '../system/decomp-globals';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
+// Migration TEXTE byte-level 1:1 (flip direct, 2026-06-06) : gStringVar1-4 +
+// StringExpandPlaceholders = le miroir `src/game/string_util.ts` (Uint8Array
+// charmap), source UNIQUE. gba-text-system ne définit plus ses propres JS-string.
+import {
+  gStringVar1, gStringVar2, gStringVar3, gStringVar4,
+  StringExpandPlaceholders, StringCopy, StringLength,
+} from '../../game/include/string_util';
+// text.h — FontIds + attributs de font, RELOCALISÉS dans le miroir
+// `src/game/text.ts` (1:1 text.c/text.h, VAGUE 2b). Importés ici pour usage
+// interne (default params fontId, GetFontAttribute dans AddTextPrinterParameterized).
+import {
+  FONT_SMALL, FONT_NORMAL, FONT_SHORT,
+  FONT_SHORT_COPY_1, FONT_SHORT_COPY_2, FONT_SHORT_COPY_3,
+  FONT_BRAILLE, FONT_NARROW, FONT_SMALL_NARROW, FONT_BOLD,
+  TEXT_SKIP_DRAW,
+  FONTATTR_MAX_LETTER_WIDTH, FONTATTR_MAX_LETTER_HEIGHT, FONTATTR_LETTER_SPACING,
+  FONTATTR_LINE_SPACING, FONTATTR_UNKNOWN, FONTATTR_COLOR_FOREGROUND,
+  FONTATTR_COLOR_BACKGROUND, FONTATTR_COLOR_SHADOW,
+  GetFontAttribute, GetMenuCursorDimensionByFont,
+} from '../../game/include/text';
+// Migration TEXTE byte : init la charmap du miroir strings.ts (= encode les
+// gText_ExpandedPlaceholder_* FR + active EncodePlayerNameFR pour {PLAYER}/{RIVAL}).
+import { InitTextData } from '../../game/include/strings';
+// Couche de gestion des printers RELOCALISÉE dans le miroir `src/game/text.ts`.
+// `RunTextPrinters` (ci-dessous) = boucle 1:1 décomp (le driving scroll/down-arrow/
+// input vit dans RenderText, raffinement 1) ; il lit le registre `sTextPrinters`
+// (indexé par windowId, `.active` sur le struct, raffinement 3) + RenderFont.
+import { sTextPrinters, IsTextPrinterActive, RenderFont } from '../../game/text';
+export {
+  AddTextPrinterParameterized,
+  IsTextPrinterActive, _debugGetTextPrinters, ClearTextPrinters, DeactivateAllTextPrinters,
+} from '../../game/text';
+// menu.c (VAGUE 1 text-speed/run + VAGUE 2 chaîne AddTextPrinter) : relocalisés
+// dans le miroir `src/game/menu.ts`, ré-exportés pour les consommateurs de gba-text-system.
+export {
+  GetPlayerTextSpeed, GetPlayerTextSpeedDelay, RunTextPrintersAndIsPrinter0Active,
+  AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
+  AddTextPrinterForMessage, AddTextPrinterForMessage_2, AddTextPrinterWithCustomSpeedForMessage,
+  AddTextPrinterWithCallbackForMessage,
+} from '../../game/menu';
 
 // ─── Font data (lazy loaded) ─────────────────────────────────────────────────
 
@@ -81,10 +102,20 @@ async function loadFontData(): Promise<void> {
   glyphData = glyphDataByFont.normal;
   glyphWidths = glyphWidthsByFont.normal;
   charmap = charmapRes as Record<string, number>;
+  // Migration TEXTE byte : init le miroir strings.ts (gText_ExpandedPlaceholder_*
+  // FR + EncodePlayerNameFR) avec la charmap fraîchement chargée. Sans ça,
+  // `{PLAYER}`/`{RIVAL}` rendaient des espaces (charmap null → byte 0).
+  InitTextData(charmap);
   const arrow = arrowRes as { width: number; height: number; pixels: number[][] };
   downArrowPixels = arrow.pixels;
   const arrowAlt = arrowAltRes as { width: number; height: number; pixels: number[][] };
   darkDownArrowPixels = arrowAlt.pixels;
+}
+
+/** Charmap OW (char→byte), chargée au boot par loadFontData. null avant. Utilisée
+ *  par `getText` (script-runtime) pour encoder la data texte en bytes (notre préproc). */
+export function getOwCharmap(): Record<string, number> | null {
+  return charmap;
 }
 
 /** Résout glyph data + widths selon fontId. Fallback à FONT_NORMAL si inconnu. */
@@ -96,63 +127,45 @@ function _resolveFont(fontId: number): { glyphData: number[][]; glyphWidths: Uin
   };
 }
 
+/** Accesseur HW des width-tables d'un font (= `gFontXLatinGlyphWidths` du décomp).
+ *  Utilisé par les `GetGlyphWidth_*` du miroir `src/game/text.ts` (VAGUE 2b-2).
+ *  La couche data (chargement font) reste engine ; la logique de mesure migre. */
+export function getFontGlyphWidths(fontId: number): Uint8Array {
+  ensureFontLoaded();
+  return _resolveFont(fontId).glyphWidths;
+}
+
+/** Accesseur HW des glyphes pré-décodés d'un font (= `gFontXLatinGlyphs` décomp).
+ *  Pour le miroir `text.ts` (AddTextPrinter*, VAGUE 2e). */
+export function getFontGlyphData(fontId: number): number[][] {
+  ensureFontLoaded();
+  return _resolveFont(fontId).glyphData;
+}
+
+/** Accesseur du `resolveFont` (switch glyph-set mid-string {FONT N}) pour le miroir. */
+export function resolveFontForMirror(fontId: number): { glyphData: number[][]; glyphWidths: Uint8Array } {
+  return _resolveFont(fontId);
+}
+
+/** Pixels de la down-arrow (▼ fin de message) — terrain/menus + alt combat.
+ *  HW asset chargé par loadFontData ; exposé pour le miroir (AddTextPrinter*). */
+export function getDownArrowPixels(): number[][] | null { return downArrowPixels; }
+export function getDarkDownArrowPixels(): number[][] | null { return darkDownArrowPixels; }
+
+// GetPlayerTextSpeed / GetPlayerTextSpeedDelay : RELOCALISÉS dans le miroir
+// `src/game/menu.ts` (1:1 menu.c:474/481), ré-exportés en bas de module.
+
 /** Force load font data (call during scene preload). */
 export function preloadFontData(): Promise<void> {
   return loadFontData();
 }
 
-/** 1:1 décomp src/text.c `GetStringWidth(FONT_NORMAL, str, letterSpacing=0)`.
- *  Retourne la pixel width réelle de `str` rendue avec FONT_NORMAL. Strip
- *  les control codes `{NAME ...}` (= placeholders/color changes) avant
- *  mesure (= analogue au switch sur EXT_CTRL_CODE_BEGIN du décomp).
- *
- *  Phase B audit session 83 : remplace l'approximation `~6px/char` qu'on
- *  avait dans option-menu-impl.ts (= rightAlignX). Maintenant le right-align
- *  des choices "FAST" / "OFF" / "STÉRÉO" / etc. matche exactement le décomp. */
-export function GetStringWidth(str: string, fontId: number = FONT_NORMAL): number {
-  ensureFontLoaded();
-  // 1:1 décomp text.c:GetStringWidth(fontId, str, letterSpacing=0) — utilise
-  // glyphWidths[fontId] (= différent pour FONT_NORMAL vs FONT_NARROW vs FONT_SHORT).
-  // On encode la string COMPLÈTE (pas un strip regex naïf) puis on walk les bytes :
-  // les EXT_CTRL (0xFC) = 0 px (3 bytes), les EXTRA_SYMBOL (0xF9) = glyphWidths[0x100|sym]
-  // (2 bytes, cf. text.c:1454-1456 `func(*++str | 0x100)`), le reste = glyphWidths[b].
-  const fontGlyphs = _resolveFont(fontId);
-  const encoded = encodeStringForFont(str, charmap!);
-  let width = 0;
-  for (let i = 0; i < encoded.length; i++) {
-    const b = encoded[i];
-    if (b === EOS) break;
-    if (b === EXT_CTRL_CODE_BEGIN) { i += 2; continue; } // BEGIN+sub+param = 0 px
-    if (b === CHAR_EXTRA_SYMBOL) {
-      const sym = encoded[i + 1] ?? 0;
-      width += fontGlyphs.glyphWidths[0x100 | sym] ?? 0;
-      i += 1;
-      continue;
-    }
-    if (b === CHAR_NEWLINE || b === CHAR_PROMPT_SCROLL || b === CHAR_PROMPT_CLEAR) continue;
-    width += fontGlyphs.glyphWidths[b] ?? 0;
-  }
-  return width;
-}
-
-/** 1:1 décomp src/text.c `GetStringRightAlignXOffset(fontId, str, rightX)`.
- *  Retourne la X offset où placer le START de `str` pour qu'il finisse à `rightX`. */
-export function GetStringRightAlignXOffset(str: string, rightX: number, fontId: number = FONT_NORMAL): number {
-  return rightX - GetStringWidth(str, fontId);
-}
-
-/** 1:1 décomp src/text.c `GetStringCenterAlignXOffset(fontId, str, totalWidth)`.
- *  Retourne la X offset où placer le START de `str` pour qu'il soit centered
- *  dans `totalWidth` pixels.
- *
- *  ⚠️ Le décomp C fait `(totalWidth - GetStringWidth(...)) / 2` en integer
- *  division (= floor). En JS la division retourne float (12.5, 15.5, 3.5
- *  pour OBJETS/BAIES/OBJ. RARES dans le bag). AddTextPrinterParameterized3
- *  ne render PAS le texte avec un offset fractionnaire (= header pocket
- *  vide pour ces 3 strings dans le SAC). Floor pour 1:1 C. */
-export function GetStringCenterAlignXOffset(str: string, totalWidth: number, fontId: number = FONT_NORMAL): number {
-  return Math.floor((totalWidth - GetStringWidth(str, fontId)) / 2);
-}
+// GetStringWidth / GetStringRightAlignXOffset / GetStringCenterAlignXOffset —
+// RELOCALISÉS dans le miroir `src/game/text.ts` (1:1 text.c:1328, VAGUE 2b-2 :
+// state-machine byte-level complète — multi-ligne MAX, EXT_CTRL skip par code,
+// placeholders gStringVar1-3/dynamic, EXTRA_SYMBOL, KEYPAD_ICON). Les WIDTH-TABLES
+// HW restent ici (getFontGlyphWidths). Ré-exportés pour les ~31 consommateurs.
+export { GetStringWidth, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from '../../game/text';
 
 /** 1:1 décomp `CHAR_SPACER` (= byte 0x77 dans charmap, charmap.txt:280).
  *  Caractère spacer demi-largeur utilisé par `ConvertIntToDecimalStringN`
@@ -174,297 +187,42 @@ function ensureFontLoaded(): void {
 // auto callbacks font `StringExpandPlaceholders(gStringVar4, gText_X)` puis
 // `AddTextPrinterForMessage` qui lit `gStringVar4`.
 
-export let gStringVar4: string = '';
-export let gStringVar1: string = '';
-export let gStringVar2: string = '';
-export let gStringVar3: string = '';
+// 1:1 décomp `EWRAM_DATA u8 gStringVar1-4[]` = le miroir byte (string_util.ts),
+// importé + ré-exporté ici (source UNIQUE). Plus de JS-string locale.
+export { gStringVar1, gStringVar2, gStringVar3, gStringVar4 };
 
-/** Setter pour les modules externes (= les auto callbacks ne peuvent pas
- *  faire `gStringVar4 = ...` à cause des import bindings ES). */
-export function setStringVar4(value: string): void {
-  gStringVar4 = value;
-  (globalThis as Record<string, unknown>).gStringVar4 = value;
+/** Remplit le buffer byte gStringVar4 via StringCopy (byte-level). Le décomp n'a
+ *  pas de `setStringVar4` (les callers écrivent gStringVar4 via StringCopy /
+ *  StringExpandPlaceholders direct) ; on garde ce helper pour les call-sites
+ *  existants. `value` = bytes charmap (EOS-terminé). */
+export function setStringVar4(value: Uint8Array): void {
+  StringCopy(gStringVar4, value);
 }
 
-// Expose les string vars sur globalThis pour les auto callbacks.
+// Expose les BUFFERS byte (réf. stable, contenu mutable) sur globalThis pour les
+// auto-callbacks / debug. Une seule fois (les buffers ne sont jamais réassignés).
 if (!('gStringVar4' in globalThis)) {
-  Object.defineProperty(globalThis, 'gStringVar4', {
-    get: () => gStringVar4,
-    set: (v) => { gStringVar4 = String(v); },
-    enumerable: true, configurable: true,
-  });
-  Object.defineProperty(globalThis, 'gStringVar1', {
-    get: () => gStringVar1,
-    set: (v) => { gStringVar1 = String(v); },
-    enumerable: true, configurable: true,
-  });
-  Object.defineProperty(globalThis, 'gStringVar2', {
-    get: () => gStringVar2,
-    set: (v) => { gStringVar2 = String(v); },
-    enumerable: true, configurable: true,
-  });
-  Object.defineProperty(globalThis, 'gStringVar3', {
-    get: () => gStringVar3,
-    set: (v) => { gStringVar3 = String(v); },
-    enumerable: true, configurable: true,
-  });
+  const g = globalThis as Record<string, unknown>;
+  g.gStringVar1 = gStringVar1;
+  g.gStringVar2 = gStringVar2;
+  g.gStringVar3 = gStringVar3;
+  g.gStringVar4 = gStringVar4;
 }
 
-// ─── Text printers registry ──────────────────────────────────────────────────
-
-interface ActivePrinter {
-  printer: TextPrinter;
-  windowId: number;
-  finished: boolean;
-}
-
-let gTextPrinters: ActivePrinter[] = [];
+// ─── Text printers registry — RELOCALISÉ dans `src/game/text.ts` ──────────────
+// `sTextPrinters` (1:1 décomp text.c:39, indexé par windowId, `.active` sur le
+// struct TextPrinter) y vit. Importé en tête ; `RunTextPrinters` le lit + mute `.active`.
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 
-/** Lookup helper local pour éviter import circulaire avec gba-menu-system.
- *  Lit `gSaveBlock2Ptr.optionsTextSpeed` via globalThis (= dans tous les cas
- *  populated avant le 1er texte rendered). Returns frames-per-char delay.
- *
- *  1:1 décomp `menu.c:77 sTextSpeedFrameDelays` :
- *    [OPTIONS_TEXT_SPEED_SLOW] = 8,
- *    [OPTIONS_TEXT_SPEED_MID]  = 4,
- *    [OPTIONS_TEXT_SPEED_FAST] = 1,
- *
- *  Avec ces valeurs (= 1:1 GBA ROM) :
- *    FAST (textSpeed=1) : 1 char par 2 frames = 30 chars/sec
- *    MID  (textSpeed=4) : 1 char par 5 frames = 12 chars/sec
- *    SLOW (textSpeed=8) : 1 char par 9 frames = 6.7 chars/sec
- *
- *  Note : précédent commit 4249e141 hardcodait x2 ({ 4, 2, 0 }) pour préférence
- *  user web build, mais ça déviait du 1:1 décomp. Reverted suite à audit text-tick :
- *  le guard `_lastRunTextPrintersFrame` empêche le double-tick → vitesse vue =
- *  vitesse ROM exacte. Le hardcode x2 rendait le texte 2× plus rapide qu'attendu.
- *
- *  A/B held override → delayCounter=0 chaque frame (= 60 chars/sec) gérée
- *  dans gba-text-printer.ts runTextPrinter (pas ici). */
-function _getPlayerTextSpeedDelay(): number {
-  // 1:1 décomp `gSaveBlock2Ptr->optionsTextSpeed`.
-  const speed = ((gSaveBlock2Ptr.optionsTextSpeed as number | undefined) ?? 1) | 0;
-  // 1:1 décomp menu.c:77 sTextSpeedFrameDelays = { 8, 4, 1 }.
-  if (speed === 0) return 8;  // SLOW
-  if (speed === 2) return 1;  // FAST
-  return 4;                   // MID (default)
-}
+// `_getPlayerTextSpeedDelay` RELOCALISÉ → `GetPlayerTextSpeedDelay` dans le miroir
+// `src/game/menu.ts` (1:1 menu.c:481, avec sTextSpeedFrameDelays).
 
-/** Cœur commun à AddTextPrinterParameterized3/4 (= remplir le
- *  `struct TextPrinterTemplate` puis `AddTextPrinter(&printer, speed, NULL)`,
- *  décomp menu.c). P3 (menu.c:1917) et P4 (menu.c:1938) ont un corps
- *  IDENTIQUE sauf la source de letterSpacing/lineSpacing : P3 =
- *  GetFontAttribute(fontId, …), P4 = params explicites. Tout le reste
- *  (encode, resolveFont, color[bg=0,fg=1,shadow=2], speed encoding, flush
- *  TEXT_SKIP_DRAW, slot par windowId) = commun → factorisé ici 1:1. */
-function _addTextPrinterParameterizedCore(
-  windowId: number,
-  fontId: number,
-  left: number,
-  top: number,
-  letterSpacing: number,
-  lineSpacing: number,
-  colorArray: readonly number[],
-  speed: number,
-  str: string | Uint8Array,
-): number {
-  ensureFontLoaded();
-  const win = getWindowById(windowId);
-  if (!win) {
-    console.warn('[gba-text-system] AddTextPrinterParameterized3/4: window', windowId, 'not found');
-    return 0;
-  }
-  // Byte-entry (décodeur byte-level battle-message.ts) : si `str` est déjà des
-  // bytes charmap pré-encodés (gDisplayedStringBattle), on les passe DIRECTEMENT
-  // au printer SANS re-encoder (= "une seule représentation", pas de round-trip).
-  // Sinon (JS-string OW/menus) : encode via charmap comme avant (inchangé).
-  const encoded = (str instanceof Uint8Array) ? str : encodeStringForFont(str, charmap!);
-  // 1:1 décomp : glyph data selon fontId (= FONT_NARROW = different glyphs
-  // que FONT_NORMAL). Avant : fontId ignored, toujours FONT_NORMAL rendered.
-  const fnt = _resolveFont(fontId);
-  const opts: AddTextPrinterOpts = {
-    window: win,
-    encodedString: encoded,
-    glyphData: fnt.glyphData,
-    glyphWidths: fnt.glyphWidths,
-    resolveFont: _resolveFont,  // {FONT N} mid-string switch (1:1 EXT_CTRL_CODE_FONT)
-    x: left,
-    y: top,
-    // 1:1 décomp menu.c:1931-1933 : `color` array layout = [bgColor=color[0],
-    // fgColor=color[1], shadowColor=color[2]] (printer.bgColor = color[0],
-    // fgColor = color[1], shadowColor = color[2]).
-    bgColor: colorArray[0] ?? 1,
-    fgColor: colorArray[1] ?? 2,
-    shadowColor: colorArray[2] ?? 3,
-    // 1:1 décomp menu.c:1928-1929 (P3 = GetFontAttribute) / :1949-1950
-    // (P4 = params). Honoré par le rendu (gba-text-printer currentX +=
-    // glyphW + letterSpacing). list_menu.c passe template.lettersSpacing.
-    letterSpacing,
-    lineSpacing,
-    // 1:1 décomp src/text.c : speed parameter encoding :
-    //   255 (TEXT_SKIP_DRAW) → instant render (= no per-char delay)
-    //   -1                   → use player's saved option (= GetPlayerTextSpeedDelay())
-    //   N >= 0               → explicit N-frame per-char delay
-    // Sentinel -1 ajouté pour permettre aux auto-callbacks de respecter le
-    // setting joueur via gSaveBlock2Ptr.optionsTextSpeed sans hardcoder les
-    // delay values per call site.
-    textSpeed: speed === 255 ? 0
-      : speed < 0 ? _getPlayerTextSpeedDelay()
-      : speed,
-    downArrowPixels: downArrowPixels ?? undefined,
-    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
-  };
-  const printer = addTextPrinter(opts);
-  // 1:1 décomp src/text.c:AddTextPrinter (text.c:91-117) :
-  //   if (speed != TEXT_SKIP_DRAW && speed != 0)
-  //       sTextPrinters[windowId] = sTempTextPrinter;     // animated print
-  //   else
-  //       for (i = 0; i < 0x400; ++i) RenderFont(...);    // sync render
-  //       CopyWindowToVram(...);
-  //       sTextPrinters[windowId].active = 0;             // mark inactive
-  // → speed=0 ET speed=255 (TEXT_SKIP_DRAW) = render full synchronous instant.
-  //   speed > 0 (animated) = laisser RunTextPrinters() iterer par frame.
-  let finished = false;
-  if (speed === 255 || speed === 0) {
-    // Boucle borne (= équivalent décomp `for (j = 0; j < 0x400; ++j)`).
-    for (let j = 0; j < 0x400; j++) {
-      runTextPrinter(printer);
-      if (printer.state === RENDER_STATE_WAIT_WITH_DOWN_ARROW || printer.state === RENDER_STATE_FINISH) break;
-    }
-    finished = true;
-  }
-  // 1:1 décomp : sTextPrinters[printer.id] = ... (slot fixe par windowId, pas
-  // push). Retire les anciens printers du même windowId pour éviter que leurs
-  // ❤️ down arrows résiduels continuent de s'animer.
-  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== windowId);
-  gTextPrinters.push({ printer, windowId, finished });
-  return gTextPrinters.length - 1;
-}
+// _addTextPrinterParameterizedCore + AddTextPrinterParameterized + P3 + P4
+// RELOCALISÉS dans `src/game/text.ts` (VAGUE 2e), ré-exportés en tête de module.
 
-/** 1:1 décomp `src/text.c:251-269 AddTextPrinterParameterized(u8 windowId,
- *  u8 fontId, const u8 *str, u8 x, u8 y, u8 speed, void (*callback))`.
- *  Variante simple : utilise les colors par défaut du font (= gFonts[fontId]
- *  .fgColor/bgColor/shadowColor). Wrapper sur AddTextPrinterParameterized3. */
-export function AddTextPrinterParameterized(
-  windowId: number,
-  fontId: number,
-  str: string | Uint8Array,
-  x: number,
-  y: number,
-  speed: number,
-  _callback: ((tmpl: unknown, idx: number) => void) | null = null,
-): number {
-  // 1:1 décomp : `const u8 *str` peut venir en bytes (= easy_chat avec
-  // chars GBA charmap). Convert vers string ASCII pour notre text-system.
-  const text = typeof str === 'string' ? str : Array.from(str).map(b => String.fromCharCode(b)).join('');
-  // 1:1 décomp text.c:262-267 : prend les colors par défaut du font via
-  // GetFontAttribute (= équivalent gFonts[fontId].XColor du décomp).
-  const bg = GetFontAttribute(fontId, FONTATTR_COLOR_BACKGROUND);
-  const fg = GetFontAttribute(fontId, FONTATTR_COLOR_FOREGROUND);
-  const shadow = GetFontAttribute(fontId, FONTATTR_COLOR_SHADOW);
-  // Color array order [bg, fg, shadow] — matche le pattern utilisé par
-  // AddTextPrinterParameterized3 callers (= cf. option-menu-impl TEXT_COLOR_NORMAL).
-  return AddTextPrinterParameterized3(windowId, fontId, x, y, [bg, fg, shadow], speed, text);
-}
-
-/** 1:1 décomp `src/menu.c:1917 AddTextPrinterParameterized3(u8 windowId,
- *  u8 fontId, u8 left, u8 top, const u8 *color, s8 speed, const u8 *str)`.
- *  letterSpacing/lineSpacing = GetFontAttribute (= 0 pour tous les fonts
- *  sauf BRAILLE.lineSpacing=8 ; comportement P3 INCHANGÉ vs avant 2b car
- *  ces fonts donnent 0). */
-export function AddTextPrinterParameterized3(
-  windowId: number,
-  fontId: number,
-  left: number,
-  top: number,
-  colorArray: readonly number[],
-  speed: number,
-  str: string,
-): number {
-  return _addTextPrinterParameterizedCore(
-    windowId, fontId, left, top,
-    GetFontAttribute(fontId, FONTATTR_LETTER_SPACING),
-    GetFontAttribute(fontId, FONTATTR_LINE_SPACING),
-    colorArray, speed, str,
-  );
-}
-
-/** 1:1 décomp `src/menu.c:1938 AddTextPrinterParameterized4(u8 windowId,
- *  u8 fontId, u8 left, u8 top, u8 letterSpacing, u8 lineSpacing,
- *  const u8 *color, s8 speed, const u8 *str)`. Diffère de P3 uniquement
- *  par letterSpacing/lineSpacing EXPLICITES (list_menu.c:588-606 passe
- *  template.lettersSpacing + 0). */
-export function AddTextPrinterParameterized4(
-  windowId: number,
-  fontId: number,
-  left: number,
-  top: number,
-  letterSpacing: number,
-  lineSpacing: number,
-  colorArray: readonly number[],
-  speed: number,
-  str: string | Uint8Array,
-): number {
-  return _addTextPrinterParameterizedCore(
-    windowId, fontId, left, top, letterSpacing, lineSpacing, colorArray, speed, str,
-  );
-}
-
-export function AddTextPrinterForMessage(_allowSkipping: boolean): void {
-  ensureFontLoaded();
-  const win = getWindowById(0);
-  if (!win) {
-    console.warn('[gba-text-system] AddTextPrinterForMessage: window 0 not found');
-    return;
-  }
-  const encoded = encodeStringForFont(gStringVar4, charmap!);
-  const opts: AddTextPrinterOpts = {
-    window: win,
-    encodedString: encoded,
-    glyphData: glyphData!,
-    glyphWidths: glyphWidths!,
-    x: 0,
-    y: 1,
-    textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
-    downArrowPixels: downArrowPixels ?? undefined,
-    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
-  };
-  const printer = addTextPrinter(opts);
-  // 1:1 décomp slot fixe : retire les anciens printers du même windowId.
-  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== 0);
-  gTextPrinters.push({ printer, windowId: 0, finished: false });
-}
-
-export function AddTextPrinterWithCallbackForMessage(
-  _allowSkipping: boolean,
-  callback: (printer: TextPrinter, lastByte: number) => void,
-): void {
-  ensureFontLoaded();
-  const win = getWindowById(0);
-  if (!win) {
-    console.warn('[gba-text-system] AddTextPrinterWithCallbackForMessage: window 0 not found');
-    return;
-  }
-  const encoded = encodeStringForFont(gStringVar4, charmap!);
-  const opts: AddTextPrinterOpts = {
-    window: win,
-    encodedString: encoded,
-    glyphData: glyphData!,
-    glyphWidths: glyphWidths!,
-    x: 0,
-    y: 1,
-    textSpeed: _getPlayerTextSpeedDelay(),  // 1:1 décomp : lit gSaveBlock2Ptr.optionsTextSpeed
-    downArrowPixels: downArrowPixels ?? undefined,
-    darkDownArrowPixels: darkDownArrowPixels ?? undefined,
-    onCharRendered: callback,
-  };
-  const printer = addTextPrinter(opts);
-  // 1:1 décomp slot fixe : retire les anciens printers du même windowId.
-  gTextPrinters = gTextPrinters.filter((ap) => ap.windowId !== 0);
-  gTextPrinters.push({ printer, windowId: 0, finished: false });
-}
+// AddTextPrinterForMessage + AddTextPrinterWithCallbackForMessage RELOCALISÉS
+// dans `src/game/text.ts` (VAGUE 2e), ré-exportés en tête de module.
 
 const A_BUTTON_TEXT = 0x01;
 const B_BUTTON_TEXT = 0x02;
@@ -481,271 +239,61 @@ export function RunTextPrinters(): void {
   // Skip si déjà tick cette frame (= 1:1 décomp behavior, 1 call par frame).
   if (rt.gIntroFrameCounter === _lastRunTextPrintersFrame) return;
   _lastRunTextPrintersFrame = rt.gIntroFrameCounter;
-  // 1:1 décomp text.c:944-953 — A/B speed up via JOY_NEW + JOY_HELD.
+  // 1:1 décomp text.c:944-953 — JOY_NEW/JOY_HELD(A|B) lus inline par RenderText
+  // (pacing A/B + TextPrinterWait*). On publie l'état input AVANT RenderFont ; tout
+  // le driving (WAIT/CLEAR/SCROLL_START/SCROLL/WAIT_SE + down-arrow + PlaySE) vit
+  // désormais DANS RenderText (miroir src/game/text.ts), centralisé 1:1 décomp
+  // (VAGUE 2 raffinement 1). Avant, ces transitions étaient pilotées ici.
   const newAB = !!(rt.gMain.newKeys & AB_MASK);
   const heldAB = !!(rt.gMain.heldKeys & AB_MASK);
   _setTextInputState(newAB, heldAB);
-  const aPressed = rt.gMain.newKeys & AB_MASK;  // A or B for page advance.
 
-  for (const ap of gTextPrinters) {
-    if (ap.finished) continue;
-
-    // 1:1 décomp text.c:1171-1210 state machine transitions.
-    if (aPressed && ap.printer.state === RENDER_STATE_CLEAR) {
-      // 1:1 décomp text.c:874-879 TextPrinterWaitWithDownArrow : JOY_NEW(A|B) →
-      // PlaySE(SE_SELECT). Notre impl manquait cet appel → silence sur dialog advance.
-      void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(5));  // SE_SELECT = 5
-      // 1:1 décomp text.c:1174-1177 : FillWindowPixelBuffer(bgColor) + cursor (x, y).
-      fillWindowPixelBuffer(ap.printer.window, (ap.printer.bgColor << 4) | ap.printer.bgColor);
-      ap.printer.currentX = ap.printer.x;
-      ap.printer.currentY = ap.printer.y;
-      ap.printer.state = RENDER_STATE_HANDLE_CHAR;
-    } else if (aPressed && ap.printer.state === RENDER_STATE_SCROLL_START) {
-      // 1:1 décomp text.c:874-879 : same SE_SELECT on scroll page break.
-      void import('../system/decomp-globals').then(({ PlaySE }) => PlaySE(5));
-      // 1:1 décomp text.c:1181-1187 : TextPrinterClearDownArrow → init scroll
-      // + cursor.x reset (Y reste). Sans clear de l'❤️ AVANT le scroll, l'ancien
-      // ❤️ shift up avec le content → 2 ❤️ visibles à la fin.
-      // text.c:838-848 TextPrinterClearDownArrow = FillWindowPixelRect 8x16 à
-      // (currentX, currentY).
-      fillWindowPixelRect(
-        ap.printer.window,
-        ap.printer.bgColor,
-        ap.printer.currentX,
-        ap.printer.currentY,
-        8,
-        16,
-      );
-      ap.printer.scrollDistance = LINE_HEIGHT + ap.printer.lineSpacing;
-      ap.printer.currentX = ap.printer.x;
-      // currentY ne reset PAS — c'est ce qui distingue de CLEAR.
-      ap.printer.state = RENDER_STATE_SCROLL;
-    } else if (ap.printer.state === RENDER_STATE_SCROLL) {
-      // 1:1 décomp text.c:1189-1209 : scroll progressif chaque frame.
-      // sWindowVerticalScrollSpeeds[textSpeed] : SLOW=1, MID=2, FAST=4 pixels/frame.
-      if (ap.printer.scrollDistance > 0) {
-        // 1:1 décomp `gSaveBlock2Ptr->optionsTextSpeed`.
-        const textSpeed = (gSaveBlock2Ptr.optionsTextSpeed as number | undefined) ?? 1;  // default MID
-        const speeds = [1, 2, 4];  // SLOW, MID, FAST
-        const speed = speeds[textSpeed] ?? 2;
-        const deltaY = Math.min(ap.printer.scrollDistance, speed);
-        scrollWindow(ap.printer.window, deltaY, ap.printer.bgColor);
-        ap.printer.scrollDistance -= deltaY;
-      } else {
-        ap.printer.state = RENDER_STATE_HANDLE_CHAR;
-      }
-    }
-
-    const result = runTextPrinter(ap.printer);
-    // 1:1 décomp text.c:787-836 — TextPrinterDrawDownArrow appelé chaque frame
-    // pendant CLEAR ou SCROLL_START (= bobbing animation pendant l'attente A).
-    if (result === RENDER_UPDATE && (
-      ap.printer.state === RENDER_STATE_CLEAR ||
-      ap.printer.state === RENDER_STATE_SCROLL_START
-    )) {
-      textPrinterDrawDownArrow(ap.printer);
-    }
-    // 1:1 décomp pokeemerald RunTextPrinters : RENDER_FINISH → active = FALSE.
-    if (result === RENDER_FINISH) {
-      ap.finished = true;
-    }
+  // 1:1 décomp `src/text.c:319 RunTextPrinters` : pour chaque printer actif,
+  // `RenderFont` puis switch(renderCmd) { PRINT→CopyWindowToVram ; UPDATE→callback ;
+  // FINISH→active=FALSE }. Chez nous : CopyWindowToVram = `needsFlush` (posé par le
+  // HW blit/scroll) ; le callback per-char = `onCharRendered` (fired dans RenderText).
+  // 1:1 décomp text.c:325-343 — for (i=0; i<WINDOWS_MAX; i++) if (sTextPrinters[i].active)
+  // { renderCmd = RenderFont(&sTextPrinters[i]); … case FINISH: active = FALSE; }.
+  // Tableau creux indexé par windowId (slots vides = undefined → skip).
+  for (let i = 0; i < sTextPrinters.length; i++) {
+    const p = sTextPrinters[i];
+    if (!p || !p.active) continue;
+    const renderCmd = RenderFont(p);
+    if (renderCmd === RENDER_FINISH) p.active = false;
   }
 }
 
-export function IsTextPrinterActive(windowId: number): boolean {
-  return gTextPrinters.some((ap) => ap.windowId === windowId && !ap.finished);
-}
+// IsTextPrinterActive + _debugGetTextPrinters + expositions globalThis
+// (__debugGetTextPrinters / __gbaIsTextPrinterActive) RELOCALISÉS dans
+// `src/game/text.ts` (VAGUE 2e). IsTextPrinterActive importé en tête.
 
-/** DEBUG only — accès lecture aux active printers depuis window.dev. */
-export function _debugGetTextPrinters(): typeof gTextPrinters {
-  return gTextPrinters;
-}
+// RunTextPrintersAndIsPrinter0Active : RELOCALISÉ dans le miroir `src/game/menu.ts`
+// (1:1 menu.c:163), ré-exporté en bas de module.
 
-// Expose pour debug overworld dialog (= bundle module instance, pas dynamic import).
-(globalThis as Record<string, unknown>).__debugGetTextPrinters = _debugGetTextPrinters;
+// ClearTextPrinters + DeactivateAllTextPrinters RELOCALISÉS dans
+// `src/game/text.ts` (VAGUE 2e), ré-exportés en tête de module.
 
-// Expose le VRAI IsTextPrinterActive pour le gate de combat (CompleteOnInactiveTextPrinter*).
-// Le gate doit suivre le printer RÉEL — qui gère `\p` (CHAR_PROMPT_SCROLL) = flèche ▼ +
-// attente A/B — et NON le shim setTimeout aveugle de battle-controllers.ts (qui flippe le
-// flag après ~N frames sans connaître `\p` ni l'input → bug "le texte defile sans nous"
-// après « X apparaît »). 1:1 décomp text.c:347 IsTextPrinterActive = sTextPrinters[id].active.
-(globalThis as Record<string, unknown>).__gbaIsTextPrinterActive = IsTextPrinterActive;
+// ─── String placeholders ────────────────────────────────────────────────────
+// `StringExpandPlaceholders` (byte-level, récursif, 1:1 string_util.c:335) est
+// désormais le miroir `src/game/string_util.ts`, importé + ré-exporté en tête de
+// ce module. La version JS-string locale (regex) a été retirée (flip byte 2026-06-06).
+export { StringExpandPlaceholders };
 
-export function RunTextPrintersAndIsPrinter0Active(): boolean {
-  RunTextPrinters();
-  return IsTextPrinterActive(0);
-}
-
-/** Efface tous les printers (appelé au changement de scène). */
-export function ClearTextPrinters(): void {
-  gTextPrinters = [];
-}
-
-/** 1:1 décomp DeactivateAllTextPrinters — stop tous les printers actifs. */
-export function DeactivateAllTextPrinters(): void {
-  gTextPrinters = [];
-}
-
-// ─── String placeholders stub ─────────────────────────────────────────────────
-
-/** 1:1 décomp `string_util.c StringExpandPlaceholders(dest, src)`.
- *  Résout les placeholders `{PLAYER}`, `{STR_VAR_1..3}`, `{RIVAL}`, etc. depuis
- *  `src` et écrit le résultat dans `dest` (= globalement `gStringVar4` chez tous
- *  les callers). Retourne dest pour chainage 1:1 décomp.
- *
- *  Phase E Step 1 audit session 84 : real impl. Avant : stub no-op qui retournait
- *  src tel quel sans écrire dans dest → les placeholders n'étaient jamais
- *  résolus et `gStringVar4` restait vide. */
-export function StringExpandPlaceholders(_dest: string, src: string): string {
-  // Tous les callers passent `gStringVar4` comme dest. On mute le module-level
-  // gStringVar4 directement (= les imports binding ES ne permettent pas l'écriture
-  // depuis l'extérieur de toute façon).
-  let result = src;
-
-  // Substitution des placeholders 1:1 décomp (= macros buffers sStringVarBuffers).
-  // {STR_VAR_1..3} → gStringVar1..3 contenu courant.
-  result = result.replace(/\{STR_VAR_1\}/g, () => gStringVar1);
-  result = result.replace(/\{STR_VAR_2\}/g, () => gStringVar2);
-  result = result.replace(/\{STR_VAR_3\}/g, () => gStringVar3);
-
-  // {PLAYER} = nom du joueur. 1:1 décomp `gSaveBlock2Ptr->playerName` direct.
-  const playerName: string | undefined = gSaveBlock2Ptr.playerName as string | undefined;
-  // 1:1 décomp `StringCopy(dest, gSaveBlock2Ptr->playerName)` : substitute
-  // toujours (= si playerName empty, le décomp pousse aussi vide). Avant on
-  // skipped si playerName === 'PLAYER' → résultat "MAMAN: Alors, ?" car le
-  // text printer strippait silencieusement les `{PLAYER}` non-substitués.
-  // Maintenant on substitute toujours, en utilisant 'PLAYER' (= placeholder
-  // défaut décomp pre-Birch-naming) ou fallback.
-  result = result.replace(/\{PLAYER\}/g, playerName || 'PLAYER');
-
-  // B2 fix (DEMO-AUDIT-FINDINGS) : {RIVAL} = nom du rival gender-aware.
-  // 1:1 décomp string_util.c:456-462 `ExpandPlaceholder_RivalName` :
-  //   if (gSaveBlock2Ptr->playerGender == MALE)
-  //       return gText_ExpandedPlaceholder_May;    // = "FLORA"
-  //   else
-  //       return gText_ExpandedPlaceholder_Brendan; // = "BRICE"
-  let rivalName: string;
-  if ((gSaveBlock2Ptr.playerGender ?? 0) === 1 /* FEMALE */) {
-    rivalName = 'BRICE'; // = gText_ExpandedPlaceholder_Brendan FR
-  } else {
-    // Default MALE (= player non set) → FLORA (= rival féminin).
-    rivalName = 'FLORA'; // = gText_ExpandedPlaceholder_May FR
-  }
-  result = result.replace(/\{RIVAL\}/g, rivalName);
-
-  // Mute le module-level gStringVar4. Écriture en dur (= ne mute PAS _dest car
-  // les strings TS sont immutables, et tous les callers utilisent gStringVar4
-  // de toute façon).
-  gStringVar4 = result;
-  (globalThis as Record<string, unknown>).gStringVar4 = result;
-  return result;
-}
-
-// ─── Font IDs & TEXT_SKIP_DRAW (1:1 décomp include/text.h) ──────────────────
-
-/** 1:1 décomp `include/text.h` enum FontIds. Source de vérité unique pour
- *  éviter la duplication entre bag-screen, party-screen, pokedex-screen,
- *  trainer-card-screen, start-menu, option-menu-impl, etc.
- *
- *  Valeurs identiques à text.h :
- *    FONT_SMALL=0, FONT_NORMAL=1, FONT_SHORT=2, FONT_SHORT_COPY_{1,2,3}=3,4,5,
- *    FONT_BRAILLE=6, FONT_NARROW=7, FONT_SMALL_NARROW=8, FONT_BOLD=9. */
-export const FONT_SMALL = 0;
-export const FONT_NORMAL = 1;
-export const FONT_SHORT = 2;
-export const FONT_SHORT_COPY_1 = 3;
-export const FONT_SHORT_COPY_2 = 4;
-export const FONT_SHORT_COPY_3 = 5;
-export const FONT_BRAILLE = 6;
-export const FONT_NARROW = 7;
-export const FONT_SMALL_NARROW = 8;
-export const FONT_BOLD = 9;
-
-/** 1:1 décomp `#define TEXT_SKIP_DRAW 0xFF` (text.h:8).
- *  Sentinel pour `AddTextPrinterParameterized3.speed` indiquant "ne pas dessiner
- *  immédiatement, juste setup le printer state". */
-export const TEXT_SKIP_DRAW = 0xFF;
-
-// ─── Font attributes 1:1 décomp (text.c sFontInfos + GetFontAttribute) ───────
-
-/** 1:1 décomp `include/text.h:43-50` enum (attributeId de GetFontAttribute). */
-export const FONTATTR_MAX_LETTER_WIDTH = 0;
-export const FONTATTR_MAX_LETTER_HEIGHT = 1;
-export const FONTATTR_LETTER_SPACING = 2;
-export const FONTATTR_LINE_SPACING = 3;
-export const FONTATTR_UNKNOWN = 4;
-export const FONTATTR_COLOR_FOREGROUND = 5;
-export const FONTATTR_COLOR_BACKGROUND = 6;
-export const FONTATTR_COLOR_SHADOW = 7;
-
-interface FontInfo {
-  maxLetterWidth: number;
-  maxLetterHeight: number;
-  letterSpacing: number;
-  lineSpacing: number;
-  unk: number;
-  fgColor: number;
-  bgColor: number;
-  shadowColor: number;
-}
-
-/** 1:1 décomp `src/text.c:119-221 sFontInfos[]`. Indexé par FONT_* (text.h
- *  enum FontIds : SMALL=0, NORMAL=1, SHORT=2, SHORT_COPY_{1,2,3}=3,4,5,
- *  BRAILLE=6, NARROW=7, SMALL_NARROW=8, BOLD=9). `.unk` non initialisé en
- *  décomp (= 0). `.fontFunction` pointers omis (rendu géré par notre moteur
- *  TextPrinter). Valeurs reportées EXACTEMENT du décomp. */
-const sFontInfos: ReadonlyArray<FontInfo> = [
-  /* [FONT_SMALL]        */ { maxLetterWidth: 5, maxLetterHeight: 12, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_NORMAL]       */ { maxLetterWidth: 6, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_SHORT]        */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_SHORT_COPY_1] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_SHORT_COPY_2] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_SHORT_COPY_3] */ { maxLetterWidth: 6, maxLetterHeight: 14, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_BRAILLE]      */ { maxLetterWidth: 8, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 8, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_NARROW]       */ { maxLetterWidth: 5, maxLetterHeight: 16, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_SMALL_NARROW] */ { maxLetterWidth: 5, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 2, bgColor: 1, shadowColor: 3 },
-  /* [FONT_BOLD]         */ { maxLetterWidth: 8, maxLetterHeight: 8, letterSpacing: 0, lineSpacing: 0, unk: 0, fgColor: 1, bgColor: 2, shadowColor: 15 },
-];
-
-/** 1:1 décomp `src/text.c:1645 GetFontAttribute(u8 fontId, u8 attributeId)`.
- *  Switch pur → `sFontInfos[fontId].<field>`. attributeId hors enum → 0. */
-export function GetFontAttribute(fontId: number, attributeId: number): number {
-  let result = 0;
-  const f = sFontInfos[fontId];
-  if (!f) return 0;
-  switch (attributeId) {
-    case FONTATTR_MAX_LETTER_WIDTH: result = f.maxLetterWidth; break;
-    case FONTATTR_MAX_LETTER_HEIGHT: result = f.maxLetterHeight; break;
-    case FONTATTR_LETTER_SPACING: result = f.letterSpacing; break;
-    case FONTATTR_LINE_SPACING: result = f.lineSpacing; break;
-    case FONTATTR_UNKNOWN: result = f.unk; break;
-    case FONTATTR_COLOR_FOREGROUND: result = f.fgColor; break;
-    case FONTATTR_COLOR_BACKGROUND: result = f.bgColor; break;
-    case FONTATTR_COLOR_SHADOW: result = f.shadowColor; break;
-  }
-  return result;
-}
-
-/** 1:1 décomp `src/text.c:223-235 sMenuCursorDimensions[][2]` ([w, h] par
- *  fontId). FONT_BOLD non initialisé en décomp (= {0, 0}). */
-const sMenuCursorDimensions: ReadonlyArray<readonly [number, number]> = [
-  /* [FONT_SMALL]        */ [8, 12],
-  /* [FONT_NORMAL]       */ [8, 15],
-  /* [FONT_SHORT]        */ [8, 14],
-  /* [FONT_SHORT_COPY_1] */ [8, 14],
-  /* [FONT_SHORT_COPY_2] */ [8, 14],
-  /* [FONT_SHORT_COPY_3] */ [8, 14],
-  /* [FONT_BRAILLE]      */ [8, 16],
-  /* [FONT_NARROW]       */ [8, 15],
-  /* [FONT_SMALL_NARROW] */ [8, 8],
-  /* [FONT_BOLD]         */ [0, 0],
-];
-
-/** 1:1 décomp `src/text.c:1678 GetMenuCursorDimensionByFont(u8 fontId,
- *  u8 whichDimension)` = `sMenuCursorDimensions[fontId][whichDimension]`. */
-export function GetMenuCursorDimensionByFont(fontId: number, whichDimension: number): number {
-  return sMenuCursorDimensions[fontId]?.[whichDimension] ?? 0;
-}
+// ─── Font IDs / TEXT_SKIP_DRAW / attributs de font (text.h + text.c) ─────────
+// RELOCALISÉS dans le miroir `src/game/text.ts` (1:1, VAGUE 2b). `sFontInfos` /
+// `sMenuCursorDimensions` (privés) y vivent désormais. Importés en tête (usage
+// interne) + ré-exportés ici pour les consommateurs de gba-text-system
+// (bag-screen, party-screen, option-menu-impl, etc.).
+export {
+  FONT_SMALL, FONT_NORMAL, FONT_SHORT,
+  FONT_SHORT_COPY_1, FONT_SHORT_COPY_2, FONT_SHORT_COPY_3,
+  FONT_BRAILLE, FONT_NARROW, FONT_SMALL_NARROW, FONT_BOLD,
+  TEXT_SKIP_DRAW,
+  FONTATTR_MAX_LETTER_WIDTH, FONTATTR_MAX_LETTER_HEIGHT, FONTATTR_LETTER_SPACING,
+  FONTATTR_LINE_SPACING, FONTATTR_UNKNOWN, FONTATTR_COLOR_FOREGROUND,
+  FONTATTR_COLOR_BACKGROUND, FONTATTR_COLOR_SHADOW,
+  GetFontAttribute, GetMenuCursorDimensionByFont,
+};
 
 // ─── Text colors helper ──────────────────────────────────────────────────────
 

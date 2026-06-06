@@ -46,7 +46,7 @@ import {
   ResetPaletteFade, ResetTasks, gMain, BG_PLTT_ID,
 } from '../system/decomp-globals';
 import { ResetSpriteData, GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
-import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import {
@@ -167,20 +167,11 @@ const sClockHandCoords: ReadonlyArray<readonly [number, number]> = [
   [-4, -25], [-3, -25], [-2, -25], [-2, -24], [-2, -24], [-1, -25], [-1, -25], [0, -25],
 ];
 
-// ─── Trig helpers (= Sin2/Cos2 décomp Q4.12 fixed-point) ────────────────────
-
-/** 1:1 décomp `s16 Sin2(u16 angle)` (trig.c:529).
- *  Returns sin(angle°) as Q4.12 fixed-point (= multiplied by 4096).
- *  Range : -4096..4096. */
-function Sin2(angle: number): number {
-  // Use Math.sin instead of gSineDegreeTable (= same result, less dependencies).
-  return Math.round(Math.sin((angle * Math.PI) / 180) * 4096);
-}
-
-/** 1:1 décomp `s16 Cos2(u16 angle)` (trig.c:535) : returns sin(angle+90°). */
-function Cos2(angle: number): number {
-  return Math.round(Math.cos((angle * Math.PI) / 180) * 4096);
-}
+// ─── Trig helpers Sin2/Cos2 → miroir 1:1 `src/game/trig.ts` (= trig.c) ───────
+// L'ancien code local utilisait `Math.round(Math.sin/cos)` = NON-1:1 (la table
+// gSineDegreeTable de la décomp TRONQUE, diverge à 4 angles ; et Cos2 = Sin2(+90)).
+// Consolidé sur le miroir (dup Sin2/Cos2 flaggé par check-duplicate-helpers).
+import { Sin2, Cos2 } from '../../game/include/trig';
 
 // ─── State module-level (= encapsulates gTasks[taskId].data fields) ─────────
 

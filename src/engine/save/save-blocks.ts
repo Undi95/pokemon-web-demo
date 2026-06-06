@@ -1095,11 +1095,13 @@ export interface SaveBlock1 {
   objectEvents: ObjectEventSnapshot[];
   /** Object event templates (= per-map customizations from setobjectxyperm). */
   objectEventTemplates: ObjectEventTemplate[];
-  /** Flags bitset (= NUM_FLAG_BYTES). Stored as Record<string, true> en TS
-   *  pour facilité (= keys = 'FLAG_X' strings). */
-  flags: Record<string, true>;
-  /** Vars (= 256 u16). Stored as Record<string, number>. */
-  vars: Record<string, number>;
+  /** Flags bit-packés indexés par ID — 1:1 décomp `gSaveBlock1Ptr->flags[id/8]`
+   *  (cf. src/game/event_data.ts). `number[]` (PAS Uint8Array : save=JSON.stringify
+   *  → number[] round-trip ; typed array non). Taille NUM_FLAG_BYTES. (Migration miroir.) */
+  flags: number[];
+  /** Vars u16 indexées par (id − VARS_START) — 1:1 décomp `vars[id-0x4000]`. 256 entrées.
+   *  (Les special vars 0x8000+ ne sont PAS ici = EWRAM séparé, non sauvé, cf. event_data.ts.) */
+  vars: number[];
   /** Game stats (= 64 u32). Indexé par GAME_STAT_X enum. */
   gameStats: number[];
   /** Berry trees (= 128 entries). */
@@ -1525,8 +1527,8 @@ export function emptySaveBlock1(): SaveBlock1 {
     trainerRematches: zeros(MAX_REMATCH_ENTRIES),
     objectEvents: [],
     objectEventTemplates: [],
-    flags: {},
-    vars: {},
+    flags: new Array(NUM_FLAG_BYTES).fill(0),
+    vars: new Array(256 /* VARS_COUNT 0x4000..0x40FF */).fill(0),
     gameStats: zeros(NUM_GAME_STATS),
     berryTrees: arr(BERRY_TREES_COUNT, () => ({
       berry: 0, stage: 0, stopGrowth: 0, minutesUntilNextStage: 0,

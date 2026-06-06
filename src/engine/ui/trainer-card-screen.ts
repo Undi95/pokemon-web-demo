@@ -36,7 +36,7 @@ import {
   CopyWindowToVram, ShowBg, HideBg,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
+import { LoadUserWindowBorderGfx } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { FlagGet } from '../script/script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';

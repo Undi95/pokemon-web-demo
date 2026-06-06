@@ -1,219 +1,142 @@
 /**
- * script-vars.ts — flags + variables global state pour le script engine.
+ * script-vars.ts — BRIDGE nom→id vers le miroir 1:1 `src/game/event_data.ts`.
  *
- * Source de vérité (1:1 décomp) :
- *   - `D:/Projet 1/decomps/pokeemeraude/src/event_data.c:164-233` (= FlagSet,
- *     FlagGet, FlagClear, VarSet, VarGet, GetVarPointer, GetFlagPointer)
- *   - `D:/Projet 1/decomps/pokeemeraude/include/event_data.h` (= macros / IDs)
+ * Migration miroir 2026-06-05 : le stockage flags/vars est désormais 1:1 décomp
+ * (bit-packé / indexé par id, dans gSaveBlock1Ptr.flags/vars = number[]). Ce
+ * fichier RÉSOUT les noms `FLAG_X`/`VAR_X` → id numérique (via les tables résolues
+ * `src/game/include/constants/flags.ts`/`vars.ts`) puis appelle les fonctions du
+ * miroir par id. Les callers existants (string-based) continuent de marcher.
  *
- * 1:1 strict : tous les flags/vars vivent dans `gSaveBlock1Ptr->flags / vars`.
- * Décomp `GetFlagPointer(id)` returns `&gSaveBlock1Ptr->flags[id / 8]`, le
- * `FlagSet` set le bit `1 << (id & 7)`. Notre port stocke chaque flag par
- * name (= simplification structurelle, mais comportementalement identique :
- * un bit du décomp = une entry de notre Record<string, boolean>).
- *
- * 2026-05-23 : élimination du round-trip via gameState (= ancien wrapper non-
- * 1:1). Maintenant 1:1 direct gSaveBlock1Ptr. Brise aussi le cycle ESM
- * script-vars → game-state.
+ * Fallback `_legacy*` : pour un nom non présent dans les tables résolues (rare),
+ * on garde un stockage name-keyed séparé → zéro régression.
  */
 
-import { gSaveBlock1Ptr } from '../save/save-block-state';
+import * as ED from '../../game/include/event_data';
+import * as FLAGS from '../../game/include/constants/flags';
+import * as VARS from '../../game/include/constants/vars';
+import { resolveDecompConstant } from '../system/decomp-constants';
 import { ResetSaveBlocks } from '../save/save-system';
-import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 
-// ─── Flag API (1:1 décomp event_data.c:206-233) ──────────────────────────────
+const _FLAGS = FLAGS as unknown as Record<string, number>;
+const _VARS = VARS as unknown as Record<string, number>;
 
-/** Helper 1:1 strict : resolve un flag id numeric → name string. Notre projet
- *  stocke les flags dans `gSaveBlock1Ptr.flags: Record<string, boolean>` indexé
- *  par name (= équivalent comportemental du bitfield u8 array décomp où chaque
- *  bit `id` correspond à un name `FLAG_X`). Quand un caller passe un NUMERIC id
- *  (= e.g. `FlagSet(gSpecialVar_0x8004)` avec une var qui stocke FLAG_X numeric
- *  resolved par parseValue), on doit le mapper inverse au nom canonical.
- *
- *  1:1 strict bridge : le décomp utilise le numeric id direct pour indexer le
- *  bitfield ; notre port utilise le name string comme clé. Ce helper rend les
- *  2 paradigmes interopérables sans casser l'invariant 1 bit = 1 flag. */
-function _resolveFlagKey(flagIdOrName: string | number): string {
-  if (typeof flagIdOrName === 'number') {
-    // Lookup inverse via _constantsTable (= reverse de FLAG_X = numeric_id).
-    const name = reverseDecompConstant(flagIdOrName, 'FLAG_');
-    if (name) return name;
-    // Fallback : flag id non mappé → stocker par id stringifié.
-    // 1:1 strict : le décomp utiliserait le bit `id & 7` du byte `id / 8` ;
-    // ici on utilise un key namespace dédié `__flag_<id>`. Comportementalement
-    // équivalent (= 1 bit ↔ 1 entry).
-    return `__flag_${flagIdOrName}`;
-  }
-  return flagIdOrName;
+// Fallback pour les noms non résolus (anti-régression).
+const _legacyFlags = new Set<string>();
+const _legacyVars = new Map<string, number>();
+
+// ─── Flag API (bridge → miroir event_data.c:206-233) ─────────────────────────
+function _flagId(flag: string | number): number | null {
+  if (typeof flag === 'number') return flag;
+  const v = _FLAGS[flag];
+  return typeof v === 'number' ? v : null;
 }
 
-/** 1:1 décomp `FlagSet(id)` (event_data.c:206-212) :
- *    u8 *ptr = GetFlagPointer(id);
- *    if (ptr) *ptr |= 1 << (id & 7);
- *  Notre port : `gSaveBlock1Ptr->flags` est `Record<string, boolean>` indexé
- *  par name de flag (= u8 array bitfield indexé par id/8 dans ROM). Accepte
- *  string name OU numeric id (= ScrCmd_setflag use string, mais SetHiddenItemFlag
- *  et autres specials passent un numeric via gSpecialVar_0x8004). */
+/** 1:1 décomp `FlagSet(id)`. Accepte un nom (résolu) ou un id numérique. */
 export function FlagSet(flag: string | number): void {
-  gSaveBlock1Ptr.flags[_resolveFlagKey(flag)] = true;
+  const id = _flagId(flag);
+  if (id !== null) ED.FlagSet(id);
+  else if (typeof flag === 'string') _legacyFlags.add(flag);
 }
 
-/** 1:1 décomp `FlagClear(id)` (event_data.c:214-220) :
- *    u8 *ptr = GetFlagPointer(id);
- *    if (ptr) *ptr &= ~(1 << (id & 7)); */
+/** 1:1 décomp `FlagClear(id)`. */
 export function FlagClear(flag: string | number): void {
-  delete gSaveBlock1Ptr.flags[_resolveFlagKey(flag)];
+  const id = _flagId(flag);
+  if (id !== null) ED.FlagClear(id);
+  else if (typeof flag === 'string') _legacyFlags.delete(flag);
 }
 
-/** 1:1 décomp `FlagGet(id)` (event_data.c:222-233) :
- *    u8 *ptr = GetFlagPointer(id);
- *    if (!ptr) return FALSE;
- *    if (!(((*ptr) >> (id & 7)) & 1)) return FALSE;
- *    return TRUE; */
+/** 1:1 décomp `FlagGet(id)`. */
 export function FlagGet(flag: string | number): boolean {
-  return !!gSaveBlock1Ptr.flags[_resolveFlagKey(flag)];
+  const id = _flagId(flag);
+  if (id !== null) return ED.FlagGet(id);
+  return typeof flag === 'string' ? _legacyFlags.has(flag) : false;
 }
 
-// ─── Var API (1:1 décomp event_data.c:164-189) ───────────────────────────────
+// ─── Var API (bridge → miroir event_data.c:164-189) ──────────────────────────
+function _varId(varId: string): number | null {
+  const v = _VARS[varId];
+  return typeof v === 'number' ? v : null;
+}
 
-/** 1:1 décomp `VarSet(id, value)` (event_data.c:182-189) :
- *    u16 *ptr = GetVarPointer(id);
- *    if (!ptr) return FALSE;
- *    *ptr = value;
- *  Notre port : `gSaveBlock1Ptr->vars` est `Record<string, number>` indexé
- *  par name de var (= u16 array indexé par id-VARS_START dans ROM). */
+/** 1:1 décomp `VarSet(id, value)`. */
 export function VarSet(varId: string, value: number): void {
-  gSaveBlock1Ptr.vars[varId] = value & 0xFFFF;
+  const id = _varId(varId);
+  if (id !== null) ED.VarSet(id, value);
+  else _legacyVars.set(varId, value & 0xFFFF);
 }
 
-/** 1:1 décomp `VarGet(id)` (event_data.c:174-180) :
- *    u16 *ptr = GetVarPointer(id);
- *    if (!ptr) return id;        // 1:1 décomp : if id < VARS_START, return id
- *    return *ptr;
- *
- *  Notre port reçoit le name string : si c'est un immediate numérique → return.
- *  Si c'est une var name (= VAR_xxx) → lookup `gSaveBlock1Ptr.vars[name]`.
- *  Si c'est une constant name (= METATILE_X, MALE, etc) → resolveDecompConstant
- *  (= simule le compile-time literal resolution du décomp).
- *
- *  Special var `VAR_FACING` (= 0x800C dans le décomp) pointe vers
- *  `gSpecialVar_Facing` (= field_control_avatar.c:282,305) — facing direction
- *  du player au moment de l'interact. Notre port lit gPlayerAvatar.facing
- *  via globalThis (= évite cycle ESM script-vars ↔ player-avatar). */
+/** 1:1 décomp `VarGet(id)`. Gère aussi : immédiats numériques, et constantes
+ *  non-VAR (METATILE_X, MALE…) résolues en littéral (le décomp les inline au
+ *  compile-time ; notre transpiler garde le nom). */
 export function VarGet(varId: string): number {
-  // Si l'arg ressemble à un nombre / hex, le return tel quel (= immediate).
   if (/^-?\d+$/.test(varId)) return parseInt(varId, 10) & 0xFFFF;
   if (/^0x[0-9a-fA-F]+$/.test(varId)) return parseInt(varId, 16) & 0xFFFF;
-  // Special vars resolved at runtime (= 1:1 décomp gSpecialVars[]).
-  if (varId === 'VAR_FACING') {
-    // 1:1 décomp event_data.c:24 `EWRAM_DATA u16 gSpecialVar_Facing = 0;`
-    // Set par field-control-avatar.ts (= 1:1 field_control_avatar.c:282,305)
-    // au moment de starting un script d'interaction. Read direct via gSpecialVar.Facing.
-    return gSpecialVar.Facing;
-  }
-  // 1:1 décomp event_data.c:174-180 : `if (id < VARS_START) return id`.
-  // Sur ROM les constants comme METATILE_X / MALE / FEMALE sont resolved au
-  // compile time (= literal u16 inline dans le bytecode). Notre transpiler
-  // garde le NAME → on resolve ici via la table des constants extraites depuis
-  // les headers décomp. Audit session 125 : sans ça, setmetatile écrivait 0
-  // (= wall) sur (4,2) → player can't exit truck après option menu cycle.
-  if (varId.startsWith('VAR_')) {
-    // Var symbolique → lookup direct gSaveBlock1Ptr.vars (= 1:1 décomp
-    // gSaveBlock1Ptr->vars[id-0x4000]).
-    return gSaveBlock1Ptr.vars[varId] ?? 0;
-  }
-  // Constant resolution (METATILE_*, MALE/FEMALE, FLAG_*, ITEM_*, MUS_*, etc).
-  const constVal = resolveDecompConstant(varId);
-  if (constVal !== undefined) return constVal & 0xFFFF;
-  // Unknown : fallback lookup direct gSaveBlock1Ptr.vars (= returns 0 if not set).
-  return gSaveBlock1Ptr.vars[varId] ?? 0;
+  const id = _varId(varId);
+  if (id !== null) return ED.VarGet(id);
+  // Constante non-VAR (literal compile-time décomp).
+  const c = resolveDecompConstant(varId);
+  if (c !== undefined) return c & 0xFFFF;
+  return _legacyVars.get(varId) ?? 0;
 }
 
-// ─── Special vars (1:1 décomp) ───────────────────────────────────────────────
-
-/** `gSpecialVar_Result` (= VAR_RESULT, 0x800D dans le décomp). Set par checkflag,
- *  checkplayergender, yesnobox, etc. Read par goto_if_eq, call_if_eq.
- *
- *  1:1 strict : Result est un getter/setter sur la var VAR_RESULT dans
- *  gSaveBlock1Ptr.vars direct. Ça permet de read VAR_RESULT via VarGet AND
- *  via gSpecialVar.Result indistinctement (= 1:1 décomp où c'est la même
- *  chose). Critique pour goto_if_eq VAR_RESULT, MALE qui était cassé avant
- *  (= deux stores séparés faisaient que VarGet(VAR_RESULT) = 0 toujours).
- *
- *  LastTalked = gSpecialVar_LastTalked (= localId du NPC interacted). Set par
- *  CheckForObjectEventInteractive avant ScriptContext_SetupScript. */
+// ─── Special vars (1:1 décomp — backés par le miroir via leur id) ────────────
+/** `gSpecialVar_Result/LastTalked/Facing` = special vars (0x800D/0x800F/0x800C)
+ *  → routés vers `gSpecialVars` par le miroir. ItemId/Aux = globals séparés
+ *  (item_menu.h), gardés en champs simples. */
 export const gSpecialVar = {
-  get Result(): number { return gSaveBlock1Ptr.vars['VAR_RESULT'] ?? 0; },
-  set Result(value: number) { gSaveBlock1Ptr.vars['VAR_RESULT'] = value & 0xFFFF; },
-  get LastTalked(): number { return gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] ?? 0; },
-  set LastTalked(value: number) { gSaveBlock1Ptr.vars['VAR_LAST_TALKED'] = value & 0xFFFF; },
-  /** 1:1 décomp `EWRAM_DATA u16 gSpecialVar_Facing = 0` (event_data.c:24).
-   *  Set par `field_control_avatar.c:282,305` quand le player trigger un
-   *  script d'interaction (= snapshot direction du player à ce moment).
-   *  Read par scripts via VarGet('VAR_FACING'). Notre port stocke direct
-   *  ici (= module-level), sans passer par gSaveBlock1Ptr (le décomp non
-   *  plus — c'est un EWRAM global séparé). */
-  Facing: 0,
-  /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — u16 global set par
-   *  `Task_BagMenu_HandleInput` quand A pressé sur un item, lu par les
-   *  handlers context-menu (UTILIS./DONNER/JETER/etc.) + scripts give-item. */
+  get Result(): number { return ED.VarGet(VARS.VAR_RESULT); },
+  set Result(v: number) { ED.VarSet(VARS.VAR_RESULT, v); },
+  get LastTalked(): number { return ED.VarGet(VARS.VAR_LAST_TALKED); },
+  set LastTalked(v: number) { ED.VarSet(VARS.VAR_LAST_TALKED, v); },
+  get Facing(): number { return ED.VarGet(VARS.VAR_FACING); },
+  set Facing(v: number) { ED.VarSet(VARS.VAR_FACING, v); },
+  /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — global séparé. */
   ItemId: 0,
-  /** 1:1 décomp `gSpecialVar_0x8005` — slot generic (item_menu.c utilise pour
-   *  Apprentice/FavorLady/QuizLady). */
+  /** 1:1 décomp `gSpecialVar_0x8005` — slot generic. */
   Aux: 0,
 };
 
-/** 1:1 décomp `gSelectedObjectEvent` : index dans gObjectEvents du NPC en
- *  interaction. Set au début de l'interact, read par ScrCmd_lock,
- *  ScrCmd_faceplayer, ScrCmd_release. */
+/** 1:1 décomp `gSelectedObjectEvent` : index du NPC en interaction. */
 export const gSelectedObjectEvent = { index: 0 };
 
-/** 1:1 décomp `ctx->comparisonResult` (= LESS_THAN/EQUAL/GREATER_THAN, used
- *  par goto_if_eq etc. après `compare`). 0=LT, 1=EQ, 2=GT. */
+// ─── Compare (ctx->comparisonResult) ─────────────────────────────────────────
 export const COMPARE_LT = 0;
 export const COMPARE_EQ = 1;
 export const COMPARE_GT = 2;
-
 export function Compare(a: number, b: number): number {
   if (a < b) return COMPARE_LT;
   if (a > b) return COMPARE_GT;
   return COMPARE_EQ;
 }
 
-/** Reset complet (= pour debugging / map reload). Appelle ResetSaveBlocks
- *  direct (= 1:1 save-system). Note : ça reset AUSSI playerName/gender/bag/
- *  etc — donc à utiliser avec prudence. Pour reset script vars seulement,
- *  écrire ici un helper dédié. */
+/** Reset complet (debug / map reload) — via ResetSaveBlocks (1:1 save-system). */
 export function ResetScriptVars(): void {
   ResetSaveBlocks();
   gSelectedObjectEvent.index = 0;
+  _legacyFlags.clear();
+  _legacyVars.clear();
 }
 
-// ─── Debug exposure ─────────────────────────────────────────────────────────
-// Compat avec ancien code qui lit window.__gFlags / window.__gVars depuis console.
-// Lecture directe gSaveBlock1Ptr (= 1:1 décomp event_data.c storage location).
+// ─── Debug exposure (= window.__gFlags / __gVars) ────────────────────────────
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, '__gFlags', {
     configurable: true,
     get() {
-      const flags = gSaveBlock1Ptr.flags;
-      const names = Object.keys(flags);
+      const setNames = Object.keys(_FLAGS).filter((n) => n.startsWith('FLAG_') && ED.FlagGet(_FLAGS[n]));
       return {
-        size: names.length,
-        has: (flag: string) => !!flags[flag],
-        forEach: (cb: (flag: string) => void) => names.forEach(cb),
+        size: setNames.length + _legacyFlags.size,
+        has: (flag: string) => FlagGet(flag),
+        forEach: (cb: (flag: string) => void) => { setNames.forEach(cb); _legacyFlags.forEach(cb); },
       };
     },
   });
   Object.defineProperty(window, '__gVars', {
     configurable: true,
     get() {
-      const vars = gSaveBlock1Ptr.vars;
       return {
-        size: Object.keys(vars).length,
-        get: (varId: string) => vars[varId] ?? 0,
-        set: (varId: string, value: number) => { vars[varId] = value & 0xFFFF; },
-        has: (varId: string) => varId in vars,
+        get: (varId: string) => VarGet(varId),
+        set: (varId: string, value: number) => VarSet(varId, value),
+        has: (varId: string) => _varId(varId) !== null || _legacyVars.has(varId),
       };
     },
   });

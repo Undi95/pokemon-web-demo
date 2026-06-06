@@ -36,7 +36,7 @@ import {
   DISOBEDIENCE_OBEDIENT, DISOBEDIENCE_IGNORED, DISOBEDIENCE_OTHER,
   STATUS1_ANY, STATUS1_SLEEP,
   STATUS2_RAGE, STATUS2_UPROAR,
-  MOVE_RAGE, MOVE_SNORE, MOVE_SLEEP_TALK,
+  MOVE_RAGE, MOVE_SNORE, MOVE_SLEEP_TALK, MOVE_POUND,
   MULTISTRING_CHOOSER, NUM_LOAF_STRINGS,
   HITMARKER_DISOBEDIENT_MOVE, HITMARKER_UNABLE_TO_USE_MOVE,
   ABILITY_VITAL_SPIRIT, ABILITY_INSOMNIA,
@@ -47,6 +47,12 @@ import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../system/random';
 import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitations';
+// 1:1 décomp `GetMoveTarget` (battle_util.c:3811) — recompute la cible du move
+// aléatoire de désobéissance. Même import que atk-canceler.ts:52 (cycle déjà
+// existant + booté → pas le cas rtc) ; vérifié au boot après ce fix.
+import { _GetMoveTarget } from './battle-script-commands';
+// 1:1 décomp `CalculateBaseDamage` (battle_util.c:4000, self-hit désobéissance).
+import { CalculateBaseDamage } from './damage-calc';
 
 /** 1:1 décomp `IsBattlerModernFatefulEncounter(battler)` (battle_util.c:3890-3898).
  *
@@ -98,17 +104,13 @@ const FLAG_BADGE08_GET = 'FLAG_BADGE08_GET';
 
 const MOD = (a: number, b: number): number => ((a % b) + b) % b;
 
-/** Simplified `CalculateBaseDamage` pour confusion self-hit (= 1:1 décomp).
- *  Le décomp utilise CalculateBaseDamage(attacker, attacker, MOVE_POUND, 0, 40, 0, attacker, attacker).
- *  Notre port : formule de base GBA. */
+/** 1:1 décomp `CalculateBaseDamage(self, self, MOVE_POUND, 0, 40, 0, self, self)`
+ *  (battle_util.c:4000) = self-hit 40-power typeless. Appelle le VRAI
+ *  CalculateBaseDamage (= burn-halving + badge boost), pas une formule simplifiée. */
 function _calculateConfusionDamage(battler: number): number {
-  const mon = gBattleMons[battler];
-  const level = mon.level;
-  const attack = mon.attack;
-  const defense = mon.defense;
-  const power = 40;
-  const baseDmg = Math.floor((Math.floor(2 * level / 5 + 2) * attack * power) / defense / 50) + 2;
-  return Math.max(1, baseDmg);
+  return CalculateBaseDamage(
+    gBattleMons[battler], gBattleMons[battler], MOVE_POUND, 0, 40, 0, battler, battler,
+  ).damage;
 }
 
 export interface DisobedienceResult {
@@ -186,21 +188,21 @@ export function IsMonDisobedient(_ctx: BattleScriptContext): DisobedienceResult 
         jumpLabel: 'BattleScript_MoveUsedLoafingAround',
       };
     } else {
-      // Random pick un autre move
-      let safety = 0;
+      // Random pick un autre move (1:1 décomp battle_util.c : do/while sans garde —
+      // termine forcément car ce else-branch garantit limitations != ALL_MOVES_MASK,
+      // donc au moins un slot de move est libre).
       do {
         const idx = MOD(Random(), MAX_MON_MOVES);
         setCurrMovePos(idx);
         setChosenMovePos(idx);
-        safety++;
-      } while ((1 << gCurrMovePos) & limitations && safety < 50);
+      } while ((1 << gCurrMovePos) & limitations);
 
       const calledMove = gBattleMons[gBattlerAttacker].moves[gCurrMovePos];
       setCalledMove(calledMove);
       // 1:1 décomp : gBattlerTarget = GetMoveTarget(calledMove, NO_TARGET_OVERRIDE).
-      // Notre port : keep current target.
-      void NO_TARGET_OVERRIDE;
-      void setBattlerTarget;
+      // Recompute la cible pour le move ALÉATOIRE (peut différer de la cible du
+      // move original : self-buff, spread, etc.) — était skippé (« keep current »).
+      setBattlerTarget(_GetMoveTarget(calledMove, NO_TARGET_OVERRIDE));
       setHitMarker(gHitMarker | HITMARKER_DISOBEDIENT_MOVE);
       return {
         retval: DISOBEDIENCE_OTHER,

@@ -50,7 +50,7 @@ import {
   WINDOW_WIDTH, WINDOW_HEIGHT,
   AddWindow, RemoveWindow, ClearWindowTilemap, ClearStdWindowAndFrame,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from './gba-text-window';
+import { LoadUserWindowBorderGfx, DrawTextBorderOuter } from '../../game/text_window';
 import {
   AddTextPrinterParameterized4, GetFontAttribute, GetMenuCursorDimensionByFont,
   FONTATTR_MAX_LETTER_HEIGHT, TEXT_SKIP_DRAW,
@@ -110,8 +110,9 @@ export const LISTFIELD_CURSORKIND = 16;
 
 /** 1:1 `struct ListMenuItem` (list_menu.h:54-58). */
 export interface ListMenuItem {
-  /** `const u8 *name` (string FR côté port). */
-  name: string;
+  /** 1:1 décomp `const u8 *name` : bytes charmap (migration texte byte-level) OU
+   *  source string FR (encodée au rendu par AddTextPrinter — convention string|byte). */
+  name: string | Uint8Array;
   /** `s32 id` — ou LIST_HEADER/LIST_CANCEL/… */
   id: number;
 }
@@ -506,7 +507,7 @@ function _destroyTask(listTaskId: number): void {
  *  const u8 *str, u8 x, u8 y)` (list_menu.c:580-607). colors[3] =
  *  [fillValue, cursorPal, cursorShadowPal] (= [bg, fg, shadow] pour
  *  AddTextPrinterParameterized4, cf. menu.c:1952-1954). */
-function ListMenuPrint(list: ListMenu, str: string, x: number, y: number): void {
+function ListMenuPrint(list: ListMenu, str: string | Uint8Array, x: number, y: number): void {
   const colors = [0, 0, 0];
   if (gListMenuOverride.enabled) {
     colors[0] = gListMenuOverride.fillValue;
@@ -1652,11 +1653,8 @@ export function DoMysteryGiftListMenu(
         case 2:
           // 1:1 :309-313 décomp : `case 2:` n'a PAS de break → FALLTHROUGH
           // vers `case 1:`. Expansion fidèle (net-effect IDENTIQUE : drawMode
-          // 2 = LoadUserWindowBorderGfx PUIS DrawTextBorderOuter). Notre
-          // LoadUserWindowBorderGfx prend `bg` (pas windowId) ; la chaîne
-          // décomp dérive bg = GetWindowAttribute(windowId, WINDOW_BG)
-          // (LoadWindowGfx) → on passe ce bg résolu = net-effect 1:1 EXACT.
-          LoadUserWindowBorderGfx(GetWindowAttribute(sMysteryGiftLinkMenu.windowId, /* WINDOW_BG */ 0), tileNum, palOffset); // 1:1 :310
+          // 2 = LoadUserWindowBorderGfx PUIS DrawTextBorderOuter).
+          LoadUserWindowBorderGfx(sMysteryGiftLinkMenu.windowId, tileNum, palOffset); // 1:1 :310
           DrawTextBorderOuter(sMysteryGiftLinkMenu.windowId, tileNum, palOffset >> 4); // 1:1 :312 (fallthrough) palOffset/16 (u16)
           break;
         case 1:

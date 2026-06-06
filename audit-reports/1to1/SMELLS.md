@@ -1,6 +1,6 @@
 # SMELLS 1:1 — filet anti-régression (Outil C)
 
-Généré : 2026-05-19T14:24:57.078Z
+Généré : 2026-06-05T16:00:39.446Z
 
 > ⚠️ Statique = filet régression. **NE PROUVE PAS le comportement.**
 >
@@ -18,547 +18,159 @@ Généré : 2026-05-19T14:24:57.078Z
 
 _aucun ✓_
 
-## [HARDCODE] 465 — littéral ≠ constante décomp (vrai bug, non-gating)
+## [HARDCODE] 9 — littéral ≠ constante décomp (vrai bug, non-gating)
 
-- `src/engine/battle/battle-string-decoder.ts`:60 — `TRAINER_LINK_OPPONENT = 1024` mais décomp = **2048** (src/engine/decomp-data/auto/include/constants/trainers-data.ts)
-- `src/engine/battle/cmd-niveau-2.ts`:83 — `B_ANIM_STATS_CHANGE = 0` mais décomp = **1** (src/engine/decomp-data/auto/include/constants/battle_anim-data.ts)
-- `src/engine/battle/constants.ts`:176 — `NO_ACC_CALC_CHECK_LOCK_ON = 65533` mais décomp = **65535** (src/engine/decomp-data/auto/include/constants/battle_script_commands-data.ts)
-- `src/engine/battle/constants.ts`:188 — `B_MSG_STAYED_AWAKE_USING = 1` mais décomp = **2** (src/engine/decomp-data/auto/include/constants/battle_string_ids-data.ts)
-- `src/engine/battle/constants.ts`:407 — `BATTLE_RUN_FAILURE = 1` mais décomp = **2** (src/engine/decomp-data/auto/include/constants/battle-data.ts)
-- `src/engine/battle/handle-action.ts`:77 — `B_MSG_INCAPABLE_OF_POWER = 0` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/battle_string_ids-data.ts)
-- `src/engine/decomp-bridge.ts`:588 — `B_BUFF_STRING = 2` mais décomp = **0** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:589 — `B_BUFF_MOVE = 3` mais décomp = **2** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:590 — `B_BUFF_TYPE = 4` mais décomp = **3** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:591 — `B_BUFF_MON_NICK = 5` mais décomp = **7** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:592 — `B_BUFF_MON_NICK_WITH_PREFIX = 6` mais décomp = **4** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:593 — `B_BUFF_ITEM = 12` mais décomp = **10** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:594 — `B_BUFF_SPECIES = 13` mais décomp = **6** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:1724 — `B_BUFF_STAT = 7` mais décomp = **5** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:1725 — `B_BUFF_ABILITY = 8` mais décomp = **9** (src/engine/decomp-data/auto/include/battle_message-data.ts)
-- `src/engine/decomp-bridge.ts`:1871 — `MAX_CONDITION_SPARKLES = 7` mais décomp = **10** (src/engine/decomp-data/auto/include/menu_specialized-data.ts)
-- `src/engine/decomp-bridge.ts`:2098 — `NUM_BARD_PITCH_TABLES_PER_SIZE = 8` mais décomp = **5** (src/engine/decomp-data/auto/include/bard_music-data.ts)
-- `src/engine/decomp-globals.ts`:1067 — `CRY_PRIORITY_NORMAL = 2` mais décomp = **10** (src/engine/decomp-data/auto/include/constants/sound-data.ts)
-- `src/engine/gba-text-printer.ts`:67 — `EXT_CTRL_CODE_PAUSE = 9` mais décomp = **8** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/gba-text-printer.ts`:68 — `EXT_CTRL_CODE_PAUSE_UNTIL_PRESS = 10` mais décomp = **9** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/gba-text-printer.ts`:69 — `EXT_CTRL_CODE_WAIT_SE = 11` mais décomp = **10** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/gba-text-printer.ts`:70 — `EXT_CTRL_CODE_PLAY_BGM = 12` mais décomp = **11** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/gba-text-printer.ts`:71 — `EXT_CTRL_CODE_ESCAPE = 13` mais décomp = **12** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/gba-window-system.ts`:472 — `DLG_WINDOW_BASE_TILE_NUM = 252` mais décomp = **512** (src/engine/decomp-data/auto/src/menu-data.ts)
-- `src/engine/main-menu-impl.ts`:948 — `EXT_CTRL_CODE_PAUSE = 9` mais décomp = **8** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/map-loader.ts`:984 — `CONNECTION_INVALID = 255` mais décomp = **-1** (src/engine/decomp-data/auto/include/constants/global-data.ts)
-- `src/engine/object-event-graphics.ts`:48 — `OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL = 248` mais décomp = **100** (src/engine/decomp-data/auto/include/constants/event_objects-data.ts)
-- `src/engine/object-event-graphics.ts`:49 — `OBJ_EVENT_GFX_RIVAL_MAY_NORMAL = 249` mais décomp = **105** (src/engine/decomp-data/auto/include/constants/event_objects-data.ts)
-- `src/engine/object-event-graphics.ts`:58 — `ANIM_STD_GO_SOUTH = 0` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/object-event-graphics.ts`:59 — `ANIM_STD_GO_NORTH = 1` mais décomp = **5** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/object-event-graphics.ts`:60 — `ANIM_STD_GO_WEST = 2` mais décomp = **6** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/object-event-graphics.ts`:61 — `ANIM_STD_GO_EAST = 3` mais décomp = **7** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/option-menu-impl.ts`:623 — `CHAR_0 = 48` mais décomp = **161** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/option-menu-impl.ts`:624 — `CHAR_SPACER = 32` mais décomp = **119** (src/engine/decomp-data/auto/include/constants/characters-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:6 — `SPECIES_IVYSAUR = 1` mais décomp = **2** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:7 — `SPECIES_VENUSAUR = 1` mais décomp = **3** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:8 — `SPECIES_CHARMANDER = 0` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:9 — `SPECIES_CHARMELEON = 0` mais décomp = **5** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:10 — `SPECIES_CHARIZARD = 0` mais décomp = **6** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:11 — `SPECIES_SQUIRTLE = 0` mais décomp = **7** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:12 — `SPECIES_WARTORTLE = 2` mais décomp = **8** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:13 — `SPECIES_BLASTOISE = 2` mais décomp = **9** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:14 — `SPECIES_CATERPIE = 1` mais décomp = **10** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:15 — `SPECIES_METAPOD = 1` mais décomp = **11** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:16 — `SPECIES_BUTTERFREE = 0` mais décomp = **12** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:17 — `SPECIES_WEEDLE = 1` mais décomp = **13** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:18 — `SPECIES_KAKUNA = 2` mais décomp = **14** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:19 — `SPECIES_BEEDRILL = 2` mais décomp = **15** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:20 — `SPECIES_PIDGEY = 0` mais décomp = **16** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:21 — `SPECIES_PIDGEOTTO = 0` mais décomp = **17** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:22 — `SPECIES_PIDGEOT = 0` mais décomp = **18** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:23 — `SPECIES_RATTATA = 2` mais décomp = **19** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:24 — `SPECIES_RATICATE = 1` mais décomp = **20** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:25 — `SPECIES_SPEAROW = 0` mais décomp = **21** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:26 — `SPECIES_FEAROW = 0` mais décomp = **22** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:27 — `SPECIES_EKANS = 2` mais décomp = **23** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:28 — `SPECIES_ARBOK = 2` mais décomp = **24** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:29 — `SPECIES_PIKACHU = 2` mais décomp = **25** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:30 — `SPECIES_RAICHU = 0` mais décomp = **26** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:31 — `SPECIES_SANDSHREW = 2` mais décomp = **27** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:32 — `SPECIES_SANDSLASH = 2` mais décomp = **28** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:33 — `SPECIES_NIDORAN_F = 2` mais décomp = **29** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:34 — `SPECIES_NIDORINA = 2` mais décomp = **30** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:35 — `SPECIES_NIDOQUEEN = 2` mais décomp = **31** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:36 — `SPECIES_NIDORAN_M = 2` mais décomp = **32** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:37 — `SPECIES_NIDORINO = 2` mais décomp = **33** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:38 — `SPECIES_NIDOKING = 2` mais décomp = **34** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:39 — `SPECIES_CLEFAIRY = 0` mais décomp = **35** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:40 — `SPECIES_CLEFABLE = 0` mais décomp = **36** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:41 — `SPECIES_VULPIX = 2` mais décomp = **37** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:42 — `SPECIES_NINETALES = 1` mais décomp = **38** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:43 — `SPECIES_JIGGLYPUFF = 0` mais décomp = **39** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:44 — `SPECIES_WIGGLYTUFF = 0` mais décomp = **40** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:45 — `SPECIES_ZUBAT = 2` mais décomp = **41** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:46 — `SPECIES_GOLBAT = 2` mais décomp = **42** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:47 — `SPECIES_ODDISH = 1` mais décomp = **43** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:48 — `SPECIES_GLOOM = 0` mais décomp = **44** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:49 — `SPECIES_VILEPLUME = 0` mais décomp = **45** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:50 — `SPECIES_PARAS = 0` mais décomp = **46** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:51 — `SPECIES_PARASECT = 0` mais décomp = **47** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:52 — `SPECIES_VENONAT = 0` mais décomp = **48** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:53 — `SPECIES_VENOMOTH = 2` mais décomp = **49** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:54 — `SPECIES_DIGLETT = 2` mais décomp = **50** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:55 — `SPECIES_DUGTRIO = 2` mais décomp = **51** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:56 — `SPECIES_MEOWTH = 1` mais décomp = **52** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:57 — `SPECIES_PERSIAN = 1` mais décomp = **53** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:58 — `SPECIES_PSYDUCK = 1` mais décomp = **54** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:59 — `SPECIES_GOLDUCK = 2` mais décomp = **55** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:60 — `SPECIES_MANKEY = 1` mais décomp = **56** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:61 — `SPECIES_PRIMEAPE = 2` mais décomp = **57** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:62 — `SPECIES_GROWLITHE = 0` mais décomp = **58** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:63 — `SPECIES_ARCANINE = 0` mais décomp = **59** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:64 — `SPECIES_POLIWAG = 0` mais décomp = **60** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:65 — `SPECIES_POLIWHIRL = 0` mais décomp = **61** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:66 — `SPECIES_POLIWRATH = 0` mais décomp = **62** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:67 — `SPECIES_ABRA = 2` mais décomp = **63** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:68 — `SPECIES_KADABRA = 2` mais décomp = **64** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:69 — `SPECIES_ALAKAZAM = 2` mais décomp = **65** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:70 — `SPECIES_MACHOP = 0` mais décomp = **66** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:71 — `SPECIES_MACHOKE = 2` mais décomp = **67** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:72 — `SPECIES_MACHAMP = 0` mais décomp = **68** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:73 — `SPECIES_BELLSPROUT = 1` mais décomp = **69** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:74 — `SPECIES_WEEPINBELL = 1` mais décomp = **70** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:75 — `SPECIES_VICTREEBEL = 1` mais décomp = **71** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:76 — `SPECIES_TENTACOOL = 2` mais décomp = **72** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:77 — `SPECIES_TENTACRUEL = 2` mais décomp = **73** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:78 — `SPECIES_GEODUDE = 1` mais décomp = **74** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:79 — `SPECIES_GRAVELER = 1` mais décomp = **75** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:80 — `SPECIES_GOLEM = 1` mais décomp = **76** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:81 — `SPECIES_PONYTA = 0` mais décomp = **77** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:82 — `SPECIES_RAPIDASH = 0` mais décomp = **78** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:83 — `SPECIES_SLOWPOKE = 0` mais décomp = **79** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:84 — `SPECIES_SLOWBRO = 0` mais décomp = **80** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:85 — `SPECIES_MAGNEMITE = 0` mais décomp = **81** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:86 — `SPECIES_MAGNETON = 0` mais décomp = **82** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:87 — `SPECIES_FARFETCHD = 1` mais décomp = **83** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:88 — `SPECIES_DODUO = 2` mais décomp = **84** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:89 — `SPECIES_DODRIO = 2` mais décomp = **85** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:90 — `SPECIES_SEEL = 2` mais décomp = **86** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:91 — `SPECIES_DEWGONG = 2` mais décomp = **87** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:92 — `SPECIES_GRIMER = 2` mais décomp = **88** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:93 — `SPECIES_MUK = 2` mais décomp = **89** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:94 — `SPECIES_SHELLDER = 2` mais décomp = **90** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:95 — `SPECIES_CLOYSTER = 2` mais décomp = **91** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:96 — `SPECIES_GASTLY = 2` mais décomp = **92** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:97 — `SPECIES_HAUNTER = 2` mais décomp = **93** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:98 — `SPECIES_GENGAR = 2` mais décomp = **94** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:99 — `SPECIES_ONIX = 2` mais décomp = **95** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:100 — `SPECIES_DROWZEE = 2` mais décomp = **96** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:101 — `SPECIES_HYPNO = 1` mais décomp = **97** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:102 — `SPECIES_KRABBY = 2` mais décomp = **98** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:103 — `SPECIES_KINGLER = 2` mais décomp = **99** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:104 — `SPECIES_VOLTORB = 0` mais décomp = **100** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:105 — `SPECIES_ELECTRODE = 0` mais décomp = **101** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:106 — `SPECIES_EXEGGCUTE = 0` mais décomp = **102** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:107 — `SPECIES_EXEGGUTOR = 1` mais décomp = **103** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:108 — `SPECIES_CUBONE = 1` mais décomp = **104** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:109 — `SPECIES_MAROWAK = 1` mais décomp = **105** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:110 — `SPECIES_HITMONLEE = 2` mais décomp = **106** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:111 — `SPECIES_HITMONCHAN = 2` mais décomp = **107** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:112 — `SPECIES_LICKITUNG = 1` mais décomp = **108** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:113 — `SPECIES_KOFFING = 2` mais décomp = **109** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:114 — `SPECIES_WEEZING = 2` mais décomp = **110** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:115 — `SPECIES_RHYHORN = 1` mais décomp = **111** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:116 — `SPECIES_RHYDON = 1` mais décomp = **112** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:117 — `SPECIES_CHANSEY = 0` mais décomp = **113** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:118 — `SPECIES_TANGELA = 0` mais décomp = **114** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:119 — `SPECIES_KANGASKHAN = 1` mais décomp = **115** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:120 — `SPECIES_HORSEA = 0` mais décomp = **116** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:121 — `SPECIES_SEADRA = 0` mais décomp = **117** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:122 — `SPECIES_GOLDEEN = 0` mais décomp = **118** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:123 — `SPECIES_SEAKING = 0` mais décomp = **119** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:124 — `SPECIES_STARYU = 2` mais décomp = **120** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:125 — `SPECIES_STARMIE = 2` mais décomp = **121** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:126 — `SPECIES_MR_MIME = 0` mais décomp = **122** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:127 — `SPECIES_SCYTHER = 1` mais décomp = **123** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:128 — `SPECIES_JYNX = 2` mais décomp = **124** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:129 — `SPECIES_ELECTABUZZ = 1` mais décomp = **125** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:130 — `SPECIES_MAGMAR = 0` mais décomp = **126** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:131 — `SPECIES_PINSIR = 2` mais décomp = **127** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:132 — `SPECIES_TAUROS = 2` mais décomp = **128** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:133 — `SPECIES_MAGIKARP = 0` mais décomp = **129** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:134 — `SPECIES_GYARADOS = 0` mais décomp = **130** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:135 — `SPECIES_LAPRAS = 2` mais décomp = **131** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:136 — `SPECIES_DITTO = 2` mais décomp = **132** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:137 — `SPECIES_EEVEE = 2` mais décomp = **133** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:138 — `SPECIES_VAPOREON = 0` mais décomp = **134** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:139 — `SPECIES_JOLTEON = 0` mais décomp = **135** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:140 — `SPECIES_FLAREON = 0` mais décomp = **136** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:141 — `SPECIES_PORYGON = 0` mais décomp = **137** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:142 — `SPECIES_OMANYTE = 0` mais décomp = **138** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:143 — `SPECIES_OMASTAR = 0` mais décomp = **139** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:144 — `SPECIES_KABUTO = 2` mais décomp = **140** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:145 — `SPECIES_KABUTOPS = 2` mais décomp = **141** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:146 — `SPECIES_AERODACTYL = 0` mais décomp = **142** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:147 — `SPECIES_SNORLAX = 1` mais décomp = **143** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:148 — `SPECIES_ARTICUNO = 0` mais décomp = **144** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:149 — `SPECIES_ZAPDOS = 0` mais décomp = **145** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:150 — `SPECIES_MOLTRES = 0` mais décomp = **146** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:151 — `SPECIES_DRATINI = 0` mais décomp = **147** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:152 — `SPECIES_DRAGONAIR = 0` mais décomp = **148** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:153 — `SPECIES_DRAGONITE = 2` mais décomp = **149** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:154 — `SPECIES_MEWTWO = 2` mais décomp = **150** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:155 — `SPECIES_MEW = 0` mais décomp = **151** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:156 — `SPECIES_CHIKORITA = 1` mais décomp = **152** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:157 — `SPECIES_BAYLEEF = 1` mais décomp = **153** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:158 — `SPECIES_MEGANIUM = 1` mais décomp = **154** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:159 — `SPECIES_CYNDAQUIL = 1` mais décomp = **155** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:160 — `SPECIES_QUILAVA = 1` mais décomp = **156** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:161 — `SPECIES_TYPHLOSION = 1` mais décomp = **157** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:162 — `SPECIES_TOTODILE = 2` mais décomp = **158** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:163 — `SPECIES_CROCONAW = 2` mais décomp = **159** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:164 — `SPECIES_FERALIGATR = 2` mais décomp = **160** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:165 — `SPECIES_SENTRET = 2` mais décomp = **161** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:166 — `SPECIES_FURRET = 2` mais décomp = **162** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:167 — `SPECIES_HOOTHOOT = 2` mais décomp = **163** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:168 — `SPECIES_NOCTOWL = 2` mais décomp = **164** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:169 — `SPECIES_LEDYBA = 0` mais décomp = **165** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:170 — `SPECIES_LEDIAN = 0` mais décomp = **166** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:171 — `SPECIES_SPINARAK = 1` mais décomp = **167** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:172 — `SPECIES_ARIADOS = 0` mais décomp = **168** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:173 — `SPECIES_CROBAT = 2` mais décomp = **169** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:174 — `SPECIES_CHINCHOU = 2` mais décomp = **170** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:175 — `SPECIES_LANTURN = 0` mais décomp = **171** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:176 — `SPECIES_PICHU = 0` mais décomp = **172** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:177 — `SPECIES_CLEFFA = 0` mais décomp = **173** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:178 — `SPECIES_IGGLYBUFF = 1` mais décomp = **174** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:179 — `SPECIES_TOGEPI = 2` mais décomp = **175** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:180 — `SPECIES_TOGETIC = 2` mais décomp = **176** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:181 — `SPECIES_NATU = 0` mais décomp = **177** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:182 — `SPECIES_XATU = 0` mais décomp = **178** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:183 — `SPECIES_MAREEP = 2` mais décomp = **179** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:184 — `SPECIES_FLAAFFY = 0` mais décomp = **180** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:185 — `SPECIES_AMPHAROS = 0` mais décomp = **181** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:186 — `SPECIES_BELLOSSOM = 1` mais décomp = **182** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:187 — `SPECIES_MARILL = 2` mais décomp = **183** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:188 — `SPECIES_AZUMARILL = 2` mais décomp = **184** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:189 — `SPECIES_SUDOWOODO = 1` mais décomp = **185** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:190 — `SPECIES_POLITOED = 1` mais décomp = **186** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:191 — `SPECIES_HOPPIP = 1` mais décomp = **187** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:192 — `SPECIES_SKIPLOOM = 1` mais décomp = **188** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:193 — `SPECIES_JUMPLUFF = 2` mais décomp = **189** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:194 — `SPECIES_AIPOM = 2` mais décomp = **190** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:195 — `SPECIES_SUNKERN = 1` mais décomp = **191** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:196 — `SPECIES_SUNFLORA = 1` mais décomp = **192** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:197 — `SPECIES_YANMA = 1` mais décomp = **193** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:198 — `SPECIES_WOOPER = 0` mais décomp = **194** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:199 — `SPECIES_QUAGSIRE = 0` mais décomp = **195** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:200 — `SPECIES_ESPEON = 2` mais décomp = **196** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:201 — `SPECIES_UMBREON = 2` mais décomp = **197** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:202 — `SPECIES_MURKROW = 2` mais décomp = **198** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:203 — `SPECIES_SLOWKING = 0` mais décomp = **199** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:204 — `SPECIES_MISDREAVUS = 0` mais décomp = **200** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:205 — `SPECIES_UNOWN = 0` mais décomp = **201** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:206 — `SPECIES_WOBBUFFET = 0` mais décomp = **202** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:207 — `SPECIES_GIRAFARIG = 1` mais décomp = **203** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:208 — `SPECIES_PINECO = 0` mais décomp = **204** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:209 — `SPECIES_FORRETRESS = 2` mais décomp = **205** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:210 — `SPECIES_DUNSPARCE = 2` mais décomp = **206** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:211 — `SPECIES_GLIGAR = 2` mais décomp = **207** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:212 — `SPECIES_STEELIX = 0` mais décomp = **208** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:213 — `SPECIES_SNUBBULL = 0` mais décomp = **209** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:214 — `SPECIES_GRANBULL = 2` mais décomp = **210** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:215 — `SPECIES_QWILFISH = 0` mais décomp = **211** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:216 — `SPECIES_SCIZOR = 0` mais décomp = **212** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:217 — `SPECIES_SHUCKLE = 1` mais décomp = **213** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:218 — `SPECIES_HERACROSS = 2` mais décomp = **214** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:219 — `SPECIES_SNEASEL = 0` mais décomp = **215** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:220 — `SPECIES_TEDDIURSA = 0` mais décomp = **216** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:221 — `SPECIES_URSARING = 2` mais décomp = **217** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:222 — `SPECIES_SLUGMA = 0` mais décomp = **218** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:223 — `SPECIES_MAGCARGO = 0` mais décomp = **219** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:224 — `SPECIES_SWINUB = 2` mais décomp = **220** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:225 — `SPECIES_PILOSWINE = 2` mais décomp = **221** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:226 — `SPECIES_CORSOLA = 0` mais décomp = **222** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:227 — `SPECIES_REMORAID = 0` mais décomp = **223** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:228 — `SPECIES_OCTILLERY = 0` mais décomp = **224** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:229 — `SPECIES_DELIBIRD = 0` mais décomp = **225** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:230 — `SPECIES_MANTINE = 2` mais décomp = **226** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:231 — `SPECIES_SKARMORY = 0` mais décomp = **227** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:232 — `SPECIES_HOUNDOUR = 0` mais décomp = **228** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:233 — `SPECIES_HOUNDOOM = 0` mais décomp = **229** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:234 — `SPECIES_KINGDRA = 0` mais décomp = **230** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:235 — `SPECIES_PHANPY = 0` mais décomp = **231** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:236 — `SPECIES_DONPHAN = 0` mais décomp = **232** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:237 — `SPECIES_PORYGON2 = 0` mais décomp = **233** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:238 — `SPECIES_STANTLER = 2` mais décomp = **234** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:239 — `SPECIES_SMEARGLE = 1` mais décomp = **235** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:240 — `SPECIES_TYROGUE = 2` mais décomp = **236** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:241 — `SPECIES_HITMONTOP = 2` mais décomp = **237** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:242 — `SPECIES_SMOOCHUM = 1` mais décomp = **238** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:243 — `SPECIES_ELEKID = 1` mais décomp = **239** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:244 — `SPECIES_MAGBY = 1` mais décomp = **240** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:245 — `SPECIES_MILTANK = 1` mais décomp = **241** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:246 — `SPECIES_BLISSEY = 1` mais décomp = **242** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:247 — `SPECIES_RAIKOU = 0` mais décomp = **243** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:248 — `SPECIES_ENTEI = 2` mais décomp = **244** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:249 — `SPECIES_SUICUNE = 0` mais décomp = **245** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:250 — `SPECIES_LARVITAR = 1` mais décomp = **246** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:251 — `SPECIES_PUPITAR = 0` mais décomp = **247** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:252 — `SPECIES_TYRANITAR = 1` mais décomp = **248** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:253 — `SPECIES_LUGIA = 0` mais décomp = **249** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:254 — `SPECIES_HO_OH = 1` mais décomp = **250** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:255 — `SPECIES_CELEBI = 1` mais décomp = **251** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:256 — `SPECIES_OLD_UNOWN_B = 0` mais décomp = **252** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:257 — `SPECIES_OLD_UNOWN_C = 0` mais décomp = **253** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:258 — `SPECIES_OLD_UNOWN_D = 0` mais décomp = **254** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:259 — `SPECIES_OLD_UNOWN_E = 0` mais décomp = **255** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:260 — `SPECIES_OLD_UNOWN_F = 0` mais décomp = **256** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:261 — `SPECIES_OLD_UNOWN_G = 0` mais décomp = **257** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:262 — `SPECIES_OLD_UNOWN_H = 0` mais décomp = **258** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:263 — `SPECIES_OLD_UNOWN_I = 0` mais décomp = **259** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:264 — `SPECIES_OLD_UNOWN_J = 0` mais décomp = **260** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:265 — `SPECIES_OLD_UNOWN_K = 0` mais décomp = **261** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:266 — `SPECIES_OLD_UNOWN_L = 0` mais décomp = **262** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:267 — `SPECIES_OLD_UNOWN_M = 0` mais décomp = **263** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:268 — `SPECIES_OLD_UNOWN_N = 0` mais décomp = **264** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:269 — `SPECIES_OLD_UNOWN_O = 0` mais décomp = **265** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:270 — `SPECIES_OLD_UNOWN_P = 0` mais décomp = **266** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:271 — `SPECIES_OLD_UNOWN_Q = 0` mais décomp = **267** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:272 — `SPECIES_OLD_UNOWN_R = 0` mais décomp = **268** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:273 — `SPECIES_OLD_UNOWN_S = 0` mais décomp = **269** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:274 — `SPECIES_OLD_UNOWN_T = 0` mais décomp = **270** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:275 — `SPECIES_OLD_UNOWN_U = 0` mais décomp = **271** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:276 — `SPECIES_OLD_UNOWN_V = 0` mais décomp = **272** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:277 — `SPECIES_OLD_UNOWN_W = 0` mais décomp = **273** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:278 — `SPECIES_OLD_UNOWN_X = 0` mais décomp = **274** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:279 — `SPECIES_OLD_UNOWN_Y = 0` mais décomp = **275** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:280 — `SPECIES_OLD_UNOWN_Z = 0` mais décomp = **276** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:281 — `SPECIES_TREECKO = 1` mais décomp = **277** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:282 — `SPECIES_GROVYLE = 0` mais décomp = **278** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:283 — `SPECIES_SCEPTILE = 1` mais décomp = **279** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:284 — `SPECIES_TORCHIC = 0` mais décomp = **280** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:285 — `SPECIES_COMBUSKEN = 0` mais décomp = **281** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:286 — `SPECIES_BLAZIKEN = 0` mais décomp = **282** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:287 — `SPECIES_MUDKIP = 0` mais décomp = **283** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:288 — `SPECIES_MARSHTOMP = 0` mais décomp = **284** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:289 — `SPECIES_SWAMPERT = 0` mais décomp = **285** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:290 — `SPECIES_POOCHYENA = 2` mais décomp = **286** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:291 — `SPECIES_MIGHTYENA = 2` mais décomp = **287** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:292 — `SPECIES_ZIGZAGOON = 2` mais décomp = **288** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:293 — `SPECIES_LINOONE = 2` mais décomp = **289** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:294 — `SPECIES_WURMPLE = 0` mais décomp = **290** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:295 — `SPECIES_SILCOON = 2` mais décomp = **291** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:296 — `SPECIES_BEAUTIFLY = 0` mais décomp = **292** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:297 — `SPECIES_CASCOON = 2` mais décomp = **293** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:298 — `SPECIES_DUSTOX = 1` mais décomp = **294** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:299 — `SPECIES_LOTAD = 1` mais décomp = **295** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:300 — `SPECIES_LOMBRE = 1` mais décomp = **296** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:301 — `SPECIES_LUDICOLO = 1` mais décomp = **297** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:302 — `SPECIES_SEEDOT = 1` mais décomp = **298** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:303 — `SPECIES_NUZLEAF = 1` mais décomp = **299** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:304 — `SPECIES_SHIFTRY = 0` mais décomp = **300** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:305 — `SPECIES_NINCADA = 1` mais décomp = **301** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:306 — `SPECIES_NINJASK = 1` mais décomp = **302** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:307 — `SPECIES_SHEDINJA = 1` mais décomp = **303** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:308 — `SPECIES_TAILLOW = 2` mais décomp = **304** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:309 — `SPECIES_SWELLOW = 2` mais décomp = **305** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:310 — `SPECIES_SHROOMISH = 1` mais décomp = **306** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:311 — `SPECIES_BRELOOM = 1` mais décomp = **307** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:312 — `SPECIES_SPINDA = 1` mais décomp = **308** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:313 — `SPECIES_WINGULL = 0` mais décomp = **309** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:314 — `SPECIES_PELIPPER = 0` mais décomp = **310** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:315 — `SPECIES_SURSKIT = 2` mais décomp = **311** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:316 — `SPECIES_MASQUERAIN = 0` mais décomp = **312** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:317 — `SPECIES_WAILMER = 2` mais décomp = **313** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:318 — `SPECIES_WAILORD = 0` mais décomp = **314** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:319 — `SPECIES_SKITTY = 0` mais décomp = **315** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:320 — `SPECIES_DELCATTY = 2` mais décomp = **316** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:321 — `SPECIES_KECLEON = 1` mais décomp = **317** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:322 — `SPECIES_BALTOY = 1` mais décomp = **318** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:323 — `SPECIES_CLAYDOL = 0` mais décomp = **319** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:324 — `SPECIES_NOSEPASS = 0` mais décomp = **320** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:325 — `SPECIES_TORKOAL = 1` mais décomp = **321** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:326 — `SPECIES_SABLEYE = 2` mais décomp = **322** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:327 — `SPECIES_BARBOACH = 0` mais décomp = **323** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:328 — `SPECIES_WHISCASH = 0` mais décomp = **324** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:329 — `SPECIES_LUVDISC = 0` mais décomp = **325** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:330 — `SPECIES_CORPHISH = 0` mais décomp = **326** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:331 — `SPECIES_CRAWDAUNT = 0` mais décomp = **327** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:332 — `SPECIES_FEEBAS = 2` mais décomp = **328** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:333 — `SPECIES_MILOTIC = 0` mais décomp = **329** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:334 — `SPECIES_CARVANHA = 0` mais décomp = **330** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:335 — `SPECIES_SHARPEDO = 0` mais décomp = **331** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:336 — `SPECIES_TRAPINCH = 1` mais décomp = **332** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:337 — `SPECIES_VIBRAVA = 1` mais décomp = **333** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:338 — `SPECIES_FLYGON = 1` mais décomp = **334** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:339 — `SPECIES_MAKUHITA = 2` mais décomp = **335** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:340 — `SPECIES_HARIYAMA = 1` mais décomp = **336** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:341 — `SPECIES_ELECTRIKE = 1` mais décomp = **337** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:342 — `SPECIES_MANECTRIC = 0` mais décomp = **338** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:343 — `SPECIES_NUMEL = 1` mais décomp = **339** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:344 — `SPECIES_CAMERUPT = 0` mais décomp = **340** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:345 — `SPECIES_SPHEAL = 2` mais décomp = **341** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:346 — `SPECIES_SEALEO = 2` mais décomp = **342** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:347 — `SPECIES_WALREIN = 0` mais décomp = **343** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:348 — `SPECIES_CACNEA = 1` mais décomp = **344** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:349 — `SPECIES_CACTURNE = 1` mais décomp = **345** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:350 — `SPECIES_SNORUNT = 2` mais décomp = **346** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:351 — `SPECIES_GLALIE = 0` mais décomp = **347** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:352 — `SPECIES_LUNATONE = 1` mais décomp = **348** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:353 — `SPECIES_SOLROCK = 0` mais décomp = **349** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:354 — `SPECIES_AZURILL = 2` mais décomp = **350** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:355 — `SPECIES_SPOINK = 0` mais décomp = **351** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:356 — `SPECIES_GRUMPIG = 2` mais décomp = **352** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:357 — `SPECIES_PLUSLE = 0` mais décomp = **353** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:358 — `SPECIES_MINUN = 0` mais décomp = **354** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:359 — `SPECIES_MAWILE = 2` mais décomp = **355** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:360 — `SPECIES_MEDITITE = 0` mais décomp = **356** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:361 — `SPECIES_MEDICHAM = 0` mais décomp = **357** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:362 — `SPECIES_SWABLU = 0` mais décomp = **358** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:363 — `SPECIES_ALTARIA = 0` mais décomp = **359** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:364 — `SPECIES_WYNAUT = 0` mais décomp = **360** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:365 — `SPECIES_DUSKULL = 0` mais décomp = **361** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:366 — `SPECIES_DUSCLOPS = 0` mais décomp = **362** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:367 — `SPECIES_ROSELIA = 0` mais décomp = **363** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:368 — `SPECIES_SLAKOTH = 2` mais décomp = **364** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:369 — `SPECIES_VIGOROTH = 2` mais décomp = **365** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:370 — `SPECIES_SLAKING = 1` mais décomp = **366** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:371 — `SPECIES_GULPIN = 1` mais décomp = **367** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:372 — `SPECIES_SWALOT = 2` mais décomp = **368** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:373 — `SPECIES_TROPIUS = 1` mais décomp = **369** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:374 — `SPECIES_WHISMUR = 0` mais décomp = **370** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:375 — `SPECIES_LOUDRED = 2` mais décomp = **371** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:376 — `SPECIES_EXPLOUD = 2` mais décomp = **372** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:377 — `SPECIES_CLAMPERL = 0` mais décomp = **373** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:378 — `SPECIES_HUNTAIL = 0` mais décomp = **374** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:379 — `SPECIES_GOREBYSS = 0` mais décomp = **375** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:380 — `SPECIES_ABSOL = 0` mais décomp = **376** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:381 — `SPECIES_SHUPPET = 0` mais décomp = **377** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:382 — `SPECIES_BANETTE = 0` mais décomp = **378** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:383 — `SPECIES_SEVIPER = 2` mais décomp = **379** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:384 — `SPECIES_ZANGOOSE = 0` mais décomp = **380** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:385 — `SPECIES_RELICANTH = 1` mais décomp = **381** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:386 — `SPECIES_ARON = 2` mais décomp = **382** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:387 — `SPECIES_LAIRON = 2` mais décomp = **383** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:388 — `SPECIES_AGGRON = 2` mais décomp = **384** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:389 — `SPECIES_CASTFORM = 0` mais décomp = **385** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:390 — `SPECIES_VOLBEAT = 0` mais décomp = **386** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:391 — `SPECIES_ILLUMISE = 2` mais décomp = **387** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:392 — `SPECIES_LILEEP = 2` mais décomp = **388** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:393 — `SPECIES_CRADILY = 0` mais décomp = **389** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:394 — `SPECIES_ANORITH = 0` mais décomp = **390** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:395 — `SPECIES_ARMALDO = 0` mais décomp = **391** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:396 — `SPECIES_RALTS = 1` mais décomp = **392** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:397 — `SPECIES_KIRLIA = 1` mais décomp = **393** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:398 — `SPECIES_GARDEVOIR = 1` mais décomp = **394** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:399 — `SPECIES_BAGON = 2` mais décomp = **395** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:400 — `SPECIES_SHELGON = 2` mais décomp = **396** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:401 — `SPECIES_SALAMENCE = 0` mais décomp = **397** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:402 — `SPECIES_BELDUM = 0` mais décomp = **398** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:403 — `SPECIES_METANG = 0` mais décomp = **399** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:404 — `SPECIES_METAGROSS = 0` mais décomp = **400** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:405 — `SPECIES_REGIROCK = 2` mais décomp = **401** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:406 — `SPECIES_REGICE = 2` mais décomp = **402** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:407 — `SPECIES_REGISTEEL = 2` mais décomp = **403** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:408 — `SPECIES_KYOGRE = 2` mais décomp = **404** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:409 — `SPECIES_GROUDON = 0` mais décomp = **405** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:410 — `SPECIES_RAYQUAZA = 1` mais décomp = **406** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:411 — `SPECIES_LATIAS = 0` mais décomp = **407** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:412 — `SPECIES_LATIOS = 2` mais décomp = **408** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:413 — `SPECIES_JIRACHI = 0` mais décomp = **409** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:414 — `SPECIES_DEOXYS = 0` mais décomp = **410** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:415 — `SPECIES_CHIMECHO = 0` mais décomp = **411** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/pokemon-icon-palettes.ts`:416 — `SPECIES_EGG = 1` mais décomp = **412** (src/engine/decomp-data/auto/include/constants/species-data.ts)
-- `src/engine/rtc.ts`:59 — `RTC_ERR_FLAG_MASK = 255` mais décomp = **4080** (src/engine/decomp-data/auto/include/rtc-data.ts)
-- `src/engine/script-opcodes.ts`:3253 — `FLDEFF_SPARKLE = 36` mais décomp = **54** (src/engine/decomp-data/auto/include/constants/field_effects-data.ts)
-- `src/engine/static-data-tables.ts`:21 — `ANIM_STD_GO_SOUTH = 0` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:22 — `ANIM_STD_GO_NORTH = 1` mais décomp = **5** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:23 — `ANIM_STD_GO_WEST = 2` mais décomp = **6** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:24 — `ANIM_STD_GO_EAST = 3` mais décomp = **7** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:25 — `ANIM_STD_GO_FAST_SOUTH = 4` mais décomp = **8** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:26 — `ANIM_STD_GO_FAST_NORTH = 5` mais décomp = **9** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:27 — `ANIM_STD_GO_FAST_WEST = 6` mais décomp = **10** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:28 — `ANIM_STD_GO_FAST_EAST = 7` mais décomp = **11** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:29 — `ANIM_STD_GO_FASTER_SOUTH = 8` mais décomp = **12** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:30 — `ANIM_STD_GO_FASTER_NORTH = 9` mais décomp = **13** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:31 — `ANIM_STD_GO_FASTER_WEST = 10` mais décomp = **14** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:32 — `ANIM_STD_GO_FASTER_EAST = 11` mais décomp = **15** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:33 — `ANIM_STD_GO_FASTEST_SOUTH = 12` mais décomp = **16** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:34 — `ANIM_STD_GO_FASTEST_NORTH = 13` mais décomp = **17** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:35 — `ANIM_STD_GO_FASTEST_WEST = 14` mais décomp = **18** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/static-data-tables.ts`:36 — `ANIM_STD_GO_FASTEST_EAST = 15` mais décomp = **19** (src/engine/decomp-data/auto/include/constants/event_object_movement-data.ts)
-- `src/engine/step-callbacks.ts`:32 — `STEP_CB_TRUCK = 4` mais décomp = **5** (src/engine/decomp-data/auto/include/constants/field_tasks-data.ts)
-- `src/engine/step-callbacks.ts`:33 — `STEP_CB_SOOTOPOLIS_ICE = 5` mais décomp = **4** (src/engine/decomp-data/auto/include/constants/field_tasks-data.ts)
+- `src/engine/battle/battle-bag.ts`:36 — `SE_USE_ITEM = 4` mais décomp = **1** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/gba-text-printer.ts`:67 — `EXT_CTRL_CODE_PAUSE = 9` mais décomp = **8** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/gba-text-printer.ts`:68 — `EXT_CTRL_CODE_PAUSE_UNTIL_PRESS = 10` mais décomp = **9** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/gba-text-printer.ts`:69 — `EXT_CTRL_CODE_WAIT_SE = 11` mais décomp = **10** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/gba-text-printer.ts`:70 — `EXT_CTRL_CODE_PLAY_BGM = 12` mais décomp = **11** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/gba-text-printer.ts`:71 — `EXT_CTRL_CODE_ESCAPE = 13` mais décomp = **12** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/main-menu-impl.ts`:977 — `EXT_CTRL_CODE_PAUSE = 9` mais décomp = **8** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/option-menu-impl.ts`:627 — `CHAR_0 = 48` mais décomp = **161** (src/engine/decomp-data/_common-constants.ts)
+- `src/engine/ui/option-menu-impl.ts`:628 — `CHAR_SPACER = 32` mais décomp = **119** (src/engine/decomp-data/_common-constants.ts)
 
-## [FALLTHRU] 111 — case sans break/return ni commentaire (structurel)
+## [FALLTHRU] 190 — case sans break/return ni commentaire (structurel)
 
-- `src/engine/bag-menu.ts`:637 — `case TMHM_POCKET` tombe sur le suivant
-- `src/engine/battle/ability-battle-effects.ts`:304 — `case WEATHER_RAIN` tombe sur le suivant
-- `src/engine/battle/ability-battle-effects.ts`:305 — `case WEATHER_RAIN_THUNDERSTORM` tombe sur le suivant
-- `src/engine/battle/ability-battle-effects.ts`:390 — `case ABILITY_CLOUD_NINE` tombe sur le suivant
-- `src/engine/battle/ability-battle-effects.ts`:563 — `case ABILITY_INSOMNIA` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1140 — `case AI_TARGET` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1155 — `case AI_USER` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1163 — `case AI_TARGET` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1177 — `case AI_USER` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1186 — `case AI_TARGET` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1202 — `case AI_USER` tombe sur le suivant
-- `src/engine/battle/ai/ai-script-commands.ts`:1211 — `case AI_TARGET` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:498 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:509 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:510 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:511 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:518 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:519 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:520 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:523 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:524 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:525 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:526 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:537 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:537 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:539 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:539 — `case ` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:593 — `case 6` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:594 — `case 7` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:595 — `case 8` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:596 — `case 9` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:597 — `case 10` tombe sur le suivant
-- `src/engine/battle/battle-string-decoder.ts`:600 — `case default` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-1.ts`:252 — `case MOVE_TARGET_BOTH` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-12.ts`:153 — `case MOVE_FLY` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-12.ts`:172 — `case MOVE_FLY` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-31.ts`:420 — `case 0` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-31.ts`:421 — `case 1` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-31.ts`:422 — `case 2` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-31.ts`:423 — `case 3` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:318 — `case 2` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:445 — `case 2` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:446 — `case 3` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:556 — `case 5` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:699 — `case 11` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-32.ts`:703 — `case default` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-34.ts`:241 — `case MOVE_TARGET_DEPENDS` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-34.ts`:242 — `case MOVE_TARGET_BOTH` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-34.ts`:243 — `case MOVE_TARGET_FOES_AND_ALLY` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-34.ts`:274 — `case MOVE_TARGET_USER_OR_SELECTED` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-5.ts`:128 — `case MOVE_RESULT_DOESNT_AFFECT_FOE` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-5.ts`:132 — `case MOVE_RESULT_FOE_ENDURED` tombe sur le suivant
-- `src/engine/battle/cmd-niveau-5.ts`:133 — `case MOVE_RESULT_ONE_HIT_KO` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:482 — `case 0` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:678 — `case 0` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:679 — `case 1` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:680 — `case 2` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:734 — `case 5` tombe sur le suivant
+- `src/engine/bag/bag-item-effects.ts`:735 — `case 6` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:297 — `case ITEMMENULOCATION_BATTLE` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:644 — `case ITEM_EFFECT_HEAL_HP` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:645 — `case ITEM_EFFECT_CURE_POISON` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:646 — `case ITEM_EFFECT_CURE_SLEEP` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:647 — `case ITEM_EFFECT_CURE_BURN` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:648 — `case ITEM_EFFECT_CURE_FREEZE` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:649 — `case ITEM_EFFECT_CURE_PARALYSIS` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:650 — `case ITEM_EFFECT_CURE_ALL_STATUS` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:651 — `case ITEM_EFFECT_HP_EV` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:652 — `case ITEM_EFFECT_ATK_EV` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:653 — `case ITEM_EFFECT_DEF_EV` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:654 — `case ITEM_EFFECT_SPEED_EV` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:655 — `case ITEM_EFFECT_SPATK_EV` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:664 — `case ITEM_EFFECT_PP_UP` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:548 — `case ` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:705 — `case ` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:706 — `case ` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:707 — `case ` tombe sur le suivant
+- `src/engine/bag/bag-menu-ctx.ts`:708 — `case ` tombe sur le suivant
+- `src/engine/bag/bag-menu.ts`:805 — `case TMHM_POCKET` tombe sur le suivant
+- `src/engine/battle/ability-battle-effects.ts`:306 — `case WEATHER_RAIN` tombe sur le suivant
+- `src/engine/battle/ability-battle-effects.ts`:307 — `case WEATHER_RAIN_THUNDERSTORM` tombe sur le suivant
+- `src/engine/battle/ability-battle-effects.ts`:392 — `case ABILITY_CLOUD_NINE` tombe sur le suivant
+- `src/engine/battle/ability-battle-effects.ts`:565 — `case ABILITY_INSOMNIA` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1154 — `case AI_TARGET` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1169 — `case AI_USER` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1177 — `case AI_TARGET` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1191 — `case AI_USER` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1200 — `case AI_TARGET` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1216 — `case AI_USER` tombe sur le suivant
+- `src/engine/battle/ai/ai-script-commands.ts`:1225 — `case AI_TARGET` tombe sur le suivant
+- `src/engine/battle/battle-controller-player.ts`:1975 — `case default` tombe sur le suivant
+- `src/engine/battle/battle-flow.ts`:2366 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-healthbox.ts`:1028 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-link-start.ts`:460 — `case 5` tombe sur le suivant
+- `src/engine/battle/battle-link-start.ts`:461 — `case 9` tombe sur le suivant
+- `src/engine/battle/battle-link-start.ts`:469 — `case 6` tombe sur le suivant
+- `src/engine/battle/battle-link-start.ts`:470 — `case 10` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1486 — `case TRAINER_CLASS_ELITE_FOUR` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1490 — `case TRAINER_CLASS_TEAM_AQUA` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1491 — `case TRAINER_CLASS_TEAM_MAGMA` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1492 — `case TRAINER_CLASS_AQUA_ADMIN` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1493 — `case TRAINER_CLASS_AQUA_LEADER` tombe sur le suivant
+- `src/engine/battle/battle-main-functions.ts`:1494 — `case TRAINER_CLASS_MAGMA_ADMIN` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:363 — `case B_TXT_ATK_PREFIX1` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:363 — `case B_TXT_ATK_PREFIX2` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:365 — `case B_TXT_DEF_PREFIX1` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:365 — `case B_TXT_DEF_PREFIX2` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:370 — `case B_TXT_TRAINER2_CLASS` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:370 — `case B_TXT_TRAINER2_NAME` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:371 — `case B_TXT_TRAINER1_LOSE_TEXT` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:371 — `case B_TXT_TRAINER1_WIN_TEXT` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:372 — `case B_TXT_TRAINER2_LOSE_TEXT` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 5` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 6` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 7` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 8` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 9` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:474 — `case 10` tombe sur le suivant
+- `src/engine/battle/battle-message.ts`:476 — `case default` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:1027 — `case MOVE_TARGET_BOTH` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:3429 — `case MOVE_RESULT_DOESNT_AFFECT_FOE` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:3433 — `case MOVE_RESULT_FOE_ENDURED` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:3434 — `case MOVE_RESULT_ONE_HIT_KO` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:4710 — `case MOVE_FLY` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:4729 — `case MOVE_FLY` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:9704 — `case 0` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:9705 — `case 1` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:9706 — `case 2` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:9707 — `case 3` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10122 — `case 2` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10249 — `case 2` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10250 — `case 3` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10360 — `case 5` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10503 — `case 11` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:10507 — `case default` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:11109 — `case MOVE_TARGET_DEPENDS` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:11110 — `case MOVE_TARGET_BOTH` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:11111 — `case MOVE_TARGET_FOES_AND_ALLY` tombe sur le suivant
+- `src/engine/battle/battle-script-commands.ts`:11142 — `case MOVE_TARGET_USER_OR_SELECTED` tombe sur le suivant
+- `src/engine/battle/battle-setup-helpers.ts`:258 — `case MAP_TYPE_TOWN` tombe sur le suivant
+- `src/engine/battle/battle-setup-helpers.ts`:259 — `case MAP_TYPE_CITY` tombe sur le suivant
+- `src/engine/battle/battle-setup-helpers.ts`:266 — `case MAP_TYPE_INDOOR` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:546 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:557 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:558 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:559 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:566 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:567 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:568 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:571 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:572 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:573 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:574 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:584 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:584 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:586 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:586 — `case ` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:655 — `case 6` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:656 — `case 7` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:657 — `case 8` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:658 — `case 9` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:659 — `case 10` tombe sur le suivant
+- `src/engine/battle/battle-string-decoder.ts`:662 — `case default` tombe sur le suivant
 - `src/engine/battle/data/item-effects.ts`:77 — `case 0` tombe sur le suivant
 - `src/engine/battle/data/item-effects.ts`:78 — `case 1` tombe sur le suivant
 - `src/engine/battle/data/item-effects.ts`:79 — `case 2` tombe sur le suivant
-- `src/engine/battle/item-battle-effects.ts`:338 — `case HOLD_EFFECT_CONFUSE_SPICY` tombe sur le suivant
-- `src/engine/battle/item-battle-effects.ts`:339 — `case HOLD_EFFECT_CONFUSE_DRY` tombe sur le suivant
-- `src/engine/battle/item-battle-effects.ts`:340 — `case HOLD_EFFECT_CONFUSE_SWEET` tombe sur le suivant
-- `src/engine/battle/item-battle-effects.ts`:341 — `case HOLD_EFFECT_CONFUSE_BITTER` tombe sur le suivant
-- `src/engine/battle/party-storage.ts`:963 — `case REQUEST_MOVES_PP_BATTLE_PSC` tombe sur le suivant
-- `src/engine/battle/util.ts`:89 — `case BS_ATTACKER_WITH_PARTNER` tombe sur le suivant
-- `src/engine/battle/util.ts`:90 — `case BS_FAINTED_LINK_MULTIPLE_2` tombe sur le suivant
-- `src/engine/battle/util.ts`:91 — `case BS_ATTACKER_SIDE` tombe sur le suivant
-- `src/engine/battle/util.ts`:92 — `case BS_NOT_ATTACKER_SIDE` tombe sur le suivant
-- `src/engine/battle-flow.ts`:1211 — `case ` tombe sur le suivant
-- `src/engine/battle-healthbox.ts`:728 — `case ` tombe sur le suivant
-- `src/engine/list-menu.ts`:297 — `case 2` tombe sur le suivant
-- `src/engine/list-menu.ts`:765 — `case LISTFIELD_MOVECURSORFUNC` tombe sur le suivant
-- `src/engine/list-menu.ts`:813 — `case LISTFIELD_MOVECURSORFUNC` tombe sur le suivant
-- `src/engine/list-menu.ts`:1662 — `case 2` tombe sur le suivant
+- `src/engine/battle/item-battle-effects.ts`:337 — `case HOLD_EFFECT_CONFUSE_SPICY` tombe sur le suivant
+- `src/engine/battle/item-battle-effects.ts`:338 — `case HOLD_EFFECT_CONFUSE_DRY` tombe sur le suivant
+- `src/engine/battle/item-battle-effects.ts`:339 — `case HOLD_EFFECT_CONFUSE_SWEET` tombe sur le suivant
+- `src/engine/battle/item-battle-effects.ts`:340 — `case HOLD_EFFECT_CONFUSE_BITTER` tombe sur le suivant
+- `src/engine/battle/party-storage.ts`:1124 — `case REQUEST_MOVES_PP_BATTLE_PSC` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:116 — `case 7` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:117 — `case 8` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:118 — `case 9` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:131 — `case 11` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:132 — `case 12` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:133 — `case 13` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:137 — `case 15` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:138 — `case 16` tombe sur le suivant
+- `src/engine/battle/reshow-battle-screen.ts`:139 — `case 17` tombe sur le suivant
+- `src/engine/battle/util.ts`:90 — `case BS_ATTACKER_WITH_PARTNER` tombe sur le suivant
+- `src/engine/battle/util.ts`:91 — `case BS_FAINTED_LINK_MULTIPLE_2` tombe sur le suivant
+- `src/engine/battle/util.ts`:92 — `case BS_ATTACKER_SIDE` tombe sur le suivant
+- `src/engine/battle/util.ts`:93 — `case BS_NOT_ATTACKER_SIDE` tombe sur le suivant
+- `src/engine/field/map-loader.ts`:983 — `case CONNECTION_SOUTH` tombe sur le suivant
+- `src/engine/field/map-loader.ts`:986 — `case CONNECTION_WEST` tombe sur le suivant
+- `src/engine/field/map-loader.ts`:1130 — `case CONNECTION_SOUTH` tombe sur le suivant
+- `src/engine/field/map-loader.ts`:1133 — `case CONNECTION_WEST` tombe sur le suivant
+- `src/engine/field/object-events.ts`:1894 — `case 0` tombe sur le suivant
+- `src/engine/field/object-events.ts`:1921 — `case 0` tombe sur le suivant
+- `src/engine/field/object-events.ts`:2007 — `case 0` tombe sur le suivant
+- `src/engine/field/tilemap-loader.ts`:142 — `case MB_SOUTH_ARROW_WARP` tombe sur le suivant
 - `src/engine/m4a/envelope.ts`:38 — `case ` tombe sur le suivant
 - `src/engine/m4a/envelope.ts`:38 — `case ` tombe sur le suivant
 - `src/engine/m4a/envelope.ts`:39 — `case ` tombe sur le suivant
@@ -570,53 +182,70 @@ _aucun ✓_
 - `src/engine/m4a/synth.ts`:218 — `case ` tombe sur le suivant
 - `src/engine/m4a/synth.ts`:236 — `case ` tombe sur le suivant
 - `src/engine/m4a/synth.ts`:262 — `case ` tombe sur le suivant
-- `src/engine/map-loader.ts`:1007 — `case CONNECTION_SOUTH` tombe sur le suivant
-- `src/engine/map-loader.ts`:1010 — `case CONNECTION_WEST` tombe sur le suivant
-- `src/engine/mon-anim.ts`:251 — `case ` tombe sur le suivant
-- `src/engine/mon-anim.ts`:252 — `case ` tombe sur le suivant
-- `src/engine/mon-anim.ts`:262 — `case ` tombe sur le suivant
-- `src/engine/mon-anim.ts`:263 — `case ` tombe sur le suivant
-- `src/engine/mon-anim.ts`:330 — `case ` tombe sur le suivant
-- `src/engine/mon-anim.ts`:340 — `case ` tombe sur le suivant
-- `src/engine/mon-summary-anim.ts`:255 — `case 0` tombe sur le suivant
-- `src/engine/mon-summary-anim.ts`:256 — `case 2` tombe sur le suivant
-- `src/engine/mon-summary-anim.ts`:268 — `case 0` tombe sur le suivant
-- `src/engine/mon-summary-anim.ts`:1136 — `case 0` tombe sur le suivant
-- `src/engine/object-events.ts`:706 — `case 0` tombe sur le suivant
-- `src/engine/object-events.ts`:730 — `case 0` tombe sur le suivant
-- `src/engine/object-events.ts`:803 — `case 0` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3017 — `case 0` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3017 — `case 7` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3017 — `case 8` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3017 — `case 9` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3033 — `case 2` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3033 — `case 3` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3033 — `case 4` tombe sur le suivant
-- `src/engine/script-opcodes.ts`:3033 — `case 5` tombe sur le suivant
-- `src/engine/start-menu.ts`:669 — `case ` tombe sur le suivant
-- `src/engine/summary-screen.ts`:1488 — `case 5` tombe sur le suivant
-- `src/engine/summary-screen.ts`:1488 — `case 6` tombe sur le suivant
-- `src/engine/summary-screen.ts`:1501 — `case 5` tombe sur le suivant
-- `src/engine/summary-screen.ts`:1571 — `case PSS_PAGE_BATTLE_MOVES` tombe sur le suivant
-- `src/engine/tilemap-loader.ts`:142 — `case MB_SOUTH_ARROW_WARP` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:513 — `case 0` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:513 — `case 7` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:513 — `case 8` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:513 — `case 9` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:530 — `case 2` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:530 — `case 3` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:530 — `case 4` tombe sur le suivant
+- `src/engine/script/script-opcodes.ts`:530 — `case 5` tombe sur le suivant
+- `src/engine/system/palette.ts`:372 — `case FAST_FADE_IN_FROM_WHITE` tombe sur le suivant
+- `src/engine/system/time-based-events.ts`:95 — `case BERRY_STAGE_PLANTED` tombe sur le suivant
+- `src/engine/system/time-based-events.ts`:96 — `case BERRY_STAGE_SPROUTED` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:240 — `case ITEM_EFFECT_HP_EV` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:241 — `case ITEM_EFFECT_ATK_EV` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:242 — `case ITEM_EFFECT_DEF_EV` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:243 — `case ITEM_EFFECT_SPEED_EV` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:244 — `case ITEM_EFFECT_SPATK_EV` tombe sur le suivant
+- `src/engine/ui/item-use-callbacks.ts`:258 — `case ITEM_EFFECT_PP_UP` tombe sur le suivant
+- `src/engine/ui/list-menu.ts`:300 — `case 2` tombe sur le suivant
+- `src/engine/ui/list-menu.ts`:769 — `case LISTFIELD_MOVECURSORFUNC` tombe sur le suivant
+- `src/engine/ui/list-menu.ts`:817 — `case LISTFIELD_MOVECURSORFUNC` tombe sur le suivant
+- `src/engine/ui/list-menu.ts`:1691 — `case 2` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:362 — `case ITEM_ORANGE_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:363 — `case ITEM_HARBOR_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:364 — `case ITEM_GLITTER_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:365 — `case ITEM_MECH_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:366 — `case ITEM_WOOD_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:367 — `case ITEM_WAVE_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:368 — `case ITEM_BEAD_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:369 — `case ITEM_SHADOW_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:370 — `case ITEM_TROPIC_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:371 — `case ITEM_DREAM_MAIL` tombe sur le suivant
+- `src/engine/ui/mail-data.ts`:372 — `case ITEM_FAB_MAIL` tombe sur le suivant
+- `src/engine/ui/mail.ts`:841 — `case ICON_TYPE_BEAD` tombe sur le suivant
+- `src/engine/ui/mon-summary-anim.ts`:258 — `case 0` tombe sur le suivant
+- `src/engine/ui/mon-summary-anim.ts`:259 — `case 2` tombe sur le suivant
+- `src/engine/ui/mon-summary-anim.ts`:271 — `case 0` tombe sur le suivant
+- `src/engine/ui/mon-summary-anim.ts`:1139 — `case 0` tombe sur le suivant
+- `src/engine/ui/start-menu.ts`:727 — `case ` tombe sur le suivant
+- `src/engine/ui/summary-screen.ts`:1656 — `case PSS_PAGE_BATTLE_MOVES` tombe sur le suivant
+- `src/engine/ui/wallclock.ts`:750 — `case 1` tombe sur le suivant
 
-## [U32-SUB] 17 — soustraction sans `>>> 0` près d'un contexte u32 (heuristique)
+## [U32-SUB] 23 — soustraction sans `>>> 0` près d'un contexte u32 (heuristique)
 
-- `src/engine/battle/cmd-niveau-1.ts`:437 — `setBattleMoveDamage(targetMon.hp - 1);  // leave at 1 HP`
-- `src/engine/battle/cmd-niveau-11.ts`:151 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - gBattleMons[gBattlerAttacker].hp);`
-- `src/engine/battle/cmd-niveau-17.ts`:114 — `const painSplitHp = gBattleMons[gBattlerTarget].hp - hpDiff;`
-- `src/engine/battle/cmd-niveau-17.ts`:119 — `setBattleMoveDamage(gBattleMons[gBattlerAttacker].hp - hpDiff);`
-- `src/engine/battle/cmd-niveau-21.ts`:149 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
-- `src/engine/battle/cmd-niveau-21.ts`:152 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
-- `src/engine/battle/cmd-niveau-22.ts`:107 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
-- `src/engine/battle/cmd-niveau-22.ts`:227 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
-- `src/engine/battle/cmd-niveau-22.ts`:299 — `const divisor = 1 << (3 - gDisableStructs[gBattlerAttacker].stockpileCounter);`
-- `src/engine/battle/cmd-niveau-26.ts`:277 — `const result = Math.floor(((hpSwitchout - gBattleMons[opposing].hp) * 100) / hpSwitchout);`
-- `src/engine/battle/cmd-niveau-28.ts`:115 — `const spikesDmg = (5 - gSideTimers[side].spikesAmount) * 2;`
-- `src/engine/battle/item-battle-effects.ts`:316 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
-- `src/engine/battle/item-battle-effects.ts`:354 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
-- `src/engine/battle/item-battle-effects.ts`:372 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
-- `src/engine/battle/party-storage.ts`:682 — `mon.hp += newMaxHP - previousMaxHP;`
-- `src/engine/battle/wire-bytecode-bridge.ts`:342 — `const damage = defenderHpBefore - opts.defender.currentHp;`
-- `src/engine/pokemon.ts`:384 — `const hpDelta = mon.maxHp - oldMaxHp;`
+- `src/engine/bag/bag-item-effects.ts`:411 — `const hpDelta = mon.maxHp - oldMaxHp;`
+- `src/engine/bag/bag-item-effects.ts`:553 — `amount = mon.maxHp - mon.currentHp;`
+- `src/engine/bag/bag-item-effects.ts`:570 — `result.hpHealed = newHp - mon.currentHp;`
+- `src/engine/battle/battle-healthbox-l.ts`:311 — `const currExpBarValue = exp - currLevelExp;`
+- `src/engine/battle/battle-script-commands.ts`:1205 — `setBattleMoveDamage(targetMon.hp - 1);  // leave at 1 HP`
+- `src/engine/battle/battle-script-commands.ts`:4558 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - gBattleMons[gBattlerAttacker].hp);`
+- `src/engine/battle/battle-script-commands.ts`:5715 — `const painSplitHp = gBattleMons[gBattlerTarget].hp - hpDiff;`
+- `src/engine/battle/battle-script-commands.ts`:5720 — `setBattleMoveDamage(gBattleMons[gBattlerAttacker].hp - hpDiff);`
+- `src/engine/battle/battle-script-commands.ts`:6538 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
+- `src/engine/battle/battle-script-commands.ts`:6541 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
+- `src/engine/battle/battle-script-commands.ts`:6810 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
+- `src/engine/battle/battle-script-commands.ts`:6933 — `setBattleMoveDamage(gBattleMons[gBattlerTarget].hp - 1);`
+- `src/engine/battle/battle-script-commands.ts`:7005 — `const divisor = 1 << (3 - gDisableStructs[gBattlerAttacker].stockpileCounter);`
+- `src/engine/battle/battle-script-commands.ts`:7896 — `const result = Math.floor(((hpSwitchout - gBattleMons[opposing].hp) * 100) / hpSwitchout);`
+- `src/engine/battle/battle-script-commands.ts`:8254 — `const spikesDmg = (5 - gSideTimers[side].spikesAmount) * 2;`
+- `src/engine/battle/item-battle-effects.ts`:315 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
+- `src/engine/battle/item-battle-effects.ts`:353 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
+- `src/engine/battle/item-battle-effects.ts`:371 — `dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;`
+- `src/engine/battle/party-storage.ts`:842 — `mon.hp += newMaxHP - previousMaxHP;`
+- `src/engine/battle/wire-bytecode-bridge.ts`:353 — `const damage = defenderHpBefore - opts.defender.currentHp;`
+- `src/engine/pokemon/pokemon.ts`:357 — `inst.currentHp = Math.min(inst.maxHp, inst.currentHp + (inst.maxHp - oldMaxHp));`
+- `src/engine/pokemon/pokemon.ts`:541 — `const hpDelta = mon.maxHp - oldMaxHp;`
+- `src/engine/script/specials-registry.ts`:3391 — `i = (i - 1) & 0xFFFF;`
 

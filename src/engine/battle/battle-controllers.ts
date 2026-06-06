@@ -140,13 +140,11 @@ function _snapshotMsgData(): BattleMsgData {
 // (= placeholder for future Phase 1.4 events).
 void resolveDecompConstant;
 
-// ─── gBitTable[] (util.c:7) — 1:1 décomp ─────────────────────────────────────
-// `const u32 gBitTable[] = { 1<<0, 1<<1, ..., 1<<31 }`. Indexé par battler id.
-export const gBitTable: number[] = (() => {
-  const t = new Array(32);
-  for (let i = 0; i < 32; i++) t[i] = 1 << i;
-  return t;
-})();
+// ─── gBitTable[] (util.c:7) → consolidé sur le miroir `src/game/util.ts` ──────
+// (source unique ; les `_gBitTable` privés de battle-action-selection/battle-main-
+//  functions restent à migrer — cf. ledger.) import+export = binding local + ré-export.
+import { gBitTable } from '../../game/include/util';
+export { gBitTable };
 
 // ─── Controller exec flags helpers ──────────────────────────────────────────
 

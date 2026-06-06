@@ -22,6 +22,7 @@
  */
 
 import { registerOpcode, getOpcodeHandler, SetupNativeScript, getText } from './script-runtime';
+import { encodeOwText } from '../../game/include/text';  // préproc : littéral → bytes (ShowFieldMessage byte)
 import { gSpecialVar } from './script-vars';
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '../field/field-message-box';
 import {
@@ -109,7 +110,7 @@ registerOpcode('msgbox', (ctx, args) => {
   if (!lookupText) {
     console.error(`[opcode msgbox] text '${textLabel}' not found — showing [MISSING] placeholder`);
   }
-  const rawText = lookupText ?? `[MISSING:${textLabel}]`;
+  const rawText = lookupText ?? encodeOwText(`[MISSING:${textLabel}]`);
 
   // 1:1 décomp `data/scripts/std_msgbox.inc` semantics :
   //   MSGBOX_NPC      → lock + faceplayer + message + waitbuttonpress + release

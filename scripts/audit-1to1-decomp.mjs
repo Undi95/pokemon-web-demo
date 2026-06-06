@@ -29,6 +29,8 @@
  *   - decomp-runtime.ts ↔ main.c (= partial)
  *   - script-runner.ts ↔ script.c
  *   - object-events.ts ↔ event_object_movement.c (= partial)
+ *   - src/game/random.ts ↔ random.c   (racine miroir 1:1, vague 2026-06-05)
+ *   - src/game/util.ts ↔ util.c · src/game/trig.ts ↔ trig.c · src/game/math_util.ts ↔ math_util.c
  *
  * Output : JSON ou markdown report.
  */
@@ -77,7 +79,13 @@ const MAPPING = {
   'src/engine/play-time-counter.ts': 'src/play_time.c',
   'src/engine/wallclock-flow.ts': 'src/wallclock.c',
   'src/engine/rtc.ts': 'src/rtc.c',
-  'src/engine/random.ts': 'src/random.c',
+  // ── Miroir 1:1 `src/game/` (vague 2026-06-05) : la logique a quitté
+  //    `src/engine/…` pour la racine miroir `src/game/X.ts` (= decomp/src/X.c).
+  //    On pointe ces entrées sur le miroir, source unique de la logique. ──
+  'src/game/random.ts': 'src/random.c',
+  'src/game/util.ts': 'src/util.c',
+  'src/game/trig.ts': 'src/trig.c',
+  'src/game/math_util.ts': 'src/math_util.c',
   'src/engine/movement-system.ts': 'src/event_object_movement.c',
   'src/engine/warp-system.ts': 'src/field_screen_effect.c',
   'src/engine/door-anim.ts': 'src/field_door.c',

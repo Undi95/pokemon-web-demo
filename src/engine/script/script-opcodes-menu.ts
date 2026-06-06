@@ -38,7 +38,7 @@ import { parseValue } from './script-opcodes-helpers';
 
 let _multichoiceWindowId = -1;
 
-function _spawnMultichoiceMenu(left: number, top: number, items: string[], cursorPos: number): void {
+function _spawnMultichoiceMenu(left: number, top: number, items: (string | Uint8Array)[], cursorPos: number): void {
   const count = items.length;
   if (count === 0) return;
   // Estimate width : max len of items * 0.5 tile + 2 tiles margin (= rough).
