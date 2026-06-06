@@ -884,8 +884,38 @@ export function setupEnemyPartyForBattle(enemy: PokemonInstance[]): void {
  *  qui veulent une party artificielle ; ⚠️ elle écrase la party joueur courante
  *  (à entourer d'un backup/restore côté appelant — cf. push/popTestPlayerParty). */
 export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonInstance[]): void {
+  backupOwPartyForTest();      // sauve la party OW (ce combat de TEST va écraser gPlayerParty)
   loadPlayerPartyFromInstances(player);
   setupEnemyPartyForBattle(enemy);
+  RefreshPlayerPartyViews();   // block1.playerParty reflète la party de test (pas de vues fantômes)
+}
+
+// ─── Backup/restore party OW pour les COMBATS DE TEST (devtools) — échafaudage ──
+// Depuis le pivot, gPlayerParty est la SOURCE (= party OW). `setupPartyForBattle`
+// (test-only) la remplace par une party artificielle → écraserait la party OW.
+// On sauvegarde la party OW au 1er setup et on la restaure au retour OW
+// (FreeResetData_ReturnToOvOrDoEvolutions). Conditionnel : un combat RÉEL
+// (setupEnemyPartyForBattle) ne backup PAS → restore = no-op (la party de combat
+// EST la party OW, ses HP/XP post-combat persistent). 1:1 N/A (la décomp n'a pas
+// de combat de test ; gPlayerParty y est l'unique party).
+let sBackupOwParty: Pokemon[] | null = null;
+
+export function backupOwPartyForTest(): void {
+  if (sBackupOwParty) return;  // déjà sauvegardé (combat de test multi-setup)
+  sBackupOwParty = gPlayerParty.map(m => {
+    const c = createEmptyPokemon();
+    Object.assign(c, m);
+    c.moves = [...m.moves];
+    c.pp = [...m.pp];
+    return c;
+  });
+}
+
+export function restoreOwPartyAfterTest(): void {
+  if (!sBackupOwParty) return;
+  for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], sBackupOwParty[i]);
+  sBackupOwParty = null;
+  RefreshPlayerPartyViews();
 }
 
 // ─── Migration Pokémon (palier B) : gPlayerParty = SOURCE, block1.playerParty = vues ──

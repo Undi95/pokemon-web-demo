@@ -93,7 +93,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, type PokemonInstance } from '../pokemon/pokemon';
-import { setupEnemyPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
+import { setupEnemyPartyForBattle, teardownPartyAfterBattle, restoreOwPartyAfterTest, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -4361,6 +4361,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp : sync HP/status/exp depuis gPlayerParty vers PokemonInstance
         // pour persist au post-combat.
         teardownPartyAfterBattle(gSaveBlock1Ptr.playerParty.filter((m: PokemonInstance | null): m is PokemonInstance => !!m));
+        // Échafaudage devtools (non-1:1) : restaure la party OW si COMBAT DE TEST
+        // (voie V). No-op pour les combats réels (pas de backup → party intacte).
+        restoreOwPartyAfterTest();
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
         // 1:1 décomp `CB2_EndWildBattle` (battle_setup.c:602-616) →
         // `SetMainCallback2(CB2_ReturnToField)` + `gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic`.

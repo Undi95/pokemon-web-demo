@@ -136,7 +136,7 @@ import { getSpeciesInfo } from '../data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../ui/pokedex-flags';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './ai/ai-script-commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../system/decomp-globals';
-import { GetMonData, PARTY_SIZE, gEnemyParty as _gEnemyParty, GetAbilityBySpecies } from './party-storage';
+import { GetMonData, PARTY_SIZE, gEnemyParty as _gEnemyParty, GetAbilityBySpecies, restoreOwPartyAfterTest } from './party-storage';
 // Helpers de conversion id↔enum 1:1 (= mêmes que party-storage utilise pour
 // dériver type1/type2/ability ; getSpeciesInfo est keyé par enum string).
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
@@ -1749,6 +1749,10 @@ export function WaitForEvoSceneToFinish(): void {
 
 /** 1:1 décomp `ReturnFromBattleToOverworld()` (battle_main.c:5217-5249). */
 export function ReturnFromBattleToOverworld(): void {
+  // Échafaudage devtools (non-1:1) : restaure la party OW si un COMBAT DE TEST
+  // l'avait remplacée (backupOwPartyForTest dans setupPartyForBattle). No-op pour
+  // les combats RÉELS (pas de backup → la party de combat EST la party OW).
+  restoreOwPartyAfterTest();
   const playerParty = _getPlayerParty();
 
   if (!(gBattleTypeFlags & BATTLE_TYPE_LINK)) {
