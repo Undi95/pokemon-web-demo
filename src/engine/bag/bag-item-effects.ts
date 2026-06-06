@@ -17,7 +17,8 @@
  * status), (4) friendship sub-states.
  */
 
-import type { PokemonInstance } from '../pokemon/pokemon';
+import { type Pokemon } from '../battle/party-storage';
+import { gBattleMoves, gSpeciesInfo, getExperienceForLevel } from '../data/game-data';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
   ITEM0_X_ATTACK, ITEM0_DIRE_HIT, ITEM0_INFATUATION,
@@ -70,16 +71,20 @@ const _MAX_PP_BONUS = 3;  // 1:1 décomp pokemon.c: PP Up max = 3 (= +60% PP). P
 type EvKey = 'hp' | 'atk' | 'def' | 'spe' | 'spa' | 'spd';
 const _EV_KEY_BY_ITEM4_BIT: Record<number, EvKey> = { 0: 'hp', 1: 'atk' };
 const _EV_KEY_BY_ITEM5_BIT: Record<number, EvKey> = { 0: 'def', 1: 'spe', 2: 'spd', 3: 'spa' };
-
-/** Mapping mon.status (string FR-canonique) → bit ITEM3_*. */
-const _STATUS_TO_ITEM3: Record<string, number> = {
-  PSN: ITEM3_POISON,
-  TOX: ITEM3_POISON,
-  BRN: ITEM3_BURN,
-  FRZ: ITEM3_FREEZE,
-  PAR: ITEM3_PARALYSIS,
-  SLP: ITEM3_SLEEP,
+/** Mapping EvKey → champ EV natif du struct Pokemon (1:1 MON_DATA_*_EV). */
+const _EV_FIELD: Record<EvKey, 'hpEV' | 'attackEV' | 'defenseEV' | 'speedEV' | 'spAttackEV' | 'spDefenseEV'> = {
+  hp: 'hpEV', atk: 'attackEV', def: 'defenseEV', spe: 'speedEV', spa: 'spAttackEV', spd: 'spDefenseEV',
 };
+/** Construit le healMask STATUS1 1:1 décomp HealStatusConditions depuis itemEffect[3]. */
+function _item3ToStatus1Mask(b: number): number {
+  let mask = 0;
+  if (b & ITEM3_SLEEP) mask |= STATUS1_SLEEP;
+  if (b & ITEM3_POISON) mask |= STATUS1_POISON | STATUS1_TOXIC_POISON | STATUS1_TOXIC_COUNTER;
+  if (b & ITEM3_BURN) mask |= STATUS1_BURN;
+  if (b & ITEM3_FREEZE) mask |= STATUS1_FREEZE;
+  if (b & ITEM3_PARALYSIS) mask |= STATUS1_PARALYSIS;
+  return mask;
+}
 
 /** 1:1 décomp `GetItemEffectType` (party_menu.c:5250). Retourne l'effet
  *  principal d'un item (= utilisé pour choisir le message FR + ItemUseCB_*
@@ -200,18 +205,16 @@ function _makeResult(): ItemEffectResult {
 }
 
 /** Compute total EVs sum (1:1 décomp `GetMonEVCount`). */
-function _getMonEVCount(mon: PokemonInstance): number {
-  return mon.evs.hp + mon.evs.atk + mon.evs.def + mon.evs.spe + mon.evs.spa + mon.evs.spd;
+function _getMonEVCount(mon: Pokemon): number {
+  return mon.hpEV + mon.attackEV + mon.defenseEV + mon.speedEV + mon.spAttackEV + mon.spDefenseEV;
 }
 
-/** Get `ppBonuses` stored on mon (= 8-bit field, 2 bits par move slot).
- *  Pas dans PokemonInstance par défaut → utilise `_ppBonuses` extension
- *  (back-compat : 0 si absent). */
-function _getPpBonuses(mon: PokemonInstance): number {
-  return ((mon as unknown as { _ppBonuses?: number })._ppBonuses ?? 0) & 0xFF;
+/** `ppBonuses` natif du struct Pokemon (8 bits, 2/slot) = 1:1 MON_DATA_PP_BONUSES. */
+function _getPpBonuses(mon: Pokemon): number {
+  return mon.ppBonuses & 0xFF;
 }
-function _setPpBonuses(mon: PokemonInstance, value: number): void {
-  (mon as unknown as { _ppBonuses?: number })._ppBonuses = value & 0xFF;
+function _setPpBonuses(mon: Pokemon, value: number): void {
+  mon.ppBonuses = value & 0xFF;
 }
 
 /** 1:1 décomp `gPPUpGetMask` (pokemon.c:1245).
@@ -220,34 +223,21 @@ const _PP_UP_GET_MASK = [0x03, 0x0C, 0x30, 0xC0];
 const _PP_UP_CLEAR_MASK = [0xFC, 0xF3, 0xCF, 0x3F];
 const _PP_UP_ADD_VALUES = [0x01, 0x04, 0x10, 0x40];
 
-/** 1:1 décomp `CalculatePPWithBonus(move, bonus, moveIndex)` (pokemon.c:5005)
- *  : basePP + bonusPP, bonusPP = basePP * bonusBits / 5 (= ROUND DOWN).
- *  En l'absence de basePP par-move (= move dict externe), on dérive depuis
- *  ppMax (= deja stocké sur PokemonInstance, set à create) sans PP_Up
- *  appliqué. Donc : basePP = ppMax / (1 + bonus*0.2) reverse-calc. */
-function _calculatePPWithBonus(mon: PokemonInstance, moveIndex: number, ppBonuses: number): number {
-  const move = mon.moves[moveIndex];
-  if (!move) return 0;
-  // basePP heuristique : ppMax actuel peut DÉJÀ inclure des bonus. On stocke
-  // donc `_basePP` à la création (= immutable basePP), et on dérive le total
-  // avec le bonus courant.
-  const monExt = mon as unknown as { _basePPPerSlot?: number[] };
-  if (!monExt._basePPPerSlot) {
-    // Snapshot ppMax → basePP (= au premier appel, on assume aucun bonus).
-    monExt._basePPPerSlot = mon.moves.map(m => m?.ppMax ?? 0);
-  }
-  const basePP = monExt._basePPPerSlot[moveIndex] ?? move.ppMax;
+/** 1:1 décomp `CalculatePPWithBonus(move, bonus, moveIndex)` (pokemon.c:5005) :
+ *  basePP + (basePP * 20 * bonusBits / 100). basePP = `gBattleMoves[move].pp`
+ *  (table id F2 — plus de hack `_basePPPerSlot`/ppMax reverse-calc). */
+function _calculatePPWithBonus(mon: Pokemon, moveIndex: number, ppBonuses: number): number {
+  const basePP = gBattleMoves[mon.moves[moveIndex]]?.pp ?? 0;
   const currentBonusBits = (ppBonuses & _PP_UP_GET_MASK[moveIndex]) >> (moveIndex * 2);
-  // 1:1 formule décomp `bonusPP = (basePP * 20 * bonusBits) / 100`.
   return basePP + Math.floor((basePP * 20 * currentBonusBits) / 100);
 }
 
-/** Compute current EV value by EvKey. */
-function _getEv(mon: PokemonInstance, key: EvKey): number {
-  return (mon.evs as unknown as Record<EvKey, number>)[key];
+/** EV courant par EvKey (champ natif Pokemon, 1:1 MON_DATA_*_EV). */
+function _getEv(mon: Pokemon, key: EvKey): number {
+  return mon[_EV_FIELD[key]];
 }
-function _setEv(mon: PokemonInstance, key: EvKey, value: number): void {
-  (mon.evs as unknown as Record<EvKey, number>)[key] = value;
+function _setEv(mon: Pokemon, key: EvKey, value: number): void {
+  mon[_EV_FIELD[key]] = value;
 }
 
 /** ITEM6_HEAL_HP_FULL = (u8) -1, _HALF = -2, _LVL_UP = -3 (décomp item_
@@ -275,7 +265,7 @@ export function setForceInBattle(v: boolean): void { _forceInBattle = v; }
  *  TS pour permettre au caller de construire le message FR correct. Le décomp
  *  ne retourne que retVal — il dérive les détails via re-read GetMonData. */
 export function PokemonUseItemEffects(
-  mon: PokemonInstance,
+  mon: Pokemon,
   itemId: number,
   partyIndex: number,
   moveIndex: number,
@@ -387,33 +377,26 @@ export function PokemonUseItemEffects(
         if ((b & ITEM3_LEVEL_UP) && mon.level !== MAX_LEVEL) {
           // 1:1 :4906-4914 Rare Candy : SetMonData(EXP, exp[level+1]).
           // Plus CalculateMonStats. Notre applyExpAward fait ça naturellement.
-          const dataMod = (globalThis as { __game_data?: {
-            getExperienceForLevel: (rate: string, lvl: number) => number;
-            getSpeciesInfo: (k: string) => { stats?: { hp: number } } | undefined;
-          } }).__game_data;
-          if (dataMod && mon.growthRate) {
-            const expForNext = dataMod.getExperienceForLevel(mon.growthRate, mon.level + 1);
-            const expDelta = expForNext - (mon.currentExp ?? 0);
+          const sInfo = gSpeciesInfo[mon.species];
+          if (sInfo) {
+            const expForNext = getExperienceForLevel(sInfo.growthRate, mon.level + 1);
+            const expDelta = expForNext - (mon.experience >>> 0);
             if (expDelta > 0) {
-              mon.currentExp = expForNext;
-              // Recalc maxHp + level
-              const oldMaxHp = mon.maxHp;
-              const oldLevel = mon.level;
+              mon.experience = expForNext;
+              // Recalc maxHP du nouveau niveau (formule Gen3 = 1:1 CalculateMonStats HP).
+              const oldMaxHp = mon.maxHP;
               mon.level++;
-              // CalculateMonStats : recalc maxHp from new level.
-              const baseHp = dataMod.getSpeciesInfo(mon.speciesEnum)?.stats?.hp ?? 50;
-              const ivHp = mon.ivs.hp;
-              const evHp = mon.evs.hp;
-              // Standard Gen 3 HP formula.
-              mon.maxHp = baseHp === 1
+              const baseHp = sInfo.stats?.hp ?? 50;
+              const ivHp = mon.hpIV;
+              const evHp = mon.hpEV;
+              mon.maxHP = baseHp === 1
                 ? 1  // SHEDINJA
                 : Math.floor(((2 * baseHp + ivHp + Math.floor(evHp / 4)) * mon.level) / 100) + mon.level + 10;
-              const hpDelta = mon.maxHp - oldMaxHp;
-              if (hpDelta > 0) mon.currentHp += hpDelta;
+              const hpDelta = mon.maxHP - oldMaxHp;
+              if (hpDelta > 0) mon.hp += hpDelta;
               result.leveledUp = true;
               result.newLevel = mon.level;
               result.cannotUse = false;
-              void oldLevel;
             }
           }
         }
@@ -421,22 +404,17 @@ export function PokemonUseItemEffects(
         // 1:1 décomp HealStatusConditions (pokemon.c:5293-5309) :
         //   si status1 & healMask : clear bits, set mon, et si en battle aussi
         //   clear gBattleMons[battler].status1.
-        if ((b & ITEM3_STATUS_ALL) && mon.status && _STATUS_TO_ITEM3[mon.status]) {
-          const monBit = _STATUS_TO_ITEM3[mon.status];
-          if (b & monBit) {
-            const wasSleep = mon.status === 'SLP';
-            mon.status = null;
+        if (b & ITEM3_STATUS_ALL) {
+          // 1:1 décomp HealStatusConditions : healMask STATUS1 depuis itemEffect[3].
+          const healMask = _item3ToStatus1Mask(b);
+          if ((mon.status >>> 0) & healMask) {
+            const wasSleep = (mon.status & STATUS1_SLEEP) !== 0;
+            mon.status = (mon.status >>> 0) & ~healMask;   // clear les bits status1 ciblés
             result.statusCured = true;
             result.cannotUse = false;
-            // 1:1 décomp HealStatusConditions :5301-5302 sync gBattleMons.
+            // 1:1 :5301-5302 sync gBattleMons (même healMask).
             if (inBattle && battler !== MAX_BATTLERS_COUNT) {
-              // healMask = SLEEP/POISON+TOXIC_COUNTER/BURN/FREEZE/PARALYSIS
-              if (b & ITEM3_SLEEP) gBattleMons[battler].status1 &= ~STATUS1_SLEEP;
-              if (b & ITEM3_POISON) gBattleMons[battler].status1 &= ~(STATUS1_POISON | STATUS1_TOXIC_POISON | STATUS1_TOXIC_COUNTER);
-              if (b & ITEM3_BURN) gBattleMons[battler].status1 &= ~STATUS1_BURN;
-              if (b & ITEM3_FREEZE) gBattleMons[battler].status1 &= ~STATUS1_FREEZE;
-              if (b & ITEM3_PARALYSIS) gBattleMons[battler].status1 &= ~STATUS1_PARALYSIS;
-              // 1:1 :4920-4921 : si SLEEP cure + en battle, clear NIGHTMARE
+              gBattleMons[battler].status1 &= ~healMask;
               if (wasSleep && (b & ITEM3_SLEEP)) gBattleMons[battler].status2 &= ~STATUS2_NIGHTMARE;
             }
           }
@@ -456,8 +434,7 @@ export function PokemonUseItemEffects(
         // 1:1 :4945-4960 PP_UP first (= cleared from effectFlags).
         if (effectFlags & ITEM4_PP_UP) {
           effectFlags = effectFlags & ~ITEM4_PP_UP & 0xFF;
-          const move = mon.moves[moveIndex];
-          if (move) {
+          if (mon.moves[moveIndex]) {
             const ppBonuses = _getPpBonuses(mon);
             const currentBonus = (ppBonuses & _PP_UP_GET_MASK[moveIndex]) >> (moveIndex * 2);
             const totalPP = _calculatePPWithBonus(mon, moveIndex, ppBonuses);
@@ -467,8 +444,7 @@ export function PokemonUseItemEffects(
               _setPpBonuses(mon, newBonuses);
               const newTotalPP = _calculatePPWithBonus(mon, moveIndex, newBonuses);
               const ppDiff = newTotalPP - totalPP;
-              move.pp = Math.min(move.pp + ppDiff, newTotalPP);
-              move.ppMax = newTotalPP;
+              mon.pp[moveIndex] = Math.min(mon.pp[moveIndex] + ppDiff, newTotalPP);
               result.ppUpAppliedSlot = moveIndex;
               result.cannotUse = false;
             }
@@ -520,7 +496,7 @@ export function PokemonUseItemEffects(
                 const isRevive = (effectFlags & (ITEM4_REVIVE >> 2)) !== 0;
                 if (isRevive) {
                   // 1:1 :5019-5042 — Revive uniquement si mon a 0 HP.
-                  if (mon.currentHp !== 0) { paramOffset++; break; }
+                  if (mon.hp !== 0) { paramOffset++; break; }
                   // 1:1 :5026-5042 — in-battle revive : update gAbsentBattlerFlags
                   //   + CopyPlayerPartyMonToBattleData + bump numRevivesUsed.
                   if (inBattle) {
@@ -545,14 +521,14 @@ export function PokemonUseItemEffects(
                   }
                 } else {
                   // 1:1 :5045-5049 — heal seulement si mon HP != 0
-                  if (mon.currentHp === 0) { paramOffset++; break; }
+                  if (mon.hp === 0) { paramOffset++; break; }
                 }
                 // 1:1 :5053-5067 — compute amount.
                 let amount = bytes[paramOffset++] ?? 0;
                 if (amount === ITEM6_HEAL_HP_FULL)
-                  amount = mon.maxHp - mon.currentHp;
+                  amount = mon.maxHP - mon.hp;
                 else if (amount === ITEM6_HEAL_HP_HALF) {
-                  amount = Math.floor(mon.maxHp / 2);
+                  amount = Math.floor(mon.maxHP / 2);
                   if (amount === 0) amount = 1;
                 } else if (amount === ITEM6_HEAL_HP_LVL_UP) {
                   // 1:1 :5065 gBattleScripting.levelUpHP — battle-only. Si pas
@@ -563,12 +539,12 @@ export function PokemonUseItemEffects(
                   // Cmd_drawlvlupbox path).
                 }
                 // 1:1 :5070-5102 — apply HP heal.
-                if (mon.currentHp !== mon.maxHp) {
+                if (mon.hp !== mon.maxHP) {
                   if (!usedByAI) {
                     // Restore HP direct.
-                    const newHp = Math.min(mon.currentHp + amount, mon.maxHp);
-                    result.hpHealed = newHp - mon.currentHp;
-                    mon.currentHp = newHp;
+                    const newHp = Math.min(mon.hp + amount, mon.maxHP);
+                    result.hpHealed = newHp - mon.hp;
+                    mon.hp = newHp;
                     // 1:1 :5081-5095 — battle sync.
                     if (inBattle && battler !== MAX_BATTLERS_COUNT) {
                       gBattleMons[battler].hp = newHp;
@@ -601,13 +577,12 @@ export function PokemonUseItemEffects(
                   const ppBonuses = _getPpBonuses(mon);
                   const healAmount = bytes[paramOffset] ?? 0;
                   for (let m = 0; m < MAX_MON_MOVES; m++) {
-                    const move = mon.moves[m];
-                    if (!move) continue;
+                    if (!mon.moves[m]) continue;
                     const totalPP = _calculatePPWithBonus(mon, m, ppBonuses);
-                    if (move.pp !== totalPP) {
-                      const newPp = Math.min(move.pp + healAmount, totalPP);
-                      result.ppRecoveredBySlot[m] = newPp - move.pp;
-                      move.pp = newPp;
+                    if (mon.pp[m] !== totalPP) {
+                      const newPp = Math.min(mon.pp[m] + healAmount, totalPP);
+                      result.ppRecoveredBySlot[m] = newPp - mon.pp[m];
+                      mon.pp[m] = newPp;
                       // 1:1 :5127-5128 sync battler PP if applicable.
                       if (inBattle && battler !== MAX_BATTLERS_COUNT
                           && MOVE_IS_PERMANENT(battler, m)) {
@@ -619,15 +594,14 @@ export function PokemonUseItemEffects(
                   paramOffset++;
                 } else {
                   // 1:1 :5136-5158 Heal PP for one move
-                  const move = mon.moves[moveIndex];
-                  if (move) {
+                  if (mon.moves[moveIndex]) {
                     const ppBonuses = _getPpBonuses(mon);
                     const totalPP = _calculatePPWithBonus(mon, moveIndex, ppBonuses);
-                    if (move.pp !== totalPP) {
+                    if (mon.pp[moveIndex] !== totalPP) {
                       const healAmount = bytes[paramOffset++] ?? 0;
-                      const newPp = Math.min(move.pp + healAmount, totalPP);
-                      result.ppRecoveredBySlot[moveIndex] = newPp - move.pp;
-                      move.pp = newPp;
+                      const newPp = Math.min(mon.pp[moveIndex] + healAmount, totalPP);
+                      result.ppRecoveredBySlot[moveIndex] = newPp - mon.pp[moveIndex];
+                      mon.pp[moveIndex] = newPp;
                       // 1:1 :5153-5154 sync battler PP if applicable.
                       if (inBattle && battler !== MAX_BATTLERS_COUNT
                           && MOVE_IS_PERMANENT(battler, moveIndex)) {
@@ -710,8 +684,7 @@ export function PokemonUseItemEffects(
                 break;
               }
               case 4: { // ITEM5_PP_MAX
-                const move = mon.moves[moveIndex];
-                if (move) {
+                if (mon.moves[moveIndex]) {
                   const ppBonuses = _getPpBonuses(mon);
                   const currentBonus = (ppBonuses & _PP_UP_GET_MASK[moveIndex]) >> (moveIndex * 2);
                   const totalPP = _calculatePPWithBonus(mon, moveIndex, ppBonuses);
@@ -723,8 +696,7 @@ export function PokemonUseItemEffects(
                     _setPpBonuses(mon, newBonuses);
                     const newTotalPP = _calculatePPWithBonus(mon, moveIndex, newBonuses);
                     const ppDiff = newTotalPP - totalPP;
-                    move.pp = Math.min(move.pp + ppDiff, newTotalPP);
-                    move.ppMax = newTotalPP;
+                    mon.pp[moveIndex] = Math.min(mon.pp[moveIndex] + ppDiff, newTotalPP);
                     result.ppMaxAppliedSlot = moveIndex;
                     result.cannotUse = false;
                   }
@@ -782,7 +754,7 @@ export interface MedicineResult {
   cannotUse: boolean;
 }
 
-export function ApplyMedicineEffect(itemId: number, mon: PokemonInstance): MedicineResult {
+export function ApplyMedicineEffect(itemId: number, mon: Pokemon): MedicineResult {
   // Back-compat : assume slot 0 + moveIndex 0 + field (usedByAI=false).
   const r = PokemonUseItemEffects(mon, itemId, 0, 0, false);
   return {

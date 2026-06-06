@@ -71,8 +71,9 @@ import {
 } from '../ui/party-screen';
 import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
-import type { PokemonInstance } from '../pokemon/pokemon';
 import { getRuntime, PlaySE } from '../system/decomp-globals';
+import { gPlayerParty } from '../battle/party-storage';
+import { gMoveNames } from '../data/game-data';
 import { SE_USE_ITEM } from '../decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -272,12 +273,11 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
   const rt = getRuntime();
   if (!rt) return;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;  // 1:1 IsSelectedMonNotEgg FALSE → silent return.
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;  // 1:1 IsSelectedMonNotEgg FALSE → silent return.
   const itemId = gSpecialVar.ItemId;
   // 1:1 décomp party_menu.c:4396 : check IsHPRecoveryItem + save hpBefore.
-  const hpBefore = mon.currentHp;
+  const hpBefore = mon.hp;
   const result = ApplyMedicineEffect(itemId, mon);
   if (result.cannotUse) {
     // 1:1 :4423 DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE).
@@ -294,7 +294,7 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
     //   hpBefore → newHp puis message "Les PV de X restaurés N pts.".
     // L'anim fait son propre initial draw (= reverse à hpBefore + redraw),
     // pas besoin de RefreshPartySlot ici. Status icon refresh hors anim.
-    const newHp = mon.currentHp;
+    const newHp = mon.hp;
     const msg = _expandStr(getString('gText_PkmnHPRestoredByVar2'),
       { var1: mon.nickname, var2: String(result.hpHealed) });
     PartyMenuAnimateHP(slotId, hpBefore, newHp, () => {
@@ -320,9 +320,8 @@ export function ItemUseCB_Medicine(taskId: number, _returnTask: ((task: DecompTa
 export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, slotId, 0 /* moveIndex */, false);
   if (result.cannotUse) {
@@ -333,7 +332,7 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
   _removeOneFromBag(itemId);
   // 1:1 décomp :4671-4675 — gMoveNames[move] + GetMedicineItemEffectMessage
   // → "PP de {move} restaurés.".
-  const moveName = mon.moves[0]?.nameFr ?? '';
+  const moveName = gMoveNames[mon.moves[0]] ?? '';
   ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
 }
 
@@ -341,9 +340,8 @@ export function ItemUseCB_PPRecovery(taskId: number, _returnTask: ((task: Decomp
 export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
@@ -352,7 +350,7 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
   }
   PlaySE(SE_USE_ITEM);
   _removeOneFromBag(itemId);
-  const moveName = mon.moves[0]?.nameFr ?? '';
+  const moveName = gMoveNames[mon.moves[0]] ?? '';
   ShowPartyMenuItemMessage(_getMedicineItemEffectMessage(itemId, mon.nickname, moveName));
 }
 
@@ -360,9 +358,8 @@ export function ItemUseCB_PPUp(taskId: number, _returnTask: ((task: DecompTask) 
 export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
@@ -387,9 +384,8 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
 export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   const itemId = gSpecialVar.ItemId;
   const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
   if (result.cannotUse) {
@@ -420,12 +416,12 @@ export function ItemUseCB_ReduceEV(taskId: number, _returnTask: ((task: DecompTa
 // ─── ItemUseCB_SacredAsh (party_menu.c:5149) — 1:1-sémantique ───────────────
 export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = gPlayerParty;
   const itemId = gSpecialVar.ItemId;
   let anyEffect = false;
   for (let i = 0; i < party.length; i++) {
     const mon = party[i];
-    if (!mon) continue;
+    if (!mon || !mon.species) continue;
     const r = PokemonUseItemEffects(mon, itemId, i, 0, false);
     if (!r.cannotUse) anyEffect = true;
   }
@@ -441,10 +437,10 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
   // affiche "PV de X restaurés.". Notre version simplifiée : affiche
   // un message générique pour le 1er KO revived. Polish 1:1 = display
   // message par mon (= loop).
-  const firstRev = party.find(m => m && m.currentHp > 0);
+  const firstRev = party.find(m => m && m.species !== 0 && m.hp > 0);
   ShowPartyMenuItemMessage(_expandStr(
     getString('gText_PkmnHPRestoredByVar2'),
-    { var1: firstRev?.nickname ?? 'POKéMON', var2: String(firstRev?.maxHp ?? 0) },
+    { var1: firstRev?.nickname ?? 'POKéMON', var2: String(firstRev?.maxHP ?? 0) },
   ));
 }
 
@@ -452,9 +448,8 @@ export function ItemUseCB_SacredAsh(taskId: number, _returnTask: ((task: DecompT
 export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   // GetEvolutionTargetSpecies + BeginEvolutionScene non porté.
   // → "Ça n'aura aucun effet." 1:1 fallback.
   ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), { var1: mon.nickname }));
@@ -464,9 +459,8 @@ export function ItemUseCB_EvolutionStone(taskId: number, _returnTask: ((task: De
 export function ItemUseCB_TMHM(taskId: number, _returnTask: ((task: DecompTask) => void) | null): void {
   void _returnTask; void taskId;
   const slotId = GetPartyScreenSlotId();
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[slotId];
-  if (!mon) return;
+  const mon = gPlayerParty[slotId];
+  if (!mon || !mon.species) return;
   // 1:1 polish à porter : UseTMHM flow + check CanMonLearnTMHM + ReplaceMove
   // YesNo. Pour l'instant : message honest.
   ShowPartyMenuItemMessage(`${mon.nickname}\nne peut pas l'apprendre.`);

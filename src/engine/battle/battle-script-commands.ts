@@ -8373,7 +8373,7 @@ function Cmd_updatebattlermoves(ctx: BattleScriptContext): boolean {
 function Cmd_useitemonopponent(_ctx: BattleScriptContext): boolean {
   setBattlerInMenuId(gBattlerAttacker);
   const partyIdx = gBattlerPartyIndexes[gBattlerAttacker];
-  const mon = gEnemyParty[partyIdx] as unknown as PokemonInstance;
+  const mon = gEnemyParty[partyIdx];  // 1:1 &gEnemyParty[partyIdx] (Pokemon natif)
   if (mon) {
     PokemonUseItemEffects(mon, gLastUsedItem, partyIdx, 0, true);
   }

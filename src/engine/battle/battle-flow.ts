@@ -2844,7 +2844,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         setForceInBattle(true);       // combat SAUVAGE inline : gBattleTypeFlags == 0
         let r: ReturnType<typeof PokemonUseItemEffects> | undefined;
         try {
-          r = PokemonUseItemEffects(playerMon, _battleItemId, _activePlayerSlot, 0, false);
+          // ids purs : l'effet opère sur le Pokemon NATIF (source post-pivot). En
+          // voie V, gPlayerParty[slot] = le mon joueur actif (1:1 décomp).
+          r = PokemonUseItemEffects(gPlayerParty[_activePlayerSlot], _battleItemId, _activePlayerSlot, 0, false);
         } finally {
           setForceInBattle(false);
         }
