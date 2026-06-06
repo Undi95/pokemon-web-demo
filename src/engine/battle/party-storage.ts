@@ -19,9 +19,9 @@
  */
 
 import type { PokemonInstance } from '../pokemon/pokemon';
-import { gSaveBlock2Ptr } from '../save/save-block-state';
+import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import {
-  speciesEnumToDexId, moveEnumToDexId,
+  speciesEnumToDexId, moveEnumToDexId, makePokemonInstanceView,
 } from '../pokemon/pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 // Helpers purs nature/stat → miroir 1:1 `src/game/pokemon.ts` (source unique).
@@ -527,6 +527,17 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
   mon.level = inst.level;
   mon.hp = inst.currentHp;
   mon.maxHP = inst.maxHp;
+  // Champs meta/flags lus par la VUE (pokemonToPokemonInstance) : sans eux, le
+  // round-trip PokemonInstance→Pokemon→vue les PERDRAIT (bug A/B révélé par le
+  // pivot : l'œuf devenait un mon normal car isEgg n'était pas reporté).
+  // 1:1 MON_DATA_IS_EGG / MARKINGS / MET_LEVEL / MET_LOCATION / POKEBALL / OT.
+  mon.isEgg = inst.isEgg ? 1 : 0;
+  mon.markings = inst.markings ?? 0;
+  mon.metLevel = inst.metLevel ?? 0;
+  mon.metLocation = inst.metLocation ? (resolveDecompConstant(inst.metLocation) as number | undefined ?? 0) : 0;
+  mon.pokeball = inst.pokeball ? (resolveDecompConstant(inst.pokeball) as number | undefined ?? 0) : 0;
+  mon.otName = inst.otName ?? '';
+  mon.otGender = inst.otGender ?? 0;
   // Moves + PP
   for (let i = 0; i < MAX_MON_MOVES_PARTY; i++) {
     const m = inst.moves[i];
@@ -856,6 +867,50 @@ export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonIns
   for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
     Object.assign(gEnemyParty[i], pokemonInstanceToPokemon(enemy[i]));
   }
+}
+
+// ─── Migration Pokémon (palier B) : gPlayerParty = SOURCE, block1.playerParty = vues ──
+
+/** Reconstruit la FAÇADE transitoire `gSaveBlock1Ptr.playerParty` = tableau de
+ *  vues LIVE (`makePokemonInstanceView`) sur les slots PEUPLÉS de `gPlayerParty`
+ *  (= la source de vérité). Les ~129 lecteurs OW (PokemonInstance) lisent ET
+ *  mutent gPlayerParty À TRAVERS ces vues, sans churn. Appelé après chaque
+ *  mutation STRUCTURELLE de gPlayerParty (ajout via GiveMonToPlayer, LoadPlayerParty).
+ *  Transitoire : disparaîtra quand les lecteurs passeront à GetMonData(gPlayerParty)
+ *  (P3) puis que PokemonInstance sera retiré (P4). */
+export function RefreshPlayerPartyViews(): void {
+  const views: PokemonInstance[] = [];
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (gPlayerParty[i].species !== 0) views.push(makePokemonInstanceView(gPlayerParty[i]));
+  }
+  gSaveBlock1Ptr.playerParty = views;
+  gSaveBlock1Ptr.playerPartyCount = views.length;
+}
+
+/** 1:1 décomp cœur STOCKAGE de `GiveMonToPlayer` (pokemon.c:4412) : cherche le
+ *  premier slot `gPlayerParty[i].species == SPECIES_NONE`, y copie le mon (via le
+ *  pont PokemonInstance→Pokemon = `CopyMon`), puis rafraîchit la façade. Retourne
+ *  l'index du slot rempli, ou -1 si la party est pleine (décomp : `CopyMonToPC`,
+ *  PC storage non porté = Phase 5). `GiveMonToPlayer` (pokemon.ts) pose l'OT data
+ *  puis délègue ici. */
+export function GiveMonToGPlayerParty(inst: PokemonInstance): number {
+  let i = 0;
+  for (; i < PARTY_SIZE; i++) if (gPlayerParty[i].species === 0) break;
+  if (i >= PARTY_SIZE) return -1;
+  Object.assign(gPlayerParty[i], pokemonInstanceToPokemon(inst));
+  RefreshPlayerPartyViews();
+  return i;
+}
+
+/** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3030) côté STOCKAGE : swap le
+ *  CONTENU des 2 slots `gPlayerParty` (la source) via un buffer temporaire. Les
+ *  vues de la façade pointent vers les objets-slots → reflètent le swap
+ *  automatiquement (aucun refresh nécessaire). */
+export function SwitchPartyMonSlots(i: number, j: number): void {
+  const tmp = createEmptyPokemon();
+  Object.assign(tmp, gPlayerParty[i]);
+  Object.assign(gPlayerParty[i], gPlayerParty[j]);
+  Object.assign(gPlayerParty[j], tmp);
 }
 
 /** Sync HP/status/exp post-combat depuis gPlayerParty vers PokemonInstance

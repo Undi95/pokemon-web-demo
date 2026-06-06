@@ -47,6 +47,7 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { SwitchPartyMonSlots } from '../battle/party-storage';
 import { ItemIsMail } from './mail-data';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag } from '../system/sprite';
@@ -1795,10 +1796,10 @@ function _switchSlotIconGraphics(s1: number, s2: number): void {
  *  dans gPlayerParty (= gSaveBlock1Ptr.playerParty) + SwitchMenuBoxSprites (pokeball +
  *  icône ; item/statut = window, re-dessinés). */
 function _switchPartyMon(): void {
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const tmp = party[_slotId];
-  party[_slotId] = party[_slotId2];
-  party[_slotId2] = tmp;
+  // 1:1 décomp SwitchPartyMon (party_menu.c:3025-3030) : swap le CONTENU des 2
+  // slots gPlayerParty (la SOURCE). La façade block1.playerParty (vues sur les
+  // objets-slots) reflète le swap automatiquement.
+  SwitchPartyMonSlots(_slotId, _slotId2);
   _switchMenuBoxSprites(_pokeballOamBySlot, _slotId, _slotId2);  // 1:1 :3031
   // ROOT CAUSE (bug A/B 2026-05-19) : la décomp fait
   // `SwitchMenuBoxSprites(&menuBoxes[0]->monSpriteId, &menuBoxes[1]->

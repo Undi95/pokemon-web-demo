@@ -29,6 +29,11 @@ import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-c
 // type-importe déjà PokemonInstance de ce module). On lit les champs `mon.*`
 // directement (pas besoin de GetMonData ici).
 import type { Pokemon } from '../battle/party-storage';
+// Migration modèle Pokémon (palier B) : `GiveMonToPlayer` écrit dans gPlayerParty
+// (la SOURCE 1:1). Import RUNTIME de party-storage = cycle FONCTION-SEULEMENT
+// (party-storage importe déjà speciesEnumToDexId/makePokemonInstanceView d'ici ;
+// aucun usage croisé au top-level → bénin, cf. ledger).
+import { GiveMonToGPlayerParty } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
 import { gMapHeader } from '../field/map-loader';
@@ -772,18 +777,18 @@ export const MON_CANT_GIVE = 2;
  *  CopyMonToPC = future (= PC storage system Phase 5).
  */
 export function GiveMonToPlayer(mon: PokemonInstance): number {
-  // Set OT data depuis gSaveBlock2Ptr (= 1:1 décomp).
+  // Set OT data depuis gSaveBlock2Ptr (= 1:1 décomp, AVANT la copie : lu par le
+  // pont PokemonInstance→Pokemon).
   if (!mon.otName) mon.otName = gSaveBlock2Ptr.playerName ?? 'UNDI';
   if (mon.otGender === undefined) mon.otGender = gSaveBlock2Ptr.playerGender ?? 0;
   if (mon.otId === undefined || mon.otId === 0) mon.otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-  // Cherche slot libre (= 1:1 SPECIES_NONE check, ici = absent du array).
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  if (party.length >= 6) {
-    // 1:1 décomp CopyMonToPC — pas porté. Return CANT_GIVE.
+  // 1:1 décomp : copie le mon dans le premier slot SPECIES_NONE de gPlayerParty
+  // (la SOURCE de vérité) + rafraîchit la façade block1.playerParty (vues live).
+  const slot = GiveMonToGPlayerParty(mon);
+  if (slot < 0) {
+    // 1:1 décomp : `return CopyMonToPC(mon)` — PC storage non porté (Phase 5).
     console.warn('[GiveMonToPlayer] party full → CopyMonToPC pas porté');
     return MON_CANT_GIVE;
   }
-  party.push(mon);
-  gSaveBlock1Ptr.playerPartyCount = party.length;
   return MON_GIVEN_TO_PARTY;
 }

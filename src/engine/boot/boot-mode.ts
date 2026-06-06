@@ -20,7 +20,7 @@ import { SetSaveLocked } from '../save/save-system';
 import { FlagSet, VarSet } from '../script/script-vars';
 import { HasValidSave, LoadGameSave, ResetSaveBlocks, SAVE_STATUS_OK } from '../save/save-system';
 import { SetDynamicWarp } from '../field/warp-system';
-import { GetCurrentMap, LoadPlayerParty } from '../save/load_save';
+import { GetCurrentMap } from '../save/load_save';
 import { SetObjEventTemplateCoords } from '../save/load_save';
 import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { MALE, FEMALE } from '../system/decomp-globals';
@@ -335,11 +335,11 @@ function applyNoIntroPreset(): void {
     console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
   }
 
-  // PALIER A migration Pokémon : peuple gPlayerParty (Pokemon/BoxMon) depuis
-  // block1.playerParty (PokemonInstance) au boot OW — 1:1 `LoadPlayerParty`
-  // (load_save.c). gPlayerParty devient la copie runtime ; INERTE tant que l'OW
-  // lit encore block1.playerParty (le pivot vues = palier B).
-  LoadPlayerParty();
+  // Migration Pokémon (palier B) : la party DEBUG ci-dessus est créée via
+  // GiveMonToPlayer, qui écrit désormais DIRECTEMENT dans gPlayerParty (la
+  // source 1:1) et pose la façade block1.playerParty = vues. Plus besoin d'un
+  // LoadPlayerParty explicite ici (il sert au RESUME de save via
+  // CopyPartyAndObjectsFromSave).
 
   // 1:1 ROM : pas de save SRAM auto, le mode test vit en RAM tant que user
   // n'appuie pas SAUVER explicitement. User-flag : "Retire save auto SRAM des

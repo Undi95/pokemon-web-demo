@@ -31,7 +31,7 @@ import {
   emptySaveBlock1,
 } from './save-blocks';
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
-import { loadPlayerPartyFromInstances } from '../battle/party-storage';
+import { loadPlayerPartyFromInstances, RefreshPlayerPartyViews } from '../battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
@@ -200,7 +200,8 @@ export function SavePlayerParty(): void {
  *  qui en fait la source de vérité (block1.playerParty → vues) est le palier B. */
 export function LoadPlayerParty(): void {
   const block1 = GetSaveBlock1();
-  loadPlayerPartyFromInstances(block1.playerParty);
+  loadPlayerPartyFromInstances(block1.playerParty);  // block1.playerParty (natifs/save) → gPlayerParty
+  RefreshPlayerPartyViews();                          // block1.playerParty ← vues live sur gPlayerParty
 }
 
 /** 1:1 décomp `CopyPartyAndObjectsToSave(void)` (load_save.c:196). */
