@@ -152,6 +152,11 @@ export const gSpeciesInfo: SpeciesInfo[] = [];
 export const gSpeciesNames: string[] = [];
 export const sSpeciesToHoennPokedexNum: number[] = [];
 export const sSpeciesToNationalPokedexNum: number[] = [];
+export const gBattleMoves: MoveData[] = [];
+export const gMoveNames: string[] = [];
+export const gMoveDescriptions: string[] = [];
+export const gContestMoves: ContestMove[] = [];
+export const gItems: ItemData[] = [];
 
 async function fetchJson<T>(name: string): Promise<T> {
   const r = await fetch(`${BASE}/${name}`);
@@ -273,6 +278,40 @@ export function loadGameData(): Promise<void> {
       console.log(`[game-data] F1 id-tables built — gSpeciesInfo[${gSpeciesInfo.filter(Boolean).length}], ` +
         `dex hoenn[${sSpeciesToHoennPokedexNum.filter((n) => n).length}]`);
     }
+    // ─── F2 — tables id-indexées moves (1:1 décomp gBattleMoves[] /
+    //     gMoveNames[] / descriptions / contest). ADDITIF. ──────────────────
+    {
+      gBattleMoves.length = 0; gMoveNames.length = 0;
+      gMoveDescriptions.length = 0; gContestMoves.length = 0;
+      const moveIds = movesMod as unknown as Record<string, unknown>;
+      for (const [enumKey, data] of Object.entries(moves)) {
+        const id = moveIds[enumKey];
+        if (typeof id !== 'number') continue;
+        gBattleMoves[id] = data;
+        gMoveNames[id] = moveNamesFr[enumKey] ?? enumKey.replace(/^MOVE_/, '');
+        gMoveDescriptions[id] = moveDescriptionsFr[enumKey] ?? '';
+        const cm = contestMoves[enumKey];
+        if (cm) gContestMoves[id] = cm;
+      }
+      (globalThis as Record<string, unknown>).gBattleMoves = gBattleMoves;
+      (globalThis as Record<string, unknown>).gMoveNames = gMoveNames;
+      (globalThis as Record<string, unknown>).gContestMoves = gContestMoves;
+      console.log(`[game-data] F2 id-tables built — gBattleMoves[${gBattleMoves.filter(Boolean).length}], ` +
+        `gMoveNames, contest[${gContestMoves.filter(Boolean).length}]`);
+    }
+    // ─── F3 — tables id-indexées items (1:1 décomp gItems[] / ItemId_GetName).
+    //     Ids items via resolveDecompConstant (pas de module items-data). ADDITIF.
+    {
+      const { resolveDecompConstant } = await import('../system/decomp-constants');
+      gItems.length = 0;
+      for (const [enumKey, data] of Object.entries(itemsData)) {
+        const id = resolveDecompConstant(enumKey);
+        if (typeof id !== 'number') continue;
+        gItems[id] = data;
+      }
+      (globalThis as Record<string, unknown>).gItems = gItems;
+      console.log(`[game-data] F3 id-tables built — gItems[${gItems.filter(Boolean).length}]`);
+    }
     console.log(`[game-data] loaded — ${Object.keys(species).length} species, ` +
       `${Object.keys(moves).length} moves, ${Object.keys(trainers).length} trainers, ` +
       `${typeChart.length} type-chart entries`);
@@ -301,6 +340,10 @@ export function SpeciesToNationalPokedexNum(species: number): number {
  *  `sSpeciesToHoennPokedexNum[species]`. 0 si hors Hoenn dex. */
 export function SpeciesToHoennPokedexNum(species: number): number {
   return sSpeciesToHoennPokedexNum[species] ?? 0;
+}
+/** 1:1 décomp `ItemId_GetName(itemId)` = `gItems[itemId].name` (nom FR). */
+export function ItemId_GetName(itemId: number): string {
+  return gItems[itemId]?.name ?? '';
 }
 
 export function getMove(moveId: string): MoveData | undefined {
