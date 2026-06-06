@@ -852,10 +852,18 @@ export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void
  *  PokemonInstance→Pokemon. Slots vides reset via `createEmptyPokemon`. Partagé
  *  par `setupPartyForBattle` (boot combat) et `LoadPlayerParty` (boot/load OW). */
 export function loadPlayerPartyFromInstances(player: PokemonInstance[]): void {
+  // ⚠️ Snapshot AVANT le reset : depuis le pivot (palier B), `player` peut être
+  // `block1.playerParty` = des VUES LIVE sur gPlayerParty (combat sauvage via
+  // wild-encounter, battle-flow). Reset gPlayerParty PUIS lire les vues les
+  // viderait (elles pointent vers les slots qu'on vient de reset) → party de
+  // combat vide. On convertit donc d'abord en Pokemon natifs (snapshot lu sur
+  // gPlayerParty intact), ensuite on reset + ré-écrit. Pour les appelants qui
+  // passent des natifs (harness/devtools) le résultat est identique.
+  const n = Math.min(player.length, PARTY_SIZE);
+  const snapshot: Pokemon[] = [];
+  for (let i = 0; i < n; i++) snapshot.push(pokemonInstanceToPokemon(player[i]));
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], createEmptyPokemon());
-  for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
-    Object.assign(gPlayerParty[i], pokemonInstanceToPokemon(player[i]));
-  }
+  for (let i = 0; i < n; i++) Object.assign(gPlayerParty[i], snapshot[i]);
 }
 
 /** Fill gPlayerParty/gEnemyParty depuis runtime PokemonInstance arrays.
