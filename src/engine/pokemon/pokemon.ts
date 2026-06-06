@@ -599,6 +599,12 @@ const _STATUS_TO_STATUS1_VIEW: Record<string, number> = {
 export function makePokemonInstanceView(mon: Pokemon): PokemonInstance {
   return new Proxy({} as PokemonInstance, {
     get(_t, prop: string | symbol): unknown {
+      // Migration Pokémon (étape 4 save) : le save sérialise block1.playerParty
+      // via JSON.stringify (save-sectors.ts:encodeSaveBlock). Sans `toJSON`, ce
+      // Proxy (target {}) se sérialiserait en `{}` → corruption save. `toJSON`
+      // retourne le snapshot PokemonInstance natif (format legacy = compatible
+      // saves existantes ; LoadPlayerParty le reconvertit + repose les vues au load).
+      if (prop === 'toJSON') return () => pokemonToPokemonInstance(mon);
       return (pokemonToPokemonInstance(mon) as unknown as Record<string | symbol, unknown>)[prop];
     },
     set(_t, prop: string | symbol, value: unknown): boolean {
