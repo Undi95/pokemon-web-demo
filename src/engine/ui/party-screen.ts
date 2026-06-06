@@ -47,9 +47,9 @@ import {
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { SwitchPartyMonSlots } from '../battle/party-storage';
+import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
 import { ItemIsMail } from './mail-data';
-import { resolveDecompConstant } from '../system/decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from '../system/decomp-constants';
 import { LoadSpritePalette, MarkObjTilesAllocated, ReserveSpritePaletteSlot, FreeSpritePaletteByTag } from '../system/sprite';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
@@ -64,7 +64,6 @@ import { OpenSummaryScreen, GetSummaryLastMonIndex } from './summary-screen';
 import { getString } from './gba-strings';
 import { MON_ICON_PALETTE_INDICES } from '../pokemon/pokemon-icon-palettes';
 import type { DecompTask } from '../system/decomp-runtime';
-import type { PokemonInstance } from '../pokemon/pokemon';
 
 // FONT_NORMAL/SMALL = text.h enum FontIds local (= pas extrait decomp-data,
 // hardcode 1:1 strict justifié).
@@ -320,7 +319,7 @@ let _partyTransientExitCb: (() => void) | null = null;
  *  gPartyMenu.slotId]`) + garde one-shot : le décomp `ShowPokemonSummaryScreen`
  *  est synchrone, notre `OpenSummaryScreen` est async (_loadAssets) donc ce CB2
  *  est rappelé chaque frame jusqu'au SetMainCallback2(CB2_InitSummaryScreen). */
-let _summaryTargetMon: PokemonInstance | null = null;
+let _summaryTargetMon: Pokemon | null = null;
 let _showSummaryPending = false;
 /** 1:1 décomp `CB2_ReturnToPartyMenuFromSummaryScreen` (party_menu.c:2790) :
  *  re-init avec `Task_TryCreateSelectionWindow` + `PARTY_MSG_DO_WHAT_WITH_MON`
@@ -569,7 +568,7 @@ function _drawSlotFrame(slotIdx: number): void {
   if (!_assets) return;
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
-  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
+  const mon = _slotMon(slotIdx);
   // 1:1 décomp DisplayPartyPokemonData (:876) : un ŒUF blit la variante
   // NoHP (sSlotTilemap_MainNoHP/_WideNoHP) = box SANS label "PV"/barre.
   const isEgg = !!mon?.isEgg;
@@ -607,7 +606,7 @@ const _rightAlign3 = (n: number) =>
 function _drawSlot(slotIdx: number): void {
   if (_slotWindowIds[slotIdx] === undefined) return;
   const wid = _slotWindowIds[slotIdx];
-  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
+  const mon = _slotMon(slotIdx);
   // 1:1 décomp RenderPartyMenuBox → SetPartyMonAilmentGfx + UpdatePartyMon
   // HeldItemSprite : rafraîchit icône statut + objet tenu du slot (sprites
   // slot-pinned, dérivés du mon courant).
@@ -636,7 +635,7 @@ function _drawSlot(slotIdx: number): void {
   // affiché à (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column,
   // AVEC palette swap genderMale/Female aux positions TEXT_DYNAMIC_COLOR_2/3
   // de la sub-pal du slot. Color triple stays [0, 0xB, 0xC] for both genders.
-  const gSym = getMonGenderSymbol(mon);
+  const gSym = getMonGenderSymbol({ personality: mon.personality, speciesEnum: reverseDecompConstant(mon.species, 'SPECIES_') ?? '' });
   const genderStr = gSym === 'M' ? '♂' : gSym === 'F' ? '♀' : '';
   if (genderStr) {
     const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
@@ -673,8 +672,8 @@ function _drawSlot(slotIdx: number): void {
     // L'overlap des 2 "/" (FONT_SMALL widths = ROM exacts : sp 3, digit 5,
     // '/' 5 — vérifiés vs gFontSmallLatinGlyphWidths fonts.c:40) produit le
     // visuel ROM 1:1. PLUS de hack 1-string / espaces hardcodés.
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.currentHp)}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 53, 37, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHp)}`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.hp)}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 53, 37, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHP)}`);
   } else {
     // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
     //   Nickname (22, 3) — width=40
@@ -688,8 +687,8 @@ function _drawSlot(slotIdx: number): void {
     }
     // 1:1 décomp DisplayPartyPokemonHP/MaxHP — 2 strings FONT_SMALL séparés
     // aux coords sPartyBoxInfoRects[PARTY_BOX_RIGHT_COLUMN] (party_menu.h:56-57).
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.currentHp)}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHp)}`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, `${_rightAlign3(mon.hp)}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP, TEXT_SKIP_DRAW, `/${_rightAlign3(mon.maxHP)}`);
   }
   void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
@@ -723,7 +722,7 @@ function _getHpBarLevel(hp: number, maxhp: number): 'FULL' | 'GREEN' | 'YELLOW' 
  *  - FillWindowPixelRect avec palette idx 9 (top row 1px) + 10 (bottom 2 rows)
  *  - Pour la partie vide (empty), fill avec idx 0x0D et 0x02 (= alternating
  *    fill pattern du décomp). */
-function _drawHpBar(slotIdx: number, mon: PokemonInstance): void {
+function _drawHpBar(slotIdx: number, mon: Pokemon): void {
   if (!_assets) return;
   const wid = _slotWindowIds[slotIdx];
   if (wid === undefined) return;
@@ -731,7 +730,7 @@ function _drawHpBar(slotIdx: number, mon: PokemonInstance): void {
   if (slotPalNum === undefined) return;
 
   // Load HP bar palette colors selon le level.
-  const level = _getHpBarLevel(mon.currentHp, mon.maxHp);
+  const level = _getHpBarLevel(mon.hp, mon.maxHP);
   const palIds =
     (level === 'FULL' || level === 'GREEN') ? sHPBarGreenPalIds
     : level === 'YELLOW' ? sHPBarYellowPalIds
@@ -745,7 +744,7 @@ function _drawHpBar(slotIdx: number, mon: PokemonInstance): void {
   // Position de la bar HP : (x, y, w) selon slot layout.
   const [x, y, w] = slotIdx === 0 ? HP_BAR_RECT_LEFT : HP_BAR_RECT_RIGHT;
   // 1:1 décomp GetScaledHPFraction : ratio * width arrondi.
-  const hpFraction = Math.floor((mon.currentHp / mon.maxHp) * w);
+  const hpFraction = Math.floor((mon.hp / mon.maxHP) * w);
 
   // 1:1 décomp FillWindowPixelRect (party_menu.c:2402) :
   //   row 1 (haut, 1 px) = sHPBarPalOffsets[1] (= idx 10 = couleur FONCÉE)
@@ -855,8 +854,8 @@ function _loadPartyBoxPalette(slotIdx: number, palFlags: number): void {
 function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
   let palFlags = 0;
   if (animNum === 1) palFlags |= PARTY_PAL_SELECTED;
-  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
-  if (mon && mon.currentHp === 0) palFlags |= PARTY_PAL_FAINTED;
+  const mon = _slotMon(slotIdx);
+  if (mon && mon.hp === 0) palFlags |= PARTY_PAL_FAINTED;
   return palFlags;
 }
 
@@ -868,7 +867,7 @@ function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
 function AnimatePartySlot(slotIdx: number, animNum: number): void {
   const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
   if (slotIdx < PARTY_SIZE) {
-    const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slotIdx];
+    const mon = _slotMon(slotIdx);
     if (mon) {
       // 1:1 décomp AnimatePartySlot (party_menu.c:1129-1131) ordre EXACT :
       //   LoadPartyBoxPalette(...) ; AnimateSelectedPartyIcon(monSpriteId,
@@ -949,10 +948,10 @@ function _drawMsg(): void {
     _msgWid = -1;
   }
   // 1:1 décomp ShouldUseChooseMonText : count alive mons.
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   let numAlive = 0;
   for (const m of party) {
-    if (m && m.currentHp > 0) numAlive++;
+    if (m && m.hp > 0) numAlive++;
     if (numAlive > 1) break;
   }
   const useChooseMon = numAlive > 1;
@@ -1001,7 +1000,7 @@ function _spawnSlotPokeballOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   const POKEBALL_TILE_BASE = 256;
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
@@ -1056,7 +1055,7 @@ function _spawnStatusOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _statusOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   for (let i = 0; i < 6; i++) {
     if (!party[i]) continue;
     const [x, y] = STATUS_COORDS[i];
@@ -1077,14 +1076,40 @@ function _spawnStatusOams(): void {
  *    status → PSN/TOX=1, PAR=2, SLP=3, FRZ=4, BRN=5
  *    pokérus → AILMENT_PKRS(6)  (non modélisé chez nous → NONE, honnête)
  *    sinon AILMENT_NONE(0). */
-function _ailmentFromStatus(mon: PokemonInstance | undefined): number {
-  if (!mon) return 0;
-  if (mon.currentHp === 0) return 7;            // 1:1 :1928 AILMENT_FNT
-  const st = mon.status;
-  const a = st === 'PSN' || st === 'TOX' ? 1 : st === 'PAR' ? 2 : st === 'SLP' ? 3
-    : st === 'FRZ' ? 4 : st === 'BRN' ? 5 : 0;
-  return a;                                     // 1:1 :1930-1935 (pokérus n/a → NONE)
+/** Mon natif du slot s'il est OCCUPÉ (species != SPECIES_NONE), sinon undefined
+ *  — 1:1 décomp (iterate PARTY_SIZE + check MON_DATA_SPECIES). Mimique le null
+ *  des anciennes vues pour préserver les gardes `if (!mon)`. */
+function _slotMon(i: number): Pokemon | undefined {
+  const m = gPlayerParty[i];
+  return (m && m.species !== 0) ? m : undefined;
 }
+/** Array party 6 slots : Pokemon natif si occupé, sinon undefined (= vues). */
+function _party(): (Pokemon | undefined)[] {
+  return gPlayerParty.map((m) => (m && m.species !== 0 ? m : undefined));
+}
+
+function _ailmentFromStatus(mon: Pokemon | undefined): number {
+  if (!mon) return 0;
+  if (mon.hp === 0) return 7;                    // 1:1 :1928 AILMENT_FNT
+  // 1:1 décomp GetAilmentFromStatus (party_menu.c) : status1 bitfield → AILMENT_*.
+  const st = mon.status >>> 0;
+  const S = (n: string): number => resolveDecompConstant(n) ?? 0;
+  if (st & (S('STATUS1_POISON') | S('STATUS1_TOXIC_POISON'))) return 1;
+  if (st & S('STATUS1_PARALYSIS')) return 2;
+  if (st & S('STATUS1_SLEEP')) return 3;
+  if (st & S('STATUS1_FREEZE')) return 4;
+  if (st & S('STATUS1_BURN')) return 5;
+  return 0;                                     // 1:1 :1930-1935 (pokérus n/a → NONE)
+}
+
+// Debug-only (P3) : dump des slots party (vérif déterministe de la migration
+// ids purs : comptage via CalculatePlayerPartyCount + lecture gPlayerParty natif).
+(globalThis as Record<string, unknown>).__partyDebugDump = () => ({
+  count: CalculatePlayerPartyCount(),
+  slots: _party().map((m, i) => (m
+    ? { slot: i, species: m.species, hp: `${m.hp}/${m.maxHP}`, lvl: m.level, ail: _ailmentFromStatus(m), egg: !!m.isEgg, item: m.heldItem }
+    : null)),
+});
 
 /** 1:1 décomp `SetPartyMonAilmentGfx`→`UpdatePartyMonAilmentGfx`
  *  (party_menu.c:4203-4221) : AILMENT_NONE/PKRS → sprite invisible ;
@@ -1096,7 +1121,7 @@ function _updatePartyMonAilmentGfx(slot: number): void {
   if (!rt || id === undefined || id < 0) return;
   const spr = rt.gSprites.get(id);
   if (!spr) return;
-  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slot];
+  const mon = _slotMon(slot);
   const ailment = _ailmentFromStatus(mon);
   if (ailment === 0 || ailment === 6) {         // 1:1 :4212-4213 AILMENT_NONE/PKRS → invisible
     rt.setSpriteInvisible(id, true);
@@ -1129,7 +1154,7 @@ function _spawnHeldItemOams(): void {
   const rt = getRuntime();
   if (!rt) return;
   _itemOamBySlot = [-1, -1, -1, -1, -1, -1];
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   for (let i = 0; i < 6; i++) {
     if (!party[i]) continue;
     const [x, y] = ITEM_COORDS[i];
@@ -1155,7 +1180,7 @@ function _updatePartyMonHeldItem(slot: number): void {
   if (!rt || id === undefined || id < 0) return;
   const spr = rt.gSprites.get(id);
   if (!spr) return;
-  const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[slot];
+  const mon = _slotMon(slot);
   const item = mon?.heldItem;
   if (!item) {                                   // ITEM_NONE → invisible
     rt.setSpriteInvisible(id, true);
@@ -1197,15 +1222,16 @@ async function _spawnIconOams(): Promise<void> {
   if (!rt) return;
   _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
   _iconBaseY = [0, 0, 0, 0, 0, 0];
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
     if (!mon) continue;
     // 1:1 décomp `CreatePartyMonIconSprite` (party_menu.c:3937) : species2 =
     // MON_DATA_SPECIES_OR_EGG → SPECIES_EGG si œuf → gMonIconTable[SPECIES_EGG]
     // = icône d'ŒUF (pas l'icône de l'espèce dedans).
-    const dexId = mon.isEgg ? 'egg' : mon.speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
-    const iconPalSpecies = mon.isEgg ? 'SPECIES_EGG' : mon.speciesEnum;
+    const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
+    const dexId = mon.isEgg ? 'egg' : speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+    const iconPalSpecies = mon.isEgg ? 'SPECIES_EGG' : speciesEnum;
     try {
       const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
       // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
@@ -1345,7 +1371,7 @@ function Task_ClosePartyMenu(task: DecompTask): void {
  *  Layout single (= notre cas) : slotId values 0..5 (mons), 7 (Cancel).
  *  Confirm (slot 6) pas utilisé en single layout (= chooseHalf=false). */
 function _updateSlotIdSingle(dir: number): void {
-  const partyCount = (gSaveBlock1Ptr.playerParty as PokemonInstance[]).length;
+  const partyCount = CalculatePlayerPartyCount();
   const PARTY_SIZE = 6;
   const CANCEL = PARTY_SIZE + 1;  // = 7
   switch (dir) {
@@ -1642,14 +1668,17 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
   _actionList = [MENU_SUMMARY];
   // 1:1 décomp party_menu.c:2615-2625 : iterate party[slotId].moves (= 4 slots) ;
   // pour chaque move, chercher dans sFieldMoves[] ; si trouvé : push MENU_FIELD_MOVES + j.
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
-  const mon = party[_slotId];  // 1:1 décomp `mons[slotId]` (party_menu.c:2619).
-  if (mon && mon.moves) {
+  const mon = _slotMon(_slotId);  // 1:1 décomp `mons[slotId]` (party_menu.c:2619).
+  if (mon) {
     for (let i = 0; i < mon.moves.length && i < 4; i++) {
-      const moveId = mon.moves[i]?.id;
-      if (!moveId) continue;
+      const move = mon.moves[i];  // 1:1 id u16 (MON_DATA_MOVE1+i)
+      if (!move) continue;
+      // id → dexId kebab pour matcher sFieldMoves (cf. pokemon.ts:241).
+      const moveEnum = reverseDecompConstant(move, 'MOVE_');
+      if (!moveEnum) continue;
+      const moveDexId = moveEnum.replace(/^MOVE_/, '').toLowerCase().replace(/_/g, '');
       for (let j = 0; j < sFieldMoves.length; j++) {
-        if (moveId === sFieldMoves[j]) {
+        if (moveDexId === sFieldMoves[j]) {
           _actionList.push(MENU_FIELD_MOVES + j);
           break;
         }
@@ -1657,16 +1686,11 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>, playSe = true): void
     }
   }
   // 1:1 décomp :2629-2630 : if (mons[1].species != SPECIES_NONE) push MENU_SWITCH.
-  if (party.length > 1 && party[1] && party[1].speciesEnum !== 'SPECIES_NONE') {
+  if (_slotMon(1)) {
     _actionList.push(MENU_SWITCH);  // ORDRE - si plus de 1 mon
   }
   // 1:1 décomp :2631-2634 : if (ItemIsMail(heldItem)) push MENU_MAIL else MENU_ITEM.
-  // Notre heldItem est string EN canonique (= 'orangemail' format) ; check via
-  // resolveDecompConstant pour bridge string→u16 puis ItemIsMail.
-  const heldItemKey = mon?.heldItem
-    ? 'ITEM_' + mon.heldItem.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '')
-    : '';
-  const heldItemId = heldItemKey ? (resolveDecompConstant(heldItemKey) ?? 0) : 0;
+  const heldItemId = mon?.heldItem ?? 0;  // 1:1 MON_DATA_HELD_ITEM (id u16)
   if (heldItemId !== 0 && ItemIsMail(heldItemId)) {
     _actionList.push(MENU_MAIL);
   } else {
@@ -2024,7 +2048,7 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
       // appelé pendant que le party menu vivait encore (tâche de close
       // survivante → CB2_ReturnToFieldWithOpenMenu = OW+START bug #4, ou
       // CB2 stomp = crash fade bug #3).
-      const mon = (gSaveBlock1Ptr.playerParty as PokemonInstance[])[_slotId];
+      const mon = _slotMon(_slotId);
       if (mon) {
         _summaryTargetMon = mon;
         _showSummaryPending = false;
@@ -2126,7 +2150,7 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
       }
       // 1:1 décomp IsSelectedMonNotEgg : on évite slot vide/egg. Notre party
       // n'a pas d'œuf encore, on check juste mon présent.
-      const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+      const party = _party();
       const mon = party[_slotId];
       if (!mon) return;  // 1:1 :1310 IsSelectedMonNotEgg FALSE = silent skip.
       // Invoque gItemUseCB (= ItemUseCB_Medicine pour POTION etc.).
@@ -2153,11 +2177,11 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         }
         return;
       }
-      const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+      const party = _party();
       const mon = party[_slotId];
       // 1:1 : interdit le mon DÉJÀ au combat (= actif) ou un mon K.O. (les messages
       // FR "déjà en plein combat" / "plus d'énergie" = polish ultérieur ; ici no-op).
-      if (_slotId === _battleSwitchActiveSlot || !mon || mon.currentHp <= 0) {
+      if (_slotId === _battleSwitchActiveSlot || !mon || mon.hp <= 0) {
         PlaySE(5);
         return;  // reste sur la sélection
       }
@@ -2417,11 +2441,11 @@ export function RefreshPartySlot(slotIdx: number): void {
 /** 1:1 décomp `PartyMenuModifyHP(taskId, slot, direction, delta, callback)`
  *  (party_menu.c:5455). Anime le HP bar frame-par-frame du oldHp au targetHp
  *  via `direction` (+1 heal / -1 damage). À chaque tick : incrémente
- *  `mon.currentHp` + redraw le slot. À la fin (delta atteint) : appelle
+ *  `mon.hp` + redraw le slot. À la fin (delta atteint) : appelle
  *  `onDone()`.
  *
  *  Le caller (ItemUseCB_Medicine) doit avoir DÉJÀ appliqué l'effet (=
- *  mon.currentHp = newHp post-heal). Cette fonction reverse momentanément
+ *  mon.hp = newHp post-heal). Cette fonction reverse momentanément
  *  pour démarrer l'anim depuis oldHp, puis incrémente jusqu'à newHp.
  *
  *  `onDone` est typiquement `() => ShowPartyMenuItemMessage(msg)` (= 1:1
@@ -2432,13 +2456,13 @@ export function PartyMenuAnimateHP(
   newHp: number,
   onDone: () => void,
 ): void {
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   const mon = party[slotIdx];
   if (!mon) { onDone(); return; }
   const delta = newHp - oldHp;
   if (delta === 0) { onDone(); return; }
   // Reverse à oldHp pour démarrer l'anim.
-  mon.currentHp = oldHp;
+  mon.hp = oldHp;
   _hpAnimSlot = slotIdx;
   _hpAnimDirection = delta > 0 ? 1 : -1;
   _hpAnimRemaining = Math.abs(delta);
@@ -2464,7 +2488,7 @@ function _tickHpAnim(): void {
   const ticksPerHp = 1;  // 1:1 décomp = 1 HP/frame (60Hz, ~16ms/HP).
   if (_hpAnimFrameCounter < ticksPerHp) return;
   _hpAnimFrameCounter = 0;
-  const party = gSaveBlock1Ptr.playerParty as PokemonInstance[];
+  const party = _party();
   const mon = party[_hpAnimSlot];
   if (!mon) {
     // Mon disparu en cours d'anim → cancel + onDone.
@@ -2472,7 +2496,7 @@ function _tickHpAnim(): void {
     cb?.();
     return;
   }
-  mon.currentHp += _hpAnimDirection;
+  mon.hp += _hpAnimDirection;
   _hpAnimRemaining--;
   // 1:1 décomp :1846-1847 DisplayPartyPokemonHPCheck + HPBarCheck —
   // redraw HP bar + text. Notre RefreshPartySlot (= _drawSlotFrame +

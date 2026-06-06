@@ -4696,7 +4696,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     const partyCount = party.filter(Boolean).length;
     void import('../ui/summary-screen').then(({ ShowSelectMovePokemonSummaryScreen }) => {
       ShowSelectMovePokemonSummaryScreen(
-        party as PokemonInstance[], _activePlayerSlot, Math.max(0, partyCount - 1),
+        gPlayerParty, _activePlayerSlot, Math.max(0, partyCount - 1),
         _onSubScreenClose, _learnNewEnum,
       );
     });

@@ -59,7 +59,7 @@ import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
-import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, type Pokemon } from '../battle/party-storage';
+import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
 import { IsShinyOtIdPersonality } from '../../game/pokemon';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
@@ -3063,7 +3063,7 @@ function Task_HandleInputCantForgetHMsMoves(task: DecompTask): void {
 /** 1:1 décomp `ShowSelectMovePokemonSummaryScreen` (:1142). Ouvre le summary en
  *  mode SELECT_MOVE sur la page BATTLE_MOVES, avec `newMove` comme 5e capacité. */
 export function ShowSelectMovePokemonSummaryScreen(
-  monList: PokemonInstance[], monIndex: number, maxMonIndex: number,
+  monList: Pokemon[], monIndex: number, maxMonIndex: number,
   callback: (() => void) | null, newMove: string,
 ): void {
   if (_isOpen) return;
@@ -3332,16 +3332,14 @@ export function GetSummaryLastMonIndex(): number {
 
 /** 1:1 décomp `ShowPokemonSummaryScreen` (party_menu.c via CursorCb_Summary).
  *  callback = retour party menu (sMonSummaryScreen->callback). */
-export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): void {
+export function OpenSummaryScreen(mon: Pokemon, callback?: () => void): void {
   if (_isOpen) return;
-  // Frontière transitoire : party-screen passe encore une VUE PokemonInstance.
-  // On résout son index dans la party de vues → source réelle = gPlayerParty.
-  const views = (gSaveBlock1Ptr.playerParty as PokemonInstance[]) ?? [];
-  const idx = views.indexOf(mon);
+  // 1:1 décomp ShowPokemonSummaryScreen(PSS_MODE_NORMAL, gPlayerParty, slotId, …).
   _monList = gPlayerParty;
+  const idx = gPlayerParty.indexOf(mon);
   sMon.curMonIndex = idx >= 0 ? idx : 0;
-  sMon.maxMonIndex = Math.max(0, views.length - 1);
-  sMon.currentMon = gPlayerParty[sMon.curMonIndex] ?? null;
+  sMon.maxMonIndex = Math.max(0, CalculatePlayerPartyCount() - 1);
+  sMon.currentMon = mon;
   sMon.currPageIndex = PSS_PAGE_INFO;
   sMon.minPageIndex = PSS_PAGE_INFO;
   sMon.maxPageIndex = PSS_PAGE_CONTEST_MOVES;
