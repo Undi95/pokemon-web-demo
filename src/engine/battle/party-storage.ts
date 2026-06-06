@@ -869,12 +869,23 @@ export function loadPlayerPartyFromInstances(player: PokemonInstance[]): void {
 /** Fill gPlayerParty/gEnemyParty depuis runtime PokemonInstance arrays.
  *  Appelé au début de chaque combat. Les slots vides sont reset via
  *  `createEmptyPokemon`. */
-export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonInstance[]): void {
-  loadPlayerPartyFromInstances(player);
+export function setupEnemyPartyForBattle(enemy: PokemonInstance[]): void {
   for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
   for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
     Object.assign(gEnemyParty[i], pokemonInstanceToPokemon(enemy[i]));
   }
+}
+
+/** Setup gPlayerParty ET gEnemyParty. ⚠️ Migration Pokémon (étape 5) : depuis
+ *  le pivot, `gPlayerParty` est la SOURCE de vérité (= la party joueur OW). Les
+ *  combats RÉELS (wild/trainer) ne doivent donc PAS la remplacer — ils appellent
+ *  `setupEnemyPartyForBattle` (ennemi seul) et lisent gPlayerParty direct. Cette
+ *  fonction (qui REMPLACE gPlayerParty) reste pour les COMBATS DE TEST (devtools)
+ *  qui veulent une party artificielle ; ⚠️ elle écrase la party joueur courante
+ *  (à entourer d'un backup/restore côté appelant — cf. push/popTestPlayerParty). */
+export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonInstance[]): void {
+  loadPlayerPartyFromInstances(player);
+  setupEnemyPartyForBattle(enemy);
 }
 
 // ─── Migration Pokémon (palier B) : gPlayerParty = SOURCE, block1.playerParty = vues ──

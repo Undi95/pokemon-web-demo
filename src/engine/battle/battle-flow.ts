@@ -93,7 +93,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, type PokemonInstance } from '../pokemon/pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
+import { setupEnemyPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
 import { startBallThrow, tickBallThrow, stopBallThrow, isBallThrowActive } from './battle-ball-throw';
@@ -2072,7 +2072,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // 1:1 décomp : fill gPlayerParty/gEnemyParty battle-side au début de
         // combat. Ainsi les opcodes du bytecode interpreter qui lisent
         // GetMonData(gPlayerParty[i], ...) ont les bonnes données.
-        setupPartyForBattle(party.filter((m: PokemonInstance | null): m is PokemonInstance => !!m), [opponentMon]);
+        // Migration Pokémon (étape 5) : gPlayerParty est déjà la party joueur
+        // (source) ; on ne remplit que gEnemyParty, gPlayerParty est lu direct.
+        setupEnemyPartyForBattle([opponentMon]);
         // 1:1 décomp battle_main.c:BattleIntroGetMonsData : populate gBattleMons[0]
         // (player active) + gBattleMons[1] (enemy active) depuis party slot 0.
         // Cette init est requise pour que les opcodes bytecode lisent les vraies

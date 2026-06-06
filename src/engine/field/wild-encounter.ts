@@ -48,7 +48,7 @@ import { startWildBattle } from '../battle/battle-flow';
 import { ScriptContext_SetupInlineNative } from '../script/script-runtime';
 // Aiguillage VOIE L (flag __USE_DECOMP_BATTLE_LOOP__, défaut OFF) — cf. CreateWildMon.
 import { isDecompBattleLoopEnabled, bootDecompBattleLoop } from '../battle/battle-decomp-loop';
-import { setupPartyForBattle } from '../battle/party-storage';
+import { setupEnemyPartyForBattle } from '../battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from '../pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
 import { BATTLE_TYPE_TRAINER } from '../battle/constants';
@@ -290,8 +290,9 @@ function CreateWildMon(species: string, level: number): void {
   // VRAIE boucle décomp (`bootDecompBattleLoop(true)` = transition d'entrée + BGM combat +
   // swap CB2 réel + savedCallback de retour OW). Flag OFF (défaut) → voie V ci-dessous INCHANGÉE.
   if (isDecompBattleLoopEnabled()) {
-    const party = gSaveBlock1Ptr.playerParty.filter((m: PokemonInstance | null): m is PokemonInstance => !!m);
-    setupPartyForBattle(party, [createPokemonInstance(species, level)]);
+    // Migration Pokémon (étape 5) : gPlayerParty EST déjà la party joueur (source) ;
+    // on ne remplit que gEnemyParty (le mon sauvage), gPlayerParty est lu direct.
+    setupEnemyPartyForBattle([createPokemonInstance(species, level)]);
     setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);  // combat SAUVAGE
     bootDecompBattleLoop(true);
     return;
