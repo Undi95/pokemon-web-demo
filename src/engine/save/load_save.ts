@@ -31,6 +31,7 @@ import {
   emptySaveBlock1,
 } from './save-blocks';
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
+import { loadPlayerPartyFromInstances } from '../battle/party-storage';
 import {
   gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent,
   SetObjectEventSpritePosToMapCoords,
@@ -192,9 +193,14 @@ export function SavePlayerParty(): void {
 }
 
 /** 1:1 décomp `LoadPlayerParty(void)` (load_save.c:170).
- *  Sync `block1.playerParty` → `gPlayerParty`. No-op web port (= shared ref). */
+ *  Sync `block1.playerParty` → `gPlayerParty`. Migration Pokémon (palier A) :
+ *  peuple `gPlayerParty` (Pokemon/BoxMon) depuis `block1.playerParty`
+ *  (PokemonInstance) à travers le pont. Tant que l'OW lit encore
+ *  `block1.playerParty`, `gPlayerParty` est une copie runtime inerte ; le pivot
+ *  qui en fait la source de vérité (block1.playerParty → vues) est le palier B. */
 export function LoadPlayerParty(): void {
-  // No-op : block1.playerParty IS the runtime party.
+  const block1 = GetSaveBlock1();
+  loadPlayerPartyFromInstances(block1.playerParty);
 }
 
 /** 1:1 décomp `CopyPartyAndObjectsToSave(void)` (load_save.c:196). */

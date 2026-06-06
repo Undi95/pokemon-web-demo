@@ -836,17 +836,23 @@ export function syncPokemonToInstance(mon: Pokemon, inst: PokemonInstance): void
 
 // ─── Party bridge (called at battle setup/end) ─────────────────────────────
 
+/** 1:1 décomp `LoadPlayerParty` (load_save.c:170) — copie save→runtime côté
+ *  joueur (`gPlayerParty[i] = block1.playerParty[i]`), à travers le pont
+ *  PokemonInstance→Pokemon. Slots vides reset via `createEmptyPokemon`. Partagé
+ *  par `setupPartyForBattle` (boot combat) et `LoadPlayerParty` (boot/load OW). */
+export function loadPlayerPartyFromInstances(player: PokemonInstance[]): void {
+  for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gPlayerParty[i], createEmptyPokemon());
+  for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
+    Object.assign(gPlayerParty[i], pokemonInstanceToPokemon(player[i]));
+  }
+}
+
 /** Fill gPlayerParty/gEnemyParty depuis runtime PokemonInstance arrays.
  *  Appelé au début de chaque combat. Les slots vides sont reset via
  *  `createEmptyPokemon`. */
 export function setupPartyForBattle(player: PokemonInstance[], enemy: PokemonInstance[]): void {
-  for (let i = 0; i < PARTY_SIZE; i++) {
-    Object.assign(gPlayerParty[i], createEmptyPokemon());
-    Object.assign(gEnemyParty[i], createEmptyPokemon());
-  }
-  for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
-    Object.assign(gPlayerParty[i], pokemonInstanceToPokemon(player[i]));
-  }
+  loadPlayerPartyFromInstances(player);
+  for (let i = 0; i < PARTY_SIZE; i++) Object.assign(gEnemyParty[i], createEmptyPokemon());
   for (let i = 0; i < Math.min(enemy.length, PARTY_SIZE); i++) {
     Object.assign(gEnemyParty[i], pokemonInstanceToPokemon(enemy[i]));
   }
