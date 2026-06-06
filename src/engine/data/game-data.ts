@@ -142,6 +142,17 @@ interface GameData {
 let _data: GameData | null = null;
 let _loadPromise: Promise<void> | null = null;
 
+// ─── Tables id-indexées 1:1 décomp (gSpeciesInfo[] / gSpeciesNames[] / …) ────
+// Construites au boot (loadGameData) depuis les Records keyés enum + les modules
+// de constantes id (`species-data`). Accès O(1) `gSpeciesInfo[species]` = 1:1
+// décomp (`pokemon_summary_screen.c` : `gSpeciesInfo[summary->species]`,
+// `gMoveNames[move]`…). PHASE ADDITIVE : les getters enum (`getSpeciesInfo(enum)`
+// …) restent intacts → zéro régression sur les call sites non encore migrés.
+export const gSpeciesInfo: SpeciesInfo[] = [];
+export const gSpeciesNames: string[] = [];
+export const sSpeciesToHoennPokedexNum: number[] = [];
+export const sSpeciesToNationalPokedexNum: number[] = [];
+
 async function fetchJson<T>(name: string): Promise<T> {
   const r = await fetch(`${BASE}/${name}`);
   if (!r.ok) throw new Error(`game-data: failed to fetch ${name}: ${r.status}`);
@@ -224,6 +235,44 @@ export function loadGameData(): Promise<void> {
       }
     }
     (globalThis as Record<string, unknown>).gameDataMovesNumToEnum = movesNumToEnum;
+    // ─── F1 — tables id-indexées species (1:1 décomp gSpeciesInfo[] /
+    //     gSpeciesNames[] / sSpeciesToHoennPokedexNum[]). ADDITIF. ───────────
+    {
+      let textSpeciesNames: Record<string, string> = {};
+      let dexNums: Record<string, { national: number; hoenn: number } | number> = {};
+      try {
+        const [textJson, dexJson] = await Promise.all([
+          fetchJson<{ species?: Record<string, string> }>('text-tables.json'),
+          fetchJson<Record<string, { national: number; hoenn: number } | number>>('species-dex-numbers.json'),
+        ]);
+        textSpeciesNames = textJson?.species ?? {};
+        dexNums = dexJson ?? {};
+      } catch (e) {
+        console.error('[game-data] F1 species id-tables: aux fetch failed', e);
+      }
+      gSpeciesInfo.length = 0; gSpeciesNames.length = 0;
+      sSpeciesToHoennPokedexNum.length = 0; sSpeciesToNationalPokedexNum.length = 0;
+      const speciesIds = speciesMod as unknown as Record<string, unknown>;
+      for (const [enumKey, info] of Object.entries(species)) {
+        const id = speciesIds[enumKey];
+        if (typeof id !== 'number') continue;
+        gSpeciesInfo[id] = info;
+        gSpeciesNames[id] = textSpeciesNames[enumKey] ?? enumKey.replace(/^SPECIES_/, '');
+      }
+      for (const [enumKey, e] of Object.entries(dexNums)) {
+        if (enumKey === '__HOENN_DEX_COUNT' || !e || typeof e !== 'object') continue;
+        const id = speciesIds[enumKey];
+        if (typeof id !== 'number') continue;
+        sSpeciesToHoennPokedexNum[id] = e.hoenn;
+        sSpeciesToNationalPokedexNum[id] = e.national;
+      }
+      (globalThis as Record<string, unknown>).gSpeciesInfo = gSpeciesInfo;
+      (globalThis as Record<string, unknown>).gSpeciesNames = gSpeciesNames;
+      (globalThis as Record<string, unknown>).sSpeciesToHoennPokedexNum = sSpeciesToHoennPokedexNum;
+      (globalThis as Record<string, unknown>).sSpeciesToNationalPokedexNum = sSpeciesToNationalPokedexNum;
+      console.log(`[game-data] F1 id-tables built — gSpeciesInfo[${gSpeciesInfo.filter(Boolean).length}], ` +
+        `dex hoenn[${sSpeciesToHoennPokedexNum.filter((n) => n).length}]`);
+    }
     console.log(`[game-data] loaded — ${Object.keys(species).length} species, ` +
       `${Object.keys(moves).length} moves, ${Object.keys(trainers).length} trainers, ` +
       `${typeChart.length} type-chart entries`);
@@ -240,6 +289,18 @@ function ensureLoaded(): GameData {
 
 export function getSpeciesInfo(speciesId: string): SpeciesInfo | undefined {
   return ensureLoaded().species[speciesId];
+}
+
+// ─── Accès id-keyés 1:1 décomp (species) ────────────────────────────────────
+/** 1:1 décomp `SpeciesToNationalPokedexNum(species)` (pokedex.c) via la table
+ *  `sSpeciesToNationalPokedexNum[species]`. 0 si hors table. */
+export function SpeciesToNationalPokedexNum(species: number): number {
+  return sSpeciesToNationalPokedexNum[species] ?? 0;
+}
+/** 1:1 décomp `SpeciesToHoennPokedexNum(species)` (pokedex.c) via la table
+ *  `sSpeciesToHoennPokedexNum[species]`. 0 si hors Hoenn dex. */
+export function SpeciesToHoennPokedexNum(species: number): number {
+  return sSpeciesToHoennPokedexNum[species] ?? 0;
 }
 
 export function getMove(moveId: string): MoveData | undefined {
