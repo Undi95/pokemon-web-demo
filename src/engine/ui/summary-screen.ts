@@ -38,9 +38,11 @@ import { gSaveBlock1Ptr, gSaveBlock2Ptr } from '../save/save-block-state';
 import { FEMALE } from '../system/decomp-globals';
 import { LoadSpriteSheet, LoadSpritePalette, MarkObjTilesAllocated, FreeSpritePaletteByTag } from '../system/sprite';
 import {
-  getAbility, getSpeciesInfo, getNatureNameByIndex, getMove, getMoveName,
-  getMoveDescription, getContestMove, getContestEffect, getContestEffectDescription, getItemNameFr,
+  getAbility, getNatureNameByIndex, getContestEffect, getContestEffectDescription,
   getExperienceForLevel,
+  gSpeciesInfo, gSpeciesNames, gBattleMoves, gMoveNames, gMoveDescriptions, gContestMoves, gItems,
+  SpeciesToHoennPokedexNum, ItemId_GetName,
+  type SpeciesInfo, type MoveData, type ContestMove,
 } from '../data/game-data';
 import {
   DynamicPlaceholderTextUtil_Reset,
@@ -57,8 +59,20 @@ import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
-import { pokemonInstanceToPokemon } from '../battle/party-storage';
-import { moveDexIdToEnum } from '../battle/data/move-name-resolve';
+import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, type Pokemon } from '../battle/party-storage';
+import { IsShinyOtIdPersonality } from '../../game/pokemon';
+import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
+import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
+
+// Accès id-keyés locaux 1:1 décomp = indexation DIRECTE des tables id-strictes
+// (`gSpeciesInfo[species]` / `gBattleMoves[move]` / `gMoveNames[move]` / …).
+// Pas de conversion : les ids viennent de GetMonData / summary (u16). 1:1
+// pokemon_summary_screen.c.
+const getSpeciesInfo = (species: number): SpeciesInfo | undefined => gSpeciesInfo[species];
+const getMove = (move: number): MoveData | undefined => gBattleMoves[move];
+const getMoveName = (move: number): string => gMoveNames[move] ?? '';
+const getMoveDescription = (move: number): string => gMoveDescriptions[move] ?? '';
+const getContestMove = (move: number): ContestMove | undefined => gContestMoves[move];
 import { PokemonSummaryDoMonAnimation, StopPokemonAnimations, StopPokemonAnimationDelayTask, HasTwoFramesAnimation, preloadFrontPicAnims } from './mon-summary-anim';
 import type { DecompTask, DecompSprite } from '../system/decomp-runtime';
 import type { PokemonInstance } from '../pokemon/pokemon';
@@ -386,14 +400,15 @@ const BG_COORD_SUB = 2;
  * ========================================================================== */
 
 interface SummaryData {
-  species: string;       // speciesEnum
+  species: number;       // 1:1 PokeSummary.species (u16 id)
+  species2: number;      // 1:1 PokeSummary.species2 (species, ou SPECIES_EGG=0 si œuf)
   exp: number;
   level: number;
   abilityNum: number;
-  item: string;          // heldItem EN ("" si rien)
+  item: number;          // 1:1 PokeSummary.item (u16 id, 0 = ITEM_NONE)
   pid: number;           // personality
   isEgg: boolean;
-  moves: string[];       // 4 move dexIds ("" si vide)
+  moves: number[];       // 1:1 PokeSummary.moves[4] (u16 ids, 0 = MOVE_NONE)
   pp: number[];          // 4 pp courant
   ppMax: number[];       // 4 pp max
   currentHP: number; maxHP: number;
@@ -405,15 +420,15 @@ interface SummaryData {
   OTID: number;
   ribbonCount: number;
   ailment: number;       // AILMENT_NONE=0 / 1..6
-  metLocation: string | undefined;
-  metLevel: number | undefined;
-  pokeball: string;      // 1:1 MON_DATA_POKEBALL (ITEM_*), default ITEM_POKE_BALL
+  metLocation: number;   // 1:1 PokeSummary.metLocation (u8 id ; dette MAPSEC → 0)
+  metLevel: number;      // 1:1 PokeSummary.metLevel (u8)
+  pokeball: number;      // 1:1 MON_DATA_POKEBALL (id)
   markings: number;      // 1:1 MON_DATA_MARKINGS (0..15 bitfield)
 }
 
 interface SummaryState {
   callback: (() => void) | null;
-  currentMon: PokemonInstance | null;
+  currentMon: Pokemon | null;
   summary: SummaryData;
   /** 1:1 décomp `bgTilemapBuffers[PSS_PAGE_COUNT][2][0x400]` = par page UN
    *  buffer CONTIGU de 0x800 u16 (screenSize=1, 64×32) : SC0 = [0..0x3FF]
@@ -436,8 +451,8 @@ interface SummaryState {
   /** 1:1 décomp `sMonSummaryScreen->secondMoveIndex` — 2e curseur (réordre). */
   secondMoveIndex: number;
   /** 1:1 décomp `sMonSummaryScreen->newMove` — MOVE_NONE en mode NORMAL
-   *  (notre flux party→RÉSUME ; le slot 5 affiche "ANNULE"). '' = MOVE_NONE. */
-  newMove: string;
+   *  (notre flux party→RÉSUME ; le slot 5 affiche "ANNULE"). 0 = MOVE_NONE. */
+  newMove: number;
   /** 1:1 décomp `sMonSummaryScreen->lockMovesFlag` — FALSE en mode NORMAL
    *  (TRUE = contexte interdisant le réordre, ex. Battle Factory). */
   lockMovesFlag: boolean;
@@ -465,16 +480,16 @@ export function GetMoveSlotToReplace(): number {
 
 /** Temp pour Task_PrintBattleMoves case 6→7 (le décomp stocke le move ID dans
  *  data[1] ; nos moves = enums string → temp module). */
-let _pbmPendingMove = '';
+let _pbmPendingMove = 0;
 
 function _emptySummary(): SummaryData {
   return {
-    species: 'SPECIES_NONE', exp: 0, level: 0, abilityNum: 0, item: '', pid: 0,
-    isEgg: false, moves: ['', '', '', ''], pp: [0, 0, 0, 0], ppMax: [0, 0, 0, 0],
+    species: 0, species2: 0, exp: 0, level: 0, abilityNum: 0, item: 0, pid: 0,
+    isEgg: false, moves: [0, 0, 0, 0], pp: [0, 0, 0, 0], ppMax: [0, 0, 0, 0],
     currentHP: 0, maxHP: 0, atk: 0, def: 0, spatk: 0, spdef: 0, speed: 0,
     friendship: 0, OTGender: 0, nature: 0, OTName: '', OTID: 0, ribbonCount: 0,
-    ailment: 0, metLocation: undefined, metLevel: undefined,
-    pokeball: 'ITEM_POKE_BALL', markings: 0,
+    ailment: 0, metLocation: 0, metLevel: 0,
+    pokeball: 0, markings: 0,
   };
 }
 
@@ -484,7 +499,7 @@ const sMon: SummaryState = {
   currPageIndex: 0, minPageIndex: 0, maxPageIndex: 3, bgDisplayOrder: 0,
   windowIds: [WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE, WINDOW_NONE],
   switchCounter: 0,
-  firstMoveIndex: 0, secondMoveIndex: 0, newMove: '', lockMovesFlag: false, lockMonFlag: false,
+  firstMoveIndex: 0, secondMoveIndex: 0, newMove: 0, lockMovesFlag: false, lockMonFlag: false,
 };
 
 let _isOpen = false;
@@ -499,14 +514,15 @@ let _statusSpriteId = -1;
 let _markingsSpriteId = -1;
 let _ballSpriteId = -1;
 /** Liste party (UP/DOWN) — 1:1 décomp `monList.mons` (= gPlayerParty). */
-let _monList: PokemonInstance[] = [];
+let _monList: Pokemon[] = [];
 /** 1:1 décomp `gLastViewedMonIndex` (pokemon_summary_screen.c:190) — set au
  *  close = curMonIndex. Le party menu y replace son curseur au retour. */
 let _lastViewedMonIndex = 0;
 
-// 1:1 décomp `sSpeciesToHoennPokedexNum` (extract-species-dex-numbers.mjs).
-let _dexNumbers: Record<string, { national: number; hoenn: number }> | null = null;
+// 1:1 décomp `HOENN_DEX_COUNT` — borne pour _speciesToPokedexNum (les n° de dex
+// id-indexés vivent dans game-data : sSpeciesToHoennPokedexNum / SpeciesToHoenn…).
 let _hoennDexCount = 202;
+let _hoennCountLoaded = false;
 
 /* ============================================================================
  * Assets
@@ -805,13 +821,12 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
       await _loadMonFrontPic(r, mon);
     }
     await preloadFrontPicAnims();   // séquences AnimCmd 2-frame (front-pic-anims.json)
-    if (!_dexNumbers) {
+    if (!_hoennCountLoaded) {
       try {
         const dj = await fetch('/decomp/em/species-dex-numbers.json').then((rsp) => rsp.json());
         _hoennDexCount = dj.__HOENN_DEX_COUNT ?? 202;
-        delete dj.__HOENN_DEX_COUNT;
-        _dexNumbers = dj;
       } catch (e) { console.error('[summary] species-dex-numbers load failed:', e); }
+      _hoennCountLoaded = true;
     }
     _graphicsReady = true;
     _graphicsLoading = false;
@@ -819,64 +834,64 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
   return false;
 }
 
+/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c) —
+ *  basePP + basePP*20*bonus/100. bonus = 2 bits/slot dans ppBonuses. */
+function _calcPpWithBonus(move: number, ppBonuses: number, idx: number): number {
+  const basePP = gBattleMoves[move]?.pp ?? 0;
+  const bonus = (ppBonuses >> (2 * idx)) & 3;
+  return basePP + Math.floor((basePP * 20 * bonus) / 100);
+}
+
+/** 1:1 décomp `GetAilmentFromStatus(u32 status)` (party_menu.c:4694) — status1
+ *  bitfield → AILMENT_* (NONE=0, PSN=1, PRZ=2, SLP=3, FRZ=4, BRN=5). Masks via
+ *  resolveDecompConstant (STATUS1_* = exprs évaluées de battle-data). */
+function _getAilmentFromStatus(status: number): number {
+  const S = (n: string): number => resolveDecompConstant(n) ?? 0;
+  if (status & (S('STATUS1_POISON') | S('STATUS1_TOXIC_POISON'))) return 1;
+  if (status & S('STATUS1_PARALYSIS')) return 2;
+  if (status & S('STATUS1_SLEEP')) return 3;
+  if (status & S('STATUS1_FREEZE')) return 4;
+  if (status & S('STATUS1_BURN')) return 5;
+  return 0;
+}
+
 /** 1:1 décomp `CopyMonToSummaryStruct` + `ExtractMonDataToSummaryStruct`
- *  (:1386/:1400). Source = PokemonInstance (party). Stats via CalculateMonStats
- *  1:1 (pokemonInstanceToPokemon). */
-function _extractMonData(mon: PokemonInstance): void {
+ *  (:1386/:1400). Source = Pokemon (gPlayerParty). Tout via champs natifs /
+ *  GetMonData ; species/species2/moves/item = ids (u16) 1:1 PokeSummary. */
+function _extractMonData(mon: Pokemon): void {
   const s = _emptySummary();
-  s.species = mon.speciesEnum;
-  s.level = mon.level;
-  s.pid = mon.personality ?? 0;
-  s.abilityNum = s.pid & 1;
-  s.item = mon.heldItem || '';
-  s.isEgg = mon.isEgg ?? false;                 // 1:1 MON_DATA_IS_EGG
-  s.nature = (mon.personality ?? 0) % 25;       // GetNature = pid % NUM_NATURES
-  s.currentHP = mon.currentHp; s.maxHP = mon.maxHp;
-  s.OTName = gSaveBlock2Ptr.playerName ?? '';
-  s.OTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-  s.OTGender = gSaveBlock2Ptr.playerGender === FEMALE ? 1 : 0;
-  s.metLocation = mon.metLocation;
-  s.metLevel = mon.metLevel;
-  s.pokeball = mon.pokeball || 'ITEM_POKE_BALL'; // 1:1 MON_DATA_POKEBALL
-  s.markings = mon.markings ?? 0;                // 1:1 MON_DATA_MARKINGS
-  s.friendship = mon.friendship ?? 0;            // 1:1 MON_DATA_FRIENDSHIP (œuf)
-  s.ribbonCount = 0;                              // PokemonInstance n'a pas de rubans
-  // ailment 1:1 GetMonAilment : AILMENT_NONE=0, PSN=1, PAR=2, SLP=3, FRZ=4,
-  // BRN=5, plus PSN(TOX) traité comme PSN. (sStatusIconsSpriteSheet anim idx.)
-  const st = mon.status;
-  s.ailment = st === 'PSN' || st === 'TOX' ? 1 : st === 'PAR' ? 2 : st === 'SLP' ? 3
-    : st === 'FRZ' ? 4 : st === 'BRN' ? 5 : 0;
-  // moves + pp. 1:1 décomp `summary.moves[i]` = move identifier. Notre
-  // équivalent = l'ENUM ("MOVE_ABSORB") car moves-data/move-names-fr/
-  // move-descriptions-fr/contest sont keyés par enum (mv.id = dexId
-  // "absorb" → moveDexIdToEnum). gMoveNames[move]/gBattleMoves[move] 1:1.
+  s.species = mon.species;                          // MON_DATA_SPECIES
+  s.species2 = mon.isEgg ? 0 : mon.species;         // MON_DATA_SPECIES_OR_EGG (SPECIES_EGG=0)
+  s.level = mon.level;                              // MON_DATA_LEVEL
+  s.pid = mon.personality >>> 0;                    // MON_DATA_PERSONALITY
+  s.abilityNum = mon.abilityNum;                    // MON_DATA_ABILITY_NUM (1:1, plus pid&1)
+  s.item = mon.heldItem;                            // MON_DATA_HELD_ITEM (id, 0 = ITEM_NONE)
+  s.isEgg = !!mon.isEgg;                            // MON_DATA_IS_EGG
+  s.nature = s.pid % 25;                            // GetNature = pid % NUM_NATURES
+  s.currentHP = mon.hp; s.maxHP = mon.maxHP;        // MON_DATA_HP / MAX_HP
+  s.atk = mon.attack; s.def = mon.defense;          // stats 1:1 CalculateMonStats (champs natifs)
+  s.spatk = mon.spAttack; s.spdef = mon.spDefense; s.speed = mon.speed;
+  s.OTName = mon.otName || (gSaveBlock2Ptr.playerName ?? '');  // MON_DATA_OT_NAME
+  s.OTID = mon.otId >>> 0;                          // MON_DATA_OT_ID
+  s.OTGender = mon.otGender;                        // MON_DATA_OT_GENDER
+  s.metLocation = mon.metLocation;                  // MON_DATA_MET_LOCATION (dette MAPSEC)
+  s.metLevel = mon.metLevel;                        // MON_DATA_MET_LEVEL
+  s.pokeball = mon.pokeball;                        // MON_DATA_POKEBALL (id)
+  s.markings = mon.markings;                        // MON_DATA_MARKINGS
+  s.friendship = mon.friendship;                    // MON_DATA_FRIENDSHIP
+  s.ribbonCount = GetMonData(mon, MON_DATA_RIBBON_COUNT) as number;  // 1:1 (plus le 0 hardcodé)
+  s.ailment = _getAilmentFromStatus(mon.status >>> 0);              // MON_DATA_STATUS → ailment
+  // moves + pp (ids 1:1) ; ppMax = CalculatePPWithBonus(move, ppBonuses, i).
   for (let i = 0; i < 4; i++) {
-    const mv = mon.moves[i];
-    if (mv && mv.id) {
-      s.moves[i] = moveDexIdToEnum(mv.id);
-      s.pp[i] = mv.pp;
-      s.ppMax[i] = mv.ppMax;
-    }
+    const move = mon.moves[i];
+    s.moves[i] = move;
+    s.pp[i] = mon.pp[i];
+    s.ppMax[i] = move ? _calcPpWithBonus(move, mon.ppBonuses, i) : 0;
   }
-  // exp. 1:1 décomp ExtractMonDataToSummaryStruct : summary->exp =
-  // GetMonData(MON_DATA_EXP). Invariant jeu (CreateBoxMon:2262) : l'exp
-  // TOTALE d'un mon de niveau L est TOUJOURS >= gExperienceTables[growth
-  // Rate][L]. `mon.currentExp ?? …` ne rattrapait PAS `currentExp===0`
-  // (mons debug/non-trackés) → exp=0 à N>1 → POINTS EXP 0 + barre fausse
-  // (underflow u32). Math.max applique l'invariant : exp obtenue gardée si
-  // trackée, sinon = base de la table de gain (erratic/slow/medium…) pour
-  // le niveau → expSince=0 → barre VIDE (logique, 1:1 ROM).
-  const sp = getSpeciesInfo(mon.speciesEnum);
-  const expForLevel = sp ? getExperienceForLevel(sp.growthRate, mon.level) : 0;
-  s.exp = Math.max(mon.currentExp ?? 0, expForLevel);
-  // stats calculées 1:1 décomp (CalculateMonStats via pokemonInstanceToPokemon).
-  try {
-    const p = pokemonInstanceToPokemon(mon);
-    s.atk = p.attack; s.def = p.defense; s.spatk = p.spAttack;
-    s.spdef = p.spDefense; s.speed = p.speed;
-    if (p.maxHP) { s.maxHP = p.maxHP; }
-    if (typeof p.hp === 'number') { s.currentHP = p.hp; }
-  } catch { /* fallback : currentHp/maxHp instance déjà set */ }
+  // exp 1:1 (MON_DATA_EXP). Invariant CreateBoxMon : exp >= table[growth][L].
+  const growth = gSpeciesInfo[mon.species]?.growthRate;
+  const expForLevel = growth ? getExperienceForLevel(growth, mon.level) : 0;
+  s.exp = Math.max(mon.experience >>> 0, expForLevel);
   sMon.summary = s;
 }
 
@@ -936,7 +951,7 @@ function _flushWin(wid: number): void {
  *  castform/deoxys/spinda/unown (HasTwoFramesAnimation FALSE) → front.png
  *  1-frame. Fallback front.png si anim_front absent. */
 async function _loadMonFrontPic(
-  r: NonNullable<ReturnType<typeof getRuntime>>, mon: PokemonInstance,
+  r: NonNullable<ReturnType<typeof getRuntime>>, mon: Pokemon,
 ): Promise<void> {
   // 1:1 fix : LoadSpritePalette (décomp:1591) renvoie le slot existant SANS recharger
   // les data si le tag existe déjà → en switchant de Pokémon dans le summary, le slot
@@ -945,8 +960,9 @@ async function _loadMonFrontPic(
   // nouveau mon. No-op au 1er load (tag absent). Le sprite est re-créé via _createMonSprite.
   FreeSpritePaletteByTag(TAG_MON_PIC_PAL);
   const isEgg = !!mon.isEgg;
-  const dexId = isEgg ? 'egg' : mon.speciesEnum.replace('SPECIES_', '').toLowerCase();
-  const twoFrame = !isEgg && HasTwoFramesAnimation(mon.speciesEnum);
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const dexId = isEgg ? 'egg' : speciesEnum.replace('SPECIES_', '').toLowerCase();
+  const twoFrame = !isEgg && HasTwoFramesAnimation(speciesEnum);
   const url = `/decomp/em/pokemon/${dexId}/${twoFrame ? 'anim_front' : 'front'}.png`;
   try {
     const ld = await r.LoadCompressedSpriteSheet(url, MON_PIC_BYTE_OFFSET);
@@ -963,10 +979,10 @@ async function _loadMonFrontPic(
  * 1:1 décomp Pokédex num (SpeciesToPokedexNum :6364) — Hoenn (national off)
  * ========================================================================== */
 
-function _speciesToPokedexNum(speciesEnum: string): number {
-  const e = _dexNumbers?.[speciesEnum];
-  if (!e) return 0xFFFF;
-  return e.hoenn <= _hoennDexCount ? e.hoenn : 0xFFFF;
+function _speciesToPokedexNum(species: number): number {
+  // 1:1 décomp SpeciesToHoennPokedexNum, capé au Hoenn dex count (sinon 0xFFFF).
+  const h = SpeciesToHoennPokedexNum(species);
+  return (h && h <= _hoennDexCount) ? h : 0xFFFF;
 }
 
 /* ============================================================================
@@ -984,13 +1000,16 @@ function _printNotEggInfo(): void {
   const sum = sMon.summary;
   const mon = sMon.currentMon;
   if (!mon) return;
-  const dexNum = _speciesToPokedexNum(sum.species);
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const isShiny = IsShinyOtIdPersonality(mon.otId, mon.personality);
+  const gender = GetGenderFromSpeciesAndPersonality(speciesEnum, mon.personality);
+  const dexNum = _speciesToPokedexNum(sum.species2);
   if (dexNum !== 0xFFFF) {
     // gText_NumberClear01 = "{NO}{CLEAR 1}" (strings.c:210) + dexNum 3-digit
     // leading zeros.
     // 1:1 : StringCopy(gStringVar1, gText_NumberClear01) + ConvertInt 3-digit.
     const dexStr = gText_NumberClear01 + String(dexNum).padStart(3, '0');
-    if (!mon.isShiny) {
+    if (!isShiny) {
       _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER, dexStr, 0, 1, 0, 1);
       _setMonPicBackgroundPalette(false);
     } else {
@@ -1000,7 +1019,7 @@ function _printNotEggInfo(): void {
     _flushWin(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
   } else {
     ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
-    _setMonPicBackgroundPalette(!!mon.isShiny);
+    _setMonPicBackgroundPalette(isShiny);
   }
   // gText_LevelSymbol "N." + level (LEFT_ALIGN) @(24,17) color1, SPECIES win.
   // 1:1 : StringCopy(gStringVar1, gText_LevelSymbol) + ConvertInt level.
@@ -1011,12 +1030,12 @@ function _printNotEggInfo(): void {
   // 1:1 : strArray[0]=CHAR_SLASH (charmap '/', char structurel, pas une
   // string traduisible) ; &strArray[1]=gSpeciesNames[species2] (= déjà
   // extrait via speciesNameFr, zéro hardcode).
-  _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, '/' + mon.speciesNameFr, 0, 1, 0, 1);
+  _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, '/' + (gSpeciesNames[sum.species] ?? ''), 0, 1, 0, 1);
   // 1:1 PrintGenderSymbol (:2805) : sauf NIDORAN_M/F ; ♂ color3 / ♀ color4
   // @(57,17).
-  if (sum.species !== 'SPECIES_NIDORAN_M' && sum.species !== 'SPECIES_NIDORAN_F') {
-    if (mon.monGender === 0) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_MaleSymbol, 57, 17, 0, 3);
-    else if (mon.monGender === 254) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_FemaleSymbol, 57, 17, 0, 4);
+  if (sum.species !== resolveDecompConstant('SPECIES_NIDORAN_M') && sum.species !== resolveDecompConstant('SPECIES_NIDORAN_F')) {
+    if (gender === 0) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_MaleSymbol, 57, 17, 0, 3);
+    else if (gender === 254) _printTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_FemaleSymbol, 57, 17, 0, 4);
   }
   _flushWin(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME);
   _flushWin(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
@@ -1120,12 +1139,12 @@ function _printMonOTID(): void {
 
 function _resolveAbility(): { name: string; description: string } {
   const mon = sMon.currentMon;
-  const sp = mon ? getSpeciesInfo(mon.speciesEnum) : undefined;
+  const sp = mon ? getSpeciesInfo(mon.species) : undefined;
   const abilities = sp?.abilities ?? [];
   const abilNum = sMon.summary.abilityNum;
   let abilityConst = abilities[abilNum] || abilities[0] || '';
   if (!abilityConst || abilityConst === 'ABILITY_NONE') abilityConst = abilities[0] || '';
-  return abilityConst ? getAbility(abilityConst) : { name: mon?.ability ?? '', description: '' };
+  return abilityConst ? getAbility(abilityConst) : { name: '', description: '' };
 }
 
 function _printMonAbilityName(): void {
@@ -1151,8 +1170,8 @@ function _bufferMonTrainerMemo(): void {
   if (dispLevel === 0) dispLevel = 5;
   DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, String(dispLevel));
   const loc = sum.metLocation;
-  const locReal = !!loc && loc !== 'MAPSEC_NONE';
-  if (locReal) DynamicPlaceholderTextUtil_SetPlaceholderPtr(4, GetMapNameHandleAquaHideout(null, loc!));
+  const locReal = loc !== 0;  // MAPSEC_NONE = 0 (dette : id→MAPSEC non résoluble, cf. ledger)
+  if (locReal) DynamicPlaceholderTextUtil_SetPlaceholderPtr(4, GetMapNameHandleAquaHideout(null, reverseDecompConstant(loc, 'MAPSEC_') ?? ''));
   let text: string;
   if (sum.metLevel === 0) text = locReal ? GTEXT_X_NATURE_HATCHED_AT_YZ : GTEXT_X_NATURE_HATCHED_SOMEWHERE_AT;
   else text = locReal ? GTEXT_X_NATURE_MET_AT_YZ : GTEXT_X_NATURE_MET_SOMEWHERE_AT;
@@ -1218,16 +1237,16 @@ function _printInfoPageText(): void {
  * 1:1 décomp page SKILLS (`PrintSkillsPageText` :3301 + helpers)
  * ========================================================================== */
 
-function _itemNameFr(itemEnumOrDexId: string): string {
-  // 1:1 décomp PrintHeldItemName (:3346) : CopyItemName(item) =
-  // gItems[item].name (= nom FR, items.json). "" → gText_None.
-  if (!itemEnumOrDexId) return gText_None;
-  return getItemNameFr(itemEnumOrDexId) || itemEnumOrDexId;
+function _itemNameFr(item: number): string {
+  // 1:1 décomp PrintHeldItemName (:3346) : CopyItemName(item) = gItems[item].name
+  // (= nom FR, items.json). 0 (ITEM_NONE) → gText_None.
+  if (!item) return gText_None;
+  return ItemId_GetName(item) || gText_None;
 }
 
 function _printHeldItemName(): void {
   const sum = sMon.summary;
-  const text = sum.item === '' ? gText_None : _itemNameFr(sum.item);
+  const text = sum.item === 0 ? gText_None : _itemNameFr(sum.item);
   const x = GetStringCenterAlignXOffset(text, 72) + 6;
   _printTextOnWindow(_addWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_HELD_ITEM), text, x, 1, 0, 0);
 }
@@ -1406,7 +1425,7 @@ function _printMoveNameAndPP(moveIndex: number): void {
   _printTextOnWindow(ppValueWid, text, x, moveIndex * 16 + 1, 0, ppState);
 }
 
-function _printMovePowerAndAccuracy(move: string): void {
+function _printMovePowerAndAccuracy(move: number): void {
   // 1:1 décomp PrintMovePowerAndAccuracy (:3562). FillWindowPixelRect efface
   // la colonne VALEURS (x53 w19 h32, = lignes POUVOIR y1 + PRECIS. y17) AVANT
   // de réimprimer — sinon l'ancienne valeur (move précédent) bave sous la
@@ -1420,7 +1439,7 @@ function _printMovePowerAndAccuracy(move: string): void {
   _printTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, text, 53, 17, 0, 0);
 }
 
-function _printMoveDetails(move: string): void {
+function _printMoveDetails(move: number): void {
   const wid = _addWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
   FillWindowPixelBuffer(wid, 0);
   if (move) {
@@ -1448,7 +1467,7 @@ const TILE_FILLED_APPEAL_HEART = 0x103A;
 const TILE_FILLED_JAM_HEART = 0x103C;
 const TILE_EMPTY_JAM_HEART = 0x103D;
 const MAX_CONTEST_MOVE_HEARTS = 8;
-function _drawContestMoveHearts(move: string): void {
+function _drawContestMoveHearts(move: number): void {
   // décomp `bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][1]` = SC1 (offset 0x400).
   const buf = sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES];
   if (!buf || !move) return;
@@ -1965,7 +1984,7 @@ function _createMonSprite(): void {
   });
   _monPicSpriteId = spr.spriteId;
   // 1:1 CreateMonSprite (:3986) : hFlip = !IsMonSpriteNotFlipped (= !noFlip).
-  const noFlip = getSpeciesInfo(mon.speciesEnum)?.noFlip ?? false;
+  const noFlip = getSpeciesInfo(mon.species)?.noFlip ?? false;
   const o = rt.gSprites.get(spr.spriteId);
   if (o) {
     o.hFlip = !noFlip;
@@ -2071,7 +2090,7 @@ function _playMonCryOnce(): void {
   // 1:1 décomp `PlayMonCry` (pokemon_summary_screen.c:3963) : `if (!summary
   // ->isEgg) PlayCry...`. Un œuf NE FAIT PAS le cri du mon à l'intérieur.
   if (!isEgg) {
-    const sp = sMon.currentMon.speciesName;
+    const sp = (reverseDecompConstant(sMon.currentMon.species, 'SPECIES_') ?? 'SPECIES_NONE').replace('SPECIES_', '');
     void import('../system/music').then(({ playCry }) => playCry(sp)).catch(() => { /* cry asset absent */ });
   }
   // PokemonSummaryDoMonAnimation : species2 = SPECIES_EGG si œuf (sprite =
@@ -2079,7 +2098,7 @@ function _playMonCryOnce(): void {
   const rt = getRuntime();
   const monSpr = rt && _monPicSpriteId >= 0 ? rt.gSprites.get(_monPicSpriteId) : null;
   if (monSpr) {
-    const speciesEnum = isEgg ? 'SPECIES_EGG' : sMon.summary.species;
+    const speciesEnum = isEgg ? 'SPECIES_EGG' : (reverseDecompConstant(sMon.summary.species, 'SPECIES_') ?? 'SPECIES_NONE');
     try { PokemonSummaryDoMonAnimation(monSpr, speciesEnum, isEgg, MON_PIC_TILE_BASE, MON_PIC_FRAME_TILES); }
     catch (e) { console.error('[summary] mon anim failed:', e); }
   }
@@ -2489,7 +2508,7 @@ function _taskSlidePowerAccWindow(task: DecompTask): void {
 }
 
 /** 1:1 décomp `PositionAppealJamSlidingWindow` (:2485). */
-function _positionAppealJamSlidingWindow(visibleColumns: number, speed: number, move: string): void {
+function _positionAppealJamSlidingWindow(visibleColumns: number, speed: number, move: number): void {
   const sw = _swAppealJam();
   if (!sw) return;
   if (speed > sw.width) speed = sw.width;
@@ -2502,13 +2521,13 @@ function _positionAppealJamSlidingWindow(visibleColumns: number, speed: number, 
       _slideAppealJamTaskId = rt.CreateTask(_taskSlideAppealJamWindow, 8);
     }
     const t = rt.gTasks.get(_slideAppealJamTaskId);
-    // décomp tMove = data[2] : move stocké en index numérique. On garde le
-    // move courant côté module (string enum) car notre move = string.
+    // décomp tMove = data[2] : move (id u16) ; on garde le move courant côté
+    // module pour le redraw des cœurs au terme du slide.
     if (t) { t.data[0] = speed; t.data[1] = visibleColumns; }
     _slideAppealJamMove = move;
   }
 }
-let _slideAppealJamMove = '';
+let _slideAppealJamMove = 0;
 
 /** 1:1 décomp `Task_SlideAppealJamWindow` (:2505). */
 function _taskSlideAppealJamWindow(task: DecompTask): void {
@@ -2795,7 +2814,7 @@ function _changeSelectedMove(task: DecompTask, direction: number, which: 'first'
   PlaySE(SE_SELECT);
   const moveIndexOld = (which === 'first') ? sMon.firstMoveIndex : sMon.secondMoveIndex;
   let newMoveIndex = moveIndexOld;
-  let move = '';
+  let move = 0;
   for (let i = 0; i < MAX_MON_MOVES; i++) {
     newMoveIndex += direction;
     if (newMoveIndex > task.data[0]) newMoveIndex = 0;
@@ -2820,7 +2839,7 @@ function _changeSelectedMove(task: DecompTask, direction: number, which: 'first'
     ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
     _scheduleBgCopy(0);
     _positionPowerAccSlidingWindow(0, 3);
-    _positionAppealJamSlidingWindow(0, 3, '');
+    _positionAppealJamSlidingWindow(0, 3, 0);
   }
   if (which === 'first') sMon.firstMoveIndex = newMoveIndex;
   else sMon.secondMoveIndex = newMoveIndex;
@@ -2833,7 +2852,7 @@ function _closeMoveSelectMode(task: DecompTask): void {
   _destroyMoveSelectorSprites(SEL1);
   ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_SWITCH);
   PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
-  _printMoveDetails('');
+  _printMoveDetails(0);
   _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES], 3, true);
   _tilemapFiveMovesDisplay(sMon.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES], 1, true);
   _addAndFillMoveNamesWindow();
@@ -2841,7 +2860,7 @@ function _closeMoveSelectMode(task: DecompTask): void {
     ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
     ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
     _positionPowerAccSlidingWindow(0, 3);
-    _positionAppealJamSlidingWindow(0, 3, '');
+    _positionAppealJamSlidingWindow(0, 3, 0);
   }
   _scheduleBgCopy(0); _scheduleBgCopy(1); _scheduleBgCopy(2);
   task.func = Task_Summary_HandleInput;
@@ -2894,14 +2913,18 @@ function _exitMovePositionSwitchMode(task: DecompTask, swapMoves: boolean): void
   task.func = Task_HandleInput_MoveSelect;
 }
 
-/** 1:1 décomp `SwapMonMoves` (:2115). Notre PokemonInstance.moves[] porte
- *  {id,nameFr,pp,ppMax} → swap des slots = 1:1 observable (le ppMax par slot
- *  remplace le calcul ppBonuses/CalculatePPWithBonus du décomp). currentMon
- *  = l'objet party persistant (mutation = SetMonData). */
-function _swapMonMoves(mon: PokemonInstance, i1: number, i2: number): void {
+/** 1:1 décomp `SwapMonMoves` (:2115) — swap MON_DATA_MOVEx + PPx + les 2 bits
+ *  ppBonuses du slot, sur le Pokemon NATIF (gPlayerParty = persistant, plus de
+ *  vue → le réordre n'est plus perdu), puis la struct summary d'affichage. */
+function _swapMonMoves(mon: Pokemon, i1: number, i2: number): void {
   const sum = sMon.summary;
-  const m1 = mon.moves[i1], m2 = mon.moves[i2];
-  mon.moves[i1] = m2; mon.moves[i2] = m1;
+  const m1 = mon.moves[i1]; mon.moves[i1] = mon.moves[i2]; mon.moves[i2] = m1;
+  const p1 = mon.pp[i1]; mon.pp[i1] = mon.pp[i2]; mon.pp[i2] = p1;
+  const mask = 3;                                  // 2 bits ppBonuses / slot
+  const b1 = (mon.ppBonuses >> (2 * i1)) & mask;
+  const b2 = (mon.ppBonuses >> (2 * i2)) & mask;
+  mon.ppBonuses = (mon.ppBonuses & ~((mask << (2 * i1)) | (mask << (2 * i2))))
+    | (b2 << (2 * i1)) | (b1 << (2 * i2));
   const sm = sum.moves[i1]; sum.moves[i1] = sum.moves[i2]; sum.moves[i2] = sm;
   const sp = sum.pp[i1]; sum.pp[i1] = sum.pp[i2]; sum.pp[i2] = sp;
   const spm = sum.ppMax[i1]; sum.ppMax[i1] = sum.ppMax[i2]; sum.ppMax[i2] = spm;
@@ -2911,10 +2934,11 @@ function _swapMonMoves(mon: PokemonInstance, i1: number, i2: number): void {
 
 /** 1:1 décomp `IsMoveHm` (party_menu.c:4694) — les 8 dernières entrées de
  *  sTMHMMoves (NUM_HIDDEN_MACHINES) sont des CS (HM01-08). */
-function _isMoveHm(move: string): boolean {
+function _isMoveHm(move: number): boolean {
   const NUM_HIDDEN_MACHINES = 8;
   for (let i = 0; i < NUM_HIDDEN_MACHINES; i++) {
-    if (sTMHMMoves[sTMHMMoves.length - NUM_HIDDEN_MACHINES + i] === move) return true;
+    const hm = sTMHMMoves[sTMHMMoves.length - NUM_HIDDEN_MACHINES + i];
+    if ((resolveDecompConstant(hm) ?? -1) === move) return true;
   }
   return false;
 }
@@ -2940,7 +2964,7 @@ function _showCantForgetHMsWindow(task: DecompTask): void {
   ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
   _scheduleBgCopy(0);
   _positionPowerAccSlidingWindow(0, 3);
-  _positionAppealJamSlidingWindow(0, 3, '');
+  _positionAppealJamSlidingWindow(0, 3, 0);
   _printHMMovesCantBeForgotten();
   task.func = Task_HandleInputCantForgetHMsMoves;
 }
@@ -3043,10 +3067,12 @@ export function ShowSelectMovePokemonSummaryScreen(
   callback: (() => void) | null, newMove: string,
 ): void {
   if (_isOpen) return;
-  _monList = monList;
+  // Frontière transitoire : monList = vues ; on travaille sur gPlayerParty.
+  void monList;
+  _monList = gPlayerParty;
   sMon.curMonIndex = monIndex;
   sMon.maxMonIndex = maxMonIndex;
-  sMon.currentMon = monList[monIndex] ?? null;
+  sMon.currentMon = gPlayerParty[monIndex] ?? null;
   // 1:1 :1126-1130 — SELECT_MOVE : pages BATTLE_MOVES..CONTEST_MOVES, lockMonFlag.
   sMon.mode = SUMMARY_MODE_SELECT_MOVE;
   sMon.minPageIndex = PSS_PAGE_BATTLE_MOVES;
@@ -3057,7 +3083,7 @@ export function ShowSelectMovePokemonSummaryScreen(
   sMon.lockMovesFlag = false;
   sMon.firstMoveIndex = 0;
   sMon.secondMoveIndex = 0;
-  sMon.newMove = newMove;
+  sMon.newMove = newMove ? (resolveDecompConstant(newMove) ?? 0) : 0;
   sMon.callback = callback ?? null;
   _moveSlotToReplace = 0;
   void _loadAssets().then(() => {
@@ -3308,12 +3334,14 @@ export function GetSummaryLastMonIndex(): number {
  *  callback = retour party menu (sMonSummaryScreen->callback). */
 export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): void {
   if (_isOpen) return;
-  // monList = party courante ; curMonIndex = slot du mon.
-  _monList = (gSaveBlock1Ptr.playerParty as PokemonInstance[]) ?? [];
-  const idx = _monList.indexOf(mon);
+  // Frontière transitoire : party-screen passe encore une VUE PokemonInstance.
+  // On résout son index dans la party de vues → source réelle = gPlayerParty.
+  const views = (gSaveBlock1Ptr.playerParty as PokemonInstance[]) ?? [];
+  const idx = views.indexOf(mon);
+  _monList = gPlayerParty;
   sMon.curMonIndex = idx >= 0 ? idx : 0;
-  sMon.maxMonIndex = Math.max(0, _monList.length - 1);
-  sMon.currentMon = mon;
+  sMon.maxMonIndex = Math.max(0, views.length - 1);
+  sMon.currentMon = gPlayerParty[sMon.curMonIndex] ?? null;
   sMon.currPageIndex = PSS_PAGE_INFO;
   sMon.minPageIndex = PSS_PAGE_INFO;
   sMon.maxPageIndex = PSS_PAGE_CONTEST_MOVES;
@@ -3321,7 +3349,7 @@ export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): 
   sMon.mode = SUMMARY_MODE_NORMAL;
   // 1:1 décomp : flux party→RÉSUME = mode NORMAL → pas de nouveau move,
   // réordre autorisé (lockMovesFlag FALSE), curseurs réinitialisés.
-  sMon.newMove = '';
+  sMon.newMove = 0;
   sMon.lockMovesFlag = false;
   sMon.firstMoveIndex = 0;
   sMon.secondMoveIndex = 0;
@@ -3340,6 +3368,13 @@ export function OpenSummaryScreen(mon: PokemonInstance, callback?: () => void): 
 export function CloseSummaryScreen(): void {
   _beginCloseSummaryScreen();
 }
+
+// Debug-only (P3-M) : vérif déterministe de l'extraction ids-purs. Extrait un
+// slot gPlayerParty → renvoie sMon.summary (species/moves/item = ids).
+(globalThis as Record<string, unknown>).__summaryDebugExtract = (slot: number): SummaryData => {
+  _extractMonData(gPlayerParty[slot]);
+  return sMon.summary;
+};
 
 /** Debug-only : snapshot état scroll/BG pour diagnostiquer désync. */
 export function __summaryDebugState(): Record<string, unknown> {
