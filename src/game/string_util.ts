@@ -607,7 +607,18 @@ export function StripExtCtrlCodes(str: Uint8Array): void {
  * `EXT_CTRL_CODE_BEGIN(0xFC) <code> [args]` copié tel quel (0..3 args selon le code).
  * Sémantique pointeur `u8*` = vue `Uint8Array.subarray`. Retourne le ptr sur le EOS final.
  */
-export function StringExpandPlaceholders(dest: Uint8Array, src: Uint8Array): Uint8Array {
+// Pont transitoire (chantier texte) : les textes PRÉ-CAMION (main_menu / intro
+// Birch) ne sont PAS encore migrés byte-level → ils passent encore des `string`
+// (cf. gText_Birch_* dans gba-global-scope). On les encode ici via `encodeOwText`,
+// chargé en DIFFÉRÉ pour ne pas tirer le module `text` (lourd) dans ce module
+// foundational (leçon menu_helpers) ; l'import est résolu pendant le boot, bien
+// avant tout appel runtime (l'intro vient après le main menu). À terme : migrer
+// ces callers en bytes (chantier texte pré-camion).
+let _encodeOwTextForExpand: ((s: string) => Uint8Array) | null = null;
+void import('./text').then((m) => { _encodeOwTextForExpand = m.encodeOwText; });
+
+export function StringExpandPlaceholders(dest: Uint8Array, src: Uint8Array | string): Uint8Array {
+  if (typeof src === 'string') src = _encodeOwTextForExpand ? _encodeOwTextForExpand(src) : new Uint8Array([EOS]);
   for (;;) {
     let c = src[0]; src = src.subarray(1);                   // u8 c = *src++;
 
