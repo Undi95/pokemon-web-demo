@@ -124,10 +124,53 @@ function coverOpcodes() {
   return { present, missing, total: names.length };
 }
 
+// (e) MOVE_EFFECT_* : par VALEUR — set-move-effect.ts gère via `eff === N` / ranges /
+// logique status (0-14), PAS par nom (comme la décomp). NOTHING_* = no-op 1:1.
+function coverMoveEffect() {
+  const re = /#define\s+(MOVE_EFFECT_\w+)\s+(0x[0-9A-Fa-f]+|\d+)/g;
+  const txt = read(join(decompInc, 'battle.h'));
+  const decomp = []; let m;
+  while ((m = re.exec(txt))) {
+    const val = m[2].startsWith('0x') ? parseInt(m[2], 16) : Number(m[2]);
+    if (val < 0x40 && m[1] !== 'MOVE_EFFECT_BYTE') decomp.push({ name: m[1], val }); // exclut flags AFFECTS_USER/CERTAIN
+  }
+  const sme = readPort('engine/battle/set-move-effect.ts');
+  const handled = new Set();
+  for (let i = 0; i <= 14; i++) handled.add(i); // logique status primaires (0-14)
+  for (const mm of sme.matchAll(/eff === (\d+)/g)) handled.add(Number(mm[1]));
+  for (const mm of sme.matchAll(/eff >= (\d+) && eff <= (\d+)/g))
+    for (let i = Number(mm[1]); i <= Number(mm[2]); i++) handled.add(i);
+  const present = [], missing = [];
+  for (const { name, val } of decomp)
+    (handled.has(val) || /NOTHING/.test(name) ? present : missing).push(name);
+  return { present, missing, total: decomp.length };
+}
+
+// (f) HOLD_EFFECT_* : par VALEUR — type-power via _sHoldEffectToType (damage-calc),
+// reste par nom/valeur dans item-battle-effects/end-turn-effects/item-hold-effects.
+// Les hold effects d'ÉVOLUTION/OW (DRAGON_SCALE/UP_GRADE/PREVENT_EVOLVE/REPEL) restent
+// hors périmètre COMBAT (gérés evolution.c / overworld) → légitimement non couverts ici.
+function coverHoldEffect() {
+  const re = /#define\s+(HOLD_EFFECT_\w+)\s+(0x[0-9A-Fa-f]+|\d+)/g;
+  const txt = read(join(decompInc, 'hold_effects.h'));
+  const decomp = []; let m;
+  while ((m = re.exec(txt))) decomp.push({ name: m[1], val: m[2].startsWith('0x') ? parseInt(m[2], 16) : Number(m[2]) });
+  const handled = new Set();
+  const dc = readPort('engine/battle/damage-calc.ts');
+  for (const mm of dc.matchAll(/\[(\d+),\s*\d+\]/g)) handled.add(Number(mm[1])); // _sHoldEffectToType
+  for (const f of ['engine/battle/item-battle-effects.ts', 'engine/battle/end-turn-effects.ts', 'engine/battle/data/item-hold-effects.ts']) {
+    for (const mm of readPort(f).matchAll(/holdEffect === (\d+)/g)) handled.add(Number(mm[1]));
+  }
+  const present = [], missing = [];
+  for (const { name, val } of decomp)
+    (handled.has(val) || portTokens.has(name) ? present : missing).push(name);
+  return { present, missing, total: decomp.length };
+}
+
 const cats = [
   { key: 'EFFECT (move)', cov: coverEffect(), note: 'jump-table gBattleScriptsForMoveEffects → labels bytecode' },
-  { key: 'MOVE_EFFECT (secondary)', cov: coverByName(defines(join(decompInc, 'battle.h'), 'MOVE_EFFECT_')), note: 'nom dans le code combat' },
-  { key: 'HOLD_EFFECT', cov: coverByName(defines(join(decompInc, 'hold_effects.h'), 'HOLD_EFFECT_')), note: 'nom dans le code combat' },
+  { key: 'MOVE_EFFECT (secondary)', cov: coverMoveEffect(), note: 'par valeur dans set-move-effect.ts (eff===N / ranges)' },
+  { key: 'HOLD_EFFECT', cov: coverHoldEffect(), note: 'par valeur _sHoldEffectToType + item-effects ; évo/OW hors combat' },
   { key: 'ABILITY', cov: coverByName(defines(join(decompInc, 'abilities.h'), 'ABILITY_')), note: 'nom dans le code combat' },
   { key: 'STRINGID', cov: coverStringId(), note: 'table de strings extraite (STRINGID_NAMES)' },
   { key: 'Opcodes Cmd_*', cov: coverOpcodes(), note: 'OPCODE_NAMES + impl' },
