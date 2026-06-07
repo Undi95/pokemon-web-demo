@@ -431,7 +431,12 @@ export function BtlController_EmitPrintSelectionString(bufferId: number, stringI
 }
 
 /** 1:1 signature décomp `BtlController_EmitEndLinkBattle(buf, outcome)`. */
-export function BtlController_EmitEndLinkBattle(_bufferId: number, outcome: number): void {
+export function BtlController_EmitEndLinkBattle(bufferId: number, outcome: number): void {
+  // 1:1 décomp battle_controllers.c:1576-1583 : [ENDLINKBATTLE, outcome, disableRecord,
+  // disableRecord, record bytes…]. disableRecordBattle + RecordedBattle_BufferNewBattlerData
+  // = dette R3 → 0 (link/recorded only, jamais atteint en wild solo). Écrit bufferA[0]
+  // pour le dispatch (cf. [[EmitGetMonData]]). 6 bytes.
+  _emitToBufferA(bufferId, [CONTROLLER_ENDLINKBATTLE, outcome & 0xFF, 0, 0, 0, 0]);
   enqueueBattleEvent({
     type: CONTROLLER_ENDLINKBATTLE,
     battler: gActiveBattler,
@@ -451,8 +456,15 @@ export function BtlController_EmitBattleAnimation(bufferId: number, animationId:
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitStatusIconUpdate(buf, status1, status2)`. */
-export function BtlController_EmitStatusIconUpdate(_bufferId: number, status1: number, status2: number): void {
+/** 1:1 décomp `BtlController_EmitStatusIconUpdate` (battle_controllers.c:1284-1296).
+ *  [STATUSICONUPDATE, status1 u32 LE, status2 u32 LE] (9 bytes). Écrit bufferA[0]
+ *  pour le dispatch (cf. [[EmitGetMonData]] : sans ça, résidu = mauvais handler). */
+export function BtlController_EmitStatusIconUpdate(bufferId: number, status1: number, status2: number): void {
+  _emitToBufferA(bufferId, [
+    CONTROLLER_STATUSICONUPDATE,
+    status1 & 0xFF, (status1 >> 8) & 0xFF, (status1 >> 16) & 0xFF, (status1 >> 24) & 0xFF,
+    status2 & 0xFF, (status2 >> 8) & 0xFF, (status2 >> 16) & 0xFF, (status2 >> 24) & 0xFF,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_STATUSICONUPDATE,
     battler: gActiveBattler,
@@ -663,8 +675,12 @@ export function BtlController_EmitChoosePokemon(
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitLinkStandbyMsg(buf, mode, frame)`. */
-export function BtlController_EmitLinkStandbyMsg(_bufferId: number, mode: number, frame: boolean): void {
+/** 1:1 décomp `BtlController_EmitLinkStandbyMsg` (battle_controllers.c:1555-1567).
+ *  [LINKSTANDBYMSG, mode, record?, record?] (4 bytes hors recorded). `record`
+ *  (= notre param `frame`) déclenche RecordedBattle_BufferNewBattlerData = dette R3
+ *  → 0. Écrit bufferA[0] pour le dispatch (cf. [[EmitGetMonData]]). */
+export function BtlController_EmitLinkStandbyMsg(bufferId: number, mode: number, frame: boolean): void {
+  _emitToBufferA(bufferId, [CONTROLLER_LINKSTANDBYMSG, mode & 0xFF, 0, 0]);
   enqueueBattleEvent({
     type: CONTROLLER_LINKSTANDBYMSG,
     battler: gActiveBattler,
@@ -682,7 +698,11 @@ export function BtlController_EmitCantSwitch(bufferId: number): void {
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)`. */
+/** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)` (battle_controllers.c:1210-1217 :
+ *  [YESNOBOX ×4], 4 bytes). ⚠️ DETTE : reste no-op (n'écrit pas bufferA[0]). À lever :
+ *  vérifier que notre CONTROLLER_UNKNOWNYESNOBOX (0x13) correspond bien à CONTROLLER_YESNOBOX
+ *  de la décomp (et non CONTROLLER_23) avant d'écrire le buffer. Non atteint en wild solo
+ *  (shift-style / safari / capture yes-no), donc le résidu de buffer n'a pas encore mordu. */
 export function BtlController_EmitYesNoBox(_bufferId: number): void {
   enqueueBattleEvent({
     type: CONTROLLER_UNKNOWNYESNOBOX,
@@ -690,8 +710,11 @@ export function BtlController_EmitYesNoBox(_bufferId: number): void {
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitSwitchInAnim(buf, partyId, dontClear)`. */
-export function BtlController_EmitSwitchInAnim(_bufferId: number, partyId: number, dontClear: number): void {
+/** 1:1 décomp `BtlController_EmitSwitchInAnim` (battle_controllers.c:1019-1026).
+ *  [SWITCHINANIM, partyId, dontClearSubstituteBit, 5] (4 bytes). Écrit bufferA[0]
+ *  pour le dispatch (cf. [[EmitGetMonData]]). */
+export function BtlController_EmitSwitchInAnim(bufferId: number, partyId: number, dontClear: number): void {
+  _emitToBufferA(bufferId, [CONTROLLER_SWITCHINANIM, partyId & 0xFF, dontClear & 0xFF, 5]);
   enqueueBattleEvent({
     type: CONTROLLER_SWITCHINANIM,
     battler: gActiveBattler,
