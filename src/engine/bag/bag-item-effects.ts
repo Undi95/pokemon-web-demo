@@ -17,7 +17,7 @@
  * status), (4) friendship sub-states.
  */
 
-import { type Pokemon, CalculateMonStats } from '../battle/party-storage';
+import { type Pokemon, CalculateMonStats, CalculatePPWithBonus } from '../battle/party-storage';
 import { gBattleMoves, gSpeciesInfo, getExperienceForLevel } from '../data/game-data';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
@@ -227,9 +227,8 @@ const _PP_UP_ADD_VALUES = [0x01, 0x04, 0x10, 0x40];
  *  basePP + (basePP * 20 * bonusBits / 100). basePP = `gBattleMoves[move].pp`
  *  (table id F2 — plus de hack `_basePPPerSlot`/ppMax reverse-calc). */
 function _calculatePPWithBonus(mon: Pokemon, moveIndex: number, ppBonuses: number): number {
-  const basePP = gBattleMoves[mon.moves[moveIndex]]?.pp ?? 0;
-  const currentBonusBits = (ppBonuses & _PP_UP_GET_MASK[moveIndex]) >> (moveIndex * 2);
-  return basePP + Math.floor((basePP * 20 * currentBonusBits) / 100);
+  // Délègue au canonique 1:1 (party-storage) — adaptateur de signature mon-based.
+  return CalculatePPWithBonus(mon.moves[moveIndex], ppBonuses, moveIndex);
 }
 
 /** EV courant par EvKey (champ natif Pokemon, 1:1 MON_DATA_*_EV). */

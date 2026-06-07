@@ -66,7 +66,7 @@ import {
   BIT_FLANK, BATTLE_PARTNER,
 } from './constants';
 import { GetBattlerPosition, GetBattlerAtPosition } from './util';
-import { getBattleMove } from './data/battle-moves';
+import { CalculatePPWithBonus } from './party-storage';
 
 // ─── STATE enum 1:1 décomp (4116-4127) ─────────────────────────────────────
 
@@ -294,18 +294,11 @@ function _TrySetCantSelectMoveBattleScript(): boolean {
   return false;
 }
 
-/** 1:1 décomp `gPPUpGetMask[MAX_MON_MOVES]` (pokemon.c) : masque 2 bits par slot. */
-const _gPPUpGetMask = [0x03, 0x0C, 0x30, 0xC0];
-
-/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c) :
- *  `basePP + (basePP * 20 * nbPPUp) / 100`, nbPPUp = `(gPPUpGetMask[idx] &
- *  ppBonuses) >> (2*idx)` (0..3), basePP = `gBattleMoves[move].pp`.
- *  AVANT : stub → 35 fixe → max PP faux pour tout move ≠35 PP (ex Leer affiché
- *  « 30/35 » au lieu de « 30/30 »). */
+/** Délègue au canonique 1:1 `CalculatePPWithBonus` (party-storage). Source unique
+ *  de la formule (basePP + basePP*20*nbPPUp/100, basePP=gBattleMoves[move].pp).
+ *  Nom local conservé pour les call-sites (maxPp du menu de moves). */
 function _CalculatePPWithBonus(move: number, ppBonuses: number, idx: number): number {
-  const basePP = getBattleMove(move).pp;
-  const ppUps = (_gPPUpGetMask[idx] & ppBonuses) >> (2 * idx);
-  return (basePP + Math.floor((basePP * 20 * ppUps) / 100)) & 0xFF;
+  return CalculatePPWithBonus(move, ppBonuses, idx);
 }
 
 /** 1:1 décomp `ABILITY_ON_OPPOSING_FIELD(battler, ability)`. */

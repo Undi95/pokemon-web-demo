@@ -59,7 +59,7 @@ import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { getString } from './gba-strings';
 import { loadGbaPal, loadTilemapBin, loadTileBin } from '../gba/png-loader';
 import { OBJ_PLTT_ID, BG_PLTT_ID } from '../system/decomp-runtime';
-import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
+import { gPlayerParty, GetMonData, MON_DATA_RIBBON_COUNT, CalculatePlayerPartyCount, CalculatePPWithBonus, type Pokemon } from '../battle/party-storage';
 import { IsShinyOtIdPersonality } from '../../game/pokemon';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon/pokemon';
 import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
@@ -837,9 +837,7 @@ function _loadSummaryGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
 /** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c) —
  *  basePP + basePP*20*bonus/100. bonus = 2 bits/slot dans ppBonuses. */
 function _calcPpWithBonus(move: number, ppBonuses: number, idx: number): number {
-  const basePP = gBattleMoves[move]?.pp ?? 0;
-  const bonus = (ppBonuses >> (2 * idx)) & 3;
-  return basePP + Math.floor((basePP * 20 * bonus) / 100);
+  return CalculatePPWithBonus(move, ppBonuses, idx);  // canonique 1:1 (party-storage)
 }
 
 /** 1:1 décomp `GetAilmentFromStatus(u32 status)` (party_menu.c:4694) — status1

@@ -35,7 +35,6 @@ import { GetCurrentMap } from '../save/load_save';
 import { CheckForPlayersHouseNews as _CheckForPlayersHouseNews } from '../ui/tv-screen';
 import { setStringVar } from '../system/string-buffers';
 import { SPECIES_WAILORD, SPECIES_RELICANTH, SPECIES_DODRIO } from '../decomp-data/include/constants/species-data';
-import { TYPE_GRASS } from '../decomp-data/include/constants/pokemon-data';
 import { ITEM_MACH_BIKE, ITEM_ACRO_BIKE, ITEM_ENIGMA_BERRY } from '../decomp-data/include/constants/items-data';
 import { OBJ_EVENT_GFX_BARD } from '../decomp-data/include/constants/event_objects-data';
 import { GIDDY_MAX_TALES, MAX_MON_MOVES, PARTY_SIZE } from '../decomp-data/include/constants/global-data';
@@ -48,8 +47,17 @@ import { ShowFieldMessage } from '../field/field-message-box';
 import { gStringVar4 } from '../ui/gba-text-system';
 import { Random } from '../system/random';
 import { reverseDecompConstant } from '../system/decomp-constants';
-import { CheckPartyPokerus, GetMonData as _GetMonData, MON_DATA_MOVE1 as _MON_DATA_MOVE1 } from '../battle/party-storage';
+import {
+  CheckPartyPokerus, gPlayerParty, CalculatePlayerPartyCount, CalculatePPWithBonus,
+  GetMonData as _GetMonData, SetMonData,
+  MON_DATA_MOVE1 as _MON_DATA_MOVE1,
+  MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_STATUS,
+  MON_DATA_PP1, MON_DATA_PP_BONUSES,
+  MON_DATA_FRIENDSHIP, MON_DATA_NICKNAME, MON_DATA_IS_EGG, MON_DATA_OT_NAME, MON_DATA_OT_ID,
+  MON_DATA_HELD_ITEM,
+} from '../battle/party-storage';
 import type { Pokemon as _PartyPokemon } from '../battle/party-storage';
+import { gSpeciesNames, gSpeciesInfo } from '../data/game-data';
 import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
@@ -109,17 +117,27 @@ registerSpecial('BufferBigGuyOrBigGirlString', () => {
  *  restaure donc à `ppMax`, conséquence de ce défèrement systémique, PAS
  *  un raccourci local. Porter ppBonuses + CalculatePPWithBonus =
  *  chantier data-model séparé (supervisé). */
-registerSpecial('HealPlayerParty', () => {
-  for (const mon of gSaveBlock1Ptr.playerParty) {
-    if (!mon) continue;
-    mon.currentHp = mon.maxHp;
-    mon.status = null;
-    for (const mv of mon.moves) {
-      mv.pp = mv.ppMax;
+/** 1:1 décomp `HealPlayerParty` (party_menu.c) : pour chaque mon (< partyCount) :
+ *  HP = MAX_HP ; chaque move : PP = CalculatePPWithBonus(move, ppBonuses, j) ;
+ *  STATUS = 0. Opère sur gPlayerParty + GetMonData/SetMonData (1:1).
+ *  ⚠️ Corrige le bug latent de l'ancienne version : `mv.pp = mv.ppMax` sur les
+ *  VUES nested (`mon.moves[i].pp`) n'était PAS propagé au modèle natif. */
+function _healPlayerParty(): void {
+  const count = CalculatePlayerPartyCount();
+  for (let i = 0; i < count; i++) {
+    const mon = gPlayerParty[i];
+    const maxHP = _GetMonData(mon, MON_DATA_MAX_HP) as number;
+    SetMonData(mon, MON_DATA_HP, maxHP);
+    const ppBonuses = _GetMonData(mon, MON_DATA_PP_BONUSES) as number;
+    for (let j = 0; j < MAX_MON_MOVES; j++) {
+      const pp = CalculatePPWithBonus(_GetMonData(mon, _MON_DATA_MOVE1 + j) as number, ppBonuses, j);
+      SetMonData(mon, MON_DATA_PP1 + j, pp);
     }
+    SetMonData(mon, MON_DATA_STATUS, 0);
   }
-  console.log(`[special HealPlayerParty] healed ${gSaveBlock1Ptr.playerParty.length} mons`);
-});
+  console.log(`[special HealPlayerParty] healed ${count} mons (1:1 gPlayerParty)`);
+}
+registerSpecial('HealPlayerParty', _healPlayerParty);
 
 /** 1:1 décomp `ChooseStarter` (battle_setup.c:911) :
  *  ```c
@@ -174,11 +192,9 @@ registerSpecial('GetBattleOutcome', () => {
  *    return gPlayerPartyCount;
  *  Recompute + sync cache. Évite la dérive si le cache n'a pas été update. */
 registerSpecial('CalculatePlayerPartyCount', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  let count = 0;
-  while (count < 6 && party[count] && party[count].speciesId !== 0) {
-    count++;
-  }
+  // 1:1 décomp `CalculatePlayerPartyCount` (pokemon.c) : compte gPlayerParty tant
+  // que MON_DATA_SPECIES != SPECIES_NONE. + sync le cache save (legacy).
+  const count = CalculatePlayerPartyCount();
   gSaveBlock1Ptr.playerPartyCount = count;
   return count;
 });
@@ -303,21 +319,26 @@ registerSpecial('RemoveAllWeatherPokemonItemEffect', () => {
  *
  *  Notre projet : FR-only (= tous mons GAME_LANGUAGE). Compare nickname vs
  *  speciesNameFr. Si match → FALSE (= pas renommé), sinon TRUE. */
-registerSpecial('IsLeadMonNicknamed', () => {
-  // GetLeadMonIndex = 1st non-egg non-empty slot.
-  const party = gSaveBlock1Ptr.playerParty;
-  let leadIdx = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg) {
-      leadIdx = i;
-      break;
+/** 1:1 décomp `GetLeadMonIndex` (pokemon.c) : 1er slot non-egg non-empty, sinon 0.
+ *  Opère sur gPlayerParty + GetMonData(SPECIES/IS_EGG). */
+function _GetLeadMonIndex(): number {
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number)) {
+      return i;
     }
   }
-  const lead = party[leadIdx];
-  if (!lead) return 0;
-  // Compare nickname vs speciesNameFr (= GAME_LANGUAGE assumed).
-  return lead.nickname === lead.speciesNameFr ? 0 : 1;
+  return 0;
+}
+
+registerSpecial('IsLeadMonNicknamed', () => {
+  // 1:1 décomp IsPartyMonNicknamedOrNotEnglish(GetLeadMonIndex()) (tv.c) :
+  // compare nickname vs gSpeciesNames[species] (= GAME_LANGUAGE FR assumé).
+  const mon = gPlayerParty[_GetLeadMonIndex()];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 0;
+  const nickname = _GetMonData(mon, MON_DATA_NICKNAME) as string;
+  const speciesName = gSpeciesNames[_GetMonData(mon, MON_DATA_SPECIES) as number] ?? '';
+  return nickname === speciesName ? 0 : 1;
 });
 
 /** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
@@ -352,10 +373,10 @@ registerSpecial('ChangePokemonNickname', () => {
 /** 1:1 décomp `BufferLeadMonSpeciesName` (pokemon_util.c).
  *  Sets gStringVar1 to lead party mon species name. Used by scripts post-battle. */
 registerSpecial('BufferLeadMonSpeciesName', () => {
-  const lead = gSaveBlock1Ptr.playerParty[0];
-  if (lead && lead.speciesNameFr) {
-    setStringVar(1, lead.speciesNameFr);
-  }
+  // 1:1 décomp : StringCopy(gStringVar1, gSpeciesNames[GetMonData(&gPlayerParty[0], MON_DATA_SPECIES)]).
+  const mon = gPlayerParty[0];
+  const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
+  if (species !== 0) setStringVar(1, gSpeciesNames[species] ?? '');
 });
 
 // ─── PC effects (= used by post-rival-battle when player visits Birch's lab) ─
@@ -526,14 +547,7 @@ registerSpecial('PlayerFaceTrainerAfterBattle', () => { /* no-op */ });
 // ─── Additional commonly-used early-game specials ───────────────────────────
 
 /** 1:1 décomp `ScrSpecial_HealPlayerParty` (= alias of HealPlayerParty). */
-registerSpecial('ScrSpecial_HealPlayerParty', () => {
-  for (const mon of gSaveBlock1Ptr.playerParty) {
-    if (!mon) continue;
-    mon.currentHp = mon.maxHp;
-    mon.status = null;
-    for (const mv of mon.moves) mv.pp = mv.ppMax;
-  }
-});
+registerSpecial('ScrSpecial_HealPlayerParty', _healPlayerParty);
 
 // `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390) — porté ci-bas avec
 // real body (= sum 6 EVs >= MAX_TOTAL_EVS=510). Stub supprimé.
@@ -555,29 +569,29 @@ registerSpecial('Special_StartLegendaryBattle', () => {
  *  loop autres mons party + check chacun (= si trouvé, FALSE). Si aucun autre
  *  mon n'a le move, check storage (PC boxes). Set result = TRUE seulement si
  *  c'est le dernier qui sait le HM-move. */
+/** HM field-move name (arg de _isLastMonThatKnowsMove) → constante MOVE_ décomp. */
+const _HM_MOVE_CONST: Record<string, string> = {
+  surf: 'MOVE_SURF', cut: 'MOVE_CUT', dive: 'MOVE_DIVE', rocksmash: 'MOVE_ROCK_SMASH',
+  fly: 'MOVE_FLY', waterfall: 'MOVE_WATERFALL', strength: 'MOVE_STRENGTH', flash: 'MOVE_FLASH',
+};
 function _isLastMonThatKnowsMove(moveIdString: string): number {
   const slot = VarGet('VAR_0x8004');
   const moveSlot = VarGet('VAR_0x8005');
-  const mon = gSaveBlock1Ptr.playerParty[slot];
-  if (!mon || !mon.moves[moveSlot]) return 0;
-  if (mon.moves[moveSlot].id !== moveIdString) return 0;
-  // Loop other party slots, check si autre mon a le même move
-  const party = gSaveBlock1Ptr.playerParty;
-  let partyCount = 0;
-  for (let i = 0; i < 6; i++) {
-    if (party[i] && party[i].speciesId !== 0) partyCount++;
-  }
+  // moveIdString ('surf'…) → id MOVE_ numérique (1:1 : on compare des ids de move).
+  const moveId = resolveDecompConstant(_HM_MOVE_CONST[moveIdString] ?? '') ?? 0;
+  const mon = gPlayerParty[slot];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 0;
+  if ((_GetMonData(mon, _MON_DATA_MOVE1 + moveSlot) as number) !== moveId) return 0;
+  // Loop les autres slots party : si un autre mon connaît le même move → pas le dernier.
+  const partyCount = CalculatePlayerPartyCount();
   for (let i = 0; i < partyCount; i++) {
     if (i === slot) continue;
-    const m = party[i];
-    if (!m) continue;
-    for (let j = 0; j < 4; j++) {
-      if (m.moves[j] && m.moves[j].id === moveIdString) return 0;
+    const m = gPlayerParty[i];
+    for (let j = 0; j < MAX_MON_MOVES; j++) {
+      if ((_GetMonData(m, _MON_DATA_MOVE1 + j) as number) === moveId) return 0;
     }
   }
-  // Dette R3 : check storage PC (AnyStorageMonWithMove). Notre projet :
-  // skip car AnyStorageMonWithMove pas porté → return TRUE (= safe :
-  // permet pas de deleter HM si dernier party, même si user a un dans PC).
+  // Dette R3 : check storage PC (AnyStorageMonWithMove) pas porté → return TRUE.
   return 1;
 }
 registerSpecial('IsLastMonThatKnowsSurf', () => _isLastMonThatKnowsMove('surf'));
@@ -617,8 +631,8 @@ registerSpecial('GetGameStat', () => {
  *  for Birch tutorial battle if party is empty. */
 registerSpecial('PutZigzagoonInPlayerParty', () => {
   // For our flow, we already have a Pokemon from ChooseStarter. If party is
-  // empty (= dev test), add a Zigzagoon.
-  if (gSaveBlock1Ptr.playerPartyCount === 0) {
+  // empty (= dev test), add a Zigzagoon. 1:1 count via CalculatePlayerPartyCount.
+  if (CalculatePlayerPartyCount() === 0) {
     void (async () => {
       const { createPokemonInstance, GiveMonToPlayer } = await import('../pokemon/pokemon');
       const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
@@ -677,17 +691,12 @@ registerSpecial('IsStarterInParty', () => {
   const STARTER_BY_INDEX = [277 /* TREECKO */, 280 /* TORCHIC */, 283 /* MUDKIP */];
   const starterIdx = VarGet('VAR_STARTER_MON') ?? 0;
   const starter = STARTER_BY_INDEX[starterIdx] ?? STARTER_BY_INDEX[0];
-  const party = gSaveBlock1Ptr.playerParty;
-  let partyCount = 0;
-  for (let i = 0; i < 6; i++) {
-    if (party[i] && party[i].speciesId !== 0) partyCount++;
-  }
+  const partyCount = CalculatePlayerPartyCount();
   for (let i = 0; i < partyCount; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesId === 0) continue;
-    // MON_DATA_SPECIES_OR_EGG : si egg retourne SPECIES_EGG (412), pas le species.
-    if (mon.isEgg) continue;
-    if (mon.speciesId === starter) return 1;
+    const mon = gPlayerParty[i];
+    const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
+    if (species === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
+    if (species === starter) return 1;
   }
   return 0;
 });
@@ -1043,19 +1052,14 @@ registerSpecial('ChooseHalfPartyForBattle', () => 0);
  *    Si gPlayerPartyCount == 1 → PLAYER_HAS_ONE_MON.
  *    Sinon aliveCount > 1 → PLAYER_HAS_TWO_USABLE_MONS, else PLAYER_HAS_ONE_USABLE_MON. */
 registerSpecial('HasEnoughMonsForDoubleBattle', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  // 1:1 décomp pokemon.c:4498 CalculatePlayerPartyCount() — count slots non-empty.
-  let partyCount = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0) partyCount++;
-  }
+  // 1:1 décomp pokemon.c:4494 GetMonsStateToDoubles.
+  const partyCount = CalculatePlayerPartyCount();  // :4498
   if (partyCount === 1) return 1;  // PLAYER_HAS_ONE_MON
-  // 1:1 :4503-4509 aliveCount.
+  // 1:1 :4503-4509 aliveCount = non-egg + HP != 0.
   let aliveCount = 0;
   for (let i = 0; i < partyCount; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) {
       aliveCount++;
     }
   }
@@ -1390,17 +1394,12 @@ registerSpecial('CloseFrontierExchangeCornerItemIconWindow', () => { /* no-op */
  *  ```
  *  Retourne le bucket de friendship du lead mon (= 7 valeurs 0..6 → enum). */
 registerSpecial('GetLeadMonFriendshipScore', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  // 1:1 décomp GetLeadMonIndex = 1st non-egg non-empty slot.
-  let leadIdx = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg) { leadIdx = i; break; }
-  }
-  const mon = party[leadIdx];
+  // 1:1 décomp GetLeadMonFriendshipScore (field_specials.c:949) : friendship du
+  // lead mon (GetLeadMonIndex) via GetMonData(MON_DATA_FRIENDSHIP).
+  const mon = gPlayerParty[_GetLeadMonIndex()];
   // 1:1 décomp constants/pokemon.h : MAX_FRIENDSHIP=255, FRIENDSHIP_MAX=6,
   // FRIENDSHIP_NONE=0 etc.
-  const friendship = mon?.friendship ?? 0;
+  const friendship = _GetMonData(mon, MON_DATA_FRIENDSHIP) as number;
   if (friendship === 255) return 6;        // FRIENDSHIP_MAX
   if (friendship >= 200) return 5;         // FRIENDSHIP_200_TO_254
   if (friendship >= 150) return 4;         // FRIENDSHIP_150_TO_199
@@ -1440,9 +1439,10 @@ import { resolveDecompConstant } from '../system/decomp-constants';
  *  Utilisé par scripts give Pokémon, daycare retrieve, etc. Buffer dans
  *  STR_VAR_1 le nickname du party[VAR_0x8004]. */
 registerSpecial('BufferMonNickname', () => {
+  // 1:1 décomp : GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_NICKNAME, gStringVar1).
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gSaveBlock1Ptr.playerParty?.[slot];
-  setStringVar(1, mon?.nickname || mon?.speciesNameFr || '???');
+  const mon = gPlayerParty[slot];
+  setStringVar(1, mon ? (_GetMonData(mon, MON_DATA_NICKNAME) as string) : '???');
   return 0;
 });
 
@@ -1450,13 +1450,10 @@ registerSpecial('BufferMonNickname', () => {
  *    return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES);
  *  Utilisé par scripts pour check le species du Pokémon en slot. */
 registerSpecial('ScriptGetPartyMonSpecies', () => {
+  // 1:1 décomp : return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES).
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gSaveBlock1Ptr.playerParty?.[slot];
-  if (!mon?.speciesEnum) return mon?.speciesId ?? 0;
-  // Resolve species name → numeric ID via constants.
-  return mon.speciesEnum.startsWith('SPECIES_')
-    ? (resolveDecompConstant(mon.speciesEnum) ?? mon.speciesId ?? 0)
-    : mon.speciesId ?? 0;
+  const mon = gPlayerParty[slot];
+  return mon ? (_GetMonData(mon, MON_DATA_SPECIES) as number) : 0;
 });
 
 /** 1:1 décomp `GetPlayerAvatarBike` (field_specials.c:168-175) :
@@ -1496,9 +1493,10 @@ registerSpecial('ShowMapNamePopup', () => {
 /** 1:1 décomp `IsSelectedMonEgg` :
  *    return GetMonData(party[VAR_0x8004], MON_DATA_IS_EGG); */
 registerSpecial('IsSelectedMonEgg', () => {
+  // 1:1 décomp : return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_IS_EGG).
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gSaveBlock1Ptr.playerParty?.[slot];
-  return (mon as { isEgg?: number })?.isEgg ? 1 : 0;
+  const mon = gPlayerParty[slot];
+  return mon && (_GetMonData(mon, MON_DATA_IS_EGG) as number) ? 1 : 0;
 });
 
 /** 1:1 décomp `StorePlayerCoordsInVars` (event_object_movement.c) :
@@ -1630,20 +1628,12 @@ registerSpecial('BufferTMHMMoveName', () => {
  *  Notre projet FR-only → équivalent à IsLeadMonNicknamed (= compare nickname
  *  vs speciesNameFr). Comportement 1:1 strict identique vu que langage match. */
 registerSpecial('IsLeadMonNicknamedOrNotEnglish', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  let leadIdx = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg) {
-      leadIdx = i;
-      break;
-    }
-  }
-  const lead = party[leadIdx];
-  if (!lead) return 0;
-  // 1:1 décomp tv.c:3018 : compare gSpeciesNames[species] vs nickname.
-  // Notre FR-only : speciesNameFr est le species name affiché.
-  return lead.nickname === lead.speciesNameFr ? 0 : 1;
+  // 1:1 décomp tv.c:3018 : compare gSpeciesNames[species] vs nickname (FR-only).
+  const mon = gPlayerParty[_GetLeadMonIndex()];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 0;
+  const nickname = _GetMonData(mon, MON_DATA_NICKNAME) as string;
+  const speciesName = gSpeciesNames[_GetMonData(mon, MON_DATA_SPECIES) as number] ?? '';
+  return nickname === speciesName ? 0 : 1;
 });
 
 /** 1:1 décomp `GetMartEmployeeObjectEventId` (field_specials.c:3598-3626) :
@@ -2010,14 +2000,14 @@ registerSpecial('ToggleCurSecretBaseRegistry', () => {
  *  Compare player trainer ID vs mon OT ID. TRUE si différent (= mon traded). */
 registerSpecial('IsMonOTIDNotPlayers', () => {
   const slot = VarGet('VAR_0x8004');
-  const mon = gSaveBlock1Ptr.playerParty?.[slot];
-  if (!mon) {
+  const mon = gPlayerParty[slot];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) {
     VarSet('VAR_RESULT', 1);
     return 1;
   }
-  // 1:1 décomp GetPlayerIDAsU32 = saveBlock2.playerTrainerId u32.
+  // 1:1 décomp GetPlayerIDAsU32 = saveBlock2.playerTrainerId u32 vs MON_DATA_OT_ID.
   const playerTID = gSaveBlock2Ptr.playerTrainerId;
-  const monOtId = mon.otId ?? 0;
+  const monOtId = _GetMonData(mon, MON_DATA_OT_ID) as number;
   const result = (playerTID === monOtId) ? 0 : 1;
   VarSet('VAR_RESULT', result);
   return result;
@@ -2037,13 +2027,12 @@ registerSpecial('IsMonOTIDNotPlayers', () => {
  *  rnd = result >> 16 = VAR_MIRAGE_RND_H (= high 16 bits).
  *  Mirage Island apparait si un mon de party a `(personality & 0xFFFF) == rnd_high`. */
 registerSpecial('IsMirageIslandPresent', () => {
+  // 1:1 décomp : un mon dont (personality & 0xFFFF) == VAR_MIRAGE_RND_H.
   const rnd = VarGet('VAR_MIRAGE_RND_H');
-  const party = gSaveBlock1Ptr.playerParty;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesId === 0) continue;
-    const personality = mon.personality ?? 0;
-    if ((personality & 0xFFFF) === rnd) return 1;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) continue;
+    if ((mon.personality & 0xFFFF) === rnd) return 1;
   }
   return 0;
 });
@@ -2387,19 +2376,13 @@ registerSpecial('CheckPlayerHasSecretBase', () => {
  *  Sealed Chamber puzzle : WAILORD en slot 0 + RELICANTH en dernier slot
  *  occupé de la party. Emerald flip vs RS (= "First comes Wailord"). */
 registerSpecial('CheckRelicanthWailord', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  // 1:1 décomp :96 GetMonData SLOT 0 SPECIES_OR_EGG == SPECIES_WAILORD
-  const lead = party[0];
-  if (!lead || lead.speciesId !== SPECIES_WAILORD) return 0;
-  // 1:1 décomp :98 CalculatePlayerPartyCount (= count non-empty slots).
-  let partyCount = 0;
-  for (let i = 0; i < 6; i++) {
-    if (party[i] && party[i].speciesId !== 0) partyCount++;
-  }
+  // 1:1 décomp :96 GetMonData(&gPlayerParty[0], SPECIES) == SPECIES_WAILORD.
+  if ((_GetMonData(gPlayerParty[0], MON_DATA_SPECIES) as number) !== SPECIES_WAILORD) return 0;
+  // 1:1 décomp :98 CalculatePlayerPartyCount.
+  const partyCount = CalculatePlayerPartyCount();
   if (partyCount === 0) return 0;
-  // 1:1 décomp :100 GetMonData SLOT [partyCount-1] SPECIES_OR_EGG == SPECIES_RELICANTH
-  const last = party[partyCount - 1];
-  return (last && last.speciesId === SPECIES_RELICANTH) ? 1 : 0;
+  // 1:1 décomp :100 GetMonData(&gPlayerParty[partyCount-1], SPECIES) == SPECIES_RELICANTH.
+  return (_GetMonData(gPlayerParty[partyCount - 1], MON_DATA_SPECIES) as number) === SPECIES_RELICANTH ? 1 : 0;
 });
 
 /** 1:1 décomp `GetTrainerFlag` (battle_setup.c:1235-1243) :
@@ -2436,11 +2419,11 @@ registerSpecial('GetTrainerFlag', () => {
 /** 1:1 décomp `CountPartyNonEggMons` (pokemon_storage_system.c:1424-1438).
  *  Count non-empty + non-egg party slots. Used par scripts daycare/PC switch. */
 registerSpecial('CountPartyNonEggMons', () => {
-  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp : count gPlayerParty[i] avec SPECIES != SPECIES_NONE && !IS_EGG.
   let count = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg) count++;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number)) count++;
   }
   return count;
 });
@@ -2449,11 +2432,11 @@ registerSpecial('CountPartyNonEggMons', () => {
  *  qui appelle CountPartyAliveNonEggMonsExcept(PARTY_SIZE) (= ignore aucun slot,
  *  donc count tous les vivants). Non-empty + non-egg + HP != 0. */
 registerSpecial('CountPartyAliveNonEggMons', () => {
-  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp : count gPlayerParty[i] non-empty, non-egg, HP != 0.
   let count = 0;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) count++;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) count++;
   }
   return count;
 });
@@ -2463,13 +2446,13 @@ registerSpecial('CountPartyAliveNonEggMons', () => {
  *  ignoré (used par scripts qui considèrent le mon que le joueur est en train
  *  de transférer/déposer). */
 registerSpecial('CountPartyAliveNonEggMons_IgnoreVar0x8004Slot', () => {
-  const party = gSaveBlock1Ptr.playerParty;
+  // 1:1 décomp CountPartyAliveNonEggMonsExcept(gSpecialVar_0x8004) : ignore ce slot.
   const slotToIgnore = VarGet('VAR_0x8004');
   let count = 0;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < PARTY_SIZE; i++) {
     if (i === slotToIgnore) continue;
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && !mon.isEgg && mon.currentHp !== 0) count++;
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) !== 0 && !(_GetMonData(mon, MON_DATA_IS_EGG) as number) && (_GetMonData(mon, MON_DATA_HP) as number) !== 0) count++;
   }
   return count;
 });
@@ -2521,18 +2504,13 @@ registerSpecial('HasAtLeastOneBerry', () => {
 /** 1:1 décomp `Special_AreLeadMonEVsMaxedOut` (field_specials.c:1390-1396).
  *  Return TRUE si EVs total du lead mon >= MAX_TOTAL_EVS (= 510). */
 registerSpecial('Special_AreLeadMonEVsMaxedOut', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  // GetLeadMonIndex : 1st non-egg non-empty slot.
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
-    // 1:1 décomp pokemon.c:1845 GetMonEVCount = sum of all 6 EVs.
-    const evCount = (mon.evs?.hp ?? 0) + (mon.evs?.atk ?? 0) + (mon.evs?.def ?? 0)
-                  + (mon.evs?.spe ?? 0) + (mon.evs?.spa ?? 0) + (mon.evs?.spd ?? 0);
-    // MAX_TOTAL_EVS = 510 (= 1:1 décomp constants/pokemon.h).
-    return evCount >= 510 ? 1 : 0;
-  }
-  return 0;
+  // 1:1 décomp Special_AreLeadMonEVsMaxedOut (field_specials.c:1390) :
+  // GetMonEVCount(&gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS (510).
+  const mon = gPlayerParty[_GetLeadMonIndex()];
+  if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) return 0;
+  // 1:1 décomp pokemon.c:1845 GetMonEVCount = somme des 6 EVs (champs natifs Pokemon).
+  const evCount = mon.hpEV + mon.attackEV + mon.defenseEV + mon.speedEV + mon.spAttackEV + mon.spDefenseEV;
+  return evCount >= 510 ? 1 : 0;  // MAX_TOTAL_EVS = 510
 });
 
 /** 1:1 décomp `RetrieveLotteryNumber` (lottery_corner.c:42-46).
@@ -2619,10 +2597,10 @@ registerSpecial('DoesPlayerHaveNoDecorations', () => {
 /** 1:1 décomp `IsDodrioInParty` (dodrio_berry_picking.c:2908-2922).
  *  Loop sur PARTY_SIZE, return TRUE si un mon non-empty est SPECIES_DODRIO. */
 registerSpecial('IsDodrioInParty', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (mon && mon.speciesId !== 0 && mon.speciesId === SPECIES_DODRIO) {
+  // 1:1 décomp : loop PARTY_SIZE, TRUE si un mon non-empty == SPECIES_DODRIO.
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const species = _GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+    if (species !== 0 && species === SPECIES_DODRIO) {
       VarSet('VAR_RESULT', 1);
       return 1;
     }
@@ -2638,15 +2616,11 @@ registerSpecial('IsDodrioInParty', () => {
  *  donne pas encore de ribbons via SetMonData MON_DATA_EFFORT_RIBBON).
  *  Dette R3 documentée : ajouter ribbons field PokemonInstance + serialization. */
 registerSpecial('LeadMonHasEffortRibbon', () => {
-  // GetLeadMonIndex : 1st non-empty non-egg slot.
-  const party = gSaveBlock1Ptr.playerParty;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
-    // 1:1 décomp :1374 GetMonData(EFFORT_RIBBON) — pas stocké → 0.
-    return (mon as unknown as { effortRibbon?: number }).effortRibbon ?? 0;
-  }
-  return 0;
+  // 1:1 décomp :1374 GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_EFFORT_RIBBON).
+  const mon = gPlayerParty[_GetLeadMonIndex()];
+  if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) return 0;
+  // Dette R3 : effortRibbon pas dans GetMonData natif (subsystem rubans partiel) → 0.
+  return (mon as unknown as { effortRibbon?: number }).effortRibbon ?? 0;
 });
 
 /** 1:1 décomp `GetPlayerTrainerIdOnesDigit` (field_specials.c:901-904).
@@ -2663,13 +2637,11 @@ registerSpecial('GetPlayerTrainerIdOnesDigit', () => {
  *  Used par scripts e.g. NameRater pour bloquer rename de mons étrangers. */
 registerSpecial('MonOTNameNotPlayer', () => {
   const slot = VarGet('VAR_0x8004');
-  const mon = gSaveBlock1Ptr.playerParty[slot];
-  if (!mon || mon.speciesId === 0) return 1;
-  // 1:1 décomp :1574 : MON_DATA_LANGUAGE != GAME_LANGUAGE
-  // Notre projet : FR only, donc tous nos mons sont GAME_LANGUAGE (= français).
-  // Si on porte multi-language plus tard, ajouter language field PokemonInstance.
-  // 1:1 :1577-1582 : compare playerName vs otName.
-  const otName = mon.otName ?? '';
+  const mon = gPlayerParty[slot];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return 1;
+  // 1:1 décomp :1574 MON_DATA_LANGUAGE != GAME_LANGUAGE → FR only, skip.
+  // 1:1 :1577-1582 compare playerName vs GetMonData(MON_DATA_OT_NAME).
+  const otName = (_GetMonData(mon, MON_DATA_OT_NAME) as string) ?? '';
   const playerName = gSaveBlock2Ptr.playerName;
   if (!otName) return 1;  // pas d'OT → considère étranger
   return otName === playerName ? 0 : 1;
@@ -2679,22 +2651,15 @@ registerSpecial('MonOTNameNotPlayer', () => {
  *  Loop sur les 6 slots party, retourne TRUE si au moins un mon non-egg a
  *  TYPE_GRASS comme type1 ou type2. Set gSpecialVar_Result. */
 registerSpecial('IsGrassTypeInParty', () => {
-  const party = gSaveBlock1Ptr.playerParty;
-  for (let i = 0; i < 6; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesId === 0 || mon.isEgg) continue;
-    // 1:1 décomp :1240-1241 : check gSpeciesInfo[species].types[0/1] == TYPE_GRASS.
-    // Notre PokemonInstance ne stocke pas les types par mon (= dérivé species
-    // via gSpeciesInfo lookup). Dette : import species → types pour ce check.
-    // En attendant : approximation grossière via gSpeciesInfo dynamic require.
-    const dataMod = (globalThis as { __game_data?: {
-      getSpeciesInfo: (k: string) => { types?: number[] } | undefined;
-    } }).__game_data;
-    const info = dataMod?.getSpeciesInfo(mon.speciesEnum);
-    const types = info?.types ?? [];
-    if (types[0] === TYPE_GRASS || types[1] === TYPE_GRASS) {
-      return 1;
-    }
+  // 1:1 décomp :1240-1241 : check gSpeciesInfo[species].types[0/1] == TYPE_GRASS
+  // pour chaque mon non-egg non-empty de gPlayerParty.
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    const species = _GetMonData(mon, MON_DATA_SPECIES) as number;
+    if (species === 0 || (_GetMonData(mon, MON_DATA_IS_EGG) as number)) continue;
+    // Notre `gSpeciesInfo[].types` = enum-strings ('TYPE_GRASS'…) ≠ ids num décomp.
+    const types = gSpeciesInfo[species]?.types ?? [];
+    if (types[0] === 'TYPE_GRASS' || types[1] === 'TYPE_GRASS') return 1;
   }
   return 0;
 });
@@ -3081,8 +3046,8 @@ registerSpecial('GetObjectEventLocalIdByFlag', () => {
  *  (= 1:1 pokemon.c:6101-6127). Lit MON_DATA_POKERUS sur chaque mon (bits 0-3
  *  = active pokerus). Retourne TRUE si au moins un mon a pokerus actif. */
 registerSpecial('IsPokerusInParty', () => {
-  const party = gSaveBlock1Ptr.playerParty as unknown as _PartyPokemon[];
-  return CheckPartyPokerus(party, (1 << PARTY_SIZE) - 1) ? 1 : 0;
+  // 1:1 décomp : CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1).
+  return CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1) ? 1 : 0;
 });
 
 /** 1:1 décomp `DoesPartyHaveEnigmaBerry` (script_pokemon_util.c:128-135) :
@@ -3124,9 +3089,9 @@ registerSpecial('DoesPartyHaveEnigmaBerry', () => {
  *  Scan slots MOVE1..MOVE4 du mon à l'index VAR_0x8004 dans gPlayerParty.
  *  Compte le nombre de slots non-MOVE_NONE. Result dans VAR_RESULT. */
 registerSpecial('GetNumMovesSelectedMonHas', () => {
+  // 1:1 décomp (party_menu.c:6347) : count MOVE1..MOVE4 != MOVE_NONE du mon VAR_0x8004.
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const party = gSaveBlock1Ptr.playerParty as unknown as _PartyPokemon[];
-  const mon = party[slot];
+  const mon = gPlayerParty[slot];
   let count = 0;
   if (mon) {
     for (let i = 0; i < MAX_MON_MOVES; i++) {
@@ -3423,13 +3388,12 @@ registerSpecial('PickLotteryCornerTicket', () => {
 
   // 1:1 :58-82 : loop party.
   const TOTAL_BOXES_COUNT = 14;
-  const party = gSaveBlock1Ptr.playerParty;
-  for (let i = 0; i < 6 && i < party.length; i++) {
-    const mon = party[i];
-    if (!mon || mon.speciesEnum === 'SPECIES_NONE') break;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    const mon = gPlayerParty[i];
+    if ((_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) break;
     // skip eggs (= 1:1 :65-77).
-    if (mon.isEgg) continue;
-    const otId = (mon.otId ?? 0) >>> 0;
+    if (_GetMonData(mon, MON_DATA_IS_EGG) as number) continue;
+    const otId = (_GetMonData(mon, MON_DATA_OT_ID) as number) >>> 0;
     const matching = _getMatchingDigits(lottoNumber, otId & 0xFFFF);
     if (matching > bestMatching && matching > 1) {
       bestMatching = matching - 1;
@@ -3451,7 +3415,9 @@ registerSpecial('PickLotteryCornerTicket', () => {
     // 1:1 :108-117 : box marker + nickname buffer.
     if (bestBox === TOTAL_BOXES_COUNT) {
       VarSet('VAR_0x8006', 0);  // party
-      setStringVar(1, party[bestSlot].nickname || party[bestSlot].speciesName);
+      const winner = gPlayerParty[bestSlot];
+      setStringVar(1, (_GetMonData(winner, MON_DATA_NICKNAME) as string)
+        || (gSpeciesNames[_GetMonData(winner, MON_DATA_SPECIES) as number] ?? ''));
     } else {
       VarSet('VAR_0x8006', 1);  // PC (= jamais atteint actuellement)
     }
@@ -3648,13 +3614,10 @@ registerSpecial('DoesContestCategoryHaveMuseumPainting', () => {
  *  FRONTIER_PARTY_SIZE=3. Loop check held item != ITEM_NONE=0. */
 registerSpecial('DoBattlePyramidMonsHaveHeldItem', () => {
   gSpecialVar.Result = 0;
-  const party = gSaveBlock1Ptr.playerParty;
   for (let i = 0; i < 3; i++) {  // FRONTIER_PARTY_SIZE
-    const mon = party?.[i];
-    if (!mon) continue;
+    const mon = gPlayerParty[i];
     // 1:1 décomp GetMonData(mon, MON_DATA_HELD_ITEM) != ITEM_NONE=0.
-    // Notre PokemonInstance utilise `heldItem` field (= alias canonical).
-    if ((mon as { heldItem?: number }).heldItem) {
+    if ((_GetMonData(mon, MON_DATA_HELD_ITEM) as number)) {
       gSpecialVar.Result = 1;
       break;
     }
@@ -3782,17 +3745,11 @@ registerSpecial('ClearQuizLadyQuestionAndAnswer', () => {
  *  IV Rater à Lavaridge ; le NPC parle de la stat avec le plus haut IV. */
 registerSpecial('BufferVarsForIVRater', () => {
   const slot = VarGet('VAR_0x8004') ?? 0;
-  const mon = gSaveBlock1Ptr.playerParty?.[slot];
-  if (!mon) return;
-  // 1:1 décomp ivStorage[NUM_STATS=6].
-  // Notre PokemonInstance has hpIV/attackIV/defenseIV/speedIV/spAttackIV/spDefenseIV.
+  const mon = gPlayerParty[slot];
+  if (!mon || (_GetMonData(mon, MON_DATA_SPECIES) as number) === 0) return;
+  // 1:1 décomp ivStorage[NUM_STATS=6] = IVs natifs Pokemon (HP/ATK/DEF/SPEED/SPATK/SPDEF).
   const ivStorage: number[] = [
-    (mon as { hpIV?: number }).hpIV ?? 0,
-    (mon as { attackIV?: number }).attackIV ?? 0,
-    (mon as { defenseIV?: number }).defenseIV ?? 0,
-    (mon as { speedIV?: number }).speedIV ?? 0,
-    (mon as { spAttackIV?: number }).spAttackIV ?? 0,
-    (mon as { spDefenseIV?: number }).spDefenseIV ?? 0,
+    mon.hpIV, mon.attackIV, mon.defenseIV, mon.speedIV, mon.spAttackIV, mon.spDefenseIV,
   ];
   // VAR_0x8005 = sum.
   let sum = 0;

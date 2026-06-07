@@ -29,7 +29,7 @@ import { GetNatureFromPersonality, ModifyStatByNature } from '../../game/include
 // 1:1 décomp `Random()` (random.c) — pour le gate 50% de friendship-WALKING
 // (AdjustFriendship). random.ts = leaf pur (zéro import) → aucun cycle possible.
 import { Random } from '../system/random';
-import { getSpeciesInfo } from '../data/game-data';
+import { getSpeciesInfo, gBattleMoves } from '../data/game-data';
 // Résolution nom-de-move 1:1 décomp (leaf partagé, zéro @pkmn/dex). Re-export
 // pour les call-sites existants (wire-bytecode-bridge).
 import { moveDexIdToEnum, resolveMoveDexId } from './data/move-name-resolve';
@@ -826,6 +826,19 @@ export function CalculateMonStats(mon: Pokemon): void {
     if (mon.hp <= 0) mon.hp = 1;
   }
   // else : stay at 0 (= fainted).
+}
+
+/** 1:1 décomp `gPPUpGetMask` (pokemon.c) — masque 2 bits par slot de move. */
+export const gPPUpGetMask: readonly number[] = [0x03, 0x0c, 0x30, 0xc0];
+
+/** 1:1 décomp `CalculatePPWithBonus(move, ppBonuses, moveIndex)` (pokemon.c:5005) :
+ *  `basePP + (basePP * 20 * nbPPUp) / 100`, nbPPUp = `(gPPUpGetMask[moveIndex] &
+ *  ppBonuses) >> (2*moveIndex)` (0..3), basePP = `gBattleMoves[move].pp`. Retourne u8.
+ *  Fonction CANONIQUE (= source unique 1:1) ; battle-action/summary/bag délèguent ici. */
+export function CalculatePPWithBonus(move: number, ppBonuses: number, moveIndex: number): number {
+  const basePP = gBattleMoves[move]?.pp ?? 0;
+  const ppUps = (gPPUpGetMask[moveIndex] & ppBonuses) >> (2 * moveIndex);
+  return (basePP + Math.floor((basePP * 20 * ppUps) / 100)) & 0xff;
 }
 
 /** Bridge inverse `Pokemon` → mise à jour de `PokemonInstance` (= persist
