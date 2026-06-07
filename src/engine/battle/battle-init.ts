@@ -46,6 +46,7 @@ import {
   BATTLE_TYPE_TWO_OPPONENTS,
 } from './constants';
 import { getRuntime, setReservedSpritePaletteCount } from '../system/decomp-globals';
+import { FreeAllSpritePalettes } from '../system/sprite';
 import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1,
   BATTLE_ENVIRONMENT_GRASS,
@@ -180,9 +181,14 @@ function _LoadBattleTextboxAndBackground(env: number): void {
   void loadBattleTextboxAndBackground1to1(env);
 }
 
-/** 1:1 décomp `ResetSpriteData()` + `ResetTasks()`. */
+/** 1:1 décomp `ResetSpriteData()` (sprite.c:294) : vide TOUS les gSprites + OAM +
+ *  reset l'allocateur de tiles OBJ (bitmap/ranges) + matrices OAM + cleanup hooks.
+ *  L'ancien `gSprites.clear()` PARTIEL laissait l'allocateur de tiles MARQUÉ → sur
+ *  map chargée (NPC + sprites field-effect herbe/ombre) la VRAM OBJ saturait →
+ *  `AllocSpriteTiles échoué` → sprite ennemi/healthbox absents (même bug que la voie V,
+ *  cf. fix battle-flow LOAD_ASSETS). Le vrai runtime ResetSpriteData fait tout 1:1. */
 function _ResetSpriteData(): void {
-  getRuntime()?.gSprites?.clear();
+  getRuntime()?.ResetSpriteData();
 }
 function _ResetTasks(): void {
   getRuntime()?.gTasks?.clear();
@@ -191,8 +197,11 @@ function _ResetTasks(): void {
 /** 1:1 décomp `DrawBattleEntryBackground()`. */
 function _DrawBattleEntryBackground(): void { /* Dette R3 */ }
 
-/** 1:1 décomp `FreeAllSpritePalettes()`. */
-function _FreeAllSpritePalettes(): void { /* Dette R3 */ }
+/** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c) : libère TOUS les slots de palette
+ *  OBJ. CRITIQUE 1:1 (cf. voie V battle-flow) : l'overworld occupe les OBJ palette
+ *  slots 0-3 ; sans free, le healthbox (slots fixes 5/6) + les mons entreraient en
+ *  collision → sprite ennemi GARBLED. (Était un stub vide = Dette R3.) */
+function _FreeAllSpritePalettes(): void { FreeAllSpritePalettes(); }
 
 /** 1:1 décomp `SetWildMonHeldItem()` (pokemon.c). */
 function _SetWildMonHeldItem(): void {
