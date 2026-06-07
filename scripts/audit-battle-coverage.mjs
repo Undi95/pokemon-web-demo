@@ -4,24 +4,23 @@
  * -------------------------
  * FILET MÉCANIQUE de couverture combat 1:1 (≠ checklist de mémoire).
  *
- * Énumère les TABLES exhaustives de la décomp (chaque entrée = un outcome à porter)
- * et les croise avec le CODE de combat porté → rapport `présent / MANQUANT` par table.
- * Re-run à volonté : à tout moment on sait ce qui reste.
+ * Énumère les TABLES exhaustives de la décomp (chaque entrée = un outcome à porter) et
+ * les croise avec le portage. CHAQUE table via SA bonne source (pas un croisement naïf) :
  *
- *   Tables auditées (source = decomps/pokeemeraude) :
- *     - EFFECT_*        (include/constants/battle_move_effects.h)  — effets de move
- *     - MOVE_EFFECT_*   (include/constants/battle.h)               — effets secondaires
- *     - HOLD_EFFECT_*   (include/constants/hold_effects.h)         — objets tenus
- *     - ABILITY_*       (include/constants/abilities.h)            — talents
- *     - STRINGID_*      (include/constants/battle_string_ids.h)    — messages de combat
- *     - opcodes Cmd_*   (src/battle_script_commands.c)             — moteur de script
+ *   Table (décomp)                                     | Source de couverture (port)
+ *   ---------------------------------------------------|----------------------------------------
+ *   EFFECT_*       (battle_move_effects.h, 214)        | gBattleScriptsForMoveEffects (jump-table)
+ *                                                      |   → label présent dans LABELS du bytecode
+ *   STRINGID_*     (battle_string_ids.h)               | STRINGID_NAMES (battle-strings-table.ts)
+ *   MOVE_EFFECT_*  (battle.h)                          | nom référencé dans le code combat
+ *   HOLD_EFFECT_*  (hold_effects.h)                    | nom référencé dans le code combat
+ *   ABILITY_*      (abilities.h)                       | nom référencé dans le code combat
+ *   opcodes Cmd_*  (battle_script_commands.c)          | OPCODE_NAMES + impl (nom quoté)
  *
- * Croisement = présence du NOM décomp (1:1 → les noms sont préservés) comme TOKEN dans
- * le code porté (src/engine/battle + src/game, hors decomp-data auto-extraites).
- *   - "MANQUANT" = nom absent du code = à faire (signal SÛR).
- *   - "présent"  = nom référencé (≠ garantie 1:1 complète ; à raffiner par l'audit du maillon).
- * Un taux ~0% sur une catégorie = le port la référence par id/script et non par nom → la
- * méthode de croisement est à adapter pour cette catégorie (noté dans le rapport).
+ *   - "MANQUANT" = absent du portage = à faire (signal fiable).
+ *   - "présent"  = la DATA est portée (script/message/nom existe). ⚠️ ≠ garantie que le
+ *     contenu est 1:1 CORRECT — c'est le NIVEAU 2 (audit du maillon : le script s'exécute-t-il
+ *     bien ? le message est-il rendu byte-level ? la case ability fait-elle le bon truc ?).
  *
  * Usage : node scripts/audit-battle-coverage.mjs [--output=audit-reports/battle-coverage.md]
  */
@@ -36,6 +35,7 @@ const decompSrc = join(decompPath, 'src');
 const decompInc = join(decompPath, 'include', 'constants');
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
+const readPort = (rel) => read(join(projectRoot, 'src', rel));
 
 function walkTs(dir, acc = []) {
   if (!existsSync(dir)) return acc;
@@ -71,65 +71,84 @@ function opcodeNamesDecomp() {
   const i = txt.indexOf('gBattleScriptingCommandsTable[])');
   if (i < 0) return [];
   const block = txt.slice(i, txt.indexOf('};', i));
-  const re = /Cmd_(\w+)/g;
   const out = [];
   let m;
+  const re = /Cmd_(\w+)/g;
   while ((m = re.exec(block))) out.push(m[1]);
   return out;
 }
 
-// reliable=false → le port gère cette table par id/script/byte-level (PAS par nom décomp) :
-// le croisement par nom sous-estime massivement la couverture (faux manquants).
-//   - EFFECT_*  : implémentés via gBattleScriptsForMoveEffects (scripts) → raffiner par script.
-//   - STRINGID_ : messages byte-level indexés par id → raffiner par table de strings.
-const categories = [
-  ['EFFECT (move)', defines(join(decompInc, 'battle_move_effects.h'), 'EFFECT_'), false],
-  ['MOVE_EFFECT (secondary)', defines(join(decompInc, 'battle.h'), 'MOVE_EFFECT_'), true],
-  ['HOLD_EFFECT', defines(join(decompInc, 'hold_effects.h'), 'HOLD_EFFECT_'), true],
-  ['ABILITY', defines(join(decompInc, 'abilities.h'), 'ABILITY_'), true],
-  ['STRINGID', defines(join(decompInc, 'battle_string_ids.h'), 'STRINGID_'), false],
-];
+// ── Croisements (un par stratégie) ──
 
-const cover = (names) => {
+// (a) par NOM dans le code combat porté (fiable quand le port référence par nom).
+const coverByName = (names) => {
   const present = [], missing = [];
   for (const n of names) (portTokens.has(n) ? present : missing).push(n);
-  return { present, missing };
+  return { present, missing, total: names.length };
 };
 
-// Opcodes : croisement par nom lowercase entre quotes (OPCODE_NAMES + impl).
-const opNames = opcodeNamesDecomp();
-const opCover = (() => {
+// (b) EFFECT_* : gBattleScriptsForMoveEffects (jump-table) → label dans LABELS du bytecode.
+function coverEffect() {
+  const names = defines(join(decompInc, 'battle_move_effects.h'), 'EFFECT_');
+  const jt = readPort('engine/decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table.ts');
+  const arr = jt.match(/BATTLE_SCRIPTS_FOR_MOVE_EFFECTS[\s\S]*?=\s*\[([\s\S]*?)\]/);
+  const scripts = arr ? [...arr[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+  const bc = readPort('engine/decomp-data/auto-asm-bytecode/data/battle_scripts_1-bytecode.ts');
+  const lab = bc.match(/LABELS[\s\S]*?=\s*\{([\s\S]*?)\n\}/);
+  const labels = new Set(lab ? [...lab[1].matchAll(/"(\w+)"\s*:/g)].map((m) => m[1]) : []);
   const present = [], missing = [];
-  for (const n of opNames) {
-    (new RegExp("['\"]" + n + "['\"]").test(portText) ? present : missing).push(n);
-  }
-  return { present, missing };
-})();
+  names.forEach((name, i) => {
+    const s = scripts[i];
+    if (s && labels.has(s)) present.push(name);
+    else missing.push(`${name} → ${s || '(absent de la jump-table)'}`);
+  });
+  return { present, missing, total: names.length };
+}
+
+// (c) STRINGID_* : STRINGID_NAMES (table de strings extraite id→nom).
+function coverStringId() {
+  const names = defines(join(decompInc, 'battle_string_ids.h'), 'STRINGID_');
+  const st = readPort('engine/decomp-data/battle-strings-table.ts');
+  const nm = st.match(/STRINGID_NAMES[\s\S]*?=\s*\{([\s\S]*?)\n\}/);
+  const portNames = new Set(nm ? [...nm[1].matchAll(/"(STRINGID_\w+)"/g)].map((m) => m[1]) : []);
+  const present = [], missing = [];
+  for (const n of names) (portNames.has(n) ? present : missing).push(n);
+  return { present, missing, total: names.length };
+}
+
+// (d) opcodes : nom lowercase quoté (OPCODE_NAMES + impl).
+function coverOpcodes() {
+  const names = opcodeNamesDecomp();
+  const present = [], missing = [];
+  for (const n of names) (new RegExp("['\"]" + n + "['\"]").test(portText) ? present : missing).push(n);
+  return { present, missing, total: names.length };
+}
+
+const cats = [
+  { key: 'EFFECT (move)', cov: coverEffect(), note: 'jump-table gBattleScriptsForMoveEffects → labels bytecode' },
+  { key: 'MOVE_EFFECT (secondary)', cov: coverByName(defines(join(decompInc, 'battle.h'), 'MOVE_EFFECT_')), note: 'nom dans le code combat' },
+  { key: 'HOLD_EFFECT', cov: coverByName(defines(join(decompInc, 'hold_effects.h'), 'HOLD_EFFECT_')), note: 'nom dans le code combat' },
+  { key: 'ABILITY', cov: coverByName(defines(join(decompInc, 'abilities.h'), 'ABILITY_')), note: 'nom dans le code combat' },
+  { key: 'STRINGID', cov: coverStringId(), note: 'table de strings extraite (STRINGID_NAMES)' },
+  { key: 'Opcodes Cmd_*', cov: coverOpcodes(), note: 'OPCODE_NAMES + impl' },
+];
 
 // ── Rapport ──
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 100);
 let md = '# Couverture combat 1:1 — filet mécanique\n\n';
-md += '> Généré par `scripts/audit-battle-coverage.mjs`. Croise les tables EXHAUSTIVES de la\n';
-md += '> décomp avec le CODE de combat porté (src/engine/battle + src/game, hors decomp-data).\n';
-md += '> **MANQUANT** = nom absent du code = à faire (sûr). **présent** = nom référencé\n';
-md += '> (≠ garantie 1:1 ; à confirmer par l\'audit du maillon). Re-run après chaque ajout.\n\n';
-md += '| Table | présents | total | % | manquants |\n|---|---|---|---|---|\n';
-
-const sections = [];
-for (const [key, names, reliable] of categories) {
-  const { present, missing } = cover(names);
-  md += `| ${key}${reliable ? '' : ' ⚠️'} | ${present.length} | ${names.length} | ${pct(present.length, names.length)}% | ${missing.length} |\n`;
-  sections.push([key, present, missing, reliable]);
+md += '> Généré par `scripts/audit-battle-coverage.mjs`. Énumère les tables EXHAUSTIVES de la décomp\n';
+md += '> et les croise avec le portage — chaque table via SA bonne source (cf. colonne « méthode »).\n';
+md += '> **MANQUANT** = absent du portage (à faire, fiable). **présent** = la DATA est portée\n';
+md += '> (script/message/nom existe) ≠ garantie que le CONTENU est 1:1 correct = **NIVEAU 2**\n';
+md += '> (audit du maillon : exécution du script, rendu byte-level, contenu des cases). Re-run à volonté.\n\n';
+md += '| Table | présents | total | % | manquants | méthode |\n|---|---|---|---|---|---|\n';
+for (const c of cats) {
+  md += `| ${c.key} | ${c.cov.present.length} | ${c.cov.total} | ${pct(c.cov.present.length, c.cov.total)}% | ${c.cov.missing.length} | ${c.note} |\n`;
 }
-md += `| Opcodes Cmd_* | ${opCover.present.length} | ${opNames.length} | ${pct(opCover.present.length, opNames.length)}% | ${opCover.missing.length} |\n`;
-sections.push(['Opcodes Cmd_*', opCover.present, opCover.missing, true]);
-
-md += '\n> ⚠️ = croisement par nom NON FIABLE (le port gère cette table par id/script/byte-level).\n';
-md += '> Les « manquants » de ces lignes sont des FAUX POSITIFS tant que le raffinement n\'est pas fait\n';
-md += '> (EFFECT → gBattleScriptsForMoveEffects ; STRINGID → table de strings byte-level).\n\n';
-for (const [key, , missing, reliable] of sections) {
-  md += `## ${key}${reliable ? '' : ' ⚠️ (croisement non fiable — faux positifs)'} — ${missing.length} MANQUANT(S)\n\n`;
-  md += missing.length ? missing.map((n) => `- ${n}`).join('\n') + '\n\n' : '_(tous présents)_\n\n';
+md += '\n';
+for (const c of cats) {
+  md += `## ${c.key} — ${c.cov.missing.length} MANQUANT(S)\n\n`;
+  md += c.cov.missing.length ? c.cov.missing.map((n) => `- ${n}`).join('\n') + '\n\n' : '_(tous présents)_\n\n';
 }
 
 const outArg = process.argv.find((a) => a.startsWith('--output='));
@@ -138,7 +157,7 @@ mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, md);
 
 console.log('Couverture combat (présents/total) :');
-for (const [key, present, missing, reliable] of sections) {
-  console.log(`  ${key.padEnd(24)} ${String(present.length).padStart(4)}/${present.length + missing.length}  (${missing.length} manquants)${reliable ? '' : '  [croisement non fiable]'}`);
+for (const c of cats) {
+  console.log(`  ${c.key.padEnd(24)} ${String(c.cov.present.length).padStart(4)}/${c.cov.total}  (${c.cov.missing.length} manquants)`);
 }
 console.log(`\nRapport : ${outPath}`);
