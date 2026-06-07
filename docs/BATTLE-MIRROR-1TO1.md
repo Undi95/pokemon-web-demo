@@ -207,9 +207,32 @@ engine) + wire `_BattleSetup_GetEnvironmentId` + `setBattleEnvironment(...)` (ba
 (branches manquantes) ; (c) fiabiliser `PlayerGetDestCoords` (pas de fallback (0,0) silencieux) ;
 (d) relocaliser `battle_setup.ts` dans `src/game/`. A/B.
 
-### 3.2 Transition · 3.3 BGM · 3.4 Intro/send-out · 3.5 Sprite ennemi absent
-→ à cartographier (CB2_InitBattle + gBattleMainFunc intro states + pokeball.c send-out)
-puis auditer voie L (garder/jeter) puis reconstruire. *(prochaines passes)*
+### 3.2 Flux d'intro décomp (CARTOGRAPHIÉ — battle_main.c)
+```
+CB2_InitBattle (l.672) : gBattleEnvironment = BattleSetup_GetEnvironmentId()
+                         (link/multi → BUILDING l.674) ; DrawBattleEntryBackground() (l.680)
+  → BattleIntroGetMonsData                    (3023)
+  → BattleIntroPrepareBackgroundSlide         (3372)
+  → BattleIntroDrawTrainersOrMonsSprites      (3387)  ← dessine sprites ennemi/joueur 🔴 sprite absent
+  → BattleIntroDrawPartySummaryScreens        (3488)
+  → BattleIntroPrintWildMonAttacked           (3560)  ← « Un X sauvage apparaît! »
+  → BattleIntro(Opp/Player)SendsOutMonAnim    (3607/3736) ← send-out (pokeball.c)
+  → TryDoEventsBeforeFirstTurn                (3773)  ← talents/objets switch-in
+  → HandleTurnActionSelectionState            (3905)  = MENU
+```
+
+### 3.3 Constats
+- **Terrain** posé dans `CB2_InitBattle` (l.672) — **même timing** que la voie L (battle-init:352).
+  Donc le bug SAND n'est PAS un décalage de timing : c'est la **position/behavior lus sur Route 101**
+  (`PlayerGetDestCoords` + `MapGridGetMetatileBehaviorAt`). À confirmer runtime sur Route 101.
+- **Background + plateformes** : `DrawBattleEntryBackground` (battle_bg.c) via `sBattleEnvironmentTable[gBattleEnvironment]`.
+- **Sprite ennemi** : `BattleIntroDrawTrainersOrMonsSprites` (3387) → c'est là que se situe le « sprite absent ».
+
+### 3.4 Plan d'attaque (ordre flux)
+1. **Terrain** : confirmer behavior/env sur Route 101 (runtime ciblé : hook log ou navigation) →
+   fix (classifieur OU position lue) + compléter `BattleSetup_GetEnvironmentId` 1:1 (branches SURFING/Route113/SANDSTORM) → relocaliser `src/game/battle_setup.ts`.
+2. **Sprite ennemi** : auditer `BattleIntroDrawTrainersOrMonsSprites` voie L vs décomp (garder/jeter).
+3. Reconstruire chaque état en `src/game/`, A/B par sous-élément.
 
 ---
 
