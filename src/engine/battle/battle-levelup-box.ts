@@ -27,7 +27,10 @@ import {
   ClearWindowTilemap,
   RemoveWindow,
 } from '../ui/gba-window-system';
-import { AddTextPrinterParameterized3 } from '../ui/gba-text-system';
+import {
+  DrawLevelUpWindowPg1, DrawLevelUpWindowPg2, GetMonLevelUpWindowStats,
+  type LevelUpStatMon,
+} from '../../game/menu_specialized';
 import { HandleBattleWindow, WINDOW_BG1, WINDOW_CLEAR } from './battle-window-frame';
 import { B_WIN_LEVEL_UP_BOX } from './battle-windows';
 import { sStandardBattleWindowTemplates } from '../decomp-data/src/battle_bg-data';
@@ -38,110 +41,30 @@ import { REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS } from '../system/decomp-runtime
 
 /** 1:1 décomp `NUM_STATS` = 6. */
 const NUM_STATS = 6;
-/** 1:1 décomp `FONT_NORMAL` = 1 (text.h:10). */
-const FONT_NORMAL = 1;
-/** 1:1 décomp `TEXT_SKIP_DRAW` = 0xFF → rendu synchrone immédiat (pas de typewriter). */
-const TEXT_SKIP_DRAW = 0xff;
 
-/** 1:1 décomp couleurs (characters.h:247-249) passées à DrawLevelUpWindowPg1/2 :
- *  bgClr = TEXT_DYNAMIC_COLOR_5 (0xE), fgClr = TEXT_DYNAMIC_COLOR_4 (0xD),
- *  shadowClr = TEXT_DYNAMIC_COLOR_6 (0xF). color[] = {bg, fg, shadow}. */
+/** 1:1 décomp couleurs COMBAT (characters.h:247-249) passées à
+ *  DrawLevelUpWindowPg1/2 par Cmd_drawlvlupbox : bgClr = TEXT_DYNAMIC_COLOR_5
+ *  (0xE), fgClr = TEXT_DYNAMIC_COLOR_4 (0xD), shadowClr = TEXT_DYNAMIC_COLOR_6
+ *  (0xF). (Le menu d'équipe, lui, passe WHITE/DARK_GRAY/LIGHT_GRAY.) Les
+ *  fonctions Draw* sont PARTAGÉES (game/menu_specialized) — couleurs en args. */
 const LVLUP_BG_CLR = 0xe;
 const LVLUP_FG_CLR = 0xd;
 const LVLUP_SHADOW_CLR = 0xf;
-const LVLUP_COLOR: readonly number[] = [LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR];
-
-/** 1:1 décomp `PIXEL_FILL(n)` (window.h:6) = (n << 4) | n. */
-function PIXEL_FILL(n: number): number {
-  return ((n << 4) | n) & 0xff;
-}
-
-/** 1:1 décomp `sLvlUpStatStrings[NUM_STATS]` (menu_specialized.c:1513-1521) :
- *  {gText_MaxHP, gText_Attack, gText_Defense, gText_SpAtk, gText_SpDef, gText_Speed}.
- *  Ordre d'AFFICHAGE (= les 6 lignes de la box, de haut en bas). Valeurs FR strings.c. */
-const sLvlUpStatStrings: readonly string[] = [
-  'PV MAX.',    // gText_MaxHP
-  'ATTAQUE',    // gText_Attack
-  'DEFENSE',    // gText_Defense
-  'ATQ. SPE.',  // gText_SpAtk
-  'DEF. SPE.',  // gText_SpDef
-  'VITESSE',    // gText_Speed
-];
-
-/** Mapping ligne d'affichage i → index STAT_ dans le tableau de stats.
- *  Décomp DrawLevelUpWindowPg1 (1532-1537) : statsDiff[0..5] =
- *  after[STAT_HP/ATK/DEF/SPATK/SPDEF/SPEED]. STAT_HP=0, ATK=1, DEF=2, SPEED=3,
- *  SPATK=4, SPDEF=5 → l'ordre d'affichage HP,ATK,DEF,SPATK,SPDEF,SPEED indexe
- *  le tableau STAT_-ordonné à [0,1,2,4,5,3]. */
-const DISPLAY_TO_STAT: readonly number[] = [0, 1, 2, 4, 5, 3];
 
 // ─── Stats extraction ──────────────────────────────────────────────────────
 
-/** Mon-like avec les 6 stats finales (= PokemonInstance party-storage). */
-interface LvlUpStatMon {
-  maxHP: number;
-  attack: number;
-  defense: number;
-  speed: number;
-  spAttack: number;
-  spDefense: number;
-}
-
 /** 1:1 décomp `GetMonLevelUpWindowStats(mon, currStats)` (menu_specialized.c:1628).
- *  Retourne les stats STAT_-indexées : [HP, ATK, DEF, SPEED, SPATK, SPDEF]. */
-export function lvlUpBoxStatsOf(mon: LvlUpStatMon): number[] {
+ *  Retourne les stats STAT_-indexées : [HP, ATK, DEF, SPEED, SPATK, SPDEF].
+ *  Wrapper ergonomique autour de la fonction PARTAGÉE (game/menu_specialized) —
+ *  c'est elle (et DrawLevelUpWindowPg1/Pg2) qui était DUPLIQUÉE ici avant. */
+export function lvlUpBoxStatsOf(mon: LevelUpStatMon): number[] {
   const s = new Array<number>(NUM_STATS).fill(0);
-  s[0] = mon.maxHP;       // STAT_HP
-  s[1] = mon.attack;      // STAT_ATK
-  s[2] = mon.defense;     // STAT_DEF
-  s[3] = mon.speed;       // STAT_SPEED
-  s[4] = mon.spAttack;    // STAT_SPATK
-  s[5] = mon.spDefense;   // STAT_SPDEF
+  GetMonLevelUpWindowStats(mon, s);
   return s;
 }
 
-// ─── DrawLevelUpWindowPg1 / Pg2 (menu_specialized.c:1523-1626) — 1:1 ────────
-
-/** 1:1 décomp `DrawLevelUpWindowPg1` (menu_specialized.c:1523). Page 1 = deltas
- *  (label + signe +/- + |delta|) pour les 6 stats. */
-function DrawLevelUpWindowPg1(winId: number, statsBefore: number[], statsAfter: number[]): void {
-  // 1:1 décomp 1530 : FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr)).
-  FillWindowPixelBuffer(winId, PIXEL_FILL(LVLUP_BG_CLR));
-
-  for (let i = 0; i < NUM_STATS; i++) {
-    const stat = DISPLAY_TO_STAT[i];
-    const diff = statsAfter[stat] - statsBefore[stat];
-
-    // 1:1 décomp 1546-1552 : label à x=0, y=15*i.
-    AddTextPrinterParameterized3(winId, FONT_NORMAL, 0, 15 * i, LVLUP_COLOR, TEXT_SKIP_DRAW, sLvlUpStatStrings[i]);
-
-    // 1:1 décomp 1554-1561 : signe "+" (gText_Plus) ou "-" (gText_Dash) à x=56.
-    const sign = diff >= 0 ? '+' : '-';
-    AddTextPrinterParameterized3(winId, FONT_NORMAL, 56, 15 * i, LVLUP_COLOR, TEXT_SKIP_DRAW, sign);
-
-    // 1:1 décomp 1562-1574 : |delta| à x=56+18 (si <=9) ou 56+12 (si >9).
-    const x = Math.abs(diff) <= 9 ? 18 : 12;
-    AddTextPrinterParameterized3(winId, FONT_NORMAL, 56 + x, 15 * i, LVLUP_COLOR, TEXT_SKIP_DRAW, String(Math.abs(diff)));
-  }
-}
-
-/** 1:1 décomp `DrawLevelUpWindowPg2` (menu_specialized.c:1578). Page 2 = nouveaux
- *  totaux pour les 6 stats. */
-function DrawLevelUpWindowPg2(winId: number, statsAfter: number[]): void {
-  FillWindowPixelBuffer(winId, PIXEL_FILL(LVLUP_BG_CLR));
-
-  for (let i = 0; i < NUM_STATS; i++) {
-    const stat = DISPLAY_TO_STAT[i];
-    const v = statsAfter[stat];
-
-    // 1:1 décomp 1600-1608 : numDigits + x = 6*(4-numDigits) (right-align ~à droite).
-    const numDigits = v > 99 ? 3 : v > 9 ? 2 : 1;
-    const x = 6 * (4 - numDigits);
-
-    AddTextPrinterParameterized3(winId, FONT_NORMAL, 0, 15 * i, LVLUP_COLOR, TEXT_SKIP_DRAW, sLvlUpStatStrings[i]);
-    AddTextPrinterParameterized3(winId, FONT_NORMAL, 56 + x, 15 * i, LVLUP_COLOR, TEXT_SKIP_DRAW, String(v));
-  }
-}
+// ─── DrawLevelUpWindowPg1 / Pg2 : voir game/menu_specialized (fonctions PARTAGÉES,
+//     1:1 menu_specialized.c:1523-1626, importées en tête). ───────────────────
 
 // ─── API inline (pilotée par battle-flow.ts) ───────────────────────────────
 
@@ -198,7 +121,7 @@ export function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
   // 1:1 décomp Cmd_drawlvlupbox : HandleBattleWindow(18, 7, 29, 19, WINDOW_BG1).
   HandleBattleWindow(LVLUP_FRAME_X1, LVLUP_FRAME_Y1, LVLUP_FRAME_X2, LVLUP_FRAME_Y2, WINDOW_BG1);
   PutWindowTilemap(_lvlUpBoxWinId);
-  DrawLevelUpWindowPg1(_lvlUpBoxWinId, before, after);
+  DrawLevelUpWindowPg1(_lvlUpBoxWinId, before, after, LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR);
   CopyWindowToVram(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
   _showLevelUpBg();
 }
@@ -206,7 +129,7 @@ export function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
 /** Re-dessine la page 2 (totaux). 1:1 décomp case 6 (DrawLevelUpWindow2 + CopyWindowToVram). */
 export function lvlUpBoxDrawPage2(after: number[]): void {
   if (_lvlUpBoxWinId < 0) return;
-  DrawLevelUpWindowPg2(_lvlUpBoxWinId, after);
+  DrawLevelUpWindowPg2(_lvlUpBoxWinId, after, LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR);
   CopyWindowToVram(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
 }
 

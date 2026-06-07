@@ -17,7 +17,7 @@
  * status), (4) friendship sub-states.
  */
 
-import { type Pokemon } from '../battle/party-storage';
+import { type Pokemon, CalculateMonStats } from '../battle/party-storage';
 import { gBattleMoves, gSpeciesInfo, getExperienceForLevel } from '../data/game-data';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../battle/data/item-effects';
 import {
@@ -375,29 +375,27 @@ export function PokemonUseItemEffects(
           result.cannotUse = false;
         }
         if ((b & ITEM3_LEVEL_UP) && mon.level !== MAX_LEVEL) {
-          // 1:1 :4906-4914 Rare Candy : SetMonData(EXP, exp[level+1]).
-          // Plus CalculateMonStats. Notre applyExpAward fait ça naturellement.
+          // 1:1 décomp pokemon.c PokemonUseItemEffects ITEM3_LEVEL_UP (Rare Candy) :
+          //   dataUnsigned = gExperienceTables[growthRate][level + 1];
+          //   SetMonData(mon, MON_DATA_EXP, &dataUnsigned);
+          //   CalculateMonStats(mon);   // recalc level (dérivé) + LES 6 STATS + HP
+          //   retVal = FALSE;
+          // ⚠️ Avant : on ne recalculait QUE maxHP → atk/def/spatk/spdef/speed
+          //   restaient figés → la boîte de stats level-up affichait des deltas
+          //   FAUX (uniquement HP changeait). CalculateMonStats recalcule tout.
           const sInfo = gSpeciesInfo[mon.species];
           if (sInfo) {
             const expForNext = getExperienceForLevel(sInfo.growthRate, mon.level + 1);
-            const expDelta = expForNext - (mon.experience >>> 0);
-            if (expDelta > 0) {
-              mon.experience = expForNext;
-              // Recalc maxHP du nouveau niveau (formule Gen3 = 1:1 CalculateMonStats HP).
-              const oldMaxHp = mon.maxHP;
-              mon.level++;
-              const baseHp = sInfo.stats?.hp ?? 50;
-              const ivHp = mon.hpIV;
-              const evHp = mon.hpEV;
-              mon.maxHP = baseHp === 1
-                ? 1  // SHEDINJA
-                : Math.floor(((2 * baseHp + ivHp + Math.floor(evHp / 4)) * mon.level) / 100) + mon.level + 10;
-              const hpDelta = mon.maxHP - oldMaxHp;
-              if (hpDelta > 0) mon.hp += hpDelta;
-              result.leveledUp = true;
-              result.newLevel = mon.level;
-              result.cannotUse = false;
-            }
+            mon.experience = expForNext >>> 0;   // 1:1 SetMonData(MON_DATA_EXP)
+            // Notre CalculateMonStats lit `mon.level` (≠ décomp qui re-dérive de
+            // l'EXP via GetLevelFromMonExp) → on incrémente le niveau AVANT.
+            // Résultat observable identique : level+1, 6 stats recalculées, HP
+            // courant ajusté du delta maxHP.
+            mon.level++;
+            CalculateMonStats(mon);              // 1:1 recalc 6 stats + ajuste HP
+            result.leveledUp = true;
+            result.newLevel = mon.level;
+            result.cannotUse = false;
           }
         }
         // 1:1 :4917-4931 cure status (SLEEP/POISON/BURN/FREEZE/PARALYSIS).

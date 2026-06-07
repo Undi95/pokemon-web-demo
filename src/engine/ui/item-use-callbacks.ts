@@ -66,16 +66,18 @@ import {
   GetPartyScreenSlotId,
   ClosePartyScreen,
   ShowPartyMenuItemMessage,
+  ShowLevelUpStatsBox,
   RefreshPartySlot,
   PartyMenuAnimateHP,
 } from '../ui/party-screen';
+import { GetMonLevelUpWindowStats } from '../../game/menu_specialized';
 import { getString } from './gba-strings';
 import type { DecompTask } from '../system/decomp-runtime';
 import { getRuntime, PlaySE } from '../system/decomp-globals';
 import { gPlayerParty } from '../battle/party-storage';
 import { gMoveNames } from '../data/game-data';
 import { RemoveBagItem } from '../bag/bag';
-import { SE_USE_ITEM } from '../decomp-data/include/constants/songs-data';
+import { SE_USE_ITEM, SE_SELECT } from '../decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 
@@ -346,23 +348,34 @@ export function ItemUseCB_RareCandy(taskId: number, _returnTask: ((task: DecompT
   const mon = gPlayerParty[slotId];
   if (!mon || !mon.species) return;
   const itemId = gSpecialVar.ItemId;
+
+  // 1:1 décomp party_menu.c:4963-4972 — si level != MAX_LEVEL : buffer stats
+  // AVANT, applique l'effet (level up + CalculateMonStats = 6 stats), buffer
+  // stats APRÈS. (Le cas level==MAX → cannotUseEffect=TRUE, géré par result.)
+  const statsBefore = new Array<number>(6).fill(0);
+  const statsAfter = new Array<number>(6).fill(0);
+  GetMonLevelUpWindowStats(mon, statsBefore);   // 1:1 BufferMonStatsToTaskData(mon, arrayPtr)
   const result = PokemonUseItemEffects(mon, itemId, slotId, 0, false);
+  GetMonLevelUpWindowStats(mon, statsAfter);    // 1:1 BufferMonStatsToTaskData(mon, &data[NUM_STATS])
+
+  // 1:1 :4973 PlaySE(SE_SELECT).
+  PlaySE(SE_SELECT);
   if (result.cannotUse) {
+    // 1:1 :4974-4980 cannotUseEffect → "Ça n'aura aucun effet." (pas de box).
     ShowPartyMenuItemMessage(_expandStr(getString('gText_WontHaveEffect'), {}));
     return;
   }
-  // 1:1 décomp :4984 PlayFanfareByFanfareNum(FANFARE_LEVEL_UP). Notre 1ère
-  // iter : SE_USE_ITEM (= sound positif), polish ultérieur = fanfare full.
-  PlaySE(SE_USE_ITEM);
-  _removeOneFromBag(itemId);
-  // 1:1 :4996-5007 UpdateMonDisplayInfoAfterRareCandy : refresh status icon
-  // + level + HP text + HP bar + AnimatePartySlot.
+  // 1:1 :4985 UpdateMonDisplayInfoAfterRareCandy (refresh slot : level/HP/barre).
   RefreshPartySlot(slotId);
-  // 1:1 :4988-4989 ConvertIntToDecimalStringN(new level) + gText_Pkmn
-  // ElevatedToLvVar2 = "X est promu au\nN.\xb0{lvl}!"
-  const tmpl = getString('gText_PkmnElevatedToLvVar2');
-  const msg = _expandStr(tmpl, { var1: mon.nickname, var2: String(result.newLevel) });
-  ShowPartyMenuItemMessage(msg);
+  // 1:1 :4986 RemoveBagItem(item, 1).
+  _removeOneFromBag(itemId);
+  // 1:1 :4987-4989 ConvertIntToDecimalStringN(new level) + gText_PkmnElevatedToLvVar2
+  // = "X est promu au\nN.\xb0{lvl}!".
+  const msg = _expandStr(getString('gText_PkmnElevatedToLvVar2'),
+    { var1: mon.nickname, var2: String(result.newLevel) });
+  // 1:1 :4984 PlayFanfare + :4990 DisplayPartyMenuMessage + :4992 func=
+  // Task_DisplayLevelUpStatsPg1 → la séquence boîte de stats (pages 1/2).
+  ShowLevelUpStatsBox(statsBefore, statsAfter, msg);
 }
 
 // ─── ItemUseCB_ReduceEV (party_menu.c:4482) — 1:1-sémantique ────────────────

@@ -45,6 +45,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from '../../game/text_window';
+import { DrawLevelUpWindowPg1, DrawLevelUpWindowPg2 } from '../../game/menu_specialized';
 import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { SwitchPartyMonSlots, gPlayerParty, CalculatePlayerPartyCount, type Pokemon } from '../battle/party-storage';
@@ -55,7 +56,9 @@ import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from '../pokemon/pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
+  PlayFanfareByFanfareNum, WaitFanfare,
 } from '../system/decomp-globals';
+import { MUS_LEVEL_UP } from '../decomp-data/_common-constants';
 import { ResetSpriteData, ConvertIntToDecimalStringN, STR_CONV_MODE_RIGHT_ALIGN } from '../system/decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
@@ -200,6 +203,13 @@ const ITEM_USED_MSG_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 2, tilemapLeft: 1, tilemapTop: 15, width: 28, height: 4, paletteNum: 14, baseBlock: 0x1DF,
 };
 
+/** 1:1 décomp `sLevelUpStatsWindowTemplate` (data/party_menu.h:529-538) :
+ *  bg=2, (19, 1), 10×11, paletteNum=14, baseBlock=0x2E9. — la boîte de stats
+ *  à DROITE de l'écran, affichée au level-up via Super Bonbon (Rare Candy). */
+const LEVEL_UP_STATS_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 2, tilemapLeft: 19, tilemapTop: 1, width: 10, height: 11, paletteNum: 14, baseBlock: 0x2E9,
+};
+
 /** 1:1 décomp `sCancelButtonWindowTemplate` (pokeemeraude FR party_menu.h:386) :
  *  Window "SORTIR" à droite du SORTIR pokeball OAM. */
 const CANCEL_BUTTON_WINDOW_TEMPLATE: WindowTemplate = {
@@ -288,7 +298,8 @@ interface PartyAssets {
 }
 
 let _isOpen = false;
-let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim' = 'idle';
+let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item_used_msg' | 'hp_anim'
+  | 'levelup_pg1' | 'levelup_pg2' | 'levelup_learn' = 'idle';
 
 /** Message à afficher après use d'item (= 1:1 décomp DisplayPartyMenuMessage
  *  appelé depuis ItemUseCB_* : "Les PV de X sont restaurés...", "X est guéri
@@ -296,6 +307,15 @@ let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' | 'switching' | 'item
  *  on draw msg dans WIN_MSG, et au prochain A_BUTTON → ClosePartyScreen vers
  *  bag (via savedCallback = CB2_ReturnToBagMenu). */
 let _itemUsedMsgText: string | null = null;
+
+/** État boîte de stats level-up (Rare Candy / Super Bonbon). 1:1 décomp :
+ *  `sPartyMenuInternal->data` stocke les stats AVANT (slots 0-5) / APRÈS (6-11)
+ *  + `data[12]` = windowId. Ici en module vars. `_lvlUpStatsBefore/After` sont
+ *  STAT_-indexés ([HP,ATK,DEF,SPEED,SPATK,SPDEF]) = ordre BufferMonStatsToTaskData /
+ *  GetMonLevelUpWindowStats. */
+let _lvlUpStatsWinId = -1;
+let _lvlUpStatsBefore: number[] = [];
+let _lvlUpStatsAfter: number[] = [];
 
 /** 1:1 décomp `PartyMenuModifyHP` state (party_menu.c:5455). Le décomp utilise
  *  les data slots de la task ; ici on stocke en module vars. */
@@ -967,12 +987,14 @@ function _drawMsg(): void {
     //  strings.c:431 = "Le mettre où?"). Même famille fenêtre que CHOOSE_MON.
     msg = getString('gText_MoveToWhere');
     template = MSG_WINDOW_TEMPLATE;
-  } else if (_phase === 'item_used_msg' && _itemUsedMsgText) {
+  } else if ((_phase === 'item_used_msg' || _phase === 'levelup_pg1'
+      || _phase === 'levelup_pg2' || _phase === 'levelup_learn') && _itemUsedMsgText) {
     // 1:1 décomp DisplayPartyMenuMessage → PrintMessage(text) (party_menu.c:
     // 1706/2566) — utilise WIN_MSG = sSinglePartyMenuWindowTemplate[6]
     // (party_menu.h:180-187) = 28×4 tiles (= 2 lignes FONT_NORMAL). C'est
     // PAS la window CHOOSE_MON (= 21×2). Le `\n` du décomp FR pour
-    // gText_PkmnHPRestoredByVar2 prend la 2e ligne.
+    // gText_PkmnHPRestoredByVar2 prend la 2e ligne. Les phases levelup_*
+    // gardent ce même message ("X est promu au N.Y") affiché sous la box.
     msg = _itemUsedMsgText;
     template = ITEM_USED_MSG_WINDOW_TEMPLATE;
   } else if (_partyAction === PARTY_ACTION_USE_ITEM) {
@@ -2119,6 +2141,48 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
     }
     return;
   }
+  // Sub-states boîte de stats level-up (Rare Candy / Super Bonbon) — 1:1 décomp
+  // Task_DisplayLevelUpStatsPg1 → Pg2 → Task_TryLearnNewMoves (party_menu.c:5009-5073).
+  if (_phase === 'levelup_pg1') {
+    // 1:1 :5011 WaitFanfare(FALSE) && !IsPartyMenuTextPrinterActive && (A||B).
+    // (texte rendu instantané via TEXT_SKIP_DRAW → printer toujours inactif.)
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (WaitFanfare(false) && (newKeys & (KEY_A | KEY_B))) {
+      PlaySE(5);  // 1:1 :5013 PlaySE(SE_SELECT)
+      DisplayLevelUpStatsPg1();  // 1:1 :5014 crée la box + page 1 (deltas)
+      _phase = 'levelup_pg2';    // = func Task_DisplayLevelUpStatsPg2
+    }
+    return;
+  }
+  if (_phase === 'levelup_pg2') {
+    // 1:1 :5021 (A||B) → PlaySE + DisplayLevelUpStatsPg2 (page 2 = totaux).
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (newKeys & (KEY_A | KEY_B)) {
+      PlaySE(5);
+      DisplayLevelUpStatsPg2();  // 1:1 :5024
+      _phase = 'levelup_learn';  // = func Task_TryLearnNewMoves
+    }
+    return;
+  }
+  if (_phase === 'levelup_learn') {
+    // 1:1 :5052 WaitFanfare(FALSE) && (A||B) → RemoveLevelUpStatsWindow + learn/evo.
+    const newKeys = rt.gMain.newKeys;
+    const KEY_A = 0x0001, KEY_B = 0x0002;
+    if (WaitFanfare(false) && (newKeys & (KEY_A | KEY_B))) {
+      RemoveLevelUpStatsWindow();  // 1:1 :5054
+      _itemUsedMsgText = null;
+      // ⚠️ DETTE 1:1 (R3) : MonTryLearningNewMove + PartyMenuTryEvolution non
+      //   portés (fonctions absentes). Le décomp case 0 "No moves to learn" →
+      //   PartyMenuTryEvolution → (pas d'évo) → Task_ClosePartyMenuAfterText.
+      //   C'est le chemin par défaut le + courant → on close directement (retour
+      //   bag via savedCallback). À porter : apprentissage de move + évolution
+      //   au level-up via Super Bonbon.
+      ClosePartyScreen();
+    }
+    return;
+  }
   if (_phase !== 'open') return;
   const result = _partyMenuButtonHandler(rt);
   const KEY_A = 0x0001, KEY_B = 0x0002;
@@ -2421,6 +2485,70 @@ export function GetPartyScreenSlotId(): number {
 export function ShowPartyMenuItemMessage(text: string): void {
   _itemUsedMsgText = text;
   _phase = 'item_used_msg';
+  _drawMsg();
+}
+
+// ─── Boîte de stats level-up (Super Bonbon / Rare Candy) — 1:1 party_menu.c ──
+
+/** 1:1 décomp `CreateLevelUpStatsWindow` (party_menu.c:2578) :
+ *  AddWindow(sLevelUpStatsWindowTemplate) + DrawStdFrameWithCustomTileAndPalette. */
+function CreateLevelUpStatsWindow(): number {
+  _lvlUpStatsWinId = AddWindow(LEVEL_UP_STATS_WINDOW_TEMPLATE);
+  DrawStdFrameWithCustomTileAndPalette(_lvlUpStatsWinId, false, 0x4F, 13);
+  return _lvlUpStatsWinId;
+}
+
+/** 1:1 décomp `RemoveLevelUpStatsWindow` (party_menu.c:2585) : ClearWindowTilemap
+ *  + PartyMenuRemoveWindow(&windowId). */
+function RemoveLevelUpStatsWindow(): void {
+  if (_lvlUpStatsWinId < 0) return;
+  ClearWindowTilemap(_lvlUpStatsWinId);
+  RemoveWindow(_lvlUpStatsWinId);   // 1:1 PartyMenuRemoveWindow
+  _lvlUpStatsWinId = -1;
+  ScheduleBgCopyTilemapToVram(2);   // pousse le clear → la box disparaît.
+}
+
+/** 1:1 décomp `DisplayLevelUpStatsPg1` (party_menu.c:5029) : crée la box +
+ *  DrawLevelUpWindowPg1(win, before, after, WHITE, DARK_GRAY, LIGHT_GRAY) +
+ *  CopyWindowToVram + ScheduleBgCopyTilemapToVram(2). Page 1 = deltas (+/-N). */
+function DisplayLevelUpStatsPg1(): void {
+  const win = CreateLevelUpStatsWindow();
+  // 1:1 :5034 couleurs party = TEXT_COLOR_WHITE(1)/DARK_GRAY(2)/LIGHT_GRAY(3).
+  DrawLevelUpWindowPg1(win, _lvlUpStatsBefore, _lvlUpStatsAfter, 1, 2, 3);
+  // Port : COPYWIN_FULL(3) (= comme _drawMsg) pousse gfx+tilemap ensemble (la
+  // décomp fait GFX(2) + ScheduleBgCopy ; résultat affiché identique).
+  CopyWindowToVram(win, 3);
+  ScheduleBgCopyTilemapToVram(2);
+}
+
+/** 1:1 décomp `DisplayLevelUpStatsPg2` (party_menu.c:5039) : DrawLevelUpWindowPg2
+ *  (win, after, WHITE, DARK_GRAY, LIGHT_GRAY). Page 2 = nouveaux totaux. */
+function DisplayLevelUpStatsPg2(): void {
+  if (_lvlUpStatsWinId < 0) return;
+  DrawLevelUpWindowPg2(_lvlUpStatsWinId, _lvlUpStatsAfter, 1, 2, 3);
+  CopyWindowToVram(_lvlUpStatsWinId, 3);
+  ScheduleBgCopyTilemapToVram(2);
+}
+
+/** Lance la séquence boîte de stats level-up (= queue de `ItemUseCB_RareCandy`,
+ *  party_menu.c:4982-4992 : PlayFanfareByFanfareNum(FANFARE_LEVEL_UP) +
+ *  DisplayPartyMenuMessage("X est promu au N.Y") + func=Task_DisplayLevelUpStatsPg1).
+ *  `statsBefore`/`statsAfter` = stats STAT_-indexées AVANT/APRÈS le level-up
+ *  (cf. GetMonLevelUpWindowStats). L'appelant a DÉJÀ appliqué l'effet + retiré
+ *  l'objet du sac + rafraîchi le slot party. */
+export function ShowLevelUpStatsBox(
+  statsBefore: number[],
+  statsAfter: number[],
+  msg: string,
+): void {
+  _lvlUpStatsBefore = statsBefore;
+  _lvlUpStatsAfter = statsAfter;
+  // 1:1 :4984 PlayFanfareByFanfareNum(FANFARE_LEVEL_UP) (= MUS_LEVEL_UP).
+  PlayFanfareByFanfareNum(MUS_LEVEL_UP);
+  // 1:1 :4990 DisplayPartyMenuMessage("X est promu au N.Y", TRUE) → WIN_MSG.
+  _itemUsedMsgText = msg;
+  // 1:1 :4992 func = Task_DisplayLevelUpStatsPg1 (attend fanfare finie + A/B).
+  _phase = 'levelup_pg1';
   _drawMsg();
 }
 
