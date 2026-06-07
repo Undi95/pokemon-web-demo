@@ -210,9 +210,9 @@ function _battleBgOffset(regOffset: number): number {
 // 1:1 scanline_effect.c:126-195
 function TaskFunc_UpdateWavePerFrame(taskId: number): void {
   const r = rt();
-  const tasks = r?.gTasks;
-  if (!tasks) return;
-  const data: number[] = tasks[taskId].data;
+  const task = r?.gTasks?.get?.(taskId);  // HW-emu : rt.gTasks = Map
+  if (!task) return;
+  const data: number[] = task.data;
   let value = 0;
   let i: number;
   let offset: number;
@@ -276,8 +276,9 @@ export function ScanlineEffect_InitWave(
   });
 
   const r = rt();
-  const taskId: number = r.CreateTask(TaskFunc_UpdateWavePerFrame, 0);
-  const data: number[] = r.gTasks[taskId].data;
+  // HW-emu : la task func reçoit l'objet DecompTask → wrap pour passer task.taskId.
+  const taskId: number = r.CreateTask((tk: { taskId: number }) => TaskFunc_UpdateWavePerFrame(tk.taskId), 0);
+  const data: number[] = r.gTasks.get(taskId).data;  // HW-emu : rt.gTasks = Map
 
   data[T_START_LINE] = startLine;
   data[T_END_LINE] = endLine;

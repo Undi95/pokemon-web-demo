@@ -38,7 +38,6 @@ import {
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
 } from '../system/decomp-globals';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../ui/gba-text-system';
-import { tickBattleIntroSlideL } from './battle-intro';
 import { tickBattlerMonReveals } from './battle-controller-opponent';
 import { tickIntroSlideIn, tickTrainerThrow, tickSendOut } from './battle-sendout-anim';
 /** 1:1 décomp `B_BUTTON` (io_reg.h) = 1 << 1. */
@@ -197,10 +196,9 @@ export function BattleMainCB2(): void {
   _RunTextPrinters();
   _UpdatePaletteFade();
   _RunTasks();
-  // Voie L : tick l'animation d'entrée de scène (BattleIntroSlide1). No-op si pas
-  // de slide active. 1:1 : la slide tourne comme une task via RunTasks ; on la ticke
-  // ici (BattleMainCB2 = 1×/frame, comme RunTasks).
-  tickBattleIntroSlideL();
+  // Voie L : l'animation d'entrée (BattleIntroSlide1/2/3) tourne comme une TASK via
+  // _RunTasks() ci-dessus (1:1 : HandleIntroSlide → CreateTask). L'ancien tick ad-hoc
+  // tickBattleIntroSlideL est retiré (port miroir battle_intro.c).
   // Voie L : révèle les sprites mon créés invisibles (fix « sprite noir »/avatar noir) dès
   // que leur palette OBJ est live. No-op si rien en attente. 1×/frame comme tickBattleIntroSlideL.
   tickBattlerMonReveals();

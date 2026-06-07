@@ -48,6 +48,10 @@ import {
 import { getRuntime, setReservedSpritePaletteCount } from '../system/decomp-globals';
 import { FreeAllSpritePalettes } from '../system/sprite';
 import {
+  gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
+  SCANLINE_EFFECT_DMACNT_16BIT,
+} from '../../game/scanline_effect';
+import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1,
   BATTLE_ENVIRONMENT_GRASS,
 } from './battle-bg';
@@ -146,14 +150,11 @@ function _SetGpuReg(reg: number, value: number): void {
   rt?.SetGpuReg?.(reg, value);
 }
 
-/** 1:1 décomp `ScanlineEffect_Clear()` + `ScanlineEffect_SetParams(params)`. */
-function _ScanlineEffect_Clear(): void { /* Dette R3 */ }
-function _ScanlineEffect_SetParams(_params: unknown): void { /* Dette R3 */ }
-
-/** 1:1 décomp `gScanlineEffectRegBuffers[buf][line]`. */
-const gScanlineEffectRegBuffers: number[][] = [
-  new Array(160).fill(0), new Array(160).fill(0),
-];
+/** 1:1 décomp `REG_OFFSET_BG3HOFS` (io_reg.h) = 0x1C : cible du scanline d'intro
+ *  (sIntroScanlineParams16Bit, battle_main.c:250). */
+const REG_OFFSET_BG3HOFS = 0x1C;
+// ScanlineEffect_Clear/SetParams + gScanlineEffectRegBuffers = MIROIR 1:1
+// src/game/scanline_effect.ts (importés ci-dessus ; plus de buffer local dupliqué).
 
 /** 1:1 décomp `ResetPaletteFade()`. */
 function _ResetPaletteFade(): void {
@@ -331,7 +332,7 @@ export function CB2_InitBattleInternal(): void {
     if (vbm?.battleVBlankState) {
       vbm.battleVBlankState.win0v = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1);
     }
-    _ScanlineEffect_Clear();
+    ScanlineEffect_Clear();
 
     // 1:1 décomp ll. 647-657 : scanline buffer fill (top half 0xF0, bottom 0xFF10).
     let i = 0;
@@ -344,7 +345,9 @@ export function CB2_InitBattleInternal(): void {
       gScanlineEffectRegBuffers[1][i] = 0xFF10;
     }
 
-    _ScanlineEffect_SetParams(null /* sIntroScanlineParams16Bit */);
+    // 1:1 décomp `ScanlineEffect_SetParams(sIntroScanlineParams16Bit)` (battle_main.c:659) :
+    // dmaDest = &REG_BG3HOFS, 16-bit, initState 1 → le DMA HBlank applique le buffer au terrain BG3.
+    ScanlineEffect_SetParams({ dmaDest: REG_OFFSET_BG3HOFS, dmaControl: SCANLINE_EFFECT_DMACNT_16BIT, initState: 1 });
   }
 
   _ResetPaletteFade();

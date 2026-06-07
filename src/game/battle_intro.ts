@@ -99,7 +99,7 @@ function setIntroSlideFlagsClearBit0(): void { G.gIntroSlideFlags = (G.gIntroSli
 
 // ─── Task helpers (HW-emu via rt.gTasks / rt.CreateTask) ────────────────────
 // tState = data[0], tEnvironment = data[1] (1:1 #define battle_intro.c:102-103).
-function tData(taskId: number): number[] { return rt().gTasks[taskId].data as number[]; }
+function tData(taskId: number): number[] { return rt().gTasks.get(taskId).data as number[]; }  // HW-emu : rt.gTasks = Map
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SetAnimBgAttribute / GetAnimBgAttribute (battle_intro.c:39-100)
@@ -133,18 +133,23 @@ export function HandleIntroSlide(environment: number): void {
   const r = rt();
   let taskId: number;
   const flags = gBattleTypeFlags();
+  // HW-emu : notre runtime appelle la task func avec l'OBJET DecompTask, pas le taskId
+  // (décomp = func(taskId)). On wrappe pour passer `task.taskId` aux BattleIntroSlideN
+  // (qui gardent la signature 1:1 `(taskId)` + tData(taskId)=gTasks.get(taskId)).
+  const _ct = (fn: (taskId: number) => void): number =>
+    r.CreateTask((tk: { taskId: number }) => fn(tk.taskId), 0);
 
   if ((flags & BATTLE_TYPE_INGAME_PARTNER) && G.gPartnerTrainerId !== TRAINER_STEVEN_PARTNER) {
-    taskId = r.CreateTask(BattleIntroSlidePartner, 0);
+    taskId = _ct(BattleIntroSlidePartner);
   } else if (flags & BATTLE_TYPE_LINK) {
-    taskId = r.CreateTask(BattleIntroSlideLink, 0);
+    taskId = _ct(BattleIntroSlideLink);
   } else if (flags & BATTLE_TYPE_FRONTIER) {
-    taskId = r.CreateTask(BattleIntroSlide3, 0);
+    taskId = _ct(BattleIntroSlide3);
   } else if ((flags & BATTLE_TYPE_KYOGRE_GROUDON) && G.gGameVersion !== VERSION_RUBY) {
     environment = BATTLE_ENVIRONMENT_UNDERWATER;
-    taskId = r.CreateTask(BattleIntroSlide2, 0);
+    taskId = _ct(BattleIntroSlide2);
   } else {
-    taskId = r.CreateTask(sBattleIntroSlideFuncs[environment] ?? BattleIntroSlide1, 0);
+    taskId = _ct(sBattleIntroSlideFuncs[environment] ?? BattleIntroSlide1);
   }
 
   const data = tData(taskId);

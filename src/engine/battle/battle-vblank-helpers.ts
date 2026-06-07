@@ -265,3 +265,39 @@ export function BufferPartyVsScreenHealth_AtEnd(taskId: number): void {
   BufferPartyVsScreenHealth_AtStart, BufferPartyVsScreenHealth_AtEnd,
   battleVBlankState,
 };
+
+// ─── Globals battle_main gBattle_BG*/WIN* = accesseurs live sur battleVBlankState ──
+// Unifie la convention décomp (`gBattle_BG1_X += 6`, écrit par src/game/battle_intro.ts
+// + les auto-callbacks battle_anim) avec la source appliquée par VBlankCB_Battle, SANS
+// réécrire VBlankCB. (Port miroir battle_intro — étape câblage 2026-06-07.)
+(() => {
+  const g = globalThis as Record<string, unknown>;
+  type VKey = keyof typeof battleVBlankState;
+  const def = (name: string, key: VKey): void => {
+    // Toujours (re)définir : au HMR, `battleVBlankState` est une NOUVELLE instance ;
+    // un accesseur capturant l'ancienne serait périmé (= écrit dans le vide).
+    // configurable:true → redéfinissable à chaque (re)chargement du module.
+    Object.defineProperty(g, name, {
+      configurable: true,
+      get: () => battleVBlankState[key],
+      set: (v: number) => { battleVBlankState[key] = v & 0xFFFF; },
+    });
+  };
+  def('gBattle_BG0_X', 'bg0_x'); def('gBattle_BG0_Y', 'bg0_y');
+  def('gBattle_BG1_X', 'bg1_x'); def('gBattle_BG1_Y', 'bg1_y');
+  def('gBattle_BG2_X', 'bg2_x'); def('gBattle_BG2_Y', 'bg2_y');
+  def('gBattle_BG3_X', 'bg3_x'); def('gBattle_BG3_Y', 'bg3_y');
+  def('gBattle_WIN0H', 'win0h'); def('gBattle_WIN0V', 'win0v');
+  def('gBattle_WIN1H', 'win1h'); def('gBattle_WIN1V', 'win1v');
+  // gIntroSlideFlags ↔ __battleMainFunctions (= source du flag lue par le send-out
+  // SpriteCB). battle_intro.ts le clear (&= ~1) ; PlayerHandleIntroSlide le set (|= 1).
+  {
+    const bmf = (): { getIntroSlideFlags?: () => number; setIntroSlideFlags?: (v: number) => void } | undefined =>
+      (globalThis as Record<string, unknown>).__battleMainFunctions as never;
+    Object.defineProperty(g, 'gIntroSlideFlags', {
+      configurable: true,
+      get: () => bmf()?.getIntroSlideFlags?.() ?? 0,
+      set: (v: number) => { bmf()?.setIntroSlideFlags?.(v & 0xFFFF); },
+    });
+  }
+})();

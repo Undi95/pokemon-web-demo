@@ -108,7 +108,7 @@ import {
   SetBattleMonDataFromBuffer,
 } from './party-storage';
 import { gBattlerPartyIndexes } from './state';
-import { startBattleIntroSlideL } from './battle-intro';
+import { HandleIntroSlide } from '../../game/battle_intro';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
 } from './battle-hp-bar';
@@ -1875,7 +1875,7 @@ function PlayerHandleFaintingCry(): void {
  *  BattleIntroSlide1) → charge le fond d'entrée strié + ouvre les bandes WIN0V +
  *  scroll terrain. Tickée par BattleMainCB2. (gIntroSlideFlags = raffinement A/B.) */
 function PlayerHandleIntroSlide(): void {
-  startBattleIntroSlideL(gBattleBufferA[gActiveBattler][1]);
+  HandleIntroSlide(gBattleBufferA[gActiveBattler][1]);  // 1:1 → CreateTask(BattleIntroSlideN), tickée par RunTasks
   // 1:1 décomp battle_controller_player.c:2936 `gIntroSlideFlags |= 1;` : gèle les SpriteCB de
   // slide (mon sauvage = SpriteCB_MoveWildMonToRight) pendant l'ouverture des bandes ; remis à 0
   // par tickBattleIntroSlideL case 2 → le mon ne glisse qu'APRÈS l'ouverture (timing 1:1).
