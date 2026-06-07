@@ -28,14 +28,26 @@
  *     = dette R3 (le runtime web les fait implicitement / via __scanlineEffectTick).
  */
 
-import { getRuntime } from '../engine/system/decomp-globals';
+import {
+  getRuntime, BlendPalettes, PALETTES_ALL,
+  AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
+  UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
+} from '../engine/system/decomp-globals';
 import { Random } from '../engine/system/random';
 // Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
 import * as _saveBlockNs from '../engine/save/save-block-state';
-import { gBattleTypeFlags } from '../engine/battle/state';
+import {
+  gActiveBattler, gBattleTypeFlags, gBattlersCount,
+  setBattleOutcome, setActiveBattler, getBattlerControllerFunc,
+} from '../engine/battle/state';
+// Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
+import * as _stateNs from '../engine/battle/state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_RECORDED,
 } from '../engine/battle/constants';
+import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
+import { tickBattlerMonReveals } from '../engine/battle/battle-controller-opponent';
+import { tickIntroSlideIn, tickTrainerThrow, tickSendOut } from '../engine/battle/battle-sendout-anim';
 
 // ─── BG/WIN scroll state 1:1 décomp (battle_main.c:124-135) ─────────────────
 
@@ -297,11 +309,291 @@ export function BufferPartyVsScreenHealth_AtEnd(taskId: number): void {
   }
 })();
 
+// ════════════════════════════════════════════════════════════════════════════
+// Tranche 2 — BattleMainCB1/CB2 + cleanup (battle_main.c) [ex-battle-cb2.ts]
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `B_BUTTON` (io_reg.h) = 1 << 1. */
+const B_BUTTON = 1 << 1;
+/** 1:1 décomp `BeginNormalPaletteFade(palettes, delay, startY, endY, color)`. */
+function _BeginNormalPaletteFade(palettes: number, delay: number, startY: number, endY: number, color: number): void {
+  const rt = getRuntime();
+  rt?.BeginNormalPaletteFade?.(
+    palettes as unknown as string, delay, startY, endY, color as unknown as string,
+  );
+}
+
+// ─── Cascade helpers (= dette R3 documentée) ───────────────────────────────
+
+/** 1:1 décomp `gBattleMainFunc` getter via K8. */
+function _getBattleMainFunc(): (() => void) | null {
+  const m = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    getBattleMainFunc?: () => (() => void) | null;
+  } | undefined;
+  return m?.getBattleMainFunc?.() ?? null;
+}
+
+/** 1:1 décomp `gBattlerControllerFuncs[gActiveBattler]()` (battle_main.c:3031).
+ *  Appel NON gaté : la func installée (SetControllerTo* / XxxBufferRunCommand /
+ *  poller CompleteOnXxx) s'auto-gate sur `gBattleControllerExecFlags`. Gater
+ *  ici casserait le 1er tick (SetControllerToPlayer doit tourner alors qu'aucun
+ *  flag n'est set). Table partagée = state.ts. */
+function _runBattlerController(battler: number): void {
+  const fn = getBattlerControllerFunc(battler);
+  if (fn) fn();
+}
+
+/** 1:1 décomp `AnimateSprites()` (sprite.c). Wire vers decomp-globals existing. */
+function _AnimateSprites(): void {
+  _AnimateSprites_rt();
+}
+
+/** 1:1 décomp `BuildOamBuffer()`. Wire vers decomp-globals existing. */
+function _BuildOamBuffer(): void {
+  _BuildOamBuffer_rt();
+}
+
+/** 1:1 décomp `RunTextPrinters()`. Wire vers ui/gba-text-system existing. */
+function _RunTextPrinters(): void {
+  _RunTextPrinters_rt();
+}
+
+/** 1:1 décomp `UpdatePaletteFade()`. Wire vers decomp-globals existing. */
+function _UpdatePaletteFade(): void {
+  _UpdatePaletteFade_rt();
+}
+
+/** 1:1 décomp `RunTasks()`. Wire vers decomp-globals existing. */
+function _RunTasks(): void {
+  _RunTasks_rt();
+}
+
+/** 1:1 décomp `JOY_HELD(button)`. */
+function _JOY_HELD(button: number): boolean {
+  const rt = getRuntime();
+  const heldKeys = rt?.gMain?.heldKeys ?? 0;
+  return (heldKeys & button) === button;
+}
+
+/** 1:1 décomp `RecordedBattle_CanStopPlayback()`. */
+function _RecordedBattle_CanStopPlayback(): boolean {
+  // Dette R3 : recorded battle system.
+  return false;
+}
+
+/** 1:1 décomp `ResetPaletteFadeControl()`. */
+function _ResetPaletteFadeControl(): void {
+  // Dette R3 : palette fade reset.
+}
+
+/** 1:1 décomp `m4aMPlayStop(playerInfo)`. Wire vers m4a/player stopSong. */
+function _m4aMPlayStop(playerInfo: unknown): void {
+  // 1:1 décomp : stop le music player (= BGM ou SE1/SE2 selon ptr passé).
+  void playerInfo;
+  void import('../engine/m4a/player').then(({ stopSong }) => {
+    stopSong('se1' as never);
+    stopSong('se2' as never);
+  });
+}
+
+/** 1:1 décomp `m4aSongNumStop(songId)`. Wire vers m4a/player stopSong. */
+function _m4aSongNumStop(_songId: number): void {
+  // 1:1 décomp : stop song par songId. SE_LOW_HEALTH = 287.
+  void import('../engine/m4a/player').then(({ stopSong }) => {
+    stopSong('se1' as never);
+    stopSong('se2' as never);
+  });
+}
+
+/** 1:1 décomp `FreeMonSpritesGfx()`. */
+function _FreeMonSpritesGfx(): void {
+  // Dette R3 : noop pour notre runtime web.
+}
+
+/** 1:1 décomp `FreeBattleSpritesData()`. */
+function _FreeBattleSpritesData(): void {
+  // Dette R3 : noop.
+}
+
+/** 1:1 décomp `FreeBattleResources()`. */
+function _FreeBattleResources(): void {
+  // Dette R3 : noop.
+}
+
+/** 1:1 décomp `FreeAllWindowBuffers()`. */
+function _FreeAllWindowBuffers(): void {
+  // Dette R3 : window buffer cleanup.
+}
+
+/** 1:1 décomp `ZeroEnemyPartyMons()`. */
+function _ZeroEnemyPartyMons(): void {
+  const stateMod = _stateNs as unknown as { gEnemyParty?: unknown[] };
+  if (stateMod.gEnemyParty) {
+    for (let i = 0; i < 6; i++) {
+      stateMod.gEnemyParty[i] = null;
+    }
+  }
+}
+
+/** 1:1 décomp `SetMainCallback2(cb)` : installe le callback2 sur le runtime
+ *  (= gMain.callback2, ticked chaque frame par CallCallbacks). */
+function _SetMainCallback2(cb: (() => void) | null): void {
+  getRuntime()?.SetMainCallback2?.(cb as never);
+}
+
+// ─── BattleMainCB1 (battle_main.c:3026-3032) ───────────────────────────────
+
+/** 1:1 décomp `BattleMainCB1()` (battle_main.c:3026-3032).
+ *  CB1 callback : run gBattleMainFunc puis controllers per-battler. */
+export function BattleMainCB1(): void {
+  const mainFunc = _getBattleMainFunc();
+  if (mainFunc) mainFunc();
+
+  for (let i = 0; i < gBattlersCount; i++) {
+    setActiveBattler(i);
+    _runBattlerController(gActiveBattler);
+  }
+}
+
+// ─── BattleMainCB2 (battle_main.c:1863-1879) ───────────────────────────────
+
+/** 1:1 décomp `BattleMainCB2()` (battle_main.c:1863-1879).
+ *  CB2 callback : anim + OAM + text + palette fade + tasks. */
+export function BattleMainCB2(): void {
+  _AnimateSprites();
+  _BuildOamBuffer();
+  _RunTextPrinters();
+  _UpdatePaletteFade();
+  _RunTasks();
+  // Voie L : l'animation d'entrée (BattleIntroSlide1/2/3) tourne comme une TASK via
+  // _RunTasks() ci-dessus (1:1 : HandleIntroSlide → CreateTask).
+  // ⚠️ DETTE port miroir : les 4 ticks ad-hoc ci-dessous ne sont PAS 1:1 (la décomp
+  // fait reveal/send-out via SpriteCB). À RETIRER quand send-out/reveals passeront par
+  // les vrais SpriteCB (cause probable de la désync texte/anim). Conservés pour l'instant
+  // (comportement constant lors de la migration tranche 2).
+  tickBattlerMonReveals();
+  tickIntroSlideIn();
+  tickTrainerThrow();
+  tickSendOut();
+
+  // 1:1 décomp ll. 1871-1878 : B button during recorded → quit.
+  if (_JOY_HELD(B_BUTTON)
+      && (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      && _RecordedBattle_CanStopPlayback()) {
+    setBattleOutcome(5 /* B_OUTCOME_PLAYER_TELEPORTED */);
+    const stateMod = _stateNs as unknown as { setSpecialVarResult?: (v: number) => void };
+    stateMod.setSpecialVarResult?.(5);
+
+    _ResetPaletteFadeControl();
+    _BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, 0 /* RGB_BLACK */);
+    _SetMainCallback2(CB2_QuitRecordedBattle);
+  }
+}
+
+// ─── FreeRestoreBattleData (battle_main.c:1881-1891) ───────────────────────
+
+/** 1:1 décomp `FreeRestoreBattleData()` (battle_main.c:1881-1891). */
+export function FreeRestoreBattleData(): void {
+  const m = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    setMainInBattle?: (v: boolean) => void;
+    getPreBattleCallback1?: () => (() => void) | null;
+    setMainCallback1?: (cb: (() => void) | null) => void;
+  } | undefined;
+  m?.setMainCallback1?.(m?.getPreBattleCallback1?.() ?? null);
+  m?.setMainInBattle?.(false);
+
+  _ZeroEnemyPartyMons();
+  _m4aSongNumStop(287 /* SE_LOW_HEALTH */);
+  _FreeMonSpritesGfx();
+  _FreeBattleSpritesData();
+  _FreeBattleResources();
+}
+
+// ─── CB2_QuitRecordedBattle (battle_main.c:1893-1904) ──────────────────────
+
+/** 1:1 décomp `CB2_QuitRecordedBattle()` (battle_main.c:1893-1904).
+ *  Exit recorded playback : wait palette fade end + cleanup + restore CB2. */
+export function CB2_QuitRecordedBattle(): void {
+  _UpdatePaletteFade();
+  const rt = getRuntime();
+  if (!rt?.gPaletteFade?.active) {
+    _m4aMPlayStop(null /* gMPlayInfo_SE1 */);
+    _m4aMPlayStop(null /* gMPlayInfo_SE2 */);
+    FreeRestoreBattleData();
+    _FreeAllWindowBuffers();
+
+    const m = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+      getMainSavedCallback?: () => (() => void) | null;
+    } | undefined;
+    _SetMainCallback2(m?.getMainSavedCallback?.() ?? null);
+  }
+}
+
+// ─── SpriteCB_UnusedBattleInit (battle_main.c:1909-1958) ───────────────────
+
+interface UnusedSprite {
+  data: number[];
+  callback?: ((sprite: UnusedSprite) => void) | null;
+}
+
+/** 1:1 décomp `SpriteCB_UnusedBattleInit(sprite)` (1909-1913). UNUSED. */
+export function SpriteCB_UnusedBattleInit(sprite: UnusedSprite): void {
+  sprite.data[0] = 0;  // sState = 0
+  sprite.callback = SpriteCB_UnusedBattleInit_Main;
+}
+
+/** 1:1 décomp helper case 1 (= extrait pour bypass fallthrough noFallthrough). */
+function _spriteCB_UnusedBattleInit_Main_Case1(sprite: UnusedSprite): void {
+  sprite.data[4]--;  // sDelay--
+  if (sprite.data[4] === 0) {
+    sprite.data[4] = 2;
+    const r2 = sprite.data[1] + sprite.data[3] * 32;
+    const r0 = sprite.data[2] - sprite.data[3] * 32;
+    void r2; void r0;
+    sprite.data[3]++;
+    if (sprite.data[3] === 21) {
+      sprite.data[0]++;
+      sprite.data[1] = 32;
+    }
+  }
+}
+
+/** 1:1 décomp `SpriteCB_UnusedBattleInit_Main(sprite)` (1915-1958). UNUSED. */
+export function SpriteCB_UnusedBattleInit_Main(sprite: UnusedSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[0]++;
+      sprite.data[1] = 0;
+      sprite.data[2] = 0x281;
+      sprite.data[3] = 0;
+      sprite.data[4] = 1;  // sDelay = 1
+      _spriteCB_UnusedBattleInit_Main_Case1(sprite);
+      break;
+    case 1:
+      _spriteCB_UnusedBattleInit_Main_Case1(sprite);
+      break;
+    case 2:
+      sprite.data[1]--;
+      if (sprite.data[1] === 20) {
+        // 1:1 décomp : SetMainCallback2(CB2_InitBattle). Dette R3.
+      }
+      break;
+  }
+}
+
 // ─── Devtools expose ───────────────────────────────────────────────────────
+
+void BlendPalettes;
 
 (globalThis as Record<string, unknown>).__battleVBlankHelpers = {
   VBlankCB_Battle, HBlankCB_Battle, GetBattleBgTemplateData,
   SpriteCB_VsLetterDummy, SpriteCB_VsLetter, SpriteCB_VsLetterInit,
   BufferPartyVsScreenHealth_AtStart, BufferPartyVsScreenHealth_AtEnd,
   battleVBlankState,
+};
+
+(globalThis as Record<string, unknown>).__battleCB2 = {
+  BattleMainCB1, BattleMainCB2,
+  FreeRestoreBattleData, CB2_QuitRecordedBattle,
+  SpriteCB_UnusedBattleInit, SpriteCB_UnusedBattleInit_Main,
 };
