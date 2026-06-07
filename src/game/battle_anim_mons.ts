@@ -123,3 +123,64 @@ export function SetSpritePrimaryCoordsFromSecondaryCoords(sprite: DecompSprite):
   sprite.x2 = 0;
   sprite.y2 = 0;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TRANCHE 2 (data, 2026-06-08) — fondation de GetBattlerSpriteCoord (#19).
+// Tables PURES portees 1:1. Les fonctions GetBattlerSpriteCoord/Final_Y/YDelta/
+// Elevation viendront APRES (besoin d'une source SYNCHRONE des y_offset par-espece
+// = gMonFront/BackPicCoords, aujourd'hui seulement en JSON async). DORMANT.
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 decomp include/battle_anim.h:162-168 — enum coordType de GetBattlerSpriteCoord.
+export const BATTLER_COORD_X = 0;
+export const BATTLER_COORD_Y = 1;
+export const BATTLER_COORD_X_2 = 2;
+export const BATTLER_COORD_Y_PIC_OFFSET = 3;
+export const BATTLER_COORD_Y_PIC_OFFSET_DEFAULT = 4;
+
+/** 1:1 decomp gba/types.h `struct UCoords8 { u8 x, y; }`. */
+export interface UCoords8 { x: number; y: number; }
+
+// 1:1 decomp battle_anim_mons.c:38-52 `static const struct UCoords8 sBattlerCoords[][MAX_BATTLERS_COUNT]`.
+// Indexe [IS_DOUBLE_BATTLE()][GetBattlerPosition(battler)] : position de base (px) du
+// sprite de chaque battler (B_POSITION_PLAYER_LEFT/OPPONENT_LEFT/PLAYER_RIGHT/OPPONENT_RIGHT).
+export const sBattlerCoords: ReadonlyArray<ReadonlyArray<UCoords8>> = [
+  [ // [0] Single battle
+    { x: 72, y: 80 },   // B_POSITION_PLAYER_LEFT
+    { x: 176, y: 40 },  // B_POSITION_OPPONENT_LEFT
+    { x: 48, y: 40 },   // B_POSITION_PLAYER_RIGHT
+    { x: 112, y: 80 },  // B_POSITION_OPPONENT_RIGHT
+  ],
+  [ // [1] Double battle
+    { x: 32, y: 80 },
+    { x: 200, y: 40 },
+    { x: 90, y: 88 },
+    { x: 152, y: 32 },
+  ],
+];
+
+// 1:1 decomp src/data/pokemon_graphics/enemy_mon_elevation.h (`#include` dans
+// battle_anim_mons.c). `const u8 gEnemyMonElevation[NUM_SPECIES]` : de combien (px)
+// le mon ADVERSE est remonte au-dessus de sa position normale en combat (especes
+// volantes/flottantes). SPARSE : transcription 1:1 des 61 entrees non-nulles ; toutes
+// les autres especes = 0. Cle = nom enum SPECIES_X (transcription verifiable
+// directement vs la decomp). GetBattlerElevation (a venir) lira via species num ->
+// nom (reverseDecompConstant), defaut 0. Cf. la table decomp indexee par num.
+export const gEnemyMonElevation: Readonly<Record<string, number>> = {
+  SPECIES_BUTTERFREE: 8, SPECIES_BEEDRILL: 8, SPECIES_PIDGEY: 16, SPECIES_PIDGEOT: 4,
+  SPECIES_FEAROW: 6, SPECIES_ZUBAT: 8, SPECIES_GOLBAT: 8, SPECIES_VENOMOTH: 8,
+  SPECIES_GEODUDE: 16, SPECIES_MAGNEMITE: 16, SPECIES_MAGNETON: 8, SPECIES_GASTLY: 4,
+  SPECIES_HAUNTER: 4, SPECIES_VOLTORB: 10, SPECIES_ELECTRODE: 12, SPECIES_KOFFING: 8,
+  SPECIES_WEEZING: 6, SPECIES_AERODACTYL: 7, SPECIES_ARTICUNO: 6, SPECIES_ZAPDOS: 8,
+  SPECIES_MOLTRES: 5, SPECIES_DRAGONITE: 6, SPECIES_MEW: 8, SPECIES_LEDIAN: 8,
+  SPECIES_CROBAT: 6, SPECIES_HOPPIP: 11, SPECIES_SKIPLOOM: 12, SPECIES_JUMPLUFF: 9,
+  SPECIES_YANMA: 8, SPECIES_MISDREAVUS: 8, SPECIES_UNOWN: 8, SPECIES_GLIGAR: 6,
+  SPECIES_LUGIA: 6, SPECIES_HO_OH: 6, SPECIES_CELEBI: 15, SPECIES_BEAUTIFLY: 8,
+  SPECIES_DUSTOX: 10, SPECIES_NINJASK: 10, SPECIES_SHEDINJA: 8, SPECIES_WINGULL: 16,
+  SPECIES_PELIPPER: 8, SPECIES_MASQUERAIN: 10, SPECIES_BALTOY: 4, SPECIES_CLAYDOL: 10,
+  SPECIES_FLYGON: 7, SPECIES_GLALIE: 12, SPECIES_LUNATONE: 13, SPECIES_SOLROCK: 4,
+  SPECIES_SWABLU: 12, SPECIES_ALTARIA: 8, SPECIES_DUSKULL: 9, SPECIES_SHUPPET: 12,
+  SPECIES_BANETTE: 8, SPECIES_CASTFORM: 16, SPECIES_BELDUM: 8, SPECIES_RAYQUAZA: 6,
+  SPECIES_LATIAS: 6, SPECIES_LATIOS: 6, SPECIES_JIRACHI: 12, SPECIES_DEOXYS: 8,
+  SPECIES_CHIMECHO: 12,
+};
