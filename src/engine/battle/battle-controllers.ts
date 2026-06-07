@@ -82,6 +82,7 @@ import {
   CONTROLLER_INTROTRAINERBALLTHROW,
   CONTROLLER_DRAWTRAINERPIC,
   CONTROLLER_LOADMONSPRITE,
+  CONTROLLER_GETMONDATA,
   enqueueBattleEvent,
   buildBattleMsgDataSnapshot,
   type BattleMsgData,
@@ -698,10 +699,16 @@ export function BtlController_EmitSwitchInAnim(_bufferId: number, partyId: numbe
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitGetMonData(buf, requestId, monBitFlags)`. */
-export function BtlController_EmitGetMonData(_bufferId: number, _requestId: number, _monBitFlags: number): void {
-  // Phase 1.4 UI : read mon data via controller. Notre port lit directement
-  // gBattleMons donc cet émitter est no-op (= équivalent côté queue : pas d'event UI).
+/** 1:1 décomp `BtlController_EmitGetMonData` (battle_controllers.c:968-975).
+ *  Écrit [GETMONDATA, requestId, monToCheck, 0] dans gBattleBufferA via
+ *  PrepareBufferDataTransfer. CRITIQUE : bufferA[0] = l'ID de COMMANDE lu par
+ *  XxxBufferRunCommand pour dispatcher vers XxxHandleGetMonData. Sans cette
+ *  écriture, le buffer garde sa valeur RÉSIDUELLE (au 1er combat = 0 = GETMONDATA
+ *  par chance ; au re-combat = CHOOSEACTION résiduel → dispatch vers le mauvais
+ *  handler → BattleIntroGetMonsData bloque case 1 → écran noir). Le handler lit
+ *  ensuite gBattleMons directement (adaptation : pas de round-trip data réel). */
+export function BtlController_EmitGetMonData(bufferId: number, requestId: number, monToCheck: number): void {
+  _emitToBufferA(bufferId, [CONTROLLER_GETMONDATA, requestId & 0xFF, monToCheck & 0xFF, 0]);
 }
 
 /** 1:1 signature décomp `BtlController_EmitResetActionMoveSelection(buf, caseId)`. */
