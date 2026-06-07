@@ -53,7 +53,7 @@ import {
 } from '../../game/scanline_effect';
 import {
   BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1,
-  BATTLE_ENVIRONMENT_GRASS,
+  BATTLE_ENVIRONMENT_GRASS, drawBattleEntryBackground,
 } from './battle-bg';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
@@ -195,8 +195,7 @@ function _ResetTasks(): void {
   getRuntime()?.gTasks?.clear();
 }
 
-/** 1:1 décomp `DrawBattleEntryBackground()`. */
-function _DrawBattleEntryBackground(): void { /* Dette R3 */ }
+// DrawBattleEntryBackground → vrai `drawBattleEntryBackground` (battle-bg) appelé dans CB2 (1:1).
 
 /** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c) : libère TOUS les slots de palette
  *  OBJ. CRITIQUE 1:1 (cf. voie V battle-flow) : l'overworld occupe les OBJ palette
@@ -376,7 +375,11 @@ export function CB2_InitBattleInternal(): void {
   _LoadBattleTextboxAndBackground(environment);
   _ResetSpriteData();
   _ResetTasks();
-  _DrawBattleEntryBackground();
+  // 1:1 décomp `DrawBattleEntryBackground()` (battle_main.c:680) : dessine le terrain
+  // (avec l'env RECALCULÉ ci-dessus) à CHAQUE combat → fixe le « sable au re-combat »
+  // (avant : stub ici, terrain dessiné par l'ad-hoc startBattleIntroSlideL retiré → env périmé).
+  // Async (charge les assets terrain) ; fire-and-forget comme l'ex-voie. Caché par WIN0 jusqu'à l'ouverture.
+  void drawBattleEntryBackground(environment);
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT.
   // Réserve les slots OBJ 0..3 (palettes des battlers, OBJ_PLTT_ID(battler)) → l'allocateur
