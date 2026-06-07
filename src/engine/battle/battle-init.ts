@@ -302,6 +302,11 @@ export function CB2_InitBattleInternal(): void {
   _SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1));
   _SetGpuReg(REG_OFFSET_WININ, 0);
   _SetGpuReg(REG_OFFSET_WINOUT, 0);
+  // 1:1 : active WIN0 (DISPCNT_WIN0_ON = 0x2000). WININ=0/WINOUT=0 masquent alors l'écran
+  // (noir géométrique) jusqu'à l'ouverture des bandes (BattleIntroSlide case 1). Le décomp
+  // l'active via InitBattleBgsVideo ; sans ça WIN0 est inactif → le garbage scanline (BG3
+  // pas encore dessiné) est visible (= régression du retrait de l'ad-hoc startBattleIntroSlideL).
+  _SetGpuReg(0x00 /*REG_OFFSET_DISPCNT*/, (getRuntime()?.GetGpuReg?.(0x00) ?? 0) | 0x2000);
 
   // 1:1 décomp ll. 634-660 : WIN setup + scanline buffers selon partner type.
   const vbm = (globalThis as Record<string, unknown>).__battleVBlankHelpers as {
