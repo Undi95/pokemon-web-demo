@@ -34,6 +34,12 @@
 
 import type { DecompSprite } from '../engine/system/decomp-runtime';
 import { Sin } from './trig';
+import { GetBattlerPosition } from '../engine/battle/util';
+import { gBattleTypeFlags, gBattlerPartyIndexes } from '../engine/battle/state';
+import { BATTLE_TYPE_DOUBLE, B_SIDE_PLAYER, B_SIDE_OPPONENT } from '../engine/battle/constants';
+import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
+import { reverseDecompConstant } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
 /** Reinterprete les 16 bits bas de `v` en s16 signe (= cast (s16) decomp). */
 function toS16(v: number): number {
@@ -184,3 +190,132 @@ export const gEnemyMonElevation: Readonly<Record<string, number>> = {
   SPECIES_LATIAS: 6, SPECIES_LATIOS: 6, SPECIES_JIRACHI: 12, SPECIES_DEOXYS: 8,
   SPECIES_CHIMECHO: 12,
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+// TRANCHE 3 (fonctions, 2026-06-08) — GetBattlerSpriteCoord & cascade (#19).
+// Porte le graphe COMPLET battle_anim_mons.c:112-330. Les cas Unown/Castform/
+// transform sont portes en STRUCTURE mais REDUITS a l'espece de BASE / forme
+// NORMAL : le runtime ne modelise PAS les formes (gBattleMonForms) ni l'override
+// Transform (gBattleSpritesDataPtr->battlerData.transformSpecies), et le chargement
+// du sprite mon (battle-controller-opponent) utilise deja l'espece de BASE
+// (reverseDecompConstant) -> GetBattlerSpriteCoord reste COHERENT avec la position
+// reelle du sprite (1:1 quand ces features sont inactives ; dette = formes-lettres).
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 decomp battle_util.c — IsDoubleBattle() = gBattleTypeFlags & BATTLE_TYPE_DOUBLE.
+function IsDoubleBattle(): boolean {
+  return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0;
+}
+// 1:1 decomp — GetBattlerSide(battler) = GetBattlerPosition(battler) & BIT_SIDE (BIT_SIDE=1).
+function GetBattlerSide(battler: number): number {
+  return GetBattlerPosition(battler) & 1;
+}
+// 1:1 decomp battle_anim.c:1102 IsContest() = !gMain.inBattle. Pas de mode contest dans
+// ce jeu (post-camion) -> toujours false (= en combat). Cf. battle-anim-interpreter.ts:98.
+function IsContest(): boolean {
+  return false;
+}
+// species num -> nom enum SPECIES_X (cle de getMon*PicCoords / gEnemyMonElevation).
+function _speciesName(species: number): string {
+  return reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+}
+// 1:1 decomp : species du battler via gEnemyParty/gPlayerParty[gBattlerPartyIndexes].
+// transformSpecies (gBattleSpritesDataPtr->battlerData) non modelise -> pas d'override
+// Transform (= branche !transformSpecies, 1:1 quand Transform inactif).
+function _battlerSpecies(battler: number): number {
+  const party = GetBattlerSide(battler) !== B_SIDE_PLAYER ? gEnemyParty : gPlayerParty;
+  return GetMonData(party[gBattlerPartyIndexes[battler]] as never, MON_DATA_SPECIES) as number;
+}
+
+// Tables Castform (battle_anim_mons.c:55-78), indexees par gBattleMonForms[battler]
+// (NORMAL/FIRE/WATER/ICE). Forme non modelisee runtime -> 0 (NORMAL).
+const sCastformFrontYOffset: ReadonlyArray<number> = [17, 9, 9, 8];   // gCastformFrontSpriteCoords[].y_offset
+const sCastformElevations: ReadonlyArray<number> = [13, 14, 13, 13];
+const sCastformBackSpriteYCoords: ReadonlyArray<number> = [0, 0, 0, 0];
+
+/** 1:1 decomp battle_anim_mons.c:172 `u8 GetBattlerYDelta(u8 battler, u16 species)`.
+ *  Renvoie le y_offset (px) du pic du mon (back = joueur, front = adverse). */
+export function GetBattlerYDelta(battler: number, species: number): number {
+  const name = _speciesName(species);
+  if (GetBattlerSide(battler) === B_SIDE_PLAYER || IsContest()) {
+    // back pic (mon JOUEUR)
+    if (name === 'SPECIES_UNOWN') {
+      // 1:1 : forme-lettre via GET_UNOWN_LETTER(personality) -> gMonBackPicCoords[letter+SPECIES_UNOWN_B-1].
+      // Formes Unown non modelisees (sprite charge en base) -> base. Dette : formes-lettres.
+      return getMonBackPicCoords('SPECIES_UNOWN').yOffset;
+    }
+    if (name === 'SPECIES_CASTFORM') return sCastformBackSpriteYCoords[0];   // forme NORMAL
+    return getMonBackPicCoords(name).yOffset;   // species > NUM_SPECIES -> SPECIES_NONE (fallback 1:1 [0])
+  }
+  // front pic (mon ADVERSE)
+  if (name === 'SPECIES_UNOWN') return getMonFrontPicCoords('SPECIES_UNOWN').yOffset;
+  if (name === 'SPECIES_CASTFORM') return sCastformFrontYOffset[0];
+  return getMonFrontPicCoords(name).yOffset;
+}
+
+/** 1:1 decomp battle_anim_mons.c:251 `u8 GetBattlerElevation(u8 battler, u16 species)`.
+ *  Hauteur (px) au-dessus de la position normale, mon ADVERSE uniquement (volant/flottant). */
+export function GetBattlerElevation(battler: number, species: number): number {
+  let ret = 0;
+  if (GetBattlerSide(battler) === B_SIDE_OPPONENT) {
+    if (!IsContest()) {
+      const name = _speciesName(species);
+      if (name === 'SPECIES_CASTFORM') ret = sCastformElevations[0];   // forme NORMAL
+      else ret = gEnemyMonElevation[name] ?? 0;   // table sparse : defaut 0 (= gEnemyMonElevation[0])
+    }
+  }
+  return ret;
+}
+
+/** 1:1 decomp battle_anim_mons.c:269 `u8 GetBattlerSpriteFinal_Y(u8 battler, u16 species, bool8 a3)`.
+ *  y final = y_offset (- elevation cote adverse) + sBattlerCoords.y, avec clamp si a3. */
+export function GetBattlerSpriteFinal_Y(battler: number, species: number, a3: boolean): number {
+  let offset: number;
+  if (GetBattlerSide(battler) === B_SIDE_PLAYER || IsContest()) {
+    offset = GetBattlerYDelta(battler, species);
+  } else {
+    offset = GetBattlerYDelta(battler, species);
+    offset -= GetBattlerElevation(battler, species);   // peut etre <0 ; +.y le ramene positif (= u8 1:1)
+  }
+  let y = offset + sBattlerCoords[IsDoubleBattle() ? 1 : 0][GetBattlerPosition(battler)].y;
+  if (a3) {
+    if (GetBattlerSide(battler) === B_SIDE_PLAYER) y += 8;
+    // 1:1 : DISPLAY_HEIGHT(160) - MON_PIC_HEIGHT(64) + 8 = 104.
+    if (y > 104) y = 104;
+  }
+  return y;
+}
+
+/** 1:1 decomp battle_anim_mons.c:112 `u8 GetBattlerSpriteCoord(u8 battler, u8 coordType)`.
+ *  Position (px) du sprite du battler selon coordType (X/X_2/Y depuis sBattlerCoords ;
+ *  Y_PIC_OFFSET via GetBattlerSpriteFinal_Y = grounding par espece). */
+export function GetBattlerSpriteCoord(battler: number, coordType: number): number {
+  let retVal: number;
+  let ct = coordType;
+  if (IsContest()) {
+    if (ct === BATTLER_COORD_Y_PIC_OFFSET && battler === 3) ct = BATTLER_COORD_Y;
+  }
+  switch (ct) {
+    case BATTLER_COORD_X:
+    case BATTLER_COORD_X_2:
+      retVal = sBattlerCoords[IsDoubleBattle() ? 1 : 0][GetBattlerPosition(battler)].x;
+      break;
+    case BATTLER_COORD_Y:
+      retVal = sBattlerCoords[IsDoubleBattle() ? 1 : 0][GetBattlerPosition(battler)].y;
+      break;
+    case BATTLER_COORD_Y_PIC_OFFSET:
+    case BATTLER_COORD_Y_PIC_OFFSET_DEFAULT:
+    default: {
+      const species = _battlerSpecies(battler);
+      if (ct === BATTLER_COORD_Y_PIC_OFFSET) retVal = GetBattlerSpriteFinal_Y(battler, species, true);
+      else retVal = GetBattlerSpriteFinal_Y(battler, species, false);
+      break;
+    }
+  }
+  return retVal;
+}
+
+/** 1:1 decomp battle_anim_mons.c:327 `u8 GetBattlerSpriteDefault_Y(u8 battler)`. */
+export function GetBattlerSpriteDefault_Y(battler: number): number {
+  return GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET_DEFAULT);
+}
