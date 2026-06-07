@@ -949,19 +949,50 @@ export function RefreshPlayerPartyViews(): void {
   gSaveBlock1Ptr.playerPartyCount = views.length;
 }
 
-/** 1:1 décomp cœur STOCKAGE de `GiveMonToPlayer` (pokemon.c:4412) : cherche le
- *  premier slot `gPlayerParty[i].species == SPECIES_NONE`, y copie le mon NATIF
- *  (`CopyMon` = Object.assign), puis rafraîchit la façade. Retourne l'index du slot
- *  rempli, ou -1 si la party est pleine (décomp : `CopyMonToPC`, PC storage non
- *  porté = Phase 5). Prend un `Pokemon` natif (P4a : produit par `CreateMon`) ; le
- *  wrapper legacy `GiveMonToPlayer(PokemonInstance)` convertit via le pont. */
-export function GiveMonToGPlayerParty(mon: Pokemon): number {
+/** 1:1 décomp `u8 MON_GIVEN_TO_PARTY/PC/CANT_GIVE` (include/pokemon.h). Co-localisés
+ *  avec gPlayerParty + GetMonData/SetMonData (= fragment de pokemon.c côté stockage) ;
+ *  `pokemon.ts` les re-exporte pour les call-sites OW existants. */
+export const MON_GIVEN_TO_PARTY = 0;
+export const MON_GIVEN_TO_PC = 1;
+export const MON_CANT_GIVE = 2;
+
+/** 1:1 décomp `u8 GiveMonToPlayer(struct Pokemon *mon)` (pokemon.c:4412) :
+ *    SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr->playerName);
+ *    SetMonData(mon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
+ *    SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr->playerTrainerId);
+ *    for (i = 0; i < PARTY_SIZE; i++)
+ *        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) == SPECIES_NONE) break;
+ *    if (i >= PARTY_SIZE) return CopyMonToPC(mon);
+ *    CopyMon(&gPlayerParty[i], mon, sizeof(*mon));
+ *    gPlayerPartyCount = i + 1;
+ *    return MON_GIVEN_TO_PARTY;
+ *
+ *  Prend un `struct Pokemon` natif (P4a-suite : produit par `CreateMon`, ou par le
+ *  pont `pokemonInstanceToPokemon` aux call-sites legacy/DEBUG/voie-V). Écrit dans
+ *  `gPlayerParty` (la SOURCE de vérité) + rafraîchit la façade de vues. */
+export function GiveMonToPlayer(mon: Pokemon): number {
+  // 1:1 décomp pokemon.c:4416-4418 : le mon donné/capturé prend l'OT du joueur
+  // (fallbacks `??` = robustesse boot avant init playerName, comportement inchangé).
+  SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr.playerName ?? 'UNDI');
+  SetMonData(mon, MON_DATA_OT_GENDER, gSaveBlock2Ptr.playerGender ?? 0);
+  SetMonData(mon, MON_DATA_OT_ID, (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0);
+  // 1:1 décomp : premier slot SPECIES_NONE de gPlayerParty.
   let i = 0;
-  for (; i < PARTY_SIZE; i++) if (gPlayerParty[i].species === 0) break;
-  if (i >= PARTY_SIZE) return -1;
-  Object.assign(gPlayerParty[i], mon);  // 1:1 CopyMon
+  for (; i < PARTY_SIZE; i++) if (gPlayerParty[i].species === 0 /* SPECIES_NONE */) break;
+  if (i >= PARTY_SIZE) return CopyMonToPC(mon);
+  Object.assign(gPlayerParty[i], mon);  // 1:1 CopyMon(&gPlayerParty[i], mon, sizeof(*mon))
+  // 1:1 décomp : gPlayerPartyCount = i + 1 (notre décompte = playerPartyCount, posé
+  // par RefreshPlayerPartyViews = views.length, == i+1 pour une party compacte).
   RefreshPlayerPartyViews();
-  return i;
+  return MON_GIVEN_TO_PARTY;
+}
+
+/** 1:1 décomp `static u8 CopyMonToPC(struct Pokemon *mon)` (pokemon.c:4434) : range
+ *  le mon dans la 1ère box PC libre. PC box storage non porté (Phase 5) → renvoie
+ *  MON_CANT_GIVE (dette R3 : party pleine → CANT_GIVE au lieu de MON_GIVEN_TO_PC). */
+function CopyMonToPC(_mon: Pokemon): number {
+  console.warn('[GiveMonToPlayer] party pleine → CopyMonToPC pas porté (Phase 5)');
+  return MON_CANT_GIVE;
 }
 
 /** 1:1 décomp `SwitchPartyMon` (party_menu.c:3016-3030) côté STOCKAGE : swap le

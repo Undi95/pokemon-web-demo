@@ -28,7 +28,7 @@ import { NewGameInit } from '../save/new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from '../bag/bag';
 import { DIR_SOUTH } from '../field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../system/data-tables';
-import { createPokemonInstance, GiveMonToPlayer } from '../pokemon/pokemon';
+import { createPokemonInstance, GiveMonToPlayer, pokemonInstanceToPokemon } from '../pokemon/pokemon';
 import { CalculatePlayerPartyCount } from '../battle/party-storage';
 import { loadGameData } from '../data/game-data';
 
@@ -304,7 +304,7 @@ function applyNoIntroPreset(): void {
     // du résumé (MED2, 1:1 PositionStatusSlidingWindow). ailment BRN=5
     // (summary-screen _extractMonData : mon.status==='BRN' → ailment 5).
     arcko.status = 'BRN';
-    GiveMonToPlayer(arcko);
+    GiveMonToPlayer(pokemonInstanceToPokemon(arcko));
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
     // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
@@ -320,7 +320,7 @@ function applyNoIntroPreset(): void {
     // explicite retiré (redondant + 1:1 : tout dérive du PID, pas l'inverse).
     // ⚠️ DEBUG ONLY : lieu valide (mon de test). pokeball = ITEM_POKE_BALL.
     jirachi.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    GiveMonToPlayer(jirachi);
+    GiveMonToPlayer(pokemonInstanceToPokemon(jirachi));
     console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
     // ⚠️ DEBUG ONLY : Œuf de Leveinard (Chansey) — test page résumé œuf 1:1
     // (user : "pas pour le faire éclore, juste afficher sa page"). isEgg →
@@ -334,7 +334,7 @@ function applyNoIntroPreset(): void {
     egg.friendship = 80;          // frais → gText_EggWillTakeALongTime
     egg.metLevel = 0;             // œuf
     egg.metLocation = 'MAPSEC_LITTLEROOT_TOWN';
-    GiveMonToPlayer(egg);
+    GiveMonToPlayer(pokemonInstanceToPokemon(egg));
     console.log(`[boot-mode] ?debug Œuf Leveinard ajouté (isEgg, test page résumé œuf)`);
   }
 

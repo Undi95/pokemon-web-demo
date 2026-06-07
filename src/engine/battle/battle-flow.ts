@@ -92,7 +92,7 @@ import { OBJ_PLTT_ID } from '../system/decomp-runtime';
 // Utilisé par le bounce healthbox+mon (DoBounceEffect, battle_main.c:2899-2979).
 import { gSineTable } from '../system/decomp-helpers';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, type PokemonInstance } from '../pokemon/pokemon';
+import { createPokemonInstance, calculateExpGain, applyExpAward, monGainEVs, getLevelUpMovesAtLevel, makeMoveSlot, getEvolutionTargetForLevelUp, evolveInstance, GiveMonToPlayer, pokemonInstanceToPokemon, type PokemonInstance } from '../pokemon/pokemon';
 import { setupEnemyPartyForBattle, teardownPartyAfterBattle, restoreOwPartyAfterTest, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, gPlayerParty, _modifyStatByNature } from '../battle/party-storage';
 import { startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition, startBattleIntroFlash, tickBattleIntroFlash } from './battle-transition';
 import { setupBattleWindowForIntro, startBattleIntroSlide, tickBattleIntroSlide, resetBattleIntroWindow } from './battle-intro';
@@ -2946,7 +2946,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
             if (opponentMon.growthRate) {
               opponentMon.currentExp = getExperienceForLevel(opponentMon.growthRate, opponentMon.level);
             }
-            GiveMonToPlayer(opponentMon);
+            GiveMonToPlayer(pokemonInstanceToPokemon(opponentMon));
           }
           outcome = BATTLE_OUTCOME_CAUGHT;
           state = 'CLEANUP_FADE_OUT';

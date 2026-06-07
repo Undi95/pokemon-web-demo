@@ -49,8 +49,8 @@ registerOpcode('givemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
-      const mon = createPokemonInstance(speciesName, level, heldItem ? { heldItem } : undefined);
+      const { CreateMon, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
+      const mon = CreateMon(speciesName, level, heldItem ? { heldItem } : undefined);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;
       // 1:1 ScriptGiveMon : 0=MON_GIVEN_TO_PARTY, 1=MON_GIVEN_TO_PC.
@@ -75,8 +75,8 @@ registerOpcode('givepokemon', (_ctx, args) => {
   }
   void (async () => {
     try {
-      const { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
-      const mon = createPokemonInstance(speciesName, level);
+      const { CreateMon, GiveMonToPlayer, MON_GIVEN_TO_PARTY } = await import('../pokemon/pokemon');
+      const mon = CreateMon(speciesName, level);
       const result = GiveMonToPlayer(mon);
       const ok = result === MON_GIVEN_TO_PARTY;
       VarSet('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail

@@ -634,8 +634,8 @@ registerSpecial('PutZigzagoonInPlayerParty', () => {
   // empty (= dev test), add a Zigzagoon. 1:1 count via CalculatePlayerPartyCount.
   if (CalculatePlayerPartyCount() === 0) {
     void (async () => {
-      const { createPokemonInstance, GiveMonToPlayer } = await import('../pokemon/pokemon');
-      const zig = createPokemonInstance('SPECIES_ZIGZAGOON', 5);
+      const { CreateMon, GiveMonToPlayer } = await import('../pokemon/pokemon');
+      const zig = CreateMon('SPECIES_ZIGZAGOON', 5);
       GiveMonToPlayer(zig);
     })();
   }

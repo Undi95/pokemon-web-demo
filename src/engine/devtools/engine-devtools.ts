@@ -514,7 +514,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const sbsMod = await import('../save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon/pokemon');
-      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 5);
+      const starter = pokeMod.CreateMon('SPECIES_TREECKO', 5);
       pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startBirchTutorial] auto-added Treecko Lv5 (party était vide)');
     }
@@ -530,7 +530,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     const sbsMod2 = await import('../save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon/pokemon');
-      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', Math.max(5, level - 1));
+      const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, level - 1));
       pokeMod.GiveMonToPlayer(starter);
       console.log(`[dev.battle.startWild] auto-added Treecko Lv${starter.level} (party était vide)`);
     }

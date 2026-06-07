@@ -54,7 +54,7 @@ import { getRuntime, LoadPalette } from '../system/decomp-globals';
 import { BG_PLTT_ID } from '../system/decomp-runtime';
 import { GetOverworldTextboxPalettePtr } from '../system/decomp-bridge';
 import { CreateMon } from '../pokemon/pokemon';
-import { GiveMonToGPlayerParty } from './party-storage';
+import { GiveMonToPlayer } from './party-storage';
 import { VarSet } from '../script/script-vars';
 import { Sin } from '../system/decomp-helpers';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from '../field/map-loader';
@@ -680,7 +680,7 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     const speciesEnum = GetStarterPokemon(selection);
     // P4a : création NATIVE directe dans gPlayerParty (CreateMon → Pokemon natif +
     // give natif), plus de détour PokemonInstance. 1:1 décomp CB2_GiveStarter.
-    GiveMonToGPlayerParty(CreateMon(speciesEnum, 5));
+    GiveMonToPlayer(CreateMon(speciesEnum, 5));
 
     // 1:1 décomp C:546 `ResetAllPicSprites()` : destroy circle + pkmn sprites
     // explicitement (= sinon ils persistent over battle scene + repop labo

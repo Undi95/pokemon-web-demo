@@ -363,7 +363,7 @@ if (typeof window !== 'undefined') {
     const psMod = await import('./party-storage');
     if (psMod.CalculatePlayerPartyCount() === 0) {
       const pokeMod = await import('../pokemon/pokemon');
-      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
+      const starter = pokeMod.CreateMon('SPECIES_TREECKO', 8);
       pokeMod.GiveMonToPlayer(starter);
       console.log('[dev.battle.startTrainer] auto-added Treecko Lv8 (party était vide)');
     }

@@ -98,7 +98,7 @@ import {
   getSpeciesNameFr, getMoveNameFr, getTrainerClassNameFr,
   getItemNameFr, getTrainer, getTrainerNameFr,
 } from '../system/data-tables';
-import { createPokemonInstance, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from '../pokemon/pokemon';
+import { CreateMon, GiveMonToPlayer, MON_GIVEN_TO_PARTY } from '../pokemon/pokemon';
 
 // Constantes décomp `include/constants/items.h` enum starters (Hoenn).
 // `sStarterMon[]` dans starter_choose.c : index 0/1/2 → species enum.
@@ -167,13 +167,13 @@ const SPECIALS: Record<string, SpecialFn> = {
       console.warn('[ChooseStarter] askMultichoice non fourni → defaultIdx 0');
       VarSet('VAR_RESULT', 0);
       VarSet('VAR_STARTER_MON', 0);
-      GiveMonToPlayer(createPokemonInstance(STARTER_SPECIES[0], 5));
+      GiveMonToPlayer(CreateMon(STARTER_SPECIES[0], 5));
       return;
     }
     let idx = await ctx.askMultichoice(STARTER_NAMES_FR);
     if (idx < 0 || idx > 2) idx = 0; // cancel = treecko (déco fait pareil)
     const speciesEnum = STARTER_SPECIES[idx];
-    const mon = createPokemonInstance(speciesEnum, 5);
+    const mon = CreateMon(speciesEnum, 5);
     GiveMonToPlayer(mon);
     VarSet('VAR_RESULT', idx);
     VarSet('VAR_STARTER_MON', idx);
@@ -698,7 +698,7 @@ export async function runScript(
       const heldItem = itemTok && itemTok !== 'ITEM_NONE' && itemTok !== '0'
         ? itemTok.replace(/^ITEM_/, '').toLowerCase().replace(/_/g, '')
         : '';
-      const mon = createPokemonInstance(species, level, heldItem ? { heldItem } : undefined);
+      const mon = CreateMon(species, level, heldItem ? { heldItem } : undefined);
       // 1:1 décomp ScriptGiveMon : VarSet(VAR_RESULT, GiveMonToPlayer(...)) directe.
       // GiveMonToPlayer retourne MON_GIVEN_TO_PARTY=0 | MON_GIVEN_TO_PC=1 | MON_CANT_GIVE=2.
       // Notre GiveMonToPlayer port retourne actuellement MON_GIVEN_TO_PARTY ou MON_CANT_GIVE

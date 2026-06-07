@@ -33,7 +33,7 @@ import type { Pokemon } from '../battle/party-storage';
 // (la SOURCE 1:1). Import RUNTIME de party-storage = cycle FONCTION-SEULEMENT
 // (party-storage importe déjà speciesEnumToDexId/makePokemonInstanceView d'ici ;
 // aucun usage croisé au top-level → bénin, cf. ledger).
-import { GiveMonToGPlayerParty, pokemonInstanceToPokemon } from '../battle/party-storage';
+import { pokemonInstanceToPokemon } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
 import { gMapHeader } from '../field/map-loader';
@@ -779,41 +779,11 @@ export function monGainEVs(mon: PokemonInstance, defeatedSpeciesEnum: string): v
 
 // ─── 1:1 décomp pokemon.c:4412 GiveMonToPlayer ───────────────────────────────
 
-/** 1:1 décomp `u8 MON_GIVEN_TO_PARTY = 0` (pokemon.h). */
-export const MON_GIVEN_TO_PARTY = 0;
-/** 1:1 décomp `u8 MON_GIVEN_TO_PC = 1` (pokemon.h). */
-export const MON_GIVEN_TO_PC = 1;
-/** 1:1 décomp `u8 MON_CANT_GIVE = 2` (pokemon.h). */
-export const MON_CANT_GIVE = 2;
-
-/** 1:1 décomp `u8 GiveMonToPlayer(struct Pokemon *mon)` (pokemon.c:4412) :
- *    SetMonData(mon, MON_DATA_OT_NAME, gSaveBlock2Ptr->playerName);
- *    SetMonData(mon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
- *    SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr->playerTrainerId);
- *    for (i = 0; i < PARTY_SIZE; i++)
- *        if (gPlayerParty[i].species == SPECIES_NONE) break;
- *    if (i >= PARTY_SIZE) return CopyMonToPC(mon);
- *    CopyMon(&gPlayerParty[i], mon, sizeof(*mon));
- *    gPlayerPartyCount = i + 1;
- *    return MON_GIVEN_TO_PARTY;
- *
- *  Notre port stocke playerParty comme dynamic array (= push si pas full).
- *  CopyMonToPC = future (= PC storage system Phase 5).
- */
-export function GiveMonToPlayer(mon: PokemonInstance): number {
-  // Set OT data depuis gSaveBlock2Ptr (= 1:1 décomp, AVANT la copie : lu par le
-  // pont PokemonInstance→Pokemon).
-  if (!mon.otName) mon.otName = gSaveBlock2Ptr.playerName ?? 'UNDI';
-  if (mon.otGender === undefined) mon.otGender = gSaveBlock2Ptr.playerGender ?? 0;
-  if (mon.otId === undefined || mon.otId === 0) mon.otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
-  // 1:1 décomp : copie le mon dans le premier slot SPECIES_NONE de gPlayerParty
-  // (la SOURCE de vérité) + rafraîchit la façade. P4a : GiveMonToGPlayerParty prend
-  // un Pokemon natif → on convertit le PokemonInstance legacy via le pont ici.
-  const slot = GiveMonToGPlayerParty(pokemonInstanceToPokemon(mon));
-  if (slot < 0) {
-    // 1:1 décomp : `return CopyMonToPC(mon)` — PC storage non porté (Phase 5).
-    console.warn('[GiveMonToPlayer] party full → CopyMonToPC pas porté');
-    return MON_CANT_GIVE;
-  }
-  return MON_GIVEN_TO_PARTY;
-}
+// P4a-suite : GiveMonToPlayer(struct Pokemon *) + MON_GIVEN_TO_* vivent désormais
+// dans party-storage.ts (co-localisés avec gPlayerParty/GetMonData/SetMonData =
+// fragment de pokemon.c côté stockage). Re-exportés ici (+ le pont
+// pokemonInstanceToPokemon) pour les call-sites OW qui importent `../pokemon/pokemon`.
+export {
+  GiveMonToPlayer, MON_GIVEN_TO_PARTY, MON_GIVEN_TO_PC, MON_CANT_GIVE,
+  pokemonInstanceToPokemon,
+} from '../battle/party-storage';
