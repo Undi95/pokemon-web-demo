@@ -29,7 +29,7 @@
  */
 
 import {
-  getRuntime, BlendPalettes, PALETTES_ALL,
+  getRuntime, BlendPalettes, PALETTES_ALL, setReservedSpritePaletteCount,
   AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
 } from '../engine/system/decomp-globals';
@@ -37,17 +37,27 @@ import { Random } from '../engine/system/random';
 // Namespace ESM (remplace require('../save/save-block-state') CommonJS, dormant).
 import * as _saveBlockNs from '../engine/save/save-block-state';
 import {
-  gActiveBattler, gBattleTypeFlags, gBattlersCount,
-  setBattleOutcome, setActiveBattler, getBattlerControllerFunc,
+  gActiveBattler, gBattleTypeFlags, gBattlersCount, gBattleCommunication,
+  gTrainerBattleOpponent_A, gTrainerBattleOpponent_B,
+  setBattleOutcome, setActiveBattler, getBattlerControllerFunc, setBattleEnvironment,
 } from '../engine/battle/state';
 // Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
 import * as _stateNs from '../engine/battle/state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_FRONTIER, BATTLE_TYPE_RECORDED,
+  BATTLE_TYPE_MULTI, BATTLE_TYPE_TWO_OPPONENTS,
 } from '../engine/battle/constants';
 import { RunTextPrinters as _RunTextPrinters_rt } from '../engine/ui/gba-text-system';
 import { tickBattlerMonReveals } from '../engine/battle/battle-controller-opponent';
 import { tickIntroSlideIn, tickTrainerThrow, tickSendOut } from '../engine/battle/battle-sendout-anim';
+import { FreeAllSpritePalettes } from '../engine/system/sprite';
+import {
+  gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_SetParams,
+  SCANLINE_EFFECT_DMACNT_16BIT,
+} from './scanline_effect';
+import {
+  BattleInitBgsAndWindows, loadBattleTextboxAndBackground1to1, drawBattleEntryBackground,
+} from '../engine/battle/battle-bg';
 
 // ─── BG/WIN scroll state 1:1 décomp (battle_main.c:124-135) ─────────────────
 
@@ -581,6 +591,269 @@ export function SpriteCB_UnusedBattleInit_Main(sprite: UnusedSprite): void {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// Tranche 3 — CB2_InitBattle + CB2_InitBattleInternal (battle_main.c) [ex-battle-init.ts]
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `BATTLE_TYPE_INGAME_PARTNER` = bit 23. */
+const BATTLE_TYPE_INGAME_PARTNER = 1 << 23;
+/** 1:1 décomp `BATTLE_TYPE_BATTLE_TOWER` = bit 19. */
+const BATTLE_TYPE_BATTLE_TOWER = 1 << 19;
+/** 1:1 décomp `PARTY_SIZE` = 6. */
+const PARTY_SIZE = 6;
+/** 1:1 décomp `MAX_BATTLERS_COUNT` = 4. */
+const MAX_BATTLERS_COUNT = 4;
+/** 1:1 décomp `MULTIUSE_STATE` = 0. */
+const MULTIUSE_STATE = 0;
+/** 1:1 décomp `BATTLE_ENVIRONMENT_BUILDING` = 8. */
+const BATTLE_ENVIRONMENT_BUILDING = 8;
+/** 1:1 décomp `TRAINER_STEVEN_PARTNER` ID. */
+const TRAINER_STEVEN_PARTNER = 768;
+/** 1:1 décomp `FRIENDSHIP_EVENT_LEAGUE_BATTLE` = 6. */
+const FRIENDSHIP_EVENT_LEAGUE_BATTLE = 6;
+/** 1:1 décomp `DISPLAY_WIDTH` = 240, `DISPLAY_HEIGHT` = 160. */
+const DISPLAY_WIDTH = 240;
+const DISPLAY_HEIGHT = 160;
+// REG_OFFSET_* spécifiques init (WIN0H/WIN0V/BG3HOFS déjà définis tranche 1).
+const REG_OFFSET_MOSAIC = 0x4C;
+const REG_OFFSET_WININ = 0x48;
+const REG_OFFSET_WINOUT = 0x4A;
+
+/** 1:1 décomp `WIN_RANGE(a, b)` = (a << 8) | b. */
+function WIN_RANGE(a: number, b: number): number {
+  return ((a & 0xFF) << 8) | (b & 0xFF);
+}
+
+// ─── Cascade helpers init (= dette R3 documentée) ──────────────────────────
+
+/** 1:1 décomp `MoveSaveBlocks_ResetHeap()` (save.c). */
+function _MoveSaveBlocks_ResetHeap(): void { /* Dette R3 : heap reset (n/a web). */ }
+/** 1:1 décomp `AllocateBattleResources()`. */
+function _AllocateBattleResources(): void { /* Dette R3 : gBattleResources alloc. */ }
+/** 1:1 décomp `AllocateBattleSpritesData()`. */
+function _AllocateBattleSpritesData(): void { /* Dette R3. */ }
+/** 1:1 décomp `AllocateMonSpritesGfx()`. */
+function _AllocateMonSpritesGfx(): void { /* Dette R3. */ }
+/** 1:1 décomp `RecordedBattle_ClearFrontierPassFlag()`. */
+function _RecordedBattle_ClearFrontierPassFlag(): void { /* Dette R3. */ }
+/** 1:1 décomp `HandleLinkBattleSetup()`. */
+function _HandleLinkBattleSetup(): void { /* Dette R3. */ }
+
+/** 1:1 décomp `SetHBlankCallback(cb)`. */
+function _SetHBlankCallback(_cb: (() => void) | null): void { /* Dette R3 (HBlank scanline). */ }
+/** 1:1 décomp `SetVBlankCallback(cb)` : installe le callback VBlank runtime. */
+function _SetVBlankCallback(cb: (() => void) | null): void {
+  getRuntime()?.SetVBlankCallback?.(cb);
+}
+/** 1:1 décomp `CpuFill32(value, dest, size)`. */
+function _CpuFill32(_value: number, _dest: unknown, _size: number): void { /* Dette R3 : DMA VRAM clear. */ }
+/** 1:1 décomp `SetGpuReg(reg, value)`. */
+function _SetGpuReg(reg: number, value: number): void {
+  getRuntime()?.SetGpuReg?.(reg, value);
+}
+/** 1:1 décomp `ResetPaletteFade()`. */
+function _ResetPaletteFade(): void { /* Dette R3 : palette fade state reset. */ }
+
+/** 1:1 décomp `InitBattleBgsVideo()` (battle_bg.c) → CpuFill32(0,VRAM) + BattleInitBgsAndWindows. */
+function _InitBattleBgsVideo(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.gba.vram.fill(0);          // 1:1 CpuFill32(0, VRAM, VRAM_SIZE)
+  BattleInitBgsAndWindows();    // 1:1 InitBattleBgsVideo → BattleInitBgsAndWindows
+}
+/** 1:1 décomp `LoadBattleTextboxAndBackground()` (battle_bg.c:859) — async fire-and-forget. */
+function _LoadBattleTextboxAndBackground(env: number): void {
+  void loadBattleTextboxAndBackground1to1(env);
+}
+/** 1:1 décomp `ResetSpriteData()` (sprite.c:294). */
+function _ResetSpriteData(): void { getRuntime()?.ResetSpriteData(); }
+/** 1:1 décomp `ResetTasks()`. */
+function _ResetTasks(): void { getRuntime()?.gTasks?.clear(); }
+/** 1:1 décomp `FreeAllSpritePalettes()` (sprite.c). */
+function _FreeAllSpritePalettes(): void { FreeAllSpritePalettes(); }
+/** 1:1 décomp `SetWildMonHeldItem()` (pokemon.c). */
+function _SetWildMonHeldItem(): void { /* Dette R3. */ }
+/** 1:1 décomp `AdjustFriendship(mon, eventType)`. */
+function _AdjustFriendship(_mon: unknown, _eventType: number): void { /* Dette R3. */ }
+
+/** Wire vers BattleSetup_GetEnvironmentId (battle_setup.c). */
+function _BattleSetup_GetEnvironmentId(): number {
+  const m = (globalThis as Record<string, unknown>).__battleSetupHelpers as {
+    BattleSetup_GetEnvironmentId?: () => number;
+  } | undefined;
+  return m?.BattleSetup_GetEnvironmentId?.() ?? 0;
+}
+/** Wire vers SetUpBattleVarsAndBirchZigzagoon (battle_setup.c). */
+function _SetUpBattleVarsAndBirchZigzagoon(): void {
+  const m = (globalThis as Record<string, unknown>).__battleSetupHelpers as {
+    SetUpBattleVarsAndBirchZigzagoon?: () => void;
+  } | undefined;
+  m?.SetUpBattleVarsAndBirchZigzagoon?.();
+}
+/** Wire vers CB2_HandleStartBattle (battle-link-start.ts). */
+function _getCB2_HandleStartBattle(): () => void {
+  const m = (globalThis as Record<string, unknown>).__battleLinkStart as {
+    CB2_HandleStartBattle?: () => void;
+  } | undefined;
+  return m?.CB2_HandleStartBattle ?? ((): void => { /* noop */ });
+}
+/** Wire vers CreateNPCTrainerParty (battle-trainer-party.ts). */
+function _CreateNPCTrainerParty(party: unknown, trainerNum: number, firstTrainer: boolean): number {
+  const m = (globalThis as Record<string, unknown>).__battleTrainerParty as {
+    CreateNPCTrainerParty?: (party: unknown, trainerNum: number, firstTrainer: boolean) => number;
+  } | undefined;
+  return m?.CreateNPCTrainerParty?.(party, trainerNum, firstTrainer) ?? 0;
+}
+// CB2_HandleStartMulti* / PreInit* — non portés (Dette R3 multi/partner).
+function _CB2_HandleStartMultiPartnerBattle(): void { /* Dette R3 multi */ }
+function _CB2_HandleStartMultiBattle(): void { /* Dette R3 multi */ }
+function _CB2_PreInitMultiBattle(): void { /* Dette R3 multi */ }
+function _CB2_PreInitIngamePlayerPartnerBattle(): void { /* Dette R3 partner */ }
+
+// ─── CB2_InitBattle (battle_main.c:588-617) ────────────────────────────────
+
+/** 1:1 décomp `CB2_InitBattle()` (battle_main.c:588-617).
+ *  Entry boot battle : alloc resources + branche selon BATTLE_TYPE_MULTI. */
+export function CB2_InitBattle(): void {
+  _MoveSaveBlocks_ResetHeap();
+  _AllocateBattleResources();
+  _AllocateBattleSpritesData();
+  _AllocateMonSpritesGfx();
+  _RecordedBattle_ClearFrontierPassFlag();
+
+  if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+    if (gBattleTypeFlags & BATTLE_TYPE_RECORDED) {
+      CB2_InitBattleInternal();
+    } else if (!(gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)) {
+      _HandleLinkBattleSetup();
+      _SetMainCallback2(_CB2_PreInitMultiBattle);
+    } else {
+      _SetMainCallback2(_CB2_PreInitIngamePlayerPartnerBattle);
+    }
+    gBattleCommunication[MULTIUSE_STATE] = 0;
+  } else {
+    CB2_InitBattleInternal();
+  }
+}
+
+// ─── CB2_InitBattleInternal (battle_main.c:619-710) ────────────────────────
+
+/** 1:1 décomp `CB2_InitBattleInternal()` (battle_main.c:619-710).
+ *  Full battle setup : VRAM clear + GPU/WIN regs + scanline + BGs + sprites +
+ *  dispatch CB2 selon type + trainer party + friendship. battleVBlankState +
+ *  VBlankCB_Battle = accès DIRECT (même module = plus 1:1 que l'ancien lazy global). */
+export function CB2_InitBattleInternal(): void {
+  _SetHBlankCallback(null);
+  _SetVBlankCallback(null);
+
+  _CpuFill32(0, null /* VRAM */, 0x18000);
+
+  _SetGpuReg(REG_OFFSET_MOSAIC, 0);
+  _SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);
+  _SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1));
+  _SetGpuReg(REG_OFFSET_WININ, 0);
+  _SetGpuReg(REG_OFFSET_WINOUT, 0);
+  // 1:1 : active WIN0 (DISPCNT_WIN0_ON = 0x2000). WININ=0/WINOUT=0 masquent l'écran
+  // (noir géométrique) jusqu'à l'ouverture des bandes (BattleIntroSlide case 1).
+  _SetGpuReg(0x00 /*REG_OFFSET_DISPCNT*/, (getRuntime()?.GetGpuReg?.(0x00) ?? 0) | 0x2000);
+
+  battleVBlankState.win0h = DISPLAY_WIDTH;
+
+  // gPartnerTrainerId via lazy globalThis.
+  const stateMod = (globalThis as { __battleState?: { gPartnerTrainerId?: number } }).__battleState;
+  const partnerTrainerId = stateMod?.gPartnerTrainerId ?? 0;
+
+  if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) && partnerTrainerId !== TRAINER_STEVEN_PARTNER) {
+    // 1:1 décomp ll. 638-641 : ingame partner non-Steven WIN setup.
+    battleVBlankState.win0v = DISPLAY_HEIGHT - 1;
+    battleVBlankState.win1h = DISPLAY_WIDTH;
+    battleVBlankState.win1v = 32;
+  } else {
+    // 1:1 décomp ll. 644-660 : standard battle WIN0V split central + scanline.
+    battleVBlankState.win0v = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2 + 1);
+    ScanlineEffect_Clear();
+
+    // 1:1 décomp ll. 647-657 : scanline buffer fill (top half 0xF0, bottom 0xFF10).
+    let i = 0;
+    for (; i < DISPLAY_HEIGHT / 2; i++) {
+      gScanlineEffectRegBuffers[0][i] = 0xF0;
+      gScanlineEffectRegBuffers[1][i] = 0xF0;
+    }
+    for (; i < DISPLAY_HEIGHT; i++) {
+      gScanlineEffectRegBuffers[0][i] = 0xFF10;
+      gScanlineEffectRegBuffers[1][i] = 0xFF10;
+    }
+
+    // 1:1 décomp `ScanlineEffect_SetParams(sIntroScanlineParams16Bit)` (battle_main.c:659).
+    ScanlineEffect_SetParams({ dmaDest: REG_OFFSET_BG3HOFS, dmaControl: SCANLINE_EFFECT_DMACNT_16BIT, initState: 1 });
+  }
+
+  _ResetPaletteFade();
+
+  // 1:1 décomp ll. 663-670 : reset 8 BG scroll vars.
+  battleVBlankState.bg0_x = 0; battleVBlankState.bg0_y = 0;
+  battleVBlankState.bg1_x = 0; battleVBlankState.bg1_y = 0;
+  battleVBlankState.bg2_x = 0; battleVBlankState.bg2_y = 0;
+  battleVBlankState.bg3_x = 0; battleVBlankState.bg3_y = 0;
+
+  // 1:1 décomp ll. 672-674 : gBattleEnvironment depuis BattleSetup_GetEnvironmentId.
+  let environment = _BattleSetup_GetEnvironmentId();
+  if (gBattleTypeFlags & BATTLE_TYPE_RECORDED) {
+    environment = BATTLE_ENVIRONMENT_BUILDING;
+  }
+  setBattleEnvironment(environment);
+
+  _InitBattleBgsVideo();
+  _LoadBattleTextboxAndBackground(environment);
+  _ResetSpriteData();
+  _ResetTasks();
+  // 1:1 décomp `DrawBattleEntryBackground()` (battle_main.c:680) avec l'env RECALCULÉ
+  // (fixe le « sable au re-combat »). Async (assets terrain), caché par WIN0 jusqu'à l'ouverture.
+  void drawBattleEntryBackground(environment);
+  _FreeAllSpritePalettes();
+  // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT (réserve OBJ 0..3).
+  setReservedSpritePaletteCount(MAX_BATTLERS_COUNT);
+  _SetVBlankCallback(VBlankCB_Battle);
+  _SetUpBattleVarsAndBirchZigzagoon();
+
+  // 1:1 décomp ll. 686-693 : dispatch CB2 selon BATTLE_TYPE.
+  if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER) {
+    _SetMainCallback2(_CB2_HandleStartMultiPartnerBattle);
+  } else if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+    _SetMainCallback2(_CB2_HandleStartMultiPartnerBattle);
+  } else if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+    _SetMainCallback2(_CB2_HandleStartMultiBattle);
+  } else {
+    _SetMainCallback2(_getCB2_HandleStartBattle());
+  }
+
+  // 1:1 décomp ll. 695-701 : trainer party load + wild held item.
+  if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED))) {
+    _CreateNPCTrainerParty(null /* gEnemyParty[0] */, gTrainerBattleOpponent_A, true);
+    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+      _CreateNPCTrainerParty(null /* gEnemyParty[PARTY_SIZE/2] */, gTrainerBattleOpponent_B, false);
+    }
+    _SetWildMonHeldItem();
+  }
+
+  // 1:1 décomp ll. 703-704 : gMain.inBattle = TRUE + frontier disableRecordBattle.
+  const m = (globalThis as Record<string, unknown>).__battleMainFunctions as {
+    setMainInBattle?: (v: boolean) => void;
+  } | undefined;
+  m?.setMainInBattle?.(true);
+
+  const sb2 = (globalThis as { gSaveBlock2Ptr?: { frontier?: { disableRecordBattle?: boolean } } }).gSaveBlock2Ptr;
+  if (sb2?.frontier) sb2.frontier.disableRecordBattle = false;
+
+  // 1:1 décomp ll. 706-707 : AdjustFriendship per player mon.
+  const playerParty = ((globalThis as { gSaveBlock1Ptr?: { playerParty?: unknown[] } }).gSaveBlock1Ptr?.playerParty) ?? [];
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    _AdjustFriendship(playerParty[i], FRIENDSHIP_EVENT_LEAGUE_BATTLE);
+  }
+
+  gBattleCommunication[MULTIUSE_STATE] = 0;
+}
+
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
 void BlendPalettes;
@@ -596,4 +869,9 @@ void BlendPalettes;
   BattleMainCB1, BattleMainCB2,
   FreeRestoreBattleData, CB2_QuitRecordedBattle,
   SpriteCB_UnusedBattleInit, SpriteCB_UnusedBattleInit_Main,
+};
+
+(globalThis as Record<string, unknown>).__battleInit = {
+  CB2_InitBattle, CB2_InitBattleInternal,
+  gScanlineEffectRegBuffers,
 };
