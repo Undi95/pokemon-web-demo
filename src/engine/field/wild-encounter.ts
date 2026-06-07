@@ -44,10 +44,9 @@
 import { Random } from '../system/random';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { gMapHeader } from './map-loader';
-import { startWildBattle } from '../battle/battle-flow';
-import { ScriptContext_SetupInlineNative } from '../script/script-runtime';
-// Aiguillage VOIE L (flag __USE_DECOMP_BATTLE_LOOP__, défaut OFF) — cf. CreateWildMon.
-import { isDecompBattleLoopEnabled, bootDecompBattleLoop } from '../battle/battle-decomp-loop';
+// Combat SAUVAGE = VOIE L (décomp) inconditionnelle — cf. CreateWildMon. La voie V
+// (battle-flow) n'est plus dans le chemin wild (destruction voie V, étape 1).
+import { bootDecompBattleLoop } from '../battle/battle-decomp-loop';
 import { setupEnemyPartyForBattle } from '../battle/party-storage';
 import { createPokemonInstance, type PokemonInstance } from '../pokemon/pokemon';
 import { setBattleTypeFlags, gBattleTypeFlags } from '../battle/state';
@@ -279,38 +278,20 @@ function AreLegendariesInSootopolisPreventingEncounters(): boolean {
   return false;
 }
 
-/** 1:1 décomp `CreateWildMon` (wild_encounter.c:379-415).
- *  Notre TS : `startWildBattle` (battle-flow.ts) gère ZeroEnemyPartyMons +
- *  CreateMonWithNature internally. Donc on passe juste species + level. */
+/** 1:1 décomp `CreateWildMon` (wild_encounter.c:379-415) + boot du combat.
+ *  Le combat SAUVAGE passe par la VRAIE boucle décomp (voie L) — la voie V
+ *  (battle-flow.ts) a été retirée du chemin wild (destruction voie V, étape 1). */
 function CreateWildMon(species: string, level: number): void {
-  // ── AIGUILLAGE VOIE L (flag `__USE_DECOMP_BATTLE_LOOP__`, défaut OFF) ──────────
-  // 1:1 décomp `BattleSetup_StartWildBattle` (battle_setup.c:389) → `SetMainCallback2(
-  // CB2_InitBattle)`. Peuple gPlayerParty (VRAIE party save, exactement comme la voie V
-  // battle-flow.ts:2024/2075) + gEnemyParty (mon sauvage), pose le type SAUVAGE, et boote la
-  // VRAIE boucle décomp (`bootDecompBattleLoop(true)` = transition d'entrée + BGM combat +
-  // swap CB2 réel + savedCallback de retour OW). Flag OFF (défaut) → voie V ci-dessous INCHANGÉE.
-  if (isDecompBattleLoopEnabled()) {
-    // Migration Pokémon (étape 5) : gPlayerParty EST déjà la party joueur (source) ;
-    // on ne remplit que gEnemyParty (le mon sauvage), gPlayerParty est lu direct.
-    setupEnemyPartyForBattle([createPokemonInstance(species, level)]);
-    setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);  // combat SAUVAGE
-    bootDecompBattleLoop(true);
-    return;
-  }
-  // ── VOIE V (par défaut) ───────────────────────────────────────────────────────
-  // Dette R3 : Cute Charm gender bias check (lignes 394-412).
-  // Notre TS : startWildBattle accepte (opponentSpecies, opponentLevel).
-  // PickWildMonNature (= dette R3) est aussi géré internally par startWildBattle.
-  const flow = startWildBattle({ opponentSpecies: species, opponentLevel: level });
-  // 1:1 équivalent inline du décomp `BattleSetup_StartWildBattle` (battle_setup.c)
-  // → `SetMainCallback2(CB2_InitBattle)` : le combat DOIT être piloté chaque frame.
-  // Notre combat tourne inline (pas de swap CB2), donc on enregistre son tick comme
-  // script natif (= SetupNativeScript décomp) → ScriptContext_RunScript le tick chaque
-  // frame jusqu'à la fin du combat. SANS ça le flow reste bloqué à INIT (jamais tické)
-  // = bug "marcher dans l'herbe ne lance pas vraiment le combat". Identique au chemin
-  // devtool dev.battle.startWild (engine-devtools.ts).
-  (globalThis as { __activeBattleFlow?: unknown }).__activeBattleFlow = flow;
-  ScriptContext_SetupInlineNative(flow.tick);
+  // ── 1:1 décomp `BattleSetup_StartWildBattle` (battle_setup.c:389) → `SetMainCallback2(
+  //    CB2_InitBattle)`. Peuple gEnemyParty (le mon sauvage) ; gPlayerParty EST déjà la
+  //    party joueur (source, migration Pokémon étape 5) → lue direct. Pose le type SAUVAGE.
+  //    `bootDecompBattleLoop(true)` = CreateBattleStartTask(GetWildBattleTransition) (transition
+  //    d'entrée) + PlayBattleBGM + swap CB2_InitBattle + savedCallback de retour OW
+  //    (CB2_EndWildBattle). Dette R3 : Cute Charm gender bias (wild_encounter.c:394-412),
+  //    PickWildMonNature — déférés (étaient déjà gérés ad-hoc par l'ex-voie V).
+  setupEnemyPartyForBattle([createPokemonInstance(species, level)]);
+  setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);  // combat SAUVAGE
+  bootDecompBattleLoop(true);
 }
 
 /** 1:1 décomp `TryGenerateWildMon` (wild_encounter.c:422-456) minimal.
