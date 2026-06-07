@@ -29,6 +29,7 @@ import { AddBagItem, DEBUG_ExpandBagToFit } from '../bag/bag';
 import { DIR_SOUTH } from '../field/direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from '../system/data-tables';
 import { createPokemonInstance, GiveMonToPlayer } from '../pokemon/pokemon';
+import { CalculatePlayerPartyCount } from '../battle/party-storage';
 import { loadGameData } from '../data/game-data';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
@@ -281,7 +282,9 @@ function applyNoIntroPreset(): void {
   //   - IVs : 31/31/31/31/31/31 (= max, simplifie damage calc tests)
   //   - EVs : 0 (= un fresh starter)
   // Skip si party déjà populée (= user a déjà fait l'intro + caught Treecko).
-  if (gSaveBlock1Ptr.playerParty.length === 0) {
+  // 1:1 : compte gPlayerParty natif (CalculatePlayerPartyCount) plutôt que la
+  // façade de vues `gSaveBlock1Ptr.playerParty`.
+  if (CalculatePlayerPartyCount() === 0) {
     const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
       heldItem: 'miracleseed',  // DEBUG fixture (= ITEM_MIRACLE_SEED)
       ability: 'Overgrow',

@@ -14,9 +14,13 @@
 import { registerOpcode } from './script-runtime';
 import { VarGet, VarSet } from './script-vars';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { reverseDecompConstant } from '../system/decomp-constants';
-import { getMoveNameFr } from '../system/data-tables';
+import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
+import {
+  gPlayerParty, SetMonData, CalculatePPWithBonus,
+  MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_MET_LOCATION,
+} from '../battle/party-storage';
+import { PARTY_SIZE, MAX_MON_MOVES } from '../decomp-data/include/constants/global-data';
 
 /** _vget = VarGet avec fallback '0'. Local au fichier (= 1:1 décomp inline read). */
 function _vget(arg: string | undefined): number {
@@ -99,17 +103,14 @@ registerOpcode('giveegg', (_ctx, args) => {
 registerOpcode('setmonmove', (_ctx, args) => {
   const partyIndex = parseValue(args[0] ?? '0');
   const slot = parseValue(args[1] ?? '0');
-  const moveArg = args[2] ?? 'MOVE_NONE';
-  const party = gSaveBlock1Ptr.playerParty;
-  if (party && partyIndex >= 0 && partyIndex < party.length && slot >= 0 && slot < 4) {
-    const mon = party[partyIndex];
-    if (!mon.moves) mon.moves = [];
-    // 1:1 décomp `ScriptSetMonMoveSlot` set le slot direct (= overwrite).
-    mon.moves[slot] = {
-      id: moveArg.toLowerCase().replace(/^move_/, ''),
-      nameFr: getMoveNameFr(moveArg),
-      pp: 0, ppMax: 0,
-    };
+  const moveId = resolveDecompConstant(args[2] ?? 'MOVE_NONE') ?? 0;
+  if (partyIndex >= 0 && partyIndex < PARTY_SIZE && slot >= 0 && slot < MAX_MON_MOVES) {
+    const mon = gPlayerParty[partyIndex];
+    // 1:1 décomp `ScriptSetMonMoveSlot`→`SetMonMoveSlot` (pokemon.c) : SetMonData
+    // du move + PP plein (CalculatePPWithBonus, ppBonuses=0). Opère sur le NATIF
+    // gPlayerParty (l'ancien `mon.moves[slot]=…` mutait une VUE nested = non propagé).
+    SetMonData(mon, MON_DATA_MOVE1 + slot, moveId);
+    SetMonData(mon, MON_DATA_PP1 + slot, CalculatePPWithBonus(moveId, 0, slot));
   }
   return false;
 });
@@ -119,9 +120,9 @@ registerOpcode('setmonmove', (_ctx, args) => {
 registerOpcode('setmonmetlocation', (_ctx, args) => {
   const partyIndex = _vget(args[0]);
   const location = parseValue(args[1] ?? '0');
-  const party = gSaveBlock1Ptr.playerParty as Array<{ metLocation?: number }>;
-  if (party && partyIndex >= 0 && partyIndex < party.length) {
-    party[partyIndex].metLocation = location;
+  // 1:1 décomp : SetMonData(&gPlayerParty[idx], MON_DATA_MET_LOCATION, &loc).
+  if (partyIndex >= 0 && partyIndex < PARTY_SIZE) {
+    SetMonData(gPlayerParty[partyIndex], MON_DATA_MET_LOCATION, location);
   }
   return false;
 });
