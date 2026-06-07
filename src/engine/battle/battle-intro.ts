@@ -181,6 +181,10 @@ export function tickBattleIntroSlide(): boolean {
       rt.SetGpuReg(REG_OFFSET_WINOUT, 0x3F | (0x3F << 8));                       // winout + winobj all
       // Fenêtre pleine (top=0 bottom=160) = battle screen complet visible.
       rt.SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(0, DISPLAY_HEIGHT));
+      // #484050 (fond panneau menu) appliqué au backdrop à la FIN de la slide seulement
+      // (= pareil que la voie L l.446) → bandes NOIRES pendant l'ouverture, panneau menu
+      // gris-bleu après. (N'était posé qu'au chargement = bandes violettes, corrigé.)
+      LoadPalette(new Uint16Array([getMenuBackdropRgb15()]), 0, 2);
       _introSlide = null;
       return true;
   }

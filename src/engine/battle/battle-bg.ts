@@ -294,22 +294,15 @@ export async function loadBattleTextbox(): Promise<void> {
   // → palettes slot 0 + 1 (= 32 entries 0..31).
   LoadPalette(assets.palette0, 0, 32);
   LoadPalette(assets.palette1, 16, 32);
-  // BACKDROP (BG palette[0] entry 0) = couleur de FOND du menu de combat (#484050,
-  // gris-bleu/violet foncé). Le décomp charge `gBattleTextboxPalette` = textbox.gbapal
-  // (.lz, 2 palettes) ; mon port charge textbox_0.pal/_1.pal à la place — et leur idx 0
-  // est NOIR alors que la vraie palette décomp a #484050 au backdrop. Conséquence : les
-  // pixels TRANSPARENTS (index 0) des cadres de box menu (text_window, coins arrondis +
-  // bords) montraient le backdrop NOIR au lieu du panneau #484050 → "noir autour des
-  // textbox" signalé par l'user (A/B ROM 2026-06-03 : autour des boxes = panneau
-  // gris-bleu foncé uni, PAS noir). On corrige en posant le backdrop = la couleur de fond
-  // du menu, sourcée depuis la palette elle-même (textbox_0.pal idx 9 = #484050, = le
-  // fill du tile de prompt de l'action menu), pas un hardcode.
-  // ⚠️ Révise la décision A/B 2026-05-31 (qui avait reverté ce #484050 pensant que la ROM
-  // montrait du noir + que ça "violçait l'intro split-slide"). L'A/B 2026-06-03 + un test
-  // direct (set runtime → match ROM) confirment #484050. À A/B-confirmer : l'intro (mons
-  // qui slident) ne doit pas être pollué — si c'est le cas, gater ce set au post-intro.
+  // 1:1 décomp : `LoadBattleTextboxAndBackground` (battle_bg.c:864) charge la palette
+  // textbox SANS toucher le backdrop → BG palette[0][0] = couleur 0 de gBattleTextboxPalette
+  // = NOIR. On NE l'écrase PLUS avec #484050 ICI (ancien hack non-1:1 qui colorait les
+  // bandes de l'ouverture WIN0 en violet au lieu de noir — confirmé A/B user 2026-06-07).
+  // #484050 (fond du panneau menu, textbox idx 9) est exposé via getMenuBackdropRgb15() et
+  // appliqué à la FIN de la slide d'intro (battle-intro.ts BattleIntroSlideEnd, V + L),
+  // quand le menu apparaît — pas avant. Le backdrop reste noir pendant l'ouverture.
+  // (Dette 1:1 séparée : le panneau menu devrait venir du window fill, pas du backdrop.)
   _menuBackdropRgb15 = assets.palette0[9];
-  LoadPalette(new Uint16Array([_menuBackdropRgb15]), 0, 2);
 }
 
 /** 1:1 décomp `DrawMainBattleBackground` partie default (ll. 807-814) — charge
