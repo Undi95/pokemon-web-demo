@@ -40,6 +40,9 @@ import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transiti
  *  boote la voie décomp au lieu de battle-flow inline. Façon
  *  `isControllerDispatchEnabled` / `isBytecodeDamageEnabled`. */
 export function isDecompBattleLoopEnabled(): boolean {
+  // Défaut OFF : voie V (battle-flow) jouable pendant la RECONSTRUCTION miroir 1:1 de
+  // la voie L (A/B 2026-06-07 : voie L bootable mais bugs terrain/sprite/anim = ad-hoc
+  // hérité de la voie V). Voie L testable via `__decompBattleLoop.enable()` ou `&`+`'`.
   return !!(globalThis as { __USE_DECOMP_BATTLE_LOOP__?: boolean }).__USE_DECOMP_BATTLE_LOOP__;
 }
 
