@@ -33,7 +33,7 @@ import type { Pokemon } from '../battle/party-storage';
 // (la SOURCE 1:1). Import RUNTIME de party-storage = cycle FONCTION-SEULEMENT
 // (party-storage importe déjà speciesEnumToDexId/makePokemonInstanceView d'ici ;
 // aucun usage croisé au top-level → bénin, cf. ledger).
-import { GiveMonToGPlayerParty } from '../battle/party-storage';
+import { GiveMonToGPlayerParty, pokemonInstanceToPokemon } from '../battle/party-storage';
 // 1:1 décomp `gMapHeader->regionMapSectionId` (= struct MapHeader,
 // global.fieldmap.h). Import direct au lieu de pattern globalThis non-1:1.
 import { gMapHeader } from '../field/map-loader';
@@ -491,6 +491,11 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     metLocation: gMapHeader?.regionMapSectionId,
     // 1:1 décomp CreateBoxMon (pokemon.c:2262) : value = ITEM_POKE_BALL.
     pokeball: opts?.pokeball ?? 'ITEM_POKE_BALL',
+    // 1:1 décomp CreateBoxMon (pokemon.c:2246/2254/2264) : OT id/name/gender posés
+    // À LA SOURCE (l'ancien chemin les patchait dans GiveMonToPlayer → manque 1:1).
+    otId,
+    otName: gSaveBlock2Ptr.playerName,
+    otGender: gSaveBlock2Ptr.playerGender,
     isEgg: false,
   };
 }
@@ -510,6 +515,19 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
  * STATUS1_* → enum. ⚠️ Champs « edge » approximés (à affiner Phase 2/3 sous A/B) :
  * `pokeball` (index balle→enum item ; défaut POKE_BALL), `metLocation` (MAPSEC).
  */
+/** 1:1 décomp `CreateMon` (pokemon.c:2196) : crée un Pokemon NATIF (destiné à
+ *  gPlayerParty/gEnemyParty). Génération 1:1 `CreateBoxMon` via createPokemonInstance
+ *  (ordre RNG préservé : personality puis IVs) + conversion native pokemonInstanceToPokemon.
+ *  C'est l'API de création « un seul modèle » — les callers OW passent par ici au
+ *  lieu de manipuler PokemonInstance. (PokemonInstance reste l'intermédiaire de
+ *  génération + le format save jusqu'à P4b.) */
+export function CreateMon(
+  speciesEnum: string, level: number,
+  opts?: Parameters<typeof createPokemonInstance>[2],
+): Pokemon {
+  return pokemonInstanceToPokemon(createPokemonInstance(speciesEnum, level, opts));
+}
+
 export function pokemonToPokemonInstance(mon: Pokemon): PokemonInstance {
   const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_') ?? 'SPECIES_NONE';
   const dexId = speciesEnumToDexId(speciesEnum);
@@ -789,8 +807,9 @@ export function GiveMonToPlayer(mon: PokemonInstance): number {
   if (mon.otGender === undefined) mon.otGender = gSaveBlock2Ptr.playerGender ?? 0;
   if (mon.otId === undefined || mon.otId === 0) mon.otId = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
   // 1:1 décomp : copie le mon dans le premier slot SPECIES_NONE de gPlayerParty
-  // (la SOURCE de vérité) + rafraîchit la façade block1.playerParty (vues live).
-  const slot = GiveMonToGPlayerParty(mon);
+  // (la SOURCE de vérité) + rafraîchit la façade. P4a : GiveMonToGPlayerParty prend
+  // un Pokemon natif → on convertit le PokemonInstance legacy via le pont ici.
+  const slot = GiveMonToGPlayerParty(pokemonInstanceToPokemon(mon));
   if (slot < 0) {
     // 1:1 décomp : `return CopyMonToPC(mon)` — PC storage non porté (Phase 5).
     console.warn('[GiveMonToPlayer] party full → CopyMonToPC pas porté');

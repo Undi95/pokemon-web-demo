@@ -950,16 +950,16 @@ export function RefreshPlayerPartyViews(): void {
 }
 
 /** 1:1 décomp cœur STOCKAGE de `GiveMonToPlayer` (pokemon.c:4412) : cherche le
- *  premier slot `gPlayerParty[i].species == SPECIES_NONE`, y copie le mon (via le
- *  pont PokemonInstance→Pokemon = `CopyMon`), puis rafraîchit la façade. Retourne
- *  l'index du slot rempli, ou -1 si la party est pleine (décomp : `CopyMonToPC`,
- *  PC storage non porté = Phase 5). `GiveMonToPlayer` (pokemon.ts) pose l'OT data
- *  puis délègue ici. */
-export function GiveMonToGPlayerParty(inst: PokemonInstance): number {
+ *  premier slot `gPlayerParty[i].species == SPECIES_NONE`, y copie le mon NATIF
+ *  (`CopyMon` = Object.assign), puis rafraîchit la façade. Retourne l'index du slot
+ *  rempli, ou -1 si la party est pleine (décomp : `CopyMonToPC`, PC storage non
+ *  porté = Phase 5). Prend un `Pokemon` natif (P4a : produit par `CreateMon`) ; le
+ *  wrapper legacy `GiveMonToPlayer(PokemonInstance)` convertit via le pont. */
+export function GiveMonToGPlayerParty(mon: Pokemon): number {
   let i = 0;
   for (; i < PARTY_SIZE; i++) if (gPlayerParty[i].species === 0) break;
   if (i >= PARTY_SIZE) return -1;
-  Object.assign(gPlayerParty[i], pokemonInstanceToPokemon(inst));
+  Object.assign(gPlayerParty[i], mon);  // 1:1 CopyMon
   RefreshPlayerPartyViews();
   return i;
 }
