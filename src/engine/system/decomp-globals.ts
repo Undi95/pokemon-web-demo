@@ -1318,28 +1318,15 @@ export const gIntroRayquaza_Gfx = 'gIntroRayquaza_Gfx';
 export const gIntroRayquazaClouds_Gfx = 'gIntroRayquazaClouds_Gfx';
 export const gIntro3Bg_Pal = 'gIntro3Bg_Pal';
 
-/** Scanline effect register buffers (2 buffers × 640 entries).
- *  Matches decomp gScanlineEffectRegBuffers[2][0x320]. */
-export const gScanlineEffectRegBuffers: [Uint16Array, Uint16Array] = [
-  new Uint16Array(640),
-  new Uint16Array(640),
-];
-
-/** Stop flag for wave task. */
-export let sShouldStopWaveTask = false;
-
-/** Global scanline effect state (mutable). */
-export let gScanlineEffect = {
-  state: 0,
-  dmaSrcBuffers: [null, null] as (null | number)[],
-  dmaDest: null as number | null,
-  dmaControl: 0,
-  srcBuffer: 0,
-  unused16: 0,
-  unused17: 0,
-  waveTaskId: 0xFF,
-  setFirstScanlineReg: () => {},
-};
+// ─── Scanline effect → MIROIR 1:1 dans src/game/scanline_effect.ts ──────────
+// gScanlineEffect(RegBuffers) + Clear/Stop/SetParams/InitHBlankDmaTransfer +
+// InitWave sont portés 1:1 dans src/game/scanline_effect.ts (qui pose aussi
+// globalThis.__scanlineEffectTick). Ré-exportés ici pour les imports existants.
+export {
+  gScanlineEffectRegBuffers, gScanlineEffect,
+  ScanlineEffect_Clear, ScanlineEffect_Stop, ScanlineEffect_SetParams,
+  ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave,
+} from '../../game/scanline_effect';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TITLE SCREEN STUBS (Phase 3 minimum viable)
@@ -1512,50 +1499,8 @@ export function LoadOam(): void {
 export function ProcessSpriteCopyRequests(): void {
   // No-op : sprite tile copies are eager (immediate write to objVram).
 }
-export function ScanlineEffect_Clear(): void {
-  gScanlineEffectRegBuffers[0].fill(0);
-  gScanlineEffectRegBuffers[1].fill(0);
-  gScanlineEffect.dmaSrcBuffers[0] = null;
-  gScanlineEffect.dmaSrcBuffers[1] = null;
-  gScanlineEffect.dmaDest = null;
-  gScanlineEffect.dmaControl = 0;
-  gScanlineEffect.srcBuffer = 0;
-  gScanlineEffect.state = 0;
-  gScanlineEffect.waveTaskId = 0xFF;
-  sShouldStopWaveTask = false;
-}
-
-export function ScanlineEffect_SetParams(_params: unknown): void {
-  // Phase 3+ : faithful DMA emulation via gScanlineEffectRegBuffers.
-  // For now, mark active so H-blank callback knows to run.
-  gScanlineEffect.state = 1;
-}
-
-export function ScanlineEffect_InitHBlankDmaTransfer(): void {
-  // 1:1 décomp src/scanline_effect.c:72 — appelé chaque VBlank par VBlankCB_Intro.
-  // Quand `gScanlineEffect.state === 3`, le décomp stoppe le DMA + réinit state.
-  // Chez nous : pas de DMA mais on doit toujours clear le hblank callback pour
-  // que le BG arrête d'avoir le wave de la scène précédente.
-  if (gScanlineEffect.state === 3) {
-    ScanlineEffect_Stop();
-  }
-  // Real GBA uses DMA from gScanlineEffectRegBuffers to hardware regs (= no-op here).
-}
-
-// Expose globally pour que runOneFrame du runtime puisse l'appeler (sans avoir
-// à importer decomp-globals depuis decomp-runtime, qui créerait un cycle).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).__scanlineEffectTick = ScanlineEffect_InitHBlankDmaTransfer;
-
-export function ScanlineEffect_Stop(): void {
-  waveParams = null;
-  wavePhase = 0;
-  waveDelayCounter = 0;
-  try {
-    rt().gba.setHBlankCallback(null);
-  } catch { /* runtime may not be set */ }
-  gScanlineEffect.state = 0;
-}
+// ScanlineEffect_Clear/SetParams/InitHBlankDmaTransfer/Stop + __scanlineEffectTick
+// → MIROIR 1:1 src/game/scanline_effect.ts (ré-exporté ci-dessus).
 export function EnableInterrupts(_flag: number): void { /* no-op */ }
 /** 1:1 décomp src/sprite.c:1589-1608 — délégué à `src/engine/sprite.ts`
  *  (= source de vérité 1:1 strict du palette tag system).
@@ -1597,83 +1542,7 @@ export function JOY_REPEAT(buttonMask: number): number {
 }
 export const JOY_REPT = JOY_REPEAT;
 
-// ─── ScanlineEffect_InitWave implementation ─────────────────────────────────
-
-let wavePhase = 0;
-let waveDelayCounter = 0;
-let waveParams: {
-  startLine: number;
-  endLine: number;
-  frequency: number;
-  amplitude: number;
-  regOffset: number;
-  delayInterval: number;
-  applyBattleBgOffsets: boolean;
-} | null = null;
-
-function getBgForRegOffset(regOffset: number): { bgIndex: number; prop: 'hofs' | 'vofs' } {
-  const bgIndex = Math.floor(regOffset / 4);
-  const isVofs = (regOffset % 4) === 2;
-  return { bgIndex: Math.min(3, Math.max(0, bgIndex)), prop: isVofs ? 'vofs' : 'hofs' };
-}
-
-/** 1:1 décomp `ScanlineEffect_InitWave(...)` — implémentation directe via H-blank callback.
- *  Pas de DMA fidle : le compositor appelle le H-blank callback à chaque scanline.
- *  Amplitude/frequency/wavePhase modélisés avec G_SINE_TABLE (Q.8). */
-export function ScanlineEffect_InitWave(
-  startLine: number, endLine: number, frequency: number,
-  amplitude: number, delayInterval: number, regOffset: number,
-  applyBattleBgOffsets: boolean,
-): number {
-  const r = rt();
-  const { bgIndex, prop } = getBgForRegOffset(regOffset);
-
-  wavePhase = 0;
-  waveDelayCounter = delayInterval;
-  waveParams = { startLine, endLine, frequency, amplitude, regOffset, delayInterval, applyBattleBgOffsets };
-
-  // Capture frameBase ONCE à l'init — pas à chaque frame. Lire depuis bg.config
-  // chaque scanline 0 cause drift (on overwrite la config à scanline 159, puis
-  // on re-lit cette valeur corrompue comme base au prochain scanline 0).
-  const bgInit = r.gba.bg(bgIndex as 0 | 1 | 2 | 3);
-  const frameBase = prop === 'hofs' ? bgInit.config.hofs : bgInit.config.vofs;
-
-  r.gba.setHBlankCallback((scanline) => {
-    if (!waveParams) return;
-
-    const bg = r.gba.bg(bgIndex as 0 | 1 | 2 | 3);
-
-    if (scanline === 0) {
-      // Advance phase according to delayInterval (decomp tFramesUntilMove logic)
-      if (waveDelayCounter === 0) {
-        waveDelayCounter = waveParams.delayInterval;
-        wavePhase = (wavePhase + 1) & 0xFF;
-      } else {
-        waveDelayCounter--;
-      }
-    }
-
-    if (scanline < waveParams.startLine || scanline >= waveParams.endLine) {
-      if (prop === 'hofs') bg.config.hofs = frameBase;
-      else bg.config.vofs = frameBase;
-      return;
-    }
-
-    // Decomp wave formula: Sin((scanline + phase) * frequency, amplitude)
-    // G_SINE_TABLE is Q.8 (range -256..256). Sin(idx, amp) = (table[idx] * amp) >> 8.
-    const idx = ((scanline + wavePhase) * waveParams.frequency) & 0xFF;
-    const offset = (G_SINE_TABLE[idx] * waveParams.amplitude) >> 8;
-
-    if (prop === 'hofs') {
-      bg.config.hofs = frameBase + offset;
-    } else {
-      bg.config.vofs = frameBase + offset;
-    }
-  });
-
-  gScanlineEffect.state = 1;
-  return 0; // taskId (not used by caller in our engine)
-}
+// ScanlineEffect_InitWave → MIROIR 1:1 src/game/scanline_effect.ts (ré-exporté ci-dessus).
 
 /** 1:1 décomp `StartPokemonLogoShine(mode)` — title_screen.c:527.
  *  Crée le(s) sprite(s) shine sweep avec OAM_OBJ_WINDOW + SpriteCB_PokemonLogoShine.
