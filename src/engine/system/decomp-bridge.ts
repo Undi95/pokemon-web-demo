@@ -39,6 +39,11 @@
  *   - `decomps/pokeemeraude/src/*.c` pour chaque helper.
  */
 
+// Import LOCAL (en plus du re-export plus bas) pour usage interne par CreateSprite
+// (branche sheet taggee). Re-export `export {X} from './sprite'` ne cree PAS de
+// binding local → on importe explicitement (alias `_` pour zero ambiguite). 1:1 ESM.
+import { GetSpriteTileStartByTag as _GetSpriteTileStartByTag, IndexOfSpritePaletteTag as _IndexOfSpritePaletteTag } from './sprite';
+
 // ─── Re-exports : palette / GPU / VRAM ────────────────────────────────────────
 
 export {
@@ -2953,6 +2958,63 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
   // INCHANGÉ = zéro régression OW). Branche additive.
   if (template && typeof template === 'object' && Array.isArray(template.images) && template.images.length > 0) {
     return rt.CreateSpriteInline(template, x, y, subpriority);
+  }
+  // 1:1 decomp `CreateSprite` avec `tileTag != TAG_NONE` : la sheet + palette ont
+  // deja ete chargees par TAG (ex `LoadBallGfx` → gBallSpriteSheets/Palettes). On
+  // resout tileNum via GetSpriteTileStartByTag + paletteNum via IndexOfSpritePaletteTag,
+  // cree le sprite, attache callback/anims/affineAnims. HW-emu : la decomp fait ca dans
+  // InitSprite/InitSpriteAffineAnim ; ici via CreateSpriteAtOam (qui calcule deja
+  // CalcCenterToCornerVec selon affineMode) + AllocOamMatrix pour l'affine. Branche
+  // ADDITIVE : les sprites OW restent par-NOM ; seuls les templates {tileTag numerique,
+  // oam, SANS images} l'empruntent (= gBallSpriteTemplates etc., aujourd'hui DORMANT).
+  if (template && typeof template === 'object'
+      && typeof template.tileTag === 'number' && template.oam && typeof template.oam === 'object') {
+    const oam = template.oam;
+    const affineMode = (oam.affineMode ?? 0) as 0 | 1 | 2 | 3;
+    const tileStart = _GetSpriteTileStartByTag(template.tileTag);
+    if (tileStart === 0xFFFF) {
+      console.warn(`[CreateSprite] sheet tag ${template.tileTag} non chargee (GetSpriteTileStartByTag=0xFFFF) — LoadXxxGfx requis avant CreateSprite`);
+    }
+    const palSlot = (typeof template.paletteTag === 'number') ? _IndexOfSpritePaletteTag(template.paletteTag) : 0xFF;
+    // Affine : alloue la matrice OAM AVANT la creation pour que CalcCenterToCornerVec
+    // (dans CreateSpriteAtOam) centre correctement le sprite en AFFINE_DOUBLE/NORMAL.
+    let matrixNum = 0;
+    if (affineMode !== 0) {
+      const m = rt.AllocOamMatrix();
+      if (m > 0) matrixNum = m;
+    }
+    const created = rt.CreateSpriteAtOam({
+      tileId: tileStart === 0xFFFF ? 0 : tileStart,
+      paletteBank: palSlot === 0xFF ? 0 : palSlot,
+      x, y,
+      shape: oam.shape, size: oam.size,
+      priority: oam.priority ?? 1,
+      paletteMode: oam.paletteMode ?? 0,
+      affineMode,
+      affineParamIndex: matrixNum,
+      subpriority,
+    });
+    const spriteId = created.spriteId;
+    if (spriteId >= 0 && spriteId < 64) {
+      const s = rt.gSprites.get(spriteId);
+      if (s) {
+        s.callback = template.callback ?? null;
+        s.anims = template.anims ?? null;
+        // En miroir, `template.affineAnims` = le NOM de la table enregistree
+        // (sprite-affine-extras.ts), ex 'sAffineAnim_BallRotate'.
+        s.affineAnimsTableName = (typeof template.affineAnims === 'string') ? template.affineAnims : null;
+        s.usingSheet = true;
+        s.tileBase = tileStart === 0xFFFF ? 0 : tileStart;
+        if (affineMode !== 0 && matrixNum > 0) {
+          s.matrixNum = matrixNum;
+          // Demarre l'affine anim a l'index 0 (statique par defaut) ; l'appelant
+          // bascule vers un autre index plus tard (ex StartSpriteAffineAnim(ball, 4)
+          // = le SPIN du send-out). AllocOamMatrix a deja pose la matrice a l'identite.
+          if (s.affineAnimsTableName) rt.StartSpriteAffineAnim(spriteId, 0);
+        }
+      }
+    }
+    return spriteId;
   }
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
   return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
