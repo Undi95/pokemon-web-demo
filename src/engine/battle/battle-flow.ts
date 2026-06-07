@@ -2186,6 +2186,15 @@ export function startWildBattle(params: BattleParams): BattleFlow {
                 paMod.DestroyPlayerAvatar(rt);
                 saMod.ResetSpriteCopyRequests();
               }
+              // 🔧 FIX VRAM (sprite ennemi/healthbox absents sur map chargée — A/B 2026-06-07) :
+              // 1:1 décomp `CB2_InitBattle` (battle_main.c:678) `ResetSpriteData()` vide TOUS les
+              // gSprites HW. La repro partielle ci-dessus (destroyAllNpcSprites + DestroyPlayerAvatar)
+              // OUBLIAIT les sprites FIELD-EFFECT (herbe haute/ombre) → sur Route 101 (joueur DANS
+              // l'herbe) ils squattaient la VRAM OBJ → `AllocSpriteTiles échoué` pour le mon ennemi.
+              // ResetSpriteData clear gSprites ENTIER (field effects inclus) + reset l'allocateur de
+              // tiles/bitmap/matrices ; les structs gObjectEvents/gPlayerAvatar (EWRAM) persistent
+              // → re-spawn OW intact. (Couvre aussi FreeSpriteTileRanges/AllocSpriteTiles(0) ci-dessous.)
+              getRuntime().ResetSpriteData();
               // 1:1 décomp `CB2_InitBattleInternal:681` FreeAllSpritePalettes(). CRITIQUE :
               // l'overworld occupe les OBJ palette slots 0-3 ; sans free, le healthbox (slots
               // FIXES 5/6) entrerait en collision → sprite ennemi GARBLED. Free → mons 0/1,
