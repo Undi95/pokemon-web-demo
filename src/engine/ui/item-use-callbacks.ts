@@ -74,6 +74,7 @@ import type { DecompTask } from '../system/decomp-runtime';
 import { getRuntime, PlaySE } from '../system/decomp-globals';
 import { gPlayerParty } from '../battle/party-storage';
 import { gMoveNames } from '../data/game-data';
+import { RemoveBagItem } from '../bag/bag';
 import { SE_USE_ITEM } from '../decomp-data/include/constants/songs-data';
 // 1:1 décomp `gSaveBlock1Ptr` source unique via Foundation save-block-state.
 import { gSaveBlock1Ptr } from '../save/save-block-state';
@@ -152,27 +153,11 @@ function _itemKeyForId(itemId: number): string | undefined {
 function _removeOneFromBag(itemId: number): void {
   const key = _itemKeyForId(itemId);
   if (!key) return;
-  // 1:1 décomp RemoveBagItem (item.c:570) — décrémente quantité, supprime
-  // le slot si quantity tombe à 0. Notre gameState API : removeItem(key, qty).
-  const bag = gSaveBlock1Ptr.bag as unknown as Record<string, unknown>;
-  const rm = bag && (bag.removeItem as ((k: string, q: number) => void) | undefined);
-  if (typeof rm === 'function') {
-    rm.call(bag, key, 1);
-    return;
-  }
-  // Fallback : itère les poches manuellement (pour les pocketSlots typed).
-  const pockets = bag as Record<string, Array<{ itemKey: string; quantity: number }>>;
-  for (const pname of Object.keys(pockets)) {
-    const slots = pockets[pname];
-    if (!Array.isArray(slots)) continue;
-    for (let i = 0; i < slots.length; i++) {
-      if (slots[i].itemKey === key && slots[i].quantity > 0) {
-        slots[i].quantity--;
-        if (slots[i].quantity === 0) slots.splice(i, 1);
-        return;
-      }
-    }
-  }
+  // 1:1 décomp `RemoveBagItem(item, 1)` (item.c:570) — opère sur le VRAI bag
+  // `gBagPockets` (décrémente la quantité, retire le slot à 0). ⚠️ l'ancien
+  // composite `gSaveBlock1Ptr.bag` a été migré vers `bagPocket_*` (= undefined)
+  // → l'utiliser plantait `Object.keys(undefined)`.
+  RemoveBagItem(key, 1);
 }
 
 // ─── ItemUseCB_Medicine (party_menu.c:4396) — 1:1-sémantique ────────────────
