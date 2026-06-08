@@ -2262,6 +2262,8 @@ export function startWildBattle(params: BattleParams): BattleFlow {
               // sans passer par l'intro Birch (dev / save chargée), l'asset n'est pas caché
               // → `gBattleAnimSpriteGfx_Particles not in cache` + pas d'étincelles. Idempotent.
               await import('../boot/intro-asset-loader').then(m => m.ensureBallParticlesLoaded()).catch(() => {});
+              // Précharge aussi le gfx de la ball (gBallGfx_Poke) pour LoadBallGfx (send-out 1:1).
+              await import('../boot/intro-asset-loader').then(m => m.ensureBallGfxLoaded()).catch(() => {});
               loadDone = true;
             } catch (e) {
               console.error('[battle-flow] sprite load failed', e);

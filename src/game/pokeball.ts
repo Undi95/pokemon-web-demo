@@ -37,7 +37,9 @@ import { B_SIDE_PLAYER } from '../engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL } from '../engine/battle/party-storage';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
-import { SpriteCallbackDummy } from '../engine/system/decomp-globals';
+import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag } from '../engine/system/decomp-globals';
+import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
+import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER } from '../engine/system/pokeball-effects';
 import {
   GFX_TAG_POKE_BALL, GFX_TAG_GREAT_BALL, GFX_TAG_SAFARI_BALL, GFX_TAG_ULTRA_BALL,
   GFX_TAG_MASTER_BALL, GFX_TAG_NET_BALL, GFX_TAG_DIVE_BALL, GFX_TAG_NEST_BALL,
@@ -109,3 +111,76 @@ export const gBallSpriteTemplates = _ballGfxTags.map((tag) => ({
   affineAnims: 'sAffineAnim_BallRotate',
   callback: SpriteCallbackDummy,
 }));
+
+// ════════════════════════════════════════════════════════════════════════════
+// GFX BALL (pokeball.c:60-90 + 1309-1336) — chargement via le MECANISME DECOMP
+// (assetCache precharge + LoadCompressedSpriteSheet/LoadSpriteSheet SYNC).
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 decomp pokeball.c:60 `gBallSpriteSheets[POKEBALL_COUNT]` (CompressedSpriteSheet).
+// data = SYMBOLE asset (gBallGfx_X), resolu sync par getAsset dans LoadCompressedSpriteSheet
+// (= le data en ROM de la decomp). size = 384 (12 tiles). Seul BALL_POKE est preacharge
+// (ensureBallGfxLoaded) ; les autres = dette (asset non extrait -> getAsset null -> skip).
+const gBallSpriteSheets: ReadonlyArray<{ data: string; size: number; tag: number }> = [
+  { data: 'gBallGfx_Poke',    size: 384, tag: GFX_TAG_POKE_BALL },
+  { data: 'gBallGfx_Great',   size: 384, tag: GFX_TAG_GREAT_BALL },
+  { data: 'gBallGfx_Safari',  size: 384, tag: GFX_TAG_SAFARI_BALL },
+  { data: 'gBallGfx_Ultra',   size: 384, tag: GFX_TAG_ULTRA_BALL },
+  { data: 'gBallGfx_Master',  size: 384, tag: GFX_TAG_MASTER_BALL },
+  { data: 'gBallGfx_Net',     size: 384, tag: GFX_TAG_NET_BALL },
+  { data: 'gBallGfx_Dive',    size: 384, tag: GFX_TAG_DIVE_BALL },
+  { data: 'gBallGfx_Nest',    size: 384, tag: GFX_TAG_NEST_BALL },
+  { data: 'gBallGfx_Repeat',  size: 384, tag: GFX_TAG_REPEAT_BALL },
+  { data: 'gBallGfx_Timer',   size: 384, tag: GFX_TAG_TIMER_BALL },
+  { data: 'gBallGfx_Luxury',  size: 384, tag: GFX_TAG_LUXURY_BALL },
+  { data: 'gBallGfx_Premier', size: 384, tag: GFX_TAG_PREMIER_BALL },
+];
+
+// 1:1 decomp pokeball.c:76 `gBallSpritePalettes[POKEBALL_COUNT]` (CompressedSpritePalette).
+const gBallSpritePalettes: ReadonlyArray<{ data: string; tag: number }> = [
+  { data: 'gBallPal_Poke',    tag: GFX_TAG_POKE_BALL },
+  { data: 'gBallPal_Great',   tag: GFX_TAG_GREAT_BALL },
+  { data: 'gBallPal_Safari',  tag: GFX_TAG_SAFARI_BALL },
+  { data: 'gBallPal_Ultra',   tag: GFX_TAG_ULTRA_BALL },
+  { data: 'gBallPal_Master',  tag: GFX_TAG_MASTER_BALL },
+  { data: 'gBallPal_Net',     tag: GFX_TAG_NET_BALL },
+  { data: 'gBallPal_Dive',    tag: GFX_TAG_DIVE_BALL },
+  { data: 'gBallPal_Nest',    tag: GFX_TAG_NEST_BALL },
+  { data: 'gBallPal_Repeat',  tag: GFX_TAG_REPEAT_BALL },
+  { data: 'gBallPal_Timer',   tag: GFX_TAG_TIMER_BALL },
+  { data: 'gBallPal_Luxury',  tag: GFX_TAG_LUXURY_BALL },
+  { data: 'gBallPal_Premier', tag: GFX_TAG_PREMIER_BALL },
+];
+
+/** 1:1 decomp pokeball.c:1309 `void LoadBallGfx(u8 ballId)`. Charge la sheet + palette
+ *  de la ball (par tag) si pas deja en VRAM, puis decompresse gOpenPokeballGfx (frame
+ *  ouverte) par-dessus. Le data est resolu sync via getAsset (asset precharge). */
+export function LoadBallGfx(ballId: number): void {
+  if (GetSpriteTileStartByTag(gBallSpriteSheets[ballId].tag) === 0xFFFF) {
+    LoadCompressedSpriteSheetUsingHeap(gBallSpriteSheets[ballId]);
+    LoadCompressedSpritePaletteUsingHeap(gBallSpritePalettes[ballId]);
+  }
+  switch (ballId) {
+    case BALL_DIVE:
+    case BALL_LUXURY:
+    case BALL_PREMIER:
+      break;
+    default: {
+      // 1:1 decomp : `LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var*32)` —
+      // ecrit la frame "ball ouverte" aux tiles [start+8..]. DETTE : le runtime
+      // LZ77UnCompVram/LZDecompressVram ecrit en BG VRAM (gba.vram), PAS en OBJ
+      // (gba.objVram) -> on ne peut pas l'appeler sans corrompre le BG. A raffiner
+      // (router OBJ dans LZ77UnCompVram). NB poke.4bpp.bin a 3 frames (0/4/8) -> l'anim
+      // d'ouverture de la ball marche sans gOpenPokeballGfx (a confirmer A/B).
+      const var_ = GetSpriteTileStartByTag(gBallSpriteSheets[ballId].tag);
+      void var_;
+      break;
+    }
+  }
+}
+
+/** 1:1 decomp pokeball.c:1332 `void FreeBallGfx(u8 ballId)`. */
+export function FreeBallGfx(ballId: number): void {
+  FreeSpriteTilesByTag(gBallSpriteSheets[ballId].tag);
+  FreeSpritePaletteByTag(gBallSpritePalettes[ballId].tag);
+}

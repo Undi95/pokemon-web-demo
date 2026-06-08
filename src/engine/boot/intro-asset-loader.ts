@@ -67,6 +67,28 @@ export async function ensureBallParticlesLoaded(): Promise<void> {
   }
 }
 
+/** Précharge le gfx de la Poke Ball (= gBallGfx_Poke / gBallPal_Poke / gOpenPokeballGfx,
+ *  pokeball.c:62/78) dans assetCache → LoadBallGfx (pokeball.ts) y fait lookup-cache +
+ *  LoadSpriteSheet SYNC (1:1 le data en ROM). Calqué sur ensureBallParticlesLoaded ;
+ *  appelé aux mêmes sites (preload Birch + battle LOAD_ASSETS). Seul BALL_POKE (les
+ *  autres types de ball = dette : assets non extraits). */
+let _ballGfxPreloaded = false;
+export async function ensureBallGfxLoaded(): Promise<void> {
+  if (_ballGfxPreloaded) return;
+  if (assetCache.has('gBallGfx_Poke') && assetCache.has('gBallPal_Poke') && assetCache.has('gOpenPokeballGfx')) {
+    _ballGfxPreloaded = true;
+    return;
+  }
+  try {
+    assetCache.set('gBallGfx_Poke', await loadTileBin('/decomp/em/balls/poke.png', 4));   // poke.4bpp.bin (384B = 12 tiles, 3 frames)
+    assetCache.set('gOpenPokeballGfx', await loadTileBin('/decomp/em/balls/open.png', 4)); // open.4bpp.bin (128B = 4 tiles, frame ouverte)
+    assetCache.set('gBallPal_Poke', await loadGbaPal('/decomp/em/balls/poke.gbapal'));     // poke.gbapal (16 couleurs)
+    _ballGfxPreloaded = true;
+  } catch (e) {
+    console.warn('[intro-asset-loader] Ball gfx load failed:', e);
+  }
+}
+
 /** Convertit un GFX_SOURCES path "graphics/intro/scene_1/bg.pal" → URL public. */
 function urlFor(decompPath: string): string {
   return '/decomp/em/' + decompPath.replace(/^graphics\//, '');
@@ -630,6 +652,7 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
   // battles, eggs, evolutions). Extrait en fonction réutilisable (= aussi appelée
   // par battle-flow LOAD_ASSETS pour les combats hors-intro).
   await ensureBallParticlesLoaded();
+  await ensureBallGfxLoaded();
 
   console.log(`[intro-asset-loader] Birch speech preload done (${assetCache.size} symbols total cached)`);
 }
