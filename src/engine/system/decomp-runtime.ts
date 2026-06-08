@@ -322,6 +322,11 @@ export class MainStruct {
    *  imbriquée (e.g. option menu, naming screen) se termine. Set par le caller
    *  AVANT `SetMainCallback2(CB2_InitOptionMenu)` etc. */
   savedCallback: CB2Callback | null = null;
+  /** 1:1 décomp `bool8 gMain.inBattle` (main.h) — TRUE pendant un combat (posé par
+   *  CB2_InitBattle, levé à la sortie). Lu par les sprite callbacks send-out
+   *  (SpriteCB_ReleaseMonFromBall) pour distinguer combat vs Birch/trade. Câblage
+   *  du flag au boot voie L = #22 (pour l'instant false → DORMANT). */
+  inBattle = false;
   /** 1:1 décomp gMain.newKeys / gMain.heldKeys — input keys this frame / held keys. */
   newKeys = 0;
   heldKeys = 0;

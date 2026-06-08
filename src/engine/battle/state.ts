@@ -120,6 +120,11 @@ export let gBattlerInMenuId = 0;
 /** 1:1 décomp `gBattlersCount` (= 2 single, 4 double). */
 export let gBattlersCount = 2;
 
+/** 1:1 décomp `EWRAM_DATA bool8 gDoingBattleAnim` (battle_main.c). Flag global
+ *  posé pendant une anim de combat bloquante (send-out ball / capture) : TRUE par
+ *  DoPokeballSendOutAnimation, FALSE par HandleBallAnimEnd. Lu comme garde. */
+export let gDoingBattleAnim = false;
+
 /** 1:1 décomp `void (*gBattlerControllerFuncs[MAX_BATTLERS_COUNT])(void)`
  *  (battle_main.c). TABLE PARTAGÉE unique : `BattleMainCB1` la tick chaque
  *  frame (`gBattlerControllerFuncs[i]()`), et chaque controller (player/
@@ -851,6 +856,7 @@ export const gBattleCommunication: number[] = new Array(16).fill(0);
 export function setBattlerAttacker(v: number) { gBattlerAttacker = v; }
 export function setBattlerTarget(v: number) { gBattlerTarget = v; }
 export function setActiveBattler(v: number) { gActiveBattler = v; }
+export function setGDoingBattleAnim(v: boolean) { gDoingBattleAnim = v; }
 export function setEffectBattler(v: number) { gEffectBattler = v; }
 export function setBattlerFainted(v: number) { gBattlerFainted = v; }
 export function setPotentialItemEffectBattler(v: number) { gPotentialItemEffectBattler = v; }
@@ -916,6 +922,7 @@ export function resetBattleState(): void {
   gBattlerTarget = 0;
   gActiveBattler = 0;
   gEffectBattler = 0;
+  gDoingBattleAnim = false;
   gBattlerFainted = 0;
   gPotentialItemEffectBattler = 0;
   gBattlersCount = 2;

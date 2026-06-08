@@ -159,6 +159,12 @@ export interface OamEntry {
   affineMode: 0 | 1 | 2 | 3;
   /** Affine matrix slot (0-31, attr1 bits 9-13) si affineMode != NORMAL. */
   affineParamIndex: number;
+  /** 1:1 struct OamData.affineParam (offset 0x06, u16) — champ DISTINCT de
+   *  affineParamIndex (matrixNum). Detourne comme registre SCRATCH 16-bit par
+   *  certains sprite callbacks (ex. SpriteCB_PlayerMonSendOut_2 : sBattler en byte
+   *  bas + compteur de frame en byte haut). Non synchronise vers le hardware OAM
+   *  par le compositor (usage purement logique cote sprite callbacks). */
+  affineParam: number;
   /** Sub-priority used by `BuildSpritePriorities` (= sprite.c:361) to order
    *  same-priority OBJs : `priority = subpriority | (oam.priority << 8)`,
    *  sort ASC. Lower subpriority drawn ON TOP. Hardware GBA OAM doesn't
@@ -193,6 +199,7 @@ export function defaultOamEntry(): OamEntry {
     objMode: 0,
     affineMode: 0,
     affineParamIndex: 0,
+    affineParam: 0,
     subpriority: 0xFF,  // 1:1 décomp default for sentinel slots (sprite.c:168)
   };
 }

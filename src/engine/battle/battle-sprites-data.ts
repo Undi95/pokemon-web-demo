@@ -34,6 +34,17 @@ const _statusAnimActive: boolean[] = new Array(MAX_BATTLERS_COUNT).fill(false);
 // ─── struct BattleSpriteInfo (champs utilisés) ──────────────────────────────
 const _behindSubstitute: boolean[] = new Array(MAX_BATTLERS_COUNT).fill(false);
 
+// ─── struct BattleHealthboxInfo (send-out ball, pokeball.c) ─────────────────
+// 1:1 `ballAnimActive:1` (TRUE pendant l'anim send-out d'un battler, posé par
+// DoPokeballSendOutAnimation, levé par HandleBallAnimEnd) + `waitForCry:1` (TRUE
+// tant que le cri du mon relâché joue, Task_PlayCryWhenReleasedFromBall).
+const _ballAnimActive: boolean[] = new Array(MAX_BATTLERS_COUNT).fill(false);
+const _waitForCry: boolean[] = new Array(MAX_BATTLERS_COUNT).fill(false);
+
+// ─── struct BattleAnimationInfo (animationData, singleton) ──────────────────
+// 1:1 `introAnimActive:1` (TRUE pendant l'intro d'envoi des deux camps en double).
+let _introAnimActive = false;
+
 /** 1:1 `gBattleSpritesDataPtr->healthBoxesData[b].animationState`. */
 export function getHealthBoxAnimationState(battler: number): number {
   return _animationState[battler] ?? 0;
@@ -62,6 +73,27 @@ export function isBehindSubstitute(battler: number): boolean {
 export function setBehindSubstitute(battler: number, v: boolean): void {
   _behindSubstitute[battler] = v;
 }
+/** 1:1 `gBattleSpritesDataPtr->healthBoxesData[b].ballAnimActive`. */
+export function isBallAnimActive(battler: number): boolean {
+  return !!_ballAnimActive[battler];
+}
+export function setBallAnimActive(battler: number, v: boolean): void {
+  _ballAnimActive[battler] = v;
+}
+/** 1:1 `gBattleSpritesDataPtr->healthBoxesData[b].waitForCry`. */
+export function isWaitForCry(battler: number): boolean {
+  return !!_waitForCry[battler];
+}
+export function setWaitForCry(battler: number, v: boolean): void {
+  _waitForCry[battler] = v;
+}
+/** 1:1 `gBattleSpritesDataPtr->animationData->introAnimActive`. */
+export function isIntroAnimActive(): boolean {
+  return _introAnimActive;
+}
+export function setIntroAnimActive(v: boolean): void {
+  _introAnimActive = v;
+}
 
 /** Reset complet (= alloc fraîche de gBattleSpritesDataPtr à chaque combat,
  *  battle_main.c BattleStartClearSetData → AllocateBattleResources). */
@@ -70,6 +102,9 @@ export function resetBattleSpritesData(): void {
   _specialAnimActive.fill(false);
   _statusAnimActive.fill(false);
   _behindSubstitute.fill(false);
+  _ballAnimActive.fill(false);
+  _waitForCry.fill(false);
+  _introAnimActive = false;
 }
 
 // ─── Enregistrement globalThis.__battleSpritesData (= surface lue par les
