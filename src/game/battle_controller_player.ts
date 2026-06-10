@@ -726,17 +726,93 @@ function HandleInputChooseMove(): void {
       MoveSelectionDisplayMoveType();
     }
   } else if (JOY_NEW(SELECT_BUTTON)) {
-    // 1:1 décomp : move switching mode (HandleMoveSwitching). Dette R3 :
-    // swap moves + PP persisté via SetMonData (= ~150l C). Phase L2+ ou L3.
-    void _HandleMoveSwitching_stub;
+    // 1:1 décomp (goal T5) : mode réarrangement des moves.
+    if (gNumberOfMovesToChoose > 1 && !(gBattleTypeFlags & BATTLE_TYPE_LINK)) {
+      MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 29);
+      if (gMoveSelectionCursor[gActiveBattler] !== 0) setMultiUsePlayerCursor(0);
+      else setMultiUsePlayerCursor(gMoveSelectionCursor[gActiveBattler] + 1);
+      MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 27);
+      BattlePutTextOnWindow('Échanger' + String.fromCharCode(10) + 'lequel?' /* 1:1 gText_BattleSwitchWhich */, 11 /* B_WIN_SWITCH_PROMPT */);
+      gBattlerControllerFuncs[gActiveBattler] = HandleMoveSwitching;
+    }
   }
 }
 
-/** 1:1 décomp `HandleMoveSwitching()` (battle_controller_player.c:667-810).
- *  Dette R3 : SELECT_BUTTON swap moves + persist via SetMonData. Non critique
- *  pour Birch tutorial (= mon a 2 moves Tackle+Growl, pas de swap UI). */
-function _HandleMoveSwitching_stub(): void {
-  // Dette R3 : full move swap UI + persist Phase L2+ post-tutorial.
+/** 1:1 décomp `HandleMoveSwitching()` (battle_controller_player.c:667-810),
+ *  goal T5 2026-06-11 : A/SELECT → swap (bufferA ChooseMoveStruct +
+ *  gBattleMons.moves/pp/ppBonuses + persistance party mon) ; DPAD → bouge le
+ *  2e curseur ; B → annule. Re-render menu + retour HandleInputChooseMove. */
+function HandleMoveSwitching(): void {
+  if (JOY_NEW(A_BUTTON) || JOY_NEW(SELECT_BUTTON)) {
+    PlaySE(SE_SELECT);
+    if (gMoveSelectionCursor[gActiveBattler] !== gMultiUsePlayerCursor) {
+      const buf = gBattleBufferA[gActiveBattler];
+      const a = gMoveSelectionCursor[gActiveBattler];
+      const b = gMultiUsePlayerCursor;
+      // swap moves (u16) + currentPp + maxPp dans le ChooseMoveStruct (bufferA).
+      for (const [off, sz] of [[4, 2], [12, 1], [16, 1]] as const) {
+        for (let k = 0; k < sz; k++) {
+          const t = buf[off + a * sz + k];
+          buf[off + a * sz + k] = buf[off + b * sz + k];
+          buf[off + b * sz + k] = t;
+        }
+      }
+      // swap gBattleMons[active].moves/pp + ppBonuses (2 bits par slot) 1:1.
+      const bm = ((globalThis as Record<string, unknown>).__battleState as { gBattleMons?: Array<{ moves: number[]; pp: number[]; ppBonuses: number }> })?.gBattleMons?.[gActiveBattler];
+      if (bm) {
+        [bm.moves[a], bm.moves[b]] = [bm.moves[b], bm.moves[a]];
+        [bm.pp[a], bm.pp[b]] = [bm.pp[b], bm.pp[a]];
+        const bitsA = (bm.ppBonuses >> (a * 2)) & 3;
+        const bitsB = (bm.ppBonuses >> (b * 2)) & 3;
+        bm.ppBonuses = (bm.ppBonuses & ~((3 << (a * 2)) | (3 << (b * 2)))) | (bitsA << (b * 2)) | (bitsB << (a * 2));
+      }
+      // persistance party mon (SetMonData MON_DATA_MOVE/PP/PP_BONUSES 1:1).
+      const party = (globalThis as Record<string, unknown>).gPlayerParty as Array<{ moves?: number[]; pp?: number[]; ppBonuses?: number }> | undefined;
+      const idx = (gBattlerPartyIndexes as number[])[gActiveBattler] ?? 0;
+      const mon = party?.[idx];
+      if (mon?.moves && mon.pp) {
+        [mon.moves[a], mon.moves[b]] = [mon.moves[b], mon.moves[a]];
+        [mon.pp[a], mon.pp[b]] = [mon.pp[b], mon.pp[a]];
+        if (mon.ppBonuses !== undefined) {
+          const pA = (mon.ppBonuses >> (a * 2)) & 3;
+          const pB = (mon.ppBonuses >> (b * 2)) & 3;
+          mon.ppBonuses = (mon.ppBonuses & ~((3 << (a * 2)) | (3 << (b * 2)))) | (pA << (b * 2)) | (pB << (a * 2));
+        }
+      }
+      gMoveSelectionCursor[gActiveBattler] = gMultiUsePlayerCursor;
+    }
+    // re-render + retour au choix de move (1:1 fin de HandleMoveSwitching).
+    MoveSelectionDisplayMoveNames();
+    MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+    MoveSelectionDisplayPpString();
+    MoveSelectionDisplayPpNumber();
+    MoveSelectionDisplayMoveType();
+    gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
+    return;
+  }
+  if (JOY_NEW(B_BUTTON)) {
+    PlaySE(SE_SELECT);
+    MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
+    MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
+    MoveSelectionDisplayPpString();
+    MoveSelectionDisplayPpNumber();
+    MoveSelectionDisplayMoveType();
+    gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
+    return;
+  }
+  // DPAD : bouge le 2e curseur (1:1 mêmes toggles que le menu).
+  const cur = gMultiUsePlayerCursor;
+  let next = cur;
+  if (JOY_NEW(DPAD_LEFT) && (cur & 1)) next = cur ^ 1;
+  else if (JOY_NEW(DPAD_RIGHT) && !(cur & 1) && ((cur ^ 1) < gNumberOfMovesToChoose)) next = cur ^ 1;
+  else if (JOY_NEW(DPAD_UP) && (cur & 2)) next = cur ^ 2;
+  else if (JOY_NEW(DPAD_DOWN) && !(cur & 2) && ((cur ^ 2) < gNumberOfMovesToChoose)) next = cur ^ 2;
+  if (next !== cur) {
+    PlaySE(SE_SELECT);
+    MoveSelectionDestroyCursorAt(cur);
+    setMultiUsePlayerCursor(next);
+    MoveSelectionCreateCursorAt(next, 27);
+  }
 }
 
 /** 1:1 décomp `B_POSITION_OPPONENT_LEFT/RIGHT` (battle.h). */
