@@ -43,23 +43,23 @@
  *   - battle-healthbox.ts : healthbox sprite handle
  */
 
-import { getRuntime } from '../system/decomp-globals';
-import { Cos } from '../../game/trig';
-import { gBallSpriteTemplates } from '../../game/pokeball';
-import { CreateSprite as _CreateSpriteFromTemplate } from '../system/decomp-bridge';
-import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from '../../game/battle_anim_mons';
-import { CreateTask, DestroyTask } from '../system/decomp-bridge';
+import { getRuntime } from '../engine/system/decomp-globals';
+import { Cos } from './trig';
+import { gBallSpriteTemplates } from './pokeball';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
+import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
+import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import {
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
-} from '../../game/battle_anim_mons';
-import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../system/pokeball-effects';
-import { BlendPalettes } from '../system/decomp-globals';
-import { BeginNormalPaletteFade } from '../system/decomp-bridge';
-import { setGDoingBattleAnim } from './state';
+} from './battle_anim_mons';
+import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../engine/system/pokeball-effects';
+import { BlendPalettes } from '../engine/system/decomp-globals';
+import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';
+import { setGDoingBattleAnim } from '../engine/battle/state';
 import {
   gLastUsedItem, gBattleStruct,
-} from './state';
+} from '../engine/battle/state';
 
 // ─── BALL_* enum (= include/pokeball.h:4-19) ───────────────────────────────
 

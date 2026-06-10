@@ -42,7 +42,7 @@ import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressed
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, AnimateBallOpenParticles, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
-import { ItemIdToBallId } from '../engine/battle/battle-anim-throw';
+import { ItemIdToBallId } from './battle_anim_throw';
 import { getBattlerMonSpriteId } from './battle_controller_opponent';
 import { SpriteCB_PlayerMonFromBall, SpriteCB_OpponentMonFromBall } from '../engine/battle/battle-sprite-callbacks';
 import {
