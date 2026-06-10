@@ -38,7 +38,8 @@ export const ANIM_SYMBOL_BASE = 0x1000;
 /** Résout un opérande 32-bit du bytecode anim : marqueur nominal → nom, sinon null. */
 export function animSymbolName(value: number): string | null {
   const v = value >>> 0;
-  if ((v & 0xF0000000) !== SYMBOL_MARKER) return null;
+  // >>> 0 sur le masque : & 32-bit SIGNE en JS -> -268435456 !== 0xF0000000 (positif)
+  if (((v & 0xF0000000) >>> 0) !== SYMBOL_MARKER) return null;
   const id = v & 0xFFFF;
   if (id < ANIM_SYMBOL_BASE) return null; // ids 0-81 = table commune battle vars
   return _idToName.get(id) ?? null;
