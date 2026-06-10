@@ -79,7 +79,12 @@ export function AffineAnimStateStartAnim(sprite: DecompSprite, animNum: number):
 export function StartSpriteAffineAnim(sprite: DecompSprite, animNum: number): void {
   AffineAnimStateStartAnim(sprite, animNum);
   sprite.affineAnimBeginning = true;
-  sprite.affineAnimEnded = false;
+  // Sprite SANS table affine (affineAnimsTableName absent) : le ticker
+  // (tickAllAffineAnims:353) le skippe -> ended ne serait JAMAIS pose ->
+  // soft-lock des gates affineAnimEnded (capture Release_Wait, send-out
+  // HandleBallAnimEnd). Semantique plateforme : anim no-op = finie immediatement
+  // (le mon emerge sans l effet grow, comme le send-out valide A/B).
+  sprite.affineAnimEnded = !sprite.affineAnimsTableName;
 }
 
 /** 1:1 décomp src/sprite.c:ConvertScaleParam (l.1316-1320) :

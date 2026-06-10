@@ -19,6 +19,7 @@
  */
 
 import {
+  gLastUsedItem,
   gBattleMons, gBattlerAttacker, setBattlerAttacker,
   gBattlerTarget, setBattlerTarget,
   gActiveBattler, setActiveBattler,
@@ -404,11 +405,30 @@ export function HandleAction_Switch(ctx?: BattleScriptContext): void {
  *  Wirage minimal : set attacker + ClearFuryCutterDestinyBondGrudge.
  *  Phase 1.4 : full item battle flow deferred (= read gBattleBufferB[1..2] pour item ID,
  *  switch sur effect, run bytecode item-use). */
-export function HandleAction_UseItem(_ctx?: BattleScriptContext): void {
+export function HandleAction_UseItem(ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
   setBattlerTarget(gBattlerAttacker);
   ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
-  // Phase 1.4 : full item battle flow deferred.
+  // 1:1 decomp battle_util.c:318 : gLastUsedItem = bufferB[1] | bufferB[2]<<8
+  // (deja pose 1:1 par STATE_WAIT_ACTION_CASE_CHOSEN -> setLastUsedItem).
+  const item = gLastUsedItem;
+  if (item > 0 && item <= 12 /* LAST_BALL = ITEM_PREMIER_BALL */) {
+    // 1:1 : gBattlescriptCurrInstr = gBattlescriptsForBallThrow[item] — la table
+    // (battle_scripts_2.s:15) pointe BattleScript_BallThrow pour toutes les balls
+    // (Safari = BattleScript_SafariBallThrow, item 5 en Safari uniquement).
+    const off = getBattleScriptOffset('BattleScript_BallThrow');
+    // Le dispatcher C7 (RunTurnActionsFunctions) appelle les handlers SANS ctx
+    // -> fallback 1:1 sur le ctx PERSISTANT (gBattleScriptContext), comme
+    // HandleEndTurn_BattleWon.
+    const c = ctx ?? gBattleScriptContext;
+    if (off >= 0 && c) {
+      c.scriptPtr = off;
+      setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+      return;
+    }
+  }
+  // Items non-ball (POKE_DOLL/soins/X items + branche AI trainer) : dette
+  // Phase 1.4 (full item battle flow). Comportement conserve : action finie.
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
 

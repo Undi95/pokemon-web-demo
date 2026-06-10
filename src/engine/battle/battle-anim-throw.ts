@@ -45,6 +45,9 @@
 
 import { getRuntime } from '../system/decomp-globals';
 import { Cos } from '../../game/trig';
+import { gBallSpriteTemplates } from '../../game/pokeball';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../system/decomp-bridge';
+import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from '../../game/battle_anim_mons';
 import { CreateTask, DestroyTask } from '../system/decomp-bridge';
 import {
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
@@ -508,33 +511,26 @@ export function AnimTask_GetBattlersFromArg(taskId: number): void {
 
 // ─── Helpers internes (= dette R3 wire) ────────────────────────────────────
 
-/** Helper : spawn ball sprite via runtime CreateSprite. */
+/** 1:1 decomp : CreateSprite(&gBallSpriteTemplates[ballId], x, y, subpriority)
+ *  — le MEME createur que le send-out (#20, pokeball.ts:284). Le gfx ball est
+ *  precharge au boot (ensureBallGfxLoaded). */
 function _CreateBallSprite(ballId: number, x: number, y: number, subpriority: number): number {
-  void ballId; void subpriority;
-  // Dette R3 : full ball sprite template lookup gBallSpriteTemplates[ballId].
-  // Pour now : wire vers battle-ball-throw.ts existant qui gère ball arc.
-  const rt = getRuntime();
-  if (!rt) return -1;
-  // Approximation : return un dummy sprite id.
-  void x; void y;
-  return -1;
+  const tpl = gBallSpriteTemplates[ballId] ?? gBallSpriteTemplates[0];
+  if (!tpl) return -1;
+  return _CreateSpriteFromTemplate(tpl as never, x, y, subpriority);
 }
 
-/** Helper : récupère le sprite battler id (= gBattlerSpriteIds[battler]). */
+/** 1:1 `gBattlerSpriteIds[battler]` — via le registre controllers (modele plat). */
 function _getBattlerSpriteId(battler: number): number {
-  // Dette R3 : gBattlerSpriteIds tracker. Pour now : returns battler index.
-  return battler;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  return co?.getBattlerMonSpriteId?.(battler) ?? -1;
 }
 
-/** Helper : GetBattlerSpriteCoord (battle_anim_mons.c). */
+/** 1:1 GetBattlerSpriteCoord — delegue au miroir game/battle_anim_mons. */
 function _GetBattlerSpriteCoord(battler: number, coord: number): number {
-  // 1:1 décomp : BATTLER_COORD_X/Y → sBattlerCoords[position]. Single battle :
-  //   Player coord X = 72, Y = 80 (+ y_offset)
-  //   Opponent coord X = 176, Y = 40 (+ y_offset)
-  // Dette R3 : full sBattlerCoords table + y_offset per species.
-  void battler;
-  if (coord === 0) return 176;  // X
-  return 40;  // Y
+  return _GetBattlerSpriteCoordReal(battler, coord);
 }
 
 // ─── Chaîne CAPTURE 1:1 (battle_anim_throw.c:855-1567) ─────────────────────
@@ -1086,7 +1082,7 @@ export function Special_BallThrow_TS(): void {
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__battleAnimThrow = {
-  Special_BallThrow_TS,
+  Special_BallThrow_TS, BeginNormalPaletteFade,
   ItemIdToBallId,
   AnimTask_LoadBallGfx, AnimTask_FreeBallGfx,
   AnimTask_IsBallBlockedByTrainer,

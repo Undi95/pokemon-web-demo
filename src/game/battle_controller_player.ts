@@ -2371,7 +2371,7 @@ void MarkBattlerForControllerExec;
   // L1 wires exposés pour tests déterministes A_BUTTON cursor input loop.
   HandleInputChooseAction, HandleChooseActionAfterDma3,
   ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt,
-  PlayerHandleChooseAction,
+  PlayerHandleChooseAction, PlayerBufferExecCompleted,
   // L2 wires exposés pour tests déterministes Move selection input loop.
   HandleInputChooseMove, HandleChooseMoveAfterDma3,
   MoveSelectionCreateCursorAt, MoveSelectionDestroyCursorAt,
