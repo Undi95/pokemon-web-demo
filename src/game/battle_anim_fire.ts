@@ -22,7 +22,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 
 export const ANIM_TAG_SMALL_EMBER = 10029; // ANIM_SPRITES_START + 29
 
-const sSheet = { data: 'gAnimGfx_SmallEmber', size: 2560, tag: ANIM_TAG_SMALL_EMBER };
+const sSheet = { data: 'gAnimGfx_SmallEmber', size: 2560, tag: ANIM_TAG_SMALL_EMBER, targetTileBase: 864 };
 const sPal = { data: 'gAnimPal_SmallEmber', tag: ANIM_TAG_SMALL_EMBER };
 export function LoadAnimSmallEmberGfx(): void {
   if (GetSpriteTileStartByTag(ANIM_TAG_SMALL_EMBER) === 0xFFFF) {

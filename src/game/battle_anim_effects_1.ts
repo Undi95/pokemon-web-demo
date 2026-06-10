@@ -12,7 +12,7 @@ import {
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 
 export const ANIM_TAG_ORBS = 10147;
-const sSheet = { data: 'gAnimGfx_Orbs', size: 384, tag: ANIM_TAG_ORBS };
+const sSheet = { data: 'gAnimGfx_Orbs', size: 384, tag: ANIM_TAG_ORBS, targetTileBase: 956 };
 const sPal = { data: 'gAnimPal_Orbs', tag: ANIM_TAG_ORBS };
 export function LoadAnimOrbsGfx(): void {
   if (GetSpriteTileStartByTag(ANIM_TAG_ORBS) === 0xFFFF) {

@@ -14,7 +14,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { TranslateAnimSpriteToTargetMonLocation } from './battle_anim_fire';
 
 export const ANIM_TAG_BUBBLE = 10146;
-const sSheet = { data: 'gAnimGfx_Bubble', size: 384, tag: ANIM_TAG_BUBBLE };
+const sSheet = { data: 'gAnimGfx_Bubble', size: 384, tag: ANIM_TAG_BUBBLE, targetTileBase: 944 };
 const sPal = { data: 'gAnimPal_Bubble', tag: ANIM_TAG_BUBBLE };
 export function LoadAnimBubbleGfx(): void {
   if (GetSpriteTileStartByTag(ANIM_TAG_BUBBLE) === 0xFFFF) {

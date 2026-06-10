@@ -1151,7 +1151,7 @@ export function Special_BallThrow_TS(): void {
 // ════════════════════════════════════════════════════════════════════════════
 export const ANIM_TAG_GOLD_STARS = 10233; // ANIM_SPRITES_START + 233
 
-const _sGoldStarsSheet = { data: 'gAnimGfx_GoldStars', size: 192, tag: ANIM_TAG_GOLD_STARS };
+const _sGoldStarsSheet = { data: 'gAnimGfx_GoldStars', size: 192, tag: ANIM_TAG_GOLD_STARS, targetTileBase: 968 };
 const _sGoldStarsPal = { data: 'gAnimPal_GoldStars', tag: ANIM_TAG_GOLD_STARS };
 
 type _ShinySprite = {
@@ -1294,7 +1294,7 @@ function _shinyStarDone(sprite: _ShinySprite): void {
   for (const [id, sp] of rt.gSprites?.entries() ?? []) {
     if ((sp as unknown) === (sprite as unknown)) {
       rt.DestroySprite?.(id);
-      rt.gSprites?.delete(id);
+      // pas de gSprites.delete (slot garde jusqu'a reallocation, 1:1)
       break;
     }
   }

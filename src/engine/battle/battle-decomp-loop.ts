@@ -216,6 +216,13 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // Side-effect modules (T3/T4) en DYNAMIQUE : un import statique provoquait
   // la TDZ ST_OAM_AFFINE_DOUBLE (cycle ESM via pokeball) -> l'app ne bootait
   // plus. Charges ici = poses avant tout usage en combat.
+  // FIX user 2026-06-11 (« ton dernier a casse nos barres de PV ») : nos
+  // healthbox/mons utilisent des tiles OBJ FIXES (0..~300) SANS marquer le
+  // bitmap d'allocation -> les sheets d'anim par tag (AllocSpriteTiles)
+  // s'allouaient PAR-DESSUS (scratch.png ecrasait le panneau nom de la box).
+  // Reserve 1:1-mecanisme (gReservedSpriteTileCount, cf. pokemon_storage 0x280):
+  // l'allocateur scanne a partir de 0x140 -> zone fixe intouchable.
+  (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
   void Promise.all([
     import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
     import('../../game/battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)

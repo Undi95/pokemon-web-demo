@@ -634,7 +634,7 @@ function SpriteCB_HitAnimHealthoxEffect(sprite: { data: number[] }): void {
     const self = sprite as { spriteId?: number };
     if (rt?.DestroySprite && self.spriteId !== undefined) {
       rt.DestroySprite(self.spriteId);
-      rt.gSprites?.delete?.(self.spriteId as never);
+      // pas de gSprites.delete (slot garde, 1:1)
     } else {
       // fallback : neutraliser le callback
       (sprite as { callback?: unknown }).callback = null;

@@ -470,7 +470,8 @@ export function DestroyAnimSprite(spriteOrId: number | object): void {
     rt.FreeOamMatrix(sprite.matrixNum);
   }
   try { rt.DestroySprite(spriteId); } catch (e) { void e; }
-  rt.gSprites?.delete?.(spriteId);
+  // PAS de gSprites.delete : le runtime garde le slot jusqu'a reallocation
+  // (1:1 decomp — le delete cassait la healthbox composee, fix user 2026-06-11).
   if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--;
 }
 
