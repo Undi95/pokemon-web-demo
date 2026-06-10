@@ -1,7 +1,7 @@
 # État du projet — port 1:1 Pokémon Émeraude
 
 > **Doc canonique** : ce qui est fait / pas fait, les outils d'audit, le backlog
-> priorisé. Mis à jour 2026-06-01. Branche `upd2` (non poussée — on ne push jamais).
+> priorisé. Mis à jour 2026-06-10. Branche `mirroir` (non poussée — on ne push jamais).
 > Pour l'archi : `docs/ARCHITECTURE.md`. Pour les dettes ponctuelles : `DETTES-1TO1-STRICT.md`.
 
 ## 🧰 La boîte à outils d'audit (ne JAMAIS auditer à la main — lancer un script)
@@ -37,6 +37,35 @@ move, movement OW, PC boxes) — le **chemin de jeu principal** (boot → OW →
 menus) tourne. `npm run coverage:1to1` affiche les 3 axes.
 
 ## ✅ Mûr (porté + vérifié, tourne bout-en-bout)
+
+### 🆕 2026-06-10 — capture + sac en combat + audit ULTRACODE (session miroir)
+
+- **CAPTURE 100% bout-en-bout, manette-réaliste** (commits `30faa4a0`→`a239ec03`) :
+  menu → SAC (l'UI **complète** du sac s'ouvre EN COMBAT) → poche POKé BALLS →
+  UTILIS. → chaîne d'anim 1:1 `battle_anim_throw.c:855-1567` (arc, mon aspiré
+  rot-scale, 4 rebonds + SE, secousses subpixel, échec = mon ressort / succès =
+  click + flash + `MUS_RG_CAUGHT_INTRO`) → mon ajouté à la party →
+  `gBattleOutcome=7 (CAUGHT)` → retour OW. Annulation B validée (re-menu propre).
+  ⚠️ La chaîne `SpriteCB_BallThrow*` de pokeball.c est du CODE MORT décomp
+  (« do not seem to get run ») — la vraie = battle_anim_throw.c.
+- **Reloc bytecode scripts_2** (`script-interpreter.ts`) : les opérandes de saut
+  de `battle_scripts_2` étaient émises en offsets LOCAUX non shiftés → tout jump
+  interne _2 (capture, items) sautait dans scripts_1 (garbage). Reloc à la volée
+  dans le stepper (prouvé sûr : aucun script _2 ne référence un label _1).
+- **Audit ULTRACODE game-vs-decomp** : 967 fonctions auditées sur les 24 miroirs
+  `src/game/`, 8 écarts confirmés adversarialement, **8/8 corrigés** (dont
+  `BATTLE_TYPE_IS_MASTER` 1<<24→1<<2 qui posait RECORDED à chaque combat = RNG
+  VBlank gelé). Rapport : `AUDIT-GAME-VS-DECOMP-2026-06.md`.
+- **5 fixes A/B user validés** : sprite KO fantôme (DestroySprite sans hide OAM),
+  cris (préfixe SPECIES_ → 404), élévation des volants (GetBattlerElevation),
+  **anims 2-frames** des fronts (439 séquences exactes extraites de
+  front_pic_anims.h → `pokemon-front-anims.json`, flip à la frame près + cri à
+  l'apparition), **party order combat** (nibbles 1:1 party_menu.c:6035+, l'actif
+  en haut-gauche, restore à la fermeture).
+- Dettes capture/sac documentées (mémoire `chantier-capture/sac-combat-2026-06-10.md`) :
+  yes/no + naming screen du surnom (auto-NON 1:1-doc), 3 étoiles de capture,
+  battleUsage non-balls (médecine/X items), check box pleine, displaydexinfo,
+  « attrapé!À » (byte de contrôle décodeur), anim throw du dresseur (backsprite).
 
 - **Boot → title → main menu → new game / resume** (callback2 1:1).
 - **Overworld** : maps, collisions, warps, NPCs, mouvement joueur, caméra, save/RTC/RNG.
