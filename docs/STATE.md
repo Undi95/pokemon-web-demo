@@ -190,3 +190,20 @@ secret base, pokénav, pokéblock. (Liste éditable dans `scripts/audit-coverage
 - T5 : TryShinyAnimAfterMonAnim (gold stars gfx — le pattern hitsplat s'applique tel quel).
 - T6 : ~40 renames-miroir (DETTE-T6-COMBAT-MISSING.md).
 - T7 : DoNamingScreen + dexinfo (dette assumée, capture OK avec auto-NO).
+
+## 2026-06-11 (matin) — RAPPORT FINAL v3 : T4 CHEMIN DE JEU COMPLET
+**Les 6 moves nommés du goal sont TOUS visibles et A/B-validés au pixel :**
+Tackle (lunge+slide+hitsplat+shake) · Growl (noise lines+double cri) · Scratch
+(griffures dorées 5 frames) · Ember (flamme en vol — LE PROJECTILE GÉNÉRIQUE
+Translate* 1:1 : InitAnimLinearTranslation/AnimTranslateLinear fixed-point) ·
+Bubble (template projectile) · Absorb (orbes drain cible→attaquant).
+Fallback documenté : move sans template = terminaison propre warn-once.
+
+### Bilan goal 8 tranches (final)
+- T1 ✓ (user-validé) · T2 ✓ (62/62 anims) · T3 ✓ (statuts) · **T4 ✓ chemin de
+  jeu** (6/6 nommés ; les ~400 autres moves = pattern industrialisé, vagues
+  guidées par les warns) · T5 3.5/4 (shiny restant — pattern hitsplat
+  applicable) · T6 1/2 (5 shims déposés ; ~40 renames listés) · T7 dette
+  re-documentée (clause du goal) · T8 ✓ (3 runs verts + docs).
+- Dettes 1:1 douces tracées : offset Y splat, oscillation flare Ember,
+  trajectoire sinusoïdale Bubble, affine réel hitsplat (scale-in net-effect).
