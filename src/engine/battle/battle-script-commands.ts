@@ -3284,7 +3284,7 @@ function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
   switch (gBattleCommunication[0]) {
     case 0:
       HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
-      BattlePutTextOnWindow(0 /* gText_BattleYesNoChoice */, B_WIN_YESNO);
+      BattlePutTextOnWindow('OUI' + String.fromCharCode(10) + 'NON', B_WIN_YESNO); // 1:1 gText_BattleYesNoChoice (battle_message.c:1283) — codes PALETTE/COLOR dynamiques = dette douce
       gBattleCommunication[0]++;
       gBattleCommunication[CURSOR_POSITION] = 0;
       BattleCreateYesNoCursorAt(0);
@@ -9635,12 +9635,15 @@ function _shouldShowBoxWasFullMessage_GC(): boolean {
 
 /** 1:1 décomp `FlagGet(flag)` — `gSaveBlock1Ptr->flags[byteIdx] & (1<<bitIdx)`. */
 function _flagGet_GC(flag: number): boolean {
+  // FIX user 2026-06-10 (« ANNETTE au lieu de QUELQU'UN ») : l'ancienne lecture
+  // brute gSaveBlock1Ptr.flags divergeait de la VRAIE structure des flags ->
+  // bit fantome SET -> Lanette « rencontree » a tort. Source de verite = le
+  // miroir game/event_data.FlagGet (celui des flags OW, valide en jeu).
+  const ed = (globalThis as Record<string, unknown>).__eventData as { FlagGet?: (id: number) => boolean } | undefined;
+  if (ed?.FlagGet) return ed.FlagGet(flag);
   const flags = gSaveBlock1Ptr.flags as number[] | Uint8Array | undefined;
   if (!flags) return false;
-  const byteIdx = flag >> 3;
-  const bitIdx = flag & 7;
-  const byte = flags[byteIdx] ?? 0;
-  return (byte & (1 << bitIdx)) !== 0;
+  return ((flags[flag >> 3] ?? 0) & (1 << (flag & 7))) !== 0;
 }
 
 
@@ -9673,7 +9676,10 @@ function _GiveMonToPlayerGC(mon: unknown): number {
   // 1:1 décomp : scan gPlayerParty pour 1er slot species==0.
   for (let i = 0; i < 6; i++) {
     const slotMon = _gPlayerPartyGC[i];
-    if (!slotMon || slotMon.species === 0) {
+    // FIX user 2026-06-10 (« OUI envoie au PC alors qu'on avait de la place ») :
+    // les slots VIDES de party-storage ont species UNDEFINED (pas 0) -> l'ancien
+    // test === 0 ne matchait jamais -> tout mon capture partait au PC.
+    if (!slotMon || !slotMon.species) {
       // 1:1 décomp : CopyMon(&gPlayerParty[i], mon, sizeof(*mon)).
       // Notre port : shallow copy (= mon est aussi Pokemon struct).
       if (slotMon && mon) {
@@ -9762,7 +9768,7 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       // 1:1 decomp case 0 : VRAIE yes/no box (HandleBattleWindow + texte
       // OUI/NON + curseur) — remplace l'auto-NO (tranche 1 goal).
       HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
-      BattlePutTextOnWindow(0 /* gText_BattleYesNoChoice */, B_WIN_YESNO);
+      BattlePutTextOnWindow('OUI' + String.fromCharCode(10) + 'NON', B_WIN_YESNO); // 1:1 gText_BattleYesNoChoice (battle_message.c:1283) — codes PALETTE/COLOR dynamiques = dette douce
       gBattleCommunication[0]++;
       gBattleCommunication[CURSOR_POSITION] = 0;
       BattleCreateYesNoCursorAt(0);

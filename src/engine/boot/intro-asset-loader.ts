@@ -83,6 +83,19 @@ export async function ensureBallGfxLoaded(): Promise<void> {
     assetCache.set('gBallGfx_Poke', await loadTileBin('/decomp/em/balls/poke.png', 4));   // poke.4bpp.bin (384B = 12 tiles, 3 frames)
     assetCache.set('gOpenPokeballGfx', await loadTileBin('/decomp/em/balls/open.png', 4)); // open.4bpp.bin (128B = 4 tiles, frame ouverte)
     assetCache.set('gBallPal_Poke', await loadGbaPal('/decomp/em/balls/poke.gbapal'));     // poke.gbapal (16 couleurs)
+    // Les 11 AUTRES balls (gfx + palette PROPRES — fix user « la ball n'a ni
+    // couleur ni forme » : seule la Poke etait prechargee, Master/Ultra/... =
+    // tile 0 + palette noire). Extraites 2026-06-10 (PLTE->gbapal).
+    const others: Array<[string, string]> = [
+      ['Great', 'great'], ['Safari', 'safari'], ['Ultra', 'ultra'],
+      ['Master', 'master'], ['Net', 'net'], ['Dive', 'dive'],
+      ['Nest', 'nest'], ['Repeat', 'repeat'], ['Timer', 'timer'],
+      ['Luxury', 'luxury'], ['Premier', 'premier'],
+    ];
+    await Promise.all(others.map(async ([sym, file]) => {
+      assetCache.set('gBallGfx_' + sym, await loadTileBin('/decomp/em/balls/' + file + '.png', 4));
+      assetCache.set('gBallPal_' + sym, await loadGbaPal('/decomp/em/balls/' + file + '.gbapal'));
+    }));
     _ballGfxPreloaded = true;
   } catch (e) {
     console.warn('[intro-asset-loader] Ball gfx load failed:', e);

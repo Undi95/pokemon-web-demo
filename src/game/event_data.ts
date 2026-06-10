@@ -217,3 +217,6 @@ export function CanResetRTC(): boolean {
 //   (pokedex.c, non porté). Différés ; legacy `engine/save/event-data.ts`
 //   (IsNationalPokedexEnabled) + `specials-registry.ts` (Enable/Disable) couvrent
 //   l'API actuelle via le bridge nom→id.
+
+// Surface lazy (consommee par battle-script-commands _flagGet_GC — flags 1:1).
+(globalThis as Record<string, unknown>).__eventData = { FlagGet, FlagSet, VarGet, VarSet };

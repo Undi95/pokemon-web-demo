@@ -523,10 +523,18 @@ export function decodeBytesToString(bytes: Uint8Array): string {
     if (b === CHAR_NEWLINE || b === CHAR_PROMPT_SCROLL) { s += '\n'; continue; } // \n / \l (scroll)
     if (b === CHAR_PROMPT_CLEAR) { continue; } // \p (page-break) → rien en lisible
     if (b === EXT_CTRL_CODE_BEGIN) {
-      // skip le sub-code + son éventuel param (PAUSE/COLOR/SHADOW/HIGHLIGHT/CLEAR/SKIP/
-      // CLEAR_TO/MIN_LETTER_SPACING/FONT = 1 param ; PAUSE_UNTIL_PRESS = 0 param).
+      // skip le sub-code + ses params PAR CODE (1:1 GetExtCtrlCodeLength) :
+      // PAUSE_UNTIL_PRESS/WAIT_SE/JPN/ENG = 0 param ; PLAY_BGM/PLAY_SE = 2
+      // (u16 — le « À » fantome du texte capture = le byte haut de MUS_CAUGHT
+      // 0x160 laisse par l'ancien skip generique 1-param) ;
+      // COLOR_HIGHLIGHT_SHADOW = 3 ; le reste = 1.
       const sub = bytes[i + 1];
-      i += (sub === EXT_CTRL_CODE_PAUSE_UNTIL_PRESS) ? 1 : 2;
+      const ZERO = new Set([0x09 /*PAUSE_UNTIL_PRESS*/, 0x0A /*WAIT_SE*/, 0x15 /*JPN*/, 0x16 /*ENG*/]);
+      const args = ZERO.has(sub) ? 0
+        : (sub === 0x0B /*PLAY_BGM*/ || sub === 0x10 /*PLAY_SE*/) ? 2
+        : (sub === 0x04 /*COLOR_HIGHLIGHT_SHADOW*/) ? 3
+        : 1;
+      i += 1 + args;
       continue;
     }
     if (b === PLACEHOLDER_BEGIN) { i++; continue; } // skip code + sub-byte
