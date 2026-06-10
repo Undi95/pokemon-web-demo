@@ -75,7 +75,11 @@ export async function ensureBallParticlesLoaded(): Promise<void> {
 let _ballGfxPreloaded = false;
 export async function ensureBallGfxLoaded(): Promise<void> {
   if (_ballGfxPreloaded) return;
-  if (assetCache.has('gBallGfx_Poke') && assetCache.has('gBallPal_Poke') && assetCache.has('gOpenPokeballGfx')) {
+  // Le gate verifie AUSSI une cle des 11 autres balls (sinon : les 3 cles poke
+  // posees par une autre voie -> early-return -> Master/Ultra/... jamais
+  // chargees -> tiles garbage avec la bonne palette, A/B user 2026-06-10).
+  if (assetCache.has('gBallGfx_Poke') && assetCache.has('gBallPal_Poke') && assetCache.has('gOpenPokeballGfx')
+      && assetCache.has('gBallGfx_Master')) {
     _ballGfxPreloaded = true;
     return;
   }

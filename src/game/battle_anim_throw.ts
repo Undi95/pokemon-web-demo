@@ -45,7 +45,7 @@
 
 import { getRuntime } from '../engine/system/decomp-globals';
 import { Cos } from './trig';
-import { gBallSpriteTemplates } from './pokeball';
+import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
 import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
@@ -175,10 +175,10 @@ export function ItemIdToBallId(ballItem: number): number {
 /** 1:1 décomp `LoadBallGfx(ballId)` (battle_anim_throw.c, helper). Charge
  *  les tiles + palette du ball graphics dans OAM VRAM. */
 function LoadBallGfx(ballId: number): void {
-  // Dette R3 : full ball graphics tile loading via runtime.
-  // Cascade : LoadCompressedSpriteSheet + LoadSpritePalette via tag.
-  // Notre battle-ball-throw.ts existant gère partial ; wire complet ultérieur.
-  void ballId;
+  // Delegue au miroir game/pokeball (sheet + palette par TAG ; les 12 assets
+  // sont precharges au boot -> resolution sync). Fix user 2026-06-10 : la
+  // capture creait la ball SANS charger sa palette -> slot 0 (« hamburger »).
+  _LoadBallGfxReal(ballId);
 }
 
 /** 1:1 décomp `FreeBallGfx(ballId)`. */
@@ -515,6 +515,12 @@ export function AnimTask_GetBattlersFromArg(taskId: number): void {
  *  — le MEME createur que le send-out (#20, pokeball.ts:284). Le gfx ball est
  *  precharge au boot (ensureBallGfxLoaded). */
 function _CreateBallSprite(ballId: number, x: number, y: number, subpriority: number): number {
+  // 1:1 : LoadBallGfx AVANT la creation (le send-out le fait ; la capture ne le
+  // faisait PAS -> sheet/palette du tag jamais chargees -> la ball rendait avec
+  // le slot palette 0 (le « hamburger » jaune/brun, A/B user 2026-06-10 :
+  // « la ball n'est pas reconnue telle quelle »). Les 12 assets sont
+  // precharges au boot -> le load par tag est sync.
+  LoadBallGfx(ballId);
   const tpl = gBallSpriteTemplates[ballId] ?? gBallSpriteTemplates[0];
   if (!tpl) return -1;
   return _CreateSpriteFromTemplate(tpl as never, x, y, subpriority);
@@ -567,6 +573,16 @@ function _ballThrowCaseId(): number {
 }
 function _wildMonInvisible(): boolean {
   return ((gBattleStruct as unknown) as { wildMonInvisible?: boolean }).wildMonInvisible ?? false;
+}
+
+/** Slot palette OBJ REEL du sprite mon adverse (l'arg « spritePalNum » de
+ *  LaunchBallFadeMonTask — battler==slot sur GBA, pas chez nous). */
+function _monPalNum(): number {
+  const rt = getRuntime();
+  const sp = rt?.gSprites?.get(_getBattlerSpriteId(_getAnimState().target)) as { oamIndex?: number } | undefined;
+  if (!rt || !sp || sp.oamIndex === undefined) return _getAnimState().target;
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteNum?: number }> } }).gba?.oam?.[sp.oamIndex];
+  return oam?.paletteNum ?? _getAnimState().target;
 }
 
 function _rtSprite(spriteId: number): BallSprite | undefined {
@@ -643,7 +659,11 @@ function SpriteCB_Ball_Arc(sprite: BallSprite): void {
       const rt = getRuntime();
       if (rt) {
         _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
-        _fxBallFadeMon(rt as never, false, _getAnimState().target, 14, ballId);
+        // 1:1 LaunchBallFadeMonTask(FALSE, gBattleAnimTarget, 14, ballId) — le
+        // 2e arg decomp = le SLOT PALETTE OBJ du mon (battler==slot sur GBA) ;
+        // chez nous les slots ne suivent pas le battler -> resoudre le palNum
+        // REEL du sprite mon (fix user « pas de teinte blanc/rose »).
+        _fxBallFadeMon(rt as never, false, _monPalNum(), 14, ballId);
       }
     }
   }
@@ -1021,7 +1041,7 @@ function SpriteCB_Ball_Release_Step(sprite: BallSprite): void {
   const rt = getRuntime();
   if (rt) {
     _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
-    _fxBallFadeMon(rt as never, true, _getAnimState().target, 14, ballId);
+    _fxBallFadeMon(rt as never, true, _monPalNum(), 14, ballId);
   }
   const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
   const monSprite = _rtSprite(monSpriteId);
