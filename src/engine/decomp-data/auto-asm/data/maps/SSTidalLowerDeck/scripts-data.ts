@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/maps/SSTidalLowerDeck/scripts.inc
-// Generated: 2026-04-26
+// Generated: 2026-06-10
 
 // ─── Labels (script entry points + local jumps) ─────────────────────────────
 // instrIndex = 0-based index into OPS array (Nth tokenized instruction line).

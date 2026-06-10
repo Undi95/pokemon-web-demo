@@ -142,6 +142,8 @@ import { getPPTextPalette } from '../engine/battle/battle-bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
 import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from '../engine/ui/gba-window-system';
+import { InitAndLaunchChosenStatusAnimation as _InitAndLaunchChosenStatusAnimation } from './battle_gfx_sfx_util';
+import { isStatusAnimActive as _isStatusAnimActiveBC } from '../engine/battle/battle-sprites-data';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -1847,10 +1849,23 @@ function _CompleteOnFinishedStatusAnimation(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleStatusAnimation()`. */
+/** 1:1 décomp `PlayerHandleStatusAnimation()` (battle_controller_player.c) :
+ *  InitAndLaunchChosenStatusAnimation(bufferA[1], bufferA[2..5] u32) puis
+ *  attendre la fin (CompleteOnFinishedStatusAnimation). Goal T3 2026-06-10. */
 function PlayerHandleStatusAnimation(): void {
-  // Dette R3 : status anim (paralyse blue / sleep zZ / etc.).
-  PlayerBufferExecCompleted();
+  if (!_IsBattleSEPlaying(gActiveBattler)) {
+    const buf = gBattleBufferA[gActiveBattler];
+    const status = (buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24)) >>> 0;
+    _InitAndLaunchChosenStatusAnimation(buf[1] !== 0, status);
+    gBattlerControllerFuncs[gActiveBattler] = CompleteOnFinishedStatusAnimation;
+  }
+}
+
+/** 1:1 décomp `CompleteOnFinishedStatusAnimation()`. */
+function CompleteOnFinishedStatusAnimation(): void {
+  if (!_isStatusAnimActiveBC(gActiveBattler) && !_IsBattleSEPlaying(gActiveBattler)) {
+    PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `PlayerHandleStatusXor()`. */

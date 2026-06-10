@@ -50,6 +50,8 @@ import {
   BtlController_EmitOneReturnValue, gUnusedControllerStruct,
 } from '../engine/battle/battle-controllers-ipc';
 import { HandleIntroSlide } from './battle_intro';
+import { InitAndLaunchChosenStatusAnimation as _InitAndLaunchChosenStatusAnimationOpp } from './battle_gfx_sfx_util';
+import { isStatusAnimActive as _isStatusAnimActiveOpp } from '../engine/battle/battle-sprites-data';
 import { gBitTable } from '../engine/battle/battle-controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
@@ -1154,7 +1156,20 @@ function _CompleteOnFinishedStatusAnimation_Opp(): void {
   if (!isStatusAnimActive(gActiveBattler)) OpponentBufferExecCompleted();
 }
 /** Décomp = InitAndLaunchChosenStatusAnimation — chantier anims de statut (dette). */
-function OpponentHandleStatusAnimation(): void { OpponentBufferExecCompleted(); }
+function OpponentHandleStatusAnimation(): void {
+  // 1:1 décomp battle_controller_opponent.c (goal T3 2026-06-10).
+  if (!_IsBattleSEPlaying_Opp(gActiveBattler)) {
+    const buf = gBattleBufferA[gActiveBattler];
+    const status = (buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24)) >>> 0;
+    _InitAndLaunchChosenStatusAnimationOpp(buf[1] !== 0, status);
+    setBattlerControllerFunc(gActiveBattler, _CompleteOnFinishedStatusAnimationOpp);
+  }
+}
+function _CompleteOnFinishedStatusAnimationOpp(): void {
+  if (!_isStatusAnimActiveOpp(gActiveBattler) && !_IsBattleSEPlaying_Opp(gActiveBattler)) {
+    OpponentBufferExecCompleted();
+  }
+}
 function OpponentHandleStatusXor(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleDataTransfer(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleDMA3Transfer(): void { OpponentBufferExecCompleted(); }

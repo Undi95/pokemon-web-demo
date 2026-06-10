@@ -373,11 +373,15 @@ function processFile(absPath, relInput) {
       '// ─── Tokenized instruction stream (macro invocations + opcodes) ───────────',
       `// ${ops.length} instructions. Each has { op, args[] } — args are unresolved strings/numbers.`,
     ];
-    if (ops.length > 5000) {
-      lines.push(`/** OPS truncated (${ops.length} total) — first 5000 shown. */`);
+    // battle_anim_scripts : FULL (goal T3/T4 2026-06-10 — les 415 moves +
+    // General/Special/StatusConditions exigent le flux complet ; la coupure
+    // 5000 ne laissait que les ~80 premiers moves).
+    const opsLimit = relInput.includes('battle_anim_scripts') ? Infinity : 5000;
+    if (ops.length > opsLimit) {
+      lines.push(`/** OPS truncated (${ops.length} total) — first ${opsLimit} shown. */`);
       lines.push(`export const OPS_TOTAL = ${ops.length};`);
       lines.push('export const OPS = [');
-      for (let i = 0; i < 5000; i++) {
+      for (let i = 0; i < opsLimit; i++) {
         const o = ops[i];
         const argsStr = o.args.map(a => typeof a === 'number' ? a : JSON.stringify(a)).join(',');
         lines.push(`  {op:${JSON.stringify(o.op)},args:[${argsStr}]},`);

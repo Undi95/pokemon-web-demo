@@ -666,3 +666,120 @@ export function BattleInitAllSpritesTick(): boolean {
   IsBattleSEPlaying, BattleLoadAllHealthBoxesGfxAtOnce, GetMonHPBarLevel,
   TrySetBehindSubstituteSpriteBit, ClearBehindSubstituteBit, SetBattlerSpriteAffineMode,
 };
+
+// ─── Anims de STATUT + anims GENERAL par table (goal T3 2026-06-10) ─────────
+// 1:1 battle_gfx_sfx_util.c:349-466.
+
+import { LaunchStatusAnimation } from './battle_anim_status_effects';
+import {
+  LaunchBattleAnimation as _LaunchBattleAnim, isAnimScriptActive as _animActive,
+  tickAnimScript as _tickAnim, setBattleAnimAttackerTarget as _setAnimAtkTgt,
+} from '../engine/battle/battle-anim-interpreter';
+import {
+  setStatusAnimActive as _setStatusAnimActive, isStatusAnimActive as _isStatusAnimActive,
+  isBehindSubstitute as _behindSub,
+} from '../engine/battle/battle-sprites-data';
+import { CreateTask as _CreateTask, DestroyTask as _DestroyTask } from '../engine/system/decomp-bridge';
+import {
+  STATUS1_FREEZE as _S1_FRZ, STATUS1_POISON as _S1_PSN, STATUS1_TOXIC_POISON as _S1_TOX,
+  STATUS1_BURN as _S1_BRN, STATUS1_SLEEP as _S1_SLP, STATUS1_PARALYSIS as _S1_PRZ,
+  STATUS2_INFATUATION as _S2_INF, STATUS2_CONFUSION as _S2_CNF, STATUS2_CURSED as _S2_CRS,
+  STATUS2_NIGHTMARE as _S2_NGT, STATUS2_WRAPPED as _S2_WRP,
+} from '../engine/battle/constants';
+
+// 1:1 battle_anim.h:391-400.
+const B_ANIM_STATUS_PSN = 0, B_ANIM_STATUS_CONFUSION = 1, B_ANIM_STATUS_BRN = 2,
+  B_ANIM_STATUS_INFATUATION = 3, B_ANIM_STATUS_SLP = 4, B_ANIM_STATUS_PRZ = 5,
+  B_ANIM_STATUS_FRZ = 6, B_ANIM_STATUS_CURSED = 7, B_ANIM_STATUS_NIGHTMARE = 8,
+  B_ANIM_STATUS_WRAPPED = 9;
+
+function _activeBattlerGfx(): number {
+  return ((globalThis as Record<string, unknown>).gActiveBattler as number) ?? 0;
+}
+
+/** 1:1 décomp `InitAndLaunchChosenStatusAnimation(isStatus2, status)`
+ *  (battle_gfx_sfx_util.c:349-381). */
+export function InitAndLaunchChosenStatusAnimation(isStatus2: boolean, status: number): void {
+  const battler = _activeBattlerGfx();
+  _setStatusAnimActive(battler, true);
+  if (!isStatus2) {
+    if (status === _S1_FRZ) LaunchStatusAnimation(battler, B_ANIM_STATUS_FRZ);
+    else if (status === _S1_PSN || (status & _S1_TOX)) LaunchStatusAnimation(battler, B_ANIM_STATUS_PSN);
+    else if (status === _S1_BRN) LaunchStatusAnimation(battler, B_ANIM_STATUS_BRN);
+    else if (status & _S1_SLP) LaunchStatusAnimation(battler, B_ANIM_STATUS_SLP);
+    else if (status === _S1_PRZ) LaunchStatusAnimation(battler, B_ANIM_STATUS_PRZ);
+    else _setStatusAnimActive(battler, false); // no animation
+  } else {
+    if (status & _S2_INF) LaunchStatusAnimation(battler, B_ANIM_STATUS_INFATUATION);
+    else if (status & _S2_CNF) LaunchStatusAnimation(battler, B_ANIM_STATUS_CONFUSION);
+    else if (status & _S2_CRS) LaunchStatusAnimation(battler, B_ANIM_STATUS_CURSED);
+    else if (status & _S2_NGT) LaunchStatusAnimation(battler, B_ANIM_STATUS_NIGHTMARE);
+    else if (status & _S2_WRP) LaunchStatusAnimation(battler, B_ANIM_STATUS_WRAPPED); // n'existe pas (1:1)
+    else _setStatusAnimActive(battler, false);
+  }
+}
+
+// gBattleSpritesDataPtr->healthBoxesData[b].animFromTableActive (module-local,
+// meme pattern que les autres bits healthBoxesData).
+const _animFromTableActive: boolean[] = [false, false, false, false];
+export function isAnimFromTableActive(battler: number): boolean { return _animFromTableActive[battler] ?? false; }
+
+/** 1:1 décomp `ShouldAnimBeDoneRegardlessOfSubstitute(animId)` (:428-442). */
+function ShouldAnimBeDoneRegardlessOfSubstitute(animId: number): boolean {
+  // B_ANIM_* general ids (battle_anim.h) : SUBSTITUTE_TO_MON=5, SUBSTITUTE_FADE=2(?),
+  // SNATCH_MOVE, etc. — 1:1 les cases du switch décomp :
+  switch (animId) {
+    case 2:  // B_ANIM_SUBSTITUTE_FADE
+    case 10: // B_ANIM_RAIN_CONTINUES
+    case 11: // B_ANIM_SUN_CONTINUES
+    case 12: // B_ANIM_SANDSTORM_CONTINUES
+    case 13: // B_ANIM_HAIL_CONTINUES
+    case 17: // B_ANIM_SNATCH_MOVE
+      return true;
+    default:
+      return false;
+  }
+}
+
+/** 1:1 décomp `Task_ClearBitWhenBattleTableAnimDone(taskId)` (:444-453). */
+function Task_ClearBitWhenBattleTableAnimDone(task: { data: number[]; taskId: number }): void {
+  _tickAnim();
+  if (!_animActive()) {
+    _animFromTableActive[task.data[0]] = false;
+    _DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 décomp `TryHandleLaunchBattleTableAnimation(activeBattler, atkBattler,
+ *  defBattler, tableId, argument)` (:383-426). Retourne TRUE si SKIPPÉE. */
+export function TryHandleLaunchBattleTableAnimation(
+  activeBattler: number, atkBattler: number, defBattler: number,
+  tableId: number, argument: number,
+): boolean {
+  // 1:1 : Castform behind substitute → set form, skip (CASTFORM_SUBSTITUTE = 0x80).
+  if (tableId === 25 /* B_ANIM_CASTFORM_CHANGE */ && (argument & 0x80)) {
+    // gBattleMonForms[activeBattler] = argument & ~0x80 — formes = dette Castform.
+    return true;
+  }
+  if (_behindSub(activeBattler) && !ShouldAnimBeDoneRegardlessOfSubstitute(tableId)) {
+    return true;
+  }
+  // 1:1 behindSubstitute && SUBSTITUTE_FADE && invisible → reload gfx, skip :
+  // (LoadBattleMonGfxAndAnimate + ClearBehindSubstituteBit — chemin substitute,
+  //  rare ; dette douce, log si rencontré.)
+  _setAnimAtkTgt(atkBattler, defBattler);
+  // gBattleSpritesDataPtr->animationData->animArg = argument (consommé par
+  // certains scripts General via les args — posé sur la surface anim).
+  (globalThis as Record<string, unknown>).__battleAnimArg = argument;
+  _LaunchBattleAnim('gBattleAnims_General', tableId, false);
+  const taskId = _CreateTask(Task_ClearBitWhenBattleTableAnimDone, 10);
+  const t = (globalThis as { __rt?: { gTasks?: Map<number, { data: number[] }> } }).__rt?.gTasks?.get(taskId);
+  if (t) t.data[0] = activeBattler;
+  _animFromTableActive[activeBattler] = true;
+  return false;
+}
+
+// Surface harness (anti import()-dynamique : l'instance Vite fraiche MENT).
+(globalThis as Record<string, unknown>).__battleGfxSfxUtil = {
+  InitAndLaunchChosenStatusAnimation, TryHandleLaunchBattleTableAnimation, isAnimFromTableActive,
+};

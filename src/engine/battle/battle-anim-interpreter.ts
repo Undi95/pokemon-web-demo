@@ -45,7 +45,7 @@
  *     iteration via `T2_READ_32` qui devient `read32(offset)`.
  */
 
-import { CreateTask, DestroyTask } from '../system/decomp-bridge';
+import { CreateTask, DestroyTask as _DestroyTaskRaw } from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE } from '../system/decomp-globals';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
@@ -104,14 +104,24 @@ function IsContest(): boolean {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Helper : safe lookup d'un task entry via runtime gTasks Map. */
-function _gTasks(taskId: number): { data: Int16Array | number[]; func: ((id: number) => void) | null } {
+/** Accepte taskId NUMBER ou l'OBJET DecompTask (le runtime tick fn(taskObjet) —
+ *  fix goal T3 2026-06-10 : les anim-tasks recevaient l'objet, _gTasks(objet)
+ *  -> gTasks.get(objet)=undefined -> DUMMY -> state machine figee -> le script
+ *  anim bloquait sur waitbgfadein A JAMAIS). */
+function _taskIdOf(x: number | { taskId?: number }): number {
+  return typeof x === 'number' ? x : (x?.taskId ?? -1);
+}
+function _gTasks(taskId: number | { taskId?: number; data?: unknown }): { data: Int16Array | number[]; func: ((id: number) => void) | null } {
+  if (typeof taskId === 'object' && taskId && (taskId as { data?: unknown }).data) {
+    return taskId as unknown as { data: Int16Array | number[]; func: ((id: number) => void) | null };
+  }
   const rt = getRuntime();
   if (!rt) return _DUMMY_TASK;
-  const t = rt.gTasks?.get(taskId);
-  // DecompTask.func a signature (task: DecompTask) => void ; on adapte au
-  // wrapper compatible (taskId: number) => void via cast (le caller bridge
-  // utilise un wire ad-hoc dans le tick loop).
+  const t = rt.gTasks?.get(_taskIdOf(taskId));
   return (t ?? _DUMMY_TASK) as unknown as { data: Int16Array | number[]; func: ((id: number) => void) | null };
+}
+function DestroyTask(taskId: number | { taskId?: number }): void {
+  _DestroyTaskRaw(_taskIdOf(taskId));
 }
 const _DUMMY_TASK = { data: new Int16Array(16) as Int16Array | number[], func: null };
 
@@ -155,6 +165,18 @@ export let gAnimFriendship = 0;
 
 /** Weather move anim (= gWeatherMoveAnim). */
 export let gWeatherMoveAnim = 0;
+
+import {
+  gBattleAnims_Moves as _TBL_MOVES, gBattleAnims_StatusConditions as _TBL_STATUS,
+  gBattleAnims_General as _TBL_GENERAL, gBattleAnims_Special as _TBL_SPECIAL,
+} from '../decomp-data/battle-anim-tables';
+
+const _ANIM_NAME_TABLES: Record<string, ReadonlyArray<string>> = {
+  gBattleAnims_Moves: _TBL_MOVES,
+  gBattleAnims_StatusConditions: _TBL_STATUS,
+  gBattleAnims_General: _TBL_GENERAL,
+  gBattleAnims_Special: _TBL_SPECIAL,
+};
 
 /** Anim args array [8] passée via Cmd_setarg + Cmd_createsprite (= gBattleAnimArgs). */
 export const gBattleAnimArgs = new Int16Array(ANIM_ARGS_COUNT);
@@ -318,13 +340,28 @@ export function DoMoveAnim(move: number): void {
  *  En décomp : `animsTable[tableId]` (= array of pointers de 4 bytes chacun).
  *  En TS : table label → base offset, puis +tableId*4 → 32-bit script offset. */
 function _resolveAnimScript(tableLabel: string, tableId: number): number {
-  const tableBase = ANIM_LABELS[tableLabel];
-  if (tableBase === undefined) {
+  // FIX goal T3 2026-06-10 : les tables de POINTEURS (.4byte) ne sont PAS
+  // compilees dans le bytecode (section data omise) -> l'ancienne lecture
+  // read32(base + id*4) lisait le DEBUT du flux comme une table = garbage =
+  // la racine du << 0/415 anims jouables >>. Resolution par TABLES DE NOMS
+  // extraites (battle-anim-tables.ts, 1:1 data/battle_anim_scripts.s) ->
+  // label -> offset reel du bytecode COMPLET (regenere, 9215 ops).
+  const table = _ANIM_NAME_TABLES[tableLabel];
+  if (!table) {
     console.warn(`[battle-anim] table label "${tableLabel}" not found`);
     return -1;
   }
-  // Each entry = 4 bytes (= u32 script pointer/offset).
-  return read32(tableBase + tableId * 4);
+  const name = table[tableId];
+  if (!name) {
+    console.warn(`[battle-anim] ${tableLabel}[${tableId}] hors table (len=${table.length})`);
+    return -1;
+  }
+  const off = ANIM_LABELS[name];
+  if (off === undefined) {
+    console.warn(`[battle-anim] label "${name}" absent du bytecode`);
+    return -1;
+  }
+  return off;
 }
 
 /** 1:1 décomp `LaunchBattleAnimation(animsTable, tableId, isMoveAnim)` (battle_anim.c:208-264).
@@ -726,11 +763,20 @@ function Cmd_createsprite(): void {
   }
   if (subpriority < 3) subpriority = 3;
 
-  // CreateSpriteAndAnimate(template, x, y, subpriority).
-  // Sprite template resolution deferred — pour now skip spawn mais incremente count
-  // pour préserver Cmd_waitforvisualfinish semantics.
+  // CreateSpriteAndAnimate(template, x, y, subpriority) : templates non resolus
+  // (chantier T4 registry). NE PAS incrementer gAnimVisualTaskCount : rien ne le
+  // decrementerait (le decomp decremente a DestroyAnimSprite) -> soft-lock
+  // waitforvisualfinish garanti. Skip propre = l'anim se termine (SE/palette
+  // jouent, sprites absents = dette visuelle T4).
   void subpriority;
-  gAnimVisualTaskCount++;
+  _warnOnceDette('createsprite');
+}
+
+const _detteWarned = new Set<string>();
+function _warnOnceDette(what: string): void {
+  if (_detteWarned.has(what)) return;
+  _detteWarned.add(what);
+  console.warn(`[battle-anim] ${what} : templates/tasks non resolus (dette T4) — spawn skippe, l'anim se termine sans ce visuel.`);
 }
 
 /** 0x03 Cmd_createvisualtask (battle_anim.c:414-442).
@@ -747,11 +793,11 @@ function Cmd_createvisualtask(): void {
     gBattleAnimArgs[i] = read16(_pc) << 16 >> 16;
     _pc += 2;
   }
-  // Task func resolution deferred — battle_anim_*.c task funcs ne sont pas portés.
-  // Pour now : on increment le count mais skip création.
+  // Task funcs non resolues (chantier T4 registry AnimTask_*). Meme raison que
+  // createsprite : pas d'increment (sinon soft-lock waitforvisualfinish).
   void taskFuncPtr;
   void taskPriority;
-  gAnimVisualTaskCount++;
+  _warnOnceDette('createvisualtask');
 }
 
 /** 0x04 Cmd_delay (battle_anim.c:444-452).
@@ -1425,3 +1471,14 @@ export function SetAnimBattlers(atk: number, def: number): void {
   LaunchBattleAnimation, DoMoveAnim, ClearBattleAnimationVars,
   SetAnimBattlers,
 };
+
+// ─── Accesseurs pour les anims de STATUT (battle_anim_status_effects.ts) ────
+export function setBattleAnimAttackerTarget(attacker: number, target: number): void {
+  gBattleAnimAttacker = attacker;
+  gBattleAnimTarget = target;
+}
+export function isAnimScriptActive(): boolean { return gAnimScriptActive; }
+/** Tick une frame du script anim (1:1 : `gAnimScriptCallback()`). */
+export function tickAnimScript(): void {
+  if (gAnimScriptCallback) gAnimScriptCallback();
+}

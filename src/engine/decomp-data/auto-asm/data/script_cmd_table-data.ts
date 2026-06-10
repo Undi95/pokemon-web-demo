@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/script_cmd_table.inc
-// Generated: 2026-04-26
+// Generated: 2026-06-10
 
 // ─── .equ / .set constants ──────────────────────────────────────────────────
 export const SCRIPT_CMD_TABLE_ENTRY_MACRO = 1;

@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/event_scripts.s
-// Generated: 2026-04-26
+// Generated: 2026-06-10
 
 // ─── .equ / .set constants ──────────────────────────────────────────────────
 export const ALLOCATE_SCRIPT_CMD_TABLE = 1;

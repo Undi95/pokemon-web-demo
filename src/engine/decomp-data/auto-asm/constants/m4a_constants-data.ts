@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/constants/m4a_constants.inc
-// Generated: 2026-04-26
+// Generated: 2026-06-10
 
 // ─── .macro definitions (asm macro → opcode mapping bodies) ─────────────────
 export const MACROS = [

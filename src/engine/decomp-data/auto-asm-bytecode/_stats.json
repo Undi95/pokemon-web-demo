@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-16",
+  "generatedAt": "2026-06-10",
   "inputCount": 607,
   "okCount": 484,
   "skipCount": 123,
   "totalStats": {
-    "ops": 60595,
-    "bytes": 589693,
+    "ops": 64810,
+    "bytes": 611156,
     "unknownOps": 0,
-    "unresolvedSymbols": 10481,
-    "labels": 11336
+    "unresolvedSymbols": 21038,
+    "labels": 11661
   },
   "topUnknownOps": {},
-  "durationMs": 843
+  "durationMs": 767
 }
