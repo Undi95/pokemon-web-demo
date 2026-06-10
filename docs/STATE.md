@@ -38,6 +38,39 @@ menus) tourne. `npm run coverage:1to1` affiche les 3 axes.
 
 ## ✅ Mûr (porté + vérifié, tourne bout-en-bout)
 
+### 🏁 2026-06-10 (suite) — GOAL 7 TRANCHES « combat 100% 1:1 miroir » : LIVRÉ
+
+Sept tranches committées (ea19bcb8→T5), chacune tsc 0 + A/B harness :
+1. **Capture finale** : 3 étoiles réelles (arc+flicker), yes/no surnom 1:1
+   (vraie box+curseurs+inputs), PLAY_BGM/PLAY_SE/WAIT_SE au rendu texte (fix
+   « attrapé!À » + fanfare MUS_CAUGHT), displaydexinfo flux 1:1.
+2. **Sac combat complet** : dispatch data-driven `.battleUseFunc` — balls
+   (+check box), X items (effet réel mon actif), **médecine bag→party→soin→
+   retour combat** (A/B 18→33), escape (wild). Moteur : RunByUsingItem/
+   PlayerUsesItem routés.
+3. **VOIE V SUPPRIMÉE** (~6000 l. : battle-flow, trainer-battle-flow,
+   battle-ball-throw, battle-intro-events, script-runner) + C4 WhiteOut
+   net-effect (money/2+heal+EventScript_WhiteOut). KO-run WON + capture-run
+   CAUGHT post-suppression.
+4. **Placement miroir** : `src/game/battle_anim_throw.ts` (rename complet).
+5. **Anims de mouvement** : `src/game/pokemon_animation.ts` (top-5 = 41%
+   des species, scale matrice réel, Launch+delay 1:1).
+
+**DETTES RESTANTES EXPLICITES (le contrat du goal)** :
+- T1 : naming screen (OUI=sans surnom, warn) ; écran dexinfo (flux ok, UI page
+  dex à porter) ; messages UI bag-battle (WontHaveEffect/BoxFull/DadsAdvice
+  en console).
+- T2 : branche AI trainer items (HandleAction_UseItem) ; EnigmaBerry.
+- T3b : dépose des 13 shims re-export engine/battle→game (~21 importeurs,
+  zéro logique dupliquée) ; warp lastHealLocation du WhiteOut (script joue,
+  specials warp selon dispo).
+- T5 : 56 ANIM_* de mouvement restantes (warn-once par anim) ; back anims.
+- T6 : les fonctions .c manquantes par fichier = la section « Fonctions du .c
+  absentes des miroirs » de `AUDIT-GAME-VS-DECOMP-2026-06.md` (battle_anim_mons
+  111, menus 103, controllers link/multi 43, battle_interface 18,
+  battle_gfx_sfx_util 21, pokeball 25 dont chaîne morte décomp) — backlog
+  d'import incrémental, majorité link/multi/contest/Frontier hors scope démo.
+
 ### 🆕 2026-06-10 — capture + sac en combat + audit ULTRACODE (session miroir)
 
 - **CAPTURE 100% bout-en-bout, manette-réaliste** (commits `30faa4a0`→`a239ec03`) :
