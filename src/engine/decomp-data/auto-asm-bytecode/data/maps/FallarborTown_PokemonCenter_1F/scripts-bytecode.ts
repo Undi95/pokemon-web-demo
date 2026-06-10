@@ -1,8 +1,8 @@
 // AUTO-GENERATED from data/maps/FallarborTown_PokemonCenter_1F/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
-// Stats: ops=60, bytes=232, labels=11, unknownOps=0, unresolvedSymbols=10
+// Generated: 2026-06-10
+// Stats: ops=60, bytes=232, labels=11, unknownOps=0, unresolvedSymbols=23
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -20,6 +20,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [3,10,0,0,0,5,0,0,0,0,160,0,0,5,0,0,0,0,3,23,11,128,0,0,5,0,0,0,0,103,110,109,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,107,91,16,0,0,0,0,0,10,4,105,26,0,128,12,128,35,0,128,2,0,34,0,128,2,0,35,132,0,0,0,34,132,0,0,0,7,1,0,0,0,0,7,1,132,0,0,0,35,0,128,3,0,34,0,128,3,0,35,162,0,0,0,34,162,0,0,0,7,1,0,0,0,0,7,1,162,0,0,0,3,80,0,0,208,0,0,0,81,0,0,208,0,0,0,0,0,82,0,0,83,0,0,0,0,6,192,0,0,0,3,80,0,0,221,0,0,0,81,0,0,221,0,0,0,0,0,82,0,0,83,0,0,0,0,6,192,0,0,0,3,48,18,0,84,0,0,85,0,0,0,0,43,102,3,109,3,11,8,8,10,10,10,10,8,8,8,8,19,254,8,8,10,10,10,8,8,8,8,19,254] as const;
+export const BYTECODE: readonly number[] = [0,10,0,0,0,0,0,0,0,0,160,0,0,5,0,0,0,0,3,23,0,0,0,0,5,0,0,0,0,103,110,109,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,107,91,16,0,0,0,0,0,10,4,105,26,0,0,0,0,35,0,0,0,0,34,0,0,0,0,35,132,0,0,0,34,132,0,0,0,7,1,0,0,0,0,7,1,132,0,0,0,35,0,0,0,0,34,0,0,0,0,35,162,0,0,0,34,162,0,0,0,7,1,0,0,0,0,7,1,162,0,0,0,3,80,0,0,208,0,0,0,81,0,0,208,0,0,0,0,0,82,0,0,83,0,0,0,0,6,192,0,0,0,3,80,0,0,221,0,0,0,81,0,0,221,0,0,0,0,0,82,0,0,83,0,0,0,0,6,192,0,0,0,3,48,18,0,84,0,0,85,0,0,0,0,43,0,0,109,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] as const;
 
-export const STATS = { ops: 60, bytes: 232, labels: 11, unknownOps: 0, unresolvedSymbols: 10 } as const;
+export const STATS = { ops: 60, bytes: 232, labels: 11, unknownOps: 0, unresolvedSymbols: 23 } as const;

@@ -142,8 +142,16 @@ import { getPPTextPalette } from '../engine/battle/battle-bg';
 // BG tilemap réel (curseur menu action/move) — 1:1 décomp bg.c. gba-window-system
 // n'importe PAS battle/ → pas de cycle.
 import { CopyRectToBgTilemapBufferRect, CopyBgTilemapBufferToVram } from '../engine/ui/gba-window-system';
-import { InitAndLaunchChosenStatusAnimation as _InitAndLaunchChosenStatusAnimation } from './battle_gfx_sfx_util';
-import { isStatusAnimActive as _isStatusAnimActiveBC } from '../engine/battle/battle-sprites-data';
+// ANTI-CYCLE ESM (regression T3 : l'import statique de battle_gfx_sfx_util
+// bloquait l'INTRO — meme TDZ que pokeball/ST_OAM_AFFINE_DOUBLE) : lazy.
+function _InitAndLaunchChosenStatusAnimation(isStatus2: boolean, status: number): void {
+  const m = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as { InitAndLaunchChosenStatusAnimation?: (a: boolean, b: number) => void } | undefined;
+  m?.InitAndLaunchChosenStatusAnimation?.(isStatus2, status);
+}
+function _isStatusAnimActiveBC(battler: number): boolean {
+  const m = (globalThis as Record<string, unknown>).__battleSpritesData as { isStatusAnimActive?: (b: number) => boolean } | undefined;
+  return m?.isStatusAnimActive?.(battler) ?? false;
+}
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -1853,6 +1861,11 @@ function _CompleteOnFinishedStatusAnimation(): void {
  *  InitAndLaunchChosenStatusAnimation(bufferA[1], bufferA[2..5] u32) puis
  *  attendre la fin (CompleteOnFinishedStatusAnimation). Goal T3 2026-06-10. */
 function PlayerHandleStatusAnimation(): void {
+  // [BISECT 2026-06-10] le cablage reel bloquait l'INTRO (regression T3) —
+  // re-stub temporaire le temps du diagnostic (dette re-documentee).
+  PlayerBufferExecCompleted();
+}
+function _PlayerHandleStatusAnimation_REAL(): void {
   if (!_IsBattleSEPlaying(gActiveBattler)) {
     const buf = gBattleBufferA[gActiveBattler];
     const status = (buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24)) >>> 0;
@@ -1860,6 +1873,7 @@ function PlayerHandleStatusAnimation(): void {
     gBattlerControllerFuncs[gActiveBattler] = CompleteOnFinishedStatusAnimation;
   }
 }
+void _PlayerHandleStatusAnimation_REAL;
 
 /** 1:1 décomp `CompleteOnFinishedStatusAnimation()`. */
 function CompleteOnFinishedStatusAnimation(): void {

@@ -50,8 +50,15 @@ import {
   BtlController_EmitOneReturnValue, gUnusedControllerStruct,
 } from '../engine/battle/battle-controllers-ipc';
 import { HandleIntroSlide } from './battle_intro';
-import { InitAndLaunchChosenStatusAnimation as _InitAndLaunchChosenStatusAnimationOpp } from './battle_gfx_sfx_util';
-import { isStatusAnimActive as _isStatusAnimActiveOpp } from '../engine/battle/battle-sprites-data';
+// ANTI-CYCLE ESM (regression T3) : lazy au lieu d'imports statiques.
+function _InitAndLaunchChosenStatusAnimationOpp(isStatus2: boolean, status: number): void {
+  const m = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as { InitAndLaunchChosenStatusAnimation?: (a: boolean, b: number) => void } | undefined;
+  m?.InitAndLaunchChosenStatusAnimation?.(isStatus2, status);
+}
+function _isStatusAnimActiveOpp(battler: number): boolean {
+  const m = (globalThis as Record<string, unknown>).__battleSpritesData as { isStatusAnimActive?: (b: number) => boolean } | undefined;
+  return m?.isStatusAnimActive?.(battler) ?? false;
+}
 import { gBitTable } from '../engine/battle/battle-controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
@@ -1157,7 +1164,10 @@ function _CompleteOnFinishedStatusAnimation_Opp(): void {
 }
 /** Décomp = InitAndLaunchChosenStatusAnimation — chantier anims de statut (dette). */
 function OpponentHandleStatusAnimation(): void {
-  // 1:1 décomp battle_controller_opponent.c (goal T3 2026-06-10).
+  // [BISECT 2026-06-10] re-stub temporaire (cf. player).
+  OpponentBufferExecCompleted();
+}
+function _OpponentHandleStatusAnimation_REAL(): void {
   if (!_IsBattleSEPlaying_Opp(gActiveBattler)) {
     const buf = gBattleBufferA[gActiveBattler];
     const status = (buf[2] | (buf[3] << 8) | (buf[4] << 16) | (buf[5] << 24)) >>> 0;
@@ -1165,6 +1175,7 @@ function OpponentHandleStatusAnimation(): void {
     setBattlerControllerFunc(gActiveBattler, _CompleteOnFinishedStatusAnimationOpp);
   }
 }
+void _OpponentHandleStatusAnimation_REAL;
 function _CompleteOnFinishedStatusAnimationOpp(): void {
   if (!_isStatusAnimActiveOpp(gActiveBattler) && !_IsBattleSEPlaying_Opp(gActiveBattler)) {
     OpponentBufferExecCompleted();
