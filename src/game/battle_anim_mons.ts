@@ -420,3 +420,40 @@ export function ResetSpriteRotScale(spriteId: number): void {
     oam.objMode = 0;
   }
 }
+
+/** 1:1 décomp `TrySetSpriteRotScale(sprite, recalcCenter, xScale, yScale, rotation)`
+ *  (battle_anim_mons.c:1322) : ne pose la matrice QUE si le sprite est déjà
+ *  affine (oam.affineMode & 1). */
+export function TrySetSpriteRotScale(spriteId: number, recalcCenterVector: boolean, xScale: number, yScale: number, rotation: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  if (!rt || !sprite) return;
+  if (((sprite.affineMode ?? 0) & 1) === 0) return;
+  sprite.affineAnimPaused = true;
+  if (recalcCenterVector) {
+    const v = CalcCenterToCornerVec(0, 3, 3);
+    sprite.centerToCornerVecX = v.centerToCornerVecX;
+    sprite.centerToCornerVecY = v.centerToCornerVecY;
+  }
+  SetSpriteRotScale(spriteId, xScale, yScale, rotation);
+}
+
+/** 1:1 décomp `ResetSpriteRotScale_PreserveAffine(sprite)` (battle_anim_mons.c:1356). */
+export function ResetSpriteRotScale_PreserveAffine(spriteId: number): void {
+  TrySetSpriteRotScale(spriteId, true, 0x100, 0x100, 0);
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  if (sprite) sprite.affineAnimPaused = false;
+}
+
+/** 1:1 décomp `SetBattlerSpriteYOffsetFromRotation(spriteId)`
+ *  (battle_anim_mons.c:1342) : y2 = |c| >> 3 de la matrice courante. */
+export function SetBattlerSpriteYOffsetFromRotation(spriteId: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as (RotScaleSprite & { y2?: number }) | undefined;
+  if (!rt || !sprite) return;
+  const m = (rt as unknown as { gba?: { affineParams?: Array<{ pc?: number }> } }).gba?.affineParams?.[sprite.matrixNum ?? 0];
+  let c = m?.pc ?? 0;
+  if (c < 0) c = -c;
+  sprite.y2 = c >> 3;
+}
