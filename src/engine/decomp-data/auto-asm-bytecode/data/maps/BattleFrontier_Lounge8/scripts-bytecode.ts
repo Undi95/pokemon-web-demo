@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/BattleFrontier_Lounge8/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-06-10
+// Generated: 2026-05-16
 // Stats: ops=6, bytes=27, labels=4, unknownOps=0, unresolvedSymbols=3
 
 /** Label name → byte offset within BYTECODE. */

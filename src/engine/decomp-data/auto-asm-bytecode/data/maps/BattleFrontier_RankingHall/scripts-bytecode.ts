@@ -1,8 +1,8 @@
 // AUTO-GENERATED from data/maps/BattleFrontier_RankingHall/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-06-10
-// Stats: ops=65, bytes=224, labels=18, unknownOps=0, unresolvedSymbols=23
+// Generated: 2026-05-16
+// Stats: ops=65, bytes=224, labels=18, unknownOps=0, unresolvedSymbols=10
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -27,6 +27,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,106,23,0,0,0,0,6,120,0,0,0,3,38,0,0,0,110,38,0,0,0,110,38,0,0,0,108,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,107,91,16,0,0,0,0,0,10,5,35,0,0,1,0,34,0,0,1,0,7,1,205,0,0,0,7,1,0,0,0,0,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,2,3] as const;
+export const BYTECODE: readonly number[] = [106,23,5,128,0,0,6,120,0,0,0,3,106,23,5,128,1,0,6,120,0,0,0,3,106,23,5,128,2,0,6,120,0,0,0,3,106,23,5,128,9,0,6,120,0,0,0,3,106,23,5,128,5,0,6,120,0,0,0,3,106,23,5,128,4,0,6,120,0,0,0,3,106,23,5,128,6,0,6,120,0,0,0,3,106,23,5,128,3,0,6,120,0,0,0,3,106,23,5,128,7,0,6,120,0,0,0,3,106,23,5,128,8,0,6,120,0,0,0,3,38,0,0,58,110,38,0,0,58,110,38,0,0,58,108,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,107,91,16,0,0,0,0,0,10,5,35,13,128,1,0,34,13,128,1,0,7,1,205,0,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,2,3] as const;
 
-export const STATS = { ops: 65, bytes: 224, labels: 18, unknownOps: 0, unresolvedSymbols: 23 } as const;
+export const STATS = { ops: 65, bytes: 224, labels: 18, unknownOps: 0, unresolvedSymbols: 10 } as const;
