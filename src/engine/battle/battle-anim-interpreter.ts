@@ -280,14 +280,23 @@ function WaitAnimFrameCount(): void {
 /** 1:1 décomp `RunAnimScriptCommand` (battle_anim.c:326-332).
  *  Loop : dispatch sur sScriptCmdTable[opcode] tant que pas en wait state. */
 function RunAnimScriptCommand(): void {
-  // 1:1 strict décomp : do-while.
+  // 1:1 strict décomp : do-while. + garde-fou bornes (T4) : un PC hors du
+  // buffer (offset non resolu/jump marqueur) terminait en crash-loop chaque
+  // frame -> terminer le script PROPREMENT (l'anim s'arrete, le tour continue).
   do {
+    if (_pc < 0 || _pc >= ANIM_BYTECODE.length) {
+      console.warn(`[battle-anim] PC hors bornes (${_pc}/${ANIM_BYTECODE.length}) — script termine (dette).`);
+      gAnimScriptActive = false;
+      sAnimFramesToWait = 0;
+      return;
+    }
     const opcode = ANIM_BYTECODE[_pc];
     const fn = sScriptCmdTable[opcode];
     if (!fn) {
-      console.warn(`[battle-anim] unknown opcode 0x${opcode.toString(16)} @ PC ${_pc}`);
-      _pc++;
-      continue;
+      console.warn(`[battle-anim] unknown opcode 0x${(opcode ?? -1).toString(16)} @ PC ${_pc} — script termine (dette).`);
+      gAnimScriptActive = false;
+      sAnimFramesToWait = 0;
+      return;
     }
     fn();
   } while (sAnimFramesToWait === 0 && gAnimScriptActive);
@@ -1529,4 +1538,5 @@ export function tickAnimScript(): void {
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
   DestroyAnimVisualTask, DestroyAnimSprite,
+  DoMoveAnim, tickAnimScript, isAnimScriptActive,
 };

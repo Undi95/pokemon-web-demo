@@ -824,7 +824,45 @@ function OpponentHandleSuccessBallThrowAnim(): void { OpponentBufferExecComplete
 function OpponentHandleBallThrow(): void { OpponentBufferExecCompleted(); }
 function OpponentHandlePause(): void { OpponentBufferExecCompleted(); }
 /** Décomp = OpponentDoMoveAnimation (gAnimScriptActive…) — chantier anims de move (dette). */
-function OpponentHandleMoveAnimation(): void { OpponentBufferExecCompleted(); }
+const _oppMoveAnimState: number[] = [0, 0, 0, 0];
+const _oppMoveAnimMove: number[] = [0, 0, 0, 0];
+type _AnimItfO = {
+  DoMoveAnim?: (move: number) => void;
+  tickAnimScript?: () => void;
+  isAnimScriptActive?: () => boolean;
+};
+function _animItfO(): _AnimItfO {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as _AnimItfO) ?? {};
+}
+function OpponentHandleMoveAnimation(): void {
+  // 1:1 décomp battle_controller_opponent.c (goal T4 2026-06-10).
+  if (!_IsBattleSEPlaying_Opp(gActiveBattler)) {
+    const buf = gBattleBufferA[gActiveBattler];
+    _oppMoveAnimMove[gActiveBattler] = buf[1] | (buf[2] << 8);
+    _oppMoveAnimState[gActiveBattler] = 0;
+    setBattlerControllerFunc(gActiveBattler, OpponentDoMoveAnimation);
+  }
+}
+function OpponentDoMoveAnimation(): void {
+  const itf = _animItfO();
+  switch (_oppMoveAnimState[gActiveBattler]) {
+    case 0:
+      _oppMoveAnimState[gActiveBattler] = 1;
+      break;
+    case 1:
+      if (itf.DoMoveAnim) itf.DoMoveAnim(_oppMoveAnimMove[gActiveBattler]);
+      _oppMoveAnimState[gActiveBattler] = 2;
+      break;
+    case 2:
+      itf.tickAnimScript?.();
+      if (!itf.isAnimScriptActive?.()) _oppMoveAnimState[gActiveBattler] = 3;
+      break;
+    case 3:
+      _oppMoveAnimState[gActiveBattler] = 0;
+      OpponentBufferExecCompleted();
+      break;
+  }
+}
 
 function OpponentHandlePrintString(): void {
   // 1:1 décomp `OpponentHandlePrintString` (battle_controller_opponent.c:2543-2555) :

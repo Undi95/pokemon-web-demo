@@ -1166,9 +1166,55 @@ function PlayerHandlePause(): void {
 }
 
 /** 1:1 décomp `PlayerHandleMoveAnimation()`. */
+// Machine a etats DoMoveAnimation (1:1 healthBoxesData[b].animationState ;
+// module-local par battler). Goal T4 2026-06-10.
+const _moveAnimState: number[] = [0, 0, 0, 0];
+const _moveAnimMove: number[] = [0, 0, 0, 0];
+type _AnimItf = {
+  DoMoveAnim?: (move: number) => void;
+  tickAnimScript?: () => void;
+  isAnimScriptActive?: () => boolean;
+};
+function _animItf(): _AnimItf {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as _AnimItf) ?? {};
+}
+
+/** 1:1 décomp `PlayerHandleMoveAnimation()` (battle_controller_player.c) :
+ *  lit le move du buffer, lance la state machine PlayerDoMoveAnimation.
+ *  Dettes : IsMoveWithoutAnimation, substitute swap (cases 0/2 partiels),
+ *  gAnimMoveTurn/Power/Dmg/Friendship surfaces. */
 function PlayerHandleMoveAnimation(): void {
-  // Dette R3 : move animation play (= cascade visuels K1 per-move).
-  PlayerBufferExecCompleted();
+  if (!_IsBattleSEPlaying(gActiveBattler)) {
+    const buf = gBattleBufferA[gActiveBattler];
+    _moveAnimMove[gActiveBattler] = buf[1] | (buf[2] << 8);
+    _moveAnimState[gActiveBattler] = 0;
+    gBattlerControllerFuncs[gActiveBattler] = PlayerDoMoveAnimation;
+  }
+}
+
+/** 1:1 décomp `PlayerDoMoveAnimation()` : case 0 substitute (dette, skip) →
+ *  case 1 DoMoveAnim → case 2 tick jusqu'à !gAnimScriptActive → case 3 done. */
+function PlayerDoMoveAnimation(): void {
+  const itf = _animItf();
+  switch (_moveAnimState[gActiveBattler]) {
+    case 0:
+      // 1:1 : substitute -> InitAndLaunchSpecialAnimation(SUBSTITUTE_TO_MON)
+      // (dette substitute) ; sinon passe direct.
+      _moveAnimState[gActiveBattler] = 1;
+      break;
+    case 1:
+      if (itf.DoMoveAnim) itf.DoMoveAnim(_moveAnimMove[gActiveBattler]);
+      _moveAnimState[gActiveBattler] = 2;
+      break;
+    case 2:
+      itf.tickAnimScript?.();
+      if (!itf.isAnimScriptActive?.()) _moveAnimState[gActiveBattler] = 3;
+      break;
+    case 3:
+      _moveAnimState[gActiveBattler] = 0;
+      PlayerBufferExecCompleted();
+      break;
+  }
 }
 
 /** 1:1 décomp `PlayerHandlePrintString()` (battle_controller_player.c:2543-2555).
