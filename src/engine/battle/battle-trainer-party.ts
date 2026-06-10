@@ -40,6 +40,11 @@ import {
 } from './constants';
 import { MAX_PER_STAT_IVS } from '../decomp-data/include/constants/pokemon-data';
 import { TRAINER_SECRET_BASE } from '../decomp-data/include/constants/trainers-data';
+// Voie L : mon dresseur BATTLE-READY (= CreateMon plein) ecrit dans gEnemyParty (party-storage,
+// array LU par la voie L). Remplace le _CreateMon stub (sans stats, mauvais array). T2 du port trainer.
+import { createPokemonInstance, type PokemonInstance, type StatSpread } from '../pokemon/pokemon';
+import { setupEnemyPartyForBattle } from './party-storage';
+import { reverseDecompConstant } from '../system/decomp-constants';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
 
@@ -183,6 +188,28 @@ function _ZeroEnemyPartyMons(): void {
   }
 }
 
+/** 1:1 décomp `CreateMon(&party[i], species, lvl, fixedIV, TRUE, personality, OT_ID_RANDOM_NO_SHINY, 0)`
+ *  (battle_main.c:2014) via notre générateur BATTLE-READY. `personality` IMPOSÉ
+ *  (pokemon.ts:412 ne consomme PAS le RNG pour le PID) → nature/ability-slot/gender/shiny
+ *  dérivés du PID 1:1. `fixedIV` appliqué aux 6 IVs (= CreateMon `fixedIV`). Sans `moves`
+ *  → pickLevelUpMoves = moveset de niveau natif (= CreateMon default-moves 1:1). */
+function _makeTrainerMon(
+  species: number, lvl: number, fixedIV: number, personality: number,
+  moves?: number[], heldItem?: number,
+): PokemonInstance {
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const iv: StatSpread = { hp: fixedIV, atk: fixedIV, def: fixedIV, spa: fixedIV, spd: fixedIV, spe: fixedIV };
+  const opts: { personality: number; ivs: StatSpread; moves?: string[]; heldItem?: string } =
+    { personality: personality >>> 0, ivs: iv };
+  if (moves && moves.length) {
+    // 1:1 ll.2028-2032 : moveset custom (MOVE_X). PP 1:1 via createPokemonInstance (gameDataGetMove().pp).
+    const ms = moves.filter((m) => m !== 0).map((m) => reverseDecompConstant(m, 'MOVE_') ?? '').filter(Boolean);
+    if (ms.length) opts.moves = ms;
+  }
+  if (heldItem) { const it = reverseDecompConstant(heldItem, 'ITEM_'); if (it) opts.heldItem = it; }
+  return createPokemonInstance(speciesEnum, lvl, opts);
+}
+
 // ─── CreateNPCTrainerParty (battle_main.c:1960) — 1:1 strict ───────────────
 
 /** 1:1 décomp `CreateNPCTrainerParty(party, trainerNum, firstTrainer)`
@@ -232,6 +259,11 @@ export function CreateNPCTrainerParty(
       monsCount = trainerData.partySize;
     }
 
+    // Voie L : on ACCUMULE les mons BATTLE-READY puis UN seul setupEnemyPartyForBattle (qui zero les
+    // 6 slots = ZeroEnemyPartyMons + remplit). Un appel par mon ecraserait les precedents.
+    // DETTE (hors scope single) : multi-dresseur (TWO_OPPONENTS, firstTrainer=false) ecraserait la
+    // party du 1er dresseur -> a gerer avec un accumulateur persistant quand le double sera porte.
+    const acc: PokemonInstance[] = [];
     for (i = 0; i < monsCount; i++) {
       // 1:1 décomp ll. 1993-1998 : personality init selon gender flag.
       if (trainerData.doubleBattle) {
@@ -242,87 +274,59 @@ export function CreateNPCTrainerParty(
         personalityValue = 0x88;  // skew male
       }
 
-      // 1:1 décomp ll. 2000-2001 : trainerName hash sum. ⚠️ FIX 1:1 : nameHash N'EST PAS
-      // reset par mon — le décomp le déclare `u32 nameHash = 0` au scope FONCTION (battle_main.c
-      // l.1962, AVANT le `for i`) et l'ACCUMULE à travers les mons (le `for j` trainerName tourne
-      // CHAQUE itération i sans reset). L'ancien `nameHash = 0` ici resettait par mon → la
-      // personality (nature/genre/ability) du 2e+ mon de dresseur était FAUSSE (≠ décomp).
+      // 1:1 décomp ll. 2000-2001 : trainerName hash sum. ⚠️ nameHash N'EST PAS reset par mon
+      // (scope FONCTION dans la décomp, accumulé à travers les mons).
       for (j = 0; trainerData.trainerName[j] !== EOS && j < trainerData.trainerName.length; j++) {
         nameHash += trainerData.trainerName[j];
       }
 
-      // 1:1 décomp ll. 2003-2069 : switch sur partyFlags (4 variants).
+      // 1:1 décomp ll. 2003-2069 : switch sur partyFlags (4 variants). Mon battle-ready via _makeTrainerMon.
       switch (trainerData.partyFlags) {
         case 0: {
-          // NoItemDefaultMoves
           const partyData = trainerData.party.NoItemDefaultMoves;
           if (!partyData || !partyData[i]) break;
           const speciesName = _getSpeciesName(partyData[i].species);
-          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) {
-            nameHash += speciesName[j];
-          }
+          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) nameHash += speciesName[j];
           personalityValue += nameHash << 8;
           fixedIV = Math.floor(partyData[i].iv * MAX_PER_STAT_IVS / 255);
-          _CreateMon(party[i], partyData[i].species, partyData[i].lvl, fixedIV,
-                     true, personalityValue, OT_ID_RANDOM_NO_SHINY, 0);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue));
           break;
         }
         case F_TRAINER_PARTY_CUSTOM_MOVESET: {
           const partyData = trainerData.party.NoItemCustomMoves;
           if (!partyData || !partyData[i]) break;
           const speciesName = _getSpeciesName(partyData[i].species);
-          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) {
-            nameHash += speciesName[j];
-          }
+          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) nameHash += speciesName[j];
           personalityValue += nameHash << 8;
           fixedIV = Math.floor(partyData[i].iv * MAX_PER_STAT_IVS / 255);
-          _CreateMon(party[i], partyData[i].species, partyData[i].lvl, fixedIV,
-                     true, personalityValue, OT_ID_RANDOM_NO_SHINY, 0);
-
-          // 1:1 décomp ll. 2028-2032 : SetMonData MOVE_X + PP_X.
-          for (j = 0; j < MAX_MON_MOVES; j++) {
-            _SetMonData(party[i], MON_DATA_MOVE1 + j, partyData[i].moves[j]);
-            _SetMonData(party[i], MON_DATA_PP1 + j, _getMovePp(partyData[i].moves[j]));
-          }
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, partyData[i].moves));
           break;
         }
         case F_TRAINER_PARTY_HELD_ITEM: {
           const partyData = trainerData.party.ItemDefaultMoves;
           if (!partyData || !partyData[i]) break;
           const speciesName = _getSpeciesName(partyData[i].species);
-          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) {
-            nameHash += speciesName[j];
-          }
+          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) nameHash += speciesName[j];
           personalityValue += nameHash << 8;
           fixedIV = Math.floor(partyData[i].iv * MAX_PER_STAT_IVS / 255);
-          _CreateMon(party[i], partyData[i].species, partyData[i].lvl, fixedIV,
-                     true, personalityValue, OT_ID_RANDOM_NO_SHINY, 0);
-
-          _SetMonData(party[i], MON_DATA_HELD_ITEM, partyData[i].heldItem);
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, undefined, partyData[i].heldItem));
           break;
         }
         case F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM: {
           const partyData = trainerData.party.ItemCustomMoves;
           if (!partyData || !partyData[i]) break;
           const speciesName = _getSpeciesName(partyData[i].species);
-          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) {
-            nameHash += speciesName[j];
-          }
+          for (j = 0; speciesName[j] !== EOS && j < speciesName.length; j++) nameHash += speciesName[j];
           personalityValue += nameHash << 8;
           fixedIV = Math.floor(partyData[i].iv * MAX_PER_STAT_IVS / 255);
-          _CreateMon(party[i], partyData[i].species, partyData[i].lvl, fixedIV,
-                     true, personalityValue, OT_ID_RANDOM_NO_SHINY, 0);
-
-          _SetMonData(party[i], MON_DATA_HELD_ITEM, partyData[i].heldItem);
-
-          for (j = 0; j < MAX_MON_MOVES; j++) {
-            _SetMonData(party[i], MON_DATA_MOVE1 + j, partyData[i].moves[j]);
-            _SetMonData(party[i], MON_DATA_PP1 + j, _getMovePp(partyData[i].moves[j]));
-          }
+          acc.push(_makeTrainerMon(partyData[i].species, partyData[i].lvl, fixedIV, personalityValue, partyData[i].moves, partyData[i].heldItem));
           break;
         }
       }
     }
+
+    // 1:1 : ecrit gEnemyParty (party-storage) = l array LU par la voie L. (= ZeroEnemyPartyMons + CreateMon×n)
+    setupEnemyPartyForBattle(acc);
 
     // 1:1 décomp l. 2072 : OR le doubleBattle flag dans gBattleTypeFlags.
     if (trainerData.doubleBattle) {

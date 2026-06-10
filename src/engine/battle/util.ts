@@ -117,116 +117,9 @@ export function getBattlerForBattleScript(caseId: number): number {
  *
  *  Le reste est 1:1 strict.
  */
-export function FaintClearSetData(): void {
-  for (let i = 0; i < NUM_BATTLE_STATS; i++) {
-    gBattleMons[gActiveBattler].statStages[i] = DEFAULT_STAT_STAGE;
-  }
-  gBattleMons[gActiveBattler].status2 = 0;
-  gStatuses3[gActiveBattler] = 0;
-
-  // 1:1 décomp ll.3275-3283 : clear cross-battler effects qui dépendent de
-  // gActiveBattler (= escape prevention, infatuation, wrap).
-  for (let i = 0; i < gBattlersCount; i++) {
-    if ((gBattleMons[i].status2 & STATUS2_ESCAPE_PREVENTION)
-        && gDisableStructs[i].battlerPreventingEscape === gActiveBattler) {
-      gBattleMons[i].status2 &= ~STATUS2_ESCAPE_PREVENTION;
-    }
-    // STATUS2_INFATUATED_WITH(active) = 0x1<<16 << active (= 4 bits at 16-19).
-    const infatuatedWithActive = STATUS2_INFATUATION & (0x10000 << gActiveBattler);
-    if (gBattleMons[i].status2 & infatuatedWithActive) {
-      gBattleMons[i].status2 &= ~infatuatedWithActive;
-    }
-    if ((gBattleMons[i].status2 & STATUS2_WRAPPED)
-        && gBattleStruct.wrappedBy[i] === gActiveBattler) {
-      gBattleMons[i].status2 &= ~STATUS2_WRAPPED;
-    }
-  }
-
-  // 1:1 décomp ll.3285-3286 : reset UI cursors pour ce battler.
-  gActionSelectionCursor[gActiveBattler] = 0;
-  gMoveSelectionCursor[gActiveBattler] = 0;
-
-  // 1:1 décomp ll.3288-3290 : clear gDisableStructs entièrement.
-  const ds = gDisableStructs[gActiveBattler];
-  for (const k of Object.keys(ds) as Array<keyof typeof ds>) {
-    (ds as unknown as Record<string, number>)[k] = 0;
-  }
-
-  // 1:1 décomp ll.3292-3310 : clear gProtectStructs bit fields.
-  const ps = gProtectStructs[gActiveBattler];
-  ps.protected = 0;
-  ps.endured = 0;
-  ps.noValidMoves = 0;
-  ps.helpingHand = 0;
-  ps.bounceMove = 0;
-  ps.stealMove = 0;
-  ps.flag0Unknown = 0;
-  ps.prlzImmobility = 0;
-  ps.confusionSelfDmg = 0;
-  ps.targetNotAffected = 0;
-  ps.chargingTurn = 0;
-  ps.fleeType = 0;
-  ps.usedImprisonedMove = 0;
-  ps.loveImmobility = 0;
-  ps.usedDisabledMove = 0;
-  ps.usedTauntedMove = 0;
-  ps.flag2Unknown = 0;
-  ps.flinchImmobility = 0;
-  ps.notFirstStrike = 0;
-
-  ds.isFirstTurn = 2; // 1:1 décomp : reset to 2 (= post-faint freshness).
-
-  gLastMoves[gActiveBattler] = MOVE_NONE;
-  gLastLandedMoves[gActiveBattler] = MOVE_NONE;
-  gLastHitByType[gActiveBattler] = 0;
-  gLastResultingMoves[gActiveBattler] = MOVE_NONE;
-  gLastPrintedMoves[gActiveBattler] = MOVE_NONE;
-  gLastHitBy[gActiveBattler] = 0xFF;
-
-  // 1:1 décomp ll.3321-3322 : clear gBattleStruct->choicedMove (= u16 low/high).
-  gBattleStruct.choicedMove[gActiveBattler] = MOVE_NONE;
-
-  // 1:1 décomp ll.3324-3325 : clear gBattleStruct->lastTakenMove[active*2..+1].
-  gBattleStruct.lastTakenMove[gActiveBattler * 2 + 0] = MOVE_NONE;
-  gBattleStruct.lastTakenMove[gActiveBattler * 2 + 1] = MOVE_NONE;
-
-  // 1:1 décomp ll.3326-3333 : clear gBattleStruct->lastTakenMoveFrom[active][0..3].
-  for (let i = 0; i < 4; i++) {
-    gBattleStruct.lastTakenMoveFrom[gActiveBattler * 8 + i * 2 + 0] = 0;
-    gBattleStruct.lastTakenMoveFrom[gActiveBattler * 8 + i * 2 + 1] = 0;
-  }
-
-  // 1:1 décomp l.3335 : clear palace flag pour active battler.
-  gBattleStruct.palaceFlags &= ~(1 << gActiveBattler);
-
-  // 1:1 décomp ll.3337-3346 : clear cross-battler tracking depuis active.
-  for (let i = 0; i < gBattlersCount; i++) {
-    if (i !== gActiveBattler && GET_BATTLER_SIDE(i) !== GET_BATTLER_SIDE(gActiveBattler)) {
-      // Clear lastTakenMove pour les opponents (= no longer hit by us).
-      gBattleStruct.lastTakenMove[i * 2 + 0] = MOVE_NONE;
-      gBattleStruct.lastTakenMove[i * 2 + 1] = MOVE_NONE;
-    }
-    // Clear lastTakenMoveFrom[i][active] (= no longer hit by active).
-    gBattleStruct.lastTakenMoveFrom[i * 8 + gActiveBattler * 2 + 0] = 0;
-    gBattleStruct.lastTakenMoveFrom[i * 8 + gActiveBattler * 2 + 1] = 0;
-  }
-
-  // 1:1 décomp l.3348 : `gBattleResources->flags->flags[active] = 0;`
-  gBattleResourcesFlags[gActiveBattler] = 0;
-
-  // 1:1 décomp ll.3350-3351 : reset types depuis species data (= revert
-  // Conversion / Soak / etc.).
-  const [t1, t2] = getSpeciesTypes(gBattleMons[gActiveBattler].species);
-  gBattleMons[gActiveBattler].type1 = t1;
-  gBattleMons[gActiveBattler].type2 = t2;
-
-  // 1:1 décomp ll.3353-3354 : ClearBattlerMoveHistory + ClearBattlerAbilityHistory.
-  ClearBattlerMoveHistory(gActiveBattler);
-  ClearBattlerAbilityHistory(gActiveBattler);
-
-  // Reference l.3324-3325 : gCurrentMove non touché ici (= different scope).
-  void gCurrentMove;
-}
+// ─── FaintClearSetData — DÉPLACÉ dans le miroir src/game/battle_main.ts
+//     (battle_main.c:3270-3355, consolidation C2 2026-06-10). Re-export compat. ──
+export { FaintClearSetData } from '../../game/battle_main';
 
 // ─── CancelMultiTurnMoves (battle_util.c:864) — 1:1 décomp ─────────────────
 
@@ -243,15 +136,9 @@ export function CancelMultiTurnMoves(battler: number): void {
   gDisableStructs[battler].furyCutterCounter = 0;
 }
 
-// ─── GetScaledHPFraction (battle_interface.c:2517) — 1:1 décomp ────────────
-
-/** 1:1 décomp `GetScaledHPFraction(s16 hp, s16 maxhp, u8 scale)`. */
-export function GetScaledHPFraction(hp: number, maxhp: number, scale: number): number {
-  if (maxhp === 0) return 0;
-  let result = Math.floor((hp * scale) / maxhp);
-  if (result === 0 && hp > 0) return 1;
-  return result;
-}
+// ─── GetScaledHPFraction — DÉPLACÉ dans le miroir src/game/battle_interface.ts
+//     (battle_interface.c:2517, consolidation C4 2026-06-09). Re-export compat. ──
+export { GetScaledHPFraction } from '../../game/battle_interface';
 
 // ─── ClearFuryCutterDestinyBondGrudge (battle_util.c:3798-3803) — 1:1 décomp ───
 
@@ -430,56 +317,6 @@ export function WEATHER_HAS_EFFECT(): boolean {
 
 // ─── TurnValuesCleanUp (battle_main.c:4857-4892) — 1:1 décomp ──────────────
 
-/** 1:1 décomp `TurnValuesCleanUp(bool8 var0)`.
- *  - `var0=TRUE` : juste reset protected/endured pour chaque battler (= post-move cleanup).
- *  - `var0=FALSE` : full clear ProtectStruct + decrement isFirstTurn + rechargeTimer
- *    (= fresh turn start).
- *  Appelé par turn loop décomp avant chaque action. Caller wire dans le bridge
- *  pour Speed Boost isFirstTurn fix + rechargeTimer décrement post-Hyper Beam. */
-export function TurnValuesCleanUp(var0: boolean): void {
-  // Inline STATUS2_* constants (= éviter circular import).
-  const STATUS2_RECHARGE_LOCAL  = 1 << 22;
-  const STATUS2_SUBSTITUTE_LOCAL = 1 << 24;
-  for (let active = 0; active < gBattlersCount; active++) {
-    if (var0) {
-      // 1:1 décomp ll. 4866-4867 : post-move cleanup.
-      gProtectStructs[active].protected = 0;
-      gProtectStructs[active].endured = 0;
-    } else {
-      // 1:1 décomp ll. 4871-4883 : fresh turn = full clear ProtectStruct.
-      const ps = gProtectStructs[active];
-      ps.protected = 0; ps.endured = 0;
-      ps.noValidMoves = 0; ps.helpingHand = 0;
-      ps.bounceMove = 0; ps.stealMove = 0;
-      ps.flag0Unknown = 0; ps.prlzImmobility = 0;
-      ps.confusionSelfDmg = 0; ps.targetNotAffected = 0;
-      ps.chargingTurn = 0; ps.fleeType = 0;
-      ps.usedImprisonedMove = 0; ps.loveImmobility = 0;
-      ps.usedDisabledMove = 0; ps.usedTauntedMove = 0;
-      ps.flag2Unknown = 0; ps.flinchImmobility = 0;
-      ps.notFirstStrike = 0;
-      // 1:1 décomp ll. 4875-4876 : decrement isFirstTurn si > 0.
-      if (gDisableStructs[active].isFirstTurn) {
-        gDisableStructs[active].isFirstTurn--;
-      }
-      // 1:1 décomp ll. 4878-4883 : rechargeTimer countdown + STATUS2_RECHARGE clear.
-      if (gDisableStructs[active].rechargeTimer) {
-        gDisableStructs[active].rechargeTimer--;
-        if (gDisableStructs[active].rechargeTimer === 0) {
-          gBattleMons[active].status2 &= ~STATUS2_RECHARGE_LOCAL;
-        }
-      }
-    }
-    // 1:1 décomp ll. 4886-4887 : substituteHP 0 → clear STATUS2_SUBSTITUTE.
-    if (gDisableStructs[active].substituteHP === 0) {
-      gBattleMons[active].status2 &= ~STATUS2_SUBSTITUTE_LOCAL;
-    }
-  }
-  // 1:1 décomp ll. 4890-4891 : reset followmeTimer pour les 2 sides.
-  // Lazy via state singleton (= éviter d'importer gSideTimers ici).
-  const sideTimersGlobal = (globalThis as { __battleState?: { gSideTimers?: Array<{ followmeTimer: number }> } }).__battleState?.gSideTimers;
-  if (sideTimersGlobal) {
-    if (sideTimersGlobal[0]) sideTimersGlobal[0].followmeTimer = 0;
-    if (sideTimersGlobal[1]) sideTimersGlobal[1].followmeTimer = 0;
-  }
-}
+// ─── TurnValuesCleanUp — DÉPLACÉ dans le miroir src/game/battle_main.ts
+//     (battle_main.c:4857-4892, consolidation C2 2026-06-10). Re-export compat. ──
+export { TurnValuesCleanUp } from '../../game/battle_main';

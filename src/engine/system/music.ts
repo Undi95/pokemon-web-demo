@@ -153,7 +153,10 @@ export async function playSE(name: string): Promise<void> {
 export function playCry(species: string): void {
   const ctx = getAudioContext();
   if (!ctx) return;
-  const url = `/decomp/em/cries/${species.toLowerCase()}.wav`;
+  // Accepte 'SPECIES_ZUBAT' (constante décomp — ce que passent pokeball send-out
+  // et les FaintingCry) comme 'zubat' (nom dossier) : les WAV = nom sans préfixe.
+  const file = species.toLowerCase().replace(/^species_/, '').replace(/[^a-z0-9]/g, '');
+  const url = `/decomp/em/cries/${file}.wav`;
   fetch(url)
     .then(r => r.arrayBuffer())
     .then(buf => ctx.decodeAudioData(buf))

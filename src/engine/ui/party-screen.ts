@@ -385,6 +385,9 @@ let _partyAction: number = PARTY_ACTION_CHOOSE_MON;
 // = oui ; choix forcé après K.O. = non). Lus par les handlers A/B SEND_OUT.
 let _battleSwitchActiveSlot = -1;
 let _battleSwitchAllowCancel = true;
+/** Id FIELD du mon actif (pour chooseSwitchSlot 1:1) + flag « ordre battle posé ». */
+let _battleSwitchActivePartyId = -1;
+let _battleOrderApplied = false;
 /** 1:1 décomp `gPartyMenu.slotId2` (= 1er mon mémorisé pour la permutation). */
 let _slotId2 = 0;
 let _graphicsReady = false;
@@ -2250,7 +2253,18 @@ function Task_PartyMenu_HandleInput(_task: DecompTask): void {
         return;  // reste sur la sélection
       }
       PlaySE(5);
-      (globalThis as Record<string, unknown>).__battleSwitchResultSlot = _slotId;
+      // 1:1 TrySwitchInPokemon (party_menu.c:5851-5856) : capture l'id FIELD du mon
+      // choisi (la réponse moteur) PUIS swap nibbles + swap physique (le choisi prend
+      // le slot affiché de l'actif → il sera EN HAUT à la prochaine ouverture).
+      {
+        const po2 = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+          chooseSwitchSlot?: (displaySlot: number, activePartyId: number) => number;
+        } | undefined;
+        const fieldId = (_battleOrderApplied && po2?.chooseSwitchSlot)
+          ? po2.chooseSwitchSlot(_slotId, _battleSwitchActivePartyId)
+          : _slotId;
+        (globalThis as Record<string, unknown>).__battleSwitchResultSlot = fieldId;
+      }
       ClosePartyScreen();
     } else {
       // A sur slot mon → ouvre action menu. (A sur CANCEL est mappé à B.)
@@ -2460,7 +2474,21 @@ export function OpenPartyScreenForBattleSwitch(
 ): void {
   if (_isOpen) return;
   _partyAction = PARTY_ACTION_SEND_OUT;
-  _battleSwitchActiveSlot = opts.activeSlot;
+  // 1:1 party_menu.c (combat) : le menu vit en ORDRE BATTLE — gPlayerParty est
+  // physiquement réordonnée (UpdatePartyToBattleOrder : l'ACTIF au slot affiché 0,
+  // fix « le mon échangé n'est pas premier » user 2026-06-10) et RESTAURÉE à la
+  // fermeture (closeBattleOrder dans ClosePartyScreen). opts.activeSlot = id FIELD ;
+  // le slot AFFICHÉ interdit = retour d'openBattleOrder.
+  const po = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+    openBattleOrder?: (activePartyId: number) => number;
+  } | undefined;
+  _battleSwitchActivePartyId = opts.activeSlot;
+  if (po?.openBattleOrder) {
+    _battleSwitchActiveSlot = po.openBattleOrder(opts.activeSlot);
+    _battleOrderApplied = true;
+  } else {
+    _battleSwitchActiveSlot = opts.activeSlot;
+  }
   _battleSwitchAllowCancel = opts.allowCancel;
   void _loadAssets().then(() => {
     const rt = getRuntime();
@@ -2690,6 +2718,16 @@ export function CB2_ReturnToPartyMenuFromSummary(): void {
 
 export function ClosePartyScreen(): void {
   if (!_isOpen || _phase === 'fading_out') return;
+  // 1:1 UpdatePartyToFieldOrder (party_menu.c) : TOUTE sortie du menu combat
+  // (choix OU annulation B) restaure l'ordre FIELD de gPlayerParty + persiste
+  // les nibbles (battlerPartyOrders) pour la prochaine ouverture.
+  if (_battleOrderApplied) {
+    const po = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+      closeBattleOrder?: () => void;
+    } | undefined;
+    po?.closeBattleOrder?.();
+    _battleOrderApplied = false;
+  }
   _phase = 'fading_out';
   const rt = getRuntime();
   if (!rt) return;

@@ -17,11 +17,9 @@
  *   - TranslateAnimHorizontalArc (794-801)
  *   - TranslateAnimVerticalArc (803-810)
  *   - SetSpritePrimaryCoordsFromSecondaryCoords (812-817)
- *
- * Dette (non portees ici, pas requises par le send-out) :
- *   - StartAnimLinearTranslation / AnimTranslateLinear_WithFollowup (1093/1141) :
- *     dependent de SetCallbackToStoredInData6 (callback stocke en data[6]/data[7]
- *     comme une ADRESSE — non transposable trivialement a nos callbacks-objets).
+ *   - StartAnimLinearTranslation / AnimTranslateLinear_WithFollowup (1093/1141)
+ *   - StoreSpriteCallbackInData6 / SetCallbackToStoredInData6 (sprite.c) : callback
+ *     stocke en data[6]/data[7] (adresse) en decomp → champ dedie `inData6Callback` ici.
  *
  * Adaptation HW-emu :
  *   - La decomp s'appuie sur les types `s16 data[]` / `u16` locaux pour le
@@ -128,6 +126,37 @@ export function SetSpritePrimaryCoordsFromSecondaryCoords(sprite: DecompSprite):
   sprite.y += sprite.y2;
   sprite.x2 = 0;
   sprite.y2 = 0;
+}
+
+/** 1:1 decomp sprite.c `void StoreSpriteCallbackInData6(struct Sprite *sprite, SpriteCallback callback)`.
+ *  En decomp : split du pointeur 32-bit dans data[6]/data[7]. Nos callbacks etant des
+ *  fonctions JS (pas des adresses), on les garde dans le champ dedie `inData6Callback`. */
+export function StoreSpriteCallbackInData6(sprite: DecompSprite, callback: NonNullable<DecompSprite['callback']>): void {
+  sprite.inData6Callback = callback;
+}
+
+/** 1:1 decomp sprite.c `void SetCallbackToStoredInData6(struct Sprite *sprite)`.
+ *  Restaure le callback stocke par StoreSpriteCallbackInData6 (= reassemble data[6]|data[7]). */
+export function SetCallbackToStoredInData6(sprite: DecompSprite): void {
+  sprite.callback = sprite.inData6Callback ?? null;
+}
+
+/** 1:1 decomp battle_anim_mons.c:1141 `void AnimTranslateLinear_WithFollowup(struct Sprite *sprite)`.
+ *  Avance la translation lineaire ; quand finie (data[0]==0), enchaine sur le callback stocke. */
+export function AnimTranslateLinear_WithFollowup(sprite: DecompSprite): void {
+  if (AnimTranslateLinear(sprite)) SetCallbackToStoredInData6(sprite);
+}
+
+/** 1:1 decomp battle_anim_mons.c:1093 `void StartAnimLinearTranslation(struct Sprite *sprite)`.
+ *  Pre : data[0]=nbFrames, data[2]=destX, data[4]=destY (poses par l'appelant). Capture x/y de
+ *  depart dans data[1]/data[3], calcule les deltas, installe AnimTranslateLinear_WithFollowup
+ *  comme callback PUIS l'execute immediatement (= `sprite->callback(sprite)` du decomp). */
+export function StartAnimLinearTranslation(sprite: DecompSprite): void {
+  sprite.data[1] = sprite.x;
+  sprite.data[3] = sprite.y;
+  InitAnimLinearTranslation(sprite);
+  sprite.callback = AnimTranslateLinear_WithFollowup;
+  AnimTranslateLinear_WithFollowup(sprite);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

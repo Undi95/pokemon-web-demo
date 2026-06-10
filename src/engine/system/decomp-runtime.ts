@@ -430,6 +430,10 @@ export interface DecompSprite {
   affineAnimEnded: boolean;
   /** Callback exécuté chaque frame (1:1 décomp sprite->callback). */
   callback: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
+  /** 1:1 décomp callback stocké via StoreSpriteCallbackInData6 (sprite.c) — en décomp
+   *  l'adresse 32-bit du callback est splittée dans data[6]/data[7] ; ici on garde la
+   *  ref-fonction telle quelle. Restauré dans `callback` par SetCallbackToStoredInData6. */
+  inData6Callback?: ((sprite: DecompSprite, rt: DecompRuntime) => void) | null;
   /** sprite ID (notre extension pour DestroySprite par ID). */
   spriteId: number;
   /** Tile base dans objVram (= tileSheetTagToTileStart pour le tileTag du template).
@@ -1222,6 +1226,39 @@ export class DecompRuntime {
       // softwareFadeFinishing latch : reset après 1 frame.
       if (f.softwareFadeFinishing) f.softwareFadeFinishing = false;
       return false;
+    }
+
+    // ─── 1:1 décomp HARDWARE_FADE (palette.c UpdateHardwarePaletteFade +
+    //     UpdateBlendRegisters) ──────────────────────────────────────────────
+    // BeginHardwarePaletteFade (= fondu du reshow, BLDCNT+BLDY hardware) anime y et
+    // ÉCRIT les registres BLDCNT/BLDY chaque frame → le compositor assombrit tout
+    // l'écran (fondu synchronisé). Avant : ce mode tombait dans le chemin SOFTWARE
+    // (qui anime brightness mais n'écrit JAMAIS gba.blend) → le fondu reshow était
+    // INVISIBLE (apparition progressive des éléments). Le software path est sauté ici.
+    if (f.mode === HARDWARE_FADE) {
+      if (f.delayRemaining < f.multipurpose2) {
+        f.delayRemaining++;
+      } else {
+        f.delayRemaining = 0;
+        if (!f.yDec) {
+          f.brightness++;
+          if (f.brightness > f.endY) { f.hardwareFadeFinishing = true; f.brightness--; }
+        } else {
+          const yPrev = f.brightness--;
+          if (yPrev - 1 < f.endY) { f.hardwareFadeFinishing = true; f.brightness++; }
+        }
+      }
+      // UpdateBlendRegisters (palette.c:795) : BLDCNT=0x050, BLDY=0x054.
+      this.SetGpuReg(0x050, f.multipurpose1 & 0xFFFF);
+      this.SetGpuReg(0x054, f.brightness);
+      if (f.hardwareFadeFinishing) {
+        f.hardwareFadeFinishing = false;
+        f.mode = 0 /* NORMAL_FADE */;
+        f.multipurpose1 = 0;
+        f.brightness = 0;
+        f.active = false;
+      }
+      return f.active;
     }
 
     // ─── 1:1 décomp IsSoftwarePaletteFadeFinishing (palette.c:809-830) ──

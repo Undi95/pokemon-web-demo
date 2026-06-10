@@ -23,12 +23,12 @@
 
 import {
   gActionSelectionCursor, gMoveSelectionCursor,
-  gBattleTypeFlags,
+  gBattleTypeFlags, setBattleTypeFlags,
   setBattleControllerExecFlags, setActiveBattler,
   MAX_BATTLERS_COUNT,
   gBattlerControllerFuncs,
 } from './state';
-import { BATTLE_TYPE_FIRST_BATTLE } from './constants';
+import { BATTLE_TYPE_FIRST_BATTLE, BATTLE_TYPE_TRAINER } from './constants';
 // Namespace ESM (remplace require('./state') CommonJS, dormant → throw en navigateur).
 import * as _stateNs from './state';
 import { gBattlerPositions } from './util';
@@ -42,7 +42,16 @@ import {
 } from '../field/metatile-behavior';
 // Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
 // Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
-import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE } from './party-storage';
+import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';
+// Entrees voie L (scripted-wild) : enemy mon plein + boot de la VRAIE boucle decomp.
+// Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
+// n'importe pas ce module en retour, il passe par un wire globalThis).
+import { createPokemonInstance } from '../pokemon/pokemon';
+import { reverseDecompConstant } from '../system/decomp-constants';
+import { bootDecompBattleLoop } from './battle-decomp-loop';
+// Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
+import { StringExpandPlaceholders } from '../../game/string_util';
+import { getText } from '../script/script-runtime';
 // Constantes auto-extraites (règle [[feedback-no-hardcoded-decomp-values]]).
 import { ENUM_TRANSITION_0 } from '../decomp-data/src/battle_setup-data';
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
@@ -187,14 +196,103 @@ export function SetUpBattleVarsAndBirchZigzagoon(): void {
   BattleAI_HandleItemUseBeforeAISetup(0xF);
 
   // 1:1 décomp ll. 68-74 : Birch tutorial = spawn Zigzagoon LV 2.
+  // ZeroEnemyPartyMons + CreateMon(&gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS,...) +
+  // SetMonData(HELD_ITEM, 0). Voie L : mon PLEIN via createPokemonInstance (= CreateMon réel :
+  // stats/moves/IVs) dans le gEnemyParty que LIT la voie L (party-storage, = chemin wild prouvé).
+  // L'ancien _CreateMon (state ns, simplifié sans stats/moves) = combat injouable en voie L.
   if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) {
-    _ZeroEnemyPartyMons();
-    _CreateMon(0, SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);
-    _SetMonData(0, MON_DATA_HELD_ITEM, 0);
+    setupEnemyPartyForBattle([
+      createPokemonInstance(reverseDecompConstant(SPECIES_ZIGZAGOON, 'SPECIES_') ?? 'SPECIES_ZIGZAGOON', 2),
+    ]);
   }
 
   // 1:1 décomp ll. 77-78 : unused vars (never read).
   // gUnusedFirstBattleVar1 = 0; gUnusedFirstBattleVar2 = 0;
+}
+
+// ─── Scripted wild battle (battle_setup.c + scrcmd.c) — DORMANT (#suppr voie V) ──
+// Port strict 1:1 des entrees scripted-wild de la voie L. DORMANT : pas encore
+// cable aux opcodes setwildbattle/dowildbattle (le flip + A/B = etape suivante,
+// cf. [[voie-v-suppression-plan]] GAP-3). Additif -> 0 regression.
+
+/** 1:1 décomp `CreateScriptedWildMon(u16 species, u8 level, u16 item)` (battle_setup.c).
+ *  ZeroEnemyPartyMons + CreateMon(&gEnemyParty[0], species, level, USE_RANDOM_IVS,...) +
+ *  (si item) SetMonData(MON_DATA_HELD_ITEM, item). Notre port : `setupEnemyPartyForBattle`
+ *  zéro gEnemyParty puis remplit le slot 0 avec un mon PLEIN (createPokemonInstance =
+ *  CreateMon 1:1, stats/moves/IVs réels — PAS le _CreateMon simplifié de Birch).
+ *  Appelé par ScrCmd_setwildbattle (scrcmd.c:1869). */
+export function CreateScriptedWildMon(species: number, level: number, item: number): void {
+  const speciesEnum = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const heldItem = item ? (reverseDecompConstant(item, 'ITEM_') ?? undefined) : undefined;
+  setupEnemyPartyForBattle([
+    createPokemonInstance(speciesEnum, level, heldItem ? { heldItem } : undefined),
+  ]);
+}
+
+/** 1:1 décomp `BattleSetup_StartScriptedWildBattle(void)` (battle_setup.c:489-499).
+ *  LockPlayerFieldControls + `gMain.savedCallback = CB2_EndScriptedWildBattle` +
+ *  `gBattleTypeFlags = 0` + `CreateBattleStartTask(GetWildBattleTransition(), 0)` +
+ *  IncrementGameStat(TOTAL/WILD) + IncrementDailyWildBattles + TryUpdateGymLeaderRematchFromWild.
+ *  Notre port : `bootDecompBattleLoop(true)` = CreateBattleStartTask (transition d'entrée)
+ *  + PlayBattleBGM + swap CB2_InitBattle + retour OW (= équivalent du savedCallback). La
+ *  CONTINUATION du script (CB2_EndScriptedWildBattle → CB2_ReturnToFieldContinueScript) est
+ *  assurée par le poll `SetupNativeScript` du caller ScrCmd_dowildbattle (qui reprend le
+ *  script quand la scène combat rend la main), 1:1 le `ScriptContext_Stop()` de scrcmd.c:1882.
+ *  Appelé par ScrCmd_dowildbattle (scrcmd.c:1879). gEnemyParty[0] déjà posé par CreateScriptedWildMon. */
+export function BattleSetup_StartScriptedWildBattle(): void {
+  // 1:1 décomp l.493 : `gBattleTypeFlags = 0` (overwrite — combat sauvage scripté pur).
+  setBattleTypeFlags(0);
+  // 1:1 décomp l.494 : CreateBattleStartTask(GetWildBattleTransition(), 0) + (l.407 modèle)
+  // gMain.savedCallback = retour OW. bootDecompBattleLoop(true) encapsule les deux (1:1 CreateWildMon).
+  bootDecompBattleLoop(true);
+  // DETTE 1:1 (hors démo) : IncrementGameStat(GAME_STAT_TOTAL_BATTLES/WILD_BATTLES) +
+  // IncrementDailyWildBattles + TryUpdateGymLeaderRematchFromWild (stats/rematch) — non portés.
+}
+
+/** 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:930-948) — entrée du 1er combat
+ *  (tutoriel Birch, Zigzagoon Lv2). `gBattleTypeFlags = BATTLE_TYPE_FIRST_BATTLE` +
+ *  `gMain.savedCallback = CB2_EndFirstBattle` + `SetMainCallback2(CB2_InitBattle)`.
+ *  L'ennemi Zigzagoon est spawné par SetUpBattleVarsAndBirchZigzagoon (appelé dans le boot
+ *  CB2_InitBattleInternal, gate FIRST_BATTLE). Notre port : setBattleTypeFlags +
+ *  bootDecompBattleLoop(true) (= CreateBattleStartTask + swap CB2_InitBattle + retour OW).
+ *  Remplace la voie V `startBirchTutorialBattle` (suppression voie V). DETTE 1:1 : la
+ *  transition décomp est B_TRANSITION_BLUR (CB2_GiveStarter) ; bootDecompBattleLoop fait
+ *  un fallback SLICE (transitions visuelles pas toutes portées). */
+export function StartFirstBattle(): void {
+  setBattleTypeFlags(BATTLE_TYPE_FIRST_BATTLE >>> 0);
+  bootDecompBattleLoop(true);
+}
+
+/** 1:1 décomp `BattleSetup_StartTrainerBattle` (battle_setup.c:1272-1325) — single, hors
+ *  frontier/hill. `gBattleTypeFlags = BATTLE_TYPE_TRAINER` + `gMain.savedCallback =
+ *  CB2_EndTrainerBattle` + `DoTrainerBattle` (459 = CreateBattleStartTask(GetTrainerBattleTransition,0))
+ *  + `ScriptContext_Stop`. Voie L : `gTrainerBattleOpponent_A` déjà posé par le caller ;
+ *  `CreateNPCTrainerParty` est appelé À L'INIT (CB2_InitBattleInternal, battle_main.ts:836) →
+ *  peuple gEnemyParty. `bootDecompBattleLoop(true)` = CreateBattleStartTask + swap CB2_InitBattle
+ *  + retour OW. DETTE 1:1 : IncrementGameStat(TOTAL/TRAINER_BATTLES) + TryUpdateGymLeaderRematchFromTrainer
+ *  (stats) + GetTrainerBattleTransition (transition spécifique → fallback SLICE) — non portés. */
+// 1:1 décomp battle_setup.c:102 (EWRAM `sTrainerADefeatSpeech`) — lose_text du macro
+// trainerbattle (bytes charmap, deja encodes). NULL -> "" (gText_EmptyString2).
+let sTrainerADefeatSpeech: Uint8Array | null = null;
+export function setTrainerADefeatSpeech(s: Uint8Array | null): void { sTrainerADefeatSpeech = s; }
+export function getTrainerADefeatSpeech(): Uint8Array | null { return sTrainerADefeatSpeech; }
+
+/** 1:1 décomp `GetTrainerALoseText` (battle_setup.c:1517-1528, hors SECRET_BASE non géré voie L) :
+ *  `string = sTrainerADefeatSpeech; StringExpandPlaceholders(gStringVar4, string); return gStringVar4;`
+ *  ⚠️ StringExpandPlaceholders ECRIT dans `out` et RETOURNE le pointeur AVANCE (pas le buffer) ->
+ *  on retourne `out` (= gStringVar4), pas le retour de l'appel. */
+export function GetTrainerALoseText(): Uint8Array {
+  const out = new Uint8Array(256);
+  StringExpandPlaceholders(out, sTrainerADefeatSpeech ?? new Uint8Array([0xFF]));
+  return out;
+}
+
+export function BattleSetup_StartTrainerBattle(defeatTextLabel?: string): void {
+  setBattleTypeFlags(BATTLE_TYPE_TRAINER >>> 0);
+  // 1:1 battle_setup.c:168 (TrainerBattleLoadArgs charge sTrainerADefeatSpeech depuis le lose_text
+  // du macro). getText(label) = bytes charmap, undefined si absent -> null.
+  setTrainerADefeatSpeech(defeatTextLabel ? (getText(defeatTextLabel) ?? null) : null);
+  bootDecompBattleLoop(true);
 }
 
 // ─── BattleSetup_GetEnvironmentId (battle_setup.c:636) ─────────────────────

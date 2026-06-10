@@ -231,6 +231,25 @@ export function BtlController_EmitTwoReturnValues(bufferId: number, ret8: number
   PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
 }
 
+/** 1:1 décomp `EWRAM_DATA struct UnusedControllerStruct gUnusedControllerStruct`
+ *  (battle_controllers.c) — struct jamais LUE, mais les handlers UnkVar/UnkFlag
+ *  des deux controllers y écrivent (corps 1:1). UNE instance partagée. */
+export const gUnusedControllerStruct = { unk: 0, flag: 0 };
+
+/** 1:1 décomp `CONTROLLER_ONERETURNVALUE` (battle_controllers.h, enum = 0x23). */
+const CONTROLLER_ONERETURNVALUE = 0x23;
+
+/** 1:1 décomp `void BtlController_EmitOneReturnValue(u8 bufferId, u16 ret)`
+ *  (battle_controllers.c) : réponse 16-bit seule → bufferB[1..2] LE
+ *  (ex. item choisi par l'AI en réponse à OPENBAG). */
+export function BtlController_EmitOneReturnValue(bufferId: number, ret: number): void {
+  sBattleBuffersTransferData[0] = CONTROLLER_ONERETURNVALUE;
+  sBattleBuffersTransferData[1] = ret & 0xFF;
+  sBattleBuffersTransferData[2] = (ret & 0xFF00) >> 8;
+  sBattleBuffersTransferData[3] = 0;
+  PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
+}
+
 // ─── Init helpers (battle_controllers.c:81-111) ────────────────────────────
 
 /** 1:1 décomp `InitBattleControllers()` (battle_controllers.c:81-111). */
@@ -296,8 +315,13 @@ export function InitSinglePlayerBtlControllers(): void {
 }
 
 /** 1:1 décomp `BufferBattlePartyCurrentOrderBySide(battler, side)`. */
-function _BufferBattlePartyCurrentOrderBySide(_battler: number, _side: number): void {
-  // Dette R3 : multi battle party order buffer (= non applicable single battle).
+function _BufferBattlePartyCurrentOrderBySide(battler: number, flankId: number): void {
+  // 1:1 décomp party_menu.c:5918 : init battlerPartyOrders[battler] = [mon actif,
+  // puis les autres] (nibbles). Impl dans le miroir battle_main (lazy anti-cycle).
+  const m = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+    BufferBattlePartyCurrentOrderBySide?: (b: number, f: number) => void;
+  } | undefined;
+  m?.BufferBattlePartyCurrentOrderBySide?.(battler, flankId);
 }
 
 // ─── Helper export for battle-action-selection (= replace lazy globalThis) ─

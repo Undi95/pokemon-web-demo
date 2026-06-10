@@ -33,6 +33,7 @@ import {
   startBattleTransitionWhiteBarsFade, tickBattleTransitionWhiteBarsFade,
 } from './battle-transition';
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
+import { ensureBallGfxLoaded, ensureBallParticlesLoaded } from '../boot/intro-asset-loader';
 
 // ─── Flag d'activation ──────────────────────────────────────────────────────
 
@@ -190,6 +191,17 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // healthbox. (Mettre ce reset dans BattleStartClearSetData échouait : il tourne APRÈS
   // case 18, donc il effaçait les ids que la création ASYNC venait de poser = course.)
   (globalThis as { __battleHealthbox?: { resetHealthboxL?: () => void } }).__battleHealthbox?.resetHealthboxL?.();
+  // Précharge le gfx de la Poke Ball (gBallGfx_Poke/gBallPal_Poke/gOpenPokeballGfx) dans assetCache
+  // pour CHAQUE combat. Sinon LoadBallGfx (pokeball.c:1309, résolu SYNC via getAsset) échoue hors
+  // flux Birch (assetCache miss → ball tileId 0 + palette bank noire = garble "Tetris" signalé user).
+  // Async, mais terminé bien avant le send-out (~250f après le boot, > la latence de fetch). 1:1 : la
+  // décomp a gBallGfx_Poke en ROM (toujours dispo) ; ici on précharge dans notre cache équivalent.
+  void ensureBallGfxLoaded();
+  // Précharge AUSSI les étincelles d'ouverture de ball (gBattleAnimSpriteGfx/Pal_Particles) dans
+  // assetCache pour CHAQUE combat. AnimateBallOpenParticles (pokeball.ts SpriteCB_ReleaseMonFromBall)
+  // les résout SYNC via getAsset ; hors flux Birch elles manquaient (console "Particles not in cache")
+  // → 0 étincelle au send-out (#5). Même mécanisme/raison que ensureBallGfxLoaded.
+  void ensureBallParticlesLoaded();
   // RETOUR OW : ReturnFromBattleToOverworld (battle_main.c:5249) fait
   // `SetMainCallback2(gMain.savedCallback)`. Lancée hors encounter (touche dev '),
   // la voie L n'a PAS de savedCallback posé → à la fin du combat, la boucle reste
@@ -825,6 +837,11 @@ export async function harnessSetupPartiesN(
   if (trainerOpponent !== undefined) {
     st.setBattleTypeFlags((st.gBattleTypeFlags | cst.BATTLE_TYPE_TRAINER) >>> 0);
     st.setTrainerBattleOpponentA(trainerOpponent);
+    // Combat dresseur : charge gTrainers (pic + données) AVANT le boot — en jeu réel
+    // c'est le flux trainerbattle qui l'await ; sans ça le sprite dresseur (intro
+    // DrawTrainerPic + TrainerSlide victoire) est silencieusement absent en harness.
+    const tb = await import('./battle-trainer-data-bridge');
+    await tb.ensureGTrainersLoaded();
   } else {
     st.setBattleTypeFlags((st.gBattleTypeFlags & ~cst.BATTLE_TYPE_TRAINER) >>> 0);
   }
@@ -929,8 +946,30 @@ export function harnessRunDecompLoopSync(maxFrames = 600, injectInput = false, a
 
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
+/** Dev (A/B animations) : boote le COMBAT RIVAL #1 (May/Flora Route 103) sur voie L, pour iterer vite
+ *  sur les animations de combat DRESSEUR (opponent trainer slide-in/throw, send-out, ball, idle bob...).
+ *  player Treecko Lv5 vs May (BATTLE_TYPE_TRAINER + gTrainerBattleOpponent_A=numId) ; la party rival est
+ *  generee au boot par CreateNPCTrainerParty depuis gTrainers[numId] (charge ici via ensureGTrainersLoaded).
+ *  Le starter exact importe peu pour les anims (3 rivaux selon le starter ; on prend TREECKO). Bouton
+ *  « ( » (numpad-5, DebugOverlayScene). A utiliser depuis l'overworld (PAS pendant un combat). */
+export async function harnessBootRivalBattle1(): Promise<void> {
+  const bdb = await import('./battle-trainer-data-bridge');
+  await bdb.ensureGTrainersLoaded();
+  const numId = bdb.resolveTrainerNumId('TRAINER_MAY_ROUTE_103_TREECKO');
+  await harnessSetupParties(
+    'SPECIES_TREECKO', 5, 'SPECIES_TORCHIC', 5,
+    { moves: ['MOVE_POUND', 'MOVE_LEER', 'MOVE_ABSORB'] },
+    { moves: ['MOVE_SCRATCH', 'MOVE_GROWL'] },
+    numId,
+  );
+  const st = await import('./state');
+  st.setBattleOutcome(0);
+  bootDecompBattleLoop(true);   // CreateNPCTrainerParty (au boot) genere la party rival depuis gTrainers
+}
+
 (globalThis as Record<string, unknown>).__decompBattleLoop = {
   harnessDriveTurn,
+  harnessBootRivalBattle1,
   harnessExecuteTurnL,
   harnessRunDecompLoopAsync,
   harnessSetupParties,

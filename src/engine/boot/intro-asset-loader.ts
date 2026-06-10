@@ -636,8 +636,10 @@ export async function preloadBirchSpeechAssets(): Promise<void> {
   try {
     const pokeballGfx = await loadTileBin('/decomp/em/balls/poke.png', 4);
     assetCache.set('gBallGfx_Poke', pokeballGfx);
-    const pokeballPal = await loadIndexedPngStrict('/decomp/em/balls/poke.png', 4);
-    assetCache.set('gBallPal_Poke', pokeballPal.palette);
+    // 1:1 ad-hoc PROUVE (battle-sendout-anim.ts:144-145) : la palette de la ball vient du
+    // .gbapal (poke.gbapal, 16 couleurs RGB15), PAS du PLTE du PNG. La voie PNG peut keyer le
+    // blanc/un mauvais index 0 -> ball NOIRE/corrompue. Coherent avec ensureBallGfxLoaded (l.85).
+    assetCache.set('gBallPal_Poke', await loadGbaPal('/decomp/em/balls/poke.gbapal'));
     // 1:1 décomp src/data/graphics/pokeballs.h:37 gOpenPokeballGfx (= open.png 16x16 = 4 tiles).
     // LoadBallGfx (pokeball.c:1326) overwrite les frames 8-11 du poke.png par open.png.
     const openBallGfx = await loadTileBin('/decomp/em/balls/open.png', 4);

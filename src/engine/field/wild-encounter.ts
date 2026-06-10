@@ -290,7 +290,11 @@ function CreateWildMon(species: string, level: number): void {
   //    (CB2_EndWildBattle). Dette R3 : Cute Charm gender bias (wild_encounter.c:394-412),
   //    PickWildMonNature — déférés (étaient déjà gérés ad-hoc par l'ex-voie V).
   setupEnemyPartyForBattle([createPokemonInstance(species, level)]);
-  setBattleTypeFlags((gBattleTypeFlags & ~BATTLE_TYPE_TRAINER) >>> 0);  // combat SAUVAGE
+  // 1:1 décomp `DoStandardWildBattle` (battle_setup.c:408) : `gBattleTypeFlags = 0` (OVERWRITE).
+  // ⚠️ FIX régression : l'ancien `& ~BATTLE_TYPE_TRAINER` PRÉSERVAIT BATTLE_TYPE_FIRST_BATTLE posé
+  // par le tuto Birch (StartFirstBattle) → chaque combat sauvage APRÈS le tuto restait un Zigzagoon
+  // Lv2 infuyable. Le reset complet à 0 (= la décomp) efface FIRST_BATTLE/TRAINER/etc.
+  setBattleTypeFlags(0);
   bootDecompBattleLoop(true);
 }
 

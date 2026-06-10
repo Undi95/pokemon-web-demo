@@ -30,6 +30,12 @@ import { registerOpcode, SetupNativeScript, ScriptJump, ScriptCall, getScript } 
 import { FlagSet, FlagClear, FlagGet, VarSet, gSpecialVar } from './script-vars';
 import { reverseDecompConstant } from '../system/decomp-constants';
 import { parseValue } from './script-opcodes-helpers';
+// Voie L (suppression voie V) : entrees scripted-wild 1:1 (battle_setup.c). Import
+// statique SYNC (setwildbattle doit peupler gEnemyParty AVANT que dowildbattle boote).
+// Pas de cycle : battle-setup-helpers -> battle-decomp-loop -> engine/battle/* (PAS engine/script/).
+import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle, BattleSetup_StartTrainerBattle } from '../battle/battle-setup-helpers';
+import { resolveTrainerNumId, ensureGTrainersLoaded } from '../battle/battle-trainer-data-bridge';
+import { setTrainerBattleOpponentA, setBattleOutcome, gBattleOutcome } from '../battle/state';
 
 function _stubTrainerBattle(trainerArg: string): void {
   console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
@@ -48,21 +54,31 @@ function _runTrainerBattle(ctx: ScriptContext, trainerArg: string, defeatText?: 
     _stubTrainerBattle(trainerArg);
     return false;
   }
-  // Dynamic import : avoid circular deps at load.
-  let flowReady = false;
-  let flow: { tick: () => boolean } | null = null;
-  void import('../battle/trainer-battle-flow').then((mod) => {
-    flow = mod.startTrainerBattle(trainerArg, defeatText ? { defeatText } : undefined);
-    flowReady = true;
-  }).catch(() => {
-    // Fallback to stub if import fails.
-    _stubTrainerBattle(trainerArg);
-    flowReady = true;
-    flow = { tick: () => true };
-  });
+  // VOIE L (reflip C5) : route le combat dresseur sur la boucle decomp (CB2_InitBattle -> controllers
+  // + gBattleMainFunc), comme le wild. Verifie voie L (harness combat dresseur) : intro + send-out 1:1
+  // + VICTOIRE complete + retour OW + inBattle reset (C1-C3 lose_text + getmoneyreward suffisent). Briques
+  // T1-T3 : resolveTrainerNumId + ensureGTrainersLoaded (peuple gTrainers numId-keyed + gEnemyParty
+  // battle-ready) + BattleSetup_StartTrainerBattle (BATTLE_TYPE_TRAINER + sTrainerADefeatSpeech + boot).
+  // ⚠️ DETTE C4 : DEFAITE -> retour OW SANS whiteout (CB2_WhiteOut non porte). PAS de freeze (verifie),
+  //    juste pas 1:1 (devrait teleporter au Centre Pokemon + soigner). A porter ensuite.
+  const numId = resolveTrainerNumId(trainerArg);
+  setBattleOutcome(0);                  // reset l'outcome AVANT le combat (gate du poll de fin)
+  setTrainerBattleOpponentA(numId);
+  let started = false;
+  void ensureGTrainersLoaded().then(() => {
+    BattleSetup_StartTrainerBattle(defeatText);
+    started = true;
+  }).catch(() => { started = true; });
   SetupNativeScript(ctx, () => {
-    if (!flowReady) return false;
-    return flow!.tick();
+    if (!started) return false;
+    // 1:1 : le script BLOQUE jusqu'au retour du combat. On poll l'etat equivalent : combat fini =
+    // gMain.inBattle (runtime) false ET gBattleOutcome pose (!=0). inBattle reset par
+    // ReturnFromBattleToOverworld (fix verifie) ; gBattleOutcome pose au meme endroit (setSpecialVarResult).
+    const inB = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt?.gMain?.inBattle ?? false;
+    if (inB || gBattleOutcome === 0) return false;
+    // 1:1 SetBattledTrainersFlags : FlagSet(TRAINER_FLAGS_START + numId) si VICTOIRE (B_OUTCOME_WON=1).
+    if (gBattleOutcome === 1) FlagSet(1280 + numId);
+    return true;   // debloque le script (continue apres le trainerbattle)
   });
   return true;  // block script
 }
@@ -193,47 +209,32 @@ registerOpcode('dowildbattle', (_ctx, _args) => false);
 /** 1:1 décomp `ScrCmd_setwildbattle` (scrcmd.c:1869-1877) :
  *    CreateScriptedWildMon(species, level, item). */
 registerOpcode('setwildbattle', (_ctx, args) => {
-  const speciesArg = args[0] ?? '';
+  // 1:1 décomp ScrCmd_setwildbattle (scrcmd.c:1869-1877) : CreateScriptedWildMon(species, level, item).
+  // Voie L : peuple gEnemyParty[0] avec un mon PLEIN (createPokemonInstance) — remplace le
+  // stub global gScriptedWildMon de la voie V (suppression voie V).
+  const speciesId = parseValue(args[0] ?? '');
   const level = parseValue(args[1] ?? '5');
-  const itemArg = args[2] ?? 'ITEM_NONE';
-  const speciesId = parseValue(speciesArg);
-  const itemId = parseValue(itemArg);
-  (globalThis as Record<string, unknown>).gScriptedWildMon = {
-    species: speciesId,
-    level,
-    item: itemId,
-  };
+  const itemId = parseValue(args[2] ?? 'ITEM_NONE');
+  CreateScriptedWildMon(speciesId, level, itemId);
   return false;
 });
 
 /** 1:1 décomp `ScrCmd_dowildbattle` (scrcmd.c:1879-1884) :
  *    BattleSetup_StartScriptedWildBattle + ScriptContext_Stop. */
 registerOpcode('dowildbattle', (ctx, _args) => {
-  void (async () => {
-    try {
-      const mon = (globalThis as Record<string, unknown>).gScriptedWildMon as
-        { species?: number; level?: number; item?: number } | undefined;
-      if (mon) {
-        const { startWildBattle } = await import('../battle/battle-flow').catch(() => ({ startWildBattle: undefined }));
-        if (typeof startWildBattle === 'function') {
-          const enumName = reverseDecompConstant(mon.species ?? 0, 'SPECIES_') ?? `SPECIES_${mon.species ?? 0}`;
-          startWildBattle({
-            opponentSpecies: enumName,
-            opponentLevel: mon.level ?? 5,
-          });
-        } else {
-          console.warn('[opcode dowildbattle] battle-flow.startWildBattle not exposed yet');
-        }
-      }
-    } catch (e) {
-      console.warn('[opcode dowildbattle] failed:', e);
-    }
-  })();
-  // SetupNativeScript wait — battle screen takes over until done.
+  // 1:1 décomp ScrCmd_dowildbattle (scrcmd.c:1879-1884) :
+  //   BattleSetup_StartScriptedWildBattle(); ScriptContext_Stop(); return TRUE;
+  // Voie L : gEnemyParty[0] deja pose par setwildbattle -> CreateScriptedWildMon ;
+  // BattleSetup_StartScriptedWildBattle pose flags=0 + boote la VRAIE boucle decomp
+  // (CB2_InitBattle), remplace l'ad-hoc voie V startWildBattle (suppression voie V).
+  BattleSetup_StartScriptedWildBattle();
+  // ScriptContext_Stop() : le swap CB2 (boucle combat) prend la main pendant le combat ;
+  // au retour OW (CB2_EndScriptedWildBattle -> ReturnToFieldContinueScript), le poll
+  // reprend le script. (A/B : confirmer la reprise du script apres un dowildbattle.)
   let framesWaited = 0;
   const poll = (): boolean => {
     framesWaited++;
-    return framesWaited >= 1;  // resume immediately (battle scene is async)
+    return framesWaited >= 1;
   };
   SetupNativeScript(ctx, poll);
   return true;

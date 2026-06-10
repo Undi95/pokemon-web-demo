@@ -48,14 +48,20 @@ import {
   gLastUsedItem, gBattleStruct,
 } from './state';
 
-// ─── BALL_* enum (= include/constants/items.h) ─────────────────────────────
+// ─── BALL_* enum (= include/pokeball.h:4-19) ───────────────────────────────
 
-/** 1:1 décomp BALL_* enum. */
-export const BALL_MASTER = 0;
-export const BALL_ULTRA = 1;
-export const BALL_GREAT = 2;
-export const BALL_POKE = 3;
-export const BALL_SAFARI = 4;
+/** 1:1 décomp `enum { BALL_POKE, BALL_GREAT, BALL_SAFARI, BALL_ULTRA, BALL_MASTER,
+ *  BALL_NET, BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER, BALL_LUXURY, BALL_PREMIER }`
+ *  (include/pokeball.h).
+ *  ⚠️ CORRIGE 2026-06-08 : l'ancien ordre (MASTER=0 … POKE=3) etait FAUX (faux label
+ *  "1:1") → ItemIdToBallId(ITEM_POKE_BALL) renvoyait BALL_POKE=3 → gBallSpriteSheets[3]
+ *  = Ultra (asset non charge) → POKEBALL NOIRE au send-out (#22). Aligne sur la vraie
+ *  enum decomp = pokeball-effects.ts + gBallSpriteSheets (indexes par designators). */
+export const BALL_POKE = 0;
+export const BALL_GREAT = 1;
+export const BALL_SAFARI = 2;
+export const BALL_ULTRA = 3;
+export const BALL_MASTER = 4;
 export const BALL_NET = 5;
 export const BALL_DIVE = 6;
 export const BALL_NEST = 7;

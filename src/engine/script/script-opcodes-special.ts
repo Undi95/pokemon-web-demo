@@ -20,6 +20,8 @@ import { registerOpcode, SetupNativeScript } from './script-runtime';
 import { VarSet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { getPendingWarp } from '../field/warp-system';
+// Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
+import { StartFirstBattle } from '../battle/battle-setup-helpers';
 
 // ─── waitstate / SignalWaitState ────────────────────────────────────────────
 
@@ -143,16 +145,12 @@ registerOpcode('special', (ctx, args) => {
   // (= BATTLE_TYPE_FIRST_BATTLE vs SPECIES_ZIGZAGOON Lv 2). Notre version :
   // inline state machine via SetupNativeScript (= block script, no scene switch).
   if (name === 'StartBirchTutorialBattle') {
-    let flowReady = false;
-    let flow: { tick: () => boolean } | null = null;
-    void import('../battle/battle-flow').then((mod) => {
-      flow = mod.startBirchTutorialBattle();
-      flowReady = true;
-    });
-    SetupNativeScript(ctx, () => {
-      if (!flowReady) return false;
-      return flow!.tick();
-    });
+    // 1:1 décomp : CB2_GiveStarter -> CB2_StartFirstBattle. Voie L : boote la VRAIE boucle
+    // decomp (StartFirstBattle), remplace l'ad-hoc voie V startBirchTutorialBattle. Le swap
+    // CB2 prend la main ; au retour OW le poll reprend le script (1:1 ScriptContext block).
+    StartFirstBattle();
+    let framesWaited = 0;
+    SetupNativeScript(ctx, () => { framesWaited++; return framesWaited >= 1; });
     return true;
   }
   // 1:1 décomp `FieldShowRegionMap` (field_specials.c:973) : CB2 swap vers

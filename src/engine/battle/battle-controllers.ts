@@ -501,15 +501,23 @@ export function BtlController_EmitStatusAnimation(bufferId: number, isStatus2: b
 
 /** 1:1 signature décomp `BtlController_EmitDrawPartyStatusSummary(buf, hpStatuses, isBattleStart)`. */
 export function BtlController_EmitDrawPartyStatusSummary(bufferId: number, hpStatuses: unknown, arg2: number): void {
-  // hpStatuses 1:1 décomp = struct HpAndStatus per mon (= [species, hp, status1] tuples).
-  // Notre port : accepte n'importe quelle structure, le UI consumer fera le decode.
   // 1:1 décomp battle_controllers.c:1505-1512 : [DRAWPARTYSTATUSSUMMARY,
-  // flags & ~PARTY_SUMM_SKIP_DRAW_DELAY, (flags & 0x80)>>7, DRAWPARTYSTATUSSUMMARY, ...HpAndStatus].
-  // Le handler (ExecCompleted) ignore le payload HpAndStatus → header 4 bytes suffit
-  // pour l'invariant bufferA[0] (visuel via enqueue).
-  _emitToBufferA(bufferId, [
+  // flags & ~PARTY_SUMM_SKIP_DRAW_DELAY, (flags & 0x80)>>7, DRAWPARTYSTATUSSUMMARY,
+  // ...memcpy(HpAndStatus[PARTY_SIZE])]. struct HpAndStatus {u16 hp; u32 status;}
+  // = 8 bytes (2 hp LE + 2 pad + 4 status LE) × 6 mons → bufferA[4..51]. Les
+  // handlers (PlayerHandleDrawPartyStatusSummary) parsent bufferA[4+i*8] 1:1.
+  const _bytes: number[] = [
     CONTROLLER_DRAWPARTYSTATUSSUMMARY, arg2 & 0x7F, (arg2 & 0x80) >> 7, CONTROLLER_DRAWPARTYSTATUSSUMMARY,
-  ]);
+  ];
+  const _arr = Array.isArray(hpStatuses) ? hpStatuses as Array<{ hp?: number; status?: number }> : [];
+  for (let i = 0; i < 6; i++) {
+    const e = _arr[i] ?? {};
+    const hp = (e.hp ?? 0) & 0xFFFF;
+    const st = (e.status ?? 0) >>> 0;
+    _bytes.push(hp & 0xFF, (hp >> 8) & 0xFF, 0, 0,
+      st & 0xFF, (st >> 8) & 0xFF, (st >> 16) & 0xFF, (st >>> 24) & 0xFF);
+  }
+  _emitToBufferA(bufferId, _bytes);
   enqueueBattleEvent({
     type: CONTROLLER_DRAWPARTYSTATUSSUMMARY,
     battler: gActiveBattler,
@@ -698,12 +706,23 @@ export function BtlController_EmitCantSwitch(bufferId: number): void {
   });
 }
 
-/** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)` (battle_controllers.c:1210-1217 :
- *  [YESNOBOX ×4], 4 bytes). ⚠️ DETTE : reste no-op (n'écrit pas bufferA[0]). À lever :
- *  vérifier que notre CONTROLLER_UNKNOWNYESNOBOX (0x13) correspond bien à CONTROLLER_YESNOBOX
- *  de la décomp (et non CONTROLLER_23) avant d'écrire le buffer. Non atteint en wild solo
- *  (shift-style / safari / capture yes-no), donc le résidu de buffer n'a pas encore mordu. */
-export function BtlController_EmitYesNoBox(_bufferId: number): void {
+/** 1:1 décomp `BtlController_EmitYesNoBox` (battle_controllers.c:1210-1217).
+ *  Écrit [YESNOBOX, YESNOBOX, YESNOBOX, YESNOBOX] (4 bytes) dans gBattleBufferA via
+ *  PrepareBufferDataTransfer. CRITIQUE : bufferA[0] = l'ID de COMMANDE lu par
+ *  XxxBufferRunCommand pour dispatcher vers Xxx HandleYesNoBox (cf. [[EmitGetMonData]]).
+ *  Correspondance constante vérifiée 1:1 : décomp `CONTROLLER_YESNOBOX` = index 19 = 0x13
+ *  (enum battle_controllers.h:186-205, base CONTROLLER_GETMONDATA=0) = notre
+ *  CONTROLLER_UNKNOWNYESNOBOX (0x13, battle-event-queue.ts:69), qui est aussi la clé de
+ *  dispatch `sPlayerBufferCommands[0x13] = PlayerHandleYesNoBox` (battle-controller-player.ts).
+ *  (≠ CONTROLLER_23 = index 20 = 0x14.) */
+export function BtlController_EmitYesNoBox(bufferId: number): void {
+  // 1:1 décomp battle_controllers.c:1212-1216 : [YESNOBOX ×4], taille 4.
+  _emitToBufferA(bufferId, [
+    CONTROLLER_UNKNOWNYESNOBOX,
+    CONTROLLER_UNKNOWNYESNOBOX,
+    CONTROLLER_UNKNOWNYESNOBOX,
+    CONTROLLER_UNKNOWNYESNOBOX,
+  ]);
   enqueueBattleEvent({
     type: CONTROLLER_UNKNOWNYESNOBOX,
     battler: gActiveBattler,

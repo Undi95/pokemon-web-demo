@@ -61,6 +61,9 @@ import { BATTLE_STRINGS_TABLE, STRINGID_NAMES, BATTLESTRINGS_TABLE_START } from 
 import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../decomp-data/include/constants/battle_string_ids-data';
 import { getString } from '../ui/gba-strings';
 import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './state';
+// Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
+// -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).
+import { GetTrainerALoseText, getTrainerADefeatSpeech } from './battle-setup-helpers';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
 import type { BattleMsgData } from './battle-event-queue';
 
@@ -367,8 +370,15 @@ function _resolveToCpy(code: number, msgData: BattleMsgData): Uint8Array {
     // Cas dresseur 2 / lose-win text / link / frontier : data par-dresseur ou
     // modes non supportés (double/link) → marqueur déféré (= comportement du
     // décodeur actuel, battle-string-decoder:552). Le {B_X} reste visible = signal.
+    // 1:1 décomp battle_message.c:2680 : B_TXT_TRAINER1_LOSE_TEXT -> GetTrainerALoseText()
+    // (= StringExpandPlaceholders(sTrainerADefeatSpeech)). Voie L : sTrainerADefeatSpeech pose au
+    // setup (BattleSetup_StartTrainerBattle). Fallback marqueur si null (voie V / non pose) -> 0 regression.
+    case B_TXT_TRAINER1_LOSE_TEXT: {
+      if (getTrainerADefeatSpeech()) return GetTrainerALoseText();
+      return encodeChars('[B_TRAINER1_LOSE_TEXT]');
+    }
     case B_TXT_TRAINER2_CLASS: case B_TXT_TRAINER2_NAME:
-    case B_TXT_TRAINER1_LOSE_TEXT: case B_TXT_TRAINER1_WIN_TEXT:
+    case B_TXT_TRAINER1_WIN_TEXT:
     case B_TXT_TRAINER2_LOSE_TEXT: case B_TXT_TRAINER2_WIN_TEXT:
       return encodeChars('[B_' + (_CODE_TO_B_TXT_NAME[code] ?? code) + ']');
     default:

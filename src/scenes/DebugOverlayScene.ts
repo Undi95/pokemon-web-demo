@@ -60,6 +60,31 @@ export class DebugOverlayScene extends Phaser.Scene {
         if (this._visible) this.updateDebug();
         return;
       }
+      // « ( » (= numpad-5 sur le clavier de l'user) — DEV : lance le COMBAT RIVAL #1 (May/Flora Route 103)
+      // voie L, pour A/B les animations de combat dresseur (opponent send-out, ball, idle bob...). TOUJOURS
+      // actif (hors combat), comme « & ». Garde anti-chain-boot (ne boote pas si deja en combat).
+      if (e.key === '(') {
+        const rt0 = getRuntime();
+        if (rt0?.gMain?.inBattle) { console.warn('[DebugOverlay] deja en combat — Numpad5 (rival) ignore'); return; }
+        const dlr = (globalThis as unknown as {
+          __decompBattleLoop?: { harnessBootRivalBattle1?: () => Promise<void> };
+        }).__decompBattleLoop;
+        if (dlr?.harnessBootRivalBattle1) {
+          // sync pos pour le retour OW post-combat (= comme le combat de test « ' »).
+          const gg = globalThis as unknown as {
+            gSaveBlock1Ptr?: { pos: { x: number; y: number } };
+            __gObjectEvents?: Array<{ currentCoordsX: number; currentCoordsY: number } | undefined>;
+          };
+          const sb1 = gg.gSaveBlock1Ptr; const player = gg.__gObjectEvents?.[0];
+          if (sb1 && player && typeof player.currentCoordsX === 'number') {
+            sb1.pos.x = player.currentCoordsX - 7; sb1.pos.y = player.currentCoordsY - 7;
+          }
+          void dlr.harnessBootRivalBattle1();
+        } else {
+          console.warn('[DebugOverlay] harnessBootRivalBattle1 indisponible');
+        }
+        return;
+      }
       // Les commandes ci-dessous = uniquement quand devmenu ouvert
       // (= évite trigger accidentel pendant gameplay normal).
       if (!this._visible) return;
@@ -85,6 +110,10 @@ export class DebugOverlayScene extends Phaser.Scene {
       // une scène Phaser). Pour itérer vite sur les bugs combat. À utiliser depuis
       // l'overworld (pas pendant un combat déjà en cours).
       if (e.key === "'") {
+        // Garde anti-chain-boot (= bloqueur double-combat) : ne boote PAS si deja en combat
+        // (un 2e boot par-dessus accumule l'etat runtime -> crash, lecon user 2026-06-09).
+        const rt0 = getRuntime();
+        if (rt0?.gMain?.inBattle) { console.warn("[DebugOverlay] deja en combat — ' (wild) ignore"); return; }
         const dl = (globalThis as unknown as {
           __decompBattleLoop?: {
             harnessSetupParties: (...a: unknown[]) => Promise<boolean>;

@@ -1904,6 +1904,14 @@ export interface NamingSubsprite {
 
 const _spriteSubsprites = new Map<number, { childOamIndices: number[]; subsprites: NamingSubsprite[] }>();
 
+// 1:1 décomp `sOamDimensions[3][4].width` (sprite.c:245-268) — largeur px par
+// (shape, size), pour le mirror hFlip des subsprites (AddSubspritesToOamBuffer).
+const _SUB_W: ReadonlyArray<ReadonlyArray<number>> = [
+  [8, 16, 32, 64],   // square
+  [16, 32, 32, 64],  // horizontal rectangle
+  [8, 8, 16, 32],    // vertical rectangle
+];
+
 export function SetSubspriteTables(spriteId: number, subspriteTable: ReadonlyArray<NamingSubsprite>): void {
   const r = rt();
   const sprite = r.gSprites.get(spriteId);
@@ -1971,17 +1979,38 @@ export function syncSubspriteOam(): void {
     const sprite = r.gSprites.get(spriteId);
     if (!sprite || !sprite.inUse) continue;
     const primaryOam = r.gba.oam[sprite.oamIndex];
+    // 1:1 décomp `AddSubspritesToOamBuffer` (sprite.c:1712-1735) : hFlip lu sur le
+    // sprite parent (= oam.matrixNum bit 3) → chaque pièce est MIRROIRÉE (flipH) et
+    // repositionnée x = base - (sub.x + width) (l'assemblage entier est symétrisé).
+    // Additif : tous les sprites à subsprites existants ont hFlip=false (inchangés).
+    const _parentHFlip = !!(sprite as { hFlip?: boolean }).hFlip;
     for (let i = 0; i < info.subsprites.length; i++) {
       const oam = r.gba.oam[info.childOamIndices[i]];
       const sub = info.subsprites[i];
       if (!oam) continue;
       oam.visible = !sprite.invisible;
-      oam.x = sprite.x + sprite.x2 + sub.x;
+      if (_parentHFlip) {
+        const w = _SUB_W[sub.shape & 3]?.[sub.size & 3] ?? 8;
+        oam.x = sprite.x + sprite.x2 - (sub.x + w);
+        oam.flipH = true;
+      } else {
+        oam.x = sprite.x + sprite.x2 + sub.x;
+        oam.flipH = false;
+      }
       oam.y = sprite.y + sprite.y2 + sub.y;
       oam.tileId = (sprite.tileBase ?? 0) + sub.tileOffset;
       oam.paletteBank = primaryOam.paletteBank;
       oam.priority = sub.priority;
+      // 1:1 décomp `AddSubspritesToOamBuffer` (sprite.c) : chaque child OAM hérite de
+      // la subpriority du SPRITE (z-order entre sprites de même priority). Sans ça, le
+      // child OAM gardait la subpriority PÉRIMÉE de son slot OAM précédent → z-order
+      // non-déterministe (barre HP adverse recouverte par sa boîte = sp identiques 255 ;
+      // barre joueur visible par chance avec un sp périmé < boîte). Cf SUBSPRITES_IGNORE_PRIORITY.
+      oam.subpriority = sprite.subpriority;
       oam.paletteMode = primaryOam.paletteMode;
+      // 1:1 décomp `destOam[i] = *oam` : le child hérite du objMode du parent
+      // (= ST_OAM_OBJ_BLEND pendant le fade du party-summary).
+      oam.objMode = primaryOam.objMode;
       // Re-hide primary OAM (defense against syncSpritesToOam reactivating).
       primaryOam.visible = false;
     }
@@ -1998,6 +2027,22 @@ export function clearAllSubspriteTables(): void {
     }
   }
   _spriteSubsprites.clear();
+}
+
+// 1:1 décomp `ResetSpriteData` (sprite.c:294) reset TOUT le système sprite/OAM, y
+// compris les sprites à sous-sprites. Notre `_spriteSubsprites` est un registre à part
+// (hors gSprites) → ResetSpriteData ne le vidait PAS. Conséquence au RESHOW combat
+// (reshow_battle_screen.c case 3 = ResetSpriteData) : une entrée PÉRIMÉE (l'ancienne
+// barre HP) survit ; son spriteId est réutilisé par un nouveau sprite (la box healthbox
+// main) → `syncSubspriteOam` CACHE le primary OAM de la box (l.1992) + rend des pièces
+// enfant bidon (palette/tileBase de la box) → "fond" healthbox cassé/pointillé après
+// switch ou retour de menu. Fix : brancher clearAllSubspriteTables sur ResetSpriteData
+// (lu par decomp-runtime.ts:ResetSpriteData via __spriteResetCallbacks).
+{
+  const _g = globalThis as Record<string, unknown>;
+  const _cbs = (_g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
+  if (!_cbs.includes(clearAllSubspriteTables)) _cbs.push(clearAllSubspriteTables);
+  _g.__spriteResetCallbacks = _cbs;
 }
 
 /** Cleanup d'UN seul sprite à sous-sprites (= 1:1 destroy du healthbar bar entre

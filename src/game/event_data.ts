@@ -81,7 +81,8 @@ export function VarSet(id: number, value: number): boolean {
 
 /** 1:1 décomp `u8 VarGetObjectEventGraphicsId(u8 id)` (event_data.c:191). */
 export function VarGetObjectEventGraphicsId(id: number): number {
-  return VarGet(0x4023 /* VAR_OBJ_GFX_ID_0 */ + id);
+  // AUDIT 2026-06 : était 0x4023 (= VAR_STARTER_MON, vars.h:53) mislabellé.
+  return VarGet(0x4010 /* VAR_OBJ_GFX_ID_0 (vars.h:32) */ + id);
 }
 
 // ─── Flags (1:1 décomp event_data.c:196-233) ────────────────────────────────

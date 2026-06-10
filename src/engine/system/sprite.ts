@@ -1,5 +1,47 @@
 /**
- * src/engine/sprite.ts — port 1:1 STRICT de decomp/src/sprite.c (1759l).
+ * src/engine/sprite.ts — port 1:1 STRICT de decomp/src/sprite.c (1760l).
+ *
+ * ┌─ STATUT (certifié 2026-06-09, user) ────────────────────────────────────┐
+ * │ sprite.c = COUCHE PLATEFORME → RESTE en src/engine/system (règle « couche │
+ * │ matérielle/OAM reste en system », PAS de déplacement vers src/game/). Le  │
+ * │ port est RÉPARTI (pas un seul fichier) et FONCTIONNEL :                   │
+ * │   • CE fichier (system/sprite.ts) : port MANUEL 1:1 — palette tag system, │
+ * │     tile alloc bitmap, OAM matrix alloc/ops, AllocSpriteTiles,            │
+ * │     LoadSpriteSheet(s), CalcCenterToCornerVec, ResetOamRange, LoadOam.    │
+ * │   • decomp-runtime.ts : struct Sprite (= DecompSprite, MODÈLE PLAT, voir  │
+ * │     ci-dessous), gSprites (Map<id,Sprite>), CreateSpriteAt(=CreateSprite- │
+ * │     AtOam)/ResetSprite/ResetAllSprites/UpdateOamCoords/SortSprites/       │
+ * │     BuildSpritePriorities/AddSpritesToOamBuffer(=syncSpritesToOam).       │
+ * │   • decomp-data/auto-engine/src/sprite-engine.ts : EXTRACTION AUTO (bodyC │
+ * │     = C littéral + callsTo) des 102 fns sprite.c — regen via             │
+ * │     scripts/extract-engine-helpers.mjs. (miroir de DONNÉES du C.)         │
+ * │   • sprite-animation.ts : BeginAnim/ContinueAnim/AnimCmd_frame.end.jump.loop               │
+ * │     SetSpriteOamFlipBits/Request+ProcessSpriteCopyRequests.               │
+ * │   • sprite-engine-impl.ts : BeginAffineAnim/ContinueAffineAnim.           │
+ * │   • decomp-bridge.ts : CreateSprite/CreateSpriteAtEnd/DestroySprite/      │
+ * │     StartSpriteAnim/StartSpriteAffineAnim/AllocOamMatrix/FreeOamMatrix.   │
+ * │   • decomp-globals.ts : AnimateSprites/BuildOamBuffer/SpriteCallbackDummy/│
+ * │     SetSubspriteTables/syncSubspriteOam(=AddSubspritesToOamBuffer)/       │
+ * │     clearAllSubspriteTables/InitSpriteAffineAnim.                         │
+ * │                                                                          │
+ * │ MODÈLE PLAT (décision archi, NON négociable) : le sprite N'A PAS de       │
+ * │ sous-objet `.oam` (vs décomp `sprite->oam.x/tileNum/...`). Les champs OAM │
+ * │ sont PLATS sur le sprite + `oamIndex` → `gba.oam[oamIndex]` (= l'équiv.   │
+ * │ web de struct Sprite + oamBuffer → OAM hardware). C'est le standard de    │
+ * │ TOUT le port, Y COMPRIS le miroir certifié (pokeball.ts/battle_anim_mons. │
+ * │ ts : `rt.gSprites.get(id)` + `rt.gba.oam[s.oamIndex]`). Introduire `.oam` │
+ * │ casserait ~300 accès + le miroir déjà validé → EXCLU.                     │
+ * │                                                                          │
+ * │ DETTES (à résorber AU MOMENT des migrations combat, PAS maintenant — on   │
+ * │ ne porte pas de code mort) :                                              │
+ * │   • Le combat garde des DUPLICATAS LOCAUX de fns sprite.c/util.c :        │
+ * │     _StartSpriteAnimIfDifferent, _CreateInvisibleSpriteWithCallback       │
+ * │     (battle-sprite-callbacks.ts) → importer la version canonique lors de  │
+ * │     la migration de battle_interface/controllers.                        │
+ * │   • Les bodyC auto-engine réfèrent gOamLimit/gAffineAnimsDisabled/        │
+ * │     gSpriteCoordOffsetX/Y/gDummyOamData/gDummySpriteTemplate : vérifier   │
+ * │     le chemin d'exécution (auto vs manuel) si un cas combat les exige.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
  *
  * Sections portées (palette+tile+OAM matrix tag system) :
  *   - FreeAllSpritePalettes  (sprite.c:1581-1587)

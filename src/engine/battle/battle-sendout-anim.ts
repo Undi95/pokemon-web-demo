@@ -36,6 +36,12 @@ import {
 import { BeginAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { gSineTable, ST_OAM_AFFINE_DOUBLE } from '../system/decomp-helpers';
 import { loadTileBin, loadGbaPal } from '../gba/png-loader';
+import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../system/sprite-animation';
+import { setActiveBattler } from './state';
+import { DoPokeballSendOutAnimation, POKEBALL_PLAYER_SENDOUT } from '../../game/pokeball';
+// Gate GFX ball (#22) : la sheet/palette ball doivent etre dans assetCache (1 seul instance
+// partage, decomp-globals.ts:153) AVANT le getAsset SYNC de LoadBallGfx, sinon BLOC NOIR.
+import { assetCache } from '../system/decomp-globals';
 
 // Asset Poke Ball 16x16. VRAM via l'ALLOCATEUR 1:1 décomp (`AllocSpriteTiles`) — PLUS
 // d'offset en dur (l'ancien 0x4000 écrasait les tiles du mon joueur ; 0x5800 était un
@@ -494,6 +500,22 @@ async function _ensureTrainerBackAsset(gender: number): Promise<void> {
   }
 }
 
+// 1:1 décomp `gTrainerBackAnimsPtrTable[BACK_PIC_BRENDAN/MAY]` = sBackAnims_Brendan/May
+// (data/trainer_graphics/back_pic_anims.h) : [0]=idle (sAnim_GeneralFrame3 = frame 3),
+// [1]=throw (sAnimCmd_Brendan_1 / May_Steven_1, IDENTIQUES). La décomp est image-based
+// (imageValue = index de frame) ; notre back-pic est SHEET-based (4 frames × 64 tiles dans
+// une seule sheet VRAM) → imageValue = frame × 64 (= la convention prouvée par sBallAnimSequences,
+// ex FRAME(4)/FRAME(8) pour la ball 16×16=4t/frame). Lu par AnimateSprite : oam.tileNum =
+// sheetTileStart + imageValue (sprite-animation.ts). PlayerHandleIntroTrainerBallThrow lance
+// StartSpriteAnim(tr, 1) = le throw (frame 0→1→2→0→3).
+const _TBACK_TPF = 64;   // tiles par frame (64×64)
+const _sBackAnimIdle: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(3 * _TBACK_TPF, 0), ANIMCMD_END];
+const _sBackAnimThrow: ReadonlyArray<AnimCmd> = [
+  ANIMCMD_FRAME(0 * _TBACK_TPF, 24), ANIMCMD_FRAME(1 * _TBACK_TPF, 9), ANIMCMD_FRAME(2 * _TBACK_TPF, 24),
+  ANIMCMD_FRAME(0 * _TBACK_TPF, 9), ANIMCMD_FRAME(3 * _TBACK_TPF, 50), ANIMCMD_END,
+];
+const _sBackAnimsTrainer: ReadonlyArray<ReadonlyArray<AnimCmd>> = [_sBackAnimIdle, _sBackAnimThrow];
+
 /** Charge + affiche le sprite de dos du dresseur (frame 0 = idle) à (x,y).
  *  1:1 décomp : montré pendant l'intro (scroll), avant le lancer. */
 export async function showTrainerBackSprite(gender: number, x: number, y: number): Promise<number> {
@@ -516,7 +538,16 @@ export async function showTrainerBackSprite(gender: number, x: number, y: number
   // 1:1 PlayerHandleDrawTrainerPic : démarre off-screen DROITE (x2 = +DISPLAY_WIDTH),
   // le scroll (tickIntroSlideIn) le glisse vers x2=0 (-2/frame, SpriteCB_TrainerSlideIn).
   const _ts = rt.gSprites.get(_trainerSpriteId);
-  if (_ts) _ts.x2 = DISPLAY_WIDTH;
+  if (_ts) {
+    _ts.x2 = DISPLAY_WIDTH;
+    // 1:1 SetMultiuseSpriteTemplateToTrainerBack : attache la table d'anims back-pic. usingSheet +
+    // sheetTileStart pour que AnimateSprite résolve oam.tileId = sheetTileStart + imageValue (anim 0
+    // idle = frame 3 ; anim 1 = throw, lancé par StartSpriteAnim(tr,1) au lancer). Sans sheetTileStart
+    // l'anim mettrait tileId = 0 + imageValue (cf root cause ball "cubique").
+    _ts.usingSheet = true;
+    _ts.sheetTileStart = _trainerTileStart;
+    (_ts as { anims: ReadonlyArray<ReadonlyArray<AnimCmd>> }).anims = _sBackAnimsTrainer;
+  }
   return _trainerSpriteId;
 }
 
@@ -742,8 +773,15 @@ export function startTrainerThrow(opts: BallSendOpts): void {
   const rt = getRuntime();
   const t = rt?.gSprites.get(_trainerSpriteId);
   _tt = { frame: 0, slideStartX: t ? t.x : 0, ballOpts: opts, ballStarted: false };
+  // GFX ball 1:1 (DECOMP-TS-BRIDGE §4 + pokeball.c:1313) : gBallGfx_Poke/gBallPal_Poke doivent
+  // etre dans assetCache AVANT le getAsset SYNC de LoadBallGfx (chain #22). Sinon
+  // GetSpriteTileStartByTag=0xFFFF -> tileId 0 + palette noire = BLOC NOIR (cause racine PROUVEE
+  // runtime __ballDiag : matrice ball saine, tileId=0, palette bank noire). (Re)garantit le
+  // preload (async, idempotent). Le gate de tickTrainerThrow attend qu'il soit pret.
+  void import('../boot/intro-asset-loader').then((m) => m.ensureBallGfxLoaded()).catch(() => {});
   // Fallback : pas de sprite dresseur (asset échoué) → lance la ball directement.
-  if (!t) { void startSendOut(opts); _tt.ballStarted = true; }
+  // Fallback (asset dresseur echoue) : lance la ball directement via le chain (#22).
+  if (!t) { setActiveBattler(opts.monPalNum); DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT); _tt.ballStarted = true; }
 }
 
 /** Tick per-frame (gated ~60fps). No-op si pas actif. */
@@ -766,10 +804,21 @@ export function tickTrainerThrow(): void {
     const _p = Math.min(1, _tt.frame / TRAINER_THROW_SLIDE_FRAMES);
     t.x = Math.round(_tt.slideStartX + (TRAINER_THROW_SLIDE_DEST_X - _tt.slideStartX) * _p);
   }
-  // Ball lancée à la frame 31 (Task_StartSendOutAnim) → le mon émerge.
+  // Ball lancée à la frame 31 (Task_StartSendOutAnim) → le mon émerge. GATE GFX 1:1 : ne lancer le
+  // chain (#22) QUE si la sheet+palette ball sont dans assetCache (-> LoadBallGfx les charge SYNC ->
+  // ball coloree) ; sinon LoadBallGfx -> getAsset null -> tileId 0 + palette noire = BLOC NOIR (cause
+  // racine prouvee). Le preload async (startTrainerThrow) resout en qq frames ; le slide dure 50f ->
+  // la fenetre [31..49] absorbe la latence. Filet a 49f pour ne JAMAIS bloquer l'emergence du mon.
   if (!_tt.ballStarted && _tt.frame >= TRAINER_THROW_BALL_FRAME) {
-    void startSendOut(_tt.ballOpts);
-    _tt.ballStarted = true;
+    const gfxReady = assetCache.has('gBallGfx_Poke') && assetCache.has('gBallPal_Poke');
+    if (gfxReady || _tt.frame >= TRAINER_THROW_SLIDE_FRAMES - 1) {
+      // 1:1 #22 : la ball part par le VRAI chain (DoPokeballSendOutAnimation, pokeball.ts).
+      // DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT) (player.c:2224). Le mon est deja
+      // cree (invisible). monPalNum = battler -> setActiveBattler avant (lu par le chain).
+      setActiveBattler(_tt.ballOpts.monPalNum);
+      DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT);
+      _tt.ballStarted = true;
+    }
   }
   // Free dresseur à la fin du slide (50f) — SpriteCB_FreePlayerSpriteLoadMonSprite.
   if (_tt.frame >= TRAINER_THROW_SLIDE_FRAMES) {

@@ -57,11 +57,15 @@ function _RecordedBattle_SaveParties(): void { /* Dette R3 */ }
 /** 1:1 décomp `InitLinkBtlControllers()`. */
 function _InitLinkBtlControllers(): void { /* Dette R3 : link battle offline */ }
 
-/** 1:1 décomp `BufferBattlePartyCurrentOrderBySide(battler, side)`.
- *  Buffer l'ordre d'affichage de la party par side. Notre port ipc = noop
- *  (= ordering display, non requis pour la logique). Déféré. */
-function _BufferBattlePartyCurrentOrderBySide(_battler: number, _side: number): void {
-  // Dette R3 : party display order buffering (battle_controllers.c:656+).
+/** 1:1 décomp `BufferBattlePartyCurrentOrderBySide(battler, side)`
+ *  (party_menu.c:5918) : init battlerPartyOrders[battler] = nibbles
+ *  [mon ACTIF, puis les autres] — la base de l'ordre d'affichage du party menu
+ *  COMBAT. Impl dans le miroir battle_main (lazy anti-cycle). */
+function _BufferBattlePartyCurrentOrderBySide(battler: number, flankId: number): void {
+  const m = (globalThis as Record<string, unknown>).__battlePartyOrder as {
+    BufferBattlePartyCurrentOrderBySide?: (b: number, f: number) => void;
+  } | undefined;
+  m?.BufferBattlePartyCurrentOrderBySide?.(battler, flankId);
 }
 
 // ─── InitSinglePlayerBtlControllers (battle_controllers.c:113-235) ─────────

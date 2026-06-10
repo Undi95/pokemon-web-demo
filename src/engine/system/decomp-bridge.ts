@@ -3005,6 +3005,12 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
         s.affineAnimsTableName = (typeof template.affineAnims === 'string') ? template.affineAnims : null;
         s.usingSheet = true;
         s.tileBase = tileStart === 0xFFFF ? 0 : tileStart;
+        // 1:1 decomp `sprite->sheetTileStart = GetSpriteTileStartByTag(tileTag)` (sprite.c CreateSpriteAt) :
+        // le systeme d'anim (sprite-animation.ts AnimateSprite) recalcule chaque frame
+        // `oam.tileNum = sheetTileStart + frame.imageValue`. Sans ce set, sheetTileStart restait 0
+        // -> des que l'anim de la ball tickait, oam.tileId = 0 + 0 = 0 -> rendu de la tile 0 (garbage)
+        // en rotation = ball "cubique" (root cause prouvee runtime : tileBase=657 OK mais sheetTileStart=0).
+        s.sheetTileStart = tileStart === 0xFFFF ? 0 : tileStart;
         if (affineMode !== 0 && matrixNum > 0) {
           s.matrixNum = matrixNum;
           // Demarre l'affine anim a l'index 0 (statique par defaut) ; l'appelant

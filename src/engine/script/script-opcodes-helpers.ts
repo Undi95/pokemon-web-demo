@@ -69,6 +69,14 @@ export function parseValue(arg: string | undefined): number {
   // 1:1 décomp constants : MALE = 0, FEMALE = 1 (= include/constants/global.h).
   if (arg === 'MALE') return MALE_GENDER;
   if (arg === 'FEMALE') return FEMALE_GENDER;
+  // 1:1 décomp asm/macros/event.inc:1932-1933 : YES = 1, NO = 0 (convention FIELD
+  // yesnobox, stocke dans VAR_RESULT). ⚠️ FIX inversion : YES/NO ne sont PAS dans les
+  // namespaces include/constants de decomp-constants.ts -> resolveDecompConstant renvoie
+  // undefined -> fallback `return 0` (l.90) -> `goto_if_eq VAR_RESULT, YES` matchait quand
+  // Result=0 (NON) -> OUI/NON inverses (tuto Birch : OUI repete, NON avance). TRUE/FALSE
+  // ajoutes par coherence (global.h). Corrobore src/script_menu.c:241 (case 0 -> Result=1).
+  if (arg === 'YES' || arg === 'TRUE') return 1;
+  if (arg === 'NO' || arg === 'FALSE') return 0;
   // 1:1 décomp LOCALID_X : look up index dans les templates de la map courante.
   // LOCALID_PLAYER = 255, LOCALID_NONE = 0, LOCALID_CAMERA = 127.
   if (arg === 'LOCALID_PLAYER') return 255;

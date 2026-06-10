@@ -569,10 +569,23 @@ export async function LoadBattleMenuWindowGfx(): Promise<void> {
 export async function loadBattleTextboxAndBackground1to1(
   env: number = BATTLE_ENVIRONMENT_GRASS,
 ): Promise<void> {
-  await loadBattleTextbox();
-  await LoadBattleMenuWindowGfx();
-  await drawMainBattleBackground(env);
+  _bgCopiesInFlight++;
+  try {
+    await loadBattleTextbox();
+    await LoadBattleMenuWindowGfx();
+    await drawMainBattleBackground(env);
+  } finally {
+    _bgCopiesInFlight--;
+  }
 }
+
+// 1:1 décomp `IsDma3ManagerBusyWithBgCopy()` (dma3_manager.c) : TRUE tant que des
+// copies BG sont en attente. Plateforme : nos « copies » = les chargements ASYNC
+// tiles/tilemap/palettes du boot (fire-and-forget de CB2_InitBattleInternal) → la
+// case 0 de CB2_HandleStartBattle (ShowBg ×4 + FillAroundBattleWindows) doit
+// attendre, sinon le fill est écrasé par le tileset qui finit de se charger.
+let _bgCopiesInFlight = 0;
+export function IsDma3ManagerBusyWithBgCopy(): boolean { return _bgCopiesInFlight > 0; }
 
 /** 1:1 décomp portion vidéo de `CB2_InitBattleInternal` (battle_main.c:619+) :
  *  `CpuFill32(0, VRAM, VRAM_SIZE)` → `InitBattleBgsVideo` (=

@@ -43,13 +43,15 @@ import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/syste
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, AnimateBallOpenParticles, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
 import { ItemIdToBallId } from '../engine/battle/battle-anim-throw';
-import { getBattlerMonSpriteId } from '../engine/battle/battle-controller-opponent';
+import { getBattlerMonSpriteId } from './battle_controller_opponent';
 import { SpriteCB_PlayerMonFromBall, SpriteCB_OpponentMonFromBall } from '../engine/battle/battle-sprite-callbacks';
 import {
   GetBattlerSpriteCoord, InitAnimArcTranslation, AnimTranslateLinear, TranslateAnimHorizontalArc,
 } from './battle_anim_mons';
 import { Sin } from './trig';
 import { isBallAnimActive, setBallAnimActive, setWaitForCry, isIntroAnimActive } from '../engine/battle/battle-sprites-data';
+import { reverseDecompConstant } from '../engine/system/decomp-constants';
+import { BeginAffineAnim } from '../engine/decomp-impls/sprite-engine-impl';
 import {
   GFX_TAG_POKE_BALL, GFX_TAG_GREAT_BALL, GFX_TAG_SAFARI_BALL, GFX_TAG_ULTRA_BALL,
   GFX_TAG_MASTER_BALL, GFX_TAG_NET_BALL, GFX_TAG_DIVE_BALL, GFX_TAG_NEST_BALL,
@@ -282,6 +284,11 @@ function Task_DoPokeballSendOutAnim(task: DecompTask, rt: DecompRuntime): void {
   const ballSpriteId = CreateSprite(gBallSpriteTemplates[ballId], 32, 80, 29);
   const ball = rt.gSprites.get(ballSpriteId);
   if (!ball) { rt.DestroyTask(taskId); return; }
+  // 1:1 ad-hoc PROUVE (battle-sendout-anim.ts:232) : la ball est ST_OAM_AFFINE_DOUBLE — applique
+  // la frame 0 de l'affine (matrice identite) IMMEDIATEMENT, sinon sa zone de rendu 2x mappe une
+  // matrice non calculee = garbage/NOIR avant le 1er tickAllAffineAnims. CreateSprite #20 a deja
+  // fait StartSpriteAffineAnim(0) + alloue la matrice ; BeginAffineAnim pose la frame.
+  BeginAffineAnim(ball, rt);
   ball.data[0] = 0x80;
   ball.data[1] = 0;
   ball.data[7] = throwCaseId;
@@ -540,12 +547,17 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
         task.data[15] = wantedCry + 1;
       break;
     }
-    case 1:
-      // 1:1 PlayCry_ByMode(species, pan, NORMAL/WEAK) — DIFFERE (SE).
+    case 1: {
+      // 1:1 PlayCry_ByMode(species, pan, NORMAL/WEAK). On garde le CRI du mon via playCry (mecanisme
+      // prouve = ce que l'ad-hoc jouait) pour ne pas regresser en silence ; SE/BGM restent differes.
+      // Timing 1:1 : apres affineAnimEnded (case 0 -> state 1 = fin de l'emergence).
+      const nm = reverseDecompConstant(task.data[0] /* tCryTaskSpecies */, 'SPECIES_');
+      if (nm) void import('../engine/system/music').then(({ playCry }) => playCry(nm)).catch(() => {});
       setWaitForCry(battler, false);
       _cryTaskMon.delete(taskId);
       rt.DestroyTask(taskId);
       break;
+    }
     case 2:
       // 1:1 StopCryAndClearCrySongs() — DIFFERE.
       task.data[10] = 3;            // tCryTaskFrames

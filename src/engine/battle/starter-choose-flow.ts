@@ -63,7 +63,9 @@ import { setFieldCameraSuspended } from '../field/field-camera';
 import { setObjectEventsSuspended } from '../field/object-events';
 import { getString, initStringsFromDecomp } from '../ui/gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from '../system/data-tables';
-import { startBirchTutorialBattle, type BattleFlow } from './battle-flow';
+import { type BattleFlow } from './battle-flow';
+// Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
+import { StartFirstBattle } from './battle-setup-helpers';
 import { registerAffineAnim, registerAffineAnimTable } from '../decomp-impls/sprite-affine-extras';
 import { StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import {
@@ -705,8 +707,13 @@ function Task_HandleConfirmStarterInput(taskId: number): void {
     cleanupScene();
 
     // 1:1 décomp `CB2_StartFirstBattle` (battle_setup.c:930) : chained battle.
-    _firstBattleFlow = startBirchTutorialBattle();
+    // Voie L : boote la VRAIE boucle decomp (swap CB2). _firstBattleFlow reste null ->
+    // le tick-loop voie V (l.520) no-op ; on marque la flow ChooseStarter terminee
+    // (_done) : son role - drive starter + chain battle - est fini. Le combat + le retour
+    // OW (CB2_EndFirstBattle -> ReturnToFieldContinueScript) sont pilotes par la chaine CB2.
+    StartFirstBattle();
     _firstBattleStarted = true;
+    _done = true;
   } else if (choice === 1 || choice === -1 /* MENU_B_PRESSED */) {
     // NO : 1:1 décomp C:551-561 :
     //   PlaySE(SE_SELECT);

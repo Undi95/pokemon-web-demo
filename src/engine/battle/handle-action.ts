@@ -72,6 +72,18 @@ import {
   RecordAbilityBattle, ClearFuryCutterDestinyBondGrudge,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
+// 1:1 décomp battle_util.c:1942-1945 — HandleFaintedMonActions case 6 applique les
+// effets de switch-in (Intimidate/Trace/Forecast + items). Import direct (= pas de
+// cycle : ability/item-battle-effects n'importent pas handle-action) ; même pattern
+// que end-turn-effects.ts.
+import {
+  AbilityBattleEffects,
+  ABILITYEFFECT_INTIMIDATE1, ABILITYEFFECT_TRACE, ABILITYEFFECT_FORECAST,
+  consumeAbilityWantedScript,
+} from './ability-battle-effects';
+import {
+  ItemBattleEffects, ITEMEFFECT_NORMAL, consumeItemWantedScript,
+} from './item-battle-effects';
 import {
   getMoveEffectScriptOffset, getBattleScriptOffset,
   stepBattleScriptCommand, gBattleScriptContext,
@@ -617,11 +629,41 @@ export function HandleFaintedMonActions(): boolean {
         else gBattleStruct.faintedActionsState = 4;
         break;
       case 6:
-        // 1:1 décomp ll.1942-1947 : Intimidate/Trace/ITEMEFFECT_NORMAL(TRUE)/Forecast
-        // on switch-in. Dette ponctuelle : AbilityBattleEffects/ItemBattleEffects de
-        // switch-in différés (pas d'effet pour un KO wild simple ; les helpers
-        // existent dans wire-bytecode-bridge à brancher quand un cas le requiert).
-        gBattleStruct.faintedActionsState = 7;
+        // 1:1 décomp battle_util.c:1942-1947 :
+        //   if (AbilityBattleEffects(ABILITYEFFECT_INTIMIDATE1, 0,0,0,0)
+        //    || AbilityBattleEffects(ABILITYEFFECT_TRACE, 0,0,0,0)
+        //    || ItemBattleEffects(ITEMEFFECT_NORMAL, 0, TRUE)
+        //    || AbilityBattleEffects(ABILITYEFFECT_FORECAST, 0,0,0,0))
+        //       return TRUE;          // un script switch-in a été mis en file
+        //   gBattleStruct->faintedActionsState++;   // → état 7
+        //
+        // Dans la décomp, AbilityBattleEffects/ItemBattleEffects mettent le script
+        // en file (BattleScriptPushCursorAndCallback) et retournent l'effet != 0 ;
+        // ici notre port délègue l'exécution au caller : on consomme le label voulu
+        // (consume*WantedScript) puis on le lance via _BattleScriptExecuteHFM (=
+        // l'équivalent du BattleScriptExecute interne). Le `return true` reproduit
+        // le `return TRUE` (= le caller re-appelle au frame suivant).
+        if (AbilityBattleEffects(ABILITYEFFECT_INTIMIDATE1, 0, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) _BattleScriptExecuteHFM(label);
+          return true;
+        }
+        if (AbilityBattleEffects(ABILITYEFFECT_TRACE, 0, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) _BattleScriptExecuteHFM(label);
+          return true;
+        }
+        if (ItemBattleEffects(ITEMEFFECT_NORMAL, 0, true) !== 0) {
+          const label = consumeItemWantedScript();
+          if (label) _BattleScriptExecuteHFM(label);
+          return true;
+        }
+        if (AbilityBattleEffects(ABILITYEFFECT_FORECAST, 0, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) _BattleScriptExecuteHFM(label);
+          return true;
+        }
+        gBattleStruct.faintedActionsState++;
         break;
       case _FAINTED_ACTIONS_MAX_CASE:
         break;

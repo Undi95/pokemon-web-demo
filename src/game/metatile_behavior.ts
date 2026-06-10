@@ -843,14 +843,15 @@ export function MetatileBehavior_IsQuestionnaire(mb: number): boolean { return m
 export function MetatileBehavior_IsTrainerHillTimer(mb: number): boolean { return mb === MB_TRAINER_HILL_TIMER; }
 export function MetatileBehavior_IsCableBoxResults1(mb: number): boolean { return mb === MB_CABLE_BOX_RESULTS_1; }
 export function MetatileBehavior_IsCableBoxResults2(mb: number, direction: number): boolean {
-  // 1:1 décomp `MetatileBehavior_IsCableBoxResults2` (metatile_behavior.c:1362-1370).
-  // direction != DIR_EAST (=4) AND tile = MB_CABLE_BOX_RESULTS_2.
-  return direction !== 4 && mb === MB_CABLE_BOX_RESULTS_2;
+  // 1:1 décomp `MetatileBehavior_IsCableBoxResults2` (metatile_behavior.c:1362-1370) :
+  // `if (playerDir != CONNECTION_NORTH) return FALSE` — exige face NORD (=2).
+  // AUDIT 2026-06 : était `direction !== 4` (mauvaise lecture, vrai pour 4 directions).
+  return direction === 2 && mb === MB_CABLE_BOX_RESULTS_2;
 }
 export function MetatileBehavior_IsPlayerFacingWirelessBoxResults(mb: number, direction: number): boolean {
-  // 1:1 décomp `MetatileBehavior_IsPlayerFacingWirelessBoxResults` (metatile_behavior.c:1352-1360).
-  // direction != DIR_EAST AND tile = MB_WIRELESS_BOX_RESULTS.
-  return direction !== 4 && mb === MB_WIRELESS_BOX_RESULTS;
+  // 1:1 décomp (metatile_behavior.c:1352-1360) : même gate `!= CONNECTION_NORTH` → face NORD (=2).
+  // AUDIT 2026-06 : même correction que IsCableBoxResults2.
+  return direction === 2 && mb === MB_WIRELESS_BOX_RESULTS;
 }
 export function MetatileBehavior_IsRegionMap(mb: number): boolean { return mb === MB_REGION_MAP; }
 export function MetatileBehavior_IsClosedSootopolisDoor(mb: number): boolean {
