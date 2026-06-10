@@ -1476,9 +1476,61 @@ function _AddBagItem_battle(itemId: number, count: number): void {
 }
 
 /** 1:1 décomp `PlayerHandleYesNoBox()`. */
+/** 1:1 décomp `PlayerHandleYesNoBox()` (battle_controller_player.c) — goal T5 :
+ *  dessine la box yes/no + curseur à 1 (NON par défaut 1:1) + installe
+ *  PlayerHandleYesNoInput. (gMultiUsePlayerCursor = 1 1:1.) */
 function PlayerHandleYesNoBox(): void {
-  // 1:1 décomp : yes/no input loop. Auto-confirme YES pour now.
-  PlayerBufferExecCompleted();
+  if ((gActiveBattler & 1) === 0 /* B_SIDE_PLAYER */) {
+    const bc = (globalThis as Record<string, unknown>).__battleControllers as {
+      HandleBattleWindow?: (x1: number, y1: number, x2: number, y2: number, flags: number) => void;
+      BattlePutTextOnWindow?: (text: string, windowId: number) => void;
+      BattleCreateYesNoCursorAt?: (pos: number) => void;
+    } | undefined;
+    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 0);
+    bc?.BattlePutTextOnWindow?.('OUI' + String.fromCharCode(10) + 'NON', 12 /* B_WIN_YESNO */);
+    setMultiUsePlayerCursor(1);
+    bc?.BattleCreateYesNoCursorAt?.(1);
+    gBattlerControllerFuncs[gActiveBattler] = PlayerHandleYesNoInput;
+  } else {
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `PlayerHandleYesNoInput()` : UP/DOWN bougent le curseur,
+ *  A → emit B_ACTION_UNK_14 (NON, 14) ou B_ACTION_NOTHING_FAINTED (OUI, 13),
+ *  B → clear + complete sans emit. */
+function PlayerHandleYesNoInput(): void {
+  const bc = (globalThis as Record<string, unknown>).__battleControllers as {
+    HandleBattleWindow?: (x1: number, y1: number, x2: number, y2: number, flags: number) => void;
+    BattleCreateYesNoCursorAt?: (pos: number) => void;
+    BattleDestroyYesNoCursorAt?: (pos: number) => void;
+  } | undefined;
+  if (JOY_NEW(DPAD_UP) && gMultiUsePlayerCursor !== 0) {
+    PlaySE(SE_SELECT);
+    bc?.BattleDestroyYesNoCursorAt?.(gMultiUsePlayerCursor);
+    setMultiUsePlayerCursor(0);
+    bc?.BattleCreateYesNoCursorAt?.(0);
+  }
+  if (JOY_NEW(DPAD_DOWN) && gMultiUsePlayerCursor === 0) {
+    PlaySE(SE_SELECT);
+    bc?.BattleDestroyYesNoCursorAt?.(gMultiUsePlayerCursor);
+    setMultiUsePlayerCursor(1);
+    bc?.BattleCreateYesNoCursorAt?.(1);
+  }
+  if (JOY_NEW(A_BUTTON)) {
+    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 0x80 /* WINDOW_CLEAR */);
+    PlaySE(SE_SELECT);
+    if (gMultiUsePlayerCursor !== 0) {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, 14 /* B_ACTION_UNK_14 */, 0);
+    } else {
+      BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, 13 /* B_ACTION_NOTHING_FAINTED */, 0);
+    }
+    PlayerBufferExecCompleted();
+  } else if (JOY_NEW(B_BUTTON)) {
+    bc?.HandleBattleWindow?.(0x18, 8, 0x1D, 0x0D, 0x80 /* WINDOW_CLEAR */);
+    PlaySE(SE_SELECT);
+    PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `PlayerHandleChooseMove()` (battle_controller_player.c:2629-2641).

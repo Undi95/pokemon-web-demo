@@ -1042,4 +1042,8 @@ export { gBattleScripting };
   getLastPrintStringMsgData,
   BattlePutTextOnWindowBytes,
   BattlePutTextOnWindow,
+  // T5 : consommes par PlayerHandleYesNoBox/Input (acces lazy anti-cycle).
+  HandleBattleWindow,
+  BattleCreateYesNoCursorAt,
+  BattleDestroyYesNoCursorAt,
 };
