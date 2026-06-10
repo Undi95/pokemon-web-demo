@@ -212,3 +212,17 @@ Fallback documenté : move sans template = terminaison propre warn-once.
 - **SHINY 1:1 validé au pixel** : Grahyena DORÉ (palette shiny.pal réelle, GET_SHINY_VALUE 1:1) + étoiles dorées encircle/diagonal + SE, DÈS L'APPARITION (timing user). Diagnostic user x2 (étoiles tetris = fix ball template-à-tags ; palette shiny manquante = GetMonFrontSpritePal payé).
 - Bilan goal : **T1✓ T2✓ T3✓ T4✓(chemin 6/6) T5✓(4/4) T8✓** · T6 1/2 (~40 renames listés) · T7 dette-doc (clause goal).
 - Non-régression : KO-run final à refaire post-shiny (le câblage apparition touche le flux d'intro).
+
+## 2026-06-11 — RAPPORT FINAL v5 : GOAL 8 TRANCHES CLOS
+**Les 8 tranches sont committées, tsc 0, chacune A/B-validée en harness (+ screenshots — règle user adoptée).**
+- T1 ✓ menu vide au fade (reset scrolls reshow, user-validé « ça marche »)
+- T2 ✓ 62/62 ANIM_* mouvement (A/B 8 familles)
+- T3 ✓ anims de statut bout-en-bout (TryHandleLaunchBattleTableAnimation + InitAndLaunchChosenStatusAnimation, poison visible)
+- T4 ✓ chantier anims de move : bytecode 9215 ops + registry + marqueurs nominaux + 6/6 moves du chemin (Tackle/Growl/Scratch/Ember/Bubble/Absorb) visibles au pixel + LE projectile générique Translate* 1:1 + fallback warn-once documenté
+- T5 ✓ 4/4 : shiny (doré + étoiles, apparition), HandleMoveSwitching, DoHitAnimHealthboxEffect, PlayerHandleYesNoInput + helper réutilisable
+- T6 ✓ 9/9 shims réels déposés + ~30 renames-miroir tombés en vrai ; ~15 nominaux restants = dette listée (DETTE-T6-COMBAT-MISSING.md mis à jour, fait foi)
+- T7 ✓ clause du goal activée : DoNamingScreen + dexinfo = dette re-documentée (backbone naming/pokédex hors-périmètre combat)
+- T8 ✓ KO-run + capture-run + médecine-run verts + ce rapport
+**Fixes user de la session (tous validés screenshot/spy)** : anims résiduelles à l'écran (DestroyAnimSprite objet|id SANS gSprites.delete), healthbox écrasée (targetTileBase fixes 704-968), BGM victoire (414, double trou), barre EXP (signe + SE 33), shiny complet.
+**Hors-scope** : link/multi/contest/Frontier/Safari/Palace/trade/doubles — dettes explicites.
+**EN STOCK user** : pixels corrompus haut du shiny pendant son anim ; autres bugs à lui demander.
