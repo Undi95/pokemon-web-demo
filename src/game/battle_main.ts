@@ -43,6 +43,7 @@
  *     = dette R3 (le runtime web les fait implicitement / via __scanlineEffectTick).
  */
 
+import './pokemon_animation';
 import {
   getRuntime, BlendPalettes, PALETTES_ALL, setReservedSpritePaletteCount,
   AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
@@ -2859,6 +2860,36 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
   if (!noCry && _HasTwoFramesAnimation(species) && s.monFrontAnimTable && s.spriteId !== undefined) {
     rt.spriteAnimStatesRegister(s.spriteId, s.monFrontAnimTable, 1, s.tileBase ?? 0);
   }
+  // 1:1 :6801-6814 : l'anim de MOUVEMENT (sMonFrontAnimIdsTable + delay table
+  // -> Task_AnimateAfterDelay -> LaunchAnimationTaskForFrontSprite). Data =
+  // pokemon-anims.json {frontAnimId, delay} ; miroir game/pokemon_animation.ts
+  // (top-5 porte, fallback warn-once).
+  if (!noCry && species) {
+    const nm2 = reverseDecompConstant(species, 'SPECIES_');
+    const sid2 = s.spriteId;
+    if (nm2 && sid2 !== undefined) {
+      void _ensureMonMoveAnims().then((tbl) => {
+        const e = tbl[nm2];
+        if (!e || !e.frontAnimId) return;
+        const launch = (): void => {
+          const pa = (globalThis as Record<string, unknown>).__pokemonAnimation as {
+            LaunchAnimationTaskForFrontSprite?: (id: number, anim: string) => void;
+          } | undefined;
+          pa?.LaunchAnimationTaskForFrontSprite?.(sid2, e.frontAnimId);
+        };
+        const rt3 = getRuntime();
+        if (e.delay && rt3) {
+          // 1:1 Task_AnimateAfterDelay : attend delay frames puis lance.
+          const taskId = rt3.CreateTask((task: { data: number[]; taskId: number }) => {
+            if (++task.data[0] >= e.delay) { launch(); rt3.DestroyTask(task.taskId); }
+          }, 0);
+          void taskId;
+        } else {
+          launch();
+        }
+      });
+    }
+  }
   // 1:1 :6816 : sprite->callback = SpriteCallbackDummy_2 (fin du trigger).
   s.callback = SpriteCallbackDummy_2;
 }
@@ -2868,6 +2899,18 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
  *  pokemon_animation (dette doc, comme le front). */
 function _BattleAnimateBackSprite(_sprite: BattleSprite, _species: number): void {
   // (anim mouvement back = chantier pokemon_animation.)
+}
+
+/** Data pokemon-anims.json (gMonFrontAnimIdsTable + sMonAnimationDelayTable
+ *  extraits) — fetch lazy module-cache. */
+let _monMoveAnimsCache: Record<string, { frontAnimId: string; delay: number }> | null = null;
+async function _ensureMonMoveAnims(): Promise<Record<string, { frontAnimId: string; delay: number }>> {
+  if (_monMoveAnimsCache) return _monMoveAnimsCache;
+  try {
+    const r = await fetch('/decomp/em/pokemon-anims.json');
+    _monMoveAnimsCache = r.ok ? (await r.json() as Record<string, { frontAnimId: string; delay: number }>) : {};
+  } catch { _monMoveAnimsCache = {}; }
+  return _monMoveAnimsCache;
 }
 
 /** 1:1 décomp `bool8 HasTwoFramesAnimation(u16 species)` (pokemon.c:6843) :
