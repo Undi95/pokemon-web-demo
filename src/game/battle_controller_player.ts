@@ -54,6 +54,7 @@ import {
 import {
   gBattleBufferA, gBattleBufferB, B_COMM_TO_ENGINE,
   PrepareBufferDataTransfer, BtlController_EmitTwoReturnValues,
+  BtlController_EmitOneReturnValue,
   gUnusedControllerStruct,
 } from '../engine/battle/battle-controllers-ipc';
 import {
@@ -1514,22 +1515,34 @@ function _BeginNormalPaletteFade(_palettes: number, _delay: number, _startY: num
 }
 
 function _OpenBagAndChooseItem(): void {
-  // 1:1 décomp : attend la fin du fade-to-black (lancé par PlayerHandleChooseItem)
-  // avant d'« ouvrir » le bag. Bag-in-battle = Dette R3 (sous-écran UI à porter) →
-  // headless : on ANNULE proprement (émet itemId 0 → l'action selection voit itemValue
-  // 0 et re-affiche le menu) PUIS fade BACK vers normal (sinon écran NOIR). MÊME pattern
-  // que _OpenPartyMenuToChooseMon (switch loop #9). Empêche le SOFT-LOCK de SAC.
-  const _rt = (globalThis as { __rt?: { gPaletteFade?: { active?: boolean } } }).__rt;
-  if (_rt?.gPaletteFade?.active) return;
-  // EmitOneReturnValue(0) : bufferB[1..2]=0 → itemValue 0 = annulation (cf. décomp
-  // bag cancel B-button). L'action selection (STATE_WAIT_ACTION_CASE_CHOSEN) lit
-  // bufferB[1..2], pas l'opcode bufferB[0].
-  const CONTROLLER_ONERETURNVALUE = 0x23;
-  const buf = new Uint8Array(4);
-  buf[0] = CONTROLLER_ONERETURNVALUE;
-  PrepareBufferDataTransfer(B_COMM_TO_ENGINE, buf, 4);
-  // Fade back du noir vers normal (équivalent fermeture du bag).
-  _BeginNormalPaletteFade(_PALETTES_ALL, 0, 0x10, 0, _RGB_BLACK);
+  // 1:1 decomp OpenBagAndChooseItem (battle_controller_player.c:2640s) : attend
+  // la fin du fade-to-black (PlayerHandleChooseItem), installe
+  // CompleteWhenChoseItem, FreeAllWindowBuffers (plateforme : le swap CB2 du
+  // bag s'en charge), CB2_BagMenuFromBattle -> chez nous l'UI reelle
+  // bag-screen en mode BATTLE avec le reshow decomp en retour (MEME pattern
+  // que _OpenPartyMenuToChooseMon, valide switch).
+  if (getRuntime()?.gPaletteFade?.active) return;
+  gBattlerControllerFuncs[gActiveBattler] = _CompleteWhenChoseItem;
+  (globalThis as Record<string, unknown>).__battleBagResultItemId = 0;
+  (globalThis as Record<string, unknown>).__battleReshowDone = false;
+  void Promise.all([
+    import('../engine/bag/bag-screen'),
+    import('../engine/battle/reshow-battle-screen'),
+  ]).then(([bag, reshow]) => {
+    bag.OpenBagScreenForBattle(reshow.CB2_SetUpReshowBattleScreenAfterMenu);
+  });
+}
+
+/** 1:1 decomp CompleteWhenChoseItem : `callback2 == BattleMainCB2 && !fade ->
+ *  EmitOneReturnValue(BUFFER_B, gSpecialVar_ItemId) + completed`. Equivalent L :
+ *  reshow termine (__battleReshowDone) + fade fini ; gSpecialVar_ItemId =
+ *  bridge __battleBagResultItemId (0 = annule -> la machine C5 re-affiche le
+ *  menu, itemValue 0). */
+function _CompleteWhenChoseItem(): void {
+  const reshowDone = (globalThis as { __battleReshowDone?: boolean }).__battleReshowDone === true;
+  if (!reshowDone || getRuntime()?.gPaletteFade?.active) return;
+  const itemId = (globalThis as { __battleBagResultItemId?: number }).__battleBagResultItemId ?? 0;
+  BtlController_EmitOneReturnValue(B_COMM_TO_ENGINE, itemId);
   PlayerBufferExecCompleted();
 }
 

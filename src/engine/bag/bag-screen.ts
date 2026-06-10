@@ -934,6 +934,21 @@ export const BAG_LOCATION_ITEMPC = 6;
  *  Pour ITEMPC : `CB2_PlayerPCExitBagMenu` qui retourne au PC menu. */
 let _bagExitCallback: (() => void) | null = null;
 
+/** Retour combat (CB2 reshow) pour le mode BATTLE — pose en savedCallback a
+ *  l'ouverture (meme pattern que le party-screen combat, valide switch #9). */
+let _battleReturnCb: (() => void) | null = null;
+
+/** Entree SAC EN COMBAT (1:1 CB2_BagMenuFromBattle -> GoToBagMenu(BATTLE) ;
+ *  l'UI = bag-screen reel, le retour = CB2_SetUpReshowBattleScreenAfterMenu).
+ *  Le resultat (item choisi ou 0 = annule) = (globalThis).__battleBagResultItemId
+ *  (bridge gSpecialVar_ItemId decomp), lu par CompleteWhenChoseItem cote
+ *  controller. */
+export function OpenBagScreenForBattle(returnCb: () => void): void {
+  (globalThis as Record<string, unknown>).__battleBagResultItemId = 0;
+  _battleReturnCb = returnCb;
+  OpenBagScreen(undefined, BagLocation.BATTLE, undefined);
+}
+
 export function OpenBagScreen(_onCloseLegacy?: () => void, location: number = 0, exitCallback?: () => void): void {
   if (_isOpen) return;
   // 1:1 décomp `gBagPosition.location = location` (item_menu.c:617).
@@ -960,9 +975,14 @@ export function OpenBagScreen(_onCloseLegacy?: () => void, location: number = 0,
     //   FIELD  → CB2_ReturnToFieldWithOpenMenu_Manual (= reopen start menu)
     // Sans cette branche, après close du bag ITEMPC, le start menu s'ouvre
     // par-dessus le PC re-open (= bug user "mélange des deux modes du sac").
-    rt.gMain.savedCallback = (location === 6 /* ITEMPC */)
-      ? CB2_ReturnToFieldLocal_Manual
-      : CB2_ReturnToFieldWithOpenMenu_Manual;
+    // BATTLE (=1) : le retour = le reshow combat (CB2 posee a la fermeture par
+    // Task_CloseBagMenu via SetMainCallback2(savedCallback)) — PAS le retour OW.
+    rt.gMain.savedCallback = (location === 1 /* BATTLE */ && _battleReturnCb)
+      ? _battleReturnCb
+      : (location === 6 /* ITEMPC */)
+        ? CB2_ReturnToFieldLocal_Manual
+        : CB2_ReturnToFieldWithOpenMenu_Manual;
+    if (location === 1) _battleReturnCb = null;
     rt.SetMainCallback2(CB2_InitBagMenu);
   }).catch((e) => {
     console.error('[bag-screen] OpenBagScreen asset preload failed', e);
@@ -1518,6 +1538,14 @@ function _openContextMenu(): void {
     case 'tmHm':      actions = [...CTX_TMHM_POCKET]; break;
     case 'berries':   actions = [...CTX_BERRIES_POCKET]; break;
   }
+  // 1:1 item_menu.c OpenContextMenu mode BATTLE : balls -> [UTILISER, ANNULER]
+  // (ItemUseInBattle_PokeBall) ; autres poches : battleUsage (medecine/X items)
+  // = tranche ulterieure -> [ANNULER] seul (dette documentee).
+  if (_bagLocation === BagLocation.BATTLE) {
+    actions = pocketKey === 'pokeBalls'
+      ? [ItemAction.BATTLE_USE, ItemAction.CANCEL]
+      : [ItemAction.CANCEL];
+  }
   _ctxActions = actions;
   _ctxCursor = 0;
   _ctxItemKey = itemKey;
@@ -1715,6 +1743,22 @@ function _executeAction(action: ItemAction): void {
     // 1:1 :1926-1930 : refresh list + cancel ctx window.
     _drawList();
     _closeContextMenu();
+    return;
+  }
+  if (action === ItemAction.BATTLE_USE) {
+    // 1:1 ItemUseInBattle_PokeBall (item_use.c) : RemoveBagItem(item, 1) +
+    // fermeture du bag (le savedCallback battle = reshow combat) ; l'item
+    // choisi (gSpecialVar_ItemId decomp) part au controller via le bridge
+    // __battleBagResultItemId. Check party+box pleines = dette (flux box de
+    // givecaughtmon, tranche ulterieure).
+    const itemKeyBU = _ctxItemKey;
+    const itemIdBU = itemKeyBU ? (resolveDecompConstant(itemKeyBU) ?? 0) : 0;
+    if (itemKeyBU && itemIdBU) {
+      RemoveBagItem(itemKeyBU, 1);
+      (globalThis as Record<string, unknown>).__battleBagResultItemId = itemIdBU;
+    }
+    _closeContextMenu();
+    CloseBagScreen();
     return;
   }
   // USE / GIVE / CHECK / CHECK_TAG : dette R3 documentée (= cascade vers
