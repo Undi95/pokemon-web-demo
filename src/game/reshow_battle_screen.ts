@@ -102,10 +102,23 @@ function CB2_ReshowBattleScreenAfterMenu(): void {
   switch (state) {
     case 0:
       // 1:1 : ScanlineEffect_Clear + BattleInitBgsAndWindows + ShowBg(0..3) +
-      // ResetPaletteFade + reset scrolls BG (= runtime web : BattleInitBgsAndWindows
-      // + ResetPaletteFade ; ShowBg/BG-scroll gérés par le renderer).
+      // ResetPaletteFade + reset scrolls BG (reshow_battle_screen.c:56-63).
       BattleInitBgsAndWindows();
       ResetPaletteFade();
+      // 1:1 gBattle_BG0_X/Y = 0 (+BG1/2) — SANS ce reset, le scroll BG0 reste
+      // a 160 (groupe ACTION du tilemap 32x64) -> les boites du menu d'action
+      // VIDES (tiles texte wipees) restent visibles pendant tout le fade-in du
+      // retour sac/party (bug user 2026-06-10 « le menu s'affiche dans le
+      // fading, vide » — capture frames n1720/n1725).
+      {
+        const vb = (globalThis as { __battleVBlankHelpers?: { battleVBlankState?: Record<string, number> } }).__battleVBlankHelpers;
+        const st = vb?.battleVBlankState;
+        if (st) {
+          st.bg0_x = 0; st.bg0_y = 0;
+          if ('bg1_x' in st) { st.bg1_x = 0; st.bg1_y = 0; }
+          if ('bg2_x' in st) { st.bg2_x = 0; st.bg2_y = 0; }
+        }
+      }
       break;
     case 1:
       // 1:1 : CpuFastFill(0, VRAM, VRAM_SIZE) — clear VRAM (implicite en L via le
