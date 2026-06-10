@@ -427,8 +427,27 @@ export function HandleAction_UseItem(ctx?: BattleScriptContext): void {
       return;
     }
   }
-  // Items non-ball (POKE_DOLL/soins/X items + branche AI trainer) : dette
-  // Phase 1.4 (full item battle flow). Comportement conserve : action finie.
+  // 1:1 decomp battle_util.c:324-330 : POKE_DOLL(80)/FLUFFY_TAIL(81) ->
+  // BattleScript_RunByUsingItem (fuite garantie wild) ; autres items joueur ->
+  // BattleScript_PlayerUsesItem (message + finishaction ; l effet medecine/X a
+  // deja ete applique cote bag/party 1:1). Branche AI trainer items = dette.
+  if (item === 80 || item === 81) {
+    const off2 = getBattleScriptOffset('BattleScript_RunByUsingItem');
+    const c2 = ctx ?? gBattleScriptContext;
+    if (off2 >= 0 && c2) {
+      c2.scriptPtr = off2;
+      setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+      return;
+    }
+  } else if (item > 0) {
+    const off3 = getBattleScriptOffset('BattleScript_PlayerUsesItem');
+    const c3 = ctx ?? gBattleScriptContext;
+    if (off3 >= 0 && c3) {
+      c3.scriptPtr = off3;
+      setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+      return;
+    }
+  }
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
 

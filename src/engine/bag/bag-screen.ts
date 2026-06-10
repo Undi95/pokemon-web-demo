@@ -41,7 +41,10 @@ import { StringExpandPlaceholders, gStringVar4 } from '../ui/gba-text-system';
 import { encodeOwText } from '../../game/include/text';  // préproc : source FR → bytes charmap
 import { EOS, CHAR_NEWLINE } from '../decomp-data/include/constants/characters-data';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from '../system/data-tables';
-import { RemoveBagItem, UpdatePocketItemList, gBagPockets } from './bag';
+import { RemoveBagItem, UpdatePocketItemList, gBagPockets, GetBagItemQuantity } from './bag';
+import { PokemonUseItemEffects } from './bag-item-effects';
+import { ItemUseCB_Medicine, ItemUseCB_PPRecovery, setItemUseCB } from '../ui/item-use-callbacks';
+import { gSpecialVar } from '../script/script-vars';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -937,6 +940,22 @@ let _bagExitCallback: (() => void) | null = null;
 /** Retour combat (CB2 reshow) pour le mode BATTLE — pose en savedCallback a
  *  l'ouverture (meme pattern que le party-screen combat, valide switch #9). */
 let _battleReturnCb: (() => void) | null = null;
+/** Copie du reshow combat pour les flows multi-ecrans (medecine -> party). */
+let _battleReshowCb: (() => void) | null = null;
+
+/** items.json (battleUsage/battleUseFunc par ITEM_*) — fetch lazy module-cache.
+ *  1:1 data decomp items.h (.battleUsage / .battleUseFunc). */
+let _itemsJsonCache: Record<string, { battleUsage?: string; battleUseFunc?: string }> | null = null;
+function _ensureItemsJson(): void {
+  if (_itemsJsonCache) return;
+  _itemsJsonCache = {};  // anti re-fetch
+  void fetch('/decomp/em/items.json').then(r => r.ok ? r.json() : {}).then((j) => {
+    _itemsJsonCache = j as Record<string, { battleUsage?: string; battleUseFunc?: string }>;
+  }).catch(() => { /* garde vide */ });
+}
+function _itemBattleUseFunc(itemKey: string): string {
+  return _itemsJsonCache?.[itemKey]?.battleUseFunc ?? '';
+}
 
 /** Entree SAC EN COMBAT (1:1 CB2_BagMenuFromBattle -> GoToBagMenu(BATTLE) ;
  *  l'UI = bag-screen reel, le retour = CB2_SetUpReshowBattleScreenAfterMenu).
@@ -946,6 +965,8 @@ let _battleReturnCb: (() => void) | null = null;
 export function OpenBagScreenForBattle(returnCb: () => void): void {
   (globalThis as Record<string, unknown>).__battleBagResultItemId = 0;
   _battleReturnCb = returnCb;
+  _battleReshowCb = returnCb;
+  _ensureItemsJson();
   OpenBagScreen(undefined, BagLocation.BATTLE, undefined);
 }
 
@@ -1542,7 +1563,10 @@ function _openContextMenu(): void {
   // (ItemUseInBattle_PokeBall) ; autres poches : battleUsage (medecine/X items)
   // = tranche ulterieure -> [ANNULER] seul (dette documentee).
   if (_bagLocation === BagLocation.BATTLE) {
-    actions = pocketKey === 'pokeBalls'
+    // 1:1 data items.h : UTILISER apparait si l'item a un battleUseFunc
+    // (balls/medecine/PP/X items/escape) ; sinon RETOUR seul.
+    const hasBattleUse = pocketKey === 'pokeBalls' || _itemBattleUseFunc(itemKey) !== '';
+    actions = hasBattleUse
       ? [ItemAction.BATTLE_USE, ItemAction.CANCEL]
       : [ItemAction.CANCEL];
   }
@@ -1746,20 +1770,105 @@ function _executeAction(action: ItemAction): void {
     return;
   }
   if (action === ItemAction.BATTLE_USE) {
-    // 1:1 ItemUseInBattle_PokeBall (item_use.c) : RemoveBagItem(item, 1) +
-    // fermeture du bag (le savedCallback battle = reshow combat) ; l'item
-    // choisi (gSpecialVar_ItemId decomp) part au controller via le bridge
-    // __battleBagResultItemId. Check party+box pleines = dette (flux box de
-    // givecaughtmon, tranche ulterieure).
+    // 1:1 dispatch data-driven items.h .battleUseFunc (item_use.c).
     const itemKeyBU = _ctxItemKey;
     const itemIdBU = itemKeyBU ? (resolveDecompConstant(itemKeyBU) ?? 0) : 0;
-    if (itemKeyBU && itemIdBU) {
-      RemoveBagItem(itemKeyBU, 1);
-      (globalThis as Record<string, unknown>).__battleBagResultItemId = itemIdBU;
+    if (!itemKeyBU || !itemIdBU) { _closeContextMenu(); return; }
+    // 1:1 item_menu.c Task_BagMenu_HandleInput : gSpecialVar_ItemId = item
+    // selectionne (lu par ItemUseCB_Medicine/PPRecovery cote party).
+    gSpecialVar.ItemId = itemIdBU;
+    const useFunc = POCKETS[_pocketIdx].key === 'pokeBalls'
+      ? 'ItemUseInBattle_PokeBall' : _itemBattleUseFunc(itemKeyBU);
+    const g = globalThis as Record<string, unknown>;
+    switch (useFunc) {
+      case 'ItemUseInBattle_PokeBall': {
+        // 1:1 item_use.c:949 : party+box pleines -> refus (BoxFull) ;
+        // sinon RemoveBagItem + fermeture (l'anim throw suit cote moteur).
+        const party = (g.gPlayerParty as Array<{ species?: number }> | undefined) ?? [];
+        let count = 0;
+        for (let i = 0; i < 6; i++) { if (party[i]?.species) count++; }
+        const boxFull = (g.__pcBoxesFull as boolean | undefined) === true;
+        if (count >= 6 && boxFull) {
+          console.warn('[bag-battle] party + boxes pleines (1:1 BoxFull — UI message = dette)');
+          _closeContextMenu();
+          return;
+        }
+        RemoveBagItem(itemKeyBU, 1);
+        g.__battleBagResultItemId = itemIdBU;
+        _closeContextMenu();
+        CloseBagScreen();
+        return;
+      }
+      case 'ItemUseInBattle_StatIncrease': {
+        // 1:1 item_use.c:994 : effet table sur le MON ACTIF (gBattlerInMenuId) ;
+        // echec -> aucun effet (reste dans le bag) ; succes -> Remove + ferme.
+        const bs = g.__battleState as { gBattlerPartyIndexes?: number[]; gBattlerInMenuId?: number } | undefined;
+        const menuBattler = bs?.gBattlerInMenuId ?? 0;
+        const partyIdx = bs?.gBattlerPartyIndexes?.[menuBattler] ?? 0;
+        const party = (g.gPlayerParty as Array<Record<string, unknown>> | undefined) ?? [];
+        const mon = party[partyIdx];
+        if (!mon) { _closeContextMenu(); return; }
+        const res = PokemonUseItemEffects(mon as never, itemIdBU, partyIdx, 0);
+        if ((res as { cannotUse?: boolean }).cannotUse) {
+          console.warn('[bag-battle] X item sans effet (gText_WontHaveEffect — UI message = dette)');
+          _closeContextMenu();
+          return;
+        }
+        RemoveBagItem(itemKeyBU, 1);
+        g.__battleBagResultItemId = itemIdBU;
+        _closeContextMenu();
+        CloseBagScreen();
+        return;
+      }
+      case 'ItemUseInBattle_Medicine':
+      case 'ItemUseInBattle_PPRecovery': {
+        // 1:1 item_use.c:1026/1039 : gItemUseCB = ItemUseCB_* puis le bag se
+        // ferme VERS LE PARTY MENU (ChooseMonForInBattleItem). Retour party ->
+        // reshow combat + emission selon CONSOMMATION reelle (qty avant/apres).
+        setItemUseCB(useFunc === 'ItemUseInBattle_Medicine' ? ItemUseCB_Medicine : ItemUseCB_PPRecovery);
+        const qtyBefore = GetBagItemQuantity(itemKeyBU);
+        const reshow = _battleReshowCb;
+        let opened = false;
+        _battleReturnCb = null;
+        const rt2 = getRuntime();
+        if (rt2) {
+          rt2.gMain.savedCallback = function BattleItemOpenPartyCB2(): void {
+            if (opened) return;
+            opened = true;
+            void import('../ui/party-screen').then((party) => {
+              party.OpenPartyScreenForItemUse(function BattleItemPartyReturnCB2(): void {
+                const used = GetBagItemQuantity(itemKeyBU) < qtyBefore;
+                (globalThis as Record<string, unknown>).__battleBagResultItemId = used ? itemIdBU : 0;
+                reshow?.();
+              });
+            });
+          };
+        }
+        _closeContextMenu();
+        CloseBagScreen();
+        return;
+      }
+      case 'ItemUseInBattle_Escape': {
+        // 1:1 item_use.c:1046 : wild -> RemoveUsedItem + fermeture (le moteur
+        // joue BattleScript_RunByUsingItem) ; trainer -> refus (DadsAdvice).
+        const bs = g.__battleState as { gBattleTypeFlags?: number } | undefined;
+        const TRAINER = 1 << 3;
+        if (((bs?.gBattleTypeFlags ?? 0) & TRAINER) !== 0) {
+          console.warn('[bag-battle] Escape item vs dresseur (DadsAdvice — UI message = dette)');
+          _closeContextMenu();
+          return;
+        }
+        RemoveBagItem(itemKeyBU, 1);
+        g.__battleBagResultItemId = itemIdBU;
+        _closeContextMenu();
+        CloseBagScreen();
+        return;
+      }
+      default:
+        console.warn('[bag-battle] battleUseFunc non porte:', useFunc, '(dette)');
+        _closeContextMenu();
+        return;
     }
-    _closeContextMenu();
-    CloseBagScreen();
-    return;
   }
   // USE / GIVE / CHECK / CHECK_TAG : dette R3 documentée (= cascade vers
   // screens U-tier). Log explicit + close (= comportement 1:1 incomplet, pas
