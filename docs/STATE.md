@@ -151,3 +151,11 @@ secret base, pokénav, pokéblock. (Liste éditable dans `scripts/audit-coverage
 - **OW** : `CHANTIER-OW-1TO1-PROGRESS.md`. **Pokédex** : `POKEDEX-CHANTIER-1TO1-PLAN.md`.
 - **Refactor arbre** : `REFACTOR-ARBRE-PLAN-POST-1TO1.md` (feu vert user).
 - **Protocole 1:1 à relire avant chaque port** : `1to1-import-protocol.md`, `WORKING-MODE-deep-research-1to1.md`.
+
+## 2026-06-10 (soir) — GOAL 8 TRANCHES : état T1-T4 + dettes
+- **T1 ✓** menu vide à chaque fade : scrolls BG reset au reshow 1:1 (reshow_battle_screen.c:56-63). VALIDÉ USER.
+- **T2 ✓** pokemon_animation.c COMPLET : 62/62 anims de mouvement 1:1 (+1127 l.), A/B 8 familles.
+- **T3 ✓** anims de STATUT : bytecode anim COMPLET (9215 ops, levée de la troncature 5000), tables de pointeurs extraites (anim-tables.json + battle-anim-tables.ts), résolution par NOMS, LaunchStatusAnimation/InitAndLaunchChosenStatusAnimation/TryHandleLaunchBattleTableAnimation 1:1, handlers controllers câblés. A/B poison bout-en-bout.
+- **T4 ~70%** : registry créé (marqueurs nominaux ids 0x1000+, table dédiée 795 symboles, fix bitwise >>> 0), handlers MOVEANIMATION 1:1 (DoMoveAnim + tick), garde-fou opcodes/PC, AnimTask_ShakeMon/2 + lunge portés. LES SCRIPTS DE MOVE S'EXÉCUTENT (warns nominaux). RESTE : shake visible (hypothèse double-instance registry статique/dynamique), loadspritegfx réel (gfx par tag), déraillements PC move-0, autres templates/tasks par vagues.
+- **INCIDENT MAJEUR RÉSOLU** (user-assist) : « ARCKO est déjà empoisonné » bloquant = bytecodes scripts_1/2 re-cassés par les recompiles T4 successifs (l'Intimidation de Mightyena déraillait). Restauration + RÈGLE : jamais recompiler sans restaurer/vérifier les non-cibles.
+- **T5-T8 : non commencées** (shiny/move-switching/hit-shake/yes-no helper ; shims+renames ; naming/dexinfo ; doc+3 runs).
