@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/asm/macros/trainer_hill.inc
-// Generated: 2026-06-10
+// Generated: 2026-04-26
 
 // ─── .macro definitions (asm macro → opcode mapping bodies) ─────────────────
 export const MACROS = [

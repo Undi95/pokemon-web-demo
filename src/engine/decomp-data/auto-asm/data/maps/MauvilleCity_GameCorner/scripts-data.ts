@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/maps/MauvilleCity_GameCorner/scripts.inc
-// Generated: 2026-06-10
+// Generated: 2026-04-26
 
 // ─── .equ / .set constants ──────────────────────────────────────────────────
 export const TM_DOUBLE_TEAM_COINS = 1500;

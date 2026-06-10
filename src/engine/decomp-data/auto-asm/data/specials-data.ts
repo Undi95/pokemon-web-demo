@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/specials.inc
-// Generated: 2026-06-10
+// Generated: 2026-04-26
 
 // ─── .equ / .set constants ──────────────────────────────────────────────────
 /** Raw expr: `__special__ + 1` */

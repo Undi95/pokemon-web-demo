@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:decomp-asm` to refresh.
 //
 // Source: D:/Projet 1/decomps/pokeemeraude/data/maps/BattleFrontier_Lounge3/scripts.inc
-// Generated: 2026-06-10
+// Generated: 2026-04-26
 
 // ─── .equ / .set constants ──────────────────────────────────────────────────
 export const BET_AMOUNT_5 = 5;
