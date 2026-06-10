@@ -2847,9 +2847,28 @@ function _StartSpriteAnimIfDifferent(sprite: BattleSprite, animNum: number): voi
  *  SpriteCB_WildMonAnimate/OpponentMonFromBall ne re-déclenchent plus).
  *  Dette doc : l'anim de MOUVEMENT (sMonFrontAnimIdsTable → pokemon_animation.c,
  *  bounce/shake par species — cf. pokemon-anims.json déjà extrait) = chantier dédié. */
+let _shinyTriedThisBattle = false;
+export function resetShinyTried(): void { _shinyTriedThisBattle = false; }
 function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry: boolean, _panMode: number): void {
   const rt = getRuntime();
   if (!rt) return;
+  // 1:1-net (goal T5, timing user « les etoiles arrivent DES l'apparition ») :
+  // TryShinyAnimation au moment de l'apparition du FRONT adverse (decomp :
+  // Intro_TryShinyAnimShowHealthbox, battle_controller_opponent.c). Le PID
+  // check decide ; idempotent via le flag tried interne.
+  {
+    const shiny = (globalThis as Record<string, unknown>).__battleAnimThrowShiny as {
+      TryShinyAnimation?: (b: number, m: { otId?: number; personality?: number } | null) => boolean;
+      _tried?: Record<number, boolean>;
+    } | undefined;
+    const bs = (globalThis as Record<string, unknown>).__battleState as { gBattleMons?: Array<{ otId?: number; personality?: number }> } | undefined;
+    const party = (globalThis as Record<string, unknown>).__gEnemyParty as Array<{ otId?: number; personality?: number }> | undefined;
+    const mon = party?.[0] ?? bs?.gBattleMons?.[1] ?? null;
+    if (shiny?.TryShinyAnimation && !_shinyTriedThisBattle) {
+      _shinyTriedThisBattle = true;
+      shiny.TryShinyAnimation(1, mon);
+    }
+  }
   // 1:1 :6796-6800 : PlayCry_Normal(species, pan) — le cri du mon à l'apparition.
   if (!noCry && species) {
     const nm = reverseDecompConstant(species, 'SPECIES_');

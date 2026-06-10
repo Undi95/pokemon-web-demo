@@ -1145,6 +1145,8 @@ export function IsFanfareTaskInactive(): boolean {
 // lieu d'importer directement de decomp-globals.ts.
 (globalThis as { __decompGlobals?: Record<string, unknown> }).__decompGlobals = {
   IsSEPlaying, IsCryPlaying, IsCryFinished, IsFanfareTaskInactive,
+  // T5 shiny : acces par TAG (battle_anim_throw _LoadGoldStarsGfx, anti-cycle).
+  GetSpriteTileStartByTag, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
 };
 
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─

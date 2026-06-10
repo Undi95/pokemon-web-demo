@@ -204,6 +204,8 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_Bubble')) assetCache.set('gAnimPal_Bubble', await loadGbaPal('/decomp/em/battle_anims/sprites/bubble.gbapal'));
     await loadBin('gAnimGfx_Orbs', '/decomp/em/battle_anims/sprites/orbs.4bpp.bin');
     if (!assetCache.has('gAnimPal_Orbs')) assetCache.set('gAnimPal_Orbs', await loadGbaPal('/decomp/em/battle_anims/sprites/orbs.gbapal'));
+    await loadBin('gAnimGfx_GoldStars', '/decomp/em/battle_anims/sprites/gold_stars.4bpp.bin');
+    if (!assetCache.has('gAnimPal_GoldStars')) assetCache.set('gAnimPal_GoldStars', await loadGbaPal('/decomp/em/battle_anims/sprites/gold_stars.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);

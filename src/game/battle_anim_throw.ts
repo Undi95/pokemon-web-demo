@@ -1143,3 +1143,183 @@ export function Special_BallThrow_TS(): void {
   BALL_NET, BALL_DIVE, BALL_NEST, BALL_REPEAT, BALL_TIMER,
   BALL_LUXURY, BALL_PREMIER, BALL_TRAINER_BLOCK,
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHINY (goal T5 2026-06-11) — 1:1 battle_anim_throw.c:2228-2380.
+// TryShinyAnimation : PID check -> 2 tasks d etoiles (encircle Sin/Cos r24 +
+// diagonal x2+=5/y2-=5 avec SE_SHINY) -> finishedShinyMonAnim.
+// ════════════════════════════════════════════════════════════════════════════
+export const ANIM_TAG_GOLD_STARS = 10233; // ANIM_SPRITES_START + 233
+
+const _sGoldStarsSheet = { data: 'gAnimGfx_GoldStars', size: 192, tag: ANIM_TAG_GOLD_STARS };
+const _sGoldStarsPal = { data: 'gAnimPal_GoldStars', tag: ANIM_TAG_GOLD_STARS };
+
+type _ShinySprite = {
+  data: number[]; x: number; y: number; x2: number; y2: number;
+  invisible?: boolean; oamIndex?: number;
+  callback: ((s: _ShinySprite) => void) | null;
+};
+
+function _shinyRt(): {
+  gSprites?: Map<number, _ShinySprite>;
+  gTasks?: Map<number, { data: number[]; taskId: number; func?: unknown }>;
+  CreateTask?: (fn: unknown, prio: number) => number;
+  DestroyTask?: (id: number) => void;
+  DestroySprite?: (id: number) => void;
+  CreateSpriteInline?: (t: never, x: number, y: number, s?: number) => number;
+  gba?: { oam?: Array<{ tileId?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+/** 1:1 `TryShinyAnimation(battler, mon)` (:2228). Retourne true si shiny
+ *  (anim lancee). Pose tried/finishedShinyMonAnim (battle-sprites-data). */
+export function TryShinyAnimation(battler: number, mon: { otId?: number; personality?: number } | null): boolean {
+  const sd = (globalThis as Record<string, unknown>).__battleSpritesData as {
+    setStatusAnimActive?: unknown;
+  } | undefined;
+  void sd;
+  _setShinyFlag(battler, 'tried');
+  const otId = mon?.otId ?? 1;
+  const personality = mon?.personality ?? 1;
+  // 1:1 GET_SHINY_VALUE = HIHALF(otId)^LOHALF(otId)^HIHALF(pid)^LOHALF(pid) < 8.
+  const shinyValue = ((otId >> 16) & 0xFFFF) ^ (otId & 0xFFFF) ^ ((personality >> 16) & 0xFFFF) ^ (personality & 0xFFFF);
+  if (shinyValue < 8) {
+    _LoadGoldStarsGfx();
+    const rt = _shinyRt();
+    const t1 = rt.CreateTask?.(Task_ShinyStars as never, 10) ?? -1;
+    const t2 = rt.CreateTask?.(Task_ShinyStars as never, 10) ?? -1;
+    const task1 = rt.gTasks?.get(t1); const task2 = rt.gTasks?.get(t2);
+    if (task1) { task1.data[0] = battler; task1.data[1] = 0; /* ENCIRCLE */ }
+    if (task2) { task2.data[0] = battler; task2.data[1] = 1; /* DIAGONAL */ }
+    return true;
+  }
+  _setShinyFlag(battler, 'finished');
+  return false;
+}
+const _shinyFlags: Record<number, { tried?: boolean; finished?: boolean }> = {};
+function _setShinyFlag(battler: number, k: 'tried' | 'finished'): void {
+  (_shinyFlags[battler] = _shinyFlags[battler] ?? {})[k] = true;
+}
+export function isShinyAnimFinished(battler: number): boolean {
+  return _shinyFlags[battler]?.finished ?? true;
+}
+function _LoadGoldStarsGfx(): void {
+  // pattern LoadBallGfx (sheet+palette par TAG depuis assetCache precharge).
+  const gg = (globalThis as Record<string, unknown>);
+  const load = gg.__loadCompressedSheets as undefined;
+  void load;
+  try {
+    // imports deja en scope module (LoadCompressedSpriteSheetUsingHeap & co
+    // sont importes en tete de battle_anim_throw.ts via decomp-globals ? si
+    // non, lazy via globalThis __decompGlobals — fallback no-op).
+    const dg = (globalThis as Record<string, unknown>).__decompGlobals as {
+      GetSpriteTileStartByTag?: (t: number) => number;
+      LoadCompressedSpriteSheetUsingHeap?: (s: unknown) => void;
+      LoadCompressedSpritePaletteUsingHeap?: (s: unknown) => void;
+    } | undefined;
+    if (dg?.GetSpriteTileStartByTag?.(ANIM_TAG_GOLD_STARS) === 0xFFFF) {
+      dg.LoadCompressedSpriteSheetUsingHeap?.(_sGoldStarsSheet);
+      dg.LoadCompressedSpritePaletteUsingHeap?.(_sGoldStarsPal);
+    }
+  } catch { /* dette douce */ }
+}
+
+// data : [0]=battler, [1]=move(0 encircle/1 diagonal), [2]=timer, [3]=starTimer,
+//        [4]=starIdx, [5]=numStars.
+function Task_ShinyStars(task: { data: number[]; taskId: number; func?: unknown }): void {
+  const rt = _shinyRt();
+  if (task.data[2] < 60) { task.data[2]++; return; }
+  const timer = task.data[3]++;
+  if (timer % 4) return;
+  const battler = task.data[0];
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const monSp = rt.gSprites?.get(co?.getBattlerMonSpriteId?.(battler) ?? -1);
+  const x = monSp ? monSp.x : 120;
+  const y = monSp ? monSp.y : 60;
+  const starIdx = task.data[4];
+  const dg = (globalThis as Record<string, unknown>).__decompGlobals as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const base = dg?.GetSpriteTileStartByTag?.(ANIM_TAG_GOLD_STARS) ?? 0xFFFF;
+  // FIX user 2026-06-11 (« etoiles corrompues = la pokeball tetris ») :
+  // CreateSpriteInline n'assigne NI sheet NI palette du tag -> tiles/palette
+  // d'autrui. Le fix ball : CreateSprite SYSTEME par template a TAGS
+  // (resolution sheet+palette par tag, _CreateSpriteFromTemplate).
+  const spriteId = _CreateSpriteFromTemplate({
+    tileTag: ANIM_TAG_GOLD_STARS, paletteTag: ANIM_TAG_GOLD_STARS,
+    oam: { shape: 0, size: 1 },
+    callback: null,
+  } as never, x, y, 5);
+  if (spriteId >= 0) {
+    const sp = rt.gSprites?.get(spriteId);
+    if (sp) {
+      sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+      sp.invisible = false;
+      // tiles : grande etoile = base+0 (16x16, 4 tiles) ; minis = base+4 / base+5.
+      const oam = rt.gba?.oam?.[sp.oamIndex ?? -1];
+      if (oam && base !== 0xFFFF && starIdx !== 0) {
+        oam.tileId = base + (starIdx < 4 ? 4 : 5);
+      }
+      sp.data[6] = task.taskId;
+      if (task.data[1] === 0) {
+        sp.data[7] = 0; // phase
+        sp.callback = _ShinyStar_Encircle;
+      } else {
+        sp.callback = _ShinyStar_Diagonal;
+        sp.x2 = -32;
+        sp.y2 = 32;
+        sp.invisible = true;
+        if (starIdx === 0) {
+          const playSE = (globalThis as Record<string, unknown>).__PlaySE as ((id: number) => void) | undefined;
+          playSE?.(0xFF); // SE_SHINY (=255) — meme infra SE validee
+        }
+      }
+      task.data[5]++;
+    }
+    task.data[4]++;
+  }
+  if (task.data[4] === 5) task.func = Task_ShinyStars_Wait as never;
+}
+function Task_ShinyStars_Wait(task: { data: number[]; taskId: number }): void {
+  const rt = _shinyRt();
+  if (task.data[5] === 0) {
+    if (task.data[1] === 1) _setShinyFlag(task.data[0], 'finished');
+    rt.DestroyTask?.(task.taskId);
+  }
+}
+function _shinyStarDone(sprite: _ShinySprite): void {
+  const rt = _shinyRt();
+  const task = rt.gTasks?.get(sprite.data[6]);
+  if (task) task.data[5]--;
+  // destroy
+  for (const [id, sp] of rt.gSprites?.entries() ?? []) {
+    if ((sp as unknown) === (sprite as unknown)) {
+      rt.DestroySprite?.(id);
+      rt.gSprites?.delete(id);
+      break;
+    }
+  }
+}
+function _ShinyStar_Encircle(sprite: _ShinySprite): void {
+  const trig = (globalThis as Record<string, unknown>).__trig as { Sin?: (i: number, a: number) => number; Cos?: (i: number, a: number) => number } | undefined;
+  const sin = trig?.Sin ?? ((i: number, a: number) => Math.round(Math.sin((i / 256) * 2 * Math.PI) * a));
+  const cos = trig?.Cos ?? ((i: number, a: number) => Math.round(Math.cos((i / 256) * 2 * Math.PI) * a));
+  sprite.x2 = sin(sprite.data[7], 24);
+  sprite.y2 = cos(sprite.data[7], 24);
+  sprite.data[7] += 12;
+  if (sprite.data[7] > 255) _shinyStarDone(sprite);
+}
+function _ShinyStar_Diagonal(sprite: _ShinySprite): void {
+  if (sprite.data[5] < 4) {
+    sprite.data[5]++;
+  } else {
+    sprite.invisible = false;
+    sprite.x2 += 5;
+    sprite.y2 -= 5;
+    if (sprite.x2 > 32) _shinyStarDone(sprite);
+  }
+}
+
+// Surface harness/consommateurs (TryShinyAnimAfterMonAnim cote opponent).
+(globalThis as Record<string, unknown>).__battleAnimThrowShiny = {
+  TryShinyAnimation, isShinyAnimFinished,
+};

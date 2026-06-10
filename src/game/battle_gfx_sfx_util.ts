@@ -57,7 +57,7 @@ import { loadIndexedPngStrict, extractPngPlte, loadTileBin, loadGbaPal } from '.
 import { GetBattlerSpriteCoord, GetBattlerElevation } from './battle_anim_mons';
 import { GET_BATTLER_SIDE, B_SIDE_PLAYER } from '../engine/battle/constants';
 import { GetBattlerPosition } from '../engine/battle/util';
-import { GetMonData, MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP } from '../engine/battle/party-storage';
+import { GetMonData, MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_OT_ID, MON_DATA_PERSONALITY } from '../engine/battle/party-storage';
 import {
   isBehindSubstitute, setBehindSubstitute, ClearSpritesHealthboxAnimData,
   isBattlerDataInvisible, setBattlerDataInvisible,
@@ -136,6 +136,19 @@ function _speciesAssetFolder(species: number): string | null {
  *  HandleLoadSpecialPokePic_DontHandleDeoxys + LZDecompressWram) ; transformSpecies
  *  non modélisé (Transform inactif → branche SPECIES_NONE 1:1 :587-590) ; shiny non
  *  modélisé (GetMonFrontSpritePal → normal.pal, dette) ; Castform (:615) non atteignable. */
+/** 1:1 décomp `GetMonSpritePalFromSpeciesAndPersonality` : shiny si
+ *  GET_SHINY_VALUE(otId, personality) < SHINY_ODDS(8) → shiny.pal (extrait),
+ *  sinon normal.pal. (Fix user 2026-06-11 : « le sprite n'est PAS shiny ».) */
+function _monSpritePalFile(mon: unknown): string {
+  try {
+    const otId = (GetMonData(mon as never, MON_DATA_OT_ID as never) as number) >>> 0;
+    const personality = (GetMonData(mon as never, MON_DATA_PERSONALITY as never) as number) >>> 0;
+    const shinyValue = ((otId >> 16) & 0xFFFF) ^ (otId & 0xFFFF) ^ ((personality >> 16) & 0xFFFF) ^ (personality & 0xFFFF);
+    if (shinyValue < 8) return 'shiny.pal';
+  } catch { /* mon incomplet -> normal */ }
+  return 'normal.pal';
+}
+
 export async function BattleLoadOpponentMonSpriteGfx(mon: unknown, battler: number): Promise<void> {
   // 1:1 :585-595 : transformSpecies != SPECIES_NONE → species de la CIBLE Transform
   // (champ battlerData, écrit par HandleSpeciesGfxDataChange) ; sinon species du mon.
@@ -152,7 +165,7 @@ export async function BattleLoadOpponentMonSpriteGfx(mon: unknown, battler: numb
   // 1:1 :604-613 : lzPaletteData = GetMonFrontSpritePal(mon) ; LZDecompressWram ;
   //   LoadPalette(buf, OBJ_PLTT_ID(battler), PLTT_SIZE_4BPP) ;
   //   LoadPalette(buf, BG_PLTT_ID(8) + BG_PLTT_ID(battler), PLTT_SIZE_4BPP).
-  const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`);
+  const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/${_monSpritePalFile(mon)}`);
   LoadPalette(pal, OBJ_PLTT_ID(battler), 32);
   LoadPalette(pal, (8 + battler) * 16, 32);
   // 1:1 :615-619 (Castform) + :622-626 (transform white blend) : non atteignables.
@@ -174,7 +187,7 @@ export async function BattleLoadPlayerMonSpriteGfx(mon: unknown, battler: number
   gMonSpritesGfxPtr.sprites.ptr[position] =
     await loadTileBin(`/decomp/em/pokemon/${folder}/back.png`, 4);
   // 1:1 :669-678 : mêmes deux LoadPalette que le front (OBJ battler + BG 8+battler).
-  const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`);
+  const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/${_monSpritePalFile(mon)}`);
   LoadPalette(pal, OBJ_PLTT_ID(battler), 32);
   LoadPalette(pal, (8 + battler) * 16, 32);
   // 1:1 :680-691 (Castform + transform pink) : non atteignables.
