@@ -200,6 +200,10 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_NoiseLine')) assetCache.set('gAnimPal_NoiseLine', await loadGbaPal('/decomp/em/battle_anims/sprites/noise_line.gbapal'));
     await loadBin('gAnimGfx_SmallEmber', '/decomp/em/battle_anims/sprites/small_ember.4bpp.bin');
     if (!assetCache.has('gAnimPal_SmallEmber')) assetCache.set('gAnimPal_SmallEmber', await loadGbaPal('/decomp/em/battle_anims/sprites/small_ember.gbapal'));
+    await loadBin('gAnimGfx_Bubble', '/decomp/em/battle_anims/sprites/bubble.4bpp.bin');
+    if (!assetCache.has('gAnimPal_Bubble')) assetCache.set('gAnimPal_Bubble', await loadGbaPal('/decomp/em/battle_anims/sprites/bubble.gbapal'));
+    await loadBin('gAnimGfx_Orbs', '/decomp/em/battle_anims/sprites/orbs.4bpp.bin');
+    if (!assetCache.has('gAnimPal_Orbs')) assetCache.set('gAnimPal_Orbs', await loadGbaPal('/decomp/em/battle_anims/sprites/orbs.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -216,6 +220,8 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_effects_3'),     // registry scratch + noise lines (T4)
     import('../../game/battle_anim_sound_tasks'),   // registry sound tasks Growl (T4)
     import('../../game/battle_anim_fire'),           // registry Ember + projectile generique (T4)
+    import('../../game/battle_anim_water'),          // registry Bubble (T4)
+    import('../../game/battle_anim_effects_1'),      // registry Absorb orbs (T4)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
