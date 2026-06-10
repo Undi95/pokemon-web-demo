@@ -11432,13 +11432,11 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
               && gBattleMons[0].hp !== 0
               && !gBattleStruct.wildVictorySong) {
-            // 1:1 décomp : wire vers audioEngine global (= stub si pas dispo).
-            const ae = (globalThis as { __audioEngine?: {
-              stopLowHpSound?: () => void; playBgm?: (id: number) => void;
-            } }).__audioEngine;
-            ae?.stopLowHpSound?.();
-            // MUS_VICTORY_WILD = 414 (= include/constants/songs.h).
-            ae?.playBgm?.(414 /* MUS_VICTORY_WILD */);
+            // Fix user 2026-06-11 « pas de BGM victoire » : l ancienne surface
+            // __audioEngine n existe pas -> no-op silencieux. Pattern VALIDE :
+            // __m4aSongNumStart (l infra BGM reelle). MUS_VICTORY_WILD = 414.
+            const m4a = (globalThis as Record<string, unknown>).__m4aSongNumStart as ((id: number, loop?: boolean) => void) | undefined;
+            m4a?.(414 /* MUS_VICTORY_WILD */, true);
             gBattleStruct.wildVictorySong = gBattleStruct.wildVictorySong + 1;
           }
 

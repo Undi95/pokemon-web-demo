@@ -1975,7 +1975,11 @@ function PlayerHandleExpUpdate(): void {
     const maxExpBarValue = getExpForLevel(gr, level + 1) - currLevelExp;
     const newExpInLevel = newExp - currLevelExp;
     const oldExpInLevel = newExpInLevel - expPoints;
-    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxExpBarValue, oldExpInLevel, expPoints);
+    // 1:1 décomp : receivedValue NÉGATIF = gain (la barre MONTE old->old+gained).
+    // Fix user 2026-06-11 « pas de gain d exp sur la barre » : le positif la
+    // faisait reculer/no-op. + PlaySE(SE_EXP=33) 1:1 (battle_controller_player.c:1215).
+    SetBattleBarStruct(gActiveBattler, _gHealthboxSpriteId(gActiveBattler), maxExpBarValue, oldExpInLevel, -expPoints);
+    PlaySE(33 /* SE_EXP */);
     gBattlerControllerFuncs[gActiveBattler] = _CompleteOnExpBarDone;
   }
 }
@@ -2166,7 +2170,15 @@ function PlayerHandlePlaySE(): void {
 }
 
 /** 1:1 décomp `PlayerHandlePlayFanfareOrBGM()`. */
+/** 1:1 décomp PlayerHandlePlayFanfareOrBGM : bufferA[3] -> PlayBGM(loop),
+ *  sinon PlayFanfare (one-shot). Fix user 2026-06-11 « pas de BGM victoire ».
+ *  Infra __m4aSongNumStart validée (pattern BGM/SE existant). */
 function PlayerHandlePlayFanfareOrBGM(): void {
+  const buf = gBattleBufferA[gActiveBattler];
+  const songId = buf[1] | (buf[2] << 8);
+  const isBGM = buf[3] !== 0;
+  const m4a = (globalThis as Record<string, unknown>).__m4aSongNumStart as ((id: number, loop?: boolean) => void) | undefined;
+  if (m4a && songId) m4a(songId, isBGM);
   PlayerBufferExecCompleted();
 }
 
