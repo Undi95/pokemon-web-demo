@@ -100,6 +100,11 @@ export interface BattleScriptContext {
 
 let _BYTECODE: Uint8Array | null = null;
 let _LABELS: Record<string, number> = {};
+/** Longueur de battle_scripts_1 dans le bytecode concatene (= base des offsets
+ *  scripts_2). Les OPERANDES de saut emises par le generateur dans scripts_2
+ *  sont des offsets LOCAUX _2 (le loader ne shifte que les LABELS) -> reloc a
+ *  la volee dans le stepper (cf. stepBattleScriptCommand). */
+let _scripts2Shift = 0;
 
 /** Load le battle script bytecode au boot. */
 export async function loadBattleScriptBytecode(): Promise<void> {
@@ -113,6 +118,7 @@ export async function loadBattleScriptBytecode(): Promise<void> {
   combined.set(bytes1, 0);
   combined.set(bytes2, bytes1.length);
   _BYTECODE = combined;
+  _scripts2Shift = bytes1.length;
   // Merge labels (= scripts_2 offsets are post-1).
   _LABELS = { ...mod1.LABELS };
   for (const [k, v] of Object.entries(mod2.LABELS)) {
@@ -629,6 +635,15 @@ export function stepBattleScriptCommand(ctx: BattleScriptContext): void {
       at: Date.now(),
     };
     console.error(`[battle/script-interpreter] handler '${name}' threw at @0x${ptrBefore.toString(16)} :`, err);
+  }
+  // RELOC scripts_2 : un opcode execute en zone _2 (ptrBefore >= shift) qui pose
+  // un scriptPtr < shift a saute sur une OPERANDE locale _2 non-shiftee (le
+  // generateur n'emet pas de reloc inter-fichier ; VERIFIE : aucun script _2 ne
+  // reference un label _1) -> re-base. Fix du soft-lock post-capture
+  // (trygivecaughtmonnick jump 90 -> garbage scripts_1[90] -> ptr fabrique).
+  if (_scripts2Shift > 0 && ptrBefore >= _scripts2Shift
+      && ctx.scriptPtr >= 0 && ctx.scriptPtr < _scripts2Shift) {
+    ctx.scriptPtr += _scripts2Shift;
   }
 }
 

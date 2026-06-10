@@ -8147,7 +8147,13 @@ function Cmd_callenvironmentattack(ctx: BattleScriptContext): boolean {
  *  Notre port : utilise gBattleMons[1] (= opponent battler) car gEnemyParty
  *  pas wired battle-side. */
 function Cmd_trysetcaughtmondexflags(ctx: BattleScriptContext): boolean {
-  const failJump = readWord(ctx);
+  let failJump = readWord(ctx);
+  // Meme garde que trygivecaughtmonnick : param pointeur potentiellement
+  // unresolved dans le bytecode (adresse brute) -> resolution par nom (usage
+  // decomp unique : BattleScript_PrintCaughtMonInfo:69 -> TryNicknameCaughtMon).
+  if (failJump < 0 || failJump > 0x100000) {
+    failJump = getBattleScriptOffset('BattleScript_TryNicknameCaughtMon');
+  }
   // 1:1 décomp lit gEnemyParty[0] (species + personality). Notre engine :
   // gBattleMons[1] (= opponent battler) en proxy (gEnemyParty pas wired
   // battle-side — adaptation pré-existante documentée, hors scope ÉTAPE 2c).
@@ -9737,7 +9743,16 @@ function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
  *  Port Phase 1 (UI naming screen Phase 1.4+) : auto-NO → case 4 → check party.
  *  Le state advance par tick comme dans drawlvlupbox. */
 function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
-  const jumpPtr = readWord(ctx);
+  let jumpPtr = readWord(ctx);
+  // GENERATEUR : le param pointeur de CET opcode fait partie des 2
+  // unresolvedSymbols de battle_scripts_2-bytecode (emis = adresse EWRAM brute
+  // 0x0203xxxx au lieu de l'offset relocalise) -> sauter dessus = soft-lock
+  // post-capture (A/B 2026-06-10). Garde : opcode hors bytecode => resolution
+  // par nom (l'UNIQUE usage decomp = BattleScript_TryNicknameCaughtMon:78 ->
+  // BattleScript_GiveCaughtMonEnd).
+  if (jumpPtr < 0 || jumpPtr > 0x100000) {
+    jumpPtr = getBattleScriptOffset('BattleScript_GiveCaughtMonEnd');
+  }
   switch (gBattleCommunication[0 /* MULTIUSE_STATE */]) {
     case 0:
       // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
