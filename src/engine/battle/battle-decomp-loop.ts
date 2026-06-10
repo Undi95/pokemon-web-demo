@@ -186,12 +186,16 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
   try {
     const { assetCache } = await import('../system/decomp-globals');
     const { loadGbaPal } = await import('../gba/png-loader');
-    if (!assetCache.has('gAnimGfx_Impact')) {
-      // le .4bpp.bin est byte-exact (convertisseur valide balls) — fetch direct.
-      const resp = await fetch('/decomp/em/battle_anims/sprites/impact.4bpp.bin');
-      assetCache.set('gAnimGfx_Impact', new Uint8Array(await resp.arrayBuffer()));
-      assetCache.set('gAnimPal_Impact', await loadGbaPal('/decomp/em/battle_anims/sprites/impact.gbapal'));
-    }
+    const loadBin = async (key: string, url: string) => {
+      if (assetCache.has(key)) return;
+      const resp = await fetch(url);
+      assetCache.set(key, new Uint8Array(await resp.arrayBuffer()));
+    };
+    // les .4bpp.bin sont byte-exacts (convertisseur valide balls) — fetch direct.
+    await loadBin('gAnimGfx_Impact', '/decomp/em/battle_anims/sprites/impact.4bpp.bin');
+    if (!assetCache.has('gAnimPal_Impact')) assetCache.set('gAnimPal_Impact', await loadGbaPal('/decomp/em/battle_anims/sprites/impact.gbapal'));
+    await loadBin('gAnimGfx_Scratch', '/decomp/em/battle_anims/sprites/scratch.4bpp.bin');
+    if (!assetCache.has('gAnimPal_Scratch')) assetCache.set('gAnimPal_Scratch', await loadGbaPal('/decomp/em/battle_anims/sprites/scratch.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -205,6 +209,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   void Promise.all([
     import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
     import('../../game/battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)
+    import('../../game/battle_anim_effects_3'),     // registry scratch (T4)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
