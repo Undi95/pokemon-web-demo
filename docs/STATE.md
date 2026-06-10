@@ -159,3 +159,19 @@ secret base, pokénav, pokéblock. (Liste éditable dans `scripts/audit-coverage
 - **T4 ~70%** : registry créé (marqueurs nominaux ids 0x1000+, table dédiée 795 symboles, fix bitwise >>> 0), handlers MOVEANIMATION 1:1 (DoMoveAnim + tick), garde-fou opcodes/PC, AnimTask_ShakeMon/2 + lunge portés. LES SCRIPTS DE MOVE S'EXÉCUTENT (warns nominaux). RESTE : shake visible (hypothèse double-instance registry статique/dynamique), loadspritegfx réel (gfx par tag), déraillements PC move-0, autres templates/tasks par vagues.
 - **INCIDENT MAJEUR RÉSOLU** (user-assist) : « ARCKO est déjà empoisonné » bloquant = bytecodes scripts_1/2 re-cassés par les recompiles T4 successifs (l'Intimidation de Mightyena déraillait). Restauration + RÈGLE : jamais recompiler sans restaurer/vérifier les non-cibles.
 - **T5-T8 : non commencées** (shiny/move-switching/hit-shake/yes-no helper ; shims+renames ; naming/dexinfo ; doc+3 runs).
+
+## 2026-06-10 (nuit) — GOAL 8 TRANCHES : RAPPORT FINAL
+**T1 ✓ · T2 ✓ · T3 ✓ · T4 jalon majeur · T5 3/4 · T6 1/2 · T7 dette re-documentée · T8 ✓ (3 runs verts)**
+
+### Livré cette session (commits f109ab73 → HEAD, tsc 0 partout)
+- T4 JALON : **première anim de move 1:1 fonctionnelle** (POUND → AnimTask_ShakeMon → la cible TREMBLE à l'écran). Chaîne complète : bytecode asm régénéré (9215 ops) → tables de noms → marqueurs nominaux (handlers natifs compileur pour createsprite/createvisualtask/createsoundtask — l'expansion générique désalignait TOUT) → registry singleton global → AnimTask TS → pixels. + handlers MOVEANIMATION 1:1 (DoMoveAnim+tick), garde-fou opcodes/PC (terminaison propre = jamais de soft-lock).
+- T5 : DoHitAnimHealthboxEffect 1:1 (healthbox oscille au hit, A/B ✓) ; PlayerHandleYesNoBox/Input 1:1 (le yes/no controller réel) ; runBattleYesNoMachine (helper réutilisable, suggestion user).
+- T6 : 5 shims déposés (battle-healthbox-l/healthbox/hp-bar/party-summary/reshow-battle-screen) — importeurs redirigés vers les miroirs, KO-run post-dépose ✓.
+- T8 : **KO-run ✓ + capture-run ✓ + médecine-run ✓** (combat→KO→OW ; Master Ball→capture→OW ; dégâts→potion→31/31→tour fini).
+
+### Dettes restantes EXPLICITES (goal final)
+- **T4** : loadspritegfx réel (gfx par tag → hitsplat/particules visibles) ; templates/tasks par vagues (les warns nominaux tracent la demande : gSlideMonToOffset/OriginalPos en tête) ; Translate* helpers ; déraillements PC résiduels tracés (move-0, 0x78@21334) ; monbg/MoveBattlerSpriteToBG réels.
+- **T5** : TryShinyAnimAfterMonAnim (chantier gfx shiny) ; HandleMoveSwitching (réarrangement moves, ~150 l.) ; basculer les 2 sites yes/no script sur le helper (A/B dédié).
+- **T6** : ~40 renames-miroir des équivalents fonctionnels (DETTE-T6-COMBAT-MISSING.md) ; fichiers engine/battle restants à migrer au nom décomp.
+- **T7** : DoNamingScreen + CB2_DisplayDexInfo = écrans entiers (clavier/OAM dex) — le backbone actuel ne les fournit pas ; la capture fonctionne avec auto-NO documenté + dexflags posés. DETTE ASSUMÉE (1:1 différé, comportement net préservé).
+- Hors-scope permanent : link/multi/contest/Frontier/Safari/Palace/debug.
