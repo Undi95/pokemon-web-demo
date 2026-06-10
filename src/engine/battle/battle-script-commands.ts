@@ -3280,6 +3280,51 @@ function _readBytecodeForString(tableOffset: number, idx: number): number {
  *  Strict 1:1 décomp : reste sur opcode tant qu'A ou B n'est pas pressé.
  *  Input wire requis (= JOY_NEW retourne false par défaut sans UI input réel,
  *  donc les scripts utilisant yesnobox attendent input UI Phase 1.4). */
+/** Machine YES/NO réutilisable (suggestion user 2026-06-10 : « comme le script
+ *  décomp, réutilisable partout, on précise sur quoi le OUI/NON retourne »).
+ *  1:1 du pattern décomp (battle_main.c:2507 / battle_script_commands yes/no) :
+ *  state 0 = dessine la box + curseur ; state 1 = input UP/DOWN/A/B.
+ *  Retourne null tant que pas de choix ; true = OUI (cursor 0 + A) ;
+ *  false = NON (cursor 1 + A, ou B qui force cursor=1). Le caller gère ses
+ *  états autour (stateRef = l'index gBattleCommunication utilisé). */
+function runBattleYesNoMachine(stateIdx: number): boolean | null {
+  switch (gBattleCommunication[stateIdx]) {
+    case 0:
+      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
+      BattlePutTextOnWindow('OUI' + String.fromCharCode(10) + 'NON', B_WIN_YESNO); // 1:1 gText_BattleYesNoChoice (battle_message.c:1283)
+      gBattleCommunication[stateIdx]++;
+      gBattleCommunication[CURSOR_POSITION] = 0;
+      BattleCreateYesNoCursorAt(0);
+      return null;
+    case 1:
+      if (JOY_NEW(DPAD_UP) && gBattleCommunication[CURSOR_POSITION] !== 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(gBattleCommunication[CURSOR_POSITION]);
+        gBattleCommunication[CURSOR_POSITION] = 0;
+        BattleCreateYesNoCursorAt(0);
+      }
+      if (JOY_NEW(DPAD_DOWN) && gBattleCommunication[CURSOR_POSITION] === 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(gBattleCommunication[CURSOR_POSITION]);
+        gBattleCommunication[CURSOR_POSITION] = 1;
+        BattleCreateYesNoCursorAt(1);
+      }
+      if (JOY_NEW(B_BUTTON)) {
+        gBattleCommunication[CURSOR_POSITION] = 1;
+        PlaySE(SE_SELECT);
+        HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+        return false;
+      } else if (JOY_NEW(A_BUTTON)) {
+        PlaySE(SE_SELECT);
+        HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+        return gBattleCommunication[CURSOR_POSITION] === 0;
+      }
+      return null;
+    default:
+      return null;
+  }
+}
+
 function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
   switch (gBattleCommunication[0]) {
     case 0:
