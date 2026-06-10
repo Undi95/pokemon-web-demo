@@ -508,40 +508,34 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
   battleNs.startBirchTutorial = async (): Promise<string> => {
-    const mod = await import('../battle/battle-flow');
-    const scriptMod = await import('../script/script-runtime');
-    // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
+    // VOIE L (depose voie V) : StartFirstBattle = 1:1 CB2_StartFirstBattle.
+    const helpers = await import('../battle/battle-setup-helpers');
     const sbsMod = await import('../save/save-block-state');
     if (sbsMod.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon/pokemon');
       const starter = pokeMod.CreateMon('SPECIES_TREECKO', 5);
       pokeMod.GiveMonToPlayer(starter);
-      console.log('[dev.battle.startBirchTutorial] auto-added Treecko Lv5 (party était vide)');
     }
-    const flow = mod.startBirchTutorialBattle();
-    (globalThis as { __activeBattleFlow?: { tick: () => boolean; getState: () => string } }).__activeBattleFlow = flow;
-    scriptMod.ScriptContext_SetupInlineNative(flow.tick);
-    return 'Birch tutorial battle started — flow ticked via script engine';
+    (helpers as unknown as { StartFirstBattle?: () => void }).StartFirstBattle?.();
+    return 'Birch tutorial (voie L) started';
   };
   battleNs.startWild = async (species: string, level: number): Promise<string> => {
-    const mod = await import('../battle/battle-flow');
-    const scriptMod = await import('../script/script-runtime');
-    // Auto-add Treecko if party is empty.
+    // VOIE L (depose voie V) : scripted wild 1:1.
+    const helpers = await import('../battle/battle-setup-helpers');
     const sbsMod2 = await import('../save/save-block-state');
     if (sbsMod2.gSaveBlock1Ptr.playerPartyCount === 0) {
       const pokeMod = await import('../pokemon/pokemon');
       const starter = pokeMod.CreateMon('SPECIES_TREECKO', Math.max(5, level - 1));
       pokeMod.GiveMonToPlayer(starter);
-      console.log(`[dev.battle.startWild] auto-added Treecko Lv${starter.level} (party était vide)`);
     }
-    const flow = mod.startWildBattle({ opponentSpecies: species, opponentLevel: level });
-    (globalThis as { __activeBattleFlow?: { tick: () => boolean; getState: () => string } }).__activeBattleFlow = flow;
-    scriptMod.ScriptContext_SetupInlineNative(flow.tick);
-    return `wild battle vs ${species} Lv${level} started`;
+    const h = helpers as unknown as { CreateScriptedWildMon?: (s: string, l: number, i: number) => void; BattleSetup_StartScriptedWildBattle?: () => void };
+    h.CreateScriptedWildMon?.(species, level, 0);
+    h.BattleSetup_StartScriptedWildBattle?.();
+    return `wild battle (voie L) vs ${species} Lv${level} started`;
   };
   battleNs.state = (): string => {
-    const af = (globalThis as { __activeBattleFlow?: { getState: () => string } }).__activeBattleFlow;
-    return af?.getState() ?? '(no active flow)';
+    const bmf = (globalThis as { __battleMainFunctions?: { getBattleMainFunc?: () => { name?: string } } }).__battleMainFunctions?.getBattleMainFunc?.();
+    return bmf?.name ?? '(voie L inactive)';
   };
   battleNs.outcome = (): number => {
     return (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome ?? 0;

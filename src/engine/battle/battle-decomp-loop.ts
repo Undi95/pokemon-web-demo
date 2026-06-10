@@ -221,6 +221,24 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     _setMainSavedCallback(() => {
       if (restored) return;
       restored = true;
+      // 1:1 decomp CB2_EndWildBattle/CB2_EndTrainerBattle (battle_setup.c:614/1327) :
+      // defaite (B_OUTCOME_LOST=2) ou nul (DREW=3) -> CB2_WhiteOut (overworld.c) :
+      // money/2 + HealPlayerParty + warp lastHealLocation (EventScript_WhiteOut).
+      // Port net-effect (C4, goal tranche 3) : money/2 + heal directs (filets) puis
+      // RunScriptImmediately(EventScript_WhiteOut) — le script bytecode fait le
+      // message + respawn warp si ses opcodes/specials sont disponibles.
+      try {
+        const oc = (globalThis as { __battleState?: { getBattleOutcome?: () => number } }).__battleState?.getBattleOutcome?.() ?? 0;
+        if (oc === 2 || oc === 3) {
+          const sb1 = (globalThis as Record<string, unknown>).gSaveBlock1 as { money?: number } | undefined;
+          if (sb1 && typeof sb1.money === 'number') sb1.money = Math.floor(sb1.money / 2);
+          const sp = (globalThis as Record<string, unknown>).__specials as { HealPlayerParty?: () => void } | undefined;
+          sp?.HealPlayerParty?.();
+          void import('../script/script-runtime').then((m) => {
+            try { m.RunScriptImmediately('EventScript_WhiteOut'); } catch (e) { console.warn('[whiteout] script KO (dette warp)', e); }
+          });
+        }
+      } catch (e) { console.warn('[whiteout] C4 net-effect KO', e); }
       const restore = (globalThis as Record<string, unknown>)._restoreOverworldFromMenu as (() => Promise<void>) | undefined;
       if (typeof restore === 'function') {
         // Reprend la BGM OW (sauvée par _playBattleBGM) après le re-init du field

@@ -887,11 +887,7 @@ export function BattlePutTextOnWindow(text: number | string, windowId: number): 
   const g = globalThis as Record<string, unknown>;
   const txt = typeof text === 'string' ? text : String(text);
 
-  // R2 : delegate au battle-flow rendering réel si combat actif (voie V).
-  const flow = (g.__activeBattleFlow as { printText?: (winId: number, t: string) => void } | undefined);
-  if (flow?.printText) {
-    flow.printText(windowId, txt);
-  } else {
+  {
     // Voie L (décomp) : pas de flow voie-V → rendu RÉEL 1:1 (battle_message.c:3035).
     try {
       _battlePutTextOnWindowReal(txt, windowId);

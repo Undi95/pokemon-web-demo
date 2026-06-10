@@ -289,11 +289,6 @@ const gText_WhatWillPkmnDo = 'Que doit faire\n{B_ACTIVE_NAME_WITH_PREFIX}?';
  *  (= text printer `>` mark) si combat actif, sinon BG tilemap manip. */
 export function ActionSelectionCreateCursorAt(cursorPosition: number, baseTileNum: number): void {
   // R2 : delegate au battle-flow rendering réel si combat actif.
-  const flow = (globalThis as { __activeBattleFlow?: { setActionCursor?: (p: number) => void } }).__activeBattleFlow;
-  if (flow?.setActionCursor) {
-    flow.setActionCursor(cursorPosition);
-    return;
-  }
   // 1:1 décomp BG tilemap fallback.
   const src = new Uint16Array([baseTileNum + 1, baseTileNum + 2]);
   _CopyToBgTilemapBufferRect_ChangePalette(
@@ -308,8 +303,6 @@ export function ActionSelectionCreateCursorAt(cursorPosition: number, baseTileNu
  *  (battle_controller_player.c:1540-1548). R2 wire : no-op si combat actif
  *  (= setActionCursor remplace `>` par ` ` au prochain refresh), sinon BG tilemap. */
 export function ActionSelectionDestroyCursorAt(cursorPosition: number): void {
-  const flow = (globalThis as { __activeBattleFlow?: { setActionCursor?: (p: number) => void } }).__activeBattleFlow;
-  if (flow?.setActionCursor) return; // refresh handled par Create call suivant
   const src = new Uint16Array([0x1016, 0x1016]);
   _CopyToBgTilemapBufferRect_ChangePalette(
     0, src,
@@ -397,11 +390,6 @@ function HandleInputChooseTarget(): void {
  *  (battle_controller_player.c:1510-1518). R2 wire : delegate au battle-flow
  *  setMoveCursor si combat actif. */
 export function MoveSelectionCreateCursorAt(cursorPosition: number, baseTileNum: number): void {
-  const flow = (globalThis as { __activeBattleFlow?: { setMoveCursor?: (p: number) => void } }).__activeBattleFlow;
-  if (flow?.setMoveCursor) {
-    flow.setMoveCursor(cursorPosition);
-    return;
-  }
   const src = new Uint16Array([baseTileNum + 1, baseTileNum + 2]);
   _CopyToBgTilemapBufferRect_ChangePalette(
     0, src,
@@ -414,8 +402,6 @@ export function MoveSelectionCreateCursorAt(cursorPosition: number, baseTileNum:
 /** 1:1 décomp `MoveSelectionDestroyCursorAt(cursorPosition)`
  *  (battle_controller_player.c:1520-1528). R2 wire : no-op si combat actif. */
 export function MoveSelectionDestroyCursorAt(cursorPosition: number): void {
-  const flow = (globalThis as { __activeBattleFlow?: { setMoveCursor?: (p: number) => void } }).__activeBattleFlow;
-  if (flow?.setMoveCursor) return;
   const src = new Uint16Array([0x1016, 0x1016]);
   _CopyToBgTilemapBufferRect_ChangePalette(
     0, src,
@@ -1706,12 +1692,6 @@ function PlayerHandleHealthBarUpdate(): void {
   // R2 : wire vers battle-flow scheduleHpBarUpdate pour rendering Phaser
   // (= update HP visible + redraw HP bar window). Convertit delta hpVal en
   // delta direct (= damage négatif = HP loss).
-  const flow = (globalThis as { __activeBattleFlow?: { scheduleHpBarUpdate?: (b: number, d: number) => void } }).__activeBattleFlow;
-  if (flow?.scheduleHpBarUpdate) {
-    // Note : décomp hpVal > 0 = damage, hpVal < 0 = heal (= signe inverse).
-    // Notre scheduleHpBarUpdate prend delta direct (positif = heal, négatif = damage).
-    flow.scheduleHpBarUpdate(gActiveBattler, -hpVal);
-  }
 
   gBattlerControllerFuncs[gActiveBattler] = CompleteOnHealthbarDone;
 }

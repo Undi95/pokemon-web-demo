@@ -63,7 +63,8 @@ import { setFieldCameraSuspended } from '../field/field-camera';
 import { setObjectEventsSuspended } from '../field/object-events';
 import { getString, initStringsFromDecomp } from '../ui/gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from '../system/data-tables';
-import { type BattleFlow } from './battle-flow';
+/** Type local (ex-voie V, supprimee) : l'ancien flow Birch ne retourne plus rien. */
+type BattleFlow = { tick(): boolean };
 // Voie L (suppression voie V) : 1er combat (Birch) via la VRAIE boucle decomp.
 import { StartFirstBattle } from './battle-setup-helpers';
 import { registerAffineAnim, registerAffineAnimTable } from '../decomp-impls/sprite-affine-extras';
