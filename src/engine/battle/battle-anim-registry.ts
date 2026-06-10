@@ -29,8 +29,19 @@ export interface AnimSpriteTemplate {
 const _idToName = new Map<number, string>();
 for (const { id, name } of ANIM_SYMBOLS_TABLE) _idToName.set(id, name);
 
-const _tasks = new Map<string, AnimTaskFn>();
-const _templates = new Map<string, AnimSpriteTemplate>();
+// SINGLETON GLOBAL (fix T4) : si le module est instancie DEUX fois (import
+// statique par l'interpreter + import DYNAMIQUE de mon_movement par
+// decomp-loop -> instances Vite distinctes possibles), les enregistrements
+// partaient dans une map fantome -> lookup vide cote interpreter. Le store
+// vit sur globalThis : toutes les instances partagent LE meme.
+type _RegStore = { tasks: Map<string, AnimTaskFn>; templates: Map<string, AnimSpriteTemplate> };
+const _store: _RegStore = ((globalThis as Record<string, unknown>).__battleAnimRegistryStore as _RegStore) ?? {
+  tasks: new Map<string, AnimTaskFn>(),
+  templates: new Map<string, AnimSpriteTemplate>(),
+};
+(globalThis as Record<string, unknown>).__battleAnimRegistryStore = _store;
+const _tasks = _store.tasks;
+const _templates = _store.templates;
 
 export const SYMBOL_MARKER = 0xF0000000;
 export const ANIM_SYMBOL_BASE = 0x1000;

@@ -785,6 +785,55 @@ function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null,
     return Array(Math.max(0, Math.min(n, 4096))).fill(fill);
   }
 
+  // ─── HANDLERS NATIFS battle_anim_script (goal T4 2026-06-10) ─────────────
+  // Les macros createsprite/createvisualtask/createsoundtask calculent
+  // argsCount via labels locaux ((.L2-.L1)/2) et argVar via .if — l'expansion
+  // generique emettait argsCount=subpriorite -> DESALIGNEMENT TOTAL des
+  // scripts (PC atterrissait dans les operandes). Emission native 1:1.
+  if (_currentScriptContext === 'battle_anim_script' && opName === 'createsprite') {
+    // createsprite template, anim_battler, subpriority_offset, argv...
+    const out = [0x02];
+    const tpl = resolveValue(op.args[0], labelOffsets, warnings) >>> 0;
+    out.push(tpl & 0xFF, (tpl >> 8) & 0xFF, (tpl >> 16) & 0xFF, (tpl >>> 24) & 0xFF);
+    const battler = resolveValue(op.args[1], labelOffsets, warnings);
+    const subprio = resolveValue(op.args[2], labelOffsets, warnings);
+    // 1:1 : ANIM_TARGET(=1) -> ANIMSPRITE_IS_TARGET(0x80) | (subprio & 0x7F).
+    const argVar = (battler === 1 ? 0x80 : 0) | (subprio & 0x7F);
+    out.push(argVar & 0xFF);
+    const argv = op.args.slice(3);
+    out.push(argv.length & 0xFF);
+    for (const a of argv) {
+      const v = resolveValue(a, labelOffsets, warnings) & 0xFFFF;
+      out.push(v & 0xFF, (v >> 8) & 0xFF);
+    }
+    return out;
+  }
+  if (_currentScriptContext === 'battle_anim_script' && opName === 'createvisualtask') {
+    const out = [0x03];
+    const addr = resolveValue(op.args[0], labelOffsets, warnings) >>> 0;
+    out.push(addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >>> 24) & 0xFF);
+    out.push(resolveValue(op.args[1], labelOffsets, warnings) & 0xFF); // priority
+    const argv = op.args.slice(2);
+    out.push(argv.length & 0xFF);
+    for (const a of argv) {
+      const v = resolveValue(a, labelOffsets, warnings) & 0xFFFF;
+      out.push(v & 0xFF, (v >> 8) & 0xFF);
+    }
+    return out;
+  }
+  if (_currentScriptContext === 'battle_anim_script' && opName === 'createsoundtask') {
+    const out = [0x1F];
+    const addr = resolveValue(op.args[0], labelOffsets, warnings) >>> 0;
+    out.push(addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >>> 24) & 0xFF);
+    const argv = op.args.slice(1);
+    out.push(argv.length & 0xFF);
+    for (const a of argv) {
+      const v = resolveValue(a, labelOffsets, warnings) & 0xFFFF;
+      out.push(v & 0xFF, (v >> 8) & 0xFF);
+    }
+    return out;
+  }
+
   // Macro invocation? Resolve by context (= 1:1 décomp .include scoping).
   const macro = lookupMacro(opName, scriptContext);
   if (macro) {
