@@ -350,73 +350,73 @@ export function GetBattlerSpriteDefault_Y(battler: number): number {
 }
 
 // ─── Rot/Scale des sprites battler (battle_anim_mons.c:1260-1360) ──────────
-// Portés pour la chaîne capture (SpriteCB_Ball_MonShrink_Step : le mon rétrécit
-// dans la ball, scale Q8.8 256→1152 = screen→texel ×4.5 → mon ÷4.5).
+// FIX user 2026-06-10 (« pas de retreci / pas d'anim ») : la 1re version
+// ecrivait sprite.oam.affineMode — les sprites du MODELE PLAT n'ont PAS de
+// champ .oam (l'OAM reel = rt.gba.oam[sprite.oamIndex] ; affineMode/matrixNum
+// = champs PLATS) -> no-op silencieux. Reecrit sur le modele reel.
 
 import { ObjAffineSet } from '../engine/system/decomp-bridge';
 import { getRuntime } from '../engine/system/decomp-globals';
 import { SetOamMatrix, AllocOamMatrix, CalcCenterToCornerVec } from '../engine/system/sprite';
 
-/** 1:1 décomp `ShouldRotScaleSpeciesBeFlipped()` (battle_anim_mons.c:1280) :
- *  flip uniquement en CONTEST (non porté) → false. */
+type RotScaleSprite = {
+  oamIndex: number; matrixNum?: number; affineMode?: number;
+  affineAnimPaused?: boolean; invisible?: boolean;
+  centerToCornerVecX?: number; centerToCornerVecY?: number;
+};
+
 function _shouldRotScaleSpeciesBeFlipped(): boolean { return false; }
 
-/** 1:1 décomp `SetSpriteRotScale(spriteId, xScale, yScale, rotation)`
- *  (battle_anim_mons.c:1260) : ObjAffineSet → écrit la matrice OAM du sprite. */
+/** 1:1 décomp `SetSpriteRotScale` (battle_anim_mons.c:1260) : ObjAffineSet →
+ *  matrice OAM du sprite (slot sprite.matrixNum, champ PLAT). */
 export function SetSpriteRotScale(spriteId: number, xScale: number, yScale: number, rotation: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as { oam?: { matrixNum?: number } } | undefined;
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   let sx = xScale;
   if (_shouldRotScaleSpeciesBeFlipped()) sx = -sx;
   const dst = [{ pa: 0x100, pb: 0, pc: 0, pd: 0x100 }];
   ObjAffineSet({ xScale: sx, yScale, rotation }, dst, 1, 2);
-  const i = sprite.oam?.matrixNum ?? 0;
-  SetOamMatrix(i, dst[0].pa, dst[0].pb, dst[0].pc, dst[0].pd);
+  const m = sprite.matrixNum ?? 0;
+  SetOamMatrix(m, dst[0].pa, dst[0].pb, dst[0].pc, dst[0].pd);
 }
 
-/** 1:1 décomp `PrepareBattlerSpriteForRotScale(spriteId, objMode)`
- *  (battle_anim_mons.c:1295) : passe le sprite en affine double + assigne une
- *  matrice. Divergence plateforme : la matrice vient d'AllocOamMatrix (le décomp
- *  réutilise healthBoxesData[battler].matrixNum pré-allouée — pas modélisée). */
+/** 1:1 décomp `PrepareBattlerSpriteForRotScale` (battle_anim_mons.c:1295) :
+ *  alloue/assigne une matrice + passe le sprite en affine double (champs PLATS
+ *  + OamEntry hardware rt.gba.oam[oamIndex]). */
 export function PrepareBattlerSpriteForRotScale(spriteId: number, objMode: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as {
-    invisible?: boolean; affineAnimPaused?: boolean;
-    oam?: { objMode?: number; affineMode?: number; matrixNum?: number; shape?: number; size?: number };
-  } | undefined;
-  if (!rt || !sprite || !sprite.oam) return;
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  if (!rt || !sprite) return;
   sprite.invisible = false;
-  sprite.oam.objMode = objMode;
   sprite.affineAnimPaused = true;
-  if (!sprite.oam.affineMode) {
+  if (!sprite.affineMode || sprite.matrixNum === undefined || sprite.matrixNum < 0) {
     const m = AllocOamMatrix();
-    sprite.oam.matrixNum = m >= 0 ? m : 0;
+    sprite.matrixNum = m >= 0 ? m : 0;
   }
-  sprite.oam.affineMode = 3; // ST_OAM_AFFINE_DOUBLE
-  {
-    const v = CalcCenterToCornerVec(sprite.oam.shape ?? 0, sprite.oam.size ?? 0, sprite.oam.affineMode ?? 0);
-    (sprite as { centerToCornerVecX?: number; centerToCornerVecY?: number }).centerToCornerVecX = v.centerToCornerVecX;
-    (sprite as { centerToCornerVecX?: number; centerToCornerVecY?: number }).centerToCornerVecY = v.centerToCornerVecY;
+  sprite.affineMode = 3; // ST_OAM_AFFINE_DOUBLE
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; matrixNum?: number; objMode?: number }> } }).gba?.oam?.[sprite.oamIndex];
+  if (oam) {
+    oam.affineMode = 3;
+    oam.matrixNum = sprite.matrixNum;
+    oam.objMode = objMode;
   }
+  const v = CalcCenterToCornerVec(0, 3, 3);
+  sprite.centerToCornerVecX = v.centerToCornerVecX;
+  sprite.centerToCornerVecY = v.centerToCornerVecY;
 }
 
-/** 1:1 décomp `ResetSpriteRotScale(spriteId)` (battle_anim_mons.c:1309). */
+/** 1:1 décomp `ResetSpriteRotScale` (battle_anim_mons.c:1309). */
 export function ResetSpriteRotScale(spriteId: number): void {
   const rt = getRuntime();
-  const sprite = rt?.gSprites?.get(spriteId) as {
-    affineAnimPaused?: boolean;
-    oam?: { objMode?: number; affineMode?: number; shape?: number; size?: number };
-  } | undefined;
-  if (!rt || !sprite || !sprite.oam) return;
+  const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
+  if (!rt || !sprite) return;
   SetSpriteRotScale(spriteId, 0x100, 0x100, 0);
-  sprite.oam.affineMode = 1; // ST_OAM_AFFINE_NORMAL
-  sprite.oam.objMode = 0;    // ST_OAM_OBJ_NORMAL
+  sprite.affineMode = 0;
   sprite.affineAnimPaused = false;
-  {
-    const v = CalcCenterToCornerVec(sprite.oam.shape ?? 0, sprite.oam.size ?? 0, sprite.oam.affineMode ?? 0);
-    (sprite as { centerToCornerVecX?: number; centerToCornerVecY?: number }).centerToCornerVecX = v.centerToCornerVecX;
-    (sprite as { centerToCornerVecX?: number; centerToCornerVecY?: number }).centerToCornerVecY = v.centerToCornerVecY;
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; objMode?: number }> } }).gba?.oam?.[sprite.oamIndex];
+  if (oam) {
+    oam.affineMode = 0;
+    oam.objMode = 0;
   }
 }
-
