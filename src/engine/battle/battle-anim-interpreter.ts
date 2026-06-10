@@ -1407,10 +1407,21 @@ export function GetSoundTaskCount(): number { return gAnimSoundTaskCount; }
 // Exposed sentinel value (= ANIM_BYTECODE buffer size pour bounds checks externes).
 export const ANIM_BYTECODE_SIZE = ANIM_BYTECODE.length;
 
+/** 1:1 decomp InitAndLaunchSpecialAnimation prologue (battle_gfx_sfx_util.c) :
+ *  gBattleAnimAttacker = atk ; gBattleAnimTarget = def. Met a jour les lets
+ *  ET la surface globalThis (exposee par VALEUR, sinon snapshot fige a 0). */
+export function SetAnimBattlers(atk: number, def: number): void {
+  gBattleAnimAttacker = atk;
+  gBattleAnimTarget = def;
+  const surf = (globalThis as Record<string, unknown>).__battleAnim as Record<string, unknown> | undefined;
+  if (surf) { surf.gBattleAnimAttacker = atk; surf.gBattleAnimTarget = def; }
+}
+
 // Devtools exposure : trace les anims (= devtools K7).
 (globalThis as Record<string, unknown>).__battleAnim = {
   IsAnimRunning, GetCurrentPC, GetAnimFramesToWait,
   GetVisualTaskCount, GetSoundTaskCount,
   gBattleAnimArgs, gBattleAnimAttacker, gBattleAnimTarget,
   LaunchBattleAnimation, DoMoveAnim, ClearBattleAnimationVars,
+  SetAnimBattlers,
 };

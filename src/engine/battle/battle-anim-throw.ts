@@ -44,6 +44,16 @@
  */
 
 import { getRuntime } from '../system/decomp-globals';
+import { Cos } from '../../game/trig';
+import { CreateTask, DestroyTask } from '../system/decomp-bridge';
+import {
+  InitAnimArcTranslation, TranslateAnimHorizontalArc,
+  SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
+} from '../../game/battle_anim_mons';
+import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon } from '../system/pokeball-effects';
+import { BlendPalettes } from '../system/decomp-globals';
+import { BeginNormalPaletteFade } from '../system/decomp-bridge';
+import { setGDoingBattleAnim } from './state';
 import {
   gLastUsedItem, gBattleStruct,
 } from './state';
@@ -527,21 +537,556 @@ function _GetBattlerSpriteCoord(battler: number, coord: number): number {
   return 40;  // Y
 }
 
-/** Helper : SpriteCB_Ball_Throw (= ball arc trajectory callback). */
-function SpriteCB_Ball_Throw(sprite: { data: number[]; x?: number; y?: number; x2?: number; y2?: number; callback?: unknown }): void {
-  // Dette R3 : full ball arc trajectory (= parabolic curve + reach + bounce).
-  // Cascade vers battle-ball-throw.ts existant qui implémente le arc.
-  // Pour now : decrement sDuration jusqu'à 0xFFFF (= done).
-  if (sprite.data[0] > 0) {
-    sprite.data[0]--;
+// ─── Chaîne CAPTURE 1:1 (battle_anim_throw.c:855-1567) ─────────────────────
+// La VRAIE séquence de capture (le SpriteCB_BallThrow* de pokeball.c est du
+// code mort décomp — « These do not seem to get run »). Sprite ball type plat
+// runtime : data[8], x/y/x2/y2, callback, animEnded/affineAnimEnded.
+
+type BallSprite = {
+  data: number[]; x: number; y: number; x2: number; y2: number;
+  callback: ((s: BallSprite) => void) | null;
+  animEnded?: boolean; affineAnimEnded?: boolean; animPaused?: boolean;
+  affineAnimPaused?: boolean; invisible?: boolean; spriteId?: number;
+  subpriority?: number;
+  oam?: { objMode?: number; paletteNum?: number; matrixNum?: number };
+  template?: { paletteTag?: number };
+};
+
+function _PlaySE(seId: number): void {
+  const g = globalThis as { __PlaySE?: (id: number) => void };
+  g.__PlaySE?.(seId);
+}
+// SE ids 1:1 songs.h.
+const SE_BALL_T = 23;
+const SE_BALL_BOUNCE = [56, 57, 58, 59];  // SE_BALL_BOUNCE_1..4 (songs.h:62-65)
+const SE_BALL_TRADE_T = 60;
+const SE_RG_BALL_CLICK_T = 254;
+const MUS_RG_CAUGHT_INTRO_T = 531;
+
+/** animationData (gBattleSpritesDataPtr->animationData) — ballSubpx local ;
+ *  ballThrowCaseId/wildMonInvisible via gBattleStruct (dette storage existante). */
+const _animData = { ballSubpx: 0 };
+function _ballThrowCaseId(): number {
+  return ((gBattleStruct as unknown) as { ballThrowCaseId?: number }).ballThrowCaseId ?? 0;
+}
+function _wildMonInvisible(): boolean {
+  return ((gBattleStruct as unknown) as { wildMonInvisible?: boolean }).wildMonInvisible ?? false;
+}
+
+function _rtSprite(spriteId: number): BallSprite | undefined {
+  return getRuntime()?.gSprites?.get(spriteId) as unknown as BallSprite | undefined;
+}
+function _spriteIdOf(sprite: BallSprite): number {
+  if (sprite.spriteId !== undefined) return sprite.spriteId;
+  const rt = getRuntime();
+  if (!rt?.gSprites) return -1;
+  for (const [id, sp] of rt.gSprites.entries()) {
+    if ((sp as unknown) === (sprite as unknown)) return id;
+  }
+  return -1;
+}
+function _startAnim(sprite: BallSprite, n: number): void {
+  const id = _spriteIdOf(sprite);
+  const rt = getRuntime() as unknown as { StartSpriteAnim?: (i: number, n: number) => void };
+  if (id >= 0) rt?.StartSpriteAnim?.(id, n);
+}
+function _startAffine(sprite: BallSprite, n: number): void {
+  const id = _spriteIdOf(sprite);
+  const rt = getRuntime() as unknown as { StartSpriteAffineAnim?: (i: number, n: number) => void };
+  if (id >= 0) rt?.StartSpriteAffineAnim?.(id, n);
+}
+function _destroyBall(sprite: BallSprite): void {
+  const id = _spriteIdOf(sprite);
+  const rt = getRuntime();
+  if (rt && id >= 0) { rt.DestroySprite(id); rt.gSprites.delete(id); }
+}
+function _updateOamPriorityInAllHealthboxes(priority: number): void {
+  const hb = (globalThis as Record<string, unknown>).__battleHealthbox as {
+    UpdateOamPriorityInAllHealthboxes?: (p: number) => void;
+  } | undefined;
+  hb?.UpdateOamPriorityInAllHealthboxes?.(priority);
+}
+// Constantes affine ball (pokeball.h enum) + battler (data.h enum).
+const BALL_ROTATE_RIGHT = 1;
+const BALL_ROTATE_LEFT = 2;
+const BALL_AFFINE_ANIM_3 = 3;
+const BATTLER_AFFINE_NORMAL = 0;
+const BATTLER_AFFINE_EMERGE = 1;
+// ballThrowCaseId enum (battle_anim.h) : 0=NO_SHAKES..4=3_SHAKES_SUCCESS, 5=TRAINER_BLOCK.
+const BALL_NO_SHAKES = 0;
+const BALL_3_SHAKES_SUCCESS = 4;
+
+/** 1:1 décomp `SpriteCB_Ball_Throw(sprite)` (battle_anim_throw.c:855) :
+ *  setup de l'arc (amplitude -40) → Ball_Arc. */
+function SpriteCB_Ball_Throw(sprite: BallSprite): void {
+  const targetX = sprite.data[1] & 0xFFFF;
+  const targetY = sprite.data[2] & 0xFFFF;
+  sprite.data[1] = sprite.x;       // sOffsetX
+  sprite.data[2] = targetX;        // sTargetX
+  sprite.data[3] = sprite.y;       // sOffsetY
+  sprite.data[4] = targetY;        // sTargetY
+  sprite.data[5] = -40;            // sAmplitude
+  InitAnimArcTranslation(sprite as never);
+  sprite.callback = SpriteCB_Ball_Arc;
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Arc(sprite)` (:880) : vol en arc → block trainer
+ *  OU ouverture (anim 1 + particles + fade mon) → MonShrink. */
+function SpriteCB_Ball_Arc(sprite: BallSprite): void {
+  if (TranslateAnimHorizontalArc(sprite as never)) {
+    if (_ballThrowCaseId() === BALL_TRAINER_BLOCK) {
+      sprite.callback = SpriteCB_Ball_Block;
+    } else {
+      _startAnim(sprite, 1);
+      sprite.x += sprite.x2; sprite.y += sprite.y2;
+      sprite.x2 = 0; sprite.y2 = 0;
+      for (let i = 0; i < 8; i++) sprite.data[i] = 0;
+      sprite.data[5] = 0;  // sTimer
+      sprite.callback = SpriteCB_Ball_MonShrink;
+      const ballId = ItemIdToBallId(gLastUsedItem);
+      const rt = getRuntime();
+      if (rt) {
+        _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
+        _fxBallFadeMon(rt as never, false, _getAnimState().target, 14, ballId);
+      }
+    }
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_MonShrink(sprite)` (:917) : délai 10 frames →
+ *  task shrink + Step. */
+function SpriteCB_Ball_MonShrink(sprite: BallSprite): void {
+  if (++sprite.data[5] === 10) {
+    sprite.data[5] = CreateTask(() => { /* TaskDummy */ }, 50);
+    sprite.callback = SpriteCB_Ball_MonShrink_Step;
+    const monSprite = _rtSprite(_getBattlerSpriteId(_getAnimState().target));
+    if (monSprite) monSprite.data[1] = 0;
+  }
+}
+
+// MON_SHRINK states : 0 setup, 1 step, 2 invisible, 3 free (battle_anim.h).
+/** 1:1 décomp `SpriteCB_Ball_MonShrink_Step(sprite)` (:934) : rot-scale du mon
+ *  256→1152 (le mon rétrécit dans la ball en montant), puis invisible → Bounce. */
+function SpriteCB_Ball_MonShrink_Step(sprite: BallSprite): void {
+  const spriteId = _getBattlerSpriteId(_getAnimState().target);
+  const taskId = sprite.data[5];
+  const task = _gTasks(taskId);
+  const monSprite = _rtSprite(spriteId);
+  if (++task.data[1] === 11) _PlaySE(SE_BALL_TRADE_T);
+  switch (task.data[0]) {
+    case 0: {  // MON_SHRINK
+      PrepareBattlerSpriteForRotScale(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+      task.data[10] = 256;
+      const monY = monSprite ? (monSprite.y + monSprite.y2) : 0;
+      const shrinkDistance = monY - (sprite.y + sprite.y2);
+      task.data[2] = Math.floor((shrinkDistance * 256) / 28) | 0;  // gMonShrinkDelta (duration 28)
+      task.data[0]++;
+      break;
+    }
+    case 1:  // MON_SHRINK_STEP
+      task.data[10] += 32;
+      SetSpriteRotScale(spriteId, task.data[10], task.data[10], 0);
+      task.data[3] += task.data[2];
+      if (monSprite) monSprite.y2 = -(task.data[3] >> 8);
+      if (task.data[10] >= 1152) task.data[0]++;
+      break;
+    case 2:  // MON_SHRINK_INVISIBLE
+      ResetSpriteRotScale(spriteId);
+      if (monSprite) monSprite.invisible = true;
+      task.data[0]++;
+      break;
+    default:  // MON_SHRINK_FREE
+      if (task.data[1] > 10) {
+        DestroyTask(taskId);
+        _startAnim(sprite, 2);
+        sprite.data[5] = 0;
+        sprite.callback = SpriteCB_Ball_Bounce;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Bounce(sprite)` (:990) : attend la fin d'anim →
+ *  init la chute (amplitude 40, phase 0). */
+function SpriteCB_Ball_Bounce(sprite: BallSprite): void {
+  if (sprite.animEnded) {
+    sprite.data[3] = 0;   // sState
+    sprite.data[4] = 40;  // sAmplitude
+    sprite.data[5] = 0;   // sPhase
+    sprite.y += Cos(0, 40);
+    sprite.y2 = -Cos(0, sprite.data[4]);
+    sprite.callback = SpriteCB_Ball_Bounce_Step;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Bounce_Step(sprite)` (:1025) : 4 rebonds Cos
+ *  (amplitude -10/rebond, SE bounce 1-4) → Release (NO_SHAKES) ou Wobble.
+ *  sState : low byte = direction (0 fall / 1 rise), high byte = bounces. */
+function SpriteCB_Ball_Bounce_Step(sprite: BallSprite): void {
+  let lastBounce = false;
+  const state = sprite.data[3];
+  switch (state & 0xFF) {
+    case 0:  // BALL_FALLING
+      sprite.y2 = -Cos(sprite.data[5], sprite.data[4]);
+      sprite.data[5] += (state >> 8) + 4;
+      if (sprite.data[5] >= 64) {
+        sprite.data[4] -= 10;
+        sprite.data[3] += 257;  // RISE_FASTER
+        const bounceCount = sprite.data[3] >> 8;
+        if (bounceCount === 4) lastBounce = true;
+        _PlaySE(SE_BALL_BOUNCE[Math.min(bounceCount, 4) - 1] ?? SE_BALL_BOUNCE[3]);
+      }
+      break;
+    case 1:  // BALL_RISING
+      sprite.y2 = -Cos(sprite.data[5], sprite.data[4]);
+      sprite.data[5] -= (state >> 8) + 4;
+      if (sprite.data[5] <= 0) {
+        sprite.data[5] = 0;
+        sprite.data[3] &= -0x100;  // FALL
+      }
+      break;
+  }
+  if (lastBounce) {
+    sprite.data[3] = 0;
+    sprite.y += Cos(64, 40);
+    sprite.y2 = 0;
+    if (_ballThrowCaseId() === BALL_NO_SHAKES) {
+      sprite.data[5] = 0;
+      sprite.callback = SpriteCB_Ball_Release;
+    } else {
+      sprite.callback = SpriteCB_Ball_Wobble;
+      sprite.data[4] = 1;
+      sprite.data[5] = 0;
+    }
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Wobble(sprite)` (:1110) : délai 31 frames →
+ *  rotation droite + SE_BALL → Wobble_Step. */
+function SpriteCB_Ball_Wobble(sprite: BallSprite): void {
+  if (++sprite.data[3] === 31) {
+    sprite.data[3] = 0;
+    sprite.affineAnimPaused = true;
+    _startAffine(sprite, BALL_ROTATE_RIGHT);
+    _animData.ballSubpx = 0;
+    sprite.callback = SpriteCB_Ball_Wobble_Step;
+    _PlaySE(SE_BALL_T);
+  }
+}
+
+// Wobble states : BALL_ROLL_1=0, PIVOT_1, ROLL_2, PIVOT_2, ROLL_3, NEXT_MOVE,
+// WAIT_NEXT_SHAKE (battle_anim.h).
+/** 1:1 décomp `SpriteCB_Ball_Wobble_Step(sprite)` (:1135) : LA SECOUSSE
+ *  (roll subpixel 176/256 px/frame + pivots) ×N ; shakes==caseId → Release
+ *  (échec) ; caseId==BALL_3_SHAKES_SUCCESS && shakes==3 → Capture. */
+function SpriteCB_Ball_Wobble_Step(sprite: BallSprite): void {
+  const rollSub = (): void => {
+    if (_animData.ballSubpx > 255) {
+      sprite.x2 += sprite.data[4];
+      _animData.ballSubpx &= 0xFF;
+    } else {
+      _animData.ballSubpx += 176;
+    }
+  };
+  switch (sprite.data[3] & 0xFF) {
+    case 0: {  // BALL_ROLL_1
+      rollSub();
+      sprite.data[5]++;
+      sprite.affineAnimPaused = false;
+      if (sprite.data[5] + 7 > 14) {
+        _animData.ballSubpx = 0;
+        sprite.data[3]++;
+        sprite.data[5] = 0;
+      }
+      break;
+    }
+    case 1:  // BALL_PIVOT_1
+      if (++sprite.data[5] === 1) {
+        sprite.data[5] = 0;
+        sprite.data[4] = -sprite.data[4];
+        sprite.data[3]++;
+        sprite.affineAnimPaused = false;
+        _startAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
+      } else {
+        sprite.affineAnimPaused = true;
+      }
+      break;
+    case 2: {  // BALL_ROLL_2
+      rollSub();
+      sprite.data[5]++;
+      sprite.affineAnimPaused = false;
+      if (sprite.data[5] + 12 > 24) {
+        _animData.ballSubpx = 0;
+        sprite.data[3]++;
+        sprite.data[5] = 0;
+      }
+      break;
+    }
+    case 3:  // BALL_PIVOT_2 (1:1 : sTimer++ < 0 jamais vrai → exécute direct)
+      sprite.data[5] = 0;
+      sprite.data[4] = -sprite.data[4];
+      sprite.data[3]++;
+      sprite.affineAnimPaused = false;
+      _startAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
+      // 1:1 fall through vers BALL_ROLL_3 (deplie, tsc strict) :
+      rollSub();
+      sprite.data[5]++;
+      sprite.affineAnimPaused = false;
+      if (sprite.data[5] + 4 > 8) {
+        _animData.ballSubpx = 0;
+        sprite.data[3]++;
+        sprite.data[5] = 0;
+        sprite.data[4] = -sprite.data[4];
+      }
+      break;
+    case 4: {  // BALL_ROLL_3
+      rollSub();
+      sprite.data[5]++;
+      sprite.affineAnimPaused = false;
+      if (sprite.data[5] + 4 > 8) {
+        _animData.ballSubpx = 0;
+        sprite.data[3]++;
+        sprite.data[5] = 0;
+        sprite.data[4] = -sprite.data[4];
+      }
+      break;
+    }
+    case 5: {  // BALL_NEXT_MOVE
+      sprite.data[3] += 0x100;  // SHAKE_INC
+      const shakes = sprite.data[3] >> 8;
+      if (shakes === _ballThrowCaseId()) {
+        sprite.affineAnimPaused = true;
+        sprite.callback = SpriteCB_Ball_Release;
+        sprite.data[5] = 0;
+      } else if (_ballThrowCaseId() === BALL_3_SHAKES_SUCCESS && shakes === 3) {
+        sprite.callback = SpriteCB_Ball_Capture;
+        sprite.affineAnimPaused = true;
+      } else {
+        sprite.data[3]++;  // BALL_WAIT_NEXT_SHAKE
+        sprite.affineAnimPaused = true;
+      }
+      break;
+    }
+    default:  // BALL_WAIT_NEXT_SHAKE
+      if (++sprite.data[5] === 31) {
+        sprite.data[5] = 0;
+        sprite.data[3] &= -0x100;  // RESET_STATE
+        _startAffine(sprite, BALL_AFFINE_ANIM_3);
+        _startAffine(sprite, sprite.data[4] < 0 ? BALL_ROTATE_LEFT : BALL_ROTATE_RIGHT);
+        _PlaySE(SE_BALL_T);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Release(sprite)` (:1289) : délai 31 → Release_Step. */
+function SpriteCB_Ball_Release(sprite: BallSprite): void {
+  if (++sprite.data[5] === 31) {
+    sprite.data[5] = 0;
+    sprite.callback = SpriteCB_Ball_Release_Step;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Capture(sprite)` (:1302). */
+function SpriteCB_Ball_Capture(sprite: BallSprite): void {
+  sprite.animPaused = true;
+  sprite.callback = SpriteCB_Ball_Capture_Step;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = 0;
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Capture_Step(sprite)` (:1312) : timers 40 (click
+ *  + flash noir + étoiles) / 60 (unfade) / 95 (fin anim + musique capture) /
+ *  315 (destroy mon sprite → FadeOut). */
+function SpriteCB_Ball_Capture_Step(sprite: BallSprite): void {
+  sprite.data[4]++;
+  if (sprite.data[4] === 40) {
+    _PlaySE(SE_RG_BALL_CLICK_T);
+    BlendPalettes(0x10000 << (sprite.oam?.paletteNum ?? 0), 6, 0x0000);
+    MakeCaptureStars(sprite);
+  } else if (sprite.data[4] === 60) {
+    BeginNormalPaletteFade(0x10000 << (sprite.oam?.paletteNum ?? 0), 2, 6, 0, 0x0000);
+  } else if (sprite.data[4] === 95) {
+    setGDoingBattleAnim(false);
+    _updateOamPriorityInAllHealthboxes(1);
+    const dg = globalThis as { __m4aMPlayAllStop?: () => void };
+    dg.__m4aMPlayAllStop?.();
+    _PlaySE(MUS_RG_CAUGHT_INTRO_T);
+  } else if (sprite.data[4] === 315) {
+    const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
+    const rt = getRuntime();
+    if (rt && monSpriteId >= 0) { rt.DestroySprite(monSpriteId); rt.gSprites.delete(monSpriteId); }
+    sprite.data[0] = 0;
+    sprite.callback = SpriteCB_Ball_FadeOut;
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_FadeOut(sprite)` (:1350) : blend → invisible →
+ *  destroy (BLDCNT/BLDALPHA via runtime SetGpuReg). */
+function SpriteCB_Ball_FadeOut(sprite: BallSprite): void {
+  const rt = getRuntime();
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.data[1] = 0;
+      sprite.data[2] = 0;
+      if (sprite.oam) sprite.oam.objMode = 1;  // ST_OAM_OBJ_BLEND
+      rt?.SetGpuReg?.(0x50 /* BLDCNT */, 0x40 | 0x3F00);
+      rt?.SetGpuReg?.(0x52 /* BLDALPHA */, 16);
+      sprite.data[0]++;
+      break;
+    case 1:
+      if (sprite.data[1]++ > 0) {
+        sprite.data[1] = 0;
+        sprite.data[2]++;
+        rt?.SetGpuReg?.(0x52, (16 - sprite.data[2]) | (sprite.data[2] << 8));
+        if (sprite.data[2] === 16) sprite.data[0]++;
+      }
+      break;
+    case 2:
+      sprite.invisible = true;
+      sprite.data[0]++;
+      break;
+    default: {
+      const pf = (globalThis as Record<string, unknown>).__paletteFade as { active?: boolean } | undefined;
+      if (!pf?.active) {
+        rt?.SetGpuReg?.(0x50, 0);
+        rt?.SetGpuReg?.(0x52, 0);
+        sprite.data[0] = 0;
+        sprite.callback = DestroySpriteAfterOneFrame;
+      }
+      break;
+    }
+  }
+}
+
+/** 1:1 décomp `DestroySpriteAfterOneFrame(sprite)` (:1398). */
+function DestroySpriteAfterOneFrame(sprite: BallSprite): void {
+  if (sprite.data[0] === 0) {
+    sprite.data[0] = -1;
   } else {
-    sprite.data[0] = 0xFFFF;  // animation done sentinel
+    _destroyBall(sprite);
+  }
+}
+
+/** 1:1 décomp `sCaptureStars[]` : 3 étoiles (xOffset, yOffset, amplitude). */
+const sCaptureStars = [
+  { xOffset: 10, yOffset: 2, amplitude: -3 },
+  { xOffset: 15, yOffset: 0, amplitude: -4 },
+  { xOffset: -10, yOffset: 2, amplitude: -3 },
+] as const;
+
+/** 1:1 décomp `MakeCaptureStars(sprite)` (:1417) — DETTE DOUCE : la création
+ *  unitaire de sprite étoile (sBallParticleSpriteTemplates[BALL_MASTER] + anim
+ *  star + arc + flicker) requiert d'exposer le template particle côté
+ *  pokeball-effects ; en attendant les 3 étoiles ne spawnent pas (le reste —
+ *  click, flash, musique, destruction — est 1:1). */
+function MakeCaptureStars(sprite: BallSprite): void {
+  void sprite; void sCaptureStars; void SpriteCB_CaptureStar_Flicker;
+  console.warn('[capture] MakeCaptureStars : étoiles non portées (dette template particle unitaire)');
+}
+
+/** 1:1 décomp `SpriteCB_CaptureStar_Flicker(sprite)` (:1454). */
+function SpriteCB_CaptureStar_Flicker(sprite: BallSprite): void {
+  sprite.invisible = !sprite.invisible;
+  if (TranslateAnimHorizontalArc(sprite as never)) _destroyBall(sprite);
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Release_Step(sprite)` (:1468) : ÉCHEC — la ball
+ *  s'ouvre (anim 1 + particles + unfade) + le mon ÉMERGE (affine EMERGE,
+ *  sOffsetY 4096 → -288/frame). */
+function SpriteCB_Ball_Release_Step(sprite: BallSprite): void {
+  _startAnim(sprite, 1);
+  _startAffine(sprite, 0);
+  sprite.callback = SpriteCB_Ball_Release_Wait;
+  const ballId = ItemIdToBallId(gLastUsedItem);
+  const rt = getRuntime();
+  if (rt) {
+    _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
+    _fxBallFadeMon(rt as never, true, _getAnimState().target, 14, ballId);
+  }
+  const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
+  const monSprite = _rtSprite(monSpriteId);
+  if (monSprite) {
+    monSprite.invisible = false;
+    const rtA = getRuntime() as unknown as { StartSpriteAffineAnim?: (i: number, n: number) => void };
+    rtA?.StartSpriteAffineAnim?.(monSpriteId, BATTLER_AFFINE_EMERGE);
+    monSprite.data[1] = 4096;  // sOffsetY
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Release_Wait(sprite)` (:1492) : le mon remonte
+ *  (sOffsetY -= 288/frame), fin → restore + fin d'anim. */
+function SpriteCB_Ball_Release_Wait(sprite: BallSprite): void {
+  let released = false;
+  if (sprite.animEnded) sprite.invisible = true;
+  const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
+  const monSprite = _rtSprite(monSpriteId);
+  if (monSprite?.affineAnimEnded) {
+    const rtA = getRuntime() as unknown as { StartSpriteAffineAnim?: (i: number, n: number) => void };
+    rtA?.StartSpriteAffineAnim?.(monSpriteId, BATTLER_AFFINE_NORMAL);
+    released = true;
+  } else if (monSprite) {
+    monSprite.data[1] -= 288;
+    monSprite.y2 = monSprite.data[1] >> 8;
+  }
+  if (sprite.animEnded && released && monSprite) {
+    monSprite.y2 = 0;
+    monSprite.invisible = _wildMonInvisible();
+    sprite.data[0] = 0;
+    sprite.callback = DestroySpriteAfterOneFrame;
+    setGDoingBattleAnim(false);
+    _updateOamPriorityInAllHealthboxes(1);
+  }
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Block(sprite)` (:1524) : trainer bloque la ball. */
+function SpriteCB_Ball_Block(sprite: BallSprite): void {
+  sprite.x += sprite.x2;
+  sprite.y += sprite.y2;
+  sprite.y2 = 0;
+  sprite.x2 = 0;
+  for (let i = 0; i < 6; i++) sprite.data[i] = 0;
+  sprite.callback = SpriteCB_Ball_Block_Step;
+}
+
+/** 1:1 décomp `SpriteCB_Ball_Block_Step(sprite)` (:1544) : la ball retombe
+ *  hors écran (subpixel dx 0x680 / dy 0x800). */
+function SpriteCB_Ball_Block_Step(sprite: BallSprite): void {
+  const dy = sprite.data[0] + 0x800;
+  const dx = sprite.data[1] + 0x680;
+  sprite.x2 -= dx >> 8;
+  sprite.y2 += dy >> 8;
+  sprite.data[0] = (sprite.data[0] + 0x800) & 0xFF;
+  sprite.data[1] = (sprite.data[1] + 0x680) & 0xFF;
+  if (sprite.y + sprite.y2 > 160 || sprite.x + sprite.x2 < -8) {
+    sprite.data[0] = 0;
+    sprite.callback = DestroySpriteAfterOneFrame;
+    setGDoingBattleAnim(false);
+    _updateOamPriorityInAllHealthboxes(1);
+  }
+}
+
+/** Séquence TS 1:1 du script asm `Special_BallThrow` (battle_anim_scripts.s:
+ *  10719 — ABSENT du bytecode extrait, qui s'arrête aux moves) :
+ *  launchtask AnimTask_IsBallBlockedByTrainer → block ? _StandingTrainer :
+ *  ThrowBall → end. La « fin » (waitforvisualfinish) est observée par le
+ *  caller via gDoingBattleAnim (cleared 1:1 par Capture_Step :95 /
+ *  Release_Wait / Block_Step). */
+export function Special_BallThrow_TS(): void {
+  if (_ballThrowCaseId() === BALL_TRAINER_BLOCK) {
+    const taskId = CreateTask(() => { /* géré par les SpriteCB */ }, 2);
+    AnimTask_ThrowBall_StandingTrainer(taskId);
+  } else {
+    const taskId = CreateTask(() => { /* géré par les SpriteCB */ }, 2);
+    AnimTask_ThrowBall(taskId);
   }
 }
 
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__battleAnimThrow = {
+  Special_BallThrow_TS,
   ItemIdToBallId,
   AnimTask_LoadBallGfx, AnimTask_FreeBallGfx,
   AnimTask_IsBallBlockedByTrainer,

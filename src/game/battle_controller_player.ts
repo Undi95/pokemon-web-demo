@@ -44,6 +44,7 @@ import {
   gNumberOfMovesToChoose, setNumberOfMovesToChoose,
   gMultiUsePlayerCursor, setMultiUsePlayerCursor,
   gBattlerControllerFuncs, setBattlerControllerFunc,
+  gDoingBattleAnim as gDoingBattleAnimState, setGDoingBattleAnim, gBattlerTarget,
 } from '../engine/battle/state';
 import {
   BATTLE_TYPE_LINK, BATTLE_TYPE_DOUBLE, BATTLE_TYPE_MULTI, BATTLE_TYPE_PALACE,
@@ -1135,8 +1136,30 @@ function PlayerHandleSuccessBallThrowAnim(): void {
 
 /** Décomp = ballThrowCaseId bufferA[1] + B_ANIM_BALL_THROW — chantier CAPTURE/anims
  *  (dette, émis par les scripts de capture). */
+/** 1:1 decomp `PlayerHandleBallThrowAnim()` (battle_controller_player.c:~1530) :
+ *  ballThrowCaseId = bufferA[1] ; gDoingBattleAnim = TRUE ;
+ *  InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW) ; attend la fin.
+ *  Divergence documentee : le script asm Special_BallThrow est ABSENT du
+ *  bytecode extrait -> sequence TS 1:1 Special_BallThrow_TS (battle-anim-throw),
+ *  fin observee via gDoingBattleAnim (cleared 1:1 par Capture/Release/Block). */
 function PlayerHandleBallThrowAnim(): void {
-  PlayerBufferExecCompleted();
+  const caseId = gBattleBufferA[gActiveBattler]?.[1] ?? 0;
+  const bs = (globalThis as Record<string, unknown>).__battleState as { gBattleStruct?: Record<string, unknown> } | undefined;
+  if (bs?.gBattleStruct) bs.gBattleStruct.ballThrowCaseId = caseId;
+  setGDoingBattleAnim(true);
+  // 1:1 InitAndLaunchSpecialAnimation : pose attacker/target puis lance l'anim.
+  const ba = (globalThis as Record<string, unknown>).__battleAnim as { SetAnimBattlers?: (a: number, d: number) => void } | undefined;
+  ba?.SetAnimBattlers?.(gActiveBattler, gBattlerTarget);
+  const bat = (globalThis as Record<string, unknown>).__battleAnimThrow as { Special_BallThrow_TS?: () => void } | undefined;
+  bat?.Special_BallThrow_TS?.();
+  setBattlerControllerFunc(gActiveBattler, CompleteOnSpecialAnimDone);
+}
+
+/** 1:1 decomp `CompleteOnSpecialAnimDone()` (battle_controller_player.c) :
+ *  complete quand l'anim speciale est finie (gDoingBattleAnim cleared par la
+ *  chaine capture ; specialAnimActive non modelise = gDoingBattleAnim suffit). */
+function CompleteOnSpecialAnimDone(): void {
+  if (!gDoingBattleAnimState) PlayerBufferExecCompleted();
 }
 
 /** 1:1 EXACT : le corps décomp est un busy-loop `while (timer != 0) timer--;`
