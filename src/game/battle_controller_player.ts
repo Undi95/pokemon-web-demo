@@ -1861,9 +1861,9 @@ function _CompleteOnFinishedStatusAnimation(): void {
  *  InitAndLaunchChosenStatusAnimation(bufferA[1], bufferA[2..5] u32) puis
  *  attendre la fin (CompleteOnFinishedStatusAnimation). Goal T3 2026-06-10. */
 function PlayerHandleStatusAnimation(): void {
-  // [BISECT 2026-06-10] le cablage reel bloquait l'INTRO (regression T3) —
-  // re-stub temporaire le temps du diagnostic (dette re-documentee).
-  PlayerBufferExecCompleted();
+  // 1:1 (T3) — re-active : la « regression » etait les bytecodes scripts_1/2
+  // re-casses par les recompiles T4, PAS ce handler.
+  _PlayerHandleStatusAnimation_REAL();
 }
 function _PlayerHandleStatusAnimation_REAL(): void {
   if (!_IsBattleSEPlaying(gActiveBattler)) {

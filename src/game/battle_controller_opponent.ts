@@ -1164,8 +1164,8 @@ function _CompleteOnFinishedStatusAnimation_Opp(): void {
 }
 /** Décomp = InitAndLaunchChosenStatusAnimation — chantier anims de statut (dette). */
 function OpponentHandleStatusAnimation(): void {
-  // [BISECT 2026-06-10] re-stub temporaire (cf. player).
-  OpponentBufferExecCompleted();
+  // 1:1 (T3) — re-active (cf. player).
+  _OpponentHandleStatusAnimation_REAL();
 }
 function _OpponentHandleStatusAnimation_REAL(): void {
   if (!_IsBattleSEPlaying_Opp(gActiveBattler)) {

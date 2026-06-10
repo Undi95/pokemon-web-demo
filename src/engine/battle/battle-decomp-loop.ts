@@ -184,8 +184,10 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // Side-effect modules (T3/T4) en DYNAMIQUE : un import statique provoquait
   // la TDZ ST_OAM_AFFINE_DOUBLE (cycle ESM via pokeball) -> l'app ne bootait
   // plus. Charges ici = poses avant tout usage en combat.
-  // [BISECT] imports dynamiques temporairement neutralises
-  void 0;
+  void Promise.all([
+    import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
+    import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
+  ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   const cb = _CB2_InitBattle();
   if (!cb) {
     console.warn('[decomp-loop] CB2_InitBattle indisponible (battle-init pas chargé)');
