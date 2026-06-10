@@ -92,6 +92,80 @@ function _Scratch_AnimStep(sprite: AnimSprite): void {
   _applyFrame(sprite, frame);
 }
 
+// --- GROWL : les lignes de bruit (gRoarNoiseLineSpriteTemplate, :949) -------
+export const ANIM_TAG_NOISE_LINE = 10053; // ANIM_SPRITES_START + 53
+
+const sSheetNoise = { data: 'gAnimGfx_NoiseLine', size: 2048, tag: ANIM_TAG_NOISE_LINE };
+const sPalNoise = { data: 'gAnimPal_NoiseLine', tag: ANIM_TAG_NOISE_LINE };
+export function LoadAnimNoiseLineGfx(): void {
+  if (GetSpriteTileStartByTag(ANIM_TAG_NOISE_LINE) === 0xFFFF) {
+    LoadCompressedSpriteSheetUsingHeap(sSheetNoise);
+    LoadCompressedSpritePaletteUsingHeap(sPalNoise);
+  }
+}
+
+/** 1:1 `AnimRoarNoiseLine` : args [xOff, yOff, variante 0/1/2].
+ *  0 = diagonale haut, 1 = diagonale bas (vFlip), 2 = droite (frames 32/48).
+ *  Vitesse 0x280 fixed-point, miroir cote adverse, destroy a 14 frames. */
+function AnimRoarNoiseLine(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 0];
+  const atk = _itf().getAttacker?.() ?? 0;
+  if ((atk & 1) === 1 /* B_SIDE_OPPONENT */) args[0] = -args[0];
+  const mon = _battlerSprite(atk);
+  if (mon) {
+    sprite.x = mon.x + args[0];
+    sprite.y = mon.y + args[1];
+  }
+  sprite.invisible = false;
+  let frameBase = 0;
+  if (args[2] === 0) {
+    sprite.data[0] = 0x280;
+    sprite.data[1] = -0x280;
+  } else if (args[2] === 1) {
+    _setFlip(sprite, undefined, true);
+    sprite.data[0] = 0x280;
+    sprite.data[1] = 0x280;
+  } else {
+    frameBase = 32; // StartSpriteAnim(sprite, 1) = frames 32/48
+    sprite.data[0] = 0x280;
+    sprite.data[1] = 0;
+  }
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) {
+    sprite.data[0] = -sprite.data[0];
+    _setFlip(sprite, true, undefined);
+  }
+  sprite.data[4] = frameBase;
+  _applyNoiseFrame(sprite, frameBase);
+  sprite.data[5] = 0;
+  sprite.data[6] = 0;
+  sprite.data[7] = 0;
+  sprite.callback = AnimRoarNoiseLine_Step;
+}
+function _applyNoiseFrame(sprite: AnimSprite, frameTile: number): void {
+  const base = GetSpriteTileStartByTag(ANIM_TAG_NOISE_LINE);
+  if (base === 0xFFFF || sprite.oamIndex === undefined) return;
+  const oam = _rt()?.gba?.oam?.[sprite.oamIndex] as { tileId?: number } | undefined;
+  if (oam) oam.tileId = base + frameTile;
+}
+function _setFlip(sprite: AnimSprite, h: boolean | undefined, v: boolean | undefined): void {
+  const sp = sprite as { hFlip?: boolean; vFlip?: boolean };
+  if (h !== undefined) sp.hFlip = h;
+  if (v !== undefined) sp.vFlip = v;
+}
+function AnimRoarNoiseLine_Step(sprite: AnimSprite): void {
+  sprite.data[6] += sprite.data[0];
+  sprite.data[7] += sprite.data[1];
+  sprite.x2 = (sprite.data[6] << 16 >> 16) >> 8;
+  sprite.y2 = (sprite.data[7] << 16 >> 16) >> 8;
+  // anim 2 frames (0/16 ou 32/48, 3 ticks) 1:1 gRoarNoiseLineAnimTable.
+  const t = Math.floor((++sprite.data[5]) / 3) & 1;
+  _applyNoiseFrame(sprite, sprite.data[4] + t * 16);
+  if (sprite.data[5] === 14) {
+    _itf().DestroyAnimSprite?.(sprite);
+  }
+}
+
 registerAnimTemplates([
   { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never },
+  { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never },
 ]);

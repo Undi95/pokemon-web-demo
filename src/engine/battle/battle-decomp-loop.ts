@@ -196,6 +196,8 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_Impact')) assetCache.set('gAnimPal_Impact', await loadGbaPal('/decomp/em/battle_anims/sprites/impact.gbapal'));
     await loadBin('gAnimGfx_Scratch', '/decomp/em/battle_anims/sprites/scratch.4bpp.bin');
     if (!assetCache.has('gAnimPal_Scratch')) assetCache.set('gAnimPal_Scratch', await loadGbaPal('/decomp/em/battle_anims/sprites/scratch.gbapal'));
+    await loadBin('gAnimGfx_NoiseLine', '/decomp/em/battle_anims/sprites/noise_line.4bpp.bin');
+    if (!assetCache.has('gAnimPal_NoiseLine')) assetCache.set('gAnimPal_NoiseLine', await loadGbaPal('/decomp/em/battle_anims/sprites/noise_line.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -209,7 +211,8 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   void Promise.all([
     import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
     import('../../game/battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)
-    import('../../game/battle_anim_effects_3'),     // registry scratch (T4)
+    import('../../game/battle_anim_effects_3'),     // registry scratch + noise lines (T4)
+    import('../../game/battle_anim_sound_tasks'),   // registry sound tasks Growl (T4)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
