@@ -65,13 +65,13 @@ import {
 } from '../engine/battle/util';
 import { getBattleMove } from '../engine/battle/data/battle-moves';
 import { gEnemyParty, gPlayerParty, GetMonData, MON_DATA_HP, MON_DATA_MAX_HP, MON_DATA_SPECIES, SetBattleMonDataFromBuffer } from '../engine/battle/party-storage';
-import { SetBattleBarStruct, MoveBattleBar, HEALTH_BAR } from '../engine/battle/battle-hp-bar';
+import { SetBattleBarStruct, MoveBattleBar, HEALTH_BAR } from './battle_interface';
 // Party summary (barre + 6 balls, 1:1 battle_interface.c party-summary slice).
 import {
   CreatePartyStatusSummarySprites, SetTaskFuncToHidePartyStatusSummary,
   ensurePartySummaryAssets, gBattlerStatusSummaryTaskId,
   type HpAndStatus as _PSHpAndStatus,
-} from '../engine/battle/battle-party-summary';
+} from './battle_interface';
 import {
   setPartyStatusSummaryShown as _setPartyStatusSummaryShown,
   isPartyStatusSummaryShown as _isPartyStatusSummaryShown,

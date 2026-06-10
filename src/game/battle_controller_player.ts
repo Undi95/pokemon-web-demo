@@ -35,7 +35,7 @@ import '../engine/battle/battle-message';
 // Couche healthbox VOIE L (modèle décomp : gHealthboxSpriteIds + UpdateHealthboxAttribute
 // + MoveBattleBarGraphically). Side-effect import : s'enregistre sur globalThis.__battleHealthbox
 // (que _gHealthboxSpriteId / _UpdateHealthboxAttribute lisent) + branche le hook MoveBattleBarGraphically.
-import '../engine/battle/battle-healthbox-l';
+import './battle_interface'; // side-effect miroir (ex-shim battle-healthbox-l)
 import {
   gActiveBattler, gBattleTypeFlags, gBattleControllerExecFlags,
   setBattleControllerExecFlags,
@@ -102,13 +102,13 @@ import { gBattlerPartyIndexes, setActiveBattler } from '../engine/battle/state';
 import { HandleIntroSlide } from './battle_intro';
 import {
   SetBattleBarStruct, MoveBattleBar, HEALTH_BAR, EXP_BAR,
-} from '../engine/battle/battle-hp-bar';
+} from './battle_interface';
 // Party summary (barre + 6 balls, 1:1 battle_interface.c party-summary slice).
 import {
   CreatePartyStatusSummarySprites, SetTaskFuncToHidePartyStatusSummary,
   ensurePartySummaryAssets, gBattlerStatusSummaryTaskId,
   type HpAndStatus as _PSHpAndStatus,
-} from '../engine/battle/battle-party-summary';
+} from './battle_interface';
 import {
   setPartyStatusSummaryShown as _setPartyStatusSummaryShown,
   isPartyStatusSummaryShown as _isPartyStatusSummaryShown,
@@ -1621,7 +1621,7 @@ function _OpenBagAndChooseItem(): void {
   (globalThis as Record<string, unknown>).__battleReshowDone = false;
   void Promise.all([
     import('../engine/bag/bag-screen'),
-    import('../engine/battle/reshow-battle-screen'),
+    import('./reshow_battle_screen'),
   ]).then(([bag, reshow]) => {
     bag.OpenBagScreenForBattle(reshow.CB2_SetUpReshowBattleScreenAfterMenu);
   });
@@ -1674,7 +1674,7 @@ function _OpenPartyMenuToChooseMon(): void {
   // (= pattern voie V battle-flow:4655) ; one-shot à l'ouverture (pas per-frame).
   void Promise.all([
     import('../engine/ui/party-screen'),
-    import('../engine/battle/reshow-battle-screen'),
+    import('./reshow_battle_screen'),
   ]).then(([party, reshow]) => {
     party.OpenPartyScreenForBattleSwitch(reshow.CB2_SetUpReshowBattleScreenAfterMenu, {
       activeSlot, allowCancel,
