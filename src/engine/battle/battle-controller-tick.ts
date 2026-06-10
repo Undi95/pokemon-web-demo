@@ -45,7 +45,7 @@ import {
   gActiveBattler, setActiveBattler, gBattlersCount, gBattleControllerExecFlags,
 } from './state';
 import { gBitTable } from './battle-controllers';
-import { getBattlerControllerFunc as _getBattlerControllerFuncPlayer } from './battle-controller-player';
+import { getBattlerControllerFunc as _getBattlerControllerFuncPlayer } from '../../game/battle_controller_player';
 
 // ─── Flag d'activation Controller IPC dispatch ─────────────────────────────
 

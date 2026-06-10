@@ -604,8 +604,8 @@ export async function harnessExecuteTurnL(opts?: {
   const st = await import('./state');
   const td = await import('./battle-turn-dispatch');
   const bmf = await import('./battle-main-functions');
-  const cp = await import('./battle-controller-player');
-  const co = await import('./battle-controller-opponent');
+  const cp = await import('../../game/battle_controller_player');
+  const co = await import('../../game/battle_controller_opponent');
   const C = await import('./constants');
 
   // 1. Combat ad-hoc + peuplement gBattleMons[0],[1].

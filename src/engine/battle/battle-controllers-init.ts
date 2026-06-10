@@ -32,8 +32,8 @@ import {
   BATTLE_TYPE_SAFARI, BATTLE_TYPE_WALLY_TUTORIAL,
 } from './constants';
 import { gBattlerPositions, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT } from './util';
-import { SetControllerToPlayer } from './battle-controller-player';
-import { SetControllerToOpponent } from './battle-controller-opponent';
+import { SetControllerToPlayer } from '../../game/battle_controller_player';
+import { SetControllerToOpponent } from '../../game/battle_controller_opponent';
 import { setBattleMainFunc, BeginBattleIntro } from './battle-main-functions';
 import { SetBattlePartyIds } from './battle-controllers-ipc';
 

@@ -447,14 +447,30 @@ export function LaunchBattleAnimation(
 
 /** 1:1 décomp `DestroyAnimSprite(struct Sprite *sprite)` (battle_anim.c:266-271).
  *  Free OAM matrix + destroy sprite + decrement visual task count. */
-export function DestroyAnimSprite(spriteId: number): void {
+export function DestroyAnimSprite(spriteOrId: number | object): void {
   const rt = getRuntime();
   if (!rt) return;
+  // FIX user 2026-06-11 (« les animations restent bloquees sur la scene ») :
+  // les callbacks registry passent l OBJET sprite ; la version id-only faisait
+  // gSprites.get(objet)=undefined -> DestroySprite(objet)=no-op SILENCIEUX ->
+  // les sprites d anim restaient a l ecran. Accepte objet|id (pattern _gTasks).
+  let spriteId = typeof spriteOrId === 'number' ? spriteOrId : -1;
+  if (spriteId < 0 && rt.gSprites) {
+    const direct = (spriteOrId as { spriteId?: number }).spriteId;
+    if (direct !== undefined && direct >= 0) spriteId = direct;
+    else {
+      for (const [sid, sp] of rt.gSprites.entries()) {
+        if ((sp as unknown) === spriteOrId) { spriteId = sid; break; }
+      }
+    }
+  }
+  if (spriteId < 0) return;
   const sprite = rt.gSprites.get(spriteId);
   if (sprite && sprite.matrixNum !== 0) {
     rt.FreeOamMatrix(sprite.matrixNum);
   }
   try { rt.DestroySprite(spriteId); } catch (e) { void e; }
+  rt.gSprites?.delete?.(spriteId);
   if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--;
 }
 
