@@ -207,3 +207,8 @@ Fallback documenté : move sans template = terminaison propre warn-once.
   re-documentée (clause du goal) · T8 ✓ (3 runs verts + docs).
 - Dettes 1:1 douces tracées : offset Y splat, oscillation flare Ember,
   trajectoire sinusoïdale Bubble, affine réel hitsplat (scale-in net-effect).
+
+## 2026-06-11 — RAPPORT FINAL v4 : T5 COMPLET (4/4) — LE SHINY VIT
+- **SHINY 1:1 validé au pixel** : Grahyena DORÉ (palette shiny.pal réelle, GET_SHINY_VALUE 1:1) + étoiles dorées encircle/diagonal + SE, DÈS L'APPARITION (timing user). Diagnostic user x2 (étoiles tetris = fix ball template-à-tags ; palette shiny manquante = GetMonFrontSpritePal payé).
+- Bilan goal : **T1✓ T2✓ T3✓ T4✓(chemin 6/6) T5✓(4/4) T8✓** · T6 1/2 (~40 renames listés) · T7 dette-doc (clause goal).
+- Non-régression : KO-run final à refaire post-shiny (le câblage apparition touche le flux d'intro).
