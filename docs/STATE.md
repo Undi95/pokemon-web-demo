@@ -175,3 +175,18 @@ secret base, pokénav, pokéblock. (Liste éditable dans `scripts/audit-coverage
 - **T6** : ~40 renames-miroir des équivalents fonctionnels (DETTE-T6-COMBAT-MISSING.md) ; fichiers engine/battle restants à migrer au nom décomp.
 - **T7** : DoNamingScreen + CB2_DisplayDexInfo = écrans entiers (clavier/OAM dex) — le backbone actuel ne les fournit pas ; la capture fonctionne avec auto-NO documenté + dexflags posés. DETTE ASSUMÉE (1:1 différé, comportement net préservé).
 - Hors-scope permanent : link/multi/contest/Frontier/Safari/Palace/debug.
+
+## 2026-06-11 — GOAL 8 TRANCHES : RAPPORT FINAL v2 (nuit complète)
+**T1✓ T2✓ T3✓ · T4 : TACKLE VISUELLEMENT COMPLET · T5 3.5/4 · T6 1/2 · T7 dette-doc · T8✓ (KO-run final vert avec toutes les anims actives)**
+
+### Jalons additionnels de la nuit (post-rapport v1)
+- **T4 hitsplat VISIBLE** : battle_anim_normal.ts (gBasicHitSplat+HandleInvert, AnimHitSplatBasic, LoadAnimImpactGfx pattern LoadBallGfx) + impact.png extrait byte-exact + registry load/oam + Cmd_createsprite route les tags via CreateSprite SYSTÈME. L'étoile d'impact d'Émeraude éclate à l'écran.
+- **T4 slides 1:1** : SlideMonToOffset/OriginalPos(+Step) + InitSpriteDataForLinearTranslation + TranslateSpriteLinearByIdFixedPoint — le Tackle adverse glisse réellement. **Tackle = lunge + slide + hitsplat + shake, complet hors fond.**
+- **T5 HandleMoveSwitching 1:1** : SELECT au menu moves → swap complet (bufferA + gBattleMons + ppBonuses + party) validé harness ([1,43,71,98]→[98,43,71,1]).
+- **PATTERN GFX INDUSTRIALISÉ** : png→4bpp.bin/gbapal (convertisseur validé) → preload decomp-loop → template registry {tileTag, oam, load, callback}. Les warns console = la liste de demande réelle des prochaines vagues.
+
+### Dettes restantes (mises à jour)
+- T4 : vagues gfx suivantes guidées par les warns (Scratch/Ember/Bubble/Absorb...), offset Y du splat, monbg/MoveBattlerSpriteToBG réels, opcodes déraillements résiduels (move-0).
+- T5 : TryShinyAnimAfterMonAnim (gold stars gfx — le pattern hitsplat s'applique tel quel).
+- T6 : ~40 renames-miroir (DETTE-T6-COMBAT-MISSING.md).
+- T7 : DoNamingScreen + dexinfo (dette assumée, capture OK avec auto-NO).
