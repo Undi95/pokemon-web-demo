@@ -402,6 +402,23 @@ const _RegularBallAnimFrames: ReadonlyArray<{ tile: number, hFlip: boolean }> = 
   { tile: 1, hFlip: false },
 ];
 
+/** 1:1 decomp MakeCaptureStars support : cree UN sprite etoile de capture
+ *  (sheet particles, sAnim_MasterBall = ANIMCMD_FRAME(3,1) -> tile 3 statique,
+ *  sBallParticleAnimNums[BALL_MASTER]=1). Le caller (battle-anim-throw)
+ *  pose data/arc/callback flicker. Retourne le spriteId (-1 si echec). */
+export function CreateCaptureStarSprite(rt: DecompRuntime, x: number, y: number, priority: number): number {
+  loadParticlesAssets(rt, 4 /* BALL_MASTER */);
+  const tileBaseRaw = GetSpriteTileStartByTag(PARTICLES_TILE_TAG);
+  const palSlotRaw = IndexOfSpritePaletteTag(PARTICLES_PAL_TAG);
+  const tileBase = tileBaseRaw === 0xFFFF ? 0 : tileBaseRaw;
+  const palSlot = palSlotRaw === 0xFF ? 0 : palSlotRaw;
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: tileBase + 3, paletteBank: palSlot, x, y,
+    shape: 0, size: 0, priority,
+  });
+  return spriteId ?? -1;
+}
+
 function spawnSparkle(rt: DecompRuntime, x: number, y: number, priority: number, tileBase: number, palSlot: number, spawnIdx: number): void {
   // 1:1 décomp battle_anim_throw.c:1623 :
   //   var0 = (u8)gTasks[taskId].data[0];

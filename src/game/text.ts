@@ -23,7 +23,7 @@ import {
   EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_COLOR, EXT_CTRL_CODE_HIGHLIGHT, EXT_CTRL_CODE_SHADOW,
   EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW, EXT_CTRL_CODE_PALETTE, EXT_CTRL_CODE_FONT,
   EXT_CTRL_CODE_PAUSE, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, EXT_CTRL_CODE_ESCAPE, EXT_CTRL_CODE_SHIFT_RIGHT, EXT_CTRL_CODE_SHIFT_DOWN,
-  EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_PLAY_SE, EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP,
+  EXT_CTRL_CODE_PLAY_BGM, EXT_CTRL_CODE_PLAY_SE, EXT_CTRL_CODE_WAIT_SE, EXT_CTRL_CODE_CLEAR, EXT_CTRL_CODE_SKIP,
   EXT_CTRL_CODE_CLEAR_TO, EXT_CTRL_CODE_MIN_LETTER_SPACING, EXT_CTRL_CODE_JPN, EXT_CTRL_CODE_ENG,
 } from '../engine/decomp-data/include/constants/characters-data';
 import {
@@ -726,6 +726,32 @@ function renderHandleChar(printer: TextPrinter): number {
         if (gTextFlags.autoScroll) printer.subStruct.autoScrollDelay = 0;
         if (printer.onCharRendered) printer.onCharRendered(printer, EXT_CTRL_CODE_PAUSE_UNTIL_PRESS);
         return RENDER_UPDATE;
+      }
+      // WAIT_SE : BEGIN + sub (2 bytes). 1:1 text.c:1023-1025 : state WAIT_SE
+      // (attend !IsSEPlaying). Plateforme : SE async (WebAudio, pas de registre
+      // busy) -> consommer et continuer (equivalent net, le SE joue deja).
+      if (subCode === EXT_CTRL_CODE_WAIT_SE) {
+        printer.printerTemplate.currentChar += 2;
+        return RENDER_REPEAT;
+      }
+      // PLAY_BGM : BEGIN + sub + u16 LE (4 bytes). 1:1 text.c:1026-1032 :
+      // PlayBGM(id) — ex. {PLAY_BGM}{MUS_CAUGHT} du texte de capture (le « A »
+      // parasite affiche etait le byte haut 0x01 de 0x160 non consomme).
+      if (subCode === EXT_CTRL_CODE_PLAY_BGM) {
+        const id = (printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0)
+                 | ((printer.encodedString[printer.printerTemplate.currentChar + 3] ?? 0) << 8);
+        printer.printerTemplate.currentChar += 4;
+        const g = globalThis as { __m4aSongNumStart?: (n: number, loop?: boolean) => void };
+        g.__m4aSongNumStart?.(id, false);
+        return RENDER_REPEAT;
+      }
+      // PLAY_SE : BEGIN + sub + u16 LE (4 bytes). 1:1 text.c (case suivante) : PlaySE(id).
+      if (subCode === EXT_CTRL_CODE_PLAY_SE) {
+        const id = (printer.encodedString[printer.printerTemplate.currentChar + 2] ?? 0)
+                 | ((printer.encodedString[printer.printerTemplate.currentChar + 3] ?? 0) << 8);
+        printer.printerTemplate.currentChar += 4;
+        (globalThis as { __PlaySE?: (n: number) => void }).__PlaySE?.(id);
+        return RENDER_REPEAT;
       }
       // COLOR/HIGHLIGHT/SHADOW : set couleur courante (lue au blit). text.c:980-993.
       if (subCode === EXT_CTRL_CODE_COLOR) {

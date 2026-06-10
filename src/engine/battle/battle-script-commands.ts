@@ -9705,7 +9705,11 @@ function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
   //   4 : wait DMA + BeginNormalPaletteFade in → state 5
   //   5 : wait fade done → advance opcode.
   //
-  // Notre port : state machine fidèle, stubs UI fns advance instant.
+  // Notre port : state machine fidele, stubs UI advance instant. DETTE
+  // (goal tranche 1, 2026-06-10) : l'ECRAN dex du mon capture
+  // (DisplayCaughtMonDexPage -> page entry pokedex + cri + flavor) = meme
+  // calibre UI que le naming screen -> tranche pokedex-UI ulterieure ; le
+  // FLUX (fades + restore bgs combat) ne bloque pas (outcome 7 valide).
   switch (gBattleCommunication[0]) {
     case 0:
     case 1:
@@ -9755,30 +9759,58 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
   }
   switch (gBattleCommunication[0 /* MULTIUSE_STATE */]) {
     case 0:
-      // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
-      gBattleCommunication[1 /* CURSOR_POSITION (battle_script_commands.h:288) */] = 0;
+      // 1:1 decomp case 0 : VRAIE yes/no box (HandleBattleWindow + texte
+      // OUI/NON + curseur) — remplace l'auto-NO (tranche 1 goal).
+      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, 0);
+      BattlePutTextOnWindow(0 /* gText_BattleYesNoChoice */, B_WIN_YESNO);
       gBattleCommunication[0]++;
-      ctx.scriptPtr -= 5;  // re-enter opcode.
+      gBattleCommunication[CURSOR_POSITION] = 0;
+      BattleCreateYesNoCursorAt(0);
+      ctx.scriptPtr -= 5;
       return true;
     case 1:
-      // 1:1 décomp : poll input. UI Phase 1.4 deferred : auto-NO → state 4 (= skip naming).
-      gBattleCommunication[0] = 4;
+      // 1:1 decomp case 1 : input UP/DOWN/A/B.
+      if (JOY_NEW(DPAD_UP) && gBattleCommunication[CURSOR_POSITION] !== 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(gBattleCommunication[CURSOR_POSITION]);
+        gBattleCommunication[CURSOR_POSITION] = 0;
+        BattleCreateYesNoCursorAt(0);
+      }
+      if (JOY_NEW(DPAD_DOWN) && gBattleCommunication[CURSOR_POSITION] === 0) {
+        PlaySE(SE_SELECT);
+        BattleDestroyYesNoCursorAt(gBattleCommunication[CURSOR_POSITION]);
+        gBattleCommunication[CURSOR_POSITION] = 1;
+        BattleCreateYesNoCursorAt(1);
+      }
+      if (JOY_NEW(A_BUTTON)) {
+        PlaySE(SE_SELECT);
+        if (gBattleCommunication[CURSOR_POSITION] === 0) {
+          // OUI -> decomp case 2/3 : fade + DoNamingScreen + SetMonData(nickname).
+          // NAMING SCREEN = DETTE DOCUMENTEE (goal tranche 1) : on continue SANS
+          // renommer (nickname = nom d'espece, deja le cas) -> meme sortie que le
+          // retour du naming (continue inline vers givecaughtmon).
+          console.warn('[capture] naming screen non porte (dette) — OUI = pas de surnom');
+          HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+          gBattleCommunication[0] = 0;
+          return false;
+        } else {
+          gBattleCommunication[0] = 4;
+          ctx.scriptPtr -= 5;
+          return true;
+        }
+      } else if (JOY_NEW(B_BUTTON)) {
+        PlaySE(SE_SELECT);
+        gBattleCommunication[0] = 4;
+        ctx.scriptPtr -= 5;
+        return true;
+      }
       ctx.scriptPtr -= 5;
       return true;
-    case 2:
-      // UI Phase 1.4 deferred : palette fade : assume done → state 3.
-      gBattleCommunication[0]++;
-      ctx.scriptPtr -= 5;
-      return true;
-    case 3:
-      // UI Phase 1.4 deferred : naming screen : assume done → jump à jumpPtr (= retour normal).
-      gBattleCommunication[0] = 0;  // reset.
-      ctx.scriptPtr = jumpPtr;
-      return false;
     case 4: {
-      // 1:1 décomp : si party FULL = 6 mons → advance 5 (= sent to PC story).
-      // Sinon jump à jumpPtr (= party menu pour place).
-      gBattleCommunication[0] = 0;  // reset.
+      // 1:1 decomp case 4 : NON -> party pleine ? continue (+5 : le mon part au
+      // PC, texte gCaughtMonStringIds) : jump (jumpPtr = GiveCaughtMonEnd).
+      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
+      gBattleCommunication[0] = 0;
       let playerPartyCount = 0;
       const gParty = (globalThis as { gPlayerParty?: Array<{ species?: number }> }).gPlayerParty;
       if (gParty) {
@@ -9787,7 +9819,6 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
         }
       }
       if (playerPartyCount === 6) {
-        // Advance (= already advanced by readWord).
         return false;
       } else {
         ctx.scriptPtr = jumpPtr;

@@ -722,6 +722,7 @@ async function m4aPrime(): Promise<void> {
 // Expose pour debug console
 if (typeof globalThis !== 'undefined') {
   (globalThis as { __PlaySE?: typeof PlaySE }).__PlaySE = PlaySE;
+(globalThis as Record<string, unknown>).__m4aSongNumStart = m4aSongNumStart;
 }
 
 /** 1:1 décomp `m4aSongNumStart(songId)` — démarre une song en boucle via NOTRE

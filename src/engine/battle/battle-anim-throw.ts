@@ -53,7 +53,7 @@ import {
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
 } from '../../game/battle_anim_mons';
-import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon } from '../system/pokeball-effects';
+import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../system/pokeball-effects';
 import { BlendPalettes } from '../system/decomp-globals';
 import { BeginNormalPaletteFade } from '../system/decomp-bridge';
 import { setGDoingBattleAnim } from './state';
@@ -978,8 +978,30 @@ const sCaptureStars = [
  *  pokeball-effects ; en attendant les 3 étoiles ne spawnent pas (le reste —
  *  click, flash, musique, destruction — est 1:1). */
 function MakeCaptureStars(sprite: BallSprite): void {
-  void sprite; void sCaptureStars; void SpriteCB_CaptureStar_Flicker;
-  console.warn('[capture] MakeCaptureStars : étoiles non portées (dette template particle unitaire)');
+  // 1:1 decomp :1417-1447 : 3 etoiles (sCaptureStars), sprite particle
+  // BALL_MASTER (tile etoile), arc InitAnimArcTranslation + flicker 1 frame/2.
+  let subpriority: number;
+  if (sprite.subpriority) {
+    subpriority = sprite.subpriority - 1;
+  } else {
+    subpriority = 0;
+    sprite.subpriority = 1;
+  }
+  const rt = getRuntime();
+  if (!rt) return;
+  for (const star of sCaptureStars) {
+    const spriteId = _fxCaptureStar(rt as never, sprite.x, sprite.y, subpriority);
+    if (spriteId < 0) continue;
+    const sp = _rtSprite(spriteId);
+    if (!sp) continue;
+    sp.data[0] = 24;                              // sDuration
+    sp.data[1] = sp.x; sp.data[3] = sp.y;         // offsets InitAnimArcTranslation (sOffsetX/Y)
+    sp.data[2] = sprite.x + star.xOffset;         // sTargetX
+    sp.data[4] = sprite.y + star.yOffset;         // sTargetY
+    sp.data[5] = star.amplitude;                  // sAmplitude
+    InitAnimArcTranslation(sp as never);
+    sp.callback = SpriteCB_CaptureStar_Flicker;
+  }
 }
 
 /** 1:1 décomp `SpriteCB_CaptureStar_Flicker(sprite)` (:1454). */
