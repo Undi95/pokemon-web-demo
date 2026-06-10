@@ -820,6 +820,12 @@ export function CB2_InitBattleInternal(): void {
   if (gBattleTypeFlags & BATTLE_TYPE_RECORDED) {
     environment = BATTLE_ENVIRONMENT_BUILDING;
   }
+  // DEVTOOL harness (chantier intro-terrains 2026-06-11) : forcer l'environment
+  // pour A/B les 10 intros sans se déplacer sur la map. null/undefined = réel.
+  {
+    const forced = (globalThis as Record<string, unknown>).__forceBattleEnvironment;
+    if (typeof forced === 'number' && forced >= 0 && forced <= 9) environment = forced;
+  }
   setBattleEnvironment(environment);
 
   _InitBattleBgsVideo();

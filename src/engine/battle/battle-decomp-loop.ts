@@ -216,6 +216,36 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   // Side-effect modules (T3/T4) en DYNAMIQUE : un import statique provoquait
   // la TDZ ST_OAM_AFFINE_DOUBLE (cycle ESM via pokeball) -> l'app ne bootait
   // plus. Charges ici = poses avant tout usage en combat.
+  // DEVTOOL chantier anims-de-move (2026-06-11) : tester l'anim d'un move
+  // directement au menu, sans jouer le tour. Usage (console/harness) :
+  //   await __testMoveAnim(33 /* MOVE_POUND */)  -> { ok, frames, residuels }
+  // Joue DoMoveAnim(moveId) attacker 0 -> target 1, tick jusqu'a fin
+  // (timeout 900 ticks), compte les sprites anim residuels (doit etre 0).
+  (globalThis as Record<string, unknown>).__testMoveAnim = async (moveId: number, attacker = 0, target = 1): Promise<unknown> => {
+    const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as {
+      setBattleAnimAttackerTarget?: (a: number, t: number) => void;
+      DoMoveAnim?: (m: number) => void;
+      tickAnimScript?: () => void;
+      isAnimScriptActive?: () => boolean;
+    } | undefined;
+    if (!itf?.DoMoveAnim) return { ok: false, err: 'interpreter absent (boot un combat d abord)' };
+    itf.setBattleAnimAttackerTarget?.(attacker, target);
+    itf.DoMoveAnim(moveId);
+    let frames = 0;
+    while ((itf.isAnimScriptActive?.() ?? false) && frames < 900) {
+      itf.tickAnimScript?.();
+      frames++;
+      if (frames % 4 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { callback?: { name?: string } | null }> } | undefined;
+    const residuels: string[] = [];
+    for (const [, sp] of rt?.gSprites?.entries() ?? []) {
+      const n = sp.callback?.name ?? '';
+      if (/Anim|Splat|Scratch|Noise|Ember|Orb|Translate|Shiny/i.test(n)) residuels.push(n);
+    }
+    return { ok: frames < 900, frames, residuels };
+  };
+
   // FIX user 2026-06-11 (« ton dernier a casse nos barres de PV ») : nos
   // healthbox/mons utilisent des tiles OBJ FIXES (0..~300) SANS marquer le
   // bitmap d'allocation -> les sheets d'anim par tag (AllocSpriteTiles)
