@@ -36,7 +36,7 @@ function getRuntime(): unknown { return (globalThis as Record<string, unknown>).
 function GetBattlerSide(battler: number): number { return battler & 1; }
 
 type AnimSprite = {
-  data: number[]; x2: number; y2: number; invisible?: boolean;
+  data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean;
   callback: ((s: AnimSprite) => void) | null;
   _storedCb6?: ((s: AnimSprite) => void) | null;
 };
@@ -193,6 +193,102 @@ function ReverseHorizontalLungeDirection(sprite: AnimSprite): void {
   StoreSpriteCallbackInData6(sprite, DestroyAnimSprite as unknown as (s: AnimSprite) => void);
 }
 
+// ─── Slides (Tackle & co — gSlideMonToOffset/OriginalPos, tileTag 0) ────────
+// 1:1 InitSpriteDataForLinearTranslation (battle_anim_mons.c) — s16 wraps.
+function _s16(v: number): number { return (v << 16) >> 16; }
+function InitSpriteDataForLinearTranslation(sprite: AnimSprite): void {
+  const x = _s16((sprite.data[2] - sprite.data[1]) << 8);
+  const y = _s16((sprite.data[4] - sprite.data[3]) << 8);
+  sprite.data[1] = Math.trunc(x / sprite.data[0]);
+  sprite.data[2] = Math.trunc(y / sprite.data[0]);
+  sprite.data[4] = 0;
+  sprite.data[3] = 0;
+}
+/** 1:1 `TranslateSpriteLinearByIdFixedPoint` (battle_anim_mons.c). */
+function TranslateSpriteLinearByIdFixedPoint(sprite: AnimSprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    sprite.data[3] += sprite.data[1];
+    sprite.data[4] += sprite.data[2];
+    const mon = _sprites()?.get(sprite.data[5]);
+    if (mon) {
+      mon.x2 = _s16(sprite.data[3]) >> 8;
+      mon.y2 = _s16(sprite.data[4]) >> 8;
+    }
+  } else {
+    SetCallbackToStoredInData6(sprite);
+  }
+}
+
+/** 1:1 `SlideMonToOffset` (battle_anim_mon_movement.c) — args :
+ *  [battler(0=atk/1=tgt), xOff, yOff, mirrorY, duration]. */
+function SlideMonToOffset(sprite: AnimSprite): void {
+  const args = _args();
+  const battler = !args[0] ? _atk() : (_itf()?.getTarget() ?? 1);
+  const monSpriteId = _battlerSpriteId(battler);
+  const mon = _sprites()?.get(monSpriteId);
+  if (!mon) { DestroyAnimSprite(sprite); return; }
+  if (GetBattlerSide(battler) !== 0 /* B_SIDE_PLAYER */) {
+    args[1] = -args[1];
+    if (args[3] === 1) args[2] = -args[2];
+  }
+  sprite.data[0] = args[4];
+  sprite.data[1] = mon.x;
+  sprite.data[2] = mon.x + args[1];
+  sprite.data[3] = mon.y;
+  sprite.data[4] = mon.y + args[2];
+  InitSpriteDataForLinearTranslation(sprite);
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = monSpriteId;
+  sprite.invisible = true;
+  StoreSpriteCallbackInData6(sprite, DestroyAnimSprite as unknown as (s: AnimSprite) => void);
+  sprite.callback = TranslateSpriteLinearByIdFixedPoint;
+}
+
+/** 1:1 `SlideMonToOriginalPos` — args : [battler, mode(0=xy/1=y/2=x), duration]. */
+function SlideMonToOriginalPos(sprite: AnimSprite): void {
+  const args = _args();
+  const monSpriteId = _battlerSpriteId(!args[0] ? _atk() : (_itf()?.getTarget() ?? 1));
+  const mon = _sprites()?.get(monSpriteId);
+  if (!mon) { DestroyAnimSprite(sprite); return; }
+  sprite.data[0] = args[2];
+  sprite.data[1] = mon.x + mon.x2;
+  sprite.data[2] = mon.x;
+  sprite.data[3] = mon.y + mon.y2;
+  sprite.data[4] = mon.y;
+  InitSpriteDataForLinearTranslation(sprite);
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = mon.x2;
+  sprite.data[6] = mon.y2;
+  sprite.invisible = true;
+  if (args[1] === 1) sprite.data[2] = 0;
+  else if (args[1] === 2) sprite.data[1] = 0;
+  sprite.data[7] = (args[1] & 0xFF) | (monSpriteId << 8);
+  sprite.callback = SlideMonToOriginalPos_Step;
+}
+function SlideMonToOriginalPos_Step(sprite: AnimSprite): void {
+  const lo = sprite.data[7] & 0xFF;
+  const monSpriteId = sprite.data[7] >> 8;
+  const mon = _sprites()?.get(monSpriteId);
+  if (sprite.data[0] === 0) {
+    if (mon) {
+      if (lo < 2) mon.x2 = 0;
+      if (lo === 2 || lo === 0) mon.y2 = 0;
+    }
+    DestroyAnimSprite(sprite);
+  } else {
+    sprite.data[0]--;
+    sprite.data[3] += sprite.data[1];
+    sprite.data[4] += sprite.data[2];
+    if (mon) {
+      mon.x2 = ((_s16(sprite.data[3]) >> 8) << 24 >> 24) + sprite.data[5];
+      mon.y2 = ((_s16(sprite.data[4]) >> 8) << 24 >> 24) + sprite.data[6];
+    }
+  }
+}
+
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
 registerAnimTasks({
   AnimTask_ShakeMon: AnimTask_ShakeMon as never,
@@ -200,4 +296,6 @@ registerAnimTasks({
 });
 registerAnimTemplates([
   { name: 'gHorizontalLungeSpriteTemplate', tileTag: 0, paletteTag: 0, callback: DoHorizontalLunge as never },
+  { name: 'gSlideMonToOffsetSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOffset as never },
+  { name: 'gSlideMonToOriginalPosSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOriginalPos as never },
 ]);
