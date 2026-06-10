@@ -24,6 +24,10 @@ export interface AnimSpriteTemplate {
   paletteTag: number;
   /** Callback TS (1:1 le .callback du template C). */
   callback: (sprite: unknown) => void;
+  /** Charge la sheet/palette du tag si besoin (pattern LoadBallGfx). */
+  load?: () => void;
+  /** OAM du template C (shape/size) — requis si tileTag > 0. */
+  oam?: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3 };
 }
 
 const _idToName = new Map<number, string>();

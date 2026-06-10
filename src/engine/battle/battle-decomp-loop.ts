@@ -180,14 +180,34 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
  *  déroule ensuite CB2_InitBattle → CB2_HandleStartBattle → BattleMainCB1/CB2.
  *  Suppose l'état combat (gBattleTypeFlags, gPlayerParty, gEnemyParty) déjà posé
  *  par le caller (= équivalent de BattleSetup_StartWildBattle côté setup data). */
+let _animGfxPreloaded = false;
+async function _ensureAnimSpriteGfx(): Promise<void> {
+  if (_animGfxPreloaded) return;
+  try {
+    const { assetCache } = await import('../system/decomp-globals');
+    const { loadGbaPal } = await import('../gba/png-loader');
+    if (!assetCache.has('gAnimGfx_Impact')) {
+      // le .4bpp.bin est byte-exact (convertisseur valide balls) — fetch direct.
+      const resp = await fetch('/decomp/em/battle_anims/sprites/impact.4bpp.bin');
+      assetCache.set('gAnimGfx_Impact', new Uint8Array(await resp.arrayBuffer()));
+      assetCache.set('gAnimPal_Impact', await loadGbaPal('/decomp/em/battle_anims/sprites/impact.gbapal'));
+    }
+    _animGfxPreloaded = true;
+  } catch (e) {
+    console.warn('[decomp-loop] anim sprite gfx preload:', e);
+  }
+}
+
 export function bootDecompBattleLoop(returnToOverworld = false): void {
   // Side-effect modules (T3/T4) en DYNAMIQUE : un import statique provoquait
   // la TDZ ST_OAM_AFFINE_DOUBLE (cycle ESM via pokeball) -> l'app ne bootait
   // plus. Charges ici = poses avant tout usage en combat.
   void Promise.all([
     import('../../game/battle_anim_mon_movement'),  // registry AnimTask/templates (T4)
+    import('../../game/battle_anim_normal'),        // registry hitsplat + gfx IMPACT (T4)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
+  void _ensureAnimSpriteGfx();
   const cb = _CB2_InitBattle();
   if (!cb) {
     console.warn('[decomp-loop] CB2_InitBattle indisponible (battle-init pas chargé)');

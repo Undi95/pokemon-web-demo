@@ -45,7 +45,7 @@
  *     iteration via `T2_READ_32` qui devient `read32(offset)`.
  */
 
-import { CreateTask, DestroyTask as _DestroyTaskRaw } from '../system/decomp-bridge';
+import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE } from '../system/decomp-globals';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
@@ -779,11 +779,26 @@ function Cmd_createsprite(): void {
       // 1:1 CreateSpriteAndAnimate(template, coord(target,X_2), coord(target,Y_PIC_OFFSET), subprio).
       const x = _battlerCoordT4(gBattleAnimTarget, 2);
       const y = _battlerCoordT4(gBattleAnimTarget, 3);
-      const spriteId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 1 }, images: [] } as never, x, y, subpriority) ?? -1;
+      let spriteId = -1;
+      if (tpl.tileTag > 0) {
+        // Template a TAGS (gfx reels) : charge la sheet/palette (pattern
+        // LoadBallGfx) puis CreateSprite SYSTEME (resolution par tag).
+        tpl.load?.();
+        const sysTpl = {
+          tileTag: tpl.tileTag, paletteTag: tpl.paletteTag,
+          oam: tpl.oam ?? { shape: 0, size: 2 },
+          callback: tpl.callback as never,
+        };
+        spriteId = _CreateSpriteByTemplate(sysTpl as never, x, y, subpriority);
+      } else {
+        // Sprite CONTROLEUR invisible (tileTag 0 — lunge & co).
+        spriteId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 1 }, images: [] } as never, x, y, subpriority) ?? -1;
+      }
       if (spriteId >= 0) {
-        const sp = rt.gSprites?.get(spriteId) as { data?: number[]; callback?: unknown; invisible?: boolean } | undefined;
+        const sp = rt.gSprites?.get(spriteId) as { data?: number[]; callback?: unknown; invisible?: boolean; spriteId?: number } | undefined;
         if (sp) {
           sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+          sp.spriteId = spriteId;
           (sp as { callback: unknown }).callback = tpl.callback;
           if (tpl.tileTag === 0) sp.invisible = true;  // sprite controleur 1:1
           tpl.callback(sp);
