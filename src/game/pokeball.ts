@@ -600,3 +600,44 @@ function Task_PlayCryWhenReleasedFromBall(task: DecompTask, rt: DecompRuntime): 
       break;
   }
 }
+
+/** 1:1 décomp `DoHitAnimHealthboxEffect(battler)` (pokeball.c) : sprite
+ *  contrôleur invisible qui fait osciller la HEALTHBOX (+1/-1 alterné, 21
+ *  frames) quand le mon est touché. Goal T5 2026-06-10. */
+export function DoHitAnimHealthboxEffect(battler: number): void {
+  const rt = (globalThis as { __rt?: { CreateSpriteInline?: (t: never, x: number, y: number, s?: number) => number; gSprites?: Map<number, { data: number[]; invisible?: boolean; callback?: unknown }> } }).__rt;
+  if (!rt?.CreateSpriteInline || !rt.gSprites) return;
+  const hb = (globalThis as { __battleHealthbox?: { gHealthboxSpriteIds?: number[] } }).__battleHealthbox;
+  const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
+  if (hbId < 0) return;
+  const spriteId = rt.CreateSpriteInline({ oam: { shape: 0, size: 0 }, images: [] } as never, 0, 0, 0xFF);
+  const sp = rt.gSprites.get(spriteId);
+  if (!sp) return;
+  sp.invisible = true;
+  sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  sp.data[0] = 1;
+  sp.data[1] = hbId;
+  (sp as { callback: unknown }).callback = SpriteCB_HitAnimHealthoxEffect;
+}
+
+/** 1:1 décomp `SpriteCB_HitAnimHealthoxEffect` (typo decomp conservée). */
+function SpriteCB_HitAnimHealthoxEffect(sprite: { data: number[] }): void {
+  const rt = (globalThis as { __rt?: { gSprites?: Map<number, { x2: number; y2: number }>; DestroySprite?: (id: number) => void } }).__rt;
+  const hb = rt?.gSprites?.get(sprite.data[1]);
+  if (hb) {
+    hb.y2 = sprite.data[0];
+  }
+  sprite.data[0] = -sprite.data[0];
+  sprite.data[2] = (sprite.data[2] ?? 0) + 1;
+  if (sprite.data[2] === 21) {
+    if (hb) { hb.x2 = 0; hb.y2 = 0; }
+    const self = sprite as { spriteId?: number };
+    if (rt?.DestroySprite && self.spriteId !== undefined) {
+      rt.DestroySprite(self.spriteId);
+      rt.gSprites?.delete?.(self.spriteId as never);
+    } else {
+      // fallback : neutraliser le callback
+      (sprite as { callback?: unknown }).callback = null;
+    }
+  }
+}

@@ -2003,7 +2003,8 @@ function PlayerHandleHitAnimation(): void {
   if (!sprite || sprite.invisible === true) { PlayerBufferExecCompleted(); return; }
   _gDoingBattleAnim = true;
   sprite.data[1] = 0;
-  // DoHitAnimHealthboxEffect (healthbox bob, pokeball.c:1284) = Dette R3 (effet secondaire, déféré).
+  // 1:1 DoHitAnimHealthboxEffect (pokeball.c) — goal T5 2026-06-10.
+  void import('./pokeball').then((m) => m.DoHitAnimHealthboxEffect?.(gActiveBattler)).catch(() => {});
   gBattlerControllerFuncs[gActiveBattler] = _DoHitAnimBlinkSpriteEffect;
 }
 
