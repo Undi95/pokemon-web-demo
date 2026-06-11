@@ -1083,3 +1083,55 @@ _pwRegT({
   AnimTask_AttackerPunchWithTrace: AnimTask_AttackerPunchWithTrace as never,
   AnimTask_GetFrustrationPowerLevel: AnimTask_GetFrustrationPowerLevel as never,
 });
+
+// ─── VAGUE F38 : AlphaFadeIn (mons.c:1654) + surface enrichie ───────────────
+/** 1:1 `AnimTask_AlphaFadeIn` (mons.c:1654) : BLDALPHA progressif args
+ *  [evaDébut, evbDébut, evaFin, evbFin, délai]. */
+function AnimTask_AlphaFadeIn(task: _PwTask): void {
+  const itf = _pwItf();
+  const args = (itf.getArgs?.() ?? [0, 0, 0, 0, 0]).slice();
+  let v1 = 0, v2 = 0;
+  if (args[2] > args[0]) v2 = 1;
+  if (args[2] < args[0]) v2 = -1;
+  if (args[3] > args[1]) v1 = 1;
+  if (args[3] < args[1]) v1 = -1;
+  task.data[0] = 0;
+  task.data[1] = args[4] | 0;
+  task.data[2] = 0;
+  task.data[3] = args[0] | 0;
+  task.data[4] = args[1] | 0;
+  task.data[5] = v2;
+  task.data[6] = v1;
+  task.data[7] = args[2] | 0;
+  task.data[8] = args[3] | 0;
+  const rt = getRuntime();
+  (rt as unknown as { SetGpuReg?: (o: number, v: number) => void })?.SetGpuReg?.(0x52, (args[0] & 0xFFFF) | ((args[1] & 0xFF) << 8));
+  task.func = _AlphaFadeIn_Step;
+}
+/** 1:1 `AnimTask_AlphaFadeIn_Step` (mons.c:1681). */
+function _AlphaFadeIn_Step(task: _PwTask): void {
+  if (++task.data[0] > task.data[1]) {
+    task.data[0] = 0;
+    if (++task.data[2] & 1) {
+      if (task.data[3] !== task.data[7]) task.data[3] += task.data[5];
+    } else {
+      if (task.data[4] !== task.data[8]) task.data[4] += task.data[6];
+    }
+    const rt = getRuntime();
+    (rt as unknown as { SetGpuReg?: (o: number, v: number) => void })?.SetGpuReg?.(0x52, (task.data[3] & 0xFFFF) | ((task.data[4] & 0xFF) << 8));
+    if (task.data[3] === task.data[7] && task.data[4] === task.data[8]) {
+      _pwItf().DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+_pwRegT({ AnimTask_AlphaFadeIn: AnimTask_AlphaFadeIn as never });
+
+// Surface enrichie (F38) — consommée par effects_2 Minimize & co.
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.GetBattlerSpriteSubpriority = GetBattlerSpriteSubpriority;
+  surf.SetBattlerSpriteYOffsetFromYScale = SetBattlerSpriteYOffsetFromYScale;
+  surf.CloneBattlerSpriteWithBlend = CloneBattlerSpriteWithBlend;
+  surf.DestroySpriteWithActiveSheet = DestroySpriteWithActiveSheet;
+  surf.AllocOamMatrix = AllocOamMatrix;
+}

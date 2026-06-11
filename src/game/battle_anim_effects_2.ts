@@ -1974,3 +1974,157 @@ function _GrowAndGrayscale_Step(task: { taskId: number; data: number[] }): void 
   }
 }
 _regTasks({ AnimTask_GrowAndGrayscale: AnimTask_GrowAndGrayscale as never });
+
+// ─── VAGUE F38 : AnimTask_Minimize (effects_2.c:2040-2156) ──────────────────
+// L'attaquant rétrécit/regrossit ×3 en laissant des clones transparents.
+function _mzMons(): {
+  PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void;
+  SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+  ResetSpriteRotScale?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _mzAtkSpriteId(): number {
+  const b = _spItf2().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+type _MzTask = { taskId: number; data: number[]; func?: unknown };
+
+/** 1:1 `AnimTask_Minimize` (effects_2.c:2040). */
+function AnimTask_Minimize(task: _MzTask): void {
+  const spriteId = _mzAtkSpriteId();
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  _mzMons().PrepareBattlerSpriteForRotScale?.(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 0;
+  task.data[4] = 0x100;
+  task.data[5] = 0;
+  task.data[6] = 0;
+  task.data[7] = _e2Subprio(_spItf2().getAttacker?.() ?? 0);
+  task.func = _Minimize_Step;
+}
+/** GetBattlerSpriteSubpriority via la surface mons (export F36). */
+function _e2Subprio(battler: number): number {
+  const m = (_mzMons() as { GetBattlerSpriteSubpriority?: (b: number) => number }).GetBattlerSpriteSubpriority;
+  return m ? m(battler) : ((battler & 1) === 0 ? 30 : 40);
+}
+function _Minimize_Step(task: _MzTask): void {
+  const mons = _mzMons();
+  const setYFromScale = (): void => {
+    (_mzMons() as { SetBattlerSpriteYOffsetFromYScale?: (id: number) => void }).SetBattlerSpriteYOffsetFromYScale?.(task.data[0]);
+  };
+  switch (task.data[1]) {
+    case 0:
+      if (task.data[2] === 0 || task.data[2] === 3 || task.data[2] === 6) _CreateMinimizeSprite(task, task.taskId);
+      task.data[2]++;
+      task.data[4] += 0x28;
+      mons.SetSpriteRotScale?.(task.data[0], task.data[4], task.data[4], 0);
+      setYFromScale();
+      if (task.data[2] === 32) {
+        task.data[5]++;
+        task.data[1]++;
+      }
+      break;
+    case 1:
+      if (task.data[6] === 0) {
+        if (task.data[5] === 3) {
+          task.data[2] = 0;
+          task.data[1] = 3;
+        } else {
+          task.data[2] = 0;
+          task.data[3] = 0;
+          task.data[4] = 0x100;
+          mons.SetSpriteRotScale?.(task.data[0], task.data[4], task.data[4], 0);
+          setYFromScale();
+          task.data[1] = 2;
+        }
+      }
+      break;
+    case 2:
+      task.data[1] = 0;
+      break;
+    case 3:
+      if (++task.data[2] > 32) {
+        task.data[2] = 0;
+        task.data[1]++;
+      }
+      break;
+    case 4:
+      task.data[2] += 2;
+      task.data[4] -= 0x50;
+      mons.SetSpriteRotScale?.(task.data[0], task.data[4], task.data[4], 0);
+      setYFromScale();
+      if (task.data[2] === 32) {
+        task.data[2] = 0;
+        task.data[1]++;
+      }
+      break;
+    case 5: {
+      mons.ResetSpriteRotScale?.(task.data[0]);
+      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number }> } | undefined;
+      const sp = rt?.gSprites?.get(task.data[15] || task.data[0]);
+      if (sp) sp.y2 = 0;
+      _spItf2().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+/** 1:1 `CreateMinimizeSprite` (effects_2.c:2119). */
+function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+  } | undefined;
+  const clone = (_mzMons() as { CloneBattlerSpriteWithBlend?: (a: number) => number }).CloneBattlerSpriteWithBlend;
+  const spriteId = clone ? clone(0) : -1;
+  if (spriteId < 0) return;
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { data: number[]; subpriority?: number; affineAnimPaused?: boolean; oamIndex: number; callback: unknown; matrixNum?: number; affineMode?: number; centerToCornerVecX?: number; centerToCornerVecY?: number }>;
+    gba?: { oam: Array<{ objMode: number; affineMode: number; matrixNum: number; shape: number; size: number }> };
+  } | undefined;
+  const alloc = (_mzMons() as { AllocOamMatrix?: () => number }).AllocOamMatrix;
+  const matrixNum = alloc ? alloc() : -1;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (!sp) return;
+  if (matrixNum < 0 || matrixNum === 0xFF) {
+    (_mzMons() as { DestroySpriteWithActiveSheet?: (id: number) => void }).DestroySpriteWithActiveSheet?.(spriteId);
+    return;
+  }
+  const oam = rt?.gba?.oam[sp.oamIndex];
+  if (oam) {
+    oam.objMode = 1;       // ST_OAM_OBJ_BLEND
+    oam.affineMode = 3;    // ST_OAM_AFFINE_DOUBLE
+    oam.matrixNum = matrixNum;
+  }
+  sp.affineAnimPaused = true;
+  sp.matrixNum = matrixNum;
+  sp.affineMode = 3;
+  sp.subpriority = task.data[7] - task.data[3];
+  task.data[3]++;
+  task.data[6]++;
+  sp.data[0] = 16;
+  sp.data[1] = taskId;
+  sp.data[2] = 6;
+  sp.callback = _ClonedMinizeSprite_Step as never;
+  mons?.SetSpriteRotScale?.(spriteId, task.data[4], task.data[4], 0);
+  sp.affineMode = 1;     // ST_OAM_AFFINE_NORMAL (1:1 après SetSpriteRotScale)
+  if (oam) oam.affineMode = 1;
+}
+/** 1:1 `ClonedMinizeSprite_Step` (effects_2.c:2149). */
+function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }): void {
+  if (--sprite.data[0] === 0) {
+    const rt = (globalThis as Record<string, unknown>).__rt as {
+      gTasks?: Map<number, { data: number[] }>;
+      gba?: { oam: Array<{ matrixNum: number }> };
+      FreeOamMatrix?: (m: number) => void;
+    } | undefined;
+    const task = rt?.gTasks?.get(sprite.data[1]);
+    if (task) task.data[sprite.data[2]]--;
+    const m = rt?.gba?.oam[sprite.oamIndex]?.matrixNum;
+    if (m !== undefined) rt?.FreeOamMatrix?.(m);
+    (_mzMons() as { DestroySpriteWithActiveSheet?: (s: unknown) => void }).DestroySpriteWithActiveSheet?.(sprite);
+  }
+}
+_regTasks({ AnimTask_Minimize: AnimTask_Minimize as never });
