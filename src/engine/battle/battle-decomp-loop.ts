@@ -1136,3 +1136,18 @@ export async function harnessBootRivalBattle1(): Promise<void> {
   enable: () => { (globalThis as { __USE_DECOMP_BATTLE_LOOP__?: boolean }).__USE_DECOMP_BATTLE_LOOP__ = true; },
   disable: () => { (globalThis as { __USE_DECOMP_BATTLE_LOOP__?: boolean }).__USE_DECOMP_BATTLE_LOOP__ = false; },
 };
+
+// ─── DEVTOOL combat de test USER (2026-06-11, demande directe) ──────────────
+// VRAI combat : ton pokemon avec les moves a tester, adversaire INCREVABLE
+// (Wailord lvl 100, Splash uniquement -> 0 degat). Tu joues les tours TOI-MEME
+// (vraies frames entieres, vrai flux controller).
+// Console : __combatTest(['MOVE_SCRATCH','MOVE_BITE','MOVE_EMBER','MOVE_GROWL'])
+(globalThis as Record<string, unknown>).__combatTest = async (moves?: string[]): Promise<string> => {
+  const mv = (moves && moves.length) ? moves.slice(0, 4) : ['MOVE_SCRATCH', 'MOVE_BITE', 'MOVE_EMBER', 'MOVE_GROWL'];
+  await harnessSetupPartiesN(
+    [{ species: 'SPECIES_TREECKO', level: 60, opts: { moves: mv } }],
+    [{ species: 'SPECIES_WAILORD', level: 100, opts: { moves: ['MOVE_SPLASH'] } }],
+  );
+  void bootDecompBattleLoop(true);
+  return 'combat de test : TREECKO lvl60 [' + mv.join(', ') + '] vs WAILORD increvable (Splash only)';
+};
