@@ -258,10 +258,13 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     itf.setBattleAnimAttackerTarget?.(attacker, target);
     itf.DoMoveAnim(moveId);
     let frames = 0;
-    while ((itf.isAnimScriptActive?.() ?? false) && frames < 900) {
+    // 1 tick = 1 VRAIE frame (les AnimTasks sont tickees par runOneFrame — le
+    // spam de ticks faisait timeout les anims dependant de tasks a N frames
+    // reelles : faux rouges ABSORB/SMOG, fix 2026-06-11).
+    while ((itf.isAnimScriptActive?.() ?? false) && frames < 1800) {
       itf.tickAnimScript?.();
       frames++;
-      if (frames % 4 === 0) await new Promise(r => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
     }
     // laisser 30 frames de jeu (les sprites a vie propre finissent)
     await new Promise(r => setTimeout(r, 600));
@@ -297,7 +300,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         monDeplace.push(`mon${m.id} x:${m.x}->${sp.x} y:${m.y}->${sp.y} x2:${m.x2}->${sp.x2} y2:${m.y2}->${sp.y2} flip:${m.hFlip}->${!!sp.hFlip}`);
       }
     }
-    return { ok: frames < 900, frames, residuels, oamResiduels, monDeplace };
+    return { ok: frames < 1800, frames, residuels, oamResiduels, monDeplace };
   };
 
   // FIX user 2026-06-11 (« ton dernier a casse nos barres de PV ») : nos
@@ -319,6 +322,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_dark'),             // registry Bite crocs (micro-vague)
     import('./battle-anim-generated-bridge'),           // PHASE 1a : donnees generees (387 tpl)
     import('../../game/battle_anim_rock'),               // vague 2c : vortex
+    import('../../game/battle_anim_utility_funcs'),       // vague 2e : BlendBattleAnimPal (89 usages)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
