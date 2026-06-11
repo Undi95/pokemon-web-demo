@@ -12,6 +12,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { StartAnimLinearTranslation, StoreSpriteCallbackInData6 } from './battle_anim_mons';
 import type { DecompSprite } from '../engine/system/decomp-runtime';
 
@@ -66,3 +67,5 @@ function AnimDirtScatter(sprite: DecompSprite): void {
 registerAnimTemplates([
   { name: 'gSandAttackDirtSpriteTemplate', tileTag: ANIM_TAG_MUD_SAND, paletteTag: ANIM_TAG_MUD_SAND, oam: { shape: 0, size: 0 }, load: LoadAnimMudSandGfx, callback: AnimDirtScatter as never },
 ]);
+
+registerAnimCallbacks({ AnimDirtScatter: AnimDirtScatter as never });

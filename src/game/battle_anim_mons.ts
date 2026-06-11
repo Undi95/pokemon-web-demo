@@ -503,3 +503,9 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   SetSpriteRotScale, ResetSpriteRotScale, PrepareBattlerSpriteForRotScale,
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
+
+// PHASE 1a : callbacks par nom C pour les templates generes.
+import { registerAnimCallbacks as _regCb } from '../engine/battle/battle-anim-generated-bridge';
+_regCb({
+  TranslateAnimSpriteToTargetMonLocation: TranslateAnimSpriteToTargetMonLocation as never,
+});

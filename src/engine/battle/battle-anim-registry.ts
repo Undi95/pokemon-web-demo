@@ -74,7 +74,16 @@ export function registerAnimTemplates(templates: AnimSpriteTemplate[]): void {
   for (const t of templates) _templates.set(t.name, t);
 }
 export function lookupAnimTask(name: string): AnimTaskFn | undefined { return _tasks.get(name); }
-export function lookupAnimTemplate(name: string): AnimSpriteTemplate | undefined { return _templates.get(name); }
+export function lookupAnimTemplate(name: string): AnimSpriteTemplate | undefined {
+  const manual = _templates.get(name);
+  if (manual) return manual;
+  // PHASE 1a (roadmap) : fallback sur les DONNEES GENEREES (387 templates
+  // extraits de la decomp — tables exactes ; callback resolu par nom).
+  // Import lazy anti-cycle (le bridge importe ce module pour le type).
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as
+    { lookupGeneratedTemplate?: (n: string) => AnimSpriteTemplate | undefined } | undefined;
+  return bridge?.lookupGeneratedTemplate?.(name);
+}
 export function animRegistryStats(): { tasks: number; templates: number } {
   return { tasks: _tasks.size, templates: _templates.size };
 }

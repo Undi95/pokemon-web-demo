@@ -317,6 +317,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_effects_1'),      // registry Absorb orbs (T4)
     import('../../game/battle_anim_ground'),          // registry Sand-Attack (C1b)
     import('../../game/battle_anim_dark'),             // registry Bite crocs (micro-vague)
+    import('./battle-anim-generated-bridge'),           // PHASE 1a : donnees generees (387 tpl)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();

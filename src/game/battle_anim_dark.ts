@@ -13,6 +13,7 @@ import {
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
+import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 
 export const ANIM_TAG_SHARP_TEETH = 10139; // ANIM_SPRITES_START + 139
 
@@ -96,3 +97,5 @@ registerAnimTemplates([
   { name: 'gFangSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
   { name: 'gSharpTeethSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
 ]);
+
+registerAnimCallbacks({ AnimBite: AnimBite as never });

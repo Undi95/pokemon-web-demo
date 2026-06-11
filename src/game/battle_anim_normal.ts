@@ -25,6 +25,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 import { SetSpriteRotScale, PrepareBattlerSpriteForRotScale } from './battle_anim_mons';
 
@@ -131,3 +132,9 @@ registerAnimTemplates([
   // est ignoré par AnimHitSplatBasic de base — dette douce).
   { name: 'gHandleInvertHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never, affineAnims: 'sAffineAnims_HitSplat' },
 ]);
+
+// PHASE 1a : les callbacks portes, par NOM C (consommes par les 387 templates generes).
+registerAnimCallbacks({
+  AnimHitSplatBasic: AnimHitSplatBasic as never,
+  AnimHitSplatHandleInvert: AnimHitSplatBasic as never, // 1:1 : meme base, invert X = dette douce
+});
