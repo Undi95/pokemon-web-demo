@@ -82,3 +82,21 @@ InvertScreenColor).
 F3 : InvertScreenColor(18) + SetGrayscaleOrOriginalPal(14) + MetallicShine(12)
 ≈ 44 hits. F4 : SetPsychicBackground(14, avec le chantier fadetobg/LoadMoveBg).
 Puis le reste par fréquence décroissante (~120 tasks ≤6 hits).
+
+## SWEEP GLOBAL FINAL v3 (fin de session, post-F29)
+**206/354 FIDÈLES (58 %) — +63 moves vs la baseline 143/354 (40 %).**
+Les 148 dégradés restants par catégorie (un move peut cumuler) :
+- **task: 143 occurrences** — la plus grosse restante = MetallicShine ×12
+  (OBJ-window plateforme, dette stricte) ; puis ~80 tasks à ≤4 hits
+  (HardwarePaletteFade, BlendParticle, MusicNotes×2, Extrasensory,
+  fades attacker, spotlights, SurfWave, Dig×2 [scanline], sandstorm BG…)
+- **sheet: 66 occurrences / 29 tags distincts** — fragmentation VRAM
+  en sweep-série (à re-mesurer en jeu réel ; piste : compactage ou
+  ordre d'allocation)
+- **duree: 30** — résiduels liés aux tasks manquantes ci-dessus
+- residuels: 1
+
+## Le bilan de LA session (2026-06-11→12)
+4 racines systémiques + 29 vagues (68 AnimTasks ≈ 320 usages) + chantier
+BG ANIM complet + task-affine + monbg + vérificateur permanent
+= **40 % → 58 % de fidélité mesurée**, ~70 commits tsc 0.
