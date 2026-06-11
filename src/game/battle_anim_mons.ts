@@ -512,6 +512,44 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+// ─── VAGUE F6 : CloneBattlerSpriteWithBlend (mons.c:1626) ───────────────────
+// Copie le sprite du battler en clone OBJ_BLEND (traces/afterimages).
+// 1:1-net : CreateSpriteInline + copie de l OAM du mon (tile/shape/size/pal).
+export function CloneBattlerSpriteWithBlend(animBattler: number): number {
+  const itf = _f1Itf();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : animBattler === 1 ? (itf.getTarget?.() ?? 1) : -1;
+  if (b < 0) return -1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b);
+  const rt = getRuntime() as unknown as { gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number; paletteNum: number; priority: number; objMode: number; affineMode: number }> } } | null;
+  const mon = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  if (!mon || !rt) return -1;
+  const monOam = rt.gba?.oam[mon.oamIndex];
+  const cloneId = rt.CreateSpriteInline?.({ oam: { shape: monOam?.shape ?? 0, size: monOam?.size ?? 3, priority: monOam?.priority ?? 2 }, images: [] } as never, mon.x + mon.x2, mon.y + mon.y2, mon.subpriority ?? 3) ?? -1;
+  if (cloneId < 0) return -1;
+  const clone = rt.gSprites?.get(cloneId);
+  const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
+  if (cloneOam && monOam) {
+    cloneOam.tileId = monOam.tileId;
+    cloneOam.paletteNum = monOam.paletteNum;
+    cloneOam.objMode = 1; // ST_OAM_OBJ_BLEND
+  }
+  return cloneId;
+}
+/** 1:1-net `DestroySpriteWithActiveSheet` : destroy simple (la sheet du mon
+ *  reste vivante — c est le POINT de la fonction C). */
+export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  let id = typeof spriteOrId === 'number' ? spriteOrId : -1;
+  if (id < 0) {
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if ((sp as unknown) === spriteOrId) { id = sid as number; break; }
+    }
+  }
+  if (id >= 0) (rt as unknown as { DestroySprite?: (i: number) => void }).DestroySprite?.(id);
+}
+
 // ─── VAGUE F1 : AnimTask_BlendMonInAndOut (mons.c, 14 usages) ───────────────
 // Le mon pulse vers une couleur (BlendPalette aller-retour x N).
 import { BlendPalette as _f1Blend } from '../engine/system/decomp-globals';

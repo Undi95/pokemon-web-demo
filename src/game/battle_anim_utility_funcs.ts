@@ -183,7 +183,59 @@ function _UpdateSlidingBg(task: AnimTask): void {
   }
 }
 
+/** 1:1 `AnimTask_TraceMonBlended` (utility_funcs.c, 7 hits — afterimages) :
+ *  spawn data[4] clones blend, un toutes data[2] frames, vie data[3] frames. */
+function AnimTask_TraceMonBlended(task: AnimTask): void {
+  const a = _itf().getArgs?.() ?? [];
+  task.data[0] = a[0];
+  task.data[1] = 0;
+  task.data[2] = a[1];
+  task.data[3] = a[2];
+  task.data[4] = a[3];
+  task.data[5] = 0;
+  task.func = _TraceMonBlended_Step;
+}
+function _TraceMonBlended_Step(task: AnimTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; gba?: { oam: Array<{ priority: number }> } } | undefined;
+  if (task.data[4]) {
+    if (task.data[1]) {
+      task.data[1]--;
+    } else {
+      const cloneId = _ufClone(task.data[0]);
+      if (cloneId >= 0) {
+        const c = rt?.gSprites?.get(cloneId);
+        const oam = c ? rt?.gba?.oam[c.oamIndex] : undefined;
+        if (oam) oam.priority = task.data[0] ? 1 : 2;
+        if (c) {
+          c.data = c.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+          c.data[0] = task.data[3];
+          c.data[1] = task.taskId;
+          c.data[2] = 5;
+          c.callback = _AnimMonTrace;
+        }
+        task.data[5]++;
+      }
+      task.data[4]--;
+      task.data[1] = task.data[2];
+    }
+  } else if (task.data[5] === 0) {
+    _itf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+function _AnimMonTrace(sprite: { data: number[] }): void {
+  if (sprite.data[0]) {
+    sprite.data[0]--;
+  } else {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[1]);
+    if (t) t.data[sprite.data[2]]--;
+    _ufDestroyActive(sprite);
+  }
+}
+import { CloneBattlerSpriteWithBlend as _ufClone, DestroySpriteWithActiveSheet as _ufDestroyActive } from './battle_anim_mons';
+
 registerAnimTasks({
+  AnimTask_TraceMonBlended: AnimTask_TraceMonBlended as never,
   AnimTask_StartSlidingBg: AnimTask_StartSlidingBg as never,
   AnimTask_BlendBattleAnimPal: AnimTask_BlendBattleAnimPal as never,
   AnimTask_BlendColorCycle: AnimTask_BlendColorCycle as never,
