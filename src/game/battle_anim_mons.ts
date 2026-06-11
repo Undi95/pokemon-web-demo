@@ -504,6 +504,13 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+/** 1:1 `SetSpriteCoordsToAnimAttackerCoords` (battle_anim_mons.c:755). */
+export function SetSpriteCoordsToAnimAttackerCoords(sprite: { x: number; y: number }): void {
+  const atk = _projItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+}
+
 /** 1:1 `TranslateSpriteLinearAndFlicker` (battle_anim_mons.c:681) : mouvement
  *  fixed-point + clignotement (invisible toggle tous les data[5] frames). */
 export function TranslateSpriteLinearAndFlicker(sprite: DecompSprite): void {

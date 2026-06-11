@@ -266,6 +266,23 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       frames++;
       await new Promise(r => setTimeout(r, 0));
     }
+    // CLEANUP DUR post-timeout (sweep 2026-06-11 : Ice Beam timeout polluait
+    // TOUS les moves suivants en cascade — un task/state d'anim ne se nettoie
+    // jamais) : si le script a depasse le plafond, forcer l'etat anim a zero.
+    if (frames >= 1800) {
+      try {
+        (itf as { forceFinishAnim?: () => void }).forceFinishAnim?.();
+        // tuer les tasks anim restantes (AnimTask_*/SoundTask_*)
+        const gT = (rt as { gTasks?: Map<number, { func?: { name?: string } }> } | undefined)?.gTasks;
+        const dT = (rt as { DestroyTask?: (id: number) => void } | undefined)?.DestroyTask;
+        if (gT && dT) {
+          for (const [tid, t] of gT.entries()) {
+            const n = t.func?.name ?? '';
+            if (/AnimTask|SoundTask|BlendSpriteColor|_Anim/i.test(n)) { try { dT(tid); } catch { /* mort */ } }
+          }
+        }
+      } catch { /* best effort */ }
+    }
     // laisser 30 frames de jeu (les sprites a vie propre finissent)
     await new Promise(r => setTimeout(r, 600));
     const residuels: string[] = [];

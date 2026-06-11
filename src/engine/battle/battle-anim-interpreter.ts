@@ -1843,4 +1843,15 @@ export function tickAnimScript(): void {
   getTarget: () => gBattleAnimTarget,
   DestroyAnimVisualTask, DestroyAnimSprite,
   DoMoveAnim, tickAnimScript, isAnimScriptActive,
+  // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.
+  forceFinishAnim: () => {
+    gAnimVisualTaskCount = 0;
+    gAnimSoundTaskCount = 0;
+    sMonAnimTaskIdArray[0] = TASK_NONE;
+    sMonAnimTaskIdArray[1] = TASK_NONE;
+    sAnimFramesToWait = 0;
+    sSoundAnimFramesToWait = 0;
+    gAnimScriptActive = false;
+    _purgeScriptSprites();
+  },
 };

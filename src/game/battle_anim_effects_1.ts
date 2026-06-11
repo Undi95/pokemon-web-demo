@@ -13,7 +13,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
-import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT } from './battle_anim_mons';
+import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords } from './battle_anim_mons';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -459,6 +459,65 @@ function _Slice_FinalWait(sprite: _PSprite): void {
   if (--sprite.data[0] <= 0) _pItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimBubbleBurst`(+Step) : la bulle qui eclate — 30f sur place (anim
+ *  table), puis monte en oscillant ; destroy a animEnded. */
+function AnimBubbleBurst(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  SetSpriteCoordsToAnimAttackerCoords(sprite);
+  sprite.invisible = false;
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if ((atk & 1) === 0) {
+    sprite.x += args[0] | 0;
+    sprite.y += args[1] | 0;
+  } else {
+    sprite.x -= args[0] | 0;
+    sprite.y += args[1] | 0;
+    if (spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
+  }
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.callback = _BubbleBurst_Step;
+}
+function _BubbleBurst_Step(sprite: _PSprite): void {
+  if (++sprite.data[0] > 30) {
+    sprite.y2 = Math.trunc((30 - sprite.data[0]) / 3);
+    sprite.x2 = Sin((sprite.data[1] * 4) & 0xFF, 3);
+    sprite.data[1]++;
+  }
+  if ((sprite as { animEnded?: boolean }).animEnded) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimSleepLetterZ`(+Step) : le Z qui monte en derivant (cote miroir). */
+function AnimSleepLetterZ(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  SetSpriteCoordsToAnimAttackerCoords(sprite);
+  sprite.invisible = false;
+  if ((atk & 1) === 0) {
+    sprite.x += args[0] | 0;
+    sprite.y += args[1] | 0;
+    sprite.data[3] = 1;
+  } else {
+    sprite.x -= args[0] | 0;
+    sprite.y += args[1] | 0;
+    sprite.data[3] = -1;
+    const spA = sprite as unknown as { affineAnimsTableName?: string; affineMode?: number };
+    void spA; // StartSpriteAffineAnim(1) : variante affine cote adverse (table generee)
+  }
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.data[4] = 0;
+  sprite.callback = _SleepLetterZ_Step;
+}
+function _SleepLetterZ_Step(sprite: _PSprite): void {
+  sprite.y2 = -Math.trunc(sprite.data[0] / 0x28);
+  sprite.x2 = Math.trunc(sprite.data[4] / 10);
+  sprite.data[4] += sprite.data[3] * 2;
+  sprite.data[0] += sprite.data[1];
+  if (++sprite.data[1] > 60) _pItf().DestroyAnimSprite?.(sprite);
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
@@ -474,4 +533,6 @@ registerAnimCallbacks({
   AnimWhipHit: AnimWhipHit as never,
   AnimCuttingSlice: AnimCuttingSlice as never,
   AnimAirCutterSlice: AnimCuttingSlice as never, // 1:1 : meme Slice_Step (position avg cible — net)
+  AnimBubbleBurst: AnimBubbleBurst as never,
+  AnimSleepLetterZ: AnimSleepLetterZ as never,
 });

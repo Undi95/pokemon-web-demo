@@ -1,8 +1,30 @@
 # État du projet — port 1:1 Pokémon Émeraude
 
 > **Doc canonique** : ce qui est fait / pas fait, les outils d'audit, le backlog
-> priorisé. Mis à jour 2026-06-10. Branche `mirroir` (non poussée — on ne push jamais).
+> priorisé. Mis à jour 2026-06-11. Branche `mirroir` (non poussée — on ne push jamais).
 > Pour l'archi : `docs/ARCHITECTURE.md`. Pour les dettes ponctuelles : `DETTES-1TO1-STRICT.md`.
+
+## ⚔️ ANIMS DE MOVE — LE PIPELINE GÉNÉRÉ (session 2026-06-11, ~20 commits)
+
+**Le pivot user « extraction auto, pas de recopie » est EXÉCUTÉ** (docs/ROADMAP-ANIMS-1TO1.md) :
+
+| Étage | Outil/Module | Contenu |
+|---|---|---|
+| Tables const | `scripts/extract-battle-anim-sprites.mjs` → `decomp-data/auto/src/battle-anim-sprites.ts` | 226 AnimCmd + 128 tables + 185 AffineAnimCmd + 101 tables + **387 SpriteTemplates** + 74 OAM |
+| Gfx par tag | `scripts/extract-battle-anim-gfx.py` → `public/decomp/em/battle_anims/` | **289/289 tags** (manifest + .4bpp.bin/.gbapal, multi-frames concaténés) |
+| Le bridge | `src/engine/battle/battle-anim-generated-bridge.ts` | lookupGeneratedTemplate : tag manifest + OAM + tables exactes + **callback par nom C** (`registerAnimCallbacks`) |
+| Loader | `_loadAnimSheetByTag` (interpreter) | n'importe quel `loadspritegfx` charge depuis le manifest |
+
+**LA SEULE CHOSE MANUELLE = les callbacks** (vagues 2a-3c : ~25 portés → ~66 templates actifs).
+Les warns console `callback X non porté` = la liste de demande exacte des vagues suivantes.
+
+**Racine VRAM morte** (4 itérations de sonde) : `_markLiveSpriteTiles` (sprites vivants + ranges
+non-anim) avant CHAQUE alloc anim + realBytes + re-marquage post-free. Sonde de vérité :
+`sSpriteTileRangeTags` par zones (« conflitsVram: AUCUN »).
+
+**Outils de qualif** : `__combatTest(['MOVE_X',...])` (Treecko lvl60 vs Wailord increvable) ;
+`__testMoveAnim(id)` v4 (1 tick = 1 vraie frame, plafond 1800, oamResiduels + monDeplace) ;
+`__animCallbackCanary` ; sweep de masse `__sweepResults` (354 moves).
 
 ## 🧰 La boîte à outils d'audit (ne JAMAIS auditer à la main — lancer un script)
 
