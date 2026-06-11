@@ -641,4 +641,64 @@ function _RunSinAnimTimer(task: { taskId: number; data: number[] }): void {
   if (--task.data[0] === 0) _wItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _wRegT } from '../engine/battle/battle-anim-registry';
-_wRegT({ AnimTask_StartSinAnimTimer: AnimTask_StartSinAnimTimer as never });
+/** 1:1 `AnimTask_CreateRaindrops` (water.c, 4 hits — Rain Dance) : spawn une
+ *  goutte aléatoire toutes args[1] frames pendant args[2] frames. RNG : LCG
+ *  déterministe seedé par le timer (pas Math.random — interdit harness). */
+let _rainSeed = 0x1234;
+function _rainRand(): number {
+  _rainSeed = (_rainSeed * 1103515245 + 12345) & 0x7FFFFFFF;
+  return _rainSeed >> 16;
+}
+function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): void {
+  const itf = _wItf2() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  if (task.data[0] === 0) {
+    task.data[1] = a[0];
+    task.data[2] = a[1] || 2;
+    task.data[3] = a[2];
+  }
+  task.data[0]++;
+  if (task.data[0] % task.data[2] === 1) {
+    const x = _rainRand() % 240;
+    const y = _rainRand() % 80;
+    // créer la goutte via le bridge (template generated avec son AnimCmd splash)
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number; oam: { shape: number; size: number }; callback: unknown; anims?: unknown } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplate?.('gRainDropSpriteTemplate');
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
+    if (sid >= 0) {
+      const sp = rt?.gSprites?.get(sid);
+      const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+      const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
+      if (sp) {
+        sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+        if (tpl?.anims) {
+          sp.anims = tpl.anims as never;
+          sp.tileBase = tileStart !== 0xFFFF ? tileStart : 0;
+          sp.animNum = 0; sp.animCmdIndex = 0; sp.animDelayCounter = 0;
+          sp.animBeginning = true; sp.animEnded = false;
+        }
+        sp.callback = _AnimRainDrop_Step;
+      }
+    }
+  }
+  if (task.data[0] === task.data[3]) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+function _AnimRainDrop_Step(sprite: { data: number[]; x2: number; y2: number; animEnded?: boolean }): void {
+  if (++sprite.data[0] <= 13) {
+    sprite.x2++;
+    sprite.y2 += 4;
+  }
+  if (sprite.animEnded || sprite.data[0] > 40) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_wRegT({
+  AnimTask_StartSinAnimTimer: AnimTask_StartSinAnimTimer as never,
+  AnimTask_CreateRaindrops: AnimTask_CreateRaindrops as never,
+});
