@@ -340,12 +340,59 @@ function _TranslateMonElliptical_Step(task: AnimTask): void {
   }
 }
 
+/** 1:1 `AnimTask_ScaleMonAndRestore` (battle_anim_mon_movement.c) :
+ *  args [dX, dY, durée, battler, objMode]. Scale le mon par accumulation
+ *  (data10/11 += dX/dY par frame, base 0x100), inverse à mi-course, restore.
+ *  (C1b : LEER + plein de moves de statut.) */
+function AnimTask_ScaleMonAndRestore(task: AnimTask): void {
+  const args = _itf()?.getArgs?.() ?? [-5, -5, 10, 0, 1];
+  const battler = args[3] === 0 ? (_itf()?.getAttacker?.() ?? 0) : (_itf()?.getTarget?.() ?? 1);
+  const spriteId = _battlerSpriteId(battler);
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+    ResetSpriteRotScale?: (id: number) => void;
+    PrepareBattlerSpriteForRotScale?: (id: number, mode: number) => void;
+  } | undefined;
+  if (spriteId < 0 || !mons?.SetSpriteRotScale) { DestroyAnimVisualTask(task.taskId); return; }
+  mons.PrepareBattlerSpriteForRotScale?.(spriteId, args[4] ?? 0);
+  task.data[0] = args[0];
+  task.data[1] = args[1];
+  task.data[2] = args[2];
+  task.data[3] = args[2];
+  task.data[4] = spriteId;
+  task.data[10] = 0x100;
+  task.data[11] = 0x100;
+  task.func = _ScaleMonAndRestore_Step as never;
+}
+function _ScaleMonAndRestore_Step(task: AnimTask): void {
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+    ResetSpriteRotScale?: (id: number) => void;
+  } | undefined;
+  task.data[10] += task.data[0];
+  task.data[11] += task.data[1];
+  mons?.SetSpriteRotScale?.(task.data[4], task.data[10], task.data[11], 0);
+  if (--task.data[2] === 0) {
+    if (task.data[3] > 0) {
+      task.data[0] = -task.data[0];
+      task.data[1] = -task.data[1];
+      task.data[2] = task.data[3];
+      task.data[3] = 0;
+    } else {
+      mons?.ResetSpriteRotScale?.(task.data[4]);
+      DestroyAnimVisualTask(task.taskId);
+      return;
+    }
+  }
+}
+
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
 registerAnimTasks({
   AnimTask_ShakeMon: AnimTask_ShakeMon as never,
   AnimTask_ShakeMon2: AnimTask_ShakeMon2 as never,
   AnimTask_TranslateMonElliptical: AnimTask_TranslateMonElliptical as never,
   AnimTask_TranslateMonEllipticalRespectSide: AnimTask_TranslateMonEllipticalRespectSide as never,
+  AnimTask_ScaleMonAndRestore: AnimTask_ScaleMonAndRestore as never,
 });
 registerAnimTemplates([
   { name: 'gHorizontalLungeSpriteTemplate', tileTag: 0, paletteTag: 0, callback: DoHorizontalLunge as never },

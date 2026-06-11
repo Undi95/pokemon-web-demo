@@ -206,6 +206,10 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_Orbs')) assetCache.set('gAnimPal_Orbs', await loadGbaPal('/decomp/em/battle_anims/sprites/orbs.gbapal'));
     await loadBin('gAnimGfx_GoldStars', '/decomp/em/battle_anims/sprites/gold_stars.4bpp.bin');
     if (!assetCache.has('gAnimPal_GoldStars')) assetCache.set('gAnimPal_GoldStars', await loadGbaPal('/decomp/em/battle_anims/sprites/gold_stars.gbapal'));
+    await loadBin('gAnimGfx_MudSand', '/decomp/em/battle_anims/sprites/mud_sand_0.4bpp.bin');
+    if (!assetCache.has('gAnimPal_MudSand')) assetCache.set('gAnimPal_MudSand', await loadGbaPal('/decomp/em/battle_anims/sprites/mud_sand_0.gbapal'));
+    await loadBin('gAnimGfx_Leer', '/decomp/em/battle_anims/sprites/leer.4bpp.bin');
+    if (!assetCache.has('gAnimPal_Leer')) assetCache.set('gAnimPal_Leer', await loadGbaPal('/decomp/em/battle_anims/sprites/leer.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -261,6 +265,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_fire'),           // registry Ember + projectile generique (T4)
     import('../../game/battle_anim_water'),          // registry Bubble (T4)
     import('../../game/battle_anim_effects_1'),      // registry Absorb orbs (T4)
+    import('../../game/battle_anim_ground'),          // registry Sand-Attack (C1b)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();

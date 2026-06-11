@@ -201,7 +201,37 @@ function _DeepInhale_Step(task: _IhTask): void {
 }
 registerAnimTasks({ AnimTask_DeepInhale: AnimTask_DeepInhale as never });
 
+// ─── LEER (gLeerSpriteTemplate — vit dans battle_anim_effects_2.c décomp ;
+// posé ICI provisoirement, note placement) : le "regard" s'affiche au-dessus
+// de l'attaquant ~50 frames puis destroy (net-effect AnimLeerSprite).
+export const ANIM_TAG_LEER = 10027; // ANIM_SPRITES_START + 27
+const sSheetLeer = { data: 'gAnimGfx_Leer', size: 0, tag: ANIM_TAG_LEER };
+const sPalLeer = { data: 'gAnimPal_Leer', tag: ANIM_TAG_LEER };
+export function LoadAnimLeerGfx(): void {
+  if (GetSpriteTileStartByTag(ANIM_TAG_LEER) === 0xFFFF) {
+    LoadCompressedSpriteSheetUsingHeap(sSheetLeer);
+    LoadCompressedSpritePaletteUsingHeap(sPalLeer);
+  }
+}
+function AnimLeerSprite(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [24, -12];
+  const atk = _itf().getAttacker?.() ?? 0;
+  if ((atk & 1) === 1) args[0] = -args[0];
+  const mon = _battlerSprite(atk);
+  if (mon) {
+    sprite.x = mon.x + args[0];
+    sprite.y = mon.y + args[1];
+  }
+  sprite.invisible = false;
+  sprite.data[7] = 0;
+  sprite.callback = _Leer_Step;
+}
+function _Leer_Step(sprite: AnimSprite): void {
+  if (++sprite.data[7] >= 50) _itf().DestroyAnimSprite?.(sprite);
+}
+
 registerAnimTemplates([
   { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never },
   { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never },
+  { name: 'gLeerSpriteTemplate', tileTag: ANIM_TAG_LEER, paletteTag: ANIM_TAG_LEER, oam: { shape: 0, size: 2 }, load: LoadAnimLeerGfx, callback: AnimLeerSprite as never },
 ]);
