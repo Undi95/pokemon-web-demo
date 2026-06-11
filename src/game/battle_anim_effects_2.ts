@@ -1366,7 +1366,48 @@ function _ThrashV_Step(task: _SpTask): void {
       break;
   }
 }
+/** 1:1 `AnimTask_Withdraw` (effects_2.c, 1 hit) : bascule rotation ±0xB0/f
+ *  jusqu'à 0xF20, pause 30f, retour. */
+function AnimTask_Withdraw(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0);
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void } | undefined;
+  mons?.PrepareBattlerSpriteForRotScale?.(spriteId, 0);
+  task.data[15] = spriteId;
+  task.data[0] = 0; task.data[1] = 0; task.data[3] = 0;
+  task.func = _Withdraw_Step;
+}
+function _Withdraw_Step(task: _SpTask): void {
+  const itf = _spItf2() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const spriteId = task.data[15];
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void; ResetSpriteRotScale?: (id: number) => void } | undefined;
+  const side = ((itf.getAttacker?.() ?? 0) & 1) === 0;
+  const rotation = side ? -task.data[0] : task.data[0];
+  mons?.SetSpriteRotScale?.(spriteId, 0x100, 0x100, rotation & 0xFFFF);
+  if (task.data[1] === 0) {
+    task.data[0] += 0xB0;
+    sp.y2++;
+  } else if (task.data[1] === 1) {
+    if (++task.data[3] === 30) task.data[1] = 2;
+    return;
+  } else {
+    task.data[0] -= 0xB0;
+    sp.y2--;
+  }
+  if (task.data[0] === 0xF20 || task.data[0] === 0) {
+    if (task.data[1] === 2) {
+      mons?.ResetSpriteRotScale?.(spriteId);
+      itf.DestroyAnimVisualTask?.(task.taskId);
+    } else {
+      task.data[1] = 1;
+    }
+  }
+}
 _regTasks({
+  AnimTask_Withdraw: AnimTask_Withdraw as never,
   AnimTask_ThrashMoveMonHorizontal: AnimTask_ThrashMoveMonHorizontal as never,
   AnimTask_ThrashMoveMonVertical: AnimTask_ThrashMoveMonVertical as never,
   AnimTask_Splash: AnimTask_Splash as never,

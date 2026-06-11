@@ -2434,7 +2434,29 @@ function _PsychicBg_Step(task: { taskId: number; data: number[] }): void {
   const args = (_e3ItfB() as { getArgs?: () => number[] }).getArgs?.() ?? [];
   if ((args[7] & 0xFFFF) === 0xFFFF) rt?.DestroyTask?.(task.taskId);
 }
+/** 1:1 `AnimTask_DefenseCurlDeformMon` (effects_3.c, 1 hit) : boule affine. */
+import {
+  PrepareAffineAnimInTaskData as _dcPrep, RunAffineAnimFromTaskData as _dcRun,
+} from './battle_anim_mons';
+import { BATTLE_ANIM_AFFINE_ANIMS as _dcTables } from '../engine/decomp-data/auto/src/battle-anim-sprites';
+function AnimTask_DefenseCurlDeformMon(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  switch (task.data[0]) {
+    case 0: {
+      const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+      const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
+      if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+      _dcPrep(task as never, sid, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['DefenseCurlDeformMonAffineAnimCmds']);
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (!_dcRun(task as never)) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
 _e3RegTasks({
+  AnimTask_DefenseCurlDeformMon: AnimTask_DefenseCurlDeformMon as never,
   AnimTask_SetPsychicBackground: AnimTask_SetPsychicBackground as never,
   AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never,
   AnimTask_RockMonBackAndForth: AnimTask_RockMonBackAndForth as never,
