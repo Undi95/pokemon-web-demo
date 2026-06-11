@@ -140,6 +140,10 @@ let sAnimFramesToWait = 0;
 
 /** Active flag (= gAnimScriptActive). */
 export let gAnimScriptActive = false;
+// Sprites crees par le SCRIPT en cours (purge a la terminaison — garde-fou :
+// le decomp exige les sprites d'anim morts avant `end` via waitforvisualfinish ;
+// un survivant = anomalie slot/callback ecrase -> orphelin OAM, bug particules).
+const _scriptSpriteIds: Array<{ id: number; ref: unknown }> = [];
 
 /** Compteur tasks visuelles actives (= gAnimVisualTaskCount). */
 export let gAnimVisualTaskCount = 0;
@@ -288,6 +292,7 @@ function RunAnimScriptCommand(): void {
     if (_pc < 0 || _pc >= ANIM_BYTECODE.length) {
       console.warn(`[battle-anim] PC hors bornes (${_pc}/${ANIM_BYTECODE.length}) — script termine (dette).`);
       gAnimScriptActive = false;
+      _purgeScriptSprites();
       sAnimFramesToWait = 0;
       return;
     }
@@ -296,6 +301,7 @@ function RunAnimScriptCommand(): void {
     if (!fn) {
       console.warn(`[battle-anim] unknown opcode 0x${(opcode ?? -1).toString(16)} @ PC ${_pc} — script termine (dette).`);
       gAnimScriptActive = false;
+      _purgeScriptSprites();
       sAnimFramesToWait = 0;
       return;
     }
@@ -307,12 +313,31 @@ function RunAnimScriptCommand(): void {
 // PUBLIC API : ClearBattleAnimationVars + LaunchBattleAnimation + DoMoveAnim
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Purge les sprites du script termine encore vivants (anomalie -> destroy).
+ *  Les sprites legitimes sont morts avant `end` (waitforvisualfinish 1:1). */
+function _purgeScriptSprites(): void {
+  const rt = getRuntime();
+  if (rt) {
+    for (const e of _scriptSpriteIds) {
+      const sp = rt.gSprites?.get(e.id);
+      // IDENTITE obligatoire : l'id peut etre recycle par un sprite SYSTEME
+      // (healthbox re-render pendant l'anim) — detruire par id nu detruisait
+      // la healthbox (paye 2026-06-11). On ne purge que NOTRE objet.
+      if (sp && (sp as unknown) === e.ref && (sp as { inUse?: boolean }).inUse !== false) {
+        try { rt.DestroySprite(e.id); } catch { /* deja mort */ }
+      }
+    }
+  }
+  _scriptSpriteIds.length = 0;
+}
+
 /** 1:1 décomp `ClearBattleAnimationVars` (battle_anim.c:170-199).
  *  Reset complet de l'état battle anim. Appelé entre les anims pour s'assurer
  *  qu'aucune leak n'arrive. */
 export function ClearBattleAnimationVars(): void {
   sAnimFramesToWait = 0;
   gAnimScriptActive = false;
+  _purgeScriptSprites();
   gAnimVisualTaskCount = 0;
   gAnimSoundTaskCount = 0;
   gAnimDisableStructPtr = null;
@@ -834,6 +859,7 @@ function Cmd_createsprite(): void {
         if (sp) {
           sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
           sp.spriteId = spriteId;
+          _scriptSpriteIds.push({ id: spriteId, ref: sp as unknown });
           (sp as { callback: unknown }).callback = tpl.callback;
           if (tpl.tileTag === 0) sp.invisible = true;  // sprite controleur 1:1
           tpl.callback(sp);

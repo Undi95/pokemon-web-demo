@@ -845,6 +845,11 @@ export function CB2_InitBattleInternal(): void {
   // -> la pose au boot decomp-loop etait ECRASEE, cause du scratch@0 d'hier).
   // Nos healthbox/mons utilisent des tiles FIXES 0..~0x140 non marquees au
   // bitmap -> on reserve la zone pour l'allocateur dynamique des sheets anim.
+  // ⚠️ 0x140 : monter a 0x280 CASSE le send-out (_PlayerIntroSendOutWait
+  // coince — les mons s'allouent DYNAMIQUEMENT, la carte VRAM reelle est a
+  // etablir AVANT de toucher la reserve). Les sheets d'anim a 0x140+ peuvent
+  // chevaucher les tiles mons alloues dynamiquement -> corruption possible
+  // apres plusieurs anims enchainees (bug « feuilles » en stock, memoire).
   (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT (réserve OBJ 0..3).

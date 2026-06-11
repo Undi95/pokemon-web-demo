@@ -465,7 +465,7 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
 // palette est live (transfer activé + ≥1 flush), filet de sécurité à 30f. Forcer flushTo()
 // est exclu (bypasse le gate → flash, cf. fix session-124).
 const _battlerMonSpriteIds: number[] = [-1, -1, -1, -1];
-interface _PendingReveal { battler: number; spriteId: number; frames: number; }
+interface _PendingReveal { battler: number; spriteId: number; frames: number; sprRef?: unknown }
 const _pendingMonReveals: _PendingReveal[] = [];
 
 // 1:1 send-out JOUEUR : un mon qui sort d'une POKÉBALL reste INVISIBLE jusqu'à HandleBallAnimEnd
@@ -496,7 +496,11 @@ function _registerBattlerMonSprite(battler: number, spriteId: number): void {
   }
   // Send-out ball (deferReveal) : reste invisible — c'est tickSendOut qui révèle à l'émergence.
   if (_deferRevealBattlers.has(battler)) return;
-  _pendingMonReveals.push({ battler, spriteId, frames: 0 });
+  // + la REFERENCE objet du sprite : si le slot est recycle avant le reveal
+  // (sprite detruit -> id reutilise par un sprite d'anim), on droppe au lieu
+  // de reveler un orphelin (bug particules Sand-Attack, fix 2026-06-11).
+  const _sprRef = getRuntime()?.gSprites?.get(spriteId);
+  _pendingMonReveals.push({ battler, spriteId, frames: 0, sprRef: _sprRef as unknown });
 }
 
 /** Révèle chaque mon en attente dès que sa palette OBJ est live (déterministe). Appelé
@@ -518,7 +522,9 @@ export function tickBattlerMonReveals(): void {
     // qu'au moins 2 frames ont passé. Filet de sécurité à 30f (jamais invisible en permanence).
     if ((transferOk && p.frames >= 2) || p.frames >= 30) {
       const spr = rt.gSprites?.get(p.spriteId);
-      if (spr) spr.invisible = false;
+      // identite : le slot peut avoir ete recycle (destroy -> id reutilise par
+      // un sprite d'anim) -> reveler l'orphelin etait le bug des particules.
+      if (spr && (p.sprRef === undefined || (spr as unknown) === p.sprRef)) spr.invisible = false;
       _pendingMonReveals.splice(i, 1);
     }
   }
