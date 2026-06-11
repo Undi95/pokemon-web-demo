@@ -1053,6 +1053,16 @@ function Cmd_createsprite(): void {
             // ST_OAM_AFFINE_ON (1), PAS DOUBLE (3 = rendu 2x la box -> le
             // hitsplat GEANT vu par le user 2026-06-11).
             spF.affineMode = 1;
+            // ...ET dans L'OAM (le point de verite) : la sync retrograde du
+            // ticker (sprite-engine-impl:363) ECRASAIT sprite.affineMode avec
+            // l'OAM(0) au tick suivant -> plus jamais ticke -> affineAnimEnded
+            // jamais pose -> TOUS les hitsplats finissaient au garde-fou 600f
+            // (la racine de la signature f~607 du sweep, 2026-06-11 soir).
+            {
+              const rtO = (globalThis as Record<string, unknown>).__rt as { gba?: { oam?: Array<{ affineMode?: number }> } } | undefined;
+              const oamE = rtO?.gba?.oam?.[(sp as { oamIndex?: number }).oamIndex ?? -1];
+              if (oamE) oamE.affineMode = 1;
+            }
             // 1:1 InitSpriteAffineAnim -> AllocOamMatrix : SA PROPRE matrice.
             // Sans alloc, matrixNum=0 = LA MATRICE DU MON ADVERSE -> l'anim
             // ecrasait la matrice du Wailord = mon deplace/deforme (retour
