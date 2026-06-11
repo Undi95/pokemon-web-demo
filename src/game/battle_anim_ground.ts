@@ -609,3 +609,13 @@ _hsReg({
   AnimTask_DigDownMovement: AnimTask_DigDownMovement as never,
   AnimTask_DigUpMovement: AnimTask_DigUpMovement as never,
 });
+
+// ─── VAGUE F36 : AnimTask_IsPowerOver99 (ground.c:734) ──────────────────────
+/** 1:1 → gBattleAnimArgs[15] = power > 99 (Magnitude). */
+function AnimTask_IsPowerOver99(task: { taskId: number }): void {
+  const itf = _dgItf() as { getArgs?: () => number[]; getAnimMovePower?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.();
+  if (args) args[15] = ((itf.getAnimMovePower?.() ?? 0) > 99) ? 1 : 0;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_hsReg({ AnimTask_IsPowerOver99: AnimTask_IsPowerOver99 as never });

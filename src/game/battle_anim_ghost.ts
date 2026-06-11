@@ -482,3 +482,147 @@ registerAnimCallbacks({
   AnimCurseNail: AnimCurseNail as never,
   AnimGhostStatusSprite: AnimGhostStatusSprite as never,
 });
+
+// ─── VAGUE F36 : NightShadeClone + NightmareClone (ghost.c:339-585) ─────────
+import {
+  PrepareBattlerSpriteForRotScale as _f36Prep,
+  SetSpriteRotScale as _f36SetRS,
+  ResetSpriteRotScale as _f36ResetRS,
+  CloneBattlerSpriteWithBlend as _f36Clone,
+  DestroySpriteWithActiveSheet as _f36DestroySheet,
+  TranslateSpriteLinearFixedPoint as _f36TransFP,
+  StoreSpriteCallbackInData6 as _f36Store6,
+} from './battle_anim_mons';
+
+type _F36Task = { taskId: number; data: number[]; func?: unknown };
+function _f36Itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+type _F36Sprite = { data: number[]; x2: number; invisible?: boolean; callback: unknown; oamIndex: number };
+function _f36Rt(): {
+  gSprites?: Map<number, _F36Sprite>;
+  SetGpuReg?: (off: number, v: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _f36AtkSpriteId(): number {
+  const b = _f36Itf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+const _F36_BLDCNT = 0x50, _F36_BLDALPHA = 0x52;
+function _f36Blend(eva: number, evb: number): number { return (eva & 0xFFFF) | ((evb & 0xFFFF) << 8); }
+
+/** 1:1 `AnimTask_NightShadeClone` (ghost.c:339) : l'attaquant rétréci 128 en
+ *  blend qui regrandit jusqu'à 256. arg0 = délai avant le regrossissement. */
+function AnimTask_NightShadeClone(task: _F36Task): void {
+  const rt = _f36Rt();
+  rt.SetGpuReg?.(_F36_BLDCNT, 0x3F40);          // BLDCNT_EFFECT_BLEND | TGT2_ALL
+  rt.SetGpuReg?.(_F36_BLDALPHA, _f36Blend(0, 0x10));
+  const spriteId = _f36AtkSpriteId();
+  if (spriteId === 0xFF) { _f36Itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  _f36Prep(spriteId, 1 /* ST_OAM_OBJ_BLEND */);
+  _f36SetRS(spriteId, 128, 128, 0);
+  const sp = rt.gSprites?.get(spriteId);
+  if (sp) sp.invisible = false;
+  task.data[0] = 128;
+  task.data[1] = (_f36Itf().getArgs?.() ?? [0])[0] | 0;  // *gBattleAnimArgs
+  task.data[2] = 0;
+  task.data[3] = 16;
+  task.func = _NightShadeClone_Step1;
+}
+function _NightShadeClone_Step1(task: _F36Task): void {
+  task.data[10] += 1;
+  if (task.data[10] === 3) {
+    task.data[10] = 0;
+    task.data[2] += 1;
+    task.data[3] -= 1;
+    _f36Rt().SetGpuReg?.(_F36_BLDALPHA, _f36Blend(task.data[2], task.data[3]));
+    if (task.data[2] !== 9) return;
+    task.func = _NightShadeClone_Step2;
+  }
+}
+function _NightShadeClone_Step2(task: _F36Task): void {
+  if (task.data[1] > 0) {
+    task.data[1] -= 1;
+    return;
+  }
+  const spriteId = _f36AtkSpriteId();
+  task.data[0] += 8;
+  if (task.data[0] <= 0xFF) {
+    _f36SetRS(spriteId, task.data[0], task.data[0], 0);
+  } else {
+    _f36ResetRS(spriteId);
+    _f36Itf().DestroyAnimVisualTask?.(task.taskId);
+    const rt = _f36Rt();
+    rt.SetGpuReg?.(_F36_BLDCNT, 0);
+    rt.SetGpuReg?.(_F36_BLDALPHA, 0);
+  }
+}
+
+/** 1:1 `AnimTask_NightmareClone` (ghost.c:516) : clone blend du TARGET qui
+ *  s'éloigne en s'estompant (15→0 / 2→16). */
+function AnimTask_NightmareClone(task: _F36Task): void {
+  const itf = _f36Itf();
+  task.data[0] = _f36Clone(1 /* ANIM_TARGET */);
+  if (task.data[0] < 0) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  task.data[1] = 0;
+  task.data[2] = 15;
+  task.data[3] = 2;
+  task.data[4] = 0;
+  const rt = _f36Rt();
+  rt.SetGpuReg?.(_F36_BLDCNT, 0x3F40);
+  rt.SetGpuReg?.(_F36_BLDALPHA, _f36Blend(task.data[2], task.data[3]));
+  const clone = rt.gSprites?.get(task.data[0]);
+  if (clone) {
+    clone.data[0] = 80;
+    const targetSide = (itf.getTarget?.() ?? 1) & 1;
+    if (targetSide === 0 /* B_SIDE_PLAYER */) {
+      clone.data[1] = -144;
+      clone.data[2] = 112;
+    } else {
+      clone.data[1] = 144;
+      clone.data[2] = -112;
+    }
+    clone.data[3] = 0;
+    clone.data[4] = 0;
+    _f36Store6(clone as never, (() => { /* SpriteCallbackDummy */ }) as never);
+    clone.callback = _f36TransFP as never;
+  }
+  task.func = _NightmareClone_Step;
+}
+function _NightmareClone_Step(task: _F36Task): void {
+  const rt = _f36Rt();
+  switch (task.data[4]) {
+    case 0: {
+      task.data[1] += 1;
+      task.data[5] = task.data[1] & 3;
+      if (task.data[5] === 1 && task.data[2] > 0) task.data[2] -= 1;
+      if (task.data[5] === 3 && task.data[3] <= 15) task.data[3] += 1;
+      rt.SetGpuReg?.(_F36_BLDALPHA, _f36Blend(task.data[2], task.data[3]));
+      if (task.data[3] !== 16 || task.data[2] !== 0) break;
+      if (task.data[1] <= 80) break;
+      _f36DestroySheet(task.data[0]);
+      task.data[4] = 1;
+      break;
+    }
+    case 1:
+      if (++task.data[6] <= 1) break;
+      rt.SetGpuReg?.(_F36_BLDCNT, 0);
+      rt.SetGpuReg?.(_F36_BLDALPHA, 0);
+      task.data[4] += 1;
+      break;
+    case 2:
+      _f36Itf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+import { registerAnimTasks as _f36RegT } from '../engine/battle/battle-anim-registry';
+_f36RegT({
+  AnimTask_NightShadeClone: AnimTask_NightShadeClone as never,
+  AnimTask_NightmareClone: AnimTask_NightmareClone as never,
+});

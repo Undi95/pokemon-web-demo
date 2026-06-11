@@ -3133,3 +3133,30 @@ function _AcidArmor_Step(task: _AaTask): void {
 }
 
 registerAnimTasks({ AnimTask_AcidArmor: AnimTask_AcidArmor as never });
+
+// ─── VAGUE F36 : booléennes/power-levels (effects_3.c:1531 + :5060) ─────────
+/** 1:1 `AnimTask_IsHealingMove` (effects_3.c:1531) → args[7] = (dmg <= 0). */
+function AnimTask_IsHealingMove(task: { taskId: number }): void {
+  const itf = _vItf() as { getArgs?: () => number[]; getAnimMoveDmg?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.();
+  if (args) args[7] = (itf.getAnimMoveDmg?.() ?? 0) > 0 ? 0 : 1;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_GetReturnPowerLevel` (effects_3.c:5060) → args[7] = 0..3. */
+function AnimTask_GetReturnPowerLevel(task: { taskId: number }): void {
+  const itf = _vItf() as { getArgs?: () => number[]; getAnimFriendship?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const f = itf.getAnimFriendship?.() ?? 0;
+  const args = itf.getArgs?.();
+  if (args) {
+    args[7] = 0;
+    if (f < 60) args[7] = 0;
+    if (f > 60 && f < 92) args[7] = 1;
+    if (f > 91 && f < 201) args[7] = 2;
+    if (f > 200) args[7] = 3;
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+registerAnimTasks({
+  AnimTask_IsHealingMove: AnimTask_IsHealingMove as never,
+  AnimTask_GetReturnPowerLevel: AnimTask_GetReturnPowerLevel as never,
+});

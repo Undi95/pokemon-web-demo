@@ -2241,6 +2241,8 @@ export function tickAnimScript(): void {
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
   getAnimMoveDmg: () => gAnimMoveDmg,
+  getAnimMovePower: () => gAnimMovePower,
+  getAnimFriendship: () => gAnimFriendship,
   DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,
   DoMoveAnim, tickAnimScript, isAnimScriptActive, setBattleAnimAttackerTarget,
   // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.

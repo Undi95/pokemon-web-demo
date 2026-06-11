@@ -935,3 +935,151 @@ _regCb({
   AnimWeatherBallDown: AnimWeatherBallDown as never,
   AnimWeatherBallUp: AnimWeatherBallUp as never,
 });
+
+// ─── VAGUE F36 : AttackerPunchWithTrace (mons.c:2408) + helpers ─────────────
+// L'attaquant « punch » vers l'avant en laissant des clones-traces teintés
+// (Mega/Comet Punch). + GetBattlerSpriteSubpriority + GetFrustrationPowerLevel.
+
+/** 1:1 `GetBattlerSpriteSubpriority(battler)` (battle_anim_mons.c:2035) :
+ *  PLAYER_LEFT 30, PLAYER_RIGHT 20, OPPONENT_LEFT 40, OPPONENT_RIGHT 50
+ *  (single : player 30 / opponent 40). Contest → 30/40. */
+export function GetBattlerSpriteSubpriority(battler: number): number {
+  if (IsContest()) return battler === 2 ? 30 : 40;
+  const position = GetBattlerPosition(battler);
+  if (position === 0) return 30;       // B_POSITION_PLAYER_LEFT
+  if (position === 2) return 20;       // B_POSITION_PLAYER_RIGHT
+  if (position === 1) return 40;       // B_POSITION_OPPONENT_LEFT
+  return 50;                           // B_POSITION_OPPONENT_RIGHT
+}
+
+type _PwTask = { taskId: number; data: number[]; func?: unknown };
+function _pwItf(): { getArgs?: () => number[]; getAttacker?: () => number; getAnimFriendship?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _pwSpriteApi(): { AllocSpritePalette?: (tag: number) => number; FreeSpritePaletteByTag?: (tag: number) => void } {
+  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+}
+function _pwAtkSpriteId(): number {
+  const b = _pwItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+const _PW_TAG_BENT_SPOON = 10097; // ANIM_TAG_BENT_SPOON (trace palette du C)
+
+/** 1:1 `CreateBattlerTrace(task, taskId)` (mons.c:2474) — un clone blend
+ *  teinté de 8 frames de vie, géré PAR LE SPRITE (sActiveTime). */
+function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
+  const spriteId = CloneBattlerSpriteWithBlend(0);
+  if (spriteId < 0) return;
+  const rt = getRuntime();
+  const clone = rt?.gSprites?.get(spriteId) as { data: number[]; x2: number; oamIndex: number; callback: unknown; subpriority?: number } | undefined;
+  const atk = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
+  if (!clone) return;
+  const oam = (rt as unknown as { gba?: { oam: Array<{ priority: number; paletteNum: number }> } }).gba?.oam[clone.oamIndex];
+  if (oam) {
+    oam.priority = task.data[6];      // tPriority
+    oam.paletteNum = task.data[4];    // tPaletteNum
+  }
+  clone.data[0] = 8;                  // sActiveTime
+  clone.data[1] = taskId;             // sTaskId
+  clone.data[2] = spriteId;           // sSpriteId
+  clone.x2 = atk?.x2 ?? 0;
+  clone.callback = _AnimBattlerTrace as never;
+  task.data[5]++;                     // tNumTracesActive
+}
+/** 1:1 `AnimBattlerTrace` (mons.c:2491). */
+function _AnimBattlerTrace(sprite: { data: number[] }): void {
+  if (--sprite.data[0] === 0) {
+    const rt = getRuntime();
+    const task = (rt as unknown as { gTasks?: Map<number, _PwTask> }).gTasks?.get(sprite.data[1]);
+    if (task) task.data[5]--;         // tNumTracesActive
+    DestroySpriteWithActiveSheet(sprite.data[2]);
+  }
+}
+
+/** 1:1 `AnimTask_AttackerPunchWithTrace` (mons.c:2408). arg0 = couleur blend,
+ *  arg1 = coeff. */
+function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
+  const itf = _pwItf();
+  const args = itf.getArgs?.() ?? [0, 0];
+  const attacker = itf.getAttacker?.() ?? 0;
+  task.data[0] = _pwAtkSpriteId();                                  // tBattlerSpriteId
+  if (task.data[0] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[1] = GetBattlerSide(attacker) !== 0 ? -8 : 8;           // tMoveSpeed
+  task.data[2] = 0;                                                 // tState
+  task.data[3] = 0;                                                 // tCounter
+  const rt = getRuntime();
+  const atkSp = rt?.gSprites?.get(task.data[0]) as { x2: number; oamIndex: number } | undefined;
+  // 1:1 décomp (bug ROM conservé) : x2 -= spriteId.
+  if (atkSp) atkSp.x2 -= task.data[0];
+  task.data[4] = _pwSpriteApi().AllocSpritePalette?.(_PW_TAG_BENT_SPOON) ?? 0xFF;  // tPaletteNum
+  task.data[5] = 0;                                                 // tNumTracesActive
+  // priority de la trace selon la subpriority du battler (20/40 → 2 sinon 3)
+  let prio = GetBattlerSpriteSubpriority(attacker);
+  prio = (prio === 20 || prio === 40) ? 2 : 3;
+  task.data[6] = prio;                                              // tPriority
+  // CpuCopy32(Unfaded[src pal mon] → Faded[dest pal trace]) + BlendPalette
+  const monOam = atkSp ? (rt as unknown as { gba?: { oam: Array<{ paletteNum: number }> } }).gba?.oam[atkSp.oamIndex] : undefined;
+  const srcSlot = monOam?.paletteNum ?? 0;
+  const destSlot = task.data[4] === 0xFF ? 0 : task.data[4];
+  const bufs = rt as unknown as {
+    gPlttBufferUnfaded?: { get: (i: number) => number };
+    gPlttBufferFaded?: { set: (i: number, v: number) => void };
+  };
+  if (bufs.gPlttBufferUnfaded?.get && bufs.gPlttBufferFaded?.set) {
+    for (let k = 0; k < 16; k++) {
+      bufs.gPlttBufferFaded.set(256 + destSlot * 16 + k, bufs.gPlttBufferUnfaded.get(256 + srcSlot * 16 + k));
+    }
+  }
+  _f1Blend(256 + destSlot * 16, 16, args[1] | 0, args[0] | 0);
+  task.func = _AttackerPunchWithTrace_Step;
+}
+/** 1:1 `AnimTask_AttackerPunchWithTrace_Step` (mons.c:2437). */
+function _AttackerPunchWithTrace_Step(task: _PwTask): void {
+  const rt = getRuntime();
+  const atkSp = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
+  switch (task.data[2]) {
+    case 0:
+      _CreateBattlerTrace(task, task.taskId);
+      if (atkSp) atkSp.x2 += task.data[1];
+      if (++task.data[3] === 5) {
+        task.data[3]--;
+        task.data[2]++;
+      }
+      break;
+    case 1:
+      _CreateBattlerTrace(task, task.taskId);
+      if (atkSp) atkSp.x2 -= task.data[1];
+      if (--task.data[3] === 0) {
+        if (atkSp) atkSp.x2 = 0;
+        task.data[2]++;
+      }
+      break;
+    case 2:
+      if (task.data[5] === 0) {
+        _pwSpriteApi().FreeSpritePaletteByTag?.(_PW_TAG_BENT_SPOON);
+        _pwItf().DestroyAnimVisualTask?.(task.taskId);
+      }
+      break;
+  }
+}
+
+/** 1:1 `AnimTask_GetFrustrationPowerLevel` (mons.c:1993) → gBattleAnimArgs[7]. */
+function AnimTask_GetFrustrationPowerLevel(task: _PwTask): void {
+  const itf = _pwItf();
+  const friendship = itf.getAnimFriendship?.() ?? 0;
+  let powerLevel: number;
+  if (friendship <= 30) powerLevel = 0;
+  else if (friendship <= 100) powerLevel = 1;
+  else if (friendship <= 200) powerLevel = 2;
+  else powerLevel = 3;
+  const args = itf.getArgs?.();
+  if (args) args[7] = powerLevel;  // ARG_RET_ID
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+
+import { registerAnimTasks as _pwRegT } from '../engine/battle/battle-anim-registry';
+_pwRegT({
+  AnimTask_AttackerPunchWithTrace: AnimTask_AttackerPunchWithTrace as never,
+  AnimTask_GetFrustrationPowerLevel: AnimTask_GetFrustrationPowerLevel as never,
+});
