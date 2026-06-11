@@ -13,6 +13,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
+import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation } from './battle_anim_mons';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -244,10 +245,75 @@ function _MoveTwisterParticle_Step(sprite: _PSprite): void {
 }
 function SinT(i: number, a: number): number { return Sin(i & 0xFF, a); }
 
+/** 1:1 `AnimSolarBeamBigOrb` (effects_1.c) : orbe attaquant->cible, anim
+ *  variante args[3], lineaire -> destroy. */
+function AnimSolarBeamBigOrb(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 20, 0];
+  const tgt = _pItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && (args[3] | 0) > 0) { spA.animNum = args[3] | 0; spA.animBeginning = true; spA.animEnded = false; }
+  sprite.data[0] = args[2] | 0;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, 2);
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, 3);
+  StoreSpriteCallbackInData6(sprite as never, ((sp: unknown) => { _pItf().DestroyAnimSprite?.(sp); }) as never);
+  StartAnimLinearTranslation(sprite as never);
+}
+
+/** 1:1 `AnimSolarBeamSmallOrb`(+Step) : la petite orbe qui spirale autour
+ *  des grosses (Sin/Cos additifs + subpriorite alternee). */
+function AnimSolarBeamSmallOrb(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 20, 0];
+  const tgt = _pItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, 2);
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, 3);
+  InitAnimLinearTranslation(sprite as never);
+  sprite.data[5] = args[3] | 0;
+  sprite.callback = _SolarBeamSmallOrb_Step;
+  _SolarBeamSmallOrb_Step(sprite);
+}
+function _SolarBeamSmallOrb_Step(sprite: _PSprite): void {
+  if (AnimTranslateLinear(sprite as never)) {
+    _pItf().DestroyAnimSprite?.(sprite);
+  } else {
+    sprite.x2 += Sin(sprite.data[5] & 0xFF, 5);
+    sprite.y2 += Cos(sprite.data[5] & 0xFF, 14);
+    sprite.data[5] = (sprite.data[5] + 15) & 0xFF;
+  }
+}
+
+/** 1:1 `AnimSporeParticle`(+Step) : la spore qui tournoie en descendant. */
+function AnimSporeParticle(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 60, 0];
+  InitSpritePosToAnimTarget(sprite as never, true);
+  sprite.invisible = false;
+  sprite.data[0] = args[3] | 0;
+  sprite.data[1] = args[2] | 0;
+  sprite.data[2] = 0;
+  sprite.callback = _SporeParticle_Step;
+  _SporeParticle_Step(sprite);
+}
+function _SporeParticle_Step(sprite: _PSprite): void {
+  sprite.x2 = Sin(sprite.data[1] & 0xFF, 32);
+  sprite.data[2] += 24;
+  sprite.y2 = Cos(sprite.data[1] & 0xFF, -3) + ((sprite.data[2] << 16 >> 16) >> 8);
+  sprite.data[1] = (sprite.data[1] + 2) & 0xFF;
+  if (--sprite.data[0] === -1) _pItf().DestroyAnimSprite?.(sprite);
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
   AnimPowerAbsorptionOrb: AnimPowerAbsorptionOrb as never,
   AnimTranslateLinearSingleSineWave: AnimTranslateLinearSingleSineWave as never,
   AnimMoveTwisterParticle: AnimMoveTwisterParticle as never,
+  AnimSolarBeamBigOrb: AnimSolarBeamBigOrb as never,
+  AnimSolarBeamSmallOrb: AnimSolarBeamSmallOrb as never,
+  AnimSporeParticle: AnimSporeParticle as never,
 });
