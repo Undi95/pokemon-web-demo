@@ -1114,15 +1114,14 @@ function _AnimBulletSeed_Step2(sprite: _VSprite): void {
 
 // 1:1 `sMusicNotePaletteTagsTable` (battle_anim_effects_2.c:885) :
 // [ANIM_TAG_MUSIC_NOTES_2, ANIM_SPRITES_START-1, ANIM_SPRITES_START-2] — les
-// 2 derniers tags = palettes blend chargées par AnimTask_HealBellMusicNotePalettes
-// (:3019, non porté).
+// 2 derniers tags = palettes chargées par AnimTask_LoadMusicNotesPals
+// (PORTÉ, vague F35 multipal — voir fin de fichier).
 const ANIM_TAG_MUSIC_NOTES_2 = 10206; // ANIM_SPRITES_START + 206
 const sMusicNotePaletteTagsTable: ReadonlyArray<number> = [ANIM_TAG_MUSIC_NOTES_2, 9999, 9998];
 
 /** 1:1 `SetMusicNotePalette` (battle_anim_effects_2.c:3048) : frame (tileNum +=
  *  32 si b impair, + a<<2) et palette (tag sMusicNotePaletteTagsTable[b>>1]).
- *  Dette douce : tags 9999/9998 non chargés (task non portée) →
- *  IndexOfSpritePaletteTag = 0xFF → palette non écrite (le C écrirait 15). */
+ *  Les tags 9999/9998 sont chargés par AnimTask_LoadMusicNotesPals (F35). */
 function _SetMusicNotePalette(sprite: _VSprite, a: number, b: number): void {
   const tile = (b & 1) ? 32 : 0;
   _oamTileNumAdd(sprite, tile + (a << 2));
@@ -1849,3 +1848,73 @@ function _SketchDrawMon_Step(task: _SkTask): void {
 }
 
 _regTasks({ AnimTask_SketchDrawMon: AnimTask_SketchDrawMon as never });
+
+// ─── VAGUE F35-MULTIPAL : Load/FreeMusicNotesPals (effects_2.c:3021-3046) ────
+// HealBell : le .gbapal de MUSIC_NOTES_2 contient 3 BANKS de 16 couleurs
+// (asset régénéré 48 couleurs — le chemin loadspritegfx normal n'en copie que
+// 16, 1:1 LoadCompressedSpritePalette). La task alloue 2 slots de plus (tags
+// 9999/9998 = ANIM_SPRITES_START-1/-2) et y charge les banks 1-2.
+const _MN_NUM_PAL_TAGS = 3; // 1:1 NUM_MUSIC_NOTE_PAL_TAGS
+type _MnTask = { taskId: number; data: number[]; func?: unknown };
+function _mnSprite(): {
+  AllocSpritePalette?: (tag: number) => number;
+  FreeSpritePaletteByTag?: (tag: number) => void;
+  IndexOfSpritePaletteTag?: (tag: number | string) => number;
+} {
+  return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
+}
+function _mnWritePalBank(slot: number, p16: Uint16Array, bank: number): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gPlttBufferUnfaded?: { set: (i: number, v: number) => void };
+    gPlttBufferFaded?: { set: (i: number, v: number) => void };
+  } | undefined;
+  if (!rt?.gPlttBufferFaded?.set || slot < 0 || slot === 0xFF) return;
+  for (let k = 0; k < 16; k++) {
+    const v = p16[bank * 16 + k] ?? 0;
+    rt.gPlttBufferUnfaded?.set(256 + slot * 16 + k, v);
+    rt.gPlttBufferFaded.set(256 + slot * 16 + k, v);
+  }
+}
+
+/** 1:1 `AnimTask_LoadMusicNotesPals` (effects_2.c:3021) : slot du tag
+ *  MUSIC_NOTES_2 + 2 slots alloués (9999/9998), 3 banks du .gbapal. */
+function AnimTask_LoadMusicNotesPals(task: _MnTask): void {
+  const sp = _mnSprite();
+  const paletteNums: number[] = [];
+  paletteNums[0] = sp.IndexOfSpritePaletteTag?.(ANIM_TAG_MUSIC_NOTES_2) ?? 0xFF;
+  if (paletteNums[0] === 0xFF) paletteNums[0] = sp.IndexOfSpritePaletteTag?.('ANIM_TAG_MUSIC_NOTES_2') ?? 0xFF;
+  for (let i = 1; i < _MN_NUM_PAL_TAGS; i++) {
+    paletteNums[i] = sp.AllocSpritePalette?.(10000 - i) ?? 0xFF; // ANIM_SPRITES_START - i
+  }
+  const apply = (p16: Uint16Array): void => {
+    for (let i = 0; i < _MN_NUM_PAL_TAGS; i++) _mnWritePalBank(paletteNums[i], p16, i);
+  };
+  const cache = (globalThis as Record<string, unknown>).__assetCache as Map<string, unknown> | undefined;
+  const cached = cache?.get('gAnimPalTag_' + ANIM_TAG_MUSIC_NOTES_2);
+  if (cached instanceof Uint16Array && cached.length >= 48) {
+    apply(cached); // 1:1 LZDecompressWram synchrone (préload bridge)
+  } else {
+    // filet : fetch direct (la ROM décompresse en synchrone ; ici le préload
+    // total au boot rend ce chemin rare — les notes prennent la palette dès
+    // le retour, quelques frames au pire)
+    void fetch('/decomp/em/battle_anims/sprites/music_notes_2.gbapal')
+      .then((r) => r.arrayBuffer())
+      .then((b) => { const p = new Uint16Array(b); cache?.set('gAnimPalTag_' + ANIM_TAG_MUSIC_NOTES_2, p); apply(p); })
+      .catch(() => { /* asset absent */ });
+  }
+  _spItf2().DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 `AnimTask_FreeMusicNotesPals` (effects_2.c:3039). */
+function AnimTask_FreeMusicNotesPals(task: _MnTask): void {
+  const sp = _mnSprite();
+  for (let i = 0; i < _MN_NUM_PAL_TAGS; i++) {
+    sp.FreeSpritePaletteByTag?.(sMusicNotePaletteTagsTable[i]);
+  }
+  _spItf2().DestroyAnimVisualTask?.(task.taskId);
+}
+
+_regTasks({
+  AnimTask_LoadMusicNotesPals: AnimTask_LoadMusicNotesPals as never,
+  AnimTask_FreeMusicNotesPals: AnimTask_FreeMusicNotesPals as never,
+});

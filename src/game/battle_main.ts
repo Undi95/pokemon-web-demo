@@ -840,22 +840,17 @@ export function CB2_InitBattleInternal(): void {
   // 1:1 décomp `DrawBattleEntryBackground()` (battle_main.c:680) avec l'env RECALCULÉ
   // (fixe le « sable au re-combat »). Async (assets terrain), caché par WIN0 jusqu'à l'ouverture.
   void drawBattleEntryBackground(environment);
-  // C0 (goal 2026-06-11) : la reserve tiles OBJ doit etre posee APRES le
-  // _ResetSpriteData ci-dessus (sprite.c:302 remet gReservedSpriteTileCount=0
-  // -> la pose au boot decomp-loop etait ECRASEE, cause du scratch@0 d'hier).
-  // Nos healthbox/mons utilisent des tiles FIXES 0..~0x140 non marquees au
-  // bitmap -> on reserve la zone pour l'allocateur dynamique des sheets anim.
-  // ⚠️ 0x140 : monter a 0x280 CASSE le send-out (_PlayerIntroSendOutWait
-  // coince — les mons s'allouent DYNAMIQUEMENT, la carte VRAM reelle est a
-  // etablir AVANT de toucher la reserve). Les sheets d'anim a 0x140+ peuvent
-  // chevaucher les tiles mons alloues dynamiquement -> corruption possible
-  // apres plusieurs anims enchainees (bug « feuilles » en stock, memoire).
-  // 0x140 : toute valeur superieure casse le send-out (allocs dynamiques
-  // basses). LA solution VRAM = le marqueur dynamique au 1er load anim
-  // (_markLiveSpriteTiles : marque les plages des sprites VIVANTS dans le
-  // bitmap -> l'allocateur ne donne jamais une plage occupee — la healthbox
-  // @320-447 protegee sans casser le send-out).
-  (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
+  // 1:1 ROM (C0 racine, 2026-06-12) : AUCUNE réserve tiles en combat —
+  // ResetSpriteData (sprite.c:302) remet gReservedSpriteTileCount=0 et la ROM
+  // n'y touche PAS (seul pokemon_storage_system pose 0x280). Tout est
+  // first-fit depuis 0 : mons (sprites-à-images), healthboxes (ranges par
+  // tag au bitmap), ball, sheets anim. L'ex-réserve 0x140 (pansement
+  // scratch@0 d'avant le marquage des ranges) GASPILLAIT 320 tiles : la zone
+  // anim tombait à ~107 tiles → ANIM_TAG_ROCKS (96) / HealBell (BELL+
+  // NOTES_2+THIN_RING) ne tenaient plus (sheet:10058/10206/10203/10049,
+  // mesures 2026-06-12). Les occupants réels sont TOUS au bitmap
+  // (AllocSpriteTileRange + _markLiveSpriteTiles).
+  (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0;
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT (réserve OBJ 0..3).
   setReservedSpritePaletteCount(MAX_BATTLERS_COUNT);
