@@ -1406,7 +1406,65 @@ function _Withdraw_Step(task: _SpTask): void {
     }
   }
 }
+/** 1:1 `AnimTask_ScaryFace` (effects_2.c:3326, 2 hits) : le visage géant en
+ *  BG1 (blend BLDCNT TGT1_BG1, alpha 0→16→0) — tilemap selon le côté cible. */
+import {
+  GetBattleAnimBg1Data as _sfBgData, AnimLoadCompressedBgGfx as _sfLoadGfx,
+  AnimLoadCompressedBgTilemap as _sfLoadMap, LoadAnimBgPalette as _sfLoadPal,
+  ClearBattleAnimBg as _sfClear,
+} from '../engine/battle/battle-anim-interpreter';
+function AnimTask_ScaryFace(task: _SpTask): void {
+  const itf = _spItf2() as { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
+  rt?.SetGpuReg?.(0x50, 0x3F40 | 0x02); // BLDCNT = TGT2_ALL|EFFECT_BLEND|TGT1_BG1
+  rt?.SetGpuReg?.(0x52, 16 << 8);       // BLDALPHA (0,16)
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG1_X = 0;
+  g.gBattle_BG1_Y = 0;
+  const animBg = _sfBgData();
+  const tgt = itf.getTarget?.() ?? 1;
+  if ((tgt & 1) === 1) _sfLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_ScaryFacePlayer');
+  else _sfLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_ScaryFaceOpponent');
+  _sfLoadGfx(animBg.bgId, 'gBattleAnimBgImage_ScaryFace', animBg.tilesOffset);
+  _sfLoadPal('gBattleAnimBgPalette_ScaryFace', animBg.paletteId);
+  task.data[12] = 0;
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.func = _ScaryFace_Step;
+}
+function _ScaryFace_Step(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
+  switch (task.data[12]) {
+    case 0: // alpha in 0→14 (1:1 step 2/frame-paire)
+      if (++task.data[10] === 2) {
+        task.data[10] = 0;
+        task.data[11]++;
+        rt?.SetGpuReg?.(0x52, ((16 - task.data[11]) << 8) | task.data[11]);
+        if (task.data[11] === 14) { task.data[12]++; task.data[11] = 0; }
+      }
+      break;
+    case 1: // hold 21f
+      if (++task.data[11] === 21) { task.data[12]++; task.data[11] = 14; }
+      break;
+    case 2: // alpha out
+      if (++task.data[10] === 2) {
+        task.data[10] = 0;
+        task.data[11]--;
+        rt?.SetGpuReg?.(0x52, ((16 - task.data[11]) << 8) | task.data[11]);
+        if (task.data[11] === 0) { task.data[12]++; }
+      }
+      break;
+    case 3:
+      _sfClear(1);
+      rt?.SetGpuReg?.(0x50, 0);
+      rt?.SetGpuReg?.(0x52, 0);
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
 _regTasks({
+  AnimTask_ScaryFace: AnimTask_ScaryFace as never,
   AnimTask_Withdraw: AnimTask_Withdraw as never,
   AnimTask_ThrashMoveMonHorizontal: AnimTask_ThrashMoveMonHorizontal as never,
   AnimTask_ThrashMoveMonVertical: AnimTask_ThrashMoveMonVertical as never,

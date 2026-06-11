@@ -717,6 +717,79 @@ export function ResetBattleAnimBg(toBG2: boolean): void {
 
 /** 1:1 décomp `LoadMoveBg(u16 bgId)` (battle_anim.c:1185-1207).
  *  Décompresse + load BG tilemap/tiles/palette depuis gBattleAnimBackgroundTable[bgId]. */
+// ─── Helpers BG ANIM par SYMBOLE (chantier BG étape 3) ──────────────────────
+// 1:1 GetBattleAnimBg1Data + AnimLoadCompressedBgGfx/Tilemap + ClearBattleAnimBg
+// — chargent dans LE BG1 ANIM (charblock 1, mapBase 28 : les conventions monbg).
+let _animBgSymbols: Record<string, string> | null = null;
+const _animBgSymCache = new Map<string, Uint8Array>();
+function _ensureAnimBgSymbols(): void {
+  if (_animBgSymbols) return;
+  void fetch('/decomp/em/battle_anims/anim-bg-symbols.json')
+    .then((r) => r.json())
+    .then((j: Record<string, string>) => {
+      _animBgSymbols = j;
+      for (const f of Object.values(j)) {
+        if (_animBgSymCache.has(f)) continue;
+        void fetch('/decomp/em/battle_anims/backgrounds/' + f)
+          .then((r) => r.arrayBuffer())
+          .then((b) => { _animBgSymCache.set(f, new Uint8Array(b)); })
+          .catch(() => {});
+      }
+    })
+    .catch(() => {});
+}
+_ensureAnimBgSymbols();
+function _bgSymData(symbol: string): Uint8Array | undefined {
+  const f = _animBgSymbols?.[symbol];
+  return f ? _animBgSymCache.get(f) : undefined;
+}
+/** 1:1 net `GetBattleAnimBg1Data` : { bgId 1, paletteId 8, tilesOffset 0 }. */
+export function GetBattleAnimBg1Data(): { bgId: number; paletteId: number; tilesOffset: number } {
+  return { bgId: 1, paletteId: 8, tilesOffset: 0 };
+}
+/** 1:1 `AnimLoadCompressedBgGfx(bgId, symbol, tilesOffset)` — tiles → charblock. */
+export function AnimLoadCompressedBgGfx(bgId: number, symbol: string, tilesOffset: number): void {
+  const rt = getRuntime();
+  const data = _bgSymData(symbol);
+  if (!rt || !data) return;
+  const gba = (rt as unknown as { gba: { bg: (i: number) => { vram: Uint8Array; config: { charBaseIndex: number; visible: boolean; priority: number; screenSize: number } } } }).gba;
+  const bg = gba.bg(bgId);
+  bg.config.charBaseIndex = 1; // le charblock ANIM (conventions monbg — JAMAIS la textbox)
+  bg.vram.set(data.subarray(0, Math.min(data.length, bg.vram.length - tilesOffset * 32)), tilesOffset * 32);
+}
+/** 1:1 `AnimLoadCompressedBgTilemap(bgId, symbol)` — tilemap u16. */
+export function AnimLoadCompressedBgTilemap(bgId: number, symbol: string): void {
+  const rt = getRuntime();
+  const data = _bgSymData(symbol);
+  if (!rt || !data) return;
+  const gba = (rt as unknown as { gba: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean; priority: number } } } }).gba;
+  const bg = gba.bg(bgId);
+  const m16 = new Uint16Array(data.buffer, data.byteOffset, data.byteLength >> 1);
+  bg.tilemap.set(m16.subarray(0, Math.min(m16.length, bg.tilemap.length)), 0);
+  bg.config.visible = true;
+  bg.config.priority = 1;
+  _monbgActive[bgId] = true; // le clear standard le démontera
+}
+/** 1:1 `LoadAnimBgPalette(symbol, paletteId)` (LoadCompressedPalette BG). */
+export function LoadAnimBgPalette(symbol: string, paletteId: number): void {
+  const rt = getRuntime();
+  const data = _bgSymData(symbol);
+  if (!rt || !data) return;
+  const pf = (rt as unknown as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } }).gPlttBufferFaded;
+  const p16 = new Uint16Array(data.buffer, data.byteOffset, data.byteLength >> 1);
+  if (pf?.set) for (let i = 0; i < 16 && i < p16.length; i++) pf.set(paletteId * 16 + i, p16[i]);
+}
+/** 1:1 `ClearBattleAnimBg(bgId)` — vide + cache. */
+export function ClearBattleAnimBg(bgId: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const gba = (rt as unknown as { gba: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } }).gba;
+  const bg = gba.bg(bgId);
+  bg.tilemap.fill(0);
+  bg.config.visible = false;
+  _monbgActive[bgId] = false;
+}
+
 // ─── LoadMoveBg RÉEL (chantier BG étape 2, 2026-06-11) ──────────────────────
 // 1:1 battle_anim.c:1185 (non-contest) : tilemap → BG_SCREEN_ADDR(26) (=
 // mapBase 26 = LE TILEMAP DU TERRAIN BG3), image → BG_CHAR_ADDR(2) (charBase
