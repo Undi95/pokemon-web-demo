@@ -605,7 +605,49 @@ function _ShakePlatforms_Step(task: { taskId: number; data: number[] }): void {
     task.data[3]--;
   }
 }
+/** 1:1 `AnimTask_FlashAnimTagWithColor` (normal.c, 3 hits) : alterne 2 blends
+ *  (color1/Y1 ↔ color2/Y2) toutes les delay frames, numBlends fois.
+ *  args (tag, delay, numBlends, color1, blendY1, color2, blendY2). */
+function AnimTask_FlashAnimTagWithColor(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const a = _nItf3().getArgs?.() ?? [];
+  task.data[0] = a[1];        // tTimer
+  task.data[1] = a[1];        // tDelay (+ flag 0x100 alternance)
+  task.data[2] = a[2];        // tNumBlends
+  task.data[3] = a[3];        // tColor1
+  task.data[4] = a[4];        // tBlendY1
+  task.data[5] = a[5];        // tColor2
+  task.data[6] = a[6];        // tBlendY2
+  task.data[7] = a[0];        // tAnimTag
+  _FlashTag_Apply(task.data[7], task.data[4], task.data[3]);
+  task.func = _FlashTag_Step1;
+}
+function _FlashTag_Apply(tag: number, y: number, color: number): void {
+  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const palIdx = sp?.IndexOfSpritePaletteTag?.(tag) ?? 0xFF;
+  if (palIdx === 0xFF) return;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined;
+  const pf = rt?.gPlttBufferFaded;
+  if (!pf?.get || !pf.set) return;
+  // BlendPalette(palOffset OBJ, 16, y, color) — via decomp-globals
+  const dgb = (globalThis as Record<string, unknown>).__decompGlobals as { BlendPalette?: (o: number, n: number, c: number, col: number) => void } | undefined;
+  dgb?.BlendPalette?.(256 + palIdx * 16, 16, y & 0xFF, color);
+}
+function _FlashTag_Step1(task: { taskId: number; data: number[]; func?: unknown }): void {
+  if (task.data[0] > 0) { task.data[0]--; return; }
+  if (task.data[2] === 0) {
+    // restore : blend 0 (couleurs nettes) puis destroy
+    _FlashTag_Apply(task.data[7], 0, 0);
+    _nItf3().DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  if (task.data[1] & 0x100) _FlashTag_Apply(task.data[7], task.data[4], task.data[3]);
+  else _FlashTag_Apply(task.data[7], task.data[6], task.data[5]);
+  task.data[1] ^= 0x100;
+  task.data[0] = task.data[1] & 0xFF;
+  task.data[2]--;
+}
 _nRegT({
+  AnimTask_FlashAnimTagWithColor: AnimTask_FlashAnimTagWithColor as never,
   AnimTask_InvertScreenColor: AnimTask_InvertScreenColor as never,
   AnimTask_ShakeBattlePlatforms: AnimTask_ShakeBattlePlatforms as never,
 });
