@@ -3924,7 +3924,10 @@ export function BattleStartClearSetData(): void {
 
   // 1:1 décomp ll. 3083-3091 : HITMARKER_NO_ANIMATIONS si battleSceneOff.
   if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED)) {
-    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK) && gSaveBlock2Ptr.optionsBattleSceneOff === true) {
+    // 1:1 battle_main.c:3085 `optionsBattleSceneOff == TRUE` — la save stocke
+    // 0/1 NUMERIQUE (boot-mode) : `=== true` ne matchait JAMAIS -> l'option
+    // « ANIMS DE COMBAT : SANS » etait ignoree (tranche B goal 2026-06-11).
+    if (!(gBattleTypeFlags & BATTLE_TYPE_LINK) && !!gSaveBlock2Ptr.optionsBattleSceneOff) {
       setHitMarker(gHitMarker | HITMARKER_NO_ANIMATIONS);
     }
   } else if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
