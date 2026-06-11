@@ -395,8 +395,172 @@ function _ScaleMonAndRestore_Step(task: AnimTask): void {
   }
 }
 
+// ─── VAGUE F1 fidélité (2026-06-11, qualification user) ─────────────────────
+/** 1:1 `AnimTask_ShakeMonInPlace` (mon_movement.c:236) — args:
+ *  (battler, xOff, yOff, numShakes, delay). 27 usages scripts. */
+function AnimTask_ShakeMonInPlace(task: AnimTask): void {
+  const a = _args();
+  const spriteId = GetAnimBattlerSpriteId(a[0]);
+  if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
+  const sp = _sprites()?.get(spriteId);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  sp.x2 += a[1];
+  sp.y2 += a[2];
+  task.data[0] = spriteId;
+  task.data[1] = 0;
+  task.data[2] = a[3];
+  task.data[3] = 0;
+  task.data[4] = a[4];
+  task.data[5] = a[1] * 2;
+  task.data[6] = a[2] * 2;
+  task.func = AnimTask_ShakeMonInPlace_Step;
+  AnimTask_ShakeMonInPlace_Step(task);
+}
+function AnimTask_ShakeMonInPlace_Step(task: AnimTask): void {
+  const sp = _sprites()?.get(task.data[0]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  if (task.data[3] === 0) {
+    if (task.data[1] & 1) { sp.x2 += task.data[5]; sp.y2 += task.data[6]; }
+    else { sp.x2 -= task.data[5]; sp.y2 -= task.data[6]; }
+    task.data[3] = task.data[4];
+    if (++task.data[1] >= task.data[2]) {
+      if (task.data[1] & 1) { sp.x2 += Math.trunc(task.data[5] / 2); sp.y2 += Math.trunc(task.data[6] / 2); }
+      else { sp.x2 -= Math.trunc(task.data[5] / 2); sp.y2 -= Math.trunc(task.data[6] / 2); }
+      DestroyAnimVisualTask(task.taskId);
+      return;
+    }
+  } else {
+    task.data[3]--;
+  }
+}
+
+/** 1:1 `AnimTask_SwayMon` (mon_movement.c:613) — args:
+ *  (axe 0=x/1=y, amplitude, vitesse, numSways, battler). 13 usages. */
+function AnimTask_SwayMon(task: AnimTask): void {
+  const a = _args();
+  if ((_atk() & 1) !== 0 /* != B_SIDE_PLAYER */) a[1] = -a[1];
+  const spriteId = GetAnimBattlerSpriteId(a[4]);
+  task.data[0] = a[0];
+  task.data[1] = a[1];
+  task.data[2] = a[2];
+  task.data[3] = a[3];
+  task.data[4] = spriteId;
+  task.data[5] = a[4] === 0 ? _atk() : (_itf()?.getTarget() ?? 1);
+  task.data[10] = 0; task.data[11] = 0;
+  task.data[12] = 1;
+  task.func = AnimTask_SwayMonStep;
+}
+function AnimTask_SwayMonStep(task: AnimTask): void {
+  const sp = _sprites()?.get(task.data[4]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  const sineIndex = (task.data[10] + task.data[2]) & 0xFFFF;
+  task.data[10] = sineIndex;
+  const waveIndex = sineIndex >> 8;
+  const sineValue = Sin(waveIndex, task.data[1]);
+  if (task.data[0] === 0) {
+    sp.x2 = sineValue;
+  } else {
+    const side = task.data[5] & 1; // 0=player
+    if (side === 0) sp.y2 = sineValue >= 0 ? sineValue : -sineValue;
+    else sp.y2 = sineValue >= 0 ? -sineValue : sineValue;
+  }
+  if ((waveIndex >= 0x80 && task.data[11] === 0 && task.data[12] === 1)
+    || (waveIndex < 0x7f && task.data[11] === 1 && task.data[12] === 0)) {
+    task.data[11] ^= 1;
+    task.data[12] ^= 1;
+    if (--task.data[3] === 0) {
+      sp.x2 = 0;
+      sp.y2 = 0;
+      DestroyAnimVisualTask(task.taskId);
+    }
+  }
+}
+
+/** 1:1 `AnimTask_WindUpLunge` (mon_movement.c:741) — args:
+ *  (battler, windUpX, windUpYAmp, windUpDur, delay, lungeX, lungeDur). */
+function AnimTask_WindUpLunge(task: AnimTask): void {
+  const a = _args();
+  const wavePeriod = Math.trunc(0x8000 / (a[3] || 1));
+  if ((_atk() & 1) !== 0) { a[1] = -a[1]; a[5] = -a[5]; }
+  task.data[0] = GetAnimBattlerSpriteId(a[0]);
+  task.data[1] = Math.trunc((a[1] << 8) / (a[3] || 1));
+  task.data[2] = a[2];
+  task.data[3] = a[3];
+  task.data[4] = a[4];
+  task.data[5] = Math.trunc((a[5] << 8) / (a[6] || 1));
+  task.data[6] = a[6];
+  task.data[7] = wavePeriod;
+  task.data[10] = 0; task.data[11] = 0; task.data[12] = 0;
+  task.func = AnimTask_WindUpLunge_Step1;
+}
+function AnimTask_WindUpLunge_Step1(task: AnimTask): void {
+  const sp = _sprites()?.get(task.data[0]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  task.data[11] += task.data[1];
+  sp.x2 = task.data[11] >> 8;
+  sp.y2 = Sin((task.data[10] >> 8) & 0xFF, task.data[2]);
+  task.data[10] += task.data[7];
+  if (--task.data[3] === 0) task.func = AnimTask_WindUpLunge_Step2;
+}
+function AnimTask_WindUpLunge_Step2(task: AnimTask): void {
+  if (task.data[4] > 0) { task.data[4]--; return; }
+  const sp = _sprites()?.get(task.data[0]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  task.data[12] += task.data[5];
+  sp.x2 = (task.data[12] >> 8) + (task.data[11] >> 8);
+  if (--task.data[6] === 0) { DestroyAnimVisualTask(task.taskId); }
+}
+
+/** 1:1 `AnimTask_ShakeTargetBasedOnMovePowerOrDmg` (mon_movement.c:868) —
+ *  args: (usePowerOrDmg, stepDelay, numShakes, shakeX, shakeY). 15 usages. */
+function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(task: AnimTask): void {
+  const a = _args();
+  const g = globalThis as Record<string, unknown>;
+  const base = !a[0] ? ((g.__gAnimMovePower as number) ?? 0) : ((g.__gAnimMoveDmg as number) ?? 0);
+  let amp = Math.trunc(base / 12);
+  if (amp < 1) amp = 1;
+  if (amp > 16) amp = 16;
+  task.data[15] = amp;
+  task.data[14] = Math.trunc(amp / 2);
+  task.data[13] = task.data[14] + (amp & 1);
+  task.data[12] = 0;
+  task.data[10] = a[3];
+  task.data[11] = a[4];
+  task.data[7] = GetAnimBattlerSpriteId(1 /* ANIM_TARGET */);
+  const sp = _sprites()?.get(task.data[7]);
+  task.data[8] = sp?.x2 ?? 0;
+  task.data[9] = sp?.y2 ?? 0;
+  task.data[0] = 0;
+  task.data[1] = a[1];
+  task.data[2] = a[2];
+  task.func = AnimTask_ShakeTargetPowerDmg_Step;
+}
+function AnimTask_ShakeTargetPowerDmg_Step(task: AnimTask): void {
+  const sp = _sprites()?.get(task.data[7]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  if (++task.data[0] > task.data[1]) {
+    task.data[0] = 0;
+    task.data[12] = (task.data[12] + 1) & 1;
+    if (task.data[10]) {
+      sp.x2 = task.data[12] ? task.data[8] + task.data[13] : task.data[8] - task.data[14];
+    }
+    if (task.data[11]) {
+      sp.y2 = task.data[12] ? task.data[15] : 0;
+    }
+    if (!--task.data[2]) {
+      sp.x2 = 0;
+      sp.y2 = 0;
+      DestroyAnimVisualTask(task.taskId);
+    }
+  }
+}
+
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
 registerAnimTasks({
+  AnimTask_ShakeMonInPlace: AnimTask_ShakeMonInPlace as never,
+  AnimTask_SwayMon: AnimTask_SwayMon as never,
+  AnimTask_WindUpLunge: AnimTask_WindUpLunge as never,
+  AnimTask_ShakeTargetBasedOnMovePowerOrDmg: AnimTask_ShakeTargetBasedOnMovePowerOrDmg as never,
   AnimTask_ShakeMon: AnimTask_ShakeMon as never,
   AnimTask_ShakeMon2: AnimTask_ShakeMon2 as never,
   AnimTask_TranslateMonElliptical: AnimTask_TranslateMonElliptical as never,

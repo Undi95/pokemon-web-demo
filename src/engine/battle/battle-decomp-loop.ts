@@ -254,6 +254,48 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
   //   await __testMoveAnim(33 /* MOVE_POUND */)  -> { ok, frames, residuels }
   // Joue DoMoveAnim(moveId) attacker 0 -> target 1, tick jusqu'a fin
   // (timeout 900 ticks), compte les sprites anim residuels (doit etre 0).
+  // ─── VERIF FIDELITE 1:1 (qualification user 2026-06-11) : trace d'opcodes ──
+  // __verifyMoveAnim(id) : joue le move en mode trace et rapporte les DEFAUTS
+  // (sheet 0xFFFF, sprite/task non resolus, duree garde-fou, residuels).
+  (globalThis as Record<string, unknown>).__verifyMoveAnim = async (moveId: number, attacker = 0, target = 1): Promise<unknown> => {
+    const g = globalThis as Record<string, unknown>;
+    g.__animVerifyMode = true;
+    g.__animTrace = [];
+    const r = await (g.__testMoveAnim as (m: number, a?: number, t?: number) => Promise<{ ok: boolean; frames: number; oamResiduels: unknown[]; monDeplace?: unknown }>)(moveId, attacker, target);
+    g.__animVerifyMode = false;
+    const trace = (g.__animTrace as Array<Record<string, unknown>>) ?? [];
+    const defects: string[] = [];
+    for (const e of trace) {
+      if (e.op === 'load' && e.tileStart === 0xFFFF) defects.push(`sheet:${e.tag}`);
+      if (e.op === 'sprite' && !e.resolved) defects.push(`sprite:${e.name}`);
+      if (e.op === 'sprite' && e.resolved && e.cb === 'none' && (e.tileTag as number) > 0) defects.push(`cb-none:${e.name}`);
+      if (e.op === 'task' && !e.resolved) defects.push(`task:${e.name}`);
+    }
+    if (r.frames >= 590) defects.push(`duree:${r.frames}`);
+    if ((r.oamResiduels?.length ?? 0) > 0) defects.push(`residuels:${r.oamResiduels.length}`);
+    const nSprites = trace.filter((e) => e.op === 'sprite').length;
+    const nTasks = trace.filter((e) => e.op === 'task').length;
+    return { moveId, ok: r.ok, frames: r.frames, nSprites, nTasks, defects, fidele: defects.length === 0 };
+  };
+  // Le sweep complet : tous les moves -> classement par defaut.
+  (globalThis as Record<string, unknown>).__fidelitySweep = async (ids: number[]): Promise<unknown> => {
+    const g = globalThis as Record<string, unknown>;
+    const verify = g.__verifyMoveAnim as (m: number) => Promise<{ moveId: number; frames: number; defects: string[]; fidele: boolean }>;
+    const out: Array<{ moveId: number; frames: number; defects: string[]; fidele: boolean }> = [];
+    for (const id of ids) {
+      try { out.push(await verify(id)); }
+      catch (e) { out.push({ moveId: id, frames: -1, defects: ['EXC:' + String(e).slice(0, 60)], fidele: false }); }
+    }
+    g.__fidelityResults = out;
+    const parDefaut: Record<string, number[]> = {};
+    for (const r of out) {
+      for (const d of r.defects) {
+        const k = d.split(':')[0] + ':' + (d.split(':')[1] ?? '');
+        (parDefaut[k] ??= []).push(r.moveId);
+      }
+    }
+    return { total: out.length, fideles: out.filter((r) => r.fidele).length, parDefaut };
+  };
   (globalThis as Record<string, unknown>).__testMoveAnim = async (moveId: number, attacker = 0, target = 1): Promise<unknown> => {
     const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as {
       setBattleAnimAttackerTarget?: (a: number, t: number) => void;
@@ -269,6 +311,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // SNAPSHOT OAM avant (regle user « rien ne doit rester affiche » : le
     // critere = AUCUN NOUVEAU OAM visible apres l'anim vs avant).
     const visAvant = new Set<number>();
+    const tasksAvant = new Set<number>((rt as { gTasks?: Map<number, unknown> } | undefined)?.gTasks?.keys() ?? []);
     rt?.gba?.oam?.forEach((o, i) => { if (o.visible) visAvant.add(i); });
     // snapshot des BATTLERS (retour user : des moves deplacent le mon) :
     // position/flips identiques apres l'anim, sinon monDeplace signale.
@@ -294,21 +337,26 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       frames++;
       await new Promise(r => setTimeout(r, 0));
     }
-    // CLEANUP DUR post-timeout (sweep 2026-06-11 : Ice Beam timeout polluait
-    // TOUS les moves suivants en cascade — un task/state d'anim ne se nettoie
-    // jamais) : si le script a depasse le plafond, forcer l'etat anim a zero.
-    if (frames >= 1800) {
+    // CLEANUP SYSTEMIQUE (2026-06-11 v2) : tuer TOUTE task creee PENDANT le
+    // move et encore vivante (diff de taskIds — robuste aux noms, les steps
+    // `_Blend*` underscores echappaient au filtre par nom -> zombies cumules,
+    // chaque move suivant partait au garde-fou 600f en cascade).
+    {
       try {
-        (itf as { forceFinishAnim?: () => void }).forceFinishAnim?.();
-        // tuer les tasks anim restantes (AnimTask_*/SoundTask_*)
+        if (frames >= 590) (itf as { forceFinishAnim?: () => void }).forceFinishAnim?.();
         const gT = (rt as { gTasks?: Map<number, { func?: { name?: string } }> } | undefined)?.gTasks;
         const dT = (rt as { DestroyTask?: (id: number) => void } | undefined)?.DestroyTask;
         if (gT && dT) {
           for (const [tid, t] of gT.entries()) {
-            const n = t.func?.name ?? '';
-            if (/AnimTask|SoundTask|BlendSpriteColor|_Anim/i.test(n)) { try { dT(tid); } catch { /* mort */ } }
+            if (!tasksAvant.has(tid)) {
+              const n = t.func?.name ?? '';
+              // epargner les tasks systeme legitimes (cry, healthbox...)
+              if (!/Cry|Health|Intro|SlideIn/i.test(n)) { try { dT(tid); } catch { /* morte */ } }
+            }
           }
         }
+        // re-zero le compteur anim (les zombies l'avaient gonfle)
+        (itf as { forceFinishAnim?: () => void }).forceFinishAnim?.();
       } catch { /* best effort */ }
     }
     // laisser 30 frames de jeu (les sprites a vie propre finissent)

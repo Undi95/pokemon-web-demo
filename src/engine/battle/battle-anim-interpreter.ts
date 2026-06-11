@@ -867,6 +867,7 @@ function Cmd_loadspritegfx(): void {
   // registry des templates (C0 goal 2026-06-11 : le load vient de l'OPCODE,
   // pas seulement du createsprite).
   _loadAnimSheetByTag(10000 + trueIndex);
+  _vtrace({ op: 'load', tag: 10000 + trueIndex, tileStart: ((globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined)?.GetSpriteTileStartByTag?.(10000 + trueIndex) });
   AddSpriteIndex(trueIndex);
   _pc += 2;
   sAnimFramesToWait = 1;
@@ -1035,6 +1036,7 @@ function Cmd_createsprite(): void {
   // T4 registry : marqueur nominal -> template TS enregistre.
   const tplName = animSymbolName(templatePtr);
   const tpl = tplName ? lookupAnimTemplate(tplName) : undefined;
+  if (!tpl) _vtrace({ op: 'sprite', name: tplName ?? ('0x' + (templatePtr >>> 0).toString(16)), resolved: false });
   if (tpl) {
     const rt = getRuntime();
     if (rt) {
@@ -1057,6 +1059,7 @@ function Cmd_createsprite(): void {
         // Sprite CONTROLEUR invisible (tileTag 0 — lunge & co).
         spriteId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 1 }, images: [] } as never, x, y, subpriority) ?? -1;
       }
+      _vtrace({ op: 'sprite', name: tplName, resolved: true, spriteId, tileTag: tpl.tileTag, cb: (tpl.callback as { name?: string } | undefined)?.name ?? 'none' });
       if (spriteId >= 0) {
         const sp = rt.gSprites?.get(spriteId) as { data?: number[]; callback?: unknown; invisible?: boolean; spriteId?: number } | undefined;
         if (sp) {
@@ -1151,9 +1154,13 @@ function Cmd_createsprite(): void {
             spF.affineAnimBeginning = true;
             spF.affineAnimEnded = false;
           }
+          // ++ AVANT l'appel du callback (1:1 net : en C le callback tourne au
+          // tick SUIVANT, le ++ precede toujours ; un callback qui detruit
+          // immediatement (gardes-fous) faisait --(clampe 0) puis ++ = compteur
+          // FANTOME -> waitforvisualfinish 600f (BodySlam & co, 2026-06-11).
+          gAnimVisualTaskCount++;
           tpl.callback(sp);
         }
-        gAnimVisualTaskCount++;  // 1:1 battle_anim.c:411 (decremente par DestroyAnimSprite)
       }
     }
     return;
@@ -1194,11 +1201,24 @@ function Cmd_createvisualtask(): void {
   if (taskFn) {
     const rt = getRuntime();
     if (rt) {
-      rt.CreateTask(taskFn as never, taskPriority);
-      gAnimVisualTaskCount++;  // 1:1 battle_anim.c:441 (decremente par DestroyAnimVisualTask)
+      const tid = rt.CreateTask(taskFn as never, taskPriority);
+      // 1:1 battle_anim.c : `taskFunc(taskId);` IMMEDIAT — les args sont encore
+      // frais. Sans ça, la task lisait gBattleAnimArgs AU 1ER TICK, APRES que
+      // les opcodes suivants du script les aient REECRITS (racine des data
+      // corrompues : target=4126(couleur), delay=40… — qualification user
+      // 2026-06-11, sonde BodySlam/SolarBeam).
+      // ++ AVANT l'appel immediat : le C fait (CreateTask, func(), ++) avec un
+      // compteur u8 qui WRAP (une task qui se detruit DANS func() fait 0-- =255
+      // puis ++ =0 net). Notre compteur clampe a 0 -> l'ordre C laissait un
+      // fantome a 1 -> TOUT move suivant partait au garde-fou (BodySlam 1357f).
+      gAnimVisualTaskCount++;
+      const tobj = rt.gTasks?.get(tid);
+      if (tobj) (taskFn as (t: unknown) => void)(tobj);
+      _vtrace({ op: 'task', name: taskName, resolved: true });
     }
     return;
   }
+  _vtrace({ op: 'task', name: taskName ?? ('0x' + (taskFuncPtr >>> 0).toString(16)), resolved: false });
   // Non enregistree : PAS d'increment (rien ne decrementerait -> soft-lock
   // waitforvisualfinish). Skip propre = l'anim se termine (dette registry).
   void taskPriority;
@@ -1206,6 +1226,13 @@ function Cmd_createvisualtask(): void {
 }
 
 const _detteWarned = new Set<string>();
+// ─── MODE VERIF FIDELITE (qualification 1:1 move-par-move, user 2026-06-11) ──
+// __animVerifyMode = true → chaque opcode-cle pushe son issue dans __animTrace.
+function _vtrace(e: Record<string, unknown>): void {
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__animVerifyMode) return;
+  (g.__animTrace as unknown[] ?? (g.__animTrace = [])) && (g.__animTrace as unknown[]).push(e);
+}
 function _warnOnceDette(what: string): void {
   if (_detteWarned.has(what)) return;
   _detteWarned.add(what);
@@ -1686,8 +1713,11 @@ function Cmd_createsoundtask(): void {
   if (fn) {
     const rt = getRuntime();
     if (rt) {
-      rt.CreateTask(fn as never, 1);
-      gAnimSoundTaskCount++; // decremente par DestroyAnimSoundTask/VisualTask
+      const tid = rt.CreateTask(fn as never, 1);
+      // 1:1 : appel IMMEDIAT (args frais — cf. Cmd_createvisualtask).
+      gAnimSoundTaskCount++; // ++ AVANT l'appel (cf. visualtask : wrap u8 du C)
+      const tobj = rt.gTasks?.get(tid);
+      if (tobj) (fn as (t: unknown) => void)(tobj);
     }
     return;
   }

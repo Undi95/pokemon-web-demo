@@ -512,6 +512,61 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+// ─── VAGUE F1 : AnimTask_BlendMonInAndOut (mons.c, 14 usages) ───────────────
+// Le mon pulse vers une couleur (BlendPalette aller-retour x N).
+import { BlendPalette as _f1Blend } from '../engine/system/decomp-globals';
+type _F1Task = { taskId: number; data: number[]; func?: unknown };
+function _f1Itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _f1SpriteId(animBattler: number): number {
+  const itf = _f1Itf();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : animBattler === 1 ? (itf.getTarget?.() ?? 1) : -1;
+  if (b < 0) return 0xFF;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+export function AnimTask_BlendMonInAndOut(task: _F1Task): void {
+  const itf = _f1Itf();
+  const args = itf.getArgs?.() ?? [];
+  const spriteId = _f1SpriteId(args[0]);
+  if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const rt = getRuntime();
+  const sp = rt?.gSprites?.get(spriteId) as { oamIndex: number } | undefined;
+  const oam = sp ? (rt as unknown as { gba: { oam: Array<{ paletteNum: number }> } }).gba.oam[sp.oamIndex] : undefined;
+  task.data[0] = 256 + (oam?.paletteNum ?? 0) * 16 + 1; // OBJ_PLTT_ID + 1
+  _BlendPalInAndOutSetup(task, args);
+}
+function _BlendPalInAndOutSetup(task: _F1Task, args: number[]): void {
+  task.data[1] = args[1];
+  task.data[2] = 0;
+  task.data[3] = args[2];
+  task.data[4] = 0;
+  task.data[5] = args[3];
+  task.data[6] = 0;
+  task.data[7] = args[4];
+  task.func = _BlendMonInAndOut_Step;
+}
+function _BlendMonInAndOut_Step(task: _F1Task): void {
+  if (++task.data[4] >= task.data[5]) {
+    task.data[4] = 0;
+    if (!task.data[6]) {
+      task.data[2]++;
+      _f1Blend(task.data[0], 15, task.data[2], task.data[1]);
+      if (task.data[2] === task.data[3]) task.data[6] = 1;
+    } else {
+      task.data[2]--;
+      _f1Blend(task.data[0], 15, task.data[2], task.data[1]);
+      if (!task.data[2]) {
+        if (--task.data[7]) { task.data[4] = 0; task.data[6] = 0; }
+        else { _f1Itf().DestroyAnimVisualTask?.(task.taskId); }
+      }
+    }
+  }
+}
+import { registerAnimTasks as _f1Reg } from '../engine/battle/battle-anim-registry';
+_f1Reg({ AnimTask_BlendMonInAndOut: AnimTask_BlendMonInAndOut as never });
+
 // ─── Sous-système AFFINE-PAR-TASK (battle_anim_mons.c:2240-2330) ────────────
 // PrepareAffineAnimInTaskData/RunAffineAnimFromTaskData — utilisé par ~30
 // AnimTasks (Splash, GrowAndShrink, Minimize…). Le C stocke le ptr des cmds

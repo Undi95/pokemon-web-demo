@@ -55,7 +55,10 @@ function _StartBlendAnimSpriteColor(task: AnimTask, selectedPalettes: number): v
   task.data[0] = selectedPalettes & 0xFFFF;
   task.data[1] = (selectedPalettes >>> 16) & 0xFFFF;
   task.data[2] = args[1] | 0;  // delay
-  task.data[4] = args[3] | 0;  // target blend
+  // CLAMP 0..16 (1:1 : le C borne le coeff en u8 — un target hors-borne
+  // (script a layout variant) rendait la condition === inatteignable ->
+  // task zombie infinie -> cascade garde-fou sur les moves suivants).
+  task.data[4] = Math.min(Math.max(args[3] | 0, 0), 16);  // target blend
   task.data[5] = args[4] | 0;  // couleur RGB15
   task.data[9] = 0;            // delay counter
   task.data[10] = args[2] | 0; // blend courant
@@ -82,6 +85,104 @@ function _BlendSpriteColor_Step2(task: AnimTask): void {
   }
 }
 
+/** 1:1 `AnimTask_BlendColorCycle` (battle_anim_normal.c:447 — placement noté
+ *  dette douce : l'infra blend vit ici). args (selector, delay, numBlends,
+ *  initialY, targetY, color). Cycle aller-retour ×numBlends via BlendPalette
+ *  progressif (net-effect de BeginNormalPaletteFade). 13+12 usages. */
+function AnimTask_BlendColorCycle(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [1, 0, 2, 0, 14, 0];
+  task.data[0] = args[0];  // selector
+  task.data[1] = args[1];  // delay
+  task.data[2] = args[2];  // numBlends
+  task.data[3] = Math.min(Math.max(args[3] | 0, 0), 16);  // initialY (clamp 0..16)
+  task.data[4] = Math.min(Math.max(args[4] | 0, 0), 16);  // targetY (clamp 0..16)
+  task.data[5] = args[5];  // color
+  task.data[6] = 0;        // restoreBlend
+  task.data[10] = task.data[3]; // blend courant
+  task.data[9] = 0;        // delay counter
+  task.func = _BlendColorCycle_Step;
+}
+function _BlendColorCycle_Step(task: AnimTask): void {
+  if (task.data[9] < task.data[1]) { task.data[9]++; return; }
+  task.data[9] = 0;
+  const target = !task.data[6] ? task.data[4] : (task.data[2] === 1 ? 0 : task.data[3]);
+  // appliquer le blend courant sur le masque
+  let selected = UnpackSelectedBattlePalettes(task.data[0]) >>> 0;
+  let palOffset = 0;
+  while (selected !== 0) {
+    if (selected & 1) BlendPalette(palOffset, 16, task.data[10], task.data[5]);
+    palOffset += 16;
+    selected >>>= 1;
+  }
+  if (task.data[10] < target) task.data[10]++;
+  else if (task.data[10] > target) task.data[10]--;
+  else {
+    // palier atteint : inverser ou finir
+    task.data[6] ^= 1;
+    if (task.data[6] === 0) {
+      // un cycle complet (aller-retour) fini
+      if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+    }
+  }
+}
+/** 1:1 `AnimTask_BlendBattleAnimPalExclude` (utility_funcs.c) — net : comme
+ *  BlendBattleAnimPal mais exclut attaquant/cible du masque (les anims qui
+ *  teintent TOUT sauf les mons). */
+function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [0, 1, 0, 4, 0];
+  // selector 0/1 → bg+fond sans mons (net) : masque BG 0-3
+  let selected = UnpackSelectedBattlePalettes(args[0] | 0) >>> 0;
+  // retirer les palettes OBJ des battlers (slots 16+battler)
+  const itf2 = _itf();
+  const atk = (itf2.getAttacker?.() ?? 0) as number;
+  const tgt = (itf2.getTarget?.() ?? 1) as number;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  for (const b of [atk, tgt]) {
+    const sid = co?.getBattlerMonSpriteId?.(b);
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteNum : undefined;
+    if (pal !== undefined) selected &= ~(1 << (16 + pal));
+  }
+  _StartBlendAnimSpriteColor(task, selected >>> 0);
+}
+
 registerAnimTasks({
   AnimTask_BlendBattleAnimPal: AnimTask_BlendBattleAnimPal as never,
+  AnimTask_BlendColorCycle: AnimTask_BlendColorCycle as never,
+  AnimTask_BlendBattleAnimPalExclude: AnimTask_BlendBattleAnimPalExclude as never,
+});
+
+// ─── VAGUE F1 : les booléens de branchement (ARG_RET_ID=7) ──────────────────
+// Les scripts font `createvisualtask AnimTask_X` puis `jumpargeq 7, N, label` —
+// sans ces tasks, les branches étaient aléatoires (args[7] périmé).
+function _ufItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 `AnimTask_GetAttackerSide` (utility_funcs.c:780). */
+function AnimTask_GetAttackerSide(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  if (args) args[7] = (itf.getAttacker?.() ?? 0) & 1; // GetBattlerSide
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_IsContest` (utility_funcs.c:1039) — jamais contest chez nous. */
+function AnimTask_IsContest(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  if (args) args[7] = 0;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_IsTargetSameSide` (utility_funcs.c:1056). */
+function AnimTask_IsTargetSameSide(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  if (args) args[7] = (((itf.getAttacker?.() ?? 0) & 1) === ((itf.getTarget?.() ?? 1) & 1)) ? 1 : 0;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _ufRegTasks } from '../engine/battle/battle-anim-registry';
+_ufRegTasks({
+  AnimTask_GetAttackerSide: AnimTask_GetAttackerSide as never,
+  AnimTask_IsContest: AnimTask_IsContest as never,
+  AnimTask_IsTargetSameSide: AnimTask_IsTargetSameSide as never,
 });

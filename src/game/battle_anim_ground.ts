@@ -280,3 +280,115 @@ registerAnimCallbacks({
   AnimDirtPlumeParticle: AnimDirtPlumeParticle as never,
   AnimDigDirtMound: AnimDigDirtMound as never,
 });
+
+// ─── VAGUE F1 : AnimTask_HorizontalShake (ground.c:575, 14 usages) ───────────
+// data: 0=state 1=delay 2=timer 3=maxTime 9+i=spriteIds 13=numBattlers/initialX
+// 14=horizOffset 15=initHorizOffset. 3 modes : 5=platforms(BG3) 4=all default=un.
+type _HsTask = { taskId: number; data: number[]; func?: unknown };
+function _hsItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _hsRt(): { gSprites?: Map<number, { x2: number; invisible?: boolean }> } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _hsSpriteId(animBattler: number): number {
+  const itf = _hsItf();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : animBattler === 1 ? (itf.getTarget?.() ?? 1) : -1;
+  if (b < 0) return 0xFF;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+function AnimTask_HorizontalShake(task: _HsTask): void {
+  const itf = _hsItf();
+  const a = itf.getArgs?.() ?? [];
+  const g = globalThis as Record<string, unknown>;
+  const power = (g.__gAnimMovePower as number) ?? 0;
+  const off = a[1] !== 0 ? a[1] + 3 : Math.trunc(power / 10) + 3;
+  task.data[14] = off;
+  task.data[15] = off;
+  task.data[3] = a[2];
+  task.data[0] = 0; task.data[1] = 0; task.data[2] = 0;
+  if (a[0] === 5) { // MAX_BATTLERS_COUNT+1 : platforms (BG3)
+    task.data[13] = (g.gBattle_BG3_X as number) ?? 0;
+    task.func = _HS_Platforms;
+  } else if (a[0] === 4) { // tous les battlers visibles
+    let n = 0;
+    for (const b of [0, 1]) { // single : 0/1
+      const sid = _hsSpriteId(b);
+      if (sid !== 0xFF) { task.data[9 + n] = sid; n++; }
+    }
+    task.data[13] = n;
+    task.func = _HS_Battlers;
+  } else {
+    const sid = _hsSpriteId(a[0]);
+    if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+    task.data[9] = sid;
+    task.data[13] = 1;
+    task.func = _HS_Battlers;
+  }
+}
+function _HS_Platforms(task: _HsTask): void {
+  const g = globalThis as Record<string, unknown>;
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        g.gBattle_BG3_X = task.data[13] + ((task.data[2] & 1) === 0 ? task.data[15] : -task.data[15]);
+        if (++task.data[2] === task.data[3]) { task.data[2] = 0; task.data[14]--; task.data[0]++; }
+      }
+      break;
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        g.gBattle_BG3_X = task.data[13] + ((task.data[2] & 1) === 0 ? task.data[14] : -task.data[14]);
+        if (++task.data[2] === 4) {
+          task.data[2] = 0;
+          if (--task.data[14] === 0) task.data[0]++;
+        }
+      }
+      break;
+    case 2:
+      g.gBattle_BG3_X = task.data[13];
+      _hsItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+function _HS_SetX(task: _HsTask): void {
+  const xOff = (task.data[2] & 1) === 0
+    ? Math.trunc(task.data[14] / 2) + (task.data[14] & 1)
+    : -Math.trunc(task.data[14] / 2);
+  for (let i = 0; i < task.data[13]; i++) {
+    const sp = _hsRt().gSprites?.get(task.data[9 + i]);
+    if (sp) sp.x2 = xOff;
+  }
+}
+function _HS_Battlers(task: _HsTask): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        _HS_SetX(task);
+        if (++task.data[2] === task.data[3]) { task.data[2] = 0; task.data[14]--; task.data[0]++; }
+      }
+      break;
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        _HS_SetX(task);
+        if (++task.data[2] === 4) {
+          task.data[2] = 0;
+          if (--task.data[14] === 0) task.data[0]++;
+        }
+      }
+      break;
+    case 2:
+      for (let i = 0; i < task.data[13]; i++) {
+        const sp = _hsRt().gSprites?.get(task.data[9 + i]);
+        if (sp) sp.x2 = 0;
+      }
+      _hsItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+import { registerAnimTasks as _hsReg } from '../engine/battle/battle-anim-registry';
+_hsReg({ AnimTask_HorizontalShake: AnimTask_HorizontalShake as never });

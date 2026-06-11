@@ -2282,3 +2282,16 @@ function AnimLetterZ(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimLetterZ: AnimLetterZ as never });
+
+// ─── VAGUE F1 : AnimTask_IsTargetPlayerSide (effects_3.c:1521) ──────────────
+function _e3ItfB(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_IsTargetPlayerSide(task: { taskId: number }): void {
+  const itf = _e3ItfB();
+  const args = itf.getArgs?.();
+  if (args) args[7] = ((itf.getTarget?.() ?? 1) & 1) === 0 ? 1 : 0; // player side = TRUE
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _e3RegTasks } from '../engine/battle/battle-anim-registry';
+_e3RegTasks({ AnimTask_IsTargetPlayerSide: AnimTask_IsTargetPlayerSide as never });
