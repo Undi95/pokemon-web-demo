@@ -1,0 +1,164 @@
+{
+"0": {
+"name": "BG_NONE",
+"image": "dark.4bpp.bin",
+"pal": "dark.gbapal",
+"tilemap": "dark.map.bin"
+},
+"1": {
+"name": "BG_DARK",
+"image": "dark.4bpp.bin",
+"pal": "dark.gbapal",
+"tilemap": "dark.map.bin"
+},
+"2": {
+"name": "BG_GHOST",
+"image": "ghost.4bpp.bin",
+"pal": "ghost.gbapal",
+"tilemap": "ghost.map.bin"
+},
+"3": {
+"name": "BG_PSYCHIC",
+"image": "psychic.4bpp.bin",
+"pal": "psychic.gbapal",
+"tilemap": "psychic.map.bin"
+},
+"4": {
+"name": "BG_IMPACT_OPPONENT",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_opponent.map.bin"
+},
+"5": {
+"name": "BG_IMPACT_PLAYER",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_player.map.bin"
+},
+"6": {
+"name": "BG_IMPACT_CONTESTS",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_contests.map.bin"
+},
+"7": {
+"name": "BG_DRILL",
+"image": "drill.4bpp.bin",
+"pal": "drill.gbapal",
+"tilemap": "drill.map.bin"
+},
+"8": {
+"name": "BG_DRILL_CONTESTS",
+"image": "drill.4bpp.bin",
+"pal": "drill.gbapal",
+"tilemap": "drill_contests.map.bin"
+},
+"9": {
+"name": "BG_HIGHSPEED_OPPONENT",
+"image": "highspeed.4bpp.bin",
+"pal": "highspeed.gbapal",
+"tilemap": "highspeed_opponent.map.bin"
+},
+"10": {
+"name": "BG_HIGHSPEED_PLAYER",
+"image": "highspeed.4bpp.bin",
+"pal": "highspeed.gbapal",
+"tilemap": "highspeed_player.map.bin"
+},
+"11": {
+"name": "BG_THUNDER",
+"image": "thunder.4bpp.bin",
+"pal": "thunder.gbapal",
+"tilemap": "thunder.map.bin"
+},
+"12": {
+"name": "BG_GUILLOTINE_OPPONENT",
+"image": "guillotine.4bpp.bin",
+"pal": "guillotine.gbapal",
+"tilemap": "guillotine_opponent.map.bin"
+},
+"13": {
+"name": "BG_GUILLOTINE_PLAYER",
+"image": "guillotine.4bpp.bin",
+"pal": "guillotine.gbapal",
+"tilemap": "guillotine_player.map.bin"
+},
+"14": {
+"name": "BG_GUILLOTINE_CONTESTS",
+"image": "guillotine.4bpp.bin",
+"pal": "guillotine.gbapal",
+"tilemap": "guillotine_contests.map.bin"
+},
+"15": {
+"name": "BG_ICE",
+"image": "ice.4bpp.bin",
+"pal": "ice.gbapal",
+"tilemap": "ice.map.bin"
+},
+"16": {
+"name": "BG_COSMIC",
+"image": "cosmic.4bpp.bin",
+"pal": "cosmic.gbapal",
+"tilemap": "cosmic.map.bin"
+},
+"17": {
+"name": "BG_IN_AIR",
+"image": "in_air.4bpp.bin",
+"pal": "in_air.gbapal",
+"tilemap": "in_air.map.bin"
+},
+"18": {
+"name": "BG_SKY",
+"image": "drill.4bpp.bin",
+"pal": "drill.gbapal",
+"tilemap": "drill.map.bin"
+},
+"19": {
+"name": "BG_SKY_CONTESTS",
+"image": "drill.4bpp.bin",
+"pal": "drill.gbapal",
+"tilemap": "drill_contests.map.bin"
+},
+"20": {
+"name": "BG_AURORA",
+"image": "aurora.4bpp.bin",
+"pal": "aurora.gbapal",
+"tilemap": "aurora.map.bin"
+},
+"21": {
+"name": "BG_FISSURE",
+"image": "fissure.4bpp.bin",
+"pal": "fissure.gbapal",
+"tilemap": "fissure.map.bin"
+},
+"22": {
+"name": "BG_BUG_OPPONENT",
+"image": "highspeed.4bpp.bin",
+"pal": "highspeed.gbapal",
+"tilemap": "highspeed_opponent.map.bin"
+},
+"23": {
+"name": "BG_BUG_PLAYER",
+"image": "highspeed.4bpp.bin",
+"pal": "highspeed.gbapal",
+"tilemap": "highspeed_player.map.bin"
+},
+"24": {
+"name": "BG_SOLAR_BEAM_OPPONENT",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_opponent.map.bin"
+},
+"25": {
+"name": "BG_SOLAR_BEAM_PLAYER",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_player.map.bin"
+},
+"26": {
+"name": "BG_SOLAR_BEAM_CONTESTS",
+"image": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"tilemap": "impact_contests.map.bin"
+}
+}
