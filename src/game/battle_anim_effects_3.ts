@@ -2678,7 +2678,71 @@ function _Flail_Step(task: { taskId: number; data: number[] }): void {
     }
   }
 }
+/** 1:1 `gFacadeBlendColors` (effects_3.c:902) — les 24 RGB15 du cycle. */
+const _gFacadeBlendColors = [1852, 5820, 8795, 11739, 15706, 18682, 21625, 25625, 23577, 20505, 16409, 13337, 10266, 6170, 3098, 27, 59, 187, 315, 411, 540, 636, 764, 893];
+/** 1:1 `AnimTask_FacadeColorBlend` (effects_3.c:3875) : cycle 24 couleurs
+ *  coeff 8 sur la palette OBJ du battler pendant args[1] frames. */
+function AnimTask_FacadeColorBlend(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  task.data[0] = 0;
+  task.data[1] = a[1];
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[2] = 256 + (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) * 16;
+  task.func = _FacadeBlend_Step;
+}
+function _FacadeBlend_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  if (task.data[1]) {
+    _e3Blend(task.data[2], 16, 8, _gFacadeBlendColors[task.data[0]]);
+    if (++task.data[0] > 23) task.data[0] = 0;
+    task.data[1]--;
+  } else {
+    _e3Blend(task.data[2], 16, 0, 0);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+import { BlendPalette as _e3Blend } from '../engine/system/decomp-globals';
+/** 1:1 `AnimTask_SmellingSaltsSquish` (effects_3.c:4307) : squish affine ×N
+ *  avec tremblement x2 ±2. */
+function AnimTask_SmellingSaltsSquish(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  if (a[0] === 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(itf.getTarget?.() ?? 1) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = a[1];
+  task.data[15] = sid;
+  _dcPrep(task as never, sid, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gSmellingSaltsSquishAffineAnimCmds']);
+  task.func = _SmellingSalts_Step;
+}
+function _SmellingSalts_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if (++task.data[1] > 1) {
+    task.data[1] = 0;
+    sp.x2 = (task.data[2] & 1) ? -2 : 2;
+  }
+  if (!_dcRun(task as never)) {
+    sp.x2 = 0;
+    if (--task.data[0]) {
+      _dcPrep(task as never, task.data[15], (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gSmellingSaltsSquishAffineAnimCmds']);
+    } else {
+      itf.DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
 _e3RegTasks({
+  AnimTask_FacadeColorBlend: AnimTask_FacadeColorBlend as never,
+  AnimTask_SmellingSaltsSquish: AnimTask_SmellingSaltsSquish as never,
   AnimTask_SlackOffSquish: AnimTask_SlackOffSquish as never,
   AnimTask_FlailMovement: AnimTask_FlailMovement as never,
   AnimTask_StockpileDeformMon: _mkDeformTask('gStockpileDeformMonAffineAnimCmds') as never,
