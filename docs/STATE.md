@@ -226,3 +226,15 @@ Fallback documenté : move sans template = terminaison propre warn-once.
 **Fixes user de la session (tous validés screenshot/spy)** : anims résiduelles à l'écran (DestroyAnimSprite objet|id SANS gSprites.delete), healthbox écrasée (targetTileBase fixes 704-968), BGM victoire (414, double trou), barre EXP (signe + SE 33), shiny complet.
 **Hors-scope** : link/multi/contest/Frontier/Safari/Palace/trade/doubles — dettes explicites.
 **EN STOCK user** : pixels corrompus haut du shiny pendant son anim ; autres bugs à lui demander.
+
+## 2026-06-11 (soir) — GOAL « INTROS + OPTION + TOUTES LES ANIMS » : état v6
+**Tranches A/B/C0 COMPLÈTES (A/B-validées screenshots)** :
+- A : 10/10 intros terrain (racine « barres noires » = ResetPaletteFade stub vide → câblé ; fix BLDALPHA_BLEND evb).
+- B : option ANIMS DE COMBAT 1:1 opérationnelle (fix === true vs 0/1 ; toggle gSaveBlock2Ptr.optionsBattleSceneOff).
+- C0 : unloadspritegfx 1:1 (VRAM libérée par tag), alloc dynamique (réserve 0x140 post-ResetSpriteData), Translate* dans battle_anim_mons.
+
+**C1..Cn EN COURS (~30/415 moves mécaniquement verts)** — recadrage user intégré :
+- LES DEUX MOTEURS DE TABLES 1:1 BRANCHÉS : ANIMCMD (AnimateSprite sprite.c:901) + AFFINEANIMCMD (BeginAffineAnim, registre extras). Les templates portent leurs VRAIES tables décomp → fidélité par construction. Pilotes : Scratch (gScratchAnimCmds), hitsplat (sAffineAnims_HitSplat 4 courbes), crocs Bite (gAffineAnims_Bite 8 rotations).
+- __combatTest(['MOVE_X',...]) : combat réel vs Wailord lvl100 Splash-only (increvable) — la qualification visuelle humaine move par move (méthode user).
+- Outils : __testMoveAnim v3 (ok + oamResiduels + monDeplace), getDebugState, garde-fous (waitforvisualfinish borné + purge/reveal par identité + restauration battlers).
+- Dettes actives : ciblage createsprite (crocs sur l'attaquant — vérifier ANIMSPRITE_IS_TARGET), carte VRAM OBJ (mons dynamiques, réserve 0x280 casse le send-out), orphelin mud cosmétique, ~385 moves à porter/qualifier par vagues.

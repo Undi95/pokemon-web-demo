@@ -12,6 +12,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 
 export const ANIM_TAG_SHARP_TEETH = 10139; // ANIM_SPRITES_START + 139
 
@@ -23,6 +24,14 @@ export function LoadAnimSharpTeethGfx(): void {
     LoadCompressedSpritePaletteUsingHeap(sPal);
   }
 }
+
+// 1:1 gAffineAnims_Bite (battle_anim_dark.c:41-100) — LES VRAIES 8 rotations
+// de la machoire (0/32/64/96/-128/-96/-64/-32, duree 1 = pose immediate).
+for (let i = 0; i < 8; i++) {
+  const rot = [0, 32, 64, 96, -128, -96, -64, -32][i];
+  registerAffineAnim('sAffineAnim_Bite_' + i, { frames: [{ xScale: 0, yScale: 0, rotation: rot, duration: 1 }], terminator: 'END' });
+}
+registerAffineAnimTable('gAffineAnims_Bite', { affineAnims: [0, 1, 2, 3, 4, 5, 6, 7].map(i => 'sAffineAnim_Bite_' + i) });
 
 type AnimSprite = {
   data: number[]; x: number; y: number; x2: number; y2: number;
@@ -52,7 +61,16 @@ function AnimBite(sprite: AnimSprite): void {
     sprite.y = mon.y + (mon.y2 ?? 0) + args[1];
   }
   sprite.invisible = false;
-  if ((args[2] | 0) >= 4) sprite.vFlip = true; // mâchoire basse
+  // 1:1 : StartSpriteAffineAnim(args[2]) sur gAffineAnims_Bite (la table est
+  // posee par Cmd_createsprite) — les 8 rotations exactes de la machoire.
+  const spF = sprite as unknown as { affineAnimsTableName?: string | null; affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean };
+  if (spF.affineAnimsTableName) {
+    spF.affineAnimNum = (args[2] | 0) & 7;
+    spF.affineAnimBeginning = true;
+    spF.affineAnimEnded = false;
+  } else if ((args[2] | 0) >= 4) {
+    sprite.vFlip = true; // fallback legacy
+  }
   sprite.data[0] = args[3];
   sprite.data[1] = args[4];
   sprite.data[2] = args[5];
@@ -77,6 +95,6 @@ function _Bite_Step2(sprite: AnimSprite): void {
 }
 
 registerAnimTemplates([
-  { name: 'gFangSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never },
-  { name: 'gSharpTeethSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never },
+  { name: 'gFangSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
+  { name: 'gSharpTeethSpriteTemplate', tileTag: ANIM_TAG_SHARP_TEETH, paletteTag: ANIM_TAG_SHARP_TEETH, oam: { shape: 0, size: 3 }, load: LoadAnimSharpTeethGfx, callback: AnimBite as never, affineAnims: 'gAffineAnims_Bite' },
 ]);

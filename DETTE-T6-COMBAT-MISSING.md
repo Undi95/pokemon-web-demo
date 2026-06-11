@@ -87,3 +87,10 @@
 4. **Dettes douces visuelles tracées** : offset Y du hitsplat (Y_PIC_OFFSET), oscillation flare Ember, trajectoire sinusoïdale Bubble, mini-étoiles shiny en OAM 16x16 (8x8 décomp), SE_SHINY id à vérifier (255 supposé), pixels corrompus haut du mon shiny pendant son anim 2-frames (bug user EN STOCK, non diagnostiqué).
 5. **Hors-scope goal (inchangé)** : link/multi (8), Palace/Safari/Contest/Trade (11), Debug (6), morts décomp (17), doubles (2).
 
+## ADDENDUM 2026-06-11 (goal anims) — moteurs de tables + nouvelles dettes
+- ✅ MOTEURS 1:1 : ANIMCMD + AFFINEANIMCMD branchés (templates → vraies tables décomp). Pilotes : Scratch/hitsplat/crocs.
+- 🔴 Ciblage Cmd_createsprite : positionnement par défaut vs décomp CreateSpriteAndAnimate (ANIMSPRITE_IS_TARGET bit) — les crocs rendent sur l'attaquant.
+- 🔴 Carte VRAM OBJ à établir (mons alloués dynamiquement) avant de toucher la réserve (0x280 → send-out cassé, rollback).
+- 🟡 Script QUICK_ATTACK : opérandes désalignées (macro create_basic_hitsplat_sprite suspecte) — auditer au byte.
+- 🟡 DeepInhale net-effect (gDeepInhaleAffineAnimCmds à migrer au moteur AFFINE) ; CryHighPitch sans pitch ; AnimLeerSprite net (50f) à migrer.
+- Inventaire : ~30 moves verts-mécaniques (qualification visuelle user en cours via __combatTest).
