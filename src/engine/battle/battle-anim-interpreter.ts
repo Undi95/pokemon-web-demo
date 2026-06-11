@@ -313,6 +313,25 @@ function RunAnimScriptCommand(): void {
 // PUBLIC API : ClearBattleAnimationVars + LaunchBattleAnimation + DoMoveAnim
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Restaure l'etat visuel des sprites BATTLERS (x2/y2/flips) — apres une
+ *  anim coupee par le garde-fou, le mon ne doit JAMAIS rester deplace. */
+function _restoreBattlerSprites(): void {
+  const rt = getRuntime();
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  if (!rt || !co?.getBattlerMonSpriteId) return;
+  for (let b = 0; b < 4; b++) {
+    const id = co.getBattlerMonSpriteId(b);
+    if (id === undefined || id < 0) continue;
+    const sp = rt.gSprites?.get(id) as { x2?: number; y2?: number; hFlip?: boolean; vFlip?: boolean } | undefined;
+    if (sp) { sp.x2 = 0; sp.y2 = 0; sp.hFlip = false; sp.vFlip = false; }
+    // scale/rot : remis par ResetSpriteRotScale si dispo.
+    const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { ResetSpriteRotScale?: (i: number) => void } | undefined;
+    try { mons?.ResetSpriteRotScale?.(id); } catch { /* pas en rotscale */ }
+  }
+}
+
 /** Purge les sprites du script termine encore vivants (anomalie -> destroy).
  *  Les sprites legitimes sont morts avant `end` (waitforvisualfinish 1:1). */
 function _purgeScriptSprites(): void {
@@ -949,6 +968,10 @@ function Cmd_waitforvisualfinish(): void {
     // le script continue vers end (et la purge par identite nettoie).
     console.warn('[battle-anim] waitforvisualfinish > 600 frames (taskCount=' + gAnimVisualTaskCount + ') — force la suite (garde-fou).');
     gAnimVisualTaskCount = 0;
+    // RESTAURATION des battlers (retour user 2026-06-11 : « des moves
+    // deplacent MON pokemon ») : la task de mouvement tuee en plein vol
+    // laissait le mon deplace/flippe A JAMAIS. On remet x2/y2/flips/scale.
+    _restoreBattlerSprites();
     _pc++;
     sAnimFramesToWait = 0;
     _waitVisualFrames = 0;

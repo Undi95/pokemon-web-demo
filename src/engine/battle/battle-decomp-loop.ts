@@ -241,6 +241,15 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     // critere = AUCUN NOUVEAU OAM visible apres l'anim vs avant).
     const visAvant = new Set<number>();
     rt?.gba?.oam?.forEach((o, i) => { if (o.visible) visAvant.add(i); });
+    // snapshot des BATTLERS (retour user : des moves deplacent le mon) :
+    // position/flips identiques apres l'anim, sinon monDeplace signale.
+    const co2 = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    const monAvant: Array<{ id: number; x: number; y: number; x2: number; y2: number; hFlip: boolean }> = [];
+    for (let b = 0; b < 2; b++) {
+      const id = co2?.getBattlerMonSpriteId?.(b);
+      const sp = id !== undefined && id >= 0 ? rt?.gSprites?.get(id) as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined : undefined;
+      if (sp) monAvant.push({ id: id as number, x: sp.x ?? 0, y: sp.y ?? 0, x2: sp.x2 ?? 0, y2: sp.y2 ?? 0, hFlip: !!sp.hFlip });
+    }
     itf.setBattleAnimAttackerTarget?.(attacker, target);
     itf.DoMoveAnim(moveId);
     let frames = 0;
@@ -275,7 +284,15 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         }
       }
     }
-    return { ok: frames < 900, frames, residuels, oamResiduels };
+    const monDeplace: string[] = [];
+    for (const m of monAvant) {
+      const sp = rt?.gSprites?.get(m.id) as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined;
+      if (!sp) { monDeplace.push(`mon${m.id} DETRUIT`); continue; }
+      if ((sp.x ?? 0) !== m.x || (sp.y ?? 0) !== m.y || (sp.x2 ?? 0) !== m.x2 || (sp.y2 ?? 0) !== m.y2 || !!sp.hFlip !== m.hFlip) {
+        monDeplace.push(`mon${m.id} x:${m.x}->${sp.x} y:${m.y}->${sp.y} x2:${m.x2}->${sp.x2} y2:${m.y2}->${sp.y2} flip:${m.hFlip}->${!!sp.hFlip}`);
+      }
+    }
+    return { ok: frames < 900, frames, residuels, oamResiduels, monDeplace };
   };
 
   // FIX user 2026-06-11 (« ton dernier a casse nos barres de PV ») : nos
