@@ -181,7 +181,79 @@ function GetIsDoomDesireHitTurn(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _dRegT } from '../engine/battle/battle-anim-registry';
+/** 1:1 les 3 fades attacker (dark.c:191-274) : BLDALPHA progressif sur le BG
+ *  monbg (TGT1_BG1) — Feinte & co. args (stepDelay). */
+function _dkRt(): { SetGpuReg?: (r: number, v: number) => void; gSprites?: Map<number, { invisible?: boolean }> } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _dkAtkSprite(): { invisible?: boolean } | undefined {
+  const itf = _dItf3();
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
+  return sid !== 0xFF ? _dkRt().gSprites?.get(sid) : undefined;
+}
+function AnimTask_AttackerFadeToInvisible(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const a = _dItf3().getArgs?.() ?? [];
+  task.data[0] = a[0];
+  task.data[1] = 16;
+  task.data[2] = 0;
+  _dkRt().SetGpuReg?.(0x52, 16);
+  _dkRt().SetGpuReg?.(0x50, 0x3F40 | 0x02);
+  task.func = _FadeToInvisible_Step;
+}
+function _FadeToInvisible_Step(task: { taskId: number; data: number[] }): void {
+  let evb = task.data[1] >> 8;
+  let eva = task.data[1] & 0xFF;
+  if (task.data[2] === (task.data[0] & 0xFF)) {
+    evb++;
+    eva--;
+    task.data[1] = eva | (evb << 8);
+    _dkRt().SetGpuReg?.(0x52, task.data[1]);
+    task.data[2] = 0;
+    if (evb === 16) {
+      const sp = _dkAtkSprite();
+      if (sp) sp.invisible = true;
+      _dItf3().DestroyAnimVisualTask?.(task.taskId);
+    }
+  } else {
+    task.data[2]++;
+  }
+}
+function AnimTask_AttackerFadeFromInvisible(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const a = _dItf3().getArgs?.() ?? [];
+  task.data[0] = a[0];
+  task.data[1] = (16 << 8) | 0;
+  task.data[2] = 0;
+  _dkRt().SetGpuReg?.(0x52, task.data[1]);
+  task.func = _FadeFromInvisible_Step;
+}
+function _FadeFromInvisible_Step(task: { taskId: number; data: number[] }): void {
+  let evb = task.data[1] >> 8;
+  let eva = task.data[1] & 0xFF;
+  if (task.data[2] === (task.data[0] & 0xFF)) {
+    evb--;
+    eva++;
+    task.data[1] = eva | (evb << 8);
+    _dkRt().SetGpuReg?.(0x52, task.data[1]);
+    task.data[2] = 0;
+    if (evb === 0) {
+      _dkRt().SetGpuReg?.(0x50, 0);
+      _dkRt().SetGpuReg?.(0x52, 0);
+      _dItf3().DestroyAnimVisualTask?.(task.taskId);
+    }
+  } else {
+    task.data[2]++;
+  }
+}
+function AnimTask_InitAttackerFadeFromInvisible(task: { taskId: number }): void {
+  _dkRt().SetGpuReg?.(0x52, (16 << 8) | 0);
+  _dkRt().SetGpuReg?.(0x50, 0x3F40 | 0x02);
+  _dItf3().DestroyAnimVisualTask?.(task.taskId);
+}
 _dRegT({
+  AnimTask_AttackerFadeToInvisible: AnimTask_AttackerFadeToInvisible as never,
+  AnimTask_AttackerFadeFromInvisible: AnimTask_AttackerFadeFromInvisible as never,
+  AnimTask_InitAttackerFadeFromInvisible: AnimTask_InitAttackerFadeFromInvisible as never,
   AnimTask_SetGrayscaleOrOriginalPal: AnimTask_SetGrayscaleOrOriginalPal as never,
   GetIsDoomDesireHitTurn: GetIsDoomDesireHitTurn as never,
 });
