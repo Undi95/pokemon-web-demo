@@ -1269,7 +1269,42 @@ function AnimTask_GrowAndShrink(task: _SpTask): void {
 function _GrowAndShrink_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
+/** 1:1 `AnimTask_StretchTargetUp`/`StretchAttackerUp` (effects_2.c, 3+1 hits) :
+ *  le mon s'étire vers le haut (table affine) en tremblant x2 ±4. */
+function _StretchUp(task: _SpTask, animBattler: number): void {
+  const spriteId = _spBattlerSpriteId(animBattler);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (!sp || spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  if (++task.data[0] === 1) {
+    _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnims_StretchBattlerUp']);
+    sp.x2 = 4;
+  } else {
+    sp.x2 = -sp.x2;
+    if (!_spRun(task)) {
+      sp.x2 = 0;
+      sp.y2 = 0;
+      _spItf2().DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+function AnimTask_StretchTargetUp(task: _SpTask): void { _StretchUp(task, 1); }
+function AnimTask_StretchAttackerUp(task: _SpTask): void { _StretchUp(task, 0); }
+/** 1:1 `AnimTask_UproarDistortion` (effects_2.c, 3 hits) : distorsion
+ *  rot-scale oscillante du mon (8 steps). */
+function AnimTask_UproarDistortion(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0);
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnims_UproarDistortion'] ?? (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gUproarAffineAnimCmds']);
+  task.func = _Uproar_Step;
+}
+function _Uproar_Step(task: _SpTask): void {
+  if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
+}
 _regTasks({
   AnimTask_Splash: AnimTask_Splash as never,
   AnimTask_GrowAndShrink: AnimTask_GrowAndShrink as never,
+  AnimTask_StretchTargetUp: AnimTask_StretchTargetUp as never,
+  AnimTask_StretchAttackerUp: AnimTask_StretchAttackerUp as never,
+  AnimTask_UproarDistortion: AnimTask_UproarDistortion as never,
 });
