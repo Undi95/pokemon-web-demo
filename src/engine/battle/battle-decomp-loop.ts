@@ -215,6 +215,30 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_Leer')) assetCache.set('gAnimPal_Leer', await loadGbaPal('/decomp/em/battle_anims/sprites/leer.gbapal'));
     await loadBin('gAnimGfx_SharpTeeth', '/decomp/em/battle_anims/sprites/sharp_teeth.4bpp.bin');
     if (!assetCache.has('gAnimPal_SharpTeeth')) assetCache.set('gAnimPal_SharpTeeth', await loadGbaPal('/decomp/em/battle_anims/sprites/sharp_teeth.gbapal'));
+    // PRELOAD TOTAL DES 289 GFX D'ANIM (fix « je vois presque aucun effet »,
+    // user 2026-06-11) : le loader generique fetchait ASYNC au premier
+    // loadspritegfx -> le sprite jouait AVANT l'arrivee de sa sheet (tiles
+    // garbage/OW affichees, sheet arrivee trop tard). La decomp charge
+    // SYNCHRONE (ROM mappee) -> on precharge TOUT au boot du combat
+    // (~500KB local), chaque load devient synchrone comme en ROM.
+    try {
+      const manifest = await fetch('/decomp/em/battle_anims/anim-gfx-manifest.json').then((r) => r.json()) as Record<string, { bin: string; pal: string; tagValue: number }>;
+      await Promise.all(Object.values(manifest).map(async (e) => {
+        const gfxKey = 'gAnimGfxTag_' + e.tagValue;
+        const palKey = 'gAnimPalTag_' + e.tagValue;
+        if (!assetCache.has(gfxKey)) {
+          const [gb, pb] = await Promise.all([
+            fetch('/decomp/em/battle_anims/sprites/' + e.bin).then((r) => r.arrayBuffer()),
+            fetch('/decomp/em/battle_anims/sprites/' + e.pal).then((r) => r.arrayBuffer()),
+          ]);
+          assetCache.set(gfxKey, new Uint8Array(gb));
+          assetCache.set(palKey, new Uint16Array(pb));
+        }
+      }));
+      console.log('[decomp-loop] 289 anim gfx precharges (loads synchrones).');
+    } catch (e) {
+      console.warn('[decomp-loop] preload manifest gfx:', e);
+    }
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -255,8 +279,12 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       const sp = id !== undefined && id >= 0 ? rt?.gSprites?.get(id) as { x?: number; y?: number; x2?: number; y2?: number; hFlip?: boolean } | undefined : undefined;
       if (sp) monAvant.push({ id: id as number, x: sp.x ?? 0, y: sp.y ?? 0, x2: sp.x2 ?? 0, y2: sp.y2 ?? 0, hFlip: !!sp.hFlip });
     }
-    itf.setBattleAnimAttackerTarget?.(attacker, target);
     itf.DoMoveAnim(moveId);
+    // APRES DoMoveAnim (qui ecrase avec gBattlerAttacker/Target du tour —
+    // 0/0 hors tour = l'anim se jouait SUR NOTRE MON, retour user « tu
+    // t'attaques toi-meme » 2026-06-11). Les Cmd lisent gBattleAnim* aux
+    // ticks -> poser ici = correct.
+    itf.setBattleAnimAttackerTarget?.(attacker, target);
     let frames = 0;
     // 1 tick = 1 VRAIE frame (les AnimTasks sont tickees par runOneFrame — le
     // spam de ticks faisait timeout les anims dependant de tasks a N frames

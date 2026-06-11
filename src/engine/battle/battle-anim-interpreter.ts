@@ -440,14 +440,18 @@ export function LaunchBattleAnimation(
   if (!IsContest()) {
     // InitPrioritiesForVisibleBattlers + UpdateOamPriorityInAllHealthboxes deferred
     // (= déjà gérés par notre battle-flow ; pas critique pour l'anim runner).
-    // TODO porter quand healthbox depth handling sera porté complet.
-    // for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
-    //   if (GetBattlerSide(i) !== B_SIDE_PLAYER) {
-    //     gAnimBattlerSpecies[i] = GetMonData(gEnemyParty[gBattlerPartyIndexes[i]], MON_DATA_SPECIES);
-    //   } else {
-    //     gAnimBattlerSpecies[i] = GetMonData(gPlayerParty[gBattlerPartyIndexes[i]], MON_DATA_SPECIES);
-    //   }
-    // }
+    // 1:1 LaunchBattleAnimation : gAnimBattlerSpecies[i] rempli pour CHAQUE
+    // battler (la décomp lit les parties ; gBattleMons[i].species = la même
+    // valeur pour les battlers actifs — fill recâblé 2026-06-11, il était
+    // commenté → toutes les élévations Y species-based étaient à zéro =
+    // positions d'anim fausses, retours user).
+    {
+      const bs = (globalThis as { __battleState?: { gBattleMons?: Array<{ species?: number }>; gBattlersCount?: number } }).__battleState;
+      const n = bs?.gBattlersCount ?? 2;
+      for (let i = 0; i < n && i < MAX_BATTLERS_COUNT; i++) {
+        gAnimBattlerSpecies[i] = bs?.gBattleMons?.[i]?.species ?? 0;
+      }
+    }
   }
 
   // 1:1 décomp C:230-233 : sAnimMoveIndex tracking.
@@ -462,6 +466,7 @@ export function LaunchBattleAnimation(
   sMonAnimTaskIdArray[1] = TASK_NONE;
   _pc = scriptOffset;
   gAnimScriptActive = true;
+  _snapshotAnimPalettes();
   sAnimFramesToWait = 0;
   gAnimScriptCallback = RunAnimScriptCommand;
 
@@ -1231,6 +1236,7 @@ function Cmd_end(): void {
   // UpdateOamPriorityInAllHealthboxes. Mark inactive.
   m4aMPlayVolumeControl_BGM(256);
   gAnimScriptActive = false;
+  _restoreAnimPalettes();
   // LA PURGE au chemin de fin NORMAL (le trou des residuels : elle n'etait
   // branchee que sur les garde-fous — l'etoile/crocs coinces en wait-affine
   // survivaient a Cmd_end, retours user 2026-06-11).
@@ -1860,6 +1866,24 @@ export function SetAnimBattlers(atk: number, def: number): void {
 
 // ─── Accesseurs pour les anims de STATUT (battle_anim_status_effects.ts) ────
 // (T3 — ajouts PURS en fin de module, zero changement de comportement.)
+// SNAPSHOT palettes par anim (filet rainbow user 2026-06-11) : Unfaded est un
+// alias de Faded dans ce runtime -> on capture les 512 u16 au LAUNCH et on
+// restaure BG1-3 + OBJ au end/garde-fou (les blends coupes ne s'accumulent plus).
+let _palSnapshot: Uint16Array | null = null;
+export function _snapshotAnimPalettes(): void {
+  const rt = getRuntime() as unknown as { gPlttBufferFaded?: { subarray?: (a: number, b: number) => Uint16Array } } | null;
+  const buf = rt?.gPlttBufferFaded as unknown as Uint16Array | undefined;
+  if (buf?.length) _palSnapshot = buf.slice(0, 512);
+}
+export function _restoreAnimPalettes(): void {
+  const rt = getRuntime() as unknown as { gPlttBufferFaded?: Uint16Array } | null;
+  const buf = rt?.gPlttBufferFaded;
+  if (buf && _palSnapshot) {
+    buf.set(_palSnapshot.subarray(16, 64), 16);     // BG 1-3
+    buf.set(_palSnapshot.subarray(256, 512), 256);  // OBJ
+  }
+}
+
 export function setBattleAnimAttackerTarget(attacker: number, target: number): void {
   gBattleAnimAttacker = attacker;
   gBattleAnimTarget = target;
@@ -1879,7 +1903,7 @@ export function tickAnimScript(): void {
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
   DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,
-  DoMoveAnim, tickAnimScript, isAnimScriptActive,
+  DoMoveAnim, tickAnimScript, isAnimScriptActive, setBattleAnimAttackerTarget,
   // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.
   forceFinishAnim: () => {
     gAnimVisualTaskCount = 0;
@@ -1890,5 +1914,23 @@ export function tickAnimScript(): void {
     sSoundAnimFramesToWait = 0;
     gAnimScriptActive = false;
     _purgeScriptSprites();
+    // FILETS post-coupe (retours user 2026-06-11 « rainbow épileptique » +
+    // « Wailord mal placé ») : un blend/slide coupé à mi-course laissait
+    // (a) des teintes résiduelles accumulées dans gPlttBufferFaded,
+    // (b) x2 résiduel sur les battlers. Restaurer = recopier Unfaded->Faded
+    // (BG 1-3 + OBJ) + x2=0 battlers (y2 = le bob idle, on n'y touche pas).
+    try {
+      const rt = getRuntime() as unknown as {
+        gPlttBufferUnfaded?: Uint16Array; gPlttBufferFaded?: Uint16Array;
+        gSprites?: Map<number, { x2: number; inUse?: boolean; callback?: { name?: string } | null }>;
+      } | null;
+      _restoreAnimPalettes(); // snapshot du Launch (Unfaded = alias Faded ici)
+      if (rt?.gSprites) {
+        for (const sp of rt.gSprites.values()) {
+          const n = sp.callback?.name ?? '';
+          if (sp.inUse && /HealthBox|MonFromBall|CallbackDummy/i.test(n)) sp.x2 = 0;
+        }
+      }
+    } catch { /* best effort */ }
   },
 };

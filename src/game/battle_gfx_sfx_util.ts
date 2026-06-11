@@ -368,14 +368,35 @@ export function ClearBehindSubstituteBit(battler: number): void {
   setBehindSubstitute(battler, false);
 }
 
-/** 1:1 décomp `void SetBattlerSpriteAffineMode(u8 affineMode)` (:1159) : itère les
- *  battlers et pose oam.affineMode (+ libère les matrices DOUBLE). Plateforme :
- *  l'affine des sprites mon est posé À LA CRÉATION (SetUpForReleaseAffineAnim,
- *  controller) et géré par le runtime → no-op documenté (pas de pool de matrices
- *  OAM à libérer chez nous). */
-export function SetBattlerSpriteAffineMode(_affineMode: number): void {
-  // no-op plateforme (cf. doc).
+/** 1:1 décomp `void SetBattlerSpriteAffineMode(u8 affineMode)` (battle_gfx_sfx_util.c) :
+ *  pour chaque battler présent : oam.affineMode = mode ; à OFF, SAUVE matrixNum
+ *  puis le met à 0 ; à NORMAL, RESTAURE le matrixNum sauvé. C'est LE protocole
+ *  d'encadrement des anims de move (décomp PlayerDoMoveAnimation : OFF avant
+ *  DoMoveAnim, NORMAL après) — l'ancien no-op « géré par le runtime » était une
+ *  dette masquée : les anims corrompaient la matrice/scale des mons (retours
+ *  user « Wailord mal placé après son affine » ×3, 2026-06-11). */
+const _savedBattlerMatrixNum = [0, 0, 0, 0];
+export function SetBattlerSpriteAffineMode(affineMode: number): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const bs = (globalThis as { __battleState?: { gBattlersCount?: number } }).__battleState;
+  const count = bs?.gBattlersCount ?? 2;
+  for (let i = 0; i < count; i++) {
+    const sid = _battlerSpriteId(i);
+    if (sid === undefined || sid === 0xFF) continue;
+    const sp = _spr(sid);
+    const oam = sp ? (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; matrixNum?: number }> } }).gba?.oam?.[sp.oamIndex] : undefined;
+    if (!oam) continue;
+    oam.affineMode = affineMode;
+    if (affineMode === 0 /* ST_OAM_AFFINE_OFF */) {
+      _savedBattlerMatrixNum[i] = oam.matrixNum ?? 0;
+      oam.matrixNum = 0;
+    } else {
+      oam.matrixNum = _savedBattlerMatrixNum[i];
+    }
+  }
 }
+(globalThis as Record<string, unknown>).__SetBattlerSpriteAffineMode = SetBattlerSpriteAffineMode;
 
 // ─── Constantes 1:1 ──────────────────────────────────────────────────────────
 const MAX_BATTLERS_COUNT = 4;

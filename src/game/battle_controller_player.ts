@@ -1263,6 +1263,16 @@ function PlayerHandleMoveAnimation(): void {
   if (!_IsBattleSEPlaying(gActiveBattler)) {
     const buf = gBattleBufferA[gActiveBattler];
     _moveAnimMove[gActiveBattler] = buf[1] | (buf[2] << 8);
+    // 1:1 decomp : gAnimMoveTurn/Power/Dmg/Friendship/Weather poses depuis le
+    // buffer AVANT l'anim (les AnimTask les lisent : ShakeTargetBasedOnMove
+    // PowerOrDmg, WeatherBall, ArmThrust multihit...). Surface globale (les
+    // miroirs anim y accedent sans cycle ESM).
+    const g = globalThis as Record<string, unknown>;
+    g.__gAnimMoveTurn = buf[3];
+    g.__gAnimMovePower = buf[4] | (buf[5] << 8);
+    g.__gAnimMoveDmg = (buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)) | 0;
+    g.__gAnimFriendship = buf[10];
+    g.__gWeatherMoveAnim = buf[12] | (buf[13] << 8);
     _moveAnimState[gActiveBattler] = 0;
     gBattlerControllerFuncs[gActiveBattler] = PlayerDoMoveAnimation;
   }
@@ -1279,12 +1289,20 @@ function PlayerDoMoveAnimation(): void {
       _moveAnimState[gActiveBattler] = 1;
       break;
     case 1:
+      // 1:1 decomp : SetBattlerSpriteAffineMode(ST_OAM_AFFINE_OFF) AVANT
+      // DoMoveAnim — les mons ne sont plus affines pendant l'anim (anti
+      // corruption matrice/scale, retours user Wailord x3).
+      ((globalThis as Record<string, unknown>).__SetBattlerSpriteAffineMode as ((m: number) => void) | undefined)?.(0);
       if (itf.DoMoveAnim) itf.DoMoveAnim(_moveAnimMove[gActiveBattler]);
       _moveAnimState[gActiveBattler] = 2;
       break;
     case 2:
       itf.tickAnimScript?.();
-      if (!itf.isAnimScriptActive?.()) _moveAnimState[gActiveBattler] = 3;
+      if (!itf.isAnimScriptActive?.()) {
+        // 1:1 decomp : ST_OAM_AFFINE_NORMAL au retour (matrice restauree).
+        ((globalThis as Record<string, unknown>).__SetBattlerSpriteAffineMode as ((m: number) => void) | undefined)?.(1);
+        _moveAnimState[gActiveBattler] = 3;
+      }
       break;
     case 3:
       _moveAnimState[gActiveBattler] = 0;
