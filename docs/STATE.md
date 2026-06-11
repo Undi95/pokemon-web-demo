@@ -268,3 +268,9 @@ Fallback documenté : move sans template = terminaison propre warn-once.
 - __combatTest(['MOVE_X',...]) : combat réel vs Wailord lvl100 Splash-only (increvable) — la qualification visuelle humaine move par move (méthode user).
 - Outils : __testMoveAnim v3 (ok + oamResiduels + monDeplace), getDebugState, garde-fous (waitforvisualfinish borné + purge/reveal par identité + restauration battlers).
 - Dettes actives : ciblage createsprite (crocs sur l'attaquant — vérifier ANIMSPRITE_IS_TARGET), carte VRAM OBJ (mons dynamiques, réserve 0x280 casse le send-out), orphelin mud cosmétique, ~385 moves à porter/qualifier par vagues.
+
+## 2026-06-12 — F34 SCANLINE + F35 MULTIPAL + C0 RACINE VRAM : **252/354 fidèles (71 %)**
+- **Chantier scanline ENTIER** (`604e2ccb`) : mode DMA 32-bit (paire HOFS+VOFS) + 13 AnimTasks (Extrasensory ×2, Dig ×6, AcidArmor, Sketch, SeismicToss ×3 + UpdateAnimBg3ScreenSize) + fix 1:1 `Cmd_clearmonbg_static` (stub → Task_ClearMonBgStatic réel, « tête d'Arcko » résiduelle éliminée — sondes BG2).
+- **C0 RACINE VRAM** (`aaddbe01`) : `gReservedSpriteTileCount = 0` en combat (1:1 ROM — l'ex-réserve 0x140 gaspillait 320 tiles ; zone anim 107 → **491 tiles contiguës**). Carte mesurée : healthbox 0-255, bars 256-272, ball 273-276, mons 277-532, anims 533-1023. A/B : send-out complet + screenshots + 8 moves.
+- **F35 multipal** (même commit) : asset `music_notes_2.gbapal` régénéré 3 banks (48 couleurs) + AnimTask_Load/FreeMusicNotesPals 1:1 → HealBell complet.
+- **Sweep global v4** (`afb2c320`) : **252/354 (71 %), zéro défaut `sheet:`** (29 tags résolus en masse par C0). Reste : ~89 tasks 1-2 hits (MetallicShine ×12 = OBJ-window strict, spotlights, pal-buffer ×5, mon-gfx ×6, backgrounds ×6), ~33 durées (partie ROM-réalistes), 7 artefacts série.
