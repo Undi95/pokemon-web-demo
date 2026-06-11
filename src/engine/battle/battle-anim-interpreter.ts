@@ -905,6 +905,20 @@ function Cmd_createsprite(): void {
             spA.animBeginning = true;
             spA.animEnded = false;
           }
+          // Pendant AFFINE 1:1 : le template porte le NOM de sa table
+          // AFFINEANIMCMD (registre extras) -> BeginAffineAnim/Continue la
+          // tick exactement comme la cartouche (deltas, durees, rotations).
+          if (tpl.affineAnims && tpl.tileTag && tpl.tileTag > 0) {
+            const spF = sp as unknown as {
+              affineAnimsTableName: string | null; affineMode: number;
+              affineAnimBeginning: boolean; affineAnimEnded: boolean; affineAnimNum: number;
+            };
+            spF.affineAnimsTableName = tpl.affineAnims;
+            spF.affineMode = 3; // ST_OAM_AFFINE_DOUBLE (gOamData_AffineNormal_* combat)
+            spF.affineAnimNum = 0;
+            spF.affineAnimBeginning = true;
+            spF.affineAnimEnded = false;
+          }
           tpl.callback(sp);
         }
         gAnimVisualTaskCount++;  // 1:1 battle_anim.c:411 (decremente par DestroyAnimSprite)

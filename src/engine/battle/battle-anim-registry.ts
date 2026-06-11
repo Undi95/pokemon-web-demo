@@ -32,6 +32,9 @@ export interface AnimSpriteTemplate {
    *  posées sur le sprite par Cmd_createsprite, tickées par AnimateSprite
    *  (sprite.c:901). LE moteur de tables (recadrage user 2026-06-11). */
   anims?: ReadonlyArray<ReadonlyArray<unknown>>;
+  /** NOM de la table AFFINE 1:1 (registre sprite-affine-extras — les tables
+   *  AFFINEANIMCMD du .c, tickées par tickAllAffineAnims/BeginAffineAnim). */
+  affineAnims?: string;
 }
 
 const _idToName = new Map<number, string>();

@@ -25,6 +25,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 import { SetSpriteRotScale, PrepareBattlerSpriteForRotScale } from './battle_anim_mons';
 
 export const ANIM_TAG_IMPACT = 10135; // ANIM_SPRITES_START(10000) + 135, battle_anim.h:145
@@ -63,6 +64,15 @@ function _battlerSprite(battler: number): AnimSprite | undefined {
   return id !== undefined && id >= 0 ? _rt()?.gSprites?.get(id) : undefined;
 }
 
+// 1:1 sAffineAnims_HitSplat (battle_anim_normal.c:134-167) — LES VRAIES
+// courbes : variante 0 = hold 8f a l'echelle d'arrivee ; 1/2/3 = scale
+// initial 0xD8/0xB0/0x80 puis hold 8f. (Le moteur AFFINE tick les deltas.)
+registerAffineAnim('sAffineAnim_HitSplat_0', { frames: [{ xScale: 0, yScale: 0, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_HitSplat_1', { frames: [{ xScale: 0xD8, yScale: 0xD8, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_HitSplat_2', { frames: [{ xScale: 0xB0, yScale: 0xB0, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnim('sAffineAnim_HitSplat_3', { frames: [{ xScale: 0x80, yScale: 0x80, rotation: 0, duration: 0 }, { xScale: 0, yScale: 0, rotation: 0, duration: 8 }], terminator: 'END' });
+registerAffineAnimTable('sAffineAnims_HitSplat', { affineAnims: ['sAffineAnim_HitSplat_0', 'sAffineAnim_HitSplat_1', 'sAffineAnim_HitSplat_2', 'sAffineAnim_HitSplat_3'] });
+
 /** 1:1 `AnimHitSplatBasic` (battle_anim_normal.c) — net-effect plateforme :
  *  args = [x, y, relativeTo, animation]. Position sur la cible (ou attaquant)
  *  + offsets, scale-in affine ~12 frames, destroy. */
@@ -76,12 +86,26 @@ function AnimHitSplatBasic(sprite: AnimSprite): void {
     sprite.y = mon.y + (mon.y2 ?? 0) + args[1];
   }
   sprite.invisible = false;
-  sprite.data[7] = 0;            // timer
-  sprite.data[6] = args[3] & 3;  // variante affine (0-3)
+  // 1:1 : StartSpriteAffineAnim(variante) sur LA VRAIE table (posee par
+  // Cmd_createsprite via tpl.affineAnims) -> RunStoredCallbackWhenAffineAnimEnds.
+  const spF = sprite as unknown as { affineAnimsTableName?: string | null; affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean };
+  if (spF.affineAnimsTableName) {
+    spF.affineAnimNum = args[3] & 3;
+    spF.affineAnimBeginning = true;
+    spF.affineAnimEnded = false;
+    sprite.callback = _HitSplat_WaitAffineEnd;
+    return;
+  }
+  // fallback legacy (pas de table) : scale-in approxime.
+  sprite.data[7] = 0;
+  sprite.data[6] = args[3] & 3;
   if (sprite.spriteId !== undefined) {
-    PrepareBattlerSpriteForRotScale(sprite.spriteId, 1 /* ST_OAM_OBJ_BLEND 1:1 oam ObjBlend */);
+    PrepareBattlerSpriteForRotScale(sprite.spriteId, 1 /* ST_OAM_OBJ_BLEND */);
   }
   sprite.callback = _HitSplat_Step;
+}
+function _HitSplat_WaitAffineEnd(sprite: AnimSprite): void {
+  if ((sprite as { affineAnimEnded?: boolean }).affineAnimEnded) _itf().DestroyAnimSprite?.(sprite);
 }
 function _HitSplat_Step(sprite: AnimSprite): void {
   sprite.data[7]++;
@@ -102,8 +126,8 @@ function _HitSplat_Step(sprite: AnimSprite): void {
 
 // ─── Enregistrement registry ────────────────────────────────────────────────
 registerAnimTemplates([
-  { name: 'gBasicHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never },
+  { name: 'gBasicHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never, affineAnims: 'sAffineAnims_HitSplat' },
   // 1:1 : gHandleInvertHitSplatSpriteTemplate partage gfx+callback (l'invert X
   // est ignoré par AnimHitSplatBasic de base — dette douce).
-  { name: 'gHandleInvertHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never },
+  { name: 'gHandleInvertHitSplatSpriteTemplate', tileTag: ANIM_TAG_IMPACT, paletteTag: ANIM_TAG_IMPACT, oam: { shape: 0, size: 2 }, load: LoadAnimImpactGfx, callback: AnimHitSplatBasic as never, affineAnims: 'sAffineAnims_HitSplat' },
 ]);
