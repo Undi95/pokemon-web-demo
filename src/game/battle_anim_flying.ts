@@ -787,3 +787,38 @@ function AnimBounceBallShrink(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimBounceBallShrink: AnimBounceBallShrink as never });
+
+// ─── VAGUE F12 : AnimTask_AnimateGustTornadoPalette (flying.c, 3 hits) ──────
+// Rotation des couleurs 1-8 de la palette GUST toutes args[0] frames pendant
+// args[1] frames (le tourbillon qui scintille).
+function _flItf(): { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_AnimateGustTornadoPalette(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const a = _flItf().getArgs?.() ?? [];
+  task.data[0] = a[1]; // durée
+  task.data[1] = a[0]; // intervalle
+  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  task.data[2] = sp?.IndexOfSpritePaletteTag?.(10008 /* ANIM_TAG_GUST */) ?? 0xFF;
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.func = _GustTornadoPal_Step;
+}
+function _GustTornadoPal_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _flItf();
+  if (task.data[2] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if (task.data[10]++ === task.data[1]) {
+    task.data[10] = 0;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined;
+    const pf = rt?.gPlttBufferFaded;
+    if (pf?.get && pf.set) {
+      const base = 256 + task.data[2] * 16;
+      const temp = pf.get(base + 8);
+      for (let i = 7; i > 0; i--) pf.set(base + 1 + i, pf.get(base + i));
+      pf.set(base + 1, temp);
+    }
+  }
+  if (++task.data[11] >= task.data[0]) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _flRegT } from '../engine/battle/battle-anim-registry';
+_flRegT({ AnimTask_AnimateGustTornadoPalette: AnimTask_AnimateGustTornadoPalette as never });
