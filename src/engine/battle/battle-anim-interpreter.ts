@@ -1903,7 +1903,31 @@ function Cmd_monbg_static(): void {
 /** 0x23 Cmd_clearmonbg_static (battle_anim.c:960-991). */
 function Cmd_clearmonbg_static(): void {
   _pc++;
-  // Cascade deferred (= Task_ClearMonBgStatic dispatch).
+  let animBattlerId = read8(_pc);
+  if (animBattlerId === ANIM_ATTACKER) animBattlerId = ANIM_ATK_PARTNER;
+  else if (animBattlerId === ANIM_TARGET) animBattlerId = ANIM_DEF_PARTNER;
+  const battler = (animBattlerId === ANIM_ATTACKER || animBattlerId === ANIM_ATK_PARTNER) ? gBattleAnimAttacker : gBattleAnimTarget;
+  // 1:1 Task_ClearMonBgStatic (battle_anim.c:885-906, net single) : re-montrer
+  // le sprite + ResetBattleAnimBg (tilemap vide + BG caché + scroll 0). C'était
+  // un STUB → la copie monbg_static du Dig restait affichée à (40,0) après le
+  // clear (la « tête d'Arcko » flottante, sondes BG2 2026-06-12).
+  {
+    const rt = getRuntime();
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    const sid = co?.getBattlerMonSpriteId?.(battler);
+    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites.get(sid) : undefined;
+    if (sprite) (sprite as { invisible?: boolean }).invisible = false;
+    const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
+    const g = globalThis as Record<string, unknown>;
+    for (const bgId of [1, 2]) {
+      if (!_monbgActive[bgId]) continue;
+      const bg = gba?.bg(bgId);
+      if (bg) { bg.tilemap.fill(0); bg.config.visible = false; }
+      _monbgActive[bgId] = false;
+      if (bgId === 1) { g.gBattle_BG1_X = 0; g.gBattle_BG1_Y = 0; }
+      else { g.gBattle_BG2_X = 0; g.gBattle_BG2_Y = 0; }
+    }
+  }
   _pc++;
 }
 
@@ -2216,6 +2240,7 @@ export function tickAnimScript(): void {
   decVisualTaskCount: () => { if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--; },
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
+  getAnimMoveDmg: () => gAnimMoveDmg,
   DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,
   DoMoveAnim, tickAnimScript, isAnimScriptActive, setBattleAnimAttackerTarget,
   // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.

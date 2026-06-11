@@ -392,3 +392,220 @@ function _HS_Battlers(task: _HsTask): void {
 }
 import { registerAnimTasks as _hsReg } from '../engine/battle/battle-anim-registry';
 _hsReg({ AnimTask_HorizontalShake: AnimTask_HorizontalShake as never });
+
+// ─── VAGUE F34-SCANLINE : Dig (ground.c:288-496) ────────────────────────────
+// AnimTask_DigDownMovement/DigUpMovement : le mon plonge sous terre / en sort.
+// SetDigScanlineEffect : scanlines sous endY décalées de +240 (BG hors-map =
+// vide) → le bas du mon « disparaît dans le sol ».
+import {
+  ScanlineEffect_SetParams as _dgSetParams,
+  gScanlineEffectRegBuffers as _dgBufs,
+  gScanlineEffect as _dgScan,
+  SCANLINE_EFFECT_DMACNT_16BIT as _dgDma16,
+  SCANLINE_EFFECT_REG_BG1HOFS as _dgRegBg1H,
+  SCANLINE_EFFECT_REG_BG2HOFS as _dgRegBg2H,
+  REG_OFFSET_BG0HOFS as _dgRegBase,
+} from './scanline_effect';
+import { gSineTable as _dgSine } from './trig';
+import { GetBattlerSpriteBGPriorityRank as _dgBgRank } from './battle_anim_mons';
+
+const _DG_DISPLAY_WIDTH = 240;
+const _DG_DISPLAY_HEIGHT = 160;
+
+type _DgTask = { taskId: number; data: number[]; func?: unknown };
+function _dgItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+type _DgSprite = { x: number; y: number; x2: number; y2: number; invisible?: boolean };
+function _dgRt(): { gSprites?: Map<number, _DgSprite> } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _dgAttackerSpriteId(): number {
+  const b = _dgItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+function _dgBgX(rank: number): number {
+  const g = globalThis as Record<string, unknown>;
+  return rank === 1 ? ((g.gBattle_BG1_X as number) | 0) : ((g.gBattle_BG2_X as number) | 0);
+}
+function _dgBgY(rank: number): number {
+  const g = globalThis as Record<string, unknown>;
+  return rank === 1 ? ((g.gBattle_BG1_Y as number) | 0) : ((g.gBattle_BG2_Y as number) | 0);
+}
+function _dgSetBgY(rank: number, v: number): void {
+  const g = globalThis as Record<string, unknown>;
+  if (rank === 1) g.gBattle_BG1_Y = v; else g.gBattle_BG2_Y = v;
+}
+
+/** 1:1 `SetDigScanlineEffect(useBG1, y, endY)` (ground.c:458). */
+function _SetDigScanlineEffect(useBG1: number, y: number, endY: number): void {
+  const bgX = _dgBgX(useBG1 === 1 ? 1 : 2);
+  const dmaDest = _dgRegBase + (useBG1 === 1 ? _dgRegBg1H : _dgRegBg2H);
+  if (y < 0) y = 0;
+  while (y < endY) {
+    _dgBufs[0][y] = bgX;
+    _dgBufs[1][y] = bgX;
+    y++;
+  }
+  while (y < _DG_DISPLAY_HEIGHT) {
+    _dgBufs[0][y] = bgX + _DG_DISPLAY_WIDTH;
+    _dgBufs[1][y] = bgX + _DG_DISPLAY_WIDTH;
+    y++;
+  }
+  _dgSetParams({ dmaDest, dmaControl: _dgDma16, initState: 1, unused9: 0 });
+}
+
+/** 1:1 `AnimTask_DigDownMovement` (ground.c:288) — dispatcher + appel immédiat. */
+function AnimTask_DigDownMovement(task: _DgTask): void {
+  const args = _dgItf().getArgs?.() ?? [0];
+  if (args[0] === 0) task.func = _DigBounceMovement;
+  else task.func = _DigEndBounceMovementSetInvisible;
+  (task.func as (t: _DgTask) => void)(task);
+}
+
+/** 1:1 `AnimTask_DigBounceMovement` (ground.c:301). */
+function _DigBounceMovement(task: _DgTask): void {
+  switch (task.data[0]) {
+    case 0: {
+      task.data[10] = _dgAttackerSpriteId();
+      task.data[11] = _dgBgRank(_dgItf().getAttacker?.() ?? 0);
+      if (task.data[11] === 1) {
+        task.data[12] = _dgBgX(1);
+        task.data[13] = _dgBgY(1);
+      } else {
+        task.data[12] = _dgBgX(2);
+        task.data[13] = _dgBgY(2);
+      }
+      const y = _GetBattlerYCoordWithElevation(_dgItf().getAttacker?.() ?? 0) & 0xFF;
+      task.data[14] = y - 32;
+      task.data[15] = y + 32;
+      if (task.data[14] < 0) task.data[14] = 0;
+      const sp = _dgRt().gSprites?.get(task.data[10]);
+      if (sp) sp.invisible = true;
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      _SetDigScanlineEffect(task.data[11], task.data[14], task.data[15]);
+      task.data[0]++;
+      break;
+    case 2: {
+      task.data[2] = (task.data[2] + 6) & 0x7F;
+      if (++task.data[4] > 2) {
+        task.data[4] = 0;
+        task.data[3]++;
+      }
+      task.data[5] = task.data[3] + ((_dgSine[task.data[2]] ?? 0) >> 4);
+      _dgSetBgY(task.data[11], task.data[13] - task.data[5]);
+      if (task.data[5] > 63) {
+        task.data[5] = 120 - task.data[14];
+        _dgSetBgY(task.data[11], task.data[13] - task.data[5]);
+        const sp = _dgRt().gSprites?.get(task.data[10]);
+        if (sp) sp.x2 = _DG_DISPLAY_WIDTH + 32 - sp.x;
+        task.data[0]++;
+      }
+      break;
+    }
+    case 3:
+      _dgScan.state = 3;
+      task.data[0]++;
+      break;
+    case 4: {
+      _dgItf().DestroyAnimVisualTask?.(task.taskId);
+      const sp = _dgRt().gSprites?.get(task.data[10]);
+      if (sp) sp.invisible = true;
+      break;
+    }
+  }
+}
+
+/** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (ground.c:371). */
+function _DigEndBounceMovementSetInvisible(task: _DgTask): void {
+  const spriteId = _dgAttackerSpriteId();
+  const sp = _dgRt().gSprites?.get(spriteId);
+  if (sp) {
+    sp.invisible = true;
+    sp.x2 = 0;
+    sp.y2 = 0;
+  }
+  if (_dgBgRank(_dgItf().getAttacker?.() ?? 0) === 1) _dgSetBgY(1, 0);
+  else _dgSetBgY(2, 0);
+  _dgItf().DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 `AnimTask_DigUpMovement` (ground.c:386) — dispatcher + appel immédiat. */
+function AnimTask_DigUpMovement(task: _DgTask): void {
+  const args = _dgItf().getArgs?.() ?? [0];
+  if (args[0] === 0) task.func = _DigSetVisibleUnderground;
+  else task.func = _DigRiseUpFromHole;
+  (task.func as (t: _DgTask) => void)(task);
+}
+
+/** 1:1 `AnimTask_DigSetVisibleUnderground` (ground.c:398). */
+function _DigSetVisibleUnderground(task: _DgTask): void {
+  switch (task.data[0]) {
+    case 0: {
+      task.data[10] = _dgAttackerSpriteId();
+      const sp = _dgRt().gSprites?.get(task.data[10]);
+      if (sp) {
+        sp.invisible = false;
+        sp.x2 = 0;
+        sp.y2 = _DG_DISPLAY_HEIGHT - sp.y;
+      }
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      _dgItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+
+/** 1:1 `AnimTask_DigRiseUpFromHole` (ground.c:417). */
+function _DigRiseUpFromHole(task: _DgTask): void {
+  switch (task.data[0]) {
+    case 0: {
+      task.data[10] = _dgAttackerSpriteId();
+      task.data[11] = _dgBgRank(_dgItf().getAttacker?.() ?? 0);
+      if (task.data[11] === 1) task.data[12] = _dgBgX(1);
+      else task.data[12] = _dgBgX(2);
+      const var0 = _GetBattlerYCoordWithElevation(_dgItf().getAttacker?.() ?? 0) & 0xFF;
+      task.data[14] = var0 - 32;
+      task.data[15] = var0 + 32;
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      _SetDigScanlineEffect(task.data[11], 0, task.data[15]);
+      task.data[0]++;
+      break;
+    case 2: {
+      const sp = _dgRt().gSprites?.get(task.data[10]);
+      if (sp) sp.y2 = 96;
+      task.data[0]++;
+      break;
+    }
+    case 3: {
+      const sp = _dgRt().gSprites?.get(task.data[10]);
+      if (sp) {
+        sp.y2 -= 8;
+        if (sp.y2 === 0) {
+          _dgScan.state = 3;
+          task.data[0]++;
+        }
+      } else {
+        _dgScan.state = 3;
+        task.data[0]++;
+      }
+      break;
+    }
+    case 4:
+      _dgItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+_hsReg({
+  AnimTask_DigDownMovement: AnimTask_DigDownMovement as never,
+  AnimTask_DigUpMovement: AnimTask_DigUpMovement as never,
+});

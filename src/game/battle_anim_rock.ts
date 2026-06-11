@@ -255,3 +255,85 @@ registerAnimCallbacks({
   AnimRockBlastRock: AnimRockBlastRock as never,
   AnimRockScatter: AnimRockScatter as never,
 });
+
+// ─── VAGUE F34 : Seismic Toss (rock.c:836-887) ──────────────────────────────
+// Le fond défile (la « terre tourne ») : scroll BG3_Y décéléré (MoveSeismicTossBg)
+// puis ré-accéléré en Cos à l'impact (BgAccelerateDownAtEnd) ; bascule du
+// screen-size BG3 512x256 → 256x256 (UpdateAnimBg3ScreenSize) pour le wrap.
+import { registerAnimTasks as _stRegT } from '../engine/battle/battle-anim-registry';
+import { Cos as _stCos } from './trig';
+
+type _StTask = { taskId: number; data: number[]; func?: unknown };
+function _stItf(): { getArgs?: () => number[]; getAnimMoveDmg?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _stBg3Y(): number {
+  return ((globalThis as Record<string, unknown>).gBattle_BG3_Y as number) | 0;
+}
+function _stSetBg3Y(v: number): void {
+  (globalThis as Record<string, unknown>).gBattle_BG3_Y = v;
+}
+
+/** 1:1 `UpdateAnimBg3ScreenSize(largeScreenSize)` (battle_anim_mons.c:1032) :
+ *  SetAnimBgAttribute(3, SCREEN_SIZE, 0|1) — AREA_OVERFLOW_MODE est ignoré par
+ *  le matériel en mode text (BG3 combat = text) → no-op réel chez nous aussi. */
+function _UpdateAnimBg3ScreenSize(largeScreenSize: boolean): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { bg: (i: number) => { config: { screenSize: number } } } } | undefined;
+  const cfg = rt?.gba?.bg(3)?.config;
+  if (!cfg) return;
+  // IsContest() = false (post-camion).
+  cfg.screenSize = largeScreenSize ? 1 : 0;
+}
+
+/** 1:1 `AnimTask_GetSeismicTossDamageLevel` (rock.c:836) → gBattleAnimArgs[7]. */
+function AnimTask_GetSeismicTossDamageLevel(task: _StTask): void {
+  const itf = _stItf();
+  const args = itf.getArgs?.();
+  const dmg = itf.getAnimMoveDmg?.() ?? 0;
+  if (args) {
+    if (dmg < 33) args[7] = 0;
+    if (dmg - 33 >= 0 && dmg - 33 < 33) args[7] = 1;  // (u32)dmg-33 < 33
+    if (dmg > 65) args[7] = 2;
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 `AnimTask_MoveSeismicTossBg` (rock.c:848). */
+function AnimTask_MoveSeismicTossBg(task: _StTask): void {
+  if (task.data[0] === 0) {
+    _UpdateAnimBg3ScreenSize(false);
+    task.data[1] = 200;
+  }
+  _stSetBg3Y(_stBg3Y() + Math.trunc(task.data[1] / 10));
+  task.data[1] -= 3;
+  if (task.data[0] === 120) {
+    _UpdateAnimBg3ScreenSize(true);
+    _stItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+  task.data[0]++;
+}
+
+/** 1:1 `AnimTask_SeismicTossBgAccelerateDownAtEnd` (rock.c:868). */
+function AnimTask_SeismicTossBgAccelerateDownAtEnd(task: _StTask): void {
+  const itf = _stItf();
+  if (task.data[0] === 0) {
+    _UpdateAnimBg3ScreenSize(false);
+    task.data[0]++;
+    task.data[2] = _stBg3Y();
+  }
+  task.data[1] += 80;
+  task.data[1] &= 0xFF;
+  _stSetBg3Y(task.data[2] + _stCos(4, task.data[1]));
+  const args = itf.getArgs?.();
+  if (args && args[7] === 0xFFF) {
+    _stSetBg3Y(0);
+    _UpdateAnimBg3ScreenSize(true);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+
+_stRegT({
+  AnimTask_GetSeismicTossDamageLevel: AnimTask_GetSeismicTossDamageLevel as never,
+  AnimTask_MoveSeismicTossBg: AnimTask_MoveSeismicTossBg as never,
+  AnimTask_SeismicTossBgAccelerateDownAtEnd: AnimTask_SeismicTossBgAccelerateDownAtEnd as never,
+});

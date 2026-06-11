@@ -28,7 +28,9 @@ import { gSineTable } from './trig';
 function rt(): any { return (globalThis as any).__rt; }
 
 // ─── Constantes (1:1 gba/io_reg.h + scanline_effect.h) ─────────────────────
-const REG_OFFSET_BG0HOFS = 0x10;  // base ; +regOffset relatif = BGnH/VOFS
+// Exportée : les consommateurs (Dig/Extrasensory/AcidArmor) composent
+// `dmaDest: REG_OFFSET_BG0HOFS + SCANLINE_EFFECT_REG_*` (= &REG_BGnHOFS du C).
+export const REG_OFFSET_BG0HOFS = 0x10;  // base ; +regOffset relatif = BGnH/VOFS
 const DISPLAY_HEIGHT = 160;
 const TASK_NONE = 0xFF;
 
@@ -133,7 +135,11 @@ function CopyValue16Bit(): void {
   _applyRegFromValue(gScanlineEffect.dmaDest, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][0]);
 }
 function CopyValue32Bit(): void {
-  _applyRegFromValue(gScanlineEffect.dmaDest, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][0]);
+  // 1:1 : `*(vu32*)dest = *(vu32*)src` = écrit les DEUX registres adjacents
+  // (ex. BG2HOFS+BG2VOFS) depuis le buffer entrelacé [0]=HOFS, [1]=VOFS.
+  const buf = gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer];
+  _applyRegFromValue(gScanlineEffect.dmaDest, buf[0]);
+  _applyRegFromValue(gScanlineEffect.dmaDest + 2, buf[1]);
 }
 
 // ─── ScanlineEffect_SetParams (1:1 scanline_effect.c:46-70) ─────────────────
@@ -168,12 +174,20 @@ export function ScanlineEffect_InitHBlankDmaTransfer(): void {
   } else {
     // DmaSet(0, &buffer[srcBuffer], dmaDest, HBLANK|REPEAT) HW-emu : installe un
     // cb HBlank qui écrit buffer[srcBuffer][y] dans le registre dmaDest chaque scanline.
+    // Mode 32BIT (1:1 DMA_32BIT) : 4 bytes/HBlank = les DEUX registres adjacents
+    // (HOFS+VOFS) depuis le buffer entrelacé [y*2]/[y*2+1] (cf. AcidArmor).
     const r = rt();
     if (!r?.gba?.setHBlankCallback) return;
     r.gba.setHBlankCallback((y: number) => {
       if (gScanlineEffect.state === 0) return;
       if (y >= 0 && y < DISPLAY_HEIGHT) {
-        _applyRegFromValue(gScanlineEffect.dmaDest, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer][y]);
+        const buf = gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer];
+        if (gScanlineEffect.dmaControl === SCANLINE_EFFECT_DMACNT_32BIT) {
+          _applyRegFromValue(gScanlineEffect.dmaDest, buf[y * 2]);
+          _applyRegFromValue(gScanlineEffect.dmaDest + 2, buf[y * 2 + 1]);
+        } else {
+          _applyRegFromValue(gScanlineEffect.dmaDest, buf[y]);
+        }
       }
     });
     gScanlineEffect.setFirstScanlineReg();  // 1re scanline manuelle (1:1)

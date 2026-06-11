@@ -2978,3 +2978,158 @@ _e3RegTasks({
   AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never,
   AnimTask_RockMonBackAndForth: AnimTask_RockMonBackAndForth as never,
 });
+
+// ─── VAGUE F34-SCANLINE : AcidArmor (effects_3.c:3296-3470) ─────────────────
+// Le mon « fond » : scanlines compressées vers le bas (mode DMA 32-BIT = paire
+// HOFS+VOFS entrelacée par scanline) + fondu BLDALPHA.
+import {
+  ScanlineEffect_SetParams as _aaSetParams,
+  gScanlineEffectRegBuffers as _aaBufs,
+  gScanlineEffect as _aaScan,
+  SCANLINE_EFFECT_DMACNT_32BIT as _aaDma32,
+  SCANLINE_EFFECT_REG_BG1HOFS as _aaRegBg1H,
+  SCANLINE_EFFECT_REG_BG2HOFS as _aaRegBg2H,
+  REG_OFFSET_BG0HOFS as _aaRegBase,
+} from './scanline_effect';
+import { GetBattlerSpriteBGPriorityRank as _aaBgRank } from './battle_anim_mons';
+
+type _AaTask = { taskId: number; data: number[]; func?: unknown };
+function _aaBgXY(rank: number): [number, number] {
+  const g = globalThis as Record<string, unknown>;
+  return rank === 1
+    ? [((g.gBattle_BG1_X as number) | 0), ((g.gBattle_BG1_Y as number) | 0)]
+    : [((g.gBattle_BG2_X as number) | 0), ((g.gBattle_BG2_Y as number) | 0)];
+}
+
+/** 1:1 `AnimTask_AcidArmor` (effects_3.c:3296). arg0 = ANIM_ATTACKER/TARGET. */
+function AnimTask_AcidArmor(task: _AaTask): void {
+  const itf = _vItf();
+  const args = itf.getArgs?.() ?? [0];
+  const battler = args[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 16;
+  task.data[4] = 0;
+  task.data[5] = battler;
+  task.data[6] = 32;
+  task.data[7] = 0;
+  task.data[8] = 24;
+  if (_side(battler) === 1 /* B_SIDE_OPPONENT */) task.data[8] *= -1;
+
+  task.data[13] = _GetBattlerYCoordWithElevation(battler) - 34;
+  if (task.data[13] < 0) task.data[13] = 0;
+  task.data[14] = task.data[13] + 66;
+  task.data[15] = _GetAnimBattlerSpriteId(args[0]);
+
+  const rank = _aaBgRank(battler);
+  let dmaDest: number;
+  let bgX: number, bgY: number;
+  const rt = _grt();
+  if (rank === 1) {
+    dmaDest = _aaRegBase + _aaRegBg1H;
+    // BLDCNT_TGT2_ALL(0x3F00) | BLDCNT_EFFECT_BLEND(0x40) | BLDCNT_TGT1_BG1(0x02)
+    rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0x3F42);
+    [bgX, bgY] = _aaBgXY(1);
+  } else {
+    dmaDest = _aaRegBase + _aaRegBg2H;
+    // BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG2(0x04)
+    rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0x3F44);
+    [bgX, bgY] = _aaBgXY(2);
+  }
+
+  for (let y = 0, i = 0; y < 160; y++, i += 2) {
+    _aaBufs[0][i] = bgX;
+    _aaBufs[1][i] = bgX;
+    _aaBufs[0][i + 1] = bgY;
+    _aaBufs[1][i + 1] = bgY;
+  }
+
+  _aaSetParams({ dmaDest, dmaControl: _aaDma32, initState: 1, unused9: 0 });
+  task.func = _AcidArmor_Step;
+}
+
+/** 1:1 `AnimTask_AcidArmor_Step` (effects_3.c:3358). */
+function _AcidArmor_Step(task: _AaTask): void {
+  const rank = _aaBgRank(task.data[5]);
+  const [bgX, bgY] = _aaBgXY(rank);
+  const rt = _grt();
+
+  switch (task.data[0]) {
+    case 0: {
+      let offset = task.data[14] * 2;
+      let var1 = 0;
+      let var2 = 0;
+      let i = 0;
+      task.data[1] = (task.data[1] + 2) & 0xFF;
+      let sineIndex = task.data[1];
+      task.data[9] = Math.trunc(0x7E0 / task.data[6]);
+      task.data[10] = -Math.trunc((task.data[7] * 2) / task.data[9]);
+      task.data[11] = task.data[7];
+      let var3 = task.data[11] >> 5;
+      task.data[12] = var3;
+      let var0 = task.data[14];
+      const sBuf = _aaBufs[_aaScan.srcBuffer];
+      while (var0 > task.data[13]) {
+        sBuf[offset + 1] = (i - var2) + bgY;
+        sBuf[offset] = bgX + var3 + ((gSineTable[sineIndex] ?? 0) >> 5);
+        sineIndex = (sineIndex + 10) & 0xFF;
+        task.data[11] += task.data[10];
+        var3 = task.data[11] >> 5;
+        task.data[12] = var3;
+        i++;
+        offset -= 2;
+        var1 += task.data[6];
+        var2 = var1 >> 5;
+        var0--;
+      }
+
+      var0 *= 2;
+      while (var0 >= 0) {
+        _aaBufs[0][var0] = bgX + 240; // + DISPLAY_WIDTH
+        _aaBufs[1][var0] = bgX + 240;
+        var0 -= 2;
+      }
+
+      if (++task.data[6] > 63) {
+        task.data[6] = 64;
+        task.data[2]++;
+        if (task.data[2] & 1) task.data[3]--;
+        else task.data[4]++;
+        rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(task.data[3], task.data[4]));
+        if (task.data[3] === 0 && task.data[4] === 16) {
+          task.data[2] = 0;
+          task.data[3] = 0;
+          task.data[0]++;
+        }
+      } else {
+        task.data[7] += task.data[8];
+      }
+      break;
+    }
+    case 1:
+      if (++task.data[2] > 12) {
+        _aaScan.state = 3;
+        task.data[2] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      task.data[2]++;
+      if (task.data[2] & 1) task.data[3]++;
+      else task.data[4]--;
+      rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(task.data[3], task.data[4]));
+      if (task.data[3] === 16 && task.data[4] === 0) {
+        task.data[2] = 0;
+        task.data[3] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 3:
+      _vItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+registerAnimTasks({ AnimTask_AcidArmor: AnimTask_AcidArmor as never });

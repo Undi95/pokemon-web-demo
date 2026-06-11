@@ -643,6 +643,35 @@ export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
   sprite.y2 = Math.trunc((v - v2) / 2);
 }
 
+/** 1:1 `SetBattlerSpriteYOffsetFromOtherYScale(spriteId, otherSpriteId)`
+ *  (battle_anim_mons.c:1886) — y2 = déplacement induit par la matrice de
+ *  spriteId (échelle Y), base 64px (même dette douce species-delta que
+ *  SetBattlerSpriteYOffsetFromYScale : GetBattlerYDeltaFromSpriteId ≈ 0). */
+export function SetBattlerSpriteYOffsetFromOtherYScale(spriteId: number, _otherSpriteId: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(spriteId) as { y2: number; oamIndex: number } | undefined;
+  if (!rt || !sprite) return;
+  const MON_PIC_HEIGHT = 64;
+  const v = MON_PIC_HEIGHT; // - GetBattlerYDeltaFromSpriteId(other)*2 (≈ 0)
+  const m = (rt as unknown as { gOamMatrices?: Array<{ d: number }> }).gOamMatrices;
+  const oam = (rt as unknown as { gba: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } }).gba.oam[sprite.oamIndex];
+  const d = m?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0]?.d ?? 0x100;
+  let v2 = d !== 0 ? Math.trunc((v << 8) / d) : v * 2;
+  if (v2 > MON_PIC_HEIGHT * 2) v2 = MON_PIC_HEIGHT * 2;
+  sprite.y2 = Math.trunc((v - v2) / 2);
+}
+
+/** 1:1 `GetBattlerSpriteBGPriorityRank(battler)` (battle_anim_mons.c) :
+ *  PLAYER_LEFT(0)/OPPONENT_RIGHT(3) → 2 (BG2), sinon → 1 (BG1). Contest → 1. */
+export function GetBattlerSpriteBGPriorityRank(battler: number): number {
+  if (!IsContest()) {
+    const position = GetBattlerPosition(battler);
+    if (position === 0 || position === 3) return 2;  // B_POSITION_PLAYER_LEFT | B_POSITION_OPPONENT_RIGHT
+    return 1;
+  }
+  return 1;
+}
+
 /** 1:1 `RunAffineAnimFromTaskData(task)` — TRUE tant que l anim tourne. */
 export function RunAffineAnimFromTaskData(task: _TaskLike): boolean {
   const table = _taskAffineCmds.get(task.taskId);

@@ -551,3 +551,198 @@ _tpRegT({
   AnimTask_Teleport: AnimTask_Teleport as never,
   AnimTask_MeditateStretchAttacker: AnimTask_MeditateStretchAttacker as never,
 });
+
+// ─── VAGUE F34-SCANLINE : Extrasensory (psychic.c:954-1117) ─────────────────
+// AnimTask_ExtrasensoryDistortion : ondulation horizontale par-scanline (±32px
+// autour du target) via gScanlineEffectRegBuffers + ScanlineEffect_SetParams.
+// AnimTask_TransparentCloneGrowAndShrink : clone blend du battler qui grossit
+// puis revient (matrice OAM dédiée).
+import {
+  ScanlineEffect_SetParams as _exSetParams,
+  gScanlineEffectRegBuffers as _exBufs,
+  gScanlineEffect as _exScan,
+  SCANLINE_EFFECT_DMACNT_16BIT as _exDma16,
+  SCANLINE_EFFECT_REG_BG1HOFS as _exRegBg1H,
+  SCANLINE_EFFECT_REG_BG2HOFS as _exRegBg2H,
+  REG_OFFSET_BG0HOFS as _exRegBase,
+} from './scanline_effect';
+import { gSineTable as _exSine } from './trig';
+import {
+  GetBattlerSpriteBGPriorityRank as _exBgRank,
+  CloneBattlerSpriteWithBlend as _exClone,
+  DestroySpriteWithActiveSheet as _exDestroySheet,
+  SetSpriteRotScale as _exSetRotScale,
+  SetBattlerSpriteYOffsetFromOtherYScale as _exYFromOther,
+  GetBattlerElevation as _exElev,
+} from './battle_anim_mons';
+import { AllocOamMatrix as _exAllocMat, FreeOamMatrix as _exFreeMat, CalcCenterToCornerVec as _exC2C } from '../engine/system/sprite';
+import { gBattlerPartyIndexes as _exPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _exEnemyParty, GetMonData as _exGetMon, MON_DATA_SPECIES as _exSpeciesK } from '../engine/battle/party-storage';
+
+type _ExTask = { taskId: number; data: number[]; func?: unknown };
+function _exItf(): {
+  getArgs?: () => number[];
+  getAttacker?: () => number;
+  getTarget?: () => number;
+  DestroyAnimVisualTask?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 `GetBattlerYCoordWithElevation` (battle_anim_mons.c:342), transcrit
+ *  localement (pattern ground.ts/effects_3.ts). */
+function _exYCoordWithElevation(battler: number): number {
+  let y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
+  if ((battler & 1) !== 0 /* side != B_SIDE_PLAYER */) {
+    const species = _exGetMon(_exEnemyParty[_exPartyIdx[battler]] as never, _exSpeciesK) as number;
+    y -= _exElev(battler, species);
+  }
+  return y;
+}
+function _exSpriteIdOf(animBattler: number): number {
+  const itf = _exItf();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+function _exBattleBgX(rank: number): number {
+  const g = globalThis as Record<string, unknown>;
+  return rank === 1 ? ((g.gBattle_BG1_X as number) | 0) : ((g.gBattle_BG2_X as number) | 0);
+}
+
+/** 1:1 `AnimTask_ExtrasensoryDistortion` (psychic.c:954). arg0 = phase 0/1/2. */
+function AnimTask_ExtrasensoryDistortion(task: _ExTask): void {
+  const itf = _exItf();
+  const args = itf.getArgs?.() ?? [0];
+  const target = itf.getTarget?.() ?? 1;
+  const yOffset = _exYCoordWithElevation(target) & 0xFF;  // u8 du C
+  task.data[14] = yOffset - 32;
+
+  switch (args[0]) {
+    case 0:
+      task.data[11] = 2; task.data[12] = 5; task.data[13] = 64;
+      task.data[15] = yOffset + 32;
+      break;
+    case 1:
+      task.data[11] = 2; task.data[12] = 5; task.data[13] = 192;
+      task.data[15] = yOffset + 32;
+      break;
+    case 2:
+      task.data[11] = 4; task.data[12] = 4; task.data[13] = 0;
+      task.data[15] = yOffset + 32;
+      break;
+  }
+  if (task.data[14] < 0) task.data[14] = 0;
+
+  const rank = _exBgRank(target);
+  task.data[10] = _exBattleBgX(rank);
+  const dmaDest = _exRegBase + (rank === 1 ? _exRegBg1H : _exRegBg2H);
+
+  for (let i = task.data[14]; i <= task.data[14] + 64; i++) {
+    _exBufs[0][i] = task.data[10];
+    _exBufs[1][i] = task.data[10];
+  }
+
+  _exSetParams({ dmaDest, dmaControl: _exDma16, initState: 1, unused9: 0 });
+  task.func = _ExtrasensoryDistortion_Step;
+}
+
+/** 1:1 `AnimTask_ExtrasensoryDistortion_Step` (psychic.c:1013). */
+function _ExtrasensoryDistortion_Step(task: _ExTask): void {
+  switch (task.data[0]) {
+    case 0: {
+      let sineIndex = task.data[13];
+      let i = task.data[14];
+      while (i <= task.data[15]) {
+        // gSineTable[320] (overflow C) lit gSineDegreeTable[0]=0 en ROM → ?? 0 1:1.
+        let var2 = (_exSine[sineIndex] ?? 0) >> task.data[12];
+        if (var2 > 0) var2 += (task.data[1] & 3);
+        else if (var2 < 0) var2 -= (task.data[1] & 3);
+        _exBufs[0][i] = task.data[10] + var2;
+        _exBufs[1][i] = task.data[10] + var2;
+        sineIndex += task.data[11];
+        i++;
+      }
+      if (++task.data[1] > 23) task.data[0]++;
+      break;
+    }
+    case 1:
+      _exScan.state = 3;
+      task.data[0]++;
+      break;
+    case 2:
+      _exItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+/** 1:1 `AnimTask_TransparentCloneGrowAndShrink` (psychic.c:1051). arg0 = battler. */
+function AnimTask_TransparentCloneGrowAndShrink(task: _ExTask): void {
+  const itf = _exItf();
+  const args = itf.getArgs?.() ?? [0];
+  const matrixNum = _exAllocMat();
+  if (matrixNum < 0 || matrixNum === 0xFF) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  const spriteId = _exClone(args[0]);
+  if (spriteId < 0) {
+    _exFreeMat(matrixNum);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { callback: unknown; affineAnimPaused?: boolean; subpriority?: number; matrixNum?: number; affineMode?: number; oamIndex: number; centerToCornerVecX?: number; centerToCornerVecY?: number }>;
+    gba?: { oam: Array<{ affineMode: number; matrixNum: number; shape: number; size: number }> };
+  } | undefined;
+  const clone = rt?.gSprites?.get(spriteId);
+  if (clone) {
+    clone.callback = (() => { /* SpriteCallbackDummy */ }) as unknown;
+    clone.affineMode = 3;            // ST_OAM_AFFINE_DOUBLE
+    clone.matrixNum = matrixNum;
+    clone.affineAnimPaused = true;
+    clone.subpriority = (clone.subpriority ?? 0) + 1;
+    const oam = rt?.gba?.oam[clone.oamIndex];
+    if (oam) { oam.affineMode = 3; oam.matrixNum = matrixNum; }
+    _exSetRotScale(spriteId, 256, 256, 0);
+    const v = _exC2C(oam?.shape ?? 0, oam?.size ?? 3, 3);
+    clone.centerToCornerVecX = v.centerToCornerVecX;
+    clone.centerToCornerVecY = v.centerToCornerVecY;
+  }
+  task.data[13] = _exSpriteIdOf(args[0]);
+  task.data[14] = matrixNum;
+  task.data[15] = spriteId;
+  task.func = _TransparentCloneGrowAndShrink_Step;
+}
+
+/** 1:1 `AnimTask_TransparentCloneGrowAndShrink_Step` (psychic.c:1086). */
+function _TransparentCloneGrowAndShrink_Step(task: _ExTask): void {
+  switch (task.data[0]) {
+    case 0:
+      task.data[1] += 4;
+      task.data[2] = 256 - ((_exSine[task.data[1]] ?? 0) >> 1);
+      _exSetRotScale(task.data[15], task.data[2], task.data[2], 0);
+      _exYFromOther(task.data[15], task.data[13]);
+      if (task.data[1] === 48) task.data[0]++;
+      break;
+    case 1:
+      task.data[1] -= 4;
+      task.data[2] = 256 - ((_exSine[task.data[1]] ?? 0) >> 1);
+      _exSetRotScale(task.data[15], task.data[2], task.data[2], 0);
+      _exYFromOther(task.data[15], task.data[13]);
+      if (task.data[1] === 0) task.data[0]++;
+      break;
+    case 2:
+      _exDestroySheet(task.data[15]);
+      task.data[0]++;
+      break;
+    case 3:
+      _exFreeMat(task.data[14]);
+      _exItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+_tpRegT({
+  AnimTask_ExtrasensoryDistortion: AnimTask_ExtrasensoryDistortion as never,
+  AnimTask_TransparentCloneGrowAndShrink: AnimTask_TransparentCloneGrowAndShrink as never,
+});

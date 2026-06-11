@@ -1742,3 +1742,110 @@ _regTasks({
   AnimTask_StretchAttackerUp: AnimTask_StretchAttackerUp as never,
   AnimTask_UproarDistortion: AnimTask_UproarDistortion as never,
 });
+
+// ─── VAGUE F34-SCANLINE : Sketch (effects_2.c:2392-2478) ────────────────────
+// AnimTask_SketchDrawMon : le mon cible est « dessiné » ligne par ligne — les
+// scanlines de sa zone partent à +240 (vides) puis sont restaurées une à une
+// en zigzag (pattern crayon) du bas vers le haut.
+import {
+  ScanlineEffect_SetParams as _skSetParams,
+  gScanlineEffectRegBuffers as _skBufs,
+  gScanlineEffect as _skScan,
+  SCANLINE_EFFECT_DMACNT_16BIT as _skDma16,
+  SCANLINE_EFFECT_REG_BG1HOFS as _skRegBg1H,
+  SCANLINE_EFFECT_REG_BG2HOFS as _skRegBg2H,
+  REG_OFFSET_BG0HOFS as _skRegBase,
+} from './scanline_effect';
+import { GetBattlerSpriteBGPriorityRank as _skBgRank, GetBattlerElevation as _skElev } from './battle_anim_mons';
+import { gBattlerPartyIndexes as _skPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _skEnemyParty, gPlayerParty as _skPlayerParty, GetMonData as _skGetMon, MON_DATA_SPECIES as _skSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _skRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _skFrontCoords, getMonBackPicCoords as _skBackCoords } from './data/mon_pic_coords';
+
+type _SkTask = { taskId: number; data: number[]; func?: unknown };
+function _skItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 `GetBattlerYCoordWithElevation` (mons.c:342), transcrit local (pattern repo). */
+function _skYCoordWithElevation(battler: number): number {
+  let y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
+  if ((battler & 1) !== 0 /* side != B_SIDE_PLAYER */) {
+    const species = _skGetMon(_skEnemyParty[_skPartyIdx[battler]] as never, _skSpeciesK) as number;
+    y -= _skElev(battler, species);
+  }
+  return y;
+}
+/** 1:1 `GetBattlerSpriteCoordAttr(b, HEIGHT)` (mons.c:2151) — hauteur du pic
+ *  espèce (même dette douce transformSpecies que effects_1b). */
+function _skPicHeight(battler: number): number {
+  const party = (battler & 1) !== 0 ? _skEnemyParty : _skPlayerParty;
+  const species = _skGetMon(party[_skPartyIdx[battler]] as never, _skSpeciesK) as number;
+  const name = _skRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _skBackCoords(name) : _skFrontCoords(name);
+  return coords.h;
+}
+
+/** 1:1 `AnimTask_SketchDrawMon` (effects_2.c:2392). */
+function AnimTask_SketchDrawMon(task: _SkTask): void {
+  const target = _skItf().getTarget?.() ?? 1;
+  task.data[0] = _skYCoordWithElevation(target) + 32;
+  task.data[1] = 4;
+  task.data[2] = 0;
+  task.data[3] = 0;
+  task.data[4] = 0;
+  task.data[5] = 0;
+  task.data[15] = _skPicHeight(target);
+
+  const rank = _skBgRank(target);
+  const g = globalThis as Record<string, unknown>;
+  let dmaDest: number;
+  if (rank === 1) {
+    task.data[6] = (g.gBattle_BG1_X as number) | 0;
+    dmaDest = _skRegBase + _skRegBg1H;
+  } else {
+    task.data[6] = (g.gBattle_BG2_X as number) | 0;
+    dmaDest = _skRegBase + _skRegBg2H;
+  }
+
+  for (let i = task.data[0] - 0x40; i <= task.data[0]; i++) {
+    if (i >= 0) {
+      _skBufs[0][i] = task.data[6] + 0xF0;
+      _skBufs[1][i] = task.data[6] + 0xF0;
+    }
+  }
+
+  _skSetParams({ dmaDest, dmaControl: _skDma16, initState: 1, unused9: 0 });
+  task.func = _SketchDrawMon_Step;
+}
+
+/** 1:1 `AnimTask_SketchDrawMon_Step` (effects_2.c:2433). */
+function _SketchDrawMon_Step(task: _SkTask): void {
+  switch (task.data[4]) {
+    case 0:
+      if (++task.data[5] > 20) task.data[4]++;
+      break;
+    case 1:
+      if (++task.data[1] > 3) {
+        task.data[1] = 0;
+        task.data[2] = task.data[3] & 3;
+        task.data[5] = task.data[0] - task.data[3];
+        switch (task.data[2]) {
+          case 0: break;
+          case 1: task.data[5] -= 2; break;
+          case 2: task.data[5] += 1; break;
+          case 3: task.data[5] += 1; break;
+        }
+        if (task.data[5] >= 0) {
+          _skBufs[0][task.data[5]] = task.data[6];
+          _skBufs[1][task.data[5]] = task.data[6];
+        }
+        if (++task.data[3] >= task.data[15]) {
+          _skScan.state = 3;
+          _skItf().DestroyAnimVisualTask?.(task.taskId);
+        }
+      }
+      break;
+  }
+}
+
+_regTasks({ AnimTask_SketchDrawMon: AnimTask_SketchDrawMon as never });
