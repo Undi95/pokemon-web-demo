@@ -2585,7 +2585,102 @@ function _mkDeformTask(tableName: string): (task: { taskId: number; data: number
     }
   };
 }
+/** 1:1 `AnimTask_SlackOffSquish` (effects_3.c:5514) : table affine + micro
+ *  tremblement x2 ±1 sur les frames 17-39. */
+function AnimTask_SlackOffSquish(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = 0;
+  task.data[15] = sid;
+  _dcPrep(task as never, sid, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gSlackOffSquishAffineAnimCmds']);
+  task.func = _SlackOff_Step;
+}
+function _SlackOff_Step(task: { taskId: number; data: number[] }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0]++;
+  if (task.data[0] > 16 && task.data[0] < 40) {
+    if (++task.data[1] > 2) {
+      task.data[1] = 0;
+      task.data[2]++;
+      sp.x2 = (task.data[2] & 1) ? 1 : -1;
+    }
+  } else {
+    sp.x2 = 0;
+  }
+  if (!_dcRun(task as never)) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_FlailMovement` (effects_3.c:2845 — Fléau) : oscillation
+ *  rotation ±data[14] décroissante (0x800→16) + x2 dérivé. */
+function AnimTask_FlailMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = 0; task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
+  task.data[12] = 0x20;
+  task.data[13] = 0x40;
+  task.data[14] = 0x800;
+  task.data[15] = sid;
+  _psPrep(sid, 0);
+  task.func = _Flail_Step;
+}
+function _Flail_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[0]) {
+    case 0:
+      task.data[2] += 0x200;
+      if (task.data[2] >= task.data[14]) {
+        const diff = task.data[14] - task.data[2];
+        const div = Math.trunc(diff / (task.data[14] * 2));
+        const mod = diff % (task.data[14] * 2);
+        if ((div & 1) === 0) { task.data[2] = task.data[14] - mod; task.data[0] = 1; }
+        else task.data[2] = mod - task.data[14];
+      }
+      break;
+    case 1:
+      task.data[2] -= 0x200;
+      if (task.data[2] <= -task.data[14]) {
+        const diff = task.data[14] - task.data[2];
+        const div = Math.trunc(diff / (task.data[14] * 2));
+        const mod = diff % (task.data[14] * 2);
+        if ((div & 1) === 0) { task.data[2] = mod - task.data[14]; task.data[0] = 0; }
+        else task.data[2] = task.data[14] - mod;
+      }
+      break;
+    case 2:
+      _psReset(task.data[15]);
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      return;
+  }
+  _psSet(task.data[15], 0x100, 0x100, task.data[2] & 0xFFFF);
+  _psYOff(task.data[15]);
+  const t = task.data[2];
+  sp.x2 = -((t >= 0 ? t : t + 63) >> 6);
+  if (++task.data[1] > 8) {
+    if (task.data[12]) {
+      task.data[12]--;
+      task.data[14] -= task.data[13];
+      if (task.data[14] < 16) task.data[14] = 16;
+    } else {
+      task.data[0] = 2;
+    }
+  }
+}
 _e3RegTasks({
+  AnimTask_SlackOffSquish: AnimTask_SlackOffSquish as never,
+  AnimTask_FlailMovement: AnimTask_FlailMovement as never,
   AnimTask_StockpileDeformMon: _mkDeformTask('gStockpileDeformMonAffineAnimCmds') as never,
   AnimTask_SpitUpDeformMon: _mkDeformTask('gSpitUpDeformMonAffineAnimCmds') as never,
   AnimTask_SwallowDeformMon: _mkDeformTask('gSwallowDeformMonAffineAnimCmds') as never,
