@@ -653,7 +653,18 @@ export function RunAffineAnimFromTaskData(task: _TaskLike): boolean {
   if (idx >= frames.length) {
     const term = table.terminator ?? 'END';
     if (term.startsWith('JUMP')) { task.data[7] = parseInt(term.slice(5), 10) || 0; return true; }
-    if (term.startsWith('LOOP')) { task.data[7] = 0; return true; } // net : reboucle
+    if (term.startsWith('LOOP')) {
+      // LOOP:n 1:1 : reboucler n fois (data[9] = compteur) puis END.
+      const n = parseInt(term.slice(5), 10) || 0;
+      if (n > 0) {
+        if (task.data[9] === 0) task.data[9] = n;
+        if (--task.data[9] > 0) { task.data[7] = 0; return true; }
+        // compte epuise -> tomber au END ci-dessous
+      } else {
+        task.data[7] = 0;
+        return true;
+      }
+    }
     const rt = getRuntime();
     const sprite = rt?.gSprites?.get(task.data[15]) as { y2: number } | undefined;
     if (sprite) sprite.y2 = 0;

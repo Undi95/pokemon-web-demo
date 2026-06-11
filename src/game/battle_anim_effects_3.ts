@@ -2569,7 +2569,26 @@ function _TeeterDance_Step(task: { taskId: number; data: number[] }): void {
 }
 // gSineTable importee en tete de fichier (trig) — acces brut 1:1
 function _osSinTable(i: number): number { return gSineTable[i & 0xFF] ?? 0; }
+/** Factory 1:1 du pattern « deform affine attaquant » (Stockpile/SpitUp/
+ *  Swallow — effects_3.c, 3×1 hits) : Prepare puis Run jusqu'à la fin. */
+function _mkDeformTask(tableName: string): (task: { taskId: number; data: number[] }) => void {
+  return (task) => {
+    const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+    if (!task.data[0]) {
+      const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+      const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
+      if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+      _dcPrep(task as never, sid, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)[tableName]);
+      task.data[0]++;
+    } else {
+      if (!_dcRun(task as never)) itf.DestroyAnimVisualTask?.(task.taskId);
+    }
+  };
+}
 _e3RegTasks({
+  AnimTask_StockpileDeformMon: _mkDeformTask('gStockpileDeformMonAffineAnimCmds') as never,
+  AnimTask_SpitUpDeformMon: _mkDeformTask('gSpitUpDeformMonAffineAnimCmds') as never,
+  AnimTask_SwallowDeformMon: _mkDeformTask('gSwallowDeformMonAffineAnimCmds') as never,
   AnimTask_TeeterDanceMovement: AnimTask_TeeterDanceMovement as never,
   AnimTask_OdorSleuthMovement: AnimTask_OdorSleuthMovement as never,
   AnimTask_DefenseCurlDeformMon: AnimTask_DefenseCurlDeformMon as never,
