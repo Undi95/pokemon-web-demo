@@ -13,7 +13,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
-import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation } from './battle_anim_mons';
+import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT } from './battle_anim_mons';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -307,6 +307,84 @@ function _SporeParticle_Step(sprite: _PSprite): void {
   if (--sprite.data[0] === -1) _pItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimRazorLeafParticle`(+Step1/2) : la feuille monte (durée) puis
+ *  oscille Sin x25 en retombant lentement ; destroy à data[1]>80. */
+function AnimRazorLeafParticle(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, -4, 10];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2);
+  sprite.y = GetBattlerSpriteCoord(atk, 3);
+  sprite.invisible = false;
+  sprite.data[0] = args[0] | 0;
+  sprite.data[1] = args[1] | 0;
+  sprite.data[2] = args[2] | 0;
+  sprite.callback = _RazorLeaf_Step1;
+}
+function _RazorLeaf_Step1(sprite: _PSprite): void {
+  if (!sprite.data[2]) {
+    if (sprite.data[1] & 1) {
+      sprite.data[0] = 0x80;
+    } else {
+      sprite.data[0] = 0;
+    }
+    sprite.data[1] = 0;
+    sprite.data[2] = 0;
+    sprite.callback = _RazorLeaf_Step2;
+  } else {
+    sprite.data[2]--;
+    sprite.x += sprite.data[0];
+    sprite.y += sprite.data[1];
+  }
+}
+function _RazorLeaf_Step2(sprite: _PSprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if ((atk & 1) !== 0) sprite.x2 = -Sin(sprite.data[0] & 0xFF, 25);
+  else sprite.x2 = Sin(sprite.data[0] & 0xFF, 25);
+  sprite.data[0] = (sprite.data[0] + 2) & 0xFF;
+  sprite.data[1]++;
+  if (!(sprite.data[1] & 1)) sprite.y2++;
+  if (sprite.data[1] > 80) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimLeechSeed`(+Step+Sprouts) : la graine en arc, atterrit, attend 10f
+ *  invisible, GERME (anim 1) 60 frames, destroy. */
+function AnimLeechSeed(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 30, 30];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  let tx = args[2] | 0;
+  if ((atk & 1) !== 0) tx = -tx;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = (GetBattlerSpriteCoord(tgt, 0) + tx) & 0xFFFF;
+  sprite.data[4] = (GetBattlerSpriteCoord(tgt, 1) + (args[3] | 0)) & 0xFFFF;
+  sprite.data[5] = args[5] | 0;
+  InitAnimArcTranslation(sprite as never);
+  sprite.callback = _LeechSeed_Step;
+}
+function _LeechSeed_Step(sprite: _PSprite): void {
+  if (ArcT(sprite as never)) {
+    (sprite as { invisible?: boolean }).invisible = true;
+    sprite.data[0] = 10;
+    sprite.data[7] = 0;
+    sprite.callback = _LeechSeed_Wait;
+  }
+}
+function _LeechSeed_Wait(sprite: _PSprite): void {
+  if (--sprite.data[0] <= 0) _LeechSeedSprouts(sprite);
+}
+function _LeechSeedSprouts(sprite: _PSprite): void {
+  (sprite as { invisible?: boolean }).invisible = false;
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
+  sprite.data[0] = 60;
+  sprite.callback = _LeechSeed_FinalWait;
+}
+function _LeechSeed_FinalWait(sprite: _PSprite): void {
+  if (--sprite.data[0] <= 0) _pItf().DestroyAnimSprite?.(sprite);
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
@@ -316,4 +394,6 @@ registerAnimCallbacks({
   AnimSolarBeamBigOrb: AnimSolarBeamBigOrb as never,
   AnimSolarBeamSmallOrb: AnimSolarBeamSmallOrb as never,
   AnimSporeParticle: AnimSporeParticle as never,
+  AnimRazorLeafParticle: AnimRazorLeafParticle as never,
+  AnimLeechSeed: AnimLeechSeed as never,
 });
