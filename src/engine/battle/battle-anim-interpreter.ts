@@ -676,10 +676,11 @@ export function MoveBattlerSpriteToBG(battler: number, toBG_2: boolean, setSprit
     }
   }
   // palette OBJ du battler -> palette BG slot (LoadPalette 1:1)
-  const pf = (rt as unknown as { gPlttBufferFaded?: { [i: number]: number } }).gPlttBufferFaded;
-  if (pf) {
-    // PaletteBuffer custom (pas un TypedArray) -> copie indexee
-    for (let k = 0; k < 16; k++) pf[paletteId * 16 + k] = pf[256 + battler * 16 + k];
+  const pf = (rt as unknown as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } }).gPlttBufferFaded;
+  if (pf?.get && pf.set) {
+    // PaletteBuffer custom : API get/set (la copie indexee etait un NO-OP —
+    // la copie BG du mon s affichait avec une palette BG quelconque).
+    for (let k = 0; k < 16; k++) pf.set(paletteId * 16 + k, pf.get(256 + battler * 16 + k));
   }
   // scroll : superposer la copie sur le sprite (gBattle_BGn via accesseurs)
   const g = globalThis as Record<string, unknown>;
