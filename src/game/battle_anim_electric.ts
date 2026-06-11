@@ -583,4 +583,95 @@ function _ElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): voi
   }
 }
 import { registerAnimTasks as _ebRegT } from '../engine/battle/battle-anim-registry';
-_ebRegT({ AnimTask_ElectricBolt: AnimTask_ElectricBolt as never });
+/** 1:1 `AnimTask_VoltTackleBolt` (electric.c, 5 hits) : éclairs en chaîne
+ *  entre l attaquant et la cible (sprites gVoltTackleBolt via bridge tag). */
+function AnimTask_VoltTackleBolt(task: { taskId: number; data: number[]; func?: unknown }): void {
+  task.data[0] = 0;
+  task.func = _VoltTackleBolt_Step;
+  _VoltTackleBolt_Step(task);
+}
+function _VoltTackleBolt_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _ebItf() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  switch (task.data[0]) {
+    case 0: {
+      const atk = itf.getAttacker?.() ?? 0;
+      task.data[1] = (atk & 1) === 0 ? 1 : -1;
+      switch (a[0]) {
+        case 0:
+          task.data[3] = GetBattlerSpriteCoord(atk, 2);
+          task.data[5] = GetBattlerSpriteCoord(atk, 3);
+          task.data[4] = task.data[1] * 128 + 120;
+          break;
+        case 4: {
+          const tgt = itf.getTarget?.() ?? 1;
+          task.data[3] = 120 - task.data[1] * 128;
+          task.data[5] = GetBattlerSpriteCoord(tgt, 3);
+          task.data[4] = GetBattlerSpriteCoord(tgt, 2) - task.data[1] * 32;
+          break;
+        }
+        default:
+          if ((a[0] & 1) !== 0) { task.data[3] = 256; task.data[4] = -16; }
+          else { task.data[3] = -16; task.data[4] = 256; }
+          if (task.data[1] === 1) {
+            task.data[5] = 80 - a[0] * 10;
+          } else {
+            task.data[5] = a[0] * 10 + 40;
+            const t = task.data[3];
+            task.data[3] = task.data[4];
+            task.data[4] = t;
+          }
+      }
+      if (task.data[3] < task.data[4]) { task.data[1] = 1; task.data[6] = 0; }
+      else { task.data[1] = -1; task.data[6] = 3; }
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (++task.data[2] > 0) {
+        task.data[2] = 0;
+        if (_CreateVoltBolt(task) || _CreateVoltBolt(task)) task.data[0]++;
+      }
+      break;
+    case 2:
+      if (task.data[7] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+function _CreateVoltBolt(task: { taskId: number; data: number[] }): boolean {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const tileStart = dg?.GetSpriteTileStartByTag?.(10011) ?? 0xFFFF; // ANIM_TAG_LIGHTNING? net : si absent, bolt invisible doux
+  const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, task.data[3], task.data[5], 35) ?? -1;
+  if (sid >= 0) {
+    const sp = rt?.gSprites?.get(sid);
+    const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
+    if (sp) {
+      sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+      sp.data[6] = task.taskId;
+      sp.data[7] = 7;
+      sp.callback = _AnimVoltBolt;
+      task.data[7]++;
+    }
+  }
+  task.data[6] += task.data[1];
+  if (task.data[6] < 0) task.data[6] = 3;
+  if (task.data[6] > 3) task.data[6] = 0;
+  task.data[3] += task.data[1] * 16;
+  return (task.data[1] === 1 && task.data[3] >= task.data[4])
+    || (task.data[1] === -1 && task.data[3] <= task.data[4]);
+}
+function _AnimVoltBolt(sprite: { data: number[] }): void {
+  if (++sprite.data[0] > 12) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_ebRegT({
+  AnimTask_ElectricBolt: AnimTask_ElectricBolt as never,
+  AnimTask_VoltTackleBolt: AnimTask_VoltTackleBolt as never,
+});
