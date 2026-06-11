@@ -331,7 +331,55 @@ function _WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): vo
     rt?.DestroyTask?.(task.taskId);
   }
 }
+/** 1:1 `AnimTask_SetCamouflageBlend` (utility:109, 2 hits) : la couleur du
+ *  TERRAIN (gBattleEnvironment) injectée en args[4] puis blend standard. */
+const _camouflageColors: Record<number, number> = {
+  0: 12 | (24 << 5) | (2 << 10),   // GRASS
+  1: 0 | (15 << 5) | (2 << 10),    // LONG_GRASS
+  2: 30 | (24 << 5) | (11 << 10),  // SAND
+  3: 0 | (0 << 5) | (18 << 10),    // UNDERWATER
+  4: 11 | (22 << 5) | (31 << 10),  // WATER
+  5: 11 | (22 << 5) | (31 << 10),  // POND (1:1 même RGB que WATER)
+  6: 22 | (16 << 5) | (10 << 10),  // MOUNTAIN
+  7: 14 | (9 << 5) | (3 << 10),    // CAVE
+  8: 0x7FFF,                        // BUILDING
+  9: 0x7FFF,                        // PLAIN
+};
+function AnimTask_SetCamouflageBlend(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [];
+  const env = ((globalThis as Record<string, unknown>).__battleState as { gBattleEnvironment?: number } | undefined)?.gBattleEnvironment
+    ?? ((globalThis as Record<string, unknown>).__forceBattleEnvironment as number | undefined) ?? 0;
+  args[4] = _camouflageColors[env] ?? 0x7FFF;
+  const selected = UnpackSelectedBattlePalettes(args[0] | 0) >>> 0;
+  _StartBlendAnimSpriteColor(task, selected);
+}
+/** 1:1 `AnimTask_BlendParticle` (utility:149, 4 hits) : blend la palette OBJ
+ *  du TAG donné (args[0] = ANIM_TAG). */
+function AnimTask_BlendParticle(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [];
+  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const palIdx = sp?.IndexOfSpritePaletteTag?.(args[0] | 0) ?? 0xFF;
+  if (palIdx === 0xFF) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  // ATTENTION layout : BlendParticle utilise args[1..4]=(delay,start,target,
+  // color) MAIS _StartBlendAnimSpriteColor lit args[1..4] pareil ✓ 1:1.
+  _StartBlendAnimSpriteColor(task, (1 << (palIdx + 16)) >>> 0);
+}
+/** 1:1 `AnimTask_HardwarePaletteFade` (utility:199, 4 hits) : délégué au
+ *  helper HW-fade de l interpreter (déjà 1:1 pour Task_FadeToBg). */
+function AnimTask_HardwarePaletteFade(task: AnimTask): void {
+  const itf = _itf() as { beginHardwarePaletteFade?: (b: number, d: number, y: number, t: number, r: number) => void; paletteFadeActive?: () => boolean; DestroyAnimVisualTask?: (id: number) => void };
+  const a = _itf().getArgs?.() ?? [];
+  itf.beginHardwarePaletteFade?.(a[0], a[1], a[2], a[3], a[4]);
+  task.func = _HWFade_Step;
+}
+function _HWFade_Step(task: AnimTask): void {
+  const itf = _itf() as { paletteFadeActive?: () => boolean; DestroyAnimVisualTask?: (id: number) => void };
+  if (!itf.paletteFadeActive?.()) itf.DestroyAnimVisualTask?.(task.taskId);
+}
 _ufRegTasks({
+  AnimTask_SetCamouflageBlend: AnimTask_SetCamouflageBlend as never,
+  AnimTask_BlendParticle: AnimTask_BlendParticle as never,
+  AnimTask_HardwarePaletteFade: AnimTask_HardwarePaletteFade as never,
   AnimTask_SetAttackerInvisibleWaitForSignal: AnimTask_SetAttackerInvisibleWaitForSignal as never,
   AnimTask_GetTargetSide: AnimTask_GetTargetSide as never,
   AnimTask_GetTargetIsAttackerPartner: AnimTask_GetTargetIsAttackerPartner as never,

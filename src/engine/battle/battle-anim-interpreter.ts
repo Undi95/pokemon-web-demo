@@ -2209,6 +2209,8 @@ export function tickAnimScript(): void {
   getDebugState: () => ({ pc: _pc, visualTaskCount: gAnimVisualTaskCount, active: gAnimScriptActive, cbName: (gAnimScriptCallback as { name?: string } | null)?.name ?? null }),
   getArgs: () => gBattleAnimArgs,
   getDisableStruct: () => gAnimDisableStructPtr,
+  beginHardwarePaletteFade: (b: number, d: number, y: number, t: number, r: number) => _beginHardwarePaletteFade(b, d, y, t, r),
+  paletteFadeActive: () => _paletteFadeActive(),
   // pattern « task de fond » 1:1 (SetPsychicBackground/FadeScreenToWhite… :
   // gAnimVisualTaskCount-- a l'init — la task ne bloque pas waitforvisualfinish)
   decVisualTaskCount: () => { if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--; },
