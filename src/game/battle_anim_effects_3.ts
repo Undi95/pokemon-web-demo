@@ -3160,3 +3160,36 @@ registerAnimTasks({
   AnimTask_IsHealingMove: AnimTask_IsHealingMove as never,
   AnimTask_GetReturnPowerLevel: AnimTask_GetReturnPowerLevel as never,
 });
+
+// ─── VAGUE F39b : AnimTask_FadeScreenToWhite (effects_3.c:1398) ─────────────
+// Nom trompeur : ROTATION des couleurs 1..11 de la palette BG terrain toutes
+// les 4f (le fond « psychédélique » de Solar Beam) jusqu'au signal
+// args[7]=0xFFFF. Pattern « task de fond » (decVisualTaskCount à l'init).
+function AnimTask_FadeScreenToWhite(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _vItf() as { decVisualTaskCount?: () => void };
+  itf.decVisualTaskCount?.();   // 1:1 gAnimVisualTaskCount--
+  task.func = _FadeScreenToWhite_Step;
+}
+function _FadeScreenToWhite_Step(task: { taskId: number; data: number[] }): void {
+  const rt = _grt() as unknown as {
+    gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+    DestroyTask?: (id: number) => void;
+  };
+  if (++task.data[5] === 4) {
+    // GetBattleBgPaletteNum = 2 en single (la palette du terrain — LoadMoveBg slot 2).
+    const base = 2 * 16;
+    const pf = rt.gPlttBufferFaded;
+    if (pf?.get && pf.set) {
+      // rotation 1..11 (Unfaded aliase Faded chez nous → une rotation 1:1-net).
+      const lastColor = pf.get(base + 11);
+      for (let i = 10; i > 0; i--) pf.set(base + i + 1, pf.get(base + i));
+      pf.set(base + 1, lastColor);
+    }
+    task.data[5] = 0;
+  }
+  const args = (_vItf() as { getArgs?: () => number[] }).getArgs?.();
+  if (args && (args[7] & 0xFFFF) === 0xFFFF) {
+    rt.DestroyTask?.(task.taskId);  // 1:1 DestroyTask (compteur déjà décrémenté)
+  }
+}
+registerAnimTasks({ AnimTask_FadeScreenToWhite: AnimTask_FadeScreenToWhite as never });
