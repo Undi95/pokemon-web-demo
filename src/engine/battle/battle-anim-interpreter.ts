@@ -886,6 +886,20 @@ function Cmd_createsprite(): void {
         if (sp) {
           sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
           sp.spriteId = spriteId;
+          // 1:1 battle_anim.c:406-410 : CreateSpriteAndAnimate positionne TOUT
+          // sprite a (TARGET.X_2, TARGET.Y_PIC_OFFSET) — le flag IS_TARGET ne
+          // sert QUE la subpriorite. Les callbacks font ensuite des OFFSETS
+          // relatifs (+=). (Fix ciblage crocs/projectiles, 2026-06-11.)
+          {
+            const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+            const rtg = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x?: number; y?: number; x2?: number; y2?: number }> } | undefined;
+            const tgtId = co?.getBattlerMonSpriteId?.(gBattleAnimTarget);
+            const tgtSp = tgtId !== undefined && tgtId >= 0 ? rtg?.gSprites?.get(tgtId) : undefined;
+            if (tgtSp) {
+              (sp as { x: number; y: number }).x = (tgtSp.x ?? 120) + (tgtSp.x2 ?? 0);
+              (sp as { x: number; y: number }).y = (tgtSp.y ?? 80) + (tgtSp.y2 ?? 0);
+            }
+          }
           _scriptSpriteIds.push({ id: spriteId, ref: sp as unknown });
           (sp as { callback: unknown }).callback = tpl.callback;
           if (tpl.tileTag === 0) sp.invisible = true;  // sprite controleur 1:1

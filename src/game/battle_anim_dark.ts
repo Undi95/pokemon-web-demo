@@ -54,12 +54,10 @@ function _monSprite(battler: number): AnimSprite | undefined {
  *  4 = bas (net vFlip), aller halfDuration frames puis retour, destroy. */
 function AnimBite(sprite: AnimSprite): void {
   const args = _itf().getArgs?.() ?? [0, -32, 0, 0, 819, 10];
-  const tgt = _itf().getTarget?.() ?? 1;
-  const mon = _monSprite(tgt);
-  if (mon) {
-    sprite.x = mon.x + (mon.x2 ?? 0) + args[0];
-    sprite.y = mon.y + (mon.y2 ?? 0) + args[1];
-  }
+  // 1:1 AnimBite : sprite->x += cmd->x (OFFSET — la base TARGET est posee
+  // par Cmd_createsprite, battle_anim.c:406).
+  sprite.x += args[0];
+  sprite.y += args[1];
   sprite.invisible = false;
   // 1:1 : StartSpriteAffineAnim(args[2]) sur gAffineAnims_Bite (la table est
   // posee par Cmd_createsprite) — les 8 rotations exactes de la machoire.
