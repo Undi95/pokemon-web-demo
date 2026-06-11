@@ -101,13 +101,42 @@ Les 148 dégradés restants par catégorie (un move peut cumuler) :
 BG ANIM complet + task-affine + monbg + vérificateur permanent
 = **40 % → 58 % de fidélité mesurée**, ~70 commits tsc 0.
 
+## VAGUE F34 — LE CHANTIER SCANLINE EFFECT ENTIER (2026-06-12, commit 604e2ccb)
+Le chantier plateforme n°2 du constat ci-dessous est FAIT en entier :
+- **Plateforme** : `scanline_effect.ts` était déjà complet (HBlank émulé par le
+  compositor per-scanline) — ajout du mode **DMACNT_32BIT** 1:1 (paire
+  HOFS+VOFS entrelacée `[y*2]/[y*2+1]`, requise par AcidArmor).
+- **13 AnimTasks** : ExtrasensoryDistortion + TransparentCloneGrowAndShrink
+  (psychic) ; Dig ×6 + SetDigScanlineEffect (ground) ; AcidArmor (effects_3) ;
+  SketchDrawMon (effects_2) ; SeismicToss ×3 + UpdateAnimBg3ScreenSize (rock,
+  + getter `getAnimMoveDmg` sur la surface interpreter).
+- **FIX 1:1 BONUS (démasqué par l'A/B visuel)** : `Cmd_clearmonbg_static`
+  était un STUB → la copie monbg_static du Dig restait affichée à (40,0)
+  après le clear (« tête d'Arcko » flottante). Porté Task_ClearMonBgStatic
+  1:1 net (re-montre le sprite + ResetBattleAnimBg). Validé aux sondes
+  (bg2 visible=false, tilemap=0, scroll=0 post-anim).
+- **A/B** : 91 Dig / 151 AcidArmor / 326 Extrasensory = 0 defect ;
+  69 SeismicToss ok=true (seul defect `sheet:10058` = dette VRAM, voir
+  ci-dessous) ; 166 Sketch ok=true 722f = durée ROM-réaliste (la task
+  restaure 1 scanline / 4f sur la hauteur du pic ; Wailord h=64 → long).
+  Visuel Dig live : découpe scanline pendant la plongée, fin two-turn 1:1
+  (le mon RESTE sous terre après DigSetUp — c'est le script).
+- **RACINE VRAM décortiquée (dette C0, hors scanline)** : `sheet:10058`
+  (ANIM_TAG_ROCKS, 96 tiles contiguës) échoue MÊME à VRAM fraîche : au moment
+  de l'alloc, `_markLiveSpriteTiles` re-marque les pics mons (~0-256) + le
+  bloc fixe 320-917 → plus AUCUN trou ≥96 ; le bitmap « libre » mesuré
+  hors-anim (240 tiles à l'idx 80) est un mirage post-cleanup. Le vrai fix =
+  la migration des 7 targetTileBase fixes vers l'alloc dynamique (dette C0
+  du goal, déjà tracée). Les ~29 sheets « fragmentation-série » du sweep
+  global relèvent en partie de CETTE racine (gros blocs), à re-mesurer.
+
 ## Constat structurel (fin de session, post-F33)
 Le backlog des tasks restantes est désormais dominé par 4 CHANTIERS PLATEFORME
 (plus de la traîne 1-hit) :
 1. **OBJ-window** (compositor) : MetallicShine ×12, spotlights ×4, Curse mask —
    ordre user « pas de compromis », pas de version dégradée.
-2. **Scanline effect** : ExtrasensoryDistortion ×3, Dig ×4, Sketch, AcidArmor,
-   SeismicToss BG accel — le système gScanlineEffect (per-scanline HOFS/VOFS).
+2. ~~**Scanline effect**~~ ✅ **FAIT EN ENTIER (F34, commit 604e2ccb)** — voir
+   la section VAGUE F34 ci-dessus.
 3. **Mon-gfx-espèce** : RolePlaySilhouette, TransformMon, MonToSubstitute,
    SwapMonSpriteToFromSubstitute — charger le pic d'une autre espèce à la volée.
 4. **Multi-palettes asset** : LoadMusicNotesPals (HealBell) — palette 3-banks.
