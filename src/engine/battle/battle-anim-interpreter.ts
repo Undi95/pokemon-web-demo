@@ -929,7 +929,10 @@ function Cmd_createsprite(): void {
               affineAnimBeginning: boolean; affineAnimEnded: boolean; affineAnimNum: number;
             };
             spF.affineAnimsTableName = tpl.affineAnims;
-            spF.affineMode = 3; // ST_OAM_AFFINE_DOUBLE (gOamData_AffineNormal_* combat)
+            // 1:1 gOamData_AffineNormal_* (les templates anim combat) =
+            // ST_OAM_AFFINE_ON (1), PAS DOUBLE (3 = rendu 2x la box -> le
+            // hitsplat GEANT vu par le user 2026-06-11).
+            spF.affineMode = 1;
             spF.affineAnimNum = 0;
             spF.affineAnimBeginning = true;
             spF.affineAnimEnded = false;
