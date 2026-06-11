@@ -1170,14 +1170,30 @@ function Cmd_nop2(): void { _pc++; }
 /** 0x08 Cmd_end (battle_anim.c:476-528).
  *  Finalize anim : wait sprites/sounds, free sprite tiles/palettes, reset BGM,
  *  set gAnimScriptActive = FALSE. */
+let _endGuardFrames = 0;
 function Cmd_end(): void {
   // 1:1 décomp C:482-488 : block tant que tasks restantes.
   if (gAnimVisualTaskCount !== 0 || gAnimSoundTaskCount !== 0
    || sMonAnimTaskIdArray[0] !== TASK_NONE || sMonAnimTaskIdArray[1] !== TASK_NONE) {
-    sSoundAnimFramesToWait = 0;
-    sAnimFramesToWait = 1;
-    return;
+    // GARDE-FOU (2026-06-11) : Endeavor & co finissent par `end` SANS
+    // waitforvisualfinish — un compteur orphelin (splat wait-affine) bloquait
+    // a JAMAIS ici (le garde-fou n'existait que sur waitforvisualfinish).
+    if (++_endGuardFrames > 600) {
+      console.warn(`[battle-anim] Cmd_end > 600 frames (visual=${gAnimVisualTaskCount} sound=${gAnimSoundTaskCount}) — force (garde-fou).`);
+      _endGuardFrames = 0;
+      gAnimVisualTaskCount = 0;
+      gAnimSoundTaskCount = 0;
+      sMonAnimTaskIdArray[0] = TASK_NONE;
+      sMonAnimTaskIdArray[1] = TASK_NONE;
+      _purgeScriptSprites();
+      // tombe dans la suite du end (frees + inactive)
+    } else {
+      sSoundAnimFramesToWait = 0;
+      sAnimFramesToWait = 1;
+      return;
+    }
   }
+  _endGuardFrames = 0;
 
   // 1:1 décomp C:491-503 : wait pour SE finish, halt après 90 frames.
   if (IsSEPlaying()) {
