@@ -11,7 +11,8 @@ import {
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
-import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6 } from './battle_anim_mons';
+import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
+import { Cos } from './trig';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -174,8 +175,79 @@ function AnimPowerAbsorptionOrb(sprite: _PSprite): void {
   StartAnimLinearTranslation(sprite as never);
 }
 
+/** 1:1 `AnimTranslateLinearSingleSineWave` (effects_1.c, 2 tpl) : projectile
+ *  en arc-sinus simple, clignote/détruit en fin (Mud-Slap, Octazooka...). */
+function AnimTranslateLinearSingleSineWave(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 20, 16, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  let tx = args[2] | 0;
+  if ((atk & 1) !== 0) tx = -tx;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = (GetBattlerSpriteCoord(tgt, 2) + tx) & 0xFFFF;
+  sprite.data[4] = (GetBattlerSpriteCoord(tgt, 3) + (args[3] | 0)) & 0xFFFF;
+  sprite.data[5] = args[5] | 0;
+  InitAnimArcTranslation(sprite as never);
+  if ((atk & 1) === (tgt & 1)) sprite.data[0] = 1;
+  (sprite as { _affineParam?: number })._affineParam = 0;
+  sprite.callback = _TranslateLinearSingleSineWave_Step;
+}
+function _TranslateLinearSingleSineWave_Step(sprite: _PSprite): void {
+  let destroy = false;
+  const a = sprite.data[0];
+  const b = sprite.data[7];
+  sprite.data[0] = 1;
+  TranslateAnimHorizontalArc(sprite as never);
+  const r0 = sprite.data[7];
+  sprite.data[0] = a;
+  const spx = sprite as _PSprite & { _affineParam?: number; invisible?: boolean };
+  if (b > 200 && r0 < 56 && (spx._affineParam ?? 0) === 0) spx._affineParam = (spx._affineParam ?? 0) + 1;
+  if ((spx._affineParam ?? 0) && sprite.data[0]) {
+    spx.invisible = !spx.invisible;
+    spx._affineParam = (spx._affineParam ?? 0) + 1;
+    if (spx._affineParam === 30) destroy = true;
+  }
+  if (sprite.x + sprite.x2 > 240 + 16 || sprite.x + sprite.x2 < -16
+   || sprite.y + sprite.y2 > 160 || sprite.y + sprite.y2 < -16) destroy = true;
+  if (destroy) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimMoveTwisterParticle` (effects_1.c, 2 tpl) : la particule de
+ *  tornade (Cos X / Sin Y, montée, priorité alternée). */
+function AnimMoveTwisterParticle(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [40, 48, 4, 20, 10];
+  sprite.y += 32;
+  sprite.invisible = false;
+  sprite.data[0] = args[0] | 0;
+  sprite.data[1] = args[1] | 0;
+  sprite.data[2] = args[2] | 0;
+  sprite.data[3] = args[3] | 0;
+  sprite.data[4] = args[4] | 0;
+  sprite.data[5] = 0;
+  sprite.callback = _MoveTwisterParticle_Step;
+}
+function _MoveTwisterParticle_Step(sprite: _PSprite): void {
+  if (sprite.data[1] === 0xFF) {
+    sprite.y -= 2;
+  } else if (sprite.data[1] > 0) {
+    sprite.y -= 2;
+    sprite.data[1] -= 2;
+  }
+  sprite.data[5] += sprite.data[2];
+  if (sprite.data[0] < sprite.data[4]) sprite.data[5] += sprite.data[2];
+  sprite.data[5] &= 0xFF;
+  sprite.x2 = Cos(sprite.data[5], sprite.data[3]);
+  sprite.y2 = SinT(sprite.data[5], 5);
+  if (--sprite.data[0] === 0) _pItf().DestroyAnimSprite?.(sprite);
+}
+function SinT(i: number, a: number): number { return Sin(i & 0xFF, a); }
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
   AnimPowerAbsorptionOrb: AnimPowerAbsorptionOrb as never,
+  AnimTranslateLinearSingleSineWave: AnimTranslateLinearSingleSineWave as never,
+  AnimMoveTwisterParticle: AnimMoveTwisterParticle as never,
 });
