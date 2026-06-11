@@ -2083,6 +2083,9 @@ export function tickAnimScript(): void {
   // devtool vagues : l'état interne pour diagnostiquer un soft-lock d'anim.
   getDebugState: () => ({ pc: _pc, visualTaskCount: gAnimVisualTaskCount, active: gAnimScriptActive, cbName: (gAnimScriptCallback as { name?: string } | null)?.name ?? null }),
   getArgs: () => gBattleAnimArgs,
+  // pattern « task de fond » 1:1 (SetPsychicBackground/FadeScreenToWhite… :
+  // gAnimVisualTaskCount-- a l'init — la task ne bloque pas waitforvisualfinish)
+  decVisualTaskCount: () => { if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--; },
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
   DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,

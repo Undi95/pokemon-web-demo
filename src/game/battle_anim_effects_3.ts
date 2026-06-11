@@ -2408,7 +2408,34 @@ function _RockMonBF_Step(task: { taskId: number; data: number[] }): void {
       break;
   }
 }
+/** 1:1 `AnimTask_SetPsychicBackground` (effects_3.c:1372, 14 hits) : task de
+ *  FOND (gAnimVisualTaskCount-- à l'init — ne bloque pas les waits) qui fait
+ *  onduler la palette BG (rotation slots 1-11 toutes les 4 frames) jusqu'au
+ *  sentinel args[7]==0xFFFF (posé par UnsetPsychicBackground). Le VRAI fond
+ *  psy (fadetobg BG_PSYCHIC) = chantier BG — en attendant, l'ondulation
+ *  s'applique au décor existant (paletteIndex BG3=2 net). */
+function AnimTask_SetPsychicBackground(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { decVisualTaskCount?: () => void };
+  itf.decVisualTaskCount?.();
+  task.func = _PsychicBg_Step;
+}
+function _PsychicBg_Step(task: { taskId: number; data: number[] }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void }; DestroyTask?: (id: number) => void } | undefined;
+  const pf = rt?.gPlttBufferFaded;
+  if (++task.data[5] === 4) {
+    task.data[5] = 0;
+    if (pf?.get && pf.set) {
+      const base = 2 * 16; // GetBattleBgPaletteNum net : palette BG du terrain (slot 2)
+      const last = pf.get(base + 11);
+      for (let i = 10; i > 0; i--) pf.set(base + i + 1, pf.get(base + i));
+      pf.set(base + 1, last);
+    }
+  }
+  const args = (_e3ItfB() as { getArgs?: () => number[] }).getArgs?.() ?? [];
+  if ((args[7] & 0xFFFF) === 0xFFFF) rt?.DestroyTask?.(task.taskId);
+}
 _e3RegTasks({
+  AnimTask_SetPsychicBackground: AnimTask_SetPsychicBackground as never,
   AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never,
   AnimTask_RockMonBackAndForth: AnimTask_RockMonBackAndForth as never,
 });

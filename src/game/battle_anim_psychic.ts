@@ -486,3 +486,68 @@ function _DefensiveWall_Step5(sprite: _DwSprite): void {
   _dwItf().DestroyAnimSprite?.(sprite);
 }
 registerAnimCallbacks({ AnimDefensiveWall: AnimDefensiveWall as never });
+
+// ─── VAGUE F15 : Teleport + MeditateStretchAttacker (psychic.c) ─────────────
+import {
+  PrepareAffineAnimInTaskData as _tpPrep, RunAffineAnimFromTaskData as _tpRun,
+  ResetSpriteRotScale as _tpReset,
+} from './battle_anim_mons';
+import { BATTLE_ANIM_AFFINE_ANIMS as _tpTables } from '../engine/decomp-data/auto/src/battle-anim-sprites';
+import { registerAnimTasks as _tpRegT } from '../engine/battle/battle-anim-registry';
+type _TpTask = { taskId: number; data: number[]; func?: unknown };
+function _tpItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _tpSpriteId(b: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+/** 1:1 `AnimTask_Teleport` (1 hit) : spin affine 20f → monte 8px/f → invisible. */
+function AnimTask_Teleport(task: _TpTask): void {
+  const atk = _tpItf().getAttacker?.() ?? 0;
+  const spriteId = _tpSpriteId(atk);
+  if (spriteId === 0xFF) { _tpItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = (atk & 1) !== 0 ? 4 : 8;
+  _tpPrep(task, spriteId, (_tpTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnim_Teleport']);
+  task.func = _Teleport_Step;
+}
+function _Teleport_Step(task: _TpTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y2: number; invisible?: boolean }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[0]);
+  if (!sp) { _tpItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[1]) {
+    case 0:
+      _tpRun(task);
+      if (++task.data[2] > 19) task.data[1]++;
+      break;
+    case 1:
+      if (task.data[3] !== 0) {
+        sp.y2 -= 8;
+        task.data[3]--;
+      } else {
+        sp.invisible = true;
+        sp.x = 272;
+        _tpReset(task.data[0]);
+        _tpItf().DestroyAnimVisualTask?.(task.taskId);
+      }
+      break;
+  }
+}
+/** 1:1 `AnimTask_MeditateStretchAttacker` (1 hit) : table affine simple. */
+function AnimTask_MeditateStretchAttacker(task: _TpTask): void {
+  const spriteId = _tpSpriteId(_tpItf().getAttacker?.() ?? 0);
+  if (spriteId === 0xFF) { _tpItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  _tpPrep(task, spriteId, (_tpTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnim_MeditateStretchAttacker']);
+  task.func = _Meditate_Step;
+}
+function _Meditate_Step(task: _TpTask): void {
+  if (!_tpRun(task)) _tpItf().DestroyAnimVisualTask?.(task.taskId);
+}
+_tpRegT({
+  AnimTask_Teleport: AnimTask_Teleport as never,
+  AnimTask_MeditateStretchAttacker: AnimTask_MeditateStretchAttacker as never,
+});
