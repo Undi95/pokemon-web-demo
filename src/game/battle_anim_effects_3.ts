@@ -2455,7 +2455,70 @@ function AnimTask_DefenseCurlDeformMon(task: { taskId: number; data: number[] })
       break;
   }
 }
+/** 1:1 `AnimTask_OdorSleuthMovement` (effects_3.c, 1 hit) : 2 clones de la
+ *  cible oscillent en Cos (amplitude décroissante après 60f) en clignotant. */
+import { CloneBattlerSpriteWithBlend as _osClone, DestroySpriteWithActiveSheet as _osDestroy } from './battle_anim_mons';
+import { Cos as _osCos } from './trig';
+function AnimTask_OdorSleuthMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  const id1 = _osClone(1);
+  if (id1 < 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const id2 = _osClone(1);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; data: number[]; callback: unknown; invisible?: boolean; oamIndex: number }>; gba?: { oam: Array<{ objMode: number }> } } | undefined;
+  if (id2 < 0) {
+    const s1 = rt?.gSprites?.get(id1);
+    if (s1) _osDestroy(s1);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  const s1 = rt?.gSprites?.get(id1);
+  const s2 = rt?.gSprites?.get(id2);
+  if (!s1 || !s2) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  s2.x2 += 24; s1.x2 -= 24;
+  for (const [sp, d3, d4] of [[s2, 16, 0], [s1, -16, 128]] as Array<[typeof s1, number, number]>) {
+    sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+    sp.data[0] = 0; sp.data[1] = 0; sp.data[2] = 0;
+    sp.data[3] = d3; sp.data[4] = d4; sp.data[5] = 24;
+    sp.data[6] = task.taskId; sp.data[7] = 0;
+    const oam = rt?.gba?.oam[sp.oamIndex];
+    if (oam) oam.objMode = 0;
+    sp.callback = _MoveOdorSleuthClone;
+  }
+  s2.invisible = false;
+  s1.invisible = true;
+  task.data[0] = 2;
+  task.func = _OdorSleuthWait;
+}
+function _OdorSleuthWait(task: { taskId: number; data: number[] }): void {
+  if (task.data[0] === 0) (_e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId);
+}
+function _MoveOdorSleuthClone(sprite: { data: number[]; x2: number; invisible?: boolean }): void {
+  if (++sprite.data[1] > 1) {
+    sprite.data[1] = 0;
+    sprite.invisible = !sprite.invisible;
+  }
+  sprite.data[4] = (sprite.data[4] + sprite.data[3]) & 0xFF;
+  sprite.x2 = _osCos(sprite.data[4], sprite.data[5]);
+  switch (sprite.data[0]) {
+    case 0:
+      if (++sprite.data[2] === 60) { sprite.data[2] = 0; sprite.data[0]++; }
+      break;
+    case 1:
+      if (++sprite.data[2] > 0) {
+        sprite.data[2] = 0;
+        sprite.data[5] -= 2;
+        if (sprite.data[5] < 0) {
+          const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+          const t = rt?.gTasks?.get(sprite.data[6]);
+          if (t) t.data[sprite.data[7]]--;
+          _osDestroy(sprite);
+        }
+      }
+      break;
+  }
+}
 _e3RegTasks({
+  AnimTask_OdorSleuthMovement: AnimTask_OdorSleuthMovement as never,
   AnimTask_DefenseCurlDeformMon: AnimTask_DefenseCurlDeformMon as never,
   AnimTask_SetPsychicBackground: AnimTask_SetPsychicBackground as never,
   AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never,
