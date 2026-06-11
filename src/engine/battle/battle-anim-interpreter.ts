@@ -636,11 +636,65 @@ export function IsBattlerSpriteVisible(_battler: number): boolean {
  *  Move battler sprite vers BG1 ou BG2 pour permettre des affine BG anims
  *  pendant l'attack. Complexe : need DMA tile copy + palette relocate + BG offsets.
  *  Implementation déférée (= pas critique pour anim runner basique). */
-export function MoveBattlerSpriteToBG(_battler: number, _toBG_2: boolean, _setSpriteInvisible: boolean): void {
-  // Deferred port — `DrawBattlerOnBg` cascade depends on battle_interface.c which
-  // is partially ported. The interpreter runs without monbg manipulation but
-  // certain move anims (= those who morph the battler sprite via affine BG)
-  // may render incorrectly. Track via TODO.
+const _monbgActive = [false, false, false]; // index 1/2 = BG actifs par monbg
+export function MoveBattlerSpriteToBG(battler: number, toBG_2: boolean, setSpriteInvisible: boolean): void {
+  // 1:1 battle_anim.c:668 (single, non-contest) — LE systeme monbg REEL
+  // (chantier Phase 1b, 2026-06-11) : copie le SPRITE du mon en VRAM BG
+  // (64 tiles OBJ -> tiles BG + tilemap 8x8 + palette OBJ->BG slot 8/9),
+  // positionne le scroll BG pour superposer la copie, cache le sprite si
+  // demande. DrawBattlerOnBg (battle_intro.c:587) inline.
+  const rt = getRuntime();
+  if (!rt) return;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(battler);
+  if (sid === undefined || sid === 0xFF) return;
+  const sprite = rt.gSprites.get(sid);
+  if (!sprite) return;
+  const oam = (rt as unknown as { gba: { oam: Array<{ tileId: number }> } }).gba.oam[sprite.oamIndex];
+  const gba = (rt as unknown as { gba: { bg: (i: number) => { vram: Uint8Array; tilemap: Uint16Array; config: { charBaseIndex: number } }; objVram: Uint8Array } }).gba;
+  const bgId = toBG_2 ? 2 : 1;
+  const bg = gba.bg(bgId);
+  // CHARBASE D'ABORD (la racine des « dents de scie » 2026-06-11 : bg1 etait
+  // a charBase 0 au moment du write -> la view pointait LE CHARBLOCK DE LA
+  // TEXTBOX et les 64 tiles du mon ecrasaient le cadre !). Le C utilise des
+  // adresses dediees (BG_SCREEN_ADDR(8)) ; nous : charblock 1 (0x4000+),
+  // hors textbox(0)/terrain(2). La view (getter dynamique) suit.
+  bg.config.charBaseIndex = 1;
+  // fills 1:1 (CpuFill16(0, tiles, 0x1000) + tilemap 0xFF/0) — net : zero.
+  const tilesOffsetBytes = toBG_2 ? 0x1000 : 0;
+  bg.tilemap.fill(0);
+  // les 64 tiles OBJ du mon (BG_SCREEN_SIZE=0x800 bytes 1:1)
+  const monTile = oam?.tileId ?? 0;
+  const src = gba.objVram.subarray(monTile * 32, monTile * 32 + 0x800);
+  bg.vram.set(src, tilesOffsetBytes);
+  // tilemap 8x8 a (0,0) : offset croissant | palette<<12 (DrawBattlerOnBg)
+  const paletteId = toBG_2 ? 9 : 8;
+  const baseTile = tilesOffsetBytes >> 5;
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      bg.tilemap[i * 32 + j] = ((baseTile + i * 8 + j) & 0x3FF) | (paletteId << 12);
+    }
+  }
+  // palette OBJ du battler -> palette BG slot (LoadPalette 1:1)
+  const pf = (rt as unknown as { gPlttBufferFaded?: { [i: number]: number } }).gPlttBufferFaded;
+  if (pf) {
+    // PaletteBuffer custom (pas un TypedArray) -> copie indexee
+    for (let k = 0; k < 16; k++) pf[paletteId * 16 + k] = pf[256 + battler * 16 + k];
+  }
+  // scroll : superposer la copie sur le sprite (gBattle_BGn via accesseurs)
+  const g = globalThis as Record<string, unknown>;
+  const bgX = (-(sprite.x + sprite.x2) + 0x20) & 0xFFFF;
+  const bgY = (-(sprite.y + sprite.y2) + 0x20) & 0xFFFF;
+  if (toBG_2) { g.gBattle_BG2_X = bgX; g.gBattle_BG2_Y = bgY; }
+  else { g.gBattle_BG1_X = bgX; g.gBattle_BG1_Y = bgY; }
+  // BG1/BG2 sont CACHES en combat chez nous (post-intro) : montrer + attributs
+  // 1:1 (SetAnimBgAttribute PRIORITY=2, SCREEN_SIZE=1).
+  const cfg = (rt as unknown as { gba: { bg: (i: number) => { config: { visible: boolean; priority: number; screenSize: number; hofs: number; vofs: number } } } }).gba.bg(bgId).config;
+  cfg.visible = true;
+  cfg.priority = 2;
+  cfg.screenSize = 1;
+  _monbgActive[bgId] = true;
+  if (setSpriteInvisible) (sprite as { invisible?: boolean }).invisible = true;
 }
 
 /** 1:1 décomp `ResetBattleAnimBg(bool8 toBG2)` (battle_anim.c:794-811).
@@ -1309,9 +1363,29 @@ function Cmd_clearmonbg(): void {
   if (animBattlerId === ANIM_ATTACKER) animBattlerId = ANIM_ATK_PARTNER;
   else if (animBattlerId === ANIM_TARGET) animBattlerId = ANIM_DEF_PARTNER;
   const battler = (animBattlerId === ANIM_ATTACKER || animBattlerId === ANIM_ATK_PARTNER) ? gBattleAnimAttacker : gBattleAnimTarget;
-  void battler;
-
-  // Sprite restore + Task_ClearMonBg dispatch — cascade deferred (= MoveBattlerSpriteToBG).
+  // 1:1 Task_ClearMonBg (net, single) : re-montrer le sprite du battler
+  // (les anims type DefensiveWall le cachent via la copie BG), vider le BG
+  // anime + scroll. (chantier monbg 2026-06-11 — la version etait deferred.)
+  {
+    const rt = getRuntime();
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    const sid = co?.getBattlerMonSpriteId?.(battler);
+    const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites.get(sid) : undefined;
+    if (sprite) (sprite as { invisible?: boolean }).invisible = false;
+    const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
+    const g = globalThis as Record<string, unknown>;
+    for (const bgId of [1, 2]) {
+      // NE toucher QUE les BG reellement actives par monbg (toucher BG2
+      // aveuglement corrompait la zone menu — tilemap zero + garbage tile 0,
+      // les « dents de scie » du screenshot 2026-06-11).
+      if (!_monbgActive[bgId]) continue;
+      const bg = gba?.bg(bgId);
+      if (bg) { bg.tilemap.fill(0); bg.config.visible = false; }
+      _monbgActive[bgId] = false;
+      if (bgId === 1) { g.gBattle_BG1_X = 0; g.gBattle_BG1_Y = 0; }
+      else { g.gBattle_BG2_X = 0; g.gBattle_BG2_Y = 0; }
+    }
+  }
   _pc++;
 }
 
