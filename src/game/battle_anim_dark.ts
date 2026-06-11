@@ -138,3 +138,50 @@ function AnimClawSlash(sprite: AnimSprite): void {
 }
 
 registerAnimCallbacks({ AnimClawSlash: AnimClawSlash as never });
+
+// ─── VAGUE F3 : SetGrayscaleOrOriginalPal (dark.c:939, 14 hits) ─────────────
+// mode 0 = griser la palette OBJ du battler (moyenne RGB) ; mode 1 = restore.
+// Restore : notre gPlttBufferUnfaded est un ALIAS de Faded → le restore
+// intra-anim est no-op ; le SNAPSHOT du Launch (filet anti-rainbow) restaure
+// les couleurs exactes à la fin du move (1:1-net documenté).
+function _dItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_SetGrayscaleOrOriginalPal(task: { taskId: number }): void {
+  const itf = _dItf3();
+  const a = itf.getArgs?.() ?? [];
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : a[0] === 1 ? (itf.getTarget?.() ?? 1) : -1;
+  if (b >= 0) {
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> }; gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined;
+    const sid = co?.getBattlerMonSpriteId?.(b);
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : -1;
+    const pf = rt?.gPlttBufferFaded;
+    if (pal >= 0 && pf?.get && pf.set && a[1] === 0) {
+      const off = 256 + pal * 16;
+      for (let i = 0; i < 16; i++) {
+        const c = pf.get(off + i);
+        const r = c & 31, g = (c >> 5) & 31, bl = (c >> 10) & 31;
+        const avg = Math.trunc((r + g + bl) / 3);
+        pf.set(off + i, avg | (avg << 5) | (avg << 10));
+      }
+    }
+    // a[1]===1 : restore = no-op net (cf. en-tête).
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `GetIsDoomDesireHitTurn` (dark.c:992) : args[7] = (gAnimMoveTurn == 2). */
+function GetIsDoomDesireHitTurn(task: { taskId: number }): void {
+  const itf = _dItf3();
+  const args = itf.getArgs?.() ?? [];
+  const turn = ((globalThis as Record<string, unknown>).__gAnimMoveTurn as number) ?? 0;
+  if (turn < 2) args[7] = 0;
+  if (turn === 2) args[7] = 1;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _dRegT } from '../engine/battle/battle-anim-registry';
+_dRegT({
+  AnimTask_SetGrayscaleOrOriginalPal: AnimTask_SetGrayscaleOrOriginalPal as never,
+  GetIsDoomDesireHitTurn: GetIsDoomDesireHitTurn as never,
+});

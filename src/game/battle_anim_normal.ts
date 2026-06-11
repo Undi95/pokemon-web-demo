@@ -531,3 +531,45 @@ registerAnimCallbacks({
   AnimSpinningSparkle: AnimSpinningSparkle as never,
   AnimShakeMonOrBattlePlatforms: AnimShakeMonOrBattlePlatforms as never,
 });
+
+// ─── VAGUE F3 : AnimTask_InvertScreenColor (normal.c:759, 18 hits sweep) ────
+// Inverse les palettes sélectionnées (Thunder/Explosion flash négatif).
+// args (flagsScenery, flagsAttacker, flagsTarget) — bit 8 = actif.
+function _nItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _nPf(): { get?: (i: number) => number; set?: (i: number, v: number) => void } | undefined {
+  return ((globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: never } | undefined)?.gPlttBufferFaded;
+}
+function _nBattlerPalSlot(b: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b);
+  const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  return sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : 0;
+}
+function AnimTask_InvertScreenColor(task: { taskId: number }): void {
+  const itf = _nItf3();
+  const a = itf.getArgs?.() ?? [];
+  let selected = 0;
+  // flagsScenery bit8 → BG 0-3 (GetBattlePalettesMask(TRUE,...) net : pal BG 0..3)
+  if (a[0] & 0x100) selected |= 0x0F;
+  if (a[1] & 0x100) selected |= (0x10000 << _nBattlerPalSlot(itf.getAttacker?.() ?? 0));
+  if (a[2] & 0x100) selected |= (0x10000 << _nBattlerPalSlot(itf.getTarget?.() ?? 1));
+  // InvertPlttBuffer (palette.c) : ~couleur sur chaque entrée
+  const pf = _nPf();
+  if (pf?.get && pf.set) {
+    let palOffset = 0;
+    let sel = selected >>> 0;
+    while (sel !== 0) {
+      if (sel & 1) {
+        for (let i = 0; i < 16; i++) pf.set(palOffset + i, (~pf.get(palOffset + i)) & 0x7FFF);
+      }
+      sel >>>= 1;
+      palOffset += 16;
+    }
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _nRegT } from '../engine/battle/battle-anim-registry';
+_nRegT({ AnimTask_InvertScreenColor: AnimTask_InvertScreenColor as never });
