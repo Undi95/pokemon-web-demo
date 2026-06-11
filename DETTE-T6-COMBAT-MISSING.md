@@ -101,3 +101,13 @@
 - 🔶 RACINE à creuser : hitsplat affine variante≠0 → affineAnimEnded jamais posé (les scripts end-direct s'appuient sur le garde-fou Cmd_end 600f).
 - 🔶 Chantier BG/monbg (Phase 1b roadmap) : Seismic Toss visuel complet, AnimDefensiveWall, 412 usages monbg.
 - 🔶 Lots workflow morts à relancer (session-limit 13:30) : battle_anim_flying.ts, battle_anim_effects_2.ts + compléter effects_1/1b.
+
+## Dette bytecode cœur (2026-06-11 soir) — audit préliminaire
+- Le fix bindArgs (sémantique GAS args nommés, commit 935d63e2) est CORRECT pour
+  battle_anim_scripts (354/354 verts) mais change **2150 plages** dans
+  battle_scripts_1 (12 Ko) → le cœur gelait. REVERT appliqué (65e460ed) : le cœur
+  tourne sur le bytecode pré-fix (A/B-validé de longue date), les anims sur le réparé.
+- RE-RÉPARATION = chantier à part : décoder les sites changés opcode-par-opcode
+  (snapshot : %TEMP%/bytecode-avant/ + version réparée dans le commit 935d63e2),
+  comprendre pourquoi les scripts du cœur dépendaient des opérandes pré-fix,
+  puis A/B complet du combat (tour, KO-run, capture-run) avant d'adopter.
