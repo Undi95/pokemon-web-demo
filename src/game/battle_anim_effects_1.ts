@@ -2027,4 +2027,44 @@ function _SkullBashReset(task: { taskId: number; data: number[] }): void {
     itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
-_sbRegT({ AnimTask_SkullBashPosition: AnimTask_SkullBashPosition as never });
+/** 1:1 `gParticlesColorBlendTable` (effects_1.c:1973) + les 2 tasks MusicNotes
+ *  rainbow (6 hits — Sing/HealBell/GrassWhistle) : pose les 4 palettes de
+ *  particules colorées (alloc par tag), le clear les libère. */
+const _gParticlesColorBlendTable: ReadonlyArray<readonly [number, readonly number[]]> = [
+  [10072, [32767, 29535, 27359, 25151, 22975]],
+  [10097, [32767, 27641, 22516, 17391, 13290]],
+  [10185, [32767, 25599, 18431, 11263, 4095]],
+  [10175, [32767, 32666, 32597, 32528, 32460]],
+];
+function AnimTask_MusicNotesRainbowBlend(task: { taskId: number }): void {
+  const spr = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number; AllocSpritePalette?: (t: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } } | undefined;
+  const pf = rt?.gPlttBufferFaded;
+  // la 1re ligne : la palette EXISTANTE du tag MUSIC_NOTES, recolorée
+  const first = _gParticlesColorBlendTable[0];
+  let idx = spr?.IndexOfSpritePaletteTag?.(first[0]) ?? 0xFF;
+  if (idx !== 0xFF && pf?.set) {
+    for (let i = 1; i < 6 && i - 1 < first[1].length; i++) pf.set(256 + idx * 16 + i, first[1][i - 1]);
+  }
+  // les 3 suivantes : ALLOC d une palette par tag + couleurs
+  for (let j = 1; j < _gParticlesColorBlendTable.length; j++) {
+    const [tag, cols] = _gParticlesColorBlendTable[j];
+    idx = spr?.AllocSpritePalette?.(tag) ?? 0xFF;
+    if (idx !== 0xFF && pf?.set) {
+      for (let i = 1; i < 6 && i - 1 < cols.length; i++) pf.set(256 + idx * 16 + i, cols[i - 1]);
+    }
+  }
+  _sbItf().DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_MusicNotesClearRainbowBlend(task: { taskId: number }): void {
+  const spr = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+  for (let j = 1; j < _gParticlesColorBlendTable.length; j++) {
+    spr?.FreeSpritePaletteByTag?.(_gParticlesColorBlendTable[j][0]);
+  }
+  _sbItf().DestroyAnimVisualTask?.(task.taskId);
+}
+_sbRegT({
+  AnimTask_SkullBashPosition: AnimTask_SkullBashPosition as never,
+  AnimTask_MusicNotesRainbowBlend: AnimTask_MusicNotesRainbowBlend as never,
+  AnimTask_MusicNotesClearRainbowBlend: AnimTask_MusicNotesClearRainbowBlend as never,
+});
