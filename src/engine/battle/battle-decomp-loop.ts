@@ -233,6 +233,14 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       isAnimScriptActive?: () => boolean;
     } | undefined;
     if (!itf?.DoMoveAnim) return { ok: false, err: 'interpreter absent (boot un combat d abord)' };
+    const rt = (globalThis as Record<string, unknown>).__rt as {
+      gSprites?: Map<number, { callback?: { name?: string } | null }>;
+      gba?: { oam?: Array<{ visible?: boolean; tileId?: number; x?: number; y?: number }> };
+    } | undefined;
+    // SNAPSHOT OAM avant (regle user « rien ne doit rester affiche » : le
+    // critere = AUCUN NOUVEAU OAM visible apres l'anim vs avant).
+    const visAvant = new Set<number>();
+    rt?.gba?.oam?.forEach((o, i) => { if (o.visible) visAvant.add(i); });
     itf.setBattleAnimAttackerTarget?.(attacker, target);
     itf.DoMoveAnim(moveId);
     let frames = 0;
@@ -241,13 +249,33 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
       frames++;
       if (frames % 4 === 0) await new Promise(r => setTimeout(r, 0));
     }
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { callback?: { name?: string } | null }> } | undefined;
+    // laisser 30 frames de jeu (les sprites a vie propre finissent)
+    await new Promise(r => setTimeout(r, 600));
     const residuels: string[] = [];
     for (const [, sp] of rt?.gSprites?.entries() ?? []) {
       const n = sp.callback?.name ?? '';
-      if (/Anim|Splat|Scratch|Noise|Ember|Orb|Translate|Shiny/i.test(n)) residuels.push(n);
+      if (/Anim|Splat|Scratch|Noise|Ember|Orb|Translate|Shiny|Dirt|Leer/i.test(n)) residuels.push('cb:' + n);
     }
-    return { ok: frames < 900, frames, residuels };
+    const oamResiduels: string[] = [];
+    rt?.gba?.oam?.forEach((o, i) => {
+      if (o.visible && !visAvant.has(i)) oamResiduels.push(`oam${i}@${o.x},${o.y} tile${o.tileId}`);
+    });
+    // CLEANUP du test (2026-06-11) : un sprite d'anim peut survivre si un
+    // controller ecrase son callback via un spriteId PERIME (vu : dirt slot 3
+    // -> SpriteCallbackDummy -> orphelin affiche ; DETTE : trouver l'ecraseur).
+    // On detruit tout sprite d'anim encore lie a une sheet de tag anim (tile
+    // >= reserve 0x140) qui n'etait pas visible avant — le test reste fiable.
+    const ds = (rt as { DestroySprite?: (id: number) => void } | undefined)?.DestroySprite;
+    if (ds && rt?.gSprites) {
+      for (const [id, sp] of rt.gSprites.entries()) {
+        const oamIdx = (sp as { oamIndex?: number }).oamIndex;
+        const o = oamIdx !== undefined ? rt.gba?.oam?.[oamIdx] : undefined;
+        if (o?.visible && !visAvant.has(oamIdx as number) && (o.tileId ?? 0) >= 0x140) {
+          try { ds(id); } catch { /* deja mort */ }
+        }
+      }
+    }
+    return { ok: frames < 900, frames, residuels, oamResiduels };
   };
 
   // FIX user 2026-06-11 (« ton dernier a casse nos barres de PV ») : nos
