@@ -579,6 +579,30 @@ export function AnimTranslateLinearAndFlicker(sprite: DecompSprite): void {
   sprite.callback = TranslateSpriteLinearAndFlicker as never;
 }
 
+/** 1:1 `AnimWeatherBallUp`(+_Step) (battle_anim_mons.c:2510) : la boule météo
+ *  monte depuis l'attaquant (x/10, y/10 fixed-dixième, décélération) et sort
+ *  par le haut. (Était LE skip « mons.ts gelé » de la mini-vague finale.) */
+export function AnimWeatherBallUp(sprite: DecompSprite): void {
+  const itf = _projItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  (sprite as { invisible?: boolean }).invisible = false;
+  sprite.data[0] = (atk & 1) === 0 ? 5 : -10;
+  sprite.data[1] = -40;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.callback = _WeatherBallUp_Step as never;
+}
+function _WeatherBallUp_Step(sprite: DecompSprite): void {
+  sprite.data[2] += sprite.data[0];
+  sprite.data[3] += sprite.data[1];
+  sprite.x2 = Math.trunc(sprite.data[2] / 10);
+  sprite.y2 = Math.trunc(sprite.data[3] / 10);
+  if (sprite.data[1] < -20) sprite.data[1]++;
+  if (sprite.y + sprite.y2 < -32) _projItf().DestroyAnimSprite?.(sprite);
+}
+
 /** 1:1 `AnimWeatherBallDown` (:2534 — 5 templates générés) : la boule météo
  *  tombe du haut de l'écran vers le point cible (linéaire). */
 export function AnimWeatherBallDown(sprite: DecompSprite): void {
@@ -699,4 +723,5 @@ _regCb({
   AnimThrowProjectile: AnimThrowProjectile as never,
   AnimTranslateLinearAndFlicker: AnimTranslateLinearAndFlicker as never,
   AnimWeatherBallDown: AnimWeatherBallDown as never,
+  AnimWeatherBallUp: AnimWeatherBallUp as never,
 });
