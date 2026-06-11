@@ -100,3 +100,16 @@ Les 148 dégradés restants par catégorie (un move peut cumuler) :
 4 racines systémiques + 29 vagues (68 AnimTasks ≈ 320 usages) + chantier
 BG ANIM complet + task-affine + monbg + vérificateur permanent
 = **40 % → 58 % de fidélité mesurée**, ~70 commits tsc 0.
+
+## Constat structurel (fin de session, post-F33)
+Le backlog des tasks restantes est désormais dominé par 4 CHANTIERS PLATEFORME
+(plus de la traîne 1-hit) :
+1. **OBJ-window** (compositor) : MetallicShine ×12, spotlights ×4, Curse mask —
+   ordre user « pas de compromis », pas de version dégradée.
+2. **Scanline effect** : ExtrasensoryDistortion ×3, Dig ×4, Sketch, AcidArmor,
+   SeismicToss BG accel — le système gScanlineEffect (per-scanline HOFS/VOFS).
+3. **Mon-gfx-espèce** : RolePlaySilhouette, TransformMon, MonToSubstitute,
+   SwapMonSpriteToFromSubstitute — charger le pic d'une autre espèce à la volée.
+4. **Multi-palettes asset** : LoadMusicNotesPals (HealBell) — palette 3-banks.
+Plus : ~50 micro-tasks 1-hit éparses (DragonDanceWaver, BarrageBall,
+GrudgeFlames, ImprisonOrbs…) portables une à une par la méthode des vagues.
