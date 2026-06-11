@@ -18,7 +18,7 @@ import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
-import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAnimTemplates, registerAnimTasks } from '../engine/battle/battle-anim-registry';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
 
@@ -44,7 +44,7 @@ function _rt(): {
 } | undefined {
   return (globalThis as Record<string, unknown>).__rt as never;
 }
-function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+function _itf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _battlerSprite(battler: number): AnimSprite | undefined {
@@ -164,6 +164,42 @@ function AnimRoarNoiseLine_Step(sprite: AnimSprite): void {
     _itf().DestroyAnimSprite?.(sprite);
   }
 }
+
+// ─── HOWL : AnimTask_DeepInhale (net-effect squish 1:1 gDeepInhaleAffineAnimCmds)
+// + le mon "inspire" : scale Y léger (squish vertical) ~20 frames puis restore.
+type _IhTask = { taskId: number; data: number[]; func?: (t: _IhTask) => void };
+function AnimTask_DeepInhale(task: _IhTask): void {
+  const args = _itf().getArgs?.() ?? [0];
+  const battler = args[0] === 0 ? (_itf().getAttacker?.() ?? 0) : (_itf().getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  task.data[15] = co?.getBattlerMonSpriteId?.(battler) ?? -1;
+  task.data[0] = 0;
+  task.func = _DeepInhale_Step;
+}
+function _DeepInhale_Step(task: _IhTask): void {
+  task.data[0]++;
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+    ResetSpriteRotScale?: (id: number) => void;
+    PrepareBattlerSpriteForRotScale?: (id: number, mode: number) => void;
+  } | undefined;
+  const id = task.data[15];
+  if (id < 0 || !mons?.SetSpriteRotScale) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  if (task.data[0] === 1) mons.PrepareBattlerSpriteForRotScale?.(id, 0);
+  const t = task.data[0];
+  if (t <= 16) {
+    // inspire : Y comprime (scale param >256 = plus petit), X gonfle léger.
+    const squish = 256 + t * 4;
+    mons.SetSpriteRotScale(id, 256 - t * 2, squish, 0);
+  } else if (t <= 28) {
+    const back = 28 - t;
+    mons.SetSpriteRotScale(id, 256 - back * 2, 256 + back * 4 + (t === 28 ? 0 : 8), 0);
+  } else {
+    mons.ResetSpriteRotScale?.(id);
+    _itf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+registerAnimTasks({ AnimTask_DeepInhale: AnimTask_DeepInhale as never });
 
 registerAnimTemplates([
   { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never },

@@ -1584,6 +1584,8 @@ export function tickAnimScript(): void {
 // Surface lazy pour les miroirs AnimTask (anti-cycle ESM : battle_anim_mon_movement
 // n'importe PAS ce module statiquement -> TDZ pokeball evitee).
 (globalThis as Record<string, unknown>).__battleAnimInterpreter = {
+  // devtool vagues : l'état interne pour diagnostiquer un soft-lock d'anim.
+  getDebugState: () => ({ pc: _pc, visualTaskCount: gAnimVisualTaskCount, active: gAnimScriptActive, cbName: (gAnimScriptCallback as { name?: string } | null)?.name ?? null }),
   getArgs: () => gBattleAnimArgs,
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,

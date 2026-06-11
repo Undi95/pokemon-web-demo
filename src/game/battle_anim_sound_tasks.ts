@@ -40,7 +40,17 @@ function SoundTask_WaitForCry(task: AnimTask): void {
   if (task.data[7] >= 30) _itf().DestroyAnimVisualTask?.(task.taskId);
 }
 
+/** 1:1 net `SoundTask_PlayCryHighPitch` : cri du battler (pitch haut = dette
+ *  douce infra cris) puis destroy immédiat (one-shot). */
+function SoundTask_PlayCryHighPitch(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [0];
+  const battler = args[0] === 1 ? (_itf().getTarget?.() ?? 1) : (_itf().getAttacker?.() ?? 0);
+  _playCryOf(battler);
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+
 registerAnimTasks({
   SoundTask_PlayDoubleCry: SoundTask_PlayDoubleCry as never,
   SoundTask_WaitForCry: SoundTask_WaitForCry as never,
+  SoundTask_PlayCryHighPitch: SoundTask_PlayCryHighPitch as never,
 });

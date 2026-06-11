@@ -15,6 +15,7 @@
  *   RotateMonSpriteToSide, ShakeTargetBasedOnMovePowerOrDmg, SlideOffScreen)
  *   — portage par vagues avec les moves qui les consomment.
  */
+import { Sin, Cos } from './trig';
 import {
   registerAnimTasks, registerAnimTemplates,
 } from '../engine/battle/battle-anim-registry';
@@ -113,6 +114,15 @@ function AnimTask_ShakeMon(task: AnimTask): void {
 function AnimTask_ShakeMon_Step(task: AnimTask): void {
   const sp = _sprites()?.get(task.data[0]);
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  // Garde-fou (2026-06-11) : numShakes aberrant = args pollues par un script
+  // aux operandes desalignees (vu : QUICK_ATTACK data[1]=-1031 -> --x===0
+  // jamais vrai -> soft-lock waitforvisualfinish). Le decomp ne peut pas
+  // produire numShakes<=0 ; nous si (deraillement) -> terminaison propre.
+  if (task.data[1] <= 0 || task.data[1] > 1000) {
+    sp.x2 = 0; sp.y2 = 0;
+    DestroyAnimVisualTask(task.taskId);
+    return;
+  }
   if (task.data[3] === 0) {
     sp.x2 = (sp.x2 === 0) ? task.data[4] : 0;
     sp.y2 = (sp.y2 === 0) ? task.data[5] : 0;
@@ -289,10 +299,53 @@ function SlideMonToOriginalPos_Step(sprite: AnimSprite): void {
   }
 }
 
+/** 1:1 `AnimTask_TranslateMonElliptical` (battle_anim_mon_movement.c) :
+ *  args [battler, amplX, amplY, nbTours, vitesse 0-5]. Le mon décrit une
+ *  ellipse via x2=Sin(angle,amplX), y2=-Cos(angle,amplY)+amplY (départ bas).
+ *  wavePeriod = 1<<vitesse. (C1a goal : Tail Whip ENTIER + Quick Attack.) */
+function AnimTask_TranslateMonElliptical(task: AnimTask): void {
+  const args = _itf()?.getArgs?.() ?? [0, 12, 4, 2, 3];
+  const spriteId = _battlerSpriteId(args[0] === 0 ? (_itf()?.getAttacker?.() ?? 0) : (_itf()?.getTarget?.() ?? 1));
+  let speed = args[4];
+  if (speed > 5) speed = 5;
+  const wavePeriod = 1 << speed;
+  task.data[0] = spriteId;
+  task.data[1] = args[1];
+  task.data[2] = args[2];
+  task.data[3] = args[3];
+  task.data[4] = wavePeriod;
+  task.data[5] = 0;
+  task.func = _TranslateMonElliptical_Step as never;
+  _TranslateMonElliptical_Step(task);
+}
+/** 1:1 `AnimTask_TranslateMonEllipticalRespectSide` : amplX inversé côté adverse. */
+function AnimTask_TranslateMonEllipticalRespectSide(task: AnimTask): void {
+  const args = _itf()?.getArgs?.() ?? [0, 12, 4, 2, 3];
+  const atk = _itf()?.getAttacker?.() ?? 0;
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) args[1] = -args[1];
+  AnimTask_TranslateMonElliptical(task);
+}
+function _TranslateMonElliptical_Step(task: AnimTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[0]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  sp.x2 = Sin(task.data[5], _s16(task.data[1]));
+  sp.y2 = -Cos(task.data[5], task.data[2]) + task.data[2];
+  task.data[5] = (task.data[5] + task.data[4]) & 0xFF;
+  if (task.data[5] === 0) task.data[3]--;
+  if (task.data[3] === 0) {
+    sp.x2 = 0;
+    sp.y2 = 0;
+    DestroyAnimVisualTask(task.taskId);
+  }
+}
+
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
 registerAnimTasks({
   AnimTask_ShakeMon: AnimTask_ShakeMon as never,
   AnimTask_ShakeMon2: AnimTask_ShakeMon2 as never,
+  AnimTask_TranslateMonElliptical: AnimTask_TranslateMonElliptical as never,
+  AnimTask_TranslateMonEllipticalRespectSide: AnimTask_TranslateMonEllipticalRespectSide as never,
 });
 registerAnimTemplates([
   { name: 'gHorizontalLungeSpriteTemplate', tileTag: 0, paletteTag: 0, callback: DoHorizontalLunge as never },

@@ -497,3 +497,9 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   StoreSpriteCallbackInData6(sprite, ((s: DecompSprite) => { _projItf().DestroyAnimSprite?.(s); }) as never);
   StartAnimLinearTranslation(sprite);
 }
+
+// Surface lazy pour les AnimTasks d'autres modules (DeepInhale squish...).
+(globalThis as Record<string, unknown>).__battleAnimMons = {
+  SetSpriteRotScale, ResetSpriteRotScale, PrepareBattlerSpriteForRotScale,
+  TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
+};
