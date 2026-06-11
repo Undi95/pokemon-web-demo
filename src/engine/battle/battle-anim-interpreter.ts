@@ -717,17 +717,65 @@ export function ResetBattleAnimBg(toBG2: boolean): void {
 
 /** 1:1 décomp `LoadMoveBg(u16 bgId)` (battle_anim.c:1185-1207).
  *  Décompresse + load BG tilemap/tiles/palette depuis gBattleAnimBackgroundTable[bgId]. */
-function LoadMoveBg(_bgId: number): void {
-  // Asset extraction deferred — `gBattleAnimBackgroundTable` data not extracted yet.
-  // 27 BGs total (DARK/GHOST/PSYCHIC/IMPACT_OPPONENT/IMPACT_PLAYER/DRILL/THUNDER/ICE/SOLAR_BEAM_*/etc.).
-  // À extract via scripts/extract-*.mjs.
+// ─── LoadMoveBg RÉEL (chantier BG étape 2, 2026-06-11) ──────────────────────
+// 1:1 battle_anim.c:1185 (non-contest) : tilemap → BG_SCREEN_ADDR(26) (=
+// mapBase 26 = LE TILEMAP DU TERRAIN BG3), image → BG_CHAR_ADDR(2) (charBase
+// 2 = les tiles du terrain), palette → BG_PLTT_ID(2). Le fond d'anim REMPLACE
+// le terrain ; restorebg (bgId -1) recharge le décor via DrawMainBattleBackground.
+let _animBgManifest: Record<string, { name: string; image: string; pal: string; tilemap: string }> | null = null;
+const _animBgCache = new Map<string, Uint8Array>();
+function _ensureAnimBgManifest(): void {
+  if (_animBgManifest) return;
+  void fetch('/decomp/em/battle_anims/anim-bg-manifest.json')
+    .then((r) => r.json())
+    .then((j: Record<string, { name: string; image: string; pal: string; tilemap: string }>) => {
+      _animBgManifest = j;
+      // préload TOTAL des 27 (≈ quelques centaines de Ko — comme les 289 sprites)
+      for (const e of Object.values(j)) {
+        for (const f of [e.image, e.pal, e.tilemap]) {
+          if (_animBgCache.has(f)) continue;
+          void fetch('/decomp/em/battle_anims/backgrounds/' + f)
+            .then((r) => r.arrayBuffer())
+            .then((b) => { _animBgCache.set(f, new Uint8Array(b)); })
+            .catch(() => {});
+        }
+      }
+    })
+    .catch((e) => console.warn('[battle-anim] manifest BG KO', e));
+}
+_ensureAnimBgManifest();
+function LoadMoveBg(bgId: number): void {
+  const entry = _animBgManifest?.[String(bgId)];
+  const rt = getRuntime();
+  if (!entry || !rt) return;
+  const img = _animBgCache.get(entry.image);
+  const pal = _animBgCache.get(entry.pal);
+  const map = _animBgCache.get(entry.tilemap);
+  const gba = (rt as unknown as { gba: { bg: (i: number) => { vram: Uint8Array; tilemap: Uint16Array } } }).gba;
+  const bg3 = gba.bg(3);
+  if (img) bg3.vram.set(img.subarray(0, Math.min(img.length, bg3.vram.length)), 0);
+  if (map) {
+    const m16 = new Uint16Array(map.buffer, map.byteOffset, map.byteLength >> 1);
+    bg3.tilemap.set(m16.subarray(0, Math.min(m16.length, bg3.tilemap.length)), 0);
+  }
+  if (pal) {
+    const pf = (rt as unknown as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } }).gPlttBufferFaded;
+    const p16 = new Uint16Array(pal.buffer, pal.byteOffset, pal.byteLength >> 1);
+    if (pf?.set) for (let i = 0; i < 16 && i < p16.length; i++) pf.set(2 * 16 + i, p16[i]); // BG_PLTT_ID(2)
+  }
 }
 
 /** 1:1 décomp `LoadDefaultBg()` (battle_anim.c:1209-1215).
  *  Restore default battle BG (= DrawMainBattleBackground ou LoadContestBgAfterMoveAnim). */
 function LoadDefaultBg(): void {
-  // Cascade : depends on battle-bg.ts loadBattleTextboxAndBackground. Restore call
-  // doit re-wire vers cette fonction. Deferred jusqu'à BG fade integration.
+  // 1:1 DrawMainBattleBackground : recharge LE TERRAIN (chantier BG étape 2).
+  // loadBattleTerrain est async (assets en cache après le boot → quasi-sync).
+  const g = globalThis as Record<string, unknown>;
+  const env = ((g.__battleState as { gBattleEnvironment?: number } | undefined)?.gBattleEnvironment
+    ?? (g.__forceBattleEnvironment as number | undefined) ?? 0);
+  const bb = g.__battleBg as { loadBattleTerrain?: (e: number) => Promise<void> } | undefined;
+  if (bb?.loadBattleTerrain) { void bb.loadBattleTerrain(env); return; }
+  void import('./battle-bg').then((m) => (m as { loadBattleTerrain?: (e: number) => Promise<void> }).loadBattleTerrain?.(env)).catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
