@@ -699,8 +699,19 @@ export function MoveBattlerSpriteToBG(battler: number, toBG_2: boolean, setSprit
 
 /** 1:1 décomp `ResetBattleAnimBg(bool8 toBG2)` (battle_anim.c:794-811).
  *  Clear BG1 ou BG2 + reset scroll offsets. */
-export function ResetBattleAnimBg(_toBG2: boolean): void {
-  // Deferred — voir MoveBattlerSpriteToBG.
+export function ResetBattleAnimBg(toBG2: boolean): void {
+  // 1:1 (net) : demonte la copie monbg du BG vise — meme nettoyage que
+  // Cmd_clearmonbg (tilemap vide + BG cache + scroll 0 + tracker).
+  const rt = getRuntime();
+  const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
+  const bgId = toBG2 ? 2 : 1;
+  if (!_monbgActive[bgId]) return;
+  const bg = gba?.bg(bgId);
+  if (bg) { bg.tilemap.fill(0); bg.config.visible = false; }
+  _monbgActive[bgId] = false;
+  const g = globalThis as Record<string, unknown>;
+  if (bgId === 1) { g.gBattle_BG1_X = 0; g.gBattle_BG1_Y = 0; }
+  else { g.gBattle_BG2_X = 0; g.gBattle_BG2_Y = 0; }
 }
 
 /** 1:1 décomp `LoadMoveBg(u16 bgId)` (battle_anim.c:1185-1207).

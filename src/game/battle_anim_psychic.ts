@@ -401,3 +401,88 @@ function AnimQuestionMark_Step2(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimQuestionMark: AnimQuestionMark as never });
+
+// ─── AnimDefensiveWall 1:1 (psychic.c:423-578) — LE DERNIER CALLBACK ────────
+// Reflect/Light Screen/Safeguard : le mur translucide. Single non-contest :
+// monbg(OPPONENT_LEFT) -> mon invisible (le rendu = la copie BG) -> fade
+// BLDALPHA in -> rotation de palette (8 slots) -> fade out -> restore.
+import { MoveBattlerSpriteToBG, ResetBattleAnimBg } from '../engine/battle/battle-anim-interpreter';
+import { GetBattlerSpriteCoord as _dwCoord } from './battle_anim_mons';
+
+type _DwSprite = { data: number[]; x: number; y: number; invisible?: boolean; subpriority?: number; oamIndex?: number; callback: unknown };
+function _dwItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _dwRt(): { gSprites?: Map<number, { invisible?: boolean }>; gba?: { oam?: Array<{ priority?: number }> }; SetGpuReg?: (r: number, v: number) => void; gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _dwOppSprite(): { invisible?: boolean } | undefined {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(1); // OPPONENT_LEFT = battler 1 (single)
+  return sid !== undefined && sid !== 0xFF ? _dwRt().gSprites?.get(sid) : undefined;
+}
+
+/** 1:1 `AnimDefensiveWall` (psychic.c:423) — args [x, y, paletteTag]. */
+function AnimDefensiveWall(sprite: _DwSprite): void {
+  const itf = _dwItf();
+  const args = itf.getArgs?.() ?? [0, 0, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  if ((atk & 1) === 0 /* B_SIDE_PLAYER */) {
+    const oam = _dwRt().gba?.oam?.[sprite.oamIndex ?? -1];
+    if (oam) oam.priority = 2;
+    sprite.subpriority = 200;
+  }
+  // monbg du mon adverse (single : OPPONENT_LEFT=1, rank net -> BG1)
+  MoveBattlerSpriteToBG(1, false, false);
+  // position (single) : attaquant +/- args
+  let a0 = args[0] | 0;
+  if ((atk & 1) !== 0) a0 = -a0;
+  sprite.x = _dwCoord(atk, 0) + a0;
+  sprite.y = _dwCoord(atk, 1) + (args[1] | 0);
+  sprite.invisible = false;
+  // data[0] = offset palette OBJ du tag du mur (rotation Step3)
+  const spSurf = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const palIdx = spSurf?.IndexOfSpritePaletteTag?.(args[2] | 0) ?? 0xFF;
+  sprite.data[0] = palIdx !== 0xFF ? 256 + palIdx * 16 : 256;
+  sprite.data[1] = 0; sprite.data[2] = 0; sprite.data[3] = 0; sprite.data[7] = 0;
+  sprite.callback = _DefensiveWall_Step1;
+}
+function _DefensiveWall_Step1(sprite: _DwSprite): void {
+  if (!sprite.data[7]) { sprite.data[7] = 1; return; } // 1 frame (la copie BG s'affiche)
+  const mon = _dwOppSprite();
+  if (mon) mon.invisible = true; // le rendu bascule sur la copie BG
+  sprite.callback = _DefensiveWall_Step2;
+  _DefensiveWall_Step2(sprite);
+}
+function _DefensiveWall_Step2(sprite: _DwSprite): void {
+  _dwRt().SetGpuReg?.(0x52, ((16 - sprite.data[3]) << 8) | sprite.data[3]); // BLDALPHA
+  if (sprite.data[3] === 13) sprite.callback = _DefensiveWall_Step3;
+  else sprite.data[3]++;
+}
+function _DefensiveWall_Step3(sprite: _DwSprite): void {
+  if (++sprite.data[1] === 2) {
+    sprite.data[1] = 0;
+    const pf = _dwRt().gPlttBufferFaded;
+    const base = sprite.data[0];
+    if (pf?.get && pf.set) {
+      const color = pf.get(base + 8);
+      for (let i = 8; i > 0; i--) pf.set(base + i, pf.get(base + i - 1));
+      pf.set(base + 1, color);
+    }
+    if (++sprite.data[2] === 16) sprite.callback = _DefensiveWall_Step4;
+  }
+}
+function _DefensiveWall_Step4(sprite: _DwSprite): void {
+  _dwRt().SetGpuReg?.(0x52, ((16 - sprite.data[3]) << 8) | sprite.data[3]);
+  if (--sprite.data[3] === -1) {
+    const mon = _dwOppSprite();
+    if (mon) mon.invisible = false;
+    sprite.invisible = true;
+    sprite.callback = _DefensiveWall_Step5;
+  }
+}
+function _DefensiveWall_Step5(sprite: _DwSprite): void {
+  ResetBattleAnimBg(false);
+  _dwItf().DestroyAnimSprite?.(sprite);
+}
+registerAnimCallbacks({ AnimDefensiveWall: AnimDefensiveWall as never });
