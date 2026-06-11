@@ -1905,3 +1905,126 @@ registerAnimCallbacks({
   AnimMilkBottle: AnimMilkBottle as never,
   AnimBowMon: AnimBowMon as never,
 });
+
+// ─── VAGUE F28 : AnimTask_SkullBashPosition (effects_1.c, 2 hits) ───────────
+// mode 0 = recul + bascule rotation + tremblement + charge ; mode 1 = reset.
+import {
+  PrepareBattlerSpriteForRotScale as _sbPrep, SetSpriteRotScale as _sbSet,
+  ResetSpriteRotScale as _sbReset, SetBattlerSpriteYOffsetFromRotation as _sbYRot,
+} from './battle_anim_mons';
+import { registerAnimTasks as _sbRegT } from '../engine/battle/battle-anim-registry';
+function _sbItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_SkullBashPosition(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _sbItf();
+  const a = itf.getArgs?.() ?? [];
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = sid;
+  const side = atk & 1; // 0=player
+  task.data[1] = side;
+  task.data[2] = 0;
+  switch (a[0]) {
+    default:
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    case 0:
+      task.data[2] = 0;
+      task.data[3] = 8;
+      task.data[4] = 0;
+      task.data[5] = side === 0 ? -3 : 3;
+      task.func = _SkullBashSet;
+      break;
+    case 1:
+      task.data[3] = 8;
+      task.data[4] = side === 0 ? -0x600 : 0x600;
+      task.data[5] = side === 0 ? -0xC0 : 0xC0;
+      task.func = _SkullBashReset;
+      break;
+  }
+}
+function _SkullBashSet(task: { taskId: number; data: number[] }): void {
+  const itf = _sbItf();
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[0]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[2]) {
+    case 0:
+      if (task.data[3]) {
+        task.data[4] += task.data[5];
+        sp.x2 = task.data[4];
+        task.data[3]--;
+      } else {
+        task.data[3] = 8;
+        task.data[4] = 0;
+        task.data[5] = task.data[1] === 0 ? -0xC0 : 0xC0;
+        _sbPrep(task.data[0], 0);
+        task.data[2]++;
+      }
+      break;
+    case 1:
+      if (task.data[3]) {
+        task.data[4] += task.data[5];
+        _sbSet(task.data[0], 0x100, 0x100, task.data[4] & 0xFFFF);
+        _sbYRot(task.data[0]);
+        task.data[3]--;
+      } else {
+        task.data[3] = 8;
+        task.data[4] = sp.x2;
+        task.data[5] = task.data[1] === 0 ? 2 : -2;
+        task.data[6] = 1;
+        task.data[2]++;
+      }
+      break;
+    case 2:
+      if (task.data[3]) {
+        if (task.data[6]) {
+          task.data[6]--;
+        } else {
+          sp.x2 = (task.data[3] & 1) ? task.data[4] + task.data[5] : task.data[4] - task.data[5];
+          task.data[6] = 1;
+          task.data[3]--;
+        }
+      } else {
+        sp.x2 = task.data[4];
+        task.data[3] = 12;
+        task.data[2]++;
+      }
+      break;
+    case 3:
+      if (task.data[3]) {
+        task.data[3]--;
+      } else {
+        task.data[3] = 3;
+        task.data[4] = sp.x2;
+        task.data[5] = task.data[1] === 0 ? 8 : -8;
+        task.data[2]++;
+      }
+      break;
+    case 4:
+      if (task.data[3]) {
+        task.data[4] += task.data[5];
+        sp.x2 = task.data[4];
+        task.data[3]--;
+      } else {
+        itf.DestroyAnimVisualTask?.(task.taskId);
+      }
+      break;
+  }
+}
+function _SkullBashReset(task: { taskId: number; data: number[] }): void {
+  const itf = _sbItf();
+  if (task.data[3]) {
+    task.data[4] -= task.data[5];
+    _sbSet(task.data[0], 0x100, 0x100, task.data[4] & 0xFFFF);
+    _sbYRot(task.data[0]);
+    task.data[3]--;
+  } else {
+    _sbReset(task.data[0]);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+_sbRegT({ AnimTask_SkullBashPosition: AnimTask_SkullBashPosition as never });
