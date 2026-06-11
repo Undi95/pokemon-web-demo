@@ -1493,10 +1493,21 @@ function Cmd_createsoundtask(): void {
     gBattleAnimArgs[i] = read16(_pc) << 16 >> 16;
     _pc += 2;
   }
-  // Sound task func resolution deferred — call funcPtr() would require resolving
-  // bytecode pointer to actual function. Pour now incrementer count seul.
-  void funcPtr;
-  gAnimSoundTaskCount++;
+  // 1:1 battle_anim.c:1616-1633 via le registry (meme pattern que
+  // Cmd_createvisualtask — fix 2026-06-11 : l'increment SANS task etait LE
+  // bloqueur des 15 moves rouges du sweep, le compteur ne redescendait jamais).
+  const fnName = animSymbolName(funcPtr);
+  const fn = fnName ? lookupAnimTask(fnName) : undefined;
+  if (fn) {
+    const rt = getRuntime();
+    if (rt) {
+      rt.CreateTask(fn as never, 1);
+      gAnimSoundTaskCount++; // decremente par DestroyAnimSoundTask/VisualTask
+    }
+    return;
+  }
+  // Non enregistree : PAS d'increment (skip propre, dette registry).
+  _warnOnceDette('createsoundtask:' + (fnName ?? ('0x' + (funcPtr >>> 0).toString(16))));
 }
 
 /** 0x20 Cmd_waitsound (battle_anim.c:1635-1661). */
@@ -1841,7 +1852,7 @@ export function tickAnimScript(): void {
   getArgs: () => gBattleAnimArgs,
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
-  DestroyAnimVisualTask, DestroyAnimSprite,
+  DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,
   DoMoveAnim, tickAnimScript, isAnimScriptActive,
   // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.
   forceFinishAnim: () => {

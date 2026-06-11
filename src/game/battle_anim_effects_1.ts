@@ -8,12 +8,15 @@
 import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
+  BlendPalettes, LoadPalette, IndexOfSpritePaletteTag, OBJ_PLTT_ID, gPlttBufferUnfaded,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
 import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords, TranslateSpriteLinearFixedPoint, SetAnimSpriteInitialXOffset } from './battle_anim_mons';
+import { SetCallbackToStoredInData6 } from './battle_anim_mons';
+import { Random2 } from './random';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -576,4 +579,858 @@ registerAnimCallbacks({
   AnimSleepLetterZ: AnimSleepLetterZ as never,
   AnimGrantingStars: AnimGrantingStars as never,
   AnimSparklingStars: AnimSparklingStars as never,
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VAGUE 3 (2026-06-11) : 18 callbacks miroir battle_anim_effects_1.c —
+// constrict/mimic/petal dance/lock-on/horn/slices/endure/sharpen/conversion/
+// moon/moonlight/super fang/hyper beam. Corps C transcrits VERBATIM (mêmes
+// data[], mêmes formules fixed-point) ; GetBattlerSide(b) = (b & 1) ;
+// IsContest() = false (pas de concours web).
+// ═════════════════════════════════════════════════════════════════════════════
+type _ESprite = {
+  data: number[]; x: number; y: number; x2: number; y2: number;
+  invisible?: boolean; subpriority?: number;
+  hFlip?: boolean; vFlip?: boolean;
+  animEnded?: boolean; animPaused?: boolean;
+  affineAnimEnded?: boolean; affineAnimPaused?: boolean;
+  shape?: number; size?: number;
+  callback: unknown;
+};
+
+// constants/battle_anim.h:324-325
+const SOUND_PAN_ATTACKER = -64;
+const SOUND_PAN_TARGET = 63;
+// constants/songs.h
+const SE_M_LEER = 192;
+const SE_M_SWAGGER2 = 194;
+const SE_M_LOCK_ON = 210;
+// constants/rgb.h : RGB(31,31,31)
+const RGB_WHITE = 0x7FFF;
+// constants/battle_anim.h : ANIM_SPRITES_START(10000) + 14
+const ANIM_TAG_LOCK_ON = 10014;
+
+/** 1:1 `gInclineMonCoordTable` (effects_1.c:1545, s8[][2]). */
+const gInclineMonCoordTable: ReadonlyArray<readonly [number, number]> = [
+  [64, 64],
+  [0, -64],
+  [-64, 64],
+  [32, -32],
+];
+
+/** 1:1 `DestroyAnimSprite` utilisé comme VALEUR de callback (stocké en data6). */
+function _destroyAnimSpriteCb(sprite: unknown): void { _pItf().DestroyAnimSprite?.(sprite); }
+
+// ─── Helpers battle_anim_mons.c non encore exportés (transcrits localement) ───
+
+/** 1:1 `WaitAnimForDuration` (battle_anim_mons.c:551) : décompte data[0] → data6. */
+function _WaitAnimForDuration(sprite: _ESprite): void {
+  if (sprite.data[0] > 0) sprite.data[0]--;
+  else SetCallbackToStoredInData6(sprite as never);
+}
+
+/** 1:1 `RunStoredCallbackWhenAnimEnds` (battle_anim_mons.c:735). */
+function _RunStoredCallbackWhenAnimEnds(sprite: _ESprite): void {
+  if (sprite.animEnded) SetCallbackToStoredInData6(sprite as never);
+}
+
+/** 1:1 `TranslateSpriteLinear` (battle_anim_mons.c:593) : data[0] steps,
+ *  x2 += data[1], y2 += data[2] → data6. */
+function _TranslateSpriteLinear(sprite: _ESprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    sprite.x2 += sprite.data[1];
+    sprite.y2 += sprite.data[2];
+  } else {
+    SetCallbackToStoredInData6(sprite as never);
+  }
+}
+
+/** 1:1 `InitAnimFastLinearTranslation` (battle_anim_mons.c:1171) : vitesses
+ *  u16 <<4 avec bit0 = signe. */
+function _InitAnimFastLinearTranslation(sprite: _ESprite): void {
+  const xDiff = sprite.data[2] - sprite.data[1];
+  const yDiff = sprite.data[4] - sprite.data[3];
+  const xSign = xDiff < 0;
+  const ySign = yDiff < 0;
+  let x2 = (Math.abs(xDiff) << 4) & 0xFFFF;
+  let y2 = (Math.abs(yDiff) << 4) & 0xFFFF;
+  x2 = Math.trunc(x2 / sprite.data[0]) & 0xFFFF;
+  y2 = Math.trunc(y2 / sprite.data[0]) & 0xFFFF;
+  if (xSign) x2 |= 1; else x2 &= ~1;
+  if (ySign) y2 |= 1; else y2 &= ~1;
+  sprite.data[1] = x2;
+  sprite.data[2] = y2;
+  sprite.data[4] = 0;
+  sprite.data[3] = 0;
+}
+
+/** 1:1 `AnimFastTranslateLinear` (battle_anim_mons.c:1208) — true = arrivé. */
+function _AnimFastTranslateLinear(sprite: _ESprite): boolean {
+  if (!sprite.data[0]) return true;
+  const v1 = sprite.data[1] & 0xFFFF;
+  const v2 = sprite.data[2] & 0xFFFF;
+  const x = (sprite.data[3] + v1) & 0xFFFF;
+  const y = (sprite.data[4] + v2) & 0xFFFF;
+  if (v1 & 1) sprite.x2 = -(x >> 4);
+  else sprite.x2 = x >> 4;
+  if (v2 & 1) sprite.y2 = -(y >> 4);
+  else sprite.y2 = y >> 4;
+  sprite.data[3] = x;
+  sprite.data[4] = y;
+  sprite.data[0]--;
+  return false;
+}
+
+/** 1:1 `AnimFastTranslateLinearWaitEnd` (battle_anim_mons.c:1239). */
+function _AnimFastTranslateLinearWaitEnd(sprite: _ESprite): void {
+  if (_AnimFastTranslateLinear(sprite)) SetCallbackToStoredInData6(sprite as never);
+}
+
+/** 1:1 `InitAnimFastLinearTranslationWithSpeed` (battle_anim_mons.c:1244) :
+ *  data[0] = vitesse → nb de steps. */
+function _InitAnimFastLinearTranslationWithSpeed(sprite: _ESprite): void {
+  const xDiff = Math.abs(sprite.data[2] - sprite.data[1]) << 4;
+  sprite.data[0] = Math.trunc(xDiff / sprite.data[0]);
+  _InitAnimFastLinearTranslation(sprite);
+}
+
+/** 1:1 `InitAndRunAnimFastLinearTranslation` (battle_anim_mons.c:1199). */
+function _InitAndRunAnimFastLinearTranslation(sprite: _ESprite): void {
+  sprite.data[1] = sprite.x;
+  sprite.data[3] = sprite.y;
+  _InitAnimFastLinearTranslation(sprite);
+  sprite.callback = _AnimFastTranslateLinearWaitEnd;
+  _AnimFastTranslateLinearWaitEnd(sprite);
+}
+
+/** 1:1 `GetBattlerSpriteSubpriority` (battle_anim_mons.c:2035, hors contest).
+ *  Single battle : GetBattlerPosition(b) = b → 0:30, 2:20, 1:40, sinon 50. */
+function _GetBattlerSpriteSubpriority(battler: number): number {
+  const position = battler;
+  if (position === 0) return 30;      // B_POSITION_PLAYER_LEFT
+  else if (position === 2) return 20; // B_POSITION_PLAYER_RIGHT
+  else if (position === 1) return 40; // B_POSITION_OPPONENT_LEFT
+  return 50;                          // B_POSITION_OPPONENT_RIGHT
+}
+
+/** 1:1 `StartSpriteAnim` (sprite.c:1346). */
+function _StartSpriteAnim(sprite: unknown, n: number): void {
+  const spA = sprite as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && n >= 0) { spA.animNum = n; spA.animBeginning = true; spA.animEnded = false; }
+}
+
+/** 1:1 `StartSpriteAffineAnim` (sprite.c:1373). */
+function _StartSpriteAffineAnim(sprite: unknown, n: number): void {
+  const spF = sprite as { affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean };
+  spF.affineAnimNum = n;
+  spF.affineAnimBeginning = true;
+  spF.affineAnimEnded = false;
+}
+
+/** 1:1 `ChangeSpriteAffineAnim` (sprite.c:1388) — même effet au niveau de
+ *  notre modèle (animNum + beginning + ended=false). */
+function _ChangeSpriteAffineAnim(sprite: unknown, n: number): void {
+  _StartSpriteAffineAnim(sprite, n);
+}
+
+/** 1:1 `PlaySE12WithPanning` — pattern repo (battle_controller_player.ts) :
+ *  __PlaySE simple, pan stéréo non câblé. */
+function _PlaySE12WithPanning(seId: number, _pan: number): void {
+  const g = globalThis as { __PlaySE?: (id: number) => void };
+  if (g.__PlaySE) g.__PlaySE(seId);
+}
+
+/** 1:1 `BattleAnimAdjustPanning` (battle_anim.c:1263) hors contest ;
+ *  healthBoxesData[].statusAnimActive non exposé → branche false. */
+function _BattleAnimAdjustPanning(pan: number): number {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  if ((atk & 1) === 0 /* B_SIDE_PLAYER */) {
+    if ((tgt & 1) === 0) {
+      if (pan === SOUND_PAN_TARGET) pan = SOUND_PAN_ATTACKER;
+      else if (pan !== SOUND_PAN_ATTACKER) pan = -pan;
+    }
+  } else if ((tgt & 1) === 1 /* B_SIDE_OPPONENT */) {
+    if (pan === SOUND_PAN_ATTACKER) pan = SOUND_PAN_TARGET;
+  } else {
+    pan = -pan;
+  }
+  if (pan > SOUND_PAN_TARGET) pan = SOUND_PAN_TARGET;
+  else if (pan < SOUND_PAN_ATTACKER) pan = SOUND_PAN_ATTACKER;
+  return pan;
+}
+
+/** 1:1 `GetBattlePalettesMask` (battle_anim_mons.c:1402, hors contest).
+ *  anim1/anim2 (palettes ANIM_TAG allouées) non câblés — toujours appelés
+ *  FALSE ici. Partner visible ≈ IsBattlerSpriteVisible (sprite existe et
+ *  pas invisible) ; single battle → partenaire absent → bit non posé. */
+function _GetBattlePalettesMask(battleBackground: boolean, attacker: boolean, target: boolean,
+  attackerPartner: boolean, targetPartner: boolean, _anim1: boolean, _anim2: boolean): number {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  let selectedPalettes = 0;
+  if (battleBackground) selectedPalettes = 0xE; // palettes BG 1, 2, 3
+  if (attacker) selectedPalettes |= 1 << (atk + 16);
+  if (target) selectedPalettes |= 1 << (tgt + 16);
+  if (attackerPartner) {
+    const p = atk ^ 2; // BATTLE_PARTNER
+    const ps = _battlerSprite(p);
+    if (ps && !ps.invisible) selectedPalettes |= 1 << (p + 16);
+  }
+  if (targetPartner) {
+    const p = tgt ^ 2;
+    const ps = _battlerSprite(p);
+    if (ps && !ps.invisible) selectedPalettes |= 1 << (p + 16);
+  }
+  return selectedPalettes >>> 0;
+}
+
+// ─── Callbacks portés ─────────────────────────────────────────────────────────
+
+/** 1:1 `AnimHyperBeamOrb` (effects_1.c:2336) : orbe du faisceau — anim random
+ *  %8, départ X_2/Y_PIC attaquant ±20 (miroir côté), translation RAPIDE vitesse
+ *  random (64..95), oscillation Cos + subpriority alternée. */
+function AnimHyperBeamOrb(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  const animNum = Random2();
+  _StartSpriteAnim(sprite, animNum % 8);
+  sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) sprite.x -= 20;
+  else sprite.x += 20;
+  const speed = Random2();
+  sprite.data[0] = (speed & 31) + 64;
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, 2);
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, 3);
+  _InitAnimFastLinearTranslationWithSpeed(sprite);
+  sprite.data[5] = Random2() & 0xFF;
+  sprite.data[6] = sprite.subpriority ?? 0;
+  sprite.invisible = false;
+  sprite.callback = AnimHyperBeamOrb_Step;
+  AnimHyperBeamOrb_Step(sprite);
+}
+
+/** 1:1 `AnimHyperBeamOrb_Step` (effects_1.c:2362). */
+function AnimHyperBeamOrb_Step(sprite: _ESprite): void {
+  if (_AnimFastTranslateLinear(sprite)) {
+    _pItf().DestroyAnimSprite?.(sprite);
+  } else {
+    sprite.y2 += Cos(sprite.data[5] & 0xFF, 12);
+    if (sprite.data[5] < 0x7F) sprite.subpriority = sprite.data[6];
+    else sprite.subpriority = sprite.data[6] + 1;
+    sprite.data[5] += 24;
+    sprite.data[5] &= 0xFF;
+  }
+}
+
+/** 1:1 `AnimPetalDanceBigFlower` (effects_1.c:2482) : grande fleur — descente
+ *  linéaire (durée args[3]) + grand cercle Sin(32)/Cos(-5), subpriority
+ *  alternée autour de l'attaquant. */
+function AnimPetalDanceBigFlower(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  InitSpritePosToAnimAttacker(sprite as never, false);
+  sprite.invisible = false;
+  sprite.data[0] = args[3] | 0;  // duration
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = sprite.x;
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(atk, 3) + (args[2] | 0); // targetY
+  InitAnimLinearTranslation(sprite as never);
+  sprite.data[5] = 0x40;
+  sprite.callback = AnimPetalDanceBigFlower_Step;
+  AnimPetalDanceBigFlower_Step(sprite);
+}
+
+/** 1:1 `AnimPetalDanceBigFlower_Step` (effects_1.c:2499). */
+function AnimPetalDanceBigFlower_Step(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if (!AnimTranslateLinear(sprite as never)) {
+    sprite.x2 += Sin(sprite.data[5] & 0xFF, 32);
+    sprite.y2 += Cos(sprite.data[5] & 0xFF, -5);
+    if (((sprite.data[5] - 0x40) & 0xFFFF) < 0x80)
+      sprite.subpriority = _GetBattlerSpriteSubpriority(atk) - 1;
+    else
+      sprite.subpriority = _GetBattlerSpriteSubpriority(atk) + 1;
+    sprite.data[5] = (sprite.data[5] + 5) & 0xFF;
+  } else {
+    _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimPetalDanceSmallFlower` (effects_1.c:2518) : petite fleur — descente
+ *  lente + balancement Sin(8), flip H aux extrêmes (data5≈59/187). */
+function AnimPetalDanceSmallFlower(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  sprite.data[0] = args[3] | 0;  // duration
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = sprite.x;
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(atk, 3) + (args[2] | 0); // targetY
+  InitAnimLinearTranslation(sprite as never);
+  sprite.data[5] = 0x40;
+  sprite.callback = AnimPetalDanceSmallFlower_Step;
+  AnimPetalDanceSmallFlower_Step(sprite);
+}
+
+/** 1:1 `AnimPetalDanceSmallFlower_Step` (effects_1.c:2535). */
+function AnimPetalDanceSmallFlower_Step(sprite: _ESprite): void {
+  if (!AnimTranslateLinear(sprite as never)) {
+    sprite.x2 += Sin(sprite.data[5] & 0xFF, 8);
+    if (((sprite.data[5] - 59) & 0xFFFF) < 5 || ((sprite.data[5] - 187) & 0xFFFF) < 5)
+      sprite.hFlip = !sprite.hFlip; // 1:1 oam.matrixNum ^= ST_OAM_HFLIP
+    sprite.data[5] += 5;
+    sprite.data[5] &= 0xFF;
+  } else {
+    _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimConstrictBinding` (effects_1.c:2719) : corde qui SERRE la cible —
+ *  affine anim args[2] (en pause), relancée args[3] fois au signal scripté
+ *  gBattleAnimArgs[7] == 0xFFFF. */
+function AnimConstrictBinding(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 2];
+  InitSpritePosToAnimTarget(sprite as never, false);
+  sprite.invisible = false;
+  sprite.affineAnimPaused = true;
+  _StartSpriteAffineAnim(sprite, args[2] | 0);
+  sprite.data[6] = args[2] | 0;  // affineAnimation
+  sprite.data[7] = args[3] | 0;  // squeezes
+  sprite.callback = AnimConstrictBinding_Step1;
+}
+
+/** 1:1 `AnimConstrictBinding_Step1` (effects_1.c:2731) : attend le signal
+ *  scripté args[7] == 0xFFFF (setarg) → dépause l'affine, data[0]=0x100. */
+function AnimConstrictBinding_Step1(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [];
+  if (((args[7] ?? 0) & 0xFFFF) === 0xFFFF) {
+    sprite.affineAnimPaused = false;
+    sprite.data[0] = 0x100;
+    sprite.callback = AnimConstrictBinding_Step2;
+  }
+}
+
+/** 1:1 `AnimConstrictBinding_Step2` (effects_1.c:2744) : ±11 sur data[0]
+ *  (alternance 6 frames) ; à chaque fin d'affine → resqueeze ou destroy. */
+function AnimConstrictBinding_Step2(sprite: _ESprite): void {
+  if (!sprite.data[2]) sprite.data[0] += 11;
+  else sprite.data[0] -= 11;
+  if (++sprite.data[1] === 6) {
+    sprite.data[1] = 0;
+    sprite.data[2] ^= 1;
+  }
+  if (sprite.affineAnimEnded) {
+    if (--sprite.data[7] > 0) _StartSpriteAffineAnim(sprite, sprite.data[6]);
+    else _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimMimicOrb` (effects_1.c:2840) : orbe cible → attaquant. case 0 :
+ *  pos cible+args (miroir X si cible côté joueur — MUTE args[0] comme le C),
+ *  invisible ; case 1 : visible, fin d'affine → ChangeSpriteAffineAnim(1) +
+ *  translation rapide (25) vers l'attaquant → destroy. */
+function AnimMimicOrb(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  switch (sprite.data[0]) {
+    case 0:
+      if ((tgt & 1) === 0 /* B_SIDE_PLAYER */) args[0] = -(args[0] | 0);
+      sprite.x = GetBattlerSpriteCoord(tgt, 0) + (args[0] | 0);
+      sprite.y = GetBattlerSpriteCoord(tgt, 1) + (args[1] | 0);
+      sprite.invisible = true;
+      sprite.data[0]++;
+      break;
+    case 1:
+      sprite.invisible = false;
+      if (sprite.affineAnimEnded) {
+        _ChangeSpriteAffineAnim(sprite, 1);
+        sprite.data[0] = 25;
+        sprite.data[2] = GetBattlerSpriteCoord(atk, 2);
+        sprite.data[4] = GetBattlerSpriteCoord(atk, 3);
+        sprite.callback = _InitAndRunAnimFastLinearTranslation;
+        StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+        break;
+      }
+  }
+}
+
+/** 1:1 `AnimLockOnTarget` (effects_1.c:4219) : réticule Lock-On — départ
+ *  (-32,-32) du centre, 20 frames, puis cascade Step1..6 (4 bonds inclinés +
+ *  flash blanc + flicker final). */
+function AnimLockOnTarget(sprite: _ESprite): void {
+  sprite.x -= 32;
+  sprite.y -= 32;
+  sprite.invisible = false;
+  sprite.data[0] = 20;
+  sprite.callback = _WaitAnimForDuration;
+  StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step1 as never);
+}
+
+/** 1:1 `AnimLockOnTarget_Step1` (effects_1.c:4228) : alternance pause 1 frame /
+ *  bond 8 frames vers gInclineMonCoordTable[data5>>8] (+SE_M_LOCK_ON). */
+function AnimLockOnTarget_Step1(sprite: _ESprite): void {
+  switch (sprite.data[5] & 1) {
+    case 0:
+      sprite.data[0] = 1;
+      sprite.callback = _WaitAnimForDuration;
+      StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step1 as never);
+      break;
+    case 1:
+      sprite.x += sprite.x2;
+      sprite.y += sprite.y2;
+      sprite.y2 = 0;
+      sprite.x2 = 0;
+      sprite.data[0] = 8;
+      sprite.data[2] = sprite.x + gInclineMonCoordTable[sprite.data[5] >> 8][0];
+      sprite.data[4] = sprite.y + gInclineMonCoordTable[sprite.data[5] >> 8][1];
+      sprite.callback = StartAnimLinearTranslation as never;
+      StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step2 as never);
+      sprite.data[5] += 0x100;
+      _PlaySE12WithPanning(SE_M_LOCK_ON, _BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+      break;
+  }
+  sprite.data[5] ^= 1;
+}
+
+/** 1:1 `AnimLockOnTarget_Step2` (effects_1.c:4255) : 4 bonds faits → pause 10
+ *  puis Step3, sinon re-Step1. */
+function AnimLockOnTarget_Step2(sprite: _ESprite): void {
+  if ((sprite.data[5] >> 8) === 4) {
+    sprite.data[0] = 10;
+    sprite.callback = _WaitAnimForDuration;
+    StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step3 as never);
+  } else {
+    sprite.callback = AnimLockOnTarget_Step1;
+  }
+}
+
+/** 1:1 `AnimLockOnTarget_Step3` (effects_1.c:4269) : réticule principal
+ *  (affineParam 0) → flash blanc Step4 ; coin (1..4) → file vers son coin
+ *  (±8,±8) en 6 frames puis Step5. (oam.affineParam modélisé `_affineParam`.) */
+function AnimLockOnTarget_Step3(sprite: _ESprite): void {
+  const spx = sprite as _ESprite & { _affineParam?: number };
+  if ((spx._affineParam ?? 0) === 0) {
+    sprite.data[0] = 3;
+    sprite.data[1] = 0;
+    sprite.data[2] = 0;
+    sprite.callback = _WaitAnimForDuration;
+    StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step4 as never);
+  } else {
+    const tgt = _pItf().getTarget?.() ?? 1;
+    let a: number;
+    let b: number;
+    switch (spx._affineParam) {
+      case 1: a = -8; b = -8; break;
+      case 2: a = -8; b = 8; break;
+      case 3: a = 8; b = -8; break;
+      default: a = 8; b = 8; break;
+    }
+    sprite.x += sprite.x2;
+    sprite.y += sprite.y2;
+    sprite.y2 = 0;
+    sprite.x2 = 0;
+    sprite.data[0] = 6;
+    sprite.data[2] = GetBattlerSpriteCoord(tgt, 2) + a;
+    sprite.data[4] = GetBattlerSpriteCoord(tgt, 3) + b;
+    sprite.callback = StartAnimLinearTranslation as never;
+    StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step5 as never);
+  }
+}
+
+/** 1:1 `AnimLockOnTarget_Step4` (effects_1.c:4315) : flash BLANC des palettes
+ *  combat (BlendPalettes ±3/frame jusqu'à 16 puis redescente), au pic :
+ *  recolore le réticule (couleurs 8..9 → 1..2 de sa palette OBJ — slot via
+ *  tag ANIM_TAG_LOCK_ON ≡ oam.paletteNum décomp) + SE_M_LEER. */
+function AnimLockOnTarget_Step4(sprite: _ESprite): void {
+  if (sprite.data[2] === 0) {
+    if ((sprite.data[1] += 3) > 16) sprite.data[1] = 16;
+  } else if ((sprite.data[1] -= 3) < 0) {
+    sprite.data[1] = 0;
+  }
+  BlendPalettes(_GetBattlePalettesMask(true, true, true, true, true, false, false), sprite.data[1], RGB_WHITE);
+  if (sprite.data[1] === 16) {
+    sprite.data[2]++;
+    let pal = IndexOfSpritePaletteTag(ANIM_TAG_LOCK_ON);
+    if (pal === 0xFF) pal = IndexOfSpritePaletteTag('ANIM_TAG_LOCK_ON');
+    if (pal !== 0xFF) {
+      const base = OBJ_PLTT_ID(pal);
+      const src = new Uint16Array([gPlttBufferUnfaded[base + 8], gPlttBufferUnfaded[base + 9]]);
+      LoadPalette(src, base + 1, 4 /* PLTT_SIZEOF(2) */);
+    }
+    _PlaySE12WithPanning(SE_M_LEER, _BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+  } else if (sprite.data[1] === 0) {
+    sprite.callback = AnimLockOnTarget_Step5;
+  }
+}
+
+/** 1:1 `AnimLockOnTarget_Step5` (effects_1.c:4342) : attend le signal scripté
+ *  args[7] == 0xFFFF → flicker final. */
+function AnimLockOnTarget_Step5(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [];
+  if (((args[7] ?? 0) & 0xFFFF) === 0xFFFF) {
+    sprite.data[1] = 0;
+    sprite.data[0] = 0;
+    sprite.callback = AnimLockOnTarget_Step6;
+  }
+}
+
+/** 1:1 `AnimLockOnTarget_Step6` (effects_1.c:4353) : flicker toutes les 3
+ *  frames ×8 → destroy. */
+function AnimLockOnTarget_Step6(sprite: _ESprite): void {
+  if (sprite.data[0] % 3 === 0) {
+    sprite.data[1]++;
+    sprite.invisible = !sprite.invisible;
+  }
+  sprite.data[0]++;
+  if (sprite.data[1] === 8) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimLockOnMoveTarget` (effects_1.c:4366) : coin du réticule — args[0]
+ *  1..4 = coin (offsets ±0x18 + flips OAM), tile +16 (partie coin de la sheet
+ *  LOCK_ON), puis chaîne AnimLockOnTarget. */
+function AnimLockOnMoveTarget(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0];
+  const spx = sprite as _ESprite & { _affineParam?: number; tileBase?: number; sheetTileStart?: number };
+  spx._affineParam = args[0] | 0; // 1:1 sprite->oam.affineParam = cmd->unk0
+  if ((args[0] | 0) === 1) {
+    sprite.x -= 0x18;
+    sprite.y -= 0x18;
+  } else if ((args[0] | 0) === 2) {
+    sprite.x -= 0x18;
+    sprite.y += 0x18;
+    sprite.vFlip = true;  // 1:1 oam.matrixNum = ST_OAM_VFLIP
+  } else if ((args[0] | 0) === 3) {
+    sprite.x += 0x18;
+    sprite.y -= 0x18;
+    sprite.hFlip = true;  // 1:1 oam.matrixNum = ST_OAM_HFLIP
+  } else {
+    sprite.x += 0x18;
+    sprite.y += 0x18;
+    sprite.hFlip = true;  // 1:1 oam.matrixNum = ST_OAM_HFLIP | ST_OAM_VFLIP
+    sprite.vFlip = true;
+  }
+  // 1:1 sprite->oam.tileNum += 16 : la sheet LOCK_ON = réticule 32x32
+  // (16 tiles) puis coin 16x16 ; le runtime recalcule oam.tileNum depuis la
+  // base → on décale les DEUX bases modélisées.
+  if (typeof spx.tileBase === 'number') spx.tileBase += 16;
+  if (typeof spx.sheetTileStart === 'number') spx.sheetTileStart += 16;
+  sprite.callback = AnimLockOnTarget as never;
+  AnimLockOnTarget(sprite);
+}
+
+/** 1:1 `AnimSlashSlice` (effects_1.c:4696) : entaille sur attaquant (args[0]=0)
+ *  ou cible (X_2/Y_PIC + args[1..2]), anim de table → flicker Step3 → destroy. */
+function AnimSlashSlice(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [1, 0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  if ((args[0] | 0) === 0) {
+    sprite.x = GetBattlerSpriteCoord(atk, 2) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, 3) + (args[2] | 0);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(tgt, 2) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(tgt, 3) + (args[2] | 0);
+  }
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  StoreSpriteCallbackInData6(sprite as never, AnimFalseSwipeSlice_Step3 as never);
+  sprite.callback = _RunStoredCallbackWhenAnimEnds;
+}
+
+/** 1:1 `AnimFalseSwipeSlice` (effects_1.c:4717) : entaille à -48px (0xFFD0 s16)
+ *  de la cible, anim de table → Step1 (glisse) → flicker → destroy. */
+function AnimFalseSwipeSlice(sprite: _ESprite): void {
+  const tgt = _pItf().getTarget?.() ?? 1;
+  sprite.x = GetBattlerSpriteCoord(tgt, 2) - 48; // + 0xFFD0 (s16)
+  sprite.y = GetBattlerSpriteCoord(tgt, 3);
+  sprite.invisible = false;
+  StoreSpriteCallbackInData6(sprite as never, AnimFalseSwipeSlice_Step1 as never);
+  sprite.callback = _RunStoredCallbackWhenAnimEnds;
+}
+
+/** 1:1 `AnimFalseSwipePositionedSlice` (effects_1.c:4725) : entaille positionnée
+ *  -48+args[0], anim 1, flicker Step3 direct. */
+function AnimFalseSwipePositionedSlice(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0];
+  const tgt = _pItf().getTarget?.() ?? 1;
+  sprite.x = GetBattlerSpriteCoord(tgt, 2) - 48 + (args[0] | 0);
+  sprite.y = GetBattlerSpriteCoord(tgt, 3);
+  sprite.invisible = false;
+  _StartSpriteAnim(sprite, 1);
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.callback = AnimFalseSwipeSlice_Step3;
+}
+
+/** 1:1 `AnimFalseSwipeSlice_Step1` (effects_1.c:4737) : 8 frames puis glisse
+ *  linéaire (12 steps de +8 en X). */
+function AnimFalseSwipeSlice_Step1(sprite: _ESprite): void {
+  if (++sprite.data[0] > 8) {
+    sprite.data[0] = 12;
+    sprite.data[1] = 8;
+    sprite.data[2] = 0;
+    StoreSpriteCallbackInData6(sprite as never, AnimFalseSwipeSlice_Step2 as never);
+    sprite.callback = _TranslateSpriteLinear;
+  }
+}
+
+/** 1:1 `AnimFalseSwipeSlice_Step2` (effects_1.c:4749). */
+function AnimFalseSwipeSlice_Step2(sprite: _ESprite): void {
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.callback = AnimFalseSwipeSlice_Step3;
+}
+
+/** 1:1 `AnimFalseSwipeSlice_Step3` (effects_1.c:4756) : flicker 1 frame sur 2,
+ *  ×8 → destroy. */
+function AnimFalseSwipeSlice_Step3(sprite: _ESprite): void {
+  if (++sprite.data[0] > 1) {
+    sprite.data[0] = 0;
+    sprite.invisible = !sprite.invisible;
+    if (++sprite.data[1] > 8) _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimEndureEnergy` (effects_1.c:4767) : flamme d'Endure sur attaquant
+ *  (args[0]=0) ou cible (COORD_X/Y + args[1..2]) — monte par paliers
+ *  (data[0] cycle 0..args[3]). */
+function AnimEndureEnergy(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 2];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  if ((args[0] | 0) === 0) {
+    sprite.x = GetBattlerSpriteCoord(atk, 0) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, 1) + (args[2] | 0);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(tgt, 0) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(tgt, 1) + (args[2] | 0);
+  }
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.callback = AnimEndureEnergy_Step;
+}
+
+/** 1:1 `AnimEndureEnergy_Step` (effects_1.c:4787) — `y -= data[0]` VERBATIM
+ *  (:4795, montée accélérée par paliers) ; destroy à animEnded. */
+function AnimEndureEnergy_Step(sprite: _ESprite): void {
+  if (++sprite.data[0] > sprite.data[1]) {
+    sprite.data[0] = 0;
+    sprite.y--;
+  }
+  sprite.y -= sprite.data[0];
+  if (sprite.animEnded) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimSharpenSphere` (effects_1.c:4800) : sphère Sharpen au-dessus de
+ *  l'attaquant (Y_PIC-12), flicker s'élargissant + SE_M_SWAGGER2 un cycle
+ *  visible sur deux → destroy (animEnded & data[1]>16 & invisible). */
+function AnimSharpenSphere(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2);
+  sprite.y = GetBattlerSpriteCoord(atk, 3) - 12;
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = 2;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = _BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);
+  sprite.callback = AnimSharpenSphere_Step;
+}
+
+/** 1:1 `AnimSharpenSphere_Step` (effects_1.c:4813). */
+function AnimSharpenSphere_Step(sprite: _ESprite): void {
+  if (++sprite.data[0] >= sprite.data[1]) {
+    sprite.invisible = !sprite.invisible;
+    if (!sprite.invisible) {
+      sprite.data[4]++;
+      if (!(sprite.data[4] & 1)) _PlaySE12WithPanning(SE_M_SWAGGER2, sprite.data[5]);
+    }
+    sprite.data[0] = 0;
+    if (++sprite.data[2] > 1) {
+      sprite.data[2] = 0;
+      sprite.data[1]++;
+    }
+  }
+  if (sprite.animEnded && sprite.data[1] > 16 && sprite.invisible)
+    _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimConversion` (effects_1.c:4837) : carré Conversion sur l'attaquant
+ *  (COORD_X/Y + args[0..1]), détruit au signal scripté args[7] == 0xFFFF
+ *  (posé par AnimTask_ConversionAlphaBlend). */
+function AnimConversion(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if (sprite.data[0] === 0) {
+    sprite.x = GetBattlerSpriteCoord(atk, 0) + (args[0] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, 1) + (args[1] | 0);
+    sprite.invisible = false;
+    // IsContest() → y += 10 : pas de concours web.
+    sprite.data[0]++;
+  }
+  if (((args[7] ?? 0) & 0xFFFF) === 0xFFFF) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimConversion2` (effects_1.c:4881) : carré sur la CIBLE, anim en
+ *  pause args[2] frames puis file vers l'attaquant (30 frames) → destroy. */
+function AnimConversion2(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0];
+  InitSpritePosToAnimTarget(sprite as never, false);
+  sprite.invisible = false;
+  sprite.animPaused = true;
+  sprite.data[0] = args[2] | 0;
+  sprite.callback = AnimConversion2_Step;
+}
+
+/** 1:1 `AnimConversion2_Step` (effects_1.c:4891). */
+function AnimConversion2_Step(sprite: _ESprite): void {
+  if (sprite.data[0]) {
+    sprite.data[0]--;
+  } else {
+    const atk = _pItf().getAttacker?.() ?? 0;
+    sprite.animPaused = false;
+    sprite.data[0] = 30;
+    sprite.data[2] = GetBattlerSpriteCoord(atk, 2);
+    sprite.data[4] = GetBattlerSpriteCoord(atk, 3);
+    sprite.callback = StartAnimLinearTranslation as never;
+    StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+  }
+}
+
+/** 1:1 `AnimMoon` (effects_1.c:4946) : la lune de Moonlight (64x64, position
+ *  args[0..1]) — reste affichée jusqu'au signal data[0] (posé par
+ *  AnimTask_MoonlightEndFade, non porté → cleanup fin d'anim). */
+function AnimMoon(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [120, 56];
+  // IsContest() → (48,40) : pas de concours web.
+  sprite.x = args[0] | 0;
+  sprite.y = args[1] | 0;
+  sprite.invisible = false;
+  sprite.shape = 0; // 1:1 oam.shape = SPRITE_SHAPE(64x64)
+  sprite.size = 3;  // 1:1 oam.size = SPRITE_SIZE(64x64)
+  sprite.data[0] = 0;
+  sprite.callback = AnimMoon_Step;
+}
+
+/** 1:1 `AnimMoon_Step` (effects_1.c:4967). */
+function AnimMoon_Step(sprite: _ESprite): void {
+  if (sprite.data[0]) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimMoonlightSparkle` (effects_1.c:4973) : étincelle de Moonlight —
+ *  descend 1px / 2 frames (120 max) jusqu'au signal data[0]. */
+function AnimMoonlightSparkle(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2) + (args[0] | 0);
+  sprite.y = args[1] | 0;
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 1;
+  sprite.callback = AnimMoonlightSparkle_Step;
+}
+
+/** 1:1 `AnimMoonlightSparkle_Step` (effects_1.c:4987). */
+function AnimMoonlightSparkle_Step(sprite: _ESprite): void {
+  if (++sprite.data[1] > 1) {
+    sprite.data[1] = 0;
+    if (sprite.data[2] < 120) {
+      sprite.y++;
+      sprite.data[2]++;
+    }
+  }
+  if (sprite.data[0]) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimHornHit` (effects_1.c:5108) : la corne file vers le point d'impact
+ *  cible+args[0..1] en args[2] frames (fixed-point <<7, clamp 2..0x7F — MUTE
+ *  args[2] comme le C), flips côté adverse ; snap au point d'impact à
+ *  data[1]==1 → destroy. */
+function AnimHornHit(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 8];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  if ((args[2] | 0) < 2) args[2] = 2;
+  if ((args[2] | 0) > 0x7F) args[2] = 0x7F;
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = args[2] | 0;
+  sprite.x = GetBattlerSpriteCoord(tgt, 2) + (args[0] | 0);
+  sprite.y = GetBattlerSpriteCoord(tgt, 3) + (args[1] | 0);
+  sprite.data[6] = sprite.x;
+  sprite.data[7] = sprite.y;
+  if ((atk & 1) === 0 /* B_SIDE_PLAYER */) {
+    sprite.x -= 40;
+    sprite.y += 20;
+    sprite.data[2] = sprite.x << 7;
+    sprite.data[3] = Math.trunc(0x1400 / sprite.data[1]);
+    sprite.data[4] = sprite.y << 7;
+    sprite.data[5] = Math.trunc(-0xA00 / sprite.data[1]);
+  } else {
+    sprite.x += 40;
+    sprite.y -= 20;
+    sprite.data[2] = sprite.x << 7;
+    sprite.data[3] = Math.trunc(-0x1400 / sprite.data[1]);
+    sprite.data[4] = sprite.y << 7;
+    sprite.data[5] = Math.trunc(0xA00 / sprite.data[1]);
+    sprite.hFlip = true; // 1:1 oam.matrixNum = ST_OAM_HFLIP | ST_OAM_VFLIP
+    sprite.vFlip = true;
+  }
+  sprite.callback = AnimHornHit_Step;
+}
+
+/** 1:1 `AnimHornHit_Step` (effects_1.c:5157). */
+function AnimHornHit_Step(sprite: _ESprite): void {
+  sprite.data[2] += sprite.data[3];
+  sprite.data[4] += sprite.data[5];
+  sprite.x = sprite.data[2] >> 7;
+  sprite.y = sprite.data[4] >> 7;
+  if (--sprite.data[1] === 1) {
+    sprite.x = sprite.data[6];
+    sprite.y = sprite.data[7];
+  }
+  if (sprite.data[1] === 0) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimSuperFang` (effects_1.c:5245) : anim de table → destroy à la fin. */
+function AnimSuperFang(sprite: _ESprite): void {
+  sprite.invisible = false;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+  sprite.callback = _RunStoredCallbackWhenAnimEnds;
+}
+
+registerAnimCallbacks({
+  AnimConstrictBinding: AnimConstrictBinding as never,
+  AnimMimicOrb: AnimMimicOrb as never,
+  AnimPetalDanceBigFlower: AnimPetalDanceBigFlower as never,
+  AnimPetalDanceSmallFlower: AnimPetalDanceSmallFlower as never,
+  AnimLockOnTarget: AnimLockOnTarget as never,
+  AnimLockOnMoveTarget: AnimLockOnMoveTarget as never,
+  AnimHornHit: AnimHornHit as never,
+  AnimSlashSlice: AnimSlashSlice as never,
+  AnimFalseSwipeSlice: AnimFalseSwipeSlice as never,
+  AnimFalseSwipePositionedSlice: AnimFalseSwipePositionedSlice as never,
+  AnimEndureEnergy: AnimEndureEnergy as never,
+  AnimSharpenSphere: AnimSharpenSphere as never,
+  AnimConversion: AnimConversion as never,
+  AnimConversion2: AnimConversion2 as never,
+  AnimMoon: AnimMoon as never,
+  AnimMoonlightSparkle: AnimMoonlightSparkle as never,
+  AnimSuperFang: AnimSuperFang as never,
+  AnimHyperBeamOrb: AnimHyperBeamOrb as never,
 });
