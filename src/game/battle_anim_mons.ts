@@ -504,6 +504,76 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+/** 1:1 `TranslateSpriteLinearAndFlicker` (battle_anim_mons.c:681) : mouvement
+ *  fixed-point + clignotement (invisible toggle tous les data[5] frames). */
+export function TranslateSpriteLinearAndFlicker(sprite: DecompSprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    sprite.x2 = toS16(sprite.data[2]) >> 8;
+    sprite.data[2] = (sprite.data[2] + sprite.data[1]) & 0xFFFF;
+    sprite.y2 = toS16(sprite.data[4]) >> 8;
+    sprite.data[4] = (sprite.data[4] + sprite.data[3]) & 0xFFFF;
+    if (sprite.data[5] && sprite.data[0] % sprite.data[5] === 0) {
+      (sprite as { invisible?: boolean }).invisible = !(sprite as { invisible?: boolean }).invisible;
+    }
+  } else {
+    SetCallbackToStoredInData6(sprite);
+  }
+}
+
+/** 1:1 `AnimTranslateLinearAndFlicker` (:2358 — 3 templates générés) : args
+ *  [x, y, durée, xVel, yVel, flickerPériode, animNum]. */
+export function AnimTranslateLinearAndFlicker(sprite: DecompSprite): void {
+  const itf = _projItf();
+  const args = itf.getArgs?.() ?? [0, 0, 20, 0, 0, 0, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  let a3 = args[3] | 0;
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) {
+    sprite.x -= args[0] | 0;
+    a3 = -a3;
+  } else {
+    sprite.x += args[0] | 0;
+  }
+  sprite.y += args[1] | 0;
+  (sprite as { invisible?: boolean }).invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = a3;
+  sprite.data[2] = 0;
+  sprite.data[3] = args[4] | 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = args[5] | 0;
+  // StartSpriteAnim(args[6]) : la table generee est posee par Cmd_createsprite —
+  // changer d'anim via animNum.
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && (args[6] | 0) > 0) { spA.animNum = args[6] | 0; spA.animBeginning = true; spA.animEnded = false; }
+  StoreSpriteCallbackInData6(sprite, ((sp: DecompSprite) => { _projItf().DestroyAnimSprite?.(sp); }) as never);
+  sprite.callback = TranslateSpriteLinearAndFlicker as never;
+}
+
+/** 1:1 `AnimWeatherBallDown` (:2534 — 5 templates générés) : la boule météo
+ *  tombe du haut de l'écran vers le point cible (linéaire). */
+export function AnimWeatherBallDown(sprite: DecompSprite): void {
+  const itf = _projItf();
+  const args = itf.getArgs?.() ?? [0, 0, 20, 0, 0, 0];
+  const tgt = itf.getTarget?.() ?? 1;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[2] = (sprite.x + (args[4] | 0)) & 0xFFFF;
+  sprite.data[4] = (sprite.y + (args[5] | 0)) & 0xFFFF;
+  if ((tgt & 1) === 0 /* B_SIDE_PLAYER */) {
+    const x = ((args[4] | 0) & 0xFFFF) + 30;
+    sprite.x += x;
+    sprite.y = (args[5] | 0) - 20;
+  } else {
+    const x = ((args[4] | 0) & 0xFFFF) - 30;
+    sprite.x += x;
+    sprite.y = (args[5] | 0) - 80;
+  }
+  (sprite as { invisible?: boolean }).invisible = false;
+  StoreSpriteCallbackInData6(sprite, ((sp: DecompSprite) => { _projItf().DestroyAnimSprite?.(sp); }) as never);
+  sprite.callback = StartAnimLinearTranslation as never;
+  StartAnimLinearTranslation(sprite);
+}
+
 /** 1:1 `AnimThrowProjectile` (battle_anim_mons.c — 3 templates générés) :
  *  args [xOff, yOff, tgtXOff, tgtYOff, durée, arcAmplitude]. Départ attaquant,
  *  arc vers la cible, destroy. */
@@ -598,4 +668,6 @@ _regCb({
   AnimSpriteOnMonPos: AnimSpriteOnMonPos as never,
   SpriteCallbackDummy: ((_s: unknown) => { /* 1:1 vide */ }) as never,
   AnimThrowProjectile: AnimThrowProjectile as never,
+  AnimTranslateLinearAndFlicker: AnimTranslateLinearAndFlicker as never,
+  AnimWeatherBallDown: AnimWeatherBallDown as never,
 });
