@@ -11,7 +11,7 @@ import {
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
-import { GetBattlerSpriteCoord } from './battle_anim_mons';
+import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6 } from './battle_anim_mons';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -159,7 +159,23 @@ function _FlyingParticle_Step(sprite: _PSprite): void {
   _pItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimPowerAbsorptionOrb` (effects_1.c) : args [x, y, durée] — l'orbe
+ *  converge vers le CENTRE de l'attaquant (charge type Meteor Mash/Giga Drain). */
+function AnimPowerAbsorptionOrb(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 20];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[2] = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  sprite.data[4] = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  StoreSpriteCallbackInData6(sprite as never, ((sp: unknown) => { _pItf().DestroyAnimSprite?.(sp); }) as never);
+  // 1:1 : sprite->callback = StartAnimLinearTranslation (qui chaine WithFollowup).
+  StartAnimLinearTranslation(sprite as never);
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
+  AnimPowerAbsorptionOrb: AnimPowerAbsorptionOrb as never,
 });

@@ -49,8 +49,22 @@ function SoundTask_PlayCryHighPitch(task: AnimTask): void {
   _itf().DestroyAnimVisualTask?.(task.taskId);
 }
 
+/** 1:1 `SoundTask_PlaySE1WithPanning` / `_PlaySE2WithPanning` (sound_tasks.c) :
+ *  SE one-shot avec panning (panning = dette douce infra SE mono) — 47 usages. */
+function SoundTask_PlaySE1WithPanning(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [0, 0];
+  const playSE = (globalThis as Record<string, unknown>).__PlaySE as ((id: number) => void) | undefined;
+  if (args[0]) playSE?.(args[0] | 0);
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+function SoundTask_PlaySE2WithPanning(task: AnimTask): void {
+  SoundTask_PlaySE1WithPanning(task);
+}
+
 registerAnimTasks({
   SoundTask_PlayDoubleCry: SoundTask_PlayDoubleCry as never,
   SoundTask_WaitForCry: SoundTask_WaitForCry as never,
   SoundTask_PlayCryHighPitch: SoundTask_PlayCryHighPitch as never,
+  SoundTask_PlaySE1WithPanning: SoundTask_PlaySE1WithPanning as never,
+  SoundTask_PlaySE2WithPanning: SoundTask_PlaySE2WithPanning as never,
 });
