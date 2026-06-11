@@ -13,7 +13,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
-import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords } from './battle_anim_mons';
+import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords, TranslateSpriteLinearFixedPoint, SetAnimSpriteInitialXOffset } from './battle_anim_mons';
 import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
@@ -518,6 +518,45 @@ function _SleepLetterZ_Step(sprite: _PSprite): void {
   if (++sprite.data[1] > 60) _pItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimGrantingStars` : etoiles de stat-up — args [x, y, anchor, velX, velY, duree]. */
+function AnimGrantingStars(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, -48, 24];
+  if (!(args[2] | 0)) SetSpriteCoordsToAnimAttackerCoords(sprite);
+  sprite.invisible = false;
+  SetAnimSpriteInitialXOffset(sprite as never, args[0] | 0);
+  sprite.y += args[1] | 0;
+  sprite.data[0] = args[5] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[2] = args[4] | 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  StoreSpriteCallbackInData6(sprite as never, ((sp: unknown) => { _pItf().DestroyAnimSprite?.(sp); }) as never);
+  sprite.callback = TranslateSpriteLinearFixedPoint as never;
+}
+
+/** 1:1 `AnimSparklingStars` (single battle) : etoiles scintillantes —
+ *  args [x, y, anchor, velX, velY, duree, coordType]. */
+function AnimSparklingStars(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 0, 30, 0];
+  const battler = !(args[2] | 0) ? (_pItf().getAttacker?.() ?? 0) : (_pItf().getTarget?.() ?? 1);
+  sprite.invisible = false;
+  if (!(args[6] | 0)) {
+    sprite.x = GetBattlerSpriteCoord(battler, 0);
+    sprite.y = GetBattlerSpriteCoord(battler, 1) + (args[1] | 0);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(battler, 2);
+    sprite.y = GetBattlerSpriteCoord(battler, 3) + (args[1] | 0);
+  }
+  SetAnimSpriteInitialXOffset(sprite as never, args[0] | 0);
+  sprite.data[0] = args[5] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[2] = args[4] | 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  StoreSpriteCallbackInData6(sprite as never, ((sp: unknown) => { _pItf().DestroyAnimSprite?.(sp); }) as never);
+  sprite.callback = TranslateSpriteLinearFixedPoint as never;
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
@@ -535,4 +574,6 @@ registerAnimCallbacks({
   AnimAirCutterSlice: AnimCuttingSlice as never, // 1:1 : meme Slice_Step (position avg cible — net)
   AnimBubbleBurst: AnimBubbleBurst as never,
   AnimSleepLetterZ: AnimSleepLetterZ as never,
+  AnimGrantingStars: AnimGrantingStars as never,
+  AnimSparklingStars: AnimSparklingStars as never,
 });

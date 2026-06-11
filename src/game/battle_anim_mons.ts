@@ -504,6 +504,20 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+/** 1:1 `TranslateSpriteLinearFixedPoint` (battle_anim_mons.c:607) : mouvement
+ *  8.8 fixed-point data[1]/data[2], duree data[0] -> stored callback. */
+export function TranslateSpriteLinearFixedPoint(sprite: DecompSprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    sprite.data[3] = (sprite.data[3] + sprite.data[1]) & 0xFFFF;
+    sprite.data[4] = (sprite.data[4] + sprite.data[2]) & 0xFFFF;
+    sprite.x2 = toS16(sprite.data[3]) >> 8;
+    sprite.y2 = toS16(sprite.data[4]) >> 8;
+  } else {
+    SetCallbackToStoredInData6(sprite);
+  }
+}
+
 /** 1:1 `SetSpriteCoordsToAnimAttackerCoords` (battle_anim_mons.c:755). */
 export function SetSpriteCoordsToAnimAttackerCoords(sprite: { x: number; y: number }): void {
   const atk = _projItf().getAttacker?.() ?? 0;

@@ -26,6 +26,7 @@ import {
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';
 import { registerAffineAnim, registerAffineAnimTable } from '../engine/decomp-impls/sprite-affine-extras';
 import { SetSpriteRotScale, PrepareBattlerSpriteForRotScale } from './battle_anim_mons';
 
@@ -134,7 +135,38 @@ registerAnimTemplates([
 ]);
 
 // PHASE 1a : les callbacks portes, par NOM C (consommes par les 387 templates generes).
+/** 1:1 `UnpackSelectedBattlePalettes` (battle_anim_mons.c:317) — single battle. */
+function _UnpackSelectedBattlePalettes(selector: number): number {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as {
+    getAttacker?: () => number; getTarget?: () => number;
+  };
+  let sel = 0;
+  if (selector & 1) sel = 0xE; // F_PAL_BG : palettes BG 1,2,3
+  if ((selector >> 1) & 1) sel |= 1 << ((itf?.getAttacker?.() ?? 0) + 16);
+  if ((selector >> 2) & 1) sel |= 1 << ((itf?.getTarget?.() ?? 1) + 16);
+  // partners (bits 3-4) : non exerces en single ; anim pals (bits 5-6) : dette douce.
+  return sel >>> 0;
+}
+
+/** 1:1 `AnimSimplePaletteBlend`(+Step) (battle_anim_normal.c:298) : LE blend
+ *  des scripts (sprite-controleur invisible — macro simple_palette_blend) :
+ *  BeginNormalPaletteFade(masque) puis attend gPaletteFade.active=false. */
+function AnimSimplePaletteBlend(sprite: { data: number[]; invisible?: boolean; callback: unknown }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[]; DestroyAnimSprite?: (s: unknown) => void };
+  const args = itf?.getArgs?.() ?? [1, 1, 0, 7, 0];
+  const selected = _UnpackSelectedBattlePalettes(args[0] | 0);
+  BeginNormalPaletteFade(selected, args[1] << 16 >> 16, args[2] | 0, args[3] | 0, args[4] & 0xFFFF);
+  sprite.invisible = true;
+  sprite.callback = _SimplePaletteBlend_Step;
+}
+function _SimplePaletteBlend_Step(sprite: { callback: unknown }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gPaletteFade?: { active?: boolean } } | undefined;
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimSprite?: (s: unknown) => void };
+  if (!rt?.gPaletteFade?.active) itf?.DestroyAnimSprite?.(sprite);
+}
+
 registerAnimCallbacks({
   AnimHitSplatBasic: AnimHitSplatBasic as never,
   AnimHitSplatHandleInvert: AnimHitSplatBasic as never, // 1:1 : meme base, invert X = dette douce
+  AnimSimplePaletteBlend: AnimSimplePaletteBlend as never,
 });

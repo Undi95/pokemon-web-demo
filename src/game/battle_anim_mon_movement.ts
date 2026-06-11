@@ -100,6 +100,15 @@ function AnimTask_ShakeMon(task: AnimTask): void {
   }
   const sp = _sprites()?.get(spriteId);
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  // GARDE-FOU opérandes désalignées (sweep 2026-06-11 : numShakes=-1347/-3372,
+  // delay=4172 sur Ice Beam & co — la dette bytecode QUICK_ATTACK généralisée,
+  // 15 moves rouges) : données corrompues → skip le shake, l'anim continue.
+  // RACINE À AUDITER : l'encodage s16 des opérandes createvisualtask.
+  if ((_args()[3] | 0) <= 0 || (_args()[3] | 0) > 1000 || (_args()[4] | 0) < 0 || (_args()[4] | 0) > 240) {
+    console.warn('[anim] ShakeMon2 args corrompus (bytecode) :', _args().slice(0, 5).join(','), '— skip');
+    DestroyAnimVisualTask(task.taskId);
+    return;
+  }
   sp.x2 = _args()[1];
   sp.y2 = _args()[2];
   task.data[0] = spriteId;
@@ -127,7 +136,7 @@ function AnimTask_ShakeMon_Step(task: AnimTask): void {
     sp.x2 = (sp.x2 === 0) ? task.data[4] : 0;
     sp.y2 = (sp.y2 === 0) ? task.data[5] : 0;
     task.data[3] = task.data[2];
-    if (--task.data[1] === 0) {
+    if (--task.data[1] <= 0) {
       sp.x2 = 0;
       sp.y2 = 0;
       DestroyAnimVisualTask(task.taskId);

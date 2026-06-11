@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/check_furniture-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
+// Generated: 2026-06-11
 // Stats: ops=14, bytes=63, labels=7, unknownOps=0, unresolvedSymbols=7
 
 /** Label name → byte offset within BYTECODE. */

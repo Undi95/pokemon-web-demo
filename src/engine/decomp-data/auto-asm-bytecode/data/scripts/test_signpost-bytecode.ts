@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/test_signpost-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
+// Generated: 2026-06-11
 // Stats: ops=2, bytes=9, labels=2, unknownOps=0, unresolvedSymbols=0
 
 /** Label name → byte offset within BYTECODE. */

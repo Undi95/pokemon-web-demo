@@ -1,8 +1,8 @@
 // AUTO-GENERATED from data/scripts/movement-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
-// Stats: ops=56, bytes=56, labels=22, unknownOps=0, unresolvedSymbols=0
+// Generated: 2026-06-11
+// Stats: ops=56, bytes=56, labels=22, unknownOps=0, unresolvedSymbols=19
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -31,6 +31,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [87,254,86,254,20,20,20,254,62,254,63,254,78,254,39,254,38,254,40,254,37,254,3,254,2,254,0,254,1,254,29,254,31,254,32,254,9,9,9,9,9,9,254,9,9,9,9,254,20,20,254,9,254,9,9,254] as const;
+export const BYTECODE: readonly number[] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] as const;
 
-export const STATS = { ops: 56, bytes: 56, labels: 22, unknownOps: 0, unresolvedSymbols: 0 } as const;
+export const STATS = { ops: 56, bytes: 56, labels: 22, unknownOps: 0, unresolvedSymbols: 19 } as const;

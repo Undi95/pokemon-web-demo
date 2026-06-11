@@ -698,22 +698,37 @@ function substituteArgs(op, bindings) {
 
 /** Bind macro args. macro.args are like ['dest:req', 'val=TRUE']. */
 function bindArgs(macroArgs, callArgs) {
+  // SEMANTIQUE GNU as 1:1 (fix 2026-06-11) : les appels de macro peuvent
+  // passer des arguments NOMMES `param=valeur` (ex. la macro
+  // simple_palette_blend appelee `selector=F_PAL_BG, delay=1, ...` dans
+  // battle_anim_scripts.s). L'ancienne liaison purement POSITIONNELLE liait
+  // 'selector=F_PAL_BG' au param 1 (unused_anim_battler) -> operandes a ZERO
+  // emises pour ~15 moves (Ice Beam & toute la famille beam, sweep rouges).
+  // Regle GAS : un arg `name=value` ou `name` est un parametre de la macro se
+  // lie PAR NOM ; les positionnels restants se lient aux params libres en ordre.
+  const params = macroArgs.map((def) => {
+    let name = def, dflt = undefined;
+    const eqIdx = name.indexOf('=');
+    if (eqIdx !== -1) { dflt = name.slice(eqIdx + 1); name = name.slice(0, eqIdx); }
+    const colonIdx = name.indexOf(':');
+    if (colonIdx !== -1) name = name.slice(0, colonIdx);
+    return { name: name.trim(), dflt };
+  });
+  const paramNames = new Set(params.map((p) => p.name));
   const bindings = {};
-  for (let i = 0; i < macroArgs.length; i++) {
-    const def = macroArgs[i];
-    // Strip :req or = default
-    let name = def, def2 = undefined;
-    const colonIdx = def.indexOf(':');
-    if (colonIdx !== -1) name = def.slice(0, colonIdx);
-    const eqIdx = def.indexOf('=');
-    if (eqIdx !== -1) { name = def.slice(0, eqIdx); def2 = def.slice(eqIdx + 1); }
-    if (i < callArgs.length) {
-      bindings[name] = String(callArgs[i]);
-    } else if (def2 !== undefined) {
-      bindings[name] = def2;
-    } else {
-      bindings[name] = ''; // unbound required arg
-    }
+  const positional = [];
+  for (const raw of callArgs) {
+    const s = String(raw);
+    const m = s.match(/^\s*(\w+)\s*=\s*([\s\S]*)$/);
+    if (m && paramNames.has(m[1])) bindings[m[1]] = m[2].trim();
+    else positional.push(s);
+  }
+  let pi = 0;
+  for (const p of params) {
+    if (Object.prototype.hasOwnProperty.call(bindings, p.name)) continue;
+    if (pi < positional.length) bindings[p.name] = String(positional[pi++]);
+    else if (p.dflt !== undefined) bindings[p.name] = p.dflt;
+    else bindings[p.name] = ''; // unbound required arg
   }
   return bindings;
 }

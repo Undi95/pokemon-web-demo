@@ -340,6 +340,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('./battle-anim-generated-bridge'),           // PHASE 1a : donnees generees (387 tpl)
     import('../../game/battle_anim_rock'),               // vague 2c : vortex
     import('../../game/battle_anim_utility_funcs'),       // vague 2e : BlendBattleAnimPal (89 usages)
+    import('../../game/battle_anim_fight'),                // vague 3h : poings/pieds
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
