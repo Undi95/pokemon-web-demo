@@ -2068,3 +2068,42 @@ _sbRegT({
   AnimTask_MusicNotesRainbowBlend: AnimTask_MusicNotesRainbowBlend as never,
   AnimTask_MusicNotesClearRainbowBlend: AnimTask_MusicNotesClearRainbowBlend as never,
 });
+
+// ─── VAGUE F37 : Conversion ×2 (effects_1.c:4856 + :4908) ───────────────────
+function _cvRt(): { SetGpuReg?: (off: number, v: number) => void } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+/** 1:1 `AnimTask_ConversionAlphaBlend` (effects_1.c:4856) : fondu BLDALPHA
+ *  16-n/n par pas de 4f, signal args[7]=0xFFFF une frame, puis destroy. */
+function AnimTask_ConversionAlphaBlend(task: { taskId: number; data: number[] }): void {
+  const itf = _sbItf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  if (task.data[2] === 1) {
+    const args = itf.getArgs?.();
+    if (args) args[7] = 0xFFFF;
+    task.data[2]++;
+  } else if (task.data[2] === 2) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  } else {
+    if (++task.data[0] === 4) {
+      task.data[0] = 0;
+      task.data[1]++;
+      _cvRt().SetGpuReg?.(0x52, ((16 - task.data[1]) & 0xFFFF) | (task.data[1] << 8));
+      if (task.data[1] === 16) task.data[2]++;
+    }
+  }
+}
+/** 1:1 `AnimTask_Conversion2AlphaBlend` (effects_1.c:4908) : fondu inverse. */
+function AnimTask_Conversion2AlphaBlend(task: { taskId: number; data: number[] }): void {
+  if (++task.data[0] === 4) {
+    task.data[0] = 0;
+    task.data[1]++;
+    _cvRt().SetGpuReg?.(0x52, (task.data[1] & 0xFFFF) | ((16 - task.data[1]) << 8));
+    if (task.data[1] === 16) {
+      (_sbItf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+_sbRegT({
+  AnimTask_ConversionAlphaBlend: AnimTask_ConversionAlphaBlend as never,
+  AnimTask_Conversion2AlphaBlend: AnimTask_Conversion2AlphaBlend as never,
+});

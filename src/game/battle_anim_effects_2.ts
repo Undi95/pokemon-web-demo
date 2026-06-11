@@ -1918,3 +1918,59 @@ _regTasks({
   AnimTask_LoadMusicNotesPals: AnimTask_LoadMusicNotesPals as never,
   AnimTask_FreeMusicNotesPals: AnimTask_FreeMusicNotesPals as never,
 });
+
+// ─── VAGUE F37 : AnimTask_GrowAndGrayscale (effects_2.c:2012) ───────────────
+// Le target grossit (0xD0) en blend + palette GRISÉE 80 frames, puis restore.
+function _ggSpriteId(): number {
+  const b = _spItf2().getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+/** Grayscale de la palette OBJ du sprite (transcrit local, pattern dark.ts —
+ *  restore = no-op net : le snapshot du Launch restaure en fin de move). */
+function _ggGrayscale(spriteId: number): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { oamIndex: number }>;
+    gba?: { oam: Array<{ paletteNum: number }> };
+    gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+  } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : -1;
+  const pf = rt?.gPlttBufferFaded;
+  if (pal < 0 || !pf?.get || !pf.set) return;
+  const off = 256 + pal * 16;
+  for (let i = 0; i < 16; i++) {
+    const c = pf.get(off + i);
+    const r = c & 31, g = (c >> 5) & 31, b = (c >> 10) & 31;
+    const avg = Math.trunc((r + g + b) / 3);
+    pf.set(off + i, avg | (avg << 5) | (avg << 10));
+  }
+}
+/** 1:1 `AnimTask_GrowAndGrayscale` (effects_2.c:2012). */
+function AnimTask_GrowAndGrayscale(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const spriteId = _ggSpriteId();
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void;
+    SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+    ResetSpriteRotScale?: (id: number) => void;
+  } | undefined;
+  mons?.PrepareBattlerSpriteForRotScale?.(spriteId, 1 /* ST_OAM_OBJ_BLEND */);
+  mons?.SetSpriteRotScale?.(spriteId, 0xD0, 0xD0, 0);
+  _ggGrayscale(spriteId);
+  task.data[0] = 80;
+  task.func = _GrowAndGrayscale_Step;
+}
+/** 1:1 `AnimTask_GrowAndGrayscale_Step` (effects_2.c:2022). */
+function _GrowAndGrayscale_Step(task: { taskId: number; data: number[] }): void {
+  if (--task.data[0] === -1) {
+    const spriteId = _ggSpriteId();
+    if (spriteId !== 0xFF) {
+      const mons2 = (globalThis as Record<string, unknown>).__battleAnimMons as { ResetSpriteRotScale?: (id: number) => void } | undefined;
+      mons2?.ResetSpriteRotScale?.(spriteId);
+    }
+    // restore palette = no-op net (snapshot Launch, cf. _ggGrayscale).
+    _spItf2().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+_regTasks({ AnimTask_GrowAndGrayscale: AnimTask_GrowAndGrayscale as never });
