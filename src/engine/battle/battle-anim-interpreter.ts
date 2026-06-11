@@ -935,10 +935,23 @@ function Cmd_delay(): void {
 
 /** 0x05 Cmd_waitforvisualfinish (battle_anim.c:454-466).
  *  Block until gAnimVisualTaskCount == 0. */
+let _waitVisualFrames = 0;
 function Cmd_waitforvisualfinish(): void {
   if (gAnimVisualTaskCount === 0) {
     _pc++;
     sAnimFramesToWait = 0;
+    _waitVisualFrames = 0;
+  } else if (++_waitVisualFrames > 600) {
+    // GARDE-FOU GENERAL (2026-06-11) : une task visuelle RESOLUE bloquee
+    // (args pollues / step qui ne converge pas) gelait le script a jamais
+    // (vu : MEGA_PUNCH/CUT/SLAM timeout\@900, visualTaskCount=1). Le decomp
+    // n'en a pas besoin (tasks saines) ; nous si -> on force la fin du wait,
+    // le script continue vers end (et la purge par identite nettoie).
+    console.warn('[battle-anim] waitforvisualfinish > 600 frames (taskCount=' + gAnimVisualTaskCount + ') — force la suite (garde-fou).');
+    gAnimVisualTaskCount = 0;
+    _pc++;
+    sAnimFramesToWait = 0;
+    _waitVisualFrames = 0;
   } else {
     sAnimFramesToWait = 1;
   }
