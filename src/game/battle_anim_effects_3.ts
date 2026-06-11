@@ -19,7 +19,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates, registerAnimTasks } from '../engine/battle/battle-anim-registry';
-import { ANIMCMD_FRAME, ANIMCMD_END } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../engine/system/sprite-animation';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
 
@@ -119,8 +119,14 @@ export function LoadAnimNoiseLineGfx(): void {
   }
 }
 
+// 1:1 gRoarNoiseLineAnimTable (battle_anim_effects_3.c:929-947) : 2 anims
+// (frames 0/16 et 32/48, 3 ticks, JUMP 0 = loop infini — la duree de vie du
+// sprite (14 frames) borne le loop, 1:1).
+export const gRoarNoiseLineAnimCmds1 = [ANIMCMD_FRAME(0, 3), ANIMCMD_FRAME(16, 3), ANIMCMD_JUMP(0)];
+export const gRoarNoiseLineAnimCmds2 = [ANIMCMD_FRAME(32, 3), ANIMCMD_FRAME(48, 3), ANIMCMD_JUMP(0)];
+
 /** 1:1 `AnimRoarNoiseLine` : args [xOff, yOff, variante 0/1/2].
- *  0 = diagonale haut, 1 = diagonale bas (vFlip), 2 = droite (frames 32/48).
+ *  0 = diagonale haut, 1 = diagonale bas (vFlip), 2 = droite (anim 1).
  *  Vitesse 0x280 fixed-point, miroir cote adverse, destroy a 14 frames. */
 function AnimRoarNoiseLine(sprite: AnimSprite): void {
   const args = _itf().getArgs?.() ?? [0, 0, 0];
@@ -133,6 +139,7 @@ function AnimRoarNoiseLine(sprite: AnimSprite): void {
   }
   sprite.invisible = false;
   let frameBase = 0;
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
   if (args[2] === 0) {
     sprite.data[0] = 0x280;
     sprite.data[1] = -0x280;
@@ -141,7 +148,9 @@ function AnimRoarNoiseLine(sprite: AnimSprite): void {
     sprite.data[0] = 0x280;
     sprite.data[1] = 0x280;
   } else {
-    frameBase = 32; // StartSpriteAnim(sprite, 1) = frames 32/48
+    // 1:1 StartSpriteAnim(sprite, 1) : la 2e anim de la table (frames 32/48).
+    if (spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
+    else frameBase = 32; // fallback legacy
     sprite.data[0] = 0x280;
     sprite.data[1] = 0;
   }
@@ -172,9 +181,13 @@ function AnimRoarNoiseLine_Step(sprite: AnimSprite): void {
   sprite.data[7] += sprite.data[1];
   sprite.x2 = (sprite.data[6] << 16 >> 16) >> 8;
   sprite.y2 = (sprite.data[7] << 16 >> 16) >> 8;
-  // anim 2 frames (0/16 ou 32/48, 3 ticks) 1:1 gRoarNoiseLineAnimTable.
-  const t = Math.floor((++sprite.data[5]) / 3) & 1;
-  _applyNoiseFrame(sprite, sprite.data[4] + t * 16);
+  // 1:1 : la table gRoarNoiseLineAnimTable anime les frames (AnimateSprite) ;
+  // fallback legacy si table absente.
+  sprite.data[5]++;
+  if (!(sprite as unknown as { anims?: unknown }).anims) {
+    const t = Math.floor(sprite.data[5] / 3) & 1;
+    _applyNoiseFrame(sprite, sprite.data[4] + t * 16);
+  }
   if (sprite.data[5] === 14) {
     _itf().DestroyAnimSprite?.(sprite);
   }
@@ -247,6 +260,6 @@ function _Leer_Step(sprite: AnimSprite): void {
 
 registerAnimTemplates([
   { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never, anims: [gScratchAnimCmds] },
-  { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never },
+  { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never, anims: [gRoarNoiseLineAnimCmds1, gRoarNoiseLineAnimCmds2] },
   { name: 'gLeerSpriteTemplate', tileTag: ANIM_TAG_LEER, paletteTag: ANIM_TAG_LEER, oam: { shape: 0, size: 2 }, load: LoadAnimLeerGfx, callback: AnimLeerSprite as never },
 ]);
