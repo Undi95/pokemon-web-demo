@@ -504,6 +504,29 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+/** 1:1 `AnimThrowProjectile` (battle_anim_mons.c — 3 templates générés) :
+ *  args [xOff, yOff, tgtXOff, tgtYOff, durée, arcAmplitude]. Départ attaquant,
+ *  arc vers la cible, destroy. */
+export function AnimThrowProjectile(sprite: DecompSprite): void {
+  const itf = _projItf();
+  const args = itf.getArgs?.() ?? [0, 0, 0, 0, 20, 20];
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  (sprite as { invisible?: boolean }).invisible = false;
+  let a2 = args[2] | 0;
+  if ((atk & 1) !== 0) a2 = -a2;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = (GetBattlerSpriteCoord(tgt, 2 /* X_2 */) + a2) & 0xFFFF;
+  sprite.data[4] = (GetBattlerSpriteCoord(tgt, 3 /* Y_PIC_OFFSET */) + (args[3] | 0)) & 0xFFFF;
+  sprite.data[5] = args[5] | 0;
+  InitAnimArcTranslation(sprite);
+  sprite.callback = _ThrowProjectile_Step as never;
+}
+function _ThrowProjectile_Step(sprite: DecompSprite): void {
+  if (TranslateAnimHorizontalArc(sprite)) _projItf().DestroyAnimSprite?.(sprite);
+}
+
 /** 1:1 `SetAnimSpriteInitialXOffset` (battle_anim_mons.c) : le signe de
  *  l'offset X suit le sens attaquant→cible. */
 export function SetAnimSpriteInitialXOffset(sprite: { x: number }, xOffset: number): void {
@@ -574,4 +597,5 @@ _regCb({
   TranslateAnimSpriteToTargetMonLocation: TranslateAnimSpriteToTargetMonLocation as never,
   AnimSpriteOnMonPos: AnimSpriteOnMonPos as never,
   SpriteCallbackDummy: ((_s: unknown) => { /* 1:1 vide */ }) as never,
+  AnimThrowProjectile: AnimThrowProjectile as never,
 });

@@ -10,6 +10,9 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
+import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import { GetBattlerSpriteCoord } from './battle_anim_mons';
+import { Sin } from './trig';
 
 export const ANIM_TAG_ORBS = 10147;
 const sSheet = { data: 'gAnimGfx_Orbs', size: 384, tag: ANIM_TAG_ORBS };
@@ -78,3 +81,85 @@ function _AbsorptionOrb_Step(sprite: AnimSprite): void {
 registerAnimTemplates([
   { name: 'gAbsorptionOrbSpriteTemplate', tileTag: ANIM_TAG_ORBS, paletteTag: ANIM_TAG_ORBS, oam: { shape: 0, size: 1 }, load: LoadAnimOrbsGfx, callback: AnimAbsorptionOrb as never },
 ]);
+
+// ─── VAGUE 2b : AnimMovePowderParticle (3 tpl : poudres) + AnimFlyingParticle (5 tpl) ───
+type _PSprite = { data: number[]; x: number; y: number; x2: number; y2: number; invisible?: boolean; oamIndex?: number; callback: unknown };
+function _pItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 `AnimMovePowderParticle` (effects_1.c:2195) : args [x, y, durée,
+ *  yVel, amplitude, vitesse] — descente + onde X. */
+function AnimMovePowderParticle(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 30, 64, 10, 4];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  sprite.invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = (atk & 1) !== 0 ? -(args[4] | 0) : (args[4] | 0);
+  sprite.data[4] = args[5] | 0;
+  sprite.data[5] = 0;
+  sprite.callback = _MovePowderParticle_Step;
+}
+function _MovePowderParticle_Step(sprite: _PSprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    sprite.y2 = (sprite.data[2] << 16 >> 16) >> 8;
+    sprite.data[2] = (sprite.data[2] + sprite.data[1]) & 0xFFFF;
+    sprite.x2 = Sin(sprite.data[5] & 0xFF, sprite.data[3]);
+    sprite.data[5] = (sprite.data[5] + sprite.data[4]) & 0xFF;
+  } else {
+    _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimFlyingParticle` (effects_1.c:3517) : particule qui traverse
+ *  l'écran (gust/razor wind...) — args [y0, amplY, phase0, vX, dPhase, mode, anchor]. */
+function AnimFlyingParticle(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0];
+  const battler = !args[6] ? (_pItf().getAttacker?.() ?? 0) : (_pItf().getTarget?.() ?? 1);
+  if ((battler & 1) !== 0 /* != B_SIDE_PLAYER */) {
+    sprite.data[4] = 0;
+    sprite.data[2] = args[3] | 0;
+    sprite.x = -16;
+  } else {
+    sprite.data[4] = 1;
+    sprite.data[2] = -(args[3] | 0);
+    sprite.x = 240 + 16;
+  }
+  sprite.invisible = false;
+  sprite.data[1] = args[1] | 0;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[3] = args[4] | 0;
+  const mode = args[5] | 0;
+  if (mode === 2 || mode === 3) {
+    const ref = mode === 3 ? (_pItf().getTarget?.() ?? 1) : battler;
+    sprite.y = GetBattlerSpriteCoord(ref, 3 /* Y_PIC_OFFSET */) + (args[0] | 0);
+  } else {
+    sprite.y = args[0] | 0;
+  }
+  sprite.data[7] = 0;
+  sprite.callback = _FlyingParticle_Step;
+}
+function _FlyingParticle_Step(sprite: _PSprite): void {
+  const a = sprite.data[7];
+  sprite.data[7]++;
+  const sineTable = ((globalThis as Record<string, unknown>).__gSineTable as Int16Array | undefined);
+  const sinv = sineTable ? sineTable[sprite.data[0] & 0xFF] : Math.round(Math.sin(((sprite.data[0] & 0xFF) / 256) * 2 * Math.PI) * 256);
+  sprite.y2 = (sprite.data[1] * sinv) >> 8;
+  sprite.x2 = sprite.data[2] * a;
+  sprite.data[0] = (sprite.data[3] * a) & 0xFF;
+  if (!sprite.data[4]) {
+    if (sprite.x2 + sprite.x < 240 + 8) return;
+  } else {
+    if (sprite.x2 + sprite.x > -16) return;
+  }
+  _pItf().DestroyAnimSprite?.(sprite);
+}
+
+registerAnimCallbacks({
+  AnimMovePowderParticle: AnimMovePowderParticle as never,
+  AnimFlyingParticle: AnimFlyingParticle as never,
+});
