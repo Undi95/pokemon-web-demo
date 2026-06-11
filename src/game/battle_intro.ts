@@ -83,7 +83,10 @@ const VERSION_RUBY = 1;
 // ─── helpers GPU/CPU (HW-emu via rt) ────────────────────────────────────────
 function SetGpuReg(off: number, v: number): void { rt()?.SetGpuReg?.(off, v & 0xFFFF); }
 function GetGpuReg(off: number): number { return rt()?.GetGpuReg?.(off) ?? 0; }
-function BLDALPHA_BLEND(eva: number, evb: number): number { return (eva & 0x1F) | ((evb & 0x1F) << 8); }
+// 1:1 io_reg.h BLDALPHA_BLEND(t1, t2) = (t1 | (t2 << 8)) SANS masque : Slide2/3
+// passent data[4] PACKED (eva|evb<<8) en t1 -> le masque 0x1F perdait l evb
+// (le cross-fade entry->terrain ne fadait que l entry). Fix matrice 2026-06-11.
+function BLDALPHA_BLEND(eva: number, evb: number): number { return ((eva & 0xFFFF) | ((evb & 0xFF) << 8)) & 0xFFFF; }
 /** 1:1 `CpuFill32(0, BG_SCREEN_ADDR(n), size)` : clear une zone de VRAM BG (screen base). */
 function CpuFill32_BgScreen(screenBase: number, sizeBytes: number): void {
   const vram = rt()?.gba?.vram as Uint8Array | undefined;

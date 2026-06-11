@@ -335,6 +335,7 @@ export async function loadBattleTerrain(env: number): Promise<void> {
  *  Les overrides spécial (GROUDON/KYOGRE/RAYQUAZA/LEADER/CHAMPION/MAP_SCENE_*)
  *  seront ajoutés dans sub-phases B4/B5/B6 selon roadmap. */
 export async function drawMainBattleBackground(env: number = BATTLE_ENVIRONMENT_GRASS): Promise<void> {
+  console.info(`[battle-bg] drawMainBattleBackground env=${env} dir=${ENV_TO_DIR[env]}`);
   await loadBattleTerrain(env);
 }
 
@@ -357,6 +358,7 @@ export async function drawBattleEntryBackground(env: number = BATTLE_ENVIRONMENT
   if (!rt) return;
   const dir = ENV_TO_DIR[env];
   if (!dir) return;
+  console.info(`[battle-bg] drawBattleEntryBackground env=${env} dir=${dir}`);
   const base = `/decomp/em/battle_environment/${dir}`;
   // anim_tiles.png = entryTileset (même format 4bpp 48-color que le terrain) ;
   // anim_map.bin = entryTilemap (u16 entries).
