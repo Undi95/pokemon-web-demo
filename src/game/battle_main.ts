@@ -850,6 +850,11 @@ export function CB2_InitBattleInternal(): void {
   // etablir AVANT de toucher la reserve). Les sheets d'anim a 0x140+ peuvent
   // chevaucher les tiles mons alloues dynamiquement -> corruption possible
   // apres plusieurs anims enchainees (bug « feuilles » en stock, memoire).
+  // 0x140 : toute valeur superieure casse le send-out (allocs dynamiques
+  // basses). LA solution VRAM = le marqueur dynamique au 1er load anim
+  // (_markLiveSpriteTiles : marque les plages des sprites VIVANTS dans le
+  // bitmap -> l'allocateur ne donne jamais une plage occupee — la healthbox
+  // @320-447 protegee sans casser le send-out).
   (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT (réserve OBJ 0..3).

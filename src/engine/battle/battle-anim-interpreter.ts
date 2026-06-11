@@ -47,7 +47,7 @@
 
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
 import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
-import { FreeSpritePaletteByTag } from '../system/sprite';
+import { FreeSpritePaletteByTag, sSpriteTileAllocBitmap } from '../system/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
 import {
@@ -823,7 +823,29 @@ function _ensureAnimGfxManifest(): void {
 }
 _ensureAnimGfxManifest();
 const _loadedTags = new Set<number>();
+/** Marque les plages de tiles des sprites VIVANTS dans le bitmap d'alloc —
+ *  les fixes (mons, healthbox@320-447) ne marquent pas le bitmap eux-memes ->
+ *  l'allocateur donnait leurs plages aux sheets anim (les « eclats » = tiles
+ *  VRAM de la box reecrites par mud_sand, sonde 2026-06-11). Idempotent. */
+function _markLiveSpriteTiles(): void {
+  const rt = getRuntime();
+  const bmp = sSpriteTileAllocBitmap;
+  if (!rt || !bmp) return;
+  for (const s of rt.gSprites.values()) {
+    if (!s.inUse) continue;
+    const oam = rt.gba.oam[s.oamIndex];
+    if (!oam) continue;
+    const tile = oam.tileId ?? 0;
+    const size = (oam as { size?: number }).size ?? 0;
+    const shape = (oam as { shape?: number }).shape ?? 0;
+    const count = shape === 0 ? [1, 4, 16, 64][size] : [2, 8, 16, 32][size];
+    for (let n = tile; n < tile + count && n < 1024; n++) {
+      bmp[n >> 3] |= (1 << (n & 7));
+    }
+  }
+}
 function _loadAnimSheetByTag(tag: number): void {
+  _markLiveSpriteTiles();
   const entry = _animGfxByValue?.get(tag);
   if (entry) {
     const dg = (globalThis as Record<string, unknown>).__decompGlobals as {
@@ -936,6 +958,26 @@ function Cmd_createsprite(): void {
         if (sp) {
           sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
           sp.spriteId = spriteId;
+          // CANARI (dette racine 2026-06-11) : attraper l'ECRASEUR de callback
+          // des sprites d'anim (les sprites geles en plein vol — eclats Mud-Slap
+          // sur la healthbox). Actif si __animCallbackCanary = true (devtool).
+          if ((globalThis as Record<string, unknown>).__animCallbackCanary) {
+            let _cb = (sp as { callback: unknown }).callback;
+            try {
+              Object.defineProperty(sp, 'callback', {
+                configurable: true,
+                get() { return _cb; },
+                set(v: unknown) {
+                  const name = (v as { name?: string } | null)?.name ?? String(v);
+                  if (v === null || /Dummy/i.test(name)) {
+                    const nl = String.fromCharCode(10);
+                    console.warn('[CANARI] sprite anim #' + spriteId + ' callback ECRASE par ' + name + nl + (new Error().stack ?? '').split(nl).slice(2, 6).join(nl));
+                  }
+                  _cb = v;
+                },
+              });
+            } catch { /* deja defini */ }
+          }
           // 1:1 battle_anim.c:406-410 : CreateSpriteAndAnimate positionne TOUT
           // sprite a (TARGET.X_2, TARGET.Y_PIC_OFFSET) — le flag IS_TARGET ne
           // sert QUE la subpriorite. Les callbacks font ensuite des OFFSETS
