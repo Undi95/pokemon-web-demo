@@ -130,6 +130,19 @@ Le chantier plateforme n°2 du constat ci-dessous est FAIT en entier :
   du goal, déjà tracée). Les ~29 sheets « fragmentation-série » du sweep
   global relèvent en partie de CETTE racine (gros blocs), à re-mesurer.
 
+## SWEEP GLOBAL v4 — POST C0-RACINE (2026-06-12) : **252/354 FIDÈLES (71 %)**
++46 moves vs v3 (206/58 %), +109 vs baseline (143/40 %). **Plus AUCUN défaut
+`sheet:`** — la racine VRAM C0 (réserve 0, commit aaddbe01) a éliminé les 29
+tags/66 occurrences d'un coup. Les 102 dégradés restants :
+- **~89 AnimTasks distinctes** à 1-2 hits (la traîne) — les gros blocs :
+  MetallicShine ×12 (OBJ-window, ordre user strict), spotlights ×4,
+  pal-buffer ×5 (Alloc/CopyPal backup), mon-gfx ×6 (Transform/Substitute/
+  RolePlay/DoubleTeam/NightShade/Nightmare), backgrounds ×6 (sandstorm/Hail/
+  Hearts/MistBall/Haze/Memento), SurfWave/Eruption/WaterSpout ×2 chacun.
+- **~33 durées 595-1098f** — pour partie ROM-réalistes (HealBell 668,
+  Sketch 723 = hauteur pic), pour partie liées aux tasks ci-dessus.
+- **7 residuels:1** — artefacts de phasage série (AcidArmor re-seul = 0 defect).
+
 ## Constat structurel (fin de session, post-F33)
 Le backlog des tasks restantes est désormais dominé par 4 CHANTIERS PLATEFORME
 (plus de la traîne 1-hit) :
