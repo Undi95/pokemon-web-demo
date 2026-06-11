@@ -385,6 +385,80 @@ function _LeechSeed_FinalWait(sprite: _PSprite): void {
   if (--sprite.data[0] <= 0) _pItf().DestroyAnimSprite?.(sprite);
 }
 
+/** 1:1 `AnimSlidingHit` : position offset (miroir cote) puis attendre la
+ *  fin de l'anim de table -> destroy. */
+function AnimSlidingHit(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if ((atk & 1) !== 0) { sprite.x -= args[0] | 0; sprite.y += args[1] | 0; }
+  else { sprite.x += args[0] | 0; sprite.y += args[1] | 0; }
+  sprite.invisible = false;
+  sprite.callback = _WaitTableAnimEnd_Destroy;
+}
+function _WaitTableAnimEnd_Destroy(sprite: _PSprite): void {
+  if ((sprite as { animEnded?: boolean }).animEnded) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimWhipHit` : anim 1 cote joueur, offset X signe, attendre fin. */
+function AnimWhipHit(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if ((atk & 1) === 0 && spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
+  sprite.invisible = false;
+  // SetAnimSpriteInitialXOffset inline (signe attaquant->cible)
+  const tgt = _pItf().getTarget?.() ?? 1;
+  const ax = GetBattlerSpriteCoord(atk, 0), tx = GetBattlerSpriteCoord(tgt, 0);
+  if (ax > tx) sprite.x -= args[0] | 0;
+  else if (ax < tx) sprite.x += args[0] | 0;
+  else if ((atk & 1) !== 0) sprite.x -= args[0] | 0;
+  else sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  sprite.callback = _WaitTableAnimEnd_Destroy;
+}
+
+/** 1:1 `AnimCuttingSlice`(+AnimSlice_Step) : la lame qui traverse en
+ *  decrochant (data1 +/-0x18, data2 -0x18), 20 frames + 3 -> destroy. */
+function AnimCuttingSlice(sprite: _PSprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0];
+  const tgt = _pItf().getTarget?.() ?? 1;
+  sprite.x = GetBattlerSpriteCoord(tgt, 0);
+  sprite.y = GetBattlerSpriteCoord(tgt, 1);
+  if ((tgt & 1) === 0) sprite.y += 8;
+  sprite.invisible = false;
+  if ((args[2] | 0) === 0) {
+    sprite.x += args[0] | 0;
+  } else {
+    sprite.x -= args[0] | 0;
+    (sprite as { hFlip?: boolean }).hFlip = true;
+  }
+  sprite.y += args[1] | 0;
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[5] = args[2] | 0;
+  sprite.callback = _Slice_Step;
+}
+function _Slice_Step(sprite: _PSprite): void {
+  sprite.data[3] = (sprite.data[3] + sprite.data[1]) & 0xFFFF;
+  sprite.data[4] = (sprite.data[4] + sprite.data[2]) & 0xFFFF;
+  if (sprite.data[5] === 0) sprite.data[1] += 0x18;
+  else sprite.data[1] -= 0x18;
+  sprite.data[2] -= 0x18;
+  sprite.x2 = (sprite.data[3] << 16 >> 16) >> 8;
+  sprite.y2 = (sprite.data[4] << 16 >> 16) >> 8;
+  sprite.data[0]++;
+  if (sprite.data[0] === 20) {
+    sprite.data[0] = 3;
+    sprite.callback = _Slice_FinalWait;
+  }
+}
+function _Slice_FinalWait(sprite: _PSprite): void {
+  if (--sprite.data[0] <= 0) _pItf().DestroyAnimSprite?.(sprite);
+}
+
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
@@ -396,4 +470,8 @@ registerAnimCallbacks({
   AnimSporeParticle: AnimSporeParticle as never,
   AnimRazorLeafParticle: AnimRazorLeafParticle as never,
   AnimLeechSeed: AnimLeechSeed as never,
+  AnimSlidingHit: AnimSlidingHit as never,
+  AnimWhipHit: AnimWhipHit as never,
+  AnimCuttingSlice: AnimCuttingSlice as never,
+  AnimAirCutterSlice: AnimCuttingSlice as never, // 1:1 : meme Slice_Step (position avg cible — net)
 });

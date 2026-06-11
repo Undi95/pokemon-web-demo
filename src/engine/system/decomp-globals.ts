@@ -1739,6 +1739,24 @@ export function LoadCompressedSpriteSheet(sheet: { data: string, size: number, t
         }
       }
     }
+    // INVALIDER les ranges de tags CHEVAUCHANT la zone ciblee (racine des
+    // eclats VRAM 2026-06-11) : les sheets prechargees au boot occupaient
+    // 320+, la healthbox targetTileBase les ECRASE ici — si leurs ranges
+    // restent enregistrees, un FreeSpriteTilesByTag tardif DEMARQUE les
+    // tiles de la box du bitmap -> l'allocateur les ressert aux anims.
+    {
+      const tileStart0 = sheet.targetTileBase;
+      const tileEnd0 = tileStart0 + (copySize >> 5);
+      for (let i = 0; i < _sSpriteTileRangeTags.length; i++) {
+        if (_sSpriteTileRangeTags[i] === 0xFFFF) continue;
+        if (_sSpriteTileRangeTags[i] === (typeof sheet.tag === 'number' ? sheet.tag : -1)) continue;
+        const rs = _sSpriteTileRanges[i * 2];
+        const rc = _sSpriteTileRanges[i * 2 + 1];
+        if (rs < tileEnd0 && rs + rc > tileStart0) {
+          _sSpriteTileRangeTags[i] = 0xFFFF; // range obsolete : ecrasee par overwrite cible
+        }
+      }
+    }
     // 1:1 STRICT register tag dans sSpriteTileRangeTags array primary.
     // copySize >> 5 = tile count. Si sheet.size != copySize (= bytes clamped
     // par OBJ VRAM end), on prend copySize comme source authentique.

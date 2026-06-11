@@ -806,8 +806,8 @@ function _resolveTileBase(tag: number): number {
 // PHASE 0bis (roadmap) : LE LOADER GÉNÉRIQUE par tag — anim-gfx-manifest.json
 // (289 entrées générées : tag → {bin, pal, size}). Charge la sheet+palette de
 // N'IMPORTE quel tag sans loader manuel. Fallback : l'ancien chemin template.load.
-let _animGfxManifest: Record<string, { bin: string; pal: string; size: number; tagValue: number }> | null = null;
-let _animGfxByValue: Map<number, { bin: string; pal: string; size: number }> | null = null;
+let _animGfxManifest: Record<string, { bin: string; pal: string; size: number; realBytes?: number; tagValue: number }> | null = null;
+let _animGfxByValue: Map<number, { bin: string; pal: string; size: number; realBytes?: number }> | null = null;
 let _manifestLoading = false;
 function _ensureAnimGfxManifest(): void {
   if (_animGfxManifest || _manifestLoading) return;
@@ -843,6 +843,23 @@ function _markLiveSpriteTiles(): void {
       bmp[n >> 3] |= (1 << (n & 7));
     }
   }
+  // + LES RANGES par tag NON-anim (healthbox 4916x, balls...) : leurs sheets
+  // depassent les tiles affichees (box = 128 tiles, sprites n'en montrent
+  // que 32 — impact@512 ecrasait les frames non-affichees, 2026-06-11).
+  const spSurf = (globalThis as Record<string, unknown>).__sprite as {
+    sSpriteTileRangeTags?: Uint16Array; sSpriteTileRanges?: Uint16Array;
+  } | undefined;
+  const rTags = spSurf?.sSpriteTileRangeTags, rRanges = spSurf?.sSpriteTileRanges;
+  if (rTags && rRanges) {
+    for (let i = 0; i < rTags.length; i++) {
+      const tg = rTags[i];
+      if (tg === 0xFFFF || (tg >= 10000 && tg < 20000)) continue; // anims gerees par free/load
+      const rs = rRanges[i * 2], rc = rRanges[i * 2 + 1];
+      for (let n = rs; n < rs + rc && n < 1024; n++) {
+        bmp[n >> 3] |= (1 << (n & 7));
+      }
+    }
+  }
 }
 function _loadAnimSheetByTag(tag: number): void {
   _markLiveSpriteTiles();
@@ -858,7 +875,13 @@ function _loadAnimSheetByTag(tag: number): void {
     const palKey = 'gAnimPalTag_' + tag;
     const cache = (globalThis as Record<string, unknown>).__assetCache as Map<string, unknown> | undefined;
     const doLoad = (): void => {
-      dg?.LoadCompressedSpriteSheetUsingHeap?.({ data: gfxKey, size: entry.size, tag });
+      // ATOMIQUE : marquer les vivants JUSTE avant l'alloc (le marquage au
+      // call + alloc au retour de fetch = course — les eclats CUT sur la box).
+      _markLiveSpriteTiles();
+      // realBytes (la taille REELLE du .bin) PAS entry.size (la table decomp) :
+      // un bin plus grand DEBORDAIT l'alloc et reecrivait les tiles suivantes
+      // (les eclats CUT sur la box, 2026-06-11).
+      dg?.LoadCompressedSpriteSheetUsingHeap?.({ data: gfxKey, size: (entry.realBytes ?? entry.size), tag });
       dg?.LoadCompressedSpritePaletteUsingHeap?.({ data: palKey, tag });
     };
     if (cache?.has(gfxKey)) { doLoad(); return; }
@@ -881,7 +904,7 @@ function _loadAnimSheetByTag(tag: number): void {
   } | undefined;
   if (!reg?.templates) return;
   for (const tpl of reg.templates.values()) {
-    if (tpl.tileTag === tag && tpl.load) { try { tpl.load(); } catch { /* asset */ } return; }
+    if (tpl.tileTag === tag && tpl.load) { _markLiveSpriteTiles(); try { tpl.load(); } catch { /* asset */ } return; }
   }
 }
 void _loadedTags;
@@ -895,6 +918,9 @@ function Cmd_unloadspritegfx(): void {
   // 1:1 battle_anim.c:348-358 : Free tiles + palette par TAG (C0 : la VRAM se
   // LIBERE en fin d'anim -> les 415 moves scalent sans s'accumuler).
   FreeSpriteTilesByTag(10000 + trueIndex);
+  // re-marquer l'occupe : le free demarque des tiles que des sprites VIVANTS
+  // (healthbox hors-bitmap) utilisent encore (racine eclats VRAM 2026-06-11)
+  _markLiveSpriteTiles();
   FreeSpritePaletteByTag(10000 + trueIndex);
   ClearSpriteIndex(trueIndex);
   _pc += 2;
@@ -942,6 +968,7 @@ function Cmd_createsprite(): void {
       if (tpl.tileTag > 0) {
         // Template a TAGS (gfx reels) : charge la sheet/palette (pattern
         // LoadBallGfx) puis CreateSprite SYSTEME (resolution par tag).
+        _markLiveSpriteTiles(); // AVANT l'alloc synchrone (eclats VRAM : impact@320 sur la box)
         tpl.load?.();
         const sysTpl = {
           tileTag: tpl.tileTag, paletteTag: tpl.paletteTag,
@@ -1170,6 +1197,7 @@ function Cmd_end(): void {
       FreeSpriteTilesByTag(10000 + sAnimSpriteIndexArray[i]);
       FreeSpritePaletteByTag(10000 + sAnimSpriteIndexArray[i]);
       sAnimSpriteIndexArray[i] = 0xFFFF;
+      _markLiveSpriteTiles(); // re-marquer l'occupe apres le free (eclats VRAM)
     }
   }
 
