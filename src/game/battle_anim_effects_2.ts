@@ -1301,7 +1301,74 @@ function AnimTask_UproarDistortion(task: _SpTask): void {
 function _Uproar_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
+/** 1:1 `AnimTask_ThrashMoveMonHorizontal` (effects_2.c:2304 — Thrash) :
+ *  table affine gThrashMoveMonAffineAnimCmds. */
+function AnimTask_ThrashMoveMonHorizontal(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0);
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  task.data[1] = 0;
+  _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gThrashMoveMonAffineAnimCmds']);
+  task.func = _ThrashH_Step;
+}
+function _ThrashH_Step(task: _SpTask): void {
+  if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_ThrashMoveMonVertical` : zigzag x ±4 (3 phases ×3 reps) +
+ *  bob y ±2 toutes les 3 frames. ATTENTION : modifie x/y ABSOLUS du mon (1:1). */
+function AnimTask_ThrashMoveMonVertical(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (!sp || spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  task.data[1] = 0;
+  task.data[2] = 4;
+  task.data[3] = 7;
+  task.data[4] = 3;
+  task.data[5] = sp.x;
+  task.data[6] = sp.y;
+  task.data[7] = 0;
+  task.data[8] = 0;
+  task.data[9] = 2;
+  const itf = _spItf2() as { getAttacker?: () => number };
+  if (((itf.getAttacker?.() ?? 0) & 1) === 1) task.data[2] *= -1;
+  task.func = _ThrashV_Step;
+}
+function _ThrashV_Step(task: _SpTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[0]);
+  if (!sp) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  if (++task.data[7] > 2) {
+    task.data[7] = 0;
+    task.data[8]++;
+    if (task.data[8] & 1) sp.y += task.data[9];
+    else sp.y -= task.data[9];
+  }
+  switch (task.data[1]) {
+    case 0:
+      sp.x += task.data[2];
+      if (--task.data[3] === 0) { task.data[3] = 14; task.data[1] = 1; }
+      break;
+    case 1:
+      sp.x -= task.data[2];
+      if (--task.data[3] === 0) { task.data[3] = 7; task.data[1] = 2; }
+      break;
+    case 2:
+      sp.x += task.data[2];
+      if (--task.data[3] === 0) {
+        if (--task.data[4] !== 0) { task.data[3] = 7; task.data[1] = 0; }
+        else {
+          if ((task.data[8] & 1) !== 0) sp.y -= task.data[9];
+          _spItf2().DestroyAnimVisualTask?.(task.taskId);
+        }
+      }
+      break;
+  }
+}
 _regTasks({
+  AnimTask_ThrashMoveMonHorizontal: AnimTask_ThrashMoveMonHorizontal as never,
+  AnimTask_ThrashMoveMonVertical: AnimTask_ThrashMoveMonVertical as never,
   AnimTask_Splash: AnimTask_Splash as never,
   AnimTask_GrowAndShrink: AnimTask_GrowAndShrink as never,
   AnimTask_StretchTargetUp: AnimTask_StretchTargetUp as never,
