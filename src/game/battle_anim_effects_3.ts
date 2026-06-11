@@ -2348,4 +2348,67 @@ function AnimTask_PainSplitMovement(task: { taskId: number; data: number[] }): v
     }
   }
 }
-_e3RegTasks({ AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never });
+/** 1:1 `AnimTask_RockMonBackAndForth` (effects_3.c, 4 hits) : balancement
+ *  rot-scale (x2 ± data[5], rotation ± data[4]) x N répétitions. */
+function AnimTask_RockMonBackAndForth(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  if (!a[1]) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if (a[2] < 0) a[2] = 0;
+  if (a[2] > 2) a[2] = 2;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 8 - 2 * a[2];
+  task.data[4] = 0x100 + a[2] * 128;
+  task.data[5] = a[2] + 2;
+  task.data[6] = a[1] - 1;
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  task.data[15] = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+  if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if ((b & 1) === 1) { task.data[4] *= -1; task.data[5] *= -1; }
+  _psPrep(task.data[15], 0);
+  task.func = _RockMonBF_Step;
+}
+function _RockMonBF_Step(task: { taskId: number; data: number[] }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const rot = (): void => {
+    _psSet(task.data[15], 0x100, 0x100, task.data[2] & 0xFFFF);
+    _psYOff(task.data[15]);
+  };
+  switch (task.data[0]) {
+    case 0:
+      sp.x2 += task.data[5];
+      task.data[2] -= task.data[4];
+      rot();
+      if (++task.data[1] >= task.data[3]) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 1:
+      sp.x2 -= task.data[5];
+      task.data[2] += task.data[4];
+      rot();
+      if (++task.data[1] >= task.data[3] * 2) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 2:
+      sp.x2 += task.data[5];
+      task.data[2] -= task.data[4];
+      rot();
+      if (++task.data[1] >= task.data[3]) {
+        if (task.data[6]) { task.data[6]--; task.data[1] = 0; task.data[0] = 0; }
+        else task.data[0]++;
+      }
+      break;
+    case 3:
+      _psReset(task.data[15]);
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+_e3RegTasks({
+  AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never,
+  AnimTask_RockMonBackAndForth: AnimTask_RockMonBackAndForth as never,
+});
