@@ -2740,7 +2740,92 @@ function _SmellingSalts_Step(task: { taskId: number; data: number[] }): void {
     }
   }
 }
+/** 1:1 `AnimTask_SquishAndSweatDroplets` (effects_3.c:3742) : squish affine
+ *  ×N + 2 salves de 4 gouttes de sueur (frames 6 et 18 de chaque squish). */
+function AnimTask_SquishAndSweatDroplets(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  if (!a[1]) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = 0;             // tState
+  task.data[1] = 0;             // tTimer
+  task.data[2] = 0;             // tActiveSprites
+  task.data[3] = a[1];          // tNumSquishes
+  task.data[4] = _e3Coord(b, 0); // tBaseX
+  task.data[5] = _e3Coord(b, 1); // tBaseY
+  task.data[6] = 25;            // tSubpriority (net)
+  task.data[7] = sid;           // tBattlerSpriteId
+  _dcPrep(task as never, sid, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gFacadeSquishAffineAnimCmds']);
+  task.func = _SquishSweat_Step;
+}
+import { GetBattlerSpriteCoord as _e3Coord } from './battle_anim_mons';
+function _SquishSweat_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  switch (task.data[0]) {
+    case 0:
+      task.data[1]++;
+      if (task.data[1] === 6) _CreateSweatDroplets(task, false);
+      if (task.data[1] === 18) _CreateSweatDroplets(task, true);
+      if (!_dcRun(task as never)) {
+        if (--task.data[3] === 0) {
+          task.data[0]++;
+        } else {
+          task.data[1] = 0;
+          _dcPrep(task as never, task.data[7], (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gFacadeSquishAffineAnimCmds']);
+        }
+      }
+      break;
+    case 1:
+      if (task.data[2] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+function _CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: boolean): void {
+  const xOffset = lower ? 30 : 18;
+  const yOffset = lower ? 20 : -20;
+  const xs = [task.data[4] - xOffset, task.data[4] - xOffset - 4, task.data[4] + xOffset, task.data[4] + xOffset + 4];
+  const ys = [task.data[5] + yOffset, task.data[5] + yOffset + 6];
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gFacadeSweatDropSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  for (let i = 0; i < 4; i++) {
+    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, xs[i], ys[i & 1], 20) ?? -1;
+    if (sid >= 0) {
+      const sp = rt?.gSprites?.get(sid);
+      const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
+      if (sp) {
+        sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+        sp.data[0] = 0;            // sTimer
+        sp.data[1] = i < 2 ? -2 : 2; // sVelocX
+        sp.data[2] = -1;           // sVelocY
+        sp.data[3] = task.taskId;  // sTaskId
+        sp.data[4] = 2;            // sActiveSpritesIdx (data[2] de la task)
+        sp.callback = _AnimSweatDrop;
+        task.data[2]++;
+      }
+    }
+  }
+}
+function _AnimSweatDrop(sprite: { data: number[]; x: number; y: number }): void {
+  sprite.x += sprite.data[1];
+  sprite.y += sprite.data[2];
+  if (++sprite.data[0] > 6) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[3]);
+    if (t) t.data[sprite.data[4]]--;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
 _e3RegTasks({
+  AnimTask_SquishAndSweatDroplets: AnimTask_SquishAndSweatDroplets as never,
   AnimTask_FacadeColorBlend: AnimTask_FacadeColorBlend as never,
   AnimTask_SmellingSaltsSquish: AnimTask_SmellingSaltsSquish as never,
   AnimTask_SlackOffSquish: AnimTask_SlackOffSquish as never,
