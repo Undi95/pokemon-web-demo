@@ -121,9 +121,12 @@ function _getBattleBGM(): number {
  *  + m4aMPlayAllStop) puis joue la BGM de combat. On sauve d'abord la chanson OW
  *  courante pour la reprendre au retour. loop=true (1:1 voie V, markers .mid). */
 function _playBattleBGM(): void {
-  _savedOwSong = getCurrentSongId();
-  m4aMPlayAllStop();
-  m4aSongNumStart(_getBattleBGM(), true);
+  // Blindage (retour user « plus de sons » 2026-06-11) : si une etape throw
+  // (getCurrentSongId sur etat audio pas pret ?), les suivantes tournent —
+  // la BGM combat ne doit JAMAIS sauter en silence.
+  try { _savedOwSong = getCurrentSongId(); } catch (e) { _savedOwSong = null; console.warn('[battle-bgm] getCurrentSongId KO', e); }
+  try { m4aMPlayAllStop(); } catch (e) { console.warn('[battle-bgm] m4aMPlayAllStop KO', e); }
+  try { m4aSongNumStart(_getBattleBGM(), true); } catch (e) { console.warn('[battle-bgm] m4aSongNumStart KO', e); }
 }
 
 /** 1:1 décomp `Task_BattleStart` (battle_setup.c) + `Task_BattleTransition`

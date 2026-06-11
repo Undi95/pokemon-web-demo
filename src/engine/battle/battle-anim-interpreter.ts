@@ -326,9 +326,10 @@ function _restoreBattlerSprites(): void {
     if (id === undefined || id < 0) continue;
     const sp = rt.gSprites?.get(id) as { x2?: number; y2?: number; hFlip?: boolean; vFlip?: boolean } | undefined;
     if (sp) { sp.x2 = 0; sp.y2 = 0; sp.hFlip = false; sp.vFlip = false; }
-    // scale/rot : remis par ResetSpriteRotScale si dispo.
-    const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { ResetSpriteRotScale?: (i: number) => void } | undefined;
-    try { mons?.ResetSpriteRotScale?.(id); } catch { /* pas en rotscale */ }
+    // PAS de ResetSpriteRotScale AVEUGLE : sur un mon SAIN ca togglait
+    // l affine/double-size -> POSITION DECALEE (retour user : « probleme de
+    // position apres anim affine de Wailord »). Seules les AnimTasks qui ont
+    // PrepareBattlerSpriteForRotScale doivent Reset (elles le font deja).
   }
 }
 
