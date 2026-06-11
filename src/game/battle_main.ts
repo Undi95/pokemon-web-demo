@@ -45,6 +45,7 @@
 
 import './pokemon_animation';
 import {
+  ResetPaletteFade as ResetPaletteFade_rt,
   getRuntime, BlendPalettes, PALETTES_ALL, setReservedSpritePaletteCount,
   AnimateSprites as _AnimateSprites_rt, BuildOamBuffer as _BuildOamBuffer_rt,
   UpdatePaletteFade as _UpdatePaletteFade_rt, RunTasks as _RunTasks_rt,
@@ -670,8 +671,12 @@ function _CpuFill32(_value: number, _dest: unknown, _size: number): void { /* De
 function _SetGpuReg(reg: number, value: number): void {
   getRuntime()?.SetGpuReg?.(reg, value);
 }
-/** 1:1 décomp `ResetPaletteFade()`. */
-function _ResetPaletteFade(): void { /* Dette R3 : palette fade state reset. */ }
+/** 1:1 décomp `ResetPaletteFade()` (palette.c:374). FIX user « barres noires
+ *  d intro » 2026-06-11 : ce stub vide laissait le fade NOIR de la transition
+ *  d entree ACTIF pendant toute la slide -> les bandes defilaient dans le noir
+ *  (invisible) puis POP le combat revele. Le decomp reset le fade ICI (la
+ *  fente WIN0 1px assure le noir geometrique, pas la palette). */
+function _ResetPaletteFade(): void { ResetPaletteFade_rt(); }
 
 /** 1:1 décomp `InitBattleBgsVideo()` (battle_bg.c) → CpuFill32(0,VRAM) + BattleInitBgsAndWindows. */
 function _InitBattleBgsVideo(): void {
