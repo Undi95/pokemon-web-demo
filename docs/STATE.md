@@ -22,6 +22,13 @@ Les warns console `callback X non porté` = la liste de demande exacte des vague
 non-anim) avant CHAQUE alloc anim + realBytes + re-marquage post-free. Sonde de vérité :
 `sSpriteTileRangeTags` par zones (« conflitsVram: AUCUN »).
 
+**🏆 QUALIFICATION COMPLÈTE 2026-06-11 (soir)** : **354/354 moves gen1-3 VERTS**
+(zéro soft-lock, zéro résiduel OAM) — sweep + re-sweep + garde-fous Cmd_end/
+waitforvisualfinish + fix bindArgs (args nommés GAS) + createsoundtask registry.
+~92 callbacks restent en fallback propre (anim sautée, listée par __warnCapture) ;
+dette racine : affine variante≠0 des hitsplats (ended jamais — garde-fou actif),
+chantier BG/monbg. Détail : audit-reports/anims/SWEEP-2026-06-11.md.
+
 **Outils de qualif** : `__combatTest(['MOVE_X',...])` (Treecko lvl60 vs Wailord increvable) ;
 `__testMoveAnim(id)` v4 (1 tick = 1 vraie frame, plafond 1800, oamResiduels + monDeplace) ;
 `__animCallbackCanary` ; sweep de masse `__sweepResults` (354 moves).

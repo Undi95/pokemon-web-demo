@@ -94,3 +94,10 @@
 - 🟡 Script QUICK_ATTACK : opérandes désalignées (macro create_basic_hitsplat_sprite suspecte) — auditer au byte.
 - 🟡 DeepInhale net-effect (gDeepInhaleAffineAnimCmds à migrer au moteur AFFINE) ; CryHighPitch sans pitch ; AnimLeerSprite net (50f) à migrer.
 - Inventaire : ~30 moves verts-mécaniques (qualification visuelle user en cours via __combatTest).
+
+## Addendum 2026-06-11 (soir) — qualification anims 354/354
+- ✅ 354/354 moves verts (stabilité) — voir audit-reports/anims/SWEEP-2026-06-11.md.
+- 🔶 ~92 callbacks d'anim en fallback propre (la liste = __warnCapture du sweep) — vagues restantes.
+- 🔶 RACINE à creuser : hitsplat affine variante≠0 → affineAnimEnded jamais posé (les scripts end-direct s'appuient sur le garde-fou Cmd_end 600f).
+- 🔶 Chantier BG/monbg (Phase 1b roadmap) : Seismic Toss visuel complet, AnimDefensiveWall, 412 usages monbg.
+- 🔶 Lots workflow morts à relancer (session-limit 13:30) : battle_anim_flying.ts, battle_anim_effects_2.ts + compléter effects_1/1b.
