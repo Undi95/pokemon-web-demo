@@ -102,12 +102,17 @@
 - 🔶 Chantier BG/monbg (Phase 1b roadmap) : Seismic Toss visuel complet, AnimDefensiveWall, 412 usages monbg.
 - 🔶 Lots workflow morts à relancer (session-limit 13:30) : battle_anim_flying.ts, battle_anim_effects_2.ts + compléter effects_1/1b.
 
-## Dette bytecode cœur (2026-06-11 soir) — audit préliminaire
-- Le fix bindArgs (sémantique GAS args nommés, commit 935d63e2) est CORRECT pour
-  battle_anim_scripts (354/354 verts) mais change **2150 plages** dans
-  battle_scripts_1 (12 Ko) → le cœur gelait. REVERT appliqué (65e460ed) : le cœur
-  tourne sur le bytecode pré-fix (A/B-validé de longue date), les anims sur le réparé.
-- RE-RÉPARATION = chantier à part : décoder les sites changés opcode-par-opcode
-  (snapshot : %TEMP%/bytecode-avant/ + version réparée dans le commit 935d63e2),
-  comprendre pourquoi les scripts du cœur dépendaient des opérandes pré-fix,
-  puis A/B complet du combat (tour, KO-run, capture-run) avant d'adopter.
+## Dette bytecode cœur (2026-06-11 soir) — audit CORRIGÉ (diff décodé)
+- ⚠️ DIAGNOSTIC INVERSÉ par le décodage : la version bindArgs ne « réparait »
+  pas battle_scripts_1 — elle le **ZÉROTAIT** (échantillon : @0 `2a 01`→`00 00`,
+  @46-56 une séquence d opérandes `02 03 04 05 06 07 09 0a 0e`→tout zéros).
+  bindArgs (sémantique GAS, commit 935d63e2) est correct pour battle_anim_scripts
+  (354/354 verts) mais CASSE la compilation des macros battle_script (2150 plages
+  vidées sur 12 Ko) → opérandes insolubles → 0 émis → le cœur gelait.
+- PISTE RACINE : les macros imbriquées/meta de battle_script.inc (propagation
+  d args via vararg/\()) — ma liaison nommée détourne probablement des args
+  positionnels dans la RÉCURSION d expansion. À reproduire sur UNE macro
+  (la 1re plage = le 1er script du fichier) avant tout re-fix.
+- REVERT appliqué (65e460ed) : le cœur tourne sur le bytecode pré-fix
+  (A/B-validé), les anims sur le réparé. Snapshots : %TEMP%/bytecode-avant/.
+- RE-RÉPARATION = chantier dédié + A/B complet (tour, KO-run, capture-run).
