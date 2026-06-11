@@ -629,7 +629,29 @@ function _RotateToSide_Step(task: AnimTask): void {
 }
 
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
+/** 1:1 `AnimTask_SlideOffScreen` (mon_movement.c, 2 hits — Roar/Whirlwind) :
+ *  glisse le battler hors écran (x2 += data[1] jusqu à sortir ±32). */
+function AnimTask_SlideOffScreen(task: AnimTask): void {
+  const a = _args();
+  let spriteId: number;
+  if (a[0] === 0 || a[0] === 1) spriteId = GetAnimBattlerSpriteId(a[0]);
+  else { DestroyAnimVisualTask(task.taskId); return; } // partners = single skip 1:1
+  if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
+  task.data[0] = spriteId;
+  const tgt = _itf()?.getTarget() ?? 1;
+  task.data[1] = (tgt & 1) !== 0 ? a[1] : -a[1];
+  task.func = _SlideOffScreen_Step;
+}
+function _SlideOffScreen_Step(task: AnimTask): void {
+  const sp = _sprites()?.get(task.data[0]);
+  if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
+  sp.x2 += task.data[1];
+  if (sp.x2 + sp.x < -32 || sp.x2 + sp.x > 272) {
+    DestroyAnimVisualTask(task.taskId);
+  }
+}
 registerAnimTasks({
+  AnimTask_SlideOffScreen: AnimTask_SlideOffScreen as never,
   AnimTask_RotateMonSpriteToSide: AnimTask_RotateMonSpriteToSide as never,
   AnimTask_RotateMonToSideAndRestore: AnimTask_RotateMonToSideAndRestore as never,
   AnimTask_ShakeMonInPlace: AnimTask_ShakeMonInPlace as never,
