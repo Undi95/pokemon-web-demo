@@ -1258,4 +1258,18 @@ function AnimTask_Splash_Step(task: _SpTask): void {
   }
 }
 import { registerAnimTasks as _regTasks } from '../engine/battle/battle-anim-registry';
-_regTasks({ AnimTask_Splash: AnimTask_Splash as never });
+/** 1:1 `AnimTask_GrowAndShrink` (effects_2.c — Swords Dance/Howl…, 2 hits) :
+ *  l attaquant grossit puis revient (table affine task-data). */
+function AnimTask_GrowAndShrink(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0 /* ANIM_ATTACKER */);
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gGrowAndShrinkAffineAnimCmds']);
+  task.func = _GrowAndShrink_Step;
+}
+function _GrowAndShrink_Step(task: _SpTask): void {
+  if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
+}
+_regTasks({
+  AnimTask_Splash: AnimTask_Splash as never,
+  AnimTask_GrowAndShrink: AnimTask_GrowAndShrink as never,
+});

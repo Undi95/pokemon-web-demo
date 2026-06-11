@@ -504,3 +504,83 @@ function AnimGrowingShockWaveOrb(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimGrowingShockWaveOrb: AnimGrowingShockWaveOrb as never });
+
+// ─── VAGUE F5 : AnimTask_ElectricBolt (electric.c:685, 5 hits — Thunderbolt) ─
+// Crée 5 segments de foudre échelonnés (un toutes les 2 frames, y+16*k),
+// chaque segment vit 15f. Le C ajuste oam.tileNum (+r8) et shape 8x16/16x16.
+function _ebItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_ElectricBolt(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _ebItf();
+  const a = itf.getArgs?.() ?? [];
+  const tgt = itf.getTarget?.() ?? 1;
+  task.data[0] = (GetBattlerSpriteCoord?.(tgt, 0) ?? 176) + a[0];
+  task.data[1] = (GetBattlerSpriteCoord?.(tgt, 1) ?? 40) + a[1];
+  task.data[2] = a[2];
+  task.data[10] = 0;
+  task.func = _ElectricBolt_Step;
+}
+function _ElectricBolt_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _ebItf();
+  const sp = task.data[2];
+  const x = task.data[0];
+  const y = task.data[1];
+  const step = task.data[10];
+  const r2 = !sp ? 1 : 4;
+  let r8 = !sp ? 0 : 8;
+  let create = false;
+  let r12 = 16;
+  switch (step) {
+    case 0: r12 *= 1; create = true; break;
+    case 2: r12 *= 2; r8 += r2; create = true; break;
+    case 4: r12 *= 3; r8 += r2 * 2; create = true; break;
+    case 6: r12 *= 4; r8 += r2 * 3; create = true; break;
+    case 8: r12 *= 5; create = true; break;
+    case 10:
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      return;
+  }
+  if (create) {
+    // via le bridge : le template generated (tag + oam) + notre callback
+    const reg = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => unknown } | undefined;
+    void reg; // le createsprite runtime passe par CreateSprite système :
+    const cs = (globalThis as Record<string, unknown>).__decompGlobals as { CreateSpriteFromGeneratedTemplate?: never } | undefined;
+    void cs;
+    // pattern minimal robuste : créer par le même chemin que les callbacks
+    // (CreateSprite système avec le tag du bolt 10011=ANIM_TAG_LIGHTNING ?)
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; oamIndex: number; callback: unknown }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number }> } } | undefined;
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+    const tileStart = dg?.GetSpriteTileStartByTag?.(10038) ?? 0xFFFF; // ANIM_TAG_ELECTRIC_BOLT? — si absent, segment invisible (net doux)
+    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 0, priority: 2 }, images: [] } as never, x, y + r12, 2) ?? -1;
+    if (sid >= 0) {
+      const spr = rt?.gSprites?.get(sid);
+      const oam = spr ? rt?.gba?.oam[spr.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart + r8;
+      if (spr) {
+        spr.data = spr.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+        spr.data[0] = sp;
+        spr.data[1] = 0;
+        spr.callback = _ElectricBoltSegment;
+        _ElectricBoltSegment(spr as never);
+      }
+    }
+  }
+  task.data[10]++;
+}
+function _ElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam: Array<{ shape: number; size: number }> }; DestroySprite?: (id: number) => void; gSprites?: Map<number, unknown> } | undefined;
+  const oam = rt?.gba?.oam[sprite.oamIndex];
+  if (oam) {
+    if (!sprite.data[0]) { oam.shape = 2; oam.size = 0; } // 8x16
+    else { oam.shape = 0; oam.size = 1; }                 // 16x16
+  }
+  if (++sprite.data[1] === 15) {
+    // DestroySprite(sprite) : retrouver l'id
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+import { registerAnimTasks as _ebRegT } from '../engine/battle/battle-anim-registry';
+_ebRegT({ AnimTask_ElectricBolt: AnimTask_ElectricBolt as never });
