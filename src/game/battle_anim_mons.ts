@@ -412,13 +412,21 @@ export function ResetSpriteRotScale(spriteId: number): void {
   const sprite = rt?.gSprites?.get(spriteId) as unknown as RotScaleSprite | undefined;
   if (!rt || !sprite) return;
   SetSpriteRotScale(spriteId, 0x100, 0x100, 0);
-  sprite.affineMode = 0;
+  // 1:1 décomp : ST_OAM_AFFINE_NORMAL (1), PAS OFF — et CalcCenterToCornerVec
+  // RECALCULÉ au mode normal. Notre version remettait 0 SANS recalc -> le c2c
+  // -64 du Prepare (DOUBLE) restait À JAMAIS = le Wailord coupé en haut/
+  // décalé -32px après son anim d'apparition (retours user ×4, sonde
+  // c2c=-64 affine=0 persistant 2026-06-11).
+  sprite.affineMode = 1; // ST_OAM_AFFINE_NORMAL
   sprite.affineAnimPaused = false;
-  const oam = (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; objMode?: number }> } }).gba?.oam?.[sprite.oamIndex];
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ affineMode?: number; objMode?: number; shape?: number; size?: number }> } }).gba?.oam?.[sprite.oamIndex];
   if (oam) {
-    oam.affineMode = 0;
+    oam.affineMode = 1;
     oam.objMode = 0;
   }
+  const v = CalcCenterToCornerVec(oam?.shape ?? 0, oam?.size ?? 3, 1);
+  sprite.centerToCornerVecX = v.centerToCornerVecX;
+  sprite.centerToCornerVecY = v.centerToCornerVecY;
 }
 
 /** 1:1 décomp `TrySetSpriteRotScale(sprite, recalcCenter, xScale, yScale, rotation)`
