@@ -732,3 +732,18 @@ function AnimWiggleParticleTowardsTarget(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimMoveParticleBeyondTarget: AnimMoveParticleBeyondTarget as never });
+
+// ─── VAGUE F29 : AnimTask_GetIceBallCounter (ice.c:1609, 3 hits) ────────────
+function _iceItf(): { getArgs?: () => number[]; getDisableStruct?: () => { rolloutTimerStartValue?: number; rolloutTimer?: number } | null; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_GetIceBallCounter(task: { taskId: number }): void {
+  const itf = _iceItf();
+  const args = itf.getArgs?.() ?? [];
+  const ds = itf.getDisableStruct?.();
+  const arg = args[0] | 0;
+  args[arg] = (ds?.rolloutTimerStartValue ?? 0) - (ds?.rolloutTimer ?? 0) - 1;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _iceRegT } from '../engine/battle/battle-anim-registry';
+_iceRegT({ AnimTask_GetIceBallCounter: AnimTask_GetIceBallCounter as never });

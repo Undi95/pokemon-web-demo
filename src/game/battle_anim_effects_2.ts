@@ -1711,7 +1711,22 @@ function _FakeOut_Step2(task: _SpTask): void {
     itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
+/** 1:1 FuryCutter (effects_2.c:3821/3827) : args[7] depuis le DisableStruct. */
+function AnimTask_IsFuryCutterHitRight(task: _SpTask): void {
+  const itf = _spItf2() as { getArgs?: () => number[]; getDisableStruct?: () => { furyCutterCounter?: number } | null; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.();
+  if (args) args[7] = (itf.getDisableStruct?.()?.furyCutterCounter ?? 0) & 1;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_GetFuryCutterHitCount(task: _SpTask): void {
+  const itf = _spItf2() as { getArgs?: () => number[]; getDisableStruct?: () => { furyCutterCounter?: number } | null; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.();
+  if (args) args[7] = itf.getDisableStruct?.()?.furyCutterCounter ?? 0;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
 _regTasks({
+  AnimTask_IsFuryCutterHitRight: AnimTask_IsFuryCutterHitRight as never,
+  AnimTask_GetFuryCutterHitCount: AnimTask_GetFuryCutterHitCount as never,
   AnimTask_FakeOut: AnimTask_FakeOut as never,
   AnimTask_AttackerStretchAndDisappear: AnimTask_AttackerStretchAndDisappear as never,
   AnimTask_SpeedDust: AnimTask_SpeedDust as never,

@@ -451,6 +451,10 @@ export function LaunchBattleAnimation(
       for (let i = 0; i < n && i < MAX_BATTLERS_COUNT; i++) {
         gAnimBattlerSpecies[i] = bs?.gBattleMons?.[i]?.species ?? 0;
       }
+      // 1:1 LaunchBattleAnimation : gAnimDisableStructPtr = &gDisableStructs[gBattlerAttacker]
+      // (FuryCutter/Rollout/IceBall comptent dessus — F29).
+      const ds = (globalThis as { __battleState?: { gDisableStructs?: unknown[] } }).__battleState?.gDisableStructs;
+      gAnimDisableStructPtr = ds?.[gBattleAnimAttacker] ?? null;
     }
   }
 
@@ -2204,6 +2208,7 @@ export function tickAnimScript(): void {
   // devtool vagues : l'état interne pour diagnostiquer un soft-lock d'anim.
   getDebugState: () => ({ pc: _pc, visualTaskCount: gAnimVisualTaskCount, active: gAnimScriptActive, cbName: (gAnimScriptCallback as { name?: string } | null)?.name ?? null }),
   getArgs: () => gBattleAnimArgs,
+  getDisableStruct: () => gAnimDisableStructPtr,
   // pattern « task de fond » 1:1 (SetPsychicBackground/FadeScreenToWhite… :
   // gAnimVisualTaskCount-- a l'init — la task ne bloque pas waitforvisualfinish)
   decVisualTaskCount: () => { if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--; },
