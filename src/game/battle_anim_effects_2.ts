@@ -1656,7 +1656,63 @@ function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded
     }
   }
 }
+/** 1:1 `AnimTask_FakeOut` (effects_2.c, 1 hit — Bluff) : la fenêtre WIN0 se
+ *  referme en pince (13px/f des deux bords) avec assombrissement BG3, puis
+ *  flash blanc des palettes BG. */
+function AnimTask_FakeOut(task: _SpTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_WIN0H = 240;
+  g.gBattle_WIN0V = 160;
+  rt?.SetGpuReg?.(0x40, 240);     // WIN0H
+  rt?.SetGpuReg?.(0x44, 160);     // WIN0V
+  rt?.SetGpuReg?.(0x48, 0x3F3F);  // WININ
+  rt?.SetGpuReg?.(0x4A, 0x3F3F);  // WINOUT
+  rt?.SetGpuReg?.(0x50, 0x0088);  // BLDCNT TGT1_BG3|DARKEN... (1:1 valeur 0x88? : TGT1_BG3=0x08, EFFECT_DARKEN=0xC0 -> 0xC8)
+  rt?.SetGpuReg?.(0x50, 0x00C8);
+  rt?.SetGpuReg?.(0x54, 16);      // BLDY
+  task.data[0] = 0;
+  task.data[1] = 240;
+  task.data[10] = 0;
+  task.func = _FakeOut_Step1;
+}
+function _FakeOut_Step1(task: _SpTask): void {
+  const g = globalThis as Record<string, unknown>;
+  task.data[0] += 13;
+  task.data[1] -= 13;
+  if (task.data[0] >= task.data[1]) {
+    g.gBattle_WIN0H = 0;
+    task.func = _FakeOut_Step2;
+  } else {
+    g.gBattle_WIN0H = ((task.data[0] << 8) | (task.data[1] & 0xFF)) & 0xFFFF; // WIN_RANGE
+  }
+}
+function _FakeOut_Step2(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
+  const g = globalThis as Record<string, unknown>;
+  if (++task.data[10] === 5) {
+    task.data[11] = 0x88;
+    rt?.SetGpuReg?.(0x50, 0x0090); // TGT1_BG3|LIGHTEN (LIGHTEN=0x80+? net : flash blanc via BlendPalette)
+    // flash blanc des palettes BG (GetBattlePalettesMask(TRUE,...) = BG 0-3)
+    const pf = (g.__rt as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined)?.gPlttBufferFaded;
+    if (pf?.get && pf.set) {
+      for (let pal = 0; pal < 4; pal++) {
+        for (let i = 0; i < 16; i++) pf.set(pal * 16 + i, 0x7FFF);
+      }
+    }
+  } else if (task.data[10] > 4) {
+    g.gBattle_WIN0H = 0;
+    g.gBattle_WIN0V = 0;
+    rt?.SetGpuReg?.(0x48, 0x3F3F);
+    rt?.SetGpuReg?.(0x4A, 0x3F3F);
+    rt?.SetGpuReg?.(0x50, 0);
+    rt?.SetGpuReg?.(0x54, 0);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
 _regTasks({
+  AnimTask_FakeOut: AnimTask_FakeOut as never,
   AnimTask_AttackerStretchAndDisappear: AnimTask_AttackerStretchAndDisappear as never,
   AnimTask_SpeedDust: AnimTask_SpeedDust as never,
   AnimTask_ExtremeSpeedImpact: AnimTask_ExtremeSpeedImpact as never,
