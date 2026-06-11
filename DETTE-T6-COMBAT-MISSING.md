@@ -115,4 +115,14 @@
   (la 1re plage = le 1er script du fichier) avant tout re-fix.
 - REVERT appliqué (65e460ed) : le cœur tourne sur le bytecode pré-fix
   (A/B-validé), les anims sur le réparé. Snapshots : %TEMP%/bytecode-avant/.
+- 🎯 MÉCANISME EXACT IDENTIFIÉ (audit final) : la zone zérotée @0.. =
+  **gBattleScriptsForMoveEffects** — la table des pointeurs `.4byte
+  BattleScript_EffectX` des 214 effets de move. Après bindArgs, la RÉSOLUTION
+  DES LABELS du fichier échoue (le TS réparé n'a plus qu'un label « Generated »
+  au lieu des centaines de BattleScript_*) → tous les pointeurs émis à 0 →
+  chaque move exécuté saute à l'adresse 0 → GEL. Le bug n'est donc PAS dans la
+  liaison des args elle-même mais dans un EFFET DE BORD de bindArgs sur la
+  passe de déclaration/résolution des labels (expansion déraillée → labels
+  jamais déclarés). REPRO dry-run : compiler SEULEMENT les 30 premières lignes
+  de battle_scripts_1.s avec/sans le fix et comparer la table des labels.
 - RE-RÉPARATION = chantier dédié + A/B complet (tour, KO-run, capture-run).
