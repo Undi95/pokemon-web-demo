@@ -602,8 +602,25 @@ function _BlendMonInAndOut_Step(task: _F1Task): void {
     }
   }
 }
+/** 1:1 `AnimTask_BlendPalInAndOutByTag` (mons.c:1774) : meme Setup mais la
+ *  palette vient du TAG (args[0]) — data[0] = (palette*16)+0x101. */
+export function AnimTask_BlendPalInAndOutByTag(task: _F1Task): void {
+  const itf = _f1Itf();
+  const args = itf.getArgs?.() ?? [];
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const palette = spApi?.IndexOfSpritePaletteTag?.(args[0]) ?? 0xFF;
+  if (palette === 0xFF) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  task.data[0] = palette * 0x10 + 0x101; // = 256 + palette*16 + 1 (OBJ, couleur 1)
+  _BlendPalInAndOutSetup(task, args);
+}
 import { registerAnimTasks as _f1Reg } from '../engine/battle/battle-anim-registry';
-_f1Reg({ AnimTask_BlendMonInAndOut: AnimTask_BlendMonInAndOut as never });
+_f1Reg({
+  AnimTask_BlendMonInAndOut: AnimTask_BlendMonInAndOut as never,
+  AnimTask_BlendPalInAndOutByTag: AnimTask_BlendPalInAndOutByTag as never,
+});
 
 // ─── Sous-système AFFINE-PAR-TASK (battle_anim_mons.c:2240-2330) ────────────
 // PrepareAffineAnimInTaskData/RunAffineAnimFromTaskData — utilisé par ~30

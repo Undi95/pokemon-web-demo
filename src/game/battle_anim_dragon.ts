@@ -212,3 +212,101 @@ registerAnimCallbacks({
   AnimDragonRageFirePlume: AnimDragonRageFirePlume as never,
   AnimDragonDanceOrb: AnimDragonDanceOrb as never,
 });
+
+// ─── VAGUE F39a : AnimTask_DragonDanceWaver (dragon.c:338-424) ──────────────
+// Ondulation scanline ±32px autour de l'ATTAQUANT (amplitude qui monte 0→3
+// puis redescend), client du système gScanlineEffect (pattern Extrasensory).
+import {
+  ScanlineEffect_SetParams as _ddSetParams,
+  gScanlineEffectRegBuffers as _ddBufs,
+  gScanlineEffect as _ddScan,
+  SCANLINE_EFFECT_DMACNT_16BIT as _ddDma16,
+  SCANLINE_EFFECT_REG_BG1HOFS as _ddRegBg1H,
+  SCANLINE_EFFECT_REG_BG2HOFS as _ddRegBg2H,
+  REG_OFFSET_BG0HOFS as _ddRegBase,
+} from './scanline_effect';
+import { gSineTable as _ddSine } from './trig';
+import { GetBattlerSpriteBGPriorityRank as _ddBgRank, GetBattlerElevation as _ddElev, GetBattlerSpriteCoord as _ddCoord, BATTLER_COORD_Y as _DD_COORD_Y } from './battle_anim_mons';
+import { gBattlerPartyIndexes as _ddPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _ddEnemyParty, GetMonData as _ddGetMon, MON_DATA_SPECIES as _ddSpeciesK } from '../engine/battle/party-storage';
+import { registerAnimTasks as _ddRegT } from '../engine/battle/battle-anim-registry';
+
+type _DdTask = { taskId: number; data: number[]; func?: unknown };
+function _ddItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 GetBattlerYCoordWithElevation (transcrit local, pattern repo). */
+function _ddYCoordWithElevation(battler: number): number {
+  let y = _ddCoord(battler, _DD_COORD_Y);
+  if ((battler & 1) !== 0) {
+    const species = _ddGetMon(_ddEnemyParty[_ddPartyIdx[battler]] as never, _ddSpeciesK) as number;
+    y -= _ddElev(battler, species);
+  }
+  return y;
+}
+
+/** 1:1 `AnimTask_DragonDanceWaver` (dragon.c:338). */
+function AnimTask_DragonDanceWaver(task: _DdTask): void {
+  const attacker = _ddItf().getAttacker?.() ?? 0;
+  const rank = _ddBgRank(attacker);
+  const g = globalThis as Record<string, unknown>;
+  let dmaDest: number;
+  if (rank === 1) {
+    dmaDest = _ddRegBase + _ddRegBg1H;
+    task.data[2] = (g.gBattle_BG1_X as number) | 0;
+  } else {
+    dmaDest = _ddRegBase + _ddRegBg2H;
+    task.data[2] = (g.gBattle_BG2_X as number) | 0;
+  }
+  const y = _ddYCoordWithElevation(attacker) & 0xFF;
+  task.data[3] = y - 32;
+  task.data[4] = y + 32;
+  if (task.data[3] < 0) task.data[3] = 0;
+  for (let i = task.data[3]; i <= task.data[4]; i++) {
+    _ddBufs[0][i] = task.data[2];
+    _ddBufs[1][i] = task.data[2];
+  }
+  _ddSetParams({ dmaDest, dmaControl: _ddDma16, initState: 1, unused9: 0 });
+  task.func = _DragonDanceWaver_Step;
+}
+/** 1:1 `AnimTask_DragonDanceWaver_Step` (dragon.c:374). */
+function _DragonDanceWaver_Step(task: _DdTask): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[7] > 1) {
+        task.data[7] = 0;
+        if (++task.data[6] === 3) task.data[0]++;
+      }
+      _UpdateDragonDanceScanlineEffect(task);
+      break;
+    case 1:
+      if (++task.data[1] > 0x3C) task.data[0]++;
+      _UpdateDragonDanceScanlineEffect(task);
+      break;
+    case 2:
+      if (++task.data[7] > 1) {
+        task.data[7] = 0;
+        if (--task.data[6] === 0) task.data[0]++;
+      }
+      _UpdateDragonDanceScanlineEffect(task);
+      break;
+    case 3:
+      _ddScan.state = 3;
+      task.data[0]++;
+      break;
+    case 4:
+      _ddItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 `UpdateDragonDanceScanlineEffect` (dragon.c:413). */
+function _UpdateDragonDanceScanlineEffect(task: _DdTask): void {
+  let sineIndex = task.data[5] & 0xFFFF;
+  const sBuf = _ddBufs[_ddScan.srcBuffer];
+  for (let i = task.data[3]; i <= task.data[4]; i++) {
+    sBuf[i] = (((_ddSine[sineIndex] ?? 0) * task.data[6]) >> 7) + task.data[2];
+    sineIndex = (sineIndex + 8) & 0xFF;
+  }
+  task.data[5] = (task.data[5] + 9) & 0xFF;
+}
+_ddRegT({ AnimTask_DragonDanceWaver: AnimTask_DragonDanceWaver as never });
