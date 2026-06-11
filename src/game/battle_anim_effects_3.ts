@@ -2882,7 +2882,86 @@ function _HelpingHand_Step(task: { taskId: number; data: number[] }): void {
       break;
   }
 }
+/** 1:1 `AnimTask_GlareEyeDots` (effects_3.c, 1 hit — Regard Noir/Glare) :
+ *  12 paires de points le long de la ligne attaquant→cible (interp 8.8),
+ *  chaque point vit 36f, offsets ±3 en diagonale. */
+function AnimTask_GlareEyeDots(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  task.data[0] = 0;  // tState
+  task.data[1] = 0;  // tTimer
+  task.data[2] = 0;  // tPairNum
+  task.data[3] = 12; // tPairMax
+  task.data[4] = 3;  // tDotOffset
+  task.data[5] = 0;  // tActiveSprites
+  const h4 = 16; // ATTR_HEIGHT/4 net (64/4)
+  task.data[10] = _e3Coord(atk, 2) + ((atk & 1) === 0 ? h4 : -h4); // tStartX
+  task.data[11] = _e3Coord(atk, 3) - h4;                            // tStartY
+  task.data[12] = _e3Coord(tgt, 2);                                 // tEndX
+  task.data[13] = _e3Coord(tgt, 3);                                 // tEndY
+  task.func = _GlareEyeDots_Step;
+}
+function _GlareEyeDots_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 3) {
+        task.data[1] = 0;
+        const [x, y] = _GlareDotCoords(task.data[10], task.data[11], task.data[12], task.data[13], task.data[3], task.data[2]);
+        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplate?.('gGlareEyeDotSpriteTemplate');
+        const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+        for (let i = 0; i < 2; i++) {
+          const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
+          if (sid >= 0) {
+            const sp = rt?.gSprites?.get(sid);
+            const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+            if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
+            if (sp) {
+              sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+              const off = i === 0 ? -task.data[4] : task.data[4];
+              sp.x2 = off;
+              sp.y2 = off;
+              sp.data[0] = 0;            // sTimer
+              sp.data[3] = task.taskId;  // sTaskId
+              sp.data[4] = 5;            // sActiveSpritesIdx
+              sp.callback = _AnimGlareEyeDot;
+              task.data[5]++;
+            }
+          }
+        }
+        if (task.data[2] === task.data[3]) task.data[0]++;
+        task.data[2]++;
+      }
+      break;
+    case 1:
+      if (task.data[5] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+function _GlareDotCoords(sx: number, sy: number, ex: number, ey: number, pairMax: number, pairNum: number): [number, number] {
+  if (pairNum === 0) return [sx, sy];
+  if (pairNum >= pairMax) return [ex, ey];
+  const pm = pairMax - 1;
+  const x2 = (sx << 8) + pairNum * Math.trunc(((ex - sx) << 8) / pm);
+  const y2 = (sy << 8) + pairNum * Math.trunc(((ey - sy) << 8) / pm);
+  return [x2 >> 8, y2 >> 8];
+}
+function _AnimGlareEyeDot(sprite: { data: number[] }): void {
+  if (++sprite.data[0] > 36) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[3]);
+    if (t) t.data[sprite.data[4]]--;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
 _e3RegTasks({
+  AnimTask_GlareEyeDots: AnimTask_GlareEyeDots as never,
   AnimTask_HelpingHandAttackerMovement: AnimTask_HelpingHandAttackerMovement as never,
   AnimTask_SquishAndSweatDroplets: AnimTask_SquishAndSweatDroplets as never,
   AnimTask_FacadeColorBlend: AnimTask_FacadeColorBlend as never,
