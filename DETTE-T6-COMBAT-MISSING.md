@@ -137,3 +137,11 @@
 - RE-RÉPARATION = chantier dédié : bisecter la régression du compilateur
   (quel commit/changement a cassé la résolution des labels de tables .4byte),
   puis A/B complet (tour, KO-run, capture-run).
+
+## Dette PLATEFORME : OBJ-window (ordre user 2026-06-11 : « pas de compromis »)
+- AnimTask_MetallicShine (12 hits) + le pattern OBJ-window (DISPCNT_OBJWIN_ON,
+  sprites objMode=2 = région-fenêtre, WINOUT masque les couches) NE SERONT
+  PORTÉS QU AVEC le support OBJ-window RÉEL dans le compositor (chantier
+  plateforme : masque par-pixel/scanline des sprites window → visibilité BG).
+  PAS de version dégradée (bande translucide plein écran ≠ silhouette ROM).
+- Même dépendance : tout effet à découpe-silhouette (Curse mask, spotlight…).
