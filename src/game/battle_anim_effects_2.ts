@@ -1463,7 +1463,204 @@ function _ScaryFace_Step(task: _SpTask): void {
       break;
   }
 }
+/** 1:1 `AnimTask_ExtremeSpeedImpact` (effects_2.c:2814) : la cible encaisse
+ *  3 rafales (poussée ±8 + tremblement ±6 x5) puis revient pixel par pixel. */
+function AnimTask_ExtremeSpeedImpact(task: _SpTask): void {
+  const itf = _spItf2() as { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const tgt = itf.getTarget?.() ?? 1;
+  task.data[0] = 0; task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
+  task.data[12] = 3;
+  if ((tgt & 1) === 0) { task.data[13] = -1; task.data[14] = 8; }
+  else { task.data[13] = 1; task.data[14] = -8; }
+  task.data[15] = _spBattlerSpriteId(1);
+  if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.func = _ExSpeedImpact_Step;
+}
+function _ExSpeedImpact_Step(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[0]) {
+    case 0:
+      sp.x2 += task.data[14];
+      task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
+      task.data[0]++;
+      break;
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        task.data[2]++;
+        if (task.data[2] & 1) sp.x2 += 6;
+        else sp.x2 -= 6;
+        if (++task.data[3] > 4) {
+          if (task.data[2] & 1) sp.x2 -= 6;
+          task.data[0]++;
+        }
+      }
+      break;
+    case 2:
+      if (--task.data[12] !== 0) task.data[0] = 0;
+      else task.data[0]++;
+      break;
+    case 3:
+      sp.x2 += task.data[13];
+      if (sp.x2 === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 `AnimTask_ExtremeSpeedMonReappear` : l attaquant clignote en
+ *  réapparaissant (période croissante 1→2). */
+function AnimTask_ExtremeSpeedMonReappear(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  task.data[0] = 0; task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
+  task.data[4] = 1;
+  task.data[13] = 14;
+  task.data[14] = 2;
+  task.data[15] = _spBattlerSpriteId(0);
+  if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.func = _ExSpeedReappear_Step;
+}
+function _ExSpeedReappear_Step(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if (task.data[0] === 0 && ++task.data[1] > task.data[4]) {
+    task.data[1] = 0;
+    sp.invisible = !((++task.data[2]) & 1);
+    if (++task.data[3] >= task.data[13]) {
+      if (++task.data[4] < task.data[14]) {
+        task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
+      } else {
+        sp.invisible = false;
+        itf.DestroyAnimVisualTask?.(task.taskId);
+      }
+    }
+  }
+}
+/** 1:1 `AnimTask_AttackerStretchAndDisappear` : étirement affine puis
+ *  invisible (ExtremeSpeed départ). */
+function AnimTask_AttackerStretchAndDisappear(task: _SpTask): void {
+  const spriteId = _spBattlerSpriteId(0);
+  if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gStretchAttackerAffineAnimCmds']);
+  task.func = _StretchDisappear_Step;
+}
+function _StretchDisappear_Step(task: _SpTask): void {
+  if (!_spRun(task)) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; invisible?: boolean }> } | undefined;
+    const sp = rt?.gSprites?.get(task.data[0]);
+    if (sp) { sp.y2 = 0; sp.invisible = true; }
+    _spItf2().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+/** 1:1 `AnimTask_SpeedDust` + table gSpeedDustPosTable + AnimSpeedDust :
+ *  les nuages de poussière clignotants autour de l attaquant (24 spawns). */
+const _gSpeedDustPos: ReadonlyArray<readonly [number, number]> = [[30, 28], [-20, 24], [16, 26], [-10, 28]];
+function AnimTask_SpeedDust(task: _SpTask): void {
+  const itf = _spItf2() as { getAttacker?: () => number };
+  for (let i = 0; i <= 8; i++) task.data[i] = 0;
+  task.data[1] = 4;
+  task.data[13] = 0;
+  const atk = (itf.getAttacker?.() ?? 0) as number;
+  task.data[14] = _e2Coord(atk, 0);
+  task.data[15] = _e2Coord(atk, 1);
+  task.func = _SpeedDust_Step;
+}
+import { GetBattlerSpriteCoord as _e2Coord } from './battle_anim_mons';
+function _SpeedDust_Step(task: _SpTask): void {
+  const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
+  // VIE DES DUSTS GÉRÉE ICI, inconditionnellement (le ticker sprite peut être
+  // gelé en harness ; les dusts immortels saturaient les slots → les spawns
+  // suivants échouaient → la task restait en case 0 → garde-fou 600f) :
+  // chaque dust vit ~40f (l'anim ROM 5×8f), purge par âge global.
+  task.data[9]++;
+  if (task.data[9] > 40 && task.data[13] > 0) {
+    const rtp = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { callback?: unknown }>; DestroySprite?: (i: number) => void } | undefined;
+    for (const [sid, sp2] of rtp?.gSprites ?? new Map()) {
+      if ((sp2 as { callback?: unknown }).callback === _AnimSpeedDust) {
+        rtp?.DestroySprite?.(sid);
+        if (--task.data[13] <= 0) break;
+      }
+    }
+    task.data[9] = 20; // les vagues suivantes purgées par paquet
+  }
+  switch (task.data[8]) {
+    case 0:
+      if (++task.data[4] > 1) {
+        task.data[4] = 0;
+        task.data[5] = (task.data[5] + 1) & 1;
+        if (++task.data[6] > 20) {
+          if (task.data[7] === 0) { task.data[6] = 0; task.data[8] = 1; }
+          else task.data[8] = 2;
+        }
+      }
+      break;
+    case 1:
+      task.data[5] = 0;
+      if (++task.data[4] > 20) { task.data[7] = 1; task.data[8] = 0; }
+      break;
+    case 2:
+      task.data[5] = 1;
+      break;
+  }
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 4) {
+        task.data[1] = 0;
+        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplate?.('gSpeedDustSpriteTemplate');
+        const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
+        if (sid >= 0) {
+          const sp = rt?.gSprites?.get(sid);
+          const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+          if (oam && tileStart !== 0xFFFF) oam.tileId = tileStart;
+          if (sp) {
+            sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+            sp.data[0] = task.taskId;
+            sp.data[1] = 13;
+            sp.x2 = _gSpeedDustPos[task.data[2]][0];
+            sp.y2 = _gSpeedDustPos[task.data[2]][1];
+            // PAS de sp.anims sur sprite inline (le ticker saute le callback
+            // si l anim-state du generated est incomplete -> sprites immortels
+            // -> vtc fantome 600f, sonde ExSpeed 2026-06-11). Le clignotement
+            // vient de task.data[5] ; vie = cap 40 ticks (~ l anim ROM 5x8f).
+            sp.callback = _AnimSpeedDust;
+            task.data[13]++;
+            if (++task.data[2] > 3) {
+              task.data[2] = 0;
+              if (++task.data[3] > 5) task.data[0]++;
+            }
+          }
+        }
+      }
+      break;
+    case 1:
+      if (task.data[13] <= 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded?: boolean }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+  const t = rt?.gTasks?.get(sprite.data[0]);
+  sprite.invisible = !!(t?.data[5]);
+  if (sprite.animEnded || (sprite.data[7] = (sprite.data[7] ?? 0) + 1) > 40) {
+    if (t) t.data[sprite.data[1]]--;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
 _regTasks({
+  AnimTask_AttackerStretchAndDisappear: AnimTask_AttackerStretchAndDisappear as never,
+  AnimTask_SpeedDust: AnimTask_SpeedDust as never,
+  AnimTask_ExtremeSpeedImpact: AnimTask_ExtremeSpeedImpact as never,
+  AnimTask_ExtremeSpeedMonReappear: AnimTask_ExtremeSpeedMonReappear as never,
   AnimTask_ScaryFace: AnimTask_ScaryFace as never,
   AnimTask_Withdraw: AnimTask_Withdraw as never,
   AnimTask_ThrashMoveMonHorizontal: AnimTask_ThrashMoveMonHorizontal as never,

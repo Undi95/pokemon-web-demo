@@ -307,7 +307,32 @@ function AnimTask_GetWeather(task: { taskId: number }): void {
   if (args) args[7] = r;
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
+/** 1:1 `AnimTask_SetAttackerInvisibleWaitForSignal` (utility:1079, 2 hits) :
+ *  task de FOND (vtc--) qui cache l attaquant jusqu au signal args[7]==0x1000. */
+function AnimTask_SetAttackerInvisibleWaitForSignal(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _ufItf() as { getAttacker?: () => number; decVisualTaskCount?: () => void };
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
+  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  if (!sp) { (_ufItf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = sp.invisible ? 1 : 0;
+  task.data[15] = sid;
+  sp.invisible = true;
+  (itf as { decVisualTaskCount?: () => void }).decVisualTaskCount?.();
+  task.func = _WaitAndRestoreVisibility;
+}
+function _WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): void {
+  const args = _ufItf().getArgs?.() ?? [];
+  if (args[7] === 0x1000) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }>; DestroyTask?: (id: number) => void } | undefined;
+    const sp = rt?.gSprites?.get(task.data[15]);
+    if (sp) sp.invisible = (task.data[0] & 1) === 1;
+    rt?.DestroyTask?.(task.taskId);
+  }
+}
 _ufRegTasks({
+  AnimTask_SetAttackerInvisibleWaitForSignal: AnimTask_SetAttackerInvisibleWaitForSignal as never,
   AnimTask_GetTargetSide: AnimTask_GetTargetSide as never,
   AnimTask_GetTargetIsAttackerPartner: AnimTask_GetTargetIsAttackerPartner as never,
   AnimTask_GetBattleEnvironment: AnimTask_GetBattleEnvironment as never,
