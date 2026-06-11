@@ -19,6 +19,7 @@ import {
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
 import { registerAnimTemplates, registerAnimTasks } from '../engine/battle/battle-anim-registry';
+import { ANIMCMD_FRAME, ANIMCMD_END } from '../engine/system/sprite-animation';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
 
@@ -55,7 +56,12 @@ function _battlerSprite(battler: number): AnimSprite | undefined {
   return id !== undefined && id >= 0 ? _rt()?.gSprites?.get(id) : undefined;
 }
 
-// 1:1 gScratchAnimCmds : 5 frames (tiles 0/16/32/48/64), 4 ticks chacune.
+// 1:1 gScratchAnimCmds (battle_anim_effects_3.c) — LA VRAIE TABLE, tickée par
+// AnimateSprite (sprite.c:901) via le moteur de tables (recadrage user).
+export const gScratchAnimCmds = [
+  ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(32, 4),
+  ANIMCMD_FRAME(48, 4), ANIMCMD_FRAME(64, 4), ANIMCMD_END,
+];
 const SCRATCH_FRAMES = [0, 16, 32, 48, 64];
 const SCRATCH_TICKS = 4;
 
@@ -71,9 +77,18 @@ function AnimSpriteOnMonPos_Scratch(sprite: AnimSprite): void {
     sprite.y = mon.y + (mon.y2 ?? 0) + args[1];
   }
   sprite.invisible = false;
-  sprite.data[7] = 0; // tick global
+  // 1:1 : la table gScratchAnimCmds (posee par Cmd_createsprite) anime les
+  // frames -> on attend animEnded -> destroy (= RunStoredCallbackWhenAnimEnds).
+  if ((sprite as { anims?: unknown }).anims) {
+    sprite.callback = _Scratch_WaitAnimEnd;
+    return;
+  }
+  sprite.data[7] = 0; // fallback legacy : stepper local
   sprite.callback = _Scratch_AnimStep;
   _applyFrame(sprite, 0);
+}
+function _Scratch_WaitAnimEnd(sprite: AnimSprite): void {
+  if ((sprite as { animEnded?: boolean }).animEnded) _itf().DestroyAnimSprite?.(sprite);
 }
 function _applyFrame(sprite: AnimSprite, frame: number): void {
   const rt = _rt();
@@ -231,7 +246,7 @@ function _Leer_Step(sprite: AnimSprite): void {
 }
 
 registerAnimTemplates([
-  { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never },
+  { name: 'gScratchSpriteTemplate', tileTag: ANIM_TAG_SCRATCH, paletteTag: ANIM_TAG_SCRATCH, oam: { shape: 0, size: 2 }, load: LoadAnimScratchGfx, callback: AnimSpriteOnMonPos_Scratch as never, anims: [gScratchAnimCmds] },
   { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never },
   { name: 'gLeerSpriteTemplate', tileTag: ANIM_TAG_LEER, paletteTag: ANIM_TAG_LEER, oam: { shape: 0, size: 2 }, load: LoadAnimLeerGfx, callback: AnimLeerSprite as never },
 ]);

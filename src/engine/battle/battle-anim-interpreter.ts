@@ -795,6 +795,13 @@ function Cmd_loadspritegfx(): void {
   sAnimFramesToWait = 1;
   gAnimScriptCallback = WaitAnimFrameCount;
 }
+/** tileStart du tag (sprite.tileBase — AnimateSprite calcule tileBase+frame). */
+function _resolveTileBase(tag: number): number {
+  const dg = (globalThis as Record<string, unknown>).__decompGlobals as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const v = dg?.GetSpriteTileStartByTag?.(tag);
+  return (v !== undefined && v !== 0xFFFF) ? v : 0;
+}
+
 /** Charge la sheet+palette d'un tag anim via le registry (template.load). */
 function _loadAnimSheetByTag(tag: number): void {
   const reg = (globalThis as Record<string, unknown>).__battleAnimRegistryStore as {
@@ -881,6 +888,23 @@ function Cmd_createsprite(): void {
           _scriptSpriteIds.push({ id: spriteId, ref: sp as unknown });
           (sp as { callback: unknown }).callback = tpl.callback;
           if (tpl.tileTag === 0) sp.invisible = true;  // sprite controleur 1:1
+          // MOTEUR DE TABLES 1:1 (recadrage user 2026-06-11) : le template
+          // porte ses VRAIES tables ANIMCMD -> brancher AnimateSprite
+          // (sprite.c:901, ticke tout sprite avec .anims) : anims + tileBase.
+          if (tpl.anims && tpl.tileTag && tpl.tileTag > 0) {
+            const spA = sp as unknown as {
+              anims: ReadonlyArray<ReadonlyArray<unknown>> | null; tileBase: number;
+              animNum: number; animCmdIndex: number; animDelayCounter: number;
+              animBeginning: boolean; animEnded: boolean;
+            };
+            spA.anims = tpl.anims;
+            spA.tileBase = _resolveTileBase(tpl.tileTag);
+            spA.animNum = 0;
+            spA.animCmdIndex = 0;
+            spA.animDelayCounter = 0;
+            spA.animBeginning = true;
+            spA.animEnded = false;
+          }
           tpl.callback(sp);
         }
         gAnimVisualTaskCount++;  // 1:1 battle_anim.c:411 (decremente par DestroyAnimSprite)

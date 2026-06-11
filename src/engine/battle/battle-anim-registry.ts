@@ -28,6 +28,10 @@ export interface AnimSpriteTemplate {
   load?: () => void;
   /** OAM du template C (shape/size) — requis si tileTag > 0. */
   oam?: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3 };
+  /** Tables ANIMCMD 1:1 (anims[animNum][cmdIdx], format sprite-animation.ts) —
+   *  posées sur le sprite par Cmd_createsprite, tickées par AnimateSprite
+   *  (sprite.c:901). LE moteur de tables (recadrage user 2026-06-11). */
+  anims?: ReadonlyArray<ReadonlyArray<unknown>>;
 }
 
 const _idToName = new Map<number, string>();
