@@ -125,4 +125,15 @@
   passe de déclaration/résolution des labels (expansion déraillée → labels
   jamais déclarés). REPRO dry-run : compiler SEULEMENT les 30 premières lignes
   de battle_scripts_1.s avec/sans le fix et comparer la table des labels.
-- RE-RÉPARATION = chantier dédié + A/B complet (tour, KO-run, capture-run).
+- 🔄 VERDICT SANDBOX (repro A/B, %TEMP%/bytecode-repro) : **bindArgs est
+  INNOCENT** — la compile AVEC le fix (A) et SANS (B) produisent un
+  battle_scripts_1 IDENTIQUE octet pour octet... et toutes deux ZÉROTENT la
+  table vs le fichier EN PLACE (\`2a 01...\` historique vs \`00 00...\` recompilé).
+  La régression est dans le COMPILATEUR ACTUEL (ou ses sources auto-asm) :
+  il ne résout plus les \`.4byte BattleScript_EffectX\` de la table d'effets —
+  indépendamment de bindArgs. Le fichier en place provient d'une génération
+  antérieure correcte → NE JAMAIS RECOMPILER les bytecodes du cœur sans diff
+  complet (le piège du goal, démontré).
+- RE-RÉPARATION = chantier dédié : bisecter la régression du compilateur
+  (quel commit/changement a cassé la résolution des labels de tables .4byte),
+  puis A/B complet (tour, KO-run, capture-run).
