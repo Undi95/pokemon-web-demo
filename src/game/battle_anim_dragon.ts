@@ -12,7 +12,8 @@
  *
  * Skips propres : AnimTask_DragonDanceWaver(+Step+UpdateDragonDanceScanlineEffect)
  * = effet scanline (gScanlineEffectRegBuffers/DMA BG HOFS) ; AnimOverheatFlame
- * (+_Step) = hors lot (Overheat, portable sans dépendance — dette douce).
+ * (+_Step) = hors lot, DÉJÀ porté 1:1 dans battle_anim_fire.ts (:479) — NE PAS
+ * re-porter ici (double registration).
  *
  * Dettes douces : GetBattlerSpriteCoordAttr(HEIGHT/WIDTH) approximé par la
  * frame mon 64x64 documentée (rayon orbe = 32, même approx que

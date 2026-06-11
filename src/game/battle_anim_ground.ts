@@ -165,9 +165,10 @@ function AnimBoneHitProjectile(sprite: DecompSprite): void {
   sprite.data[0] = args[4] | 0;
   sprite.data[2] = (GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2) + a2) & 0xFFFF;
   sprite.data[4] = (GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) + (args[3] | 0)) & 0xFFFF;
+  // 1:1 ordre C : callback = StartAnimLinearTranslation (exécuté au tick
+  // SUIVANT, qui chaîne WithFollowup), PUIS StoreSpriteCallbackInData6.
+  sprite.callback = StartAnimLinearTranslation;
   StoreSpriteCallbackInData6(sprite, ((s: DecompSprite) => { _itf().DestroyAnimSprite?.(s); }) as never);
-  // 1:1 : sprite->callback = StartAnimLinearTranslation (chaîne WithFollowup).
-  StartAnimLinearTranslation(sprite);
 }
 
 /** 1:1 `AnimMudSportDirt` (battle_anim_ground.c:232) : particule de boue de

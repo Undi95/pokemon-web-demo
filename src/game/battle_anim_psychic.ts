@@ -121,8 +121,11 @@ function _StoreDestroyAnimSpriteInData6(sprite: _VSprite): void {
 // terminator) — sémantique sprite.c:1124-1161 : LOOP(n) rejoue le bloc depuis
 // la borne LOOP précédente n fois (n+1 passages au total), LOOP(0) = borne.
 //   FRAME(0x20,0x20,0,0) ; FRAME(0x10,0x10,0,17) ; LOOP(0)
-//   [FRAME(-0x8,-0x8,0,10) ; FRAME(0x8,0x8,0,10)] × (4+1)   ← LOOP(4)
+//   [FRAME(-0x8,-0x8,0,10) ; FRAME(0x8,0x8,0,10)] × (4+1)   ← LOOP(4) ; LOOP(0)
 //   [FRAME(-0x10,-0x10,0,5) ; FRAME(0x10,0x10,0,5)] × (7+1) ← LOOP(7) ; END
+// NB : le C a un 2e LOOP(0) entre LOOP(4) et le bloc -0x10 (psychic.c:392) —
+// il ne sert que de borne au LOOP(7) ; vérifié sprite.c:1147-1161 : la borne
+// serait LOOP(4) sans lui → même bloc rejoué → déroulé strictement identique.
 const _orb0Frames: { xScale: number; yScale: number; rotation: number; duration: number }[] = [
   { xScale: 0x20, yScale: 0x20, rotation: 0, duration: 0 },
   { xScale: 0x10, yScale: 0x10, rotation: 0, duration: 17 },

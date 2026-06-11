@@ -18,8 +18,26 @@ import {
   LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
   GetSpriteTileStartByTag,
 } from '../engine/system/decomp-globals';
-import { registerAnimTemplates, registerAnimTasks } from '../engine/battle/battle-anim-registry';
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP } from '../engine/system/sprite-animation';
+import { registerAnimTemplates, registerAnimTasks, lookupAnimTemplate } from '../engine/battle/battle-anim-registry';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, SeekSpriteAnim } from '../engine/system/sprite-animation';
+// ─── Imports vague « callbacks 1:1 » (section en fin de fichier) ────────────
+import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-bridge';
+import {
+  GetBattlerSpriteCoord,
+  BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, SetSpriteCoordsToAnimAttackerCoords,
+  InitAnimLinearTranslation, AnimTranslateLinear, InitAnimArcTranslation, TranslateAnimHorizontalArc,
+  StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
+  DestroySpriteAndMatrix, TrySetSpriteRotScale, PrepareBattlerSpriteForRotScale,
+  SetSpriteRotScale, ResetSpriteRotScale, GetBattlerElevation,
+} from './battle_anim_mons';
+import { Sin, Cos, gSineTable } from './trig';
+import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
+import { gBattlerPartyIndexes, gBattleTypeFlags } from '../engine/battle/state';
+import { BATTLE_TYPE_DOUBLE } from '../engine/battle/constants';
+import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
+import { reverseDecompConstant } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
 
@@ -263,3 +281,1703 @@ registerAnimTemplates([
   { name: 'gRoarNoiseLineSpriteTemplate', tileTag: ANIM_TAG_NOISE_LINE, paletteTag: ANIM_TAG_NOISE_LINE, oam: { shape: 0, size: 2 }, load: LoadAnimNoiseLineGfx, callback: AnimRoarNoiseLine as never, anims: [gRoarNoiseLineAnimCmds1, gRoarNoiseLineAnimCmds2] },
   { name: 'gLeerSpriteTemplate', tileTag: ANIM_TAG_LEER, paletteTag: ANIM_TAG_LEER, oam: { shape: 0, size: 2 }, load: LoadAnimLeerGfx, callback: AnimLeerSprite as never },
 ]);
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « callbacks 1:1 » (goal 2026-06-11) — 31 callbacks transcrits depuis :
+//   - battle_anim_effects_3.c (le gros du lot : BlackSmoke, WhiteHalo, TealAlert,
+//     MeanLookEye, Spikes, ClappingHand(+2), RapidSpin, TriAttackTriangle,
+//     BatonPassPokeball, WishStar(+MiniTwinklingStar), SweetScentPetal,
+//     PainSplitProjectile, FlatterConfetti, FlatterSpotlight, YawnCloud,
+//     AssistPawprint, SmellingSaltsHand, SmellingSaltExclamation,
+//     HelpingHandClap, ForesightMagnifyingGlass, MeteorMashStar, BlockX,
+//     KnockOffStrike, Recycle)
+//   - battle_anim_effects_2.c (AnimViceGripPincer, AnimGuillotinePincer,
+//     AnimPencil) — DETTE placement : à déplacer dans battle_anim_effects_2.ts
+//     quand ce miroir-là sera créé (ordre de lot, pattern battle_anim_ghost).
+//   - battle_anim_dark.c (AnimTearDrop) / battle_anim_rock.c (AnimRaiseSprite) /
+//     battle_anim_psychic.c (AnimRedX) — même dette placement.
+// Pattern repo : accès LAZY interpréteur/runtime via __battleAnimInterpreter/__rt
+// (AUCUN import statique de l'interpréteur = anti-cycle ESM).
+// ════════════════════════════════════════════════════════════════════════════
+
+type _VSprite = {
+  data: number[]; x: number; y: number; x2: number; y2: number;
+  invisible?: boolean; subpriority?: number; spriteId?: number; oamIndex?: number;
+  hFlip?: boolean; vFlip?: boolean;
+  animEnded?: boolean; affineAnimEnded?: boolean;
+  callback: unknown;
+};
+function _vItf(): {
+  getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number;
+  DestroyAnimSprite?: (s: unknown) => void; DestroyAnimVisualTask?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _grt(): {
+  gSprites?: Map<number, _VSprite & { objMode?: number }>;
+  gba?: { oam?: Array<{ tileId?: number; priority?: number }> };
+  SetGpuReg?: (off: number, v: number) => void;
+  GetGpuReg?: (off: number) => number;
+  DestroySprite?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+/** `DestroyAnimSprite` stockable en callback (C : StoreSpriteCallbackInData6(sprite, DestroyAnimSprite)). */
+function _DestroyAnimSprite(sprite: unknown): void { _vItf().DestroyAnimSprite?.(sprite); }
+/** Réinterprète les 16 bits bas en s16 signé (= cast (s16) décomp). */
+function _toS16(v: number): number { return (v << 16) >> 16; }
+/** 1:1 GetBattlerSide(b) — 0 = B_SIDE_PLAYER, 1 = B_SIDE_OPPONENT. */
+function _side(b: number): number { return b & 1; }
+/** 1:1 `StartSpriteAnim` (sprite.c:1351) — pattern repo (tables posées par le template). */
+function _StartSpriteAnim(sprite: unknown, n: number): void {
+  const spA = sprite as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && n >= 0) { spA.animNum = n; spA.animBeginning = true; spA.animEnded = false; }
+}
+/** 1:1 `StartSpriteAffineAnim` (sprite.c:1373) — pattern repo.
+ *  Sert aussi pour `ChangeSpriteAffineAnim` (sprite.c:1388, même surface plate :
+ *  animNum + beginning + ended ; la nuance reset-loop-counter C est interne au
+ *  moteur affine). */
+function _StartSpriteAffineAnim(sprite: unknown, n: number): void {
+  const spF = sprite as { affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean };
+  spF.affineAnimNum = n; spF.affineAnimBeginning = true; spF.affineAnimEnded = false;
+}
+/** 1:1 `WaitAnimForDuration` (battle_anim_mons.c:551) : data[0] frames puis cb stocké. */
+function _WaitAnimForDuration(sprite: _VSprite): void {
+  if (sprite.data[0] > 0) sprite.data[0]--;
+  else SetCallbackToStoredInData6(sprite as never);
+}
+/** 1:1 BIOS `ArcTan2` + `ArcTan2Neg` (battle_anim_mons.c:1368) — même formule que
+ *  battle_anim_effects_1b.ts. */
+function _ArcTan2Neg(x: number, y: number): number {
+  const a = ((Math.atan2(y, x) / (2 * Math.PI)) * 65536) | 0;
+  return (-a) & 0xFFFF;
+}
+// Random2 décomp → LCG local déterministe (pattern battle_anim_water/fight — dette douce).
+let _e3Lcg = 0x51f3;
+function _rand2(): number { _e3Lcg = (_e3Lcg * 1103515245 + 24691) & 0xFFFFFFFF; return (_e3Lcg >>> 16) & 0xFFFF; }
+/** 1:1 `PlaySE12WithPanning`/`PlaySE1WithPanning` — route vers le SE runtime
+ *  (pattern battle_anim_effects_1b) ; le pan est ignoré par le wrapper runtime. */
+function _PlaySE12WithPanning(songId: number, _pan: number): void {
+  (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(songId);
+}
+const SE_M_LEER = 192;     // include/constants/songs.h:199
+const SE_M_SKETCH = 205;   // include/constants/songs.h:212
+const SE_M_ENCORE = 222;   // include/constants/songs.h:229
+const SOUND_PAN_ATTACKER = -64;  // include/battle_anim.h
+const SOUND_PAN_TARGET = 63;
+const DISPLAY_WIDTH = 240;
+// ─── GPU regs (io_reg.h) — pattern battle_anim_ghost (rt.SetGpuReg lazy) ────
+const REG_OFFSET_DISPCNT = 0x00;
+const REG_OFFSET_WIN0H = 0x40;
+const REG_OFFSET_WIN0V = 0x44;
+const REG_OFFSET_WINOUT = 0x4A;
+const REG_OFFSET_BLDCNT = 0x50;
+const REG_OFFSET_BLDALPHA = 0x52;
+const BLDCNT_BLEND_TGT2ALL = 0x3F40; // BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND
+const DISPCNT_OBJWIN_ON = 0x8000;
+// WINOUT_WIN01_BG_ALL|WIN01_OBJ|WIN01_CLR|WINOBJ_BG_ALL|WINOBJ_OBJ [|WINOBJ_CLR]
+const WINOUT_FLATTER_ON = 0x1F3F;
+const WINOUT_FLATTER_OFF = 0x3F3F;
+function _BLDALPHA_BLEND(eva: number, evb: number): number { return (eva & 0xFFFF) | ((evb & 0xFFFF) << 8); }
+/** gBattle_WIN0H/V décomp = accesseurs globalThis → battleVBlankState (battle_main.ts:323) ;
+ *  VBlankCB_Battle ré-applique chaque frame → écrire le MIROIR, pas que le reg. */
+function _setBattleWinReg(name: 'gBattle_WIN0H' | 'gBattle_WIN0V', v: number): void {
+  (globalThis as Record<string, unknown>)[name] = v;
+}
+/** Entrée OAM réelle du sprite (rt.gba.oam[oamIndex]) — pour tileNum/priority
+ *  (champs NON synchronisés depuis le sprite plat). */
+function _oamOf(sprite: _VSprite): { tileId?: number; priority?: number } | undefined {
+  return sprite.oamIndex !== undefined ? _grt().gba?.oam?.[sprite.oamIndex] : undefined;
+}
+/** 1:1 `sprite->oam.tileNum += n` (sheet déjà résolue → bump le tileId OAM). */
+function _oamTileBump(sprite: _VSprite, delta: number): void {
+  const oam = _oamOf(sprite);
+  if (oam && typeof oam.tileId === 'number') oam.tileId += delta;
+}
+/** Sprite id d'un battler (surface __battleControllerOpponent — pattern repo). */
+function _battlerSpriteId(battler: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  const id = co?.getBattlerMonSpriteId?.(battler);
+  return (id === undefined || id === null || id < 0) ? 0xFF : id;
+}
+/** 1:1 `GetAnimBattlerSpriteId(animBattler)` (battle_anim_mons.c:373) —
+ *  ANIM_ATTACKER=0 / ANIM_TARGET=1 (partners doubles = dette douce). */
+function _GetAnimBattlerSpriteId(animBattler: number): number {
+  if (animBattler === 0) return _battlerSpriteId(_vItf().getAttacker?.() ?? 0);
+  if (animBattler === 1) return _battlerSpriteId(_vItf().getTarget?.() ?? 1);
+  return 0xFF;
+}
+// 1:1 battle_util.c — IsDoubleBattle() = gBattleTypeFlags & BATTLE_TYPE_DOUBLE.
+function _IsDoubleBattle(): boolean { return (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) !== 0; }
+/** 1:1 `SetAverageBattlerPositions` (battle_anim_mons.c:2289) : moyenne battler+
+ *  partenaire (doubles), sinon battler seul. Out-params C (&x,&y) → retour {x,y}. */
+function _SetAverageBattlerPositions(battler: number, respectMonPicOffsets: boolean): { x: number; y: number } {
+  const xCoordType = !respectMonPicOffsets ? BATTLER_COORD_X : BATTLER_COORD_X_2;
+  const yCoordType = !respectMonPicOffsets ? BATTLER_COORD_Y : BATTLER_COORD_Y_PIC_OFFSET;
+  const battlerX = GetBattlerSpriteCoord(battler, xCoordType);
+  const battlerY = GetBattlerSpriteCoord(battler, yCoordType);
+  let partnerX: number, partnerY: number;
+  if (_IsDoubleBattle()) {
+    partnerX = GetBattlerSpriteCoord(battler ^ 2 /* BATTLE_PARTNER */, xCoordType);
+    partnerY = GetBattlerSpriteCoord(battler ^ 2, yCoordType);
+  } else {
+    partnerX = battlerX;
+    partnerY = battlerY;
+  }
+  return { x: ((battlerX + partnerX) / 2) | 0, y: ((battlerY + partnerY) / 2) | 0 };
+}
+/** 1:1 `GetBattlerSpriteSubpriority` (battle_anim_mons.c:2035) — IsContest()=false ;
+ *  position = battler (singles 1:1 ; doubles = dette douce). */
+function _GetBattlerSpriteSubpriority(battler: number): number {
+  const position = battler; // GetBattlerPosition — singles : position == battler
+  if (position === 0) return 30;       // B_POSITION_PLAYER_LEFT
+  else if (position === 2) return 20;  // B_POSITION_PLAYER_RIGHT
+  else if (position === 1) return 40;  // B_POSITION_OPPONENT_LEFT
+  else return 50;                      // B_POSITION_OPPONENT_RIGHT
+}
+/** 1:1 `GetBattlerSpriteBGPriority` (battle_anim_mons.c:2063) — IsContest()=false ;
+ *  GetAnimBgAttribute(2/1, BG_ANIM_PRIORITY) → 2/1 (valeurs vanilla combat,
+ *  pattern battle_anim_ice). position = battler (singles). */
+function _GetBattlerSpriteBGPriority(battler: number): number {
+  const position = battler;
+  if (position === 0 || position === 3) return 2; // PLAYER_LEFT / OPPONENT_RIGHT
+  else return 1;
+}
+// species du battler (même dette douce que battle_anim_effects_1b :
+// transformSpecies/illusion non modélisés).
+function _battlerSpeciesName(battler: number): string {
+  const party = _side(battler) !== 0 ? gEnemyParty : gPlayerParty;
+  const species = GetMonData(party[gBattlerPartyIndexes[battler]] as never, MON_DATA_SPECIES) as number;
+  return reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+}
+// 1:1 battle_anim_mons.c:2151 `GetBattlerSpriteCoordAttr` — cases utilisées ici
+// (HEIGHT/WIDTH/TOP/BOTTOM/LEFT/RIGHT). coords = back pic (joueur) / front pic
+// (adverse). Dette douce : transformSpecies/Unown/Castform non modélisés.
+const BATTLER_COORD_ATTR_HEIGHT = 0;
+const BATTLER_COORD_ATTR_TOP = 2;
+const BATTLER_COORD_ATTR_BOTTOM = 3;
+const BATTLER_COORD_ATTR_RIGHT = 4;
+const BATTLER_COORD_ATTR_LEFT = 5;
+function _GetBattlerSpriteCoordAttr(battler: number, attr: number): number {
+  const name = _battlerSpeciesName(battler);
+  const coords = _side(battler) === 0 ? getMonBackPicCoords(name) : getMonFrontPicCoords(name);
+  const w = coords.w, h = coords.h;
+  switch (attr) {
+    case BATTLER_COORD_ATTR_HEIGHT: return h;
+    case 1 /* BATTLER_COORD_ATTR_WIDTH */: return w;
+    case BATTLER_COORD_ATTR_TOP:
+      return GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET) - ((h / 2) | 0);
+    case BATTLER_COORD_ATTR_BOTTOM:
+      return GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET) + ((h / 2) | 0);
+    case BATTLER_COORD_ATTR_LEFT:
+      return GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2) - ((w / 2) | 0);
+    case BATTLER_COORD_ATTR_RIGHT:
+      return GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2) + ((w / 2) | 0);
+    default: return 0;
+  }
+}
+/** 1:1 `GetBattlerYCoordWithElevation` (battle_anim_mons.c:342) — pattern
+ *  battle_anim_ground : élévation soustraite côté adverse uniquement. */
+function _GetBattlerYCoordWithElevation(battler: number): number {
+  let y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
+  if (_side(battler) !== 0) {
+    const species = GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]] as never, MON_DATA_SPECIES) as number;
+    y -= GetBattlerElevation(battler, species);
+  }
+  return y;
+}
+/** 1:1 `InitAnimFastLinearTranslation` (battle_anim_mons.c:1171) : deltas
+ *  fixed-point x16 (u16, bit 0 = signe) — transcription battle_anim_ice. */
+function _InitAnimFastLinearTranslation(sprite: _VSprite): void {
+  const xDiff = _toS16(sprite.data[2]) - _toS16(sprite.data[1]);
+  const yDiff = _toS16(sprite.data[4]) - _toS16(sprite.data[3]);
+  const xSign = xDiff < 0;
+  const ySign = yDiff < 0;
+  let x2 = (Math.abs(xDiff) << 4) & 0xFFFF;
+  let y2 = (Math.abs(yDiff) << 4) & 0xFFFF;
+  x2 = (x2 / _toS16(sprite.data[0])) | 0;
+  y2 = (y2 / _toS16(sprite.data[0])) | 0;
+  if (xSign) x2 |= 1; else x2 &= ~1;
+  if (ySign) y2 |= 1; else y2 &= ~1;
+  sprite.data[1] = x2 & 0xFFFF;
+  sprite.data[2] = y2 & 0xFFFF;
+  sprite.data[4] = 0;
+  sprite.data[3] = 0;
+}
+/** 1:1 `AnimFastTranslateLinear` (battle_anim_mons.c:1208). */
+function _AnimFastTranslateLinear(sprite: _VSprite): boolean {
+  if (!sprite.data[0]) return true;
+  const v1 = sprite.data[1] & 0xFFFF;
+  const v2 = sprite.data[2] & 0xFFFF;
+  let x = sprite.data[3] & 0xFFFF;
+  let y = sprite.data[4] & 0xFFFF;
+  x = (x + v1) & 0xFFFF;
+  y = (y + v2) & 0xFFFF;
+  if (v1 & 1) sprite.x2 = -(x >> 4); else sprite.x2 = x >> 4;
+  if (v2 & 1) sprite.y2 = -(y >> 4); else sprite.y2 = y >> 4;
+  sprite.data[3] = x;
+  sprite.data[4] = y;
+  sprite.data[0]--;
+  return false;
+}
+/** 1:1 `AnimFastTranslateLinearWaitEnd` (battle_anim_mons.c:1238). */
+function _AnimFastTranslateLinearWaitEnd(sprite: _VSprite): void {
+  if (_AnimFastTranslateLinear(sprite)) SetCallbackToStoredInData6(sprite as never);
+}
+/** 1:1 `InitAndRunAnimFastLinearTranslation` (battle_anim_mons.c:1199). */
+function _InitAndRunAnimFastLinearTranslation(sprite: _VSprite): void {
+  sprite.data[1] = sprite.x;
+  sprite.data[3] = sprite.y;
+  _InitAnimFastLinearTranslation(sprite);
+  sprite.callback = _AnimFastTranslateLinearWaitEnd;
+  _AnimFastTranslateLinearWaitEnd(sprite);
+}
+
+// ─── SMOKESCREEN : AnimBlackSmoke ────────────────────────────────────────────
+
+/** 1:1 `AnimBlackSmoke` (battle_anim_effects_3.c:1182) : nuage qui dérive en X
+ *  fixed-point (args [x, y, vitesse, miroir?, durée]) en clignotant 1 frame/2. */
+function AnimBlackSmoke(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  if (!(args[3] | 0)) sprite.data[0] = args[2] | 0;
+  else sprite.data[0] = -(args[2] | 0);
+  sprite.data[1] = args[4] | 0;
+  sprite.invisible = false; // runtime crée invisible (le C crée visible)
+  sprite.callback = AnimBlackSmoke_Step;
+}
+/** 1:1 `AnimBlackSmoke_Step` (:1196) : x2 = data[2]>>8 cumulé + flicker invisible^=1. */
+function AnimBlackSmoke_Step(sprite: _VSprite): void {
+  if (sprite.data[1] > 0) {
+    sprite.x2 = sprite.data[2] >> 8;
+    sprite.data[2] += sprite.data[0];
+    sprite.invisible = !sprite.invisible; // sprite->invisible ^= 1
+    sprite.data[1]--;
+  } else {
+    _DestroyAnimSprite(sprite);
+  }
+}
+
+// ─── FLASH/halo blanc : AnimWhiteHalo ────────────────────────────────────────
+
+/** 1:1 `AnimWhiteHalo` (battle_anim_effects_3.c:1220) : halo blend (eva 7) tenu
+ *  90 frames (WaitAnimForDuration) puis fade-out par _Step1. */
+function AnimWhiteHalo(sprite: _VSprite): void {
+  sprite.data[0] = 90;
+  sprite.callback = _WaitAnimForDuration;
+  sprite.data[1] = 7;
+  StoreSpriteCallbackInData6(sprite as never, AnimWhiteHalo_Step1 as never);
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDCNT, BLDCNT_BLEND_TGT2ALL);
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[1], 16 - sprite.data[1]));
+  sprite.invisible = false;
+}
+/** 1:1 `AnimWhiteHalo_Step1` (:1230) : eva data[1] 7→-1 (fade out). */
+function AnimWhiteHalo_Step1(sprite: _VSprite): void {
+  _grt().SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[1], 16 - sprite.data[1]));
+  if (--sprite.data[1] < 0) {
+    sprite.invisible = true;
+    sprite.callback = AnimWhiteHalo_Step2;
+  }
+}
+/** 1:1 `AnimWhiteHalo_Step2` (:1240) : reset blend + destroy. */
+function AnimWhiteHalo_Step2(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0);
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, 0);
+  _DestroyAnimSprite(sprite);
+}
+
+// ─── MEAN LOOK satellites : AnimTealAlert / AnimMeanLookEye ──────────────────
+
+/** 1:1 `AnimTealAlert` (battle_anim_effects_3.c:1247) : trait « alerte » orienté
+ *  vers la cible (ArcTan2Neg + 0x6000) qui converge en data[2] frames. */
+function AnimTealAlert(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0];
+  const tgt = _vItf().getTarget?.() ?? 1;
+  const x = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2) & 0xFF;      // u8 1:1
+  const y = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) & 0xFF;
+  InitSpritePosToAnimTarget(sprite as never, true);
+  let rotation = _ArcTan2Neg(sprite.x - x, sprite.y - y);
+  rotation = (rotation + 0x6000) & 0xFFFF;
+  // IsContest() == false → pas de += 0x4000.
+  if (sprite.spriteId !== undefined)
+    TrySetSpriteRotScale(sprite.spriteId, false, 0x100, 0x100, rotation);
+  sprite.invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[2] = x;
+  sprite.data[4] = y;
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
+}
+
+/** 1:1 `AnimMeanLookEye` (battle_anim_effects_3.c:1269) : l'œil en blend
+ *  (eva 0→15 ping-pong), puis affine 1 (zoom), tremblement, fade out. */
+function AnimMeanLookEye(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDCNT, BLDCNT_BLEND_TGT2ALL);
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(0, 16));
+  sprite.data[0] = 4;
+  sprite.invisible = false;
+  sprite.callback = AnimMeanLookEye_Step1;
+}
+/** 1:1 `AnimMeanLookEye_Step1` (:1277) : eva 4↔15 ping-pong ~70 frames →
+ *  affine anim 1 (paused) + invisible → _Step2. */
+function AnimMeanLookEye_Step1(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[0], 16 - sprite.data[0]));
+  if (sprite.data[1]) sprite.data[0]--;
+  else sprite.data[0]++;
+  if (sprite.data[0] === 15 || sprite.data[0] === 4) sprite.data[1] ^= 1;
+  if (sprite.data[2]++ > 70) {
+    rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0);
+    rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, 0);
+    _StartSpriteAffineAnim(sprite, 1);
+    sprite.data[2] = 0;
+    sprite.invisible = true;
+    (sprite as { affineAnimPaused?: boolean }).affineAnimPaused = true;
+    sprite.callback = AnimMeanLookEye_Step2;
+  }
+}
+/** 1:1 `AnimMeanLookEye_Step2` (:1301) : 10 frames puis dé-pause l'affine ;
+ *  passe à _Step3 quand l'affine est finie. */
+function AnimMeanLookEye_Step2(sprite: _VSprite): void {
+  if (sprite.data[2]++ > 9) {
+    sprite.invisible = false;
+    (sprite as { affineAnimPaused?: boolean }).affineAnimPaused = false;
+    if (sprite.affineAnimEnded) sprite.callback = AnimMeanLookEye_Step3;
+  }
+}
+/** 1:1 `AnimMeanLookEye_Step3` (:1312) : tremblement x2/y2 ±1 (cycle 8) pendant
+ *  16 frames → réinstalle le blend (eva 16) → _Step4. */
+function AnimMeanLookEye_Step3(sprite: _VSprite): void {
+  switch (sprite.data[3]) {
+    case 0: case 1:
+      sprite.x2 = 1;
+      sprite.y2 = 0;
+      break;
+    case 2: case 3:
+      sprite.x2 = -1;
+      sprite.y2 = 0;
+      break;
+    case 4: case 5:
+      sprite.x2 = 0;
+      sprite.y2 = 1;
+      break;
+    case 6: default:
+      sprite.x2 = 0;
+      sprite.y2 = -1;
+      break;
+  }
+  if (++sprite.data[3] > 7) sprite.data[3] = 0;
+  if (sprite.data[4]++ > 15) {
+    sprite.data[0] = 16;
+    sprite.data[1] = 0;
+    const rt = _grt();
+    rt.SetGpuReg?.(REG_OFFSET_BLDCNT, BLDCNT_BLEND_TGT2ALL);
+    rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[0], 0));
+    sprite.callback = AnimMeanLookEye_Step4;
+  }
+}
+/** 1:1 `AnimMeanLookEye_Step4` (:1351) : fade eva 16→0 (1 pas / 2 frames) →
+ *  reset blend + destroy. */
+function AnimMeanLookEye_Step4(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[0], 16 - sprite.data[0]));
+  if (sprite.data[1]++ > 1) {
+    sprite.data[0]--;
+    sprite.data[1] = 0;
+  }
+  if (sprite.data[0] === 0) sprite.invisible = true;
+  if (sprite.data[0] < 0) {
+    rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0);
+    rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, 0);
+    _DestroyAnimSprite(sprite);
+  }
+}
+
+// ─── SPIKES ──────────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimSpikes` (battle_anim_effects_3.c:1429) : pic lancé en arc (-50) de
+ *  l'attaquant vers la position moyenne cible + offsets (args [x, y, xT, yT, durée]). */
+function AnimSpikes(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  const avg = _SetAverageBattlerPositions(tgt, false);
+  if (_side(atk) !== 0 /* != B_SIDE_PLAYER */) args[2] = -(args[2] | 0);
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = avg.x + (args[2] | 0);
+  sprite.data[4] = avg.y + (args[3] | 0);
+  sprite.data[5] = -50;
+  InitAnimArcTranslation(sprite as never);
+  sprite.invisible = false;
+  sprite.callback = AnimSpikes_Step1;
+}
+/** 1:1 `AnimSpikes_Step1` (:1448) : fin d'arc → 30 frames d'attente → _Step2. */
+function AnimSpikes_Step1(sprite: _VSprite): void {
+  if (TranslateAnimHorizontalArc(sprite as never)) {
+    sprite.data[0] = 30;
+    sprite.data[1] = 0;
+    sprite.callback = _WaitAnimForDuration;
+    StoreSpriteCallbackInData6(sprite as never, AnimSpikes_Step2 as never);
+  }
+}
+/** 1:1 `AnimSpikes_Step2` (:1459) : flicker 1 frame/2 pendant 16 frames → destroy. */
+function AnimSpikes_Step2(sprite: _VSprite): void {
+  if (sprite.data[1] & 1) sprite.invisible = !sprite.invisible;
+  if (++sprite.data[1] === 16) _DestroyAnimSprite(sprite);
+}
+
+// ─── ENCORE : AnimClappingHand (+2) ──────────────────────────────────────────
+
+/** 1:1 `AnimClappingHand` (battle_anim_effects_3.c:1606) : une main qui clappe
+ *  (x2 ±12 → 0 → ±12, data[0] claps). args [x, y, gauche/droite, pos abs?, claps].
+ *  tileNum += 16 = la frame « main » de la sheet. */
+function AnimClappingHand(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  if ((args[3] | 0) === 0) {
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X);
+    sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y);
+  }
+  sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  _oamTileBump(sprite, 16);
+  if ((args[2] | 0) === 0) {
+    sprite.hFlip = true; // sprite->oam.matrixNum = ST_OAM_HFLIP (non-affine)
+    sprite.x2 = -12;
+    sprite.data[1] = 2;
+  } else {
+    sprite.x2 = 12;
+    sprite.data[1] = -2;
+  }
+  sprite.data[0] = args[4] | 0;
+  if (sprite.data[3] !== 255) sprite.data[3] = args[2] | 0;
+  sprite.invisible = false;
+  sprite.callback = AnimClappingHand_Step;
+}
+/** 1:1 `AnimClappingHand_Step` (:1638) : aller (x2→0, SE au contact si main 0)
+ *  puis retour (|x2|==12 → un clap décompté). */
+function AnimClappingHand_Step(sprite: _VSprite): void {
+  if (sprite.data[2] === 0) {
+    sprite.x2 += sprite.data[1];
+    if (sprite.x2 === 0) {
+      sprite.data[2]++;
+      if (sprite.data[3] === 0) {
+        _PlaySE12WithPanning(SE_M_ENCORE, SOUND_PAN_ATTACKER); // PlaySE1WithPanning
+      }
+    }
+  } else {
+    sprite.x2 -= sprite.data[1];
+    if (Math.abs(sprite.x2) === 12) {
+      sprite.data[0]--;
+      sprite.data[2]--;
+    }
+  }
+  if (sprite.data[0] === 0) _DestroyAnimSprite(sprite);
+}
+/** 1:1 `AnimClappingHand2` (:1667) : variante OBJ_WINDOW (masque spotlight) ;
+ *  data[3]=255 = pas de SE, puis délègue à AnimClappingHand. */
+function AnimClappingHand2(sprite: _VSprite): void {
+  (sprite as { objMode?: number }).objMode = 2; // ST_OAM_OBJ_WINDOW
+  sprite.data[3] = 255;
+  AnimClappingHand(sprite);
+}
+
+// ─── RAPID SPIN ──────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimRapidSpin` (battle_anim_effects_3.c:1708) : la toupie oscille en X
+ *  (gSineTable>>4) en montant/descendant jusqu'à y2 cible.
+ *  args [ancre, x, y2départ, y2fin, vitesseOnde, vitesseY]. */
+function AnimRapidSpin(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if ((args[0] | 0) === 0) {
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X) + (args[1] | 0);
+    sprite.y = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y);
+  }
+  sprite.y2 = args[2] | 0;
+  sprite.data[0] = sprite.y2 > (args[3] | 0) ? 1 : 0;
+  sprite.data[1] = 0;
+  sprite.data[2] = args[4] | 0;
+  sprite.data[3] = args[5] | 0;
+  sprite.data[4] = args[3] | 0;
+  sprite.invisible = false;
+  sprite.callback = AnimRapidSpin_Step;
+}
+/** 1:1 `AnimRapidSpin_Step` (:1731). */
+function AnimRapidSpin_Step(sprite: _VSprite): void {
+  sprite.data[1] = (sprite.data[1] + sprite.data[2]) & 0xFF;
+  sprite.x2 = gSineTable[sprite.data[1]] >> 4;
+  sprite.y2 += sprite.data[3];
+  if (sprite.data[0]) {
+    if (sprite.y2 < sprite.data[4]) _DestroyAnimSprite(sprite);
+  } else {
+    if (sprite.y2 > sprite.data[4]) _DestroyAnimSprite(sprite);
+  }
+}
+
+// ─── TRI ATTACK ──────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimTriAttackTriangle` (battle_anim_effects_3.c:2015) : le triangle
+ *  clignote 40 frames sur l'attaquant (l'affine du template le fait tourner),
+ *  puis (frame 61) translate vers la cible et se détruit. Self-stepper : le
+ *  callback du template RESTE actif jusqu'à la frame 61 (1:1). */
+function AnimTriAttackTriangle(sprite: _VSprite): void {
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if (sprite.data[0] === 0) InitSpritePosToAnimAttacker(sprite as never, false);
+  if (++sprite.data[0] < 40) {
+    const v = sprite.data[0] & 0xFFFF;
+    if ((v & 1) === 0) sprite.invisible = true;
+    else sprite.invisible = false;
+  }
+  if (sprite.data[0] > 30) sprite.invisible = false;
+  if (sprite.data[0] === 61) {
+    StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
+    sprite.x += sprite.x2;
+    sprite.y += sprite.y2;
+    sprite.x2 = 0;
+    sprite.y2 = 0;
+    sprite.data[0] = 20;
+    sprite.data[2] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+    sprite.data[4] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET);
+    sprite.callback = StartAnimLinearTranslation as never;
+  }
+}
+
+// ─── BATON PASS ──────────────────────────────────────────────────────────────
+
+/** 1:1 corps du `case 2` d'AnimBatonPassPokeball (:2083) — extrait pour
+ *  répliquer le fall-through C `case 1 → case 2` (tsconfig noFallthrough). */
+function _BatonPassPokeball_Case2(sprite: _VSprite, spriteId: number): void {
+  sprite.data[1] += 96;
+  sprite.data[2] += 48;
+  if (spriteId !== 0xFF) SetSpriteRotScale(spriteId, sprite.data[1], sprite.data[2], 0);
+  if (++sprite.data[3] === 9) {
+    sprite.data[3] = 0;
+    const mon = spriteId !== 0xFF ? _grt().gSprites?.get(spriteId) : undefined;
+    if (mon) mon.invisible = true; // gSprites[spriteId].invisible = TRUE
+    if (spriteId !== 0xFF) ResetSpriteRotScale(spriteId);
+    sprite.data[0]++;
+  }
+}
+/** 1:1 `AnimBatonPassPokeball` (battle_anim_effects_3.c:2061) : la ball apparaît
+ *  sur l'attaquant pendant que le mon est étiré (rot-scale) puis caché ; la ball
+ *  monte hors écran. Self-stepper (switch data[0]). */
+function AnimBatonPassPokeball(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const spriteId = _GetAnimBattlerSpriteId(0 /* ANIM_ATTACKER */);
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+      sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+      if (spriteId !== 0xFF) PrepareBattlerSpriteForRotScale(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+      sprite.data[1] = 256;
+      sprite.data[2] = 256;
+      sprite.invisible = false;
+      sprite.data[0]++;
+      break;
+    case 1:
+      sprite.data[1] += 96;
+      sprite.data[2] -= 26;
+      if (spriteId !== 0xFF) SetSpriteRotScale(spriteId, sprite.data[1], sprite.data[2], 0);
+      if (++sprite.data[3] === 5) sprite.data[0]++;
+      _BatonPassPokeball_Case2(sprite, spriteId); // 1:1 fall through C
+      break;
+    case 2:
+      _BatonPassPokeball_Case2(sprite, spriteId);
+      break;
+    case 3:
+      sprite.y2 -= 6;
+      if (sprite.y + sprite.y2 < -32) _DestroyAnimSprite(sprite);
+      break;
+  }
+}
+
+// ─── WISH : AnimWishStar + AnimMiniTwinklingStar ─────────────────────────────
+
+/** 1:1 `AnimWishStar` (battle_anim_effects_3.c:2104) : l'étoile filante entre
+ *  par le bord (côté attaquant) en haut de l'écran. */
+function AnimWishStar(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  if (_side(atk) !== 0 /* != B_SIDE_PLAYER */) sprite.x = -16;
+  else sprite.x = DISPLAY_WIDTH + 16;
+  sprite.y = 0;
+  sprite.invisible = false;
+  sprite.callback = AnimWishStar_Step;
+}
+/** 1:1 `AnimWishStar_Step` (:2115) : traverse l'écran (72/16 px/frame) en
+ *  tombant doucement, sème une mini-étoile toutes les 3 frames
+ *  (CreateSpriteAndAnimate(gMiniTwinklingStarSpriteTemplate) — ici CreateSprite
+ *  du bridge ; anims du template = gDummySpriteAnimTable → net identique).
+ *  Destroy en cast u32 1:1 (sortie d'écran des DEUX côtés). */
+function AnimWishStar_Step(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.data[0] += 72;
+  if (_side(atk) !== 0) sprite.x2 = sprite.data[0] >> 4;
+  else sprite.x2 = -(sprite.data[0] >> 4);
+  sprite.data[1] += 16;
+  sprite.y2 += sprite.data[1] >> 8;
+  if (++sprite.data[2] % 3 === 0) {
+    _CreateMiniTwinklingStar(sprite.x + sprite.x2, sprite.y + sprite.y2, (sprite.subpriority ?? 0) + 1);
+  }
+  const newX = (sprite.x + sprite.x2 + 32) >>> 0; // u32 newX 1:1 (négatif → énorme)
+  if (newX > DISPLAY_WIDTH + 64) _DestroyAnimSprite(sprite);
+}
+/** Crée une mini-étoile gMiniTwinklingStarSpriteTemplate (template résolu par le
+ *  registre généré ; sheet ANIM_TAG_GOLD_STARS chargée par le loadspritegfx du
+ *  script parent) — pattern CreateWaterPulseRingBubbles (battle_anim_water). */
+function _CreateMiniTwinklingStar(x: number, y: number, subpriority: number): void {
+  const tpl = lookupAnimTemplate('gMiniTwinklingStarSpriteTemplate');
+  if (!tpl) return; // registre pas prêt — dette douce (le C crée toujours)
+  const spriteId = _CreateSpriteFromTemplate(tpl as never, x, y, subpriority);
+  if (spriteId < 0) return;
+  const sp = _grt().gSprites?.get(spriteId);
+  if (!sp) return;
+  sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  sp.spriteId = spriteId;
+}
+/** 1:1 `AnimMiniTwinklingStar` (battle_anim_effects_3.c:2142) : choisit une des
+ *  2 frames étoile (tileNum += 4/5, Random2) + offset y aléatoire. */
+function AnimMiniTwinklingStar(sprite: _VSprite): void {
+  const rand = _rand2() & 3;
+  if (rand === 0) _oamTileBump(sprite, 4);
+  else _oamTileBump(sprite, 5);
+  let y = _rand2() & 7; // s8 y
+  if (y > 3) y = -y;
+  sprite.y2 = y;
+  sprite.callback = AnimMiniTwinklingStar_Step;
+}
+/** 1:1 `AnimMiniTwinklingStar_Step` (:2161) : scintille (toggle /2 frames) 30
+ *  frames puis pattern 3-on/1-off ; DestroySprite (raw, PAS DestroyAnimSprite —
+ *  l'étoile ne compte pas dans gAnimVisualTaskCount). */
+function AnimMiniTwinklingStar_Step(sprite: _VSprite): void {
+  if (++sprite.data[0] < 30) {
+    if (++sprite.data[1] === 2) {
+      sprite.invisible = !sprite.invisible;
+      sprite.data[1] = 0;
+    }
+  } else {
+    if (sprite.data[1] === 2) sprite.invisible = false;
+    if (sprite.data[1] === 3) {
+      sprite.invisible = true;
+      sprite.data[1] = -1;
+    }
+    sprite.data[1]++;
+  }
+  if (sprite.data[0] > 60) {
+    if (sprite.spriteId !== undefined) _grt().DestroySprite?.(sprite.spriteId);
+    else { sprite.invisible = true; sprite.callback = null; } // fail-safe sans id
+  }
+}
+
+// ─── SWEET SCENT ─────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimSweetScentPetal` (battle_anim_effects_3.c:2800) : pétale qui
+ *  traverse l'écran depuis le bord de l'attaquant. args [y, animNum, ?]. */
+function AnimSweetScentPetal(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  if (_side(atk) === 0 /* B_SIDE_PLAYER */) {
+    sprite.x = 0;
+    sprite.y = args[0] | 0;
+  } else {
+    sprite.x = DISPLAY_WIDTH;
+    sprite.y = (args[0] | 0) - 30;
+  }
+  sprite.data[2] = args[2] | 0;
+  _StartSpriteAnim(sprite, args[1] | 0);
+  sprite.invisible = false;
+  sprite.callback = AnimSweetScentPetal_Step;
+}
+/** 1:1 `AnimSweetScentPetal_Step` (:2818) : +5px/frame + onde Sin (joueur) ou
+ *  -5px + Cos (adverse) ; destroy au bord opposé. */
+function AnimSweetScentPetal_Step(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.data[0] += 3;
+  if (_side(atk) === 0) {
+    sprite.x += 5;
+    sprite.y -= 1;
+    if (sprite.x > DISPLAY_WIDTH) _DestroyAnimSprite(sprite);
+    sprite.y2 = Sin(sprite.data[0] & 0xFF, 16);
+  } else {
+    sprite.x -= 5;
+    sprite.y += 1;
+    if (sprite.x < 0) _DestroyAnimSprite(sprite);
+    sprite.y2 = Cos(sprite.data[0] & 0xFF, 16);
+  }
+}
+
+// ─── PAIN SPLIT ──────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimPainSplitProjectile` (battle_anim_effects_3.c:2937) : le projectile
+ *  rebondit (gravité fixed-point, rebond aux 2/3) — self-stepper (data[0]=phase
+ *  init). args [x, y, ancre atk/tgt]. Destroy à la fin de l'anim de frames. */
+function AnimPainSplitProjectile(sprite: _VSprite): void {
+  if (!sprite.data[0]) {
+    const args = _vItf().getArgs?.() ?? [0, 0, 0];
+    const atk = _vItf().getAttacker?.() ?? 0;
+    if ((args[2] | 0) === 0 /* ANIM_ATTACKER */) {
+      sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+      sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+    }
+    sprite.x += args[0] | 0;
+    sprite.y += args[1] | 0;
+    sprite.data[1] = 0x80;
+    sprite.data[2] = 0x300;
+    sprite.data[3] = args[1] | 0;
+    sprite.invisible = false;
+    sprite.data[0]++;
+  } else {
+    sprite.x2 = sprite.data[1] >> 8;
+    sprite.y2 += sprite.data[2] >> 8;
+    if (sprite.data[4] === 0 && sprite.y2 > -sprite.data[3]) {
+      sprite.data[4] = 1;
+      sprite.data[2] = Math.trunc(-sprite.data[2] / 3) * 2;
+    }
+    sprite.data[1] += 192;
+    sprite.data[2] += 128;
+    if (sprite.animEnded) _DestroyAnimSprite(sprite);
+  }
+}
+
+// ─── FLATTER ─────────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimFlatterConfetti` (battle_anim_effects_3.c:3033) : confetti éjecté
+ *  du bord (vitesses randomisées Random2). arg0 = côté (0 = gauche). */
+function AnimFlatterConfetti(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  const tileOffset = _rand2() % 12;
+  _oamTileBump(sprite, tileOffset);
+  const rand1 = _rand2() & 0x1FF;
+  const rand2 = _rand2() & 0xFF;
+  if (rand1 & 1) sprite.data[0] = 0x5E0 + rand1;
+  else sprite.data[0] = 0x5E0 - rand1;
+  if (rand2 & 1) sprite.data[1] = 0x480 + rand2;
+  else sprite.data[1] = 0x480 - rand2;
+  sprite.data[2] = args[0] | 0;
+  if (sprite.data[2] === 0 /* ANIM_ATTACKER */) sprite.x = -8;
+  else sprite.x = DISPLAY_WIDTH + 8;
+  sprite.y = 104;
+  sprite.invisible = false;
+  sprite.callback = AnimFlatterConfetti_Step;
+}
+/** 1:1 `AnimFlatterConfetti_Step` (:3064) : parabole fixed-point décélérée,
+ *  destroy à 31 frames. */
+function AnimFlatterConfetti_Step(sprite: _VSprite): void {
+  if (sprite.data[2] === 0) {
+    sprite.x2 += sprite.data[0] >> 8;
+    sprite.y2 -= sprite.data[1] >> 8;
+  } else {
+    sprite.x2 -= sprite.data[0] >> 8;
+    sprite.y2 -= sprite.data[1] >> 8;
+  }
+  sprite.data[0] -= 22;
+  sprite.data[1] -= 48;
+  if (sprite.data[0] < 0) sprite.data[0] = 0;
+  if (++sprite.data[3] === 31) _DestroyAnimSprite(sprite);
+}
+
+/** 1:1 `AnimFlatterSpotlight` (battle_anim_effects_3.c:3090) : le cône spotlight
+ *  en OBJ_WINDOW illumine la cible (WINOUT sans WINOBJ_CLR = le blend ne
+ *  s'applique pas dans le cône). args [x, y, durée plein ouvert]. */
+function AnimFlatterSpotlight(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0];
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_WINOUT, WINOUT_FLATTER_ON);
+  rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) | DISPCNT_OBJWIN_ON); // SetGpuRegBits
+  _setBattleWinReg('gBattle_WIN0H', 0);
+  _setBattleWinReg('gBattle_WIN0V', 0);
+  rt.SetGpuReg?.(REG_OFFSET_WIN0H, 0);
+  rt.SetGpuReg?.(REG_OFFSET_WIN0V, 0);
+  sprite.data[0] = args[2] | 0;
+  InitSpritePosToAnimTarget(sprite as never, false);
+  (sprite as { objMode?: number }).objMode = 2; // ST_OAM_OBJ_WINDOW
+  sprite.invisible = true; // 1:1 décomp (révélé par _Step case 0)
+  sprite.callback = AnimFlatterSpotlight_Step;
+}
+/** 1:1 `AnimFlatterSpotlight_Step` (:3106) : ouvre (affine 0) → tient data[0]
+ *  frames → ferme (affine 1) → restore WINOUT/DISPCNT + destroy. */
+function AnimFlatterSpotlight_Step(sprite: _VSprite): void {
+  const rt = _grt();
+  switch (sprite.data[1]) {
+    case 0:
+      sprite.invisible = false;
+      if (sprite.affineAnimEnded) sprite.data[1]++;
+      break;
+    case 1:
+      if (--sprite.data[0] === 0) {
+        _StartSpriteAffineAnim(sprite, 1); // ChangeSpriteAffineAnim(sprite, 1)
+        sprite.data[1]++;
+      }
+      break;
+    case 2:
+      if (sprite.affineAnimEnded) {
+        sprite.invisible = true;
+        sprite.data[1]++;
+      }
+      break;
+    case 3:
+      rt.SetGpuReg?.(REG_OFFSET_WINOUT, WINOUT_FLATTER_OFF);
+      rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) ^ DISPCNT_OBJWIN_ON);
+      _DestroyAnimSprite(sprite);
+      break;
+  }
+}
+
+// ─── YAWN ────────────────────────────────────────────────────────────────────
+
+/** 1:1 `InitYawnCloudPosition` (battle_anim_effects_3.c:3512) : interpolation
+ *  fixed-point x16 start→dest en `duration` frames. */
+function _InitYawnCloudPosition(sprite: _VSprite, startX: number, startY: number, destX: number, destY: number, duration: number): void {
+  sprite.x = startX;
+  sprite.y = startY;
+  sprite.data[4] = startX << 4;
+  sprite.data[5] = startY << 4;
+  sprite.data[6] = Math.trunc(((destX - startX) << 4) / duration);
+  sprite.data[7] = Math.trunc(((destY - startY) << 4) / duration);
+}
+/** 1:1 `UpdateYawnCloudPosition` (:3522). */
+function _UpdateYawnCloudPosition(sprite: _VSprite): void {
+  sprite.data[4] += sprite.data[6];
+  sprite.data[5] += sprite.data[7];
+  sprite.x = sprite.data[4] >> 4;
+  sprite.y = sprite.data[5] >> 4;
+}
+/** 1:1 `AnimYawnCloud` (battle_anim_effects_3.c:3532) : le nuage part de
+ *  l'attaquant vers sa position de création (= la cible posée par createsprite),
+ *  affine arg0, en ondulant. */
+function AnimYawnCloud(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  const destX = sprite.x; // s16 destX = sprite->x (position posée par createsprite)
+  const destY = sprite.y;
+  SetSpriteCoordsToAnimAttackerCoords(sprite as never);
+  _StartSpriteAffineAnim(sprite, args[0] | 0);
+  _InitYawnCloudPosition(sprite, sprite.x, sprite.y, destX, destY, 64);
+  sprite.data[0] = 0;
+  sprite.invisible = false;
+  sprite.callback = AnimYawnCloud_Step;
+}
+/** 1:1 `AnimYawnCloud_Step` (:3544) : translation + Sin(index*8, 8) ; après 58
+ *  frames, flicker /2 puis DestroySpriteAndMatrix. */
+function AnimYawnCloud_Step(sprite: _VSprite): void {
+  sprite.data[0]++;
+  const index = (sprite.data[0] * 8) & 0xFF;
+  _UpdateYawnCloudPosition(sprite);
+  sprite.y2 = Sin(index, 8);
+  if (sprite.data[0] > 58) {
+    if (++sprite.data[1] > 1) {
+      sprite.data[1] = 0;
+      sprite.data[2]++;
+      sprite.invisible = (sprite.data[2] & 1) !== 0;
+      if (sprite.data[2] > 3) DestroySpriteAndMatrix(sprite as never);
+    }
+  }
+}
+
+// ─── ASSIST ──────────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimAssistPawprint` (battle_anim_effects_3.c:4145) : empreinte en
+ *  translation rapide x16 (InitAndRunAnimFastLinearTranslation) → destroy.
+ *  args [xDépart, yDépart, xFin, yFin, durée] (positions ABSOLUES écran). */
+function AnimAssistPawprint(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 1];
+  sprite.x = args[0] | 0;
+  sprite.y = args[1] | 0;
+  sprite.data[2] = args[2] | 0;
+  sprite.data[4] = args[3] | 0;
+  sprite.data[0] = args[4] | 0;
+  sprite.invisible = false;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
+  sprite.callback = _InitAndRunAnimFastLinearTranslation;
+}
+
+// ─── SMELLING SALTS ──────────────────────────────────────────────────────────
+
+/** 1:1 `AnimSmellingSaltsHand` (battle_anim_effects_3.c:4232) : la main qui
+ *  « claque » contre le flanc du mon (tileNum += 16 = frame main).
+ *  args [ancre, côté gauche/droite, répétitions]. */
+function AnimSmellingSaltsHand(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0];
+  const battler = (args[0] | 0) === 0 /* ANIM_ATTACKER */
+    ? (_vItf().getAttacker?.() ?? 0)
+    : (_vItf().getTarget?.() ?? 1);
+  _oamTileBump(sprite, 16);
+  sprite.data[6] = args[2] | 0;
+  sprite.data[7] = (args[1] | 0) === 0 ? -1 : 1;
+  sprite.y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET);
+  if ((args[1] | 0) === 0) {
+    sprite.hFlip = true; // sprite->oam.matrixNum |= ST_OAM_HFLIP
+    sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_LEFT) - 8;
+  } else {
+    sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_RIGHT) + 8;
+  }
+  sprite.invisible = false;
+  sprite.callback = AnimSmellingSaltsHand_Step;
+}
+/** 1:1 `AnimSmellingSaltsHand_Step` (:4258) : approche lente 12px → pause 8 →
+ *  frappe -4px/f ×6 → recul +3px/f ×8, répété data[6] fois. */
+function AnimSmellingSaltsHand_Step(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      if (++sprite.data[1] > 1) {
+        sprite.data[1] = 0;
+        sprite.x2 += sprite.data[7];
+        if (++sprite.data[2] === 12) sprite.data[0]++;
+      }
+      break;
+    case 1:
+      if (++sprite.data[1] === 8) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      sprite.x2 -= sprite.data[7] * 4;
+      if (++sprite.data[1] === 6) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 3:
+      sprite.x2 += sprite.data[7] * 3;
+      if (++sprite.data[1] === 8) {
+        if (--sprite.data[6]) {
+          sprite.data[1] = 0;
+          sprite.data[0]--;
+        } else {
+          _DestroyAnimSprite(sprite);
+        }
+      }
+      break;
+  }
+}
+
+/** 1:1 `AnimSmellingSaltExclamation` (battle_anim_effects_3.c:4355) : le « ! »
+ *  clignote au-dessus du mon (args [ancre, période, répétitions]). */
+function AnimSmellingSaltExclamation(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if ((args[0] | 0) === 0 /* ANIM_ATTACKER */) {
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+    sprite.y = _GetBattlerSpriteCoordAttr(atk, BATTLER_COORD_ATTR_TOP);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+    sprite.y = _GetBattlerSpriteCoordAttr(tgt, BATTLER_COORD_ATTR_TOP);
+  }
+  if (sprite.y < 8) sprite.y = 8;
+  sprite.data[0] = 0;
+  sprite.data[1] = args[1] | 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = args[2] | 0;
+  sprite.invisible = false;
+  sprite.callback = AnimSmellingSaltExclamation_Step;
+}
+/** 1:1 `AnimSmellingSaltExclamation_Step` (:4378). */
+function AnimSmellingSaltExclamation_Step(sprite: _VSprite): void {
+  if (++sprite.data[0] >= sprite.data[1]) {
+    sprite.data[0] = 0;
+    sprite.data[2] = (sprite.data[2] + 1) & 1;
+    sprite.invisible = sprite.data[2] !== 0;
+    if (sprite.data[2] && --sprite.data[3] === 0) _DestroyAnimSprite(sprite);
+  }
+}
+
+// ─── HELPING HAND ────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimHelpingHandClap` (battle_anim_effects_3.c:4393) : les deux mains
+ *  (positions écran FIXES 100/140, y 56) qui applaudissent 3 fois.
+ *  arg0 = quelle main (0 = gauche, hFlip). */
+function AnimHelpingHandClap(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  if ((args[0] | 0) === 0) {
+    sprite.hFlip = true; // sprite->oam.matrixNum |= ST_OAM_HFLIP
+    sprite.x = 100;
+    sprite.data[7] = 1;
+  } else {
+    sprite.x = 140;
+    sprite.data[7] = -1;
+  }
+  sprite.y = 56;
+  sprite.invisible = false;
+  sprite.callback = AnimHelpingHandClap_Step;
+}
+/** 1:1 `AnimHelpingHandClap_Step` (:4411) : chorégraphie 9 phases (montée,
+ *  claps Sin gSineTable[d1*10]>>3, frame de main tileNum+16, sortie). */
+function AnimHelpingHandClap_Step(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.y -= sprite.data[7] * 2;
+      if (sprite.data[1] & 1) sprite.x -= sprite.data[7] * 2;
+      if (++sprite.data[1] === 9) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 1:
+      if (++sprite.data[1] === 4) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      sprite.data[1]++;
+      sprite.y += sprite.data[7] * 3;
+      sprite.x2 = sprite.data[7] * (gSineTable[sprite.data[1] * 10] >> 3);
+      if (sprite.data[1] === 12) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 3:
+      if (++sprite.data[1] === 2) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 4:
+      sprite.data[1]++;
+      sprite.y -= sprite.data[7] * 3;
+      sprite.x2 = sprite.data[7] * (gSineTable[sprite.data[1] * 10] >> 3);
+      if (sprite.data[1] === 12) sprite.data[0]++;
+      break;
+    case 5:
+      sprite.data[1]++;
+      sprite.y += sprite.data[7] * 3;
+      sprite.x2 = sprite.data[7] * (gSineTable[sprite.data[1] * 10] >> 3);
+      if (sprite.data[1] === 15) _oamTileBump(sprite, 16);
+      if (sprite.data[1] === 18) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 6:
+      sprite.x += sprite.data[7] * 6;
+      if (++sprite.data[1] === 9) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 7:
+      sprite.x += sprite.data[7] * 2;
+      if (++sprite.data[1] === 1) {
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 8:
+      sprite.x -= sprite.data[7] * 3;
+      if (++sprite.data[1] === 5) _DestroyAnimSprite(sprite);
+      break;
+  }
+}
+
+// ─── FORESIGHT ───────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimForesightMagnifyingGlass` (battle_anim_effects_3.c:4612) : la loupe
+ *  parcourt les coins du mon (attrs LEFT/RIGHT/TOP/BOTTOM) puis le centre,
+ *  flash blend, destroy. arg0 = mon ciblé. data[7] = battler. */
+function AnimForesightMagnifyingGlass(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  if ((args[0] | 0) === 0 /* ANIM_ATTACKER */) {
+    InitSpritePosToAnimAttacker(sprite as never, true);
+    sprite.data[7] = _vItf().getAttacker?.() ?? 0;
+  } else {
+    sprite.data[7] = _vItf().getTarget?.() ?? 1;
+  }
+  if (_side(sprite.data[7]) === 1 /* B_SIDE_OPPONENT */)
+    sprite.hFlip = true; // sprite->oam.matrixNum = ST_OAM_HFLIP
+  const oam = _oamOf(sprite);
+  if (oam) oam.priority = _GetBattlerSpriteBGPriority(sprite.data[7]);
+  (sprite as { objMode?: number }).objMode = 1; // ST_OAM_OBJ_BLEND
+  sprite.invisible = false;
+  sprite.callback = AnimForesightMagnifyingGlass_Step;
+}
+/** 1:1 `AnimForesightMagnifyingGlass_Step` (:4632) : machine d'états — data[5]
+ *  = phase (0 choisir cible, 1 translater, 2 pause, 3 fade blend, 4 destroy),
+ *  data[6] = étape du parcours (0..5). */
+function AnimForesightMagnifyingGlass_Step(sprite: _VSprite): void {
+  let x = 0, y = 0;
+  switch (sprite.data[5]) {
+    case 0: {
+      // 1:1 switch C avec `default: data[6] = 0;` qui TOMBE dans case 0/4.
+      if (sprite.data[6] < 0 || sprite.data[6] > 5) sprite.data[6] = 0;
+      switch (sprite.data[6]) {
+        case 0: case 4:
+          x = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_RIGHT) - 4;
+          y = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_BOTTOM) - 4;
+          break;
+        case 1:
+          x = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_RIGHT) - 4;
+          y = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_TOP) + 4;
+          break;
+        case 2:
+          x = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_LEFT) + 4;
+          y = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_BOTTOM) - 4;
+          break;
+        case 3:
+          x = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_LEFT) + 4;
+          y = _GetBattlerSpriteCoordAttr(sprite.data[7], BATTLER_COORD_ATTR_TOP) - 4;
+          break;
+        case 5: default:
+          x = GetBattlerSpriteCoord(sprite.data[7], BATTLER_COORD_X_2);
+          y = GetBattlerSpriteCoord(sprite.data[7], BATTLER_COORD_Y_PIC_OFFSET);
+          break;
+      }
+      if (sprite.data[6] === 4) sprite.data[0] = 24;
+      else if (sprite.data[6] === 5) sprite.data[0] = 6;
+      else sprite.data[0] = 12;
+      sprite.data[1] = sprite.x;
+      sprite.data[2] = x;
+      sprite.data[3] = sprite.y;
+      sprite.data[4] = y;
+      InitAnimLinearTranslation(sprite as never);
+      sprite.data[5]++;
+      break;
+    }
+    case 1:
+      if (AnimTranslateLinear(sprite as never)) {
+        switch (sprite.data[6]) {
+          case 4:
+            sprite.x += sprite.x2;
+            sprite.y += sprite.y2;
+            sprite.y2 = 0;
+            sprite.x2 = 0;
+            sprite.data[5] = 0;
+            sprite.data[6]++;
+            break;
+          case 5:
+            sprite.data[0] = 0;
+            sprite.data[1] = 16;
+            sprite.data[2] = 0;
+            sprite.data[5] = 3;
+            break;
+          default:
+            sprite.x += sprite.x2;
+            sprite.y += sprite.y2;
+            sprite.y2 = 0;
+            sprite.x2 = 0;
+            sprite.data[0] = 0;
+            sprite.data[5]++;
+            sprite.data[6]++;
+            break;
+        }
+      }
+      break;
+    case 2:
+      if (++sprite.data[0] === 4) sprite.data[5] = 0;
+      break;
+    case 3:
+      if (!(sprite.data[0] & 1)) sprite.data[1]--;
+      else sprite.data[2]++;
+      _grt().SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[1], sprite.data[2]));
+      if (++sprite.data[0] === 32) {
+        sprite.invisible = true;
+        sprite.data[5]++;
+      }
+      break;
+    case 4:
+      _DestroyAnimSprite(sprite);
+      break;
+  }
+}
+
+// ─── METEOR MASH ─────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimMeteorMashStar_Step` (battle_anim_effects_3.c:4734) : interpolation
+ *  linéaire data[0..3] → sème une mini-étoile 1 frame/2 (CreateSprite, subprio 5). */
+function AnimMeteorMashStar_Step(sprite: _VSprite): void {
+  sprite.x2 = Math.trunc(((sprite.data[2] - sprite.data[0]) * sprite.data[5]) / sprite.data[4]);
+  sprite.y2 = Math.trunc(((sprite.data[3] - sprite.data[1]) * sprite.data[5]) / sprite.data[4]);
+  if (!(sprite.data[5] & 1)) {
+    _CreateMiniTwinklingStar(sprite.x + sprite.x2, sprite.y + sprite.y2, 5);
+  }
+  if (sprite.data[5] === sprite.data[4]) _DestroyAnimSprite(sprite);
+  sprite.data[5]++;
+}
+/** 1:1 `AnimMeteorMashStar` (battle_anim_effects_3.c:4758) : étoile filante
+ *  miroir côté cible. args [x0, y0, x1, y1, durée]. */
+function AnimMeteorMashStar(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 1];
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if (_side(tgt) === 0 /* B_SIDE_PLAYER (|| IsContest()) */) {
+    sprite.data[0] = sprite.x - (args[0] | 0);
+    sprite.data[2] = sprite.x - (args[2] | 0);
+  } else {
+    sprite.data[0] = sprite.x + (args[0] | 0);
+    sprite.data[2] = sprite.x + (args[2] | 0);
+  }
+  sprite.data[1] = sprite.y + (args[1] | 0);
+  sprite.data[3] = sprite.y + (args[3] | 0);
+  sprite.data[4] = args[4] | 0;
+  sprite.x = sprite.data[0];
+  sprite.y = sprite.data[1];
+  sprite.invisible = false;
+  sprite.callback = AnimMeteorMashStar_Step;
+}
+
+// ─── BLOCK ───────────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimBlockX` (battle_anim_effects_3.c:4878) : le X tombe du haut de
+ *  l'écran sur la cible, rebondit 2 fois (gSineTable), clignote, destroy. */
+function AnimBlockX(sprite: _VSprite): void {
+  const tgt = _vItf().getTarget?.() ?? 1;
+  let y: number;
+  if (_side(tgt) === 0 /* B_SIDE_PLAYER */) {
+    sprite.subpriority = _GetBattlerSpriteSubpriority(tgt) - 2;
+    y = -144;
+  } else {
+    sprite.subpriority = _GetBattlerSpriteSubpriority(tgt) + 2;
+    y = -96;
+  }
+  sprite.y = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.y2 = y;
+  sprite.invisible = false;
+  sprite.callback = AnimBlockX_Step;
+}
+/** 1:1 `AnimBlockX_Step` (:4898) : chute +10px/f (SE au contact) → rebond
+ *  Sin>>3 → rebond Sin>>4 → pause → flicker + SE_M_LEER → destroy. */
+function AnimBlockX_Step(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.y2 += 10;
+      if (sprite.y2 >= 0) {
+        _PlaySE12WithPanning(SE_M_SKETCH, SOUND_PAN_TARGET);
+        sprite.y2 = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 1:
+      sprite.data[1] += 4;
+      sprite.y2 = -(gSineTable[sprite.data[1]] >> 3);
+      if (sprite.data[1] > 0x7F) {
+        _PlaySE12WithPanning(SE_M_SKETCH, SOUND_PAN_TARGET);
+        sprite.data[1] = 0;
+        sprite.y2 = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      sprite.data[1] += 6;
+      sprite.y2 = -(gSineTable[sprite.data[1]] >> 4);
+      if (sprite.data[1] > 0x7F) {
+        sprite.data[1] = 0;
+        sprite.y2 = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 3:
+      if (++sprite.data[1] > 8) {
+        _PlaySE12WithPanning(SE_M_LEER, SOUND_PAN_TARGET);
+        sprite.data[1] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 4:
+      if (++sprite.data[1] > 8) {
+        sprite.data[1] = 0;
+        sprite.data[2]++;
+        sprite.invisible = (sprite.data[2] & 1) !== 0;
+        if (sprite.data[2] === 7) _DestroyAnimSprite(sprite);
+      }
+      break;
+  }
+}
+
+// ─── KNOCK OFF ───────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimKnockOffStrike_Step` (battle_anim_effects_3.c:5376) : balaye en
+ *  cercle Cos/Sin(data[1], 20) ; destroy à la fin de l'anim de frames.
+ *  (Les deux branches side du C sont identiques — transcrit tel quel.) */
+function AnimKnockOffStrike_Step(sprite: _VSprite): void {
+  sprite.data[1] += sprite.data[0];
+  sprite.data[1] &= 0xFF;
+  sprite.x2 = Cos(sprite.data[1], 20);
+  sprite.y2 = Sin(sprite.data[1], 20);
+  if (sprite.animEnded) _DestroyAnimSprite(sprite);
+  sprite.data[2]++;
+}
+/** 1:1 `AnimKnockOffStrike` (battle_anim_effects_3.c:5401) : la frappe qui
+ *  balaie vers le bas — miroir côté cible (affine 1 = flip côté joueur).
+ *  args [x, y]. */
+function AnimKnockOffStrike(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0];
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if (_side(tgt) === 0 /* B_SIDE_PLAYER */) {
+    sprite.x -= args[0] | 0;
+    sprite.y += args[1] | 0;
+    sprite.data[0] = -11;
+    sprite.data[1] = 192;
+    _StartSpriteAffineAnim(sprite, 1);
+  } else {
+    sprite.data[0] = 11;
+    sprite.data[1] = 192;
+    sprite.x += args[0] | 0;
+    sprite.y += args[1] | 0;
+  }
+  sprite.invisible = false;
+  sprite.callback = AnimKnockOffStrike_Step;
+}
+
+// ─── RECYCLE ─────────────────────────────────────────────────────────────────
+
+/** 1:1 `AnimRecycle` (battle_anim_effects_3.c:5424) : les flèches recycle
+ *  au-dessus de l'attaquant, fade-in eva 0→16 / evb 16→0 puis fade-out (le
+ *  BLDCNT est posé par le script — seul BLDALPHA est écrit ici, 1:1). */
+function AnimRecycle(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  sprite.y = _GetBattlerSpriteCoordAttr(atk, BATTLER_COORD_ATTR_TOP);
+  if (sprite.y < 16) sprite.y = 16;
+  sprite.data[6] = 0;
+  sprite.data[7] = 16;
+  sprite.invisible = false;
+  sprite.callback = AnimRecycle_Step;
+  _grt().SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[6], sprite.data[7]));
+}
+/** 1:1 `AnimRecycle_Step` (:5437) : fade-in alterné (1 pas / 2 frames, eva puis
+ *  evb) → pause 10 → fade-out symétrique → DestroySpriteAndMatrix. */
+function AnimRecycle_Step(sprite: _VSprite): void {
+  const rt = _grt();
+  switch (sprite.data[2]) {
+    case 0:
+      if (++sprite.data[0] > 1) {
+        sprite.data[0] = 0;
+        if (!(sprite.data[1] & 1)) {
+          if (sprite.data[6] < 16) sprite.data[6]++;
+        } else {
+          if (sprite.data[7] !== 0) sprite.data[7]--;
+        }
+        sprite.data[1]++;
+        rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[6], sprite.data[7]));
+        if (sprite.data[7] === 0) sprite.data[2]++;
+      }
+      break;
+    case 1:
+      if (++sprite.data[0] === 10) {
+        sprite.data[0] = 0;
+        sprite.data[1] = 0;
+        sprite.data[2]++;
+      }
+      break;
+    case 2:
+      if (++sprite.data[0] > 1) {
+        sprite.data[0] = 0;
+        if (!(sprite.data[1] & 1)) {
+          if (sprite.data[6] !== 0) sprite.data[6]--;
+        } else {
+          if (sprite.data[7] < 16) sprite.data[7]++;
+        }
+        sprite.data[1]++;
+        rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, _BLDALPHA_BLEND(sprite.data[6], sprite.data[7]));
+        if (sprite.data[7] === 16) sprite.data[2]++;
+      }
+      break;
+    case 3:
+      DestroySpriteAndMatrix(sprite as never);
+      break;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOT CROSS-FILE (ordre de lot — DETTE placement, cf. bannière de section) :
+// battle_anim_rock.c / battle_anim_effects_2.c / battle_anim_psychic.c /
+// battle_anim_dark.c.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimRaiseSprite` (battle_anim_rock.c:571) : rocher d'Ancient Power qui
+ *  s'élève depuis l'attaquant. args [x, y, dyFin, durée, animNum]. */
+function AnimRaiseSprite(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  _StartSpriteAnim(sprite, args[4] | 0);
+  InitSpritePosToAnimAttacker(sprite as never, false);
+  sprite.data[0] = args[3] | 0;
+  sprite.data[2] = sprite.x;
+  sprite.data[4] = sprite.y + (args[2] | 0);
+  sprite.invisible = false;
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
+}
+
+/** 1:1 `AnimViceGripPincer` (battle_anim_effects_2.c:1903) : une pince qui
+ *  converge en diagonale vers le centre de la cible (anim 1 = pince basse).
+ *  arg0 = quelle pince. */
+function AnimViceGripPincer(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  const tgt = _vItf().getTarget?.() ?? 1;
+  let startXOffset = 32;
+  let startYOffset = -32;
+  let endXOffset = 16;
+  let endYOffset = -16;
+  if (args[0] | 0) {
+    startXOffset = -32;
+    startYOffset = 32;
+    endXOffset = -16;
+    endYOffset = 16;
+    _StartSpriteAnim(sprite, 1);
+  }
+  sprite.x += startXOffset;
+  sprite.y += startYOffset;
+  sprite.data[0] = 6;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2) + endXOffset;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) + endYOffset;
+  sprite.invisible = false;
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, AnimViceGripPincer_Step as never);
+}
+/** 1:1 `AnimViceGripPincer_Step` (:1927) : destroy à la fin de l'anim de frames. */
+function AnimViceGripPincer_Step(sprite: _VSprite): void {
+  if (sprite.animEnded) _DestroyAnimSprite(sprite);
+}
+
+/** 1:1 `AnimGuillotinePincer` (battle_anim_effects_2.c:1935) : pince qui entre
+ *  vers le centre de la cible, vibre 51 frames (pince fermée, anim figée
+ *  SeekSpriteAnim+animPaused), puis ressort en sens inverse. arg0 = animId. */
+function AnimGuillotinePincer(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  const tgt = _vItf().getTarget?.() ?? 1;
+  let startXOffset = 32;
+  let startYOffset = -32;
+  let endXOffset = 16;
+  let endYOffset = -16;
+  if (args[0] | 0) {
+    startXOffset = -32;
+    startYOffset = 32;
+    endXOffset = -16;
+    endYOffset = 16;
+    _StartSpriteAnim(sprite, args[0] | 0);
+  }
+  sprite.x += startXOffset;
+  sprite.y += startYOffset;
+  sprite.data[0] = 6;
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2) + endXOffset;
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) + endYOffset;
+  InitAnimLinearTranslation(sprite as never);
+  sprite.data[5] = args[0] | 0;
+  sprite.data[6] = sprite.data[0];
+  sprite.invisible = false;
+  sprite.callback = AnimGuillotinePincer_Step1;
+}
+/** 1:1 `AnimGuillotinePincer_Step1` (:1963) : fin de translation + fin d'anim →
+ *  fige l'anim (SeekSpriteAnim(0) + animPaused), inverse les deltas (XOR du bit
+ *  de signe data[1]/data[2]) → _Step2. */
+function AnimGuillotinePincer_Step1(sprite: _VSprite): void {
+  if (AnimTranslateLinear(sprite as never) && sprite.animEnded) {
+    const rt = (globalThis as Record<string, unknown>).__rt;
+    if (rt) SeekSpriteAnim(rt as never, sprite as never, 0);
+    (sprite as { animPaused?: boolean }).animPaused = true;
+    sprite.x += sprite.x2;
+    sprite.y += sprite.y2;
+    sprite.x2 = 2;
+    sprite.y2 = -2;
+    sprite.data[0] = sprite.data[6];
+    sprite.data[1] ^= 1;
+    sprite.data[2] ^= 1;
+    sprite.data[4] = 0;
+    sprite.data[3] = 0;
+    sprite.callback = AnimGuillotinePincer_Step2;
+  }
+}
+/** 1:1 `AnimGuillotinePincer_Step2` (:1982) : vibration ±(2,-2) pendant 51
+ *  frames puis relance l'anim (animNum^1) et ressort (_Step3). */
+function AnimGuillotinePincer_Step2(sprite: _VSprite): void {
+  if (sprite.data[3]) {
+    sprite.x2 = -sprite.x2;
+    sprite.y2 = -sprite.y2;
+  }
+  sprite.data[3] ^= 1;
+  if (++sprite.data[4] === 51) {
+    sprite.y2 = 0;
+    sprite.x2 = 0;
+    sprite.data[4] = 0;
+    sprite.data[3] = 0;
+    (sprite as { animPaused?: boolean }).animPaused = false;
+    _StartSpriteAnim(sprite, sprite.data[5] ^ 1);
+    sprite.callback = AnimGuillotinePincer_Step3;
+  }
+}
+/** 1:1 `AnimGuillotinePincer_Step3` (:2003) : translation retour → destroy. */
+function AnimGuillotinePincer_Step3(sprite: _VSprite): void {
+  if (AnimTranslateLinear(sprite as never)) _DestroyAnimSprite(sprite);
+}
+
+/** 1:1 `AnimPencil` (battle_anim_effects_2.c:2480) : le crayon de Sketch —
+ *  flicker-in, monte le long du mon (hauteur pic) en zigzag x2 ±31, SE
+ *  périodique, flicker-out. (d6 = pan C BattleAnimAdjustPanning(SOUND_PAN_TARGET),
+ *  ignoré par le wrapper SE runtime.) */
+function AnimPencil(sprite: _VSprite): void {
+  const tgt = _vItf().getTarget?.() ?? 1;
+  sprite.x = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X) - 16;
+  sprite.y = _GetBattlerYCoordWithElevation(tgt) + 16;
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = 16;
+  sprite.data[4] = 0;
+  sprite.data[5] = _GetBattlerSpriteCoordAttr(tgt, BATTLER_COORD_ATTR_HEIGHT) + 2;
+  sprite.data[6] = SOUND_PAN_TARGET; // BattleAnimAdjustPanning(SOUND_PAN_TARGET)
+  sprite.invisible = false;
+  sprite.callback = AnimPencil_Step;
+}
+/** 1:1 `AnimPencil_Step` (:2494). */
+function AnimPencil_Step(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      if (++sprite.data[2] > 1) {
+        sprite.data[2] = 0;
+        sprite.invisible = !sprite.invisible;
+      }
+      if (++sprite.data[1] > 16) {
+        sprite.invisible = false;
+        sprite.data[0]++;
+      }
+      break;
+    case 1:
+      if (++sprite.data[1] > 3 && sprite.data[2] < sprite.data[5]) {
+        sprite.data[1] = 0;
+        sprite.y -= 1;
+        sprite.data[2]++;
+        if (sprite.data[2] % 10 === 0) _PlaySE12WithPanning(SE_M_SKETCH, sprite.data[6]);
+      }
+      sprite.data[4] += sprite.data[3];
+      if (sprite.data[4] > 31) {
+        sprite.data[4] = 0x40 - sprite.data[4];
+        sprite.data[3] *= -1;
+      } else if (sprite.data[4] <= -32) {
+        sprite.data[4] = -0x40 - sprite.data[4];
+        sprite.data[3] *= -1;
+      }
+      sprite.x2 = sprite.data[4];
+      if (sprite.data[5] === sprite.data[2]) {
+        sprite.data[1] = 0;
+        sprite.data[2] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      if (++sprite.data[2] > 1) {
+        sprite.data[2] = 0;
+        sprite.invisible = !sprite.invisible;
+      }
+      if (++sprite.data[1] > 16) {
+        sprite.invisible = false;
+        _DestroyAnimSprite(sprite);
+      }
+      break;
+  }
+}
+
+/** 1:1 `AnimRedX_Step` (battle_anim_psychic.c:839) : visible data[0]-10 frames
+ *  puis flicker, destroy à data[0]. */
+function AnimRedX_Step(sprite: _VSprite): void {
+  if (sprite.data[1] > sprite.data[0] - 10)
+    sprite.invisible = (sprite.data[1] & 1) !== 0;
+  if (sprite.data[1] === sprite.data[0]) _DestroyAnimSprite(sprite);
+  sprite.data[1]++;
+}
+/** 1:1 `AnimRedX` (battle_anim_psychic.c:850) : le X rouge sur l'attaquant
+ *  (arg0=ANIM_ATTACKER) ou à la position posée par createsprite. arg1 = durée. */
+function AnimRedX(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  if ((args[0] | 0) === 0 /* ANIM_ATTACKER */) {
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+    sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  }
+  sprite.data[0] = args[1] | 0;
+  sprite.invisible = false;
+  sprite.callback = AnimRedX_Step;
+}
+
+/** 1:1 `AnimTearDrop` (battle_anim_dark.c:354) : la larme de Fake Tears — part
+ *  d'un coin du mon (args [ancre, type 0-3]) et tombe en petit arc (-12).
+ *  tileNum += 4 = frame larme ; types 2/3 = côté gauche (affine 1 = flip). */
+function AnimTearDrop(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0];
+  const battler = (args[0] | 0) === 0 /* ANIM_ATTACKER */
+    ? (_vItf().getAttacker?.() ?? 0)
+    : (_vItf().getTarget?.() ?? 1);
+  let xOffset = 20; // s8
+  _oamTileBump(sprite, 4);
+  switch (args[1] | 0) {
+    case 0:
+      sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_RIGHT) - 8;
+      sprite.y = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_TOP) + 8;
+      break;
+    case 1:
+      sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_RIGHT) - 14;
+      sprite.y = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_TOP) + 16;
+      break;
+    case 2:
+      sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_LEFT) + 8;
+      sprite.y = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_TOP) + 8;
+      _StartSpriteAffineAnim(sprite, 1);
+      xOffset = -20;
+      break;
+    case 3:
+      sprite.x = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_LEFT) + 14;
+      sprite.y = _GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_TOP) + 16;
+      _StartSpriteAffineAnim(sprite, 1);
+      xOffset = -20;
+      break;
+  }
+  sprite.data[0] = 32;
+  sprite.data[2] = sprite.x + xOffset;
+  sprite.data[4] = sprite.y + 12;
+  sprite.data[5] = -12;
+  InitAnimArcTranslation(sprite as never);
+  sprite.invisible = false;
+  sprite.callback = AnimTearDrop_Step;
+}
+/** 1:1 `AnimTearDrop_Step` (battle_anim_dark.c:402). */
+function AnimTearDrop_Step(sprite: _VSprite): void {
+  if (TranslateAnimHorizontalArc(sprite as never)) DestroySpriteAndMatrix(sprite as never);
+}
+
+// ─── Enregistrement par NOM C EXACT (résolution createsprite via le bridge) ──
+registerAnimCallbacks({
+  AnimBlackSmoke: AnimBlackSmoke as never,
+  AnimWhiteHalo: AnimWhiteHalo as never,
+  AnimTealAlert: AnimTealAlert as never,
+  AnimMeanLookEye: AnimMeanLookEye as never,
+  AnimSpikes: AnimSpikes as never,
+  AnimClappingHand: AnimClappingHand as never,
+  AnimClappingHand2: AnimClappingHand2 as never,
+  AnimRapidSpin: AnimRapidSpin as never,
+  AnimTriAttackTriangle: AnimTriAttackTriangle as never,
+  AnimBatonPassPokeball: AnimBatonPassPokeball as never,
+  AnimWishStar: AnimWishStar as never,
+  AnimMiniTwinklingStar: AnimMiniTwinklingStar as never,
+  AnimSweetScentPetal: AnimSweetScentPetal as never,
+  AnimPainSplitProjectile: AnimPainSplitProjectile as never,
+  AnimFlatterConfetti: AnimFlatterConfetti as never,
+  AnimFlatterSpotlight: AnimFlatterSpotlight as never,
+  AnimYawnCloud: AnimYawnCloud as never,
+  AnimAssistPawprint: AnimAssistPawprint as never,
+  AnimSmellingSaltsHand: AnimSmellingSaltsHand as never,
+  AnimSmellingSaltExclamation: AnimSmellingSaltExclamation as never,
+  AnimHelpingHandClap: AnimHelpingHandClap as never,
+  AnimForesightMagnifyingGlass: AnimForesightMagnifyingGlass as never,
+  AnimMeteorMashStar: AnimMeteorMashStar as never,
+  AnimBlockX: AnimBlockX as never,
+  AnimKnockOffStrike: AnimKnockOffStrike as never,
+  AnimRecycle: AnimRecycle as never,
+  AnimRaiseSprite: AnimRaiseSprite as never,
+  AnimViceGripPincer: AnimViceGripPincer as never,
+  AnimGuillotinePincer: AnimGuillotinePincer as never,
+  AnimPencil: AnimPencil as never,
+  AnimRedX: AnimRedX as never,
+  AnimTearDrop: AnimTearDrop as never,
+});

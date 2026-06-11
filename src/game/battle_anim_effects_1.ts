@@ -15,7 +15,7 @@ import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-br
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
 import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords, TranslateSpriteLinearFixedPoint, SetAnimSpriteInitialXOffset } from './battle_anim_mons';
-import { SetCallbackToStoredInData6 } from './battle_anim_mons';
+import { SetCallbackToStoredInData6, TrySetSpriteRotScale } from './battle_anim_mons';
 import { Random2 } from './random';
 import { Sin } from './trig';
 
@@ -1433,4 +1433,94 @@ registerAnimCallbacks({
   AnimMoonlightSparkle: AnimMoonlightSparkle as never,
   AnimSuperFang: AnimSuperFang as never,
   AnimHyperBeamOrb: AnimHyperBeamOrb as never,
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VAGUE 3bis (2026-06-11) : 3 callbacks dont le corps C vit dans
+// `battle_anim_effects_2.c` (binning du lot orchestrateur). Transcrits VERBATIM
+// depuis ce fichier-là. DETTE DOUCE placement : à déplacer dans un futur miroir
+// src/game/battle_anim_effects_2.ts quand il existera.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `RunStoredCallbackWhenAffineAnimEnds` (battle_anim_mons.c:729). */
+function _RunStoredCallbackWhenAffineAnimEnds(sprite: _ESprite): void {
+  if (sprite.affineAnimEnded) SetCallbackToStoredInData6(sprite as never);
+}
+
+/** 1:1 BIOS `ArcTan2` (syscall, u16 0-65535) + `ArcTan2Neg` (battle_anim_mons.c:1368).
+ *  Même approx que le repo (battle_anim_effects_1b.ts / decomp-bridge.ts). */
+function _ArcTan2Neg(x: number, y: number): number {
+  const a = ((Math.atan2(y, x) / (2 * Math.PI)) * 65536) | 0;
+  return (-a) & 0xFFFF;
+}
+
+/** 1:1 `AnimSwordsDanceBlade` (battle_anim_effects_2.c:1470) : épée posée sur
+ *  l'attaquant (+args[0..1]) — attend la fin de l'affine anim (grow) puis Step. */
+function AnimSwordsDanceBlade(sprite: _ESprite): void {
+  InitSpritePosToAnimAttacker(sprite, false);
+  sprite.invisible = false;
+  sprite.callback = _RunStoredCallbackWhenAffineAnimEnds;
+  StoreSpriteCallbackInData6(sprite as never, AnimSwordsDanceBlade_Step as never);
+}
+
+/** 1:1 `AnimSwordsDanceBlade_Step` (battle_anim_effects_2.c:1477) : l'épée
+ *  monte de 32 px en 6 frames (translation linéaire) puis destroy. */
+function AnimSwordsDanceBlade_Step(sprite: _ESprite): void {
+  sprite.data[0] = 6;
+  sprite.data[2] = sprite.x;
+  sprite.data[4] = sprite.y - 32;
+  sprite.callback = StartAnimLinearTranslation;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+}
+
+/** 1:1 `AnimSonicBoomProjectile` (battle_anim_effects_2.c:1493) : projectile
+ *  attaquant → cible, sprite tourné dans la direction du mouvement
+ *  (ArcTan2Neg + 0xF000). Miroir côté : négation args[1..3] en MUTANT les args
+ *  vifs comme le C (vue par InitSpritePosToAnimAttacker). IsContest()=false. */
+function AnimSonicBoomProjectile(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  const tgt = _pItf().getTarget?.() ?? 1;
+  // IsContest() == false → seule la branche else-if subsiste.
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) {
+    args[2] = -(args[2] | 0);
+    args[1] = -(args[1] | 0);
+    args[3] = -(args[3] | 0);
+  }
+  InitSpritePosToAnimAttacker(sprite, true);
+  sprite.invisible = false;
+  const targetXPos = ((GetBattlerSpriteCoord(tgt, 2 /* X_2 */) + (args[2] | 0)) << 16) >> 16;
+  const targetYPos = ((GetBattlerSpriteCoord(tgt, 3 /* Y_PIC_OFFSET */) + (args[3] | 0)) << 16) >> 16;
+  let rotation = _ArcTan2Neg(targetXPos - sprite.x, targetYPos - sprite.y);
+  rotation = (rotation + 0xF000) & 0xFFFF; // u16 wrap
+  // IsContest() == false → pas de rotation -= 0x6000.
+  const sid = (sprite as { spriteId?: number }).spriteId;
+  if (sid !== undefined) TrySetSpriteRotScale(sid, false, 0x100, 0x100, rotation);
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = targetXPos;
+  sprite.data[4] = targetYPos;
+  sprite.callback = StartAnimLinearTranslation;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+}
+
+/** 1:1 `AnimFurySwipes` (battle_anim_effects_2.c:3607) : griffure — offsets
+ *  args[0..1] depuis la position de création, anim de table args[2], destroy
+ *  quand l'anim est finie. */
+function AnimFurySwipes(sprite: _ESprite): void {
+  if (sprite.data[0] === 0) {
+    const args = _pItf().getArgs?.() ?? [0, 0, 0];
+    sprite.x += args[0] | 0;
+    sprite.y += args[1] | 0;
+    _StartSpriteAnim(sprite, args[2] | 0);
+    sprite.invisible = false;
+    sprite.data[0]++;
+  } else if (sprite.animEnded) {
+    _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+registerAnimCallbacks({
+  AnimSwordsDanceBlade: AnimSwordsDanceBlade as never,
+  AnimSonicBoomProjectile: AnimSonicBoomProjectile as never,
+  AnimFurySwipes: AnimFurySwipes as never,
 });

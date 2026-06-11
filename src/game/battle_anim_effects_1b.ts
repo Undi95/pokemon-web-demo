@@ -551,13 +551,14 @@ function _AnimCirclingMusicNote_Step(sprite: _ESprite): void {
 // sBlendCycleTime=d3, sX=d4, sY=d5, sVelocX=d6, sVelocY=d7.
 
 /** 1:1 `AnimWavyMusicNotes_CalcVelocity` (:5328) : vélocité Q8 vers la cible,
- *  vitesse X bornée par xSpeedFactor. Retourne [velocX, velocY]. */
+ *  vitesse X bornée par xSpeedFactor. Retourne [velocX, velocY] — écritures
+ *  `*velocX`/`*velocY` s16 en C → wrap signé _toS16. */
 function _AnimWavyMusicNotes_CalcVelocity(x: number, y: number, xSpeedFactor: number): [number, number] {
   if (x < 0) xSpeedFactor = -xSpeedFactor;
   const x2 = x * 256;
   let time = Math.trunc(x2 / xSpeedFactor);
   if (time === 0) time = 1;
-  return [Math.trunc(x2 / time), Math.trunc((y * 256) / time)];
+  return [_toS16(Math.trunc(x2 / time)), _toS16(Math.trunc((y * 256) / time))];
 }
 
 /** 1:1 `AnimWavyMusicNotes` (:5297) : note qui ondule (Sin ±15) en filant vers

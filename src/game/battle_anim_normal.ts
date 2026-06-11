@@ -172,12 +172,14 @@ function _SimplePaletteBlend_Step(sprite: { callback: unknown }): void {
 }
 
 // ═══ Vague 2 (2026-06-11) : ComplexPaletteBlend + hit splats restants + cross
-// impact + AnimSpinningSparkle. Sources : battle_anim_normal.c (sauf mention).
-// SKIP PROPRE : AnimShakeMonOrBattlePlatforms(+Step/+UpdateCoordOffsetEnabled)
-// — dépend de gBattle_BG3_X/Y (BG scrolling, non câblé : __battle_bg3 = dette
-// R3) ET de gSpriteCoordOffsetX/Y + Sprite.coordOffsetEnabled (non implémentés
-// dans le pipeline sprites combat) ; en plus le C stocke un u16* brut splitté
-// dans data[6]/data[7]. Un port serait un stub invisible. ═══════════════════
+// impact + AnimSpinningSparkle + AnimShakeMonOrBattlePlatforms. Sources :
+// battle_anim_normal.c (sauf mention). Note shake : les types SHAKE_BG_X/Y
+// écrivent gBattle_BG3_X/Y qui SONT câblés 1:1 (battle_main.ts:322, accesseurs
+// live sur battleVBlankState → VBlankCB_Battle) — 6/10 usages réels des
+// scripts (1×BG_X + 5×BG_Y) pleinement fonctionnels. SHAKE_MON_X/Y posent
+// gSpriteCoordOffsetX/Y + coordOffsetEnabled 1:1 nominal, mais le moteur ne
+// lit pas encore coordOffset au BuildOamBuffer (même dette tracée que
+// field-effect-arrow.ts:524) → 4 usages MON_Y sans effet visuel pour l'instant.
 
 // ── Helpers décomp partagés (locaux, préfixés _) ────────────────────────────
 
@@ -403,6 +405,118 @@ function AnimSpinningSparkle(sprite: AnimSprite): void {
   StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
 }
 
+// ── AnimShakeMonOrBattlePlatforms (battle_anim_normal.c:853-939) ────────────
+// Le C stocke un POINTEUR u16* brut (gBattle_BG3_X/Y ou gSpriteCoordOffsetX/Y)
+// splitté lo/hi dans data[6]/data[7] (via StoreSpriteCallbackInData6) puis le
+// déréférence. Pointeur GBA non transposable en JS : la cible est résolue par
+// sType (data[5]) — même bijection que le switch C — et accédée par NOM de
+// global décomp (gBattle_BG3_X/Y = accesseurs live battle_main.ts:322 câblés
+// au VBlank ; gSpriteCoordOffsetX/Y = posés ici, rendu = dette BuildOamBuffer).
+
+/** 1:1 `SHAKE_BG_X/BG_Y/MON_X/MON_Y` (constants/battle_anim.h:443). */
+const SHAKE_BG_X = 0;
+const SHAKE_BG_Y = 1;
+const SHAKE_MON_X = 2;
+const SHAKE_MON_Y = 3;
+
+/** Nom du global décomp ciblé par le shake (≙ le pointeur u16* du switch C). */
+function _shakeTargetName(type: number): string {
+  if (type === SHAKE_BG_X) return 'gBattle_BG3_X';
+  if (type === SHAKE_BG_Y) return 'gBattle_BG3_Y';
+  if (type === SHAKE_MON_X) return 'gSpriteCoordOffsetX';
+  return 'gSpriteCoordOffsetY'; // default du switch C (SHAKE_MON_Y)
+}
+
+/** Lit la cible u16 (≙ `*(u16 *)(sShakePtrLo | sShakePtrHi << 16)`). */
+function _shakeTargetGet(type: number): number {
+  const v = (globalThis as Record<string, unknown>)[_shakeTargetName(type)];
+  return ((v as number | undefined) ?? 0) & 0xFFFF;
+}
+
+/** Écrit la cible u16 — wrap u16 1:1 (le `+= velocity` négatif wrappe pareil). */
+function _shakeTargetSet(type: number, value: number): void {
+  (globalThis as Record<string, unknown>)[_shakeTargetName(type)] = value & 0xFFFF;
+}
+
+/** 1:1 `gBattlersCount` — lazy via __battleState (2 en single). */
+function _battlersCount(): number {
+  const bs = (globalThis as Record<string, unknown>).__battleState as { gBattlersCount?: number } | undefined;
+  return bs?.gBattlersCount ?? 2;
+}
+
+/** Pose `Sprite.coordOffsetEnabled` (champ décomp 1:1 nominal ; inerte côté
+ *  rendu tant que BuildOamBuffer n'ajoute pas gSpriteCoordOffsetX/Y — même
+ *  dette tracée que field-effect-arrow.ts:524) sur le sprite du battler. */
+function _setBattlerCoordOffsetEnabled(battler: number, enabled: boolean): void {
+  const mon = _battlerSprite(battler);
+  if (mon) (mon as unknown as { coordOffsetEnabled?: boolean }).coordOffsetEnabled = enabled;
+}
+
+/** 1:1 `AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled`
+ *  (battle_anim_normal.c:918) : relit les args (« Matches
+ *  AnimShakeMonOrBattlePlatforms ») — args[4]=battlerSelector : 0=attaquant,
+ *  1=cible, 2=les deux. Clear les deux puis set selon le sélecteur. */
+function AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled(): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  const attacker = _itf().getAttacker?.() ?? 0;
+  const target = _itf().getTarget?.() ?? 1;
+  _setBattlerCoordOffsetEnabled(attacker, false);
+  _setBattlerCoordOffsetEnabled(target, false);
+  if (args[4] === 2) {
+    _setBattlerCoordOffsetEnabled(attacker, true);
+    _setBattlerCoordOffsetEnabled(target, true);
+  } else if (args[4] === 0) {
+    _setBattlerCoordOffsetEnabled(attacker, true);
+  } else {
+    _setBattlerCoordOffsetEnabled(target, true);
+  }
+}
+
+/** 1:1 `AnimShakeMonOrBattlePlatforms` (battle_anim_normal.c:853) : secoue les
+ *  plateformes BG3 (SHAKE_BG_X/Y) ou les mons via coordOffset (SHAKE_MON_X/Y)
+ *  — args = [velocity, shakeTimer, shakeDuration, type, battlerSelector].
+ *  Data layout 1:1 : data[0]=sShakeVelocity(=-velocity), [1]=sShakeTimer,
+ *  [2]=sShakeDuration(=shakeTimer), [3]=sTimer(=shakeDuration),
+ *  [4]=sOriginalValue(=*ptr), [5]=sType. */
+function AnimShakeMonOrBattlePlatforms(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  sprite.invisible = true;
+  sprite.data[0] = -args[0];
+  sprite.data[1] = args[1];
+  sprite.data[2] = args[1];
+  sprite.data[3] = args[2];
+  sprite.data[4] = _shakeTargetGet(args[3]);
+  sprite.data[5] = args[3];
+  if (sprite.data[5] === SHAKE_MON_X || sprite.data[5] === SHAKE_MON_Y)
+    AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled();
+  sprite.callback = AnimShakeMonOrBattlePlatforms_Step;
+}
+
+/** 1:1 `AnimShakeMonOrBattlePlatforms_Step` (battle_anim_normal.c:887) :
+ *  pendant sTimer frames, toutes les sShakeDuration frames : cible +=
+ *  sShakeVelocity puis inversion de la vélocité ; sTimer épuisé → restaure
+ *  sOriginalValue, clear coordOffsetEnabled de tous les battlers (types MON)
+ *  et destroy. */
+function AnimShakeMonOrBattlePlatforms_Step(sprite: AnimSprite): void {
+  if (sprite.data[3] > 0) {
+    sprite.data[3]--;
+    if (sprite.data[1] > 0) {
+      sprite.data[1]--;
+    } else {
+      sprite.data[1] = sprite.data[2];
+      _shakeTargetSet(sprite.data[5], _shakeTargetGet(sprite.data[5]) + sprite.data[0]);
+      sprite.data[0] = -sprite.data[0];
+    }
+  } else {
+    _shakeTargetSet(sprite.data[5], sprite.data[4]);
+    if (sprite.data[5] === SHAKE_MON_X || sprite.data[5] === SHAKE_MON_Y) {
+      for (let i = 0; i < _battlersCount(); i++)
+        _setBattlerCoordOffsetEnabled(i, false);
+    }
+    _DestroyAnimSprite(sprite);
+  }
+}
+
 registerAnimCallbacks({
   AnimHitSplatBasic: AnimHitSplatBasic as never,
   AnimHitSplatHandleInvert: AnimHitSplatBasic as never, // 1:1 : meme base, invert X = dette douce
@@ -415,4 +529,5 @@ registerAnimCallbacks({
   AnimCrossImpact: AnimCrossImpact as never,
   AnimFlashingHitSplat: AnimFlashingHitSplat as never,
   AnimSpinningSparkle: AnimSpinningSparkle as never,
+  AnimShakeMonOrBattlePlatforms: AnimShakeMonOrBattlePlatforms as never,
 });
