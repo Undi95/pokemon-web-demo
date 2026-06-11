@@ -2824,7 +2824,66 @@ function _AnimSweatDrop(sprite: { data: number[]; x: number; y: number }): void 
     }
   }
 }
+/** 1:1 `AnimTask_HelpingHandAttackerMovement` (effects_3.c, 1 hit) :
+ *  la chorégraphie 9 états du « tope-là » (claps x2 puis poussée). */
+function AnimTask_HelpingHandAttackerMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[15] = sid;
+  task.data[14] = (atk & 1) === 0 ? -1 : 1; // single 1:1
+  task.data[0] = 0; task.data[1] = 0; task.data[2] = 0;
+  task.func = _HelpingHand_Step;
+}
+function _HelpingHand_Step(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[15]);
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] === 13) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 1:
+      sp.x2 -= task.data[14] * 3;
+      if (++task.data[1] === 6) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 2:
+      sp.x2 += task.data[14] * 3;
+      if (++task.data[1] === 6) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 3:
+      if (++task.data[1] === 2) {
+        task.data[1] = 0;
+        if (task.data[2] === 0) { task.data[2]++; task.data[0] = 1; }
+        else task.data[0]++;
+      }
+      break;
+    case 4:
+      sp.x2 += task.data[14];
+      if (++task.data[1] === 3) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 5:
+      if (++task.data[1] === 6) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 6:
+      sp.x2 -= task.data[14] * 4;
+      if (++task.data[1] === 5) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 7:
+      sp.x2 += task.data[14] * 4;
+      if (++task.data[1] === 5) { task.data[1] = 0; task.data[0]++; }
+      break;
+    case 8:
+      sp.x2 = 0;
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
 _e3RegTasks({
+  AnimTask_HelpingHandAttackerMovement: AnimTask_HelpingHandAttackerMovement as never,
   AnimTask_SquishAndSweatDroplets: AnimTask_SquishAndSweatDroplets as never,
   AnimTask_FacadeColorBlend: AnimTask_FacadeColorBlend as never,
   AnimTask_SmellingSaltsSquish: AnimTask_SmellingSaltsSquish as never,
