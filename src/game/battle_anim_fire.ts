@@ -541,3 +541,36 @@ function AnimSunlight(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimSunlight: AnimSunlight as never });
+
+// ─── VAGUE F2 : AnimTask_ShakeTargetInPattern (fire.c:1339, 5 hits) ─────────
+const _sShakeDirsPattern0 = [-1, -1, 0, 1, 1, 0, 0, -1, -1, 1, 1, 0, 0, -1, 0, 1];
+const _sShakeDirsPattern1 = [-1, 0, 1, 0, -1, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, 1];
+function _fItf2(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_ShakeTargetInPattern(task: { taskId: number; data: number[] }): void {
+  const itf = _fItf2();
+  const a = itf.getArgs?.() ?? [];
+  if (task.data[0] === 0) {
+    task.data[1] = a[0]; // maxShakes
+    task.data[2] = a[1]; // offset
+    task.data[3] = a[2]; // vertical
+    task.data[4] = a[3]; // patternId
+  }
+  task.data[0]++;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(itf.getTarget?.() ?? 1) ?? 0xFF;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const dir = task.data[4] === 0 ? _sShakeDirsPattern0[task.data[0] % 10] : _sShakeDirsPattern1[task.data[0] % 10];
+  if (task.data[3] === 1) sp.y2 = Math.abs(task.data[2] * dir);
+  else sp.x2 = task.data[2] * dir;
+  if (task.data[0] === task.data[1]) {
+    sp.x2 = 0;
+    sp.y2 = 0;
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+import { registerAnimTasks as _fRegT } from '../engine/battle/battle-anim-registry';
+_fRegT({ AnimTask_ShakeTargetInPattern: AnimTask_ShakeTargetInPattern as never });

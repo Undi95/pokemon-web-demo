@@ -16,6 +16,7 @@
  *   — portage par vagues avec les moves qui les consomment.
  */
 import { Sin, Cos } from './trig';
+import { PrepareBattlerSpriteForRotScale, SetSpriteRotScale, ResetSpriteRotScale } from './battle_anim_mons';
 import {
   registerAnimTasks, registerAnimTemplates,
 } from '../engine/battle/battle-anim-registry';
@@ -555,8 +556,82 @@ function AnimTask_ShakeTargetPowerDmg_Step(task: AnimTask): void {
   }
 }
 
+// ─── VAGUE F2 (sweep final 2026-06-11) ──────────────────────────────────────
+/** 1:1 `SetBattlerSpriteYOffsetFromRotation` (mons.c:1320) : y2 = |sin|>>3. */
+function _SetYOffsetFromRotation(spriteId: number): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; oamIndex: number }>; gOamMatrices?: Array<{ c: number }>; gba?: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (!sp) return;
+  const oam = rt?.gba?.oam[sp.oamIndex];
+  const m = rt?.gOamMatrices?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0];
+  let c = m?.c ?? 0;
+  if (c < 0) c = -c;
+  sp.y2 = c >> 3;
+}
+/** 1:1 `AnimTask_RotateMonSpriteToSide` (mon_movement.c) — args
+ *  (durée, deltaRot, battler, mode 0/1/2). 10 hits sweep. */
+function AnimTask_RotateMonSpriteToSide(task: AnimTask): void {
+  const a = _args();
+  const spriteId = GetAnimBattlerSpriteId(a[2]);
+  if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
+  PrepareBattlerSpriteForRotScale(spriteId, 0);
+  task.data[1] = 0;
+  task.data[2] = a[0];
+  task.data[3] = a[3] !== 1 ? 0 : a[0] * a[1];
+  task.data[4] = a[1];
+  task.data[5] = spriteId;
+  task.data[6] = a[3];
+  const b = a[2] === 0 ? _atk() : (_itf()?.getTarget() ?? 1);
+  task.data[7] = (b & 1) === 0 ? 1 : 0; // player side
+  if (task.data[7]) { task.data[3] *= -1; task.data[4] *= -1; }
+  task.func = _RotateToSide_Step;
+}
+/** 1:1 `AnimTask_RotateMonToSideAndRestore` — mode 2 = aller-retour. */
+function AnimTask_RotateMonToSideAndRestore(task: AnimTask): void {
+  const a = _args();
+  const spriteId = GetAnimBattlerSpriteId(a[2]);
+  if (spriteId === 0xFF) { DestroyAnimVisualTask(task.taskId); return; }
+  PrepareBattlerSpriteForRotScale(spriteId, 0);
+  task.data[1] = 0;
+  task.data[2] = a[0];
+  const b = a[2] === 0 ? _atk() : (_itf()?.getTarget() ?? 1);
+  if ((b & 1) !== 0) a[1] = -a[1];
+  task.data[3] = a[3] !== 1 ? 0 : a[0] * a[1];
+  task.data[4] = a[1];
+  task.data[5] = spriteId;
+  task.data[6] = a[3];
+  task.data[7] = 1;
+  task.data[3] *= -1;
+  task.data[4] *= -1;
+  task.func = _RotateToSide_Step;
+}
+function _RotateToSide_Step(task: AnimTask): void {
+  task.data[3] += task.data[4];
+  SetSpriteRotScale(task.data[5], 0x100, 0x100, task.data[3] & 0xFFFF);
+  if (task.data[7]) _SetYOffsetFromRotation(task.data[5]);
+  if (++task.data[1] >= task.data[2]) {
+    switch (task.data[6]) {
+      case 1:
+        ResetSpriteRotScale(task.data[5]);
+        DestroyAnimVisualTask(task.taskId);
+        return;
+      case 0:
+      default:
+        DestroyAnimVisualTask(task.taskId);
+        return;
+      case 2:
+        task.data[1] = 0;
+        task.data[4] *= -1;
+        task.data[6] = 1;
+        break;
+    }
+  }
+}
+
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
 registerAnimTasks({
+  AnimTask_RotateMonSpriteToSide: AnimTask_RotateMonSpriteToSide as never,
+  AnimTask_RotateMonToSideAndRestore: AnimTask_RotateMonToSideAndRestore as never,
   AnimTask_ShakeMonInPlace: AnimTask_ShakeMonInPlace as never,
   AnimTask_SwayMon: AnimTask_SwayMon as never,
   AnimTask_WindUpLunge: AnimTask_WindUpLunge as never,

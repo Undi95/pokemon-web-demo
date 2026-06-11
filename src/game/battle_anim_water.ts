@@ -622,3 +622,23 @@ function AnimAuroraBeamRings_Step(sprite: _WSprite): void {
 }
 
 registerAnimCallbacks({ AnimAuroraBeamRings: AnimAuroraBeamRings as never });
+
+// ─── VAGUE F2 : AnimTask_StartSinAnimTimer (water.c:704, 5 hits) ────────────
+// args[7] = timer sinusoïdal partagé (+3/frame) lu par les sprites (Surf...).
+function _wItf2(): { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function AnimTask_StartSinAnimTimer(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _wItf2();
+  const args = itf.getArgs?.() ?? [];
+  task.data[0] = args[0];
+  args[7] = 0;
+  task.func = _RunSinAnimTimer;
+}
+function _RunSinAnimTimer(task: { taskId: number; data: number[] }): void {
+  const args = _wItf2().getArgs?.() ?? [];
+  args[7] = (args[7] + 3) & 0xFF;
+  if (--task.data[0] === 0) _wItf2().DestroyAnimVisualTask?.(task.taskId);
+}
+import { registerAnimTasks as _wRegT } from '../engine/battle/battle-anim-registry';
+_wRegT({ AnimTask_StartSinAnimTimer: AnimTask_StartSinAnimTimer as never });

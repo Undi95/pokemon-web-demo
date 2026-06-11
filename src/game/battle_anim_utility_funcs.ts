@@ -147,7 +147,44 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
   _StartBlendAnimSpriteColor(task, selected >>> 0);
 }
 
+/** 1:1 `AnimTask_StartSlidingBg` (utility_funcs.c, 9 hits sweep) : scroll BG3
+ *  fixed-point 8.8 continu, stoppé quand args[7] == data[3] (le sentinel
+ *  `setarg 7, 0xFFFF` des scripts). UpdateAnimBg3ScreenSize = net no-op
+ *  (le wrap 256 suffit à notre compositor — dette douce si visuel 512). */
+function AnimTask_StartSlidingBg(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [];
+  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (fn: unknown, p: number) => number; gTasks?: Map<number, { data: number[] }> } | undefined;
+  const newTaskId = rt?.CreateTask?.(_UpdateSlidingBg, 5) ?? -1;
+  const atk = (_itf().getAttacker?.() ?? 0) as number;
+  if (args[2] && (atk & 1) !== 0) { args[0] = -args[0]; args[1] = -args[1]; }
+  const nt = newTaskId >= 0 ? rt?.gTasks?.get(newTaskId) : undefined;
+  if (nt) {
+    nt.data[1] = args[0];
+    nt.data[2] = args[1];
+    nt.data[3] = args[3];
+    nt.data[0]++;
+  }
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+function _UpdateSlidingBg(task: AnimTask): void {
+  const g = globalThis as Record<string, unknown>;
+  task.data[10] += task.data[1];
+  task.data[11] += task.data[2];
+  g.gBattle_BG3_X = (((g.gBattle_BG3_X as number) ?? 0) + (task.data[10] >> 8)) & 0xFFFF;
+  g.gBattle_BG3_Y = (((g.gBattle_BG3_Y as number) ?? 0) + (task.data[11] >> 8)) & 0xFFFF;
+  task.data[10] &= 0xFF;
+  task.data[11] &= 0xFF;
+  const args = _itf().getArgs?.() ?? [];
+  if ((args[7] & 0xFFFF) === (task.data[3] & 0xFFFF)) {
+    g.gBattle_BG3_X = 0;
+    g.gBattle_BG3_Y = 0;
+    const rt = (globalThis as Record<string, unknown>).__rt as { DestroyTask?: (id: number) => void } | undefined;
+    rt?.DestroyTask?.(task.taskId);
+  }
+}
+
 registerAnimTasks({
+  AnimTask_StartSlidingBg: AnimTask_StartSlidingBg as never,
   AnimTask_BlendBattleAnimPal: AnimTask_BlendBattleAnimPal as never,
   AnimTask_BlendColorCycle: AnimTask_BlendColorCycle as never,
   AnimTask_BlendBattleAnimPalExclude: AnimTask_BlendBattleAnimPalExclude as never,
