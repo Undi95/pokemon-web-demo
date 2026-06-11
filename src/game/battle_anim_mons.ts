@@ -504,8 +504,74 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+/** 1:1 `SetAnimSpriteInitialXOffset` (battle_anim_mons.c) : le signe de
+ *  l'offset X suit le sens attaquant→cible. */
+export function SetAnimSpriteInitialXOffset(sprite: { x: number }, xOffset: number): void {
+  const atk = _projItf().getAttacker?.() ?? 0;
+  const tgt = _projItf().getTarget?.() ?? 1;
+  const attackerX = GetBattlerSpriteCoord(atk, 0 /* BATTLER_COORD_X */) & 0xFFFF;
+  const targetX = GetBattlerSpriteCoord(tgt, 0) & 0xFFFF;
+  if (attackerX > targetX) sprite.x -= xOffset;
+  else if (attackerX < targetX) sprite.x += xOffset;
+  else if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) sprite.x -= xOffset;
+  else sprite.x += xOffset;
+}
+
+/** 1:1 `InitSpritePosToAnimTarget` (:820) — la base sprite est déjà au centre
+ *  TARGET (Cmd_createsprite 1:1) ; respectMonPicOffsets=false → re-base X/Y purs. */
+export function InitSpritePosToAnimTarget(sprite: { x: number; y: number }, respectMonPicOffsets: boolean): void {
+  const tgt = _projItf().getTarget?.() ?? 1;
+  const args = _projItf().getArgs?.() ?? [0, 0];
+  if (!respectMonPicOffsets) {
+    sprite.x = GetBattlerSpriteCoord(tgt, 0 /* X */);
+    sprite.y = GetBattlerSpriteCoord(tgt, 1 /* Y */);
+  }
+  SetAnimSpriteInitialXOffset(sprite, args[0] | 0);
+  sprite.y += args[1] | 0;
+}
+
+/** 1:1 `InitSpritePosToAnimAttacker` (:833). */
+export function InitSpritePosToAnimAttacker(sprite: { x: number; y: number }, respectMonPicOffsets: boolean): void {
+  const atk = _projItf().getAttacker?.() ?? 0;
+  const args = _projItf().getArgs?.() ?? [0, 0];
+  if (!respectMonPicOffsets) {
+    sprite.x = GetBattlerSpriteCoord(atk, 0 /* X */);
+    sprite.y = GetBattlerSpriteCoord(atk, 1 /* Y */);
+  } else {
+    sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+    sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  }
+  SetAnimSpriteInitialXOffset(sprite, args[0] | 0);
+  sprite.y += args[1] | 0;
+}
+
+/** 1:1 `DestroySpriteAndMatrix` : FreeSpriteOamMatrix + DestroyAnimSprite. */
+export function DestroySpriteAndMatrix(sprite: unknown): void {
+  _projItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimSpriteOnMonPos` (battle_anim_mons.c) — LE callback générique des
+ *  sprites « posés sur un mon » (13 templates générés !) :
+ *  args [x, y, target?, ignorePicOffsets?] ; attend animEnded/affineAnimEnded
+ *  (les tables ANIMCMD générées) → DestroySpriteAndMatrix. */
+export function AnimSpriteOnMonPos(sprite: { data: number[]; x: number; y: number; invisible?: boolean; animEnded?: boolean; affineAnimEnded?: boolean; callback: unknown }): void {
+  const args = _projItf().getArgs?.() ?? [0, 0, 0, 0];
+  if (!sprite.data[0]) {
+    const respect = !args[3];
+    if (!args[2]) InitSpritePosToAnimAttacker(sprite, respect);
+    else InitSpritePosToAnimTarget(sprite, respect);
+    sprite.invisible = false;
+    sprite.data[0]++;
+    sprite.callback = AnimSpriteOnMonPos as never; // reste sur lui-même (1:1 état data[0])
+  } else if (sprite.animEnded || sprite.affineAnimEnded) {
+    DestroySpriteAndMatrix(sprite);
+  }
+}
+
 // PHASE 1a : callbacks par nom C pour les templates generes.
 import { registerAnimCallbacks as _regCb } from '../engine/battle/battle-anim-generated-bridge';
 _regCb({
   TranslateAnimSpriteToTargetMonLocation: TranslateAnimSpriteToTargetMonLocation as never,
+  AnimSpriteOnMonPos: AnimSpriteOnMonPos as never,
+  SpriteCallbackDummy: ((_s: unknown) => { /* 1:1 vide */ }) as never,
 });
