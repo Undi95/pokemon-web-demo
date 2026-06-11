@@ -210,6 +210,8 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     if (!assetCache.has('gAnimPal_MudSand')) assetCache.set('gAnimPal_MudSand', await loadGbaPal('/decomp/em/battle_anims/sprites/mud_sand_0.gbapal'));
     await loadBin('gAnimGfx_Leer', '/decomp/em/battle_anims/sprites/leer.4bpp.bin');
     if (!assetCache.has('gAnimPal_Leer')) assetCache.set('gAnimPal_Leer', await loadGbaPal('/decomp/em/battle_anims/sprites/leer.gbapal'));
+    await loadBin('gAnimGfx_SharpTeeth', '/decomp/em/battle_anims/sprites/sharp_teeth.4bpp.bin');
+    if (!assetCache.has('gAnimPal_SharpTeeth')) assetCache.set('gAnimPal_SharpTeeth', await loadGbaPal('/decomp/em/battle_anims/sprites/sharp_teeth.gbapal'));
     _animGfxPreloaded = true;
   } catch (e) {
     console.warn('[decomp-loop] anim sprite gfx preload:', e);
@@ -311,6 +313,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_water'),          // registry Bubble (T4)
     import('../../game/battle_anim_effects_1'),      // registry Absorb orbs (T4)
     import('../../game/battle_anim_ground'),          // registry Sand-Attack (C1b)
+    import('../../game/battle_anim_dark'),             // registry Bite crocs (micro-vague)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
