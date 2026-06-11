@@ -1188,3 +1188,74 @@ function AnimParticleBurst(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({ AnimParticleBurst: AnimParticleBurst as never });
+
+// ─── AnimTask_Splash 1:1 (effects_2.c:2161-2231) — la riposte du Wailord ! ──
+// Le mon s'écrase/rebondit N fois (args: battler, count). Affine par task-data
+// (PrepareAffineAnimInTaskData) + montée y2 progressive puis retour.
+import {
+  PrepareAffineAnimInTaskData as _spPrep, RunAffineAnimFromTaskData as _spRun,
+} from './battle_anim_mons';
+import { BATTLE_ANIM_AFFINE_ANIMS as _spTables } from '../engine/decomp-data/auto/src/battle-anim-sprites';
+
+type _SpTask = { taskId: number; data: number[]; func?: unknown };
+function _spItf2(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+// 1:1 GetAnimBattlerSpriteId local (le stub surface rend -1 — pattern mon_movement)
+function _spBattlerSpriteId(animBattler: number): number {
+  const itf = _spItf2();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : animBattler === 1 ? (itf.getTarget?.() ?? 1) : -1;
+  if (b < 0) return 0xFF;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+function AnimTask_Splash(task: _SpTask): void {
+  const itf = _spItf2();
+  const args = itf.getArgs?.() ?? [0, 0];
+  if (!args[1]) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const spriteId = _spBattlerSpriteId(args[0]);
+  if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[0] = spriteId;
+  task.data[1] = 0;
+  task.data[2] = args[1];
+  task.data[3] = 0;
+  task.data[4] = 0;
+  _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gSplashEffectAffineAnimCmds']);
+  task.func = AnimTask_Splash_Step;
+  AnimTask_Splash_Step(task);
+}
+function AnimTask_Splash_Step(task: _SpTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites: Map<number, { y2: number }> } | undefined;
+  const sprite = rt?.gSprites?.get(task.data[0]);
+  if (!sprite) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[1]) {
+    case 0:
+      _spRun(task);
+      task.data[4] += 3;
+      sprite.y2 += task.data[4];
+      if (++task.data[3] > 7) { task.data[3] = 0; task.data[1]++; }
+      break;
+    case 1:
+      _spRun(task);
+      sprite.y2 += task.data[4];
+      if (++task.data[3] > 7) { task.data[3] = 0; task.data[1]++; }
+      break;
+    case 2:
+      if (task.data[4] !== 0) { sprite.y2 -= 2; task.data[4] -= 2; }
+      else task.data[1]++;
+      break;
+    case 3:
+      if (!_spRun(task)) {
+        if (--task.data[2] === 0) {
+          sprite.y2 = 0;
+          _spItf2().DestroyAnimVisualTask?.(task.taskId);
+        } else {
+          _spPrep(task, task.data[0], (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gSplashEffectAffineAnimCmds']);
+          task.data[1] = 0;
+        }
+      }
+      break;
+  }
+}
+import { registerAnimTasks as _regTasks } from '../engine/battle/battle-anim-registry';
+_regTasks({ AnimTask_Splash: AnimTask_Splash as never });

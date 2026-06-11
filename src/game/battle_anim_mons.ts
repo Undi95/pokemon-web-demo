@@ -512,6 +512,83 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
+// ─── Sous-système AFFINE-PAR-TASK (battle_anim_mons.c:2240-2330) ────────────
+// PrepareAffineAnimInTaskData/RunAffineAnimFromTaskData — utilisé par ~30
+// AnimTasks (Splash, GrowAndShrink, Minimize…). Le C stocke le ptr des cmds
+// dans data[13..14] (StorePointerInVars) ; nous : side-table par taskId.
+export type TaskAffineCmd = { xScale: number; yScale: number; rotation: number; duration: number };
+export type TaskAffineTable = { frames: readonly TaskAffineCmd[]; terminator: string };
+const _taskAffineCmds = new Map<number, TaskAffineTable>();
+type _TaskLike = { taskId: number; data: number[] };
+
+/** 1:1 `PrepareAffineAnimInTaskData(task, spriteId, cmds)`. */
+export function PrepareAffineAnimInTaskData(task: _TaskLike, spriteId: number, cmds: TaskAffineTable): void {
+  task.data[7] = 0;    // cmd index
+  task.data[8] = 0;    // frame-in-cmd
+  task.data[9] = 0;    // loop counter
+  task.data[15] = spriteId;
+  task.data[10] = 0x100; // xScale
+  task.data[11] = 0x100; // yScale
+  task.data[12] = 0;     // rotation
+  _taskAffineCmds.set(task.taskId, cmds);
+  PrepareBattlerSpriteForRotScale(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+}
+
+/** 1:1 `SetBattlerSpriteYOffsetFromYScale(spriteId)` (mons.c) : y2 compense la
+ *  réduction verticale (le mon « s'écrase » au sol, pas au centre). */
+export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
+  const rt = getRuntime();
+  const sprite = rt?.gSprites?.get(spriteId) as { y2: number; oamIndex: number } | undefined;
+  if (!rt || !sprite) return;
+  const MON_PIC_HEIGHT = 64;
+  const v = MON_PIC_HEIGHT; // GetBattlerYDeltaFromSpriteId ≈ 0 (dette douce species delta)
+  const m = (rt as unknown as { gOamMatrices?: Array<{ d: number }> }).gOamMatrices;
+  const oam = (rt as unknown as { gba: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } }).gba.oam[sprite.oamIndex];
+  const d = m?.[oam?.matrixNum ?? oam?.affineParamIndex ?? 0]?.d ?? 0x100;
+  let v2 = d !== 0 ? Math.trunc((v << 8) / d) : v * 2;
+  if (v2 > MON_PIC_HEIGHT * 2) v2 = MON_PIC_HEIGHT * 2;
+  sprite.y2 = Math.trunc((v - v2) / 2);
+}
+
+/** 1:1 `RunAffineAnimFromTaskData(task)` — TRUE tant que l anim tourne. */
+export function RunAffineAnimFromTaskData(task: _TaskLike): boolean {
+  const table = _taskAffineCmds.get(task.taskId);
+  if (!table) return false;
+  const frames = table.frames;
+  const idx = task.data[7];
+  // END (terminator atteint)
+  if (idx >= frames.length) {
+    const term = table.terminator ?? 'END';
+    if (term.startsWith('JUMP')) { task.data[7] = parseInt(term.slice(5), 10) || 0; return true; }
+    if (term.startsWith('LOOP')) { task.data[7] = 0; return true; } // net : reboucle
+    const rt = getRuntime();
+    const sprite = rt?.gSprites?.get(task.data[15]) as { y2: number } | undefined;
+    if (sprite) sprite.y2 = 0;
+    ResetSpriteRotScale(task.data[15]);
+    _taskAffineCmds.delete(task.taskId);
+    return false;
+  }
+  let cmd = frames[idx];
+  if (!cmd.duration) {
+    task.data[10] = cmd.xScale;
+    task.data[11] = cmd.yScale;
+    task.data[12] = cmd.rotation;
+    task.data[7]++;
+    cmd = frames[task.data[7]] ?? cmd;
+    if (task.data[7] >= frames.length) return true;
+  }
+  task.data[10] += cmd.xScale;
+  task.data[11] += cmd.yScale;
+  task.data[12] += cmd.rotation;
+  SetSpriteRotScale(task.data[15], task.data[10] & 0xFFFF, task.data[11] & 0xFFFF, task.data[12] & 0xFFFF);
+  SetBattlerSpriteYOffsetFromYScale(task.data[15]);
+  if (++task.data[8] >= cmd.duration) {
+    task.data[8] = 0;
+    task.data[7]++;
+  }
+  return true;
+}
+
 /** 1:1 `TranslateSpriteLinearFixedPoint` (battle_anim_mons.c:607) : mouvement
  *  8.8 fixed-point data[1]/data[2], duree data[0] -> stored callback. */
 export function TranslateSpriteLinearFixedPoint(sprite: DecompSprite): void {

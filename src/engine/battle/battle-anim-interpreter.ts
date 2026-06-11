@@ -857,7 +857,12 @@ function _paletteFadeActive(): boolean {
 function Cmd_loadspritegfx(): void {
   _pc++;
   const index = read16(_pc);
-  const trueIndex = index & 0x7FFF;  // GET_TRUE_SPRITE_INDEX strips bit 15.
+  // 1:1 GET_TRUE_SPRITE_INDEX(i) = i - ANIM_SPRITES_START (10000) — le bytecode
+  // encode le TAG ABSOLU (ANIM_TAG_X = 10000+idx). L'ancien `& 0x7FFF` ne
+  // retirait RIEN puis on RAJOUTAIT 10000 -> tag 20xxx inexistant -> sheet
+  // jamais chargee (les CARRES VERTS de Water Gun, user 2026-06-11) ET
+  // jamais liberee (unload symetriquement faux -> fuite VRAM des tours).
+  const trueIndex = index >= 10000 ? index - 10000 : (index & 0x7FFF);
   // 1:1 : Load par TAG (= gBattleAnimPicTable[idx], tag = 10000 + idx) via le
   // registry des templates (C0 goal 2026-06-11 : le load vient de l'OPCODE,
   // pas seulement du createsprite).
@@ -985,7 +990,8 @@ void _loadedTags;
 function Cmd_unloadspritegfx(): void {
   _pc++;
   const index = read16(_pc);
-  const trueIndex = index & 0x7FFF;
+  // 1:1 GET_TRUE_SPRITE_INDEX (cf. Cmd_loadspritegfx — meme fix tag absolu).
+  const trueIndex = index >= 10000 ? index - 10000 : (index & 0x7FFF);
   // 1:1 battle_anim.c:348-358 : Free tiles + palette par TAG (C0 : la VRAM se
   // LIBERE en fin d'anim -> les 415 moves scalent sans s'accumuler).
   FreeSpriteTilesByTag(10000 + trueIndex);
@@ -1361,10 +1367,63 @@ function Cmd_monbg(): void {
 }
 
 /** Task_InitUpdateMonBg + Task_UpdateMonBg : track sprite movement + sync BG offset. */
+const _sMonAnimTaskIdArray: number[] = [TASK_NONE, TASK_NONE]; // 1:1 sMonAnimTaskIdArray
+function _monSpriteOf(battler: number): { x: number; y: number; x2: number; y2: number; invisible?: boolean } | undefined {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(battler);
+  return sid !== undefined && sid !== 0xFF ? getRuntime()?.gSprites.get(sid) as never : undefined;
+}
+/** 1:1 battle_anim.c Task_InitUpdateMonBg : cache le SPRITE (seule la copie BG
+ *  s'affiche) + lance Task_UpdateMonBg qui RECALE le scroll BG sur la position
+ *  du sprite CHAQUE FRAME — sans ça, la copie reste FIXE pendant les shakes
+ *  (ShakeMon2 de Water Gun & co) et un DOUBLE du mon apparaît à ±1px
+ *  (bug user 2026-06-11 : « un wailord caché sous wailord pendant le hit »). */
 function Task_InitUpdateMonBg(taskId: number): void {
-  // Cascade deferred : depends on MoveBattlerSpriteToBG + gBattlerSpriteIds + DMA copy.
-  // Pour now : decrement count + cleanup pour ne pas bloquer.
+  const t = _gTasks(taskId);
+  const battler = t.data[0];      // tBattlerId
+  const inBg2 = t.data[1] !== 0;  // tInBg2
+  const active = t.data[2] !== 0; // tActive
+  const isPartner = t.data[3];    // tIsPartner
+  const sprite = _monSpriteOf(battler);
+  if (sprite) sprite.invisible = true;
+  if (!active || !sprite) { DestroyAnimVisualTask(taskId); return; }
+  const updateTaskId = CreateTask(Task_UpdateMonBg, 10);
+  if (updateTaskId !== TASK_NONE) {
+    const u = _gTasks(updateTaskId);
+    const g = globalThis as Record<string, unknown>;
+    u.data[0] = battler;                          // t2_BattlerId
+    u.data[1] = inBg2 ? 1 : 0;                    // t2_InBg2
+    u.data[2] = sprite.x + sprite.x2;             // t2_SpriteX
+    u.data[3] = sprite.y + sprite.y2;             // t2_SpriteY
+    u.data[4] = (inBg2 ? (g.gBattle_BG2_X as number) : (g.gBattle_BG1_X as number)) ?? 0; // t2_BgX
+    u.data[5] = (inBg2 ? (g.gBattle_BG2_Y as number) : (g.gBattle_BG1_Y as number)) ?? 0; // t2_BgY
+    _sMonAnimTaskIdArray[isPartner] = updateTaskId;
+  }
   DestroyAnimVisualTask(taskId);
+}
+/** 1:1 battle_anim.c:813 Task_UpdateMonBg : la copie BG SUIT le sprite. */
+function Task_UpdateMonBg(taskId: number): void {
+  const t = _gTasks(taskId);
+  const battler = t.data[0];
+  const inBg2 = t.data[1] !== 0;
+  const sprite = _monSpriteOf(battler);
+  if (!sprite) return;
+  const dx = t.data[2] - (sprite.x + sprite.x2);
+  const dy = t.data[3] - (sprite.y + sprite.y2);
+  const g = globalThis as Record<string, unknown>;
+  if (!inBg2) {
+    g.gBattle_BG1_X = (dx + t.data[4]) & 0xFFFF;
+    g.gBattle_BG1_Y = (dy + t.data[5]) & 0xFFFF;
+  } else {
+    g.gBattle_BG2_X = (dx + t.data[4]) & 0xFFFF;
+    g.gBattle_BG2_Y = (dy + t.data[5]) & 0xFFFF;
+  }
+  // 1:1 : palette OBJ -> BG recopiée chaque frame (suit les blends)
+  const pf = (getRuntime() as unknown as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | null)?.gPlttBufferFaded;
+  if (pf?.get && pf.set) {
+    const palId = inBg2 ? 9 : 8;
+    for (let k = 0; k < 16; k++) pf.set(palId * 16 + k, pf.get(256 + battler * 16 + k));
+  }
 }
 
 /** 0x0B Cmd_clearmonbg (battle_anim.c:852-883).
@@ -1384,6 +1443,14 @@ function Cmd_clearmonbg(): void {
     const sid = co?.getBattlerMonSpriteId?.(battler);
     const sprite = sid !== undefined && sid !== 0xFF ? rt?.gSprites.get(sid) : undefined;
     if (sprite) (sprite as { invisible?: boolean }).invisible = false;
+    // 1:1 Task_ClearMonBg : detruire les Task_UpdateMonBg actives (sinon elles
+    // continuent d'ecraser le scroll BG apres le demontage)
+    for (let i = 0; i < 2; i++) {
+      if (_sMonAnimTaskIdArray[i] !== TASK_NONE) {
+        rt?.DestroyTask?.(_sMonAnimTaskIdArray[i]);
+        _sMonAnimTaskIdArray[i] = TASK_NONE;
+      }
+    }
     const gba = (rt as unknown as { gba?: { bg: (i: number) => { tilemap: Uint16Array; config: { visible: boolean } } } } | null)?.gba;
     const g = globalThis as Record<string, unknown>;
     for (const bgId of [1, 2]) {

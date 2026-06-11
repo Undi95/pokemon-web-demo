@@ -879,6 +879,14 @@ function OpponentHandlePrintString(): void {
   // de l'ennemi, statuts pendant le tour ennemi). Le décomp REND le texte des 2 côtés
   // (fenêtre message PARTAGÉE B_WIN_MSG=0). Port voie L = byte path (comme
   // PlayerHandlePrintString) + fallback JS-string, via globals (évite cycle ESM).
+  // 1:1 battle_controller_opponent.c:1556 : gBattle_BG0_X = 0; gBattle_BG0_Y = 0;
+  // — le menu action/moves vit sur la PAGE SCROLLÉE de BG0 (vofs 160/320) ;
+  // sans ce reset, le texte adverse s'écrit dans la page message HORS ÉCRAN
+  // et le joueur voit le menu figé (bug user 2026-06-11 : « ni texte ni anim
+  // quand Wailord attaque, pourtant j'entends le splash »).
+  const gT = globalThis as Record<string, unknown>;
+  gT.gBattle_BG0_X = 0;
+  gT.gBattle_BG0_Y = 0;
   const stringId = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
   const B_WIN_MSG = 0; // 1:1 décomp battle.h
   let rendered = false;
