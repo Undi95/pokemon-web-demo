@@ -457,3 +457,43 @@ export function SetBattlerSpriteYOffsetFromRotation(spriteId: number): void {
   if (c < 0) c = -c;
   sprite.y2 = c >> 3;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TranslateAnimSpriteToTargetMonLocation (battle_anim_mons.c) — C0 2026-06-11.
+// LE projectile générique (Ember/Bubble/Swift/...). DÉPLACÉ depuis
+// battle_anim_fire.ts (qui DOUBLONNAIT la chaîne linéaire : mons l'avait déjà,
+// tranche 5a-1 — doublon supprimé, on branche sur l'EXISTANTE ci-dessus).
+// ═══════════════════════════════════════════════════════════════════════════
+function _projItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _projBattlerSprite(battler: number): DecompSprite | undefined {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, DecompSprite> } | undefined;
+  const id = co?.getBattlerMonSpriteId?.(battler);
+  return id !== undefined && id >= 0 ? rt?.gSprites?.get(id) : undefined;
+}
+
+/** 1:1 `TranslateAnimSpriteToTargetMonLocation` : args [startXOff, startYOff,
+ *  tgtXOff, tgtYOff, durée, flags]. Départ ATTAQUANT, arrivée CIBLE, destroy
+ *  à l'arrivée (StoreSpriteCallbackInData6 → la chaîne linéaire existante). */
+export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): void {
+  const args = _projItf().getArgs?.() ?? [0, 0, 0, 0, 20, 0];
+  const atk = _projItf().getAttacker?.() ?? 0;
+  const tgt = _projItf().getTarget?.() ?? 1;
+  const monA = _projBattlerSprite(atk);
+  if (monA) {
+    sprite.x = monA.x + (monA.x2 ?? 0) + args[0];
+    sprite.y = monA.y + (monA.y2 ?? 0) + args[1];
+  }
+  sprite.invisible = false;
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) args[2] = -args[2];
+  const monT = _projBattlerSprite(tgt);
+  sprite.data[0] = args[4] || 20;
+  sprite.data[2] = ((monT ? monT.x + (monT.x2 ?? 0) : 120) + args[2]) & 0xFFFF;
+  sprite.data[4] = ((monT ? monT.y + (monT.y2 ?? 0) : 80) + args[3]) & 0xFFFF;
+  StoreSpriteCallbackInData6(sprite, ((s: DecompSprite) => { _projItf().DestroyAnimSprite?.(s); }) as never);
+  StartAnimLinearTranslation(sprite);
+}

@@ -840,6 +840,12 @@ export function CB2_InitBattleInternal(): void {
   // 1:1 décomp `DrawBattleEntryBackground()` (battle_main.c:680) avec l'env RECALCULÉ
   // (fixe le « sable au re-combat »). Async (assets terrain), caché par WIN0 jusqu'à l'ouverture.
   void drawBattleEntryBackground(environment);
+  // C0 (goal 2026-06-11) : la reserve tiles OBJ doit etre posee APRES le
+  // _ResetSpriteData ci-dessus (sprite.c:302 remet gReservedSpriteTileCount=0
+  // -> la pose au boot decomp-loop etait ECRASEE, cause du scratch@0 d'hier).
+  // Nos healthbox/mons utilisent des tiles FIXES 0..~0x140 non marquees au
+  // bitmap -> on reserve la zone pour l'allocateur dynamique des sheets anim.
+  (globalThis as Record<string, unknown>).gReservedSpriteTileCount = 0x140;
   _FreeAllSpritePalettes();
   // 1:1 décomp l. 682 : gReservedSpritePaletteCount = MAX_BATTLERS_COUNT (réserve OBJ 0..3).
   setReservedSpritePaletteCount(MAX_BATTLERS_COUNT);

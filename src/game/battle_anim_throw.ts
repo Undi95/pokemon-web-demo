@@ -1151,7 +1151,7 @@ export function Special_BallThrow_TS(): void {
 // ════════════════════════════════════════════════════════════════════════════
 export const ANIM_TAG_GOLD_STARS = 10233; // ANIM_SPRITES_START + 233
 
-const _sGoldStarsSheet = { data: 'gAnimGfx_GoldStars', size: 192, tag: ANIM_TAG_GOLD_STARS, targetTileBase: 968 };
+const _sGoldStarsSheet = { data: 'gAnimGfx_GoldStars', size: 192, tag: ANIM_TAG_GOLD_STARS };
 const _sGoldStarsPal = { data: 'gAnimPal_GoldStars', tag: ANIM_TAG_GOLD_STARS };
 
 type _ShinySprite = {

@@ -46,7 +46,8 @@
  */
 
 import { CreateTask, DestroyTask as _DestroyTaskRaw , CreateSprite as _CreateSpriteByTemplate} from '../system/decomp-bridge';
-import { getRuntime, TASK_NONE } from '../system/decomp-globals';
+import { getRuntime, TASK_NONE, FreeSpriteTilesByTag } from '../system/decomp-globals';
+import { FreeSpritePaletteByTag } from '../system/sprite';
 import { gBattlerAttacker, gBattlerTarget, gBattleTypeFlags, MAX_BATTLERS_COUNT } from './state';
 import { GetBattlerPosition, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
 import {
@@ -740,12 +741,25 @@ function _paletteFadeActive(): boolean {
 function Cmd_loadspritegfx(): void {
   _pc++;
   const index = read16(_pc);
-  // LoadCompressedSpriteSheetUsingHeap + LoadCompressedSpritePaletteUsingHeap
-  // — asset table extraction deferred ; AddSpriteIndex track le tag pour cleanup.
-  AddSpriteIndex(index & 0x7FFF);  // GET_TRUE_SPRITE_INDEX strips bit 15.
+  const trueIndex = index & 0x7FFF;  // GET_TRUE_SPRITE_INDEX strips bit 15.
+  // 1:1 : Load par TAG (= gBattleAnimPicTable[idx], tag = 10000 + idx) via le
+  // registry des templates (C0 goal 2026-06-11 : le load vient de l'OPCODE,
+  // pas seulement du createsprite).
+  _loadAnimSheetByTag(10000 + trueIndex);
+  AddSpriteIndex(trueIndex);
   _pc += 2;
   sAnimFramesToWait = 1;
   gAnimScriptCallback = WaitAnimFrameCount;
+}
+/** Charge la sheet+palette d'un tag anim via le registry (template.load). */
+function _loadAnimSheetByTag(tag: number): void {
+  const reg = (globalThis as Record<string, unknown>).__battleAnimRegistryStore as {
+    templates?: Map<string, { tileTag?: number; load?: () => void }>;
+  } | undefined;
+  if (!reg?.templates) return;
+  for (const tpl of reg.templates.values()) {
+    if (tpl.tileTag === tag && tpl.load) { try { tpl.load(); } catch { /* asset */ } return; }
+  }
 }
 
 /** 0x01 Cmd_unloadspritegfx (battle_anim.c:348-358).
@@ -753,8 +767,12 @@ function Cmd_loadspritegfx(): void {
 function Cmd_unloadspritegfx(): void {
   _pc++;
   const index = read16(_pc);
-  // FreeSpriteTilesByTag + FreeSpritePaletteByTag — cascade deferred.
-  ClearSpriteIndex(index & 0x7FFF);
+  const trueIndex = index & 0x7FFF;
+  // 1:1 battle_anim.c:348-358 : Free tiles + palette par TAG (C0 : la VRAM se
+  // LIBERE en fin d'anim -> les 415 moves scalent sans s'accumuler).
+  FreeSpriteTilesByTag(10000 + trueIndex);
+  FreeSpritePaletteByTag(10000 + trueIndex);
+  ClearSpriteIndex(trueIndex);
   _pc += 2;
 }
 

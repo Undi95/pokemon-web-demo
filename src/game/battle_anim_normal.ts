@@ -31,7 +31,7 @@ export const ANIM_TAG_IMPACT = 10135; // ANIM_SPRITES_START(10000) + 135, battle
 
 // 1:1 gBattleAnimPicTable/PaletteTable entries pour ANIM_TAG_IMPACT
 // (battle_anim_data : {gBattleAnimSpriteGfx_Impact, 0x0200, ANIM_TAG_IMPACT}).
-const sAnimSpriteSheet_Impact = { data: 'gAnimGfx_Impact', size: 512, tag: ANIM_TAG_IMPACT, targetTileBase: 704 };
+const sAnimSpriteSheet_Impact = { data: 'gAnimGfx_Impact', size: 512, tag: ANIM_TAG_IMPACT };
 const sAnimSpritePalette_Impact = { data: 'gAnimPal_Impact', tag: ANIM_TAG_IMPACT };
 
 /** Charge la sheet+palette du tag IMPACT si pas déjà en VRAM (pattern LoadBallGfx). */

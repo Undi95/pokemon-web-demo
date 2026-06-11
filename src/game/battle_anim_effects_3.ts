@@ -22,7 +22,7 @@ import { registerAnimTemplates } from '../engine/battle/battle-anim-registry';
 
 export const ANIM_TAG_SCRATCH = 10137; // ANIM_SPRITES_START + 137
 
-const sSheet = { data: 'gAnimGfx_Scratch', size: 2560, tag: ANIM_TAG_SCRATCH, targetTileBase: 720 };
+const sSheet = { data: 'gAnimGfx_Scratch', size: 2560, tag: ANIM_TAG_SCRATCH };
 const sPal = { data: 'gAnimPal_Scratch', tag: ANIM_TAG_SCRATCH };
 
 export function LoadAnimScratchGfx(): void {
@@ -95,7 +95,7 @@ function _Scratch_AnimStep(sprite: AnimSprite): void {
 // --- GROWL : les lignes de bruit (gRoarNoiseLineSpriteTemplate, :949) -------
 export const ANIM_TAG_NOISE_LINE = 10053; // ANIM_SPRITES_START + 53
 
-const sSheetNoise = { data: 'gAnimGfx_NoiseLine', size: 2048, tag: ANIM_TAG_NOISE_LINE, targetTileBase: 800 };
+const sSheetNoise = { data: 'gAnimGfx_NoiseLine', size: 2048, tag: ANIM_TAG_NOISE_LINE };
 const sPalNoise = { data: 'gAnimPal_NoiseLine', tag: ANIM_TAG_NOISE_LINE };
 export function LoadAnimNoiseLineGfx(): void {
   if (GetSpriteTileStartByTag(ANIM_TAG_NOISE_LINE) === 0xFFFF) {
