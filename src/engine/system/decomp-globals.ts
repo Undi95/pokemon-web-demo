@@ -151,6 +151,8 @@ export function getRuntime(): DecompRuntime {
  *  Populé par intro-asset-loader avant de lancer les Tasks. Les helpers
  *  LZ77UnCompVram/LoadPalette font lookup ici. */
 export const assetCache = new Map<string, Uint8Array | Uint16Array>();
+// Surface lazy (loader generique gfx anims par tag, Phase 0bis roadmap).
+(globalThis as Record<string, unknown>).__assetCache = assetCache;
 
 /** Compteur LZ77UnCompVram pour debug : combien de fois chaque symbol a été appelé,
  *  combien d'entries ont été copiées, vers quel bgIdx. Inspectable via window.debug. */

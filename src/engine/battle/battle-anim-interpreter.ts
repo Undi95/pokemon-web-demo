@@ -803,8 +803,57 @@ function _resolveTileBase(tag: number): number {
   return (v !== undefined && v !== 0xFFFF) ? v : 0;
 }
 
-/** Charge la sheet+palette d'un tag anim via le registry (template.load). */
+// PHASE 0bis (roadmap) : LE LOADER GÉNÉRIQUE par tag — anim-gfx-manifest.json
+// (289 entrées générées : tag → {bin, pal, size}). Charge la sheet+palette de
+// N'IMPORTE quel tag sans loader manuel. Fallback : l'ancien chemin template.load.
+let _animGfxManifest: Record<string, { bin: string; pal: string; size: number; tagValue: number }> | null = null;
+let _animGfxByValue: Map<number, { bin: string; pal: string; size: number }> | null = null;
+let _manifestLoading = false;
+function _ensureAnimGfxManifest(): void {
+  if (_animGfxManifest || _manifestLoading) return;
+  _manifestLoading = true;
+  void fetch('/decomp/em/battle_anims/anim-gfx-manifest.json')
+    .then((r) => r.json())
+    .then((j: Record<string, { bin: string; pal: string; size: number; tagValue: number }>) => {
+      _animGfxManifest = j;
+      _animGfxByValue = new Map();
+      for (const e of Object.values(j)) _animGfxByValue.set(e.tagValue, e);
+    })
+    .catch((e) => { console.warn('[battle-anim] manifest gfx KO', e); _manifestLoading = false; });
+}
+_ensureAnimGfxManifest();
+const _loadedTags = new Set<number>();
 function _loadAnimSheetByTag(tag: number): void {
+  const entry = _animGfxByValue?.get(tag);
+  if (entry) {
+    const dg = (globalThis as Record<string, unknown>).__decompGlobals as {
+      GetSpriteTileStartByTag?: (t: number) => number;
+      LoadCompressedSpriteSheetUsingHeap?: (s: unknown) => void;
+      LoadCompressedSpritePaletteUsingHeap?: (s: unknown) => void;
+    } | undefined;
+    if (dg?.GetSpriteTileStartByTag?.(tag) !== 0xFFFF) return; // deja en VRAM
+    const gfxKey = 'gAnimGfxTag_' + tag;
+    const palKey = 'gAnimPalTag_' + tag;
+    const cache = (globalThis as Record<string, unknown>).__assetCache as Map<string, unknown> | undefined;
+    const doLoad = (): void => {
+      dg?.LoadCompressedSpriteSheetUsingHeap?.({ data: gfxKey, size: entry.size, tag });
+      dg?.LoadCompressedSpritePaletteUsingHeap?.({ data: palKey, tag });
+    };
+    if (cache?.has(gfxKey)) { doLoad(); return; }
+    // fetch async des bins -> retente le load au retour (l'anim attend 1 frame
+    // au loadspritegfx 1:1, et les sheets se re-resolvent par tag au createsprite)
+    void Promise.all([
+      fetch('/decomp/em/battle_anims/sprites/' + entry.bin).then((r) => r.arrayBuffer()),
+      fetch('/decomp/em/battle_anims/sprites/' + entry.pal).then((r) => r.arrayBuffer()),
+    ]).then(([gb, pb]) => {
+      cache?.set(gfxKey, new Uint8Array(gb));
+      const pal16 = new Uint16Array(pb);
+      cache?.set(palKey, pal16);
+      doLoad();
+    }).catch((e) => console.warn('[battle-anim] gfx fetch KO tag ' + tag, e));
+    return;
+  }
+  // fallback : l'ancien chemin (templates manuels avec load())
   const reg = (globalThis as Record<string, unknown>).__battleAnimRegistryStore as {
     templates?: Map<string, { tileTag?: number; load?: () => void }>;
   } | undefined;
@@ -813,6 +862,7 @@ function _loadAnimSheetByTag(tag: number): void {
     if (tpl.tileTag === tag && tpl.load) { try { tpl.load(); } catch { /* asset */ } return; }
   }
 }
+void _loadedTags;
 
 /** 0x01 Cmd_unloadspritegfx (battle_anim.c:348-358).
  *  Free sprite tiles + palette by tag. */
@@ -927,12 +977,20 @@ function Cmd_createsprite(): void {
             const spF = sp as unknown as {
               affineAnimsTableName: string | null; affineMode: number;
               affineAnimBeginning: boolean; affineAnimEnded: boolean; affineAnimNum: number;
+              matrixNum: number;
             };
             spF.affineAnimsTableName = tpl.affineAnims;
             // 1:1 gOamData_AffineNormal_* (les templates anim combat) =
             // ST_OAM_AFFINE_ON (1), PAS DOUBLE (3 = rendu 2x la box -> le
             // hitsplat GEANT vu par le user 2026-06-11).
             spF.affineMode = 1;
+            // 1:1 InitSpriteAffineAnim -> AllocOamMatrix : SA PROPRE matrice.
+            // Sans alloc, matrixNum=0 = LA MATRICE DU MON ADVERSE -> l'anim
+            // ecrasait la matrice du Wailord = mon deplace/deforme (retour
+            // user x2 2026-06-11).
+            const rtm = (globalThis as Record<string, unknown>).__rt as { AllocOamMatrix?: () => number } | undefined;
+            const m = rtm?.AllocOamMatrix?.();
+            if (m !== undefined && m >= 0) spF.matrixNum = m;
             spF.affineAnimNum = 0;
             spF.affineAnimBeginning = true;
             spF.affineAnimEnded = false;
@@ -1063,10 +1121,12 @@ function Cmd_end(): void {
   }
   sSoundAnimFramesToWait = 0;
 
-  // 1:1 décomp C:508-516 : free remaining sprite tiles/palettes.
+  // 1:1 décomp C:508-516 : free remaining sprite tiles/palettes (C0 : les
+  // Free par tag REELS maintenant — la VRAM se libere a CHAQUE fin d'anim).
   for (let i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++) {
     if (sAnimSpriteIndexArray[i] !== 0xFFFF) {
-      // FreeSpriteTilesByTag + FreeSpritePaletteByTag — cascade deferred.
+      FreeSpriteTilesByTag(10000 + sAnimSpriteIndexArray[i]);
+      FreeSpritePaletteByTag(10000 + sAnimSpriteIndexArray[i]);
       sAnimSpriteIndexArray[i] = 0xFFFF;
     }
   }
@@ -1075,6 +1135,10 @@ function Cmd_end(): void {
   // UpdateOamPriorityInAllHealthboxes. Mark inactive.
   m4aMPlayVolumeControl_BGM(256);
   gAnimScriptActive = false;
+  // LA PURGE au chemin de fin NORMAL (le trou des residuels : elle n'etait
+  // branchee que sur les garde-fous — l'etoile/crocs coinces en wait-affine
+  // survivaient a Cmd_end, retours user 2026-06-11).
+  _purgeScriptSprites();
 }
 
 /** 0x09 Cmd_playse (battle_anim.c:530-535). */

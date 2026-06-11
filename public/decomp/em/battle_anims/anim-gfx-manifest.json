@@ -1,0 +1,2025 @@
+{
+"ANIM_TAG_BONE": {
+"bin": "bone.4bpp.bin",
+"pal": "bone.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10000
+},
+"ANIM_TAG_PENCIL": {
+"bin": "pencil.4bpp.bin",
+"pal": "pencil.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10002
+},
+"ANIM_TAG_AIR_WAVE": {
+"bin": "air_wave.4bpp.bin",
+"pal": "air_wave.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10003
+},
+"ANIM_TAG_ORB": {
+"bin": "orb.4bpp.bin",
+"pal": "orb.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10004
+},
+"ANIM_TAG_SWORD": {
+"bin": "sword.4bpp.bin",
+"pal": "sword.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10005
+},
+"ANIM_TAG_SEED": {
+"bin": "seed.4bpp.bin",
+"pal": "seed.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10006
+},
+"ANIM_TAG_EXPLOSION_6": {
+"bin": "explosion_6.4bpp.bin",
+"pal": "explosion_6.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10007
+},
+"ANIM_TAG_PINK_ORB": {
+"bin": "pink_orb.4bpp.bin",
+"pal": "pink_orb.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10008
+},
+"ANIM_TAG_GUST": {
+"bin": "gust.4bpp.bin",
+"pal": "gust.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10009
+},
+"ANIM_TAG_SPARK_2": {
+"bin": "spark_2.4bpp.bin",
+"pal": "spark_2.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10011
+},
+"ANIM_TAG_ORANGE": {
+"bin": "orange.4bpp.bin",
+"pal": "orange.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10012
+},
+"ANIM_TAG_YELLOW_BALL": {
+"bin": "yellow_ball.4bpp.bin",
+"pal": "yellow_ball.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10013
+},
+"ANIM_TAG_LOCK_ON": {
+"bin": "lock_on.4bpp.bin",
+"pal": "lock_on.gbapal",
+"size": 640,
+"realBytes": 640,
+"tagValue": 10014
+},
+"ANIM_TAG_TIED_BAG": {
+"bin": "tied_bag.4bpp.bin",
+"pal": "tied_bag.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10015
+},
+"ANIM_TAG_BLACK_SMOKE": {
+"bin": "black_smoke.4bpp.bin",
+"pal": "black_smoke.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10016
+},
+"ANIM_TAG_BLACK_BALL": {
+"bin": "black_ball.4bpp.bin",
+"pal": "black_ball.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10017
+},
+"ANIM_TAG_CONVERSION": {
+"bin": "conversion.4bpp.bin",
+"pal": "conversion.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10018
+},
+"ANIM_TAG_GLASS": {
+"bin": "glass.4bpp.bin",
+"pal": "glass.gbapal",
+"size": 1024,
+"realBytes": 896,
+"tagValue": 10019
+},
+"ANIM_TAG_HORN_HIT": {
+"bin": "horn_hit.4bpp.bin",
+"pal": "horn_hit.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10020
+},
+"ANIM_TAG_HIT": {
+"bin": "hit.4bpp.bin",
+"pal": "hit.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10021
+},
+"ANIM_TAG_HIT_2": {
+"bin": "hit.4bpp.bin",
+"pal": "hit.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10022
+},
+"ANIM_TAG_BLUE_SHARDS": {
+"bin": "blue_shards.4bpp.bin",
+"pal": "blue_shards.gbapal",
+"size": 896,
+"realBytes": 896,
+"tagValue": 10023
+},
+"ANIM_TAG_CLOSING_EYE": {
+"bin": "closing_eye.4bpp.bin",
+"pal": "closing_eye.gbapal",
+"size": 768,
+"realBytes": 768,
+"tagValue": 10024
+},
+"ANIM_TAG_WAVING_HAND": {
+"bin": "waving_hand.4bpp.bin",
+"pal": "waving_hand.gbapal",
+"size": 2560,
+"realBytes": 384,
+"tagValue": 10025
+},
+"ANIM_TAG_HIT_DUPLICATE": {
+"bin": "hit_duplicate.4bpp.bin",
+"pal": "hit_duplicate.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10026
+},
+"ANIM_TAG_LEER": {
+"bin": "leer.4bpp.bin",
+"pal": "leer.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10027
+},
+"ANIM_TAG_BLUE_BURST": {
+"bin": "blue_burst.4bpp.bin",
+"pal": "blue_burst.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10028
+},
+"ANIM_TAG_SMALL_EMBER": {
+"bin": "small_ember.4bpp.bin",
+"pal": "small_ember.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10029
+},
+"ANIM_TAG_GRAY_SMOKE": {
+"bin": "gray_smoke.4bpp.bin",
+"pal": "gray_smoke.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10030
+},
+"ANIM_TAG_BLUE_STAR": {
+"bin": "blue_star.4bpp.bin",
+"pal": "blue_star.gbapal",
+"size": 3584,
+"realBytes": 3584,
+"tagValue": 10031
+},
+"ANIM_TAG_BUBBLE_BURST": {
+"bin": "bubble_burst.4bpp.bin",
+"pal": "bubble_burst.gbapal",
+"size": 896,
+"realBytes": 896,
+"tagValue": 10032
+},
+"ANIM_TAG_FIRE": {
+"bin": "fire.4bpp.bin",
+"pal": "fire.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10033
+},
+"ANIM_TAG_SPINNING_FIRE": {
+"bin": "spinning_fire.4bpp.bin",
+"pal": "spinning_fire.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10034
+},
+"ANIM_TAG_FIRE_PLUME": {
+"bin": "fire_plume.4bpp.bin",
+"pal": "fire_plume.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10035
+},
+"ANIM_TAG_LIGHTNING_2": {
+"bin": "lightning_2.4bpp.bin",
+"pal": "lightning_2.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10036
+},
+"ANIM_TAG_LIGHTNING": {
+"bin": "lightning.4bpp.bin",
+"pal": "lightning.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10037
+},
+"ANIM_TAG_CLAW_SLASH_2": {
+"bin": "claw_slash_2.4bpp.bin",
+"pal": "claw_slash_2.gbapal",
+"size": 2560,
+"realBytes": 2048,
+"tagValue": 10038
+},
+"ANIM_TAG_CLAW_SLASH": {
+"bin": "claw_slash.4bpp.bin",
+"pal": "claw_slash.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10039
+},
+"ANIM_TAG_SCRATCH_3": {
+"bin": "scratch_3.4bpp.bin",
+"pal": "scratch_3.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10040
+},
+"ANIM_TAG_SCRATCH_2": {
+"bin": "scratch_2.4bpp.bin",
+"pal": "scratch_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10041
+},
+"ANIM_TAG_BUBBLE_BURST_2": {
+"bin": "bubble_burst_2.4bpp.bin",
+"pal": "bubble_burst_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10042
+},
+"ANIM_TAG_ICE_CHUNK": {
+"bin": "ice_chunk.4bpp.bin",
+"pal": "ice_chunk.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10043
+},
+"ANIM_TAG_GLASS_2": {
+"bin": "glass_2.4bpp.bin",
+"pal": "glass_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10044
+},
+"ANIM_TAG_PINK_HEART_2": {
+"bin": "pink_heart_2.4bpp.bin",
+"pal": "pink_heart_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10045
+},
+"ANIM_TAG_SAP_DRIP": {
+"bin": "sap_drip.4bpp.bin",
+"pal": "sap_drip.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10046
+},
+"ANIM_TAG_SAP_DRIP_2": {
+"bin": "sap_drip.4bpp.bin",
+"pal": "sap_drip.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10047
+},
+"ANIM_TAG_SPARKLE_1": {
+"bin": "sparkle_1.4bpp.bin",
+"pal": "sparkle_1.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10048
+},
+"ANIM_TAG_SPARKLE_2": {
+"bin": "sparkle_1.4bpp.bin",
+"pal": "sparkle_1.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10049
+},
+"ANIM_TAG_HUMANOID_FOOT": {
+"bin": "humanoid_foot.4bpp.bin",
+"pal": "humanoid_foot.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10050
+},
+"ANIM_TAG_MONSTER_FOOT": {
+"bin": "monster_foot.4bpp.bin",
+"pal": "monster_foot.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10051
+},
+"ANIM_TAG_HUMANOID_HAND": {
+"bin": "humanoid_hand.4bpp.bin",
+"pal": "humanoid_hand.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10052
+},
+"ANIM_TAG_NOISE_LINE": {
+"bin": "noise_line.4bpp.bin",
+"pal": "noise_line.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10053
+},
+"ANIM_TAG_YELLOW_UNK": {
+"bin": "yellow_unk.4bpp.bin",
+"pal": "yellow_unk.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10054
+},
+"ANIM_TAG_RED_FIST": {
+"bin": "red_fist.4bpp.bin",
+"pal": "red_fist.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10055
+},
+"ANIM_TAG_SLAM_HIT": {
+"bin": "slam_hit.4bpp.bin",
+"pal": "slam_hit.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10056
+},
+"ANIM_TAG_RING": {
+"bin": "ring.4bpp.bin",
+"pal": "ring.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10057
+},
+"ANIM_TAG_ROCKS": {
+"bin": "rocks.4bpp.bin",
+"pal": "rocks.gbapal",
+"size": 3072,
+"realBytes": 3072,
+"tagValue": 10058
+},
+"ANIM_TAG_Z": {
+"bin": "z.4bpp.bin",
+"pal": "z.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10059
+},
+"ANIM_TAG_YELLOW_UNK_2": {
+"bin": "yellow_unk_2.4bpp.bin",
+"pal": "yellow_unk_2.gbapal",
+"size": 64,
+"realBytes": 64,
+"tagValue": 10060
+},
+"ANIM_TAG_AIR_SLASH": {
+"bin": "air_slash.4bpp.bin",
+"pal": "air_slash.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10061
+},
+"ANIM_TAG_SPINNING_GREEN_ORBS": {
+"bin": "spinning_green_orbs.4bpp.bin",
+"pal": "spinning_green_orbs.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10062
+},
+"ANIM_TAG_LEAF": {
+"bin": "leaf.4bpp.bin",
+"pal": "leaf.gbapal",
+"size": 1152,
+"realBytes": 1152,
+"tagValue": 10063
+},
+"ANIM_TAG_FINGER": {
+"bin": "finger.4bpp.bin",
+"pal": "finger.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10064
+},
+"ANIM_TAG_POISON_POWDER": {
+"bin": "poison_powder.4bpp.bin",
+"pal": "poison_powder.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10065
+},
+"ANIM_TAG_BROWN_TRIANGLE": {
+"bin": "brown_triangle.4bpp.bin",
+"pal": "brown_triangle.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10066
+},
+"ANIM_TAG_SLEEP_POWDER": {
+"bin": "poison_powder.4bpp.bin",
+"pal": "poison_powder.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10067
+},
+"ANIM_TAG_STUN_SPORE": {
+"bin": "poison_powder.4bpp.bin",
+"pal": "poison_powder.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10068
+},
+"ANIM_TAG_POWDER": {
+"bin": "poison_powder.4bpp.bin",
+"pal": "poison_powder.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10069
+},
+"ANIM_TAG_SPARKLE_3": {
+"bin": "sparkle_3.4bpp.bin",
+"pal": "sparkle_3.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10070
+},
+"ANIM_TAG_SPARKLE_4": {
+"bin": "sparkle_4.4bpp.bin",
+"pal": "sparkle_4.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10071
+},
+"ANIM_TAG_MUSIC_NOTES": {
+"bin": "music_notes.4bpp.bin",
+"pal": "music_notes.gbapal",
+"size": 768,
+"realBytes": 768,
+"tagValue": 10072
+},
+"ANIM_TAG_DUCK": {
+"bin": "duck.4bpp.bin",
+"pal": "duck.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10073
+},
+"ANIM_TAG_ALERT": {
+"bin": "alert.4bpp.bin",
+"pal": "alert.gbapal",
+"size": 1792,
+"realBytes": 1792,
+"tagValue": 10075
+},
+"ANIM_TAG_BLUE_FLAMES": {
+"bin": "blue_flames.4bpp.bin",
+"pal": "blue_flames.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10076
+},
+"ANIM_TAG_BLUE_FLAMES_2": {
+"bin": "blue_flames_2.4bpp.bin",
+"pal": "blue_flames_2.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10077
+},
+"ANIM_TAG_SHOCK_4": {
+"bin": "shock_4.4bpp.bin",
+"pal": "shock_4.gbapal",
+"size": 768,
+"realBytes": 768,
+"tagValue": 10078
+},
+"ANIM_TAG_SHOCK": {
+"bin": "shock.4bpp.bin",
+"pal": "shock.gbapal",
+"size": 3072,
+"realBytes": 3072,
+"tagValue": 10079
+},
+"ANIM_TAG_BELL_2": {
+"bin": "bell_2.4bpp.bin",
+"pal": "bell_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10080
+},
+"ANIM_TAG_PINK_GLOVE": {
+"bin": "pink_glove.4bpp.bin",
+"pal": "pink_glove.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10081
+},
+"ANIM_TAG_BLUE_LINES": {
+"bin": "blue_lines.4bpp.bin",
+"pal": "blue_lines.gbapal",
+"size": 64,
+"realBytes": 64,
+"tagValue": 10082
+},
+"ANIM_TAG_IMPACT_3": {
+"bin": "impact_3.4bpp.bin",
+"pal": "impact_3.gbapal",
+"size": 3584,
+"realBytes": 3328,
+"tagValue": 10083
+},
+"ANIM_TAG_IMPACT_2": {
+"bin": "impact_2.4bpp.bin",
+"pal": "impact_2.gbapal",
+"size": 3584,
+"realBytes": 3072,
+"tagValue": 10084
+},
+"ANIM_TAG_RETICLE": {
+"bin": "reticle.4bpp.bin",
+"pal": "reticle.gbapal",
+"size": 640,
+"realBytes": 640,
+"tagValue": 10085
+},
+"ANIM_TAG_BREATH": {
+"bin": "breath.4bpp.bin",
+"pal": "breath.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10086
+},
+"ANIM_TAG_ANGER": {
+"bin": "anger.4bpp.bin",
+"pal": "anger.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10087
+},
+"ANIM_TAG_SNOWBALL": {
+"bin": "snowball.4bpp.bin",
+"pal": "snowball.gbapal",
+"size": 192,
+"realBytes": 192,
+"tagValue": 10088
+},
+"ANIM_TAG_VINE": {
+"bin": "vine.4bpp.bin",
+"pal": "vine.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10089
+},
+"ANIM_TAG_SWORD_2": {
+"bin": "sword_2.4bpp.bin",
+"pal": "sword_2.gbapal",
+"size": 512,
+"realBytes": 384,
+"tagValue": 10090
+},
+"ANIM_TAG_CLAPPING": {
+"bin": "clapping.4bpp.bin",
+"pal": "clapping.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10091
+},
+"ANIM_TAG_RED_TUBE": {
+"bin": "red_tube.4bpp.bin",
+"pal": "red_tube.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10092
+},
+"ANIM_TAG_AMNESIA": {
+"bin": "amnesia.4bpp.bin",
+"pal": "amnesia.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10093
+},
+"ANIM_TAG_STRING_2": {
+"bin": "string_2.4bpp.bin",
+"pal": "string_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10094
+},
+"ANIM_TAG_PENCIL_2": {
+"bin": "pencil_2.4bpp.bin",
+"pal": "pencil_2.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10095
+},
+"ANIM_TAG_PETAL": {
+"bin": "petal.4bpp.bin",
+"pal": "petal.gbapal",
+"size": 896,
+"realBytes": 896,
+"tagValue": 10096
+},
+"ANIM_TAG_BENT_SPOON": {
+"bin": "bent_spoon.4bpp.bin",
+"pal": "bent_spoon.gbapal",
+"size": 3072,
+"realBytes": 1536,
+"tagValue": 10097
+},
+"ANIM_TAG_WEB": {
+"bin": "web.4bpp.bin",
+"pal": "web.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10098
+},
+"ANIM_TAG_MILK_BOTTLE": {
+"bin": "milk_bottle.4bpp.bin",
+"pal": "milk_bottle.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10099
+},
+"ANIM_TAG_COIN": {
+"bin": "coin.4bpp.bin",
+"pal": "coin.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10100
+},
+"ANIM_TAG_CRACKED_EGG": {
+"bin": "cracked_egg.4bpp.bin",
+"pal": "cracked_egg.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10101
+},
+"ANIM_TAG_HATCHED_EGG": {
+"bin": "hatched_egg.4bpp.bin",
+"pal": "hatched_egg.gbapal",
+"size": 1024,
+"realBytes": 512,
+"tagValue": 10102
+},
+"ANIM_TAG_FRESH_EGG": {
+"bin": "fresh_egg.4bpp.bin",
+"pal": "fresh_egg.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10103
+},
+"ANIM_TAG_FANGS": {
+"bin": "fangs.4bpp.bin",
+"pal": "fangs.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10104
+},
+"ANIM_TAG_EXPLOSION_2": {
+"bin": "explosion_2.4bpp.bin",
+"pal": "explosion_2.gbapal",
+"size": 3072,
+"realBytes": 3072,
+"tagValue": 10105
+},
+"ANIM_TAG_EXPLOSION_3": {
+"bin": "explosion_3.4bpp.bin",
+"pal": "explosion_3.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10106
+},
+"ANIM_TAG_WATER_DROPLET": {
+"bin": "water_droplet.4bpp.bin",
+"pal": "water_droplet.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10107
+},
+"ANIM_TAG_WATER_DROPLET_2": {
+"bin": "water_droplet_2.4bpp.bin",
+"pal": "water_droplet_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10108
+},
+"ANIM_TAG_SEED_2": {
+"bin": "seed_2.4bpp.bin",
+"pal": "seed_2.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10109
+},
+"ANIM_TAG_SPROUT": {
+"bin": "sprout.4bpp.bin",
+"pal": "sprout.gbapal",
+"size": 3584,
+"realBytes": 3584,
+"tagValue": 10110
+},
+"ANIM_TAG_RED_WAND": {
+"bin": "red_wand.4bpp.bin",
+"pal": "red_wand.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10111
+},
+"ANIM_TAG_PURPLE_GREEN_UNK": {
+"bin": "purple_green_unk.4bpp.bin",
+"pal": "purple_green_unk.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10112
+},
+"ANIM_TAG_WATER_COLUMN": {
+"bin": "water_column.4bpp.bin",
+"pal": "water_column.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10113
+},
+"ANIM_TAG_MUD_UNK": {
+"bin": "mud_unk.4bpp.bin",
+"pal": "mud_unk.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10114
+},
+"ANIM_TAG_RAIN_DROPS": {
+"bin": "rain_drops.4bpp.bin",
+"pal": "rain_drops.gbapal",
+"size": 1792,
+"realBytes": 1792,
+"tagValue": 10115
+},
+"ANIM_TAG_FURY_SWIPES": {
+"bin": "fury_swipes.4bpp.bin",
+"pal": "fury_swipes.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10116
+},
+"ANIM_TAG_VINE_2": {
+"bin": "vine_2.4bpp.bin",
+"pal": "vine_2.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10117
+},
+"ANIM_TAG_TEETH": {
+"bin": "teeth.4bpp.bin",
+"pal": "teeth.gbapal",
+"size": 1536,
+"realBytes": 2048,
+"tagValue": 10118
+},
+"ANIM_TAG_BONE_2": {
+"bin": "bone_2.4bpp.bin",
+"pal": "bone_2.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10119
+},
+"ANIM_TAG_WHITE_BAG": {
+"bin": "white_bag.4bpp.bin",
+"pal": "white_bag.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10120
+},
+"ANIM_TAG_UNKNOWN": {
+"bin": "unknown.4bpp.bin",
+"pal": "unknown.gbapal",
+"size": 64,
+"realBytes": 64,
+"tagValue": 10121
+},
+"ANIM_TAG_PURPLE_CORAL": {
+"bin": "purple_coral.4bpp.bin",
+"pal": "purple_coral.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10122
+},
+"ANIM_TAG_PURPLE_DROPLET": {
+"bin": "purple_droplet.4bpp.bin",
+"pal": "purple_droplet.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10123
+},
+"ANIM_TAG_SHOCK_2": {
+"bin": "shock_2.4bpp.bin",
+"pal": "shock_2.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10124
+},
+"ANIM_TAG_CLOSING_EYE_2": {
+"bin": "closing_eye_2.4bpp.bin",
+"pal": "closing_eye_2.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10125
+},
+"ANIM_TAG_METAL_BALL": {
+"bin": "metal_ball.4bpp.bin",
+"pal": "metal_ball.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10126
+},
+"ANIM_TAG_MONSTER_DOLL": {
+"bin": "monster_doll.4bpp.bin",
+"pal": "monster_doll.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10127
+},
+"ANIM_TAG_WHIRLWIND": {
+"bin": "whirlwind.4bpp.bin",
+"pal": "whirlwind.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10128
+},
+"ANIM_TAG_WHIRLWIND_2": {
+"bin": "whirlwind_2.4bpp.bin",
+"pal": "whirlwind_2.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10129
+},
+"ANIM_TAG_EXPLOSION_4": {
+"bin": "explosion_4.4bpp.bin",
+"pal": "explosion_4.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10130
+},
+"ANIM_TAG_EXPLOSION_5": {
+"bin": "explosion_5.4bpp.bin",
+"pal": "explosion_5.gbapal",
+"size": 640,
+"realBytes": 640,
+"tagValue": 10131
+},
+"ANIM_TAG_TONGUE": {
+"bin": "tongue.4bpp.bin",
+"pal": "tongue.gbapal",
+"size": 640,
+"realBytes": 640,
+"tagValue": 10132
+},
+"ANIM_TAG_SMOKE": {
+"bin": "smoke.4bpp.bin",
+"pal": "smoke.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10133
+},
+"ANIM_TAG_SMOKE_2": {
+"bin": "smoke_2.4bpp.bin",
+"pal": "smoke_2.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10134
+},
+"ANIM_TAG_IMPACT": {
+"bin": "impact.4bpp.bin",
+"pal": "impact.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10135
+},
+"ANIM_TAG_CIRCLE_IMPACT": {
+"bin": "circle_impact.4bpp.bin",
+"pal": "circle_impact.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10136
+},
+"ANIM_TAG_SCRATCH": {
+"bin": "scratch.4bpp.bin",
+"pal": "scratch.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10137
+},
+"ANIM_TAG_CUT": {
+"bin": "cut.4bpp.bin",
+"pal": "cut.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10138
+},
+"ANIM_TAG_SHARP_TEETH": {
+"bin": "sharp_teeth.4bpp.bin",
+"pal": "sharp_teeth.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10139
+},
+"ANIM_TAG_RAINBOW_RINGS": {
+"bin": "rainbow_rings.4bpp.bin",
+"pal": "rainbow_rings.gbapal",
+"size": 192,
+"realBytes": 192,
+"tagValue": 10140
+},
+"ANIM_TAG_ICE_SPIKES": {
+"bin": "ice_spikes.4bpp.bin",
+"pal": "ice_spikes.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10142
+},
+"ANIM_TAG_HANDS_AND_FEET": {
+"bin": "hands_and_feet.4bpp.bin",
+"pal": "hands_and_feet.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10143
+},
+"ANIM_TAG_MIST_CLOUD": {
+"bin": "mist_cloud.4bpp.bin",
+"pal": "mist_cloud.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10144
+},
+"ANIM_TAG_CLAMP": {
+"bin": "clamp.4bpp.bin",
+"pal": "clamp.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10145
+},
+"ANIM_TAG_BUBBLE": {
+"bin": "bubble.4bpp.bin",
+"pal": "bubble.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10146
+},
+"ANIM_TAG_ORBS": {
+"bin": "orbs.4bpp.bin",
+"pal": "orbs.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10147
+},
+"ANIM_TAG_WATER_IMPACT": {
+"bin": "water_impact.4bpp.bin",
+"pal": "water_impact.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10148
+},
+"ANIM_TAG_WATER_ORB": {
+"bin": "water_orb.4bpp.bin",
+"pal": "water_orb.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10149
+},
+"ANIM_TAG_POISON_BUBBLE": {
+"bin": "poison_bubble.4bpp.bin",
+"pal": "poison_bubble.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10150
+},
+"ANIM_TAG_TOXIC_BUBBLE": {
+"bin": "toxic_bubble.4bpp.bin",
+"pal": "toxic_bubble.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10151
+},
+"ANIM_TAG_SPIKES": {
+"bin": "spikes.4bpp.bin",
+"pal": "spikes.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10152
+},
+"ANIM_TAG_HORN_HIT_2": {
+"bin": "horn_hit_2.4bpp.bin",
+"pal": "horn_hit_2.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10153
+},
+"ANIM_TAG_AIR_WAVE_2": {
+"bin": "air_wave_2.4bpp.bin",
+"pal": "air_wave_2.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10154
+},
+"ANIM_TAG_SMALL_BUBBLES": {
+"bin": "small_bubbles.4bpp.bin",
+"pal": "small_bubbles.gbapal",
+"size": 320,
+"realBytes": 320,
+"tagValue": 10155
+},
+"ANIM_TAG_ROUND_SHADOW": {
+"bin": "round_shadow.4bpp.bin",
+"pal": "round_shadow.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10156
+},
+"ANIM_TAG_SUNLIGHT": {
+"bin": "sunlight.4bpp.bin",
+"pal": "sunlight.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10157
+},
+"ANIM_TAG_SPORE": {
+"bin": "spore.4bpp.bin",
+"pal": "spore.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10158
+},
+"ANIM_TAG_RAZOR_LEAF": {
+"bin": "razor_leaf.4bpp.bin",
+"pal": "razor_leaf.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10160
+},
+"ANIM_TAG_NEEDLE": {
+"bin": "needle.4bpp.bin",
+"pal": "needle.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10161
+},
+"ANIM_TAG_WHIRLWIND_LINES": {
+"bin": "whirlwind_lines.4bpp.bin",
+"pal": "whirlwind_lines.gbapal",
+"size": 768,
+"realBytes": 768,
+"tagValue": 10162
+},
+"ANIM_TAG_GOLD_RING": {
+"bin": "gold_ring.4bpp.bin",
+"pal": "gold_ring.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10163
+},
+"ANIM_TAG_PURPLE_RING": {
+"bin": "gold_ring.4bpp.bin",
+"pal": "gold_ring.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10164
+},
+"ANIM_TAG_BLUE_RING": {
+"bin": "gold_ring.4bpp.bin",
+"pal": "gold_ring.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10165
+},
+"ANIM_TAG_GREEN_LIGHT_WALL": {
+"bin": "green_light_wall.4bpp.bin",
+"pal": "green_light_wall.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10166
+},
+"ANIM_TAG_BLUE_LIGHT_WALL": {
+"bin": "green_light_wall.4bpp.bin",
+"pal": "green_light_wall.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10167
+},
+"ANIM_TAG_RED_LIGHT_WALL": {
+"bin": "green_light_wall.4bpp.bin",
+"pal": "green_light_wall.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10168
+},
+"ANIM_TAG_GRAY_LIGHT_WALL": {
+"bin": "green_light_wall.4bpp.bin",
+"pal": "green_light_wall.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10169
+},
+"ANIM_TAG_ORANGE_LIGHT_WALL": {
+"bin": "green_light_wall.4bpp.bin",
+"pal": "green_light_wall.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10170
+},
+"ANIM_TAG_BLACK_BALL_2": {
+"bin": "black_ball_2.4bpp.bin",
+"pal": "black_ball_2.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10171
+},
+"ANIM_TAG_PURPLE_GAS_CLOUD": {
+"bin": "mist_cloud.4bpp.bin",
+"pal": "mist_cloud.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10172
+},
+"ANIM_TAG_SPARK_H": {
+"bin": "spark_h.4bpp.bin",
+"pal": "spark_h.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10173
+},
+"ANIM_TAG_YELLOW_STAR": {
+"bin": "yellow_star.4bpp.bin",
+"pal": "yellow_star.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10174
+},
+"ANIM_TAG_LARGE_FRESH_EGG": {
+"bin": "large_fresh_egg.4bpp.bin",
+"pal": "large_fresh_egg.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10175
+},
+"ANIM_TAG_SHADOW_BALL": {
+"bin": "shadow_ball.4bpp.bin",
+"pal": "shadow_ball.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10176
+},
+"ANIM_TAG_LICK": {
+"bin": "lick.4bpp.bin",
+"pal": "lick.gbapal",
+"size": 1280,
+"realBytes": 1280,
+"tagValue": 10177
+},
+"ANIM_TAG_VOID_LINES": {
+"bin": "void_lines.4bpp.bin",
+"pal": "void_lines.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10178
+},
+"ANIM_TAG_STRING": {
+"bin": "string.4bpp.bin",
+"pal": "string.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10179
+},
+"ANIM_TAG_WEB_THREAD": {
+"bin": "web_thread.4bpp.bin",
+"pal": "web_thread.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10180
+},
+"ANIM_TAG_SPIDER_WEB": {
+"bin": "spider_web.4bpp.bin",
+"pal": "spider_web.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10181
+},
+"ANIM_TAG_LIGHTBULB": {
+"bin": "lightbulb.4bpp.bin",
+"pal": "lightbulb.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10182
+},
+"ANIM_TAG_SLASH": {
+"bin": "slash.4bpp.bin",
+"pal": "slash.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10183
+},
+"ANIM_TAG_FOCUS_ENERGY": {
+"bin": "focus_energy.4bpp.bin",
+"pal": "focus_energy.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10184
+},
+"ANIM_TAG_SPHERE_TO_CUBE": {
+"bin": "sphere_to_cube.4bpp.bin",
+"pal": "sphere_to_cube.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10185
+},
+"ANIM_TAG_TENDRILS": {
+"bin": "tendrils.4bpp.bin",
+"pal": "tendrils.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10186
+},
+"ANIM_TAG_EYE": {
+"bin": "eye.4bpp.bin",
+"pal": "eye.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10187
+},
+"ANIM_TAG_WHITE_SHADOW": {
+"bin": "white_shadow.4bpp.bin",
+"pal": "white_shadow.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10188
+},
+"ANIM_TAG_TEAL_ALERT": {
+"bin": "teal_alert.4bpp.bin",
+"pal": "teal_alert.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10189
+},
+"ANIM_TAG_OPENING_EYE": {
+"bin": "opening_eye.4bpp.bin",
+"pal": "opening_eye.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10190
+},
+"ANIM_TAG_ROUND_WHITE_HALO": {
+"bin": "round_white_halo.4bpp.bin",
+"pal": "round_white_halo.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10191
+},
+"ANIM_TAG_FANG_ATTACK": {
+"bin": "fang_attack.4bpp.bin",
+"pal": "fang_attack.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10192
+},
+"ANIM_TAG_PURPLE_HAND_OUTLINE": {
+"bin": "purple_hand_outline.4bpp.bin",
+"pal": "purple_hand_outline.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10193
+},
+"ANIM_TAG_MOON": {
+"bin": "moon.4bpp.bin",
+"pal": "moon.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10194
+},
+"ANIM_TAG_GREEN_SPARKLE": {
+"bin": "green_sparkle.4bpp.bin",
+"pal": "green_sparkle.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10195
+},
+"ANIM_TAG_SPIRAL": {
+"bin": "spiral.4bpp.bin",
+"pal": "spiral.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10196
+},
+"ANIM_TAG_SNORE_Z": {
+"bin": "snore_z.4bpp.bin",
+"pal": "snore_z.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10197
+},
+"ANIM_TAG_EXPLOSION": {
+"bin": "explosion.4bpp.bin",
+"pal": "explosion.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10198
+},
+"ANIM_TAG_NAIL": {
+"bin": "nail.4bpp.bin",
+"pal": "nail.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10199
+},
+"ANIM_TAG_GHOSTLY_SPIRIT": {
+"bin": "ghostly_spirit.4bpp.bin",
+"pal": "ghostly_spirit.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10200
+},
+"ANIM_TAG_WARM_ROCK": {
+"bin": "warm_rock.4bpp.bin",
+"pal": "warm_rock.gbapal",
+"size": 2688,
+"realBytes": 2688,
+"tagValue": 10201
+},
+"ANIM_TAG_BREAKING_EGG": {
+"bin": "breaking_egg.4bpp.bin",
+"pal": "breaking_egg.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10202
+},
+"ANIM_TAG_THIN_RING": {
+"bin": "thin_ring.4bpp.bin",
+"pal": "thin_ring.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10203
+},
+"ANIM_TAG_PUNCH_IMPACT": {
+"bin": "punch_impact.4bpp.bin",
+"pal": "punch_impact.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10204
+},
+"ANIM_TAG_BELL": {
+"bin": "bell.4bpp.bin",
+"pal": "bell.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10205
+},
+"ANIM_TAG_MUSIC_NOTES_2": {
+"bin": "music_notes_2.4bpp.bin",
+"pal": "music_notes_2.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10206
+},
+"ANIM_TAG_SPEED_DUST": {
+"bin": "speed_dust.4bpp.bin",
+"pal": "speed_dust.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10207
+},
+"ANIM_TAG_TORN_METAL": {
+"bin": "torn_metal.4bpp.bin",
+"pal": "torn_metal.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10208
+},
+"ANIM_TAG_THOUGHT_BUBBLE": {
+"bin": "thought_bubble.4bpp.bin",
+"pal": "thought_bubble.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10209
+},
+"ANIM_TAG_MAGENTA_HEART": {
+"bin": "magenta_heart.4bpp.bin",
+"pal": "magenta_heart.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10210
+},
+"ANIM_TAG_ELECTRIC_ORBS": {
+"bin": "electric_orbs.4bpp.bin",
+"pal": "electric_orbs.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10211
+},
+"ANIM_TAG_CIRCLE_OF_LIGHT": {
+"bin": "circle_of_light.4bpp.bin",
+"pal": "circle_of_light.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10212
+},
+"ANIM_TAG_ELECTRICITY": {
+"bin": "electricity.4bpp.bin",
+"pal": "electricity.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10213
+},
+"ANIM_TAG_FINGER_2": {
+"bin": "finger_2.4bpp.bin",
+"pal": "finger_2.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10214
+},
+"ANIM_TAG_MOVEMENT_WAVES": {
+"bin": "movement_waves.4bpp.bin",
+"pal": "movement_waves.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10215
+},
+"ANIM_TAG_RED_HEART": {
+"bin": "magenta_heart.4bpp.bin",
+"pal": "magenta_heart.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10216
+},
+"ANIM_TAG_RED_ORB": {
+"bin": "red_orb.4bpp.bin",
+"pal": "red_orb.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10217
+},
+"ANIM_TAG_EYE_SPARKLE": {
+"bin": "eye_sparkle.4bpp.bin",
+"pal": "eye_sparkle.gbapal",
+"size": 384,
+"realBytes": 512,
+"tagValue": 10218
+},
+"ANIM_TAG_PINK_HEART": {
+"bin": "magenta_heart.4bpp.bin",
+"pal": "magenta_heart.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10219
+},
+"ANIM_TAG_ANGEL": {
+"bin": "angel.4bpp.bin",
+"pal": "angel.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10220
+},
+"ANIM_TAG_DEVIL": {
+"bin": "devil.4bpp.bin",
+"pal": "devil.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10221
+},
+"ANIM_TAG_SWIPE": {
+"bin": "swipe.4bpp.bin",
+"pal": "swipe.gbapal",
+"size": 2560,
+"realBytes": 2560,
+"tagValue": 10222
+},
+"ANIM_TAG_ROOTS": {
+"bin": "roots.4bpp.bin",
+"pal": "roots.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10223
+},
+"ANIM_TAG_ITEM_BAG": {
+"bin": "item_bag.4bpp.bin",
+"pal": "item_bag.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10224
+},
+"ANIM_TAG_JAGGED_MUSIC_NOTE": {
+"bin": "jagged_music_note.4bpp.bin",
+"pal": "jagged_music_note.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10225
+},
+"ANIM_TAG_POKEBALL": {
+"bin": "pokeball.4bpp.bin",
+"pal": "pokeball.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10226
+},
+"ANIM_TAG_SPOTLIGHT": {
+"bin": "spotlight.4bpp.bin",
+"pal": "spotlight.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10227
+},
+"ANIM_TAG_LETTER_Z": {
+"bin": "letter_z.4bpp.bin",
+"pal": "letter_z.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10228
+},
+"ANIM_TAG_RAPID_SPIN": {
+"bin": "rapid_spin.4bpp.bin",
+"pal": "rapid_spin.gbapal",
+"size": 768,
+"realBytes": 768,
+"tagValue": 10229
+},
+"ANIM_TAG_TRI_ATTACK_TRIANGLE": {
+"bin": "tri_attack_triangle.4bpp.bin",
+"pal": "tri_attack_triangle.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10230
+},
+"ANIM_TAG_WISP_ORB": {
+"bin": "wisp_orb.4bpp.bin",
+"pal": "wisp_orb.gbapal",
+"size": 896,
+"realBytes": 896,
+"tagValue": 10231
+},
+"ANIM_TAG_WISP_FIRE": {
+"bin": "wisp_fire.4bpp.bin",
+"pal": "wisp_fire.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10232
+},
+"ANIM_TAG_GOLD_STARS": {
+"bin": "gold_stars.4bpp.bin",
+"pal": "gold_stars.gbapal",
+"size": 192,
+"realBytes": 192,
+"tagValue": 10233
+},
+"ANIM_TAG_ECLIPSING_ORB": {
+"bin": "eclipsing_orb.4bpp.bin",
+"pal": "eclipsing_orb.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10234
+},
+"ANIM_TAG_GRAY_ORB": {
+"bin": "gray_orb.4bpp.bin",
+"pal": "gray_orb.gbapal",
+"size": 96,
+"realBytes": 96,
+"tagValue": 10235
+},
+"ANIM_TAG_BLUE_ORB": {
+"bin": "gray_orb.4bpp.bin",
+"pal": "gray_orb.gbapal",
+"size": 96,
+"realBytes": 96,
+"tagValue": 10236
+},
+"ANIM_TAG_RED_ORB_2": {
+"bin": "gray_orb.4bpp.bin",
+"pal": "gray_orb.gbapal",
+"size": 96,
+"realBytes": 96,
+"tagValue": 10237
+},
+"ANIM_TAG_PINK_PETAL": {
+"bin": "pink_petal.4bpp.bin",
+"pal": "pink_petal.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10238
+},
+"ANIM_TAG_PAIN_SPLIT": {
+"bin": "pain_split.4bpp.bin",
+"pal": "pain_split.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10239
+},
+"ANIM_TAG_CONFETTI": {
+"bin": "confetti.4bpp.bin",
+"pal": "confetti.gbapal",
+"size": 384,
+"realBytes": 384,
+"tagValue": 10240
+},
+"ANIM_TAG_GREEN_STAR": {
+"bin": "green_star.4bpp.bin",
+"pal": "green_star.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10241
+},
+"ANIM_TAG_PINK_CLOUD": {
+"bin": "pink_cloud.4bpp.bin",
+"pal": "pink_cloud.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10242
+},
+"ANIM_TAG_SWEAT_DROP": {
+"bin": "sweat_drop.4bpp.bin",
+"pal": "sweat_drop.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10243
+},
+"ANIM_TAG_GUARD_RING": {
+"bin": "guard_ring.4bpp.bin",
+"pal": "guard_ring.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10244
+},
+"ANIM_TAG_PURPLE_SCRATCH": {
+"bin": "purple_scratch.4bpp.bin",
+"pal": "purple_scratch.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10245
+},
+"ANIM_TAG_PURPLE_SWIPE": {
+"bin": "purple_swipe.4bpp.bin",
+"pal": "purple_swipe.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10246
+},
+"ANIM_TAG_TAG_HAND": {
+"bin": "tag_hand.4bpp.bin",
+"pal": "tag_hand.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10247
+},
+"ANIM_TAG_SMALL_RED_EYE": {
+"bin": "small_red_eye.4bpp.bin",
+"pal": "small_red_eye.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10248
+},
+"ANIM_TAG_HOLLOW_ORB": {
+"bin": "hollow_orb.4bpp.bin",
+"pal": "hollow_orb.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10249
+},
+"ANIM_TAG_X_SIGN": {
+"bin": "x_sign.4bpp.bin",
+"pal": "x_sign.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10250
+},
+"ANIM_TAG_BLUEGREEN_ORB": {
+"bin": "bluegreen_orb.4bpp.bin",
+"pal": "bluegreen_orb.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10251
+},
+"ANIM_TAG_PAW_PRINT": {
+"bin": "paw_print.4bpp.bin",
+"pal": "paw_print.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10252
+},
+"ANIM_TAG_PURPLE_FLAME": {
+"bin": "purple_flame.4bpp.bin",
+"pal": "purple_flame.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10253
+},
+"ANIM_TAG_RED_BALL": {
+"bin": "red_ball.4bpp.bin",
+"pal": "red_ball.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10254
+},
+"ANIM_TAG_SMELLINGSALT_EFFECT": {
+"bin": "smellingsalt_effect.4bpp.bin",
+"pal": "smellingsalt_effect.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10255
+},
+"ANIM_TAG_METEOR": {
+"bin": "meteor.4bpp.bin",
+"pal": "meteor.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10256
+},
+"ANIM_TAG_FLAT_ROCK": {
+"bin": "flat_rock.4bpp.bin",
+"pal": "flat_rock.gbapal",
+"size": 640,
+"realBytes": 640,
+"tagValue": 10257
+},
+"ANIM_TAG_MAGNIFYING_GLASS": {
+"bin": "magnifying_glass.4bpp.bin",
+"pal": "magnifying_glass.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10258
+},
+"ANIM_TAG_BROWN_ORB": {
+"bin": "water_orb.4bpp.bin",
+"pal": "water_orb.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10259
+},
+"ANIM_TAG_METAL_SOUND_WAVES": {
+"bin": "metal_sound_waves.4bpp.bin",
+"pal": "metal_sound_waves.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10260
+},
+"ANIM_TAG_FLYING_DIRT": {
+"bin": "flying_dirt.4bpp.bin",
+"pal": "flying_dirt.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10261
+},
+"ANIM_TAG_ICICLE_SPEAR": {
+"bin": "icicle_spear.4bpp.bin",
+"pal": "icicle_spear.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10262
+},
+"ANIM_TAG_HAIL": {
+"bin": "hail.4bpp.bin",
+"pal": "hail.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10263
+},
+"ANIM_TAG_GLOWY_RED_ORB": {
+"bin": "glowy_red_orb.4bpp.bin",
+"pal": "glowy_red_orb.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10264
+},
+"ANIM_TAG_GLOWY_GREEN_ORB": {
+"bin": "glowy_red_orb.4bpp.bin",
+"pal": "glowy_red_orb.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10265
+},
+"ANIM_TAG_GREEN_SPIKE": {
+"bin": "green_spike.4bpp.bin",
+"pal": "green_spike.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10266
+},
+"ANIM_TAG_WHITE_CIRCLE_OF_LIGHT": {
+"bin": "circle_of_light.4bpp.bin",
+"pal": "circle_of_light.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10267
+},
+"ANIM_TAG_GLOWY_BLUE_ORB": {
+"bin": "glowy_red_orb.4bpp.bin",
+"pal": "glowy_red_orb.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10268
+},
+"ANIM_TAG_POKEBLOCK": {
+"bin": "pokeblock.4bpp.bin",
+"pal": "pokeblock.gbapal",
+"size": 128,
+"realBytes": 128,
+"tagValue": 10269
+},
+"ANIM_TAG_WHITE_FEATHER": {
+"bin": "white_feather.4bpp.bin",
+"pal": "white_feather.gbapal",
+"size": 1024,
+"realBytes": 1024,
+"tagValue": 10270
+},
+"ANIM_TAG_SPARKLE_6": {
+"bin": "sparkle_6.4bpp.bin",
+"pal": "sparkle_6.gbapal",
+"size": 128,
+"realBytes": 256,
+"tagValue": 10271
+},
+"ANIM_TAG_SPLASH": {
+"bin": "splash.4bpp.bin",
+"pal": "splash.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10272
+},
+"ANIM_TAG_SWEAT_BEAD": {
+"bin": "sweat_bead.4bpp.bin",
+"pal": "sweat_bead.gbapal",
+"size": 32,
+"realBytes": 32,
+"tagValue": 10273
+},
+"ANIM_TAG_GEM_1": {
+"bin": "gem_1.4bpp.bin",
+"pal": "gem_1.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10274
+},
+"ANIM_TAG_GEM_2": {
+"bin": "gem_2.4bpp.bin",
+"pal": "gem_2.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10275
+},
+"ANIM_TAG_GEM_3": {
+"bin": "gem_3.4bpp.bin",
+"pal": "gem_3.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10276
+},
+"ANIM_TAG_SLAM_HIT_2": {
+"bin": "slam_hit_2.4bpp.bin",
+"pal": "slam_hit_2.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10277
+},
+"ANIM_TAG_RECYCLE": {
+"bin": "recycle.4bpp.bin",
+"pal": "recycle.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10278
+},
+"ANIM_TAG_RED_PARTICLES": {
+"bin": "red_particles.4bpp.bin",
+"pal": "red_particles.gbapal",
+"size": 160,
+"realBytes": 160,
+"tagValue": 10279
+},
+"ANIM_TAG_PROTECT": {
+"bin": "protect.4bpp.bin",
+"pal": "protect.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10280
+},
+"ANIM_TAG_DIRT_MOUND": {
+"bin": "dirt_mound.4bpp.bin",
+"pal": "dirt_mound.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10281
+},
+"ANIM_TAG_SHOCK_3": {
+"bin": "shock_3.4bpp.bin",
+"pal": "shock_3.gbapal",
+"size": 1536,
+"realBytes": 1536,
+"tagValue": 10282
+},
+"ANIM_TAG_WEATHER_BALL": {
+"bin": "weather_ball.4bpp.bin",
+"pal": "weather_ball.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10283
+},
+"ANIM_TAG_BIRD": {
+"bin": "bird.4bpp.bin",
+"pal": "bird.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10284
+},
+"ANIM_TAG_CROSS_IMPACT": {
+"bin": "cross_impact.4bpp.bin",
+"pal": "cross_impact.gbapal",
+"size": 512,
+"realBytes": 512,
+"tagValue": 10285
+},
+"ANIM_TAG_SLASH_2": {
+"bin": "slash.4bpp.bin",
+"pal": "slash.gbapal",
+"size": 2048,
+"realBytes": 2048,
+"tagValue": 10286
+},
+"ANIM_TAG_WHIP_HIT": {
+"bin": "slam_hit.4bpp.bin",
+"pal": "slam_hit.gbapal",
+"size": 4096,
+"realBytes": 4096,
+"tagValue": 10287
+},
+"ANIM_TAG_BLUE_RING_2": {
+"bin": "gold_ring.4bpp.bin",
+"pal": "gold_ring.gbapal",
+"size": 256,
+"realBytes": 256,
+"tagValue": 10288
+},
+"ANIM_TAG_SPARK": {
+"bin": "spark.4bpp.bin",
+"pal": "spark.gbapal",
+"size": 768,
+"realBytes": 1152,
+"tagValue": 10001
+},
+"ANIM_TAG_ICE_CUBE": {
+"bin": "ice_cube.4bpp.bin",
+"pal": "ice_cube.gbapal",
+"size": 4608,
+"realBytes": 4608,
+"tagValue": 10010
+},
+"ANIM_TAG_MUD_SAND": {
+"bin": "mud_sand.4bpp.bin",
+"pal": "mud_sand.gbapal",
+"size": 160,
+"realBytes": 160,
+"tagValue": 10074
+},
+"ANIM_TAG_ICE_CRYSTALS": {
+"bin": "ice_crystals.4bpp.bin",
+"pal": "ice_crystals.gbapal",
+"size": 448,
+"realBytes": 448,
+"tagValue": 10141
+},
+"ANIM_TAG_FLOWER": {
+"bin": "flower.4bpp.bin",
+"pal": "flower.gbapal",
+"size": 160,
+"realBytes": 160,
+"tagValue": 10159
+}
+}
