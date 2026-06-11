@@ -2517,7 +2517,60 @@ function _MoveOdorSleuthClone(sprite: { data: number[]; x2: number; invisible?: 
       break;
   }
 }
+/** 1:1 `AnimTask_TeeterDanceMovement` (effects_3.c, 1 hit — Danse-Folle) :
+ *  le mon titube — x absolu en sinus lent (>>3) + wobble x2 rapide (>>5). */
+function AnimTask_TeeterDanceMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const atk = itf.getAttacker?.() ?? 0;
+  const sid = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
+  const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[3] = sid;
+  task.data[4] = (atk & 1) === 0 ? 1 : -1;
+  task.data[6] = sp.y;
+  task.data[5] = sp.x;
+  task.data[9] = 0;
+  task.data[11] = 0;
+  task.data[10] = 1;
+  task.data[12] = 0;
+  task.data[0] = 0;
+  task.func = _TeeterDance_Step;
+}
+function _TeeterDance_Step(task: { taskId: number; data: number[] }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; x2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[3]);
+  const itf = _e3ItfB() as { DestroyAnimVisualTask?: (id: number) => void };
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[0]) {
+    case 0:
+      task.data[11] = (task.data[11] + 8) & 0xFF;
+      sp.x2 = _osSinTable(task.data[11]) >> 5;
+      task.data[9] = (task.data[9] + 2) & 0xFF;
+      sp.x = (_osSinTable(task.data[9]) >> 3) * task.data[4] + task.data[5];
+      if (task.data[9] === 0) {
+        sp.x = task.data[5];
+        task.data[0]++;
+      }
+      break;
+    case 1:
+      task.data[11] = (task.data[11] + 8) & 0xFF;
+      sp.x2 = _osSinTable(task.data[11]) >> 5;
+      if (task.data[11] === 0) {
+        sp.x2 = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+// gSineTable importee en tete de fichier (trig) — acces brut 1:1
+function _osSinTable(i: number): number { return gSineTable[i & 0xFF] ?? 0; }
 _e3RegTasks({
+  AnimTask_TeeterDanceMovement: AnimTask_TeeterDanceMovement as never,
   AnimTask_OdorSleuthMovement: AnimTask_OdorSleuthMovement as never,
   AnimTask_DefenseCurlDeformMon: AnimTask_DefenseCurlDeformMon as never,
   AnimTask_SetPsychicBackground: AnimTask_SetPsychicBackground as never,
