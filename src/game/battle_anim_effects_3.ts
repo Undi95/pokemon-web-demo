@@ -2295,3 +2295,57 @@ function AnimTask_IsTargetPlayerSide(task: { taskId: number }): void {
 }
 import { registerAnimTasks as _e3RegTasks } from '../engine/battle/battle-anim-registry';
 _e3RegTasks({ AnimTask_IsTargetPlayerSide: AnimTask_IsTargetPlayerSide as never });
+
+// ─── VAGUE F4 : AnimTask_PainSplitMovement (effects_3.c, 6 hits) ────────────
+// Le mon se déforme (rot-scale écrasé) + tremble x2 ±2 pendant 13 frames.
+import {
+  PrepareBattlerSpriteForRotScale as _psPrep, SetSpriteRotScale as _psSet,
+  ResetSpriteRotScale as _psReset, SetBattlerSpriteYOffsetFromYScale as _psYOff,
+} from './battle_anim_mons';
+function AnimTask_PainSplitMovement(task: { taskId: number; data: number[] }): void {
+  const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const a = itf.getArgs?.() ?? [];
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  if (task.data[0] === 0) {
+    const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+    task.data[11] = b;
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+    const spriteId = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+    if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+    task.data[10] = spriteId;
+    _psPrep(spriteId, 0);
+    const sp = rt?.gSprites?.get(spriteId);
+    switch (a[1]) {
+      case 0:
+        _psSet(spriteId, 0xE0, 0x140, 0);
+        _psYOff(spriteId);
+        break;
+      case 1:
+        _psSet(spriteId, 0xD0, 0x130, 0xF00);
+        _psYOff(spriteId);
+        if ((b & 1) === 0 && sp) sp.y2 += 16;
+        break;
+      case 2:
+        _psSet(spriteId, 0xD0, 0x130, 0xF100);
+        _psYOff(spriteId);
+        if ((b & 1) === 0 && sp) sp.y2 += 16;
+        break;
+    }
+    if (sp) sp.x2 = 2;
+    task.data[0]++;
+  } else {
+    const sp = rt?.gSprites?.get(task.data[10]);
+    if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+    if (++task.data[2] === 3) {
+      task.data[2] = 0;
+      sp.x2 = -sp.x2;
+    }
+    if (++task.data[1] === 13) {
+      _psReset(task.data[10]);
+      sp.x2 = 0;
+      sp.y2 = 0;
+      itf.DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+_e3RegTasks({ AnimTask_PainSplitMovement: AnimTask_PainSplitMovement as never });

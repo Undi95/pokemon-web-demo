@@ -572,4 +572,40 @@ function AnimTask_InvertScreenColor(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _nRegT } from '../engine/battle/battle-anim-registry';
-_nRegT({ AnimTask_InvertScreenColor: AnimTask_InvertScreenColor as never });
+/** 1:1 `AnimTask_ShakeBattlePlatforms` (normal.c:957, 9 hits) — secoue BG3
+ *  (le terrain entier) en X/Y alterné. args (xOff, yOff, shakes, delay). */
+function AnimTask_ShakeBattlePlatforms(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const a = _nItf3().getArgs?.() ?? [];
+  const g = globalThis as Record<string, unknown>;
+  task.data[0] = a[0]; // xOffset
+  task.data[1] = a[1]; // yOffset
+  task.data[2] = a[2]; // numShakes
+  task.data[3] = a[3]; // timer
+  task.data[4] = a[3]; // shakeDelay
+  g.gBattle_BG3_X = a[0] & 0xFFFF;
+  g.gBattle_BG3_Y = a[1] & 0xFFFF;
+  task.func = _ShakePlatforms_Step;
+  _ShakePlatforms_Step(task);
+}
+function _ShakePlatforms_Step(task: { taskId: number; data: number[] }): void {
+  const g = globalThis as Record<string, unknown>;
+  const s16 = (v: number): number => (v << 16) >> 16;
+  if (task.data[3] === 0) {
+    if (s16((g.gBattle_BG3_X as number) ?? 0) === task.data[0]) g.gBattle_BG3_X = (-task.data[0]) & 0xFFFF;
+    else g.gBattle_BG3_X = task.data[0] & 0xFFFF;
+    if (s16((g.gBattle_BG3_Y as number) ?? 0) === -task.data[1]) g.gBattle_BG3_Y = 0;
+    else g.gBattle_BG3_Y = (-task.data[1]) & 0xFFFF;
+    task.data[3] = task.data[4];
+    if (--task.data[2] === 0) {
+      g.gBattle_BG3_X = 0;
+      g.gBattle_BG3_Y = 0;
+      _nItf3().DestroyAnimVisualTask?.(task.taskId);
+    }
+  } else {
+    task.data[3]--;
+  }
+}
+_nRegT({
+  AnimTask_InvertScreenColor: AnimTask_InvertScreenColor as never,
+  AnimTask_ShakeBattlePlatforms: AnimTask_ShakeBattlePlatforms as never,
+});
