@@ -270,7 +270,48 @@ function AnimTask_IsTargetSameSide(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _ufRegTasks } from '../engine/battle/battle-anim-registry';
+/** 1:1 `AnimTask_GetTargetSide` : args[7] = side de la cible. */
+function AnimTask_GetTargetSide(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  if (args) args[7] = (itf.getTarget?.() ?? 1) & 1;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_GetTargetIsAttackerPartner` : single → toujours 0. */
+function AnimTask_GetTargetIsAttackerPartner(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  if (args) args[7] = 0;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_GetBattleEnvironment` : args[0] = gBattleEnvironment. */
+function AnimTask_GetBattleEnvironment(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  const env = ((globalThis as Record<string, unknown>).__battleState as { gBattleEnvironment?: number } | undefined)?.gBattleEnvironment
+    ?? ((globalThis as Record<string, unknown>).__forceBattleEnvironment as number | undefined) ?? 0;
+  if (args) args[0] = env;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_GetWeather` (effects_3.c:5497 — placement net ici) :
+ *  args[7] = ANIM_WEATHER_* depuis gWeatherMoveAnim. */
+function AnimTask_GetWeather(task: { taskId: number }): void {
+  const itf = _ufItf();
+  const args = itf.getArgs?.();
+  const w = ((globalThis as Record<string, unknown>).__gWeatherMoveAnim as number) ?? 0;
+  let r = 0; // NONE
+  if (w & 0x60) r = 1;        // SUN (B_WEATHER_SUN)
+  else if (w & 0x6) r = 2;    // RAIN
+  else if (w & 0x18) r = 3;   // SANDSTORM? (net mapping)
+  else if (w & 0x80) r = 4;   // HAIL
+  if (args) args[7] = r;
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
 _ufRegTasks({
+  AnimTask_GetTargetSide: AnimTask_GetTargetSide as never,
+  AnimTask_GetTargetIsAttackerPartner: AnimTask_GetTargetIsAttackerPartner as never,
+  AnimTask_GetBattleEnvironment: AnimTask_GetBattleEnvironment as never,
+  AnimTask_GetWeather: AnimTask_GetWeather as never,
   AnimTask_GetAttackerSide: AnimTask_GetAttackerSide as never,
   AnimTask_IsContest: AnimTask_IsContest as never,
   AnimTask_IsTargetSameSide: AnimTask_IsTargetSameSide as never,
