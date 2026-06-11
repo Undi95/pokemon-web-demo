@@ -872,3 +872,45 @@ registerAnimCallbacks({
   AnimItemSteal: AnimItemSteal as never,
   AnimCirclingMusicNote: AnimCirclingMusicNote as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// FRENZY PLANT (2026-06-11, append-only) — AnimFrenzyPlantRoot (:2892),
+// réutilise _AnimRootFlickerOut (:2918) porté plus haut (désormais ses DEUX
+// appelants décomp — AnimIngrainRoot et AnimFrenzyPlantRoot — sont portés).
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 EWRAM `sFrenzyPlantRootData` (battle_anim_effects_1.c:19-25) —
+// commentaire décomp : « Debug? Written to but never read. »
+const _sFrenzyPlantRootData = { startX: 0, startY: 0, targetX: 0, targetY: 0 };
+
+/** 1:1 `AnimFrenzyPlantRoot` (battle_anim_effects_1.c:2892) : racine posée sur
+ *  le CHEMIN attaquant→cible (interpolation interpolatePercent/100, division C
+ *  tronquée), offsets x2/y2, subpriority+30, anim de table, puis flicker-out.
+ *  CMD_ARGS(interpolatePercent, offsetX, offsetY, subpriorityM30, animation,
+ *  duration). */
+function AnimFrenzyPlantRoot(sprite: _ESprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0, 30];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  const attackerX = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  const attackerY = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  let targetX = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+  let targetY = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET);
+  targetX -= attackerX;
+  targetY -= attackerY;
+  sprite.x = attackerX + Math.trunc((targetX * (args[0] | 0)) / 100);
+  sprite.y = attackerY + Math.trunc((targetY * (args[0] | 0)) / 100);
+  sprite.x2 = args[1] | 0;
+  sprite.y2 = args[2] | 0;
+  sprite.subpriority = (args[3] | 0) + 30;
+  _StartSpriteAnim(sprite, args[4] | 0);
+  sprite.data[2] = args[5] | 0;
+  sprite.invisible = false;
+  sprite.callback = _AnimRootFlickerOut;
+  _sFrenzyPlantRootData.startX = sprite.x;
+  _sFrenzyPlantRootData.startY = sprite.y;
+  _sFrenzyPlantRootData.targetX = targetX;
+  _sFrenzyPlantRootData.targetY = targetY;
+}
+
+registerAnimCallbacks({ AnimFrenzyPlantRoot: AnimFrenzyPlantRoot as never });

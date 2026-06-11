@@ -1981,3 +1981,304 @@ registerAnimCallbacks({
   AnimRedX: AnimRedX as never,
   AnimTearDrop: AnimTearDrop as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes & étoiles » (goal 2026-06-11) — AnimSwallowBlueOrb (:2217),
+// AnimGreenStar (+Step1/Step2/Callback, :2467-:2554), AnimReversalOrb (+_Step,
+// :3140/:3150) — transcrits 1:1 depuis battle_anim_effects_3.c.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `SpriteCallbackDummy` (sprite.c) — no-op IDENTITAIRE : AnimGreenStar_Step2
+ *  compare le pointeur de callback (`== SpriteCallbackDummy`). */
+function _SpriteCallbackDummy(_sprite: _VSprite): void {}
+
+/** 1:1 `AnimSwallowBlueOrb` (battle_anim_effects_3.c:2217) : l'orbe bleu
+ *  d'Avale-Tout monte (vitesse 0x900 fixed-point, −96/frame) puis retombe ;
+ *  destroy quand il repasse SOUS le Y_PIC_OFFSET de l'attaquant. */
+function AnimSwallowBlueOrb(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  switch (sprite.data[0]) {
+    case 0:
+      InitSpritePosToAnimAttacker(sprite as never, false);
+      sprite.invisible = false;
+      sprite.data[1] = 0x900;
+      sprite.data[2] = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+      sprite.data[0]++;
+      break;
+    case 1:
+      sprite.y2 -= sprite.data[1] >> 8;
+      sprite.data[1] = _toS16(sprite.data[1] - 96);
+      if (sprite.y + sprite.y2 > sprite.data[2]) _DestroyAnimSprite(sprite);
+      break;
+  }
+}
+
+/** 1:1 `AnimGreenStar` (battle_anim_effects_3.c:2467) : Croissance — 3 étoiles
+ *  vertes (anims 0/1/2 de gGreenStarAnimTable) montent depuis le bas de
+ *  l'attaquant (xOffset aléatoire −31..+31) ; les 2 spawnées
+ *  (CreateSprite(gGreenStarSpriteTemplate)) démarrent INVISIBLES et sont
+ *  révélées en différé par _Step1. args [durée, vitesse]. */
+function AnimGreenStar(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  let xOffset = _rand2() & 0x3F; // xOffset = Random2(); xOffset &= 0x3F;
+  if (xOffset > 31) xOffset = 32 - xOffset;
+
+  sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X) + xOffset;
+  sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y) + 32;
+  sprite.invisible = false;
+  sprite.data[1] = args[0] | 0;
+  sprite.data[2] = args[1] | 0;
+
+  // spriteId1/2 = CreateSprite(&gGreenStarSpriteTemplate, x, y, subpriority + 1);
+  const tpl = lookupAnimTemplate('gGreenStarSpriteTemplate');
+  const sub = (sprite.subpriority ?? 0) + 1;
+  const spriteId1 = tpl ? _CreateSpriteFromTemplate(tpl as never, sprite.x, sprite.y, sub) : -1;
+  const spriteId2 = tpl ? _CreateSpriteFromTemplate(tpl as never, sprite.x, sprite.y, sub) : -1;
+  const s1 = spriteId1 >= 0 ? _grt().gSprites?.get(spriteId1) : undefined;
+  const s2 = spriteId2 >= 0 ? _grt().gSprites?.get(spriteId2) : undefined;
+  if (s1) {
+    s1.data = s1.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+    _StartSpriteAnim(s1, 1);
+    s1.data[1] = args[0] | 0;
+    s1.data[2] = args[1] | 0;
+    s1.data[7] = -1;
+    s1.invisible = true;
+    s1.callback = _AnimGreenStar_Callback;
+  }
+  if (s2) {
+    s2.data = s2.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
+    _StartSpriteAnim(s2, 2);
+    s2.data[1] = args[0] | 0;
+    s2.data[2] = args[1] | 0;
+    s2.data[7] = -1;
+    s2.invisible = true;
+    s2.callback = _AnimGreenStar_Callback;
+  }
+
+  sprite.data[6] = spriteId1;
+  sprite.data[7] = spriteId2;
+  sprite.callback = _AnimGreenStar_Step1;
+}
+
+/** 1:1 `AnimGreenStar_Step1` (:2504) : montée fixed-point (delta s16 >> 8) ;
+ *  révèle l'étoile 2 à y2<−8 et la 3 à y2<−16 ; après data[1] frames →
+ *  invisible + _Step2 (attente des spawnées). */
+function _AnimGreenStar_Step1(sprite: _VSprite): void {
+  const delta = _toS16(sprite.data[3] + sprite.data[2]); // s16 delta = data[3] + data[2];
+  sprite.y2 -= delta >> 8;
+  sprite.data[3] = (sprite.data[3] + sprite.data[2]) & 0xFF;
+  if (sprite.data[4] === 0 && sprite.y2 < -8) {
+    const s1 = sprite.data[6] >= 0 ? _grt().gSprites?.get(sprite.data[6]) : undefined;
+    if (s1) s1.invisible = false; // gSprites[data[6]].invisible = FALSE
+    sprite.data[4]++;
+  }
+
+  if (sprite.data[4] === 1 && sprite.y2 < -16) {
+    const s2 = sprite.data[7] >= 0 ? _grt().gSprites?.get(sprite.data[7]) : undefined;
+    if (s2) s2.invisible = false; // gSprites[data[7]].invisible = FALSE
+    sprite.data[4]++;
+  }
+
+  if (--sprite.data[1] === -1) {
+    sprite.invisible = true;
+    sprite.callback = _AnimGreenStar_Step2;
+  }
+}
+
+/** 1:1 `AnimGreenStar_Step2` (:2529) : quand les 2 spawnées ont fini (callback
+ *  == SpriteCallbackDummy) → DestroySprite (raw ×2, elles ne comptent pas dans
+ *  gAnimVisualTaskCount) + DestroyAnimSprite. Garde anti soft-lock : sprite
+ *  absent de la map (création manquée) = considéré fini. */
+function _AnimGreenStar_Step2(sprite: _VSprite): void {
+  const s1 = sprite.data[6] >= 0 ? _grt().gSprites?.get(sprite.data[6]) : undefined;
+  const s2 = sprite.data[7] >= 0 ? _grt().gSprites?.get(sprite.data[7]) : undefined;
+  const done1 = !s1 || s1.callback === _SpriteCallbackDummy;
+  const done2 = !s2 || s2.callback === _SpriteCallbackDummy;
+  if (done1 && done2) {
+    if (s1) _grt().DestroySprite?.(sprite.data[6]);
+    if (s2) _grt().DestroySprite?.(sprite.data[7]);
+    _DestroyAnimSprite(sprite);
+  }
+}
+
+/** 1:1 `AnimGreenStar_Callback` (:2540) : même montée que _Step1 pour les
+ *  étoiles spawnées (gelées tant qu'invisibles) ; après data[1] frames →
+ *  invisible + SpriteCallbackDummy (signal de fin pour _Step2). */
+function _AnimGreenStar_Callback(sprite: _VSprite): void {
+  if (!sprite.invisible) {
+    const delta = _toS16(sprite.data[3] + sprite.data[2]); // s16 delta
+    sprite.y2 -= delta >> 8;
+    sprite.data[3] = (sprite.data[3] + sprite.data[2]) & 0xFF;
+    if (--sprite.data[1] === -1) {
+      sprite.invisible = true;
+      sprite.callback = _SpriteCallbackDummy;
+    }
+  }
+}
+
+/** 1:1 `AnimReversalOrb` (battle_anim_effects_3.c:3140) : l'orbe de Renversement
+ *  tournoie autour de l'attaquant, rayon X/Y qui grandit puis rétrécit.
+ *  args [durée (par phase), offset d'onde initial]. */
+function AnimReversalOrb(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.invisible = false;
+  sprite.data[0] = args[0] | 0;
+  sprite.data[1] = args[1] | 0;
+  sprite.callback = _AnimReversalOrb_Step;
+  _AnimReversalOrb_Step(sprite); // sprite->callback(sprite);
+}
+
+/** 1:1 `AnimReversalOrb_Step` (:3150) : orbite Sin/Cos (rayons data[2..3] >> 8),
+ *  sous-priorité ±1 selon la phase (orbe devant/derrière le mon) ; rayons
+ *  +0x400/+0x100 par frame pendant data[0] frames puis décroissent → destroy. */
+function _AnimReversalOrb_Step(sprite: _VSprite): void {
+  sprite.x2 = Sin(sprite.data[1] & 0xFF, sprite.data[2] >> 8);
+  sprite.y2 = Cos(sprite.data[1] & 0xFF, sprite.data[3] >> 8);
+  sprite.data[1] = (sprite.data[1] + 9) & 0xFF;
+  const atk = _vItf().getAttacker?.() ?? 0;
+
+  if ((sprite.data[1] & 0xFFFF) < 64 || sprite.data[1] > 195) // (u16)data[1] < 64 || data[1] > 195
+    sprite.subpriority = _GetBattlerSpriteSubpriority(atk) - 1;
+  else
+    sprite.subpriority = _GetBattlerSpriteSubpriority(atk) + 1;
+
+  if (!sprite.data[5]) {
+    sprite.data[2] = _toS16(sprite.data[2] + 0x400);
+    sprite.data[3] = _toS16(sprite.data[3] + 0x100);
+    sprite.data[4]++;
+    if (sprite.data[4] === sprite.data[0]) {
+      sprite.data[4] = 0;
+      sprite.data[5] = 1;
+    }
+  } else if (sprite.data[5] === 1) {
+    sprite.data[2] = _toS16(sprite.data[2] - 0x400);
+    sprite.data[3] = _toS16(sprite.data[3] - 0x100);
+    sprite.data[4]++;
+    if (sprite.data[4] === sprite.data[0]) _DestroyAnimSprite(sprite);
+  }
+}
+
+registerAnimCallbacks({
+  AnimSwallowBlueOrb: AnimSwallowBlueOrb as never,
+  AnimGreenStar: AnimGreenStar as never,
+  AnimReversalOrb: AnimReversalOrb as never,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SPOTLIGHT (2026-06-11, append-only) — AnimSpotlight (+_Step1/_Step2,
+// battle_anim_effects_3.c:1541/:1557/:1599) : même mécanique fenêtre OBJ que
+// AnimFlatterSpotlight plus haut (les valeurs WINOUT 0x1F3F / 0x3F3F des deux
+// fonctions C sont identiques → réutilise WINOUT_FLATTER_ON/OFF).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimSpotlight` (battle_anim_effects_3.c:1541) : cône de Spotlight en
+ *  OBJ_WINDOW posé sur la cible — ouvre (affine 0), balaye droite 21f / gauche
+ *  41f / droite 21f, ferme (affine 1), restore WINOUT/DISPCNT. */
+function AnimSpotlight(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_WINOUT, WINOUT_FLATTER_ON); // WINOUT_WIN01_BG_ALL|WIN01_OBJ|WIN01_CLR|WINOBJ_BG_ALL|WINOBJ_OBJ
+  rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) | DISPCNT_OBJWIN_ON); // SetGpuRegBits
+  _setBattleWinReg('gBattle_WIN0H', 0);
+  _setBattleWinReg('gBattle_WIN0V', 0);
+  rt.SetGpuReg?.(REG_OFFSET_WIN0H, 0);
+  rt.SetGpuReg?.(REG_OFFSET_WIN0V, 0);
+  InitSpritePosToAnimTarget(sprite as never, false);
+  (sprite as { objMode?: number }).objMode = 2; // sprite->oam.objMode = ST_OAM_OBJ_WINDOW
+  sprite.invisible = true; // 1:1 décomp (révélé par _Step1 case 0)
+  sprite.callback = AnimSpotlight_Step1;
+}
+
+/** 1:1 `AnimSpotlight_Step1` (:1557) : machine à états data[0] — 0 ouverture
+ *  (attend l'affine), 1/3 balayage droite (data[1] += 117, 8.8) 21 frames,
+ *  2 balayage gauche 41 frames, 4 fermeture (affine 1), 5 attente → _Step2. */
+function AnimSpotlight_Step1(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.invisible = false;
+      if (sprite.affineAnimEnded) sprite.data[0]++;
+      break;
+    case 1:
+    case 3:
+      sprite.data[1] += 117;
+      sprite.x2 = sprite.data[1] >> 8;
+      if (++sprite.data[2] === 21) {
+        sprite.data[2] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      sprite.data[1] -= 117;
+      sprite.x2 = sprite.data[1] >> 8;
+      if (++sprite.data[2] === 41) {
+        sprite.data[2] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 4:
+      _StartSpriteAffineAnim(sprite, 1); // ChangeSpriteAffineAnim(sprite, 1)
+      sprite.data[0]++;
+      break;
+    case 5:
+      if (sprite.affineAnimEnded) {
+        sprite.invisible = true;
+        sprite.callback = AnimSpotlight_Step2;
+      }
+      break;
+  }
+}
+
+/** 1:1 `AnimSpotlight_Step2` (:1599) : restore WINOUT (+ WINOBJ_CLR) et
+ *  DISPCNT ^= OBJWIN_ON, puis destroy. */
+function AnimSpotlight_Step2(sprite: _VSprite): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_WINOUT, WINOUT_FLATTER_OFF);
+  rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) ^ DISPCNT_OBJWIN_ON);
+  _DestroyAnimSprite(sprite);
+}
+
+registerAnimCallbacks({ AnimSpotlight: AnimSpotlight as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// AnimLetterZ (battle_anim_effects_3.c:1477) — le « Z » de Snore/repos
+// (gLetterZSpriteTemplate, ANIM_TAG_LETTER_Z, tables anims+affine du généré).
+// Append-only 2026-06-11.
+// ════════════════════════════════════════════════════════════════════════════
+// Import additionnel du bloc (hoisté ESM — légal en fin de fichier) :
+import { SetAnimSpriteInitialXOffset as _zSetAnimSpriteInitialXOffset } from './battle_anim_mons';
+
+/** 1:1 `AnimLetterZ` (battle_anim_effects_3.c:1477) : le Z part de l'attaquant
+ *  (offset X args[0]) et dérive (args[2]/2, args[3]/2 par frame — miroir X/Y
+ *  côté adverse) avec flottement Sin(data[0]*20, 5) ; destroy à la sortie
+ *  droite d'écran ((u16)(x+x2) > 240). data[0] = latch d'init ET compteur. */
+function AnimLetterZ(sprite: _VSprite): void {
+  if (sprite.data[0] === 0) {
+    const args = _vItf().getArgs?.() ?? [0, 0, 0, 0];
+    SetSpriteCoordsToAnimAttackerCoords(sprite as never);
+    _zSetAnimSpriteInitialXOffset(sprite as never, args[0] | 0);
+    // !IsContest() → vrai (doctrine repo : pas de concours web).
+    if (_side(_vItf().getAttacker?.() ?? 0) === 0 /* B_SIDE_PLAYER */) {
+      sprite.data[1] = args[2] | 0;
+      sprite.data[2] = args[3] | 0;
+    } else {
+      sprite.data[1] = -1 * (args[2] | 0);
+      sprite.data[2] = -1 * (args[3] | 0);
+    }
+    sprite.invisible = false;
+  }
+
+  sprite.data[0]++;
+  const var0 = (sprite.data[0] * 20) & 0xFF;
+  sprite.data[3] += sprite.data[1];
+  sprite.data[4] += sprite.data[2];
+  sprite.x2 = Math.trunc(sprite.data[3] / 2); // division C tronquée (s16)
+  sprite.y2 = Sin(var0 & 0xFF, 5) + Math.trunc(sprite.data[4] / 2);
+
+  if (((sprite.x + sprite.x2) & 0xFFFF) > DISPLAY_WIDTH) // cast (u16) 1:1
+    _DestroyAnimSprite(sprite);
+}
+
+registerAnimCallbacks({ AnimLetterZ: AnimLetterZ as never });

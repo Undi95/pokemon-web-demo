@@ -99,3 +99,42 @@ registerAnimTemplates([
 ]);
 
 registerAnimCallbacks({ AnimBite: AnimBite as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// CLAW SLASH (2026-06-11, append-only) — AnimClawSlash (battle_anim_dark.c:808) :
+// la griffure profonde de Metal Claw / Dragon Claw / Crush Claw
+// (gClawSlashSpriteTemplate, sAnims_ClawSlash = 5 frames × 4 ticks, anim 1 = hFlip).
+// ════════════════════════════════════════════════════════════════════════════
+import { SetCallbackToStoredInData6, StoreSpriteCallbackInData6 } from './battle_anim_mons';
+
+/** 1:1 `StartSpriteAnim` (sprite.c) — pattern repo (battle_anim_rock.ts). */
+function _StartSpriteAnim(sprite: unknown, n: number): void {
+  const spA = sprite as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && n >= 0) { spA.animNum = n; spA.animBeginning = true; spA.animEnded = false; }
+}
+
+/** 1:1 `RunStoredCallbackWhenAnimEnds` (battle_anim_mons.c:735).
+ *  Adaptation anti-leak (convention battle_anim_ice.ts:142) : pas de table
+ *  anims posée → ended immédiat. */
+function _RunStoredCallbackWhenAnimEnds(sprite: AnimSprite): void {
+  const spA = sprite as { animEnded?: boolean; anims?: unknown };
+  if (spA.animEnded || spA.anims === undefined) SetCallbackToStoredInData6(sprite as never);
+}
+
+/** Wrapper nommé `DestroyAnimSprite` — stockable en data6 (le C passe le ptr fonction). */
+function _DestroyAnimSpriteCb(sprite: unknown): void { _itf().DestroyAnimSprite?.(sprite); }
+
+/** 1:1 `AnimClawSlash` (battle_anim_dark.c:808) : griffure posée en offset de
+ *  la position de création (cible), joue l'anim args[2] une fois → destroy.
+ *  CMD_ARGS(x, y, animation). */
+function AnimClawSlash(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 0];
+  sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  sprite.invisible = false;
+  _StartSpriteAnim(sprite, args[2] | 0);
+  sprite.callback = _RunStoredCallbackWhenAnimEnds;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSpriteCb as never);
+}
+
+registerAnimCallbacks({ AnimClawSlash: AnimClawSlash as never });

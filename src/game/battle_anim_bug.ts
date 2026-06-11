@@ -11,7 +11,7 @@
  *   - AnimTranslateStinger (:366)        — dard linéaire à rotation initiale
  *   - AnimMissileArc (+_Step, :414)      — missile en arc + rotation lookahead
  *
- * Non porté ici : AnimTailGlowOrb (hors lot — RunStoredCallbackWhenAffineAnimEnds).
+ * AnimTailGlowOrb (:470) — porté (vague orbes 2026-06-11, en fin de fichier).
  *
  * Helpers C transcrits localement (absents de battle_anim_mons.ts, préfixés _) :
  *   _GetBattlerSpriteCoord2, _SetAverageBattlerPositions,
@@ -22,10 +22,10 @@ import {
   GetBattlerSpriteCoord,
   BATTLER_COORD_X, BATTLER_COORD_Y, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET,
   InitSpritePosToAnimAttacker,
-  StartAnimLinearTranslation, StoreSpriteCallbackInData6,
+  StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
   InitAnimLinearTranslation, AnimTranslateLinear,
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
-  TrySetSpriteRotScale,
+  TrySetSpriteRotScale, DestroySpriteAndMatrix,
 } from './battle_anim_mons';
 import { Sin } from './trig';
 import { ArcTan2 } from '../engine/system/decomp-bridge';
@@ -407,3 +407,37 @@ registerAnimCallbacks({
   AnimTranslateStinger: AnimTranslateStinger as never,
   AnimMissileArc: AnimMissileArc as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes » (goal 2026-06-11) — AnimTailGlowOrb (battle_anim_bug.c:470).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `RunStoredCallbackWhenAffineAnimEnds` (battle_anim_mons.c:729).
+ *  Adaptation repo : pas de table affine → ended immédiat (leçon « affine sans
+ *  table », pattern battle_anim_ice.ts:135). */
+function _RunStoredCallbackWhenAffineAnimEnds(sprite: _VSprite): void {
+  const spF = sprite as { affineAnimEnded?: boolean; affineAnimsTableName?: string | null };
+  if (spF.affineAnimEnded || !spF.affineAnimsTableName) SetCallbackToStoredInData6(sprite as never);
+}
+
+/** 1:1 `AnimTailGlowOrb` (battle_anim_bug.c:470) : l'orbe de Lumiqueue se pose
+ *  sur le battler choisi (arg 0 = relativeTo : 0 attaquant / 1 cible) à
+ *  Y_PIC_OFFSET+18 ; l'affine du template (sAffineAnims_TailGlowOrb — grossit
+ *  puis pulse) se joue → fin d'affine → DestroySpriteAndMatrix. */
+function AnimTailGlowOrb(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0];
+  const atk = _vItf().getAttacker?.() ?? 0;
+  const tgt = _vItf().getTarget?.() ?? 1;
+  if ((args[0] | 0) === 0 /* cmd->relativeTo == ANIM_ATTACKER */) {
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+    sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET) + 18;
+  } else {
+    sprite.x = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+    sprite.y = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) + 18;
+  }
+  sprite.invisible = false;
+  StoreSpriteCallbackInData6(sprite as never, DestroySpriteAndMatrix as never);
+  sprite.callback = _RunStoredCallbackWhenAffineAnimEnds;
+}
+
+registerAnimCallbacks({ AnimTailGlowOrb: AnimTailGlowOrb as never });

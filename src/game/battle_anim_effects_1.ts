@@ -1524,3 +1524,384 @@ registerAnimCallbacks({
   AnimSonicBoomProjectile: AnimSonicBoomProjectile as never,
   AnimFurySwipes: AnimFurySwipes as never,
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// VAGUE « Protect / Milk Drink / Bow » (2026-06-11, append-only) :
+// AnimProtect (+_Step, effects_1.c:3922/:3944), AnimMilkBottle (+_Step1/_Step2,
+// :3987/:4003/:4078), AnimBowMon (+_Step1.._Step4, :4400-:4503).
+// Plomberie du bloc préfixée _p1 (anti-collision vagues parallèles).
+// ═════════════════════════════════════════════════════════════════════════════
+// Imports additionnels du bloc (hoistés ESM — légal en fin de fichier) :
+import {
+  PrepareBattlerSpriteForRotScale as _p1PrepRotScale,
+  SetSpriteRotScale as _p1SetRotScale,
+  SetBattlerSpriteYOffsetFromRotation as _p1YOffFromRot,
+  ResetSpriteRotScale as _p1ResetRotScale,
+} from './battle_anim_mons';
+
+// constants/battle_anim.h : ANIM_SPRITES_START(10000) + 280
+const ANIM_TAG_PROTECT = 10280;
+
+/** Runtime lazy du bloc (GPU regs + gSprites + palettes) — pattern repo. */
+function _p1Rt(): {
+  SetGpuReg?: (off: number, v: number) => void;
+  gSprites?: Map<number, { x2: number; y2: number }>;
+  gba?: { oam?: Array<{ priority?: number }> };
+  gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void };
+} | undefined {
+  return (globalThis as Record<string, unknown>).__rt as never;
+}
+/** s16 (= cast/stockage s16 data[] décomp). */
+function _p1S16(v: number): number { return (v << 16) >> 16; }
+/** 1:1 `GetBattlerSide(b)` — 0 = B_SIDE_PLAYER. */
+function _p1Side(b: number): number { return b & 1; }
+/** io_reg.h `BLDALPHA_BLEND(target1, target2)` = target1 | target2 << 8. */
+function _p1BldAlphaBlend(target1: number, target2: number): number {
+  return ((target1 & 0xFF) | ((target2 & 0xFF) << 8)) & 0xFFFF;
+}
+/** Miroir `sprite->oam.priority = n` (OAM brute via oamIndex — pattern ice/fight). */
+function _p1SetOamPriority(sprite: unknown, priority: number): void {
+  const sp = sprite as { oamIndex?: number };
+  const oam = sp.oamIndex !== undefined ? _p1Rt()?.gba?.oam?.[sp.oamIndex] : undefined;
+  if (oam) oam.priority = priority & 3;
+}
+/** gBattlerSpriteIds[battler] (surface __battleControllerOpponent — pattern repo). */
+function _p1BattlerSpriteId(battler: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as {
+    getBattlerMonSpriteId?: (b: number) => number;
+  } | undefined;
+  const id = co?.getBattlerMonSpriteId?.(battler);
+  return (id === undefined || id === null || id < 0) ? 0xFF : id;
+}
+/** 1:1 `GetBattlerSpriteCoord2` (battle_anim_mons.c:294) : ≡ GetBattlerSpriteCoord
+ *  sauf la source species (gAnimBattlerSpecies vs party live) — Transform/Contest
+ *  non modélisés → délégation strictement identique (précédent battle_anim_bug). */
+function _p1GetBattlerSpriteCoord2(battler: number, coordType: number): number {
+  return GetBattlerSpriteCoord(battler, coordType);
+}
+/** 1:1 `GetBattlerSpriteBGPriority` (battle_anim_mons.c:2063) — IsContest()=false ;
+ *  GetAnimBgAttribute(2/1, BG_ANIM_PRIORITY) → 2/1 (valeurs vanilla posées par le
+ *  setup anim du runtime ; position = battler en simples — précédent effects_3). */
+function _p1GetBattlerSpriteBGPriority(battler: number): number {
+  const position = battler;
+  if (position === 0 || position === 3) return 2; // PLAYER_LEFT / OPPONENT_RIGHT
+  else return 1;
+}
+/** 1:1 `TranslateSpriteLinearById` (battle_anim_mons.c:651) : déplace le sprite
+ *  d'id data[3] de (data[1], data[2]) pendant data[0] frames → data6. */
+function _p1TranslateSpriteLinearById(sprite: _ESprite): void {
+  if (sprite.data[0] > 0) {
+    sprite.data[0]--;
+    const target = _p1Rt()?.gSprites?.get(sprite.data[3]);
+    if (target) {
+      target.x2 += sprite.data[1];
+      target.y2 += sprite.data[2];
+    }
+  } else {
+    SetCallbackToStoredInData6(sprite as never);
+  }
+}
+/** 1:1 `DestroyAnimSpriteAndDisableBlend` (battle_anim_mons.c:741). */
+function _p1DestroyAnimSpriteAndDisableBlend(sprite: _ESprite): void {
+  const rt = _p1Rt();
+  rt?.SetGpuReg?.(0x50 /* REG_OFFSET_BLDCNT */, 0);
+  rt?.SetGpuReg?.(0x52 /* REG_OFFSET_BLDALPHA */, 0);
+  _pItf().DestroyAnimSprite?.(sprite);
+}
+
+// ─── AnimProtect (effects_1.c:3922) — gProtectSpriteTemplate (ObjBlend 64x64) ─
+
+/** 1:1 `AnimProtect` (effects_1.c:3922) : le mur de Protect/Detect — position
+ *  attaquant via GetBattlerSpriteCoord2 (+args[0..1]), priorité BG (+1 côté
+ *  joueur), blend BLDCNT TGT2_ALL (EVA 0/EVB 16 au départ), data[0]=durée
+ *  (args[2]), data[2]=base palette OBJ du tag PROTECT (rotation de teinte). */
+function AnimProtect(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0, 0, 0];
+  const atk = _pItf().getAttacker?.() ?? 0;
+  // if (IsContest()) cmd->unk1 += 8; — IsContest()=false (doctrine repo).
+  sprite.x = _p1GetBattlerSpriteCoord2(atk, 0 /* BATTLER_COORD_X */) + (args[0] | 0);
+  sprite.y = _p1GetBattlerSpriteCoord2(atk, 1 /* BATTLER_COORD_Y */) + (args[1] | 0);
+  if (_p1Side(atk) === 0 /* B_SIDE_PLAYER */ /* || IsContest() */)
+    _p1SetOamPriority(sprite, _p1GetBattlerSpriteBGPriority(atk) + 1);
+  else
+    _p1SetOamPriority(sprite, _p1GetBattlerSpriteBGPriority(atk));
+
+  sprite.invisible = false;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(ANIM_TAG_PROTECT));
+  sprite.data[7] = 16;
+  const rt = _p1Rt();
+  rt?.SetGpuReg?.(0x50 /* BLDCNT */, 0x3F40 /* BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND */);
+  rt?.SetGpuReg?.(0x52 /* BLDALPHA */, _p1BldAlphaBlend(16 - sprite.data[7], sprite.data[7]));
+  sprite.callback = AnimProtect_Step;
+}
+
+/** 1:1 `AnimProtect_Step` (effects_1.c:3944) : dérive X fixed-point (-data[5]>>8,
+ *  +96/frame), rotation des couleurs 1..7 de la palette du tag toutes les 2
+ *  frames, fade-in EVA jusqu'à 10 (data[7]>6) pendant la durée, puis fade-out
+ *  (data[7]→16) → invisible + DestroyAnimSpriteAndDisableBlend. */
+function AnimProtect_Step(sprite: _ESprite): void {
+  sprite.data[5] = _p1S16(sprite.data[5] + 96);
+  sprite.x2 = -(sprite.data[5] >> 8);
+  if (++sprite.data[1] > 1) {
+    sprite.data[1] = 0;
+    const pb = _p1Rt()?.gPlttBufferFaded;
+    // Garde runtime : palette du tag non chargée (IndexOfSpritePaletteTag=0xFF
+    // → index hors PLTT) → skip la rotation de teinte, flux blend conservé.
+    // Décomp : impossible (loadspritegfx la charge toujours avant).
+    if (pb && sprite.data[2] + 8 <= 512) {
+      const savedPal = pb.get(sprite.data[2] + 1);
+      let i = 0;
+      while (i < 6) {
+        const id = sprite.data[2] + (++i);
+        pb.set(id, pb.get(id + 1));
+      }
+      pb.set(sprite.data[2] + 7, savedPal);
+    }
+  }
+
+  if (sprite.data[7] > 6 && sprite.data[0] > 0 && ++sprite.data[6] > 1) {
+    sprite.data[6] = 0;
+    sprite.data[7] -= 1;
+    _p1Rt()?.SetGpuReg?.(0x52, _p1BldAlphaBlend(16 - sprite.data[7], sprite.data[7]));
+  }
+
+  if (sprite.data[0] > 0) {
+    sprite.data[0] -= 1;
+  } else if (++sprite.data[6] > 1) {
+    sprite.data[6] = 0;
+    sprite.data[7]++;
+    _p1Rt()?.SetGpuReg?.(0x52, _p1BldAlphaBlend(16 - sprite.data[7], sprite.data[7]));
+    if (sprite.data[7] === 16) {
+      sprite.invisible = true;
+      sprite.callback = _p1DestroyAnimSpriteAndDisableBlend;
+    }
+  }
+}
+
+// ─── AnimMilkBottle (effects_1.c:3987) — gMilkBottleSpriteTemplate ───────────
+
+/** 1:1 `AnimMilkBottle` (effects_1.c:3987) : la bouteille de Milk Drink —
+ *  centrée cible, y-24 (0xFFE8 s16), blend EVA0/EVB16, fade-in (Step1 case 0)
+ *  → bascule affine 1 (case 1) → balancement (Step2) + descente + fade-out
+ *  (case 2) → invisible → reset blend + destroy. */
+function AnimMilkBottle(sprite: _ESprite): void {
+  const tgt = _pItf().getTarget?.() ?? 1;
+  sprite.x = GetBattlerSpriteCoord(tgt, 2 /* BATTLER_COORD_X_2 */);
+  sprite.y = _p1S16(GetBattlerSpriteCoord(tgt, 3 /* BATTLER_COORD_Y_PIC_OFFSET */) + 0xFFE8); // y - 24 (s16 1:1)
+  sprite.invisible = false;
+  sprite.data[0] = 0;
+  sprite.data[1] = 0;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  sprite.data[6] = 0;
+  sprite.data[7] = 16;
+  const rt = _p1Rt();
+  rt?.SetGpuReg?.(0x50 /* BLDCNT */, 0x3F40 /* BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND */);
+  rt?.SetGpuReg?.(0x52 /* BLDALPHA */, _p1BldAlphaBlend(sprite.data[6], sprite.data[7]));
+  sprite.callback = AnimMilkBottle_Step1;
+}
+
+/** 1:1 `AnimMilkBottle_Step1` (effects_1.c:4003). */
+function AnimMilkBottle_Step1(sprite: _ESprite): void {
+  switch (sprite.data[0]) {
+    case 0:
+      if (++sprite.data[2] > 0) {
+        sprite.data[2] = 0;
+        if (((++sprite.data[1]) & 1) !== 0) {
+          if (sprite.data[6] <= 15)
+            sprite.data[6]++;
+        } else if (sprite.data[7] > 0) {
+          sprite.data[7]--;
+        }
+
+        _p1Rt()?.SetGpuReg?.(0x52, _p1BldAlphaBlend(sprite.data[6], sprite.data[7]));
+        if (sprite.data[6] === 16 && sprite.data[7] === 0) {
+          sprite.data[1] = 0;
+          sprite.data[0]++;
+        }
+      }
+      break;
+    case 1:
+      if (++sprite.data[1] > 8) {
+        sprite.data[1] = 0;
+        _StartSpriteAffineAnim(sprite, 1); // gMilkBottleAffineAnimTable[1] (penche)
+        sprite.data[0]++;
+      }
+      break;
+    case 2:
+      AnimMilkBottle_Step2(sprite, 16, 4);
+      if (++sprite.data[1] > 2) {
+        sprite.data[1] = 0;
+        sprite.y++;
+      }
+
+      if (++sprite.data[2] <= 29)
+        break;
+
+      if (sprite.data[2] & 1) {
+        if (sprite.data[6] > 0)
+          sprite.data[6]--;
+      } else if (sprite.data[7] <= 15) {
+        sprite.data[7]++;
+      }
+
+      _p1Rt()?.SetGpuReg?.(0x52, _p1BldAlphaBlend(sprite.data[6], sprite.data[7]));
+      if (sprite.data[6] === 0 && sprite.data[7] === 16) {
+        sprite.data[1] = 0;
+        sprite.data[2] = 0;
+        sprite.data[0]++;
+      }
+      break;
+    case 3:
+      sprite.invisible = true;
+      sprite.data[0]++;
+      break;
+    case 4:
+      _p1Rt()?.SetGpuReg?.(0x50, 0);
+      _p1Rt()?.SetGpuReg?.(0x52, _p1BldAlphaBlend(0, 0));
+      _pItf().DestroyAnimSprite?.(sprite);
+      break;
+  }
+}
+
+/** 1:1 `AnimMilkBottle_Step2` (effects_1.c:4078) : balancement — data[4] ±2
+ *  par fenêtres de data[3] (0..11 / 18..41 / 48..59, cycle 60), x2 = data[4]/9,
+ *  y2 = |data[4]/14|. (unk1/unk2 inutilisés — signature C conservée.) */
+function AnimMilkBottle_Step2(sprite: _ESprite, _unk1: number, _unk2: number): void {
+  if (sprite.data[3] <= 11)
+    sprite.data[4] += 2;
+
+  if (((sprite.data[3] - 0x12) & 0xFFFF) <= 0x17) // (u16)(data[3] - 18) <= 23
+    sprite.data[4] -= 2;
+
+  if (sprite.data[3] > 0x2F)
+    sprite.data[4] += 2;
+
+  sprite.x2 = Math.trunc(sprite.data[4] / 9);
+  sprite.y2 = Math.trunc(sprite.data[4] / 14);
+  if (sprite.y2 < 0)
+    sprite.y2 *= -1;
+
+  sprite.data[3]++;
+  if (sprite.data[3] > 0x3B)
+    sprite.data[3] = 0;
+}
+
+// ─── AnimBowMon (effects_1.c:4400) — gBowMonSpriteTemplate (contrôleur) ──────
+
+/** 1:1 `AnimBowMon` (effects_1.c:4400) : sprite contrôleur INVISIBLE qui fait
+ *  « s'incliner » l'ATTAQUANT (salut de Slack Off…). args[0] : 0 = avance +
+ *  rotation (Step1), 1 = recule (Step2), 2 = attente 9f + rotation inverse
+ *  (Step3), autre = destroy direct (Step4). */
+function AnimBowMon(sprite: _ESprite): void {
+  const args = _pItf().getArgs?.() ?? [0];
+  sprite.invisible = true; // 1:1 décomp (contrôleur)
+  sprite.data[0] = 0;
+  switch (args[0] | 0) {
+    case 0:
+      sprite.callback = AnimBowMon_Step1;
+      break;
+    case 1:
+      sprite.callback = AnimBowMon_Step2;
+      break;
+    case 2:
+      sprite.callback = AnimBowMon_Step3;
+      break;
+    default:
+      sprite.callback = AnimBowMon_Step4;
+      break;
+  }
+}
+
+/** 1:1 `AnimBowMon_Step1` (effects_1.c:4423) : translate l'attaquant de ±2 px/f
+ *  pendant 6 frames (vers la cible) puis enchaîne la rotation (Step1_Callback). */
+function AnimBowMon_Step1(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.data[0] = 6;
+  sprite.data[1] = _p1Side(atk) ? 2 : -2;
+  sprite.data[2] = 0;
+  sprite.data[3] = _p1BattlerSpriteId(atk);
+  StoreSpriteCallbackInData6(sprite as never, AnimBowMon_Step1_Callback as never);
+  sprite.callback = _p1TranslateSpriteLinearById;
+}
+
+/** 1:1 `AnimBowMon_Step1_Callback` (effects_1.c:4433) : rotation ±0x300/frame
+ *  (4 frames) du sprite du mon via SetSpriteRotScale + y2 dérivé de la matrice. */
+function AnimBowMon_Step1_Callback(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if (sprite.data[0] === 0) {
+    sprite.data[3] = _p1BattlerSpriteId(atk);
+    _p1PrepRotScale(sprite.data[3], 0 /* ST_OAM_OBJ_NORMAL */);
+    sprite.data[6] = _p1Side(atk);
+    sprite.data[4] = sprite.data[6] ? 0x300 : -0x300; // (data[6] = side) ? ... (affectation imbriquée C dépliée)
+    sprite.data[5] = 0;
+  }
+
+  sprite.data[5] = _p1S16(sprite.data[5] + sprite.data[4]);
+  _p1SetRotScale(sprite.data[3], 0x100, 0x100, sprite.data[5] & 0xFFFF);
+  _p1YOffFromRot(sprite.data[3]);
+  if (++sprite.data[0] > 3) {
+    sprite.data[0] = 0;
+    sprite.callback = AnimBowMon_Step4;
+  }
+}
+
+/** 1:1 `AnimBowMon_Step2` (effects_1.c:4453) : recule l'attaquant de ±3 px/f
+ *  pendant 4 frames → destroy (Step4). */
+function AnimBowMon_Step2(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  sprite.data[0] = 4;
+  sprite.data[1] = _p1Side(atk) ? -3 : 3;
+  sprite.data[2] = 0;
+  sprite.data[3] = _p1BattlerSpriteId(atk);
+  StoreSpriteCallbackInData6(sprite as never, AnimBowMon_Step4 as never);
+  sprite.callback = _p1TranslateSpriteLinearById;
+}
+
+/** 1:1 `AnimBowMon_Step3` (effects_1.c:4463) : attend 9 frames puis lance la
+ *  rotation inverse (Step3_Callback). */
+function AnimBowMon_Step3(sprite: _ESprite): void {
+  if (++sprite.data[0] > 8) {
+    sprite.data[0] = 0;
+    sprite.callback = AnimBowMon_Step3_Callback;
+  }
+}
+
+/** 1:1 `AnimBowMon_Step3_Callback` (effects_1.c:4472) : redresse le mon —
+ *  rotation depuis ±0xC00/-0xF400 par pas de ±0x400 (3 frames) puis
+ *  ResetSpriteRotScale → Step4. */
+function AnimBowMon_Step3_Callback(sprite: _ESprite): void {
+  const atk = _pItf().getAttacker?.() ?? 0;
+  if (sprite.data[0] === 0) {
+    sprite.data[3] = _p1BattlerSpriteId(atk);
+    sprite.data[6] = _p1Side(atk);
+    if (_p1Side(atk) !== 0 /* != B_SIDE_PLAYER */) {
+      sprite.data[4] = _p1S16(0xFC00); // -0x400
+      sprite.data[5] = 0xC00;
+    } else {
+      sprite.data[4] = 0x400;
+      sprite.data[5] = _p1S16(0xF400); // -0xC00
+    }
+  }
+
+  sprite.data[5] = _p1S16(sprite.data[5] + sprite.data[4]);
+  _p1SetRotScale(sprite.data[3], 0x100, 0x100, sprite.data[5] & 0xFFFF);
+  _p1YOffFromRot(sprite.data[3]);
+  if (++sprite.data[0] > 2) {
+    _p1ResetRotScale(sprite.data[3]);
+    sprite.callback = AnimBowMon_Step4;
+  }
+}
+
+/** 1:1 `AnimBowMon_Step4` (effects_1.c:4500). */
+function AnimBowMon_Step4(sprite: _ESprite): void {
+  _pItf().DestroyAnimSprite?.(sprite);
+}
+
+registerAnimCallbacks({
+  AnimProtect: AnimProtect as never,
+  AnimMilkBottle: AnimMilkBottle as never,
+  AnimBowMon: AnimBowMon as never,
+});

@@ -569,3 +569,56 @@ registerAnimCallbacks({
   AnimDiveBall: AnimDiveBall as never,
   AnimDiveWaterSplash: AnimDiveWaterSplash as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// AURORA BEAM (goal 2026-06-11) — AnimAuroraBeamRings (+_Step)
+// (battle_anim_water.c:602/:622) 1:1.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 sprite.c `StartSpriteAnim(sprite, n)` : champs PLATS du runtime (pattern repo). */
+function _abStartSpriteAnim(sprite: unknown, n: number): void {
+  const spA = sprite as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims && n >= 0) { spA.animNum = n; spA.animBeginning = true; spA.animEnded = false; }
+}
+
+/** 1:1 `AnimAuroraBeamRings` (battle_anim_water.c:602) : anneau arc-en-ciel
+ *  d'Onde Boréale — translation linéaire attaquant → cible. args [x, y,
+ *  xOffCible (miroir côté attaquant), yOffCible, durée] ; l'affine du template
+ *  (sAffineAnims_AuroraBeamRing) reste en PAUSE jusqu'au signal du script. */
+function AnimAuroraBeamRings(sprite: _WSprite): void {
+  const args = _wItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0, 0];
+  const atk = _wItf().getAttacker?.() ?? 0;
+  const tgt = _wItf().getTarget?.() ?? 1;
+  let unkArg: number; // s16 unkArg;
+
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  if ((atk & 1) !== 0 /* GetBattlerSide != B_SIDE_PLAYER */)
+    unkArg = -(args[2] | 0);
+  else
+    unkArg = args[2] | 0;
+  sprite.invisible = false;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[1] = sprite.x;
+  sprite.data[2] = GetBattlerSpriteCoord(tgt, 2 /* BATTLER_COORD_X_2 */) + unkArg;
+  sprite.data[3] = sprite.y;
+  sprite.data[4] = GetBattlerSpriteCoord(tgt, 3 /* BATTLER_COORD_Y_PIC_OFFSET */) + (args[3] | 0);
+  InitAnimLinearTranslation(sprite as never);
+  sprite.callback = AnimAuroraBeamRings_Step;
+  (sprite as { affineAnimPaused?: boolean }).affineAnimPaused = true;
+  AnimAuroraBeamRings_Step(sprite); // sprite->callback(sprite);
+}
+
+/** 1:1 `AnimAuroraBeamRings_Step` (:622) : gBattleAnimArgs[7] relu LIVE chaque
+ *  frame — le script pose 0xFFFF (setarg 7) → anim 1 + dé-pause de l'affine ;
+ *  destroy en fin de translation. */
+function AnimAuroraBeamRings_Step(sprite: _WSprite): void {
+  const arg7 = ((_wItf().getArgs?.() ?? [])[7] ?? 0) & 0xFFFF; // (u16)gBattleAnimArgs[7]
+  if (arg7 === 0xFFFF) {
+    _abStartSpriteAnim(sprite, 1);
+    (sprite as { affineAnimPaused?: boolean }).affineAnimPaused = false;
+  }
+  if (AnimTranslateLinear(sprite as never))
+    _wItf().DestroyAnimSprite?.(sprite);
+}
+
+registerAnimCallbacks({ AnimAuroraBeamRings: AnimAuroraBeamRings as never });

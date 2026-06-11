@@ -756,3 +756,34 @@ registerAnimCallbacks({
   AnimRazorWindTornado: AnimRazorWindTornado as never,
   AnimFlyingSandCrescent: AnimFlyingSandCrescent as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes » (goal 2026-06-11) — AnimBounceBallShrink
+// (battle_anim_flying.c:969).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimBounceBallShrink` (battle_anim_flying.c:969) : Rebond (Bounce)
+ *  tour de charge — la « boule » se pose sur l'attaquant et joue l'affine du
+ *  template (sAffineAnims_BounceBallShrink = rétrécissement) pendant que
+ *  l'ATTAQUANT devient INVISIBLE (restauré par AnimBounceBallLand au tour
+ *  d'attaque) ; fin d'affine → DestroyAnimSprite. Self-stepper (switch data[0]). */
+function AnimBounceBallShrink(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  switch (sprite.data[0]) {
+    case 0: {
+      InitSpritePosToAnimAttacker(sprite as never, true);
+      sprite.invisible = false;
+      // gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
+      const monId = _getBattlerMonSpriteId(atk);
+      const mon = monId >= 0 ? _rt()?.gSprites?.get(monId) : undefined;
+      if (mon) mon.invisible = true;
+      ++sprite.data[0];
+      break;
+    }
+    case 1:
+      if (sprite.affineAnimEnded) _vItf().DestroyAnimSprite?.(sprite);
+      break;
+  }
+}
+
+registerAnimCallbacks({ AnimBounceBallShrink: AnimBounceBallShrink as never });

@@ -408,3 +408,79 @@ registerAnimTemplates([
   { name: 'gSlideMonToOffsetSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOffset as never },
   { name: 'gSlideMonToOriginalPosSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOriginalPos as never },
 ]);
+
+// ════════════════════════════════════════════════════════════════════════════
+// Vague « callbacks mouvement » (2026-06-11) : DoVerticalDip +
+// SlideMonToOffsetAndBack — 1:1 battle_anim_mon_movement.c:455/:582.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `DoVerticalDip` (battle_anim_mon_movement.c:455) —
+ *  gVerticalDipSpriteTemplate (tileTag 0 = contrôleur invisible).
+ *  args [durée d'un sens, deltaY/frame, battler] : déplace le battler via
+ *  TranslateSpriteLinearById (data[1]=0 → X immobile), puis inverse. */
+function DoVerticalDip(sprite: AnimSprite): void {
+  sprite.invisible = true;
+  const spriteId = GetAnimBattlerSpriteId(_args()[2]);
+  sprite.data[0] = _args()[0];
+  sprite.data[1] = 0;
+  sprite.data[2] = _args()[1];
+  sprite.data[3] = spriteId;
+  sprite.data[4] = _args()[0];
+  StoreSpriteCallbackInData6(sprite, ReverseVerticalDipDirection);
+  sprite.callback = TranslateSpriteLinearById;
+}
+/** 1:1 `ReverseVerticalDipDirection` (battle_anim_mon_movement.c:469). */
+function ReverseVerticalDipDirection(sprite: AnimSprite): void {
+  sprite.data[0] = sprite.data[4];
+  sprite.data[2] = -sprite.data[2];
+  sprite.callback = TranslateSpriteLinearById;
+  StoreSpriteCallbackInData6(sprite, DestroyAnimSprite as unknown as (s: AnimSprite) => void);
+}
+
+/** 1:1 `SlideMonToOffsetAndBack` (battle_anim_mon_movement.c:582) —
+ *  gSlideMonToOffsetAndBackSpriteTemplate. args [battler(0=atk/1=tgt), xOff,
+ *  yOff, mirrorY, durée, back?]. Part de la position COURANTE (x+x2, y+y2) ;
+ *  data[3]/data[4] réamorcés à x2<<8 / y2<<8 (offsets fixed-point continus) ;
+ *  args[5]≠0 → _End remet x2/y2 du mon à 0 avant destroy. */
+function SlideMonToOffsetAndBack(sprite: AnimSprite): void {
+  sprite.invisible = true;
+  const args = _args();
+  const battler = args[0] === 0 /* ANIM_ATTACKER */ ? _atk() : (_itf()?.getTarget() ?? 1);
+  const spriteId = _battlerSpriteId(battler);
+  const mon = _sprites()?.get(spriteId);
+  if (!mon) { DestroyAnimSprite(sprite); return; } // garde-fou runtime (pattern SlideMonToOffset)
+  if (GetBattlerSide(battler)) {
+    args[1] = -args[1]; // mutation in-place 1:1 (gBattleAnimArgs partagé)
+    if (args[3] === 1) args[2] = -args[2];
+  }
+  sprite.data[0] = args[4];
+  sprite.data[1] = mon.x + mon.x2;
+  sprite.data[2] = sprite.data[1] + args[1];
+  sprite.data[3] = mon.y + mon.y2;
+  sprite.data[4] = sprite.data[3] + args[2];
+  InitSpriteDataForLinearTranslation(sprite);
+  sprite.data[3] = mon.x2 << 8;
+  sprite.data[4] = mon.y2 << 8;
+  sprite.data[5] = spriteId;
+  sprite.data[6] = args[5];
+  if (!args[5]) {
+    StoreSpriteCallbackInData6(sprite, DestroyAnimSprite as unknown as (s: AnimSprite) => void);
+  } else {
+    StoreSpriteCallbackInData6(sprite, SlideMonToOffsetAndBack_End);
+  }
+  sprite.callback = TranslateSpriteLinearByIdFixedPoint;
+}
+/** 1:1 `SlideMonToOffsetAndBack_End` (battle_anim_mon_movement.c:624). */
+function SlideMonToOffsetAndBack_End(sprite: AnimSprite): void {
+  const mon = _sprites()?.get(sprite.data[5]);
+  if (mon) {
+    mon.x2 = 0;
+    mon.y2 = 0;
+  }
+  DestroyAnimSprite(sprite);
+}
+
+registerAnimTemplates([
+  { name: 'gVerticalDipSpriteTemplate', tileTag: 0, paletteTag: 0, callback: DoVerticalDip as never },
+  { name: 'gSlideMonToOffsetAndBackSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOffsetAndBack as never },
+]);

@@ -663,3 +663,16 @@ registerAnimCallbacks({
   AnimRevengeScratch: AnimRevengeScratch as never,
   AnimFocusPunchFist: AnimFocusPunchFist as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// Symbole PUBLIC `AnimTravelDiagonally` (battle_anim_mons.c:1591). Le corps 1:1
+// vit CI-DESSUS (_AnimTravelDiagonally :182, transcrit dans CE fichier — le lot
+// le plus proche — car battle_anim_mons.ts est gelé). Wrapper public SANS
+// duplication du corps, enregistré sous le nom C exact pour les templates qui
+// le référencent directement (gSnoreZSpriteTemplate — Snore — via le bridge
+// généré). À DÉMÉNAGER dans battle_anim_mons.ts si le gel est levé.
+// ════════════════════════════════════════════════════════════════════════════
+export function AnimTravelDiagonally(sprite: unknown): void {
+  _AnimTravelDiagonally(sprite as never);
+}
+registerAnimCallbacks({ AnimTravelDiagonally: AnimTravelDiagonally as never });

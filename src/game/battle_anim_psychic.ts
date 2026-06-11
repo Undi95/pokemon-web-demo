@@ -284,3 +284,120 @@ registerAnimCallbacks({
   AnimKinesisZapEnergy: AnimKinesisZapEnergy as never,
   AnimPsychoBoost: AnimPsychoBoost as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// AnimQuestionMark (battle_anim_psychic.c:645) — le « ? » d'Amnesia
+// (gQuestionMarkSpriteTemplate, ANIM_TAG_AMNESIA). Append-only 2026-06-11.
+// ════════════════════════════════════════════════════════════════════════════
+// Imports additionnels du bloc (hoistés ESM — légal en fin de fichier) :
+import { gBattlerPartyIndexes as _qmPartyIdx } from '../engine/battle/state';
+import {
+  gPlayerParty as _qmPlayerParty, gEnemyParty as _qmEnemyParty,
+  GetMonData as _qmGetMonData, MON_DATA_SPECIES as _QM_MON_DATA_SPECIES,
+} from '../engine/battle/party-storage';
+import { reverseDecompConstant as _qmRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _qmFrontCoords, getMonBackPicCoords as _qmBackCoords } from './data/mon_pic_coords';
+
+/** Runtime étendu du bloc (OAM brute + matrices affine) — pattern interpreter
+ *  Cmd_createsprite (battle-anim-interpreter.ts:1045) / battle_anim_flying. */
+function _qmRt(): {
+  gba?: { oam?: Array<{ affineMode?: number }> };
+  AllocOamMatrix?: () => number;
+  FreeOamMatrix?: (m: number) => void;
+} | undefined {
+  return (globalThis as Record<string, unknown>).__rt as never;
+}
+// species du battler → nom (même dette douce que battle_anim_effects_3 :
+// transformSpecies/illusion non modélisés).
+function _qmBattlerSpeciesName(battler: number): string {
+  const party = _GetBattlerSide(battler) !== B_SIDE_PLAYER ? _qmEnemyParty : _qmPlayerParty;
+  const species = _qmGetMonData(party[_qmPartyIdx[battler]] as never, _QM_MON_DATA_SPECIES) as number;
+  return _qmRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+}
+// 1:1 battle_anim_mons.c:2151 `GetBattlerSpriteCoordAttr` — cases WIDTH/HEIGHT
+// (les seules consommées ici) ; back pic (joueur) / front pic (adverse).
+// Transcription = battle_anim_effects_3.ts (même modèle).
+const _QM_COORD_ATTR_HEIGHT = 0;
+const _QM_COORD_ATTR_WIDTH = 1;
+function _qmGetBattlerSpriteCoordAttr(battler: number, attr: number): number {
+  const name = _qmBattlerSpeciesName(battler);
+  const coords = _GetBattlerSide(battler) === B_SIDE_PLAYER ? _qmBackCoords(name) : _qmFrontCoords(name);
+  return attr === _QM_COORD_ATTR_WIDTH ? coords.w : coords.h;
+}
+
+/** 1:1 `AnimQuestionMark` (battle_anim_psychic.c:645) : le « ? » apparaît au
+ *  coin haut (gauche/droite selon le côté) de l'attaquant — x = ±largeur/2,
+ *  y = -hauteur/2 (clamp y ≥ 16), joue son anim de frames (sAnims_QuestionMark)
+ *  puis enchaîne sur le wobble affine (Step1). */
+function AnimQuestionMark(sprite: _VSprite): void {
+  const attacker = _vItf().getAttacker?.() ?? 0;
+  let x = Math.trunc(_qmGetBattlerSpriteCoordAttr(attacker, _QM_COORD_ATTR_WIDTH) / 2);
+  const y = Math.trunc(_qmGetBattlerSpriteCoordAttr(attacker, _QM_COORD_ATTR_HEIGHT) / -2);
+
+  if (_GetBattlerSide(attacker) !== B_SIDE_PLAYER) // == B_SIDE_OPPONENT
+    x = -x;
+
+  sprite.x = GetBattlerSpriteCoord(attacker, BATTLER_COORD_X_2) + x;
+  sprite.y = GetBattlerSpriteCoord(attacker, BATTLER_COORD_Y_PIC_OFFSET) + y;
+
+  if (sprite.y < 16)
+    sprite.y = 16;
+
+  sprite.invisible = false;
+  StoreSpriteCallbackInData6(sprite as never, AnimQuestionMark_Step1 as never);
+  sprite.callback = _RunStoredCallbackWhenAnimEnds;
+}
+
+/** 1:1 `AnimQuestionMark_Step1` (battle_anim_psychic.c:663) : bascule le sprite
+ *  en affine NORMAL sur la table sAffineAnims_QuestionMark (wobble ±4°) —
+ *  C : oam.affineMode = ST_OAM_AFFINE_NORMAL ; affineAnims = table ;
+ *  InitSpriteAffineAnim. Modèle runtime = celui de Cmd_createsprite :
+ *  affineAnimsTableName (registre extras, peuplé du généré) + affineMode 1
+ *  (champ plat ET OAM, sinon le sync rétrograde l'écrase) + AllocOamMatrix
+ *  (sa PROPRE matrice — slot 0 = matrice partagée). */
+function AnimQuestionMark_Step1(sprite: _VSprite): void {
+  const spF = sprite as {
+    oamIndex?: number; matrixNum?: number; affineMode?: number;
+    affineAnimsTableName?: string | null;
+    affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean;
+  };
+  spF.affineMode = 1; // ST_OAM_AFFINE_NORMAL
+  const oam = _qmRt()?.gba?.oam?.[spF.oamIndex ?? -1];
+  if (oam) oam.affineMode = 1;
+  spF.affineAnimsTableName = 'sAffineAnims_QuestionMark';
+  sprite.data[0] = 0;
+  // InitSpriteAffineAnim (sprite.c) : alloue la matrice + démarre l'anim 0.
+  const m = _qmRt()?.AllocOamMatrix?.();
+  if (m !== undefined && m >= 0) spF.matrixNum = m;
+  spF.affineAnimNum = 0;
+  spF.affineAnimBeginning = true;
+  spF.affineAnimEnded = false;
+  sprite.callback = AnimQuestionMark_Step2;
+}
+
+/** 1:1 `AnimQuestionMark_Step2` (battle_anim_psychic.c:672) : attend la fin du
+ *  wobble (affineAnimEnded) → FreeOamMatrix + AFFINE_OFF, puis 18 frames
+ *  d'attente → destroy. */
+function AnimQuestionMark_Step2(sprite: _VSprite): void {
+  switch (sprite.data[0]) {
+    case 0: {
+      const spF = sprite as { oamIndex?: number; matrixNum?: number; affineMode?: number };
+      if ((sprite as { affineAnimEnded?: boolean }).affineAnimEnded) {
+        if (spF.matrixNum !== undefined && spF.matrixNum > 0) // slot 0 = identité partagée, jamais libéré
+          _qmRt()?.FreeOamMatrix?.(spF.matrixNum);
+        spF.affineMode = 0; // ST_OAM_AFFINE_OFF
+        const oam = _qmRt()?.gba?.oam?.[spF.oamIndex ?? -1];
+        if (oam) oam.affineMode = 0;
+        sprite.data[1] = 18;
+        sprite.data[0]++;
+      }
+      break;
+    }
+    case 1:
+      if (--sprite.data[1] === -1)
+        _vItf().DestroyAnimSprite?.(sprite);
+      break;
+  }
+}
+
+registerAnimCallbacks({ AnimQuestionMark: AnimQuestionMark as never });

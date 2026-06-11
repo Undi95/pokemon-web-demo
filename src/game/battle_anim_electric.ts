@@ -477,3 +477,30 @@ registerAnimCallbacks({
   AnimElectricPuff: AnimElectricPuff as never,
   AnimVoltTackleOrbSlide: AnimVoltTackleOrbSlide as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes » (goal 2026-06-11) — AnimGrowingShockWaveOrb
+// (battle_anim_electric.c:1135).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimGrowingShockWaveOrb` (battle_anim_electric.c:1135) : l'orbe d'Onde
+ *  de Choc se pose sur l'attaquant, joue l'affine 2 du template
+ *  (sAffineAnims_GrowingElectricOrb — grossissement) ; fin d'affine →
+ *  DestroySpriteAndMatrix. Self-stepper (switch data[0]). */
+function AnimGrowingShockWaveOrb(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  switch (sprite.data[0]) {
+    case 0:
+      sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+      sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+      _StartSpriteAffineAnim(sprite, 2);
+      sprite.invisible = false;
+      sprite.data[0]++;
+      break;
+    case 1:
+      if (sprite.affineAnimEnded) DestroySpriteAndMatrix(sprite as never);
+      break;
+  }
+}
+
+registerAnimCallbacks({ AnimGrowingShockWaveOrb: AnimGrowingShockWaveOrb as never });

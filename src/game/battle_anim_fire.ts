@@ -519,3 +519,25 @@ registerAnimCallbacks({
   AnimEruptionFallingRock: AnimEruptionFallingRock as never,
   AnimOverheatFlame: AnimOverheatFlame as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUNNY DAY (2026-06-11, append-only) — AnimSunlight (battle_anim_fire.c:604,
+// gSunlightRaySpriteTemplate). La dette « AnimSunlight » du header est levée.
+// ════════════════════════════════════════════════════════════════════════════
+import { StartAnimLinearTranslation } from './battle_anim_mons';
+
+/** 1:1 `AnimSunlight` (battle_anim_fire.c:604) : rayon de soleil (Sunny Day /
+ *  météo soleil) — part du coin écran (0,0) et translate vers (140,80) en 60
+ *  frames (chaîne linéaire 8.8) → destroy. */
+function AnimSunlight(sprite: _VSprite): void {
+  sprite.x = 0;
+  sprite.y = 0;
+  sprite.invisible = false;
+  sprite.data[0] = 60;
+  sprite.data[2] = 140;
+  sprite.data[4] = 80;
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSpriteCb as never);
+}
+
+registerAnimCallbacks({ AnimSunlight: AnimSunlight as never });

@@ -43,6 +43,7 @@ import {
   StoreSpriteCallbackInData6,
   SetCallbackToStoredInData6,
   DestroySpriteAndMatrix,
+  TranslateAnimSpriteToTargetMonLocation,
   BATTLER_COORD_X,
   BATTLER_COORD_Y,
   BATTLER_COORD_X_2,
@@ -582,3 +583,152 @@ registerAnimCallbacks({
   InitIceBallAnim: InitIceBallAnim as never,
   InitIceBallParticle: InitIceBallParticle as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes » (goal 2026-06-11) — AnimThrowMistBall (battle_anim_ice.c:1090).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimThrowMistBall` (battle_anim_ice.c:1090) : la ball de Ball'Brume part
+ *  du centre de l'attaquant puis vole vers la cible —
+ *  TranslateAnimSpriteToTargetMonLocation (battle_anim_mons.c) lit les args
+ *  [x, y, xCible, yCible, durée, coordType] et gère translation + destroy. */
+function AnimThrowMistBall(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.invisible = false;
+  sprite.callback = TranslateAnimSpriteToTargetMonLocation as never;
+}
+
+registerAnimCallbacks({ AnimThrowMistBall: AnimThrowMistBall as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// ICY WIND — pilier de glace (2026-06-11, append-only) :
+// AnimWaveFromCenterOfTarget (battle_anim_ice.c:869, gIceGroundSpikeSpriteTemplate).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimWaveFromCenterOfTarget` (battle_anim_ice.c:869) : pic/onde posé sur
+ *  la cible — args [x, y, useAveragePos] ; arg2 != 0 → position moyenne cible(+
+ *  partenaire) + offsets (x miroir côté attaquant). Joue son anim une fois puis
+ *  destroy (anti-leak : pas de table anims → ended immédiat, convention
+ *  _RunStoredCallbackWhenAnimEnds de ce fichier). data[0] = latch d'init. */
+function AnimWaveFromCenterOfTarget(sprite: _VSprite): void {
+  if (sprite.data[0] === 0) {
+    const args = _vItf().getArgs?.() ?? [0, 0, 0];
+    if ((args[2] | 0) === 0) {
+      InitSpritePosToAnimTarget(sprite as never, false);
+    } else {
+      const target = _vItf().getTarget?.() ?? 1;
+      const attacker = _vItf().getAttacker?.() ?? 0;
+      const [ax, ay] = _SetAverageBattlerPositions(target, false);
+      sprite.x = ax;
+      sprite.y = ay;
+      let arg0 = args[0] | 0;
+      if ((attacker & 1) !== 0) // GetBattlerSide(attacker) != B_SIDE_PLAYER
+        arg0 = -arg0;           // C : gBattleAnimArgs[0] = -gBattleAnimArgs[0]
+      sprite.x += arg0;
+      sprite.y += args[1] | 0;
+    }
+    sprite.invisible = false;
+    sprite.data[0]++;
+  } else {
+    const spA = sprite as { animEnded?: boolean; anims?: unknown };
+    if (spA.animEnded || spA.anims === undefined) _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+registerAnimCallbacks({ AnimWaveFromCenterOfTarget: AnimWaveFromCenterOfTarget as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// BLIZZARD / POWDER SNOW (2026-06-11, append-only) : AnimMoveParticleBeyondTarget
+// (battle_anim_ice.c:788) + AnimWiggleParticleTowardsTarget (:847) —
+// gBlizzardIceCrystalSpriteTemplate + gPowderSnowSnowballSpriteTemplate.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimMoveParticleBeyondTarget` (battle_anim_ice.c:788) : la particule
+ *  part de l'attaquant et traverse l'écran AU-DELÀ de la cible. args [x, y,
+ *  xCible, yCible, vitesse, amplitude onde, fréquence onde, multi-cibles?].
+ *  Le C précalcule le point de sortie d'écran (boucle AnimFastTranslateLinear
+ *  avec data[0]=1, deltas XOR 1 = signes forcés opposés), téléporte le départ
+ *  x/y dessus puis restaure data[0..7] → le vol REVIENT vers la cible en
+ *  ondulant (AnimWiggleParticleTowardsTarget). */
+function AnimMoveParticleBeyondTarget(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 1, 0, 0, 0];
+  const attacker = _vItf().getAttacker?.() ?? 0;
+  const target = _vItf().getTarget?.() ?? 1;
+
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+
+  sprite.data[0] = args[4] | 0;
+  sprite.data[1] = sprite.x;
+  sprite.data[3] = sprite.y;
+
+  if (!args[7]) {
+    sprite.data[2] = GetBattlerSpriteCoord(target, BATTLER_COORD_X_2);
+    sprite.data[4] = GetBattlerSpriteCoord(target, BATTLER_COORD_Y_PIC_OFFSET);
+  } else {
+    const [ax, ay] = _SetAverageBattlerPositions(target, true);
+    sprite.data[2] = ax;
+    sprite.data[4] = ay;
+  }
+
+  if ((attacker & 1) !== 0) // GetBattlerSide(attacker) != B_SIDE_PLAYER
+    sprite.data[2] -= args[2] | 0;
+  else
+    sprite.data[2] += args[2] | 0;
+
+  sprite.data[4] += args[3] | 0;
+  _InitAnimFastLinearTranslationWithSpeed(sprite);
+  const tempDataHolder: number[] = [];
+  for (let i = 0; i < 8; i++) tempDataHolder[i] = sprite.data[i];
+
+  sprite.data[1] ^= 1;
+  sprite.data[2] ^= 1;
+
+  // C : while (1) { data[0]=1; AnimFastTranslateLinear; if (hors écran) break; }
+  // Garde-fou runtime (PAS décomp) : deltas nuls (args corrompus → division
+  // par 0 dans InitAnimFastLinearTranslationWithSpeed = UB côté GBA) →
+  // boucle infinie JS ; borne large 0x8000 itérations puis sortie propre.
+  for (let guard = 0; guard < 0x8000; guard++) {
+    sprite.data[0] = 1;
+    _AnimFastTranslateLinear(sprite);
+    if (sprite.x + sprite.x2 > 240 + 16  // DISPLAY_WIDTH + 16
+     || sprite.x + sprite.x2 < -16
+     || sprite.y + sprite.y2 > 160       // DISPLAY_HEIGHT
+     || sprite.y + sprite.y2 < -16)
+      break;
+  }
+
+  sprite.x += sprite.x2;
+  sprite.y += sprite.y2;
+  sprite.y2 = 0;
+  sprite.x2 = 0;
+
+  for (let i = 0; i < 8; i++) sprite.data[i] = tempDataHolder[i];
+
+  sprite.data[5] = args[5] | 0;
+  sprite.data[6] = args[6] | 0;
+  sprite.callback = AnimWiggleParticleTowardsTarget;
+}
+
+/** 1:1 `AnimWiggleParticleTowardsTarget` (battle_anim_ice.c:847) : avance
+ *  fast-linear + onde Sin(data[7], data[5]) en Y ; data[0] est maintenu à 1
+ *  (jamais « fini ») → destroy à la sortie d'écran. */
+function AnimWiggleParticleTowardsTarget(sprite: _VSprite): void {
+  _AnimFastTranslateLinear(sprite);
+  if (sprite.data[0] === 0)
+    sprite.data[0] = 1;
+
+  sprite.y2 += Sin(sprite.data[7] & 0xFF, sprite.data[5]);
+  sprite.data[7] = (sprite.data[7] + sprite.data[6]) & 0xFF;
+  if (sprite.data[0] === 1) {
+    if (sprite.x + sprite.x2 > 240 + 16  // DISPLAY_WIDTH + 16
+     || sprite.x + sprite.x2 < -16
+     || sprite.y + sprite.y2 > 160       // DISPLAY_HEIGHT
+     || sprite.y + sprite.y2 < -16)
+      _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+registerAnimCallbacks({ AnimMoveParticleBeyondTarget: AnimMoveParticleBeyondTarget as never });

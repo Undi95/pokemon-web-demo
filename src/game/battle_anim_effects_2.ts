@@ -45,7 +45,7 @@ import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
   InitAnimLinearTranslation, AnimTranslateLinear,
   SetSpritePrimaryCoordsFromSecondaryCoords,
-  DestroySpriteAndMatrix, AnimSpriteOnMonPos,
+  DestroySpriteAndMatrix, AnimSpriteOnMonPos, TranslateSpriteLinearFixedPoint,
 } from './battle_anim_mons';
 import { Sin, Cos } from './trig';
 import { Random2 } from './random';
@@ -940,3 +940,251 @@ registerAnimCallbacks({
   AnimPerishSongMusicNote2: AnimPerishSongMusicNote2 as never,
   AnimGuardRing: AnimGuardRing as never,
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// VAGUE « orbes » (goal 2026-06-11) — AnimBreathPuff (battle_anim_effects_2.c:2255).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimBreathPuff` (battle_anim_effects_2.c:2255) : petit souffle du mon
+ *  (Vantardise/Gonflette). Côté joueur : anim 0, X_2+32, vitesse +64 ; côté
+ *  adverse : anim 1, X_2−32, −64. 52 frames de translation fixed-point
+ *  (TranslateSpriteLinearFixedPoint) → DestroyAnimSprite. No args. */
+function AnimBreathPuff(sprite: _VSprite): void {
+  const atk = _vItf().getAttacker?.() ?? 0;
+  if (_GetBattlerSide(atk) === B_SIDE_PLAYER) {
+    _StartSpriteAnim(sprite, 0);
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2) + 32;
+    sprite.data[1] = 64;
+  } else {
+    _StartSpriteAnim(sprite, 1);
+    sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2) - 32;
+    sprite.data[1] = -64;
+  }
+
+  sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.invisible = false;
+  sprite.data[0] = 52;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+  sprite.data[4] = 0;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+  sprite.callback = TranslateSpriteLinearFixedPoint as never;
+}
+
+registerAnimCallbacks({ AnimBreathPuff: AnimBreathPuff as never });
+
+// ════════════════════════════════════════════════════════════════════════════
+// Vague PAY DAY / BULLET SEED / HEAL BELL (2026-06-11, append-only) :
+// AnimCoinThrow (:1778), AnimFallingCoin (+_Step :1801/:1808), AnimBulletSeed
+// (+_Step1/_Step2 :1826/:1837/:1859), AnimHealBellMusicNote (:3055,
+// +_SetMusicNotePalette :3048 + sMusicNotePaletteTagsTable :885).
+// ════════════════════════════════════════════════════════════════════════════
+import { AnimTranslateLinear_WithFollowup, TrySetSpriteRotScale } from './battle_anim_mons';
+
+/** 1:1 BIOS `ArcTan2` + `ArcTan2Neg` (battle_anim_mons.c:1368) — même formule
+ *  que battle_anim_effects_1b.ts:99 / battle_anim_effects_3.ts:351. */
+function _ArcTan2Neg(x: number, y: number): number {
+  const a = ((Math.atan2(y, x) / (2 * Math.PI)) * 65536) | 0;
+  return (-a) & 0xFFFF;
+}
+
+/** 1:1 `InitAnimLinearTranslationWithSpeed` (battle_anim_mons.c:1155) :
+ *  data[0] = VITESSE → convertie en durée ((|Δx|<<8)/vitesse), puis chaîne
+ *  linéaire 8.8 standard. */
+function _InitAnimLinearTranslationWithSpeed(sprite: _VSprite): void {
+  const v1 = Math.abs(_toS16(sprite.data[2]) - _toS16(sprite.data[1])) << 8;
+  sprite.data[0] = Math.trunc(v1 / _toS16(sprite.data[0]));
+  InitAnimLinearTranslation(sprite as never);
+}
+
+/** 1:1 `InitAnimLinearTranslationWithSpeedAndPos` (battle_anim_mons.c:1162). */
+function _InitAnimLinearTranslationWithSpeedAndPos(sprite: _VSprite): void {
+  sprite.data[1] = sprite.x;
+  sprite.data[3] = sprite.y;
+  _InitAnimLinearTranslationWithSpeed(sprite);
+  sprite.callback = AnimTranslateLinear_WithFollowup as never;
+  AnimTranslateLinear_WithFollowup(sprite as never);
+}
+
+/** 1:1 `PlaySE12WithPanning` — route vers le SE runtime (pattern
+ *  battle_anim_effects_3.ts:360) ; le pan (BattleAnimAdjustPanning) est ignoré
+ *  par le wrapper __PlaySE. */
+function _PlaySE12WithPanning(songId: number, _pan: number): void {
+  (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(songId);
+}
+const SE_M_HORN_ATTACK = 166;       // include/constants/songs.h:173
+const SOUND_PAN_TARGET_E2 = 63;     // include/battle_anim.h
+
+/** 1:1 `AnimCoinThrow` (battle_anim_effects_2.c:1778) : la pièce de Pay Day —
+ *  part de l'attaquant (args [x, y, tgtXOff(miroir côté), tgtYOff, vitesse]),
+ *  rotation posée vers la cible (ArcTan2Neg + 0xC000), translation à vitesse
+ *  constante (InitAnimLinearTranslationWithSpeedAndPos) → destroy. */
+function AnimCoinThrow(sprite: _VSprite): void {
+  const args = _args();
+  const attacker = _vItf().getAttacker?.() ?? 0;
+  const target = _vItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  let r6 = GetBattlerSpriteCoord(target, BATTLER_COORD_X_2);
+  const r7 = GetBattlerSpriteCoord(target, BATTLER_COORD_Y_PIC_OFFSET) + (args[3] | 0);
+  let arg2 = args[2] | 0;
+  if (_GetBattlerSide(attacker) !== B_SIDE_PLAYER) arg2 = -arg2; // C : gBattleAnimArgs[2] = -gBattleAnimArgs[2]
+  r6 += arg2;
+  const rot = (_ArcTan2Neg(r6 - sprite.x, r7 - sprite.y) + 0xC000) & 0xFFFF; // var += 0xC000
+  const sid = (sprite as { spriteId?: number }).spriteId;
+  if (sid !== undefined) TrySetSpriteRotScale(sid, false, 0x100, 0x100, rot);
+  sprite.invisible = false;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = r6;
+  sprite.data[4] = r7;
+  sprite.callback = _InitAnimLinearTranslationWithSpeedAndPos;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+}
+
+/** 1:1 `AnimFallingCoin` (battle_anim_effects_2.c:1801) : pièce qui retombe —
+ *  dérive X 0.5px/frame (miroir côté joueur) + 2 rebonds Sin d'amplitude
+ *  divisée par 2 → destroy. */
+function AnimFallingCoin(sprite: _VSprite): void {
+  sprite.data[2] = -16;
+  sprite.y += 8;
+  sprite.invisible = false;
+  sprite.callback = _AnimFallingCoin_Step;
+}
+/** 1:1 `AnimFallingCoin_Step` (:1808). */
+function _AnimFallingCoin_Step(sprite: _VSprite): void {
+  sprite.data[0] = _toS16(sprite.data[0] + 0x80);
+  sprite.x2 = sprite.data[0] >> 8;
+  if (_GetBattlerSide(_vItf().getAttacker?.() ?? 0) === B_SIDE_PLAYER)
+    sprite.x2 = -sprite.x2;
+  sprite.y2 = Sin(sprite.data[1] & 0xFF, sprite.data[2]);
+  sprite.data[1] += 5;
+  if (sprite.data[1] > 126) {
+    sprite.data[1] = 0;
+    sprite.data[2] = Math.trunc(sprite.data[2] / 2); // s16 /= 2 (troncature C)
+    if (++sprite.data[3] === 2) _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimBulletSeed` (battle_anim_effects_2.c:1826) : graine Bullet Seed —
+ *  translation attaquant→cible en 20 frames (affine en pause pendant le vol),
+ *  puis rebond aléatoire (_Step1). */
+function AnimBulletSeed(sprite: _VSprite): void {
+  const target = _vItf().getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.invisible = false;
+  sprite.data[0] = 20;
+  sprite.data[2] = GetBattlerSpriteCoord(target, BATTLER_COORD_X_2);
+  sprite.data[4] = GetBattlerSpriteCoord(target, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.callback = StartAnimLinearTranslation as never;
+  sprite.affineAnimPaused = true; // C : sprite->affineAnimPaused = 1
+  StoreSpriteCallbackInData6(sprite as never, _AnimBulletSeed_Step1 as never);
+}
+/** 1:1 `AnimBulletSeed_Step1` (:1837) : SE corne + repose la position, zère
+ *  data[0..7] (C : ptr[i-7]=0 sur &data[7]), tire l'amplitude data[6] =
+ *  -12-(rand&7) et la vitesse data[7] = (rand%0xA0)+0xA0 (bit 0 = direction),
+ *  relance l'affine. */
+function _AnimBulletSeed_Step1(sprite: _VSprite): void {
+  _PlaySE12WithPanning(SE_M_HORN_ATTACK, SOUND_PAN_TARGET_E2); // C : BattleAnimAdjustPanning(SOUND_PAN_TARGET)
+  sprite.x += sprite.x2;
+  sprite.y += sprite.y2;
+  sprite.y2 = 0;
+  sprite.x2 = 0;
+  for (let i = 0; i < 8; i++) sprite.data[i] = 0;
+  let rand = Random2();
+  sprite.data[6] = _toS16(0xFFF4 - (rand & 7));
+  rand = Random2();
+  sprite.data[7] = (rand % 0xA0) + 0xA0;
+  sprite.callback = _AnimBulletSeed_Step2;
+  sprite.affineAnimPaused = false;
+}
+/** 1:1 `AnimBulletSeed_Step2` (:1859) : zigzag horizontal 8.8 (bit 0 de data[7]
+ *  = direction) + arche Sin (amplitude data[6] négative) ; destroy au bout
+ *  d'une arche (data[3] == 1). */
+function _AnimBulletSeed_Step2(sprite: _VSprite): void {
+  sprite.data[0] = _toS16(sprite.data[0] + sprite.data[7]);
+  sprite.x2 = sprite.data[0] >> 8;
+  if (sprite.data[7] & 1) sprite.x2 = -sprite.x2;
+  sprite.y2 = Sin(sprite.data[1] & 0xFF, sprite.data[6]);
+  sprite.data[1] += 8;
+  if (sprite.data[1] > 126) {
+    sprite.data[1] = 0;
+    sprite.data[2] = Math.trunc(sprite.data[2] / 2); // s16 /= 2 (troncature C)
+    if (++sprite.data[3] === 1) _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+// 1:1 `sMusicNotePaletteTagsTable` (battle_anim_effects_2.c:885) :
+// [ANIM_TAG_MUSIC_NOTES_2, ANIM_SPRITES_START-1, ANIM_SPRITES_START-2] — les
+// 2 derniers tags = palettes blend chargées par AnimTask_HealBellMusicNotePalettes
+// (:3019, non porté).
+const ANIM_TAG_MUSIC_NOTES_2 = 10206; // ANIM_SPRITES_START + 206
+const sMusicNotePaletteTagsTable: ReadonlyArray<number> = [ANIM_TAG_MUSIC_NOTES_2, 9999, 9998];
+
+/** 1:1 `SetMusicNotePalette` (battle_anim_effects_2.c:3048) : frame (tileNum +=
+ *  32 si b impair, + a<<2) et palette (tag sMusicNotePaletteTagsTable[b>>1]).
+ *  Dette douce : tags 9999/9998 non chargés (task non portée) →
+ *  IndexOfSpritePaletteTag = 0xFF → palette non écrite (le C écrirait 15). */
+function _SetMusicNotePalette(sprite: _VSprite, a: number, b: number): void {
+  const tile = (b & 1) ? 32 : 0;
+  _oamTileNumAdd(sprite, tile + (a << 2));
+  let index = IndexOfSpritePaletteTag(sMusicNotePaletteTagsTable[b >> 1]);
+  if (index === 0xFF && (b >> 1) === 0) index = IndexOfSpritePaletteTag('ANIM_TAG_MUSIC_NOTES_2');
+  if (index !== 0xFF) {
+    const oam = _rt()?.gba?.oam?.[sprite.oamIndex ?? -1];
+    if (oam) oam.paletteBank = index & 0xF;
+  }
+}
+
+/** 1:1 `AnimHealBellMusicNote` (battle_anim_effects_2.c:3055) : note de Heal
+ *  Bell — part de l'attaquant (args [x, y, tgtXOff(miroir côté), tgtYOff,
+ *  durée, frame a, palette b]), translation linéaire → destroy. */
+function AnimHealBellMusicNote(sprite: _VSprite): void {
+  const args = _args();
+  const attacker = _vItf().getAttacker?.() ?? 0;
+  InitSpritePosToAnimAttacker(sprite as never, false);
+  let arg2 = args[2] | 0;
+  if (_GetBattlerSide(attacker) !== B_SIDE_PLAYER) arg2 = -arg2; // C : gBattleAnimArgs[2] = -gBattleAnimArgs[2]
+  sprite.invisible = false;
+  sprite.data[0] = args[4] | 0;
+  sprite.data[2] = GetBattlerSpriteCoord(attacker, BATTLER_COORD_X) + arg2;
+  sprite.data[4] = GetBattlerSpriteCoord(attacker, BATTLER_COORD_Y) + (args[3] | 0);
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
+  _SetMusicNotePalette(sprite, args[5] | 0, args[6] | 0);
+}
+
+registerAnimCallbacks({
+  AnimCoinThrow: AnimCoinThrow as never,
+  AnimFallingCoin: AnimFallingCoin as never,
+  AnimBulletSeed: AnimBulletSeed as never,
+  AnimHealBellMusicNote: AnimHealBellMusicNote as never,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// AnimParticleBurst (battle_anim_effects_2.c:3200, PUBLIC dans le .c) —
+// gRedHeartBurstSpriteTemplate (Attract) + sUnusedStarBurstSpriteTemplate.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 `AnimParticleBurst` (battle_anim_effects_2.c:3200) : particule éjectée —
+ *  dérive X fixed-point (data[4] s16, >>8) + onde Sin(data[3], args[1]) en Y ;
+ *  scintille (invisible = data[3] % 2) après data[3] > 100, destroy à > 120.
+ *  args [vitesseX (8.8), amplitude onde]. data[0] = latch d'init (1er tick). */
+function AnimParticleBurst(sprite: _VSprite): void {
+  if (sprite.data[0] === 0) {
+    sprite.data[1] = _args()[0] | 0;
+    sprite.data[2] = _args()[1] | 0;
+    sprite.invisible = false; // setup visible (pattern repo — le C n'y touche pas)
+    sprite.data[0]++;
+  } else {
+    sprite.data[4] = _toS16(sprite.data[4] + sprite.data[1]); // s16 += s16 (wrap 1:1)
+    sprite.x2 = sprite.data[4] >> 8;
+    sprite.y2 = Sin(sprite.data[3] & 0xFF, sprite.data[2]);
+    sprite.data[3] = (sprite.data[3] + 3) & 0xFF;
+    if (sprite.data[3] > 100)
+      sprite.invisible = (sprite.data[3] % 2) !== 0;
+
+    if (sprite.data[3] > 120)
+      _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+registerAnimCallbacks({ AnimParticleBurst: AnimParticleBurst as never });
