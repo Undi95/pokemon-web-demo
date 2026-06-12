@@ -33,95 +33,63 @@ import { parseValue } from './script-opcodes-helpers';
 // Voie L (suppression voie V) : entrees scripted-wild 1:1 (battle_setup.c). Import
 // statique SYNC (setwildbattle doit peupler gEnemyParty AVANT que dowildbattle boote).
 // Pas de cycle : battle-setup-helpers -> battle-decomp-loop -> engine/battle/* (PAS engine/script/).
-import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle, BattleSetup_StartTrainerBattle } from '../battle/battle-setup-helpers';
-import { resolveTrainerNumId, ensureGTrainersLoaded } from '../battle/battle-trainer-data-bridge';
-import { setTrainerBattleOpponentA, setBattleOutcome, gBattleOutcome } from '../battle/state';
+import { CreateScriptedWildMon, BattleSetup_StartScriptedWildBattle } from '../battle/battle-setup-helpers';
+// Flux dresseur 1:1 (port miroir battle_setup.c) : Configure (tables
+// TrainerBattleParameter) + jump EventScript_* + dotrainerbattle/post-battle.
+// Remplace l'ancien net-effect local _runTrainerBattle (2026-06-12).
+import {
+  ScrCmd_trainerbattle, ScrCmd_dotrainerbattle,
+  ScrCmd_gotopostbattlescript, ScrCmd_gotobeatenscript,
+} from '../../game/battle_setup';
 
-function _stubTrainerBattle(trainerArg: string): void {
-  console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
-  gSpecialVar.Result = 1;
-  // 1:1 strict (B1) : FlagSet(TRAINER_FLAGS_START + trainerId) aligned avec
-  // settrainerflag opcode.
-  const trainerId = parseValue(trainerArg);
-  FlagSet(1280 + trainerId);
-}
+// ─── Trainerbattle variants — flux 1:1 BattleSetup_ConfigureTrainerBattle ────
+// (port miroir game/battle_setup.ts, remplace l'ancien net-effect _runTrainerBattle.)
+// Chaque macro haut-niveau (asm/macros/event.inc:730-823) est RE-DÉPLIÉE vers la
+// forme générique `[mode, trainer, localId, ptr…]` que ConfigureTrainerBattle
+// parse via les MÊMES tables TrainerBattleParameter que la ROM, puis JUMP vers
+// le EventScript_* de trainer_battle.inc (transpilé) — intro speech, musique,
+// flag déjà-battu, dotrainerbattle, lose_text et post-battle script suivent le
+// script 1:1.
 
-/** 1:1 décomp `ScrCmd_trainerbattle` (scrcmd.c:1821-1825) : real trainer battle
- *  via state machine + battle-flow. Reads trainer party from JSON, runs battles
- *  in sequence. Falls back to stub si trainer data n'est pas dispo. */
-function _runTrainerBattle(ctx: ScriptContext, trainerArg: string, defeatText?: string): boolean {
-  if (!trainerArg) {
-    _stubTrainerBattle(trainerArg);
-    return false;
-  }
-  // VOIE L (reflip C5) : route le combat dresseur sur la boucle decomp (CB2_InitBattle -> controllers
-  // + gBattleMainFunc), comme le wild. Verifie voie L (harness combat dresseur) : intro + send-out 1:1
-  // + VICTOIRE complete + retour OW + inBattle reset (C1-C3 lose_text + getmoneyreward suffisent). Briques
-  // T1-T3 : resolveTrainerNumId + ensureGTrainersLoaded (peuple gTrainers numId-keyed + gEnemyParty
-  // battle-ready) + BattleSetup_StartTrainerBattle (BATTLE_TYPE_TRAINER + sTrainerADefeatSpeech + boot).
-  // ⚠️ DETTE C4 : DEFAITE -> retour OW SANS whiteout (CB2_WhiteOut non porte). PAS de freeze (verifie),
-  //    juste pas 1:1 (devrait teleporter au Centre Pokemon + soigner). A porter ensuite.
-  const numId = resolveTrainerNumId(trainerArg);
-  setBattleOutcome(0);                  // reset l'outcome AVANT le combat (gate du poll de fin)
-  setTrainerBattleOpponentA(numId);
-  let started = false;
-  void ensureGTrainersLoaded().then(() => {
-    BattleSetup_StartTrainerBattle(defeatText);
-    started = true;
-  }).catch(() => { started = true; });
-  SetupNativeScript(ctx, () => {
-    if (!started) return false;
-    // 1:1 : le script BLOQUE jusqu'au retour du combat. On poll l'etat equivalent : combat fini =
-    // gMain.inBattle (runtime) false ET gBattleOutcome pose (!=0). inBattle reset par
-    // ReturnFromBattleToOverworld (fix verifie) ; gBattleOutcome pose au meme endroit (setSpecialVarResult).
-    const inB = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt?.gMain?.inBattle ?? false;
-    if (inB || gBattleOutcome === 0) return false;
-    // 1:1 SetBattledTrainersFlags : FlagSet(TRAINER_FLAGS_START + numId) si VICTOIRE (B_OUTCOME_WON=1).
-    if (gBattleOutcome === 1) FlagSet(1280 + numId);
-    return true;   // debloque le script (continue apres le trainerbattle)
-  });
-  return true;  // block script
-}
-
-// ─── Trainerbattle variants ──────────────────────────────────────────────────
-
-// Le label `defeat` (= lose_text = réplique de défaite PERSONNELLE du dresseur,
-// affichée sur l'OW après la victoire) est à une position 1:1 selon la macro
-// (cf. asm/macros/event.inc). Notre transpileur émet la forme HAUT-NIVEAU
-// (vérifié : `trainerbattle_double args:[trainer,intro,defeat,not_enough,event]`).
 registerOpcode('trainerbattle', (ctx, args) => {
-  // Forme générique `trainerbattle TYPE, trainer, localId, ptr1, ptr2, ...` :
-  // ptr2 (=args[4]) = lose_text pour tous les types SAUF SINGLE_NO_INTRO_TEXT
-  // où ptr1 (=args[3]) = lose_text.
-  const type = args[0] ?? '';
-  const defeat = type === 'TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT' ? args[3] : args[4];
-  return _runTrainerBattle(ctx, args[1] ?? '', defeat);
+  // Forme générique déjà dépliée : [TYPE, trainer, localId, ptr1, ptr2, …].
+  return ScrCmd_trainerbattle(ctx, args);
 });
 
-// trainerbattle_single trainer, intro, lose, ...  → lose = args[2].
+// trainerbattle_single trainer, intro, lose [, event_script [, music]]
+// (event.inc : sans event_script → SINGLE ; avec → CONTINUE_SCRIPT(_NO_MUSIC)).
 registerOpcode('trainerbattle_single', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
+  const [trainer, intro, lose, eventScript, music] = args;
+  if (eventScript && eventScript !== '0') {
+    const mode = music === 'NO_MUSIC' ? 'TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC' : 'TRAINER_BATTLE_CONTINUE_SCRIPT';
+    return ScrCmd_trainerbattle(ctx, [String(mode === 'TRAINER_BATTLE_CONTINUE_SCRIPT' ? 2 : 1), trainer ?? '0', '0', intro ?? '0', lose ?? '0', eventScript]);
+  }
+  return ScrCmd_trainerbattle(ctx, ['0' /* TRAINER_BATTLE_SINGLE */, trainer ?? '0', '0', intro ?? '0', lose ?? '0']);
 });
 
-// trainerbattle_double trainer, intro, lose, not_enough, ...  → lose = args[2].
+// trainerbattle_double trainer, intro, lose, not_enough [, event_script [, music]]
 registerOpcode('trainerbattle_double', (ctx, args) => {
-  // Double battles not yet supported — fallback to single.
-  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
+  const [trainer, intro, lose, notEnough, eventScript, music] = args;
+  if (eventScript && eventScript !== '0') {
+    const modeVal = music === 'NO_MUSIC' ? 8 /* CONTINUE_SCRIPT_DOUBLE_NO_MUSIC */ : 6 /* CONTINUE_SCRIPT_DOUBLE */;
+    return ScrCmd_trainerbattle(ctx, [String(modeVal), trainer ?? '0', '0', intro ?? '0', lose ?? '0', notEnough ?? '0', eventScript]);
+  }
+  return ScrCmd_trainerbattle(ctx, ['4' /* TRAINER_BATTLE_DOUBLE */, trainer ?? '0', '0', intro ?? '0', lose ?? '0', notEnough ?? '0']);
 });
 
-// trainerbattle_rematch trainer, intro, lose  → lose = args[2].
+// trainerbattle_rematch trainer, intro, lose
 registerOpcode('trainerbattle_rematch', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
+  return ScrCmd_trainerbattle(ctx, ['5' /* TRAINER_BATTLE_REMATCH */, args[0] ?? '0', '0', args[1] ?? '0', args[2] ?? '0']);
 });
 
-// trainerbattle_rematch_double trainer, intro, lose, not_enough  → lose = args[2].
+// trainerbattle_rematch_double trainer, intro, lose, not_enough
 registerOpcode('trainerbattle_rematch_double', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '', args[2]);
+  return ScrCmd_trainerbattle(ctx, ['7' /* TRAINER_BATTLE_REMATCH_DOUBLE */, args[0] ?? '0', '0', args[1] ?? '0', args[2] ?? '0', args[3] ?? '0']);
 });
 
-// trainerbattle_no_intro trainer, lose_text  → lose = args[1].
+// trainerbattle_no_intro trainer, lose_text
 registerOpcode('trainerbattle_no_intro', (ctx, args) => {
-  return _runTrainerBattle(ctx, args[0] ?? '', args[1]);
+  return ScrCmd_trainerbattle(ctx, ['3' /* TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT */, args[0] ?? '0', '0', args[1] ?? '0']);
 });
 
 // ─── Trainer flags ───────────────────────────────────────────────────────────
@@ -240,14 +208,17 @@ registerOpcode('dowildbattle', (ctx, _args) => {
   return true;
 });
 
-// ─── Trainer battle internal opcodes ────────────────────────────────────────
+// ─── Trainer battle internal opcodes (1:1 scrcmd.c:1827-1843, port miroir
+//     game/battle_setup.ts — remplacent les anciens stubs no-op) ─────────────
 
-/** 1:1 décomp ScrCmd_dotrainerbattle : ConfigureAndSetUpOneTrainerBattle.
- *  Internal — pas appelé directement par les scripts user. No-op safe. */
-registerOpcode('dotrainerbattle', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_dotrainerbattle` (scrcmd.c:1827) : DoTrainerBattle +
+ *  ScriptContext_Stop (poll de fin + CB2_EndTrainerBattle flags). */
+registerOpcode('dotrainerbattle', (ctx, _args) => ScrCmd_dotrainerbattle(ctx));
 
-/** 1:1 décomp : jump to BattleScript_PostBattle. Internal. */
-registerOpcode('gotopostbattlescript', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_gotopostbattlescript` (scrcmd.c:1833) :
+ *  jump BattleSetup_GetTrainerPostBattleScript(). */
+registerOpcode('gotopostbattlescript', (ctx, _args) => ScrCmd_gotopostbattlescript(ctx));
 
-/** 1:1 décomp : jump to BattleScript_TrainerDefeated. Internal. */
-registerOpcode('gotobeatenscript', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_gotobeatenscript` (scrcmd.c:1839) :
+ *  jump BattleSetup_GetScriptAddrAfterBattle() (= reprise du script de map). */
+registerOpcode('gotobeatenscript', (ctx, _args) => ScrCmd_gotobeatenscript(ctx));

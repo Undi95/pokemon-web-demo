@@ -2202,7 +2202,7 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'GetSelectedMonNicknameAndSpecies',
   // 'GetTraderTradedFlag' — porté 1:1 décomp trader.c:139 ci-bas.
   // 'GetTrainerFlag' — porté 1:1 décomp battle_setup.c:1235 ci-bas (refactor B1).
-  'GetTrainerBattleMode',
+  // 'GetTrainerBattleMode' — porté 1:1 décomp battle_setup.c:1230 (game/battle_setup.ts).
   // 'GetWirelessCommType' — porté 1:1 décomp link.c:1846 ci-bas (= no wireless).
   // 'GiddyShouldTellAnotherTale' — porté 1:1 décomp mauville_old_man.c:267 ci-bas.
   'GiveEggFromDaycare', 'GiveLeadMonEffortRibbon', 'GiveMonContestRibbon',
@@ -2325,8 +2325,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'ShowPokedexRatingMessage', 'ShowPokemonJumpRecords',
   'ShowPokemonStorageSystemPC', 'ShowRankingHallRecordsWindow',
   'ShowSecretBaseDecorationMenu', 'ShowSecretBaseRegistryMenu',
-  'ShowTrainerCantBattleSpeech', 'ShowTrainerHillRecords',
-  'ShowTrainerIntroSpeech', 'ShowWirelessCommunicationScreen',
+  // 'ShowTrainerCantBattleSpeech' — porté 1:1 décomp battle_setup.c:1435 (game/battle_setup.ts).
+  'ShowTrainerHillRecords',
+  // 'ShowTrainerIntroSpeech' — porté 1:1 décomp battle_setup.c:1378 (game/battle_setup.ts).
+  'ShowWirelessCommunicationScreen',
   'SpawnLinkPartnerObjectEvent', 'StartDroughtWeatherBlend',
   'StartGroudonKyogreBattle', 'StartMirageTowerDisintegration',
   'StartMirageTowerFossilFallAndSink', 'StartMirageTowerShake',
@@ -2345,7 +2347,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'TryHideBattleTowerReporter', 'TryInitBattleTowerAwardManObjectEvent',
   'TryJoinLinkGroup', 'TryLoseFansFromPlayTime',
   'TryLoseFansFromPlayTimeAfterLinkBattle',
-  'TryPrepareSecondApproachingTrainer', 'TryPutNameRaterShowOnTheAir',
+  // 'TryPrepareSecondApproachingTrainer' — porté (=0, trainer_see dette) game/battle_setup.ts.
+  'TryPutNameRaterShowOnTheAir',
   'TryPutTrainerFanClubOnAir', 'TryPutTreasureInvestigatorsOnAir',
   'TryRecordMixLinkup', 'TrySetBattleTowerLinkType',
   'TryStoreHeldItemsInPyramidBag', 'TryTradeLinkup',
