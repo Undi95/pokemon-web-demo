@@ -603,9 +603,12 @@ function _StartSendOutAnim_Opponent(battler: number, dontClearSubstituteBit: boo
   // démasqué par l'A/B chaîne SwitchIn sur Rick ×2 Wurmple 2026-06-12).
   void dontClearSubstituteBit; // ClearTemporarySpeciesSpriteData = dette substitute.
   // Création réelle du sprite front (gfx+palette+registre, reveal anti-noir) —
-  // la brique du chemin INTRO. Ball anim DoPokeballSendOutAnimation
-  // (POKEBALL_OPPONENT_SENDOUT) = dette : le mon apparaît sans throw de ball.
-  void _loadAndCreateBattlerMonSprite(battler, false);
+  // la brique du chemin INTRO. isOpponent=TRUE : lit gEnemyParty (le `false`
+  // initial lisait gPlayerParty[idx] vide → « species 0 », mon invisible —
+  // ce N'ÉTAIT PAS une désync party-storage, juste cet argument).
+  // Ball anim DoPokeballSendOutAnimation (POKEBALL_OPPONENT_SENDOUT) = dette :
+  // le mon apparaît sans throw de ball.
+  void _loadAndCreateBattlerMonSprite(battler, true);
 }
 
 function _installSwitchInTryShinyAnim(battler: number): void {
