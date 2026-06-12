@@ -376,11 +376,32 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       // PLAYER_LEFT=30 / OPPONENT_LEFT=40 → à priority égale, le mon adverse (40) rend DERRIÈRE
       // le dresseur joueur (back-sprite, subpri 30). Avant : priority=1 + subpri=2 (FAUX) → le
       // mon adverse passait DEVANT le dresseur (retour A/B 2026-06-04).
-      oam: { shape: 0, size: 3, priority: 2, paletteNum: battler, affineMode: 0 },
-      images: [{ data: frame0, size: FRAME0 }],
+      // 1:1 gOamData_BattleSpriteOpponentSide/PlayerSide (battle_main.c:284/299) :
+      // affineMode = ST_OAM_AFFINE_NORMAL (1) — requis pour l'affine EMERGE du
+      // send-out (StartSpriteAffineAnim BATTLER_AFFINE_EMERGE, pokeball.ts:476).
+      // Matrice par battler (affineParamIndex) = pas de collision player/opponent.
+      oam: { shape: 0, size: 3, priority: 2, paletteNum: battler, affineMode: 1, affineParamIndex: battler },
+      // ⚠️ size = la TAILLE RÉELLE uploadée (2 frames = 128 tiles pour le front
+      // adverse animé). L'ancien `size: FRAME0` n'ALLOUAIT que 64 tiles alors que
+      // _writeToObjVram écrivait les 2 frames → la frame 2 (base+64) vivait en
+      // VRAM NON allouée → écrasée par les allocs suivantes → tiles corrompues
+      // dès que l'anim 2-frames bascule (bug user #2b, + le shiny Grahyena en stock).
+      images: [{ data: frame0, size: frame0.length }],
       callback: null,
     }, _GetBattlerSpriteCoordX(battler), y, _GetBattlerSpriteSubpriority(battler));
     _registerBattlerMonSprite(battler, spriteId);
+    // 1:1 décomp gBattlerSpriteTemplates[position].affineAnims =
+    // gAffineAnims_BattleSpriteOpponentSide/PlayerSide (battle_main.c:305-330) —
+    // SANS la table, StartSpriteAffineAnim pose ended immédiatement (sémantique
+    // plateforme) → l'EMERGE du send-out ne grossissait jamais (bug user #2a).
+    {
+      const monSpr = getRuntime()?.gSprites.get(spriteId);
+      if (monSpr) {
+        monSpr.affineAnimsTableName = isOpponent
+          ? 'gAffineAnims_BattleSpriteOpponentSide'
+          : 'gAffineAnims_BattleSpritePlayerSide';
+      }
+    }
     // 1:1 décomp OpponentHandleLoadMonSprite (battle_controller_opponent.c:1149-1153) : le mon
     // SAUVAGE adverse naît HORS-ÉCRAN DROITE (x2=-DISPLAY_WIDTH) avec le callback SpriteCB_WildMon
     // (du template gBattlerSpriteTemplates[B_POSITION_OPPONENT_LEFT], pokemon.c:1959) → il GLISSE
