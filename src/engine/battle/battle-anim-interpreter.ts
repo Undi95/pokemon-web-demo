@@ -834,6 +834,15 @@ function LoadMoveBg(bgId: number): void {
   if (map) {
     const m16 = new Uint16Array(map.buffer, map.byteOffset, map.byteLength >> 1);
     bg3.tilemap.set(m16.subarray(0, Math.min(m16.length, bg3.tilemap.length)), 0);
+    // Bug user 2026-06-12 « le fond ExtremeSpeed passe de ciel à VIDE à ciel » :
+    // les tilemaps d'anim font 1024 entries (32×32, 1 screenblock) mais le BG3
+    // combat est screenSize 1 (512×256 = 2 screenblocks) → le SB1 (colonnes
+    // 32-63) restait l'ancien contenu/vide et le slide horizontal le traversait.
+    // Les fonds d'anim sont des motifs répétitifs → dupliquer SB0 dans SB1
+    // (= l'effet du wrap 256 hardware que la ROM obtient sur l'écran).
+    if (m16.length === 1024 && bg3.tilemap.length >= 2048) {
+      bg3.tilemap.set(m16, 1024);
+    }
   }
   if (pal) {
     const pf = (rt as unknown as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } }).gPlttBufferFaded;
