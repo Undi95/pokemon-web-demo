@@ -32,37 +32,37 @@
 > (SetMonData(LEVEL) sans CalculateMonStats) → fixé 1:1 + copie gBattleMons
 > complète (:3469-3498) + capture beforeLvlUp (:3436). Commit 0be2e866.
 
-## battle_setup.c — 49/102 fonctions couvertes (48%) · cite:17 + symbole:32 · 56 citations
+## battle_setup.c — T-A FAITE ✅ (commit 4491dad2 : miroir src/game/battle_setup.ts) — reste T-B/T-C
 - [ ] BattleSetup_StartBattlePikeWildBattle  @ L397-401
 - [ ] BattleSetup_StartRoamerBattle  @ L421-434
 - [ ] DoSafariBattle  @ L435-444
 - [ ] DoBattlePikeWildBattle  @ L445-458
 - [ ] DoBattlePyramidTrainerHillBattle  @ L467-479
 - [ ] GetSpecialBattleTransition  @ L864-910
-- [ ] TrainerBattleLoadArg32  @ L969-973
-- [ ] TrainerBattleLoadArg16  @ L974-978
-- [ ] TrainerBattleLoadArg8  @ L979-983
-- [ ] GetTrainerBFlag  @ L989-993
-- [ ] IsPlayerDefeated  @ L994-1011
-- [ ] ResetTrainerOpponentIds  @ L1012-1017
-- [ ] InitTrainerBattleVariables  @ L1018-1038
-- [ ] SetU8  @ L1039-1043
-- [ ] SetU16  @ L1044-1048
-- [ ] SetU32  @ L1049-1053
-- [ ] SetPtr  @ L1054-1058
-- [ ] SetMapVarsToTrainer  @ L1094-1102
+- [x] TrainerBattleLoadArg32 (T-A 4491dad2) @ L969-973
+- [x] TrainerBattleLoadArg16 (T-A 4491dad2) @ L974-978
+- [x] TrainerBattleLoadArg8 (T-A 4491dad2) @ L979-983
+- [x] GetTrainerBFlag (T-A 4491dad2) @ L989-993
+- [x] IsPlayerDefeated (T-A 4491dad2) @ L994-1011
+- [x] ResetTrainerOpponentIds (T-A 4491dad2) @ L1012-1017
+- [x] InitTrainerBattleVariables (T-A 4491dad2) @ L1018-1038
+- [x] SetU8 (T-A 4491dad2) @ L1039-1043
+- [x] SetU16 (T-A 4491dad2) @ L1044-1048
+- [x] SetU32 (T-A 4491dad2) @ L1049-1053
+- [x] SetPtr (T-A 4491dad2) @ L1054-1058
+- [x] SetMapVarsToTrainer (T-A 4491dad2) @ L1094-1102
 - [ ] ConfigureTwoTrainersBattle  @ L1202-1208
 - [ ] SetUpTwoTrainersBattle  @ L1209-1214
 - [ ] GetTrainerFlagFromScriptPointer  @ L1215-1223
-- [ ] SetBattledTrainerFlag  @ L1252-1256
-- [ ] HasTrainerBeenFought  @ L1257-1261
-- [ ] SetTrainerFlag  @ L1262-1266
-- [ ] ClearTrainerFlag  @ L1267-1271
+- [x] SetBattledTrainerFlag (T-A 4491dad2) @ L1252-1256
+- [x] HasTrainerBeenFought (T-A 4491dad2) @ L1257-1261
+- [x] SetTrainerFlag (T-A 4491dad2) @ L1262-1266
+- [x] ClearTrainerFlag (T-A 4491dad2) @ L1267-1271
 - [ ] CB2_EndRematchBattle  @ L1351-1369
-- [ ] BattleSetup_GetScriptAddrAfterBattle  @ L1404-1411
-- [ ] BattleSetup_GetTrainerPostBattleScript  @ L1412-1434
+- [x] BattleSetup_GetScriptAddrAfterBattle (T-A 4491dad2) @ L1404-1411
+- [x] BattleSetup_GetTrainerPostBattleScript (T-A 4491dad2) @ L1412-1434
 - [ ] ReturnEmptyStringIfNull  @ L1501-1508
-- [ ] GetTrainerWonSpeech  @ L1536-1540
+- [x] GetTrainerWonSpeech (T-A 4491dad2) @ L1536-1540
 - [ ] FirstBattleTrainerIdToRematchTableId  @ L1546-1558
 - [ ] TrainerIdToRematchTableId  @ L1559-1577
 - [ ] IsRematchForbidden  @ L1578-1587
