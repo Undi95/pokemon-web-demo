@@ -740,7 +740,7 @@
 
 ## battle_anim_throw.c — 60/78 fonctions couvertes (77%) · cite:51 + symbole:9 · 91 citations
 - [ ] AnimTask_UnusedLevelUpHealthBox_Step  @ L484-543
-- [ ] Task_PlayerThrow_Wait  @ L837-854
+- [x] Task_PlayerThrow_Wait @ L837-854 — DETTE LIÉE — créé uniquement par AnimTask_ThrowBall_StandingTrainer_Step (.c:826) dont le port TS est en dette R3 (switch immédiat sans monitor animCmdIndex, battle_anim_throw.ts:313) ; le porter seul = orphelin sans effet. À porter AVEC le monitor du bras dresseur.
 - [ ] IncrBallParticleCount  @ L1593-1598
 - [ ] TimerBallOpenParticleAnimation  @ L1660-1693
 - [ ] DiveBallOpenParticleAnimation  @ L1694-1728
