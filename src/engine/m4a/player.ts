@@ -673,3 +673,11 @@ export function isPlaying(slot: SlotKind = 'bgm'): boolean {
   // Une song pausée a paused=true mais isFinished=false → toujours "playing".
   return !state.sequencer.isFinished;
 }
+
+// Sonde debug (diagnostic « plus de musique » enchaînement combats 2026-06-12) :
+// état BGM lisible depuis la console / preview_eval sans import() dynamique.
+(globalThis as Record<string, unknown>).__m4aNowPlaying = () => ({
+  bgm: isPlaying('bgm'),
+  paused: isPaused('bgm'),
+  ctxState: (() => { try { return getAudioContext().state; } catch { return 'uninit'; } })(),
+});

@@ -1394,7 +1394,7 @@ setMoveBattleBarGraphicallyHook(MoveBattleBarGraphically);
 //  NamingSubsprite / loadIndexedPngStrict / extractPngPlte / LoadSpritePalette :
 //  déjà importés par les sections précédentes du miroir.)
 import { loadIndexedPng, loadIndexedPngRawIndices } from '../engine/gba/png-loader';
-import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange } from '../engine/system/sprite';
+import { MarkObjTilesAllocated, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag } from '../engine/system/sprite';
 // Pipeline texte→OBJ healthbox (1:1 décomp AddTextPrinterAndCreateWindowOnHealthbox).
 // UI modules bas-niveau (une seule direction d'import : battle_interface → ui/*).
 import { AddWindow, RemoveWindow, FillWindowPixelBuffer, GetWindowPixelBuffer } from '../engine/ui/gba-window-system';
@@ -1548,12 +1548,6 @@ const HEALTHBAR_SUBSPRITES_OPPONENT: readonly NamingSubsprite[] = [
 // ─── Asset loading (idempotent) ─────────────────────────────────────────────
 
 let _assetsLoaded = false;
-// #VRAM 1:1 (étape 2c) : garde-fou d'allocation PAR COMBAT. ensureHealthboxAssets
-// est appelé 2× par combat (player + opp via createBattlerHealthboxSprites) mais
-// les 4 régions VRAM healthbox ne doivent être allouées qu'1× ; reset à false au
-// teardown (resetHealthboxAllocation) pour que le combat SUIVANT ré-alloue —
-// l'allocateur OBJ se reset entre combats (decomp-runtime FreeSpriteTileRanges).
-let _hbAllocatedThisBattle = false;
 // #VRAM 1:1 : la base healthbox (tiles boîte + barre vide) ne doit être (re)blittée
 // qu'UNE FOIS par cycle d'allocation (= par combat / par reshow), PAS à chaque appel
 // per-battler. Sinon la création de la healthbox adverse re-blitte la base du joueur
@@ -1563,36 +1557,21 @@ let _hbAllocatedThisBattle = false;
 // ne recharge pas. Reset à false à l'(ré)allocation → re-blit frais ce cycle-là.
 let _hbBaseBlitted = false;
 
-/** #VRAM 1:1 (étape 2c) : libère les 4 régions VRAM healthbox (par tag) + arme la
- *  ré-allocation au combat suivant. À appeler au teardown du combat (battle-flow),
- *  à côté des FreeSpriteTilesByTag des mons. Les offsets du prochain combat seront
- *  potentiellement différents (allocateur dynamique) — tous les sites les relisent. */
-export function resetHealthboxAllocation(): void {
-  FreeSpriteTilesByTag(TAG_HB_PLAYER);
-  FreeSpriteTilesByTag(TAG_HB_OPP);
-  FreeSpriteTilesByTag(TAG_HPBAR_PLAYER);
-  FreeSpriteTilesByTag(TAG_HPBAR_OPP);
-  _hbAllocatedThisBattle = false;
-  _hbBaseBlitted = false;
-}
-
 /** 1:1 décomp `BattleLoadAllHealthBoxesGfx` (battle_gfx_sfx_util.c) — (re)charge les
  *  sheets healthbox = (ré)alloue les 4 régions OBJ VRAM + (ré)upload les tiles.
  *
  *  Appelé par le RESHOW (reshow_battle_screen.c case 6), AVANT la (re)création des
  *  sprites mon (cases 7-14). C'est essentiel : la case 3 (ResetSpriteData) a vidé le
- *  bitmap d'alloc OBJ VRAM (sSpriteTileAllocBitmap + sSpriteTileRanges). Si on NE
- *  ré-alloue PAS le gfx healthbox ici, les sprites mon prennent les tiles bas (0..127)
- *  via AllocSpriteTiles, puis le re-blit healthbox (offset périmé du combat, garde-fou
- *  `_hbAllocatedThisBattle` resté à true) écrase ces mêmes tiles → les DEUX mons
- *  rendent le gfx de la box (= "blocs orange" après un switch / retour de party
- *  screen, root cause #8). En ré-allouant le healthbox D'ABORD (comme le décomp), il
- *  reprend les tiles bas et les mons s'allouent APRÈS → aucune collision.
+ *  bitmap d'alloc OBJ VRAM (sSpriteTileAllocBitmap + sSpriteTileRanges + les TAGS).
+ *  Si on NE ré-alloue PAS le gfx healthbox ici, les sprites mon prennent les tiles
+ *  bas (0..127) via AllocSpriteTiles → collision (= "blocs orange" après un switch /
+ *  retour de party screen, root cause #8). En ré-allouant le healthbox D'ABORD
+ *  (comme le décomp), il reprend les tiles bas et les mons s'allouent APRÈS.
  *
- *  Reset du garde-fou → ensureHealthboxAssets ré-alloue frais (les 4 régions via
- *  AllocSpriteTiles, sur le bitmap vide post-ResetSpriteData). */
+ *  La ré-allocation est automatique : le ResetSpriteData de la case 3 a purgé
+ *  sSpriteTileRangeTags → ensureHealthboxAssets voit TAG_HB_PLAYER absent →
+ *  ré-alloue les 4 régions + re-blitte la base (même critère qu'un boot de combat). */
 export async function BattleLoadAllHealthBoxesGfx(): Promise<void> {
-  _hbAllocatedThisBattle = false;
   await ensureHealthboxAssets();
 }
 
@@ -1716,9 +1695,15 @@ export async function ensureHealthboxAssets(): Promise<void> {
   // LoadCompressedSpriteSheet → le tile allocator OBJ (AllocSpriteTiles). On
   // réplique : on alloue les 4 régions et on fixe les byte offsets dynamiques.
   // Ordre décomp (battle_gfx_sfx_util.c:747-760) : player box → opp box →
-  // HealthBar[player] → HealthBar[opp]. Garde-fou `_hbAllocatedThisBattle` :
-  // l'appel #2 (opp) + le re-blit cache-hit réutilisent ces mêmes offsets.
-  if (!_hbAllocatedThisBattle) {
+  // HealthBar[player] → HealthBar[opp].
+  // Critère « déjà alloué ce cycle » 1:1 décomp : l'état de l'ALLOCATEUR PAR TAG
+  // (= GetSpriteTileStartByTag). ResetSpriteData (boot combat CB2_InitBattleInternal,
+  // reshow case 3, swap de scène) purge sSpriteTileRangeTags → le tag disparaît →
+  // on (ré)alloue + re-blitte, exactement comme la ROM où BattleLoadAllHealthBoxesGfx
+  // recharge les sheets parce que leur tag n'existe plus. L'appel #2 per-battler du
+  // même cycle voit le tag présent → réutilise les mêmes offsets. (Un flag privé
+  // module-level survivrait au swap de scène → combat 2 jamais re-blitté = bouillie.)
+  if (GetSpriteTileStartByTag(TAG_HB_PLAYER) === 0xFFFF) {
     const hbPlayerStart = AllocSpriteTiles(HEALTHBOX_PLAYER_TILE_COUNT);
     AllocSpriteTileRange(TAG_HB_PLAYER, hbPlayerStart, HEALTHBOX_PLAYER_TILE_COUNT);
     HEALTHBOX_PLAYER_VRAM = hbPlayerStart * TILE_BYTES;
@@ -1737,7 +1722,6 @@ export async function ensureHealthboxAssets(): Promise<void> {
     HPBAR_OPP_LEFT_VRAM  = hpbarOppStart * TILE_BYTES;
     HPBAR_OPP_RIGHT_VRAM = HPBAR_OPP_LEFT_VRAM + 0x80;
 
-    _hbAllocatedThisBattle = true;
     _hbBaseBlitted = false;   // nouvelle alloc → la base doit être (re)blittée ce cycle
   }
 

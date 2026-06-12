@@ -484,7 +484,12 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
       ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
       gBattleCommunication[MULTISTRING_CHOOSER] = _B_MSG_CANT_ESCAPE_2_HAR;
       const off = _getBattleScriptOffsetHAR('BattleScript_PrintFailedToRunString');
-      if (ctx && off >= 0) ctx.scriptPtr = off;
+      // 1:1 décomp `gBattlescriptCurrInstr = BattleScript_PrintFailedToRunString` :
+      // la table sTurnActionsFuncsTable appelle SANS ctx → fallback OBLIGATOIRE sur
+      // le ctx persistant (sinon le script n'est jamais pointé → B_ACTION_EXEC_SCRIPT
+      // steppe l'ancien pointeur = soft-lock silencieux au menu, bug user fuite).
+      const c = ctx ?? gBattleScriptContext;
+      if (c && off >= 0) c.scriptPtr = off;
       setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
     }
     // Si TryRunFromBattle a réussi : il a déjà set gBattleOutcome = RAN +
@@ -494,7 +499,9 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
     if (gBattleMons[gBattlerAttacker].status2 & (_STATUS2_WRAPPED_HAR | _STATUS2_ESCAPE_PREVENTION_HAR)) {
       gBattleCommunication[MULTISTRING_CHOOSER] = _B_MSG_ATTACKER_CANT_ESCAPE_HAR;
       const off = _getBattleScriptOffsetHAR('BattleScript_PrintFailedToRunString');
-      if (ctx && off >= 0) ctx.scriptPtr = off;
+      // 1:1 : même fallback ctx persistant (appel sans ctx depuis la table d'actions).
+      const c = ctx ?? gBattleScriptContext;
+      if (c && off >= 0) c.scriptPtr = off;
       setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
     } else {
       setCurrentTurnActionNumberHAR(gBattlersCount);
@@ -521,10 +528,12 @@ import {
 } from './constants';
 
 const _B_ACTION_RUN_HAR = 3;
-// 1:1 décomp `B_MSG_CANT_ESCAPE_2` / `B_MSG_ATTACKER_CANT_ESCAPE` (= index dans
-// sRoarUsedStringIds / sNoEscapeStringIds).
-const _B_MSG_CANT_ESCAPE_2_HAR = 1;
-const _B_MSG_ATTACKER_CANT_ESCAPE_HAR = 0;
+// 1:1 décomp battle_string_ids.h:564-569 (index dans gNoEscapeStringIds) :
+// CANT_ESCAPE=0, DONT_LEAVE_BIRCH=1, PREVENTS_ESCAPE=2, CANT_ESCAPE_2=3,
+// ATTACKER_CANT_ESCAPE=4. (Les anciennes valeurs 1/0 affichaient le message
+// Birch « Ne me laisse pas comme ça! » sur un échec de fuite sauvage.)
+const _B_MSG_CANT_ESCAPE_2_HAR = 3;
+const _B_MSG_ATTACKER_CANT_ESCAPE_HAR = 4;
 
 /** 1:1 décomp `HandleAction_RunBattleScript` (battle_util.c:3805-3809) :
  *  `if (gBattleControllerExecFlags == 0) gBattleScriptingCommandsTable[*gBattlescriptCurrInstr]();`

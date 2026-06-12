@@ -39,7 +39,7 @@ import { setReverb as _staticSetReverb } from '../m4a/audio-context';
 // Static imports m4a/player + synth pour pouvoir stopper la musique de FAÇON
 // SYNCHRONE depuis m4aSongNumStart (sinon le sync stop attend l'import async,
 // laissant la song précédente déclencher son endTimer de loop entre-temps).
-import { stopSong as _staticStopSong, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
+import { stopSong as _staticStopSong, stopAllSongs as _staticStopAllSongs, loadMidi as _staticLoadMidi, playSong as _staticPlaySong, pauseSong as _staticPauseSong, resumeSong as _staticResumeSong, isPaused as _staticIsPaused, isPlaying as _staticIsPlaying } from '../m4a/player';
 import { hasPrerenderedSE, playPrerenderedSE, stopPrerenderedSE, preloadPrerenderedList } from '../m4a/se-noise-prerendered';
 import { stopAllActiveNotes as _staticStopAllNotes } from '../m4a/synth';
 // Side-effect import : registers battler affine animations (gAffineAnims_BattleSprite*)
@@ -794,9 +794,14 @@ export function m4aSongNumStart(songId: number, loop: boolean = false): void {
 }
 
 /** 1:1 décomp `m4aMPlayAllStop()` — stoppe tout playback M4A (BGM + SE).
- *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2). */
+ *  Utilise `stopAllSongs()` du player qui boucle sur les 3 slots (bgm/se1/se2).
+ *  SYNC obligatoire (import statique) : la version `import().then()` différait le
+ *  stop APRÈS le playSong d'un m4aSongNumStart appelé juste ensuite quand le .mid
+ *  était déjà en cache (combat 2+) → tuait la BGM de combat fraîchement lancée =
+ *  « plus de musique » au 2e combat (bug user 2026-06-12). Ordre strict 1:1 ROM :
+ *  PlayBattleBGM = m4aMPlayAllStop PUIS PlayBGM. */
 export function m4aMPlayAllStop(): void {
-  void import('../m4a/player').then(({ stopAllSongs }) => stopAllSongs());
+  _staticStopAllSongs();
 }
 
 /** 1:1 décomp `FillPalBufferBlack()` (field_screen_effect.c:69-72) :

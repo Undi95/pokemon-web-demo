@@ -1111,6 +1111,9 @@ if (!(globalThis as Record<string, unknown>).__battleState) {
   setMultiUsePlayerCursor,
   get gActiveBattler() { return gActiveBattler; },
   setActiveBattler,
+  // Debug protocole controllers (diagnostic soft-lock action-selection 2026-06-12).
+  get gBattleControllerExecFlags() { return gBattleControllerExecFlags; },
+  gBattlerControllerFuncs,
   // Setters pour memory-map writes (= opcodes natifs setbyte/addbyte/orbyte).
   setBattlerTarget,
   setBattlerAttacker,
