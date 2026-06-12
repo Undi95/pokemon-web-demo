@@ -3402,3 +3402,104 @@ function _TormentBubble_Pop(sprite: { data: number[]; animEnded?: boolean }): vo
   }
 }
 registerAnimTasks({ AnimTask_TormentAttacker: AnimTask_TormentAttacker as never });
+
+// --- VAGUE F57 : AnimTask_BarrageBall (effects_3.c:4158-4225) ---------------
+// L'oeuf de Barrage : arc ralenti (1 tick/2f x8) puis arc plein, clignote 16
+// demi-cycles a l'impact et meurt.
+import {
+  InitAnimArcTranslation as _bbArcInit,
+  TranslateAnimHorizontalArc as _bbArcRun,
+  GetBattlerSpriteSubpriority as _bbSubprio,
+} from './battle_anim_mons';
+
+function _bbPicHeight(battler: number): number {
+  const party = (battler & 1) !== 0 ? gEnemyParty : gPlayerParty;
+  const species = GetMonData(party[gBattlerPartyIndexes[battler]] as never, MON_DATA_SPECIES) as number;
+  const name = reverseDecompConstant(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? getMonBackPicCoords(name) : getMonFrontPicCoords(name);
+  return coords.h;
+}
+
+/** 1:1 AnimTask_BarrageBall (effects_3.c:4158). */
+function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _vItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[11] = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  task.data[12] = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  task.data[13] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+  task.data[14] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y_PIC_OFFSET) + Math.trunc(_bbPicHeight(tgt) / 4);
+  const rt = _grt() as unknown as {
+    gSprites?: Map<number, { data: number[]; invisible?: boolean; oamIndex: number }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    DestroySprite?: (i: number) => void;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  };
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gBarrageBallSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], _bbSubprio(tgt) - 5) ?? -1;
+  task.data[15] = sid;
+  if (sid >= 0) {
+    const sp = rt.gSprites?.get(sid);
+    const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) {
+      oam.tileId = tileStart;
+      const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    }
+    if (sp) {
+      sp.data[0] = 16;
+      sp.data[2] = task.data[13];
+      sp.data[4] = task.data[14];
+      sp.data[5] = -32;
+      _bbArcInit(sp as never);
+      // (affine anim 1 = rotation inverse cote opponent — dette douce inline)
+    }
+    task.func = _BarrageBall_Step;
+  } else {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+function _BarrageBall_Step(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const rt = _grt() as unknown as {
+    gSprites?: Map<number, { data: number[]; invisible?: boolean; oamIndex: number }>;
+    DestroySprite?: (i: number) => void;
+  };
+  const sp = rt.gSprites?.get(task.data[15]);
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        if (sp) _bbArcRun(sp as never);
+        if (++task.data[2] > 7) task.data[0]++;
+      }
+      break;
+    case 1:
+      if (!sp || _bbArcRun(sp as never)) {
+        task.data[1] = 0;
+        task.data[2] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        task.data[2]++;
+        if (sp) sp.invisible = !!(task.data[2] & 1);
+        if (task.data[2] === 16) {
+          rt.DestroySprite?.(task.data[15]);
+          task.data[0]++;
+        }
+      }
+      break;
+    case 3:
+      _vItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+registerAnimTasks({ AnimTask_BarrageBall: AnimTask_BarrageBall as never });
