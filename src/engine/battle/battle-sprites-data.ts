@@ -242,6 +242,10 @@ _g.__battleSpritesData = Object.assign(
     isSpecialAnimActive, setSpecialAnimActive,
     isStatusAnimActive, setStatusAnimActive,
     isBehindSubstitute, setBehindSubstitute,
+    // battlerData.invisible (consommé par AnimTask_SetAttackerInvisibleWaitForSignal
+    // 1:1 — le flag LOGIQUE sauvé/restauré, pas sprite.invisible).
+    isBattlerDataInvisible, setBattlerDataInvisible,
+    isBallAnimActive, setBallAnimActive,
     getHealthBoxBounceData,
     // 1:1 décomp `ClearSpritesHealthboxAnimData` (reshow case 5) : reset les flags bounce
     // (healthboxIsBouncing/battlerIsBouncing). N'était PAS exposé -> le reshow l'appelait

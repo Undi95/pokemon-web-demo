@@ -311,13 +311,30 @@ function AnimTask_GetWeather(task: { taskId: number }): void {
  *  task de FOND (vtc--) qui cache l attaquant jusqu au signal args[7]==0x1000. */
 function AnimTask_SetAttackerInvisibleWaitForSignal(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _ufItf() as { getAttacker?: () => number; decVisualTaskCount?: () => void };
+  const attacker = itf.getAttacker?.() ?? 0;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-  const sid = co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? 0xFF;
+  const sid = co?.getBattlerMonSpriteId?.(attacker) ?? 0xFF;
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
   const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
   if (!sp) { (_ufItf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId); return; }
-  task.data[0] = sp.invisible ? 1 : 0;
+  // 1:1 .c:1087 : data[0] = battlerData[attacker].invisible — le FLAG LOGIQUE
+  // (PAS sprite->invisible !). Bug Rayquaza-disparaît-après-ExtremeSpeed
+  // (user 2026-06-12) : on sauvait sprite.invisible (TRUE à cet instant, posé
+  // par AttackerStretchAndDisappear) → quand cette task fantôme tirait enfin
+  // (un ret-task pose args[7]=0x1000 par hasard, quirk vanilla : le script
+  // envoie 0xFFFF qui ne matche jamais), elle « restaurait » INVISIBLE et
+  // écrasait le invisible=false du Reappear. Le .c sauve battlerData (false,
+  // jamais touché par l'anim) → restauration toujours inoffensive.
+  const sd = (globalThis as Record<string, unknown>).__battleSpritesData as {
+    isBattlerDataInvisible?: (b: number) => boolean; setBattlerDataInvisible?: (b: number, v: boolean) => void;
+  } | undefined;
+  task.data[0] = sd?.isBattlerDataInvisible?.(attacker) ? 1 : 0;
+  task.data[14] = attacker;
   task.data[15] = sid;
+  // 1:1 .c:1088 : battlerData.invisible = TRUE (+ le sprite pour l'effet
+  // immédiat — notre rendu lit le sprite ; le .c synchronise via
+  // CopyBattleSpriteInvisibility ailleurs).
+  sd?.setBattlerDataInvisible?.(attacker, true);
   sp.invisible = true;
   (itf as { decVisualTaskCount?: () => void }).decVisualTaskCount?.();
   task.func = _WaitAndRestoreVisibility;
@@ -326,8 +343,14 @@ function _WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): vo
   const args = _ufItf().getArgs?.() ?? [];
   if (args[7] === 0x1000) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }>; DestroyTask?: (id: number) => void } | undefined;
+    const sd = (globalThis as Record<string, unknown>).__battleSpritesData as {
+      setBattlerDataInvisible?: (b: number, v: boolean) => void;
+    } | undefined;
+    const restored = (task.data[0] & 1) === 1;
+    // 1:1 .c:1098 : battlerData.invisible = data[0] & 1 (+ miroir sprite).
+    sd?.setBattlerDataInvisible?.(task.data[14], restored);
     const sp = rt?.gSprites?.get(task.data[15]);
-    if (sp) sp.invisible = (task.data[0] & 1) === 1;
+    if (sp) sp.invisible = restored;
     rt?.DestroyTask?.(task.taskId);
   }
 }

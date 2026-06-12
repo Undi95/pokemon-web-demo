@@ -1506,7 +1506,7 @@ function _ExSpeedReappear_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[15]);
-  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  if (!sp) { console.warn('[ExSpeedReappear] sprite', task.data[15], 'ABSENT → destroy précoce (mon reste invisible !)'); itf.DestroyAnimVisualTask?.(task.taskId); return; }
   if (task.data[0] === 0 && ++task.data[1] > task.data[4]) {
     task.data[1] = 0;
     sp.invisible = !((++task.data[2]) & 1);
@@ -1515,6 +1515,7 @@ function _ExSpeedReappear_Step(task: _SpTask): void {
         task.data[1] = 0; task.data[2] = 0; task.data[3] = 0;
       } else {
         sp.invisible = false;
+        console.warn('[ExSpeedReappear] FIN normale → invisible=false posé sur sprite', task.data[15]);
         itf.DestroyAnimVisualTask?.(task.taskId);
       }
     }
