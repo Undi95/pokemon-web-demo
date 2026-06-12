@@ -672,27 +672,48 @@ export function MoveBattlerSpriteToBG(battler: number, toBG_2: boolean, setSprit
   // adresses dediees (BG_SCREEN_ADDR(8)) ; nous : charblock 1 (0x4000+),
   // hors textbox(0)/terrain(2). La view (getter dynamique) suit.
   bg.config.charBaseIndex = 1;
-  // fills 1:1 (CpuFill16(0, tiles, 0x1000) + tilemap 0xFF/0) — net : zero.
   const tilesOffsetBytes = toBG_2 ? 0x1000 : 0;
-  bg.tilemap.fill(0);
+  // 1:1 RequestDma3Fill(0, BG_SCREEN_ADDR(8|12), 0x2000, 1) + CpuFill16(0,
+  // bgTiles(+0x1000), 0x1000) (battle_anim.c:684/689 | :724/727) : vider 256
+  // tiles du charblock anim AVANT la copie — le mon n'en occupe que 64, les
+  // tiles 64+ deviennent des VIDES GARANTIES (audit engine-gaps 2026-06-13 :
+  // RequestDma3Fill était inexistant → jamais nettoyé).
+  bg.vram.fill(0, tilesOffsetBytes, tilesOffsetBytes + 0x2000);
   // les 64 tiles OBJ du mon (BG_SCREEN_SIZE=0x800 bytes 1:1)
   const monTile = oam?.tileId ?? 0;
   const src = gba.objVram.subarray(monTile * 32, monTile * 32 + 0x800);
   bg.vram.set(src, tilesOffsetBytes);
-  // tilemap 8x8 a (0,0) : offset croissant | palette<<12 (DrawBattlerOnBg)
   const paletteId = toBG_2 ? 9 : 8;
   const baseTile = tilesOffsetBytes >> 5;
+  // 1:1 RequestDma3Fill(0xFF, BG_SCREEN_ADDR(28), 0x1000, 0) + CpuFill16(0xFF,
+  // bgTilemap, 0x800) (:685/690 — BG2 : fill 0, :725/728) : TOUTES les entrées
+  // du tilemap pointent une tile VIDE. Vanilla : 0xFFFF = tile 1023, vide par
+  // layout ROM ; notre layout (mon aux tiles 0+ du charblock 1) → l'entrée vide
+  // pointe la tile 64 locale (vidée par le fill ci-dessus), même effet net.
+  // ⚠ L'ancien fill(0) pointait la TILE 0 DU MON COPIÉ → motif 8x8 répété
+  // plein écran pendant CHAQUE monbg (le « damier » des screenshots user).
+  bg.tilemap.fill(((baseTile + 64) & 0x3FF) | (15 << 12));
+  // tilemap 8x8 a (0,0) : offset croissant | palette<<12 (DrawBattlerOnBg)
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       bg.tilemap[i * 32 + j] = ((baseTile + i * 8 + j) & 0x3FF) | (paletteId << 12);
     }
   }
-  // palette OBJ du battler -> palette BG slot (LoadPalette 1:1)
+  // 1:1 LoadPalette(&gPlttBufferUnfaded[OBJ_PLTT_ID(battler)], BG_PLTT_ID(8|9))
+  // + CpuCopy32 → HW (battle_anim.c:709-710/744-745) : la SOURCE est le slot
+  // palette OBJ RÉEL du sprite mon (OBJ_PLTT_ID(battler) ne vaut que sur GBA où
+  // slot==battler — chez nous les slots ne suivent PAS les battlers, leçon
+  // _monPalNum), copiée depuis UNFADED vers Unfaded ET Faded BG (l'ancienne
+  // copie Faded→Faded figeait un éventuel fade en cours dans la copie BG).
+  const palSrc = 256 + (((oam as unknown as { paletteBank?: number })?.paletteBank) ?? battler) * 16;
+  const pu = (rt as unknown as { gPlttBufferUnfaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } }).gPlttBufferUnfaded;
   const pf = (rt as unknown as { gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } }).gPlttBufferFaded;
-  if (pf?.get && pf.set) {
-    // PaletteBuffer custom : API get/set (la copie indexee etait un NO-OP —
-    // la copie BG du mon s affichait avec une palette BG quelconque).
-    for (let k = 0; k < 16; k++) pf.set(paletteId * 16 + k, pf.get(256 + battler * 16 + k));
+  if (pu?.get && pu.set && pf?.set) {
+    for (let k = 0; k < 16; k++) {
+      const c = pu.get(palSrc + k);
+      pu.set(paletteId * 16 + k, c);
+      pf.set(paletteId * 16 + k, c);
+    }
   }
   // scroll : superposer la copie sur le sprite (gBattle_BGn via accesseurs)
   const g = globalThis as Record<string, unknown>;

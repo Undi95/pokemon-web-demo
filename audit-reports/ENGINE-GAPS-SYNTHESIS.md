@@ -1,5 +1,69 @@
 # SYNTHÈSE AUDIT ENGINE GAPS — 2026-06-13
 
+## ⭐ PLAN « 100 % DES ANIMS » (réflexion demandée user 2026-06-13 — PAS du patch)
+Constat user validé par l'enquête Mist : « on a dû extraire une palette alors
+qu'elle devrait déjà être dans la décomp » + le rendu rose avec des palettes
+logiques CORRECTES (sonde slot 8 = mist_cloud exact, BLD/objMode 1:1, et
+pourtant rose à l'écran). Les bugs d'anims ne sont plus des trous de PORTAGE
+(les fonctions y sont) mais des trous d'INFRASTRUCTURE. Par couche :
+
+### 1. DONNÉES (la racine n°1 — le point user)
+- Aujourd'hui : manifest custom `_animGfxByValue` (battle-anim-interpreter:1108)
+  → fetch de .bin/.pal extraits AU CAS PAR CAS au fil des chantiers + entrées
+  manuelles éparses (`_battleAnimPicEntries` decomp-globals:1313 n'a QUE ROCKS).
+  Chaque anim nouvelle = risque de palette/gfx manquant ou louche, en silence.
+- Vanilla : `gBattleAnimPicTable` + `gBattleAnimPaletteTable` (src/data/battle_anim.h)
+  = ~289 paires {gBattleAnimSpriteGfx_X, gBattleAnimSpritePal_X} COMPLÈTES par tag.
+- → FIX DE FOND : UN script d'extraction TOTAL (graphics/battle_anims/sprites/*
+  → public/, mêmes noms de symboles) + table TS générée 1:1 de gBattleAnimPicTable.
+  Tue toute la classe « mauvaise palette d'anim » d'un coup. PRIORITÉ 1.
+
+### 2. PALETTES — le double-monde (la racine du « rose »)
+- Architecture actuelle : gPlttBufferUnfaded/Faded (monde LOGIQUE 1:1, sondes,
+  BlendPalette, fades) ≠ PaletteBanks bgRgb15/objRgb15 (monde RENDU, compositor)
+  ; pont = `gPlttBufferFaded.flushTo()` au VBlank si gMain.vblankCallback
+  (decomp-runtime:2433-2438) + déviation documentée (palette.ts:16-25) :
+  certains chemins écrivent DIRECT PaletteBanks (écrans UI : bag/summary/party/
+  wallclock/trainer-card — hors combat, tolérable).
+- Bug Mist : palettes logiques justes, rendu rose → un désync flush/ordre/écrivain
+  direct reste possible en combat. → FIX DE FOND : (a) canary dev qui warn toute
+  écriture directe PaletteBanks pendant un combat ; (b) investiguer le rose AVEC
+  ce canary (1 tranche dédiée) ; (c) à terme : une SEULE écriture = flushTo.
+
+### 3. VRAM OBJ — la corruption
+- RequestDma3Fill inexistant (cleanup screenblocks anims, cf. manque n°1 plus bas)
+  + `_markLiveSpriteTiles` = rustine qui PROUVE que des chemins chargent hors
+  allocateur. → FIX : RequestDma3Fill 1:1 + tout chargement via l'allocateur par
+  tags (supprimer les rustines une fois les chemins unifiés).
+- ✍ EN COURS (working tree, A/B Psychic restant) : fills 1:1 de
+  MoveBattlerSpriteToBG (l'ancien tilemap.fill(0) pointait la 1ère TILE DU MON
+  → motif 8x8 répété plein écran à chaque monbg = le « damier » des screenshots)
+  + palette monbg depuis le slot RÉEL du sprite (pas 256+battler*16) + Unfaded.
+
+### 4. RENDU (compositor) — presque complet
+- Solide : windowing par pixel, blend + règle GBATEK OBJ semi-transparent,
+  mosaic H, affine BG/OBJ, scanline. Manques : mosaic V (+ bit oam.mosaic par
+  sprite), détaillés plus bas.
+
+### 5. MOTEUR SPRITE — la classe sync-écrase
+- syncSpritesToOam ré-écrit x/y/visible/flips/objMode/subpriority/affineParamIndex
+  depuis les champs SPRITE chaque frame (3 bugs payés). → poser les champs côté
+  sprite TOUJOURS ; généraliser le canary si une 4e occurrence apparaît.
+
+### 6. OUTILLAGE (fiabilité des diagnostics)
+- __verifyMoveAnim et harnessExecuteTurnL pompent HORS runOneFrame → le
+  freeze-frame (patch runOneFrame=noop) fige l'ÉCRAN mais pas la simulation →
+  sondes post-freeze = post-mortem trompeur (2 fois cette session). → FIX :
+  un vrai flag pause respecté par les pumps du harnais.
+- gba.getFrameBuffer() pendant le freeze ≠ écran affiché (la texture Phaser ne
+  suit plus). → échantillonner le canvas, ou sonder DANS le watcher (synchrone).
+
+### Ordre d'exécution proposé
+1. Données : extraction totale + gBattleAnimPicTable 1:1 (priorité user).
+2. Palette : canary écrivains directs + résoudre le rose.
+3. VRAM : RequestDma3Fill + A/B du fix monbg (Psychic) + retirer les rustines.
+4. Mosaic V. 5. Re-sweep __verifyMoveAnim ×354 avec pixel-probes par mécanisme.
+
 Demande user : « savoir définitivement ce qu'il nous manque dans notre engine »
 (même 1:1 strict miroir, des anims sortent fausses — ex. Mist mauve + corruption).
 Outil : `scripts/audit-engine-gaps.cjs` → `audit-reports/engine-gaps.txt` (brut).
