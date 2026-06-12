@@ -22,7 +22,7 @@
 - [x] MarkBattlerReceivedLinkData — porté 1:1 (GetLinkPlayerCount=0 hors link → clear-mask seule ; dette link) @ L854-863
 
 ## battle_script_commands.c — 287/287 ✅ hors Unused (commits a8c2e914 + 0be2e866)
-- [ ] Unused_ApplyRandomDmgMultiplier  @ L1653-1657 (unused décomp — en bas de pile)
+- [x] Unused_ApplyRandomDmgMultiplier @ L1653-1657 — DETTE — Unused décomp (préfixe)
 - [x] Cmd_waitstate  @ L3930-3935 — 1:1 réel (était stub « avance toujours ») + Cmd_pause aussi
 - [x] InitLevelUpBanner  @ L6044-6056 — porté entier (+ SlideIn/Out)
 - [x] DrawLevelUpBannerText  @ L6075-6135 — porté (dette : couleurs genre, glyphe Niv)
@@ -88,15 +88,15 @@
 - [x] CountBattledRematchTeams (T-B 9e6fc16f) @ L1873-1890
 
 ## battle_controllers.c — 64/68 fonctions couvertes (94%) · cite:58 + symbole:6 · 96 citations
-- [ ] CreateTasksForSendRecvLinkBuffers  @ L701-733
-- [ ] Task_HandleSendLinkBuffersData  @ L775-870
-- [ ] TryReceiveLinkBattleData  @ L871-908
-- [ ] Task_HandleCopyReceivedLinkBuffersData  @ L909-967
+- [x] CreateTasksForSendRecvLinkBuffers @ L701-733 — DETTE EXPLICITE link (multi-joueur non porté)
+- [x] Task_HandleSendLinkBuffersData @ L775-870 — DETTE link
+- [x] TryReceiveLinkBattleData @ L871-908 — DETTE link
+- [x] Task_HandleCopyReceivedLinkBuffersData @ L909-967 — DETTE link
 
 ## battle_controller_player.c — 111/124 fonctions couvertes (90%) · cite:49 + symbole:62 · 89 citations
-- [ ] CompleteOnBankSpritePosX_0  @ L227-232
-- [ ] UnusedEndBounceEffect  @ L332-338
-- [ ] HandleMoveInputUnused  @ L617-666
+- [x] CompleteOnBankSpritePosX_0 @ L227-232 — ÉQUIVALENCE : notre TrainerSlideBack poll x2/visible (slide-back validé à chaque intro dresseur) — renommage nominal au déplacement miroir
+- [x] UnusedEndBounceEffect @ L332-338 — DETTE — Unused décomp (préfixe)
+- [x] HandleMoveInputUnused @ L617-666 — DETTE — Unused décomp (préfixe)
 - [x] SetLinkBattleEndCallbacks @ L851-881 — DETTE EXPLICITE link (multi-joueur non porté, inatteignable)
 - [x] SwitchIn_CleanShinyAnimShowSubstitute @ L1065-1086 — porté 1:1 (corps réel exporté ; câblage : la machine _sendOutPhase A/B-validée couvre intro+switch — re-câblage nominal au refactor send-out, dette douce)
 - [x] SwitchIn_HandleSoundAndEnd @ L1087-1097 — porté 1:1 (specialAnim+cry → volume BGM hook + HandleLowHpMusicChange + completed)
@@ -267,12 +267,12 @@
 
 ## battle_gfx_sfx_util.c — 49/53 fonctions couvertes (92%) · cite:9 + symbole:40 · 34 citations
 - [x] Task_ClearBitWhenSpecialAnimDone  @ L535-547 — porté 1:1 commit 02fcd96c (battle_gfx_sfx_util.ts, avec InitAndLaunchSpecialAnimation :523-533 ; tick anim + clear specialAnimActive, A/B switch réel)
-- [ ] BattleGfxSfxDummy1  @ L693-696
-- [ ] BattleGfxSfxDummy2  @ L697-700
-- [ ] BattleGfxSfxDummy3  @ L728-731
+- [x] BattleGfxSfxDummy1 @ L693-696 — DETTE — dummy décomp (corps vide)
+- [x] BattleGfxSfxDummy2 @ L697-700 — DETTE — dummy décomp
+- [x] BattleGfxSfxDummy3 @ L728-731 — DETTE — dummy décomp
 
 ## battle_message.c — 9/10 fonctions couvertes (90%) · cite:8 + symbole:1 · 69 citations
-- [ ] ChooseMoveUsedParticle  @ L2959-2998
+- [x] ChooseMoveUsedParticle @ L2959-2998 — DETTE contest (particules du nom de move au concours — hors démo)
 
 ## battle_transition.c — QUALIFIÉ : Slice+WhiteBarsFade+flash portés (battle-transition.ts) · infra=équivalence CB2 inline · 140 dette explicite (frontier/légendaires/E4/zones hors démo) · RESTE CHANTIER ATTEIGNABLE ↓ (Blur wild-faible, PokeballsTrail+AngledWipes dresseurs, + helpers BlackWipe)
 - [x] CB2_TestBattleTransition @ L997-1019 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
@@ -611,9 +611,9 @@
 - [ ] AnimTask_WaterSport_Step  @ L1374-1442
 
 ## battle_anim_fire.c — 32/35 fonctions couvertes (91%) · cite:20 + symbole:12 · 36 citations
-- [ ] AnimUnusedSmallEmber_Step  @ L577-603
-- [ ] AnimTask_EruptionLaunchRocks_Step  @ L815-921
-- [ ] AnimTask_MoveHeatWaveTargets_Step  @ L1239-1328
+- [x] AnimUnusedSmallEmber_Step @ L577-603 — DETTE — Unused décomp (préfixe)
+- [x] AnimTask_EruptionLaunchRocks_Step @ L815-921 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
+- [x] AnimTask_MoveHeatWaveTargets_Step @ L1239-1328 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 
 ## battle_anim_electric.c — 28/37 fonctions couvertes (76%) · cite:17 + symbole:11 · 30 citations
 - [ ] AnimUnusedSpinningFist  @ L476-485
@@ -657,9 +657,9 @@
 - [ ] AnimTask_ImprisonOrbs_Step  @ L769-838
 
 ## battle_anim_rock.c — 19/22 fonctions couvertes (86%) · cite:10 + symbole:9 · 28 citations
-- [ ] AnimParticleInVortex_Step  @ L378-395
-- [ ] AnimTask_LoadSandstormBackground_Step  @ L427-512
-- [ ] AnimTask_Rollout_Step  @ L630-694
+- [x] AnimParticleInVortex_Step @ L378-395 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
+- [x] AnimTask_LoadSandstormBackground_Step @ L427-512 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
+- [x] AnimTask_Rollout_Step @ L630-694 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 
 ## battle_anim_ground.c — 22/25 fonctions couvertes (88%) · cite:10 + symbole:12 · 27 citations
 - [ ] AnimTask_ShakePlatforms  @ L619-665
@@ -678,7 +678,7 @@
 ## battle_anim_normal.c — 32/36 fonctions couvertes (89%) · cite:20 + symbole:12 · 36 citations
 - [ ] AnimConfusionDuck  @ L258-281
 - [ ] AnimConfusionDuck_Step  @ L282-297
-- [ ] AnimSimplePaletteBlend_Step  @ L329-343
+- [x] AnimSimplePaletteBlend_Step @ L329-343 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 - [ ] AnimCirclingSparkle  @ L416-446
 
 ## battle_anim_dark.c — 19/25 fonctions couvertes (76%) · cite:3 + symbole:16 · 29 citations
@@ -699,8 +699,8 @@
 - ✓ complet
 
 ## battle_anim_fight.c — 28/31 fonctions couvertes (90%) · cite:24 + symbole:4 · 32 citations
-- [ ] AnimUnusedHumanoidFoot  @ L412-420
-- [ ] AnimFistOrFootRandomPos_Step  @ L512-529
+- [x] AnimUnusedHumanoidFoot @ L412-420 — DETTE — Unused décomp (préfixe)
+- [x] AnimFistOrFootRandomPos_Step @ L512-529 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 - [ ] AnimSpinningKickOrPunchFinish  @ L622-635
 
 ## battle_anim_utility_funcs.c — 28/42 fonctions couvertes (67%) · cite:0 + symbole:28 · 19 citations
