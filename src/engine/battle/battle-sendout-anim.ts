@@ -28,7 +28,7 @@
 
 import { getRuntime, FreeSpriteTilesByTag } from '../system/decomp-globals';
 import type { DecompRuntime } from '../system/decomp-runtime';
-import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange } from '../system/sprite';
+import { LoadSpritePalette, AllocSpriteTiles, AllocSpriteTileRange, GetSpriteTileStartByTag, IndexOfSpritePaletteTag } from '../system/sprite';
 import {
   SetUpForReleaseAffineAnim, TearDownReleaseAffineAnim,
   LaunchBallFadeMonTask, AnimateBallOpenParticles, BALL_POKE,
@@ -483,7 +483,17 @@ let _trainerBackPalSlot = -1;
 let _trainerSpriteId = -1;
 
 async function _ensureTrainerBackAsset(gender: number): Promise<void> {
-  if (_trainerBackLoaded) return;
+  // Même critère par TAG que le front adverse (cf. _ensureOppTrainerAsset) :
+  // l'état de l'allocateur fait foi, pas un flag module-level qui peut survivre
+  // à un teardown (ResetSpriteData du boot purge les tags → recharge 1:1 ROM).
+  const existingStart = GetSpriteTileStartByTag(TAG_TRAINER_BACK);
+  const existingPal = IndexOfSpritePaletteTag(TAG_TRAINER_BACK_PAL);
+  if (existingStart !== 0xFFFF && existingPal !== 0xFF) {
+    _trainerTileStart = existingStart;
+    _trainerBackPalSlot = existingPal;
+    _trainerBackLoaded = true;
+    return;
+  }
   const rt = getRuntime();
   if (!rt) return;
   const url = gender === 1 ? TRAINER_BACK_URL_FEMALE : TRAINER_BACK_URL_MALE;
@@ -596,9 +606,23 @@ async function _ensureOppTrainerPicMap(): Promise<void> {
   await _oppTrainerPicMapLoading;
 }
 
-/** Charge le front pic du dresseur adverse 1 fois (= DecompressTrainerFrontPic). */
+/** Charge le front pic du dresseur adverse (= DecompressTrainerFrontPic).
+ *  Critère « déjà chargé » 1:1 décomp : l'état de l'allocateur PAR TAG —
+ *  ResetSpriteData (boot de CHAQUE combat) purge sSpriteTileRangeTags → le tag
+ *  disparaît → on recharge, exactement comme la ROM recharge le pic à chaque
+ *  combat. (L'ancien flag module-level `_oppTrainerLoaded` survivait au
+ *  teardown → 2e combat dresseur = sprite créé sur des tiles jamais rechargées
+ *  = bouillie, bug user 2026-06-12. Même racine/fix que la healthbox.) */
 async function _ensureOppTrainerAsset(picEnum: string): Promise<void> {
-  if (_oppTrainerLoaded) return;
+  const existingStart = GetSpriteTileStartByTag(TAG_OPP_TRAINER);
+  const existingPal = IndexOfSpritePaletteTag(TAG_OPP_TRAINER_PAL);
+  if (existingStart !== 0xFFFF && existingPal !== 0xFF) {
+    // Déjà chargé CE cycle (tag vivant) — resynchronise les miroirs locaux.
+    _oppTrainerTileStart = existingStart;
+    _oppTrainerPalSlot = existingPal;
+    _oppTrainerLoaded = true;
+    return;
+  }
   const rt = getRuntime();
   if (!rt) return;
   await _ensureOppTrainerPicMap();
