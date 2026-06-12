@@ -626,3 +626,165 @@ _f36RegT({
   AnimTask_NightShadeClone: AnimTask_NightShadeClone as never,
   AnimTask_NightmareClone: AnimTask_NightmareClone as never,
 });
+
+// --- VAGUE F55 : AnimTask_GrudgeFlames (ghost.c:1176-1307) ------------------
+// 6 flammes en orbite Sin autour de l'attaquant (priorite alternee devant/
+// derriere par phase), fondu BLDALPHA 14/4 puis extinction signalee data[8].
+import { GetBattlerElevation as _gfElev, GetBattlerSpriteSubpriority as _gfSubprio } from './battle_anim_mons';
+import { gBattlerPartyIndexes as _gfPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _gfEnemyParty, gPlayerParty as _gfPlayerParty, GetMonData as _gfGetMon, MON_DATA_SPECIES as _gfSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _gfRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _gfFrontCoords, getMonBackPicCoords as _gfBackCoords } from './data/mon_pic_coords';
+import { Sin as _gfSin } from './trig';
+
+type _GfTask = { taskId: number; data: number[]; func?: unknown };
+function _gfItf2(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+type _GfSprite = { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
+function _gfRt(): {
+  gSprites?: Map<number, _GfSprite>;
+  gTasks?: Map<number, { data: number[] }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  SetGpuReg?: (o: number, v: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number; priority: number }>; bg: (i: number) => { config: { priority: number } } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _gfYCoordWithElevation(battler: number): number {
+  let y = GetBattlerSpriteCoord(battler, 1 /* BATTLER_COORD_Y */);
+  if ((battler & 1) !== 0) {
+    const species = _gfGetMon(_gfEnemyParty[_gfPartyIdx[battler]] as never, _gfSpeciesK) as number;
+    y -= _gfElev(battler, species);
+  }
+  return y;
+}
+function _gfPicWidth(battler: number): number {
+  const party = (battler & 1) !== 0 ? _gfEnemyParty : _gfPlayerParty;
+  const species = _gfGetMon(party[_gfPartyIdx[battler]] as never, _gfSpeciesK) as number;
+  const name = _gfRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _gfBackCoords(name) : _gfFrontCoords(name);
+  return coords.w;
+}
+function _gfBgPriority(battler: number): number {
+  const pos = battler & 3;
+  const bgId = (pos === 0 || pos === 3) ? 2 : 1;
+  return _gfRt().gba?.bg(bgId)?.config?.priority ?? 2;
+}
+
+/** 1:1 AnimTask_GrudgeFlames (ghost.c:1176). */
+function AnimTask_GrudgeFlames(task: _GfTask): void {
+  const atk = _gfItf2().getAttacker?.() ?? 0;
+  task.data[0] = 0;
+  task.data[1] = 16;
+  task.data[9] = GetBattlerSpriteCoord(atk, 2 /* BATTLER_COORD_X_2 */);
+  task.data[10] = _gfYCoordWithElevation(atk);
+  task.data[11] = Math.trunc(_gfPicWidth(atk) / 2) + 8;
+  task.data[7] = 0;
+  task.data[5] = _gfBgPriority(atk);
+  task.data[6] = _gfSubprio(atk) - 2;
+  task.data[3] = 0;
+  task.data[4] = 16;
+  const rt = _gfRt();
+  rt.SetGpuReg?.(0x50, 0x3F40);
+  rt.SetGpuReg?.(0x52, 0 | (0x10 << 8));
+  task.data[8] = 0;
+  task.func = _GrudgeFlames_Step;
+}
+function _GrudgeFlames_Step(task: _GfTask): void {
+  const rt = _gfRt();
+  switch (task.data[0]) {
+    case 0: {
+      const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+      const tpl = bridge?.lookupGeneratedTemplate?.('gGrudgeFlameSpriteTemplate');
+      const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+      const atkSide = ((_gfItf2().getAttacker?.() ?? 0) & 1) === 0 ? 1 : 0;
+      for (let i = 0; i < 6; i++) {
+        const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[6]) ?? -1;
+        if (sid >= 0) {
+          const sp = rt.gSprites?.get(sid);
+          const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+          if (oam && tileStart !== 0xFFFF) {
+            oam.tileId = tileStart;
+            const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+          }
+          if (sp) {
+            sp.data[0] = task.taskId;
+            sp.data[1] = atkSide;
+            sp.data[2] = (i * 42) & 0xFF;
+            sp.data[3] = task.data[11];
+            sp.data[5] = i * 6;
+            sp.callback = _AnimGrudgeFlame as never;
+            task.data[7]++;
+          }
+        }
+      }
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (++task.data[1] & 1) {
+        if (task.data[3] < 14) task.data[3]++;
+      } else {
+        if (task.data[4] > 4) task.data[4]--;
+      }
+      if (task.data[3] === 14 && task.data[4] === 4) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      rt.SetGpuReg?.(0x52, (task.data[3] & 0xFF) | ((task.data[4] & 0xFF) << 8));
+      break;
+    case 2:
+      if (++task.data[1] > 30) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 3:
+      if (++task.data[1] & 1) {
+        if (task.data[3] > 0) task.data[3]--;
+      } else {
+        if (task.data[4] < 16) task.data[4]++;
+      }
+      if (task.data[3] === 0 && task.data[4] === 16) {
+        task.data[8] = 1;
+        task.data[0]++;
+      }
+      rt.SetGpuReg?.(0x52, (task.data[3] & 0xFF) | ((task.data[4] & 0xFF) << 8));
+      break;
+    case 4:
+      if (task.data[7] === 0) task.data[0]++;
+      break;
+    case 5:
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      _gfItf2().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 AnimGrudgeFlame : orbite Sin + priorite alternee + bob vertical. */
+function _AnimGrudgeFlame(sprite: _GfSprite): void {
+  const rt = _gfRt();
+  const t = rt.gTasks?.get(sprite.data[0]);
+  if (!t) return;
+  if (sprite.data[1] === 0) sprite.data[2] += 2;
+  else sprite.data[2] -= 2;
+  sprite.data[2] &= 0xFF;
+  sprite.x2 = _gfSin(sprite.data[2], sprite.data[3]);
+  const index = (sprite.data[2] - 65) & 0xFFFF;
+  const oam = rt.gba?.oam[sprite.oamIndex];
+  if (oam) oam.priority = index < 127 ? t.data[5] + 1 : t.data[5];
+  sprite.data[5]++;
+  sprite.data[6] = (sprite.data[5] * 8) & 0xFF;
+  sprite.y2 = _gfSin(sprite.data[6], 7);
+  if (t.data[8]) {
+    t.data[7]--;
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_f36RegT({ AnimTask_GrudgeFlames: AnimTask_GrudgeFlames as never });
