@@ -32,13 +32,13 @@
 > (SetMonData(LEVEL) sans CalculateMonStats) → fixé 1:1 + copie gBattleMons
 > complète (:3469-3498) + capture beforeLvlUp (:3436). Commit 0be2e866.
 
-## battle_setup.c — T-A FAITE ✅ (commit 4491dad2 : miroir src/game/battle_setup.ts) — reste T-B/T-C
-- [ ] BattleSetup_StartBattlePikeWildBattle  @ L397-401
-- [ ] BattleSetup_StartRoamerBattle  @ L421-434
-- [ ] DoSafariBattle  @ L435-444
-- [ ] DoBattlePikeWildBattle  @ L445-458
-- [ ] DoBattlePyramidTrainerHillBattle  @ L467-479
-- [ ] GetSpecialBattleTransition  @ L864-910
+## battle_setup.c — ✅ SOLDÉ (T-A 4491dad2 + T-B 9e6fc16f + T-C : portés ou dette explicite)
+- [x] BattleSetup_StartBattlePikeWildBattle  @ L397-401 — DETTE EXPLICITE frontier (Battle Pike hors démo ; caller battle_pike.c non porté)
+- [x] BattleSetup_StartRoamerBattle  @ L421-434 — DETTE EXPLICITE post-game (roamer.c non porté, inatteignable)
+- [x] DoSafariBattle  @ L435-444 — DETTE EXPLICITE zone (Safari Zone hors démo ; chapitre safari dédié, cf. battle_controller_safari.c)
+- [x] DoBattlePikeWildBattle  @ L445-458 — DETTE EXPLICITE frontier (idem Pike)
+- [x] DoBattlePyramidTrainerHillBattle  @ L467-479 — DETTE EXPLICITE frontier (cohérent avec modes PYRAMID/HILL du Configure en dette T-A)
+- [x] GetSpecialBattleTransition  @ L864-910 — DETTE EXPLICITE frontier (mux B_TRANSITION_* par VAR_FRONTIER_FACILITY, callers = facilities uniquement ; les transitions normales Wild/Trainer sont portées)
 - [x] TrainerBattleLoadArg32 (T-A 4491dad2) @ L969-973
 - [x] TrainerBattleLoadArg16 (T-A 4491dad2) @ L974-978
 - [x] TrainerBattleLoadArg8 (T-A 4491dad2) @ L979-983
@@ -51,9 +51,9 @@
 - [x] SetU32 (T-A 4491dad2) @ L1049-1053
 - [x] SetPtr (T-A 4491dad2) @ L1054-1058
 - [x] SetMapVarsToTrainer (T-A 4491dad2) @ L1094-1102
-- [ ] ConfigureTwoTrainersBattle  @ L1202-1208
-- [ ] SetUpTwoTrainersBattle  @ L1209-1214
-- [ ] GetTrainerFlagFromScriptPointer  @ L1215-1223
+- [x] ConfigureTwoTrainersBattle (T-C) @ L1202-1208 — porté 1:1 structurel (battle_setup.ts ; caller trainer_see = dette, position {opcodes,idx} = trainerScript+1)
+- [x] SetUpTwoTrainersBattle (T-C) @ L1209-1214 — porté (EventScript_StartTrainerApproach transpilé idx 0 ; run réel via contexte NPC trainer_see = dette)
+- [x] GetTrainerFlagFromScriptPointer (T-C) @ L1215-1223 — porté 1:1 structurel (args[1] de l'opcode trainerbattle = TrainerBattleLoadArg16(data+2))
 - [x] SetBattledTrainerFlag (T-A 4491dad2) @ L1252-1256
 - [x] HasTrainerBeenFought (T-A 4491dad2) @ L1257-1261
 - [x] SetTrainerFlag (T-A 4491dad2) @ L1262-1266

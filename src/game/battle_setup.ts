@@ -37,7 +37,7 @@ import {
   type ScriptContext, type Opcode,
 } from '../engine/script/script-runtime';
 import { registerSpecial } from '../engine/script/script-opcodes';
-import { FlagSet, FlagGet, gSpecialVar } from '../engine/script/script-vars';
+import { FlagSet, FlagGet, gSpecialVar, gSelectedObjectEvent } from '../engine/script/script-vars';
 import { parseValue } from '../engine/script/script-opcodes-helpers';
 import { ShowFieldMessage } from '../engine/field/field-message-box';
 import { BattleSetup_StartTrainerBattle } from '../engine/battle/battle-setup-helpers';
@@ -586,6 +586,51 @@ export function ScrCmd_gotobeatenscript(ctx: ScriptContext): boolean {
   return false;
 }
 
+// ─── T-C : approche dresseur (callers = trainer_see.c, non porté) ───────────
+
+/** 1:1 décomp `ConfigureTwoTrainersBattle(trainerObjEventId, trainerScript)`
+ *  (battle_setup.c:1202-1208). Caller unique = trainer_see.c TryPrepareSecond
+ *  ApproachingTrainer (2 approchants) — dette trainer_see : appelé avec la
+ *  POSITION du script du dresseur B ({opcodes, idx} sur l'opcode trainerbattle,
+ *  équivalent structurel du `trainerScript + 1` décomp = les args). */
+export function ConfigureTwoTrainersBattle(trainerObjEventId: number, trainerScript: { opcodes: Array<{ op: string; args?: string[] }>; idx: number }): void {
+  gSelectedObjectEvent.index = trainerObjEventId;
+  // 1:1 :1206 gSpecialVar_LastTalked = gObjectEvents[trainerObjEventId].localId
+  // (chez nous l'appelant trainer_see fournira le localId via l'objet NPC ;
+  //  l'index sert de LastTalked en attendant — même sémantique d'interaction).
+  gSpecialVar.LastTalked = trainerObjEventId;
+  const op = trainerScript.opcodes[trainerScript.idx];
+  BattleSetup_ConfigureTrainerBattle(op?.args ?? [], { scriptOpcodes: trainerScript.opcodes, scriptIdx: trainerScript.idx + 1 } as never);
+}
+
+/** 1:1 décomp `SetUpTwoTrainersBattle()` (battle_setup.c:1209-1214) :
+ *  ScriptContext_SetupScript(EventScript_StartTrainerApproach) + lock.
+ *  Le script transpilé EXISTE (trainer_battle-data.ts idx 0) ; le run réel
+ *  passera par le contexte NPC global de trainer_see (dette trainer_see). */
+export function SetUpTwoTrainersBattle(): void {
+  const sc = getScript('EventScript_StartTrainerApproach');
+  if (sc) RunScriptImmediatelyCompat('EventScript_StartTrainerApproach');
+}
+
+/** 1:1 décomp `GetTrainerFlagFromScriptPointer(data)` (battle_setup.c:1215-1223) :
+ *  lit l'arg trainer (u16 à data+2 = l'opérande du trainerbattle) → flag battu.
+ *  Forme structurelle : (opcodes, idx) sur l'opcode trainerbattle* transpilé →
+ *  args[1] (le trainer) — `TrainerBattleLoadArg16(data + 2)` 1:1. */
+export function GetTrainerFlagFromScriptPointer(script: { opcodes: Array<{ op: string; args?: string[] }>; idx: number }): boolean {
+  const op = script.opcodes[script.idx];
+  const raw = op?.args?.[1];
+  if (raw === undefined) return false;
+  const flag = resolveTrainerNumId(raw) & 0xFFFF;
+  return FlagGet(TRAINER_FLAGS_START + flag);
+}
+
+/** Wrapper RunScriptImmediately importé en bas de fichier (devtools) — alias
+ *  local pour SetUpTwoTrainersBattle (anti-hoisting d'import). */
+function RunScriptImmediatelyCompat(label: string): void {
+  const g = (globalThis as { __runEventScript?: (l: string) => void });
+  g.__runEventScript?.(label);
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // T-B REMATCHES — 1:1 battle_setup.c:253-346 (table) + :1351-1376 + :1546-1890.
 // Déclenchement vanilla : per-step IncrementRematchStepCounter (overworld.c) +
@@ -1043,6 +1088,8 @@ import { RunScriptImmediately as _RunScriptImmediately } from '../engine/script/
 (globalThis as Record<string, unknown>).__battleSetup = {
   BattleSetup_ConfigureTrainerBattle, GetTrainerBattleMode, HasTrainerBeenFought,
   SetBattledTrainersFlags, BattleSetup_GetTrainerPostBattleScript,
+  // T-C approche dresseur (callers trainer_see = dette).
+  ConfigureTwoTrainersBattle, SetUpTwoTrainersBattle, GetTrainerFlagFromScriptPointer,
   // T-B rematches (consommés par l'interception opcode special + match_call + OW hooks).
   _bootRematchBattleForScript, IsTrainerReadyForRematch, ShouldTryRematchBattle,
   DoesSomeoneWantRematchIn, IsRematchTrainerIn, GetLastBeatenRematchTrainerId,
