@@ -802,9 +802,10 @@ function AnimTask_AnimateGustTornadoPalette(task: { taskId: number; data: number
   task.data[2] = sp?.IndexOfSpritePaletteTag?.(10008 /* ANIM_TAG_GUST */) ?? 0xFF;
   task.data[10] = 0;
   task.data[11] = 0;
-  task.func = _GustTornadoPal_Step;
+  task.func = AnimTask_AnimateGustTornadoPalette_Step;
 }
-function _GustTornadoPal_Step(task: { taskId: number; data: number[] }): void {
+/** 1:1 `AnimTask_AnimateGustTornadoPalette_Step` (battle_anim_flying.c:381). */
+function AnimTask_AnimateGustTornadoPalette_Step(task: { taskId: number; data: number[] }): void {
   const itf = _flItf();
   if (task.data[2] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   if (task.data[10]++ === task.data[1]) {
@@ -822,6 +823,53 @@ function _GustTornadoPal_Step(task: { taskId: number; data: number[] }): void {
 }
 import { registerAnimTasks as _flRegT } from '../engine/battle/battle-anim-registry';
 _flRegT({ AnimTask_AnimateGustTornadoPalette: AnimTask_AnimateGustTornadoPalette as never });
+
+// ─── AnimSkyAttackBird (battle_anim_flying.c:1187-1222) — Sky Attack ─────────
+// L'oiseau lumineux part de l'attaquant et TRAVERSE l'écran en passant par la
+// position posée par createsprite (cible + offsets), orienté bec-en-avant
+// (ArcTan2Neg − 90°), vitesse fixe : la traversée dure 12 frames jusqu'à la
+// cible puis continue jusqu'à sortir de l'écran (destroy + libère la matrice).
+import { TrySetSpriteRotScale as _skTryRotScale, DestroySpriteAndMatrix as _skDestroyMatrix } from './battle_anim_mons';
+import { ArcTan2 as _skArcTan2 } from '../engine/system/decomp-bridge';
+
+/** 1:1 `ArcTan2Neg(x, y)` (battle_anim_mons.c:1368), copie locale pattern repo. */
+function _ArcTan2Neg(x: number, y: number): number {
+  return (-_skArcTan2(x, y)) & 0xFFFF;
+}
+
+/** 1:1 `AnimSkyAttackBird` (battle_anim_flying.c:1187). */
+function AnimSkyAttackBird(sprite: _VSprite): void {
+  const posx = sprite.x | 0;   // position posée par createsprite (cible + offsets)
+  const posy = sprite.y | 0;
+  const atk = _vItf().getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  sprite.y = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  sprite.data[4] = sprite.x << 4;
+  sprite.data[5] = sprite.y << 4;
+  sprite.data[6] = Math.trunc(((posx - sprite.x) << 4) / 12);
+  sprite.data[7] = Math.trunc(((posy - sprite.y) << 4) / 12);
+  let rotation = _ArcTan2Neg(posx - sprite.x, posy - sprite.y);
+  rotation = (rotation - 16384) & 0xFFFF;
+  _skTryRotScale((sprite as { spriteId?: number }).spriteId ?? -1, true, 0x100, 0x100, rotation);
+  sprite.invisible = false;
+  sprite.callback = AnimSkyAttackBird_Step;
+}
+
+/** 1:1 `AnimSkyAttackBird_Step` (battle_anim_flying.c:1210). */
+function AnimSkyAttackBird_Step(sprite: _VSprite): void {
+  sprite.data[4] += sprite.data[6];
+  sprite.data[5] += sprite.data[7];
+  sprite.x = sprite.data[4] >> 4;
+  sprite.y = sprite.data[5] >> 4;
+  if (sprite.x > DISPLAY_WIDTH + 45 || sprite.x < -45
+   || sprite.y > 157 || sprite.y < -45)
+    _skDestroyMatrix(sprite as never);
+}
+
+registerAnimCallbacks({
+  AnimSkyAttackBird: AnimSkyAttackBird as never,
+  AnimSkyAttackBird_Step: AnimSkyAttackBird_Step as never,
+});
 
 // --- VAGUE F49 : AnimTask_DrillPeckHitSplats (battle_anim_flying.c.c) ---------------------
 // 8 hitsplats clignotants en cercle (Sin/Cos -13) toutes les 32 unites de

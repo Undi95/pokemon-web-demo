@@ -183,8 +183,16 @@ const _ANIM_NAME_TABLES: Record<string, ReadonlyArray<string>> = {
   gBattleAnims_Special: _TBL_SPECIAL,
 };
 
-/** Anim args array [8] passée via Cmd_setarg + Cmd_createsprite (= gBattleAnimArgs). */
-export const gBattleAnimArgs = new Int16Array(ANIM_ARGS_COUNT);
+/** Anim args array passée via Cmd_setarg + Cmd_createsprite (= gBattleAnimArgs).
+ *  ⚠ QUIRK VANILLA (2026-06-12) : le tableau C fait ANIM_ARGS_COUNT=8 mais
+ *  AnimTask_IsPowerOver99 (.c:736) écrit gBattleAnimArgs[15] et le script
+ *  Magnitude lit `jumpargeq 15, ...` (.s:3321) — overflow EWRAM STABLE de la
+ *  ROM (l'index 15 aliase la mémoire qui suit, write puis read du même slot).
+ *  Un Int16Array(8) IGNORAIT l'écriture → args[15] undefined → les deux
+ *  jumpargeq rataient → Magnitude finissait en 1 frame sans shake. Taille 16
+ *  = comportement net identique (le reset ClearBattleAnimationVars ne couvre
+ *  que 0..7, comme la ROM). */
+export const gBattleAnimArgs = new Int16Array(16);
 
 /** Sound anim frame counter (= sSoundAnimFramesToWait, used by Cmd_end + Cmd_waitsound). */
 let sSoundAnimFramesToWait = 0;
@@ -2258,6 +2266,22 @@ export function tickAnimScript(): void {
   getAnimMoveDmg: () => gAnimMoveDmg,
   getAnimMovePower: () => gAnimMovePower,
   getAnimFriendship: () => gAnimFriendship,
+  // 1:1 gAnimMoveTurn (battle_anim.c:108, u8) : posé par les CONTRÔLEURS
+  // (HandleMoveAnimation, bufA[3]) AVANT DoMoveAnim ; lu par
+  // Cmd_choosetwoturnanim/jumpifmoveturn + AnimArmThrustHit & co.
+  // WIRE MORT #7 (2026-06-12) : le contrôleur écrivait __gAnimMoveTurn
+  // (globalThis) que PERSONNE ne lisait, pendant que ce module lisait son
+  // gAnimMoveTurn local que PERSONNE n'écrivait → Sky Attack jouait
+  // toujours la branche « charge ».
+  getAnimMoveTurn: () => gAnimMoveTurn,
+  setAnimMoveTurn: (v: number) => { gAnimMoveTurn = v & 0xFF; },
+  // Même wire mort pour power/dmg/friendship : les locals (lus par
+  // AnimTask_IsPowerOver99/Frustration/Return via les getters ci-dessus)
+  // n'avaient AUCUN écrivain — les contrôleurs ne posaient que les
+  // __gAnimMove* globalThis. Setters 1:1 (bufA, cf. HandleMoveAnimation).
+  setAnimMovePower: (v: number) => { gAnimMovePower = v & 0xFFFF; },
+  setAnimMoveDmg: (v: number) => { gAnimMoveDmg = v | 0; },
+  setAnimFriendship: (v: number) => { gAnimFriendship = v & 0xFF; },
   DestroyAnimVisualTask, DestroyAnimSprite, DestroyAnimSoundTask,
   DoMoveAnim, tickAnimScript, isAnimScriptActive, setBattleAnimAttackerTarget,
   // CLEANUP DUR post-timeout (sweep cascades) : zero-er l'etat anim complet.

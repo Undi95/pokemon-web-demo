@@ -667,14 +667,14 @@
 - [x] SetBattlersXOffsetForShake @ L708-733 — porté 1:1 (ex-_HS_SetX renommé ; formule (off/2)+(off&1) / −(off/2) vérifiée A/B)
 - ⚠ RACINE corrigée avec cette tranche : `MAX_BATTLERS_COUNT`/`(MAX_BATTLERS_COUNT + 1)` (et ~80 constantes : ANIM_ATTACKER ×3162, RGB(...) ×182, F_PAL_*, B_WAIT_TIME_*…) étaient compilées en MARQUEURS corrompus dans le bytecode (compile-decomp-bytecode.mjs ne scannait plus decomp-data/include/ depuis la migration 66dec4f5 + ne lisait pas les enums C / macros RGB). Bytecode entier régénéré : battle_scripts_1 unresolved 692→8, global 19495→9932. A/B : tour complet wild (move → 1121 dmg → KO → WON → OW) + 2e combat fuite.
 
-## battle_anim_flying.c — 24/31 fonctions couvertes (77%) · cite:21 + symbole:3 · 37 citations
-- [ ] AnimTask_AnimateGustTornadoPalette_Step  @ L381-407
-- [ ] AnimUnusedBubbleThrow  @ L895-902
-- [ ] AnimUnusedFlashingLight  @ L1161-1167
-- [ ] AnimUnusedFlashingLight_Step  @ L1168-1186
-- [ ] AnimSkyAttackBird  @ L1187-1209
-- [ ] AnimSkyAttackBird_Step  @ L1210-1222
-- [ ] AnimTask_SetAttackerVisibility  @ L1223-1237
+## battle_anim_flying.c — 31/31 fonctions couvertes (100%) · cite:21 + symbole:3 · 37 citations
+- [x] AnimTask_AnimateGustTornadoPalette_Step @ L381-407 — renommé au nom C exact (ex-_GustTornadoPal_Step, battle_anim_flying.ts)
+- [x] AnimUnusedBubbleThrow @ L895-902 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedFlashingLight @ L1161-1167 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedFlashingLight_Step @ L1168-1186 — DETTE — Unused décomp (préfixe)
+- [x] AnimSkyAttackBird @ L1187-1209 — porté 1:1 (battle_anim_flying.ts : vol attaquant→travers-écran 12f, ArcTan2Neg−90°, TrySetSpriteRotScale ; A/B __verifyMoveAnim(143) turn=1 : 1 sprite résolu, branche Unleash ≠ charge — débloqué par le câblage gAnimMoveTurn, wire mort #7)
+- [x] AnimSkyAttackBird_Step @ L1210-1222 — porté 1:1 (fixed-point ×16, destroy hors écran via DestroySpriteAndMatrix)
+- [x] AnimTask_SetAttackerVisibility @ L1223-1237 — DETTE — `static void UNUSED` décomp (jamais référencé)
 
 ## battle_anim_normal.c — 32/36 fonctions couvertes (89%) · cite:20 + symbole:12 · 36 citations
 - [x] AnimConfusionDuck (e35a107a) @ L258-281
@@ -682,13 +682,13 @@
 - [x] AnimSimplePaletteBlend_Step @ L329-343 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 - [x] AnimCirclingSparkle (e35a107a) @ L416-446
 
-## battle_anim_dark.c — 19/25 fonctions couvertes (76%) · cite:3 + symbole:16 · 29 citations
-- [ ] AnimTask_AttackerFadeToInvisible_Step  @ L208-230
-- [ ] AnimTask_AttackerFadeFromInvisible_Step  @ L241-264
-- [ ] AnimUnusedBagSteal  @ L276-290
-- [ ] AnimUnusedBagSteal_Step  @ L291-319
-- [ ] AnimBite_Step1  @ L333-342
-- [ ] AnimBite_Step2  @ L343-353
+## battle_anim_dark.c — 25/25 fonctions couvertes (100%) · cite:3 + symbole:16 · 29 citations
+- [x] AnimTask_AttackerFadeToInvisible_Step @ L208-230 — renommé au nom C exact (ex-_FadeToInvisible_Step, battle_anim_dark.ts)
+- [x] AnimTask_AttackerFadeFromInvisible_Step @ L241-264 — renommé au nom C exact (ex-_FadeFromInvisible_Step)
+- [x] AnimUnusedBagSteal @ L276-290 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedBagSteal_Step @ L291-319 — DETTE — Unused décomp (préfixe)
+- [x] AnimBite_Step1 @ L333-342 — renommé au nom C exact (ex-_Bite_Step1 ; A/B __verifyMoveAnim(44 Bite) : fidèle, 3 sprites, 0 défaut)
+- [x] AnimBite_Step2 @ L343-353 — renommé au nom C exact (ex-_Bite_Step2)
 
 ## battle_anim_dragon.c — 11/11 fonctions couvertes (100%) · cite:8 + symbole:3 · 18 citations
 - ✓ complet

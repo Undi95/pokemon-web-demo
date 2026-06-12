@@ -76,16 +76,18 @@ function AnimBite(sprite: AnimSprite): void {
   sprite.data[3] = 0;
   sprite.data[4] = 0;
   sprite.data[5] = 0;
-  sprite.callback = _Bite_Step1;
+  sprite.callback = AnimBite_Step1;
 }
-function _Bite_Step1(sprite: AnimSprite): void {
+/** 1:1 `AnimBite_Step1` (battle_anim_dark.c:333) : aller (vitesses Q8.8). */
+function AnimBite_Step1(sprite: AnimSprite): void {
   sprite.data[4] += sprite.data[0];
   sprite.data[5] += sprite.data[1];
   sprite.x2 = (sprite.data[4] << 16 >> 16) >> 8;
   sprite.y2 = (sprite.data[5] << 16 >> 16) >> 8;
-  if (++sprite.data[3] === sprite.data[2]) sprite.callback = _Bite_Step2;
+  if (++sprite.data[3] === sprite.data[2]) sprite.callback = AnimBite_Step2;
 }
-function _Bite_Step2(sprite: AnimSprite): void {
+/** 1:1 `AnimBite_Step2` (battle_anim_dark.c:343) : retour puis destroy. */
+function AnimBite_Step2(sprite: AnimSprite): void {
   sprite.data[4] -= sprite.data[0];
   sprite.data[5] -= sprite.data[1];
   sprite.x2 = (sprite.data[4] << 16 >> 16) >> 8;
@@ -191,9 +193,10 @@ function AnimTask_AttackerFadeToInvisible(task: { taskId: number; data: number[]
   task.data[2] = 0;
   _dkRt().SetGpuReg?.(0x52, 16);
   _dkRt().SetGpuReg?.(0x50, 0x3F40 | 0x02);
-  task.func = _FadeToInvisible_Step;
+  task.func = AnimTask_AttackerFadeToInvisible_Step;
 }
-function _FadeToInvisible_Step(task: { taskId: number; data: number[] }): void {
+/** 1:1 `AnimTask_AttackerFadeToInvisible_Step` (battle_anim_dark.c:208). */
+function AnimTask_AttackerFadeToInvisible_Step(task: { taskId: number; data: number[] }): void {
   let evb = task.data[1] >> 8;
   let eva = task.data[1] & 0xFF;
   if (task.data[2] === (task.data[0] & 0xFF)) {
@@ -217,9 +220,10 @@ function AnimTask_AttackerFadeFromInvisible(task: { taskId: number; data: number
   task.data[1] = (16 << 8) | 0;
   task.data[2] = 0;
   _dkRt().SetGpuReg?.(0x52, task.data[1]);
-  task.func = _FadeFromInvisible_Step;
+  task.func = AnimTask_AttackerFadeFromInvisible_Step;
 }
-function _FadeFromInvisible_Step(task: { taskId: number; data: number[] }): void {
+/** 1:1 `AnimTask_AttackerFadeFromInvisible_Step` (battle_anim_dark.c:241). */
+function AnimTask_AttackerFadeFromInvisible_Step(task: { taskId: number; data: number[] }): void {
   let evb = task.data[1] >> 8;
   let eva = task.data[1] & 0xFF;
   if (task.data[2] === (task.data[0] & 0xFF)) {

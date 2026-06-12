@@ -1051,6 +1051,10 @@ type _AnimItfO = {
   DoMoveAnim?: (move: number) => void;
   tickAnimScript?: () => void;
   isAnimScriptActive?: () => boolean;
+  setAnimMoveTurn?: (v: number) => void;
+  setAnimMovePower?: (v: number) => void;
+  setAnimMoveDmg?: (v: number) => void;
+  setAnimFriendship?: (v: number) => void;
 };
 function _animItfO(): _AnimItfO {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as _AnimItfO) ?? {};
@@ -1060,6 +1064,20 @@ function OpponentHandleMoveAnimation(): void {
   if (!_IsBattleSEPlaying_Opp(gActiveBattler)) {
     const buf = gBattleBufferA[gActiveBattler];
     _oppMoveAnimMove[gActiveBattler] = buf[1] | (buf[2] << 8);
+    // 1:1 décomp :1391-1394 (forme link_opponent, identique opponent) :
+    // gAnimMoveTurn/Power/Dmg/Friendship posés depuis bufA AVANT l'anim.
+    // Manquait totalement côté adverse (wire mort #7, 2026-06-12).
+    const itfT = _animItfO();
+    itfT.setAnimMoveTurn?.(buf[3]);
+    itfT.setAnimMovePower?.(buf[4] | (buf[5] << 8));
+    itfT.setAnimMoveDmg?.((buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)) | 0);
+    itfT.setAnimFriendship?.(buf[10]);
+    const g = globalThis as Record<string, unknown>;
+    g.__gAnimMoveTurn = buf[3];
+    g.__gAnimMovePower = buf[4] | (buf[5] << 8);
+    g.__gAnimMoveDmg = (buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)) | 0;
+    g.__gAnimFriendship = buf[10];
+    g.__gWeatherMoveAnim = buf[12] | (buf[13] << 8);
     _oppMoveAnimState[gActiveBattler] = 0;
     setBattlerControllerFunc(gActiveBattler, OpponentDoMoveAnimation);
   }

@@ -1346,6 +1346,10 @@ type _AnimItf = {
   DoMoveAnim?: (move: number) => void;
   tickAnimScript?: () => void;
   isAnimScriptActive?: () => boolean;
+  setAnimMoveTurn?: (v: number) => void;
+  setAnimMovePower?: (v: number) => void;
+  setAnimMoveDmg?: (v: number) => void;
+  setAnimFriendship?: (v: number) => void;
 };
 function _animItf(): _AnimItf {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as _AnimItf) ?? {};
@@ -1369,6 +1373,14 @@ function PlayerHandleMoveAnimation(): void {
     g.__gAnimMoveDmg = (buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)) | 0;
     g.__gAnimFriendship = buf[10];
     g.__gWeatherMoveAnim = buf[12] | (buf[13] << 8);
+    // + les VRAIS gAnimMove* de l'interpreter (lus par choosetwoturnanim/
+    // jumpifmoveturn/IsPowerOver99/Frustration...) — WIRE MORT #7 : les
+    // __gAnimMove* ci-dessus n'étaient lus par personne côté interpreter.
+    const itfT = _animItf();
+    itfT.setAnimMoveTurn?.(buf[3]);
+    itfT.setAnimMovePower?.(buf[4] | (buf[5] << 8));
+    itfT.setAnimMoveDmg?.((buf[6] | (buf[7] << 8) | (buf[8] << 16) | (buf[9] << 24)) | 0);
+    itfT.setAnimFriendship?.(buf[10]);
     _moveAnimState[gActiveBattler] = 0;
     gBattlerControllerFuncs[gActiveBattler] = PlayerDoMoveAnimation;
   }

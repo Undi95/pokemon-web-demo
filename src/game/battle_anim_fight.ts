@@ -598,9 +598,8 @@ function AnimSuperpowerFireball(sprite: _FSprite): void {
 }
 
 /** 1:1 `AnimArmThrustHit` (battle_anim_fight.c:937) : paume d'Arm Thrust sur
- *  la cible — args [x2, y2, durée, animNum]. DETTE DOUCE : `gAnimMoveTurn`
- *  n'est pas exposé sur la surface lazy → turn=0 (l'alternance G/D entre les
- *  coups multiples est perdue ; le flip côté joueur reste 1:1). */
+ *  la cible — args [x2, y2, durée, animNum]. turn = gAnimMoveTurn (exposé
+ *  2026-06-12, wire mort #7 soldé) → l'alternance G/D des coups multiples. */
 function AnimArmThrustHit(sprite: _FSprite): void {
   const args = _fItf().getArgs?.() ?? [0, 0, 0, 0];
   const target = _fItf().getTarget?.() ?? 1;
@@ -610,7 +609,7 @@ function AnimArmThrustHit(sprite: _FSprite): void {
   sprite.data[2] = args[0] | 0;
   sprite.data[3] = args[1] | 0;
   sprite.data[4] = args[2] | 0;
-  let turn = 0;  // = gAnimMoveTurn (non exposé — dette douce documentée)
+  let turn = (_fItf() as { getAnimMoveTurn?: () => number }).getAnimMoveTurn?.() ?? 0;
   if (_GetBattlerSide(target) === 0 /* B_SIDE_PLAYER */)
     turn++;
   if (turn & 1) {
