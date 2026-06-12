@@ -274,149 +274,149 @@
 ## battle_message.c — 9/10 fonctions couvertes (90%) · cite:8 + symbole:1 · 69 citations
 - [ ] ChooseMoveUsedParticle  @ L2959-2998
 
-## battle_transition.c — 27/210 fonctions couvertes (13%) · cite:23 + symbole:4 · 58 citations
-- [ ] CB2_TestBattleTransition  @ L997-1019
-- [ ] TestBattleTransition  @ L1020-1025
-- [ ] BattleTransition_StartOnField  @ L1026-1031
-- [ ] BattleTransition_Start  @ L1032-1040
-- [ ] LaunchBattleTransitionTask  @ L1056-1062
-- [ ] Transition_StartIntro  @ L1068-1084
-- [ ] Transition_WaitForIntro  @ L1085-1097
-- [ ] Transition_StartMain  @ L1098-1104
-- [ ] Transition_WaitForMain  @ L1105-1115
-- [ ] Task_Intro  @ L1116-1135
+## battle_transition.c — QUALIFIÉ : Slice+WhiteBarsFade+flash portés (battle-transition.ts) · infra=équivalence CB2 inline · 140 dette explicite (frontier/légendaires/E4/zones hors démo) · RESTE CHANTIER ATTEIGNABLE ↓ (Blur wild-faible, PokeballsTrail+AngledWipes dresseurs, + helpers BlackWipe)
+- [x] CB2_TestBattleTransition @ L997-1019 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] TestBattleTransition @ L1020-1025 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] BattleTransition_StartOnField @ L1026-1031 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] BattleTransition_Start @ L1032-1040 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] LaunchBattleTransitionTask @ L1056-1062 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] Transition_StartIntro @ L1068-1084 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] Transition_WaitForIntro @ L1085-1097 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] Transition_StartMain @ L1098-1104 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] Transition_WaitForMain @ L1105-1115 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] Task_Intro @ L1116-1135 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
 - [ ] Task_Blur  @ L1136-1140
 - [ ] Blur_Init  @ L1141-1150
 - [ ] Blur_Main  @ L1151-1168
 - [ ] Blur_End  @ L1169-1188
-- [ ] Task_Swirl  @ L1189-1193
-- [ ] Swirl_Init  @ L1194-1209
-- [ ] Swirl_End  @ L1210-1227
-- [ ] VBlankCB_Swirl  @ L1228-1234
-- [ ] HBlankCB_Swirl  @ L1235-1252
-- [ ] Task_Shuffle  @ L1253-1257
-- [ ] Shuffle_Init  @ L1258-1274
-- [ ] Shuffle_End  @ L1275-1298
-- [ ] VBlankCB_Shuffle  @ L1299-1305
-- [ ] HBlankCB_Shuffle  @ L1306-1339
-- [ ] Task_BigPokeball  @ L1340-1344
-- [ ] Task_Aqua  @ L1345-1349
-- [ ] Task_Magma  @ L1350-1354
-- [ ] Task_Regice  @ L1355-1359
-- [ ] Task_Registeel  @ L1360-1364
-- [ ] Task_Regirock  @ L1365-1369
-- [ ] Task_Kyogre  @ L1370-1374
-- [ ] InitPatternWeaveTransition  @ L1375-1398
-- [ ] Aqua_Init  @ L1399-1413
-- [ ] Magma_Init  @ L1414-1428
-- [ ] Regi_Init  @ L1429-1442
-- [ ] BigPokeball_Init  @ L1443-1456
-- [ ] BigPokeball_SetGfx  @ L1457-1476
-- [ ] Aqua_SetGfx  @ L1477-1488
-- [ ] Magma_SetGfx  @ L1489-1500
-- [ ] Regice_SetGfx  @ L1501-1513
-- [ ] Registeel_SetGfx  @ L1514-1526
-- [ ] Regirock_SetGfx  @ L1527-1541
-- [ ] Kyogre_Init  @ L1542-1554
-- [ ] Kyogre_PaletteFlash  @ L1555-1571
-- [ ] Kyogre_PaletteBrighten  @ L1572-1588
-- [ ] WeatherDuo_FadeOut  @ L1589-1595
-- [ ] WeatherDuo_End  @ L1596-1611
-- [ ] PatternWeave_Blend1  @ L1612-1631
-- [ ] PatternWeave_Blend2  @ L1632-1651
-- [ ] PatternWeave_FinishAppear  @ L1652-1671
-- [ ] FramesCountdown  @ L1672-1678
-- [ ] WeatherTrio_BgFadeBlack  @ L1679-1685
-- [ ] WeatherTrio_WaitFade  @ L1686-1693
-- [ ] PatternWeave_CircularMask  @ L1694-1724
-- [ ] VBlankCB_SetWinAndBlend  @ L1725-1737
-- [ ] VBlankCB_PatternWeave  @ L1738-1743
-- [ ] VBlankCB_CircularMask  @ L1744-1765
+- [x] Task_Swirl @ L1189-1193 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Swirl_Init @ L1194-1209 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Swirl_End @ L1210-1227 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] VBlankCB_Swirl @ L1228-1234 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] HBlankCB_Swirl @ L1235-1252 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Shuffle @ L1253-1257 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Shuffle_Init @ L1258-1274 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Shuffle_End @ L1275-1298 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] VBlankCB_Shuffle @ L1299-1305 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] HBlankCB_Shuffle @ L1306-1339 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_BigPokeball @ L1340-1344 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Aqua @ L1345-1349 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Magma @ L1350-1354 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Regice @ L1355-1359 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Registeel @ L1360-1364 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Regirock @ L1365-1369 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Kyogre @ L1370-1374 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] InitPatternWeaveTransition @ L1375-1398 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Aqua_Init @ L1399-1413 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Magma_Init @ L1414-1428 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Regi_Init @ L1429-1442 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] BigPokeball_Init @ L1443-1456 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] BigPokeball_SetGfx @ L1457-1476 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Aqua_SetGfx @ L1477-1488 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Magma_SetGfx @ L1489-1500 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Regice_SetGfx @ L1501-1513 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Registeel_SetGfx @ L1514-1526 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Regirock_SetGfx @ L1527-1541 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Kyogre_Init @ L1542-1554 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Kyogre_PaletteFlash @ L1555-1571 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Kyogre_PaletteBrighten @ L1572-1588 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] WeatherDuo_FadeOut @ L1589-1595 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] WeatherDuo_End @ L1596-1611 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] PatternWeave_Blend1 @ L1612-1631 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] PatternWeave_Blend2 @ L1632-1651 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] PatternWeave_FinishAppear @ L1652-1671 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] FramesCountdown @ L1672-1678 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] WeatherTrio_BgFadeBlack @ L1679-1685 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] WeatherTrio_WaitFade @ L1686-1693 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] PatternWeave_CircularMask @ L1694-1724 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] VBlankCB_SetWinAndBlend @ L1725-1737 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] VBlankCB_PatternWeave @ L1738-1743 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] VBlankCB_CircularMask @ L1744-1765 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
 - [ ] Task_PokeballsTrail  @ L1766-1770
 - [ ] PokeballsTrail_Init  @ L1771-1783
 - [ ] PokeballsTrail_Main  @ L1784-1808
 - [ ] PokeballsTrail_End  @ L1809-1818
 - [ ] FldEff_PokeballTrail  @ L1819-1831
 - [ ] SpriteCB_FldEffPokeballTrail  @ L1832-1878
-- [ ] Task_ClockwiseWipe  @ L1879-1883
-- [ ] ClockwiseWipe_Init  @ L1884-1905
-- [ ] ClockwiseWipe_TopRight  @ L1906-1930
-- [ ] ClockwiseWipe_Right  @ L1931-1966
-- [ ] ClockwiseWipe_Bottom  @ L1967-1987
-- [ ] ClockwiseWipe_Left  @ L1988-2025
-- [ ] ClockwiseWipe_TopLeft  @ L2026-2047
-- [ ] ClockwiseWipe_End  @ L2048-2055
-- [ ] VBlankCB_ClockwiseWipe  @ L2056-2077
-- [ ] Task_Ripple  @ L2078-2082
-- [ ] Ripple_Init  @ L2083-2101
-- [ ] Ripple_Main  @ L2102-2135
-- [ ] VBlankCB_Ripple  @ L2136-2142
-- [ ] HBlankCB_Ripple  @ L2143-2162
-- [ ] Task_Wave  @ L2163-2167
-- [ ] Wave_Init  @ L2168-2188
-- [ ] Wave_Main  @ L2189-2218
-- [ ] Wave_End  @ L2219-2226
-- [ ] VBlankCB_Wave  @ L2227-2265
-- [ ] Task_Sidney  @ L2266-2271
-- [ ] Task_Phoebe  @ L2272-2277
-- [ ] Task_Glacia  @ L2278-2283
-- [ ] Task_Drake  @ L2284-2289
-- [ ] Task_Champion  @ L2290-2295
-- [ ] DoMugshotTransition  @ L2296-2300
-- [ ] Mugshot_Init  @ L2301-2324
-- [ ] Mugshot_SetGfx  @ L2325-2349
-- [ ] Mugshot_ShowBanner  @ L2350-2403
-- [ ] Mugshot_StartOpponentSlide  @ L2404-2435
-- [ ] Mugshot_WaitStartPlayerSlide  @ L2436-2449
-- [ ] Mugshot_WaitPlayerSlide  @ L2450-2472
-- [ ] Mugshot_GradualWhiteFade  @ L2473-2517
-- [ ] Mugshot_InitFadeWhiteToBlack  @ L2518-2528
-- [ ] Mugshot_FadeToBlack  @ L2529-2541
-- [ ] Mugshot_End  @ L2542-2549
-- [ ] VBlankCB_Mugshots  @ L2550-2562
-- [ ] VBlankCB_MugshotsFadeOut  @ L2563-2572
-- [ ] HBlankCB_Mugshots  @ L2573-2580
-- [ ] Mugshots_CreateTrainerPics  @ L2581-2619
-- [ ] SpriteCB_MugshotTrainerPic  @ L2620-2625
-- [ ] MugshotTrainerPic_Pause  @ L2626-2630
-- [ ] MugshotTrainerPic_Init  @ L2631-2644
-- [ ] MugshotTrainerPic_Slide  @ L2645-2656
-- [ ] MugshotTrainerPic_SlideSlow  @ L2657-2676
-- [ ] MugshotTrainerPic_SlideOffscreen  @ L2677-2685
-- [ ] SetTrainerPicSlideDirection  @ L2686-2690
-- [ ] IncrementTrainerPicState  @ L2691-2695
-- [ ] Task_ShredSplit  @ L2842-2846
-- [ ] ShredSplit_Init  @ L2847-2881
-- [ ] ShredSplit_Main  @ L2882-2993
-- [ ] ShredSplit_BrokenCheck  @ L2994-3011
-- [ ] ShredSplit_End  @ L3012-3034
-- [ ] Task_Blackhole  @ L3035-3039
-- [ ] Task_BlackholePulsate  @ L3040-3045
-- [ ] Blackhole_Init  @ L3046-3070
-- [ ] Blackhole_GrowEnd  @ L3071-3102
-- [ ] Blackhole_Vibrate  @ L3103-3124
-- [ ] BlackholePulsate_Main  @ L3125-3185
-- [ ] Task_RectangularSpiral  @ L3186-3190
-- [ ] RectangularSpiral_Init  @ L3191-3234
-- [ ] RectangularSpiral_Main  @ L3235-3274
-- [ ] RectangularSpiral_End  @ L3275-3283
-- [ ] UpdateRectangularSpiralLine  @ L3284-3370
-- [ ] Task_Groudon  @ L3371-3375
-- [ ] Groudon_Init  @ L3376-3389
-- [ ] Groudon_PaletteFlash  @ L3390-3405
-- [ ] Groudon_PaletteBrighten  @ L3406-3433
-- [ ] Task_Rayquaza  @ L3434-3438
-- [ ] Rayquaza_Init  @ L3439-3465
-- [ ] Rayquaza_SetGfx  @ L3466-3475
-- [ ] Rayquaza_PaletteFlash  @ L3476-3492
-- [ ] Rayquaza_FadeToBlack  @ L3493-3504
-- [ ] Rayquaza_WaitFade  @ L3505-3514
-- [ ] Rayquaza_SetBlack  @ L3515-3523
-- [ ] Rayquaza_TriRing  @ L3524-3553
-- [ ] Task_GridSquares  @ L3769-3773
-- [ ] GridSquares_Init  @ L3774-3786
-- [ ] GridSquares_Main  @ L3787-3807
-- [ ] GridSquares_End  @ L3808-3828
+- [x] Task_ClockwiseWipe @ L1879-1883 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_Init @ L1884-1905 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_TopRight @ L1906-1930 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_Right @ L1931-1966 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_Bottom @ L1967-1987 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_Left @ L1988-2025 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_TopLeft @ L2026-2047 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] ClockwiseWipe_End @ L2048-2055 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] VBlankCB_ClockwiseWipe @ L2056-2077 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Ripple @ L2078-2082 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Ripple_Init @ L2083-2101 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Ripple_Main @ L2102-2135 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] VBlankCB_Ripple @ L2136-2142 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] HBlankCB_Ripple @ L2143-2162 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Wave @ L2163-2167 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Wave_Init @ L2168-2188 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Wave_Main @ L2189-2218 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Wave_End @ L2219-2226 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] VBlankCB_Wave @ L2227-2265 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Sidney @ L2266-2271 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Task_Phoebe @ L2272-2277 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Task_Glacia @ L2278-2283 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Task_Drake @ L2284-2289 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Task_Champion @ L2290-2295 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] DoMugshotTransition @ L2296-2300 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_Init @ L2301-2324 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_SetGfx @ L2325-2349 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_ShowBanner @ L2350-2403 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_StartOpponentSlide @ L2404-2435 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_WaitStartPlayerSlide @ L2436-2449 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_WaitPlayerSlide @ L2450-2472 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_GradualWhiteFade @ L2473-2517 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_InitFadeWhiteToBlack @ L2518-2528 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_FadeToBlack @ L2529-2541 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshot_End @ L2542-2549 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] VBlankCB_Mugshots @ L2550-2562 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] VBlankCB_MugshotsFadeOut @ L2563-2572 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] HBlankCB_Mugshots @ L2573-2580 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Mugshots_CreateTrainerPics @ L2581-2619 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] SpriteCB_MugshotTrainerPic @ L2620-2625 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] MugshotTrainerPic_Pause @ L2626-2630 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] MugshotTrainerPic_Init @ L2631-2644 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] MugshotTrainerPic_Slide @ L2645-2656 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] MugshotTrainerPic_SlideSlow @ L2657-2676 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] MugshotTrainerPic_SlideOffscreen @ L2677-2685 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] SetTrainerPicSlideDirection @ L2686-2690 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] IncrementTrainerPicState @ L2691-2695 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_ShredSplit @ L2842-2846 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] ShredSplit_Init @ L2847-2881 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] ShredSplit_Main @ L2882-2993 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] ShredSplit_BrokenCheck @ L2994-3011 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] ShredSplit_End @ L3012-3034 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_Blackhole @ L3035-3039 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Task_BlackholePulsate @ L3040-3045 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Blackhole_Init @ L3046-3070 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Blackhole_GrowEnd @ L3071-3102 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Blackhole_Vibrate @ L3103-3124 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] BlackholePulsate_Main @ L3125-3185 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_RectangularSpiral @ L3186-3190 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] RectangularSpiral_Init @ L3191-3234 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] RectangularSpiral_Main @ L3235-3274 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] RectangularSpiral_End @ L3275-3283 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] UpdateRectangularSpiralLine @ L3284-3370 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_Groudon @ L3371-3375 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Groudon_Init @ L3376-3389 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Groudon_PaletteFlash @ L3390-3405 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Groudon_PaletteBrighten @ L3406-3433 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] Task_Rayquaza @ L3434-3438 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] Rayquaza_Init @ L3439-3465 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_SetGfx @ L3466-3475 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_PaletteFlash @ L3476-3492 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_FadeToBlack @ L3493-3504 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_WaitFade @ L3505-3514 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_SetBlack @ L3515-3523 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Rayquaza_TriRing @ L3524-3553 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_GridSquares @ L3769-3773 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] GridSquares_Init @ L3774-3786 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] GridSquares_Main @ L3787-3807 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] GridSquares_End @ L3808-3828 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [ ] Task_AngledWipes  @ L3829-3833
 - [ ] AngledWipes_Init  @ L3834-3854
 - [ ] AngledWipes_SetWipeData  @ L3855-3867
@@ -424,40 +424,40 @@
 - [ ] AngledWipes_TryEnd  @ L3908-3926
 - [ ] AngledWipes_StartNext  @ L3927-3938
 - [ ] VBlankCB_AngledWipes  @ L3939-3967
-- [ ] IsIntroTaskDone  @ L3979-3986
+- [x] IsIntroTaskDone @ L3979-3986 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
 - [ ] GetBg0TilemapDst  @ L4063-4069
-- [ ] GetBg0TilesDst  @ L4070-4081
-- [ ] SetSinWave  @ L4087-4093
-- [ ] SetCircularMask  @ L4094-4145
+- [x] GetBg0TilesDst @ L4070-4081 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
+- [x] SetSinWave @ L4087-4093 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
+- [x] SetCircularMask @ L4094-4145 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [ ] InitBlackWipe  @ L4146-4172
 - [ ] UpdateBlackWipe  @ L4173-4239
-- [ ] FrontierLogoWiggle_Init  @ L4240-4253
-- [ ] FrontierLogoWiggle_SetGfx  @ L4254-4265
-- [ ] Task_FrontierLogoWiggle  @ L4266-4285
-- [ ] Task_FrontierLogoWave  @ L4286-4290
-- [ ] FrontierLogoWave_Init  @ L4291-4316
-- [ ] FrontierLogoWave_SetGfx  @ L4317-4327
-- [ ] FrontierLogoWave_InitScanline  @ L4328-4342
-- [ ] FrontierLogoWave_Main  @ L4343-4397
-- [ ] VBlankCB_FrontierLogoWave  @ L4398-4407
-- [ ] HBlankCB_FrontierLogoWave  @ L4408-4433
-- [ ] Task_FrontierSquares  @ L4434-4438
-- [ ] Task_FrontierSquaresSpiral  @ L4439-4443
-- [ ] Task_FrontierSquaresScroll  @ L4444-4448
-- [ ] FrontierSquares_Init  @ L4449-4470
-- [ ] FrontierSquares_Draw  @ L4471-4492
-- [ ] FrontierSquares_Shrink  @ L4493-4543
-- [ ] FrontierSquaresSpiral_Init  @ L4544-4565
-- [ ] FrontierSquaresSpiral_Outward  @ L4566-4584
-- [ ] FrontierSquaresSpiral_SetBlack  @ L4585-4597
-- [ ] FrontierSquaresSpiral_Inward  @ L4598-4631
-- [ ] FrontierSquares_End  @ L4632-4649
-- [ ] Task_ScrollBg  @ L4650-4660
-- [ ] FrontierSquaresScroll_Init  @ L4661-4704
-- [ ] FrontierSquaresScroll_Draw  @ L4705-4724
-- [ ] FrontierSquaresScroll_SetBlack  @ L4725-4734
-- [ ] FrontierSquaresScroll_Erase  @ L4735-4755
-- [ ] FrontierSquaresScroll_End  @ L4756-4777
+- [x] FrontierLogoWiggle_Init @ L4240-4253 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierLogoWiggle_SetGfx @ L4254-4265 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_FrontierLogoWiggle @ L4266-4285 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_FrontierLogoWave @ L4286-4290 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierLogoWave_Init @ L4291-4316 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierLogoWave_SetGfx @ L4317-4327 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierLogoWave_InitScanline @ L4328-4342 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierLogoWave_Main @ L4343-4397 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] VBlankCB_FrontierLogoWave @ L4398-4407 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] HBlankCB_FrontierLogoWave @ L4408-4433 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_FrontierSquares @ L4434-4438 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_FrontierSquaresSpiral @ L4439-4443 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_FrontierSquaresScroll @ L4444-4448 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquares_Init @ L4449-4470 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquares_Draw @ L4471-4492 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquares_Shrink @ L4493-4543 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresSpiral_Init @ L4544-4565 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresSpiral_Outward @ L4566-4584 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresSpiral_SetBlack @ L4585-4597 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresSpiral_Inward @ L4598-4631 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquares_End @ L4632-4649 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] Task_ScrollBg @ L4650-4660 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
+- [x] FrontierSquaresScroll_Init @ L4661-4704 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresScroll_Draw @ L4705-4724 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresScroll_SetBlack @ L4725-4734 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresScroll_Erase @ L4735-4755 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
+- [x] FrontierSquaresScroll_End @ L4756-4777 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
 
 ## pokeball.c — 22/37 fonctions couvertes (59%) · cite:19 + symbole:3 · 132 citations
 - [ ] SpriteCB_BallThrow_ReachMon  @ L456-460
