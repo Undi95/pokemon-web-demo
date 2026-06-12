@@ -2238,6 +2238,8 @@ export function tickAnimScript(): void {
   // pattern « task de fond » 1:1 (SetPsychicBackground/FadeScreenToWhite… :
   // gAnimVisualTaskCount-- a l'init — la task ne bloque pas waitforvisualfinish)
   decVisualTaskCount: () => { if (gAnimVisualTaskCount > 0) gAnimVisualTaskCount--; },
+  // 1:1 inverse (tasks créées PAR une task, ex. WaterSpoutRain → HorizontalShake ×2)
+  incVisualTaskCount: () => { gAnimVisualTaskCount = (gAnimVisualTaskCount + 1) & 0xFF; },
   getAttacker: () => gBattleAnimAttacker,
   getTarget: () => gBattleAnimTarget,
   getAnimMoveDmg: () => gAnimMoveDmg,

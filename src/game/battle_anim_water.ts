@@ -859,3 +859,318 @@ function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
   }
 }
 _wRegT({ AnimTask_WaterSport: AnimTask_WaterSport as never });
+
+// --- VAGUE F47 : WaterSpout complet (water.c:1054-1356) ---------------------
+// Launch : le mon ecrase/etire (erupt) + 20 gouttes en eventail ; Rain : pluie
+// de gouttes (ISO_RANDOMIZE2 1:1) + splats clignotants + HorizontalShake x2.
+import {
+  PrepareEruptAnimTaskData as _spPrepErupt,
+  UpdateEruptAnimTask as _spUpdErupt,
+  GetBattlerSpriteSubpriority as _spSubprio2,
+  SetBattlerSpriteYOffsetFromYScale as _spYFromScale,
+} from './battle_anim_mons';
+import { gSineTable as _spSine, Cos as _spCos, Sin as _spSin } from './trig';
+import { gBattlerPartyIndexes as _spPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _spEnemyParty, gPlayerParty as _spPlayerParty, GetMonData as _spGetMon, MON_DATA_HP as _SP_HP, MON_DATA_MAX_HP as _SP_MAXHP } from '../engine/battle/party-storage';
+
+type _SpTask = { taskId: number; data: number[]; func?: unknown };
+function _spRt2(): {
+  gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean }>;
+  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  CreateTask?: (f: unknown, prio: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _spMons2(): { PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void; ResetSpriteRotScale?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _spAtkSpriteId2(): number {
+  const b = _wItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+function _spSpawnOrb2(x: number, y: number, subprio: number): number {
+  return _wsSpawnOrb(x, y, subprio);
+}
+/** 1:1 GetWaterSpoutPowerForAnim : quart de HP de l'attaquant (0-3). */
+function _GetWaterSpoutPowerForAnim(): number {
+  const atk = _wItf().getAttacker?.() ?? 0;
+  const party = (atk & 1) === 0 ? _spPlayerParty : _spEnemyParty;
+  const slot = party[_spPartyIdx[atk]];
+  const maxhpQ = Math.trunc(((_spGetMon(slot as never, _SP_MAXHP) as number) || 1) / 4);
+  const hp = (_spGetMon(slot as never, _SP_HP) as number) || 0;
+  for (let i = 0; i < 3; i++) {
+    if (hp < maxhpQ * (i + 1)) return i;
+  }
+  return 3;
+}
+
+/** 1:1 AnimTask_WaterSpoutLaunch (water.c:1054). */
+function AnimTask_WaterSpoutLaunch(task: _SpTask): void {
+  task.data[15] = _spAtkSpriteId2();
+  if (task.data[15] === 0xFF) { _wItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  const sp = _spRt2().gSprites?.get(task.data[15]);
+  task.data[5] = sp ? sp.y : 0;
+  task.data[1] = _GetWaterSpoutPowerForAnim();
+  _spMons2().PrepareBattlerSpriteForRotScale?.(task.data[15], 0);
+  task.func = _WaterSpoutLaunch_Step;
+}
+type _SpOrbSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean } | undefined;
+function _WaterSpoutLaunch_Case1(task: _SpTask, sp: _SpOrbSprite): void {
+  if (++task.data[3] > 1) {
+    task.data[3] = 0;
+    if (++task.data[4] & 1) {
+      if (sp) { sp.x2 = 3; sp.y++; }
+    } else {
+      if (sp) sp.x2 = -3;
+    }
+  }
+  if (_spUpdErupt(task as never) === 0) {
+    _spYFromScale(task.data[15]);
+    if (sp) sp.x2 = 0;
+    task.data[3] = 0;
+    task.data[4] = 0;
+    task.data[0]++;
+  }
+}
+function _WaterSpoutLaunch_Case5(task: _SpTask, sp: _SpOrbSprite): void {
+  if (++task.data[3] > 1) {
+    task.data[3] = 0;
+    if (++task.data[4] & 1) {
+      if (sp) sp.y2 += 2;
+    } else {
+      if (sp) sp.y2 -= 2;
+    }
+    if (task.data[4] === 10) {
+      _spPrepErupt(task as never, task.data[15], 0x180, 0xE0, 0x100, 0x100, 8);
+      task.data[3] = 0;
+      task.data[4] = 0;
+      task.data[0]++;
+    }
+  }
+}
+function _WaterSpoutLaunch_Step(task: _SpTask): void {
+  const rt = _spRt2();
+  const sp = rt.gSprites?.get(task.data[15]);
+  switch (task.data[0]) {
+    case 0:
+      _spPrepErupt(task as never, task.data[15], 0x100, 0x100, 0xE0, 0x200, 32);
+      task.data[0]++;
+      _WaterSpoutLaunch_Case1(task, sp); // 1:1 fallthrough C (meme frame)
+      break;
+    case 1:
+      _WaterSpoutLaunch_Case1(task, sp);
+      break;
+    case 99: // (cases suivants ci-dessous)
+      break; // (case 99 inutilise)
+    case 2:
+      if (++task.data[3] > 4) {
+        _spPrepErupt(task as never, task.data[15], 0xE0, 0x200, 0x180, 0xE0, 8);
+        task.data[3] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 3:
+      if (_spUpdErupt(task as never) === 0) {
+        task.data[3] = 0;
+        task.data[4] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 4:
+      _CreateWaterSpoutLaunchDroplets(task, task.taskId);
+      task.data[0]++;
+      _WaterSpoutLaunch_Case5(task, sp); // 1:1 fallthrough C
+      break;
+    case 5:
+      _WaterSpoutLaunch_Case5(task, sp);
+      break;
+    case 98: // (corps deplace)
+      break; // (case 98 inutilise)
+    case 6:
+      if (sp) sp.y--;
+      if (_spUpdErupt(task as never) === 0) {
+        _spMons2().ResetSpriteRotScale?.(task.data[15]);
+        if (sp) sp.y = task.data[5];
+        task.data[4] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 7:
+      if (task.data[2] === 0) _wItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 CreateWaterSpoutLaunchDroplets (water.c:1184). */
+function _CreateWaterSpoutLaunchDroplets(task: _SpTask, taskId: number): void {
+  const atk = _wItf().getAttacker?.() ?? 0;
+  const ax = GetBattlerSpriteCoord(atk, 2);
+  const ay = GetBattlerSpriteCoord(atk, 3);
+  let trigIndex = 172;
+  const subprio = _spSubprio2(atk) - 1;
+  let increment = 4 - task.data[1];
+  if (increment <= 0) increment = 1;
+  for (let i = 0; i < 20; i += increment) {
+    const sid = _spSpawnOrb2(ax, ay, subprio);
+    if (sid >= 0) {
+      const sp = _spRt2().gSprites?.get(sid);
+      if (sp) {
+        sp.data[1] = i;
+        sp.data[2] = ax * 16;
+        sp.data[3] = ay * 16;
+        sp.data[4] = _spCos(trigIndex & 0xFF, 64);
+        sp.data[5] = _spSin(trigIndex & 0xFF, 64);
+        sp.data[6] = taskId;
+        sp.data[7] = 2;
+        sp.callback = _AnimSmallWaterOrb as never;
+        if (task.data[2] & 1) _AnimSmallWaterOrb(sp as never);
+        task.data[2]++;
+      }
+    }
+    trigIndex = (trigIndex + increment * 2) & 0xFF;
+  }
+}
+/** 1:1 AnimSmallWaterOrb : projection 16.4 jusqu'a la sortie d'ecran. */
+function _AnimSmallWaterOrb(sprite: { x: number; y: number; data: number[] }): void {
+  if (sprite.data[0] === 0) {
+    sprite.data[4] += (sprite.data[1] % 6) * 3;
+    sprite.data[5] += (sprite.data[1] % 3) * 3;
+    sprite.data[0]++;
+  }
+  { // 1:1 case 1 (fallthrough C : execute aussi la frame du case 0)
+    {
+      sprite.data[2] += sprite.data[4];
+      sprite.data[3] += sprite.data[5];
+      sprite.x = sprite.data[2] >> 4;
+      sprite.y = sprite.data[3] >> 4;
+      if (sprite.x < -8 || sprite.x > 248 || sprite.y < -8 || sprite.y > 120) {
+        const rt = _spRt2();
+        const t = rt.gTasks?.get(sprite.data[6]);
+        if (t) t.data[sprite.data[7]]--;
+        for (const [sid, sp] of rt.gSprites ?? new Map()) {
+          if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+        }
+      }
+    }
+  }
+}
+
+/** 1:1 AnimTask_WaterSpoutRain (water.c:1239). */
+function AnimTask_WaterSpoutRain(task: _SpTask): void {
+  const atk = _wItf().getAttacker?.() ?? 0;
+  task.data[1] = _GetWaterSpoutPowerForAnim();
+  if ((atk & 1) === 0) {
+    task.data[4] = 136;
+    task.data[6] = 40;
+  } else {
+    task.data[4] = 16;
+    task.data[6] = 80;
+  }
+  task.data[5] = 98;
+  task.data[7] = task.data[4] + 49;
+  task.data[12] = task.data[1] * 5 + 5;
+  task.func = _WaterSpoutRain_Step;
+}
+function _WaterSpoutRain_Step(task: _SpTask): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[2] > 2) {
+        task.data[2] = 0;
+        _CreateWaterSpoutRainDroplet(task, task.taskId);
+      }
+      if (task.data[10] !== 0 && task.data[13] === 0) {
+        // 1:1 : deux HorizontalShake (TARGET + DEF_PARTNER) crees + appel
+        // immediat + gAnimVisualTaskCount++ — via le registre des tasks.
+        const reg = (globalThis as Record<string, unknown>).__battleAnimRegistryStore as { tasks?: Map<string, (t: unknown) => void> } | undefined;
+        const shakeFn = reg?.tasks?.get('AnimTask_HorizontalShake');
+        const itf = ((globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[] } | undefined);
+        const args = itf?.getArgs?.();
+        const rt = _spRt2();
+        if (shakeFn && args && rt.CreateTask && rt.gTasks) {
+          args[0] = 1; // ANIM_TARGET
+          args[1] = 0;
+          args[2] = 12;
+          const t2 = rt.CreateTask((tk: unknown) => { /* func reposee par shakeFn */ void tk; }, 80);
+          const tobj = rt.gTasks.get(t2);
+          if (tobj) {
+            shakeFn(tobj); // pose tobj.func et lit args (appel immediat 1:1)
+            ((globalThis as Record<string, unknown>).__battleAnimInterpreter as { incVisualTaskCount?: () => void } | undefined)?.incVisualTaskCount?.();
+          }
+        }
+        task.data[13] = 1;
+      }
+      if (task.data[11] >= task.data[12]) task.data[0]++;
+      break;
+    case 1:
+      if (task.data[9] === 0) _wItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 CreateWaterSpoutRainDroplet (water.c:1304) — ISO_RANDOMIZE2 exact. */
+function _CreateWaterSpoutRainDroplet(task: _SpTask, taskId: number): void {
+  const yPosArg = (((_spSine[task.data[8]] ?? 0) + 3) >> 4) + task.data[6];
+  const sid = _spSpawnOrb2(task.data[7], 0, 0);
+  if (sid >= 0) {
+    const sp = _spRt2().gSprites?.get(sid);
+    if (sp) {
+      sp.callback = _AnimWaterSpoutRain as never;
+      sp.data[0] = 0;
+      sp.data[5] = yPosArg;
+      sp.data[6] = taskId;
+      sp.data[7] = 9;
+      task.data[9]++;
+    }
+  }
+  task.data[11]++;
+  task.data[8] = (task.data[8] + 39) & 0xFF;
+  // ISO_RANDOMIZE2(x) = x*1103515245+24691 (u32) — 1:1 ROM
+  const r = (Math.imul(task.data[7], 1103515245) + 24691) >>> 0;
+  task.data[7] = (r % task.data[5]) + task.data[4];
+}
+/** 1:1 AnimWaterSpoutRain : chute 8px/f -> splat clignotant. */
+function _AnimWaterSpoutRain(sprite: { x: number; y: number; data: number[]; callback: unknown }): void {
+  if (sprite.data[0] === 0) {
+    sprite.y += 8;
+    if (sprite.y >= sprite.data[5]) {
+      const rt = _spRt2();
+      const t = rt.gTasks?.get(sprite.data[6]);
+      if (t) t.data[10] = 1;
+      const hitId = _wsSpawnOrb(sprite.x, sprite.y, 1); // gWaterHitSplatSpriteTemplate (meme tag eau)
+      if (hitId >= 0) {
+        const hit = rt.gSprites?.get(hitId);
+        if (hit) {
+          hit.data[1] = 0;
+          hit.data[2] = 0;
+          hit.data[6] = sprite.data[6];
+          hit.data[7] = sprite.data[7];
+          hit.callback = _AnimWaterSpoutRainHit as never;
+        }
+      }
+      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+        if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      }
+    }
+  }
+}
+/** 1:1 AnimWaterSpoutRainHit : clignote 12 cycles puis meurt. */
+function _AnimWaterSpoutRainHit(sprite: { data: number[]; invisible?: boolean }): void {
+  if (++sprite.data[1] > 1) {
+    sprite.data[1] = 0;
+    sprite.invisible = !sprite.invisible;
+    if (++sprite.data[2] === 12) {
+      const rt = _spRt2();
+      const t = rt.gTasks?.get(sprite.data[6]);
+      if (t) t.data[sprite.data[7]]--;
+      for (const [sid, sp] of rt.gSprites ?? new Map()) {
+        if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      }
+    }
+  }
+}
+_wRegT({
+  AnimTask_WaterSpoutLaunch: AnimTask_WaterSpoutLaunch as never,
+  AnimTask_WaterSpoutRain: AnimTask_WaterSpoutRain as never,
+});

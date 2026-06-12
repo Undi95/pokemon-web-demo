@@ -1205,3 +1205,42 @@ export function GetBattleMonSpritePalettesMask(
   surf.GetBattlePalettesMask = GetBattlePalettesMask;
   surf.GetBattleMonSpritePalettesMask = GetBattleMonSpritePalettesMask;
 }
+
+// --- VAGUE F47 : sous-systeme ERUPT (mons.c:1958-1992) ----------------------
+// Scales interpoles lineairement data[8..15] — partage WaterSpout/Eruption.
+export function PrepareEruptAnimTaskData(
+  task: _TaskLike, spriteId: number,
+  xScaleStart: number, yScaleStart: number, xScaleEnd: number, yScaleEnd: number, duration: number,
+): void {
+  task.data[8] = duration;
+  task.data[15] = spriteId;
+  task.data[9] = xScaleStart;
+  task.data[10] = yScaleStart;
+  task.data[13] = xScaleEnd;
+  task.data[14] = yScaleEnd;
+  task.data[11] = Math.trunc((xScaleEnd - xScaleStart) / duration);
+  task.data[12] = Math.trunc((yScaleEnd - yScaleStart) / duration);
+}
+export function UpdateEruptAnimTask(task: _TaskLike): number {
+  if (!task.data[8]) return 0;
+  if (--task.data[8] !== 0) {
+    task.data[9] += task.data[11];
+    task.data[10] += task.data[12];
+  } else {
+    task.data[9] = task.data[13];
+    task.data[10] = task.data[14];
+  }
+  SetSpriteRotScale(task.data[15], task.data[9], task.data[10], 0);
+  if (task.data[8]) {
+    SetBattlerSpriteYOffsetFromYScale(task.data[15]);
+  } else {
+    const sp = getRuntime()?.gSprites?.get(task.data[15]) as { y2: number } | undefined;
+    if (sp) sp.y2 = 0;
+  }
+  return task.data[8];
+}
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.PrepareEruptAnimTaskData = PrepareEruptAnimTaskData;
+  surf.UpdateEruptAnimTask = UpdateEruptAnimTask;
+}
