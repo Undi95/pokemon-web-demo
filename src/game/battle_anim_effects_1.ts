@@ -2107,3 +2107,100 @@ _sbRegT({
   AnimTask_ConversionAlphaBlend: AnimTask_ConversionAlphaBlend as never,
   AnimTask_Conversion2AlphaBlend: AnimTask_Conversion2AlphaBlend as never,
 });
+
+// --- VAGUE F52 : AnimTask_DoubleTeam (effects_1.c:5173-5245) ----------------
+// 2 clones assombris (palette BENT_SPOON blend noir 11/16) qui oscillent en
+// Sin dephases de 128, pendant que le BG du mon est COUPE (DISPCNT).
+import { BlendPalette as _dtBlend } from '../engine/system/decomp-globals';
+import { gSineTable as _dtSine } from './trig';
+
+type _DtTask = { taskId: number; data: number[]; func?: unknown };
+function _dtItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _dtMons(): {
+  CloneBattlerSpriteWithBlend?: (a: number) => number;
+  DestroySpriteWithActiveSheet?: (s: unknown) => void;
+  GetBattlerSpriteBGPriorityRank?: (b: number) => number;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _dtBgVisible(rank: number, on: boolean): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { bg: (i: number) => { config: { visible: boolean } } } } | undefined;
+  const cfg = rt?.gba?.bg(rank === 1 ? 1 : 2)?.config;
+  if (cfg) cfg.visible = on; // 1:1 Clear/SetGpuRegBits(DISPCNT, BGn_ON)
+}
+
+/** 1:1 AnimTask_DoubleTeam (effects_1.c:5173). */
+function AnimTask_DoubleTeam(task: _DtTask): void {
+  const itf = _dtItf();
+  const mons = _dtMons();
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  task.data[0] = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  if (task.data[0] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+  task.data[1] = spApi?.AllocSpritePalette?.(10097 /* ANIM_TAG_BENT_SPOON */) ?? 0xFF;
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; x2: number }>;
+    gba?: { oam: Array<{ paletteNum: number }> };
+    gPlttBufferUnfaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+    gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+  } | undefined;
+  const atkSp = rt?.gSprites?.get(task.data[0]);
+  const monPal = atkSp ? (rt?.gba?.oam[atkSp.oamIndex]?.paletteNum ?? 0) : 0;
+  if (task.data[1] !== 0xFF && rt?.gPlttBufferUnfaded?.get && rt.gPlttBufferUnfaded.set) {
+    const r3 = 256 + task.data[1] * 16;
+    const r4 = 256 + monPal * 16;
+    for (let i = 1; i < 16; i++) rt.gPlttBufferUnfaded.set(r3 + i, rt.gPlttBufferUnfaded.get(r4 + i));
+    _dtBlend(r3, 16, 11, 0 /* RGB_BLACK */);
+  }
+  task.data[3] = 0;
+  for (let i = 0; i < 2; i++) {
+    const obj = mons.CloneBattlerSpriteWithBlend?.(0) ?? -1;
+    if (obj < 0) break;
+    const clone = rt?.gSprites?.get(obj);
+    const cloneOam = clone ? rt?.gba?.oam[clone.oamIndex] : undefined;
+    if (cloneOam && task.data[1] !== 0xFF) cloneOam.paletteNum = task.data[1];
+    if (clone) {
+      clone.data[0] = 0;
+      clone.data[1] = i << 7;
+      clone.data[2] = task.taskId;
+      clone.data[3] = 0;
+      clone.callback = _AnimDoubleTeam as never;
+      task.data[3]++;
+    }
+  }
+  task.func = _DoubleTeam_Step;
+  const rank = mons.GetBattlerSpriteBGPriorityRank?.(atk) ?? 2;
+  _dtBgVisible(rank, false);
+}
+/** 1:1 AnimTask_DoubleTeam_Step. */
+function _DoubleTeam_Step(task: _DtTask): void {
+  if (!task.data[3]) {
+    const rank = _dtMons().GetBattlerSpriteBGPriorityRank?.(_dtItf().getAttacker?.() ?? 0) ?? 2;
+    _dtBgVisible(rank, true);
+    const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+    spApi?.FreeSpritePaletteByTag?.(10097);
+    _dtItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+/** 1:1 AnimDoubleTeam : oscillation Sin amortie, 64 pas puis meurt. */
+function _AnimDoubleTeam(sprite: { data: number[]; x2: number }): void {
+  if (++sprite.data[3] > 1) {
+    sprite.data[3] = 0;
+    sprite.data[0]++;
+  }
+  if (sprite.data[0] > 64) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[2]);
+    if (t) t.data[3]--;
+    _dtMons().DestroySpriteWithActiveSheet?.(sprite);
+  } else {
+    sprite.data[4] = Math.trunc((_dtSine[sprite.data[0]] ?? 0) / 6);
+    sprite.data[5] = Math.trunc((_dtSine[sprite.data[0]] ?? 0) / 13);
+    sprite.data[1] = (sprite.data[1] + sprite.data[5]) & 0xFF;
+    sprite.x2 = Sin(sprite.data[1], sprite.data[4]);
+  }
+}
+_sbRegT({ AnimTask_DoubleTeam: AnimTask_DoubleTeam as never });
