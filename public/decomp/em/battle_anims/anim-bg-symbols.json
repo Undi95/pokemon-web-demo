@@ -75,5 +75,7 @@
 "gBattleAnimBgPalette_Surf": "water.gbapal",
 "gBattleAnimBgTilemap_SurfOpponent": "water_opponent.map.bin",
 "gBattleAnimBgTilemap_SurfPlayer": "water_player.map.bin",
-"gBattleAnimBgTilemap_SurfContest": "water_contest.map.bin"
+"gBattleAnimBgTilemap_SurfContest": "water_contest.map.bin",
+"gWeatherFogHorizontalTiles": "fog_horizontal.4bpp.bin",
+"gFogPalette": "fog.gbapal"
 }

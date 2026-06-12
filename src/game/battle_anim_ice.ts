@@ -747,3 +747,160 @@ function AnimTask_GetIceBallCounter(task: { taskId: number }): void {
 }
 import { registerAnimTasks as _iceRegT } from '../engine/battle/battle-anim-registry';
 _iceRegT({ AnimTask_GetIceBallCounter: AnimTask_GetIceBallCounter as never });
+
+// --- VAGUE F61 : HazeScrollingFog + MistBallFog (ice.c:993-1182) ------------
+// Le brouillard BG1 (assets weather fog extraits byte-exact) : scroll -1 X,
+// fondu par TABLE (Haze 0..9 / Mist 0..5 [17-x]), plateau 0x51, demontage.
+import {
+  GetBattleAnimBg1Data as _fogBgData,
+  AnimLoadCompressedBgGfx as _fogLoadGfx,
+  AnimLoadCompressedBgTilemap as _fogLoadMap,
+  LoadAnimBgPalette as _fogLoadPal,
+  ClearBattleAnimBg as _fogClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+const _sHazeBlendAmounts: ReadonlyArray<number> = [0, 1, 2, 2, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6, 6, 7, 8, 8, 8, 9];
+const _sMistBlendAmounts: ReadonlyArray<number> = [0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5];
+
+type _FogTask = { taskId: number; data: number[]; func?: unknown };
+function _fogItf(): { DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _fogRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _fogSetBg1(x: number | null, y: number | null): void {
+  const g = globalThis as Record<string, unknown>;
+  if (x !== null) g.gBattle_BG1_X = x;
+  if (y !== null) g.gBattle_BG1_Y = y;
+}
+function _fogBg1X(): number { return ((globalThis as Record<string, unknown>).gBattle_BG1_X as number) | 0; }
+
+/** Init commun Haze/MistBall (1:1 — BLDCNT TGT1_BG1, BG1 anim charge fog). */
+function _fogCommonInit(task: _FogTask, stepFn: (t: _FogTask) => void): void {
+  const rt = _fogRt();
+  rt.SetGpuReg?.(0x50, 0x3F42);
+  rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 1;
+    bg1.screenSize = 0;
+    bg1.charBaseIndex = 1;
+  }
+  _fogSetBg1(0, 0);
+  const animBg = _fogBgData();
+  _fogLoadGfx(animBg.bgId, 'gWeatherFogHorizontalTiles', animBg.tilesOffset);
+  _fogLoadMap(animBg.bgId, 'gBattleAnimFogTilemap');
+  _fogLoadPal('gFogPalette', animBg.paletteId);
+  task.data[9] = 0;
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.data[12] = 0;
+  task.func = stepFn;
+}
+/** Demontage commun (cases 3-4, fallthrough C inline). */
+function _fogTeardown(task: _FogTask): void {
+  const animBg = _fogBgData();
+  void animBg;
+  _fogClearBg(1);
+  _fogClearBg(2);
+  const rt = _fogRt();
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) bg1.charBaseIndex = 0;
+  _fogSetBg1(0, 0);
+  rt.SetGpuReg?.(0x50, 0);
+  rt.SetGpuReg?.(0x52, 0);
+  if (bg1) bg1.priority = 1;
+  _fogItf().DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 AnimTask_HazeScrollingFog (ice.c:993). */
+function AnimTask_HazeScrollingFog(task: _FogTask): void {
+  _fogCommonInit(task, _HazeScrollingFog_Step);
+}
+function _HazeScrollingFog_Step(task: _FogTask): void {
+  const rt = _fogRt();
+  _fogSetBg1(_fogBg1X() - 1, null);
+  switch (task.data[12]) {
+    case 0:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[9]++;
+        task.data[11] = _sHazeBlendAmounts[task.data[9]] ?? 9;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 9) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 1:
+      if (++task.data[11] === 0x51) {
+        task.data[11] = 9;
+        task.data[12]++;
+      }
+      break;
+    case 2:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11]--;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 0) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 3:
+      _fogTeardown(task);
+      break;
+  }
+}
+
+/** 1:1 AnimTask_MistBallFog (ice.c:1097). */
+function AnimTask_MistBallFog(task: _FogTask): void {
+  _fogCommonInit(task, _MistBallFog_Step);
+  task.data[15] = -1;
+}
+function _MistBallFog_Step(task: _FogTask): void {
+  const rt = _fogRt();
+  _fogSetBg1(_fogBg1X() + task.data[15], null);
+  switch (task.data[12]) {
+    case 0:
+      task.data[9] += 1;
+      task.data[11] = _sMistBlendAmounts[task.data[9]] ?? 5;
+      rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((17 - task.data[11]) << 8));
+      if (task.data[11] === 5) {
+        task.data[12]++;
+        task.data[11] = 0;
+      }
+      break;
+    case 1:
+      if (++task.data[11] === 0x51) {
+        task.data[11] = 5;
+        task.data[12]++;
+      }
+      break;
+    case 2:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11] -= 1;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 0) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 3:
+      _fogTeardown(task);
+      break;
+  }
+}
+_iceRegT({
+  AnimTask_HazeScrollingFog: AnimTask_HazeScrollingFog as never,
+  AnimTask_MistBallFog: AnimTask_MistBallFog as never,
+});
