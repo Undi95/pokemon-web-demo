@@ -634,15 +634,15 @@
 - [x] AnimTask_Hail2 @ L1354-1413 — renommé au nom C exact (ex-_Hail2_Step ; A/B Hail 258 : fidèle 460f, 3 tasks)
 
 ## battle_anim_ghost.c — 26/37 fonctions couvertes (70%) · cite:5 + symbole:21 · 18 citations
-- [ ] AnimTask_NightShadeClone_Step1  @ L355-370
-- [ ] AnimTask_NightShadeClone_Step2  @ L371-399
-- [ ] AnimTask_NightmareClone_Step  @ L551-588
+- [x] AnimTask_NightShadeClone_Step1 @ L355-370 — renommé au nom C exact (ex-_NightShadeClone_Step1, battle_anim_ghost.ts)
+- [x] AnimTask_NightShadeClone_Step2 @ L371-399 — renommé au nom C exact (ex-_NightShadeClone_Step2)
+- [x] AnimTask_NightmareClone_Step @ L551-588 — renommé au nom C exact (ex-_NightmareClone_Step)
 - [ ] AnimTask_SpiteTargetShadow_Step1  @ L599-689
 - [ ] AnimTask_SpiteTargetShadow_Step2  @ L690-709
 - [ ] AnimTask_SpiteTargetShadow_Step3  @ L710-745
-- [ ] AnimDestinyBondWhiteShadow  @ L746-782
-- [ ] AnimTask_DestinyBondWhiteShadow_Step  @ L868-944
-- [ ] AnimTask_GrudgeFlames_Step  @ L1196-1280
+- [x] AnimDestinyBondWhiteShadow @ L746-782 — ÉQUIVALENCE : init inliné dans le spawner de la task (assigne AnimDestinyBondWhiteShadow_Step directement, base présente)
+- [x] AnimTask_DestinyBondWhiteShadow_Step @ L868-944 — renommé au nom C exact (ex-_DestinyBondWhiteShadow_Step)
+- [x] AnimTask_GrudgeFlames_Step @ L1196-1280 — renommé au nom C exact (ex-_GrudgeFlames_Step)
 - [ ] AnimMonMoveCircular  @ L1309-1321
 - [ ] AnimMonMoveCircular_Step  @ L1322-1341
 

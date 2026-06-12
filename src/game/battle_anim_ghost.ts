@@ -529,9 +529,9 @@ function AnimTask_NightShadeClone(task: _F36Task): void {
   task.data[1] = (_f36Itf().getArgs?.() ?? [0])[0] | 0;  // *gBattleAnimArgs
   task.data[2] = 0;
   task.data[3] = 16;
-  task.func = _NightShadeClone_Step1;
+  task.func = AnimTask_NightShadeClone_Step1;
 }
-function _NightShadeClone_Step1(task: _F36Task): void {
+function AnimTask_NightShadeClone_Step1(task: _F36Task): void {
   task.data[10] += 1;
   if (task.data[10] === 3) {
     task.data[10] = 0;
@@ -539,10 +539,10 @@ function _NightShadeClone_Step1(task: _F36Task): void {
     task.data[3] -= 1;
     _f36Rt().SetGpuReg?.(_F36_BLDALPHA, _f36Blend(task.data[2], task.data[3]));
     if (task.data[2] !== 9) return;
-    task.func = _NightShadeClone_Step2;
+    task.func = AnimTask_NightShadeClone_Step2;
   }
 }
-function _NightShadeClone_Step2(task: _F36Task): void {
+function AnimTask_NightShadeClone_Step2(task: _F36Task): void {
   if (task.data[1] > 0) {
     task.data[1] -= 1;
     return;
@@ -592,9 +592,9 @@ function AnimTask_NightmareClone(task: _F36Task): void {
     _f36Store6(clone as never, (() => { /* SpriteCallbackDummy */ }) as never);
     clone.callback = _f36TransFP as never;
   }
-  task.func = _NightmareClone_Step;
+  task.func = AnimTask_NightmareClone_Step;
 }
-function _NightmareClone_Step(task: _F36Task): void {
+function AnimTask_NightmareClone_Step(task: _F36Task): void {
   const rt = _f36Rt();
   switch (task.data[4]) {
     case 0: {
@@ -690,9 +690,9 @@ function AnimTask_GrudgeFlames(task: _GfTask): void {
   rt.SetGpuReg?.(0x50, 0x3F40);
   rt.SetGpuReg?.(0x52, 0 | (0x10 << 8));
   task.data[8] = 0;
-  task.func = _GrudgeFlames_Step;
+  task.func = AnimTask_GrudgeFlames_Step;
 }
-function _GrudgeFlames_Step(task: _GfTask): void {
+function AnimTask_GrudgeFlames_Step(task: _GfTask): void {
   const rt = _gfRt();
   switch (task.data[0]) {
     case 0: {
@@ -852,14 +852,14 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
       sp.data[4] = args[1] | 0;
       sp.data[5] = x;
       sp.data[6] = y;
-      sp.callback = _AnimDestinyBondWhiteShadow_Step as never;
+      sp.callback = AnimDestinyBondWhiteShadow_Step as never;
       task.data[task.data[12] + 13] = sid;
       task.data[12]++;
     }
   }
-  task.func = _DestinyBondWhiteShadow_Step;
+  task.func = AnimTask_DestinyBondWhiteShadow_Step;
 }
-function _DestinyBondWhiteShadow_Step(task: _DbTask): void {
+function AnimTask_DestinyBondWhiteShadow_Step(task: _DbTask): void {
   const rt = _gfRt() as unknown as { SetGpuReg?: (o: number, v: number) => void; DestroySprite?: (i: number) => void };
   switch (task.data[0]) {
     case 0:
@@ -909,7 +909,7 @@ function _DestinyBondWhiteShadow_Step(task: _DbTask): void {
   }
 }
 /** 1:1 AnimDestinyBondWhiteShadow_Step (le sprite glisse 16.4). */
-function _AnimDestinyBondWhiteShadow_Step(sprite: { x: number; y: number; data: number[] }): void {
+function AnimDestinyBondWhiteShadow_Step(sprite: { x: number; y: number; data: number[] }): void {
   if (sprite.data[4]) {
     sprite.data[0] += sprite.data[2];
     sprite.data[1] += sprite.data[3];
