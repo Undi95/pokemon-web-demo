@@ -325,8 +325,8 @@ function AnimTask_TranslateMonElliptical(task: AnimTask): void {
   task.data[3] = args[3];
   task.data[4] = wavePeriod;
   task.data[5] = 0;
-  task.func = _TranslateMonElliptical_Step as never;
-  _TranslateMonElliptical_Step(task);
+  task.func = AnimTask_TranslateMonElliptical_Step as never;
+  AnimTask_TranslateMonElliptical_Step(task);
 }
 /** 1:1 `AnimTask_TranslateMonEllipticalRespectSide` : amplX inversé côté adverse. */
 function AnimTask_TranslateMonEllipticalRespectSide(task: AnimTask): void {
@@ -335,7 +335,7 @@ function AnimTask_TranslateMonEllipticalRespectSide(task: AnimTask): void {
   if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) args[1] = -args[1];
   AnimTask_TranslateMonElliptical(task);
 }
-function _TranslateMonElliptical_Step(task: AnimTask): void {
+function AnimTask_TranslateMonElliptical_Step(task: AnimTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[0]);
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
@@ -372,9 +372,9 @@ function AnimTask_ScaleMonAndRestore(task: AnimTask): void {
   task.data[4] = spriteId;
   task.data[10] = 0x100;
   task.data[11] = 0x100;
-  task.func = _ScaleMonAndRestore_Step as never;
+  task.func = AnimTask_ScaleMonAndRestore_Step as never;
 }
-function _ScaleMonAndRestore_Step(task: AnimTask): void {
+function AnimTask_ScaleMonAndRestore_Step(task: AnimTask): void {
   const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
     SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
     ResetSpriteRotScale?: (id: number) => void;
@@ -534,9 +534,9 @@ function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(task: AnimTask): void {
   task.data[0] = 0;
   task.data[1] = a[1];
   task.data[2] = a[2];
-  task.func = AnimTask_ShakeTargetPowerDmg_Step;
+  task.func = AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step;
 }
-function AnimTask_ShakeTargetPowerDmg_Step(task: AnimTask): void {
+function AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step(task: AnimTask): void {
   const sp = _sprites()?.get(task.data[7]);
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   if (++task.data[0] > task.data[1]) {
@@ -584,7 +584,7 @@ function AnimTask_RotateMonSpriteToSide(task: AnimTask): void {
   const b = a[2] === 0 ? _atk() : (_itf()?.getTarget() ?? 1);
   task.data[7] = (b & 1) === 0 ? 1 : 0; // player side
   if (task.data[7]) { task.data[3] *= -1; task.data[4] *= -1; }
-  task.func = _RotateToSide_Step;
+  task.func = AnimTask_RotateMonSpriteToSide_Step;
 }
 /** 1:1 `AnimTask_RotateMonToSideAndRestore` — mode 2 = aller-retour. */
 function AnimTask_RotateMonToSideAndRestore(task: AnimTask): void {
@@ -603,9 +603,9 @@ function AnimTask_RotateMonToSideAndRestore(task: AnimTask): void {
   task.data[7] = 1;
   task.data[3] *= -1;
   task.data[4] *= -1;
-  task.func = _RotateToSide_Step;
+  task.func = AnimTask_RotateMonSpriteToSide_Step;
 }
-function _RotateToSide_Step(task: AnimTask): void {
+function AnimTask_RotateMonSpriteToSide_Step(task: AnimTask): void {
   task.data[3] += task.data[4];
   SetSpriteRotScale(task.data[5], 0x100, 0x100, task.data[3] & 0xFFFF);
   if (task.data[7]) _SetYOffsetFromRotation(task.data[5]);
@@ -640,9 +640,9 @@ function AnimTask_SlideOffScreen(task: AnimTask): void {
   task.data[0] = spriteId;
   const tgt = _itf()?.getTarget() ?? 1;
   task.data[1] = (tgt & 1) !== 0 ? a[1] : -a[1];
-  task.func = _SlideOffScreen_Step;
+  task.func = AnimTask_SlideOffScreen_Step;
 }
-function _SlideOffScreen_Step(task: AnimTask): void {
+function AnimTask_SlideOffScreen_Step(task: AnimTask): void {
   const sp = _sprites()?.get(task.data[0]);
   if (!sp) { DestroyAnimVisualTask(task.taskId); return; }
   sp.x2 += task.data[1];
@@ -776,10 +776,10 @@ function AnimTask_ShakeAndSinkMon(task: _SasTask): void {
   task.data[4] = args[4] | 0;
   task.data[8] = 0;
   task.data[9] = 0;
-  task.func = _ShakeAndSinkMon_Step;
-  _ShakeAndSinkMon_Step(task); // 1:1 gTasks[taskId].func(taskId)
+  task.func = AnimTask_ShakeAndSinkMon_Step;
+  AnimTask_ShakeAndSinkMon_Step(task); // 1:1 gTasks[taskId].func(taskId)
 }
-function _ShakeAndSinkMon_Step(task: _SasTask): void {
+function AnimTask_ShakeAndSinkMon_Step(task: _SasTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[0]);
   let x = task.data[1];

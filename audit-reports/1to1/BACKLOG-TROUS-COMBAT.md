@@ -761,13 +761,13 @@
 ## battle_anim_smokescreen.c — 3/3 fonctions couvertes (100%) · cite:1 + symbole:2 · 9 citations
 - ✓ complet
 
-## battle_anim_mon_movement.c — 28/34 fonctions couvertes (82%) · cite:5 + symbole:23 · 19 citations
-- [ ] AnimTask_ShakeAndSinkMon_Step  @ L333-362
-- [ ] AnimTask_TranslateMonElliptical_Step  @ L385-413
-- [ ] AnimTask_SlideOffScreen_Step  @ L736-754
-- [ ] AnimTask_ScaleMonAndRestore_Step  @ L841-865
-- [ ] AnimTask_RotateMonSpriteToSide_Step  @ L948-974
-- [ ] AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step  @ L1015-1053
+## battle_anim_mon_movement.c — 34/34 fonctions couvertes (100%) · cite:5 + symbole:23 · 19 citations
+- [x] AnimTask_ShakeAndSinkMon_Step @ L333-362 — renommé au nom C exact (ex-_ShakeAndSinkMon_Step, battle_anim_mon_movement.ts)
+- [x] AnimTask_TranslateMonElliptical_Step @ L385-413 — renommé au nom C exact (ex-_TranslateMonElliptical_Step ; A/B Tail Whip 39 : fidèle 190f)
+- [x] AnimTask_SlideOffScreen_Step @ L736-754 — renommé au nom C exact (ex-_SlideOffScreen_Step ; A/B Roar 46 : fidèle 264f)
+- [x] AnimTask_ScaleMonAndRestore_Step @ L841-865 — renommé au nom C exact (ex-_ScaleMonAndRestore_Step ; A/B Leer 43 : fidèle 208f)
+- [x] AnimTask_RotateMonSpriteToSide_Step @ L948-974 — renommé au nom C exact (ex-_RotateToSide_Step, partagé par RotateMonSpriteToSide ET RotateMonToSideAndRestore comme le .c)
+- [x] AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step @ L1015-1053 — renommé au nom C exact (ex-AnimTask_ShakeTargetPowerDmg_Step abrégé)
 
 ## pokemon.c — 90/160 fonctions couvertes (56%) · cite:44 + symbole:46 · 195 citations
 - [ ] ZeroBoxMonData  @ L2156-2163
