@@ -2488,3 +2488,208 @@ function AnimTask_SporeDoubleBattle(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 _sbRegT({ AnimTask_SporeDoubleBattle: AnimTask_SporeDoubleBattle as never });
+
+// --- VAGUE F81 : AnimTask_LeafBlade (effects_1.c:3255-3464) -----------------
+// Lame-Feuille : UNE feuille pilotée par la task fait 6 ARCS successifs
+// autour de la cible (positions ±(w/2+10)/±(h/2+10), anim de sprite 0..6 par
+// segment, subpriority oscillante ±2, pause 5f entre segments via l'état
+// 0xFF), en semant chaque tick une TRAÎNE clignotante (8 flips puis meurt en
+// décrémentant data[12]) ; fin quand toutes les traînes sont mortes.
+import { gBattlerPartyIndexes as _lbPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _lbEnemyParty, gPlayerParty as _lbPlayerParty, GetMonData as _lbGetMon, MON_DATA_SPECIES as _lbSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _lbRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _lbFrontCoords, getMonBackPicCoords as _lbBackCoords } from './data/mon_pic_coords';
+
+type _LbTask = { taskId: number; data: number[]; func?: unknown };
+type _LbSprite = {
+  x: number; y: number; x2: number; y2: number; data: number[];
+  callback: unknown; oamIndex?: number; subpriority?: number; invisible?: boolean;
+  anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number;
+  animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean;
+};
+function _lbRt(): {
+  gSprites?: Map<number, _LbSprite>;
+  gTasks?: Map<number, { data: number[] }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _lbItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _lbPicDim(battler: number, which: 'w' | 'h'): number {
+  const party = (battler & 1) !== 0 ? _lbEnemyParty : _lbPlayerParty;
+  const species = _lbGetMon(party[_lbPartyIdx[battler]] as never, _lbSpeciesK) as number;
+  const name = _lbRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _lbBackCoords(name) : _lbFrontCoords(name);
+  return which === 'w' ? coords.w : coords.h;
+}
+/** Spawn d'une feuille (template gLeafBladeSpriteTemplate tags-only, tag LEAF
+ *  10063, 16x16, anims gLeafBladeAnimTable posées pour StartSpriteAnim). */
+function _lbSpawnLeaf(x: number, y: number, subprio: number): number {
+  const rt = _lbRt();
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gLeafBladeSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
+  if (sid < 0) return -1;
+  const sp = rt.gSprites?.get(sid);
+  const oam = sp && sp.oamIndex !== undefined ? rt.gba?.oam[sp.oamIndex] : undefined;
+  if (oam && tileStart !== 0xFFFF) {
+    oam.tileId = tileStart;
+    const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+    if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
+  }
+  if (sp && tpl?.anims) {
+    sp.anims = tpl.anims as never;
+    sp.tileBase = tileStart !== 0xFFFF ? tileStart : 0;
+    sp.animNum = 0; sp.animCmdIndex = 0; sp.animDelayCounter = 0;
+    sp.animBeginning = true; sp.animEnded = false;
+  }
+  return sid;
+}
+function _lbStartAnim(sp: _LbSprite | undefined, n: number): void {
+  if (sp && sp.anims) {
+    sp.animNum = n; sp.animCmdIndex = 0; sp.animDelayCounter = 0;
+    sp.animBeginning = true; sp.animEnded = false;
+  }
+}
+function _lbGetPosFactor(sp: _LbSprite): number {
+  return sp.data[4] < sp.y ? -8 : 8;
+}
+/** Recentre le sprite et prépare l'arc suivant (corps commun des cases impaires). */
+function _lbRearm(task: _LbTask, sp: _LbSprite, destX: number, destY: number, animNum: number, subprioDelta: number): void {
+  sp.x += sp.x2; sp.y += sp.y2;
+  sp.x2 = 0; sp.y2 = 0;
+  sp.data[0] = 10;
+  sp.data[1] = sp.x;
+  sp.data[2] = destX;
+  sp.data[3] = sp.y;
+  sp.data[4] = destY;
+  sp.data[5] = _lbGetPosFactor(sp);
+  task.data[4] += subprioDelta;
+  task.data[3] = animNum;
+  sp.subpriority = task.data[4];
+  _lbStartAnim(sp, animNum);
+  InitAnimArcTranslation(sp as never);
+  task.data[0]++;
+}
+/** 1:1 AnimTask_LeafBlade (effects_1.c:3255). */
+function AnimTask_LeafBlade(task: _LbTask): void {
+  const itf = _lbItf();
+  const tgt = itf.getTarget?.() ?? 1;
+  task.data[4] = _GetBattlerSpriteSubpriority(tgt) - 1;
+  task.data[6] = GetBattlerSpriteCoord(tgt, 2);
+  task.data[7] = GetBattlerSpriteCoord(tgt, 3);
+  task.data[10] = _lbPicDim(tgt, 'w');
+  task.data[11] = _lbPicDim(tgt, 'h');
+  task.data[5] = (tgt & 1) !== 0 ? 1 : -1;
+  task.data[9] = 56 - task.data[5] * 64;
+  task.data[8] = task.data[7] - task.data[9] + task.data[6];
+  task.data[2] = _lbSpawnLeaf(task.data[8], task.data[9], task.data[4]);
+  if (task.data[2] < 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const sp = _lbRt().gSprites?.get(task.data[2]);
+  if (sp) {
+    sp.data[0] = 10;
+    sp.data[1] = task.data[8];
+    sp.data[2] = task.data[6] - (Math.trunc(task.data[10] / 2) + 10) * task.data[5];
+    sp.data[3] = task.data[9];
+    sp.data[4] = task.data[7] + (Math.trunc(task.data[11] / 2) + 10) * task.data[5];
+    sp.data[5] = _lbGetPosFactor(sp);
+    InitAnimArcTranslation(sp as never);
+  }
+  task.func = _LeafBlade_Step;
+}
+/** 1:1 AnimTask_LeafBlade_Step (machine 0..13 + 0xFF pause). */
+function _LeafBlade_Step(task: _LbTask): void {
+  const rt = _lbRt();
+  const sp = rt.gSprites?.get(task.data[2]);
+  if (!sp && task.data[0] !== 13) { _lbItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  switch (task.data[0]) {
+    case 0: case 2: case 4: case 6: case 8: case 10: case 12:
+      _LeafBlade_Trail(task);
+      if (sp && TranslateAnimHorizontalArc(sp as never)) {
+        if (task.data[0] === 12) {
+          for (const [sid, s2] of rt.gSprites ?? new Map()) {
+            if (s2 === sp) { rt.DestroySprite?.(sid); break; }
+          }
+          task.data[0] = 13;
+        } else {
+          task.data[15] = task.data[0] + 1;
+          task.data[0] = 0xFF;
+        }
+      }
+      break;
+    case 1:
+      if (sp) _lbRearm(task, sp, task.data[6], task.data[7], 1, 2);
+      break;
+    case 3:
+      if (sp) _lbRearm(task, sp, task.data[6] - (Math.trunc(task.data[10] / 2) + 10) * task.data[5], task.data[7] - (Math.trunc(task.data[11] / 2) + 10) * task.data[5], 2, 0);
+      break;
+    case 5:
+      if (sp) _lbRearm(task, sp, task.data[6] + (Math.trunc(task.data[10] / 2) + 10) * task.data[5], task.data[7] + (Math.trunc(task.data[11] / 2) + 10) * task.data[5], 3, -2);
+      break;
+    case 7:
+      if (sp) _lbRearm(task, sp, task.data[6], task.data[7], 4, 2);
+      break;
+    case 9:
+      if (sp) _lbRearm(task, sp, task.data[6] - (Math.trunc(task.data[10] / 2) + 10) * task.data[5], task.data[7] + (Math.trunc(task.data[11] / 2) + 10) * task.data[5], 5, 0);
+      break;
+    case 11:
+      if (sp) _lbRearm(task, sp, task.data[8], task.data[9], 6, -2);
+      break;
+    case 13:
+      if (task.data[12] === 0) _lbItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    case 0xFF:
+      if (++task.data[1] > 5) {
+        task.data[1] = 0;
+        task.data[0] = task.data[15];
+      }
+      break;
+  }
+}
+/** 1:1 AnimTask_LeafBlade_Step2 : sème une traîne clignotante chaque tick. */
+function _LeafBlade_Trail(task: _LbTask): void {
+  task.data[14]++;
+  if (task.data[14] > 0) {
+    task.data[14] = 0;
+    const rt = _lbRt();
+    const main = rt.gSprites?.get(task.data[2]);
+    if (!main) return;
+    const sid = _lbSpawnLeaf(main.x + main.x2, main.y + main.y2, task.data[4]);
+    if (sid < 0) return;
+    const sp = rt.gSprites?.get(sid);
+    if (sp) {
+      sp.data[6] = task.taskId;
+      sp.data[7] = 12;
+      task.data[12]++;
+      sp.data[0] = task.data[13] & 1;
+      task.data[13]++;
+      _lbStartAnim(sp, task.data[3]);
+      sp.subpriority = task.data[4];
+      sp.callback = _LeafBlade_TrailFlicker as never;
+    }
+  }
+}
+/** 1:1 AnimTask_LeafBlade_Step2_Callback : 8 flips puis meurt (décrémente d12). */
+function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
+  sprite.data[0]++;
+  if (sprite.data[0] > 1) {
+    sprite.data[0] = 0;
+    sprite.invisible = !sprite.invisible;
+    sprite.data[1]++;
+    if (sprite.data[1] > 8) {
+      const rt = _lbRt();
+      const task = rt.gTasks?.get(sprite.data[6]);
+      if (task) task.data[sprite.data[7]]--;
+      for (const [sid, s2] of rt.gSprites ?? new Map()) {
+        if (s2 === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+      }
+    }
+  }
+}
+_sbRegT({ AnimTask_LeafBlade: AnimTask_LeafBlade as never });
