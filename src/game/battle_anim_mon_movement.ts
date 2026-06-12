@@ -745,3 +745,55 @@ registerAnimTemplates([
   { name: 'gVerticalDipSpriteTemplate', tileTag: 0, paletteTag: 0, callback: DoVerticalDip as never },
   { name: 'gSlideMonToOffsetAndBackSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOffsetAndBack as never },
 ]);
+
+// --- VAGUE F63 : AnimTask_ShakeAndSinkMon (mon_movement.c:320-354) ----------
+// Le mon tremble (x2 alterne +-arg1 toutes les arg2 frames) en S'ENFONCANT
+// (y2 += arg3 Q8.8 cumulatif) pendant arg4 frames. (Dive/Submersion...)
+type _SasTask = { taskId: number; data: number[]; func?: unknown };
+function _sasItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _sasSpriteId(animBattler: number): number {
+  const itf = _sasItf();
+  const b = animBattler === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+
+/** 1:1 AnimTask_ShakeAndSinkMon (+ appel immediat du Step, 1:1). */
+function AnimTask_ShakeAndSinkMon(task: _SasTask): void {
+  const itf = _sasItf();
+  const args = itf.getArgs?.() ?? [0, 4, 2, 96, 30];
+  const spriteId = _sasSpriteId(args[0]);
+  if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(spriteId);
+  if (sp) sp.x2 = args[1] | 0;
+  task.data[0] = spriteId;
+  task.data[1] = args[1] | 0;
+  task.data[2] = args[2] | 0;
+  task.data[3] = args[3] | 0;
+  task.data[4] = args[4] | 0;
+  task.data[8] = 0;
+  task.data[9] = 0;
+  task.func = _ShakeAndSinkMon_Step;
+  _ShakeAndSinkMon_Step(task); // 1:1 gTasks[taskId].func(taskId)
+}
+function _ShakeAndSinkMon_Step(task: _SasTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number }> } | undefined;
+  const sp = rt?.gSprites?.get(task.data[0]);
+  let x = task.data[1];
+  if (task.data[2] === task.data[8]++) {
+    task.data[8] = 0;
+    if (sp && sp.x2 === x) x = -x;
+    if (sp) sp.x2 += x;
+  }
+  task.data[1] = x;
+  task.data[9] += task.data[3];
+  if (sp) sp.y2 = task.data[9] >> 8;
+  if (--task.data[4] === 0) {
+    _sasItf().DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+}
+registerAnimTasks({ AnimTask_ShakeAndSinkMon: AnimTask_ShakeAndSinkMon as never });
