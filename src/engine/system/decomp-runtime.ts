@@ -2524,6 +2524,12 @@ export class DecompRuntime {
     sprite.invisible = true;
     sprite.inUse = false;
     sprite.callback = null;
+    // Contrat plateforme : si la matrice affine du sprite a été ALLOUÉE via
+    // AllocOamMatrix (_matrixUsed), la libérer (≈ FreeSpriteOamMatrix décomp).
+    // Sans ça, les matrices des mons de combat (1 alloc/sprite) fuieraient.
+    if (sprite.matrixNum > 0 && this._matrixUsed?.has?.(sprite.matrixNum)) {
+      this.FreeOamMatrix(sprite.matrixNum);
+    }
     // NOTE: ne PAS this.gSprites.delete(spriteId) — les sprites enfants
     // (e.g. water drop halves) lisent encore gSprites[parentId].data[7].
     // Le vrai décomp garde le slot jusqu'à réallocation.

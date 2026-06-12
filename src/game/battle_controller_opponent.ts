@@ -368,6 +368,8 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
     // d'élévation (back pic au sol).
     const elevation = isOpponent ? GetBattlerElevation(battler, sp) : 0;
     const y = (c ? (isOpponent ? c.front.yOffset : c.back.yOffset) : 0) + baseY - elevation;
+    // Matrice affine ALLOUÉE pour ce mon (cf. commentaire oam ci-dessous).
+    const _monMatrixNum = (getRuntime() as unknown as { AllocOamMatrix?: () => number } | null)?.AllocOamMatrix?.() ?? (16 + battler);
     // 1:1 SetMultiuseSpriteTemplateToPokemon + CreateSprite : template INLINE
     // (tileTag=TAG_NONE + images) → keystone CreateSpriteInline. shape0/size3 = 64x64.
     const spriteId = CreateSprite({
@@ -379,8 +381,12 @@ export async function _loadAndCreateBattlerMonSprite(battler: number, isOpponent
       // 1:1 gOamData_BattleSpriteOpponentSide/PlayerSide (battle_main.c:284/299) :
       // affineMode = ST_OAM_AFFINE_NORMAL (1) — requis pour l'affine EMERGE du
       // send-out (StartSpriteAffineAnim BATTLER_AFFINE_EMERGE, pokeball.ts:476).
-      // Matrice par battler (affineParamIndex) = pas de collision player/opponent.
-      oam: { shape: 0, size: 3, priority: 2, paletteNum: battler, affineMode: 1, affineParamIndex: battler },
+      // Matrice ALLOUÉE (AllocOamMatrix, 1:1 InitSpriteAffineAnim) — un slot fixe
+      // (battler) était RÉÉCRIT à l'identité chaque frame par un autre sprite
+      // affine du send-out → le compositeur voyait toujours scale 100% = pas de
+      // grossissement visible (pixel-probe : matrice animait, aire constante).
+      // Libérée par DestroySprite (contrat plateforme _matrixUsed).
+      oam: { shape: 0, size: 3, priority: 2, paletteNum: battler, affineMode: 1, affineParamIndex: _monMatrixNum },
       // ⚠️ size = la TAILLE RÉELLE uploadée (2 frames = 128 tiles pour le front
       // adverse animé). L'ancien `size: FRAME0` n'ALLOUAIT que 64 tiles alors que
       // _writeToObjVram écrivait les 2 frames → la frame 2 (base+64) vivait en
