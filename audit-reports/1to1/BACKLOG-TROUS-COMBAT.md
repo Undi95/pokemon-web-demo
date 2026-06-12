@@ -12,14 +12,14 @@
 - [x] BattleIntroSwitchInPlayerMons  @ L3820-3840 — UNUSED décomp, dette documentée
 - [x] RunBattleScriptCommands  @ L5266-5271 — porté 1:1 + BattleScriptPushCursorAndCallback (battle_util.c:3192)
 
-## battle_util.c — 45/52 fonctions couvertes (87%) · cite:36 + symbole:9 · 191 citations
-- [ ] HandleAction_SafariZoneBallThrow  @ L550-560
-- [ ] HandleAction_ThrowPokeblock  @ L561-589
-- [ ] HandleAction_GoNear  @ L590-616
-- [ ] HandleAction_SafariZoneRun  @ L617-624
-- [ ] HandleAction_WallyBallThrow  @ L625-637
-- [ ] MarkAllBattlersForControllerExec  @ L830-845
-- [ ] MarkBattlerReceivedLinkData  @ L854-863
+## battle_util.c — ✅ SOLDÉ (tranche ×7 portée 1:1 dans src/game/battle_util.ts)
+- [x] HandleAction_SafariZoneBallThrow — porté 1:1 (BattleScript_SafariBallThrow bytecode:22 ; gNumSafariBalls module ; boot safari = dette zone) @ L550-560
+- [x] HandleAction_ThrowPokeblock — porté 1:1 QUIRK VANILLA reproduit (< pas <= = pokeblock throw glitch, safariEscapeFactor peut tomber à 0) + sPkblToEscapeFactor 5x3 @ L561-589
+- [x] HandleAction_GoNear — porté 1:1 (tables sGoNearCounterToCatch/EscapeFactor, caps 20, B_MSG 0/1) @ L590-616
+- [x] HandleAction_SafariZoneRun — porté 1:1 (SE_FLEE 17 + B_OUTCOME_RAN 4) @ L617-624
+- [x] HandleAction_WallyBallThrow — porté 1:1 (PREPARE_MON_NICK_BUFFER + BattleScript_ActionWallyThrow + gActionsByTurnOrder[1]=FINISHED) @ L625-637
+- [x] MarkAllBattlersForControllerExec — porté nominal — UNUSED explicite dans le .c (aucun caller) @ L830-845
+- [x] MarkBattlerReceivedLinkData — porté 1:1 (GetLinkPlayerCount=0 hors link → clear-mask seule ; dette link) @ L854-863
 
 ## battle_script_commands.c — 287/287 ✅ hors Unused (commits a8c2e914 + 0be2e866)
 - [ ] Unused_ApplyRandomDmgMultiplier  @ L1653-1657 (unused décomp — en bas de pile)

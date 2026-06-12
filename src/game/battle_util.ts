@@ -510,6 +510,142 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
   }
 }
 
+// ─── Actions SAFARI + WALLY (battle_util.c:550-637) — tranche battle_util ×7 ──
+// Atteignabilité : Safari Zone + tuto Wally hors démo actuelle (les boots
+// DoSafariBattle/StartWallyTutorialBattle = dettes notées) ; les handlers sont
+// la STRUCTURE 1:1 complète, dispatchés par sTurnActionsFuncsTable dès que les
+// entrées de jeu existeront.
+
+/** 1:1 `sPkblToEscapeFactor[5][3]` (battle_util.c:52-74) — lignes = throw
+ *  counter, colonnes = B_MSG_MON_CURIOUS(0)/ENTHRALLED(1)/IGNORED(2). */
+const sPkblToEscapeFactor: ReadonlyArray<ReadonlyArray<number>> = [
+  [0, 0, 0], [3, 5, 0], [2, 3, 0], [1, 2, 0], [1, 1, 0],
+];
+/** 1:1 `sGoNearCounterToCatchFactor[]` (battle_util.c:75). */
+const sGoNearCounterToCatchFactor: readonly number[] = [4, 3, 2, 1];
+/** 1:1 `sGoNearCounterToEscapeFactor[]` (battle_util.c:76). */
+const sGoNearCounterToEscapeFactor: readonly number[] = [4, 4, 4, 4];
+
+/** 1:1 EWRAM `gNumSafariBalls` (battle global) — décrémenté par le throw ;
+ *  initialisé (30) à l'entrée Safari Zone (boot safari = dette). */
+export let gNumSafariBalls = 0;
+export function setNumSafariBalls(v: number): void { gNumSafariBalls = v & 0xFF; }
+
+/** 1:1 `MULTISTRING_CHOOSER` (battle.h) = gBattleCommunication[5]. */
+const _MULTISTRING_CHOOSER_SAF = 5;
+const _ITEM_SAFARI_BALL = 5;
+/** 1:1 battle_string_ids.h:548-549. */
+const _B_MSG_CREPT_CLOSER = 0, _B_MSG_CANT_GET_CLOSER = 1;
+
+/** 1:1 décomp `HandleAction_SafariZoneBallThrow()` (battle_util.c:550-560).
+ *  gBattle_BG0_X/Y=0 : scroll textbox piloté par le renderer web (cf.
+ *  HandleAction_Switch, même convention no-op). */
+export function HandleAction_SafariZoneBallThrow(ctx?: BattleScriptContext): void {
+  setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
+  gNumSafariBalls--;
+  _setLastUsedItemSAF(_ITEM_SAFARI_BALL);
+  // 1:1 gBattlescriptsForBallThrow[ITEM_SAFARI_BALL] = BattleScript_SafariBallThrow
+  // (battle_scripts_2.s:20).
+  const off = getBattleScriptOffset('BattleScript_SafariBallThrow');
+  const c = ctx ?? gBattleScriptContext;
+  if (c && off >= 0) c.scriptPtr = off;
+  setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+}
+
+/** 1:1 décomp `HandleAction_ThrowPokeblock()` (battle_util.c:561-589).
+ *  ⚠️ QUIRK VANILLA reproduit (pas de BUGFIX) : `<` au lieu de `<=` →
+ *  safariEscapeFactor peut tomber à 0 (« pokeblock throw glitch »). */
+export function HandleAction_ThrowPokeblock(ctx?: BattleScriptContext): void {
+  setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
+  gBattleCommunication[_MULTISTRING_CHOOSER_SAF] = (gBattleBufferB[gBattlerAttacker][1] ?? 1) - 1;
+  _setLastUsedItemSAF(gBattleBufferB[gBattlerAttacker][2] ?? 0);
+
+  if (gBattleResults.pokeblockThrows < 255) gBattleResults.pokeblockThrows++;
+  const bs = gBattleStruct as { safariPkblThrowCounter?: number; safariEscapeFactor?: number };
+  if ((bs.safariPkblThrowCounter ?? 0) < 3) bs.safariPkblThrowCounter = (bs.safariPkblThrowCounter ?? 0) + 1;
+  if ((bs.safariEscapeFactor ?? 0) > 1) {
+    const dec = sPkblToEscapeFactor[bs.safariPkblThrowCounter ?? 0][gBattleCommunication[_MULTISTRING_CHOOSER_SAF]] ?? 0;
+    if ((bs.safariEscapeFactor ?? 0) < dec) bs.safariEscapeFactor = 1;
+    else bs.safariEscapeFactor = (bs.safariEscapeFactor ?? 0) - dec;
+  }
+
+  // 1:1 gBattlescriptsForSafariActions[2] = BattleScript_ActionThrowPokeblock.
+  const off = getBattleScriptOffset('BattleScript_ActionThrowPokeblock');
+  const c = ctx ?? gBattleScriptContext;
+  if (c && off >= 0) c.scriptPtr = off;
+  setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+}
+
+/** 1:1 décomp `HandleAction_GoNear()` (battle_util.c:590-616). */
+export function HandleAction_GoNear(ctx?: BattleScriptContext): void {
+  setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
+  const bs = gBattleStruct as { safariCatchFactor?: number; safariEscapeFactor?: number; safariGoNearCounter?: number };
+
+  bs.safariCatchFactor = (bs.safariCatchFactor ?? 0) + (sGoNearCounterToCatchFactor[bs.safariGoNearCounter ?? 0] ?? 0);
+  if (bs.safariCatchFactor > 20) bs.safariCatchFactor = 20;
+
+  bs.safariEscapeFactor = (bs.safariEscapeFactor ?? 0) + (sGoNearCounterToEscapeFactor[bs.safariGoNearCounter ?? 0] ?? 0);
+  if (bs.safariEscapeFactor > 20) bs.safariEscapeFactor = 20;
+
+  if ((bs.safariGoNearCounter ?? 0) < 3) {
+    bs.safariGoNearCounter = (bs.safariGoNearCounter ?? 0) + 1;
+    gBattleCommunication[_MULTISTRING_CHOOSER_SAF] = _B_MSG_CREPT_CLOSER;
+  } else {
+    gBattleCommunication[_MULTISTRING_CHOOSER_SAF] = _B_MSG_CANT_GET_CLOSER;
+  }
+  // 1:1 gBattlescriptsForSafariActions[1] = BattleScript_ActionGetNear.
+  const off = getBattleScriptOffset('BattleScript_ActionGetNear');
+  const c = ctx ?? gBattleScriptContext;
+  if (c && off >= 0) c.scriptPtr = off;
+  setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+}
+
+/** 1:1 décomp `HandleAction_SafariZoneRun()` (battle_util.c:617-624). */
+export function HandleAction_SafariZoneRun(_ctx?: BattleScriptContext): void {
+  setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
+  (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(17 /* SE_FLEE (songs.h:23) */);
+  setCurrentTurnActionNumberHAR(gBattlersCount);
+  _setBattleOutcomeHAR(4 /* B_OUTCOME_RAN */);
+}
+
+/** 1:1 décomp `HandleAction_WallyBallThrow()` (battle_util.c:625-637). */
+export function HandleAction_WallyBallThrow(ctx?: BattleScriptContext): void {
+  setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
+  PREPARE_MON_NICK_BUFFER(_gBattleTextBuff1_HA, gBattlerAttacker, gBattlerPartyIndexes[gBattlerAttacker]);
+  // 1:1 gBattlescriptsForSafariActions[3] = BattleScript_ActionWallyThrow.
+  const off = getBattleScriptOffset('BattleScript_ActionWallyThrow');
+  const c = ctx ?? gBattleScriptContext;
+  if (c && off >= 0) c.scriptPtr = off;
+  setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+  gActionsByTurnOrder[1] = B_ACTION_FINISHED;
+}
+
+// ─── Mark* controller exec (battle_util.c:830-863) ──────────────────────────
+
+/** 1:1 décomp `MarkAllBattlersForControllerExec()` (battle_util.c:830-845) —
+ *  marqué UNUSED dans le .c (port nominal complet, aucun caller décomp). */
+export function MarkAllBattlersForControllerExec(): void {
+  if (gBattleTypeFlags & _BATTLE_TYPE_LINK_HAR) {
+    for (let i = 0; i < gBattlersCount; i++) {
+      _orBattleControllerExecFlags(gBitTable[i] << (32 - 4 /* MAX_BATTLERS_COUNT */));
+    }
+  } else {
+    for (let i = 0; i < gBattlersCount; i++) {
+      _orBattleControllerExecFlags(gBitTable[i]);
+    }
+  }
+}
+
+/** 1:1 décomp `MarkBattlerReceivedLinkData(battlerId)` (battle_util.c:854-863) —
+ *  link only : GetLinkPlayerCount()=0 hors link → seule la clear-mask s'applique. */
+export function MarkBattlerReceivedLinkData(battlerId: number): void {
+  const linkPlayers = 0; // GetLinkPlayerCount() — link non porté (dette link).
+  for (let i = 0; i < linkPlayers; i++) {
+    _orBattleControllerExecFlags(gBitTable[battlerId] << (i << 2));
+  }
+  _andBattleControllerExecFlags(~((1 << 28) << battlerId));
+}
+
 // Imports locaux HandleAction_Run. (TryRunFromBattle vit DANS ce fichier
 // depuis la fusion miroir — ex-try-run-from-battle.ts, section en bas.)
 import { getBattleScriptOffset as _getBattleScriptOffsetHAR } from '../engine/battle/script-interpreter';
@@ -519,7 +655,20 @@ import {
   gChosenActionByBattler as _gChosenActionByBattlerHAR,
   setActiveBattler as _setActiveBattlerHAR,
   gBattleOutcome as _gBattleOutcomeHAR,
+  setLastUsedItem as _setLastUsedItemSAF,
+  setBattleControllerExecFlags as _setBattleControllerExecFlagsSAF,
+  gBattleControllerExecFlags as _gBattleControllerExecFlagsSAF,
+  gActionsByTurnOrder,
 } from '../engine/battle/state';
+import { gBattleBufferB } from '../engine/battle/battle-controllers-ipc';
+
+/** Helpers OR/AND sur gBattleControllerExecFlags (Mark* 1:1). */
+function _orBattleControllerExecFlags(mask: number): void {
+  _setBattleControllerExecFlagsSAF((_gBattleControllerExecFlagsSAF | mask) >>> 0);
+}
+function _andBattleControllerExecFlags(mask: number): void {
+  _setBattleControllerExecFlagsSAF((_gBattleControllerExecFlagsSAF & mask) >>> 0);
+}
 import {
   BATTLE_TYPE_LINK as _BATTLE_TYPE_LINK_HAR,
   BATTLE_TYPE_RECORDED_LINK as _BATTLE_TYPE_RECORDED_LINK_HAR,
