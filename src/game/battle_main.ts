@@ -2903,11 +2903,18 @@ function _BattleAnimateFrontSprite(sprite: BattleSprite, species: number, noCry:
   if (!noCry && _HasTwoFramesAnimation(species) && s.monFrontAnimTable && s.spriteId !== undefined) {
     rt.spriteAnimStatesRegister(s.spriteId, s.monFrontAnimTable, 1, s.tileBase ?? 0);
   }
-  // 1:1 :6801-6814 : l'anim de MOUVEMENT (sMonFrontAnimIdsTable + delay table
+  // 1:1 :6809-6821 : l'anim de MOUVEMENT (sMonFrontAnimIdsTable + delay table
   // -> Task_AnimateAfterDelay -> LaunchAnimationTaskForFrontSprite). Data =
-  // pokemon-anims.json {frontAnimId, delay} ; miroir game/pokemon_animation.ts
-  // (top-5 porte, fallback warn-once).
-  if (!noCry && species) {
+  // pokemon-anims.json {frontAnimId, delay} ; miroir game/pokemon_animation.ts.
+  // ⚠️ 1:1 : ce bloc est HORS du gate `!noCry` dans la décomp (seuls le CRI et
+  // l'anim 2-frames y sont) — l'ancien gate `!noCry` supprimait la « respiration »
+  // du mon adverse en combat DRESSEUR (noCry=true car le cri vient de la cry-task
+  // de la ball) : bug user 2026-06-12. Seul SKIP_FRONT_ANIM (0x80, posé par
+  // BattleAnimateFrontSprite :6773 quand HITMARKER_NO_ANIMATIONS) la saute.
+  const skipFrontAnim = (_panMode & 0x80) !== 0
+    || ((gHitMarker & HITMARKER_NO_ANIMATIONS) !== 0
+        && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)));
+  if (!skipFrontAnim && species) {
     const nm2 = reverseDecompConstant(species, 'SPECIES_');
     const sid2 = s.spriteId;
     if (nm2 && sid2 !== undefined) {
