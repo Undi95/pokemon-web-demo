@@ -1279,6 +1279,16 @@ function _setShinyFlag(battler: number, k: 'tried' | 'finished'): void {
 export function isShinyAnimFinished(battler: number): boolean {
   return _shinyFlags[battler]?.finished ?? true;
 }
+/** True si TryShinyAnimation a déjà été tentée pour ce battler (1:1
+ *  healthBoxesData[b].triedShinyMonAnim). */
+export function hasTriedShinyAnim(battler: number): boolean {
+  return _shinyFlags[battler]?.tried ?? false;
+}
+/** 1:1 les deux clears de SwitchIn_ShowHealthbox (battle_controller_*.c) :
+ *  triedShinyMonAnim = FALSE ; finishedShinyMonAnim = FALSE. */
+export function resetShinyAnimFlags(battler: number): void {
+  delete _shinyFlags[battler];
+}
 function _LoadGoldStarsGfx(): void {
   // pattern LoadBallGfx (sheet+palette par TAG depuis assetCache precharge).
   const gg = (globalThis as Record<string, unknown>);
@@ -1394,7 +1404,7 @@ function _ShinyStar_Diagonal(sprite: _ShinySprite): void {
   }
 }
 
-// Surface harness/consommateurs (TryShinyAnimAfterMonAnim cote opponent).
+// Surface harness/consommateurs (chaîne SwitchIn_TryShinyAnim côté opponent).
 (globalThis as Record<string, unknown>).__battleAnimThrowShiny = {
-  TryShinyAnimation, isShinyAnimFinished,
+  TryShinyAnimation, isShinyAnimFinished, hasTriedShinyAnim, resetShinyAnimFlags,
 };

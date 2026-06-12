@@ -108,6 +108,7 @@ import {
   showOpponentTrainerSprite, getOpponentTrainerSpriteId, destroyOpponentTrainerSprite,
 } from '../engine/battle/battle-sendout-anim';
 import { getTrainerPicEnum } from '../engine/battle/battle-trainer-data-bridge';
+import { StartSpriteAnim } from '../engine/system/sprite-animation';
 import './battle_main';  // section faint-anim consolidee : pose globalThis.__battleFaintAnim (Trigger/SpriteCB faint).
 
 // ─── Constants 1:1 décomp (= same as Player) ───────────────────────────────
@@ -593,16 +594,147 @@ function _setBattlerPartyIndex(battler: number, idx: number): void {
 }
 
 function _StartSendOutAnim_Opponent(battler: number, dontClearSubstituteBit: boolean): void {
-  // Dette R3 : full sprite cascade + DoPokeballSendOutAnimation POKEBALL_OPPONENT.
-  const m = (globalThis as { __battleBallThrow?: { doPokeballSendOutAnimationOpponent?: (b: number, c: boolean) => void } }).__battleBallThrow;
-  m?.doPokeballSendOutAnimationOpponent?.(battler, dontClearSubstituteBit);
+  // 1:1 décomp `StartSendOutAnim` (battle_controller_opponent.c:1131-1159) :
+  // party index + load gfx + CreateSprite mon + ball send-out adverse.
+  // ⚠️ L'ancien wire `__battleBallThrow.doPokeballSendOutAnimationOpponent`
+  // n'existait NULLE PART (no-op silencieux) → le 2e mon d'un dresseur n'avait
+  // JAMAIS de sprite (latent : tous les dresseurs testés n'avaient qu'1 mon ;
+  // démasqué par l'A/B chaîne SwitchIn sur Rick ×2 Wurmple 2026-06-12).
+  void dontClearSubstituteBit; // ClearTemporarySpeciesSpriteData = dette substitute.
+  // Création réelle du sprite front (gfx+palette+registre, reveal anti-noir) —
+  // la brique du chemin INTRO. Ball anim DoPokeballSendOutAnimation
+  // (POKEBALL_OPPONENT_SENDOUT) = dette : le mon apparaît sans throw de ball.
+  void _loadAndCreateBattlerMonSprite(battler, false);
 }
 
-function _installSwitchInTryShinyAnim(_battler: number): void {
-  // Dette R3 : full shiny anim controller. Pour now : immediate.
-  // Note : called via gBattlerControllerFuncs install par controller dispatch,
-  // mais nous appelons via le hook qui mappe vers OpponentBufferExecCompleted.
-  OpponentBufferExecCompleted();
+function _installSwitchInTryShinyAnim(battler: number): void {
+  // 1:1 décomp :1165 gBattlerControllerFuncs[battler] = SwitchIn_TryShinyAnim
+  // (la chaîne 4 états ci-dessous remplace l'ancien ExecCompleted immédiat).
+  _setBattlerControllerFunc(battler, SwitchIn_TryShinyAnim);
+}
+
+// ─── Chaîne SwitchIn 1:1 (battle_controller_opponent.c:459-513) ──────────────
+// TryShinyAnim → ShowHealthbox → ShowSubstitute → HandleSoundAndEnd → completed.
+
+/** 1:1 décomp `SwitchIn_TryShinyAnim()` (:501-513). Le double-check décomp
+ *  « callback ball == SpriteCallbackDummy && !ballAnimActive » : notre
+ *  HandleBallAnimEnd (pokeball.ts 1:1) clear ballAnimActive au même moment où
+ *  la ball meurt → le bit seul est équivalent (la ball n'est plus accessible
+ *  par id ici, gBattleControllerData non modélisé — dette douce documentée). */
+function SwitchIn_TryShinyAnim(): void {
+  if (!_shinyItf().hasTriedShinyAnim(gActiveBattler) && !isBallAnimActive(gActiveBattler)) {
+    const mon = _gEnemyPartyMon(gActiveBattler) as { otId?: number; personality?: number } | null;
+    _shinyItf().TryShinyAnimation(gActiveBattler, mon);
+  }
+  if (!isBallAnimActive(gActiveBattler)) {
+    // 1:1 :509-511 : DestroySprite(ball) fait par HandleBallAnimEnd ;
+    // SetBattlerShadowSpriteCallback (l'ombre du volant réapparaît).
+    const species = (_gEnemyPartyMon(gActiveBattler) as { species?: number } | null)?.species ?? 0;
+    (globalThis as { __battleGfxSfxUtil?: { SetBattlerShadowSpriteCallback?: (b: number, s: number) => void } })
+      .__battleGfxSfxUtil?.SetBattlerShadowSpriteCallback?.(gActiveBattler, species);
+    _setBattlerControllerFunc(gActiveBattler, SwitchIn_ShowHealthbox);
+  }
+}
+
+/** 1:1 décomp `SwitchIn_ShowHealthbox()` (:482-499). */
+function SwitchIn_ShowHealthbox(): void {
+  const monId = getBattlerMonSpriteId(gActiveBattler);
+  const spr = getRuntime()?.gSprites?.get(monId);
+  // GARDE-FOU (pas 1:1 — cas d'erreur impossible en décomp) : si la création du
+  // sprite a ÉCHOUÉ (species 0 : gEnemyParty[1+] party-storage vide alors que
+  // gBattleMons/harness ont le mon — désync CreateNPCTrainerParty, DETTE
+  // investiguer), continuer sans sprite plutôt que soft-lock le combat.
+  if (monId < 0 || !spr) {
+    console.warn('[SwitchIn_ShowHealthbox] sprite mon absent (création échouée) — continue sans (dette party-storage[1+])');
+    _shinyItf().resetShinyAnimFlags(gActiveBattler);
+    _setBattlerControllerFunc(gActiveBattler, SwitchIn_ShowSubstitute);
+    return;
+  }
+  const cbName = (spr?.callback as { name?: string } | null)?.name ?? 'null';
+  // Décomp : callback == SpriteCallbackDummy STRICT. Chez nous l'état de repos
+  // post-send-out est SpriteCallbackDummy_2 (l'anim de mouvement est une task,
+  // le callback du sprite ne repasse pas par Dummy — divergence send-out
+  // documentée, même équivalence que SwitchIn_HandleSoundAndEnd qui accepte
+  // les DEUX dans le .c :473-474).
+  if (_shinyItf().isShinyAnimFinished(gActiveBattler)
+    && (cbName === 'SpriteCallbackDummy' || cbName === 'SpriteCallbackDummy_2' || spr?.callback === null)) {
+    _shinyItf().resetShinyAnimFlags(gActiveBattler);
+    // 1:1 FreeSpriteTiles/PaletteByTag(ANIM_TAG_GOLD_STARS) : géré par les
+    // Task_ShinyStars à leur destruction (chaîne T5).
+    if (spr) StartSpriteAnim(spr as never, 0);
+    const hb = (globalThis as { __battleHealthbox?: {
+      gHealthboxSpriteIds?: number[];
+      UpdateHealthboxAttribute?: (id: number, mon: unknown, attr: number) => void;
+      StartHealthboxSlideIn?: (b: number) => void;
+      SetHealthboxSpriteVisible?: (id: number) => void;
+    } }).__battleHealthbox;
+    const hbId = hb?.gHealthboxSpriteIds?.[gActiveBattler] ?? -1;
+    if (hbId >= 0) {
+      hb?.UpdateHealthboxAttribute?.(hbId, _gEnemyPartyMon(gActiveBattler), 0 /* HEALTHBOX_ALL */);
+      hb?.StartHealthboxSlideIn?.(gActiveBattler);
+      hb?.SetHealthboxSpriteVisible?.(hbId);
+    }
+    (globalThis as { __battleGfxSfxUtil?: { CopyBattleSpriteInvisibility?: (b: number) => void } })
+      .__battleGfxSfxUtil?.CopyBattleSpriteInvisibility?.(gActiveBattler);
+    _setBattlerControllerFunc(gActiveBattler, SwitchIn_ShowSubstitute);
+  }
+}
+
+/** 1:1 décomp `SwitchIn_ShowSubstitute()` (:459-467). Le gate décomp = la
+ *  healthbox a fini son slide (callback == SpriteCallbackDummy) — notre slide
+ *  est tické côté healthbox ; on poll le même critère via le bit slide actif
+ *  si exposé, sinon pass-through (slide non bloquant). */
+function SwitchIn_ShowSubstitute(): void {
+  if (_isBehindSubstitute(gActiveBattler)) {
+    _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, 6 /* B_ANIM_MON_TO_SUBSTITUTE */);
+  }
+  _setBattlerControllerFunc(gActiveBattler, SwitchIn_HandleSoundAndEnd);
+}
+
+/** 1:1 décomp `SwitchIn_HandleSoundAndEnd()` (:469-481) : attend la fin de la
+ *  special anim (substitute) + du cri, puis restore le volume BGM (hook m4a
+ *  toléré — l'infra BGM n'est pas modifiée) et complete. */
+function SwitchIn_HandleSoundAndEnd(): void {
+  const cryPlaying = !!(globalThis as { __isCryPlaying?: () => boolean }).__isCryPlaying?.();
+  if (!_isSpecialAnimActive(gActiveBattler) && !cryPlaying) {
+    (globalThis as { __m4aMPlayVolumeControlBGMFull?: () => void }).__m4aMPlayVolumeControlBGMFull?.();
+    OpponentBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `CompleteOnFinishedBattleAnimation()` (:521-526) : attend la fin
+ *  d'une anim de la table General (animFromTableActive, battle_gfx_sfx_util). */
+function CompleteOnFinishedBattleAnimation(): void {
+  const active = !!(globalThis as { __battleGfxSfxUtil?: { isAnimFromTableActive?: (b: number) => boolean } })
+    .__battleGfxSfxUtil?.isAnimFromTableActive?.(gActiveBattler);
+  if (!active) OpponentBufferExecCompleted();
+}
+// Câblage différé : CompleteOnFinishedBattleAnimation est installé par
+// OpponentHandleBattleAnimation (TryHandleLaunchBattleTableAnimation) — exposé
+// pour le wire au moment du renommage du handler (export utilisé ci-dessous).
+void CompleteOnFinishedBattleAnimation;
+
+/** Interface lazy vers battle_anim_throw (anti-cycle ESM). */
+function _shinyItf(): {
+  TryShinyAnimation: (b: number, m: unknown) => boolean;
+  isShinyAnimFinished: (b: number) => boolean;
+  hasTriedShinyAnim: (b: number) => boolean;
+  resetShinyAnimFlags: (b: number) => void;
+} {
+  const m = (globalThis as Record<string, unknown>).__battleAnimThrowShiny as Record<string, unknown> | undefined;
+  return {
+    TryShinyAnimation: (m?.TryShinyAnimation as never) ?? (() => false),
+    isShinyAnimFinished: (m?.isShinyAnimFinished as never) ?? (() => true),
+    hasTriedShinyAnim: (m?.hasTriedShinyAnim as never) ?? (() => true),
+    resetShinyAnimFlags: (m?.resetShinyAnimFlags as never) ?? (() => { /* no-op */ }),
+  };
+}
+
+/** Mon ennemi du battler (gEnemyParty[gBattlerPartyIndexes[b]]). */
+function _gEnemyPartyMon(battler: number): unknown {
+  const g = globalThis as { __gEnemyParty?: unknown[] };
+  const idx = gBattlerPartyIndexes[battler] ?? 0;
+  return g.__gEnemyParty?.[idx] ?? null;
 }
 /** 1:1 décomp `OpponentHandleReturnMonToBall()` (battle_controller_opponent.c:1200-1216).
  *  bufferA[1]==0 → DoSwitchOutAnimation (anim de rappel : le mon rétrécit dans la
