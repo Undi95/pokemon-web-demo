@@ -3193,3 +3193,86 @@ function _FadeScreenToWhite_Step(task: { taskId: number; data: number[] }): void
   }
 }
 registerAnimTasks({ AnimTask_FadeScreenToWhite: AnimTask_FadeScreenToWhite as never });
+
+// ─── VAGUE F43 : AnimTask_RapinSpinMonElevation (effects_3.c:1749-1891) ─────
+// [typo décomp d'origine] Rapid Spin : le mon « décolle » — la bande scanline
+// se rétrécit par le bas (alternance bgX/bgX+240 toutes les 2f = strobo).
+import { SCANLINE_EFFECT_DMACNT_16BIT as _rsDma16 } from './scanline_effect';
+
+function AnimTask_RapinSpinMonElevation(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _vItf();
+  const args = itf.getArgs?.() ?? [0, 0, 0];
+  const battler = !args[0] ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  const var0 = _GetBattlerYCoordWithElevation(battler) & 0xFF;
+  const toBG2 = _aaBgRank(battler);
+
+  task.data[0] = var0 + 36;
+  task.data[1] = task.data[0];
+  task.data[2] = var0 - 33;
+  if (task.data[2] < 0) task.data[2] = 0;
+  task.data[3] = task.data[0];
+  task.data[4] = 8;
+  task.data[5] = args[1] | 0;
+  task.data[6] = 0;
+  task.data[7] = 0;
+
+  const g = globalThis as Record<string, unknown>;
+  const var3 = toBG2 === 1 ? ((g.gBattle_BG1_X as number) | 0) : ((g.gBattle_BG2_X as number) | 0);
+  task.data[8] = var3;
+  const var4 = var3 + 240; // DISPLAY_WIDTH
+  task.data[9] = var4;
+  task.data[10] = args[2] | 0;
+
+  let var2: number;
+  if (!args[2]) {
+    task.data[11] = var4;
+    var2 = task.data[8];
+  } else {
+    task.data[11] = var3;
+    var2 = task.data[9];
+  }
+  task.data[15] = 0;
+
+  for (let i = task.data[2]; i <= task.data[3]; i++) {
+    _aaBufs[0][i] = var2;
+    _aaBufs[1][i] = var2;
+  }
+  const dmaDest = _aaRegBase + (toBG2 === 1 ? _aaRegBg1H : _aaRegBg2H);
+  _aaSetParams({ dmaDest, dmaControl: _rsDma16, initState: 1, unused9: 0 });
+  task.func = _RapinSpinMonElevation_Step;
+}
+function _RapinSpinMonElevation_Step(task: { taskId: number; data: number[] }): void {
+  task.data[0] -= task.data[5];
+  if (task.data[0] < task.data[2]) task.data[0] = task.data[2];
+
+  if (task.data[4] === 0) {
+    task.data[1] -= task.data[5];
+    if (task.data[1] < task.data[2]) {
+      task.data[1] = task.data[2];
+      task.data[15] = 1;
+    }
+  } else {
+    task.data[4]--;
+  }
+
+  if (++task.data[6] > 1) {
+    task.data[6] = 0;
+    task.data[7] = task.data[7] === 0 ? 1 : 0;
+    task.data[12] = task.data[7] ? task.data[8] : task.data[9];
+  }
+
+  for (let i = task.data[0]; i < task.data[1]; i++) {
+    _aaBufs[0][i] = task.data[12];
+    _aaBufs[1][i] = task.data[12];
+  }
+  for (let i = task.data[1]; i <= task.data[3]; i++) {
+    _aaBufs[0][i] = task.data[11];
+    _aaBufs[1][i] = task.data[11];
+  }
+
+  if (task.data[15]) {
+    if (task.data[10]) _aaScan.state = 3;
+    _vItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+registerAnimTasks({ AnimTask_RapinSpinMonElevation: AnimTask_RapinSpinMonElevation as never });
