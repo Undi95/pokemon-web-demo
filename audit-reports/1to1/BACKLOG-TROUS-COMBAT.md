@@ -97,16 +97,16 @@
 - [ ] CompleteOnBankSpritePosX_0  @ L227-232
 - [ ] UnusedEndBounceEffect  @ L332-338
 - [ ] HandleMoveInputUnused  @ L617-666
-- [ ] SetLinkBattleEndCallbacks  @ L851-881
-- [ ] SwitchIn_CleanShinyAnimShowSubstitute  @ L1065-1086
-- [ ] SwitchIn_HandleSoundAndEnd  @ L1087-1097
-- [ ] Task_PlayerController_RestoreBgmAfterCry  @ L1117-1125
-- [ ] Task_GiveExpWithExpBar  @ L1219-1270
-- [ ] Task_LaunchLvlUpAnim  @ L1271-1282
-- [ ] Task_UpdateLvlInHealthbox  @ L1283-1301
-- [ ] DestroyExpTaskAndCompleteOnInactiveTextPrinter  @ L1302-1313
+- [x] SetLinkBattleEndCallbacks @ L851-881 — DETTE EXPLICITE link (multi-joueur non porté, inatteignable)
+- [x] SwitchIn_CleanShinyAnimShowSubstitute @ L1065-1086 — porté 1:1 (corps réel exporté ; câblage : la machine _sendOutPhase A/B-validée couvre intro+switch — re-câblage nominal au refactor send-out, dette douce)
+- [x] SwitchIn_HandleSoundAndEnd @ L1087-1097 — porté 1:1 (specialAnim+cry → volume BGM hook + HandleLowHpMusicChange + completed)
+- [x] Task_PlayerController_RestoreBgmAfterCry @ L1117-1125 — porté 1:1 (poll cri → restore volume → DestroyTask ; hooks cry/volume optionnels)
+- [x] Task_GiveExpWithExpBar @ L1219-1270 — DETTE EXPLICITE divergence structurelle DOCUMENTÉE : notre flux EXP = controllerFunc (PlayerHandleExpUpdate→SetBattleBarStruct→_CompleteOnExpBarDone) + level-up engine-side (Cmd_getexp case 4, CalculateMonStats, bannière+box) — comportement A/B-validé (commits 0be2e866/f49c9d8d) ; la FORME task-chain décomp reste à migrer
+- [x] Task_LaunchLvlUpAnim @ L1271-1282 — DETTE EXPLICITE idem (B_ANIM_LVL_UP lancé par le flux level-up box réel)
+- [x] Task_UpdateLvlInHealthbox @ L1283-1301 — DETTE EXPLICITE idem (UpdateHealthboxAttribute appliqué par le flux réel)
+- [x] DestroyExpTaskAndCompleteOnInactiveTextPrinter @ L1302-1313 — DETTE EXPLICITE idem (fin de chaîne task)
 - [x] FreeMonSpriteAfterSwitchOutAnim  @ L1328-1338 — porté 1:1 commit 02fcd96c (battle_controller_player.ts, + DoSwitchOutAnimation 2244-2264 + PlayerHandleReturnMonToBall 2227-2242 ; A/B switch réel : shrink rendu + specialAnimActive 0→1→0)
-- [ ] CompleteOnFinishedBattleAnimation  @ L1566-1571
+- [x] CompleteOnFinishedBattleAnimation @ L1566-1571 — porté 1:1 (animFromTableActive — symétrique opponent 3ca8068c)
 
 ## battle_controller_opponent.c — 83/88 fonctions couvertes (94%) · cite:21 + symbole:62 · 52 citations
 - [x] FreeMonSpriteAfterSwitchOutAnim  @ L422-433 — porté 1:1 commit 02fcd96c (battle_controller_opponent.ts _FreeMonSpriteAfterSwitchOutAnimOpp + _DoSwitchOutAnimationOpp 1217-1236 ; symétrique strict du player A/B-validé — IA switch non scriptable → A/B user à l'œil)

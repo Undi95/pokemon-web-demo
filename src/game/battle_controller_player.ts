@@ -1149,6 +1149,61 @@ function PlayerHandleFaintAnimation(): void {
   }
 }
 
+// ─── Chaîne SwitchIn player 1:1 (battle_controller_player.c:1065-1125) ──────
+// CÂBLAGE : la machine _sendOutPhase (intro+switch, A/B-validée) couvre le même
+// comportement en compact ; ces fonctions nommées 1:1 sont les états décomp
+// exacts — re-câblage nominal fin = au refactor du send-out player (dette douce).
+
+/** 1:1 décomp `SwitchIn_CleanShinyAnimShowSubstitute()` (:1065-1086). */
+export function SwitchIn_CleanShinyAnimShowSubstitute(): void {
+  const monId = getBattlerMonSpriteId(gActiveBattler);
+  const spr = getRuntime()?.gSprites?.get(monId);
+  const cbName = (spr?.callback as { name?: string } | null)?.name ?? 'null';
+  const shiny = (globalThis as Record<string, unknown>).__battleAnimThrowShiny as {
+    isShinyAnimFinished?: (b: number) => boolean; resetShinyAnimFlags?: (b: number) => void;
+  } | undefined;
+  if ((shiny?.isShinyAnimFinished?.(gActiveBattler) ?? true)
+    && (cbName === 'SpriteCallbackDummy' || cbName === 'SpriteCallbackDummy_2' || spr?.callback === null)) {
+    (globalThis as { __battleGfxSfxUtil?: { CopyBattleSpriteInvisibility?: (b: number) => void } })
+      .__battleGfxSfxUtil?.CopyBattleSpriteInvisibility?.(gActiveBattler);
+    // 1:1 reset shiny anim (even if it didn't occur) + free GOLD_STARS (tasks T5).
+    shiny?.resetShinyAnimFlags?.(gActiveBattler);
+    if (_isBehindSubstitute(gActiveBattler))
+      _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, 6 /* B_ANIM_MON_TO_SUBSTITUTE */);
+    gBattlerControllerFuncs[gActiveBattler] = SwitchIn_HandleSoundAndEnd;
+  }
+}
+
+/** 1:1 décomp `SwitchIn_HandleSoundAndEnd()` (:1087-1097) — volume BGM via hook
+ *  m4a toléré (infra BGM non modifiée). */
+export function SwitchIn_HandleSoundAndEnd(): void {
+  const cryPlaying = !!(globalThis as { __isCryPlaying?: () => boolean }).__isCryPlaying?.();
+  if (!_isSpecialAnimActive(gActiveBattler) && !cryPlaying) {
+    (globalThis as { __m4aMPlayVolumeControlBGMFull?: () => void }).__m4aMPlayVolumeControlBGMFull?.();
+    _HandleLowHpMusicChange(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** 1:1 décomp `Task_PlayerController_RestoreBgmAfterCry(taskId)` (:1117-1125) :
+ *  attend la fin du cri → restore volume BGM → DestroyTask. Caller décomp =
+ *  PlayerHandleFaintingCry/HandleIntro (création au cri baissé). */
+export function Task_PlayerController_RestoreBgmAfterCry(task: { taskId: number }): void {
+  const cryPlaying = !!(globalThis as { __isCryPlaying?: () => boolean }).__isCryPlaying?.();
+  if (!cryPlaying) {
+    (globalThis as { __m4aMPlayVolumeControlBGMFull?: () => void }).__m4aMPlayVolumeControlBGMFull?.();
+    getRuntime()?.DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 décomp `CompleteOnFinishedBattleAnimation()` (:1566-1571) : attend la fin
+ *  d'une anim de la table General (animFromTableActive, battle_gfx_sfx_util). */
+export function CompleteOnFinishedBattleAnimation(): void {
+  const active = !!(globalThis as { __battleGfxSfxUtil?: { isAnimFromTableActive?: (b: number) => boolean } })
+    .__battleGfxSfxUtil?.isAnimFromTableActive?.(gActiveBattler);
+  if (!active) PlayerBufferExecCompleted();
+}
+
 /** 1:1 décomp `B_ANIM_SUBSTITUTE_TO_MON` (battle_anim.h). */
 const _B_ANIM_SUBSTITUTE_TO_MON = 5; // AUDIT 2026-06 : 5 = SUBSTITUTE_TO_MON (battle_anim.h:387) ; était 6 (anim inverse).
 
