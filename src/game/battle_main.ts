@@ -3406,7 +3406,11 @@ import { getSpeciesInfo } from '../engine/data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../engine/ui/pokedex-flags';
 import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from '../engine/battle/ai/ai-script-commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../engine/system/decomp-globals';
-import { GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty, GetAbilityBySpecies, restoreOwPartyAfterTest } from '../engine/battle/party-storage';
+import {
+  GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty,
+  GetAbilityBySpecies, restoreOwPartyAfterTest,
+  MON_DATA_SPECIES, MON_DATA_SPECIES_OR_EGG, MON_DATA_HP, MON_DATA_STATUS, MON_DATA_NICKNAME,
+} from '../engine/battle/party-storage';
 import { resolveDecompConstant, reverseDecompConstant } from '../engine/system/decomp-constants';
 
 // Inline constants 1:1 décomp (= éviter export-clutter sur ces specifics) :
@@ -3461,20 +3465,13 @@ const STRINGID_INTROMSG = 0;
 /** 1:1 décomp `STRINGID_INTROSENDOUT` = 1. */
 const STRINGID_INTROSENDOUT = 1;
 
-/** 1:1 décomp `MON_DATA_SPECIES`. */
-const MON_DATA_SPECIES = 11;
-
-/** 1:1 décomp `MON_DATA_SPECIES_OR_EGG`. */
-const MON_DATA_SPECIES_OR_EGG = 65;
-
-/** 1:1 décomp `MON_DATA_HP`. */
-const MON_DATA_HP = 39;
-
-/** 1:1 décomp `MON_DATA_STATUS`. */
-const MON_DATA_STATUS = 37;
-
-/** 1:1 décomp `MON_DATA_NICKNAME`. */
-const MON_DATA_NICKNAME = 2;
+// MON_DATA_* : IMPORTÉS de party-storage (la source de vérité du GetMonData
+// utilisé ici). ⚠️ NE PAS redéclarer en local avec les valeurs de l'enum .h
+// décomp : notre party-storage a un mapping DÉCALÉ (+2 après les ribbons,
+// cf. party-storage.ts:102). Les anciennes const locales MON_DATA_HP=39 /
+// MON_DATA_STATUS=37 (valeurs .h) lisaient les MAUVAIS champs via GetMonData
+// → hp=0 émis pour les mons vivants → balls party-summary adverses rendues
+// FAINTED à l'intro dresseur (bug user #1, 2026-06-12).
 
 /** 1:1 décomp `SPECIES_NONE`. */
 const SPECIES_NONE = 0;
