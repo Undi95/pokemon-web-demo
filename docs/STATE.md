@@ -274,3 +274,29 @@ Fallback documenté : move sans template = terminaison propre warn-once.
 - **C0 RACINE VRAM** (`aaddbe01`) : `gReservedSpriteTileCount = 0` en combat (1:1 ROM — l'ex-réserve 0x140 gaspillait 320 tiles ; zone anim 107 → **491 tiles contiguës**). Carte mesurée : healthbox 0-255, bars 256-272, ball 273-276, mons 277-532, anims 533-1023. A/B : send-out complet + screenshots + 8 moves.
 - **F35 multipal** (même commit) : asset `music_notes_2.gbapal` régénéré 3 banks (48 couleurs) + AnimTask_Load/FreeMusicNotesPals 1:1 → HealBell complet.
 - **Sweep global v4** (`afb2c320`) : **252/354 (71 %), zéro défaut `sheet:`** (29 tags résolus en masse par C0). Reste : ~89 tasks 1-2 hits (MetallicShine ×12 = OBJ-window strict, spotlights, pal-buffer ×5, mon-gfx ×6, backgrounds ×6), ~33 durées (partie ROM-réalistes), 7 artefacts série.
+
+## 2026-06-12 — Anims de move : SWEEP GLOBAL OFFICIEL 95,7 % (session F72-F79)
+
+**Chiffre officiel (6 tranches de ~58, exclusion des moves terminaux, reboot entre tranches)** :
+306/347 fidèles stricts → **~333/348 qualifiés (95,7 %)** en comptant les 26 « duree:599-1800 »
+(anims ROM complètes sans résiduel, seuil harnais 594 arbitraire) + Memento 262 validé à part (F75).
+
+**Vagues livrées** : F72 MetallicShine (commit 173611d4) · F73 FIX PALETTE SYSTÉMIQUE
+(paletteBank + bridge tags-only 11 templates + restore Unfaded→Faded réel) · F74 spotlights +
+OBJ-window AFFINE compositor (96b1b82d) · F75 Memento 4 tasks scanline (3fbfed7f) · F76 Curse
+(96eece62) · F77 Role Play + CreateAdditionalMonSpriteForMoveAnim + bitmap C0-racine
+(__markLiveSpriteTiles dans CreateSpriteInline, ab1ce61a) · F78 Transform + copie VRAM OBJ
+de HandleSpeciesGfxDataChange (c1fbe5d8) · F79 Substitute doll byte-exact (5ee62795).
+
+**Manques nommés (la prochaine vague)** :
+- AnimTask_CreateSurfWave (57 Surf, 330 Muddy Water)
+- AnimTask_RotateAuroraRingColors (62) · AnimTask_BlendColorCycleByTag (109) ·
+  AnimTask_BlendColorCycleExclude (244) — la famille BlendColorCycle*
+- AnimTask_SporeDoubleBattle (147) · gPresentHealParticleSpriteTemplate (217)
+- SoundTask_PlayCryWithEcho (304 Hyper Voice) · AnimTask_VoltTackleAttackerReappear (344) ·
+  AnimTask_LeafBlade (348) · Facade 263 residuels:1 (leak sweat drop à chasser)
+- Moves terminaux à tester un-par-un avec reboot : 18, 46, 100, 120, 153, 226.
+
+**Leçons harnais** : preview_screenshot PÉRIMÉ → pixel-probe canvas ; le sweep ne vérifie ni
+tiles ni palettes (spawns invisibles passaient « fidèles ») ; sweep 354 d'un coup MEURT
+(moves terminaux → éjection OW) → tranches + exclusions ; taskIds recyclés → jetons data[14].
