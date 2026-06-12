@@ -746,3 +746,110 @@ _tpRegT({
   AnimTask_ExtrasensoryDistortion: AnimTask_ExtrasensoryDistortion as never,
   AnimTask_TransparentCloneGrowAndShrink: AnimTask_TransparentCloneGrowAndShrink as never,
 });
+
+// ─── VAGUE F42 : AnimTask_SkillSwap (psychic.c:862-948) ─────────────────────
+// 12 orbes en arc attaquant↔cible (toutes les 7f, 4 affines cyclées).
+import {
+  InitAnimArcTranslation as _ssArcInit,
+  TranslateAnimHorizontalArc as _ssArcRun,
+  GetBattlerElevation as _ssElev,
+} from './battle_anim_mons';
+import { gBattlerPartyIndexes as _ssPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _ssEnemyParty, gPlayerParty as _ssPlayerParty, GetMonData as _ssGetMon, MON_DATA_SPECIES as _ssSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _ssRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _ssFrontCoords, getMonBackPicCoords as _ssBackCoords } from './data/mon_pic_coords';
+
+void _ssElev;
+/** GetBattlerSpriteCoordAttr LEFT/RIGHT/TOP/BOTTOM (transcrit local, pattern 1b). */
+function _ssCoordAttr(battler: number, attr: 'left' | 'right' | 'top' | 'bottom'): number {
+  const party = (battler & 1) !== 0 ? _ssEnemyParty : _ssPlayerParty;
+  const species = _ssGetMon(party[_ssPartyIdx[battler]] as never, _ssSpeciesK) as number;
+  const name = _ssRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _ssBackCoords(name) : _ssFrontCoords(name);
+  const cx = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2);
+  const cy = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET);
+  switch (attr) {
+    case 'left': return cx - ((coords.w / 2) | 0);
+    case 'right': return cx + ((coords.w / 2) | 0);
+    case 'top': return cy - ((coords.h / 2) | 0);
+    case 'bottom': return cy + ((coords.h / 2) | 0);
+  }
+}
+type _SsTask = { taskId: number; data: number[]; func?: unknown };
+function _ssItf2(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+
+/** 1:1 `AnimTask_SkillSwap` (psychic.c:862, non-contest). arg0 = direction. */
+function AnimTask_SkillSwap(task: _SsTask): void {
+  const itf = _ssItf2();
+  const args = itf.getArgs?.() ?? [0];
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  if (args[0] === 1) {
+    task.data[10] = -10;
+    task.data[11] = _ssCoordAttr(tgt, 'left') + 8;
+    task.data[12] = _ssCoordAttr(tgt, 'top') + 8;
+    task.data[13] = _ssCoordAttr(atk, 'left') + 8;
+    task.data[14] = _ssCoordAttr(atk, 'top') + 8;
+  } else {
+    task.data[10] = 10;
+    task.data[11] = _ssCoordAttr(atk, 'right') - 8;
+    task.data[12] = _ssCoordAttr(atk, 'bottom') - 8;
+    task.data[13] = _ssCoordAttr(tgt, 'right') - 8;
+    task.data[14] = _ssCoordAttr(tgt, 'bottom') - 8;
+  }
+  task.data[1] = 6;
+  task.func = _SkillSwap_Step;
+}
+/** 1:1 `AnimTask_SkillSwap_Step` (psychic.c:909). */
+function _SkillSwap_Step(task: _SsTask): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 6) {
+        task.data[1] = 0;
+        const rt = (globalThis as Record<string, unknown>).__rt as {
+          gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+          CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+          gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+        } | undefined;
+        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplate?.('gSkillSwapOrbSpriteTemplate');
+        const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], 0) ?? -1;
+        if (sid >= 0) {
+          const sp = rt?.gSprites?.get(sid);
+          const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+          if (oam && tileStart !== 0xFFFF) {
+            oam.tileId = tileStart;
+            const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+          }
+          if (sp) {
+            sp.data[0] = 16;
+            sp.data[2] = task.data[13];
+            sp.data[4] = task.data[14];
+            sp.data[5] = task.data[10];
+            _ssArcInit(sp as never);
+            sp.callback = _AnimSkillSwapOrb as never;
+          }
+        }
+        if (++task.data[2] === 12) task.data[0]++;
+      }
+      break;
+    case 1:
+      if (++task.data[1] > 17) _ssItf2().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 `AnimSkillSwapOrb` (psychic.c:945) : arc puis destroy (vie par la translation). */
+function _AnimSkillSwapOrb(sprite: { data: number[] }): void {
+  if (_ssArcRun(sprite as never)) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_tpRegT({ AnimTask_SkillSwap: AnimTask_SkillSwap as never });
