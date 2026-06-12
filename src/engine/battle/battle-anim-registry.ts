@@ -26,8 +26,11 @@ export interface AnimSpriteTemplate {
   callback: (sprite: unknown) => void;
   /** Charge la sheet/palette du tag si besoin (pattern LoadBallGfx). */
   load?: () => void;
-  /** OAM du template C (shape/size) — requis si tileTag > 0. */
-  oam?: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3 };
+  /** OAM du template C (shape/size/objMode) — requis si tileTag > 0.
+   *  objMode 1:1 gOamData_*_ObjBlend_* (=1) / ObjWindow (=2) — AUDIT OBJMODE
+   *  2026-06-12 : la donnée était extraite (BATTLE_ANIM_OAMS) mais JETÉE par
+   *  le bridge → toutes les anims à templates Blend rendaient opaques. */
+  oam?: { shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3; objMode?: 0 | 1 | 2 };
   /** Tables ANIMCMD 1:1 (anims[animNum][cmdIdx], format sprite-animation.ts) —
    *  posées sur le sprite par Cmd_createsprite, tickées par AnimateSprite
    *  (sprite.c:901). LE moteur de tables (recadrage user 2026-06-11). */

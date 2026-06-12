@@ -113,8 +113,10 @@ function _resolveGeneratedTemplate(name: string, requireCallback: boolean): Anim
     }
     return undefined;
   }
-  // OAM résolu
-  const oam = g.oam ? (BATTLE_ANIM_OAMS as Record<string, { shape: number | null; size: number | null }>)[g.oam] : undefined;
+  // OAM résolu — objMode 1:1 (AUDIT OBJMODE 2026-06-12 : la string
+  // "ST_OAM_OBJ_BLEND/WINDOW" était extraite mais jetée → anims opaques).
+  const oam = g.oam ? (BATTLE_ANIM_OAMS as Record<string, { shape: number | null; size: number | null; objMode?: string }>)[g.oam] : undefined;
+  const objMode = oam?.objMode === 'ST_OAM_OBJ_BLEND' ? 1 : oam?.objMode === 'ST_OAM_OBJ_WINDOW' ? 2 : 0;
   // anims : la ref table → les tables AnimCmd (format runtime déjà)
   let anims: ReadonlyArray<ReadonlyArray<unknown>> | undefined;
   if (g.anims && g.anims !== 'gDummySpriteAnimTable') {
@@ -131,7 +133,7 @@ function _resolveGeneratedTemplate(name: string, requireCallback: boolean): Anim
     paletteTag: tileTag,
     callback: (cb ?? null) as never,
     oam: oam && oam.shape !== null && oam.size !== null
-      ? { shape: oam.shape as 0 | 1 | 2, size: oam.size as 0 | 1 | 2 | 3 }
+      ? { shape: oam.shape as 0 | 1 | 2, size: oam.size as 0 | 1 | 2 | 3, objMode: objMode as 0 | 1 | 2 }
       : { shape: 0, size: 2 },
     ...(anims && anims.length ? { anims } : {}),
     ...(g.affineAnims && g.affineAnims !== 'gDummySpriteAffineAnimTable' ? { affineAnims: g.affineAnims } : {}),

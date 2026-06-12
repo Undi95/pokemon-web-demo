@@ -3000,6 +3000,11 @@ export function CreateSprite(template: any, x: number, y: number, subpriority: n
       if (s) {
         s.callback = template.callback ?? null;
         s.anims = template.anims ?? null;
+        // 1:1 oam.objMode du template (gOamData_*_ObjBlend/ObjWindow) — posé
+        // côté SPRITE : syncSpritesToOam ré-écrit oam.objMode depuis ce champ
+        // CHAQUE frame (AUDIT OBJMODE 2026-06-12 — il était perdu ici, toutes
+        // les anims à templates Blend rendaient opaques).
+        s.objMode = (oam.objMode ?? 0) as 0 | 1 | 2;
         // En miroir, `template.affineAnims` = le NOM de la table enregistree
         // (sprite-affine-extras.ts), ex 'sAffineAnim_BallRotate'.
         s.affineAnimsTableName = (typeof template.affineAnims === 'string') ? template.affineAnims : null;
