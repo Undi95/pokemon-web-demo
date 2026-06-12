@@ -105,11 +105,11 @@
 - [ ] Task_LaunchLvlUpAnim  @ L1271-1282
 - [ ] Task_UpdateLvlInHealthbox  @ L1283-1301
 - [ ] DestroyExpTaskAndCompleteOnInactiveTextPrinter  @ L1302-1313
-- [ ] FreeMonSpriteAfterSwitchOutAnim  @ L1328-1338
+- [x] FreeMonSpriteAfterSwitchOutAnim  @ L1328-1338 — porté 1:1 commit 02fcd96c (battle_controller_player.ts, + DoSwitchOutAnimation 2244-2264 + PlayerHandleReturnMonToBall 2227-2242 ; A/B switch réel : shrink rendu + specialAnimActive 0→1→0)
 - [ ] CompleteOnFinishedBattleAnimation  @ L1566-1571
 
 ## battle_controller_opponent.c — 83/88 fonctions couvertes (94%) · cite:21 + symbole:62 · 52 citations
-- [ ] FreeMonSpriteAfterSwitchOutAnim  @ L422-433
+- [x] FreeMonSpriteAfterSwitchOutAnim  @ L422-433 — porté 1:1 commit 02fcd96c (battle_controller_opponent.ts _FreeMonSpriteAfterSwitchOutAnimOpp + _DoSwitchOutAnimationOpp 1217-1236 ; symétrique strict du player A/B-validé — IA switch non scriptable → A/B user à l'œil)
 - [ ] SwitchIn_ShowSubstitute  @ L459-468
 - [ ] SwitchIn_HandleSoundAndEnd  @ L469-481
 - [ ] SwitchIn_ShowHealthbox  @ L482-499
@@ -266,7 +266,7 @@
 - [ ] Debug_TestHealthBar_Helper  @ L2482-2496
 
 ## battle_gfx_sfx_util.c — 49/53 fonctions couvertes (92%) · cite:9 + symbole:40 · 34 citations
-- [ ] Task_ClearBitWhenSpecialAnimDone  @ L535-547
+- [x] Task_ClearBitWhenSpecialAnimDone  @ L535-547 — porté 1:1 commit 02fcd96c (battle_gfx_sfx_util.ts, avec InitAndLaunchSpecialAnimation :523-533 ; tick anim + clear specialAnimActive, A/B switch réel)
 - [ ] BattleGfxSfxDummy1  @ L693-696
 - [ ] BattleGfxSfxDummy2  @ L697-700
 - [ ] BattleGfxSfxDummy3  @ L728-731
