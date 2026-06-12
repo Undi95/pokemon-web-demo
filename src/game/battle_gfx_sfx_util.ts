@@ -324,7 +324,32 @@ export async function HandleSpeciesGfxDataChange(battlerAtk: number, battlerDef:
  *  FALSE → le doll Substitute (asset gSubstituteDollGfx NON extrait → dette doc). */
 export async function BattleLoadSubstituteOrMonSpriteGfx(battler: number, loadMonSprite: boolean): Promise<void> {
   if (!loadMonSprite) {
-    console.warn('[gfx_sfx_util] Substitute doll gfx : asset non extrait (dette)');
+    // 1:1 :1040-1058 (vague F79) : le DOLL Substitute — back côté joueur,
+    // front côté adverse (assets substitute_doll_*.4bpp.bin extraits
+    // byte-exact de graphics/battle_anims/sprites/substitute*.png) +
+    // palette doll dans le slot OBJ du battler + copie VRAM OBJ (le
+    // LZDecompressVram du C écrit directement la VRAM du mon).
+    const isPlayer = GET_BATTLER_SIDE(battler) === B_SIDE_PLAYER;
+    const pic = isPlayer ? 'substitute_doll_back' : 'substitute_doll_front';
+    const [tilesBuf, palBuf] = await Promise.all([
+      fetch(`/decomp/em/battle_anims/sprites/${pic}.4bpp.bin`).then((r) => r.arrayBuffer()),
+      fetch('/decomp/em/battle_anims/sprites/substitute_doll.gbapal').then((r) => r.arrayBuffer()),
+    ]);
+    const tiles = new Uint8Array(tilesBuf);
+    const position = GetBattlerPosition(battler) & 3;
+    gMonSpritesGfxPtr.sprites.ptr[position] = tiles;
+    LoadPalette(new Uint16Array(palBuf), OBJ_PLTT_ID(battler), 32);
+    {
+      const rt = getRuntime() as unknown as {
+        gSprites?: Map<number, { oamIndex: number }>;
+        gba?: { oam: Array<{ tileId: number }>; objVram: Uint8Array };
+      } | null;
+      const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+      const sid = co?.getBattlerMonSpriteId?.(battler);
+      const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+      const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+      if (oam && rt?.gba) rt.gba.objVram.set(tiles.subarray(0, 0x800), oam.tileId * 32);
+    }
     return;
   }
   const isPlayer = GET_BATTLER_SIDE(battler) === B_SIDE_PLAYER;

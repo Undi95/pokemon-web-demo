@@ -3904,3 +3904,101 @@ _e3RegTasks({
   AnimTask_IsMonInvisible: AnimTask_IsMonInvisible as never,
   AnimTask_CastformGfxDataChange: AnimTask_CastformGfxDataChange as never,
 });
+
+// --- VAGUE F79 : AnimTask_MonToSubstitute(+Doll) (effects_3.c:4782-4875) ----
+// Clonage : le mon se SQUISH (rotscale x+=0x60/y-=0xD ×9) puis disparaît, le
+// DOLL (gfx swappé par BattleLoadSubstituteOrMonSpriteGfx FALSE — async jeton)
+// tombe du haut (y2 -200, gravité 112 Q8.8) avec 2 rebonds. SE via __PlaySE.
+import { LoadBattleMonGfxAndAnimate as _stLoadGfx } from './battle_gfx_sfx_util';
+
+let _stToken = 0;
+const _stDone = new Set<number>();
+
+function AnimTask_MonToSubstitute(task: _E3Task): void {
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const spriteId = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    PrepareBattlerSpriteForRotScale?: (sid: number, objMode: number) => void;
+    SetSpriteRotScale?: (sid: number, x: number, y: number, rot: number) => void;
+    ResetSpriteRotScale?: (sid: number) => void;
+  } | undefined;
+  const rt = _grt();
+  if (task.data[0] === 0) {
+    mons?.PrepareBattlerSpriteForRotScale?.(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+    task.data[1] = 0x100;
+    task.data[2] = 0x100;
+    task.data[0]++;
+  } else if (task.data[0] === 1) {
+    task.data[1] += 0x60;
+    task.data[2] -= 0xD;
+    mons?.SetSpriteRotScale?.(spriteId, task.data[1], task.data[2], 0);
+    if (++task.data[3] === 9) {
+      task.data[3] = 0;
+      mons?.ResetSpriteRotScale?.(spriteId);
+      const sp = rt.gSprites?.get(spriteId);
+      if (sp) (sp as { invisible?: boolean }).invisible = true;
+      task.data[0]++;
+    }
+  } else {
+    // 1:1 :4809 LoadBattleMonGfxAndAnimate(atk, FALSE, spriteId) — async jeton.
+    if ((task.data[14] | 0) === 0) {
+      const token = ++_stToken;
+      task.data[14] = token;
+      void _stLoadGfx(atk, false, spriteId).then(() => { _stDone.add(token); });
+      return;
+    }
+    if (!_stDone.has(task.data[14])) return; // load en vol
+    _stDone.delete(task.data[14]);
+    for (let i = 0; i < 16; i++) task.data[i] = 0;
+    task.func = _MonToSubstituteDoll;
+  }
+}
+/** 1:1 AnimTask_MonToSubstituteDoll (effects_3.c:4823) : chute + 2 rebonds. */
+function _MonToSubstituteDoll(task: _E3Task): void {
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const spriteId = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+  const sp = spriteId !== 0xFF ? (_grt().gSprites?.get(spriteId) as { x?: number; y?: number; x2?: number; y2?: number; invisible?: boolean } | undefined) : undefined;
+  if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const playSE = (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE;
+  switch (task.data[0]) {
+    case 0:
+      sp.y2 = -200;
+      sp.x2 = 200;
+      sp.invisible = false;
+      task.data[10] = 0;
+      task.data[0]++;
+      break;
+    case 1:
+      task.data[10] += 112;
+      sp.y2 = (sp.y2 ?? 0) + (task.data[10] >> 8);
+      if ((sp.y ?? 0) + (sp.y2 ?? 0) >= -32) sp.x2 = 0;
+      if ((sp.y2 ?? 0) > 0) sp.y2 = 0;
+      if (sp.y2 === 0) {
+        playSE?.(140); // SE_M_BUBBLE2
+        task.data[10] -= 0x800;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      task.data[10] -= 112;
+      if (task.data[10] < 0) task.data[10] = 0;
+      sp.y2 = (sp.y2 ?? 0) - (task.data[10] >> 8);
+      if (task.data[10] === 0) task.data[0]++;
+      break;
+    case 3:
+      task.data[10] += 112;
+      sp.y2 = (sp.y2 ?? 0) + (task.data[10] >> 8);
+      if ((sp.y2 ?? 0) > 0) sp.y2 = 0;
+      if (sp.y2 === 0) {
+        playSE?.(140);
+        itf.DestroyAnimVisualTask?.(task.taskId);
+      }
+      break;
+  }
+}
+_e3RegTasks({ AnimTask_MonToSubstitute: AnimTask_MonToSubstitute as never });
