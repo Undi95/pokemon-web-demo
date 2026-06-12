@@ -241,6 +241,40 @@ export function MarkWindowDirty(windowId: number): void {
   if (gw) gw.win.needsFlush = true;
 }
 
+/** 1:1 décomp `CopyToWindowPixelBuffer(u8 windowId, const void *src, u16 size,
+ *  u16 tileOffset)` (window.c) — copie un gfx 4bpp TILE-ARRANGED dans le buffer
+ *  de la fenêtre. Notre pixelBuffer étant linéaire row-major 1 byte/pixel, on
+ *  dépaquette tile par tile. `size` en BYTES (0 = toute la fenêtre, 1:1 décomp
+ *  qui lit alors windowWidth*windowHeight*TILE_SIZE_4BPP), `tileOffset` en tiles. */
+export function CopyToWindowPixelBuffer(windowId: number, src: Uint8Array, size: number, tileOffset: number): void {
+  const gw = gWindows.find((w) => w.id === windowId);
+  if (!gw) return;
+  const widthTiles = gw.template.width;
+  const heightTiles = gw.template.height;
+  const totalTiles = widthTiles * heightTiles;
+  const nTiles = Math.min(
+    size > 0 ? Math.floor(size / 32) : totalTiles,
+    totalTiles - tileOffset,
+    Math.floor(src.length / 32),
+  );
+  const buf = gw.win.pixelBuffer;
+  const rowW = widthTiles * 8;
+  for (let t = 0; t < nTiles; t++) {
+    const tileIdx = tileOffset + t;
+    const tx = (tileIdx % widthTiles) * 8;
+    const ty = Math.floor(tileIdx / widthTiles) * 8;
+    for (let py = 0; py < 8; py++) {
+      for (let pxPair = 0; pxPair < 4; pxPair++) {
+        const byte = src[t * 32 + py * 4 + pxPair];
+        const off = (ty + py) * rowW + tx + pxPair * 2;
+        buf[off] = byte & 0xF;
+        buf[off + 1] = (byte >> 4) & 0xF;
+      }
+    }
+  }
+  gw.win.needsFlush = true;
+}
+
 export function CopyWindowToVram(windowId: number, mode: number): void {
   const gw = gWindows.find((w) => w.id === windowId);
   if (!gw) return;

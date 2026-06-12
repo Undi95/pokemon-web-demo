@@ -699,6 +699,9 @@ import {
   gPlayerParty as _gPlayerPartyPK,
   gPlayerParty as gPlayerParty_BU,
   gPlayerParty as gPlayerParty_CDS,
+  CalculateMonStats,
+  MON_DATA_MAX_HP, MON_DATA_ATK, MON_DATA_DEF, MON_DATA_SPEED,
+  MON_DATA_SPATK, MON_DATA_SPDEF,
   type Pokemon,
 } from './party-storage';
 import {
@@ -10415,66 +10418,271 @@ function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
   }
 }
 
-// ─── 0x6C drawlvlupbox ────────────────────────────────────────────────────
+// ─── 0x6C drawlvlupbox + Level-Up Banner (battle_script_commands.c:5927-6196) ──
+// Imports locaux du bloc (modules feuilles — pas de cycle avec ce fichier).
+import {
+  AddWindow as _AddWindowBSC, RemoveWindow as _RemoveWindowBSC,
+  PutWindowTilemap as _PutWindowTilemapBSC, ClearWindowTilemap as _ClearWindowTilemapBSC,
+  CopyWindowToVram as _CopyWindowToVramBSC, CopyToWindowPixelBuffer as _CopyToWindowPixelBufferBSC,
+} from '../ui/gba-window-system';
+import { AddTextPrinterParameterized3 as _AddTextPrinterParameterized3BSC } from '../ui/gba-text-system';
+import { loadIndexedPngStrict as _loadIndexedPngStrictBSC, loadGbaPal as _loadGbaPalBSC } from '../gba/png-loader';
+import {
+  LoadSpriteSheet as _LoadSpriteSheetBSC, LoadSpritePalette as _LoadSpritePaletteBSC,
+  GetSpriteTileStartByTag as _GetSpriteTileStartByTagBSC,
+  FreeSpritePaletteByTag as _FreeSpritePaletteByTagBSC,
+} from '../system/sprite';
+import { FreeSpriteTilesByTag as _FreeSpriteTilesByTagBSC } from '../system/decomp-globals';
+import { sStandardBattleWindowTemplates as _sStandardBattleWindowTemplatesBSC } from '../decomp-data/src/battle_bg-data';
+import { GetMonLevelUpWindowStats as _GetMonLevelUpWindowStatsBSC } from '../../game/menu_specialized';
+import {
+  lvlUpBoxOpenPage1 as _lvlUpBoxOpenPage1BSC, lvlUpBoxDrawPage2 as _lvlUpBoxDrawPage2BSC,
+  lvlUpBoxClose as _lvlUpBoxCloseBSC,
+} from './battle-levelup-box';
+import { MON_ICON_PALETTE_INDICES as _MON_ICON_PALETTE_INDICES_BSC } from '../pokemon/pokemon-icon-palettes';
+import { reverseDecompConstant as _reverseDecompConstantBSC } from '../system/decomp-constants';
 
-/** 1:1 décomp Cmd_drawlvlupbox (battle_script_commands.c:5927-6024). 1 byte.
+/** PlaySE via le hook global (même mécanisme que les anims — pas d'import BGM/SE). */
+function _PlaySE_BSC(se: number): void {
+  ((globalThis as Record<string, unknown>).__PlaySE as ((id: number) => void) | undefined)?.(se);
+}
+
+/** 1:1 décomp `LEVEL_UP_BANNER_START/END` (battle_script_commands.c:59-60). */
+const LEVEL_UP_BANNER_START = 416;
+const LEVEL_UP_BANNER_END = 512;
+/** 1:1 décomp `TAG_LVLUP_BANNER_MON_ICON` (battle_script_commands.c:62). */
+const TAG_LVLUP_BANNER_MON_ICON = 55130;
+
+// État module bannière : window + assets (fetch one-shot, cache module).
+let _lvlUpBannerWinId = -1;
+let _lvlUpBannerGfx: Uint8Array | null = null;
+let _lvlUpBannerPal: Uint16Array | null = null;
+let _lvlUpBannerAssetsLoading = false;
+/** Stats AVANT le level-up (1:1 gBattleResources->beforeLvlUp->stats), capturées
+ *  par Cmd_getexp case 3 (battle_script_commands.c:3436-3441). */
+const _beforeLvlUpStats: number[] = [0, 0, 0, 0, 0, 0];
+export function captureBeforeLvlUpStats(): void {
+  _GetMonLevelUpWindowStatsBSC(gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as never, _beforeLvlUpStats);
+}
+
+/** Accès miroirs gBattle_BG2_X/Y (battleVBlankState via globalThis, cf. battle_main.ts:306). */
+function _bg2X(): number { return ((globalThis as Record<string, unknown>).gBattle_BG2_X as number) | 0; }
+function _setBg2X(v: number): void { (globalThis as Record<string, unknown>).gBattle_BG2_X = v; }
+function _setBg2Y(v: number): void { (globalThis as Record<string, unknown>).gBattle_BG2_Y = v; }
+function _rtBSC(): { gba: { bg: (i: number) => { config: { priority: number; visible: boolean } } }; gMain: { newKeys: number }; LoadPaletteBg?: (pal: Uint16Array, slot: number) => void; CreateSpriteAtOam: (cfg: Record<string, unknown>) => { spriteId: number }; gSprites: Map<number, { data: number[]; x2: number; callback: unknown }>; DestroySprite: (id: number) => void; LoadPalette?: (pal: Uint16Array, slot: number) => void } | null {
+  return ((globalThis as Record<string, unknown>).__rt as ReturnType<typeof _rtBSC>) ?? null;
+}
+
+/** Fetch one-shot des assets bannière (PNG indexé déjà extrait byte-exact). */
+function _ensureLevelUpBannerAssets(): boolean {
+  if (_lvlUpBannerGfx && _lvlUpBannerPal) return true;
+  if (!_lvlUpBannerAssetsLoading) {
+    _lvlUpBannerAssetsLoading = true;
+    void (async () => {
+      try {
+        const png = await _loadIndexedPngStrictBSC('/decomp/em/battle_interface/level_up_banner.png', 4);
+        _lvlUpBannerGfx = png.charData;
+        _lvlUpBannerPal = png.palette;
+      } catch (e) {
+        console.warn('[lvlup-banner] assets KO', e);
+      }
+    })();
+  }
+  return !!(_lvlUpBannerGfx && _lvlUpBannerPal);
+}
+
+/** 1:1 décomp `InitLevelUpBanner()` (battle_script_commands.c:6044-6055) :
+ *  BG2 scroll (Y=0, X=START), palette BG slot 6, gfx → window banner,
+ *  PutWindowTilemap + CopyWindowToVram, puis l'icône du mon. */
+function InitLevelUpBanner(): void {
+  _setBg2Y(0);
+  _setBg2X(LEVEL_UP_BANNER_START);
+  const rt = _rtBSC();
+  if (_lvlUpBannerPal && rt?.LoadPaletteBg) rt.LoadPaletteBg(_lvlUpBannerPal, 6 * 16);
+  if (_lvlUpBannerWinId < 0) {
+    _lvlUpBannerWinId = _AddWindowBSC(_sStandardBattleWindowTemplatesBSC[14 /* B_WIN_LEVEL_UP_BANNER */]);
+  }
+  if (_lvlUpBannerGfx) _CopyToWindowPixelBufferBSC(_lvlUpBannerWinId, _lvlUpBannerGfx, 0, 0);
+  _PutWindowTilemapBSC(_lvlUpBannerWinId);
+  _CopyWindowToVramBSC(_lvlUpBannerWinId, 3 /* COPYWIN_FULL */);
+  PutMonIconOnLvlUpBanner();
+}
+
+/** 1:1 décomp `SlideInLevelUpBanner()` (battle_script_commands.c:6057-6073) —
+ *  TRUE tant que le slide n'est pas fini (BG2_X: START → END par +8/frame).
+ *  Le texte est dessiné à la PREMIÈRE frame (X == START). */
+function SlideInLevelUpBanner(): boolean {
+  if (_bg2X() === LEVEL_UP_BANNER_END) return false;
+  if (_bg2X() === LEVEL_UP_BANNER_START) DrawLevelUpBannerText();
+  let x = _bg2X() + 8;
+  if (x >= LEVEL_UP_BANNER_END) x = LEVEL_UP_BANNER_END;
+  _setBg2X(x);
+  return x !== LEVEL_UP_BANNER_END;
+}
+
+/** 1:1 décomp `DrawLevelUpBannerText()` (battle_script_commands.c:6075-6134) :
+ *  nickname (FONT_SMALL, x=32, y=0, blanc/ombre grise) + « Niv.N♂ » (y=10).
+ *  Dette cosmétique : glyphe LV_2 rendu « Niv. », couleurs de genre via control
+ *  codes non émises (le ♂/♀ hérite du blanc). */
+function DrawLevelUpBannerText(): void {
+  if (_lvlUpBannerWinId < 0) return;
+  const mon = gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as { level?: number; gender?: number; nickname?: string; name?: string } | undefined;
+  if (!mon) return;
+  const nick = (mon.nickname || mon.name || '?').toUpperCase();
+  const level = mon.level ?? 1;
+  // FONT_SMALL=0 chez nous ? on passe par la config window banner (FONT déjà
+  // calibré dans sTextOnWindowsInfo_Normal[B_WIN_LEVEL_UP_BANNER]).
+  const colors = [0 /* bg transparent */, 1 /* blanc */, 3 /* ombre gris */];
+  _AddTextPrinterParameterized3BSC(_lvlUpBannerWinId, 0 /* FONT_SMALL */, 32, 0, colors, -1, nick);
+  const gender = mon.gender; // 0=male 254=female 255=genderless (décomp MON_MALE=0/FEMALE=254)
+  const genderChar = gender === 0 ? '♂' : gender === 254 ? '♀' : '';
+  _AddTextPrinterParameterized3BSC(_lvlUpBannerWinId, 0, 32, 10, colors, -1, `Niv.${level}${genderChar}`);
+  _CopyWindowToVramBSC(_lvlUpBannerWinId, 2 /* COPYWIN_GFX */);
+}
+
+/** 1:1 décomp `SlideOutLevelUpBanner()` (battle_script_commands.c:6136-6147) —
+ *  TRUE tant que le slide retour n'est pas fini (BG2_X: END → START par -16). */
+function SlideOutLevelUpBanner(): boolean {
+  const x = _bg2X();
+  if (x === LEVEL_UP_BANNER_START) return false;
+  const nx = x - 16 < LEVEL_UP_BANNER_START ? LEVEL_UP_BANNER_START : x - 16;
+  _setBg2X(nx);
+  return nx !== LEVEL_UP_BANNER_START;
+}
+
+/** 1:1 décomp `PutMonIconOnLvlUpBanner()` (battle_script_commands.c:6152-6177) :
+ *  LoadSpriteSheet (frame 0, 0x200) + LoadSpritePalette tag 55130, sprite 32×32
+ *  à (256,10) qui SUIT le scroll BG2 via SpriteCB. Fetch async (≤2 frames) —
+ *  la ROM lit directement ; ici l'icône apparaît dès le fetch fini, le slide
+ *  (12 frames) couvre largement la latence locale. */
+function PutMonIconOnLvlUpBanner(): void {
+  const monIdx = _gBattleStruct32.expGetterMonId ?? 0;
+  const mon = gPlayerParty[monIdx] as { species?: number } | undefined;
+  if (!mon?.species) return;
+  const bg2AtSpawn = _bg2X();
+  void (async () => {
+    try {
+      const speciesEnum = _reverseDecompConstantBSC(mon.species as number, 'SPECIES_') ?? 'SPECIES_NONE';
+      const dexId = speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
+      const png = await _loadIndexedPngStrictBSC(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
+      const palIdx = (_MON_ICON_PALETTE_INDICES_BSC as Record<string, number>)[speciesEnum] ?? 0;
+      const pal = await _loadGbaPalBSC(`/decomp/em/pokemon/icon_palettes/icon_palette_${palIdx}.pal`);
+      // 1:1 : sheet = frame 0 seule (0x200 = 16 tiles 32×32).
+      _LoadSpriteSheetBSC({ data: png.charData.subarray(0, 0x200), size: 0x200, tag: TAG_LVLUP_BANNER_MON_ICON });
+      const palSlot = _LoadSpritePaletteBSC({ data: pal, tag: TAG_LVLUP_BANNER_MON_ICON });
+      const tileStart = _GetSpriteTileStartByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
+      const rt = _rtBSC();
+      if (!rt || tileStart === 0xFFFF) return;
+      const { spriteId } = rt.CreateSpriteAtOam({
+        x: 256, y: 10, shape: 0, size: 2, tileId: tileStart,
+        paletteBank: palSlot, priority: 0, subpriority: 0,
+      });
+      const spr = rt.gSprites.get(spriteId);
+      if (spr) {
+        spr.data[0] = 0;            // sDestroy
+        spr.data[1] = bg2AtSpawn;   // sXOffset (le BG2_X au moment du Put 1:1)
+        spr.callback = SpriteCB_MonIconOnLvlUpBanner as unknown;
+      }
+    } catch (e) {
+      console.warn('[lvlup-banner] icône KO', e);
+    }
+  })();
+}
+
+/** 1:1 décomp `SpriteCB_MonIconOnLvlUpBanner` (battle_script_commands.c:6179-6193) :
+ *  x2 suit le scroll BG2 ; détruit (+ free sheet/palette par tag) au retour. */
+function SpriteCB_MonIconOnLvlUpBanner(sprite: { data: number[]; x2: number; spriteId?: number }): void {
+  sprite.x2 = sprite.data[1] - _bg2X();
+  if (sprite.x2 !== 0) {
+    sprite.data[0] = 1;  // sDestroy
+  } else if (sprite.data[0]) {
+    const rt = _rtBSC();
+    if (rt && typeof sprite.spriteId === 'number') rt.DestroySprite(sprite.spriteId);
+    _FreeSpriteTilesByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
+    _FreeSpritePaletteByTagBSC(TAG_LVLUP_BANNER_MON_ICON);
+  }
+}
+
+/** Cleanup window bannière (1:1 case 9 : ClearWindowTilemap + CopyWindowToVram MAP). */
+function _removeLevelUpBannerWindow(): void {
+  if (_lvlUpBannerWinId < 0) return;
+  _ClearWindowTilemapBSC(_lvlUpBannerWinId);
+  _CopyWindowToVramBSC(_lvlUpBannerWinId, 1 /* COPYWIN_MAP */);
+  _RemoveWindowBSC(_lvlUpBannerWinId);
+  _lvlUpBannerWinId = -1;
+}
+
+/** 1:1 décomp Cmd_drawlvlupbox (battle_script_commands.c:5927-6026). 1 byte.
  *  State machine via gBattleScripting.drawlvlupboxState (11 cases 0..10).
- *
- *  Notre port : state machine fidèle au décomp, avec stubs UI fns qui
- *  retournent les valeurs nécessaires pour faire avancer rapidement
- *  (= simulate "level-up box closed" en ~3 ticks pour ne pas bloquer le
- *  bytecode interpreter). UI réelle wired Phase 1.4+. */
+ *  BANNIÈRE (cases 1-2, 9) = port réel ci-dessus ; BOX de stats (cases 3-8) =
+ *  API battle-levelup-box (port 1:1 existant des helpers DrawLevelUpWindow1/2).
+ *  Cases 6/8 : VRAIE attente d'appui (rt.gMain.newKeys), 1:1 décomp. */
 function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
   const bs = (globalThis as { __battleState?: { gBattleScripting?: { drawlvlupboxState: number } } })
     .__battleState?.gBattleScripting;
   if (!bs) return false;
 
-  // 1:1 décomp 5929-5938 : case 0 → décide skip banner (case 3) ou show (case 1).
+  // 1:1 décomp 5929-5938 : case 0 → mon HORS terrain → bannière (case 1) ;
+  // mon SUR le terrain (sa healthbox suffit) → skip à la box (case 3).
   if (bs.drawlvlupboxState === 0) {
-    // IsMonGettingExpSentOut : check si le mon level-up est in-battle (gBattlerPartyIndexes match expGetterMonId).
-    // Notre simplification : si in-battle skip banner (case 3) directement.
     bs.drawlvlupboxState = _isMonGettingExpSentOutHBT() ? 3 : 1;
   }
 
+  const rt = _rtBSC();
   switch (bs.drawlvlupboxState) {
     case 1:
-      // Start level up banner (= UI banner anim slide-in). UI Phase 1.4 deferred.
+      // 1:1 décomp case 1 : BG2_Y=96 + BG2 prio 0 + ShowBg(2) + InitLevelUpBanner.
+      // Pré-condition runtime : assets fetchés (1-2 frames, la ROM lit direct).
+      if (!_ensureLevelUpBannerAssets()) break;  // re-tick à la frame suivante
+      _setBg2Y(96);
+      if (rt) { rt.gba.bg(2).config.priority = 0; rt.gba.bg(2).config.visible = true; }
+      InitLevelUpBanner();
       bs.drawlvlupboxState = 2;
       break;
     case 2:
-      // 1:1 décomp : SlideInLevelUpBanner returns FALSE quand anim done.
-      // UI Phase 1.4 deferred : assume anim done instant → next state.
-      bs.drawlvlupboxState = 3;
+      if (!SlideInLevelUpBanner()) bs.drawlvlupboxState = 3;
       break;
-    case 3:
-      // Init level up box window. UI Phase 1.4 deferred : advance state.
-      bs.drawlvlupboxState = 4;
+    case 3: {
+      // 1:1 décomp case 3+4 via l'API box existante (cadre + page 1 + priorités BG).
+      const monStats: number[] = [0, 0, 0, 0, 0, 0];
+      _GetMonLevelUpWindowStatsBSC(gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as never, monStats);
+      _lvlUpBoxOpenPage1BSC(_beforeLvlUpStats.slice(), monStats);
+      bs.drawlvlupboxState = 5;  // (case 4 = dessin page 1, fait par OpenPage1)
       break;
-    case 4:
-      // Draw page 1 of level up box. UI Phase 1.4 deferred : advance state.
-      bs.drawlvlupboxState++;
-      break;
+    }
     case 5:
     case 7:
-      // Wait for draw. UI Phase 1.4 deferred : IsDma3ManagerBusyWithBgCopy = FALSE → advance.
+      // 1:1 décomp : wait DMA (no-op chez nous) + BG1_Y=0 (fait par OpenPage1).
       bs.drawlvlupboxState++;
       break;
     case 6:
-      // 1:1 décomp : wait for player key (gMain.newKeys != 0).
-      // UI Phase 1.4 deferred : auto-accept (= simulate key press).
-      bs.drawlvlupboxState++;
+      // 1:1 décomp : attendre un VRAI appui (gMain.newKeys != 0) → SE + page 2.
+      if (rt && rt.gMain.newKeys !== 0) {
+        _PlaySE_BSC(5 /* SE_SELECT */);
+        const monStats: number[] = [0, 0, 0, 0, 0, 0];
+        _GetMonLevelUpWindowStatsBSC(gPlayerParty[_gBattleStruct32.expGetterMonId ?? 0] as never, monStats);
+        _lvlUpBoxDrawPage2BSC(monStats);
+        bs.drawlvlupboxState++;
+      }
       break;
     case 8:
-      // Same : wait key + close. UI Phase 1.4 deferred : auto-accept.
-      bs.drawlvlupboxState++;
+      // 1:1 décomp : attendre un appui → SE + fermer la box.
+      if (rt && rt.gMain.newKeys !== 0) {
+        _PlaySE_BSC(5 /* SE_SELECT */);
+        _lvlUpBoxCloseBSC();
+        bs.drawlvlupboxState++;
+      }
       break;
     case 9:
-      // SlideOutLevelUpBanner → UI Phase 1.4 deferred.
-      bs.drawlvlupboxState = 10;
+      // 1:1 décomp : slide-out bannière puis cleanup windows + BG2 état combat.
+      if (!SlideOutLevelUpBanner()) {
+        _removeLevelUpBannerWindow();
+        if (rt) { rt.gba.bg(2).config.priority = 2; rt.gba.bg(2).config.visible = true; }
+        bs.drawlvlupboxState = 10;
+      }
       break;
     case 10:
-      // 1:1 décomp : final advance → gBattlescriptCurrInstr++.
-      // Pour réinit prochain usage, reset state.
+      // 1:1 décomp : restaure BG0/BG1 (fait par lvlUpBoxClose) → advance.
       bs.drawlvlupboxState = 0;
       return false;  // advance opcode.
     default:
@@ -11503,6 +11711,10 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
         const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
         if (monHp && monLevel !== MAX_LEVEL) {
+          // 1:1 décomp battle_script_commands.c:3436-3441 : capture des stats AVANT
+          // le level-up (gBattleResources->beforeLvlUp->stats) — la page 1 de la
+          // level-up box (Cmd_drawlvlupbox case 4) affiche les deltas vs ces valeurs.
+          captureBeforeLvlUpStats();
           // 1:1 décomp : applique l'EXP SEGMENTÉE jusqu'au PROCHAIN seuil de niveau (le
           // décomp laisse le controller remplir la barre 1 niveau à la fois + renvoyer le
           // reste en bufferB ; notre port n'anime pas la barre → on segmente ici). Si le
@@ -11560,15 +11772,37 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         const newLevel = currentLevel + 1;
         if (currentLevel < MAX_LEVEL && currentExp >= getExpForLevel(getSpeciesGrowthRate(species), newLevel)) {
           SetMonData(gPlayerParty[monId], MON_DATA_LEVEL, newLevel);
+          // 1:1 décomp (côté controller, battle_controller_player.c Task_GiveExpToMon) :
+          // le level-up RECALCULE les 6 stats + ajuste les HP de la diff maxHP.
+          // SANS ça : les stats party ne montaient JAMAIS au level-up en combat
+          // (et la level-up box affichait +0 partout, before==after).
+          CalculateMonStats(gPlayerParty[monId] as never);
           setLeveledUpInBattle(gLeveledUpInBattle | gBitTable[monId]);
 
-          // 1:1 décomp : update gBattleMons[slot] post lvl up si mon est en field.
+          // 1:1 décomp battle_script_commands.c:3469-3498 : update gBattleMons[slot]
+          // post level-up si le mon est sur le terrain (level + hp + 6 stats).
+          // Quirks vanilla reproduits : Speed copiée 2× (slot 0) ; spDefense NON
+          // copiée pour le slot 2 en double (bug ROM, #ifndef BUGFIX).
           if (gBattlerPartyIndexes[0] === monId && gBattleMons[0].hp) {
             gBattleMons[0].level = newLevel;
+            gBattleMons[0].hp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
+            gBattleMons[0].maxHP = GetMonData(gPlayerParty[monId], MON_DATA_MAX_HP) as number;
+            gBattleMons[0].attack = GetMonData(gPlayerParty[monId], MON_DATA_ATK) as number;
+            gBattleMons[0].defense = GetMonData(gPlayerParty[monId], MON_DATA_DEF) as number;
+            gBattleMons[0].speed = GetMonData(gPlayerParty[monId], MON_DATA_SPEED) as number;
+            gBattleMons[0].spAttack = GetMonData(gPlayerParty[monId], MON_DATA_SPATK) as number;
+            gBattleMons[0].spDefense = GetMonData(gPlayerParty[monId], MON_DATA_SPDEF) as number;
           }
           if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
               && gBattlerPartyIndexes[2] === monId && gBattleMons[2].hp) {
             gBattleMons[2].level = newLevel;
+            gBattleMons[2].hp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
+            gBattleMons[2].maxHP = GetMonData(gPlayerParty[monId], MON_DATA_MAX_HP) as number;
+            gBattleMons[2].attack = GetMonData(gPlayerParty[monId], MON_DATA_ATK) as number;
+            gBattleMons[2].defense = GetMonData(gPlayerParty[monId], MON_DATA_DEF) as number;
+            gBattleMons[2].speed = GetMonData(gPlayerParty[monId], MON_DATA_SPEED) as number;
+            gBattleMons[2].spAttack = GetMonData(gPlayerParty[monId], MON_DATA_SPATK) as number;
+            // spDefense volontairement absente (1:1 bug vanilla, sans BUGFIX).
           }
 
           // 1:1 décomp : AdjustFriendship(FRIENDSHIP_EVENT_GROW_LEVEL).
