@@ -753,10 +753,10 @@
 - [ ] MasterBallOpenParticleAnimation  @ L1897-1942
 - [ ] PremierBallOpenParticleAnimation  @ L1943-1973
 - [ ] PremierBallOpenParticleAnimation_Step1  @ L1974-1984
-- [ ] SpriteCB_PokeBlock_Throw  @ L2423-2439
-- [ ] SpriteCB_PokeBlock_LiftArm  @ L2440-2445
-- [ ] SpriteCB_PokeBlock_Arc  @ L2446-2456
-- [ ] SpriteCB_ThrowPokeBlock_Free  @ L2457-2468
+- [x] SpriteCB_PokeBlock_Throw @ L2423-2439 — DETTE — lancer de PokéBlock = SAFARI ZONE uniquement (hors démo, cohérent dette contrôleur Safari 6f928ed6)
+- [x] SpriteCB_PokeBlock_LiftArm @ L2440-2445 — DETTE — Safari Zone (idem)
+- [x] SpriteCB_PokeBlock_Arc @ L2446-2456 — DETTE — Safari Zone (idem)
+- [x] SpriteCB_ThrowPokeBlock_Free @ L2457-2468 — DETTE — Safari Zone (idem)
 
 ## battle_anim_smokescreen.c — 3/3 fonctions couvertes (100%) · cite:1 + symbole:2 · 9 citations
 - ✓ complet
