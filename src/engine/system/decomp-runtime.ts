@@ -778,6 +778,9 @@ export class DecompRuntime {
       case REG_OFFSET_WINOUT:
         this.gba.windows.outsideEnable = value & 0x3F;
         this.gba.windows.outsideBlendEnable = !!(value & 0x20);
+        // haut-byte = WINOBJ (1:1 io_reg : bits 8-13 layers, bit 13 = CLR/blend)
+        this.gba.windows.winObjInside = (value >> 8) & 0x3F;
+        this.gba.windows.winObjBlendEnable = !!(value & 0x2000);
         break;
       // Affine matrix BG2 (8.8 fixed, sign-extended 16-bit)
       case REG_OFFSET_BG2PA: this.gba.bgAffineMatrices[0].pa = (value << 16) >> 16; break;

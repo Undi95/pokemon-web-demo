@@ -3600,3 +3600,13 @@ function AnimTask_MorningSunLightBeam(task: _MsTask): void {
   }
 }
 registerAnimTasks({ AnimTask_MorningSunLightBeam: AnimTask_MorningSunLightBeam as never });
+
+// --- VAGUE F71 : AnimTask_StatusClearedEffect (effects_3.c:3904) ------------
+/** 1:1 : StartMonScrollingBgMask(0x1A0, attacker, 10, 2, 30, cure_bubbles). */
+function AnimTask_StatusClearedEffect(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _vItf() as { getAttacker?: () => number };
+  const start = (globalThis as Record<string, unknown>).__startMonScrollingBgMask as
+    ((t: unknown, sp: number, b: number, n: number, d: number, dur: number, g: string, m: string, p: string) => void) | undefined;
+  start?.(task, 0x1A0, itf.getAttacker?.() ?? 0, 10, 2, 30, 'gCureBubblesGfx', 'gCureBubblesTilemap', 'gCureBubblesPal');
+}
+registerAnimTasks({ AnimTask_StatusClearedEffect: AnimTask_StatusClearedEffect as never });

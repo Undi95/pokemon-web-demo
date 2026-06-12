@@ -571,3 +571,132 @@ registerAnimTasks({
   AnimTask_CopyPalUnfadedFromBackup: AnimTask_CopyPalUnfadedFromBackup as never,
   AnimTask_CopyPalFadedToUnfaded: AnimTask_CopyPalFadedToUnfaded as never,
 });
+
+// --- VAGUE F71 : StartMonScrollingBgMask (utility_funcs.c:813-940) ----------
+// LE systeme BG-mask : le BG1 (image metallique/bulles) n'est visible QU'A
+// TRAVERS la silhouette OBJ-window du mon (clone objMode=2). WINOUT sans BG1
+// + WINOBJ avec BG1 + DISPCNT_OBJWIN. ~22 usages (MetallicShine/StatusCleared/
+// spotlights/Memento/Curse).
+import {
+  GetBattleAnimBg1Data as _smskBgData,
+  AnimLoadCompressedBgGfx as _smskLoadGfx,
+  AnimLoadCompressedBgTilemap as _smskLoadMap,
+  LoadAnimBgPalette as _smskLoadPal,
+  ResetBattleAnimBg as _smskResetBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+type _SmskTask = { taskId: number; data: number[]; func?: unknown };
+function _smskRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  GetGpuReg?: (o: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } }; windows?: { winObjEnabled: boolean } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _smskItf(): { DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _smskSetWin(x: number, y: number): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_WIN0H = x;
+  g.gBattle_WIN0V = y;
+}
+
+/** 1:1 StartMonScrollingBgMask(taskId, _, scrollSpeed, battler, includePartner
+ *  [single: false], numFadeSteps, fadeStepDelay, duration, gfxSym, mapSym, palSym). */
+export function StartMonScrollingBgMask(
+  task: _SmskTask, scrollSpeed: number, battler: number,
+  numFadeSteps: number, fadeStepDelay: number, duration: number,
+  gfxSym: string, mapSym: string, palSym: string,
+): void {
+  const rt = _smskRt();
+  _smskSetWin(0, 0);
+  // WININ : tout+CLR pour WIN0/WIN1 (0x3F3F)
+  rt.SetGpuReg?.(0x48, 0x3F3F);
+  // WINOUT 1:1 : BG0|BG2|BG3|OBJ|CLR (PAS BG1 !) + WINOBJ tout+CLR
+  rt.SetGpuReg?.(0x4A, (0x3F << 8) | 0x3D);
+  // DISPCNT |= OBJWIN_ON
+  if (rt.gba?.windows) rt.gba.windows.winObjEnabled = true;
+  rt.SetGpuReg?.(0x50, 0x3F42); // BLDCNT TGT1_BG1 | TGT2_ALL | EFFECT_BLEND
+  rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 0;
+    bg1.screenSize = 0;
+    bg1.charBaseIndex = 1;
+  }
+  // clone OBJ-window du mon
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const monSpriteId = co?.getBattlerMonSpriteId?.(battler) ?? 0xFF;
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { CreateInvisibleSpriteCopy?: (b: number, s: number, sp: number) => number } | undefined;
+  const spriteId = monSpriteId !== 0xFF ? (mons?.CreateInvisibleSpriteCopy?.(battler, monSpriteId, 0) ?? -1) : -1;
+  // assets en BG1 anim
+  const animBg = _smskBgData();
+  _smskLoadMap(animBg.bgId, mapSym);
+  _smskLoadGfx(animBg.bgId, gfxSym, animBg.tilesOffset);
+  _smskLoadPal(palSym, animBg.paletteId);
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG1_X = 0;
+  g.gBattle_BG1_Y = 0;
+  task.data[1] = scrollSpeed;
+  task.data[4] = numFadeSteps;
+  task.data[5] = duration;
+  task.data[6] = fadeStepDelay;
+  task.data[0] = spriteId;
+  task.data[2] = 0; // includePartner (single)
+  task.data[3] = -1;
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.data[12] = 0;
+  task.data[13] = 0;
+  task.data[15] = 0;
+  task.func = _UpdateMonScrollingBgMask;
+}
+/** 1:1 UpdateMonScrollingBgMask (utility_funcs.c:879-938). */
+function _UpdateMonScrollingBgMask(task: _SmskTask): void {
+  const rt = _smskRt();
+  const g = globalThis as Record<string, unknown>;
+  task.data[13] += task.data[1] < 0 ? -task.data[1] : task.data[1];
+  const dy = task.data[13] >> 8;
+  if (task.data[1] < 0) g.gBattle_BG1_Y = (((g.gBattle_BG1_Y as number) | 0) - dy) & 0xFFFF;
+  else g.gBattle_BG1_Y = (((g.gBattle_BG1_Y as number) | 0) + dy) & 0xFFFF;
+  task.data[13] &= 0xFF;
+  switch (task.data[15]) {
+    case 0:
+      if (task.data[11]++ >= task.data[6]) {
+        task.data[11] = 0;
+        task.data[12]++;
+        rt.SetGpuReg?.(0x52, (task.data[12] & 0xFF) | ((16 - task.data[12]) << 8));
+        if (task.data[12] === task.data[4]) task.data[15]++;
+      }
+      break;
+    case 1:
+      if (++task.data[10] === task.data[5]) task.data[15]++;
+      break;
+    case 2:
+      if (task.data[11]++ >= task.data[6]) {
+        task.data[11] = 0;
+        task.data[12]--;
+        rt.SetGpuReg?.(0x52, (task.data[12] & 0xFF) | ((16 - task.data[12]) << 8));
+        if (task.data[12] === 0) {
+          _smskResetBg(false);
+          _smskSetWin(0, 0);
+          rt.SetGpuReg?.(0x48, 0x3F3F);
+          rt.SetGpuReg?.(0x4A, 0x3F3F); // WINOUT all (teardown 1:1)
+          const bg1 = rt.gba?.bg(1)?.config;
+          if (bg1) bg1.charBaseIndex = 0;
+          if (rt.gba?.windows) rt.gba.windows.winObjEnabled = false; // DISPCNT ^= OBJWIN
+          rt.SetGpuReg?.(0x50, 0);
+          rt.SetGpuReg?.(0x52, 0);
+          if (task.data[0] >= 0) rt.DestroySprite?.(task.data[0]);
+          _smskItf().DestroyAnimVisualTask?.(task.taskId);
+        }
+      }
+      break;
+  }
+}
+{
+  // surface : les clients (effects_3 StatusCleared, MetallicShine...) consomment
+  (globalThis as Record<string, unknown>).__startMonScrollingBgMask = StartMonScrollingBgMask;
+}

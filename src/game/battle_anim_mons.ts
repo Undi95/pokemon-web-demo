@@ -1244,3 +1244,41 @@ export function UpdateEruptAnimTask(task: _TaskLike): number {
   surf.PrepareEruptAnimTaskData = PrepareEruptAnimTaskData;
   surf.UpdateEruptAnimTask = UpdateEruptAnimTask;
 }
+
+// --- VAGUE F71 : CreateInvisibleSpriteCopy (mons.c:2323) --------------------
+// Copie OAM complete du sprite du mon en ST_OAM_OBJ_WINDOW (objMode=2,
+// priority 0) : le clone ne se DESSINE pas — il decoupe la fenetre OBJ
+// (compositor computeWinObjScanline) a la silhouette du mon.
+export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _species: number): number {
+  const rt = getRuntime();
+  void battler;
+  const src = rt?.gSprites?.get(spriteId) as { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number } | undefined;
+  if (!rt || !src) return -1;
+  const gba = (rt as unknown as { gba: { oam: Array<{ tileId: number; shape: number; size: number; paletteNum: number; priority: number; objMode: number; affineMode: number; hFlip?: boolean; vFlip?: boolean }> } }).gba;
+  const srcOam = gba.oam[src.oamIndex];
+  const newId = (rt as unknown as { CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number }).CreateSpriteInline?.(
+    { oam: { shape: srcOam?.shape ?? 0, size: srcOam?.size ?? 3, priority: 0 }, images: [] } as never,
+    src.x, src.y, src.subpriority ?? 3,
+  ) ?? -1;
+  if (newId < 0) return -1;
+  const clone = rt.gSprites?.get(newId) as { x2: number; y2: number; oamIndex: number; callback: unknown } | undefined;
+  const cloneOam = clone ? gba.oam[clone.oamIndex] : undefined;
+  if (clone && cloneOam && srcOam) {
+    clone.x2 = src.x2;
+    clone.y2 = src.y2;
+    cloneOam.tileId = srcOam.tileId;
+    cloneOam.paletteNum = srcOam.paletteNum;
+    cloneOam.shape = srcOam.shape;
+    cloneOam.size = srcOam.size;
+    cloneOam.priority = 0;
+    cloneOam.objMode = 2; // ST_OAM_OBJ_WINDOW
+    if (cloneOam.hFlip !== undefined && srcOam.hFlip !== undefined) cloneOam.hFlip = srcOam.hFlip;
+    if (cloneOam.vFlip !== undefined && srcOam.vFlip !== undefined) cloneOam.vFlip = srcOam.vFlip;
+    clone.callback = (() => { /* SpriteCallbackDummy */ }) as never;
+  }
+  return newId;
+}
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.CreateInvisibleSpriteCopy = CreateInvisibleSpriteCopy;
+}
