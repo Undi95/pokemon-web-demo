@@ -934,3 +934,54 @@ function _AnimElecChargeParticle_Step(sprite: { data: number[] }): void {
   }
 }
 _ebRegT({ AnimTask_ElectricChargingParticles: AnimTask_ElectricChargingParticles as never });
+
+// --- VAGUE F80b : AnimTask_VoltTackleAttackerReappear (electric.c:963) ------
+// Volt Tackle : l'attaquant REVIENT en glissant depuis le bord (x2 ∓32 → 0,
+// pas de 2) en CLIGNOTANT (invisible ^= 1 tous les 2 ticks), puis 8 clignote-
+// ments sur place et reapparition franche.
+function AnimTask_VoltTackleAttackerReappear(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; invisible?: boolean }> } | undefined;
+  switch (task.data[0]) {
+    case 0: {
+      const atk = itf.getAttacker?.() ?? 0;
+      task.data[15] = co?.getBattlerMonSpriteId?.(atk) ?? 0xFF;
+      if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+      if ((atk & 1) === 0) { task.data[14] = -32; task.data[13] = 2; }
+      else { task.data[14] = 32; task.data[13] = -2; }
+      const sp = rt?.gSprites?.get(task.data[15]);
+      if (sp) sp.x2 = task.data[14];
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        const sp = rt?.gSprites?.get(task.data[15]);
+        if (sp) sp.invisible = !sp.invisible;
+        if (task.data[14]) {
+          task.data[14] += task.data[13];
+          if (sp) sp.x2 = task.data[14];
+        } else {
+          task.data[0]++;
+        }
+      }
+      break;
+    case 2:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        const sp = rt?.gSprites?.get(task.data[15]);
+        if (sp) sp.invisible = !sp.invisible;
+        if (++task.data[2] === 8) task.data[0]++;
+      }
+      break;
+    case 3: {
+      const sp = rt?.gSprites?.get(task.data[15]);
+      if (sp) sp.invisible = false;
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+_ebRegT({ AnimTask_VoltTackleAttackerReappear: AnimTask_VoltTackleAttackerReappear as never });
