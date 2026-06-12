@@ -49,7 +49,10 @@
 
 import { Random } from '../system/random';
 import { tickBattleControllers } from './battle-controllers';
-import { setCurrentActionFuncId, setMoveResultFlags, setActiveBattler } from './state';
+import {
+  setCurrentActionFuncId, setMoveResultFlags, setActiveBattler,
+  gBattleControllerExecFlags, gPauseCounterBattle, setPauseCounterBattle,
+} from './state';
 import { B_ACTION_TRY_FINISH } from './constants';
 import { BATTLE_SCRIPTS_FOR_MOVE_EFFECTS } from '../decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table';
 import { OPCODE_NAMES, getOpcodeName } from './opcode-names';
@@ -253,16 +256,35 @@ function _Cmd_end3(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 0x39 pause : wait N frames (N = ReadHalfword). */
+/** 0x39 pause : 1:1 décomp `Cmd_pause` (battle_script_commands.c:3917-3928) —
+ *  attend que gBattleControllerExecFlags == 0 PUIS compte `value` frames via
+ *  gPauseCounterBattle avant d'avancer (+3 = opcode + halfword). Le stepper a
+ *  déjà consommé l'opcode (scriptPtr++) → « rester » = reculer scriptPtr (même
+ *  convention que les opcodes contrôleur de battle-script-commands.ts). */
 function _Cmd_pause(ctx: BattleScriptContext): boolean {
-  const _frames = _readHalfword(ctx);
-  // Phase 1.4 : real frame wait via SetupNativeScript pattern deferred.
-  return true;
+  if (gBattleControllerExecFlags !== 0) {
+    ctx.scriptPtr--;          // re-exécute l'opcode à la frame suivante
+    return false;
+  }
+  const value = _readHalfword(ctx);
+  setPauseCounterBattle(gPauseCounterBattle + 1);
+  if (gPauseCounterBattle >= value) {
+    setPauseCounterBattle(0);
+    return true;              // scriptPtr est déjà à opcode+3 (readHalfword)
+  }
+  ctx.scriptPtr -= 3;          // recule sur l'opcode (annule ++ et halfword)
+  return false;
 }
 
-/** 0x3A waitstate : wait until gBattleControllerExecFlags === 0 (= toutes anims done). */
-function _Cmd_waitstate(_ctx: BattleScriptContext): boolean {
-  // Phase 1.4 : real wait via shared state polling deferred.
+/** 0x3A waitstate : 1:1 décomp `Cmd_waitstate` (battle_script_commands.c:3930-3934)
+ *  — n'avance QUE quand gBattleControllerExecFlags == 0 (texte/anim/hp update du
+ *  contrôleur finis). Était un stub « avance toujours » → les scripts enchaînaient
+ *  l'opcode suivant pendant que le contrôleur travaillait (courses). */
+function _Cmd_waitstate(ctx: BattleScriptContext): boolean {
+  if (gBattleControllerExecFlags !== 0) {
+    ctx.scriptPtr--;          // re-exécute l'opcode à la frame suivante
+    return false;
+  }
   return true;
 }
 

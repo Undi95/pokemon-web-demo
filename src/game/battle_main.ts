@@ -1753,14 +1753,16 @@ function _TryClearRageStatuses(): void {
   // Dette R3 : Rage status clear cascade vers util.ts.
 }
 
-/** 1:1 décomp `BattleScriptExecute(bsPtr)`. */
-function _BattleScriptExecute_c4(_bsPtr: unknown): void {
-  // Dette R3 : wire vers script-interpreter.ts.
-  console.warn('[battle-turn-dispatch] BattleScriptExecute called — script interpreter wire needed');
+/** 1:1 décomp `BattleScriptExecute(bsPtr)` — délègue au vrai BattleScriptExecute
+ *  (défini plus bas dans ce fichier, hoisting) : push gBattleMainFunc →
+ *  RunBattleScriptCommands_PopCallbacksStack. (Était un stub console.warn →
+ *  Focus Punch ne lançait JAMAIS son script de setup.) */
+function _BattleScriptExecute_c4(label: string): void {
+  BattleScriptExecute(label);
 }
 
-/** 1:1 décomp `BattleScript_FocusPunchSetUp` (battle_scripts_1.s). */
-const BattleScript_FocusPunchSetUp = {} as unknown;
+/** 1:1 décomp `BattleScript_FocusPunchSetUp` (battle_scripts_1.s) — label bytecode. */
+const BattleScript_FocusPunchSetUp = 'BattleScript_FocusPunchSetUp';
 
 /** 1:1 décomp `B_OUTCOME_MON_FLED` = 6. */
 const B_OUTCOME_MON_FLED = 6;
@@ -3706,6 +3708,45 @@ function BattleScriptExecute(scriptLabel: string): void {
   setCurrentActionFuncId(0);
 }
 
+/** 1:1 décomp `RunBattleScriptCommands()` (battle_main.c:5266-5271) : step le
+ *  script courant tant qu'aucun contrôleur n'est actif. Posé par
+ *  BattleScriptPushCursorAndCallback (scripts abilities/items end-turn).
+ *  Branche scriptPtr<0 : même compromis documenté que PopCallbacksStack — notre
+ *  Cmd_end3 ne pop pas lui-même le callback stack (décomp Cmd_end3 le fait) →
+ *  on restaure ici cursor + mainFunc quand le script imbriqué vient de finir. */
+export function RunBattleScriptCommands(): void {
+  if (gBattleScriptContext.scriptPtr < 0 && gBattleCallbackStack.length > 0) {
+    const savedCursor = gBattleScriptContext.scriptPtrStack.pop();
+    if (savedCursor !== undefined) gBattleScriptContext.scriptPtr = savedCursor;
+    const fn = gBattleCallbackStack.pop();
+    if (fn) gBattleMainFunc = fn;
+    return;
+  }
+  if (gBattleControllerExecFlags === 0) {
+    stepBattleScriptCommand(gBattleScriptContext);
+  }
+}
+
+/** 1:1 décomp `BattleScriptPushCursorAndCallback(BS_ptr)` (battle_util.c:3192-3198) :
+ *  BattleScriptPushCursor (push le cursor du script courant) + push gBattleMainFunc
+ *  → exécute le script donné sous RunBattleScriptCommands (sans toucher
+ *  gCurrentActionFuncId, contrairement à BattleScriptExecute). Décomp : appelé EN
+ *  INTERNE par AbilityBattleEffects/ItemBattleEffects pour les scripts end-turn
+ *  (Speed Boost, Shed Skin…). Notre AbilityBattleEffects délègue encore le
+ *  lancement au caller via consumeAbilityWantedScript → BattleScriptExecute
+ *  (dette d'alignement) ; ce port rend la cible 1:1 disponible. */
+export function BattleScriptPushCursorAndCallback(scriptLabel: string): void {
+  const off = getBattleScriptOffset(scriptLabel);
+  if (off < 0) {
+    console.warn(`[battle_main] BattleScriptPushCursorAndCallback: label '${scriptLabel}' introuvable`);
+    return;
+  }
+  gBattleScriptContext.scriptPtrStack.push(gBattleScriptContext.scriptPtr);
+  gBattleScriptContext.scriptPtr = off;
+  gBattleCallbackStack.push(gBattleMainFunc);
+  gBattleMainFunc = RunBattleScriptCommands;
+}
+
 /** 1:1 décomp `BattleScript_*` pointers. Dette R3 : script bytecode entries
  *  pour outcomes spécifiques. */
 const BattleScript_LinkBattleWonOrLost = {} as unknown;
@@ -4398,6 +4439,11 @@ export function BattleIntroRecordMonsToDex(): void {
     gBattleMainFunc = BattleIntroPrintPlayerSendsOut;
   }
 }
+
+// NON PORTÉS (volontaire) : `BattleIntroSkipRecordMonsToDex` (battle_main.c:3705)
+// et `BattleIntroSwitchInPlayerMons` (battle_main.c:3820) sont marqués `UNUSED`
+// dans la décomp (jamais référencés = hors graphe d'appels). Dette explicite
+// plutôt que code mort.
 
 // ─── BattleIntroPrintPlayerSendsOut (3711) ─────────────────────────────────
 
