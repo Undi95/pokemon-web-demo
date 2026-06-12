@@ -127,8 +127,19 @@ function _buildTrainer(j: JsonTrainer): BridgeTrainer {
 
 /** Peuple `globalThis.__gTrainers` (numId -> TrainerData) en joignant opponents-data
  *  (numId<->cle) + trainer-parties.json (cle<->donnees). Idempotent + async (fetch JSON).
- *  A AWAIT avant qu'un combat dresseur ne boote (CreateNPCTrainerParty lit sync). */
-export async function ensureGTrainersLoaded(): Promise<void> {
+ *  A AWAIT avant qu'un combat dresseur ne boote (CreateNPCTrainerParty lit sync).
+ *  ⚠️ COURSE corrigée (2026-06-12) : l'ancien `if (_loadStarted) return` faisait
+ *  qu'un 2e appel pendant le fetch du 1er retournait IMMÉDIATEMENT sans attendre
+ *  → DoTrainerBattle (.then) tournait AVANT que __gTrainers soit posé →
+ *  GetTrainerBattleTransition lisait une table vide → sumEnemy=0 → la transition
+ *  « joueur plus fort » (trail) jouait SYSTÉMATIQUEMENT au 1er combat dresseur.
+ *  Tous les appelants partagent désormais LA même promesse. */
+export function ensureGTrainersLoaded(): Promise<void> {
+  if (!_loadPromise) _loadPromise = _doLoadGTrainers();
+  return _loadPromise;
+}
+let _loadPromise: Promise<void> | null = null;
+async function _doLoadGTrainers(): Promise<void> {
   if (_loadDone || _loadStarted) return;
   _loadStarted = true;
   try {
