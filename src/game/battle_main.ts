@@ -1738,7 +1738,7 @@ import {
   HandleAction_UseMove, HandleAction_UseItem, HandleAction_Switch,
   HandleAction_Run, HandleAction_RunBattleScript, HandleAction_TryFinish,
   HandleAction_ActionFinished, HandleAction_NothingIsFainted,
-} from '../engine/battle/handle-action';
+} from './battle_util';
 // (setBattleMainFunc + HandleEndTurn_* : fonctions LOCALES section C7.)
 
 // ─── Type pour HandleAction_* + HandleEndTurn_* ────────────────────────────

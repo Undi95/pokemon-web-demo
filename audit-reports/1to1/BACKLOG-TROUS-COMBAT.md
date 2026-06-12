@@ -4,11 +4,13 @@
 > Deux familles : VRAIS trous (à porter) et FAUX trous (statics TS renommés — à
 > RE-NOMMER au nom C exact pour l'alignement miroir strict).
 **TOTAL : 743 fonctions à traiter (vrais trous + renommages)**
+> MAJ 2026-06-12 soir : battle_main.c SOLDÉ (commit a8c2e914), level-up banner/box
+> SOLDÉ (commit 0be2e866). + 3 bugs user fixés (af4edffb).
 
-## battle_main.c — 104/107 fonctions couvertes (97%) · cite:97 + symbole:7 · 306 citations
-- [ ] BattleIntroSkipRecordMonsToDex  @ L3705-3710
-- [ ] BattleIntroSwitchInPlayerMons  @ L3820-3840
-- [ ] RunBattleScriptCommands  @ L5266-5271
+## battle_main.c — SOLDÉ ✅ (commit a8c2e914)
+- [x] BattleIntroSkipRecordMonsToDex  @ L3705-3710 — UNUSED décomp, dette documentée (non porté volontairement)
+- [x] BattleIntroSwitchInPlayerMons  @ L3820-3840 — UNUSED décomp, dette documentée
+- [x] RunBattleScriptCommands  @ L5266-5271 — porté 1:1 + BattleScriptPushCursorAndCallback (battle_util.c:3192)
 
 ## battle_util.c — 45/52 fonctions couvertes (87%) · cite:36 + symbole:9 · 191 citations
 - [ ] HandleAction_SafariZoneBallThrow  @ L550-560
@@ -19,13 +21,16 @@
 - [ ] MarkAllBattlersForControllerExec  @ L830-845
 - [ ] MarkBattlerReceivedLinkData  @ L854-863
 
-## battle_script_commands.c — 281/287 fonctions couvertes (98%) · cite:99 + symbole:182 · 247 citations
-- [ ] Unused_ApplyRandomDmgMultiplier  @ L1653-1657
-- [ ] Cmd_waitstate  @ L3930-3935
-- [ ] InitLevelUpBanner  @ L6044-6056
-- [ ] DrawLevelUpBannerText  @ L6075-6135
-- [ ] PutMonIconOnLvlUpBanner  @ L6152-6178
-- [ ] SpriteCB_MonIconOnLvlUpBanner  @ L6179-6197
+## battle_script_commands.c — 287/287 ✅ hors Unused (commits a8c2e914 + 0be2e866)
+- [ ] Unused_ApplyRandomDmgMultiplier  @ L1653-1657 (unused décomp — en bas de pile)
+- [x] Cmd_waitstate  @ L3930-3935 — 1:1 réel (était stub « avance toujours ») + Cmd_pause aussi
+- [x] InitLevelUpBanner  @ L6044-6056 — porté entier (+ SlideIn/Out)
+- [x] DrawLevelUpBannerText  @ L6075-6135 — porté (dette : couleurs genre, glyphe Niv)
+- [x] PutMonIconOnLvlUpBanner  @ L6152-6178 — porté (sheet+pal par TAG 55130)
+- [x] SpriteCB_MonIconOnLvlUpBanner  @ L6179-6197 — porté (suit BG2_X, auto-free)
+> BONUS découvert par l'A/B : le level-up ne recalculait JAMAIS les stats party
+> (SetMonData(LEVEL) sans CalculateMonStats) → fixé 1:1 + copie gBattleMons
+> complète (:3469-3498) + capture beforeLvlUp (:3436). Commit 0be2e866.
 
 ## battle_setup.c — 49/102 fonctions couvertes (48%) · cite:17 + symbole:32 · 56 citations
 - [ ] BattleSetup_StartBattlePikeWildBattle  @ L397-401

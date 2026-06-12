@@ -1,21 +1,21 @@
 /**
- * battle/handle-action.ts — Port 1:1 décomp `HandleAction_*` action dispatchers.
+ * game/battle_util.ts — MIROIR (partiel) de `src/battle_util.c` (décomp pokeemeraude).
  *
- * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/battle_util.c:78-...`
- * Voir aussi `battle_main.c:538-548` pour le table dispatch.
+ * Contenu (par chapitre du .c) :
+ *   - HandleAction_* (battle_util.c:78-650) : UseMove (full), UseItem, Switch,
+ *     Run, RunBattleScript, TryFinish, ActionFinished, NothingIsFainted +
+ *     HandleFaintedMonActions. [ex-engine/battle/handle-action.ts]
+ *   - TryRunFromBattle (battle_util.c:407-485) + IsRunningFromBattleImpossible
+ *     (battle_main.c:4021-4084). [ex-engine/battle/try-run-from-battle.ts,
+ *     fusion miroir 2026-06-12]
  *
- * Action handlers :
- *   B_ACTION_USE_MOVE  → HandleAction_UseMove    (~210l, full port)
- *   B_ACTION_USE_ITEM  → HandleAction_UseItem    (= partial port, item battle UI Phase 1.4 deferred)
- *   B_ACTION_SWITCH    → HandleAction_Switch     (= minimal port)
- *   B_ACTION_RUN       → HandleAction_Run        (= minimal port)
- *   B_ACTION_EXEC_SCRIPT → HandleAction_RunBattleScript (= no-op, script déjà running)
+ * PAS ENCORE ICI (reste dans engine/battle/, à absorber au fil du miroir) :
+ *   AbilityBattleEffects (ability-battle-effects.ts), ItemBattleEffects
+ *   (item-battle-effects.ts), BattleScriptPushCursorAndCallback (battle_main.ts),
+ *   les helpers util.ts, Safari/Wally HandleActions (backlog).
  *
- * Le caller (= battle main loop) :
- *  1. Set gCurrentActionFuncId = B_ACTION_USE_MOVE/SWITCH/etc. depuis action queue.
- *  2. Call le dispatch handler approprié (= sTurnActionsFuncsTable[funcId], battle-turn-dispatch.ts).
- *  3. Handler set gBattlescriptCurrInstr = label approprié + gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT.
- *  4. Battle loop run le script via runBattleScript.
+ * Dispatch : la table 1:1 `sTurnActionsFuncsTable` (battle_main.c:536) vit dans
+ * battle_main.ts qui importe les HandleAction_* d'ici directement.
  */
 
 import {
@@ -45,11 +45,11 @@ import {
   gBattlerPartyIndexes,
   gBattleControllerExecFlags,
   setBattlerFainted, setAbsentBattlerFlags,
-} from './state';
+} from '../engine/battle/state';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_HA,
   PREPARE_MON_NICK_BUFFER,
-} from './text-buffers';
+} from '../engine/battle/text-buffers';
 import {
   STATUS2_MULTIPLETURNS, STATUS2_RECHARGE,
   HITMARKER_NO_PPDEDUCT,
@@ -64,15 +64,15 @@ import {
   B_ACTION_FINISHED, B_ACTION_EXEC_SCRIPT,
   MULTISTRING_CHOOSER,
   MISS_TYPE,
-} from './constants';
-import { gBitTable } from './battle-controllers';
+} from '../engine/battle/constants';
+import { gBitTable } from '../engine/battle/battle-controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
   B_POSITION_OPPONENT_LEFT, B_POSITION_OPPONENT_RIGHT,
   RecordAbilityBattle, ClearFuryCutterDestinyBondGrudge,
-} from './util';
-import { getBattleMove } from './data/battle-moves';
+} from '../engine/battle/util';
+import { getBattleMove } from '../engine/battle/data/battle-moves';
 // 1:1 décomp battle_util.c:1942-1945 — HandleFaintedMonActions case 6 applique les
 // effets de switch-in (Intimidate/Trace/Forecast + items). Import direct (= pas de
 // cycle : ability/item-battle-effects n'importent pas handle-action) ; même pattern
@@ -81,16 +81,16 @@ import {
   AbilityBattleEffects,
   ABILITYEFFECT_INTIMIDATE1, ABILITYEFFECT_TRACE, ABILITYEFFECT_FORECAST,
   consumeAbilityWantedScript,
-} from './ability-battle-effects';
+} from '../engine/battle/ability-battle-effects';
 import {
   ItemBattleEffects, ITEMEFFECT_NORMAL, consumeItemWantedScript,
-} from './item-battle-effects';
+} from '../engine/battle/item-battle-effects';
 import {
   getMoveEffectScriptOffset, getBattleScriptOffset,
   stepBattleScriptCommand, gBattleScriptContext,
-} from './script-interpreter';
-import type { BattleScriptContext } from './script-interpreter';
-import { Random } from '../system/random';
+} from '../engine/battle/script-interpreter';
+import type { BattleScriptContext } from '../engine/battle/script-interpreter';
+import { Random } from '../engine/system/random';
 
 const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
 
@@ -479,7 +479,7 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
 
   // Normal battle.
   if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
-    if (!_TryRunFromBattleHAR(gBattlerAttacker)) {
+    if (!TryRunFromBattle(gBattlerAttacker)) {
       // Failed to run away.
       ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
       gBattleCommunication[MULTISTRING_CHOOSER] = _B_MSG_CANT_ESCAPE_2_HAR;
@@ -510,22 +510,22 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
   }
 }
 
-// Imports locaux HandleAction_Run.
-import { TryRunFromBattle as _TryRunFromBattleHAR } from './try-run-from-battle';
-import { getBattleScriptOffset as _getBattleScriptOffsetHAR } from './script-interpreter';
+// Imports locaux HandleAction_Run. (TryRunFromBattle vit DANS ce fichier
+// depuis la fusion miroir — ex-try-run-from-battle.ts, section en bas.)
+import { getBattleScriptOffset as _getBattleScriptOffsetHAR } from '../engine/battle/script-interpreter';
 import {
   setBattleOutcome as _setBattleOutcomeHAR,
   setCurrentTurnActionNumber as setCurrentTurnActionNumberHAR,
   gChosenActionByBattler as _gChosenActionByBattlerHAR,
   setActiveBattler as _setActiveBattlerHAR,
   gBattleOutcome as _gBattleOutcomeHAR,
-} from './state';
+} from '../engine/battle/state';
 import {
   BATTLE_TYPE_LINK as _BATTLE_TYPE_LINK_HAR,
   BATTLE_TYPE_RECORDED_LINK as _BATTLE_TYPE_RECORDED_LINK_HAR,
   STATUS2_WRAPPED as _STATUS2_WRAPPED_HAR,
   STATUS2_ESCAPE_PREVENTION as _STATUS2_ESCAPE_PREVENTION_HAR,
-} from './constants';
+} from '../engine/battle/constants';
 
 const _B_ACTION_RUN_HAR = 3;
 // 1:1 décomp battle_string_ids.h:564-569 (index dans gNoEscapeStringIds) :
@@ -798,7 +798,7 @@ import {
   gSpecialStatuses as _gSpecialStatusesHAF,
   setBattleMoveDamage as setBattleMoveDamageHAR,
   setDynamicBasePower as setDynamicBasePowerHAR,
-} from './state';
+} from '../engine/battle/state';
 import {
   HITMARKER_DESTINYBOND as _HITMARKER_DESTINYBOND_HAF,
   HITMARKER_IGNORE_SUBSTITUTE as _HITMARKER_IGNORE_SUBSTITUTE_HAF,
@@ -814,10 +814,217 @@ import {
   HITMARKER_SYNCHRONIZE_EFFECT as _HITMARKER_SYNCHRONIZE_EFFECT_HAF,
   HITMARKER_CHARGING as _HITMARKER_CHARGING_HAF,
   HITMARKER_NEVER_SET as _HITMARKER_NEVER_SET_HAF,
-} from './constants';
+} from '../engine/battle/constants';
 
 // NB : la table de dispatch d'actions 1:1 (`sTurnActionsFuncsTable`, battle_main.c:536) vit
 // dans battle-turn-dispatch.ts (= le port de battle_main.c, là où vit aussi
 // RunTurnActionsFunctions), qui importe les HandleAction_* DIRECTEMENT (imports ESM). On ne
 // duplique donc PAS la table ici, et on n'expose plus de registre globalThis.__handleAction
 // (l'ancien `handleActionTable` + le registre étaient des duplicatas morts — retirés, B6).
+
+// ════════════════════════════════════════════════════════════════════════════
+// TryRunFromBattle (battle_util.c:407-485) + IsRunningFromBattleImpossible
+// (battle_main.c:4021-4084) — [fusion miroir 2026-06-12, ex-try-run-from-battle.ts]
+// ════════════════════════════════════════════════════════════════════════════
+import {
+  gStatuses3,
+  setBattleOutcome, setCurrentTurnActionNumber,
+  setLastUsedItem, setPotentialItemEffectBattler,
+} from '../engine/battle/state';
+import {
+  ABILITY_RUN_AWAY, ABILITY_SHADOW_TAG, ABILITY_ARENA_TRAP,
+  ABILITY_LEVITATE, ABILITY_MAGNET_PULL,
+  BATTLE_TYPE_FRONTIER, BATTLE_TYPE_TRAINER_HILL, BATTLE_TYPE_TRAINER,
+  BATTLE_TYPE_LINK, BATTLE_TYPE_FIRST_BATTLE,
+  B_OUTCOME_RAN,
+  FLEE_ITEM, FLEE_ABILITY,
+  PYRAMID_LOCATION_NONE,
+  STATUS2_ESCAPE_PREVENTION, STATUS2_WRAPPED,
+  STATUS3_ROOTED,
+  TYPE_FLYING, TYPE_STEEL,
+} from '../engine/battle/constants';
+import { HOLD_EFFECT_CAN_ALWAYS_RUN } from '../engine/decomp-data/include/constants/hold_effects-data';
+import { GetItemHoldEffect } from '../engine/battle/data/item-hold-effects';
+import { ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER } from '../engine/battle/ability-battle-effects';
+
+// ─── BATTLE_RUN_* return codes (= constants/battle.h) ──────────────────────
+
+/** 1:1 décomp `BATTLE_RUN_SUCCESS` (= 0). */
+export const BATTLE_RUN_SUCCESS = 0;
+/** 1:1 décomp `BATTLE_RUN_FORBIDDEN` (= 1). Status (Bind/etc.), First Battle
+ *  (= "Don't be a coward!") ; message direct. */
+export const BATTLE_RUN_FORBIDDEN = 1;
+/** 1:1 décomp `BATTLE_RUN_FAILURE` (= 2). Shadow Tag/Arena Trap/Magnet Pull
+ *  block ; message via gBattleCommunication[MULTISTRING_CHOOSER]. */
+export const BATTLE_RUN_FAILURE = 2;
+
+/** 1:1 décomp `B_MSG_*` indices (include/constants/battle_string_ids.h:565-569).
+ *  Ces valeurs indexent gNoEscapeStringIds[] (battle_message.c:900) :
+ *  [0]=CANTESCAPE, [1]=DONTLEAVEBIRCH, [2]=PREVENTSESCAPE. */
+const B_MSG_CANT_ESCAPE = 0;
+const B_MSG_DONT_LEAVE_BIRCH = 1;
+const B_MSG_PREVENTS_ESCAPE = 2;
+
+/** 1:1 décomp `CurrentBattlePyramidLocation()` (battle_pyramid.c). Retourne
+ *  PYRAMID_LOCATION_NONE quand on est pas dans la Battle Pyramid. */
+function CurrentBattlePyramidLocation(): number {
+  return PYRAMID_LOCATION_NONE;
+}
+
+/** 1:1 décomp `GetPyramidRunMultiplier()` (battle_pyramid.c). Return 100 par
+ *  défaut (= rare hors Frontier). */
+function GetPyramidRunMultiplier(): number {
+  return 100;
+}
+
+/** Helper : check si un battler est de type donné. */
+function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
+  const mon = gBattleMons[battler];
+  return mon.type1 === type || mon.type2 === type;
+}
+
+/** 1:1 décomp `IsRunningFromBattleImpossible()` (battle_main.c:4021-4084).
+ *
+ *  Check si le battler ACTIF peut fuir le combat. Returns :
+ *  - BATTLE_RUN_SUCCESS : fuite permise → caller appelle TryRunFromBattle
+ *  - BATTLE_RUN_FAILURE : abilité opposite bloque (Shadow Tag/Arena Trap/
+ *    Magnet Pull) → message via gBattleCommunication[MULTISTRING_CHOOSER]
+ *  - BATTLE_RUN_FORBIDDEN : status/first battle bloque → message direct */
+export function IsRunningFromBattleImpossible(): number {
+  let holdEffect: number;
+  let side: number;
+  let i: number;
+
+  // 1:1 décomp ll. 4027-4030 : check Enigma Berry vs normal hold effect.
+  // Stub : on assume item normal (= ITEM_ENIGMA_BERRY pas porté).
+  holdEffect = GetItemHoldEffect(gBattleMons[gActiveBattler].item);
+
+  setPotentialItemEffectBattler(gActiveBattler);
+
+  if (holdEffect === HOLD_EFFECT_CAN_ALWAYS_RUN) return BATTLE_RUN_SUCCESS;
+  if (gBattleTypeFlags & BATTLE_TYPE_LINK) return BATTLE_RUN_SUCCESS;
+  if (gBattleMons[gActiveBattler].ability === ABILITY_RUN_AWAY) return BATTLE_RUN_SUCCESS;
+
+  side = GET_BATTLER_SIDE(gActiveBattler);
+
+  // 1:1 décomp ll. 4043-4063 : check opponents abilities Shadow Tag / Arena Trap.
+  for (i = 0; i < gBattlersCount; i++) {
+    if (side !== GET_BATTLER_SIDE(i)
+        && gBattleMons[i].ability === ABILITY_SHADOW_TAG) {
+      gBattleScripting.battler = i;
+      setLastUsedAbility(gBattleMons[i].ability);
+      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_PREVENTS_ESCAPE;
+      return BATTLE_RUN_FAILURE;
+    }
+    if (side !== GET_BATTLER_SIDE(i)
+        && gBattleMons[gActiveBattler].ability !== ABILITY_LEVITATE
+        && !IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_FLYING)
+        && gBattleMons[i].ability === ABILITY_ARENA_TRAP) {
+      gBattleScripting.battler = i;
+      setLastUsedAbility(gBattleMons[i].ability);
+      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_PREVENTS_ESCAPE;
+      return BATTLE_RUN_FAILURE;
+    }
+  }
+
+  // 1:1 décomp ll. 4064-4071 : Magnet Pull vs Steel-type check.
+  const magnetPullCheck = AbilityBattleEffects(
+    ABILITYEFFECT_CHECK_FIELD_EXCEPT_BATTLER, gActiveBattler,
+    ABILITY_MAGNET_PULL, 0, 0,
+  );
+  if (magnetPullCheck !== 0 && IS_BATTLER_OF_TYPE(gActiveBattler, TYPE_STEEL)) {
+    gBattleScripting.battler = magnetPullCheck - 1;
+    setLastUsedAbility(gBattleMons[magnetPullCheck - 1].ability);
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_PREVENTS_ESCAPE;
+    return BATTLE_RUN_FAILURE;
+  }
+
+  // 1:1 décomp ll. 4072-4077 : status check (Wrap/Bind/Mean Look/Spider Web).
+  if ((gBattleMons[gActiveBattler].status2 & (STATUS2_ESCAPE_PREVENTION | STATUS2_WRAPPED))
+      || (gStatuses3[gActiveBattler] & STATUS3_ROOTED)) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CANT_ESCAPE;
+    return BATTLE_RUN_FORBIDDEN;
+  }
+
+  // 1:1 décomp ll. 4078-4082 : BIRCH TUTORIAL ⇒ "Don't be a coward!" message.
+  if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DONT_LEAVE_BIRCH;
+    return BATTLE_RUN_FORBIDDEN;
+  }
+
+  return BATTLE_RUN_SUCCESS;
+}
+
+/** 1:1 décomp `TryRunFromBattle(u8 battler)` (battle_util.c:407-485). */
+export function TryRunFromBattle(battler: number): boolean {
+  let effect = 0;
+  let holdEffect: number;
+  let pyramidMultiplier: number;
+  let speedVar: number;
+
+  // 1:1 décomp ll.414-417 : Enigma Berry test (stub - on assume item normal).
+  holdEffect = GetItemHoldEffect(gBattleMons[battler].item);
+
+  setPotentialItemEffectBattler(battler);
+
+  if (holdEffect === HOLD_EFFECT_CAN_ALWAYS_RUN) {
+    setLastUsedItem(gBattleMons[battler].item);
+    gProtectStructs[battler].fleeType = FLEE_ITEM;
+    effect++;
+  } else if (gBattleMons[battler].ability === ABILITY_RUN_AWAY) {
+    if (CurrentBattlePyramidLocation() !== PYRAMID_LOCATION_NONE) {
+      gBattleStruct.runTries++;
+      pyramidMultiplier = GetPyramidRunMultiplier();
+      speedVar = Math.floor(
+        (gBattleMons[battler].speed * pyramidMultiplier) /
+        gBattleMons[BATTLE_OPPOSITE(battler)].speed
+      ) + (gBattleStruct.runTries * 30);
+      if (speedVar > (Random() & 0xFF)) {
+        setLastUsedAbility(ABILITY_RUN_AWAY);
+        gProtectStructs[battler].fleeType = FLEE_ABILITY;
+        effect++;
+      }
+    } else {
+      setLastUsedAbility(ABILITY_RUN_AWAY);
+      gProtectStructs[battler].fleeType = FLEE_ABILITY;
+      effect++;
+    }
+  } else if ((gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_TRAINER_HILL))
+             && (gBattleTypeFlags & BATTLE_TYPE_TRAINER)) {
+    effect++;
+  } else {
+    if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+      if (CurrentBattlePyramidLocation() !== PYRAMID_LOCATION_NONE) {
+        pyramidMultiplier = GetPyramidRunMultiplier();
+        speedVar = Math.floor(
+          (gBattleMons[battler].speed * pyramidMultiplier) /
+          gBattleMons[BATTLE_OPPOSITE(battler)].speed
+        ) + (gBattleStruct.runTries * 30);
+        if (speedVar > (Random() & 0xFF)) effect++;
+      } else if (gBattleMons[battler].speed < gBattleMons[BATTLE_OPPOSITE(battler)].speed) {
+        speedVar = Math.floor(
+          (gBattleMons[battler].speed * 128) /
+          gBattleMons[BATTLE_OPPOSITE(battler)].speed
+        ) + (gBattleStruct.runTries * 30);
+        if (speedVar > (Random() & 0xFF)) effect++;
+      } else {
+        // same speed or faster
+        effect++;
+      }
+    }
+
+    gBattleStruct.runTries++;
+  }
+
+  if (effect !== 0) {
+    setCurrentTurnActionNumber(gBattlersCount);
+    setBattleOutcome(B_OUTCOME_RAN);
+  }
+
+  return effect !== 0;
+}
+
+// ─── K14b wire — auto-enregistrement sur globalThis (convention, cf ability-battle-
+//     effects:985). La voie L action-selection appelle IsRunningFromBattleImpossible
+//     au choix de FUITE (battle_main.c:4322-4351) via ce hook (évite le cycle ESM).
+(globalThis as { IsRunningFromBattleImpossible?: () => number }).IsRunningFromBattleImpossible = IsRunningFromBattleImpossible;

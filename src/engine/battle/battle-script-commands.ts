@@ -899,7 +899,7 @@ import {
 } from './text-buffers';
 import {
   TryRunFromBattle as _tryRunFromBattleFull,
-} from './try-run-from-battle';
+} from '../../game/battle_util';
 import {
   Cmd_typecalc as TypecalcImpl,
   attacksThisTurn,
