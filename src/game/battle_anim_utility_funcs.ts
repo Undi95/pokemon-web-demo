@@ -501,3 +501,73 @@ function AnimTask_SetAllNonAttackersInvisiblity(task: AnimTask): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 registerAnimTasks({ AnimTask_SetAllNonAttackersInvisiblity: AnimTask_SetAllNonAttackersInvisiblity as never });
+
+// ─── VAGUE F41 : le PAL-BUFFER (utility_funcs.c:946-1037, 5 tasks) ──────────
+// gMonSpritesGfxPtr->buffer = zone de sauvegarde de palettes pendant une anim
+// (Memento/SkillSwap/Conversion…). Side-buffer module 1:1-net (0x2000 bytes).
+let _palBackup: Uint16Array | null = null;
+function _pbIndex(args: number[]): number {
+  // 1:1 : args[0]==0 → le bit le plus bas du mask battle-BG (=1) ; 1 → atk+16 ; 2 → tgt+16.
+  const itf = _itf() as { getAttacker?: () => number; getTarget?: () => number };
+  if (args[0] === 1) return (itf.getAttacker?.() ?? 0) + 16;
+  if (args[0] === 2) return (itf.getTarget?.() ?? 1) + 16;
+  let selected = (_flMons().GetBattlePalettesMask?.(true, false, false, false, false, false, false) ?? 0xE) >>> 0;
+  let paletteIndex = 0;
+  while ((selected & 1) === 0) { selected >>>= 1; paletteIndex++; }
+  return paletteIndex;
+}
+function _pbBufs(): {
+  gPlttBufferUnfaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+  gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function AnimTask_AllocBackupPalBuffer(task: AnimTask): void {
+  _palBackup = new Uint16Array(0x1000); // AllocZeroed(MON_PIC_SIZE*MAX_MON_PIC_FRAMES)/2
+  (_itf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_FreeBackupPalBuffer(task: AnimTask): void {
+  _palBackup = null; // FREE_AND_SET_NULL
+  (_itf() as { DestroyAnimVisualTask?: (id: number) => void }).DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_CopyPalUnfadedToBackup(task: AnimTask): void {
+  const itf = _itf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.() ?? [0, 0];
+  const idx = _pbIndex(args);
+  const un = _pbBufs().gPlttBufferUnfaded;
+  if (_palBackup && un?.get) {
+    for (let k = 0; k < 16; k++) _palBackup[(args[1] | 0) * 16 + k] = un.get(idx * 16 + k);
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_CopyPalUnfadedFromBackup(task: AnimTask): void {
+  const itf = _itf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.() ?? [0, 0];
+  const idx = _pbIndex(args);
+  const bufs = _pbBufs();
+  if (_palBackup && bufs.gPlttBufferUnfaded?.set) {
+    for (let k = 0; k < 16; k++) {
+      bufs.gPlttBufferUnfaded.set(idx * 16 + k, _palBackup[(args[1] | 0) * 16 + k]);
+      // Unfaded aliase Faded chez nous : le set ci-dessus restaure le visible (1:1-net).
+    }
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+function AnimTask_CopyPalFadedToUnfaded(task: AnimTask): void {
+  const itf = _itf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const args = itf.getArgs?.() ?? [0];
+  const idx = _pbIndex(args);
+  const bufs = _pbBufs();
+  // 1:1 memcpy(Unfaded[idx], Faded[idx]) — alias chez nous → no-op net (documenté).
+  if (bufs.gPlttBufferUnfaded?.set && bufs.gPlttBufferFaded?.get) {
+    for (let k = 0; k < 16; k++) bufs.gPlttBufferUnfaded.set(idx * 16 + k, bufs.gPlttBufferFaded.get(idx * 16 + k));
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+registerAnimTasks({
+  AnimTask_AllocBackupPalBuffer: AnimTask_AllocBackupPalBuffer as never,
+  AnimTask_FreeBackupPalBuffer: AnimTask_FreeBackupPalBuffer as never,
+  AnimTask_CopyPalUnfadedToBackup: AnimTask_CopyPalUnfadedToBackup as never,
+  AnimTask_CopyPalUnfadedFromBackup: AnimTask_CopyPalUnfadedFromBackup as never,
+  AnimTask_CopyPalFadedToUnfaded: AnimTask_CopyPalFadedToUnfaded as never,
+});
