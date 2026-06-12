@@ -33,10 +33,20 @@ derrière le clone) passe par le contrôleur switch, pas une anim de move.
 - Les 7 `targetTileBase` provisoires hérités : neutralisés par le marquage
   bitmap (`__markLiveSpriteTiles` dans CreateSpriteInline, F77) — migration
   cosmétique restante.
-- `Translate*` (battle_anim_fire.ts → mons.ts) : déplacement miroir cosmétique.
-- unloadspritegfx : FreeSpriteTilesByTag/FreeSpritePaletteByTag portés et
-  appelés (Cmd_unloadspritegfx, session 2026-06-11) ; re-vérification de
-  pression VRAM sur un combat long à programmer.
+- ~~Translate*~~ : MIGRÉ (F84) — TranslateSpriteInGrowingCircle/TranslateSpriteLinear/
+  WaitAnimForDuration exportés de mons.ts, fire.ts consomme par import.
+- ~~unloadspritegfx~~ : VÉRIFIÉ porté réel (Cmd_unloadspritegfx interpreter:1118 —
+  free par tag + re-marquage des vivants) ; pression VRAM long-combat à programmer.
 
 ## Hors-scope inchangé
 link / multi / contest / Frontier ; doubles (SporeDoubleBattle single=destroy 1:1).
+
+## Validations re-faites en session F84 (transcript 2026-06-12)
+- (A) 10/10 intros terrain : screenshots ENV 0-9 — GRASS/LONG_GRASS/SAND/
+  UNDERWATER/WATER/POND/MOUNTAIN/CAVE/BUILDING/PLAIN, chacun avec SES couleurs
+  et plateformes, zéro barre noire.
+- (B) option anims A/B : OFF (optionsBattleSceneOff=1) = 13 dégâts infligés,
+  0/40 échantillons d'anim active, rien de bloqué ; ON = anims jouent (9/40).
+  Toggle console : `gSaveBlock2Ptr.optionsBattleSceneOff = 1` (lu au boot du
+  combat — hitmarker HITMARKER_NO_ANIMATIONS posé 1:1 battle_main.ts:3941).
+- (C1) moves terminaux 6/6 fidèles un-par-un ; 354/354 verdicts.

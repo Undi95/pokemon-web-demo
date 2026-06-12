@@ -56,6 +56,7 @@ registerAnimTemplates([
 // WaitAnimForDuration, InitAnimLinearTranslationWithSpeed).
 // ════════════════════════════════════════════════════════════════════════════
 import {
+  TranslateSpriteInGrowingCircle, TranslateSpriteLinear, WaitAnimForDuration,
   GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, SetAnimSpriteInitialXOffset,
   SetSpriteCoordsToAnimAttackerCoords, InitAnimLinearTranslation, AnimTranslateLinear,
   TranslateSpriteLinearFixedPoint, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
@@ -93,36 +94,13 @@ function _GetBattlerSpriteBGPriority(_battler: number): number { return 2; }
 /** 1:1 `TranslateSpriteInGrowingCircle` (battle_anim_mons.c:468) : cercle dont
  *  l'amplitude évolue — data[0]=angle, [1]=ampl, [2]=vitesse angulaire, [3]=durée,
  *  [4]=vitesse d'amplitude (8.8 signée), [5]=accumulateur → stored callback. */
-function _TranslateSpriteInGrowingCircle(sprite: _VSprite): void {
-  if (sprite.data[3]) {
-    sprite.x2 = Sin(sprite.data[0] & 0xFF, ((sprite.data[5] << 16 >> 16) >> 8) + sprite.data[1]);
-    sprite.y2 = Cos(sprite.data[0] & 0xFF, ((sprite.data[5] << 16 >> 16) >> 8) + sprite.data[1]);
-    sprite.data[0] += sprite.data[2];
-    sprite.data[5] = (sprite.data[5] + sprite.data[4]) << 16 >> 16;
-    if (sprite.data[0] >= 0x100) sprite.data[0] -= 0x100;
-    else if (sprite.data[0] < 0) sprite.data[0] += 0x100;
-    sprite.data[3]--;
-  } else {
-    SetCallbackToStoredInData6(sprite as never);
-  }
-}
+const _TranslateSpriteInGrowingCircle = (sprite: _VSprite): void => TranslateSpriteInGrowingCircle(sprite as never); // migre vers mons.ts (F84)
 /** 1:1 `TranslateSpriteLinear` (battle_anim_mons.c:593) : x2/y2 += data[1]/data[2]
  *  (pixels ENTIERS, pas 8.8) pendant data[0] frames → stored callback. */
-function _TranslateSpriteLinear(sprite: _VSprite): void {
-  if (sprite.data[0] > 0) {
-    sprite.data[0]--;
-    sprite.x2 += sprite.data[1];
-    sprite.y2 += sprite.data[2];
-  } else {
-    SetCallbackToStoredInData6(sprite as never);
-  }
-}
+const _TranslateSpriteLinear = (sprite: _VSprite): void => TranslateSpriteLinear(sprite as never); // migre vers mons.ts (F84)
 /** 1:1 `WaitAnimForDuration` (battle_anim_mons.c:551) : attend data[0] frames
  *  → stored callback. */
-function _WaitAnimForDuration(sprite: _VSprite): void {
-  if (sprite.data[0] > 0) sprite.data[0]--;
-  else SetCallbackToStoredInData6(sprite as never);
-}
+const _WaitAnimForDuration = (sprite: _VSprite): void => WaitAnimForDuration(sprite as never); // migre vers mons.ts (F84)
 /** 1:1 `InitAnimLinearTranslationWithSpeed` (battle_anim_mons.c:1155) :
  *  data[0]=vitesse 8.8/frame → convertie en durée (abs(dx)<<8 / vitesse),
  *  puis InitAnimLinearTranslation standard. */

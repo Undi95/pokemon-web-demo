@@ -1390,3 +1390,40 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
   surf.CreateAdditionalMonSpriteForMoveAnim = CreateAdditionalMonSpriteForMoveAnim;
   surf.MoveEffectMonPaletteTags = _CAM_TAGS;
 }
+
+// --- VAGUE F84 (C0 placement miroir) : Translate* migres de fire.ts ---------
+// Leurs maisons C : mons.c:468 / :593 / :551 / :1155. fire.ts (et tout autre
+// fichier d'effets) consomme par import — zero transcription locale residuelle.
+import { Sin as _tgSin, Cos as _tgCos } from './trig';
+/** 1:1 TranslateSpriteInGrowingCircle (mons.c:468). */
+export function TranslateSpriteInGrowingCircle(sprite: DecompSprite): void {
+  const sp = sprite as unknown as { data: number[]; x2: number; y2: number };
+  if (sp.data[3]) {
+    sp.x2 = _tgSin(sp.data[0] & 0xFF, ((sp.data[5] << 16 >> 16) >> 8) + sp.data[1]);
+    sp.y2 = _tgCos(sp.data[0] & 0xFF, ((sp.data[5] << 16 >> 16) >> 8) + sp.data[1]);
+    sp.data[0] += sp.data[2];
+    sp.data[5] = (sp.data[5] + sp.data[4]) << 16 >> 16;
+    if (sp.data[0] >= 0x100) sp.data[0] -= 0x100;
+    else if (sp.data[0] < 0) sp.data[0] += 0x100;
+    sp.data[3]--;
+  } else {
+    SetCallbackToStoredInData6(sprite);
+  }
+}
+/** 1:1 TranslateSpriteLinear (mons.c:593) — pixels entiers, pas 8.8. */
+export function TranslateSpriteLinear(sprite: DecompSprite): void {
+  const sp = sprite as unknown as { data: number[]; x2: number; y2: number };
+  if (sp.data[0] > 0) {
+    sp.data[0]--;
+    sp.x2 += sp.data[1];
+    sp.y2 += sp.data[2];
+  } else {
+    SetCallbackToStoredInData6(sprite);
+  }
+}
+/** 1:1 WaitAnimForDuration (mons.c:551). */
+export function WaitAnimForDuration(sprite: DecompSprite): void {
+  const sp = sprite as unknown as { data: number[] };
+  if (sp.data[0] > 0) sp.data[0]--;
+  else SetCallbackToStoredInData6(sprite);
+}
