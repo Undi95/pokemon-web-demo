@@ -517,7 +517,87 @@ function AnimShakeMonOrBattlePlatforms_Step(sprite: AnimSprite): void {
   }
 }
 
+// ─── AnimConfusionDuck (battle_anim_normal.c:258-297) — le canard de la
+// confusion (status anim B_ANIM_STATUS_CONFUSION) : orbite Cos/Sin autour de
+// la tête du mon, priorité OAM alternée (devant/derrière selon la phase).
+function AnimConfusionDuck(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  sprite.x += args[0];
+  sprite.y += args[1];
+  sprite.data[0] = args[2];                 // waveOffset
+  const attacker = _itf().getAttacker?.() ?? 0;
+  if ((attacker & 1) !== 0) {               // GetBattlerSide != B_SIDE_PLAYER
+    sprite.data[1] = -args[3];              // -wavePeriod
+    sprite.data[4] = 1;
+  } else {
+    sprite.data[1] = args[3];
+    sprite.data[4] = 0;
+    _nStartSpriteAnim(sprite, 1);
+  }
+  sprite.data[3] = args[4];                 // duration
+  sprite.callback = AnimConfusionDuck_Step as never;
+  (sprite.callback as (s: AnimSprite) => void)(sprite);
+}
+
+/** 1:1 `AnimConfusionDuck_Step` (:282-297). */
+function AnimConfusionDuck_Step(sprite: AnimSprite): void {
+  sprite.x2 = _nCos(sprite.data[0], 30);
+  sprite.y2 = _nSin(sprite.data[0], 10);
+  // priority 1 (devant) sur la demi-orbite avant, 3 (derrière) sur l'arrière.
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam?: Array<{ priority?: number }> } } | undefined;
+  const oam = rt?.gba?.oam?.[(sprite as { oamIndex?: number }).oamIndex ?? -1];
+  if (oam) oam.priority = ((sprite.data[0] & 0xFFFF) < 128) ? 1 : 3;
+  sprite.data[0] = (sprite.data[0] + sprite.data[1]) & 0xFF;
+  if (++sprite.data[2] === sprite.data[3]) _DestroyAnimSprite(sprite as never);
+}
+
+/** 1:1 `AnimCirclingSparkle` (battle_anim_normal.c:416-446) : étincelle en
+ *  cercle croissant (TranslateSpriteInGrowingCircle, battle_anim_mons). */
+function AnimCirclingSparkle(sprite: AnimSprite): void {
+  const args = _itf().getArgs?.() ?? [0, 0];
+  sprite.x += args[0];
+  sprite.y += args[1];
+  sprite.data[0] = 0;
+  sprite.data[1] = 10;
+  sprite.data[2] = 8;
+  sprite.data[3] = 40;
+  sprite.data[4] = 112;
+  sprite.data[5] = 0;
+  StoreSpriteCallbackInData6(sprite as never, _nDestroySpriteAndMatrix as never);
+  sprite.callback = _nTranslateGrowingCircle as never;
+  (sprite.callback as (s: AnimSprite) => void)(sprite);
+}
+function _nTranslateGrowingCircle(sprite: AnimSprite): void {
+  const m = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    TranslateSpriteInGrowingCircle?: (s: unknown) => void;
+  } | undefined;
+  m?.TranslateSpriteInGrowingCircle?.(sprite);
+}
+function _nDestroySpriteAndMatrix(sprite: AnimSprite): void {
+  const m = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    DestroySpriteAndMatrix?: (s: unknown) => void;
+  } | undefined;
+  if (m?.DestroySpriteAndMatrix) m.DestroySpriteAndMatrix(sprite);
+  else _DestroyAnimSprite(sprite as never);
+}
+function _nStartSpriteAnim(sprite: AnimSprite, animNum: number): void {
+  const sa = (globalThis as Record<string, unknown>).__spriteAnimation as {
+    StartSpriteAnim?: (s: unknown, n: number) => void;
+  } | undefined;
+  sa?.StartSpriteAnim?.(sprite, animNum);
+}
+function _nCos(idx: number, amp: number): number {
+  const tr = (globalThis as Record<string, unknown>).__trig as { Cos?: (i: number, a: number) => number } | undefined;
+  return tr?.Cos?.(idx, amp) ?? Math.floor(Math.cos((idx / 256) * 2 * Math.PI) * amp);
+}
+function _nSin(idx: number, amp: number): number {
+  const tr = (globalThis as Record<string, unknown>).__trig as { Sin?: (i: number, a: number) => number } | undefined;
+  return tr?.Sin?.(idx, amp) ?? Math.floor(Math.sin((idx / 256) * 2 * Math.PI) * amp);
+}
+
 registerAnimCallbacks({
+  AnimConfusionDuck: AnimConfusionDuck as never,
+  AnimCirclingSparkle: AnimCirclingSparkle as never,
   AnimHitSplatBasic: AnimHitSplatBasic as never,
   AnimHitSplatHandleInvert: AnimHitSplatBasic as never, // 1:1 : meme base, invert X = dette douce
   AnimSimplePaletteBlend: AnimSimplePaletteBlend as never,
