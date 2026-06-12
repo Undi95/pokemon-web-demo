@@ -52,7 +52,10 @@ async function loadIndexedPngPreserveIndices(url: string): Promise<{ charData: U
 let _ballParticlesPreloaded = false;
 export async function ensureBallParticlesLoaded(): Promise<void> {
   if (_ballParticlesPreloaded) return;
-  if (assetCache.has('gBattleAnimSpriteGfx_Particles') && assetCache.has('gBattleAnimSpritePal_Particles')) {
+  // ⚠ gate sur TOUTES les clés (leçon ensureBallGfxLoaded : une clé posée par une
+  // autre voie → early-return → les autres jamais chargées).
+  if (assetCache.has('gBattleAnimSpriteGfx_Particles') && assetCache.has('gBattleAnimSpritePal_Particles')
+      && assetCache.has('gBattleAnimSpritePal_CircleImpact')) {
     _ballParticlesPreloaded = true;
     return;
   }
@@ -61,6 +64,11 @@ export async function ensureBallParticlesLoaded(): Promise<void> {
     assetCache.set('gBattleAnimSpriteGfx_Particles', particlesGfx);
     const particlesPal = await loadIndexedPngStrict('/decomp/em/battle_anims/particles.png', 4);
     assetCache.set('gBattleAnimSpritePal_Particles', particlesPal.palette);
+    // 1:1 décomp battle_anim_throw.c:159 sBallParticlePalettes[*] = la palette des
+    // étincelles est gBattleAnimSpritePal_CircleImpact (PAS celle du PNG particles —
+    // celle-ci reste pour le chemin Birch/OW de pokeball-effects).
+    assetCache.set('gBattleAnimSpritePal_CircleImpact',
+      await loadGbaPal('/decomp/em/battle_anims/sprites/circle_impact.gbapal'));
     _ballParticlesPreloaded = true;
   } catch (e) {
     console.warn('[intro-asset-loader] Ball particles load failed:', e);

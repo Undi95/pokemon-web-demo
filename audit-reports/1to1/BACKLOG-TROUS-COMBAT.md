@@ -741,18 +741,18 @@
 ## battle_anim_throw.c — 60/78 fonctions couvertes (77%) · cite:51 + symbole:9 · 91 citations
 - [ ] AnimTask_UnusedLevelUpHealthBox_Step  @ L484-543
 - [x] Task_PlayerThrow_Wait @ L837-854 — DETTE LIÉE — créé uniquement par AnimTask_ThrowBall_StandingTrainer_Step (.c:826) dont le port TS est en dette R3 (switch immédiat sans monitor animCmdIndex, battle_anim_throw.ts:313) ; le porter seul = orphelin sans effet. À porter AVEC le monitor du bras dresseur.
-- [x] IncrBallParticleCount @ L1593-1598 — DETTE LIÉE — helper appelé uniquement par les 9 *OpenParticleAnimation (.c:1618-1960), toutes non portées (= la dette « étoiles/particules d ouverture » du chantier capture 2026-06-10) ; à porter AVEC la chaîne particules entière
-- [ ] TimerBallOpenParticleAnimation  @ L1660-1693
-- [ ] DiveBallOpenParticleAnimation  @ L1694-1728
-- [ ] SafariBallOpenParticleAnimation  @ L1729-1763
-- [ ] UltraBallOpenParticleAnimation  @ L1764-1798
-- [ ] GreatBallOpenParticleAnimation  @ L1799-1843
-- [ ] FanOutBallOpenParticles_Step1  @ L1844-1854
-- [ ] RepeatBallOpenParticleAnimation  @ L1855-1885
-- [ ] RepeatBallOpenParticleAnimation_Step1  @ L1886-1896
-- [ ] MasterBallOpenParticleAnimation  @ L1897-1942
-- [ ] PremierBallOpenParticleAnimation  @ L1943-1973
-- [ ] PremierBallOpenParticleAnimation_Step1  @ L1974-1984
+- [x] IncrBallParticleCount @ L1593-1598 — PORTÉ 1:1 (battle_anim_throw.ts : gMain.inBattle → numBallParticles++, nouveau champ 1:1 battle-sprites-data BattleAnimationInfo battle.h:546) — la chaîne particules ENTIÈRE est live (tables :130-370 + :1568-2023, palette 1:1 gBattleAnimSpritePal_CircleImpact extraite)
+- [x] TimerBallOpenParticleAnimation @ L1660-1693 — porté 1:1 (8 étincelles fan-out d4=10/d5=2/d6=1, quirk data[7] dernier-sprite reproduit)
+- [x] DiveBallOpenParticleAnimation @ L1694-1728 — porté 1:1 (8 étincelles d4=10/d5=1/d6=2)
+- [x] SafariBallOpenParticleAnimation @ L1729-1763 — porté 1:1 (« Also used for Net Ball », 8 étincelles d4=4/d5=1/d6=1)
+- [x] UltraBallOpenParticleAnimation @ L1764-1798 — porté 1:1 (« Also used for Nest Ball », 10 étincelles angle i*25, d4=5)
+- [x] GreatBallOpenParticleAnimation @ L1799-1843 — porté 1:1 (« Also used for Luxury Ball », 2 vagues de 8 espacées de 8 frames via task.data[7] ; A/B profil mesuré 8→16→0)
+- [x] FanOutBallOpenParticles_Step1 @ L1844-1854 — porté 1:1 (Sin/Cos rayons découplés d1/d2, 51 frames ; A/B Master Ball freeze-frame : double anneau VISIBLE à l'écran)
+- [x] RepeatBallOpenParticleAnimation @ L1855-1885 — porté 1:1 (POKEBALL_COUNT=12 étincelles, angle i*21 ; A/B sondes : 12 sprites Step1)
+- [x] RepeatBallOpenParticleAnimation_Step1 @ L1886-1896 — porté 1:1 (y2 = Cos(d0, Sin(d0, d2)))
+- [x] MasterBallOpenParticleAnimation @ L1897-1942 — porté 1:1 (2 anneaux j=0 d5=2/d6=1, j=1 d5=1/d6=2 ; A/B freeze-frame : 16 sprites, 2 rayons 28/14 mesurés)
+- [x] PremierBallOpenParticleAnimation @ L1943-1973 — porté 1:1 (8 étincelles → Step1 propre)
+- [x] PremierBallOpenParticleAnimation_Step1 @ L1974-1984 — porté 1:1 (y2 = Cos(d0, Sin(d0 & 0x3F, d2)), angle +10 ; A/B sondes : 8 sprites Step1)
 - [x] SpriteCB_PokeBlock_Throw @ L2423-2439 — DETTE — lancer de PokéBlock = SAFARI ZONE uniquement (hors démo, cohérent dette contrôleur Safari 6f928ed6)
 - [x] SpriteCB_PokeBlock_LiftArm @ L2440-2445 — DETTE — Safari Zone (idem)
 - [x] SpriteCB_PokeBlock_Arc @ L2446-2456 — DETTE — Safari Zone (idem)

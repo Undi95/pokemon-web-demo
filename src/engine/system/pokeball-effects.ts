@@ -309,6 +309,15 @@ function _bp(): { BlendPalette: BlendPaletteFn } {
 // AnimateBallOpenParticles — sparkle spawn task
 // ============================================================================
 //
+// ⚠ DETTE PLACEMENT (2026-06-12) : cette version simplifiée (BALL_POKE-only,
+// cycle d'anim inline, un seul tag) ne sert PLUS QUE le chemin Birch/OW
+// (decomp-globals SpriteCB release Lotad = pokeball.c
+// AnimateBallOpenParticlesForPokeball, hors combat). TOUS les chemins COMBAT
+// (send-out, capture, switch-out) passent par le miroir 1:1 complet :
+// src/game/battle_anim_throw.ts AnimateBallOpenParticles (12 types de balls,
+// tables sBallParticle*, numBallParticles, libération des tags). À absorber
+// dans le miroir quand le chemin Birch sera migré.
+//
 // 1:1 décomp src/battle_anim_throw.c:1577 :
 //   u8 AnimateBallOpenParticles(u8 x, u8 y, u8 priority, u8 subpriority, u8 ballId)
 //   {

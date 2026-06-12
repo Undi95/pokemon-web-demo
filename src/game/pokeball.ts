@@ -41,8 +41,8 @@ import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
 import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime } from '../engine/system/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
-import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, AnimateBallOpenParticles, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
-import { ItemIdToBallId } from './battle_anim_throw';
+import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
+import { ItemIdToBallId, AnimateBallOpenParticles } from './battle_anim_throw';
 import { getBattlerMonSpriteId } from './battle_controller_opponent';
 import { SpriteCB_PlayerMonFromBall, SpriteCB_OpponentMonFromBall } from '../engine/battle/battle-sprite-callbacks';
 import {
@@ -422,7 +422,8 @@ function SpriteCB_ReleaseMonFromBall(sprite: DecompSprite, rt: DecompRuntime): v
   const battler = sprite.data[6];   // sBattler
   rt.StartSpriteAnim(sprite.spriteId, 1);
   const ballId = ItemIdToBallId(GetBattlerPokeballItemId(battler));
-  AnimateBallOpenParticles(rt, sprite.x, sprite.y - 5, 1, 28, ballId);
+  // 1:1 pokeball.c:757 — miroir battle_anim_throw (PlaySE SE_BALL_OPEN dedans).
+  AnimateBallOpenParticles(sprite.x, sprite.y - 5, 1, 28, ballId);
   sprite.data[0] = LaunchBallFadeMonTask(rt, true, sprite.data[6], 14, ballId);
   sprite.callback = HandleBallAnimEnd;
 

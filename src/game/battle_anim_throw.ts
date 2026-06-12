@@ -44,7 +44,7 @@
  */
 
 import { getRuntime } from '../engine/system/decomp-globals';
-import { Cos } from './trig';
+import { Sin, Cos } from './trig';
 import { gBallSpriteTemplates, LoadBallGfx as _LoadBallGfxReal } from './pokeball';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
 import { GetBattlerSpriteCoord as _GetBattlerSpriteCoordReal } from './battle_anim_mons';
@@ -56,8 +56,15 @@ import {
 } from './battle_anim_mons';
 import { GetBattlerPokeballItemId } from './pokeball';
 import { registerAnimTasks } from '../engine/battle/battle-anim-registry';
-import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../engine/system/pokeball-effects';
-import { BlendPalettes } from '../engine/system/decomp-globals';
+import { LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../engine/system/pokeball-effects';
+import {
+  BlendPalettes, SpriteCallbackDummy,
+  LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap,
+  FreeSpriteTilesByTag,
+} from '../engine/system/decomp-globals';
+import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
+import { getNumBallParticles, setNumBallParticles } from '../engine/battle/battle-sprites-data';
 import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';
 import { setGDoingBattleAnim } from '../engine/battle/state';
 import {
@@ -455,10 +462,8 @@ export function AnimTask_SwitchOutBallEffect(taskId: number): void {
       const y = _GetBattlerSpriteCoordReal(attacker, 1 /* BATTLER_COORD_Y */);
       const priority = oam?.priority ?? 2;
       const subpriority = spr?.subpriority ?? 0;
-      task.data[10] = _fxBallOpenParticles(rt as never, x, y + 32, priority, subpriority, ballId);
-      // 1:1 décomp : PlaySE(SE_BALL_OPEN) vit DANS AnimateBallOpenParticles ;
-      // notre impl le délègue au caller (anti double-play chemin Birch).
-      (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(15 /* SE_BALL_OPEN */);
+      // 1:1 :684 — PlaySE(SE_BALL_OPEN) vit DANS AnimateBallOpenParticles (miroir).
+      task.data[10] = AnimateBallOpenParticles(x, y + 32, priority, subpriority, ballId);
       const selectedPalettes = GetBattlePalettesMask(true, false, false, false, false, false, false);
       task.data[11] = _fxBallFadeMon(rt as never, false, attacker, selectedPalettes, ballId);
       task.data[0]++;
@@ -719,9 +724,11 @@ function SpriteCB_Ball_Arc(sprite: BallSprite): void {
       sprite.data[5] = 0;  // sTimer
       sprite.callback = SpriteCB_Ball_MonShrink;
       const ballId = ItemIdToBallId(gLastUsedItem);
+      // 1:1 :895 AnimateBallOpenParticles(sprite->x, sprite->y - 5, 1, 28, ballId)
+      // — miroir local (PlaySE SE_BALL_OPEN dedans).
+      AnimateBallOpenParticles(sprite.x, sprite.y - 5, 1, 28, ballId);
       const rt = getRuntime();
       if (rt) {
-        _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
         // 1:1 LaunchBallFadeMonTask(FALSE, gBattleAnimTarget, 14, ballId) — le
         // 2e arg decomp = le SLOT PALETTE OBJ du mon (battler==slot sur GBA) ;
         // chez nous les slots ne suivent pas le battler -> resoudre le palNum
@@ -1101,9 +1108,10 @@ function SpriteCB_Ball_Release_Step(sprite: BallSprite): void {
   _startAffine(sprite, 0);
   sprite.callback = SpriteCB_Ball_Release_Wait;
   const ballId = ItemIdToBallId(gLastUsedItem);
+  // 1:1 :1476 — miroir local (PlaySE SE_BALL_OPEN dedans).
+  AnimateBallOpenParticles(sprite.x, sprite.y - 5, 1, 28, ballId);
   const rt = getRuntime();
   if (rt) {
-    _fxBallOpenParticles(rt as never, sprite.x, sprite.y - 5, 1, 28, ballId);
     _fxBallFadeMon(rt as never, true, _monPalNum(), 14, ballId);
   }
   const monSpriteId = _getBattlerSpriteId(_getAnimState().target);
@@ -1168,6 +1176,529 @@ function SpriteCB_Ball_Block_Step(sprite: BallSprite): void {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// PARTICULES D'OUVERTURE DE BALL — 1:1 battle_anim_throw.c:130-370 (tables) +
+// :1568-2023 (LoadBallParticleGfx → AnimateBallOpenParticles → une task
+// *OpenParticleAnimation PAR TYPE de ball → sprites Step → DestroyBallOpen
+// AnimationParticle qui libère les 12 tags quand tout est fini).
+// Callers combat : SpriteCB_Ball_Arc (:895 capture), SpriteCB_Ball_Release_Step
+// (:1476 échec capture), AnimTask_SwitchOutBallEffect (:684 switch-out),
+// pokeball.c SpriteCB_ReleaseMonFromBall (:757 send-out). Le chemin Birch/OW
+// (hors combat) reste servi par engine/system/pokeball-effects.ts (dette
+// placement documentée là-bas).
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 :130-141 — #define TAG_PARTICLES_* (55020..55031, un tag par type de ball).
+const TAG_PARTICLES_POKEBALL = 55020;
+const TAG_PARTICLES_GREATBALL = 55021;
+const TAG_PARTICLES_SAFARIBALL = 55022;
+const TAG_PARTICLES_ULTRABALL = 55023;
+const TAG_PARTICLES_MASTERBALL = 55024;
+const TAG_PARTICLES_NETBALL = 55025;
+const TAG_PARTICLES_DIVEBALL = 55026;
+const TAG_PARTICLES_NESTBALL = 55027;
+const TAG_PARTICLES_REPEATBALL = 55028;
+const TAG_PARTICLES_TIMERBALL = 55029;
+const TAG_PARTICLES_LUXURYBALL = 55030;
+const TAG_PARTICLES_PREMIERBALL = 55031;
+// Ordre BALL_POKE..BALL_PREMIER (= l'index des designated initializers C).
+const _particleTags: ReadonlyArray<number> = [
+  TAG_PARTICLES_POKEBALL, TAG_PARTICLES_GREATBALL, TAG_PARTICLES_SAFARIBALL,
+  TAG_PARTICLES_ULTRABALL, TAG_PARTICLES_MASTERBALL, TAG_PARTICLES_NETBALL,
+  TAG_PARTICLES_DIVEBALL, TAG_PARTICLES_NESTBALL, TAG_PARTICLES_REPEATBALL,
+  TAG_PARTICLES_TIMERBALL, TAG_PARTICLES_LUXURYBALL, TAG_PARTICLES_PREMIERBALL,
+];
+// 1:1 include/pokeball.h POKEBALL_COUNT.
+const _POKEBALL_COUNT = 12;
+
+// 1:1 :143-157 sBallParticleSpriteSheets[POKEBALL_COUNT] — les 12 entrées
+// partagent le MÊME gfx (gBattleAnimSpriteGfx_Particles, 0x100 = 8 tiles 8x8) ;
+// seul le tag diffère (pattern .map() = précédent gBallSpriteTemplates,
+// pokeball.ts:118).
+const sBallParticleSpriteSheets: ReadonlyArray<{ data: string; size: number; tag: number }> =
+  _particleTags.map((tag) => ({ data: 'gBattleAnimSpriteGfx_Particles', size: 0x100, tag }));
+
+// 1:1 :159-173 sBallParticlePalettes[POKEBALL_COUNT] — même palette
+// gBattleAnimSpritePal_CircleImpact ×12 (un slot OBJ par tag).
+const sBallParticlePalettes: ReadonlyArray<{ data: string; tag: number }> =
+  _particleTags.map((tag) => ({ data: 'gBattleAnimSpritePal_CircleImpact', tag }));
+
+// 1:1 :175-215 — séquences d'anim de frame des étincelles.
+const sAnim_RegularBall: ReadonlyArray<AnimCmd> = [
+  ANIMCMD_FRAME(0, 1),
+  ANIMCMD_FRAME(1, 1),
+  ANIMCMD_FRAME(2, 1),
+  ANIMCMD_FRAME(0, 1, { hFlip: true }),
+  ANIMCMD_FRAME(2, 1),
+  ANIMCMD_FRAME(1, 1),
+  ANIMCMD_JUMP(0),
+];
+const sAnim_MasterBall: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(3, 1), ANIMCMD_END];
+const sAnim_NetDiveBall: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(4, 1), ANIMCMD_END];
+const sAnim_NestBall: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(5, 1), ANIMCMD_END];
+const sAnim_LuxuryPremierBall: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(6, 4), ANIMCMD_FRAME(7, 4), ANIMCMD_JUMP(0)];
+const sAnim_UltraRepeatTimerBall: ReadonlyArray<AnimCmd> = [ANIMCMD_FRAME(7, 4), ANIMCMD_END];
+
+// 1:1 :217-225 sAnims_BallParticles[].
+const sAnims_BallParticles: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  sAnim_RegularBall,
+  sAnim_MasterBall,
+  sAnim_NetDiveBall,
+  sAnim_NestBall,
+  sAnim_LuxuryPremierBall,
+  sAnim_UltraRepeatTimerBall,
+];
+
+// 1:1 :227-241 sBallParticleAnimNums[POKEBALL_COUNT].
+const sBallParticleAnimNums: ReadonlyArray<number> = [
+  0,  // BALL_POKE
+  0,  // BALL_GREAT
+  0,  // BALL_SAFARI
+  5,  // BALL_ULTRA
+  1,  // BALL_MASTER
+  2,  // BALL_NET
+  2,  // BALL_DIVE
+  3,  // BALL_NEST
+  5,  // BALL_REPEAT
+  5,  // BALL_TIMER
+  4,  // BALL_LUXURY
+  4,  // BALL_PREMIER
+];
+
+// Task particule (= struct Task décomp : la fonction reçoit l'objet DecompTask
+// runtime — data Int16Array + taskId — convention rt.CreateTask).
+type ParticleTask = { taskId: number; data: number[] };
+type ParticleTaskFn = (task: ParticleTask) => void;
+
+// 1:1 :243-257 sBallParticleAnimationFuncs[POKEBALL_COUNT] (function
+// declarations hoistées → références valides ici, comme les statics C).
+const sBallParticleAnimationFuncs: ReadonlyArray<ParticleTaskFn> = [
+  PokeBallOpenParticleAnimation,    // BALL_POKE
+  GreatBallOpenParticleAnimation,   // BALL_GREAT
+  SafariBallOpenParticleAnimation,  // BALL_SAFARI
+  UltraBallOpenParticleAnimation,   // BALL_ULTRA
+  MasterBallOpenParticleAnimation,  // BALL_MASTER
+  SafariBallOpenParticleAnimation,  // BALL_NET (« Also used for Net Ball »)
+  DiveBallOpenParticleAnimation,    // BALL_DIVE
+  UltraBallOpenParticleAnimation,   // BALL_NEST (« Also used for Nest Ball »)
+  RepeatBallOpenParticleAnimation,  // BALL_REPEAT
+  TimerBallOpenParticleAnimation,   // BALL_TIMER
+  GreatBallOpenParticleAnimation,   // BALL_LUXURY (« Also used for Luxury Ball »)
+  PremierBallOpenParticleAnimation, // BALL_PREMIER
+];
+
+// 1:1 graphics oam : gOamData_AffineOff_ObjNormal_8x8 (shape/size 8x8, prio 0).
+const gOamData_AffineOff_ObjNormal_8x8 = { shape: 0, size: 0, affineMode: 0, priority: 0, paletteNum: 0 };
+
+// 1:1 :259-370 sBallParticleSpriteTemplates[POKEBALL_COUNT] — 12 entrées
+// identiques sauf les tags (oam 8x8, anims sAnims_BallParticles, dummy affine,
+// SpriteCallbackDummy).
+const sBallParticleSpriteTemplates: ReadonlyArray<{
+  tileTag: number; paletteTag: number;
+  oam: typeof gOamData_AffineOff_ObjNormal_8x8;
+  anims: ReadonlyArray<ReadonlyArray<AnimCmd>>;
+  callback: unknown;
+}> = _particleTags.map((tag) => ({
+  tileTag: tag,
+  paletteTag: tag,
+  oam: gOamData_AffineOff_ObjNormal_8x8,
+  anims: sAnims_BallParticles,
+  callback: SpriteCallbackDummy,
+}));
+
+// 1:1 include/constants/songs.h:23 SE_BALL_OPEN (déjà joué inline ailleurs).
+const SE_BALL_OPEN = 15;
+
+/** 1:1 décomp `LoadBallParticleGfx(u8 ballId)` (battle_anim_throw.c:1568-1575). */
+export function LoadBallParticleGfx(ballId: number): void {
+  if (GetSpriteTileStartByTag(sBallParticleSpriteSheets[ballId].tag) === 0xFFFF) {
+    LoadCompressedSpriteSheetUsingHeap(sBallParticleSpriteSheets[ballId]);
+    LoadCompressedSpritePaletteUsingHeap(sBallParticlePalettes[ballId]);
+  }
+}
+
+/** 1:1 décomp `u8 AnimateBallOpenParticles(u8 x, u8 y, u8 priority,
+ *  u8 subpriority, u8 ballId)` (battle_anim_throw.c:1577-1591). PlaySE
+ *  (SE_BALL_OPEN) vit ICI, 1:1 (:1588). */
+export function AnimateBallOpenParticles(x: number, y: number, priority: number, subpriority: number, ballId: number): number {
+  LoadBallParticleGfx(ballId);
+  const taskId = CreateTask(sBallParticleAnimationFuncs[ballId], 5);
+  const task = _gTasks(taskId);
+  task.data[1] = x;
+  task.data[2] = y;
+  task.data[3] = priority;
+  task.data[4] = subpriority;
+  task.data[15] = ballId;
+  _PlaySE(SE_BALL_OPEN);
+  return taskId;
+}
+
+/** 1:1 décomp `IncrBallParticleCount(void)` (:1593-1597). */
+function IncrBallParticleCount(): void {
+  if (getRuntime()?.gMain?.inBattle) {
+    setNumBallParticles(getNumBallParticles() + 1);
+  }
+}
+
+/** 1:1 task.c `FuncIsActiveTask(TaskFunc func)` — scan gTasks par identité de
+ *  fonction (notre Map ne contient que les tasks actives). */
+function FuncIsActiveTask(func: ParticleTaskFn): boolean {
+  const rt = getRuntime();
+  if (!rt?.gTasks) return false;
+  for (const t of rt.gTasks.values()) {
+    if ((t as { func?: unknown }).func === func) return true;
+  }
+  return false;
+}
+
+/** Crée UN sprite étincelle depuis le template du ballId (= corps commun des
+ *  CreateSprite+IncrBallParticleCount+StartSpriteAnim+oam.priority répété dans
+ *  chaque *OpenParticleAnimation C). Retourne le sprite (null si MAX_SPRITES).
+ *  oam.priority : posé sur l'OAM directement — PAS écrasé par syncSpritesToOam
+ *  (seuls x/y/flips/objMode/affineParamIndex/subpriority le sont). */
+function _createBallParticleSprite(ballId: number, x: number, y: number, priority: number, subpriority: number): BallSprite | null {
+  const rt = getRuntime();
+  const spriteId = _CreateSpriteFromTemplate(sBallParticleSpriteTemplates[ballId] as never, x, y, subpriority);
+  if (spriteId < 0 || !rt) return null;
+  const sp = _rtSprite(spriteId);
+  if (!sp) return null;
+  IncrBallParticleCount();
+  (rt as unknown as { StartSpriteAnim?: (i: number, n: number) => void }).StartSpriteAnim?.(spriteId, sBallParticleAnimNums[ballId]);
+  const oamIndex = (sp as { oamIndex?: number }).oamIndex;
+  const oam = oamIndex !== undefined ? (rt as unknown as { gba?: { oam?: Array<{ priority?: number }> } }).gba?.oam?.[oamIndex] : undefined;
+  if (oam) oam.priority = priority;
+  sp.spriteId = spriteId;
+  return sp;
+}
+
+/** 1:1 décomp `PokeBallOpenParticleAnimation(u8 taskId)` (:1599-1641) —
+ *  UNE étincelle par frame pendant 16 frames, angle (frame%8)*32. */
+function PokeBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  if (task.data[0] < 16) {
+    const x = task.data[1];
+    const y = task.data[2];
+    const priority = task.data[3];
+    const subpriority = task.data[4];
+
+    const sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = PokeBallOpenParticleAnimation_Step1;
+      let var0 = task.data[0] & 0xFF;
+      if (var0 >= 8) var0 -= 8;
+      sp.data[0] = var0 * 32;
+    }
+
+    if (task.data[0] === 15) {
+      // 1:1 :1632-1633 — hors combat : marque le DERNIER sprite pour
+      // DestroySpriteAndFreeResources (chemin Birch/OW, jamais pris en combat).
+      if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+      DestroyTask(task.taskId);
+      return;
+    }
+  }
+  task.data[0]++;
+}
+
+/** 1:1 décomp `PokeBallOpenParticleAnimation_Step1(sprite)` (:1643-1649). */
+function PokeBallOpenParticleAnimation_Step1(sprite: BallSprite): void {
+  if (sprite.data[1] === 0) {
+    sprite.callback = PokeBallOpenParticleAnimation_Step2;
+  } else {
+    sprite.data[1]--;
+  }
+}
+
+/** 1:1 décomp `PokeBallOpenParticleAnimation_Step2(sprite)` (:1651-1658) —
+ *  rayon +2/frame jusqu'à 50. */
+function PokeBallOpenParticleAnimation_Step2(sprite: BallSprite): void {
+  sprite.x2 = Sin(sprite.data[0], sprite.data[1]);
+  sprite.y2 = Cos(sprite.data[0], sprite.data[1]);
+  sprite.data[1] += 2;
+  if (sprite.data[1] === 50) {
+    DestroyBallOpenAnimationParticle(sprite);
+  }
+}
+
+/** 1:1 décomp `TimerBallOpenParticleAnimation(u8 taskId)` (:1660-1692) —
+ *  8 étincelles d'un coup, fan-out d4=10/d5=2/d6=1. */
+function TimerBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < 8; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = FanOutBallOpenParticles_Step1;
+      sp.data[0] = i * 32;
+      sp.data[4] = 10;
+      sp.data[5] = 2;
+      sp.data[6] = 1;
+    }
+  }
+
+  // 1:1 :1688-1689 quirk vanilla : data[7] posé sur le sprite du DERNIER tour.
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `DiveBallOpenParticleAnimation(u8 taskId)` (:1694-1726) —
+ *  8 étincelles, d4=10/d5=1/d6=2. */
+function DiveBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < 8; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = FanOutBallOpenParticles_Step1;
+      sp.data[0] = i * 32;
+      sp.data[4] = 10;
+      sp.data[5] = 1;
+      sp.data[6] = 2;
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `SafariBallOpenParticleAnimation(u8 taskId)` (:1729-1761,
+ *  « Also used for Net Ball ») — 8 étincelles, d4=4/d5=1/d6=1. */
+function SafariBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < 8; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = FanOutBallOpenParticles_Step1;
+      sp.data[0] = i * 32;
+      sp.data[4] = 4;
+      sp.data[5] = 1;
+      sp.data[6] = 1;
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `UltraBallOpenParticleAnimation(u8 taskId)` (:1764-1796,
+ *  « Also used for Nest Ball ») — 10 étincelles, angle i*25, d4=5/d5=1/d6=1. */
+function UltraBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < 10; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = FanOutBallOpenParticles_Step1;
+      sp.data[0] = i * 25;
+      sp.data[4] = 5;
+      sp.data[5] = 1;
+      sp.data[6] = 1;
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `GreatBallOpenParticleAnimation(u8 taskId)` (:1799-1842,
+ *  « Also used for Luxury Ball ») — 2 vagues de 8 espacées de 8 frames
+ *  (task.data[7] = délai, task.data[0] = compteur de vagues). */
+function GreatBallOpenParticleAnimation(task: ParticleTask): void {
+  if (task.data[7]) {
+    task.data[7]--;
+  } else {
+    const ballId = task.data[15];
+    const x = task.data[1];
+    const y = task.data[2];
+    const priority = task.data[3];
+    const subpriority = task.data[4];
+
+    let sp: BallSprite | null = null;
+    for (let i = 0; i < 8; i++) {
+      sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+      if (sp) {
+        sp.callback = FanOutBallOpenParticles_Step1;
+        sp.data[0] = i * 32;
+        sp.data[4] = 8;
+        sp.data[5] = 2;
+        sp.data[6] = 2;
+      }
+    }
+
+    task.data[7] = 8;
+    if (++task.data[0] === 2) {
+      if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+      DestroyTask(task.taskId);
+    }
+  }
+}
+
+/** 1:1 décomp `FanOutBallOpenParticles_Step1(sprite)` (:1844-1853) —
+ *  spirale : angle += d4, rayons x += d5 / y += d6, 51 frames. */
+function FanOutBallOpenParticles_Step1(sprite: BallSprite): void {
+  sprite.x2 = Sin(sprite.data[0], sprite.data[1]);
+  sprite.y2 = Cos(sprite.data[0], sprite.data[2]);
+  sprite.data[0] = (sprite.data[0] + sprite.data[4]) & 0xFF;
+  sprite.data[1] += sprite.data[5];
+  sprite.data[2] += sprite.data[6];
+  if (++sprite.data[3] === 51) {
+    DestroyBallOpenAnimationParticle(sprite);
+  }
+}
+
+/** 1:1 décomp `RepeatBallOpenParticleAnimation(u8 taskId)` (:1855-1884) —
+ *  POKEBALL_COUNT (12) étincelles, angle i*21. */
+function RepeatBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < _POKEBALL_COUNT; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = RepeatBallOpenParticleAnimation_Step1;
+      sp.data[0] = i * 21;
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `RepeatBallOpenParticleAnimation_Step1(sprite)` (:1886-1895). */
+function RepeatBallOpenParticleAnimation_Step1(sprite: BallSprite): void {
+  sprite.x2 = Sin(sprite.data[0], sprite.data[1]);
+  sprite.y2 = Cos(sprite.data[0], Sin(sprite.data[0], sprite.data[2]));
+  sprite.data[0] = (sprite.data[0] + 6) & 0xFF;
+  sprite.data[1]++;
+  sprite.data[2]++;
+  if (++sprite.data[3] === 51) {
+    DestroyBallOpenAnimationParticle(sprite);
+  }
+}
+
+/** 1:1 décomp `MasterBallOpenParticleAnimation(u8 taskId)` (:1897-1941) —
+ *  2 anneaux de 8 (j=0 : d5=2/d6=1 ; j=1 : d5=1/d6=2), d4=8. */
+function MasterBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let j = 0; j < 2; j++) {
+    for (let i = 0; i < 8; i++) {
+      sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+      if (sp) {
+        sp.callback = FanOutBallOpenParticles_Step1;
+        sp.data[0] = i * 32;
+        sp.data[4] = 8;
+        if (j === 0) {
+          sp.data[5] = 2;
+          sp.data[6] = 1;
+        } else {
+          sp.data[5] = 1;
+          sp.data[6] = 2;
+        }
+      }
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `PremierBallOpenParticleAnimation(u8 taskId)` (:1943-1972). */
+function PremierBallOpenParticleAnimation(task: ParticleTask): void {
+  const ballId = task.data[15];
+  const x = task.data[1];
+  const y = task.data[2];
+  const priority = task.data[3];
+  const subpriority = task.data[4];
+
+  let sp: BallSprite | null = null;
+  for (let i = 0; i < 8; i++) {
+    sp = _createBallParticleSprite(ballId, x, y, priority, subpriority);
+    if (sp) {
+      sp.callback = PremierBallOpenParticleAnimation_Step1;
+      sp.data[0] = i * 32;
+    }
+  }
+
+  if (!getRuntime()?.gMain?.inBattle && sp) sp.data[7] = 1;
+  DestroyTask(task.taskId);
+}
+
+/** 1:1 décomp `PremierBallOpenParticleAnimation_Step1(sprite)` (:1974-1983). */
+function PremierBallOpenParticleAnimation_Step1(sprite: BallSprite): void {
+  sprite.x2 = Sin(sprite.data[0], sprite.data[1]);
+  sprite.y2 = Cos(sprite.data[0], Sin(sprite.data[0] & 0x3F, sprite.data[2]));
+  sprite.data[0] = (sprite.data[0] + 10) & 0xFF;
+  sprite.data[1]++;
+  sprite.data[2]++;
+  if (++sprite.data[3] === 51) {
+    DestroyBallOpenAnimationParticle(sprite);
+  }
+}
+
+/** 1:1 décomp `DestroyBallOpenAnimationParticle(sprite)` (:1985-2023) —
+ *  en combat : numBallParticles-- ; à 0 et plus AUCUNE task particule active
+ *  → libère les 12 tags (tiles + palettes). */
+function DestroyBallOpenAnimationParticle(sprite: BallSprite): void {
+  const rt = getRuntime();
+  if (!rt?.gMain?.inBattle) {
+    // 1:1 :1989-1995 — chemin hors combat (Birch/OW : servi par pokeball-effects,
+    // jamais pris par les callers combat de ce miroir). DestroySpriteAndFree
+    // Resources (data[7]==1) = dette : le sprite runtime ne porte pas les tags
+    // de son template → destroy simple.
+    _destroyBall(sprite);
+    return;
+  }
+  setNumBallParticles(getNumBallParticles() - 1);
+  if (getNumBallParticles() === 0) {
+    let i = 0;
+    for (; i < _POKEBALL_COUNT; i++) {
+      if (FuncIsActiveTask(sBallParticleAnimationFuncs[i])) break;
+    }
+
+    if (i === _POKEBALL_COUNT) {
+      for (let j = 0; j < _POKEBALL_COUNT; j++) {
+        FreeSpriteTilesByTag(sBallParticleSpriteSheets[j].tag);
+        FreeSpritePaletteByTag(sBallParticlePalettes[j].tag);
+      }
+    }
+
+    _destroyBall(sprite);
+  } else {
+    _destroyBall(sprite);
+  }
+}
+
 /** Séquence TS 1:1 du script asm `Special_BallThrow` (battle_anim_scripts.s:
  *  10719 — ABSENT du bytecode extrait, qui s'arrête aux moves) :
  *  launchtask AnimTask_IsBallBlockedByTrainer → block ? _StandingTrainer :
@@ -1201,6 +1732,7 @@ registerAnimTasks({
 (globalThis as Record<string, unknown>).__battleAnimThrow = {
   Special_BallThrow_TS, BeginNormalPaletteFade,
   ItemIdToBallId,
+  AnimateBallOpenParticles, LoadBallParticleGfx,
   AnimTask_LoadBallGfx, AnimTask_FreeBallGfx,
   AnimTask_IsBallBlockedByTrainer,
   AnimTask_ThrowBall, AnimTask_ThrowBall_Step,

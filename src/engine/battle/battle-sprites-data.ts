@@ -79,6 +79,11 @@ let _summaryBarsActive = 0;
 // ─── struct BattleAnimationInfo (animationData, singleton) ──────────────────
 // 1:1 `introAnimActive:1` (TRUE pendant l'intro d'envoi des deux camps en double).
 let _introAnimActive = false;
+// 1:1 `u8 numBallParticles` (battle.h:546) — compte les sprites d'étincelles
+// d'ouverture de ball vivants ; quand il retombe à 0 ET qu'aucune task
+// *OpenParticleAnimation n'est active, les 12 tags particules sont libérés
+// (DestroyBallOpenAnimationParticle, battle_anim_throw.c:1998-2014).
+let _numBallParticles = 0;
 
 /** 1:1 `gBattleSpritesDataPtr->healthBoxesData[b].animationState`. */
 export function getHealthBoxAnimationState(battler: number): number {
@@ -177,6 +182,14 @@ export function isIntroAnimActive(): boolean {
 export function setIntroAnimActive(v: boolean): void {
   _introAnimActive = v;
 }
+/** 1:1 `gBattleSpritesDataPtr->animationData->numBallParticles` (u8 — le
+ *  & 0xFF reproduit le wrap u8 du décrément C). */
+export function getNumBallParticles(): number {
+  return _numBallParticles;
+}
+export function setNumBallParticles(v: number): void {
+  _numBallParticles = v & 0xFF;
+}
 /** 1:1 `&gBattleSpritesDataPtr->healthBoxesData[battler]` (sous-ensemble bounce). Retourne
  *  l'OBJET mutable par battler (DoBounceEffect/EndBounceEffect ecrivent dedans). null si OOB. */
 export function getHealthBoxBounceData(battler: number): BattleHealthboxBounceInfo | null {
@@ -200,6 +213,7 @@ export function ClearSpritesHealthboxAnimData(): void {
   _opponentDrawPartyStatusSummaryDelay.fill(0);
   _summaryBarsActive = 0;
   _introAnimActive = false;
+  _numBallParticles = 0;
   for (const d of _healthBoxesData) {
     d.healthboxIsBouncing = 0; d.battlerIsBouncing = 0;
     d.healthboxBounceSpriteId = 0; d.battlerBounceSpriteId = 0;
@@ -222,6 +236,7 @@ export function resetBattleSpritesData(): void {
   _opponentDrawPartyStatusSummaryDelay.fill(0);
   _summaryBarsActive = 0;
   _introAnimActive = false;
+  _numBallParticles = 0;
   // Mutation in-place (refs stables) : DoBounceEffect re-fetch chaque frame, mais
   // un bouncer en cours peut tenir une ref -> on remet a 0 sans recreer l'objet.
   for (const d of _healthBoxesData) {
