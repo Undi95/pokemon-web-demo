@@ -110,10 +110,10 @@
 
 ## battle_controller_opponent.c — 83/88 fonctions couvertes (94%) · cite:21 + symbole:62 · 52 citations
 - [x] FreeMonSpriteAfterSwitchOutAnim  @ L422-433 — porté 1:1 commit 02fcd96c (battle_controller_opponent.ts _FreeMonSpriteAfterSwitchOutAnimOpp + _DoSwitchOutAnimationOpp 1217-1236 ; symétrique strict du player A/B-validé — IA switch non scriptable → A/B user à l'œil)
-- [ ] SwitchIn_ShowSubstitute  @ L459-468
-- [ ] SwitchIn_HandleSoundAndEnd  @ L469-481
-- [ ] SwitchIn_ShowHealthbox  @ L482-499
-- [ ] CompleteOnFinishedBattleAnimation  @ L521-526
+- [x] SwitchIn_ShowSubstitute (controllers 3ca8068c) @ L459-468 — chaîne SwitchIn 1:1 A/B Rick ×2 Wurmple (2e send-out réel) ; dette party-storage[1+] vide + ball throw anim
+- [x] SwitchIn_HandleSoundAndEnd (controllers 3ca8068c) @ L469-481 — chaîne SwitchIn 1:1 A/B Rick ×2 Wurmple (2e send-out réel) ; dette party-storage[1+] vide + ball throw anim
+- [x] SwitchIn_ShowHealthbox (controllers 3ca8068c) @ L482-499 — chaîne SwitchIn 1:1 A/B Rick ×2 Wurmple (2e send-out réel) ; dette party-storage[1+] vide + ball throw anim
+- [x] CompleteOnFinishedBattleAnimation (controllers 3ca8068c) @ L521-526 — chaîne SwitchIn 1:1 A/B Rick ×2 Wurmple (2e send-out réel) ; dette party-storage[1+] vide + ball throw anim
 
 ## battle_controller_wally.c — 14/82 fonctions couvertes (17%) · cite:0 + symbole:14 · 5 citations
 - [ ] SpriteCB_Null7  @ L164-167
