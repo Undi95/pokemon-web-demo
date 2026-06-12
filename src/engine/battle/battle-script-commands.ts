@@ -11748,6 +11748,13 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           //   gBattleStruct->expGetterMonId, gBattleMoveDamage) + Mark.
           _BtlController_EmitExpUpdate_N34(0 /* B_COMM_TO_CONTROLLER */, monId, gBattleMoveDamage);
           _MarkBattlerForControllerExec_N34(gBattleStruct.expGetterBattlerId);
+        } else {
+          // 1:1 décomp (côté controller Task_GiveExpToMon) : au cap MAX_LEVEL (ou
+          // HP=0), le reste d'EXP est PERDU — le controller renvoie 0 en bufferB.
+          // SANS cette purge, un mon qui ATTEINT le lvl 100 en plein flux segmenté
+          // (99→100 avec reste) faisait boucler case 5→3→4→5 à l'INFINI
+          // (_getexpRemaining jamais consommé) = soft-lock silencieux.
+          _getexpRemaining = 0;
         }
         gBattleScripting.getexpState++;
       }
