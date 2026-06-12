@@ -2081,6 +2081,9 @@ function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
     oam.affineMode = 3;    // ST_OAM_AFFINE_DOUBLE
     oam.matrixNum = matrixNum;
   }
+  // syncSpritesToOam écrase oam.objMode avec sprite.objMode chaque frame
+  // (classe sync-écrase, fix 2026-06-13) — poser le champ sprite aussi.
+  (sp as { objMode?: number }).objMode = 1;
   sp.affineAnimPaused = true;
   sp.matrixNum = matrixNum;
   sp.affineMode = 3;

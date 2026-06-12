@@ -710,10 +710,10 @@
 - [ ] AnimMonTrace  @ L264-277
 - [ ] AnimTask_DrawFallingWhiteLinesOnAttacker  @ L278-347
 - [ ] AnimTask_DrawFallingWhiteLinesOnAttacker_Step  @ L348-414
-- [ ] InitStatsChangeAnimation  @ L415-425
-- [ ] StatsChangeAnimation_Step1  @ L426-478
-- [ ] StatsChangeAnimation_Step2  @ L479-566
-- [ ] StatsChangeAnimation_Step3  @ L567-648
+- [x] InitStatsChangeAnimation @ L415-425 — porté 1:1 (battle_anim_utility_funcs.ts, chaîne StatsChange complète, commit 23c2e2aa)
+- [x] StatsChangeAnimation_Step1 @ L426-478 — porté 1:1 (regs fenêtre OBJ + species party)
+- [x] StatsChangeAnimation_Step2 @ L479-566 — porté 1:1 (copie OBJ_WINDOW + BG1 gfx/tilemap/palette par stat + SE ; assets extract-stat-change-assets.cjs)
+- [x] StatsChangeAnimation_Step3 @ L567-648 — porté 1:1 (scroll BG1 ±3 + fade in/wait/out + teardown ; A/B pixel-probe teardown diff 0)
 - [ ] AnimTask_UpdateSlidingBg  @ L762-779
 - [ ] AnimTask_SetAnimAttackerAndTargetForEffectTgt  @ L1049-1055
 - [ ] AnimTask_SetAnimTargetToBattlerTarget  @ L1066-1071
@@ -736,7 +736,7 @@
 - [x] AnimTask_FrozenIceCube_Step2 @ L415-447 — renommé au nom C exact (ex-_FrozenIceCube_Step2)
 - [x] AnimTask_FrozenIceCube_Step3 @ L448-463 — renommé au nom C exact (ex-_FrozenIceCube_Step3)
 - [x] AnimTask_FrozenIceCube_Step4 @ L464-481 — renommé au nom C exact (ex-_FrozenIceCube_Step4)
-- [ ] AnimTask_StatsChange  @ L482-542 — ⚠ PROCHAINE TRANCHE (atteignable 100% : décodeur animArg des anims stat ±1/±2 → délègue à InitStatsChangeAnimation+StatsChangeAnimation_Step1..3 d'utility_funcs :415-648 ENCORE OUVERTS — porter LA CHAÎNE ENTIÈRE ensemble : assets gStatAnim_Gfx/Tilemaps/7 palettes + OBJWIN + CreateInvisibleSpriteCopy)
+- [x] AnimTask_StatsChange @ L482-542 — porté 1:1 (battle_anim_status_effects.ts : décodeur 32 cases animArg via __battleAnimArg ; A/B tour réel Growl forcé : anim rendue sur le battler affecté, pixel-probe 690 pts)
 
 ## battle_anim_throw.c — 60/78 fonctions couvertes (77%) · cite:51 + symbole:9 · 91 citations
 - [ ] AnimTask_UnusedLevelUpHealthBox_Step  @ L484-543

@@ -533,6 +533,9 @@ export function CloneBattlerSpriteWithBlend(animBattler: number): number {
     cloneOam.tileId = monOam.tileId;
     cloneOam.paletteBank = monOam.paletteBank;
     cloneOam.objMode = 1; // ST_OAM_OBJ_BLEND
+    // syncSpritesToOam écrase oam.objMode avec sprite.objMode chaque frame
+    // (même classe que la copie OBJ_WINDOW, fix 2026-06-13).
+    (clone as { objMode?: number }).objMode = 1;
   }
   return cloneId;
 }
