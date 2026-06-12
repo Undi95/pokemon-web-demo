@@ -389,3 +389,80 @@ _ufRegTasks({
   AnimTask_IsContest: AnimTask_IsContest as never,
   AnimTask_IsTargetSameSide: AnimTask_IsTargetSameSide as never,
 });
+
+// ─── VAGUE F40 : SetPalettesToColor + AnimTask_Flash (utility_funcs.c:649-723) ─
+// Flash : mons → NOIR, fond → BLANC une fraction de seconde, puis re-blend
+// progressif 16→0 vers les couleurs normales (BlendPalette).
+import { gSineTable as _flUnused } from './trig'; // (aucun usage — garde l'ordre des imports stable)
+void _flUnused;
+
+function _flMons(): {
+  GetBattlePalettesMask?: (a: boolean, b: boolean, c: boolean, d: boolean, e: boolean, f: boolean, g: boolean) => number;
+  GetBattleMonSpritePalettesMask?: (a: number, b: number, c: number, d: number) => number;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _flItf(): { DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _flPf(): { set?: (i: number, v: number) => void } | undefined {
+  return ((globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } } | undefined)?.gPlttBufferFaded;
+}
+/** 1:1 `SetPalettesToColor` (utility_funcs.c:704) : bits 0-15 = BG, 16-31 = OBJ. */
+function _SetPalettesToColor(selectedPalettes: number, color: number): void {
+  const pf = _flPf();
+  if (!pf?.set) return;
+  let sel = selectedPalettes >>> 0;
+  for (let i = 0; i < 32; i++) {
+    if (sel & 1) {
+      const base = i * 16; // PLTT_ID(i) : i<16 = BG, i>=16 = OBJ (256+)
+      for (let k = 0; k < 16; k++) pf.set(base + k, color);
+    }
+    sel >>>= 1;
+  }
+}
+const _FL_RGB_BLACK = 0;
+const _FL_RGB_WHITEALPHA = 0xFFFF; // RGB_WHITEALPHA (bit 15 posé, 1:1)
+
+/** 1:1 `AnimTask_Flash` (utility_funcs.c:649). */
+function AnimTask_Flash(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const m = _flMons();
+  let selected = (m.GetBattleMonSpritePalettesMask?.(1, 1, 1, 1) ?? 0) >>> 0;
+  _SetPalettesToColor(selected, _FL_RGB_BLACK);
+  task.data[14] = selected >>> 16;
+
+  selected = ((m.GetBattlePalettesMask?.(true, false, false, false, false, false, false) ?? 0) & 0xFFFF) >>> 0;
+  _SetPalettesToColor(selected, _FL_RGB_WHITEALPHA);
+  task.data[15] = selected;
+
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.func = _Flash_Step;
+}
+/** 1:1 `AnimTask_Flash_Step` (utility_funcs.c:664). */
+function _Flash_Step(task: { taskId: number; data: number[] }): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 6) {
+        task.data[1] = 0;
+        task.data[2] = 16;
+        task.data[0]++;
+      }
+      break;
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        task.data[2]--;
+        for (let i = 0; i < 16; i++) {
+          if ((task.data[15] >> i) & 1) BlendPalette(i * 16, 16, task.data[2], 0xFFFF);
+          if ((task.data[14] >> i) & 1) BlendPalette(256 + i * 16, 16, task.data[2], 0);
+        }
+        if (task.data[2] === 0) task.data[0]++;
+      }
+      break;
+    case 2:
+      _flItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+registerAnimTasks({ AnimTask_Flash: AnimTask_Flash as never });

@@ -1152,3 +1152,56 @@ _pwRegT({ AnimTask_AlphaFadeIn: AnimTask_AlphaFadeIn as never });
   surf.DestroySpriteWithActiveSheet = DestroySpriteWithActiveSheet;
   surf.AllocOamMatrix = AllocOamMatrix;
 }
+
+// ─── VAGUE F40 : les MASKS de palettes (mons.c:1402-1508) ───────────────────
+// Bits 0-15 = palettes BG, bits 16-31 = slots OBJ. La CLÉ de Flash/Moonlight/
+// MorningSun/BlendNonAttacker/CopyPal (famille palettes-masks, triage 2026-06-12).
+function _pmVisible(battler: number): boolean {
+  // 1:1-net IsBattlerSpriteVisible : le sprite du battler existe et n'est pas invisible.
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(battler);
+  if (sid === undefined || sid === 0xFF) return false;
+  const sp = getRuntime()?.gSprites?.get(sid) as { invisible?: boolean; inUse?: boolean } | undefined;
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
+import { GetBattlerAtPosition as _pmAtPos } from '../engine/battle/util';
+
+/** 1:1 `GetBattlePalettesMask` (mons.c:1402). */
+export function GetBattlePalettesMask(
+  battleBackground: boolean, attacker: boolean, target: boolean,
+  attackerPartner: boolean, targetPartner: boolean, anim1: boolean, anim2: boolean,
+): number {
+  let selected = 0;
+  const itf = _pwItf() as { getAttacker?: () => number; getTarget?: () => number };
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  if (battleBackground) selected = 0xE; // palettes BG 1,2,3 (non-contest)
+  if (attacker) selected |= 1 << (atk + 16);
+  if (target) selected |= 1 << (tgt + 16);
+  if (attackerPartner && _pmVisible(atk ^ 2)) selected |= 1 << ((atk ^ 2) + 16);
+  if (targetPartner && _pmVisible(tgt ^ 2)) selected |= 1 << ((tgt ^ 2) + 16);
+  if (anim1) selected |= 1 << 8;  // BG_ANIM_PAL_1 (slot monbg BG1)
+  if (anim2) selected |= 1 << 9;  // BG_ANIM_PAL_2 (slot monbg BG2)
+  return selected >>> 0;
+}
+
+/** 1:1 `GetBattleMonSpritePalettesMask` (mons.c:1455) — battlers VISIBLES par position. */
+export function GetBattleMonSpritePalettesMask(
+  playerLeft: number, playerRight: number, opponentLeft: number, opponentRight: number,
+): number {
+  let selected = 0;
+  const add = (position: number): void => {
+    const b = _pmAtPos(position);
+    if (b !== 0xFF && _pmVisible(b)) selected |= 1 << (b + 16);
+  };
+  if (playerLeft) add(0);
+  if (playerRight) add(2);
+  if (opponentLeft) add(1);
+  if (opponentRight) add(3);
+  return selected >>> 0;
+}
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.GetBattlePalettesMask = GetBattlePalettesMask;
+  surf.GetBattleMonSpritePalettesMask = GetBattleMonSpritePalettesMask;
+}
