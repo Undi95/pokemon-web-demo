@@ -1077,3 +1077,93 @@ function _SpiteTargetShadow_Step3(task: _SpwTask): void {
   task.data[15]++;
 }
 _f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
+
+// --- VAGUE F76 : AnimTask_CurseStretchingBlackBg(+Step1/Step2) --------------
+// (ghost.c:945-1030) — le NOIR de Curse (utilisateur Ghost) : une fenêtre WIN0
+// part d'un point côté attaquant (x=200 joueur / 40 ennemi, y=40) et s'étire
+// en 16 pas jusqu'à 240x112 ; DANS la fenêtre le DARKEN (BLDCNT TGT1_BG3 +
+// BLDY 16) noircit le décor ; à 16 pas, fade des palettes BG vers noir puis
+// teardown complet quand gPaletteFade.active retombe.
+import { BeginNormalPaletteFade as _csBeginFade } from '../engine/system/decomp-bridge';
+
+const _CS_REG_WININ = 0x48;
+const _CS_REG_WINOUT = 0x4A;
+const _CS_REG_BLDCNT = 0x50;
+const _CS_REG_BLDY = 0x54;
+
+type _CsTask = { taskId: number; data: number[]; func?: unknown };
+function _csRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gPaletteFade?: { active?: boolean };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _csSetG(name: string, v: number): void {
+  (globalThis as Record<string, unknown>)[name] = v;
+}
+function _csWinRange(a: number, b: number): number { return ((a & 0xFF) << 8) | (b & 0xFF); }
+
+/** 1:1 AnimTask_CurseStretchingBlackBg (ghost.c:945). */
+function AnimTask_CurseStretchingBlackBg(task: _CsTask): void {
+  const rt = _csRt();
+  _csSetG('gBattle_WIN0H', 0);
+  _csSetG('gBattle_WIN0V', 0);
+  rt.SetGpuReg?.(_CS_REG_WININ, 0x3F3F);
+  // WINOUT : WIN01 BG_ALL|OBJ (SANS CLR) | WINOBJ all+CLR
+  rt.SetGpuReg?.(_CS_REG_WINOUT, (0x3F << 8) | 0x1F);
+  rt.SetGpuReg?.(_CS_REG_BLDCNT, 0xC8); // BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_DARKEN
+  rt.SetGpuReg?.(_CS_REG_BLDY, 16);
+  const atk = _dbItf().getAttacker?.() ?? 0;
+  const startX = (atk & 1) !== 0 ? 40 : 200; // != B_SIDE_PLAYER ? 40 : 200
+  _csSetG('gBattle_WIN0H', _csWinRange(startX, startX));
+  const startY = 40;
+  _csSetG('gBattle_WIN0V', _csWinRange(startY, startY));
+  task.data[1] = startX;        // leftDistance
+  task.data[2] = 240 - startX;  // rightDistance
+  task.data[3] = startY;        // topDistance
+  task.data[4] = 72;            // bottomDistance
+  task.data[5] = startX;
+  task.data[6] = startY;
+  task.func = _CurseStretchingBlackBg_Step1;
+}
+/** 1:1 AnimTask_CurseStretchingBlackBg_Step1 (:982) — interpolation 16 pas
+ *  (arithmétique FLOAT du C reproduite : (dist * 0.0625) * step, tronquée). */
+function _CurseStretchingBlackBg_Step1(task: _CsTask): void {
+  const step = task.data[0];
+  task.data[0]++;
+  const leftDistance = task.data[1], rightDistance = task.data[2];
+  const topDistance = task.data[3], bottomDistance = task.data[4];
+  const startX = task.data[5], startY = task.data[6];
+  let left: number, right: number, top: number, bottom: number;
+  if (step < 16) {
+    left = (startX - (leftDistance * 0.0625) * step) | 0;
+    right = (startX + (rightDistance * 0.0625) * step) | 0;
+    top = (startY - (topDistance * 0.0625) * step) | 0;
+    bottom = (startY + (bottomDistance * 0.0625) * step) | 0;
+  } else {
+    left = 0;
+    right = 240;
+    top = 0;
+    bottom = 112;
+    const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { GetBattlePalettesMask?: (bg: boolean, a: boolean, t: boolean, ap: boolean, tp: boolean, a1: boolean, a2: boolean) => number } | undefined;
+    const selectedPalettes = mons?.GetBattlePalettesMask?.(true, false, false, false, false, false, false) ?? 0xE;
+    _csBeginFade(selectedPalettes >>> 0, 0, 16, 16, 0 /* RGB_BLACK */);
+    task.func = _CurseStretchingBlackBg_Step2;
+  }
+  _csSetG('gBattle_WIN0H', _csWinRange(left, right));
+  _csSetG('gBattle_WIN0V', _csWinRange(top, bottom));
+}
+/** 1:1 AnimTask_CurseStretchingBlackBg_Step2 (:1017) : teardown post-fade. */
+function _CurseStretchingBlackBg_Step2(task: _CsTask): void {
+  const rt = _csRt();
+  if (!rt.gPaletteFade?.active) {
+    _csSetG('gBattle_WIN0H', 0);
+    _csSetG('gBattle_WIN0V', 0);
+    rt.SetGpuReg?.(_CS_REG_WININ, 0x3F3F);
+    rt.SetGpuReg?.(_CS_REG_WINOUT, 0x3F3F);
+    rt.SetGpuReg?.(_CS_REG_BLDCNT, 0);
+    rt.SetGpuReg?.(_CS_REG_BLDY, 0);
+    _dbItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+_f36RegT({ AnimTask_CurseStretchingBlackBg: AnimTask_CurseStretchingBlackBg as never });
