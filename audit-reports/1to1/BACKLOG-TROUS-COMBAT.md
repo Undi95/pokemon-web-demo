@@ -252,18 +252,18 @@
 - [x] SafariHandleEndLinkBattle @ L679-688 — dette Safari Zone (cf. en-tête section)
 - [x] SafariCmdEnd @ L689-692 — dette Safari Zone (cf. en-tête section)
 
-## battle_interface.c — 42/53 fonctions couvertes (79%) · cite:36 + symbole:6 · 85 citations
-- [ ] DummiedOutFunction  @ L770-774
-- [ ] Debug_DrawNumber  @ L775-843
-- [ ] Debug_DrawNumberPair  @ L844-868
-- [ ] CreateSafariPlayerHealthboxSprites  @ L953-972
-- [ ] UpdateHpTextInHealthboxInDoubles  @ L1216-1311
-- [ ] PrintSafariMonInfo  @ L1312-1375
-- [ ] GetStatusIconForBattlerId  @ L2074-2133
-- [ ] UpdateSafariBallsTextOnHealthbox  @ L2134-2145
-- [ ] UpdateLeftNoOfBallsTextOnHealthbox  @ L2146-2162
-- [ ] Debug_TestHealthBar  @ L2462-2481
-- [ ] Debug_TestHealthBar_Helper  @ L2482-2496
+## battle_interface.c — ✅ SOLDÉ (42 portés + 11 qualifiés : debug/dummied ×5, safari ×3, doubles ×1, arène ×1, équivalence ×1)
+- [x] DummiedOutFunction @ L770-774 — DETTE — dummied décomp (corps vide, args unused)
+- [x] Debug_DrawNumber @ L775-843 — DETTE — debug UNUSED en release
+- [x] Debug_DrawNumberPair @ L844-868 — DETTE — debug UNUSED
+- [x] CreateSafariPlayerHealthboxSprites @ L953-972 — DETTE safari (healthbox safari — zone hors démo, cohérent contrôleur safari)
+- [x] UpdateHpTextInHealthboxInDoubles @ L1216-1311 — DETTE doubles (combats doubles hors démo — à porter au chantier doubles)
+- [x] PrintSafariMonInfo @ L1312-1375 — DETTE safari
+- [x] GetStatusIconForBattlerId @ L2074-2133 — ÉQUIVALENCE : le mapping statusElementId+battler est inliné dans notre UpdateStatusIconInHealthbox (chemin ACTIF — icônes status A/B-validées, ball status Treecko BURN bug #1) ; renommage nominal au déplacement miroir battle_interface
+- [x] UpdateSafariBallsTextOnHealthbox @ L2134-2145 — DETTE safari
+- [x] UpdateLeftNoOfBallsTextOnHealthbox @ L2146-2162 — DETTE (texte balls restantes — arène/multi, aucun caller externe actif)
+- [x] Debug_TestHealthBar @ L2462-2481 — DETTE — debug UNUSED
+- [x] Debug_TestHealthBar_Helper @ L2482-2496 — DETTE — debug UNUSED
 
 ## battle_gfx_sfx_util.c — 49/53 fonctions couvertes (92%) · cite:9 + symbole:40 · 34 citations
 - [x] Task_ClearBitWhenSpecialAnimDone  @ L535-547 — porté 1:1 commit 02fcd96c (battle_gfx_sfx_util.ts, avec InitAndLaunchSpecialAnimation :523-533 ; tick anim + clear specialAnimActive, A/B switch réel)
