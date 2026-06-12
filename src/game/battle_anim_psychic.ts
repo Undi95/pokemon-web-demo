@@ -445,21 +445,21 @@ function AnimDefensiveWall(sprite: _DwSprite): void {
   const palIdx = spSurf?.IndexOfSpritePaletteTag?.(args[2] | 0) ?? 0xFF;
   sprite.data[0] = palIdx !== 0xFF ? 256 + palIdx * 16 : 256;
   sprite.data[1] = 0; sprite.data[2] = 0; sprite.data[3] = 0; sprite.data[7] = 0;
-  sprite.callback = _DefensiveWall_Step1;
+  sprite.callback = AnimDefensiveWall_Step1;
 }
-function _DefensiveWall_Step1(sprite: _DwSprite): void {
+function AnimDefensiveWall_Step1(sprite: _DwSprite): void {
   if (!sprite.data[7]) { sprite.data[7] = 1; return; } // 1 frame (la copie BG s'affiche)
   const mon = _dwOppSprite();
   if (mon) mon.invisible = true; // le rendu bascule sur la copie BG
-  sprite.callback = _DefensiveWall_Step2;
-  _DefensiveWall_Step2(sprite);
+  sprite.callback = AnimDefensiveWall_Step2;
+  AnimDefensiveWall_Step2(sprite);
 }
-function _DefensiveWall_Step2(sprite: _DwSprite): void {
+function AnimDefensiveWall_Step2(sprite: _DwSprite): void {
   _dwRt().SetGpuReg?.(0x52, ((16 - sprite.data[3]) << 8) | sprite.data[3]); // BLDALPHA
-  if (sprite.data[3] === 13) sprite.callback = _DefensiveWall_Step3;
+  if (sprite.data[3] === 13) sprite.callback = AnimDefensiveWall_Step3;
   else sprite.data[3]++;
 }
-function _DefensiveWall_Step3(sprite: _DwSprite): void {
+function AnimDefensiveWall_Step3(sprite: _DwSprite): void {
   if (++sprite.data[1] === 2) {
     sprite.data[1] = 0;
     const pf = _dwRt().gPlttBufferFaded;
@@ -469,19 +469,19 @@ function _DefensiveWall_Step3(sprite: _DwSprite): void {
       for (let i = 8; i > 0; i--) pf.set(base + i, pf.get(base + i - 1));
       pf.set(base + 1, color);
     }
-    if (++sprite.data[2] === 16) sprite.callback = _DefensiveWall_Step4;
+    if (++sprite.data[2] === 16) sprite.callback = AnimDefensiveWall_Step4;
   }
 }
-function _DefensiveWall_Step4(sprite: _DwSprite): void {
+function AnimDefensiveWall_Step4(sprite: _DwSprite): void {
   _dwRt().SetGpuReg?.(0x52, ((16 - sprite.data[3]) << 8) | sprite.data[3]);
   if (--sprite.data[3] === -1) {
     const mon = _dwOppSprite();
     if (mon) mon.invisible = false;
     sprite.invisible = true;
-    sprite.callback = _DefensiveWall_Step5;
+    sprite.callback = AnimDefensiveWall_Step5;
   }
 }
-function _DefensiveWall_Step5(sprite: _DwSprite): void {
+function AnimDefensiveWall_Step5(sprite: _DwSprite): void {
   ResetBattleAnimBg(false);
   _dwItf().DestroyAnimSprite?.(sprite);
 }
@@ -512,9 +512,9 @@ function AnimTask_Teleport(task: _TpTask): void {
   task.data[2] = 0;
   task.data[3] = (atk & 1) !== 0 ? 4 : 8;
   _tpPrep(task, spriteId, (_tpTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnim_Teleport']);
-  task.func = _Teleport_Step;
+  task.func = AnimTask_Teleport_Step;
 }
-function _Teleport_Step(task: _TpTask): void {
+function AnimTask_Teleport_Step(task: _TpTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y2: number; invisible?: boolean }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[0]);
   if (!sp) { _tpItf().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -542,9 +542,9 @@ function AnimTask_MeditateStretchAttacker(task: _TpTask): void {
   if (spriteId === 0xFF) { _tpItf().DestroyAnimVisualTask?.(task.taskId); return; }
   task.data[0] = spriteId;
   _tpPrep(task, spriteId, (_tpTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnim_MeditateStretchAttacker']);
-  task.func = _Meditate_Step;
+  task.func = AnimTask_MeditateStretchAttacker_Step;
 }
-function _Meditate_Step(task: _TpTask): void {
+function AnimTask_MeditateStretchAttacker_Step(task: _TpTask): void {
   if (!_tpRun(task)) _tpItf().DestroyAnimVisualTask?.(task.taskId);
 }
 _tpRegT({
@@ -882,9 +882,9 @@ function AnimTask_ImprisonOrbs(task: _SsTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (o: number, v: number) => void } | undefined;
   rt?.SetGpuReg?.(0x50, 0x3F40);
   rt?.SetGpuReg?.(0x52, 16 | (0 << 8));
-  task.func = _ImprisonOrbs_Step;
+  task.func = AnimTask_ImprisonOrbs_Step;
 }
-function _ImprisonOrbs_Step(task: _SsTask): void {
+function AnimTask_ImprisonOrbs_Step(task: _SsTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { x2: number; y2: number; oamIndex: number }>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;

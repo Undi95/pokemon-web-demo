@@ -646,15 +646,15 @@
 - [ ] AnimMonMoveCircular  @ L1309-1321
 - [ ] AnimMonMoveCircular_Step  @ L1322-1341
 
-## battle_anim_psychic.c — 19/27 fonctions couvertes (70%) · cite:8 + symbole:11 · 37 citations
-- [ ] AnimDefensiveWall_Step1  @ L485-504
-- [ ] AnimDefensiveWall_Step2  @ L505-513
-- [ ] AnimDefensiveWall_Step3  @ L514-535
-- [ ] AnimDefensiveWall_Step4  @ L536-559
-- [ ] AnimDefensiveWall_Step5  @ L560-581
-- [ ] AnimTask_MeditateStretchAttacker_Step  @ L701-706
-- [ ] AnimTask_Teleport_Step  @ L720-747
-- [ ] AnimTask_ImprisonOrbs_Step  @ L769-838
+## battle_anim_psychic.c — 27/27 fonctions couvertes (100%) · cite:8 + symbole:11 · 37 citations
+- [x] AnimDefensiveWall_Step1 @ L485-504 — renommé au nom C exact (ex-_DefensiveWall_Step1, battle_anim_psychic.ts ; A/B Reflect 115 : fidèle 178f)
+- [x] AnimDefensiveWall_Step2 @ L505-513 — renommé au nom C exact (ex-_DefensiveWall_Step2)
+- [x] AnimDefensiveWall_Step3 @ L514-535 — renommé au nom C exact (ex-_DefensiveWall_Step3)
+- [x] AnimDefensiveWall_Step4 @ L536-559 — renommé au nom C exact (ex-_DefensiveWall_Step4)
+- [x] AnimDefensiveWall_Step5 @ L560-581 — renommé au nom C exact (ex-_DefensiveWall_Step5)
+- [x] AnimTask_MeditateStretchAttacker_Step @ L701-706 — renommé au nom C exact (ex-_Meditate_Step ; A/B Meditate 96 : fidèle ×3 runs)
+- [x] AnimTask_Teleport_Step @ L720-747 — renommé au nom C exact (ex-_Teleport_Step ; A/B Teleport 100 : fidèle 98f)
+- [x] AnimTask_ImprisonOrbs_Step @ L769-838 — renommé au nom C exact (ex-_ImprisonOrbs_Step ; A/B Imprison 286 : fidèle 379f)
 
 ## battle_anim_rock.c — 19/22 fonctions couvertes (86%) · cite:10 + symbole:9 · 28 citations
 - [x] AnimParticleInVortex_Step @ L378-395 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
