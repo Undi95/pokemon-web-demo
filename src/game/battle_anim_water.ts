@@ -1201,3 +1201,193 @@ function _RotateAuroraRingColors_Step(task: { taskId: number; data: number[] }):
   if (++task.data[11] === task.data[0]) itf.DestroyAnimVisualTask?.(task.taskId);
 }
 _wRegT({ AnimTask_RotateAuroraRingColors: AnimTask_RotateAuroraRingColors as never });
+
+// --- VAGUE F83 : SURF — AnimTask_CreateSurfWave(+Step1/Step2) + la task
+// scanline BLDALPHA (water.c:814-1023). La vague plein écran : fond surf en
+// BG1 (tilemap player/opponent, palette surf ou muddy selon args[0]), scroll
+// diagonal, rotation des couleurs 2..7 toutes les 4 frames, montée/descente
+// du blend via la 2e TASK qui remplit gScanlineEffectRegBuffers de valeurs
+// BLDALPHA par BANDE de scanlines (dmaDest=REG_BLDALPHA routé scanline_effect).
+import {
+  gScanlineEffect as _swScanFx,
+  gScanlineEffectRegBuffers as _swScanBufs,
+  ScanlineEffect_SetParams as _swScanSetParams,
+  ScanlineEffect_Stop as _swScanStop,
+} from './scanline_effect';
+import {
+  GetBattleAnimBg1Data as _swBgData,
+  AnimLoadCompressedBgGfx as _swLoadGfx,
+  AnimLoadCompressedBgTilemap as _swLoadMap,
+  LoadAnimBgPalette as _swLoadPal,
+  ClearBattleAnimBg as _swClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+type _SfwTask = { taskId: number; data: number[]; func?: unknown; priority?: number };
+function _sfwRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  CreateTask?: (fn: (t: _SfwTask) => void, prio: number) => number;
+  DestroyTask?: (id: number) => void;
+  gTasks?: Map<number, _SfwTask>;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number; visible: boolean } } };
+  gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _sfwItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _sfwSetG(name: string, v: number): void {
+  (globalThis as Record<string, unknown>)[name] = v & 0xFFFF;
+}
+function _sfwG(name: string): number {
+  return ((globalThis as Record<string, unknown>)[name] as number) ?? 0;
+}
+
+/** 1:1 AnimTask_CreateSurfWave (water.c:814). args[0] = palette (0 surf, 1 muddy). */
+function AnimTask_CreateSurfWave(task: _SfwTask): void {
+  const itf = _sfwItf();
+  const rt = _sfwRt();
+  const args = itf.getArgs?.() ?? [0];
+  const atk = itf.getAttacker?.() ?? 0;
+  rt.SetGpuReg?.(0x50, 0x3F42); // BLDCNT_TGT1_BG1 | EFFECT_BLEND | TGT2_ALL
+  rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 1;
+    bg1.screenSize = 1;
+    bg1.charBaseIndex = 1;
+    bg1.visible = true;
+  }
+  const animBg = _swBgData();
+  if ((atk & 1) !== 0) _swLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_SurfOpponent');
+  else _swLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_SurfPlayer');
+  _swLoadGfx(animBg.bgId, 'gBattleAnimBgImage_Surf', animBg.tilesOffset);
+  if ((args[0] | 0) === 0) _swLoadPal('gBattleAnimBgPalette_Surf', animBg.paletteId);
+  else _swLoadPal('gBattleAnimBackgroundImageMuddyWater_Pal', animBg.paletteId);
+  const taskId2 = rt.CreateTask?.((t) => _SurfWaveScanlineEffect(t), 2) ?? -1;
+  task.data[15] = taskId2;
+  const t2 = taskId2 >= 0 ? rt.gTasks?.get(taskId2) : undefined;
+  if (t2) {
+    t2.data[0] = 0;
+    t2.data[1] = 0x1000;
+    t2.data[2] = 0x1000;
+  }
+  // branche combat (pas contest)
+  if ((atk & 1) !== 0) { // B_SIDE_OPPONENT
+    _sfwSetG('gBattle_BG1_X', -224);
+    _sfwSetG('gBattle_BG1_Y', 256);
+    task.data[0] = 2;
+    task.data[1] = -1;
+    if (t2) t2.data[3] = 1;
+  } else {
+    _sfwSetG('gBattle_BG1_X', 0);
+    _sfwSetG('gBattle_BG1_Y', -48);
+    task.data[0] = -2;
+    task.data[1] = 1;
+    if (t2) t2.data[3] = 0;
+  }
+  rt.SetGpuReg?.(0x14, _sfwG('gBattle_BG1_X')); // REG_BG1HOFS
+  rt.SetGpuReg?.(0x16, _sfwG('gBattle_BG1_Y')); // REG_BG1VOFS
+  if (t2) {
+    if (t2.data[3] === 0) { t2.data[4] = 48; t2.data[5] = 112; }
+    else { t2.data[4] = 0; t2.data[5] = 0; }
+  }
+  task.data[6] = 1;
+  task.func = _CreateSurfWave_Step1;
+}
+/** 1:1 AnimTask_CreateSurfWave_Step1 (water.c:893). */
+function _CreateSurfWave_Step1(task: _SfwTask): void {
+  const rt = _sfwRt();
+  _sfwSetG('gBattle_BG1_X', _sfwG('gBattle_BG1_X') + task.data[0]);
+  _sfwSetG('gBattle_BG1_Y', _sfwG('gBattle_BG1_Y') + task.data[1]);
+  const animBg = _swBgData();
+  task.data[2] += task.data[1];
+  const pf = rt.gPlttBufferFaded;
+  if (++task.data[5] === 4 && pf) {
+    const base = animBg.paletteId * 16;
+    const rgbBuffer = pf.get(base + 7);
+    for (let i = 6; i !== 0; i--) pf.set(base + 1 + i, pf.get(base + i));
+    pf.set(base + 1, rgbBuffer);
+    task.data[5] = 0;
+  }
+  const t2 = rt.gTasks?.get(task.data[15]);
+  if (++task.data[6] > 1) {
+    task.data[6] = 0;
+    if (++task.data[3] <= 13) {
+      if (t2) t2.data[1] = (task.data[3] | ((16 - task.data[3]) << 8)) << 16 >> 16;
+      task.data[4]++;
+    }
+    if (task.data[3] > 54) {
+      task.data[4]--;
+      if (t2) t2.data[1] = (task.data[4] | ((16 - task.data[4]) << 8)) << 16 >> 16;
+    }
+  }
+  if (t2 && !(t2.data[1] & 0x1F)) {
+    task.data[0] = t2.data[1] & 0x1F;
+    task.func = _CreateSurfWave_Step2;
+  }
+}
+/** 1:1 AnimTask_CreateSurfWave_Step2 (water.c:939). */
+function _CreateSurfWave_Step2(task: _SfwTask): void {
+  const rt = _sfwRt();
+  if (task.data[0] === 0) {
+    _swClearBg(1);
+    _swClearBg(2);
+    task.data[0]++;
+  } else {
+    const bg1 = rt.gba?.bg(1)?.config;
+    if (bg1) bg1.charBaseIndex = 0;
+    _sfwSetG('gBattle_BG1_X', 0);
+    _sfwSetG('gBattle_BG1_Y', 0);
+    rt.SetGpuReg?.(0x50, 0);
+    rt.SetGpuReg?.(0x52, 0);
+    const t2 = rt.gTasks?.get(task.data[15]);
+    if (t2) t2.data[15] = -1;
+    _sfwItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+/** 1:1 AnimTask_SurfWaveScanlineEffect (water.c:961) : BLDALPHA par bande. */
+function _SurfWaveScanlineEffect(task: _SfwTask): void {
+  const rt = _sfwRt();
+  const buf0 = _swScanBufs[0], buf1 = _swScanBufs[1];
+  switch (task.data[0]) {
+    case 0: {
+      let i = 0;
+      for (i = 0; i < task.data[4]; i++) { buf0[i] = task.data[2] & 0xFFFF; buf1[i] = task.data[2] & 0xFFFF; }
+      for (i = task.data[4]; i < task.data[5]; i++) { buf0[i] = task.data[1] & 0xFFFF; buf1[i] = task.data[1] & 0xFFFF; }
+      for (i = task.data[5]; i < 160; i++) { buf0[i] = task.data[2] & 0xFFFF; buf1[i] = task.data[2] & 0xFFFF; }
+      const v = (task.data[4] === 0 ? task.data[1] : task.data[2]) & 0xFFFF;
+      buf0[i] = v; buf1[i] = v;
+      _swScanSetParams({ dmaDest: 0x52, dmaControl: 0, initState: 1, unused9: 0 } as never);
+      task.data[0]++;
+      break;
+    }
+    case 1: {
+      if (task.data[3] === 0) {
+        if (--task.data[4] <= 0) {
+          task.data[4] = 0;
+          task.data[0]++;
+        }
+      } else if (++task.data[5] > 111) {
+        task.data[0]++;
+      }
+      const buf = _swScanBufs[_swScanFx.srcBuffer];
+      for (let i = 0; i < task.data[4]; i++) buf[i] = task.data[2] & 0xFFFF;
+      for (let i = task.data[4]; i < task.data[5]; i++) buf[i] = task.data[1] & 0xFFFF;
+      for (let i = task.data[5]; i < 160; i++) buf[i] = task.data[2] & 0xFFFF;
+      break;
+    }
+    case 2: {
+      const buf = _swScanBufs[_swScanFx.srcBuffer];
+      for (let i = 0; i < task.data[4]; i++) buf[i] = task.data[2] & 0xFFFF;
+      for (let i = task.data[4]; i < task.data[5]; i++) buf[i] = task.data[1] & 0xFFFF;
+      for (let i = task.data[5]; i < 160; i++) buf[i] = task.data[2] & 0xFFFF;
+      if (task.data[15] === -1) {
+        _swScanStop();
+        rt.DestroyTask?.(task.taskId);
+      }
+      break;
+    }
+  }
+}
+_wRegT({ AnimTask_CreateSurfWave: AnimTask_CreateSurfWave as never });

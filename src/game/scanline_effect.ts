@@ -94,6 +94,17 @@ let sShouldStopWaveTask = false;
 // ─── HW-emu : écrit une valeur de buffer dans le registre BGnH/VOFS ─────────
 // (= ce que le DMA fait vers REG_ADDR_BGnHOFS). dmaDest est un REG_OFFSET absolu.
 function _applyRegFromValue(dmaDest: number, value: number): void {
+  // REG_BLDALPHA par scanline (vague F83 — Surf/Muddy Water) : le compositor
+  // lit gba.blend.alpha1/2 PENDANT la boucle scanline → le HBlank cb qui les
+  // modifie ici fait varier l'alpha PAR BANDE de lignes (1:1 dmaDest=&REG_BLDALPHA).
+  if (dmaDest === 0x52) {
+    const g = rt()?.gba as unknown as { blend?: { alpha1: number; alpha2: number } } | undefined;
+    if (g?.blend) {
+      g.blend.alpha1 = value & 0x1F;
+      g.blend.alpha2 = (value >> 8) & 0x1F;
+    }
+    return;
+  }
   const off = dmaDest - REG_OFFSET_BG0HOFS;           // 0x00..0x0E
   const bgIndex = Math.min(3, Math.max(0, Math.floor(off / 4)));
   const isVofs = (off % 4) === 2;
