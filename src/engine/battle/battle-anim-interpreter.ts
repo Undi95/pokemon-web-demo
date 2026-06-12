@@ -55,6 +55,10 @@ import {
   BATTLE_TYPE_DOUBLE,
 } from './constants';
 import { BYTECODE as ANIM_BYTECODE, LABELS as ANIM_LABELS } from '../decomp-data/auto-asm-bytecode/data/battle_anim_scripts-bytecode';
+// Pipeline anims DECOMP-DIRECT (2026-06-13) : table 1:1 gBattleAnimPicTable +
+// décodeurs runtime éprouvés (la même chaîne couleur que mons/balls).
+import { G_BATTLE_ANIM_PIC_TABLE } from '../decomp-data/src/battle_anim_pic_table-data';
+import { loadTileBin, loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTS (= include/constants/battle_anim.h + battle_anim.c #defines)
@@ -1107,6 +1111,57 @@ function _markLiveSpriteTiles(): void {
 }
 function _loadAnimSheetByTag(tag: number): void {
   _markLiveSpriteTiles();
+  // ── CHEMIN DECOMP-DIRECT (directive user 2026-06-13 : « utiliser les
+  // palettes de la décomp — le problème c'est nous, pas la décomp ») : la
+  // table 1:1 gBattleAnimPicTable/PaletteTable (par POSITION) + sources
+  // png/.pal copiées AS-IS (sprites-src/), décodées AU RUNTIME par les
+  // décodeurs éprouvés du jeu (png-loader = la même chaîne couleur que les
+  // mons/balls — fin des .gbapal intermédiaires aux conventions divergentes :
+  // hit.gbapal rendait CYAN, mist rose…). Le manifest historique reste en
+  // fallback le temps de la transition.
+  const pic = G_BATTLE_ANIM_PIC_TABLE[tag];
+  if (pic) {
+    const dg = (globalThis as Record<string, unknown>).__decompGlobals as {
+      GetSpriteTileStartByTag?: (t: number) => number;
+      LoadCompressedSpriteSheetUsingHeap?: (s: unknown) => void;
+      LoadCompressedSpritePaletteUsingHeap?: (s: unknown) => void;
+    } | undefined;
+    if (dg?.GetSpriteTileStartByTag?.(tag) !== 0xFFFF) return; // déjà en VRAM
+    const gfxKey = 'gAnimGfxTag_' + tag;
+    const palKey = 'gAnimPalTag_' + tag;
+    const cache = (globalThis as Record<string, unknown>).__assetCache as Map<string, unknown> | undefined;
+    const doLoad = (): void => {
+      _markLiveSpriteTiles();
+      dg?.LoadCompressedSpriteSheetUsingHeap?.({ data: gfxKey, size: pic.size, tag });
+      if (cache?.has(palKey)) dg?.LoadCompressedSpritePaletteUsingHeap?.({ data: palKey, tag });
+    };
+    if (cache?.has(gfxKey)) { doLoad(); return; }
+    const SRC = '/decomp/em/battle_anims/sprites-src/';
+    // Import DYNAMIQUE de png-loader : les imports statiques de ce module
+    // pendaient dans l'instance du graphe (double-instance Vite, cf. piège T4)
+    // — le dynamique résout la même instance que les évals/decomp-loop.
+    void import('../gba/png-loader').then((pl) => Promise.all([
+      Promise.all(pic.gfx.map((f) => pl.loadTileBin(SRC + f, 4))),
+      pic.pal
+        ? (pic.pal.endsWith('.pal')
+            ? pl.loadGbaPal(SRC + pic.pal)
+            : pl.loadIndexedPngStrict(SRC + pic.pal, 4).then((p) => p.palette))
+        : Promise.resolve(null),
+    ])).then(([parts, pal]) => {
+      // concat (gfx multi-png .mk, ex. spark = spark_0+spark_1) puis tronque/
+      // padde à size = les octets exacts chargés par la ROM (LZ77 décompressé).
+      let total = 0;
+      for (const p of parts) total += p.length;
+      let bin = new Uint8Array(Math.max(total, pic.size));
+      let off = 0;
+      for (const p of parts) { bin.set(p, off); off += p.length; }
+      if (bin.length > pic.size) bin = bin.subarray(0, pic.size);
+      cache?.set(gfxKey, bin);
+      if (pal) cache?.set(palKey, pal);
+      doLoad();
+    }).catch((e) => console.warn('[battle-anim] decomp-direct fetch KO tag ' + tag, e));
+    return;
+  }
   const entry = _animGfxByValue?.get(tag);
   if (entry) {
     const dg = (globalThis as Record<string, unknown>).__decompGlobals as {

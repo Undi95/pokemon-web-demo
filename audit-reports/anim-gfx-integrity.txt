@@ -1,0 +1,28 @@
+═══ INTÉGRITÉ DONNÉES ANIMS — table décomp 289 tags · manifest 289 · OK 264 ═══
+
+⚠ entrées avec écarts (25) :
+  ANIM_TAG_GLASS: bin 896o != size table 1024o
+  ANIM_TAG_HIT: palette ≠ source PLTE (11/16 couleurs)
+  ANIM_TAG_WAVING_HAND: bin 384o != size table 2560o
+  ANIM_TAG_CLAW_SLASH_2: bin 2048o != size table 2560o
+  ANIM_TAG_SAP_DRIP_2: tag absent de gBattleAnimPaletteTable
+  ANIM_TAG_SPARKLE_1: palette ≠ source PLTE (6/16 couleurs)
+  ANIM_TAG_SLAM_HIT: palette ≠ source PLTE (12/16 couleurs)
+  ANIM_TAG_IMPACT_3: bin 3328o != size table 3584o
+  ANIM_TAG_IMPACT_2: bin 3072o != size table 3584o
+  ANIM_TAG_SWORD_2: bin 384o != size table 512o
+  ANIM_TAG_BENT_SPOON: bin 1536o != size table 3072o
+  ANIM_TAG_HATCHED_EGG: bin 512o != size table 1024o
+  ANIM_TAG_TEETH: bin 2048o != size table 1536o
+  ANIM_TAG_WATER_ORB: palette ≠ source PLTE (11/16 couleurs)
+  ANIM_TAG_GOLD_RING: palette ≠ source PLTE (2/16 couleurs)
+  ANIM_TAG_GREEN_LIGHT_WALL: palette ≠ source PLTE (10/16 couleurs)
+  ANIM_TAG_SLASH: palette ≠ source PLTE (11/16 couleurs)
+  ANIM_TAG_MUSIC_NOTES_2: pal 96o != 32o
+  ANIM_TAG_MAGENTA_HEART: palette ≠ source PLTE (7/16 couleurs)
+  ANIM_TAG_CIRCLE_OF_LIGHT: palette ≠ source PLTE (10/16 couleurs)
+  ANIM_TAG_EYE_SPARKLE: bin 512o != size table 384o
+  ANIM_TAG_GRAY_ORB: palette ≠ source PLTE (6/16 couleurs)
+  ANIM_TAG_GLOWY_RED_ORB: palette ≠ source PLTE (4/16 couleurs)
+  ANIM_TAG_SPARKLE_6: bin 256o != size table 128o
+  ANIM_TAG_SPARK: bin 1152o != size table 768o

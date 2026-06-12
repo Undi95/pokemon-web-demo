@@ -243,22 +243,44 @@ async function _ensureAnimSpriteGfx(): Promise<void> {
     // SYNCHRONE (ROM mappee) -> on precharge TOUT au boot du combat
     // (~500KB local), chaque load devient synchrone comme en ROM.
     try {
-      const manifest = await fetch('/decomp/em/battle_anims/anim-gfx-manifest.json').then((r) => r.json()) as Record<string, { bin: string; pal: string; tagValue: number }>;
-      await Promise.all(Object.values(manifest).map(async (e) => {
-        const gfxKey = 'gAnimGfxTag_' + e.tagValue;
-        const palKey = 'gAnimPalTag_' + e.tagValue;
+      // DECOMP-DIRECT (directive user 2026-06-13 : « utiliser les palettes de
+      // la décomp — le problème c'est nous, pas la décomp ») : précharge les
+      // 289 tags depuis la table 1:1 gBattleAnimPicTable (par POSITION, recolors
+      // croisés résolus) + les SOURCES png/.pal copiées AS-IS (sprites-src/),
+      // décodées par png-loader = la même chaîne couleur que les mons/balls.
+      // Remplace le manifest .bin/.gbapal intermédiaires (2 générations de
+      // convertisseurs aux conventions divergentes : hit CYAN, mist ROSE).
+      const [{ G_BATTLE_ANIM_PIC_TABLE }, pl] = await Promise.all([
+        import('../decomp-data/src/battle_anim_pic_table-data'),
+        import('../gba/png-loader'),
+      ]);
+      const SRC = '/decomp/em/battle_anims/sprites-src/';
+      await Promise.all(Object.entries(G_BATTLE_ANIM_PIC_TABLE).map(async ([tagValue, e]) => {
+        const gfxKey = 'gAnimGfxTag_' + tagValue;
+        const palKey = 'gAnimPalTag_' + tagValue;
         if (!assetCache.has(gfxKey)) {
-          const [gb, pb] = await Promise.all([
-            fetch('/decomp/em/battle_anims/sprites/' + e.bin).then((r) => r.arrayBuffer()),
-            fetch('/decomp/em/battle_anims/sprites/' + e.pal).then((r) => r.arrayBuffer()),
+          const [parts, pal] = await Promise.all([
+            Promise.all(e.gfx.map((f) => pl.loadTileBin(SRC + f, 4))),
+            e.pal
+              ? (e.pal.endsWith('.pal')
+                  ? pl.loadGbaPal(SRC + e.pal)
+                  : pl.loadIndexedPngStrict(SRC + e.pal, 4).then((p) => p.palette))
+              : Promise.resolve(null),
           ]);
-          assetCache.set(gfxKey, new Uint8Array(gb));
-          assetCache.set(palKey, new Uint16Array(pb));
+          // concat (gfx multi-png .mk) + tronque/padde à size (octets ROM)
+          let total = 0;
+          for (const p of parts) total += p.length;
+          let bin = new Uint8Array(Math.max(total, e.size));
+          let off = 0;
+          for (const p of parts) { bin.set(p, off); off += p.length; }
+          if (bin.length > e.size) bin = bin.subarray(0, e.size);
+          assetCache.set(gfxKey, bin);
+          if (pal) assetCache.set(palKey, pal);
         }
       }));
-      console.log('[decomp-loop] 289 anim gfx precharges (loads synchrones).');
+      console.log('[decomp-loop] 289 anim gfx precharges DECOMP-DIRECT (sources png/pal, loads synchrones).');
     } catch (e) {
-      console.warn('[decomp-loop] preload manifest gfx:', e);
+      console.warn('[decomp-loop] preload decomp-direct gfx:', e);
     }
     _animGfxPreloaded = true;
   } catch (e) {
