@@ -576,9 +576,9 @@ export function AnimTask_BlendMonInAndOut(task: _F1Task): void {
   const sp = rt?.gSprites?.get(spriteId) as { oamIndex: number } | undefined;
   const oam = sp ? (rt as unknown as { gba: { oam: Array<{ paletteBank: number }> } }).gba.oam[sp.oamIndex] : undefined;
   task.data[0] = 256 + (oam?.paletteBank ?? 0) * 16 + 1; // OBJ_PLTT_ID + 1
-  _BlendPalInAndOutSetup(task, args);
+  AnimTask_BlendPalInAndOutSetup(task, args);
 }
-function _BlendPalInAndOutSetup(task: _F1Task, args: number[]): void {
+function AnimTask_BlendPalInAndOutSetup(task: _F1Task, args: number[]): void {
   task.data[1] = args[1];
   task.data[2] = 0;
   task.data[3] = args[2];
@@ -586,9 +586,9 @@ function _BlendPalInAndOutSetup(task: _F1Task, args: number[]): void {
   task.data[5] = args[3];
   task.data[6] = 0;
   task.data[7] = args[4];
-  task.func = _BlendMonInAndOut_Step;
+  task.func = AnimTask_BlendMonInAndOut_Step;
 }
-function _BlendMonInAndOut_Step(task: _F1Task): void {
+function AnimTask_BlendMonInAndOut_Step(task: _F1Task): void {
   if (++task.data[4] >= task.data[5]) {
     task.data[4] = 0;
     if (!task.data[6]) {
@@ -617,7 +617,7 @@ export function AnimTask_BlendPalInAndOutByTag(task: _F1Task): void {
     return;
   }
   task.data[0] = palette * 0x10 + 0x101; // = 256 + palette*16 + 1 (OBJ, couleur 1)
-  _BlendPalInAndOutSetup(task, args);
+  AnimTask_BlendPalInAndOutSetup(task, args);
 }
 import { registerAnimTasks as _f1Reg } from '../engine/battle/battle-anim-registry';
 _f1Reg({
@@ -822,9 +822,9 @@ export function AnimWeatherBallUp(sprite: DecompSprite): void {
   sprite.data[1] = -40;
   sprite.data[2] = 0;
   sprite.data[3] = 0;
-  sprite.callback = _WeatherBallUp_Step as never;
+  sprite.callback = AnimWeatherBallUp_Step as never;
 }
-function _WeatherBallUp_Step(sprite: DecompSprite): void {
+function AnimWeatherBallUp_Step(sprite: DecompSprite): void {
   sprite.data[2] += sprite.data[0];
   sprite.data[3] += sprite.data[1];
   sprite.x2 = Math.trunc(sprite.data[2] / 10);
@@ -874,9 +874,9 @@ export function AnimThrowProjectile(sprite: DecompSprite): void {
   sprite.data[4] = (GetBattlerSpriteCoord(tgt, 3 /* Y_PIC_OFFSET */) + (args[3] | 0)) & 0xFFFF;
   sprite.data[5] = args[5] | 0;
   InitAnimArcTranslation(sprite);
-  sprite.callback = _ThrowProjectile_Step as never;
+  sprite.callback = AnimThrowProjectile_Step as never;
 }
-function _ThrowProjectile_Step(sprite: DecompSprite): void {
+function AnimThrowProjectile_Step(sprite: DecompSprite): void {
   if (TranslateAnimHorizontalArc(sprite)) _projItf().DestroyAnimSprite?.(sprite);
 }
 

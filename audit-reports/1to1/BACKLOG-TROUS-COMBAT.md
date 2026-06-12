@@ -480,29 +480,29 @@
 - ✓ complet
 
 ## battle_anim_mons.c — 105/128 fonctions couvertes (82%) · cite:61 + symbole:44 · 219 citations
-- [ ] GetSubstituteSpriteDefault_Y  @ L332-341
-- [ ] TranslateSpriteInLissajousCurve  @ L489-515
-- [ ] AnimPosToTranslateLinear  @ L572-578
-- [ ] ConvertPosDataToTranslateLinearData  @ L579-592
-- [ ] TranslateSpriteLinearFixedPointIconFrame  @ L623-640
-- [ ] TranslateSpriteToBattleTargetPos  @ L641-650
-- [ ] TranslateSpriteToBattleAttackerPos  @ L708-722
-- [ ] EndUnkPaletteAnim  @ L723-728
-- [ ] GetBattleAnimBgData  @ L933-958
-- [ ] InitAnimBgTilemapBuffer  @ L1004-1009
-- [ ] AnimLoadCompressedBgTilemapHandleContest  @ L1016-1023
-- [ ] Trade_MoveSelectedMonToTarget  @ L1046-1054
-- [ ] StartAnimLinearTranslation_SetCornerVecX  @ L1102-1110
-- [ ] AnimTranslateLinear_WithFollowup_SetCornerVecX  @ L1148-1154
-- [ ] ArcTan2_  @ L1363-1367
-- [ ] GetSpritePalIdxByBattler  @ L1505-1509
-- [ ] GetSpritePalIdxByPosition  @ L1510-1514
-- [ ] AnimThrowProjectile_Step  @ L1585-1590
-- [ ] AnimTask_BlendPalInAndOutSetup  @ L1726-1737
-- [ ] AnimTask_BlendMonInAndOut_Step  @ L1738-1773
-- [ ] SetPriorityForVisibleBattlers  @ L2009-2020
-- [ ] AnimTranslateLinearAndFlicker_Flipped  @ L2335-2357
-- [ ] AnimWeatherBallUp_Step  @ L2522-2533
+- [ ] GetSubstituteSpriteDefault_Y  @ L332-341  ← ATTEIGNABLE (battle_gfx_sfx_util + reshow, substitute) → PORT à faire
+- [x] TranslateSpriteInLissajousCurve @ L489-515 — DETTE — `static void UNUSED` (.c:489)
+- [x] AnimPosToTranslateLinear @ L572-578 — DETTE LIÉE — callers uniques = TranslateSpriteToBattleTargetPos (:647, mort) + ToBattleAttackerPos (:714, mort)
+- [x] ConvertPosDataToTranslateLinearData @ L579-592 — DETTE LIÉE — callers = AnimPosToTranslateLinear (lié-mort) + Trade_MoveSelectedMonToTarget (trade)
+- [x] TranslateSpriteLinearFixedPointIconFrame @ L623-640 — DETTE LIÉE — caller unique :1051 = Trade_MoveSelectedMonToTarget (trade.c)
+- [x] TranslateSpriteToBattleTargetPos @ L641-650 — DETTE — code mort total (déf seule, aucun caller .c ni .h)
+- [x] TranslateSpriteToBattleAttackerPos @ L708-722 — DETTE — code mort total (idem)
+- [x] EndUnkPaletteAnim @ L723-728 — DETTE — code mort total (resliquat UnkPaletteAnim RS)
+- [ ] GetBattleAnimBgData  @ L933-958  ← ATTEIGNABLE → PORT à faire
+- [ ] InitAnimBgTilemapBuffer  @ L1004-1009  ← ATTEIGNABLE (AnimLoadCompressedBgTilemap*) → équivalence LoadMoveBg à vérifier
+- [ ] AnimLoadCompressedBgTilemapHandleContest  @ L1016-1023  ← ATTEIGNABLE (6 fichiers anims) → équivalence à vérifier
+- [x] Trade_MoveSelectedMonToTarget @ L1046-1054 — DETTE — callers = trade.c uniquement (hors combat démo)
+- [x] StartAnimLinearTranslation_SetCornerVecX @ L1102-1110 — DETTE — code mort total (déf seule)
+- [ ] AnimTranslateLinear_WithFollowup_SetCornerVecX  @ L1148-1154  ← caller interne à requalifier
+- [x] ArcTan2_ @ L1363-1367 — ÉQUIVALENCE — wrapper interne de ArcTan2 (caller unique :1370 = ArcTan2Neg, dont la copie TS locale battle_anim_flying.ts:835 consomme ArcTan2 du bridge directement)
+- [ ] GetSpritePalIdxByBattler  @ L1505-1509  ← ATTEIGNABLE (utility_funcs) → PORT à faire
+- [x] GetSpritePalIdxByPosition @ L1510-1514 — DETTE — code mort total (ByBattler ne l'appelle pas, aucun autre caller)
+- [x] AnimThrowProjectile_Step @ L1585-1590 — renommé au nom C exact (ex-_ThrowProjectile_Step, corps 1:1 TranslateAnimHorizontalArc→destroy)
+- [x] AnimTask_BlendPalInAndOutSetup @ L1726-1737 — renommé au nom C exact (ex-_BlendPalInAndOutSetup)
+- [x] AnimTask_BlendMonInAndOut_Step @ L1738-1773 — renommé au nom C exact (ex-_BlendMonInAndOut_Step)
+- [x] SetPriorityForVisibleBattlers @ L2009-2020 — DETTE — code mort total (déf seule)
+- [ ] AnimTranslateLinearAndFlicker_Flipped  @ L2335-2357  ← ATTEIGNABLE (status_effects template) → PORT à faire
+- [x] AnimWeatherBallUp_Step @ L2522-2533 — renommé au nom C exact (ex-_WeatherBallUp_Step)
 
 ## battle_anim_effects_1.c — 125/154 fonctions couvertes (81%) · cite:3 + symbole:122 · 89 citations
 - [ ] AnimMovePowderParticle_Step  @ L2213-2229
