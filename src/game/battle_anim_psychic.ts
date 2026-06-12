@@ -853,3 +853,94 @@ function _AnimSkillSwapOrb(sprite: { data: number[] }): void {
   }
 }
 _tpRegT({ AnimTask_SkillSwap: AnimTask_SkillSwap as never });
+
+// --- VAGUE F56 : AnimTask_ImprisonOrbs (psychic.c:748-838) ------------------
+// 5 orbes (4 coins +-max(w,h)/3 + 1 centre) toutes les 9f, fondu BLDALPHA
+// 16/0 -> 0/16 par alternance, destroy des 5 puis reset.
+function _ioPicMaxThird(battler: number): number {
+  const party = (battler & 1) !== 0 ? _ssEnemyParty : _ssPlayerParty;
+  const species = _ssGetMon(party[_ssPartyIdx[battler]] as never, _ssSpeciesK) as number;
+  const name = _ssRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _ssBackCoords(name) : _ssFrontCoords(name);
+  const var0 = Math.trunc(coords.w / 3);
+  const var1 = Math.trunc(coords.h / 3);
+  return var0 > var1 ? var0 : var1;
+}
+
+/** 1:1 AnimTask_ImprisonOrbs (psychic.c:748). */
+function AnimTask_ImprisonOrbs(task: _SsTask): void {
+  const itf = _ssItf2();
+  const atk = itf.getAttacker?.() ?? 0;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 16;
+  task.data[4] = 0;
+  task.data[13] = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  task.data[14] = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  task.data[12] = _ioPicMaxThird(atk);
+  const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (o: number, v: number) => void } | undefined;
+  rt?.SetGpuReg?.(0x50, 0x3F40);
+  rt?.SetGpuReg?.(0x52, 16 | (0 << 8));
+  task.func = _ImprisonOrbs_Step;
+}
+function _ImprisonOrbs_Step(task: _SsTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { x2: number; y2: number; oamIndex: number }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    DestroySprite?: (i: number) => void;
+    SetGpuReg?: (o: number, v: number) => void;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  } | undefined;
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 8) {
+        task.data[1] = 0;
+        const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplate?.('gImprisonOrbSpriteTemplate');
+        const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+        const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2, objMode: 1 }, images: [] } as never, task.data[13], task.data[14], 0) ?? -1;
+        task.data[task.data[2] + 8] = sid;
+        if (sid >= 0) {
+          const sp = rt?.gSprites?.get(sid);
+          const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+          if (oam && tileStart !== 0xFFFF) {
+            oam.tileId = tileStart;
+            const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+          }
+          if (sp) {
+            switch (task.data[2]) {
+              case 0: sp.x2 = task.data[12]; sp.y2 = -task.data[12]; break;
+              case 1: sp.x2 = -task.data[12]; sp.y2 = task.data[12]; break;
+              case 2: sp.x2 = task.data[12]; sp.y2 = task.data[12]; break;
+              case 3: sp.x2 = -task.data[12]; sp.y2 = -task.data[12]; break;
+            }
+          }
+        }
+        if (++task.data[2] === 5) task.data[0]++;
+      }
+      break;
+    case 1:
+      if (task.data[1] & 1) task.data[3]--;
+      else task.data[4]++;
+      rt?.SetGpuReg?.(0x52, (task.data[3] & 0xFF) | ((task.data[4] & 0xFF) << 8));
+      if (++task.data[1] === 32) {
+        for (let i = 8; i < 13; i++) {
+          if (task.data[i] >= 0) rt?.DestroySprite?.(task.data[i]);
+        }
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      task.data[0]++;
+      break;
+    case 3:
+      rt?.SetGpuReg?.(0x52, 0);
+      rt?.SetGpuReg?.(0x50, 0);
+      _ssItf2().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+_tpRegT({ AnimTask_ImprisonOrbs: AnimTask_ImprisonOrbs as never });
