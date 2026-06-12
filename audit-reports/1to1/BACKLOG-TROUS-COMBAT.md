@@ -417,20 +417,20 @@
 - [x] GridSquares_Init @ L3774-3786 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] GridSquares_Main @ L3787-3807 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] GridSquares_End @ L3808-3828 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
-- [ ] Task_AngledWipes  @ L3829-3833
-- [ ] AngledWipes_Init  @ L3834-3854
-- [ ] AngledWipes_SetWipeData  @ L3855-3867
-- [ ] AngledWipes_DoWipe  @ L3868-3907
-- [ ] AngledWipes_TryEnd  @ L3908-3926
-- [ ] AngledWipes_StartNext  @ L3927-3938
-- [ ] VBlankCB_AngledWipes  @ L3939-3967
+- [x] Task_AngledWipes (0ec3866f) @ L3829-3833 — porté 1:1 (state machine inline du miroir) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] AngledWipes_Init (0ec3866f) @ L3834-3854 — porté 1:1 (buffers WIN0H pleins + WIN0 + HBlank) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] AngledWipes_SetWipeData (0ec3866f) @ L3855-3867 — porté 1:1 (InitBlackWipe + MoveData[wipeId]) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] AngledWipes_DoWipe (0ec3866f) @ L3868-3907 — porté 1:1 (16 pas/frame, resserre left/right selon dir) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] AngledWipes_TryEnd (0ec3866f) @ L3908-3926 — porté 1:1 (7 wipes puis FadeScreenBlack) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] AngledWipes_StartNext (0ec3866f) @ L3927-3938 — porté 1:1 (EndDelays) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] VBlankCB_AngledWipes (0ec3866f) @ L3939-3967 — porté (copy buf[0]→[1] + WIN0H par-scanline via HBlank du miroir) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
 - [x] IsIntroTaskDone @ L3979-3986 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
-- [ ] GetBg0TilemapDst  @ L4063-4069
+- [x] GetBg0TilemapDst (0ec3866f) @ L4063-4069 — équivalence : bg(0).tilemap direct (vue runtime) — utilisé par PokeballsTrail/futures wipes BG0 ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
 - [x] GetBg0TilesDst @ L4070-4081 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
 - [x] SetSinWave @ L4087-4093 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] SetCircularMask @ L4094-4145 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
-- [ ] InitBlackWipe  @ L4146-4172
-- [ ] UpdateBlackWipe  @ L4173-4239
+- [x] InitBlackWipe (0ec3866f) @ L4146-4172 — porté 1:1 (:4146-4171, Bresenham init — réutilisable ClockwiseWipe etc.) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
+- [x] UpdateBlackWipe (0ec3866f) @ L4173-4239 — porté 1:1 (:4173-4239) ; A/B sélecteur=11 cache chaud, visuel wipe = œil user (dette course __gTrainers 1er boot)
 - [x] FrontierLogoWiggle_Init @ L4240-4253 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
 - [x] FrontierLogoWiggle_SetGfx @ L4254-4265 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
 - [x] Task_FrontierLogoWiggle @ L4266-4285 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
