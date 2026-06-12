@@ -332,12 +332,12 @@
 - [x] VBlankCB_SetWinAndBlend @ L1725-1737 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
 - [x] VBlankCB_PatternWeave @ L1738-1743 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
 - [x] VBlankCB_CircularMask @ L1744-1765 — DETTE EXPLICITE (mugshots E4-Champion / weave-CircularMask machinery légendaires / frontier wrappers — hors démo)
-- [ ] Task_PokeballsTrail  @ L1766-1770
-- [ ] PokeballsTrail_Init  @ L1771-1783
-- [ ] PokeballsTrail_Main  @ L1784-1808
-- [ ] PokeballsTrail_End  @ L1809-1818
-- [ ] FldEff_PokeballTrail  @ L1819-1831
-- [ ] SpriteCB_FldEffPokeballTrail  @ L1832-1878
+- [x] Task_PokeballsTrail (8664e0b5) @ L1766-1770 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
+- [x] PokeballsTrail_Init (8664e0b5) @ L1771-1783 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
+- [x] PokeballsTrail_Main (8664e0b5) @ L1784-1808 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
+- [x] PokeballsTrail_End (8664e0b5) @ L1809-1818 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
+- [x] FldEff_PokeballTrail (8664e0b5) @ L1819-1831 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
+- [x] SpriteCB_FldEffPokeballTrail (8664e0b5) @ L1832-1878 — porté 1:1 src/game/battle_transition.ts (MIROIR créé) ; A/B pixel : noir 3→3840 progressif, combat boote, victoire
 - [x] Task_ClockwiseWipe @ L1879-1883 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] ClockwiseWipe_Init @ L1884-1905 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] ClockwiseWipe_TopRight @ L1906-1930 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
