@@ -7543,12 +7543,18 @@ function _isAlwaysPlayAnim(animId: number): boolean {
 // ─── 0x45 playanimation ───────────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_playanimation. 7 bytes (u8 battler + u8 anim_id + u32 arg_ptr).
- *  Notre bytecode stocke directement les valeurs au lieu de pointers — on lit
- *  un u32 comme argument value direct (= bytecode extractor déjà flat). */
+ *  arg_ptr est un POINTEUR (le C lit `*argumentPtr` — `playanimation X,
+ *  B_ANIM_STATS_CHANGE, sB_ANIM_ARG1`) : notre bytecode l'encode en
+ *  SYMBOL_MARKER → DÉRÉFÉRENCER via memory-map. ⚠ BUG corrigé 2026-06-13 :
+ *  l'ancien code tronquait le marqueur en valeur directe → le contrôleur
+ *  recevait l'ID du symbole (10) au lieu d'animArg1 (22) → l'anim de stats
+ *  décodait `default` → AUCUNE anim de stats ne jouait (retour user). */
 function Cmd_playanimation(ctx: BattleScriptContext): boolean {
   const arg = readByte(ctx);
   const animId = readByte(ctx);
-  const argument = readWord(ctx);  // u32 — décomp lit u16 via T2_READ_PTR(u32 ptr)
+  const argPtr = readWord(ctx);
+  const argAcc = resolveAddress(argPtr);
+  const argument = argAcc ? (argAcc.read() & 0xFFFF) : (argPtr & 0xFFFF);
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
 
@@ -7582,13 +7588,17 @@ function Cmd_playanimation(ctx: BattleScriptContext): boolean {
 // ─── 0x46 playanimation_var ───────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_playanimation_var. 10 bytes (u8 battler + u32 anim_ptr + u32 arg_ptr).
- *  Décomp déréfère animationIdPtr (u8*) et argumentPtr (u16*). Notre bytecode
- *  stocke les valeurs directly — on lit 4 bytes pour chaque mais utilise seulement
- *  les low bytes/words. */
+ *  Décomp déréfère animationIdPtr (u8*) et argumentPtr (u16*) — même
+ *  déréférencement memory-map que Cmd_playanimation (fix 2026-06-13) ;
+ *  fallback valeur directe si l'opérande n'est pas un symbole whitelisté. */
 function Cmd_playanimation_var(ctx: BattleScriptContext): boolean {
   const arg = readByte(ctx);
-  const animId = readWord(ctx) & 0xFF;  // u8 anim id via u32 ptr
-  const argument = readWord(ctx) & 0xFFFF;  // u16 argument via u32 ptr
+  const animIdPtr = readWord(ctx);
+  const animIdAcc = resolveAddress(animIdPtr);
+  const animId = (animIdAcc ? animIdAcc.read() : animIdPtr) & 0xFF;
+  const argPtr = readWord(ctx);
+  const argAcc = resolveAddress(argPtr);
+  const argument = (argAcc ? argAcc.read() : argPtr) & 0xFFFF;
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
 

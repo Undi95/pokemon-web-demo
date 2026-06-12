@@ -77,5 +77,16 @@
   "gBattleAnimBgTilemap_SurfPlayer": "surf_player.map.bin",
   "gBattleAnimBgTilemap_SurfContest": "water_contest.map.bin",
   "gWeatherFogHorizontalTiles": "fog_horizontal.4bpp.bin",
-  "gFogPalette": "fog.gbapal"
+  "gFogPalette": "fog.gbapal",
+  "gStatAnim_Attack_Pal": "stat_change_attack.gbapal",
+  "gStatAnim_Defense_Pal": "stat_change_defense.gbapal",
+  "gStatAnim_Accuracy_Pal": "stat_change_accuracy.gbapal",
+  "gStatAnim_Speed_Pal": "stat_change_speed.gbapal",
+  "gStatAnim_Evasion_Pal": "stat_change_evasion.gbapal",
+  "gStatAnim_SpAttack_Pal": "stat_change_sp_attack.gbapal",
+  "gStatAnim_SpDefense_Pal": "stat_change_sp_defense.gbapal",
+  "gStatAnim_Multiple_Pal": "stat_change_multiple.gbapal",
+  "gStatAnim_Gfx": "stat_change.4bpp.bin",
+  "gStatAnim_Increase_Tilemap": "stat_change_increase.map.bin",
+  "gStatAnim_Decrease_Tilemap": "stat_change_decrease.map.bin"
 }

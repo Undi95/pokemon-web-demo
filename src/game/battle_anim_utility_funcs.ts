@@ -792,3 +792,195 @@ registerAnimTasks({
   AnimTask_BlendColorCycleExclude: AnimTask_BlendColorCycleExclude as never,
   AnimTask_BlendColorCycleByTag: AnimTask_BlendColorCycleByTag as never,
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CHAÎNE StatsChange (battle_anim_utility_funcs.c:415-648) — l'anim stat ±1/±2
+// (les flèches qui défilent sur le mon, découpé à sa silhouette par la fenêtre
+// OBJ). Lancée par AnimTask_StatsChange (battle_anim_status_effects.c:482,
+// décodeur animArg) → InitStatsChangeAnimation → Step1 (regs fenêtre/blend +
+// species) → Step2 (copie OBJWIN + BG1 tiles/tilemap/palette + SE) → Step3
+// (scroll BG1_Y + fade in/wait/fade out/reset).
+// Assets : scripts/extract-stat-change-assets.cjs → backgrounds/stat_change*
+// (symboles gStatAnim_* dans anim-bg-symbols.json).
+// ═════════════════════════════════════════════════════════════════════════════
+import {
+  GetBattleAnimBg1Data as _scBgData,
+  AnimLoadCompressedBgGfx as _scLoadGfx,
+  AnimLoadCompressedBgTilemap as _scLoadTilemap,
+  LoadAnimBgPalette as _scLoadPal,
+  ResetBattleAnimBg as _scResetBg,
+} from '../engine/battle/battle-anim-interpreter';
+import { ENUM_STAT_3 as _SC_PAL } from '../engine/decomp-data/include/battle_anim-data';
+import { resolveDecompConstant as _scSE } from '../engine/system/decomp-constants';
+import { gBattlerPartyIndexes as _scPartyIdx } from '../engine/battle/state';
+import {
+  gPlayerParty as _scPlayerParty, gEnemyParty as _scEnemyParty,
+  GetMonData as _scGetMonData, MON_DATA_SPECIES as _SC_MON_SPECIES,
+} from '../engine/battle/party-storage';
+
+/** = struct AnimStatsChangeData (alloué par Init, libéré par Step3 case 3).
+ *  data[0]=aDecrease, [1]=aAnimStatId, [2]=aIsTarget, [3]=aMultipleBattlers,
+ *  [4]=aSharply. */
+let sAnimStatsChangeData: {
+  data: number[]; battler1: number; battler2: number;
+  species: number; hidBattler2: boolean;
+} | null = null;
+
+type _ScRt = {
+  SetGpuReg?: (off: number, v: number) => void;
+  GetGpuReg?: (off: number) => number;
+  DestroySprite?: (id: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number; visible: boolean } } };
+};
+function _scRt(): _ScRt {
+  return ((globalThis as Record<string, unknown>).__rt as _ScRt) ?? {};
+}
+function _scMonSpriteId(battler: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(battler) ?? -1;
+}
+
+/** 1:1 `InitStatsChangeAnimation` (battle_anim_utility_funcs.c:415). */
+export function InitStatsChangeAnimation(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [];
+  sAnimStatsChangeData = { data: [], battler1: 0, battler2: 0, species: 0, hidBattler2: false };
+  for (let i = 0; i < 8; i++) sAnimStatsChangeData.data[i] = args[i] | 0;
+  task.func = StatsChangeAnimation_Step1;
+}
+
+/** 1:1 `StatsChangeAnimation_Step1` (battle_anim_utility_funcs.c:426). */
+function StatsChangeAnimation_Step1(task: AnimTask): void {
+  const sc = sAnimStatsChangeData;
+  if (!sc) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  const itf = _itf();
+  sc.battler1 = !sc.data[2] ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  sc.battler2 = sc.battler1 ^ 2; // BATTLE_PARTNER
+  // 1:1 :434 — runtime SINGLES : IsBattlerSpriteVisible(partner) = false →
+  // aMultipleBattlers retombe à FALSE.
+  if (sc.data[3]) sc.data[3] = 0;
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_WIN0H = 0;
+  g.gBattle_WIN0V = 0;
+  const rt = _scRt();
+  rt.SetGpuReg?.(0x48 /* WININ */, 0x3F3F /* WININ_WIN0_ALL | WININ_WIN1_ALL */);
+  rt.SetGpuReg?.(0x4A /* WINOUT */, 0x3F3D /* (WINOUT_WIN01_ALL & ~BG1) | WINOUT_WINOBJ_ALL */);
+  rt.SetGpuReg?.(0x00 /* DISPCNT */, (rt.GetGpuReg?.(0x00) ?? 0) | 0x8000 /* DISPCNT_OBJWIN_ON */);
+  rt.SetGpuReg?.(0x50 /* BLDCNT */, 0x3F42 /* TGT1_BG1 | TGT2_ALL | EFFECT_BLEND */);
+  rt.SetGpuReg?.(0x52 /* BLDALPHA */, (16 << 8) | 0 /* BLDALPHA_BLEND(0, 16) */);
+  // 1:1 :444-447 SetAnimBgAttribute(1, PRIORITY 0, SCREEN_SIZE 0, CHAR_BASE 1)
+  const cfg = rt.gba?.bg(1)?.config;
+  if (cfg) { cfg.priority = 0; cfg.screenSize = 0; cfg.charBaseIndex = 1; }
+  // :449-462 doubles (pousser battler2 hors anim) — hors-scope single, hidBattler2 reste false.
+  // :470-473 species du battler1 (party réelle, par side).
+  const idx = _scPartyIdx[sc.battler1] ?? 0;
+  const mon = (sc.battler1 & 1) !== 0 ? _scEnemyParty[idx] : _scPlayerParty[idx];
+  sc.species = (_scGetMonData(mon as never, _SC_MON_SPECIES) as number) || 0;
+  task.func = StatsChangeAnimation_Step2;
+}
+
+/** 1:1 `StatsChangeAnimation_Step2` (battle_anim_utility_funcs.c:479).
+ *  Slots task (les #define t* du C) : [0]=tAnimSpriteId1, [1]=tVelocity,
+ *  [2]=tMultipleBattlers, [3]=tAnimSpriteId2, [4]=tTargetBlend, [5]=tWaitTime,
+ *  [6]=tHidBattler2, [7]=tBattler2SpriteId, [10]=tState, [11]=tFadeTimer,
+ *  [12]=tBlend, [13]=tWaitTimer. */
+function StatsChangeAnimation_Step2(task: AnimTask): void {
+  const sc = sAnimStatsChangeData;
+  if (!sc) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    CreateInvisibleSpriteCopy?: (battler: number, spriteId: number, species: number) => number;
+  } | undefined;
+  const spriteId2 = 0; // aMultipleBattlers = false en single (:488-492 non exercé)
+  const battlerSpriteId = _scMonSpriteId(sc.battler1);
+  const spriteId = battlerSpriteId >= 0
+    ? (mons?.CreateInvisibleSpriteCopy?.(sc.battler1, battlerSpriteId, sc.species) ?? -1)
+    : -1;
+  const bgData = _scBgData();
+  _scLoadTilemap(bgData.bgId, !sc.data[0] ? 'gStatAnim_Increase_Tilemap' : 'gStatAnim_Decrease_Tilemap');
+  _scLoadGfx(bgData.bgId, 'gStatAnim_Gfx', bgData.tilesOffset);
+  switch (sc.data[1]) {
+    case _SC_PAL.STAT_ANIM_PAL_ATK: _scLoadPal('gStatAnim_Attack_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_DEF: _scLoadPal('gStatAnim_Defense_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_ACC: _scLoadPal('gStatAnim_Accuracy_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_SPEED: _scLoadPal('gStatAnim_Speed_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_EVASION: _scLoadPal('gStatAnim_Evasion_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_SPATK: _scLoadPal('gStatAnim_SpAttack_Pal', bgData.paletteId); break;
+    case _SC_PAL.STAT_ANIM_PAL_SPDEF: _scLoadPal('gStatAnim_SpDefense_Pal', bgData.paletteId); break;
+    default /* STAT_ANIM_PAL_MULTIPLE */: _scLoadPal('gStatAnim_Multiple_Pal', bgData.paletteId); break;
+  }
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG1_X = 0;
+  g.gBattle_BG1_Y = 0;
+  if (sc.data[0] === 1) {
+    g.gBattle_BG1_X = 64;
+    task.data[1] = -3;
+  } else {
+    task.data[1] = 3;
+  }
+  if (!sc.data[4]) {
+    task.data[4] = 10;
+    task.data[5] = 20;
+  } else {
+    task.data[4] = 13;
+    task.data[5] = 30;
+  }
+  task.data[0] = spriteId;
+  task.data[2] = sc.data[3];
+  task.data[3] = spriteId2;
+  task.data[6] = sc.hidBattler2 ? 1 : 0;
+  task.data[7] = _scMonSpriteId(sc.battler2);
+  task.data[10] = 0; task.data[11] = 0; task.data[12] = 0; task.data[13] = 0;
+  task.func = StatsChangeAnimation_Step3;
+  // 1:1 :561-564 — SE up/down (pan = dette douce infra SE mono, pattern repo).
+  const se = _scSE(!sc.data[0] ? 'SE_M_STAT_INCREASE' : 'SE_M_STAT_DECREASE') ?? 0;
+  if (se) ((globalThis as Record<string, unknown>).__PlaySE as ((id: number) => void) | undefined)?.(se);
+}
+
+/** 1:1 `StatsChangeAnimation_Step3` (battle_anim_utility_funcs.c:567). */
+function StatsChangeAnimation_Step3(task: AnimTask): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG1_Y = (((g.gBattle_BG1_Y as number) | 0) + task.data[1]) & 0xFFFF;
+  const rt = _scRt();
+  switch (task.data[10]) {
+    case 0: // fade in
+      if (task.data[11]++ > 0) {
+        task.data[11] = 0;
+        task.data[12]++;
+        rt.SetGpuReg?.(0x52, ((16 - task.data[12]) << 8) | task.data[12]);
+        if (task.data[12] === task.data[4]) task.data[10]++;
+      }
+      break;
+    case 1: // wait
+      if (++task.data[13] === task.data[5]) task.data[10]++;
+      break;
+    case 2: // fade out
+      if (task.data[11]++ > 0) {
+        task.data[11] = 0;
+        task.data[12]--;
+        rt.SetGpuReg?.(0x52, ((16 - task.data[12]) << 8) | task.data[12]);
+        if (task.data[12] === 0) {
+          _scResetBg(false);
+          task.data[10]++;
+        }
+      }
+      break;
+    case 3: { // reset
+      g.gBattle_WIN0H = 0;
+      g.gBattle_WIN0V = 0;
+      rt.SetGpuReg?.(0x48 /* WININ */, 0x3F3F);
+      rt.SetGpuReg?.(0x4A /* WINOUT */, 0x3F3F /* WIN01_ALL | OBJ_ALL */);
+      const cfg = rt.gba?.bg(1)?.config;
+      if (cfg) cfg.charBaseIndex = 0; // :611 SetAnimBgAttribute(1, CHAR_BASE, 0)
+      rt.SetGpuReg?.(0x00, (rt.GetGpuReg?.(0x00) ?? 0) ^ 0x8000 /* DISPCNT ^ OBJWIN_ON */);
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      if (task.data[0] >= 0) rt.DestroySprite?.(task.data[0]);
+      if (task.data[2] && task.data[3] >= 0) rt.DestroySprite?.(task.data[3]);
+      // :622-623 restaure la priorité du battler2 — hors-scope single (tHidBattler2=0).
+      sAnimStatsChangeData = null; // FREE_AND_SET_NULL
+      _itf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+
+registerAnimTasks({ InitStatsChangeAnimation: InitStatsChangeAnimation as never });

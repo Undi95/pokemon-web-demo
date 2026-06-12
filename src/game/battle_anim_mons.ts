@@ -1261,7 +1261,7 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
     src.x, src.y, src.subpriority ?? 3,
   ) ?? -1;
   if (newId < 0) return -1;
-  const clone = rt.gSprites?.get(newId) as { x2: number; y2: number; oamIndex: number; callback: unknown } | undefined;
+  const clone = rt.gSprites?.get(newId) as { x2: number; y2: number; oamIndex: number; callback: unknown; objMode?: number } | undefined;
   const cloneOam = clone ? gba.oam[clone.oamIndex] : undefined;
   if (clone && cloneOam && srcOam) {
     clone.x2 = src.x2;
@@ -1272,6 +1272,11 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
     cloneOam.size = srcOam.size;
     cloneOam.priority = 0;
     cloneOam.objMode = 2; // ST_OAM_OBJ_WINDOW
+    // ⚠ syncSpritesToOam (decomp-runtime:2499) ÉCRASE oam.objMode avec
+    // sprite.objMode CHAQUE frame → poser AUSSI le champ du sprite logique,
+    // sinon la fenêtre OBJ disparaît au tick suivant (anim stats invisible,
+    // retour user 2026-06-13 — même classe que le piège affineMode).
+    clone.objMode = 2;
     if (cloneOam.hFlip !== undefined && srcOam.hFlip !== undefined) cloneOam.hFlip = srcOam.hFlip;
     if (cloneOam.vFlip !== undefined && srcOam.vFlip !== undefined) cloneOam.vFlip = srcOam.vFlip;
     clone.callback = (() => { /* SpriteCallbackDummy */ }) as never;

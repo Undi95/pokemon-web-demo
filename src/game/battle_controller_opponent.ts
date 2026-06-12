@@ -1755,7 +1755,26 @@ function OpponentHandleSpriteInvisibility(): void {
   }
   OpponentBufferExecCompleted();
 }
-function OpponentHandleBattleAnimation(): void { OpponentBufferExecCompleted(); }
+/** 1:1 décomp `OpponentHandleBattleAnimation()` (battle_controller_opponent.c) :
+ *  lance l'anim GÉNÉRALE (B_ANIM_STATS_CHANGE & co) via
+ *  TryHandleLaunchBattleTableAnimation + attend la fin
+ *  (CompleteOnFinishedBattleAnimation :718). Était un STUB → l'anim de stats
+ *  du Growl adverse ne jouait jamais. */
+function OpponentHandleBattleAnimation(): void {
+  if (_IsBattleSEPlaying_Opp(gActiveBattler)) return;
+  const buf = gBattleBufferA[gActiveBattler];
+  const animationId = buf[1];
+  const argument = buf[2] | (buf[3] << 8);
+  const gfx = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as {
+    TryHandleLaunchBattleTableAnimation?: (a: number, b: number, c: number, id: number, arg: number) => boolean;
+  } | undefined;
+  // 1:1 — atk/def = gActiveBattler ×3 (cf. battle_controller_player.c:3088,
+  // même forme opponent : l'anim générale joue SUR le battler affecté).
+  const skipped = gfx?.TryHandleLaunchBattleTableAnimation?.(
+    gActiveBattler, gActiveBattler, gActiveBattler, animationId, argument) ?? true;
+  if (skipped) OpponentBufferExecCompleted();
+  else setBattlerControllerFunc(gActiveBattler, CompleteOnFinishedBattleAnimation);
+}
 function OpponentHandleLinkStandbyMsg(): void { OpponentBufferExecCompleted(); }
 function OpponentHandleResetActionMoveSelection(): void { OpponentBufferExecCompleted(); }
 /** 1:1 COMPORTEMENTAL : le corps décomp est gaté `BATTLE_TYPE_LINK && !IS_MASTER`

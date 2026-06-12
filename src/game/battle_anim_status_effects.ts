@@ -45,7 +45,7 @@ function Task_DoStatusAnimation(task: { data: number[]; taskId: number }): void 
 const _FIC_TAG_ICE_CUBE = 10141; // ANIM_TAG_ICE_CUBE
 
 type _FicTask = { taskId: number; data: number[]; func?: unknown };
-function _ficItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+function _ficItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 function _ficRt(): {
@@ -154,3 +154,76 @@ function AnimTask_FrozenIceCube_Step4(task: _FicTask): void {
 }
 import { registerAnimTasks as _ficRegT } from '../engine/battle/battle-anim-registry';
 _ficRegT({ AnimTask_FrozenIceCube: AnimTask_FrozenIceCube as never });
+
+// ─── AnimTask_StatsChange (battle_anim_status_effects.c:482-539) ─────────────
+// LE décodeur des anims de stats ±1/±2 : lit animArg (gBattleSpritesDataPtr->
+// animationData->animArg en C — chez nous le canal __battleAnimArg posé par
+// TryHandleLaunchBattleTableAnimation, battle_gfx_sfx_util.ts:851, même flux),
+// traduit en (goesDown, animStatId, sharply), pose gBattleAnimArgs[0..4] puis
+// délègue à InitStatsChangeAnimation (utility_funcs :415) — appel immédiat 1:1.
+import {
+  STAT_ANIM_PLUS1, STAT_ANIM_PLUS2, STAT_ANIM_MINUS1, STAT_ANIM_MINUS2,
+  STAT_ANIM_MULTIPLE_PLUS1, STAT_ANIM_MULTIPLE_PLUS2,
+  STAT_ANIM_MULTIPLE_MINUS1, STAT_ANIM_MULTIPLE_MINUS2,
+  ENUM_STAT_3 as _SC_PAL,
+} from '../engine/decomp-data/include/battle_anim-data';
+import {
+  STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF, STAT_ACC, STAT_EVASION,
+} from '../engine/decomp-data/include/constants/pokemon-data';
+import { InitStatsChangeAnimation } from './battle_anim_utility_funcs';
+
+/** 1:1 `AnimTask_StatsChange` (battle_anim_status_effects.c:482). */
+function AnimTask_StatsChange(task: _FicTask & { func?: unknown }): void {
+  let goesDown = false;
+  let animStatId = 0;
+  let sharply = false;
+  const animArg = ((globalThis as Record<string, unknown>).__battleAnimArg as number) ?? -1;
+  switch (animArg) {
+    case STAT_ANIM_PLUS1 + STAT_ATK:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_ATK; break;
+    case STAT_ANIM_PLUS1 + STAT_DEF:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_DEF; break;
+    case STAT_ANIM_PLUS1 + STAT_SPEED:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPEED; break;
+    case STAT_ANIM_PLUS1 + STAT_SPATK:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPATK; break;
+    case STAT_ANIM_PLUS1 + STAT_SPDEF:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPDEF; break;
+    case STAT_ANIM_PLUS1 + STAT_ACC:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_ACC; break;
+    case STAT_ANIM_PLUS1 + STAT_EVASION: goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_EVASION; break;
+    case STAT_ANIM_MINUS1 + STAT_ATK:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_ATK; break;
+    case STAT_ANIM_MINUS1 + STAT_DEF:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_DEF; break;
+    case STAT_ANIM_MINUS1 + STAT_SPEED:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPEED; break;
+    case STAT_ANIM_MINUS1 + STAT_SPATK:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPATK; break;
+    case STAT_ANIM_MINUS1 + STAT_SPDEF:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPDEF; break;
+    case STAT_ANIM_MINUS1 + STAT_ACC:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_ACC; break;
+    case STAT_ANIM_MINUS1 + STAT_EVASION: goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_EVASION; break;
+    case STAT_ANIM_PLUS2 + STAT_ATK:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_ATK; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_DEF:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_DEF; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_SPEED:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPEED; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_SPATK:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPATK; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_SPDEF:   goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_SPDEF; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_ACC:     goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_ACC; sharply = true; break;
+    case STAT_ANIM_PLUS2 + STAT_EVASION: goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_EVASION; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_ATK:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_ATK; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_DEF:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_DEF; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_SPEED:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPEED; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_SPATK:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPATK; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_SPDEF:   goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_SPDEF; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_ACC:     goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_ACC; sharply = true; break;
+    case STAT_ANIM_MINUS2 + STAT_EVASION: goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_EVASION; sharply = true; break;
+    case STAT_ANIM_MULTIPLE_PLUS1:  goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_MULTIPLE; sharply = false; break;
+    case STAT_ANIM_MULTIPLE_PLUS2:  goesDown = false; animStatId = _SC_PAL.STAT_ANIM_PAL_MULTIPLE; sharply = true; break;
+    case STAT_ANIM_MULTIPLE_MINUS1: goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_MULTIPLE; sharply = false; break;
+    case STAT_ANIM_MULTIPLE_MINUS2: goesDown = true; animStatId = _SC_PAL.STAT_ANIM_PAL_MULTIPLE; sharply = true; break;
+    default:
+      _ficItf().DestroyAnimVisualTask?.(task.taskId);
+      return;
+  }
+  const args = _ficItf().getArgs?.();
+  if (args) {
+    args[0] = goesDown ? 1 : 0;
+    args[1] = animStatId;
+    args[2] = 0; // aIsTarget : false (l'anim joue sur l'attaquant du script)
+    args[3] = 0; // aMultipleBattlers
+    args[4] = sharply ? 1 : 0;
+  }
+  task.func = InitStatsChangeAnimation as never;
+  (InitStatsChangeAnimation as (t: unknown) => void)(task); // 1:1 :538 gTasks[taskId].func(taskId)
+}
+_ficRegT({ AnimTask_StatsChange: AnimTask_StatsChange as never });

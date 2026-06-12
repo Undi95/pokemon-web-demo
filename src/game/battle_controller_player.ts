@@ -2562,10 +2562,35 @@ function PlayerHandleSpriteInvisibility(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandleBattleAnimation()`. */
+/** 1:1 décomp `PlayerHandleBattleAnimation()` (battle_controller_player.c:3083) :
+ *  lance l'anim GÉNÉRALE (gBattleAnims_General[animationId], ex. B_ANIM_STATS_CHANGE)
+ *  via TryHandleLaunchBattleTableAnimation — skippée → complete direct, sinon
+ *  attend la fin (CompleteOnFinishedBattleAnimation). Était un STUB ExecCompleted
+ *  → AUCUNE anim générale (stats ±, statuts board…) ne jouait côté joueur. */
 function PlayerHandleBattleAnimation(): void {
-  // Wire vers K1 battle-anim-interpreter LaunchBattleAnimation.
-  PlayerBufferExecCompleted();
+  if (_IsBattleSEPlaying(gActiveBattler)) return;
+  const buf = gBattleBufferA[gActiveBattler];
+  const animationId = buf[1];
+  const argument = buf[2] | (buf[3] << 8);
+  const gfx = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as {
+    TryHandleLaunchBattleTableAnimation?: (a: number, b: number, c: number, id: number, arg: number) => boolean;
+    isAnimFromTableActive?: (b: number) => boolean;
+  } | undefined;
+  // 1:1 :3088 — atk/def = gActiveBattler ×3 (l'anim générale joue SUR le
+  // battler affecté, pas sur l'attaquant du tour).
+  const skipped = gfx?.TryHandleLaunchBattleTableAnimation?.(
+    gActiveBattler, gActiveBattler, gActiveBattler, animationId, argument) ?? true;
+  if (skipped) PlayerBufferExecCompleted();
+  else gBattlerControllerFuncs[gActiveBattler] = PlayerCompleteOnFinishedBattleAnimation;
+}
+
+/** 1:1 décomp `CompleteOnFinishedBattleAnimation()` (côté player) : attend la
+ *  fin de l'anim de table (animFromTableActive retombe) puis complete. */
+function PlayerCompleteOnFinishedBattleAnimation(): void {
+  const gfx = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as {
+    isAnimFromTableActive?: (b: number) => boolean;
+  } | undefined;
+  if (!gfx?.isAnimFromTableActive?.(gActiveBattler)) PlayerBufferExecCompleted();
 }
 
 /** 1:1 décomp `PlayerHandleLinkStandbyMsg()`. */
