@@ -471,3 +471,164 @@ function _LoadSandstormBackground_Step(task: _SsbTask): void {
   }
 }
 _stRegT({ AnimTask_LoadSandstormBackground: AnimTask_LoadSandstormBackground as never });
+
+// --- VAGUE F64 : AnimTask_Rollout (rock.c:584-741) --------------------------
+// Recul (10f), pause 20f, charge vers la cible (data 8.3) en semant des
+// particules boue/roche en arc (tileOffset par compteur Rollout 1..5),
+// vie des particules par la translation + decrement via scan-par-func.
+import { InitAnimArcTranslation as _roArcInit, TranslateAnimHorizontalArc as _roArcRun } from './battle_anim_mons';
+
+type _RoTask = { taskId: number; data: number[]; func?: unknown };
+function _roItf(): { getAttacker?: () => number; getTarget?: () => number; getDisableStruct?: () => { rolloutTimerStartValue?: number; rolloutTimer?: number } | null; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _roRt(): {
+  gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number }>;
+  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _roAtkSpriteId(): number {
+  const b = _roItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+/** 1:1 GetRolloutCounter (rock.c) : startValue - timer, hors 1..5 -> 1. */
+function _GetRolloutCounter(): number {
+  const ds = _roItf().getDisableStruct?.();
+  const retVal = (((ds?.rolloutTimerStartValue ?? 0) - (ds?.rolloutTimer ?? 0)) & 0xFF);
+  return ((retVal - 1) & 0xFF) > 4 ? 1 : retVal;
+}
+
+/** 1:1 AnimTask_Rollout (rock.c:584). */
+function AnimTask_Rollout(task: _RoTask): void {
+  const itf = _roItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  const var0 = GetBattlerSpriteCoord(atk, 2) & 0xFFFF;
+  const var1 = (GetBattlerSpriteCoord(atk, 1) + 24) & 0xFFFF;
+  const var2 = GetBattlerSpriteCoord(tgt, 2) & 0xFFFF;
+  const var3 = (GetBattlerSpriteCoord(tgt, 1) + 24) & 0xFFFF;
+  const rolloutCounter = _GetRolloutCounter();
+  task.data[8] = rolloutCounter === 1 ? 32 : 48 - rolloutCounter * 8;
+  task.data[0] = 0;
+  task.data[11] = 0;
+  task.data[9] = 0;
+  task.data[12] = 1;
+  task.data[10] = Math.trunc(task.data[8] / 8) - 1;
+  task.data[2] = var0 * 8;
+  task.data[3] = var1 * 8;
+  task.data[4] = Math.trunc(((var2 - var0) * 8) / task.data[8]);
+  task.data[5] = Math.trunc(((var3 - var1) * 8) / task.data[8]);
+  task.data[6] = 0;
+  task.data[7] = 0;
+  task.data[1] = rolloutCounter;
+  task.data[15] = _roAtkSpriteId();
+  task.func = _Rollout_Step;
+}
+function _Rollout_Step(task: _RoTask): void {
+  const rt = _roRt();
+  const sp = rt.gSprites?.get(task.data[15]);
+  switch (task.data[0]) {
+    case 0:
+      task.data[6] -= task.data[4];
+      task.data[7] -= task.data[5];
+      if (sp) {
+        sp.x2 = task.data[6] >> 3;
+        sp.y2 = task.data[7] >> 3;
+      }
+      if (++task.data[9] === 10) {
+        task.data[11] = 20;
+        task.data[0]++;
+      }
+      (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(38 /* SE_M_HEADBUTT */);
+      break;
+    case 1:
+      if (--task.data[11] === 0) task.data[0]++;
+      break;
+    case 2:
+      if (--task.data[9] !== 0) {
+        task.data[6] += task.data[4];
+        task.data[7] += task.data[5];
+      } else {
+        task.data[6] = 0;
+        task.data[7] = 0;
+        task.data[0]++;
+      }
+      if (sp) {
+        sp.x2 = task.data[6] >> 3;
+        sp.y2 = task.data[7] >> 3;
+      }
+      break;
+    case 3:
+      task.data[2] += task.data[4];
+      task.data[3] += task.data[5];
+      if (++task.data[9] >= task.data[10]) {
+        task.data[9] = 0;
+        _CreateRolloutDirtSprite(task);
+        (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(37 /* SE_M_DIG */);
+      }
+      if (--task.data[8] === 0) task.data[0]++;
+      break;
+    case 4:
+      if (task.data[11] === 0) _roItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 CreateRolloutDirtSprite (rock.c:697). */
+function _CreateRolloutDirtSprite(task: _RoTask): void {
+  let tplName: string;
+  let tileOffset: number;
+  switch (task.data[1]) {
+    case 1: tplName = 'gRolloutMudSpriteTemplate'; tileOffset = 0; break;
+    case 2:
+    case 3: tplName = 'gRolloutRockSpriteTemplate'; tileOffset = 80; break;
+    case 4: tplName = 'gRolloutRockSpriteTemplate'; tileOffset = 64; break;
+    case 5: tplName = 'gRolloutRockSpriteTemplate'; tileOffset = 48; break;
+    default: return;
+  }
+  let x = (task.data[2] >> 3) & 0xFFFF;
+  const y = (task.data[3] >> 3) & 0xFFFF;
+  x = (x + task.data[12] * 4) & 0xFFFF;
+  const rt = _roRt();
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.(tplName);
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
+  if (sid >= 0) {
+    const dirt = rt.gSprites?.get(sid);
+    const oam = dirt ? rt.gba?.oam[dirt.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) {
+      oam.tileId = tileStart + tileOffset;
+      const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    }
+    if (dirt) {
+      dirt.data[0] = 18;
+      dirt.data[2] = ((task.data[12] * 20) + x + (task.data[1] * 3)) & 0xFFFF;
+      dirt.data[4] = y;
+      dirt.data[5] = -16 - task.data[1] * 2;
+      _roArcInit(dirt as never);
+      dirt.callback = _AnimRolloutParticle as never;
+      task.data[11]++;
+    }
+  }
+  task.data[12] *= -1;
+}
+/** 1:1 AnimRolloutParticle : arc puis decremente LA task Rollout (scan par func). */
+function _AnimRolloutParticle(sprite: { data: number[] }): void {
+  if (_roArcRun(sprite as never)) {
+    const rt = _roRt();
+    for (const t of rt.gTasks?.values() ?? []) {
+      if (t.func === _Rollout_Step) t.data[11]--;
+    }
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_stRegT({ AnimTask_Rollout: AnimTask_Rollout as never });
