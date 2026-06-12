@@ -822,3 +822,56 @@ function _GustTornadoPal_Step(task: { taskId: number; data: number[] }): void {
 }
 import { registerAnimTasks as _flRegT } from '../engine/battle/battle-anim-registry';
 _flRegT({ AnimTask_AnimateGustTornadoPalette: AnimTask_AnimateGustTornadoPalette as never });
+
+// --- VAGUE F49 : AnimTask_DrillPeckHitSplats (flying.c) ---------------------
+// 8 hitsplats clignotants en cercle (Sin/Cos -13) toutes les 32 unites de
+// phase. Reutilise AnimFlashingHitSplat via __animCallbackRegistry.
+function _dpItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void; incVisualTaskCount?: () => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+/** 1:1 AnimTask_DrillPeckHitSplats. */
+function AnimTask_DrillPeckHitSplats(task: { taskId: number; data: number[] }): void {
+  const itf = _dpItf();
+  if (!(task.data[0] % 32)) {
+    itf.incVisualTaskCount?.(); // 1:1 gAnimVisualTaskCount++ (le splat compte)
+    const args = itf.getArgs?.();
+    if (args) {
+      args[0] = Sin(task.data[0] & 0xFF, -13);
+      args[1] = Cos(task.data[0] & 0xFF, -13);
+      args[2] = 1;
+      args[3] = 3;
+    }
+    const rt = (globalThis as Record<string, unknown>).__rt as {
+      gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+      CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+      gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    } | undefined;
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplate?.('gFlashingHitSplatSpriteTemplate');
+    const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+    const tgt = itf.getTarget?.() ?? 1;
+    const x = GetBattlerSpriteCoord(tgt, 2);
+    const y = GetBattlerSpriteCoord(tgt, 3);
+    const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 3) ?? -1;
+    if (sid >= 0) {
+      const sp = rt?.gSprites?.get(sid);
+      const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) {
+        oam.tileId = tileStart;
+        const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+        if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      }
+      // CreateSpriteAndAnimate 1:1 : le callback du template tourne a la creation.
+      const reg = (globalThis as Record<string, unknown>).__animCallbackRegistry as Map<string, (s: unknown) => void> | undefined;
+      const cb = reg?.get('AnimFlashingHitSplat');
+      if (sp && cb) {
+        sp.callback = cb as never;
+        cb(sp);
+      }
+    }
+  }
+  task.data[0] += 8;
+  if (task.data[0] > 255) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_flRegT({ AnimTask_DrillPeckHitSplats: AnimTask_DrillPeckHitSplats as never });
