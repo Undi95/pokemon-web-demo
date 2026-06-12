@@ -626,12 +626,12 @@
 - [ ] CreateVoltTackleBolt  @ L1095-1124
 - [ ] AnimVoltTackleBolt  @ L1125-1134
 
-## battle_anim_ice.c — 27/32 fonctions couvertes (84%) · cite:20 + symbole:7 · 36 citations
-- [ ] AnimUnusedIceCrystalThrow  @ L532-570
-- [ ] AnimUnusedIceCrystalThrow_Step  @ L571-591
-- [ ] AnimTask_HazeScrollingFog_Step  @ L1018-1089
-- [ ] AnimTask_MistBallFog_Step  @ L1124-1193
-- [ ] AnimTask_Hail2  @ L1354-1413
+## battle_anim_ice.c — 32/32 fonctions couvertes (100%) · cite:20 + symbole:7 · 36 citations
+- [x] AnimUnusedIceCrystalThrow @ L532-570 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedIceCrystalThrow_Step @ L571-591 — DETTE — Unused décomp (préfixe)
+- [x] AnimTask_HazeScrollingFog_Step @ L1018-1089 — renommé au nom C exact (ex-_HazeScrollingFog_Step, battle_anim_ice.ts ; A/B Haze 114 : fidèle 529f)
+- [x] AnimTask_MistBallFog_Step @ L1124-1193 — renommé au nom C exact (ex-_MistBallFog_Step)
+- [x] AnimTask_Hail2 @ L1354-1413 — renommé au nom C exact (ex-_Hail2_Step ; A/B Hail 258 : fidèle 460f, 3 tasks)
 
 ## battle_anim_ghost.c — 26/37 fonctions couvertes (70%) · cite:5 + symbole:21 · 18 citations
 - [ ] AnimTask_NightShadeClone_Step1  @ L355-370
@@ -720,12 +720,12 @@
 - [ ] AnimTask_SetAnimAttackerAndTargetForEffectAtk  @ L1072-1078
 - [ ] AnimTask_WaitAndRestoreVisibility  @ L1094-1102
 
-## battle_anim_sound_tasks.c — 10/15 fonctions couvertes (67%) · cite:4 + symbole:6 · 10 citations
-- [ ] SoundTask_FireBlast  @ L23-41
-- [ ] SoundTask_FireBlast_Step1  @ L42-63
-- [ ] SoundTask_FireBlast_Step2  @ L64-77
-- [ ] SoundTask_PlayDoubleCry_Step  @ L239-268
-- [ ] SoundTask_PlayCryWithEcho_Step  @ L310-349
+## battle_anim_sound_tasks.c — 15/15 fonctions couvertes (100%) · cite:4 + symbole:6 · 10 citations
+- [x] SoundTask_FireBlast @ L23-41 — porté 1:1 (battle_anim_sound_tasks.ts : pan attaquant→cible incrément 2, plays toutes les 11f ; A/B Fire Blast 126 : fidèle 407f, 3 tasks, la sound task se détruit proprement)
+- [x] SoundTask_FireBlast_Step1 @ L42-63 — porté 1:1 (111 frames de loop SE + pan glissant clampé)
+- [x] SoundTask_FireBlast_Step2 @ L64-77 — porté 1:1 (SE final ×2 toutes les 6f → DestroyAnimSoundTask)
+- [x] SoundTask_PlayDoubleCry_Step @ L239-268 — renommé au nom C exact (ex-_DoubleCry_Step, net-effect infra cris documenté ; A/B Growl 45 : fidèle)
+- [x] SoundTask_PlayCryWithEcho_Step @ L310-349 — renommé au nom C exact (ex-_PlayCryWithEcho_Step, net-effect infra cris)
 
 ## battle_anim_status_effects.c — 3/12 fonctions couvertes (25%) · cite:1 + symbole:2 · 10 citations
 - [ ] Task_FlashingCircleImpacts  @ L273-312

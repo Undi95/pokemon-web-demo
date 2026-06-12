@@ -28,9 +28,12 @@ function SoundTask_PlayDoubleCry(task: AnimTask): void {
   task.data[0] = battler;
   task.data[7] = 0;
   _playCryOf(battler);
-  task.func = _DoubleCry_Step;
+  task.func = SoundTask_PlayDoubleCry_Step;
 }
-function _DoubleCry_Step(task: AnimTask): void {
+/** 1:1 `SoundTask_PlayDoubleCry_Step` (battle_anim_sound_tasks.c:239) — net-effect
+ *  infra cris (2e cri à +20 frames, destroy à 24 ; le wait IsCryFinished du C
+ *  est remplacé par le timing fixe, convention __playCry validée). */
+function SoundTask_PlayDoubleCry_Step(task: AnimTask): void {
   task.data[7]++;
   if (task.data[7] === 20) _playCryOf(task.data[0]);
   if (task.data[7] >= 24) _itf().DestroyAnimVisualTask?.(task.taskId);
@@ -266,9 +269,11 @@ registerAnimTasks({
 function SoundTask_PlayCryWithEcho(task: AnimTask): void {
   task.data[14] = (_itf().getArgs?.() ?? [0])[0] | 0; // tLastCry
   task.data[0] = 0;
-  task.func = _PlayCryWithEcho_Step;
+  task.func = SoundTask_PlayCryWithEcho_Step;
 }
-function _PlayCryWithEcho_Step(task: AnimTask): void {
+/** 1:1 `SoundTask_PlayCryWithEcho_Step` (battle_anim_sound_tasks.c:310) —
+ *  net-effect infra cris (modes echo = dette douce, timing conservé). */
+function SoundTask_PlayCryWithEcho_Step(task: AnimTask): void {
   switch (task.data[0]) {
     case 2:
       _playCryOf(_itf().getAttacker?.() ?? 0); // CRY_MODE_ECHO_START (net)
@@ -289,3 +294,58 @@ function _PlayCryWithEcho_Step(task: AnimTask): void {
   }
 }
 registerAnimTasks({ SoundTask_PlayCryWithEcho: SoundTask_PlayCryWithEcho as never });
+
+// ─── SoundTask_FireBlast (battle_anim_sound_tasks.c:23-77) — Fire Blast ─────
+// Boucle le SE args[0] toutes les 11 frames en glissant le pan de l'attaquant
+// vers la cible (durées CÂBLÉES au move, cf. commentaire décomp « effectively
+// hardcoded to FIRE_BLAST ») pendant 111 frames, puis le SE final args[1] ×2
+// toutes les 6 frames sur la cible → destroy SOUND task. Créée par
+// createsoundtask (0x1F, registre câblé).
+
+/** 1:1 `SoundTask_FireBlast` (battle_anim_sound_tasks.c:23). */
+function SoundTask_FireBlast(task: AnimTask): void {
+  const args = _sndItf().getArgs?.() ?? [0, 0];
+  task.data[0] = args[0];
+  task.data[1] = args[1];
+  const pan1 = _BattleAnimAdjustPanning(_SOUND_PAN_ATTACKER);
+  const pan2 = _BattleAnimAdjustPanning(_SOUND_PAN_TARGET);
+  const panIncrement = _CalculatePanIncrement(pan1, pan2, 2);
+  task.data[2] = pan1;
+  task.data[3] = pan2;
+  task.data[4] = panIncrement;
+  task.data[10] = 10;
+  task.func = SoundTask_FireBlast_Step1;
+}
+
+/** 1:1 `SoundTask_FireBlast_Step1` (battle_anim_sound_tasks.c:42). */
+function SoundTask_FireBlast_Step1(task: AnimTask): void {
+  let pan = (task.data[2] << 16) >> 16;        // s16 pan
+  const panIncrement = (task.data[4] << 24) >> 24; // s8 panIncrement
+  if (++task.data[11] === 111) {
+    task.data[10] = 5;
+    task.data[11] = 0;
+    task.func = SoundTask_FireBlast_Step2;
+  } else {
+    if (++task.data[10] === 11) {
+      task.data[10] = 0;
+      _PlaySE12WithPanning(task.data[0], pan);
+    }
+    pan += panIncrement;
+    task.data[2] = _KeepPanInRange(pan, panIncrement);
+  }
+}
+
+/** 1:1 `SoundTask_FireBlast_Step2` (battle_anim_sound_tasks.c:64). */
+function SoundTask_FireBlast_Step2(task: AnimTask): void {
+  if (++task.data[10] === 6) {
+    task.data[10] = 0;
+    const pan = _BattleAnimAdjustPanning(_SOUND_PAN_TARGET);
+    _PlaySE12WithPanning(task.data[1], pan);
+    if (++task.data[11] === 2) {
+      const itf = _sndItf();
+      (itf.DestroyAnimSoundTask ?? itf.DestroyAnimVisualTask)?.(task.taskId);
+    }
+  }
+}
+
+registerAnimTasks({ SoundTask_FireBlast: SoundTask_FireBlast as never });

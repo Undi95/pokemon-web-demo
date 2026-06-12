@@ -819,9 +819,10 @@ function _fogTeardown(task: _FogTask): void {
 
 /** 1:1 AnimTask_HazeScrollingFog (battle_anim_ice.c.c:993). */
 function AnimTask_HazeScrollingFog(task: _FogTask): void {
-  _fogCommonInit(task, _HazeScrollingFog_Step);
+  _fogCommonInit(task, AnimTask_HazeScrollingFog_Step);
 }
-function _HazeScrollingFog_Step(task: _FogTask): void {
+/** 1:1 `AnimTask_HazeScrollingFog_Step` (battle_anim_ice.c:1018). */
+function AnimTask_HazeScrollingFog_Step(task: _FogTask): void {
   const rt = _fogRt();
   _fogSetBg1(_fogBg1X() - 1, null);
   switch (task.data[12]) {
@@ -862,10 +863,11 @@ function _HazeScrollingFog_Step(task: _FogTask): void {
 
 /** 1:1 AnimTask_MistBallFog (battle_anim_ice.c.c:1097). */
 function AnimTask_MistBallFog(task: _FogTask): void {
-  _fogCommonInit(task, _MistBallFog_Step);
+  _fogCommonInit(task, AnimTask_MistBallFog_Step);
   task.data[15] = -1;
 }
-function _MistBallFog_Step(task: _FogTask): void {
+/** 1:1 `AnimTask_MistBallFog_Step` (battle_anim_ice.c:1124). */
+function AnimTask_MistBallFog_Step(task: _FogTask): void {
   const rt = _fogRt();
   _fogSetBg1(_fogBg1X() + task.data[15], null);
   switch (task.data[12]) {
@@ -964,9 +966,10 @@ function AnimTask_Hail(task: _HlTask): void {
   task.data[3] = 0;
   task.data[4] = 0;
   task.data[5] = 0;
-  task.func = _Hail2_Step;
+  task.func = AnimTask_Hail2;
 }
-function _Hail2_Step(task: _HlTask): void {
+/** 1:1 `AnimTask_Hail2` (battle_anim_ice.c:1354). */
+function AnimTask_Hail2(task: _HlTask): void {
   switch (task.data[0]) {
     case 0:
       if (++task.data[4] > 2) {
