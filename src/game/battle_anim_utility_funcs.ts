@@ -482,3 +482,22 @@ function AnimTask_BlendNonAttackerPalettes(task: AnimTask): void {
   _StartBlendAnimSpriteColor(task, selectedPalettes >>> 0);
 }
 registerAnimTasks({ AnimTask_BlendNonAttackerPalettes: AnimTask_BlendNonAttackerPalettes as never });
+
+// ─── VAGUE F40c : AnimTask_SetAllNonAttackersInvisiblity (utility_funcs.c:799) ─
+/** 1:1 : invisible = args[0] pour tous les battlers ≠ attaquant visibles. */
+function AnimTask_SetAllNonAttackersInvisiblity(task: AnimTask): void {
+  const itf = _itf() as { getAttacker?: () => number; getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const attacker = itf.getAttacker?.() ?? 0;
+  const args = itf.getArgs?.() ?? [0];
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean; inUse?: boolean }> } | undefined;
+  for (let battler = 0; battler < 4; battler++) {
+    if (battler === attacker) continue;
+    const sid = co?.getBattlerMonSpriteId?.(battler);
+    if (sid === undefined || sid === 0xFF) continue;
+    const sp = rt?.gSprites?.get(sid);
+    if (sp && sp.inUse !== false) sp.invisible = !!args[0];
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+registerAnimTasks({ AnimTask_SetAllNonAttackersInvisiblity: AnimTask_SetAllNonAttackersInvisiblity as never });
