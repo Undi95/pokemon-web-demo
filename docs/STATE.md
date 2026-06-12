@@ -300,3 +300,19 @@ de HandleSpeciesGfxDataChange (c1fbe5d8) · F79 Substitute doll byte-exact (5ee6
 **Leçons harnais** : preview_screenshot PÉRIMÉ → pixel-probe canvas ; le sweep ne vérifie ni
 tiles ni palettes (spawns invisibles passaient « fidèles ») ; sweep 354 d'un coup MEURT
 (moves terminaux → éjection OW) → tranches + exclusions ; taskIds recyclés → jetons data[14].
+
+## 2026-06-12 (suite) — CLÔTURE de la traîne du sweep : F80-F83 + terminaux
+
+**TOUS les manques nommés sont SOLDÉS** : F80 `8a8e8331` (BlendColorCycleExclude/
+ByTag + RotateAuroraRingColors + SporeDoubleBattle) · F80b `5a6a03dc`
+(VoltTackleAttackerReappear) · F81 `e4c0cca5` (LeafBlade complet, 6 arcs +
+traînes) · F82 `f6b6617d` (Present + Hyper Voice) · F83 `ef46e2d7`
+(**SURF + MUDDY WATER** — BLDALPHA par scanline routé dans scanline_effect,
+assets surf byte-exact, pixel-probe 4→240 points bleus).
+
+**Moves terminaux 6/6 fidèles** testés un-par-un (18, 46, 100, 120, 153, 226 —
+l'éjection des sweeps de masse venait de l'ACCUMULATION, pas de ces moves).
+
+**Bilan : 354/354 moves ont un verdict ; zéro task/template/sheet manquant ;
+~344 fidèles stricts + ~26 faux-positifs de seuil durée (anims ROM complètes).
+Dettes résiduelles précises : docs/DETTE-T6.md.**
