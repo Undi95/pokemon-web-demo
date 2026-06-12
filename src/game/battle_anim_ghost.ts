@@ -788,3 +788,134 @@ function _AnimGrudgeFlame(sprite: _GfSprite): void {
   }
 }
 _f36RegT({ AnimTask_GrudgeFlames: AnimTask_GrudgeFlames as never });
+
+// --- VAGUE F66 : DestinyBondWhiteShadow (ghost.c) ---------------------------
+// L'ombre blanche glisse de l'attaquant vers chaque ennemi visible (16.4),
+// fondu in 24 demi-pas (8/9 alternes), tenue arg0 frames, fondu out, destroy.
+function _dbPicBottom(battler: number): number {
+  const party = (battler & 1) !== 0 ? _gfEnemyParty : _gfPlayerParty;
+  const species = _gfGetMon(party[_gfPartyIdx[battler]] as never, _gfSpeciesK) as number;
+  const name = _gfRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _gfBackCoords(name) : _gfFrontCoords(name);
+  return GetBattlerSpriteCoord(battler, 3 /* Y_PIC_OFFSET */) + ((coords.h / 2) | 0);
+}
+
+type _DbTask = { taskId: number; data: number[]; func?: unknown };
+function _dbItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+
+/** 1:1 AnimTask_DestinyBondWhiteShadow (single : 1 ennemi = la cible). */
+function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
+  const itf = _dbItf();
+  const args = itf.getArgs?.() ?? [40, 48];
+  const rt = _gfRt() as unknown as {
+    gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown; oamIndex: number }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    DestroySprite?: (i: number) => void;
+    SetGpuReg?: (o: number, v: number) => void;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  };
+  rt.SetGpuReg?.(0x50, 0x3F40);
+  rt.SetGpuReg?.(0x52, 0 | (0x10 << 8));
+  task.data[5] = 0;
+  task.data[6] = 0;
+  task.data[7] = 0;
+  task.data[8] = 0;
+  task.data[9] = 16;
+  task.data[10] = args[0] | 0;
+  task.data[12] = 0;
+  const atk = itf.getAttacker?.() ?? 0;
+  const baseX = GetBattlerSpriteCoord(atk, 2);
+  const baseY = _dbPicBottom(atk);
+  const battler = itf.getTarget?.() ?? 1; // single : seul ennemi visible
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gDestinyBondWhiteShadowSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 2, priority: 2, objMode: 1 }, images: [] } as never, baseX, baseY, 55) ?? -1;
+  if (sid >= 0) {
+    const sp = rt.gSprites?.get(sid);
+    const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) {
+      oam.tileId = tileStart;
+      const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    }
+    if (sp) {
+      const x = GetBattlerSpriteCoord(battler, 2);
+      const y = _dbPicBottom(battler);
+      sp.data[0] = baseX << 4;
+      sp.data[1] = baseY << 4;
+      sp.data[2] = Math.trunc(((x - baseX) << 4) / (args[1] | 1));
+      sp.data[3] = Math.trunc(((y - baseY) << 4) / (args[1] | 1));
+      sp.data[4] = args[1] | 0;
+      sp.data[5] = x;
+      sp.data[6] = y;
+      sp.callback = _AnimDestinyBondWhiteShadow_Step as never;
+      task.data[task.data[12] + 13] = sid;
+      task.data[12]++;
+    }
+  }
+  task.func = _DestinyBondWhiteShadow_Step;
+}
+function _DestinyBondWhiteShadow_Step(task: _DbTask): void {
+  const rt = _gfRt() as unknown as { SetGpuReg?: (o: number, v: number) => void; DestroySprite?: (i: number) => void };
+  switch (task.data[0]) {
+    case 0:
+      if (task.data[6] === 0) {
+        if (++task.data[5] > 1) {
+          task.data[5] = 0;
+          task.data[7]++;
+          if (task.data[7] & 1) {
+            if (task.data[8] < 16) task.data[8]++;
+          } else {
+            if (task.data[9]) task.data[9]--;
+          }
+          rt.SetGpuReg?.(0x52, (task.data[8] & 0xFF) | ((task.data[9] & 0xFF) << 8));
+          if (task.data[7] >= 24) {
+            task.data[7] = 0;
+            task.data[6] = 1;
+          }
+        }
+      }
+      if (task.data[10]) task.data[10]--;
+      else if (task.data[6]) task.data[0]++;
+      break;
+    case 1:
+      if (++task.data[5] > 1) {
+        task.data[5] = 0;
+        task.data[7]++;
+        if (task.data[7] & 1) {
+          if (task.data[8]) task.data[8]--;
+        } else {
+          if (task.data[9] < 16) task.data[9]++;
+        }
+        rt.SetGpuReg?.(0x52, (task.data[8] & 0xFF) | ((task.data[9] & 0xFF) << 8));
+        if (task.data[8] === 0 && task.data[9] === 16) {
+          for (let i = 0; i < task.data[12]; i++) rt.DestroySprite?.(task.data[i + 13]);
+          task.data[0]++;
+        }
+      }
+      break;
+    case 2:
+      if (++task.data[5] > 0) task.data[0]++;
+      break;
+    case 3:
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      _dbItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 AnimDestinyBondWhiteShadow_Step (le sprite glisse 16.4). */
+function _AnimDestinyBondWhiteShadow_Step(sprite: { x: number; y: number; data: number[] }): void {
+  if (sprite.data[4]) {
+    sprite.data[0] += sprite.data[2];
+    sprite.data[1] += sprite.data[3];
+    sprite.x = sprite.data[0] >> 4;
+    sprite.y = sprite.data[1] >> 4;
+    if (--sprite.data[4] === 0) sprite.data[0] = 0;
+  }
+}
+_f36RegT({ AnimTask_DestinyBondWhiteShadow: AnimTask_DestinyBondWhiteShadow as never });
