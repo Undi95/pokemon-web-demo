@@ -427,6 +427,7 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
     import('../../game/battle_anim_effects_1b'),             // port massif (musique/fingers)
     import('../../game/battle_anim_flying'),                  // port massif (vols)
     import('../../game/battle_anim_effects_2'),               // port massif (38 callbacks)
+    import('../../game/battle_anim_smokescreen'),             // F50 (SmokescreenImpact)
     import('../../game/battle_gfx_sfx_util'),       // surface __battleGfxSfxUtil (statut T3)
   ]).catch((e) => console.warn('[decomp-loop] side-effect anim modules:', e));
   void _ensureAnimSpriteGfx();
