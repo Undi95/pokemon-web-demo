@@ -2352,3 +2352,130 @@ function AnimTask_CycleMagicalLeafPal(task: { taskId: number; data: number[] }):
   }
 }
 _sbRegT({ AnimTask_CycleMagicalLeafPal: AnimTask_CycleMagicalLeafPal as never });
+
+// --- VAGUE F68 : AnimTask_MoonlightEndFade (effects_1.c:5003-5106) ----------
+// Fondu blanc-lune RGB(27,29,31) : fade hardware (mask 32-bit BG+OBJ via
+// BeginNormalPaletteFade) + montee progressive 13/14/15>>3 ecrite DIRECTEMENT
+// dans les banks BG du mask, signal aux sprites Moon/Sparkle, re-fade inverse.
+import { BeginNormalPaletteFade as _mlBeginFade } from '../engine/system/decomp-bridge';
+
+const _ML_WHITE_MOON = 27 | (29 << 5) | (31 << 10); // RGB(27,29,31)
+type _MlTask = { taskId: number; data: number[]; func?: unknown };
+function _mlItf(): { DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _mlMasks(): {
+  GetBattlePalettesMask?: (a: boolean, b: boolean, c: boolean, d: boolean, e: boolean, f: boolean, g: boolean) => number;
+  GetBattleMonSpritePalettesMask?: (a: number, b: number, c: number, d: number) => number;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _mlRt(): {
+  gPaletteFade?: { active?: boolean };
+  gPlttBufferFaded?: { set?: (i: number, v: number) => void };
+  gSprites?: Map<number, { data: number[]; oamIndex: number; inUse?: boolean }>;
+  gba?: { oam: Array<{ tileId: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _mlSlotOf(tag: number): number {
+  const sp = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  return sp?.IndexOfSpritePaletteTag?.(tag) ?? 0xFF;
+}
+/** Signale les sprites des sheets MOON/SPARKLE (data[0]=1, 1:1 template-match). */
+function _mlSignalMoonSprites(): void {
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
+  const rt = _mlRt();
+  const ranges: Array<[number, number]> = [];
+  for (const tag of [10194 /* ANIM_TAG_MOON (START+194) */, 10195 /* ANIM_TAG_GREEN_SPARKLE (START+195) */]) {
+    const start = dg?.GetSpriteTileStartByTag?.(tag) ?? 0xFFFF;
+    if (start !== 0xFFFF) ranges.push([start, start + 96]);
+  }
+  for (const sp of rt.gSprites?.values() ?? []) {
+    if (sp.inUse === false) continue;
+    const t0 = rt.gba?.oam[sp.oamIndex]?.tileId ?? -1;
+    for (const [a, b] of ranges) {
+      if (t0 >= a && t0 < b) { sp.data[0] = 1; break; }
+    }
+  }
+}
+
+/** 1:1 AnimTask_MoonlightEndFade (effects_1.c:5003). */
+function AnimTask_MoonlightEndFade(task: _MlTask): void {
+  const m = _mlMasks();
+  const a = ((m.GetBattlePalettesMask?.(true, false, false, false, false, false, false) ?? 0xE) & 0xFFFF) >>> 0;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = a;
+  task.data[4] = 0;
+  task.data[5] = 0;
+  task.data[6] = 0;
+  task.data[7] = 13;
+  task.data[8] = 14;
+  task.data[9] = 15;
+  let b = (m.GetBattleMonSpritePalettesMask?.(1, 1, 1, 1) ?? 0) >>> 0;
+  const c = (a | b) >>> 0;
+  // StorePointerInVars 1:1-net : mask u32 scinde data[14]/[15]
+  task.data[14] = c & 0xFFFF;
+  task.data[15] = (c >>> 16) & 0xFFFF;
+  const moonSlot = _mlSlotOf(10194);
+  if (moonSlot !== 0xFF) b = (b | (0x10000 << moonSlot)) >>> 0;
+  const d = _mlSlotOf(10195);
+  const mask = d !== 0xFF ? ((0x10000 << d) | b) >>> 0 : b;
+  _mlBeginFade(mask, 0, 0, 16, _ML_WHITE_MOON);
+  task.func = _MoonlightEndFade_Step;
+  _MoonlightEndFade_Step(task); // 1:1 appel immediat
+}
+function _MoonlightEndFade_Step(task: _MlTask): void {
+  const rt = _mlRt();
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 0) {
+        task.data[1] = 0;
+        let color: number;
+        if (++task.data[2] <= 15) {
+          task.data[4] += task.data[7];
+          task.data[5] += task.data[8];
+          task.data[6] += task.data[9];
+          const red = task.data[4] >> 3;
+          const green = task.data[5] >> 3;
+          const blue = task.data[6] >> 3;
+          color = (red | (green << 5) | (blue << 10)) & 0x7FFF;
+        } else {
+          color = _ML_WHITE_MOON;
+          task.data[0]++;
+        }
+        // ecrit les couleurs 1..15 des banks BG du mask data[3]
+        let bitmask = 1;
+        let r3 = 0;
+        const pf = rt.gPlttBufferFaded;
+        for (let i = 0; i <= 15; i++) {
+          if (task.data[3] & bitmask) {
+            for (let j = 1; j <= 15; j++) pf?.set?.(r3 + j, color);
+          }
+          bitmask <<= 1;
+          r3 += 16;
+        }
+      }
+      break;
+    case 1:
+      if (!rt.gPaletteFade?.active) {
+        _mlSignalMoonSprites();
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      if (++task.data[1] > 30) {
+        const mask = ((task.data[15] & 0xFFFF) << 16 | (task.data[14] & 0xFFFF)) >>> 0;
+        _mlBeginFade(mask, 0, 16, 0, _ML_WHITE_MOON);
+        task.data[0]++;
+      }
+      break;
+    case 3:
+      if (!rt.gPaletteFade?.active) _mlItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+_sbRegT({ AnimTask_MoonlightEndFade: AnimTask_MoonlightEndFade as never });
