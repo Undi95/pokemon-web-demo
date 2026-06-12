@@ -466,3 +466,19 @@ function _Flash_Step(task: { taskId: number; data: number[] }): void {
   }
 }
 registerAnimTasks({ AnimTask_Flash: AnimTask_Flash as never });
+
+// ─── VAGUE F40b : AnimTask_BlendNonAttackerPalettes (utility_funcs.c:725) ────
+/** 1:1 : mask de TOUS les battlers ≠ attaquant (bits 16+), args décalés
+ *  [1..5]=[0..4], puis StartBlendAnimSpriteColor (déjà porté). */
+function AnimTask_BlendNonAttackerPalettes(task: AnimTask): void {
+  const itf = _itf() as { getAttacker?: () => number; getArgs?: () => number[] };
+  const attacker = itf.getAttacker?.() ?? 0;
+  let selectedPalettes = 0;
+  for (let battler = 0; battler < 4; battler++) {
+    if (attacker !== battler) selectedPalettes |= 1 << (battler + 16);
+  }
+  const args = itf.getArgs?.();
+  if (args) for (let j = 5; j !== 0; j--) args[j] = args[j - 1];
+  _StartBlendAnimSpriteColor(task, selectedPalettes >>> 0);
+}
+registerAnimTasks({ AnimTask_BlendNonAttackerPalettes: AnimTask_BlendNonAttackerPalettes as never });
