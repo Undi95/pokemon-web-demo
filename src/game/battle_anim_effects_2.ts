@@ -2297,3 +2297,98 @@ function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
   }
 }
 _regTasks({ AnimTask_AirCutterProjectile: AnimTask_AirCutterProjectile as never });
+
+// --- VAGUE F62 : AnimTask_HeartsBackground (effects_2.c:3248-3326) ----------
+// Fond Attract (coeurs) en BG1 anim : fondu 0..16, plateau 141f, inverse,
+// demontage (pattern fog F61, fondu complet 16 et priority 3).
+import {
+  GetBattleAnimBg1Data as _hbBgData,
+  AnimLoadCompressedBgGfx as _hbLoadGfx,
+  AnimLoadCompressedBgTilemap as _hbLoadMap,
+  LoadAnimBgPalette as _hbLoadPal,
+  ClearBattleAnimBg as _hbClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+type _HbTask = { taskId: number; data: number[]; func?: unknown };
+function _hbItf(): { DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _hbRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+/** 1:1 AnimTask_HeartsBackground (effects_2.c:3248). */
+function AnimTask_HeartsBackground(task: _HbTask): void {
+  const rt = _hbRt();
+  rt.SetGpuReg?.(0x50, 0x3F42);
+  rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 3;
+    bg1.screenSize = 0;
+    bg1.charBaseIndex = 1;
+  }
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG1_X = 0;
+  g.gBattle_BG1_Y = 0;
+  const animBg = _hbBgData();
+  _hbLoadGfx(animBg.bgId, 'gBattleAnimBgImage_Attract', animBg.tilesOffset);
+  _hbLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_Attract');
+  _hbLoadPal('gBattleAnimBgPalette_Attract', animBg.paletteId);
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.data[12] = 0;
+  task.func = _HeartsBackground_Step;
+}
+function _HeartsBackground_Step(task: _HbTask): void {
+  const rt = _hbRt();
+  switch (task.data[12]) {
+    case 0:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11]++;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 16) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 1:
+      if (++task.data[11] === 141) {
+        task.data[11] = 16;
+        task.data[12]++;
+      }
+      break;
+    case 2:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11]--;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 0) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 3: {
+      const animBg = _hbBgData();
+      _hbClearBg(animBg.bgId);
+      task.data[12]++;
+      break;
+    }
+    case 4: {
+      const bg1 = _hbRt().gba?.bg(1)?.config;
+      if (bg1) bg1.charBaseIndex = 0;
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      if (bg1) bg1.priority = 1;
+      _hbItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+_regTasks({ AnimTask_HeartsBackground: AnimTask_HeartsBackground as never });
