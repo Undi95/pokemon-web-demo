@@ -285,10 +285,10 @@
 - [x] Transition_StartMain @ L1098-1104 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
 - [x] Transition_WaitForMain @ L1105-1115 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
 - [x] Task_Intro @ L1116-1135 — équivalence infra DOCUMENTÉE : _makeBattleStartTransitionCB2 (battle-decomp-loop.ts:144, CB2 inline = Task_BattleStart+Task_Intro+dispatch) — renommage nominal au déplacement miroir
-- [ ] Task_Blur  @ L1136-1140
-- [ ] Blur_Init  @ L1141-1150
-- [ ] Blur_Main  @ L1151-1168
-- [ ] Blur_End  @ L1169-1188
+- [x] Task_Blur (cff54739) @ L1136-1140 — porté 1:1 (mosaic émulé ✓) ; A/B direct : mosaic 1→15 + fade + fin propre (sélection naturelle = zone FLASH hors démo)
+- [x] Blur_Init (cff54739) @ L1141-1150 — porté 1:1 (mosaic émulé ✓) ; A/B direct : mosaic 1→15 + fade + fin propre (sélection naturelle = zone FLASH hors démo)
+- [x] Blur_Main (cff54739) @ L1151-1168 — porté 1:1 (mosaic émulé ✓) ; A/B direct : mosaic 1→15 + fade + fin propre (sélection naturelle = zone FLASH hors démo)
+- [x] Blur_End (cff54739) @ L1169-1188 — porté 1:1 (mosaic émulé ✓) ; A/B direct : mosaic 1→15 + fade + fin propre (sélection naturelle = zone FLASH hors démo)
 - [x] Task_Swirl @ L1189-1193 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] Swirl_Init @ L1194-1209 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
 - [x] Swirl_End @ L1210-1227 — DETTE EXPLICITE zone (cave/eau/flash : Shuffle-BigPokeball-Wave-Ripple-ClockwiseWipe-GridSquares-Swirl ; scénario/légendaires : Aqua-Magma-Regi-Kyogre-Groudon — hors démo Littleroot/Routes 102-103)
