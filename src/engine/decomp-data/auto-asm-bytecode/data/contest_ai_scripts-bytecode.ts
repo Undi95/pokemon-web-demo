@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/contest_ai_scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
+// Generated: 2026-06-12
 // Stats: ops=622, bytes=2423, labels=165, unknownOps=0, unresolvedSymbols=6
 
 /** Label name → byte offset within BYTECODE. */

@@ -40,6 +40,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const decompRoot = resolve(projectRoot, '..', 'decomps', 'pokeemeraude');
 const autoRoot = resolve(projectRoot, 'src', 'engine', 'decomp-data', 'auto');
+// Les *-data.ts des headers C (B_SCR_OP_*, STRINGID_*, STAT_*...) vivaient dans
+// auto/include — migres vers decomp-data/include par 66dec4f5 (« 1:1 STRICT »)
+// SANS mettre a jour ce chemin -> tout run post-migration perdait ~680 symboles
+// battle_scripts (bug retrouve 2026-06-12 : pause/accuracycheck en charabia).
+const includeRoot = resolve(projectRoot, 'src', 'engine', 'decomp-data', 'include');
 const asmRoot = resolve(projectRoot, 'src', 'engine', 'decomp-data', 'auto-asm');
 const outRoot = resolve(projectRoot, 'src', 'engine', 'decomp-data', 'auto-asm-bytecode');
 
@@ -125,9 +130,47 @@ function scrapeConstants(rootDir) {
 
 const constantsMap = new Map();
 for (const [k, v] of scrapeConstants(autoRoot)) constantsMap.set(k, v);
+// include/ = position historique de ces constantes (elles etaient scannees en
+// premier quand elles vivaient dans auto/include, avant 66dec4f5).
+for (const [k, v] of scrapeConstants(includeRoot)) {
+  if (!constantsMap.has(k)) constantsMap.set(k, v);
+}
 // goal T4 : constantes des HEADERS decomp consommees par battle_anim_scripts
 // (ANIM_TAG_*, SOUND_PAN_*, ANIM_ATTACKER/TARGET, SE_*...) — sans elles, les
 // args des createsprite deviendraient des marqueurs nominaux (= corrompus).
+// Macros C 1-ligne a PARAMETRES (rgb.h : RGB/RGB2/GET_*) — les scripts anim
+// les utilisent NUES en operande (`RGB(31, 2, 2)` ×182) et rgb.h derive ses
+// constantes d'elles (#define RGB_BLACK RGB(0, 0, 0)).
+const cFuncMacros = new Map(); // name -> { params: string[], body: string }
+function scrapeCFuncMacros(relPath) {
+  try {
+    const txt = readFileSync(join(decompRoot, relPath), 'utf8');
+    for (const m of txt.matchAll(/^#define\s+(\w+)\(([^)]*)\)\s+(.+?)\s*$/gm)) {
+      const params = m[2].split(',').map((s) => s.trim()).filter(Boolean);
+      cFuncMacros.set(m[1], { params, body: m[3] });
+    }
+  } catch (e) { console.error(`  [scrapeCFuncMacros] ${relPath} FAILED: ${e.message}`); }
+}
+/** Expanse un appel `MACRO(a, b, c)` en valeur numerique — undefined si la
+ *  macro est inconnue, un arg irresoluble, ou le corps non purement
+ *  arithmetique apres substitution. */
+function expandCFuncMacro(name, argStrs, resolveArg) {
+  const mac = cFuncMacros.get(name);
+  if (!mac || argStrs.length !== mac.params.length) return undefined;
+  let body = mac.body;
+  for (let i = 0; i < mac.params.length; i++) {
+    const v = resolveArg(argStrs[i]);
+    if (v === undefined) return undefined;
+    body = body.replace(new RegExp(`\\b${mac.params[i]}\\b`, 'g'), `(${v})`);
+  }
+  body = body.replace(/\b[A-Za-z_]\w*\b/g, (n) => (constantsMap.has(n) ? `(${constantsMap.get(n)})` : n));
+  if (!/^[\d\s+\-*/<>&|^()]+$/.test(body)) return undefined;
+  try {
+    const v = new Function('return ' + body)();
+    return typeof v === 'number' && !isNaN(v) ? (v | 0) : undefined;
+  } catch { return undefined; }
+}
+
 function scrapeDecompHeader(relPath) {
   try {
     const txt = readFileSync(join(decompRoot, relPath), 'utf8');
@@ -135,22 +178,93 @@ function scrapeDecompHeader(relPath) {
     for (const m of txt.matchAll(/^#define\s+(\w+)\s+\(?(-?\d+|0x[0-9a-fA-F]+)\)?\s*(?:\/\/.*)?$/gm)) {
       out.push([m[1], parseInt(m[2], m[2].startsWith('0x') ? 16 : 10)]);
     }
-    // formes (BASE + N) : 2e passe avec resolution des bases deja connues
+    // Enums C simples (battle.h : B_POSITION_*, MAX_BATTLERS_COUNT...) —
+    // membres sequentiels, support `= N` litteral ; un membre complexe
+    // (expression, macro) abandonne L'ENUM ENTIER (pas de valeurs fausses).
+    for (const em of txt.matchAll(/enum\s+\w*\s*\{([^}]*)\}/g)) {
+      const buf = [];
+      let next = 0, ok = true;
+      for (const rawItem of em[1].split(',')) {
+        const item = rawItem.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+        if (!item) continue;
+        const mm = item.match(/^(\w+)(?:\s*=\s*(-?\d+|0x[0-9a-fA-F]+))?$/);
+        if (!mm) { ok = false; break; }
+        if (mm[2] !== undefined) next = parseInt(mm[2], mm[2].startsWith('0x') ? 16 : 10);
+        buf.push([mm[1], next]);
+        next++;
+      }
+      if (ok) out.push(...buf);
+    }
+    // formes (BASE + N) : 2e passe avec resolution des bases deja connues —
+    // dans CE fichier d'abord, sinon dans les headers deja scrapes
+    // (battle_anim.h `ANIM_PLAYER_LEFT (MAX_BATTLERS_COUNT + 0)` avec la base
+    // dans battle.h scrape avant).
     for (const m of txt.matchAll(/^#define\s+(\w+)\s+\((\w+)\s*\+\s*(\d+)\)\s*$/gm)) {
       const base = out.find(([k]) => k === m[2]);
       if (base) out.push([m[1], base[1] + parseInt(m[3], 10)]);
+      else if (constantsMap.has(m[2])) out.push([m[1], constantsMap.get(m[2]) + parseInt(m[3], 10)]);
     }
     // formes (1 << N) — ex ANIMSPRITE_IS_TARGET (1 << 7).
     for (const m of txt.matchAll(/^#define\s+(\w+)\s+\(1\s*<<\s*(\d+)\)\s*(?:\/\/.*)?$/gm)) {
       out.push([m[1], 1 << parseInt(m[2], 10)]);
     }
+    const known = (n) => {
+      const loc = out.find(([k]) => k === n);
+      if (loc) return loc[1];
+      return constantsMap.has(n) ? constantsMap.get(n) : undefined;
+    };
+    // formes `#define NAME MACRO(a, b, c)` — rgb.h RGB_BLACK & co.
+    for (const m of txt.matchAll(/^#define\s+(\w+)\s+(\w+)\(([^()]*)\)\s*(?:\/\/.*)?$/gm)) {
+      if (out.some(([k]) => k === m[1])) continue;
+      const v = expandCFuncMacro(m[2], m[3].split(',').map((s) => s.trim()), (a) => {
+        if (/^-?\d+$/.test(a)) return parseInt(a, 10);
+        if (/^-?0x[0-9a-fA-F]+$/i.test(a)) return parseInt(a, 16);
+        return known(a);
+      });
+      if (v !== undefined) out.push([m[1], v]);
+    }
+    // formes expression generale — `F_PAL_ATK_SIDE (F_PAL_ATTACKER |
+    // F_PAL_ATK_PARTNER)`, `F_PAL_BATTLERS_2 (1 << 7 | 1 << 8 | ...)` :
+    // evaluee SEULEMENT si tous les identifiants sont deja connus (ce fichier
+    // ou map globale) -> jamais de valeur fausse.
+    // NB : PAS _parseExpr ici (il reference SYMBOL_MARKER = TDZ au top-level) ;
+    // substitution numerique + eval pur (pattern scrapeConstants).
+    for (const m of txt.matchAll(/^#define\s+(\w+)\s+\(([^()\n]+)\)\s*(?:\/\/.*)?$/gm)) {
+      if (out.some(([k]) => k === m[1])) continue;
+      let allKnown = true;
+      const expr = m[2].replace(/\b[A-Za-z_]\w*\b/g, (name) => {
+        const v = known(name);
+        if (v === undefined) { allKnown = false; return name; }
+        return `(${v})`;
+      });
+      if (!allKnown) continue;
+      if (!/^[\d\s+\-*/<>&|^()]+$/.test(expr)) continue;
+      try {
+        const v = new Function('return ' + expr)();
+        if (typeof v === 'number' && !isNaN(v)) out.push([m[1], v | 0]);
+      } catch { /* skip */ }
+    }
     return out;
-  } catch { return []; }
-}
-for (const hdr of ['include/constants/battle_anim.h', 'include/constants/songs.h', 'include/constants/sound.h', 'include/constants/moves.h', 'include/constants/species.h']) {
-  for (const [k, v] of scrapeDecompHeader(hdr)) {
-    if (!constantsMap.has(k)) constantsMap.set(k, v);
+  } catch (e) {
+    // Un header illisible doit se VOIR (le silence = des milliers d'operandes
+    // marqueurs corrompues au runtime, bug ANIM_ATTACKER 2026-06-12).
+    console.error(`  [scrapeDecompHeader] ${relPath} FAILED: ${e.message}`);
+    return [];
   }
+}
+// battle.h EN PREMIER : battle_anim.h reference ses enums (MAX_BATTLERS_COUNT).
+// Sans lui, les operandes anim `MAX_BATTLERS_COUNT` tombaient dans le fallback
+// marqueur-nominal -> args[0]=0x10B4 -> AnimTask_HorizontalShake (Earthquake/
+// Magnitude/Eruption) se detruisait immediatement (bug trouve A/B 2026-06-12).
+// rgb.h : macros RGB() utilisees NUES dans les scripts anim + RGB_BLACK & co.
+scrapeCFuncMacros('include/constants/rgb.h');
+for (const hdr of ['include/constants/battle.h', 'include/constants/rgb.h', 'include/constants/battle_anim.h', 'include/constants/songs.h', 'include/constants/sound.h', 'include/constants/moves.h', 'include/constants/species.h']) {
+  const scraped = scrapeDecompHeader(hdr);
+  let added = 0;
+  for (const [k, v] of scraped) {
+    if (!constantsMap.has(k)) { constantsMap.set(k, v); added++; }
+  }
+  console.log(`  ${hdr}: ${scraped.length} scraped, ${added} added`);
 }
 for (const [k, v] of scrapeConstants(asmRoot)) {
   if (!constantsMap.has(k)) constantsMap.set(k, v);
@@ -457,6 +571,9 @@ function getAnimSymbolId(name) {
   if (!animSymbolIds.has(name)) animSymbolIds.set(name, ANIM_SYMBOL_BASE + animSymbolIds.size);
   return animSymbolIds.get(name);
 }
+// Constantes TOUT-MAJUSCULES avalees par le fallback marqueur anim (= bug
+// silencieux type MAX_BATTLERS_COUNT 2026-06-12) — dump en fin de run.
+const animConstWarnings = new Map(); // name -> count
 const BATTLE_MEMORY_SYMBOLS = new Set([
   // gXxx prefix = globals battle ewram vars.
   'gHitMarker', 'gMoveResultFlags', 'gChosenMove', 'gCurrentMove', 'gBattleMoveDamage',
@@ -653,6 +770,15 @@ function resolveValue(v, labelOffsets, warnings) {
   if (BATTLE_MEMORY_SYMBOLS.has(stripped)) {
     return (SYMBOL_MARKER | getSymbolId(stripped)) >>> 0;
   }
+  // Appel de macro C parametrique (`RGB(31, 2, 2)` ×182 dans les scripts
+  // anim) : expansion numerique AVANT le parser generique (qui traiterait
+  // `RGB` comme un identifiant -> marqueur corrompu, bug 2026-06-12).
+  const callM = stripped.match(/^(\w+)\(([^()]*)\)$/);
+  if (callM && cFuncMacros.has(callM[1])) {
+    const v = expandCFuncMacro(callM[1], callM[2].split(',').map((x) => x.trim()),
+      (a) => resolveValue(a, labelOffsets, warnings));
+    if (v !== undefined) return v;
+  }
   // Stripped form starts with paren — try inner directly via expr parser.
   // Composite expression : if it contains any operator (+, -, |, &, <<, >>, ^,
   // parens), parse via mini expression parser.
@@ -667,6 +793,13 @@ function resolveValue(v, labelOffsets, warnings) {
   // Compatible : bindSymbol lie par NOM ; le prefixe des ids existants est
   // stable (verifie aux bytes avant commit).
   if (_currentScriptContext === 'battle_anim_script' && /^[A-Za-z_]\w*$/.test(stripped)) {
+    // Visibilite : un nom TOUT-MAJUSCULES n'est pas un ptr C (AnimTask_/gXxx/
+    // SpriteCB_) mais une CONSTANTE NON RESOLUE que le marqueur avalerait en
+    // silence (bug MAX_BATTLERS_COUNT 2026-06-12) -> warn pour audit.
+    if (/^[A-Z][A-Z0-9_]*$/.test(stripped)) {
+      if (warnings) warnings.add('anim_const?:' + stripped);
+      animConstWarnings.set(stripped, (animConstWarnings.get(stripped) || 0) + 1);
+    }
     return (SYMBOL_MARKER | getAnimSymbolId(stripped)) >>> 0;
   }
   // Unresolved.
@@ -960,6 +1093,11 @@ function processScript(absPath, relInput) {
   // Stats
   const unknownOps = [...warnings].filter(w => w.startsWith('unknown_op:')).length;
   const unresolvedSymbols = [...warnings].filter(w => !w.startsWith('unknown_op:')).length;
+  // DEBUG ponctuel : DEBUG_WARN_FILE=battle_scripts_1 -> dump des warnings.
+  if (process.env.DEBUG_WARN_FILE && relInput.includes(process.env.DEBUG_WARN_FILE)) {
+    console.error(`[DEBUG warnings ${relInput}] ${unresolvedSymbols} unresolved:`);
+    for (const w of [...warnings].filter((x) => !x.startsWith('unknown_op:')).slice(0, 80)) console.error('   ', w);
+  }
 
   return { bytes, labelMap, ops: ops.length, unknownOps, unresolvedSymbols };
 }
@@ -1101,4 +1239,10 @@ console.log(`    bytes emitted         ${totalStats.bytes.toLocaleString()}`);
 console.log(`    labels resolved       ${totalStats.labels.toLocaleString()}`);
 console.log(`    unknown ops           ${totalStats.unknownOps.toLocaleString()}`);
 console.log(`    unresolved symbols    ${totalStats.unresolvedSymbols.toLocaleString()}`);
+if (animConstWarnings.size) {
+  console.log(`  ⚠ Constantes anim NON RESOLUES (avalees en marqueur nominal — corrompues au runtime) :`);
+  for (const [name, n] of [...animConstWarnings.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`      ${name} ×${n}`);
+  }
+}
 console.log(`  Output: ${outRoot.replace(/\\/g, '/')}`);

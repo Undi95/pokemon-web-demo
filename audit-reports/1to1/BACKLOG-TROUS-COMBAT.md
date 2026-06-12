@@ -661,10 +661,11 @@
 - [x] AnimTask_LoadSandstormBackground_Step @ L427-512 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 - [x] AnimTask_Rollout_Step @ L630-694 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 
-## battle_anim_ground.c — 22/25 fonctions couvertes (88%) · cite:10 + symbole:12 · 27 citations
-- [ ] AnimTask_ShakePlatforms  @ L619-665
-- [ ] AnimTask_ShakeBattlers  @ L666-707
-- [ ] SetBattlersXOffsetForShake  @ L708-733
+## battle_anim_ground.c — 25/25 fonctions couvertes (100%) · cite:10 + symbole:12 · 27 citations
+- [x] AnimTask_ShakePlatforms @ L619-665 — porté 1:1 (battle_anim_ground.ts, ex-_HS_Platforms renommé au nom C ; A/B Earthquake : BG3_X oscille ±13 puis 0)
+- [x] AnimTask_ShakeBattlers @ L666-707 — porté 1:1 (ex-_HS_Battlers renommé ; boucle shake-all = 4 battlers + check IsBattlerSpriteVisible ajouté ; A/B : x2 des 2 battlers oscille +7/−6 puis 0)
+- [x] SetBattlersXOffsetForShake @ L708-733 — porté 1:1 (ex-_HS_SetX renommé ; formule (off/2)+(off&1) / −(off/2) vérifiée A/B)
+- ⚠ RACINE corrigée avec cette tranche : `MAX_BATTLERS_COUNT`/`(MAX_BATTLERS_COUNT + 1)` (et ~80 constantes : ANIM_ATTACKER ×3162, RGB(...) ×182, F_PAL_*, B_WAIT_TIME_*…) étaient compilées en MARQUEURS corrompus dans le bytecode (compile-decomp-bytecode.mjs ne scannait plus decomp-data/include/ depuis la migration 66dec4f5 + ne lisait pas les enums C / macros RGB). Bytecode entier régénéré : battle_scripts_1 unresolved 692→8, global 19495→9932. A/B : tour complet wild (move → 1121 dmg → KO → WON → OW) + 2e combat fuite.
 
 ## battle_anim_flying.c — 24/31 fonctions couvertes (77%) · cite:21 + symbole:3 · 37 citations
 - [ ] AnimTask_AnimateGustTornadoPalette_Step  @ L381-407
@@ -698,10 +699,10 @@
 ## battle_anim_poison.c — 9/9 fonctions couvertes (100%) · cite:9 + symbole:0 · 17 citations
 - ✓ complet
 
-## battle_anim_fight.c — 28/31 fonctions couvertes (90%) · cite:24 + symbole:4 · 32 citations
+## battle_anim_fight.c — 31/31 fonctions couvertes (100%) · cite:24 + symbole:4 · 32 citations
 - [x] AnimUnusedHumanoidFoot @ L412-420 — DETTE — Unused décomp (préfixe)
 - [x] AnimFistOrFootRandomPos_Step @ L512-529 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
-- [ ] AnimSpinningKickOrPunchFinish  @ L622-635
+- [x] AnimSpinningKickOrPunchFinish @ L622-635 — porté 1:1 (battle_anim_fight.ts : StartSpriteAffineAnim(0) + affineAnimPaused=1 + 20f → destroy, l'inline _SpinningKick_Wait omettait le reset affine « réapparaît à taille pleine » ; A/B MOVE_MEGA_PUNCH : sprite vu avec affineAnimNum=0+paused, 0 résiduel)
 
 ## battle_anim_utility_funcs.c — 28/42 fonctions couvertes (67%) · cite:0 + symbole:28 · 19 citations
 - [ ] AnimTask_HardwarePaletteFade_Step  @ L211-217

@@ -298,6 +298,16 @@ function _hsSpriteId(animBattler: number): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
 }
+/** 1:1-net `IsBattlerSpriteVisible(i)` + `gBattlerSpriteIds[i]` (boucle shake-all
+ *  :594-601) : sprite du BATTLER i présent, en vie et pas invisible → son id,
+ *  sinon 0xFF. (Un mon sous Dig/Fly ne shake pas.) */
+function _hsBattlerSpriteIdVisible(battler: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(battler);
+  if (sid === undefined || sid === 0xFF || sid < 0) return 0xFF;
+  const sp = _hsRt().gSprites?.get(sid) as { invisible?: boolean; inUse?: boolean } | undefined;
+  return sp && sp.inUse !== false && !sp.invisible ? sid : 0xFF;
+}
 function AnimTask_HorizontalShake(task: _HsTask): void {
   const itf = _hsItf();
   const a = itf.getArgs?.() ?? [];
@@ -310,24 +320,25 @@ function AnimTask_HorizontalShake(task: _HsTask): void {
   task.data[0] = 0; task.data[1] = 0; task.data[2] = 0;
   if (a[0] === 5) { // MAX_BATTLERS_COUNT+1 : platforms (BG3)
     task.data[13] = (g.gBattle_BG3_X as number) ?? 0;
-    task.func = _HS_Platforms;
-  } else if (a[0] === 4) { // tous les battlers visibles
+    task.func = AnimTask_ShakePlatforms;
+  } else if (a[0] === 4) { // MAX_BATTLERS_COUNT : tous les battlers visibles (:592-602)
     let n = 0;
-    for (const b of [0, 1]) { // single : 0/1
-      const sid = _hsSpriteId(b);
+    for (let b = 0; b < 4 /* MAX_BATTLERS_COUNT */; b++) {
+      const sid = _hsBattlerSpriteIdVisible(b);
       if (sid !== 0xFF) { task.data[9 + n] = sid; n++; }
     }
     task.data[13] = n;
-    task.func = _HS_Battlers;
+    task.func = AnimTask_ShakeBattlers;
   } else {
     const sid = _hsSpriteId(a[0]);
     if (sid === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
     task.data[9] = sid;
     task.data[13] = 1;
-    task.func = _HS_Battlers;
+    task.func = AnimTask_ShakeBattlers;
   }
 }
-function _HS_Platforms(task: _HsTask): void {
+/** 1:1 `AnimTask_ShakePlatforms` (battle_anim_ground.c:619). */
+function AnimTask_ShakePlatforms(task: _HsTask): void {
   const g = globalThis as Record<string, unknown>;
   switch (task.data[0]) {
     case 0:
@@ -353,7 +364,8 @@ function _HS_Platforms(task: _HsTask): void {
       break;
   }
 }
-function _HS_SetX(task: _HsTask): void {
+/** 1:1 `SetBattlersXOffsetForShake` (battle_anim_ground.c:708). */
+function SetBattlersXOffsetForShake(task: _HsTask): void {
   const xOff = (task.data[2] & 1) === 0
     ? Math.trunc(task.data[14] / 2) + (task.data[14] & 1)
     : -Math.trunc(task.data[14] / 2);
@@ -362,19 +374,20 @@ function _HS_SetX(task: _HsTask): void {
     if (sp) sp.x2 = xOff;
   }
 }
-function _HS_Battlers(task: _HsTask): void {
+/** 1:1 `AnimTask_ShakeBattlers` (battle_anim_ground.c:666). */
+function AnimTask_ShakeBattlers(task: _HsTask): void {
   switch (task.data[0]) {
     case 0:
       if (++task.data[1] > 1) {
         task.data[1] = 0;
-        _HS_SetX(task);
+        SetBattlersXOffsetForShake(task);
         if (++task.data[2] === task.data[3]) { task.data[2] = 0; task.data[14]--; task.data[0]++; }
       }
       break;
     case 1:
       if (++task.data[1] > 1) {
         task.data[1] = 0;
-        _HS_SetX(task);
+        SetBattlersXOffsetForShake(task);
         if (++task.data[2] === 4) {
           task.data[2] = 0;
           if (--task.data[14] === 0) task.data[0]++;

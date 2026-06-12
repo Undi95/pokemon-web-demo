@@ -68,20 +68,36 @@ function AnimFistOrFootRandomPos(sprite: _FSprite): void {
   sprite.callback = _waitThenDestroy;
 }
 
-/** 1:1 `AnimSpinningKickOrPunch`(+Finish 20f) : args [x, y, animNum, durée]. */
+/** 1:1 sprite.c `StartSpriteAffineAnim(sprite, n)` : champs PLATS du runtime
+ *  (pattern repo, copie locale). */
+function _StartSpriteAffineAnim(sprite: unknown, n: number): void {
+  const spF = sprite as { affineAnimNum?: number; affineAnimBeginning?: boolean; affineAnimEnded?: boolean };
+  spF.affineAnimNum = n;
+  spF.affineAnimBeginning = true;
+  spF.affineAnimEnded = false;
+}
+
+/** 1:1 `AnimSpinningKickOrPunch` (battle_anim_fight.c:612) : args [x, y,
+ *  animNum, durée spin] — spin (durée) puis Finish. */
 function AnimSpinningKickOrPunch(sprite: _FSprite): void {
   const args = _fItf().getArgs?.() ?? [0, 0, 0, 30];
   InitSpritePosToAnimTarget(sprite as never, true);
   _startAnim(sprite, args[2] | 0);
   sprite.invisible = false;
   sprite.data[0] = args[3] | 0;
-  sprite.callback = _SpinningKick_Wait;
+  sprite.callback = _WaitAnimForDuration;
+  StoreSpriteCallbackInData6(sprite as never, AnimSpinningKickOrPunchFinish as never);
 }
-function _SpinningKick_Wait(sprite: _FSprite): void {
-  if (--sprite.data[0] <= 0) {
-    sprite.data[0] = 20;
-    sprite.callback = _waitThenDestroy;
-  }
+
+/** 1:1 `AnimSpinningKickOrPunchFinish` (battle_anim_fight.c:622) : reset de
+ *  l'affine anim 0 PAUSÉE (le poing/pied réapparaît à taille pleine, figé)
+ *  puis 20 frames d'attente → destroy. */
+function AnimSpinningKickOrPunchFinish(sprite: _FSprite): void {
+  _StartSpriteAffineAnim(sprite, 0);
+  (sprite as unknown as { affineAnimPaused?: boolean }).affineAnimPaused = true;  // sprite->affineAnimPaused = 1;
+  sprite.data[0] = 20;
+  sprite.callback = _WaitAnimForDuration;
+  StoreSpriteCallbackInData6(sprite as never, _DestroyAnimSprite as never);
 }
 
 registerAnimCallbacks({

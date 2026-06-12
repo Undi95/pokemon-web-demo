@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/event_scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-05-16
+// Generated: 2026-06-12
 // Stats: ops=183, bytes=711, labels=72, unknownOps=0, unresolvedSymbols=18
 
 /** Label name → byte offset within BYTECODE. */

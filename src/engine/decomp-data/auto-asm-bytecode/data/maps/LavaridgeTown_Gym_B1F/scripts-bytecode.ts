@@ -1,8 +1,8 @@
 // AUTO-GENERATED from data/maps/LavaridgeTown_Gym_B1F/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-06-11
-// Stats: ops=26, bytes=146, labels=12, unknownOps=0, unresolvedSymbols=14
+// Generated: 2026-06-12
+// Stats: ops=26, bytes=146, labels=12, unknownOps=0, unresolvedSymbols=8
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -21,6 +21,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [0,5,0,0,0,5,16,0,0,0,5,93,0,0,0,3,23,0,0,0,0,23,0,0,0,0,23,0,0,0,0,23,0,0,0,0,97,0,0,7,1,50,0,0,0,23,0,0,1,0,97,0,0,7,1,64,0,0,0,23,0,0,1,0,97,0,0,7,1,78,0,0,0,23,0,0,1,0,97,0,0,7,1,92,0,0,0,23,0,0,1,0,4,97,0,0,7,1,106,0,0,0,102,0,0,0,97,0,0,7,1,119,0,0,0,102,0,0,0,97,0,0,7,1,132,0,0,0,102,0,0,0,97,0,0,7,1,145,0,0,0,102,0,0,0,4] as const;
+export const BYTECODE: readonly number[] = [3,5,0,0,0,5,16,0,0,0,5,93,0,0,0,3,23,0,0,0,0,23,0,0,0,0,23,0,0,0,0,23,0,0,0,0,97,205,0,7,1,50,0,0,0,23,0,0,1,0,97,204,0,7,1,64,0,0,0,23,0,0,1,0,97,202,0,7,1,78,0,0,0,23,0,0,1,0,97,245,1,7,1,92,0,0,0,23,0,0,1,0,4,97,205,0,7,1,106,0,0,0,102,0,0,63,97,204,0,7,1,119,0,0,0,102,0,0,63,97,202,0,7,1,132,0,0,0,102,0,0,63,97,245,1,7,1,145,0,0,0,102,0,0,63,4] as const;
 
-export const STATS = { ops: 26, bytes: 146, labels: 12, unknownOps: 0, unresolvedSymbols: 14 } as const;
+export const STATS = { ops: 26, bytes: 146, labels: 12, unknownOps: 0, unresolvedSymbols: 8 } as const;
