@@ -1167,3 +1167,59 @@ function _CurseStretchingBlackBg_Step2(task: _CsTask): void {
   }
 }
 _f36RegT({ AnimTask_CurseStretchingBlackBg: AnimTask_CurseStretchingBlackBg as never });
+
+// ─── AnimMonMoveCircular (battle_anim_ghost.c:1309-1340) — Curse (non-ghost) ─
+// Sprite-pilote invisible : fait décrire un cercle (Sin/Cos rayon 10) au mon
+// ATTAQUANT pendant args[1] frames (pas angulaire args[0]), mon décalé y+8
+// pendant l'effet puis restauré.
+type _McSprite = { invisible?: boolean; data: number[]; callback: unknown };
+function _mcAtkSpriteId(): number {
+  const itf = _f36Itf() as { getAttacker?: () => number };
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(itf.getAttacker?.() ?? 0) ?? -1;
+}
+
+/** 1:1 `AnimMonMoveCircular` (battle_anim_ghost.c:1309). */
+function AnimMonMoveCircular(sprite: _McSprite): void {
+  const itf = _f36Itf() as { getArgs?: () => number[] };
+  const args = itf.getArgs?.() ?? [4, 30];
+  sprite.invisible = true;
+  sprite.data[5] = _mcAtkSpriteId();
+  sprite.data[0] = 128;
+  sprite.data[1] = 10;
+  sprite.data[2] = args[0] | 0;
+  sprite.data[3] = args[1] | 0;
+  sprite.callback = AnimMonMoveCircular_Step;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y: number }> } | undefined;
+  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.get(sprite.data[5]) : undefined;
+  if (mon) mon.y += 8;
+}
+
+/** 1:1 `AnimMonMoveCircular_Step` (battle_anim_ghost.c:1322). */
+function AnimMonMoveCircular_Step(sprite: _McSprite): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; y: number }> } | undefined;
+  const mon = sprite.data[5] >= 0 ? rt?.gSprites?.get(sprite.data[5]) : undefined;
+  if (sprite.data[3]) {
+    sprite.data[3]--;
+    if (mon) {
+      mon.x2 = Sin(sprite.data[0], sprite.data[1]);
+      mon.y2 = Cos(sprite.data[0], sprite.data[1]);
+    }
+    sprite.data[0] += sprite.data[2];
+    if (sprite.data[0] > 255) sprite.data[0] -= 256;
+  } else {
+    if (mon) {
+      mon.x2 = 0;
+      mon.y2 = 0;
+      mon.y -= 8;
+    }
+    sprite.callback = ((s: unknown) => {
+      ((globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimSprite?: (x: unknown) => void } | undefined)?.DestroyAnimSprite?.(s);
+    }) as never; // DestroySpriteAndMatrix (matrice : sprite-pilote sans affine → destroy simple)
+  }
+}
+
+registerAnimCallbacks({
+  AnimMonMoveCircular: AnimMonMoveCircular as never,
+  AnimMonMoveCircular_Step: AnimMonMoveCircular_Step as never,
+});

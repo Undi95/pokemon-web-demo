@@ -643,8 +643,8 @@
 - [x] AnimDestinyBondWhiteShadow @ L746-782 — ÉQUIVALENCE : init inliné dans le spawner de la task (assigne AnimDestinyBondWhiteShadow_Step directement, base présente)
 - [x] AnimTask_DestinyBondWhiteShadow_Step @ L868-944 — renommé au nom C exact (ex-_DestinyBondWhiteShadow_Step)
 - [x] AnimTask_GrudgeFlames_Step @ L1196-1280 — renommé au nom C exact (ex-_GrudgeFlames_Step)
-- [ ] AnimMonMoveCircular  @ L1309-1321
-- [ ] AnimMonMoveCircular_Step  @ L1322-1341
+- [x] AnimMonMoveCircular @ L1309-1321 — porté 1:1 (battle_anim_ghost.ts : sprite-pilote invisible, mon attaquant décrit un cercle Sin/Cos rayon 10, y+8 pendant l effet)
+- [x] AnimMonMoveCircular_Step @ L1322-1341 — porté 1:1 (orbite pas angulaire args[0] pendant args[1] frames, restore x2/y2/y puis destroy)
 
 ## battle_anim_psychic.c — 27/27 fonctions couvertes (100%) · cite:8 + symbole:11 · 37 citations
 - [x] AnimDefensiveWall_Step1 @ L485-504 — renommé au nom C exact (ex-_DefensiveWall_Step1, battle_anim_psychic.ts ; A/B Reflect 115 : fidèle 178f)
