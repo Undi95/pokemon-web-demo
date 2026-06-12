@@ -1,13 +1,13 @@
 # CARTE DE COUVERTURE 1:1 GLOBALE — décomp `src/*.c` ↔ notre port
 
-Généré : 2026-06-12T16:42:45.908Z
+Généré : 2026-06-12T20:53:35.070Z
 
 > Signal "couvert" = une citation `1:1 décomp file.c:N` pointe dans la fonction.
 > ⚠️ Prouve la COUVERTURE/traçabilité, **PAS le comportement** (bugs runtime = ROM-diff séparé).
-> Couverture globale (≥1 fonctions/fichier) : **6061/11228 fonctions** (54%) sur **221 fichiers .c**.
-> 35 fichiers 100% · 186 partiels · 0 jamais touchés.
+> Couverture globale (≥1 fonctions/fichier) : **6119/11228 fonctions** (54%) sur **221 fichiers .c**.
+> 39 fichiers 100% · 182 partiels · 0 jamais touchés.
 
-## 🟢 Fichiers 100% couverts (35)
+## 🟢 Fichiers 100% couverts (39)
 
 - `battle_script_commands.c` (287 fn)
 - `battle_ai_script_commands.c` (115 fn)
@@ -16,12 +16,16 @@ Généré : 2026-06-12T16:42:45.908Z
 - `battle_anim.c` (79 fn)
 - `battle_util.c` (52 fn)
 - `string_util.c` (44 fn)
+- `battle_anim_mon_movement.c` (34 fn)
 - `field_camera.c` (28 fn)
+- `battle_anim_psychic.c` (27 fn)
+- `battle_anim_ground.c` (25 fn)
 - `event_data.c` (25 fn)
 - `wallclock.c` (25 fn)
 - `option_menu.c` (24 fn)
 - `rotating_gate.c` (22 fn)
 - `starter_choose.c` (18 fn)
+- `battle_anim_sound_tasks.c` (15 fn)
 - `battle_ai_switch_items.c` (13 fn)
 - `battle_anim_bug.c` (13 fn)
 - `pokemon_size_record.c` (12 fn)
@@ -105,7 +109,7 @@ Généré : 2026-06-12T16:42:45.908Z
 | `berry_tag_screen.c` | 2/27 | 7% | **25** | 10 |
 | `battle_anim_effects_2.c` | 97/121 | 80% | **24** | 97 |
 | `pokemon_summary_screen.c` | 116/140 | 83% | **24** | 38 |
-| `battle_anim_mons.c` | 105/128 | 82% | **23** | 219 |
+| `battle_anim_mons.c` | 105/128 | 82% | **23** | 220 |
 | `evolution_scene.c` | 2/25 | 8% | **23** | 16 |
 | `cable_car.c` | 1/22 | 5% | **21** | 17 |
 | `naming_screen.c` | 96/117 | 82% | **21** | 71 |
@@ -128,7 +132,6 @@ Généré : 2026-06-12T16:42:45.908Z
 | `main.c` | 14/29 | 48% | **15** | 37 |
 | `pokeball.c` | 22/37 | 59% | **15** | 133 |
 | `window.c` | 15/30 | 50% | **15** | 24 |
-| `battle_anim_utility_funcs.c` | 28/42 | 67% | **14** | 19 |
 | `coord_event_weather.c` | 0/14 | 0% | **14** | 2 |
 | `pokedex_cry_screen.c` | 0/14 | 0% | **14** | 6 |
 | `safari_zone.c` | 3/17 | 18% | **14** | 6 |
@@ -152,29 +155,23 @@ Généré : 2026-06-12T16:42:45.908Z
 | `field_control_avatar.c` | 31/41 | 76% | **10** | 52 |
 | `fldeff_rocksmash.c` | 0/10 | 0% | **10** | 8 |
 | `item.c` | 42/52 | 81% | **10** | 62 |
-| `sprite.c` | 92/102 | 90% | **10** | 301 |
-| `battle_anim_electric.c` | 28/37 | 76% | **9** | 30 |
-| `battle_anim_status_effects.c` | 3/12 | 25% | **9** | 10 |
+| `sprite.c` | 92/102 | 90% | **10** | 302 |
 | `intro_credits_graphics.c` | 11/20 | 55% | **9** | 30 |
 | `malloc.c` | 3/12 | 25% | **9** | 6 |
 | `mini_printf.c` | 0/9 | 0% | **9** | 2 |
 | `multiboot.c` | 0/9 | 0% | **9** | 2 |
 | `roamer.c` | 4/13 | 31% | **9** | 5 |
-| `battle_anim_psychic.c` | 19/27 | 70% | **8** | 37 |
-| `battle_controller_player.c` | 116/124 | 94% | **8** | 94 |
+| `battle_controller_player.c` | 116/124 | 94% | **8** | 96 |
 | `clear_save_data_screen.c` | 1/9 | 11% | **8** | 9 |
 | `confetti_util.c` | 0/8 | 0% | **8** | 2 |
 | `international_string_util.c` | 10/18 | 56% | **8** | 4 |
 | `new_game.c` | 5/13 | 38% | **8** | 12 |
 | `save_location.c` | 2/10 | 20% | **8** | 5 |
 | `wonder_news.c` | 1/9 | 11% | **8** | 3 |
-| `battle_anim_flying.c` | 24/31 | 77% | **7** | 37 |
 | `diploma.c` | 3/10 | 30% | **7** | 8 |
 | `fldeff_softboiled.c` | 1/8 | 13% | **7** | 9 |
 | `load_save.c` | 14/21 | 67% | **7** | 27 |
 | `title_screen.c` | 13/20 | 65% | **7** | 34 |
-| `battle_anim_dark.c` | 19/25 | 76% | **6** | 29 |
-| `battle_anim_mon_movement.c` | 28/34 | 82% | **6** | 19 |
 | `battle_setup.c` | 96/102 | 94% | **6** | 104 |
 | `field_door.c` | 17/23 | 74% | **6** | 90 |
 | `fldeff_escalator.c` | 0/6 | 0% | **6** | 5 |
@@ -183,8 +180,6 @@ Généré : 2026-06-12T16:42:45.908Z
 | `item_menu_icons.c` | 15/21 | 71% | **6** | 62 |
 | `menu_helpers.c` | 19/25 | 76% | **6** | 34 |
 | `agb_flash_mx.c` | 0/5 | 0% | **5** | 2 |
-| `battle_anim_ice.c` | 27/32 | 84% | **5** | 36 |
-| `battle_anim_sound_tasks.c` | 10/15 | 67% | **5** | 10 |
 | `dma3_manager.c` | 0/5 | 0% | **5** | 5 |
 | `event_object_lock.c` | 9/14 | 64% | **5** | 9 |
 | `fieldmap.c` | 50/55 | 91% | **5** | 99 |
@@ -193,7 +188,8 @@ Généré : 2026-06-12T16:42:45.908Z
 | `script.c` | 34/39 | 87% | **5** | 17 |
 | `time_events.c` | 5/10 | 50% | **5** | 11 |
 | `bard_music.c` | 1/5 | 20% | **4** | 3 |
-| `battle_anim_normal.c` | 32/36 | 89% | **4** | 36 |
+| `battle_anim_flying.c` | 27/31 | 87% | **4** | 41 |
+| `battle_anim_status_effects.c` | 8/12 | 67% | **4** | 13 |
 | `battle_bg.c` | 8/12 | 67% | **4** | 32 |
 | `battle_controllers.c` | 64/68 | 94% | **4** | 96 |
 | `berry_powder.c` | 10/14 | 71% | **4** | 8 |
@@ -206,16 +202,19 @@ Généré : 2026-06-12T16:42:45.908Z
 | `metatile_behavior.c` | 140/144 | 97% | **4** | 212 |
 | `pokedex_area_region_map.c` | 0/4 | 0% | **4** | 2 |
 | `script_movement.c` | 15/19 | 79% | **4** | 23 |
-| `battle_anim_fight.c` | 28/31 | 90% | **3** | 32 |
+| `battle_anim_electric.c` | 34/37 | 92% | **3** | 32 |
 | `battle_anim_fire.c` | 32/35 | 91% | **3** | 36 |
-| `battle_anim_ground.c` | 22/25 | 88% | **3** | 27 |
 | `battle_anim_rock.c` | 19/22 | 86% | **3** | 28 |
+| `battle_anim_utility_funcs.c` | 39/42 | 93% | **3** | 25 |
 | `battle_gfx_sfx_util.c` | 50/53 | 94% | **3** | 38 |
 | `berry.c` | 33/36 | 92% | **3** | 96 |
 | `gym_leader_rematch.c` | 0/3 | 0% | **3** | 2 |
 | `hof_pc.c` | 1/4 | 25% | **3** | 5 |
 | `list_menu.c` | 45/48 | 94% | **3** | 99 |
 | `agb_flash_1m.c` | 0/2 | 0% | **2** | 2 |
+| `battle_anim_dark.c` | 23/25 | 92% | **2** | 33 |
+| `battle_anim_fight.c` | 29/31 | 94% | **2** | 34 |
+| `battle_anim_ice.c` | 30/32 | 94% | **2** | 39 |
 | `braille.c` | 1/3 | 33% | **2** | 3 |
 | `heal_location.c` | 1/3 | 33% | **2** | 3 |
 | `landmark.c` | 0/2 | 0% | **2** | 2 |
@@ -223,6 +222,7 @@ Généré : 2026-06-12T16:42:45.908Z
 | `pokemon_animation.c` | 239/241 | 99% | **2** | 41 |
 | `rotating_tile_puzzle.c` | 4/6 | 67% | **2** | 4 |
 | `script_pokemon_util.c` | 11/13 | 85% | **2** | 19 |
+| `battle_anim_normal.c` | 35/36 | 97% | **1** | 38 |
 | `battle_intro.c` | 10/11 | 91% | **1** | 28 |
 | `battle_message.c` | 9/10 | 90% | **1** | 69 |
 | `birch_pc.c` | 2/3 | 67% | **1** | 4 |
@@ -242,6 +242,9 @@ Généré : 2026-06-12T16:42:45.908Z
 |---|---|---|
 
 ## ⭐ "Presque finis" (partiels avec ≤5 fonctions manquantes — candidats clôture rapide)
+
+### `battle_anim_normal.c` — 1 manquante(s) (97%)
+- `AnimSimplePaletteBlend_Step` @ L329-343
 
 ### `battle_intro.c` — 1 manquante(s) (91%)
 - `DrawBattlerOnBgDMA` @ L605-620
@@ -283,6 +286,18 @@ Généré : 2026-06-12T16:42:45.908Z
 - `IdentifyFlash` @ L13-50
 - `WaitForFlashWrite_Common` @ L51-87
 
+### `battle_anim_dark.c` — 2 manquante(s) (92%)
+- `AnimUnusedBagSteal` @ L276-290
+- `AnimUnusedBagSteal_Step` @ L291-319
+
+### `battle_anim_fight.c` — 2 manquante(s) (94%)
+- `AnimUnusedHumanoidFoot` @ L412-420
+- `AnimFistOrFootRandomPos_Step` @ L512-529
+
+### `battle_anim_ice.c` — 2 manquante(s) (94%)
+- `AnimUnusedIceCrystalThrow` @ L532-570
+- `AnimUnusedIceCrystalThrow_Step` @ L571-591
+
 ### `braille.c` — 2 manquante(s) (33%)
 - `FontFunc_Braille` @ L20-197
 - `DecompressGlyph_Braille` @ L198-208
@@ -311,25 +326,25 @@ Généré : 2026-06-12T16:42:45.908Z
 - `CB2_ReturnFromChooseHalfParty` @ L173-187
 - `CB2_ReturnFromChooseBattleFrontierParty` @ L194-208
 
-### `battle_anim_fight.c` — 3 manquante(s) (90%)
-- `AnimUnusedHumanoidFoot` @ L412-420
-- `AnimFistOrFootRandomPos_Step` @ L512-529
-- `AnimSpinningKickOrPunchFinish` @ L622-635
+### `battle_anim_electric.c` — 3 manquante(s) (92%)
+- `AnimUnusedSpinningFist` @ L476-485
+- `AnimUnusedSpinningFist_Step` @ L486-491
+- `AnimUnusedCirclingShock` @ L492-514
 
 ### `battle_anim_fire.c` — 3 manquante(s) (91%)
 - `AnimUnusedSmallEmber_Step` @ L577-603
 - `AnimTask_EruptionLaunchRocks_Step` @ L815-921
 - `AnimTask_MoveHeatWaveTargets_Step` @ L1239-1328
 
-### `battle_anim_ground.c` — 3 manquante(s) (88%)
-- `AnimTask_ShakePlatforms` @ L619-665
-- `AnimTask_ShakeBattlers` @ L666-707
-- `SetBattlersXOffsetForShake` @ L708-733
-
 ### `battle_anim_rock.c` — 3 manquante(s) (86%)
 - `AnimParticleInVortex_Step` @ L378-395
 - `AnimTask_LoadSandstormBackground_Step` @ L427-512
 - `AnimTask_Rollout_Step` @ L630-694
+
+### `battle_anim_utility_funcs.c` — 3 manquante(s) (93%)
+- `AnimTask_HardwarePaletteFade_Step` @ L211-217
+- `AnimTask_DrawFallingWhiteLinesOnAttacker` @ L278-347
+- `AnimTask_DrawFallingWhiteLinesOnAttacker_Step` @ L348-414
 
 ### `battle_gfx_sfx_util.c` — 3 manquante(s) (94%)
 - `BattleGfxSfxDummy1` @ L693-696
@@ -362,11 +377,17 @@ Généré : 2026-06-12T16:42:45.908Z
 - `GetWordSoundTemplates` @ L192-222
 - `CalcWordSounds` @ L223-248
 
-### `battle_anim_normal.c` — 4 manquante(s) (89%)
-- `AnimConfusionDuck` @ L258-281
-- `AnimConfusionDuck_Step` @ L282-297
-- `AnimSimplePaletteBlend_Step` @ L329-343
-- `AnimCirclingSparkle` @ L416-446
+### `battle_anim_flying.c` — 4 manquante(s) (87%)
+- `AnimUnusedBubbleThrow` @ L895-902
+- `AnimUnusedFlashingLight` @ L1161-1167
+- `AnimUnusedFlashingLight_Step` @ L1168-1186
+- `AnimTask_SetAttackerVisibility` @ L1223-1237
+
+### `battle_anim_status_effects.c` — 4 manquante(s) (67%)
+- `Task_FlashingCircleImpacts` @ L273-312
+- `Task_UpdateFlashingCircleImpacts` @ L313-345
+- `AnimFlashingCircleImpact` @ L346-359
+- `AnimFlashingCircleImpact_Step` @ L360-380
 
 ### `battle_bg.c` — 4 manquante(s) (67%)
 - `UnusedBattleInit` @ L697-706
@@ -446,20 +467,6 @@ Généré : 2026-06-12T16:42:45.908Z
 - `ProgramFlashByte_MX` @ L121-145
 - `ProgramByte` @ L146-155
 - `ProgramFlashSector_MX` @ L156-194
-
-### `battle_anim_ice.c` — 5 manquante(s) (84%)
-- `AnimUnusedIceCrystalThrow` @ L532-570
-- `AnimUnusedIceCrystalThrow_Step` @ L571-591
-- `AnimTask_HazeScrollingFog_Step` @ L1018-1089
-- `AnimTask_MistBallFog_Step` @ L1124-1193
-- `AnimTask_Hail2` @ L1354-1413
-
-### `battle_anim_sound_tasks.c` — 5 manquante(s) (67%)
-- `SoundTask_FireBlast` @ L23-41
-- `SoundTask_FireBlast_Step1` @ L42-63
-- `SoundTask_FireBlast_Step2` @ L64-77
-- `SoundTask_PlayDoubleCry_Step` @ L239-268
-- `SoundTask_PlayCryWithEcho_Step` @ L310-349
 
 ### `dma3_manager.c` — 5 manquante(s) (0%)
 - `ClearDma3Requests` @ L25-41
