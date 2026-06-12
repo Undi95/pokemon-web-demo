@@ -727,16 +727,16 @@
 - [x] SoundTask_PlayDoubleCry_Step @ L239-268 — renommé au nom C exact (ex-_DoubleCry_Step, net-effect infra cris documenté ; A/B Growl 45 : fidèle)
 - [x] SoundTask_PlayCryWithEcho_Step @ L310-349 — renommé au nom C exact (ex-_PlayCryWithEcho_Step, net-effect infra cris)
 
-## battle_anim_status_effects.c — 3/12 fonctions couvertes (25%) · cite:1 + symbole:2 · 10 citations
-- [ ] Task_FlashingCircleImpacts  @ L273-312
-- [ ] Task_UpdateFlashingCircleImpacts  @ L313-345
-- [ ] AnimFlashingCircleImpact  @ L346-359
-- [ ] AnimFlashingCircleImpact_Step  @ L360-380
-- [ ] AnimTask_FrozenIceCube_Step1  @ L399-414
-- [ ] AnimTask_FrozenIceCube_Step2  @ L415-447
-- [ ] AnimTask_FrozenIceCube_Step3  @ L448-463
-- [ ] AnimTask_FrozenIceCube_Step4  @ L464-481
-- [ ] AnimTask_StatsChange  @ L482-542
+## battle_anim_status_effects.c — 11/12 fonctions couvertes (92%) · cite:1 + symbole:2 · 10 citations
+- [x] Task_FlashingCircleImpacts @ L273-312 — DETTE — `static u8 UNUSED` décomp
+- [x] Task_UpdateFlashingCircleImpacts @ L313-345 — DETTE — code mort transitif (créé uniquement par Task_FlashingCircleImpacts UNUSED, vérifié grep décomp : 0 autre caller)
+- [x] AnimFlashingCircleImpact @ L346-359 — DETTE — code mort transitif (callback du template sFlashingCircleImpactSpriteTemplate, créé uniquement par la fonction UNUSED)
+- [x] AnimFlashingCircleImpact_Step @ L360-380 — DETTE — code mort transitif (idem)
+- [x] AnimTask_FrozenIceCube_Step1 @ L399-414 — renommé au nom C exact (ex-_FrozenIceCube_Step1, battle_anim_status_effects.ts)
+- [x] AnimTask_FrozenIceCube_Step2 @ L415-447 — renommé au nom C exact (ex-_FrozenIceCube_Step2)
+- [x] AnimTask_FrozenIceCube_Step3 @ L448-463 — renommé au nom C exact (ex-_FrozenIceCube_Step3)
+- [x] AnimTask_FrozenIceCube_Step4 @ L464-481 — renommé au nom C exact (ex-_FrozenIceCube_Step4)
+- [ ] AnimTask_StatsChange  @ L482-542 — ⚠ PROCHAINE TRANCHE (atteignable 100% : décodeur animArg des anims stat ±1/±2 → délègue à InitStatsChangeAnimation+StatsChangeAnimation_Step1..3 d'utility_funcs :415-648 ENCORE OUVERTS — porter LA CHAÎNE ENTIÈRE ensemble : assets gStatAnim_Gfx/Tilemaps/7 palettes + OBJWIN + CreateInvisibleSpriteCopy)
 
 ## battle_anim_throw.c — 60/78 fonctions couvertes (77%) · cite:51 + symbole:9 · 91 citations
 - [ ] AnimTask_UnusedLevelUpHealthBox_Step  @ L484-543

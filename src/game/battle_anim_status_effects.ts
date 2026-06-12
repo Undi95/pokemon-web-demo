@@ -91,19 +91,19 @@ function AnimTask_FrozenIceCube(task: _FicTask): void {
   task.data[2] = 0;
   task.data[3] = 0;
   task.data[4] = 0;
-  task.func = _FrozenIceCube_Step1;
+  task.func = AnimTask_FrozenIceCube_Step1;
 }
-function _FrozenIceCube_Step1(task: _FicTask): void {
+function AnimTask_FrozenIceCube_Step1(task: _FicTask): void {
   task.data[1]++;
   if (task.data[1] === 10) {
-    task.func = _FrozenIceCube_Step2;
+    task.func = AnimTask_FrozenIceCube_Step2;
     task.data[1] = 0;
   } else {
     const v = task.data[1];
     _ficRt().SetGpuReg?.(0x52, (v & 0xFF) | ((16 - v) << 8));
   }
 }
-function _FrozenIceCube_Step2(task: _FicTask): void {
+function AnimTask_FrozenIceCube_Step2(task: _FicTask): void {
   const palIndex = _ficSpriteApi().IndexOfSpritePaletteTag?.(_FIC_TAG_ICE_CUBE) ?? 0xFF;
   if (task.data[1]++ > 13) {
     task.data[2]++;
@@ -125,23 +125,23 @@ function _FrozenIceCube_Step2(task: _FicTask): void {
         task.data[4]++;
         if (task.data[4] === 2) {
           task.data[1] = 9;
-          task.func = _FrozenIceCube_Step3;
+          task.func = AnimTask_FrozenIceCube_Step3;
         }
       }
     }
   }
 }
-function _FrozenIceCube_Step3(task: _FicTask): void {
+function AnimTask_FrozenIceCube_Step3(task: _FicTask): void {
   task.data[1]--;
   if (task.data[1] === -1) {
-    task.func = _FrozenIceCube_Step4;
+    task.func = AnimTask_FrozenIceCube_Step4;
     task.data[1] = 0;
   } else {
     const v = task.data[1];
     _ficRt().SetGpuReg?.(0x52, (v & 0xFF) | ((16 - v) << 8));
   }
 }
-function _FrozenIceCube_Step4(task: _FicTask): void {
+function AnimTask_FrozenIceCube_Step4(task: _FicTask): void {
   task.data[1]++;
   const rt = _ficRt();
   if (task.data[1] === 37) {
