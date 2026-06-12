@@ -715,9 +715,9 @@
 - [x] StatsChangeAnimation_Step2 @ L479-566 — porté 1:1 (copie OBJ_WINDOW + BG1 gfx/tilemap/palette par stat + SE ; assets extract-stat-change-assets.cjs)
 - [x] StatsChangeAnimation_Step3 @ L567-648 — porté 1:1 (scroll BG1 ±3 + fade in/wait/out + teardown ; A/B pixel-probe teardown diff 0)
 - [x] AnimTask_UpdateSlidingBg @ L762-779 — renommé au nom C exact (ex-_UpdateSlidingBg)
-- [ ] AnimTask_SetAnimAttackerAndTargetForEffectTgt  @ L1049-1055
-- [ ] AnimTask_SetAnimTargetToBattlerTarget  @ L1066-1071
-- [ ] AnimTask_SetAnimAttackerAndTargetForEffectAtk  @ L1072-1078
+- [x] AnimTask_SetAnimAttackerAndTargetForEffectTgt @ L1049-1055 — porté 1:1 (battle_anim_utility_funcs.ts : attacker=gBattlerTarget, target=gEffectBattler via setBattleAnimAttackerTarget)
+- [x] AnimTask_SetAnimTargetToBattlerTarget @ L1066-1071 — porté 1:1 (target=gBattlerTarget)
+- [x] AnimTask_SetAnimAttackerAndTargetForEffectAtk @ L1072-1078 — porté 1:1 (attacker=gBattlerAttacker, target=gEffectBattler)
 - [x] AnimTask_WaitAndRestoreVisibility @ L1094-1102 — renommé au nom C exact (ex-_WaitAndRestoreVisibility, le restore du fix Rayquaza f478b2c4)
 
 ## battle_anim_sound_tasks.c — 15/15 fonctions couvertes (100%) · cite:4 + symbole:6 · 10 citations

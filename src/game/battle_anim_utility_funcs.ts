@@ -984,3 +984,44 @@ function StatsChangeAnimation_Step3(task: AnimTask): void {
 }
 
 registerAnimTasks({ InitStatsChangeAnimation: InitStatsChangeAnimation as never });
+
+// ─── Retargets anim attacker/target (battle_anim_utility_funcs.c:1049-1078) ──
+// Posent gBattleAnimAttacker/Target depuis l'état du tour (gBattlerTarget /
+// gEffectBattler / gBattlerAttacker) — utilisés par les scripts d'effets
+// secondaires (l'anim joue sur le mon AFFECTÉ par l'effet).
+import { gBattlerAttacker as _rtgAtk, gBattlerTarget as _rtgTgt, gEffectBattler as _rtgEff } from '../engine/battle/state';
+
+function _rtgItf(): {
+  getAttacker?: () => number; getTarget?: () => number;
+  setBattleAnimAttackerTarget?: (a: number, t: number) => void;
+  DestroyAnimVisualTask?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+
+/** 1:1 `AnimTask_SetAnimAttackerAndTargetForEffectTgt` (:1049) :
+ *  attacker = gBattlerTarget, target = gEffectBattler. */
+function AnimTask_SetAnimAttackerAndTargetForEffectTgt(task: AnimTask): void {
+  _rtgItf().setBattleAnimAttackerTarget?.(_rtgTgt, _rtgEff);
+  _rtgItf().DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 `AnimTask_SetAnimTargetToBattlerTarget` (:1066) : target = gBattlerTarget. */
+function AnimTask_SetAnimTargetToBattlerTarget(task: AnimTask): void {
+  const itf = _rtgItf();
+  itf.setBattleAnimAttackerTarget?.(itf.getAttacker?.() ?? 0, _rtgTgt);
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+
+/** 1:1 `AnimTask_SetAnimAttackerAndTargetForEffectAtk` (:1072) :
+ *  attacker = gBattlerAttacker, target = gEffectBattler. */
+function AnimTask_SetAnimAttackerAndTargetForEffectAtk(task: AnimTask): void {
+  _rtgItf().setBattleAnimAttackerTarget?.(_rtgAtk, _rtgEff);
+  _rtgItf().DestroyAnimVisualTask?.(task.taskId);
+}
+
+registerAnimTasks({
+  AnimTask_SetAnimAttackerAndTargetForEffectTgt: AnimTask_SetAnimAttackerAndTargetForEffectTgt as never,
+  AnimTask_SetAnimTargetToBattlerTarget: AnimTask_SetAnimTargetToBattlerTarget as never,
+  AnimTask_SetAnimAttackerAndTargetForEffectAtk: AnimTask_SetAnimAttackerAndTargetForEffectAtk as never,
+});
