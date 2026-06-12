@@ -24,9 +24,18 @@
  * de la rotation (±4/frame) à valider à l'œil (A/B user).
  */
 
-import { getRuntime, BlendPalettes } from '../engine/system/decomp-globals';
+import {
+  getRuntime, BlendPalettes, PALETTES_ALL,
+  gScanlineEffectRegBuffers, ScanlineEffect_Clear, ScanlineEffect_Stop,
+} from '../engine/system/decomp-globals';
 import { loadIndexedPng } from '../engine/gba/png-loader';
 import { Random } from '../engine/system/random';
+import {
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT, REG_OFFSET_WIN0V, REG_OFFSET_WIN0H,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
+  REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON,
+} from '../engine/system/decomp-runtime';
+import { DISPLAY_HEIGHT } from '../engine/decomp-data/include/gba/defines-data';
 
 /** SetSpriteRotScale via la surface __battleAnimMons (anti-cycle ESM : un import
  *  statique de battle_anim_mons depuis ce module → TDZ BG_SCREEN_SIZE au boot). */
@@ -265,8 +274,307 @@ function _findSpriteId(sprite: TrailSprite): number {
   return -1;
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// ABSORPTION MIROIR (condition C, 1er déplacement — ex engine/battle/
+// battle-transition.ts, 478 l.) : INTRO FLASH (CreateIntroTask/Task_Intro
+// :3968-4030) + B_TRANSITION_SLICE (:2716-2830) + B_TRANSITION_WHITE_BARS_FADE
+// (:3585-3754). Code identique au fichier absorbé (validé A/B sur des dizaines
+// de combats) — seuls les imports ont été réécrits.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `RGB(11, 11, 11)` (= gris du flash d'intro transition). */
+const RGB_INTRO_GRAY = 11 | (11 << 5) | (11 << 10);  // = 0x2D6B
+
+interface IntroFlashState {
+  subState: 0 | 1;
+  blend: number;
+  numFades: number;
+  lastFrame: number;
+}
+let _introFlash: IntroFlashState | null = null;
+
+/** 1:1 décomp `struct TransitionData` (subset Slice). */
+interface TransitionData {
+  cameraX: number; cameraY: number;
+  WININ: number; WINOUT: number; WIN0V: number;
+  VBlank_DMA: boolean;
+}
+interface SliceState {
+  state: number; effectX: number; speed: number; accel: number;
+  data: TransitionData;
+}
+let _slice: SliceState | null = null;
+let _hblankInstalled = false;
+let _sliceLastFrame = -1;
+
+/** 1:1 décomp `Slice_Init` (battle_transition.c:2728-2756). */
+export function startBattleTransitionSlice(): void {
+  ScanlineEffect_Clear();
+  _sliceLastFrame = -1;
+  const cameraX = 0, cameraY = 0;
+  _slice = {
+    state: 1, effectX: 0, speed: 1 << 8, accel: 1,
+    data: { cameraX, cameraY, WININ: 0x3F, WINOUT: 0, WIN0V: DISPLAY_HEIGHT, VBlank_DMA: false },
+  };
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[1][i] = cameraX;
+    gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH;
+  }
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      const offset = gScanlineEffectRegBuffers[1][y];
+      rt.gba.bg(1).config.hofs = offset;
+      rt.gba.bg(2).config.hofs = offset;
+      rt.gba.bg(3).config.hofs = offset;
+      const win0h = gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + y];
+      rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+      rt.gba.windows.win0.x2 = win0h & 0xFF;
+    }
+  });
+  _hblankInstalled = true;
+}
+
+/** 1:1 décomp `CreateIntroTask(0, 0, 3, 2, 2)` — flash gris d'entrée. */
+export function startBattleIntroFlash(): void {
+  _introFlash = { subState: 0, blend: 0, numFades: 3, lastFrame: -1 };
+}
+
+/** 1:1 décomp `Task_BattleTransition_Intro` (:3987) — 3 cycles gris. */
+export function tickBattleIntroFlash(): boolean {
+  if (!_introFlash) return true;
+  const f = _introFlash;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === f.lastFrame) return false;
+  f.lastFrame = fc;
+  if (f.subState === 0) {
+    f.blend += 2;
+    if (f.blend > 16) f.blend = 16;
+    BlendPalettes(PALETTES_ALL, f.blend, RGB_INTRO_GRAY);
+    if (f.blend >= 16) f.subState = 1;
+  } else {
+    f.blend -= 2;
+    if (f.blend < 0) f.blend = 0;
+    BlendPalettes(PALETTES_ALL, f.blend, RGB_INTRO_GRAY);
+    if (f.blend === 0) {
+      f.numFades -= 1;
+      if (f.numFades === 0) { _introFlash = null; return true; }
+      f.subState = 0;
+    }
+  }
+  return false;
+}
+
+export function isBattleIntroFlashActive(): boolean { return _introFlash !== null; }
+
+/** 1:1 décomp `Slice_Main` (battle_transition.c:2758-2795). */
+export function tickBattleTransitionSlice(): boolean {
+  if (!_slice) return true;
+  if (_slice.state !== 1) return true;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === _sliceLastFrame) return false;
+  _sliceLastFrame = fc;
+  _slice.data.VBlank_DMA = false;
+  _slice.effectX += _slice.speed >> 8;
+  if (_slice.effectX > DISPLAY_WIDTH) _slice.effectX = DISPLAY_WIDTH;
+  if (_slice.speed <= 0xFFF) _slice.speed += _slice.accel;
+  if (_slice.accel < 128) _slice.accel <<= 1;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    if (i & 1) {
+      gScanlineEffectRegBuffers[0][i] = _slice.data.cameraX + _slice.effectX;
+      gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT + i] = DISPLAY_WIDTH - _slice.effectX;
+    } else {
+      gScanlineEffectRegBuffers[0][i] = (_slice.data.cameraX - _slice.effectX) & 0xFFFF;
+      gScanlineEffectRegBuffers[0][DISPLAY_HEIGHT + i] = ((_slice.effectX << 8) | (DISPLAY_WIDTH + 1)) & 0xFFFF;
+    }
+  }
+  if (_slice.effectX >= DISPLAY_WIDTH) _slice.state = 2;
+  _slice.data.VBlank_DMA = true;
+  if (_slice.data.VBlank_DMA) {
+    for (let i = 0; i < DISPLAY_HEIGHT * 2; i++) {
+      gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+    }
+  }
+  if (_slice.state === 2) {
+    // 1:1 `Slice_End` (:2797-2803) : FadeScreenBlack INSTANT (coeff 16).
+    BlendPalettes(PALETTES_ALL, 16, 0);
+    stopBattleTransition();
+    return true;
+  }
+  return false;
+}
+
+/** Cleanup Slice : HBlank off + reset offsets + WIN0 off. */
+export function stopBattleTransition(): void {
+  if (_hblankInstalled) {
+    const rt = getRuntime();
+    if (rt) {
+      rt.gba.setHBlankCallback(null);
+      rt.gba.bg(1).config.hofs = 0;
+      rt.gba.bg(2).config.hofs = 0;
+      rt.gba.bg(3).config.hofs = 0;
+      rt.gba.windows.win0.x1 = 0;
+      rt.gba.windows.win0.x2 = DISPLAY_WIDTH;
+      rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
+    }
+    _hblankInstalled = false;
+  }
+  ScanlineEffect_Stop();
+  _slice = null;
+}
+
+export function isBattleTransitionActive(): boolean {
+  return _slice !== null && _slice.state === 1;
+}
+
+// ─── B_TRANSITION_WHITE_BARS_FADE (battle_transition.c:3585-3754) ───────────
+
+const RGB_WHITE_TR = 31 | (31 << 5) | (31 << 10);  // 0x7FFF
+const NUM_WHITE_BARS = 8;
+/** 1:1 `sWhiteBarsFade_StartDelays` (battle_transition.c:740). */
+const WHITE_BARS_START_DELAYS = [0, 20, 15, 40, 10, 25, 35, 5];
+const FADE_TARGET = 16 << 8;
+
+interface WhiteBar {
+  x: number; fade: number; finished: boolean; destroyed: boolean;
+  destroyAttempts: number; delay: number; isMainSprite: boolean;
+}
+interface WhiteBarsState {
+  state: number; counter: number; vblankDma: boolean; bldy: number; bars: WhiteBar[];
+}
+let _whiteBars: WhiteBarsState | null = null;
+let _whiteBarsLastFrame = -1;
+
+/** 1:1 `WhiteBarsFade_Init` (:3592) + `WhiteBarsFade_StartBars` (:3619). */
+export function startBattleTransitionWhiteBarsFade(): void {
+  ScanlineEffect_Clear();
+  _whiteBarsLastFrame = -1;
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(REG_OFFSET_BLDCNT, 0xBF);
+  rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+  rt.SetGpuReg(REG_OFFSET_WININ, 0x1E);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0x3F);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[1][i] = 0;
+    gScanlineEffectRegBuffers[1][i + DISPLAY_HEIGHT] = DISPLAY_WIDTH;
+  }
+  const bars: WhiteBar[] = [];
+  for (let i = 0; i < NUM_WHITE_BARS; i++) {
+    bars.push({
+      x: DISPLAY_WIDTH, fade: 0, finished: false, destroyed: false,
+      destroyAttempts: 0, delay: WHITE_BARS_START_DELAYS[i], isMainSprite: i === NUM_WHITE_BARS - 1,
+    });
+  }
+  _whiteBars = { state: 1, counter: 0, vblankDma: false, bldy: 0, bars };
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      rt.gba.blend.brightness = gScanlineEffectRegBuffers[1][y] & 0x1F;
+      rt.gba.windows.win0.x1 = 0;
+      rt.gba.windows.win0.x2 = gScanlineEffectRegBuffers[1][DISPLAY_HEIGHT + y] & 0xFF;
+    }
+  });
+  _hblankInstalled = true;
+}
+
+/** 1:1 `sWhiteBarsFade_Funcs` state machine. */
+export function tickBattleTransitionWhiteBarsFade(): boolean {
+  if (!_whiteBars) return true;
+  const w = _whiteBars;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === _whiteBarsLastFrame) return false;
+  _whiteBarsLastFrame = fc;
+  const rt = getRuntime();
+  if (!rt) return true;
+  const step = Math.floor(DISPLAY_HEIGHT / NUM_WHITE_BARS);  // 20
+
+  if (w.state === 1) {
+    w.vblankDma = false;
+    for (let bi = 0; bi < w.bars.length; bi++) {
+      const s = w.bars[bi];
+      if (s.destroyed) continue;
+      const baseY = bi * step;
+      if (s.delay) { s.delay--; if (s.isMainSprite) w.vblankDma = true; continue; }
+      for (let i = 0; i < step; i++) {
+        gScanlineEffectRegBuffers[0][baseY + i] = s.fade >> 8;
+        gScanlineEffectRegBuffers[0][baseY + i + DISPLAY_HEIGHT] = s.x & 0xFF;
+      }
+      if (s.x === 0 && s.fade === FADE_TARGET) s.finished = true;
+      s.x -= 16;
+      s.fade += FADE_TARGET / 32;
+      if (s.x < 0) s.x = 0;
+      if (s.fade > FADE_TARGET) s.fade = FADE_TARGET;
+      if (s.isMainSprite) w.vblankDma = true;
+      if (s.finished) {
+        if (!s.isMainSprite || (w.counter >= NUM_WHITE_BARS - 1 && s.destroyAttempts++ > 7)) {
+          w.counter++;
+          s.destroyed = true;
+        }
+      }
+    }
+    if (w.vblankDma) {
+      for (let i = 0; i < DISPLAY_HEIGHT * 2; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+    }
+    if (w.counter >= NUM_WHITE_BARS) { BlendPalettes(PALETTES_ALL, 16, RGB_WHITE_TR); w.state = 2; }
+    return false;
+  }
+
+  if (w.state === 2) {
+    rt.gba.setHBlankCallback(null);
+    _hblankInstalled = false;
+    rt.SetGpuReg(REG_OFFSET_WIN0H, DISPLAY_WIDTH);
+    rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+    rt.SetGpuReg(REG_OFFSET_BLDCNT, 0xFF);
+    rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);
+    w.bldy = 0;
+    w.state = 3;
+    return false;
+  }
+
+  w.bldy++;
+  rt.SetGpuReg(REG_OFFSET_BLDY, w.bldy);
+  if (w.bldy > 16) {
+    BlendPalettes(PALETTES_ALL, 16, 0);
+    stopBattleTransitionWhiteBarsFade();
+    return true;
+  }
+  return false;
+}
+
+/** Cleanup WhiteBarsFade. */
+export function stopBattleTransitionWhiteBarsFade(): void {
+  const rt = getRuntime();
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.windows.win0.x1 = 0;
+    rt.gba.windows.win0.x2 = DISPLAY_WIDTH;
+    rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
+    rt.SetGpuReg(REG_OFFSET_BLDCNT, 0);
+    rt.SetGpuReg(REG_OFFSET_BLDY, 0);
+    rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);
+  }
+  _hblankInstalled = false;
+  ScanlineEffect_Stop();
+  _whiteBars = null;
+}
+
+export function isBattleTransitionWhiteBarsFadeActive(): boolean { return _whiteBars !== null; }
+
 // Surface devtools/dispatcher (anti-cycle : battle-decomp-loop consomme lazy).
 (globalThis as Record<string, unknown>).__battleTransitionMirror = {
   startBattleTransitionPokeballsTrail, tickBattleTransitionPokeballsTrail,
   isBattleTransitionPokeballsTrailActive,
+  // Absorption miroir (ex engine/battle/battle-transition.ts) :
+  startBattleIntroFlash, tickBattleIntroFlash, isBattleIntroFlashActive,
+  startBattleTransitionSlice, tickBattleTransitionSlice, stopBattleTransition,
+  isBattleTransitionActive,
+  startBattleTransitionWhiteBarsFade, tickBattleTransitionWhiteBarsFade,
+  stopBattleTransitionWhiteBarsFade, isBattleTransitionWhiteBarsFadeActive,
 };

@@ -29,11 +29,18 @@ import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
 // (Le miroir src/game/battle_transition.ts est chargé par la scène — import ici
 //  = cycle ESM TDZ au boot froid, BG_SCREEN_SIZE before initialization.)
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
-import {
-  startBattleIntroFlash, tickBattleIntroFlash,
-  startBattleTransitionSlice, tickBattleTransitionSlice,
-  startBattleTransitionWhiteBarsFade, tickBattleTransitionWhiteBarsFade,
-} from './battle-transition';
+// Transitions (flash/Slice/WhiteBars/PokeballsTrail) : MIROIR src/game/
+// battle_transition.ts, consommé via la surface __battleTransitionMirror
+// (déplacement condition C — l'import statique du miroir = cycle TDZ).
+type _TransitionMirror = {
+  startBattleIntroFlash?: () => void; tickBattleIntroFlash?: () => boolean;
+  startBattleTransitionSlice?: () => void; tickBattleTransitionSlice?: () => boolean;
+  startBattleTransitionWhiteBarsFade?: () => void; tickBattleTransitionWhiteBarsFade?: () => boolean;
+  startBattleTransitionPokeballsTrail?: () => void; tickBattleTransitionPokeballsTrail?: () => boolean;
+};
+function _transitionMirror(): _TransitionMirror {
+  return ((globalThis as Record<string, unknown>).__battleTransitionMirror as _TransitionMirror) ?? {};
+}
 import { ENUM_B_1 as B_TRANSITION } from '../decomp-data/include/battle_transition-data';
 import { ensureBallGfxLoaded, ensureBallParticlesLoaded } from '../boot/intro-asset-loader';
 
@@ -151,34 +158,26 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
   // = le cas du combat dev Treecko5/Poochyena5). Les autres (CAVE/WATER/FLASH : WAVE,
   // GRID_SQUARES, CLOCKWISE_WIPE, BLUR, RIPPLE) font un fallback gracieux SLICE + warn
   // (= chantier VISUEL/A/B restant). Le warn rend visible quelle transition le jeu veut.
-  let startTransition = startBattleTransitionSlice;
-  let tickTransition = tickBattleTransitionSlice;
-  if (transition === B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
-    startTransition = startBattleTransitionWhiteBarsFade;
-    tickTransition = tickBattleTransitionWhiteBarsFade;
-  } else if (transition === B_TRANSITION.B_TRANSITION_POKEBALLS_TRAIL) {
-    // 1:1 miroir src/game/battle_transition.ts (la transition dresseur normale).
-    const m = (globalThis as Record<string, unknown>).__battleTransitionMirror as {
-      startBattleTransitionPokeballsTrail?: () => void;
-      tickBattleTransitionPokeballsTrail?: () => boolean;
-    } | undefined;
-    if (m?.startBattleTransitionPokeballsTrail && m.tickBattleTransitionPokeballsTrail) {
-      startTransition = m.startBattleTransitionPokeballsTrail;
-      tickTransition = m.tickBattleTransitionPokeballsTrail;
-    } else {
-      console.warn('[decomp-loop] POKEBALLS_TRAIL : miroir non chargé → fallback SLICE');
-    }
-  } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE) {
+  const m = _transitionMirror();
+  let startTransition = m.startBattleTransitionSlice ?? ((): void => { /* miroir absent */ });
+  let tickTransition = m.tickBattleTransitionSlice ?? ((): boolean => true);
+  if (transition === B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE && m.startBattleTransitionWhiteBarsFade && m.tickBattleTransitionWhiteBarsFade) {
+    startTransition = m.startBattleTransitionWhiteBarsFade;
+    tickTransition = m.tickBattleTransitionWhiteBarsFade;
+  } else if (transition === B_TRANSITION.B_TRANSITION_POKEBALLS_TRAIL && m.startBattleTransitionPokeballsTrail && m.tickBattleTransitionPokeballsTrail) {
+    startTransition = m.startBattleTransitionPokeballsTrail;
+    tickTransition = m.tickBattleTransitionPokeballsTrail;
+  } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE && transition !== B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
     console.warn(`[decomp-loop] transition=${transition} non portée → fallback SLICE (visuel A/B à porter)`);
   }
   return function CB2_BattleStartTransition(): void {
     switch (state) {
       case 0:
-        startBattleIntroFlash();
+        _transitionMirror().startBattleIntroFlash?.();
         state = 1;
         break;
       case 1:
-        if (tickBattleIntroFlash()) {
+        if (_transitionMirror().tickBattleIntroFlash?.() ?? true) {
           startTransition();
           state = 2;
         }
