@@ -619,3 +619,44 @@ function AnimTask_IsPowerOver99(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 _hsReg({ AnimTask_IsPowerOver99: AnimTask_IsPowerOver99 as never });
+
+// --- VAGUE F65b : PositionFissureBgOnBattler (ground.c:740-775) -------------
+// Cale le BG3 (la fissure) sur le battler : offsets poses puis TENUS par une
+// task d'attente jusqu'au signal args[7] == arg2 (puis reset 0/0).
+function _pfItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _pfSetBg3(x: number, y: number): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG3_X = x;
+  g.gBattle_BG3_Y = y;
+}
+
+/** 1:1 AnimTask_PositionFissureBgOnBattler (ground.c:740). */
+function AnimTask_PositionFissureBgOnBattler(task: { taskId: number }): void {
+  const itf = _pfItf();
+  const args = itf.getArgs?.() ?? [1, 1, -1];
+  const battler = (args[0] & 1) ? (itf.getTarget?.() ?? 1) : (itf.getAttacker?.() ?? 0);
+  const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (f: unknown, p: number) => number; gTasks?: Map<number, { data: number[] }> } | undefined;
+  const newId = rt?.CreateTask?.((tk: { taskId: number; data: number[] }) => _WaitForFissureCompletion(tk), args[1] | 0) ?? -1;
+  const newTask = newId >= 0 ? rt?.gTasks?.get(newId) : undefined;
+  if (newTask) {
+    newTask.data[1] = (32 - GetBattlerSpriteCoord(battler, 2)) & 0x1FF;
+    newTask.data[2] = (64 - GetBattlerSpriteCoord(battler, 3)) & 0xFF;
+    _pfSetBg3(newTask.data[1], newTask.data[2]);
+    newTask.data[3] = args[2] | 0;
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 WaitForFissureCompletion. */
+function _WaitForFissureCompletion(task: { taskId: number; data: number[] }): void {
+  const args = _pfItf().getArgs?.();
+  const rt = (globalThis as Record<string, unknown>).__rt as { DestroyTask?: (id: number) => void } | undefined;
+  if (args && ((args[7] << 16) >> 16) === task.data[3]) {
+    _pfSetBg3(0, 0);
+    rt?.DestroyTask?.(task.taskId);
+  } else {
+    _pfSetBg3(task.data[1], task.data[2]);
+  }
+}
+_hsReg({ AnimTask_PositionFissureBgOnBattler: AnimTask_PositionFissureBgOnBattler as never });

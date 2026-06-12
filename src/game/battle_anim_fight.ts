@@ -676,3 +676,59 @@ export function AnimTravelDiagonally(sprite: unknown): void {
   _AnimTravelDiagonally(sprite as never);
 }
 registerAnimCallbacks({ AnimTravelDiagonally: AnimTravelDiagonally as never });
+
+// --- VAGUE F65a : AnimTask_MoveSkyUppercutBg (fight.c:996-1035) -------------
+// Le fond accelere en diagonale (X 1280/f Q8.8 apres delai arg0, Y 2816/f)
+// jusqu'au signal args[7] = -1 (UpdateAnimBg3ScreenSize F34).
+function _suItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _suBg3(dx: number, dy: number): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG3_X = (((g.gBattle_BG3_X as number) | 0) + dx) & 0xFFFF;
+  g.gBattle_BG3_Y = (((g.gBattle_BG3_Y as number) | 0) + dy) & 0xFFFF;
+}
+function _suSetBg3(x: number, y: number): void {
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_BG3_X = x;
+  g.gBattle_BG3_Y = y;
+}
+function _suScreenSize(large: boolean): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { bg: (i: number) => { config: { screenSize: number } } } } | undefined;
+  const cfg = rt?.gba?.bg(3)?.config;
+  if (cfg) cfg.screenSize = large ? 1 : 0;
+}
+
+/** 1:1 AnimTask_MoveSkyUppercutBg (fight.c:996). */
+function AnimTask_MoveSkyUppercutBg(task: { taskId: number; data: number[] }): void {
+  const itf = _suItf();
+  const args = itf.getArgs?.() ?? [0];
+  switch (task.data[0]) {
+    case 0:
+      _suScreenSize(false);
+      task.data[8] = args[0] | 0;
+      task.data[0]++;
+      break;
+    case 1:
+      if (--task.data[8] === -1) task.data[0]++;
+      break;
+    case 2:
+    default:
+      task.data[9] += 1280;
+      break;
+  }
+  task.data[10] += 2816;
+  const tgt = itf.getTarget?.() ?? 1;
+  if ((tgt & 1) === 0 /* B_SIDE_PLAYER */) _suBg3(task.data[9] >> 8, 0);
+  else _suBg3(-(task.data[9] >> 8), 0);
+  _suBg3(0, task.data[10] >> 8);
+  task.data[9] &= 0xFF;
+  task.data[10] &= 0xFF;
+  if (args && ((args[7] << 16) >> 16) === -1) {
+    _suSetBg3(0, 0);
+    _suScreenSize(true);
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+import { registerAnimTasks as _fgRegT } from '../engine/battle/battle-anim-registry';
+_fgRegT({ AnimTask_MoveSkyUppercutBg: AnimTask_MoveSkyUppercutBg as never });
