@@ -574,3 +574,212 @@ function AnimTask_ShakeTargetInPattern(task: { taskId: number; data: number[] })
 }
 import { registerAnimTasks as _fRegT } from '../engine/battle/battle-anim-registry';
 _fRegT({ AnimTask_ShakeTargetInPattern: AnimTask_ShakeTargetInPattern as never });
+
+// --- VAGUE F48 : EruptionLaunchRocks (fire.c:774-1011) ----------------------
+// L'attaquant gonfle/eclate (erupt) et lance 7 roches en paraboles 8.3
+// (vitesse de chute quadratique). Le sous-systeme erupt vient de F47.
+import {
+  PrepareEruptAnimTaskData as _erPrep,
+  UpdateEruptAnimTask as _erUpd,
+  SetBattlerSpriteYOffsetFromYScale as _erYScale,
+} from './battle_anim_mons';
+
+type _ErTask = { taskId: number; data: number[]; func?: unknown };
+function _erItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+type _ErSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean; centerToCornerVecY?: number };
+function _erRt(): {
+  gSprites?: Map<number, _ErSprite>;
+  gTasks?: Map<number, { data: number[] }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _erMons(): { PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void; ResetSpriteRotScale?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _erAtkSpriteId(): number {
+  const b = _erItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+// 1:1 sEruptionLaunchRockSpeeds (fire.c:359)
+const _sEruptRockSpeeds: ReadonlyArray<readonly [number, number]> = [
+  [-2, -5], [-1, -1], [3, -6], [4, -2], [2, -8], [-5, -5], [4, -7],
+];
+
+/** 1:1 AnimTask_EruptionLaunchRocks (fire.c:796). data[15]=spriteId, [6]=actifs. */
+function AnimTask_EruptionLaunchRocks(task: _ErTask): void {
+  task.data[15] = _erAtkSpriteId();
+  if (task.data[15] === 0xFF) { _erItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  const sp = _erRt().gSprites?.get(task.data[15]);
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 0;
+  task.data[4] = sp ? sp.y : 0;            // tAttackerY
+  task.data[5] = (_erItf().getAttacker?.() ?? 0) & 1; // tAttackerSide
+  task.data[6] = 0;                        // tActiveSprites
+  _erMons().PrepareBattlerSpriteForRotScale?.(task.data[15], 0);
+  task.func = _EruptionLaunchRocks_Step;
+}
+function _EruptionLaunchRocks_Case1(task: _ErTask, sp: _ErSprite | undefined): void {
+  if (++task.data[1] > 1) {
+    task.data[1] = 0;
+    if (sp) sp.x2 = (++task.data[2] & 1) ? 3 : -3;
+  }
+  if (task.data[5] !== 0 /* != B_SIDE_PLAYER */) {
+    if (++task.data[3] > 4) {
+      task.data[3] = 0;
+      if (sp) sp.y++;
+    }
+  }
+  if (!_erUpd(task as never)) {
+    _erYScale(task.data[15]);
+    if (sp) sp.x2 = 0;
+    task.data[1] = 0;
+    task.data[2] = 0;
+    task.data[3] = 0;
+    task.data[0]++;
+  }
+}
+function _EruptionLaunchRocks_Step(task: _ErTask): void {
+  const sp = _erRt().gSprites?.get(task.data[15]);
+  switch (task.data[0]) {
+    case 0:
+      _erPrep(task as never, task.data[15], 0x100, 0x100, 0xE0, 0x200, 32);
+      task.data[0]++;
+      _EruptionLaunchRocks_Case1(task, sp); // 1:1 fallthrough C
+      break;
+    case 1:
+      _EruptionLaunchRocks_Case1(task, sp);
+      break;
+    case 2:
+      if (++task.data[1] > 4) {
+        if (task.data[5] !== 0) _erPrep(task as never, task.data[15], 0xE0, 0x200, 0x180, 0xF0, 6);
+        else _erPrep(task as never, task.data[15], 0xE0, 0x200, 0x180, 0xC0, 6);
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 3:
+      if (!_erUpd(task as never)) {
+        _CreateEruptionLaunchRocks(task.data[15], task.taskId, 6 /* IDX_ACTIVE_SPRITES */);
+        task.data[0]++;
+      }
+      break;
+    case 4:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        if (sp) sp.y2 += (++task.data[2] & 1) ? 3 : -3;
+      }
+      if (++task.data[3] > 24) {
+        if (task.data[5] !== 0) _erPrep(task as never, task.data[15], 0x180, 0xF0, 0x100, 0x100, 8);
+        else _erPrep(task as never, task.data[15], 0x180, 0xC0, 0x100, 0x100, 8);
+        if (task.data[2] & 1) { if (sp) sp.y2 -= 3; }
+        task.data[1] = 0;
+        task.data[2] = 0;
+        task.data[3] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 5:
+      if (task.data[5] !== 0) { if (sp) sp.y--; }
+      if (!_erUpd(task as never)) {
+        if (sp) sp.y = task.data[4];
+        _erMons().ResetSpriteRotScale?.(task.data[15]);
+        task.data[2] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 6:
+      if (task.data[6] === 0) _erItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    default:
+      break;
+  }
+}
+/** 1:1 CreateEruptionLaunchRocks (fire.c:924). */
+function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpritesIdx: number): void {
+  const rt = _erRt();
+  const atkSp = rt.gSprites?.get(spriteId);
+  if (!atkSp) return;
+  const y = _GetEruptionLaunchRockInitialYPos(atkSp);
+  let x = atkSp.x;
+  let sign: number;
+  if (((_erItf().getAttacker?.() ?? 0) & 1) === 0) {
+    x -= 12;
+    sign = 1;
+  } else {
+    x += 16;
+    sign = -1;
+  }
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gEruptionLaunchRockSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  for (let i = 0, j = 0; i <= 6; i++) {
+    const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 2) ?? -1;
+    if (sid >= 0) {
+      const rock = rt.gSprites?.get(sid);
+      const oam = rock ? rt.gba?.oam[rock.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) {
+        oam.tileId = tileStart + j * 4 + 0x40;
+        const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+        if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      }
+      if (++j >= 5) j = 0;
+      if (rock) {
+        _InitEruptionLaunchRockCoordData(rock, _sEruptRockSpeeds[i][0] * sign, _sEruptRockSpeeds[i][1]);
+        rock.data[6] = taskId;          // sTaskId
+        rock.data[7] = activeSpritesIdx; // sActiveSpritesIdx
+        rock.callback = _AnimEruptionLaunchRock as never;
+        const t = rt.gTasks?.get(taskId);
+        if (t) t.data[activeSpritesIdx]++;
+      }
+    }
+  }
+}
+/** 1:1 GetEruptionLaunchRockInitialYPos (fire.c:971). */
+function _GetEruptionLaunchRockInitialYPos(sp: _ErSprite): number {
+  let y = sp.y + sp.y2 + (sp.centerToCornerVecY ?? -32);
+  if (((_erItf().getAttacker?.() ?? 0) & 1) === 0) y += 74;
+  else y += 44;
+  return y & 0xFFFF;
+}
+/** 1:1 InitEruptionLaunchRockCoordData (fire.c:983) — fixed-point 8.3. */
+function _InitEruptionLaunchRockCoordData(sp: _ErSprite, speedX: number, speedY: number): void {
+  sp.data[0] = 0;                      // sSpeedDelay
+  sp.data[1] = 0;                      // sLaunchStage
+  sp.data[2] = (sp.x & 0xFFFF) * 8;    // sX
+  sp.data[3] = (sp.y & 0xFFFF) * 8;    // sY
+  sp.data[4] = speedX * 8;             // sSpeedX
+  sp.data[5] = speedY * 8;             // sSpeedY
+}
+/** 1:1 UpdateEruptionLaunchRockPos + AnimEruptionLaunchRock (fire.c:960-1011). */
+function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
+  if (++sprite.data[0] > 2) {
+    sprite.data[0] = 0;
+    ++sprite.data[1];
+    sprite.data[3] += (sprite.data[1] & 0xFFFF) * (sprite.data[1] & 0xFFFF);
+  }
+  sprite.data[2] += sprite.data[4];
+  sprite.x = sprite.data[2] >> 3;
+  sprite.data[3] += sprite.data[5];
+  sprite.y = sprite.data[3] >> 3;
+  if (sprite.x < -8 || sprite.x > 248 || sprite.y < -8 || sprite.y > 120) {
+    sprite.invisible = true;
+  }
+  if (sprite.invisible) {
+    const rt = _erRt();
+    const t = rt.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_fRegT({ AnimTask_EruptionLaunchRocks: AnimTask_EruptionLaunchRocks as never });
