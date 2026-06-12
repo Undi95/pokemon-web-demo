@@ -461,24 +461,36 @@ export function GetWildBattleTransition(): number {
   return (enemyLevel < playerLevel) ? row[0] : row[1];
 }
 
-/** 1:1 décomp `sBattleTransitionTable_Trainer[][2]` (battle_setup.c:121-127). */
+/** 1:1 décomp `sBattleTransitionTable_Trainer[][2]` (battle_setup.c:121-127).
+ *  ⚠️ Valeurs par l'ENUM (les littéraux initiaux avaient 3 erreurs : 10≠ANGLED_
+ *  WIPES(11), 6≠GRID_SQUARES(10), 7≠RIPPLE(6) — leçon hardcode re-payée). */
 const sBattleTransitionTable_Trainer: ReadonlyArray<readonly [number, number]> = [
-  /* NORMAL */ [4 /* B_TRANSITION_POKEBALLS_TRAIL */, 10 /* B_TRANSITION_ANGLED_WIPES */],
-  /* CAVE   */ [2 /* B_TRANSITION_SHUFFLE */, 3 /* B_TRANSITION_BIG_POKEBALL */],
-  /* FLASH  */ [0 /* B_TRANSITION_BLUR */, 6 /* B_TRANSITION_GRID_SQUARES */],
-  /* WATER  */ [1 /* B_TRANSITION_SWIRL */, 7 /* B_TRANSITION_RIPPLE */],
+  /* NORMAL */ [B_TRANSITION.B_TRANSITION_POKEBALLS_TRAIL, B_TRANSITION.B_TRANSITION_ANGLED_WIPES],
+  /* CAVE   */ [B_TRANSITION.B_TRANSITION_SHUFFLE, B_TRANSITION.B_TRANSITION_BIG_POKEBALL],
+  /* FLASH  */ [B_TRANSITION.B_TRANSITION_BLUR, B_TRANSITION.B_TRANSITION_GRID_SQUARES],
+  /* WATER  */ [B_TRANSITION.B_TRANSITION_SWIRL, B_TRANSITION.B_TRANSITION_RIPPLE],
 ];
 
 /** 1:1 décomp `GetSumOfEnemyPartyLevel(opponentId, numMons)` (battle_setup.c:740-788,
  *  branche dresseur normal — frontier omis). Lit les levels de gTrainers[id].party
  *  (les 4 unions partagent le champ level). */
 export function GetSumOfEnemyPartyLevel(opponentId: number, numMons: number): number {
-  const trainers = (globalThis as { __gTrainers?: Record<number, { party?: Record<string, Array<{ level?: number }>> }> }).__gTrainers;
+  const trainers = (globalThis as { __gTrainers?: Record<number, { party?: unknown }> }).__gTrainers;
   const t = trainers?.[opponentId];
   if (!t?.party) return 0;
-  const arr = t.party.NoItemDefaultMoves ?? t.party.NoItemCustomMoves ?? t.party.ItemDefaultMoves ?? t.party.ItemCustomMoves ?? [];
+  // Deux formes possibles : le bridge JSON expose `party` en ARRAY direct
+  // (JsonTrainerMember[], battle-trainer-data-bridge.ts:47) ; la forme struct
+  // décomp (TrainerPartyData) a les 4 unions. (Le 1er jet ne lisait que les
+  // unions → 0 → la transition dresseur tombait toujours sur row[0].)
+  type _Mon = { lvl?: number; level?: number };
+  const p = t.party as Record<string, _Mon[]> | _Mon[];
+  const arr: _Mon[] = Array.isArray(p)
+    ? p
+    : (p.NoItemDefaultMoves ?? p.NoItemCustomMoves ?? p.ItemDefaultMoves ?? p.ItemCustomMoves ?? []);
   let sum = 0;
-  for (let i = 0; i < Math.min(numMons, arr.length); i++) sum += arr[i]?.level ?? 0;
+  // 1:1 struct .c : le champ s'appelle `lvl` (TrainerMonNoItemDefaultMoves) —
+  // `level` en fallback (forme JSON brute du bridge).
+  for (let i = 0; i < Math.min(numMons, arr.length); i++) sum += arr[i]?.lvl ?? arr[i]?.level ?? 0;
   return sum;
 }
 
@@ -494,16 +506,18 @@ export function GetTrainerBattleTransition(): number {
   const t = g.__gTrainers?.[opponentA];
   const cls = t?.trainerClass ?? -1;
   const C = (name: string): number => (resolveDecompConstant(name) as number | undefined) ?? -2;
+  // ⚠️ Valeurs par l'ENUM — les littéraux initiaux étaient TOUS décalés
+  // (SIDNEY 13≠12, CHAMPION 17≠16, AQUA 11(!)=ANGLED_WIPES, MAGMA 12=SIDNEY).
   if (cls === C('TRAINER_CLASS_ELITE_FOUR')) {
-    if (opponentA === C('TRAINER_SIDNEY')) return 13;   // B_TRANSITION_SIDNEY
-    if (opponentA === C('TRAINER_PHOEBE')) return 14;   // B_TRANSITION_PHOEBE
-    if (opponentA === C('TRAINER_GLACIA')) return 15;   // B_TRANSITION_GLACIA
-    if (opponentA === C('TRAINER_DRAKE')) return 16;    // B_TRANSITION_DRAKE
-    return 17;                                          // B_TRANSITION_CHAMPION
+    if (opponentA === C('TRAINER_SIDNEY')) return B_TRANSITION.B_TRANSITION_SIDNEY;
+    if (opponentA === C('TRAINER_PHOEBE')) return B_TRANSITION.B_TRANSITION_PHOEBE;
+    if (opponentA === C('TRAINER_GLACIA')) return B_TRANSITION.B_TRANSITION_GLACIA;
+    if (opponentA === C('TRAINER_DRAKE')) return B_TRANSITION.B_TRANSITION_DRAKE;
+    return B_TRANSITION.B_TRANSITION_CHAMPION;
   }
-  if (cls === C('TRAINER_CLASS_CHAMPION')) return 17;
-  if (cls === C('TRAINER_CLASS_TEAM_MAGMA') || cls === C('TRAINER_CLASS_MAGMA_LEADER') || cls === C('TRAINER_CLASS_MAGMA_ADMIN')) return 12; // B_TRANSITION_MAGMA
-  if (cls === C('TRAINER_CLASS_TEAM_AQUA') || cls === C('TRAINER_CLASS_AQUA_LEADER') || cls === C('TRAINER_CLASS_AQUA_ADMIN')) return 11;   // B_TRANSITION_AQUA
+  if (cls === C('TRAINER_CLASS_CHAMPION')) return B_TRANSITION.B_TRANSITION_CHAMPION;
+  if (cls === C('TRAINER_CLASS_TEAM_MAGMA') || cls === C('TRAINER_CLASS_MAGMA_LEADER') || cls === C('TRAINER_CLASS_MAGMA_ADMIN')) return B_TRANSITION.B_TRANSITION_MAGMA;
+  if (cls === C('TRAINER_CLASS_TEAM_AQUA') || cls === C('TRAINER_CLASS_AQUA_LEADER') || cls === C('TRAINER_CLASS_AQUA_ADMIN')) return B_TRANSITION.B_TRANSITION_AQUA;
   const minPartyCount = t?.doubleBattle ? 2 : 1;
   const transitionType = GetBattleTransitionTypeByMap();
   const enemyLevel = GetSumOfEnemyPartyLevel(opponentA, minPartyCount);

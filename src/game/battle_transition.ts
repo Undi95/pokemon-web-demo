@@ -567,6 +567,188 @@ export function stopBattleTransitionWhiteBarsFade(): void {
 
 export function isBattleTransitionWhiteBarsFadeActive(): boolean { return _whiteBars !== null; }
 
+// ─── B_TRANSITION_ANGLED_WIPES (battle_transition.c:3829-3967) ───────────────
+// 7 wipes diagonaux successifs : chaque scanline a un WIN0H (left<<8|right) qui
+// se resserre le long d'une diagonale (algo BlackWipe = Bresenham, :4146-4239).
+// La transition dresseur « ennemi plus fort » (sBattleTransitionTable_Trainer
+// [NORMAL][1]).
+
+/** 1:1 `NUM_ANGLED_WIPES` (battle_transition.c:758). */
+const NUM_ANGLED_WIPES = 7;
+/** 1:1 `sAngledWipes_MoveData[7][5]` (:760-770) — startX/startY/endX/endY/yDir. */
+const sAngledWipes_MoveData: ReadonlyArray<readonly [number, number, number, number, number]> = [
+  [56, 0, 0, DISPLAY_HEIGHT, 0],
+  [104, DISPLAY_HEIGHT, DISPLAY_WIDTH, 88, 1],
+  [DISPLAY_WIDTH, 72, 56, 0, 1],
+  [0, 32, 144, DISPLAY_HEIGHT, 0],
+  [144, DISPLAY_HEIGHT, 184, 0, 1],
+  [56, 0, 168, DISPLAY_HEIGHT, 0],
+  [168, DISPLAY_HEIGHT, 48, 0, 1],
+];
+/** 1:1 `sAngledWipes_EndDelays[7]` (:772). */
+const sAngledWipes_EndDelays: readonly number[] = [8, 4, 2, 1, 1, 1, 0];
+
+/** 1:1 struct BlackWipe data (tWipeStartX..tWipeTemp, 11 champs s16). */
+interface BlackWipeData {
+  startX: number; startY: number; currX: number; currY: number;
+  endX: number; endY: number; xMove: number; yMove: number;
+  xDist: number; yDist: number; temp: number;
+}
+
+/** 1:1 `InitBlackWipe(data, startX, startY, endX, endY, xMove, yMove)` (:4146-4171). */
+function InitBlackWipe(d: BlackWipeData, startX: number, startY: number, endX: number, endY: number, xMove: number, yMove: number): void {
+  d.startX = startX; d.startY = startY;
+  d.currX = startX; d.currY = startY;
+  d.endX = endX; d.endY = endY;
+  d.xMove = xMove; d.yMove = yMove;
+  d.xDist = endX - startX;
+  if (d.xDist < 0) { d.xDist = -d.xDist; d.xMove = -xMove; }
+  d.yDist = endY - startY;
+  if (d.yDist < 0) { d.yDist = -d.yDist; d.yMove = -yMove; }
+  d.temp = 0;
+}
+
+/** 1:1 `UpdateBlackWipe(data, xExact, yExact)` (:4173-4239) — Bresenham, TRUE quand
+ *  les deux coords ont atteint leur fin. */
+function UpdateBlackWipe(d: BlackWipeData, xExact: boolean, yExact: boolean): boolean {
+  if (d.xDist > d.yDist) {
+    d.currX += d.xMove;
+    d.temp += d.yDist;
+    if (d.temp > d.xDist) { d.currY += d.yMove; d.temp -= d.xDist; }
+  } else {
+    d.currY += d.yMove;
+    d.temp += d.xDist;
+    if (d.temp > d.yDist) { d.currX += d.xMove; d.temp -= d.yDist; }
+  }
+  let numFinished = 0;
+  if ((d.xMove > 0 && d.currX >= d.endX) || (d.xMove < 0 && d.currX <= d.endX)) {
+    numFinished++;
+    if (xExact) d.currX = d.endX;
+  }
+  if ((d.yMove > 0 && d.currY >= d.endY) || (d.yMove < 0 && d.currY <= d.endY)) {
+    numFinished++;
+    if (yExact) d.currY = d.endY;
+  }
+  return numFinished === 2;
+}
+
+interface AngledWipesState {
+  state: number;     // 1=SetWipeData, 2=DoWipe, 3=TryEnd, 4=StartNext
+  wipeId: number; dir: number; delay: number;
+  vblankDma: boolean;
+  wipe: BlackWipeData;
+}
+let _angledWipes: AngledWipesState | null = null;
+let _angledWipesLastFrame = -1;
+
+/** 1:1 `AngledWipes_Init` (:3834-3853) : buffers WIN0H pleins + WIN0 + HBlank. */
+export function startBattleTransitionAngledWipes(): void {
+  ScanlineEffect_Clear();
+  _angledWipesLastFrame = -1;
+  for (let i = 0; i < DISPLAY_HEIGHT; i++) {
+    gScanlineEffectRegBuffers[0][i] = DISPLAY_WIDTH;
+    gScanlineEffectRegBuffers[1][i] = DISPLAY_WIDTH;
+  }
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 VBlankCB_AngledWipes : WININ_WIN0_ALL / WINOUT 0 / WIN0V plein +
+  // WIN0H par-scanline depuis buf[1] (left<<8|right).
+  rt.SetGpuReg(REG_OFFSET_WININ, 0x3F);
+  rt.SetGpuReg(REG_OFFSET_WINOUT, 0);
+  rt.SetGpuReg(REG_OFFSET_WIN0V, DISPLAY_HEIGHT);
+  rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) | DISPCNT_WIN0_ON);
+  rt.gba.setHBlankCallback((y: number) => {
+    if (y < DISPLAY_HEIGHT) {
+      const win0h = gScanlineEffectRegBuffers[1][y];
+      rt.gba.windows.win0.x1 = (win0h >> 8) & 0xFF;
+      rt.gba.windows.win0.x2 = win0h & 0xFF;
+    }
+  });
+  _hblankInstalled = true;
+  _angledWipes = {
+    state: 1, wipeId: 0, dir: 0, delay: 0, vblankDma: false,
+    wipe: { startX: 0, startY: 0, currX: 0, currY: 0, endX: 0, endY: 0, xMove: 0, yMove: 0, xDist: 0, yDist: 0, temp: 0 },
+  };
+}
+
+/** 1:1 `sAngledWipes_Funcs` state machine (SetWipeData/DoWipe/TryEnd/StartNext). */
+export function tickBattleTransitionAngledWipes(): boolean {
+  if (!_angledWipes) return true;
+  const a = _angledWipes;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === _angledWipesLastFrame) return false;
+  _angledWipesLastFrame = fc;
+
+  // 1:1 Task_AngledWipes : while(funcs[state]()) — enchaîne les états TRUE.
+  for (let guard = 0; guard < 8; guard++) {
+    if (a.state === 1) {
+      // SetWipeData (:3855-3867)
+      const md = sAngledWipes_MoveData[a.wipeId];
+      InitBlackWipe(a.wipe, md[0], md[1], md[2], md[3], 1, 1);
+      a.dir = md[4];
+      a.state = 2;
+      continue;
+    }
+    if (a.state === 2) {
+      // DoWipe (:3868-3907) : 16 pas de wipe par frame.
+      a.vblankDma = false;
+      let finished = false;
+      for (let i = 0; i < 16; i++) {
+        let r3 = gScanlineEffectRegBuffers[0][a.wipe.currY] >> 8;
+        let r4 = gScanlineEffectRegBuffers[0][a.wipe.currY] & 0xFF;
+        if (a.dir === 0) {
+          if (r3 < a.wipe.currX) r3 = a.wipe.currX;
+          if (r3 > r4) r3 = r4;
+        } else {
+          if (r4 > a.wipe.currX) r4 = a.wipe.currX;
+          if (r4 <= r3) r4 = r3;
+        }
+        gScanlineEffectRegBuffers[0][a.wipe.currY] = (r4 | (r3 << 8)) & 0xFFFF;
+        if (finished) { a.state = 3; break; }
+        finished = UpdateBlackWipe(a.wipe, true, true);
+      }
+      a.vblankDma = true;
+      // 1:1 VBlankCB : copy buf[0] → buf[1] (la moitié WIN0H = 160 entries).
+      for (let i = 0; i < DISPLAY_HEIGHT; i++) gScanlineEffectRegBuffers[1][i] = gScanlineEffectRegBuffers[0][i];
+      return false;   // (DoWipe retourne FALSE = 1 frame)
+    }
+    if (a.state === 3) {
+      // TryEnd (:3908-3926)
+      if (++a.wipeId < NUM_ANGLED_WIPES) {
+        a.state = 4;
+        a.delay = sAngledWipes_EndDelays[a.wipeId - 1];
+        continue;
+      }
+      // Fin : FadeScreenBlack + cleanup.
+      BlendPalettes(PALETTES_ALL, 16, 0);
+      stopBattleTransitionAngledWipes();
+      return true;
+    }
+    if (a.state === 4) {
+      // StartNext (:3927-3938)
+      if (--a.delay === 0) { a.state = 1; continue; }
+      return false;
+    }
+  }
+  return false;
+}
+
+/** Cleanup AngledWipes : HBlank off + WIN0 off. */
+export function stopBattleTransitionAngledWipes(): void {
+  const rt = getRuntime();
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.windows.win0.x1 = 0;
+    rt.gba.windows.win0.x2 = DISPLAY_WIDTH;
+    rt.SetGpuReg(REG_OFFSET_DISPCNT, rt.GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_WIN0_ON);
+  }
+  _hblankInstalled = false;
+  ScanlineEffect_Stop();
+  _angledWipes = null;
+}
+
+export function isBattleTransitionAngledWipesActive(): boolean { return _angledWipes !== null; }
+
 // Surface devtools/dispatcher (anti-cycle : battle-decomp-loop consomme lazy).
 (globalThis as Record<string, unknown>).__battleTransitionMirror = {
   startBattleTransitionPokeballsTrail, tickBattleTransitionPokeballsTrail,
@@ -577,4 +759,6 @@ export function isBattleTransitionWhiteBarsFadeActive(): boolean { return _white
   isBattleTransitionActive,
   startBattleTransitionWhiteBarsFade, tickBattleTransitionWhiteBarsFade,
   stopBattleTransitionWhiteBarsFade, isBattleTransitionWhiteBarsFadeActive,
+  startBattleTransitionAngledWipes, tickBattleTransitionAngledWipes,
+  stopBattleTransitionAngledWipes, isBattleTransitionAngledWipesActive,
 };
