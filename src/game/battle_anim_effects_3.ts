@@ -3503,3 +3503,100 @@ function _BarrageBall_Step(task: { taskId: number; data: number[]; func?: unknow
   }
 }
 registerAnimTasks({ AnimTask_BarrageBall: AnimTask_BarrageBall as never });
+
+// --- VAGUE F69 : AnimTask_MorningSunLightBeam (effects_3.c) -----------------
+// 4 rais de lumiere : masque light_beam en BG1, fondu 0..12, deplacement par
+// table s8 [-24,24,-4,0], 4 cycles, demontage. SE MORNING_SUN par rai.
+import {
+  GetBattleAnimBg1Data as _msBgData,
+  AnimLoadCompressedBgGfx as _msLoadGfx,
+  AnimLoadCompressedBgTilemap as _msLoadMap,
+  LoadAnimBgPalette as _msLoadPal,
+  ClearBattleAnimBg as _msClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+const _gMorningSunCoords: ReadonlyArray<number> = [-24, 24, -4, 0]; // s8 0xE8,0x18,0xFC,0x00
+type _MsTask = { taskId: number; data: number[]; func?: unknown };
+function _msItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _msRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _msSetBg1(x: number | null, y: number | null): void {
+  const g = globalThis as Record<string, unknown>;
+  if (x !== null) g.gBattle_BG1_X = x & 0xFFFF;
+  if (y !== null) g.gBattle_BG1_Y = y & 0xFFFF;
+}
+
+/** 1:1 AnimTask_MorningSunLightBeam. */
+function AnimTask_MorningSunLightBeam(task: _MsTask): void {
+  const itf = _msItf();
+  const rt = _msRt();
+  switch (task.data[0]) {
+    case 0: {
+      rt.SetGpuReg?.(0x50, 0x3F42);
+      rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) {
+        bg1.screenSize = 0;
+        bg1.priority = 1;
+        bg1.charBaseIndex = 1;
+      }
+      const animBg = _msBgData();
+      _msLoadMap(animBg.bgId, 'gBattleAnimMaskTilemap_LightBeam');
+      const atk = itf.getAttacker?.() ?? 0;
+      if ((atk & 1) !== 0) _msSetBg1(-135, 0);
+      else _msSetBg1(-10, 0);
+      _msLoadGfx(animBg.bgId, 'gBattleAnimMaskImage_LightBeam', animBg.tilesOffset);
+      _msLoadPal('gBattleAnimMaskPalette_LightBeam', animBg.paletteId);
+      task.data[10] = ((globalThis as Record<string, unknown>).gBattle_BG1_X as number) | 0;
+      task.data[11] = ((globalThis as Record<string, unknown>).gBattle_BG1_Y as number) | 0;
+      task.data[0]++;
+      (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(214 /* SE_M_MORNING_SUN */);
+      break;
+    }
+    case 1:
+      if (task.data[4]++ > 0) {
+        task.data[4] = 0;
+        if (++task.data[1] > 12) task.data[1] = 12;
+        rt.SetGpuReg?.(0x52, (task.data[1] & 0xFF) | ((16 - task.data[1]) << 8));
+        if (task.data[1] === 12) task.data[0]++;
+      }
+      break;
+    case 2:
+      if (--task.data[1] < 0) task.data[1] = 0;
+      rt.SetGpuReg?.(0x52, (task.data[1] & 0xFF) | ((16 - task.data[1]) << 8));
+      if (!task.data[1]) {
+        _msSetBg1(_gMorningSunCoords[task.data[2]] + task.data[10], null);
+        if (++task.data[2] === 4) task.data[0] = 4;
+        else task.data[0] = 3;
+      }
+      break;
+    case 3:
+      if (++task.data[3] === 4) {
+        task.data[3] = 0;
+        task.data[0] = 1;
+        (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(214);
+      }
+      break;
+    case 4: {
+      const animBg = _msBgData();
+      _msClearBg(animBg.bgId);
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) {
+        bg1.charBaseIndex = 0;
+        bg1.priority = 1;
+      }
+      _msSetBg1(0, 0);
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      _msItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+registerAnimTasks({ AnimTask_MorningSunLightBeam: AnimTask_MorningSunLightBeam as never });
