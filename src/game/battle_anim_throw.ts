@@ -52,7 +52,10 @@ import { CreateTask, DestroyTask } from '../engine/system/decomp-bridge';
 import {
   InitAnimArcTranslation, TranslateAnimHorizontalArc,
   SetSpriteRotScale, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
+  SetBattlerSpriteYOffsetFromYScale, GetBattlePalettesMask,
 } from './battle_anim_mons';
+import { GetBattlerPokeballItemId } from './pokeball';
+import { registerAnimTasks } from '../engine/battle/battle-anim-registry';
 import { AnimateBallOpenParticles as _fxBallOpenParticles, LaunchBallFadeMonTask as _fxBallFadeMon, CreateCaptureStarSprite as _fxCaptureStar } from '../engine/system/pokeball-effects';
 import { BlendPalettes } from '../engine/system/decomp-globals';
 import { BeginNormalPaletteFade } from '../engine/system/decomp-bridge';
@@ -123,15 +126,25 @@ function _getAnimState(): {
   attacker: number; target: number;
   args: Int16Array; destroyTask: (taskId: number) => void;
 } {
+  // Surface VIVANTE = __battleAnimInterpreter (getAttacker()/getArgs()/
+  // DestroyAnimVisualTask réels — décrémente gAnimVisualTaskCount, sinon
+  // Cmd_end bloque 600 frames au garde-fou). __battleAnim = fallback legacy
+  // (ses champs attacker/target sont resynchro par SetAnimBattlers mais il
+  // n'expose PAS DestroyAnimVisualTask → c'était un no-op silencieux).
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as {
+    getAttacker?: () => number; getTarget?: () => number;
+    getArgs?: () => Int16Array; DestroyAnimVisualTask?: (taskId: number) => void;
+  } | undefined;
   const ba = (globalThis as Record<string, unknown>).__battleAnim as {
     gBattleAnimAttacker?: number; gBattleAnimTarget?: number;
     gBattleAnimArgs?: Int16Array; DestroyAnimVisualTask?: (taskId: number) => void;
   } | undefined;
   return {
-    attacker: ba?.gBattleAnimAttacker ?? 0,
-    target: ba?.gBattleAnimTarget ?? 1,
-    args: ba?.gBattleAnimArgs ?? new Int16Array(8),
-    destroyTask: ba?.DestroyAnimVisualTask ?? ((_taskId: number): void => { /* no-op */ }),
+    attacker: itf?.getAttacker?.() ?? ba?.gBattleAnimAttacker ?? 0,
+    target: itf?.getTarget?.() ?? ba?.gBattleAnimTarget ?? 1,
+    args: itf?.getArgs?.() ?? ba?.gBattleAnimArgs ?? new Int16Array(8),
+    destroyTask: itf?.DestroyAnimVisualTask ?? ba?.DestroyAnimVisualTask
+      ?? ((_taskId: number): void => { /* no-op */ }),
   };
 }
 
@@ -390,23 +403,73 @@ export function AnimTask_UnusedLevelUpHealthBox(taskId: number): void {
 
 // ─── AnimTask_SwitchOutShrinkMon (battle_anim_throw.c:642) ─────────────────
 
-/** 1:1 décomp `AnimTask_SwitchOutShrinkMon(taskId)` (642-668). Setup affine
- *  shrink animation pour return-to-ball. */
+/** 1:1 décomp `AnimTask_SwitchOutShrinkMon(taskId)` (battle_anim_throw.c:642-668).
+ *  Le mon ATTACKER rétrécit (rappel dans la ball) : scale 0x100 → +0x30/frame
+ *  → ≥0x2D0, y2 compensé au sol (SetBattlerSpriteYOffsetFromYScale), puis
+ *  reset rot/scale + sprite invisible. State machine sur task.data[0]. */
 export function AnimTask_SwitchOutShrinkMon(taskId: number): void {
-  // Dette R3 : affine shrink anim via OAM matrix + AnimTaskSetCenterToCornerVec.
-  // Cascade vers battle-ball-throw.ts which has partial.
-  void taskId;
-  DestroyAnimVisualTask(taskId);
+  const task = _gTasks(taskId);
+  const spriteId = _getBattlerSpriteId(_getAnimState().attacker);
+  switch (task.data[0]) {
+    case 0:
+      PrepareBattlerSpriteForRotScale(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
+      task.data[10] = 0x100;
+      task.data[0]++;
+      break;
+    case 1:
+      task.data[10] += 0x30;
+      SetSpriteRotScale(spriteId, task.data[10], task.data[10], 0);
+      SetBattlerSpriteYOffsetFromYScale(spriteId);
+      if (task.data[10] >= 0x2D0) task.data[0]++;
+      break;
+    case 2: {
+      ResetSpriteRotScale(spriteId);
+      const spr = getRuntime()?.gSprites?.get(spriteId) as { invisible?: boolean } | undefined;
+      if (spr) spr.invisible = true;
+      DestroyAnimVisualTask(taskId);
+      break;
+    }
+  }
 }
 
 // ─── AnimTask_SwitchOutBallEffect (battle_anim_throw.c:669) ────────────────
 
-/** 1:1 décomp `AnimTask_SwitchOutBallEffect(taskId)` (669-702). Ball capture
- *  effect when switching out (= mon goes back in ball with red beam). */
+/** 1:1 décomp `AnimTask_SwitchOutBallEffect(taskId)` (battle_anim_throw.c:669-702).
+ *  Particules d'ouverture de ball + fade du mon vers la couleur de SA ball
+ *  (MON_DATA_POKEBALL — corps inline identique à GetBattlerPokeballItemId,
+ *  pokeball.c:1338). case 1 : attend la fin des 2 tasks lancées (décomp
+ *  `!gTasks[data[10]].isActive` = chez nous la task retirée de rt.gTasks). */
 export function AnimTask_SwitchOutBallEffect(taskId: number): void {
-  // Dette R3 : ball glow + red beam particle emission via sprite spawn.
-  void taskId;
-  DestroyAnimVisualTask(taskId);
+  const rt = getRuntime();
+  const task = _gTasks(taskId);
+  const attacker = _getAnimState().attacker;
+  if (!rt) { DestroyAnimVisualTask(taskId); return; }
+  switch (task.data[0]) {
+    case 0: {
+      const spriteId = _getBattlerSpriteId(attacker);
+      const spr = rt.gSprites?.get(spriteId) as { oamIndex: number; subpriority?: number } | undefined;
+      const oam = (rt as unknown as { gba?: { oam?: Array<{ priority?: number }> } }).gba?.oam?.[spr?.oamIndex ?? -1];
+      const ball = GetBattlerPokeballItemId(attacker);
+      const ballId = ItemIdToBallId(ball);
+      const x = _GetBattlerSpriteCoordReal(attacker, 0 /* BATTLER_COORD_X */);
+      const y = _GetBattlerSpriteCoordReal(attacker, 1 /* BATTLER_COORD_Y */);
+      const priority = oam?.priority ?? 2;
+      const subpriority = spr?.subpriority ?? 0;
+      task.data[10] = _fxBallOpenParticles(rt as never, x, y + 32, priority, subpriority, ballId);
+      // 1:1 décomp : PlaySE(SE_BALL_OPEN) vit DANS AnimateBallOpenParticles ;
+      // notre impl le délègue au caller (anti double-play chemin Birch).
+      (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(15 /* SE_BALL_OPEN */);
+      const selectedPalettes = GetBattlePalettesMask(true, false, false, false, false, false, false);
+      task.data[11] = _fxBallFadeMon(rt as never, false, attacker, selectedPalettes, ballId);
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (!rt.gTasks?.has(task.data[10]) && !rt.gTasks?.has(task.data[11])) {
+        DestroyAnimVisualTask(taskId);
+      }
+      break;
+  }
 }
 
 // ─── AnimTask_SwapMonSpriteToFromSubstitute (battle_anim_throw.c:2113) ─────
@@ -1120,6 +1183,18 @@ export function Special_BallThrow_TS(): void {
     AnimTask_ThrowBall(taskId);
   }
 }
+
+// ─── Registry bytecode (Cmd_createvisualtask → AnimTaskFn) ─────────────────
+// Les scripts gBattleAnims_Special (Special_SwitchOutPlayerMon/OpponentMon,
+// bytecode offsets 62397/62414) référencent ces 2 tasks par marqueur nominal.
+// Convention registry : la fn reçoit l'OBJET DecompTask → wrapper vers nos
+// signatures 1:1 (taskId). Enregistrées ici SEULEMENT celles dont le corps
+// est réel (les stubs Dette R3 restent hors registre = skip propre + warn).
+
+registerAnimTasks({
+  AnimTask_SwitchOutShrinkMon: ((t: { taskId: number }) => AnimTask_SwitchOutShrinkMon(t.taskId)) as never,
+  AnimTask_SwitchOutBallEffect: ((t: { taskId: number }) => AnimTask_SwitchOutBallEffect(t.taskId)) as never,
+});
 
 // ─── Devtools expose ───────────────────────────────────────────────────────
 

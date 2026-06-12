@@ -115,6 +115,7 @@ import {
   getPartyStatusDelayTimer as _getPartyStatusDelayTimer,
   setPartyStatusDelayTimer as _setPartyStatusDelayTimer,
 } from '../engine/battle/battle-sprites-data';
+import { B_ANIM_SWITCH_OUT_PLAYER_MON } from '../engine/decomp-data/include/constants/battle_anim-data';
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from '../engine/battle/constants';
 import { getExpForLevel } from '../engine/battle/data/experience-tables';
 import { getSpeciesGrowthRate } from '../engine/battle/data/species-runtime';
@@ -977,28 +978,65 @@ function _ClearTemporarySpeciesSpriteData(_battler: number, _dontClear: boolean)
   if (m?.clearTemporarySpeciesSpriteData) m.clearTemporarySpeciesSpriteData(_battler, _dontClear);
 }
 
-/** 1:1 décomp `PlayerHandleReturnMonToBall()` (battle_controller_player.c:2227). Le mon
- *  sortant doit DISPARAÎTRE avant le send-out du remplaçant. Décomp : bufferA[1]==0 →
- *  anim de rappel (DoSwitchOutAnimation : B_ANIM_SWITCH_OUT_PLAYER_MON, le mon rétrécit
- *  dans la ball) ; sinon → suppression directe (FreeSpriteOamMatrix + DestroySprite +
- *  SetHealthboxSpriteInvisible). DETTE 1:1 : l'anim de rappel (special anim) n'est pas
- *  encore portée → suppression directe dans les DEUX cas (le mon disparaît proprement,
- *  son sprite n'est plus orphelin = corrige "le mon ne change pas" au switch). */
+/** 1:1 décomp `PlayerHandleReturnMonToBall()` (battle_controller_player.c:2227-2242).
+ *  bufferA[1]==0 → anim de rappel (DoSwitchOutAnimation : le mon rétrécit dans la
+ *  ball, B_ANIM_SWITCH_OUT_PLAYER_MON) ; sinon → skip anim, suppression directe
+ *  (FreeSpriteOamMatrix + DestroySprite + SetHealthboxSpriteInvisible). */
 function PlayerHandleReturnMonToBall(): void {
+  if (gBattleBufferA[gActiveBattler][1] === 0) {
+    _setHealthBoxAnimationState(gActiveBattler, 0);
+    gBattlerControllerFuncs[gActiveBattler] = DoSwitchOutAnimation;
+  } else {
+    _freeMonSpriteAndHideHealthbox(gActiveBattler);
+    PlayerBufferExecCompleted();
+  }
+}
+
+/** Corps partagé 1:1 l.2237-2239 / l.1331-1334 : FreeSpriteOamMatrix + DestroySprite
+ *  (rt.DestroySprite libère la matrice allouée — mécanisme décomp) +
+ *  SetHealthboxSpriteInvisible(gHealthboxSpriteIds[battler]). */
+function _freeMonSpriteAndHideHealthbox(battler: number): void {
   const rt = getRuntime();
-  const spriteId = getBattlerMonSpriteId(gActiveBattler);
+  const spriteId = getBattlerMonSpriteId(battler);
   const sprite = rt?.gSprites?.get(spriteId);
-  if (sprite && rt?.gSprites) {
-    // 1:1 l.2237-2238 FreeSpriteOamMatrix + DestroySprite (mon post-reshow = statique,
-    // pas de matrice affine à libérer).
+  if (sprite && rt) {
     sprite.inUse = false;
     sprite.callback = null;
-    rt.gSprites.delete(spriteId);
+    rt.DestroySprite(spriteId);
   }
-  // 1:1 l.2239 SetHealthboxSpriteInvisible(gHealthboxSpriteIds[battler]).
   const hb = (globalThis as { __battleHealthbox?: { SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
-  hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(gActiveBattler));
-  PlayerBufferExecCompleted();
+  hb?.SetHealthboxSpriteInvisible?.(_gHealthboxSpriteId(battler));
+}
+
+/** 1:1 décomp `DoSwitchOutAnimation()` (battle_controller_player.c:2244-2264) :
+ *  case 0 = si behindSubstitute → B_ANIM_SUBSTITUTE_TO_MON d'abord ; case 1 =
+ *  quand la special anim est libre → B_ANIM_SWITCH_OUT_PLAYER_MON (rétrécissement
+ *  dans la ball) puis FreeMonSpriteAfterSwitchOutAnim. */
+function DoSwitchOutAnimation(): void {
+  switch (_getHealthBoxAnimationState(gActiveBattler)) {
+    case 0:
+      if (_isBehindSubstitute(gActiveBattler))
+        _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, _B_ANIM_SUBSTITUTE_TO_MON);
+      _setHealthBoxAnimationState(gActiveBattler, 1);
+      break;
+    case 1:
+      if (!_isSpecialAnimActive(gActiveBattler)) {
+        _setHealthBoxAnimationState(gActiveBattler, 0);
+        _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_SWITCH_OUT_PLAYER_MON);
+        gBattlerControllerFuncs[gActiveBattler] = FreeMonSpriteAfterSwitchOutAnim;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `FreeMonSpriteAfterSwitchOutAnim()` (battle_controller_player.c:1328-1338) :
+ *  attend la fin de la special anim (le shrink) → destroy sprite + healthbox
+ *  invisible + ExecCompleted. */
+function FreeMonSpriteAfterSwitchOutAnim(): void {
+  if (!_isSpecialAnimActive(gActiveBattler)) {
+    _freeMonSpriteAndHideHealthbox(gActiveBattler);
+    PlayerBufferExecCompleted();
+  }
 }
 
 /** 1:1 décomp `SpriteCB_TrainerSlideVertical(struct Sprite *sprite)` (battle_gfx_sfx_util.c). */
@@ -1145,10 +1183,13 @@ function _isSpecialAnimActive(battler: number): boolean {
   return !!m?.isSpecialAnimActive?.(battler);
 }
 
-/** 1:1 décomp `InitAndLaunchSpecialAnimation(active, attacker, target, animId)`. */
+/** 1:1 décomp `InitAndLaunchSpecialAnimation(active, attacker, target, animId)`
+ *  (battle_gfx_sfx_util.c:523). Surface __battleGfxSfxUtil (anti-cycle ESM) —
+ *  l'ancien wire `__battleAnim.initAndLaunchSpecialAnimation` n'existait NULLE
+ *  PART (no-op silencieux). */
 function _InitAndLaunchSpecialAnimation(_active: number, _attacker: number, _target: number, _animId: number): void {
-  const m = (globalThis as { __battleAnim?: { initAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleAnim;
-  m?.initAndLaunchSpecialAnimation?.(_active, _attacker, _target, _animId);
+  const m = (globalThis as { __battleGfxSfxUtil?: { InitAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleGfxSfxUtil;
+  m?.InitAndLaunchSpecialAnimation?.(_active, _attacker, _target, _animId);
 }
 
 /** 1:1 décomp `HandleLowHpMusicChange(mon, battler)`. */

@@ -755,6 +755,7 @@ import {
 import {
   setStatusAnimActive as _setStatusAnimActive, isStatusAnimActive as _isStatusAnimActive,
   isBehindSubstitute as _behindSub,
+  setSpecialAnimActive as _setSpecialAnimActive,
 } from '../engine/battle/battle-sprites-data';
 import { CreateTask as _CreateTask, DestroyTask as _DestroyTask } from '../engine/system/decomp-bridge';
 import {
@@ -856,7 +857,38 @@ export function TryHandleLaunchBattleTableAnimation(
   return false;
 }
 
+/** 1:1 décomp `Task_ClearBitWhenSpecialAnimDone(taskId)` (battle_gfx_sfx_util.c:535-543) :
+ *  ticke le script anim (gAnimScriptCallback()) chaque frame ; à la fin
+ *  (gAnimScriptActive == FALSE) → specialAnimActive = 0 + DestroyTask.
+ *  tBattlerId = data[0]. */
+function Task_ClearBitWhenSpecialAnimDone(task: { data: number[]; taskId: number }): void {
+  _tickAnim();
+  if (!_animActive()) {
+    _setSpecialAnimActive(task.data[0], false);
+    _DestroyTask(task.taskId);
+  }
+}
+
+/** 1:1 décomp `InitAndLaunchSpecialAnimation(activeBattler, atkBattler, defBattler,
+ *  tableId)` (battle_gfx_sfx_util.c:523-533) : gBattleAnimAttacker/Target posés,
+ *  LaunchBattleAnimation(gBattleAnims_Special, tableId), task de tick + bit
+ *  specialAnimActive[activeBattler]. Consommé par DoSwitchOutAnimation
+ *  (rappel dans la ball au switch) côté player ET opponent. */
+export function InitAndLaunchSpecialAnimation(activeBattler: number, atkBattler: number, defBattler: number, tableId: number): void {
+  _setAnimAtkTgt(atkBattler, defBattler);
+  _LaunchBattleAnim('gBattleAnims_Special', tableId, false);
+  const taskId = _CreateTask(Task_ClearBitWhenSpecialAnimDone, 10);
+  const t = (globalThis as { __rt?: { gTasks?: Map<number, { data: number[] }> } }).__rt?.gTasks?.get(taskId);
+  if (t) t.data[0] = activeBattler;
+  _setSpecialAnimActive(activeBattler, true);
+}
+
 // Surface harness (anti import()-dynamique : l'instance Vite fraiche MENT).
-(globalThis as Record<string, unknown>).__battleGfxSfxUtil = {
+// ⚠️ ÉTENDRE la surface posée plus haut (:728), PAS la réassigner : l'ancienne
+// réassignation ÉCRASAIT les 25 fonctions du 1er bloc (HideBattlerShadowSprite,
+// LoadAndCreateEnemyShadowSprites, reshow case 19…) → no-ops silencieux chez
+// tous les consommateurs globalThis (bug démasqué au port du switch-out).
+Object.assign((globalThis as Record<string, unknown>).__battleGfxSfxUtil as Record<string, unknown>, {
   InitAndLaunchChosenStatusAnimation, TryHandleLaunchBattleTableAnimation, isAnimFromTableActive,
-};
+  InitAndLaunchSpecialAnimation,
+});

@@ -605,12 +605,21 @@ function _installSwitchInTryShinyAnim(_battler: number): void {
   OpponentBufferExecCompleted();
 }
 /** 1:1 décomp `OpponentHandleReturnMonToBall()` (battle_controller_opponent.c:1200-1216).
- *  bufferA[1]==0 → DoSwitchOutAnimation (anim de rappel dans la ball — DETTE, comme côté
- *  player) ; sinon skip-anim : destroy sprite + HideBattlerShadowSprite +
- *  SetHealthboxSpriteInvisible + complete. Port : anim rappel non portée → les deux
- *  branches prennent le chemin skip (1:1 du résultat final, dette rappel documentée). */
+ *  bufferA[1]==0 → DoSwitchOutAnimation (anim de rappel : le mon rétrécit dans la
+ *  ball, B_ANIM_SWITCH_OUT_OPPONENT_MON) ; sinon skip-anim : destroy sprite +
+ *  HideBattlerShadowSprite + SetHealthboxSpriteInvisible + complete. */
 function OpponentHandleReturnMonToBall(): void {
-  const battler = gActiveBattler;
+  if (gBattleBufferA[gActiveBattler][1] === 0) {
+    _setHbAnimationState(gActiveBattler, 0);
+    _setBattlerControllerFunc(gActiveBattler, _DoSwitchOutAnimationOpp);
+  } else {
+    _freeOppMonSpriteAndHideHealthbox(gActiveBattler);
+    OpponentBufferExecCompleted();
+  }
+}
+
+/** Corps partagé 1:1 :1209-1213 / :426-430 : destroy sprite + ombre + healthbox. */
+function _freeOppMonSpriteAndHideHealthbox(battler: number): void {
   const rt = getRuntime();
   const monId = getBattlerMonSpriteId(battler);
   if (rt && monId >= 0) {
@@ -619,14 +628,39 @@ function OpponentHandleReturnMonToBall(): void {
     rt.DestroySprite(monId);
     _battlerMonSpriteIds[battler] = -1;
   }
-  // 1:1 :1212 HideBattlerShadowSprite (l'ombre du volant disparaît au rappel).
+  // 1:1 HideBattlerShadowSprite (l'ombre du volant disparaît au rappel).
   (globalThis as { __battleGfxSfxUtil?: { HideBattlerShadowSprite?: (b: number) => void } })
     .__battleGfxSfxUtil?.HideBattlerShadowSprite?.(battler);
-  // 1:1 :1213 SetHealthboxSpriteInvisible.
   const hb = (globalThis as { __battleHealthbox?: { gHealthboxSpriteIds?: number[]; SetHealthboxSpriteInvisible?: (id: number) => void } }).__battleHealthbox;
   const hbId = hb?.gHealthboxSpriteIds?.[battler] ?? -1;
   if (hbId >= 0) hb?.SetHealthboxSpriteInvisible?.(hbId);
-  OpponentBufferExecCompleted();
+}
+
+/** 1:1 décomp `DoSwitchOutAnimation()` (battle_controller_opponent.c:1217-1236) —
+ *  même machine que le player mais B_ANIM_SWITCH_OUT_OPPONENT_MON (= 2). */
+function _DoSwitchOutAnimationOpp(): void {
+  switch (_getHbAnimationState(gActiveBattler)) {
+    case 0:
+      if (_isBehindSubstitute(gActiveBattler))
+        _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, 5 /* B_ANIM_SUBSTITUTE_TO_MON */);
+      _setHbAnimationState(gActiveBattler, 1);
+      break;
+    case 1:
+      if (!_isSpecialAnimActive(gActiveBattler)) {
+        _setHbAnimationState(gActiveBattler, 0);
+        _InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, 2 /* B_ANIM_SWITCH_OUT_OPPONENT_MON */);
+        _setBattlerControllerFunc(gActiveBattler, _FreeMonSpriteAfterSwitchOutAnimOpp);
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `FreeMonSpriteAfterSwitchOutAnim()` (battle_controller_opponent.c:422-432). */
+function _FreeMonSpriteAfterSwitchOutAnimOpp(): void {
+  if (!_isSpecialAnimActive(gActiveBattler)) {
+    _freeOppMonSpriteAndHideHealthbox(gActiveBattler);
+    OpponentBufferExecCompleted();
+  }
 }
 
 /** 1:1 decomp `SpriteCB_TrainerSlideIn(struct Sprite *sprite)` (battle_gfx_sfx_util.c:396).
@@ -817,8 +851,18 @@ function _isSpecialAnimActive(battler: number): boolean {
   return !!m?.isSpecialAnimActive?.(battler);
 }
 function _InitAndLaunchSpecialAnimation(_a: number, _at: number, _t: number, _aid: number): void {
-  const m = (globalThis as { __battleAnim?: { initAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleAnim;
-  m?.initAndLaunchSpecialAnimation?.(_a, _at, _t, _aid);
+  // 1:1 battle_gfx_sfx_util.c:523 — surface __battleGfxSfxUtil (l'ancien wire
+  // `__battleAnim.initAndLaunchSpecialAnimation` n'existait nulle part = no-op).
+  const m = (globalThis as { __battleGfxSfxUtil?: { InitAndLaunchSpecialAnimation?: (a: number, at: number, t: number, aid: number) => void } }).__battleGfxSfxUtil;
+  m?.InitAndLaunchSpecialAnimation?.(_a, _at, _t, _aid);
+}
+function _getHbAnimationState(battler: number): number {
+  const m = (globalThis as { __battleSpritesData?: { getHealthBoxAnimationState?: (b: number) => number } }).__battleSpritesData;
+  return m?.getHealthBoxAnimationState?.(battler) ?? 0;
+}
+function _setHbAnimationState(battler: number, v: number): void {
+  const m = (globalThis as { __battleSpritesData?: { setHealthBoxAnimationState?: (b: number, v: number) => void } }).__battleSpritesData;
+  m?.setHealthBoxAnimationState?.(battler, v);
 }
 function _PlaySE12WithPanning(seId: number, _pan: number): void {
   const g = globalThis as { __PlaySE?: (id: number) => void };
