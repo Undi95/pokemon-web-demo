@@ -676,10 +676,10 @@
 - [ ] AnimTask_SetAttackerVisibility  @ L1223-1237
 
 ## battle_anim_normal.c — 32/36 fonctions couvertes (89%) · cite:20 + symbole:12 · 36 citations
-- [ ] AnimConfusionDuck  @ L258-281
-- [ ] AnimConfusionDuck_Step  @ L282-297
+- [x] AnimConfusionDuck (e35a107a) @ L258-281
+- [x] AnimConfusionDuck_Step (e35a107a) @ L282-297
 - [x] AnimSimplePaletteBlend_Step @ L329-343 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
-- [ ] AnimCirclingSparkle  @ L416-446
+- [x] AnimCirclingSparkle (e35a107a) @ L416-446
 
 ## battle_anim_dark.c — 19/25 fonctions couvertes (76%) · cite:3 + symbole:16 · 29 citations
 - [ ] AnimTask_AttackerFadeToInvisible_Step  @ L208-230
