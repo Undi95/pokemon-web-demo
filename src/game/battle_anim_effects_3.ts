@@ -3276,3 +3276,129 @@ function _RapinSpinMonElevation_Step(task: { taskId: number; data: number[] }): 
   }
 }
 registerAnimTasks({ AnimTask_RapinSpinMonElevation: AnimTask_RapinSpinMonElevation as never });
+
+// ─── VAGUE F44 : AnimTask_TormentAttacker (effects_3.c:1892-2003) ───────────
+// 6 bulles de pensée alternées G/D + squish affine ×6 de l'attaquant, puis
+// les bulles « pop » (anim 2) et se détruisent.
+const _tmAffine_Torment: import('./battle_anim_mons').TaskAffineTable = {
+  // 1:1 sAffineAnims_Torment (effects_3.c:435)
+  frames: [
+    { xScale: -12, yScale: 8, rotation: 0, duration: 4 },
+    { xScale: 20, yScale: -20, rotation: 0, duration: 4 },
+    { xScale: -8, yScale: 12, rotation: 0, duration: 4 },
+  ],
+  terminator: 'END',
+};
+const _tmBubbles = new Map<number, number[]>(); // taskId -> spriteIds des bulles
+
+function AnimTask_TormentAttacker(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _vItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = GetBattlerSpriteCoord(atk, BATTLER_COORD_X_2);
+  task.data[3] = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y_PIC_OFFSET);
+  task.data[4] = 32;
+  task.data[5] = -20;
+  task.data[6] = 0;
+  task.data[15] = _GetAnimBattlerSpriteId(0);
+  _tmBubbles.set(task.taskId, []);
+  task.func = _TormentAttacker_Step;
+}
+function _TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; hFlip?: boolean; animEnded?: boolean }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number; hFlip?: boolean }> };
+    DestroySprite?: (i: number) => void;
+  } | undefined;
+  switch (task.data[0]) {
+    case 0: {
+      const var1 = task.data[4];
+      const x = (task.data[1] & 1) ? task.data[2] - var1 : task.data[2] + var1;
+      const y = task.data[3] + task.data[5];
+      const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+      const tpl = bridge?.lookupGeneratedTemplate?.('gThoughtBubbleSpriteTemplate');
+      const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+      const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 6 - task.data[1]) ?? -1;
+      (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(46 /* SE_M_METRONOME */);
+      if (sid >= 0) {
+        const sp = rt?.gSprites?.get(sid);
+        const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+        if (oam && tileStart !== 0xFFFF) {
+          oam.tileId = tileStart;
+          const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+          if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+          if (oam.hFlip !== undefined) oam.hFlip = !!(task.data[1] & 1);
+        }
+        if (sp) {
+          sp.hFlip = !!(task.data[1] & 1);
+          sp.callback = (() => { /* SpriteCallbackDummy */ }) as never;
+          _tmBubbles.get(task.taskId)?.push(sid);
+        }
+      }
+      if (task.data[1] & 1) {
+        task.data[4] -= 6;
+        task.data[5] -= 6;
+      }
+      _dcPrep(task as never, task.data[15], _tmAffine_Torment);
+      task.data[1]++;
+      task.data[0] = 1;
+      break;
+    }
+    case 1:
+      if (!_dcRun(task as never)) {
+        if (task.data[1] === 6) {
+          task.data[6] = 8;
+          task.data[0] = 3;
+        } else {
+          task.data[6] = task.data[1] <= 2 ? 10 : 0;
+          task.data[0] = 2;
+        }
+      }
+      break;
+    case 2:
+      if (task.data[6] !== 0) task.data[6]--;
+      else task.data[0] = 0;
+      break;
+    case 3:
+      if (task.data[6] !== 0) task.data[6]--;
+      else task.data[0] = 4;
+      break;
+    case 4: {
+      const ids = _tmBubbles.get(task.taskId) ?? [];
+      let j = 0;
+      for (const sid of ids) {
+        const sp = rt?.gSprites?.get(sid);
+        if (!sp) continue;
+        sp.data[0] = task.taskId;
+        sp.data[1] = 6;
+        sp.data[7] = 0; // compteur de vie (la bulle inline n'a pas d'anim pop générique)
+        sp.callback = _TormentBubble_Pop as never;
+        if (++j === 6) break;
+      }
+      task.data[6] = j;
+      task.data[0] = 5;
+      break;
+    }
+    case 5:
+      if (task.data[6] === 0) {
+        _tmBubbles.delete(task.taskId);
+        _vItf().DestroyAnimVisualTask?.(task.taskId);
+      }
+      break;
+  }
+}
+/** 1:1 TormentAttacker_Callback : destroy à la fin du pop (vie 24f ≈ anim 2). */
+function _TormentBubble_Pop(sprite: { data: number[]; animEnded?: boolean }): void {
+  if (sprite.animEnded || ++sprite.data[7] > 24) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[0]);
+    if (t) t.data[sprite.data[1]]--;
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+registerAnimTasks({ AnimTask_TormentAttacker: AnimTask_TormentAttacker as never });
