@@ -459,22 +459,22 @@
 - [x] FrontierSquaresScroll_Erase @ L4735-4755 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
 - [x] FrontierSquaresScroll_End @ L4756-4777 — DETTE EXPLICITE (debug UNUSED / frontier / légendaires / mugshots gym-E4 / ShredSplit-Blackhole-Spiral frontier : zones hors démo)
 
-## pokeball.c — 22/37 fonctions couvertes (59%) · cite:19 + symbole:3 · 132 citations
-- [ ] SpriteCB_BallThrow_ReachMon  @ L456-460
-- [ ] SpriteCB_BallThrow_StartShrinkMon  @ L461-472
-- [ ] SpriteCB_BallThrow_ShrinkMon  @ L473-492
-- [ ] SpriteCB_BallThrow_Close  @ L493-509
-- [ ] SpriteCB_BallThrow_FallToGround  @ L510-569
-- [ ] SpriteCB_BallThrow_StartShakes  @ L570-582
-- [ ] SpriteCB_BallThrow_Shake  @ L583-664
-- [ ] SpriteCB_BallThrow_StartCaptureMon  @ L836-844
-- [ ] SpriteCB_BallThrow_CaptureMon  @ L886-910
-- [ ] LaunchBallFadeMonTaskForPokeball  @ L1012-1030
-- [ ] CreateTradePokeballSprite  @ L1143-1159
-- [ ] SpriteCB_TradePokeball  @ L1160-1193
-- [ ] SpriteCB_TradePokeballSendOff  @ L1194-1216
-- [ ] SpriteCB_TradePokeballEnd  @ L1217-1230
-- [ ] DestroySpriteAndFreeResources_Ball  @ L1231-1240
+## pokeball.c — ✅ SOLDÉ (22 portés + 15 qualifiés : 10 code mort capture (flux réel=battle_anim_throw), 4 dette trade, 1 équivalence)
+- [x] SpriteCB_BallThrow_ReachMon @ L456-460 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_StartShrinkMon @ L461-472 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_ShrinkMon @ L473-492 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_Close @ L493-509 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_FallToGround @ L510-569 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_StartShakes @ L570-582 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_Shake @ L583-664 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_StartCaptureMon @ L836-844 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] SpriteCB_BallThrow_CaptureMon @ L886-910 — CODE MORT décomp pour la capture : le flux réel = battle_anim_throw.c SpriteCB_Ball_* (porté 1:1 battle_anim_throw.ts, A/B capture 100% commits 30faa4a0+417edf4b+de2df95e). Ces états du callback template (dispatch data[7] throwCaseId) ne tournent jamais : la capture passe par InitAndLaunchSpecialAnimation(B_ANIM_BALL_THROW), le send-out par SpriteCB_*MonSendOut (pokeball.ts #18-22 validé)
+- [x] LaunchBallFadeMonTaskForPokeball @ L1012-1030 — wrapper privé du chemin code-mort ci-dessus ; le réel = LaunchBallFadeMonTask (pokeball-effects.ts, consommé par capture + switch-out + send-out)
+- [x] CreateTradePokeballSprite @ L1143-1159 — DETTE EXPLICITE trade (échange hors démo — CreateTradePokeballSprite appelé par trade.c:3480/3951 uniquement)
+- [x] SpriteCB_TradePokeball @ L1160-1193 — DETTE EXPLICITE trade (échange hors démo — CreateTradePokeballSprite appelé par trade.c:3480/3951 uniquement)
+- [x] SpriteCB_TradePokeballSendOff @ L1194-1216 — DETTE EXPLICITE trade (échange hors démo — CreateTradePokeballSprite appelé par trade.c:3480/3951 uniquement)
+- [x] SpriteCB_TradePokeballEnd @ L1217-1230 — DETTE EXPLICITE trade (échange hors démo — CreateTradePokeballSprite appelé par trade.c:3480/3951 uniquement)
+- [x] DestroySpriteAndFreeResources_Ball @ L1231-1240 — équivalence : HandleBallAnimEnd (pokeball.ts) détruit ball+free par TAG — helper des chaînes code-mort/trade ci-dessus
 
 ## battle_anim.c — 79/79 fonctions couvertes (100%) · cite:79 + symbole:0 · 119 citations
 - ✓ complet
