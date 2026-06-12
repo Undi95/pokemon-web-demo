@@ -199,17 +199,8 @@ registerSpecial('CalculatePlayerPartyCount', () => {
   return count;
 });
 
-/** 1:1 décomp `ShouldTryRematchBattle` (battle_setup.c:1839-1845) :
- *    if (IsFirstTrainerIdReadyForRematch(gRematchTable, gTrainerBattleOpponent_A))
- *        return TRUE;
- *    return WasSecondRematchWon(gRematchTable, gTrainerBattleOpponent_A);
- *  Dette R3 justifiée : gRematchTable + IsFirstTrainerIdReadyForRematch +
- *  WasSecondRematchWon pas portés (= subsystem rematch hors démo Littleroot).
- *  Return 0 = "no rematch available", 1:1 strict valide tant que rematch
- *  system pas wire. */
-registerSpecial('ShouldTryRematchBattle', () => {
-  return 0;
-});
+// `ShouldTryRematchBattle` : porté 1:1 (T-B rematches) dans src/game/battle_setup.ts
+// (gRematchTable + IsFirstTrainerIdReadyForRematch + WasSecondRematchWon réels).
 
 /** 1:1 décomp `IsEnoughForCostInVar0x8005` (money.c:123-126).
  *  Return IsEnoughMoney(saveBlock1.money, gSpecialVar_0x8005). */
@@ -729,8 +720,7 @@ registerSpecial('StartWallyTutorialBattle', () => {
   return 0;
 });
 
-/** 1:1 décomp `IsTrainerReadyForRematch` (match_call.c) — rematch eligibility. */
-registerSpecial('IsTrainerReadyForRematch', () => 0);
+// `IsTrainerReadyForRematch` : porté 1:1 (T-B) dans src/game/battle_setup.ts.
 
 /** 1:1 décomp `IsEnigmaBerryValid` (berry.c). */
 /** 1:1 décomp `IsEnigmaBerryValid` (berry.c:969-978).
@@ -936,9 +926,7 @@ registerSpecial('GetPlayerFacingDirection', () => {
   return GetCurrentMap()?.facing ?? 0;
 });
 
-/** 1:1 décomp `ShouldTryGetTrainerScript` (battle_setup.c). Returns 0 = no
- *  trainer engaged. */
-registerSpecial('ShouldTryGetTrainerScript', () => 0);
+// `ShouldTryGetTrainerScript` : porté 1:1 (T-B) dans src/game/battle_setup.ts.
 
 /** 1:1 décomp in-game trade specials. Stubs (= no trade UI yet). */
 registerSpecial('GetInGameTradeSpeciesInfo', () => 0);
@@ -2091,7 +2079,10 @@ registerSpecial('SetPacifidlogTMReceivedDay', () => {
 
 const _SESSION_131_DECOMP_SPECIALS = [
   'AccessHallOfFamePC', 'Bag_ChooseBerry', 'BattlePyramidChooseMonHeldItems',
-  'BattleSetup_StartLatiBattle', 'BattleSetup_StartRematchBattle',
+  'BattleSetup_StartLatiBattle',
+  // 'BattleSetup_StartRematchBattle' — porté 1:1 T-B : intercepté par l'opcode
+  // `special` (script-opcodes-special.ts, suspend/reprise du script) + boot dans
+  // src/game/battle_setup.ts (_bootRematchBattleForScript).
   'BattleTowerReconnectLink', 'BufferBattleFrontierTutorMoveName',
   // 'BufferBattleTowerElevatorFloors' — porté 1:1 décomp field_specials.c:2209 ci-bas (batch B6).
   'BufferContestTrainerAndMonNames',

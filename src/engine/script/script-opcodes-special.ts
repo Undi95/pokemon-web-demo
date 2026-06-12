@@ -194,6 +194,18 @@ registerOpcode('special', (ctx, args) => {
       return { isOpen: mod.IsWallClockOpen };
     });
   }
+  // 1:1 décomp `BattleSetup_StartRematchBattle` (battle_setup.c:1371-1376) :
+  // DoTrainerBattle + ScriptContext_Stop — le script DOIT se suspendre pendant
+  // le combat puis reprendre (releaseall/end APRÈS, = ContinueScript vanilla).
+  // Interception avec ctx (les specials n'ont pas le ctx) ; le boot + poll de
+  // fin (CB2_EndRematchBattle) vit dans battle_setup.ts (surface anti-cycle).
+  if (name === 'BattleSetup_StartRematchBattle') {
+    const bs = (globalThis as { __battleSetup?: { _bootRematchBattleForScript?: () => () => boolean } }).__battleSetup;
+    if (bs?._bootRematchBattleForScript) {
+      SetupNativeScript(ctx, bs._bootRematchBattleForScript());
+      return true;
+    }
+  }
   invokeSpecial(name);
   return false;
 });

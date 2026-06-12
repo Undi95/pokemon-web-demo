@@ -370,12 +370,14 @@ export function BattleSetup_ConfigureTrainerBattle(args: string[], ctx: ScriptCo
     case TRAINER_BATTLE_REMATCH_DOUBLE:
       TrainerBattleLoadArgs(sDoubleBattleParams, args, ctx);
       SetMapVarsToTrainer();
-      // DETTE T-B : gTrainerBattleOpponent_A = GetRematchTrainerId(...) (:1140).
+      // 1:1 :1140 gTrainerBattleOpponent_A = GetRematchTrainerId(gTrainerBattleOpponent_A).
+      _setVar('gTrainerBattleOpponent_A', GetRematchTrainerId(_trainerBattleOpponentA));
       return 'EventScript_TryDoDoubleRematchBattle';
     case TRAINER_BATTLE_REMATCH:
       TrainerBattleLoadArgs(sOrdinaryBattleParams, args, ctx);
       SetMapVarsToTrainer();
-      // DETTE T-B : gTrainerBattleOpponent_A = GetRematchTrainerId(...) (:1145).
+      // 1:1 :1145 gTrainerBattleOpponent_A = GetRematchTrainerId(gTrainerBattleOpponent_A).
+      _setVar('gTrainerBattleOpponent_A', GetRematchTrainerId(_trainerBattleOpponentA));
       return 'EventScript_TryDoRematchBattle';
     case TRAINER_BATTLE_SET_TRAINER_A:
       TrainerBattleLoadArgs(sOrdinaryBattleParams, args, ctx);
@@ -436,7 +438,8 @@ export function DoTrainerBattle(): void {
  *  RegisterTrainerInMatchCall (dette T-B) + SetBattledTrainersFlags. */
 export function CB2_EndTrainerBattle(): void {
   if (!IsPlayerDefeated(gBattleOutcome)) {
-    // DETTE T-B : RegisterTrainerInMatchCall() (battle_setup.c:1345).
+    // 1:1 :1345-1346 RegisterTrainerInMatchCall + SetBattledTrainersFlags.
+    RegisterTrainerInMatchCall();
     SetBattledTrainersFlags();
   }
 }
@@ -575,6 +578,440 @@ export function ScrCmd_gotobeatenscript(ctx: ScriptContext): boolean {
   return false;
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// T-B REMATCHES — 1:1 battle_setup.c:253-346 (table) + :1351-1376 + :1546-1890.
+// Déclenchement vanilla : per-step IncrementRematchStepCounter (overworld.c) +
+// TryUpdateRandomTrainerRematches au chargement de map → trainerRematches[i]>0
+// → scripts TRAINER_BATTLE_REMATCH (specialvar IsTrainerReadyForRematch +
+// special BattleSetup_StartRematchBattle). Les fonctions et la table sont
+// portées COMPLÈTES ; les 2 hooks OW sont exportés (câblage per-step/map-load
+// = dette OW notée — sans eux les rematches ne s'arment jamais, comme un jeu
+// sans badge 5 : chemin correct, gate fermée).
+// ═════════════════════════════════════════════════════════════════════════════
+
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { MAX_REMATCH_ENTRIES } from '../engine/save/save-blocks';
+import { Random } from '../engine/system/random';
+import { ENUM_REMATCH_0 } from '../engine/decomp-data/include/constants/rematches-data';
+import { TRAINER_REGISTERED_FLAGS_START } from '../engine/decomp-data/include/constants/flags-data';
+import { MAP_CONSTANTS, MAP_GROUP, MAP_NUM } from '../engine/decomp-data/include/constants/map_groups-data';
+
+/** 1:1 `REMATCHES_COUNT` (include/battle_setup.h:6). */
+const REMATCHES_COUNT = 5;
+/** 1:1 `REMATCH_TABLE_ENTRIES` (constants/rematches.h). */
+const REMATCH_TABLE_ENTRIES = 78;
+/** 1:1 `REMATCH_SPECIAL_TRAINER_START = REMATCH_WALLY_VR` (rematches.h). */
+const REMATCH_SPECIAL_TRAINER_START = ENUM_REMATCH_0.REMATCH_WALLY_VR;
+/** 1:1 `REMATCH_ELITE_FOUR_ENTRIES = REMATCH_SIDNEY` (rematches.h). */
+const REMATCH_ELITE_FOUR_ENTRIES = ENUM_REMATCH_0.REMATCH_SIDNEY;
+const REMATCH_WALLY_VR = ENUM_REMATCH_0.REMATCH_WALLY_VR;
+/** 1:1 `STEP_COUNTER_MAX` (battle_setup.c:1795). */
+const STEP_COUNTER_MAX = 255;
+
+/** 1:1 `sBadgeFlags[NUM_BADGES]` (battle_setup.c:342-346). */
+const sBadgeFlags: readonly string[] = [
+  'FLAG_BADGE01_GET', 'FLAG_BADGE02_GET', 'FLAG_BADGE03_GET', 'FLAG_BADGE04_GET',
+  'FLAG_BADGE05_GET', 'FLAG_BADGE06_GET', 'FLAG_BADGE07_GET', 'FLAG_BADGE08_GET',
+];
+
+/** 1:1 `struct RematchTrainer` (include/battle_setup.h) — labels décomp,
+ *  résolus lazy en numérique (_rematchTable). */
+interface RematchTrainerEntry { trainerIds: readonly string[]; map: string }
+
+/** 1:1 `gRematchTable[REMATCH_TABLE_ENTRIES]` (battle_setup.c:260-339) —
+ *  extraite par scripts/extract-rematch-table.cjs (78 entrées vérifiées). */
+export const gRematchTable: readonly RematchTrainerEntry[] = [
+  /* [REMATCH_ROSE] */ { trainerIds: ['TRAINER_ROSE_1', 'TRAINER_ROSE_2', 'TRAINER_ROSE_3', 'TRAINER_ROSE_4', 'TRAINER_ROSE_5'], map: 'MAP_ROUTE118' },
+  /* [REMATCH_ANDRES] */ { trainerIds: ['TRAINER_ANDRES_1', 'TRAINER_ANDRES_2', 'TRAINER_ANDRES_3', 'TRAINER_ANDRES_4', 'TRAINER_ANDRES_5'], map: 'MAP_ROUTE105' },
+  /* [REMATCH_DUSTY] */ { trainerIds: ['TRAINER_DUSTY_1', 'TRAINER_DUSTY_2', 'TRAINER_DUSTY_3', 'TRAINER_DUSTY_4', 'TRAINER_DUSTY_5'], map: 'MAP_ROUTE111' },
+  /* [REMATCH_LOLA] */ { trainerIds: ['TRAINER_LOLA_1', 'TRAINER_LOLA_2', 'TRAINER_LOLA_3', 'TRAINER_LOLA_4', 'TRAINER_LOLA_5'], map: 'MAP_ROUTE109' },
+  /* [REMATCH_RICKY] */ { trainerIds: ['TRAINER_RICKY_1', 'TRAINER_RICKY_2', 'TRAINER_RICKY_3', 'TRAINER_RICKY_4', 'TRAINER_RICKY_5'], map: 'MAP_ROUTE109' },
+  /* [REMATCH_LILA_AND_ROY] */ { trainerIds: ['TRAINER_LILA_AND_ROY_1', 'TRAINER_LILA_AND_ROY_2', 'TRAINER_LILA_AND_ROY_3', 'TRAINER_LILA_AND_ROY_4', 'TRAINER_LILA_AND_ROY_5'], map: 'MAP_ROUTE124' },
+  /* [REMATCH_CRISTIN] */ { trainerIds: ['TRAINER_CRISTIN_1', 'TRAINER_CRISTIN_2', 'TRAINER_CRISTIN_3', 'TRAINER_CRISTIN_4', 'TRAINER_CRISTIN_5'], map: 'MAP_ROUTE121' },
+  /* [REMATCH_BROOKE] */ { trainerIds: ['TRAINER_BROOKE_1', 'TRAINER_BROOKE_2', 'TRAINER_BROOKE_3', 'TRAINER_BROOKE_4', 'TRAINER_BROOKE_5'], map: 'MAP_ROUTE111' },
+  /* [REMATCH_WILTON] */ { trainerIds: ['TRAINER_WILTON_1', 'TRAINER_WILTON_2', 'TRAINER_WILTON_3', 'TRAINER_WILTON_4', 'TRAINER_WILTON_5'], map: 'MAP_ROUTE111' },
+  /* [REMATCH_VALERIE] */ { trainerIds: ['TRAINER_VALERIE_1', 'TRAINER_VALERIE_2', 'TRAINER_VALERIE_3', 'TRAINER_VALERIE_4', 'TRAINER_VALERIE_5'], map: 'MAP_MT_PYRE_6F' },
+  /* [REMATCH_CINDY] */ { trainerIds: ['TRAINER_CINDY_1', 'TRAINER_CINDY_3', 'TRAINER_CINDY_4', 'TRAINER_CINDY_5', 'TRAINER_CINDY_6'], map: 'MAP_ROUTE104' },
+  /* [REMATCH_THALIA] */ { trainerIds: ['TRAINER_THALIA_1', 'TRAINER_THALIA_2', 'TRAINER_THALIA_3', 'TRAINER_THALIA_4', 'TRAINER_THALIA_5'], map: 'MAP_ABANDONED_SHIP_ROOMS_1F' },
+  /* [REMATCH_JESSICA] */ { trainerIds: ['TRAINER_JESSICA_1', 'TRAINER_JESSICA_2', 'TRAINER_JESSICA_3', 'TRAINER_JESSICA_4', 'TRAINER_JESSICA_5'], map: 'MAP_ROUTE121' },
+  /* [REMATCH_WINSTON] */ { trainerIds: ['TRAINER_WINSTON_1', 'TRAINER_WINSTON_2', 'TRAINER_WINSTON_3', 'TRAINER_WINSTON_4', 'TRAINER_WINSTON_5'], map: 'MAP_ROUTE104' },
+  /* [REMATCH_STEVE] */ { trainerIds: ['TRAINER_STEVE_1', 'TRAINER_STEVE_2', 'TRAINER_STEVE_3', 'TRAINER_STEVE_4', 'TRAINER_STEVE_5'], map: 'MAP_ROUTE114' },
+  /* [REMATCH_TONY] */ { trainerIds: ['TRAINER_TONY_1', 'TRAINER_TONY_2', 'TRAINER_TONY_3', 'TRAINER_TONY_4', 'TRAINER_TONY_5'], map: 'MAP_ROUTE107' },
+  /* [REMATCH_NOB] */ { trainerIds: ['TRAINER_NOB_1', 'TRAINER_NOB_2', 'TRAINER_NOB_3', 'TRAINER_NOB_4', 'TRAINER_NOB_5'], map: 'MAP_ROUTE115' },
+  /* [REMATCH_KOJI] */ { trainerIds: ['TRAINER_KOJI_1', 'TRAINER_KOJI_2', 'TRAINER_KOJI_3', 'TRAINER_KOJI_4', 'TRAINER_KOJI_5'], map: 'MAP_ROUTE127' },
+  /* [REMATCH_FERNANDO] */ { trainerIds: ['TRAINER_FERNANDO_1', 'TRAINER_FERNANDO_2', 'TRAINER_FERNANDO_3', 'TRAINER_FERNANDO_4', 'TRAINER_FERNANDO_5'], map: 'MAP_ROUTE123' },
+  /* [REMATCH_DALTON] */ { trainerIds: ['TRAINER_DALTON_1', 'TRAINER_DALTON_2', 'TRAINER_DALTON_3', 'TRAINER_DALTON_4', 'TRAINER_DALTON_5'], map: 'MAP_ROUTE118' },
+  /* [REMATCH_BERNIE] */ { trainerIds: ['TRAINER_BERNIE_1', 'TRAINER_BERNIE_2', 'TRAINER_BERNIE_3', 'TRAINER_BERNIE_4', 'TRAINER_BERNIE_5'], map: 'MAP_ROUTE114' },
+  /* [REMATCH_ETHAN] */ { trainerIds: ['TRAINER_ETHAN_1', 'TRAINER_ETHAN_2', 'TRAINER_ETHAN_3', 'TRAINER_ETHAN_4', 'TRAINER_ETHAN_5'], map: 'MAP_JAGGED_PASS' },
+  /* [REMATCH_JOHN_AND_JAY] */ { trainerIds: ['TRAINER_JOHN_AND_JAY_1', 'TRAINER_JOHN_AND_JAY_2', 'TRAINER_JOHN_AND_JAY_3', 'TRAINER_JOHN_AND_JAY_4', 'TRAINER_JOHN_AND_JAY_5'], map: 'MAP_METEOR_FALLS_1F_2R' },
+  /* [REMATCH_JEFFREY] */ { trainerIds: ['TRAINER_JEFFREY_1', 'TRAINER_JEFFREY_2', 'TRAINER_JEFFREY_3', 'TRAINER_JEFFREY_4', 'TRAINER_JEFFREY_5'], map: 'MAP_ROUTE120' },
+  /* [REMATCH_CAMERON] */ { trainerIds: ['TRAINER_CAMERON_1', 'TRAINER_CAMERON_2', 'TRAINER_CAMERON_3', 'TRAINER_CAMERON_4', 'TRAINER_CAMERON_5'], map: 'MAP_ROUTE123' },
+  /* [REMATCH_JACKI] */ { trainerIds: ['TRAINER_JACKI_1', 'TRAINER_JACKI_2', 'TRAINER_JACKI_3', 'TRAINER_JACKI_4', 'TRAINER_JACKI_5'], map: 'MAP_ROUTE123' },
+  /* [REMATCH_WALTER] */ { trainerIds: ['TRAINER_WALTER_1', 'TRAINER_WALTER_2', 'TRAINER_WALTER_3', 'TRAINER_WALTER_4', 'TRAINER_WALTER_5'], map: 'MAP_ROUTE121' },
+  /* [REMATCH_KAREN] */ { trainerIds: ['TRAINER_KAREN_1', 'TRAINER_KAREN_2', 'TRAINER_KAREN_3', 'TRAINER_KAREN_4', 'TRAINER_KAREN_5'], map: 'MAP_ROUTE116' },
+  /* [REMATCH_JERRY] */ { trainerIds: ['TRAINER_JERRY_1', 'TRAINER_JERRY_2', 'TRAINER_JERRY_3', 'TRAINER_JERRY_4', 'TRAINER_JERRY_5'], map: 'MAP_ROUTE116' },
+  /* [REMATCH_ANNA_AND_MEG] */ { trainerIds: ['TRAINER_ANNA_AND_MEG_1', 'TRAINER_ANNA_AND_MEG_2', 'TRAINER_ANNA_AND_MEG_3', 'TRAINER_ANNA_AND_MEG_4', 'TRAINER_ANNA_AND_MEG_5'], map: 'MAP_ROUTE117' },
+  /* [REMATCH_ISABEL] */ { trainerIds: ['TRAINER_ISABEL_1', 'TRAINER_ISABEL_2', 'TRAINER_ISABEL_3', 'TRAINER_ISABEL_4', 'TRAINER_ISABEL_5'], map: 'MAP_ROUTE110' },
+  /* [REMATCH_MIGUEL] */ { trainerIds: ['TRAINER_MIGUEL_1', 'TRAINER_MIGUEL_2', 'TRAINER_MIGUEL_3', 'TRAINER_MIGUEL_4', 'TRAINER_MIGUEL_5'], map: 'MAP_ROUTE103' },
+  /* [REMATCH_TIMOTHY] */ { trainerIds: ['TRAINER_TIMOTHY_1', 'TRAINER_TIMOTHY_2', 'TRAINER_TIMOTHY_3', 'TRAINER_TIMOTHY_4', 'TRAINER_TIMOTHY_5'], map: 'MAP_ROUTE115' },
+  /* [REMATCH_SHELBY] */ { trainerIds: ['TRAINER_SHELBY_1', 'TRAINER_SHELBY_2', 'TRAINER_SHELBY_3', 'TRAINER_SHELBY_4', 'TRAINER_SHELBY_5'], map: 'MAP_MT_CHIMNEY' },
+  /* [REMATCH_CALVIN] */ { trainerIds: ['TRAINER_CALVIN_1', 'TRAINER_CALVIN_2', 'TRAINER_CALVIN_3', 'TRAINER_CALVIN_4', 'TRAINER_CALVIN_5'], map: 'MAP_ROUTE102' },
+  /* [REMATCH_ELLIOT] */ { trainerIds: ['TRAINER_ELLIOT_1', 'TRAINER_ELLIOT_2', 'TRAINER_ELLIOT_3', 'TRAINER_ELLIOT_4', 'TRAINER_ELLIOT_5'], map: 'MAP_ROUTE106' },
+  /* [REMATCH_ISAIAH] */ { trainerIds: ['TRAINER_ISAIAH_1', 'TRAINER_ISAIAH_2', 'TRAINER_ISAIAH_3', 'TRAINER_ISAIAH_4', 'TRAINER_ISAIAH_5'], map: 'MAP_ROUTE128' },
+  /* [REMATCH_MARIA] */ { trainerIds: ['TRAINER_MARIA_1', 'TRAINER_MARIA_2', 'TRAINER_MARIA_3', 'TRAINER_MARIA_4', 'TRAINER_MARIA_5'], map: 'MAP_ROUTE117' },
+  /* [REMATCH_ABIGAIL] */ { trainerIds: ['TRAINER_ABIGAIL_1', 'TRAINER_ABIGAIL_2', 'TRAINER_ABIGAIL_3', 'TRAINER_ABIGAIL_4', 'TRAINER_ABIGAIL_5'], map: 'MAP_ROUTE110' },
+  /* [REMATCH_DYLAN] */ { trainerIds: ['TRAINER_DYLAN_1', 'TRAINER_DYLAN_2', 'TRAINER_DYLAN_3', 'TRAINER_DYLAN_4', 'TRAINER_DYLAN_5'], map: 'MAP_ROUTE117' },
+  /* [REMATCH_KATELYN] */ { trainerIds: ['TRAINER_KATELYN_1', 'TRAINER_KATELYN_2', 'TRAINER_KATELYN_3', 'TRAINER_KATELYN_4', 'TRAINER_KATELYN_5'], map: 'MAP_ROUTE128' },
+  /* [REMATCH_BENJAMIN] */ { trainerIds: ['TRAINER_BENJAMIN_1', 'TRAINER_BENJAMIN_2', 'TRAINER_BENJAMIN_3', 'TRAINER_BENJAMIN_4', 'TRAINER_BENJAMIN_5'], map: 'MAP_ROUTE110' },
+  /* [REMATCH_PABLO] */ { trainerIds: ['TRAINER_PABLO_1', 'TRAINER_PABLO_2', 'TRAINER_PABLO_3', 'TRAINER_PABLO_4', 'TRAINER_PABLO_5'], map: 'MAP_ROUTE126' },
+  /* [REMATCH_NICOLAS] */ { trainerIds: ['TRAINER_NICOLAS_1', 'TRAINER_NICOLAS_2', 'TRAINER_NICOLAS_3', 'TRAINER_NICOLAS_4', 'TRAINER_NICOLAS_5'], map: 'MAP_METEOR_FALLS_1F_2R' },
+  /* [REMATCH_ROBERT] */ { trainerIds: ['TRAINER_ROBERT_1', 'TRAINER_ROBERT_2', 'TRAINER_ROBERT_3', 'TRAINER_ROBERT_4', 'TRAINER_ROBERT_5'], map: 'MAP_ROUTE120' },
+  /* [REMATCH_LAO] */ { trainerIds: ['TRAINER_LAO_1', 'TRAINER_LAO_2', 'TRAINER_LAO_3', 'TRAINER_LAO_4', 'TRAINER_LAO_5'], map: 'MAP_ROUTE113' },
+  /* [REMATCH_CYNDY] */ { trainerIds: ['TRAINER_CYNDY_1', 'TRAINER_CYNDY_2', 'TRAINER_CYNDY_3', 'TRAINER_CYNDY_4', 'TRAINER_CYNDY_5'], map: 'MAP_ROUTE115' },
+  /* [REMATCH_MADELINE] */ { trainerIds: ['TRAINER_MADELINE_1', 'TRAINER_MADELINE_2', 'TRAINER_MADELINE_3', 'TRAINER_MADELINE_4', 'TRAINER_MADELINE_5'], map: 'MAP_ROUTE113' },
+  /* [REMATCH_JENNY] */ { trainerIds: ['TRAINER_JENNY_1', 'TRAINER_JENNY_2', 'TRAINER_JENNY_3', 'TRAINER_JENNY_4', 'TRAINER_JENNY_5'], map: 'MAP_ROUTE124' },
+  /* [REMATCH_DIANA] */ { trainerIds: ['TRAINER_DIANA_1', 'TRAINER_DIANA_2', 'TRAINER_DIANA_3', 'TRAINER_DIANA_4', 'TRAINER_DIANA_5'], map: 'MAP_JAGGED_PASS' },
+  /* [REMATCH_AMY_AND_LIV] */ { trainerIds: ['TRAINER_AMY_AND_LIV_1', 'TRAINER_AMY_AND_LIV_2', 'TRAINER_AMY_AND_LIV_4', 'TRAINER_AMY_AND_LIV_5', 'TRAINER_AMY_AND_LIV_6'], map: 'MAP_ROUTE103' },
+  /* [REMATCH_ERNEST] */ { trainerIds: ['TRAINER_ERNEST_1', 'TRAINER_ERNEST_2', 'TRAINER_ERNEST_3', 'TRAINER_ERNEST_4', 'TRAINER_ERNEST_5'], map: 'MAP_ROUTE125' },
+  /* [REMATCH_CORY] */ { trainerIds: ['TRAINER_CORY_1', 'TRAINER_CORY_2', 'TRAINER_CORY_3', 'TRAINER_CORY_4', 'TRAINER_CORY_5'], map: 'MAP_ROUTE108' },
+  /* [REMATCH_EDWIN] */ { trainerIds: ['TRAINER_EDWIN_1', 'TRAINER_EDWIN_2', 'TRAINER_EDWIN_3', 'TRAINER_EDWIN_4', 'TRAINER_EDWIN_5'], map: 'MAP_ROUTE110' },
+  /* [REMATCH_LYDIA] */ { trainerIds: ['TRAINER_LYDIA_1', 'TRAINER_LYDIA_2', 'TRAINER_LYDIA_3', 'TRAINER_LYDIA_4', 'TRAINER_LYDIA_5'], map: 'MAP_ROUTE117' },
+  /* [REMATCH_ISAAC] */ { trainerIds: ['TRAINER_ISAAC_1', 'TRAINER_ISAAC_2', 'TRAINER_ISAAC_3', 'TRAINER_ISAAC_4', 'TRAINER_ISAAC_5'], map: 'MAP_ROUTE117' },
+  /* [REMATCH_GABRIELLE] */ { trainerIds: ['TRAINER_GABRIELLE_1', 'TRAINER_GABRIELLE_2', 'TRAINER_GABRIELLE_3', 'TRAINER_GABRIELLE_4', 'TRAINER_GABRIELLE_5'], map: 'MAP_MT_PYRE_3F' },
+  /* [REMATCH_CATHERINE] */ { trainerIds: ['TRAINER_CATHERINE_1', 'TRAINER_CATHERINE_2', 'TRAINER_CATHERINE_3', 'TRAINER_CATHERINE_4', 'TRAINER_CATHERINE_5'], map: 'MAP_ROUTE119' },
+  /* [REMATCH_JACKSON] */ { trainerIds: ['TRAINER_JACKSON_1', 'TRAINER_JACKSON_2', 'TRAINER_JACKSON_3', 'TRAINER_JACKSON_4', 'TRAINER_JACKSON_5'], map: 'MAP_ROUTE119' },
+  /* [REMATCH_HALEY] */ { trainerIds: ['TRAINER_HALEY_1', 'TRAINER_HALEY_2', 'TRAINER_HALEY_3', 'TRAINER_HALEY_4', 'TRAINER_HALEY_5'], map: 'MAP_ROUTE104' },
+  /* [REMATCH_JAMES] */ { trainerIds: ['TRAINER_JAMES_1', 'TRAINER_JAMES_2', 'TRAINER_JAMES_3', 'TRAINER_JAMES_4', 'TRAINER_JAMES_5'], map: 'MAP_PETALBURG_WOODS' },
+  /* [REMATCH_TRENT] */ { trainerIds: ['TRAINER_TRENT_1', 'TRAINER_TRENT_2', 'TRAINER_TRENT_3', 'TRAINER_TRENT_4', 'TRAINER_TRENT_5'], map: 'MAP_ROUTE112' },
+  /* [REMATCH_SAWYER] */ { trainerIds: ['TRAINER_SAWYER_1', 'TRAINER_SAWYER_2', 'TRAINER_SAWYER_3', 'TRAINER_SAWYER_4', 'TRAINER_SAWYER_5'], map: 'MAP_MT_CHIMNEY' },
+  /* [REMATCH_KIRA_AND_DAN] */ { trainerIds: ['TRAINER_KIRA_AND_DAN_1', 'TRAINER_KIRA_AND_DAN_2', 'TRAINER_KIRA_AND_DAN_3', 'TRAINER_KIRA_AND_DAN_4', 'TRAINER_KIRA_AND_DAN_5'], map: 'MAP_ABANDONED_SHIP_ROOMS2_1F' },
+  /* [REMATCH_WALLY_VR] */ { trainerIds: ['TRAINER_WALLY_VR_2', 'TRAINER_WALLY_VR_3', 'TRAINER_WALLY_VR_4', 'TRAINER_WALLY_VR_5', 'TRAINER_WALLY_VR_5'], map: 'MAP_VICTORY_ROAD_1F' },
+  /* [REMATCH_ROXANNE] */ { trainerIds: ['TRAINER_ROXANNE_1', 'TRAINER_ROXANNE_2', 'TRAINER_ROXANNE_3', 'TRAINER_ROXANNE_4', 'TRAINER_ROXANNE_5'], map: 'MAP_RUSTBORO_CITY' },
+  /* [REMATCH_BRAWLY] */ { trainerIds: ['TRAINER_BRAWLY_1', 'TRAINER_BRAWLY_2', 'TRAINER_BRAWLY_3', 'TRAINER_BRAWLY_4', 'TRAINER_BRAWLY_5'], map: 'MAP_DEWFORD_TOWN' },
+  /* [REMATCH_WATTSON] */ { trainerIds: ['TRAINER_WATTSON_1', 'TRAINER_WATTSON_2', 'TRAINER_WATTSON_3', 'TRAINER_WATTSON_4', 'TRAINER_WATTSON_5'], map: 'MAP_MAUVILLE_CITY' },
+  /* [REMATCH_FLANNERY] */ { trainerIds: ['TRAINER_FLANNERY_1', 'TRAINER_FLANNERY_2', 'TRAINER_FLANNERY_3', 'TRAINER_FLANNERY_4', 'TRAINER_FLANNERY_5'], map: 'MAP_LAVARIDGE_TOWN' },
+  /* [REMATCH_NORMAN] */ { trainerIds: ['TRAINER_NORMAN_1', 'TRAINER_NORMAN_2', 'TRAINER_NORMAN_3', 'TRAINER_NORMAN_4', 'TRAINER_NORMAN_5'], map: 'MAP_PETALBURG_CITY' },
+  /* [REMATCH_WINONA] */ { trainerIds: ['TRAINER_WINONA_1', 'TRAINER_WINONA_2', 'TRAINER_WINONA_3', 'TRAINER_WINONA_4', 'TRAINER_WINONA_5'], map: 'MAP_FORTREE_CITY' },
+  /* [REMATCH_TATE_AND_LIZA] */ { trainerIds: ['TRAINER_TATE_AND_LIZA_1', 'TRAINER_TATE_AND_LIZA_2', 'TRAINER_TATE_AND_LIZA_3', 'TRAINER_TATE_AND_LIZA_4', 'TRAINER_TATE_AND_LIZA_5'], map: 'MAP_MOSSDEEP_CITY' },
+  /* [REMATCH_JUAN] */ { trainerIds: ['TRAINER_JUAN_1', 'TRAINER_JUAN_2', 'TRAINER_JUAN_3', 'TRAINER_JUAN_4', 'TRAINER_JUAN_5'], map: 'MAP_SOOTOPOLIS_CITY' },
+  /* [REMATCH_SIDNEY] */ { trainerIds: ['TRAINER_SIDNEY', 'TRAINER_SIDNEY', 'TRAINER_SIDNEY', 'TRAINER_SIDNEY', 'TRAINER_SIDNEY'], map: 'MAP_EVER_GRANDE_CITY' },
+  /* [REMATCH_PHOEBE] */ { trainerIds: ['TRAINER_PHOEBE', 'TRAINER_PHOEBE', 'TRAINER_PHOEBE', 'TRAINER_PHOEBE', 'TRAINER_PHOEBE'], map: 'MAP_EVER_GRANDE_CITY' },
+  /* [REMATCH_GLACIA] */ { trainerIds: ['TRAINER_GLACIA', 'TRAINER_GLACIA', 'TRAINER_GLACIA', 'TRAINER_GLACIA', 'TRAINER_GLACIA'], map: 'MAP_EVER_GRANDE_CITY' },
+  /* [REMATCH_DRAKE] */ { trainerIds: ['TRAINER_DRAKE', 'TRAINER_DRAKE', 'TRAINER_DRAKE', 'TRAINER_DRAKE', 'TRAINER_DRAKE'], map: 'MAP_EVER_GRANDE_CITY' },
+  /* [REMATCH_WALLACE] */ { trainerIds: ['TRAINER_WALLACE', 'TRAINER_WALLACE', 'TRAINER_WALLACE', 'TRAINER_WALLACE', 'TRAINER_WALLACE'], map: 'MAP_EVER_GRANDE_CITY' },
+];
+
+/** Entrée résolue en numérique (trainerIds via resolveTrainerNumId, map via
+ *  MAP_CONSTANTS → group/num 1:1 MAP_GROUP/MAP_NUM). */
+interface ResolvedRematch { trainerIds: number[]; mapGroup: number; mapNum: number }
+let _rematchResolvedCache: ResolvedRematch[] | null = null;
+function _rematchTable(): ResolvedRematch[] {
+  if (_rematchResolvedCache) return _rematchResolvedCache;
+  _rematchResolvedCache = gRematchTable.map((e) => {
+    const mapConst = MAP_CONSTANTS[e.map] ?? 0xFFFF;
+    return {
+      trainerIds: e.trainerIds.map((t) => resolveTrainerNumId(t) & 0xFFFF),
+      mapGroup: MAP_GROUP(mapConst),
+      mapNum: MAP_NUM(mapConst),
+    };
+  });
+  return _rematchResolvedCache;
+}
+
+/** 1:1 décomp `FirstBattleTrainerIdToRematchTableId(table, trainerId)` (:1546-1558). */
+function FirstBattleTrainerIdToRematchTableId(table: ResolvedRematch[], trainerId: number): number {
+  for (let i = 0; i < REMATCH_TABLE_ENTRIES; i++) {
+    if (table[i].trainerIds[0] === trainerId) return i;
+  }
+  return -1;
+}
+
+/** 1:1 décomp `TrainerIdToRematchTableId(table, trainerId)` (:1559-1577). */
+function TrainerIdToRematchTableId(table: ResolvedRematch[], trainerId: number): number {
+  for (let i = 0; i < REMATCH_TABLE_ENTRIES; i++) {
+    for (let j = 0; j < REMATCHES_COUNT; j++) {
+      if (table[i].trainerIds[j] === 0) break;
+      if (table[i].trainerIds[j] === trainerId) return i;
+    }
+  }
+  return -1;
+}
+
+/** 1:1 décomp `IsRematchForbidden(rematchTableId)` (:1578-1587) — Elite Four
+ *  toujours interdits ; Wally VR tant que FLAG_DEFEATED_WALLY_VICTORY_ROAD=0. */
+function IsRematchForbidden(rematchTableId: number): boolean {
+  if (rematchTableId >= REMATCH_ELITE_FOUR_ENTRIES) return true;
+  if (rematchTableId === REMATCH_WALLY_VR) return !FlagGet('FLAG_DEFEATED_WALLY_VICTORY_ROAD');
+  return false;
+}
+
+/** 1:1 décomp `SetRematchIdForTrainer(table, tableId)` (:1588-1604) — quirk
+ *  vanilla : i sort de boucle à la 1re équipe non battue (ou id 0) et c'est CE
+ *  i (1..5) qui est stocké. */
+function SetRematchIdForTrainer(table: ResolvedRematch[], tableId: number): void {
+  let i = 1;
+  for (; i < REMATCHES_COUNT; i++) {
+    const trainerId = table[tableId].trainerIds[i];
+    if (trainerId === 0) break;
+    if (!HasTrainerBeenFought(trainerId)) break;
+  }
+  gSaveBlock1Ptr.trainerRematches[tableId] = i;
+}
+
+/** 1:1 décomp `UpdateRandomTrainerRematches(table, mapGroup, mapNum)` (:1605-1630).
+ *  Quirk vanilla : `<= REMATCH_SPECIAL_TRAINER_START` (inclut Wally VR) et
+ *  `(Random() % 100) <= 30` = 31 % de chance. */
+function UpdateRandomTrainerRematches(table: ResolvedRematch[], mapGroup: number, mapNum: number): boolean {
+  let ret = false;
+  for (let i = 0; i <= REMATCH_SPECIAL_TRAINER_START; i++) {
+    if (table[i].mapGroup === mapGroup && table[i].mapNum === mapNum && !IsRematchForbidden(i)) {
+      if (gSaveBlock1Ptr.trainerRematches[i] !== 0) {
+        ret = true;
+      } else if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i) && (Random() % 100) <= 30) {
+        SetRematchIdForTrainer(table, i);
+        ret = true;
+      }
+    }
+  }
+  return ret;
+}
+
+/** 1:1 décomp `UpdateRematchIfDefeated(rematchTableId)` (:1631-1636). */
+export function UpdateRematchIfDefeated(rematchTableId: number): void {
+  if (HasTrainerBeenFought(_rematchTable()[rematchTableId].trainerIds[0])) {
+    SetRematchIdForTrainer(_rematchTable(), rematchTableId);
+  }
+}
+
+/** 1:1 décomp `DoesSomeoneWantRematchIn_(table, mapGroup, mapNum)` (:1637-1649). */
+function DoesSomeoneWantRematchIn_(table: ResolvedRematch[], mapGroup: number, mapNum: number): boolean {
+  for (let i = 0; i < REMATCH_TABLE_ENTRIES; i++) {
+    if (table[i].mapGroup === mapGroup && table[i].mapNum === mapNum && gSaveBlock1Ptr.trainerRematches[i] !== 0) return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `IsRematchTrainerIn_(table, mapGroup, mapNum)` (:1650-1662). */
+function IsRematchTrainerIn_(table: ResolvedRematch[], mapGroup: number, mapNum: number): boolean {
+  for (let i = 0; i < REMATCH_TABLE_ENTRIES; i++) {
+    if (table[i].mapGroup === mapGroup && table[i].mapNum === mapNum) return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `IsFirstTrainerIdReadyForRematch(table, firstBattleTrainerId)` (:1664-1675). */
+function IsFirstTrainerIdReadyForRematch(table: ResolvedRematch[], firstBattleTrainerId: number): boolean {
+  const tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
+  if (tableId === -1) return false;
+  if (tableId >= MAX_REMATCH_ENTRIES) return false;
+  if (gSaveBlock1Ptr.trainerRematches[tableId] === 0) return false;
+  return true;
+}
+
+/** 1:1 décomp `IsTrainerReadyForRematch_(table, trainerId)` (:1677-1690). */
+function IsTrainerReadyForRematch_(table: ResolvedRematch[], trainerId: number): boolean {
+  const tableId = TrainerIdToRematchTableId(table, trainerId);
+  if (tableId === -1) return false;
+  if (tableId >= MAX_REMATCH_ENTRIES) return false;
+  if (gSaveBlock1Ptr.trainerRematches[tableId] === 0) return false;
+  return true;
+}
+
+/** 1:1 décomp `GetRematchTrainerIdFromTable(table, firstBattleTrainerId)` (:1691-1711) —
+ *  quirk vanilla : retourne FALSE (=0) si pas d'entrée. */
+function GetRematchTrainerIdFromTable(table: ResolvedRematch[], firstBattleTrainerId: number): number {
+  const tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
+  if (tableId === -1) return 0;
+  const trainerEntry = table[tableId];
+  for (let i = 1; i < REMATCHES_COUNT; i++) {
+    if (trainerEntry.trainerIds[i] === 0) return trainerEntry.trainerIds[i - 1];
+    if (!HasTrainerBeenFought(trainerEntry.trainerIds[i])) return trainerEntry.trainerIds[i];
+  }
+  return trainerEntry.trainerIds[REMATCHES_COUNT - 1];
+}
+
+/** 1:1 décomp `GetLastBeatenRematchTrainerIdFromTable(table, firstBattleTrainerId)`
+ *  (:1712-1732) — diffère du précédent : retourne ids[i-1] aussi quand ids[i]
+ *  n'est PAS battu. */
+function GetLastBeatenRematchTrainerIdFromTable(table: ResolvedRematch[], firstBattleTrainerId: number): number {
+  const tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
+  if (tableId === -1) return 0;
+  const trainerEntry = table[tableId];
+  for (let i = 1; i < REMATCHES_COUNT; i++) {
+    if (trainerEntry.trainerIds[i] === 0) return trainerEntry.trainerIds[i - 1];
+    if (!HasTrainerBeenFought(trainerEntry.trainerIds[i])) return trainerEntry.trainerIds[i - 1];
+  }
+  return trainerEntry.trainerIds[REMATCHES_COUNT - 1];
+}
+
+/** 1:1 décomp `ClearTrainerWantRematchState(table, firstBattleTrainerId)` (:1733-1740). */
+function ClearTrainerWantRematchState(table: ResolvedRematch[], firstBattleTrainerId: number): void {
+  const tableId = TrainerIdToRematchTableId(table, firstBattleTrainerId);
+  if (tableId !== -1) gSaveBlock1Ptr.trainerRematches[tableId] = 0;
+}
+
+/** 1:1 décomp `GetTrainerMatchCallFlag(trainerId)` (:1741-1753). */
+function GetTrainerMatchCallFlag(trainerId: number): number {
+  const table = _rematchTable();
+  for (let i = 0; i < REMATCH_TABLE_ENTRIES; i++) {
+    if (table[i].trainerIds[0] === trainerId) return TRAINER_REGISTERED_FLAGS_START + i;
+  }
+  return 0xFFFF;
+}
+
+/** 1:1 décomp `RegisterTrainerInMatchCall()` (:1754-1763). */
+function RegisterTrainerInMatchCall(): void {
+  if (FlagGet('FLAG_HAS_MATCH_CALL')) {
+    const matchCallFlagId = GetTrainerMatchCallFlag(_trainerBattleOpponentA);
+    if (matchCallFlagId !== 0xFFFF) FlagSet(matchCallFlagId);
+  }
+}
+
+/** 1:1 décomp `WasSecondRematchWon(table, firstBattleTrainerId)` (:1765-1774). */
+function WasSecondRematchWon(table: ResolvedRematch[], firstBattleTrainerId: number): boolean {
+  const tableId = FirstBattleTrainerIdToRematchTableId(table, firstBattleTrainerId);
+  if (tableId === -1) return false;
+  if (!HasTrainerBeenFought(table[tableId].trainerIds[1])) return false;
+  return true;
+}
+
+/** 1:1 décomp `HasAtLeastFiveBadges()` (:1776-1793). */
+function HasAtLeastFiveBadges(): boolean {
+  let count = 0;
+  for (let i = 0; i < sBadgeFlags.length; i++) {
+    if (FlagGet(sBadgeFlags[i])) {
+      if (++count >= 5) return true;
+    }
+  }
+  return false;
+}
+
+/** 1:1 décomp `IncrementRematchStepCounter()` (:1797-1807). Appelant décomp =
+ *  overworld.c per-step — hook OW exporté (dette câblage per-step). */
+export function IncrementRematchStepCounter(): void {
+  if (HasAtLeastFiveBadges()) {
+    if (gSaveBlock1Ptr.trainerRematchStepCounter >= STEP_COUNTER_MAX) {
+      gSaveBlock1Ptr.trainerRematchStepCounter = STEP_COUNTER_MAX;
+    } else {
+      gSaveBlock1Ptr.trainerRematchStepCounter++;
+    }
+  }
+}
+
+/** 1:1 décomp `IsRematchStepCounterMaxed()` (:1805-1812). */
+function IsRematchStepCounterMaxed(): boolean {
+  return HasAtLeastFiveBadges() && gSaveBlock1Ptr.trainerRematchStepCounter >= STEP_COUNTER_MAX;
+}
+
+/** 1:1 décomp `TryUpdateRandomTrainerRematches(mapGroup, mapNum)` (:1813-1818).
+ *  Appelant décomp = overworld.c au chargement de map — hook OW exporté. */
+export function TryUpdateRandomTrainerRematches(mapGroup: number, mapNum: number): void {
+  if (IsRematchStepCounterMaxed() && UpdateRandomTrainerRematches(_rematchTable(), mapGroup, mapNum)) {
+    gSaveBlock1Ptr.trainerRematchStepCounter = 0;
+  }
+}
+
+/** 1:1 décomp `DoesSomeoneWantRematchIn(mapGroup, mapNum)` (:1819-1823). */
+export function DoesSomeoneWantRematchIn(mapGroup: number, mapNum: number): boolean {
+  return DoesSomeoneWantRematchIn_(_rematchTable(), mapGroup, mapNum);
+}
+
+/** 1:1 décomp `IsRematchTrainerIn(mapGroup, mapNum)` (:1824-1828). */
+export function IsRematchTrainerIn(mapGroup: number, mapNum: number): boolean {
+  return IsRematchTrainerIn_(_rematchTable(), mapGroup, mapNum);
+}
+
+/** 1:1 décomp `GetRematchTrainerId(trainerId)` (:1829-1833). */
+function GetRematchTrainerId(trainerId: number): number {
+  return GetRematchTrainerIdFromTable(_rematchTable(), trainerId);
+}
+
+/** 1:1 décomp `GetLastBeatenRematchTrainerId(trainerId)` (:1834-1838) —
+ *  consommé par match_call.c (Pokénav). */
+export function GetLastBeatenRematchTrainerId(trainerId: number): number {
+  return GetLastBeatenRematchTrainerIdFromTable(_rematchTable(), trainerId);
+}
+
+/** 1:1 décomp `ShouldTryRematchBattle()` (:1840-1846). */
+export function ShouldTryRematchBattle(): boolean {
+  if (IsFirstTrainerIdReadyForRematch(_rematchTable(), _trainerBattleOpponentA)) return true;
+  return WasSecondRematchWon(_rematchTable(), _trainerBattleOpponentA);
+}
+
+/** 1:1 décomp `IsTrainerReadyForRematch()` (:1848-1851). */
+export function IsTrainerReadyForRematch(): boolean {
+  return IsTrainerReadyForRematch_(_rematchTable(), _trainerBattleOpponentA);
+}
+
+/** 1:1 décomp `HandleRematchVarsOnBattleEnd()` (:1852-1857) — quirk vanilla :
+ *  SetBattledTrainersFlags est appelé ICI alors que CB2_EndRematchBattle l'a
+ *  DÉJÀ appelé juste avant (flags posés deux fois, sans effet — reproduit). */
+function HandleRematchVarsOnBattleEnd(): void {
+  ClearTrainerWantRematchState(_rematchTable(), _trainerBattleOpponentA);
+  SetBattledTrainersFlags();
+}
+
+/** 1:1 décomp `ShouldTryGetTrainerScript()` (:1859-1872). */
+export function ShouldTryGetTrainerScript(): void {
+  if (sNoOfPossibleTrainerRetScripts > 1) {
+    sNoOfPossibleTrainerRetScripts = 0;
+    sShouldCheckTrainerBScript = true;
+    gSpecialVar.Result = 1;
+  } else {
+    sShouldCheckTrainerBScript = false;
+    gSpecialVar.Result = 0;
+  }
+}
+
+/** 1:1 décomp `CountBattledRematchTeams(trainerId)` (:1873-1890) — consommé
+ *  par match_call.c. Quirk vanilla : trainerId indexe la TABLE (pas un trainer). */
+export function CountBattledRematchTeams(trainerId: number): number {
+  const table = _rematchTable();
+  if (!HasTrainerBeenFought(table[trainerId].trainerIds[0])) return 0;
+  let i = 1;
+  for (; i < REMATCHES_COUNT; i++) {
+    if (table[trainerId].trainerIds[i] === 0) break;
+    if (!HasTrainerBeenFought(table[trainerId].trainerIds[i])) break;
+  }
+  return i;
+}
+
+/** 1:1 décomp `CB2_EndRematchBattle()` (battle_setup.c:1351-1369) — comme
+ *  CB2_EndTrainerBattle, la partie retour-OW/WhiteOut vit dans le savedCallback
+ *  du boot ; ici le reste 1:1 : victoire → match call + flags + rematch vars. */
+export function CB2_EndRematchBattle(): void {
+  if (!IsPlayerDefeated(gBattleOutcome)) {
+    RegisterTrainerInMatchCall();
+    SetBattledTrainersFlags();
+    HandleRematchVarsOnBattleEnd();
+  }
+}
+
+/** 1:1 décomp `BattleSetup_StartRematchBattle()` (battle_setup.c:1371-1376) :
+ *  BATTLE_TYPE_TRAINER + savedCallback=CB2_EndRematchBattle + DoTrainerBattle +
+ *  ScriptContext_Stop. Notre équivalent du Stop = le poll retourné (consommé
+ *  par l'interception de l'opcode `special` → SetupNativeScript, qui suspend le
+ *  script et le reprend à la fin du combat — 1:1 ContinueScript). */
+export function _bootRematchBattleForScript(): () => boolean {
+  setBattleOutcome(0);
+  _prepareTrainerBattleStart();
+  let booted = false;
+  void ensureGTrainersLoaded().then(() => {
+    DoTrainerBattle();
+    booted = true;
+  }).catch((e) => {
+    console.warn('[battle_setup] gTrainers KO — rematch annulé', e);
+    booted = true;
+  });
+  return () => {
+    if (!booted) return false;
+    const inB = (globalThis as { __rt?: { gMain?: { inBattle?: boolean } } }).__rt?.gMain?.inBattle ?? false;
+    if (inB || gBattleOutcome === 0) return false;
+    CB2_EndRematchBattle();
+    return true;
+  };
+}
+
 // ─── Specials 1:1 (remplacent les stubs de specials-registry) ───────────────
 
 registerSpecial('GetTrainerBattleMode', () => GetTrainerBattleMode());
@@ -583,6 +1020,13 @@ registerSpecial('ShowTrainerCantBattleSpeech', () => { ShowTrainerCantBattleSpee
 // 1:1 trainer_see.c TryPrepareSecondApproachingTrainer : trainer_see non porté
 // (gNoOfApproachingTrainers=0) → FALSE (dette T-C).
 registerSpecial('TryPrepareSecondApproachingTrainer', () => 0);
+// T-B rematches (remplacent les stubs `() => 0` de specials-registry).
+registerSpecial('IsTrainerReadyForRematch', () => (IsTrainerReadyForRematch() ? 1 : 0));
+registerSpecial('ShouldTryRematchBattle', () => (ShouldTryRematchBattle() ? 1 : 0));
+registerSpecial('ShouldTryGetTrainerScript', () => { ShouldTryGetTrainerScript(); });
+// `BattleSetup_StartRematchBattle` = intercepté par l'opcode `special`
+// (script-opcodes-special.ts) car il doit SUSPENDRE le script (ScriptContext_Stop)
+// → consomme _bootRematchBattleForScript() via la surface __battleSetup.
 
 // Devtools/debug. (__runEventScript = lancer un script de map par label, pour
 // les A/B du flux dresseur sans marcher jusqu'au NPC.)
@@ -591,6 +1035,11 @@ import { RunScriptImmediately as _RunScriptImmediately } from '../engine/script/
 (globalThis as Record<string, unknown>).__battleSetup = {
   BattleSetup_ConfigureTrainerBattle, GetTrainerBattleMode, HasTrainerBeenFought,
   SetBattledTrainersFlags, BattleSetup_GetTrainerPostBattleScript,
+  // T-B rematches (consommés par l'interception opcode special + match_call + OW hooks).
+  _bootRematchBattleForScript, IsTrainerReadyForRematch, ShouldTryRematchBattle,
+  DoesSomeoneWantRematchIn, IsRematchTrainerIn, GetLastBeatenRematchTrainerId,
+  CountBattledRematchTeams, UpdateRematchIfDefeated,
+  IncrementRematchStepCounter, TryUpdateRandomTrainerRematches,
   get sTrainerBattleMode() { return sTrainerBattleMode; },
   get sTrainerAIntroSpeech() { return sTrainerAIntroSpeech; },
   get sTrainerADefeatSpeech() { return sTrainerADefeatSpeech; },
