@@ -505,28 +505,28 @@
 - [x] AnimWeatherBallUp_Step @ L2522-2533 — renommé au nom C exact (ex-_WeatherBallUp_Step)
 
 ## battle_anim_effects_1.c — 125/154 fonctions couvertes (81%) · cite:3 + symbole:122 · 89 citations
-- [ ] AnimMovePowderParticle_Step  @ L2213-2229
-- [ ] AnimSolarBeamSmallOrb_Step  @ L2274-2295
+- [x] AnimMovePowderParticle_Step @ L2213-2229 — renommé au nom C exact (ex-_MovePowderParticle_Step)
+- [x] AnimSolarBeamSmallOrb_Step @ L2274-2295 — renommé au nom C exact (ex-_SolarBeamSmallOrb_Step)
 - [ ] AnimTask_CreateSmallSolarBeamOrbs  @ L2296-2314
-- [ ] AnimAbsorptionOrb_Step  @ L2328-2335
-- [ ] AnimLeechSeed_Step  @ L2399-2409
-- [ ] AnimLeechSeedSprouts  @ L2410-2421
-- [ ] AnimSporeParticle_Step  @ L2437-2462
-- [ ] AnimRazorLeafParticle_Step1  @ L2564-2589
-- [ ] AnimRazorLeafParticle_Step2  @ L2590-2609
-- [ ] AnimTranslateLinearSingleSineWave_Step  @ L2641-2673
-- [ ] AnimMoveTwisterParticle_Step  @ L2690-2718
+- [x] AnimAbsorptionOrb_Step @ L2328-2335 — renommé au nom C exact (ex-_AbsorptionOrb_Step)
+- [x] AnimLeechSeed_Step @ L2399-2409 — renommé au nom C exact (ex-_LeechSeed_Step)
+- [x] AnimLeechSeedSprouts @ L2410-2421 — renommé au nom C exact (ex-_LeechSeedSprouts)
+- [x] AnimSporeParticle_Step @ L2437-2462 — renommé au nom C exact (ex-_SporeParticle_Step)
+- [x] AnimRazorLeafParticle_Step1 @ L2564-2589 — renommé au nom C exact (ex-_RazorLeaf_Step1)
+- [x] AnimRazorLeafParticle_Step2 @ L2590-2609 — renommé au nom C exact (ex-_RazorLeaf_Step2)
+- [x] AnimTranslateLinearSingleSineWave_Step @ L2641-2673 — renommé au nom C exact (ex-_TranslateLinearSingleSineWave_Step)
+- [x] AnimMoveTwisterParticle_Step @ L2690-2718 — renommé au nom C exact (ex-_MoveTwisterParticle_Step)
 - [ ] AnimTask_DuplicateAndShrinkToPos_Step1  @ L2792-2809
 - [ ] AnimTask_DuplicateAndShrinkToPos_Step2  @ L2810-2839
 - [ ] AnimKnockOffOpponentsItem  @ L3044-3061
 - [ ] AnimKnockOffItem  @ L3062-3088
 - [ ] LeafBladeGetPosFactor  @ L3466-3474
-- [ ] AnimFlyingParticle_Step  @ L3571-3591
+- [x] AnimFlyingParticle_Step @ L3571-3591 — renommé au nom C exact (ex-_FlyingParticle_Step)
 - [ ] AnimWhipHit_WaitEnd  @ L3697-3702
 - [ ] AnimFlickeringPunch  @ L3734-3753
 - [ ] UnusedFlickerAnim  @ L3854-3886
-- [ ] AnimBubbleBurst_Step  @ L4174-4186
-- [ ] AnimSleepLetterZ_Step  @ L4209-4218
+- [x] AnimBubbleBurst_Step @ L4174-4186 — renommé au nom C exact (ex-_BubbleBurst_Step)
+- [x] AnimSleepLetterZ_Step @ L4209-4218 — renommé au nom C exact (ex-_SleepLetterZ_Step)
 - [ ] AnimTipMon  @ L4505-4510
 - [ ] AnimTipMon_Step  @ L4511-4547
 - [ ] AnimTask_SkullBashPositionSet  @ L4588-4678

@@ -69,9 +69,9 @@ function AnimAbsorptionOrb(sprite: AnimSprite): void {
   sprite.data[2] = Math.trunc(((destY - sprite.y) * 256) / dur);
   sprite.data[3] = 0;
   sprite.data[4] = 0;
-  sprite.callback = _AbsorptionOrb_Step;
+  sprite.callback = AnimAbsorptionOrb_Step;
 }
-function _AbsorptionOrb_Step(sprite: AnimSprite): void {
+function AnimAbsorptionOrb_Step(sprite: AnimSprite): void {
   if (sprite.data[0] <= 0) {
     _itf().DestroyAnimSprite?.(sprite);
     return;
@@ -106,9 +106,9 @@ function AnimMovePowderParticle(sprite: _PSprite): void {
   sprite.data[3] = (atk & 1) !== 0 ? -(args[4] | 0) : (args[4] | 0);
   sprite.data[4] = args[5] | 0;
   sprite.data[5] = 0;
-  sprite.callback = _MovePowderParticle_Step;
+  sprite.callback = AnimMovePowderParticle_Step;
 }
-function _MovePowderParticle_Step(sprite: _PSprite): void {
+function AnimMovePowderParticle_Step(sprite: _PSprite): void {
   if (sprite.data[0] > 0) {
     sprite.data[0]--;
     sprite.y2 = (sprite.data[2] << 16 >> 16) >> 8;
@@ -146,9 +146,9 @@ function AnimFlyingParticle(sprite: _PSprite): void {
     sprite.y = args[0] | 0;
   }
   sprite.data[7] = 0;
-  sprite.callback = _FlyingParticle_Step;
+  sprite.callback = AnimFlyingParticle_Step;
 }
-function _FlyingParticle_Step(sprite: _PSprite): void {
+function AnimFlyingParticle_Step(sprite: _PSprite): void {
   const a = sprite.data[7];
   sprite.data[7]++;
   const sineTable = ((globalThis as Record<string, unknown>).__gSineTable as Int16Array | undefined);
@@ -196,9 +196,9 @@ function AnimTranslateLinearSingleSineWave(sprite: _PSprite): void {
   InitAnimArcTranslation(sprite as never);
   if ((atk & 1) === (tgt & 1)) sprite.data[0] = 1;
   (sprite as { _affineParam?: number })._affineParam = 0;
-  sprite.callback = _TranslateLinearSingleSineWave_Step;
+  sprite.callback = AnimTranslateLinearSingleSineWave_Step;
 }
-function _TranslateLinearSingleSineWave_Step(sprite: _PSprite): void {
+function AnimTranslateLinearSingleSineWave_Step(sprite: _PSprite): void {
   let destroy = false;
   const a = sprite.data[0];
   const b = sprite.data[7];
@@ -230,9 +230,9 @@ function AnimMoveTwisterParticle(sprite: _PSprite): void {
   sprite.data[3] = args[3] | 0;
   sprite.data[4] = args[4] | 0;
   sprite.data[5] = 0;
-  sprite.callback = _MoveTwisterParticle_Step;
+  sprite.callback = AnimMoveTwisterParticle_Step;
 }
-function _MoveTwisterParticle_Step(sprite: _PSprite): void {
+function AnimMoveTwisterParticle_Step(sprite: _PSprite): void {
   if (sprite.data[1] === 0xFF) {
     sprite.y -= 2;
   } else if (sprite.data[1] > 0) {
@@ -278,10 +278,10 @@ function AnimSolarBeamSmallOrb(sprite: _PSprite): void {
   sprite.data[4] = GetBattlerSpriteCoord(tgt, 3);
   InitAnimLinearTranslation(sprite as never);
   sprite.data[5] = args[3] | 0;
-  sprite.callback = _SolarBeamSmallOrb_Step;
-  _SolarBeamSmallOrb_Step(sprite);
+  sprite.callback = AnimSolarBeamSmallOrb_Step;
+  AnimSolarBeamSmallOrb_Step(sprite);
 }
-function _SolarBeamSmallOrb_Step(sprite: _PSprite): void {
+function AnimSolarBeamSmallOrb_Step(sprite: _PSprite): void {
   if (AnimTranslateLinear(sprite as never)) {
     _pItf().DestroyAnimSprite?.(sprite);
   } else {
@@ -299,10 +299,10 @@ function AnimSporeParticle(sprite: _PSprite): void {
   sprite.data[0] = args[3] | 0;
   sprite.data[1] = args[2] | 0;
   sprite.data[2] = 0;
-  sprite.callback = _SporeParticle_Step;
-  _SporeParticle_Step(sprite);
+  sprite.callback = AnimSporeParticle_Step;
+  AnimSporeParticle_Step(sprite);
 }
-function _SporeParticle_Step(sprite: _PSprite): void {
+function AnimSporeParticle_Step(sprite: _PSprite): void {
   sprite.x2 = Sin(sprite.data[1] & 0xFF, 32);
   sprite.data[2] += 24;
   sprite.y2 = Cos(sprite.data[1] & 0xFF, -3) + ((sprite.data[2] << 16 >> 16) >> 8);
@@ -321,9 +321,9 @@ function AnimRazorLeafParticle(sprite: _PSprite): void {
   sprite.data[0] = args[0] | 0;
   sprite.data[1] = args[1] | 0;
   sprite.data[2] = args[2] | 0;
-  sprite.callback = _RazorLeaf_Step1;
+  sprite.callback = AnimRazorLeafParticle_Step1;
 }
-function _RazorLeaf_Step1(sprite: _PSprite): void {
+function AnimRazorLeafParticle_Step1(sprite: _PSprite): void {
   if (!sprite.data[2]) {
     if (sprite.data[1] & 1) {
       sprite.data[0] = 0x80;
@@ -332,14 +332,14 @@ function _RazorLeaf_Step1(sprite: _PSprite): void {
     }
     sprite.data[1] = 0;
     sprite.data[2] = 0;
-    sprite.callback = _RazorLeaf_Step2;
+    sprite.callback = AnimRazorLeafParticle_Step2;
   } else {
     sprite.data[2]--;
     sprite.x += sprite.data[0];
     sprite.y += sprite.data[1];
   }
 }
-function _RazorLeaf_Step2(sprite: _PSprite): void {
+function AnimRazorLeafParticle_Step2(sprite: _PSprite): void {
   const atk = _pItf().getAttacker?.() ?? 0;
   if ((atk & 1) !== 0) sprite.x2 = -Sin(sprite.data[0] & 0xFF, 25);
   else sprite.x2 = Sin(sprite.data[0] & 0xFF, 25);
@@ -364,9 +364,9 @@ function AnimLeechSeed(sprite: _PSprite): void {
   sprite.data[4] = (GetBattlerSpriteCoord(tgt, 1) + (args[3] | 0)) & 0xFFFF;
   sprite.data[5] = args[5] | 0;
   InitAnimArcTranslation(sprite as never);
-  sprite.callback = _LeechSeed_Step;
+  sprite.callback = AnimLeechSeed_Step;
 }
-function _LeechSeed_Step(sprite: _PSprite): void {
+function AnimLeechSeed_Step(sprite: _PSprite): void {
   if (ArcT(sprite as never)) {
     (sprite as { invisible?: boolean }).invisible = true;
     sprite.data[0] = 10;
@@ -375,9 +375,9 @@ function _LeechSeed_Step(sprite: _PSprite): void {
   }
 }
 function _LeechSeed_Wait(sprite: _PSprite): void {
-  if (--sprite.data[0] <= 0) _LeechSeedSprouts(sprite);
+  if (--sprite.data[0] <= 0) AnimLeechSeedSprouts(sprite);
 }
-function _LeechSeedSprouts(sprite: _PSprite): void {
+function AnimLeechSeedSprouts(sprite: _PSprite): void {
   (sprite as { invisible?: boolean }).invisible = false;
   const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
   if (spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
@@ -480,9 +480,9 @@ function AnimBubbleBurst(sprite: _PSprite): void {
   }
   sprite.data[0] = 0;
   sprite.data[1] = 0;
-  sprite.callback = _BubbleBurst_Step;
+  sprite.callback = AnimBubbleBurst_Step;
 }
-function _BubbleBurst_Step(sprite: _PSprite): void {
+function AnimBubbleBurst_Step(sprite: _PSprite): void {
   if (++sprite.data[0] > 30) {
     sprite.y2 = Math.trunc((30 - sprite.data[0]) / 3);
     sprite.x2 = Sin((sprite.data[1] * 4) & 0xFF, 3);
@@ -511,9 +511,9 @@ function AnimSleepLetterZ(sprite: _PSprite): void {
   sprite.data[0] = 0;
   sprite.data[1] = 0;
   sprite.data[4] = 0;
-  sprite.callback = _SleepLetterZ_Step;
+  sprite.callback = AnimSleepLetterZ_Step;
 }
-function _SleepLetterZ_Step(sprite: _PSprite): void {
+function AnimSleepLetterZ_Step(sprite: _PSprite): void {
   sprite.y2 = -Math.trunc(sprite.data[0] / 0x28);
   sprite.x2 = Math.trunc(sprite.data[4] / 10);
   sprite.data[4] += sprite.data[3] * 2;
