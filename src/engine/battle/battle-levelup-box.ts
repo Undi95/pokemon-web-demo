@@ -74,12 +74,18 @@ let _lvlUpBoxWinId = -1;
 let _prevBg0Priority = 0;
 let _prevBg1Visible = false;
 let _prevBg1Priority = 1;
+let _prevBg1CharBase = 0;
 
 /** 1:1 décomp Cmd_drawlvlupbox case 3+5 : BG0 priorité 1 + BG1 priorité 0 (la box
  *  passe AU-DESSUS du message) + active BG1 (ShowBg) + scroll 0 pour révéler la box.
  *  Sans la priorité BG0=1, le message (BG0) couvre les 3 lignes du bas de la box.
  *  BG1 est `visible=false` hors level-up → sans ShowBg, la box (rendue dans le
- *  VRAM/tilemap de BG1) ne s'affiche pas du tout. */
+ *  VRAM/tilemap de BG1) ne s'affiche pas du tout.
+ *  charBase : 1:1 sBattleBgTemplates BG1.charBaseIndex = 0 (le cadre 0x12/0x22 +
+ *  le contenu de la box vivent au charblock 0 partagé). Notre scène combat laisse
+ *  BG1 à charBase 1 (zone des anims monbg — la décomp y bascule PENDANT l'anim
+ *  puis restaure) → sans le poser à 0 ici, le cadre rend les tiles d'anim
+ *  (hachures, bug user 2026-06-12). Restauré à la fermeture. */
 function _showLevelUpBg(): void {
   const rt = getRuntime();
   if (!rt) return;
@@ -88,9 +94,11 @@ function _showLevelUpBg(): void {
   _prevBg0Priority = bg0.config.priority;
   _prevBg1Visible = bg1.config.visible;
   _prevBg1Priority = bg1.config.priority;
+  _prevBg1CharBase = bg1.config.charBaseIndex;
   bg0.config.priority = 1; // 1:1 décomp : message sous la box.
   bg1.config.visible = true;
   bg1.config.priority = 0; // 1:1 décomp : BG1 (box) priorité 0 = au-dessus.
+  bg1.config.charBaseIndex = 0; // 1:1 sBattleBgTemplates (cadre + box au charblock 0).
   rt.SetGpuReg(REG_OFFSET_BG1HOFS, 0); // gBattle_BG1_X = 0
   rt.SetGpuReg(REG_OFFSET_BG1VOFS, 0); // gBattle_BG1_Y = 0 (box révélée)
 }
@@ -103,6 +111,7 @@ function _hideLevelUpBg(): void {
   const bg1 = rt.gba.bg(1);
   bg1.config.visible = _prevBg1Visible;
   bg1.config.priority = _prevBg1Priority;
+  bg1.config.charBaseIndex = (_prevBg1CharBase & 3) as 0 | 1 | 2 | 3;
 }
 
 /** Coords du CADRE de la box (1:1 décomp Cmd_drawlvlupbox : HandleBattleWindow(18,7,29,19)).
@@ -114,6 +123,11 @@ const LVLUP_FRAME_X1 = 18, LVLUP_FRAME_Y1 = 7, LVLUP_FRAME_X2 = 29, LVLUP_FRAME_
  *  cadre + DrawLevelUpWindow1 + CopyWindowToVram) + ShowBg(1). */
 export function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
   if (_lvlUpBoxWinId >= 0) lvlUpBoxClose();
+  // 1:1 décomp case 3 : l'état BG (priorités + ShowBg + charBase 0) est posé AVANT
+  // le dessin du case 4. CRITIQUE chez nous : CopyWindowToVram écrit via la VUE
+  // bg(1).vram au charBase COURANT → basculer à 0 d'abord, sinon le contenu part
+  // au charblock des anims (1) et la box lit du vide.
+  _showLevelUpBg();
   const tpl = sStandardBattleWindowTemplates[B_WIN_LEVEL_UP_BOX];
   _lvlUpBoxWinId = AddWindow(tpl);
   // 1:1 décomp case 3 : dessine le cadre AVANT le texte (PutWindowTilemap écrase
@@ -123,7 +137,6 @@ export function lvlUpBoxOpenPage1(before: number[], after: number[]): void {
   PutWindowTilemap(_lvlUpBoxWinId);
   DrawLevelUpWindowPg1(_lvlUpBoxWinId, before, after, LVLUP_BG_CLR, LVLUP_FG_CLR, LVLUP_SHADOW_CLR);
   CopyWindowToVram(_lvlUpBoxWinId, 3 /* COPYWIN_FULL */);
-  _showLevelUpBg();
 }
 
 /** Re-dessine la page 2 (totaux). 1:1 décomp case 6 (DrawLevelUpWindow2 + CopyWindowToVram). */

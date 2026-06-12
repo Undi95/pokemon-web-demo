@@ -427,6 +427,10 @@ export async function loadBattleStdFrame(): Promise<void> {
   const frameType = ((gSaveBlock2Ptr.optionsWindowFrameType ?? 0) % 20 + 20) % 20;
   const png = await loadIndexedPngStrict(`/decomp/em/ui/text_window/${frameType + 1}.png`, 4);
   // 1:1 LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1)) + (2, 0x22, BG_PLTT_ID(1)).
+  // Le cadre vit au CHARBLOCK 0 (sBattleBgTemplates : BG0/1/2 partagent
+  // charBaseIndex 0 dans la ROM). bg(0).vram = vue VRAM au charblock 0.
+  // Un consommateur sur BG1 (level-up box) doit poser BG1 charBase=0 (1:1
+  // l'état décomp hors-anim) pour le lire — cf. battle-levelup-box.
   rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x12 * 32);
   rt.gba.bg(0).vram.set(png.charData.subarray(0, 0x120), 0x22 * 32);
   // 1:1 LoadPalette(sWindowFrames[type].pal, BG_PLTT_ID(1), 32) — slot 1.
