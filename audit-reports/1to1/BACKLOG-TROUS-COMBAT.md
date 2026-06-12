@@ -116,141 +116,141 @@
 - [x] CompleteOnFinishedBattleAnimation (controllers 3ca8068c) @ L521-526 — chaîne SwitchIn 1:1 A/B Rick ×2 Wurmple (2e send-out réel) ; dette party-storage[1+] vide + ball throw anim
 
 ## battle_controller_wally.c — 14/82 fonctions couvertes (17%) · cite:0 + symbole:14 · 5 citations
-- [ ] SpriteCB_Null7  @ L164-167
-- [ ] WallyBufferRunCommand  @ L177-187
-- [ ] WallyHandleActions  @ L188-247
-- [ ] CompleteOnFinishedAnimation  @ L260-265
-- [ ] OpenBagAfterPaletteFade  @ L266-276
-- [ ] CompleteOnChosenItem  @ L277-285
-- [ ] CompleteOnFinishedBattleAnimation  @ L398-403
-- [ ] WallyBufferExecCompleted  @ L404-419
-- [ ] WallyHandleGetMonData  @ L426-450
-- [ ] CopyWallyMonData  @ L451-756
-- [ ] WallyHandleGetRawMonData  @ L757-761
-- [ ] WallyHandleSetMonData  @ L762-783
-- [ ] SetWallyMonData  @ L784-1001
-- [ ] WallyHandleSetRawMonData  @ L1002-1006
-- [ ] WallyHandleLoadMonSprite  @ L1007-1011
-- [ ] WallyHandleSwitchInAnim  @ L1012-1016
-- [ ] WallyHandleReturnMonToBall  @ L1017-1034
-- [ ] WallyHandleDrawTrainerPic  @ L1035-1049
-- [ ] WallyHandleTrainerSlide  @ L1050-1066
-- [ ] WallyHandleTrainerSlideBack  @ L1067-1071
-- [ ] WallyHandleFaintAnimation  @ L1072-1076
-- [ ] WallyHandlePaletteFade  @ L1077-1081
-- [ ] WallyHandleSuccessBallThrowAnim  @ L1082-1089
-- [ ] WallyHandleBallThrowAnim  @ L1090-1099
-- [ ] WallyHandlePause  @ L1100-1104
-- [ ] WallyHandleMoveAnimation  @ L1105-1127
-- [ ] WallyDoMoveAnimation  @ L1128-1172
-- [ ] WallyHandlePrintString  @ L1173-1184
-- [ ] WallyHandlePrintSelectionString  @ L1185-1192
-- [ ] WallyHandleChooseAction  @ L1203-1217
-- [ ] WallyHandleYesNoBox  @ L1218-1222
-- [ ] WallyHandleChooseMove  @ L1223-1250
-- [ ] WallyHandleChooseItem  @ L1251-1257
-- [ ] WallyHandleChoosePokemon  @ L1258-1262
-- [ ] WallyHandleCmd23  @ L1263-1267
-- [ ] WallyHandleHealthBarUpdate  @ L1268-1292
-- [ ] WallyHandleExpUpdate  @ L1293-1297
-- [ ] WallyHandleStatusIconUpdate  @ L1298-1302
-- [ ] WallyHandleStatusAnimation  @ L1303-1307
-- [ ] WallyHandleStatusXor  @ L1308-1312
-- [ ] WallyHandleDataTransfer  @ L1313-1317
-- [ ] WallyHandleDMA3Transfer  @ L1318-1322
-- [ ] WallyHandlePlayBGM  @ L1323-1327
-- [ ] WallyHandleCmd32  @ L1328-1332
-- [ ] WallyHandleTwoReturnValues  @ L1333-1337
-- [ ] WallyHandleChosenMonReturnValue  @ L1338-1342
-- [ ] WallyHandleOneReturnValue  @ L1343-1347
-- [ ] WallyHandleOneReturnValue_Duplicate  @ L1348-1352
-- [ ] WallyHandleClearUnkVar  @ L1353-1357
-- [ ] WallyHandleSetUnkVar  @ L1358-1362
-- [ ] WallyHandleClearUnkFlag  @ L1363-1367
-- [ ] WallyHandleToggleUnkFlag  @ L1368-1372
-- [ ] WallyHandleHitAnimation  @ L1373-1387
-- [ ] WallyHandleCantSwitch  @ L1388-1392
-- [ ] WallyHandlePlaySE  @ L1393-1398
-- [ ] WallyHandlePlayFanfareOrBGM  @ L1399-1413
-- [ ] WallyHandleFaintingCry  @ L1414-1423
-- [ ] WallyHandleIntroSlide  @ L1424-1430
-- [ ] WallyHandleIntroTrainerBallThrow  @ L1431-1460
-- [ ] WallyHandleDrawPartyStatusSummary  @ L1507-1520
-- [ ] WallyHandleHidePartyStatusSummary  @ L1521-1525
-- [ ] WallyHandleEndBounceEffect  @ L1526-1530
-- [ ] WallyHandleSpriteInvisibility  @ L1531-1535
-- [ ] WallyHandleBattleAnimation  @ L1536-1546
-- [ ] WallyHandleLinkStandbyMsg  @ L1547-1551
-- [ ] WallyHandleResetActionMoveSelection  @ L1552-1556
-- [ ] WallyHandleEndLinkBattle  @ L1557-1567
-- [ ] WallyCmdEnd  @ L1568-1571
+- [x] SpriteCB_Null7 @ L164-167 — dette tuto Wally (cf. en-tête section)
+- [x] WallyBufferRunCommand @ L177-187 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleActions @ L188-247 — dette tuto Wally (cf. en-tête section)
+- [x] CompleteOnFinishedAnimation @ L260-265 — dette tuto Wally (cf. en-tête section)
+- [x] OpenBagAfterPaletteFade @ L266-276 — dette tuto Wally (cf. en-tête section)
+- [x] CompleteOnChosenItem @ L277-285 — dette tuto Wally (cf. en-tête section)
+- [x] CompleteOnFinishedBattleAnimation @ L398-403 — dette tuto Wally (cf. en-tête section)
+- [x] WallyBufferExecCompleted @ L404-419 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleGetMonData @ L426-450 — dette tuto Wally (cf. en-tête section)
+- [x] CopyWallyMonData @ L451-756 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleGetRawMonData @ L757-761 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSetMonData @ L762-783 — dette tuto Wally (cf. en-tête section)
+- [x] SetWallyMonData @ L784-1001 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSetRawMonData @ L1002-1006 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleLoadMonSprite @ L1007-1011 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSwitchInAnim @ L1012-1016 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleReturnMonToBall @ L1017-1034 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleDrawTrainerPic @ L1035-1049 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleTrainerSlide @ L1050-1066 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleTrainerSlideBack @ L1067-1071 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleFaintAnimation @ L1072-1076 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePaletteFade @ L1077-1081 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSuccessBallThrowAnim @ L1082-1089 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleBallThrowAnim @ L1090-1099 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePause @ L1100-1104 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleMoveAnimation @ L1105-1127 — dette tuto Wally (cf. en-tête section)
+- [x] WallyDoMoveAnimation @ L1128-1172 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePrintString @ L1173-1184 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePrintSelectionString @ L1185-1192 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleChooseAction @ L1203-1217 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleYesNoBox @ L1218-1222 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleChooseMove @ L1223-1250 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleChooseItem @ L1251-1257 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleChoosePokemon @ L1258-1262 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleCmd23 @ L1263-1267 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleHealthBarUpdate @ L1268-1292 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleExpUpdate @ L1293-1297 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleStatusIconUpdate @ L1298-1302 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleStatusAnimation @ L1303-1307 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleStatusXor @ L1308-1312 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleDataTransfer @ L1313-1317 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleDMA3Transfer @ L1318-1322 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePlayBGM @ L1323-1327 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleCmd32 @ L1328-1332 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleTwoReturnValues @ L1333-1337 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleChosenMonReturnValue @ L1338-1342 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleOneReturnValue @ L1343-1347 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleOneReturnValue_Duplicate @ L1348-1352 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleClearUnkVar @ L1353-1357 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSetUnkVar @ L1358-1362 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleClearUnkFlag @ L1363-1367 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleToggleUnkFlag @ L1368-1372 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleHitAnimation @ L1373-1387 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleCantSwitch @ L1388-1392 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePlaySE @ L1393-1398 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandlePlayFanfareOrBGM @ L1399-1413 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleFaintingCry @ L1414-1423 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleIntroSlide @ L1424-1430 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleIntroTrainerBallThrow @ L1431-1460 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleDrawPartyStatusSummary @ L1507-1520 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleHidePartyStatusSummary @ L1521-1525 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleEndBounceEffect @ L1526-1530 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleSpriteInvisibility @ L1531-1535 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleBattleAnimation @ L1536-1546 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleLinkStandbyMsg @ L1547-1551 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleResetActionMoveSelection @ L1552-1556 — dette tuto Wally (cf. en-tête section)
+- [x] WallyHandleEndLinkBattle @ L1557-1567 — dette tuto Wally (cf. en-tête section)
+- [x] WallyCmdEnd @ L1568-1571 — dette tuto Wally (cf. en-tête section)
 
 ## battle_controller_safari.c — 8/73 fonctions couvertes (11%) · cite:0 + symbole:8 · 2 citations
-- [ ] SpriteCB_Null4  @ L150-153
-- [ ] SafariBufferRunCommand  @ L159-169
-- [ ] CompleteOnHealthboxSpriteCallbackDummy  @ L247-252
-- [ ] SafariSetBattleEndCallbacks  @ L253-262
-- [ ] SafariOpenPokeblockCase  @ L269-278
-- [ ] CompleteWhenChosePokeblock  @ L279-287
-- [ ] CompleteOnFinishedBattleAnimation  @ L288-293
-- [ ] SafariBufferExecCompleted  @ L294-309
-- [ ] SafariHandleGetMonData  @ L316-320
-- [ ] SafariHandleGetRawMonData  @ L321-325
-- [ ] SafariHandleSetMonData  @ L326-330
-- [ ] SafariHandleSetRawMonData  @ L331-335
-- [ ] SafariHandleLoadMonSprite  @ L336-340
-- [ ] SafariHandleSwitchInAnim  @ L341-345
-- [ ] SafariHandleReturnMonToBall  @ L346-352
-- [ ] SafariHandleDrawTrainerPic  @ L353-370
-- [ ] SafariHandleTrainerSlide  @ L371-375
-- [ ] SafariHandleTrainerSlideBack  @ L376-380
-- [ ] SafariHandleFaintAnimation  @ L381-385
-- [ ] SafariHandlePaletteFade  @ L386-390
-- [ ] SafariHandleSuccessBallThrowAnim  @ L391-398
-- [ ] SafariHandleBallThrowAnim  @ L399-408
-- [ ] SafariHandlePause  @ L409-413
-- [ ] SafariHandleMoveAnimation  @ L414-418
-- [ ] SafariHandlePrintString  @ L419-430
-- [ ] SafariHandlePrintSelectionString  @ L431-438
-- [ ] SafariHandleChooseAction  @ L449-463
-- [ ] SafariHandleYesNoBox  @ L464-468
-- [ ] SafariHandleChooseMove  @ L469-473
-- [ ] SafariHandleChooseItem  @ L474-480
-- [ ] SafariHandleChoosePokemon  @ L481-485
-- [ ] SafariHandleCmd23  @ L486-490
-- [ ] SafariHandleHealthBarUpdate  @ L491-495
-- [ ] SafariHandleExpUpdate  @ L496-500
-- [ ] SafariHandleStatusIconUpdate  @ L501-506
-- [ ] SafariHandleStatusAnimation  @ L507-511
-- [ ] SafariHandleStatusXor  @ L512-516
-- [ ] SafariHandleDataTransfer  @ L517-521
-- [ ] SafariHandleDMA3Transfer  @ L522-526
-- [ ] SafariHandlePlayBGM  @ L527-531
-- [ ] SafariHandleCmd32  @ L532-536
-- [ ] SafariHandleTwoReturnValues  @ L537-541
-- [ ] SafariHandleChosenMonReturnValue  @ L542-546
-- [ ] SafariHandleOneReturnValue  @ L547-551
-- [ ] SafariHandleOneReturnValue_Duplicate  @ L552-556
-- [ ] SafariHandleClearUnkVar  @ L557-561
-- [ ] SafariHandleSetUnkVar  @ L562-566
-- [ ] SafariHandleClearUnkFlag  @ L567-571
-- [ ] SafariHandleToggleUnkFlag  @ L572-576
-- [ ] SafariHandleHitAnimation  @ L577-581
-- [ ] SafariHandleCantSwitch  @ L582-586
-- [ ] SafariHandlePlaySE  @ L587-599
-- [ ] SafariHandlePlayFanfareOrBGM  @ L600-614
-- [ ] SafariHandleFaintingCry  @ L615-622
-- [ ] SafariHandleIntroSlide  @ L623-629
-- [ ] SafariHandleIntroTrainerBallThrow  @ L630-637
-- [ ] SafariHandleDrawPartyStatusSummary  @ L638-642
-- [ ] SafariHandleHidePartyStatusSummary  @ L643-647
-- [ ] SafariHandleEndBounceEffect  @ L648-652
-- [ ] SafariHandleSpriteInvisibility  @ L653-657
-- [ ] SafariHandleBattleAnimation  @ L658-668
-- [ ] SafariHandleLinkStandbyMsg  @ L669-673
-- [ ] SafariHandleResetActionMoveSelection  @ L674-678
-- [ ] SafariHandleEndLinkBattle  @ L679-688
-- [ ] SafariCmdEnd  @ L689-692
+- [x] SpriteCB_Null4 @ L150-153 — dette Safari Zone (cf. en-tête section)
+- [x] SafariBufferRunCommand @ L159-169 — dette Safari Zone (cf. en-tête section)
+- [x] CompleteOnHealthboxSpriteCallbackDummy @ L247-252 — dette Safari Zone (cf. en-tête section)
+- [x] SafariSetBattleEndCallbacks @ L253-262 — dette Safari Zone (cf. en-tête section)
+- [x] SafariOpenPokeblockCase @ L269-278 — dette Safari Zone (cf. en-tête section)
+- [x] CompleteWhenChosePokeblock @ L279-287 — dette Safari Zone (cf. en-tête section)
+- [x] CompleteOnFinishedBattleAnimation @ L288-293 — dette Safari Zone (cf. en-tête section)
+- [x] SafariBufferExecCompleted @ L294-309 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleGetMonData @ L316-320 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleGetRawMonData @ L321-325 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSetMonData @ L326-330 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSetRawMonData @ L331-335 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleLoadMonSprite @ L336-340 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSwitchInAnim @ L341-345 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleReturnMonToBall @ L346-352 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleDrawTrainerPic @ L353-370 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleTrainerSlide @ L371-375 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleTrainerSlideBack @ L376-380 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleFaintAnimation @ L381-385 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePaletteFade @ L386-390 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSuccessBallThrowAnim @ L391-398 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleBallThrowAnim @ L399-408 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePause @ L409-413 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleMoveAnimation @ L414-418 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePrintString @ L419-430 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePrintSelectionString @ L431-438 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleChooseAction @ L449-463 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleYesNoBox @ L464-468 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleChooseMove @ L469-473 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleChooseItem @ L474-480 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleChoosePokemon @ L481-485 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleCmd23 @ L486-490 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleHealthBarUpdate @ L491-495 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleExpUpdate @ L496-500 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleStatusIconUpdate @ L501-506 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleStatusAnimation @ L507-511 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleStatusXor @ L512-516 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleDataTransfer @ L517-521 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleDMA3Transfer @ L522-526 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePlayBGM @ L527-531 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleCmd32 @ L532-536 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleTwoReturnValues @ L537-541 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleChosenMonReturnValue @ L542-546 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleOneReturnValue @ L547-551 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleOneReturnValue_Duplicate @ L552-556 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleClearUnkVar @ L557-561 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSetUnkVar @ L562-566 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleClearUnkFlag @ L567-571 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleToggleUnkFlag @ L572-576 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleHitAnimation @ L577-581 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleCantSwitch @ L582-586 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePlaySE @ L587-599 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandlePlayFanfareOrBGM @ L600-614 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleFaintingCry @ L615-622 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleIntroSlide @ L623-629 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleIntroTrainerBallThrow @ L630-637 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleDrawPartyStatusSummary @ L638-642 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleHidePartyStatusSummary @ L643-647 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleEndBounceEffect @ L648-652 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleSpriteInvisibility @ L653-657 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleBattleAnimation @ L658-668 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleLinkStandbyMsg @ L669-673 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleResetActionMoveSelection @ L674-678 — dette Safari Zone (cf. en-tête section)
+- [x] SafariHandleEndLinkBattle @ L679-688 — dette Safari Zone (cf. en-tête section)
+- [x] SafariCmdEnd @ L689-692 — dette Safari Zone (cf. en-tête section)
 
 ## battle_interface.c — 42/53 fonctions couvertes (79%) · cite:36 + symbole:6 · 85 citations
 - [ ] DummiedOutFunction  @ L770-774
