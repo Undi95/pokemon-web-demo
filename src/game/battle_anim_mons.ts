@@ -349,6 +349,19 @@ export function GetBattlerSpriteDefault_Y(battler: number): number {
   return GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET_DEFAULT);
 }
 
+/** 1:1 decomp battle_anim_mons.c:332 `u8 GetSubstituteSpriteDefault_Y(u8 battler)`
+ *  — l'ancrage Y du doll Substitute (+16 adversaire / +17 joueur). Callers :
+ *  battle_gfx_sfx_util.c:1078 (gfx swap) + reshow_battle_screen.c:215. */
+export function GetSubstituteSpriteDefault_Y(battler: number): number {
+  let y: number;
+  if (GetBattlerSide(battler) !== B_SIDE_PLAYER) {
+    y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 16;
+  } else {
+    y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 17;
+  }
+  return y & 0xFF;
+}
+
 // ─── Rot/Scale des sprites battler (battle_anim_mons.c:1260-1360) ──────────
 // FIX user 2026-06-10 (« pas de retreci / pas d'anim ») : la 1re version
 // ecrivait sprite.oam.affineMode — les sprites du MODELE PLAT n'ont PAS de
@@ -809,6 +822,33 @@ export function AnimTranslateLinearAndFlicker(sprite: DecompSprite): void {
   sprite.callback = TranslateSpriteLinearAndFlicker as never;
 }
 
+/** 1:1 `AnimTranslateLinearAndFlicker_Flipped` (battle_anim_mons.c:2335-2356)
+ *  — callback de 2 templates status_effects (.c:64/:207) : ancre aux coords
+ *  attaquant, hFlip + négation de la vélocité X côté adverse, puis
+ *  TranslateSpriteLinearAndFlicker → DestroySpriteAndMatrix. */
+export function AnimTranslateLinearAndFlicker_Flipped(sprite: DecompSprite): void {
+  const itf = _projItf();
+  const args = itf.getArgs?.() ?? [0, 0, 20, 0, 0, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  SetSpriteCoordsToAnimAttackerCoords(sprite as never);
+  if ((atk & 1) !== 0 /* GetBattlerSide != B_SIDE_PLAYER */) {
+    sprite.x -= args[0] | 0;
+    // 1:1 .c:2341 : gBattleAnimArgs[3] = -gBattleAnimArgs[3] (mutation du
+    // buffer vivant — relu juste après pour data[1]).
+    args[3] = -(args[3] | 0);
+    (sprite as { hFlip?: boolean }).hFlip = true;
+  } else {
+    sprite.x += args[0] | 0;
+  }
+  sprite.y += args[1] | 0;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[3] = args[4] | 0;
+  sprite.data[5] = args[5] | 0;
+  StoreSpriteCallbackInData6(sprite, DestroySpriteAndMatrix as never);
+  sprite.callback = TranslateSpriteLinearAndFlicker as never;
+}
+
 /** 1:1 `AnimWeatherBallUp`(+_Step) (battle_anim_mons.c:2510) : la boule météo
  *  monte depuis l'attaquant (x/10, y/10 fixed-dixième, décélération) et sort
  *  par le haut. (Était LE skip « mons.ts gelé » de la mini-vague finale.) */
@@ -952,6 +992,7 @@ _regCb({
   SpriteCallbackDummy: ((_s: unknown) => { /* 1:1 vide */ }) as never,
   AnimThrowProjectile: AnimThrowProjectile as never,
   AnimTranslateLinearAndFlicker: AnimTranslateLinearAndFlicker as never,
+  AnimTranslateLinearAndFlicker_Flipped: AnimTranslateLinearAndFlicker_Flipped as never,
   AnimWeatherBallDown: AnimWeatherBallDown as never,
   AnimWeatherBallUp: AnimWeatherBallUp as never,
 });

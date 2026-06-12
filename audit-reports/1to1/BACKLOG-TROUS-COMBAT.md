@@ -480,7 +480,7 @@
 - ✓ complet
 
 ## battle_anim_mons.c — 105/128 fonctions couvertes (82%) · cite:61 + symbole:44 · 219 citations
-- [ ] GetSubstituteSpriteDefault_Y  @ L332-341  ← ATTEIGNABLE (battle_gfx_sfx_util + reshow, substitute) → PORT à faire
+- [x] GetSubstituteSpriteDefault_Y @ L332-341 — PORTÉ 1:1 (battle_anim_mons.ts : +16 adverse/+17 joueur sur BATTLER_COORD_Y, & 0xFF) — consommateurs (gfx swap substitute :1078 + reshow :215) encore en dette R3 (SwapMonSpriteToFromSubstitute stub), la fonction est prête
 - [x] TranslateSpriteInLissajousCurve @ L489-515 — DETTE — `static void UNUSED` (.c:489)
 - [x] AnimPosToTranslateLinear @ L572-578 — DETTE LIÉE — callers uniques = TranslateSpriteToBattleTargetPos (:647, mort) + ToBattleAttackerPos (:714, mort)
 - [x] ConvertPosDataToTranslateLinearData @ L579-592 — DETTE LIÉE — callers = AnimPosToTranslateLinear (lié-mort) + Trade_MoveSelectedMonToTarget (trade)
@@ -495,13 +495,13 @@
 - [x] StartAnimLinearTranslation_SetCornerVecX @ L1102-1110 — DETTE — code mort total (déf seule)
 - [ ] AnimTranslateLinear_WithFollowup_SetCornerVecX  @ L1148-1154  ← caller interne à requalifier
 - [x] ArcTan2_ @ L1363-1367 — ÉQUIVALENCE — wrapper interne de ArcTan2 (caller unique :1370 = ArcTan2Neg, dont la copie TS locale battle_anim_flying.ts:835 consomme ArcTan2 du bridge directement)
-- [ ] GetSpritePalIdxByBattler  @ L1505-1509  ← ATTEIGNABLE (utility_funcs) → PORT à faire
+- [x] GetSpritePalIdxByBattler @ L1505-1509 — ÉQUIVALENCE INLINÉE — corps = `return battler` (identité GBA slot==battler) ; le caller unique utility_funcs.c:103 `0x10000 << GetSpritePalIdxByBattler(b)` est inliné 1:1 dans le miroir utility (battle_anim_utility_funcs.ts:501 `1 << (battler + 16)`), la résolution slot-réel est faite en aval par le bridge palette (F72)
 - [x] GetSpritePalIdxByPosition @ L1510-1514 — DETTE — code mort total (ByBattler ne l'appelle pas, aucun autre caller)
 - [x] AnimThrowProjectile_Step @ L1585-1590 — renommé au nom C exact (ex-_ThrowProjectile_Step, corps 1:1 TranslateAnimHorizontalArc→destroy)
 - [x] AnimTask_BlendPalInAndOutSetup @ L1726-1737 — renommé au nom C exact (ex-_BlendPalInAndOutSetup)
 - [x] AnimTask_BlendMonInAndOut_Step @ L1738-1773 — renommé au nom C exact (ex-_BlendMonInAndOut_Step)
 - [x] SetPriorityForVisibleBattlers @ L2009-2020 — DETTE — code mort total (déf seule)
-- [ ] AnimTranslateLinearAndFlicker_Flipped  @ L2335-2357  ← ATTEIGNABLE (status_effects template) → PORT à faire
+- [x] AnimTranslateLinearAndFlicker_Flipped @ L2335-2357 — PORTÉ 1:1 + enregistré (registerAnimCallbacks) — NB : ses 2 seuls templates (status_effects.c:56 sFlickeringOrbFlipped + :199 sFlickeringShrinkOrb) sont marqués `// Unused` dans le .c → INATTEIGNABLE en jeu, port par complétude (sanity boot OK)
 - [x] AnimWeatherBallUp_Step @ L2522-2533 — renommé au nom C exact (ex-_WeatherBallUp_Step)
 
 ## battle_anim_effects_1.c — 125/154 fonctions couvertes (81%) · cite:3 + symbole:122 · 89 citations
