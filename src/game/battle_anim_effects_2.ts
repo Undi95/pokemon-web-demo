@@ -2128,3 +2128,172 @@ function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }):
   }
 }
 _regTasks({ AnimTask_Minimize: AnimTask_Minimize as never });
+
+// --- VAGUE F51 : AirCutterProjectile (effects_2.c:1430-1640) ----------------
+// 3 lames d'air en vagues Q8.8 : trajectoire lineaire (task data[7]/[8] =
+// deltas signes bit0) puis virage vers la cible (Inv16/Mul16), fin -> signale.
+import { MathUtil_Mul16 as _acMul, MathUtil_Inv16 as _acInv } from './math_util';
+
+type _AcTask = { taskId: number; data: number[]; func?: unknown };
+function _acItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+type _AcSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number };
+function _acRt(): {
+  gSprites?: Map<number, _AcSprite>;
+  gTasks?: Map<number, { data: number[]; func?: unknown }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number; hFlip?: boolean; vFlip?: boolean }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+/** 1:1 AnimTask_AirCutterProjectile (effects_2.c:1565, non-contest single). */
+function AnimTask_AirCutterProjectile(task: _AcTask): void {
+  const itf = _acItf();
+  const args = itf.getArgs?.() ?? [0, 0, 6, 2, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+
+  // single : target side PLAYER -> miroir (le harness atk=player, tgt=opponent : pas de miroir)
+  if ((tgt & 1) === 0 /* B_SIDE_PLAYER */) {
+    task.data[4] = 1;
+    args[0] = -args[0];
+    args[1] = -args[1];
+    if (args[2] & 1) args[2] &= ~1;
+    else args[2] |= 1;
+  }
+
+  const attackerX = (task.data[9] = GetBattlerSpriteCoord(atk, BATTLER_COORD_X));
+  const attackerY = (task.data[10] = GetBattlerSpriteCoord(atk, BATTLER_COORD_Y));
+  const targetX = (task.data[11] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X) + (args[0] | 0));
+  const targetY = (task.data[12] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y) + (args[1] | 0));
+
+  const xDiff = targetX >= attackerX ? targetX - attackerX : attackerX - targetX;
+  task.data[5] = _acMul(xDiff, _acInv(args[2] & ~1));
+  task.data[6] = _acMul(task.data[5], 128); // Q_8_8(0.5)
+  task.data[7] = args[2] | 0;
+  if (targetY >= attackerY) {
+    const yDiff = targetY - attackerY;
+    task.data[8] = _acMul(yDiff, _acInv(task.data[5])) & ~1;
+  } else {
+    const yDiff = attackerY - targetY;
+    task.data[8] = _acMul(yDiff, _acInv(task.data[5])) | 1;
+  }
+
+  task.data[3] = args[3] | 0;
+  let arg4 = args[4] | 0;
+  if (arg4 & 0x80) arg4 ^= 0x80;
+  const subprio = GetBattlerSpriteSubpriority2(tgt);
+  task.data[2] = arg4 >= 64 ? subprio + (arg4 - 64) : subprio - arg4;
+  if (task.data[2] < 3) task.data[2] = 3;
+
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.func = _AirCutterProjectileStep1;
+}
+function GetBattlerSpriteSubpriority2(battler: number): number {
+  const m = ((globalThis as Record<string, unknown>).__battleAnimMons as { GetBattlerSpriteSubpriority?: (b: number) => number } | undefined)?.GetBattlerSpriteSubpriority;
+  return m ? m(battler) : ((battler & 1) === 0 ? 30 : 40);
+}
+/** 1:1 AirCutterProjectileStep1 : spawn des 3 lames (delai data[3]). */
+function _AirCutterProjectileStep1(task: _AcTask): void {
+  if (task.data[0]-- <= 0) {
+    const rt = _acRt();
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplate?.('gAirWaveProjectileSpriteTemplate');
+    const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+    const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
+    if (sid >= 0) {
+      const sp = rt.gSprites?.get(sid);
+      const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+      if (oam && tileStart !== 0xFFFF) {
+        oam.tileId = tileStart;
+        const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+        if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      }
+      // data[4]==1 : flips (matrixNum |= HFLIP|VFLIP -> sprite non-affine = hFlip/vFlip oam)
+      if (oam && task.data[4] === 1) {
+        if (oam.hFlip !== undefined) oam.hFlip = true;
+        if (oam.vFlip !== undefined) oam.vFlip = true;
+      }
+      if (sp) {
+        sp.data[0] = task.data[5] - task.data[6];
+        sp.data[1] = 0;
+        sp.data[2] = 0;
+        sp.data[7] = task.taskId;
+        sp.callback = _AnimAirWaveProjectile as never;
+        task.data[task.data[1] + 13] = sid;
+      }
+    }
+    task.data[0] = task.data[3];
+    task.data[1]++;
+    (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(94 /* SE_M_BLIZZARD2 */);
+    if (task.data[1] > 2) task.func = _AirCutterProjectileStep2;
+  }
+}
+/** 1:1 AirCutterProjectileStep2 : attend la mort des 3 lames. */
+function _AirCutterProjectileStep2(task: _AcTask): void {
+  if (task.data[1] === 0) _acItf().DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 AnimAirWaveProjectile : phase lineaire -> virage vers la cible. */
+function _AnimAirWaveProjectile(sprite: _AcSprite): void {
+  const task = _acRt().gTasks?.get(sprite.data[7]);
+  if (!task) return;
+  sprite.data[1] += (-2 & task.data[7]);
+  sprite.data[2] += (-2 & task.data[8]);
+  sprite.x2 = (1 & task.data[7]) ? -((sprite.data[1] & 0xFFFF) >> 8) : ((sprite.data[1] & 0xFFFF) >> 8);
+  sprite.y2 = (1 & task.data[8]) ? -((sprite.data[2] & 0xFFFF) >> 8) : ((sprite.data[2] & 0xFFFF) >> 8);
+  if (sprite.data[0]-- <= 0) {
+    sprite.data[0] = 8;
+    task.data[5] = 4;
+    const a = _acInv(4096); // Q_8_8(16)
+    sprite.x += sprite.x2;
+    sprite.y += sprite.y2;
+    sprite.y2 = 0;
+    sprite.x2 = 0;
+    const b = (task.data[11] >= sprite.x ? (task.data[11] - sprite.x) : (sprite.x - task.data[11])) << 8;
+    const c = (task.data[12] >= sprite.y ? (task.data[12] - sprite.y) : (sprite.y - task.data[12])) << 8;
+    sprite.data[2] = 0;
+    sprite.data[1] = 0;
+    sprite.data[6] = 0;
+    sprite.data[5] = 0;
+    sprite.data[3] = _acMul(_acMul(b & 0xFFFF, a), _acInv(448)); // Q_8_8(1.75)
+    sprite.data[4] = _acMul(_acMul(c & 0xFFFF, a), _acInv(448));
+    sprite.callback = _AnimAirWaveProjectile_Step1 as never;
+  }
+}
+/** 1:1 AnimAirWaveProjectile_Step1 : acceleration vers/depuis la cible. */
+function _AnimAirWaveProjectile_Step1(sprite: _AcSprite): void {
+  const task = _acRt().gTasks?.get(sprite.data[7]);
+  if (!task) return;
+  if (sprite.data[0] > task.data[5]) {
+    sprite.data[5] += sprite.data[3];
+    sprite.data[6] += sprite.data[4];
+  } else {
+    sprite.data[5] -= sprite.data[3];
+    sprite.data[6] -= sprite.data[4];
+  }
+  sprite.data[1] += sprite.data[5];
+  sprite.data[2] += sprite.data[6];
+  sprite.x2 = (1 & task.data[7]) ? -((sprite.data[1] & 0xFFFF) >> 8) : ((sprite.data[1] & 0xFFFF) >> 8);
+  sprite.y2 = (1 & task.data[8]) ? -((sprite.data[2] & 0xFFFF) >> 8) : ((sprite.data[2] & 0xFFFF) >> 8);
+  if (sprite.data[0]-- <= 0) {
+    sprite.data[0] = 30;
+    sprite.callback = _AnimAirWaveProjectile_Step2 as never;
+  }
+}
+/** 1:1 AnimAirWaveProjectile_Step2 : 30f puis signale la task + meurt. */
+function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
+  if (sprite.data[0]-- <= 0) {
+    const rt = _acRt();
+    const t = rt.gTasks?.get(sprite.data[7]);
+    if (t) t.data[1]--;
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_regTasks({ AnimTask_AirCutterProjectile: AnimTask_AirCutterProjectile as never });
