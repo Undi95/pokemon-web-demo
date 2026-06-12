@@ -53,7 +53,7 @@ function _ficRt(): {
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   SetGpuReg?: (o: number, v: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
@@ -82,7 +82,7 @@ function AnimTask_FrozenIceCube(task: _FicTask): void {
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
       const pal = api.IndexOfSpritePaletteTag?.(_FIC_TAG_ICE_CUBE) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
     if (sp && tileStart === 0xFFFF) sp.invisible = true; // 1:1
   }

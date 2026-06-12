@@ -811,11 +811,11 @@ function _SkillSwap_Step(task: _SsTask): void {
         const rt = (globalThis as Record<string, unknown>).__rt as {
           gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
           CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
-          gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+          gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
         } | undefined;
         const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-        const tpl = bridge?.lookupGeneratedTemplate?.('gSkillSwapOrbSpriteTemplate');
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplateTags?.('gSkillSwapOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], 0) ?? -1;
         if (sid >= 0) {
@@ -824,7 +824,7 @@ function _SkillSwap_Step(task: _SsTask): void {
           if (oam && tileStart !== 0xFFFF) {
             oam.tileId = tileStart;
             const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+            if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
           }
           if (sp) {
             sp.data[0] = 16;
@@ -890,15 +890,15 @@ function _ImprisonOrbs_Step(task: _SsTask): void {
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     DestroySprite?: (i: number) => void;
     SetGpuReg?: (o: number, v: number) => void;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
   switch (task.data[0]) {
     case 0:
       if (++task.data[1] > 8) {
         task.data[1] = 0;
         const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-        const tpl = bridge?.lookupGeneratedTemplate?.('gImprisonOrbSpriteTemplate');
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplateTags?.('gImprisonOrbSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2, objMode: 1 }, images: [] } as never, task.data[13], task.data[14], 0) ?? -1;
         task.data[task.data[2] + 8] = sid;
@@ -908,7 +908,7 @@ function _ImprisonOrbs_Step(task: _SsTask): void {
           if (oam && tileStart !== 0xFFFF) {
             oam.tileId = tileStart;
             const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+            if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
           }
           if (sp) {
             switch (task.data[2]) {

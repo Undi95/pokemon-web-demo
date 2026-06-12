@@ -543,7 +543,7 @@ function _ElectricBolt_Step(task: { taskId: number; data: number[] }): void {
   }
   if (create) {
     // via le bridge : le template generated (tag + oam) + notre callback
-    const reg = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => unknown } | undefined;
+    const reg = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => unknown } | undefined;
     void reg; // le createsprite runtime passe par CreateSprite système :
     const cs = (globalThis as Record<string, unknown>).__decompGlobals as { CreateSpriteFromGeneratedTemplate?: never } | undefined;
     void cs;
@@ -689,11 +689,11 @@ function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamSha
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.(tplName);
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.(tplName);
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt?.CreateSpriteInline?.({ oam: { shape: oamShape, size: oamSize, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid >= 0) {
@@ -702,7 +702,7 @@ function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamSha
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
       const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
   }
   return sid;

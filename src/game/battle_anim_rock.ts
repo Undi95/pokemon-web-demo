@@ -487,7 +487,7 @@ function _roRt(): {
   gTasks?: Map<number, { data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -595,8 +595,8 @@ function _CreateRolloutDirtSprite(task: _RoTask): void {
   x = (x + task.data[12] * 4) & 0xFFFF;
   const rt = _roRt();
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.(tplName);
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.(tplName);
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
   if (sid >= 0) {
@@ -605,7 +605,7 @@ function _CreateRolloutDirtSprite(task: _RoTask): void {
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart + tileOffset;
       const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
     if (dirt) {
       dirt.data[0] = 18;

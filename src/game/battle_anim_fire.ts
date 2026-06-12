@@ -594,7 +594,7 @@ function _erRt(): {
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -718,8 +718,8 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
     sign = -1;
   }
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gEruptionLaunchRockSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gEruptionLaunchRockSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   for (let i = 0, j = 0; i <= 6; i++) {
     const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, x, y, 2) ?? -1;
@@ -729,7 +729,7 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart + j * 4 + 0x40;
         const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-        if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+        if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
       }
       if (++j >= 5) j = 0;
       if (rock) {

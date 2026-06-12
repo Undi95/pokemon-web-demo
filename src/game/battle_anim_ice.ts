@@ -933,7 +933,7 @@ function _hlRt(): {
   gTasks?: Map<number, { data: number[] }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -1024,8 +1024,8 @@ function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, task
   const spriteX = battlerX - Math.trunc((battlerY + 8) / 2);
   const rt = _hlRt();
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gHailParticleSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gHailParticleSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, spriteX, -8, 18) ?? -1;
   if (sid < 0) return false;
@@ -1034,7 +1034,7 @@ function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, task
   if (oam && tileStart !== 0xFFFF) {
     oam.tileId = tileStart;
     const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-    if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
   }
   if (sp) {
     sp.data[0] = shouldSpawnImpactEffect; // sSpawnImpactEffect
@@ -1055,8 +1055,8 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
   const rt = _hlRt();
   if (sprite.data[0] === 1 && sprite.data[5] === 0) {
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-    const tpl = bridge?.lookupGeneratedTemplate?.('gIceCrystalHitLargeSpriteTemplate');
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplateTags?.('gIceCrystalHitLargeSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
     const hitId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sprite.data[3], sprite.data[4], sprite.subpriority ?? 18) ?? -1;
     if (hitId >= 0) {
@@ -1065,7 +1065,7 @@ function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback
       if (hitOam && tileStart !== 0xFFFF) {
         hitOam.tileId = tileStart;
         const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-        if (pal !== 0xFF && hitOam.paletteNum !== undefined) hitOam.paletteNum = pal;
+        if (pal !== 0xFF && hitOam.paletteBank !== undefined) hitOam.paletteBank = pal;
       }
       if (hit) {
         hit.data[0] = 0;            // sTimer

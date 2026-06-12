@@ -140,10 +140,11 @@ function AnimClawSlash(sprite: AnimSprite): void {
 registerAnimCallbacks({ AnimClawSlash: AnimClawSlash as never });
 
 // ─── VAGUE F3 : SetGrayscaleOrOriginalPal (dark.c:939, 14 hits) ─────────────
-// mode 0 = griser la palette OBJ du battler (moyenne RGB) ; mode 1 = restore.
-// Restore : notre gPlttBufferUnfaded est un ALIAS de Faded → le restore
-// intra-anim est no-op ; le SNAPSHOT du Launch (filet anti-rainbow) restaure
-// les couleurs exactes à la fin du move (1:1-net documenté).
+// mode 0 = griser la palette OBJ du battler (moyenne RGB depuis UNFADED) ;
+// mode 1 = restore REEL (copie Unfaded→Faded). La logique vit dans son fichier
+// miroir battle_anim_mons.ts (mons.c:1374) — re-câblé vague F73 (l'hypothèse
+// « Unfaded aliase Faded » de F3 était fausse, buffers séparés vérifiés).
+import { SetGrayscaleOrOriginalPalette as _dSetGrayPal } from './battle_anim_mons';
 function _dItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
@@ -153,21 +154,12 @@ function AnimTask_SetGrayscaleOrOriginalPal(task: { taskId: number }): void {
   const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : a[0] === 1 ? (itf.getTarget?.() ?? 1) : -1;
   if (b >= 0) {
     const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> }; gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void } } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
     const sid = co?.getBattlerMonSpriteId?.(b);
     const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
-    const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : -1;
-    const pf = rt?.gPlttBufferFaded;
-    if (pal >= 0 && pf?.get && pf.set && a[1] === 0) {
-      const off = 256 + pal * 16;
-      for (let i = 0; i < 16; i++) {
-        const c = pf.get(off + i);
-        const r = c & 31, g = (c >> 5) & 31, bl = (c >> 10) & 31;
-        const avg = Math.trunc((r + g + bl) / 3);
-        pf.set(off + i, avg | (avg << 5) | (avg << 10));
-      }
-    }
-    // a[1]===1 : restore = no-op net (cf. en-tête).
+    const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
+    // 1:1 dark.c:1005 : SetGrayscaleOrOriginalPalette(paletteNum + 16, mode).
+    if (pal >= 0) _dSetGrayPal(pal + 16, a[1] !== 0);
   }
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
@@ -257,3 +249,125 @@ _dRegT({
   AnimTask_SetGrayscaleOrOriginalPal: AnimTask_SetGrayscaleOrOriginalPal as never,
   GetIsDoomDesireHitTurn: GetIsDoomDesireHitTurn as never,
 });
+
+// --- VAGUE F72 : AnimTask_MetallicShine (dark.c:822-940) --------------------
+// L'eclat metallique : masque metal_shine en BG1 visible UNIQUEMENT a travers
+// la silhouette OBJ-window du mon (moteur F71), mon GRISE (ou teinte arg2),
+// le masque defile -4/f x2 cycles de 128, restore.
+import {
+  GetBattleAnimBg1Data as _mshBgData,
+  AnimLoadCompressedBgGfx as _mshLoadGfx,
+  AnimLoadCompressedBgTilemap as _mshLoadMap,
+  LoadAnimBgPalette as _mshLoadPal,
+  ClearBattleAnimBg as _mshClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+import { BlendPalette as _mshBlend } from '../engine/system/decomp-globals';
+
+type _MshTask = { taskId: number; data: number[]; func?: unknown };
+function _mshItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _mshRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  DestroySprite?: (i: number) => void;
+  gSprites?: Map<number, { x: number; y: number; oamIndex: number }>;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } }; windows?: { winObjEnabled: boolean }; oam: Array<{ paletteBank: number }> };
+  gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _mshAtkSpriteId(): number {
+  const b = _mshItf().getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+/** Slot OBJ du sprite de l'attacker (paletteBank OAM), -1 si introuvable. */
+function _mshAtkPalSlot(): number {
+  const spriteId = _mshAtkSpriteId();
+  const sp = spriteId !== 0xFF ? _mshRt().gSprites?.get(spriteId) : undefined;
+  if (!sp) return -1;
+  const oam = _mshRt().gba?.oam[sp.oamIndex] as { paletteBank?: number } | undefined;
+  return oam?.paletteBank ?? -1;
+}
+
+/** 1:1 AnimTask_MetallicShine (dark.c:822). args = [permanent, useColor, color]. */
+function AnimTask_MetallicShine(task: _MshTask): void {
+  const itf = _mshItf();
+  const args = itf.getArgs?.() ?? [0, 0, 0];
+  const rt = _mshRt();
+  const g = globalThis as Record<string, unknown>;
+  g.gBattle_WIN0H = 0;
+  g.gBattle_WIN0V = 0;
+  rt.SetGpuReg?.(0x48, 0x3F3F); // WININ all+CLR
+  rt.SetGpuReg?.(0x4A, (0x3F << 8) | 0x3D); // WINOUT sans BG1 + WINOBJ all
+  if (rt.gba?.windows) rt.gba.windows.winObjEnabled = true;
+  rt.SetGpuReg?.(0x50, 0x3F42); // BLDCNT TGT2_ALL | EFFECT_BLEND | TGT1_BG1
+  rt.SetGpuReg?.(0x52, 8 | (12 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 0;
+    bg1.screenSize = 0;
+    bg1.charBaseIndex = 1;
+  }
+  const spriteId = _mshAtkSpriteId();
+  if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { CreateInvisibleSpriteCopy?: (b: number, s: number, sp: number) => number } | undefined;
+  const newSpriteId = mons?.CreateInvisibleSpriteCopy?.(itf.getAttacker?.() ?? 0, spriteId, 0) ?? -1;
+  const animBg = _mshBgData();
+  _mshLoadMap(animBg.bgId, 'gMetalShineTilemap');
+  _mshLoadGfx(animBg.bgId, 'gMetalShineGfx', animBg.tilesOffset);
+  _mshLoadPal('gMetalShinePalette', animBg.paletteId);
+  const sp = rt.gSprites?.get(spriteId);
+  g.gBattle_BG1_X = (-(sp?.x ?? 0) + 96) & 0xFFFF;
+  g.gBattle_BG1_Y = (-(sp?.y ?? 0) + 32) & 0xFFFF;
+  const monPalSlot = sp ? (rt.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : 0;
+  // 1:1 dark.c:880-885 : grayscale (mons.c:1374) ou BlendPalette(couleur).
+  if ((args[1] | 0) === 0) {
+    _dSetGrayPal(16 + monPalSlot, false);
+  } else {
+    _mshBlend(256 + monPalSlot * 16, 16, 11, args[2] | 0);
+  }
+  task.data[0] = newSpriteId;
+  task.data[1] = args[0] | 0;  // permanent
+  task.data[2] = args[1] | 0;  // useColor
+  task.data[3] = args[2] | 0;  // color
+  task.data[6] = 0;            // priorityChanged (single)
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.func = _MetallicShine_Step;
+}
+/** 1:1 AnimTask_MetallicShine_Step (dark.c:895). */
+function _MetallicShine_Step(task: _MshTask): void {
+  const rt = _mshRt();
+  const g = globalThis as Record<string, unknown>;
+  task.data[10] += 4;
+  g.gBattle_BG1_X = (((g.gBattle_BG1_X as number) | 0) - 4) & 0xFFFF;
+  if (task.data[10] === 128) {
+    task.data[10] = 0;
+    g.gBattle_BG1_X = (((g.gBattle_BG1_X as number) | 0) + 128) & 0xFFFF;
+    task.data[11]++;
+    if (task.data[11] === 2) {
+      // 1:1 dark.c:910-913 : restore REEL — paletteNum recalculé sur le sprite
+      // de l'attacker, copie Unfaded→Faded si pas permanent.
+      if (task.data[1] === 0) {
+        const slot = _mshAtkPalSlot();
+        if (slot >= 0) _dSetGrayPal(16 + slot, true);
+      }
+      if (task.data[0] >= 0) rt.DestroySprite?.(task.data[0]);
+      const animBg = _mshBgData();
+      _mshClearBg(animBg.bgId);
+    } else if (task.data[11] === 3) {
+      g.gBattle_WIN0H = 0;
+      g.gBattle_WIN0V = 0;
+      rt.SetGpuReg?.(0x48, 0x3F3F);
+      rt.SetGpuReg?.(0x4A, 0x3F3F); // WINOUT all (teardown)
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) bg1.charBaseIndex = 0;
+      if (rt.gba?.windows) rt.gba.windows.winObjEnabled = false;
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      _mshItf().DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+_dRegT({ AnimTask_MetallicShine: AnimTask_MetallicShine as never });

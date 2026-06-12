@@ -20,7 +20,7 @@ function _smRt(): {
   gSprites?: Map<number, _SmSprite>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number; hFlip?: boolean; vFlip?: boolean }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number; hFlip?: boolean; vFlip?: boolean }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -96,7 +96,7 @@ export function SmokescreenImpact(x: number, y: number, persist: boolean): numbe
     const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart + _SM_FRAMES[0];
-      if (palSlot !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = palSlot;
+      if (palSlot !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = palSlot;
       const [hf, vf] = _SM_FLIPS[animNum];
       if (oam.hFlip !== undefined) oam.hFlip = hf;
       if (oam.vFlip !== undefined) oam.vFlip = vf;

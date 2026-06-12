@@ -210,27 +210,9 @@ function _FreeSpriteOamMatrix(sprite: _VSprite): void {
   }
 }
 
-/** 1:1 `SetGrayscaleOrOriginalPalette` (battle_anim_mons.c:1374) : moyenne
- *  r+g+b /3 de la palette UNFADED écrite dans la FADED (restore = recopie). */
-function _SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOriginalColor: boolean): void {
-  const r = _rt();
-  const unfaded = r?.gPlttBufferUnfaded;
-  const faded = r?.gPlttBufferFaded;
-  if (!unfaded || !faded) return;
-  const paletteOffset = paletteNum * 16; // PLTT_ID(paletteNum)
-  if (!restoreOriginalColor) {
-    for (let i = 0; i < 16; i++) {
-      const original = unfaded.get(paletteOffset + i) ?? 0;
-      const average = Math.trunc(((original & 0x1F) + ((original >> 5) & 0x1F) + ((original >> 10) & 0x1F)) / 3);
-      const dest = faded.get(paletteOffset + i) ?? 0;
-      // C : destColor->r/g/b = average (bit 15 du faded conservé).
-      faded.set(paletteOffset + i, (dest & 0x8000) | (average << 10) | (average << 5) | average);
-    }
-  } else {
-    // C : CpuCopy32(&gPlttBufferUnfaded[off], &gPlttBufferFaded[off], PLTT_SIZE_4BPP).
-    for (let i = 0; i < 16; i++) faded.set(paletteOffset + i, unfaded.get(paletteOffset + i) ?? 0);
-  }
-}
+// SetGrayscaleOrOriginalPalette : déplacé dans son fichier miroir
+// battle_anim_mons.ts (mons.c:1374) — vague F73. Alias local conservé.
+import { SetGrayscaleOrOriginalPalette as _SetGrayscaleOrOriginalPalette } from './battle_anim_mons';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Callbacks 1:1 (ordre du .c)
@@ -1611,8 +1593,8 @@ function _SpeedDust_Step(task: _SpTask): void {
         task.data[1] = 0;
         const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
         const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
-        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
-        const tpl = bridge?.lookupGeneratedTemplate?.('gSpeedDustSpriteTemplate');
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; anims?: unknown } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplateTags?.('gSpeedDustSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, task.data[14], task.data[15], 0) ?? -1;
         if (sid >= 0) {
@@ -1931,11 +1913,11 @@ function _ggSpriteId(): number {
 function _ggGrayscale(spriteId: number): void {
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { oamIndex: number }>;
-    gba?: { oam: Array<{ paletteNum: number }> };
+    gba?: { oam: Array<{ paletteBank: number }> };
     gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
   } | undefined;
   const sp = rt?.gSprites?.get(spriteId);
-  const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : -1;
+  const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
   const pf = rt?.gPlttBufferFaded;
   if (pal < 0 || !pf?.get || !pf.set) return;
   const off = 256 + pal * 16;
@@ -2144,7 +2126,7 @@ function _acRt(): {
   gTasks?: Map<number, { data: number[]; func?: unknown }>;
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number; hFlip?: boolean; vFlip?: boolean }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number; hFlip?: boolean; vFlip?: boolean }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -2202,8 +2184,8 @@ function _AirCutterProjectileStep1(task: _AcTask): void {
   if (task.data[0]-- <= 0) {
     const rt = _acRt();
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-    const tpl = bridge?.lookupGeneratedTemplate?.('gAirWaveProjectileSpriteTemplate');
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplateTags?.('gAirWaveProjectileSpriteTemplate');
     const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
     const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 1, priority: 2 }, images: [] } as never, task.data[9], task.data[10], task.data[2] - task.data[1]) ?? -1;
     if (sid >= 0) {
@@ -2212,7 +2194,7 @@ function _AirCutterProjectileStep1(task: _AcTask): void {
       if (oam && tileStart !== 0xFFFF) {
         oam.tileId = tileStart;
         const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-        if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+        if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
       }
       // data[4]==1 : flips (matrixNum |= HFLIP|VFLIP -> sprite non-affine = hFlip/vFlip oam)
       if (oam && task.data[4] === 1) {

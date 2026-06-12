@@ -136,12 +136,12 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
   const itf2 = _itf();
   const atk = (itf2.getAttacker?.() ?? 0) as number;
   const tgt = (itf2.getTarget?.() ?? 1) as number;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   for (const b of [atk, tgt]) {
     const sid = co?.getBattlerMonSpriteId?.(b);
     const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
-    const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteNum : undefined;
+    const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteBank : undefined;
     if (pal !== undefined) selected &= ~(1 << (16 + pal));
   }
   _StartBlendAnimSpriteColor(task, selected >>> 0);

@@ -2689,11 +2689,11 @@ function AnimTask_FacadeColorBlend(task: { taskId: number; data: number[]; func?
   task.data[1] = a[1];
   const b = a[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
   const sp = sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
   if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  task.data[2] = 256 + (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) * 16;
+  task.data[2] = 256 + (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) * 16;
   task.func = _FacadeBlend_Step;
 }
 function _FacadeBlend_Step(task: { taskId: number; data: number[] }): void {
@@ -2790,8 +2790,8 @@ function _CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: b
   const ys = [task.data[5] + yOffset, task.data[5] + yOffset + 6];
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gFacadeSweatDropSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gFacadeSweatDropSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   for (let i = 0; i < 4; i++) {
     const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, xs[i], ys[i & 1], 20) ?? -1;
@@ -2911,8 +2911,8 @@ function _GlareEyeDots_Step(task: { taskId: number; data: number[] }): void {
         const [x, y] = _GlareDotCoords(task.data[10], task.data[11], task.data[12], task.data[13], task.data[3], task.data[2]);
         const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
         const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
-        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-        const tpl = bridge?.lookupGeneratedTemplate?.('gGlareEyeDotSpriteTemplate');
+        const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+        const tpl = bridge?.lookupGeneratedTemplateTags?.('gGlareEyeDotSpriteTemplate');
         const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
         for (let i = 0; i < 2; i++) {
           const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, 35) ?? -1;
@@ -3309,7 +3309,7 @@ function _TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; hFlip?: boolean; animEnded?: boolean }>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number; hFlip?: boolean }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number; hFlip?: boolean }> };
     DestroySprite?: (i: number) => void;
   } | undefined;
   switch (task.data[0]) {
@@ -3318,8 +3318,8 @@ function _TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
       const x = (task.data[1] & 1) ? task.data[2] - var1 : task.data[2] + var1;
       const y = task.data[3] + task.data[5];
       const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-      const tpl = bridge?.lookupGeneratedTemplate?.('gThoughtBubbleSpriteTemplate');
+      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+      const tpl = bridge?.lookupGeneratedTemplateTags?.('gThoughtBubbleSpriteTemplate');
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
       const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 2, priority: 2 }, images: [] } as never, x, y, 6 - task.data[1]) ?? -1;
       (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(46 /* SE_M_METRONOME */);
@@ -3329,7 +3329,7 @@ function _TormentAttacker_Step(task: { taskId: number; data: number[] }): void {
         if (oam && tileStart !== 0xFFFF) {
           oam.tileId = tileStart;
           const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-          if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+          if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
           if (oam.hFlip !== undefined) oam.hFlip = !!(task.data[1] & 1);
         }
         if (sp) {
@@ -3436,11 +3436,11 @@ function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unk
     gSprites?: Map<number, { data: number[]; invisible?: boolean; oamIndex: number }>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     DestroySprite?: (i: number) => void;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   };
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gBarrageBallSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gBarrageBallSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, task.data[11], task.data[12], _bbSubprio(tgt) - 5) ?? -1;
   task.data[15] = sid;
@@ -3450,7 +3450,7 @@ function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unk
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
       const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
     if (sp) {
       sp.data[0] = 16;

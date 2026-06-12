@@ -648,7 +648,7 @@ function _gfRt(): {
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   DestroySprite?: (i: number) => void;
   SetGpuReg?: (o: number, v: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number; priority: number }>; bg: (i: number) => { config: { priority: number } } };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number; priority: number }>; bg: (i: number) => { config: { priority: number } } };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
@@ -697,8 +697,8 @@ function _GrudgeFlames_Step(task: _GfTask): void {
   switch (task.data[0]) {
     case 0: {
       const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-      const tpl = bridge?.lookupGeneratedTemplate?.('gGrudgeFlameSpriteTemplate');
+      const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+      const tpl = bridge?.lookupGeneratedTemplateTags?.('gGrudgeFlameSpriteTemplate');
       const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
       const atkSide = ((_gfItf2().getAttacker?.() ?? 0) & 1) === 0 ? 1 : 0;
       for (let i = 0; i < 6; i++) {
@@ -709,7 +709,7 @@ function _GrudgeFlames_Step(task: _GfTask): void {
           if (oam && tileStart !== 0xFFFF) {
             oam.tileId = tileStart;
             const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-            if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+            if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
           }
           if (sp) {
             sp.data[0] = task.taskId;
@@ -814,7 +814,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
     DestroySprite?: (i: number) => void;
     SetGpuReg?: (o: number, v: number) => void;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   };
   rt.SetGpuReg?.(0x50, 0x3F40);
   rt.SetGpuReg?.(0x52, 0 | (0x10 << 8));
@@ -830,8 +830,8 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
   const baseY = _dbPicBottom(atk);
   const battler = itf.getTarget?.() ?? 1; // single : seul ennemi visible
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gDestinyBondWhiteShadowSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gDestinyBondWhiteShadowSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt.CreateSpriteInline?.({ oam: { shape: 1, size: 2, priority: 2, objMode: 1 }, images: [] } as never, baseX, baseY, 55) ?? -1;
   if (sid >= 0) {
@@ -840,7 +840,7 @@ function AnimTask_DestinyBondWhiteShadow(task: _DbTask): void {
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
       const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
     if (sp) {
       const x = GetBattlerSpriteCoord(battler, 2);
@@ -937,7 +937,7 @@ function _spwRt(): {
   gSprites?: Map<number, { y: number; y2: number; invisible?: boolean; oamIndex: number; data: number[]; callback: unknown }>;
   SetGpuReg?: (o: number, v: number) => void;
   DestroyTask?: (id: number) => void;
-  gba?: { oam: Array<{ paletteNum: number; objMode: number; priority: number }>; bg: (i: number) => { config: { visible: boolean } } };
+  gba?: { oam: Array<{ paletteBank: number; objMode: number; priority: number }>; bg: (i: number) => { config: { visible: boolean } } };
   gPlttBufferUnfaded?: { get?: (i: number) => number };
   gPlttBufferFaded?: { set?: (i: number, v: number) => void };
 } {
@@ -979,7 +979,7 @@ function _SpiteTargetShadow_Step1(task: _SpwTask): void {
       const clone = rt.gSprites?.get(task.data[0]);
       const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
       if (cloneOam) {
-        cloneOam.paletteNum = task.data[14];
+        cloneOam.paletteBank = task.data[14];
         cloneOam.objMode = 0; // ST_OAM_OBJ_NORMAL
         cloneOam.priority = 3;
       }
@@ -989,7 +989,7 @@ function _SpiteTargetShadow_Step1(task: _SpwTask): void {
       task.data[13] = _spwTgtSpriteId();
       const tgtSp = rt.gSprites?.get(task.data[13]);
       const tgtOam = tgtSp ? rt.gba?.oam[tgtSp.oamIndex] : undefined;
-      task.data[4] = 256 + (tgtOam?.paletteNum ?? 0) * 16; // OBJ_PLTT_ID2
+      task.data[4] = 256 + (tgtOam?.paletteBank ?? 0) * 16; // OBJ_PLTT_ID2
       const cfg = rt.gba?.bg(position === 1 ? 1 : 2)?.config;
       if (cfg) cfg.visible = false; // ClearGpuRegBits DISPCNT BGn_ON
       task.data[15]++;

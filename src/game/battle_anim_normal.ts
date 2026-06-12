@@ -543,10 +543,10 @@ function _nPf(): { get?: (i: number) => number; set?: (i: number, v: number) => 
 }
 function _nBattlerPalSlot(b: number): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
-  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteNum: number }> } } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(b);
   const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
-  return sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteNum ?? 0) : 0;
+  return sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : 0;
 }
 function AnimTask_InvertScreenColor(task: { taskId: number }): void {
   const itf = _nItf3();

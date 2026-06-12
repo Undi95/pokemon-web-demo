@@ -521,7 +521,7 @@ export function CloneBattlerSpriteWithBlend(animBattler: number): number {
   if (b < 0) return -1;
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   const sid = co?.getBattlerMonSpriteId?.(b);
-  const rt = getRuntime() as unknown as { gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number; paletteNum: number; priority: number; objMode: number; affineMode: number }> } } | null;
+  const rt = getRuntime() as unknown as { gSprites?: Map<number, { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number }> } } | null;
   const mon = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
   if (!mon || !rt) return -1;
   const monOam = rt.gba?.oam[mon.oamIndex];
@@ -531,7 +531,7 @@ export function CloneBattlerSpriteWithBlend(animBattler: number): number {
   const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
   if (cloneOam && monOam) {
     cloneOam.tileId = monOam.tileId;
-    cloneOam.paletteNum = monOam.paletteNum;
+    cloneOam.paletteBank = monOam.paletteBank;
     cloneOam.objMode = 1; // ST_OAM_OBJ_BLEND
   }
   return cloneId;
@@ -571,8 +571,8 @@ export function AnimTask_BlendMonInAndOut(task: _F1Task): void {
   if (spriteId === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   const rt = getRuntime();
   const sp = rt?.gSprites?.get(spriteId) as { oamIndex: number } | undefined;
-  const oam = sp ? (rt as unknown as { gba: { oam: Array<{ paletteNum: number }> } }).gba.oam[sp.oamIndex] : undefined;
-  task.data[0] = 256 + (oam?.paletteNum ?? 0) * 16 + 1; // OBJ_PLTT_ID + 1
+  const oam = sp ? (rt as unknown as { gba: { oam: Array<{ paletteBank: number }> } }).gba.oam[sp.oamIndex] : undefined;
+  task.data[0] = 256 + (oam?.paletteBank ?? 0) * 16 + 1; // OBJ_PLTT_ID + 1
   _BlendPalInAndOutSetup(task, args);
 }
 function _BlendPalInAndOutSetup(task: _F1Task, args: number[]): void {
@@ -992,10 +992,10 @@ function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
   const clone = rt?.gSprites?.get(spriteId) as { data: number[]; x2: number; oamIndex: number; callback: unknown; subpriority?: number } | undefined;
   const atk = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
   if (!clone) return;
-  const oam = (rt as unknown as { gba?: { oam: Array<{ priority: number; paletteNum: number }> } }).gba?.oam[clone.oamIndex];
+  const oam = (rt as unknown as { gba?: { oam: Array<{ priority: number; paletteBank: number }> } }).gba?.oam[clone.oamIndex];
   if (oam) {
     oam.priority = task.data[6];      // tPriority
-    oam.paletteNum = task.data[4];    // tPaletteNum
+    oam.paletteBank = task.data[4];    // tPaletteNum
   }
   clone.data[0] = 8;                  // sActiveTime
   clone.data[1] = taskId;             // sTaskId
@@ -1036,8 +1036,8 @@ function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
   prio = (prio === 20 || prio === 40) ? 2 : 3;
   task.data[6] = prio;                                              // tPriority
   // CpuCopy32(Unfaded[src pal mon] → Faded[dest pal trace]) + BlendPalette
-  const monOam = atkSp ? (rt as unknown as { gba?: { oam: Array<{ paletteNum: number }> } }).gba?.oam[atkSp.oamIndex] : undefined;
-  const srcSlot = monOam?.paletteNum ?? 0;
+  const monOam = atkSp ? (rt as unknown as { gba?: { oam: Array<{ paletteBank: number }> } }).gba?.oam[atkSp.oamIndex] : undefined;
+  const srcSlot = monOam?.paletteBank ?? 0;
   const destSlot = task.data[4] === 0xFF ? 0 : task.data[4];
   const bufs = rt as unknown as {
     gPlttBufferUnfaded?: { get: (i: number) => number };
@@ -1254,7 +1254,7 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
   void battler;
   const src = rt?.gSprites?.get(spriteId) as { x: number; y: number; x2: number; y2: number; oamIndex: number; subpriority?: number } | undefined;
   if (!rt || !src) return -1;
-  const gba = (rt as unknown as { gba: { oam: Array<{ tileId: number; shape: number; size: number; paletteNum: number; priority: number; objMode: number; affineMode: number; hFlip?: boolean; vFlip?: boolean }> } }).gba;
+  const gba = (rt as unknown as { gba: { oam: Array<{ tileId: number; shape: number; size: number; paletteBank: number; priority: number; objMode: number; affineMode: number; hFlip?: boolean; vFlip?: boolean }> } }).gba;
   const srcOam = gba.oam[src.oamIndex];
   const newId = (rt as unknown as { CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number }).CreateSpriteInline?.(
     { oam: { shape: srcOam?.shape ?? 0, size: srcOam?.size ?? 3, priority: 0 }, images: [] } as never,
@@ -1267,7 +1267,7 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
     clone.x2 = src.x2;
     clone.y2 = src.y2;
     cloneOam.tileId = srcOam.tileId;
-    cloneOam.paletteNum = srcOam.paletteNum;
+    cloneOam.paletteBank = srcOam.paletteBank;
     cloneOam.shape = srcOam.shape;
     cloneOam.size = srcOam.size;
     cloneOam.priority = 0;
@@ -1281,4 +1281,35 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
 {
   const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
   surf.CreateInvisibleSpriteCopy = CreateInvisibleSpriteCopy;
+}
+
+// --- VAGUE F73 : SetGrayscaleOrOriginalPalette (mons.c:1374) ----------------
+// Grise une palette : moyenne r+g+b/3 lue depuis UNFADED, ecrite en FADED ;
+// restore = recopie Unfaded -> Faded (CpuCopy32). paletteNum en slots GBA
+// (16 + slot OBJ pour un mon). Unfaded/Faded sont des buffers SEPARES
+// (verifie 2026-06-12 — l'hypothese « alias » de la vague F3 etait fausse).
+export function SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOriginalColor: boolean): void {
+  const rt = getRuntime() as unknown as {
+    gPlttBufferUnfaded?: { get: (i: number) => number };
+    gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void };
+  } | null;
+  const unfaded = rt?.gPlttBufferUnfaded;
+  const faded = rt?.gPlttBufferFaded;
+  if (!unfaded || !faded) return;
+  const paletteOffset = paletteNum * 16; // PLTT_ID(paletteNum)
+  if (!restoreOriginalColor) {
+    for (let i = 0; i < 16; i++) {
+      const original = unfaded.get(paletteOffset + i) ?? 0;
+      const average = Math.trunc(((original & 0x1F) + ((original >> 5) & 0x1F) + ((original >> 10) & 0x1F)) / 3);
+      const dest = faded.get(paletteOffset + i) ?? 0;
+      // C : destColor->r/g/b = average (bit 15 conserve).
+      faded.set(paletteOffset + i, (dest & 0x8000) | (average << 10) | (average << 5) | average);
+    }
+  } else {
+    for (let i = 0; i < 16; i++) faded.set(paletteOffset + i, unfaded.get(paletteOffset + i) ?? 0);
+  }
+}
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.SetGrayscaleOrOriginalPalette = SetGrayscaleOrOriginalPalette;
 }

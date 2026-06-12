@@ -662,8 +662,8 @@ function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): voi
     const x = _rainRand() % 240;
     const y = _rainRand() % 80;
     // créer la goutte via le bridge (template generated avec son AnimCmd splash)
-    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number; oam: { shape: number; size: number }; callback: unknown; anims?: unknown } | undefined } | undefined;
-    const tpl = bridge?.lookupGeneratedTemplate?.('gRainDropSpriteTemplate');
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; oam: { shape: number; size: number }; callback: unknown; anims?: unknown } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplateTags?.('gRainDropSpriteTemplate');
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; anims?: unknown; tileBase?: number; animNum?: number; animCmdIndex?: number; animDelayCounter?: number; animBeginning?: boolean; animEnded?: boolean }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
     const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
     const sid = rt?.CreateSpriteInline?.({ oam: { shape: 2, size: 1, priority: 2 }, images: [] } as never, x, y, 4) ?? -1;
@@ -719,11 +719,11 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
     CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
-    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+    gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
   } | undefined;
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
-  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
-  const tpl = bridge?.lookupGeneratedTemplate?.('gSmallWaterOrbSpriteTemplate');
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplateTags?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplateTags?.('gSmallWaterOrbSpriteTemplate');
   const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
   const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
   if (sid >= 0) {
@@ -732,7 +732,7 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
     if (oam && tileStart !== 0xFFFF) {
       oam.tileId = tileStart;
       const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
-      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+      if (pal !== 0xFF && oam.paletteBank !== undefined) oam.paletteBank = pal;
     }
   }
   return sid;
@@ -880,7 +880,7 @@ function _spRt2(): {
   CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
   CreateTask?: (f: unknown, prio: number) => number;
   DestroySprite?: (i: number) => void;
-  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  gba?: { oam: Array<{ tileId: number; paletteBank?: number }> };
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }

@@ -581,8 +581,8 @@ function _monPalNum(): number {
   const rt = getRuntime();
   const sp = rt?.gSprites?.get(_getBattlerSpriteId(_getAnimState().target)) as { oamIndex?: number } | undefined;
   if (!rt || !sp || sp.oamIndex === undefined) return _getAnimState().target;
-  const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteNum?: number }> } }).gba?.oam?.[sp.oamIndex];
-  return oam?.paletteNum ?? _getAnimState().target;
+  const oam = (rt as unknown as { gba?: { oam?: Array<{ paletteBank?: number }> } }).gba?.oam?.[sp.oamIndex];
+  return oam?.paletteBank ?? _getAnimState().target;
 }
 
 function _rtSprite(spriteId: number): BallSprite | undefined {

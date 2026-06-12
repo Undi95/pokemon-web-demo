@@ -2143,12 +2143,12 @@ function AnimTask_DoubleTeam(task: _DtTask): void {
   task.data[1] = spApi?.AllocSpritePalette?.(10097 /* ANIM_TAG_BENT_SPOON */) ?? 0xFF;
   const rt = (globalThis as Record<string, unknown>).__rt as {
     gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number; x2: number }>;
-    gba?: { oam: Array<{ paletteNum: number }> };
+    gba?: { oam: Array<{ paletteBank: number }> };
     gPlttBufferUnfaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
     gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
   } | undefined;
   const atkSp = rt?.gSprites?.get(task.data[0]);
-  const monPal = atkSp ? (rt?.gba?.oam[atkSp.oamIndex]?.paletteNum ?? 0) : 0;
+  const monPal = atkSp ? (rt?.gba?.oam[atkSp.oamIndex]?.paletteBank ?? 0) : 0;
   if (task.data[1] !== 0xFF && rt?.gPlttBufferUnfaded?.get && rt.gPlttBufferUnfaded.set) {
     const r3 = 256 + task.data[1] * 16;
     const r4 = 256 + monPal * 16;
@@ -2161,7 +2161,7 @@ function AnimTask_DoubleTeam(task: _DtTask): void {
     if (obj < 0) break;
     const clone = rt?.gSprites?.get(obj);
     const cloneOam = clone ? rt?.gba?.oam[clone.oamIndex] : undefined;
-    if (cloneOam && task.data[1] !== 0xFF) cloneOam.paletteNum = task.data[1];
+    if (cloneOam && task.data[1] !== 0xFF) cloneOam.paletteBank = task.data[1];
     if (clone) {
       clone.data[0] = 0;
       clone.data[1] = i << 7;

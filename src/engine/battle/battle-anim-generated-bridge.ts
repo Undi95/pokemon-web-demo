@@ -77,6 +77,17 @@ const _warned = new Set<string>();
 
 // ─── 4) lookupGeneratedTemplate ──────────────────────────────────────────────
 export function lookupGeneratedTemplate(name: string): AnimSpriteTemplate | undefined {
+  return _resolveGeneratedTemplate(name, true);
+}
+/** Variante TAGS-ONLY (vague F73) : renvoie les données du template generated
+ *  SANS exiger que son callback C soit porté/enregistré. Pour les spawns
+ *  C-only des AnimTasks (Hail, Eruption, RainDrop…) : le site pose son propre
+ *  callback local 1:1 et n'a besoin que de tileTag/oam/anims. Le chemin
+ *  createsprite (lookupGeneratedTemplate) continue d'exiger le callback. */
+export function lookupGeneratedTemplateTags(name: string): AnimSpriteTemplate | undefined {
+  return _resolveGeneratedTemplate(name, false);
+}
+function _resolveGeneratedTemplate(name: string, requireCallback: boolean): AnimSpriteTemplate | undefined {
   const g = (BATTLE_ANIM_TEMPLATES as Record<string, {
     tileTag: string | null; paletteTag: string | null; oam: string | null;
     anims: string | null; affineAnims: string | null; callback: string | null;
@@ -95,7 +106,7 @@ export function lookupGeneratedTemplate(name: string): AnimSpriteTemplate | unde
   }
   // callback par nom (la liste de demande des vagues si absent)
   const cb = g.callback ? _callbacks.get(g.callback) : undefined;
-  if (!cb) {
+  if (!cb && requireCallback) {
     if (g.callback && !_warned.has(name)) {
       _warned.add(name);
       console.warn(`[anim-bridge] ${name}: callback ${g.callback} non porté (vague à venir) — fallback.`);
@@ -118,7 +129,7 @@ export function lookupGeneratedTemplate(name: string): AnimSpriteTemplate | unde
     name,
     tileTag,
     paletteTag: tileTag,
-    callback: cb as never,
+    callback: (cb ?? null) as never,
     oam: oam && oam.shape !== null && oam.size !== null
       ? { shape: oam.shape as 0 | 1 | 2, size: oam.size as 0 | 1 | 2 | 3 }
       : { shape: 0, size: 2 },
@@ -129,4 +140,4 @@ export function lookupGeneratedTemplate(name: string): AnimSpriteTemplate | unde
 }
 
 // Surface anti-cycle : le registry resout le genere via globalThis.
-(globalThis as Record<string, unknown>).__animGeneratedBridge = { lookupGeneratedTemplate };
+(globalThis as Record<string, unknown>).__animGeneratedBridge = { lookupGeneratedTemplate, lookupGeneratedTemplateTags };
