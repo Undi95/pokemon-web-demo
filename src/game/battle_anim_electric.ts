@@ -675,3 +675,262 @@ _ebRegT({
   AnimTask_ElectricBolt: AnimTask_ElectricBolt as never,
   AnimTask_VoltTackleBolt: AnimTask_VoltTackleBolt as never,
 });
+
+// --- VAGUE F45 : ShockWave x2 (electric.c:1153-1336) ------------------------
+// ProgressingBolt : 6 colonnes de zigzag attaquant->cible (8 segments par
+// colonne, tileNum 7..0/0..7). Lightning : la colonne verticale sur la cible.
+import { GetBattlerSpriteSubpriority as _swSubprio } from './battle_anim_mons';
+
+type _SwTask = { taskId: number; data: number[]; func?: unknown };
+function _swItf(): { getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _swSpawn(tplName: string, x: number, y: number, subprio: number, oamShape: number, oamSize: number): number {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  } | undefined;
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.(tplName);
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt?.CreateSpriteInline?.({ oam: { shape: oamShape, size: oamSize, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
+  if (sid >= 0) {
+    const sp = rt?.gSprites?.get(sid);
+    const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) {
+      oam.tileId = tileStart;
+      const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    }
+  }
+  return sid;
+}
+function _swDestroySelf(sprite: unknown): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+  for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+    if (sp === sprite) { rt?.DestroySprite?.(sid); break; }
+  }
+}
+
+/** 1:1 AnimTask_ShockWaveProgressingBolt (electric.c:1153). */
+function AnimTask_ShockWaveProgressingBolt(task: _SwTask): void {
+  const itf = _swItf();
+  switch (task.data[0]) {
+    case 0:
+      task.data[6] = GetBattlerSpriteCoord(itf.getAttacker?.() ?? 0, BATTLER_COORD_X_2);
+      task.data[7] = GetBattlerSpriteCoord(itf.getAttacker?.() ?? 0, BATTLER_COORD_Y_PIC_OFFSET);
+      task.data[8] = 4;
+      task.data[10] = GetBattlerSpriteCoord(itf.getTarget?.() ?? 1, BATTLER_COORD_X_2);
+      task.data[9] = Math.trunc((task.data[10] - task.data[6]) / 5);
+      task.data[4] = 7;
+      task.data[5] = -1;
+      task.data[11] = 12;
+      task.data[0]++;
+      break;
+    case 1:
+      if (++task.data[1] > 0) {
+        task.data[1] = 0;
+        if (_CreateShockWaveBoltSprite(task, task.taskId)) {
+          if (task.data[2] === 5) task.data[0] = 3;
+          else task.data[0]++;
+        }
+      }
+      if (task.data[11]) task.data[11]--;
+      break;
+    case 2:
+      if (task.data[11]) task.data[11]--;
+      if (++task.data[1] > 4) {
+        task.data[1] = 0;
+        if (task.data[2] & 1) {
+          task.data[7] = 4;
+          task.data[8] = 68;
+          task.data[4] = 0;
+          task.data[5] = 1;
+        } else {
+          task.data[7] = 68;
+          task.data[8] = 4;
+          task.data[4] = 7;
+          task.data[5] = -1;
+        }
+        if (task.data[11]) task.data[0] = 4;
+        else task.data[0] = 1;
+      }
+      break;
+    case 3:
+      if (task.data[3] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    case 4:
+      if (task.data[11]) task.data[11]--;
+      else task.data[0] = 1;
+      break;
+  }
+}
+/** 1:1 CreateShockWaveBoltSprite (electric.c:1232). */
+function _CreateShockWaveBoltSprite(task: _SwTask, taskId: number): boolean {
+  const sid = _swSpawn('gShockWaveProgressingBoltSpriteTemplate', task.data[6], task.data[7], 35, 0, 1);
+  if (sid >= 0) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; gba?: { oam: Array<{ tileId: number }> } } | undefined;
+    const sp = rt?.gSprites?.get(sid);
+    const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+    if (oam) oam.tileId += task.data[4];
+    task.data[4] += task.data[5];
+    if (task.data[4] < 0) task.data[4] = 7;
+    if (task.data[4] > 7) task.data[4] = 0;
+    if (sp) {
+      sp.data[6] = taskId;
+      sp.data[7] = 3;
+      sp.data[0] = 0;
+      sp.callback = _AnimShockWaveProgressingBolt as never;
+    }
+    task.data[3]++;
+  }
+  if (task.data[4] === 0 && task.data[5] > 0) {
+    (globalThis as { __PlaySE?: (id: number) => void }).__PlaySE?.(106 /* SE_M_THUNDERBOLT */);
+  }
+  if ((task.data[5] < 0 && task.data[7] <= task.data[8]) || (task.data[5] > 0 && task.data[7] >= task.data[8])) {
+    task.data[2]++;
+    task.data[6] += task.data[9];
+    return true;
+  }
+  task.data[7] += task.data[5] * 8;
+  return false;
+}
+/** 1:1 AnimShockWaveProgressingBolt : vie 12f. */
+function _AnimShockWaveProgressingBolt(sprite: { data: number[] }): void {
+  if (++sprite.data[0] > 12) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    _swDestroySelf(sprite);
+  }
+}
+
+/** 1:1 AnimTask_ShockWaveLightning (electric.c:1279). */
+function AnimTask_ShockWaveLightning(task: _SwTask): void {
+  const itf = _swItf();
+  switch (task.data[0]) {
+    case 0: {
+      const tgt = itf.getTarget?.() ?? 1;
+      task.data[15] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_Y) + 32;
+      task.data[14] = task.data[15];
+      while (task.data[14] > 16) task.data[14] -= 32;
+      task.data[13] = GetBattlerSpriteCoord(tgt, BATTLER_COORD_X_2);
+      task.data[12] = _swSubprio(tgt) - 2;
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        if (_CreateShockWaveLightningSprite(task, task.taskId)) task.data[0]++;
+      }
+      break;
+    case 2:
+      if (task.data[10] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 CreateShockWaveLightningSprite (electric.c:1310). */
+function _CreateShockWaveLightningSprite(task: _SwTask, taskId: number): boolean {
+  const sid = _swSpawn('gLightningSpriteTemplate', task.data[13], task.data[14], task.data[12], 0, 2);
+  if (sid >= 0) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown }> } | undefined;
+    const sp = rt?.gSprites?.get(sid);
+    if (sp) {
+      sp.data[6] = taskId;
+      sp.data[7] = 10;
+      sp.data[0] = 0;
+      sp.callback = _AnimShockWaveLightning as never;
+    }
+    task.data[10]++;
+  }
+  if (task.data[14] >= task.data[15]) return true;
+  task.data[14] += 32;
+  return false;
+}
+/** 1:1 AnimShockWaveLightning : animEnded / vie 15f en inline. */
+function _AnimShockWaveLightning(sprite: { data: number[]; animEnded?: boolean }): void {
+  if (sprite.animEnded || ++sprite.data[0] > 15) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    _swDestroySelf(sprite);
+  }
+}
+_ebRegT({
+  AnimTask_ShockWaveProgressingBolt: AnimTask_ShockWaveProgressingBolt as never,
+  AnimTask_ShockWaveLightning: AnimTask_ShockWaveLightning as never,
+});
+
+// --- VAGUE F45b : ElectricChargingParticles (electric.c:805-893) ------------
+// Particules aspirées vers le mon (16 offsets cycliques, vitesse croissante).
+import { InitAnimLinearTranslation as _ecInitLin, AnimTranslateLinear as _ecRunLin } from './battle_anim_mons';
+
+const _sElecChargeOffsets: ReadonlyArray<readonly [number, number]> = [
+  [58, -60], [-56, -36], [8, -56], [-16, 56], [58, -10], [-58, 10], [48, -18], [-8, 56],
+  [16, -56], [-58, -42], [58, 30], [-48, 40], [12, -48], [48, -12], [-56, 18], [48, 48],
+];
+
+function AnimTask_ElectricChargingParticles(task: _SwTask): void {
+  const itf = _swItf();
+  const args = ((globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[] } | undefined)?.getArgs?.() ?? [0, 20, 2, 5];
+  const battler = args[0] === 0 ? (itf.getAttacker?.() ?? 0) : (itf.getTarget?.() ?? 1);
+  task.data[14] = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2);
+  task.data[15] = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET);
+  task.data[6] = args[1] | 0;
+  task.data[7] = 0;
+  task.data[8] = 0;
+  task.data[9] = 0;
+  task.data[10] = 0;
+  task.data[11] = args[3] | 0;
+  task.data[12] = 0;
+  task.data[13] = args[2] | 0;
+  task.func = _ElectricChargingParticles_Step;
+}
+function _ElectricChargingParticles_Step(task: _SwTask): void {
+  if (task.data[6]) {
+    if (++task.data[12] > task.data[13]) {
+      task.data[12] = 0;
+      const sid = _swSpawn('gElectricChargingParticlesSpriteTemplate', task.data[14], task.data[15], 2, 0, 1);
+      if (sid >= 0) {
+        const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown }> } | undefined;
+        const sp = rt?.gSprites?.get(sid);
+        if (sp) {
+          sp.x += _sElecChargeOffsets[task.data[9]][0];
+          sp.y += _sElecChargeOffsets[task.data[9]][1];
+          sp.data[0] = 40 - task.data[8] * 5;
+          sp.data[1] = sp.x;
+          sp.data[2] = task.data[14];
+          sp.data[3] = sp.y;
+          sp.data[4] = task.data[15];
+          sp.data[5] = task.taskId;
+          _ecInitLin(sp as never);
+          // 1:1 net : StartSpriteAnim(1) + RunStoredCallback (inline sans anims
+          // -> on passe directement a la translation, meme trajectoire).
+          sp.callback = _AnimElecChargeParticle_Step as never;
+          if (++task.data[9] > 15) task.data[9] = 0;
+          if (++task.data[10] >= task.data[11]) {
+            task.data[10] = 0;
+            if (task.data[8] <= 5) task.data[8]++;
+          }
+          task.data[7]++;
+          task.data[6]--;
+        }
+      }
+    }
+  } else if (task.data[7] === 0) {
+    _swItf().DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+/** 1:1 AnimElectricChargingParticles_Step : translation puis decrement+destroy. */
+function _AnimElecChargeParticle_Step(sprite: { data: number[] }): void {
+  if (_ecRunLin(sprite as never)) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
+    const t = rt?.gTasks?.get(sprite.data[5]);
+    if (t) t.data[7]--;
+    _swDestroySelf(sprite);
+  }
+}
+_ebRegT({ AnimTask_ElectricChargingParticles: AnimTask_ElectricChargingParticles as never });
