@@ -1,10 +1,10 @@
 # CARTE DE COUVERTURE 1:1 GLOBALE — décomp `src/*.c` ↔ notre port
 
-Généré : 2026-06-12T15:00:56.366Z
+Généré : 2026-06-12T15:33:50.641Z
 
 > Signal "couvert" = une citation `1:1 décomp file.c:N` pointe dans la fonction.
 > ⚠️ Prouve la COUVERTURE/traçabilité, **PAS le comportement** (bugs runtime = ROM-diff séparé).
-> Couverture globale (≥1 fonctions/fichier) : **6047/11228 fonctions** (54%) sur **221 fichiers .c**.
+> Couverture globale (≥1 fonctions/fichier) : **6055/11228 fonctions** (54%) sur **221 fichiers .c**.
 > 35 fichiers 100% · 186 partiels · 0 jamais touchés.
 
 ## 🟢 Fichiers 100% couverts (35)
@@ -53,7 +53,7 @@ Généré : 2026-06-12T15:00:56.366Z
 | `pokemon_storage_system.c` | 21/380 | 6% | **359** | 71 |
 | `field_effect.c` | 31/247 | 13% | **216** | 66 |
 | `party_menu.c` | 149/354 | 42% | **205** | 277 |
-| `battle_transition.c` | 27/210 | 13% | **183** | 58 |
+| `battle_transition.c` | 35/210 | 17% | **175** | 62 |
 | `tv.c` | 48/207 | 23% | **159** | 55 |
 | `overworld.c` | 89/227 | 39% | **138** | 138 |
 | `pokedex.c` | 12/140 | 9% | **128** | 78 |
@@ -175,7 +175,7 @@ Généré : 2026-06-12T15:00:56.366Z
 | `title_screen.c` | 13/20 | 65% | **7** | 34 |
 | `battle_anim_dark.c` | 19/25 | 76% | **6** | 29 |
 | `battle_anim_mon_movement.c` | 28/34 | 82% | **6** | 19 |
-| `battle_setup.c` | 96/102 | 94% | **6** | 101 |
+| `battle_setup.c` | 96/102 | 94% | **6** | 105 |
 | `field_door.c` | 17/23 | 74% | **6** | 90 |
 | `fldeff_escalator.c` | 0/6 | 0% | **6** | 5 |
 | `fldeff_sweetscent.c` | 0/6 | 0% | **6** | 2 |
