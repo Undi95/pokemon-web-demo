@@ -919,3 +919,161 @@ function _AnimDestinyBondWhiteShadow_Step(sprite: { x: number; y: number; data: 
   }
 }
 _f36RegT({ AnimTask_DestinyBondWhiteShadow: AnimTask_DestinyBondWhiteShadow as never });
+
+// --- VAGUE F67 : SpiteTargetShadow (ghost.c:589-744) ------------------------
+// L'ombre violette de Spite : clone normal palette violette (blend 10 vers
+// RGB(13,0,15)) + ONDE ScanlineEffect_InitWave (freq 2, ampl 6) sur le BG du
+// mon + fondu Sin/18 alterne 128 pas, demontage complet.
+import { ScanlineEffect_InitWave as _spwInitWave, gScanlineEffect as _spwScan, SCANLINE_EFFECT_REG_BG1HOFS as _spwRegBg1H, SCANLINE_EFFECT_REG_BG2HOFS as _spwRegBg2H } from './scanline_effect';
+import { GetBattlerSpriteBGPriorityRank as _spwBgRank } from './battle_anim_mons';
+import { gSineTable as _spwSine } from './trig';
+import { BlendPalette as _spwBlend } from '../engine/system/decomp-globals';
+
+type _SpwTask = { taskId: number; data: number[]; func?: unknown };
+function _spwItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _spwRt(): {
+  gSprites?: Map<number, { y: number; y2: number; invisible?: boolean; oamIndex: number; data: number[]; callback: unknown }>;
+  SetGpuReg?: (o: number, v: number) => void;
+  DestroyTask?: (id: number) => void;
+  gba?: { oam: Array<{ paletteNum: number; objMode: number; priority: number }>; bg: (i: number) => { config: { visible: boolean } } };
+  gPlttBufferUnfaded?: { get?: (i: number) => number };
+  gPlttBufferFaded?: { set?: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _spwTgtSpriteId(): number {
+  const b = _spwItf().getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+const _SPW_VIOLET = 13 | (0 << 5) | (15 << 10); // RGB(13,0,15)
+
+/** 1:1 AnimTask_SpiteTargetShadow (+ appel immediat). */
+function AnimTask_SpiteTargetShadow(task: _SpwTask): void {
+  task.data[15] = 0;
+  task.func = _SpiteTargetShadow_Step1;
+  _SpiteTargetShadow_Step1(task);
+}
+function _SpiteTargetShadow_Step1(task: _SpwTask): void {
+  const itf = _spwItf();
+  const tgt = itf.getTarget?.() ?? 1;
+  const position = _spwBgRank(tgt);
+  const rt = _spwRt();
+  switch (task.data[15]) {
+    case 0: {
+      const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      task.data[14] = spApi?.AllocSpritePalette?.(10097) ?? 0xFF;
+      if (task.data[14] === 0xFF || task.data[14] === 0xF) {
+        itf.DestroyAnimVisualTask?.(task.taskId);
+        break;
+      }
+      const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { CloneBattlerSpriteWithBlend?: (a: number) => number } | undefined;
+      task.data[0] = mons?.CloneBattlerSpriteWithBlend?.(1) ?? -1;
+      if (task.data[0] < 0) {
+        spApi?.FreeSpritePaletteByTag?.(10097);
+        itf.DestroyAnimVisualTask?.(task.taskId);
+        break;
+      }
+      const clone = rt.gSprites?.get(task.data[0]);
+      const cloneOam = clone ? rt.gba?.oam[clone.oamIndex] : undefined;
+      if (cloneOam) {
+        cloneOam.paletteNum = task.data[14];
+        cloneOam.objMode = 0; // ST_OAM_OBJ_NORMAL
+        cloneOam.priority = 3;
+      }
+      task.data[1] = 0;
+      task.data[2] = 0;
+      task.data[3] = 16;
+      task.data[13] = _spwTgtSpriteId();
+      const tgtSp = rt.gSprites?.get(task.data[13]);
+      const tgtOam = tgtSp ? rt.gba?.oam[tgtSp.oamIndex] : undefined;
+      task.data[4] = 256 + (tgtOam?.paletteNum ?? 0) * 16; // OBJ_PLTT_ID2
+      const cfg = rt.gba?.bg(position === 1 ? 1 : 2)?.config;
+      if (cfg) cfg.visible = false; // ClearGpuRegBits DISPCNT BGn_ON
+      task.data[15]++;
+      break;
+    }
+    case 1: {
+      task.data[14] = 256 + task.data[14] * 16;
+      const un = rt.gPlttBufferUnfaded;
+      const fd = rt.gPlttBufferFaded;
+      if (un?.get && fd?.set) {
+        for (let k = 0; k < 16; k++) fd.set(task.data[14] + k, un.get(task.data[4] + k));
+      }
+      _spwBlend(task.data[4], 16, 10, _SPW_VIOLET);
+      task.data[15]++;
+      break;
+    }
+    case 2: {
+      const tgtSp = rt.gSprites?.get(task.data[13]);
+      let startLine = (tgtSp ? tgtSp.y + tgtSp.y2 : 56) - 32;
+      if (startLine < 0) startLine = 0;
+      task.data[10] = _spwInitWave(startLine, startLine + 64, 2, 6, 0, position === 1 ? _spwRegBg1H : _spwRegBg2H, true);
+      task.data[15]++;
+      break;
+    }
+    case 3:
+      rt.SetGpuReg?.(0x50, position === 1 ? 0x3F42 : 0x3F44);
+      rt.SetGpuReg?.(0x52, 0 | (0x10 << 8));
+      task.data[15]++;
+      break;
+    case 4: {
+      const cfg = rt.gba?.bg(position === 1 ? 1 : 2)?.config;
+      if (cfg) cfg.visible = true; // SetGpuRegBits
+      task.func = _SpiteTargetShadow_Step2;
+      task.data[15]++;
+      break;
+    }
+    default:
+      task.data[15]++;
+      break;
+  }
+}
+function _SpiteTargetShadow_Step2(task: _SpwTask): void {
+  const rt = _spwRt();
+  task.data[1]++;
+  task.data[5] = task.data[1] & 1;
+  if (task.data[5] === 0) task.data[2] = Math.trunc((_spwSine[task.data[1]] ?? 0) / 18);
+  if (task.data[5] === 1) task.data[3] = 16 - Math.trunc((_spwSine[task.data[1]] ?? 0) / 18);
+  rt.SetGpuReg?.(0x52, (task.data[2] & 0xFF) | ((task.data[3] & 0xFF) << 8));
+  if (task.data[1] === 128) {
+    task.data[15] = 0;
+    task.func = _SpiteTargetShadow_Step3;
+    _SpiteTargetShadow_Step3(task);
+  }
+}
+function _SpiteTargetShadow_Step3(task: _SpwTask): void {
+  const itf = _spwItf();
+  const rank = _spwBgRank(itf.getTarget?.() ?? 1);
+  const rt = _spwRt();
+  switch (task.data[15]) {
+    case 0: {
+      _spwScan.state = 3;
+      task.data[14] = _spwTgtSpriteId();
+      const cfg = rt.gba?.bg(rank === 1 ? 1 : 2)?.config;
+      if (cfg) cfg.visible = false;
+      break;
+    }
+    case 1:
+      _spwBlend(task.data[4], 16, 0, _SPW_VIOLET);
+      break;
+    case 2: {
+      const tgtSp = rt.gSprites?.get(task.data[14]);
+      if (tgtSp) tgtSp.invisible = true;
+      const mons = (globalThis as Record<string, unknown>).__battleAnimMons as { DestroySpriteWithActiveSheet?: (id: number) => void } | undefined;
+      mons?.DestroySpriteWithActiveSheet?.(task.data[0]);
+      const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      spApi?.FreeSpritePaletteByTag?.(10097);
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      const cfg = rt.gba?.bg(rank === 1 ? 1 : 2)?.config;
+      if (cfg) cfg.visible = true;
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+  task.data[15]++;
+}
+_f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
