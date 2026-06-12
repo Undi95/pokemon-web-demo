@@ -1174,3 +1174,30 @@ _wRegT({
   AnimTask_WaterSpoutLaunch: AnimTask_WaterSpoutLaunch as never,
   AnimTask_WaterSpoutRain: AnimTask_WaterSpoutRain as never,
 });
+
+// --- VAGUE F80 : AnimTask_RotateAuroraRingColors(+Step) (water.c:634) -------
+// Aurora Beam : rotation circulaire des couleurs 1..7 du slot OBJ du tag
+// RAINBOW_RINGS (10140) toutes les 3 frames, pendant args[0] frames.
+function AnimTask_RotateAuroraRingColors(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  task.data[0] = (itf.getArgs?.() ?? [40])[0] | 0;
+  const slot = spApi?.IndexOfSpritePaletteTag?.(10140) ?? 0xFF; // ANIM_TAG_RAINBOW_RINGS
+  if (slot === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  task.data[2] = 256 + slot * 16; // OBJ_PLTT_ID
+  task.func = _RotateAuroraRingColors_Step;
+}
+function _RotateAuroraRingColors_Step(task: { taskId: number; data: number[] }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimVisualTask?: (id: number) => void };
+  const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void } } | undefined;
+  const pf = rt?.gPlttBufferFaded;
+  if (++task.data[10] === 3 && pf) {
+    task.data[10] = 0;
+    const palIndex = task.data[2] + 1;
+    const rgbBuffer = pf.get(palIndex);
+    for (let i = 1; i < 8; i++) pf.set(palIndex + i - 1, pf.get(palIndex + i));
+    pf.set(palIndex + 7, rgbBuffer);
+  }
+  if (++task.data[11] === task.data[0]) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_wRegT({ AnimTask_RotateAuroraRingColors: AnimTask_RotateAuroraRingColors as never });

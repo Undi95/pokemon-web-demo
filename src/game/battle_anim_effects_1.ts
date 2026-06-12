@@ -2479,3 +2479,12 @@ function _MoonlightEndFade_Step(task: _MlTask): void {
   }
 }
 _sbRegT({ AnimTask_MoonlightEndFade: AnimTask_MoonlightEndFade as never });
+
+// --- VAGUE F80 : AnimTask_SporeDoubleBattle (effects_1.c:2463) --------------
+// Double battle uniquement (priorite BG du partner) ; en SINGLE (notre scope)
+// = destroy direct 1:1 (la branche IsDoubleBattle est hors-scope link/multi).
+function AnimTask_SporeDoubleBattle(task: { taskId: number }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimVisualTask?: (id: number) => void };
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_sbRegT({ AnimTask_SporeDoubleBattle: AnimTask_SporeDoubleBattle as never });

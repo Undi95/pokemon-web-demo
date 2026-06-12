@@ -700,3 +700,72 @@ function _UpdateMonScrollingBgMask(task: _SmskTask): void {
   // surface : les clients (effects_3 StatusCleared, MetallicShine...) consomment
   (globalThis as Record<string, unknown>).__startMonScrollingBgMask = StartMonScrollingBgMask;
 }
+
+// --- VAGUE F80 : variantes BlendColorCycle (battle_anim_normal.c:509/:595) --
+// Même flip-flop que AnimTask_BlendColorCycle, masque PRÉCALCULÉ stocké en
+// data[13] (hi 16 bits) / data[14] (lo) — 1:1 tPalSelectorHi/Lo du C.
+function _BlendColorCycleMask_Step(task: AnimTask): void {
+  if (task.data[9] < task.data[1]) { task.data[9]++; return; }
+  task.data[9] = 0;
+  const target = !task.data[6] ? task.data[4] : (task.data[2] === 1 ? 0 : task.data[3]);
+  let selected = (((task.data[13] & 0xFFFF) << 16) | (task.data[14] & 0xFFFF)) >>> 0;
+  let palOffset = 0;
+  while (selected !== 0) {
+    if (selected & 1) BlendPalette(palOffset, 16, task.data[10], task.data[5]);
+    palOffset += 16;
+    selected >>>= 1;
+  }
+  if (task.data[10] < target) task.data[10]++;
+  else if (task.data[10] > target) task.data[10]--;
+  else {
+    task.data[6] ^= 1;
+    if (task.data[6] === 0) {
+      if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+    }
+  }
+}
+function _initBlendCycleMask(task: AnimTask, args: number[], mask: number): void {
+  task.data[1] = args[1] | 0;  // delay
+  task.data[2] = args[2] | 0;  // numBlends
+  task.data[3] = Math.min(Math.max(args[3] | 0, 0), 16);
+  task.data[4] = Math.min(Math.max(args[4] | 0, 0), 16);
+  task.data[5] = args[5] | 0;  // color
+  task.data[6] = 0;
+  task.data[9] = 0;
+  task.data[10] = task.data[3];
+  task.data[13] = (mask >>> 16) & 0xFFFF;
+  task.data[14] = mask & 0xFFFF;
+  task.func = _BlendColorCycleMask_Step;
+}
+/** 1:1 AnimTask_BlendColorCycleExclude (normal.c:509) : tous les battlers SAUF
+ *  attacker/cible (+ BG 0xE si args[0]==1). En single le masque OBJ est vide. */
+function AnimTask_BlendColorCycleExclude(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 2, 0, 14, 0];
+  const itf2 = _itf();
+  const atk = itf2.getAttacker?.() ?? 0;
+  const tgt = itf2.getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { oamIndex: number }>; gba?: { oam: Array<{ paletteBank: number }> } } | undefined;
+  let selected = 0;
+  for (let b = 0; b < 4; b++) {
+    if (b === atk || b === tgt) continue;
+    const sid = co?.getBattlerMonSpriteId?.(b);
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const pal = sp ? rt?.gba?.oam[sp.oamIndex]?.paletteBank : undefined;
+    if (pal !== undefined) selected |= 1 << (16 + pal);
+  }
+  if ((args[0] | 0) === 1) selected |= 0xE;
+  _initBlendCycleMask(task, args, selected >>> 0);
+}
+/** 1:1 AnimTask_BlendColorCycleByTag (normal.c:595) : la palette du tag. */
+function AnimTask_BlendColorCycleByTag(task: AnimTask): void {
+  const args = _itf().getArgs?.() ?? [0, 0, 2, 0, 14, 0];
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+  const slot = spApi?.IndexOfSpritePaletteTag?.(args[0] | 0) ?? 0xFF;
+  if (slot === 0xFF) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
+  _initBlendCycleMask(task, args, (1 << (16 + slot)) >>> 0);
+}
+registerAnimTasks({
+  AnimTask_BlendColorCycleExclude: AnimTask_BlendColorCycleExclude as never,
+  AnimTask_BlendColorCycleByTag: AnimTask_BlendColorCycleByTag as never,
+});
