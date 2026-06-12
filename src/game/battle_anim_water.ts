@@ -916,7 +916,7 @@ function AnimTask_WaterSpoutLaunch(task: _SpTask): void {
   task.data[5] = sp ? sp.y : 0;
   task.data[1] = _GetWaterSpoutPowerForAnim();
   _spMons2().PrepareBattlerSpriteForRotScale?.(task.data[15], 0);
-  task.func = _WaterSpoutLaunch_Step;
+  task.func = AnimTask_WaterSpoutLaunch_Step;
 }
 type _SpOrbSprite = { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown; oamIndex: number; invisible?: boolean } | undefined;
 function _WaterSpoutLaunch_Case1(task: _SpTask, sp: _SpOrbSprite): void {
@@ -952,7 +952,7 @@ function _WaterSpoutLaunch_Case5(task: _SpTask, sp: _SpOrbSprite): void {
     }
   }
 }
-function _WaterSpoutLaunch_Step(task: _SpTask): void {
+function AnimTask_WaterSpoutLaunch_Step(task: _SpTask): void {
   const rt = _spRt2();
   const sp = rt.gSprites?.get(task.data[15]);
   switch (task.data[0]) {
@@ -1072,9 +1072,9 @@ function AnimTask_WaterSpoutRain(task: _SpTask): void {
   task.data[5] = 98;
   task.data[7] = task.data[4] + 49;
   task.data[12] = task.data[1] * 5 + 5;
-  task.func = _WaterSpoutRain_Step;
+  task.func = AnimTask_WaterSpoutRain_Step;
 }
-function _WaterSpoutRain_Step(task: _SpTask): void {
+function AnimTask_WaterSpoutRain_Step(task: _SpTask): void {
   switch (task.data[0]) {
     case 0:
       if (++task.data[2] > 2) {
@@ -1185,9 +1185,9 @@ function AnimTask_RotateAuroraRingColors(task: { taskId: number; data: number[];
   const slot = spApi?.IndexOfSpritePaletteTag?.(10140) ?? 0xFF; // ANIM_TAG_RAINBOW_RINGS
   if (slot === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
   task.data[2] = 256 + slot * 16; // OBJ_PLTT_ID
-  task.func = _RotateAuroraRingColors_Step;
+  task.func = AnimTask_RotateAuroraRingColors_Step;
 }
-function _RotateAuroraRingColors_Step(task: { taskId: number; data: number[] }): void {
+function AnimTask_RotateAuroraRingColors_Step(task: { taskId: number; data: number[] }): void {
   const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { get: (i: number) => number; set: (i: number, v: number) => void } } | undefined;
   const pf = rt?.gPlttBufferFaded;

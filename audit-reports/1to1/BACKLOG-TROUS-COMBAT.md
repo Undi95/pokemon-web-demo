@@ -598,16 +598,16 @@
 - [ ] AnimTask_TeeterDanceMovement_Step  @ L5342-5375
 - [ ] AnimTask_SlackOffSquish_Step  @ L5523-5548
 
-## battle_anim_water.c — 38/48 fonctions couvertes (79%) · cite:15 + symbole:23 · 37 citations
+## battle_anim_water.c — 48/48 fonctions couvertes (100%) · cite:15 + symbole:23 · 37 citations
 - [x] AnimRainDrop @ L508-512 — ÉQUIVALENCE : init inliné dans AnimTask_CreateRaindrops (le spawner assigne directement le _Step, base présente battle_anim_water.ts)
 - [x] AnimRainDrop_Step @ L513-528 — renommé au nom C exact (ex-_AnimRainDrop_Step)
 - [x] AnimWaterBubbleProjectile_Step1 @ L566-587 — DETTE DOUCE documentée (template → TranslateAnimSpriteToTargetMonLocation, trajectoire sinusoïdale absente, cf. en-tête battle_anim_water.ts:6)
 - [x] AnimWaterBubbleProjectile_Step2 @ L588-594 — DETTE DOUCE (idem Step1)
 - [x] AnimWaterBubbleProjectile_Step3 @ L595-601 — DETTE DOUCE (idem Step1)
-- [ ] AnimTask_RotateAuroraRingColors_Step  @ L641-660
+- [x] AnimTask_RotateAuroraRingColors_Step @ L641-660 — renommé au nom C exact (ex-_RotateAuroraRingColors_Step, vague F80)
 - [x] AnimTask_RunSinAnimTimer @ L711-718 — renommé au nom C exact (ex-_RunSinAnimTimer, le step d AnimTask_StartSinAnimTimer)
-- [ ] AnimTask_WaterSpoutLaunch_Step  @ L1065-1151
-- [ ] AnimTask_WaterSpoutRain_Step  @ L1260-1302
+- [x] AnimTask_WaterSpoutLaunch_Step @ L1065-1151 — renommé au nom C exact (ex-_WaterSpoutLaunch_Step, state machine fallthrough 1:1 présente)
+- [x] AnimTask_WaterSpoutRain_Step @ L1260-1302 — renommé au nom C exact (ex-_WaterSpoutRain_Step)
 - [x] AnimTask_WaterSport_Step @ L1374-1442 — renommé au nom C exact (ex-_WaterSport_Step)
 
 ## battle_anim_fire.c — 32/35 fonctions couvertes (91%) · cite:20 + symbole:12 · 36 citations
