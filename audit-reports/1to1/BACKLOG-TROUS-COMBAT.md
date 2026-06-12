@@ -615,16 +615,16 @@
 - [x] AnimTask_EruptionLaunchRocks_Step @ L815-921 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 - [x] AnimTask_MoveHeatWaveTargets_Step @ L1239-1328 — ÉQUIVALENCE : _Step inliné dans le port de sa task (state machine fusionnée, convention des miroirs anims — base vérifiée présente src/game)
 
-## battle_anim_electric.c — 28/37 fonctions couvertes (76%) · cite:17 + symbole:11 · 30 citations
-- [ ] AnimUnusedSpinningFist  @ L476-485
-- [ ] AnimUnusedSpinningFist_Step  @ L486-491
-- [ ] AnimUnusedCirclingShock  @ L492-514
-- [ ] AnimTask_ElectricBolt_Step  @ L693-761
-- [ ] AnimElectricBoltSegment  @ L762-778
-- [ ] AnimTask_ElectricChargingParticles_Step  @ L831-879
-- [ ] AnimElectricChargingParticles  @ L889-894
-- [ ] CreateVoltTackleBolt  @ L1095-1124
-- [ ] AnimVoltTackleBolt  @ L1125-1134
+## battle_anim_electric.c — 37/37 fonctions couvertes (100%) · cite:17 + symbole:11 · 30 citations
+- [x] AnimUnusedSpinningFist @ L476-485 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedSpinningFist_Step @ L486-491 — DETTE — Unused décomp (préfixe)
+- [x] AnimUnusedCirclingShock @ L492-514 — DETTE — Unused décomp (préfixe)
+- [x] AnimTask_ElectricBolt_Step @ L693-761 — renommé au nom C exact (ex-_ElectricBolt_Step, battle_anim_electric.ts ; A/B Thunderbolt 85 : fidèle 386f)
+- [x] AnimElectricBoltSegment @ L762-778 — renommé au nom C exact (ex-_ElectricBoltSegment)
+- [x] AnimTask_ElectricChargingParticles_Step @ L831-879 — renommé au nom C exact (ex-_ElectricChargingParticles_Step)
+- [x] AnimElectricChargingParticles @ L889-894 — restructuré 1:1 graphe C (callback initial StartSpriteAnim(1) → AnimElectricChargingParticles_Step, ex-inline ; A/B Charge 268 : fin naturelle 720f sans résiduel — anim longue en ROM, flag « duree » du sweep = heuristique)
+- [x] CreateVoltTackleBolt @ L1095-1124 — renommé au nom C exact (ex-_CreateVoltBolt ; A/B Volt Tackle 344 : fin naturelle 698f, 0 résiduel)
+- [x] AnimVoltTackleBolt @ L1125-1134 — renommé au nom C exact (ex-_AnimVoltBolt)
 
 ## battle_anim_ice.c — 32/32 fonctions couvertes (100%) · cite:20 + symbole:7 · 36 citations
 - [x] AnimUnusedIceCrystalThrow @ L532-570 — DETTE — Unused décomp (préfixe)

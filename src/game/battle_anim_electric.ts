@@ -519,9 +519,9 @@ function AnimTask_ElectricBolt(task: { taskId: number; data: number[]; func?: un
   task.data[1] = (GetBattlerSpriteCoord?.(tgt, 1) ?? 40) + a[1];
   task.data[2] = a[2];
   task.data[10] = 0;
-  task.func = _ElectricBolt_Step;
+  task.func = AnimTask_ElectricBolt_Step;
 }
-function _ElectricBolt_Step(task: { taskId: number; data: number[] }): void {
+function AnimTask_ElectricBolt_Step(task: { taskId: number; data: number[] }): void {
   const itf = _ebItf();
   const sp = task.data[2];
   const x = task.data[0];
@@ -561,14 +561,14 @@ function _ElectricBolt_Step(task: { taskId: number; data: number[] }): void {
         spr.data = spr.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
         spr.data[0] = sp;
         spr.data[1] = 0;
-        spr.callback = _ElectricBoltSegment;
-        _ElectricBoltSegment(spr as never);
+        spr.callback = AnimElectricBoltSegment;
+        AnimElectricBoltSegment(spr as never);
       }
     }
   }
   task.data[10]++;
 }
-function _ElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): void {
+function AnimElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam: Array<{ shape: number; size: number }> }; DestroySprite?: (id: number) => void; gSprites?: Map<number, unknown> } | undefined;
   const oam = rt?.gba?.oam[sprite.oamIndex];
   if (oam) {
@@ -630,14 +630,14 @@ function _VoltTackleBolt_Step(task: { taskId: number; data: number[] }): void {
     case 1:
       if (++task.data[2] > 0) {
         task.data[2] = 0;
-        if (_CreateVoltBolt(task) || _CreateVoltBolt(task)) task.data[0]++;
+        if (CreateVoltTackleBolt(task) || CreateVoltTackleBolt(task)) task.data[0]++;
       }
       break;
     case 2:
       if (task.data[7] === 0) itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
-function _CreateVoltBolt(task: { taskId: number; data: number[] }): boolean {
+function CreateVoltTackleBolt(task: { taskId: number; data: number[] }): boolean {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number; gba?: { oam: Array<{ tileId: number }> } } | undefined;
   const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number } | undefined;
   const tileStart = dg?.GetSpriteTileStartByTag?.(10011) ?? 0xFFFF; // ANIM_TAG_LIGHTNING? net : si absent, bolt invisible doux
@@ -650,7 +650,7 @@ function _CreateVoltBolt(task: { taskId: number; data: number[] }): boolean {
       sp.data = sp.data ?? [0, 0, 0, 0, 0, 0, 0, 0];
       sp.data[6] = task.taskId;
       sp.data[7] = 7;
-      sp.callback = _AnimVoltBolt;
+      sp.callback = AnimVoltTackleBolt;
       task.data[7]++;
     }
   }
@@ -661,7 +661,7 @@ function _CreateVoltBolt(task: { taskId: number; data: number[] }): boolean {
   return (task.data[1] === 1 && task.data[3] >= task.data[4])
     || (task.data[1] === -1 && task.data[3] <= task.data[4]);
 }
-function _AnimVoltBolt(sprite: { data: number[] }): void {
+function AnimVoltTackleBolt(sprite: { data: number[] }): void {
   if (++sprite.data[0] > 12) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
     const t = rt?.gTasks?.get(sprite.data[6]);
@@ -887,9 +887,9 @@ function AnimTask_ElectricChargingParticles(task: _SwTask): void {
   task.data[11] = args[3] | 0;
   task.data[12] = 0;
   task.data[13] = args[2] | 0;
-  task.func = _ElectricChargingParticles_Step;
+  task.func = AnimTask_ElectricChargingParticles_Step;
 }
-function _ElectricChargingParticles_Step(task: _SwTask): void {
+function AnimTask_ElectricChargingParticles_Step(task: _SwTask): void {
   if (task.data[6]) {
     if (++task.data[12] > task.data[13]) {
       task.data[12] = 0;
@@ -907,9 +907,7 @@ function _ElectricChargingParticles_Step(task: _SwTask): void {
           sp.data[4] = task.data[15];
           sp.data[5] = task.taskId;
           _ecInitLin(sp as never);
-          // 1:1 net : StartSpriteAnim(1) + RunStoredCallback (inline sans anims
-          // -> on passe directement a la translation, meme trajectoire).
-          sp.callback = _AnimElecChargeParticle_Step as never;
+          sp.callback = AnimElectricChargingParticles as never;
           if (++task.data[9] > 15) task.data[9] = 0;
           if (++task.data[10] >= task.data[11]) {
             task.data[10] = 0;
@@ -924,8 +922,17 @@ function _ElectricChargingParticles_Step(task: _SwTask): void {
     _swItf().DestroyAnimVisualTask?.(task.taskId);
   }
 }
-/** 1:1 AnimElectricChargingParticles_Step : translation puis decrement+destroy. */
-function _AnimElecChargeParticle_Step(sprite: { data: number[] }): void {
+/** 1:1 `AnimElectricChargingParticles` (battle_anim_electric.c:889) :
+ *  StartSpriteAnim(1) (no-op silencieux ici : sprite inline sans table anims)
+ *  puis chaîne la translation — graphe d'appels 1:1. */
+function AnimElectricChargingParticles(sprite: { data: number[]; callback: unknown }): void {
+  const spA = sprite as unknown as { anims?: unknown; animNum?: number; animBeginning?: boolean; animEnded?: boolean };
+  if (spA.anims) { spA.animNum = 1; spA.animBeginning = true; spA.animEnded = false; }
+  sprite.callback = AnimElectricChargingParticles_Step;
+}
+/** 1:1 `AnimElectricChargingParticles_Step` (battle_anim_electric.c:880) :
+ *  translation puis decrement task.data[7] + destroy. */
+function AnimElectricChargingParticles_Step(sprite: { data: number[] }): void {
   if (_ecRunLin(sprite as never)) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[] }> } | undefined;
     const t = rt?.gTasks?.get(sprite.data[5]);
