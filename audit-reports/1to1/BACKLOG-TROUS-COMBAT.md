@@ -488,12 +488,12 @@
 - [x] TranslateSpriteToBattleTargetPos @ L641-650 — DETTE — code mort total (déf seule, aucun caller .c ni .h)
 - [x] TranslateSpriteToBattleAttackerPos @ L708-722 — DETTE — code mort total (idem)
 - [x] EndUnkPaletteAnim @ L723-728 — DETTE — code mort total (resliquat UnkPaletteAnim RS)
-- [ ] GetBattleAnimBgData  @ L933-958  ← ATTEIGNABLE → PORT à faire
-- [ ] InitAnimBgTilemapBuffer  @ L1004-1009  ← ATTEIGNABLE (AnimLoadCompressedBgTilemap*) → équivalence LoadMoveBg à vérifier
-- [ ] AnimLoadCompressedBgTilemapHandleContest  @ L1016-1023  ← ATTEIGNABLE (6 fichiers anims) → équivalence à vérifier
+- [x] GetBattleAnimBgData @ L933-958 — ÉQUIVALENCE — le struct-getter C (bgId→{bgTiles,bgTilemap,paletteId,tilesOffset}) est DISSOUS dans nos fonctions paramétrées par bgId (GetBattleAnimBg1Data interpreter:784 + ClearBattleAnimBg(bgId) :820 + AnimLoadCompressed*(bgId,…)) ; paletteId 8/9 posés aux sites (monbg, StatsChange)
+- [x] InitAnimBgTilemapBuffer @ L1004-1009 — ÉQUIVALENCE INLINÉE — le memcpy src→buffer est inliné dans AnimLoadCompressedBgTilemap (interpreter:798), ses 2 seuls callers .c (:1012/:1018)
+- [x] AnimLoadCompressedBgTilemapHandleContest @ L1016-1023 — ÉQUIVALENCE — = InitAnimBgTilemapBuffer + RelocateBattleBgPal SI contest (IsContest()=false 1:1 post-camion → no-op) + CopyBgTilemapBufferToVram = exactement notre AnimLoadCompressedBgTilemap (interpreter:798)
 - [x] Trade_MoveSelectedMonToTarget @ L1046-1054 — DETTE — callers = trade.c uniquement (hors combat démo)
 - [x] StartAnimLinearTranslation_SetCornerVecX @ L1102-1110 — DETTE — code mort total (déf seule)
-- [ ] AnimTranslateLinear_WithFollowup_SetCornerVecX  @ L1148-1154  ← caller interne à requalifier
+- [x] AnimTranslateLinear_WithFollowup_SetCornerVecX @ L1148-1154 — DETTE — `// Functionally unused` (.c:1147 officiel) ; unique caller :1107 = StartAnimLinearTranslation_SetCornerVecX (code mort coché ci-dessus)
 - [x] ArcTan2_ @ L1363-1367 — ÉQUIVALENCE — wrapper interne de ArcTan2 (caller unique :1370 = ArcTan2Neg, dont la copie TS locale battle_anim_flying.ts:835 consomme ArcTan2 du bridge directement)
 - [x] GetSpritePalIdxByBattler @ L1505-1509 — ÉQUIVALENCE INLINÉE — corps = `return battler` (identité GBA slot==battler) ; le caller unique utility_funcs.c:103 `0x10000 << GetSpritePalIdxByBattler(b)` est inliné 1:1 dans le miroir utility (battle_anim_utility_funcs.ts:501 `1 << (battler + 16)`), la résolution slot-réel est faite en aval par le bridge palette (F72)
 - [x] GetSpritePalIdxByPosition @ L1510-1514 — DETTE — code mort total (ByBattler ne l'appelle pas, aucun autre caller)
