@@ -633,9 +633,9 @@ function AnimTask_StartSinAnimTimer(task: { taskId: number; data: number[]; func
   const args = itf.getArgs?.() ?? [];
   task.data[0] = args[0];
   args[7] = 0;
-  task.func = _RunSinAnimTimer;
+  task.func = AnimTask_RunSinAnimTimer;
 }
-function _RunSinAnimTimer(task: { taskId: number; data: number[] }): void {
+function AnimTask_RunSinAnimTimer(task: { taskId: number; data: number[] }): void {
   const args = _wItf2().getArgs?.() ?? [];
   args[7] = (args[7] + 3) & 0xFF;
   if (--task.data[0] === 0) _wItf2().DestroyAnimVisualTask?.(task.taskId);
@@ -680,13 +680,13 @@ function AnimTask_CreateRaindrops(task: { taskId: number; data: number[] }): voi
           sp.animNum = 0; sp.animCmdIndex = 0; sp.animDelayCounter = 0;
           sp.animBeginning = true; sp.animEnded = false;
         }
-        sp.callback = _AnimRainDrop_Step;
+        sp.callback = AnimRainDrop_Step;
       }
     }
   }
   if (task.data[0] === task.data[3]) itf.DestroyAnimVisualTask?.(task.taskId);
 }
-function _AnimRainDrop_Step(sprite: { data: number[]; x2: number; y2: number; animEnded?: boolean }): void {
+function AnimRainDrop_Step(sprite: { data: number[]; x2: number; y2: number; animEnded?: boolean }): void {
   if (++sprite.data[0] <= 13) {
     sprite.x2++;
     sprite.y2 += 4;
@@ -750,9 +750,9 @@ function AnimTask_WaterSport(task: _WsTask): void {
   task.data[9] = -32;
   task.data[1] = 0;
   task.data[0] = 0;
-  task.func = _WaterSport_Step;
+  task.func = AnimTask_WaterSport_Step;
 }
-function _WaterSport_Step(task: _WsTask): void {
+function AnimTask_WaterSport_Step(task: _WsTask): void {
   switch (task.data[0]) {
     case 0:
       _CreateWaterSportDroplet(task);
@@ -848,7 +848,7 @@ function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
   if (_wsArcRun(sprite as never)) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[]; func?: unknown }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
     for (const t of rt?.gTasks?.values() ?? []) {
-      if (t.func === _WaterSport_Step) {
+      if (t.func === AnimTask_WaterSport_Step) {
         t.data[10] = 1;
         t.data[8]--;
       }
