@@ -3781,3 +3781,126 @@ function _RolePlay_DestroyTaskAndDisableBlend(task: _E3Task): void {
   _itf().DestroyAnimVisualTask?.(task.taskId);
 }
 _e3RegTasks({ AnimTask_RolePlaySilhouette: AnimTask_RolePlaySilhouette as never });
+
+// --- VAGUE F78 : AnimTask_TransformMon + IsMonInvisible + CastformGfxDataChange
+// (effects_3.c:2250-2374) — Métamorphose : mosaïque BG montante (0→15), swap
+// du gfx (HandleSpeciesGfxDataChange, DÉJÀ porté async + copie VRAM OBJ F78)
+// + recopie du pic dans la copie monbg, mosaïque descendante, teardown +
+// shadow callback (adverse). Attente async par JETON (pattern F77, data[14]).
+import { HandleSpeciesGfxDataChange as _tfHandleGfx, gMonSpritesGfxPtr as _tfGfxPtr } from './battle_gfx_sfx_util';
+import { GetBattlerSpriteBGPriorityRank as _tfBgRank } from './battle_anim_mons';
+
+const _TF_REG_MOSAIC = 0x4C;
+let _tfToken = 0;
+const _tfDone = new Set<number>(); // jetons résolus
+
+function _tfRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gSprites?: Map<number, { oamIndex?: number; invisible?: boolean }>;
+  gba?: { bg: (i: number) => { vram: Uint8Array; config: { mosaic: boolean } }; oam: Array<{ tileId: number }>; objVram: Uint8Array };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+/** 1:1 AnimTask_TransformMon (effects_3.c:2250). args[0] = castform-like arg. */
+function AnimTask_TransformMon(task: _E3Task): void {
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const rt = _tfRt();
+  switch (task.data[0]) {
+    case 0: {
+      rt.SetGpuReg?.(_TF_REG_MOSAIC, 0);
+      const bgId = _tfBgRank(atk) === 1 ? 1 : 2;
+      const cfg = rt.gba?.bg(bgId)?.config;
+      if (cfg) cfg.mosaic = true; // SetAnimBgAttribute(bgId, BG_ANIM_MOSAIC, 1)
+      task.data[10] = (itf.getArgs?.() ?? [0])[0] | 0;
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (task.data[2]++ > 1) {
+        task.data[2] = 0;
+        task.data[1]++;
+        const stretch = task.data[1];
+        rt.SetGpuReg?.(_TF_REG_MOSAIC, ((stretch & 0xF) << 4) | (stretch & 0xF));
+        if (stretch === 15) task.data[0]++;
+      }
+      break;
+    case 2: {
+      // 1:1 :2284 HandleSpeciesGfxDataChange + GetBgDataForTransform +
+      // CpuCopy32(pic → animBg.bgTiles) + LoadBgTiles. Async plateforme :
+      // jeton data[14] (les taskIds se recyclent — cf. F77).
+      if ((task.data[14] | 0) === 0) {
+        const token = ++_tfToken;
+        task.data[14] = token;
+        const tgt = itf.getTarget?.() ?? 1;
+        void _tfHandleGfx(atk, tgt, task.data[10] !== 0).then(() => {
+          // recopie du pic fraîchement chargé dans la copie monbg (BG vram) —
+          // 1:1 :2293-2296 (src = gMonSpritesGfxPtr.sprites.ptr[position]).
+          const rank = _tfBgRank(atk);
+          const bgId = rank === 1 ? 1 : 2;
+          const tilesOffsetBytes = bgId === 2 ? 0x1000 : 0;
+          const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+          void co; // position = battler position ; miroir _loadAndCreate (pos & 3)
+          const position = atk & 3;
+          const src = _tfGfxPtr.sprites.ptr[position];
+          const rt2 = _tfRt();
+          const bg = rt2.gba?.bg(bgId);
+          if (src && bg) bg.vram.set(src.subarray(0, 0x800), tilesOffsetBytes);
+          _tfDone.add(token);
+        });
+        return;
+      }
+      if (!_tfDone.has(task.data[14])) return; // load en vol
+      _tfDone.delete(task.data[14]);
+      task.data[0]++;
+      break;
+    }
+    case 3:
+      if (task.data[2]++ > 1) {
+        task.data[2] = 0;
+        task.data[1]--;
+        const stretch = task.data[1];
+        rt.SetGpuReg?.(_TF_REG_MOSAIC, ((stretch & 0xF) << 4) | (stretch & 0xF));
+        if (stretch === 0) task.data[0]++;
+      }
+      break;
+    case 4: {
+      rt.SetGpuReg?.(_TF_REG_MOSAIC, 0);
+      const bgId = _tfBgRank(atk) === 1 ? 1 : 2;
+      const cfg = rt.gba?.bg(bgId)?.config;
+      if (cfg) cfg.mosaic = false;
+      // 1:1 :2350-2356 : côté ADVERSE, si args[0]==0 → ombre du transformSpecies.
+      if ((atk & 1) !== 0 && task.data[10] === 0) {
+        const gfx = (globalThis as Record<string, unknown>).__battleGfxSfxUtil as { SetBattlerShadowSpriteCallback?: (b: number, s: number) => void } | undefined;
+        const spritesData = (globalThis as Record<string, unknown>).__battleSpritesData as { battlerData?: Array<{ transformSpecies?: number }> } | undefined;
+        const ts = spritesData?.battlerData?.[atk]?.transformSpecies ?? 0;
+        gfx?.SetBattlerShadowSpriteCallback?.(atk, ts);
+      }
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+/** 1:1 AnimTask_IsMonInvisible (effects_3.c:2363) : args[7] = invisible. */
+function AnimTask_IsMonInvisible(task: _E3Task): void {
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(atk);
+  const sp = sid !== undefined && sid !== 0xFF ? _tfRt().gSprites?.get(sid) : undefined;
+  const args = itf.getArgs?.() ?? [];
+  args[7] = sp?.invisible ? 1 : 0; // ARG_RET_ID
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 AnimTask_CastformGfxDataChange (effects_3.c:2369) — castform=TRUE :
+ *  no-op net documenté (formes Castform non atteignables, cf. gfx_sfx_util). */
+function AnimTask_CastformGfxDataChange(task: _E3Task): void {
+  const itf = _itf();
+  void _tfHandleGfx(itf.getAttacker?.() ?? 0, itf.getTarget?.() ?? 1, true);
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_e3RegTasks({
+  AnimTask_TransformMon: AnimTask_TransformMon as never,
+  AnimTask_IsMonInvisible: AnimTask_IsMonInvisible as never,
+  AnimTask_CastformGfxDataChange: AnimTask_CastformGfxDataChange as never,
+});

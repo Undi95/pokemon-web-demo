@@ -297,6 +297,24 @@ export async function HandleSpeciesGfxDataChange(battlerAtk: number, battlerDef:
   const pal = await loadGbaPal(`/decomp/em/pokemon/${folder}/normal.pal`);
   LoadPalette(pal, OBJ_PLTT_ID(battlerAtk), 32);
   LoadPalette(pal, (8 + battlerAtk) * 16, 32);
+  // 1:1 :1008-1010 (vague F78) : DmaCopy32(src, OBJ_VRAM0 + tileNum*32,
+  // MON_PIC_SIZE) — le SPRITE du mon affiche le nouveau pic immédiatement
+  // (le cache de tuiles du compositor est purgé chaque frame). Manquait :
+  // le sprite gardait ses vieilles tuiles (Transform ne « prenait » pas).
+  {
+    const rt = getRuntime() as unknown as {
+      gSprites?: Map<number, { oamIndex: number }>;
+      gba?: { oam: Array<{ tileId: number }>; objVram: Uint8Array };
+    } | null;
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    const sid = co?.getBattlerMonSpriteId?.(battlerAtk);
+    const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
+    const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+    const src = gMonSpritesGfxPtr.sprites.ptr[position];
+    if (oam && src && rt?.gba) {
+      rt.gba.objVram.set(src.subarray(0, 0x800), oam.tileId * 32);
+    }
+  }
   // 1:1 :1029-1030 : transformSpecies posé + form reset.
   setTransformSpecies(battlerAtk, targetSpecies);
 }
