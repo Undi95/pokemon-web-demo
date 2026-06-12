@@ -1,18 +1,20 @@
 # CARTE DE COUVERTURE 1:1 GLOBALE — décomp `src/*.c` ↔ notre port
 
-Généré : 2026-06-12T14:20:04.991Z
+Généré : 2026-06-12T15:00:56.366Z
 
 > Signal "couvert" = une citation `1:1 décomp file.c:N` pointe dans la fonction.
 > ⚠️ Prouve la COUVERTURE/traçabilité, **PAS le comportement** (bugs runtime = ROM-diff séparé).
-> Couverture globale (≥1 fonctions/fichier) : **6030/11228 fonctions** (54%) sur **221 fichiers .c**.
-> 33 fichiers 100% · 188 partiels · 0 jamais touchés.
+> Couverture globale (≥1 fonctions/fichier) : **6047/11228 fonctions** (54%) sur **221 fichiers .c**.
+> 35 fichiers 100% · 186 partiels · 0 jamais touchés.
 
-## 🟢 Fichiers 100% couverts (33)
+## 🟢 Fichiers 100% couverts (35)
 
 - `battle_script_commands.c` (287 fn)
 - `battle_ai_script_commands.c` (115 fn)
 - `battle_main.c` (107 fn)
+- `battle_controller_opponent.c` (88 fn)
 - `battle_anim.c` (79 fn)
+- `battle_util.c` (52 fn)
 - `string_util.c` (44 fn)
 - `field_camera.c` (28 fn)
 - `event_data.c` (25 fn)
@@ -58,13 +60,13 @@ Généré : 2026-06-12T14:20:04.991Z
 | `field_player_avatar.c` | 56/177 | 32% | **121** | 72 |
 | `decoration.c` | 15/135 | 11% | **120** | 28 |
 | `field_weather_effect.c` | 7/106 | 7% | **99** | 6 |
-| `battle_controller_player_partner.c` | 17/93 | 18% | **76** | 10 |
 | `easy_chat.c` | 173/248 | 70% | **75** | 110 |
+| `battle_controller_player_partner.c` | 20/93 | 22% | **73** | 10 |
 | `rayquaza_scene.c` | 0/72 | 0% | **72** | 41 |
 | `pokemon.c` | 90/160 | 56% | **70** | 195 |
 | `field_effect_helpers.c` | 12/81 | 15% | **69** | 18 |
-| `battle_controller_wally.c` | 14/82 | 17% | **68** | 5 |
-| `battle_controller_safari.c` | 8/73 | 11% | **65** | 2 |
+| `battle_controller_wally.c` | 15/82 | 18% | **67** | 5 |
+| `battle_controller_safari.c` | 9/73 | 12% | **64** | 2 |
 | `fldeff_misc.c` | 5/62 | 8% | **57** | 29 |
 | `shop.c` | 3/57 | 5% | **54** | 27 |
 | `daycare.c` | 14/67 | 21% | **53** | 5 |
@@ -134,7 +136,6 @@ Généré : 2026-06-12T14:20:04.991Z
 | `braille_puzzles.c` | 5/18 | 28% | **13** | 7 |
 | `fldeff_cut.c` | 4/17 | 24% | **13** | 7 |
 | `mon_markings.c` | 2/15 | 13% | **13** | 10 |
-| `battle_controller_player.c` | 112/124 | 90% | **12** | 93 |
 | `wild_encounter.c` | 23/35 | 66% | **12** | 23 |
 | `battle_anim_ghost.c` | 26/37 | 70% | **11** | 18 |
 | `battle_interface.c` | 42/53 | 79% | **11** | 85 |
@@ -144,7 +145,6 @@ Généré : 2026-06-12T14:20:04.991Z
 | `pokemon_icon.c` | 12/23 | 52% | **11** | 18 |
 | `rtc.c` | 15/26 | 58% | **11** | 30 |
 | `save_failed_screen.c` | 1/12 | 8% | **11** | 11 |
-| `sprite.c` | 91/102 | 89% | **11** | 301 |
 | `walda_phrase.c` | 3/14 | 21% | **11** | 6 |
 | `wireless_communication_status_screen.c` | 1/12 | 8% | **11** | 9 |
 | `battle_anim_water.c` | 38/48 | 79% | **10** | 37 |
@@ -152,6 +152,7 @@ Généré : 2026-06-12T14:20:04.991Z
 | `field_control_avatar.c` | 31/41 | 76% | **10** | 52 |
 | `fldeff_rocksmash.c` | 0/10 | 0% | **10** | 8 |
 | `item.c` | 42/52 | 81% | **10** | 62 |
+| `sprite.c` | 92/102 | 90% | **10** | 301 |
 | `battle_anim_electric.c` | 28/37 | 76% | **9** | 30 |
 | `battle_anim_status_effects.c` | 3/12 | 25% | **9** | 10 |
 | `intro_credits_graphics.c` | 11/20 | 55% | **9** | 30 |
@@ -160,6 +161,7 @@ Généré : 2026-06-12T14:20:04.991Z
 | `multiboot.c` | 0/9 | 0% | **9** | 2 |
 | `roamer.c` | 4/13 | 31% | **9** | 5 |
 | `battle_anim_psychic.c` | 19/27 | 70% | **8** | 37 |
+| `battle_controller_player.c` | 116/124 | 94% | **8** | 94 |
 | `clear_save_data_screen.c` | 1/9 | 11% | **8** | 9 |
 | `confetti_util.c` | 0/8 | 0% | **8** | 2 |
 | `international_string_util.c` | 10/18 | 56% | **8** | 4 |
@@ -167,13 +169,13 @@ Généré : 2026-06-12T14:20:04.991Z
 | `save_location.c` | 2/10 | 20% | **8** | 5 |
 | `wonder_news.c` | 1/9 | 11% | **8** | 3 |
 | `battle_anim_flying.c` | 24/31 | 77% | **7** | 37 |
-| `battle_setup.c` | 95/102 | 93% | **7** | 101 |
 | `diploma.c` | 3/10 | 30% | **7** | 8 |
 | `fldeff_softboiled.c` | 1/8 | 13% | **7** | 9 |
 | `load_save.c` | 14/21 | 67% | **7** | 27 |
 | `title_screen.c` | 13/20 | 65% | **7** | 34 |
 | `battle_anim_dark.c` | 19/25 | 76% | **6** | 29 |
 | `battle_anim_mon_movement.c` | 28/34 | 82% | **6** | 19 |
+| `battle_setup.c` | 96/102 | 94% | **6** | 101 |
 | `field_door.c` | 17/23 | 74% | **6** | 90 |
 | `fldeff_escalator.c` | 0/6 | 0% | **6** | 5 |
 | `fldeff_sweetscent.c` | 0/6 | 0% | **6** | 2 |
@@ -194,7 +196,6 @@ Généré : 2026-06-12T14:20:04.991Z
 | `battle_anim_normal.c` | 32/36 | 89% | **4** | 36 |
 | `battle_bg.c` | 8/12 | 67% | **4** | 32 |
 | `battle_controllers.c` | 64/68 | 94% | **4** | 96 |
-| `battle_controller_opponent.c` | 84/88 | 95% | **4** | 54 |
 | `berry_powder.c` | 10/14 | 71% | **4** | 8 |
 | `blit.c` | 1/5 | 20% | **4** | 4 |
 | `clock.c` | 2/6 | 33% | **4** | 3 |
@@ -215,7 +216,6 @@ Généré : 2026-06-12T14:20:04.991Z
 | `hof_pc.c` | 1/4 | 25% | **3** | 5 |
 | `list_menu.c` | 45/48 | 94% | **3** | 99 |
 | `agb_flash_1m.c` | 0/2 | 0% | **2** | 2 |
-| `battle_util.c` | 50/52 | 96% | **2** | 193 |
 | `braille.c` | 1/3 | 33% | **2** | 3 |
 | `heal_location.c` | 1/3 | 33% | **2** | 3 |
 | `landmark.c` | 0/2 | 0% | **2** | 2 |
@@ -282,10 +282,6 @@ Généré : 2026-06-12T14:20:04.991Z
 ### `agb_flash_1m.c` — 2 manquante(s) (0%)
 - `IdentifyFlash` @ L13-50
 - `WaitForFlashWrite_Common` @ L51-87
-
-### `battle_util.c` — 2 manquante(s) (96%)
-- `MarkAllBattlersForControllerExec` @ L830-845
-- `MarkBattlerReceivedLinkData` @ L854-863
 
 ### `braille.c` — 2 manquante(s) (33%)
 - `FontFunc_Braille` @ L20-197
@@ -383,12 +379,6 @@ Généré : 2026-06-12T14:20:04.991Z
 - `Task_HandleSendLinkBuffersData` @ L775-870
 - `TryReceiveLinkBattleData` @ L871-908
 - `Task_HandleCopyReceivedLinkBuffersData` @ L909-967
-
-### `battle_controller_opponent.c` — 4 manquante(s) (95%)
-- `SwitchIn_ShowSubstitute` @ L459-468
-- `SwitchIn_HandleSoundAndEnd` @ L469-481
-- `SwitchIn_ShowHealthbox` @ L482-499
-- `CompleteOnFinishedBattleAnimation` @ L521-526
 
 ### `berry_powder.c` — 4 manquante(s) (71%)
 - `ApplyNewEncryptionKeyToBerryPowder` @ L138-143
