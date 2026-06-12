@@ -2424,10 +2424,10 @@ function AnimTask_MoonlightEndFade(task: _MlTask): void {
   const d = _mlSlotOf(10195);
   const mask = d !== 0xFF ? ((0x10000 << d) | b) >>> 0 : b;
   _mlBeginFade(mask, 0, 0, 16, _ML_WHITE_MOON);
-  task.func = _MoonlightEndFade_Step;
-  _MoonlightEndFade_Step(task); // 1:1 appel immediat
+  task.func = AnimTask_MoonlightEndFade_Step;
+  AnimTask_MoonlightEndFade_Step(task); // 1:1 appel immediat
 }
-function _MoonlightEndFade_Step(task: _MlTask): void {
+function AnimTask_MoonlightEndFade_Step(task: _MlTask): void {
   const rt = _mlRt();
   switch (task.data[0]) {
     case 0:

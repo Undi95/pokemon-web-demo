@@ -523,8 +523,8 @@
 - [ ] LeafBladeGetPosFactor  @ L3466-3474
 - [x] AnimFlyingParticle_Step @ L3571-3591 — renommé au nom C exact (ex-_FlyingParticle_Step)
 - [ ] AnimWhipHit_WaitEnd  @ L3697-3702
-- [ ] AnimFlickeringPunch  @ L3734-3753
-- [ ] UnusedFlickerAnim  @ L3854-3886
+- [x] AnimFlickeringPunch @ L3734-3753 — DETTE — callback du seul sFlickeringPunchSpriteTemplate, marqué `// Unused` (.c:1205) → inatteignable
+- [x] UnusedFlickerAnim @ L3854-3886 — DETTE — `static void UNUSED` (.c:3854)
 - [x] AnimBubbleBurst_Step @ L4174-4186 — renommé au nom C exact (ex-_BubbleBurst_Step)
 - [x] AnimSleepLetterZ_Step @ L4209-4218 — renommé au nom C exact (ex-_SleepLetterZ_Step)
 - [ ] AnimTipMon  @ L4505-4510
@@ -533,7 +533,7 @@
 - [ ] AnimTask_SkullBashPositionReset  @ L4679-4695
 - [ ] AnimTask_HideBattlersHealthbox  @ L4920-4936
 - [ ] AnimTask_ShowBattlersHealthbox  @ L4937-4945
-- [ ] AnimTask_MoonlightEndFade_Step  @ L5030-5107
+- [x] AnimTask_MoonlightEndFade_Step @ L5030-5107 — renommé au nom C exact (ex-_MoonlightEndFade_Step)
 
 ## battle_anim_effects_2.c — 97/121 fonctions couvertes (80%) · cite:55 + symbole:42 · 97 citations
 - [ ] AnimCirclingFinger  @ L1270-1288
