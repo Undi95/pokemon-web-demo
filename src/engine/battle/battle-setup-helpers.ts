@@ -47,7 +47,7 @@ import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBa
 // Imports RUNTIME (usage en fonction -> pas de TDZ meme si cycle ESM ; battle-decomp-loop
 // n'importe pas ce module en retour, il passe par un wire globalThis).
 import { createPokemonInstance } from '../pokemon/pokemon';
-import { reverseDecompConstant } from '../system/decomp-constants';
+import { reverseDecompConstant, resolveDecompConstant } from '../system/decomp-constants';
 import { bootDecompBattleLoop } from './battle-decomp-loop';
 // Fin de combat dresseur (lose_text) : expand placeholders + label->bytes.
 import { StringExpandPlaceholders } from '../../game/string_util';
@@ -461,6 +461,57 @@ export function GetWildBattleTransition(): number {
   return (enemyLevel < playerLevel) ? row[0] : row[1];
 }
 
+/** 1:1 décomp `sBattleTransitionTable_Trainer[][2]` (battle_setup.c:121-127). */
+const sBattleTransitionTable_Trainer: ReadonlyArray<readonly [number, number]> = [
+  /* NORMAL */ [4 /* B_TRANSITION_POKEBALLS_TRAIL */, 10 /* B_TRANSITION_ANGLED_WIPES */],
+  /* CAVE   */ [2 /* B_TRANSITION_SHUFFLE */, 3 /* B_TRANSITION_BIG_POKEBALL */],
+  /* FLASH  */ [0 /* B_TRANSITION_BLUR */, 6 /* B_TRANSITION_GRID_SQUARES */],
+  /* WATER  */ [1 /* B_TRANSITION_SWIRL */, 7 /* B_TRANSITION_RIPPLE */],
+];
+
+/** 1:1 décomp `GetSumOfEnemyPartyLevel(opponentId, numMons)` (battle_setup.c:740-788,
+ *  branche dresseur normal — frontier omis). Lit les levels de gTrainers[id].party
+ *  (les 4 unions partagent le champ level). */
+export function GetSumOfEnemyPartyLevel(opponentId: number, numMons: number): number {
+  const trainers = (globalThis as { __gTrainers?: Record<number, { party?: Record<string, Array<{ level?: number }>> }> }).__gTrainers;
+  const t = trainers?.[opponentId];
+  if (!t?.party) return 0;
+  const arr = t.party.NoItemDefaultMoves ?? t.party.NoItemCustomMoves ?? t.party.ItemDefaultMoves ?? t.party.ItemCustomMoves ?? [];
+  let sum = 0;
+  for (let i = 0; i < Math.min(numMons, arr.length); i++) sum += arr[i]?.level ?? 0;
+  return sum;
+}
+
+/** 1:1 décomp `GetTrainerBattleTransition()` (battle_setup.c:812-862).
+ *  Branches SECRET_BASE / Elite Four / Champion / Magma / Aqua incluses
+ *  (classes résolues par constante — inatteignables en démo, exactes quand même). */
+export function GetTrainerBattleTransition(): number {
+  const g = globalThis as {
+    __battleSetup?: { opponentA?: number };
+    __gTrainers?: Record<number, { trainerClass?: number; doubleBattle?: boolean }>;
+  };
+  const opponentA = g.__battleSetup?.opponentA ?? 0;
+  const t = g.__gTrainers?.[opponentA];
+  const cls = t?.trainerClass ?? -1;
+  const C = (name: string): number => (resolveDecompConstant(name) as number | undefined) ?? -2;
+  if (cls === C('TRAINER_CLASS_ELITE_FOUR')) {
+    if (opponentA === C('TRAINER_SIDNEY')) return 13;   // B_TRANSITION_SIDNEY
+    if (opponentA === C('TRAINER_PHOEBE')) return 14;   // B_TRANSITION_PHOEBE
+    if (opponentA === C('TRAINER_GLACIA')) return 15;   // B_TRANSITION_GLACIA
+    if (opponentA === C('TRAINER_DRAKE')) return 16;    // B_TRANSITION_DRAKE
+    return 17;                                          // B_TRANSITION_CHAMPION
+  }
+  if (cls === C('TRAINER_CLASS_CHAMPION')) return 17;
+  if (cls === C('TRAINER_CLASS_TEAM_MAGMA') || cls === C('TRAINER_CLASS_MAGMA_LEADER') || cls === C('TRAINER_CLASS_MAGMA_ADMIN')) return 12; // B_TRANSITION_MAGMA
+  if (cls === C('TRAINER_CLASS_TEAM_AQUA') || cls === C('TRAINER_CLASS_AQUA_LEADER') || cls === C('TRAINER_CLASS_AQUA_ADMIN')) return 11;   // B_TRANSITION_AQUA
+  const minPartyCount = t?.doubleBattle ? 2 : 1;
+  const transitionType = GetBattleTransitionTypeByMap();
+  const enemyLevel = GetSumOfEnemyPartyLevel(opponentA, minPartyCount);
+  const playerLevel = GetSumOfPlayerPartyLevel(minPartyCount);
+  const row = sBattleTransitionTable_Trainer[transitionType] ?? sBattleTransitionTable_Trainer[0];
+  return (enemyLevel < playerLevel) ? row[0] : row[1];
+}
+
 // ─── Devtools expose ───────────────────────────────────────────────────────
 
 (globalThis as Record<string, unknown>).__battleSetupHelpers = {
@@ -472,6 +523,7 @@ export function GetWildBattleTransition(): number {
   BATTLE_ENVIRONMENT_BUILDING, BATTLE_ENVIRONMENT_PLAIN,
   // Sélection de transition (Phase 4) — exposé pour vérif harness déterministe.
   GetWildBattleTransition, GetBattleTransitionTypeByMap, GetSumOfPlayerPartyLevel,
+  GetTrainerBattleTransition, GetSumOfEnemyPartyLevel,
 };
 
 void MAP_TYPE_UNKNOWN;

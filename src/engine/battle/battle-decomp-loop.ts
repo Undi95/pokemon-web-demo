@@ -26,6 +26,8 @@ import { FadeScreen, FADE_FROM_BLACK } from '../system/fade-screen';
 import { gBattleControllerExecFlags, gBattlersCount, getBattlerControllerFunc, gBattleTypeFlags } from './state';
 import { getRecentOpcodes } from './script-interpreter';
 import { BATTLE_TYPE_TRAINER, BATTLE_TYPE_LINK } from './constants';
+// (Le miroir src/game/battle_transition.ts est chargé par la scène — import ici
+//  = cycle ESM TDZ au boot froid, BG_SCREEN_SIZE before initialization.)
 import { MUS_VS_WILD, MUS_VS_TRAINER } from '../decomp-data/include/constants/songs-data';
 import {
   startBattleIntroFlash, tickBattleIntroFlash,
@@ -154,6 +156,18 @@ function _makeBattleStartTransitionCB2(cb2InitBattle: () => void, transition: nu
   if (transition === B_TRANSITION.B_TRANSITION_WHITE_BARS_FADE) {
     startTransition = startBattleTransitionWhiteBarsFade;
     tickTransition = tickBattleTransitionWhiteBarsFade;
+  } else if (transition === B_TRANSITION.B_TRANSITION_POKEBALLS_TRAIL) {
+    // 1:1 miroir src/game/battle_transition.ts (la transition dresseur normale).
+    const m = (globalThis as Record<string, unknown>).__battleTransitionMirror as {
+      startBattleTransitionPokeballsTrail?: () => void;
+      tickBattleTransitionPokeballsTrail?: () => boolean;
+    } | undefined;
+    if (m?.startBattleTransitionPokeballsTrail && m.tickBattleTransitionPokeballsTrail) {
+      startTransition = m.startBattleTransitionPokeballsTrail;
+      tickTransition = m.tickBattleTransitionPokeballsTrail;
+    } else {
+      console.warn('[decomp-loop] POKEBALLS_TRAIL : miroir non chargé → fallback SLICE');
+    }
   } else if (transition !== B_TRANSITION.B_TRANSITION_SLICE) {
     console.warn(`[decomp-loop] transition=${transition} non portée → fallback SLICE (visuel A/B à porter)`);
   }
@@ -522,11 +536,17 @@ export function bootDecompBattleLoop(returnToOverworld = false): void {
         console.warn('[decomp-loop] retour OW : _restoreOverworldFromMenu non exposé — combat sans retour');
       }
     });
-    // 1:1 décomp `BattleSetup_StartWildBattle` → `CreateBattleStartTask(GetWildBattleTransition(), 0)`
-    // (battle_setup.c:414) : la transition d'entrée tourne AVANT CB2_InitBattle. Le type est
-    // SÉLECTIONNÉ selon zone × niveau (1:1) ; l'exécuteur fait un fallback SLICE pour les
-    // visuels pas encore portés. Le harness (returnToOverworld=false) boote CB2_InitBattle direct.
-    const transition = _GetWildBattleTransition();
+    // 1:1 décomp : wild → CreateBattleStartTask(GetWildBattleTransition()) (battle_setup.c:414) ;
+    // dresseur → CreateBattleStartTask(GetTrainerBattleTransition()) (DoTrainerBattle :461).
+    // La transition d'entrée tourne AVANT CB2_InitBattle ; fallback SLICE pour les
+    // visuels pas encore portés. Le harness (returnToOverworld=false) boote direct.
+    const isTrainer = (gBattleTypeFlags & BATTLE_TYPE_TRAINER) !== 0;
+    const helpers = (globalThis as Record<string, unknown>).__battleSetupHelpers as {
+      GetTrainerBattleTransition?: () => number;
+    } | undefined;
+    const transition = (isTrainer && helpers?.GetTrainerBattleTransition)
+      ? helpers.GetTrainerBattleTransition()
+      : _GetWildBattleTransition();
     getRuntime()?.SetMainCallback2?.(_makeBattleStartTransitionCB2(cb, transition) as never);
     return;
   }
