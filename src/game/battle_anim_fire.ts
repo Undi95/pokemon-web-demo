@@ -783,3 +783,98 @@ function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
   }
 }
 _fRegT({ AnimTask_EruptionLaunchRocks: AnimTask_EruptionLaunchRocks as never });
+
+// --- VAGUE F59 : MoveHeatWaveTargets + BlendBackground (fire.c:1227-1340) ---
+// HeatWave : la cible derive (+-2/f x16) puis tremble 96f puis revient.
+// BlendBackground : masque couleur sur le fond (BlendPalette palettes BG 1-3).
+type _HwTask = { taskId: number; data: number[]; func?: unknown };
+function _hwItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _hwTargetSpriteId(): number {
+  const b = _hwItf().getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+
+/** 1:1 AnimTask_MoveHeatWaveTargets (fire.c:1227, single : 1 cible). */
+function AnimTask_MoveHeatWaveTargets(task: _HwTask): void {
+  const atk = _hwItf().getAttacker?.() ?? 0;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[9] = 0;
+  task.data[10] = 0;
+  task.data[12] = (atk & 1) === 0 ? 1 : -1;
+  task.data[13] = 1; // single : pas de DEF_PARTNER visible
+  task.data[14] = _hwTargetSpriteId();
+  if (task.data[14] === 0xFF) { _hwItf().DestroyAnimVisualTask?.(task.taskId); return; }
+  task.func = _MoveHeatWaveTargets_Step;
+}
+function _MoveHeatWaveTargets_Step(task: _HwTask): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const applyX2 = (): void => {
+    for (task.data[3] = 0; task.data[3] < task.data[13]; task.data[3]++) {
+      const sp = rt?.gSprites?.get(task.data[task.data[3] + 14]);
+      if (sp) sp.x2 = task.data[10] + task.data[11];
+    }
+  };
+  switch (task.data[0]) {
+    case 0:
+      task.data[10] += task.data[12] * 2;
+      if (++task.data[1] >= 2) {
+        task.data[1] = 0;
+        task.data[2]++;
+        task.data[11] = (task.data[2] & 1) ? 2 : -2;
+      }
+      applyX2();
+      if (++task.data[9] === 16) {
+        task.data[9] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 1:
+      if (++task.data[1] >= 5) {
+        task.data[1] = 0;
+        task.data[2]++;
+        task.data[11] = (task.data[2] & 1) ? 2 : -2;
+      }
+      applyX2();
+      if (++task.data[9] === 96) {
+        task.data[9] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      task.data[10] -= task.data[12] * 2;
+      if (++task.data[1] >= 2) {
+        task.data[1] = 0;
+        task.data[2]++;
+        task.data[11] = (task.data[2] & 1) ? 2 : -2;
+      }
+      applyX2();
+      if (++task.data[9] === 16) task.data[0]++;
+      break;
+    case 3:
+      for (task.data[3] = 0; task.data[3] < task.data[13]; task.data[3]++) {
+        const sp = rt?.gSprites?.get(task.data[task.data[3] + 14]);
+        if (sp) sp.x2 = 0;
+      }
+      _hwItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+
+/** 1:1 AnimTask_BlendBackground (fire.c:1328) : BlendPalette de LA palette
+ *  du BG anim 1 (GetBattleAnimBg1Data.paletteId = 8) — args = [opacity, couleur]. */
+function AnimTask_BlendBackground(task: _HwTask): void {
+  const itf = _hwItf();
+  const args = itf.getArgs?.() ?? [8, 0];
+  _fBlendPal(8 * 16, 16, args[0] | 0, args[1] | 0); // BG_PLTT_ID(animBg.paletteId=8)
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+import { BlendPalette as _fBlendPal } from '../engine/system/decomp-globals';
+_fRegT({
+  AnimTask_MoveHeatWaveTargets: AnimTask_MoveHeatWaveTargets as never,
+  AnimTask_BlendBackground: AnimTask_BlendBackground as never,
+});

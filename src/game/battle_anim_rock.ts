@@ -337,3 +337,137 @@ _stRegT({
   AnimTask_MoveSeismicTossBg: AnimTask_MoveSeismicTossBg as never,
   AnimTask_SeismicTossBgAccelerateDownAtEnd: AnimTask_SeismicTossBgAccelerateDownAtEnd as never,
 });
+
+// --- VAGUE F60 : AnimTask_LoadSandstormBackground (rock.c:396-492) ----------
+// Le fond de sable defilant (BG1 anim) : charge sandstorm_brew + palette
+// FlyingDirt (slot BG 8), scroll -6/+6 X et -1 Y par frame, fondu 0..7,
+// 101f plein, fondu inverse, demonte. tBlendTimer=d10, tBlend=d11, tState=d12.
+import {
+  GetBattleAnimBg1Data as _ssbBgData,
+  AnimLoadCompressedBgGfx as _ssbLoadGfx,
+  AnimLoadCompressedBgTilemap as _ssbLoadMap,
+  ClearBattleAnimBg as _ssbClearBg,
+} from '../engine/battle/battle-anim-interpreter';
+
+type _SsbTask = { taskId: number; data: number[]; func?: unknown };
+function _ssbItf(): { getArgs?: () => number[]; getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _ssbRt(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } };
+  gPlttBufferFaded?: { set?: (i: number, v: number) => void };
+  gPlttBufferUnfaded?: { set?: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _ssbSetBg1XY(x: number | null, y: number | null): void {
+  const g = globalThis as Record<string, unknown>;
+  if (x !== null) g.gBattle_BG1_X = x;
+  if (y !== null) g.gBattle_BG1_Y = y;
+}
+function _ssbBg1X(): number { return ((globalThis as Record<string, unknown>).gBattle_BG1_X as number) | 0; }
+function _ssbBg1Y(): number { return ((globalThis as Record<string, unknown>).gBattle_BG1_Y as number) | 0; }
+let _ssbPalFetching = false;
+function _ssbLoadFlyingDirtPal(paletteId: number): void {
+  // gBattleAnimSpritePal_FlyingDirt = la palette du tag sprite FLYING_DIRT
+  // (manifest sprites) -> slot BG paletteId (1:1 LoadCompressedPalette).
+  const cache = (globalThis as Record<string, unknown>).__assetCache as Map<string, unknown> | undefined;
+  const cached = cache?.get('gAnimPalTag_10261');
+  const apply = (p16: Uint16Array): void => {
+    const rt = _ssbRt();
+    for (let k = 0; k < 16 && k < p16.length; k++) {
+      rt.gPlttBufferUnfaded?.set?.(paletteId * 16 + k, p16[k]);
+      rt.gPlttBufferFaded?.set?.(paletteId * 16 + k, p16[k]);
+    }
+  };
+  if (cached instanceof Uint16Array) { apply(cached); return; }
+  if (_ssbPalFetching) return;
+  _ssbPalFetching = true;
+  void fetch('/decomp/em/battle_anims/sprites/flying_dirt.gbapal').then((r) => r.arrayBuffer()).then((b) => {
+    const p = new Uint16Array(b);
+    cache?.set('gAnimPalTag_10261', p);
+    apply(p);
+    _ssbPalFetching = false;
+  }).catch(() => { _ssbPalFetching = false; });
+}
+
+/** 1:1 AnimTask_LoadSandstormBackground (rock.c:396). */
+function AnimTask_LoadSandstormBackground(task: _SsbTask): void {
+  const itf = _ssbItf();
+  const args = itf.getArgs?.() ?? [0];
+  let var0 = 0;
+  const rt = _ssbRt();
+  rt.SetGpuReg?.(0x50, 0x3F42); // TGT1_BG1 | TGT2_ALL | EFFECT_BLEND
+  rt.SetGpuReg?.(0x52, 0 | (16 << 8));
+  const bg1 = rt.gba?.bg(1)?.config;
+  if (bg1) {
+    bg1.priority = 1;       // SetAnimBgAttribute(1, PRIORITY, 1)
+    bg1.screenSize = 0;     // SCREEN_SIZE 0
+    bg1.charBaseIndex = 1;  // CHAR_BASE_BLOCK 1 (non-contest)
+  }
+  _ssbSetBg1XY(0, 0);
+  const animBg = _ssbBgData();
+  _ssbLoadGfx(animBg.bgId, 'gBattleAnimBgImage_Sandstorm', animBg.tilesOffset);
+  _ssbLoadMap(animBg.bgId, 'gBattleAnimBgTilemap_Sandstorm');
+  _ssbLoadFlyingDirtPal(animBg.paletteId);
+  if (args[0] && (((itf.getAttacker?.() ?? 0) & 1) !== 0)) var0 = 1;
+  task.data[0] = var0;
+  task.data[10] = 0;
+  task.data[11] = 0;
+  task.data[12] = 0;
+  task.func = _LoadSandstormBackground_Step;
+}
+function _LoadSandstormBackground_Step(task: _SsbTask): void {
+  const rt = _ssbRt();
+  if (task.data[0] === 0) _ssbSetBg1XY(_ssbBg1X() - 6, null);
+  else _ssbSetBg1XY(_ssbBg1X() + 6, null);
+  _ssbSetBg1XY(null, _ssbBg1Y() - 1);
+  switch (task.data[12]) {
+    case 0:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11]++;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 7) {
+          task.data[12]++;
+          task.data[11] = 0; // tFullAlphaTimer (meme champ, 1:1)
+        }
+      }
+      break;
+    case 1:
+      if (++task.data[11] === 101) {
+        task.data[11] = 7; // tBlend repositionne (1:1)
+        task.data[12]++;
+      }
+      break;
+    case 2:
+      if (++task.data[10] === 4) {
+        task.data[10] = 0;
+        task.data[11]--;
+        rt.SetGpuReg?.(0x52, (task.data[11] & 0xFF) | ((16 - task.data[11]) << 8));
+        if (task.data[11] === 0) {
+          task.data[12]++;
+          task.data[11] = 0;
+        }
+      }
+      break;
+    case 3: {
+      const animBg = _ssbBgData();
+      _ssbClearBg(animBg.bgId);
+      task.data[12]++;
+      break;
+    }
+    case 4: {
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) bg1.charBaseIndex = 0; // CHAR_BASE_BLOCK 0 (non-contest)
+      _ssbSetBg1XY(0, 0);
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      if (bg1) bg1.priority = 1;
+      _ssbItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+_stRegT({ AnimTask_LoadSandstormBackground: AnimTask_LoadSandstormBackground as never });
