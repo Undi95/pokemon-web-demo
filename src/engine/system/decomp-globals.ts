@@ -851,21 +851,62 @@ export function PlayBGM(songNum: number): void {
 export function setDisableMusic(v: boolean): void { _gDisableMusic = v; }
 export function getDisableMusic(): boolean { return _gDisableMusic; }
 
-/** 1:1 décomp `PlayFanfare(songNum)` (sound.c) — joue un fanfare court (level
- *  up, item obtained, etc.). Décomp utilise un slot dédié `gMPlayInfo_BGM` mais
- *  avec auto-fade BGM pendant le fanfare puis resume. Pour MVP : juste m4a play
- *  sur le slot bgm (= override BGM, comme le décomp final fait).
+/** Jeton anti-chevauchement des fanfares : seule la DERNIÈRE fanfare a le droit
+ *  de reprendre le BGM (1:1 sFanfareCounter écrasé par la fanfare suivante). */
+let _fanfareGen = 0;
+
+/** 1:1 décomp `PlayFanfare(songNum)` (sound.c:217 → PlayFanfareByFanfareNum:171) :
+ *    m4aMPlayStop(&gMPlayInfo_BGM);   // PAUSE le player BGM (position conservée)
+ *    m4aSongNumStart(fanfare);        // la fanfare joue sur SON player
+ *    … Task_Fanfare (fin du compteur sFanfares[].duration) :
+ *    m4aMPlayContinue(&gMPlayInfo_BGM);  // REPREND le BGM où il en était
  *
- *  E4 fix (DEMO-AUDIT-FINDINGS) : mark le slot fanfare actif pour que
- *  IsFanfareTaskInactive() retourne false pendant ~3 sec (= durée moyenne
- *  d'un fanfare court : MUS_OBTAIN_ITEM, MUS_LEVEL_UP, MUS_FANFA1, etc.).
- *  Sans ça waitfanfare opcode ne bloquait pas → tempo cassé pour
- *  "PLAYER reçoit STR_VAR_1!" message. */
+ *  Notre port : pauseSong('bgm') + fanfare sur le slot DÉDIÉ 'fanfare' +
+ *  resumeSong('bgm') à la durée réelle du .mid. (L'ancien code jouait la
+ *  fanfare SUR le slot bgm = écrasait la BGM (fanfare de victoire incluse)
+ *  sans jamais la reprendre — bug user 2026-06-12 « le SE de la barre d'exp
+ *  ne remet pas le BGM ».)
+ *
+ *  `_markAudioSlotActive('fanfare', …)` garde IsFanfareTaskInactive()/WaitFanfare
+ *  exacts (l'opcode waitfanfare bloque pendant la fanfare). */
 export function PlayFanfare(songNum: number): void {
-  m4aSongNumStart(songNum);
-  // Estimation ~3 sec pour les fanfares standard. À raffiner avec real
-  // duration via song config (= cf. PlaySE pattern qui lookup durSec).
+  const name = SONG_ID_TO_NAME[songNum];
+  if (!name) {
+    console.warn(`[PlayFanfare] song ${songNum} not mapped`);
+    return;
+  }
+  const gen = ++_fanfareGen;
+  // 1:1 m4aMPlayStop(&gMPlayInfo_BGM) — pause, position conservée.
+  _staticPauseSong('bgm');
+  // Provisoire (raffiné par la durée réelle du .mid une fois chargé).
   _markAudioSlotActive('fanfare', 3000);
+  void (async () => {
+    const resume = (): void => { if (gen === _fanfareGen) _staticResumeSong('bgm'); };
+    try {
+      await m4aPrime();
+      const vgName = _songVoicegroups![name];
+      const voicegroup = vgName ? _vgLookup!(vgName) : null;
+      if (!voicegroup) {
+        console.warn(`[PlayFanfare] voicegroup KO pour ${name}`);
+        resume();
+        return;
+      }
+      const midi = await _staticLoadMidi(`/decomp/em/music/${name}.mid`);
+      if (gen !== _fanfareGen) return;  // une autre fanfare a pris la main
+      const cfg = getSongConfig(name);
+      if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
+      const durMs = Math.max(500, ((midi as { duration?: number }).duration ?? 2.5) * 1000);
+      _markAudioSlotActive('fanfare', durMs);
+      await (_staticPlaySong as (m: unknown, vg: unknown, lookup: VgLookupFn, loop: boolean, slot: string, volume: number | null) => Promise<void>)(
+        midi, voicegroup, _vgLookup!, false, 'fanfare', cfg?.volume ?? null,
+      );
+      // 1:1 Task_Fanfare : à la fin de la fanfare → m4aMPlayContinue(BGM).
+      setTimeout(resume, durMs);
+    } catch (e) {
+      console.warn('[PlayFanfare] KO', e);
+      resume();
+    }
+  })();
 }
 
 /** 1:1 décomp `PlayFanfareByFanfareNum` — alias avec id différent (= identique). */

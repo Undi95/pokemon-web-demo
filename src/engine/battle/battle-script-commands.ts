@@ -11640,11 +11640,11 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
               && gBattleMons[0].hp !== 0
               && !gBattleStruct.wildVictorySong) {
-            // Fix user 2026-06-11 « pas de BGM victoire » : l ancienne surface
-            // __audioEngine n existe pas -> no-op silencieux. Pattern VALIDE :
-            // __m4aSongNumStart (l infra BGM reelle). MUS_VICTORY_WILD = 414.
+            // 1:1 songs.h:284 : MUS_VICTORY_WILD = 353 (mus_victory_wild).
+            // (Bug user 2026-06-12 « BGM de victoire mauvais » : on jouait 414 =
+            // MUS_INTRO, la musique de l'intro du jeu, avec un commentaire menteur.)
             const m4a = (globalThis as Record<string, unknown>).__m4aSongNumStart as ((id: number, loop?: boolean) => void) | undefined;
-            m4a?.(414 /* MUS_VICTORY_WILD */, true);
+            m4a?.(353 /* MUS_VICTORY_WILD, songs.h:284 */, true);
             gBattleStruct.wildVictorySong = gBattleStruct.wildVictorySong + 1;
           }
 

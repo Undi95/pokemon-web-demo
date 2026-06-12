@@ -31,7 +31,9 @@ import { getAudioContext, getMasterGain } from './audio-context';
 import { songHasNoiseTrack, scheduleNoiseSE, stopNoiseSE } from './se-noise-engine';
 import { stopPrerenderedSE } from './se-noise-prerendered';
 
-export type SlotKind = 'bgm' | 'se1' | 'se2';
+// 'fanfare' = player séparé des fanfares (1:1 sound.c : PlayFanfareByFanfareNum
+// PAUSE le player BGM, la fanfare joue à part, Task_Fanfare REPREND le BGM).
+export type SlotKind = 'bgm' | 'se1' | 'se2' | 'fanfare';
 
 const SF2_URL = '/audio/emerald.sf2';
 const WORKLET_URL = '/spessasynth_processor.min.js';
@@ -309,10 +311,13 @@ export function stopSong(slot: SlotKind = 'bgm'): void {
   try {
     state.synth.stopAll(true);
   } catch { /* ignore */ }
-  // Stop les noise SE engine nodes actifs sur ce slot.
-  stopNoiseSE(slot);
-  // Stop les SE pré-rendus actifs sur ce slot.
-  stopPrerenderedSE(slot);
+  // Stop les noise SE engine nodes actifs sur ce slot. (Les modules SE-noise ne
+  // connaissent que bgm/se1/se2 — le slot 'fanfare' ne joue jamais de noise.)
+  if (slot !== 'fanfare') {
+    stopNoiseSE(slot);
+    // Stop les SE pré-rendus actifs sur ce slot.
+    stopPrerenderedSE(slot);
+  }
   // Stop les LFSR sources legacy actives sur ce slot via env.gain → 0 immédiat.
   const lfsrs = _slotLfsrSources[slot];
   if (lfsrs && lfsrs.length > 0) {
@@ -354,11 +359,12 @@ export function isPaused(slot: SlotKind = 'bgm'): boolean {
   return state.sequencer.paused;
 }
 
-/** Stop TOUS les slots (BGM + SE1 + SE2). 1:1 décomp `m4aMPlayAllStop()`. */
+/** Stop TOUS les slots (BGM + SE1 + SE2 + fanfare). 1:1 décomp `m4aMPlayAllStop()`. */
 export function stopAllSongs(): void {
   stopSong('bgm');
   stopSong('se1');
   stopSong('se2');
+  stopSong('fanfare');
 }
 
 /** 1:1 décomp `m4aMPlayFadeOut(&gMPlayInfo_BGM, speed)` (cf src/m4a.c:692

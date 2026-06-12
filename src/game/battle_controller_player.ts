@@ -118,7 +118,7 @@ import {
 import { GET_BATTLER_SIDE as _PS_SIDE, B_SIDE_PLAYER as _PS_B_SIDE_PLAYER } from '../engine/battle/constants';
 import { getExpForLevel } from '../engine/battle/data/experience-tables';
 import { getSpeciesGrowthRate } from '../engine/battle/data/species-runtime';
-import { LoadPalette, BG_PLTT_ID, getRuntime, SpriteCallbackDummy } from '../engine/system/decomp-globals';
+import { LoadPalette, BG_PLTT_ID, getRuntime, SpriteCallbackDummy, PlayFanfare } from '../engine/system/decomp-globals';
 import { reverseDecompConstant } from '../engine/system/decomp-constants';
 // Helper partagé de création de sprite de battler (gère back=joueur / front=ennemi).
 // opponent.ts n'importe PAS player.ts → pas de cycle ESM.
@@ -2187,16 +2187,24 @@ function PlayerHandlePlaySE(): void {
   PlayerBufferExecCompleted();
 }
 
-/** 1:1 décomp `PlayerHandlePlayFanfareOrBGM()`. */
-/** 1:1 décomp PlayerHandlePlayFanfareOrBGM : bufferA[3] -> PlayBGM(loop),
- *  sinon PlayFanfare (one-shot). Fix user 2026-06-11 « pas de BGM victoire ».
- *  Infra __m4aSongNumStart validée (pattern BGM/SE existant). */
+/** 1:1 décomp `PlayerHandlePlayFanfareOrBGM()` (battle_controller_player.c:2882) :
+ *  bufferA[3] → BattleStopLowHpSound + PlayBGM(songId) ; SINON → PlayFanfare(songId)
+ *  (one-shot qui PAUSE le BGM et le REPREND à la fin — sound.c). L'ancien code
+ *  jouait la fanfare via m4aSongNumStart = SUR le slot BGM → écrasait la fanfare
+ *  de victoire sans jamais la reprendre (bug user 2026-06-12 « le SE de la barre
+ *  d'exp ne remet pas le BGM » = la fanfare MUS_LEVEL_UP tuait MUS_VICTORY_WILD). */
 function PlayerHandlePlayFanfareOrBGM(): void {
   const buf = gBattleBufferA[gActiveBattler];
   const songId = buf[1] | (buf[2] << 8);
   const isBGM = buf[3] !== 0;
-  const m4a = (globalThis as Record<string, unknown>).__m4aSongNumStart as ((id: number, loop?: boolean) => void) | undefined;
-  if (m4a && songId) m4a(songId, isBGM);
+  if (songId) {
+    if (isBGM) {
+      const m4a = (globalThis as Record<string, unknown>).__m4aSongNumStart as ((id: number, loop?: boolean) => void) | undefined;
+      m4a?.(songId, true);
+    } else {
+      PlayFanfare(songId);
+    }
+  }
   PlayerBufferExecCompleted();
 }
 
