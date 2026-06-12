@@ -446,10 +446,18 @@ export function CB2_EndTrainerBattle(): void {
 
 // ─── Speeches (battle_setup.c:1378-1438 + :1496-1540) ───────────────────────
 
-/** 1:1 décomp `GetIntroSpeechOfApproachingTrainer()` — hors trainer_see (=0) :
- *  speech A. (B = 2 approchants, dette trainer_see.) */
-function GetIntroSpeechOfApproachingTrainer(): string | null {
-  return gApproachingTrainerId === 0 ? sTrainerAIntroSpeech : sTrainerBIntroSpeech;
+/** 1:1 décomp `ReturnEmptyStringIfNull(string)` (battle_setup.c:1501-1508) :
+ *  NULL → gText_EmptyString2 (le caller affiche une msgbox vide, pas de skip). */
+function ReturnEmptyStringIfNull(label: string | null): string {
+  return label === null ? 'gText_EmptyString2' : label;
+}
+
+/** 1:1 décomp `GetIntroSpeechOfApproachingTrainer()` (battle_setup.c:1509-1515) —
+ *  hors trainer_see (=0) : speech A. (B = 2 approchants, dette trainer_see.) */
+function GetIntroSpeechOfApproachingTrainer(): string {
+  return gApproachingTrainerId === 0
+    ? ReturnEmptyStringIfNull(sTrainerAIntroSpeech)
+    : ReturnEmptyStringIfNull(sTrainerBIntroSpeech);
 }
 
 /** 1:1 décomp `GetTrainerCantBattleSpeech()` (battle_setup.c:1536 zone). */

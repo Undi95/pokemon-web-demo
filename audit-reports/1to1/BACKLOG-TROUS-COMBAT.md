@@ -58,34 +58,34 @@
 - [x] HasTrainerBeenFought (T-A 4491dad2) @ L1257-1261
 - [x] SetTrainerFlag (T-A 4491dad2) @ L1262-1266
 - [x] ClearTrainerFlag (T-A 4491dad2) @ L1267-1271
-- [ ] CB2_EndRematchBattle  @ L1351-1369
+- [x] CB2_EndRematchBattle (T-B 9e6fc16f) @ L1351-1369
 - [x] BattleSetup_GetScriptAddrAfterBattle (T-A 4491dad2) @ L1404-1411
 - [x] BattleSetup_GetTrainerPostBattleScript (T-A 4491dad2) @ L1412-1434
-- [ ] ReturnEmptyStringIfNull  @ L1501-1508
+- [x] ReturnEmptyStringIfNull (T-B 9e6fc16f) @ L1501-1508
 - [x] GetTrainerWonSpeech (T-A 4491dad2) @ L1536-1540
-- [ ] FirstBattleTrainerIdToRematchTableId  @ L1546-1558
-- [ ] TrainerIdToRematchTableId  @ L1559-1577
-- [ ] IsRematchForbidden  @ L1578-1587
-- [ ] SetRematchIdForTrainer  @ L1588-1604
-- [ ] UpdateRandomTrainerRematches  @ L1605-1630
-- [ ] UpdateRematchIfDefeated  @ L1631-1636
-- [ ] DoesSomeoneWantRematchIn_  @ L1637-1649
-- [ ] IsRematchTrainerIn_  @ L1650-1662
-- [ ] IsTrainerReadyForRematch_  @ L1677-1690
-- [ ] GetRematchTrainerIdFromTable  @ L1691-1711
-- [ ] GetLastBeatenRematchTrainerIdFromTable  @ L1712-1732
-- [ ] ClearTrainerWantRematchState  @ L1733-1740
-- [ ] GetTrainerMatchCallFlag  @ L1741-1753
-- [ ] RegisterTrainerInMatchCall  @ L1754-1763
-- [ ] HasAtLeastFiveBadges  @ L1776-1793
-- [ ] IsRematchStepCounterMaxed  @ L1805-1812
-- [ ] TryUpdateRandomTrainerRematches  @ L1813-1818
-- [ ] DoesSomeoneWantRematchIn  @ L1819-1823
-- [ ] IsRematchTrainerIn  @ L1824-1828
-- [ ] GetRematchTrainerId  @ L1829-1833
-- [ ] GetLastBeatenRematchTrainerId  @ L1834-1838
-- [ ] HandleRematchVarsOnBattleEnd  @ L1852-1857
-- [ ] CountBattledRematchTeams  @ L1873-1890
+- [x] FirstBattleTrainerIdToRematchTableId (T-B 9e6fc16f) @ L1546-1558
+- [x] TrainerIdToRematchTableId (T-B 9e6fc16f) @ L1559-1577
+- [x] IsRematchForbidden (T-B 9e6fc16f) @ L1578-1587
+- [x] SetRematchIdForTrainer (T-B 9e6fc16f) @ L1588-1604
+- [x] UpdateRandomTrainerRematches (T-B 9e6fc16f) @ L1605-1630
+- [x] UpdateRematchIfDefeated (T-B 9e6fc16f) @ L1631-1636
+- [x] DoesSomeoneWantRematchIn_ (T-B 9e6fc16f) @ L1637-1649
+- [x] IsRematchTrainerIn_ (T-B 9e6fc16f) @ L1650-1662
+- [x] IsTrainerReadyForRematch_ (T-B 9e6fc16f) @ L1677-1690
+- [x] GetRematchTrainerIdFromTable (T-B 9e6fc16f) @ L1691-1711
+- [x] GetLastBeatenRematchTrainerIdFromTable (T-B 9e6fc16f) @ L1712-1732
+- [x] ClearTrainerWantRematchState (T-B 9e6fc16f) @ L1733-1740
+- [x] GetTrainerMatchCallFlag (T-B 9e6fc16f) @ L1741-1753
+- [x] RegisterTrainerInMatchCall (T-B 9e6fc16f) @ L1754-1763
+- [x] HasAtLeastFiveBadges (T-B 9e6fc16f) @ L1776-1793
+- [x] IsRematchStepCounterMaxed (T-B 9e6fc16f) @ L1805-1812
+- [x] TryUpdateRandomTrainerRematches (T-B 9e6fc16f) @ L1813-1818
+- [x] DoesSomeoneWantRematchIn (T-B 9e6fc16f) @ L1819-1823
+- [x] IsRematchTrainerIn (T-B 9e6fc16f) @ L1824-1828
+- [x] GetRematchTrainerId (T-B 9e6fc16f) @ L1829-1833
+- [x] GetLastBeatenRematchTrainerId (T-B 9e6fc16f) @ L1834-1838
+- [x] HandleRematchVarsOnBattleEnd (T-B 9e6fc16f) @ L1852-1857
+- [x] CountBattledRematchTeams (T-B 9e6fc16f) @ L1873-1890
 
 ## battle_controllers.c — 64/68 fonctions couvertes (94%) · cite:58 + symbole:6 · 96 citations
 - [ ] CreateTasksForSendRecvLinkBuffers  @ L701-733
