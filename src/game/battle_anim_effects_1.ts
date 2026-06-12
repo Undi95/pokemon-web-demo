@@ -2204,3 +2204,102 @@ function _AnimDoubleTeam(sprite: { data: number[]; x2: number }): void {
   }
 }
 _sbRegT({ AnimTask_DoubleTeam: AnimTask_DoubleTeam as never });
+
+// --- VAGUE F53 : ShrinkTargetCopy / Mimic (effects_1.c:2762-2837) -----------
+// La cible "copie" : glisse en x (vitesse Q8.8 arg0) en GRANDISSANT (+16/f)
+// en blend, attend le signal args[7]=0xFFFF, restore.
+type _StcTask = { taskId: number; data: number[]; func?: unknown };
+function _stcItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _stcMons(): {
+  PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void;
+  SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
+  ResetSpriteRotScale?: (id: number) => void;
+  SetBattlerSpriteYOffsetFromYScale?: (id: number) => void;
+} {
+  return ((globalThis as Record<string, unknown>).__battleAnimMons as never) ?? {};
+}
+function _stcRt(): {
+  gSprites?: Map<number, { x2: number; y2: number; invisible?: boolean; oamIndex: number }>;
+  gba?: { oam: Array<{ priority: number }>; bg: (i: number) => { config: { priority: number } } };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _stcTargetSpriteId(): number {
+  const b = _stcItf().getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
+}
+/** 1:1 GetBattlerSpriteBGPriority (mons.c) : priority du BG anim 1/2. */
+function _stcBgPriority(battler: number): number {
+  const pos = battler & 3;
+  const bgId = (pos === 0 || pos === 3) ? 2 : 1;
+  return _stcRt().gba?.bg(bgId)?.config?.priority ?? 2;
+}
+
+/** 1:1 AnimTask_ShrinkTargetCopy (effects_1.c:2762). args=[vitesseX Q8.8, frames]. */
+function AnimTask_ShrinkTargetCopy(task: _StcTask): void {
+  const itf = _stcItf();
+  const args = itf.getArgs?.() ?? [128, 24];
+  const spriteId = _stcTargetSpriteId();
+  const rt = _stcRt();
+  const sp = spriteId !== 0xFF ? rt.gSprites?.get(spriteId) : undefined;
+  if (!sp || sp.invisible) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+    return;
+  }
+  _stcMons().PrepareBattlerSpriteForRotScale?.(spriteId, 1 /* ST_OAM_OBJ_BLEND */);
+  const oam = rt.gba?.oam[sp.oamIndex];
+  task.data[14] = oam?.priority ?? 2;
+  if (oam) oam.priority = _stcBgPriority(itf.getTarget?.() ?? 1);
+  task.data[15] = task.data[14]; // single : pas de DEF_PARTNER (1:1 net)
+  task.data[0] = args[0] | 0;
+  task.data[1] = args[1] | 0;
+  task.data[11] = 0x100;
+  task.data[10] = 0;
+  task.data[13] = 0; // state interne Step2
+  task.func = _DuplicateAndShrink_Step1;
+}
+function _DuplicateAndShrink_Step1(task: _StcTask): void {
+  const itf = _stcItf();
+  const spriteId = _stcTargetSpriteId();
+  const sp = spriteId !== 0xFF ? _stcRt().gSprites?.get(spriteId) : undefined;
+  task.data[10] += task.data[0];
+  if (sp) {
+    sp.x2 = task.data[10] >> 8;
+    if (((itf.getTarget?.() ?? 1) & 1) !== 0 /* != B_SIDE_PLAYER */) sp.x2 = -sp.x2;
+  }
+  task.data[11] += 16;
+  _stcMons().SetSpriteRotScale?.(spriteId, task.data[11], task.data[11], 0);
+  _stcMons().SetBattlerSpriteYOffsetFromYScale?.(spriteId);
+  if (--task.data[1] === 0) {
+    task.data[13] = 0;
+    task.func = _DuplicateAndShrink_Step2;
+  }
+}
+function _DuplicateAndShrink_Step2(task: _StcTask): void {
+  const itf = _stcItf();
+  const args = itf.getArgs?.();
+  if (args && (args[7] & 0xFFFF) === 0xFFFF) {
+    if (task.data[13] === 0) {
+      const spriteId = _stcTargetSpriteId();
+      const rt = _stcRt();
+      const sp = spriteId !== 0xFF ? rt.gSprites?.get(spriteId) : undefined;
+      _stcMons().ResetSpriteRotScale?.(spriteId);
+      if (sp) {
+        sp.x2 = 0;
+        sp.y2 = 0;
+        const oam = rt.gba?.oam[sp.oamIndex];
+        if (oam) oam.priority = task.data[14];
+      }
+      task.data[13]++;
+      return;
+    }
+  } else {
+    if (task.data[13] === 0) return;
+  }
+  task.data[13]++;
+  if (task.data[13] === 3) itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_sbRegT({ AnimTask_ShrinkTargetCopy: AnimTask_ShrinkTargetCopy as never });
