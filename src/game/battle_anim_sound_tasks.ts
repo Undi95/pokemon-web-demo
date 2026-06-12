@@ -258,3 +258,34 @@ registerAnimTasks({
   SoundTask_LoopSEAdjustPanning: SoundTask_LoopSEAdjustPanning as never,
   SoundTask_AdjustPanningVar: SoundTask_AdjustPanningVar as never,
 });
+
+// --- VAGUE F82 : SoundTask_PlayCryWithEcho(+Step) (sound_tasks.c) -----------
+// Hyper Voice : le cri de l'attaquant en mode ECHO_START, attente de fin,
+// puis l'echo ECHO_END. Net-effect infra cris (pattern __playCry valide) :
+// machine d'etats au MEME timing, modes echo = dette douce (cri rejoue).
+function SoundTask_PlayCryWithEcho(task: AnimTask): void {
+  task.data[14] = (_itf().getArgs?.() ?? [0])[0] | 0; // tLastCry
+  task.data[0] = 0;
+  task.func = _PlayCryWithEcho_Step;
+}
+function _PlayCryWithEcho_Step(task: AnimTask): void {
+  switch (task.data[0]) {
+    case 2:
+      _playCryOf(_itf().getAttacker?.() ?? 0); // CRY_MODE_ECHO_START (net)
+      task.data[0]++;
+      break;
+    case 0: case 1: case 3: case 4:
+      task.data[0]++;
+      break;
+    case 5:
+      // IsCryPlaying() net : attente fixe 30 frames (pattern SoundTask_WaitForCry)
+      if (++task.data[7] < 30) break;
+      task.data[0]++;
+      break;
+    default:
+      _playCryOf(_itf().getAttacker?.() ?? 0); // CRY_MODE_ECHO_END (net)
+      _itf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+registerAnimTasks({ SoundTask_PlayCryWithEcho: SoundTask_PlayCryWithEcho as never });

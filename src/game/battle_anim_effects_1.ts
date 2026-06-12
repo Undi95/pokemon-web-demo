@@ -2693,3 +2693,21 @@ function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
   }
 }
 _sbRegT({ AnimTask_LeafBlade: AnimTask_LeafBlade as never });
+
+// --- VAGUE F82 : AnimPresentHealParticle (effects_1.c:3089) -----------------
+// La particule de soin de Present (cible alliee) : chute lineaire
+// (y2 = velocityY * frame depuis la position cible+offsets), destroy quand
+// l'anim de sprite (AnimCmd du template generated) se termine. Le callback
+// etait le SEUL manquant du template → registerAnimCallbacks le debloque
+// pour le createsprite du script (sweep : sprite:gPresentHealParticle x9).
+function AnimPresentHealParticle(sprite: { x: number; y: number; y2: number; data: number[]; animEnded?: boolean; callback: unknown }): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[]; DestroyAnimSprite?: (s: unknown) => void };
+  if (!sprite.data[0]) {
+    InitSpritePosToAnimTarget(sprite as never, false);
+    sprite.data[1] = (itf.getArgs?.() ?? [0, 0, 1])[2] | 0; // velocityY
+  }
+  sprite.data[0]++;
+  sprite.y2 = sprite.data[1] * sprite.data[0];
+  if (sprite.animEnded) itf.DestroyAnimSprite?.(sprite);
+}
+registerAnimCallbacks({ AnimPresentHealParticle: AnimPresentHealParticle as never });
