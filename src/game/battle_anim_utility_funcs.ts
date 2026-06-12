@@ -154,7 +154,7 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
 function AnimTask_StartSlidingBg(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [];
   const rt = (globalThis as Record<string, unknown>).__rt as { CreateTask?: (fn: unknown, p: number) => number; gTasks?: Map<number, { data: number[] }> } | undefined;
-  const newTaskId = rt?.CreateTask?.(_UpdateSlidingBg, 5) ?? -1;
+  const newTaskId = rt?.CreateTask?.(AnimTask_UpdateSlidingBg, 5) ?? -1;
   const atk = (_itf().getAttacker?.() ?? 0) as number;
   if (args[2] && (atk & 1) !== 0) { args[0] = -args[0]; args[1] = -args[1]; }
   const nt = newTaskId >= 0 ? rt?.gTasks?.get(newTaskId) : undefined;
@@ -166,7 +166,7 @@ function AnimTask_StartSlidingBg(task: AnimTask): void {
   }
   _itf().DestroyAnimVisualTask?.(task.taskId);
 }
-function _UpdateSlidingBg(task: AnimTask): void {
+function AnimTask_UpdateSlidingBg(task: AnimTask): void {
   const g = globalThis as Record<string, unknown>;
   task.data[10] += task.data[1];
   task.data[11] += task.data[2];
@@ -193,9 +193,9 @@ function AnimTask_TraceMonBlended(task: AnimTask): void {
   task.data[3] = a[2];
   task.data[4] = a[3];
   task.data[5] = 0;
-  task.func = _TraceMonBlended_Step;
+  task.func = AnimTask_TraceMonBlended_Step;
 }
-function _TraceMonBlended_Step(task: AnimTask): void {
+function AnimTask_TraceMonBlended_Step(task: AnimTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>; gba?: { oam: Array<{ priority: number }> } } | undefined;
   if (task.data[4]) {
     if (task.data[1]) {
@@ -211,7 +211,7 @@ function _TraceMonBlended_Step(task: AnimTask): void {
           c.data[0] = task.data[3];
           c.data[1] = task.taskId;
           c.data[2] = 5;
-          c.callback = _AnimMonTrace;
+          c.callback = AnimMonTrace;
         }
         task.data[5]++;
       }
@@ -222,7 +222,7 @@ function _TraceMonBlended_Step(task: AnimTask): void {
     _itf().DestroyAnimVisualTask?.(task.taskId);
   }
 }
-function _AnimMonTrace(sprite: { data: number[] }): void {
+function AnimMonTrace(sprite: { data: number[] }): void {
   if (sprite.data[0]) {
     sprite.data[0]--;
   } else {
@@ -337,9 +337,9 @@ function AnimTask_SetAttackerInvisibleWaitForSignal(task: { taskId: number; data
   sd?.setBattlerDataInvisible?.(attacker, true);
   sp.invisible = true;
   (itf as { decVisualTaskCount?: () => void }).decVisualTaskCount?.();
-  task.func = _WaitAndRestoreVisibility;
+  task.func = AnimTask_WaitAndRestoreVisibility;
 }
-function _WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): void {
+function AnimTask_WaitAndRestoreVisibility(task: { taskId: number; data: number[] }): void {
   const args = _ufItf().getArgs?.() ?? [];
   if (args[7] === 0x1000) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }>; DestroyTask?: (id: number) => void } | undefined;

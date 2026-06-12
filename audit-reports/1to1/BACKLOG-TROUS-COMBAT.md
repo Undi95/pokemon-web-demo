@@ -705,20 +705,20 @@
 - [x] AnimSpinningKickOrPunchFinish @ L622-635 — porté 1:1 (battle_anim_fight.ts : StartSpriteAffineAnim(0) + affineAnimPaused=1 + 20f → destroy, l'inline _SpinningKick_Wait omettait le reset affine « réapparaît à taille pleine » ; A/B MOVE_MEGA_PUNCH : sprite vu avec affineAnimNum=0+paused, 0 résiduel)
 
 ## battle_anim_utility_funcs.c — 28/42 fonctions couvertes (67%) · cite:0 + symbole:28 · 19 citations
-- [ ] AnimTask_HardwarePaletteFade_Step  @ L211-217
-- [ ] AnimTask_TraceMonBlended_Step  @ L231-263
-- [ ] AnimMonTrace  @ L264-277
+- [x] AnimTask_HardwarePaletteFade_Step @ L211-217 — ÉQUIVALENCE : délégué au fade de l’interpreter (beginHardwarePaletteFade + poll paletteFadeActive, base AnimTask_HardwarePaletteFade présente)
+- [x] AnimTask_TraceMonBlended_Step @ L231-263 — renommé au nom C exact (ex-_TraceMonBlended_Step, battle_anim_utility_funcs.ts)
+- [x] AnimMonTrace @ L264-277 — renommé au nom C exact (ex-_AnimMonTrace)
 - [ ] AnimTask_DrawFallingWhiteLinesOnAttacker  @ L278-347
 - [ ] AnimTask_DrawFallingWhiteLinesOnAttacker_Step  @ L348-414
 - [x] InitStatsChangeAnimation @ L415-425 — porté 1:1 (battle_anim_utility_funcs.ts, chaîne StatsChange complète, commit 23c2e2aa)
 - [x] StatsChangeAnimation_Step1 @ L426-478 — porté 1:1 (regs fenêtre OBJ + species party)
 - [x] StatsChangeAnimation_Step2 @ L479-566 — porté 1:1 (copie OBJ_WINDOW + BG1 gfx/tilemap/palette par stat + SE ; assets extract-stat-change-assets.cjs)
 - [x] StatsChangeAnimation_Step3 @ L567-648 — porté 1:1 (scroll BG1 ±3 + fade in/wait/out + teardown ; A/B pixel-probe teardown diff 0)
-- [ ] AnimTask_UpdateSlidingBg  @ L762-779
+- [x] AnimTask_UpdateSlidingBg @ L762-779 — renommé au nom C exact (ex-_UpdateSlidingBg)
 - [ ] AnimTask_SetAnimAttackerAndTargetForEffectTgt  @ L1049-1055
 - [ ] AnimTask_SetAnimTargetToBattlerTarget  @ L1066-1071
 - [ ] AnimTask_SetAnimAttackerAndTargetForEffectAtk  @ L1072-1078
-- [ ] AnimTask_WaitAndRestoreVisibility  @ L1094-1102
+- [x] AnimTask_WaitAndRestoreVisibility @ L1094-1102 — renommé au nom C exact (ex-_WaitAndRestoreVisibility, le restore du fix Rayquaza f478b2c4)
 
 ## battle_anim_sound_tasks.c — 15/15 fonctions couvertes (100%) · cite:4 + symbole:6 · 10 citations
 - [x] SoundTask_FireBlast @ L23-41 — porté 1:1 (battle_anim_sound_tasks.ts : pan attaquant→cible incrément 2, plays toutes les 11f ; A/B Fire Blast 126 : fidèle 407f, 3 tasks, la sound task se détruit proprement)
