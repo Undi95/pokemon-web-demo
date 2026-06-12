@@ -1313,3 +1313,80 @@ export function SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOrigina
   const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
   surf.SetGrayscaleOrOriginalPalette = SetGrayscaleOrOriginalPalette;
 }
+
+// --- VAGUE F77 : CreateAdditionalMonSpriteForMoveAnim (mons.c:2089) ---------
+// Un sprite de MON supplémentaire (espèce arbitraire) pour les anims de move
+// (Role Play, Transform-affichage…) : pic species chargé dans une alloc OBJ
+// dédiée + palette species dans un slot alloué par tag. Divergence plateforme
+// documentée : ASYNC (PNG pré-extrait vs LZ77 RAM synchrone) → les AnimTasks
+// clientes attendent la résolution en machine à états (1-3 frames).
+import { loadTileBin as _camLoadTiles, loadGbaPal as _camLoadPal } from '../engine/gba/png-loader';
+
+// 1:1 sSpriteTemplates_MoveEffectMons tags (mons.c:2056-2086) : 2 slots dédiés.
+const _CAM_TAGS: ReadonlyArray<number> = [55125, 55126]; // ANIM_TAG(s) MoveEffectMons
+
+/** species num → dossier assets (pattern battle_gfx_sfx_util._speciesAssetFolder). */
+function _camSpeciesFolder(species: number): string | null {
+  const rev = (globalThis as Record<string, unknown>).__reverseDecompConstant as ((v: number, p: string) => string | undefined) | undefined;
+  const enumName = rev ? rev(species, 'SPECIES_') : _hl2RevConst(species, 'SPECIES_');
+  if (!enumName) return null;
+  return enumName.replace(/^SPECIES_/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+function _hl2RevConst(v: number, p: string): string | undefined {
+  try {
+    return reverseDecompConstant(v, p) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** 1:1 `CreateAdditionalMonSpriteForMoveAnim` (mons.c:2089) — async plateforme.
+ *  Retourne le spriteId (ou -1). Le pic (frame 0, 0x800) est chargé en alloc
+ *  inline (AllocSpriteTiles via CreateSpriteInline) ; palette species écrite
+ *  dans un slot AllocSpritePalette(tag dédié id). */
+export async function CreateAdditionalMonSpriteForMoveAnim(
+  species: number, isBackpic: boolean, id: number,
+  x: number, y: number, subpriority: number,
+  _personality: number, _trainerId: number, _battler: number,
+): Promise<number> {
+  const folder = _camSpeciesFolder(species);
+  if (!folder) return -1;
+  const pic = isBackpic ? 'back.png' : 'anim_front.png';
+  const [tiles, pal] = await Promise.all([
+    _camLoadTiles(`/decomp/em/pokemon/${folder}/${pic}`, 4),
+    _camLoadPal(`/decomp/em/pokemon/${folder}/normal.pal`),
+  ]);
+  if (!tiles || tiles.length < 0x800) return -1;
+  const rt = getRuntime() as unknown as {
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    gSprites?: Map<number, { oamIndex: number }>;
+    gba?: { oam: Array<{ paletteBank: number }> };
+    gPlttBufferUnfaded?: { set: (i: number, v: number) => void };
+    gPlttBufferFaded?: { set: (i: number, v: number) => void };
+  } | null;
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+  const palSlot = spApi?.AllocSpritePalette?.(_CAM_TAGS[id & 1] ?? _CAM_TAGS[0]) ?? 0xFF;
+  if (palSlot === 0xFF) return -1; // panne d'alloc palette = echec FRANC (pas de slot 0 silencieux)
+  // pic coords : y += y_offset (front/back) — 1:1 mons.c:2135-2138.
+  const enumName = _hl2RevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = isBackpic ? getMonBackPicCoords(enumName) : getMonFrontPicCoords(enumName);
+  const spriteId = rt?.CreateSpriteInline?.({
+    oam: { shape: 0, size: 3, priority: 2, paletteNum: palSlot },
+    images: [{ data: tiles.subarray(0, 0x800), size: 0x800 }],
+    callback: null,
+  } as never, x, y + (coords?.yOffset ?? 0), subpriority) ?? -1;
+  if (spriteId < 0 || spriteId >= 64) return -1;
+  // palette species → slot alloué (Unfaded + Faded, 1:1 LoadCompressedPalette).
+  if (palSlot !== 0xFF && pal) {
+    for (let i = 0; i < 16 && i < pal.length; i++) {
+      rt?.gPlttBufferUnfaded?.set(256 + palSlot * 16 + i, pal[i]);
+      rt?.gPlttBufferFaded?.set(256 + palSlot * 16 + i, pal[i]);
+    }
+  }
+  return spriteId;
+}
+{
+  const surf = (globalThis as Record<string, unknown>).__battleAnimMons as Record<string, unknown>;
+  surf.CreateAdditionalMonSpriteForMoveAnim = CreateAdditionalMonSpriteForMoveAnim;
+  surf.MoveEffectMonPaletteTags = _CAM_TAGS;
+}

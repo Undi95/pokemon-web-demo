@@ -1549,6 +1549,11 @@ export class DecompRuntime {
     const tileCount = byteSize >> 5;  // 32 bytes / tile (4bpp)
     // 1:1 décomp src/sprite.c : un sprite sans sheet (tileTag TAG_NONE) alloue ses
     // propres tiles OBJ VRAM via AllocSpriteTiles (marque sSpriteTileAllocBitmap).
+    // F77 C0-racine : marquer d'abord les occupants RÉELS (mons/healthbox créés
+    // par OAM direct ne marquent pas le bitmap eux-mêmes) — sinon une alloc
+    // inline ≥64 tiles (pic de mon Role Play/Transform) part en first-fit 0
+    // = écrase la zone healthbox. Hook posé par battle-anim-interpreter.
+    ((globalThis as Record<string, unknown>).__markLiveSpriteTiles as (() => void) | undefined)?.();
     const sp = (globalThis as Record<string, unknown>).__sprite as {
       AllocSpriteTiles?: (n: number) => number;
     } | undefined;

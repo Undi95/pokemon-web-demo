@@ -3658,3 +3658,126 @@ _e3RegTasks({
   AnimTask_CreateSpotlight: AnimTask_CreateSpotlight as never,
   AnimTask_RemoveSpotlight: AnimTask_RemoveSpotlight as never,
 });
+
+// --- VAGUE F77 : AnimTask_RolePlaySilhouette(+Step1/Step2) ------------------
+// (effects_3.c:3183-3295) — la silhouette BLANCHE de la cible apparaît sur
+// l'attaquant (sprite mon supplémentaire en OBJ_BLEND, palette remplie de
+// blanc), fade-in BLDALPHA 0→10, puis aspirée (scaleX 256→112, scaleY 256+128/t)
+// et détruite. Divergence plateforme : CreateAdditionalMonSpriteForMoveAnim est
+// ASYNC → case d'attente (1-3 frames, documenté).
+
+type _E3Task = { taskId: number; data: number[]; func?: unknown };
+// jeton UNIQUE par invocation (les taskIds se RECYCLENT — une entrée stale
+// détournait le run suivant, constaté A/B 2026-06-12) ; anti-orphelin à la
+// résolution si la task est morte pendant le fetch.
+let _rpsToken = 0;
+const _rpsLoaded = new Map<number, number>(); // jeton → spriteId
+
+function AnimTask_RolePlaySilhouette(task: _E3Task): void {
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  if ((task.data[14] | 0) === 0) {
+    // 1:1 :3206-3247 (branche combat) : pic de la TARGET — back si l'attacker
+    // est côté joueur (xOffset -20), front sinon (+20).
+    const atkIsPlayer = (atk & 1) === 0;
+    const isBackPic = atkIsPlayer;
+    const xOffset = atkIsPlayer ? -20 : 20;
+    const party = (tgt & 1) === 0 ? gPlayerParty : gEnemyParty;
+    const tgtMon = party[gBattlerPartyIndexes[tgt] ?? 0];
+    const species = tgtMon ? (GetMonData(tgtMon as never, MON_DATA_SPECIES) as number) : 0;
+    if (!species) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+    const coord1 = _e3Coord(atk, 0);
+    const coord2 = _e3Coord(atk, 1);
+    const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+      CreateAdditionalMonSpriteForMoveAnim?: (sp: number, back: boolean, id: number, x: number, y: number, subp: number, p: number, t: number, b: number) => Promise<number>;
+    } | undefined;
+    const token = ++_rpsToken;
+    task.data[14] = token;
+    void mons?.CreateAdditionalMonSpriteForMoveAnim?.(species, isBackPic, 0, coord1 + xOffset, coord2, 5, 0, 0, tgt)
+      .then((sid) => {
+        // anti-orphelin : la task porteuse du jeton vit-elle encore ?
+        const rt0 = _grt() as unknown as { gTasks?: Map<number, { func?: unknown; data?: number[] }>; DestroySprite?: (i: number) => void };
+        let alive = false;
+        for (const [, t0] of rt0.gTasks ?? []) {
+          if (t0.func === AnimTask_RolePlaySilhouette && ((t0.data?.[14] ?? 0) | 0) === token) { alive = true; break; }
+        }
+        if (!alive) { if ((sid ?? -1) >= 0) rt0.DestroySprite?.(sid); return; }
+        _rpsLoaded.set(token, sid ?? -1);
+      });
+    return;
+  }
+  const loaded = _rpsLoaded.get(task.data[14]);
+  if (loaded === undefined) return; // load en vol
+  _rpsLoaded.delete(task.data[14]);
+  if (loaded < 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+  const spriteId = loaded;
+  const rt = _grt();
+  const sp = rt.gSprites?.get(spriteId);
+  const oam = sp && sp.oamIndex !== undefined ? rt.gba?.oam?.[sp.oamIndex] : undefined;
+  const priority = _GetBattlerSpriteBGPriority(atk);
+  if (oam) {
+    (oam as { priority: number }).priority = priority;
+    (oam as { objMode?: number }).objMode = 1; // ST_OAM_OBJ_BLEND
+    // FillPalette(RGB_WHITE, OBJ_PLTT_ID(paletteNum)) : silhouette blanche.
+    const slot = (oam as { paletteBank?: number }).paletteBank ?? 0;
+    const bufs = rt as unknown as { gPlttBufferUnfaded?: { set: (i: number, v: number) => void }; gPlttBufferFaded?: { set: (i: number, v: number) => void } };
+    for (let i = 0; i < 16; i++) {
+      bufs.gPlttBufferUnfaded?.set(256 + slot * 16 + i, 0x7FFF);
+      bufs.gPlttBufferFaded?.set(256 + slot * 16 + i, 0x7FFF);
+    }
+  }
+  // le sprite décomp doit suivre l'objMode (syncSpritesToOam le réécrit)
+  if (sp) (sp as { objMode?: number }).objMode = 1;
+  rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0x3F40); // BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, ((task.data[1] & 0xFF)) | ((16 - task.data[1]) << 8));
+  task.data[0] = spriteId;
+  task.func = _RolePlaySilhouette_Step1;
+}
+function _RolePlaySilhouette_Step1(task: _E3Task): void {
+  const rt = _grt();
+  if (task.data[10]++ > 1) {
+    task.data[10] = 0;
+    task.data[1]++;
+    rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, (task.data[1] & 0xFF) | ((16 - task.data[1]) << 8));
+    if (task.data[1] === 10) {
+      task.data[10] = 256;
+      task.data[11] = 256;
+      task.func = _RolePlaySilhouette_Step2;
+    }
+  }
+}
+function _RolePlaySilhouette_Step2(task: _E3Task): void {
+  const rt = _grt();
+  const spriteId = task.data[0];
+  task.data[10] -= 16;
+  task.data[11] += 128;
+  const sp = rt.gSprites?.get(spriteId);
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    SetSpriteRotScale?: (sid: number, x: number, y: number, rot: number) => void;
+    ResetSpriteRotScale?: (sid: number) => void;
+  } | undefined;
+  if (sp) {
+    const oam = (sp.oamIndex !== undefined ? rt.gba?.oam?.[sp.oamIndex] : undefined) as { affineMode?: number } | undefined;
+    if (oam) oam.affineMode = 3; // |= ST_OAM_AFFINE_DOUBLE_MASK
+    (sp as { affineMode?: number }).affineMode = 3;
+    mons?.SetSpriteRotScale?.(spriteId, task.data[10], task.data[11], 0);
+  }
+  if (++task.data[12] === 9) {
+    if (sp) mons?.ResetSpriteRotScale?.(spriteId);
+    // DestroySpriteAndFreeResources_ : destroy + libère tiles inline + palette tag.
+    const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+    const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
+    if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
+    (rt as unknown as { DestroySprite?: (i: number) => void }).DestroySprite?.(spriteId);
+    task.func = _RolePlay_DestroyTaskAndDisableBlend;
+  }
+}
+/** 1:1 DestroyAnimVisualTaskAndDisableBlend (effects_3.c, partagé). */
+function _RolePlay_DestroyTaskAndDisableBlend(task: _E3Task): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0);
+  rt.SetGpuReg?.(REG_OFFSET_BLDALPHA, 0);
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+_e3RegTasks({ AnimTask_RolePlaySilhouette: AnimTask_RolePlaySilhouette as never });

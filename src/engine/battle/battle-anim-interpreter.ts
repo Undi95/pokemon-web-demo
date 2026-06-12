@@ -1029,6 +1029,10 @@ const _loadedTags = new Set<number>();
  *  les fixes (mons, healthbox@320-447) ne marquent pas le bitmap eux-memes ->
  *  l'allocateur donnait leurs plages aux sheets anim (les « eclats » = tiles
  *  VRAM de la box reecrites par mud_sand, sonde 2026-06-11). Idempotent. */
+// Exposé global (vague F77 C0-racine) : CreateSpriteInline (decomp-runtime)
+// l'appelle AVANT toute alloc inline — sinon les allocs ≥64 tiles (pics de mon
+// des anims Role Play/Transform) retombent en first-fit 0 = ZONE HEALTHBOX.
+(globalThis as Record<string, unknown>).__markLiveSpriteTiles = (): void => { _markLiveSpriteTiles(); };
 function _markLiveSpriteTiles(): void {
   const rt = getRuntime();
   const bmp = sSpriteTileAllocBitmap;
