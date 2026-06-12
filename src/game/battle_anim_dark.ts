@@ -371,3 +371,363 @@ function _MetallicShine_Step(task: _MshTask): void {
   }
 }
 _dRegT({ AnimTask_MetallicShine: AnimTask_MetallicShine as never });
+
+// --- VAGUE F75 : MEMENTO (dark.c:408-795) -----------------------------------
+// L'ombre du mon s'étire et se fait aspirer (attacker) puis s'abat sur la
+// cible : scanline VOFS par ligne (étirement) + fenêtre WIN0 pincée + blend.
+// AnimTask_InitMementoShadow / AnimTask_MoveAttackerMementoShadow(+Step) /
+// AnimTask_MoveTargetMementoShadow(+Step) / DoMementoShadowEffect /
+// SetAllBattlersSpritePriority.
+import {
+  gScanlineEffect as _dkScanFx,
+  gScanlineEffectRegBuffers as _dkScanBufs,
+  ScanlineEffect_SetParams as _dkScanSetParams,
+} from './scanline_effect';
+import {
+  MoveBattlerSpriteToBG as _dkMoveToBG,
+  IsBattlerSpriteVisible as _dkIsVisible,
+  GetBattleAnimBg1Data as _dkBgData,
+} from '../engine/battle/battle-anim-interpreter';
+import {
+  GetBattlerSpriteBGPriorityRank as _dkBgRank,
+  GetBattlerSpriteCoord as _dkCoord,
+} from './battle_anim_mons';
+import { getMonBackPicCoords as _dkBackCoords, getMonFrontPicCoords as _dkFrontCoords } from './data/mon_pic_coords';
+import { gBattlerPartyIndexes as _dkPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _dkEnemyParty, gPlayerParty as _dkPlayerParty, GetMonData as _dkGetMon, MON_DATA_SPECIES as _dkSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _dkRevConst } from '../engine/system/decomp-constants';
+
+const _DK_REG_BG1VOFS = 0x16;
+const _DK_REG_BG2VOFS = 0x1A;
+const _DK_REG_WININ = 0x48;
+const _DK_REG_WINOUT = 0x4A;
+const _DK_REG_BLDCNT = 0x50;
+const _DK_REG_BLDALPHA = 0x52;
+
+type _DkTask = { taskId: number; data: number[]; func?: unknown };
+function _dkRtFull(): {
+  SetGpuReg?: (o: number, v: number) => void;
+  gSprites?: Map<number, { oamIndex: number; invisible?: boolean }>;
+  gba?: { oam: Array<{ priority: number }> };
+  gPlttBufferUnfaded?: { set?: (i: number, v: number) => void };
+  gPlttBufferFaded?: { set?: (i: number, v: number) => void };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _dkMonSpriteId(battler: number): number {
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
+  return co?.getBattlerMonSpriteId?.(battler) ?? 0xFF;
+}
+function _dkG(name: string): number {
+  return ((globalThis as Record<string, unknown>)[name] as number) ?? 0;
+}
+function _dkSetG(name: string, v: number): void {
+  (globalThis as Record<string, unknown>)[name] = v;
+}
+/** 1:1 GetBattlerSpriteCoordAttr — cases TOP seule utilisée par Memento
+ *  (pattern locale, cf. effects_3.ts:463 ; dette douce : transform species). */
+function _dkCoordAttrTop(battler: number): number {
+  const party = (battler & 1) !== 0 ? _dkEnemyParty : _dkPlayerParty;
+  const species = _dkGetMon(party[_dkPartyIdx[battler]] as never, _dkSpeciesK) as number;
+  const name = _dkRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _dkBackCoords(name) : _dkFrontCoords(name);
+  return _dkCoord(battler, 3 /* Y_PIC_OFFSET */) - ((coords.h / 2) | 0);
+}
+/** 1:1 FillPalette(RGB_BLACK, slot BG, 32) : 16 entrées Unfaded+Faded à 0. */
+function _dkFillPaletteBlack(bgSlot: number): void {
+  const rt = _dkRtFull();
+  for (let i = 0; i < 16; i++) {
+    rt.gPlttBufferUnfaded?.set?.(bgSlot * 16 + i, 0);
+    rt.gPlttBufferFaded?.set?.(bgSlot * 16 + i, 0);
+  }
+}
+/** 1:1 SetAllBattlersSpritePriority (dark.c:780). */
+function _dkSetAllBattlersSpritePriority(priority: number): void {
+  const rt = _dkRtFull();
+  for (let i = 0; i < 4; i++) {
+    const sid = _dkMonSpriteId(i);
+    if (sid === 0xFF) continue;
+    const sp = rt.gSprites?.get(sid);
+    const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+    if (oam) oam.priority = priority;
+  }
+}
+/** 1:1 DoMementoShadowEffect (dark.c:723) : VOFS interpolés par scanline. */
+function _DoMementoShadowEffect(task: _DkTask): void {
+  const buf = _dkScanBufs[_dkScanFx.srcBuffer];
+  const var2 = (task.data[5] - task.data[4]) | 0;
+  if (var2 !== 0) {
+    const var0 = Math.trunc(task.data[13] / var2);
+    let var1 = task.data[6] << 8;
+    for (let i = 0; i < task.data[4]; i++) {
+      buf[i] = (task.data[10] - (i - 159)) & 0xFFFF;
+    }
+    let i = task.data[4];
+    for (; i <= task.data[5]; i++) {
+      if (i >= 0) {
+        const var3 = ((var1 >> 8) - i) | 0;
+        buf[i] = (var3 + task.data[10]) & 0xFFFF;
+      }
+      var1 += var0;
+    }
+    let var4 = task.data[10] - (i - 159);
+    for (; i < task.data[7]; i++) {
+      if (i >= 0) {
+        buf[i] = var4 & 0xFFFF;
+        var4--;
+      }
+    }
+  } else {
+    let var4 = task.data[10] + 159;
+    for (let i = 0; i < 112; i++) {
+      _dkScanBufs[0][i] = var4 & 0xFFFF;
+      _dkScanBufs[1][i] = var4 & 0xFFFF;
+      var4--;
+    }
+  }
+}
+/** 1:1 AnimTask_InitMementoShadow (dark.c:781) : mon (+partner) vers le BG anim. */
+function AnimTask_InitMementoShadow(task: _DkTask): void {
+  const itf = _dItf3();
+  const atk = itf.getAttacker?.() ?? 0;
+  const toBG2 = (_dkBgRank(atk) ^ 1) !== 0 ? 1 : 0;
+  _dkMoveToBG(atk, !!toBG2, true);
+  const rt = _dkRtFull();
+  const atkSp = rt.gSprites?.get(_dkMonSpriteId(atk));
+  if (atkSp) atkSp.invisible = false;
+  const partner = atk ^ 2;
+  if (_dkIsVisible(partner)) {
+    _dkMoveToBG(partner, !(toBG2 !== 0), true);
+    const pSp = rt.gSprites?.get(_dkMonSpriteId(partner));
+    if (pSp) pSp.invisible = false;
+  }
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 AnimTask_MoveAttackerMementoShadow (dark.c:408). */
+function AnimTask_MoveAttackerMementoShadow(task: _DkTask): void {
+  const itf = _dItf3();
+  const atk = itf.getAttacker?.() ?? 0;
+  const rt = _dkRtFull();
+  task.data[7] = _dkCoord(atk, 1 /* Y */) + 31;
+  task.data[6] = _dkCoordAttrTop(atk) - 7;
+  task.data[5] = task.data[7];
+  task.data[4] = task.data[6];
+  task.data[13] = (task.data[7] - task.data[6]) << 8;
+  const pos = _dkCoord(atk, 0 /* X */);
+  task.data[14] = pos - 32;
+  task.data[15] = pos + 32;
+  task.data[8] = (atk & 1) === 0 ? -12 : -64; // B_SIDE_PLAYER ? -12 : -64
+  task.data[3] = _dkBgRank(atk);
+  let dmaDest: number;
+  let var0: number;
+  if (task.data[3] === 1) {
+    const animBg = _dkBgData();
+    task.data[10] = _dkG('gBattle_BG1_Y');
+    rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F41); // TGT2_ALL | EFFECT_BLEND | TGT1_BG1
+    _dkFillPaletteBlack(animBg.paletteId);
+    dmaDest = _DK_REG_BG1VOFS;
+    var0 = 0x02; // WINOUT_WIN01_BG1
+    _dkSetG('gBattle_BG2_X', _dkG('gBattle_BG2_X') + 240);
+  } else {
+    task.data[10] = _dkG('gBattle_BG2_Y');
+    rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F44); // TGT2_ALL | EFFECT_BLEND | TGT1_BG2
+    _dkFillPaletteBlack(9);
+    dmaDest = _DK_REG_BG2VOFS;
+    var0 = 0x04; // WINOUT_WIN01_BG2
+    _dkSetG('gBattle_BG1_X', _dkG('gBattle_BG1_X') + 240);
+  }
+  task.data[11] = 0;
+  task.data[12] = 16;
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  _dkSetAllBattlersSpritePriority(3);
+  for (let i = 0; i < 112; i++) {
+    _dkScanBufs[0][i] = task.data[10] & 0xFFFF;
+    _dkScanBufs[1][i] = task.data[10] & 0xFFFF;
+  }
+  _dkScanSetParams({ dmaDest, dmaControl: 0 /* 16BIT */, initState: 1, unused9: 0 } as never);
+  // WINOUT = WINOBJ all+CLR | (var0 ^ WIN01 all+CLR)
+  rt.SetGpuReg?.(_DK_REG_WINOUT, (0x3F << 8) | (var0 ^ 0x3F));
+  rt.SetGpuReg?.(_DK_REG_WININ, 0x3F3F);
+  _dkSetG('gBattle_WIN0H', ((task.data[14] & 0xFF) << 8) | (task.data[15] & 0xFF));
+  _dkSetG('gBattle_WIN0V', 160); // DISPLAY_HEIGHT
+  task.func = _MoveAttackerMementoShadow_Step;
+}
+/** 1:1 AnimTask_MoveAttackerMementoShadow_Step (dark.c:479). */
+function _MoveAttackerMementoShadow_Step(task: _DkTask): void {
+  const rt = _dkRtFull();
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        if (++task.data[2] & 1) {
+          if (task.data[11] !== 12) task.data[11]++;
+        } else {
+          if (task.data[12] !== 8) task.data[12]--;
+        }
+        rt.SetGpuReg?.(_DK_REG_BLDALPHA, (task.data[11] & 0xFF) | ((task.data[12] & 0xFF) << 8));
+        if (task.data[11] === 12 && task.data[12] === 8) task.data[0]++;
+      }
+      break;
+    case 1:
+      task.data[4] -= 8;
+      _DoMementoShadowEffect(task);
+      if (task.data[4] < task.data[8]) task.data[0]++;
+      break;
+    case 2:
+      task.data[4] -= 8;
+      _DoMementoShadowEffect(task);
+      task.data[14] += 4;
+      task.data[15] -= 4;
+      if (task.data[14] >= task.data[15]) task.data[14] = task.data[15];
+      _dkSetG('gBattle_WIN0H', ((task.data[14] & 0xFF) << 8) | (task.data[15] & 0xFF));
+      if (task.data[14] === task.data[15]) task.data[0]++;
+      break;
+    case 3:
+      _dkScanFx.state = 3;
+      task.data[0]++;
+      break;
+    case 4:
+      _dItf3().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 AnimTask_MoveTargetMementoShadow (dark.c:537), branche combat. */
+function AnimTask_MoveTargetMementoShadow(task: _DkTask): void {
+  const itf = _dItf3();
+  const tgt = itf.getTarget?.() ?? 1;
+  const rt = _dkRtFull();
+  switch (task.data[0]) {
+    case 0:
+      task.data[3] = _dkBgRank(tgt);
+      if (task.data[3] === 1) {
+        rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F41);
+        _dkSetG('gBattle_BG2_X', _dkG('gBattle_BG2_X') + 240);
+      } else {
+        rt.SetGpuReg?.(_DK_REG_BLDCNT, 0x3F44);
+        _dkSetG('gBattle_BG1_X', _dkG('gBattle_BG1_X') + 240);
+      }
+      task.data[0]++;
+      break;
+    case 1:
+      if (task.data[3] === 1) {
+        const animBg = _dkBgData();
+        task.data[10] = _dkG('gBattle_BG1_Y');
+        _dkFillPaletteBlack(animBg.paletteId);
+      } else {
+        task.data[10] = _dkG('gBattle_BG2_Y');
+        _dkFillPaletteBlack(9);
+      }
+      _dkSetAllBattlersSpritePriority(3);
+      task.data[0]++;
+      break;
+    case 2: {
+      task.data[7] = _dkCoord(tgt, 1) + 31;
+      task.data[6] = _dkCoordAttrTop(tgt) - 7;
+      task.data[13] = (task.data[7] - task.data[6]) << 8;
+      const x = _dkCoord(tgt, 0);
+      task.data[14] = x - 4;
+      task.data[15] = x + 4;
+      task.data[8] = (tgt & 1) === 0 ? -12 : -64;
+      task.data[4] = task.data[8];
+      task.data[5] = task.data[8];
+      task.data[11] = 12;
+      task.data[12] = 8;
+      task.data[0]++;
+      break;
+    }
+    case 3: {
+      const dmaDest = task.data[3] === 1 ? _DK_REG_BG1VOFS : _DK_REG_BG2VOFS;
+      for (let i = 0; i < 112; i++) {
+        _dkScanBufs[0][i] = (task.data[10] + (159 - i)) & 0xFFFF;
+        _dkScanBufs[1][i] = (task.data[10] + (159 - i)) & 0xFFFF;
+      }
+      _dkScanSetParams({ dmaDest, dmaControl: 0, initState: 1, unused9: 0 } as never);
+      task.data[0]++;
+      break;
+    }
+    case 4:
+      // WINOUT : WINOBJ all+CLR | WIN01 sans le BG du mon (BG1 ou BG2)
+      if (task.data[3] === 1) rt.SetGpuReg?.(_DK_REG_WINOUT, (0x3F << 8) | 0x3D);
+      else rt.SetGpuReg?.(_DK_REG_WINOUT, (0x3F << 8) | 0x3B);
+      rt.SetGpuReg?.(_DK_REG_WININ, 0x3F3F);
+      _dkSetG('gBattle_WIN0H', ((task.data[14] & 0xFF) << 8) | (task.data[15] & 0xFF));
+      _dkSetG('gBattle_WIN0V', 160);
+      task.data[0] = 0;
+      task.data[1] = 0;
+      task.data[2] = 0;
+      rt.SetGpuReg?.(_DK_REG_BLDALPHA, 12 | (8 << 8));
+      task.func = _MoveTargetMementoShadow_Step;
+      break;
+  }
+}
+/** 1:1 AnimTask_MoveTargetMementoShadow_Step (dark.c:645). */
+function _MoveTargetMementoShadow_Step(task: _DkTask): void {
+  const rt = _dkRtFull();
+  switch (task.data[0]) {
+    case 0:
+      task.data[5] += 8;
+      if (task.data[5] >= task.data[7]) task.data[5] = task.data[7];
+      _DoMementoShadowEffect(task);
+      if (task.data[5] === task.data[7]) task.data[0]++;
+      break;
+    case 1:
+      if (task.data[15] - task.data[14] < 0x40) {
+        task.data[14] -= 4;
+        task.data[15] += 4;
+      } else {
+        task.data[1] = 1;
+      }
+      _dkSetG('gBattle_WIN0H', ((task.data[14] & 0xFF) << 8) | (task.data[15] & 0xFF));
+      task.data[4] += 8;
+      if (task.data[4] >= task.data[6]) task.data[4] = task.data[6];
+      _DoMementoShadowEffect(task);
+      if (task.data[4] === task.data[6] && task.data[1]) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      if (++task.data[1] > 1) {
+        task.data[1] = 0;
+        task.data[2]++;
+        if (task.data[2] & 1) {
+          if (task.data[11]) task.data[11]--;
+        } else {
+          if (task.data[12] < 16) task.data[12]++;
+        }
+        rt.SetGpuReg?.(_DK_REG_BLDALPHA, (task.data[11] & 0xFF) | ((task.data[12] & 0xFF) << 8));
+        if (task.data[11] === 0 && task.data[12] === 16) task.data[0]++;
+      }
+      break;
+    case 3:
+      _dkScanFx.state = 3;
+      task.data[0]++;
+      break;
+    case 4:
+      _dkSetG('gBattle_WIN0H', 0);
+      _dkSetG('gBattle_WIN0V', 0);
+      rt.SetGpuReg?.(_DK_REG_WININ, 0x3F3F);
+      rt.SetGpuReg?.(_DK_REG_WINOUT, 0x3F3F);
+      _dItf3().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+_dRegT({
+  AnimTask_InitMementoShadow: AnimTask_InitMementoShadow as never,
+  AnimTask_MoveAttackerMementoShadow: AnimTask_MoveAttackerMementoShadow as never,
+  AnimTask_MoveTargetMementoShadow: AnimTask_MoveTargetMementoShadow as never,
+});
+
+/** 1:1 AnimTask_MementoHandleBg (dark.c:796) : rend le(s) BG anim au combat. */
+import { ResetBattleAnimBg as _dkResetBg } from '../engine/battle/battle-anim-interpreter';
+function AnimTask_MementoHandleBg(task: _DkTask): void {
+  const itf = _dItf3();
+  const atk = itf.getAttacker?.() ?? 0;
+  const toBG2 = (_dkBgRank(atk) ^ 1) !== 0;
+  _dkResetBg(toBG2);
+  if (_dkIsVisible(atk ^ 2)) _dkResetBg(!toBG2);
+  itf.DestroyAnimVisualTask?.(task.taskId);
+}
+_dRegT({ AnimTask_MementoHandleBg: AnimTask_MementoHandleBg as never });
