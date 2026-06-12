@@ -749,6 +749,71 @@ export function stopBattleTransitionAngledWipes(): void {
 
 export function isBattleTransitionAngledWipesActive(): boolean { return _angledWipes !== null; }
 
+// ─── B_TRANSITION_BLUR (battle_transition.c:1136-1177) ──────────────────────
+// Mosaïque croissante sur BG1-3 (REG_MOSAIC 0→14×17 par pas de 4 frames) +
+// fade noir à mi-course. La transition wild « joueur plus fort » en zone FLASH
+// et trainer FLASH (sBattleTransitionTable_*[FLASH][0]).
+
+interface BlurState { delay: number; counter: number; state: number }
+let _blur: BlurState | null = null;
+let _blurLastFrame = -1;
+
+/** 1:1 `Blur_Init` (:1141-1149) : MOSAIC=0 + BGCNT_MOSAIC sur BG1-3. */
+export function startBattleTransitionBlur(): void {
+  _blurLastFrame = -1;
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.SetGpuReg(0x04C /* REG_OFFSET_MOSAIC */, 0);
+  // BGCNT_MOSAIC (bit 6) sur BG1-3 — notre runtime : bg(n).config.mosaic.
+  for (const n of [1, 2, 3] as const) {
+    (rt.gba.bg(n).config as { mosaic?: boolean }).mosaic = true;
+  }
+  _blur = { delay: 0, counter: 0, state: 1 };
+}
+
+/** 1:1 `Blur_Main` (:1151-1167) + `Blur_End` (:1169-1177). */
+export function tickBattleTransitionBlur(): boolean {
+  if (!_blur) return true;
+  const b = _blur;
+  const fc = getRuntime()?.gIntroFrameCounter ?? -1;
+  if (fc === _blurLastFrame) return false;
+  _blurLastFrame = fc;
+  const rt = getRuntime();
+  if (!rt) return true;
+
+  if (b.state === 1) {
+    if (b.delay !== 0) { b.delay--; return false; }
+    b.delay = 4;
+    if (++b.counter === 10) {
+      // 1:1 BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK).
+      rt.BeginNormalPaletteFade(0xFFFFFFFF, -1, 0, 16, 0);
+    }
+    rt.SetGpuReg(0x04C /* REG_OFFSET_MOSAIC */, (b.counter & 15) * 17);
+    if (b.counter > 14) b.state = 2;
+    return false;
+  }
+  // Blur_End : attend la fin du fade.
+  if (!rt.gPaletteFade.active) {
+    stopBattleTransitionBlur();
+    return true;
+  }
+  return false;
+}
+
+/** Cleanup Blur : mosaic off (le combat re-pose ses BGCNT). */
+export function stopBattleTransitionBlur(): void {
+  const rt = getRuntime();
+  if (rt) {
+    rt.SetGpuReg(0x04C /* REG_OFFSET_MOSAIC */, 0);
+    for (const n of [1, 2, 3] as const) {
+      (rt.gba.bg(n).config as { mosaic?: boolean }).mosaic = false;
+    }
+  }
+  _blur = null;
+}
+
+export function isBattleTransitionBlurActive(): boolean { return _blur !== null; }
+
 // Surface devtools/dispatcher (anti-cycle : battle-decomp-loop consomme lazy).
 (globalThis as Record<string, unknown>).__battleTransitionMirror = {
   startBattleTransitionPokeballsTrail, tickBattleTransitionPokeballsTrail,
@@ -761,4 +826,6 @@ export function isBattleTransitionAngledWipesActive(): boolean { return _angledW
   stopBattleTransitionWhiteBarsFade, isBattleTransitionWhiteBarsFadeActive,
   startBattleTransitionAngledWipes, tickBattleTransitionAngledWipes,
   stopBattleTransitionAngledWipes, isBattleTransitionAngledWipesActive,
+  startBattleTransitionBlur, tickBattleTransitionBlur,
+  stopBattleTransitionBlur, isBattleTransitionBlurActive,
 };
