@@ -953,10 +953,10 @@ const _SPW_VIOLET = 13 | (0 << 5) | (15 << 10); // RGB(13,0,15)
 /** 1:1 AnimTask_SpiteTargetShadow (+ appel immediat). */
 function AnimTask_SpiteTargetShadow(task: _SpwTask): void {
   task.data[15] = 0;
-  task.func = _SpiteTargetShadow_Step1;
-  _SpiteTargetShadow_Step1(task);
+  task.func = AnimTask_SpiteTargetShadow_Step1;
+  AnimTask_SpiteTargetShadow_Step1(task);
 }
-function _SpiteTargetShadow_Step1(task: _SpwTask): void {
+function AnimTask_SpiteTargetShadow_Step1(task: _SpwTask): void {
   const itf = _spwItf();
   const tgt = itf.getTarget?.() ?? 1;
   const position = _spwBgRank(tgt);
@@ -982,6 +982,17 @@ function _SpiteTargetShadow_Step1(task: _SpwTask): void {
         cloneOam.paletteBank = task.data[14];
         cloneOam.objMode = 0; // ST_OAM_OBJ_NORMAL
         cloneOam.priority = 3;
+      }
+      if (clone) {
+        // ⚠ classe sync-écrase : syncSpritesToOam ré-écrit oam.objMode (et
+        // oam.visible depuis sprite.invisible) CHAQUE frame → poser les champs
+        // SPRITE. Le clone arrive en BLEND (objMode=1, CloneBattlerSpriteWith
+        // Blend) ; le C l'écrase en NORMAL (.c:625).
+        (clone as { objMode?: number }).objMode = 0;
+        // 1:1 :627 — l'ombre hérite du flag LOGIQUE d'invisibilité de la cible
+        // (battlerData[target].invisible, PAS sprite.invisible).
+        const sd = (globalThis as Record<string, unknown>).__battleSpritesData as { isBattlerDataInvisible?: (b: number) => boolean } | undefined;
+        clone.invisible = !!sd?.isBattlerDataInvisible?.(tgt);
       }
       task.data[1] = 0;
       task.data[2] = 0;
@@ -1022,7 +1033,7 @@ function _SpiteTargetShadow_Step1(task: _SpwTask): void {
     case 4: {
       const cfg = rt.gba?.bg(position === 1 ? 1 : 2)?.config;
       if (cfg) cfg.visible = true; // SetGpuRegBits
-      task.func = _SpiteTargetShadow_Step2;
+      task.func = AnimTask_SpiteTargetShadow_Step2;
       task.data[15]++;
       break;
     }
@@ -1031,7 +1042,7 @@ function _SpiteTargetShadow_Step1(task: _SpwTask): void {
       break;
   }
 }
-function _SpiteTargetShadow_Step2(task: _SpwTask): void {
+function AnimTask_SpiteTargetShadow_Step2(task: _SpwTask): void {
   const rt = _spwRt();
   task.data[1]++;
   task.data[5] = task.data[1] & 1;
@@ -1040,11 +1051,11 @@ function _SpiteTargetShadow_Step2(task: _SpwTask): void {
   rt.SetGpuReg?.(0x52, (task.data[2] & 0xFF) | ((task.data[3] & 0xFF) << 8));
   if (task.data[1] === 128) {
     task.data[15] = 0;
-    task.func = _SpiteTargetShadow_Step3;
-    _SpiteTargetShadow_Step3(task);
+    task.func = AnimTask_SpiteTargetShadow_Step3;
+    AnimTask_SpiteTargetShadow_Step3(task);
   }
 }
-function _SpiteTargetShadow_Step3(task: _SpwTask): void {
+function AnimTask_SpiteTargetShadow_Step3(task: _SpwTask): void {
   const itf = _spwItf();
   const rank = _spwBgRank(itf.getTarget?.() ?? 1);
   const rt = _spwRt();

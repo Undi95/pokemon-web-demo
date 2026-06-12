@@ -637,9 +637,9 @@
 - [x] AnimTask_NightShadeClone_Step1 @ L355-370 — renommé au nom C exact (ex-_NightShadeClone_Step1, battle_anim_ghost.ts)
 - [x] AnimTask_NightShadeClone_Step2 @ L371-399 — renommé au nom C exact (ex-_NightShadeClone_Step2)
 - [x] AnimTask_NightmareClone_Step @ L551-588 — renommé au nom C exact (ex-_NightmareClone_Step)
-- [ ] AnimTask_SpiteTargetShadow_Step1  @ L599-689
-- [ ] AnimTask_SpiteTargetShadow_Step2  @ L690-709
-- [ ] AnimTask_SpiteTargetShadow_Step3  @ L710-745
+- [x] AnimTask_SpiteTargetShadow_Step1 @ L599-689 — renommé au nom C exact (ex-_SpiteTargetShadow_Step1, vague F67) + 2 FIXES 1:1 : (a) clone.objMode=0 posé côté SPRITE (classe sync-écrase — l'OAM seul était ré-écrasé en BLEND chaque frame) ; (b) clone.invisible = battlerData[target].invisible (.c:627, manquait). A/B freeze-frame Spite réel : ombre violette RGB(13,0,15) VISIBLE, objMode sprite==oam==0, pal slot BENT_SPOON, prio 3
+- [x] AnimTask_SpiteTargetShadow_Step2 @ L690-709 — renommé au nom C exact ; A/B : BLDALPHA sinusoïdal mesuré (39 échantillons, 0→0x1000, EVA/EVB alternés gSineTable/18)
+- [x] AnimTask_SpiteTargetShadow_Step3 @ L710-745 — renommé au nom C exact ; A/B teardown : 0 task, BLDCNT/BLDALPHA 0, palette 10097 libérée, BG1/BG2 ré-affichés
 - [x] AnimDestinyBondWhiteShadow @ L746-782 — ÉQUIVALENCE : init inliné dans le spawner de la task (assigne AnimDestinyBondWhiteShadow_Step directement, base présente)
 - [x] AnimTask_DestinyBondWhiteShadow_Step @ L868-944 — renommé au nom C exact (ex-_DestinyBondWhiteShadow_Step)
 - [x] AnimTask_GrudgeFlames_Step @ L1196-1280 — renommé au nom C exact (ex-_GrudgeFlames_Step)
