@@ -2303,3 +2303,52 @@ function _DuplicateAndShrink_Step2(task: _StcTask): void {
   if (task.data[13] === 3) itf.DestroyAnimVisualTask?.(task.taskId);
 }
 _sbRegT({ AnimTask_ShrinkTargetCopy: AnimTask_ShrinkTargetCopy as never });
+
+// --- VAGUE F58 : AnimTask_CycleMagicalLeafPal (effects_1.c:3592) ------------
+// Arc-en-ciel des feuilles : blend des palettes LEAF + RAZOR_LEAF a travers
+// 7 couleurs (0..16 par couleur), jusqu'au signal args[7] = -1.
+const _ML_RGB = (r: number, g: number, b: number): number => r | (g << 5) | (b << 10);
+// 1:1 gMagicalLeafBlendColors (effects_1.c:1047)
+const _gMagicalLeafBlendColors: ReadonlyArray<number> = [
+  _ML_RGB(31, 0, 0),   // RGB_RED
+  _ML_RGB(31, 19, 0),
+  _ML_RGB(31, 31, 0),  // RGB_YELLOW
+  _ML_RGB(0, 31, 0),   // RGB_GREEN
+  _ML_RGB(5, 14, 31),
+  _ML_RGB(22, 10, 31),
+  _ML_RGB(22, 21, 31),
+];
+const _ML_TAG_LEAF = 10063;        // ANIM_TAG_LEAF (START+63)
+const _ML_TAG_RAZOR_LEAF = 10160;  // ANIM_TAG_RAZOR_LEAF (START+160)
+
+/** 1:1 AnimTask_CycleMagicalLeafPal. */
+function AnimTask_CycleMagicalLeafPal(task: { taskId: number; data: number[] }): void {
+  const itf = _sbItf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
+  const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  switch (task.data[0]) {
+    case 0: {
+      const leaf = spApi?.IndexOfSpritePaletteTag?.(_ML_TAG_LEAF) ?? 0xFF;
+      const razor = spApi?.IndexOfSpritePaletteTag?.(_ML_TAG_RAZOR_LEAF) ?? 0xFF;
+      task.data[8] = leaf === 0xFF ? -1 : 256 + leaf * 16;
+      task.data[12] = razor === 0xFF ? -1 : 256 + razor * 16;
+      task.data[0]++;
+      break;
+    }
+    case 1:
+      if (++task.data[9] >= 0) {
+        task.data[9] = 0;
+        if (task.data[8] >= 0) _dtBlend(task.data[8], 16, task.data[10], _gMagicalLeafBlendColors[task.data[11]]);
+        if (task.data[12] >= 0) _dtBlend(task.data[12], 16, task.data[10], _gMagicalLeafBlendColors[task.data[11]]);
+        if (++task.data[10] === 17) {
+          task.data[10] = 0;
+          if (++task.data[11] === 7) task.data[11] = 0;
+        }
+      }
+      break;
+  }
+  const args = itf.getArgs?.();
+  if (args && ((args[7] << 16) >> 16) === -1) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+_sbRegT({ AnimTask_CycleMagicalLeafPal: AnimTask_CycleMagicalLeafPal as never });
