@@ -702,3 +702,160 @@ _wRegT({
   AnimTask_StartSinAnimTimer: AnimTask_StartSinAnimTimer as never,
   AnimTask_CreateRaindrops: AnimTask_CreateRaindrops as never,
 });
+
+// --- VAGUE F46 : AnimTask_WaterSport (water.c:1357-1495) --------------------
+// Jet de gouttelettes balayé G<->D depuis l'attaquant ; chaque goutte fait un
+// arc puis REBONDIT vers un point aleatoire avant de signaler la task.
+import { InitAnimArcTranslation as _wsArcInit, TranslateAnimHorizontalArc as _wsArcRun } from './battle_anim_mons';
+
+let _wsSeed = 0x5EED;
+function _wsRand(): number {
+  // LCG deterministe (pattern _rainSeed F2 — Random2 ROM non seedee ici).
+  _wsSeed = (_wsSeed * 1103515245 + 12345) & 0x7FFFFFFF;
+  return (_wsSeed >> 16) & 0xFFFF;
+}
+type _WsTask = { taskId: number; data: number[]; func?: unknown };
+function _wsSpawnOrb(x: number, y: number, subprio: number): number {
+  const rt = (globalThis as Record<string, unknown>).__rt as {
+    gSprites?: Map<number, { data: number[]; callback: unknown; oamIndex: number }>;
+    CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+    gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+  } | undefined;
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gSmallWaterOrbSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt?.CreateSpriteInline?.({ oam: { shape: 0, size: 0, priority: 2 }, images: [] } as never, x, y, subprio) ?? -1;
+  if (sid >= 0) {
+    const sp = rt?.gSprites?.get(sid);
+    const oam = sp ? rt?.gba?.oam[sp.oamIndex] : undefined;
+    if (oam && tileStart !== 0xFFFF) {
+      oam.tileId = tileStart;
+      const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+      if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+    }
+  }
+  return sid;
+}
+
+/** 1:1 AnimTask_WaterSport (water.c:1357). */
+function AnimTask_WaterSport(task: _WsTask): void {
+  const itf = _wItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  task.data[3] = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  task.data[4] = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  task.data[7] = (atk & 1) === 0 ? 1 : -1; // GetBattlerSide == B_SIDE_PLAYER
+  task.data[5] = task.data[3] + task.data[7] * 8;
+  task.data[6] = task.data[4] - task.data[7] * 8;
+  task.data[9] = -32;
+  task.data[1] = 0;
+  task.data[0] = 0;
+  task.func = _WaterSport_Step;
+}
+function _WaterSport_Step(task: _WsTask): void {
+  switch (task.data[0]) {
+    case 0:
+      _CreateWaterSportDroplet(task);
+      if (task.data[10] !== 0) task.data[0]++;
+      break;
+    case 1:
+      _CreateWaterSportDroplet(task);
+      if (++task.data[1] > 16) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 2:
+      _CreateWaterSportDroplet(task);
+      task.data[5] += task.data[7] * 6;
+      if (!(task.data[5] >= -16 && task.data[5] <= 256)) {
+        if (++task.data[12] > 2) {
+          task.data[13] = 1;
+          task.data[0] = 6;
+          task.data[1] = 0;
+        } else {
+          task.data[1] = 0;
+          task.data[0]++;
+        }
+      }
+      break;
+    case 3:
+      _CreateWaterSportDroplet(task);
+      task.data[6] -= task.data[7] * 2;
+      if (++task.data[1] > 7) task.data[0]++;
+      break;
+    case 4:
+      _CreateWaterSportDroplet(task);
+      task.data[5] -= task.data[7] * 6;
+      if (!(task.data[5] >= -16 && task.data[5] <= 256)) {
+        task.data[12]++;
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 5:
+      _CreateWaterSportDroplet(task);
+      task.data[6] -= task.data[7] * 2;
+      if (++task.data[1] > 7) task.data[0] = 2;
+      break;
+    case 6:
+      if (task.data[8] === 0) task.data[0]++;
+      break;
+    default:
+      _wItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 CreateWaterSportDroplet (water.c:1443). */
+function _CreateWaterSportDroplet(task: _WsTask): void {
+  if (++task.data[2] > 1) {
+    task.data[2] = 0;
+    const sid = _wsSpawnOrb(task.data[3], task.data[4], 10);
+    if (sid >= 0) {
+      const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { data: number[]; callback: unknown }> } | undefined;
+      const sp = rt?.gSprites?.get(sid);
+      if (sp) {
+        sp.data[0] = 16;
+        sp.data[2] = task.data[5];
+        sp.data[4] = task.data[6];
+        sp.data[5] = task.data[9];
+        _wsArcInit(sp as never); // ecrase data[6] (phase d'arc) — d'ou le scan par func du C
+
+        sp.callback = _AnimWaterSportDroplet as never;
+        task.data[8]++;
+      }
+    }
+  }
+}
+/** 1:1 AnimWaterSportDroplet : arc -> rebond aleatoire. */
+function _AnimWaterSportDroplet(sprite: { x: number; y: number; x2: number; y2: number; data: number[]; callback: unknown }): void {
+  if (_wsArcRun(sprite as never)) {
+    sprite.x += sprite.x2;
+    sprite.y += sprite.y2;
+    sprite.x2 = 0;
+    sprite.y2 = 0;
+    sprite.data[0] = 6;
+    sprite.data[2] = (_wsRand() & 0x1F) - 16 + sprite.x;
+    sprite.data[4] = (_wsRand() & 0x1F) - 16 + sprite.y;
+    sprite.data[5] = ~(_wsRand() & 7);
+    _wsArcInit(sprite as never);
+    sprite.callback = _AnimWaterSportDroplet_Step as never;
+  }
+}
+/** 1:1 AnimWaterSportDroplet_Step : 2e arc -> signale LA task WaterSport
+ *  (scan par func, 1:1 — data[6] est la phase d'arc, pas un id). */
+function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
+  if (_wsArcRun(sprite as never)) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { gTasks?: Map<number, { data: number[]; func?: unknown }>; gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
+    for (const t of rt?.gTasks?.values() ?? []) {
+      if (t.func === _WaterSport_Step) {
+        t.data[10] = 1;
+        t.data[8]--;
+      }
+    }
+    for (const [sid, sp] of rt?.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt?.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_wRegT({ AnimTask_WaterSport: AnimTask_WaterSport as never });
