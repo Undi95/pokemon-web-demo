@@ -904,3 +904,201 @@ _iceRegT({
   AnimTask_HazeScrollingFog: AnimTask_HazeScrollingFog as never,
   AnimTask_MistBallFog: AnimTask_MistBallFog as never,
 });
+
+// --- VAGUE F70 : AnimTask_Hail (ice.c:1336-1530) ----------------------------
+// 10 grelons (table sHailCoordData : positions fixes/relatives aux battlers
+// +-w/6,h/6) x3 tailles d'affine, chute diagonale +4/+8, impact 20f sur les
+// grelons pleine taille (affine 0) visant un battler visible.
+import { GetBattlerAtPosition as _hlAtPos } from '../engine/battle/util';
+import { gBattlerPartyIndexes as _hlPartyIdx } from '../engine/battle/state';
+import { gEnemyParty as _hlEnemyParty, gPlayerParty as _hlPlayerParty, GetMonData as _hlGetMon, MON_DATA_SPECIES as _hlSpeciesK } from '../engine/battle/party-storage';
+import { reverseDecompConstant as _hlRevConst } from '../engine/system/decomp-constants';
+import { getMonFrontPicCoords as _hlFrontCoords, getMonBackPicCoords as _hlBackCoords } from './data/mon_pic_coords';
+
+const _HAIL_COORDS: ReadonlyArray<{ x: number; y: number; pos: number; type: number }> = [
+  { x: 100, y: 120, pos: 0, type: 2 }, { x: 85, y: 120, pos: 0, type: 0 },
+  { x: 242, y: 120, pos: 1, type: 1 }, { x: 66, y: 120, pos: 2, type: 1 },
+  { x: 182, y: 120, pos: 3, type: 0 }, { x: 60, y: 120, pos: 0, type: 2 },
+  { x: 214, y: 120, pos: 1, type: 0 }, { x: 113, y: 120, pos: 0, type: 1 },
+  { x: 210, y: 120, pos: 3, type: 1 }, { x: 38, y: 120, pos: 2, type: 0 },
+];
+const _HAIL_NUM_AFFINES = 3; // sAffineAnims_HailParticle (3 tailles)
+
+type _HlTask = { taskId: number; data: number[]; func?: unknown };
+function _hlItf(): { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _hlRt(): {
+  gSprites?: Map<number, { x: number; y: number; data: number[]; callback: unknown; oamIndex: number; subpriority?: number; inUse?: boolean; invisible?: boolean }>;
+  gTasks?: Map<number, { data: number[] }>;
+  CreateSpriteInline?: (t: unknown, x: number, y: number, p: number) => number;
+  DestroySprite?: (i: number) => void;
+  gba?: { oam: Array<{ tileId: number; paletteNum?: number }> };
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+function _hlBattlerAt(position: number): number {
+  return _hlAtPos(position);
+}
+function _hlVisible(battler: number): boolean {
+  if (battler === 0xFF) return false;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const sid = co?.getBattlerMonSpriteId?.(battler);
+  if (sid === undefined || sid === 0xFF) return false;
+  const sp = _hlRt().gSprites?.get(sid);
+  return !!sp && sp.inUse !== false && !sp.invisible;
+}
+function _hlPicDim(battler: number, which: 'w' | 'h'): number {
+  const party = (battler & 1) !== 0 ? _hlEnemyParty : _hlPlayerParty;
+  const species = _hlGetMon(party[_hlPartyIdx[battler]] as never, _hlSpeciesK) as number;
+  const name = _hlRevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
+  const coords = (battler & 1) === 0 ? _hlBackCoords(name) : _hlFrontCoords(name);
+  return which === 'w' ? coords.w : coords.h;
+}
+
+/** 1:1 AnimTask_Hail (+Hail2). tState=d0, count=d1, affine=d2, struct=d3, delay=d4, spawn=d5. */
+function AnimTask_Hail(task: _HlTask): void {
+  task.data[0] = 0;
+  task.data[1] = 0;
+  task.data[2] = 0;
+  task.data[3] = 0;
+  task.data[4] = 0;
+  task.data[5] = 0;
+  task.func = _Hail2_Step;
+}
+function _Hail2_Step(task: _HlTask): void {
+  switch (task.data[0]) {
+    case 0:
+      if (++task.data[4] > 2) {
+        task.data[4] = 0;
+        task.data[5] = 0;
+        task.data[2] = 0;
+        task.data[0]++;
+      }
+      break;
+    case 1:
+      if (task.data[5] === 0) {
+        if (_GenerateHailParticle(task.data[3], task.data[2], task.taskId, 1)) task.data[1]++;
+        if (++task.data[2] === _HAIL_NUM_AFFINES) {
+          if (++task.data[3] === _HAIL_COORDS.length) task.data[0]++;
+          else task.data[0]--;
+        } else {
+          task.data[5] = 1;
+        }
+      } else {
+        task.data[5]--;
+      }
+      break;
+    case 2:
+      if (task.data[1] === 0) _hlItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+  }
+}
+/** 1:1 GenerateHailParticle (ice.c:1414). */
+function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, taskId: number, c: number): boolean {
+  const entry = _HAIL_COORDS[hailStructId];
+  let battlerX: number;
+  let battlerY: number;
+  let shouldSpawnImpactEffect = 0;
+  if (entry.type !== 2 /* FIXED_POSITION */) {
+    const id = _hlBattlerAt(entry.pos);
+    if (_hlVisible(id)) {
+      shouldSpawnImpactEffect = 1;
+      battlerX = GetBattlerSpriteCoord(id, 2);
+      battlerY = GetBattlerSpriteCoord(id, 3);
+      if (entry.type === 0) {
+        battlerX -= Math.trunc(_hlPicDim(id, 'w') / 6);
+        battlerY -= Math.trunc(_hlPicDim(id, 'h') / 6);
+      } else {
+        battlerX += Math.trunc(_hlPicDim(id, 'w') / 6);
+        battlerY += Math.trunc(_hlPicDim(id, 'h') / 6);
+      }
+    } else {
+      battlerX = entry.x;
+      battlerY = entry.y;
+    }
+  } else {
+    battlerX = entry.x;
+    battlerY = entry.y;
+  }
+  const spriteX = battlerX - Math.trunc((battlerY + 8) / 2);
+  const rt = _hlRt();
+  const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+  const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+  const tpl = bridge?.lookupGeneratedTemplate?.('gHailParticleSpriteTemplate');
+  const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+  const sid = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, spriteX, -8, 18) ?? -1;
+  if (sid < 0) return false;
+  const sp = rt.gSprites?.get(sid);
+  const oam = sp ? rt.gba?.oam[sp.oamIndex] : undefined;
+  if (oam && tileStart !== 0xFFFF) {
+    oam.tileId = tileStart;
+    const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+    if (pal !== 0xFF && oam.paletteNum !== undefined) oam.paletteNum = pal;
+  }
+  if (sp) {
+    sp.data[0] = shouldSpawnImpactEffect; // sSpawnImpactEffect
+    sp.data[3] = battlerX;                // sTargetX
+    sp.data[4] = battlerY;                // sTargetY
+    sp.data[5] = affineAnimNum;           // sAffineAnimNum
+    sp.data[6] = taskId;                  // sOwnerTaskId
+    sp.data[7] = c;                       // sOwnerTaskSpriteCountField
+    sp.callback = _AnimHailBegin as never;
+  }
+  return true;
+}
+/** 1:1 AnimHailBegin : chute +4/+8 puis impact ou decrement direct. */
+function _AnimHailBegin(sprite: { x: number; y: number; data: number[]; callback: unknown; subpriority?: number }): void {
+  sprite.x += 4;
+  sprite.y += 8;
+  if (sprite.x < sprite.data[3] && sprite.y < sprite.data[4]) return;
+  const rt = _hlRt();
+  if (sprite.data[0] === 1 && sprite.data[5] === 0) {
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number | string) => number } | undefined;
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as { lookupGeneratedTemplate?: (n: string) => { tileTag: number } | undefined } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplate?.('gIceCrystalHitLargeSpriteTemplate');
+    const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+    const hitId = rt.CreateSpriteInline?.({ oam: { shape: 0, size: 1, priority: 2 }, images: [] } as never, sprite.data[3], sprite.data[4], sprite.subpriority ?? 18) ?? -1;
+    if (hitId >= 0) {
+      const hit = rt.gSprites?.get(hitId);
+      const hitOam = hit ? rt.gba?.oam[hit.oamIndex] : undefined;
+      if (hitOam && tileStart !== 0xFFFF) {
+        hitOam.tileId = tileStart;
+        const pal = dg?.IndexOfSpritePaletteTag?.(tpl?.tileTag ?? 0) ?? 0xFF;
+        if (pal !== 0xFF && hitOam.paletteNum !== undefined) hitOam.paletteNum = pal;
+      }
+      if (hit) {
+        hit.data[0] = 0;            // sTimer
+        hit.data[6] = sprite.data[6];
+        hit.data[7] = sprite.data[7];
+        hit.callback = _AnimHailContinue as never;
+      }
+    } else {
+      // pas d'impact : decremente directement (1:1 net du chemin else)
+      const t = rt.gTasks?.get(sprite.data[6]);
+      if (t) t.data[sprite.data[7]]--;
+    }
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+    // si l'impact a spawne, LE compte est transfere (pas de decrement ici, 1:1)
+  } else {
+    const t = rt.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+/** 1:1 AnimHailContinue : impact 20f puis decremente. */
+function _AnimHailContinue(sprite: { data: number[] }): void {
+  if (++sprite.data[0] === 20) {
+    const rt = _hlRt();
+    const t = rt.gTasks?.get(sprite.data[6]);
+    if (t) t.data[sprite.data[7]]--;
+    for (const [sid, sp] of rt.gSprites ?? new Map()) {
+      if (sp === (sprite as unknown)) { rt.DestroySprite?.(sid); break; }
+    }
+  }
+}
+_iceRegT({ AnimTask_Hail: AnimTask_Hail as never });
