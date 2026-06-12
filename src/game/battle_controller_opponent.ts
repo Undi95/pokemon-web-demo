@@ -87,7 +87,7 @@ import { CreateSprite } from '../engine/system/decomp-bridge';
 import type { DecompTask, DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
 import { getRuntime, SpriteCallbackDummy } from '../engine/system/decomp-globals';
 import { SpriteCB_WildMon } from '../engine/battle/battle-sprite-callbacks';
-import { isBallAnimActive } from '../engine/battle/battle-sprites-data';
+import { isBallAnimActive, setBallAnimActive } from '../engine/battle/battle-sprites-data';
 // 1:1 : l'alloc fraîche du struct sprites vit dans le miroir battle_gfx_sfx_util.
 import {
   AllocateBattleSpritesData, AllocateMonSpritesGfx, gMonSpritesGfxPtr,
@@ -596,19 +596,27 @@ function _setBattlerPartyIndex(battler: number, idx: number): void {
 
 function _StartSendOutAnim_Opponent(battler: number, dontClearSubstituteBit: boolean): void {
   // 1:1 décomp `StartSendOutAnim` (battle_controller_opponent.c:1131-1159) :
-  // party index + load gfx + CreateSprite mon + ball send-out adverse.
-  // ⚠️ L'ancien wire `__battleBallThrow.doPokeballSendOutAnimationOpponent`
-  // n'existait NULLE PART (no-op silencieux) → le 2e mon d'un dresseur n'avait
-  // JAMAIS de sprite (latent : tous les dresseurs testés n'avaient qu'1 mon ;
-  // démasqué par l'A/B chaîne SwitchIn sur Rick ×2 Wurmple 2026-06-12).
+  // party index + load gfx + CreateSprite mon (INVISIBLE) + ball send-out adverse
+  // (DoPokeballSendOutAnimation POKEBALL_OPPONENT_SENDOUT — même chaîne que
+  // Task_StartSendOutAnim de l'intro :1598). Bug user 2026-06-12 « le 2e mon
+  // arrive comme un sauvage » = la ball manquait ici.
+  // ⚠️ Historique : le wire initial `doPokeballSendOutAnimationOpponent`
+  // n'existait nulle part (mon invisible), puis isOpponent=false lisait
+  // gPlayerParty (species 0) — les 2 fixes précèdent ce throw complet.
   void dontClearSubstituteBit; // ClearTemporarySpeciesSpriteData = dette substitute.
-  // Création réelle du sprite front (gfx+palette+registre, reveal anti-noir) —
-  // la brique du chemin INTRO. isOpponent=TRUE : lit gEnemyParty (le `false`
-  // initial lisait gPlayerParty[idx] vide → « species 0 », mon invisible —
-  // ce N'ÉTAIT PAS une désync party-storage, juste cet argument).
-  // Ball anim DoPokeballSendOutAnimation (POKEBALL_OPPONENT_SENDOUT) = dette :
-  // le mon apparaît sans throw de ball.
-  void _loadAndCreateBattlerMonSprite(battler, true);
+  // deferReveal : le mon reste invisible jusqu'à l'émergence (HandleBallAnimEnd
+  // révèle — pattern player :871). ballAnimActive pré-posé SYNC : le load PNG est
+  // async, sans ça la chaîne SwitchIn_TryShinyAnim (installée juste après) verrait
+  // ballAnimActive=false AVANT le throw et avancerait trop tôt (healthbox pendant
+  // le throw). La décomp est sync (pas de fenêtre).
+  setBattlerDeferReveal(battler, true);
+  setBallAnimActive(battler, true);
+  void _loadAndCreateBattlerMonSprite(battler, true).then(() => {
+    const saved = gActiveBattler;
+    setActiveBattler(battler);
+    DoPokeballSendOutAnimation(0, POKEBALL_OPPONENT_SENDOUT);
+    setActiveBattler(saved);
+  });
 }
 
 function _installSwitchInTryShinyAnim(battler: number): void {
