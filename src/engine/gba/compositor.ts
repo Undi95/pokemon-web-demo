@@ -224,7 +224,7 @@ export function composeFrame(
     // winObjInside au lieu de outsideEnable.
     let winObjMask: Uint8Array | null = null;
     if (windows && windows.winObjEnabled && oam && objVram) {
-      winObjMask = computeWinObjScanline(y, oam, objVram);
+      winObjMask = computeWinObjScanline(y, oam, objVram, affineParams);
     }
 
     // Compute pixel layer mask + blend gate via windows pour chaque scanline.
@@ -612,6 +612,7 @@ function computeWinObjScanline(
   scanline: number,
   oam: ReadonlyArray<OamEntry>,
   objVram: Uint8Array,
+  affineParams?: ReadonlyArray<AffineMatrix>,
 ): Uint8Array {
   const mask = new Uint8Array(SCREEN_W);
   for (const sprite of oam) {
@@ -622,6 +623,43 @@ function computeWinObjScanline(
     const [wTiles, hTiles] = OAM_SIZES[sprite.shape][sprite.size];
     const wPx = wTiles * 8;
     const hPx = hTiles * 8;
+
+    // Sprites OBJ_WINDOW AFFINE (mode 1/3 — ex. spotlight Encore/Flatter) :
+    // même transfo inverse que renderOamSpriteAffine, mais on écrit le MASK.
+    if (sprite.affineMode === 1 || sprite.affineMode === 3) {
+      if (!affineParams) continue;
+      const isDouble = sprite.affineMode === 3;
+      const bboxW = isDouble ? wPx * 2 : wPx;
+      const bboxH = isDouble ? hPx * 2 : hPx;
+      const localBboxY = scanline - sprite.y;
+      if (localBboxY < 0 || localBboxY >= bboxH) continue;
+      const matrix = affineParams[sprite.affineParamIndex] ?? { pa: 256, pb: 0, pc: 0, pd: 256 };
+      const cxBbox = bboxW / 2, cyBbox = bboxH / 2;
+      const cxTex = wPx / 2, cyTex = hPx / 2;
+      const relY = localBboxY - cyBbox;
+      for (let dx = 0; dx < bboxW; dx++) {
+        const screenX = sprite.x + dx;
+        if (screenX < 0 || screenX >= SCREEN_W) continue;
+        if (mask[screenX]) continue;
+        const relX = dx - cxBbox;
+        const texX = ((matrix.pa * relX + matrix.pb * relY) >> 8) + cxTex;
+        const texY = ((matrix.pc * relX + matrix.pd * relY) >> 8) + cyTex;
+        if (texX < 0 || texX >= wPx || texY < 0 || texY >= hPx) continue;
+        const tileX = (texX / 8) | 0, tileY = (texY / 8) | 0;
+        const subX = texX % 8, subY = texY % 8;
+        const tileIdOffset = sprite.paletteMode === 0
+          ? tileY * wTiles + tileX
+          : (tileY * wTiles + tileX) * 2;
+        const finalTileId = sprite.tileId + tileIdOffset;
+        const decodeId = sprite.paletteMode === 0 ? finalTileId : (finalTileId >> 1);
+        const pixels = sprite.paletteMode === 0
+          ? decodeTile4bpp(objVram, decodeId, false, false)
+          : decodeTile8bpp(objVram, decodeId, false, false);
+        if (pixels[subY * 8 + subX] === 0) continue;
+        mask[(screenX | 0)] = 1;
+      }
+      continue;
+    }
 
     const localY = scanline - sprite.y;
     if (localY < 0 || localY >= hPx) continue;

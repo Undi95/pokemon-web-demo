@@ -3610,3 +3610,51 @@ function AnimTask_StatusClearedEffect(task: { taskId: number; data: number[]; fu
   start?.(task, 0x1A0, itf.getAttacker?.() ?? 0, 10, 2, 30, 'gCureBubblesGfx', 'gCureBubblesTilemap', 'gCureBubblesPal');
 }
 registerAnimTasks({ AnimTask_StatusClearedEffect: AnimTask_StatusClearedEffect as never });
+
+// --- VAGUE F74 : AnimTask_CreateSpotlight / AnimTask_RemoveSpotlight --------
+// (effects_3.c:1674/:1697) — la fenêtre 1 couvre la bande BASSE de l'écran
+// (y 120-160, WININ win1 SANS CLR → le « noir » du projecteur s'applique hors
+// cône) ; AnimSpotlight (OBJ_WINDOW affine, déjà porté plus haut) découpe le
+// cône sur la cible. Clients : Encore, Flatter. Combat seul (pas IsContest).
+// Les gBattle_WIN1H/V sont des MIROIRS réappliqués chaque VBlankCB_Battle
+// (battle_main.ts:158-159) → écrire le miroir ET le registre.
+const _SPT_REG_WININ = 0x48;
+const _SPT_REG_WIN1H = 0x42;
+const _SPT_REG_WIN1V = 0x46;
+const _SPT_DISPCNT_WIN1_ON = 0x4000;
+/** 1:1 WIN_RANGE(a, b) = (a << 8) | b. */
+function _sptWinRange(a: number, b: number): number { return ((a & 0xFF) << 8) | (b & 0xFF); }
+function _sptSetWin1(name: 'gBattle_WIN1H' | 'gBattle_WIN1V', v: number): void {
+  (globalThis as Record<string, unknown>)[name] = v;
+}
+/** 1:1 `AnimTask_CreateSpotlight` (effects_3.c:1674), branche combat. */
+function AnimTask_CreateSpotlight(task: { taskId: number }): void {
+  const rt = _grt();
+  // WININ_WIN0_BG_ALL|WIN0_OBJ|WIN0_CLR | WININ_WIN1_BG_ALL|WIN1_OBJ (sans CLR)
+  rt.SetGpuReg?.(_SPT_REG_WININ, 0x1F3F);
+  const h = _sptWinRange(0, 240);  // WIN_RANGE(0, DISPLAY_WIDTH)
+  const v = _sptWinRange(120, 160); // WIN_RANGE(120, DISPLAY_HEIGHT)
+  _sptSetWin1('gBattle_WIN1H', h);
+  _sptSetWin1('gBattle_WIN1V', v);
+  rt.SetGpuReg?.(_SPT_REG_WIN1H, h);
+  rt.SetGpuReg?.(_SPT_REG_WIN1V, v);
+  // SetGpuRegBits(DISPCNT, DISPCNT_WIN1_ON)
+  rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) | _SPT_DISPCNT_WIN1_ON);
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+/** 1:1 `AnimTask_RemoveSpotlight` (effects_3.c:1697). */
+function AnimTask_RemoveSpotlight(task: { taskId: number }): void {
+  const rt = _grt();
+  rt.SetGpuReg?.(_SPT_REG_WININ, 0x3F3F); // WININ all + CLR des deux fenêtres
+  _sptSetWin1('gBattle_WIN1H', 0);
+  _sptSetWin1('gBattle_WIN1V', 0);
+  rt.SetGpuReg?.(_SPT_REG_WIN1H, 0);
+  rt.SetGpuReg?.(_SPT_REG_WIN1V, 0);
+  // ClearGpuRegBits(DISPCNT, DISPCNT_WIN1_ON)
+  rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) & ~_SPT_DISPCNT_WIN1_ON);
+  _itf().DestroyAnimVisualTask?.(task.taskId);
+}
+_e3RegTasks({
+  AnimTask_CreateSpotlight: AnimTask_CreateSpotlight as never,
+  AnimTask_RemoveSpotlight: AnimTask_RemoveSpotlight as never,
+});
