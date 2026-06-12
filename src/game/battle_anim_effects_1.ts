@@ -92,7 +92,7 @@ type _PSprite = { data: number[]; x: number; y: number; x2: number; y2: number; 
 function _pItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimSprite?: (s: unknown) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-/** 1:1 `AnimMovePowderParticle` (effects_1.c:2195) : args [x, y, durée,
+/** 1:1 `AnimMovePowderParticle` (battle_anim_effects_1.c.c:2195) : args [x, y, durée,
  *  yVel, amplitude, vitesse] — descente + onde X. */
 function AnimMovePowderParticle(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 30, 64, 10, 4];
@@ -120,7 +120,7 @@ function _MovePowderParticle_Step(sprite: _PSprite): void {
   }
 }
 
-/** 1:1 `AnimFlyingParticle` (effects_1.c:3517) : particule qui traverse
+/** 1:1 `AnimFlyingParticle` (battle_anim_effects_1.c.c:3517) : particule qui traverse
  *  l'écran (gust/razor wind...) — args [y0, amplY, phase0, vX, dPhase, mode, anchor]. */
 function AnimFlyingParticle(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 0, 0, 0];
@@ -164,7 +164,7 @@ function _FlyingParticle_Step(sprite: _PSprite): void {
   _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimPowerAbsorptionOrb` (effects_1.c) : args [x, y, durée] — l'orbe
+/** 1:1 `AnimPowerAbsorptionOrb` (battle_anim_effects_1.c.c) : args [x, y, durée] — l'orbe
  *  converge vers le CENTRE de l'attaquant (charge type Meteor Mash/Giga Drain). */
 function AnimPowerAbsorptionOrb(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 20];
@@ -179,7 +179,7 @@ function AnimPowerAbsorptionOrb(sprite: _PSprite): void {
   StartAnimLinearTranslation(sprite as never);
 }
 
-/** 1:1 `AnimTranslateLinearSingleSineWave` (effects_1.c, 2 tpl) : projectile
+/** 1:1 `AnimTranslateLinearSingleSineWave` (battle_anim_effects_1.c.c, 2 tpl) : projectile
  *  en arc-sinus simple, clignote/détruit en fin (Mud-Slap, Octazooka...). */
 function AnimTranslateLinearSingleSineWave(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 0, 0, 20, 16, 0];
@@ -218,7 +218,7 @@ function _TranslateLinearSingleSineWave_Step(sprite: _PSprite): void {
   if (destroy) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimMoveTwisterParticle` (effects_1.c, 2 tpl) : la particule de
+/** 1:1 `AnimMoveTwisterParticle` (battle_anim_effects_1.c.c, 2 tpl) : la particule de
  *  tornade (Cos X / Sin Y, montée, priorité alternée). */
 function AnimMoveTwisterParticle(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [40, 48, 4, 20, 10];
@@ -248,7 +248,7 @@ function _MoveTwisterParticle_Step(sprite: _PSprite): void {
 }
 function SinT(i: number, a: number): number { return Sin(i & 0xFF, a); }
 
-/** 1:1 `AnimSolarBeamBigOrb` (effects_1.c) : orbe attaquant->cible, anim
+/** 1:1 `AnimSolarBeamBigOrb` (battle_anim_effects_1.c.c) : orbe attaquant->cible, anim
  *  variante args[3], lineaire -> destroy. */
 function AnimSolarBeamBigOrb(sprite: _PSprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 20, 0];
@@ -610,7 +610,7 @@ const RGB_WHITE = 0x7FFF;
 // constants/battle_anim.h : ANIM_SPRITES_START(10000) + 14
 const ANIM_TAG_LOCK_ON = 10014;
 
-/** 1:1 `gInclineMonCoordTable` (effects_1.c:1545, s8[][2]). */
+/** 1:1 `gInclineMonCoordTable` (battle_anim_effects_1.c.c:1545, s8[][2]). */
 const gInclineMonCoordTable: ReadonlyArray<readonly [number, number]> = [
   [64, 64],
   [0, -64],
@@ -788,7 +788,7 @@ function _GetBattlePalettesMask(battleBackground: boolean, attacker: boolean, ta
 
 // ─── Callbacks portés ─────────────────────────────────────────────────────────
 
-/** 1:1 `AnimHyperBeamOrb` (effects_1.c:2336) : orbe du faisceau — anim random
+/** 1:1 `AnimHyperBeamOrb` (battle_anim_effects_1.c.c:2336) : orbe du faisceau — anim random
  *  %8, départ X_2/Y_PIC attaquant ±20 (miroir côté), translation RAPIDE vitesse
  *  random (64..95), oscillation Cos + subpriority alternée. */
 function AnimHyperBeamOrb(sprite: _ESprite): void {
@@ -814,7 +814,7 @@ function AnimHyperBeamOrb(sprite: _ESprite): void {
   AnimHyperBeamOrb_Step(sprite);
 }
 
-/** 1:1 `AnimHyperBeamOrb_Step` (effects_1.c:2362). */
+/** 1:1 `AnimHyperBeamOrb_Step` (battle_anim_effects_1.c.c:2362). */
 function AnimHyperBeamOrb_Step(sprite: _ESprite): void {
   if (_AnimFastTranslateLinear(sprite)) {
     _pItf().DestroyAnimSprite?.(sprite);
@@ -827,7 +827,7 @@ function AnimHyperBeamOrb_Step(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimPetalDanceBigFlower` (effects_1.c:2482) : grande fleur — descente
+/** 1:1 `AnimPetalDanceBigFlower` (battle_anim_effects_1.c.c:2482) : grande fleur — descente
  *  linéaire (durée args[3]) + grand cercle Sin(32)/Cos(-5), subpriority
  *  alternée autour de l'attaquant. */
 function AnimPetalDanceBigFlower(sprite: _ESprite): void {
@@ -846,7 +846,7 @@ function AnimPetalDanceBigFlower(sprite: _ESprite): void {
   AnimPetalDanceBigFlower_Step(sprite);
 }
 
-/** 1:1 `AnimPetalDanceBigFlower_Step` (effects_1.c:2499). */
+/** 1:1 `AnimPetalDanceBigFlower_Step` (battle_anim_effects_1.c.c:2499). */
 function AnimPetalDanceBigFlower_Step(sprite: _ESprite): void {
   const atk = _pItf().getAttacker?.() ?? 0;
   if (!AnimTranslateLinear(sprite as never)) {
@@ -862,7 +862,7 @@ function AnimPetalDanceBigFlower_Step(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimPetalDanceSmallFlower` (effects_1.c:2518) : petite fleur — descente
+/** 1:1 `AnimPetalDanceSmallFlower` (battle_anim_effects_1.c.c:2518) : petite fleur — descente
  *  lente + balancement Sin(8), flip H aux extrêmes (data5≈59/187). */
 function AnimPetalDanceSmallFlower(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 0, 0];
@@ -880,7 +880,7 @@ function AnimPetalDanceSmallFlower(sprite: _ESprite): void {
   AnimPetalDanceSmallFlower_Step(sprite);
 }
 
-/** 1:1 `AnimPetalDanceSmallFlower_Step` (effects_1.c:2535). */
+/** 1:1 `AnimPetalDanceSmallFlower_Step` (battle_anim_effects_1.c.c:2535). */
 function AnimPetalDanceSmallFlower_Step(sprite: _ESprite): void {
   if (!AnimTranslateLinear(sprite as never)) {
     sprite.x2 += Sin(sprite.data[5] & 0xFF, 8);
@@ -893,7 +893,7 @@ function AnimPetalDanceSmallFlower_Step(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimConstrictBinding` (effects_1.c:2719) : corde qui SERRE la cible —
+/** 1:1 `AnimConstrictBinding` (battle_anim_effects_1.c.c:2719) : corde qui SERRE la cible —
  *  affine anim args[2] (en pause), relancée args[3] fois au signal scripté
  *  gBattleAnimArgs[7] == 0xFFFF. */
 function AnimConstrictBinding(sprite: _ESprite): void {
@@ -907,7 +907,7 @@ function AnimConstrictBinding(sprite: _ESprite): void {
   sprite.callback = AnimConstrictBinding_Step1;
 }
 
-/** 1:1 `AnimConstrictBinding_Step1` (effects_1.c:2731) : attend le signal
+/** 1:1 `AnimConstrictBinding_Step1` (battle_anim_effects_1.c.c:2731) : attend le signal
  *  scripté args[7] == 0xFFFF (setarg) → dépause l'affine, data[0]=0x100. */
 function AnimConstrictBinding_Step1(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [];
@@ -918,7 +918,7 @@ function AnimConstrictBinding_Step1(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimConstrictBinding_Step2` (effects_1.c:2744) : ±11 sur data[0]
+/** 1:1 `AnimConstrictBinding_Step2` (battle_anim_effects_1.c.c:2744) : ±11 sur data[0]
  *  (alternance 6 frames) ; à chaque fin d'affine → resqueeze ou destroy. */
 function AnimConstrictBinding_Step2(sprite: _ESprite): void {
   if (!sprite.data[2]) sprite.data[0] += 11;
@@ -933,7 +933,7 @@ function AnimConstrictBinding_Step2(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimMimicOrb` (effects_1.c:2840) : orbe cible → attaquant. case 0 :
+/** 1:1 `AnimMimicOrb` (battle_anim_effects_1.c.c:2840) : orbe cible → attaquant. case 0 :
  *  pos cible+args (miroir X si cible côté joueur — MUTE args[0] comme le C),
  *  invisible ; case 1 : visible, fin d'affine → ChangeSpriteAffineAnim(1) +
  *  translation rapide (25) vers l'attaquant → destroy. */
@@ -963,7 +963,7 @@ function AnimMimicOrb(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimLockOnTarget` (effects_1.c:4219) : réticule Lock-On — départ
+/** 1:1 `AnimLockOnTarget` (battle_anim_effects_1.c.c:4219) : réticule Lock-On — départ
  *  (-32,-32) du centre, 20 frames, puis cascade Step1..6 (4 bonds inclinés +
  *  flash blanc + flicker final). */
 function AnimLockOnTarget(sprite: _ESprite): void {
@@ -975,7 +975,7 @@ function AnimLockOnTarget(sprite: _ESprite): void {
   StoreSpriteCallbackInData6(sprite as never, AnimLockOnTarget_Step1 as never);
 }
 
-/** 1:1 `AnimLockOnTarget_Step1` (effects_1.c:4228) : alternance pause 1 frame /
+/** 1:1 `AnimLockOnTarget_Step1` (battle_anim_effects_1.c.c:4228) : alternance pause 1 frame /
  *  bond 8 frames vers gInclineMonCoordTable[data5>>8] (+SE_M_LOCK_ON). */
 function AnimLockOnTarget_Step1(sprite: _ESprite): void {
   switch (sprite.data[5] & 1) {
@@ -1001,7 +1001,7 @@ function AnimLockOnTarget_Step1(sprite: _ESprite): void {
   sprite.data[5] ^= 1;
 }
 
-/** 1:1 `AnimLockOnTarget_Step2` (effects_1.c:4255) : 4 bonds faits → pause 10
+/** 1:1 `AnimLockOnTarget_Step2` (battle_anim_effects_1.c.c:4255) : 4 bonds faits → pause 10
  *  puis Step3, sinon re-Step1. */
 function AnimLockOnTarget_Step2(sprite: _ESprite): void {
   if ((sprite.data[5] >> 8) === 4) {
@@ -1013,7 +1013,7 @@ function AnimLockOnTarget_Step2(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimLockOnTarget_Step3` (effects_1.c:4269) : réticule principal
+/** 1:1 `AnimLockOnTarget_Step3` (battle_anim_effects_1.c.c:4269) : réticule principal
  *  (affineParam 0) → flash blanc Step4 ; coin (1..4) → file vers son coin
  *  (±8,±8) en 6 frames puis Step5. (oam.affineParam modélisé `_affineParam`.) */
 function AnimLockOnTarget_Step3(sprite: _ESprite): void {
@@ -1046,7 +1046,7 @@ function AnimLockOnTarget_Step3(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimLockOnTarget_Step4` (effects_1.c:4315) : flash BLANC des palettes
+/** 1:1 `AnimLockOnTarget_Step4` (battle_anim_effects_1.c.c:4315) : flash BLANC des palettes
  *  combat (BlendPalettes ±3/frame jusqu'à 16 puis redescente), au pic :
  *  recolore le réticule (couleurs 8..9 → 1..2 de sa palette OBJ — slot via
  *  tag ANIM_TAG_LOCK_ON ≡ oam.paletteNum décomp) + SE_M_LEER. */
@@ -1072,7 +1072,7 @@ function AnimLockOnTarget_Step4(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimLockOnTarget_Step5` (effects_1.c:4342) : attend le signal scripté
+/** 1:1 `AnimLockOnTarget_Step5` (battle_anim_effects_1.c.c:4342) : attend le signal scripté
  *  args[7] == 0xFFFF → flicker final. */
 function AnimLockOnTarget_Step5(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [];
@@ -1083,7 +1083,7 @@ function AnimLockOnTarget_Step5(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimLockOnTarget_Step6` (effects_1.c:4353) : flicker toutes les 3
+/** 1:1 `AnimLockOnTarget_Step6` (battle_anim_effects_1.c.c:4353) : flicker toutes les 3
  *  frames ×8 → destroy. */
 function AnimLockOnTarget_Step6(sprite: _ESprite): void {
   if (sprite.data[0] % 3 === 0) {
@@ -1094,7 +1094,7 @@ function AnimLockOnTarget_Step6(sprite: _ESprite): void {
   if (sprite.data[1] === 8) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimLockOnMoveTarget` (effects_1.c:4366) : coin du réticule — args[0]
+/** 1:1 `AnimLockOnMoveTarget` (battle_anim_effects_1.c.c:4366) : coin du réticule — args[0]
  *  1..4 = coin (offsets ±0x18 + flips OAM), tile +16 (partie coin de la sheet
  *  LOCK_ON), puis chaîne AnimLockOnTarget. */
 function AnimLockOnMoveTarget(sprite: _ESprite): void {
@@ -1127,7 +1127,7 @@ function AnimLockOnMoveTarget(sprite: _ESprite): void {
   AnimLockOnTarget(sprite);
 }
 
-/** 1:1 `AnimSlashSlice` (effects_1.c:4696) : entaille sur attaquant (args[0]=0)
+/** 1:1 `AnimSlashSlice` (battle_anim_effects_1.c.c:4696) : entaille sur attaquant (args[0]=0)
  *  ou cible (X_2/Y_PIC + args[1..2]), anim de table → flicker Step3 → destroy. */
 function AnimSlashSlice(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [1, 0, 0];
@@ -1147,7 +1147,7 @@ function AnimSlashSlice(sprite: _ESprite): void {
   sprite.callback = _RunStoredCallbackWhenAnimEnds;
 }
 
-/** 1:1 `AnimFalseSwipeSlice` (effects_1.c:4717) : entaille à -48px (0xFFD0 s16)
+/** 1:1 `AnimFalseSwipeSlice` (battle_anim_effects_1.c.c:4717) : entaille à -48px (0xFFD0 s16)
  *  de la cible, anim de table → Step1 (glisse) → flicker → destroy. */
 function AnimFalseSwipeSlice(sprite: _ESprite): void {
   const tgt = _pItf().getTarget?.() ?? 1;
@@ -1158,7 +1158,7 @@ function AnimFalseSwipeSlice(sprite: _ESprite): void {
   sprite.callback = _RunStoredCallbackWhenAnimEnds;
 }
 
-/** 1:1 `AnimFalseSwipePositionedSlice` (effects_1.c:4725) : entaille positionnée
+/** 1:1 `AnimFalseSwipePositionedSlice` (battle_anim_effects_1.c.c:4725) : entaille positionnée
  *  -48+args[0], anim 1, flicker Step3 direct. */
 function AnimFalseSwipePositionedSlice(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [0];
@@ -1172,7 +1172,7 @@ function AnimFalseSwipePositionedSlice(sprite: _ESprite): void {
   sprite.callback = AnimFalseSwipeSlice_Step3;
 }
 
-/** 1:1 `AnimFalseSwipeSlice_Step1` (effects_1.c:4737) : 8 frames puis glisse
+/** 1:1 `AnimFalseSwipeSlice_Step1` (battle_anim_effects_1.c.c:4737) : 8 frames puis glisse
  *  linéaire (12 steps de +8 en X). */
 function AnimFalseSwipeSlice_Step1(sprite: _ESprite): void {
   if (++sprite.data[0] > 8) {
@@ -1184,14 +1184,14 @@ function AnimFalseSwipeSlice_Step1(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimFalseSwipeSlice_Step2` (effects_1.c:4749). */
+/** 1:1 `AnimFalseSwipeSlice_Step2` (battle_anim_effects_1.c.c:4749). */
 function AnimFalseSwipeSlice_Step2(sprite: _ESprite): void {
   sprite.data[0] = 0;
   sprite.data[1] = 0;
   sprite.callback = AnimFalseSwipeSlice_Step3;
 }
 
-/** 1:1 `AnimFalseSwipeSlice_Step3` (effects_1.c:4756) : flicker 1 frame sur 2,
+/** 1:1 `AnimFalseSwipeSlice_Step3` (battle_anim_effects_1.c.c:4756) : flicker 1 frame sur 2,
  *  ×8 → destroy. */
 function AnimFalseSwipeSlice_Step3(sprite: _ESprite): void {
   if (++sprite.data[0] > 1) {
@@ -1201,7 +1201,7 @@ function AnimFalseSwipeSlice_Step3(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimEndureEnergy` (effects_1.c:4767) : flamme d'Endure sur attaquant
+/** 1:1 `AnimEndureEnergy` (battle_anim_effects_1.c.c:4767) : flamme d'Endure sur attaquant
  *  (args[0]=0) ou cible (COORD_X/Y + args[1..2]) — monte par paliers
  *  (data[0] cycle 0..args[3]). */
 function AnimEndureEnergy(sprite: _ESprite): void {
@@ -1221,7 +1221,7 @@ function AnimEndureEnergy(sprite: _ESprite): void {
   sprite.callback = AnimEndureEnergy_Step;
 }
 
-/** 1:1 `AnimEndureEnergy_Step` (effects_1.c:4787) — `y -= data[0]` VERBATIM
+/** 1:1 `AnimEndureEnergy_Step` (battle_anim_effects_1.c.c:4787) — `y -= data[0]` VERBATIM
  *  (:4795, montée accélérée par paliers) ; destroy à animEnded. */
 function AnimEndureEnergy_Step(sprite: _ESprite): void {
   if (++sprite.data[0] > sprite.data[1]) {
@@ -1232,7 +1232,7 @@ function AnimEndureEnergy_Step(sprite: _ESprite): void {
   if (sprite.animEnded) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimSharpenSphere` (effects_1.c:4800) : sphère Sharpen au-dessus de
+/** 1:1 `AnimSharpenSphere` (battle_anim_effects_1.c.c:4800) : sphère Sharpen au-dessus de
  *  l'attaquant (Y_PIC-12), flicker s'élargissant + SE_M_SWAGGER2 un cycle
  *  visible sur deux → destroy (animEnded & data[1]>16 & invisible). */
 function AnimSharpenSphere(sprite: _ESprite): void {
@@ -1249,7 +1249,7 @@ function AnimSharpenSphere(sprite: _ESprite): void {
   sprite.callback = AnimSharpenSphere_Step;
 }
 
-/** 1:1 `AnimSharpenSphere_Step` (effects_1.c:4813). */
+/** 1:1 `AnimSharpenSphere_Step` (battle_anim_effects_1.c.c:4813). */
 function AnimSharpenSphere_Step(sprite: _ESprite): void {
   if (++sprite.data[0] >= sprite.data[1]) {
     sprite.invisible = !sprite.invisible;
@@ -1267,7 +1267,7 @@ function AnimSharpenSphere_Step(sprite: _ESprite): void {
     _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimConversion` (effects_1.c:4837) : carré Conversion sur l'attaquant
+/** 1:1 `AnimConversion` (battle_anim_effects_1.c.c:4837) : carré Conversion sur l'attaquant
  *  (COORD_X/Y + args[0..1]), détruit au signal scripté args[7] == 0xFFFF
  *  (posé par AnimTask_ConversionAlphaBlend). */
 function AnimConversion(sprite: _ESprite): void {
@@ -1283,7 +1283,7 @@ function AnimConversion(sprite: _ESprite): void {
   if (((args[7] ?? 0) & 0xFFFF) === 0xFFFF) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimConversion2` (effects_1.c:4881) : carré sur la CIBLE, anim en
+/** 1:1 `AnimConversion2` (battle_anim_effects_1.c.c:4881) : carré sur la CIBLE, anim en
  *  pause args[2] frames puis file vers l'attaquant (30 frames) → destroy. */
 function AnimConversion2(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0, 0];
@@ -1294,7 +1294,7 @@ function AnimConversion2(sprite: _ESprite): void {
   sprite.callback = AnimConversion2_Step;
 }
 
-/** 1:1 `AnimConversion2_Step` (effects_1.c:4891). */
+/** 1:1 `AnimConversion2_Step` (battle_anim_effects_1.c.c:4891). */
 function AnimConversion2_Step(sprite: _ESprite): void {
   if (sprite.data[0]) {
     sprite.data[0]--;
@@ -1309,7 +1309,7 @@ function AnimConversion2_Step(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimMoon` (effects_1.c:4946) : la lune de Moonlight (64x64, position
+/** 1:1 `AnimMoon` (battle_anim_effects_1.c.c:4946) : la lune de Moonlight (64x64, position
  *  args[0..1]) — reste affichée jusqu'au signal data[0] (posé par
  *  AnimTask_MoonlightEndFade, non porté → cleanup fin d'anim). */
 function AnimMoon(sprite: _ESprite): void {
@@ -1324,12 +1324,12 @@ function AnimMoon(sprite: _ESprite): void {
   sprite.callback = AnimMoon_Step;
 }
 
-/** 1:1 `AnimMoon_Step` (effects_1.c:4967). */
+/** 1:1 `AnimMoon_Step` (battle_anim_effects_1.c.c:4967). */
 function AnimMoon_Step(sprite: _ESprite): void {
   if (sprite.data[0]) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimMoonlightSparkle` (effects_1.c:4973) : étincelle de Moonlight —
+/** 1:1 `AnimMoonlightSparkle` (battle_anim_effects_1.c.c:4973) : étincelle de Moonlight —
  *  descend 1px / 2 frames (120 max) jusqu'au signal data[0]. */
 function AnimMoonlightSparkle(sprite: _ESprite): void {
   const args = _pItf().getArgs?.() ?? [0, 0];
@@ -1345,7 +1345,7 @@ function AnimMoonlightSparkle(sprite: _ESprite): void {
   sprite.callback = AnimMoonlightSparkle_Step;
 }
 
-/** 1:1 `AnimMoonlightSparkle_Step` (effects_1.c:4987). */
+/** 1:1 `AnimMoonlightSparkle_Step` (battle_anim_effects_1.c.c:4987). */
 function AnimMoonlightSparkle_Step(sprite: _ESprite): void {
   if (++sprite.data[1] > 1) {
     sprite.data[1] = 0;
@@ -1357,7 +1357,7 @@ function AnimMoonlightSparkle_Step(sprite: _ESprite): void {
   if (sprite.data[0]) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimHornHit` (effects_1.c:5108) : la corne file vers le point d'impact
+/** 1:1 `AnimHornHit` (battle_anim_effects_1.c.c:5108) : la corne file vers le point d'impact
  *  cible+args[0..1] en args[2] frames (fixed-point <<7, clamp 2..0x7F — MUTE
  *  args[2] comme le C), flips côté adverse ; snap au point d'impact à
  *  data[1]==1 → destroy. */
@@ -1394,7 +1394,7 @@ function AnimHornHit(sprite: _ESprite): void {
   sprite.callback = AnimHornHit_Step;
 }
 
-/** 1:1 `AnimHornHit_Step` (effects_1.c:5157). */
+/** 1:1 `AnimHornHit_Step` (battle_anim_effects_1.c.c:5157). */
 function AnimHornHit_Step(sprite: _ESprite): void {
   sprite.data[2] += sprite.data[3];
   sprite.data[4] += sprite.data[5];
@@ -1407,7 +1407,7 @@ function AnimHornHit_Step(sprite: _ESprite): void {
   if (sprite.data[1] === 0) _pItf().DestroyAnimSprite?.(sprite);
 }
 
-/** 1:1 `AnimSuperFang` (effects_1.c:5245) : anim de table → destroy à la fin. */
+/** 1:1 `AnimSuperFang` (battle_anim_effects_1.c.c:5245) : anim de table → destroy à la fin. */
 function AnimSuperFang(sprite: _ESprite): void {
   sprite.invisible = false;
   StoreSpriteCallbackInData6(sprite as never, _destroyAnimSpriteCb as never);
@@ -1527,7 +1527,7 @@ registerAnimCallbacks({
 
 // ═════════════════════════════════════════════════════════════════════════════
 // VAGUE « Protect / Milk Drink / Bow » (2026-06-11, append-only) :
-// AnimProtect (+_Step, effects_1.c:3922/:3944), AnimMilkBottle (+_Step1/_Step2,
+// AnimProtect (+_Step, battle_anim_effects_1.c.c:3922/:3944), AnimMilkBottle (+_Step1/_Step2,
 // :3987/:4003/:4078), AnimBowMon (+_Step1.._Step4, :4400-:4503).
 // Plomberie du bloc préfixée _p1 (anti-collision vagues parallèles).
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1609,9 +1609,9 @@ function _p1DestroyAnimSpriteAndDisableBlend(sprite: _ESprite): void {
   _pItf().DestroyAnimSprite?.(sprite);
 }
 
-// ─── AnimProtect (effects_1.c:3922) — gProtectSpriteTemplate (ObjBlend 64x64) ─
+// ─── AnimProtect (battle_anim_effects_1.c.c:3922) — gProtectSpriteTemplate (ObjBlend 64x64) ─
 
-/** 1:1 `AnimProtect` (effects_1.c:3922) : le mur de Protect/Detect — position
+/** 1:1 `AnimProtect` (battle_anim_effects_1.c.c:3922) : le mur de Protect/Detect — position
  *  attaquant via GetBattlerSpriteCoord2 (+args[0..1]), priorité BG (+1 côté
  *  joueur), blend BLDCNT TGT2_ALL (EVA 0/EVB 16 au départ), data[0]=durée
  *  (args[2]), data[2]=base palette OBJ du tag PROTECT (rotation de teinte). */
@@ -1636,7 +1636,7 @@ function AnimProtect(sprite: _ESprite): void {
   sprite.callback = AnimProtect_Step;
 }
 
-/** 1:1 `AnimProtect_Step` (effects_1.c:3944) : dérive X fixed-point (-data[5]>>8,
+/** 1:1 `AnimProtect_Step` (battle_anim_effects_1.c.c:3944) : dérive X fixed-point (-data[5]>>8,
  *  +96/frame), rotation des couleurs 1..7 de la palette du tag toutes les 2
  *  frames, fade-in EVA jusqu'à 10 (data[7]>6) pendant la durée, puis fade-out
  *  (data[7]→16) → invisible + DestroyAnimSpriteAndDisableBlend. */
@@ -1679,9 +1679,9 @@ function AnimProtect_Step(sprite: _ESprite): void {
   }
 }
 
-// ─── AnimMilkBottle (effects_1.c:3987) — gMilkBottleSpriteTemplate ───────────
+// ─── AnimMilkBottle (battle_anim_effects_1.c.c:3987) — gMilkBottleSpriteTemplate ───────────
 
-/** 1:1 `AnimMilkBottle` (effects_1.c:3987) : la bouteille de Milk Drink —
+/** 1:1 `AnimMilkBottle` (battle_anim_effects_1.c.c:3987) : la bouteille de Milk Drink —
  *  centrée cible, y-24 (0xFFE8 s16), blend EVA0/EVB16, fade-in (Step1 case 0)
  *  → bascule affine 1 (case 1) → balancement (Step2) + descente + fade-out
  *  (case 2) → invisible → reset blend + destroy. */
@@ -1703,7 +1703,7 @@ function AnimMilkBottle(sprite: _ESprite): void {
   sprite.callback = AnimMilkBottle_Step1;
 }
 
-/** 1:1 `AnimMilkBottle_Step1` (effects_1.c:4003). */
+/** 1:1 `AnimMilkBottle_Step1` (battle_anim_effects_1.c.c:4003). */
 function AnimMilkBottle_Step1(sprite: _ESprite): void {
   switch (sprite.data[0]) {
     case 0:
@@ -1766,7 +1766,7 @@ function AnimMilkBottle_Step1(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimMilkBottle_Step2` (effects_1.c:4078) : balancement — data[4] ±2
+/** 1:1 `AnimMilkBottle_Step2` (battle_anim_effects_1.c.c:4078) : balancement — data[4] ±2
  *  par fenêtres de data[3] (0..11 / 18..41 / 48..59, cycle 60), x2 = data[4]/9,
  *  y2 = |data[4]/14|. (unk1/unk2 inutilisés — signature C conservée.) */
 function AnimMilkBottle_Step2(sprite: _ESprite, _unk1: number, _unk2: number): void {
@@ -1789,9 +1789,9 @@ function AnimMilkBottle_Step2(sprite: _ESprite, _unk1: number, _unk2: number): v
     sprite.data[3] = 0;
 }
 
-// ─── AnimBowMon (effects_1.c:4400) — gBowMonSpriteTemplate (contrôleur) ──────
+// ─── AnimBowMon (battle_anim_effects_1.c.c:4400) — gBowMonSpriteTemplate (contrôleur) ──────
 
-/** 1:1 `AnimBowMon` (effects_1.c:4400) : sprite contrôleur INVISIBLE qui fait
+/** 1:1 `AnimBowMon` (battle_anim_effects_1.c.c:4400) : sprite contrôleur INVISIBLE qui fait
  *  « s'incliner » l'ATTAQUANT (salut de Slack Off…). args[0] : 0 = avance +
  *  rotation (Step1), 1 = recule (Step2), 2 = attente 9f + rotation inverse
  *  (Step3), autre = destroy direct (Step4). */
@@ -1815,7 +1815,7 @@ function AnimBowMon(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimBowMon_Step1` (effects_1.c:4423) : translate l'attaquant de ±2 px/f
+/** 1:1 `AnimBowMon_Step1` (battle_anim_effects_1.c.c:4423) : translate l'attaquant de ±2 px/f
  *  pendant 6 frames (vers la cible) puis enchaîne la rotation (Step1_Callback). */
 function AnimBowMon_Step1(sprite: _ESprite): void {
   const atk = _pItf().getAttacker?.() ?? 0;
@@ -1827,7 +1827,7 @@ function AnimBowMon_Step1(sprite: _ESprite): void {
   sprite.callback = _p1TranslateSpriteLinearById;
 }
 
-/** 1:1 `AnimBowMon_Step1_Callback` (effects_1.c:4433) : rotation ±0x300/frame
+/** 1:1 `AnimBowMon_Step1_Callback` (battle_anim_effects_1.c.c:4433) : rotation ±0x300/frame
  *  (4 frames) du sprite du mon via SetSpriteRotScale + y2 dérivé de la matrice. */
 function AnimBowMon_Step1_Callback(sprite: _ESprite): void {
   const atk = _pItf().getAttacker?.() ?? 0;
@@ -1848,7 +1848,7 @@ function AnimBowMon_Step1_Callback(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimBowMon_Step2` (effects_1.c:4453) : recule l'attaquant de ±3 px/f
+/** 1:1 `AnimBowMon_Step2` (battle_anim_effects_1.c.c:4453) : recule l'attaquant de ±3 px/f
  *  pendant 4 frames → destroy (Step4). */
 function AnimBowMon_Step2(sprite: _ESprite): void {
   const atk = _pItf().getAttacker?.() ?? 0;
@@ -1860,7 +1860,7 @@ function AnimBowMon_Step2(sprite: _ESprite): void {
   sprite.callback = _p1TranslateSpriteLinearById;
 }
 
-/** 1:1 `AnimBowMon_Step3` (effects_1.c:4463) : attend 9 frames puis lance la
+/** 1:1 `AnimBowMon_Step3` (battle_anim_effects_1.c.c:4463) : attend 9 frames puis lance la
  *  rotation inverse (Step3_Callback). */
 function AnimBowMon_Step3(sprite: _ESprite): void {
   if (++sprite.data[0] > 8) {
@@ -1869,7 +1869,7 @@ function AnimBowMon_Step3(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimBowMon_Step3_Callback` (effects_1.c:4472) : redresse le mon —
+/** 1:1 `AnimBowMon_Step3_Callback` (battle_anim_effects_1.c.c:4472) : redresse le mon —
  *  rotation depuis ±0xC00/-0xF400 par pas de ±0x400 (3 frames) puis
  *  ResetSpriteRotScale → Step4. */
 function AnimBowMon_Step3_Callback(sprite: _ESprite): void {
@@ -1895,7 +1895,7 @@ function AnimBowMon_Step3_Callback(sprite: _ESprite): void {
   }
 }
 
-/** 1:1 `AnimBowMon_Step4` (effects_1.c:4500). */
+/** 1:1 `AnimBowMon_Step4` (battle_anim_effects_1.c.c:4500). */
 function AnimBowMon_Step4(sprite: _ESprite): void {
   _pItf().DestroyAnimSprite?.(sprite);
 }
@@ -1906,7 +1906,7 @@ registerAnimCallbacks({
   AnimBowMon: AnimBowMon as never,
 });
 
-// ─── VAGUE F28 : AnimTask_SkullBashPosition (effects_1.c, 2 hits) ───────────
+// ─── VAGUE F28 : AnimTask_SkullBashPosition (battle_anim_effects_1.c.c, 2 hits) ───────────
 // mode 0 = recul + bascule rotation + tremblement + charge ; mode 1 = reset.
 import {
   PrepareBattlerSpriteForRotScale as _sbPrep, SetSpriteRotScale as _sbSet,
@@ -2027,7 +2027,7 @@ function _SkullBashReset(task: { taskId: number; data: number[] }): void {
     itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
-/** 1:1 `gParticlesColorBlendTable` (effects_1.c:1973) + les 2 tasks MusicNotes
+/** 1:1 `gParticlesColorBlendTable` (battle_anim_effects_1.c.c:1973) + les 2 tasks MusicNotes
  *  rainbow (6 hits — Sing/HealBell/GrassWhistle) : pose les 4 palettes de
  *  particules colorées (alloc par tag), le clear les libère. */
 const _gParticlesColorBlendTable: ReadonlyArray<readonly [number, readonly number[]]> = [
@@ -2069,11 +2069,11 @@ _sbRegT({
   AnimTask_MusicNotesClearRainbowBlend: AnimTask_MusicNotesClearRainbowBlend as never,
 });
 
-// ─── VAGUE F37 : Conversion ×2 (effects_1.c:4856 + :4908) ───────────────────
+// ─── VAGUE F37 : Conversion ×2 (battle_anim_effects_1.c.c:4856 + :4908) ───────────────────
 function _cvRt(): { SetGpuReg?: (off: number, v: number) => void } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
-/** 1:1 `AnimTask_ConversionAlphaBlend` (effects_1.c:4856) : fondu BLDALPHA
+/** 1:1 `AnimTask_ConversionAlphaBlend` (battle_anim_effects_1.c.c:4856) : fondu BLDALPHA
  *  16-n/n par pas de 4f, signal args[7]=0xFFFF une frame, puis destroy. */
 function AnimTask_ConversionAlphaBlend(task: { taskId: number; data: number[] }): void {
   const itf = _sbItf() as { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
@@ -2092,7 +2092,7 @@ function AnimTask_ConversionAlphaBlend(task: { taskId: number; data: number[] })
     }
   }
 }
-/** 1:1 `AnimTask_Conversion2AlphaBlend` (effects_1.c:4908) : fondu inverse. */
+/** 1:1 `AnimTask_Conversion2AlphaBlend` (battle_anim_effects_1.c.c:4908) : fondu inverse. */
 function AnimTask_Conversion2AlphaBlend(task: { taskId: number; data: number[] }): void {
   if (++task.data[0] === 4) {
     task.data[0] = 0;
@@ -2108,7 +2108,7 @@ _sbRegT({
   AnimTask_Conversion2AlphaBlend: AnimTask_Conversion2AlphaBlend as never,
 });
 
-// --- VAGUE F52 : AnimTask_DoubleTeam (effects_1.c:5173-5245) ----------------
+// --- VAGUE F52 : AnimTask_DoubleTeam (battle_anim_effects_1.c.c:5173-5245) ----------------
 // 2 clones assombris (palette BENT_SPOON blend noir 11/16) qui oscillent en
 // Sin dephases de 128, pendant que le BG du mon est COUPE (DISPCNT).
 import { BlendPalette as _dtBlend } from '../engine/system/decomp-globals';
@@ -2131,7 +2131,7 @@ function _dtBgVisible(rank: number, on: boolean): void {
   if (cfg) cfg.visible = on; // 1:1 Clear/SetGpuRegBits(DISPCNT, BGn_ON)
 }
 
-/** 1:1 AnimTask_DoubleTeam (effects_1.c:5173). */
+/** 1:1 AnimTask_DoubleTeam (battle_anim_effects_1.c.c:5173). */
 function AnimTask_DoubleTeam(task: _DtTask): void {
   const itf = _dtItf();
   const mons = _dtMons();
@@ -2205,7 +2205,7 @@ function _AnimDoubleTeam(sprite: { data: number[]; x2: number }): void {
 }
 _sbRegT({ AnimTask_DoubleTeam: AnimTask_DoubleTeam as never });
 
-// --- VAGUE F53 : ShrinkTargetCopy / Mimic (effects_1.c:2762-2837) -----------
+// --- VAGUE F53 : ShrinkTargetCopy / Mimic (battle_anim_effects_1.c.c:2762-2837) -----------
 // La cible "copie" : glisse en x (vitesse Q8.8 arg0) en GRANDISSANT (+16/f)
 // en blend, attend le signal args[7]=0xFFFF, restore.
 type _StcTask = { taskId: number; data: number[]; func?: unknown };
@@ -2231,14 +2231,14 @@ function _stcTargetSpriteId(): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
 }
-/** 1:1 GetBattlerSpriteBGPriority (mons.c) : priority du BG anim 1/2. */
+/** 1:1 GetBattlerSpriteBGPriority (battle_anim_mons.c.c) : priority du BG anim 1/2. */
 function _stcBgPriority(battler: number): number {
   const pos = battler & 3;
   const bgId = (pos === 0 || pos === 3) ? 2 : 1;
   return _stcRt().gba?.bg(bgId)?.config?.priority ?? 2;
 }
 
-/** 1:1 AnimTask_ShrinkTargetCopy (effects_1.c:2762). args=[vitesseX Q8.8, frames]. */
+/** 1:1 AnimTask_ShrinkTargetCopy (battle_anim_effects_1.c.c:2762). args=[vitesseX Q8.8, frames]. */
 function AnimTask_ShrinkTargetCopy(task: _StcTask): void {
   const itf = _stcItf();
   const args = itf.getArgs?.() ?? [128, 24];
@@ -2304,11 +2304,11 @@ function _DuplicateAndShrink_Step2(task: _StcTask): void {
 }
 _sbRegT({ AnimTask_ShrinkTargetCopy: AnimTask_ShrinkTargetCopy as never });
 
-// --- VAGUE F58 : AnimTask_CycleMagicalLeafPal (effects_1.c:3592) ------------
+// --- VAGUE F58 : AnimTask_CycleMagicalLeafPal (battle_anim_effects_1.c.c:3592) ------------
 // Arc-en-ciel des feuilles : blend des palettes LEAF + RAZOR_LEAF a travers
 // 7 couleurs (0..16 par couleur), jusqu'au signal args[7] = -1.
 const _ML_RGB = (r: number, g: number, b: number): number => r | (g << 5) | (b << 10);
-// 1:1 gMagicalLeafBlendColors (effects_1.c:1047)
+// 1:1 gMagicalLeafBlendColors (battle_anim_effects_1.c.c:1047)
 const _gMagicalLeafBlendColors: ReadonlyArray<number> = [
   _ML_RGB(31, 0, 0),   // RGB_RED
   _ML_RGB(31, 19, 0),
@@ -2353,7 +2353,7 @@ function AnimTask_CycleMagicalLeafPal(task: { taskId: number; data: number[] }):
 }
 _sbRegT({ AnimTask_CycleMagicalLeafPal: AnimTask_CycleMagicalLeafPal as never });
 
-// --- VAGUE F68 : AnimTask_MoonlightEndFade (effects_1.c:5003-5106) ----------
+// --- VAGUE F68 : AnimTask_MoonlightEndFade (battle_anim_effects_1.c.c:5003-5106) ----------
 // Fondu blanc-lune RGB(27,29,31) : fade hardware (mask 32-bit BG+OBJ via
 // BeginNormalPaletteFade) + montee progressive 13/14/15>>3 ecrite DIRECTEMENT
 // dans les banks BG du mask, signal aux sprites Moon/Sparkle, re-fade inverse.
@@ -2400,7 +2400,7 @@ function _mlSignalMoonSprites(): void {
   }
 }
 
-/** 1:1 AnimTask_MoonlightEndFade (effects_1.c:5003). */
+/** 1:1 AnimTask_MoonlightEndFade (battle_anim_effects_1.c.c:5003). */
 function AnimTask_MoonlightEndFade(task: _MlTask): void {
   const m = _mlMasks();
   const a = ((m.GetBattlePalettesMask?.(true, false, false, false, false, false, false) ?? 0xE) & 0xFFFF) >>> 0;
@@ -2480,7 +2480,7 @@ function _MoonlightEndFade_Step(task: _MlTask): void {
 }
 _sbRegT({ AnimTask_MoonlightEndFade: AnimTask_MoonlightEndFade as never });
 
-// --- VAGUE F80 : AnimTask_SporeDoubleBattle (effects_1.c:2463) --------------
+// --- VAGUE F80 : AnimTask_SporeDoubleBattle (battle_anim_effects_1.c.c:2463) --------------
 // Double battle uniquement (priorite BG du partner) ; en SINGLE (notre scope)
 // = destroy direct 1:1 (la branche IsDoubleBattle est hors-scope link/multi).
 function AnimTask_SporeDoubleBattle(task: { taskId: number }): void {
@@ -2489,7 +2489,7 @@ function AnimTask_SporeDoubleBattle(task: { taskId: number }): void {
 }
 _sbRegT({ AnimTask_SporeDoubleBattle: AnimTask_SporeDoubleBattle as never });
 
-// --- VAGUE F81 : AnimTask_LeafBlade (effects_1.c:3255-3464) -----------------
+// --- VAGUE F81 : AnimTask_LeafBlade (battle_anim_effects_1.c.c:3255-3464) -----------------
 // Lame-Feuille : UNE feuille pilotée par la task fait 6 ARCS successifs
 // autour de la cible (positions ±(w/2+10)/±(h/2+10), anim de sprite 0..6 par
 // segment, subpriority oscillante ±2, pause 5f entre segments via l'état
@@ -2577,7 +2577,7 @@ function _lbRearm(task: _LbTask, sp: _LbSprite, destX: number, destY: number, an
   InitAnimArcTranslation(sp as never);
   task.data[0]++;
 }
-/** 1:1 AnimTask_LeafBlade (effects_1.c:3255). */
+/** 1:1 AnimTask_LeafBlade (battle_anim_effects_1.c.c:3255). */
 function AnimTask_LeafBlade(task: _LbTask): void {
   const itf = _lbItf();
   const tgt = itf.getTarget?.() ?? 1;
@@ -2694,7 +2694,7 @@ function _LeafBlade_TrailFlicker(sprite: _LbSprite): void {
 }
 _sbRegT({ AnimTask_LeafBlade: AnimTask_LeafBlade as never });
 
-// --- VAGUE F82 : AnimPresentHealParticle (effects_1.c:3089) -----------------
+// --- VAGUE F82 : AnimPresentHealParticle (battle_anim_effects_1.c.c:3089) -----------------
 // La particule de soin de Present (cible alliee) : chute lineaire
 // (y2 = velocityY * frame depuis la position cible+offsets), destroy quand
 // l'anim de sprite (AnimCmd du template generated) se termine. Le callback

@@ -139,10 +139,10 @@ function AnimClawSlash(sprite: AnimSprite): void {
 
 registerAnimCallbacks({ AnimClawSlash: AnimClawSlash as never });
 
-// ─── VAGUE F3 : SetGrayscaleOrOriginalPal (dark.c:939, 14 hits) ─────────────
+// ─── VAGUE F3 : SetGrayscaleOrOriginalPal (battle_anim_dark.c.c:939, 14 hits) ─────────────
 // mode 0 = griser la palette OBJ du battler (moyenne RGB depuis UNFADED) ;
 // mode 1 = restore REEL (copie Unfaded→Faded). La logique vit dans son fichier
-// miroir battle_anim_mons.ts (mons.c:1374) — re-câblé vague F73 (l'hypothèse
+// miroir battle_anim_mons.ts (battle_anim_mons.c.c:1374) — re-câblé vague F73 (l'hypothèse
 // « Unfaded aliase Faded » de F3 était fausse, buffers séparés vérifiés).
 import { SetGrayscaleOrOriginalPalette as _dSetGrayPal } from './battle_anim_mons';
 function _dItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -158,12 +158,12 @@ function AnimTask_SetGrayscaleOrOriginalPal(task: { taskId: number }): void {
     const sid = co?.getBattlerMonSpriteId?.(b);
     const sp = sid !== undefined && sid !== 0xFF ? rt?.gSprites?.get(sid) : undefined;
     const pal = sp ? (rt?.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : -1;
-    // 1:1 dark.c:1005 : SetGrayscaleOrOriginalPalette(paletteNum + 16, mode).
+    // 1:1 battle_anim_dark.c.c:1005 : SetGrayscaleOrOriginalPalette(paletteNum + 16, mode).
     if (pal >= 0) _dSetGrayPal(pal + 16, a[1] !== 0);
   }
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `GetIsDoomDesireHitTurn` (dark.c:992) : args[7] = (gAnimMoveTurn == 2). */
+/** 1:1 `GetIsDoomDesireHitTurn` (battle_anim_dark.c.c:992) : args[7] = (gAnimMoveTurn == 2). */
 function GetIsDoomDesireHitTurn(task: { taskId: number }): void {
   const itf = _dItf3();
   const args = itf.getArgs?.() ?? [];
@@ -173,7 +173,7 @@ function GetIsDoomDesireHitTurn(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _dRegT } from '../engine/battle/battle-anim-registry';
-/** 1:1 les 3 fades attacker (dark.c:191-274) : BLDALPHA progressif sur le BG
+/** 1:1 les 3 fades attacker (battle_anim_dark.c.c:191-274) : BLDALPHA progressif sur le BG
  *  monbg (TGT1_BG1) — Feinte & co. args (stepDelay). */
 function _dkRt(): { SetGpuReg?: (r: number, v: number) => void; gSprites?: Map<number, { invisible?: boolean }> } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
@@ -250,7 +250,7 @@ _dRegT({
   GetIsDoomDesireHitTurn: GetIsDoomDesireHitTurn as never,
 });
 
-// --- VAGUE F72 : AnimTask_MetallicShine (dark.c:822-940) --------------------
+// --- VAGUE F72 : AnimTask_MetallicShine (battle_anim_dark.c.c:822-940) --------------------
 // L'eclat metallique : masque metal_shine en BG1 visible UNIQUEMENT a travers
 // la silhouette OBJ-window du mon (moteur F71), mon GRISE (ou teinte arg2),
 // le masque defile -4/f x2 cycles de 128, restore.
@@ -290,7 +290,7 @@ function _mshAtkPalSlot(): number {
   return oam?.paletteBank ?? -1;
 }
 
-/** 1:1 AnimTask_MetallicShine (dark.c:822). args = [permanent, useColor, color]. */
+/** 1:1 AnimTask_MetallicShine (battle_anim_dark.c.c:822). args = [permanent, useColor, color]. */
 function AnimTask_MetallicShine(task: _MshTask): void {
   const itf = _mshItf();
   const args = itf.getArgs?.() ?? [0, 0, 0];
@@ -321,7 +321,7 @@ function AnimTask_MetallicShine(task: _MshTask): void {
   g.gBattle_BG1_X = (-(sp?.x ?? 0) + 96) & 0xFFFF;
   g.gBattle_BG1_Y = (-(sp?.y ?? 0) + 32) & 0xFFFF;
   const monPalSlot = sp ? (rt.gba?.oam[sp.oamIndex]?.paletteBank ?? 0) : 0;
-  // 1:1 dark.c:880-885 : grayscale (mons.c:1374) ou BlendPalette(couleur).
+  // 1:1 battle_anim_dark.c.c:880-885 : grayscale (battle_anim_mons.c.c:1374) ou BlendPalette(couleur).
   if ((args[1] | 0) === 0) {
     _dSetGrayPal(16 + monPalSlot, false);
   } else {
@@ -336,7 +336,7 @@ function AnimTask_MetallicShine(task: _MshTask): void {
   task.data[11] = 0;
   task.func = _MetallicShine_Step;
 }
-/** 1:1 AnimTask_MetallicShine_Step (dark.c:895). */
+/** 1:1 AnimTask_MetallicShine_Step (battle_anim_dark.c.c:895). */
 function _MetallicShine_Step(task: _MshTask): void {
   const rt = _mshRt();
   const g = globalThis as Record<string, unknown>;
@@ -347,7 +347,7 @@ function _MetallicShine_Step(task: _MshTask): void {
     g.gBattle_BG1_X = (((g.gBattle_BG1_X as number) | 0) + 128) & 0xFFFF;
     task.data[11]++;
     if (task.data[11] === 2) {
-      // 1:1 dark.c:910-913 : restore REEL — paletteNum recalculé sur le sprite
+      // 1:1 battle_anim_dark.c.c:910-913 : restore REEL — paletteNum recalculé sur le sprite
       // de l'attacker, copie Unfaded→Faded si pas permanent.
       if (task.data[1] === 0) {
         const slot = _mshAtkPalSlot();
@@ -372,7 +372,7 @@ function _MetallicShine_Step(task: _MshTask): void {
 }
 _dRegT({ AnimTask_MetallicShine: AnimTask_MetallicShine as never });
 
-// --- VAGUE F75 : MEMENTO (dark.c:408-795) -----------------------------------
+// --- VAGUE F75 : MEMENTO (battle_anim_dark.c.c:408-795) -----------------------------------
 // L'ombre du mon s'étire et se fait aspirer (attacker) puis s'abat sur la
 // cible : scanline VOFS par ligne (étirement) + fenêtre WIN0 pincée + blend.
 // AnimTask_InitMementoShadow / AnimTask_MoveAttackerMementoShadow(+Step) /
@@ -441,7 +441,7 @@ function _dkFillPaletteBlack(bgSlot: number): void {
     rt.gPlttBufferFaded?.set?.(bgSlot * 16 + i, 0);
   }
 }
-/** 1:1 SetAllBattlersSpritePriority (dark.c:780). */
+/** 1:1 SetAllBattlersSpritePriority (battle_anim_dark.c.c:780). */
 function _dkSetAllBattlersSpritePriority(priority: number): void {
   const rt = _dkRtFull();
   for (let i = 0; i < 4; i++) {
@@ -452,7 +452,7 @@ function _dkSetAllBattlersSpritePriority(priority: number): void {
     if (oam) oam.priority = priority;
   }
 }
-/** 1:1 DoMementoShadowEffect (dark.c:723) : VOFS interpolés par scanline. */
+/** 1:1 DoMementoShadowEffect (battle_anim_dark.c.c:723) : VOFS interpolés par scanline. */
 function _DoMementoShadowEffect(task: _DkTask): void {
   const buf = _dkScanBufs[_dkScanFx.srcBuffer];
   const var2 = (task.data[5] - task.data[4]) | 0;
@@ -486,7 +486,7 @@ function _DoMementoShadowEffect(task: _DkTask): void {
     }
   }
 }
-/** 1:1 AnimTask_InitMementoShadow (dark.c:781) : mon (+partner) vers le BG anim. */
+/** 1:1 AnimTask_InitMementoShadow (battle_anim_dark.c.c:781) : mon (+partner) vers le BG anim. */
 function AnimTask_InitMementoShadow(task: _DkTask): void {
   const itf = _dItf3();
   const atk = itf.getAttacker?.() ?? 0;
@@ -503,7 +503,7 @@ function AnimTask_InitMementoShadow(task: _DkTask): void {
   }
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 AnimTask_MoveAttackerMementoShadow (dark.c:408). */
+/** 1:1 AnimTask_MoveAttackerMementoShadow (battle_anim_dark.c.c:408). */
 function AnimTask_MoveAttackerMementoShadow(task: _DkTask): void {
   const itf = _dItf3();
   const atk = itf.getAttacker?.() ?? 0;
@@ -554,7 +554,7 @@ function AnimTask_MoveAttackerMementoShadow(task: _DkTask): void {
   _dkSetG('gBattle_WIN0V', 160); // DISPLAY_HEIGHT
   task.func = _MoveAttackerMementoShadow_Step;
 }
-/** 1:1 AnimTask_MoveAttackerMementoShadow_Step (dark.c:479). */
+/** 1:1 AnimTask_MoveAttackerMementoShadow_Step (battle_anim_dark.c.c:479). */
 function _MoveAttackerMementoShadow_Step(task: _DkTask): void {
   const rt = _dkRtFull();
   switch (task.data[0]) {
@@ -593,7 +593,7 @@ function _MoveAttackerMementoShadow_Step(task: _DkTask): void {
       break;
   }
 }
-/** 1:1 AnimTask_MoveTargetMementoShadow (dark.c:537), branche combat. */
+/** 1:1 AnimTask_MoveTargetMementoShadow (battle_anim_dark.c.c:537), branche combat. */
 function AnimTask_MoveTargetMementoShadow(task: _DkTask): void {
   const itf = _dItf3();
   const tgt = itf.getTarget?.() ?? 1;
@@ -662,7 +662,7 @@ function AnimTask_MoveTargetMementoShadow(task: _DkTask): void {
       break;
   }
 }
-/** 1:1 AnimTask_MoveTargetMementoShadow_Step (dark.c:645). */
+/** 1:1 AnimTask_MoveTargetMementoShadow_Step (battle_anim_dark.c.c:645). */
 function _MoveTargetMementoShadow_Step(task: _DkTask): void {
   const rt = _dkRtFull();
   switch (task.data[0]) {
@@ -720,7 +720,7 @@ _dRegT({
   AnimTask_MoveTargetMementoShadow: AnimTask_MoveTargetMementoShadow as never,
 });
 
-/** 1:1 AnimTask_MementoHandleBg (dark.c:796) : rend le(s) BG anim au combat. */
+/** 1:1 AnimTask_MementoHandleBg (battle_anim_dark.c.c:796) : rend le(s) BG anim au combat. */
 import { ResetBattleAnimBg as _dkResetBg } from '../engine/battle/battle-anim-interpreter';
 function AnimTask_MementoHandleBg(task: _DkTask): void {
   const itf = _dItf3();

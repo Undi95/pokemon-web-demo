@@ -38,7 +38,7 @@ function Task_DoStatusAnimation(task: { data: number[]; taskId: number }): void 
   }
 }
 
-// --- VAGUE F54 : AnimTask_FrozenIceCube (status_effects.c:381-479) ----------
+// --- VAGUE F54 : AnimTask_FrozenIceCube (battle_anim_status_effects.c.c:381-479) ----------
 // Le cube de glace : fondu BLDALPHA in (0..9), 2 cycles de rotation des
 // couleurs 13..15 de la palette ICE_CUBE, fondu out, destroy a 37/39f.
 // Dette douce : sFrozenIceCubeSubspriteTable non composee (cube 64x64 simple).
@@ -63,7 +63,7 @@ function _ficSpriteApi(): { GetSpriteTileStartByTag?: (t: number) => number; Ind
   return ((globalThis as Record<string, unknown>).__sprite as never) ?? {};
 }
 
-/** 1:1 AnimTask_FrozenIceCube (status_effects.c:381). */
+/** 1:1 AnimTask_FrozenIceCube (battle_anim_status_effects.c.c:381). */
 function AnimTask_FrozenIceCube(task: _FicTask): void {
   const itf = _ficItf();
   const tgt = itf.getTarget?.() ?? 1;

@@ -512,7 +512,7 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: DecompSprite): vo
   TrySetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
 };
 
-// ─── VAGUE F6 : CloneBattlerSpriteWithBlend (mons.c:1626) ───────────────────
+// ─── VAGUE F6 : CloneBattlerSpriteWithBlend (battle_anim_mons.c.c:1626) ───────────────────
 // Copie le sprite du battler en clone OBJ_BLEND (traces/afterimages).
 // 1:1-net : CreateSpriteInline + copie de l OAM du mon (tile/shape/size/pal).
 export function CloneBattlerSpriteWithBlend(animBattler: number): number {
@@ -550,7 +550,7 @@ export function DestroySpriteWithActiveSheet(spriteOrId: number | object): void 
   if (id >= 0) (rt as unknown as { DestroySprite?: (i: number) => void }).DestroySprite?.(id);
 }
 
-// ─── VAGUE F1 : AnimTask_BlendMonInAndOut (mons.c, 14 usages) ───────────────
+// ─── VAGUE F1 : AnimTask_BlendMonInAndOut (battle_anim_mons.c.c, 14 usages) ───────────────
 // Le mon pulse vers une couleur (BlendPalette aller-retour x N).
 import { BlendPalette as _f1Blend } from '../engine/system/decomp-globals';
 type _F1Task = { taskId: number; data: number[]; func?: unknown };
@@ -602,7 +602,7 @@ function _BlendMonInAndOut_Step(task: _F1Task): void {
     }
   }
 }
-/** 1:1 `AnimTask_BlendPalInAndOutByTag` (mons.c:1774) : meme Setup mais la
+/** 1:1 `AnimTask_BlendPalInAndOutByTag` (battle_anim_mons.c.c:1774) : meme Setup mais la
  *  palette vient du TAG (args[0]) — data[0] = (palette*16)+0x101. */
 export function AnimTask_BlendPalInAndOutByTag(task: _F1Task): void {
   const itf = _f1Itf();
@@ -644,7 +644,7 @@ export function PrepareAffineAnimInTaskData(task: _TaskLike, spriteId: number, c
   PrepareBattlerSpriteForRotScale(spriteId, 0 /* ST_OAM_OBJ_NORMAL */);
 }
 
-/** 1:1 `SetBattlerSpriteYOffsetFromYScale(spriteId)` (mons.c) : y2 compense la
+/** 1:1 `SetBattlerSpriteYOffsetFromYScale(spriteId)` (battle_anim_mons.c.c) : y2 compense la
  *  réduction verticale (le mon « s'écrase » au sol, pas au centre). */
 export function SetBattlerSpriteYOffsetFromYScale(spriteId: number): void {
   const rt = getRuntime();
@@ -953,7 +953,7 @@ _regCb({
   AnimWeatherBallUp: AnimWeatherBallUp as never,
 });
 
-// ─── VAGUE F36 : AttackerPunchWithTrace (mons.c:2408) + helpers ─────────────
+// ─── VAGUE F36 : AttackerPunchWithTrace (battle_anim_mons.c.c:2408) + helpers ─────────────
 // L'attaquant « punch » vers l'avant en laissant des clones-traces teintés
 // (Mega/Comet Punch). + GetBattlerSpriteSubpriority + GetFrustrationPowerLevel.
 
@@ -983,7 +983,7 @@ function _pwAtkSpriteId(): number {
 }
 const _PW_TAG_BENT_SPOON = 10097; // ANIM_TAG_BENT_SPOON (trace palette du C)
 
-/** 1:1 `CreateBattlerTrace(task, taskId)` (mons.c:2474) — un clone blend
+/** 1:1 `CreateBattlerTrace(task, taskId)` (battle_anim_mons.c.c:2474) — un clone blend
  *  teinté de 8 frames de vie, géré PAR LE SPRITE (sActiveTime). */
 function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
   const spriteId = CloneBattlerSpriteWithBlend(0);
@@ -1004,7 +1004,7 @@ function _CreateBattlerTrace(task: _PwTask, taskId: number): void {
   clone.callback = _AnimBattlerTrace as never;
   task.data[5]++;                     // tNumTracesActive
 }
-/** 1:1 `AnimBattlerTrace` (mons.c:2491). */
+/** 1:1 `AnimBattlerTrace` (battle_anim_mons.c.c:2491). */
 function _AnimBattlerTrace(sprite: { data: number[] }): void {
   if (--sprite.data[0] === 0) {
     const rt = getRuntime();
@@ -1014,7 +1014,7 @@ function _AnimBattlerTrace(sprite: { data: number[] }): void {
   }
 }
 
-/** 1:1 `AnimTask_AttackerPunchWithTrace` (mons.c:2408). arg0 = couleur blend,
+/** 1:1 `AnimTask_AttackerPunchWithTrace` (battle_anim_mons.c.c:2408). arg0 = couleur blend,
  *  arg1 = coeff. */
 function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
   const itf = _pwItf();
@@ -1051,7 +1051,7 @@ function AnimTask_AttackerPunchWithTrace(task: _PwTask): void {
   _f1Blend(256 + destSlot * 16, 16, args[1] | 0, args[0] | 0);
   task.func = _AttackerPunchWithTrace_Step;
 }
-/** 1:1 `AnimTask_AttackerPunchWithTrace_Step` (mons.c:2437). */
+/** 1:1 `AnimTask_AttackerPunchWithTrace_Step` (battle_anim_mons.c.c:2437). */
 function _AttackerPunchWithTrace_Step(task: _PwTask): void {
   const rt = getRuntime();
   const atkSp = rt?.gSprites?.get(task.data[0]) as { x2: number } | undefined;
@@ -1081,7 +1081,7 @@ function _AttackerPunchWithTrace_Step(task: _PwTask): void {
   }
 }
 
-/** 1:1 `AnimTask_GetFrustrationPowerLevel` (mons.c:1993) → gBattleAnimArgs[7]. */
+/** 1:1 `AnimTask_GetFrustrationPowerLevel` (battle_anim_mons.c.c:1993) → gBattleAnimArgs[7]. */
 function AnimTask_GetFrustrationPowerLevel(task: _PwTask): void {
   const itf = _pwItf();
   const friendship = itf.getAnimFriendship?.() ?? 0;
@@ -1101,8 +1101,8 @@ _pwRegT({
   AnimTask_GetFrustrationPowerLevel: AnimTask_GetFrustrationPowerLevel as never,
 });
 
-// ─── VAGUE F38 : AlphaFadeIn (mons.c:1654) + surface enrichie ───────────────
-/** 1:1 `AnimTask_AlphaFadeIn` (mons.c:1654) : BLDALPHA progressif args
+// ─── VAGUE F38 : AlphaFadeIn (battle_anim_mons.c.c:1654) + surface enrichie ───────────────
+/** 1:1 `AnimTask_AlphaFadeIn` (battle_anim_mons.c.c:1654) : BLDALPHA progressif args
  *  [evaDébut, evbDébut, evaFin, evbFin, délai]. */
 function AnimTask_AlphaFadeIn(task: _PwTask): void {
   const itf = _pwItf();
@@ -1125,7 +1125,7 @@ function AnimTask_AlphaFadeIn(task: _PwTask): void {
   (rt as unknown as { SetGpuReg?: (o: number, v: number) => void })?.SetGpuReg?.(0x52, (args[0] & 0xFFFF) | ((args[1] & 0xFF) << 8));
   task.func = _AlphaFadeIn_Step;
 }
-/** 1:1 `AnimTask_AlphaFadeIn_Step` (mons.c:1681). */
+/** 1:1 `AnimTask_AlphaFadeIn_Step` (battle_anim_mons.c.c:1681). */
 function _AlphaFadeIn_Step(task: _PwTask): void {
   if (++task.data[0] > task.data[1]) {
     task.data[0] = 0;
@@ -1153,7 +1153,7 @@ _pwRegT({ AnimTask_AlphaFadeIn: AnimTask_AlphaFadeIn as never });
   surf.AllocOamMatrix = AllocOamMatrix;
 }
 
-// ─── VAGUE F40 : les MASKS de palettes (mons.c:1402-1508) ───────────────────
+// ─── VAGUE F40 : les MASKS de palettes (battle_anim_mons.c.c:1402-1508) ───────────────────
 // Bits 0-15 = palettes BG, bits 16-31 = slots OBJ. La CLÉ de Flash/Moonlight/
 // MorningSun/BlendNonAttacker/CopyPal (famille palettes-masks, triage 2026-06-12).
 function _pmVisible(battler: number): boolean {
@@ -1166,7 +1166,7 @@ function _pmVisible(battler: number): boolean {
 }
 import { GetBattlerAtPosition as _pmAtPos } from '../engine/battle/util';
 
-/** 1:1 `GetBattlePalettesMask` (mons.c:1402). */
+/** 1:1 `GetBattlePalettesMask` (battle_anim_mons.c.c:1402). */
 export function GetBattlePalettesMask(
   battleBackground: boolean, attacker: boolean, target: boolean,
   attackerPartner: boolean, targetPartner: boolean, anim1: boolean, anim2: boolean,
@@ -1185,7 +1185,7 @@ export function GetBattlePalettesMask(
   return selected >>> 0;
 }
 
-/** 1:1 `GetBattleMonSpritePalettesMask` (mons.c:1455) — battlers VISIBLES par position. */
+/** 1:1 `GetBattleMonSpritePalettesMask` (battle_anim_mons.c.c:1455) — battlers VISIBLES par position. */
 export function GetBattleMonSpritePalettesMask(
   playerLeft: number, playerRight: number, opponentLeft: number, opponentRight: number,
 ): number {
@@ -1206,7 +1206,7 @@ export function GetBattleMonSpritePalettesMask(
   surf.GetBattleMonSpritePalettesMask = GetBattleMonSpritePalettesMask;
 }
 
-// --- VAGUE F47 : sous-systeme ERUPT (mons.c:1958-1992) ----------------------
+// --- VAGUE F47 : sous-systeme ERUPT (battle_anim_mons.c.c:1958-1992) ----------------------
 // Scales interpoles lineairement data[8..15] — partage WaterSpout/Eruption.
 export function PrepareEruptAnimTaskData(
   task: _TaskLike, spriteId: number,
@@ -1245,7 +1245,7 @@ export function UpdateEruptAnimTask(task: _TaskLike): number {
   surf.UpdateEruptAnimTask = UpdateEruptAnimTask;
 }
 
-// --- VAGUE F71 : CreateInvisibleSpriteCopy (mons.c:2323) --------------------
+// --- VAGUE F71 : CreateInvisibleSpriteCopy (battle_anim_mons.c.c:2323) --------------------
 // Copie OAM complete du sprite du mon en ST_OAM_OBJ_WINDOW (objMode=2,
 // priority 0) : le clone ne se DESSINE pas — il decoupe la fenetre OBJ
 // (compositor computeWinObjScanline) a la silhouette du mon.
@@ -1283,7 +1283,7 @@ export function CreateInvisibleSpriteCopy(battler: number, spriteId: number, _sp
   surf.CreateInvisibleSpriteCopy = CreateInvisibleSpriteCopy;
 }
 
-// --- VAGUE F73 : SetGrayscaleOrOriginalPalette (mons.c:1374) ----------------
+// --- VAGUE F73 : SetGrayscaleOrOriginalPalette (battle_anim_mons.c.c:1374) ----------------
 // Grise une palette : moyenne r+g+b/3 lue depuis UNFADED, ecrite en FADED ;
 // restore = recopie Unfaded -> Faded (CpuCopy32). paletteNum en slots GBA
 // (16 + slot OBJ pour un mon). Unfaded/Faded sont des buffers SEPARES
@@ -1314,7 +1314,7 @@ export function SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOrigina
   surf.SetGrayscaleOrOriginalPalette = SetGrayscaleOrOriginalPalette;
 }
 
-// --- VAGUE F77 : CreateAdditionalMonSpriteForMoveAnim (mons.c:2089) ---------
+// --- VAGUE F77 : CreateAdditionalMonSpriteForMoveAnim (battle_anim_mons.c.c:2089) ---------
 // Un sprite de MON supplémentaire (espèce arbitraire) pour les anims de move
 // (Role Play, Transform-affichage…) : pic species chargé dans une alloc OBJ
 // dédiée + palette species dans un slot alloué par tag. Divergence plateforme
@@ -1322,7 +1322,7 @@ export function SetGrayscaleOrOriginalPalette(paletteNum: number, restoreOrigina
 // clientes attendent la résolution en machine à états (1-3 frames).
 import { loadTileBin as _camLoadTiles, loadGbaPal as _camLoadPal } from '../engine/gba/png-loader';
 
-// 1:1 sSpriteTemplates_MoveEffectMons tags (mons.c:2056-2086) : 2 slots dédiés.
+// 1:1 sSpriteTemplates_MoveEffectMons tags (battle_anim_mons.c.c:2056-2086) : 2 slots dédiés.
 const _CAM_TAGS: ReadonlyArray<number> = [55125, 55126]; // ANIM_TAG(s) MoveEffectMons
 
 /** species num → dossier assets (pattern battle_gfx_sfx_util._speciesAssetFolder). */
@@ -1340,7 +1340,7 @@ function _hl2RevConst(v: number, p: string): string | undefined {
   }
 }
 
-/** 1:1 `CreateAdditionalMonSpriteForMoveAnim` (mons.c:2089) — async plateforme.
+/** 1:1 `CreateAdditionalMonSpriteForMoveAnim` (battle_anim_mons.c.c:2089) — async plateforme.
  *  Retourne le spriteId (ou -1). Le pic (frame 0, 0x800) est chargé en alloc
  *  inline (AllocSpriteTiles via CreateSpriteInline) ; palette species écrite
  *  dans un slot AllocSpritePalette(tag dédié id). */
@@ -1367,7 +1367,7 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
   const spApi = (globalThis as Record<string, unknown>).__sprite as { AllocSpritePalette?: (t: number) => number; FreeSpritePaletteByTag?: (t: number) => void } | undefined;
   const palSlot = spApi?.AllocSpritePalette?.(_CAM_TAGS[id & 1] ?? _CAM_TAGS[0]) ?? 0xFF;
   if (palSlot === 0xFF) return -1; // panne d'alloc palette = echec FRANC (pas de slot 0 silencieux)
-  // pic coords : y += y_offset (front/back) — 1:1 mons.c:2135-2138.
+  // pic coords : y += y_offset (front/back) — 1:1 battle_anim_mons.c.c:2135-2138.
   const enumName = _hl2RevConst(species, 'SPECIES_') ?? 'SPECIES_NONE';
   const coords = isBackpic ? getMonBackPicCoords(enumName) : getMonFrontPicCoords(enumName);
   const spriteId = rt?.CreateSpriteInline?.({
@@ -1392,10 +1392,10 @@ export async function CreateAdditionalMonSpriteForMoveAnim(
 }
 
 // --- VAGUE F84 (C0 placement miroir) : Translate* migres de fire.ts ---------
-// Leurs maisons C : mons.c:468 / :593 / :551 / :1155. fire.ts (et tout autre
+// Leurs maisons C : battle_anim_mons.c.c:468 / :593 / :551 / :1155. fire.ts (et tout autre
 // fichier d'effets) consomme par import — zero transcription locale residuelle.
 import { Sin as _tgSin, Cos as _tgCos } from './trig';
-/** 1:1 TranslateSpriteInGrowingCircle (mons.c:468). */
+/** 1:1 TranslateSpriteInGrowingCircle (battle_anim_mons.c.c:468). */
 export function TranslateSpriteInGrowingCircle(sprite: DecompSprite): void {
   const sp = sprite as unknown as { data: number[]; x2: number; y2: number };
   if (sp.data[3]) {
@@ -1410,7 +1410,7 @@ export function TranslateSpriteInGrowingCircle(sprite: DecompSprite): void {
     SetCallbackToStoredInData6(sprite);
   }
 }
-/** 1:1 TranslateSpriteLinear (mons.c:593) — pixels entiers, pas 8.8. */
+/** 1:1 TranslateSpriteLinear (battle_anim_mons.c.c:593) — pixels entiers, pas 8.8. */
 export function TranslateSpriteLinear(sprite: DecompSprite): void {
   const sp = sprite as unknown as { data: number[]; x2: number; y2: number };
   if (sp.data[0] > 0) {
@@ -1421,7 +1421,7 @@ export function TranslateSpriteLinear(sprite: DecompSprite): void {
     SetCallbackToStoredInData6(sprite);
   }
 }
-/** 1:1 WaitAnimForDuration (mons.c:551). */
+/** 1:1 WaitAnimForDuration (battle_anim_mons.c.c:551). */
 export function WaitAnimForDuration(sprite: DecompSprite): void {
   const sp = sprite as unknown as { data: number[] };
   if (sp.data[0] > 0) sp.data[0]--;

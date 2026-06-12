@@ -733,7 +733,7 @@ function AnimWiggleParticleTowardsTarget(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimMoveParticleBeyondTarget: AnimMoveParticleBeyondTarget as never });
 
-// ─── VAGUE F29 : AnimTask_GetIceBallCounter (ice.c:1609, 3 hits) ────────────
+// ─── VAGUE F29 : AnimTask_GetIceBallCounter (battle_anim_ice.c.c:1609, 3 hits) ────────────
 function _iceItf(): { getArgs?: () => number[]; getDisableStruct?: () => { rolloutTimerStartValue?: number; rolloutTimer?: number } | null; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
@@ -748,7 +748,7 @@ function AnimTask_GetIceBallCounter(task: { taskId: number }): void {
 import { registerAnimTasks as _iceRegT } from '../engine/battle/battle-anim-registry';
 _iceRegT({ AnimTask_GetIceBallCounter: AnimTask_GetIceBallCounter as never });
 
-// --- VAGUE F61 : HazeScrollingFog + MistBallFog (ice.c:993-1182) ------------
+// --- VAGUE F61 : HazeScrollingFog + MistBallFog (battle_anim_ice.c.c:993-1182) ------------
 // Le brouillard BG1 (assets weather fog extraits byte-exact) : scroll -1 X,
 // fondu par TABLE (Haze 0..9 / Mist 0..5 [17-x]), plateau 0x51, demontage.
 import {
@@ -817,7 +817,7 @@ function _fogTeardown(task: _FogTask): void {
   _fogItf().DestroyAnimVisualTask?.(task.taskId);
 }
 
-/** 1:1 AnimTask_HazeScrollingFog (ice.c:993). */
+/** 1:1 AnimTask_HazeScrollingFog (battle_anim_ice.c.c:993). */
 function AnimTask_HazeScrollingFog(task: _FogTask): void {
   _fogCommonInit(task, _HazeScrollingFog_Step);
 }
@@ -860,7 +860,7 @@ function _HazeScrollingFog_Step(task: _FogTask): void {
   }
 }
 
-/** 1:1 AnimTask_MistBallFog (ice.c:1097). */
+/** 1:1 AnimTask_MistBallFog (battle_anim_ice.c.c:1097). */
 function AnimTask_MistBallFog(task: _FogTask): void {
   _fogCommonInit(task, _MistBallFog_Step);
   task.data[15] = -1;
@@ -905,7 +905,7 @@ _iceRegT({
   AnimTask_MistBallFog: AnimTask_MistBallFog as never,
 });
 
-// --- VAGUE F70 : AnimTask_Hail (ice.c:1336-1530) ----------------------------
+// --- VAGUE F70 : AnimTask_Hail (battle_anim_ice.c.c:1336-1530) ----------------------------
 // 10 grelons (table sHailCoordData : positions fixes/relatives aux battlers
 // +-w/6,h/6) x3 tailles d'affine, chute diagonale +4/+8, impact 20f sur les
 // grelons pleine taille (affine 0) visant un battler visible.
@@ -994,7 +994,7 @@ function _Hail2_Step(task: _HlTask): void {
       break;
   }
 }
-/** 1:1 GenerateHailParticle (ice.c:1414). */
+/** 1:1 GenerateHailParticle (battle_anim_ice.c.c:1414). */
 function _GenerateHailParticle(hailStructId: number, affineAnimNum: number, taskId: number, c: number): boolean {
   const entry = _HAIL_COORDS[hailStructId];
   let battlerX: number;

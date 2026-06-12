@@ -22,7 +22,7 @@ function _vItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTar
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 
-/** 1:1 `AnimParticleInVortex` (rock.c:363) : args [x, y, yVel, durée, dPhase,
+/** 1:1 `AnimParticleInVortex` (battle_anim_rock.c.c:363) : args [x, y, yVel, durée, dPhase,
  *  amplitude, anchor]. La particule MONTE (y2 négatif) en spiralant. */
 function AnimParticleInVortex(sprite: _VSprite): void {
   const args = _vItf().getArgs?.() ?? [0, 0, 64, 30, 4, 8, 0];
@@ -256,7 +256,7 @@ registerAnimCallbacks({
   AnimRockScatter: AnimRockScatter as never,
 });
 
-// ─── VAGUE F34 : Seismic Toss (rock.c:836-887) ──────────────────────────────
+// ─── VAGUE F34 : Seismic Toss (battle_anim_rock.c.c:836-887) ──────────────────────────────
 // Le fond défile (la « terre tourne ») : scroll BG3_Y décéléré (MoveSeismicTossBg)
 // puis ré-accéléré en Cos à l'impact (BgAccelerateDownAtEnd) ; bascule du
 // screen-size BG3 512x256 → 256x256 (UpdateAnimBg3ScreenSize) pour le wrap.
@@ -285,7 +285,7 @@ function _UpdateAnimBg3ScreenSize(largeScreenSize: boolean): void {
   cfg.screenSize = largeScreenSize ? 1 : 0;
 }
 
-/** 1:1 `AnimTask_GetSeismicTossDamageLevel` (rock.c:836) → gBattleAnimArgs[7]. */
+/** 1:1 `AnimTask_GetSeismicTossDamageLevel` (battle_anim_rock.c.c:836) → gBattleAnimArgs[7]. */
 function AnimTask_GetSeismicTossDamageLevel(task: _StTask): void {
   const itf = _stItf();
   const args = itf.getArgs?.();
@@ -298,7 +298,7 @@ function AnimTask_GetSeismicTossDamageLevel(task: _StTask): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 
-/** 1:1 `AnimTask_MoveSeismicTossBg` (rock.c:848). */
+/** 1:1 `AnimTask_MoveSeismicTossBg` (battle_anim_rock.c.c:848). */
 function AnimTask_MoveSeismicTossBg(task: _StTask): void {
   if (task.data[0] === 0) {
     _UpdateAnimBg3ScreenSize(false);
@@ -313,7 +313,7 @@ function AnimTask_MoveSeismicTossBg(task: _StTask): void {
   task.data[0]++;
 }
 
-/** 1:1 `AnimTask_SeismicTossBgAccelerateDownAtEnd` (rock.c:868). */
+/** 1:1 `AnimTask_SeismicTossBgAccelerateDownAtEnd` (battle_anim_rock.c.c:868). */
 function AnimTask_SeismicTossBgAccelerateDownAtEnd(task: _StTask): void {
   const itf = _stItf();
   if (task.data[0] === 0) {
@@ -338,7 +338,7 @@ _stRegT({
   AnimTask_SeismicTossBgAccelerateDownAtEnd: AnimTask_SeismicTossBgAccelerateDownAtEnd as never,
 });
 
-// --- VAGUE F60 : AnimTask_LoadSandstormBackground (rock.c:396-492) ----------
+// --- VAGUE F60 : AnimTask_LoadSandstormBackground (battle_anim_rock.c.c:396-492) ----------
 // Le fond de sable defilant (BG1 anim) : charge sandstorm_brew + palette
 // FlyingDirt (slot BG 8), scroll -6/+6 X et -1 Y par frame, fondu 0..7,
 // 101f plein, fondu inverse, demonte. tBlendTimer=d10, tBlend=d11, tState=d12.
@@ -392,7 +392,7 @@ function _ssbLoadFlyingDirtPal(paletteId: number): void {
   }).catch(() => { _ssbPalFetching = false; });
 }
 
-/** 1:1 AnimTask_LoadSandstormBackground (rock.c:396). */
+/** 1:1 AnimTask_LoadSandstormBackground (battle_anim_rock.c.c:396). */
 function AnimTask_LoadSandstormBackground(task: _SsbTask): void {
   const itf = _ssbItf();
   const args = itf.getArgs?.() ?? [0];
@@ -472,7 +472,7 @@ function _LoadSandstormBackground_Step(task: _SsbTask): void {
 }
 _stRegT({ AnimTask_LoadSandstormBackground: AnimTask_LoadSandstormBackground as never });
 
-// --- VAGUE F64 : AnimTask_Rollout (rock.c:584-741) --------------------------
+// --- VAGUE F64 : AnimTask_Rollout (battle_anim_rock.c.c:584-741) --------------------------
 // Recul (10f), pause 20f, charge vers la cible (data 8.3) en semant des
 // particules boue/roche en arc (tileOffset par compteur Rollout 1..5),
 // vie des particules par la translation + decrement via scan-par-func.
@@ -496,14 +496,14 @@ function _roAtkSpriteId(): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
 }
-/** 1:1 GetRolloutCounter (rock.c) : startValue - timer, hors 1..5 -> 1. */
+/** 1:1 GetRolloutCounter (battle_anim_rock.c.c) : startValue - timer, hors 1..5 -> 1. */
 function _GetRolloutCounter(): number {
   const ds = _roItf().getDisableStruct?.();
   const retVal = (((ds?.rolloutTimerStartValue ?? 0) - (ds?.rolloutTimer ?? 0)) & 0xFF);
   return ((retVal - 1) & 0xFF) > 4 ? 1 : retVal;
 }
 
-/** 1:1 AnimTask_Rollout (rock.c:584). */
+/** 1:1 AnimTask_Rollout (battle_anim_rock.c.c:584). */
 function AnimTask_Rollout(task: _RoTask): void {
   const itf = _roItf();
   const atk = itf.getAttacker?.() ?? 0;
@@ -578,7 +578,7 @@ function _Rollout_Step(task: _RoTask): void {
       break;
   }
 }
-/** 1:1 CreateRolloutDirtSprite (rock.c:697). */
+/** 1:1 CreateRolloutDirtSprite (battle_anim_rock.c.c:697). */
 function _CreateRolloutDirtSprite(task: _RoTask): void {
   let tplName: string;
   let tileOffset: number;

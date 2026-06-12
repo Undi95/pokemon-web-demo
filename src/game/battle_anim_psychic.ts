@@ -3,13 +3,13 @@
  * (décomp pokeemeraude), port massif 2026-06-11.
  *
  * Portés 1:1 :
- *  - AnimWallSparkle   (psychic.c:582) — étincelle Reflect / Light Screen / Mirror Coat
- *  - AnimBentSpoon     (psychic.c:621) — cuillère tordue de Kinesis
- *  - AnimPsychoBoost   (psychic.c:1119) — orbe Psycho Boost (blend + montée fixed-point)
+ *  - AnimWallSparkle   (battle_anim_psychic.c.c:582) — étincelle Reflect / Light Screen / Mirror Coat
+ *  - AnimBentSpoon     (battle_anim_psychic.c.c:621) — cuillère tordue de Kinesis
+ *  - AnimPsychoBoost   (battle_anim_psychic.c.c:1119) — orbe Psycho Boost (blend + montée fixed-point)
  *  - AnimKinesisZapEnergy (battle_anim_effects_2.c:1442) — « zap » de Kinesis.
- *    ⚠ PLACEMENT : vit dans effects_2.c côté décomp ; placé ICI par le lot du
+ *    ⚠ PLACEMENT : vit dans battle_anim_effects_2.c.c côté décomp ; placé ICI par le lot du
  *    port massif (dette douce : déménager si src/game/battle_anim_effects_2.ts naît).
- *  + tables affine `sAffineAnims_PsychoBoostOrb` (psychic.c:384-409) enregistrées
+ *  + tables affine `sAffineAnims_PsychoBoostOrb` (battle_anim_psychic.c.c:384-409) enregistrées
  *    dans le registre sprite-affine-extras (boucles AFFINEANIMCMD_LOOP déroulées).
  *
  * Pattern repo (battle_anim_rock.ts) : AUCUN import statique de l'interpréteur
@@ -115,7 +115,7 @@ function _StoreDestroyAnimSpriteInData6(sprite: _VSprite): void {
   StoreSpriteCallbackInData6(sprite as never, ((s: unknown) => { _vItf().DestroyAnimSprite?.(s); }) as never);
 }
 
-// ── Tables affine de l'orbe Psycho Boost — 1:1 psychic.c:384-409 ────────────
+// ── Tables affine de l'orbe Psycho Boost — 1:1 battle_anim_psychic.c.c:384-409 ────────────
 // 1:1 `sAffineAnim_PsychoBoostOrb_0` (battle_anim_psychic.c:384-397).
 // Boucles AFFINEANIMCMD_LOOP déroulées (le registre extras ne modélise que le
 // terminator) — sémantique sprite.c:1124-1161 : LOOP(n) rejoue le bloc depuis
@@ -123,7 +123,7 @@ function _StoreDestroyAnimSpriteInData6(sprite: _VSprite): void {
 //   FRAME(0x20,0x20,0,0) ; FRAME(0x10,0x10,0,17) ; LOOP(0)
 //   [FRAME(-0x8,-0x8,0,10) ; FRAME(0x8,0x8,0,10)] × (4+1)   ← LOOP(4) ; LOOP(0)
 //   [FRAME(-0x10,-0x10,0,5) ; FRAME(0x10,0x10,0,5)] × (7+1) ← LOOP(7) ; END
-// NB : le C a un 2e LOOP(0) entre LOOP(4) et le bloc -0x10 (psychic.c:392) —
+// NB : le C a un 2e LOOP(0) entre LOOP(4) et le bloc -0x10 (battle_anim_psychic.c.c:392) —
 // il ne sert que de borne au LOOP(7) ; vérifié sprite.c:1147-1161 : la borne
 // serait LOOP(4) sans lui → même bloc rejoué → déroulé strictement identique.
 const _orb0Frames: { xScale: number; yScale: number; rotation: number; duration: number }[] = [
@@ -139,13 +139,13 @@ for (let i = 0; i < 8; i++) {
   _orb0Frames.push({ xScale: 0x10, yScale: 0x10, rotation: 0, duration: 5 });
 }
 registerAffineAnim('sAffineAnim_PsychoBoostOrb_0', { frames: _orb0Frames, terminator: 'END' });
-// 1:1 `sAffineAnim_PsychoBoostOrb_1` (psychic.c:399-403) : 0xFFEC = -0x14 (s16),
+// 1:1 `sAffineAnim_PsychoBoostOrb_1` (battle_anim_psychic.c.c:399-403) : 0xFFEC = -0x14 (s16),
 // l'orbe s'aplatit en X et s'étire en Y pendant 15 frames.
 registerAffineAnim('sAffineAnim_PsychoBoostOrb_1', {
   frames: [{ xScale: -0x14, yScale: 0x18, rotation: 0, duration: 15 }],
   terminator: 'END',
 });
-// 1:1 `sAffineAnims_PsychoBoostOrb` (psychic.c:405-409).
+// 1:1 `sAffineAnims_PsychoBoostOrb` (battle_anim_psychic.c.c:405-409).
 registerAffineAnimTable('sAffineAnims_PsychoBoostOrb', {
   affineAnims: ['sAffineAnim_PsychoBoostOrb_0', 'sAffineAnim_PsychoBoostOrb_1'],
 });
@@ -207,7 +207,7 @@ function AnimBentSpoon(sprite: _VSprite): void {
 /** 1:1 `AnimKinesisZapEnergy` (battle_anim_effects_2.c:1442) : « zap » d'énergie
  *  de Kinesis. args [x offset, y offset, vFlip]. Position attaquant ; miroir X
  *  + hFlip côté ennemi ; destroy à la fin de l'anim de frames.
- *  ⚠ PLACEMENT : décomp = effects_2.c (placé ici par le lot — dette douce). */
+ *  ⚠ PLACEMENT : décomp = battle_anim_effects_2.c.c (placé ici par le lot — dette douce). */
 function AnimKinesisZapEnergy(sprite: _VSprite): void {
   const args = _vItf().getArgs?.() ?? [0, 0, 0];
   const attacker = _vItf().getAttacker?.() ?? 0;
@@ -402,7 +402,7 @@ function AnimQuestionMark_Step2(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimQuestionMark: AnimQuestionMark as never });
 
-// ─── AnimDefensiveWall 1:1 (psychic.c:423-578) — LE DERNIER CALLBACK ────────
+// ─── AnimDefensiveWall 1:1 (battle_anim_psychic.c.c:423-578) — LE DERNIER CALLBACK ────────
 // Reflect/Light Screen/Safeguard : le mur translucide. Single non-contest :
 // monbg(OPPONENT_LEFT) -> mon invisible (le rendu = la copie BG) -> fade
 // BLDALPHA in -> rotation de palette (8 slots) -> fade out -> restore.
@@ -422,7 +422,7 @@ function _dwOppSprite(): { invisible?: boolean } | undefined {
   return sid !== undefined && sid !== 0xFF ? _dwRt().gSprites?.get(sid) : undefined;
 }
 
-/** 1:1 `AnimDefensiveWall` (psychic.c:423) — args [x, y, paletteTag]. */
+/** 1:1 `AnimDefensiveWall` (battle_anim_psychic.c.c:423) — args [x, y, paletteTag]. */
 function AnimDefensiveWall(sprite: _DwSprite): void {
   const itf = _dwItf();
   const args = itf.getArgs?.() ?? [0, 0, 0];
@@ -487,7 +487,7 @@ function _DefensiveWall_Step5(sprite: _DwSprite): void {
 }
 registerAnimCallbacks({ AnimDefensiveWall: AnimDefensiveWall as never });
 
-// ─── VAGUE F15 : Teleport + MeditateStretchAttacker (psychic.c) ─────────────
+// ─── VAGUE F15 : Teleport + MeditateStretchAttacker (battle_anim_psychic.c.c) ─────────────
 import {
   PrepareAffineAnimInTaskData as _tpPrep, RunAffineAnimFromTaskData as _tpRun,
   ResetSpriteRotScale as _tpReset,
@@ -552,7 +552,7 @@ _tpRegT({
   AnimTask_MeditateStretchAttacker: AnimTask_MeditateStretchAttacker as never,
 });
 
-// ─── VAGUE F34-SCANLINE : Extrasensory (psychic.c:954-1117) ─────────────────
+// ─── VAGUE F34-SCANLINE : Extrasensory (battle_anim_psychic.c.c:954-1117) ─────────────────
 // AnimTask_ExtrasensoryDistortion : ondulation horizontale par-scanline (±32px
 // autour du target) via gScanlineEffectRegBuffers + ScanlineEffect_SetParams.
 // AnimTask_TransparentCloneGrowAndShrink : clone blend du battler qui grossit
@@ -609,7 +609,7 @@ function _exBattleBgX(rank: number): number {
   return rank === 1 ? ((g.gBattle_BG1_X as number) | 0) : ((g.gBattle_BG2_X as number) | 0);
 }
 
-/** 1:1 `AnimTask_ExtrasensoryDistortion` (psychic.c:954). arg0 = phase 0/1/2. */
+/** 1:1 `AnimTask_ExtrasensoryDistortion` (battle_anim_psychic.c.c:954). arg0 = phase 0/1/2. */
 function AnimTask_ExtrasensoryDistortion(task: _ExTask): void {
   const itf = _exItf();
   const args = itf.getArgs?.() ?? [0];
@@ -646,7 +646,7 @@ function AnimTask_ExtrasensoryDistortion(task: _ExTask): void {
   task.func = _ExtrasensoryDistortion_Step;
 }
 
-/** 1:1 `AnimTask_ExtrasensoryDistortion_Step` (psychic.c:1013). */
+/** 1:1 `AnimTask_ExtrasensoryDistortion_Step` (battle_anim_psychic.c.c:1013). */
 function _ExtrasensoryDistortion_Step(task: _ExTask): void {
   switch (task.data[0]) {
     case 0: {
@@ -675,7 +675,7 @@ function _ExtrasensoryDistortion_Step(task: _ExTask): void {
   }
 }
 
-/** 1:1 `AnimTask_TransparentCloneGrowAndShrink` (psychic.c:1051). arg0 = battler. */
+/** 1:1 `AnimTask_TransparentCloneGrowAndShrink` (battle_anim_psychic.c.c:1051). arg0 = battler. */
 function AnimTask_TransparentCloneGrowAndShrink(task: _ExTask): void {
   const itf = _exItf();
   const args = itf.getArgs?.() ?? [0];
@@ -714,7 +714,7 @@ function AnimTask_TransparentCloneGrowAndShrink(task: _ExTask): void {
   task.func = _TransparentCloneGrowAndShrink_Step;
 }
 
-/** 1:1 `AnimTask_TransparentCloneGrowAndShrink_Step` (psychic.c:1086). */
+/** 1:1 `AnimTask_TransparentCloneGrowAndShrink_Step` (battle_anim_psychic.c.c:1086). */
 function _TransparentCloneGrowAndShrink_Step(task: _ExTask): void {
   switch (task.data[0]) {
     case 0:
@@ -747,7 +747,7 @@ _tpRegT({
   AnimTask_TransparentCloneGrowAndShrink: AnimTask_TransparentCloneGrowAndShrink as never,
 });
 
-// ─── VAGUE F42 : AnimTask_SkillSwap (psychic.c:862-948) ─────────────────────
+// ─── VAGUE F42 : AnimTask_SkillSwap (battle_anim_psychic.c.c:862-948) ─────────────────────
 // 12 orbes en arc attaquant↔cible (toutes les 7f, 4 affines cyclées).
 import {
   InitAnimArcTranslation as _ssArcInit,
@@ -780,7 +780,7 @@ function _ssItf2(): { getArgs?: () => number[]; getAttacker?: () => number; getT
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
 
-/** 1:1 `AnimTask_SkillSwap` (psychic.c:862, non-contest). arg0 = direction. */
+/** 1:1 `AnimTask_SkillSwap` (battle_anim_psychic.c.c:862, non-contest). arg0 = direction. */
 function AnimTask_SkillSwap(task: _SsTask): void {
   const itf = _ssItf2();
   const args = itf.getArgs?.() ?? [0];
@@ -802,7 +802,7 @@ function AnimTask_SkillSwap(task: _SsTask): void {
   task.data[1] = 6;
   task.func = _SkillSwap_Step;
 }
-/** 1:1 `AnimTask_SkillSwap_Step` (psychic.c:909). */
+/** 1:1 `AnimTask_SkillSwap_Step` (battle_anim_psychic.c.c:909). */
 function _SkillSwap_Step(task: _SsTask): void {
   switch (task.data[0]) {
     case 0:
@@ -843,7 +843,7 @@ function _SkillSwap_Step(task: _SsTask): void {
       break;
   }
 }
-/** 1:1 `AnimSkillSwapOrb` (psychic.c:945) : arc puis destroy (vie par la translation). */
+/** 1:1 `AnimSkillSwapOrb` (battle_anim_psychic.c.c:945) : arc puis destroy (vie par la translation). */
 function _AnimSkillSwapOrb(sprite: { data: number[] }): void {
   if (_ssArcRun(sprite as never)) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, unknown>; DestroySprite?: (i: number) => void } | undefined;
@@ -854,7 +854,7 @@ function _AnimSkillSwapOrb(sprite: { data: number[] }): void {
 }
 _tpRegT({ AnimTask_SkillSwap: AnimTask_SkillSwap as never });
 
-// --- VAGUE F56 : AnimTask_ImprisonOrbs (psychic.c:748-838) ------------------
+// --- VAGUE F56 : AnimTask_ImprisonOrbs (battle_anim_psychic.c.c:748-838) ------------------
 // 5 orbes (4 coins +-max(w,h)/3 + 1 centre) toutes les 9f, fondu BLDALPHA
 // 16/0 -> 0/16 par alternance, destroy des 5 puis reset.
 function _ioPicMaxThird(battler: number): number {
@@ -867,7 +867,7 @@ function _ioPicMaxThird(battler: number): number {
   return var0 > var1 ? var0 : var1;
 }
 
-/** 1:1 AnimTask_ImprisonOrbs (psychic.c:748). */
+/** 1:1 AnimTask_ImprisonOrbs (battle_anim_psychic.c.c:748). */
 function AnimTask_ImprisonOrbs(task: _SsTask): void {
   const itf = _ssItf2();
   const atk = itf.getAttacker?.() ?? 0;

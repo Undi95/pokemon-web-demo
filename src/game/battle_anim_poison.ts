@@ -8,7 +8,7 @@
  *   - AnimSludgeBombHitParticle (+_Step) (:231) — éclats décélérés fixed-point.
  *   - AnimAcidPoisonDroplet (:258) — goutte qui tombe (translation linéaire).
  *   - InitPoisonGasCloudAnim + MovePoisonGasCloud (battle_anim_ice.c:1194/:1241 —
- *     le template gPoisonGasCloudSpriteTemplate vit dans ice.c mais c'est l'anim
+ *     le template gPoisonGasCloudSpriteTemplate vit dans battle_anim_ice.c.c mais c'est l'anim
  *     de POISON_GAS) : 3 états data[7]&0xFF (vol vers cible / orbite / sortie écran).
  *
  * Dettes douces : AnimBubbleEffect (+_Step) hors lot (after-effect bulles

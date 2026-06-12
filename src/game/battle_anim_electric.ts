@@ -505,7 +505,7 @@ function AnimGrowingShockWaveOrb(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimGrowingShockWaveOrb: AnimGrowingShockWaveOrb as never });
 
-// ─── VAGUE F5 : AnimTask_ElectricBolt (electric.c:685, 5 hits — Thunderbolt) ─
+// ─── VAGUE F5 : AnimTask_ElectricBolt (battle_anim_electric.c.c:685, 5 hits — Thunderbolt) ─
 // Crée 5 segments de foudre échelonnés (un toutes les 2 frames, y+16*k),
 // chaque segment vit 15f. Le C ajuste oam.tileNum (+r8) et shape 8x16/16x16.
 function _ebItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -583,7 +583,7 @@ function _ElectricBoltSegment(sprite: { data: number[]; oamIndex: number }): voi
   }
 }
 import { registerAnimTasks as _ebRegT } from '../engine/battle/battle-anim-registry';
-/** 1:1 `AnimTask_VoltTackleBolt` (electric.c, 5 hits) : éclairs en chaîne
+/** 1:1 `AnimTask_VoltTackleBolt` (battle_anim_electric.c.c, 5 hits) : éclairs en chaîne
  *  entre l attaquant et la cible (sprites gVoltTackleBolt via bridge tag). */
 function AnimTask_VoltTackleBolt(task: { taskId: number; data: number[]; func?: unknown }): void {
   task.data[0] = 0;
@@ -676,7 +676,7 @@ _ebRegT({
   AnimTask_VoltTackleBolt: AnimTask_VoltTackleBolt as never,
 });
 
-// --- VAGUE F45 : ShockWave x2 (electric.c:1153-1336) ------------------------
+// --- VAGUE F45 : ShockWave x2 (battle_anim_electric.c.c:1153-1336) ------------------------
 // ProgressingBolt : 6 colonnes de zigzag attaquant->cible (8 segments par
 // colonne, tileNum 7..0/0..7). Lightning : la colonne verticale sur la cible.
 import { GetBattlerSpriteSubpriority as _swSubprio } from './battle_anim_mons';
@@ -714,7 +714,7 @@ function _swDestroySelf(sprite: unknown): void {
   }
 }
 
-/** 1:1 AnimTask_ShockWaveProgressingBolt (electric.c:1153). */
+/** 1:1 AnimTask_ShockWaveProgressingBolt (battle_anim_electric.c.c:1153). */
 function AnimTask_ShockWaveProgressingBolt(task: _SwTask): void {
   const itf = _swItf();
   switch (task.data[0]) {
@@ -767,7 +767,7 @@ function AnimTask_ShockWaveProgressingBolt(task: _SwTask): void {
       break;
   }
 }
-/** 1:1 CreateShockWaveBoltSprite (electric.c:1232). */
+/** 1:1 CreateShockWaveBoltSprite (battle_anim_electric.c.c:1232). */
 function _CreateShockWaveBoltSprite(task: _SwTask, taskId: number): boolean {
   const sid = _swSpawn('gShockWaveProgressingBoltSpriteTemplate', task.data[6], task.data[7], 35, 0, 1);
   if (sid >= 0) {
@@ -807,7 +807,7 @@ function _AnimShockWaveProgressingBolt(sprite: { data: number[] }): void {
   }
 }
 
-/** 1:1 AnimTask_ShockWaveLightning (electric.c:1279). */
+/** 1:1 AnimTask_ShockWaveLightning (battle_anim_electric.c.c:1279). */
 function AnimTask_ShockWaveLightning(task: _SwTask): void {
   const itf = _swItf();
   switch (task.data[0]) {
@@ -832,7 +832,7 @@ function AnimTask_ShockWaveLightning(task: _SwTask): void {
       break;
   }
 }
-/** 1:1 CreateShockWaveLightningSprite (electric.c:1310). */
+/** 1:1 CreateShockWaveLightningSprite (battle_anim_electric.c.c:1310). */
 function _CreateShockWaveLightningSprite(task: _SwTask, taskId: number): boolean {
   const sid = _swSpawn('gLightningSpriteTemplate', task.data[13], task.data[14], task.data[12], 0, 2);
   if (sid >= 0) {
@@ -864,7 +864,7 @@ _ebRegT({
   AnimTask_ShockWaveLightning: AnimTask_ShockWaveLightning as never,
 });
 
-// --- VAGUE F45b : ElectricChargingParticles (electric.c:805-893) ------------
+// --- VAGUE F45b : ElectricChargingParticles (battle_anim_electric.c.c:805-893) ------------
 // Particules aspirées vers le mon (16 offsets cycliques, vitesse croissante).
 import { InitAnimLinearTranslation as _ecInitLin, AnimTranslateLinear as _ecRunLin } from './battle_anim_mons';
 
@@ -935,7 +935,7 @@ function _AnimElecChargeParticle_Step(sprite: { data: number[] }): void {
 }
 _ebRegT({ AnimTask_ElectricChargingParticles: AnimTask_ElectricChargingParticles as never });
 
-// --- VAGUE F80b : AnimTask_VoltTackleAttackerReappear (electric.c:963) ------
+// --- VAGUE F80b : AnimTask_VoltTackleAttackerReappear (battle_anim_electric.c.c:963) ------
 // Volt Tackle : l'attaquant REVIENT en glissant depuis le bord (x2 ∓32 → 0,
 // pas de 2) en CLIGNOTANT (invisible ^= 1 tous les 2 ticks), puis 8 clignote-
 // ments sur place et reapparition franche.

@@ -37,7 +37,7 @@ function UnpackSelectedBattlePalettes(selector: number): number {
   );
 }
 
-/** 1:1 `AnimTask_BlendBattleAnimPal` (utility_funcs.c:48) : args
+/** 1:1 `AnimTask_BlendBattleAnimPal` (battle_anim_utility_funcs.c.c:48) : args
  *  [masque, delay, startBlend, targetBlend, couleur RGB15]. */
 function AnimTask_BlendBattleAnimPal(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [1, 1, 0, 4, 0];
@@ -125,7 +125,7 @@ function _BlendColorCycle_Step(task: AnimTask): void {
     }
   }
 }
-/** 1:1 `AnimTask_BlendBattleAnimPalExclude` (utility_funcs.c) — net : comme
+/** 1:1 `AnimTask_BlendBattleAnimPalExclude` (battle_anim_utility_funcs.c.c) — net : comme
  *  BlendBattleAnimPal mais exclut attaquant/cible du masque (les anims qui
  *  teintent TOUT sauf les mons). */
 function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
@@ -147,7 +147,7 @@ function AnimTask_BlendBattleAnimPalExclude(task: AnimTask): void {
   _StartBlendAnimSpriteColor(task, selected >>> 0);
 }
 
-/** 1:1 `AnimTask_StartSlidingBg` (utility_funcs.c, 9 hits sweep) : scroll BG3
+/** 1:1 `AnimTask_StartSlidingBg` (battle_anim_utility_funcs.c.c, 9 hits sweep) : scroll BG3
  *  fixed-point 8.8 continu, stoppé quand args[7] == data[3] (le sentinel
  *  `setarg 7, 0xFFFF` des scripts). UpdateAnimBg3ScreenSize = net no-op
  *  (le wrap 256 suffit à notre compositor — dette douce si visuel 512). */
@@ -183,7 +183,7 @@ function _UpdateSlidingBg(task: AnimTask): void {
   }
 }
 
-/** 1:1 `AnimTask_TraceMonBlended` (utility_funcs.c, 7 hits — afterimages) :
+/** 1:1 `AnimTask_TraceMonBlended` (battle_anim_utility_funcs.c.c, 7 hits — afterimages) :
  *  spawn data[4] clones blend, un toutes data[2] frames, vie data[3] frames. */
 function AnimTask_TraceMonBlended(task: AnimTask): void {
   const a = _itf().getArgs?.() ?? [];
@@ -248,21 +248,21 @@ registerAnimTasks({
 function _ufItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-/** 1:1 `AnimTask_GetAttackerSide` (utility_funcs.c:780). */
+/** 1:1 `AnimTask_GetAttackerSide` (battle_anim_utility_funcs.c.c:780). */
 function AnimTask_GetAttackerSide(task: { taskId: number }): void {
   const itf = _ufItf();
   const args = itf.getArgs?.();
   if (args) args[7] = (itf.getAttacker?.() ?? 0) & 1; // GetBattlerSide
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_IsContest` (utility_funcs.c:1039) — jamais contest chez nous. */
+/** 1:1 `AnimTask_IsContest` (battle_anim_utility_funcs.c.c:1039) — jamais contest chez nous. */
 function AnimTask_IsContest(task: { taskId: number }): void {
   const itf = _ufItf();
   const args = itf.getArgs?.();
   if (args) args[7] = 0;
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_IsTargetSameSide` (utility_funcs.c:1056). */
+/** 1:1 `AnimTask_IsTargetSameSide` (battle_anim_utility_funcs.c.c:1056). */
 function AnimTask_IsTargetSameSide(task: { taskId: number }): void {
   const itf = _ufItf();
   const args = itf.getArgs?.();
@@ -293,7 +293,7 @@ function AnimTask_GetBattleEnvironment(task: { taskId: number }): void {
   if (args) args[0] = env;
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_GetWeather` (effects_3.c:5497 — placement net ici) :
+/** 1:1 `AnimTask_GetWeather` (battle_anim_effects_3.c.c:5497 — placement net ici) :
  *  args[7] = ANIM_WEATHER_* depuis gWeatherMoveAnim. */
 function AnimTask_GetWeather(task: { taskId: number }): void {
   const itf = _ufItf();
@@ -390,7 +390,7 @@ _ufRegTasks({
   AnimTask_IsTargetSameSide: AnimTask_IsTargetSameSide as never,
 });
 
-// ─── VAGUE F40 : SetPalettesToColor + AnimTask_Flash (utility_funcs.c:649-723) ─
+// ─── VAGUE F40 : SetPalettesToColor + AnimTask_Flash (battle_anim_utility_funcs.c.c:649-723) ─
 // Flash : mons → NOIR, fond → BLANC une fraction de seconde, puis re-blend
 // progressif 16→0 vers les couleurs normales (BlendPalette).
 import { gSineTable as _flUnused } from './trig'; // (aucun usage — garde l'ordre des imports stable)
@@ -408,7 +408,7 @@ function _flItf(): { DestroyAnimVisualTask?: (id: number) => void } {
 function _flPf(): { set?: (i: number, v: number) => void } | undefined {
   return ((globalThis as Record<string, unknown>).__rt as { gPlttBufferFaded?: { set?: (i: number, v: number) => void } } | undefined)?.gPlttBufferFaded;
 }
-/** 1:1 `SetPalettesToColor` (utility_funcs.c:704) : bits 0-15 = BG, 16-31 = OBJ. */
+/** 1:1 `SetPalettesToColor` (battle_anim_utility_funcs.c.c:704) : bits 0-15 = BG, 16-31 = OBJ. */
 function _SetPalettesToColor(selectedPalettes: number, color: number): void {
   const pf = _flPf();
   if (!pf?.set) return;
@@ -424,7 +424,7 @@ function _SetPalettesToColor(selectedPalettes: number, color: number): void {
 const _FL_RGB_BLACK = 0;
 const _FL_RGB_WHITEALPHA = 0xFFFF; // RGB_WHITEALPHA (bit 15 posé, 1:1)
 
-/** 1:1 `AnimTask_Flash` (utility_funcs.c:649). */
+/** 1:1 `AnimTask_Flash` (battle_anim_utility_funcs.c.c:649). */
 function AnimTask_Flash(task: { taskId: number; data: number[]; func?: unknown }): void {
   const m = _flMons();
   let selected = (m.GetBattleMonSpritePalettesMask?.(1, 1, 1, 1) ?? 0) >>> 0;
@@ -439,7 +439,7 @@ function AnimTask_Flash(task: { taskId: number; data: number[]; func?: unknown }
   task.data[1] = 0;
   task.func = _Flash_Step;
 }
-/** 1:1 `AnimTask_Flash_Step` (utility_funcs.c:664). */
+/** 1:1 `AnimTask_Flash_Step` (battle_anim_utility_funcs.c.c:664). */
 function _Flash_Step(task: { taskId: number; data: number[] }): void {
   switch (task.data[0]) {
     case 0:
@@ -467,7 +467,7 @@ function _Flash_Step(task: { taskId: number; data: number[] }): void {
 }
 registerAnimTasks({ AnimTask_Flash: AnimTask_Flash as never });
 
-// ─── VAGUE F40b : AnimTask_BlendNonAttackerPalettes (utility_funcs.c:725) ────
+// ─── VAGUE F40b : AnimTask_BlendNonAttackerPalettes (battle_anim_utility_funcs.c.c:725) ────
 /** 1:1 : mask de TOUS les battlers ≠ attaquant (bits 16+), args décalés
  *  [1..5]=[0..4], puis StartBlendAnimSpriteColor (déjà porté). */
 function AnimTask_BlendNonAttackerPalettes(task: AnimTask): void {
@@ -483,7 +483,7 @@ function AnimTask_BlendNonAttackerPalettes(task: AnimTask): void {
 }
 registerAnimTasks({ AnimTask_BlendNonAttackerPalettes: AnimTask_BlendNonAttackerPalettes as never });
 
-// ─── VAGUE F40c : AnimTask_SetAllNonAttackersInvisiblity (utility_funcs.c:799) ─
+// ─── VAGUE F40c : AnimTask_SetAllNonAttackersInvisiblity (battle_anim_utility_funcs.c.c:799) ─
 /** 1:1 : invisible = args[0] pour tous les battlers ≠ attaquant visibles. */
 function AnimTask_SetAllNonAttackersInvisiblity(task: AnimTask): void {
   const itf = _itf() as { getAttacker?: () => number; getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void };
@@ -502,7 +502,7 @@ function AnimTask_SetAllNonAttackersInvisiblity(task: AnimTask): void {
 }
 registerAnimTasks({ AnimTask_SetAllNonAttackersInvisiblity: AnimTask_SetAllNonAttackersInvisiblity as never });
 
-// ─── VAGUE F41 : le PAL-BUFFER (utility_funcs.c:946-1037, 5 tasks) ──────────
+// ─── VAGUE F41 : le PAL-BUFFER (battle_anim_utility_funcs.c.c:946-1037, 5 tasks) ──────────
 // gMonSpritesGfxPtr->buffer = zone de sauvegarde de palettes pendant une anim
 // (Memento/SkillSwap/Conversion…). Side-buffer module 1:1-net (0x2000 bytes).
 let _palBackup: Uint16Array | null = null;
@@ -572,7 +572,7 @@ registerAnimTasks({
   AnimTask_CopyPalFadedToUnfaded: AnimTask_CopyPalFadedToUnfaded as never,
 });
 
-// --- VAGUE F71 : StartMonScrollingBgMask (utility_funcs.c:813-940) ----------
+// --- VAGUE F71 : StartMonScrollingBgMask (battle_anim_utility_funcs.c.c:813-940) ----------
 // LE systeme BG-mask : le BG1 (image metallique/bulles) n'est visible QU'A
 // TRAVERS la silhouette OBJ-window du mon (clone objMode=2). WINOUT sans BG1
 // + WINOBJ avec BG1 + DISPCNT_OBJWIN. ~22 usages (MetallicShine/StatusCleared/
@@ -653,7 +653,7 @@ export function StartMonScrollingBgMask(
   task.data[15] = 0;
   task.func = _UpdateMonScrollingBgMask;
 }
-/** 1:1 UpdateMonScrollingBgMask (utility_funcs.c:879-938). */
+/** 1:1 UpdateMonScrollingBgMask (battle_anim_utility_funcs.c.c:879-938). */
 function _UpdateMonScrollingBgMask(task: _SmskTask): void {
   const rt = _smskRt();
   const g = globalThis as Record<string, unknown>;
@@ -737,7 +737,7 @@ function _initBlendCycleMask(task: AnimTask, args: number[], mask: number): void
   task.data[14] = mask & 0xFFFF;
   task.func = _BlendColorCycleMask_Step;
 }
-/** 1:1 AnimTask_BlendColorCycleExclude (normal.c:509) : tous les battlers SAUF
+/** 1:1 AnimTask_BlendColorCycleExclude (battle_anim_normal.c.c:509) : tous les battlers SAUF
  *  attacker/cible (+ BG 0xE si args[0]==1). En single le masque OBJ est vide. */
 function AnimTask_BlendColorCycleExclude(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [0, 0, 2, 0, 14, 0];
@@ -757,7 +757,7 @@ function AnimTask_BlendColorCycleExclude(task: AnimTask): void {
   if ((args[0] | 0) === 1) selected |= 0xE;
   _initBlendCycleMask(task, args, selected >>> 0);
 }
-/** 1:1 AnimTask_BlendColorCycleByTag (normal.c:595) : la palette du tag. */
+/** 1:1 AnimTask_BlendColorCycleByTag (battle_anim_normal.c.c:595) : la palette du tag. */
 function AnimTask_BlendColorCycleByTag(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [0, 0, 2, 0, 14, 0];
   const spApi = (globalThis as Record<string, unknown>).__sprite as { IndexOfSpritePaletteTag?: (t: number) => number } | undefined;

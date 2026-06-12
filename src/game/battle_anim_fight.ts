@@ -97,7 +97,7 @@ registerAnimCallbacks({
 // JumpKick / SlideHandOrFootToTarget (KarateChop & co).
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Plomberie locale (helpers décomp hors fight.c, transcrits préfixés _) ────
+// ── Plomberie locale (helpers décomp hors battle_anim_fight.c.c, transcrits préfixés _) ────
 
 /** 1:1 `IsContest()` : pas de concours dans ce runtime web → toujours false
  *  (structure des branches conservée telle quelle). */
@@ -677,7 +677,7 @@ export function AnimTravelDiagonally(sprite: unknown): void {
 }
 registerAnimCallbacks({ AnimTravelDiagonally: AnimTravelDiagonally as never });
 
-// --- VAGUE F65a : AnimTask_MoveSkyUppercutBg (fight.c:996-1035) -------------
+// --- VAGUE F65a : AnimTask_MoveSkyUppercutBg (battle_anim_fight.c.c:996-1035) -------------
 // Le fond accelere en diagonale (X 1280/f Q8.8 apres delai arg0, Y 2816/f)
 // jusqu'au signal args[7] = -1 (UpdateAnimBg3ScreenSize F34).
 function _suItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -699,7 +699,7 @@ function _suScreenSize(large: boolean): void {
   if (cfg) cfg.screenSize = large ? 1 : 0;
 }
 
-/** 1:1 AnimTask_MoveSkyUppercutBg (fight.c:996). */
+/** 1:1 AnimTask_MoveSkyUppercutBg (battle_anim_fight.c.c:996). */
 function AnimTask_MoveSkyUppercutBg(task: { taskId: number; data: number[] }): void {
   const itf = _suItf();
   const args = itf.getArgs?.() ?? [0];

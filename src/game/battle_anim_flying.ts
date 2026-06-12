@@ -8,9 +8,9 @@
  * `invisible=TRUE` posé sur l'attaquant par FlyBallUp n'est restauré QUE par
  * FlyBallAttack_Step → portés ensemble), AnimFallingFeather (Feather Dance,
  * struct FeatherDanceData overlay bit-packé 1:1 sur sprite->data[0..7]),
- * AnimWhirlwindLine (Whirlwind), DestroyAnimSpriteAfterTimer (flying.c:539).
+ * AnimWhirlwindLine (Whirlwind), DestroyAnimSpriteAfterTimer (battle_anim_flying.c.c:539).
  *
- * Invités hors flying.c (lot orchestrateur, enregistrés ici par NOM C — à
+ * Invités hors battle_anim_flying.c.c (lot orchestrateur, enregistrés ici par NOM C — à
  * re-loger si leurs fichiers miroirs naissent) :
  *  - AnimRazorWindTornado  — src/battle_anim_effects_2.c:1885 (Razor Wind).
  *  - AnimFlyingSandCrescent — src/battle_anim_rock.c:513 (Sandstorm strip
@@ -378,7 +378,7 @@ function _AnimFlyBallAttack_Step(sprite: _VSprite): void {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Feather Dance — struct FeatherDanceData (flying.c:556-571) bit-packé 1:1
+// Feather Dance — struct FeatherDanceData (battle_anim_flying.c.c:556-571) bit-packé 1:1
 // dans sprite->data[0..7] (overlay C exact : `(struct FeatherDanceData *)
 // sprite->data`). data[0]=unk0 (0a|0b|0c|0d|unk0_1:4|unk1:8), data[1]=unk2,
 // data[2]=unk4(s16), data[3]=unk6, data[4]=unk8, data[5]=unkA,
@@ -411,7 +411,7 @@ function _fdSetE0(d: number[], v: number): void { d[7] = (d[7] & ~0x0001) | (v &
 function _fdE1(d: number[]): number { return (d[7] >> 1) & 0x7FFF; }
 function _fdSetE1(d: number[], v: number): void { d[7] = (d[7] & 0x0001) | ((v & 0x7FFF) << 1); }
 
-/** Miroir des écritures gOamMatrices de la plume (flying.c:636-643 / 871-877) :
+/** Miroir des écritures gOamMatrices de la plume (battle_anim_flying.c.c:636-643 / 871-877) :
  *  sinIndex = (u8)((-x2 >> 1) + unkA) ; a=d=gSineTable[sinIndex+64] (cos),
  *  b=sin, c=-sin. Matrice PROPRE via _ensureOwnMatrix (template en affine
  *  DUMMY → pas d'alloc bridge). */
@@ -423,7 +423,7 @@ function _FeatherDance_WriteOamMatrix(sprite: _VSprite, d: number[]): void {
   if (m > 0) SetOamMatrix(m, cosVal, sinVal, -sinVal, cosVal);
 }
 
-/** Bloc répété ×4 dans le C (flying.c:678-712, identique dans les 4 cases du
+/** Bloc répété ×4 dans le C (battle_anim_flying.c.c:678-712, identique dans les 4 cases du
  *  switch de AnimFallingFeather_Step) : toggle hFlip+animNum (re-begin anim),
  *  et si unk0_0c → bascule oam.priority (non-contest) / subpriority (contest),
  *  toggle unkE_0, clear unk0_0d. */
@@ -651,7 +651,7 @@ function _AnimWhirlwindLine_Step(sprite: _VSprite): void {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Invités hors flying.c (lot orchestrateur — voir en-tête).
+// Invités hors battle_anim_flying.c.c (lot orchestrateur — voir en-tête).
 // ════════════════════════════════════════════════════════════════════════════
 
 /** 1:1 `AnimRazorWindTornado` (battle_anim_effects_2.c:1885) : tornade de
@@ -788,7 +788,7 @@ function AnimBounceBallShrink(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimBounceBallShrink: AnimBounceBallShrink as never });
 
-// ─── VAGUE F12 : AnimTask_AnimateGustTornadoPalette (flying.c, 3 hits) ──────
+// ─── VAGUE F12 : AnimTask_AnimateGustTornadoPalette (battle_anim_flying.c.c, 3 hits) ──────
 // Rotation des couleurs 1-8 de la palette GUST toutes args[0] frames pendant
 // args[1] frames (le tourbillon qui scintille).
 function _flItf(): { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void } {
@@ -823,7 +823,7 @@ function _GustTornadoPal_Step(task: { taskId: number; data: number[] }): void {
 import { registerAnimTasks as _flRegT } from '../engine/battle/battle-anim-registry';
 _flRegT({ AnimTask_AnimateGustTornadoPalette: AnimTask_AnimateGustTornadoPalette as never });
 
-// --- VAGUE F49 : AnimTask_DrillPeckHitSplats (flying.c) ---------------------
+// --- VAGUE F49 : AnimTask_DrillPeckHitSplats (battle_anim_flying.c.c) ---------------------
 // 8 hitsplats clignotants en cercle (Sin/Cos -13) toutes les 32 unites de
 // phase. Reutilise AnimFlashingHitSplat via __animCallbackRegistry.
 function _dpItf(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void; incVisualTaskCount?: () => void } {

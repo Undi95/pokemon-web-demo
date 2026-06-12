@@ -213,7 +213,7 @@ registerAnimCallbacks({
   AnimDragonDanceOrb: AnimDragonDanceOrb as never,
 });
 
-// ─── VAGUE F39a : AnimTask_DragonDanceWaver (dragon.c:338-424) ──────────────
+// ─── VAGUE F39a : AnimTask_DragonDanceWaver (battle_anim_dragon.c.c:338-424) ──────────────
 // Ondulation scanline ±32px autour de l'ATTAQUANT (amplitude qui monte 0→3
 // puis redescend), client du système gScanlineEffect (pattern Extrasensory).
 import {
@@ -245,7 +245,7 @@ function _ddYCoordWithElevation(battler: number): number {
   return y;
 }
 
-/** 1:1 `AnimTask_DragonDanceWaver` (dragon.c:338). */
+/** 1:1 `AnimTask_DragonDanceWaver` (battle_anim_dragon.c.c:338). */
 function AnimTask_DragonDanceWaver(task: _DdTask): void {
   const attacker = _ddItf().getAttacker?.() ?? 0;
   const rank = _ddBgRank(attacker);
@@ -269,7 +269,7 @@ function AnimTask_DragonDanceWaver(task: _DdTask): void {
   _ddSetParams({ dmaDest, dmaControl: _ddDma16, initState: 1, unused9: 0 });
   task.func = _DragonDanceWaver_Step;
 }
-/** 1:1 `AnimTask_DragonDanceWaver_Step` (dragon.c:374). */
+/** 1:1 `AnimTask_DragonDanceWaver_Step` (battle_anim_dragon.c.c:374). */
 function _DragonDanceWaver_Step(task: _DdTask): void {
   switch (task.data[0]) {
     case 0:
@@ -299,7 +299,7 @@ function _DragonDanceWaver_Step(task: _DdTask): void {
       break;
   }
 }
-/** 1:1 `UpdateDragonDanceScanlineEffect` (dragon.c:413). */
+/** 1:1 `UpdateDragonDanceScanlineEffect` (battle_anim_dragon.c.c:413). */
 function _UpdateDragonDanceScanlineEffect(task: _DdTask): void {
   let sineIndex = task.data[5] & 0xFFFF;
   const sBuf = _ddBufs[_ddScan.srcBuffer];

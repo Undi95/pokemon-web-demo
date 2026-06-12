@@ -483,7 +483,7 @@ registerAnimCallbacks({
   AnimGhostStatusSprite: AnimGhostStatusSprite as never,
 });
 
-// ─── VAGUE F36 : NightShadeClone + NightmareClone (ghost.c:339-585) ─────────
+// ─── VAGUE F36 : NightShadeClone + NightmareClone (battle_anim_ghost.c.c:339-585) ─────────
 import {
   PrepareBattlerSpriteForRotScale as _f36Prep,
   SetSpriteRotScale as _f36SetRS,
@@ -513,7 +513,7 @@ function _f36AtkSpriteId(): number {
 const _F36_BLDCNT = 0x50, _F36_BLDALPHA = 0x52;
 function _f36Blend(eva: number, evb: number): number { return (eva & 0xFFFF) | ((evb & 0xFFFF) << 8); }
 
-/** 1:1 `AnimTask_NightShadeClone` (ghost.c:339) : l'attaquant rétréci 128 en
+/** 1:1 `AnimTask_NightShadeClone` (battle_anim_ghost.c.c:339) : l'attaquant rétréci 128 en
  *  blend qui regrandit jusqu'à 256. arg0 = délai avant le regrossissement. */
 function AnimTask_NightShadeClone(task: _F36Task): void {
   const rt = _f36Rt();
@@ -560,7 +560,7 @@ function _NightShadeClone_Step2(task: _F36Task): void {
   }
 }
 
-/** 1:1 `AnimTask_NightmareClone` (ghost.c:516) : clone blend du TARGET qui
+/** 1:1 `AnimTask_NightmareClone` (battle_anim_ghost.c.c:516) : clone blend du TARGET qui
  *  s'éloigne en s'estompant (15→0 / 2→16). */
 function AnimTask_NightmareClone(task: _F36Task): void {
   const itf = _f36Itf();
@@ -627,7 +627,7 @@ _f36RegT({
   AnimTask_NightmareClone: AnimTask_NightmareClone as never,
 });
 
-// --- VAGUE F55 : AnimTask_GrudgeFlames (ghost.c:1176-1307) ------------------
+// --- VAGUE F55 : AnimTask_GrudgeFlames (battle_anim_ghost.c.c:1176-1307) ------------------
 // 6 flammes en orbite Sin autour de l'attaquant (priorite alternee devant/
 // derriere par phase), fondu BLDALPHA 14/4 puis extinction signalee data[8].
 import { GetBattlerElevation as _gfElev, GetBattlerSpriteSubpriority as _gfSubprio } from './battle_anim_mons';
@@ -673,7 +673,7 @@ function _gfBgPriority(battler: number): number {
   return _gfRt().gba?.bg(bgId)?.config?.priority ?? 2;
 }
 
-/** 1:1 AnimTask_GrudgeFlames (ghost.c:1176). */
+/** 1:1 AnimTask_GrudgeFlames (battle_anim_ghost.c.c:1176). */
 function AnimTask_GrudgeFlames(task: _GfTask): void {
   const atk = _gfItf2().getAttacker?.() ?? 0;
   task.data[0] = 0;
@@ -789,7 +789,7 @@ function _AnimGrudgeFlame(sprite: _GfSprite): void {
 }
 _f36RegT({ AnimTask_GrudgeFlames: AnimTask_GrudgeFlames as never });
 
-// --- VAGUE F66 : DestinyBondWhiteShadow (ghost.c) ---------------------------
+// --- VAGUE F66 : DestinyBondWhiteShadow (battle_anim_ghost.c.c) ---------------------------
 // L'ombre blanche glisse de l'attaquant vers chaque ennemi visible (16.4),
 // fondu in 24 demi-pas (8/9 alternes), tenue arg0 frames, fondu out, destroy.
 function _dbPicBottom(battler: number): number {
@@ -920,7 +920,7 @@ function _AnimDestinyBondWhiteShadow_Step(sprite: { x: number; y: number; data: 
 }
 _f36RegT({ AnimTask_DestinyBondWhiteShadow: AnimTask_DestinyBondWhiteShadow as never });
 
-// --- VAGUE F67 : SpiteTargetShadow (ghost.c:589-744) ------------------------
+// --- VAGUE F67 : SpiteTargetShadow (battle_anim_ghost.c.c:589-744) ------------------------
 // L'ombre violette de Spite : clone normal palette violette (blend 10 vers
 // RGB(13,0,15)) + ONDE ScanlineEffect_InitWave (freq 2, ampl 6) sur le BG du
 // mon + fondu Sin/18 alterne 128 pas, demontage complet.
@@ -1079,7 +1079,7 @@ function _SpiteTargetShadow_Step3(task: _SpwTask): void {
 _f36RegT({ AnimTask_SpiteTargetShadow: AnimTask_SpiteTargetShadow as never });
 
 // --- VAGUE F76 : AnimTask_CurseStretchingBlackBg(+Step1/Step2) --------------
-// (ghost.c:945-1030) — le NOIR de Curse (utilisateur Ghost) : une fenêtre WIN0
+// (battle_anim_ghost.c.c:945-1030) — le NOIR de Curse (utilisateur Ghost) : une fenêtre WIN0
 // part d'un point côté attaquant (x=200 joueur / 40 ennemi, y=40) et s'étire
 // en 16 pas jusqu'à 240x112 ; DANS la fenêtre le DARKEN (BLDCNT TGT1_BG3 +
 // BLDY 16) noircit le décor ; à 16 pas, fade des palettes BG vers noir puis
@@ -1103,7 +1103,7 @@ function _csSetG(name: string, v: number): void {
 }
 function _csWinRange(a: number, b: number): number { return ((a & 0xFF) << 8) | (b & 0xFF); }
 
-/** 1:1 AnimTask_CurseStretchingBlackBg (ghost.c:945). */
+/** 1:1 AnimTask_CurseStretchingBlackBg (battle_anim_ghost.c.c:945). */
 function AnimTask_CurseStretchingBlackBg(task: _CsTask): void {
   const rt = _csRt();
   _csSetG('gBattle_WIN0H', 0);

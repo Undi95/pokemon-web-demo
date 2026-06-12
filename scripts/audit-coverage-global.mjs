@@ -155,6 +155,20 @@ for (const tsAbs of walkTs(join(projectRoot, 'src'))) {
   }
 }
 
+// ─── 1bis. INDEX des SYMBOLES TS (le signal MIROIR : mêmes noms de fonctions) ──
+// Une fonction C est « couverte-par-symbole » si son NOM exact apparaît comme
+// identifiant dans notre src/ (déclaration, registre, appel ou commentaire 1:1).
+// Signal complémentaire des citations par ligne — robuste aux raccourcis de
+// notation (ex. « water.c:814 » vs « battle_anim_water.c:814 »).
+const tsIdentifiers = new Set();
+for (const tsAbs of walkTs(join(projectRoot, 'src'))) {
+  // EXCLURE l'auto-généré (decomp-data = transpilations qui contiennent TOUS
+  // les noms du décomp → faux positifs massifs ; seul le code MANUEL compte).
+  if (/decomp-data/.test(tsAbs)) continue;
+  const content = readFileSync(tsAbs, 'utf8');
+  for (const m of content.matchAll(/[A-Za-z_][A-Za-z0-9_]{3,}/g)) tsIdentifiers.add(m[0]);
+}
+
 // ─── 2. Parse TOUS les src/*.c du décomp + calcule la couverture ──────────────
 function overlaps(citedSet, s) {
   for (const ln of citedSet) if (ln >= s.start && ln <= s.end) return true;
@@ -169,22 +183,27 @@ for (const ent of readdirSync(decompSrc, { withFileTypes: true })) {
   const funcs = symbols.filter((s) => s.kind === 'func');
   const citedSet = citedLinesByFile.get(fname) || new Set();
   const covered = funcs.filter((s) => overlaps(citedSet, s));
-  const uncovered = funcs.filter((s) => !overlaps(citedSet, s));
+  const uncoveredByCite = funcs.filter((s) => !overlaps(citedSet, s));
+  // 2e passe MIROIR : nom exact présent en TS → couvert-par-symbole.
+  const coveredBySymbol = uncoveredByCite.filter((s) => tsIdentifiers.has(s.name));
+  const uncovered = uncoveredByCite.filter((s) => !tsIdentifiers.has(s.name));
   rows.push({
     file: fname, totalLines, totalFuncs: funcs.length,
-    covered: covered.length, uncovered,
+    covered: covered.length + coveredBySymbol.length,
+    coveredByCite: covered.length, coveredBySymbol: coveredBySymbol.length,
+    uncovered,
     cites: citeCountByFile.get(fname) || 0,
     fileLevelCites: fileLevelCiteByFile.get(fname) || 0,
-    pct: funcs.length ? Math.round((covered.length / funcs.length) * 100) : 0,
+    pct: funcs.length ? Math.round(((covered.length + coveredBySymbol.length) / funcs.length) * 100) : 0,
   });
 }
 
 // ─── Mode --file : détail d'un fichier (les fonctions non couvertes) ──────────
 if (onlyFile) {
   for (const r of rows) {
-    console.log(`\n# ${r.file} — ${r.covered}/${r.totalFuncs} fonctions couvertes (${r.pct}%) · ${r.cites} citations\n`);
+    console.log(`\n# ${r.file} — ${r.covered}/${r.totalFuncs} fonctions couvertes (${r.pct}%) · cite:${r.coveredByCite} + symbole:${r.coveredBySymbol} · ${r.cites} citations\n`);
     if (r.uncovered.length) {
-      console.log('Fonctions NON couvertes (pas de citation 1:1) :');
+      console.log('Fonctions NON couvertes (ni citation ni NOM dans src/) :');
       for (const s of r.uncovered) console.log(`  ✗ ${s.name}  @ L${s.start}-${s.end}`);
     } else console.log('✓ Toutes les fonctions sont citées.');
   }

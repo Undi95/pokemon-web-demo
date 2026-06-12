@@ -281,7 +281,7 @@ registerAnimCallbacks({
   AnimDigDirtMound: AnimDigDirtMound as never,
 });
 
-// ─── VAGUE F1 : AnimTask_HorizontalShake (ground.c:575, 14 usages) ───────────
+// ─── VAGUE F1 : AnimTask_HorizontalShake (battle_anim_ground.c.c:575, 14 usages) ───────────
 // data: 0=state 1=delay 2=timer 3=maxTime 9+i=spriteIds 13=numBattlers/initialX
 // 14=horizOffset 15=initHorizOffset. 3 modes : 5=platforms(BG3) 4=all default=un.
 type _HsTask = { taskId: number; data: number[]; func?: unknown };
@@ -393,7 +393,7 @@ function _HS_Battlers(task: _HsTask): void {
 import { registerAnimTasks as _hsReg } from '../engine/battle/battle-anim-registry';
 _hsReg({ AnimTask_HorizontalShake: AnimTask_HorizontalShake as never });
 
-// ─── VAGUE F34-SCANLINE : Dig (ground.c:288-496) ────────────────────────────
+// ─── VAGUE F34-SCANLINE : Dig (battle_anim_ground.c.c:288-496) ────────────────────────────
 // AnimTask_DigDownMovement/DigUpMovement : le mon plonge sous terre / en sort.
 // SetDigScanlineEffect : scanlines sous endY décalées de +240 (BG hors-map =
 // vide) → le bas du mon « disparaît dans le sol ».
@@ -438,7 +438,7 @@ function _dgSetBgY(rank: number, v: number): void {
   if (rank === 1) g.gBattle_BG1_Y = v; else g.gBattle_BG2_Y = v;
 }
 
-/** 1:1 `SetDigScanlineEffect(useBG1, y, endY)` (ground.c:458). */
+/** 1:1 `SetDigScanlineEffect(useBG1, y, endY)` (battle_anim_ground.c.c:458). */
 function _SetDigScanlineEffect(useBG1: number, y: number, endY: number): void {
   const bgX = _dgBgX(useBG1 === 1 ? 1 : 2);
   const dmaDest = _dgRegBase + (useBG1 === 1 ? _dgRegBg1H : _dgRegBg2H);
@@ -456,7 +456,7 @@ function _SetDigScanlineEffect(useBG1: number, y: number, endY: number): void {
   _dgSetParams({ dmaDest, dmaControl: _dgDma16, initState: 1, unused9: 0 });
 }
 
-/** 1:1 `AnimTask_DigDownMovement` (ground.c:288) — dispatcher + appel immédiat. */
+/** 1:1 `AnimTask_DigDownMovement` (battle_anim_ground.c.c:288) — dispatcher + appel immédiat. */
 function AnimTask_DigDownMovement(task: _DgTask): void {
   const args = _dgItf().getArgs?.() ?? [0];
   if (args[0] === 0) task.func = _DigBounceMovement;
@@ -464,7 +464,7 @@ function AnimTask_DigDownMovement(task: _DgTask): void {
   (task.func as (t: _DgTask) => void)(task);
 }
 
-/** 1:1 `AnimTask_DigBounceMovement` (ground.c:301). */
+/** 1:1 `AnimTask_DigBounceMovement` (battle_anim_ground.c.c:301). */
 function _DigBounceMovement(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
@@ -520,7 +520,7 @@ function _DigBounceMovement(task: _DgTask): void {
   }
 }
 
-/** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (ground.c:371). */
+/** 1:1 `AnimTask_DigEndBounceMovementSetInvisible` (battle_anim_ground.c.c:371). */
 function _DigEndBounceMovementSetInvisible(task: _DgTask): void {
   const spriteId = _dgAttackerSpriteId();
   const sp = _dgRt().gSprites?.get(spriteId);
@@ -534,7 +534,7 @@ function _DigEndBounceMovementSetInvisible(task: _DgTask): void {
   _dgItf().DestroyAnimVisualTask?.(task.taskId);
 }
 
-/** 1:1 `AnimTask_DigUpMovement` (ground.c:386) — dispatcher + appel immédiat. */
+/** 1:1 `AnimTask_DigUpMovement` (battle_anim_ground.c.c:386) — dispatcher + appel immédiat. */
 function AnimTask_DigUpMovement(task: _DgTask): void {
   const args = _dgItf().getArgs?.() ?? [0];
   if (args[0] === 0) task.func = _DigSetVisibleUnderground;
@@ -542,7 +542,7 @@ function AnimTask_DigUpMovement(task: _DgTask): void {
   (task.func as (t: _DgTask) => void)(task);
 }
 
-/** 1:1 `AnimTask_DigSetVisibleUnderground` (ground.c:398). */
+/** 1:1 `AnimTask_DigSetVisibleUnderground` (battle_anim_ground.c.c:398). */
 function _DigSetVisibleUnderground(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
@@ -561,7 +561,7 @@ function _DigSetVisibleUnderground(task: _DgTask): void {
   }
 }
 
-/** 1:1 `AnimTask_DigRiseUpFromHole` (ground.c:417). */
+/** 1:1 `AnimTask_DigRiseUpFromHole` (battle_anim_ground.c.c:417). */
 function _DigRiseUpFromHole(task: _DgTask): void {
   switch (task.data[0]) {
     case 0: {
@@ -610,7 +610,7 @@ _hsReg({
   AnimTask_DigUpMovement: AnimTask_DigUpMovement as never,
 });
 
-// ─── VAGUE F36 : AnimTask_IsPowerOver99 (ground.c:734) ──────────────────────
+// ─── VAGUE F36 : AnimTask_IsPowerOver99 (battle_anim_ground.c.c:734) ──────────────────────
 /** 1:1 → gBattleAnimArgs[15] = power > 99 (Magnitude). */
 function AnimTask_IsPowerOver99(task: { taskId: number }): void {
   const itf = _dgItf() as { getArgs?: () => number[]; getAnimMovePower?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -620,7 +620,7 @@ function AnimTask_IsPowerOver99(task: { taskId: number }): void {
 }
 _hsReg({ AnimTask_IsPowerOver99: AnimTask_IsPowerOver99 as never });
 
-// --- VAGUE F65b : PositionFissureBgOnBattler (ground.c:740-775) -------------
+// --- VAGUE F65b : PositionFissureBgOnBattler (battle_anim_ground.c.c:740-775) -------------
 // Cale le BG3 (la fissure) sur le battler : offsets poses puis TENUS par une
 // task d'attente jusqu'au signal args[7] == arg2 (puis reset 0/0).
 function _pfItf(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -632,7 +632,7 @@ function _pfSetBg3(x: number, y: number): void {
   g.gBattle_BG3_Y = y;
 }
 
-/** 1:1 AnimTask_PositionFissureBgOnBattler (ground.c:740). */
+/** 1:1 AnimTask_PositionFissureBgOnBattler (battle_anim_ground.c.c:740). */
 function AnimTask_PositionFissureBgOnBattler(task: { taskId: number }): void {
   const itf = _pfItf();
   const args = itf.getArgs?.() ?? [1, 1, -1];

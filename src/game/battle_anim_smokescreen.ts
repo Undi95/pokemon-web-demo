@@ -153,11 +153,11 @@ function _SmokescreenImpactMain(sprite: _SmSprite): void {
   }
 }
 
-// ─── AnimTask_SmokescreenImpact (effects_3.c — placé ICI avec son moteur) ───
+// ─── AnimTask_SmokescreenImpact (battle_anim_effects_3.c.c — placé ICI avec son moteur) ───
 import { GetBattlerSpriteCoord, BATTLER_COORD_X_2, BATTLER_COORD_Y_PIC_OFFSET } from './battle_anim_mons';
 import { registerAnimTasks } from '../engine/battle/battle-anim-registry';
 
-/** 1:1 `AnimTask_SmokescreenImpact` (effects_3.c) : impact +8/+8 sur la cible. */
+/** 1:1 `AnimTask_SmokescreenImpact` (battle_anim_effects_3.c.c) : impact +8/+8 sur la cible. */
 function AnimTask_SmokescreenImpact(task: { taskId: number }): void {
   const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } | undefined;
   const tgt = itf?.getTarget?.() ?? 1;

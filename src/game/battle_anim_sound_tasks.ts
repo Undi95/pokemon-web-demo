@@ -50,7 +50,7 @@ function SoundTask_PlayCryHighPitch(task: AnimTask): void {
   _itf().DestroyAnimVisualTask?.(task.taskId);
 }
 
-/** 1:1 `SoundTask_PlaySE1WithPanning` / `_PlaySE2WithPanning` (sound_tasks.c) :
+/** 1:1 `SoundTask_PlaySE1WithPanning` / `_PlaySE2WithPanning` (battle_anim_sound_tasks.c.c) :
  *  SE one-shot avec panning (panning = dette douce infra SE mono) — 47 usages. */
 function SoundTask_PlaySE1WithPanning(task: AnimTask): void {
   const args = _itf().getArgs?.() ?? [0, 0];
@@ -259,7 +259,7 @@ registerAnimTasks({
   SoundTask_AdjustPanningVar: SoundTask_AdjustPanningVar as never,
 });
 
-// --- VAGUE F82 : SoundTask_PlayCryWithEcho(+Step) (sound_tasks.c) -----------
+// --- VAGUE F82 : SoundTask_PlayCryWithEcho(+Step) (battle_anim_sound_tasks.c.c) -----------
 // Hyper Voice : le cri de l'attaquant en mode ECHO_START, attente de fin,
 // puis l'echo ECHO_END. Net-effect infra cris (pattern __playCry valide) :
 // machine d'etats au MEME timing, modes echo = dette douce (cri rejoue).

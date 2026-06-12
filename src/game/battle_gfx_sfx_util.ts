@@ -469,7 +469,7 @@ function _battlerSpriteId(battler: number): number {
   return fn ? fn(battler) : -1;
 }
 
-// ─── Assets ombre (gSpriteSheet_EnemyShadow, smokescreen.c:127) ──────────────
+// ─── Assets ombre (gSpriteSheet_EnemyShadow, battle_anim_smokescreen.c.c:127) ──────────────
 const ENEMY_SHADOW_PNG = '/decomp/em/battle_interface/enemy_mon_shadow.png';
 const GFXTAG_SHADOW = 'GFXTAG_SHADOW';
 const PALTAG_SHADOW = 'PALTAG_SHADOW';

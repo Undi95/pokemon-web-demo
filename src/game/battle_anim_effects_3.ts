@@ -2283,7 +2283,7 @@ function AnimLetterZ(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimLetterZ: AnimLetterZ as never });
 
-// ─── VAGUE F1 : AnimTask_IsTargetPlayerSide (effects_3.c:1521) ──────────────
+// ─── VAGUE F1 : AnimTask_IsTargetPlayerSide (battle_anim_effects_3.c.c:1521) ──────────────
 function _e3ItfB(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
@@ -2296,7 +2296,7 @@ function AnimTask_IsTargetPlayerSide(task: { taskId: number }): void {
 import { registerAnimTasks as _e3RegTasks } from '../engine/battle/battle-anim-registry';
 _e3RegTasks({ AnimTask_IsTargetPlayerSide: AnimTask_IsTargetPlayerSide as never });
 
-// ─── VAGUE F4 : AnimTask_PainSplitMovement (effects_3.c, 6 hits) ────────────
+// ─── VAGUE F4 : AnimTask_PainSplitMovement (battle_anim_effects_3.c.c, 6 hits) ────────────
 // Le mon se déforme (rot-scale écrasé) + tremble x2 ±2 pendant 13 frames.
 import {
   PrepareBattlerSpriteForRotScale as _psPrep, SetSpriteRotScale as _psSet,
@@ -2348,7 +2348,7 @@ function AnimTask_PainSplitMovement(task: { taskId: number; data: number[] }): v
     }
   }
 }
-/** 1:1 `AnimTask_RockMonBackAndForth` (effects_3.c, 4 hits) : balancement
+/** 1:1 `AnimTask_RockMonBackAndForth` (battle_anim_effects_3.c.c, 4 hits) : balancement
  *  rot-scale (x2 ± data[5], rotation ± data[4]) x N répétitions. */
 function AnimTask_RockMonBackAndForth(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2408,7 +2408,7 @@ function _RockMonBF_Step(task: { taskId: number; data: number[] }): void {
       break;
   }
 }
-/** 1:1 `AnimTask_SetPsychicBackground` (effects_3.c:1372, 14 hits) : task de
+/** 1:1 `AnimTask_SetPsychicBackground` (battle_anim_effects_3.c.c:1372, 14 hits) : task de
  *  FOND (gAnimVisualTaskCount-- à l'init — ne bloque pas les waits) qui fait
  *  onduler la palette BG (rotation slots 1-11 toutes les 4 frames) jusqu'au
  *  sentinel args[7]==0xFFFF (posé par UnsetPsychicBackground). Le VRAI fond
@@ -2434,7 +2434,7 @@ function _PsychicBg_Step(task: { taskId: number; data: number[] }): void {
   const args = (_e3ItfB() as { getArgs?: () => number[] }).getArgs?.() ?? [];
   if ((args[7] & 0xFFFF) === 0xFFFF) rt?.DestroyTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_DefenseCurlDeformMon` (effects_3.c, 1 hit) : boule affine. */
+/** 1:1 `AnimTask_DefenseCurlDeformMon` (battle_anim_effects_3.c.c, 1 hit) : boule affine. */
 import {
   PrepareAffineAnimInTaskData as _dcPrep, RunAffineAnimFromTaskData as _dcRun,
 } from './battle_anim_mons';
@@ -2455,7 +2455,7 @@ function AnimTask_DefenseCurlDeformMon(task: { taskId: number; data: number[] })
       break;
   }
 }
-/** 1:1 `AnimTask_OdorSleuthMovement` (effects_3.c, 1 hit) : 2 clones de la
+/** 1:1 `AnimTask_OdorSleuthMovement` (battle_anim_effects_3.c.c, 1 hit) : 2 clones de la
  *  cible oscillent en Cos (amplitude décroissante après 60f) en clignotant. */
 import { CloneBattlerSpriteWithBlend as _osClone, DestroySpriteWithActiveSheet as _osDestroy } from './battle_anim_mons';
 import { Cos as _osCos } from './trig';
@@ -2517,7 +2517,7 @@ function _MoveOdorSleuthClone(sprite: { data: number[]; x2: number; invisible?: 
       break;
   }
 }
-/** 1:1 `AnimTask_TeeterDanceMovement` (effects_3.c, 1 hit — Danse-Folle) :
+/** 1:1 `AnimTask_TeeterDanceMovement` (battle_anim_effects_3.c.c, 1 hit — Danse-Folle) :
  *  le mon titube — x absolu en sinus lent (>>3) + wobble x2 rapide (>>5). */
 function AnimTask_TeeterDanceMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2570,7 +2570,7 @@ function _TeeterDance_Step(task: { taskId: number; data: number[] }): void {
 // gSineTable importee en tete de fichier (trig) — acces brut 1:1
 function _osSinTable(i: number): number { return gSineTable[i & 0xFF] ?? 0; }
 /** Factory 1:1 du pattern « deform affine attaquant » (Stockpile/SpitUp/
- *  Swallow — effects_3.c, 3×1 hits) : Prepare puis Run jusqu'à la fin. */
+ *  Swallow — battle_anim_effects_3.c.c, 3×1 hits) : Prepare puis Run jusqu'à la fin. */
 function _mkDeformTask(tableName: string): (task: { taskId: number; data: number[] }) => void {
   return (task) => {
     const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2585,7 +2585,7 @@ function _mkDeformTask(tableName: string): (task: { taskId: number; data: number
     }
   };
 }
-/** 1:1 `AnimTask_SlackOffSquish` (effects_3.c:5514) : table affine + micro
+/** 1:1 `AnimTask_SlackOffSquish` (battle_anim_effects_3.c.c:5514) : table affine + micro
  *  tremblement x2 ±1 sur les frames 17-39. */
 function AnimTask_SlackOffSquish(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2616,7 +2616,7 @@ function _SlackOff_Step(task: { taskId: number; data: number[] }): void {
   }
   if (!_dcRun(task as never)) itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_FlailMovement` (effects_3.c:2845 — Fléau) : oscillation
+/** 1:1 `AnimTask_FlailMovement` (battle_anim_effects_3.c.c:2845 — Fléau) : oscillation
  *  rotation ±data[14] décroissante (0x800→16) + x2 dérivé. */
 function AnimTask_FlailMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2678,9 +2678,9 @@ function _Flail_Step(task: { taskId: number; data: number[] }): void {
     }
   }
 }
-/** 1:1 `gFacadeBlendColors` (effects_3.c:902) — les 24 RGB15 du cycle. */
+/** 1:1 `gFacadeBlendColors` (battle_anim_effects_3.c.c:902) — les 24 RGB15 du cycle. */
 const _gFacadeBlendColors = [1852, 5820, 8795, 11739, 15706, 18682, 21625, 25625, 23577, 20505, 16409, 13337, 10266, 6170, 3098, 27, 59, 187, 315, 411, 540, 636, 764, 893];
-/** 1:1 `AnimTask_FacadeColorBlend` (effects_3.c:3875) : cycle 24 couleurs
+/** 1:1 `AnimTask_FacadeColorBlend` (battle_anim_effects_3.c.c:3875) : cycle 24 couleurs
  *  coeff 8 sur la palette OBJ du battler pendant args[1] frames. */
 function AnimTask_FacadeColorBlend(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2708,7 +2708,7 @@ function _FacadeBlend_Step(task: { taskId: number; data: number[] }): void {
   }
 }
 import { BlendPalette as _e3Blend } from '../engine/system/decomp-globals';
-/** 1:1 `AnimTask_SmellingSaltsSquish` (effects_3.c:4307) : squish affine ×N
+/** 1:1 `AnimTask_SmellingSaltsSquish` (battle_anim_effects_3.c.c:4307) : squish affine ×N
  *  avec tremblement x2 ±2. */
 function AnimTask_SmellingSaltsSquish(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2740,7 +2740,7 @@ function _SmellingSalts_Step(task: { taskId: number; data: number[] }): void {
     }
   }
 }
-/** 1:1 `AnimTask_SquishAndSweatDroplets` (effects_3.c:3742) : squish affine
+/** 1:1 `AnimTask_SquishAndSweatDroplets` (battle_anim_effects_3.c.c:3742) : squish affine
  *  ×N + 2 salves de 4 gouttes de sueur (frames 6 et 18 de chaque squish). */
 function AnimTask_SquishAndSweatDroplets(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2824,7 +2824,7 @@ function _AnimSweatDrop(sprite: { data: number[]; x: number; y: number }): void 
     }
   }
 }
-/** 1:1 `AnimTask_HelpingHandAttackerMovement` (effects_3.c, 1 hit) :
+/** 1:1 `AnimTask_HelpingHandAttackerMovement` (battle_anim_effects_3.c.c, 1 hit) :
  *  la chorégraphie 9 états du « tope-là » (claps x2 puis poussée). */
 function AnimTask_HelpingHandAttackerMovement(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _e3ItfB() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -2882,7 +2882,7 @@ function _HelpingHand_Step(task: { taskId: number; data: number[] }): void {
       break;
   }
 }
-/** 1:1 `AnimTask_GlareEyeDots` (effects_3.c, 1 hit — Regard Noir/Glare) :
+/** 1:1 `AnimTask_GlareEyeDots` (battle_anim_effects_3.c.c, 1 hit — Regard Noir/Glare) :
  *  12 paires de points le long de la ligne attaquant→cible (interp 8.8),
  *  chaque point vit 36f, offsets ±3 en diagonale. */
 function AnimTask_GlareEyeDots(task: { taskId: number; data: number[]; func?: unknown }): void {
@@ -2979,7 +2979,7 @@ _e3RegTasks({
   AnimTask_RockMonBackAndForth: AnimTask_RockMonBackAndForth as never,
 });
 
-// ─── VAGUE F34-SCANLINE : AcidArmor (effects_3.c:3296-3470) ─────────────────
+// ─── VAGUE F34-SCANLINE : AcidArmor (battle_anim_effects_3.c.c:3296-3470) ─────────────────
 // Le mon « fond » : scanlines compressées vers le bas (mode DMA 32-BIT = paire
 // HOFS+VOFS entrelacée par scanline) + fondu BLDALPHA.
 import {
@@ -3001,7 +3001,7 @@ function _aaBgXY(rank: number): [number, number] {
     : [((g.gBattle_BG2_X as number) | 0), ((g.gBattle_BG2_Y as number) | 0)];
 }
 
-/** 1:1 `AnimTask_AcidArmor` (effects_3.c:3296). arg0 = ANIM_ATTACKER/TARGET. */
+/** 1:1 `AnimTask_AcidArmor` (battle_anim_effects_3.c.c:3296). arg0 = ANIM_ATTACKER/TARGET. */
 function AnimTask_AcidArmor(task: _AaTask): void {
   const itf = _vItf();
   const args = itf.getArgs?.() ?? [0];
@@ -3050,7 +3050,7 @@ function AnimTask_AcidArmor(task: _AaTask): void {
   task.func = _AcidArmor_Step;
 }
 
-/** 1:1 `AnimTask_AcidArmor_Step` (effects_3.c:3358). */
+/** 1:1 `AnimTask_AcidArmor_Step` (battle_anim_effects_3.c.c:3358). */
 function _AcidArmor_Step(task: _AaTask): void {
   const rank = _aaBgRank(task.data[5]);
   const [bgX, bgY] = _aaBgXY(rank);
@@ -3134,15 +3134,15 @@ function _AcidArmor_Step(task: _AaTask): void {
 
 registerAnimTasks({ AnimTask_AcidArmor: AnimTask_AcidArmor as never });
 
-// ─── VAGUE F36 : booléennes/power-levels (effects_3.c:1531 + :5060) ─────────
-/** 1:1 `AnimTask_IsHealingMove` (effects_3.c:1531) → args[7] = (dmg <= 0). */
+// ─── VAGUE F36 : booléennes/power-levels (battle_anim_effects_3.c.c:1531 + :5060) ─────────
+/** 1:1 `AnimTask_IsHealingMove` (battle_anim_effects_3.c.c:1531) → args[7] = (dmg <= 0). */
 function AnimTask_IsHealingMove(task: { taskId: number }): void {
   const itf = _vItf() as { getArgs?: () => number[]; getAnimMoveDmg?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const args = itf.getArgs?.();
   if (args) args[7] = (itf.getAnimMoveDmg?.() ?? 0) > 0 ? 0 : 1;
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_GetReturnPowerLevel` (effects_3.c:5060) → args[7] = 0..3. */
+/** 1:1 `AnimTask_GetReturnPowerLevel` (battle_anim_effects_3.c.c:5060) → args[7] = 0..3. */
 function AnimTask_GetReturnPowerLevel(task: { taskId: number }): void {
   const itf = _vItf() as { getArgs?: () => number[]; getAnimFriendship?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const f = itf.getAnimFriendship?.() ?? 0;
@@ -3161,7 +3161,7 @@ registerAnimTasks({
   AnimTask_GetReturnPowerLevel: AnimTask_GetReturnPowerLevel as never,
 });
 
-// ─── VAGUE F39b : AnimTask_FadeScreenToWhite (effects_3.c:1398) ─────────────
+// ─── VAGUE F39b : AnimTask_FadeScreenToWhite (battle_anim_effects_3.c.c:1398) ─────────────
 // Nom trompeur : ROTATION des couleurs 1..11 de la palette BG terrain toutes
 // les 4f (le fond « psychédélique » de Solar Beam) jusqu'au signal
 // args[7]=0xFFFF. Pattern « task de fond » (decVisualTaskCount à l'init).
@@ -3194,7 +3194,7 @@ function _FadeScreenToWhite_Step(task: { taskId: number; data: number[] }): void
 }
 registerAnimTasks({ AnimTask_FadeScreenToWhite: AnimTask_FadeScreenToWhite as never });
 
-// ─── VAGUE F43 : AnimTask_RapinSpinMonElevation (effects_3.c:1749-1891) ─────
+// ─── VAGUE F43 : AnimTask_RapinSpinMonElevation (battle_anim_effects_3.c.c:1749-1891) ─────
 // [typo décomp d'origine] Rapid Spin : le mon « décolle » — la bande scanline
 // se rétrécit par le bas (alternance bgX/bgX+240 toutes les 2f = strobo).
 import { SCANLINE_EFFECT_DMACNT_16BIT as _rsDma16 } from './scanline_effect';
@@ -3277,11 +3277,11 @@ function _RapinSpinMonElevation_Step(task: { taskId: number; data: number[] }): 
 }
 registerAnimTasks({ AnimTask_RapinSpinMonElevation: AnimTask_RapinSpinMonElevation as never });
 
-// ─── VAGUE F44 : AnimTask_TormentAttacker (effects_3.c:1892-2003) ───────────
+// ─── VAGUE F44 : AnimTask_TormentAttacker (battle_anim_effects_3.c.c:1892-2003) ───────────
 // 6 bulles de pensée alternées G/D + squish affine ×6 de l'attaquant, puis
 // les bulles « pop » (anim 2) et se détruisent.
 const _tmAffine_Torment: import('./battle_anim_mons').TaskAffineTable = {
-  // 1:1 sAffineAnims_Torment (effects_3.c:435)
+  // 1:1 sAffineAnims_Torment (battle_anim_effects_3.c.c:435)
   frames: [
     { xScale: -12, yScale: 8, rotation: 0, duration: 4 },
     { xScale: 20, yScale: -20, rotation: 0, duration: 4 },
@@ -3403,7 +3403,7 @@ function _TormentBubble_Pop(sprite: { data: number[]; animEnded?: boolean }): vo
 }
 registerAnimTasks({ AnimTask_TormentAttacker: AnimTask_TormentAttacker as never });
 
-// --- VAGUE F57 : AnimTask_BarrageBall (effects_3.c:4158-4225) ---------------
+// --- VAGUE F57 : AnimTask_BarrageBall (battle_anim_effects_3.c.c:4158-4225) ---------------
 // L'oeuf de Barrage : arc ralenti (1 tick/2f x8) puis arc plein, clignote 16
 // demi-cycles a l'impact et meurt.
 import {
@@ -3420,7 +3420,7 @@ function _bbPicHeight(battler: number): number {
   return coords.h;
 }
 
-/** 1:1 AnimTask_BarrageBall (effects_3.c:4158). */
+/** 1:1 AnimTask_BarrageBall (battle_anim_effects_3.c.c:4158). */
 function AnimTask_BarrageBall(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _vItf();
   const atk = itf.getAttacker?.() ?? 0;
@@ -3504,7 +3504,7 @@ function _BarrageBall_Step(task: { taskId: number; data: number[]; func?: unknow
 }
 registerAnimTasks({ AnimTask_BarrageBall: AnimTask_BarrageBall as never });
 
-// --- VAGUE F69 : AnimTask_MorningSunLightBeam (effects_3.c) -----------------
+// --- VAGUE F69 : AnimTask_MorningSunLightBeam (battle_anim_effects_3.c.c) -----------------
 // 4 rais de lumiere : masque light_beam en BG1, fondu 0..12, deplacement par
 // table s8 [-24,24,-4,0], 4 cycles, demontage. SE MORNING_SUN par rai.
 import {
@@ -3601,7 +3601,7 @@ function AnimTask_MorningSunLightBeam(task: _MsTask): void {
 }
 registerAnimTasks({ AnimTask_MorningSunLightBeam: AnimTask_MorningSunLightBeam as never });
 
-// --- VAGUE F71 : AnimTask_StatusClearedEffect (effects_3.c:3904) ------------
+// --- VAGUE F71 : AnimTask_StatusClearedEffect (battle_anim_effects_3.c.c:3904) ------------
 /** 1:1 : StartMonScrollingBgMask(0x1A0, attacker, 10, 2, 30, cure_bubbles). */
 function AnimTask_StatusClearedEffect(task: { taskId: number; data: number[]; func?: unknown }): void {
   const itf = _vItf() as { getAttacker?: () => number };
@@ -3612,7 +3612,7 @@ function AnimTask_StatusClearedEffect(task: { taskId: number; data: number[]; fu
 registerAnimTasks({ AnimTask_StatusClearedEffect: AnimTask_StatusClearedEffect as never });
 
 // --- VAGUE F74 : AnimTask_CreateSpotlight / AnimTask_RemoveSpotlight --------
-// (effects_3.c:1674/:1697) — la fenêtre 1 couvre la bande BASSE de l'écran
+// (battle_anim_effects_3.c.c:1674/:1697) — la fenêtre 1 couvre la bande BASSE de l'écran
 // (y 120-160, WININ win1 SANS CLR → le « noir » du projecteur s'applique hors
 // cône) ; AnimSpotlight (OBJ_WINDOW affine, déjà porté plus haut) découpe le
 // cône sur la cible. Clients : Encore, Flatter. Combat seul (pas IsContest).
@@ -3627,7 +3627,7 @@ function _sptWinRange(a: number, b: number): number { return ((a & 0xFF) << 8) |
 function _sptSetWin1(name: 'gBattle_WIN1H' | 'gBattle_WIN1V', v: number): void {
   (globalThis as Record<string, unknown>)[name] = v;
 }
-/** 1:1 `AnimTask_CreateSpotlight` (effects_3.c:1674), branche combat. */
+/** 1:1 `AnimTask_CreateSpotlight` (battle_anim_effects_3.c.c:1674), branche combat. */
 function AnimTask_CreateSpotlight(task: { taskId: number }): void {
   const rt = _grt();
   // WININ_WIN0_BG_ALL|WIN0_OBJ|WIN0_CLR | WININ_WIN1_BG_ALL|WIN1_OBJ (sans CLR)
@@ -3642,7 +3642,7 @@ function AnimTask_CreateSpotlight(task: { taskId: number }): void {
   rt.SetGpuReg?.(REG_OFFSET_DISPCNT, (rt.GetGpuReg?.(REG_OFFSET_DISPCNT) ?? 0) | _SPT_DISPCNT_WIN1_ON);
   _itf().DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_RemoveSpotlight` (effects_3.c:1697). */
+/** 1:1 `AnimTask_RemoveSpotlight` (battle_anim_effects_3.c.c:1697). */
 function AnimTask_RemoveSpotlight(task: { taskId: number }): void {
   const rt = _grt();
   rt.SetGpuReg?.(_SPT_REG_WININ, 0x3F3F); // WININ all + CLR des deux fenêtres
@@ -3660,7 +3660,7 @@ _e3RegTasks({
 });
 
 // --- VAGUE F77 : AnimTask_RolePlaySilhouette(+Step1/Step2) ------------------
-// (effects_3.c:3183-3295) — la silhouette BLANCHE de la cible apparaît sur
+// (battle_anim_effects_3.c.c:3183-3295) — la silhouette BLANCHE de la cible apparaît sur
 // l'attaquant (sprite mon supplémentaire en OBJ_BLEND, palette remplie de
 // blanc), fade-in BLDALPHA 0→10, puis aspirée (scaleX 256→112, scaleY 256+128/t)
 // et détruite. Divergence plateforme : CreateAdditionalMonSpriteForMoveAnim est
@@ -3773,7 +3773,7 @@ function _RolePlaySilhouette_Step2(task: _E3Task): void {
     task.func = _RolePlay_DestroyTaskAndDisableBlend;
   }
 }
-/** 1:1 DestroyAnimVisualTaskAndDisableBlend (effects_3.c, partagé). */
+/** 1:1 DestroyAnimVisualTaskAndDisableBlend (battle_anim_effects_3.c.c, partagé). */
 function _RolePlay_DestroyTaskAndDisableBlend(task: _E3Task): void {
   const rt = _grt();
   rt.SetGpuReg?.(REG_OFFSET_BLDCNT, 0);
@@ -3783,7 +3783,7 @@ function _RolePlay_DestroyTaskAndDisableBlend(task: _E3Task): void {
 _e3RegTasks({ AnimTask_RolePlaySilhouette: AnimTask_RolePlaySilhouette as never });
 
 // --- VAGUE F78 : AnimTask_TransformMon + IsMonInvisible + CastformGfxDataChange
-// (effects_3.c:2250-2374) — Métamorphose : mosaïque BG montante (0→15), swap
+// (battle_anim_effects_3.c.c:2250-2374) — Métamorphose : mosaïque BG montante (0→15), swap
 // du gfx (HandleSpeciesGfxDataChange, DÉJÀ porté async + copie VRAM OBJ F78)
 // + recopie du pic dans la copie monbg, mosaïque descendante, teardown +
 // shadow callback (adverse). Attente async par JETON (pattern F77, data[14]).
@@ -3801,7 +3801,7 @@ function _tfRt(): {
 } {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
-/** 1:1 AnimTask_TransformMon (effects_3.c:2250). args[0] = castform-like arg. */
+/** 1:1 AnimTask_TransformMon (battle_anim_effects_3.c.c:2250). args[0] = castform-like arg. */
 function AnimTask_TransformMon(task: _E3Task): void {
   const itf = _itf();
   const atk = itf.getAttacker?.() ?? 0;
@@ -3881,7 +3881,7 @@ function AnimTask_TransformMon(task: _E3Task): void {
     }
   }
 }
-/** 1:1 AnimTask_IsMonInvisible (effects_3.c:2363) : args[7] = invisible. */
+/** 1:1 AnimTask_IsMonInvisible (battle_anim_effects_3.c.c:2363) : args[7] = invisible. */
 function AnimTask_IsMonInvisible(task: _E3Task): void {
   const itf = _itf();
   const atk = itf.getAttacker?.() ?? 0;
@@ -3892,7 +3892,7 @@ function AnimTask_IsMonInvisible(task: _E3Task): void {
   args[7] = sp?.invisible ? 1 : 0; // ARG_RET_ID
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 AnimTask_CastformGfxDataChange (effects_3.c:2369) — castform=TRUE :
+/** 1:1 AnimTask_CastformGfxDataChange (battle_anim_effects_3.c.c:2369) — castform=TRUE :
  *  no-op net documenté (formes Castform non atteignables, cf. gfx_sfx_util). */
 function AnimTask_CastformGfxDataChange(task: _E3Task): void {
   const itf = _itf();
@@ -3905,7 +3905,7 @@ _e3RegTasks({
   AnimTask_CastformGfxDataChange: AnimTask_CastformGfxDataChange as never,
 });
 
-// --- VAGUE F79 : AnimTask_MonToSubstitute(+Doll) (effects_3.c:4782-4875) ----
+// --- VAGUE F79 : AnimTask_MonToSubstitute(+Doll) (battle_anim_effects_3.c.c:4782-4875) ----
 // Clonage : le mon se SQUISH (rotscale x+=0x60/y-=0xD ×9) puis disparaît, le
 // DOLL (gfx swappé par BattleLoadSubstituteOrMonSpriteGfx FALSE — async jeton)
 // tombe du haut (y2 -200, gravité 112 Q8.8) avec 2 rebonds. SE via __PlaySE.
@@ -3956,7 +3956,7 @@ function AnimTask_MonToSubstitute(task: _E3Task): void {
     task.func = _MonToSubstituteDoll;
   }
 }
-/** 1:1 AnimTask_MonToSubstituteDoll (effects_3.c:4823) : chute + 2 rebonds. */
+/** 1:1 AnimTask_MonToSubstituteDoll (battle_anim_effects_3.c.c:4823) : chute + 2 rebonds. */
 function _MonToSubstituteDoll(task: _E3Task): void {
   const itf = _itf();
   const atk = itf.getAttacker?.() ?? 0;

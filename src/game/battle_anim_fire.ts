@@ -15,7 +15,7 @@
  * VAGUE 2026-06-11 (bas de fichier) : AnimLargeFlame(+_Step)/AnimFirePlume/
  * AnimFireRing(+Steps)/AnimFireCross/AnimFireSpiralInward/AnimFireSpiralOutward
  * (+Steps)/AnimFireSpread/AnimWillOWispOrb(+_Step)/AnimWillOWispFire/
- * AnimEruptionFallingRock(+_Step) + AnimOverheatFlame(+_Step, dragon.c:425).
+ * AnimEruptionFallingRock(+_Step) + AnimOverheatFlame(+_Step, battle_anim_dragon.c.c:425).
  * Dettes : AnimUnusedSmallEmber, AnimSunlight, AnimEmberFlare/AnimBurnFlame,
  * AnimTask_EruptionLaunchRocks(+rocks), AnimTask_MoveHeatWaveTargets.
  */
@@ -520,7 +520,7 @@ function AnimSunlight(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimSunlight: AnimSunlight as never });
 
-// ─── VAGUE F2 : AnimTask_ShakeTargetInPattern (fire.c:1339, 5 hits) ─────────
+// ─── VAGUE F2 : AnimTask_ShakeTargetInPattern (battle_anim_fire.c.c:1339, 5 hits) ─────────
 const _sShakeDirsPattern0 = [-1, -1, 0, 1, 1, 0, 0, -1, -1, 1, 1, 0, 0, -1, 0, 1];
 const _sShakeDirsPattern1 = [-1, 0, 1, 0, -1, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, 1];
 function _fItf2(): { getArgs?: () => number[]; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -553,7 +553,7 @@ function AnimTask_ShakeTargetInPattern(task: { taskId: number; data: number[] })
 import { registerAnimTasks as _fRegT } from '../engine/battle/battle-anim-registry';
 _fRegT({ AnimTask_ShakeTargetInPattern: AnimTask_ShakeTargetInPattern as never });
 
-// --- VAGUE F48 : EruptionLaunchRocks (fire.c:774-1011) ----------------------
+// --- VAGUE F48 : EruptionLaunchRocks (battle_anim_fire.c.c:774-1011) ----------------------
 // L'attaquant gonfle/eclate (erupt) et lance 7 roches en paraboles 8.3
 // (vitesse de chute quadratique). Le sous-systeme erupt vient de F47.
 import {
@@ -584,12 +584,12 @@ function _erAtkSpriteId(): number {
   const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (x: number) => number } | undefined;
   return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
 }
-// 1:1 sEruptionLaunchRockSpeeds (fire.c:359)
+// 1:1 sEruptionLaunchRockSpeeds (battle_anim_fire.c.c:359)
 const _sEruptRockSpeeds: ReadonlyArray<readonly [number, number]> = [
   [-2, -5], [-1, -1], [3, -6], [4, -2], [2, -8], [-5, -5], [4, -7],
 ];
 
-/** 1:1 AnimTask_EruptionLaunchRocks (fire.c:796). data[15]=spriteId, [6]=actifs. */
+/** 1:1 AnimTask_EruptionLaunchRocks (battle_anim_fire.c.c:796). data[15]=spriteId, [6]=actifs. */
 function AnimTask_EruptionLaunchRocks(task: _ErTask): void {
   task.data[15] = _erAtkSpriteId();
   if (task.data[15] === 0xFF) { _erItf().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -680,7 +680,7 @@ function _EruptionLaunchRocks_Step(task: _ErTask): void {
       break;
   }
 }
-/** 1:1 CreateEruptionLaunchRocks (fire.c:924). */
+/** 1:1 CreateEruptionLaunchRocks (battle_anim_fire.c.c:924). */
 function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpritesIdx: number): void {
   const rt = _erRt();
   const atkSp = rt.gSprites?.get(spriteId);
@@ -721,14 +721,14 @@ function _CreateEruptionLaunchRocks(spriteId: number, taskId: number, activeSpri
     }
   }
 }
-/** 1:1 GetEruptionLaunchRockInitialYPos (fire.c:971). */
+/** 1:1 GetEruptionLaunchRockInitialYPos (battle_anim_fire.c.c:971). */
 function _GetEruptionLaunchRockInitialYPos(sp: _ErSprite): number {
   let y = sp.y + sp.y2 + (sp.centerToCornerVecY ?? -32);
   if (((_erItf().getAttacker?.() ?? 0) & 1) === 0) y += 74;
   else y += 44;
   return y & 0xFFFF;
 }
-/** 1:1 InitEruptionLaunchRockCoordData (fire.c:983) — fixed-point 8.3. */
+/** 1:1 InitEruptionLaunchRockCoordData (battle_anim_fire.c.c:983) — fixed-point 8.3. */
 function _InitEruptionLaunchRockCoordData(sp: _ErSprite, speedX: number, speedY: number): void {
   sp.data[0] = 0;                      // sSpeedDelay
   sp.data[1] = 0;                      // sLaunchStage
@@ -737,7 +737,7 @@ function _InitEruptionLaunchRockCoordData(sp: _ErSprite, speedX: number, speedY:
   sp.data[4] = speedX * 8;             // sSpeedX
   sp.data[5] = speedY * 8;             // sSpeedY
 }
-/** 1:1 UpdateEruptionLaunchRockPos + AnimEruptionLaunchRock (fire.c:960-1011). */
+/** 1:1 UpdateEruptionLaunchRockPos + AnimEruptionLaunchRock (battle_anim_fire.c.c:960-1011). */
 function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
   if (++sprite.data[0] > 2) {
     sprite.data[0] = 0;
@@ -762,7 +762,7 @@ function _AnimEruptionLaunchRock(sprite: _ErSprite): void {
 }
 _fRegT({ AnimTask_EruptionLaunchRocks: AnimTask_EruptionLaunchRocks as never });
 
-// --- VAGUE F59 : MoveHeatWaveTargets + BlendBackground (fire.c:1227-1340) ---
+// --- VAGUE F59 : MoveHeatWaveTargets + BlendBackground (battle_anim_fire.c.c:1227-1340) ---
 // HeatWave : la cible derive (+-2/f x16) puis tremble 96f puis revient.
 // BlendBackground : masque couleur sur le fond (BlendPalette palettes BG 1-3).
 type _HwTask = { taskId: number; data: number[]; func?: unknown };
@@ -775,7 +775,7 @@ function _hwTargetSpriteId(): number {
   return co?.getBattlerMonSpriteId?.(b) ?? 0xFF;
 }
 
-/** 1:1 AnimTask_MoveHeatWaveTargets (fire.c:1227, single : 1 cible). */
+/** 1:1 AnimTask_MoveHeatWaveTargets (battle_anim_fire.c.c:1227, single : 1 cible). */
 function AnimTask_MoveHeatWaveTargets(task: _HwTask): void {
   const atk = _hwItf().getAttacker?.() ?? 0;
   task.data[0] = 0;
@@ -843,7 +843,7 @@ function _MoveHeatWaveTargets_Step(task: _HwTask): void {
   }
 }
 
-/** 1:1 AnimTask_BlendBackground (fire.c:1328) : BlendPalette de LA palette
+/** 1:1 AnimTask_BlendBackground (battle_anim_fire.c.c:1328) : BlendPalette de LA palette
  *  du BG anim 1 (GetBattleAnimBg1Data.paletteId = 8) — args = [opacity, couleur]. */
 function AnimTask_BlendBackground(task: _HwTask): void {
   const itf = _hwItf();

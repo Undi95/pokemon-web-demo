@@ -397,7 +397,7 @@ function _ScaleMonAndRestore_Step(task: AnimTask): void {
 }
 
 // ─── VAGUE F1 fidélité (2026-06-11, qualification user) ─────────────────────
-/** 1:1 `AnimTask_ShakeMonInPlace` (mon_movement.c:236) — args:
+/** 1:1 `AnimTask_ShakeMonInPlace` (battle_anim_mon_movement.c.c:236) — args:
  *  (battler, xOff, yOff, numShakes, delay). 27 usages scripts. */
 function AnimTask_ShakeMonInPlace(task: AnimTask): void {
   const a = _args();
@@ -435,7 +435,7 @@ function AnimTask_ShakeMonInPlace_Step(task: AnimTask): void {
   }
 }
 
-/** 1:1 `AnimTask_SwayMon` (mon_movement.c:613) — args:
+/** 1:1 `AnimTask_SwayMon` (battle_anim_mon_movement.c.c:613) — args:
  *  (axe 0=x/1=y, amplitude, vitesse, numSways, battler). 13 usages. */
 function AnimTask_SwayMon(task: AnimTask): void {
   const a = _args();
@@ -477,7 +477,7 @@ function AnimTask_SwayMonStep(task: AnimTask): void {
   }
 }
 
-/** 1:1 `AnimTask_WindUpLunge` (mon_movement.c:741) — args:
+/** 1:1 `AnimTask_WindUpLunge` (battle_anim_mon_movement.c.c:741) — args:
  *  (battler, windUpX, windUpYAmp, windUpDur, delay, lungeX, lungeDur). */
 function AnimTask_WindUpLunge(task: AnimTask): void {
   const a = _args();
@@ -512,7 +512,7 @@ function AnimTask_WindUpLunge_Step2(task: AnimTask): void {
   if (--task.data[6] === 0) { DestroyAnimVisualTask(task.taskId); }
 }
 
-/** 1:1 `AnimTask_ShakeTargetBasedOnMovePowerOrDmg` (mon_movement.c:868) —
+/** 1:1 `AnimTask_ShakeTargetBasedOnMovePowerOrDmg` (battle_anim_mon_movement.c.c:868) —
  *  args: (usePowerOrDmg, stepDelay, numShakes, shakeX, shakeY). 15 usages. */
 function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(task: AnimTask): void {
   const a = _args();
@@ -557,7 +557,7 @@ function AnimTask_ShakeTargetPowerDmg_Step(task: AnimTask): void {
 }
 
 // ─── VAGUE F2 (sweep final 2026-06-11) ──────────────────────────────────────
-/** 1:1 `SetBattlerSpriteYOffsetFromRotation` (mons.c:1320) : y2 = |sin|>>3. */
+/** 1:1 `SetBattlerSpriteYOffsetFromRotation` (battle_anim_mons.c.c:1320) : y2 = |sin|>>3. */
 function _SetYOffsetFromRotation(spriteId: number): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; oamIndex: number }>; gOamMatrices?: Array<{ c: number }>; gba?: { oam: Array<{ matrixNum?: number; affineParamIndex?: number }> } } | undefined;
   const sp = rt?.gSprites?.get(spriteId);
@@ -568,7 +568,7 @@ function _SetYOffsetFromRotation(spriteId: number): void {
   if (c < 0) c = -c;
   sp.y2 = c >> 3;
 }
-/** 1:1 `AnimTask_RotateMonSpriteToSide` (mon_movement.c) — args
+/** 1:1 `AnimTask_RotateMonSpriteToSide` (battle_anim_mon_movement.c.c) — args
  *  (durée, deltaRot, battler, mode 0/1/2). 10 hits sweep. */
 function AnimTask_RotateMonSpriteToSide(task: AnimTask): void {
   const a = _args();
@@ -629,7 +629,7 @@ function _RotateToSide_Step(task: AnimTask): void {
 }
 
 // ─── Enregistrement registry (à l'import) ──────────────────────────────────
-/** 1:1 `AnimTask_SlideOffScreen` (mon_movement.c, 2 hits — Roar/Whirlwind) :
+/** 1:1 `AnimTask_SlideOffScreen` (battle_anim_mon_movement.c.c, 2 hits — Roar/Whirlwind) :
  *  glisse le battler hors écran (x2 += data[1] jusqu à sortir ±32). */
 function AnimTask_SlideOffScreen(task: AnimTask): void {
   const a = _args();
@@ -746,7 +746,7 @@ registerAnimTemplates([
   { name: 'gSlideMonToOffsetAndBackSpriteTemplate', tileTag: 0, paletteTag: 0, callback: SlideMonToOffsetAndBack as never },
 ]);
 
-// --- VAGUE F63 : AnimTask_ShakeAndSinkMon (mon_movement.c:320-354) ----------
+// --- VAGUE F63 : AnimTask_ShakeAndSinkMon (battle_anim_mon_movement.c.c:320-354) ----------
 // Le mon tremble (x2 alterne +-arg1 toutes les arg2 frames) en S'ENFONCANT
 // (y2 += arg3 Q8.8 cumulatif) pendant arg4 frames. (Dive/Submersion...)
 type _SasTask = { taskId: number; data: number[]; func?: unknown };

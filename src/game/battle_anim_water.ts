@@ -623,7 +623,7 @@ function AnimAuroraBeamRings_Step(sprite: _WSprite): void {
 
 registerAnimCallbacks({ AnimAuroraBeamRings: AnimAuroraBeamRings as never });
 
-// ─── VAGUE F2 : AnimTask_StartSinAnimTimer (water.c:704, 5 hits) ────────────
+// ─── VAGUE F2 : AnimTask_StartSinAnimTimer (battle_anim_water.c.c:704, 5 hits) ────────────
 // args[7] = timer sinusoïdal partagé (+3/frame) lu par les sprites (Surf...).
 function _wItf2(): { getArgs?: () => number[]; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
@@ -641,7 +641,7 @@ function _RunSinAnimTimer(task: { taskId: number; data: number[] }): void {
   if (--task.data[0] === 0) _wItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _wRegT } from '../engine/battle/battle-anim-registry';
-/** 1:1 `AnimTask_CreateRaindrops` (water.c, 4 hits — Rain Dance) : spawn une
+/** 1:1 `AnimTask_CreateRaindrops` (battle_anim_water.c.c, 4 hits — Rain Dance) : spawn une
  *  goutte aléatoire toutes args[1] frames pendant args[2] frames. RNG : LCG
  *  déterministe seedé par le timer (pas Math.random — interdit harness). */
 let _rainSeed = 0x1234;
@@ -703,7 +703,7 @@ _wRegT({
   AnimTask_CreateRaindrops: AnimTask_CreateRaindrops as never,
 });
 
-// --- VAGUE F46 : AnimTask_WaterSport (water.c:1357-1495) --------------------
+// --- VAGUE F46 : AnimTask_WaterSport (battle_anim_water.c.c:1357-1495) --------------------
 // Jet de gouttelettes balayé G<->D depuis l'attaquant ; chaque goutte fait un
 // arc puis REBONDIT vers un point aleatoire avant de signaler la task.
 import { InitAnimArcTranslation as _wsArcInit, TranslateAnimHorizontalArc as _wsArcRun } from './battle_anim_mons';
@@ -738,7 +738,7 @@ function _wsSpawnOrb(x: number, y: number, subprio: number): number {
   return sid;
 }
 
-/** 1:1 AnimTask_WaterSport (water.c:1357). */
+/** 1:1 AnimTask_WaterSport (battle_anim_water.c.c:1357). */
 function AnimTask_WaterSport(task: _WsTask): void {
   const itf = _wItf();
   const atk = itf.getAttacker?.() ?? 0;
@@ -806,7 +806,7 @@ function _WaterSport_Step(task: _WsTask): void {
       break;
   }
 }
-/** 1:1 CreateWaterSportDroplet (water.c:1443). */
+/** 1:1 CreateWaterSportDroplet (battle_anim_water.c.c:1443). */
 function _CreateWaterSportDroplet(task: _WsTask): void {
   if (++task.data[2] > 1) {
     task.data[2] = 0;
@@ -860,7 +860,7 @@ function _AnimWaterSportDroplet_Step(sprite: { data: number[] }): void {
 }
 _wRegT({ AnimTask_WaterSport: AnimTask_WaterSport as never });
 
-// --- VAGUE F47 : WaterSpout complet (water.c:1054-1356) ---------------------
+// --- VAGUE F47 : WaterSpout complet (battle_anim_water.c.c:1054-1356) ---------------------
 // Launch : le mon ecrase/etire (erupt) + 20 gouttes en eventail ; Rain : pluie
 // de gouttes (ISO_RANDOMIZE2 1:1) + splats clignotants + HorizontalShake x2.
 import {
@@ -908,7 +908,7 @@ function _GetWaterSpoutPowerForAnim(): number {
   return 3;
 }
 
-/** 1:1 AnimTask_WaterSpoutLaunch (water.c:1054). */
+/** 1:1 AnimTask_WaterSpoutLaunch (battle_anim_water.c.c:1054). */
 function AnimTask_WaterSpoutLaunch(task: _SpTask): void {
   task.data[15] = _spAtkSpriteId2();
   if (task.data[15] === 0xFF) { _wItf().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -1004,7 +1004,7 @@ function _WaterSpoutLaunch_Step(task: _SpTask): void {
       break;
   }
 }
-/** 1:1 CreateWaterSpoutLaunchDroplets (water.c:1184). */
+/** 1:1 CreateWaterSpoutLaunchDroplets (battle_anim_water.c.c:1184). */
 function _CreateWaterSpoutLaunchDroplets(task: _SpTask, taskId: number): void {
   const atk = _wItf().getAttacker?.() ?? 0;
   const ax = GetBattlerSpriteCoord(atk, 2);
@@ -1058,7 +1058,7 @@ function _AnimSmallWaterOrb(sprite: { x: number; y: number; data: number[] }): v
   }
 }
 
-/** 1:1 AnimTask_WaterSpoutRain (water.c:1239). */
+/** 1:1 AnimTask_WaterSpoutRain (battle_anim_water.c.c:1239). */
 function AnimTask_WaterSpoutRain(task: _SpTask): void {
   const atk = _wItf().getAttacker?.() ?? 0;
   task.data[1] = _GetWaterSpoutPowerForAnim();
@@ -1109,7 +1109,7 @@ function _WaterSpoutRain_Step(task: _SpTask): void {
       break;
   }
 }
-/** 1:1 CreateWaterSpoutRainDroplet (water.c:1304) — ISO_RANDOMIZE2 exact. */
+/** 1:1 CreateWaterSpoutRainDroplet (battle_anim_water.c.c:1304) — ISO_RANDOMIZE2 exact. */
 function _CreateWaterSpoutRainDroplet(task: _SpTask, taskId: number): void {
   const yPosArg = (((_spSine[task.data[8]] ?? 0) + 3) >> 4) + task.data[6];
   const sid = _spSpawnOrb2(task.data[7], 0, 0);
@@ -1175,7 +1175,7 @@ _wRegT({
   AnimTask_WaterSpoutRain: AnimTask_WaterSpoutRain as never,
 });
 
-// --- VAGUE F80 : AnimTask_RotateAuroraRingColors(+Step) (water.c:634) -------
+// --- VAGUE F80 : AnimTask_RotateAuroraRingColors(+Step) (battle_anim_water.c.c:634) -------
 // Aurora Beam : rotation circulaire des couleurs 1..7 du slot OBJ du tag
 // RAINBOW_RINGS (10140) toutes les 3 frames, pendant args[0] frames.
 function AnimTask_RotateAuroraRingColors(task: { taskId: number; data: number[]; func?: unknown }): void {
@@ -1203,7 +1203,7 @@ function _RotateAuroraRingColors_Step(task: { taskId: number; data: number[] }):
 _wRegT({ AnimTask_RotateAuroraRingColors: AnimTask_RotateAuroraRingColors as never });
 
 // --- VAGUE F83 : SURF — AnimTask_CreateSurfWave(+Step1/Step2) + la task
-// scanline BLDALPHA (water.c:814-1023). La vague plein écran : fond surf en
+// scanline BLDALPHA (battle_anim_water.c.c:814-1023). La vague plein écran : fond surf en
 // BG1 (tilemap player/opponent, palette surf ou muddy selon args[0]), scroll
 // diagonal, rotation des couleurs 2..7 toutes les 4 frames, montée/descente
 // du blend via la 2e TASK qui remplit gScanlineEffectRegBuffers de valeurs
@@ -1243,7 +1243,7 @@ function _sfwG(name: string): number {
   return ((globalThis as Record<string, unknown>)[name] as number) ?? 0;
 }
 
-/** 1:1 AnimTask_CreateSurfWave (water.c:814). args[0] = palette (0 surf, 1 muddy). */
+/** 1:1 AnimTask_CreateSurfWave (battle_anim_water.c.c:814). args[0] = palette (0 surf, 1 muddy). */
 function AnimTask_CreateSurfWave(task: _SfwTask): void {
   const itf = _sfwItf();
   const rt = _sfwRt();
@@ -1295,7 +1295,7 @@ function AnimTask_CreateSurfWave(task: _SfwTask): void {
   task.data[6] = 1;
   task.func = _CreateSurfWave_Step1;
 }
-/** 1:1 AnimTask_CreateSurfWave_Step1 (water.c:893). */
+/** 1:1 AnimTask_CreateSurfWave_Step1 (battle_anim_water.c.c:893). */
 function _CreateSurfWave_Step1(task: _SfwTask): void {
   const rt = _sfwRt();
   _sfwSetG('gBattle_BG1_X', _sfwG('gBattle_BG1_X') + task.data[0]);
@@ -1327,7 +1327,7 @@ function _CreateSurfWave_Step1(task: _SfwTask): void {
     task.func = _CreateSurfWave_Step2;
   }
 }
-/** 1:1 AnimTask_CreateSurfWave_Step2 (water.c:939). */
+/** 1:1 AnimTask_CreateSurfWave_Step2 (battle_anim_water.c.c:939). */
 function _CreateSurfWave_Step2(task: _SfwTask): void {
   const rt = _sfwRt();
   if (task.data[0] === 0) {
@@ -1346,7 +1346,7 @@ function _CreateSurfWave_Step2(task: _SfwTask): void {
     _sfwItf().DestroyAnimVisualTask?.(task.taskId);
   }
 }
-/** 1:1 AnimTask_SurfWaveScanlineEffect (water.c:961) : BLDALPHA par bande. */
+/** 1:1 AnimTask_SurfWaveScanlineEffect (battle_anim_water.c.c:961) : BLDALPHA par bande. */
 function _SurfWaveScanlineEffect(task: _SfwTask): void {
   const rt = _sfwRt();
   const buf0 = _swScanBufs[0], buf1 = _swScanBufs[1];

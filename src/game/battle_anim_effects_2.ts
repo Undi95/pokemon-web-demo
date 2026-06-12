@@ -211,7 +211,7 @@ function _FreeSpriteOamMatrix(sprite: _VSprite): void {
 }
 
 // SetGrayscaleOrOriginalPalette : déplacé dans son fichier miroir
-// battle_anim_mons.ts (mons.c:1374) — vague F73. Alias local conservé.
+// battle_anim_mons.ts (battle_anim_mons.c.c:1374) — vague F73. Alias local conservé.
 import { SetGrayscaleOrOriginalPalette as _SetGrayscaleOrOriginalPalette } from './battle_anim_mons';
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1170,7 +1170,7 @@ function AnimParticleBurst(sprite: _VSprite): void {
 
 registerAnimCallbacks({ AnimParticleBurst: AnimParticleBurst as never });
 
-// ─── AnimTask_Splash 1:1 (effects_2.c:2161-2231) — la riposte du Wailord ! ──
+// ─── AnimTask_Splash 1:1 (battle_anim_effects_2.c.c:2161-2231) — la riposte du Wailord ! ──
 // Le mon s'écrase/rebondit N fois (args: battler, count). Affine par task-data
 // (PrepareAffineAnimInTaskData) + montée y2 progressive puis retour.
 import {
@@ -1239,7 +1239,7 @@ function AnimTask_Splash_Step(task: _SpTask): void {
   }
 }
 import { registerAnimTasks as _regTasks } from '../engine/battle/battle-anim-registry';
-/** 1:1 `AnimTask_GrowAndShrink` (effects_2.c — Swords Dance/Howl…, 2 hits) :
+/** 1:1 `AnimTask_GrowAndShrink` (battle_anim_effects_2.c.c — Swords Dance/Howl…, 2 hits) :
  *  l attaquant grossit puis revient (table affine task-data). */
 function AnimTask_GrowAndShrink(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0 /* ANIM_ATTACKER */);
@@ -1250,7 +1250,7 @@ function AnimTask_GrowAndShrink(task: _SpTask): void {
 function _GrowAndShrink_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_StretchTargetUp`/`StretchAttackerUp` (effects_2.c, 3+1 hits) :
+/** 1:1 `AnimTask_StretchTargetUp`/`StretchAttackerUp` (battle_anim_effects_2.c.c, 3+1 hits) :
  *  le mon s'étire vers le haut (table affine) en tremblant x2 ±4. */
 function _StretchUp(task: _SpTask, animBattler: number): void {
   const spriteId = _spBattlerSpriteId(animBattler);
@@ -1271,7 +1271,7 @@ function _StretchUp(task: _SpTask, animBattler: number): void {
 }
 function AnimTask_StretchTargetUp(task: _SpTask): void { _StretchUp(task, 1); }
 function AnimTask_StretchAttackerUp(task: _SpTask): void { _StretchUp(task, 0); }
-/** 1:1 `AnimTask_UproarDistortion` (effects_2.c, 3 hits) : distorsion
+/** 1:1 `AnimTask_UproarDistortion` (battle_anim_effects_2.c.c, 3 hits) : distorsion
  *  rot-scale oscillante du mon (8 steps). */
 function AnimTask_UproarDistortion(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0);
@@ -1282,7 +1282,7 @@ function AnimTask_UproarDistortion(task: _SpTask): void {
 function _Uproar_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
-/** 1:1 `AnimTask_ThrashMoveMonHorizontal` (effects_2.c:2304 — Thrash) :
+/** 1:1 `AnimTask_ThrashMoveMonHorizontal` (battle_anim_effects_2.c.c:2304 — Thrash) :
  *  table affine gThrashMoveMonAffineAnimCmds. */
 function AnimTask_ThrashMoveMonHorizontal(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0);
@@ -1347,7 +1347,7 @@ function _ThrashV_Step(task: _SpTask): void {
       break;
   }
 }
-/** 1:1 `AnimTask_Withdraw` (effects_2.c, 1 hit) : bascule rotation ±0xB0/f
+/** 1:1 `AnimTask_Withdraw` (battle_anim_effects_2.c.c, 1 hit) : bascule rotation ±0xB0/f
  *  jusqu'à 0xF20, pause 30f, retour. */
 function AnimTask_Withdraw(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0);
@@ -1387,7 +1387,7 @@ function _Withdraw_Step(task: _SpTask): void {
     }
   }
 }
-/** 1:1 `AnimTask_ScaryFace` (effects_2.c:3326, 2 hits) : le visage géant en
+/** 1:1 `AnimTask_ScaryFace` (battle_anim_effects_2.c.c:3326, 2 hits) : le visage géant en
  *  BG1 (blend BLDCNT TGT1_BG1, alpha 0→16→0) — tilemap selon le côté cible. */
 import {
   GetBattleAnimBg1Data as _sfBgData, AnimLoadCompressedBgGfx as _sfLoadGfx,
@@ -1444,7 +1444,7 @@ function _ScaryFace_Step(task: _SpTask): void {
       break;
   }
 }
-/** 1:1 `AnimTask_ExtremeSpeedImpact` (effects_2.c:2814) : la cible encaisse
+/** 1:1 `AnimTask_ExtremeSpeedImpact` (battle_anim_effects_2.c.c:2814) : la cible encaisse
  *  3 rafales (poussée ±8 + tremblement ±6 x5) puis revient pixel par pixel. */
 function AnimTask_ExtremeSpeedImpact(task: _SpTask): void {
   const itf = _spItf2() as { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
@@ -1637,7 +1637,7 @@ function _AnimSpeedDust(sprite: { data: number[]; invisible?: boolean; animEnded
     }
   }
 }
-/** 1:1 `AnimTask_FakeOut` (effects_2.c, 1 hit — Bluff) : la fenêtre WIN0 se
+/** 1:1 `AnimTask_FakeOut` (battle_anim_effects_2.c.c, 1 hit — Bluff) : la fenêtre WIN0 se
  *  referme en pince (13px/f des deux bords) avec assombrissement BG3, puis
  *  flash blanc des palettes BG. */
 function AnimTask_FakeOut(task: _SpTask): void {
@@ -1692,7 +1692,7 @@ function _FakeOut_Step2(task: _SpTask): void {
     itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
-/** 1:1 FuryCutter (effects_2.c:3821/3827) : args[7] depuis le DisableStruct. */
+/** 1:1 FuryCutter (battle_anim_effects_2.c.c:3821/3827) : args[7] depuis le DisableStruct. */
 function AnimTask_IsFuryCutterHitRight(task: _SpTask): void {
   const itf = _spItf2() as { getArgs?: () => number[]; getDisableStruct?: () => { furyCutterCounter?: number } | null; DestroyAnimVisualTask?: (id: number) => void };
   const args = itf.getArgs?.();
@@ -1724,7 +1724,7 @@ _regTasks({
   AnimTask_UproarDistortion: AnimTask_UproarDistortion as never,
 });
 
-// ─── VAGUE F34-SCANLINE : Sketch (effects_2.c:2392-2478) ────────────────────
+// ─── VAGUE F34-SCANLINE : Sketch (battle_anim_effects_2.c.c:2392-2478) ────────────────────
 // AnimTask_SketchDrawMon : le mon cible est « dessiné » ligne par ligne — les
 // scanlines de sa zone partent à +240 (vides) puis sont restaurées une à une
 // en zigzag (pattern crayon) du bas vers le haut.
@@ -1747,7 +1747,7 @@ type _SkTask = { taskId: number; data: number[]; func?: unknown };
 function _skItf(): { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
-/** 1:1 `GetBattlerYCoordWithElevation` (mons.c:342), transcrit local (pattern repo). */
+/** 1:1 `GetBattlerYCoordWithElevation` (battle_anim_mons.c.c:342), transcrit local (pattern repo). */
 function _skYCoordWithElevation(battler: number): number {
   let y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
   if ((battler & 1) !== 0 /* side != B_SIDE_PLAYER */) {
@@ -1756,7 +1756,7 @@ function _skYCoordWithElevation(battler: number): number {
   }
   return y;
 }
-/** 1:1 `GetBattlerSpriteCoordAttr(b, HEIGHT)` (mons.c:2151) — hauteur du pic
+/** 1:1 `GetBattlerSpriteCoordAttr(b, HEIGHT)` (battle_anim_mons.c.c:2151) — hauteur du pic
  *  espèce (même dette douce transformSpecies que effects_1b). */
 function _skPicHeight(battler: number): number {
   const party = (battler & 1) !== 0 ? _skEnemyParty : _skPlayerParty;
@@ -1766,7 +1766,7 @@ function _skPicHeight(battler: number): number {
   return coords.h;
 }
 
-/** 1:1 `AnimTask_SketchDrawMon` (effects_2.c:2392). */
+/** 1:1 `AnimTask_SketchDrawMon` (battle_anim_effects_2.c.c:2392). */
 function AnimTask_SketchDrawMon(task: _SkTask): void {
   const target = _skItf().getTarget?.() ?? 1;
   task.data[0] = _skYCoordWithElevation(target) + 32;
@@ -1799,7 +1799,7 @@ function AnimTask_SketchDrawMon(task: _SkTask): void {
   task.func = _SketchDrawMon_Step;
 }
 
-/** 1:1 `AnimTask_SketchDrawMon_Step` (effects_2.c:2433). */
+/** 1:1 `AnimTask_SketchDrawMon_Step` (battle_anim_effects_2.c.c:2433). */
 function _SketchDrawMon_Step(task: _SkTask): void {
   switch (task.data[4]) {
     case 0:
@@ -1831,7 +1831,7 @@ function _SketchDrawMon_Step(task: _SkTask): void {
 
 _regTasks({ AnimTask_SketchDrawMon: AnimTask_SketchDrawMon as never });
 
-// ─── VAGUE F35-MULTIPAL : Load/FreeMusicNotesPals (effects_2.c:3021-3046) ────
+// ─── VAGUE F35-MULTIPAL : Load/FreeMusicNotesPals (battle_anim_effects_2.c.c:3021-3046) ────
 // HealBell : le .gbapal de MUSIC_NOTES_2 contient 3 BANKS de 16 couleurs
 // (asset régénéré 48 couleurs — le chemin loadspritegfx normal n'en copie que
 // 16, 1:1 LoadCompressedSpritePalette). La task alloue 2 slots de plus (tags
@@ -1858,7 +1858,7 @@ function _mnWritePalBank(slot: number, p16: Uint16Array, bank: number): void {
   }
 }
 
-/** 1:1 `AnimTask_LoadMusicNotesPals` (effects_2.c:3021) : slot du tag
+/** 1:1 `AnimTask_LoadMusicNotesPals` (battle_anim_effects_2.c.c:3021) : slot du tag
  *  MUSIC_NOTES_2 + 2 slots alloués (9999/9998), 3 banks du .gbapal. */
 function AnimTask_LoadMusicNotesPals(task: _MnTask): void {
   const sp = _mnSprite();
@@ -1887,7 +1887,7 @@ function AnimTask_LoadMusicNotesPals(task: _MnTask): void {
   _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 
-/** 1:1 `AnimTask_FreeMusicNotesPals` (effects_2.c:3039). */
+/** 1:1 `AnimTask_FreeMusicNotesPals` (battle_anim_effects_2.c.c:3039). */
 function AnimTask_FreeMusicNotesPals(task: _MnTask): void {
   const sp = _mnSprite();
   for (let i = 0; i < _MN_NUM_PAL_TAGS; i++) {
@@ -1901,7 +1901,7 @@ _regTasks({
   AnimTask_FreeMusicNotesPals: AnimTask_FreeMusicNotesPals as never,
 });
 
-// ─── VAGUE F37 : AnimTask_GrowAndGrayscale (effects_2.c:2012) ───────────────
+// ─── VAGUE F37 : AnimTask_GrowAndGrayscale (battle_anim_effects_2.c.c:2012) ───────────────
 // Le target grossit (0xD0) en blend + palette GRISÉE 80 frames, puis restore.
 function _ggSpriteId(): number {
   const b = _spItf2().getTarget?.() ?? 1;
@@ -1928,7 +1928,7 @@ function _ggGrayscale(spriteId: number): void {
     pf.set(off + i, avg | (avg << 5) | (avg << 10));
   }
 }
-/** 1:1 `AnimTask_GrowAndGrayscale` (effects_2.c:2012). */
+/** 1:1 `AnimTask_GrowAndGrayscale` (battle_anim_effects_2.c.c:2012). */
 function AnimTask_GrowAndGrayscale(task: { taskId: number; data: number[]; func?: unknown }): void {
   const spriteId = _ggSpriteId();
   if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -1943,7 +1943,7 @@ function AnimTask_GrowAndGrayscale(task: { taskId: number; data: number[]; func?
   task.data[0] = 80;
   task.func = _GrowAndGrayscale_Step;
 }
-/** 1:1 `AnimTask_GrowAndGrayscale_Step` (effects_2.c:2022). */
+/** 1:1 `AnimTask_GrowAndGrayscale_Step` (battle_anim_effects_2.c.c:2022). */
 function _GrowAndGrayscale_Step(task: { taskId: number; data: number[] }): void {
   if (--task.data[0] === -1) {
     const spriteId = _ggSpriteId();
@@ -1957,7 +1957,7 @@ function _GrowAndGrayscale_Step(task: { taskId: number; data: number[] }): void 
 }
 _regTasks({ AnimTask_GrowAndGrayscale: AnimTask_GrowAndGrayscale as never });
 
-// ─── VAGUE F38 : AnimTask_Minimize (effects_2.c:2040-2156) ──────────────────
+// ─── VAGUE F38 : AnimTask_Minimize (battle_anim_effects_2.c.c:2040-2156) ──────────────────
 // L'attaquant rétrécit/regrossit ×3 en laissant des clones transparents.
 function _mzMons(): {
   PrepareBattlerSpriteForRotScale?: (id: number, m: number) => void;
@@ -1973,7 +1973,7 @@ function _mzAtkSpriteId(): number {
 }
 type _MzTask = { taskId: number; data: number[]; func?: unknown };
 
-/** 1:1 `AnimTask_Minimize` (effects_2.c:2040). */
+/** 1:1 `AnimTask_Minimize` (battle_anim_effects_2.c.c:2040). */
 function AnimTask_Minimize(task: _MzTask): void {
   const spriteId = _mzAtkSpriteId();
   if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -2054,7 +2054,7 @@ function _Minimize_Step(task: _MzTask): void {
     }
   }
 }
-/** 1:1 `CreateMinimizeSprite` (effects_2.c:2119). */
+/** 1:1 `CreateMinimizeSprite` (battle_anim_effects_2.c.c:2119). */
 function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
   const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
     SetSpriteRotScale?: (id: number, x: number, y: number, r: number) => void;
@@ -2094,7 +2094,7 @@ function _CreateMinimizeSprite(task: _MzTask, taskId: number): void {
   sp.affineMode = 1;     // ST_OAM_AFFINE_NORMAL (1:1 après SetSpriteRotScale)
   if (oam) oam.affineMode = 1;
 }
-/** 1:1 `ClonedMinizeSprite_Step` (effects_2.c:2149). */
+/** 1:1 `ClonedMinizeSprite_Step` (battle_anim_effects_2.c.c:2149). */
 function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }): void {
   if (--sprite.data[0] === 0) {
     const rt = (globalThis as Record<string, unknown>).__rt as {
@@ -2111,7 +2111,7 @@ function _ClonedMinizeSprite_Step(sprite: { data: number[]; oamIndex: number }):
 }
 _regTasks({ AnimTask_Minimize: AnimTask_Minimize as never });
 
-// --- VAGUE F51 : AirCutterProjectile (effects_2.c:1430-1640) ----------------
+// --- VAGUE F51 : AirCutterProjectile (battle_anim_effects_2.c.c:1430-1640) ----------------
 // 3 lames d'air en vagues Q8.8 : trajectoire lineaire (task data[7]/[8] =
 // deltas signes bit0) puis virage vers la cible (Inv16/Mul16), fin -> signale.
 import { MathUtil_Mul16 as _acMul, MathUtil_Inv16 as _acInv } from './math_util';
@@ -2131,7 +2131,7 @@ function _acRt(): {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 
-/** 1:1 AnimTask_AirCutterProjectile (effects_2.c:1565, non-contest single). */
+/** 1:1 AnimTask_AirCutterProjectile (battle_anim_effects_2.c.c:1565, non-contest single). */
 function AnimTask_AirCutterProjectile(task: _AcTask): void {
   const itf = _acItf();
   const args = itf.getArgs?.() ?? [0, 0, 6, 2, 0];
@@ -2280,7 +2280,7 @@ function _AnimAirWaveProjectile_Step2(sprite: _AcSprite): void {
 }
 _regTasks({ AnimTask_AirCutterProjectile: AnimTask_AirCutterProjectile as never });
 
-// --- VAGUE F62 : AnimTask_HeartsBackground (effects_2.c:3248-3326) ----------
+// --- VAGUE F62 : AnimTask_HeartsBackground (battle_anim_effects_2.c.c:3248-3326) ----------
 // Fond Attract (coeurs) en BG1 anim : fondu 0..16, plateau 141f, inverse,
 // demontage (pattern fog F61, fondu complet 16 et priority 3).
 import {
@@ -2302,7 +2302,7 @@ function _hbRt(): {
   return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
 }
 
-/** 1:1 AnimTask_HeartsBackground (effects_2.c:3248). */
+/** 1:1 AnimTask_HeartsBackground (battle_anim_effects_2.c.c:3248). */
 function AnimTask_HeartsBackground(task: _HbTask): void {
   const rt = _hbRt();
   rt.SetGpuReg?.(0x50, 0x3F42);

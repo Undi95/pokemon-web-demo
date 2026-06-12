@@ -532,7 +532,7 @@ registerAnimCallbacks({
   AnimShakeMonOrBattlePlatforms: AnimShakeMonOrBattlePlatforms as never,
 });
 
-// ─── VAGUE F3 : AnimTask_InvertScreenColor (normal.c:759, 18 hits sweep) ────
+// ─── VAGUE F3 : AnimTask_InvertScreenColor (battle_anim_normal.c.c:759, 18 hits sweep) ────
 // Inverse les palettes sélectionnées (Thunder/Explosion flash négatif).
 // args (flagsScenery, flagsAttacker, flagsTarget) — bit 8 = actif.
 function _nItf3(): { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void } {
@@ -572,7 +572,7 @@ function AnimTask_InvertScreenColor(task: { taskId: number }): void {
   itf.DestroyAnimVisualTask?.(task.taskId);
 }
 import { registerAnimTasks as _nRegT } from '../engine/battle/battle-anim-registry';
-/** 1:1 `AnimTask_ShakeBattlePlatforms` (normal.c:957, 9 hits) — secoue BG3
+/** 1:1 `AnimTask_ShakeBattlePlatforms` (battle_anim_normal.c.c:957, 9 hits) — secoue BG3
  *  (le terrain entier) en X/Y alterné. args (xOff, yOff, shakes, delay). */
 function AnimTask_ShakeBattlePlatforms(task: { taskId: number; data: number[]; func?: unknown }): void {
   const a = _nItf3().getArgs?.() ?? [];
@@ -605,7 +605,7 @@ function _ShakePlatforms_Step(task: { taskId: number; data: number[] }): void {
     task.data[3]--;
   }
 }
-/** 1:1 `AnimTask_FlashAnimTagWithColor` (normal.c, 3 hits) : alterne 2 blends
+/** 1:1 `AnimTask_FlashAnimTagWithColor` (battle_anim_normal.c.c, 3 hits) : alterne 2 blends
  *  (color1/Y1 ↔ color2/Y2) toutes les delay frames, numBlends fois.
  *  args (tag, delay, numBlends, color1, blendY1, color2, blendY2). */
 function AnimTask_FlashAnimTagWithColor(task: { taskId: number; data: number[]; func?: unknown }): void {
