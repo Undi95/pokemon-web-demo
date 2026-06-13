@@ -1,6 +1,7 @@
 /**
- * battle/ai/ai-switch-items.ts — 1:1 décomp `src/battle_ai_switch_items.c`
- * (sous-système AI : décision de changement de Pokémon).
+ * game/battle_ai_switch_items.ts — MIROIR 1:1 de `src/battle_ai_switch_items.c`
+ * (sous-système AI : décision de changement de Pokémon ; ex-src/engine/battle/ai/
+ * ai-switch-items.ts, relocalisé dans le miroir game/ le 2026-06-13).
  *
  * Source de vérité : D:/Projet 1/decomps/pokeemeraude/src/battle_ai_switch_items.c
  *
@@ -21,7 +22,7 @@
  * Module NON wiré au controller action-choice = zéro risque gameplay.
  */
 
-import { Random } from '../../system/random';
+import { Random } from '../engine/system/random';
 import {
   gActiveBattler,
   gBattleMons,
@@ -40,7 +41,7 @@ import {
   gBattleMoveDamage,
   setBattleMoveDamage,
   gSideTimers,
-} from '../state';
+} from '../engine/battle/state';
 import {
   MAX_MON_MOVES,
   MOVE_NONE,
@@ -87,15 +88,15 @@ import {
   STATUS1_BURN,
   STATUS1_FREEZE,
   STATUS1_PARALYSIS,
-} from '../constants';
+} from '../engine/battle/constants';
 import {
   gTypeEffectiveness,
   TYPE_FORESIGHT,
   TYPE_ENDTABLE,
   TYPE_MUL_NORMAL,
   TYPE_MUL_NO_EFFECT,
-} from '../data/type-effectiveness';
-import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from '../../../game/battle_script_commands';
+} from '../engine/battle/data/type-effectiveness';
+import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from './battle_script_commands';
 import {
   gPlayerParty,
   gEnemyParty,
@@ -107,26 +108,26 @@ import {
   MON_DATA_ABILITY_NUM,
   MON_DATA_MOVE1,
   PARTY_SIZE,
-} from '../party-storage';
+} from '../engine/battle/party-storage';
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from '../../decomp-data/include/constants/species-data';
-import { gBitTable } from '../battle-controllers';
-import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from '../util';
+} from '../engine/decomp-data/include/constants/species-data';
+import { gBitTable } from '../engine/battle/battle-controllers';
+import { GetBattlerPosition, GetBattlerAtPosition, B_POSITION_PLAYER_RIGHT } from '../engine/battle/util';
 import {
   AbilityBattleEffects,
   ABILITYEFFECT_CHECK_OTHER_SIDE,
   ABILITYEFFECT_FIELD_SPORT,
-} from '../../../game/battle_util';
-import { getBattleMove } from '../data/battle-moves';
-import { getItemEffectBytes, GetItemEffectParamOffset } from '../data/item-effects';
-import { gBattleHistory } from './ai-state';
+} from './battle_util';
+import { getBattleMove } from '../engine/battle/data/battle-moves';
+import { getItemEffectBytes, GetItemEffectParamOffset } from '../engine/battle/data/item-effects';
+import { gBattleHistory } from '../engine/battle/ai/ai-state';
 import {
   ITEM_NONE,
   ITEM_FULL_RESTORE,
   ITEM_ENIGMA_BERRY,
-} from '../../decomp-data/include/constants/items-data';
+} from '../engine/decomp-data/include/constants/items-data';
 import {
   ITEM0_X_ATTACK,
   ITEM0_DIRE_HIT,
@@ -142,17 +143,17 @@ import {
   ITEM3_SLEEP,
   ITEM3_GUARD_SPEC,
   ITEM4_HEAL_HP,
-} from '../../decomp-data/include/constants/item_effects-data';
+} from '../engine/decomp-data/include/constants/item_effects-data';
 
 // ─── Constantes locales 1:1 ────────────────────────────────────────────────
 
 /** 1:1 décomp `#define B_FLANK_LEFT 0` (constants/battle.h:52). Import
  *  depuis decomp-data au lieu de hardcode (= A8 audit). */
-import { B_FLANK_LEFT } from '../../decomp-data/include/constants/battle-data';
+import { B_FLANK_LEFT } from '../engine/decomp-data/include/constants/battle-data';
 /** 1:1 décomp `enum` battle_ai_switch_items.h:4-32 — AI_ITEM_* / AI_HEAL_* / AI_X_*. */
 import {
   ENUM_AI_0, ENUM_AI_1, ENUM_AI_2,
-} from '../../decomp-data/include/battle_ai_switch_items-data';
+} from '../engine/decomp-data/include/battle_ai_switch_items-data';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
 function IS_BATTLER_OF_TYPE(battler: number, type: number): boolean {
