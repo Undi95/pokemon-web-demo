@@ -46,6 +46,7 @@ import {
   InitAnimLinearTranslation, AnimTranslateLinear,
   SetSpritePrimaryCoordsFromSecondaryCoords,
   DestroySpriteAndMatrix, AnimSpriteOnMonPos, TranslateSpriteLinearFixedPoint,
+  WaitAnimForDuration,
 } from './battle_anim_mons';
 import { Sin, Cos } from './trig';
 import { Random2 } from './random';
@@ -67,6 +68,99 @@ function _vItf(): {
 } {
   return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
 }
+// ─── Petits callbacks contrôleurs (battle_anim_effects_2.c:1324-1386 + 1751-1777) ──
+
+/** 1:1 `AnimVibrateBattlerBack_Step` (.c:1324-1338) — secoue le sprite CIBLE
+ *  (x2 ±data[1] alterné) puis remet x2=0 et se détruit. */
+function AnimVibrateBattlerBack_Step(sprite: _VSprite): void {
+  const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
+  const tgtSp = rt?.gSprites?.get(sprite.data[2]);
+  if (tgtSp) tgtSp.x2 += sprite.data[1];
+  sprite.data[1] = -sprite.data[1];
+  if (sprite.data[0] === 0) {
+    if (tgtSp) tgtSp.x2 = 0;
+    DestroySpriteAndMatrix(sprite as never);
+  }
+  sprite.data[0]--;
+}
+
+/** 1:1 `AnimVibrateBattlerBack` (.c:1339-1357) — sprite contrôleur invisible
+ *  ancré sur l'attaquant, secoue le sprite du battler CIBLE. */
+function AnimVibrateBattlerBack(sprite: _VSprite): void {
+  const itf = _vItf();
+  const args = itf.getArgs?.() ?? [0, 0, 0, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */);
+  sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */);
+  const spriteId = co?.getBattlerMonSpriteId?.(tgt) ?? -1;
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) sprite.x -= args[0] | 0;
+  else sprite.x += args[0] | 0;
+  sprite.y += args[1] | 0;
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[2] = spriteId;
+  sprite.callback = AnimVibrateBattlerBack_Step;
+  sprite.invisible = true;
+}
+
+/** 1:1 `AnimMovingClamp` (.c:1358-1367) — attend args[2] frames puis Step. */
+function AnimMovingClamp(sprite: _VSprite): void {
+  const args = _vItf().getArgs?.() ?? [0, 0, 0, 0, 0];
+  InitSpritePosToAnimAttacker(sprite as never, true);
+  sprite.data[0] = args[2] | 0;
+  sprite.data[1] = args[3] | 0;
+  sprite.data[5] = args[4] | 0;
+  sprite.callback = WaitAnimForDuration as never;
+  StoreSpriteCallbackInData6(sprite as never, AnimMovingClamp_Step as never);
+}
+
+/** 1:1 `AnimMovingClamp_Step` (.c:1368-1376) — translate vers (x, y+15). */
+function AnimMovingClamp_Step(sprite: _VSprite): void {
+  sprite.data[0] = sprite.data[1];
+  sprite.data[2] = sprite.x;
+  sprite.data[4] = sprite.y + 15;
+  sprite.callback = StartAnimLinearTranslation as never;
+  StoreSpriteCallbackInData6(sprite as never, AnimMovingClamp_End as never);
+}
+
+/** 1:1 `AnimMovingClamp_End` (.c:1377-1386) — data[5] répétitions puis destroy. */
+function AnimMovingClamp_End(sprite: _VSprite): void {
+  if (sprite.data[5] === 0) _vItf().DestroyAnimSprite?.(sprite);
+  else sprite.data[5]--;
+}
+
+/** 1:1 `AnimVoidLines` (.c:1751-1756) — data[0] = OBJ_PLTT_ID du slot palette
+ *  du sprite (équiv. IndexOfSpritePaletteTag(template.paletteTag) : le sprite
+ *  porte déjà son bank), puis Step. */
+function AnimVoidLines(sprite: _VSprite): void {
+  InitSpritePosToAnimAttacker(sprite as never, false);
+  const rt = (globalThis as Record<string, unknown>).__rt as { gba?: { oam: Array<{ paletteBank?: number }> } } | undefined;
+  const bank = (sprite.oamIndex !== undefined ? rt?.gba?.oam[sprite.oamIndex]?.paletteBank : 0) ?? 0;
+  sprite.data[0] = 256 + bank * 16; // OBJ_PLTT_ID(bank)
+  sprite.callback = AnimVoidLines_Step;
+}
+
+/** 1:1 `AnimVoidLines_Step` (.c:1758-1776) — toutes les 2 frames, ROTATION
+ *  des couleurs 8..15 de la palette (cycle), 24 cycles puis destroy. */
+function AnimVoidLines_Step(sprite: _VSprite): void {
+  if (++sprite.data[1] === 2) {
+    sprite.data[1] = 0;
+    const rt = (globalThis as Record<string, unknown>).__rt as {
+      gPlttBufferFaded?: { get?: (i: number) => number; set?: (i: number, v: number) => void };
+    } | undefined;
+    const pf = rt?.gPlttBufferFaded;
+    if (pf?.get && pf.set) {
+      const id = sprite.data[0];
+      const val = pf.get(8 + id);
+      for (let i = 8; i < 16; i++) pf.set(i + id, pf.get(i + id + 1));
+      pf.set(id + 15, val);
+    }
+    if (++sprite.data[2] === 24) _vItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
 type _RtOam = { tileId?: number; paletteBank?: number };
 type _Rt = {
   gba?: { oam?: _RtOam[] };
@@ -902,6 +996,9 @@ function AnimGuardRing(sprite: _VSprite): void {
 // Enregistrement par nom C exact (templates générés → bridge).
 // ═════════════════════════════════════════════════════════════════════════════
 registerAnimCallbacks({
+  AnimVibrateBattlerBack: AnimVibrateBattlerBack as never,
+  AnimMovingClamp: AnimMovingClamp as never,
+  AnimVoidLines: AnimVoidLines as never,
   AnimAngerMark: AnimAngerMark as never,
   AnimBlendThinRing: AnimBlendThinRing as never,
   AnimHyperVoiceRing: AnimHyperVoiceRing as never,
@@ -953,7 +1050,10 @@ function AnimBreathPuff(sprite: _VSprite): void {
   sprite.callback = TranslateSpriteLinearFixedPoint as never;
 }
 
-registerAnimCallbacks({ AnimBreathPuff: AnimBreathPuff as never });
+registerAnimCallbacks({
+  AnimVibrateBattlerBack: AnimVibrateBattlerBack as never,
+  AnimMovingClamp: AnimMovingClamp as never,
+  AnimVoidLines: AnimVoidLines as never, AnimBreathPuff: AnimBreathPuff as never });
 
 // ════════════════════════════════════════════════════════════════════════════
 // Vague PAY DAY / BULLET SEED / HEAL BELL (2026-06-11, append-only) :
@@ -1134,6 +1234,9 @@ function AnimHealBellMusicNote(sprite: _VSprite): void {
 }
 
 registerAnimCallbacks({
+  AnimVibrateBattlerBack: AnimVibrateBattlerBack as never,
+  AnimMovingClamp: AnimMovingClamp as never,
+  AnimVoidLines: AnimVoidLines as never,
   AnimCoinThrow: AnimCoinThrow as never,
   AnimFallingCoin: AnimFallingCoin as never,
   AnimBulletSeed: AnimBulletSeed as never,
@@ -1168,7 +1271,10 @@ function AnimParticleBurst(sprite: _VSprite): void {
   }
 }
 
-registerAnimCallbacks({ AnimParticleBurst: AnimParticleBurst as never });
+registerAnimCallbacks({
+  AnimVibrateBattlerBack: AnimVibrateBattlerBack as never,
+  AnimMovingClamp: AnimMovingClamp as never,
+  AnimVoidLines: AnimVoidLines as never, AnimParticleBurst: AnimParticleBurst as never });
 
 // ─── AnimTask_Splash 1:1 (battle_anim_effects_2.c.c:2161-2231) — la riposte du Wailord ! ──
 // Le mon s'écrase/rebondit N fois (args: battler, count). Affine par task-data

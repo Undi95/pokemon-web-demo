@@ -539,14 +539,14 @@
 - [ ] AnimCirclingFinger  @ L1270-1288
 - [ ] AnimBouncingMusicNote  @ L1289-1302
 - [ ] AnimBouncingMusicNote_Step  @ L1303-1323
-- [ ] AnimVibrateBattlerBack_Step  @ L1324-1338
-- [ ] AnimVibrateBattlerBack  @ L1339-1357
-- [ ] AnimMovingClamp  @ L1358-1367
-- [ ] AnimMovingClamp_Step  @ L1368-1376
-- [ ] AnimMovingClamp_End  @ L1377-1386
+- [x] AnimVibrateBattlerBack_Step @ L1324-1338 — PORTÉ 1:1 (effects_2.ts : shake x2 alterné du sprite cible, reset + DestroySpriteAndMatrix)
+- [x] AnimVibrateBattlerBack @ L1339-1357 — PORTÉ 1:1 + enregistré (contrôleur invisible ancré attaquant, secoue le battler cible)
+- [x] AnimMovingClamp @ L1358-1367 — PORTÉ 1:1 + enregistré (WaitAnimForDuration → Step)
+- [x] AnimMovingClamp_Step @ L1368-1376 — PORTÉ 1:1 (translate vers y+15 → End)
+- [x] AnimMovingClamp_End @ L1377-1386 — PORTÉ 1:1 (data[5] répétitions puis destroy)
 - [x] AnimTask_Withdraw_Step @ L1393-1441 — renommé au nom C exact (ex-_Withdraw_Step)
-- [ ] AnimVoidLines  @ L1751-1757
-- [ ] AnimVoidLines_Step  @ L1758-1777
+- [x] AnimVoidLines @ L1751-1757 — PORTÉ 1:1 + enregistré (data[0]=OBJ_PLTT_ID du bank du sprite)
+- [x] AnimVoidLines_Step @ L1758-1777 — PORTÉ 1:1 (rotation couleurs 8..15 de la palette toutes les 2f ×24 — palette-cycle 1:1 sur gPlttBufferFaded)
 - [x] AnimTask_Minimize_Step @ L2052-2117 — renommé au nom C exact (ex-_Minimize_Step)
 - [x] AnimTask_GrowAndShrink_Step @ L2245-2254 — renommé au nom C exact (ex-_GrowAndShrink_Step)
 - [x] AnimTask_ThrashMoveMonHorizontal_Step @ L2314-2321 — renommé au nom C exact (ex-_ThrashH_Step)
