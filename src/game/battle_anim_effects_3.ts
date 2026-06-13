@@ -4196,3 +4196,49 @@ function AnimTask_SlideMonForFocusBand_Step2(task: { taskId: number; data: numbe
 }
 
 registerAnimTasks({ AnimTask_SlideMonForFocusBand: AnimTask_SlideMonForFocusBand as never });
+
+/** 1:1 `AnimTask_SnatchPartnerMove` (battle_anim_effects_3.c:5267-5324) —
+ *  l'attaquant dash vers la cible (±6/frame) puis revient. 5 états data[15]. */
+function AnimTask_SnatchPartnerMove(task: { taskId: number; data: number[] }): void {
+  const itf = _fbItf() as ReturnType<typeof _fbItf> & { getTarget?: () => number; DestroyAnimVisualTask?: (id: number) => void };
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  const atk = itf.getAttacker?.() ?? 0;
+  switch (task.data[15]) {
+    case 0: {
+      const attackerX = GetBattlerSpriteCoord(atk, 0 /* BATTLER_COORD_X */);
+      const targetX = GetBattlerSpriteCoord(itf.getTarget?.() ?? 1, 0);
+      task.data[0] = 6;
+      if (attackerX > targetX) task.data[0] *= -1;
+      task.data[1] = attackerX;
+      task.data[2] = targetX;
+      task.data[15]++;
+      break;
+    }
+    case 1: {
+      const sp = _fbRt().gSprites?.get(co?.getBattlerMonSpriteId?.(atk) ?? -1) as { x: number; x2: number } | undefined;
+      if (!sp) { task.data[15] = 4; break; }
+      sp.x2 += task.data[0];
+      if (task.data[0] > 0 ? (sp.x + sp.x2 >= task.data[2]) : (sp.x + sp.x2 <= task.data[2])) task.data[15]++;
+      break;
+    }
+    case 2:
+      task.data[0] *= -1;
+      task.data[15]++;
+      break;
+    case 3: {
+      const sp = _fbRt().gSprites?.get(co?.getBattlerMonSpriteId?.(atk) ?? -1) as { x: number; x2: number } | undefined;
+      if (!sp) { task.data[15] = 4; break; }
+      sp.x2 += task.data[0];
+      if (task.data[0] < 0 ? (sp.x + sp.x2 <= task.data[1]) : (sp.x + sp.x2 >= task.data[1])) task.data[15]++;
+      break;
+    }
+    case 4:
+    default: {
+      const sp = _fbRt().gSprites?.get(co?.getBattlerMonSpriteId?.(atk) ?? -1) as { x2: number } | undefined;
+      if (sp) sp.x2 = 0;
+      itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+registerAnimTasks({ AnimTask_SnatchPartnerMove: AnimTask_SnatchPartnerMove as never });
