@@ -770,73 +770,73 @@
 - [x] AnimTask_ShakeTargetBasedOnMovePowerOrDmg_Step @ L1015-1053 — renommé au nom C exact (ex-AnimTask_ShakeTargetPowerDmg_Step abrégé)
 
 ## pokemon.c — 90/160 fonctions couvertes (56%) · cite:44 + symbole:46 · 195 citations
-- [ ] ZeroBoxMonData  @ L2156-2163
-- [ ] ZeroPlayerPartyMons  @ L2182-2188
-- [ ] CreateMonWithGenderNatureLetter  @ L2319-2349
-- [ ] CreateMaleMon  @ L2350-2363
-- [ ] CreateMonWithIVsPersonality  @ L2364-2370
-- [ ] CreateMonWithIVsOTID  @ L2371-2382
-- [ ] CreateMonWithEVSpread  @ L2383-2414
-- [ ] CreateBattleTowerMon  @ L2415-2468
-- [ ] CreateBattleTowerMon_HandleLevel  @ L2469-2530
-- [ ] CreateApprenticeMon  @ L2531-2562
-- [ ] CreateMonWithEVSpreadNatureOTID  @ L2563-2596
-- [ ] ConvertPokemonToBattleTowerPokemon  @ L2597-2633
-- [ ] CreateEventMon  @ L2634-2642
-- [ ] GetDeoxysStat  @ L2699-2715
-- [ ] GetUnionRoomTrainerPic  @ L2744-2758
-- [ ] GetUnionRoomTrainerClass  @ L2759-2773
-- [ ] BoxMonToMon  @ L2899-2910
-- [ ] SetBattleMonMoveSlot  @ L2981-2986
-- [ ] GiveMonInitialMoveset  @ L2987-2991
-- [ ] GiveBoxMonInitialMoveset  @ L2992-3014
-- [ ] DeleteFirstMoveAndGiveMoveToMon  @ L3047-3073
-- [ ] GetMonGender  @ L3448-3452
-- [ ] GetBoxMonGender  @ L3453-3471
-- [ ] SetMultiuseSpriteTemplateToTrainerFront  @ L3526-3536
-- [ ] EncryptBoxMon  @ L3537-3546
-- [ ] DecryptBoxMon  @ L3547-3603
-- [ ] GetMonData3  @ L3643-3716
-- [ ] GetMonsStateToDoubles_2  @ L4514-4532
-- [ ] CreateSecretBaseEnemyParty  @ L4550-4583
-- [ ] GetSecretBaseTrainerPicIndex  @ L4584-4589
-- [ ] GetSecretBaseTrainerClass  @ L4590-4595
-- [ ] IsPokemonStorageFull  @ L4607-4618
-- [ ] GetSpeciesName  @ L4619-4636
-- [ ] RemoveBattleMonPPBonus  @ L4650-4654
-- [ ] ExecuteTableBasedItemEffect  @ L4710-4741
-- [ ] BufferStatRoseMessage  @ L5425-5432
-- [ ] UseStatIncreaseItem  @ L5433-5479
-- [ ] HoennPokedexNumToSpecies  @ L5610-5627
-- [ ] SpeciesToCryId  @ L5688-5786
-- [ ] DrawSpindaSpotsUnused  @ L5787-5794
-- [ ] DrawSpindaSpots  @ L5795-5800
-- [ ] EvolutionRenameMon  @ L5801-5811
-- [ ] GetPlayerFlankId  @ L5812-5828
-- [ ] GetTrainerEncounterMusicId  @ L5855-5864
-- [ ] UpdatePartyPokerusTime  @ L6157-6180
-- [ ] TryIncrementMonLevel  @ L6211-6231
-- [ ] CanSpeciesLearnTMHM  @ L6252-6270
-- [ ] GetMoveRelearnerMoves  @ L6271-6309
-- [ ] GetLevelUpMovesBySpecies  @ L6310-6320
-- [ ] GetNumberOfRelearnableMoves  @ L6321-6363
-- [ ] IsSpeciesInHoennDex  @ L6379-6386
-- [ ] PlayMapChosenOrBattleBGM  @ L6466-6478
-- [ ] CreateTask_PlayMapChosenOrBattleBGM  @ L6479-6489
-- [ ] Task_PlayMapChosenOrBattleBGM  @ L6490-6500
-- [ ] IsHMMove2  @ L6542-6552
-- [ ] GetMonFlavorRelation  @ L6558-6563
-- [ ] MonRestorePP  @ L6597-6601
-- [ ] BoxMonRestorePP  @ L6602-6617
-- [ ] SetMonPreventsSwitchingString  @ L6618-6636
-- [ ] GetWildMonTableIdInAlteringCave  @ L6637-6645
-- [ ] GetOwnOpposingLinkMultiBattlerId  @ L6869-6892
-- [ ] GetOpposingLinkMultiBattlerId  @ L6893-6915
-- [ ] FacilityClassToPicIndex  @ L6916-6920
-- [ ] PlayerGenderToFrontTrainerPicId  @ L6921-6928
-- [ ] GetTrainerClassNameFromId  @ L6945-6951
-- [ ] GetTrainerNameFromId  @ L6952-6958
-- [ ] InitMonSpritesGfx_Battle  @ L6993-7005
-- [ ] CreateMonSpritesGfxManager  @ L7021-7117
-- [ ] DestroyMonSpritesGfxManager  @ L7118-7141
-- [ ] MonSpritesGfxManager_GetSpritePtr  @ L7142-7157
+- [x] ZeroBoxMonData  @ L2156-2163 — ÉQUIVALENCE — modèle party-storage EN CLAIR : createEmptyPokemon (party-storage.ts:221) zéroe le mon ; pas de BoxPokemon chiffré
+- [x] ZeroPlayerPartyMons  @ L2182-2188 — ÉQUIVALENCE — gPlayerParty initialisé ×6 via createEmptyPokemon (party-storage.ts:249) ; callers restants = frontier/recorded (hors démo)
+- [x] CreateMonWithGenderNatureLetter  @ L2319-2349 — DETTE — branche Cute Charm de CreateWildMon, non-port déjà documenté (wild-encounter.ts:36) ; pas de lead Cute Charm atteignable démo
+- [x] CreateMaleMon  @ L2350-2363 — DETTE — caller unique battle_setup.c:482 = Ralts de Wally (tuto Petalburg) ; contrôleur Wally = dette actée (6f928ed6)
+- [x] CreateMonWithIVsPersonality  @ L2364-2370 — DETTE — caller roamer.c (Latias/Latios) hors démo
+- [x] CreateMonWithIVsOTID  @ L2371-2382 — DETTE — helper de la chaîne roamer (caller interne pokemon.c only)
+- [x] CreateMonWithEVSpread  @ L2383-2414 — DETTE — caller battle_tower.c only (frontier)
+- [x] CreateBattleTowerMon  @ L2415-2468 — DETTE — battle_tower/trainer_hill (frontier)
+- [x] CreateBattleTowerMon_HandleLevel  @ L2469-2530 — DETTE — battle_tower (frontier)
+- [x] CreateApprenticeMon  @ L2531-2562 — DETTE — apprentice (frontier)
+- [x] CreateMonWithEVSpreadNatureOTID  @ L2563-2596 — DETTE — battle_dome/factory/tower (frontier)
+- [x] ConvertPokemonToBattleTowerPokemon  @ L2597-2633 — DETTE — battle_tower (frontier)
+- [x] CreateEventMon  @ L2634-2642 — DETTE — mystery event : aucun caller hors pokemon.c (code mort démo)
+- [x] GetDeoxysStat  @ L2699-2715 — DETTE — Deoxys (event hors démo) ; notre GetMonData (party-storage.ts:257) = branche !DEOXYS 1:1
+- [x] GetUnionRoomTrainerPic  @ L2744-2758 — DETTE — union room (link), callers controller_link/recorded_opponent
+- [x] GetUnionRoomTrainerClass  @ L2759-2773 — DETTE — union room (link)
+- [x] BoxMonToMon  @ L2899-2910 — DETTE — storage PC Phase 5 + summary non portés ; modèle sans BoxMon (party directe, pas de copie box→mon)
+- [x] SetBattleMonMoveSlot  @ L2981-2986 — DETTE — brique du state 4 Cmd_yesnoboxlearnmove (remplacement de move au level-up, bsc.c:5484-5495) : notre opcode = auto-NO UI Phase 1.4 deferred (battle-script-commands.ts:10359-10365) ; à porter au câblage yes/no + summary réels
+- [x] GiveMonInitialMoveset  @ L2987-2991 — ÉQUIVALENCE — moveset initial par learnset au spawn : gameDataLevelUpLearnsets bridge (battle-script-commands.ts:9976) + instances spawner ; vérifié A/B (Wurmple Tackle/String Shot)
+- [x] GiveBoxMonInitialMoveset  @ L2992-3014 — ÉQUIVALENCE — même chemin learnset (modèle sans BoxMon)
+- [x] DeleteFirstMoveAndGiveMoveToMon  @ L3047-3073 — DETTE — caller daycare.c only (héritage œufs hors démo)
+- [x] GetMonGender  @ L3448-3452 — ÉQUIVALENCE — GetGenderFromSpeciesAndPersonality (species-runtime), consommé par battle_interface.ts:1216 _gender (symbole ♂/♀ healthbox) = formule genderRatio/personality 1:1
+- [x] GetBoxMonGender  @ L3453-3471 — ÉQUIVALENCE — même formule (modèle sans BoxMon)
+- [x] SetMultiuseSpriteTemplateToTrainerFront  @ L3526-3536 — DETTE — caller controller_player.c:2326 = branche LINK/multi de DrawTrainerPic (front pic du joueur adverse) ; solo = back pic porté
+- [x] EncryptBoxMon  @ L3537-3546 — ÉQUIVALENCE STRUCTURELLE — modèle party-storage EN CLAIR : pas de chiffrement XOR/checksum ; GetMonData/SetMonData accès direct (divergence plateforme documentée)
+- [x] DecryptBoxMon  @ L3547-3603 — ÉQUIVALENCE STRUCTURELLE — idem EncryptBoxMon (modèle en clair)
+- [x] GetMonData3  @ L3643-3716 — ÉQUIVALENCE — notre GetMonData(mon, field) (party-storage.ts:257) = la signature data=NULL ; champs string retournés en string TS
+- [x] GetMonsStateToDoubles_2  @ L4514-4532 — DETTE — gating doubles de trainer_see.c (:216/:283) : aucun dresseur double atteignable démo
+- [x] CreateSecretBaseEnemyParty  @ L4550-4583 — DETTE — secret bases (battle_util2.c) hors démo
+- [x] GetSecretBaseTrainerPicIndex  @ L4584-4589 — DETTE — secret bases
+- [x] GetSecretBaseTrainerClass  @ L4590-4595 — DETTE — secret bases
+- [x] IsPokemonStorageFull  @ L4607-4618 — DETTE — caller unique GiveMonToPlayer→CopyMonToPC ; PC storage Phase 5, dette R3 déjà écrite (party-storage.ts:995 → MON_CANT_GIVE)
+- [x] GetSpeciesName  @ L4619-4636 — ÉQUIVALENCE — call-site combat battle_message.c:2913 (B_BUFF_SPECIES) porté : _speciesName (battle-message.ts:421), encodage byte-level via encodeChars
+- [x] RemoveBattleMonPPBonus  @ L4650-4654 — DETTE — brique du state 4 Cmd_yesnoboxlearnmove (cf. SetBattleMonMoveSlot), auto-NO UI deferred
+- [x] ExecuteTableBasedItemEffect  @ L4710-4741 — ÉQUIVALENCE — moteur PokemonUseItemEffects PORTÉ 1:1 (bag-item-effects.ts:266) ; ce wrapper 4-args (retry moveIndex) = chemins party_menu/item_use OW
+- [x] BufferStatRoseMessage  @ L5425-5432 — DETTE douce — message vitamines OW (appelé par UseStatIncreaseItem) ; moteur EV porté, message sac OW = UI non câblée
+- [x] UseStatIncreaseItem  @ L5433-5479 — DETTE douce — wrapper UI item_use.c (DisplayItemMessage du boost) ; moteur 1:1 porté (bag-item-effects.ts PokemonUseItemEffects)
+- [x] HoennPokedexNumToSpecies  @ L5610-5627 — DETTE — code mort : aucun caller (proto pokemon.h only)
+- [x] SpeciesToCryId  @ L5688-5786 — DETTE AUDIO — mapping species→cry index du player vanilla ; audio = bricolage maison (ordre user : ne pas toucher BGM/SE)
+- [x] DrawSpindaSpotsUnused  @ L5787-5794 — DETTE — UNUSED nominal
+- [x] DrawSpindaSpots  @ L5795-5800 — DETTE douce — spots procéduraux Spinda (LoadSpecialPokePic, decompress.c:112/343/404) ; Spinda hors zone démo (Route 113) ; pic harnais sans spots documenté
+- [x] EvolutionRenameMon  @ L5801-5811 — DETTE — evolution_scene.c non porté (naming screen) ; évolution hors flux démo
+- [x] GetPlayerFlankId  @ L5812-5828 — DETTE — multi link (party_menu)
+- [x] GetTrainerEncounterMusicId  @ L5855-5864 — DETTE BGM — sélection musique de rencontre par classe ; BGM maison (battle_setup soldé avec cette dette)
+- [x] UpdatePartyPokerusTime  @ L6157-6180 — DETTE — clock.c RTC daily (pokérus hors démo)
+- [x] TryIncrementMonLevel  @ L6211-6231 — DETTE — caller daycare.c only (le Rare Candy vanilla passe par l’EXP direct dans PokemonUseItemEffects, porté bag-item-effects.ts)
+- [x] CanSpeciesLearnTMHM  @ L6252-6270 — DETTE — caller apprentice.c only (frontier)
+- [x] GetMoveRelearnerMoves  @ L6271-6309 — DETTE — move_relearner.c (tuteur Fallarbor) hors démo
+- [x] GetLevelUpMovesBySpecies  @ L6310-6320 — DETTE — caller daycare.c only (héritage œufs)
+- [x] GetNumberOfRelearnableMoves  @ L6321-6363 — DETTE — party_menu mode RELEARNER (DisplayPartyPokemonDataForRelearner :948 + special :6302) hors démo
+- [x] IsSpeciesInHoennDex  @ L6379-6386 — DETTE — trade.c (échanges in-game hors démo)
+- [x] PlayMapChosenOrBattleBGM  @ L6466-6478 — DETTE BGM — audio maison (ordre user : ne pas toucher)
+- [x] CreateTask_PlayMapChosenOrBattleBGM  @ L6479-6489 — DETTE BGM — idem
+- [x] Task_PlayMapChosenOrBattleBGM  @ L6490-6500 — DETTE BGM — idem
+- [x] IsHMMove2  @ L6542-6552 — DETTE — callers : state 4 yesnoboxlearnmove (auto-NO deferred, cf. SetBattleMonMoveSlot) + evolution_scene (hors démo)
+- [x] GetMonFlavorRelation  @ L6558-6563 — DETTE — use_pokeblock.c (pokéblocks hors démo)
+- [x] MonRestorePP  @ L6597-6601 — DETTE — caller egg_hatch.c only (œufs hors démo)
+- [x] BoxMonRestorePP  @ L6602-6617 — DETTE — daycare + storage PC (Phase 5)
+- [x] SetMonPreventsSwitchingString  @ L6618-6636 — DETTE douce — party_menu.c:5841 PARTY_ACTION_ABILITY_PREVENTS (Shadow Tag/Arena Trap/Magnet Pull) : aucun porteur atteignable démo ; chemin party-menu combat non câblé
+- [x] GetWildMonTableIdInAlteringCave  @ L6637-6645 — DETTE — Altering Cave (event) hors démo
+- [x] GetOwnOpposingLinkMultiBattlerId  @ L6869-6892 — DETTE — link multi
+- [x] GetOpposingLinkMultiBattlerId  @ L6893-6915 — DETTE — link multi (battle_tv)
+- [x] FacilityClassToPicIndex  @ L6916-6920 — DETTE — frontier facility classes (main_menu/trainer_card, hors combat)
+- [x] PlayerGenderToFrontTrainerPicId  @ L6921-6928 — DETTE — callers link/recorded/dome + transition Mugshot (hors démo) + branche link controller_player.c:2324
+- [x] GetTrainerClassNameFromId  @ L6945-6951 — DETTE — scrcmd buffertrainerclassname : aucun script démo
+- [x] GetTrainerNameFromId  @ L6952-6958 — DETTE — scrcmd buffertrainername : aucun script démo
+- [x] InitMonSpritesGfx_Battle  @ L6993-7005 — ÉQUIVALENCE — AllocateMonSpritesGfx + gMonSpritesGfxPtr (battle_gfx_sfx_util, consommés battle_controller_opponent.ts:93/:353) couvrent le mode battle ; le ManagerA = summary
+- [x] CreateMonSpritesGfxManager  @ L7021-7117 — DETTE — pokemon_summary_screen.c:1137 (summary screen non porté) ; mode battle couvert par AllocateMonSpritesGfx
+- [x] DestroyMonSpritesGfxManager  @ L7118-7141 — DETTE — idem summary
+- [x] MonSpritesGfxManager_GetSpritePtr  @ L7142-7157 — DETTE — idem summary

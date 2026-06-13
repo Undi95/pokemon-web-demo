@@ -1,0 +1,726 @@
+[
+ {
+  "name": "ZeroBoxMonData",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_storage_system.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "ZeroPlayerPartyMons",
+  "callers": [
+   "battle_factory.c",
+   "battle_tent.c",
+   "new_game.c",
+   "pokemon.c",
+   "pokemon.h",
+   "recorded_battle.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonWithGenderNatureLetter",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "wild_encounter.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMaleMon",
+  "callers": [
+   "battle_setup.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonWithIVsPersonality",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "roamer.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonWithIVsOTID",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonWithEVSpread",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateBattleTowerMon",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h",
+   "trainer_hill.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateBattleTowerMon_HandleLevel",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateApprenticeMon",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonWithEVSpreadNatureOTID",
+  "callers": [
+   "battle_dome.c",
+   "battle_factory.c",
+   "battle_factory_screen.c",
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "ConvertPokemonToBattleTowerPokemon",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateEventMon",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetDeoxysStat",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetUnionRoomTrainerPic",
+  "callers": [
+   "battle_controller_link_opponent.c",
+   "battle_controller_recorded_opponent.c",
+   "pokemon.c",
+   "pokemon.h",
+   "union_room.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetUnionRoomTrainerClass",
+  "callers": [
+   "battle_message.c",
+   "pokemon.c",
+   "pokemon.h",
+   "union_room.c",
+   "union_room.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "BoxMonToMon",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_storage_system.c",
+   "pokemon_summary_screen.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "SetBattleMonMoveSlot",
+  "callers": [
+   "battle_script_commands.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GiveMonInitialMoveset",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GiveBoxMonInitialMoveset",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "DeleteFirstMoveAndGiveMoveToMon",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetMonGender",
+  "callers": [
+   "battle_interface.c",
+   "battle_main.c",
+   "battle_script_commands.c",
+   "egg_hatch.c",
+   "menu_specialized.c",
+   "party_menu.c",
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_storage_system.c",
+   "pokemon_summary_screen.c",
+   "pokenav_conditions.c",
+   "pokenav_conditions_search_results.c",
+   "pokenav_ribbons_list.c",
+   "pokenav_ribbons_summary.c",
+   "trade.c",
+   "tv.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetBoxMonGender",
+  "callers": [
+   "daycare.c",
+   "menu_specialized.c",
+   "pokemon.c",
+   "pokemon.h",
+   "pokenav_conditions.c",
+   "pokenav_conditions_search_results.c",
+   "pokenav_ribbons_list.c",
+   "pokenav_ribbons_summary.c",
+   "tv.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "SetMultiuseSpriteTemplateToTrainerFront",
+  "callers": [
+   "battle_controller_player.c",
+   "battle_controller_player_partner.c",
+   "battle_controller_recorded_player.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "EncryptBoxMon",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "DecryptBoxMon",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetMonData3",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetMonsStateToDoubles_2",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "trainer_see.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateSecretBaseEnemyParty",
+  "callers": [
+   "battle_util2.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetSecretBaseTrainerPicIndex",
+  "callers": [
+   "battle_controller_opponent.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetSecretBaseTrainerClass",
+  "callers": [
+   "battle_message.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "IsPokemonStorageFull",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetSpeciesName",
+  "callers": [
+   "battle_message.c",
+   "battle_pyramid.c",
+   "egg_hatch.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "RemoveBattleMonPPBonus",
+  "callers": [
+   "battle_script_commands.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "ExecuteTableBasedItemEffect",
+  "callers": [
+   "item_use.c",
+   "party_menu.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "BufferStatRoseMessage",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "UseStatIncreaseItem",
+  "callers": [
+   "item_use.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "HoennPokedexNumToSpecies",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "SpeciesToCryId",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "sound.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "DrawSpindaSpotsUnused",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "DrawSpindaSpots",
+  "callers": [
+   "decompress.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "EvolutionRenameMon",
+  "callers": [
+   "evolution_scene.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetPlayerFlankId",
+  "callers": [
+   "party_menu.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetTrainerEncounterMusicId",
+  "callers": [
+   "battle_setup.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "UpdatePartyPokerusTime",
+  "callers": [
+   "clock.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "TryIncrementMonLevel",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CanSpeciesLearnTMHM",
+  "callers": [
+   "apprentice.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetMoveRelearnerMoves",
+  "callers": [
+   "move_relearner.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetLevelUpMovesBySpecies",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetNumberOfRelearnableMoves",
+  "callers": [
+   "party_menu.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "IsSpeciesInHoennDex",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "trade.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "PlayMapChosenOrBattleBGM",
+  "callers": [
+   "battle_setup.c",
+   "battle_tower.c",
+   "cable_club.c",
+   "pokemon.c",
+   "pokemon.h",
+   "recorded_battle.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateTask_PlayMapChosenOrBattleBGM",
+  "callers": [
+   "battle_tower.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "Task_PlayMapChosenOrBattleBGM",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "IsHMMove2",
+  "callers": [
+   "battle_script_commands.c",
+   "evolution_scene.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetMonFlavorRelation",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "use_pokeblock.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "MonRestorePP",
+  "callers": [
+   "egg_hatch.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "BoxMonRestorePP",
+  "callers": [
+   "daycare.c",
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_storage_system.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "SetMonPreventsSwitchingString",
+  "callers": [
+   "party_menu.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetWildMonTableIdInAlteringCave",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetOwnOpposingLinkMultiBattlerId",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetOpposingLinkMultiBattlerId",
+  "callers": [
+   "battle_tv.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "FacilityClassToPicIndex",
+  "callers": [
+   "main_menu.c",
+   "pokemon.c",
+   "pokemon.h",
+   "trainer_card.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "PlayerGenderToFrontTrainerPicId",
+  "callers": [
+   "battle_controller_link_opponent.c",
+   "battle_controller_player.c",
+   "battle_controller_recorded_opponent.c",
+   "battle_controller_recorded_player.c",
+   "battle_dome.c",
+   "battle_transition.c",
+   "pokedex.c",
+   "pokemon.c",
+   "pokemon.h"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetTrainerClassNameFromId",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "scrcmd.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "GetTrainerNameFromId",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "scrcmd.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "InitMonSpritesGfx_Battle",
+  "callers": [
+   "pokemon.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "CreateMonSpritesGfxManager",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_summary_screen.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "DestroyMonSpritesGfxManager",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_summary_screen.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ },
+ {
+  "name": "MonSpritesGfxManager_GetSpritePtr",
+  "callers": [
+   "pokemon.c",
+   "pokemon.h",
+   "pokemon_summary_screen.c"
+  ],
+  "ours": [],
+  "oursCount": 0
+ }
+]
