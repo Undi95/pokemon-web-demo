@@ -577,9 +577,9 @@
 - [x] AnimTask_RolePlaySilhouette_Step2 @ L3279-3295 — renommé au nom C exact
 - [x] AnimTask_DeepInhale_Step @ L3483-3511 — renommé au nom C exact (ex-_DeepInhale_Step)
 - [x] AnimSmokeBallEscapeCloud @ L3570-3581 — PORTÉ 1:1 + enregistré (affine args[0], négation X cible adverse — mutation args 1:1, DestroyAnimSpriteAfterTimer exporté de flying)
-- [ ] AnimTask_SlideMonForFocusBand_Step2  @ L3582-3631
-- [ ] AnimTask_SlideMonForFocusBand_Step1  @ L3632-3684
-- [ ] AnimTask_SlideMonForFocusBand  @ L3685-3741
+- [x] AnimTask_SlideMonForFocusBand_Step2 @ L3582-3631 — PORTÉ 1:1 (phase retour 30f, offsets figés, destroy DIRECT DestroyTask+count-- :3627)
+- [x] AnimTask_SlideMonForFocusBand_Step1 @ L3632-3684 — PORTÉ 1:1 (cumul fixed-point u16 WRAP + secousses data[9]/[10], quirk `= var0`≡0 :3648 documenté)
+- [x] AnimTask_SlideMonForFocusBand @ L3685-3741 — PORTÉ 1:1 + enregistré (inversion bit15 directions côté joueur :3701-3710) ; A/B DIRECT en combat : Step1 (shake x2/y2=4 mesuré) → Step2 → auto-destroy
 - [x] AnimTask_SquishAndSweatDroplets_Step @ L3767-3803 — renommé au nom C exact (ex-_SquishSweat_Step)
 - [x] CreateSweatDroplets @ L3804-3845 — renommé au nom C exact (ex-_CreateSweatDroplets, 4 gouttes ±xOffset, vélocités ±2/-1)
 - [x] AnimFacadeSweatDrop @ L3846-3874 — renommé au nom C exact (ex-_AnimSweatDrop) ; A/B verify FACADE : callback VU en vol, fidele 0 defect

@@ -4086,3 +4086,113 @@ function _MonToSubstituteDoll(task: _E3Task): void {
   }
 }
 _e3RegTasks({ AnimTask_MonToSubstitute: AnimTask_MonToSubstitute as never });
+
+// ─── FOCUS BAND (battle_anim_effects_3.c:3582-3741) ──────────────────────────
+// Le mon glisse (General_FocusBand) : déplacement fixed-point x2/y2 avec
+// secousses optionnelles (data[6] bit15), 2 phases (aller Step1, retour Step2).
+
+function _fbItf(): { getArgs?: () => number[]; getAttacker?: () => number } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+function _fbRt(): { gSprites?: Map<number, { x2: number; y2: number }>; gTasks?: Map<number, unknown>; DestroyTask?: (i: number) => void } {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+/** 1:1 `AnimTask_SlideMonForFocusBand` (.c:3685-3718). */
+function AnimTask_SlideMonForFocusBand(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _fbItf();
+  const args = itf.getArgs?.() ?? [30, 0, 0, 0, 0, 0, 0];
+  const atk = itf.getAttacker?.() ?? 0;
+  const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+  task.data[15] = co?.getBattlerMonSpriteId?.(atk) ?? -1;
+  task.data[14] = args[0] | 0;
+  task.data[0] = args[0] | 0;
+  task.data[13] = args[6] | 0;
+  if (args[3]) task.data[6] = task.data[6] | -0x8000;
+  if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) {
+    task.data[2] = args[1] | 0;
+    task.data[3] = args[2] | 0;
+  } else {
+    // 1:1 :3701-3710 : côté joueur, INVERSER le bit de direction (bit 15)
+    task.data[2] = (args[1] & 0x8000) ? (args[1] & 0x7FFF) : (args[1] | -0x8000);
+    task.data[3] = (args[2] & 0x8000) ? (args[2] & 0x7FFF) : (args[2] | -0x8000);
+  }
+  task.data[8] = 0;
+  task.data[7] = 0;
+  task.data[4] = args[4] | 0;
+  task.data[5] = args[5] | 0;
+  task.func = AnimTask_SlideMonForFocusBand_Step1;
+}
+
+/** 1:1 `AnimTask_SlideMonForFocusBand_Step1` (.c:3632-3684) — phase aller :
+ *  cumul fixed-point (var u16 WRAP 1:1) + secousses data[9]/[10], puis Step2. */
+function AnimTask_SlideMonForFocusBand_Step1(task: { taskId: number; data: number[]; func?: unknown }): void {
+  task.data[0]--;
+  if ((task.data[6] & 0x8000) !== 0 && --task.data[1] === -1) {
+    if (task.data[9] === 0) {
+      task.data[9] = task.data[4];
+      task.data[4] = -task.data[4];
+    } else {
+      task.data[9] = 0; // 1:1 :3648 `= var0` (var0 vaut 0 ici — quirk d'écriture vanilla)
+    }
+    if (task.data[10] === 0) {
+      task.data[10] = task.data[5];
+      task.data[5] = -task.data[5];
+    } else {
+      task.data[10] = 0;
+    }
+    task.data[1] = task.data[13];
+  }
+  const var0 = ((task.data[2] & 0x7FFF) + task.data[7]) & 0xFFFF; // u16 wrap 1:1
+  const var1 = ((task.data[3] & 0x7FFF) + task.data[8]) & 0xFFFF;
+  const sp = _fbRt().gSprites?.get(task.data[15]);
+  if (sp) {
+    sp.x2 = (task.data[2] & 0x8000) ? task.data[9] - (var0 >> 8) : task.data[9] + (var0 >> 8);
+    sp.y2 = (task.data[3] & 0x8000) ? task.data[10] - (var1 >> 8) : task.data[10] + (var1 >> 8);
+  }
+  task.data[7] = var0;
+  task.data[8] = var1;
+  if (task.data[0] < 1) {
+    task.data[0] = 30;
+    task.data[13] = 0;
+    task.func = AnimTask_SlideMonForFocusBand_Step2;
+  }
+}
+
+/** 1:1 `AnimTask_SlideMonForFocusBand_Step2` (.c:3582-3631) — phase retour
+ *  (30 frames, offsets figés data[7]/[8]) puis destroy direct (DestroyTask +
+ *  gAnimVisualTaskCount--, 1:1 :3627-3628). */
+function AnimTask_SlideMonForFocusBand_Step2(task: { taskId: number; data: number[] }): void {
+  task.data[0]--;
+  if ((task.data[6] & 0x8000) !== 0 && --task.data[1] === -1) {
+    if (task.data[9] === 0) {
+      task.data[9] = task.data[4];
+      task.data[4] = -task.data[4];
+    } else {
+      task.data[9] = 0;
+    }
+    if (task.data[10] === 0) {
+      task.data[10] = task.data[5];
+      task.data[5] = -task.data[5];
+    } else {
+      task.data[10] = 0;
+    }
+    task.data[1] = task.data[13];
+  }
+  const var0 = task.data[7] & 0xFFFF;
+  const var1 = task.data[8] & 0xFFFF;
+  const sp = _fbRt().gSprites?.get(task.data[15]);
+  if (sp) {
+    sp.x2 = (task.data[2] & 0x8000) ? task.data[9] - (var0 >> 8) : task.data[9] + (var0 >> 8);
+    sp.y2 = (task.data[3] & 0x8000) ? task.data[10] - (var1 >> 8) : task.data[10] + (var1 >> 8);
+  }
+  if (task.data[0] < 1) {
+    // 1:1 destroy DIRECT (pas DestroyAnimVisualTask) : DestroyTask + count--
+    _fbRt().DestroyTask?.(task.taskId);
+    const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { decAnimVisualTaskCount?: () => void; DestroyAnimVisualTask?: (id: number) => void } | undefined;
+    if (itf?.decAnimVisualTaskCount) itf.decAnimVisualTaskCount();
+    else itf?.DestroyAnimVisualTask?.(task.taskId); // fallback : même effet net (task déjà détruite → seul le count décrémente)
+  }
+}
+
+registerAnimTasks({ AnimTask_SlideMonForFocusBand: AnimTask_SlideMonForFocusBand as never });
