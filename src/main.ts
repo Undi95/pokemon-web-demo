@@ -28,6 +28,7 @@ if (!import.meta.env.PROD) {
 import { TestGbaScene } from './scenes/TestGbaScene';
 import { GameScene } from './scenes/GameScene';
 import { DebugOverlayScene } from './scenes/DebugOverlayScene';
+import { mountDevtoolsPanel } from './engine/devtools/devtools-panel';
 import { BirchRuntimeScene } from './scenes/BirchRuntimeScene';
 // import { OverworldScene } from './scenes/OverworldScene';  // LEGACY-RETIRÉ — voir test ci-dessous
 import { TestOverworldScene } from './scenes/TestOverworldScene';
@@ -293,6 +294,11 @@ const game = new Phaser.Game(config);
 
 // Lance l'overlay debug en parallèle sur toutes les scènes
 void game.scene.add('DebugOverlayScene', DebugOverlayScene, true);
+
+// Panneau DEVTOOLS A/B (DOM overlay, toggle F2 ou bouton flottant 🛠). Observe l'état
+// live via globalThis.__rt — n'altère le runtime que via les leviers devtools prévus
+// (rt.paused/stepBudget/speedMultiplier) + le harness combat. Idempotent.
+mountDevtoolsPanel();
 
 // Pas de pause sur visibilitychange : retiré sur demande. L'onglet en arrière-plan
 // laisse tourner game + musique. Si le MIDI loop boucle pendant que tab masqué,
