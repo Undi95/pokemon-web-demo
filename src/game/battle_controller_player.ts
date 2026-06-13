@@ -31,7 +31,7 @@
 // `__battleMessage` sur globalThis + déclenche loadBattleCharmap. PlayerHandlePrintString
 // (voie L) l'utilise via lookup globalThis = chemin byte-level pur 1:1 (remplace
 // l'ancien décodeur partiel JS-string pour les messages de combat).
-import '../engine/battle/battle-message';
+import './battle_message';
 // Couche healthbox VOIE L (modèle décomp : gHealthboxSpriteIds + UpdateHealthboxAttribute
 // + MoveBattleBarGraphically). Side-effect import : s'enregistre sur globalThis.__battleHealthbox
 // (que _gHealthboxSpriteId / _UpdateHealthboxAttribute lisent) + branche le hook MoveBattleBarGraphically.

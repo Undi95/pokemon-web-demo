@@ -32,7 +32,7 @@ import {
   EOS, EXT_CTRL_CODE_BEGIN, CHAR_NEWLINE,
   EXT_CTRL_CODE_PAUSE_UNTIL_PRESS, CHAR_PROMPT_SCROLL, CHAR_PROMPT_CLEAR,
   encodeStringForFont,
-} from '../ui/gba-text-printer';
+} from '../engine/ui/gba-text-printer';
 import {
   B_TXT_BUFF1, B_TXT_BUFF2, B_TXT_BUFF3, B_TXT_COPY_VAR_1, B_TXT_COPY_VAR_2, B_TXT_COPY_VAR_3,
   B_TXT_PLAYER_MON1_NAME, B_TXT_OPPONENT_MON1_NAME, B_TXT_PLAYER_MON2_NAME, B_TXT_OPPONENT_MON2_NAME,
@@ -49,23 +49,23 @@ import {
   B_BUFF_STAT, B_BUFF_SPECIES, B_BUFF_MON_NICK, B_BUFF_NEGATIVE_FLAVOR, B_BUFF_ABILITY, B_BUFF_ITEM,
   B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_EOS,
   gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3,
-} from './text-buffers';
+} from '../engine/battle/text-buffers';
 import {
   _moveName, _abilityName, _itemName, _typeName, _speciesName,
   _monNickname, _monNicknameWithPrefix, STAT_NAMES_FR,
   _resolveTrainerNameFr, _resolveTrainerClassNameFr, _getBattlerSide,
   _resolveIntroMsgStringName, _resolveIntroSendoutStringName,
   _resolveReturnmonStringName, _resolveSwitchinmonStringName,
-} from './battle-string-decoder';
-import { BATTLE_STRINGS_TABLE, STRINGID_NAMES, BATTLESTRINGS_TABLE_START } from '../decomp-data/battle-strings-table';
-import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../decomp-data/include/constants/battle_string_ids-data';
-import { getString } from '../ui/gba-strings';
-import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from './state';
+} from '../engine/battle/battle-string-decoder';
+import { BATTLE_STRINGS_TABLE, STRINGID_NAMES, BATTLESTRINGS_TABLE_START } from '../engine/decomp-data/battle-strings-table';
+import { STRINGID_STATSHARPLY, STRINGID_STATHARSHLY } from '../engine/decomp-data/include/constants/battle_string_ids-data';
+import { getString } from '../engine/ui/gba-strings';
+import { gActiveBattler, gEffectBattler, gBattleTypeFlags, gTrainerBattleOpponent_A } from '../engine/battle/state';
 // Fin de combat dresseur : lose_text expand (1:1 GetTrainerALoseText). Usage RUNTIME (en fonction)
 // -> live-binding ESM safe meme si cycle transitif. Fallback marqueur si non pose (voie V).
-import { GetTrainerALoseText, getTrainerADefeatSpeech } from './battle-setup-helpers';
-import { gSaveBlock2Ptr } from '../save/save-block-state';
-import type { BattleMsgData } from './battle-event-queue';
+import { GetTrainerALoseText, getTrainerADefeatSpeech } from '../engine/battle/battle-setup-helpers';
+import { gSaveBlock2Ptr } from '../engine/save/save-block-state';
+import type { BattleMsgData } from '../engine/battle/battle-event-queue';
 
 // ─── Constantes 1:1 décomp (characters.h) ──────────────────────────────────
 
