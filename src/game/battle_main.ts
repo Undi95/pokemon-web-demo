@@ -3396,7 +3396,7 @@ import {
   ABILITYEFFECT_SWITCH_IN_WEATHER, ABILITYEFFECT_ON_SWITCHIN,
   ABILITYEFFECT_INTIMIDATE1, ABILITYEFFECT_TRACE,
   consumeAbilityWantedScript,
-} from '../engine/battle/ability-battle-effects';
+} from './battle_util';
 import { ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript } from './battle_util';
 import { runBattleTurnPassedViaBytecode } from '../engine/battle/wire-bytecode-bridge';
 import { gSaveBlock2Ptr } from '../engine/save/save-block-state';

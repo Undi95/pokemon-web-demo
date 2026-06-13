@@ -405,7 +405,7 @@ import {
 
 // gStatuses3 + autres globals (= lazy via globalThis pour éviter circular deps).
 import { gStatuses3, gHitMarker, setHitMarker, gDisableStructs, gBattleMoveDamage, setBattleMoveDamage, gSpecialStatuses, gBattlerAttacker } from './state';
-import { AbilityBattleEffects, ABILITYEFFECT_ENDTURN, consumeAbilityWantedScript } from './ability-battle-effects';
+import { AbilityBattleEffects, ABILITYEFFECT_ENDTURN, consumeAbilityWantedScript } from '../../game/battle_util';
 import { ItemBattleEffects, ITEMEFFECT_NORMAL, consumeItemWantedScript } from '../../game/battle_util';
 // 1:1 décomp battle.h:182, 201.
 // AUDIT BUG FIX : était 1<<13 / 1<<12 (= faux, jamais set/clear correct bit).

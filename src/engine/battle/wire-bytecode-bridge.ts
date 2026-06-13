@@ -94,7 +94,7 @@ import {
   ABILITYEFFECT_ON_SWITCHIN,
   ABILITYEFFECT_SWITCH_IN_WEATHER,
   consumeAbilityWantedScript as consumeAbilityWantedScript_static,
-} from './ability-battle-effects';
+} from '../../game/battle_util';
 import {
   ItemBattleEffects as ItemBattleEffects_static,
   ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,

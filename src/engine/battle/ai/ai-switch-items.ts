@@ -118,7 +118,7 @@ import {
   AbilityBattleEffects,
   ABILITYEFFECT_CHECK_OTHER_SIDE,
   ABILITYEFFECT_FIELD_SPORT,
-} from '../ability-battle-effects';
+} from '../../../game/battle_util';
 import { getBattleMove } from '../data/battle-moves';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../data/item-effects';
 import { gBattleHistory } from './ai-state';

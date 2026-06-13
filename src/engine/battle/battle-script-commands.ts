@@ -132,7 +132,7 @@ import {
   AbilityBattleEffects as _ABE_N1,
   _castformDataTypeChange as _castformDataTypeChangeN25,
   consumeAbilityWantedScript,
-} from './ability-battle-effects';
+} from '../../game/battle_util';
 import {
   applyAtkCanceler,
 } from '../../game/battle_util';
