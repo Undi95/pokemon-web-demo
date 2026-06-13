@@ -807,6 +807,7 @@ import {
   GetBattleAnimBg1Data as _scBgData,
   AnimLoadCompressedBgGfx as _scLoadGfx,
   AnimLoadCompressedBgTilemap as _scLoadTilemap,
+  ClearBattleAnimBg as _scClearAnimBg,
   LoadAnimBgPalette as _scLoadPal,
   ResetBattleAnimBg as _scResetBg,
 } from '../engine/battle/battle-anim-interpreter';
@@ -1025,3 +1026,91 @@ registerAnimTasks({
   AnimTask_SetAnimTargetToBattlerTarget: AnimTask_SetAnimTargetToBattlerTarget as never,
   AnimTask_SetAnimAttackerAndTargetForEffectAtk: AnimTask_SetAnimAttackerAndTargetForEffectAtk as never,
 });
+
+// ─── FALLING WHITE LINES (battle_anim_utility_funcs.c:278-414) ───────────────
+// Les lignes blanches qui tombent sur l'ATTAQUANT (masque Curse réutilisé,
+// fenêtre OBJWIN + copie invisible — la même infra que StatsChange ci-dessus).
+
+/** 1:1 `AnimTask_DrawFallingWhiteLinesOnAttacker` (.c:278-346). */
+function AnimTask_DrawFallingWhiteLinesOnAttacker(task: AnimTask): void {
+  const rt = _scRtLines();
+  const itf = _itf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const g = globalThis as Record<string, unknown>;
+  const var0 = 0; // IsDoubleBattle() : partner-priority — single = 0 (doubles dette)
+  g.gBattle_WIN0H = 0;
+  g.gBattle_WIN0V = 0;
+  rt.SetGpuReg?.(0x48, 0x3F3F); // WININ all+CLR ×2 (1:1 :290)
+  rt.SetGpuReg?.(0x4A, (0x3F << 8) | 0x3D); // WINOUT BG0|BG2|BG3|OBJ|CLR + WINOBJ all (1:1 :292)
+  const disp = rt.GetGpuReg?.(0x00) ?? 0;
+  rt.SetGpuReg?.(0x00, disp | 0x8000); // DISPCNT |= OBJWIN_ON
+  rt.SetGpuReg?.(0x50, 0x3F42); // BLDCNT TGT1_BG1 | TGT2_ALL | BLEND (1:1 :294)
+  rt.SetGpuReg?.(0x52, 8 | (12 << 8)); // BLDALPHA (8,12) (1:1 :295)
+  // bg1Cnt : priority 0, screenSize 0, charBase 1 (1:1 :296-305 — déjà la
+  // convention du BG1 anim chez nous, posée par l'infra _scBgData/monbg).
+  const bg1 = (rt as { gba?: { bg: (i: number) => { config: { priority: number; screenSize: number; charBaseIndex: number } } } }).gba?.bg(1)?.config;
+  if (bg1) { bg1.priority = 0; bg1.screenSize = 0; bg1.charBaseIndex = 1; }
+  // species du battler attaquant (party-storage par side, 1:1 :323-333)
+  const idx0 = _scPartyIdx[atk] ?? 0;
+  const mon0 = (atk & 1) !== 0 ? _scEnemyParty[idx0] : _scPlayerParty[idx0];
+  const species = (_scGetMonData(mon0 as never, _SC_MON_SPECIES) as number) || 0;
+  const monSpriteId = _scMonSpriteId(atk);
+  const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+    CreateInvisibleSpriteCopy?: (battler: number, spriteId: number, species: number) => number;
+  } | undefined;
+  const newSpriteId = monSpriteId >= 0 ? (mons?.CreateInvisibleSpriteCopy?.(atk, monSpriteId, species) ?? -1) : -1;
+  const bgData = _scBgData();
+  _scLoadTilemap(bgData.bgId, 'gBattleAnimMaskTilemap_Curse');
+  _scLoadGfx(bgData.bgId, 'gBattleAnimMaskImage_Curse', bgData.tilesOffset);
+  // LoadPalette(sCurseLinesPalette = {RGB_WHITE}, BG_PLTT_ID(palId)+1, 1 couleur) (1:1 :339)
+  const pf = (rt as { gPlttBufferUnfaded?: { set?: (i: number, v: number) => void }; gPlttBufferFaded?: { set?: (i: number, v: number) => void } });
+  pf.gPlttBufferUnfaded?.set?.(bgData.paletteId * 16 + 1, 0x7FFF);
+  pf.gPlttBufferFaded?.set?.(bgData.paletteId * 16 + 1, 0x7FFF);
+  const sp = (rt as { gSprites?: Map<number, { x: number; y: number }> }).gSprites?.get(monSpriteId);
+  g.gBattle_BG1_X = (-(sp?.x ?? 120) + 32) & 0xFFFF;
+  g.gBattle_BG1_Y = (-(sp?.y ?? 80) + 32) & 0xFFFF;
+  task.data[0] = newSpriteId;
+  task.data[6] = var0;
+  task.func = AnimTask_DrawFallingWhiteLinesOnAttacker_Step;
+}
+
+/** 1:1 `AnimTask_DrawFallingWhiteLinesOnAttacker_Step` (.c:348-392) — scroll
+ *  BG1_Y −4/frame par paquets de 64, ×4 cycles puis teardown complet. */
+function AnimTask_DrawFallingWhiteLinesOnAttacker_Step(task: AnimTask): void {
+  const rt = _scRtLines();
+  const g = globalThis as Record<string, unknown>;
+  task.data[10] += 4;
+  g.gBattle_BG1_Y = (((g.gBattle_BG1_Y as number) | 0) - 4) & 0xFFFF;
+  if (task.data[10] === 64) {
+    task.data[10] = 0;
+    g.gBattle_BG1_Y = (((g.gBattle_BG1_Y as number) | 0) + 64) & 0xFFFF;
+    if (++task.data[11] === 4) {
+      _smskResetBg(false);
+      g.gBattle_WIN0H = 0;
+      g.gBattle_WIN0V = 0;
+      rt.SetGpuReg?.(0x48, 0x3F3F);
+      rt.SetGpuReg?.(0x4A, 0x3F3F); // WINOUT all (teardown 1:1 :367)
+      const bg1 = (rt as { gba?: { bg: (i: number) => { config: { charBaseIndex: number } } } }).gba?.bg(1)?.config;
+      if (bg1) bg1.charBaseIndex = 0;
+      const disp = rt.GetGpuReg?.(0x00) ?? 0;
+      rt.SetGpuReg?.(0x00, disp ^ 0x8000); // DISPCNT ^= OBJWIN_ON
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      const sid = task.data[0];
+      const rt2 = rt as { DestroySprite?: (i: number) => void; gSprites?: Map<number, unknown> };
+      if (sid >= 0) { rt2.DestroySprite?.(sid); rt2.gSprites?.delete?.(sid); }
+      const bgData = _scBgData();
+      _scClearAnimBg(bgData.bgId);
+      g.gBattle_BG1_Y = 0;
+      _itf().DestroyAnimVisualTask?.(task.taskId);
+    }
+  }
+}
+
+function _scRtLines(): {
+  SetGpuReg?: (o: number, v: number) => void; GetGpuReg?: (o: number) => number;
+} {
+  return ((globalThis as Record<string, unknown>).__rt as never) ?? {};
+}
+
+registerAnimTasks({ AnimTask_DrawFallingWhiteLinesOnAttacker: AnimTask_DrawFallingWhiteLinesOnAttacker as never });

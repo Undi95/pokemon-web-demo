@@ -708,8 +708,8 @@
 - [x] AnimTask_HardwarePaletteFade_Step @ L211-217 — ÉQUIVALENCE : délégué au fade de l’interpreter (beginHardwarePaletteFade + poll paletteFadeActive, base AnimTask_HardwarePaletteFade présente)
 - [x] AnimTask_TraceMonBlended_Step @ L231-263 — renommé au nom C exact (ex-_TraceMonBlended_Step, battle_anim_utility_funcs.ts)
 - [x] AnimMonTrace @ L264-277 — renommé au nom C exact (ex-_AnimMonTrace)
-- [ ] AnimTask_DrawFallingWhiteLinesOnAttacker  @ L278-347
-- [ ] AnimTask_DrawFallingWhiteLinesOnAttacker_Step  @ L348-414
+- [x] AnimTask_DrawFallingWhiteLinesOnAttacker @ L278-347 — PORTÉ 1:1 + enregistré (infra StatsChange : OBJWIN+copie invisible+masque Curse+BLDALPHA 8/12) ; A/B DIRECT en combat : task→Step→scroll BG1_Y→teardown auto complet (BG1_Y reset 0)
+- [x] AnimTask_DrawFallingWhiteLinesOnAttacker_Step @ L348-414 — PORTÉ 1:1 (scroll −4/f ×64 ×4 cycles, teardown WININ/WINOUT/OBJWIN^/BLD 0/ClearBattleAnimBg) ; NB verify Move_CURSE timeout (duree:958) = défaut DISTINCT en amont de la chaîne Curse, à investiguer séparément
 - [x] InitStatsChangeAnimation @ L415-425 — porté 1:1 (battle_anim_utility_funcs.ts, chaîne StatsChange complète, commit 23c2e2aa)
 - [x] StatsChangeAnimation_Step1 @ L426-478 — porté 1:1 (regs fenêtre OBJ + species party)
 - [x] StatsChangeAnimation_Step2 @ L479-566 — porté 1:1 (copie OBJ_WINDOW + BG1 gfx/tilemap/palette par stat + SE ; assets extract-stat-change-assets.cjs)
