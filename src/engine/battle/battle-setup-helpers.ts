@@ -39,7 +39,7 @@ import {
   MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsIndoorEncounter,
   MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsDeepOrOceanWater, MetatileBehavior_IsMountain,
-} from '../field/metatile-behavior';
+} from '../../game/metatile_behavior';
 // Sélection de transition de combat (GetWildBattleTransition) : lecture niveaux party.
 // Importé direct (usage RUNTIME uniquement, dans des fns → pas de TDZ même si cycle).
 import { GetMonData, gPlayerParty, gEnemyParty, PARTY_SIZE, setupEnemyPartyForBattle } from './party-storage';

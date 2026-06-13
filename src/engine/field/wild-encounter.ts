@@ -54,7 +54,7 @@ import { BATTLE_TYPE_TRAINER } from '../battle/constants';
 import {
   MetatileBehavior_IsLandWildEncounter,
   MetatileBehavior_IsWaterWildEncounter,
-} from './metatile-behavior';
+} from '../../game/metatile_behavior';
 
 /** 1:1 décomp `LAND_WILD_COUNT` (include/constants/wild_encounter.h:4). */
 const LAND_WILD_COUNT = 12;

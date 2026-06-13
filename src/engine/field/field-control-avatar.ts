@@ -70,7 +70,7 @@ import {
   MetatileBehavior_IsCableBoxResults2,
   MetatileBehavior_IsQuestionnaire,
   MetatileBehavior_IsTrainerHillTimer,
-} from './metatile-behavior';
+} from '../../game/metatile_behavior';
 import {
   gObjectEvents,
   OBJECT_EVENTS_COUNT,

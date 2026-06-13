@@ -76,7 +76,7 @@ import {
   MetatileBehavior_IsVerticalRail,
   MetatileBehavior_IsHorizontalRail,
   MetatileBehavior_IsNonAnimDoor,
-} from './metatile-behavior';
+} from '../../game/metatile_behavior';
 import { CheckStandardWildEncounter } from './wild-encounter';
 import {
   CheckForRotatingGatePuzzleCollision,

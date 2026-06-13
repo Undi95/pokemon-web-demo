@@ -79,7 +79,7 @@ import {
   MetatileBehavior_IsOpenSecretBaseDoor,
   IsWarpMetatileBehavior as _IsWarpMetatileBehavior,
   IsArrowWarpMetatileBehavior as _IsArrowWarpMetatileBehavior,
-} from './metatile-behavior';
+} from '../../game/metatile_behavior';
 
 // ─── Warp kind classification ───────────────────────────────────────────────
 
