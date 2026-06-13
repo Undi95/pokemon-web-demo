@@ -520,9 +520,9 @@
 - [ ] AnimTask_DuplicateAndShrinkToPos_Step2  @ L2810-2839
 - [x] AnimKnockOffOpponentsItem @ L3044-3061 — PORTÉ 1:1 (sous-système ITEM BAG complet .c:2947-3153 : InitItemBagData + moveAlongLinearPath + ItemSteal_Step1/2/3 + Present + ItemSteal + KnockOff ×2, 8 fns)
 - [x] AnimKnockOffItem @ L3062-3088 — PORTÉ 1:1 + enregistré (callback de gKnockOffItemSpriteTemplate = General_ItemKnockoff, joue quand un objet est arraché en combat réel) ; verify MOVE_KNOCK_OFF fidele 0 defect
-- [ ] LeafBladeGetPosFactor  @ L3466-3474
+- [x] LeafBladeGetPosFactor @ L3466-3474 — renommé au nom C exact (ex-_lbGetPosFactor, ±8 selon data[4] vs y)
 - [x] AnimFlyingParticle_Step @ L3571-3591 — renommé au nom C exact (ex-_FlyingParticle_Step)
-- [ ] AnimWhipHit_WaitEnd  @ L3697-3702
+- [x] AnimWhipHit_WaitEnd @ L3697-3702 — ÉQUIVALENCE — corps 1:1 (`if animEnded → destroy`) = _WaitTableAnimEnd_Destroy partagé avec AnimSlidingHit (corps C strictement identiques)
 - [x] AnimFlickeringPunch @ L3734-3753 — DETTE — callback du seul sFlickeringPunchSpriteTemplate, marqué `// Unused` (.c:1205) → inatteignable
 - [x] UnusedFlickerAnim @ L3854-3886 — DETTE — `static void UNUSED` (.c:3854)
 - [x] AnimBubbleBurst_Step @ L4174-4186 — renommé au nom C exact (ex-_BubbleBurst_Step)
@@ -531,8 +531,8 @@
 - [x] AnimTipMon_Step @ L4511-4547 — PORTÉ 1:1 + enregistré (rotation attaquant ±0x200/f ×4 aller-retour via Prepare/SetSpriteRotScale + YOffsetFromRotation + Reset ; fall-through C → if-chain sémantique identique)
 - [ ] AnimTask_SkullBashPositionSet  @ L4588-4678
 - [ ] AnimTask_SkullBashPositionReset  @ L4679-4695
-- [ ] AnimTask_HideBattlersHealthbox  @ L4920-4936
-- [ ] AnimTask_ShowBattlersHealthbox  @ L4937-4945
+- [x] AnimTask_HideBattlersHealthbox @ L4920-4936 — DETTE — `static void UNUSED` (.c:4920)
+- [x] AnimTask_ShowBattlersHealthbox @ L4937-4945 — DETTE — `static void UNUSED` (.c:4937)
 - [x] AnimTask_MoonlightEndFade_Step @ L5030-5107 — renommé au nom C exact (ex-_MoonlightEndFade_Step)
 
 ## battle_anim_effects_2.c — 97/121 fonctions couvertes (80%) · cite:55 + symbole:42 · 97 citations

@@ -2813,7 +2813,7 @@ function _lbStartAnim(sp: _LbSprite | undefined, n: number): void {
     sp.animBeginning = true; sp.animEnded = false;
   }
 }
-function _lbGetPosFactor(sp: _LbSprite): number {
+function LeafBladeGetPosFactor(sp: _LbSprite): number {
   return sp.data[4] < sp.y ? -8 : 8;
 }
 /** Recentre le sprite et prépare l'arc suivant (corps commun des cases impaires). */
@@ -2825,7 +2825,7 @@ function _lbRearm(task: _LbTask, sp: _LbSprite, destX: number, destY: number, an
   sp.data[2] = destX;
   sp.data[3] = sp.y;
   sp.data[4] = destY;
-  sp.data[5] = _lbGetPosFactor(sp);
+  sp.data[5] = LeafBladeGetPosFactor(sp);
   task.data[4] += subprioDelta;
   task.data[3] = animNum;
   sp.subpriority = task.data[4];
@@ -2854,7 +2854,7 @@ function AnimTask_LeafBlade(task: _LbTask): void {
     sp.data[2] = task.data[6] - (Math.trunc(task.data[10] / 2) + 10) * task.data[5];
     sp.data[3] = task.data[9];
     sp.data[4] = task.data[7] + (Math.trunc(task.data[11] / 2) + 10) * task.data[5];
-    sp.data[5] = _lbGetPosFactor(sp);
+    sp.data[5] = LeafBladeGetPosFactor(sp);
     InitAnimArcTranslation(sp as never);
   }
   task.func = _LeafBlade_Step;
