@@ -38,7 +38,7 @@ import { B_SIDE_PLAYER, B_SIDE_OPPONENT, BATTLE_TYPE_DOUBLE } from '../engine/ba
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_POKEBALL, MON_DATA_SPECIES } from '../engine/battle/party-storage';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, AnimateSprite, type AnimCmd } from '../engine/system/sprite-animation';
 import { ST_OAM_AFFINE_DOUBLE } from '../engine/system/decomp-helpers';
-import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime } from '../engine/system/decomp-globals';
+import { SpriteCallbackDummy, LoadCompressedSpriteSheetUsingHeap, LoadCompressedSpritePaletteUsingHeap, FreeSpriteTilesByTag, getRuntime, assetCache } from '../engine/system/decomp-globals';
 import { GetSpriteTileStartByTag, FreeSpritePaletteByTag } from '../engine/system/sprite';
 import { CreateSprite } from '../engine/system/decomp-bridge';
 import { BALL_DIVE, BALL_LUXURY, BALL_PREMIER, LaunchBallFadeMonTask } from '../engine/system/pokeball-effects';
@@ -179,17 +179,21 @@ export function LoadBallGfx(ballId: number): void {
       break;
     default: {
       // 1:1 decomp `LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var*32)` :
-      // overwrite la frame "ball grande ouverte" (open.png) aux tiles [start+8 .. +11].
-      // DETTE (A/B confirme) : poke.png n'a que 2 frames pleines (fermee[0]+mi-ouverte[4])
-      // ; la frame open[8] reste VIDE -> ball "grande ouverte" invisible. MAIS le porter
-      // via LoadCompressedSpriteSheet(targetTileBase=start+8) provoque une REGRESSION :
-      // l'overwrite cible INVALIDE les ranges de tags CHEVAUCHANT (decomp-globals.ts:1788)
-      // -> le sheet poke.png principal (start..start+11) est demarque -> ball = BLOC
-      // garbage (tileId 0). Le bon fix doit ecrire open.png aux tiles start+8 SANS
-      // demarquer le sheet principal (ecriture VRAM ciblee qui ne touche pas le bitmap
-      // d'alloc des tags existants). A faire proprement.
+      // overwrite la frame "ball grande ouverte" (open.png, 128B = 4 tiles) aux tiles
+      // [start+8 .. start+11]. LZDecompressVram = un WRITE VRAM BRUT (decompress + memcpy) ;
+      // l'asset gOpenPokeballGfx est deja en tile-data 4bpp dans assetCache (intro-asset-
+      // loader), donc l'equivalent fidele = un memcpy direct en OBJ VRAM. On N'UTILISE PAS
+      // LoadCompressedSpriteSheet(targetTileBase) : il INVALIDE les ranges de tags
+      // chevauchants -> demarque le sheet poke.png (start..start+11) -> ball = BLOC garbage
+      // (regression A/B confirmee). Un objVram.set ne touche AUCUN tag (= 1:1 LZDecompressVram).
+      // A/B VRAM (dev.ovram) : SANS ca, tile start+8 = 0 octet -> ball "ouverte" INVISIBLE
+      // (poke.png n'a que fermee[0] + mi-ouverte[4] pleines ; la frame open[8] vient d'open.png).
       const var_ = GetSpriteTileStartByTag(gBallSpriteSheets[ballId].tag);
-      void var_;
+      const openGfx = assetCache.get('gOpenPokeballGfx');
+      const rt = getRuntime();
+      if (var_ !== 0xFFFF && openGfx && rt?.gba?.objVram) {
+        rt.gba.objVram.set(openGfx, var_ * 32 + 0x100); // +0x100 = +8 tiles (4bpp)
+      }
       break;
     }
   }
