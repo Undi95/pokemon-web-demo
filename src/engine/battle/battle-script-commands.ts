@@ -564,7 +564,7 @@ import {
 } from './constants';
 import {
   runDamagecalc,
-} from './damage-calc';
+} from '../../game/pokemon';
 import {
   getBattleMove,
   getBattleMove as _gbmN1,

@@ -54,7 +54,7 @@ import {
   TYPE_ELECTRIC,
   GET_BATTLER_SIDE,
 } from '../constants';
-import { CalculateBaseDamage } from '../damage-calc';
+import { CalculateBaseDamage } from '../../../game/pokemon';
 import { getSpeciesInfo } from '../../data/game-data';
 import { reverseDecompConstant, resolveDecompConstant } from '../../system/decomp-constants';
 

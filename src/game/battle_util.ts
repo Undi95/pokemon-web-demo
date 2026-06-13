@@ -239,7 +239,7 @@ import {
   ABILITY_VITAL_SPIRIT, ABILITY_INSOMNIA,
 } from '../engine/battle/constants';
 import { SPECIES_MEW, SPECIES_DEOXYS } from '../engine/decomp-data/include/constants/species-data';
-import { CalculateBaseDamage } from '../engine/battle/damage-calc';
+import { CalculateBaseDamage } from './pokemon';
 import { gPlayerParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
 import { gSaveBlock2Ptr } from '../engine/save/save-block-state';
 import { FlagGet } from '../engine/script/script-vars';

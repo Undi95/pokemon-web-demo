@@ -69,7 +69,7 @@ import {
   resetBattleState as _resetBattleState,
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart, fillBattleMonFromParty, resolveMoveDexId, PARTY_SIZE as _PARTY_SIZE } from './party-storage';
-import { CalculateBaseDamage as _cbd } from './damage-calc';
+import { CalculateBaseDamage as _cbd } from '../../game/pokemon';
 import { getBattleMove as _gbm } from './data/battle-moves';
 import * as _MOVES_ENUM from '../decomp-data/include/constants/moves-data';
 import {
