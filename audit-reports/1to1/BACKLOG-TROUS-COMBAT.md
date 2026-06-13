@@ -536,9 +536,9 @@
 - [x] AnimTask_MoonlightEndFade_Step @ L5030-5107 — renommé au nom C exact (ex-_MoonlightEndFade_Step)
 
 ## battle_anim_effects_2.c — 97/121 fonctions couvertes (80%) · cite:55 + symbole:42 · 97 citations
-- [ ] AnimCirclingFinger  @ L1270-1288
-- [ ] AnimBouncingMusicNote  @ L1289-1302
-- [ ] AnimBouncingMusicNote_Step  @ L1303-1323
+- [x] AnimCirclingFinger @ L1270-1288 — DETTE — callback du seul sCirclingFingerSpriteTemplate, marqué `// Unused` (.c effects_2) → inatteignable
+- [x] AnimBouncingMusicNote @ L1289-1302 — DETTE — template sBouncingMusicNoteSpriteTemplate `// Unused` → inatteignable
+- [x] AnimBouncingMusicNote_Step @ L1303-1323 — DETTE — step du précédent (Unused)
 - [x] AnimVibrateBattlerBack_Step @ L1324-1338 — PORTÉ 1:1 (effects_2.ts : shake x2 alterné du sprite cible, reset + DestroySpriteAndMatrix)
 - [x] AnimVibrateBattlerBack @ L1339-1357 — PORTÉ 1:1 + enregistré (contrôleur invisible ancré attaquant, secoue le battler cible)
 - [x] AnimMovingClamp @ L1358-1367 — PORTÉ 1:1 + enregistré (WaitAnimForDuration → Step)
