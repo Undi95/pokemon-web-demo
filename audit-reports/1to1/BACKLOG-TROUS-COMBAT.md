@@ -592,7 +592,7 @@
 - [x] AnimTask_HelpingHandAttackerMovement_Step @ L4528-4611 — renommé au nom C exact (ex-_HelpingHand_Step)
 - [x] AnimTask_OdorSleuthMovementWaitFinish @ L5018-5023 — renommé au nom C exact (ex-_OdorSleuthWait)
 - [x] MoveOdorSleuthClone @ L5024-5059 — renommé au nom C exact (ex-_MoveOdorSleuthClone)
-- [ ] AnimTask_SnatchOpposingMonMove  @ L5077-5221
+- [x] AnimTask_SnatchOpposingMonMove  @ L5077-5221 — porté 1:1 (.c:5077-5221, machine 0..4 : sortie écran 8.8 fixed, clone CreateAdditionalMonSpriteForMoveAnim async jeton F77, traversée + args[7]=0xFFFF au passage cible, retour) + A/B direct (clone x 256→−40, args7=−1, x2 final 0, destroy propre)
 - [x] AnimUnusedItemBagSteal @ L5222-5266 — DETTE — préfixe Unused + template sUnusedItemBagStealSpriteTemplate (.c:1096) jamais référencé par les scripts → inatteignable
 - [x] AnimTask_SnatchPartnerMove  @ L5267-5327 — porté 1:1 (.c:5267-5324, dash ±6 vers la cible puis retour, 5 états data[15]) + A/B direct (st 1→2→3→4, x2 muté, destroy propre)
 - [x] AnimTask_TeeterDanceMovement_Step @ L5342-5375 — renommé au nom C exact (ex-_TeeterDance_Step)

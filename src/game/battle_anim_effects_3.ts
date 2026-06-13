@@ -36,7 +36,7 @@ import { Sin, Cos, gSineTable } from './trig';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
 import { gBattlerPartyIndexes, gBattleTypeFlags } from '../engine/battle/state';
 import { BATTLE_TYPE_DOUBLE } from '../engine/battle/constants';
-import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
+import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES, MON_DATA_PERSONALITY, MON_DATA_OT_ID } from '../engine/battle/party-storage';
 import { reverseDecompConstant } from '../engine/system/decomp-constants';
 import { getMonFrontPicCoords, getMonBackPicCoords } from './data/mon_pic_coords';
 
@@ -4242,3 +4242,153 @@ function AnimTask_SnatchPartnerMove(task: { taskId: number; data: number[] }): v
   }
 }
 registerAnimTasks({ AnimTask_SnatchPartnerMove: AnimTask_SnatchPartnerMove as never });
+
+// --- AnimTask_SnatchOpposingMonMove (.c:5077-5221) ---------------------------
+// Le mon attaquant sort de l'écran, un CLONE (sprite mon additionnel, même
+// species — transformSpecies si Transform actif) traverse l'écran devant la
+// cible (au passage : gBattleAnimArgs[7]=0xFFFF), puis l'attaquant revient du
+// côté opposé. Machine data[0] 0..4 ; data[1]=accu vitesse 0x800 (8.8 fixed),
+// data[14]=flag passage, data[15]=spriteId2. Divergence plateforme :
+// CreateAdditionalMonSpriteForMoveAnim ASYNC → case 1 lance le fetch (jeton
+// data[13], pattern F77 anti-recyclage) et attend. IsContest()=false.
+let _somToken = 0;
+const _somLoaded = new Map<number, number>(); // jeton → spriteId2 (-1 = échec)
+
+function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; func?: unknown }): void {
+  const itf = _fbItf() as ReturnType<typeof _fbItf> & {
+    getTarget?: () => number;
+    DestroyAnimVisualTask?: (id: number) => void;
+  };
+  const rt = _fbRt() as unknown as {
+    gSprites?: Map<number, { x: number; x2: number; y2: number; subpriority?: number; oamIndex?: number }>;
+    DestroySprite?: (i: number) => void;
+    gba?: { oam?: Array<{ paletteBank?: number }> };
+  };
+  const atk = itf.getAttacker?.() ?? 0;
+  const atkIsPlayer = (atk & 1) === 0; // GetBattlerSide() == B_SIDE_PLAYER
+  switch (task.data[0]) {
+    case 0: {
+      // 1:1 :5089-5104 : l'attaquant accélère hors écran (8.8 fixed).
+      const sp = rt.gSprites?.get(_GetAnimBattlerSpriteId(0 /* ANIM_ATTACKER */));
+      if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; } // garde plateforme
+      task.data[1] += 0x800;
+      if (atkIsPlayer) sp.x2 += task.data[1] >> 8;
+      else sp.x2 -= task.data[1] >> 8;
+      task.data[1] &= 0xFF;
+      const x = sp.x + sp.x2;
+      if (x < -32 || x > 240 + 32) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    }
+    case 1: {
+      if (task.data[13] === 0) {
+        // 1:1 :5116-5145 (branche combat) : pic de l'ATTAQUANT lui-même.
+        // Joueur : front pic (isBackPic=FALSE), part de DISPLAY_WIDTH+32,
+        // subpriority cible +1. Adverse : back pic, part de -32, subpriority -1.
+        const party = atkIsPlayer ? gPlayerParty : gEnemyParty;
+        const mon = party[gBattlerPartyIndexes[atk] ?? 0];
+        if (!mon) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+        const personality = GetMonData(mon as never, MON_DATA_PERSONALITY) as number;
+        const otId = GetMonData(mon as never, MON_DATA_OT_ID) as number;
+        const spritesData = (globalThis as Record<string, unknown>).__battleSpritesData as { battlerData?: Array<{ transformSpecies?: number }> } | undefined;
+        const ts = spritesData?.battlerData?.[atk]?.transformSpecies ?? 0;
+        const species = ts !== 0 ? ts : (GetMonData(mon as never, MON_DATA_SPECIES) as number);
+        const tgtSp = rt.gSprites?.get(_GetAnimBattlerSpriteId(1 /* ANIM_TARGET */));
+        const subpriority = (tgtSp?.subpriority ?? 0) + (atkIsPlayer ? 1 : -1);
+        const isBackPic = !atkIsPlayer;
+        const startX = atkIsPlayer ? 240 + 32 : -32;
+        const mons = (globalThis as Record<string, unknown>).__battleAnimMons as {
+          CreateAdditionalMonSpriteForMoveAnim?: (sp: number, back: boolean, id: number, x: number, y: number, subp: number, p: number, t: number, b: number) => Promise<number>;
+        } | undefined;
+        const token = ++_somToken;
+        task.data[13] = token;
+        void mons?.CreateAdditionalMonSpriteForMoveAnim?.(species, isBackPic, 0, startX, _e3Coord(itf.getTarget?.() ?? 0, 1 /* BATTLER_COORD_Y */), subpriority, personality, otId, atk)
+          .then((sid) => {
+            // anti-orphelin (pattern F77) : la task porteuse du jeton vit-elle encore ?
+            const rt0 = _fbRt() as unknown as { gTasks?: Map<number, { func?: unknown; data?: number[] }>; DestroySprite?: (i: number) => void };
+            let alive = false;
+            for (const [, t0] of rt0.gTasks ?? []) {
+              if (t0.func === AnimTask_SnatchOpposingMonMove && ((t0.data?.[13] ?? 0) | 0) === token) { alive = true; break; }
+            }
+            if (!alive) { if ((sid ?? -1) >= 0) rt0.DestroySprite?.(sid); return; }
+            _somLoaded.set(token, sid ?? -1);
+          });
+        return;
+      }
+      const loaded = _somLoaded.get(task.data[13]);
+      if (loaded === undefined) return; // fetch en vol (1-3 frames, documenté)
+      _somLoaded.delete(task.data[13]);
+      if (loaded < 0) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+      // 1:1 :5149-5150 : transformé → palette éclaircie (Blend 6/16 vers blanc).
+      const spritesData2 = (globalThis as Record<string, unknown>).__battleSpritesData as { battlerData?: Array<{ transformSpecies?: number }> } | undefined;
+      if ((spritesData2?.battlerData?.[atk]?.transformSpecies ?? 0) !== 0) {
+        const sp2 = rt.gSprites?.get(loaded);
+        const oam = sp2?.oamIndex !== undefined ? rt.gba?.oam?.[sp2.oamIndex] : undefined;
+        _e3Blend(0x100 + (oam?.paletteBank ?? 0) * 16, 16, 6, 0x7FFF /* RGB_WHITE */);
+      }
+      task.data[15] = loaded;
+      task.data[0]++;
+      break;
+    }
+    case 2: {
+      // 1:1 :5156-5189 : le clone traverse ; au passage devant la cible (1 fois)
+      // → data[14]++ et gBattleAnimArgs[7] = 0xFFFF (s16 -1, signal du script).
+      const sp2 = rt.gSprites?.get(task.data[15]);
+      if (!sp2) { task.data[1] = 0; task.data[0]++; return; } // garde plateforme
+      task.data[1] += 0x800;
+      if (atkIsPlayer) sp2.x2 -= task.data[1] >> 8;
+      else sp2.x2 += task.data[1] >> 8;
+      task.data[1] &= 0xFF;
+      const x = sp2.x + sp2.x2;
+      if (task.data[14] === 0) {
+        const targetX = _e3Coord(itf.getTarget?.() ?? 0, 0 /* BATTLER_COORD_X */);
+        if (atkIsPlayer ? x < targetX : x > targetX) {
+          task.data[14]++;
+          const args = itf.getArgs?.();
+          if (args) args[7] = 0xFFFF;
+        }
+      }
+      if (x < -32 || x > 240 + 32) {
+        task.data[1] = 0;
+        task.data[0]++;
+      }
+      break;
+    }
+    case 3: {
+      // 1:1 :5190-5201 : détruit le clone (DestroySpriteAndFreeResources_ =
+      // palette par tag + destroy, pattern F77 Step2) ; replace l'attaquant
+      // hors écran du côté opposé.
+      const spApi = (globalThis as Record<string, unknown>).__sprite as { FreeSpritePaletteByTag?: (t: number) => void } | undefined;
+      const tags = ((globalThis as Record<string, unknown>).__battleAnimMons as { MoveEffectMonPaletteTags?: ReadonlyArray<number> } | undefined)?.MoveEffectMonPaletteTags;
+      if (tags) spApi?.FreeSpritePaletteByTag?.(tags[0]);
+      rt.DestroySprite?.(task.data[15]);
+      const sp = rt.gSprites?.get(_GetAnimBattlerSpriteId(0));
+      if (sp) {
+        if (atkIsPlayer) sp.x2 = -sp.x - 32;
+        else sp.x2 = 240 + 32 - sp.x;
+      }
+      task.data[0]++;
+      break;
+    }
+    case 4: {
+      // 1:1 :5202-5219 : l'attaquant revient, clamp à sa coord d'origine.
+      const sp = rt.gSprites?.get(_GetAnimBattlerSpriteId(0));
+      if (!sp) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
+      task.data[1] += 0x800;
+      const attackerX = _e3Coord(atk, 0 /* BATTLER_COORD_X */);
+      if (atkIsPlayer) {
+        sp.x2 += task.data[1] >> 8;
+        if (sp.x2 + sp.x >= attackerX) sp.x2 = 0;
+      } else {
+        sp.x2 -= task.data[1] >> 8;
+        if (sp.x2 + sp.x <= attackerX) sp.x2 = 0;
+      }
+      task.data[1] &= 0xFF;
+      if (sp.x2 === 0) itf.DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+registerAnimTasks({ AnimTask_SnatchOpposingMonMove: AnimTask_SnatchOpposingMonMove as never });
