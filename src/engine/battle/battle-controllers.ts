@@ -559,7 +559,7 @@ export function BtlController_EmitTrainerSlide(bufferId: number): void {
 /** 1:1 signature décomp `BtlController_EmitIntroSlide(buf, terrainId)`
  *  (battle_controllers.c:1141-1146). Démarre l'animation slide-in du
  *  background battle (= WIN0V split central). Enqueue event pour
- *  battle-intro.ts consume. */
+ *  battle_intro.ts (miroir game/) consume. */
 export function BtlController_EmitIntroSlide(bufferId: number, terrainId: number): void {
   // 1:1 décomp battle_controllers.c:1489-1494 : écrit gBattleBufferA[active] =
   // [CONTROLLER_INTROSLIDE, environmentId] (2 bytes). SANS ça, le Mark pairé (dans

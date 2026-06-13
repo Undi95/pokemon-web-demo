@@ -299,7 +299,7 @@ export async function loadBattleTextbox(): Promise<void> {
   // = NOIR. On NE l'écrase PLUS avec #484050 ICI (ancien hack non-1:1 qui colorait les
   // bandes de l'ouverture WIN0 en violet au lieu de noir — confirmé A/B user 2026-06-07).
   // #484050 (fond du panneau menu, textbox idx 9) est exposé via getMenuBackdropRgb15() et
-  // appliqué à la FIN de la slide d'intro (battle-intro.ts BattleIntroSlideEnd, V + L),
+  // appliqué à la FIN de la slide d'intro (battle_intro.ts BattleIntroSlideEnd (miroir game/)),
   // quand le menu apparaît — pas avant. Le backdrop reste noir pendant l'ouverture.
   // (Dette 1:1 séparée : le panneau menu devrait venir du window fill, pas du backdrop.)
   _menuBackdropRgb15 = assets.palette0[9];

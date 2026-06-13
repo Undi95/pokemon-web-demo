@@ -6,7 +6,7 @@
  * accesseurs globalThis gBattle_BG/WIN/gIntroSlideFlags) a été migré 1:1 vers
  * `src/game/battle_main.ts` (port miroir battle_main.c, tranche 1, 2026-06-07).
  *
- * Ce module reste comme façade pour les importeurs existants (battle-intro.ts,
+ * Ce module reste comme façade pour les importeurs existants (battle_intro.ts miroir game/,
  * reshow-battle-screen.ts) et déclenche, par son import de battle_main, l'IIFE
  * d'accesseurs + l'expose globalThis __battleVBlankHelpers.
  */
