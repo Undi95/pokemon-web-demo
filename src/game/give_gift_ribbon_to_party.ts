@@ -1,5 +1,5 @@
 /**
- * give-gift-ribbon-to-party.ts — Port 1:1 STRICT de
+ * give_gift_ribbon_to_party.ts — miroir 1:1 STRICT de
  * `D:/Projet 1/decomps/pokeemeraude/src/give_gift_ribbon_to_party.c`.
  *
  * Donne un gift ribbon (MARINE..WORLD) à tous les Pokémon non-œuf de l'équipe,
@@ -7,6 +7,8 @@
  * `FLAG_SYS_RIBBON_GET` si au moins un mon l'a reçu.
  *
  * Dépend de l'infra rubans portée dans party-storage.ts (SetMonData cases 72-78).
+ * NB : non encore appelé (le script appelant n'est pas porté) — dette explicite,
+ *      le fichier vit dans son miroir 1:1 comme dans la décomp.
  */
 
 import {
@@ -15,9 +17,9 @@ import {
   MON_DATA_MARINE_RIBBON, MON_DATA_LAND_RIBBON, MON_DATA_SKY_RIBBON,
   MON_DATA_COUNTRY_RIBBON, MON_DATA_NATIONAL_RIBBON, MON_DATA_EARTH_RIBBON,
   MON_DATA_WORLD_RIBBON,
-} from './party-storage';
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { FlagSet } from '../script/script-vars';
+} from '../engine/battle/party-storage';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { FlagSet } from '../engine/script/script-vars';
 
 /** 1:1 décomp `GIFT_RIBBONS_COUNT` (include/constants/global.h). */
 const GIFT_RIBBONS_COUNT = 11;
