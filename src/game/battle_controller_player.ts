@@ -81,8 +81,8 @@ import { SELECT_BUTTON } from '../engine/battle/battle-controllers';
 import {
   GetBattlerPosition, GetBattlerAtPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
-  GetDefaultMoveTarget,
 } from '../engine/battle/util';
+import { GetDefaultMoveTarget } from './pokemon';
 import {
   TYPE_GHOST, MOVE_NONE, MAX_MON_MOVES, MOVE_CURSE,
   MOVE_TARGET_USER, MOVE_TARGET_USER_OR_SELECTED, MOVE_TARGET_SELECTED,

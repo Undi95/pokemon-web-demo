@@ -63,6 +63,7 @@ import {
   IS_TYPE_PHYSICAL, IS_TYPE_SPECIAL,
 } from '../engine/battle/constants';
 import { FlagGet as _FlagGetN0 } from '../engine/script/script-vars';
+import { GetBattlerAtPosition } from './battle_anim_mons';
 
 /** 1:1 décomp `#define NUM_NATURE_STATS (NUM_STATS - 1)` (constants/pokemon.h) = 5
  *  (ATK, DEF, SPEED, SPATK, SPDEF ; HP exclu). decomp-data ne le résout pas
@@ -623,3 +624,33 @@ export function runDamagecalc(
   return damage;
 }
 
+// ─── GetDefaultMoveTarget (pokemon.c:3422-3446) — absorbé depuis ex-engine/battle/util.ts
+//     (éclatement grab-bag util, 2026-06-13). ──
+/** 1:1 décomp `GetDefaultMoveTarget(battler)`. Retourne le default target pour
+ *  un battler (= utilisé quand le UI demande qui attaque par défaut sans
+ *  override). Logique single vs double battle. */
+export function GetDefaultMoveTarget(battler: number): number {
+  // Lazy lookup gBattleTypeFlags + gAbsentBattlerFlags from globalThis (= évite circular).
+  const BIT_SIDE = 1;
+  const BIT_FLANK = 2;
+  const BATTLE_TYPE_DOUBLE = 1;  // 1 << 0
+  const stateMod = (globalThis as { __battleState?: { gBattleTypeFlags?: number; gAbsentBattlerFlags?: number } }).__battleState;
+  const gBattleTypeFlags = stateMod?.gBattleTypeFlags ?? 0;
+  const gAbsentBattlerFlags = stateMod?.gAbsentBattlerFlags ?? 0;
+
+  const battlerSide = battler & BIT_SIDE;
+  const opposing = battlerSide ^ BIT_SIDE;
+
+  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+    return GetBattlerAtPosition(opposing);
+  }
+  const aliveExceptActive = 2;
+  if (aliveExceptActive > 1) {
+    const position = (Math.random() < 0.5) ? (opposing ^ BIT_FLANK) : opposing;
+    return GetBattlerAtPosition(position);
+  }
+  if (gAbsentBattlerFlags & (1 << opposing)) {
+    return GetBattlerAtPosition(opposing ^ BIT_FLANK);
+  }
+  return GetBattlerAtPosition(opposing);
+}
