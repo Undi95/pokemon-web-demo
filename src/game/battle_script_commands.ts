@@ -1,11 +1,20 @@
 /**
- * battle/type-calc.ts — 1:1 décomp `Cmd_typecalc` + helpers
- * (`D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c:1321-1499`).
+ * game/battle_script_commands.ts — MIROIR 1:1 (partiel) de
+ * `D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c`.
  *
- * - `ModulateDmgByType(multiplier)` (1321) : multiplie gBattleMoveDamage par
- *   multiplier/10 + set MOVE_RESULT_* flags selon SE/NVE/no effect.
- * - `Cmd_typecalc` (1355) : iterate gTypeEffectiveness chart, check STAB +1.5,
- *   Levitate immunity, Wonder Guard immunity. Skip si gCurrentMove == STRUGGLE.
+ * Fichier amorcé par migration (éclatement de l'interpréteur d'opcodes côté
+ * engine vers le miroir game/, comme pokemon.ts). Contient pour l'instant la
+ * SECTION TYPE-CALC (battle_script_commands.c:1321-1499) :
+ *   - `ModulateDmgByType(multiplier)` (1321) : multiplie gBattleMoveDamage par
+ *     multiplier/10 + set MOVE_RESULT_* flags selon SE/NVE/no effect.
+ *   - `AttacksThisTurn(battler, move)` (8224) : 1 si charging turn, sinon 2.
+ *   - `Cmd_typecalc` (1355) : iterate gTypeEffectiveness chart, STAB +1.5,
+ *     Levitate immunity, Wonder Guard immunity. Skip si gCurrentMove == STRUGGLE.
+ *
+ * Le reste de battle_script_commands.c (l'interpréteur d'opcodes complet,
+ * encore dans src/engine/battle/battle-script-commands.ts) sera absorbé ici
+ * lors de la migration finale du groupe ; ces définitions dédupliqueront alors
+ * par tsc (TS2300).
  */
 
 import {
@@ -20,16 +29,17 @@ import {
   gBattleCommunication,
   gBattleWeather,
   gHitMarker,
+  gProtectStructs,
   setMoveResultFlags,
   setBattleMoveDamage,
   setLastUsedAbility,
-} from './state';
-import { B_WEATHER_SUN, HITMARKER_CHARGING } from './constants';
+} from '../engine/battle/state';
+import { B_WEATHER_SUN, HITMARKER_CHARGING } from '../engine/battle/constants';
 import {
   EFFECT_SOLAR_BEAM, EFFECT_SKULL_BASH, EFFECT_RAZOR_WIND, EFFECT_SKY_ATTACK,
   EFFECT_SEMI_INVULNERABLE, EFFECT_BIDE,
-} from '../decomp-data/include/constants/battle_move_effects-data';
-import { getBattleMove } from './data/battle-moves';
+} from '../engine/decomp-data/include/constants/battle_move_effects-data';
+import { getBattleMove } from '../engine/battle/data/battle-moves';
 import {
   gTypeEffectiveness,
   TYPE_FORESIGHT,
@@ -37,7 +47,7 @@ import {
   TYPE_MUL_NO_EFFECT,
   TYPE_MUL_NOT_EFFECTIVE,
   TYPE_MUL_SUPER_EFFECTIVE,
-} from './data/type-effectiveness';
+} from '../engine/battle/data/type-effectiveness';
 import {
   MOVE_STRUGGLE,
   MOVE_RESULT_MISSED,
@@ -52,7 +62,8 @@ import {
   MISS_TYPE,
   B_MSG_GROUND_MISS,
   B_MSG_AVOIDED_DMG,
-} from './constants';
+} from '../engine/battle/constants';
+import { RecordAbilityBattle } from '../engine/battle/util';
 
 // ─── ModulateDmgByType ──────────────────────────────────────────────────────
 
@@ -185,7 +196,7 @@ export function Cmd_typecalc(): boolean {
     gLastLandedMoves[gBattlerTarget] = 0;
     gLastHitByType[gBattlerTarget] = 0;
     gBattleCommunication[MISS_TYPE] = B_MSG_GROUND_MISS;
-    RecordAbilityBattleTC(gBattlerTarget, targetMon.ability);
+    RecordAbilityBattle(gBattlerTarget, targetMon.ability);
   } else {
     // Iterate type chart.
     let i = 0;
@@ -223,18 +234,15 @@ export function Cmd_typecalc(): boolean {
     gLastLandedMoves[gBattlerTarget] = 0;
     gLastHitByType[gBattlerTarget] = 0;
     gBattleCommunication[MISS_TYPE] = B_MSG_AVOIDED_DMG;
-    RecordAbilityBattleTC(gBattlerTarget, ABILITY_WONDER_GUARD);
+    RecordAbilityBattle(gBattlerTarget, ABILITY_WONDER_GUARD);
   }
 
   // 1:1 décomp pokemon.c:Cmd_typecalc :
   // `if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE)
   //    gProtectStructs[gBattlerAttacker].targetNotAffected = 1;`
   if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE) {
-    _gProtectStructsTC[gBattlerAttacker].targetNotAffected = 1;
+    gProtectStructs[gBattlerAttacker].targetNotAffected = 1;
   }
 
   return false;
 }
-
-import { RecordAbilityBattle as RecordAbilityBattleTC } from './util';
-import { gProtectStructs as _gProtectStructsTC } from './state';

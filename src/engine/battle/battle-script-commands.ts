@@ -903,7 +903,7 @@ import {
 import {
   Cmd_typecalc as TypecalcImpl,
   attacksThisTurn,
-} from './type-calc';
+} from '../../game/battle_script_commands';
 import {
   B_POSITION_OPPONENT_LEFT,
   B_POSITION_OPPONENT_RIGHT,
