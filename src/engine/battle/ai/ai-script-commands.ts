@@ -103,7 +103,7 @@ import {
   aiRead32,
   aiReadPtr,
 } from './ai-state';
-import { TypeCalc, AI_CalcDmg } from './ai-damage';
+import { TypeCalc, AI_CalcDmg } from '../../../game/battle_script_commands';
 import { getBattleMove } from '../data/battle-moves';
 import { GetItemHoldEffect, GetItemHoldEffectParam } from '../data/item-hold-effects';
 import {

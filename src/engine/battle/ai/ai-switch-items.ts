@@ -95,7 +95,7 @@ import {
   TYPE_MUL_NORMAL,
   TYPE_MUL_NO_EFFECT,
 } from '../data/type-effectiveness';
-import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from './ai-damage';
+import { AI_TypeCalc, AI_CalcDmg, TypeCalc, speciesTypes } from '../../../game/battle_script_commands';
 import {
   gPlayerParty,
   gEnemyParty,
