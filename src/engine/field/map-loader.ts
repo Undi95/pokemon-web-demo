@@ -59,6 +59,7 @@ import { GetSaveBlock1 } from '../save/save-system';
 // args (= élimine désync historique cam.x ≠ player.x).
 import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { DIR_TO_DX, DIR_TO_DY } from './direction-coords';
+import { BERRY_TREE_ID_BY_NAME } from '../decomp-data/include/constants/berry-data';
 import {
   CONNECTION_DIVE, CONNECTION_EMERGE, CONNECTION_NONE, CONNECTION_INVALID,
 } from '../decomp-data/include/constants/global-data';
@@ -534,6 +535,16 @@ const directionMap: Record<string, number> = {
   dive: 5, emerge: 6,
 };
 
+/** Résout le champ packé `trainer_sight_or_berry_tree_id` (string JSON) en number :
+ *  "7" → 7 (trainer sight range), "BERRY_TREE_ROUTE_104_CHERI_1" → 8 (berryTreeId),
+ *  "0"/vide → 0. */
+function _resolveBerryOrSightId(raw: string | undefined): number {
+  if (!raw) return 0;
+  const s = raw.trim();
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  return BERRY_TREE_ID_BY_NAME[s] ?? 0;
+}
+
 /** Async load d'un map header depuis `/decomp/em/maps/<MapName>.json`.
  *  Note : le JSON utilise `id` au format `MAP_X_Y` mais le fichier filename
  *  est `MapName.json` (= camelCase). On utilise `map-ids.json` pour mapper. */
@@ -594,8 +605,14 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     movementTypeRaw: e.movement_type,
     movementRangeX: e.movement_range_x,
     movementRangeY: e.movement_range_y,
+    // 1:1 décomp : champ packé `trainerRange_berryTreeId` = trainer sight range
+    // (trainers, valeur numérique) OU berryTreeId (berry trees, constante
+    // `BERRY_TREE_ROUTE_*`). La source JSON met une string : "7" (sight) ou
+    // "BERRY_TREE_ROUTE_104_CHERI_1" (id berry) ou "0". Résolu ici (= était
+    // hardcodé à 0 → toutes les berry trees lisaient berryTrees[0]).
+    // trainerType reste 0 = chantier trainer-sight séparé (non porté).
     trainerType: 0,
-    trainerRange_berryTreeId: 0,
+    trainerRange_berryTreeId: _resolveBerryOrSightId(e.trainer_sight_or_berry_tree_id),
     script: e.script,
     flagId: e.flag,
   }));

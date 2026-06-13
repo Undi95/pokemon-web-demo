@@ -22,6 +22,8 @@ import { FlagSet } from '../script/script-vars';
 import { Random, GetGeneratedTrainerIdLower } from '../system/random';
 import { gSaveBlock2Ptr } from './save-block-state';
 import { SetMoney } from '../ui/money';
+import { ClearBerryTrees } from '../pokemon/berry';
+import { ResetAllBerries } from './reset-all-berries';
 
 /** 1:1 décomp `EventScript_ResetAllMapFlags` (data/scripts/new_game.inc:178).
  *  159 flags à SET au démarrage d'une nouvelle partie. */
@@ -189,9 +191,16 @@ const NEW_GAME_HIDE_FLAGS: ReadonlyArray<string> = [
 
 /** Initialise les flags d'une nouvelle partie. À call au boot très early. */
 export function NewGameInit(): void {
+  // 1:1 décomp `NewGameInitData` (new_game.c:171) : ClearBerryTrees() — reset les
+  // 128 berry trees à gBlankBerryTree AVANT le planting initial.
+  ClearBerryTrees();
   for (const flagId of NEW_GAME_HIDE_FLAGS) {
     FlagSet(flagId);
   }
+  // 1:1 décomp : EventScript_ResetAllMapFlags finit par `call EventScript_ResetAllBerries`
+  // (new_game.inc:275) — plante les ~80 baies fixes initiales (Routes 102/104/116/…) au
+  // stade BERRY_STAGE_BERRIES (récoltable, figées via allowGrowth=FALSE).
+  ResetAllBerries();
   // 1:1 décomp `InitPlayerTrainerId()` (new_game.c:84) appelé depuis
   // `NewGameInitData()` (= line 164). Build un u32 trainerId :
   //   trainerId = (Random() << 16) | GetGeneratedTrainerIdLower()
