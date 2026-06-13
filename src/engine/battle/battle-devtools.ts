@@ -99,7 +99,7 @@ import {
 } from './constants';
 import { _GetMoveTarget } from './battle-script-commands';
 import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from './ai/ai-script-commands';
-import { resetAtkCancelerTracker } from './atk-canceler';
+import { resetAtkCancelerTracker } from '../../game/battle_util';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory, setBattlerAI } from './ai/ai-state';
 import { _debugShouldUseItem, _debugGetAI_ItemType, getAiSwitchDecision as _getAiSwitchDecision, resetAiSwitchDecision as _resetAiSwitchDecision, ShouldSwitch as _ShouldSwitch, GetMostSuitableMonToSwitchInto as _GetMostSuitable } from './ai/ai-switch-items';

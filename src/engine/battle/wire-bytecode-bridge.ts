@@ -73,7 +73,7 @@ import { MOVE_NONE } from '../decomp-data/include/constants/moves-data';
 import { PARTY_SIZE } from '../decomp-data/include/constants/global-data';
 import { MAX_BATTLERS_COUNT } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
-import { resetAtkCancelerTracker } from './atk-canceler';
+import { resetAtkCancelerTracker } from '../../game/battle_util';
 import { TurnValuesCleanUp } from './util';
 // AUDIT FIX : import statique de end-turn-effects (= éviter ESM dual-instance via
 // dynamic import async). Pas de circular dep car end-turn-effects → state ; bridge → state.

@@ -135,7 +135,7 @@ import {
 } from './ability-battle-effects';
 import {
   applyAtkCanceler,
-} from './atk-canceler';
+} from '../../game/battle_util';
 import {
   A_BUTTON,
   B_BUTTON,
