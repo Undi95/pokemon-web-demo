@@ -593,7 +593,7 @@
 - [x] AnimTask_OdorSleuthMovementWaitFinish @ L5018-5023 — renommé au nom C exact (ex-_OdorSleuthWait)
 - [x] MoveOdorSleuthClone @ L5024-5059 — renommé au nom C exact (ex-_MoveOdorSleuthClone)
 - [ ] AnimTask_SnatchOpposingMonMove  @ L5077-5221
-- [ ] AnimUnusedItemBagSteal  @ L5222-5266
+- [x] AnimUnusedItemBagSteal @ L5222-5266 — DETTE — préfixe Unused + template sUnusedItemBagStealSpriteTemplate (.c:1096) jamais référencé par les scripts → inatteignable
 - [ ] AnimTask_SnatchPartnerMove  @ L5267-5327
 - [x] AnimTask_TeeterDanceMovement_Step @ L5342-5375 — renommé au nom C exact (ex-_TeeterDance_Step)
 - [x] AnimTask_SlackOffSquish_Step @ L5523-5548 — renommé au nom C exact (ex-_SlackOff_Step)
