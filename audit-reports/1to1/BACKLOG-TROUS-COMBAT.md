@@ -569,8 +569,8 @@
 - [x] RapinSpinMonElevation_Step @ L1833-1891 — renommé au nom C exact (typo « Rapin » = vanilla)
 - [x] TormentAttacker_Step @ L1907-2005 — renommé au nom C exact
 - [ ] AnimTask_DoomDesireLightBeam  @ L2556-2657
-- [ ] AnimTask_StrongFrustrationGrowAndShrink  @ L2658-2674
-- [ ] AnimWeakFrustrationAngerMark  @ L2675-2701
+- [x] AnimTask_StrongFrustrationGrowAndShrink @ L2658-2674 — PORTÉ 1:1 + enregistré (affine-task gStrongFrustrationAffineAnimCmds des tables générées) ; verify MOVE_FRUSTRATION fidele
+- [x] AnimWeakFrustrationAngerMark @ L2675-2701 — PORTÉ 1:1 + enregistré (20f sur place puis dérive fixed-point ±160/128, destroy y2>64)
 - [x] AnimTask_RockMonBackAndForth_Step @ L2742-2799 — renommé au nom C exact (ex-_RockMonBF_Step)
 - [x] AnimTask_FlailMovement_Step @ L2862-2936 — renommé au nom C exact (ex-_Flail_Step)
 - [x] AnimTask_RolePlaySilhouette_Step1 @ L3263-3278 — renommé au nom C exact

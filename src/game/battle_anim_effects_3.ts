@@ -3158,6 +3158,44 @@ function _AcidArmor_Step(task: _AaTask): void {
 
 registerAnimTasks({ AnimTask_AcidArmor: AnimTask_AcidArmor as never });
 
+// ─── FRUSTRATION (battle_anim_effects_3.c:2658-2696) ─────────────────────────
+
+/** 1:1 `AnimTask_StrongFrustrationGrowAndShrink` (.c:2658-2670) — affine-task
+ *  gStrongFrustrationAffineAnimCmds (y −15/+15 ×7f, loop ×2) sur l'attaquant. */
+function AnimTask_StrongFrustrationGrowAndShrink(task: { taskId: number; data: number[] }): void {
+  if (task.data[0] === 0) {
+    const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getAttacker?: () => number } | undefined;
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    const spriteId = co?.getBattlerMonSpriteId?.(itf?.getAttacker?.() ?? 0) ?? 0xFF;
+    _dcPrep(task, spriteId, (_dcTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gStrongFrustrationAffineAnimCmds']);
+    task.data[0]++;
+  } else if (!_dcRun(task)) {
+    const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { DestroyAnimVisualTask?: (id: number) => void } | undefined;
+    itf?.DestroyAnimVisualTask?.(task.taskId);
+  }
+}
+registerAnimTasks({ AnimTask_StrongFrustrationGrowAndShrink: AnimTask_StrongFrustrationGrowAndShrink as never });
+
+/** 1:1 `AnimWeakFrustrationAngerMark` (.c:2675-2696) — la marque de colère :
+ *  20 frames sur place puis dérive fixed-point (x ±160/256, y +128/256),
+ *  destroy à y2 > 64. */
+function AnimWeakFrustrationAngerMark(sprite: _VSprite): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getAttacker?: () => number; DestroyAnimSprite?: (s: unknown) => void } | undefined;
+  if (sprite.data[0] === 0) {
+    InitSpritePosToAnimAttacker(sprite as never, false);
+    sprite.data[0]++;
+  } else if (sprite.data[0]++ > 20) {
+    sprite.data[1] += 160;
+    sprite.data[2] += 128;
+    const atk = itf?.getAttacker?.() ?? 0;
+    if ((atk & 1) !== 0 /* != B_SIDE_PLAYER */) sprite.x2 = -(sprite.data[1] >> 8);
+    else sprite.x2 = sprite.data[1] >> 8;
+    sprite.y2 += sprite.data[2] >> 8;
+    if (sprite.y2 > 64) itf?.DestroyAnimSprite?.(sprite);
+  }
+}
+registerAnimCallbacks({ AnimWeakFrustrationAngerMark: AnimWeakFrustrationAngerMark as never });
+
 // ─── VAGUE F36 : booléennes/power-levels (battle_anim_effects_3.c.c:1531 + :5060) ─────────
 /** 1:1 `AnimTask_IsHealingMove` (battle_anim_effects_3.c.c:1531) → args[7] = (dmg <= 0). */
 function AnimTask_IsHealingMove(task: { taskId: number }): void {
