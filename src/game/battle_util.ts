@@ -70,7 +70,7 @@ import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
   B_POSITION_OPPONENT_LEFT, B_POSITION_OPPONENT_RIGHT,
-  RecordAbilityBattle, ClearFuryCutterDestinyBondGrudge,
+  RecordAbilityBattle,
 } from '../engine/battle/util';
 import { getBattleMove } from '../engine/battle/data/battle-moves';
 // 1:1 décomp battle_util.c:1942-1945 — HandleFaintedMonActions case 6 applique les
@@ -156,6 +156,16 @@ import { gBattleTextBuff1, PREPARE_MOVE_BUFFER } from '../engine/battle/text-buf
 import {
   MOVE_REFLECT, MOVE_LIGHT_SCREEN, MOVE_MIST, MOVE_FUTURE_SIGHT,
 } from '../engine/decomp-data/include/constants/moves-data';
+// ─── Helpers battle_util.c absorbés depuis util.ts (grab-bag, stage 2) ───
+import {
+  BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
+  BS_ATTACKER_WITH_PARTNER, BS_FAINTED_LINK_MULTIPLE_1,
+  BS_FAINTED_LINK_MULTIPLE_2, BS_BATTLER_0,
+  BS_ATTACKER_SIDE, BS_NOT_ATTACKER_SIDE, BS_SCRIPTING,
+  BS_PLAYER1, BS_OPPONENT1, BS_PLAYER2, BS_OPPONENT2,
+  STATUS3_SEMI_INVULNERABLE,
+} from '../engine/battle/constants';
+import { gEffectBattler, gBattlerFainted } from '../engine/battle/state';
 // ─── ItemBattleEffects (battle_util.c:3240-3800) — absorbé au miroir 2026-06-13,
 //     ex-engine/battle/item-battle-effects.ts. (setPotentialItemEffectBattler,
 //     setLastUsedItem, gLastUsedItem, getBattleMove, Random, GET_BATTLER_SIDE,
@@ -4352,3 +4362,71 @@ export function resetWishPerishSongState(): void {
 void gBattleMoveDamage;
 void gBattlerAttacker;
 
+// ════════════════════════════════════════════════════════════════════════════
+// Helpers battle_util.c absorbés depuis ex-engine/battle/util.ts (grab-bag éclaté
+// 2026-06-13, stage 2). getBattlerForBattleScript / CancelMultiTurnMoves (public) /
+// ClearFuryCutterDestinyBondGrudge / WEATHER_HAS_EFFECT (réel).
+// NB : battle_util a déjà _CancelMultiTurnMoves (atk privé) + _CancelMultiTurnMovesETT
+//      (end-turn) + _WEATHER_HAS_EFFECT=true STUB (ability) ; consolidation vers ces
+//      versions publiques = TODO (vérifier bit-values avant de rebrancher).
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` (battle_util.c). */
+export function getBattlerForBattleScript(caseId: number): number {
+  switch (caseId) {
+    case BS_TARGET:                  return gBattlerTarget;
+    case BS_ATTACKER:                return gBattlerAttacker;
+    case BS_EFFECT_BATTLER:          return gEffectBattler;
+    case BS_BATTLER_0:               return 0;
+    case BS_SCRIPTING:               return gBattleScripting.battler;
+    case BS_FAINTED:                 return gBattlerFainted;
+    case BS_FAINTED_LINK_MULTIPLE_1: return gBattlerFainted;
+    case BS_ATTACKER_WITH_PARTNER:
+    case BS_FAINTED_LINK_MULTIPLE_2:
+    case BS_ATTACKER_SIDE:
+    case BS_NOT_ATTACKER_SIDE:
+    case BS_PLAYER1:
+      return GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+    case BS_OPPONENT1:
+      return GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+    case BS_PLAYER2:
+      return GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
+    case BS_OPPONENT2:
+      return GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
+    default:
+      return 0;
+  }
+}
+
+/** 1:1 décomp `CancelMultiTurnMoves(u8 battler)` (battle_util.c:864). */
+export function CancelMultiTurnMoves(battler: number): void {
+  gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
+  gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
+  gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
+  gBattleMons[battler].status2 &= ~STATUS2_BIDE;
+  gStatuses3[battler] &= ~STATUS3_SEMI_INVULNERABLE;
+  gDisableStructs[battler].rolloutTimer = 0;
+  gDisableStructs[battler].furyCutterCounter = 0;
+}
+
+/** 1:1 décomp `ClearFuryCutterDestinyBondGrudge(battlerId)` (battle_util.c:3798-3803). */
+export function ClearFuryCutterDestinyBondGrudge(battlerId: number): void {
+  gDisableStructs[battlerId].furyCutterCounter = 0;
+  gBattleMons[battlerId].status2 &= ~STATUS2_DESTINY_BOND;
+  gStatuses3[battlerId] &= ~STATUS3_GRUDGE;
+}
+
+/** 1:1 décomp `WEATHER_HAS_EFFECT` macro (battle_util.h:47) :
+ *  `(!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK))`. */
+export function WEATHER_HAS_EFFECT(): boolean {
+  for (let i = 0; i < gBattlersCount; i++) {
+    const mon = gBattleMons[i];
+    if (!mon) continue;
+    if ((mon.ability === ABILITY_CLOUD_NINE
+         || mon.ability === ABILITY_AIR_LOCK)
+        && mon.hp > 0) {
+      return false;
+    }
+  }
+  return true;
+}

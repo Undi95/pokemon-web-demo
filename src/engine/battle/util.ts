@@ -57,34 +57,8 @@ export {
   gBattlerPositions, GetBattlerAtPosition, GetBattlerPosition,
 };
 
-// ─── getBattlerForBattleScript (battle_util.c) — 1:1 décomp full ───────────
-
-/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)`. */
-export function getBattlerForBattleScript(caseId: number): number {
-  switch (caseId) {
-    case BS_TARGET:                  return gBattlerTarget;
-    case BS_ATTACKER:                return gBattlerAttacker;
-    case BS_EFFECT_BATTLER:          return gEffectBattler;
-    case BS_BATTLER_0:               return 0;
-    case BS_SCRIPTING:               return gBattleScripting.battler;
-    case BS_FAINTED:                 return gBattlerFainted;
-    case BS_FAINTED_LINK_MULTIPLE_1: return gBattlerFainted;
-    case BS_ATTACKER_WITH_PARTNER:
-    case BS_FAINTED_LINK_MULTIPLE_2:
-    case BS_ATTACKER_SIDE:
-    case BS_NOT_ATTACKER_SIDE:
-    case BS_PLAYER1:
-      return GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
-    case BS_OPPONENT1:
-      return GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
-    case BS_PLAYER2:
-      return GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
-    case BS_OPPONENT2:
-      return GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
-    default:
-      return 0;
-  }
-}
+// ─── getBattlerForBattleScript : DÉPLACÉ dans le miroir game/battle_util.ts
+//     (battle_util.c, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
 // ─── FaintClearSetData (battle_main.c:3264-3360) — 1:1 décomp ───────────
 
@@ -103,35 +77,15 @@ export function getBattlerForBattleScript(caseId: number): number {
 //     (battle_main.c:3270-3355, consolidation C2 2026-06-10). Re-export compat. ──
 export { FaintClearSetData } from '../../game/battle_main';
 
-// ─── CancelMultiTurnMoves (battle_util.c:864) — 1:1 décomp ─────────────────
-
-/** 1:1 décomp `CancelMultiTurnMoves(u8 battler)`. Clear locked/uproar/bide/
- *  rollout/furycutter state pour un battler donné. Utilisé quand Rollout
- *  misses, Bide breaks, ou switch out. */
-export function CancelMultiTurnMoves(battler: number): void {
-  gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
-  gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
-  gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
-  gBattleMons[battler].status2 &= ~STATUS2_BIDE;
-  gStatuses3[battler] &= ~STATUS3_SEMI_INVULNERABLE;
-  gDisableStructs[battler].rolloutTimer = 0;
-  gDisableStructs[battler].furyCutterCounter = 0;
-}
+// ─── CancelMultiTurnMoves : DÉPLACÉ dans le miroir game/battle_util.ts
+//     (battle_util.c:864, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
 // ─── GetScaledHPFraction — DÉPLACÉ dans le miroir src/game/battle_interface.ts
 //     (battle_interface.c:2517, consolidation C4 2026-06-09). Re-export compat. ──
 export { GetScaledHPFraction } from '../../game/battle_interface';
 
-// ─── ClearFuryCutterDestinyBondGrudge (battle_util.c:3798-3803) — 1:1 décomp ───
-
-/** 1:1 décomp. Reset Fury Cutter compteur + clear Destiny Bond + Grudge.
- *  Appelé par HandleAction_UseItem (= player utilise item = mon perd ses
- *  conditions accrobatiques). */
-export function ClearFuryCutterDestinyBondGrudge(battlerId: number): void {
-  gDisableStructs[battlerId].furyCutterCounter = 0;
-  gBattleMons[battlerId].status2 &= ~STATUS2_DESTINY_BOND;
-  gStatuses3[battlerId] &= ~STATUS3_GRUDGE;
-}
+// ─── ClearFuryCutterDestinyBondGrudge : DÉPLACÉ dans le miroir game/battle_util.ts
+//     (battle_util.c:3798-3803, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
 // ─── BATTLE_HISTORY tracking (battle_ai_script_commands.c:643-655) — 1:1 décomp ───
 
@@ -279,23 +233,8 @@ export function GetDefaultMoveTarget(battler: number): number {
   return GetBattlerAtPosition(opposing);
 }
 
-// ─── WEATHER_HAS_EFFECT (battle_util.h:47) — 1:1 décomp macro ──────────────
-
-/** 1:1 décomp `WEATHER_HAS_EFFECT` macro (battle_util.h:47).
- *  `((!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK)))`.
- *  Retourne TRUE sauf si Cloud Nine ou Air Lock est on field (= ability bloque weather). */
-export function WEATHER_HAS_EFFECT(): boolean {
-  for (let i = 0; i < gBattlersCount; i++) {
-    const mon = gBattleMons[i];
-    if (!mon) continue;
-    if ((mon.ability === ABILITY_CLOUD_NINE
-         || mon.ability === ABILITY_AIR_LOCK)
-        && mon.hp > 0) {
-      return false;
-    }
-  }
-  return true;
-}
+// ─── WEATHER_HAS_EFFECT : DÉPLACÉ dans le miroir game/battle_util.ts
+//     (battle_util.h:47, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
 // ─── TurnValuesCleanUp (battle_main.c:4857-4892) — 1:1 décomp ──────────────
 

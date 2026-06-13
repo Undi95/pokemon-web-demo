@@ -909,8 +909,6 @@ import {
   B_POSITION_OPPONENT_RIGHT,
   B_POSITION_PLAYER_LEFT,
   B_POSITION_PLAYER_RIGHT,
-  CancelMultiTurnMoves,
-  CancelMultiTurnMoves as _cancelMultiTurnMovesAC,
   FaintClearSetData,
   GetBattlerAtPosition,
   GetBattlerPosition,
@@ -926,10 +924,16 @@ import {
   RecordAbilityBattle as _recordAbilityBattleFullN29,
   RecordItemEffectBattle as _recordItemEffectBattleFullN21,
   RecordItemEffectBattle as _recordItemEffectBattleFullN22,
+} from './util';
+// getBattlerForBattleScript / CancelMultiTurnMoves / WEATHER_HAS_EFFECT : absorbés
+// dans le miroir game/battle_util.ts (battle_util.c, éclatement util stage 2).
+import {
+  CancelMultiTurnMoves,
+  CancelMultiTurnMoves as _cancelMultiTurnMovesAC,
   WEATHER_HAS_EFFECT as _weatherHasEffect,
   getBattlerForBattleScript,
   getBattlerForBattleScript as _utilGetBattler,
-} from './util';
+} from '../../game/battle_util';
 
 // ════════════ Batch 01 ════════════
 /**
