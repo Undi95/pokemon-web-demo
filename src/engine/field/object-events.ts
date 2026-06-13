@@ -321,6 +321,12 @@ export interface ObjectEvent {
   previousCoordsY: number;
   facingDirection: number;
   objTileBase: number;
+  /** Nombre de tiles OBJ alloués pour ce NPC (= 1:1 décomp sprite.c:566
+   *  `AllocSpriteTiles(images->size / TILE_SIZE_4BPP)` = tiles d'UNE frame pour le
+   *  flow images/dynamic-copy ; = TILES_PER_NPC pour les sprites legacy multi-frame).
+   *  Sert à libérer EXACTEMENT le bon nombre de tiles au despawn (1:1 décomp
+   *  `DestroySprite` sprite.c:625 `tileEnd = images->size / TILE_SIZE_4BPP + tileNum`). */
+  objTileCount: number;
   paletteBank: number;
   worldX: number;
   worldY: number;
@@ -542,6 +548,7 @@ export const gObjectEvents: ObjectEvent[] = Array.from({ length: OBJECT_EVENTS_C
   figure8Idx: 0,
   figure8Phase: 0,
   objTileBase: 0,
+  objTileCount: 0,
   paletteBank: 0,
   worldX: 0,
   worldY: 0,
@@ -993,6 +1000,7 @@ export function resetObjectEventAllocations(): void {
     npc.movementRangeY = 0;
     npc.directionSeqIdx = 0;
     npc.objTileBase = 0;
+    npc.objTileCount = 0;
     npc.paletteBank = 0;
     npc.worldX = 0;
     npc.worldY = 0;
@@ -1017,11 +1025,13 @@ export function destroyAllNpcSprites(rt: { gSprites: Map<number, { oamIndex: num
         sprite.inUse = false;
       }
       // 1:1 STRICT décomp sprite.c:622-628 `DestroySprite` branch `if (!usingSheet)` :
+      //   u16 tileEnd = (sprite->images->size / TILE_SIZE_4BPP) + sprite->oam.tileNum;
       //   for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
-      // Libère les tiles dans `sSpriteTileAllocBitmap` pour qu'AllocSpriteTiles
-      // puisse les ré-utiliser au prochain spawn (= NPCs map suivante / new spawn).
+      // Libère EXACTEMENT le nombre de tiles alloués (= npc.objTileCount, posé au
+      // spawn) pour qu'AllocSpriteTiles puisse les ré-utiliser au prochain spawn.
+      // Fallback TILES_PER_NPC pour les NPCs spawnés avant le tracking (= 0).
       if (npc.objTileBase > 0) {
-        MarkObjTilesFree(npc.objTileBase * 32, TILES_PER_NPC * 32);
+        MarkObjTilesFree(npc.objTileBase * 32, (npc.objTileCount > 0 ? npc.objTileCount : TILES_PER_NPC) * 32);
       }
       npc.spriteId = -1;
     }
@@ -4839,39 +4849,13 @@ function _spawnSingleNpcFromTemplate(
   const png = _npcPngCache.get(pngPath);
   if (!png) return false;
 
-  // 1:1 STRICT décomp sprite.c:562-575 `CreateSpriteAt` branch `if (tileTag == TAG_NONE)` :
-  //   sprite->images = template->images;
-  //   tileNum = AllocSpriteTiles(images->size / TILE_SIZE_4BPP);
-  //   if (tileNum == -1) { ResetSprite(); return MAX_SPRITES; }
-  //   sprite->oam.tileNum = tileNum;
-  //   sprite->usingSheet = FALSE;
-  // NPCs ont tileTag == TAG_NONE → AllocSpriteTiles depuis bitmap général.
-  // On alloue TILES_PER_NPC tiles consécutifs (= ≥ images[0].size / 32 + room
-  // pour pré-charger N frames consécutifs en VRAM pour anim sans recopier).
-  const objTileBase = AllocSpriteTiles(TILES_PER_NPC);
-  if (objTileBase < 0) return false;
-
-  // 1:1 STRICT décomp event_object_movement.c:1577-1578 + 2014-2025 :
-  //   if (spriteTemplate->paletteTag != TAG_NONE)
-  //       LoadObjectEventPalette(spriteTemplate->paletteTag);
-  // LoadObjectEventPalette → LoadSpritePaletteIfTagExists → LoadSpritePalette
-  // (sprite.c:1589-1608) : scan first-free dans `sSpritePaletteTags`. Si 2 NPCs
-  // avec même graphicsKey → tag déjà alloué → ré-utilise le même slot (= 1:1
-  // décomp authentique, palette partagée).
-  const paletteTag = `NPC_PAL_${graphicsKey}`;
-  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion.
-  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
-  if (paletteBank === 0xFF) {
-    // Saturation 16 slots palette OBJ → free tiles + abort 1:1 décomp.
-    MarkObjTilesFree(objTileBase * 32, TILES_PER_NPC * 32);
-    return false;
-  }
-
   // ─── C1.3 — 1:1 STRICT décomp flow unified (TrySpawnObjectEventTemplate) ───
   //
   // Pré-convert PNG row-major → 1D OBJ frames consécutifs (= format ROM décomp
   // gObjectEventPic_*). Sans ça les `subarray(N*sz, (N+1)*sz)` des pic_table
   // factories mélangent les frames (= bug "2 têtes empilées").
+  // 1:1 décomp : graphicsInfo (= source des `images`) est résolu AVANT
+  // AllocSpriteTiles, car la taille d'alloc dépend de `images->size` (sprite.c:566).
   const _pic1dObj = pngTo1dObjLayoutAllFrames(
     png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
   );
@@ -4900,7 +4884,44 @@ function _spawnSingleNpcFromTemplate(
   }
   const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(graphicsKey, ..._picsArgs);
   const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
-  if (_hasNewFlow) {
+
+  // 1:1 STRICT décomp sprite.c:562-575 `CreateSpriteAt` branch `if (tileTag == TAG_NONE)` :
+  //   sprite->images = template->images;
+  //   tileNum = AllocSpriteTiles(images->size / TILE_SIZE_4BPP);   // = UNE frame
+  //   if (tileNum == -1) { ResetSprite(); return MAX_SPRITES; }
+  //   sprite->usingSheet = FALSE;
+  // NPCs ont tileTag == TAG_NONE → AllocSpriteTiles depuis bitmap général.
+  // Flow images/dynamic-copy (= _hasNewFlow) : on alloue EXACTEMENT les tiles
+  // d'UNE frame (= images[0].size / TILE_SIZE_4BPP). La frame courante est
+  // recopiée dans ces mêmes tiles (oam.tileId = objTileBase) par AnimateSprite →
+  // RequestSpriteFrameImageCopy → ProcessSpriteCopyRequests (sprite-animation.ts).
+  // Sans ça (= ancien raccourci TILES_PER_NPC=72/NPC) la VRAM OBJ saturait dans
+  // les maps bondées (= flèche warp tombait sur tuile 0 = joueur). Les sprites
+  // legacy multi-frame préchargé (branches is48x48/is32x32/is16x16/else) gardent
+  // TILES_PER_NPC (= dette migration : pas encore portés au flow images).
+  const _objTileCount = (_hasNewFlow && _graphicsInfo_1to1 && _graphicsInfo_1to1.images[0])
+    ? Math.ceil(_graphicsInfo_1to1.images[0].size / 32)   // TILE_SIZE_4BPP = 32 bytes
+    : TILES_PER_NPC;
+  const objTileBase = AllocSpriteTiles(_objTileCount);
+  if (objTileBase < 0) return false;
+
+  // 1:1 STRICT décomp event_object_movement.c:1577-1578 + 2014-2025 :
+  //   if (spriteTemplate->paletteTag != TAG_NONE)
+  //       LoadObjectEventPalette(spriteTemplate->paletteTag);
+  // LoadObjectEventPalette → LoadSpritePaletteIfTagExists → LoadSpritePalette
+  // (sprite.c:1589-1608) : scan first-free dans `sSpritePaletteTags`. Si 2 NPCs
+  // avec même graphicsKey → tag déjà alloué → ré-utilise le même slot (= 1:1
+  // décomp authentique, palette partagée).
+  const paletteTag = `NPC_PAL_${graphicsKey}`;
+  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion.
+  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
+  if (paletteBank === 0xFF) {
+    // Saturation 16 slots palette OBJ → free tiles + abort 1:1 décomp.
+    MarkObjTilesFree(objTileBase * 32, _objTileCount * 32);
+    return false;
+  }
+
+  if (_hasNewFlow && _graphicsInfo_1to1) {
     // Flow 1:1 strict : copie SEULEMENT frame 0 en VRAM (= état initial).
     // AnimateSprite + RequestSpriteFrameImageCopy → ProcessSpriteCopyRequests
     // recopie images[N].data dans le slot VRAM à chaque anim cmd.
@@ -5013,6 +5034,7 @@ function _spawnSingleNpcFromTemplate(
   // `currentMetatileBehavior` + `previousMetatileBehavior` cached fields.
   ObjectEventUpdateMetatileBehaviors(npc);
   npc.objTileBase = objTileBase;
+  npc.objTileCount = _objTileCount;
   npc.paletteBank = paletteBank;
   // Post R3 refactor : npc.currentCoords déjà INTERNAL (= template + MAP_OFFSET).
   const npcGBackupCol = npc.currentCoordsX;
@@ -5402,19 +5424,6 @@ async function _respawnNpcSpriteForReturnToField(
   const png = _npcPngCache.get(pngPath);
   if (!png) return false;
 
-  // 1:1 STRICT décomp sprite.c:562-575 (CreateSpriteAt branch tileTag==TAG_NONE) :
-  // alloue tiles bitmap-based + tile data en VRAM.
-  const objTileBase = AllocSpriteTiles(TILES_PER_NPC);
-  if (objTileBase < 0) return false;
-
-  // Palette via tag system (= dedup si même graphicsId).
-  const paletteTag = `NPC_PAL_${npc.graphicsId}`;
-  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
-  if (paletteBank === 0xFF) {
-    MarkObjTilesFree(objTileBase * 32, TILES_PER_NPC * 32);
-    return false;
-  }
-
   // ─── C8 — 1:1 STRICT flow unified (= match _spawnSingleNpcFromTemplate) ────
   //
   // Pré-convert PNG row-major → 1D OBJ frames consec + lookup graphicsInfo via
@@ -5422,6 +5431,8 @@ async function _respawnNpcSpriteForReturnToField(
   // utilisait le LEGACY branch by-size → sprite.anims=null → updateNpcSpriteFrame
   // legacy path → tileId cycle bug (= "PokeBall tourne sur elle-même" user-flag
   // post WallClock close).
+  // 1:1 décomp : graphicsInfo résolu AVANT AllocSpriteTiles (taille d'alloc =
+  // images->size / TILE_SIZE_4BPP, sprite.c:566).
   const _pic1dObj = pngTo1dObjLayoutAllFrames(
     png.charData, png.widthTiles, graphics.frameWidth, graphics.frameHeight,
   );
@@ -5442,6 +5453,23 @@ async function _respawnNpcSpriteForReturnToField(
   }
   const _graphicsInfo_1to1 = GetObjectEventGraphicsInfo(npc.graphicsId, ..._picsArgs);
   const _hasNewFlow = _graphicsInfo_1to1 && _graphicsInfo_1to1.images.length > 0;
+
+  // 1:1 STRICT décomp sprite.c:562-575 + 566 : AllocSpriteTiles(images->size /
+  // TILE_SIZE_4BPP) = tiles d'UNE frame pour le flow images/dynamic-copy ;
+  // TILES_PER_NPC pour le legacy multi-frame préchargé (dette migration).
+  const _objTileCount = (_hasNewFlow && _graphicsInfo_1to1 && _graphicsInfo_1to1.images[0])
+    ? Math.ceil(_graphicsInfo_1to1.images[0].size / 32)   // TILE_SIZE_4BPP = 32 bytes
+    : TILES_PER_NPC;
+  const objTileBase = AllocSpriteTiles(_objTileCount);
+  if (objTileBase < 0) return false;
+
+  // Palette via tag system (= dedup si même graphicsId).
+  const paletteTag = `NPC_PAL_${npc.graphicsId}`;
+  const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
+  if (paletteBank === 0xFF) {
+    MarkObjTilesFree(objTileBase * 32, _objTileCount * 32);
+    return false;
+  }
 
   if (_hasNewFlow && _graphicsInfo_1to1) {
     // Copy frame 0 in VRAM (= état initial).
@@ -5484,6 +5512,7 @@ async function _respawnNpcSpriteForReturnToField(
     npc.is16x16 = false;
     npc.inanimate = _graphicsInfo_1to1.inanimate === 1;
     npc.objTileBase = objTileBase;
+    npc.objTileCount = _objTileCount;
     npc.paletteBank = paletteBank;
     return true;
   }
@@ -5583,6 +5612,7 @@ async function _respawnNpcSpriteForReturnToField(
 
   // 1:1 STRICT : update tile/palette fields for anim cycling later.
   npc.objTileBase = objTileBase;
+  npc.objTileCount = _objTileCount;
   npc.paletteBank = paletteBank;
   return true;
 }
@@ -6099,12 +6129,13 @@ export function RemoveObjectEventsOutsideView(rt: DecompRuntime): void {
       rt.gba.oam[sprite.oamIndex].visible = false;
     }
     // 1:1 STRICT décomp sprite.c:622-628 `DestroySprite` branch `if (!usingSheet)` :
+    //   u16 tileEnd = (sprite->images->size / TILE_SIZE_4BPP) + sprite->oam.tileNum;
     //   for (i = sprite->oam.tileNum; i < tileEnd; i++) FREE_SPRITE_TILE(i);
-    // Libère les tiles dans `sSpriteTileAllocBitmap`. Palette PAS libérée
-    // individuellement (= 1:1 décomp, libérée uniquement via FreeAllSpritePalettes
-    // au map switch / boot field).
+    // Libère EXACTEMENT le nombre de tiles alloués (= npc.objTileCount). Palette
+    // PAS libérée individuellement (= 1:1 décomp, libérée uniquement via
+    // FreeAllSpritePalettes au map switch / boot field).
     if (npc.objTileBase > 0) {
-      MarkObjTilesFree(npc.objTileBase * 32, TILES_PER_NPC * 32);
+      MarkObjTilesFree(npc.objTileBase * 32, (npc.objTileCount > 0 ? npc.objTileCount : TILES_PER_NPC) * 32);
     }
     npc.active = false;
     npc.spriteId = -1;
