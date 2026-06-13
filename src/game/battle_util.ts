@@ -4430,3 +4430,23 @@ export function WEATHER_HAS_EFFECT(): boolean {
   }
   return true;
 }
+
+/** 1:1 décomp `PressurePPLose(u8 target, u8 attacker, u16 move)` (battle_util.c:740).
+ *  Si target a ABILITY_PRESSURE → attacker perd 1 PP supplémentaire sur ce move.
+ *  (Relocalisé depuis engine/battle/util.ts lors du retrait du bloc BATTLE_HISTORY
+ *  mort, 2026-06-13 ; sa vraie .c est battle_util.c. Appelé par l'atk-canceler
+ *  Magic Coat/Snatch via PressurePPLoseAtkCanceler.) Notre BattleMon.pp[] est write
+ *  direct + persist au party via Emit batch C. */
+export function PressurePPLose(target: number, attacker: number, move: number): void {
+  if (gBattleMons[target].ability !== 49 /* ABILITY_PRESSURE */) return;
+
+  let moveIndex: number;
+  for (moveIndex = 0; moveIndex < 4 /* MAX_MON_MOVES */; moveIndex++) {
+    if (gBattleMons[attacker].moves[moveIndex] === move) break;
+  }
+  if (moveIndex === 4) return;
+
+  if (gBattleMons[attacker].pp[moveIndex] !== 0) {
+    gBattleMons[attacker].pp[moveIndex]--;
+  }
+}

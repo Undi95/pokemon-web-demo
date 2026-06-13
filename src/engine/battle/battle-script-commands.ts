@@ -913,8 +913,8 @@ import {
   GetBattlerAtPosition,
   GetBattlerPosition,
   GetScaledHPFraction,
-  PressurePPLose as PressurePPLoseAtkCanceler,
 } from './util';
+import { PressurePPLose as PressurePPLoseAtkCanceler } from '../../game/battle_util';
 // BATTLE_HISTORY (RecordAbilityBattle/RecordItemEffectBattle) : redirigé vers le
 // miroir game/battle_ai_script_commands.ts (store gBattleHistory UNIQUE lu par l'IA).
 // Unification des 2 stores divergents (ex-util._battleHistory mort). 2026-06-13.

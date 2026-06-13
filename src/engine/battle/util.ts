@@ -87,109 +87,11 @@ export { GetScaledHPFraction } from '../../game/battle_interface';
 // ─── ClearFuryCutterDestinyBondGrudge : DÉPLACÉ dans le miroir game/battle_util.ts
 //     (battle_util.c:3798-3803, éclatement du grab-bag util stage 2, 2026-06-13). ──
 
-// ─── BATTLE_HISTORY tracking (battle_ai_script_commands.c:643-655) — 1:1 décomp ───
-
-/** AI tracking module-local — exporté pour devtools. gBattleResources->ai =
- *  ce buffer. Notre struct match 1:1 décomp BATTLE_HISTORY :
- *  - abilities[4] : last ability seen on each battler.
- *  - itemEffects[4] : last item effect seen on each battler.
- *  - usedMoves[4].moves[4] : last 4 moves used by each battler. */
-const _battleHistory = {
-  abilities: [0, 0, 0, 0] as number[],
-  itemEffects: [0, 0, 0, 0] as number[],
-  usedMoves: [
-    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
-    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
-    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
-    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
-  ] as number[][],
-};
-
-/** 1:1 décomp `RecordAbilityBattle(battler, abilityId)` (= record qu'on a vu
- *  cette ability sur ce battler). Utilisé par l'AI pour choisir des moves. */
-export function RecordAbilityBattle(battler: number, abilityId: number): void {
-  _battleHistory.abilities[battler] = abilityId;
-}
-
-/** 1:1 décomp `ClearBattlerAbilityHistory(battler)`. */
-export function ClearBattlerAbilityHistory(battler: number): void {
-  _battleHistory.abilities[battler] = 0;
-}
-
-/** 1:1 décomp `RecordItemEffectBattle(battler, itemEffect)`. */
-export function RecordItemEffectBattle(battler: number, itemEffect: number): void {
-  _battleHistory.itemEffects[battler] = itemEffect;
-}
-
-/** Expose history pour AI (= read-only). */
-export function getBattleHistoryAbility(battler: number): number {
-  return _battleHistory.abilities[battler] ?? 0;
-}
-export function getBattleHistoryItemEffect(battler: number): number {
-  return _battleHistory.itemEffects[battler] ?? 0;
-}
-
-/** 1:1 décomp `PressurePPLose(u8 target, u8 attacker, u16 move)` (battle_util.c:740).
- *  Si target a ABILITY_PRESSURE → attacker perd 1 PP supplémentaire sur ce move.
- *  Wired BtlController_EmitSetMonData via batch C bridge (= notre BattleMon.pp[] est write
- *  direct + persist au party via Emit batch C). */
-export function PressurePPLose(target: number, attacker: number, move: number): void {
-  if (gBattleMons[target].ability !== 49 /* ABILITY_PRESSURE */) return;
-
-  let moveIndex: number;
-  for (moveIndex = 0; moveIndex < 4 /* MAX_MON_MOVES */; moveIndex++) {
-    if (gBattleMons[attacker].moves[moveIndex] === move) break;
-  }
-  if (moveIndex === 4) return;
-
-  if (gBattleMons[attacker].pp[moveIndex] !== 0) {
-    gBattleMons[attacker].pp[moveIndex]--;
-  }
-
-  // 1:1 décomp : MOVE_IS_PERMANENT(attacker, slot) → Emit SetMonData REQUEST_PPMOVE_X (wired via batch C).
-  // Notre BattleMon.pp[] est write direct + persist au party via Emit batch C.
-}
-
-/** 1:1 décomp `ClearBattlerMoveHistory(u8 battler)` (battle_ai_script_commands.c:635). */
-export function ClearBattlerMoveHistory(battler: number): void {
-  for (let i = 0; i < NUM_BATTLE_STATS && i < 4; i++) {
-    _battleHistory.usedMoves[battler][i] = MOVE_NONE;
-  }
-}
-
-/** 1:1 décomp `ClearBattlerItemEffectHistory(u8 battler)` (battle_ai_script_commands.c:658). */
-export function ClearBattlerItemEffectHistory(battler: number): void {
-  _battleHistory.itemEffects[battler] = 0;
-}
-
-/** 1:1 décomp `RecordLastUsedMoveByTarget()` (battle_ai_script_commands.c:618-633).
- *  Si gLastMoves[target] est déjà dans la history → no-op (déjà trackée).
- *  Sinon find first MOVE_NONE slot → fill. */
-export function RecordLastUsedMoveByTarget(gLastMoves: number[], gBattlerTarget: number): void {
-  for (let i = 0; i < 4 /* MAX_MON_MOVES */; i++) {
-    if (_battleHistory.usedMoves[gBattlerTarget][i] === gLastMoves[gBattlerTarget]) break;
-    if (_battleHistory.usedMoves[gBattlerTarget][i] === MOVE_NONE) {
-      _battleHistory.usedMoves[gBattlerTarget][i] = gLastMoves[gBattlerTarget];
-      break;
-    }
-  }
-}
-
-/** Expose used moves history pour AI / devtools. */
-export function getBattleHistoryUsedMoves(battler: number): readonly number[] {
-  return _battleHistory.usedMoves[battler];
-}
-
-/** Reset le battle history au battle start. */
-export function resetBattleHistory(): void {
-  for (let i = 0; i < 4; i++) {
-    _battleHistory.abilities[i] = 0;
-    _battleHistory.itemEffects[i] = 0;
-    for (let j = 0; j < 4; j++) {
-      _battleHistory.usedMoves[i][j] = MOVE_NONE;
-    }
-  }
-}
+// ─── BATTLE_HISTORY (battle_ai_script_commands.c:618-661) — UNIFIÉ : le store
+//     gBattleHistory + RecordAbilityBattle/RecordItemEffectBattle/ClearBattler*History/
+//     RecordLastUsedMoveByTarget vivent dans game/battle_ai_script_commands.ts (store
+//     LU par l'IA). Le _battleHistory dupliqué d'ici était mort (Part B, c979c57a) →
+//     retiré 2026-06-13. PressurePPLose (battle_util.c:740, vivant) → game/battle_util.ts.
 
 // ─── GetDefaultMoveTarget : DÉPLACÉ dans le miroir game/pokemon.ts
 //     (pokemon.c:3422-3446, éclatement du grab-bag util, 2026-06-13). ──
