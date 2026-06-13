@@ -840,3 +840,6 @@
 - [x] CreateMonSpritesGfxManager  @ L7021-7117 — DETTE — pokemon_summary_screen.c:1137 (summary screen non porté) ; mode battle couvert par AllocateMonSpritesGfx
 - [x] DestroyMonSpritesGfxManager  @ L7118-7141 — DETTE — idem summary
 - [x] MonSpritesGfxManager_GetSpritePtr  @ L7142-7157 — DETTE — idem summary
+
+## battle_intro.c — complément post-coverage 2026-06-13 (croisement COVERAGE-GLOBAL)
+- [x] DrawBattlerOnBgDMA  @ L605-620 — DETTE — `static void UNUSED` (.c:605), variante DMA jamais appelée de DrawBattlerOnBg (lui PORTÉ : battle_intro.ts:513)
