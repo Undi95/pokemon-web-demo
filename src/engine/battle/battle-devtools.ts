@@ -98,7 +98,7 @@ import {
   BATTLE_TYPE_TRAINER as _BATTLE_TYPE_TRAINER,
 } from './constants';
 import { _GetMoveTarget } from './battle-script-commands';
-import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from './ai/ai-script-commands';
+import { BattleAI_SetupAIData, BattleAI_ChooseMoveOrAction } from '../../game/battle_ai_script_commands';
 import { resetAtkCancelerTracker } from '../../game/battle_util';
 import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue, runEndTurnEffectsViaBytecode, runTurnStartCleanupViaBytecode, runBattleTurnPassedViaBytecode, runHandleFaintedMonActionsViaBytecode, chooseOpponentMoveViaAI, ensureAiBytecodeLoaded } from './wire-bytecode-bridge';
 import { gAiThinkingStruct, aiBytecodeLoaded, getAiScriptOffset, AI_SCRIPTS_TABLE_LABELS, gBattleHistory, setBattlerAI } from './ai/ai-state';

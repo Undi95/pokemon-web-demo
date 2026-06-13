@@ -57,7 +57,7 @@ import { Random } from '../system/random';
 import {
   BattleAI_SetupAIData,
   BattleAI_ChooseMoveOrAction,
-} from './ai/ai-script-commands';
+} from '../../game/battle_ai_script_commands';
 import {
   loadAiScriptBytecode,
   aiBytecodeLoaded,
@@ -101,7 +101,7 @@ import {
   ITEMEFFECT_ON_SWITCH_IN as ITEMEFFECT_ON_SWITCH_IN_static,
   consumeItemWantedScript as consumeItemWantedScript_static,
 } from '../../game/battle_util';
-import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from './ai/ai-script-commands';
+import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from '../../game/battle_ai_script_commands';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { getMove } from '../data/game-data';
 import { resolveMoveDexId, moveDexIdToEnum } from './party-storage';

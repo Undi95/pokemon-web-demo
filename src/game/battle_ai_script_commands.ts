@@ -1,6 +1,7 @@
 /**
- * battle/ai/ai-script-commands.ts — 1:1 décomp `src/battle_ai_script_commands.c`
- * (~2297 lignes). Interpréteur des scripts AI + framework de scoring.
+ * game/battle_ai_script_commands.ts — MIROIR 1:1 de `src/battle_ai_script_commands.c`
+ * (~2297 lignes ; ex-src/engine/battle/ai/ai-script-commands.ts, relocalisé dans le
+ * miroir game/ le 2026-06-13). Interpréteur des scripts AI + framework de scoring.
  *
  * Source de vérité :
  *   - D:/Projet 1/decomps/pokeemeraude/src/battle_ai_script_commands.c
@@ -13,7 +14,7 @@
  * avance manuellement (setAiScriptPtr). T1_READ_PTR = u32 LE = offset absolu.
  */
 
-import { Random } from '../../system/random';
+import { Random } from '../engine/system/random';
 import {
   gBattleMons,
   gBattlerTarget,
@@ -44,7 +45,7 @@ import {
   gRandomTurnNumber,
   gBattlerPartyIndexes,
   MAX_BATTLERS_COUNT,
-} from '../state';
+} from '../engine/battle/state';
 import {
   AI_TARGET,
   AI_USER,
@@ -102,14 +103,14 @@ import {
   aiRead16AtAddr,
   aiRead32,
   aiReadPtr,
-} from './ai-state';
-import { TypeCalc, AI_CalcDmg } from '../../../game/battle_script_commands';
-import { getBattleMove } from '../data/battle-moves';
-import { GetItemHoldEffect, GetItemHoldEffectParam } from '../data/item-hold-effects';
+} from '../engine/battle/ai/ai-state';
+import { TypeCalc, AI_CalcDmg } from './battle_script_commands';
+import { getBattleMove } from '../engine/battle/data/battle-moves';
+import { GetItemHoldEffect, GetItemHoldEffectParam } from '../engine/battle/data/item-hold-effects';
 import {
   HOLD_EFFECT_MACHO_BRACE,
   HOLD_EFFECT_QUICK_CLAW,
-} from '../../decomp-data/include/constants/hold_effects-data';
+} from '../engine/decomp-data/include/constants/hold_effects-data';
 import {
   gPlayerParty,
   gEnemyParty,
@@ -120,11 +121,11 @@ import {
   MON_DATA_SPECIES_OR_EGG,
   MON_DATA_STATUS,
   PARTY_SIZE,
-} from '../party-storage';
+} from '../engine/battle/party-storage';
 import {
   SPECIES_NONE,
   SPECIES_EGG,
-} from '../../decomp-data/include/constants/species-data';
+} from '../engine/decomp-data/include/constants/species-data';
 import {
   EFFECT_EXPLOSION,
   EFFECT_DREAM_EATER,
@@ -138,13 +139,13 @@ import {
   EFFECT_SUPERPOWER,
   EFFECT_ERUPTION,
   EFFECT_OVERHEAT,
-} from '../../decomp-data/include/constants/battle_move_effects-data';
-import { gBitTable } from '../battle-controllers';
-import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
-import { FlagGet } from '../../script/script-vars';
-import { GetGenderFromSpeciesAndPersonality } from '../data/species-runtime';
-import { gStatStageRatios } from '../../../game/include/pokemon';
-import { CheckMoveLimitations } from '../../../game/battle_util';
+} from '../engine/decomp-data/include/constants/battle_move_effects-data';
+import { gBitTable } from '../engine/battle/battle-controllers';
+import { GetBattlerPosition, GetBattlerAtPosition } from '../engine/battle/util';
+import { FlagGet } from '../engine/script/script-vars';
+import { GetGenderFromSpeciesAndPersonality } from '../engine/battle/data/species-runtime';
+import { gStatStageRatios } from './include/pokemon';
+import { CheckMoveLimitations } from './battle_util';
 import {
   MAX_MON_MOVES,
   MOVE_NONE,
@@ -188,12 +189,12 @@ import {
   BATTLE_TYPE_PALACE,
   BATTLE_TYPE_FACTORY,
   BATTLE_TYPE_TRAINER_HILL,
-} from '../constants';
-import { getTrainer, type TrainerData } from '../../data/game-data';
+} from '../engine/battle/constants';
+import { getTrainer, type TrainerData } from '../engine/data/game-data';
 // Static import (= module constants leaf, aucun risque circulaire) : évite
 // la race + fragilité de chemin du dynamic import async (bug Commit 4 :
 // _trainerIdToKey restait vide → aiFlags 0 sur tous les dresseurs).
-import * as OPPONENTS_DATA from '../../decomp-data/include/constants/opponents-data';
+import * as OPPONENTS_DATA from '../engine/decomp-data/include/constants/opponents-data';
 
 // ─── s8 helper (= score[] est s8 dans le décomp) ───────────────────────────
 

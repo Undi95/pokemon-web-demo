@@ -3412,7 +3412,7 @@ import {
 } from '../engine/battle/constants';
 import { getSpeciesInfo } from '../engine/data/game-data';
 import { SpeciesToNationalPokedexNum as _SpeciesToNationalPokedexNum, HandleSetPokedexFlag as _HandleSetPokedexFlag } from '../engine/ui/pokedex-flags';
-import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from '../engine/battle/ai/ai-script-commands';
+import { GetWhoStrikesFirst as _GetWhoStrikesFirst } from './battle_ai_script_commands';
 import { FadeOutBGM as _FadeOutBGM_rt, PlayBGM as _PlayBGM_rt } from '../engine/system/decomp-globals';
 import {
   GetMonData, gEnemyParty as _gEnemyParty, gPlayerParty as _gPlayerParty,
