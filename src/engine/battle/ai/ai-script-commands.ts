@@ -144,7 +144,7 @@ import { GetBattlerPosition, GetBattlerAtPosition } from '../util';
 import { FlagGet } from '../../script/script-vars';
 import { GetGenderFromSpeciesAndPersonality } from '../data/species-runtime';
 import { gStatStageRatios } from '../../../game/include/pokemon';
-import { CheckMoveLimitations } from '../move-limitations';
+import { CheckMoveLimitations } from '../../../game/battle_util';
 import {
   MAX_MON_MOVES,
   MOVE_NONE,

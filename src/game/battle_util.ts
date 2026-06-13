@@ -91,6 +91,16 @@ import {
 } from '../engine/battle/script-interpreter';
 import type { BattleScriptContext } from '../engine/battle/script-interpreter';
 import { Random } from '../engine/system/random';
+// Imports pour CheckMoveLimitations/AreAllMovesUnusable (battle_util.c:1069,
+// ex-engine/battle/move-limitations.ts, absorbé au miroir 2026-06-13).
+import { gLastMoves } from '../engine/battle/state';
+import {
+  STATUS2_TORMENT, STATUS3_IMPRISONED_OTHERS, MOVE_UNAVAILABLE, MAX_MON_MOVES,
+  HOLD_EFFECT_CHOICE_BAND, MOVE_LIMITATIONS_ALL, ALL_MOVES_MASK,
+  MOVE_LIMITATION_ZEROMOVE, MOVE_LIMITATION_PP, MOVE_LIMITATION_DISABLED,
+  MOVE_LIMITATION_TORMENTED, MOVE_LIMITATION_TAUNT, MOVE_LIMITATION_IMPRISON,
+} from '../engine/battle/constants';
+// (setPotentialItemEffectBattler + GetItemHoldEffect déjà importés plus bas dans ce fichier)
 
 const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
 
@@ -1171,6 +1181,77 @@ export function TryRunFromBattle(battler: number): boolean {
   }
 
   return effect !== 0;
+}
+
+// ─── CheckMoveLimitations + AreAllMovesUnusable (battle_util.c:1069-1151) ──────
+//     [ex-engine/battle/move-limitations.ts, absorbé au miroir 2026-06-13]
+
+/** 1:1 décomp `GetImprisonedMovesCount(battlerId, move)` (battle_util.c:1129-1151).
+ *  Compte combien d'opposants ont Imprison + ce move. Lookup état via globalThis
+ *  (__battleState) = anti-cycle ESM, comme dans l'original move-limitations.ts. */
+function _GetImprisonedMovesCount(battlerId: number, move: number): number {
+  let imprisonedMoves = 0;
+  const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gStatuses3?: number[]; gBattleMons?: { moves: number[] }[] } }).__battleState;
+  const battlersCount = stateMod?.gBattlersCount ?? 2;
+  const statuses3 = stateMod?.gStatuses3;
+  const battleMons = stateMod?.gBattleMons;
+  if (!statuses3 || !battleMons) return 0;
+  // 1:1 décomp `GetBattlerSide(id)` = id & BIT_SIDE = id & 1.
+  const battlerSide = battlerId & 1;
+  for (let i = 0; i < battlersCount; i++) {
+    if (battlerSide !== (i & 1) && (statuses3[i] & STATUS3_IMPRISONED_OTHERS)) {
+      for (let j = 0; j < MAX_MON_MOVES; j++) {
+        if (move === battleMons[i].moves[j]) { imprisonedMoves++; break; }
+      }
+    }
+  }
+  return imprisonedMoves;
+}
+
+/** 1:1 décomp `CheckMoveLimitations(battlerId, unusableMoves, check)` (battle_util.c:1069).
+ *  Dette : ITEM_ENIGMA_BERRY path (Frontier) skippé → GetItemHoldEffect direct. */
+export function CheckMoveLimitations(battlerId: number, unusableMoves: number, check: number): number {
+  const holdEffect = GetItemHoldEffect(gBattleMons[battlerId].item);
+  setPotentialItemEffectBattler(battlerId);
+
+  for (let i = 0; i < MAX_MON_MOVES; i++) {
+    const move = gBattleMons[battlerId].moves[i];
+    // No move
+    if (move === MOVE_NONE && (check & MOVE_LIMITATION_ZEROMOVE)) unusableMoves |= gBitTable[i];
+    // No PP
+    if (gBattleMons[battlerId].pp[i] === 0 && (check & MOVE_LIMITATION_PP)) unusableMoves |= gBitTable[i];
+    // Disable
+    if (move === gDisableStructs[battlerId].disabledMove && (check & MOVE_LIMITATION_DISABLED)) unusableMoves |= gBitTable[i];
+    // Torment
+    if (move === gLastMoves[battlerId] && (check & MOVE_LIMITATION_TORMENTED)
+        && (gBattleMons[battlerId].status2 & STATUS2_TORMENT)) unusableMoves |= gBitTable[i];
+    // Taunt
+    if (gDisableStructs[battlerId].tauntTimer && (check & MOVE_LIMITATION_TAUNT)
+        && getBattleMove(move).power === 0) unusableMoves |= gBitTable[i];
+    // Imprison
+    if (_GetImprisonedMovesCount(battlerId, move) && (check & MOVE_LIMITATION_IMPRISON)) unusableMoves |= gBitTable[i];
+    // Encore
+    if (gDisableStructs[battlerId].encoreTimer && gDisableStructs[battlerId].encoredMove !== move) unusableMoves |= gBitTable[i];
+    // Choice Band
+    if (holdEffect === HOLD_EFFECT_CHOICE_BAND
+        && gBattleStruct.choicedMove[battlerId] !== MOVE_NONE
+        && gBattleStruct.choicedMove[battlerId] !== MOVE_UNAVAILABLE
+        && gBattleStruct.choicedMove[battlerId] !== move) unusableMoves |= gBitTable[i];
+  }
+  return unusableMoves;
+}
+
+/** 1:1 décomp `AreAllMovesUnusable()` (battle_util.c:1112-1127).
+ *  Dette : gSelectionBattleScripts[NoMovesLeft] différé (UI selection). */
+export function AreAllMovesUnusable(): boolean {
+  const unusable = CheckMoveLimitations(gActiveBattler, 0, MOVE_LIMITATIONS_ALL);
+  if (unusable === ALL_MOVES_MASK) {
+    gProtectStructs[gActiveBattler].noValidMoves = 1;
+    return true;
+  } else {
+    gProtectStructs[gActiveBattler].noValidMoves = 0;
+    return false;
+  }
 }
 
 // ─── K14b wire — auto-enregistrement sur globalThis (convention, cf ability-battle-

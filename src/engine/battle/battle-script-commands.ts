@@ -627,7 +627,7 @@ import {
 } from './memory-map';
 import {
   CheckMoveLimitations as _CheckMoveLimitationsFull,
-} from './move-limitations';
+} from '../../game/battle_util';
 import {
   AdjustFriendship as _AdjustFriendshipAF,
   AdjustFriendship as _adjustFriendshipN34,

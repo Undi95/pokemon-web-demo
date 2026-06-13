@@ -46,7 +46,7 @@ import {
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../system/random';
-import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitations';
+import { CheckMoveLimitations as _CheckMoveLimitations } from '../../game/battle_util';
 // 1:1 décomp `GetMoveTarget` (battle_util.c:3811) — recompute la cible du move
 // aléatoire de désobéissance. Même import que atk-canceler.ts:52 (cycle déjà
 // existant + booté → pas le cas rtc) ; vérifié au boot après ce fix.
