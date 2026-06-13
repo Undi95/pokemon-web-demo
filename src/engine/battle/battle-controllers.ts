@@ -149,12 +149,8 @@ export { gBitTable };
 
 // ─── Controller exec flags helpers ──────────────────────────────────────────
 
-/** 1:1 décomp `MarkBattlerForControllerExec(battlerId)` (battle_util.c).
- *  Set bit `battlerId` dans gBattleControllerExecFlags. (Link battle shift
- *  par 28 — pas implémenté ici, gameplay offline only). */
-export function MarkBattlerForControllerExec(battlerId: number): void {
-  setBattleControllerExecFlags(gBattleControllerExecFlags | gBitTable[battlerId]);
-}
+// MarkBattlerForControllerExec : DÉPLACÉ dans le miroir game/battle_util.ts
+// (battle_util.c, 2026-06-13).
 
 /** Clear exec flag pour battler donné (= controller signal "I'm done").
  *  Pas une fonction 1:1 décomp en soi (= dans le décomp c'est implicit par le
@@ -768,29 +764,8 @@ export function BtlController_EmitResetActionMoveSelection(bufferId: number, cas
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */
 
-// ─── PrepareStringBattle (battle_util.c) — 1:1 décomp ──────────────────────
-
-/** 1:1 décomp `PrepareStringBattle` (battle_util.c). */
-export function PrepareStringBattle(stringId: number, battler: number): void {
-  setActiveBattler(battler);
-  BtlController_EmitPrintString(0 /* B_COMM_TO_CONTROLLER */, stringId);
-  MarkBattlerForControllerExec(battler);
-}
-
-// ─── BattleScript stack helpers (battle_util.c) — 1:1 décomp ───────────────
-
-/** 1:1 décomp `BattleScriptPush(bsPtr)` (battle_util.c). Push offset dans le
- *  bytecode au stack de retour. Le décomp utilise gBattleResources->...->ptr[]
- *  mais notre port mappe ça au ctx.scriptPtrStack du runtime. */
-export function BattleScriptPush(ctx: BattleScriptContext, bsPtr: number): void {
-  ctx.scriptPtrStack.push(bsPtr);
-}
-
-/** 1:1 décomp `BattleScriptPop()` (battle_util.c). Pop offset retour stack. */
-export function BattleScriptPop(ctx: BattleScriptContext): number {
-  const v = ctx.scriptPtrStack.pop();
-  return v === undefined ? -1 : v;
-}
+// PrepareStringBattle / BattleScriptPush / BattleScriptPop : DÉPLACÉS dans le
+// miroir game/battle_util.ts (battle_util.c, 2026-06-13).
 
 // ─── UI/Input stubs ─────────────────────────────────────────────────────────
 

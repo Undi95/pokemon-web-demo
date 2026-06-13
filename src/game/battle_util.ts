@@ -43,7 +43,7 @@ import {
   setLastUsedAbility,
   gActionSelectionCursor, gMoveSelectionCursor,
   gBattlerPartyIndexes,
-  gBattleControllerExecFlags,
+  gBattleControllerExecFlags, setBattleControllerExecFlags,
   setBattlerFainted, setAbsentBattlerFlags,
 } from '../engine/battle/state';
 import {
@@ -65,7 +65,7 @@ import {
   MULTISTRING_CHOOSER,
   MISS_TYPE,
 } from '../engine/battle/constants';
-import { gBitTable } from '../engine/battle/battle-controllers';
+import { gBitTable, BtlController_EmitPrintString } from '../engine/battle/battle-controllers';
 import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
@@ -4449,4 +4449,34 @@ export function PressurePPLose(target: number, attacker: number, move: number): 
   if (gBattleMons[attacker].pp[moveIndex] !== 0) {
     gBattleMons[attacker].pp[moveIndex]--;
   }
+}
+
+// ═══ Helpers controller-exec / script-stack / string (battle_util.c) — déplacés
+//     depuis le grab-bag engine/battle/battle-controllers.ts vers leur miroir
+//     1:1 (battle_util.c), 2026-06-13. Sans cycle (battle-controllers n'importe
+//     rien de game/). ═══
+
+/** 1:1 décomp `MarkBattlerForControllerExec(battlerId)` (battle_util.c). Set bit
+ *  battlerId dans gBattleControllerExecFlags (link shift 28 = offline, non impl.). */
+export function MarkBattlerForControllerExec(battlerId: number): void {
+  setBattleControllerExecFlags(gBattleControllerExecFlags | gBitTable[battlerId]);
+}
+
+/** 1:1 décomp `PrepareStringBattle(stringId, battler)` (battle_util.c). */
+export function PrepareStringBattle(stringId: number, battler: number): void {
+  setActiveBattler(battler);
+  BtlController_EmitPrintString(0 /* B_COMM_TO_CONTROLLER */, stringId);
+  MarkBattlerForControllerExec(battler);
+}
+
+/** 1:1 décomp `BattleScriptPush(bsPtr)` (battle_util.c). Push l'offset de retour
+ *  (décomp gBattleResources->...->ptr[] ; notre port = ctx.scriptPtrStack). */
+export function BattleScriptPush(ctx: BattleScriptContext, bsPtr: number): void {
+  ctx.scriptPtrStack.push(bsPtr);
+}
+
+/** 1:1 décomp `BattleScriptPop()` (battle_util.c). Pop l'offset de retour. */
+export function BattleScriptPop(ctx: BattleScriptContext): number {
+  const v = ctx.scriptPtrStack.pop();
+  return v === undefined ? -1 : v;
 }

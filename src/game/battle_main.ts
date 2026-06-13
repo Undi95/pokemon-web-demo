@@ -3389,9 +3389,9 @@ import {
   BtlController_EmitGetMonData, BtlController_EmitIntroSlide,
   BtlController_EmitIntroTrainerBallThrow, BtlController_EmitDrawTrainerPic,
   BtlController_EmitLoadMonSprite, BtlController_EmitDrawPartyStatusSummary,
-  MarkBattlerForControllerExec, PrepareStringBattle,
   BattlePutTextOnWindow,
 } from '../engine/battle/battle-controllers';
+import { MarkBattlerForControllerExec, PrepareStringBattle } from './battle_util';
 import {
   AbilityBattleEffects,
   ABILITYEFFECT_SWITCH_IN_WEATHER, ABILITYEFFECT_ON_SWITCHIN,

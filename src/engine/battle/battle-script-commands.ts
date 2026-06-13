@@ -142,7 +142,6 @@ import {
   BattleCreateYesNoCursorAt,
   BattleDestroyYesNoCursorAt,
   BattlePutTextOnWindow,
-  BattleScriptPush,
   BtlController_EmitBallThrowAnim as _BtlController_EmitBallThrowAnim_HBT,
   BtlController_EmitBattleAnimation,
   BtlController_EmitDrawPartyStatusSummary,
@@ -175,18 +174,21 @@ import {
   JOY_NEW,
   BtlController_EmitChoosePokemon,
   BtlController_EmitLinkStandbyMsg,
+  PlaySE,
+  SE_SELECT,
+  gBitTable,
+} from './battle-controllers';
+import {
+  BattleScriptPush,
   MarkBattlerForControllerExec,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_HBT,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N1,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N23,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N34,
-  PlaySE,
   PrepareStringBattle,
   PrepareStringBattle as _PrepareStringBattleN34,
   PrepareStringBattle as _PrepareStringBattle_N1,
-  SE_SELECT,
-  gBitTable,
-} from './battle-controllers';
+} from '../../game/battle_util';
 import {
   ABILITY_AIR_LOCK,
   ABILITY_ARENA_TRAP,

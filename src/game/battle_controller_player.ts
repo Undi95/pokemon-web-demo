@@ -58,12 +58,13 @@ import {
   gUnusedControllerStruct,
 } from '../engine/battle/battle-controllers-ipc';
 import {
-  gBitTable, MarkBattlerForControllerExec, BattlePutTextOnWindow,
+  gBitTable, BattlePutTextOnWindow,
   JOY_NEW, JOY_REPEAT, JOY_HELD,
   A_BUTTON, B_BUTTON, START_BUTTON,
   DPAD_LEFT, DPAD_RIGHT, DPAD_UP, DPAD_DOWN, DPAD_ANY,
   SE_SELECT,
 } from '../engine/battle/battle-controllers';
+import { MarkBattlerForControllerExec } from './battle_util';
 // PlaySE wired via globalThis.__PlaySE (exposé par decomp-globals ligne ~722) —
 // évite cycle ESM avec import direct.
 function PlaySE(seId: number): void {
