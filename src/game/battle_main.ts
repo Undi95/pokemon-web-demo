@@ -1208,7 +1208,7 @@ import {
   STATUS2_ESCAPE_PREVENTION, STATUS2_WRAPPED, STATUS2_INFATUATION,
   GET_BATTLER_SIDE,
 } from '../engine/battle/constants';
-import { ClearBattlerMoveHistory, ClearBattlerAbilityHistory } from '../engine/battle/util';
+import { ClearBattlerMoveHistory, ClearBattlerAbilityHistory } from './battle_ai_script_commands';
 import { CancelMultiTurnMoves } from './battle_util';
 import { getSpeciesTypes } from '../engine/battle/data/species-runtime';
 

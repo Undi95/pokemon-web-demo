@@ -914,6 +914,11 @@ import {
   GetBattlerPosition,
   GetScaledHPFraction,
   PressurePPLose as PressurePPLoseAtkCanceler,
+} from './util';
+// BATTLE_HISTORY (RecordAbilityBattle/RecordItemEffectBattle) : redirigé vers le
+// miroir game/battle_ai_script_commands.ts (store gBattleHistory UNIQUE lu par l'IA).
+// Unification des 2 stores divergents (ex-util._battleHistory mort). 2026-06-13.
+import {
   RecordAbilityBattle,
   RecordAbilityBattle as _recordAbilityBattleAC,
   RecordAbilityBattle as _recordAbilityBattleFull,
@@ -924,7 +929,7 @@ import {
   RecordAbilityBattle as _recordAbilityBattleFullN29,
   RecordItemEffectBattle as _recordItemEffectBattleFullN21,
   RecordItemEffectBattle as _recordItemEffectBattleFullN22,
-} from './util';
+} from '../../game/battle_ai_script_commands';
 // getBattlerForBattleScript / CancelMultiTurnMoves / WEATHER_HAS_EFFECT : absorbés
 // dans le miroir game/battle_util.ts (battle_util.c, éclatement util stage 2).
 import {

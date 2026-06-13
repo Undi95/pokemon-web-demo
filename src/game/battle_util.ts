@@ -70,8 +70,8 @@ import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
   B_POSITION_OPPONENT_LEFT, B_POSITION_OPPONENT_RIGHT,
-  RecordAbilityBattle,
 } from '../engine/battle/util';
+import { RecordAbilityBattle } from './battle_ai_script_commands';
 import { getBattleMove } from '../engine/battle/data/battle-moves';
 // 1:1 décomp battle_util.c:1942-1945 — HandleFaintedMonActions case 6 applique les
 // effets de switch-in (Intimidate/Trace/Forecast + items). Import direct (= pas de
@@ -126,7 +126,7 @@ import {
 } from '../engine/battle/text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from '../engine/battle/state';
 import { SPECIES_CASTFORM } from '../engine/decomp-data/include/constants/species-data';
-import { RecordAbilityBattle as _recordAbilityBattleFullABE } from '../engine/battle/util';
+import { RecordAbilityBattle as _recordAbilityBattleFullABE } from './battle_ai_script_commands';
 import {
   WEATHER_NONE, WEATHER_RAIN, WEATHER_RAIN_THUNDERSTORM,
   WEATHER_SANDSTORM, WEATHER_DROUGHT, WEATHER_DOWNPOUR,

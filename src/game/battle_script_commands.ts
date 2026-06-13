@@ -117,7 +117,7 @@ import {
   PREPARE_STAT_BUFFER,
   B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_STRING, B_BUFF_EOS,
 } from '../engine/battle/text-buffers';
-import { RecordAbilityBattle } from '../engine/battle/util';
+import { RecordAbilityBattle } from './battle_ai_script_commands';
 
 // ─── Imports additionnels pour la section SetMoveEffect (battle_script_commands.c) ─
 import type { BattleScriptContext } from '../engine/battle/script-interpreter';
@@ -126,7 +126,7 @@ import { ITEM_ENIGMA_BERRY } from '../engine/decomp-data/include/constants/items
 import {
   RecordAbilityBattle as _recordAbilityBattleSME,
   RecordAbilityBattle as _recordAbilityBattleFullSME,
-} from '../engine/battle/util';
+} from './battle_ai_script_commands';
 import { CancelMultiTurnMoves } from './battle_util';
 // ─── Imports additionnels pour la section TypeCalc/AI_CalcDmg (battle_script_commands.c) ─
 import { CalculateBaseDamage } from './pokemon';
