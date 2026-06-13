@@ -117,12 +117,14 @@ function _BlendColorCycle_Step(task: AnimTask): void {
   if (task.data[10] < target) task.data[10]++;
   else if (task.data[10] > target) task.data[10]--;
   else {
-    // palier atteint : inverser ou finir
+    // 1:1 AnimTask_BlendColorCycleLoop (battle_anim_normal.c:476) : un palier
+    // atteint = UN BlendColorCycle fini (= 1 BeginNormalPaletteFade). tNumBlends
+    // compte les DEMI-blends, PAS les allers-retours : Mist numBlends=2 →
+    // fade 0→14 PUIS 14→0 = 2 demi-cycles. (Bug : l'ancien `if (data[6]===0)`
+    // ne décrémentait qu'aux paliers PAIRS → 4 demi-cycles = 2× trop long, le
+    // mon brillait des secondes après la fin des nuages, désync signalé user.)
+    if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
     task.data[6] ^= 1;
-    if (task.data[6] === 0) {
-      // un cycle complet (aller-retour) fini
-      if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
-    }
   }
 }
 /** 1:1 `AnimTask_BlendBattleAnimPalExclude` (battle_anim_utility_funcs.c.c) — net : comme
@@ -741,10 +743,10 @@ function _BlendColorCycleMask_Step(task: AnimTask): void {
   if (task.data[10] < target) task.data[10]++;
   else if (task.data[10] > target) task.data[10]--;
   else {
+    // 1:1 AnimTask_BlendColorCycleLoop : numBlends = DEMI-blends (cf.
+    // _BlendColorCycle_Step) — décrément à CHAQUE palier, pas aux pairs.
+    if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
     task.data[6] ^= 1;
-    if (task.data[6] === 0) {
-      if (--task.data[2] <= 0) { _itf().DestroyAnimVisualTask?.(task.taskId); return; }
-    }
   }
 }
 function _initBlendCycleMask(task: AnimTask, args: number[], mask: number): void {
