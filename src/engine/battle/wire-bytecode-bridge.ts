@@ -100,7 +100,7 @@ import {
   ITEMEFFECT_NORMAL as ITEMEFFECT_NORMAL_static,
   ITEMEFFECT_ON_SWITCH_IN as ITEMEFFECT_ON_SWITCH_IN_static,
   consumeItemWantedScript as consumeItemWantedScript_static,
-} from './item-battle-effects';
+} from '../../game/battle_util';
 import { GetWhoStrikesFirst as GetWhoStrikesFirst_static } from './ai/ai-script-commands';
 import { resolveDecompConstant } from '../system/decomp-constants';
 import { getMove } from '../data/game-data';

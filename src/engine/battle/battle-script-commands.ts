@@ -618,7 +618,7 @@ import {
   ITEMEFFECT_ON_SWITCH_IN,
   ItemBattleEffects,
   consumeItemWantedScript,
-} from './item-battle-effects';
+} from '../../game/battle_util';
 import {
   initMemoryMap,
   resolveAddress,
