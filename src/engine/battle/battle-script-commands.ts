@@ -731,8 +731,8 @@ import {
 } from './set-move-effect';
 import {
   ChangeStatBuffs,
-} from './stat-stages';
-import type { StatBuffScriptDeps } from './stat-stages';
+} from '../../game/battle_script_commands';
+import type { StatBuffScriptDeps } from '../../game/battle_script_commands';
 import {
   MAX_BATTLERS_COUNT,
   gAbsentBattlerFlags,

@@ -85,7 +85,7 @@ import {
   BATTLE_TYPE_SECRET_BASE,
 } from './constants';
 import { CancelMultiTurnMoves } from '../../game/battle_util';
-import { ChangeStatBuffs } from './stat-stages';
+import { ChangeStatBuffs } from '../../game/battle_script_commands';
 
 // ─── 1:1 décomp sStatusFlagsForMoveEffects[] (battle_script_commands.c:608) ─
 
