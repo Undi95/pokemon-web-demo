@@ -42,38 +42,20 @@ import {
   NUM_BATTLE_STATS, DEFAULT_STAT_STAGE, MOVE_NONE,
 } from './constants';
 
-// ─── B_POSITION_* (constants/battle.h:28-31) ────────────────────────────────
-export const B_POSITION_PLAYER_LEFT    = 0;
-export const B_POSITION_OPPONENT_LEFT  = 1;
-export const B_POSITION_PLAYER_RIGHT   = 2;
-export const B_POSITION_OPPONENT_RIGHT = 3;
-
-/** 1:1 décomp `gBattlerPositions[MAX_BATTLERS_COUNT]` — par défaut single battle :
- *  battler i a position i. Set par battle_main au setup. Par défaut single battle :
- *  battler i a position i (identity), set par battle_main réel en double. */
-export const gBattlerPositions: number[] = [
-  B_POSITION_PLAYER_LEFT,
-  B_POSITION_OPPONENT_LEFT,
-  B_POSITION_PLAYER_RIGHT,
-  B_POSITION_OPPONENT_RIGHT,
-];
-
-// ─── GetBattlerAtPosition (battle_anim_mons.c:859) — 1:1 décomp ────────────
-
-/** 1:1 décomp `GetBattlerAtPosition(u8 position)`. */
-export function GetBattlerAtPosition(position: number): number {
-  // gBattlersCount = 2 single, 4 double. On itère full pour 1:1.
-  for (let i = 0; i < gBattlerPositions.length; i++) {
-    if (gBattlerPositions[i] === position) return i;
-  }
-  return 0;
-}
-
-/** 1:1 décomp `GetBattlerPosition(u8 battler)` (battle_anim_mons.c:858) :
- *  return gBattlerPositions[battler]. */
-export function GetBattlerPosition(battler: number): number {
-  return gBattlerPositions[battler] ?? 0;
-}
+// ─── B_POSITION_* + gBattlerPositions + GetBattlerAtPosition/Position : DÉPLACÉS
+//     dans le miroir src/game/battle_anim_mons.ts (battle_anim_mons.c:858-859,
+//     éclatement du grab-bag util 2026-06-13). Import (usage local : getBattlerFor-
+//     BattleScript, GetDefaultMoveTarget) + re-export (compat 14 importeurs). ──
+import {
+  B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
+  gBattlerPositions, GetBattlerAtPosition, GetBattlerPosition,
+} from '../../game/battle_anim_mons';
+export {
+  B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
+  gBattlerPositions, GetBattlerAtPosition, GetBattlerPosition,
+};
 
 // ─── getBattlerForBattleScript (battle_util.c) — 1:1 décomp full ───────────
 

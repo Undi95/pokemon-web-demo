@@ -32,7 +32,34 @@
 
 import type { DecompSprite } from '../engine/system/decomp-runtime';
 import { Sin } from './trig';
-import { GetBattlerPosition } from '../engine/battle/util';
+
+// ─── gBattlerPositions + GetBattlerAtPosition/GetBattlerPosition (battle_anim_mons.c:858-859)
+//     — 1:1 décomp, absorbé depuis ex-engine/battle/util.ts (grab-bag) 2026-06-13. ───
+export const B_POSITION_PLAYER_LEFT    = 0;
+export const B_POSITION_OPPONENT_LEFT  = 1;
+export const B_POSITION_PLAYER_RIGHT   = 2;
+export const B_POSITION_OPPONENT_RIGHT = 3;
+
+/** 1:1 décomp `gBattlerPositions[MAX_BATTLERS_COUNT]` (single battle : identity). */
+export const gBattlerPositions: number[] = [
+  B_POSITION_PLAYER_LEFT,
+  B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT,
+  B_POSITION_OPPONENT_RIGHT,
+];
+
+/** 1:1 décomp `GetBattlerAtPosition(u8 position)` (battle_anim_mons.c:859). */
+export function GetBattlerAtPosition(position: number): number {
+  for (let i = 0; i < gBattlerPositions.length; i++) {
+    if (gBattlerPositions[i] === position) return i;
+  }
+  return 0;
+}
+
+/** 1:1 décomp `GetBattlerPosition(u8 battler)` (battle_anim_mons.c:858). */
+export function GetBattlerPosition(battler: number): number {
+  return gBattlerPositions[battler] ?? 0;
+}
 import { gBattleTypeFlags, gBattlerPartyIndexes } from '../engine/battle/state';
 import { BATTLE_TYPE_DOUBLE, B_SIDE_PLAYER, B_SIDE_OPPONENT } from '../engine/battle/constants';
 import { gPlayerParty, gEnemyParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
@@ -1214,8 +1241,6 @@ function _pmVisible(battler: number): boolean {
   const sp = getRuntime()?.gSprites?.get(sid) as { invisible?: boolean; inUse?: boolean } | undefined;
   return !!sp && sp.inUse !== false && !sp.invisible;
 }
-import { GetBattlerAtPosition as _pmAtPos } from '../engine/battle/util';
-
 /** 1:1 `GetBattlePalettesMask` (battle_anim_mons.c.c:1402). */
 export function GetBattlePalettesMask(
   battleBackground: boolean, attacker: boolean, target: boolean,
@@ -1241,7 +1266,7 @@ export function GetBattleMonSpritePalettesMask(
 ): number {
   let selected = 0;
   const add = (position: number): void => {
-    const b = _pmAtPos(position);
+    const b = GetBattlerAtPosition(position);
     if (b !== 0xFF && _pmVisible(b)) selected |= 1 << (b + 16);
   };
   if (playerLeft) add(0);
