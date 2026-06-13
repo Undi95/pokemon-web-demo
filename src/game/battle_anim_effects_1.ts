@@ -15,7 +15,7 @@ import { registerAnimCallbacks } from '../engine/battle/battle-anim-generated-br
 import { GetBattlerSpriteCoord, InitSpritePosToAnimAttacker, StartAnimLinearTranslation, StoreSpriteCallbackInData6, InitAnimArcTranslation, TranslateAnimHorizontalArc } from './battle_anim_mons';
 import { Cos } from './trig';
 import { AnimTranslateLinear, InitSpritePosToAnimTarget, InitAnimLinearTranslation, TranslateAnimHorizontalArc as ArcT, SetSpriteCoordsToAnimAttackerCoords, TranslateSpriteLinearFixedPoint, SetAnimSpriteInitialXOffset } from './battle_anim_mons';
-import { SetCallbackToStoredInData6, TrySetSpriteRotScale } from './battle_anim_mons';
+import { SetCallbackToStoredInData6, TrySetSpriteRotScale, GetBattlerSpriteSubpriority } from './battle_anim_mons';
 import { Random2 } from './random';
 import { Sin } from './trig';
 
@@ -288,6 +288,56 @@ function AnimSolarBeamSmallOrb_Step(sprite: _PSprite): void {
     sprite.x2 += Sin(sprite.data[5] & 0xFF, 5);
     sprite.y2 += Cos(sprite.data[5] & 0xFF, 14);
     sprite.data[5] = (sprite.data[5] + 15) & 0xFF;
+  }
+}
+
+/** 1:1 `AnimTask_CreateSmallSolarBeamOrbs` (battle_anim_effects_1.c:2296-2312)
+ *  — pendant la charge SolarBeam : pose gBattleAnimArgs {15,0,80,0} (mutation
+ *  du buffer vivant, lu par AnimSolarBeamSmallOrb) et spawn un petit orbe
+ *  (gSolarBeamSmallOrbSpriteTemplate) toutes les 7 frames, ×15 (data[1]). */
+export function AnimTask_CreateSmallSolarBeamOrbs(task: { taskId: number; data: number[] }): void {
+  const itf = _pItf() as ReturnType<typeof _pItf> & { DestroyAnimVisualTask?: (id: number) => void };
+  if (--task.data[0] === -1) {
+    task.data[1]++;
+    task.data[0] = 6;
+    const args = itf.getArgs?.();
+    if (args) { args[0] = 15; args[1] = 0; args[2] = 80; args[3] = 0; }
+    const tgt = itf.getTarget?.() ?? 1;
+    // 1:1 CreateSpriteAndAnimate(&gSolarBeamSmallOrbSpriteTemplate, 0, 0,
+    // GetBattlerSpriteSubpriority(target) + 1) — création par TAGS (pattern
+    // F73 : le tpl générés porte tileTag/paletteTag/oam/anims, le callback
+    // local AnimSolarBeamSmallOrb tourne au tick suivant, 1:1-net).
+    const bridge = (globalThis as Record<string, unknown>).__animGeneratedBridge as {
+      lookupGeneratedTemplateTags?: (n: string) => { tileTag: number; paletteTag: number; oam?: { shape: number; size: number; objMode?: number }; anims?: unknown } | undefined;
+    } | undefined;
+    const tpl = bridge?.lookupGeneratedTemplateTags?.('gSolarBeamSmallOrbSpriteTemplate');
+    const dg = (globalThis as Record<string, unknown>).__sprite as { GetSpriteTileStartByTag?: (t: number) => number; IndexOfSpritePaletteTag?: (t: number) => number } | undefined;
+    const rt = (globalThis as Record<string, unknown>).__rt as {
+      CreateSpriteAtOam?: (cfg: Record<string, unknown>) => { spriteId: number };
+      gSprites?: Map<number, _PSprite>;
+    } | undefined;
+    const tileStart = tpl ? (dg?.GetSpriteTileStartByTag?.(tpl.tileTag) ?? 0xFFFF) : 0xFFFF;
+    const palSlot = tpl ? (dg?.IndexOfSpritePaletteTag?.(tpl.paletteTag) ?? 0xFF) : 0xFF;
+    const created = rt?.CreateSpriteAtOam?.({
+      tileId: tileStart === 0xFFFF ? 0 : tileStart,
+      paletteBank: palSlot === 0xFF ? 0 : palSlot,
+      x: 0, y: 0,
+      shape: tpl?.oam?.shape ?? 0, size: tpl?.oam?.size ?? 0,
+      priority: 2,
+      subpriority: GetBattlerSpriteSubpriority(tgt) + 1,
+    });
+    const sid = created?.spriteId ?? -1;
+    const sp = sid >= 0 && sid < 64 ? rt?.gSprites?.get(sid) : undefined;
+    if (sp) {
+      (sp as { objMode?: number }).objMode = (tpl?.oam?.objMode ?? 0) as 0 | 1 | 2;
+      (sp as { usingSheet?: boolean }).usingSheet = true;
+      (sp as { sheetTileStart?: number }).sheetTileStart = tileStart === 0xFFFF ? 0 : tileStart;
+      if (tpl?.anims) (sp as { anims?: unknown }).anims = tpl.anims;
+      sp.callback = AnimSolarBeamSmallOrb;
+    }
+  }
+  if (task.data[1] === 15) {
+    itf.DestroyAnimVisualTask?.(task.taskId);
   }
 }
 
@@ -2064,6 +2114,7 @@ function AnimTask_MusicNotesClearRainbowBlend(task: { taskId: number }): void {
   _sbItf().DestroyAnimVisualTask?.(task.taskId);
 }
 _sbRegT({
+  AnimTask_CreateSmallSolarBeamOrbs: AnimTask_CreateSmallSolarBeamOrbs as never,
   AnimTask_SkullBashPosition: AnimTask_SkullBashPosition as never,
   AnimTask_MusicNotesRainbowBlend: AnimTask_MusicNotesRainbowBlend as never,
   AnimTask_MusicNotesClearRainbowBlend: AnimTask_MusicNotesClearRainbowBlend as never,

@@ -507,7 +507,7 @@
 ## battle_anim_effects_1.c — 125/154 fonctions couvertes (81%) · cite:3 + symbole:122 · 89 citations
 - [x] AnimMovePowderParticle_Step @ L2213-2229 — renommé au nom C exact (ex-_MovePowderParticle_Step)
 - [x] AnimSolarBeamSmallOrb_Step @ L2274-2295 — renommé au nom C exact (ex-_SolarBeamSmallOrb_Step)
-- [ ] AnimTask_CreateSmallSolarBeamOrbs  @ L2296-2314
+- [x] AnimTask_CreateSmallSolarBeamOrbs @ L2296-2314 — PORTÉ 1:1 (pose args {15,0,80,0} mutation buffer vivant + spawn gSolarBeamSmallOrbSpriteTemplate ×15 toutes les 7f, pattern F73 tags + callback local) + enregistré ; A/B TOUR RÉEL SolarBeam : task active, 11 orbes simultanés mesurés
 - [x] AnimAbsorptionOrb_Step @ L2328-2335 — renommé au nom C exact (ex-_AbsorptionOrb_Step)
 - [x] AnimLeechSeed_Step @ L2399-2409 — renommé au nom C exact (ex-_LeechSeed_Step)
 - [x] AnimLeechSeedSprouts @ L2410-2421 — renommé au nom C exact (ex-_LeechSeedSprouts)
