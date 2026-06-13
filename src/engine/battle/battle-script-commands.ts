@@ -9849,13 +9849,18 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
       if (JOY_NEW(A_BUTTON)) {
         PlaySE(SE_SELECT);
         if (gBattleCommunication[CURSOR_POSITION] === 0) {
-          // OUI -> decomp case 2/3 : fade + DoNamingScreen + SetMonData(nickname).
-          // NAMING SCREEN = DETTE DOCUMENTEE (goal tranche 1) : on continue SANS
-          // renommer (nickname = nom d'espece, deja le cas) -> meme sortie que le
-          // retour du naming (continue inline vers givecaughtmon).
+          // OUI -> decomp case 2/3 : fade + DoNamingScreen + SetMonData(nickname)
+          // PUIS `gBattlescriptCurrInstr = T1_READ_PTR(+1)` = JUMP jumpPtr
+          // (BattleScript_GiveCaughtMonEnd = givecaughtmon SEUL, pas de message PC).
+          // NAMING SCREEN = DETTE (pas de renommage) MAIS le JUMP est 1:1 OBLIGATOIRE :
+          // sans lui on tombait sur `givecaughtmon ; printfromtable gCaughtMonStringIds`
+          // = message "PC d'ANNETTE" + "BOITE ()" affiché À TORT alors que le mon va
+          // à la PARTY (bug user #8/#9 — le message PC ne doit sortir QUE si party pleine,
+          // via le case 4). Sortie 1:1 = jump GiveCaughtMonEnd.
           console.warn('[capture] naming screen non porte (dette) — OUI = pas de surnom');
           HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
           gBattleCommunication[0] = 0;
+          ctx.scriptPtr = jumpPtr;
           return false;
         } else {
           gBattleCommunication[0] = 4;
