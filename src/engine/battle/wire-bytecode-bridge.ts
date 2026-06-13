@@ -61,9 +61,11 @@ import {
 import {
   loadAiScriptBytecode,
   aiBytecodeLoaded,
+} from './ai/ai-state';
+import {
   AI_CHOICE_FLEE,
   AI_CHOICE_WATCH,
-} from './ai/ai-state';
+} from '../../game/battle_ai_script_commands';
 import {
   ALL_MOVES_MASK, MAX_MON_MOVES, BATTLE_TYPE_TRAINER, MISS_TYPE,
   BATTLE_TYPE_PALACE, BATTLE_TYPE_ARENA,

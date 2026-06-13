@@ -46,47 +46,33 @@ import {
   gBattlerPartyIndexes,
   MAX_BATTLERS_COUNT,
 } from '../engine/battle/state';
+// Constantes numériques AI auto-extraites 1:1 (constants/battle_ai.h) — source des
+// re-exports AI_TARGET/etc. définis en bas de fichier (SPLIT ai-state, 2026-06-13).
 import {
-  AI_TARGET,
-  AI_USER,
-  AI_TARGET_PARTNER,
-  AI_USER_PARTNER,
-  AI_TYPE1_TARGET,
-  AI_TYPE1_USER,
-  AI_TYPE2_TARGET,
-  AI_TYPE2_USER,
-  AI_TYPE_MOVE,
-  AI_EFFECTIVENESS_x4,
-  AI_EFFECTIVENESS_x2,
-  AI_EFFECTIVENESS_x0_5,
-  AI_EFFECTIVENESS_x0_25,
-  AI_EFFECTIVENESS_x0,
-  AI_WEATHER_NONE,
-  AI_WEATHER_SUN,
-  AI_WEATHER_RAIN,
-  AI_WEATHER_SANDSTORM,
-  AI_WEATHER_HAIL,
-  MOVE_POWER_OTHER,
-  MOVE_NOT_MOST_POWERFUL,
-  MOVE_MOST_POWERFUL,
-  AI_ACTION_DONE,
-  AI_ACTION_FLEE,
-  AI_ACTION_WATCH,
-  AI_ACTION_DO_NOT_ATTACK,
-  AIState_SettingUp,
-  AIState_Processing,
-  AIState_FinishedProcessing,
-  AIState_DoNotProcess,
-  AI_CHOICE_FLEE,
-  AI_CHOICE_WATCH,
-  AI_SCRIPT_SAFARI,
-  AI_SCRIPT_ROAMING,
-  AI_SCRIPT_FIRST_BATTLE,
-  AI_SCRIPT_CHECK_BAD_MOVE,
-  AI_SCRIPT_CHECK_VIABILITY,
-  AI_SCRIPT_TRY_TO_FAINT,
-  AI_SCRIPT_DOUBLE_BATTLE,
-  IGNORED_MOVES_END,
+  AI_TARGET as _AI_TARGET,
+  AI_USER as _AI_USER,
+  AI_TARGET_PARTNER as _AI_TARGET_PARTNER,
+  AI_USER_PARTNER as _AI_USER_PARTNER,
+  AI_TYPE1_TARGET as _AI_TYPE1_TARGET,
+  AI_TYPE1_USER as _AI_TYPE1_USER,
+  AI_TYPE2_TARGET as _AI_TYPE2_TARGET,
+  AI_TYPE2_USER as _AI_TYPE2_USER,
+  AI_TYPE_MOVE as _AI_TYPE_MOVE,
+  AI_EFFECTIVENESS_x4 as _AI_EFF_x4,
+  AI_EFFECTIVENESS_x2 as _AI_EFF_x2,
+  AI_EFFECTIVENESS_x1 as _AI_EFF_x1,
+  AI_EFFECTIVENESS_x0_5 as _AI_EFF_x0_5,
+  AI_EFFECTIVENESS_x0_25 as _AI_EFF_x0_25,
+  AI_EFFECTIVENESS_x0 as _AI_EFF_x0,
+  AI_WEATHER_SUN as _AI_WEATHER_SUN,
+  AI_WEATHER_RAIN as _AI_WEATHER_RAIN,
+  AI_WEATHER_SANDSTORM as _AI_WEATHER_SANDSTORM,
+  AI_WEATHER_HAIL as _AI_WEATHER_HAIL,
+  MOVE_POWER_OTHER as _MOVE_POWER_OTHER,
+  MOVE_NOT_MOST_POWERFUL as _MOVE_NOT_MOST_POWERFUL,
+  MOVE_MOST_POWERFUL as _MOVE_MOST_POWERFUL,
+} from '../engine/decomp-data/include/constants/battle_ai-data';
+import {
   gAIScriptPtr,
   setAiScriptPtr,
   getAiScriptsTableEntry,
@@ -188,6 +174,72 @@ import { getTrainer, type TrainerData } from '../engine/data/game-data';
 // la race + fragilité de chemin du dynamic import async (bug Commit 4 :
 // _trainerIdToKey restait vide → aiFlags 0 sur tous les dresseurs).
 import * as OPPONENTS_DATA from '../engine/decomp-data/include/constants/opponents-data';
+
+// ═══ Constantes AI (battle_ai_script_commands.c / battle_ai.h) — SPLIT depuis
+//     ai-state.ts (2026-06-13) : ai-state.ts devient runtime bytecode PUR. ═══
+// ─── Constantes AI (1:1 décomp) ─────────────────────────────────────────────
+
+// battle_ai_script_commands.c:19-22
+export const AI_ACTION_DONE = 1 << 0;
+export const AI_ACTION_FLEE = 1 << 1;
+export const AI_ACTION_WATCH = 1 << 2;
+export const AI_ACTION_DO_NOT_ATTACK = 1 << 3;
+
+// battle_ai_script_commands.c:28-34 (enum AIState)
+export const AIState_SettingUp = 0;
+export const AIState_Processing = 1;
+export const AIState_FinishedProcessing = 2;
+export const AIState_DoNotProcess = 3;
+
+// include/battle_ai_script_commands.h:6-7
+export const AI_CHOICE_FLEE = 4;
+export const AI_CHOICE_WATCH = 5;
+
+// constants/battle_ai.h — re-export numériques auto-extraits 1:1
+export const AI_TARGET = _AI_TARGET;
+export const AI_USER = _AI_USER;
+export const AI_TARGET_PARTNER = _AI_TARGET_PARTNER;
+export const AI_USER_PARTNER = _AI_USER_PARTNER;
+export const AI_TYPE1_TARGET = _AI_TYPE1_TARGET;
+export const AI_TYPE1_USER = _AI_TYPE1_USER;
+export const AI_TYPE2_TARGET = _AI_TYPE2_TARGET;
+export const AI_TYPE2_USER = _AI_TYPE2_USER;
+export const AI_TYPE_MOVE = _AI_TYPE_MOVE;
+export const AI_EFFECTIVENESS_x4 = _AI_EFF_x4;
+export const AI_EFFECTIVENESS_x2 = _AI_EFF_x2;
+export const AI_EFFECTIVENESS_x1 = _AI_EFF_x1;
+export const AI_EFFECTIVENESS_x0_5 = _AI_EFF_x0_5;
+export const AI_EFFECTIVENESS_x0_25 = _AI_EFF_x0_25;
+export const AI_EFFECTIVENESS_x0 = _AI_EFF_x0;
+export const AI_WEATHER_SUN = _AI_WEATHER_SUN;
+export const AI_WEATHER_RAIN = _AI_WEATHER_RAIN;
+export const AI_WEATHER_SANDSTORM = _AI_WEATHER_SANDSTORM;
+export const AI_WEATHER_HAIL = _AI_WEATHER_HAIL;
+/** BUGFIX path : UINT32_MAX. Vanilla laisse funcResult stale (cf. Cmd_get_weather). */
+export const AI_WEATHER_NONE = 0xFFFFFFFF;
+export const MOVE_POWER_OTHER = _MOVE_POWER_OTHER;
+export const MOVE_NOT_MOST_POWERFUL = _MOVE_NOT_MOST_POWERFUL;
+export const MOVE_MOST_POWERFUL = _MOVE_MOST_POWERFUL;
+
+// constants/battle_ai.h — AI script flag bits (gTrainers[].aiFlags).
+// Capturés `_EXPR` par l'extracteur ; définis ici 1:1 (battle_ai.h:35-52).
+export const AI_SCRIPT_CHECK_BAD_MOVE = 1 << 0;
+export const AI_SCRIPT_TRY_TO_FAINT = 1 << 1;
+export const AI_SCRIPT_CHECK_VIABILITY = 1 << 2;
+export const AI_SCRIPT_SETUP_FIRST_TURN = 1 << 3;
+export const AI_SCRIPT_RISKY = 1 << 4;
+export const AI_SCRIPT_PREFER_POWER_EXTREMES = 1 << 5;
+export const AI_SCRIPT_PREFER_BATON_PASS = 1 << 6;
+export const AI_SCRIPT_DOUBLE_BATTLE = 1 << 7;
+export const AI_SCRIPT_HP_AWARE = 1 << 8;
+export const AI_SCRIPT_TRY_SUNNY_DAY_START = 1 << 9;
+export const AI_SCRIPT_ROAMING = (1 << 29) >>> 0;
+export const AI_SCRIPT_SAFARI = (1 << 30) >>> 0;
+export const AI_SCRIPT_FIRST_BATTLE = (1 << 31) >>> 0;
+
+// battle_ai_script_commands.c:265 — sIgnoredPowerfulMoveEffects terminator.
+export const IGNORED_MOVES_END = 0xFFFF;
+
 
 // ─── s8 helper (= score[] est s8 dans le décomp) ───────────────────────────
 
