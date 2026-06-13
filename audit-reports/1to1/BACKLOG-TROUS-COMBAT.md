@@ -739,7 +739,7 @@
 - [x] AnimTask_StatsChange @ L482-542 — porté 1:1 (battle_anim_status_effects.ts : décodeur 32 cases animArg via __battleAnimArg ; A/B tour réel Growl forcé : anim rendue sur le battler affecté, pixel-probe 690 pts)
 
 ## battle_anim_throw.c — 60/78 fonctions couvertes (77%) · cite:51 + symbole:9 · 91 citations
-- [ ] AnimTask_UnusedLevelUpHealthBox_Step  @ L484-543
+- [x] AnimTask_UnusedLevelUpHealthBox_Step @ L484-543 — DETTE LIÉE — step de AnimTask_UnusedLevelUpHealthBox (préfixe Unused = convention décomp « jamais appelé », base déjà cochée stub-dette throw.ts:396)
 - [x] Task_PlayerThrow_Wait @ L837-854 — DETTE LIÉE — créé uniquement par AnimTask_ThrowBall_StandingTrainer_Step (.c:826) dont le port TS est en dette R3 (switch immédiat sans monitor animCmdIndex, battle_anim_throw.ts:313) ; le porter seul = orphelin sans effet. À porter AVEC le monitor du bras dresseur.
 - [x] IncrBallParticleCount @ L1593-1598 — PORTÉ 1:1 (battle_anim_throw.ts : gMain.inBattle → numBallParticles++, nouveau champ 1:1 battle-sprites-data BattleAnimationInfo battle.h:546) — la chaîne particules ENTIÈRE est live (tables :130-370 + :1568-2023, palette 1:1 gBattleAnimSpritePal_CircleImpact extraite)
 - [x] TimerBallOpenParticleAnimation @ L1660-1693 — porté 1:1 (8 étincelles fan-out d4=10/d5=2/d6=1, quirk data[7] dernier-sprite reproduit)
