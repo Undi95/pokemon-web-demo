@@ -616,6 +616,7 @@ registerAnimCallbacks({
   AnimPresent: AnimPresent as never,
   AnimItemSteal: AnimItemSteal as never,
   AnimKnockOffItem: AnimKnockOffItem as never,
+  AnimTipMon: AnimTipMon as never,
   AnimPowerAbsorptionOrb: AnimPowerAbsorptionOrb as never,
   AnimTranslateLinearSingleSineWave: AnimTranslateLinearSingleSineWave as never,
   AnimMoveTwisterParticle: AnimMoveTwisterParticle as never,
@@ -969,6 +970,49 @@ function AnimItemSteal_Step3(sprite: _PSprite): void {
     sprite.data[0] = 0;
     sprite.callback = AnimItemSteal_Step2;
     _PlaySE12WithPanning(SE_M_BUBBLE2, _BattleAnimAdjustPanning(SOUND_PAN_ATTACKER));
+  }
+}
+
+/** 1:1 `AnimTipMon(sprite)` (battle_anim_effects_1.c:4505-4509) — sprite
+ *  contrôleur invisible : l'ATTAQUANT s'incline (rotation ±0x200/frame ×4
+ *  puis retour), puis reset. */
+function AnimTipMon(sprite: _PSprite): void {
+  sprite.data[0] = 0;
+  sprite.callback = AnimTipMon_Step;
+}
+
+/** 1:1 `AnimTipMon_Step(sprite)` (.c:4511-4547) — le switch C fait
+ *  case 0 FALL-THROUGH case 1 (setup + 1er tick même frame) : if-chain à
+ *  sémantique identique (TS7029 interdit le fallthrough). */
+function AnimTipMon_Step(sprite: _PSprite): void {
+  if (sprite.data[0] === 0) {
+    const atk = _pItf().getAttacker?.() ?? 0;
+    const co = (globalThis as Record<string, unknown>).__battleControllerOpponent as { getBattlerMonSpriteId?: (b: number) => number } | undefined;
+    sprite.data[1] = 0;
+    sprite.data[2] = co?.getBattlerMonSpriteId?.(atk) ?? -1;
+    sprite.data[3] = atk & 1; // GetBattlerSide
+    sprite.data[4] = (sprite.data[3] !== 0 /* != B_SIDE_PLAYER */) ? 0x200 : -0x200;
+    sprite.data[5] = 0;
+    _p1PrepRotScale(sprite.data[2], 0 /* ST_OAM_OBJ_NORMAL */);
+    sprite.data[0]++;
+  }
+  if (sprite.data[0] === 1) {
+    sprite.data[5] += sprite.data[4];
+    _p1SetRotScale(sprite.data[2], 0x100, 0x100, sprite.data[5]);
+    _p1YOffFromRot(sprite.data[2]);
+    if (++sprite.data[1] > 3) {
+      sprite.data[1] = 0;
+      sprite.data[4] *= -1;
+      sprite.data[0]++;
+    }
+  } else if (sprite.data[0] === 2) {
+    sprite.data[5] += sprite.data[4];
+    _p1SetRotScale(sprite.data[2], 0x100, 0x100, sprite.data[5]);
+    _p1YOffFromRot(sprite.data[2]);
+    if (++sprite.data[1] > 3) {
+      _p1ResetRotScale(sprite.data[2]);
+      _pItf().DestroyAnimSprite?.(sprite);
+    }
   }
 }
 

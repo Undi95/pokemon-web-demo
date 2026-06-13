@@ -527,8 +527,8 @@
 - [x] UnusedFlickerAnim @ L3854-3886 — DETTE — `static void UNUSED` (.c:3854)
 - [x] AnimBubbleBurst_Step @ L4174-4186 — renommé au nom C exact (ex-_BubbleBurst_Step)
 - [x] AnimSleepLetterZ_Step @ L4209-4218 — renommé au nom C exact (ex-_SleepLetterZ_Step)
-- [ ] AnimTipMon  @ L4505-4510
-- [ ] AnimTipMon_Step  @ L4511-4547
+- [x] AnimTipMon @ L4505-4510 — PORTÉ 1:1 (effects_1.ts, sprite contrôleur → Step)
+- [x] AnimTipMon_Step @ L4511-4547 — PORTÉ 1:1 + enregistré (rotation attaquant ±0x200/f ×4 aller-retour via Prepare/SetSpriteRotScale + YOffsetFromRotation + Reset ; fall-through C → if-chain sémantique identique)
 - [ ] AnimTask_SkullBashPositionSet  @ L4588-4678
 - [ ] AnimTask_SkullBashPositionReset  @ L4679-4695
 - [ ] AnimTask_HideBattlersHealthbox  @ L4920-4936
