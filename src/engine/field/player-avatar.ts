@@ -1448,7 +1448,12 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // La scene détecte _gPendingWarp dans MainCB2_Overworld et lance la
       // transition asynchrone (= fade + load + spawn). PlayerStep skip son
       // input via `ArePlayerFieldControlsLocked` pendant la transition.
-      const warp = getWarpAtPlayerPos();
+      // FIX 2026-06-13 : passer l'élévation RÉELLE du joueur (PlayerGetElevation),
+      // pas 0 en dur. 1:1 décomp GetWarpEventAtMapPosition utilise position->elevation.
+      // Bug : les warps extérieurs (entrées forêt) ont elevation=3 (sol standard) →
+      // findWarpEventAt(x,y,0) ne matchait jamais (3 !== 0). Les portes (elev 0)
+      // marchaient via le check `=== 0`. D'où « les warps marchent sauf la forêt ».
+      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, PlayerGetElevation());
       if (warp) {
         // 1:1 décomp `TryStartWarpEventScript` (field_control_avatar.c:702) +
         // `IsWarpMetatileBehavior` (line 751) : SEULEMENT door/ladder/escalator/
@@ -1574,7 +1579,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
     const playerBehavior = MapGridGetMetatileBehaviorAt(
       gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
     if (isArrowWarpMetatileBehavior(playerBehavior, inputDir)) {
-      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
+      const warp = findWarpEventAt(gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, PlayerGetElevation());
       if (warp) {
         console.log(`[player-avatar] TryArrowWarp at (${gSaveBlock1Ptr.pos.x},${gSaveBlock1Ptr.pos.y}) dir=${inputDir} → ${warp.destMap}#${warp.warpId}`);
         setPendingWarp(warp, 'arrow');
@@ -1632,7 +1637,7 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       const behavior = MapGridGetMetatileBehaviorAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
       const kind = getWarpKindFor(behavior);
       if (kind === 'door') {
-        const doorWarp = findWarpEventAt(dx, dy);
+        const doorWarp = findWarpEventAt(dx, dy, PlayerGetElevation());
         if (doorWarp) {
           console.log(`[player-avatar] door warp at (${dx},${dy}) → ${doorWarp.destMap}#${doorWarp.warpId}`);
           setPendingWarp(doorWarp, kind);
