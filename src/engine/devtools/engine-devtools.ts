@@ -416,12 +416,70 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
         id, x: s.x, y: s.y, x2: s.x2, y2: s.y2, invisible: s.invisible,
         tileId: oam?.tileId, paletteBank: oam?.paletteBank,
         shape: oam?.shape, size: oam?.size, bpp: oam?.paletteMode,
-        objMode: oam?.objMode, callback: s.callback ? 'fn' : null,
+        objMode: oam?.objMode, cb: s.callback?.name || null,
+        animNum: s.animNum, visible: !!oam?.visible && !s.invisible,
         data: Array.from(s.data || []).slice(0, 8),
       });
     }
     return out;
   };
+
+  // ─── A/B anim tracing (= « freeze une frame → voir si ça bouge ») ──────────
+  // _spriteRow : ligne compacte = vérité OAM rendue (tile/pal/vis) + cb name.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const _spriteRow = (id: number, s: any): unknown => {
+    const o = rt.gba.oam[s.oamIndex];
+    return {
+      id, cb: s.callback?.name || null,
+      x: Math.round(s.x + s.x2), y: Math.round(s.y + s.y2),
+      tile: o?.tileId, pal: o?.paletteBank, anim: s.animNum,
+      objMode: o?.objMode, affine: o?.affineMode,
+      vis: !!o?.visible && !s.invisible,
+    };
+  };
+  // dev.find('ball') → sprites dont callback.name matche (substring, insensible casse).
+  //   Sert à IDENTIFIER un sprite (ex. la ball de capture) avant de le watch.
+  dev.find = (sub = ''): unknown => {
+    const ql = sub.toLowerCase();
+    const out: unknown[] = [];
+    for (const [id, s] of rt.gSprites.entries()) {
+      if (ql && !(s.callback?.name || '').toLowerCase().includes(ql)) continue;
+      out.push(_spriteRow(id, s));
+    }
+    return out;
+  };
+  // dev.watch(target, frames=30) → AVANCE `frames` frames en step (rt.paused) et
+  //   renvoie la TIMELINE du/des sprite(s) ciblé(s), une entrée par frame :
+  //   [{ f, sprites:[{ tile, x, y, anim, vis, ... }] }]. target = id | substr cb | predicate.
+  //   USAGE #1 (ball pas ouverte) : await dev.watch('ball', 40) puis regarder si `tile`
+  //   change (4↔8 = anim open tourne) ou reste figé (= anim pas tickée / gfx vide).
+  //   ASYNC : à appeler via `(async()=>await dev.watch(...))()` en preview_eval.
+  dev.watch = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    target: number | string | ((s: any, id: number) => boolean),
+    frames = 30,
+  ): Promise<unknown> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pick: (id: number, s: any) => boolean =
+      typeof target === 'number' ? (id): boolean => id === target
+        : typeof target === 'string' ? (_id, s): boolean => (s.callback?.name || '').toLowerCase().includes(target.toLowerCase())
+          : (id, s): boolean => target(s, id);
+    rt.paused = true;
+    const timeline: unknown[] = [];
+    for (let i = 0; i < frames; i++) {
+      rt.stepBudget += 1;
+      let guard = 0;
+      // attend que la boucle Phaser ait consommé le step (= 1 frame logique avancée)
+      while (rt.stepBudget > 0 && guard++ < 250) await new Promise(r => setTimeout(r, 4));
+      const rows: unknown[] = [];
+      for (const [id, s] of rt.gSprites.entries()) {
+        if (pick(id, s)) rows.push(_spriteRow(id, s));
+      }
+      timeline.push({ f: rt.gIntroFrameCounter, sprites: rows });
+    }
+    return timeline;
+  };
+
   dev.tasks = (): unknown => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const out: any[] = [];
@@ -579,6 +637,7 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
       '  PIXEL : pixelTrace(x, y)',
       '  HOOKS : hookFn(name, opts?)/unhookFn(name)',
       '  INSP  : info()/fade()/sprites()/tasks()/bgs()/windows()/blend()/affineMat()/printers()',
+      '  TRACE : find(cbSubstr) / await watch(target, frames?)  [target = id|cbSubstr|pred]',
       '  DUMPS : vram(addr,len)/ovram(addr,len)/palBank(b,mode,faded?)/palDiff(count?)',
       '  ISOLT : bgVisible(idx, visible?)/objHide(hide?)',
     ].join('\n');
