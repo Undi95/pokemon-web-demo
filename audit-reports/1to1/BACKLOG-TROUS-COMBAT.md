@@ -516,8 +516,8 @@
 - [x] AnimRazorLeafParticle_Step2 @ L2590-2609 — renommé au nom C exact (ex-_RazorLeaf_Step2)
 - [x] AnimTranslateLinearSingleSineWave_Step @ L2641-2673 — renommé au nom C exact (ex-_TranslateLinearSingleSineWave_Step)
 - [x] AnimMoveTwisterParticle_Step @ L2690-2718 — renommé au nom C exact (ex-_MoveTwisterParticle_Step)
-- [ ] AnimTask_DuplicateAndShrinkToPos_Step1  @ L2792-2809
-- [ ] AnimTask_DuplicateAndShrinkToPos_Step2  @ L2810-2839
+- [x] AnimTask_DuplicateAndShrinkToPos_Step1 @ L2792-2809 — renommé au nom C exact (ex-_DuplicateAndShrink_Step1)
+- [x] AnimTask_DuplicateAndShrinkToPos_Step2 @ L2810-2839 — renommé au nom C exact (ex-_DuplicateAndShrink_Step2)
 - [x] AnimKnockOffOpponentsItem @ L3044-3061 — PORTÉ 1:1 (sous-système ITEM BAG complet .c:2947-3153 : InitItemBagData + moveAlongLinearPath + ItemSteal_Step1/2/3 + Present + ItemSteal + KnockOff ×2, 8 fns)
 - [x] AnimKnockOffItem @ L3062-3088 — PORTÉ 1:1 + enregistré (callback de gKnockOffItemSpriteTemplate = General_ItemKnockoff, joue quand un objet est arraché en combat réel) ; verify MOVE_KNOCK_OFF fidele 0 defect
 - [x] LeafBladeGetPosFactor @ L3466-3474 — renommé au nom C exact (ex-_lbGetPosFactor, ±8 selon data[4] vs y)
@@ -529,8 +529,8 @@
 - [x] AnimSleepLetterZ_Step @ L4209-4218 — renommé au nom C exact (ex-_SleepLetterZ_Step)
 - [x] AnimTipMon @ L4505-4510 — PORTÉ 1:1 (effects_1.ts, sprite contrôleur → Step)
 - [x] AnimTipMon_Step @ L4511-4547 — PORTÉ 1:1 + enregistré (rotation attaquant ±0x200/f ×4 aller-retour via Prepare/SetSpriteRotScale + YOffsetFromRotation + Reset ; fall-through C → if-chain sémantique identique)
-- [ ] AnimTask_SkullBashPositionSet  @ L4588-4678
-- [ ] AnimTask_SkullBashPositionReset  @ L4679-4695
+- [x] AnimTask_SkullBashPositionSet @ L4588-4678 — renommé au nom C exact (ex-_SkullBashSet, machine 5 états x2/RotScale/shake/dash)
+- [x] AnimTask_SkullBashPositionReset @ L4679-4695 — renommé au nom C exact (ex-_SkullBashReset, RotScale inverse + Reset)
 - [x] AnimTask_HideBattlersHealthbox @ L4920-4936 — DETTE — `static void UNUSED` (.c:4920)
 - [x] AnimTask_ShowBattlersHealthbox @ L4937-4945 — DETTE — `static void UNUSED` (.c:4937)
 - [x] AnimTask_MoonlightEndFade_Step @ L5030-5107 — renommé au nom C exact (ex-_MoonlightEndFade_Step)

@@ -2191,17 +2191,17 @@ function AnimTask_SkullBashPosition(task: { taskId: number; data: number[]; func
       task.data[3] = 8;
       task.data[4] = 0;
       task.data[5] = side === 0 ? -3 : 3;
-      task.func = _SkullBashSet;
+      task.func = AnimTask_SkullBashPositionSet;
       break;
     case 1:
       task.data[3] = 8;
       task.data[4] = side === 0 ? -0x600 : 0x600;
       task.data[5] = side === 0 ? -0xC0 : 0xC0;
-      task.func = _SkullBashReset;
+      task.func = AnimTask_SkullBashPositionReset;
       break;
   }
 }
-function _SkullBashSet(task: { taskId: number; data: number[] }): void {
+function AnimTask_SkullBashPositionSet(task: { taskId: number; data: number[] }): void {
   const itf = _sbItf();
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[0]);
@@ -2270,7 +2270,7 @@ function _SkullBashSet(task: { taskId: number; data: number[] }): void {
       break;
   }
 }
-function _SkullBashReset(task: { taskId: number; data: number[] }): void {
+function AnimTask_SkullBashPositionReset(task: { taskId: number; data: number[] }): void {
   const itf = _sbItf();
   if (task.data[3]) {
     task.data[4] -= task.data[5];
@@ -2515,9 +2515,9 @@ function AnimTask_ShrinkTargetCopy(task: _StcTask): void {
   task.data[11] = 0x100;
   task.data[10] = 0;
   task.data[13] = 0; // state interne Step2
-  task.func = _DuplicateAndShrink_Step1;
+  task.func = AnimTask_DuplicateAndShrinkToPos_Step1;
 }
-function _DuplicateAndShrink_Step1(task: _StcTask): void {
+function AnimTask_DuplicateAndShrinkToPos_Step1(task: _StcTask): void {
   const itf = _stcItf();
   const spriteId = _stcTargetSpriteId();
   const sp = spriteId !== 0xFF ? _stcRt().gSprites?.get(spriteId) : undefined;
@@ -2531,10 +2531,10 @@ function _DuplicateAndShrink_Step1(task: _StcTask): void {
   _stcMons().SetBattlerSpriteYOffsetFromYScale?.(spriteId);
   if (--task.data[1] === 0) {
     task.data[13] = 0;
-    task.func = _DuplicateAndShrink_Step2;
+    task.func = AnimTask_DuplicateAndShrinkToPos_Step2;
   }
 }
-function _DuplicateAndShrink_Step2(task: _StcTask): void {
+function AnimTask_DuplicateAndShrinkToPos_Step2(task: _StcTask): void {
   const itf = _stcItf();
   const args = itf.getArgs?.();
   if (args && (args[7] & 0xFFFF) === 0xFFFF) {
