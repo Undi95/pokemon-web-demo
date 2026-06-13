@@ -728,7 +728,7 @@ import type {
 } from './script-interpreter';
 import {
   SetMoveEffect,
-} from './set-move-effect';
+} from '../../game/battle_script_commands';
 import {
   ChangeStatBuffs,
 } from '../../game/battle_script_commands';
