@@ -562,41 +562,41 @@
 - [x] AnimTask_UproarDistortion_Step @ L3672-3677 — renommé au nom C exact (ex-_Uproar_Step)
 
 ## battle_anim_effects_3.c — 105/140 fonctions couvertes (75%) · cite:33 + symbole:72 · 86 citations
-- [ ] SetPsychicBackground_Step  @ L1378-1397
-- [ ] FadeScreenToWhite_Step  @ L1404-1428
+- [x] SetPsychicBackground_Step @ L1378-1397 — renommé au nom C exact (ex-_PsychicBg_Step)
+- [x] FadeScreenToWhite_Step @ L1404-1428 — renommé au nom C exact (ex-_FadeScreenToWhite_Step privé)
 - [ ] AnimLeer  @ L1468-1476
 - [ ] AnimFang  @ L1515-1520
-- [ ] RapinSpinMonElevation_Step  @ L1833-1891
-- [ ] TormentAttacker_Step  @ L1907-2005
+- [x] RapinSpinMonElevation_Step @ L1833-1891 — renommé au nom C exact (typo « Rapin » = vanilla)
+- [x] TormentAttacker_Step @ L1907-2005 — renommé au nom C exact
 - [ ] AnimTask_DoomDesireLightBeam  @ L2556-2657
 - [ ] AnimTask_StrongFrustrationGrowAndShrink  @ L2658-2674
 - [ ] AnimWeakFrustrationAngerMark  @ L2675-2701
-- [ ] AnimTask_RockMonBackAndForth_Step  @ L2742-2799
-- [ ] AnimTask_FlailMovement_Step  @ L2862-2936
-- [ ] AnimTask_RolePlaySilhouette_Step1  @ L3263-3278
-- [ ] AnimTask_RolePlaySilhouette_Step2  @ L3279-3295
-- [ ] AnimTask_DeepInhale_Step  @ L3483-3511
+- [x] AnimTask_RockMonBackAndForth_Step @ L2742-2799 — renommé au nom C exact (ex-_RockMonBF_Step)
+- [x] AnimTask_FlailMovement_Step @ L2862-2936 — renommé au nom C exact (ex-_Flail_Step)
+- [x] AnimTask_RolePlaySilhouette_Step1 @ L3263-3278 — renommé au nom C exact
+- [x] AnimTask_RolePlaySilhouette_Step2 @ L3279-3295 — renommé au nom C exact
+- [x] AnimTask_DeepInhale_Step @ L3483-3511 — renommé au nom C exact (ex-_DeepInhale_Step)
 - [ ] AnimSmokeBallEscapeCloud  @ L3570-3581
 - [ ] AnimTask_SlideMonForFocusBand_Step2  @ L3582-3631
 - [ ] AnimTask_SlideMonForFocusBand_Step1  @ L3632-3684
 - [ ] AnimTask_SlideMonForFocusBand  @ L3685-3741
-- [ ] AnimTask_SquishAndSweatDroplets_Step  @ L3767-3803
+- [x] AnimTask_SquishAndSweatDroplets_Step @ L3767-3803 — renommé au nom C exact (ex-_SquishSweat_Step)
 - [ ] CreateSweatDroplets  @ L3804-3845
 - [ ] AnimFacadeSweatDrop  @ L3846-3874
-- [ ] AnimTask_FacadeColorBlend_Step  @ L3886-3903
-- [ ] AnimTask_GlareEyeDots_Step  @ L4017-4087
-- [ ] GetGlareEyeDotCoords  @ L4088-4113
-- [ ] AnimGlareEyeDot  @ L4114-4144
-- [ ] AnimTask_BarrageBall_Step  @ L4185-4231
-- [ ] AnimTask_SmellingSaltsSquish_Step  @ L4322-4354
-- [ ] AnimTask_HelpingHandAttackerMovement_Step  @ L4528-4611
-- [ ] AnimTask_OdorSleuthMovementWaitFinish  @ L5018-5023
-- [ ] MoveOdorSleuthClone  @ L5024-5059
+- [x] AnimTask_FacadeColorBlend_Step @ L3886-3903 — renommé au nom C exact (ex-_FacadeBlend_Step)
+- [x] AnimTask_GlareEyeDots_Step @ L4017-4087 — renommé au nom C exact (ex-_GlareEyeDots_Step)
+- [x] GetGlareEyeDotCoords @ L4088-4113 — renommé au nom C exact (retour [x,y] TS ≡ out-params C)
+- [x] AnimGlareEyeDot @ L4114-4144 — renommé au nom C exact (ex-_AnimGlareEyeDot)
+- [x] AnimTask_BarrageBall_Step @ L4185-4231 — renommé au nom C exact (ex-_BarrageBall_Step)
+- [x] AnimTask_SmellingSaltsSquish_Step @ L4322-4354 — renommé au nom C exact (ex-_SmellingSalts_Step)
+- [x] AnimTask_HelpingHandAttackerMovement_Step @ L4528-4611 — renommé au nom C exact (ex-_HelpingHand_Step)
+- [x] AnimTask_OdorSleuthMovementWaitFinish @ L5018-5023 — renommé au nom C exact (ex-_OdorSleuthWait)
+- [x] MoveOdorSleuthClone @ L5024-5059 — renommé au nom C exact (ex-_MoveOdorSleuthClone)
 - [ ] AnimTask_SnatchOpposingMonMove  @ L5077-5221
 - [ ] AnimUnusedItemBagSteal  @ L5222-5266
 - [ ] AnimTask_SnatchPartnerMove  @ L5267-5327
-- [ ] AnimTask_TeeterDanceMovement_Step  @ L5342-5375
-- [ ] AnimTask_SlackOffSquish_Step  @ L5523-5548
+- [x] AnimTask_TeeterDanceMovement_Step @ L5342-5375 — renommé au nom C exact (ex-_TeeterDance_Step)
+- [x] AnimTask_SlackOffSquish_Step @ L5523-5548 — renommé au nom C exact (ex-_SlackOff_Step)
 
 ## battle_anim_water.c — 48/48 fonctions couvertes (100%) · cite:15 + symbole:23 · 37 citations
 - [x] AnimRainDrop @ L508-512 — ÉQUIVALENCE : init inliné dans AnimTask_CreateRaindrops (le spawner assigne directement le _Step, base présente battle_anim_water.ts)
