@@ -1245,9 +1245,9 @@ function AnimTask_GrowAndShrink(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0 /* ANIM_ATTACKER */);
   if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gGrowAndShrinkAffineAnimCmds']);
-  task.func = _GrowAndShrink_Step;
+  task.func = AnimTask_GrowAndShrink_Step;
 }
-function _GrowAndShrink_Step(task: _SpTask): void {
+function AnimTask_GrowAndShrink_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 /** 1:1 `AnimTask_StretchTargetUp`/`StretchAttackerUp` (battle_anim_effects_2.c.c, 3+1 hits) :
@@ -1277,9 +1277,9 @@ function AnimTask_UproarDistortion(task: _SpTask): void {
   const spriteId = _spBattlerSpriteId(0);
   if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['sAffineAnims_UproarDistortion'] ?? (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gUproarAffineAnimCmds']);
-  task.func = _Uproar_Step;
+  task.func = AnimTask_UproarDistortion_Step;
 }
-function _Uproar_Step(task: _SpTask): void {
+function AnimTask_UproarDistortion_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 /** 1:1 `AnimTask_ThrashMoveMonHorizontal` (battle_anim_effects_2.c.c:2304 — Thrash) :
@@ -1290,9 +1290,9 @@ function AnimTask_ThrashMoveMonHorizontal(task: _SpTask): void {
   task.data[0] = spriteId;
   task.data[1] = 0;
   _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gThrashMoveMonAffineAnimCmds']);
-  task.func = _ThrashH_Step;
+  task.func = AnimTask_ThrashMoveMonHorizontal_Step;
 }
-function _ThrashH_Step(task: _SpTask): void {
+function AnimTask_ThrashMoveMonHorizontal_Step(task: _SpTask): void {
   if (!_spRun(task)) _spItf2().DestroyAnimVisualTask?.(task.taskId);
 }
 /** 1:1 `AnimTask_ThrashMoveMonVertical` : zigzag x ±4 (3 phases ×3 reps) +
@@ -1314,9 +1314,9 @@ function AnimTask_ThrashMoveMonVertical(task: _SpTask): void {
   task.data[9] = 2;
   const itf = _spItf2() as { getAttacker?: () => number };
   if (((itf.getAttacker?.() ?? 0) & 1) === 1) task.data[2] *= -1;
-  task.func = _ThrashV_Step;
+  task.func = AnimTask_ThrashMoveMonVertical_Step;
 }
-function _ThrashV_Step(task: _SpTask): void {
+function AnimTask_ThrashMoveMonVertical_Step(task: _SpTask): void {
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x: number; y: number }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[0]);
   if (!sp) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
@@ -1356,9 +1356,9 @@ function AnimTask_Withdraw(task: _SpTask): void {
   mons?.PrepareBattlerSpriteForRotScale?.(spriteId, 0);
   task.data[15] = spriteId;
   task.data[0] = 0; task.data[1] = 0; task.data[3] = 0;
-  task.func = _Withdraw_Step;
+  task.func = AnimTask_Withdraw_Step;
 }
-function _Withdraw_Step(task: _SpTask): void {
+function AnimTask_Withdraw_Step(task: _SpTask): void {
   const itf = _spItf2() as { getAttacker?: () => number; DestroyAnimVisualTask?: (id: number) => void };
   const spriteId = task.data[15];
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number }> } | undefined;
@@ -1411,9 +1411,9 @@ function AnimTask_ScaryFace(task: _SpTask): void {
   task.data[12] = 0;
   task.data[10] = 0;
   task.data[11] = 0;
-  task.func = _ScaryFace_Step;
+  task.func = AnimTask_ScaryFace_Step;
 }
-function _ScaryFace_Step(task: _SpTask): void {
+function AnimTask_ScaryFace_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
   switch (task.data[12]) {
@@ -1455,9 +1455,9 @@ function AnimTask_ExtremeSpeedImpact(task: _SpTask): void {
   else { task.data[13] = 1; task.data[14] = -8; }
   task.data[15] = _spBattlerSpriteId(1);
   if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  task.func = _ExSpeedImpact_Step;
+  task.func = AnimTask_ExtremeSpeedImpact_Step;
 }
-function _ExSpeedImpact_Step(task: _SpTask): void {
+function AnimTask_ExtremeSpeedImpact_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { x2: number }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[15]);
@@ -1500,9 +1500,9 @@ function AnimTask_ExtremeSpeedMonReappear(task: _SpTask): void {
   task.data[14] = 2;
   task.data[15] = _spBattlerSpriteId(0);
   if (task.data[15] === 0xFF) { itf.DestroyAnimVisualTask?.(task.taskId); return; }
-  task.func = _ExSpeedReappear_Step;
+  task.func = AnimTask_ExtremeSpeedMonReappear_Step;
 }
-function _ExSpeedReappear_Step(task: _SpTask): void {
+function AnimTask_ExtremeSpeedMonReappear_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { invisible?: boolean }> } | undefined;
   const sp = rt?.gSprites?.get(task.data[15]);
@@ -1528,9 +1528,9 @@ function AnimTask_AttackerStretchAndDisappear(task: _SpTask): void {
   if (spriteId === 0xFF) { _spItf2().DestroyAnimVisualTask?.(task.taskId); return; }
   task.data[0] = spriteId;
   _spPrep(task, spriteId, (_spTables as unknown as Record<string, import('./battle_anim_mons').TaskAffineTable>)['gStretchAttackerAffineAnimCmds']);
-  task.func = _StretchDisappear_Step;
+  task.func = AnimTask_AttackerStretchAndDisappear_Step;
 }
-function _StretchDisappear_Step(task: _SpTask): void {
+function AnimTask_AttackerStretchAndDisappear_Step(task: _SpTask): void {
   if (!_spRun(task)) {
     const rt = (globalThis as Record<string, unknown>).__rt as { gSprites?: Map<number, { y2: number; invisible?: boolean }> } | undefined;
     const sp = rt?.gSprites?.get(task.data[0]);
@@ -1549,10 +1549,10 @@ function AnimTask_SpeedDust(task: _SpTask): void {
   const atk = (itf.getAttacker?.() ?? 0) as number;
   task.data[14] = _e2Coord(atk, 0);
   task.data[15] = _e2Coord(atk, 1);
-  task.func = _SpeedDust_Step;
+  task.func = AnimTask_SpeedDust_Step;
 }
 import { GetBattlerSpriteCoord as _e2Coord } from './battle_anim_mons';
-function _SpeedDust_Step(task: _SpTask): void {
+function AnimTask_SpeedDust_Step(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   // VIE DES DUSTS GÉRÉE ICI, inconditionnellement (le ticker sprite peut être
   // gelé en harness ; les dusts immortels saturaient les slots → les spawns
@@ -1656,20 +1656,20 @@ function AnimTask_FakeOut(task: _SpTask): void {
   task.data[0] = 0;
   task.data[1] = 240;
   task.data[10] = 0;
-  task.func = _FakeOut_Step1;
+  task.func = AnimTask_FakeOut_Step1;
 }
-function _FakeOut_Step1(task: _SpTask): void {
+function AnimTask_FakeOut_Step1(task: _SpTask): void {
   const g = globalThis as Record<string, unknown>;
   task.data[0] += 13;
   task.data[1] -= 13;
   if (task.data[0] >= task.data[1]) {
     g.gBattle_WIN0H = 0;
-    task.func = _FakeOut_Step2;
+    task.func = AnimTask_FakeOut_Step2;
   } else {
     g.gBattle_WIN0H = ((task.data[0] << 8) | (task.data[1] & 0xFF)) & 0xFFFF; // WIN_RANGE
   }
 }
-function _FakeOut_Step2(task: _SpTask): void {
+function AnimTask_FakeOut_Step2(task: _SpTask): void {
   const itf = _spItf2() as { DestroyAnimVisualTask?: (id: number) => void };
   const rt = (globalThis as Record<string, unknown>).__rt as { SetGpuReg?: (r: number, v: number) => void } | undefined;
   const g = globalThis as Record<string, unknown>;
@@ -1987,14 +1987,14 @@ function AnimTask_Minimize(task: _MzTask): void {
   task.data[5] = 0;
   task.data[6] = 0;
   task.data[7] = _e2Subprio(_spItf2().getAttacker?.() ?? 0);
-  task.func = _Minimize_Step;
+  task.func = AnimTask_Minimize_Step;
 }
 /** GetBattlerSpriteSubpriority via la surface mons (export F36). */
 function _e2Subprio(battler: number): number {
   const m = (_mzMons() as { GetBattlerSpriteSubpriority?: (b: number) => number }).GetBattlerSpriteSubpriority;
   return m ? m(battler) : ((battler & 1) === 0 ? 30 : 40);
 }
-function _Minimize_Step(task: _MzTask): void {
+function AnimTask_Minimize_Step(task: _MzTask): void {
   const mons = _mzMons();
   const setYFromScale = (): void => {
     (_mzMons() as { SetBattlerSpriteYOffsetFromYScale?: (id: number) => void }).SetBattlerSpriteYOffsetFromYScale?.(task.data[0]);
@@ -2327,9 +2327,9 @@ function AnimTask_HeartsBackground(task: _HbTask): void {
   task.data[10] = 0;
   task.data[11] = 0;
   task.data[12] = 0;
-  task.func = _HeartsBackground_Step;
+  task.func = AnimTask_HeartsBackground_Step;
 }
-function _HeartsBackground_Step(task: _HbTask): void {
+function AnimTask_HeartsBackground_Step(task: _HbTask): void {
   const rt = _hbRt();
   switch (task.data[12]) {
     case 0:

@@ -544,22 +544,22 @@
 - [ ] AnimMovingClamp  @ L1358-1367
 - [ ] AnimMovingClamp_Step  @ L1368-1376
 - [ ] AnimMovingClamp_End  @ L1377-1386
-- [ ] AnimTask_Withdraw_Step  @ L1393-1441
+- [x] AnimTask_Withdraw_Step @ L1393-1441 — renommé au nom C exact (ex-_Withdraw_Step)
 - [ ] AnimVoidLines  @ L1751-1757
 - [ ] AnimVoidLines_Step  @ L1758-1777
-- [ ] AnimTask_Minimize_Step  @ L2052-2117
-- [ ] AnimTask_GrowAndShrink_Step  @ L2245-2254
-- [ ] AnimTask_ThrashMoveMonHorizontal_Step  @ L2314-2321
-- [ ] AnimTask_ThrashMoveMonVertical_Step  @ L2341-2391
-- [ ] AnimTask_AttackerStretchAndDisappear_Step  @ L2803-2813
-- [ ] AnimTask_ExtremeSpeedImpact_Step  @ L2837-2882
-- [ ] AnimTask_ExtremeSpeedMonReappear_Step  @ L2897-2924
-- [ ] AnimTask_SpeedDust_Step  @ L2943-3010
-- [ ] AnimTask_FakeOut_Step1  @ L3100-3114
-- [ ] AnimTask_FakeOut_Step2  @ L3115-3134
-- [ ] AnimTask_HeartsBackground_Step  @ L3270-3325
-- [ ] AnimTask_ScaryFace_Step  @ L3354-3414
-- [ ] AnimTask_UproarDistortion_Step  @ L3672-3677
+- [x] AnimTask_Minimize_Step @ L2052-2117 — renommé au nom C exact (ex-_Minimize_Step)
+- [x] AnimTask_GrowAndShrink_Step @ L2245-2254 — renommé au nom C exact (ex-_GrowAndShrink_Step)
+- [x] AnimTask_ThrashMoveMonHorizontal_Step @ L2314-2321 — renommé au nom C exact (ex-_ThrashH_Step)
+- [x] AnimTask_ThrashMoveMonVertical_Step @ L2341-2391 — renommé au nom C exact (ex-_ThrashV_Step)
+- [x] AnimTask_AttackerStretchAndDisappear_Step @ L2803-2813 — renommé au nom C exact (ex-_StretchDisappear_Step)
+- [x] AnimTask_ExtremeSpeedImpact_Step @ L2837-2882 — renommé au nom C exact (ex-_ExSpeedImpact_Step)
+- [x] AnimTask_ExtremeSpeedMonReappear_Step @ L2897-2924 — renommé au nom C exact (ex-_ExSpeedReappear_Step)
+- [x] AnimTask_SpeedDust_Step @ L2943-3010 — renommé au nom C exact (ex-_SpeedDust_Step)
+- [x] AnimTask_FakeOut_Step1 @ L3100-3114 — renommé au nom C exact (ex-_FakeOut_Step1)
+- [x] AnimTask_FakeOut_Step2 @ L3115-3134 — renommé au nom C exact (ex-_FakeOut_Step2)
+- [x] AnimTask_HeartsBackground_Step @ L3270-3325 — renommé au nom C exact (ex-_HeartsBackground_Step)
+- [x] AnimTask_ScaryFace_Step @ L3354-3414 — renommé au nom C exact (ex-_ScaryFace_Step)
+- [x] AnimTask_UproarDistortion_Step @ L3672-3677 — renommé au nom C exact (ex-_Uproar_Step)
 
 ## battle_anim_effects_3.c — 105/140 fonctions couvertes (75%) · cite:33 + symbole:72 · 86 citations
 - [ ] SetPsychicBackground_Step  @ L1378-1397
