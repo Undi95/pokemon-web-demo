@@ -122,7 +122,7 @@ import {
 } from './battle_util';
 import { getBattleMove } from '../engine/battle/data/battle-moves';
 import { getItemEffectBytes, GetItemEffectParamOffset } from '../engine/battle/data/item-effects';
-import { gBattleHistory } from '../engine/battle/ai/ai-state';
+import { gBattleHistory } from './battle_ai_script_commands';
 import {
   ITEM_NONE,
   ITEM_FULL_RESTORE,

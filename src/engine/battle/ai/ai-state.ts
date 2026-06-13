@@ -138,95 +138,6 @@ export const AI_SCRIPTS_TABLE_LABELS: readonly string[] = [
   'AI_FirstBattle',         // 31 AI_SCRIPT_FIRST_BATTLE
 ];
 
-// ─── Structs 1:1 décomp (include/battle.h) ──────────────────────────────────
-
-/** 1:1 décomp `struct AI_ThinkingStruct` (battle.h:176-188). */
-export interface AI_ThinkingStruct {
-  aiState: number;          // u8
-  movesetIndex: number;     // u8
-  moveConsidered: number;   // u16
-  score: number[];          // s8[MAX_MON_MOVES]
-  funcResult: number;       // u32
-  aiFlags: number;          // u32
-  aiAction: number;         // u8
-  aiLogicId: number;        // u8
-  // filler12[6] — padding décomp, non modélisé
-  simulatedRNG: number[];   // u8[MAX_MON_MOVES]
-}
-
-/** 1:1 décomp `struct UsedMoves` (battle.h:190-194). */
-export interface UsedMoves {
-  moves: number[];          // u16[MAX_MON_MOVES]
-  unknown: number[];        // u16[MAX_MON_MOVES]
-}
-
-/** 1:1 décomp `struct BattleHistory` (battle.h:196-203). */
-export interface BattleHistory {
-  usedMoves: UsedMoves[];   // [MAX_BATTLERS_COUNT]
-  abilities: number[];      // u8[MAX_BATTLERS_COUNT]
-  itemEffects: number[];    // u8[MAX_BATTLERS_COUNT]
-  trainerItems: number[];   // u16[MAX_BATTLERS_COUNT]
-  itemsNo: number;          // u8
-}
-
-/** 1:1 décomp `struct BattleScriptsStack` (battle.h:205-209).
- *  `const u8 *ptr[8]` → offsets numériques dans BYTECODE dans notre port. */
-export interface BattleScriptsStack {
-  ptr: number[];            // [8]
-  size: number;             // u8
-}
-
-function _blankAiThinking(): AI_ThinkingStruct {
-  return {
-    aiState: 0,
-    movesetIndex: 0,
-    moveConsidered: 0,
-    score: new Array(MAX_MON_MOVES).fill(0),
-    funcResult: 0,
-    aiFlags: 0,
-    aiAction: 0,
-    aiLogicId: 0,
-    simulatedRNG: new Array(MAX_MON_MOVES).fill(0),
-  };
-}
-
-function _blankUsedMoves(): UsedMoves {
-  return {
-    moves: new Array(MAX_MON_MOVES).fill(0),
-    unknown: new Array(MAX_MON_MOVES).fill(0),
-  };
-}
-
-function _blankBattleHistory(): BattleHistory {
-  return {
-    usedMoves: Array.from({ length: MAX_BATTLERS_COUNT }, () => _blankUsedMoves()),
-    abilities: new Array(MAX_BATTLERS_COUNT).fill(0),
-    itemEffects: new Array(MAX_BATTLERS_COUNT).fill(0),
-    trainerItems: new Array(MAX_BATTLERS_COUNT).fill(0),
-    itemsNo: 0,
-  };
-}
-
-/** 1:1 décomp `AI_THINKING_STRUCT` (= gBattleResources->ai). */
-export const gAiThinkingStruct: AI_ThinkingStruct = _blankAiThinking();
-
-/** 1:1 décomp `BATTLE_HISTORY` (= gBattleResources->battleHistory). */
-export const gBattleHistory: BattleHistory = _blankBattleHistory();
-
-/** 1:1 décomp `gBattleResources->AI_ScriptsStack`. */
-export const gAI_ScriptsStack: BattleScriptsStack = { ptr: new Array(8).fill(0), size: 0 };
-
-/** `for (i=0; i<sizeof(struct AI_ThinkingStruct); i++) data[i] = 0;`
- *  (battle_ai_script_commands.c:319-320). */
-export function clearAiThinkingStruct(): void {
-  Object.assign(gAiThinkingStruct, _blankAiThinking());
-}
-
-/** `for (i=0; i<sizeof(struct BattleHistory); i++) data[i] = 0;`
- *  (battle_ai_script_commands.c:288-289). */
-export function clearBattleHistory(): void {
-  Object.assign(gBattleHistory, _blankBattleHistory());
-}
 
 // ─── gAIScriptPtr / sBattler_AI (EWRAM_DATA, battle_ai_script_commands.c:154-155) ───
 
@@ -234,9 +145,6 @@ export function clearBattleHistory(): void {
 export let gAIScriptPtr = 0;
 export function setAiScriptPtr(v: number): void { gAIScriptPtr = v; }
 
-/** 1:1 décomp `EWRAM_DATA static u8 sBattler_AI`. */
-export let sBattler_AI = 0;
-export function setBattlerAI(v: number): void { sBattler_AI = v; }
 
 // ─── Bytecode storage (mirror script-interpreter.ts) ────────────────────────
 
