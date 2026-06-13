@@ -4392,3 +4392,99 @@ function AnimTask_SnatchOpposingMonMove(task: { taskId: number; data: number[]; 
   }
 }
 registerAnimTasks({ AnimTask_SnatchOpposingMonMove: AnimTask_SnatchOpposingMonMove as never });
+
+// --- AnimTask_DoomDesireLightBeam (.c:2556-2657) -----------------------------
+// Faisceau de lumière (masque light_beam en BG1, blend BG1) qui frappe 4 fois
+// en se rapprochant de la cible (offsets 120/80/40/0 px), pulse BLDALPHA
+// 13→5→13 entre chaque frappe, puis teardown. Réutilise l'infra LightBeam de
+// MorningSun (F69 : _msBgData/_msLoadMap/_msLoadGfx/_msLoadPal/_msClearBg).
+// QUIRK VANILLA : CoordTable est s8[4] mais l'index 4 est lu au dernier
+// passage (OOB en C) — en ROM DelayTable est adjacente → CoordTable[4] =
+// DelayTable[0] = 0 ; modélisé par la 5e entrée 0.
+const _gDoomDesireLightBeamCoordTable: ReadonlyArray<number> = [0x78, 0x50, 0x28, 0x00, 0 /* OOB → DelayTable[0] */];
+const _gDoomDesireLightBeamDelayTable: ReadonlyArray<number> = [0, 0, 0, 0, 50];
+
+function AnimTask_DoomDesireLightBeam(task: _MsTask): void {
+  const itf = _msItf() as ReturnType<typeof _msItf> & { getTarget?: () => number };
+  const rt = _msRt();
+  const g = globalThis as Record<string, unknown>;
+  switch (task.data[0]) {
+    case 0: {
+      // 1:1 :2563-2604 : BLDCNT TGT2_ALL|BLEND|TGT1_BG1, BLDALPHA(3,13),
+      // BG1 screenSize 0 / priority 1 / charBase 1, masque light_beam.
+      rt.SetGpuReg?.(0x50, 0x3F42);
+      rt.SetGpuReg?.(0x52, 3 | (13 << 8));
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) {
+        bg1.screenSize = 0;
+        bg1.priority = 1;
+        bg1.charBaseIndex = 1;
+      }
+      const animBg = _msBgData();
+      _msLoadMap(animBg.bgId, 'gBattleAnimMaskTilemap_LightBeam');
+      // position de la CIBLE (singles : position = battler ; doubles 4 cas 1:1).
+      const tgt = itf.getTarget?.() ?? 0;
+      const position = tgt & 3;
+      if (_IsDoubleBattle()) {
+        if (position === 1 /* B_POSITION_OPPONENT_LEFT */) _msSetBg1(-155, null);
+        if (position === 3 /* B_POSITION_OPPONENT_RIGHT */) _msSetBg1(-115, null);
+        if (position === 0 /* B_POSITION_PLAYER_LEFT */) _msSetBg1(14, null);
+        if (position === 2 /* B_POSITION_PLAYER_RIGHT */) _msSetBg1(-20, null);
+      } else {
+        if (position === 1) _msSetBg1(-135, null);
+        if (position === 0) _msSetBg1(-10, null);
+      }
+      _msSetBg1(null, 0);
+      _msLoadGfx(animBg.bgId, 'gBattleAnimMaskImage_LightBeam', animBg.tilesOffset);
+      _msLoadPal('gBattleAnimMaskPalette_LightBeam', animBg.paletteId);
+      task.data[10] = (g.gBattle_BG1_X as number) | 0;
+      task.data[11] = (g.gBattle_BG1_Y as number) | 0;
+      task.data[0]++;
+      break;
+    }
+    case 1: {
+      // 1:1 :2606-2618 : décale le faisceau vers la cible (+ côté adverse,
+      // − côté joueur), 5 passages (index 0..4, le 5e = quirk OOB).
+      task.data[3] = 0;
+      const tgt = itf.getTarget?.() ?? 0;
+      const off = _gDoomDesireLightBeamCoordTable[task.data[2]] ?? 0;
+      if ((tgt & 1) !== 0 /* B_SIDE_OPPONENT */) _msSetBg1(task.data[10] + off, null);
+      else _msSetBg1(task.data[10] - off, null);
+      if (++task.data[2] === 5) task.data[0] = 5;
+      else task.data[0]++;
+      break;
+    }
+    case 2:
+      // 1:1 :2619-2626 : fondu descendant 13→5 (1er passage : claque à 5).
+      if (--task.data[1] <= 4) task.data[1] = 5;
+      rt.SetGpuReg?.(0x52, 3 | ((task.data[1] & 0xFF) << 8));
+      if (task.data[1] === 5) task.data[0]++;
+      break;
+    case 3:
+      // 1:1 :2627-2630 : délai DelayTable[data[2]] (data[2] déjà incrémenté → 1..4).
+      if (++task.data[3] > (_gDoomDesireLightBeamDelayTable[task.data[2]] ?? 0)) task.data[0]++;
+      break;
+    case 4:
+      // 1:1 :2631-2638 : fondu remontant → 13, puis re-frappe (data[0]=1).
+      if (++task.data[1] > 13) task.data[1] = 13;
+      rt.SetGpuReg?.(0x52, 3 | ((task.data[1] & 0xFF) << 8));
+      if (task.data[1] === 13) task.data[0] = 1;
+      break;
+    case 5: {
+      // 1:1 :2639-2652 : teardown complet.
+      const animBg = _msBgData();
+      _msClearBg(animBg.bgId);
+      const bg1 = rt.gba?.bg(1)?.config;
+      if (bg1) {
+        bg1.charBaseIndex = 0;
+        bg1.priority = 1;
+      }
+      _msSetBg1(0, 0);
+      rt.SetGpuReg?.(0x50, 0);
+      rt.SetGpuReg?.(0x52, 0);
+      _msItf().DestroyAnimVisualTask?.(task.taskId);
+      break;
+    }
+  }
+}
+registerAnimTasks({ AnimTask_DoomDesireLightBeam: AnimTask_DoomDesireLightBeam as never });

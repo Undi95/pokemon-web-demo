@@ -568,7 +568,7 @@
 - [x] AnimFang @ L1515-1520 — PORTÉ 1:1 + enregistré (animEnded→destroy) ; verify MOVE_BITE fidele
 - [x] RapinSpinMonElevation_Step @ L1833-1891 — renommé au nom C exact (typo « Rapin » = vanilla)
 - [x] TormentAttacker_Step @ L1907-2005 — renommé au nom C exact
-- [ ] AnimTask_DoomDesireLightBeam  @ L2556-2657
+- [x] AnimTask_DoomDesireLightBeam  @ L2556-2657 — porté 1:1 (infra LightBeam de MorningSun réutilisée ; 4 frappes offsets 120/80/40/0, pulse BLDALPHA 13↔5, quirk OOB CoordTable[4]=DelayTable[0]=0 documenté) + A/B direct (BG1_X −130/−90/−50/−10→0, pulse 0x503↔0xD03, teardown complet)
 - [x] AnimTask_StrongFrustrationGrowAndShrink @ L2658-2674 — PORTÉ 1:1 + enregistré (affine-task gStrongFrustrationAffineAnimCmds des tables générées) ; verify MOVE_FRUSTRATION fidele
 - [x] AnimWeakFrustrationAngerMark @ L2675-2701 — PORTÉ 1:1 + enregistré (20f sur place puis dérive fixed-point ±160/128, destroy y2>64)
 - [x] AnimTask_RockMonBackAndForth_Step @ L2742-2799 — renommé au nom C exact (ex-_RockMonBF_Step)
