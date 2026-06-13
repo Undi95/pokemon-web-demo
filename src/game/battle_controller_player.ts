@@ -1316,9 +1316,15 @@ function PlayerHandleBallThrowAnim(): void {
   const bs = (globalThis as Record<string, unknown>).__battleState as { gBattleStruct?: Record<string, unknown> } | undefined;
   if (bs?.gBattleStruct) bs.gBattleStruct.ballThrowCaseId = caseId;
   setGDoingBattleAnim(true);
-  // 1:1 InitAndLaunchSpecialAnimation : pose attacker/target puis lance l'anim.
+  // 1:1 InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler,
+  //   GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW)
+  //   (battle_controller_player.c:2454) → gBattleAnimTarget = defBattler. Le
+  //   TARGET de l'anim est le mon adverse GAUCHE *déterministe*, PAS gBattlerTarget :
+  //   ce dernier peut avoir été ré-écrit entre Cmd_handleballthrow et l'exécution
+  //   ASYNC du contrôleur → le shrink (gBattlerSpriteIds[gBattleAnimTarget])
+  //   partait sur le mauvais mon = NOTRE Pokémon rétrécissait (bug user 2026-06-13).
   const ba = (globalThis as Record<string, unknown>).__battleAnim as { SetAnimBattlers?: (a: number, d: number) => void } | undefined;
-  ba?.SetAnimBattlers?.(gActiveBattler, gBattlerTarget);
+  ba?.SetAnimBattlers?.(gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
   const bat = (globalThis as Record<string, unknown>).__battleAnimThrow as { Special_BallThrow_TS?: () => void } | undefined;
   bat?.Special_BallThrow_TS?.();
   setBattlerControllerFunc(gActiveBattler, CompleteOnSpecialAnimDone);

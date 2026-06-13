@@ -476,6 +476,18 @@ export function encodeStringForFont(str: string, charmap: Record<string, number>
           i = closeIdx + 1;
           continue;
         }
+        // 1:1 décomp : codes ext SANS param textuel. WAIT_SE (0 arg). PLAY_BGM /
+        // PLAY_SE : 0xFC + sub, PUIS un arg u16 écrit dans le string comme 2 octets
+        // bruts qui SUIVENT (ex. capture : {PLAY_BGM}{0x60}À = 0xFC 0x0B 0x60 0x01).
+        // RenderText consomme ces 2 octets. AVANT : ces tokens tombaient dans le
+        // skip silencieux → l'arg de PLAY_BGM était désaligné et le `À` (octet haut
+        // du song) s'affichait en parasite (bug user "attrapé!À♥").
+        if (inner === 'WAIT_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_WAIT_SE); i = closeIdx + 1; continue; }
+        if (inner === 'PLAY_BGM') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_BGM); i = closeIdx + 1; continue; }
+        if (inner === 'PLAY_SE') { bytes.push(EXT_CTRL_CODE_BEGIN, EXT_CTRL_CODE_PLAY_SE); i = closeIdx + 1; continue; }
+        // octet littéral {0xNN} (décomp charmap : insère le byte brut — utilisé
+        // comme arg d'un code ext, ex. le song id de PLAY_BGM écrit {0x60}À).
+        if (/^0x[0-9a-fA-F]{1,2}$/.test(inner)) { bytes.push(parseInt(inner, 16) & 0xFF); i = closeIdx + 1; continue; }
         // Bug session 96 : ce regex ne matchait QUE COLOR/SHADOW/HIGHLIGHT/PAUSE.
         // Du coup `{CLEAR N}` / `{SKIP N}` / `{CLEAR_TO N}` / `{MIN_LETTER_SPACING N}`
         // tombaient dans le fallback "skip silencieusement" (= ligne 421), et
