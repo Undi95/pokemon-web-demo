@@ -100,6 +100,24 @@ import {
   MOVE_LIMITATION_ZEROMOVE, MOVE_LIMITATION_PP, MOVE_LIMITATION_DISABLED,
   MOVE_LIMITATION_TORMENTED, MOVE_LIMITATION_TAUNT, MOVE_LIMITATION_IMPRISON,
 } from '../engine/battle/constants';
+// ─── IsMonDisobedient (battle_util.c:3890-4015) + helpers — absorbé au miroir
+//     2026-06-13, ex-engine/battle/disobedience.ts. (GetMoveTarget = _GetMoveTarget
+//     local l.138, déjà le miroir de battle_util.c:3811 → pas d'import croisé.) ───
+import { setCalledMove, setBattleMoveDamage } from '../engine/battle/state';
+import {
+  BATTLE_TYPE_RECORDED_LINK, B_SIDE_OPPONENT,
+  DISOBEDIENCE_OBEDIENT, DISOBEDIENCE_IGNORED, DISOBEDIENCE_OTHER,
+  STATUS1_ANY, STATUS1_SLEEP, STATUS2_RAGE, STATUS2_UPROAR,
+  MOVE_RAGE, MOVE_SNORE, MOVE_SLEEP_TALK, MOVE_POUND,
+  NUM_LOAF_STRINGS,
+  HITMARKER_DISOBEDIENT_MOVE, HITMARKER_UNABLE_TO_USE_MOVE,
+  ABILITY_VITAL_SPIRIT, ABILITY_INSOMNIA,
+} from '../engine/battle/constants';
+import { SPECIES_MEW, SPECIES_DEOXYS } from '../engine/decomp-data/include/constants/species-data';
+import { CalculateBaseDamage } from '../engine/battle/damage-calc';
+import { gPlayerParty, GetMonData, MON_DATA_SPECIES } from '../engine/battle/party-storage';
+import { gSaveBlock2Ptr } from '../engine/save/save-block-state';
+import { FlagGet } from '../engine/script/script-vars';
 // (setPotentialItemEffectBattler + GetItemHoldEffect déjà importés plus bas dans ce fichier)
 
 const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
@@ -1258,3 +1276,201 @@ export function AreAllMovesUnusable(): boolean {
 //     effects:985). La voie L action-selection appelle IsRunningFromBattleImpossible
 //     au choix de FUITE (battle_main.c:4322-4351) via ce hook (évite le cycle ESM).
 (globalThis as { IsRunningFromBattleImpossible?: () => number }).IsRunningFromBattleImpossible = IsRunningFromBattleImpossible;
+
+// ════════════════════════════════════════════════════════════════════════════
+// IsMonDisobedient (battle_util.c:3890-4015) — check de désobéissance des mons
+// outsiders dépassant le niveau d'obéissance correspondant aux badges.
+// [fusion miroir 2026-06-13, ex-engine/battle/disobedience.ts]
+// ════════════════════════════════════════════════════════════════════════════
+
+const _DIS_FLAG_BADGE02_GET = 'FLAG_BADGE02_GET';
+const _DIS_FLAG_BADGE04_GET = 'FLAG_BADGE04_GET';
+const _DIS_FLAG_BADGE06_GET = 'FLAG_BADGE06_GET';
+const _DIS_FLAG_BADGE08_GET = 'FLAG_BADGE08_GET';
+
+const _DIS_MOD = (a: number, b: number): number => ((a % b) + b) % b;
+
+/** 1:1 décomp `IsBattlerModernFatefulEncounter(battler)` (battle_util.c:3890-3898).
+ *  Web port : MON_DATA_MODERN_FATEFUL_ENCOUNTER déféré (pas d'anti-cheat) → always
+ *  true sauf jamais (= seul un Mew/Deoxys illégal renverrait false). */
+function _IsBattlerModernFatefulEncounter(battler: number): boolean {
+  if (GET_BATTLER_SIDE(battler) === B_SIDE_OPPONENT) return true;
+  const partyIdx = gBattlerPartyIndexes[battler];
+  if (!gPlayerParty[partyIdx]) return true;
+  const species = GetMonData(gPlayerParty[partyIdx], MON_DATA_SPECIES) as number;
+  if (species !== SPECIES_MEW && species !== SPECIES_DEOXYS) return true;
+  // MON_DATA_MODERN_FATEFUL_ENCOUNTER déféré (= pas pertinent web port).
+  return true;
+}
+
+/** 1:1 décomp `IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c) : true si TID OU
+ *  OT name diffèrent du joueur. Phase 1 single-tutorial : assume name match si TID
+ *  match. */
+function _IsOtherTrainer(otId: number, _otName: string): boolean {
+  const playerTID = (gSaveBlock2Ptr.playerTrainerId ?? 0) >>> 0;
+  if (playerTID !== (otId >>> 0)) return true;
+  return false;
+}
+
+/** 1:1 décomp `FlagGet(flag)` — wired via script-vars (gameState.hasFlag). */
+function _FlagGet(flagId: string): boolean {
+  return FlagGet(flagId);
+}
+
+/** 1:1 décomp `CalculateBaseDamage(self, self, MOVE_POUND, 0, 40, 0, self, self)`
+ *  (battle_util.c:4000) = self-hit 40-power typeless via le VRAI CalculateBaseDamage
+ *  (burn-halving + badge boost), pas une formule simplifiée. */
+function _calculateConfusionDamage(battler: number): number {
+  return CalculateBaseDamage(
+    gBattleMons[battler], gBattleMons[battler], MOVE_POUND, 0, 40, 0, battler, battler,
+  ).damage;
+}
+
+export interface DisobedienceResult {
+  /** 0 = OBEDIENT, 1 = IGNORED (= block all action), 2 = OTHER (= random thing). */
+  retval: number;
+  /** BattleScript label vers lequel sauter si pas obéissant. */
+  jumpLabel: string | null;
+}
+
+/** 1:1 décomp `IsMonDisobedient()` (battle_util.c:3900-4015). */
+export function IsMonDisobedient(_ctx: BattleScriptContext): DisobedienceResult {
+  let obedienceLevel = 0;
+
+  // 1:1 décomp : early-out checks.
+  if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
+    return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+  }
+  if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_OPPONENT) {
+    return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+  }
+
+  // 1:1 décomp : IsBattlerModernFatefulEncounter = only false if illegal Mew/Deoxys.
+  if (_IsBattlerModernFatefulEncounter(gBattlerAttacker)) {
+    // Frontier paths déférés : INGAME_PARTNER / FRONTIER / RECORDED / IsOtherTrainer.
+    const mon = gBattleMons[gBattlerAttacker];
+    if (!_IsOtherTrainer(mon.otId ?? 0, mon.otName ?? '')) {
+      return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+    }
+    if (_FlagGet(_DIS_FLAG_BADGE08_GET)) {
+      return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+    }
+
+    obedienceLevel = 10;
+    if (_FlagGet(_DIS_FLAG_BADGE02_GET)) obedienceLevel = 30;
+    if (_FlagGet(_DIS_FLAG_BADGE04_GET)) obedienceLevel = 50;
+    if (_FlagGet(_DIS_FLAG_BADGE06_GET)) obedienceLevel = 70;
+  }
+
+  if (gBattleMons[gBattlerAttacker].level <= obedienceLevel) {
+    return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+  }
+
+  // First roll : test si le mon obéit malgré son niveau trop élevé.
+  let rnd = Random() & 255;
+  let calc = ((gBattleMons[gBattlerAttacker].level + obedienceLevel) * rnd) >>> 8;
+  if (calc < obedienceLevel) {
+    return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
+  }
+
+  // Pas obéissant — break Rage if active.
+  if (gCurrentMove === MOVE_RAGE) {
+    gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_RAGE;
+  }
+
+  // Sleep + Snore/SleepTalk → ignored
+  if ((gBattleMons[gBattlerAttacker].status1 & STATUS1_SLEEP)
+      && (gCurrentMove === MOVE_SNORE || gCurrentMove === MOVE_SLEEP_TALK)) {
+    return {
+      retval: DISOBEDIENCE_IGNORED,
+      jumpLabel: 'BattleScript_IgnoresWhileAsleep',
+    };
+  }
+
+  // Second roll : type of disobedience.
+  rnd = Random() & 255;
+  calc = ((gBattleMons[gBattlerAttacker].level + obedienceLevel) * rnd) >>> 8;
+  if (calc < obedienceLevel) {
+    // Random move ou loaf si tous les moves indispo.
+    const limitations = CheckMoveLimitations(gBattlerAttacker, 1 << gCurrMovePos, MOVE_LIMITATIONS_ALL);
+    if (limitations === ALL_MOVES_MASK) {
+      gBattleCommunication[MULTISTRING_CHOOSER] = _DIS_MOD(Random(), NUM_LOAF_STRINGS);
+      return {
+        retval: DISOBEDIENCE_IGNORED,
+        jumpLabel: 'BattleScript_MoveUsedLoafingAround',
+      };
+    } else {
+      // Random pick un autre move (1:1 décomp battle_util.c : do/while sans garde —
+      // termine forcément car ce else-branch garantit limitations != ALL_MOVES_MASK,
+      // donc au moins un slot de move est libre).
+      do {
+        const idx = _DIS_MOD(Random(), MAX_MON_MOVES);
+        setCurrMovePos(idx);
+        setChosenMovePos(idx);
+      } while ((1 << gCurrMovePos) & limitations);
+
+      const calledMove = gBattleMons[gBattlerAttacker].moves[gCurrMovePos];
+      setCalledMove(calledMove);
+      // 1:1 décomp : gBattlerTarget = GetMoveTarget(calledMove, NO_TARGET_OVERRIDE).
+      setBattlerTarget(_GetMoveTarget(calledMove, NO_TARGET_OVERRIDE));
+      setHitMarker(gHitMarker | HITMARKER_DISOBEDIENT_MOVE);
+      return {
+        retval: DISOBEDIENCE_OTHER,
+        jumpLabel: 'BattleScript_IgnoresAndUsesRandomMove',
+      };
+    }
+  } else {
+    // Sleep / self-hit / loaf.
+    obedienceLevel = gBattleMons[gBattlerAttacker].level - obedienceLevel;
+    calc = Random() & 255;
+    if (calc < obedienceLevel
+        && !(gBattleMons[gBattlerAttacker].status1 & STATUS1_ANY)
+        && gBattleMons[gBattlerAttacker].ability !== ABILITY_VITAL_SPIRIT
+        && gBattleMons[gBattlerAttacker].ability !== ABILITY_INSOMNIA) {
+      // Try to fall asleep.
+      let i;
+      for (i = 0; i < gBattlersCount; i++) {
+        if (gBattleMons[i].status2 & STATUS2_UPROAR) break;
+      }
+      if (i === gBattlersCount) {
+        return {
+          retval: DISOBEDIENCE_IGNORED,
+          jumpLabel: 'BattleScript_IgnoresAndFallsAsleep',
+        };
+      }
+    }
+    calc -= obedienceLevel;
+    if (calc < obedienceLevel) {
+      // Self-hit confusion-style damage.
+      setBattleMoveDamage(_calculateConfusionDamage(gBattlerAttacker));
+      setBattlerTarget(gBattlerAttacker);
+      setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
+      return {
+        retval: DISOBEDIENCE_OTHER,
+        jumpLabel: 'BattleScript_IgnoresAndHitsItself',
+      };
+    } else {
+      gBattleCommunication[MULTISTRING_CHOOSER] = _DIS_MOD(Random(), NUM_LOAF_STRINGS);
+      return {
+        retval: DISOBEDIENCE_IGNORED,
+        jumpLabel: 'BattleScript_MoveUsedLoafingAround',
+      };
+    }
+  }
+}
+
+/** Helper glue pour Cmd_attackcanceler (= bridge du retour restructuré de
+ *  IsMonDisobedient vers le modèle d'interpréteur ctx ; dissous dans Cmd_attackcanceler
+ *  quand battle_script_commands.c sera migré). */
+export function applyDisobedienceCheck(ctx: BattleScriptContext, opcodeStartPtr: number): boolean {
+  const result = IsMonDisobedient(ctx);
+  if (result.retval === DISOBEDIENCE_OBEDIENT) return false;
+
+  // Push cursor + jump (= 1:1 décomp pattern).
+  if (result.jumpLabel) {
+    ctx.scriptPtrStack.push(opcodeStartPtr);
+    const off = getBattleScriptOffset(result.jumpLabel);
+    if (off >= 0) ctx.scriptPtr = off;
+  }
+  return true;
+}

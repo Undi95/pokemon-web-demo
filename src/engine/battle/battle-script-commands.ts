@@ -611,7 +611,7 @@ import {
 } from './data/type-effectiveness';
 import {
   applyDisobedienceCheck,
-} from './disobedience';
+} from '../../game/battle_util';
 import {
   ITEMEFFECT_KINGSROCK_SHELLBELL,
   ITEMEFFECT_MOVE_END,
