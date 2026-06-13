@@ -200,16 +200,17 @@ function ApplyAnimFrame(rt: DecompRuntime, sprite: AnimDispatchSprite, cmd: Anim
   let duration = cmd.duration;
   if (duration > 0) duration--;
   sprite.animDelayCounter = duration;
-  // Apply flips si pas en affine. La condition affine est testée par le caller
-  // au niveau du sprite (= we assume non-affine path ici, l'appelant skip
-  // ce helper si affineMode != NORMAL).
-  SetSpriteOamFlipBits(rt, sprite, cmd.hFlip, cmd.vFlip);
+  const oam = rt.gba.oam[sprite.oamIndex];
+  // 1:1 décomp (sprite.c:933 / 985 / 1019) : `if (!(oam.affineMode & ST_OAM_AFFINE_ON_MASK))
+  // SetSpriteOamFlipBits(...)`. En mode affine (affineMode 1 ou 3), les bits hFlip/vFlip
+  // de l'OAM servent au numéro de matrice → ne JAMAIS les écraser. (Bit 0 = AFFINE_ON.)
+  if (oam && !(oam.affineMode & 1)) {
+    SetSpriteOamFlipBits(rt, sprite, cmd.hFlip, cmd.vFlip);
+  }
   // Sheet vs frame-image VRAM dispatch :
   if (sprite.usingSheet) {
-    const oam = rt.gba.oam[sprite.oamIndex];
     if (oam) oam.tileId = sprite.sheetTileStart + cmd.imageValue;
   } else if (sprite.images) {
-    const oam = rt.gba.oam[sprite.oamIndex];
     if (oam) RequestSpriteFrameImageCopy(cmd.imageValue, oam.tileId, sprite.images);
   }
 }
@@ -250,7 +251,9 @@ export function ContinueAnim(rt: DecompRuntime, sprite: AnimDispatchSprite): voi
     if (!animTable) return;
     const cmd = animTable[sprite.animCmdIndex];
     if (cmd && cmd.kind === 'frame') {
-      SetSpriteOamFlipBits(rt, sprite, cmd.hFlip, cmd.vFlip);
+      // 1:1 décomp sprite.c:952 : flip bits SEULEMENT si non-affine (cf. ApplyAnimFrame).
+      const oam = rt.gba.oam[sprite.oamIndex];
+      if (oam && !(oam.affineMode & 1)) SetSpriteOamFlipBits(rt, sprite, cmd.hFlip, cmd.vFlip);
     }
     return;
   }

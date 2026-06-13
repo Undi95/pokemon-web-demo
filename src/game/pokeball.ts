@@ -178,12 +178,16 @@ export function LoadBallGfx(ballId: number): void {
     case BALL_PREMIER:
       break;
     default: {
-      // 1:1 decomp : `LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var*32)` —
-      // ecrit la frame "ball ouverte" aux tiles [start+8..]. DETTE : le runtime
-      // LZ77UnCompVram/LZDecompressVram ecrit en BG VRAM (gba.vram), PAS en OBJ
-      // (gba.objVram) -> on ne peut pas l'appeler sans corrompre le BG. A raffiner
-      // (router OBJ dans LZ77UnCompVram). NB poke.4bpp.bin a 3 frames (0/4/8) -> l'anim
-      // d'ouverture de la ball marche sans gOpenPokeballGfx (a confirmer A/B).
+      // 1:1 decomp `LZDecompressVram(gOpenPokeballGfx, OBJ_VRAM0 + 0x100 + var*32)` :
+      // overwrite la frame "ball grande ouverte" (open.png) aux tiles [start+8 .. +11].
+      // DETTE (A/B confirme) : poke.png n'a que 2 frames pleines (fermee[0]+mi-ouverte[4])
+      // ; la frame open[8] reste VIDE -> ball "grande ouverte" invisible. MAIS le porter
+      // via LoadCompressedSpriteSheet(targetTileBase=start+8) provoque une REGRESSION :
+      // l'overwrite cible INVALIDE les ranges de tags CHEVAUCHANT (decomp-globals.ts:1788)
+      // -> le sheet poke.png principal (start..start+11) est demarque -> ball = BLOC
+      // garbage (tileId 0). Le bon fix doit ecrire open.png aux tiles start+8 SANS
+      // demarquer le sheet principal (ecriture VRAM ciblee qui ne touche pas le bitmap
+      // d'alloc des tags existants). A faire proprement.
       const var_ = GetSpriteTileStartByTag(gBallSpriteSheets[ballId].tag);
       void var_;
       break;

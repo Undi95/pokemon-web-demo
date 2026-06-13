@@ -34,7 +34,7 @@ import {
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1 } from './sprite-animation';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline } from './sprite-animation';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2165,6 +2165,23 @@ export class DecompRuntime {
 
   /** Change manuellement l'anim active d'un sprite (1:1 décomp StartSpriteAnim). */
   StartSpriteAnim(spriteId: number, animIdx: number): void {
+    // ─── Système 1:1 inline (sprite avec table `.anims` : ball, sprites d'anim combat) ──
+    // 1:1 décomp sprite.c `StartSpriteAnim` = poser animNum + reset des flags ; au
+    // prochain tick, _AnimateSprite_1to1 (tickSpriteAnims) voit animBeginning=true →
+    // BeginAnim applique la frame 0 de la nouvelle anim (sprite-animation.ts).
+    // AVANT ce branchement, StartSpriteAnim était un NO-OP pour ces sprites (early-return
+    // ci-dessous car absents de spriteAnimStates) → l'ouverture de la Poké Ball
+    // (SpriteCB_Ball_Arc → StartSpriteAnim(sprite, 1)) ne démarrait JAMAIS : la ball
+    // restait sur la frame fermée (anim 0) tout le long de la capture (bug #1).
+    const inlineSprite = this.gSprites.get(spriteId);
+    if (inlineSprite && inlineSprite.anims) {
+      // Délègue à la fonction 1:1 STRICT `StartSpriteAnim` (sprite-animation.ts:363 =
+      // sprite.c:1346 : animNum + animBeginning=true + animEnded=false, SANS reset de
+      // animCmdIndex/animDelayCounter — BeginAnim s'en charge). Source UNIQUE, pas de copie.
+      _StartSpriteAnimInline(inlineSprite as never, animIdx);
+      return;
+    }
+    // ─── Système legacy nommé (spriteAnimStates : overworld / sac) ──────────────────
     const state = this.spriteAnimStates.get(spriteId);
     if (!state) return;
     // Consulte d'abord le runtime registry (_extraAnimTables = tables
