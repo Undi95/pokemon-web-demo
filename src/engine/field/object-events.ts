@@ -39,7 +39,7 @@ import { SeekSpriteAnim, StartSpriteAnim } from '../system/sprite-animation';
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
 // depuis base_oam template authoritative). Fallback dimensions-based pour les
 // rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
-import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers } from './object-event-graphics-info-data';
+import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './object-event-graphics-info-data';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -178,6 +178,28 @@ async function loadNpcPng(path: string): Promise<LoadedPng> {
   return pending;
 }
 
+// ─── Berry tree graphics (cas spécial multi-PNG + swap par baie) ─────────────
+/** Répertoire public des PNGs berry tree (dirt_pile, sprout, + 1 par baie). */
+const BERRY_TREE_PNG_DIR = `${BASE}/object_events/berry_trees`;
+
+/** Résout les 3 chemins PNG d'un berry tree (dirt_pile + sprout + baie) selon
+ *  son berryTreeId. 1:1 décomp `gBerryTreePicTablePointers` : la pic table (et
+ *  donc le PNG baie) dépend du berryType = `gSaveBlock1.berryTrees[id].berry`.
+ *  Pour un plot vide (stade NO_BERRY → berryType 0) on retombe sur l'entrée 0
+ *  (Cheri) ; le sprite sera de toute façon invisible (1:1 SetBerryTreeGraphics
+ *  rend invisible si BERRY_STAGE_NO_BERRY). */
+function _berryTreePngPaths(berryTreeId: number): string[] {
+  const berryType = GetBerryTypeByBerryTreeId(berryTreeId);
+  let berryId = berryType - 1;
+  if (berryId < 0 || berryId >= gBerryTreePicTableBuilders.length) berryId = 0;
+  const berryPng = gBerryTreePicTableBuilders[berryId].png;
+  return [
+    `${BERRY_TREE_PNG_DIR}/dirt_pile.png`,
+    `${BERRY_TREE_PNG_DIR}/sprout.png`,
+    `${BERRY_TREE_PNG_DIR}/${berryPng}.png`,
+  ];
+}
+
 /** Pre-load PARALLEL toutes les PNGs des NPCs templates de mapHeader.
  *  Resolved quand tous les loads done (ou ont silencieusement failed).
  *  Idempotent : si déjà cached, no-op rapide.
@@ -202,6 +224,12 @@ export async function preloadNpcGraphicsForMap(mapHeader: MapHeader): Promise<vo
         const resolved = _reverseDecompConstant(gfxIdValue, 'OBJ_EVENT_GFX_');
         if (resolved) key = resolved;
       }
+    }
+    // Berry tree : cas spécial (pas dans le catalogue, 3 PNGs distincts assemblés
+    // au runtime par berryType). Précharge dirt_pile + sprout + la baie.
+    if (key === 'OBJ_EVENT_GFX_BERRY_TREE') {
+      for (const p of _berryTreePngPaths(template.trainerRange_berryTreeId)) paths.add(p);
+      continue;
     }
     const graphics = catalog[key];
     if (!graphics) continue;
@@ -4758,6 +4786,207 @@ function _execHeldMovementAction(rt: DecompRuntime, npc: ObjectEvent): void {
 
 // ─── Spawn ──────────────────────────────────────────────────────────────────
 
+/** Index de la 1re frame image affichée par stade (= 1er `ANIMCMD_FRAME` de
+ *  `sAnim_BerryTreeStage{0..4}`, object_event_anims.h:564-600) :
+ *    animNum 0 (PLANTED)   → frame 0  (DirtPile 16×16)
+ *    animNum 1 (SPROUTED)  → frame 1  (Sprout   16×16)
+ *    animNum 2 (TALLER)    → frame 3  (baie     16×32)
+ *    animNum 3 (FLOWERING) → frame 5  (baie     16×32)
+ *    animNum 4 (BERRIES)   → frame 7  (baie     16×32, mûre) */
+const BERRY_TREE_FIRST_FRAME_BY_ANIM = [0, 1, 3, 5, 7] as const;
+
+/** Spawn 1:1 d'un berry tree object-event. Miroir de `TrySpawnObjectEventTemplate`
+ *  (event_object_movement.c:1478) + résolution immédiate de `SetBerryTreeGraphics`
+ *  (1890) à l'état du stade courant.
+ *
+ *  Cas spécial vs le flow NPC standard :
+ *   - la pic table (9 frames) est assemblée au runtime depuis 3 PNGs distincts
+ *     (dirt_pile + sprout + baie) via le builder `gBerryTreePicTableBuilders[berryId]` ;
+ *   - la taille OAM dépend du stade (EARLY 16×16 stades 1-2 / LATE 16×32 stades 3-5,
+ *     cf `gBerryTreeObjectEventGraphicsIdTable = {EARLY,EARLY,LATE,LATE,LATE}`) ;
+ *   - l'alloc VRAM = `graphicsInfo->size` (256 = 8 tiles, sprite.c:1488-1489 +
+ *     CreateSpriteAt:566), PAS `images[0].size` (DirtPile = 4 tiles seulement).
+ *
+ *  Le swap de graphics AU CHANGEMENT de stade en cours de partie (croissance →
+ *  ObjectEventSetGraphicsId réalloc) reste différé (dette R3) : les baies
+ *  initiales sont figées (stopGrowth=TRUE), l'état du stade est donc résolu une
+ *  fois au spawn. `tickBerryTreeGrowth`/`setBerryTreeGraphics` continuent de
+ *  resynchroniser `animNum` chaque frame (no-op pour un arbre statique). */
+function _spawnBerryTreeFromTemplate(
+  template: ObjectEventTemplate,
+  currentMapId: string,
+  rt: DecompRuntime,
+): boolean {
+  // Flag de masquage (1:1 décomp TrySpawnObjectEvents : NPC caché si flagId set).
+  if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) return false;
+
+  // Dedup (1:1 GetAvailableObjectEventId) — identique au flow standard.
+  const existing = gObjectEvents.findIndex(o => {
+    if (!o.active || o.mapId !== currentMapId) return false;
+    if (template.localIdRaw && o.localIdRaw === template.localIdRaw) return true;
+    if (!template.localIdRaw
+        && o.initialCoordsX === template.x + MAP_OFFSET
+        && o.initialCoordsY === template.y + MAP_OFFSET) return true;
+    return false;
+  });
+  if (existing >= 0) return false;
+
+  const slot = gObjectEvents.findIndex(o => !o.active);
+  if (slot < 0) return false;
+
+  // ─── Résolution graphics 1:1 SetBerryTreeGraphics (event_object_movement.c:1890) ─
+  const berryTreeId = template.trainerRange_berryTreeId;
+  const berryStage = GetStageByBerryTreeId(berryTreeId);
+  const visible = berryStage !== BERRY_STAGE_NO_BERRY;
+  // 1:1 : berryId = GetBerryTypeByBerryTreeId(id) - 1 ; garde le borne (plot vide
+  // → entrée 0 Cheri, sprite invisible de toute façon).
+  const berryType = GetBerryTypeByBerryTreeId(berryTreeId);
+  let berryId = berryType - 1;
+  if (berryId < 0 || berryId >= gBerryTreePicTableBuilders.length) berryId = 0;
+  const gfx = gBerryTreePicTableBuilders[berryId];
+  // 1:1 : berryStage-- avant le lookup table/anim. Plot vide → animNum 0 (dirt).
+  const animNum = visible ? berryStage - 1 : 0;
+  // gBerryTreeObjectEventGraphicsIdTable = {EARLY,EARLY,LATE,LATE,LATE} : stades
+  // 0-1 (PLANTED/SPROUTED) = 16×16, stades 2-4 (TALLER/FLOWERING/BERRIES) = 16×32.
+  const isLate = animNum >= 2;
+  const width = 16;
+  const height = isLate ? 32 : 16;
+
+  // PNGs préchargés (dirt_pile + sprout + baie). Si pas en cache → skip (caller
+  // doit avoir préload via preloadNpcGraphicsForMap).
+  const [dirtPath, sproutPath, berryPath] = _berryTreePngPaths(berryTreeId);
+  const dirtPng = _npcPngCache.get(dirtPath);
+  const sproutPng = _npcPngCache.get(sproutPath);
+  const berryPng = _npcPngCache.get(berryPath);
+  if (!dirtPng || !sproutPng || !berryPng) return false;
+
+  // Convertit chaque PNG row-major → 1D OBJ layout (frames consécutifs), chacun
+  // à SA taille de frame (dirt/sprout 16×16, baie 16×32). Le builder slice ces
+  // buffers via overworld_frame(buf, w, h, frame).
+  const dirt1d = pngTo1dObjLayoutAllFrames(dirtPng.charData, dirtPng.widthTiles, 16, 16);
+  const sprout1d = pngTo1dObjLayoutAllFrames(sproutPng.charData, sproutPng.widthTiles, 16, 16);
+  const berry1d = pngTo1dObjLayoutAllFrames(berryPng.charData, berryPng.widthTiles, 16, 32);
+  const picTable = gfx.build(dirt1d, sprout1d, berry1d);
+
+  // 1:1 décomp : AllocSpriteTiles(graphicsInfo->size / TILE_SIZE_4BPP) = 256/32 = 8.
+  // (gObjectEventGraphicsInfo_BerryTree{,EarlyStages,LateStages}.size = 256 = la
+  // plus grande frame 16×32 ; suffisant pour toutes les frames du sprite.)
+  const objTileCount = 8;
+  const objTileBase = AllocSpriteTiles(objTileCount);
+  if (objTileBase < 0) return false;
+
+  // Palette : on charge la palette indexée du PNG de la baie (= couleurs du stade
+  // affiché). Tag unique par baie → arbres de même baie partagent le slot.
+  // Dette web vs décomp : le décomp partage des palettes NPC pré-chargées via
+  // gBerryTreePaletteSlotTablePointers ; ici 1 slot par baie distincte (couleurs
+  // correctes, n° de slot différent — équivalent fonctionnel pour le rendu).
+  const paletteTag = `NPC_PAL_BERRY_${gfx.png}`;
+  const paletteBank = LoadSpritePalette({ data: berryPng.palette as Uint16Array, tag: paletteTag });
+  if (paletteBank === 0xFF) {
+    MarkObjTilesFree(objTileBase * 32, objTileCount * 32);
+    return false;
+  }
+
+  // Copie la frame initiale du stade en VRAM (= état avant que l'anim ne tourne).
+  const firstFrame = BERRY_TREE_FIRST_FRAME_BY_ANIM[animNum] ?? 0;
+  rt.gba.objVram.set(picTable[firstFrame].data, objTileBase * 32);
+
+  // ─── Init ObjectEvent + position (1:1 InitObjectEventStateFromTemplate) ──────
+  const cam = GetCameraTopLeftCoords();
+  const npc = gObjectEvents[slot];
+  npc.active = true;
+  // 1:1 SetBerryTreeGraphics : invisible si BERRY_STAGE_NO_BERRY.
+  npc.invisible = !visible;
+  npc.graphicsId = 'OBJ_EVENT_GFX_BERRY_TREE';
+  npc.movementType = template.movementTypeRaw ?? '';
+  npc.localId = template.localId;
+  npc.localIdRaw = template.localIdRaw;
+  npc.mapId = currentMapId;
+  npc.scriptLabel = template.script ?? '';
+  // CRITIQUE : champ jamais copié par le flow standard ; sans ça
+  // GetStageByBerryTreeId lit toujours berryTrees[0].
+  npc.trainerRange_berryTreeId = berryTreeId;
+  npc.currentCoordsX = template.x + MAP_OFFSET;
+  npc.currentCoordsY = template.y + MAP_OFFSET;
+  npc.previousCoordsX = template.x + MAP_OFFSET;
+  npc.previousCoordsY = template.y + MAP_OFFSET;
+  npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
+  npc.movementDirection = npc.facingDirection;
+  npc.previousMovementDirection = npc.facingDirection;
+  ObjectEventUpdateMetatileBehaviors(npc);
+  npc.objTileBase = objTileBase;
+  npc.objTileCount = objTileCount;
+  npc.paletteBank = paletteBank;
+  // Position sprite 1:1 SetSpritePosToMapCoords (event_object_movement.c:4801).
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  npc.worldX = (npc.currentCoordsX - cam.x) * 16 + 8 + dx;
+  npc.worldY = (npc.currentCoordsY - cam.y) * 16 + dy;
+  npc.movementStep = 0;
+  npc.movementDelay = 0;
+  npc.walkFramesLeft = 0;
+  npc.walkDirection = DIR_NONE;
+  npc.walkAnimAlt = 0;
+  npc.frozen = false;
+  npc.initialCoordsX = template.x + MAP_OFFSET;
+  npc.initialCoordsY = template.y + MAP_OFFSET;
+  npc.movementRangeX = template.movementRangeX;
+  npc.movementRangeY = template.movementRangeY;
+  if (movementTypeHasRange(npc.movementType)) {
+    if (npc.movementRangeX === 0) npc.movementRangeX = 1;
+    if (npc.movementRangeY === 0) npc.movementRangeY = 1;
+  }
+  npc.directionSeqIdx = 0;
+  // 1:1 décomp : inanimate=TRUE (gObjectEventGraphicsInfo_BerryTree). is16x16/
+  // is32x32/useSubsprites = false → frame piloté par le sprite anim system
+  // (dynamic copy), pas par le cycle tileId de updateNpcSpriteFrame.
+  npc.inanimate = true;
+  npc.is16x16 = false;
+  npc.is32x32 = false;
+  npc.useSubsprites = false;
+
+  // ─── Création du sprite (flow images/dynamic-copy 1:1, cf _hasNewFlow) ───────
+  const oamTemplate = GetBaseOamForDimensions(width, height);
+  const result = rt.CreateSpriteAtOam({
+    tileId: objTileBase,
+    paletteBank,
+    x: 0, y: 0,
+    shape: oamTemplate.shape, size: oamTemplate.size,
+    priority: oamTemplate.priority,
+    paletteMode: 0,
+    affineMode: 0,
+  });
+  npc.spriteId = result.spriteId;
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite) {
+    sprite.tileBase = objTileBase;
+    sprite.images = picTable;
+    sprite.anims = sAnimTable_BerryTree as unknown as ReadonlyArray<ReadonlyArray<unknown>>;
+    sprite.usingSheet = false;
+    sprite.sheetTileStart = 0;
+    // 1:1 event_object_movement.c:1461-1464 (ctcv + offsets).
+    sprite.centerToCornerVecX = -(width >> 1);
+    sprite.centerToCornerVecY = -(height >> 1);
+    sprite.y2 = 16 + sprite.centerToCornerVecY;
+    // 1:1 SetBerryTreeGraphics : StartSpriteAnim(sprite, berryStage) (animNum).
+    if (visible) {
+      sprite.animNum = animNum;
+      sprite.animBeginning = true;
+      sprite.animEnded = false;
+      sprite.animCmdIndex = 0;
+      sprite.animDelayCounter = 0;
+    }
+  }
+  rt.gba.oam[result.oamIndex].flipH = false;
+  rt.gba.oam[result.oamIndex].priority = oamTemplate.priority;
+  console.log(`[object-events] spawn berry tree slot=${slot} treeId=${berryTreeId} berryType=${berryType} stage=${berryStage} animNum=${animNum} (${isLate ? '16x32' : '16x16'}) png=${gfx.png} at (${template.x}, ${template.y}) visible=${visible}`);
+  return true;
+}
+
 /** Spawn 1 NPC depuis un template. SYNC : lit la PNG depuis _npcPngCache.
  *  Returns true si spawn réussi, false si skipped (= dedup hit, pool full,
  *  PNG pas cached, graphics non-standard, etc).
@@ -4796,6 +5025,13 @@ function _spawnSingleNpcFromTemplate(
       // décomp ferait pareil (= sprite blank/invisible).
       return false;
     }
+  }
+  // Berry tree : cas spécial (absent du catalogue, 3 PNGs distincts assemblés au
+  // runtime selon le berryType + swap de taille OAM selon le stade). Dispatch
+  // vers le spawner dédié 1:1 décomp (TrySpawnObjectEventTemplate +
+  // SetBerryTreeGraphics, event_object_movement.c:1478 + 1890).
+  if (graphicsKey === 'OBJ_EVENT_GFX_BERRY_TREE') {
+    return _spawnBerryTreeFromTemplate(template, currentMapId, rt);
   }
   const graphics = catalog[graphicsKey];
   if (!graphics) return false;

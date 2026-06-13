@@ -4507,6 +4507,73 @@ export function build_gObjectEventGraphicsInfo_BerryTreeLateStages(gObjectEventP
   };
 }
 
+// ─── gBerryTreePicTablePointers 1:1 décomp ──────────────────────────────────
+// Source : D:/Projet 1/decomps/pokeemeraude/src/data/object_events/
+//          berry_tree_graphics_tables.h:425-469.
+//
+// Indexé par berryId = ITEM_X_BERRY - FIRST_BERRY_INDEX (= berryType - 1, où
+// berryType = ITEM_TO_BERRY(item) ∈ [1..43]). Chaque entrée mappe :
+//   - png   : nom du fichier baie sous public/decomp/em/object_events/berry_trees/
+//   - build : le builder sPicTable correspondant (9 frames = dirt + sprout×2 +
+//             baie×6, cf berry_tree_graphics_tables.h:1-11).
+// Les baies « partagées » (BLUK→Razz, NANAB→Mago, …) pointent vers le même
+// builder + png que leur baie de référence — 1:1 décomp (lignes 442-468).
+//
+// Re-export `sAnimTable_BerryTree` (= anims du sprite, sélection animNum par
+// stade) pour le spawner berry tree de object-events.ts.
+export { sAnimTable_BerryTree };
+
+export interface BerryTreePicTableBuilder {
+  readonly png: string;
+  readonly build: (dirt: Uint8Array, sprout: Uint8Array, berry: Uint8Array) => SpriteFrameImage[];
+}
+
+export const gBerryTreePicTableBuilders: ReadonlyArray<BerryTreePicTableBuilder> = [
+  { png: 'cheri',  build: build_sPicTable_CheriBerryTree },   // 0  ITEM_CHERI_BERRY
+  { png: 'chesto', build: build_sPicTable_ChestoBerryTree },  // 1  ITEM_CHESTO_BERRY
+  { png: 'pecha',  build: build_sPicTable_PechaBerryTree },   // 2  ITEM_PECHA_BERRY
+  { png: 'rawst',  build: build_sPicTable_RawstBerryTree },   // 3  ITEM_RAWST_BERRY
+  { png: 'aspear', build: build_sPicTable_AspearBerryTree },  // 4  ITEM_ASPEAR_BERRY
+  { png: 'leppa',  build: build_sPicTable_LeppaBerryTree },   // 5  ITEM_LEPPA_BERRY
+  { png: 'oran',   build: build_sPicTable_OranBerryTree },    // 6  ITEM_ORAN_BERRY
+  { png: 'persim', build: build_sPicTable_PersimBerryTree },  // 7  ITEM_PERSIM_BERRY
+  { png: 'lum',    build: build_sPicTable_LumBerryTree },     // 8  ITEM_LUM_BERRY
+  { png: 'sitrus', build: build_sPicTable_SitrusBerryTree },  // 9  ITEM_SITRUS_BERRY
+  { png: 'figy',   build: build_sPicTable_FigyBerryTree },    // 10 ITEM_FIGY_BERRY
+  { png: 'wiki',   build: build_sPicTable_WikiBerryTree },    // 11 ITEM_WIKI_BERRY
+  { png: 'mago',   build: build_sPicTable_MagoBerryTree },    // 12 ITEM_MAGO_BERRY
+  { png: 'aguav',  build: build_sPicTable_AguavBerryTree },   // 13 ITEM_AGUAV_BERRY
+  { png: 'iapapa', build: build_sPicTable_IapapaBerryTree },  // 14 ITEM_IAPAPA_BERRY
+  { png: 'razz',   build: build_sPicTable_RazzBerryTree },    // 15 ITEM_RAZZ_BERRY
+  { png: 'razz',   build: build_sPicTable_RazzBerryTree },    // 16 ITEM_BLUK_BERRY   → Razz
+  { png: 'mago',   build: build_sPicTable_MagoBerryTree },    // 17 ITEM_NANAB_BERRY  → Mago
+  { png: 'wepear', build: build_sPicTable_WepearBerryTree },  // 18 ITEM_WEPEAR_BERRY
+  { png: 'iapapa', build: build_sPicTable_IapapaBerryTree },  // 19 ITEM_PINAP_BERRY  → Iapapa
+  { png: 'pomeg',  build: build_sPicTable_PomegBerryTree },   // 20 ITEM_POMEG_BERRY
+  { png: 'kelpsy', build: build_sPicTable_KelpsyBerryTree },  // 21 ITEM_KELPSY_BERRY
+  { png: 'wepear', build: build_sPicTable_WepearBerryTree },  // 22 ITEM_QUALOT_BERRY → Wepear
+  { png: 'hondew', build: build_sPicTable_HondewBerryTree },  // 23 ITEM_HONDEW_BERRY
+  { png: 'grepa',  build: build_sPicTable_GrepaBerryTree },   // 24 ITEM_GREPA_BERRY
+  { png: 'tamato', build: build_sPicTable_TamatoBerryTree },  // 25 ITEM_TAMATO_BERRY
+  { png: 'cornn',  build: build_sPicTable_CornnBerryTree },   // 26 ITEM_CORNN_BERRY
+  { png: 'pomeg',  build: build_sPicTable_PomegBerryTree },   // 27 ITEM_MAGOST_BERRY → Pomeg
+  { png: 'rabuta', build: build_sPicTable_RabutaBerryTree },  // 28 ITEM_RABUTA_BERRY
+  { png: 'nomel',  build: build_sPicTable_NomelBerryTree },   // 29 ITEM_NOMEL_BERRY
+  { png: 'spelon', build: build_sPicTable_SpelonBerryTree },  // 30 ITEM_SPELON_BERRY
+  { png: 'pamtre', build: build_sPicTable_PamtreBerryTree },  // 31 ITEM_PAMTRE_BERRY
+  { png: 'rabuta', build: build_sPicTable_RabutaBerryTree },  // 32 ITEM_WATMEL_BERRY → Rabuta
+  { png: 'durin',  build: build_sPicTable_DurinBerryTree },   // 33 ITEM_DURIN_BERRY
+  { png: 'hondew', build: build_sPicTable_HondewBerryTree },  // 34 ITEM_BELUE_BERRY  → Hondew
+  { png: 'liechi', build: build_sPicTable_LiechiBerryTree },  // 35 ITEM_LIECHI_BERRY
+  { png: 'hondew', build: build_sPicTable_HondewBerryTree },  // 36 ITEM_GANLON_BERRY → Hondew
+  { png: 'aguav',  build: build_sPicTable_AguavBerryTree },   // 37 ITEM_SALAC_BERRY  → Aguav
+  { png: 'pomeg',  build: build_sPicTable_PomegBerryTree },   // 38 ITEM_PETAYA_BERRY → Pomeg
+  { png: 'grepa',  build: build_sPicTable_GrepaBerryTree },   // 39 ITEM_APICOT_BERRY → Grepa
+  { png: 'lansat', build: build_sPicTable_LansatBerryTree },  // 40 ITEM_LANSAT_BERRY
+  { png: 'cornn',  build: build_sPicTable_CornnBerryTree },   // 41 ITEM_STARF_BERRY  → Cornn
+  { png: 'durin',  build: build_sPicTable_DurinBerryTree },   // 42 ITEM_ENIGMA_BERRY → Durin
+];
+
 export function build_gObjectEventGraphicsInfo_ProfBirch(gObjectEventPic_ProfBirch: Uint8Array): ObjectEventGraphicsInfo {
   return {
     tileTag: TAG_NONE,
