@@ -613,6 +613,9 @@ function AnimSparklingStars(sprite: _PSprite): void {
 registerAnimCallbacks({
   AnimMovePowderParticle: AnimMovePowderParticle as never,
   AnimFlyingParticle: AnimFlyingParticle as never,
+  AnimPresent: AnimPresent as never,
+  AnimItemSteal: AnimItemSteal as never,
+  AnimKnockOffItem: AnimKnockOffItem as never,
   AnimPowerAbsorptionOrb: AnimPowerAbsorptionOrb as never,
   AnimTranslateLinearSingleSineWave: AnimTranslateLinearSingleSineWave as never,
   AnimMoveTwisterParticle: AnimMoveTwisterParticle as never,
@@ -655,6 +658,7 @@ const SOUND_PAN_TARGET = 63;
 const SE_M_LEER = 192;
 const SE_M_SWAGGER2 = 194;
 const SE_M_LOCK_ON = 210;
+const SE_M_BUBBLE2 = 125;
 // constants/rgb.h : RGB(31,31,31)
 const RGB_WHITE = 0x7FFF;
 // constants/battle_anim.h : ANIM_SPRITES_START(10000) + 14
@@ -809,6 +813,163 @@ function _BattleAnimAdjustPanning(pan: number): number {
   if (pan > SOUND_PAN_TARGET) pan = SOUND_PAN_TARGET;
   else if (pan < SOUND_PAN_ATTACKER) pan = SOUND_PAN_ATTACKER;
   return pan;
+}
+
+// ─── SOUS-SYSTÈME ITEM BAG (battle_anim_effects_1.c:2947-3153) ──────────────
+// Present / Covet-Thief (ItemSteal) / Knock Off : le sac vole en arcs
+// décroissants (Sin 30−n×8) le long d'un chemin linéaire encodé fixed-point
+// dans data[5..7] (InitItemBagData) jusqu'à moveAlongLinearPath == TRUE.
+
+/** 1:1 `InitItemBagData(sprite, c)` (.c:2947-2955) — packe (x|y) départ dans
+ *  data[5], (data[6]|data[7]) arrivée dans data[6], durée c<<8 dans data[7]. */
+function InitItemBagData(sprite: _PSprite, c: number): void {
+  const a = ((sprite.x & 0xFF) << 8) | (sprite.y & 0xFF);
+  const b = ((sprite.data[6] & 0xFF) << 8) | (sprite.data[7] & 0xFF);
+  sprite.data[5] = a;
+  sprite.data[6] = b;
+  sprite.data[7] = (c << 8) & 0xFFFF;
+}
+
+/** 1:1 `moveAlongLinearPath(sprite)` (.c:2957-2986) — avance x/y sur la droite
+ *  départ→arrivée au prorata currentTime/totalTime ; xEnd 0→-32, 255→272. */
+function moveAlongLinearPath(sprite: _PSprite): boolean {
+  const xStartPos = (sprite.data[5] >> 8) & 0xFF;
+  const yStartPos = sprite.data[5] & 0xFF;
+  let xEndPos = (sprite.data[6] >> 8) & 0xFF;
+  const yEndPos = sprite.data[6] & 0xFF;
+  const totalTime = (sprite.data[7] >> 8) & 0xFF;
+  let currentTime = sprite.data[7] & 0xFF;
+  if (xEndPos === 0) xEndPos = -32;
+  else if (xEndPos === 255) xEndPos = 240 + 32; // DISPLAY_WIDTH + 32
+  const yEndPos_2 = yEndPos - yStartPos;
+  const r0 = xEndPos - xStartPos;
+  const var1 = Math.trunc((r0 * currentTime) / totalTime);
+  const vaxEndPos = Math.trunc((yEndPos_2 * currentTime) / totalTime);
+  sprite.x = var1 + xStartPos;
+  sprite.y = vaxEndPos + yStartPos;
+  if (++currentTime === totalTime) return true;
+  sprite.data[7] = ((totalTime << 8) | currentTime) & 0xFFFF;
+  return false;
+}
+
+/** 1:1 `AnimItemSteal_Step2(sprite)` (.c:2988-2996) — pose 10 frames puis
+ *  affine 1 (shrink), destroy à 50. */
+function AnimItemSteal_Step2(sprite: _PSprite): void {
+  if (sprite.data[0] === 10) {
+    const rt = (globalThis as Record<string, unknown>).__rt as { StartSpriteAffineAnim?: (i: number, n: number) => void } | undefined;
+    const sid = (sprite as { spriteId?: number }).spriteId ?? -1;
+    if (sid >= 0) rt?.StartSpriteAffineAnim?.(sid, 1);
+  }
+  sprite.data[0]++;
+  if (sprite.data[0] > 50) _pItf().DestroyAnimSprite?.(sprite);
+}
+
+/** 1:1 `AnimItemSteal_Step1(sprite)` (.c:2998-3014) — arcs Sin décroissants
+ *  (30 − bounce×8) le long du chemin, puis Step2. */
+function AnimItemSteal_Step1(sprite: _PSprite): void {
+  sprite.data[0] += Math.trunc((sprite.data[3] * 128) / sprite.data[4]);
+  if (sprite.data[0] >= 128) {
+    sprite.data[1]++;
+    sprite.data[0] = 0;
+  }
+  sprite.y2 = Sin((sprite.data[0] + 128) & 0xFF, 30 - sprite.data[1] * 8);
+  if (moveAlongLinearPath(sprite)) {
+    sprite.y2 = 0;
+    sprite.data[0] = 0;
+    sprite.callback = AnimItemSteal_Step2;
+  }
+}
+
+/** 1:1 `AnimPresent(sprite)` (.c:3016-3042) — le cadeau vole de l'attaquant
+ *  vers la cible (1 arc partenaire / 3 arcs sinon, 60 frames). */
+function AnimPresent(sprite: _PSprite): void {
+  const itf = _pItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  InitSpritePosToAnimAttacker(sprite as never, false);
+  const targetX = GetBattlerSpriteCoord(tgt, 0 /* BATTLER_COORD_X */);
+  const targetY = GetBattlerSpriteCoord(tgt, 1 /* BATTLER_COORD_Y */);
+  sprite.data[6] = targetX;
+  sprite.data[7] = targetY + 10;
+  InitItemBagData(sprite, 60);
+  sprite.data[3] = ((atk ^ 2) === tgt) ? 1 : 3;
+  sprite.data[4] = 60;
+  sprite.callback = AnimItemSteal_Step1;
+}
+
+/** 1:1 `AnimKnockOffOpponentsItem(sprite)` (.c:3044-3060) — l'objet éjecté
+ *  vole hors écran en arcs décroissants puis destroy. */
+function AnimKnockOffOpponentsItem(sprite: _PSprite): void {
+  sprite.data[0] += Math.trunc((sprite.data[3] * 128) / sprite.data[4]);
+  if (sprite.data[0] > 0x7F) {
+    sprite.data[1]++;
+    sprite.data[0] = 0;
+  }
+  sprite.y2 = Sin((sprite.data[0] + 0x80) & 0xFF, 30 - sprite.data[1] * 8);
+  if (moveAlongLinearPath(sprite)) {
+    sprite.y2 = 0;
+    sprite.data[0] = 0;
+    _pItf().DestroyAnimSprite?.(sprite);
+  }
+}
+
+/** 1:1 `AnimKnockOffItem(sprite)` (.c:3062-3087) — côté joueur : l'objet
+ *  retombe sur place (xEnd 0→-32) ; côté adverse : éjecté à droite (255). */
+function AnimKnockOffItem(sprite: _PSprite): void {
+  const tgt = _pItf().getTarget?.() ?? 1;
+  const targetY = GetBattlerSpriteCoord(tgt, 1 /* BATTLER_COORD_Y */);
+  if ((tgt & 1) === 0 /* B_SIDE_PLAYER */) {
+    sprite.data[6] = 0;
+    sprite.data[7] = targetY + 10;
+    InitItemBagData(sprite, 40);
+    sprite.data[3] = 3;
+    sprite.data[4] = 60;
+    sprite.callback = AnimItemSteal_Step1;
+  } else {
+    sprite.data[6] = 255; // IsContest() = false 1:1 → 255 conservé
+    sprite.data[7] = targetY + 10;
+    InitItemBagData(sprite, 40);
+    sprite.data[3] = 3;
+    sprite.data[4] = 60;
+    sprite.callback = AnimKnockOffOpponentsItem;
+  }
+}
+
+/** 1:1 `AnimItemSteal(sprite)` (.c:3105-3131) — le sac vole de la CIBLE vers
+ *  l'ATTAQUANT (Covet/Thief), puis Step3. */
+function AnimItemSteal(sprite: _PSprite): void {
+  const itf = _pItf();
+  const atk = itf.getAttacker?.() ?? 0;
+  const tgt = itf.getTarget?.() ?? 1;
+  InitSpritePosToAnimTarget(sprite as never, false);
+  const attackerX = GetBattlerSpriteCoord(atk, 0);
+  const attackerY = GetBattlerSpriteCoord(atk, 1);
+  sprite.data[6] = attackerX;
+  sprite.data[7] = attackerY + 10;
+  InitItemBagData(sprite, 60);
+  sprite.data[3] = ((tgt ^ 2) === atk) ? 1 : 3;
+  sprite.data[4] = 60;
+  sprite.callback = AnimItemSteal_Step3;
+}
+
+/** 1:1 `AnimItemSteal_Step3(sprite)` (.c:3133-3153) — comme Step1 + SE
+ *  SE_M_BUBBLE2 à chaque rebond (y2==0) et à l'arrivée. */
+function AnimItemSteal_Step3(sprite: _PSprite): void {
+  sprite.data[0] += Math.trunc((sprite.data[3] * 128) / sprite.data[4]);
+  if (sprite.data[0] > 127) {
+    sprite.data[1]++;
+    sprite.data[0] = 0;
+  }
+  sprite.y2 = Sin((sprite.data[0] + 0x80) & 0xFF, 30 - sprite.data[1] * 8);
+  if (sprite.y2 === 0) {
+    _PlaySE12WithPanning(SE_M_BUBBLE2, _BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+  }
+  if (moveAlongLinearPath(sprite)) {
+    sprite.y2 = 0;
+    sprite.data[0] = 0;
+    sprite.callback = AnimItemSteal_Step2;
+    _PlaySE12WithPanning(SE_M_BUBBLE2, _BattleAnimAdjustPanning(SOUND_PAN_ATTACKER));
+  }
 }
 
 /** 1:1 `GetBattlePalettesMask` (battle_anim_mons.c:1402, hors contest).

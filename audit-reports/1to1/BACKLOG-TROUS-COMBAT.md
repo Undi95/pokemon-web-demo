@@ -518,8 +518,8 @@
 - [x] AnimMoveTwisterParticle_Step @ L2690-2718 — renommé au nom C exact (ex-_MoveTwisterParticle_Step)
 - [ ] AnimTask_DuplicateAndShrinkToPos_Step1  @ L2792-2809
 - [ ] AnimTask_DuplicateAndShrinkToPos_Step2  @ L2810-2839
-- [ ] AnimKnockOffOpponentsItem  @ L3044-3061
-- [ ] AnimKnockOffItem  @ L3062-3088
+- [x] AnimKnockOffOpponentsItem @ L3044-3061 — PORTÉ 1:1 (sous-système ITEM BAG complet .c:2947-3153 : InitItemBagData + moveAlongLinearPath + ItemSteal_Step1/2/3 + Present + ItemSteal + KnockOff ×2, 8 fns)
+- [x] AnimKnockOffItem @ L3062-3088 — PORTÉ 1:1 + enregistré (callback de gKnockOffItemSpriteTemplate = General_ItemKnockoff, joue quand un objet est arraché en combat réel) ; verify MOVE_KNOCK_OFF fidele 0 defect
 - [ ] LeafBladeGetPosFactor  @ L3466-3474
 - [x] AnimFlyingParticle_Step @ L3571-3591 — renommé au nom C exact (ex-_FlyingParticle_Step)
 - [ ] AnimWhipHit_WaitEnd  @ L3697-3702
