@@ -30,6 +30,7 @@ import {
   StartAnimLinearTranslation, StoreSpriteCallbackInData6, SetCallbackToStoredInData6,
   DestroySpriteAndMatrix, TrySetSpriteRotScale, PrepareBattlerSpriteForRotScale,
   SetSpriteRotScale, ResetSpriteRotScale, GetBattlerElevation,
+  SetAnimSpriteInitialXOffset, RunStoredCallbackWhenAnimEnds,
 } from './battle_anim_mons';
 import { Sin, Cos, gSineTable } from './trig';
 import { CreateSprite as _CreateSpriteFromTemplate } from '../engine/system/decomp-bridge';
@@ -1946,8 +1947,31 @@ function AnimTearDrop_Step(sprite: _VSprite): void {
   if (TranslateAnimHorizontalArc(sprite as never)) DestroySpriteAndMatrix(sprite as never);
 }
 
+function _leerItf(): { getArgs?: () => number[]; DestroyAnimSprite?: (s: unknown) => void } {
+  return ((globalThis as Record<string, unknown>).__battleAnimInterpreter as never) ?? {};
+}
+
+/** 1:1 `AnimLeer` (battle_anim_effects_3.c:1468-1475) — l'œil Leer ancré sur
+ *  l'attaquant : joue l'anim de frames puis destroy. */
+function AnimLeer(sprite: _VSprite): void {
+  const args = _leerItf().getArgs?.() ?? [0, 0];
+  SetSpriteCoordsToAnimAttackerCoords(sprite as never);
+  SetAnimSpriteInitialXOffset(sprite as never, args[0] | 0);
+  sprite.y += args[1] | 0;
+  sprite.callback = RunStoredCallbackWhenAnimEnds as never;
+  StoreSpriteCallbackInData6(sprite as never, ((sp: _VSprite) => { _leerItf().DestroyAnimSprite?.(sp); }) as never);
+}
+
+/** 1:1 `AnimFang` (battle_anim_effects_3.c:1515-1519) — le croc : anim de
+ *  frames jusqu'au bout puis destroy. */
+function AnimFang(sprite: _VSprite): void {
+  if ((sprite as { animEnded?: boolean }).animEnded) _leerItf().DestroyAnimSprite?.(sprite);
+}
+
 // ─── Enregistrement par NOM C EXACT (résolution createsprite via le bridge) ──
 registerAnimCallbacks({
+  AnimLeer: AnimLeer as never,
+  AnimFang: AnimFang as never,
   AnimBlackSmoke: AnimBlackSmoke as never,
   AnimWhiteHalo: AnimWhiteHalo as never,
   AnimTealAlert: AnimTealAlert as never,

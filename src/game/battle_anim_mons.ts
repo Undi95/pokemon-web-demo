@@ -349,6 +349,12 @@ export function GetBattlerSpriteDefault_Y(battler: number): number {
   return GetBattlerSpriteCoord(battler, BATTLER_COORD_Y_PIC_OFFSET_DEFAULT);
 }
 
+/** 1:1 decomp battle_anim_mons.c `RunStoredCallbackWhenAnimEnds(sprite)` —
+ *  attend la fin de l'anim de frames puis bascule sur data[6/7]. */
+export function RunStoredCallbackWhenAnimEnds(sprite: { animEnded?: boolean }): void {
+  if (sprite.animEnded) SetCallbackToStoredInData6(sprite as never);
+}
+
 /** 1:1 decomp battle_anim_mons.c:332 `u8 GetSubstituteSpriteDefault_Y(u8 battler)`
  *  — l'ancrage Y du doll Substitute (+16 adversaire / +17 joueur). Callers :
  *  battle_gfx_sfx_util.c:1078 (gfx swap) + reshow_battle_screen.c:215. */

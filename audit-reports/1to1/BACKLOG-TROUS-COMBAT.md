@@ -564,8 +564,8 @@
 ## battle_anim_effects_3.c — 105/140 fonctions couvertes (75%) · cite:33 + symbole:72 · 86 citations
 - [x] SetPsychicBackground_Step @ L1378-1397 — renommé au nom C exact (ex-_PsychicBg_Step)
 - [x] FadeScreenToWhite_Step @ L1404-1428 — renommé au nom C exact (ex-_FadeScreenToWhite_Step privé)
-- [ ] AnimLeer  @ L1468-1476
-- [ ] AnimFang  @ L1515-1520
+- [x] AnimLeer @ L1468-1476 — PORTÉ 1:1 + enregistré (coords attaquant + offset X, RunStoredCallbackWhenAnimEnds→destroy ; RunStoredCallbackWhenAnimEnds ajouté à mons.ts) ; verify MOVE_LEER fidele
+- [x] AnimFang @ L1515-1520 — PORTÉ 1:1 + enregistré (animEnded→destroy) ; verify MOVE_BITE fidele
 - [x] RapinSpinMonElevation_Step @ L1833-1891 — renommé au nom C exact (typo « Rapin » = vanilla)
 - [x] TormentAttacker_Step @ L1907-2005 — renommé au nom C exact
 - [ ] AnimTask_DoomDesireLightBeam  @ L2556-2657
