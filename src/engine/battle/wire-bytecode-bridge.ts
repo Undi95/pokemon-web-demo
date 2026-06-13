@@ -84,7 +84,7 @@ import {
   DoFieldEndTurnEffects,
   DoBattlerEndTurnEffects,
   HandleWishPerishSongOnTurnEnd,
-} from './end-turn-effects';
+} from '../../game/battle_util';
 // AUDIT FIX : static imports pour HandleFaintedMonActions (= éviter dual-instance).
 import {
   AbilityBattleEffects as AbilityBattleEffects_static,
