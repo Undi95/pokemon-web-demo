@@ -2791,8 +2791,8 @@ function AnimTask_SquishAndSweatDroplets_Step(task: { taskId: number; data: numb
   switch (task.data[0]) {
     case 0:
       task.data[1]++;
-      if (task.data[1] === 6) _CreateSweatDroplets(task, false);
-      if (task.data[1] === 18) _CreateSweatDroplets(task, true);
+      if (task.data[1] === 6) CreateSweatDroplets(task, false);
+      if (task.data[1] === 18) CreateSweatDroplets(task, true);
       if (!_dcRun(task as never)) {
         if (--task.data[3] === 0) {
           task.data[0]++;
@@ -2807,7 +2807,7 @@ function AnimTask_SquishAndSweatDroplets_Step(task: { taskId: number; data: numb
       break;
   }
 }
-function _CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: boolean): void {
+function CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: boolean): void {
   const xOffset = lower ? 30 : 18;
   const yOffset = lower ? 20 : -20;
   const xs = [task.data[4] - xOffset, task.data[4] - xOffset - 4, task.data[4] + xOffset, task.data[4] + xOffset + 4];
@@ -2830,13 +2830,13 @@ function _CreateSweatDroplets(task: { taskId: number; data: number[] }, lower: b
         sp.data[2] = -1;           // sVelocY
         sp.data[3] = task.taskId;  // sTaskId
         sp.data[4] = 2;            // sActiveSpritesIdx (data[2] de la task)
-        sp.callback = _AnimSweatDrop;
+        sp.callback = AnimFacadeSweatDrop;
         task.data[2]++;
       }
     }
   }
 }
-function _AnimSweatDrop(sprite: { data: number[]; x: number; y: number }): void {
+function AnimFacadeSweatDrop(sprite: { data: number[]; x: number; y: number }): void {
   sprite.x += sprite.data[1];
   sprite.y += sprite.data[2];
   if (++sprite.data[0] > 6) {
@@ -3195,6 +3195,28 @@ function AnimWeakFrustrationAngerMark(sprite: _VSprite): void {
   }
 }
 registerAnimCallbacks({ AnimWeakFrustrationAngerMark: AnimWeakFrustrationAngerMark as never });
+
+import { DestroyAnimSpriteAfterTimer as _flyDestroyAfterTimer } from './battle_anim_flying';
+
+/** 1:1 `AnimSmokeBallEscapeCloud` (battle_anim_effects_3.c:3570-3580) — nuage
+ *  de fumée : affine args[0], position attaquant + offsets (négation X si
+ *  cible adverse — mutation args 1:1), vit args[3] frames puis destroy
+ *  (DestroyAnimSpriteAfterTimer, miroir flying). */
+function AnimSmokeBallEscapeCloud(sprite: _VSprite): void {
+  const itf = (globalThis as Record<string, unknown>).__battleAnimInterpreter as { getArgs?: () => number[]; getAttacker?: () => number; getTarget?: () => number } | undefined;
+  const args = itf?.getArgs?.() ?? [0, 0, 0, 30];
+  const rt = (globalThis as Record<string, unknown>).__rt as { StartSpriteAffineAnim?: (i: number, n: number) => void } | undefined;
+  sprite.data[0] = args[3] | 0;
+  const sid = (sprite as { spriteId?: number }).spriteId ?? -1;
+  if (sid >= 0) rt?.StartSpriteAffineAnim?.(sid, args[0] | 0);
+  const tgt = itf?.getTarget?.() ?? 1;
+  if ((tgt & 1) !== 0 /* != B_SIDE_PLAYER */) args[1] = -(args[1] | 0);
+  const atk = itf?.getAttacker?.() ?? 0;
+  sprite.x = GetBattlerSpriteCoord(atk, 2 /* X_2 */) + (args[1] | 0);
+  sprite.y = GetBattlerSpriteCoord(atk, 3 /* Y_PIC_OFFSET */) + (args[2] | 0);
+  sprite.callback = _flyDestroyAfterTimer as never;
+}
+registerAnimCallbacks({ AnimSmokeBallEscapeCloud: AnimSmokeBallEscapeCloud as never });
 
 // ─── VAGUE F36 : booléennes/power-levels (battle_anim_effects_3.c.c:1531 + :5060) ─────────
 /** 1:1 `AnimTask_IsHealingMove` (battle_anim_effects_3.c.c:1531) → args[7] = (dmg <= 0). */

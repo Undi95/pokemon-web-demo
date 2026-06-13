@@ -193,7 +193,7 @@ function _SeekSpriteAnim(sprite: _VSprite, animCmdIndex: number): void {
 /** 1:1 `DestroyAnimSpriteAfterTimer` (battle_anim_flying.c:539) : data[0]-- <= 0
  *  → FreeOamMatrix + DestroySprite + gAnimVisualTaskCount-- (= exactement ce
  *  que fait DestroyAnimSprite de l'interpréteur). */
-function DestroyAnimSpriteAfterTimer(sprite: _VSprite): void {
+export function DestroyAnimSpriteAfterTimer(sprite: _VSprite): void {
   if (sprite.data[0]-- <= 0) _vItf().DestroyAnimSprite?.(sprite);
 }
 

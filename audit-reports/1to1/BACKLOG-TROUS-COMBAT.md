@@ -576,13 +576,13 @@
 - [x] AnimTask_RolePlaySilhouette_Step1 @ L3263-3278 — renommé au nom C exact
 - [x] AnimTask_RolePlaySilhouette_Step2 @ L3279-3295 — renommé au nom C exact
 - [x] AnimTask_DeepInhale_Step @ L3483-3511 — renommé au nom C exact (ex-_DeepInhale_Step)
-- [ ] AnimSmokeBallEscapeCloud  @ L3570-3581
+- [x] AnimSmokeBallEscapeCloud @ L3570-3581 — PORTÉ 1:1 + enregistré (affine args[0], négation X cible adverse — mutation args 1:1, DestroyAnimSpriteAfterTimer exporté de flying)
 - [ ] AnimTask_SlideMonForFocusBand_Step2  @ L3582-3631
 - [ ] AnimTask_SlideMonForFocusBand_Step1  @ L3632-3684
 - [ ] AnimTask_SlideMonForFocusBand  @ L3685-3741
 - [x] AnimTask_SquishAndSweatDroplets_Step @ L3767-3803 — renommé au nom C exact (ex-_SquishSweat_Step)
-- [ ] CreateSweatDroplets  @ L3804-3845
-- [ ] AnimFacadeSweatDrop  @ L3846-3874
+- [x] CreateSweatDroplets @ L3804-3845 — renommé au nom C exact (ex-_CreateSweatDroplets, 4 gouttes ±xOffset, vélocités ±2/-1)
+- [x] AnimFacadeSweatDrop @ L3846-3874 — renommé au nom C exact (ex-_AnimSweatDrop) ; A/B verify FACADE : callback VU en vol, fidele 0 defect
 - [x] AnimTask_FacadeColorBlend_Step @ L3886-3903 — renommé au nom C exact (ex-_FacadeBlend_Step)
 - [x] AnimTask_GlareEyeDots_Step @ L4017-4087 — renommé au nom C exact (ex-_GlareEyeDots_Step)
 - [x] GetGlareEyeDotCoords @ L4088-4113 — renommé au nom C exact (retour [x,y] TS ≡ out-params C)
