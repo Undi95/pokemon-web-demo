@@ -136,7 +136,8 @@ export function FieldEffectStart(id: number): number {
     const ownerLocalId = (gFieldEffectArguments[4] >> 8) & 0xFF;
     const ownerMapNum = gFieldEffectArguments[4] & 0xFF;
     const ownerMapGroup = gFieldEffectArguments[5] & 0xFF;
-    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup);
+    const elevation = gFieldEffectArguments[2];
+    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
     return 64;
   }
   if (id === FLDEFF_DUST) {

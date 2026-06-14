@@ -2025,6 +2025,13 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
         npc.walkDirection = dir;
         npc.walkFramesLeft = 16;
         npc.movementStep = 6;
+        // 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5097) : le pas pose
+        // triggerGroundEffectsOnMove=TRUE → DoGroundEffects_OnBeginStep tire au step
+        // start (= step-grass/reflets/etc.). Sans ça, un NPC WANDER ne déclenchait
+        // JAMAIS de ground effect en marchant (la state machine inline saute le flag
+        // que le chemin held-movement InitNpcForMovement pose) → grass absent dès qu'il
+        // bouge (user-signalé).
+        npc.triggerGroundEffectsOnMove = true;
         // G6 — 1:1 STRICT InitMovementNormal (event_object_movement.c:5101-5108) :
         // sprite->animPaused = FALSE + SetStepAnimHandleAlternation(GO_X) au
         // step start. Sinon NPC reste sur FACE_X anim → "glisse" (= TWIN bug).
@@ -2046,6 +2053,10 @@ function tickWanderAround(rt: DecompRuntime, npc: ObjectEvent, allowedDirections
         npc.walkDirection = DIR_NONE;
         npc.walkAnimAlt = (npc.walkAnimAlt ^ 1) as 0 | 1;
         npc.movementStep = 1;
+        // 1:1 décomp `UpdateMovementNormal` step end (event_object_movement.c:5120) :
+        // triggerGroundEffectsOnStop=TRUE → DoGroundEffects_OnFinishStep tire au step
+        // end (ripple/jump-landing/etc.).
+        npc.triggerGroundEffectsOnStop = true;
         // G6 — 1:1 STRICT UpdateMovementNormal step end : animPaused = TRUE.
         _npcEndWalkAnim(rt, npc);
       }
@@ -2908,6 +2919,64 @@ const TRACKS_BIKE_TIRE = 2;
 // (event_object_movement.c:7729-7735).
 const sElevationToPriority           = [2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 0, 2];
 const sElevationToSubspriteTableNum  = [1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 0, 0, 1];
+// 1:1 décomp `sElevationToSubpriority` (event_object_movement.c:7725).
+const sElevationToSubpriority        = [115, 115, 83, 115, 83, 115, 83, 115, 83, 115, 83, 115, 83, 0, 0, 115];
+
+/** 1:1 décomp `SetObjectSubpriorityByElevation` (event_object_movement.c:7773). Calcule la
+ *  subpriority d'un sprite depuis son Y ÉCRAN (= tri ASC, lower = devant). La décomp ajoute
+ *  `gSpriteCoordOffsetY` car TOUS ses sprites overworld sont world-positionnés ; chez nous
+ *  c'est opt-in (coordOffsetEnabled) → on n'ajoute l'offset QUE pour les sprites world (grass)
+ *  ; les NPCs screen-positionnés ont déjà leur Y écran. */
+export function SetObjectSubpriorityByElevation(rt: DecompRuntime, elevation: number, sprite: DecompSprite, subpriority: number): void {
+  const offY = sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0;
+  const tmp2 = (sprite.y - sprite.centerToCornerVecY) + offY;
+  const tmp3 = (16 - (((tmp2 + 8) & 0xFF) >> 4)) * 2;
+  sprite.subpriority = (tmp3 + (sElevationToSubpriority[elevation] ?? 115) + subpriority) & 0xFF;
+}
+
+/** 1:1 décomp `ObjectEventUpdateSubpriority` (event_object_movement.c:7783). Pose la
+ *  subpriority Y-based du sprite NPC (appelé en fin de UpdateObjectEventCurrentMovement).
+ *  Sans ça nos NPCs restaient à 255 fixe → tout le z-order grass/effets cassé. */
+export function ObjectEventUpdateSubpriority(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.fixedPriority) return;
+  if (!sprite) return;
+  SetObjectSubpriorityByElevation(rt, npc.previousElevation, sprite, 1);
+}
+
+/** 1:1 décomp `UpdateGrassFieldEffectSubpriority` (field_effect_helpers.c:1662). Pose la
+ *  subpriority du sprite grass (formule Y + offset 0/4) PUIS, s'il chevauche un object event
+ *  ET passerait devant lui, le repousse DERRIÈRE (subpriority = linkedSprite.subpriority + 2).
+ *  C'est ce qui donne le bon dynamique (rustle derrière la tête du NPC pendant un pas, devant
+ *  les pieds à l'arrêt).
+ *
+ *  Adaptation archi : la décomp compare grass.x/y vs linkedSprite.x/y (tous world-positionnés) ;
+ *  chez nous le grass est world (coordOffsetEnabled) et les NPCs screen → on convertit tout en
+ *  coords ÉCRAN pour la comparaison (sprite.x/y + gSpriteCoordOffset si coordOffsetEnabled). */
+export function UpdateGrassFieldEffectSubpriority(rt: DecompRuntime, sprite: DecompSprite, elevation: number, subpriority: number): void {
+  SetObjectSubpriorityByElevation(rt, elevation, sprite, subpriority);
+  const sX = sprite.x + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
+  const sY = sprite.y + (sprite.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const objEvent = gObjectEvents[i];
+    if (!objEvent.active) continue;
+    const linked = objEvent.spriteId >= 0 ? rt.gSprites.get(objEvent.spriteId) : undefined;
+    if (!linked) continue;
+    const lX = linked.x + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetX : 0);
+    const lY = linked.y + (linked.coordOffsetEnabled ? rt.gSpriteCoordOffsetY : 0);
+    const xhi = sX + sprite.centerToCornerVecX;
+    let varv = sX - sprite.centerToCornerVecX;
+    if (xhi < lX && varv > lX) {
+      const lyhi = lY + linked.centerToCornerVecY;
+      varv = lY;
+      const ylo = sY - sprite.centerToCornerVecY;
+      const yhi = ylo + linked.centerToCornerVecY;
+      if ((lyhi < yhi || lyhi < ylo) && varv > yhi && sprite.subpriority <= linked.subpriority) {
+        sprite.subpriority = (linked.subpriority + 2) & 0xFF;
+        break;
+      }
+    }
+  }
+}
 
 /** 1:1 décomp `u8 ElevationToPriority(u8 elevation)` (event_object_movement.c:7754). */
 export function ElevationToPriority(elevation: number): number {
@@ -3593,7 +3662,12 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
     // sinon double-fire avec l'ad-hoc (le player pose triggerGroundEffectsOnMove sur
     // son slot mais ne le consomme jamais). Les NPCs n'avaient AUCUN ground effect
     // avant : le câblage est additif pour eux.
-    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined;
+    // Le player a son sprite visuel sur gPlayerAvatar.spriteId (le slot a spriteId=-1) ;
+    // les NPCs sur npc.spriteId. ObjectEventUpdateSubpriority (1:1) doit tourner pour TOUS,
+    // donc on résout le bon sprite ici (incl. player).
+    const sprite = npc.isPlayer
+      ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites.get(gPlayerAvatar.spriteId) : undefined)
+      : (npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined);
     const runGroundEffects = !npc.isPlayer;
     if (runGroundEffects) DoGroundEffects_OnSpawn(rt, npc, sprite);
 
@@ -3622,6 +3696,11 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
       DoGroundEffects_OnBeginStep(rt, npc, sprite);
       DoGroundEffects_OnFinishStep(rt, npc, sprite);
     }
+    // 1:1 décomp `UpdateObjectEventCurrentMovement` (event_object_movement.c:4943) :
+    // ObjectEventUpdateSubpriority — pose la subpriority Y-based, pour TOUS les object events
+    // y compris le player (sinon l'avatar reste à 255 → le bump grass wrap mal). Le player est
+    // skippé pour DoGroundEffects (ad-hoc) mais PAS pour la subpriority (1:1 strict).
+    ObjectEventUpdateSubpriority(rt, npc, sprite);
   }
 }
 

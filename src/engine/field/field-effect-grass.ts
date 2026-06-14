@@ -33,7 +33,7 @@ import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../sys
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { SetSpritePosToOffsetMapCoords } from './field-camera';
 import { MAP_OFFSET, MapGridGetMetatileBehaviorAt } from './map-loader';
-import { gObjectEvents, type ObjectEvent, TryGetObjectEventIdByLocalIdAndMap } from './object-events';
+import { gObjectEvents, type ObjectEvent, TryGetObjectEventIdByLocalIdAndMap, UpdateGrassFieldEffectSubpriority } from './object-events';
 import { MetatileBehavior_IsTallGrass } from '../../game/metatile_behavior';
 
 /** 1:1 décomp LOCALID_PLAYER (= 0xFF). Owner par défaut du grass effect (chemin
@@ -88,6 +88,9 @@ interface GrassEffectState {
   localId: number;
   mapNum: number;
   mapGroup: number;
+  /** 1:1 décomp `sprite->sElevation` (= gFieldEffectArguments[2] = previousElevation de
+   *  l'owner). Sert à SetObjectSubpriorityByElevation (z-order du rustle). */
+  elevation: number;
   active: boolean;
 }
 
@@ -189,7 +192,7 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
       _pool[i] = {
         spriteId: -1, oamIndex: -1, ticks: 0,
         tileX: 0, tileY: 0, objectMoved: false,
-        localId: LOCALID_PLAYER, mapNum: 0, mapGroup: 0, active: false,
+        localId: LOCALID_PLAYER, mapNum: 0, mapGroup: 0, elevation: 3, active: false,
       };
     }
     _initialized = true;
@@ -213,7 +216,7 @@ function findFreeSlot(): number {
  *  Caller (= player-avatar) passe gPlayerAvatar.x/y pour éviter circular import. */
 export function SpawnTallGrassEffect(
   rt: DecompRuntime, mapX: number, mapY: number, spawnStatic = false,
-  localId: number = LOCALID_PLAYER, mapNum = 0, mapGroup = 0,
+  localId: number = LOCALID_PLAYER, mapNum = 0, mapGroup = 0, elevation = 3,
 ): void {
   if (!_initialized) return;
   // 1:1 décomp : éviter les doublons — si un effet est déjà actif sur cette tuile
@@ -261,6 +264,8 @@ export function SpawnTallGrassEffect(
   state.localId = localId;
   state.mapNum = mapNum;
   state.mapGroup = mapGroup;
+  // 1:1 décomp `sprite->sElevation = gFieldEffectArguments[2]`.
+  state.elevation = elevation;
   state.active = true;
 }
 
@@ -304,9 +309,10 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
     let acc = 0;
     let frameIdx = lastFrame;   // défaut = anim finie → hold dernière frame.
     let animEnded = true;
-    for (const step of ANIM_SEQUENCE) {
-      acc += step.duration;
-      if (s.ticks < acc) { frameIdx = step.frameIdx; animEnded = false; break; }
+    let animCmdIndex = ANIM_SEQUENCE.length;  // = past END (≠ 0) quand animEnded.
+    for (let i = 0; i < ANIM_SEQUENCE.length; i++) {
+      acc += ANIM_SEQUENCE[i].duration;
+      if (s.ticks < acc) { frameIdx = ANIM_SEQUENCE[i].frameIdx; animEnded = false; animCmdIndex = i; break; }
     }
     const oam = rt.gba.oam[s.oamIndex];
     oam.tileId = _tallGrassTileStart + frameIdx * TILES_PER_FRAME;
@@ -339,6 +345,17 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
       if ((objEvent.currentCoordsX !== s.tileX || objEvent.currentCoordsY !== s.tileY)
        && (objEvent.previousCoordsX !== s.tileX || objEvent.previousCoordsY !== s.tileY))
         s.objectMoved = true;
+
+      // 1:1 décomp `UpdateTallGrassFieldEffect` (field_effect_helpers.c:349-355) :
+      //   metatileBehavior = 0; if (sprite->animCmdIndex == 0) metatileBehavior = 4;
+      //   UpdateObjectEventSpriteInvisibility(sprite, FALSE);
+      //   UpdateGrassFieldEffectSubpriority(sprite, sprite->sElevation, metatileBehavior);
+      // Le bump (subpriority = NPC.subpriority+2 si chevauchement) repousse le rustle DERRIÈRE
+      // le NPC quand il le couvre → dynamique correct (derrière la tête pendant un pas vers le
+      // haut, devant les pieds à l'arrêt). Requiert les NPCs à subpriority Y-based (Object
+      // EventUpdateSubpriority, câblé dans TickObjectEventMovements).
+      const subprioOffset = (animCmdIndex === 0) ? 4 : 0;
+      UpdateGrassFieldEffectSubpriority(rt, sprite, s.elevation, subprioOffset);
     }
   }
 }
