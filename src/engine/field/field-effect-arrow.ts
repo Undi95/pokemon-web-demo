@@ -31,7 +31,7 @@ import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadTileBin } from '../gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
-import { gTotalCamera, gFieldCamera, gSpriteCoordOffset } from './field-camera';
+import { gTotalCamera, gFieldCamera } from './field-camera';
 import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { ENUM_MB_0 as MB } from '../decomp-data/include/constants/metatile_behaviors-data';
 
@@ -230,6 +230,13 @@ export async function CreateWarpArrowSprite(rt: DecompRuntime): Promise<number> 
   // Initially invisible.
   rt.setSpriteInvisible(result.spriteId, true);
 
+  // 1:1 décomp `sprite->coordOffsetEnabled = TRUE` (field_effect_helpers.c:182).
+  // L'arrow est positionné en coords MONDE fixes (SetSpritePosToMapCoords) ;
+  // `syncSpritesToOam`/`UpdateOamCoords` ajoute `gSpriteCoordOffset` chaque frame
+  // → suit la caméra automatiquement (plus de workaround manuel per-frame).
+  const arrowSprite = rt.gSprites.get(result.spriteId);
+  if (arrowSprite) arrowSprite.coordOffsetEnabled = true;
+
   _arrowState = {
     spriteId: result.spriteId,
     oamIndex: result.oamIndex,
@@ -326,6 +333,9 @@ function showWarpArrowSprite(rt: DecompRuntime, direction: number, mapX: number,
     // Donc : oam.x = (sprite_center.x) + 0 + (-8) = top-left de la tile. ✓
     state.spriteX = tilePos.x + 8;
     state.spriteY = tilePos.y + 8;
+    // 1:1 : sprite.x/y = coord MONDE fixe ; coordOffsetEnabled fait suivre la caméra.
+    const sprite = rt.gSprites.get(state.spriteId);
+    if (sprite) { sprite.x = state.spriteX; sprite.y = state.spriteY; }
     state.prevX = mapX;
     state.prevY = mapY;
     state.direction = direction;
@@ -507,24 +517,9 @@ export function UpdateWarpArrowSprite(rt: DecompRuntime): void {
       : FRAME_INDEX[state.direction as keyof typeof FRAME_INDEX].off;
     const oam = rt.gba.oam[sprite.oamIndex];
     oam.tileId = _arrowTileStart + frameIdx * TILES_PER_FRAME;
-
-    // 1:1 décomp `coordOffsetEnabled = TRUE` (= field_effect_helpers.c:182).
-    // L'engine décomp `BuildOamBuffer` (sprite.c:UpdateOamCoords) fait :
-    //   oam.x = sprite->x + sprite->x2 + centerToCornerVecX + gSpriteCoordOffsetX
-    //   oam.y = sprite->y + sprite->y2 + centerToCornerVecY + gSpriteCoordOffsetY
-    //
-    // Notre `syncSpritesToOam` (= decomp-runtime.ts:2175-2176) NE FAIT PAS le
-    // `+ gSpriteCoordOffset` automatiquement (= pas de support natif
-    // `coordOffsetEnabled` dans notre engine).
-    //
-    // Workaround 1:1 strict : on add `gSpriteCoordOffset` à `sprite.x` ici
-    // chaque frame. Notre `syncSpritesToOam` add ensuite `centerToCornerVec`
-    // (= -8 pour 16x16) automatiquement → résultat OAM x identique au décomp.
-    //
-    // À long terme : porter `coordOffsetEnabled` dans `syncSpritesToOam` =
-    // dette engine documentée (= virtual-objects.ts, object-events.ts utilisent
-    // déjà des patterns similaires).
-    sprite.x = state.spriteX + gSpriteCoordOffset.x;
-    sprite.y = state.spriteY + gSpriteCoordOffset.y;
+    // sprite.x/y (coords MONDE) sont posés au repositionnement (showWarpArrowSprite).
+    // `coordOffsetEnabled = TRUE` + `syncSpritesToOam`/`UpdateOamCoords` ajoutent
+    // `gSpriteCoordOffset` chaque frame → l'arrow suit la caméra. 1:1 strict natif
+    // (l'ancien workaround manuel `sprite.x += gSpriteCoordOffset.x` est supprimé).
   }
 }

@@ -213,6 +213,12 @@ export function UpdateCameraPanning(): void {
   if (sFieldCameraPanningCallback !== null) sFieldCameraPanningCallback();
   gSpriteCoordOffset.x = gTotalCamera.pixelOffsetX - sHorizontalCameraPan;
   gSpriteCoordOffset.y = gTotalCamera.pixelOffsetY - sVerticalCameraPan - 8;
+  // Miroir sur le runtime (= système sprite, où vivent gSpriteCoordOffsetX/Y dans
+  // la décomp sprite.c) pour que `syncSpritesToOam`/`UpdateOamCoords` applique
+  // l'offset aux sprites `coordOffsetEnabled` sans cycle d'import.
+  const rt = getRuntime();
+  rt.gSpriteCoordOffsetX = gSpriteCoordOffset.x;
+  rt.gSpriteCoordOffsetY = gSpriteCoordOffset.y;
 }
 
 /** 1:1 décomp `MoveCameraAndRedrawMap(int deltaX, int deltaY)` (field_camera.c:428-435).

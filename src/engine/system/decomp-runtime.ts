@@ -403,6 +403,13 @@ export interface DecompSprite {
    *  Utilisé par syncSpritesToOam : oam.x = sprite.x + sprite.x2 + centerToCornerVecX. */
   centerToCornerVecX: number;
   centerToCornerVecY: number;
+  /** 1:1 décomp `coordOffsetEnabled:1` (sprite.c struct Sprite). Quand TRUE,
+   *  `UpdateOamCoords` (sprite.c:347-351) ajoute `gSpriteCoordOffsetX/Y` à l'OAM
+   *  x/y → le sprite suit la caméra automatiquement (= sprites overworld
+   *  positionnés en coords MONDE fixes via SetSpritePosToMapCoords : NPCs, player,
+   *  field effects, warp arrow…). Optionnel : `undefined`/false = comportement
+   *  inchangé (oam = sprite.x + x2 + centerToCornerVec, sans offset). */
+  coordOffsetEnabled?: boolean;
   /** Affine anim table name (= SPRITE_AFFINE_ANIM_TABLES key, e.g. 'sAffineAnims_GameFreak').
    *  null si pas d'affine anim. */
   affineAnimsTableName: string | null;
@@ -531,6 +538,13 @@ export class DecompRuntime {
   gTasks = new Map<number, DecompTask>();
   /** 1:1 décomp `gSprites[]` array. */
   gSprites = new Map<number, DecompSprite>();
+  /** 1:1 décomp `gSpriteCoordOffsetX/Y` (EWRAM, sprite.c:289-290). Offset caméra
+   *  ajouté par `UpdateOamCoords` aux sprites `coordOffsetEnabled` (= overworld).
+   *  Écrit chaque frame par `UpdateCameraPanning` (field-camera.ts), lu par
+   *  `syncSpritesToOam`. Sur le runtime (= système sprite, comme la décomp) pour
+   *  éviter un cycle d'import decomp-runtime ↔ field-camera. */
+  gSpriteCoordOffsetX = 0;
+  gSpriteCoordOffsetY = 0;
   /** Auto-incrementing OAM slot (next free) */
   private nextOamSlot = 0;
   /** Auto-incrementing task ID */
@@ -2502,8 +2516,17 @@ export class DecompRuntime {
       // are correctly handled by the renderer (e.g. water drops starting at y=-14
       // with centerToCornerVecY=-32 => oam.y=-46, which the GBA renders partially
       // on scanlines 0-17). The real GBA stores oam.x/y as signed 9-bit / 8-bit.
-      oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
-      oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
+      // 1:1 décomp `UpdateOamCoords` (sprite.c:347-356) : si coordOffsetEnabled,
+      // ajoute gSpriteCoordOffsetX/Y (= la caméra, écrit par UpdateCameraPanning)
+      // → le sprite suit la caméra automatiquement. Sinon (cas par défaut, tous
+      // les sprites screen-positionnés actuels) : inchangé.
+      if (sprite.coordOffsetEnabled) {
+        oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX + this.gSpriteCoordOffsetX;
+        oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY + this.gSpriteCoordOffsetY;
+      } else {
+        oam.x = sprite.x + sprite.x2 + sprite.centerToCornerVecX;
+        oam.y = sprite.y + sprite.y2 + sprite.centerToCornerVecY;
+      }
       // 1:1 décomp `BuildOamBuffer` (sprite.c:1671) : si subspriteMode == ON,
       // skip primary OAM (= les child OAMs subsprites rendent à sa place).
       // Sans ce check : truck primary OAM 32×32 visible par-dessus les 12
