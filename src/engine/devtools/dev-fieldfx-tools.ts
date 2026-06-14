@@ -32,6 +32,7 @@
 import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
 import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
 import { gPlayerAvatar } from '../field/player-avatar';
+import { MapGridGetMetatileIdAt } from '../field/map-loader';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -158,6 +159,8 @@ const fx = {
     }
     return out;
   },
+
+  metatileIdAt(x: number, y: number): number { return MapGridGetMetatileIdAt(x, y); },
 
   behaviorAt(x: number, y: number): string {
     const w = window as any;
