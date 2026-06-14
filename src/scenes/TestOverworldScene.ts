@@ -169,11 +169,8 @@ import {
   UpdateJumpImpactEffects,
   DestroyAllJumpImpactEffects,
 } from '../engine/field/field-effect-jump-impact';
-import {
-  preloadSplashEffect,
-  UpdateSplashEffects,
-  DestroyAllSplashEffects,
-} from '../engine/field/field-effect-splash';
+// Splash + feet-in-flowing-water : migrés dans le miroir 1:1 game/field_effect_helpers.ts.
+import { preloadSplashEffect } from '../game/field_effect_helpers';
 import {
   preloadFootprintsEffects,
   UpdateFootprintsEffects,
@@ -667,9 +664,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateJumpImpactEffect` : jump tall/long grass + jump small/big splash
         // (impact au saut de rebord sur herbe/eau). Hors démo, câblé via le spine.
         UpdateJumpImpactEffects(rt);
-        // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect` :
-        // éclaboussure one-shot + pieds dans l'eau qui coule (suivent le parent). Hors démo.
-        UpdateSplashEffects(rt);
+        // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect`
+        // (game/field_effect_helpers.ts) : migrés, tickés par le callback global.
         // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
         // de vélo (déposées sur sable, fade après 40f). Hors démo, câblé via le spine (DoTracks).
         UpdateFootprintsEffects(rt);
@@ -1181,8 +1177,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // Effets d'impact de saut (jump tall/long grass + jump small/big splash) assets + pool.
     DestroyAllJumpImpactEffects(this.rt);
     await preloadJumpImpactEffects(this.rt);
-    // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) assets + pool.
-    DestroyAllSplashEffects(this.rt);
+    // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) : assets seulement (sprite.callback).
     await preloadSplashEffect(this.rt);
     // Empreintes/traces (sand/deep footprints + bike tire tracks) assets + pool.
     DestroyAllFootprintsEffects(this.rt);

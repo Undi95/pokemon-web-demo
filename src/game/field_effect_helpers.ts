@@ -35,6 +35,7 @@
  *
  * Migration en cours (1 effet = 1 commit, A/B avant chaque) :
  *   ✅ FldEff_ShortGrass + UpdateShortGrassFieldEffect.
+ *   ✅ FldEff_Splash + FldEff_FeetInFlowingWater (+ leurs Update, gfx partagé).
  *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
@@ -50,7 +51,7 @@ import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
 } from '../engine/field/object-events';
-import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords } from '../engine/field/field-camera';
 import {
   gFieldEffectArguments, FieldEffectStop,
@@ -59,6 +60,8 @@ import {
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
+const FLDEFF_SPLASH = 15;
+const FLDEFF_FEET_IN_FLOWING_WATER = 34;
 const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
@@ -239,6 +242,156 @@ export function UpdateShortGrassFieldEffect(sprite: DecompSprite, rt: DecompRunt
   if (lOam) rt.gba.oam[sprite.oamIndex].priority = lOam.priority;
   // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, linkedSprite->invisible).
   UpdateObjectEventSpriteInvisibility(rt, sprite, linked.invisible);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_Splash (642) + FldEff_FeetInFlowingWater (725)
+//  Partagent le template FLDEFFOBJ_SPLASH (splash.png 16×8, 2 anims) :
+//   - anim 0 = éclaboussure one-shot (UpdateSplashFieldEffect, despawn sur animEnded).
+//   - anim 1 = pieds dans l'eau qui coule, boucle JUMP(0) (UpdateFeetInFlowingWaterFieldEffect,
+//     despawn quand l'owner n'est plus inShallowFlowingWater).
+//  Les deux SUIVENT le sprite du parent (x/y), y2 = (height>>1)-4. Palette general_0.
+//  PlaySE(SE_PUDDLE) du décomp SKIPPÉ (contrat « jamais l'audio »).
+//  Sprite data 1:1 : sLocalId=data[0] sMapNum=data[1] sMapGroup=data[2] (+ Feet : sPrevX=data[3] sPrevY=data[4]).
+// ════════════════════════════════════════════════════════════════════════════
+
+const SPLASH_PNG = '/decomp/em/field_effects/splash.png';
+const TAG_SPLASH_GFX = 'FIELD_EFFECT_SPLASH_GFX';
+const SPLASH_NUM_FRAMES = 2;
+const SPLASH_TILES_PER_FRAME = 2;  // 16×8
+
+/** 1:1 décomp `sAnim_Splash_0` (field_effect_objects.h) : FRAME(0,4)(1,4) END → éclaboussure one-shot.
+ *  `sAnim_Splash_1` : (0,4)(1,4)(0,6)(1,6)(0,8)(1,8)(0,6)(1,6) JUMP(0) → boucle pieds-dans-l'eau.
+ *  imageValue = offset tile (frameIdx × 2). */
+const sAnims_Splash: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(2, 4), ANIMCMD_END],
+  [
+    ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(2, 4), ANIMCMD_FRAME(0, 6), ANIMCMD_FRAME(2, 6),
+    ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(2, 8), ANIMCMD_FRAME(0, 6), ANIMCMD_FRAME(2, 6),
+    ANIMCMD_JUMP(0),
+  ],
+];
+
+let _splashTileStart = -1;
+let _splashPalSlot = -1;
+let _splashInit = false;
+let _splashInitPromise: Promise<void> | null = null;
+
+/** PNG 32×8 = 4×1 tiles row-major → frame F (16×8) = 2 tiles consécutifs (pas de reorder réel). */
+function pngTo1dObjLayoutSplash(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32;
+  const out = new Uint8Array(SPLASH_NUM_FRAMES * SPLASH_TILES_PER_FRAME * TILE_BYTES);
+  out.set(charData.subarray(0, out.length));
+  return out;
+}
+
+/** Préchargement asset (concern plateforme). */
+export function preloadSplashEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _splashInit && IndexOfSpriteTileTag(TAG_SPLASH_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_splashInitPromise && !_splashInit) return _splashInitPromise;
+  _splashInit = false; _splashInitPromise = null;
+  _splashInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(SPLASH_PNG, 4);
+    const reordered = pngTo1dObjLayoutSplash(png.charData);
+    _splashTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SPLASH_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_0_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _splashPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_0_PAL });
+    _splashInit = true;
+  })();
+  return _splashInitPromise;
+}
+
+/** Helper commun de création du sprite splash (partagé Splash + FeetInFlowingWater). */
+function createSplashSprite(rt: DecompRuntime, localId: number, mapNum: number, mapGroup: number) {
+  const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (objectEventId >= OBJECT_EVENTS_COUNT) return null;
+  const objectEvent = gObjectEvents[objectEventId];
+  const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  if (!parentSprite) return null;
+  const pOam = rt.gba.oam[parentSprite.oamIndex];
+  const result = rt.CreateSpriteAtOam({
+    tileId: _splashTileStart, paletteBank: _splashPalSlot,
+    x: parentSprite.x, y: parentSprite.y,
+    shape: 1, size: 0,  // 16×8
+    // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
+    priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return null;
+  setFieldEffectAnims(sprite, sAnims_Splash, _splashTileStart);
+  sprite.x = parentSprite.x; sprite.y = parentSprite.y;
+  sprite.coordOffsetEnabled = parentSprite.coordOffsetEnabled;
+  // 1:1 : sprite->y2 = (graphicsInfo->height >> 1) - 4.
+  sprite.y2 = (GetObjectEventGfxHeight(objectEvent.graphicsId) >> 1) - 4;
+  sprite.data[0] = localId; sprite.data[1] = mapNum; sprite.data[2] = mapGroup;
+  return sprite;
+}
+
+/** 1:1 décomp `FldEff_Splash` (field_effect_helpers.c:642). Lit gFieldEffectArguments[0..2]. */
+export function FldEff_Splash(rt: DecompRuntime): number {
+  if (!_splashInit) return 64;
+  const sprite = createSplashSprite(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+  if (!sprite) return 64;
+  // 1:1 : template.callback = UpdateSplashFieldEffect, anim 0 (one-shot, par défaut).
+  sprite.callback = UpdateSplashFieldEffect;
+  // 1:1 : PlaySE(SE_PUDDLE) — SKIP (audio).
+  return 0;
+}
+
+/** 1:1 décomp `UpdateSplashFieldEffect` (field_effect_helpers.c:664). Callback per-frame. */
+export function UpdateSplashFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[0], sprite.data[1], sprite.data[2]);
+  // 1:1 : despawn sur animEnded (one-shot) OU owner disparu.
+  if (sprite.animEnded || notFound) {
+    FieldEffectStop(rt, sprite, FLDEFF_SPLASH);
+    return;
+  }
+  const linkedSpriteId = GetObjectEventMainSpriteId(gObjectEvents[objectEventId]);
+  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  if (!linked) return;
+  sprite.x = linked.x; sprite.y = linked.y;
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
+  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+}
+
+/** 1:1 décomp `FldEff_FeetInFlowingWater` (field_effect_helpers.c:725). Lit gFieldEffectArguments[0..2]. */
+export function FldEff_FeetInFlowingWater(rt: DecompRuntime): number {
+  if (!_splashInit) return 64;
+  const sprite = createSplashSprite(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+  if (!sprite) return 64;
+  // 1:1 : sprite->callback = UpdateFeetInFlowingWaterFieldEffect ; sPrevX/Y = -1 ; StartSpriteAnim(1).
+  sprite.callback = UpdateFeetInFlowingWaterFieldEffect;
+  sprite.data[3] = -1; sprite.data[4] = -1;
+  rt.StartSpriteAnim(sprite.spriteId, 1);
+  return 0;
+}
+
+/** 1:1 décomp `UpdateFeetInFlowingWaterFieldEffect` (field_effect_helpers.c:748). Callback per-frame. */
+export function UpdateFeetInFlowingWaterFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[0], sprite.data[1], sprite.data[2]);
+  if (notFound || !gObjectEvents[objectEventId].inShallowFlowingWater) {
+    FieldEffectStop(rt, sprite, FLDEFF_FEET_IN_FLOWING_WATER);
+    return;
+  }
+  const objectEvent: ObjectEvent = gObjectEvents[objectEventId];
+  const linkedSpriteId = GetObjectEventMainSpriteId(objectEvent);
+  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  if (!linked) return;
+  sprite.x = linked.x; sprite.y = linked.y;
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
+  sprite.subpriority = linked.subpriority & 0xFF;
+  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  // 1:1 : au changement de tuile (currentCoords), re-PlaySE(SE_PUDDLE) si visible — SKIP (audio).
+  if (objectEvent.currentCoordsX !== sprite.data[3] || objectEvent.currentCoordsY !== sprite.data[4]) {
+    sprite.data[3] = objectEvent.currentCoordsX;
+    sprite.data[4] = objectEvent.currentCoordsY;
+    // if (!sprite.invisible) PlaySE(SE_PUDDLE) — SKIP (audio).
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════

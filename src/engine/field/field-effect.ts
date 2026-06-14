@@ -34,8 +34,7 @@ import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
-import { SpawnSplashEffect } from './field-effect-splash';
-import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles } from '../../game/field_effect_helpers';
+import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles, FldEff_Splash, FldEff_FeetInFlowingWater } from '../../game/field_effect_helpers';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
@@ -204,12 +203,15 @@ export function FieldEffectStart(id: number): number {
     SpawnFootprintsEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4]);
     return 64;
   }
-  if (id === FLDEFF_SPLASH || id === FLDEFF_FEET_IN_FLOWING_WATER) {
-    // 1:1 décomp FldEff_Splash (642) / FldEff_FeetInFlowingWater (725) : partagent l'asset
-    // splash (anim 0 one-shot vs anim 1 loop). args[0..2] = localId/mapNum/mapGroup (Start
-    // FieldEffectForObjectEvent). Suivent le sprite du parent.
-    SpawnSplashEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-    return 64;
+  if (id === FLDEFF_SPLASH) {
+    // 1:1 décomp FldEff_Splash (field_effect_helpers.c:642) : éclaboussure one-shot qui suit le
+    // parent (anim 0). Lit gFieldEffectArguments[0..2] = localId/mapNum/mapGroup.
+    return FldEff_Splash(rt);
+  }
+  if (id === FLDEFF_FEET_IN_FLOWING_WATER) {
+    // 1:1 décomp FldEff_FeetInFlowingWater (field_effect_helpers.c:725) : éclaboussure aux pieds
+    // (anim 1 loop) sur eau peu profonde qui coule. Lit gFieldEffectArguments[0..2].
+    return FldEff_FeetInFlowingWater(rt);
   }
   if (id === FLDEFF_SHORT_GRASS) {
     // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). Lit gFieldEffectArguments[0..2]
