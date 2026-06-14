@@ -34,6 +34,7 @@ import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
+import { SpawnSplashEffect } from './field-effect-splash';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { SpawnRippleEffect } from './field-effect-ripple';
@@ -167,6 +168,13 @@ export function FieldEffectStart(id: number): number {
     SpawnJumpImpactEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
     return 64;
   }
+  if (id === FLDEFF_SPLASH || id === FLDEFF_FEET_IN_FLOWING_WATER) {
+    // 1:1 décomp FldEff_Splash (642) / FldEff_FeetInFlowingWater (725) : partagent l'asset
+    // splash (anim 0 one-shot vs anim 1 loop). args[0..2] = localId/mapNum/mapGroup (Start
+    // FieldEffectForObjectEvent). Suivent le sprite du parent.
+    SpawnSplashEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return 64;
+  }
   if (id === FLDEFF_SHORT_GRASS) {
     // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). args[0..2] = localId/mapNum/
     // mapGroup de l'owner (StartFieldEffectForObjectEvent), PAS des coords → pas de MAP_OFFSET.
@@ -188,14 +196,12 @@ export function FieldEffectStart(id: number): number {
   // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
   // retourne le sentinel MAX_SPRITES silencieusement.
   switch (id) {
-    case FLDEFF_SPLASH:
     case FLDEFF_SAND_FOOTPRINTS:
     case FLDEFF_DEEP_SAND_FOOTPRINTS:
     case FLDEFF_BIKE_TIRE_TRACKS:
     case FLDEFF_SAND_PILE:
     case FLDEFF_HOT_SPRINGS_WATER:
     case FLDEFF_BUBBLES:
-    case FLDEFF_FEET_IN_FLOWING_WATER:
       return 64;
   }
 
