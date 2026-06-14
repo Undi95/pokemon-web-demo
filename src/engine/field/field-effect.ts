@@ -31,7 +31,6 @@
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { FieldEffectActiveListRemove } from './field-effect-active-list';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
-import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
@@ -39,6 +38,7 @@ import {
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
   FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
+  FldEff_TallGrass,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
@@ -165,15 +165,9 @@ export function FieldEffectStart(id: number): number {
   // (SpawnTallGrassEffect/SpawnJumpLandingDust) prennent du LOGICAL et re-ajoutent
   // MAP_OFFSET → on retire MAP_OFFSET ici (1:1 net).
   if (id === FLDEFF_TALL_GRASS) {
-    // 1:1 décomp FldEff_TallGrass (field_effect_helpers.c:291). args[7] = skip-to-end
-    // (SPAWN = overlay statique) vs 0 (STEP = rustle anim). args[4]=(localId<<8)|mapNum,
-    // args[5]=mapGroup = l'OWNER de l'effet (player ou NPC) → tracking 1:1 par object event.
-    const ownerLocalId = (gFieldEffectArguments[4] >> 8) & 0xFF;
-    const ownerMapNum = gFieldEffectArguments[4] & 0xFF;
-    const ownerMapGroup = gFieldEffectArguments[5] & 0xFF;
-    const elevation = gFieldEffectArguments[2];
-    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
-    return 64;
+    // 1:1 décomp FldEff_TallGrass (field_effect_helpers.c:291) — migré dans
+    // game/field_effect_helpers.ts (lit gFieldEffectArguments, args INTERNAL).
+    return FldEff_TallGrass(rt);
   }
   if (id === FLDEFF_DUST) {
     // 1:1 décomp FldEff_Dust (field_effect_helpers.c:1180) — nuage d'atterrissage de saut.

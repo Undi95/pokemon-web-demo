@@ -45,7 +45,8 @@
  *   ✅ FldEff_BerryTreeGrowthSparkle + FldEff_Sparkle + UpdateSparkleFieldEffect.
  *   ✅ Show{Tree,Mountain,Sand}DisguiseFieldEffect + UpdateDisguiseFieldEffect + Start/UpdateRevealDisguise.
  *   ✅ CreateWarpArrowSprite + SetSpriteInvisible + ShowWarpArrowSprite (driver HideShowWarpArrow reste field-effect-arrow.ts).
- *   ⏳ reste : reflets, shadow (stub à refaire), tall/long grass, footprints, surf blob,
+ *   ✅ FldEff_TallGrass + UpdateTallGrassFieldEffect + FindTallGrassFieldEffectSpriteId (tuile-fixe + gCamera + despawn).
+ *   ⏳ reste : reflets, shadow (stub à refaire, bloqué), long grass, footprints, surf blob,
  *      jump dust, + effets morts.
  */
 
@@ -55,11 +56,13 @@ import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
-  SetObjectSubpriorityByElevation,
+  SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
-import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt } from '../engine/field/field-camera';
-import { MapGridSetMetatileIdAt, MAP_OFFSET } from '../engine/field/map-loader';
+import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
+import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../engine/field/map-loader';
+import { MetatileBehavior_IsTallGrass } from './metatile_behavior';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
@@ -86,6 +89,8 @@ const FLDEFF_SPARKLE = 54;
 const FLDEFF_TREE_DISGUISE = 28;
 const FLDEFF_MOUNTAIN_DISGUISE = 29;
 const FLDEFF_SAND_DISGUISE = 36;
+const FLDEFF_TALL_GRASS = 4;
+const LOCALID_PLAYER = 0xFF;
 const MAX_SPRITES = 64;
 
 const OBJECT_EVENTS_COUNT = 16;
@@ -245,6 +250,160 @@ export function ShowWarpArrowSprite(rt: DecompRuntime, spriteId: number, directi
     // 1:1 : StartSpriteAnim(sprite, direction - 1) → le moteur joue le clignotement de la dir.
     rt.StartSpriteAnim(spriteId, direction - 1);
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_TallGrass (field_effect_helpers.c:291)
+//  Bruissement d'herbe haute (16×16) au passage d'un object event sur MB_TALL_GRASS.
+//  Sprite TUILE-FIXE (≠ parent-follow) : reste sur la tuile (sX/sY), suit la caméra via
+//  coordOffset. Anim 5 frames @10 jouée 1× (pas) ou figée à la fin (SeekSpriteAnim(4),
+//  retour au field/spawn). Despawn quand : owner introuvable | tuile plus de l'herbe |
+//  (owner a quitté la tuile && anim finie). Tracking de l'OWNER (player ou NPC) via
+//  localId/map → un NPC laisse un rustle persistant 1:1.
+//  Sprite data 1:1 : sElevation=data[0] sX=data[1] sY=data[2] data[3]=(sLocalId<<8)|sMapNum
+//    sMapGroup=data[4] sCurrentMap=data[5] sObjectMoved=data[7].
+//  Assets : tall_grass.png (80×16 = 5 frames 16×16), palette general_1.pal.
+// ════════════════════════════════════════════════════════════════════════════
+
+const TALL_GRASS_PNG = '/decomp/em/field_effects/tall_grass.png';
+const TAG_TALL_GRASS_GFX = 'FIELD_EFFECT_TALL_GRASS_GFX';
+const TALL_GRASS_TILES_PER_FRAME = 4; // 16×16
+
+/** 1:1 décomp `sAnim_TallGrass` (field_effect_objects.h:79) : FRAME(1,10)(2,10)(3,10)(4,10)(0,10) END.
+ *  imageValue = frameIdx × 4 → 4,8,12,16,0. SeekSpriteAnim(4) = dernière frame (0) figée. */
+const sAnims_TallGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(4, 10), ANIMCMD_FRAME(8, 10), ANIMCMD_FRAME(12, 10), ANIMCMD_FRAME(16, 10), ANIMCMD_FRAME(0, 10), ANIMCMD_END],
+];
+
+let _tallGrassTileStart = -1;
+let _tallGrassPalSlot = -1;
+let _tallGrassInit = false;
+let _tallGrassInitPromise: Promise<void> | null = null;
+
+/** Préchargement asset (concern plateforme). tall_grass.png = 80×16 = 10×2 tiles, 5 frames
+ *  16×16 → même layout que ripple (10 de large) → réutilise pngTo1dObjLayoutRipple. */
+export function preloadTallGrassEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _tallGrassInit && IndexOfSpriteTileTag(TAG_TALL_GRASS_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_tallGrassInitPromise && !_tallGrassInit) return _tallGrassInitPromise;
+  _tallGrassInit = false; _tallGrassInitPromise = null;
+  _tallGrassInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(TALL_GRASS_PNG, 4);
+    const reordered = pngTo1dObjLayoutRipple(png.charData); // 10-wide, 5 frames (identique à ripple)
+    _tallGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_TALL_GRASS_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _tallGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _tallGrassInit = true;
+  })();
+  return _tallGrassInitPromise;
+}
+
+/** 1:1 décomp `FldEff_TallGrass` (field_effect_helpers.c:291). args[0/1]=tuile INTERNAL,
+ *  [2]=elevation, [3]=priority, [4]=(localId<<8)|mapNum, [5]=mapGroup, [6]=currentMap packé,
+ *  [7]=skip-to-end (spawn statique vs rustle). */
+export function FldEff_TallGrass(rt: DecompRuntime): number {
+  if (!_tallGrassInit) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&x, &y, 8, 8) → coords MONDE (x/y = args[0/1] INTERNAL).
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _tallGrassTileStart,
+    paletteBank: _tallGrassPalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: 0,     // 1:1 CreateSpriteAtEnd(..., 0)
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateTallGrassFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_TallGrass, _tallGrassTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  sprite.coordOffsetEnabled = true; // 1:1 : sprite monde
+  // 1:1 data : sElevation=args[2], sX=args[0], sY=args[1], data[3]=args[4] (localId<<8|mapNum),
+  // sMapGroup=args[5], sCurrentMap=args[6].
+  sprite.data[0] = gFieldEffectArguments[2];
+  sprite.data[1] = gFieldEffectArguments[0];
+  sprite.data[2] = gFieldEffectArguments[1];
+  sprite.data[3] = gFieldEffectArguments[4];
+  sprite.data[4] = gFieldEffectArguments[5];
+  sprite.data[5] = gFieldEffectArguments[6];
+  // 1:1 : if (args[7]) SeekSpriteAnim(sprite, 4) — saute à la dernière frame (overlay statique).
+  if (gFieldEffectArguments[7]) rt.SeekSpriteAnim(result.spriteId, 4);
+  return 0;
+}
+
+/** 1:1 décomp `UpdateTallGrassFieldEffect` (field_effect_helpers.c:316). Callback per-frame. */
+export function UpdateTallGrassFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  let mapNum = (sprite.data[5] >> 8) & 0xFF;
+  let mapGroup = sprite.data[5] & 0xFF;
+  // 1:1 : transition de map connectée (gCamera.active) → décale la tuile + maj sCurrentMap.
+  const loc = gSaveBlock1Ptr.location;
+  if (gCamera.active && loc && (loc.mapNum !== mapNum || loc.mapGroup !== mapGroup)) {
+    sprite.data[1] -= gCamera.x; // sX
+    sprite.data[2] -= gCamera.y; // sY
+    sprite.data[5] = ((loc.mapNum & 0xFF) << 8) | (loc.mapGroup & 0xFF);
+  }
+  const localId = (sprite.data[3] >> 8) & 0xFF; // sLocalId
+  mapNum = sprite.data[3] & 0xFF;               // sMapNum
+  mapGroup = sprite.data[4];                     // sMapGroup
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(sprite.data[1], sprite.data[2]);
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (notFound || !MetatileBehavior_IsTallGrass(metatileBehavior) || (sprite.data[7] && sprite.animEnded)) {
+    FieldEffectStop(rt, sprite, FLDEFF_TALL_GRASS);
+  } else {
+    // 1:1 : l'objet a-t-il quitté la tuile ? (current ET previous coords != sX/sY).
+    const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+    if ((objEvent.currentCoordsX !== sprite.data[1] || objEvent.currentCoordsY !== sprite.data[2])
+     && (objEvent.previousCoordsX !== sprite.data[1] || objEvent.previousCoordsY !== sprite.data[2])) {
+      sprite.data[7] = 1; // sObjectMoved
+    }
+    // 1:1 : subpriority bump pendant la 1re frame (animCmdIndex == 0 → offset 4).
+    const subprioOffset = sprite.animCmdIndex === 0 ? 4 : 0;
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+    UpdateGrassFieldEffectSubpriority(rt, sprite, sprite.data[0], subprioOffset);
+  }
+}
+
+/** 1:1 décomp `FindTallGrassFieldEffectSpriteId` (field_effect_helpers.c:376). Scanne gSprites
+ *  pour le sprite tall grass à (x,y,localId,mapNum,mapGroup). Retourne le spriteId ou MAX_SPRITES. */
+export function FindTallGrassFieldEffectSpriteId(rt: DecompRuntime, localId: number, mapNum: number, mapGroup: number, x: number, y: number): number {
+  for (const s of rt.gSprites.values()) {
+    if (!s.inUse) continue;
+    if (s.callback === UpdateTallGrassFieldEffect
+        && x === s.data[1] && y === s.data[2]
+        && localId === ((s.data[3] >> 8) & 0xFF)
+        && mapNum === (s.data[3] & 0xFF)
+        && mapGroup === s.data[4]) {
+      return s.spriteId;
+    }
+  }
+  return MAX_SPRITES;
+}
+
+/** Adaptation (≠ décomp) : au RETOUR au field (sortie combat/menu), si le joueur (re)spawn sur
+ *  une tuile d'herbe haute, déclenche l'overlay STATIQUE via le chemin 1:1 (GroundEffect_SpawnOn
+ *  TallGrass = args + FieldEffectStart, args[7]=1). Notre spine OnSpawn ne fire pas sur le
+ *  menu-return → ce hook évite le « joueur dans l'herbe sans overlay » post-combat. px/py LOGICAL. */
+export function TrySpawnTallGrassOnReturnToField(rt: DecompRuntime, px: number, py: number): void {
+  if (!_tallGrassInit) return;
+  const internalX = px + MAP_OFFSET, internalY = py + MAP_OFFSET;
+  if (!MetatileBehavior_IsTallGrass(MapGridGetMetatileBehaviorAt(internalX, internalY))) return;
+  const npc = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!npc) return;
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  gFieldEffectArguments[4] = (npc.localId << 8) | (npc.mapNum & 0xFF);
+  gFieldEffectArguments[5] = npc.mapGroup;
+  const loc = gSaveBlock1Ptr.location;
+  gFieldEffectArguments[6] = loc ? (((loc.mapNum & 0xFF) << 8) | (loc.mapGroup & 0xFF)) : 0;
+  gFieldEffectArguments[7] = 1;
+  FieldEffectStart(FLDEFF_TALL_GRASS);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

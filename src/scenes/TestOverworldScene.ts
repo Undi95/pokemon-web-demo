@@ -137,10 +137,8 @@ import {
 import { UpdateTVScreensOnMap } from '../engine/ui/tv-screen';
 import {
   preloadTallGrassEffect,
-  UpdateTallGrassEffects,
-  DestroyAllTallGrassEffects,
   TrySpawnTallGrassOnReturnToField,
-} from '../engine/field/field-effect-grass';
+} from '../game/field_effect_helpers';
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import {
@@ -627,10 +625,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // la tuile adjacente, sinon hide. Le clignotement est joué par le MOTEUR
         // (CreateWarpArrowSprite/ShowWarpArrowSprite migrés game/field_effect_helpers.ts).
         HideShowWarpArrow(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
-        // 1:1 décomp tall grass field effect (= field_effect_helpers.c
-        // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
-        // destroy après cycle.
-        UpdateTallGrassEffects(rt);
+        // Tall grass (FLDEFF_TALL_GRASS) : migré (game/field_effect_helpers.ts), tické par son
+        // callback UpdateTallGrassFieldEffect via runSpriteCallbacks.
         // FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE : migrés (game/field_effect_helpers.ts),
         // tickés par leurs callbacks (WaitFieldEffectSpriteAnim / UpdateSparkleFieldEffect) via runSpriteCallbacks.
         UpdateJumpDustEffects(rt);
@@ -1136,8 +1132,8 @@ export class TestOverworldScene extends Phaser.Scene {
     // Cleanup actifs au map switch puis re-load idempotent.
     DestroyAllEmoteSprites(this.rt);
     await LoadEmoteAssets(this.rt);
-    // Phase 4.10 : preload tall grass effect assets + cleanup pool.
-    DestroyAllTallGrassEffects(this.rt);
+    // Tall grass (FLDEFF_TALL_GRASS) : assets seuls (migré game/field_effect_helpers.ts,
+    // callback-driven via le dispatcher).
     await preloadTallGrassEffect(this.rt);
     // Sparkle (FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE) : assets seuls (one-shot
     // auto-despawn via callback, migrés game/field_effect_helpers.ts).
