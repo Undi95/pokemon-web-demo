@@ -32,6 +32,7 @@ import type { DecompRuntime } from '../system/decomp-runtime';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
+import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { SpawnRippleEffect } from './field-effect-ripple';
 import { MAP_OFFSET } from './map-loader';
@@ -146,6 +147,16 @@ export function FieldEffectStart(id: number): number {
     SpawnJumpLandingDust(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET);
     return 64;
   }
+  if (id === FLDEFF_LONG_GRASS) {
+    // 1:1 décomp FldEff_LongGrass (field_effect_helpers.c:395). args identiques à TALL_GRASS
+    // (owner = (localId<<8)|mapNum en [4], mapGroup [5], elevation [2], [7]=skip-to-end).
+    const ownerLocalId = (gFieldEffectArguments[4] >> 8) & 0xFF;
+    const ownerMapNum = gFieldEffectArguments[4] & 0xFF;
+    const ownerMapGroup = gFieldEffectArguments[5] & 0xFF;
+    const elevation = gFieldEffectArguments[2];
+    SpawnLongGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
+    return 64;
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -161,8 +172,6 @@ export function FieldEffectStart(id: number): number {
   // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
   // retourne le sentinel MAX_SPRITES silencieusement.
   switch (id) {
-    case FLDEFF_RIPPLE:
-    case FLDEFF_LONG_GRASS:
     case FLDEFF_JUMP_TALL_GRASS:
     case FLDEFF_JUMP_LONG_GRASS:
     case FLDEFF_JUMP_SMALL_SPLASH:
