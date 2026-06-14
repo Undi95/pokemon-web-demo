@@ -33,6 +33,7 @@ import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
 import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
 import { gPlayerAvatar } from '../field/player-avatar';
 import { MapGridGetMetatileIdAt } from '../field/map-loader';
+import { SetSurfBlob_BobState } from '../field/field-effect-surf-blob';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -141,6 +142,16 @@ const fx = {
   /** Raccourci sand pile (inSandPile). */
   sandPile() { return fx.onPlayer('FLDEFF_SAND_PILE', ['inSandPile']); },
   stopSandPile() { fx.setFlag('inSandPile', false); return fx.list(); },
+
+  /** Raccourci surf blob : spawn la monture sur le joueur + BOB_PLAYER_AND_MON (bobbing+sync). */
+  surfBlob() {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable');
+    const objId = GetObjectEventIdByLocalIdAndMap(p.localId, p.mapNum, p.mapGroup);
+    const blobId = fx.start('FLDEFF_SURF_BLOB', [(p as any).currentCoordsX, (p as any).currentCoordsY, objId]);
+    SetSurfBlob_BobState(blobId, 1);  // BOB_PLAYER_AND_MON
+    return { blobSpriteId: blobId, sprites: fx.list() };
+  },
 
   /** Sprites d'effet actifs (= tous les sprites SAUF ceux d'un object event). */
   list() {
