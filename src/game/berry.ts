@@ -21,8 +21,8 @@
  * documentée (= berry tree NPC interactions U-tier overworld).
  */
 
-import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { Random } from '../system/random';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
+import { Random } from '../engine/system/random';
 
 // ─── Constants 1:1 décomp `include/constants/berry.h` ───────────────────────
 

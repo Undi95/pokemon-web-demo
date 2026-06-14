@@ -74,7 +74,7 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../system/decom
 // `object-events → game-state → load_save → object-events`).
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSaveBlock1 } from '../save/save-system';
-import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../pokemon/berry';
+import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../../game/berry';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE } from './field-effect';
 
 const BASE = '/decomp/em';

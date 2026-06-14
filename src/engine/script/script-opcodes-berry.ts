@@ -10,7 +10,7 @@
 
 import { registerOpcode } from './script-runtime';
 import { parseValue } from './script-opcodes-helpers';
-import { PlantBerryTree } from '../pokemon/berry';
+import { PlantBerryTree } from '../../game/berry';
 
 // 1:1 STRICT décomp `ScrCmd_setberrytree` (scrcmd.c:1923-1934) :
 //   u8 treeId = ScriptReadByte(ctx);

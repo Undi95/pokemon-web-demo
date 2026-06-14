@@ -71,7 +71,7 @@ import {
   GetBerryInfo, GetBerryTreeInfo, GetBerryNameByBerryType, BERRY_STAGE_SPARKLING,
   BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED, BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
   PlantBerryTree, ItemIdToBerryType,
-} from '../pokemon/berry';
+} from '../../game/berry';
 import { gDecorations } from '../ui/decoration-data';
 import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
 import { DecorationAdd, DecorationRemove } from '../ui/decoration-inventory';

@@ -6,7 +6,7 @@
 // commentaire. Évite toute dépendance à decomp-bridge (= zéro risque de cycle TDZ).
 // Re-générer : node scripts/gen-reset-all-berries.cjs
 
-import { PlantBerryTree } from '../pokemon/berry';
+import { PlantBerryTree } from '../../game/berry';
 import {
   BERRY_STAGE_BERRIES,
   BERRY_TREE_ROUTE_102_ORAN,
