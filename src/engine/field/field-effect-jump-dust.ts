@@ -18,7 +18,7 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
-import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
+import { SetSpritePosToOffsetMapCoords } from './field-camera';
 import { MAP_OFFSET } from './map-loader';
 
 const DUST_PNG = '/decomp/em/field_effects/ground_impact_dust.png';
@@ -42,10 +42,6 @@ const TOTAL_FRAMES = 24;
 interface DustEffectState {
   spriteId: number;
   oamIndex: number;
-  worldX: number;
-  worldY: number;
-  offsetXAtShow: number;
-  offsetYAtShow: number;
   ticks: number;
   active: boolean;
 }
@@ -101,8 +97,7 @@ export function preloadJumpDustEffect(rt: DecompRuntime): Promise<void> {
     // Palette : shared with player (= bank 0). Pas de re-upload nécessaire.
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = {
-        spriteId: -1, oamIndex: -1, worldX: 0, worldY: 0,
-        offsetXAtShow: 0, offsetYAtShow: 0, ticks: 0, active: false,
+        spriteId: -1, oamIndex: -1, ticks: 0, active: false,
       };
     }
     _initialized = true;
@@ -122,31 +117,30 @@ export function SpawnJumpLandingDust(rt: DecompRuntime, mapX: number, mapY: numb
   const slot = findFreeSlot();
   if (slot < 0) return;
 
-  const cam = GetCameraTopLeftCoords();
+  // 1:1 décomp `FldEff_Dust` (field_effect_helpers.c:1180) : `SetSpritePosToOffset
+  // MapCoords(&x, &y, 8, 12)` → coords MONDE fixes (tile center horizontal + bas de
+  // tile vertical = au pied du player, au sol) + `coordOffsetEnabled = TRUE` → suit
+  // la caméra via gSpriteCoordOffset (syncSpritesToOam). args = coords INTERNAL.
   const npcGBackupCol = mapX + MAP_OFFSET;
   const npcGBackupRow = mapY + MAP_OFFSET;
-  // Dust 16×8 → place à tile center horizontalement + tile bottom verticalement
-  // (= au pied du player, simulating impact at ground).
-  const worldX = (npcGBackupCol - cam.x) * 16 + 8;
-  const worldY = (npcGBackupRow - cam.y) * 16 + 12;  // = près du bas de tile (= sol)
+  const world = SetSpritePosToOffsetMapCoords(npcGBackupCol, npcGBackupRow, 8, 12);
 
   const result = rt.CreateSpriteAtOam({
     tileId: _dustTileStart,
     paletteBank: DUST_PALETTE_BANK,
-    x: 0, y: 0,
+    x: world.x, y: world.y,
     shape: 1, size: 0,  // 16×8 (= shape WIDE, size SMALL)
     priority: 1,         // = player priority 2 → dust derrière player (sol)
     paletteMode: 0,
     affineMode: 0,
   });
+  // 1:1 décomp `sprite->coordOffsetEnabled = TRUE` (field_effect_helpers.c:1190).
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (sprite) { sprite.x = world.x; sprite.y = world.y; sprite.coordOffsetEnabled = true; }
 
   const state = _pool[slot];
   state.spriteId = result.spriteId;
   state.oamIndex = result.oamIndex;
-  state.worldX = worldX;
-  state.worldY = worldY;
-  state.offsetXAtShow = gTotalCamera.pixelOffsetX;
-  state.offsetYAtShow = gTotalCamera.pixelOffsetY;
   state.ticks = 0;
   state.active = true;
 }
@@ -166,8 +160,8 @@ export function UpdateJumpDustEffects(rt: DecompRuntime): void {
     }
     const oam = rt.gba.oam[s.oamIndex];
     oam.tileId = _dustTileStart + frameIdx * TILES_PER_FRAME;
-    sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
-    sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
+    // sprite.x/y (coords MONDE) posés à la création ; `coordOffsetEnabled` +
+    // `syncSpritesToOam` ajoutent `gSpriteCoordOffset` → suit la caméra.
     s.ticks++;
     if (s.ticks >= TOTAL_FRAMES) {
       sprite.inUse = false;
