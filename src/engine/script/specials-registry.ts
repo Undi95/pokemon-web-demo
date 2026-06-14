@@ -68,7 +68,8 @@ import { AddBagItem } from '../bag/bag';
 import {
   GetBerryTypeByBerryTreeId, GetStageByBerryTreeId, GetNumStagesWateredByBerryTreeId,
   GetBerryCountByBerryTreeId, AllowBerryTreeGrowth, BerryTypeToItemId, RemoveBerryTree,
-  GetBerryInfo, BERRY_STAGE_SPARKLING,
+  GetBerryInfo, GetBerryTreeInfo, GetBerryNameByBerryType, BERRY_STAGE_SPARKLING,
+  BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED, BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
 } from '../pokemon/berry';
 import { gDecorations } from '../ui/decoration-data';
 import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
@@ -1365,7 +1366,7 @@ registerSpecial('GetFirstFreePokeblockSlot', () => {
   }
   return 0xFFFF;  // -1 cast u16 = 0xFFFF (= s8 -1 mais return type u16).
 });
-registerSpecial('ObjectEventInteractionGetBerryName', () => { /* no-op */ });
+// ObjectEventInteractionGetBerryName : porté 1:1 dans la section baies (berry.c:1274).
 
 /** Contests. */
 registerSpecial('DoContestHallWarp', () => { /* no-op */ });
@@ -2145,7 +2146,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'DoDiveWarp', 'DoDomeConfetti', 'DoFallWarp', 'DoLotteryCornerComputerEffect',
   'DoMirageTowerCeilingCrumble', 'DoPokeNews',
   'DoSealedChamberShakingEffect_Long', 'DoSoftReset', 'DoTVShow',
-  'DoTVShowInSearchOfTrainers', 'DoTrainerApproach', 'DoWateringBerryTreeAnim',
+  'DoTVShowInSearchOfTrainers', 'DoTrainerApproach',
+  // 'DoWateringBerryTreeAnim' — handler concret 1:1 décomp enregistré plus bas (arrosage).
   // 'DoesContestCategoryHaveMuseumPainting' — porté 1:1 décomp contest_util.c:2332 ci-bas (batch B50).
   // 'DoesPartyHaveEnigmaBerry' — porté 1:1 décomp script_pokemon_util.c:128 ci-bas (batch B6).
   // 'DoesPlayerHaveNoDecorations' — porté 1:1 décomp trader.c:145 ci-bas.
@@ -2244,10 +2246,10 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
   'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',
-  // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/PickBerryTree/
-  // RemoveBerryTree : handlers concrets 1:1 décomp enregistrés plus bas (récolte).
+  // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/GetBerryName/
+  // PickBerryTree/RemoveBerryTree/WaterBerryTree : handlers concrets 1:1 décomp
+  // enregistrés plus bas (récolte + arrosage).
   'ObjectEventInteractionPlantBerryTree',
-  'ObjectEventInteractionWaterBerryTree',
   'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
   'Overworld_PlaySpecialMapMusic',
   // 'PickLotteryCornerTicket' — porté 1:1 décomp lottery_corner.c:48 ci-bas (batch E1).
@@ -2424,6 +2426,52 @@ registerSpecial('ObjectEventInteractionRemoveBerryTree', () => {
   const npc = getGObjectEvents()[gSelectedObjectEvent.index];
   if (npc) npc.berryTreeFlags |= _BERRY_FLAG_JUST_PICKED;
 });
+
+// ─── Berry tree field interaction — arrosage (1:1 décomp berry.c:997-1019,1274) ─
+// Flux : BerryTree_EventScript_WaterBerry (berry_tree.inc:161-171) → GetBerryName
+// (msgbox "BAIE <nom>") → WaterBerryTree (pose le flag waterN du stade courant =
+// meilleur yield à maturité) → DoWateringBerryTreeAnim.
+
+/** 1:1 décomp `ObjectEventInteractionGetBerryName` (berry.c:1274-1278) :
+ *  gStringVar1 = nom de la baie de l'arbre sélectionné. */
+registerSpecial('ObjectEventInteractionGetBerryName', () => {
+  const berryType = GetBerryTypeByBerryTreeId(_selectedBerryTreeId());
+  setStringVar(1, GetBerryNameByBerryType(berryType));
+});
+
+/** 1:1 décomp `ObjectEventInteractionWaterBerryTree` (berry.c:997-1019) :
+ *  selon le stade courant, pose watered1..4 (= +1 stage arrosé → meilleur
+ *  CalcBerryYield à maturité). Retourne TRUE si arrosé, FALSE sinon (stade
+ *  hors PLANTED..FLOWERING). */
+registerSpecial('ObjectEventInteractionWaterBerryTree', () => {
+  const tree = GetBerryTreeInfo(_selectedBerryTreeId());
+  if (!tree) return 0;
+  switch (tree.stage) {
+    case BERRY_STAGE_PLANTED:   tree.watered1 = 1; break;
+    case BERRY_STAGE_SPROUTED:  tree.watered2 = 1; break;
+    case BERRY_STAGE_TALLER:    tree.watered3 = 1; break;
+    case BERRY_STAGE_FLOWERING: tree.watered4 = 1; break;
+    default: return 0;
+  }
+  return 1;
+});
+
+/** 1:1 décomp `DoWateringBerryTreeAnim` (fldeff_misc.c:1285-1288) :
+ *  CreateTask(Task_WateringBerryTreeAnim, 80) → le joueur prend la pose
+ *  « arrosoir » (SetPlayerAvatarWatering) et tient un walk-in-place 10 fois.
+ *
+ *  DETTE explicite (player-avatar subsystem) : la pose d'arrosage requiert
+ *  PLAYER_AVATAR_STATE_WATERING (object-event-graphics.ts:79) — non câblé dans
+ *  sRivalAvatarGfxIds (NORMAL seul ; bike/surf/fishing/watering = TODO Phase 4),
+ *  + SetPlayerAvatarWatering / GetWalkInPlaceNormalMovementAction /
+ *  SetPlayerAvatarTransitionFlags non portés. Le sprite arrosoir du joueur n'est
+ *  pas extrait. → animation cosmétique reportée au chantier player-avatar.
+ *
+ *  1:1 comportemental préservé : le script BerryTree_EventScript_WaterBerry NE
+ *  bloque PAS sur ce special (aucun `waitstate` ; ScriptContext_Enable du task
+ *  est défensif pour le chemin sac). L'arrosage FONCTIONNEL (flag + yield + les
+ *  3 messages) est complet ; seule la pose visuelle du joueur manque. */
+registerSpecial('DoWateringBerryTreeAnim', () => { /* dette player-avatar : cf supra */ });
 
 // ─── Session A2 batch 1 — ports 1:1 strict ─────────────────────────────────
 
