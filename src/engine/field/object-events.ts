@@ -4821,33 +4821,29 @@ const BERRY_TREE_FIRST_FRAME_BY_ANIM = [0, 1, 3, 5, 7] as const;
  *  initiales sont figées (stopGrowth=TRUE), l'état du stade est donc résolu une
  *  fois au spawn. `tickBerryTreeGrowth`/`setBerryTreeGraphics` continuent de
  *  resynchroniser `animNum` chaque frame (no-op pour un arbre statique). */
-function _spawnBerryTreeFromTemplate(
-  template: ObjectEventTemplate,
-  currentMapId: string,
-  rt: DecompRuntime,
-): boolean {
-  // Flag de masquage (1:1 décomp TrySpawnObjectEvents : NPC caché si flagId set).
-  if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) return false;
-
-  // Dedup (1:1 GetAvailableObjectEventId) — identique au flow standard.
-  const existing = gObjectEvents.findIndex(o => {
-    if (!o.active || o.mapId !== currentMapId) return false;
-    if (template.localIdRaw && o.localIdRaw === template.localIdRaw) return true;
-    if (!template.localIdRaw
-        && o.initialCoordsX === template.x + MAP_OFFSET
-        && o.initialCoordsY === template.y + MAP_OFFSET) return true;
-    return false;
-  });
-  if (existing >= 0) return false;
-
-  const slot = gObjectEvents.findIndex(o => !o.active);
-  if (slot < 0) return false;
-
+/** Crée (ou recrée) le SPRITE graphique d'un berry tree pour un object event déjà
+ *  initialisé (npc.trainerRange_berryTreeId posé). Partagé par le spawn initial
+ *  (_spawnBerryTreeFromTemplate) ET le respawn au retour de menu
+ *  (SpawnObjectEventOnReturnToField, event_object_movement.c:1728).
+ *
+ *  1:1 décomp : SpawnObjectEventOnReturnToField recrée le sprite de CHAQUE object
+ *  event actif via son graphicsId, puis le movement type re-run SetBerryTreeGraphics
+ *  (sprite.data[7]=0 sur le nouveau sprite) pour ré-appliquer les pics de la baie.
+ *  Notre helper fait les deux d'un coup (pics baie du berryType + frame du stade).
+ *  Sans ça, ouvrir un menu (sac) puis revenir à l'OW laissait le berry tree
+ *  invisible (`_respawnNpcSpriteForReturnToField` → `catalog['OBJ_EVENT_GFX_BERRY_TREE']`
+ *  = undefined → sprite jamais recréé).
+ *
+ *  Pose : npc.invisible/spriteId/objTileBase/objTileCount/paletteBank/inanimate/
+ *  is16x16/is32x32/useSubsprites + sprite.images/anims/animNum. NE touche PAS les
+ *  champs identité/position (= préservés au respawn). Retourne false si les PNGs
+ *  ne sont pas en cache ou si l'alloc tiles/palette échoue. */
+function _setupBerryTreeSpriteGraphics(npc: ObjectEvent, rt: DecompRuntime): boolean {
   // ─── Résolution graphics 1:1 SetBerryTreeGraphics (event_object_movement.c:1890) ─
-  const berryTreeId = template.trainerRange_berryTreeId;
+  const berryTreeId = npc.trainerRange_berryTreeId;
   const berryStage = GetStageByBerryTreeId(berryTreeId);
   const visible = berryStage !== BERRY_STAGE_NO_BERRY;
-  // 1:1 : berryId = GetBerryTypeByBerryTreeId(id) - 1 ; garde le borne (plot vide
+  // 1:1 : berryId = GetBerryTypeByBerryTreeId(id) - 1 ; garde la borne (plot vide
   // → entrée 0 Cheri, sprite invisible de toute façon).
   const berryType = GetBerryTypeByBerryTreeId(berryTreeId);
   let berryId = berryType - 1;
@@ -4862,7 +4858,8 @@ function _spawnBerryTreeFromTemplate(
   const height = isLate ? 32 : 16;
 
   // PNGs préchargés (dirt_pile + sprout + baie). Si pas en cache → skip (caller
-  // doit avoir préload via preloadNpcGraphicsForMap).
+  // doit avoir préload via preloadNpcGraphicsForMap ; le cache persiste au retour
+  // de menu).
   const [dirtPath, sproutPath, berryPath] = _berryTreePngPaths(berryTreeId);
   const dirtPng = _npcPngCache.get(dirtPath);
   const sproutPng = _npcPngCache.get(sproutPath);
@@ -4900,56 +4897,12 @@ function _spawnBerryTreeFromTemplate(
   const firstFrame = BERRY_TREE_FIRST_FRAME_BY_ANIM[animNum] ?? 0;
   rt.gba.objVram.set(picTable[firstFrame].data, objTileBase * 32);
 
-  // ─── Init ObjectEvent + position (1:1 InitObjectEventStateFromTemplate) ──────
-  const cam = GetCameraTopLeftCoords();
-  const npc = gObjectEvents[slot];
-  npc.active = true;
+  // ─── Champs graphics de l'object event (PAS identité/position) ───────────────
   // 1:1 SetBerryTreeGraphics : invisible si BERRY_STAGE_NO_BERRY.
   npc.invisible = !visible;
-  npc.graphicsId = 'OBJ_EVENT_GFX_BERRY_TREE';
-  npc.movementType = template.movementTypeRaw ?? '';
-  npc.localId = template.localId;
-  npc.localIdRaw = template.localIdRaw;
-  npc.mapId = currentMapId;
-  npc.scriptLabel = template.script ?? '';
-  // CRITIQUE : champ jamais copié par le flow standard ; sans ça
-  // GetStageByBerryTreeId lit toujours berryTrees[0].
-  npc.trainerRange_berryTreeId = berryTreeId;
-  npc.currentCoordsX = template.x + MAP_OFFSET;
-  npc.currentCoordsY = template.y + MAP_OFFSET;
-  npc.previousCoordsX = template.x + MAP_OFFSET;
-  npc.previousCoordsY = template.y + MAP_OFFSET;
-  npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
-  npc.movementDirection = npc.facingDirection;
-  npc.previousMovementDirection = npc.facingDirection;
-  ObjectEventUpdateMetatileBehaviors(npc);
   npc.objTileBase = objTileBase;
   npc.objTileCount = objTileCount;
   npc.paletteBank = paletteBank;
-  // Position sprite 1:1 SetSpritePosToMapCoords (event_object_movement.c:4801).
-  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
-  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
-  if (gFieldCamera.x > 0) dx += 16;
-  if (gFieldCamera.x < 0) dx -= 16;
-  if (gFieldCamera.y > 0) dy += 16;
-  if (gFieldCamera.y < 0) dy -= 16;
-  npc.worldX = (npc.currentCoordsX - cam.x) * 16 + 8 + dx;
-  npc.worldY = (npc.currentCoordsY - cam.y) * 16 + dy;
-  npc.movementStep = 0;
-  npc.movementDelay = 0;
-  npc.walkFramesLeft = 0;
-  npc.walkDirection = DIR_NONE;
-  npc.walkAnimAlt = 0;
-  npc.frozen = false;
-  npc.initialCoordsX = template.x + MAP_OFFSET;
-  npc.initialCoordsY = template.y + MAP_OFFSET;
-  npc.movementRangeX = template.movementRangeX;
-  npc.movementRangeY = template.movementRangeY;
-  if (movementTypeHasRange(npc.movementType)) {
-    if (npc.movementRangeX === 0) npc.movementRangeX = 1;
-    if (npc.movementRangeY === 0) npc.movementRangeY = 1;
-  }
-  npc.directionSeqIdx = 0;
   // 1:1 décomp : inanimate=TRUE (gObjectEventGraphicsInfo_BerryTree). is16x16/
   // is32x32/useSubsprites = false → frame piloté par le sprite anim system
   // (dynamic copy), pas par le cycle tileId de updateNpcSpriteFrame.
@@ -4992,7 +4945,83 @@ function _spawnBerryTreeFromTemplate(
   }
   rt.gba.oam[result.oamIndex].flipH = false;
   rt.gba.oam[result.oamIndex].priority = oamTemplate.priority;
-  console.log(`[object-events] spawn berry tree slot=${slot} treeId=${berryTreeId} berryType=${berryType} stage=${berryStage} animNum=${animNum} (${isLate ? '16x32' : '16x16'}) png=${gfx.png} at (${template.x}, ${template.y}) visible=${visible}`);
+  return true;
+}
+
+function _spawnBerryTreeFromTemplate(
+  template: ObjectEventTemplate,
+  currentMapId: string,
+  rt: DecompRuntime,
+): boolean {
+  // Flag de masquage (1:1 décomp TrySpawnObjectEvents : NPC caché si flagId set).
+  if (template.flagId && template.flagId !== '0' && FlagGet(template.flagId)) return false;
+
+  // Dedup (1:1 GetAvailableObjectEventId) — identique au flow standard.
+  const existing = gObjectEvents.findIndex(o => {
+    if (!o.active || o.mapId !== currentMapId) return false;
+    if (template.localIdRaw && o.localIdRaw === template.localIdRaw) return true;
+    if (!template.localIdRaw
+        && o.initialCoordsX === template.x + MAP_OFFSET
+        && o.initialCoordsY === template.y + MAP_OFFSET) return true;
+    return false;
+  });
+  if (existing >= 0) return false;
+
+  const slot = gObjectEvents.findIndex(o => !o.active);
+  if (slot < 0) return false;
+
+  // ─── Init ObjectEvent identité + position (1:1 InitObjectEventStateFromTemplate) ─
+  const cam = GetCameraTopLeftCoords();
+  const npc = gObjectEvents[slot];
+  npc.active = true;
+  npc.graphicsId = 'OBJ_EVENT_GFX_BERRY_TREE';
+  npc.movementType = template.movementTypeRaw ?? '';
+  npc.localId = template.localId;
+  npc.localIdRaw = template.localIdRaw;
+  npc.mapId = currentMapId;
+  npc.scriptLabel = template.script ?? '';
+  // CRITIQUE : champ jamais copié par le flow standard ; sans ça
+  // GetStageByBerryTreeId lit toujours berryTrees[0]. Posé AVANT le helper graphics.
+  npc.trainerRange_berryTreeId = template.trainerRange_berryTreeId;
+  npc.currentCoordsX = template.x + MAP_OFFSET;
+  npc.currentCoordsY = template.y + MAP_OFFSET;
+  npc.previousCoordsX = template.x + MAP_OFFSET;
+  npc.previousCoordsY = template.y + MAP_OFFSET;
+  npc.facingDirection = movementTypeToInitialFacing(npc.movementType);
+  npc.movementDirection = npc.facingDirection;
+  npc.previousMovementDirection = npc.facingDirection;
+  ObjectEventUpdateMetatileBehaviors(npc);
+  // Position sprite 1:1 SetSpritePosToMapCoords (event_object_movement.c:4801).
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  npc.worldX = (npc.currentCoordsX - cam.x) * 16 + 8 + dx;
+  npc.worldY = (npc.currentCoordsY - cam.y) * 16 + dy;
+  npc.movementStep = 0;
+  npc.movementDelay = 0;
+  npc.walkFramesLeft = 0;
+  npc.walkDirection = DIR_NONE;
+  npc.walkAnimAlt = 0;
+  npc.frozen = false;
+  npc.initialCoordsX = template.x + MAP_OFFSET;
+  npc.initialCoordsY = template.y + MAP_OFFSET;
+  npc.movementRangeX = template.movementRangeX;
+  npc.movementRangeY = template.movementRangeY;
+  if (movementTypeHasRange(npc.movementType)) {
+    if (npc.movementRangeX === 0) npc.movementRangeX = 1;
+    if (npc.movementRangeY === 0) npc.movementRangeY = 1;
+  }
+  npc.directionSeqIdx = 0;
+
+  // ─── Graphics + sprite (helper partagé avec le respawn retour-menu) ──────────
+  if (!_setupBerryTreeSpriteGraphics(npc, rt)) {
+    npc.active = false;  // alloc/PNG échoué → libère le slot
+    return false;
+  }
+  console.log(`[object-events] spawn berry tree slot=${slot} treeId=${npc.trainerRange_berryTreeId} stage=${GetStageByBerryTreeId(npc.trainerRange_berryTreeId)} at (${template.x}, ${template.y}) visible=${!npc.invisible}`);
   return true;
 }
 
@@ -5654,6 +5683,14 @@ async function _respawnNpcSpriteForReturnToField(
   rt: DecompRuntime,
   catalog: Record<string, GraphicsInfo>,
 ): Promise<boolean> {
+  // Berry tree : cas spécial (absent du catalogue, pics assemblés par baie au
+  // runtime). Recrée le sprite via le helper partagé avec le spawn initial. Sans
+  // ça, retour de menu (sac) → catalog['OBJ_EVENT_GFX_BERRY_TREE'] = undefined →
+  // sprite jamais recréé → berry tree invisible (1:1 décomp : SpawnObjectEvent
+  // OnReturnToField recrée le sprite de TOUS les object events actifs).
+  if (npc.graphicsId === 'OBJ_EVENT_GFX_BERRY_TREE') {
+    return _setupBerryTreeSpriteGraphics(npc, rt);
+  }
   const graphics = catalog[npc.graphicsId];
   if (!graphics) return false;
 
