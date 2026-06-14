@@ -36,7 +36,7 @@ import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
-import { FldEff_SandPile, FldEff_HotSpringsWater } from '../../game/field_effect_helpers';
+import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple } from '../../game/field_effect_helpers';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
@@ -44,7 +44,6 @@ import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandD
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
-import { SpawnRippleEffect } from './field-effect-ripple';
 import { MAP_OFFSET } from './map-loader';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
@@ -250,10 +249,9 @@ export function FieldEffectStart(id: number): number {
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
-    // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
-    // [3]=priority. coordOffsetEnabled posé par SpawnRippleEffect → suit la caméra.
-    SpawnRippleEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
-    return 64;
+    // Lit gFieldEffectArguments[0/1]=monde, [2]=subprio, [3]=priority → one-shot
+    // (WaitFieldEffectSpriteAnim auto-despawn). coordOffsetEnabled=TRUE → suit la caméra.
+    return FldEff_Ripple(rt);
   }
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────

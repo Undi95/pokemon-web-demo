@@ -34,9 +34,10 @@
  *    suivre exactement (le callback recopie x/y du parent chaque frame).
  *
  * Migration en cours (1 effet = 1 commit, A/B avant chaque) :
+ *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
- *   ⏳ reste : reflets, grass, footprints, splash, ripple, bubbles, ash, surf blob,
+ *   ⏳ reste : reflets, grass, footprints, splash, bubbles, ash, surf blob,
  *      disguises, sparkle, shadow, jump dust, warp arrow, + effets morts.
  */
 
@@ -55,6 +56,7 @@ import {
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
+const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
 const FLDEFF_SAND_PILE = 39;
 
@@ -103,6 +105,104 @@ function setFieldEffectAnims(
   sprite.animBeginning = true;
   sprite.animEnded = false;
   sprite.animPaused = false;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_Ripple (field_effect_helpers.c:780)
+//  Ondulation d'eau (16×16) spawnée sous un objet sur une tuile à ondulations
+//  (DoRippleFieldEffect). One-shot : anim 8 cmds puis ANIMCMD_END → auto-despawn via
+//  le callback générique WaitFieldEffectSpriteAnim (animEnded → FieldEffectStop).
+//  coordOffsetEnabled=TRUE (sprite MONDE : DoRippleFieldEffect convertit écran→monde
+//  avant le spawn). Assets : ripple.png (80×16 = 5 frames 16×16), palette general_1.pal.
+//  Sprite data 1:1 décomp : sWaitFldEff = data[0] (= l'id à FieldEffectStop).
+// ════════════════════════════════════════════════════════════════════════════
+
+const RIPPLE_PNG = '/decomp/em/field_effects/ripple.png';
+const TAG_RIPPLE_GFX = 'FIELD_EFFECT_RIPPLE_GFX';
+const RIPPLE_NUM_FRAMES = 5;
+const RIPPLE_TILES_PER_FRAME = 4;  // 16×16 = 2×2 tiles
+
+/** 1:1 décomp `sAnim_Ripple` (field_effect_objects.h:112) : frames 0,1,2,3,0,1,2,4 (durées
+ *  12,9,9,9,9,9,11,11) END. imageValue = offset tile (frameIdx × 4). */
+const sAnims_Ripple: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [
+    ANIMCMD_FRAME(0, 12), ANIMCMD_FRAME(4, 9), ANIMCMD_FRAME(8, 9), ANIMCMD_FRAME(12, 9),
+    ANIMCMD_FRAME(0, 9), ANIMCMD_FRAME(4, 9), ANIMCMD_FRAME(8, 11), ANIMCMD_FRAME(16, 11),
+    ANIMCMD_END,
+  ],
+];
+
+let _rippleTileStart = -1;
+let _ripplePalSlot = -1;
+let _rippleInit = false;
+let _rippleInitPromise: Promise<void> | null = null;
+
+/** PNG 80×16 = 10×2 tiles row-major → 1D OBJ frame-major (frame F = 4 tiles consécutifs :
+ *  row0 2F,2F+1 ; row1 10+2F,10+2F+1). 1:1 disposition obj_frame_tiles. */
+function pngTo1dObjLayoutRipple(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, SHEET_TILE_W = 10;
+  const out = new Uint8Array(RIPPLE_NUM_FRAMES * RIPPLE_TILES_PER_FRAME * TILE_BYTES);
+  let dst = 0;
+  for (let f = 0; f < RIPPLE_NUM_FRAMES; f++) {
+    const colStart = f * 2;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const srcOff = (r * SHEET_TILE_W + colStart + c) * TILE_BYTES;
+        if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+        dst += TILE_BYTES;
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement asset (concern plateforme). */
+export function preloadRippleEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _rippleInit && IndexOfSpriteTileTag(TAG_RIPPLE_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_rippleInitPromise && !_rippleInit) return _rippleInitPromise;
+  _rippleInit = false; _rippleInitPromise = null;
+  _rippleInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(RIPPLE_PNG, 4);
+    const reordered = pngTo1dObjLayoutRipple(png.charData);
+    _rippleTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_RIPPLE_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _ripplePalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _rippleInit = true;
+  })();
+  return _rippleInitPromise;
+}
+
+/** 1:1 décomp `FldEff_Ripple` (field_effect_helpers.c:780). Lit gFieldEffectArguments :
+ *  [0/1] = x/y MONDE (DoRippleFieldEffect a converti écran→monde), [2] = subpriority,
+ *  [3] = priority. */
+export function FldEff_Ripple(rt: DecompRuntime): number {
+  if (!_rippleInit) return 64;
+  const worldX = gFieldEffectArguments[0], worldY = gFieldEffectArguments[1];
+  const subpriority = gFieldEffectArguments[2], priority = gFieldEffectArguments[3];
+  const result = rt.CreateSpriteAtOam({
+    tileId: _rippleTileStart,
+    paletteBank: _ripplePalSlot,
+    x: worldX, y: worldY,
+    shape: 0, size: 1,  // 16×16
+    priority: (priority & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: subpriority & 0xFF,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  // 1:1 : template.callback = WaitFieldEffectSpriteAnim ; .anims = sAnims_Ripple.
+  sprite.callback = WaitFieldEffectSpriteAnim;
+  setFieldEffectAnims(sprite, sAnims_Ripple, _rippleTileStart);
+  sprite.x = worldX; sprite.y = worldY;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE (sprite MONDE → suit la caméra via gSpriteCoordOffset).
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = subpriority & 0xFF;
+  // 1:1 : sprite->sWaitFldEff = FLDEFF_RIPPLE (data[0]) — l'id passé à FieldEffectStop.
+  sprite.data[0] = FLDEFF_RIPPLE;
+  return 0;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -330,4 +430,19 @@ export function UpdateSandPileFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   sprite.subpriority = linked.subpriority & 0xFF;
   // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE).
   UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WaitFieldEffectSpriteAnim (field_effect_helpers.c:1654)
+//  Callback GÉNÉRIQUE des field effects one-shot (ripple, unused grass/sand, etc.) :
+//  laisse le moteur d'anim jouer la séquence ; despawn quand l'anim atteint ANIMCMD_END.
+//  sWaitFldEff = data[0] (l'id passé à FieldEffectStop).
+// ════════════════════════════════════════════════════════════════════════════
+/** 1:1 décomp `WaitFieldEffectSpriteAnim` (field_effect_helpers.c:1654). */
+export function WaitFieldEffectSpriteAnim(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.animEnded) {
+    FieldEffectStop(rt, sprite, sprite.data[0]);
+  } else {
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  }
 }

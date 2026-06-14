@@ -154,11 +154,9 @@ import {
   UpdateJumpDustEffects,
   DestroyAllJumpDustEffects,
 } from '../engine/field/field-effect-jump-dust';
-import {
-  preloadRippleEffect,
-  UpdateRippleEffects,
-  DestroyAllRippleEffects,
-} from '../engine/field/field-effect-ripple';
+// Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
+// WaitFieldEffectSpriteAnim — tické + auto-despawn par le callback global).
+import { preloadRippleEffect } from '../game/field_effect_helpers';
 import {
   preloadLongGrassEffect,
   UpdateLongGrassEffects,
@@ -665,9 +663,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateSparkleFieldEffect` (FLDEFF_SPARKLE générique, item/script).
         UpdateSparkleGenericEffects(rt);
         UpdateJumpDustEffects(rt);
-        // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) — tick
-        // anim + auto-despawn fin de cycle (objet sur tuile à ondulations).
-        UpdateRippleEffects(rt);
+        // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) —
+        // migré (game/field_effect_helpers.ts), tické par le callback global.
         // 1:1 décomp `UpdateLongGrassFieldEffect` : overlay herbe haute (Route 119/120) —
         // anim + tracking owner + despawn. Hors démo, mais câblé via le spine.
         UpdateLongGrassEffects(rt);
@@ -1182,8 +1179,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadSparkleEffect();
     DestroyAllJumpDustEffects(this.rt);
     await preloadJumpDustEffect(this.rt);
-    // Ondulations d'eau (FLDEFF_RIPPLE) assets + pool.
-    DestroyAllRippleEffects(this.rt);
+    // Ondulations d'eau (FLDEFF_RIPPLE) : assets seulement (one-shot auto-despawn).
     await preloadRippleEffect(this.rt);
     // Herbe haute (FLDEFF_LONG_GRASS) assets + pool.
     DestroyAllLongGrassEffects(this.rt);
