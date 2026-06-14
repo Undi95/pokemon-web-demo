@@ -30,6 +30,7 @@
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
+import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -96,8 +97,9 @@ export function FieldEffectStart(id: number): number {
     return 64;
   }
   if (id === FLDEFF_BERRY_TREE_GROWTH_SPARKLE) {
-    // DETTE R3 : sparkle anim 64f au-dessus du berry tree.
-    return 64;
+    // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) :
+    // étoile scintillante au-dessus du berry tree qui pousse (args = coords + prio).
+    return FldEff_BerryTreeGrowthSparkle(rt, gFieldEffectArguments);
   }
 
   // ─── Effects non encore portés (= dette R3) ────────────────────────────────

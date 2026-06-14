@@ -141,6 +141,11 @@ import {
   TrySpawnTallGrassOnReturnToField,
 } from '../engine/field/field-effect-grass';
 import {
+  preloadSparkleEffect,
+  UpdateSparkleEffects,
+  DestroyAllSparkleEffects,
+} from '../engine/field/field-effect-sparkle';
+import {
   preloadJumpDustEffect,
   UpdateJumpDustEffects,
   DestroyAllJumpDustEffects,
@@ -590,6 +595,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
         // destroy après cycle.
         UpdateTallGrassEffects(rt);
+        // 1:1 décomp FLDEFF_BERRY_TREE_GROWTH_SPARKLE : tick anim étoile + tracking +
+        // despawn (= WaitFieldEffectSpriteAnim) pour les berry trees qui poussent.
+        UpdateSparkleEffects(rt);
         UpdateJumpDustEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
@@ -1045,6 +1053,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.10 : preload tall grass effect assets + cleanup pool.
     DestroyAllTallGrassEffects(this.rt);
     await preloadTallGrassEffect(this.rt);
+    // Berry tree growth sparkle (FLDEFF_BERRY_TREE_GROWTH_SPARKLE) assets + pool.
+    DestroyAllSparkleEffects(this.rt);
+    await preloadSparkleEffect();
     DestroyAllJumpDustEffects(this.rt);
     await preloadJumpDustEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
