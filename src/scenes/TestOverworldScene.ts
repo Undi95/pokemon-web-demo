@@ -204,6 +204,12 @@ import {
   DestroyAllAshEffects,
 } from '../engine/field/field-effect-ash';
 import {
+  preloadSurfBlobEffect,
+  UpdateSurfBlobEffects,
+  UpdateUnderwaterSurfBlobEffects,
+  DestroyAllSurfBlobEffects,
+} from '../engine/field/field-effect-surf-blob';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -686,6 +692,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateAshFieldEffect` : nuage de cendre + révèle la tuile ashgrass
         // (Route 113/Fallarbor). Trigger = field_tasks.c (StartAshFieldEffect), port séparé.
         UpdateAshEffects(rt);
+        // 1:1 décomp `UpdateSurfBlobFieldEffect` (+ Synchronize/Bobbing) : monture de surf
+        // qui suit le joueur + bobbing synchronisé. + SpriteCB_UnderwaterSurfBlob (Dive).
+        UpdateSurfBlobEffects(rt);
+        UpdateUnderwaterSurfBlobEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1198,6 +1208,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) assets + pool.
     DestroyAllAshEffects(this.rt);
     await preloadAshEffect(this.rt);
+    // Surf blob (monture de surf qui suit le joueur + bobbing) assets + pool.
+    DestroyAllSurfBlobEffects(this.rt);
+    await preloadSurfBlobEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

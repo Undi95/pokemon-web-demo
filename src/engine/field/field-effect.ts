@@ -39,6 +39,7 @@ import { SpawnSandPileEffect } from './field-effect-sand-pile';
 import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
+import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
@@ -54,6 +55,7 @@ export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
 export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
 export const FLDEFF_ASH                        = 7;
+export const FLDEFF_SURF_BLOB                  = 8;
 export const FLDEFF_DUST                       = 10;
 export const FLDEFF_JUMP_TALL_GRASS            = 12;
 export const FLDEFF_SAND_FOOTPRINTS            = 13;
@@ -218,6 +220,11 @@ export function FieldEffectStart(id: number): number {
     SpawnAshEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4], gFieldEffectArguments[5]);
     return 64;
   }
+  if (id === FLDEFF_SURF_BLOB) {
+    // 1:1 décomp FldEff_SurfBlob (field_effect_helpers.c:999). args[0/1]=x/y map, [2]=playerObjId.
+    // Retourne le spriteId du blob (le code de surf l'utilise pour SetSurfBlob_*).
+    return SpawnSurfBlobEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -228,7 +235,7 @@ export function FieldEffectStart(id: number): number {
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
   // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
-  // scripts) ; seul le FldEff visuel manque. RESTE : surf blob, disguises
+  // scripts) ; seul le FldEff visuel manque. RESTE : disguises
   // (tree/mountain/sand), sparkle générique, water surfacing, Unused*. Le warn signale
   // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);
