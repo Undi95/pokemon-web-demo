@@ -23,7 +23,8 @@ import {
   DLG_WINDOW_BASE_TILE_NUM,
   DLG_WINDOW_PALETTE_NUM,
 } from '../ui/gba-window-system';
-import { LoadMessageBoxGfx } from '../../game/text_window';
+import { LoadMessageBoxGfx, LoadUserWindowBorderGfx } from '../../game/text_window';
+import { BG_PLTT_ID } from '../system/decomp-runtime';
 import {
   AddTextPrinterParameterized3,
   IsTextPrinterActive,
@@ -38,6 +39,12 @@ import { getRuntime } from '../system/decomp-globals';
 
 export const FIELD_MESSAGE_BOX_HIDDEN = 0;
 export const FIELD_MESSAGE_BOX_NORMAL = 1;
+
+/** 1:1 décomp menu.c:25-27 : STD_WINDOW_BASE_TILE_NUM = 0x214, _PALETTE_NUM = 14.
+ *  Bordure std window partagée par les sous-fenêtres OUI/NON, multichoice, etc.
+ *  (chargée par LoadMessageBoxAndBorderGfx). */
+const STD_WINDOW_BASE_TILE_NUM = 0x214;
+const STD_WINDOW_PALETTE_NUM = 14;
 export const FIELD_MESSAGE_BOX_AUTO_SCROLL = 2;
 
 /** 1:1 décomp `sStandardTextBox_WindowTemplates[0]` (menu.c:84-94) :
@@ -186,9 +193,16 @@ export function TickFieldMessageBox(): void {
 
   switch (sStateStep) {
     case 0: {
-      // 1:1 décomp `LoadMessageBoxAndBorderGfx` :
-      //   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(15))
+      // 1:1 STRICT décomp `LoadMessageBoxAndBorderGfx` (menu.c:210) — DEUX charges :
+      //   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM));
+      //   LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
       LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, FRAME_PALETTE_FLAT_IDX);
+      // Le 2e charge était OMIS → les sous-fenêtres OUI/NON / multichoice dessinent
+      // leur cadre via DrawStdFrameWithCustomTileAndPalette(…, STD_WINDOW_BASE_TILE_NUM=
+      // 0x214, palette 14) en référençant des tiles JAMAIS chargées en VRAM → cadre
+      // invisible (boîte OUI/NON sans bordure). STD_WINDOW_PALETTE_NUM=14, BASE=0x214
+      // (menu.c:25-27).
+      LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM));
       // Lazy-create window au 1er Show (= AddWindow alloue tilemap + pixel buffer).
       if (sWindowId < 0) {
         sWindowId = AddWindow(STANDARD_TEXT_BOX_TEMPLATE);
