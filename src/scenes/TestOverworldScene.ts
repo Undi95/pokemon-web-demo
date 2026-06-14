@@ -179,6 +179,11 @@ import {
   DestroyAllSplashEffects,
 } from '../engine/field/field-effect-splash';
 import {
+  preloadFootprintsEffects,
+  UpdateFootprintsEffects,
+  DestroyAllFootprintsEffects,
+} from '../engine/field/field-effect-footprints';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -646,6 +651,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect` :
         // éclaboussure one-shot + pieds dans l'eau qui coule (suivent le parent). Hors démo.
         UpdateSplashEffects(rt);
+        // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
+        // de vélo (déposées sur sable, fade après 40f). Hors démo, câblé via le spine (DoTracks).
+        UpdateFootprintsEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1143,6 +1151,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) assets + pool.
     DestroyAllSplashEffects(this.rt);
     await preloadSplashEffect(this.rt);
+    // Empreintes/traces (sand/deep footprints + bike tire tracks) assets + pool.
+    DestroyAllFootprintsEffects(this.rt);
+    await preloadFootprintsEffects(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

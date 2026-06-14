@@ -35,6 +35,7 @@ import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
+import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { SpawnRippleEffect } from './field-effect-ripple';
@@ -168,6 +169,12 @@ export function FieldEffectStart(id: number): number {
     SpawnJumpImpactEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
     return 64;
   }
+  if (id === FLDEFF_SAND_FOOTPRINTS || id === FLDEFF_DEEP_SAND_FOOTPRINTS || id === FLDEFF_BIKE_TIRE_TRACKS) {
+    // 1:1 décomp FldEff_{Sand,DeepSand}Footprints / BikeTireTracks (UpdateFootprintsTireTracks).
+    // args[0/1] = previousCoords INTERNAL, [2]=subprio(149), [3]=priority(2), [4]=animIdx (direction).
+    SpawnFootprintsEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4]);
+    return 64;
+  }
   if (id === FLDEFF_SPLASH || id === FLDEFF_FEET_IN_FLOWING_WATER) {
     // 1:1 décomp FldEff_Splash (642) / FldEff_FeetInFlowingWater (725) : partagent l'asset
     // splash (anim 0 one-shot vs anim 1 loop). args[0..2] = localId/mapNum/mapGroup (Start
@@ -196,9 +203,6 @@ export function FieldEffectStart(id: number): number {
   // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
   // retourne le sentinel MAX_SPRITES silencieusement.
   switch (id) {
-    case FLDEFF_SAND_FOOTPRINTS:
-    case FLDEFF_DEEP_SAND_FOOTPRINTS:
-    case FLDEFF_BIKE_TIRE_TRACKS:
     case FLDEFF_SAND_PILE:
     case FLDEFF_HOT_SPRINGS_WATER:
     case FLDEFF_BUBBLES:
