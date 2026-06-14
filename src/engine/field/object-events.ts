@@ -33,7 +33,7 @@ import { GetBaseOamForDimensions } from './object-event-base-oam';
 // G6 — 1:1 STRICT décomp anim helpers pour MovementType callbacks
 // (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
 // pour alterner walk1/walk2 entre 2 steps consécutifs.
-import { SeekSpriteAnim, StartSpriteAnim } from '../system/sprite-animation';
+import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from '../system/sprite-animation';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
@@ -2418,10 +2418,19 @@ function berryTreeNormal(rt: DecompRuntime, npc: ObjectEvent): boolean {
 }
 
 /** 1:1 décomp `MovementType_BerryTreeGrowth_Move` (event_object_movement.c:3128). */
-function berryTreeMove(_rt: DecompRuntime, npc: ObjectEvent): boolean {
-  // 1:1 : if (ObjectEventExecSingleMovementAction) { sTypeFuncId = NORMAL; return TRUE; }
-  // DETTE H1 : ObjectEventExecSingleMovementAction dispatch. Port partial :
-  // assume action done imm → retour NORMAL.
+function berryTreeMove(rt: DecompRuntime, npc: ObjectEvent): boolean {
+  // 1:1 décomp : if (ObjectEventExecSingleMovementAction) { sTypeFuncId = NORMAL; return TRUE; }
+  // L'action en cours est MOVEMENT_ACTION_START_ANIM_IN_DIRECTION (posée en NORMAL),
+  // dont l'étape WaitSpriteAnim retourne TRUE quand `SpriteAnimEnded` (= sprite.animEnded).
+  // → tant que l'anim joue (= la 4-frame sAnim_BerryTreeStage{0..4} se déroule), on
+  // RESTE en MOVE. À la fin (animEnded), retour NORMAL qui relance setBerryTreeGraphics
+  // (= StartSpriteAnim restart) → boucle continue = le sway perpétuel du berry tree.
+  //
+  // ⚠️ Sans cette attente (ancien port qui retournait NORMAL immédiatement),
+  // setBerryTreeGraphics était rappelé CHAQUE frame → reset animCmdIndex=0 →
+  // sprite figé sur la 1re frame (bug "berry tree pas animé").
+  const sprite = rt.gSprites.get(npc.spriteId);
+  if (sprite && sprite.anims && !sprite.animEnded) return false;  // anim en cours → rester en MOVE
   npc.movementStep = BERRYTREEFUNC_NORMAL;
   return true;
 }
@@ -6190,7 +6199,22 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
     updateNpcSpriteFrame(rt, npc);
+
+    // 1:1 décomp `OverworldBasic` → `AnimateSprites()` (overworld.c:1467) : tick
+    // l'anim de TOUS les sprites chaque frame. Nos NPCs animés sont pilotés par
+    // le système de mouvement (SeekSpriteAnim par step, qui skip `inanimate`),
+    // mais les sprites INANIMÉS à anim multi-frame free-running (= berry tree mûr
+    // qui oscille frame 7↔8 via sAnim_BerryTreeStage4) ne sont tickés nulle part
+    // → figés. On les fait avancer ici (ContinueAnim → RequestSpriteFrameImageCopy).
+    // Scopé `inanimate` pour ne PAS double-advancer les NPCs animés (= conflit
+    // avec le mouvement). Drain ProcessSpriteCopyRequests en fin de boucle.
+    if (npc.inanimate && sprite.anims) {
+      AnimateSprite(rt, sprite as never);
+    }
   }
+  // 1:1 décomp : ProcessSpriteCopyRequests draine la queue des copies de frame
+  // (RequestSpriteFrameImageCopy → objVram) une fois après tous les AnimateSprite.
+  ProcessSpriteCopyRequests(rt);
 }
 
 /** 1:1 décomp `SetObjectEventSpritePosByLocalIdAndMap`
