@@ -5974,6 +5974,43 @@ gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 1] = _makeAcro
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 2] = _makeAcroEndWheelieMoveAction(DIR_WEST);
 gMovementActionFuncs[MOVEMENT_ACTION_ACRO_END_WHEELIE_MOVE_DOWN + 3] = _makeAcroEndWheelieMoveAction(DIR_EAST);
 
+// ─── dir → movement-action helpers (1:1 décomp `dirn_to_anim`) ───────────────
+// Source : event_object_movement.c:933-975 (tables) + 4945-4964 (macro).
+// Tables indexées par direction : [DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST].
+// La macro `dirn_to_anim` clamp `if (direction > DIR_EAST) direction = 0`.
+
+/** 1:1 décomp `gWalkNormalMovementActions[]` (event_object_movement.c:933). */
+const gWalkNormalMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_WALK_NORMAL_DOWN,  // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_WALK_NORMAL_DOWN,  // DIR_SOUTH
+  MOVEMENT_ACTION_WALK_NORMAL_UP,    // DIR_NORTH
+  MOVEMENT_ACTION_WALK_NORMAL_LEFT,  // DIR_WEST
+  MOVEMENT_ACTION_WALK_NORMAL_RIGHT, // DIR_EAST
+];
+
+/** 1:1 décomp `gPlayerRunMovementActions[]` (event_object_movement.c:968). */
+const gPlayerRunMovementActions: readonly number[] = [
+  MOVEMENT_ACTION_PLAYER_RUN_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_PLAYER_RUN_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_PLAYER_RUN_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_PLAYER_RUN_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_PLAYER_RUN_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetWalkNormalMovementAction` (event_object_movement.c:4959, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_WALK_NORMAL_*. */
+export function GetWalkNormalMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gWalkNormalMovementActions[dir];
+}
+
+/** 1:1 décomp `GetPlayerRunMovementAction` (event_object_movement.c:4964, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_PLAYER_RUN_*. */
+export function GetPlayerRunMovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gPlayerRunMovementActions[dir];
+}
+
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
  *  Quand action done (= return TRUE), set heldMovementFinished = TRUE.

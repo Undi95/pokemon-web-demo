@@ -45,7 +45,10 @@ import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
-  ObjectEventUpdateMetatileBehaviors,
+  ObjectEventSetHeldMovement,
+  ObjectEventClearHeldMovementIfActive,
+  GetWalkNormalMovementAction,
+  GetPlayerRunMovementAction,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -1684,34 +1687,36 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
   // Walk : 16 frames step à 1 px/frame = 16 px = 1 metatile.
   gPlayerAvatar.stepFramesLeft = wantDash ? 8 : 16;
   gPlayerAvatar.stepDirection = inputDir;
-  // 1:1 décomp `InitNpcForMovement` (event_object_movement.c:5081) appelée
-  // par `MovementAction_WalkNormal*_Step0` au start du player walk :
-  //   x = objEvent->currentCoords.x; y = objEvent->currentCoords.y;
-  //   SetObjectEventDirection(objEvent, dir);  ← facing + movementDirection
-  //   MoveCoords(direction, &x, &y);            ← x,y = post-step
-  //   ShiftObjectEventCoords(objEvent, x, y);  ← previousCoords=current, current=post-step
-  //   ...
-  //   objectEvent->triggerGroundEffectsOnMove = TRUE;
+  // 1:1 décomp `PlayerWalkNormal` (field_player_avatar.c:958) / `PlayerRun` (978) :
+  //   PlayerSetAnimId(Get{WalkNormal,PlayerRun}MovementAction(direction), …);  // :949
+  //   → ObjectEventSetHeldMovement(&gObjectEvents[player], movementActionId);   // :954
   //
-  // Le décomp update slot 0 currentCoords IMMEDIATEMENT au step start. Pas
-  // mid-step. Notre TS port 1:1 strict : pareil. Sans ça, mid-step lectures
-  // de slot 0 (= collision, events, scripts) voient pre-step → divergent
-  // décomp. Aussi : event scripts firing mid-step (= coordEvents trigger
-  // quand player walk sur tile) attendent slot 0 = new tile dès Step0.
+  // M1 (chantier unif mouvement joueur → object-event) : le déplacement réel du
+  // slot joueur (currentCoords += step, facing/movementDirection, walkFrames ET
+  // surtout `triggerGroundEffectsOnMove = TRUE`) n'est PLUS dupliqué inline ici.
+  // Il est posé par `MovementAction_WalkNormal_Step0 → InitNpcForMovement`, exécuté
+  // DANS `TickObjectEventMovements` (la boucle, scène:606) PILE entre
+  // `DoGroundEffects_OnSpawn` (4042 — skip : flag pas encore posé) et
+  // `DoGroundEffects_OnBeginStep` (4065 — consomme le flag → GroundEffect_StepOnTallGrass
+  // = RUSTLE). Avant, le bloc inline posait le flag AVANT la boucle → OnSpawn le
+  // captait+effaçait → herbe STATIQUE (SpawnOn). C'est le fix 1:1 du timing.
+  // Cf. [[chantier-player-movement-unify-decomp]]. La caméra (movementSpeedX/Y +
+  // stepFramesLeft) reste le driver visuel (rendu caméra-relatif) — M3 basculera
+  // le rendu en coords-monde + caméra-suit-sprite.
   {
     const playerSlot = gPlayerAvatar.objectEventId;
     const slot = gObjectEvents[playerSlot];
     if (slot && slot.active && slot.isPlayer) {
-      const stepDx = (inputDir === DIR_WEST ? -1 : inputDir === DIR_EAST ? 1 : 0);
-      const stepDy = (inputDir === DIR_NORTH ? -1 : inputDir === DIR_SOUTH ? 1 : 0);
-      slot.previousCoordsX = slot.currentCoordsX;
-      slot.previousCoordsY = slot.currentCoordsY;
-      slot.currentCoordsX += stepDx;
-      slot.currentCoordsY += stepDy;
-      slot.movementDirection = inputDir;
-      slot.facingDirection = inputDir;
-      slot.triggerGroundEffectsOnMove = true;
-      ObjectEventUpdateMetatileBehaviors(slot);
+      // `ObjectEventSetHeldMovement` refuse si déjà overridden (singleMovementActive
+      // || heldMovementActive). Le held movement du pas précédent est FINI (le slot
+      // termine son action ~1 frame avant que stepFramesLeft atteigne 0) mais pas
+      // encore clear → on le clear avant d'en poser un neuf (1:1 décomp : le held
+      // movement est clear entre deux pas).
+      ObjectEventClearHeldMovementIfActive(slot);
+      const movementActionId = wantDash
+        ? GetPlayerRunMovementAction(inputDir)
+        : GetWalkNormalMovementAction(inputDir);
+      ObjectEventSetHeldMovement(slot, movementActionId);
     }
   }
   const speed = dirToCameraSpeed(inputDir);
