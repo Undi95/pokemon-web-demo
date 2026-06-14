@@ -34,6 +34,7 @@ import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from
 import { gPlayerAvatar } from '../field/player-avatar';
 import { MapGridGetMetatileIdAt } from '../field/map-loader';
 import { SetSurfBlob_BobState } from '../field/field-effect-surf-blob';
+import { StartRevealDisguise } from '../field/field-effect-disguise';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -142,6 +143,24 @@ const fx = {
   /** Raccourci sand pile (inSandPile). */
   sandPile() { return fx.onPlayer('FLDEFF_SAND_PILE', ['inSandPile']); },
   stopSandPile() { fx.setFlag('inSandPile', false); return fx.list(); },
+
+  /** Raccourci disguise : spawn un déguisement (kind='tree'|'mountain'|'sand') sur le joueur. */
+  disguise(kind = 'tree') {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable');
+    const map: Record<string, string> = { tree: 'FLDEFF_TREE_DISGUISE', mountain: 'FLDEFF_MOUNTAIN_DISGUISE', sand: 'FLDEFF_SAND_DISGUISE' };
+    const sid = fx.start(map[kind] ?? map.tree, [p.localId, p.mapNum, p.mapGroup]);
+    (p as any).fieldEffectSpriteId = sid;  // 1:1 : le caller MovementAction stocke le spriteId.
+    return { disguiseSpriteId: sid, sprites: fx.list() };
+  },
+  /** Déclenche la révélation (1:1 StartRevealDisguise : directionSeqIdx=1 → reveal anim → despawn). */
+  revealDisguise() {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable');
+    (p as any).directionSeqIdx = 1;
+    StartRevealDisguise(p as any);
+    return { directionSeqIdx: (p as any).directionSeqIdx, fieldEffectSpriteId: (p as any).fieldEffectSpriteId };
+  },
 
   /** Raccourci surf blob : spawn la monture sur le joueur + BOB_PLAYER_AND_MON (bobbing+sync). */
   surfBlob() {
