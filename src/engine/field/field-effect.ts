@@ -33,6 +33,7 @@ import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
+import { SpawnRippleEffect } from './field-effect-ripple';
 import { MAP_OFFSET } from './map-loader';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
@@ -143,6 +144,13 @@ export function FieldEffectStart(id: number): number {
   if (id === FLDEFF_DUST) {
     // 1:1 décomp FldEff_Dust (field_effect_helpers.c:1180) — nuage d'atterrissage de saut.
     SpawnJumpLandingDust(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET);
+    return 64;
+  }
+  if (id === FLDEFF_RIPPLE) {
+    // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
+    // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
+    // [3]=priority. coordOffsetEnabled posé par SpawnRippleEffect → suit la caméra.
+    SpawnRippleEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
     return 64;
   }
 

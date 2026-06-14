@@ -152,6 +152,11 @@ import {
   DestroyAllJumpDustEffects,
 } from '../engine/field/field-effect-jump-dust';
 import {
+  preloadRippleEffect,
+  UpdateRippleEffects,
+  DestroyAllRippleEffects,
+} from '../engine/field/field-effect-ripple';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -600,6 +605,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // despawn (= WaitFieldEffectSpriteAnim) pour les berry trees qui poussent.
         UpdateSparkleEffects(rt);
         UpdateJumpDustEffects(rt);
+        // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) — tick
+        // anim + auto-despawn fin de cycle (objet sur tuile à ondulations).
+        UpdateRippleEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1079,6 +1087,9 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadSparkleEffect();
     DestroyAllJumpDustEffects(this.rt);
     await preloadJumpDustEffect(this.rt);
+    // Ondulations d'eau (FLDEFF_RIPPLE) assets + pool.
+    DestroyAllRippleEffects(this.rt);
+    await preloadRippleEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

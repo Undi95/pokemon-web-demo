@@ -3546,13 +3546,19 @@ function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSpri
 }
 
 // ─── DoRippleFieldEffect (1:1 event_object_movement.c:8779) ────────────────────
-function DoRippleFieldEffect(_rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+function DoRippleFieldEffect(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
   if (!sprite) return;
   const h = _getGfxMeta(npc.graphicsId).height;
-  gFieldEffectArguments[0] = sprite.x;
-  gFieldEffectArguments[1] = sprite.y + (h >> 1) - 2;
-  gFieldEffectArguments[2] = 151;
-  gFieldEffectArguments[3] = 3;
+  // 1:1 décomp : args[0/1] = sprite->x, sprite->y + h/2 - 2 (coords MONDE de l'objet,
+  // sprites overworld world-positionnés). Nos NPCs sont ÉCRAN-positionnés (coordOffset
+  // Enabled=false) → convertir écran→monde (retirer gSpriteCoordOffset) pour que le ripple
+  // (coordOffsetEnabled=TRUE) se pose au bon endroit et suive ensuite la caméra.
+  const offX = sprite.coordOffsetEnabled ? 0 : rt.gSpriteCoordOffsetX;
+  const offY = sprite.coordOffsetEnabled ? 0 : rt.gSpriteCoordOffsetY;
+  gFieldEffectArguments[0] = sprite.x - offX;
+  gFieldEffectArguments[1] = (sprite.y - offY) + (h >> 1) - 2;
+  gFieldEffectArguments[2] = 151;  // subpriority
+  gFieldEffectArguments[3] = 3;    // priority
   FieldEffectStart(FLDEFF_RIPPLE);
 }
 
