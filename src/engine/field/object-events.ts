@@ -21,7 +21,7 @@
  *   - 4.5 : script engine + dialogue
  */
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
-import { loadIndexedPngStrict } from '../gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system/sprite';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
@@ -44,6 +44,24 @@ import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 // depuis base_oam template authoritative). Fallback dimensions-based pour les
 // rares graphicsId absents du décomp (= e.g. OBJ_EVENT_GFX_VAR_* dynamiques).
 import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTreePicTableBuilders, sAnimTable_BerryTree } from './object-event-graphics-info-data';
+// 1:1 décomp : constantes PALSLOT_* + OBJ_EVENT_PAL_TAG_* (event_object_movement.c:435-471
+// + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
+// reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
+import {
+  PALSLOT_PLAYER, PALSLOT_NPC_1, PALSLOT_NPC_2, PALSLOT_NPC_3, PALSLOT_NPC_4, PALSLOT_NPC_SPECIAL,
+  OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION,
+  OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION,
+  OBJ_EVENT_PAL_TAG_PLAYER_UNDERWATER, OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION,
+  OBJ_EVENT_PAL_TAG_NPC_1_REFLECTION, OBJ_EVENT_PAL_TAG_NPC_2_REFLECTION,
+  OBJ_EVENT_PAL_TAG_NPC_3_REFLECTION, OBJ_EVENT_PAL_TAG_NPC_4_REFLECTION,
+  OBJ_EVENT_PAL_TAG_QUINTY_PLUMP, OBJ_EVENT_PAL_TAG_QUINTY_PLUMP_REFLECTION,
+  OBJ_EVENT_PAL_TAG_TRUCK, OBJ_EVENT_PAL_TAG_VIGOROTH, OBJ_EVENT_PAL_TAG_MOVING_BOX,
+  OBJ_EVENT_PAL_TAG_CABLE_CAR, OBJ_EVENT_PAL_TAG_SSTIDAL,
+  OBJ_EVENT_PAL_TAG_KYOGRE, OBJ_EVENT_PAL_TAG_KYOGRE_REFLECTION,
+  OBJ_EVENT_PAL_TAG_GROUDON, OBJ_EVENT_PAL_TAG_GROUDON_REFLECTION,
+  OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW, OBJ_EVENT_PAL_TAG_RED_LEAF,
+  OBJ_EVENT_PAL_TAG_NONE,
+} from './object-event-graphics-info';
 import {
   type ObjectEventTemplate,
   type MapHeader,
@@ -86,7 +104,7 @@ import {
   MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsFootprints, MetatileBehavior_IsShallowFlowingWater,
   MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
   MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
-  MetatileBehavior_HasRipples,
+  MetatileBehavior_HasRipples, MetatileBehavior_GetBridgeType,
 } from '../../game/metatile_behavior';
 
 const BASE = '/decomp/em';
@@ -3034,17 +3052,32 @@ function GetReflectionTypeByMetatileBehavior(behavior: number): number {
 // littéraux indépendants des pics → on passe des buffers VIDES (subarray no-op) et
 // on mémoïse par graphicsId. Le spine ground-effect ne consomme QUE width/height
 // (scan reflets) + tracks (footprints), jamais les images.
-const _gfxMetaCache = new Map<string, { width: number; height: number; tracks: number }>();
+interface GfxMeta {
+  width: number; height: number; tracks: number;
+  paletteSlot: number; paletteTag: number; reflectionPaletteTag: number;
+  disableReflectionPaletteLoad: 0 | 1;
+}
+const _gfxMetaCache = new Map<string, GfxMeta>();
 const _gfxMetaEmptyPic = new Uint8Array(0);
-function _getGfxMeta(graphicsId: string): { width: number; height: number; tracks: number } {
+function _getGfxMeta(graphicsId: string): GfxMeta {
   let m = _gfxMetaCache.get(graphicsId);
   if (m) return m;
-  m = { width: 16, height: 16, tracks: TRACKS_NONE };  // défaut si la factory exige des pics réels
+  // défaut si la factory exige des pics réels (= métadonnées indispo).
+  m = {
+    width: 16, height: 16, tracks: TRACKS_NONE,
+    paletteSlot: PALSLOT_NPC_1, paletteTag: OBJ_EVENT_PAL_TAG_NONE,
+    reflectionPaletteTag: OBJ_EVENT_PAL_TAG_NONE, disableReflectionPaletteLoad: 0,
+  };
   try {
     const info = GetObjectEventGraphicsInfo(graphicsId, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic);
-    if (info) m = { width: info.width, height: info.height, tracks: info.tracks };
+    if (info) m = {
+      width: info.width, height: info.height, tracks: info.tracks,
+      paletteSlot: info.paletteSlot, paletteTag: info.paletteTag,
+      reflectionPaletteTag: info.reflectionPaletteTag,
+      disableReflectionPaletteLoad: info.disableReflectionPaletteLoad,
+    };
   } catch {
-    // métadonnées indispo (factory non-purement-littérale) → défaut 16×16 / NONE.
+    // métadonnées indispo (factory non-purement-littérale) → défauts ci-dessus.
   }
   _gfxMetaCache.set(graphicsId, m);
   return m;
@@ -3277,16 +3310,150 @@ function _oamPriority(rt: DecompRuntime, sprite: DecompSprite | undefined): numb
 // via runSpriteCallbacks dans l'overworld). Déclenché par le spine ground-effect
 // (GroundEffect_Water/IceReflection ← hasReflection posé par GetGroundEffectFlags_Reflection).
 //
-// DETTE palette teintée (sous-chantier suivant) : la décomp remappe la palette du reflet
-// vers un slot dédié (`gReflectionEffectPaletteMap[paletteNum]`) chargé par
-// LoadObjectReflectionPalette (sPlayerReflectionPaletteSets / PatchObjectPalette /
-// UpdateSpritePaletteWithWeather). Mismatch d'archi : la décomp utilise des slots OBJ
-// FIXES (PALSLOT_*_REFLECTION) ; nous une alloc dynamique par tag. En attendant, le reflet
-// RÉUTILISE la palette du sprite principal (correct au 1er ordre pour un NPC régulier en
-// météo claire = le chemin LoadObjectRegularReflectionPalette recharge la même palette).
-// DETTE ondulation eau (!stillReflection) : la décomp passe en affineMode NORMAL +
-// matrice ripple (oam.matrixNum 0/1) ; ici vflip simple (pas de wobble) tant que les
-// matrices affine ripple ne sont pas posées.
+// PALETTE TEINTÉE — adaptation 1:1 du mismatch d'archi :
+//   Décomp : `InitObjectEventPalettes(reflType)` RÉSERVE 10 slots OBJ fixes (0-9) au map
+//   init et y précharge brendan/npc_1..4 + leurs reflets (gObjectEventPal_*Reflection,
+//   = .pal bleutés pré-construits). `SetUpReflection` pose alors
+//   reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[mainSlot] (= le slot
+//   reflet réservé), et `LoadObjectReflectionPalette` ne RE-patche ce slot QUE pour le
+//   joueur / NPC spéciaux / ponts hauts (reflectionPaletteTag != NONE) ; un NPC régulier
+//   (reflectionPaletteTag == NONE) garde la palette npc_X_reflection DÉJÀ préchargée.
+//   Nous : pas de slots réservés — alloc dynamique par tag. On modélise « le contenu du
+//   slot reflet réservé » en chargeant explicitement la BONNE palette reflet (générique
+//   npc_X_reflection / brendan_reflection / spéciale) via `LoadSpritePalette({data,tag})`
+//   → bank dynamique, posée sur l'OAM du reflet. C'est exactement ce que la pré-réservation
+//   décomp aurait mis dans le slot. Les .pal reflet sont préchargés (PreloadReflectionPalettes).
+// sCurrentReflectionType (0-3) est VESTIGIAL en Émeraude (les 4 colonnes de chaque
+//   PairedPalettes sont identiques + sObjectPaletteTags0..3 identiques) → on aplatit en
+//   un map tag→reflTag (= colonne 0), 1:1 avec les données.
+// DETTE ondulation eau (!stillReflection) : la décomp passe en affineMode NORMAL + matrice
+//   ripple (oam.matrixNum 0/1) ; ici vflip simple (pas de wobble) tant que les matrices
+//   affine ripple ne sont pas posées.
+
+/** 1:1 décomp `bridgeReflectionVerticalOffsets[]` (field_effect_helpers.c:78-82),
+ *  indexé par `bridgeType - 1` (BRIDGE_TYPE_POND_LOW/MED/HIGH). */
+const sBridgeReflectionVerticalOffsets: ReadonlyArray<number> = [12, 28, 44];
+
+/** 1:1 décomp `sPlayerReflectionPaletteSets[]` (event_object_movement.c:546) aplati
+ *  (colonne sCurrentReflectionType, identique sur les 4). tag joueur → tag reflet. */
+const sPlayerReflectionPaletteSets: ReadonlyArray<readonly [number, number]> = [
+  [OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_PLAYER_UNDERWATER, OBJ_EVENT_PAL_TAG_PLAYER_UNDERWATER],
+];
+
+/** 1:1 décomp `sSpecialObjectReflectionPaletteSets[]` (event_object_movement.c:630)
+ *  aplati. tag spécial → tag reflet (certains reflètent leur PROPRE palette = pas de tint). */
+const sSpecialObjectReflectionPaletteSets: ReadonlyArray<readonly [number, number]> = [
+  [OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_QUINTY_PLUMP, OBJ_EVENT_PAL_TAG_QUINTY_PLUMP_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_TRUCK, OBJ_EVENT_PAL_TAG_TRUCK],
+  [OBJ_EVENT_PAL_TAG_VIGOROTH, OBJ_EVENT_PAL_TAG_VIGOROTH],
+  [OBJ_EVENT_PAL_TAG_MOVING_BOX, OBJ_EVENT_PAL_TAG_MOVING_BOX],
+  [OBJ_EVENT_PAL_TAG_CABLE_CAR, OBJ_EVENT_PAL_TAG_CABLE_CAR],
+  [OBJ_EVENT_PAL_TAG_SSTIDAL, OBJ_EVENT_PAL_TAG_SSTIDAL],
+  [OBJ_EVENT_PAL_TAG_KYOGRE, OBJ_EVENT_PAL_TAG_KYOGRE_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_GROUDON, OBJ_EVENT_PAL_TAG_GROUDON_REFLECTION],
+  [OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_NPC_3_REFLECTION], // pont Route 120 Kecleon
+  [OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW, OBJ_EVENT_PAL_TAG_SUBMARINE_SHADOW],
+  [OBJ_EVENT_PAL_TAG_RED_LEAF, OBJ_EVENT_PAL_TAG_RED_LEAF],
+];
+
+/** Tag reflet générique pour un slot NPC régulier (= contenu du slot PALSLOT_NPC_X_
+ *  REFLECTION préchargé par InitObjectEventPalettes via sObjectPaletteTagSets). */
+const _genericNpcReflectionTag: ReadonlyArray<number> = [
+  0,                                  // PALSLOT_PLAYER (jamais générique)
+  OBJ_EVENT_PAL_TAG_NPC_1_REFLECTION, // PALSLOT_NPC_1
+  OBJ_EVENT_PAL_TAG_NPC_2_REFLECTION, // PALSLOT_NPC_2
+  OBJ_EVENT_PAL_TAG_NPC_3_REFLECTION, // PALSLOT_NPC_3
+  OBJ_EVENT_PAL_TAG_NPC_4_REFLECTION, // PALSLOT_NPC_4
+];
+
+/** Données .pal reflet préchargées (tag numérique → BGR555). Modélise les slots reflet
+ *  réservés par `InitObjectEventPalettes` au map init. Source : .pal décomp pré-bleutés. */
+const _reflectionPalData = new Map<number, Uint16Array>();
+const _reflectionPalUrls: ReadonlyArray<readonly [number, string]> = [
+  [OBJ_EVENT_PAL_TAG_NPC_1_REFLECTION, '/decomp/em/object_events/palettes/npc_1_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_NPC_2_REFLECTION, '/decomp/em/object_events/palettes/npc_2_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_NPC_3_REFLECTION, '/decomp/em/object_events/palettes/npc_3_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_NPC_4_REFLECTION, '/decomp/em/object_events/palettes/npc_4_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION, '/decomp/em/object_events/palettes/brendan_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_MAY_REFLECTION, '/decomp/em/object_events/palettes/may_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION, '/decomp/em/object_events/palettes/bridge_reflection.pal'],
+  // Reflets teintés des objets spéciaux (sSpecialObjectReflectionPaletteSets). Hors démo
+  // mais préchargés pour la complétude 1:1. Les autres entrées de la table (TRUCK/VIGOROTH/
+  // CABLE_CAR/SSTIDAL/SUBMARINE/RED_LEAF) reflètent leur PROPRE palette (déjà chargée par le
+  // main) → pas de .pal reflet dédié à précharger ; NPC_3_REFLECTION est déjà au-dessus.
+  [OBJ_EVENT_PAL_TAG_QUINTY_PLUMP_REFLECTION, '/decomp/em/object_events/palettes/quinty_plump_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_KYOGRE_REFLECTION, '/decomp/em/object_events/palettes/kyogre_reflection.pal'],
+  [OBJ_EVENT_PAL_TAG_GROUDON_REFLECTION, '/decomp/em/object_events/palettes/groudon_reflection.pal'],
+];
+
+/** Précharge les .pal reflet dans `_reflectionPalData` (idempotent). Équivalent de
+ *  `InitObjectEventPalettes` (event_object_movement.c:2532) : remplit « les slots reflet ».
+ *  Appelé (awaité) au map init par SpawnObjectEventsOnMap, avant le spawn des NPCs. */
+export async function PreloadReflectionPalettes(): Promise<void> {
+  await Promise.all(_reflectionPalUrls.map(async ([tag, url]) => {
+    if (_reflectionPalData.has(tag)) return;
+    try { _reflectionPalData.set(tag, await loadGbaPal(url)); }
+    catch (e) { console.warn(`[reflets] échec préchargement ${url}`, e); }
+  }));
+}
+
+/** Charge le .pal reflet (si préchargé) dans un slot OBJ dynamique et renvoie le bank,
+ *  ou -1 si indisponible (= reflet non teinté, réutilise la palette du main). LoadSprite
+ *  Palette dédoublonne par tag → un tag reflet n'occupe qu'UN slot quel que soit le nombre
+ *  de reflets (= comme la réservation permanente décomp). */
+function _loadReflectionPaletteByTag(tag: number): number {
+  if (!tag || tag === OBJ_EVENT_PAL_TAG_NONE) return -1;
+  const data = _reflectionPalData.get(tag);
+  if (!data) return -1;
+  const bank = LoadSpritePalette({ data, tag });
+  return bank === 0xFF ? -1 : bank;
+}
+
+/** 1:1 décomp `LoadObjectRegularReflectionPalette` (field_effect_helpers.c:97) — adapté.
+ *  Détermine le tag reflet selon le slot palette de l'objet (joueur / NPC spécial /
+ *  générique NPC_1..4) puis charge la palette. Renvoie le bank reflet, ou -1. */
+function LoadObjectRegularReflectionPalette(meta: GfxMeta): number {
+  let reflTag = 0;
+  if (meta.paletteSlot === PALSLOT_PLAYER) {
+    for (const [tag, rt] of sPlayerReflectionPaletteSets) if (tag === meta.paletteTag) { reflTag = rt; break; }
+  } else if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) {
+    for (const [tag, rt] of sSpecialObjectReflectionPaletteSets) if (tag === meta.paletteTag) { reflTag = rt; break; }
+  } else {
+    reflTag = _genericNpcReflectionTag[meta.paletteSlot] ?? 0;
+  }
+  return _loadReflectionPaletteByTag(reflTag);
+}
+
+/** 1:1 décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) — adapté.
+ *  Pont haut au-dessus d'eau sombre (Route 120) : reflet bleu sombre uni (bridge_reflection). */
+function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta): number {
+  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return -1;
+  return _loadReflectionPaletteByTag(meta.reflectionPaletteTag);
+}
+
+/** 1:1 décomp `LoadObjectReflectionPalette` (field_effect_helpers.c:75) — adapté.
+ *  Pose l'offset vertical de pont sur le sprite reflet (data[2]) + dispatch pont-haut vs
+ *  régulier. Renvoie le bank reflet (slot OBJ dynamique), ou -1 si non teinté. */
+function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
+  const meta = _getGfxMeta(npc.graphicsId);
+  refl.data[2] = 0; // sReflectionVerticalOffset
+  let bridgeType = MetatileBehavior_GetBridgeType(npc.previousMetatileBehavior);
+  if (!bridgeType) bridgeType = MetatileBehavior_GetBridgeType(npc.currentMetatileBehavior);
+  if (!meta.disableReflectionPaletteLoad && bridgeType) {
+    refl.data[2] = sBridgeReflectionVerticalOffsets[bridgeType - 1] ?? 0;
+    return LoadObjectHighBridgeReflectionPalette(meta);
+  }
+  // Régulier : la décomp ne patche que si reflectionPaletteTag != NONE ; sinon le slot
+  // garde la palette préchargée. Notre archi n'ayant pas de slot réservé, on charge
+  // TOUJOURS la palette reflet déduite du slot (= le contenu de ce slot préchargé), sauf
+  // si disableReflectionPaletteLoad (alors reflet non teinté = réutilise la palette main).
+  if (meta.disableReflectionPaletteLoad) return -1;
+  return LoadObjectRegularReflectionPalette(meta);
+}
 
 /** 1:1 décomp `GetReflectionVerticalOffset` (field_effect_helpers.c:70). */
 function GetReflectionVerticalOffset(npc: ObjectEvent): number {
@@ -3311,9 +3478,15 @@ function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): vo
   }
   const moam = rt.gba.oam[main.oamIndex];
   const roam = rt.gba.oam[refl.oamIndex];
-  // 1:1 : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[main paletteNum].
-  // DETTE palette teintée → réutilise la palette du main (notre OAM = paletteBank).
-  roam.paletteBank = moam.paletteBank;
+  // 1:1 : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[main paletteNum]
+  // (= le slot reflet teinté). Notre adaptation : bank reflet résolu une fois (data[6]).
+  // Si pas encore chargé (-1 ; .pal préchargé arrivé APRÈS le SetUpReflection), on
+  // ré-essaie ; tant qu'indispo (ou disableReflectionPaletteLoad), on réutilise le main.
+  if (refl.data[6] < 0) {
+    const b = LoadObjectReflectionPalette(npc, refl);
+    if (b >= 0) refl.data[6] = b;
+  }
+  roam.paletteBank = refl.data[6] >= 0 ? refl.data[6] : moam.paletteBank;
   roam.shape = moam.shape;
   roam.size = moam.size;
   // 1:1 : oam.matrixNum |= ST_OAM_VFLIP → reflet vflippé. Dans notre modèle split,
@@ -3357,9 +3530,18 @@ function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSpri
   refl.subspriteMode = 'off';
   refl.data[0] = gObjectEvents.indexOf(npc);  // sReflectionObjEventId
   refl.data[1] = npc.localId;                  // sReflectionObjEventLocalId
-  refl.data[2] = 0;                            // sReflectionVerticalOffset (non-bridge ; DETTE bridge)
   refl.data[7] = stillReflection ? 1 : 0;      // sIsStillReflection
-  // LoadObjectReflectionPalette(objectEvent, refl) → DETTE palette teintée (cf note section).
+  // 1:1 décomp : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[paletteNum]
+  // (slot reflet) + LoadObjectReflectionPalette(objectEvent, reflectionSprite). Notre
+  // adaptation charge la palette reflet teintée dans un slot OBJ dynamique (data[6]=bank,
+  // -1 si .pal pas encore préchargée → ré-essai par frame côté UpdateObjectReflectionSprite)
+  // et pose data[2] (sReflectionVerticalOffset = offset de pont haut, 0 sinon).
+  refl.data[6] = -1;
+  const reflBank = LoadObjectReflectionPalette(npc, refl);
+  if (reflBank >= 0) {
+    refl.data[6] = reflBank;
+    roam.paletteBank = reflBank;
+  }
   // if (!stillReflection) oam.affineMode = NORMAL → DETTE ondulation eau (vflip simple ici).
 }
 
@@ -6573,6 +6755,11 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
     return;
   }
   const catalog = await loadGraphicsCatalog();
+
+  // 1:1 décomp `InitObjectEventPalettes` (event_object_movement.c:2532) : précharge les
+  // palettes reflet « dans les slots réservés ». Awaité AVANT le spawn pour que les NPCs
+  // statiques près de l'eau reflètent teinté dès le premier tick (spawn-trigger). Idempotent.
+  await PreloadReflectionPalettes();
 
   // PARALLEL preload (= élimine sequential await + matches décomp instant
   // spawn). Templates qui referencent une PNG manquante après preload sont
