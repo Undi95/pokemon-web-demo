@@ -38,8 +38,8 @@ import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
+  FldEff_Ash,
 } from '../../game/field_effect_helpers';
-import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
@@ -238,11 +238,10 @@ export function FieldEffectStart(id: number): number {
     return FldEff_Bubbles(rt);
   }
   if (id === FLDEFF_ASH) {
-    // 1:1 décomp FldEff_Ash (field_effect_helpers.c:926). args[0/1]=x/y map, [2]=subprio,
-    // [3]=priority, [4]=metatileId, [5]=delay (StartAshFieldEffect) → nuage de cendre + révèle
-    // la tuile ashgrass (Route 113/Fallarbor/Lavaridge).
-    SpawnAshEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4], gFieldEffectArguments[5]);
-    return 64;
+    // 1:1 décomp FldEff_Ash (field_effect_helpers.c:926). Lit gFieldEffectArguments[0/1]=x/y map,
+    // [2]=subprio, [3]=priority, [4]=metatileId, [5]=delay → nuage de cendre + révèle la tuile
+    // ashgrass (Route 113/Fallarbor/Lavaridge).
+    return FldEff_Ash(rt);
   }
   if (id === FLDEFF_SURF_BLOB) {
     // 1:1 décomp FldEff_SurfBlob (field_effect_helpers.c:999). args[0/1]=x/y map, [2]=playerObjId.

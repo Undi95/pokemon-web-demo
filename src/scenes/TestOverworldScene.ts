@@ -180,11 +180,8 @@ import {
 import { preloadSandPileEffect, preloadHotSpringsEffect } from '../game/field_effect_helpers';
 // Bubbles : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot sprite.callback).
 import { preloadBubblesEffect } from '../game/field_effect_helpers';
-import {
-  preloadAshEffect,
-  UpdateAshEffects,
-  DestroyAllAshEffects,
-} from '../engine/field/field-effect-ash';
+// Ash : migré dans le miroir 1:1 game/field_effect_helpers.ts (machine 3 états, sprite.callback).
+import { preloadAshEffect } from '../game/field_effect_helpers';
 import {
   preloadSurfBlobEffect,
   UpdateSurfBlobEffects,
@@ -671,9 +668,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // désormais tické par le callback global (sprite.callback) — plus d'appel manuel.
         // 1:1 décomp `UpdateBubblesFieldEffect` (game/field_effect_helpers.ts) : migré,
         // tické par le callback global (one-shot, GroundEffect_Seaweed → FLDEFF_BUBBLES).
-        // 1:1 décomp `UpdateAshFieldEffect` : nuage de cendre + révèle la tuile ashgrass
-        // (Route 113/Fallarbor). Trigger = field_tasks.c (StartAshFieldEffect), port séparé.
-        UpdateAshEffects(rt);
+        // 1:1 décomp `UpdateAshFieldEffect` (game/field_effect_helpers.ts) : nuage de cendre +
+        // révèle la tuile ashgrass — migré, tické par le callback global.
         // 1:1 décomp `UpdateSurfBlobFieldEffect` (+ Synchronize/Bobbing) : monture de surf
         // qui suit le joueur + bobbing synchronisé. + SpriteCB_UnderwaterSurfBlob (Dive).
         UpdateSurfBlobEffects(rt);
@@ -1183,8 +1179,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadHotSpringsEffect(this.rt);
     // Bubbles (colonne de bulles sur algues en plongée) : assets seulement (one-shot auto-despawn).
     await preloadBubblesEffect(this.rt);
-    // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) assets + pool.
-    DestroyAllAshEffects(this.rt);
+    // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) : assets seulement (sprite.callback).
     await preloadAshEffect(this.rt);
     // Surf blob (monture de surf qui suit le joueur + bobbing) assets + pool.
     DestroyAllSurfBlobEffects(this.rt);

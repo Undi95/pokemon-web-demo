@@ -39,6 +39,7 @@
  *   ✅ FldEff_Splash + FldEff_FeetInFlowingWater (+ leurs Update, gfx partagé).
  *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
+ *   ✅ StartAshFieldEffect + FldEff_Ash + UpdateAshFieldEffect (machine 3 états + révèle tuile).
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
  *   ✅ FldEff_Bubbles + UpdateBubblesFieldEffect (bug 1:1 répliqué).
  *   ⏳ reste : reflets, tall/long grass, footprints, splash, ash, surf blob,
@@ -54,14 +55,17 @@ import {
   SetObjectSubpriorityByElevation,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
-import { SetSpritePosToOffsetMapCoords } from '../engine/field/field-camera';
+import { SetSpritePosToOffsetMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt } from '../engine/field/field-camera';
+import { MapGridSetMetatileIdAt } from '../engine/field/map-loader';
+import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
-  gFieldEffectArguments, FieldEffectStop,
+  gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
 } from '../engine/field/field-effect';
 
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
+const FLDEFF_ASH = 7;
 const FLDEFF_SPLASH = 15;
 const FLDEFF_FEET_IN_FLOWING_WATER = 34;
 const FLDEFF_JUMP_TALL_GRASS = 12;
@@ -740,6 +744,125 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: Decom
   sprite.subpriority = (linked.subpriority - 1) & 0xFF;
   // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE). (Anim statique frame 0 tenue par le moteur.)
   UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  StartAshFieldEffect (915) + FldEff_Ash (926) + UpdateAshFieldEffect (953)
+//  Nuage de cendre (16×16) sur l'herbe à cendre (Route 113/Fallarbor) : RÉVÈLE la tuile
+//  (remplace ashgrass par l'herbe normale). Machine à 3 états (gAshFieldEffectFuncs) :
+//   - Wait : invisible + anim en pause, décrémente sDelay → Show quand 0.
+//   - Show : visible, anim repart ; MapGridSetMetatileIdAt + CurrentMapDrawMetatileAt + pose
+//     triggerGroundEffectsOnMove sur le joueur ; → End.
+//   - End  : UpdateObjectEventSpriteInvisibility ; despawn sur animEnded.
+//  Assets : ash.png (80×16 = 5 frames 16×16, layout ripple), palette general_1.pal.
+//  Sprite data 1:1 : sState=data[0] sX=data[1] sY=data[2] sMetatileId=data[3] sDelay=data[4].
+// ════════════════════════════════════════════════════════════════════════════
+
+const ASH_PNG = '/decomp/em/field_effects/ash.png';
+const TAG_ASH_GFX = 'FIELD_EFFECT_ASH_GFX';
+const ASH_TILES_PER_FRAME = 4;  // 16×16
+const ASH_STATE_WAIT = 0, ASH_STATE_SHOW = 1;
+
+/** 1:1 décomp `sAnim_Ash` : 5 frames durées 12,12,8,12,12, END. imageValue = frameIdx×4. */
+const sAnims_Ash: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 12), ANIMCMD_FRAME(4, 12), ANIMCMD_FRAME(8, 8), ANIMCMD_FRAME(12, 12), ANIMCMD_FRAME(16, 12), ANIMCMD_END],
+];
+
+let _ashTileStart = -1;
+let _ashPalSlot = -1;
+let _ashInit = false;
+let _ashInitPromise: Promise<void> | null = null;
+
+/** Préchargement asset (concern plateforme). */
+export function preloadAshEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _ashInit && IndexOfSpriteTileTag(TAG_ASH_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_ashInitPromise && !_ashInit) return _ashInitPromise;
+  _ashInit = false; _ashInitPromise = null;
+  _ashInitPromise = (async () => {
+    // ash.png = 80×16 = 5 frames 16×16, même layout que ripple → réutilise le reorder.
+    const png = await loadIndexedPngStrict(ASH_PNG, 4);
+    const reordered = pngTo1dObjLayoutRipple(png.charData);
+    _ashTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_ASH_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _ashPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _ashInit = true;
+  })();
+  return _ashInitPromise;
+}
+
+/** 1:1 décomp `StartAshFieldEffect(x, y, metatileId, delay)` (field_effect_helpers.c:915). Entrée
+ *  appelée par field_tasks.c (pas sur ashgrass) — pose les args + FieldEffectStart(FLDEFF_ASH). */
+export function StartAshFieldEffect(x: number, y: number, metatileId: number, delay: number): void {
+  gFieldEffectArguments[0] = x;
+  gFieldEffectArguments[1] = y;
+  gFieldEffectArguments[2] = 82; // subpriority
+  gFieldEffectArguments[3] = 1;  // priority
+  gFieldEffectArguments[4] = metatileId;
+  gFieldEffectArguments[5] = delay;
+  FieldEffectStart(FLDEFF_ASH);
+}
+
+/** 1:1 décomp `FldEff_Ash` (field_effect_helpers.c:926). args[0/1]=x/y map, [2]=subprio,
+ *  [3]=priority, [4]=metatileId, [5]=delay. */
+export function FldEff_Ash(rt: DecompRuntime): number {
+  if (!_ashInit) return 64;
+  const x = gFieldEffectArguments[0], y = gFieldEffectArguments[1];
+  // 1:1 : SetSpritePosToOffsetMapCoords(&x, &y, 8, 8) → coords MONDE.
+  const world = SetSpritePosToOffsetMapCoords(x, y, 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _ashTileStart,
+    paletteBank: _ashPalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: gFieldEffectArguments[2] & 0xFF,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateAshFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_Ash, _ashTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = gFieldEffectArguments[2] & 0xFF;
+  // État Wait : commence invisible + anim en pause (le moteur ne tique pas tant qu'animPaused).
+  sprite.invisible = true;
+  sprite.animPaused = true;
+  sprite.data[0] = ASH_STATE_WAIT;
+  sprite.data[1] = gFieldEffectArguments[0]; // sX (coords map)
+  sprite.data[2] = gFieldEffectArguments[1]; // sY
+  sprite.data[3] = gFieldEffectArguments[4]; // sMetatileId
+  sprite.data[4] = gFieldEffectArguments[5]; // sDelay
+  return 0;
+}
+
+/** 1:1 décomp `UpdateAshFieldEffect` (field_effect_helpers.c:953) = gAshFieldEffectFuncs[sState].
+ *  L'anim est pilotée par le moteur (respecte animPaused) ; le callback ne fait que la machine. */
+export function UpdateAshFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.data[0] === ASH_STATE_WAIT) {
+    // 1:1 UpdateAshFieldEffect_Wait : invisible + animPaused, décrémente sDelay.
+    sprite.invisible = true;
+    sprite.animPaused = true;
+    sprite.data[4] -= 1;
+    if (sprite.data[4] === 0) sprite.data[0] = ASH_STATE_SHOW;
+  } else if (sprite.data[0] === ASH_STATE_SHOW) {
+    // 1:1 UpdateAshFieldEffect_Show : visible, anim repart, révèle la tuile, trigger joueur.
+    sprite.invisible = false;
+    sprite.animPaused = false;
+    MapGridSetMetatileIdAt(sprite.data[1], sprite.data[2], sprite.data[3]);
+    const cam = GetCameraTopLeftCoords();
+    CurrentMapDrawMetatileAt(cam.x, cam.y, sprite.data[1], sprite.data[2]);
+    const player = gObjectEvents[gPlayerAvatar.objectEventId];
+    if (player) player.triggerGroundEffectsOnMove = true;
+    sprite.data[0] = 2; // ASH_STATE_END
+  } else {
+    // 1:1 UpdateAshFieldEffect_End : invis offscreen ; despawn quand l'anim finit.
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+    if (sprite.animEnded) FieldEffectStop(rt, sprite, FLDEFF_ASH);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
