@@ -38,6 +38,7 @@ import { SpawnSplashEffect } from './field-effect-splash';
 import { SpawnSandPileEffect } from './field-effect-sand-pile';
 import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
+import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
@@ -52,6 +53,7 @@ export const gFieldEffectArguments: number[] = new Array(8).fill(0);
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
 export const FLDEFF_TALL_GRASS                 = 4;
 export const FLDEFF_RIPPLE                     = 5;
+export const FLDEFF_ASH                        = 7;
 export const FLDEFF_DUST                       = 10;
 export const FLDEFF_JUMP_TALL_GRASS            = 12;
 export const FLDEFF_SAND_FOOTPRINTS            = 13;
@@ -209,6 +211,13 @@ export function FieldEffectStart(id: number): number {
     SpawnBubblesEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1]);
     return 64;
   }
+  if (id === FLDEFF_ASH) {
+    // 1:1 décomp FldEff_Ash (field_effect_helpers.c:926). args[0/1]=x/y map, [2]=subprio,
+    // [3]=priority, [4]=metatileId, [5]=delay (StartAshFieldEffect) → nuage de cendre + révèle
+    // la tuile ashgrass (Route 113/Fallarbor/Lavaridge).
+    SpawnAshEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4], gFieldEffectArguments[5]);
+    return 64;
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -219,7 +228,7 @@ export function FieldEffectStart(id: number): number {
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
   // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
-  // scripts) ; seul le FldEff visuel manque. RESTE : ash, surf blob, disguises
+  // scripts) ; seul le FldEff visuel manque. RESTE : surf blob, disguises
   // (tree/mountain/sand), sparkle générique, water surfacing, Unused*. Le warn signale
   // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);

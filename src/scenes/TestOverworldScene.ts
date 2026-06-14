@@ -199,6 +199,11 @@ import {
   DestroyAllBubblesEffects,
 } from '../engine/field/field-effect-bubbles';
 import {
+  preloadAshEffect,
+  UpdateAshEffects,
+  DestroyAllAshEffects,
+} from '../engine/field/field-effect-ash';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -678,6 +683,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateBubblesFieldEffect` : colonne de bulles sur les algues (plongée).
         // Câblé via le spine (GroundEffect_Seaweed → FLDEFF_BUBBLES). One-shot anim 36f.
         UpdateBubblesEffects(rt);
+        // 1:1 décomp `UpdateAshFieldEffect` : nuage de cendre + révèle la tuile ashgrass
+        // (Route 113/Fallarbor). Trigger = field_tasks.c (StartAshFieldEffect), port séparé.
+        UpdateAshEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1187,6 +1195,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Bubbles (colonne de bulles sur algues en plongée) assets + pool.
     DestroyAllBubblesEffects(this.rt);
     await preloadBubblesEffect(this.rt);
+    // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) assets + pool.
+    DestroyAllAshEffects(this.rt);
+    await preloadAshEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.
