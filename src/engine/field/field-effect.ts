@@ -37,6 +37,7 @@ import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
 import { SpawnSandPileEffect } from './field-effect-sand-pile';
 import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
+import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
@@ -202,6 +203,12 @@ export function FieldEffectStart(id: number): number {
     SpawnHotSpringsEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
     return 64;
   }
+  if (id === FLDEFF_BUBBLES) {
+    // 1:1 décomp FldEff_Bubbles (field_effect_helpers.c:1258). args[0/1] = coords MAP de l'objet
+    // (GroundEffect_Seaweed) → colonne de bulles 16×32 sur les algues (plongée).
+    SpawnBubblesEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1]);
+    return 64;
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -210,18 +217,11 @@ export function FieldEffectStart(id: number): number {
     return 64;
   }
 
-  // ─── Ground effects pas encore portés (= dette field_effect_helpers.c) ──────
-  // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart) ;
-  // seul le FldEff visuel manque (ports tier A/B à venir : reflets, ripple, long/short
-  // grass, footprints, splash, sand pile, hot springs, bubbles, flowing water…).
-  // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
-  // retourne le sentinel MAX_SPRITES silencieusement.
-  switch (id) {
-    case FLDEFF_BUBBLES:
-      return 64;
-  }
-
-  // ─── Effects non encore portés (= dette R3) ────────────────────────────────
+  // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
+  // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
+  // scripts) ; seul le FldEff visuel manque. RESTE : ash, surf blob, disguises
+  // (tree/mountain/sand), sparkle générique, water surfacing, Unused*. Le warn signale
+  // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);
   return 64;
 }
