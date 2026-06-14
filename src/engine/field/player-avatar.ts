@@ -41,7 +41,6 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
@@ -1404,12 +1403,26 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // delta`. pos est déjà à old + 2 — pas de re-apply ici.
       if (_pendingLedgeJump) {
         _pendingLedgeJump = false;
-        // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c:7997) :
-        // spawn dust cloud à la position d'atterrissage.
-        SpawnJumpLandingDust(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
-        // 1:1 décomp `MovementAction_Jump2Down_Step1:5535` : `objectEvent->hasShadow
-        // = FALSE` au jump end → UpdateShadowFieldEffect détruit le sprite.
-        // Notre impl : destroy direct.
+        // M2 (chantier unif mouvement joueur → object-event) : l'atterrissage du
+        // saut passe DÉSORMAIS par le spine ground-effect décomp, au lieu du dust
+        // ad-hoc. 1:1 décomp `MovementAction_Jump2*_Step1` (event_object_movement.c
+        // :5535) pose sur l'object event au jump end :
+        //   objectEvent->triggerGroundEffectsOnStop = TRUE;
+        //   objectEvent->landingJump = TRUE;
+        // → `DoGroundEffects_OnFinishStep` (boucle TickObjectEventMovements) lit
+        // `GetGroundEffectFlags_JumpLanding` (gate landingJump + tuile d'atterrissage)
+        // → GroundEffect_JumpOnTallGrass (RUSTLE) / JumpOnLongGrass / JumpOnShallowWater /
+        // JumpOnWater (SPLASH) / JumpLandingDust (dust sol). Avant : SpawnJumpLandingDust
+        // ad-hoc = TOUJOURS du dust, même en sautant DANS l'herbe/l'eau (trou 1:1).
+        // currentCoords du slot = tuile d'atterrissage via SyncPlayerObjectEvent (ci-dessous),
+        // lu par le spine au tick suivant (scène : PlayerStep avant TickObjectEventMovements).
+        const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+        if (slot && slot.active && slot.isPlayer) {
+          slot.landingJump = true;
+          slot.triggerGroundEffectsOnStop = true;
+        }
+        // 1:1 décomp `MovementAction_Jump2*_Step1` : `objectEvent->hasShadow = FALSE`
+        // au jump end → UpdateShadowFieldEffect détruit le sprite. Notre impl : direct.
         DestroyShadowSprite(rt);
       }
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
