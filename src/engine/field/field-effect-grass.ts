@@ -31,7 +31,7 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
-import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
+import { SetSpritePosToOffsetMapCoords } from './field-camera';
 import { MAP_OFFSET, MapGridGetMetatileBehaviorAt } from './map-loader';
 import { gObjectEvents, type ObjectEvent } from './object-events';
 import { MetatileBehavior_IsTallGrass } from '../../game/metatile_behavior';
@@ -67,12 +67,6 @@ const ANIM_SEQUENCE: ReadonlyArray<{ frameIdx: number; duration: number }> = [
 interface GrassEffectState {
   spriteId: number;
   oamIndex: number;
-  /** Pixel-space world position relative à cam AT SHOW TIME (= same pattern
-   *  qu'arrow). sprite.x = worldX + (gTotalCamera.offX - offsetXAtShow). */
-  worldX: number;
-  worldY: number;
-  offsetXAtShow: number;
-  offsetYAtShow: number;
   /** Game frame counter. L'anim cycle 5 frames @10 (= 50f) puis HOLD frame 0
    *  (= 1:1 décomp sAnim_TallGrass END), PAS de despawn auto à 50f. */
   ticks: number;
@@ -182,8 +176,7 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
     // Init pool : tous slots à -1 (= libre).
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = {
-        spriteId: -1, oamIndex: -1, worldX: 0, worldY: 0,
-        offsetXAtShow: 0, offsetYAtShow: 0, ticks: 0,
+        spriteId: -1, oamIndex: -1, ticks: 0,
         tileX: 0, tileY: 0, objectMoved: false, active: false,
       };
     }
@@ -217,33 +210,29 @@ export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: numb
   const slot = findFreeSlot();
   if (slot < 0) return;  // pool full = silently drop (= no overflow)
 
-  // Compute world position (= tile au pixel coords).
-  // 1:1 décomp `SetSpritePosToOffsetMapCoords(&x, &y, 8, 8)` : tile center + 8
-  // dans les 2 axes. Notre formula : (gBackupRow - cam.y) * 16 = tile TOP, +8
-  // = tile MID (= center vertical du tile = niveau corps du player).
-  const cam = GetCameraTopLeftCoords();
+  // 1:1 décomp `SetSpritePosToOffsetMapCoords(&x, &y, 8, 8)` : tile center + 8 dans
+  // les 2 axes → coords MONDE fixes (= tile mid, niveau corps du player) ;
+  // `coordOffsetEnabled` fait suivre la caméra via gSpriteCoordOffset (syncSpritesToOam).
   const npcGBackupCol = mapX + MAP_OFFSET;
   const npcGBackupRow = mapY + MAP_OFFSET;
-  const worldX = (npcGBackupCol - cam.x) * 16 + 8;
-  const worldY = (npcGBackupRow - cam.y) * 16 + 8;  // = tile mid (= corps player)
+  const world = SetSpritePosToOffsetMapCoords(npcGBackupCol, npcGBackupRow, 8, 8);
 
   const result = rt.CreateSpriteAtOam({
     tileId: _tallGrassTileStart + 1 * TILES_PER_FRAME,  // start at frame 1
     paletteBank: _tallGrassPalSlot,
-    x: 0, y: 0,
+    x: world.x, y: world.y,
     shape: 0, size: 1,  // 16x16 (= shape SQUARE, size SMALL)
     priority: 2,         // = behind player (player priority 2 too, but tall grass derrière BG2)
     paletteMode: 0,
     affineMode: 0,
   });
+  // 1:1 décomp `sprite->coordOffsetEnabled = TRUE` (field_effect_helpers.c:299).
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (sprite) { sprite.x = world.x; sprite.y = world.y; sprite.coordOffsetEnabled = true; }
 
   const state = _pool[slot];
   state.spriteId = result.spriteId;
   state.oamIndex = result.oamIndex;
-  state.worldX = worldX;
-  state.worldY = worldY;
-  state.offsetXAtShow = gTotalCamera.pixelOffsetX;
-  state.offsetYAtShow = gTotalCamera.pixelOffsetY;
   // 1:1 décomp `if (gFieldEffectArguments[7]) SeekSpriteAnim(sprite, 4)` : au SPAWN
   // (retour de combat/menu sur tuile herbe, GroundEffect_SpawnOnTallGrass) l'anim
   // est sautée à la fin → overlay STATIQUE sans rustle. Au PAS (StepOnTallGrass)
@@ -307,8 +296,8 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
     }
     const oam = rt.gba.oam[s.oamIndex];
     oam.tileId = _tallGrassTileStart + frameIdx * TILES_PER_FRAME;
-    sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
-    sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
+    // sprite.x/y (coords MONDE) posés à la création ; `coordOffsetEnabled` +
+    // `syncSpritesToOam` ajoutent `gSpriteCoordOffset` → suit la caméra.
     s.ticks++;
 
     // ── Despawn conditionnel 1:1 décomp (field_effect_helpers.c:335-356). ──
