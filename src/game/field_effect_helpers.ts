@@ -35,6 +35,7 @@
  *
  * Migration en cours (1 effet = 1 commit, A/B avant chaque) :
  *   ✅ FldEff_ShortGrass + UpdateShortGrassFieldEffect.
+ *   ✅ FldEff_Jump{TallGrass,LongGrass,SmallSplash,BigSplash} + UpdateJumpImpactEffect (config-driven).
  *   ✅ FldEff_Splash + FldEff_FeetInFlowingWater (+ leurs Update, gfx partagé).
  *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
@@ -50,6 +51,7 @@ import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
+  SetObjectSubpriorityByElevation,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords } from '../engine/field/field-camera';
@@ -62,6 +64,10 @@ import {
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
 const FLDEFF_SPLASH = 15;
 const FLDEFF_FEET_IN_FLOWING_WATER = 34;
+const FLDEFF_JUMP_TALL_GRASS = 12;
+const FLDEFF_JUMP_BIG_SPLASH = 14;
+const FLDEFF_JUMP_SMALL_SPLASH = 16;
+const FLDEFF_JUMP_LONG_GRASS = 18;
 const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
@@ -243,6 +249,144 @@ export function UpdateShortGrassFieldEffect(sprite: DecompSprite, rt: DecompRunt
   // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, linkedSprite->invisible).
   UpdateObjectEventSpriteInvisibility(rt, sprite, linked.invisible);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Jump impact effects (field_effect_helpers.c) — partagent UpdateJumpImpactEffect (1641) :
+//    FldEff_JumpTallGrass (359) / FldEff_JumpLongGrass (468) /
+//    FldEff_JumpSmallSplash (684) / FldEff_JumpBigSplash (701).
+//  Sprite tuile-fixe (SetSpritePosToOffsetMapCoords + coordOffsetEnabled) spawné au saut de
+//  rebord/atterrissage sur herbe/eau. Anim joue UNE fois → despawn (animEnded) ; sinon
+//  SetObjectSubpriorityByElevation. Config-driven (4 ≈ identiques : asset/anim/dims varient).
+//  Sprite data 1:1 : sJumpElevation=data[0], sJumpFldEff=data[1].
+// ════════════════════════════════════════════════════════════════════════════
+
+const FE_BASE = '/decomp/em/field_effects';
+
+interface JumpCfg {
+  tag: string; png: string; pngWidthTiles: number;
+  frameWtiles: number; frameHtiles: number;
+  shape: 0 | 1 | 2; size: 0 | 1 | 2 | 3;
+  /** Index de frame PNG pour chaque slot de sheet (long grass saute le PNG-frame 5). */
+  sheetFrames: number[];
+  /** sAnim : (slot de sheet, durée game frames). END après → despawn. */
+  anim: ReadonlyArray<readonly [number, number]>;
+  pal: 'g0' | 'g1';
+  dx: number; dy: number;
+}
+
+/** 1:1 templates field_effect_objects.h (sPicTable/sAnim/Template Jump*). */
+const JUMP_CFG: Record<number, JumpCfg> = {
+  [FLDEFF_JUMP_TALL_GRASS]: {
+    tag: 'FE_JUMP_TALL_GRASS', png: `${FE_BASE}/jump_tall_grass.png`, pngWidthTiles: 8,
+    frameWtiles: 2, frameHtiles: 1, shape: 1, size: 0,
+    sheetFrames: [0, 1, 2, 3], anim: [[0, 8], [1, 8], [2, 8], [3, 8]], pal: 'g1', dx: 8, dy: 12,
+  },
+  [FLDEFF_JUMP_LONG_GRASS]: {
+    tag: 'FE_JUMP_LONG_GRASS', png: `${FE_BASE}/jump_long_grass.png`, pngWidthTiles: 14,
+    frameWtiles: 2, frameHtiles: 2, shape: 0, size: 1,
+    sheetFrames: [0, 1, 2, 3, 4, 6], anim: [[0, 4], [1, 4], [2, 8], [3, 8], [4, 8], [5, 8]], pal: 'g1', dx: 8, dy: 8,
+  },
+  [FLDEFF_JUMP_SMALL_SPLASH]: {
+    tag: 'FE_JUMP_SMALL_SPLASH', png: `${FE_BASE}/jump_small_splash.png`, pngWidthTiles: 6,
+    frameWtiles: 2, frameHtiles: 1, shape: 1, size: 0,
+    sheetFrames: [0, 1, 2], anim: [[0, 4], [1, 4], [2, 4]], pal: 'g0', dx: 8, dy: 12,
+  },
+  [FLDEFF_JUMP_BIG_SPLASH]: {
+    tag: 'FE_JUMP_BIG_SPLASH', png: `${FE_BASE}/jump_big_splash.png`, pngWidthTiles: 8,
+    frameWtiles: 2, frameHtiles: 2, shape: 0, size: 1,
+    sheetFrames: [0, 1, 2, 3], anim: [[0, 8], [1, 8], [2, 8], [3, 8]], pal: 'g0', dx: 8, dy: 8,
+  },
+};
+
+/** Construit la table d'anim moteur depuis la config : imageValue = slot × (tiles/frame). */
+function buildJumpAnims(cfg: JumpCfg): AnimCmd[][] {
+  const tpf = cfg.frameWtiles * cfg.frameHtiles;
+  return [[...cfg.anim.map(([slot, dur]) => ANIMCMD_FRAME(slot * tpf, dur)), ANIMCMD_END]];
+}
+const _jumpAnims: Record<number, AnimCmd[][]> = {};
+const _jumpTileStart = new Map<number, number>();
+let _jumpPalG0 = -1, _jumpPalG1 = -1;
+let _jumpInit = false;
+let _jumpInitPromise: Promise<void> | null = null;
+
+/** Reorder PNG row-major → OBJ 1D frame-major, en suivant sheetFrames (PNG frame par slot). */
+function reorderJumpSheet(charData: Uint8Array, cfg: JumpCfg): Uint8Array {
+  const TILE_BYTES = 32;
+  const tpf = cfg.frameWtiles * cfg.frameHtiles;
+  const out = new Uint8Array(cfg.sheetFrames.length * tpf * TILE_BYTES);
+  let dst = 0;
+  for (const pngFrame of cfg.sheetFrames) {
+    const colStart = pngFrame * cfg.frameWtiles;
+    for (let r = 0; r < cfg.frameHtiles; r++) {
+      for (let c = 0; c < cfg.frameWtiles; c++) {
+        const srcOff = (r * cfg.pngWidthTiles + colStart + c) * TILE_BYTES;
+        if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+        dst += TILE_BYTES;
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement assets (les 4 sheets jump + palettes general_0/1). */
+export function preloadJumpImpactEffects(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _jumpInit && IndexOfSpriteTileTag(JUMP_CFG[FLDEFF_JUMP_TALL_GRASS].tag) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_jumpInitPromise && !_jumpInit) return _jumpInitPromise;
+  _jumpInit = false; _jumpInitPromise = null;
+  _jumpInitPromise = (async () => {
+    try { _jumpPalG0 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _jumpPalG0 = 0; }
+    try { _jumpPalG1 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_1.pal`), tag: TAG_GENERAL_1_PAL }); } catch { _jumpPalG1 = 0; }
+    for (const key of Object.keys(JUMP_CFG)) {
+      const fldeff = Number(key);
+      const cfg = JUMP_CFG[fldeff];
+      const png = await loadIndexedPngStrict(cfg.png, 4);
+      const reordered = reorderJumpSheet(png.charData, cfg);
+      _jumpTileStart.set(fldeff, LoadSpriteSheet({ data: reordered, size: reordered.length, tag: cfg.tag }));
+      _jumpAnims[fldeff] = buildJumpAnims(cfg);
+    }
+    _jumpInit = true;
+  })();
+  return _jumpInitPromise;
+}
+
+/** Helper commun 1:1 `FldEff_Jump*` : spawn tuile-fixe + coordOffsetEnabled + callback partagé.
+ *  Lit gFieldEffectArguments[0/1]=coords INTERNAL (currentCoords), [2]=elevation, [3]=priority. */
+function spawnJumpImpactEffect(rt: DecompRuntime, fldeff: number): number {
+  if (!_jumpInit) return 64;
+  const cfg = JUMP_CFG[fldeff];
+  const tileStart = _jumpTileStart.get(fldeff);
+  if (!cfg || tileStart === undefined) return 64;
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], cfg.dx, cfg.dy);
+  const result = rt.CreateSpriteAtOam({
+    tileId: tileStart,
+    paletteBank: cfg.pal === 'g0' ? _jumpPalG0 : _jumpPalG1,
+    x: world.x, y: world.y,
+    shape: cfg.shape, size: cfg.size,
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateJumpImpactEffect;
+  setFieldEffectAnims(sprite, _jumpAnims[fldeff], tileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE.
+  sprite.coordOffsetEnabled = true;
+  // 1:1 : sprite->sJumpElevation = args[2] ; sJumpFldEff = FLDEFF_X.
+  sprite.data[0] = gFieldEffectArguments[2];
+  sprite.data[1] = fldeff;
+  return 0;
+}
+
+/** 1:1 décomp `FldEff_JumpTallGrass` (field_effect_helpers.c:359). */
+export function FldEff_JumpTallGrass(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_TALL_GRASS); }
+/** 1:1 décomp `FldEff_JumpLongGrass` (field_effect_helpers.c:468). */
+export function FldEff_JumpLongGrass(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_LONG_GRASS); }
+/** 1:1 décomp `FldEff_JumpSmallSplash` (field_effect_helpers.c:684). */
+export function FldEff_JumpSmallSplash(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_SMALL_SPLASH); }
+/** 1:1 décomp `FldEff_JumpBigSplash` (field_effect_helpers.c:701). */
+export function FldEff_JumpBigSplash(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_BIG_SPLASH); }
 
 // ════════════════════════════════════════════════════════════════════════════
 //  FldEff_Splash (642) + FldEff_FeetInFlowingWater (725)
@@ -840,5 +984,17 @@ export function WaitFieldEffectSpriteAnim(sprite: DecompSprite, rt: DecompRuntim
     FieldEffectStop(rt, sprite, sprite.data[0]);
   } else {
     UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  }
+}
+
+/** 1:1 décomp `UpdateJumpImpactEffect` (field_effect_helpers.c:1641). Callback partagé des
+ *  effets d'impact de saut : anim une fois → despawn (animEnded) ; sinon visibilité + z-order
+ *  par élévation. sJumpElevation=data[0], sJumpFldEff=data[1]. */
+export function UpdateJumpImpactEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.animEnded) {
+    FieldEffectStop(rt, sprite, sprite.data[1]);
+  } else {
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+    SetObjectSubpriorityByElevation(rt, sprite.data[0], sprite, 0);
   }
 }

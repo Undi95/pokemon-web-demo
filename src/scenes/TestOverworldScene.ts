@@ -164,11 +164,8 @@ import {
 } from '../engine/field/field-effect-long-grass';
 // Short grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback).
 import { preloadShortGrassEffect } from '../game/field_effect_helpers';
-import {
-  preloadJumpImpactEffects,
-  UpdateJumpImpactEffects,
-  DestroyAllJumpImpactEffects,
-} from '../engine/field/field-effect-jump-impact';
+// Jump impact (jump tall/long grass + small/big splash) : migrés dans le miroir 1:1.
+import { preloadJumpImpactEffects } from '../game/field_effect_helpers';
 // Splash + feet-in-flowing-water : migrés dans le miroir 1:1 game/field_effect_helpers.ts.
 import { preloadSplashEffect } from '../game/field_effect_helpers';
 import {
@@ -661,9 +658,8 @@ export class TestOverworldScene extends Phaser.Scene {
         UpdateLongGrassEffects(rt);
         // 1:1 décomp `UpdateShortGrassFieldEffect` (game/field_effect_helpers.ts) :
         // migré, tické par le callback global.
-        // 1:1 décomp `UpdateJumpImpactEffect` : jump tall/long grass + jump small/big splash
-        // (impact au saut de rebord sur herbe/eau). Hors démo, câblé via le spine.
-        UpdateJumpImpactEffects(rt);
+        // 1:1 décomp `UpdateJumpImpactEffect` (game/field_effect_helpers.ts) : jump tall/long
+        // grass + jump small/big splash — migrés, tickés par le callback global.
         // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect`
         // (game/field_effect_helpers.ts) : migrés, tickés par le callback global.
         // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
@@ -1175,7 +1171,6 @@ export class TestOverworldScene extends Phaser.Scene {
     // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
     await preloadShortGrassEffect(this.rt);
     // Effets d'impact de saut (jump tall/long grass + jump small/big splash) assets + pool.
-    DestroyAllJumpImpactEffects(this.rt);
     await preloadJumpImpactEffects(this.rt);
     // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) : assets seulement (sprite.callback).
     await preloadSplashEffect(this.rt);

@@ -34,12 +34,15 @@ import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
-import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles, FldEff_Splash, FldEff_FeetInFlowingWater } from '../../game/field_effect_helpers';
+import {
+  FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
+  FldEff_Splash, FldEff_FeetInFlowingWater,
+  FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
+} from '../../game/field_effect_helpers';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
-import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { MAP_OFFSET } from './map-loader';
 
@@ -189,13 +192,14 @@ export function FieldEffectStart(id: number): number {
     SpawnLongGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
     return 64;
   }
-  if (id === FLDEFF_JUMP_TALL_GRASS || id === FLDEFF_JUMP_LONG_GRASS
-      || id === FLDEFF_JUMP_SMALL_SPLASH || id === FLDEFF_JUMP_BIG_SPLASH) {
-    // 1:1 décomp FldEff_Jump* (UpdateJumpImpactEffect). args[0/1] = coords INTERNAL
-    // (currentCoords, SetSpritePosToOffsetMapCoords les prend telles quelles), [2]=elevation,
-    // [3]=priority. Module générique config-driven (jump tall/long grass + small/big splash).
-    SpawnJumpImpactEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
-    return 64;
+  if (id === FLDEFF_JUMP_TALL_GRASS) return FldEff_JumpTallGrass(rt);
+  if (id === FLDEFF_JUMP_LONG_GRASS) return FldEff_JumpLongGrass(rt);
+  if (id === FLDEFF_JUMP_SMALL_SPLASH) return FldEff_JumpSmallSplash(rt);
+  if (id === FLDEFF_JUMP_BIG_SPLASH) {
+    // 1:1 décomp FldEff_Jump* (field_effect_helpers.c:359/468/684/701) : impact de saut sur
+    // herbe/eau, partagent UpdateJumpImpactEffect. Lisent gFieldEffectArguments[0/1]=coords
+    // INTERNAL, [2]=elevation, [3]=priority (config-driven dans le miroir).
+    return FldEff_JumpBigSplash(rt);
   }
   if (id === FLDEFF_SAND_FOOTPRINTS || id === FLDEFF_DEEP_SAND_FOOTPRINTS || id === FLDEFF_BIKE_TIRE_TRACKS) {
     // 1:1 décomp FldEff_{Sand,DeepSand}Footprints / BikeTireTracks (UpdateFootprintsTireTracks).
