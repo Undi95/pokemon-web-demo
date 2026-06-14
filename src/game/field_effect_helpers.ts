@@ -34,11 +34,12 @@
  *    suivre exactement (le callback recopie x/y du parent chaque frame).
  *
  * Migration en cours (1 effet = 1 commit, A/B avant chaque) :
+ *   ✅ FldEff_ShortGrass + UpdateShortGrassFieldEffect.
  *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
- *   ⏳ reste : reflets, grass, footprints, splash, bubbles, ash, surf blob,
- *      disguises, sparkle, shadow, jump dust, warp arrow, + effets morts.
+ *   ⏳ reste : reflets, tall/long grass, footprints, splash, bubbles, ash, surf blob,
+ *      disguises, sparkle, shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
@@ -56,6 +57,7 @@ import {
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
+const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
 const FLDEFF_SAND_PILE = 39;
@@ -105,6 +107,135 @@ function setFieldEffectAnims(
   sprite.animBeginning = true;
   sprite.animEnded = false;
   sprite.animPaused = false;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_ShortGrass (field_effect_helpers.c:492)
+//  Touffe d'herbe basse (16×16) qui SUIT le parent en continu (≠ tall/long grass
+//  tuile-fixe). Petit sway 2 frames qui REJOUE quand le parent bouge. y2=(height>>1)-8
+//  (mi-corps), subpriority=parent-1, oam.priority recopiée du parent chaque frame,
+//  invisible = celui du parent. Despawn quand l'owner n'est plus inShortGrass.
+//  Assets : short_grass.png (32×16 = 2 frames 16×16), palette general_1.pal.
+//  Sprite data 1:1 : sLocalId=data[0] sMapNum=data[1] sMapGroup=data[2] sPrevX=data[3] sPrevY=data[4].
+// ════════════════════════════════════════════════════════════════════════════
+
+const SHORT_GRASS_PNG = '/decomp/em/field_effects/short_grass.png';
+const TAG_SHORT_GRASS_GFX = 'FIELD_EFFECT_SHORT_GRASS_GFX';
+const SHORT_GRASS_NUM_FRAMES = 2;
+const SHORT_GRASS_TILES_PER_FRAME = 4;  // 16×16
+
+/** 1:1 décomp `sAnim_ShortGrass` (field_effect_objects.h) : FRAME(0,4)(1,4) END → sway 2 frames.
+ *  imageValue = offset tile (frameIdx × 4). */
+const sAnims_ShortGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(4, 4), ANIMCMD_END],
+];
+
+let _shortGrassTileStart = -1;
+let _shortGrassPalSlot = -1;
+let _shortGrassInit = false;
+let _shortGrassInitPromise: Promise<void> | null = null;
+
+/** PNG 32×16 = 4×2 tiles row-major → frame-major (frame F = cols 2F,2F+1 sur 2 rows = 4 tiles). */
+function pngTo1dObjLayoutShortGrass(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, PNG_WIDTH_TILES = 4;
+  const out = new Uint8Array(SHORT_GRASS_NUM_FRAMES * SHORT_GRASS_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < SHORT_GRASS_NUM_FRAMES; f++) {
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 2; col++) {
+        const pngTileIdx = row * PNG_WIDTH_TILES + (f * 2) + col;
+        const objTileIdx = f * SHORT_GRASS_TILES_PER_FRAME + row * 2 + col;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement asset (concern plateforme). */
+export function preloadShortGrassEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _shortGrassInit && IndexOfSpriteTileTag(TAG_SHORT_GRASS_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_shortGrassInitPromise && !_shortGrassInit) return _shortGrassInitPromise;
+  _shortGrassInit = false; _shortGrassInitPromise = null;
+  _shortGrassInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(SHORT_GRASS_PNG, 4);
+    const reordered = pngTo1dObjLayoutShortGrass(png.charData);
+    _shortGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SHORT_GRASS_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _shortGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _shortGrassInit = true;
+  })();
+  return _shortGrassInitPromise;
+}
+
+/** 1:1 décomp `FldEff_ShortGrass` (field_effect_helpers.c:492). Lit gFieldEffectArguments[0..2]. */
+export function FldEff_ShortGrass(rt: DecompRuntime): number {
+  if (!_shortGrassInit) return 64;
+  const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
+  // 1:1 : un seul short grass par owner (le callback despawn quand !inShortGrass).
+  for (const s of rt.gSprites.values()) {
+    if (s.inUse && s.callback === UpdateShortGrassFieldEffect &&
+        s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
+  }
+  const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
+  const objectEvent = gObjectEvents[objectEventId];
+  const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  if (!parentSprite) return 64;
+  const pOam = rt.gba.oam[parentSprite.oamIndex];
+  const result = rt.CreateSpriteAtOam({
+    tileId: _shortGrassTileStart,
+    paletteBank: _shortGrassPalSlot,
+    x: parentSprite.x, y: parentSprite.y,
+    shape: 0, size: 1,  // 16×16
+    // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
+    priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateShortGrassFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_ShortGrass, _shortGrassTileStart);
+  sprite.x = parentSprite.x; sprite.y = parentSprite.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE → matcher le parent (écran-positionné).
+  sprite.coordOffsetEnabled = parentSprite.coordOffsetEnabled;
+  sprite.data[0] = localId; sprite.data[1] = mapNum; sprite.data[2] = mapGroup;
+  // 1:1 : sprite->sPrevX/Y = gSprites[objectEvent->spriteId].x/y.
+  sprite.data[3] = parentSprite.x; sprite.data[4] = parentSprite.y;
+  return 0;
+}
+
+/** 1:1 décomp `UpdateShortGrassFieldEffect` (field_effect_helpers.c:511). Callback per-frame. */
+export function UpdateShortGrassFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[0], sprite.data[1], sprite.data[2]);
+  if (notFound || !gObjectEvents[objectEventId].inShortGrass) {
+    // 1:1 décomp : FieldEffectStop(sprite, FLDEFF_SHORT_GRASS).
+    FieldEffectStop(rt, sprite, FLDEFF_SHORT_GRASS);
+    return;
+  }
+  const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+  const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
+  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  if (!linked) return;
+  const parentX = linked.x, parentY = linked.y;
+  // 1:1 : si le parent a bougé, relance le sway depuis frame 0 (si fini). Moteur d'anim → animEnded.
+  if (parentX !== sprite.data[3] || parentY !== sprite.data[4]) {
+    sprite.data[3] = parentX; sprite.data[4] = parentY;
+    if (sprite.animEnded) rt.StartSpriteAnim(sprite.spriteId, 0);
+  }
+  // 1:1 : suit le parent + offset mi-corps + z-order devant le parent.
+  sprite.x = parentX; sprite.y = parentY;
+  sprite.y2 = (GetObjectEventGfxHeight(objEvent.graphicsId) >> 1) - 8;
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
+  sprite.subpriority = (linked.subpriority - 1) & 0xFF;
+  // 1:1 : sprite->oam.priority = linkedSprite->oam.priority (recopié chaque frame).
+  const lOam = rt.gba.oam[linked.oamIndex];
+  if (lOam) rt.gba.oam[sprite.oamIndex].priority = lOam.priority;
+  // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, linkedSprite->invisible).
+  UpdateObjectEventSpriteInvisibility(rt, sprite, linked.invisible);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

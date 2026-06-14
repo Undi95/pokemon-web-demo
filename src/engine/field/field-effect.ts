@@ -34,9 +34,8 @@ import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
-import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
-import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple } from '../../game/field_effect_helpers';
+import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass } from '../../game/field_effect_helpers';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
@@ -214,10 +213,9 @@ export function FieldEffectStart(id: number): number {
     return 64;
   }
   if (id === FLDEFF_SHORT_GRASS) {
-    // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). args[0..2] = localId/mapNum/
-    // mapGroup de l'owner (StartFieldEffectForObjectEvent), PAS des coords → pas de MAP_OFFSET.
-    SpawnShortGrassEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-    return 64;
+    // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). Lit gFieldEffectArguments[0..2]
+    // = localId/mapNum/mapGroup → touffe d'herbe basse qui suit le parent (Route 110…).
+    return FldEff_ShortGrass(rt);
   }
   if (id === FLDEFF_SAND_PILE) {
     // 1:1 décomp FldEff_SandPile (field_effect_helpers.c:1204). Lit gFieldEffectArguments[0..2]

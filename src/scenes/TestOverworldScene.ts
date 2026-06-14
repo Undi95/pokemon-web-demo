@@ -162,11 +162,8 @@ import {
   UpdateLongGrassEffects,
   DestroyAllLongGrassEffects,
 } from '../engine/field/field-effect-long-grass';
-import {
-  preloadShortGrassEffect,
-  UpdateShortGrassEffects,
-  DestroyAllShortGrassEffects,
-} from '../engine/field/field-effect-short-grass';
+// Short grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback).
+import { preloadShortGrassEffect } from '../game/field_effect_helpers';
 import {
   preloadJumpImpactEffects,
   UpdateJumpImpactEffects,
@@ -668,9 +665,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateLongGrassFieldEffect` : overlay herbe haute (Route 119/120) —
         // anim + tracking owner + despawn. Hors démo, mais câblé via le spine.
         UpdateLongGrassEffects(rt);
-        // 1:1 décomp `UpdateShortGrassFieldEffect` : touffe herbe basse suivant le parent
-        // (Route 110, etc.). Hors démo, câblé via le spine.
-        UpdateShortGrassEffects(rt);
+        // 1:1 décomp `UpdateShortGrassFieldEffect` (game/field_effect_helpers.ts) :
+        // migré, tické par le callback global.
         // 1:1 décomp `UpdateJumpImpactEffect` : jump tall/long grass + jump small/big splash
         // (impact au saut de rebord sur herbe/eau). Hors démo, câblé via le spine.
         UpdateJumpImpactEffects(rt);
@@ -1185,7 +1181,6 @@ export class TestOverworldScene extends Phaser.Scene {
     DestroyAllLongGrassEffects(this.rt);
     await preloadLongGrassEffect(this.rt);
     // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
-    DestroyAllShortGrassEffects(this.rt);
     await preloadShortGrassEffect(this.rt);
     // Effets d'impact de saut (jump tall/long grass + jump small/big splash) assets + pool.
     DestroyAllJumpImpactEffects(this.rt);
