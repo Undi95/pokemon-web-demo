@@ -81,7 +81,9 @@ const fx = {
       "  tp(map, x, y)            → fast-travel (alias __devGotoMap)",
       "  fldeffs()                → table { nom: id } des FLDEFF_*",
       "  start(idOrName, args[])  → set gFieldEffectArguments + FieldEffectStart",
-      "  onPlayer(idOrName)       → spawn effet object-event-owned sur le joueur",
+      "  onPlayer(idOrName, flags[])  → spawn effet object-event-owned sur le joueur",
+      "                               (flags posés true avant : ['inHotSprings'], …)",
+      "  setFlag(name, val=true)  → pose un flag sur l'object event joueur",
       "  sandPile() / stopSandPile()  → raccourci sand pile",
       "  list()                   → sprites d'effet actifs (non object-event)",
       "  behaviorAt(x, y)         → metatile behavior (coords map)",
@@ -115,22 +117,28 @@ const fx = {
     return FieldEffectStart(id);
   },
 
-  /** Spawn un effet object-event-owned (args = localId/mapNum/mapGroup) sur le joueur. */
-  onPlayer(idOrName: number | string): number {
-    const p = playerObjEvent();
-    if (!p) throw new Error('[dev.fx] object event joueur introuvable (overworld pas chargé ?)');
-    return fx.start(idOrName, [p.localId, p.mapNum, p.mapGroup]);
-  },
-
-  /** Raccourci sand pile : force inSandPile=true (sinon l'Update despawn aussitôt) + spawn. */
-  sandPile() {
+  /** Pose un flag (ex. 'inSandPile') sur l'object event LIVE du joueur. */
+  setFlag(name: string, val = true) {
     const p = playerObjEvent();
     if (!p) throw new Error('[dev.fx] object event joueur introuvable');
-    (p as any).inSandPile = true;
-    const started = fx.onPlayer('FLDEFF_SAND_PILE');
+    (p as any)[name] = val;
+    return { [name]: (p as any)[name] };
+  },
+
+  /** Spawn un effet object-event-owned (args = localId/mapNum/mapGroup) sur le joueur.
+   *  `flags` = flags à poser true AVANT le spawn (sinon l'Update despawn aussitôt) — ex.
+   *  ['inSandPile'], ['inHotSprings'], ['inShortGrass']. */
+  onPlayer(idOrName: number | string, flags: string[] = []): { started: number; sprites: any[] } {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable (overworld pas chargé ?)');
+    for (const f of flags) (p as any)[f] = true;
+    const started = fx.start(idOrName, [p.localId, p.mapNum, p.mapGroup]);
     return { started, sprites: fx.list() };
   },
-  stopSandPile() { const p = playerObjEvent(); if (p) (p as any).inSandPile = false; return fx.list(); },
+
+  /** Raccourci sand pile (inSandPile). */
+  sandPile() { return fx.onPlayer('FLDEFF_SAND_PILE', ['inSandPile']); },
+  stopSandPile() { fx.setFlag('inSandPile', false); return fx.list(); },
 
   /** Sprites d'effet actifs (= tous les sprites SAUF ceux d'un object event). */
   list() {
