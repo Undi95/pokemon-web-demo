@@ -35,6 +35,7 @@ import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
+import { SpawnSandPileEffect } from './field-effect-sand-pile';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
@@ -188,6 +189,12 @@ export function FieldEffectStart(id: number): number {
     SpawnShortGrassEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
     return 64;
   }
+  if (id === FLDEFF_SAND_PILE) {
+    // 1:1 décomp FldEff_SandPile (field_effect_helpers.c:1204). args[0..2] = localId/mapNum/
+    // mapGroup de l'owner (StartFieldEffectForObjectEvent) → suit le sprite parent sur sable profond.
+    SpawnSandPileEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return 64;
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -203,7 +210,6 @@ export function FieldEffectStart(id: number): number {
   // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
   // retourne le sentinel MAX_SPRITES silencieusement.
   switch (id) {
-    case FLDEFF_SAND_PILE:
     case FLDEFF_HOT_SPRINGS_WATER:
     case FLDEFF_BUBBLES:
       return 64;

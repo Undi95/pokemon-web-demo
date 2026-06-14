@@ -184,6 +184,11 @@ import {
   DestroyAllFootprintsEffects,
 } from '../engine/field/field-effect-footprints';
 import {
+  preloadSandPileEffect,
+  UpdateSandPileEffects,
+  DestroyAllSandPileEffects,
+} from '../engine/field/field-effect-sand-pile';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -654,6 +659,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
         // de vélo (déposées sur sable, fade après 40f). Hors démo, câblé via le spine (DoTracks).
         UpdateFootprintsEffects(rt);
+        // 1:1 décomp `UpdateSandPileFieldEffect` : monticule de sable remué suivant le parent
+        // sur sable profond. Câblé via le spine (GroundEffect_SandHeap → FLDEFF_SAND_PILE).
+        UpdateSandPileEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1154,6 +1162,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Empreintes/traces (sand/deep footprints + bike tire tracks) assets + pool.
     DestroyAllFootprintsEffects(this.rt);
     await preloadFootprintsEffects(this.rt);
+    // Sand pile (monticule de sable remué sur sable profond) assets + pool.
+    DestroyAllSandPileEffects(this.rt);
+    await preloadSandPileEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.
