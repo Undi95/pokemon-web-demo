@@ -70,6 +70,7 @@ import {
   GetBerryCountByBerryTreeId, AllowBerryTreeGrowth, BerryTypeToItemId, RemoveBerryTree,
   GetBerryInfo, GetBerryTreeInfo, GetBerryNameByBerryType, BERRY_STAGE_SPARKLING,
   BERRY_STAGE_PLANTED, BERRY_STAGE_SPROUTED, BERRY_STAGE_TALLER, BERRY_STAGE_FLOWERING,
+  PlantBerryTree, ItemIdToBerryType,
 } from '../pokemon/berry';
 import { gDecorations } from '../ui/decoration-data';
 import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
@@ -1339,10 +1340,12 @@ registerSpecial('InterviewBefore', () => 0);
  *  Retourne IsBagPocketNonEmpty(POCKET_BERRIES). Notre projet check
  *  gSaveBlock1Ptr.bagPocket_Berries (= 1:1 décomp 5e pocket sac). */
 registerSpecial('PlayerHasBerries', () => {
-  const sb1 = gSaveBlock1Ptr as unknown as { bagPocket_Berries?: Array<{ itemId?: string; quantity?: number }> };
+  // 1:1 décomp IsBagPocketNonEmpty(POCKET_BERRIES) : un slot non vide.
+  // Nos slots = { itemKey: string, quantity }. Vide = itemKey '' / 'ITEM_NONE'.
+  const sb1 = gSaveBlock1Ptr as unknown as { bagPocket_Berries?: Array<{ itemKey?: string; quantity?: number }> };
   const berries = sb1.bagPocket_Berries ?? [];
   for (const slot of berries) {
-    if (slot.itemId && (slot.quantity ?? 0) > 0) return 1;
+    if (slot.itemKey && slot.itemKey !== 'ITEM_NONE' && (slot.quantity ?? 0) > 0) return 1;
   }
   return 0;
 });
@@ -2086,7 +2089,8 @@ registerSpecial('SetPacifidlogTMReceivedDay', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const _SESSION_131_DECOMP_SPECIALS = [
-  'AccessHallOfFamePC', 'Bag_ChooseBerry', 'BattlePyramidChooseMonHeldItems',
+  // 'Bag_ChooseBerry' — géré dans le dispatcher script-opcodes-special.ts (waitstate=1).
+  'AccessHallOfFamePC', 'BattlePyramidChooseMonHeldItems',
   'BattleSetup_StartLatiBattle',
   // 'BattleSetup_StartRematchBattle' — porté 1:1 T-B : intercepté par l'opcode
   // `special` (script-opcodes-special.ts, suspend/reprise du script) + boot dans
@@ -2247,9 +2251,8 @@ const _SESSION_131_DECOMP_SPECIALS = [
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
   'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',
   // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/GetBerryName/
-  // PickBerryTree/RemoveBerryTree/WaterBerryTree : handlers concrets 1:1 décomp
-  // enregistrés plus bas (récolte + arrosage).
-  'ObjectEventInteractionPlantBerryTree',
+  // PickBerryTree/RemoveBerryTree/WaterBerryTree/PlantBerryTree : handlers concrets
+  // 1:1 décomp enregistrés plus bas (récolte + arrosage + plantation).
   'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
   'Overworld_PlaySpecialMapMusic',
   // 'PickLotteryCornerTicket' — porté 1:1 décomp lottery_corner.c:48 ci-bas (batch E1).
@@ -2390,7 +2393,7 @@ const _BERRY_FLAG_JUST_PICKED = 1 << 2;
 /** 1:1 décomp `ObjectEventInteractionGetBerryTreeData` (berry.c:1252-1273) :
  *  set VAR_0x8004 = stade (ou SPARKLING), VAR_0x8005 = stages arrosés,
  *  VAR_0x8006 = nb de baies, gStringVar1 = "BAIE(S) <nom>". */
-registerSpecial('ObjectEventInteractionGetBerryTreeData', () => {
+function _objectEventInteractionGetBerryTreeData(): void {
   const id = _selectedBerryTreeId();
   const berry = GetBerryTypeByBerryTreeId(id);
   AllowBerryTreeGrowth(id);
@@ -2402,6 +2405,16 @@ registerSpecial('ObjectEventInteractionGetBerryTreeData', () => {
   VarSet('VAR_0x8005', GetNumStagesWateredByBerryTreeId(id));
   VarSet('VAR_0x8006', GetBerryCountByBerryTreeId(id));
   setStringVar(1, _berryCountString(berry, GetBerryCountByBerryTreeId(id)));
+}
+registerSpecial('ObjectEventInteractionGetBerryTreeData', _objectEventInteractionGetBerryTreeData);
+
+/** 1:1 décomp `ObjectEventInteractionPlantBerryTree` (berry.c:1293-1299) :
+ *  PlantBerryTree(id, ItemIdToBerryType(VAR_ITEM_ID), BERRY_STAGE_PLANTED, TRUE)
+ *  puis ObjectEventInteractionGetBerryTreeData (refresh VAR_0x8004..6 + gStringVar1). */
+registerSpecial('ObjectEventInteractionPlantBerryTree', () => {
+  const berry = ItemIdToBerryType(gSpecialVar.ItemId);
+  PlantBerryTree(_selectedBerryTreeId(), berry, BERRY_STAGE_PLANTED, true);
+  _objectEventInteractionGetBerryTreeData();
 });
 
 /** 1:1 décomp `ObjectEventInteractionGetBerryCountString` (berry.c:1280-1286). */

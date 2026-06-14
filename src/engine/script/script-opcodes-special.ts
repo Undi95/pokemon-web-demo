@@ -206,6 +206,21 @@ registerOpcode('special', (ctx, args) => {
       return true;
     }
   }
+  // 1:1 décomp `Bag_ChooseBerry` (item_menu.c:577) = SetMainCallback2(CB2_ChooseBerry)
+  // (ouvre le sac, poche BAIES verrouillée, sélection → gSpecialVar_ItemId).
+  // `def_special Bag_ChooseBerry, waitstate=1` (specials.inc:63) → la macro `special`
+  // émet un `waitstate` implicite. Notre script extrait (depuis le .inc SOURCE) ne
+  // l'a PAS → on park le script ICI via SetupNativeScript (1:1 comportemental du
+  // waitstate implicite). Le native tick n'est pollé QUE quand l'OW est actif (pas
+  // pendant le CB2 du sac), donc le 1er poll arrive APRÈS le retour
+  // (CB2_ReturnToFieldContinueScript) → reprise avec VAR_ITEM_ID frais (baie choisie
+  // ou 0 si annulé). Même pattern prouvé que StartBirchTutorialBattle ci-dessus.
+  if (name === 'Bag_ChooseBerry') {
+    void import('../bag/bag-menu').then((m) => m.CB2_ChooseBerry());
+    let framesWaited = 0;
+    SetupNativeScript(ctx, () => { framesWaited++; return framesWaited >= 1; });
+    return true;
+  }
   invokeSpecial(name);
   return false;
 });

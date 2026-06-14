@@ -278,3 +278,47 @@ export function CB2_ReturnToFieldWithOpenMenu_Manual(): void {
   gMain.state = 0;
   rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
 }
+
+/** 1:1 décomp `void FieldCB_ContinueScript(void)` (field_screen_effect.c:150) :
+ *
+ *      LockPlayerFieldControls();
+ *      FadeInFromBlack();
+ *      CreateTask(Task_WaitForFadeAndEnableScriptCtx, 10);
+ *
+ *  `Task_WaitForFadeAndEnableScriptCtx` (field_screen_effect.c:133) attend
+ *  `WaitForWeatherFadeIn()` puis `ScriptContext_Enable()` (reprend le script).
+ *
+ *  Notre version : le script bloqué (`special Bag_ChooseBerry` `waitstate=1` →
+ *  SetupNativeScript dans script-opcodes-special) reprend de lui-même au 1er
+ *  tick de l'OW restauré (le native script n'est pollé QUE quand l'OW est actif,
+ *  = post-retour, exactement comme StartBirchTutorialBattle) → pas besoin d'un
+ *  ScriptContext_Enable explicite ici. On fait juste le fade FROM_BLACK (le
+ *  `fadescreen FADE_TO_BLACK` du script avait noirci avant d'ouvrir le sac).
+ *  Appelé par RunFieldCallback_Manual (branche gFieldCallback) en case 2. */
+function FieldCB_ContinueScript_Manual(): void {
+  FillPalBufferBlack();
+  FadeScreen(FADE_FROM_BLACK, 0);
+}
+
+/** 1:1 décomp `void CB2_ReturnToFieldContinueScript(void)` (overworld.c:1677) :
+ *
+ *      FieldClearVBlankHBlankCallbacks();
+ *      gFieldCallback = FieldCB_ContinueScript;
+ *      CB2_ReturnToField();   // → SetMainCallback2(CB2_ReturnToFieldLocal)
+ *
+ *  ⚠️ L'auto-gen `overworld-callbacks-auto.ts:222` est CASSÉ : il appelle
+ *  `CB2_ReturnToField`→`CB2_ReturnToFieldLocal`(auto) qui passe `ReturnToFieldLocal(
+ *  gMain.state)` PAR VALEUR (le transpiler ne gère pas `u8 *state`) → state machine
+ *  bloquée case 0 ; + cible `CB2_Overworld` auto ≠ vrai `_overworldMainCB2`. Audit :
+ *  ces auto-gen ne sont câblés nulle part. On réutilise la state machine manuelle
+ *  (la SEULE qui marche), juste avec `gFieldCallback = FieldCB_ContinueScript`. */
+export function CB2_ReturnToFieldContinueScript_Manual(): void {
+  const rt = getRuntime();
+  rt.SetVBlankCallback(null);
+  // gFieldCallback (PAS gFieldCallback2) → RunFieldCallback_Manual branche le
+  // chemin `if (cb) cb()` (= FieldCB_ContinueScript), pas le start menu.
+  (globalThis as Record<string, unknown>).gFieldCallback = FieldCB_ContinueScript_Manual;
+  (globalThis as Record<string, unknown>).gFieldCallback2 = null;
+  gMain.state = 0;
+  rt.SetMainCallback2(CB2_ReturnToFieldLocal_Manual);
+}

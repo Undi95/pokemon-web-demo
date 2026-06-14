@@ -115,7 +115,7 @@ import {
 } from '../decomp-data/include/menu-data';
 import { SELECT_BUTTON, L_BUTTON, R_BUTTON, A_BUTTON } from '../decomp-data/include/gba/io_reg-data';
 import type { DecompTask } from '../system/decomp-runtime';
-import { CB2_ReturnToFieldWithOpenMenu_Manual } from '../ui/option-menu-return';
+import { CB2_ReturnToFieldWithOpenMenu_Manual, CB2_ReturnToFieldContinueScript_Manual } from '../ui/option-menu-return';
 // Context menu (A_BUTTON sur item) — ouvre UTILIS./DONNER/JETER/RETOUR.
 import { Task_ItemContext_Normal } from './bag-menu-ctx';
 import { gSpecialVar } from '../script/script-vars';
@@ -552,10 +552,12 @@ export function ChooseBerryForMachine(exitCallback: MainCallback): void {
 // FIELD (START→SAC) : retour terrain + ré-ouverture start menu 1:1 (= décomp
 // CB2_ReturnToFieldWithOpenMenu) — porté option-menu-return.ts, prouvé party.
 const _cb2ReturnToFieldWithOpenMenu: MainCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
-// BATTLE / BERRY-TREE : maillons ultérieurs (hors chemin ouvrable Phase 1 ;
-// déferral honnête — ces flux ne sont pas atteints via START→SAC).
+// BATTLE : maillon ultérieur (hors chemin ouvrable Phase 1 ; déferral honnête).
 const _cb2SetUpReshowBattleScreenAfterMenu2: MainCallback = null;
-const _cb2ReturnToFieldContinueScript: MainCallback = null;
+// BERRY-TREE (Bag_ChooseBerry) : 1:1 décomp `CB2_ReturnToFieldContinueScript`
+// (item_menu.c:579) — restore l'OW + fade FROM_BLACK ; le script de plantation
+// bloqué (waitstate après `special Bag_ChooseBerry`) reprend au retour.
+const _cb2ReturnToFieldContinueScript: MainCallback = CB2_ReturnToFieldContinueScript_Manual;
 
 // ─── GoToBagMenu (item_menu.c:617) — 1:1 strict ──────────────────────────────
 export function GoToBagMenu(location: number, pocket: number, exitCallback: MainCallback): void {
@@ -1980,11 +1982,17 @@ function Task_BagMenu_HandleInput(task: DecompTask): void {
       task.data[T_LIST_POSITION] = listPosition;
       task.data[T_QUANTITY] = BagGetQuantityByPocketPosition(gBagPosition.pocket + 1, listPosition);
       gSpecialVar.ItemId = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, listPosition);
-      // 1:1 :1278 dispatch — FIELD/BATTLE → Task_ItemContext_Normal. Pour les
-      // autres locations (PARTY/SHOP/etc.), même route stub pour l'instant.
-      // SetTaskFuncWithFollowupFunc : la task reviendra à Task_BagMenu_Handle
-      // Input après cancel via SwitchTaskToFollowupFunc dans ItemMenu_Cancel.
-      SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
+      // 1:1 :1278 dispatch — `sContextMenuFuncs[gBagPosition.location](taskId)`.
+      // BERRY_TREE (sContextMenuFuncs, item_menu.c:349) = Task_FadeAndCloseBagMenu :
+      // gSpecialVar_ItemId est déjà posé ci-dessus → fade + close → exitCallback
+      // CB2_ReturnToFieldContinueScript reprend le script de plantation. Les autres
+      // locations (FIELD/BATTLE/PARTY/SHOP/...) → Task_ItemContext_Normal (+ followup
+      // pour le retour cancel vers la liste).
+      if (gBagPosition.location === ITEMMENULOCATION_BERRY_TREE) {
+        task.func = Task_FadeAndCloseBagMenu;
+      } else {
+        SetTaskFuncWithFollowupFunc(task.taskId, Task_ItemContext_Normal, Task_BagMenu_HandleInput);
+      }
       break;
     }
   }
