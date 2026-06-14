@@ -972,6 +972,25 @@ export function ObjectEventUpdateMetatileBehaviors(npc: ObjectEvent): void {
     npc.currentCoordsX, npc.currentCoordsY);
 }
 
+/** 1:1 décomp `GetObjectEventIdByLocalIdAndMapInternal` (event_object_movement.c:1263).
+ *  Cherche l'object event actif par (localId, mapNum, mapGroup). Retourne
+ *  OBJECT_EVENTS_COUNT si absent. */
+export function GetObjectEventIdByLocalIdAndMap(localId: number, mapNum: number, mapGroup: number): number {
+  for (let i = 0; i < OBJECT_EVENTS_COUNT; i++) {
+    const o = gObjectEvents[i];
+    if (o.active && o.localId === localId && o.mapNum === mapNum && o.mapGroup === mapGroup) return i;
+  }
+  return OBJECT_EVENTS_COUNT;
+}
+
+/** 1:1 décomp `TryGetObjectEventIdByLocalIdAndMap` (event_object_movement.c:1242).
+ *  La décomp retourne bool8 (= TRUE si INTROUVABLE) + écrit *objectEventId. Notre TS :
+ *  retourne `{ notFound, objectEventId }` (notFound ≡ le TRUE décomp). */
+export function TryGetObjectEventIdByLocalIdAndMap(localId: number, mapNum: number, mapGroup: number): { notFound: boolean; objectEventId: number } {
+  const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  return { notFound: objectEventId === OBJECT_EVENTS_COUNT, objectEventId };
+}
+
 // Phase 4.6 audit Opus §5 : register vers field-globals (= type-safe lookup).
 // gObjectEvents reste exposé sur globalThis pour back-compat avec les
 // auto-callbacks décomp générés (= castent en `any`), mais les call-sites

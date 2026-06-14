@@ -131,8 +131,12 @@ export function FieldEffectStart(id: number): number {
   // MAP_OFFSET → on retire MAP_OFFSET ici (1:1 net).
   if (id === FLDEFF_TALL_GRASS) {
     // 1:1 décomp FldEff_TallGrass (field_effect_helpers.c:291). args[7] = skip-to-end
-    // (SPAWN = overlay statique) vs 0 (STEP = rustle anim).
-    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0);
+    // (SPAWN = overlay statique) vs 0 (STEP = rustle anim). args[4]=(localId<<8)|mapNum,
+    // args[5]=mapGroup = l'OWNER de l'effet (player ou NPC) → tracking 1:1 par object event.
+    const ownerLocalId = (gFieldEffectArguments[4] >> 8) & 0xFF;
+    const ownerMapNum = gFieldEffectArguments[4] & 0xFF;
+    const ownerMapGroup = gFieldEffectArguments[5] & 0xFF;
+    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup);
     return 64;
   }
   if (id === FLDEFF_DUST) {

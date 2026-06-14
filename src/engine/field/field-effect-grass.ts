@@ -33,8 +33,12 @@ import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../sys
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { SetSpritePosToOffsetMapCoords } from './field-camera';
 import { MAP_OFFSET, MapGridGetMetatileBehaviorAt } from './map-loader';
-import { gObjectEvents, type ObjectEvent } from './object-events';
+import { gObjectEvents, type ObjectEvent, TryGetObjectEventIdByLocalIdAndMap } from './object-events';
 import { MetatileBehavior_IsTallGrass } from '../../game/metatile_behavior';
+
+/** 1:1 décomp LOCALID_PLAYER (= 0xFF). Owner par défaut du grass effect (chemin
+ *  player-avatar ad-hoc), tracké via TryGetObjectEventIdByLocalIdAndMap(0xFF, 0, 0). */
+const LOCALID_PLAYER = 0xFF;
 
 const TALL_GRASS_PNG = '/decomp/em/field_effects/tall_grass.png';
 const GENERAL_1_PAL  = '/decomp/em/field_effects/general_1.pal';
@@ -74,9 +78,16 @@ interface GrassEffectState {
    *  du joueur au moment du spawn). Sert au despawn conditionnel. */
   tileX: number;
   tileY: number;
-  /** 1:1 décomp `sprite->sObjectMoved` : passe TRUE quand le joueur a quitté la tuile
-   *  (current ET previous coords != tile). Despawn = objectMoved && animEnded. */
+  /** 1:1 décomp `sprite->sObjectMoved` : passe TRUE quand l'OWNER (player OU NPC) a
+   *  quitté la tuile (current ET previous coords != tile). Despawn = objectMoved && animEnded. */
   objectMoved: boolean;
+  /** 1:1 décomp `sprite->sLocalId/sMapNum/sMapGroup` : identité de l'object event qui a
+   *  déclenché l'effet (= gFieldEffectArguments[4..5]). UpdateTallGrassFieldEffect track
+   *  CET objet (via TryGetObjectEventIdByLocalIdAndMap), pas le player en dur → un NPC qui
+   *  marche dans l'herbe laisse un rustle persistant 1:1. localId 0xFF = LOCALID_PLAYER. */
+  localId: number;
+  mapNum: number;
+  mapGroup: number;
   active: boolean;
 }
 
@@ -177,7 +188,8 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = {
         spriteId: -1, oamIndex: -1, ticks: 0,
-        tileX: 0, tileY: 0, objectMoved: false, active: false,
+        tileX: 0, tileY: 0, objectMoved: false,
+        localId: LOCALID_PLAYER, mapNum: 0, mapGroup: 0, active: false,
       };
     }
     _initialized = true;
@@ -199,7 +211,10 @@ function findFreeSlot(): number {
  *  Spawn un sprite tall grass effect à la position LOGICAL (mapX, mapY).
  *  Auto-destroy après 50 game frames (= anim cycle complet).
  *  Caller (= player-avatar) passe gPlayerAvatar.x/y pour éviter circular import. */
-export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: number, spawnStatic = false): void {
+export function SpawnTallGrassEffect(
+  rt: DecompRuntime, mapX: number, mapY: number, spawnStatic = false,
+  localId: number = LOCALID_PLAYER, mapNum = 0, mapGroup = 0,
+): void {
   if (!_initialized) return;
   // 1:1 décomp : éviter les doublons — si un effet est déjà actif sur cette tuile
   // (= GroundEffect re-déclenché alors que l'effet vit encore), ne pas re-spawn.
@@ -242,6 +257,10 @@ export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: numb
   state.tileX = npcGBackupCol;
   state.tileY = npcGBackupRow;
   state.objectMoved = false;
+  // 1:1 décomp `sprite->sLocalId/sMapNum/sMapGroup = gFieldEffectArguments[4..5]`.
+  state.localId = localId;
+  state.mapNum = mapNum;
+  state.mapGroup = mapGroup;
   state.active = true;
 }
 
@@ -274,11 +293,6 @@ export function TrySpawnTallGrassOnReturnToField(rt: DecompRuntime, px: number, 
  *  le joueur qui restait dedans = le bug signalé.) */
 export function UpdateTallGrassEffects(rt: DecompRuntime): void {
   if (!_initialized) return;
-  // 1:1 décomp : l'object event qui a déclenché l'effet (= toujours le joueur dans
-  // notre cas, SpawnTallGrassEffect appelé par player-avatar). TryGetObjectEventId
-  // ByLocalIdAndMap retourne TRUE (= introuvable) → despawn ; ici on cherche isPlayer.
-  let player: ObjectEvent | null = null;
-  for (const o of gObjectEvents) { if (o.active && o.isPlayer) { player = o; break; } }
   const lastFrame = ANIM_SEQUENCE[ANIM_SEQUENCE.length - 1].frameIdx;
 
   for (const s of _pool) {
@@ -300,9 +314,13 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
     // `syncSpritesToOam` ajoutent `gSpriteCoordOffset` → suit la caméra.
     s.ticks++;
 
-    // ── Despawn conditionnel 1:1 décomp (field_effect_helpers.c:335-356). ──
+    // ── Despawn conditionnel 1:1 décomp `UpdateTallGrassFieldEffect` (335-356). ──
+    // Track l'OWNER (player OU NPC) via son localId/map, PAS le player en dur → un NPC
+    // qui marche dans l'herbe laisse un rustle persistant (despawn quand IL quitte la
+    // tuile + anim finie), 1:1 décomp. localId 0xFF = player.
     const tileBehavior = MapGridGetMetatileBehaviorAt(s.tileX, s.tileY);
-    if (!player
+    const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(s.localId, s.mapNum, s.mapGroup);
+    if (notFound
         || !MetatileBehavior_IsTallGrass(tileBehavior)
         || (s.objectMoved && animEnded)) {
       // 1:1 FieldEffectStop → DestroySprite. Hard-delete du Map + reset OAM.
@@ -316,9 +334,10 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
       s.spriteId = -1;
       s.oamIndex = -1;
     } else {
-      // 1:1 : le joueur a-t-il quitté la tuile ? (current ET previous != tile).
-      if ((player.currentCoordsX !== s.tileX || player.currentCoordsY !== s.tileY)
-       && (player.previousCoordsX !== s.tileX || player.previousCoordsY !== s.tileY))
+      // 1:1 : l'objet a-t-il quitté la tuile ? (current ET previous != tile).
+      const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+      if ((objEvent.currentCoordsX !== s.tileX || objEvent.currentCoordsY !== s.tileY)
+       && (objEvent.previousCoordsX !== s.tileX || objEvent.previousCoordsY !== s.tileY))
         s.objectMoved = true;
     }
   }
