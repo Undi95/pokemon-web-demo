@@ -550,6 +550,36 @@ export function GetCameraTopLeftCoords(): { x: number; y: number } {
   return { x: _camPos.x, y: _camPos.y };
 }
 
+/** 1:1 décomp `SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY)`
+ *  (event_object_movement.c:4801-4818). Convertit des coords MAP (INTERNAL) en
+ *  coords MONDE pour un sprite `coordOffsetEnabled` : le sprite, posé en (destX,
+ *  destY) fixe, suit ensuite la caméra via `gSpriteCoordOffset` (ajouté par
+ *  `UpdateOamCoords`/`syncSpritesToOam`).
+ *
+ *  Placé ici (et non dans object-events.ts = event_object_movement.c) pour éviter
+ *  un cycle d'import object-events ↔ field-effect-* ; ne dépend que de globals
+ *  caméra (gTotalCamera, gFieldCamera, gSaveBlock1Ptr.pos). */
+export function SetSpritePosToMapCoords(mapX: number, mapY: number): { x: number; y: number } {
+  const pos = gSaveBlock1Ptr.pos;
+  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
+  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
+  if (gFieldCamera.x > 0) dx += 16;
+  if (gFieldCamera.x < 0) dx -= 16;
+  if (gFieldCamera.y > 0) dy += 16;
+  if (gFieldCamera.y < 0) dy -= 16;
+  return {
+    x: ((mapX - pos.x) << 4) + dx,
+    y: ((mapY - pos.y) << 4) + dy,
+  };
+}
+
+/** 1:1 décomp `SetSpritePosToOffsetMapCoords(s16 *x, s16 *y, s16 dx, s16 dy)`
+ *  (event_object_movement.c:4821-4826) : SetSpritePosToMapCoords + offset (dx, dy). */
+export function SetSpritePosToOffsetMapCoords(mapX: number, mapY: number, dx: number, dy: number): { x: number; y: number } {
+  const p = SetSpritePosToMapCoords(mapX, mapY);
+  return { x: p.x + dx, y: p.y + dy };
+}
+
 export function SetCameraTopLeftCoords(x: number, y: number): void {
   _camPos.x = x;
   _camPos.y = y;

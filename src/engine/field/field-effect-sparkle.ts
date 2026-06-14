@@ -11,17 +11,18 @@
  * Comportement 1:1 : au passage de stade d'un berry tree (croissance), une étoile
  * scintille au-dessus de l'arbre puis disparaît quand son anim se termine.
  *
- * Note archi (identique à field-effect-grass.ts / arrow / emote) : notre
- * BuildOamBuffer n'applique pas `coordOffsetEnabled` → tracking caméra MANUEL
- * (recompute la position chaque frame depuis la tuile + l'offset caméra). L'anim
- * (sAnim_Sparkle) est jouée par un schedule plat 1:1 (frame, durée) au lieu du
- * système d'anim sprite, pour la même raison.
+ * Position : 1:1 décomp `coordOffsetEnabled = TRUE` — sprite.x/y en coords MONDE
+ * fixes (SetSpritePosToOffsetMapCoords) ; `syncSpritesToOam` ajoute `gSpriteCoord
+ * Offset` chaque frame → suit la caméra (plus de tracking manuel). L'anim
+ * (sAnim_Sparkle) reste jouée par un schedule plat 1:1 (frame, durée) — même
+ * pattern que le warp arrow ; passage au système d'anim sprite + callback
+ * WaitFieldEffectSpriteAnim = refinement futur (visuel identique).
  */
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../system/sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
-import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
+import { SetSpritePosToOffsetMapCoords } from './field-camera';
 
 const SPARKLE_PNG = '/decomp/em/field_effects/sparkle.png';
 const TAG_SPARKLE_GFX = 'FIELD_EFFECT_SPARKLE_GFX';
@@ -56,10 +57,6 @@ const SPARKLE_TOTAL_TICKS = SPARKLE_ANIM.reduce((s, e) => s + e.dur, 0);
 interface SparkleState {
   spriteId: number;
   oamIndex: number;
-  worldX: number;
-  worldY: number;
-  offsetXAtShow: number;
-  offsetYAtShow: number;
   ticks: number;
   active: boolean;
 }
@@ -105,7 +102,7 @@ export function preloadSparkleEffect(): Promise<void> {
     const existing = IndexOfSpritePaletteTag(TAG_SPARKLE_PAL);
     _sparklePalSlot = existing !== 0xFF ? existing : LoadSpritePalette({ data: png.palette, tag: TAG_SPARKLE_PAL });
     for (let i = 0; i < POOL_SIZE; i++) {
-      _pool[i] = { spriteId: -1, oamIndex: -1, worldX: 0, worldY: 0, offsetXAtShow: 0, offsetYAtShow: 0, ticks: 0, active: false };
+      _pool[i] = { spriteId: -1, oamIndex: -1, ticks: 0, active: false };
     }
     _initialized = true;
   })();
@@ -124,29 +121,28 @@ export function FldEff_BerryTreeGrowthSparkle(rt: DecompRuntime, args: ReadonlyA
   if (!_initialized) { void preloadSparkleEffect(); return 64; }
   const slot = findFreeSlot();
   if (slot < 0) return 64;
-  // 1:1 décomp `SetSpritePosToOffsetMapCoords(&x, &y, 8, 4)` : tuile + (8,4) px.
-  // args[0/1] = currentCoords du berry tree, déjà en INTERNAL (= +MAP_OFFSET, comme
-  // la décomp), tout comme cam.x/y (GetCameraTopLeftCoords) → pas de re-offset.
-  const cam = GetCameraTopLeftCoords();
-  const worldX = ((args[0] ?? 0) - cam.x) * 16 + 8;
-  const worldY = ((args[1] ?? 0) - cam.y) * 16 + 4;
+  // 1:1 décomp `SetSpritePosToOffsetMapCoords(&args[0], &args[1], 8, 4)` : coords
+  // MONDE fixes (tuile INTERNAL → pixel + offset 8,4). args[0/1] = currentCoords du
+  // berry tree (INTERNAL = +MAP_OFFSET, comme la décomp).
+  const world = SetSpritePosToOffsetMapCoords(args[0] ?? 0, args[1] ?? 0, 8, 4);
   const result = rt.CreateSpriteAtOam({
     tileId: _sparkleTileStart,
     paletteBank: _sparklePalSlot,
-    x: 0, y: 0,
+    x: world.x, y: world.y,
     shape: 0, size: 1,           // 16×16 (SQUARE / SMALL)
     priority: args[3] ?? 1,      // 1:1 décomp sprite->oam.priority = gFieldEffectArguments[3]
     paletteMode: 0,
     affineMode: 0,
     fromEnd: true,               // 1:1 CreateSpriteAtEnd
   });
+  // 1:1 décomp `sprite->coordOffsetEnabled = TRUE` (field_effect_helpers.c:1297) :
+  // sprite.x/y en coords MONDE fixes → suit la caméra via gSpriteCoordOffset ajouté
+  // par syncSpritesToOam (plus de camera-follow manuel par frame).
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (sprite) { sprite.x = world.x; sprite.y = world.y; sprite.coordOffsetEnabled = true; }
   const s = _pool[slot];
   s.spriteId = result.spriteId;
   s.oamIndex = result.oamIndex;
-  s.worldX = worldX;
-  s.worldY = worldY;
-  s.offsetXAtShow = gTotalCamera.pixelOffsetX;
-  s.offsetYAtShow = gTotalCamera.pixelOffsetY;
   s.ticks = 0;
   s.active = true;
   return 64;
@@ -168,9 +164,9 @@ export function UpdateSparkleEffects(rt: DecompRuntime): void {
     }
     const oam = rt.gba.oam[s.oamIndex];
     oam.tileId = _sparkleTileStart + frameIdx * TILES_PER_FRAME;
-    // Tracking caméra (= coordOffsetEnabled manuel).
-    sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
-    sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
+    // sprite.x/y (coords MONDE) posés à la création ; `coordOffsetEnabled` +
+    // `syncSpritesToOam` ajoutent `gSpriteCoordOffset` chaque frame → suit la
+    // caméra (plus de tracking manuel ici).
     s.ticks++;
     // 1:1 WaitFieldEffectSpriteAnim : animEnded → FieldEffectStop (despawn).
     if (s.ticks >= SPARKLE_TOTAL_TICKS) {

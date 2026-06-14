@@ -31,8 +31,7 @@ import { LoadSpriteSheet, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadTileBin } from '../gba/png-loader';
 import { MapGridGetMetatileBehaviorAt, MAP_OFFSET } from './map-loader';
 import { MoveCoords, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST } from './direction-coords';
-import { gTotalCamera, gFieldCamera } from './field-camera';
-import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
+import { SetSpritePosToMapCoords } from './field-camera';
 import { ENUM_MB_0 as MB } from '../decomp-data/include/constants/metatile_behaviors-data';
 
 // ─── Asset paths ────────────────────────────────────────────────────────────
@@ -263,38 +262,8 @@ export function DestroyWarpArrowSprite(rt: DecompRuntime): void {
   _arrowState = null;
 }
 
-/** 1:1 décomp `SetSpritePosToMapCoords` (event_object_movement.c:4801).
- *  Convertit des MAP INTERNAL coords (= +MAP_OFFSET) en sprite-space pixel
- *  position (= `sprite->x/y` reference, qui sera ensuite combinée avec
- *  `gSpriteCoordOffset.x/y` per-frame via `coordOffsetEnabled`).
- *
- *  Décomp body :
- *  ```c
- *  void SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY) {
- *      s16 dx = -gTotalCameraPixelOffsetX - gFieldCamera.x;
- *      s16 dy = -gTotalCameraPixelOffsetY - gFieldCamera.y;
- *      if (gFieldCamera.x > 0) dx += 16;
- *      if (gFieldCamera.x < 0) dx -= 16;
- *      if (gFieldCamera.y > 0) dy += 16;
- *      if (gFieldCamera.y < 0) dy -= 16;
- *      *destX = ((mapX - gSaveBlock1Ptr->pos.x) << 4) + dx;
- *      *destY = ((mapY - gSaveBlock1Ptr->pos.y) << 4) + dy;
- *  }
- *  ```
- */
-function setSpritePosToMapCoords(mapX: number, mapY: number): { x: number; y: number } {
-  const pos = gSaveBlock1Ptr.pos;
-  let dx = -gTotalCamera.pixelOffsetX - gFieldCamera.x;
-  let dy = -gTotalCamera.pixelOffsetY - gFieldCamera.y;
-  if (gFieldCamera.x > 0) dx += 16;
-  if (gFieldCamera.x < 0) dx -= 16;
-  if (gFieldCamera.y > 0) dy += 16;
-  if (gFieldCamera.y < 0) dy -= 16;
-  return {
-    x: ((mapX - pos.x) << 4) + dx,
-    y: ((mapY - pos.y) << 4) + dy,
-  };
-}
+// `SetSpritePosToMapCoords` (1:1 event_object_movement.c:4801) est désormais
+// partagé depuis field-camera.ts (réutilisé par sparkle/jump-dust/arrow).
 
 /** 1:1 décomp `ShowWarpArrowSprite` (field_effect_helpers.c:193).
  *
@@ -324,7 +293,7 @@ function showWarpArrowSprite(rt: DecompRuntime, direction: number, mapX: number,
   const state = _arrowState;
   // 1:1 décomp : if invisible || prevX != x || prevY != y → re-position + show + StartSpriteAnim.
   if (state.invisible || state.prevX !== mapX || state.prevY !== mapY) {
-    const tilePos = setSpritePosToMapCoords(mapX, mapY);
+    const tilePos = SetSpritePosToMapCoords(mapX, mapY);
     // 1:1 décomp `sprite->x = x2 + 8; sprite->y = y2 + 8`. Le +8 cale le
     // sprite sur le CENTER de la tile (= 1:1 décomp interprétation : sprite.x
     // est le centre, l'engine compute oam.x = sprite.x + x2 + centerToCornerVec).
