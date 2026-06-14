@@ -42,8 +42,9 @@
  *   ✅ StartAshFieldEffect + FldEff_Ash + UpdateAshFieldEffect (machine 3 états + révèle tuile).
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
  *   ✅ FldEff_Bubbles + UpdateBubblesFieldEffect (bug 1:1 répliqué).
- *   ⏳ reste : reflets, tall/long grass, footprints, splash, ash, surf blob,
- *      disguises, sparkle, shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
+ *   ✅ FldEff_BerryTreeGrowthSparkle + FldEff_Sparkle + UpdateSparkleFieldEffect.
+ *   ⏳ reste : reflets, tall/long grass, footprints, surf blob,
+ *      disguises, shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
@@ -54,9 +55,9 @@ import {
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
   SetObjectSubpriorityByElevation,
 } from '../engine/field/object-events';
-import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt } from '../engine/field/field-camera';
-import { MapGridSetMetatileIdAt } from '../engine/field/map-loader';
+import { MapGridSetMetatileIdAt, MAP_OFFSET } from '../engine/field/map-loader';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
@@ -77,6 +78,8 @@ const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
 const FLDEFF_SAND_PILE = 39;
 const FLDEFF_BUBBLES = 53;
+const FLDEFF_BERRY_TREE_GROWTH_SPARKLE = 23;
+const FLDEFF_SPARKLE = 54;
 
 const OBJECT_EVENTS_COUNT = 16;
 const DISPLAY_WIDTH = 240;
@@ -1092,6 +1095,191 @@ export function UpdateBubblesFieldEffect(sprite: DecompSprite, rt: DecompRuntime
   // 1:1 : if (sprite->invisible || sprite->animEnded) FieldEffectStop(sprite, FLDEFF_BUBBLES).
   if (sprite.invisible || sprite.animEnded) {
     FieldEffectStop(rt, sprite, FLDEFF_BUBBLES);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288)
+//  Étoile scintillante (16×16) spawnée au-dessus d'un arbre à baies qui change de stade
+//  de croissance. One-shot : despawn quand l'anim se termine (template.callback =
+//  WaitFieldEffectSpriteAnim). args[0/1]=coords map INTERNAL, [2]=subpriority, [3]=oam.priority.
+//
+//  FldEff_Sparkle (1417) + UpdateSparkleFieldEffect (1433)
+//  Étincelle générique (16×16, FLDEFFOBJ_SMALL_SPARKLE) d'objet/script. args[0/1]=coords map
+//  LOGICAL (+MAP_OFFSET ajouté ici, 1:1), [2]=oam.priority ; subpriority fixe 82. Update :
+//  anim jouée par le moteur → à animEnded, invisible + sFinished++ ; puis sEndTimer>34 →
+//  FieldEffectStop. sFinished=data[0], sEndTimer=data[1].
+//
+//  Assets : sparkle.png (96×16 = 6 frames 16×16), small_sparkle.png (32×16 = 2 frames 16×16).
+//  Palette : décomp Sparkle pose oam.paletteNum=5 (slot OW préchargé, template paletteTag=TAG_NONE)
+//  → adaptation plateforme : on charge la palette EMBARQUÉE du PNG (vérifiée 1:1, == dirt/berry),
+//  même choix que splash/ripple qui chargent general_*.pal explicitement. SmallSparkle =
+//  small_sparkle.pal (FLDEFF_PAL_TAG_SMALL_SPARKLE, 1:1 template).
+// ════════════════════════════════════════════════════════════════════════════
+
+const SPARKLE_PNG = '/decomp/em/field_effects/sparkle.png';
+const TAG_SPARKLE_GFX = 'FIELD_EFFECT_SPARKLE_GFX';
+const TAG_SPARKLE_PAL = 'FLDEFF_PAL_TAG_SPARKLE';
+const SPARKLE_TILES_PER_FRAME = 4; // 16×16 = 2×2 tiles 4bpp
+
+/** 1:1 décomp `sAnim_Sparkle` (field_effect_objects.h:902) : bloc A (6 frames @8) + LOOP(0)
+ *  (bloc joué 1×) + bloc B (6 frames @4) + LOOP(3) (bloc joué 4×) + bloc C (6 frames @8) + END.
+ *  imageValue = frameIdx × 4 (tilesParFrame, mode usingSheet). 192 ticks au total. */
+const sAnims_Sparkle: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [
+    ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(4, 8), ANIMCMD_FRAME(8, 8), ANIMCMD_FRAME(12, 8), ANIMCMD_FRAME(16, 8), ANIMCMD_FRAME(20, 8),
+    ANIMCMD_LOOP(0),
+    ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(4, 4), ANIMCMD_FRAME(8, 4), ANIMCMD_FRAME(12, 4), ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(20, 4),
+    ANIMCMD_LOOP(3),
+    ANIMCMD_FRAME(0, 8), ANIMCMD_FRAME(4, 8), ANIMCMD_FRAME(8, 8), ANIMCMD_FRAME(12, 8), ANIMCMD_FRAME(16, 8), ANIMCMD_FRAME(20, 8),
+    ANIMCMD_END,
+  ],
+];
+
+const SMALL_SPARKLE_PNG = '/decomp/em/field_effects/small_sparkle.png';
+const SMALL_SPARKLE_PAL = '/decomp/em/field_effects/small_sparkle.pal';
+const TAG_SMALL_SPARKLE_GFX = 'FIELD_EFFECT_SMALL_SPARKLE_GFX';
+const TAG_SMALL_SPARKLE_PAL = 'FLDEFF_PAL_TAG_SMALL_SPARKLE';
+
+/** 1:1 décomp `sAnim_SmallSparkle` (field_effect_objects.h:1241) : FRAME(0,3)(1,5)(0,5) END.
+ *  imageValue = frameIdx × 4 → 0, 4, 0. */
+const sAnims_SmallSparkle: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 3), ANIMCMD_FRAME(4, 5), ANIMCMD_FRAME(0, 5), ANIMCMD_END],
+];
+
+let _sparkleTileStart = -1;
+let _sparklePalSlot = -1;
+let _sparkleInit = false;
+let _sparkleInitPromise: Promise<void> | null = null;
+let _smallSparkleTileStart = -1;
+let _smallSparklePalSlot = -1;
+
+/** sparkle.png = 96×16 = 12×2 tiles row-major → 1D OBJ frame-major (6 frames 16×16, 4 tiles/frame :
+ *  row0 2F,2F+1 ; row1 12+2F,12+2F+1). Même schéma que pngTo1dObjLayoutRipple, sheet 12 de large. */
+function pngTo1dObjLayoutSparkle(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, SHEET_TILE_W = 12, NUM_FRAMES = 6;
+  const out = new Uint8Array(NUM_FRAMES * SPARKLE_TILES_PER_FRAME * TILE_BYTES);
+  let dst = 0;
+  for (let f = 0; f < NUM_FRAMES; f++) {
+    const colStart = f * 2;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) {
+      const srcOff = (r * SHEET_TILE_W + colStart + c) * TILE_BYTES;
+      if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+      dst += TILE_BYTES;
+    }
+  }
+  return out;
+}
+
+/** small_sparkle.png = 32×16 = 4×2 tiles row-major → 1D OBJ frame-major (2 frames 16×16). */
+function pngTo1dObjLayoutSmallSparkle(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, SHEET_TILE_W = 4, NUM_FRAMES = 2;
+  const out = new Uint8Array(NUM_FRAMES * SPARKLE_TILES_PER_FRAME * TILE_BYTES);
+  let dst = 0;
+  for (let f = 0; f < NUM_FRAMES; f++) {
+    const colStart = f * 2;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) {
+      const srcOff = (r * SHEET_TILE_W + colStart + c) * TILE_BYTES;
+      if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+      dst += TILE_BYTES;
+    }
+  }
+  return out;
+}
+
+/** Préchargement assets (concern plateforme) : sparkle + small sparkle (gfx + palettes). */
+export function preloadSparkleEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _sparkleInit && IndexOfSpriteTileTag(TAG_SPARKLE_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_sparkleInitPromise && !_sparkleInit) return _sparkleInitPromise;
+  _sparkleInit = false; _sparkleInitPromise = null;
+  _sparkleInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(SPARKLE_PNG, 4);
+    const reordered = pngTo1dObjLayoutSparkle(png.charData);
+    _sparkleTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SPARKLE_GFX });
+    _sparklePalSlot = LoadSpritePalette({ data: png.palette, tag: TAG_SPARKLE_PAL });
+    const smallPng = await loadIndexedPngStrict(SMALL_SPARKLE_PNG, 4);
+    const smallReordered = pngTo1dObjLayoutSmallSparkle(smallPng.charData);
+    _smallSparkleTileStart = LoadSpriteSheet({ data: smallReordered, size: smallReordered.length, tag: TAG_SMALL_SPARKLE_GFX });
+    let smallPal: Uint16Array;
+    try { smallPal = await loadGbaPal(SMALL_SPARKLE_PAL); }
+    catch { smallPal = smallPng.palette as Uint16Array; }
+    _smallSparklePalSlot = LoadSpritePalette({ data: smallPal, tag: TAG_SMALL_SPARKLE_PAL });
+    _sparkleInit = true;
+  })();
+  return _sparkleInitPromise;
+}
+
+/** 1:1 décomp `FldEff_BerryTreeGrowthSparkle` (field_effect_helpers.c:1288). */
+export function FldEff_BerryTreeGrowthSparkle(rt: DecompRuntime): number {
+  if (!_sparkleInit) return 0;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&args[0], &args[1], 8, 4) → coords MONDE.
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 4);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _sparkleTileStart,
+    paletteBank: _sparklePalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3, // 1:1 sprite->oam.priority = args[3]
+    paletteMode: 0, affineMode: 0,
+    subpriority: gFieldEffectArguments[2] & 0xFF,
+    fromEnd: true,      // 1:1 CreateSpriteAtEnd
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 0;
+  // 1:1 : template.callback = WaitFieldEffectSpriteAnim ; .anims = sAnimTable_Sparkle.
+  sprite.callback = WaitFieldEffectSpriteAnim;
+  setFieldEffectAnims(sprite, sAnims_Sparkle, _sparkleTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE (sprite MONDE → suit la caméra via gSpriteCoordOffset).
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = gFieldEffectArguments[2] & 0xFF;
+  // 1:1 : sprite->sWaitFldEff = FLDEFF_BERRY_TREE_GROWTH_SPARKLE (data[0], l'id passé à FieldEffectStop).
+  sprite.data[0] = FLDEFF_BERRY_TREE_GROWTH_SPARKLE;
+  return 0;
+}
+
+/** 1:1 décomp `FldEff_Sparkle` (field_effect_helpers.c:1417). args[0/1] = coords map LOGICAL. */
+export function FldEff_Sparkle(rt: DecompRuntime): number {
+  if (!_sparkleInit) return 0;
+  // 1:1 : args[0] += MAP_OFFSET ; args[1] += MAP_OFFSET ; SetSpritePosToOffsetMapCoords(&,&,8,8).
+  gFieldEffectArguments[0] += MAP_OFFSET;
+  gFieldEffectArguments[1] += MAP_OFFSET;
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _smallSparkleTileStart,
+    paletteBank: _smallSparklePalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: (gFieldEffectArguments[2] & 3) as 0 | 1 | 2 | 3, // 1:1 oam.priority = args[2]
+    paletteMode: 0, affineMode: 0,
+    subpriority: 82 & 0xFF,  // 1:1 CreateSpriteAtEnd(..., 82)
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 0;
+  // 1:1 : template.callback = UpdateSparkleFieldEffect ; .anims = sAnimTable_SmallSparkle.
+  sprite.callback = UpdateSparkleFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_SmallSparkle, _smallSparkleTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE.
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = 82 & 0xFF;
+  return 0;
+}
+
+/** 1:1 décomp `UpdateSparkleFieldEffect` (field_effect_helpers.c:1433). sFinished=data[0],
+ *  sEndTimer=data[1]. L'anim est jouée par le moteur : à animEnded → invisible + sFinished++ ;
+ *  puis sFinished && ++sEndTimer > 34 → FieldEffectStop. */
+export function UpdateSparkleFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (!sprite.data[0]) {
+    if (sprite.animEnded) {
+      sprite.invisible = true;
+      sprite.data[0] += 1;
+    }
+  }
+  if (sprite.data[0] && ++sprite.data[1] > 34) {
+    FieldEffectStop(rt, sprite, FLDEFF_SPARKLE);
   }
 }
 

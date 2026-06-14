@@ -38,10 +38,6 @@ import { GetBaseOamForDimensions } from './object-event-base-oam';
 // (tickWanderAround, tickLookAround). Use SeekSpriteAnim (= 1:1 sprite.c:1359)
 // pour alterner walk1/walk2 entre 2 steps consécutifs.
 import { SeekSpriteAnim, StartSpriteAnim, AnimateSprite, ProcessSpriteCopyRequests } from '../system/sprite-animation';
-// 1:1 décomp FLDEFF_BERRY_TREE_GROWTH_SPARKLE. Appel DIRECT du FldEff (au lieu de
-// FieldEffectStart→dispatcher) pour éviter le cycle d'import object-events↔field-effect
-// (via field-effect-emotes) ; field-effect-sparkle.ts n'importe rien d'object-events.
-import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 // 1:1 STRICT décomp `gObjectEventGraphicsInfoPointers[]` (= 245 records portés).
 // Lookup graphicsId → graphicsInfo record qui contient oam/size/width/height/etc.
 // 1:1 décomp pure. Si trouvé, utilise graphicsInfo.oam (= shape/size/priority
@@ -99,7 +95,7 @@ import { GetSaveBlock1 } from '../save/save-system';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../../game/berry';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
   FLDEFF_TALL_GRASS, FLDEFF_LONG_GRASS, FLDEFF_RIPPLE, FLDEFF_DUST, FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS, FLDEFF_BIKE_TIRE_TRACKS,
-  FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER } from './field-effect';
+  FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER, FLDEFF_BERRY_TREE_GROWTH_SPARKLE } from './field-effect';
 // 1:1 décomp prédicats `MetatileBehavior_Is*` (metatile_behavior.c) — miroir game/.
 // Utilisés par le spine ground-effect (GetGroundEffectFlags_* + reflection type).
 import {
@@ -2495,11 +2491,17 @@ function berryTreeMove(rt: DecompRuntime, npc: ObjectEvent): boolean {
 
 /** 1:1 décomp setup gFieldEffectArguments + FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_
  *  SPARKLE) (event_object_movement.c:3104-3108 / 3145-3149) : args[0/1] = currentCoords
- *  (INTERNAL), [2] = subpriority-1, [3] = oam.priority. Appel direct du FldEff (cf import). */
+ *  (INTERNAL), [2] = subpriority-1, [3] = oam.priority. Chemin 1:1 (dispatcher → FldEff
+ *  migré dans game/field_effect_helpers.ts) ; FieldEffectStart déjà importé pour le spine. */
 function _startBerryTreeGrowthSparkle(rt: DecompRuntime, npc: ObjectEvent): void {
   const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : null;
   const priority = sprite && sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].priority ?? 2) : 2;
-  FldEff_BerryTreeGrowthSparkle(rt, [npc.currentCoordsX, npc.currentCoordsY, 0, priority]);
+  const subpriority = sprite ? sprite.subpriority : 0;
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = (subpriority - 1) & 0xFF; // 1:1 sprite->subpriority - 1
+  gFieldEffectArguments[3] = priority;
+  FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE);
 }
 
 /** 1:1 décomp `MovementType_BerryTreeGrowth_SparkleStart` (event_object_movement.c:3139). */

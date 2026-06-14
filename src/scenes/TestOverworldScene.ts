@@ -142,12 +142,7 @@ import {
   DestroyAllTallGrassEffects,
   TrySpawnTallGrassOnReturnToField,
 } from '../engine/field/field-effect-grass';
-import {
-  preloadSparkleEffect,
-  UpdateSparkleEffects,
-  UpdateSparkleGenericEffects,
-  DestroyAllSparkleEffects,
-} from '../engine/field/field-effect-sparkle';
+import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import {
   preloadJumpDustEffect,
@@ -642,11 +637,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
         // destroy après cycle.
         UpdateTallGrassEffects(rt);
-        // 1:1 décomp FLDEFF_BERRY_TREE_GROWTH_SPARKLE : tick anim étoile + tracking +
-        // despawn (= WaitFieldEffectSpriteAnim) pour les berry trees qui poussent.
-        UpdateSparkleEffects(rt);
-        // 1:1 décomp `UpdateSparkleFieldEffect` (FLDEFF_SPARKLE générique, item/script).
-        UpdateSparkleGenericEffects(rt);
+        // FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE : migrés (game/field_effect_helpers.ts),
+        // tickés par leurs callbacks (WaitFieldEffectSpriteAnim / UpdateSparkleFieldEffect) via runSpriteCallbacks.
         UpdateJumpDustEffects(rt);
         // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) —
         // migré (game/field_effect_helpers.ts), tické par le callback global.
@@ -1154,9 +1146,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.10 : preload tall grass effect assets + cleanup pool.
     DestroyAllTallGrassEffects(this.rt);
     await preloadTallGrassEffect(this.rt);
-    // Berry tree growth sparkle (FLDEFF_BERRY_TREE_GROWTH_SPARKLE) assets + pool.
-    DestroyAllSparkleEffects(this.rt);
-    await preloadSparkleEffect();
+    // Sparkle (FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE) : assets seuls (one-shot
+    // auto-despawn via callback, migrés game/field_effect_helpers.ts).
+    await preloadSparkleEffect(this.rt);
     DestroyAllJumpDustEffects(this.rt);
     await preloadJumpDustEffect(this.rt);
     // Ondulations d'eau (FLDEFF_RIPPLE) : assets seulement (one-shot auto-despawn).

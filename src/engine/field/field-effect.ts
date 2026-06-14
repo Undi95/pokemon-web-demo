@@ -31,14 +31,13 @@
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { FieldEffectActiveListRemove } from './field-effect-active-list';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
-import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
-  FldEff_Ash,
+  FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
@@ -148,15 +147,14 @@ export function FieldEffectStart(id: number): number {
     return ShowSandDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
   }
   if (id === FLDEFF_BERRY_TREE_GROWTH_SPARKLE) {
-    // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) :
-    // étoile scintillante au-dessus du berry tree qui pousse (args = coords + prio).
-    return FldEff_BerryTreeGrowthSparkle(rt, gFieldEffectArguments);
+    // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) — migré dans
+    // game/field_effect_helpers.ts (lit gFieldEffectArguments).
+    return FldEff_BerryTreeGrowthSparkle(rt);
   }
   if (id === FLDEFF_SPARKLE) {
-    // 1:1 décomp FldEff_Sparkle (field_effect_helpers.c:1433) : sparkle générique d'objet/
-    // script (16×16). args[0/1] = coords LOGICAL (+MAP_OFFSET ajouté dans FldEff_Sparkle),
-    // args[2] = priority.
-    return FldEff_Sparkle(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    // 1:1 décomp FldEff_Sparkle (field_effect_helpers.c:1417) — migré dans
+    // game/field_effect_helpers.ts (lit gFieldEffectArguments, +MAP_OFFSET interne).
+    return FldEff_Sparkle(rt);
   }
 
   // ─── Ground effects (spine DoGroundEffects, event_object_movement.c) ─────────
