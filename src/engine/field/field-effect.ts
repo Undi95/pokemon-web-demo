@@ -30,7 +30,7 @@
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
-import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
+import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
@@ -78,6 +78,7 @@ export const FLDEFF_SHORT_GRASS                = 41;
 export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_HEART_ICON                 = 46;
 export const FLDEFF_BUBBLES                    = 53;
+export const FLDEFF_SPARKLE                    = 54;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -138,6 +139,12 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) :
     // étoile scintillante au-dessus du berry tree qui pousse (args = coords + prio).
     return FldEff_BerryTreeGrowthSparkle(rt, gFieldEffectArguments);
+  }
+  if (id === FLDEFF_SPARKLE) {
+    // 1:1 décomp FldEff_Sparkle (field_effect_helpers.c:1433) : sparkle générique d'objet/
+    // script (16×16). args[0/1] = coords LOGICAL (+MAP_OFFSET ajouté dans FldEff_Sparkle),
+    // args[2] = priority.
+    return FldEff_Sparkle(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
   }
 
   // ─── Ground effects (spine DoGroundEffects, event_object_movement.c) ─────────
@@ -240,8 +247,8 @@ export function FieldEffectStart(id: number): number {
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
   // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
-  // scripts) ; seul le FldEff visuel manque. RESTE : sparkle générique (FLDEFF_SPARKLE),
-  // water surfacing, Unused*. Le warn signale
+  // scripts) ; seul le FldEff visuel manque. RESTE (morts/spéciaux) : water surfacing
+  // (anim boucle infinie + 0 caller), Unused*. Le warn signale
   // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);
   return 64;

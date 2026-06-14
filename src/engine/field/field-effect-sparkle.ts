@@ -21,11 +21,26 @@
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag, IndexOfSpritePaletteTag } from '../system/sprite';
-import { loadIndexedPngStrict } from '../gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 import { SetSpritePosToOffsetMapCoords } from './field-camera';
+import { MAP_OFFSET } from '../decomp-data/include/fieldmap-data';
 
 const SPARKLE_PNG = '/decomp/em/field_effects/sparkle.png';
 const TAG_SPARKLE_GFX = 'FIELD_EFFECT_SPARKLE_GFX';
+
+// ─── FldEff_Sparkle générique (FLDEFFOBJ_SMALL_SPARKLE, item/script sparkle) ──
+const SMALL_SPARKLE_PNG = '/decomp/em/field_effects/small_sparkle.png';
+const SMALL_SPARKLE_PAL = '/decomp/em/field_effects/small_sparkle.pal';
+const TAG_SMALL_SPARKLE_GFX = 'FIELD_EFFECT_SMALL_SPARKLE_GFX';
+const TAG_SMALL_SPARKLE_PAL = 'FLDEFF_PAL_TAG_SMALL_SPARKLE';
+const SMALL_NUM_FRAMES = 2;
+let _smallSparkleTileStart = -1;
+let _smallSparklePalSlot = -1;
+/** 1:1 sAnim_SmallSparkle : FRAME(0,3)(1,5)(0,5) END → 13 ticks. */
+const SMALL_SPARKLE_ANIM: ReadonlyArray<{ frame: number; dur: number }> = [
+  { frame: 0, dur: 3 }, { frame: 1, dur: 5 }, { frame: 0, dur: 5 },
+];
+const SMALL_SPARKLE_TOTAL = SMALL_SPARKLE_ANIM.reduce((s, e) => s + e.dur, 0); // 13
 /** Palette : sparkle.png == palette dirt_pile == slot NPC_2 (= berry palette slot 3,
  *  vérifié à l'octet près). On réutilise le tag SLOT_3 des berry trees → bank borné
  *  partagé (1:1 décomp : sparkle oam.paletteNum pointe un slot NPC partagé). */
@@ -63,14 +78,36 @@ interface SparkleState {
 const POOL_SIZE = 4;
 const _pool: SparkleState[] = [];
 
+/** Pool du sparkle générique (UpdateSparkleFieldEffect : finished + endTimer>34). */
+interface SmallSparkleState {
+  spriteId: number; oamIndex: number; ticks: number; finished: boolean; endTimer: number; active: boolean;
+}
+const _smallPool: SmallSparkleState[] = [];
+
 // Reset hook (= 1:1 grass : clear pool au ResetSpriteData ; NE PAS reset _initialized
 // — les assets sont re-chargés au map load via preloadSparkleEffect/`stillAlloc`).
 (() => {
   const g = globalThis as Record<string, unknown>;
   const callbacks = (g.__spriteResetCallbacks as Array<() => void> | undefined) ?? [];
-  callbacks.push(() => { _pool.length = 0; });
+  callbacks.push(() => { _pool.length = 0; _smallPool.length = 0; });
   g.__spriteResetCallbacks = callbacks;
 })();
+
+/** small_sparkle.png = 32×16 = 4×2 tiles row-major. Frame F (16×16) = cols 2F,2F+1 sur 2 rows. */
+function pngTo1dObjLayoutSmall(charData: Uint8Array): Uint8Array {
+  const PNG_W_TILES = 4, FW = 2, FH = 2;
+  const out = new Uint8Array(SMALL_NUM_FRAMES * TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < SMALL_NUM_FRAMES; f++) {
+    for (let row = 0; row < FH; row++) {
+      for (let col = 0; col < FW; col++) {
+        const pngTileIdx = row * PNG_W_TILES + f * FW + col;
+        const objTileIdx = f * TILES_PER_FRAME + row * FW + col;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
 
 // ─── PNG loader (= 6 frames concaténés en OBJ 1D layout) ────────────────────
 /** sparkle.png = 96×16 = 12×2 tiles row-major. Frame F = cols 2F,2F+1 sur 2 rows. */
@@ -104,9 +141,79 @@ export function preloadSparkleEffect(): Promise<void> {
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = { spriteId: -1, oamIndex: -1, ticks: 0, active: false };
     }
+    // ─── Sparkle générique (FLDEFFOBJ_SMALL_SPARKLE) : asset + palette dédiés ───
+    const smallPng = await loadIndexedPngStrict(SMALL_SPARKLE_PNG, 4);
+    const smallReordered = pngTo1dObjLayoutSmall(smallPng.charData);
+    _smallSparkleTileStart = LoadSpriteSheet({ data: smallReordered, size: smallReordered.length, tag: TAG_SMALL_SPARKLE_GFX });
+    let smallPal: Uint16Array;
+    try { smallPal = await loadGbaPal(SMALL_SPARKLE_PAL); }
+    catch { smallPal = smallPng.palette as Uint16Array; }
+    _smallSparklePalSlot = LoadSpritePalette({ data: smallPal, tag: TAG_SMALL_SPARKLE_PAL });
+    _smallPool.length = 0;
+    for (let i = 0; i < POOL_SIZE; i++) {
+      _smallPool[i] = { spriteId: -1, oamIndex: -1, ticks: 0, finished: false, endTimer: 0, active: false };
+    }
     _initialized = true;
   })();
   return _initPromise;
+}
+
+function findFreeSmallSlot(): number {
+  for (let i = 0; i < POOL_SIZE; i++) if (!_smallPool[i].active) return i;
+  return -1;
+}
+
+/** 1:1 décomp `FldEff_Sparkle` (field_effect_helpers.c:1433). mapX/mapY = coords LOGICAL (le
+ *  décomp ajoute MAP_OFFSET) ; priority = args[2]. Sparkle d'objet/script (16×16). */
+export function FldEff_Sparkle(rt: DecompRuntime, mapX: number, mapY: number, priority: number): number {
+  if (!_initialized) { void preloadSparkleEffect(); return 0; }
+  const slot = findFreeSmallSlot();
+  if (slot < 0) return 0;
+  // 1:1 : args[0] += MAP_OFFSET ; args[1] += MAP_OFFSET ; SetSpritePosToOffsetMapCoords(8,8).
+  const world = SetSpritePosToOffsetMapCoords(mapX + MAP_OFFSET, mapY + MAP_OFFSET, 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _smallSparkleTileStart,
+    paletteBank: _smallSparklePalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: Math.max(0, Math.min(3, priority | 0)) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0, fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (sprite) { sprite.x = world.x; sprite.y = world.y; sprite.coordOffsetEnabled = true; }
+  // 1:1 : CreateSpriteAtEnd(..., 82) → subpriority 82.
+  if (sprite) sprite.subpriority = 82 & 0xFF;
+  const oam = rt.gba.oam[result.oamIndex];
+  if (oam) oam.subpriority = 82 & 0xFF;
+  const s = _smallPool[slot];
+  s.spriteId = result.spriteId; s.oamIndex = result.oamIndex; s.ticks = 0; s.finished = false; s.endTimer = 0; s.active = true;
+  return 0;
+}
+
+/** 1:1 décomp `UpdateSparkleFieldEffect` (field_effect_helpers.c:1450). À call/frame. */
+export function UpdateSparkleGenericEffects(rt: DecompRuntime): void {
+  if (!_initialized) return;
+  for (const s of _smallPool) {
+    if (!s.active) continue;
+    const sprite = rt.gSprites.get(s.spriteId);
+    if (!sprite) { s.active = false; s.spriteId = -1; continue; }
+    const oam = rt.gba.oam[s.oamIndex];
+    if (!s.finished) {
+      // Anim en cours : frame courante depuis ticks.
+      let acc = 0, frameIdx = SMALL_SPARKLE_ANIM[SMALL_SPARKLE_ANIM.length - 1].frame;
+      for (const step of SMALL_SPARKLE_ANIM) { acc += step.dur; if (s.ticks < acc) { frameIdx = step.frame; break; } }
+      oam.tileId = _smallSparkleTileStart + frameIdx * TILES_PER_FRAME;
+      s.ticks++;
+      // 1:1 : animEnded → invisible + finished.
+      if (s.ticks >= SMALL_SPARKLE_TOTAL) { sprite.invisible = true; oam.visible = false; s.finished = true; }
+    }
+    // 1:1 : if (finished && ++endTimer > 34) FieldEffectStop.
+    if (s.finished && ++s.endTimer > 34) {
+      sprite.inUse = false; oam.visible = false; oam.tileId = 0;
+      rt.gSprites.delete(s.spriteId);
+      s.active = false; s.spriteId = -1; s.oamIndex = -1;
+    }
+  }
 }
 
 function findFreeSlot(): number {
@@ -181,6 +288,12 @@ export function UpdateSparkleEffects(rt: DecompRuntime): void {
 
 export function DestroyAllSparkleEffects(rt: DecompRuntime): void {
   for (const s of _pool) {
+    if (!s.active) continue;
+    const sprite = rt.gSprites.get(s.spriteId);
+    if (sprite) { sprite.inUse = false; rt.gba.oam[s.oamIndex].visible = false; }
+    s.active = false; s.spriteId = -1;
+  }
+  for (const s of _smallPool) {
     if (!s.active) continue;
     const sprite = rt.gSprites.get(s.spriteId);
     if (sprite) { sprite.inUse = false; rt.gba.oam[s.oamIndex].visible = false; }

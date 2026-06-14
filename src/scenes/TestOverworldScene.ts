@@ -145,6 +145,7 @@ import {
 import {
   preloadSparkleEffect,
   UpdateSparkleEffects,
+  UpdateSparkleGenericEffects,
   DestroyAllSparkleEffects,
 } from '../engine/field/field-effect-sparkle';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
@@ -666,6 +667,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp FLDEFF_BERRY_TREE_GROWTH_SPARKLE : tick anim étoile + tracking +
         // despawn (= WaitFieldEffectSpriteAnim) pour les berry trees qui poussent.
         UpdateSparkleEffects(rt);
+        // 1:1 décomp `UpdateSparkleFieldEffect` (FLDEFF_SPARKLE générique, item/script).
+        UpdateSparkleGenericEffects(rt);
         UpdateJumpDustEffects(rt);
         // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) — tick
         // anim + auto-despawn fin de cycle (objet sur tuile à ondulations).
