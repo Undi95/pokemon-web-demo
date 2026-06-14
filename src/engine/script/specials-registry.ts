@@ -62,7 +62,14 @@ import { CheckPartyMonHasHeldItem } from '../pokemon/script-pokemon-util';
 import { GetPCBoxToSendMon } from '../pokemon/pc-box';
 import { ShowMapNamePopup as _ShowMapNamePopupImpl } from '../field/map-name-popup';
 import { SetCameraPanning, SetCameraPanningCallback } from '../field/field-camera';
-import { gSpecialVar } from './script-vars';
+import { gSpecialVar, gSelectedObjectEvent } from './script-vars';
+import { getGObjectEvents } from '../field/field-globals';
+import { AddBagItem } from '../bag/bag';
+import {
+  GetBerryTypeByBerryTreeId, GetStageByBerryTreeId, GetNumStagesWateredByBerryTreeId,
+  GetBerryCountByBerryTreeId, AllowBerryTreeGrowth, BerryTypeToItemId, RemoveBerryTree,
+  GetBerryInfo, BERRY_STAGE_SPARKLING,
+} from '../pokemon/berry';
 import { gDecorations } from '../ui/decoration-data';
 import { GetFirstEmptyDecorSlot } from '../ui/decoration-inventory';
 import { DecorationAdd, DecorationRemove } from '../ui/decoration-inventory';
@@ -2237,11 +2244,9 @@ const _SESSION_131_DECOMP_SPECIALS = [
   // 'MonOTNameNotPlayer' — porté 1:1 décomp field_specials.c:1572 ci-bas.
   'MoveDeleterChooseMoveToForget', 'MoveDeleterForgetMove',
   'MoveOutOfSecretBase', 'MoveOutOfSecretBaseFromOutside',
-  'ObjectEventInteractionGetBerryCountString',
-  'ObjectEventInteractionGetBerryTreeData',
-  'ObjectEventInteractionPickBerryTree',
+  // ObjectEventInteractionGetBerryTreeData/GetBerryCountString/PickBerryTree/
+  // RemoveBerryTree : handlers concrets 1:1 décomp enregistrés plus bas (récolte).
   'ObjectEventInteractionPlantBerryTree',
-  'ObjectEventInteractionRemoveBerryTree',
   'ObjectEventInteractionWaterBerryTree',
   'OpenPokeblockCaseForContestLady', 'OpenPokeblockCaseOnFeeder',
   'Overworld_PlaySpecialMapMusic',
@@ -2356,6 +2361,69 @@ const _SESSION_131_DECOMP_SPECIALS = [
 for (const name of _SESSION_131_DECOMP_SPECIALS) {
   registerSpecial(name, () => 0);
 }
+
+// ─── Berry tree field interaction — récolte (1:1 décomp berry.c:1252-1313) ───
+// Specials retirés de _SESSION_131_DECOMP_SPECIALS (étaient no-op) → handlers
+// concrets ci-dessous. Le flux récolte (BerryTree_EventScript_CheckBerryFully
+// Grown) lit VAR_0x8004 (stade), VAR_0x8006 (compte) + gStringVar1 (nom baie).
+
+/** 1:1 décomp `GetObjectEventBerryTreeId(gSelectedObjectEvent)`
+ *  (event_object_movement.c:2425) : berryTreeId de l'object event interagi. */
+function _selectedBerryTreeId(): number {
+  return getGObjectEvents()[gSelectedObjectEvent.index]?.trainerRange_berryTreeId ?? 0;
+}
+
+/** 1:1 décomp `GetBerryCountString` (item.c:107) + `GetBerryCountStringByBerryType`
+ *  (berry.c:1175) : gText_Berry/Berries ("BAIE"/"BAIES", strings.c:1822-1823) +
+ *  espace + nom de la baie. */
+function _berryCountString(berry: number, count: number): string {
+  const word = count < 2 ? 'BAIE' : 'BAIES';
+  return `${word} ${GetBerryInfo(berry).name}`;
+}
+
+/** 1:1 décomp `BERRY_FLAG_SPARKLING/JUST_PICKED` (event_object_movement.c:3072-3073). */
+const _BERRY_FLAG_SPARKLING = 1 << 1;
+const _BERRY_FLAG_JUST_PICKED = 1 << 2;
+
+/** 1:1 décomp `ObjectEventInteractionGetBerryTreeData` (berry.c:1252-1273) :
+ *  set VAR_0x8004 = stade (ou SPARKLING), VAR_0x8005 = stages arrosés,
+ *  VAR_0x8006 = nb de baies, gStringVar1 = "BAIE(S) <nom>". */
+registerSpecial('ObjectEventInteractionGetBerryTreeData', () => {
+  const id = _selectedBerryTreeId();
+  const berry = GetBerryTypeByBerryTreeId(id);
+  AllowBerryTreeGrowth(id);
+  // IsBerryTreeSparkling(gSpecialVar_LastTalked,...) : gSpecialVar_LastTalked désigne
+  // le MÊME object event que gSelectedObjectEvent → check direct du flag (résultat 1:1).
+  const npc = getGObjectEvents()[gSelectedObjectEvent.index];
+  const sparkling = npc ? (npc.berryTreeFlags & _BERRY_FLAG_SPARKLING) !== 0 : false;
+  VarSet('VAR_0x8004', sparkling ? BERRY_STAGE_SPARKLING : GetStageByBerryTreeId(id));
+  VarSet('VAR_0x8005', GetNumStagesWateredByBerryTreeId(id));
+  VarSet('VAR_0x8006', GetBerryCountByBerryTreeId(id));
+  setStringVar(1, _berryCountString(berry, GetBerryCountByBerryTreeId(id)));
+});
+
+/** 1:1 décomp `ObjectEventInteractionGetBerryCountString` (berry.c:1280-1286). */
+registerSpecial('ObjectEventInteractionGetBerryCountString', () => {
+  const id = _selectedBerryTreeId();
+  setStringVar(1, _berryCountString(GetBerryTypeByBerryTreeId(id), GetBerryCountByBerryTreeId(id)));
+});
+
+/** 1:1 décomp `ObjectEventInteractionPickBerryTree` (berry.c:1294-1300) :
+ *  gSpecialVar_0x8004 = AddBagItem(BerryTypeToItemId(berry), count) (= succès bool). */
+registerSpecial('ObjectEventInteractionPickBerryTree', () => {
+  const id = _selectedBerryTreeId();
+  const itemKey = reverseDecompConstant(BerryTypeToItemId(GetBerryTypeByBerryTreeId(id)), 'ITEM_');
+  const ok = itemKey ? AddBagItem(itemKey, GetBerryCountByBerryTreeId(id)) : false;
+  VarSet('VAR_0x8004', ok ? 1 : 0);
+});
+
+/** 1:1 décomp `ObjectEventInteractionRemoveBerryTree` (berry.c:1308-1313) :
+ *  RemoveBerryTree(id) + SetBerryTreeJustPicked (flag sur l'object event). */
+registerSpecial('ObjectEventInteractionRemoveBerryTree', () => {
+  RemoveBerryTree(_selectedBerryTreeId());
+  const npc = getGObjectEvents()[gSelectedObjectEvent.index];
+  if (npc) npc.berryTreeFlags |= _BERRY_FLAG_JUST_PICKED;
+});
 
 // ─── Session A2 batch 1 — ports 1:1 strict ─────────────────────────────────
 

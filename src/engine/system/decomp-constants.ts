@@ -56,6 +56,11 @@ import * as abilities from '../decomp-data/include/constants/abilities-data';
 import * as battleMoveEffects from '../decomp-data/include/constants/battle_move_effects-data';
 import * as holdEffects from '../decomp-data/include/constants/hold_effects-data';
 import * as vars from '../decomp-data/include/constants/vars-data';
+// BERRY_STAGE_* + BERRY_TREES_COUNT + BERRY_TREE_ROUTE_* (include/constants/berry.h).
+// Manquait → BerryTreeScript `switch VAR_0x8004` + `case BERRY_STAGE_BERRIES` ne
+// résolvait pas la constante (parseValue→0) → aucun case ne matchait → le script
+// d'interaction berry chutait vers `end` (récolte/arrosage/plantation muets).
+import * as berryConstants from '../decomp-data/include/constants/berry-data';
 // Audit session 125 : METATILE_*, MB_*, MAP_SCRIPT_ON_* manquaient → setmetatile
 // resolved les NAMES à 0 → corruption tile (= bug exit truck après option menu).
 // 1:1 décomp = ces constants sont resolved au compile-time (assembleur GBA), pas
@@ -121,6 +126,8 @@ _mergeConstants(abilities);
 _mergeConstants(battleMoveEffects);
 _mergeConstants(holdEffects);
 _mergeConstants(vars);
+// Berry constants — strictement additif (noms uniques BERRY_STAGE_*/BERRY_TREE_*).
+_mergeConstantsIfAbsent(berryConstants);
 
 // Manual constants — auto-extraction stocke ces FLAG_* comme `_EXPR` strings
 // (= "(1 << 0)") qui ne résolvent pas en number. On force-load les valeurs
