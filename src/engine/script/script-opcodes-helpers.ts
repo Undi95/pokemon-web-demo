@@ -77,6 +77,15 @@ export function parseValue(arg: string | undefined): number {
   // ajoutes par coherence (global.h). Corrobore src/script_menu.c:241 (case 0 -> Result=1).
   if (arg === 'YES' || arg === 'TRUE') return 1;
   if (arg === 'NO' || arg === 'FALSE') return 0;
+  // 1:1 décomp asm/macros/event.inc : STR_VAR_1/2/3 = index du buffer string
+  // destination (sScriptStringVars, 0-indexé décomp). Notre setStringVar est
+  // 1-indexé (1→gStringVar1) → on mappe STR_VAR_N → N. Sans ça, parseValue
+  // renvoyait 0 → tous les `buffernumberstring STR_VAR_2/3` écrivaient gStringVar1
+  // (via `|| 1`) en laissant gStringVar2/3 vierges → `{STR_VAR_2}` gelait (boucle
+  // StringCopy sur buffer non terminé).
+  if (arg === 'STR_VAR_1') return 1;
+  if (arg === 'STR_VAR_2') return 2;
+  if (arg === 'STR_VAR_3') return 3;
   // 1:1 décomp LOCALID_X : look up index dans les templates de la map courante.
   // LOCALID_PLAYER = 255, LOCALID_NONE = 0, LOCALID_CAMERA = 127.
   if (arg === 'LOCALID_PLAYER') return 255;
