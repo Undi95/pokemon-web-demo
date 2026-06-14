@@ -138,6 +138,7 @@ import {
   preloadTallGrassEffect,
   UpdateTallGrassEffects,
   DestroyAllTallGrassEffects,
+  TrySpawnTallGrassOnReturnToField,
 } from '../engine/field/field-effect-grass';
 import {
   preloadJumpDustEffect,
@@ -706,6 +707,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // option-menu le fait déjà via _overworldMainCB2). La caméra se recentre alors
         // sur le joueur (le « 2 cases en haut » = caméra figée non recentrée).
         self.rt.gMain.callback2 = MainCB2_Overworld;
+        // 1:1 décomp `GroundEffect_SpawnOnTallGrass` : si le joueur revient au field
+        // (sortie combat/menu) sur une tuile d'herbe haute, ré-affiche l'overlay
+        // statique (sinon « dessus » l'herbe sans overlay jusqu'à bouger).
+        TrySpawnTallGrassOnReturnToField(self.rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
         console.log('[restoreOverworldFromMenu] done');
       };
 

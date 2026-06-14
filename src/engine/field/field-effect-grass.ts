@@ -32,7 +32,9 @@ import type { DecompRuntime } from '../system/decomp-runtime';
 import { LoadSpriteSheet, LoadSpritePalette, IndexOfSpriteTileTag } from '../system/sprite';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import { GetCameraTopLeftCoords, gTotalCamera, GetBgVofsBaseline } from './field-camera';
-import { MAP_OFFSET } from './map-loader';
+import { MAP_OFFSET, MapGridGetMetatileBehaviorAt } from './map-loader';
+import { gObjectEvents, type ObjectEvent } from './object-events';
+import { MetatileBehavior_IsTallGrass } from '../../game/metatile_behavior';
 
 const TALL_GRASS_PNG = '/decomp/em/field_effects/tall_grass.png';
 const GENERAL_1_PAL  = '/decomp/em/field_effects/general_1.pal';
@@ -71,8 +73,16 @@ interface GrassEffectState {
   worldY: number;
   offsetXAtShow: number;
   offsetYAtShow: number;
-  /** Game frame counter : 0..49 (= 5 frames × 10). Free quand >= 50. */
+  /** Game frame counter. L'anim cycle 5 frames @10 (= 50f) puis HOLD frame 0
+   *  (= 1:1 décomp sAnim_TallGrass END), PAS de despawn auto à 50f. */
   ticks: number;
+  /** 1:1 décomp `sprite->sX/sY` : tuile de l'herbe en coords INTERNAL (= currentCoords
+   *  du joueur au moment du spawn). Sert au despawn conditionnel. */
+  tileX: number;
+  tileY: number;
+  /** 1:1 décomp `sprite->sObjectMoved` : passe TRUE quand le joueur a quitté la tuile
+   *  (current ET previous coords != tile). Despawn = objectMoved && animEnded. */
+  objectMoved: boolean;
   active: boolean;
 }
 
@@ -173,7 +183,8 @@ export function preloadTallGrassEffect(rt: DecompRuntime): Promise<void> {
     for (let i = 0; i < POOL_SIZE; i++) {
       _pool[i] = {
         spriteId: -1, oamIndex: -1, worldX: 0, worldY: 0,
-        offsetXAtShow: 0, offsetYAtShow: 0, ticks: 0, active: false,
+        offsetXAtShow: 0, offsetYAtShow: 0, ticks: 0,
+        tileX: 0, tileY: 0, objectMoved: false, active: false,
       };
     }
     _initialized = true;
@@ -195,8 +206,14 @@ function findFreeSlot(): number {
  *  Spawn un sprite tall grass effect à la position LOGICAL (mapX, mapY).
  *  Auto-destroy après 50 game frames (= anim cycle complet).
  *  Caller (= player-avatar) passe gPlayerAvatar.x/y pour éviter circular import. */
-export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: number): void {
+export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: number, spawnStatic = false): void {
   if (!_initialized) return;
+  // 1:1 décomp : éviter les doublons — si un effet est déjà actif sur cette tuile
+  // (= GroundEffect re-déclenché alors que l'effet vit encore), ne pas re-spawn.
+  const tileX = mapX + MAP_OFFSET, tileY = mapY + MAP_OFFSET;
+  for (const e of _pool) {
+    if (e.active && e.tileX === tileX && e.tileY === tileY) return;
+  }
   const slot = findFreeSlot();
   if (slot < 0) return;  // pool full = silently drop (= no overflow)
 
@@ -227,39 +244,81 @@ export function SpawnTallGrassEffect(rt: DecompRuntime, mapX: number, mapY: numb
   state.worldY = worldY;
   state.offsetXAtShow = gTotalCamera.pixelOffsetX;
   state.offsetYAtShow = gTotalCamera.pixelOffsetY;
-  state.ticks = 0;
+  // 1:1 décomp `if (gFieldEffectArguments[7]) SeekSpriteAnim(sprite, 4)` : au SPAWN
+  // (retour de combat/menu sur tuile herbe, GroundEffect_SpawnOnTallGrass) l'anim
+  // est sautée à la fin → overlay STATIQUE sans rustle. Au PAS (StepOnTallGrass)
+  // elle joue depuis le début. ticks=50 = anim terminée → hold frame 0.
+  state.ticks = spawnStatic ? 50 : 0;
+  // 1:1 décomp `sprite->sX/sY = gFieldEffectArguments[0/1]` = tuile INTERNAL.
+  state.tileX = npcGBackupCol;
+  state.tileY = npcGBackupRow;
+  state.objectMoved = false;
   state.active = true;
+}
+
+/** 1:1 décomp `GroundEffect_SpawnOnTallGrass` (event_object_movement.c:7807) +
+ *  `GetAllGroundEffectFlags_OnSpawn` : au RETOUR au field (sortie de combat ou de
+ *  menu), si le joueur (re)spawn sur une tuile d'herbe haute, ré-affiche l'overlay
+ *  STATIQUE (anim figée, pas de rustle). Sans ça, après un combat le joueur est
+ *  « dessus » l'herbe sans overlay jusqu'à ce qu'il bouge (bug signalé). À call à
+ *  la fin de la restauration OW (_restoreOverworldFromMenu). px/py = LOGICAL. */
+export function TrySpawnTallGrassOnReturnToField(rt: DecompRuntime, px: number, py: number): void {
+  if (!_initialized) return;
+  const behavior = MapGridGetMetatileBehaviorAt(px + MAP_OFFSET, py + MAP_OFFSET);
+  if (MetatileBehavior_IsTallGrass(behavior)) {
+    SpawnTallGrassEffect(rt, px, py, true);
+  }
 }
 
 // ─── Update (= per-frame anim + position tracking) ─────────────────────────
 
-/** À call chaque frame APRÈS PlayerStep depuis MainCB2_Overworld. */
+/** 1:1 décomp `UpdateTallGrassFieldEffect` (field_effect_helpers.c:316) — le
+ *  sprite.callback de l'effet, ré-implémenté ici car notre engine n'applique pas
+ *  `coordOffsetEnabled` dans BuildOamBuffer (→ tracking caméra manuel comme arrow/
+ *  emote). À call chaque frame APRÈS PlayerStep depuis MainCB2_Overworld.
+ *
+ *  Comportement 1:1 : l'anim 5 frames (sAnim_TallGrass @10 = 50f) joue UNE FOIS
+ *  puis HOLD la dernière frame (= ANIMCMD_END). L'effet RESTE tant que le joueur
+ *  est sur la tuile (= herbe sous le joueur immobile) ; il despawn quand le joueur
+ *  a quitté la tuile (`sObjectMoved`) ET l'anim est finie, OU si la tuile n'est
+ *  plus de l'herbe haute. (Avant : despawn fixe à 50f → l'herbe disparaissait sous
+ *  le joueur qui restait dedans = le bug signalé.) */
 export function UpdateTallGrassEffects(rt: DecompRuntime): void {
   if (!_initialized) return;
+  // 1:1 décomp : l'object event qui a déclenché l'effet (= toujours le joueur dans
+  // notre cas, SpawnTallGrassEffect appelé par player-avatar). TryGetObjectEventId
+  // ByLocalIdAndMap retourne TRUE (= introuvable) → despawn ; ici on cherche isPlayer.
+  let player: ObjectEvent | null = null;
+  for (const o of gObjectEvents) { if (o.active && o.isPlayer) { player = o; break; } }
+  const lastFrame = ANIM_SEQUENCE[ANIM_SEQUENCE.length - 1].frameIdx;
+
   for (const s of _pool) {
     if (!s.active) continue;
     const sprite = rt.gSprites.get(s.spriteId);
     if (!sprite) { s.active = false; continue; }
-    // Find current anim frame from ticks.
+
+    // ── Anim : 5 frames puis HOLD la dernière (= 1:1 sAnim_TallGrass + END). ──
     let acc = 0;
-    let frameIdx = 1;
+    let frameIdx = lastFrame;   // défaut = anim finie → hold dernière frame.
+    let animEnded = true;
     for (const step of ANIM_SEQUENCE) {
       acc += step.duration;
-      if (s.ticks < acc) { frameIdx = step.frameIdx; break; }
+      if (s.ticks < acc) { frameIdx = step.frameIdx; animEnded = false; break; }
     }
-    // Update sprite tile + position.
     const oam = rt.gba.oam[s.oamIndex];
     oam.tileId = _tallGrassTileStart + frameIdx * TILES_PER_FRAME;
     sprite.x = s.worldX + (gTotalCamera.pixelOffsetX - s.offsetXAtShow);
     sprite.y = s.worldY + (gTotalCamera.pixelOffsetY - s.offsetYAtShow) - GetBgVofsBaseline();
     s.ticks++;
-    // Check anim done. Cleanup complet pour éviter résidus visuels.
-    if (s.ticks >= 50) {
+
+    // ── Despawn conditionnel 1:1 décomp (field_effect_helpers.c:335-356). ──
+    const tileBehavior = MapGridGetMetatileBehaviorAt(s.tileX, s.tileY);
+    if (!player
+        || !MetatileBehavior_IsTallGrass(tileBehavior)
+        || (s.objectMoved && animEnded)) {
+      // 1:1 FieldEffectStop → DestroySprite. Hard-delete du Map + reset OAM.
       sprite.inUse = false;
       oam.visible = false;
-      // Hard-delete du Map pour pas que syncSpritesToOam le ressuscite par
-      // erreur. + reset oam fields pour clean slate au cas où le slot est
-      // réutilisé par d'autres sprites plus tard.
       rt.gSprites.delete(s.spriteId);
       oam.tileId = 0;
       oam.flipH = false;
@@ -267,6 +326,11 @@ export function UpdateTallGrassEffects(rt: DecompRuntime): void {
       s.active = false;
       s.spriteId = -1;
       s.oamIndex = -1;
+    } else {
+      // 1:1 : le joueur a-t-il quitté la tuile ? (current ET previous != tile).
+      if ((player.currentCoordsX !== s.tileX || player.currentCoordsY !== s.tileY)
+       && (player.previousCoordsX !== s.tileX || player.previousCoordsY !== s.tileY))
+        s.objectMoved = true;
     }
   }
 }
