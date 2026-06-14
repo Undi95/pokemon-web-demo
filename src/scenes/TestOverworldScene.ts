@@ -189,6 +189,11 @@ import {
   DestroyAllSandPileEffects,
 } from '../engine/field/field-effect-sand-pile';
 import {
+  preloadHotSpringsEffect,
+  UpdateHotSpringsEffects,
+  DestroyAllHotSpringsEffects,
+} from '../engine/field/field-effect-hot-springs';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -662,6 +667,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateSandPileFieldEffect` : monticule de sable remué suivant le parent
         // sur sable profond. Câblé via le spine (GroundEffect_SandHeap → FLDEFF_SAND_PILE).
         UpdateSandPileEffects(rt);
+        // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` : nappe d'eau chaude suivant le parent
+        // assis dans les sources (Lavaridge). Câblé via le spine (GroundEffect_HotSprings).
+        UpdateHotSpringsEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1165,6 +1173,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Sand pile (monticule de sable remué sur sable profond) assets + pool.
     DestroyAllSandPileEffects(this.rt);
     await preloadSandPileEffect(this.rt);
+    // Hot springs water (nappe d'eau chaude suivant le joueur assis, Lavaridge) assets + pool.
+    DestroyAllHotSpringsEffects(this.rt);
+    await preloadHotSpringsEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.
