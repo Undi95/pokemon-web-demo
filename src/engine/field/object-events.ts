@@ -3313,6 +3313,18 @@ export function StartFieldEffectForObjectEvent(fieldEffectId: number, npc: Objec
   return FieldEffectStart(fieldEffectId);
 }
 
+/** Sprite visuel d'un object event. 1:1 décomp = &gSprites[objectEvent->spriteId], MAIS
+ *  chez nous le slot player (spriteId=-1) porte son sprite sur gPlayerAvatar.spriteId →
+ *  résoudre via lui. Utilisé par les effets liés au parent (reflets, short grass). */
+export function GetObjectEventMainSpriteId(npc: ObjectEvent): number {
+  return npc && npc.isPlayer ? gPlayerAvatar.spriteId : (npc ? npc.spriteId : -1);
+}
+
+/** Hauteur (pixels) du graphics d'un object event, sans crasher (buffers vides mémoïsés). */
+export function GetObjectEventGfxHeight(graphicsId: string): number {
+  return _getGfxMeta(graphicsId).height;
+}
+
 // 1:1 décomp : args[6] = current map ((mapNum<<8)|mapGroup). Notre port web simplifie
 // l'identité de map dans gSaveBlock1Ptr.location à mapNum/mapGroup=0 (load_save.ts).
 function _currentMapLocationArg(): number {

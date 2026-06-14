@@ -164,6 +164,11 @@ import {
   DestroyAllLongGrassEffects,
 } from '../engine/field/field-effect-long-grass';
 import {
+  preloadShortGrassEffect,
+  UpdateShortGrassEffects,
+  DestroyAllShortGrassEffects,
+} from '../engine/field/field-effect-short-grass';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -622,6 +627,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateLongGrassFieldEffect` : overlay herbe haute (Route 119/120) —
         // anim + tracking owner + despawn. Hors démo, mais câblé via le spine.
         UpdateLongGrassEffects(rt);
+        // 1:1 décomp `UpdateShortGrassFieldEffect` : touffe herbe basse suivant le parent
+        // (Route 110, etc.). Hors démo, câblé via le spine.
+        UpdateShortGrassEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1110,6 +1118,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Herbe haute (FLDEFF_LONG_GRASS) assets + pool.
     DestroyAllLongGrassEffects(this.rt);
     await preloadLongGrassEffect(this.rt);
+    // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
+    DestroyAllShortGrassEffects(this.rt);
+    await preloadShortGrassEffect(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

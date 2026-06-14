@@ -33,6 +33,7 @@ import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
+import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { SpawnRippleEffect } from './field-effect-ripple';
 import { MAP_OFFSET } from './map-loader';
@@ -157,6 +158,12 @@ export function FieldEffectStart(id: number): number {
     SpawnLongGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
     return 64;
   }
+  if (id === FLDEFF_SHORT_GRASS) {
+    // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). args[0..2] = localId/mapNum/
+    // mapGroup de l'owner (StartFieldEffectForObjectEvent), PAS des coords → pas de MAP_OFFSET.
+    SpawnShortGrassEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return 64;
+  }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.
     // args[0/1] = coords MONDE (DoRippleFieldEffect a converti écran→monde), [2]=subprio,
@@ -181,7 +188,6 @@ export function FieldEffectStart(id: number): number {
     case FLDEFF_DEEP_SAND_FOOTPRINTS:
     case FLDEFF_BIKE_TIRE_TRACKS:
     case FLDEFF_SAND_PILE:
-    case FLDEFF_SHORT_GRASS:
     case FLDEFF_HOT_SPRINGS_WATER:
     case FLDEFF_BUBBLES:
     case FLDEFF_FEET_IN_FLOWING_WATER:
