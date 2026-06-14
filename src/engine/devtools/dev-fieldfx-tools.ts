@@ -103,6 +103,7 @@ const fx = {
     return {
       objectEventId: GetObjectEventIdByLocalIdAndMap(p.localId, p.mapNum, p.mapGroup),
       localId: p.localId, mapNum: p.mapNum, mapGroup: p.mapGroup,
+      mapX: (p as any).currentCoordsX, mapY: (p as any).currentCoordsY,
       graphicsId: p.graphicsId, spriteId: gPlayerAvatar.spriteId,
       currentMetatileBehavior: '0x' + (p.currentMetatileBehavior >>> 0).toString(16),
       inSandPile: (p as any).inSandPile, inShortGrass: (p as any).inShortGrass,
