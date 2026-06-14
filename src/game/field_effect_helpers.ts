@@ -47,6 +47,7 @@ import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
 } from '../engine/field/object-events';
+import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
 import {
   gFieldEffectArguments, FieldEffectStop,
 } from '../engine/field/field-effect';
@@ -81,6 +82,29 @@ export function UpdateObjectEventSpriteInvisibility(rt: DecompRuntime, sprite: D
   if ((y << 16 >> 16) >= DISPLAY_HEIGHT + 16 || y2 < -16) sprite.invisible = true;
 }
 
+/** Câble une sheet préchargée (LoadSpriteSheet) + sa table d'anim sur un sprite créé via
+ *  CreateSpriteAtOam, pour que le VRAI moteur d'anim (tickSpriteAnims → AnimateSprite) pilote
+ *  les frames (`oam.tileId = sheetTileStart + imageValue`) et pose `sprite.animEnded` sur
+ *  ANIMCMD_END. C'est l'équivalent de ce que fait CreateSprite(template) du décomp (le template
+ *  porte .anims/.images). imageValue dans les tables = offset TILE (= frameIdx × tilesParFrame)
+ *  car on est en mode `usingSheet` (toute la sheet est chargée d'un bloc, ≠ chemin images[]). */
+function setFieldEffectAnims(
+  sprite: DecompSprite, anims: ReadonlyArray<ReadonlyArray<AnimCmd>>, sheetTileStart: number,
+): void {
+  sprite.usingSheet = true;
+  sprite.sheetTileStart = sheetTileStart;
+  sprite.tileBase = sheetTileStart;
+  sprite.anims = anims;
+  sprite.images = null;
+  sprite.animNum = 0;
+  sprite.animCmdIndex = 0;
+  sprite.animDelayCounter = 0;
+  sprite.animLoopCounter = 0;
+  sprite.animBeginning = true;
+  sprite.animEnded = false;
+  sprite.animPaused = false;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  FldEff_HotSpringsWater (field_effect_helpers.c:800)
 //  Nappe d'eau chaude (16×16, frame statique) qui SUIT le parent assis dans les sources
@@ -95,6 +119,12 @@ const HOT_SPRINGS_PNG = '/decomp/em/field_effects/hot_springs_water.png';
 const GENERAL_1_PAL = '/decomp/em/field_effects/general_1.pal';
 const TAG_HOT_SPRINGS_GFX = 'FIELD_EFFECT_HOT_SPRINGS_WATER_GFX';
 const TAG_GENERAL_1_PAL = 'FLDEFF_PAL_TAG_GENERAL_1';
+
+/** 1:1 décomp `sAnim_HotSpringsWater` (field_effect_objects.h:1106) : FRAME(0,4) END →
+ *  frame 0 statique tenue (animEnded immédiat). imageValue = offset tile (frame 0 = 0). */
+const sAnims_HotSpringsWater: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 4), ANIMCMD_END],
+];
 
 let _hotSpringsTileStart = -1;
 let _hotSpringsPalSlot = -1;
@@ -149,6 +179,8 @@ export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
   const sprite = rt.gSprites.get(result.spriteId);
   if (!sprite) return 64;
   sprite.callback = UpdateHotSpringsWaterFieldEffect;
+  // 1:1 : template.anims = sAnims_HotSpringsWater → moteur d'anim (frame 0 statique).
+  setFieldEffectAnims(sprite, sAnims_HotSpringsWater, _hotSpringsTileStart);
   sprite.x = parentSprite.x; sprite.y = parentSprite.y;
   // 1:1 : sprite->coordOffsetEnabled = TRUE → matcher le parent (écran-positionné).
   sprite.coordOffsetEnabled = parentSprite.coordOffsetEnabled;
@@ -175,7 +207,7 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: Decom
   sprite.y = (GetObjectEventGfxHeight(objEvent.graphicsId) >> 1) + linked.y - 8;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
   sprite.subpriority = (linked.subpriority - 1) & 0xFF;
-  // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE). (Pas d'anim : tileId reste frame 0.)
+  // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE). (Anim statique frame 0 tenue par le moteur.)
   UpdateObjectEventSpriteInvisibility(rt, sprite, false);
 }
 
@@ -189,24 +221,19 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: Decom
 //  Sprite data 1:1 décomp :
 //    sLocalId  = data[0]   sMapNum = data[1]   sMapGroup = data[2]
 //    sPrevX    = data[3]   sPrevY  = data[4]
-//    [adaptation] sAnimTick = data[5] (compteur de frames manuel ; décomp = moteur d'anim)
+//  (anim pilotée par le VRAI moteur via sAnims_SandPile + SeekSpriteAnim, PAS de compteur manuel)
 // ════════════════════════════════════════════════════════════════════════════
 
 const SAND_PILE_PNG = '/decomp/em/field_effects/sand_pile.png';
 const GENERAL_0_PAL = '/decomp/em/field_effects/general_0.pal';
 const TAG_SAND_PILE_GFX = 'FIELD_EFFECT_SAND_PILE_GFX';
 const TAG_GENERAL_0_PAL = 'FLDEFF_PAL_TAG_GENERAL_0';
-const SAND_PILE_TILES_PER_FRAME = 2;  // 16×8 = 2×1 tiles
 
-/** 1:1 décomp `sAnim_SandPile` : (0,4)(1,4)(2,4) END → 3 frames de 4 game-frames, puis HOLD. */
-const SAND_PILE_ANIM: ReadonlyArray<{ frameIdx: number; duration: number }> = [
-  { frameIdx: 0, duration: 4 },
-  { frameIdx: 1, duration: 4 },
-  { frameIdx: 2, duration: 4 },
+/** 1:1 décomp `sAnim_SandPile` (field_effect_objects.h:793) : FRAME(0,4)(1,4)(2,4) END.
+ *  imageValue = offset tile (16×8 = 2 tiles/frame → frames 0,2,4). */
+const sAnims_SandPile: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(2, 4), ANIMCMD_FRAME(4, 4), ANIMCMD_END],
 ];
-const SAND_PILE_ANIM_TOTAL = SAND_PILE_ANIM.reduce((a, s) => a + s.duration, 0); // 12
-// 1:1 `SeekSpriteAnim(sprite, 2)` : démarre au début de la fenêtre de la frame 2.
-const SAND_PILE_SEEK_FRAME2 = SAND_PILE_ANIM[0].duration + SAND_PILE_ANIM[1].duration; // 8
 
 let _sandPileTileStart = -1;
 let _sandPilePalSlot = -1;
@@ -262,6 +289,8 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   const sprite = rt.gSprites.get(result.spriteId);
   if (!sprite) return 64;
   sprite.callback = UpdateSandPileFieldEffect;
+  // 1:1 : template.anims = sAnims_SandPile → moteur d'anim pilote les frames.
+  setFieldEffectAnims(sprite, sAnims_SandPile, _sandPileTileStart);
   sprite.x = parentSprite.x; sprite.y = parentSprite.y;
   // 1:1 : sprite->coordOffsetEnabled = TRUE → matcher le parent (écran-positionné).
   sprite.coordOffsetEnabled = parentSprite.coordOffsetEnabled;
@@ -271,7 +300,7 @@ export function FldEff_SandPile(rt: DecompRuntime): number {
   // 1:1 : sprite->sPrevX/Y = gSprites[objectEvent->spriteId].x/y.
   sprite.data[3] = parentSprite.x; sprite.data[4] = parentSprite.y;
   // 1:1 : SeekSpriteAnim(sprite, 2) → démarre sur la frame 2 (sable retombé).
-  sprite.data[5] = SAND_PILE_SEEK_FRAME2;
+  rt.SeekSpriteAnim(sprite.spriteId, 2);
   return 0;
 }
 
@@ -288,22 +317,13 @@ export function UpdateSandPileFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
   if (!linked) return;
   const parentX = linked.x, parentY = linked.y;
-  // 1:1 : si le parent a bougé, restart l'anim depuis frame 0 (si finie).
-  let animEnded = sprite.data[5] >= SAND_PILE_ANIM_TOTAL;
+  // 1:1 décomp : si le parent a bougé, relance l'anim depuis la frame 0 (si elle est finie).
+  // animEnded est posé par le moteur d'anim (tickSpriteAnims) sur ANIMCMD_END ; StartSpriteAnim(0)
+  // la rejoue → le sable se re-remue à chaque pas (le moteur pilote les frames, pas nous).
   if (parentX !== sprite.data[3] || parentY !== sprite.data[4]) {
     sprite.data[3] = parentX; sprite.data[4] = parentY;
-    if (animEnded) { sprite.data[5] = 0; animEnded = false; }
+    if (sprite.animEnded) rt.StartSpriteAnim(sprite.spriteId, 0);
   }
-  // Frame courante (hold dernière frame quand l'anim est finie).
-  let acc = 0;
-  let frameIdx = SAND_PILE_ANIM[SAND_PILE_ANIM.length - 1].frameIdx;
-  for (let i = 0; i < SAND_PILE_ANIM.length; i++) {
-    acc += SAND_PILE_ANIM[i].duration;
-    if (sprite.data[5] < acc) { frameIdx = SAND_PILE_ANIM[i].frameIdx; break; }
-  }
-  const oam = rt.gba.oam[sprite.oamIndex];
-  oam.tileId = _sandPileTileStart + frameIdx * SAND_PILE_TILES_PER_FRAME;
-  if (sprite.data[5] < SAND_PILE_ANIM_TOTAL) sprite.data[5]++;
   // 1:1 : sprite->x/y = parent x/y ; subpriority = parent subpriority (même plan).
   sprite.x = parentX; sprite.y = parentY;
   sprite.coordOffsetEnabled = linked.coordOffsetEnabled;

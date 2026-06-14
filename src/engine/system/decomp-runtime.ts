@@ -34,7 +34,7 @@ import {
   SPRITE_PALETTES, SPRITE_SHEETS,
 } from '../decomp-data/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
-import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline } from './sprite-animation';
+import { AnimateSprite as _AnimateSprite_1to1, ProcessSpriteCopyRequests as _ProcessSpriteCopyRequests_1to1, StartSpriteAnim as _StartSpriteAnimInline, SeekSpriteAnim as _SeekSpriteAnimInline } from './sprite-animation';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from '../decomp-impls/sprite-engine-impl';
 import { resolveDecompConstant } from './decomp-constants';
 import { gSaveBlock2Ptr } from '../save/save-block-state';
@@ -2277,6 +2277,18 @@ export class DecompRuntime {
     const sprite = this.gSprites.get(spriteId);
     const tileNum = _resolveTileNum(anim.frames[0].tileNum);
     if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
+  }
+
+  /** 1:1 décomp `src/sprite.c:1359 SeekSpriteAnim(sprite, animCmdIndex)` — avance l'anim au
+   *  cmd index donné + applique la frame correspondante immédiatement (= sprite avance à un
+   *  point précis de sa séquence, ex FldEff_SandPile démarre sur la frame "sable retombé").
+   *  Symétrique de StartSpriteAnim : délègue à la fonction 1:1 STRICT (sprite-animation.ts)
+   *  pour les sprites à table `.anims` (field effects, ball, anims combat). */
+  SeekSpriteAnim(spriteId: number, animCmdIndex: number): void {
+    const inlineSprite = this.gSprites.get(spriteId);
+    if (inlineSprite && inlineSprite.anims) {
+      _SeekSpriteAnimInline(this, inlineSprite as never, animCmdIndex);
+    }
   }
 
   /** Wrappers publics pour AnimateSprites/BuildOamBuffer global helpers
