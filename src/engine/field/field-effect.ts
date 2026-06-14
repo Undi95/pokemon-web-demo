@@ -38,9 +38,9 @@ import {
   FldEff_Splash, FldEff_FeetInFlowingWater,
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
   FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
+  ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
-import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { MAP_OFFSET } from './map-loader';
@@ -138,13 +138,13 @@ export function FieldEffectStart(id: number): number {
   // args[0..2] = localId/mapNum/mapGroup ; le sprite recouvre le NPC + suit. Retourne le
   // spriteId (le caller MovementAction le stocke dans objectEvent.fieldEffectSpriteId).
   if (id === FLDEFF_TREE_DISGUISE) {
-    return ShowTreeDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return ShowTreeDisguiseFieldEffect(rt);
   }
   if (id === FLDEFF_MOUNTAIN_DISGUISE) {
-    return ShowMountainDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return ShowMountainDisguiseFieldEffect(rt);
   }
   if (id === FLDEFF_SAND_DISGUISE) {
-    return ShowSandDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return ShowSandDisguiseFieldEffect(rt);
   }
   if (id === FLDEFF_BERRY_TREE_GROWTH_SPARKLE) {
     // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) — migré dans

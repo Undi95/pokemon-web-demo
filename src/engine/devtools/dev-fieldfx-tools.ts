@@ -34,7 +34,7 @@ import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from
 import { gPlayerAvatar } from '../field/player-avatar';
 import { MapGridGetMetatileIdAt } from '../field/map-loader';
 import { SetSurfBlob_BobState } from '../field/field-effect-surf-blob';
-import { StartRevealDisguise } from '../field/field-effect-disguise';
+import { StartRevealDisguise } from '../../game/field_effect_helpers';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -158,7 +158,7 @@ const fx = {
     const p = playerObjEvent();
     if (!p) throw new Error('[dev.fx] object event joueur introuvable');
     (p as any).directionSeqIdx = 1;
-    StartRevealDisguise(p as any);
+    StartRevealDisguise(rt(), p as any);
     return { directionSeqIdx: (p as any).directionSeqIdx, fieldEffectSpriteId: (p as any).fieldEffectSpriteId };
   },
 

@@ -43,8 +43,9 @@
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
  *   ✅ FldEff_Bubbles + UpdateBubblesFieldEffect (bug 1:1 répliqué).
  *   ✅ FldEff_BerryTreeGrowthSparkle + FldEff_Sparkle + UpdateSparkleFieldEffect.
+ *   ✅ Show{Tree,Mountain,Sand}DisguiseFieldEffect + UpdateDisguiseFieldEffect + Start/UpdateRevealDisguise.
  *   ⏳ reste : reflets, tall/long grass, footprints, surf blob,
- *      disguises, shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
+ *      shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
@@ -62,6 +63,7 @@ import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
   gFieldEffectArguments, FieldEffectStop, FieldEffectStart,
 } from '../engine/field/field-effect';
+import { FieldEffectActiveListRemove } from '../engine/field/field-effect-active-list';
 
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
@@ -80,6 +82,10 @@ const FLDEFF_SAND_PILE = 39;
 const FLDEFF_BUBBLES = 53;
 const FLDEFF_BERRY_TREE_GROWTH_SPARKLE = 23;
 const FLDEFF_SPARKLE = 54;
+const FLDEFF_TREE_DISGUISE = 28;
+const FLDEFF_MOUNTAIN_DISGUISE = 29;
+const FLDEFF_SAND_DISGUISE = 36;
+const MAX_SPRITES = 64;
 
 const OBJECT_EVENTS_COUNT = 16;
 const DISPLAY_WIDTH = 240;
@@ -1281,6 +1287,183 @@ export function UpdateSparkleFieldEffect(sprite: DecompSprite, rt: DecompRuntime
   if (sprite.data[0] && ++sprite.data[1] > 34) {
     FieldEffectStop(rt, sprite, FLDEFF_SPARKLE);
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Disguises tree/mountain/sand (field_effect_helpers.c:1313-1404)
+//  (ordre décomp : entre FldEff_BerryTreeGrowthSparkle (1288) et FldEff_Sparkle (1417) ;
+//   placé ici après la section sparkle car berry+générique sont regroupés.)
+//
+//  Sprite arbre/rocher/monticule (16×32) qui RECOUVRE un object event (bases secrètes) et
+//  le suit (x=parent.x, y=(height>>1)+parent.y-16, subpriority=parent-1, invisible=parent).
+//  Machine d'état (sState=data[0]) : 0 = statique (anim 0) ; StartRevealDisguise pose sState=1 ;
+//  UpdateDisguiseFieldEffect : 1→2 + StartSpriteAnim(1) (révélation 7 frames) ; 2 + animEnded →
+//  sReadyToEnd ; UpdateRevealDisguise voit sReadyToEnd → sState=3 → FieldEffectStop.
+//  Sprite data 1:1 : sState=data[0] sFldEff=data[1] sLocalId=data[2] sMapNum=data[3]
+//    sMapGroup=data[4] sReadyToEnd=data[7].
+//
+//  Assets : tree/mountain/sand_disguise_placeholder.png (112×32 = 7 frames 16×32). Sand réutilise
+//  sAnimTable_TreeDisguise (1:1). Palette : décomp oam.paletteNum = 4/3/2 (slot OW) → adaptation
+//  plateforme : palette embarquée du PNG par tag (même choix que sparkle).
+// ════════════════════════════════════════════════════════════════════════════
+
+const DISGUISE_TILES_PER_FRAME = 8; // 16×32 = 2×4 tiles 4bpp
+const DISGUISE_NUM_FRAMES = 7;
+
+interface DisguiseCfg { fldEff: number; png: string; gfxTag: string; palTag: string; paletteNum: number; }
+const DISGUISE_CFGS: ReadonlyArray<DisguiseCfg> = [
+  { fldEff: FLDEFF_TREE_DISGUISE,     png: '/decomp/em/field_effects/tree_disguise.png',             gfxTag: 'FIELD_EFFECT_TREE_DISGUISE_GFX',     palTag: 'FIELD_EFFECT_TREE_DISGUISE_PAL',     paletteNum: 4 },
+  { fldEff: FLDEFF_MOUNTAIN_DISGUISE, png: '/decomp/em/field_effects/mountain_disguise.png',         gfxTag: 'FIELD_EFFECT_MOUNTAIN_DISGUISE_GFX', palTag: 'FIELD_EFFECT_MOUNTAIN_DISGUISE_PAL', paletteNum: 3 },
+  { fldEff: FLDEFF_SAND_DISGUISE,     png: '/decomp/em/field_effects/sand_disguise_placeholder.png', gfxTag: 'FIELD_EFFECT_SAND_DISGUISE_GFX',     palTag: 'FIELD_EFFECT_SAND_DISGUISE_PAL',     paletteNum: 2 },
+];
+
+/** 1:1 décomp sAnimTable_TreeDisguise (field_effect_objects.h:970) : anim 0 = statique
+ *  (FRAME(0,16) END), anim 1 = révélation (FRAME 0..6 @4, END). imageValue = frameIdx × 8. */
+const sAnims_Disguise: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 16), ANIMCMD_END],
+  [
+    ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(8, 4), ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(24, 4),
+    ANIMCMD_FRAME(32, 4), ANIMCMD_FRAME(40, 4), ANIMCMD_FRAME(48, 4), ANIMCMD_END,
+  ],
+];
+
+const _disguiseTileStart: number[] = [-1, -1, -1];
+const _disguisePalSlot: number[] = [-1, -1, -1];
+let _disguiseInit = false;
+let _disguiseInitPromise: Promise<void> | null = null;
+
+/** PNG 112×32 = 14×4 tiles row-major → 1D OBJ frame-major (7 frames 16×32 = 2×4 tiles/frame :
+ *  frame F = colonnes 2F,2F+1 sur les 4 rows). */
+function pngTo1dObjLayoutDisguise(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, PNG_W_TILES = 14, FW = 2, FH = 4;
+  const out = new Uint8Array(DISGUISE_NUM_FRAMES * DISGUISE_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < DISGUISE_NUM_FRAMES; f++) {
+    for (let r = 0; r < FH; r++) {
+      for (let c = 0; c < FW; c++) {
+        const pngTileIdx = r * PNG_W_TILES + (f * FW + c);
+        const objTileIdx = f * DISGUISE_TILES_PER_FRAME + r * FW + c;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement assets (concern plateforme) : 3 déguisements (gfx + palettes). */
+export function preloadDisguiseEffects(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _disguiseInit && DISGUISE_CFGS.every(c => IndexOfSpriteTileTag(c.gfxTag) !== 0xFF);
+  if (stillAlloc) return Promise.resolve();
+  if (_disguiseInitPromise && !_disguiseInit) return _disguiseInitPromise;
+  _disguiseInit = false; _disguiseInitPromise = null;
+  _disguiseInitPromise = (async () => {
+    for (let i = 0; i < DISGUISE_CFGS.length; i++) {
+      const c = DISGUISE_CFGS[i];
+      const png = await loadIndexedPngStrict(c.png, 4);
+      const reordered = pngTo1dObjLayoutDisguise(png.charData);
+      _disguiseTileStart[i] = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: c.gfxTag });
+      _disguisePalSlot[i] = LoadSpritePalette({ data: png.palette as Uint16Array, tag: c.palTag });
+    }
+    _disguiseInit = true;
+  })();
+  return _disguiseInitPromise;
+}
+
+/** 1:1 décomp `ShowDisguiseFieldEffect(fldEff, fldEffObj, paletteNum)` (field_effect_helpers.c:1328).
+ *  args[0..2] = localId/mapNum/mapGroup. Retourne le spriteId (stocké dans
+ *  objectEvent.fieldEffectSpriteId par le caller MovementAction), ou MAX_SPRITES si échec. */
+function ShowDisguiseFieldEffect(rt: DecompRuntime, fldEff: number): number {
+  if (!_disguiseInit) return MAX_SPRITES;
+  const cfgIdx = DISGUISE_CFGS.findIndex(c => c.fldEff === fldEff);
+  if (cfgIdx < 0) return MAX_SPRITES;
+  const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
+  // 1:1 : if (TryGet(...)) { FieldEffectActiveListRemove; return MAX_SPRITES; } — TryGet TRUE = NOT trouvé.
+  const { notFound } = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (notFound) { FieldEffectActiveListRemove(fldEff); return MAX_SPRITES; }
+  const result = rt.CreateSpriteAtOam({
+    tileId: _disguiseTileStart[cfgIdx],
+    paletteBank: _disguisePalSlot[cfgIdx],
+    x: 0, y: 0,
+    shape: 2, size: 2,  // 16×32 (gObjectEventBaseOam_16x32)
+    priority: 2, paletteMode: 0, affineMode: 0,
+    fromEnd: true,      // 1:1 CreateSpriteAtEnd
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return MAX_SPRITES;
+  // 1:1 : template.callback = UpdateDisguiseFieldEffect ; .anims = sAnimTable_*Disguise.
+  sprite.callback = UpdateDisguiseFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_Disguise, _disguiseTileStart[cfgIdx]);
+  // 1:1 : sprite->coordOffsetEnabled++ (décomp = sprite monde). Adapté : matché au parent dans Update.
+  sprite.coordOffsetEnabled = true;
+  // 1:1 : oam.paletteNum = paletteNum (slot OW) — on a chargé la palette du PNG, paletteBank pointe dessus.
+  sprite.data[0] = 0;        // sState (statique)
+  sprite.data[1] = fldEff;   // sFldEff
+  sprite.data[2] = localId;  // sLocalId
+  sprite.data[3] = mapNum;   // sMapNum
+  sprite.data[4] = mapGroup; // sMapGroup
+  sprite.data[7] = 0;        // sReadyToEnd
+  return result.spriteId;
+}
+
+/** 1:1 décomp `ShowTreeDisguiseFieldEffect` (field_effect_helpers.c:1313). */
+export function ShowTreeDisguiseFieldEffect(rt: DecompRuntime): number {
+  return ShowDisguiseFieldEffect(rt, FLDEFF_TREE_DISGUISE);
+}
+/** 1:1 décomp `ShowMountainDisguiseFieldEffect` (field_effect_helpers.c:1318). */
+export function ShowMountainDisguiseFieldEffect(rt: DecompRuntime): number {
+  return ShowDisguiseFieldEffect(rt, FLDEFF_MOUNTAIN_DISGUISE);
+}
+/** 1:1 décomp `ShowSandDisguiseFieldEffect` (field_effect_helpers.c:1323). */
+export function ShowSandDisguiseFieldEffect(rt: DecompRuntime): number {
+  return ShowDisguiseFieldEffect(rt, FLDEFF_SAND_DISGUISE);
+}
+
+/** 1:1 décomp `UpdateDisguiseFieldEffect` (field_effect_helpers.c:1351). Callback per-frame :
+ *  suit le parent + machine de révélation. */
+export function UpdateDisguiseFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  // 1:1 : if (TryGet(...)) FieldEffectStop. Le décomp continue ensuite et lit gObjectEvents[16]
+  // (OOB, sprite déjà détruit) ; on return pour éviter le crash (lecture undefined côté TS).
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[2], sprite.data[3], sprite.data[4]);
+  if (notFound) { FieldEffectStop(rt, sprite, sprite.data[1]); return; }
+  const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+  const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
+  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  if (!linked) return;
+  // 1:1 : suit le sprite parent.
+  sprite.invisible = linked.invisible;
+  sprite.x = linked.x;
+  sprite.y = ((GetObjectEventGfxHeight(objEvent.graphicsId) >> 1) + linked.y - 16) & 0xFFFF;
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled; // matcher le parent (écran-positionné)
+  sprite.subpriority = (linked.subpriority - 1) & 0xFF;
+  // 1:1 : machine d'état de révélation (sState=data[0], sReadyToEnd=data[7]).
+  if (sprite.data[0] === 1) {
+    sprite.data[0] = 2;
+    rt.StartSpriteAnim(sprite.spriteId, 1); // révélation
+  }
+  if (sprite.data[0] === 2 && sprite.animEnded) sprite.data[7] = 1;
+  if (sprite.data[0] === 3) FieldEffectStop(rt, sprite, sprite.data[1]);
+}
+
+/** 1:1 décomp `StartRevealDisguise` (field_effect_helpers.c:1380). Appelé par les MovementActions
+ *  (dette H3 — port futur) : lance la révélation quand le joueur quitte le déguisement. */
+export function StartRevealDisguise(rt: DecompRuntime, objectEvent: ObjectEvent): void {
+  if (objectEvent.directionSeqIdx === 1) {
+    const sprite = rt.gSprites.get(objectEvent.fieldEffectSpriteId);
+    if (sprite) sprite.data[0] += 1; // sState++
+  }
+}
+
+/** 1:1 décomp `UpdateRevealDisguise` (field_effect_helpers.c:1386). Retourne TRUE quand la
+ *  révélation est finie (sReadyToEnd) ou hors séquence. */
+export function UpdateRevealDisguise(rt: DecompRuntime, objectEvent: ObjectEvent): boolean {
+  if (objectEvent.directionSeqIdx === 2) return true;
+  if (objectEvent.directionSeqIdx === 0) return true;
+  const sprite = rt.gSprites.get(objectEvent.fieldEffectSpriteId);
+  if (sprite && sprite.data[7]) {
+    objectEvent.directionSeqIdx = 2;
+    sprite.data[0] += 1; // sState++
+    return true;
+  }
+  return false;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
