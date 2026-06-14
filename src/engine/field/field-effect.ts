@@ -31,6 +31,9 @@
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
+import { SpawnTallGrassEffect } from './field-effect-grass';
+import { SpawnJumpLandingDust } from './field-effect-jump-dust';
+import { MAP_OFFSET } from './map-loader';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -38,11 +41,28 @@ export const gFieldEffectArguments: number[] = new Array(8).fill(0);
 
 /** 1:1 décomp `FLDEFF_*` constants (include/constants/field_effects.h). */
 export const FLDEFF_EXCLAMATION_MARK_ICON      = 0;
+export const FLDEFF_TALL_GRASS                 = 4;
+export const FLDEFF_RIPPLE                     = 5;
+export const FLDEFF_DUST                       = 10;
+export const FLDEFF_JUMP_TALL_GRASS            = 12;
+export const FLDEFF_SAND_FOOTPRINTS            = 13;
+export const FLDEFF_JUMP_BIG_SPLASH            = 14;
+export const FLDEFF_SPLASH                     = 15;
+export const FLDEFF_JUMP_SMALL_SPLASH          = 16;
+export const FLDEFF_LONG_GRASS                 = 17;
+export const FLDEFF_JUMP_LONG_GRASS            = 18;
 export const FLDEFF_BERRY_TREE_GROWTH_SPARKLE  = 23;
+export const FLDEFF_DEEP_SAND_FOOTPRINTS       = 24;
 export const FLDEFF_TREE_DISGUISE              = 28;
 export const FLDEFF_MOUNTAIN_DISGUISE          = 29;
 export const FLDEFF_QUESTION_MARK_ICON         = 33;
+export const FLDEFF_FEET_IN_FLOWING_WATER      = 34;
+export const FLDEFF_BIKE_TIRE_TRACKS           = 35;
+export const FLDEFF_SAND_PILE                  = 39;
+export const FLDEFF_SHORT_GRASS                = 41;
+export const FLDEFF_HOT_SPRINGS_WATER          = 42;
 export const FLDEFF_HEART_ICON                 = 46;
+export const FLDEFF_BUBBLES                    = 53;
 
 /** Runtime captured pour passer aux handlers qui need rt. Set par scene au boot. */
 let _activeRuntime: DecompRuntime | null = null;
@@ -100,6 +120,50 @@ export function FieldEffectStart(id: number): number {
     // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) :
     // étoile scintillante au-dessus du berry tree qui pousse (args = coords + prio).
     return FldEff_BerryTreeGrowthSparkle(rt, gFieldEffectArguments);
+  }
+
+  // ─── Ground effects (spine DoGroundEffects, event_object_movement.c) ─────────
+  // 1:1 décomp : les `GroundEffect_*` settent gFieldEffectArguments puis
+  // FieldEffectStart(FLDEFF_X) → gFieldEffectScriptPointers[X] → FldEff_X. Notre
+  // dispatcher route vers les FldEff portés. Les args[0]/[1] sont en coords
+  // INTERNAL (= currentCoords.x/y, +MAP_OFFSET) côté décomp ; nos spawners
+  // (SpawnTallGrassEffect/SpawnJumpLandingDust) prennent du LOGICAL et re-ajoutent
+  // MAP_OFFSET → on retire MAP_OFFSET ici (1:1 net).
+  if (id === FLDEFF_TALL_GRASS) {
+    // 1:1 décomp FldEff_TallGrass (field_effect_helpers.c:291). args[7] = skip-to-end
+    // (SPAWN = overlay statique) vs 0 (STEP = rustle anim).
+    SpawnTallGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0);
+    return 64;
+  }
+  if (id === FLDEFF_DUST) {
+    // 1:1 décomp FldEff_Dust (field_effect_helpers.c:1180) — nuage d'atterrissage de saut.
+    SpawnJumpLandingDust(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET);
+    return 64;
+  }
+
+  // ─── Ground effects pas encore portés (= dette field_effect_helpers.c) ──────
+  // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart) ;
+  // seul le FldEff visuel manque (ports tier A/B à venir : reflets, ripple, long/short
+  // grass, footprints, splash, sand pile, hot springs, bubbles, flowing water…).
+  // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
+  // retourne le sentinel MAX_SPRITES silencieusement.
+  switch (id) {
+    case FLDEFF_RIPPLE:
+    case FLDEFF_LONG_GRASS:
+    case FLDEFF_JUMP_TALL_GRASS:
+    case FLDEFF_JUMP_LONG_GRASS:
+    case FLDEFF_JUMP_SMALL_SPLASH:
+    case FLDEFF_JUMP_BIG_SPLASH:
+    case FLDEFF_SPLASH:
+    case FLDEFF_SAND_FOOTPRINTS:
+    case FLDEFF_DEEP_SAND_FOOTPRINTS:
+    case FLDEFF_BIKE_TIRE_TRACKS:
+    case FLDEFF_SAND_PILE:
+    case FLDEFF_SHORT_GRASS:
+    case FLDEFF_HOT_SPRINGS_WATER:
+    case FLDEFF_BUBBLES:
+    case FLDEFF_FEET_IN_FLOWING_WATER:
+      return 64;
   }
 
   // ─── Effects non encore portés (= dette R3) ────────────────────────────────

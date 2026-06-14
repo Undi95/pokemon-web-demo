@@ -491,6 +491,14 @@ export interface DecompSprite {
    *  Notre TS port : syncSpritesToOam check ce flag pour force oam.visible=false
    *  quand 'on' (= équivalent fonctionnel au "skip primary copy"). */
   subspriteMode: 'off' | 'on';
+  /** 1:1 décomp `sprite->subspriteTableNum` (sprite.h:226). Index dans
+   *  subspriteTables pour le rendu multi-OAM. Posé par le spine ground-effect
+   *  (UpdateObjectEventElevationAndPriority / SetObjectEventSpriteOamTableForLong
+   *  Grass) selon l'élévation. Notre renderer indexe les subsprites via
+   *  SetSubspriteTables (table fixe) + subspriteMode → ce champ est structurel
+   *  (inerte pour les NPCs non-split) ; conservé pour la fidélité 1:1. Optionnel
+   *  car non lu par BuildOamBuffer côté web. */
+  subspriteTableNum?: number;
 }
 
 // ─── Task mock minimal ───────────────────────────────────────────────────────

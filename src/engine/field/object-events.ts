@@ -20,7 +20,7 @@
  * Phase suivante :
  *   - 4.5 : script engine + dialogue
  */
-import type { DecompRuntime } from '../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { loadIndexedPngStrict } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system/sprite';
@@ -75,7 +75,19 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../system/decom
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSaveBlock1 } from '../save/save-system';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../../game/berry';
-import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE } from './field-effect';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
+  FLDEFF_TALL_GRASS, FLDEFF_LONG_GRASS, FLDEFF_RIPPLE, FLDEFF_DUST, FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS, FLDEFF_BIKE_TIRE_TRACKS,
+  FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER } from './field-effect';
+// 1:1 décomp prédicats `MetatileBehavior_Is*` (metatile_behavior.c) — miroir game/.
+// Utilisés par le spine ground-effect (GetGroundEffectFlags_* + reflection type).
+import {
+  MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_IsShortGrass,
+  MetatileBehavior_IsIce, MetatileBehavior_IsReflective, MetatileBehavior_IsDeepSand,
+  MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsFootprints, MetatileBehavior_IsShallowFlowingWater,
+  MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
+  MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
+  MetatileBehavior_HasRipples,
+} from '../../game/metatile_behavior';
 
 const BASE = '/decomp/em';
 
@@ -2819,6 +2831,637 @@ function dispatchSpecialMovement(rt: DecompRuntime, npc: ObjectEvent): boolean {
   return false;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SPINE GROUND EFFECTS — 1:1 STRICT décomp event_object_movement.c:7389-8140
+//
+// Système de dispatch des "ground effects" overworld (rustle d'herbe, kick de
+// sable, splash/ripple d'eau, reflets, footprints, dust d'atterrissage, hot
+// springs…). À chaque update d'object event (UpdateObjectEventCurrentMovement),
+// DoGroundEffects_OnSpawn (top) + OnBeginStep/OnFinishStep (bottom) calculent un
+// bitmask de flags depuis l'état tuile de l'objet (currentMetatileBehavior /
+// previousMetatileBehavior + élévation) puis dispatchent vers les GroundEffect_*
+// via sGroundEffectFuncs[].
+//
+// Gating : OnSpawn/OnBeginStep tirent sur triggerGroundEffectsOnMove, OnFinishStep
+// sur triggerGroundEffectsOnStop — flags posés par les MovementActions, DÉJÀ
+// câblés 1:1 (InitNpcForMovement:3068, UpdateMovementNormal:3120, InitJump:3657,
+// UpdateJumpAnim:3718). BUGFIX est OFF en vanilla (include/config.h:53) → on porte
+// la branche sans garde OBJ_EVENT_ID_CAMERA.
+//
+// Note archi : nos sprites NPC vivent dans rt.gSprites ; leur priority OAM est
+// dans rt.gba.oam[sprite.oamIndex].priority (pas un sprite.oam local). Les coords
+// currentCoordsX/Y sont INTERNAL (+MAP_OFFSET), 1:1 décomp → MapGridGet* direct.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// 1:1 décomp GROUND_EFFECT_FLAG_* (include/event_object_movement.h:53-72).
+const GROUND_EFFECT_FLAG_TALL_GRASS_ON_SPAWN   = 1 << 0;
+const GROUND_EFFECT_FLAG_TALL_GRASS_ON_MOVE    = 1 << 1;
+const GROUND_EFFECT_FLAG_LONG_GRASS_ON_SPAWN   = 1 << 2;
+const GROUND_EFFECT_FLAG_LONG_GRASS_ON_MOVE    = 1 << 3;
+const GROUND_EFFECT_FLAG_WATER_REFLECTION      = 1 << 4;
+const GROUND_EFFECT_FLAG_ICE_REFLECTION        = 1 << 5;
+const GROUND_EFFECT_FLAG_SHALLOW_FLOWING_WATER = 1 << 6;
+const GROUND_EFFECT_FLAG_SAND                  = 1 << 7;
+const GROUND_EFFECT_FLAG_DEEP_SAND             = 1 << 8;
+const GROUND_EFFECT_FLAG_RIPPLES               = 1 << 9;
+const GROUND_EFFECT_FLAG_PUDDLE                = 1 << 10;
+const GROUND_EFFECT_FLAG_SAND_PILE             = 1 << 11;
+const GROUND_EFFECT_FLAG_LAND_IN_TALL_GRASS    = 1 << 12;
+const GROUND_EFFECT_FLAG_LAND_IN_LONG_GRASS    = 1 << 13;
+const GROUND_EFFECT_FLAG_LAND_IN_SHALLOW_WATER = 1 << 14;
+const GROUND_EFFECT_FLAG_LAND_IN_DEEP_WATER    = 1 << 15;
+const GROUND_EFFECT_FLAG_LAND_ON_NORMAL_GROUND = 1 << 16;
+const GROUND_EFFECT_FLAG_SHORT_GRASS           = 1 << 17;
+const GROUND_EFFECT_FLAG_HOT_SPRINGS           = 1 << 18;
+const GROUND_EFFECT_FLAG_SEAWEED               = 1 << 19;
+
+// 1:1 décomp `enum` REFL_TYPE_* (include/event_object_movement.h:45-48).
+const REFL_TYPE_NONE  = 0;
+const REFL_TYPE_ICE   = 1;
+const REFL_TYPE_WATER = 2;
+
+// 1:1 décomp `TRACKS_*` (object_event_graphics_info → tracks field).
+const TRACKS_NONE      = 0;
+const TRACKS_FOOT      = 1;
+const TRACKS_BIKE_TIRE = 2;
+
+// 1:1 décomp `sElevationToPriority` / `sElevationToSubspriteTableNum`
+// (event_object_movement.c:7729-7735).
+const sElevationToPriority           = [2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 0, 2];
+const sElevationToSubspriteTableNum  = [1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 0, 0, 1];
+
+/** 1:1 décomp `u8 ElevationToPriority(u8 elevation)` (event_object_movement.c:7754). */
+export function ElevationToPriority(elevation: number): number {
+  return sElevationToPriority[elevation] ?? 2;
+}
+
+/** 1:1 décomp `void ObjectEventUpdateElevation(struct ObjectEvent *)`
+ *  (event_object_movement.c:7759). Recalcule current/previousElevation depuis la
+ *  grille. ELEVATION_TRANSITION (0) = ne MAJ pas previousElevation. */
+export function ObjectEventUpdateElevation(npc: ObjectEvent): void {
+  const curElevation = MapGridGetElevationAt(npc.currentCoordsX, npc.currentCoordsY);
+  const prevElevation = MapGridGetElevationAt(npc.previousCoordsX, npc.previousCoordsY);
+  if (curElevation === ELEVATION_MULTI_LEVEL || prevElevation === ELEVATION_MULTI_LEVEL) return;
+  npc.currentElevation = curElevation;
+  if (curElevation !== ELEVATION_TRANSITION && curElevation !== ELEVATION_MULTI_LEVEL)
+    npc.previousElevation = curElevation;
+}
+
+/** 1:1 décomp `UpdateObjectEventElevationAndPriority` (event_object_movement.c:7737).
+ *  Assigne sprite->oam.priority + subspriteTableNum selon previousElevation.
+ *  Note : notre renderer indexe les subsprites par SetSubspriteTables (fixe) +
+ *  subspriteMode, pas par subspriteTableNum → l'assignation subspriteTableNum est
+ *  structurelle/inerte pour les NPCs non-split (élévation 0/3 → table 1). La
+ *  priority OAM (rt.gba.oam[...]) est la valeur effective. */
+function UpdateObjectEventElevationAndPriority(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.fixedPriority) return;
+  ObjectEventUpdateElevation(npc);
+  if (sprite) {
+    sprite.subspriteTableNum = sElevationToSubspriteTableNum[npc.previousElevation];
+    if (sprite.oamIndex >= 0) rt.gba.oam[sprite.oamIndex].priority = sElevationToPriority[npc.previousElevation];
+  }
+}
+
+/** 1:1 décomp `SetObjectEventSpriteOamTableForLongGrass` (event_object_movement.c:7690). */
+function SetObjectEventSpriteOamTableForLongGrass(npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.disableCoveringGroundEffects) return;
+  if (!MetatileBehavior_IsLongGrass(npc.currentMetatileBehavior)) return;
+  if (!MetatileBehavior_IsLongGrass(npc.previousMetatileBehavior)) return;
+  if (!sprite) return;
+  sprite.subspriteTableNum = 4;
+  if (ElevationToPriority(npc.previousElevation) === 1) sprite.subspriteTableNum = 5;
+}
+
+/** 1:1 décomp `u8 GetReflectionTypeByMetatileBehavior(u32)` (event_object_movement.c:7654). */
+function GetReflectionTypeByMetatileBehavior(behavior: number): number {
+  if (MetatileBehavior_IsIce(behavior)) return REFL_TYPE_ICE;
+  else if (MetatileBehavior_IsReflective(behavior)) return REFL_TYPE_WATER;
+  else return REFL_TYPE_NONE;
+}
+
+// Métadonnées graphiques (width/height/tracks) SANS construire la pic-table.
+// `GetObjectEventGraphicsInfo(graphicsId, ...pics)` (object-event-graphics-info-data.ts)
+// construit eagerly les images (= subarray sur les buffers PNG) ; l'appeler sans
+// buffers crashe (`ptr.subarray` sur undefined). width/height/tracks sont des
+// littéraux indépendants des pics → on passe des buffers VIDES (subarray no-op) et
+// on mémoïse par graphicsId. Le spine ground-effect ne consomme QUE width/height
+// (scan reflets) + tracks (footprints), jamais les images.
+const _gfxMetaCache = new Map<string, { width: number; height: number; tracks: number }>();
+const _gfxMetaEmptyPic = new Uint8Array(0);
+function _getGfxMeta(graphicsId: string): { width: number; height: number; tracks: number } {
+  let m = _gfxMetaCache.get(graphicsId);
+  if (m) return m;
+  m = { width: 16, height: 16, tracks: TRACKS_NONE };  // défaut si la factory exige des pics réels
+  try {
+    const info = GetObjectEventGraphicsInfo(graphicsId, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic, _gfxMetaEmptyPic);
+    if (info) m = { width: info.width, height: info.height, tracks: info.tracks };
+  } catch {
+    // métadonnées indispo (factory non-purement-littérale) → défaut 16×16 / NONE.
+  }
+  _gfxMetaCache.set(graphicsId, m);
+  return m;
+}
+
+/** 1:1 décomp `u8 ObjectEventGetNearbyReflectionType(struct ObjectEvent *)`
+ *  (event_object_movement.c:7625). Scanne les tuiles sous l'objet (sa largeur)
+ *  pour trouver de l'eau/glace réfléchissante. */
+function ObjectEventGetNearbyReflectionType(npc: ObjectEvent): number {
+  const info = _getGfxMeta(npc.graphicsId);
+  const w = info.width;
+  const h = info.height;
+  const width = (w + 8) >> 4;   // ceil div par tile width
+  const height = (h + 8) >> 4;
+  const one = 1;
+  const at = (x: number, y: number) => GetReflectionTypeByMetatileBehavior(MapGridGetMetatileBehaviorAt(x, y));
+  for (let i = 0; i < height; i++) {
+    let r = at(npc.currentCoordsX, npc.currentCoordsY + one + i);
+    if (r !== REFL_TYPE_NONE) return r;
+    r = at(npc.previousCoordsX, npc.previousCoordsY + one + i);
+    if (r !== REFL_TYPE_NONE) return r;
+    for (let j = 1; j < width; j++) {
+      r = at(npc.currentCoordsX + j, npc.currentCoordsY + one + i); if (r !== REFL_TYPE_NONE) return r;
+      r = at(npc.currentCoordsX - j, npc.currentCoordsY + one + i); if (r !== REFL_TYPE_NONE) return r;
+      r = at(npc.previousCoordsX + j, npc.previousCoordsY + one + i); if (r !== REFL_TYPE_NONE) return r;
+      r = at(npc.previousCoordsX - j, npc.previousCoordsY + one + i); if (r !== REFL_TYPE_NONE) return r;
+    }
+  }
+  return REFL_TYPE_NONE;
+}
+
+// ─── Calcul des flags (1:1 décomp GetGroundEffectFlags_*, :7434-7617) ──────────
+// Variante return-based (≡ décomp `u32 *flags` : chaque fonction retourne les bits
+// à OR, + mute l'état npc pour les "once" stateful (Reflection/SandHeap/…)).
+
+function GetGroundEffectFlags_Reflection(npc: ObjectEvent): number {
+  const reflectionFlags = [GROUND_EFFECT_FLAG_ICE_REFLECTION, GROUND_EFFECT_FLAG_WATER_REFLECTION]; // [ICE-1], [WATER-1]
+  const reflType = ObjectEventGetNearbyReflectionType(npc);
+  if (reflType) {
+    if (!npc.hasReflection) {           // décomp : hasReflection == 0
+      npc.hasReflection = true;         // hasReflection++
+      return reflectionFlags[reflType - 1];
+    }
+    return 0;
+  }
+  npc.hasReflection = false;
+  return 0;
+}
+
+function GetGroundEffectFlags_TallGrassOnSpawn(npc: ObjectEvent): number {
+  return MetatileBehavior_IsTallGrass(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_TALL_GRASS_ON_SPAWN : 0;
+}
+function GetGroundEffectFlags_TallGrassOnBeginStep(npc: ObjectEvent): number {
+  return MetatileBehavior_IsTallGrass(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_TALL_GRASS_ON_MOVE : 0;
+}
+function GetGroundEffectFlags_LongGrassOnSpawn(npc: ObjectEvent): number {
+  return MetatileBehavior_IsLongGrass(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_LONG_GRASS_ON_SPAWN : 0;
+}
+function GetGroundEffectFlags_LongGrassOnBeginStep(npc: ObjectEvent): number {
+  return MetatileBehavior_IsLongGrass(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_LONG_GRASS_ON_MOVE : 0;
+}
+
+function GetGroundEffectFlags_Tracks(npc: ObjectEvent): number {
+  if (MetatileBehavior_IsDeepSand(npc.previousMetatileBehavior))
+    return GROUND_EFFECT_FLAG_DEEP_SAND;
+  else if (MetatileBehavior_IsSandOrDeepSand(npc.previousMetatileBehavior)
+           || MetatileBehavior_IsFootprints(npc.previousMetatileBehavior))
+    return GROUND_EFFECT_FLAG_SAND;
+  return 0;
+}
+
+function GetGroundEffectFlags_SandHeap(npc: ObjectEvent): number {
+  if (MetatileBehavior_IsDeepSand(npc.currentMetatileBehavior)
+      && MetatileBehavior_IsDeepSand(npc.previousMetatileBehavior)) {
+    if (!npc.inSandPile) {
+      npc.inSandPile = true;
+      return GROUND_EFFECT_FLAG_SAND_PILE;
+    }
+    return 0;
+  }
+  npc.inSandPile = false;
+  return 0;
+}
+
+function GetGroundEffectFlags_ShallowFlowingWater(npc: ObjectEvent): number {
+  if ((MetatileBehavior_IsShallowFlowingWater(npc.currentMetatileBehavior)
+       && MetatileBehavior_IsShallowFlowingWater(npc.previousMetatileBehavior))
+      || (MetatileBehavior_IsPacifidlogLog(npc.currentMetatileBehavior)
+          && MetatileBehavior_IsPacifidlogLog(npc.previousMetatileBehavior))) {
+    if (!npc.inShallowFlowingWater) {
+      npc.inShallowFlowingWater = true;
+      return GROUND_EFFECT_FLAG_SHALLOW_FLOWING_WATER;
+    }
+    return 0;
+  }
+  npc.inShallowFlowingWater = false;
+  return 0;
+}
+
+function GetGroundEffectFlags_Puddle(npc: ObjectEvent): number {
+  return (MetatileBehavior_IsPuddle(npc.currentMetatileBehavior)
+          && MetatileBehavior_IsPuddle(npc.previousMetatileBehavior)) ? GROUND_EFFECT_FLAG_PUDDLE : 0;
+}
+
+function GetGroundEffectFlags_Ripple(npc: ObjectEvent): number {
+  return MetatileBehavior_HasRipples(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_RIPPLES : 0;
+}
+
+function GetGroundEffectFlags_ShortGrass(npc: ObjectEvent): number {
+  if (MetatileBehavior_IsShortGrass(npc.currentMetatileBehavior)
+      && MetatileBehavior_IsShortGrass(npc.previousMetatileBehavior)) {
+    if (!npc.inShortGrass) {
+      npc.inShortGrass = true;
+      return GROUND_EFFECT_FLAG_SHORT_GRASS;
+    }
+    return 0;
+  }
+  npc.inShortGrass = false;
+  return 0;
+}
+
+function GetGroundEffectFlags_HotSprings(npc: ObjectEvent): number {
+  if (MetatileBehavior_IsHotSprings(npc.currentMetatileBehavior)
+      && MetatileBehavior_IsHotSprings(npc.previousMetatileBehavior)) {
+    if (!npc.inHotSprings) {
+      npc.inHotSprings = true;
+      return GROUND_EFFECT_FLAG_HOT_SPRINGS;
+    }
+    return 0;
+  }
+  npc.inHotSprings = false;
+  return 0;
+}
+
+function GetGroundEffectFlags_Seaweed(npc: ObjectEvent): number {
+  return MetatileBehavior_IsSeaweed(npc.currentMetatileBehavior) ? GROUND_EFFECT_FLAG_SEAWEED : 0;
+}
+
+function GetGroundEffectFlags_JumpLanding(npc: ObjectEvent): number {
+  if (npc.landingJump && !npc.disableJumpLandingGroundEffect) {
+    const metatileFuncs = [
+      MetatileBehavior_IsTallGrass,
+      MetatileBehavior_IsLongGrass,
+      MetatileBehavior_IsPuddle,
+      MetatileBehavior_IsSurfableWaterOrUnderwater,
+      MetatileBehavior_IsShallowFlowingWater,
+      MetatileBehavior_IsATile,
+    ];
+    const jumpLandingFlags = [
+      GROUND_EFFECT_FLAG_LAND_IN_TALL_GRASS,
+      GROUND_EFFECT_FLAG_LAND_IN_LONG_GRASS,
+      GROUND_EFFECT_FLAG_LAND_IN_SHALLOW_WATER,
+      GROUND_EFFECT_FLAG_LAND_IN_DEEP_WATER,
+      GROUND_EFFECT_FLAG_LAND_IN_SHALLOW_WATER,
+      GROUND_EFFECT_FLAG_LAND_ON_NORMAL_GROUND,
+    ];
+    for (let i = 0; i < metatileFuncs.length; i++) {
+      if (metatileFuncs[i](npc.currentMetatileBehavior)) return jumpLandingFlags[i];
+    }
+  }
+  return 0;
+}
+
+function GetAllGroundEffectFlags_OnSpawn(npc: ObjectEvent): number {
+  ObjectEventUpdateMetatileBehaviors(npc);
+  let flags = 0;
+  flags |= GetGroundEffectFlags_Reflection(npc);
+  flags |= GetGroundEffectFlags_TallGrassOnSpawn(npc);
+  flags |= GetGroundEffectFlags_LongGrassOnSpawn(npc);
+  flags |= GetGroundEffectFlags_SandHeap(npc);
+  flags |= GetGroundEffectFlags_ShallowFlowingWater(npc);
+  flags |= GetGroundEffectFlags_ShortGrass(npc);
+  flags |= GetGroundEffectFlags_HotSprings(npc);
+  return flags;
+}
+
+function GetAllGroundEffectFlags_OnBeginStep(npc: ObjectEvent): number {
+  ObjectEventUpdateMetatileBehaviors(npc);
+  let flags = 0;
+  flags |= GetGroundEffectFlags_Reflection(npc);
+  flags |= GetGroundEffectFlags_TallGrassOnBeginStep(npc);
+  flags |= GetGroundEffectFlags_LongGrassOnBeginStep(npc);
+  flags |= GetGroundEffectFlags_Tracks(npc);
+  flags |= GetGroundEffectFlags_SandHeap(npc);
+  flags |= GetGroundEffectFlags_ShallowFlowingWater(npc);
+  flags |= GetGroundEffectFlags_Puddle(npc);
+  flags |= GetGroundEffectFlags_ShortGrass(npc);
+  flags |= GetGroundEffectFlags_HotSprings(npc);
+  return flags;
+}
+
+function GetAllGroundEffectFlags_OnFinishStep(npc: ObjectEvent): number {
+  ObjectEventUpdateMetatileBehaviors(npc);
+  let flags = 0;
+  flags |= GetGroundEffectFlags_ShallowFlowingWater(npc);
+  flags |= GetGroundEffectFlags_SandHeap(npc);
+  flags |= GetGroundEffectFlags_Puddle(npc);
+  flags |= GetGroundEffectFlags_Ripple(npc);
+  flags |= GetGroundEffectFlags_ShortGrass(npc);
+  flags |= GetGroundEffectFlags_HotSprings(npc);
+  flags |= GetGroundEffectFlags_Seaweed(npc);
+  flags |= GetGroundEffectFlags_JumpLanding(npc);
+  return flags;
+}
+
+// ─── StartFieldEffectForObjectEvent (1:1 event_object_movement.c:8764) ─────────
+/** 1:1 décomp : ObjectEventGetLocalIdAndMap → gFieldEffectArguments[0..2], puis
+ *  FieldEffectStart(id). */
+export function StartFieldEffectForObjectEvent(fieldEffectId: number, npc: ObjectEvent): number {
+  gFieldEffectArguments[0] = npc.localId;
+  gFieldEffectArguments[1] = npc.mapNum;
+  gFieldEffectArguments[2] = npc.mapGroup;
+  return FieldEffectStart(fieldEffectId);
+}
+
+// 1:1 décomp : args[6] = current map ((mapNum<<8)|mapGroup). Notre port web simplifie
+// l'identité de map dans gSaveBlock1Ptr.location à mapNum/mapGroup=0 (load_save.ts).
+function _currentMapLocationArg(): number {
+  const loc = gSaveBlock1Ptr.location;
+  return loc ? (((loc.mapNum & 0xFF) << 8) | (loc.mapGroup & 0xFF)) : 0;
+}
+
+function _oamPriority(rt: DecompRuntime, sprite: DecompSprite | undefined): number {
+  return sprite && sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].priority ?? 2) : 2;
+}
+
+// ─── SetUpReflection (1:1 field_effect_helpers.c:47) — DETTE port reflets ──────
+/** 1:1 décomp `GroundEffect_WaterReflection`/`IceReflection` → SetUpReflection.
+ *  DETTE field_effect_helpers.c : le visuel reflet (CreateCopySpriteAt déjà porté
+ *  + UpdateObjectReflectionSprite + palette teintée) est le PROCHAIN sous-chantier.
+ *  La structure du spine est 1:1 ; hasReflection est posé par
+ *  GetGroundEffectFlags_Reflection, ce stub sera rempli au port reflets. */
+function SetUpReflection(_rt: DecompRuntime, _npc: ObjectEvent, _sprite: DecompSprite | undefined, _ice: boolean): void {
+  // TODO reflets : CreateCopySpriteAt + UpdateObjectReflectionSprite + LoadObjectReflectionPalette.
+}
+
+// ─── DoRippleFieldEffect (1:1 event_object_movement.c:8779) ────────────────────
+function DoRippleFieldEffect(_rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (!sprite) return;
+  const h = _getGfxMeta(npc.graphicsId).height;
+  gFieldEffectArguments[0] = sprite.x;
+  gFieldEffectArguments[1] = sprite.y + (h >> 1) - 2;
+  gFieldEffectArguments[2] = 151;
+  gFieldEffectArguments[3] = 3;
+  FieldEffectStart(FLDEFF_RIPPLE);
+}
+
+// ─── GroundEffect_* (1:1 event_object_movement.c:7802-8020) ────────────────────
+function GroundEffect_SpawnOnTallGrass(npc: ObjectEvent, _sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2; // priority
+  gFieldEffectArguments[4] = (npc.localId << 8) | npc.mapNum;
+  gFieldEffectArguments[5] = npc.mapGroup;
+  gFieldEffectArguments[6] = _currentMapLocationArg();
+  gFieldEffectArguments[7] = 1; // skip to end of anim (spawn = statique)
+  FieldEffectStart(FLDEFF_TALL_GRASS);
+}
+
+function GroundEffect_StepOnTallGrass(npc: ObjectEvent, _sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  gFieldEffectArguments[4] = (npc.localId << 8) | npc.mapNum;
+  gFieldEffectArguments[5] = npc.mapGroup;
+  gFieldEffectArguments[6] = _currentMapLocationArg();
+  gFieldEffectArguments[7] = 0; // don't skip (step = rustle)
+  FieldEffectStart(FLDEFF_TALL_GRASS);
+}
+
+function GroundEffect_SpawnOnLongGrass(npc: ObjectEvent, _sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  gFieldEffectArguments[4] = (npc.localId << 8) | npc.mapNum;
+  gFieldEffectArguments[5] = npc.mapGroup;
+  gFieldEffectArguments[6] = _currentMapLocationArg();
+  gFieldEffectArguments[7] = 1;
+  FieldEffectStart(FLDEFF_LONG_GRASS);
+}
+
+function GroundEffect_StepOnLongGrass(npc: ObjectEvent, _sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  gFieldEffectArguments[4] = (npc.localId << 8) | npc.mapNum;
+  gFieldEffectArguments[5] = npc.mapGroup;
+  gFieldEffectArguments[6] = _currentMapLocationArg();
+  gFieldEffectArguments[7] = 0;
+  FieldEffectStart(FLDEFF_LONG_GRASS);
+}
+
+function GroundEffect_WaterReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  SetUpReflection(rt, npc, sprite, false);
+}
+function GroundEffect_IceReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  SetUpReflection(rt, npc, sprite, true);
+}
+
+function GroundEffect_FlowingWater(npc: ObjectEvent): void {
+  StartFieldEffectForObjectEvent(FLDEFF_FEET_IN_FLOWING_WATER, npc);
+}
+
+// 1:1 décomp `sGroundEffectTracksFuncs[]` (event_object_movement.c:7869).
+const sGroundEffectTracksFuncs: ((npc: ObjectEvent, sprite: DecompSprite | undefined, isDeepSand: boolean) => void)[] = [];
+
+function GroundEffect_SandTracks(npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  const tracks = _getGfxMeta(npc.graphicsId).tracks;
+  sGroundEffectTracksFuncs[tracks]?.(npc, sprite, false);
+}
+function GroundEffect_DeepSandTracks(npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  const tracks = _getGfxMeta(npc.graphicsId).tracks;
+  sGroundEffectTracksFuncs[tracks]?.(npc, sprite, true);
+}
+
+function DoTracksGroundEffect_None(_npc: ObjectEvent, _sprite: DecompSprite | undefined, _isDeepSand: boolean): void {
+}
+function DoTracksGroundEffect_Footprints(npc: ObjectEvent, _sprite: DecompSprite | undefined, isDeepSand: boolean): void {
+  const sandFootprints = [FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS];
+  gFieldEffectArguments[0] = npc.previousCoordsX;
+  gFieldEffectArguments[1] = npc.previousCoordsY;
+  gFieldEffectArguments[2] = 149;
+  gFieldEffectArguments[3] = 2;
+  gFieldEffectArguments[4] = npc.facingDirection;
+  FieldEffectStart(sandFootprints[isDeepSand ? 1 : 0]);
+}
+function DoTracksGroundEffect_BikeTireTracks(npc: ObjectEvent, _sprite: DecompSprite | undefined, _isDeepSand: boolean): void {
+  // 1:1 décomp : forme de trace selon transition (prevMoveDir → faceDir).
+  const bikeTireTracks_Transitions = [
+    [1, 2, 7, 8],
+    [1, 2, 6, 5],
+    [5, 8, 3, 4],
+    [6, 7, 3, 4],
+  ];
+  if (npc.currentCoordsX !== npc.previousCoordsX || npc.currentCoordsY !== npc.previousCoordsY) {
+    const row = bikeTireTracks_Transitions[npc.previousMovementDirection];
+    gFieldEffectArguments[0] = npc.previousCoordsX;
+    gFieldEffectArguments[1] = npc.previousCoordsY;
+    gFieldEffectArguments[2] = 149;
+    gFieldEffectArguments[3] = 2;
+    gFieldEffectArguments[4] = row ? (row[npc.facingDirection - 5] ?? 0) : 0;
+    FieldEffectStart(FLDEFF_BIKE_TIRE_TRACKS);
+  }
+}
+sGroundEffectTracksFuncs[TRACKS_NONE]      = DoTracksGroundEffect_None;
+sGroundEffectTracksFuncs[TRACKS_FOOT]      = DoTracksGroundEffect_Footprints;
+sGroundEffectTracksFuncs[TRACKS_BIKE_TIRE] = DoTracksGroundEffect_BikeTireTracks;
+
+function GroundEffect_Ripple(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  DoRippleFieldEffect(rt, npc, sprite);
+}
+function GroundEffect_StepOnPuddle(npc: ObjectEvent): void {
+  StartFieldEffectForObjectEvent(FLDEFF_SPLASH, npc);
+}
+function GroundEffect_SandHeap(npc: ObjectEvent): void {
+  StartFieldEffectForObjectEvent(FLDEFF_SAND_PILE, npc);
+}
+
+function GroundEffect_JumpOnTallGrass(npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  FieldEffectStart(FLDEFF_JUMP_TALL_GRASS);
+  // 1:1 décomp : si pas déjà d'overlay tall-grass actif sur la tuile, on en spawn un.
+  // FindTallGrassFieldEffectSpriteId non porté (notre SpawnTallGrassEffect dédoublonne
+  // déjà par tuile) → on lance le spawn statique, qui no-op si doublon.
+  GroundEffect_SpawnOnTallGrass(npc, sprite);
+}
+function GroundEffect_JumpOnLongGrass(npc: ObjectEvent): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = 2;
+  FieldEffectStart(FLDEFF_JUMP_LONG_GRASS);
+}
+function GroundEffect_JumpOnShallowWater(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = _oamPriority(rt, sprite);
+  FieldEffectStart(FLDEFF_JUMP_SMALL_SPLASH);
+}
+function GroundEffect_JumpOnWater(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = _oamPriority(rt, sprite);
+  FieldEffectStart(FLDEFF_JUMP_BIG_SPLASH);
+}
+function GroundEffect_JumpLandingDust(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  gFieldEffectArguments[2] = npc.previousElevation;
+  gFieldEffectArguments[3] = _oamPriority(rt, sprite);
+  FieldEffectStart(FLDEFF_DUST);
+}
+function GroundEffect_ShortGrass(npc: ObjectEvent): void {
+  StartFieldEffectForObjectEvent(FLDEFF_SHORT_GRASS, npc);
+}
+function GroundEffect_HotSprings(npc: ObjectEvent): void {
+  StartFieldEffectForObjectEvent(FLDEFF_HOT_SPRINGS_WATER, npc);
+}
+function GroundEffect_Seaweed(npc: ObjectEvent): void {
+  gFieldEffectArguments[0] = npc.currentCoordsX;
+  gFieldEffectArguments[1] = npc.currentCoordsY;
+  FieldEffectStart(FLDEFF_BUBBLES);
+}
+
+// 1:1 décomp `sGroundEffectFuncs[]` (event_object_movement.c:8023). Indexé par le
+// bit de flag. Signature unifiée (rt, npc, sprite) ; les wrappers ignorent ce dont
+// ils n'ont pas besoin.
+const sGroundEffectFuncs: ((rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined) => void)[] = [
+  (_rt, npc, sprite) => GroundEffect_SpawnOnTallGrass(npc, sprite),   // TALL_GRASS_ON_SPAWN
+  (_rt, npc, sprite) => GroundEffect_StepOnTallGrass(npc, sprite),    // TALL_GRASS_ON_MOVE
+  (_rt, npc, sprite) => GroundEffect_SpawnOnLongGrass(npc, sprite),   // LONG_GRASS_ON_SPAWN
+  (_rt, npc, sprite) => GroundEffect_StepOnLongGrass(npc, sprite),    // LONG_GRASS_ON_MOVE
+  (rt, npc, sprite) => GroundEffect_WaterReflection(rt, npc, sprite), // WATER_REFLECTION
+  (rt, npc, sprite) => GroundEffect_IceReflection(rt, npc, sprite),   // ICE_REFLECTION
+  (_rt, npc) => GroundEffect_FlowingWater(npc),                       // SHALLOW_FLOWING_WATER
+  (_rt, npc, sprite) => GroundEffect_SandTracks(npc, sprite),         // SAND
+  (_rt, npc, sprite) => GroundEffect_DeepSandTracks(npc, sprite),     // DEEP_SAND
+  (rt, npc, sprite) => GroundEffect_Ripple(rt, npc, sprite),          // RIPPLES
+  (_rt, npc) => GroundEffect_StepOnPuddle(npc),                       // PUDDLE
+  (_rt, npc) => GroundEffect_SandHeap(npc),                           // SAND_PILE
+  (_rt, npc, sprite) => GroundEffect_JumpOnTallGrass(npc, sprite),    // LAND_IN_TALL_GRASS
+  (_rt, npc) => GroundEffect_JumpOnLongGrass(npc),                    // LAND_IN_LONG_GRASS
+  (rt, npc, sprite) => GroundEffect_JumpOnShallowWater(rt, npc, sprite), // LAND_IN_SHALLOW_WATER
+  (rt, npc, sprite) => GroundEffect_JumpOnWater(rt, npc, sprite),     // LAND_IN_DEEP_WATER
+  (rt, npc, sprite) => GroundEffect_JumpLandingDust(rt, npc, sprite), // LAND_ON_NORMAL_GROUND
+  (_rt, npc) => GroundEffect_ShortGrass(npc),                         // SHORT_GRASS
+  (_rt, npc) => GroundEffect_HotSprings(npc),                         // HOT_SPRINGS
+  (_rt, npc) => GroundEffect_Seaweed(npc),                            // SEAWEED
+];
+
+function DoFlaggedGroundEffects(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined, flags: number): void {
+  // 1:1 décomp : garde ObjectEventIsFarawayIslandMew non portée (Faraway Island hors
+  // démo, toujours false) → pas de early-return.
+  for (let i = 0; i < sGroundEffectFuncs.length; i++, flags >>= 1) {
+    if (flags & 1) sGroundEffectFuncs[i](rt, npc, sprite);
+  }
+}
+
+function filters_out_some_ground_effects(npc: ObjectEvent, flags: number): number {
+  if (npc.disableCoveringGroundEffects) {
+    npc.inShortGrass = false;
+    npc.inSandPile = false;
+    npc.inShallowFlowingWater = false;
+    npc.inHotSprings = false;
+    flags &= ~(GROUND_EFFECT_FLAG_HOT_SPRINGS
+             | GROUND_EFFECT_FLAG_SHORT_GRASS
+             | GROUND_EFFECT_FLAG_SAND_PILE
+             | GROUND_EFFECT_FLAG_SHALLOW_FLOWING_WATER
+             | GROUND_EFFECT_FLAG_TALL_GRASS_ON_MOVE);
+  }
+  return flags;
+}
+
+function FilterOutStepOnPuddleGroundEffectIfJumping(npc: ObjectEvent, flags: number): number {
+  if (npc.landingJump) flags &= ~GROUND_EFFECT_FLAG_PUDDLE;
+  return flags;
+}
+
+/** 1:1 décomp `DoGroundEffects_OnSpawn` (event_object_movement.c:8080). */
+export function DoGroundEffects_OnSpawn(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.triggerGroundEffectsOnMove) {
+    UpdateObjectEventElevationAndPriority(rt, npc, sprite);
+    const flags = GetAllGroundEffectFlags_OnSpawn(npc);
+    SetObjectEventSpriteOamTableForLongGrass(npc, sprite);
+    DoFlaggedGroundEffects(rt, npc, sprite, flags);
+    npc.triggerGroundEffectsOnMove = false;
+    npc.disableCoveringGroundEffects = false;
+  }
+}
+
+/** 1:1 décomp `DoGroundEffects_OnBeginStep` (event_object_movement.c:8100). */
+export function DoGroundEffects_OnBeginStep(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.triggerGroundEffectsOnMove) {
+    UpdateObjectEventElevationAndPriority(rt, npc, sprite);
+    let flags = GetAllGroundEffectFlags_OnBeginStep(npc);
+    SetObjectEventSpriteOamTableForLongGrass(npc, sprite);
+    flags = filters_out_some_ground_effects(npc, flags);
+    DoFlaggedGroundEffects(rt, npc, sprite, flags);
+    npc.triggerGroundEffectsOnMove = false;
+    npc.disableCoveringGroundEffects = false;
+  }
+}
+
+/** 1:1 décomp `DoGroundEffects_OnFinishStep` (event_object_movement.c:8121). */
+export function DoGroundEffects_OnFinishStep(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
+  if (npc.triggerGroundEffectsOnStop) {
+    UpdateObjectEventElevationAndPriority(rt, npc, sprite);
+    let flags = GetAllGroundEffectFlags_OnFinishStep(npc);
+    SetObjectEventSpriteOamTableForLongGrass(npc, sprite);
+    flags = FilterOutStepOnPuddleGroundEffectIfJumping(npc, flags);
+    DoFlaggedGroundEffects(rt, npc, sprite, flags);
+    npc.triggerGroundEffectsOnStop = false;
+    npc.landingJump = false;
+  }
+}
+
 /** Tick chaque NPC selon son movementType. À call chaque frame. */
 export function TickObjectEventMovements(rt: DecompRuntime): void {
   for (const npc of gObjectEvents) {
@@ -2828,40 +3471,56 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
     // (event_object_movement.c:4929-4944) :
     //   DoGroundEffects_OnSpawn(objectEvent, sprite);
     //   TryEnableObjectEventAnim(objectEvent, sprite);
-    //
     //   if (ObjectEventIsHeldMovementActive(objectEvent))
     //       ObjectEventExecHeldMovementAction(objectEvent, sprite);
     //   else if (!objectEvent->frozen)
     //       while (callback(objectEvent, sprite));
-    //
-    //   DoGroundEffects_OnBeginStep ... + UpdateObjectEventSpriteAnimPause ...
+    //   DoGroundEffects_OnBeginStep(objectEvent, sprite);
+    //   DoGroundEffects_OnFinishStep(objectEvent, sprite);
+    //   ...
     //
     // Le check `heldMovementActive` est CRUCIAL : si scrcmd `faceplayer`,
     // `applymovement` etc. set heldMovementActive=TRUE via ObjectEventSetHeldMovement,
     // on exec ce held movement AU LIEU du MovementType callback. Sans ce
     // dispatch, faceplayer sur NPCs WANDER/LOOK ne tourne PAS visuellement
     // (= user G15 bug "NPCs dehors ne se tournent pas").
+    //
+    // GROUND EFFECTS : le slot player (isPlayer) est SKIPPÉ ici — ses effets
+    // (grass/dust) sont déclenchés ad-hoc dans player-avatar.ts (PlayerStep).
+    // Le player garde son chemin de mouvement bespoke ; sa migration vers le spine
+    // générique (= le faire passer par ce DoGroundEffects) est le commit suivant,
+    // sinon double-fire avec l'ad-hoc (le player pose triggerGroundEffectsOnMove sur
+    // son slot mais ne le consomme jamais). Les NPCs n'avaient AUCUN ground effect
+    // avant : le câblage est additif pour eux.
+    const sprite = npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined;
+    const runGroundEffects = !npc.isPlayer;
+    if (runGroundEffects) DoGroundEffects_OnSpawn(rt, npc, sprite);
+
     if (ObjectEventIsHeldMovementActive(npc)) {
       _execHeldMovementAction(rt, npc);
-      continue;
-    }
-    // Frozen NPCs (= en interact, mais sans heldMovement actif) skip leur
-    // state machine.
-    if (npc.frozen) continue;
-
-    const handler = MOVEMENT_HANDLERS[npc.movementType];
-    if (handler) {
-      if (handler.tick === 'look') {
-        tickLookAround(rt, npc, handler.dirs);
+    } else if (!npc.frozen) {
+      // Frozen NPCs (= en interact, sans heldMovement actif) skip leur state machine,
+      // mais 1:1 décomp les DoGroundEffects tournent quand même (no-op si les triggers
+      // ne sont pas posés).
+      const handler = MOVEMENT_HANDLERS[npc.movementType];
+      if (handler) {
+        if (handler.tick === 'look') {
+          tickLookAround(rt, npc, handler.dirs);
+        } else {
+          tickWanderAround(rt, npc, handler.dirs);
+        }
       } else {
-        tickWanderAround(rt, npc, handler.dirs);
+        // Try special handlers (= ROTATE, WALK_*_AND_*, WALK_IN_PLACE_*, INVISIBLE).
+        dispatchSpecialMovement(rt, npc);
+        // Movement types non-supportés documentés : BERRY_TREE_GROWTH,
+        // TREE/MOUNTAIN/SAND_DISGUISE, COPY_PLAYER_* (= subsystem-locked).
       }
-      continue;
     }
-    // Try special handlers (= ROTATE, WALK_*_AND_*, WALK_IN_PLACE_*, INVISIBLE).
-    dispatchSpecialMovement(rt, npc);
-    // Movement types non-supportés documentés : BERRY_TREE_GROWTH,
-    // TREE/MOUNTAIN/SAND_DISGUISE, COPY_PLAYER_* (= subsystem-locked).
+
+    if (runGroundEffects) {
+      DoGroundEffects_OnBeginStep(rt, npc, sprite);
+      DoGroundEffects_OnFinishStep(rt, npc, sprite);
+    }
   }
 }
 
