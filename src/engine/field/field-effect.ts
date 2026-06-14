@@ -28,14 +28,15 @@
  * args[0..2] = localId/mapNum/mapGroup typiquement.
  */
 
-import type { DecompRuntime } from '../system/decomp-runtime';
+import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
+import { FieldEffectActiveListRemove } from './field-effect-active-list';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
 import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
-import { SpawnSandPileEffect } from './field-effect-sand-pile';
+import { FldEff_SandPile } from '../../game/field_effect_helpers';
 import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
@@ -85,6 +86,19 @@ let _activeRuntime: DecompRuntime | null = null;
 
 export function SetFieldEffectRuntime(rt: DecompRuntime): void {
   _activeRuntime = rt;
+}
+
+/** 1:1 décomp `FieldEffectStop(sprite, fieldEffectId)` (field_effect.c:380) :
+ *    FieldEffectFreeGraphicsResources(sprite);   // free sheet/palette si plus aucun user
+ *    FieldEffectActiveListRemove(fieldEffectId);
+ *
+ *  Adaptation : on ne libère PAS le sheet/palette (préchargé une fois, partagé par tous
+ *  les sprites du même effet — réutilisé). On fait juste DestroySprite (= invisible OAM +
+ *  inUse=false + callback=null, 1:1 décomp DestroySprite) + retrait de l'active-list.
+ *  Appelé par les UpdateXFieldEffect de field_effect_helpers.ts quand l'effet se termine. */
+export function FieldEffectStop(rt: DecompRuntime, sprite: DecompSprite, fieldEffectId: number): void {
+  rt.DestroySprite(sprite.spriteId);
+  FieldEffectActiveListRemove(fieldEffectId);
 }
 
 /** 1:1 décomp `FieldEffectStart(id)` (field_effect.c:172) :
@@ -208,10 +222,9 @@ export function FieldEffectStart(id: number): number {
     return 64;
   }
   if (id === FLDEFF_SAND_PILE) {
-    // 1:1 décomp FldEff_SandPile (field_effect_helpers.c:1204). args[0..2] = localId/mapNum/
-    // mapGroup de l'owner (StartFieldEffectForObjectEvent) → suit le sprite parent sur sable profond.
-    SpawnSandPileEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-    return 64;
+    // 1:1 décomp FldEff_SandPile (field_effect_helpers.c:1204). Lit gFieldEffectArguments[0..2]
+    // = localId/mapNum/mapGroup de l'owner → suit le sprite parent sur sable profond.
+    return FldEff_SandPile(rt);
   }
   if (id === FLDEFF_HOT_SPRINGS_WATER) {
     // 1:1 décomp FldEff_HotSpringsWater (field_effect_helpers.c:800). args[0..2] = localId/mapNum/

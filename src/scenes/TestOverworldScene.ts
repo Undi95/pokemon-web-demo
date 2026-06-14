@@ -184,11 +184,9 @@ import {
   UpdateFootprintsEffects,
   DestroyAllFootprintsEffects,
 } from '../engine/field/field-effect-footprints';
-import {
-  preloadSandPileEffect,
-  UpdateSandPileEffects,
-  DestroyAllSandPileEffects,
-} from '../engine/field/field-effect-sand-pile';
+// Sand pile : migré dans le miroir 1:1 game/field_effect_helpers.ts (modèle sprite.callback,
+// plus de pool ni d'Update manuel — le callback global runSpriteCallbacks le tique).
+import { preloadSandPileEffect } from '../game/field_effect_helpers';
 import {
   preloadHotSpringsEffect,
   UpdateHotSpringsEffects,
@@ -688,9 +686,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
         // de vélo (déposées sur sable, fade après 40f). Hors démo, câblé via le spine (DoTracks).
         UpdateFootprintsEffects(rt);
-        // 1:1 décomp `UpdateSandPileFieldEffect` : monticule de sable remué suivant le parent
-        // sur sable profond. Câblé via le spine (GroundEffect_SandHeap → FLDEFF_SAND_PILE).
-        UpdateSandPileEffects(rt);
+        // 1:1 décomp `UpdateSandPileFieldEffect` (game/field_effect_helpers.ts) : désormais
+        // tické par le callback global (sprite.callback) — plus d'appel manuel ici.
         // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` : nappe d'eau chaude suivant le parent
         // assis dans les sources (Lavaridge). Câblé via le spine (GroundEffect_HotSprings).
         UpdateHotSpringsEffects(rt);
@@ -1207,8 +1204,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // Empreintes/traces (sand/deep footprints + bike tire tracks) assets + pool.
     DestroyAllFootprintsEffects(this.rt);
     await preloadFootprintsEffects(this.rt);
-    // Sand pile (monticule de sable remué sur sable profond) assets + pool.
-    DestroyAllSandPileEffects(this.rt);
+    // Sand pile : assets seulement (le sprite.callback s'auto-détruit, pas de pool à reset).
     await preloadSandPileEffect(this.rt);
     // Hot springs water (nappe d'eau chaude suivant le joueur assis, Lavaridge) assets + pool.
     DestroyAllHotSpringsEffects(this.rt);
