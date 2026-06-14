@@ -1544,6 +1544,59 @@ export class DecompRuntime {
     return { spriteId, oamIndex };
   }
 
+  /** 1:1 décomp `CreateCopySpriteAt(struct Sprite *sprite, s16 x, s16 y, u8 subpriority)`
+   *  (event_object_movement.c:2343-2359) : copie un sprite existant dans un slot
+   *  libre (scan depuis la fin = `CreateSpriteAtEnd`) à la position (x, y), avec la
+   *  subpriority donnée. Utilisé par `SetUpReflection` (reflets) qui copie le sprite
+   *  de l'objet. Returns spriteId, ou MAX_SPRITES(64) si plein.
+   *
+   *  Décomp : `gSprites[i] = *sprite` copie la struct ENTIÈRE. Notre modèle sépare
+   *  l'OAM (gba.oam[oamIndex]) → on alloue un nouveau slot OAM via CreateSpriteAtOam
+   *  (qui scan aussi depuis la fin avec fromEnd), puis on recopie l'état rendu/anim/
+   *  sheet du sprite source + l'OAM source. x/y/subpriority sont écrasés (1:1). */
+  createCopySpriteAt(source: DecompSprite, x: number, y: number, subpriority: number): number {
+    const srcOam = this.gba.oam[source.oamIndex];
+    const { spriteId, oamIndex } = this.CreateSpriteAtOam({
+      tileId: srcOam.tileId, paletteBank: srcOam.paletteBank,
+      x, y,
+      shape: source.shape, size: source.size,
+      priority: srcOam.priority,
+      paletteMode: srcOam.paletteMode,
+      affineMode: source.affineMode,
+      affineParamIndex: source.matrixNum,
+      fromEnd: true,
+    });
+    if (spriteId === 64) return 64;
+    const copy = this.gSprites.get(spriteId)!;
+    const dstOam = this.gba.oam[oamIndex];
+    // Copie de l'état du sprite source (= `gSprites[i] = *sprite`), sauf identité
+    // (oamIndex/spriteId/data déjà neufs).
+    copy.images = source.images;
+    copy.anims = source.anims;
+    copy.animNum = source.animNum;
+    copy.animCmdIndex = source.animCmdIndex;
+    copy.tileBase = source.tileBase;
+    copy.usingSheet = source.usingSheet;
+    copy.sheetTileStart = source.sheetTileStart;
+    copy.centerToCornerVecX = source.centerToCornerVecX;
+    copy.centerToCornerVecY = source.centerToCornerVecY;
+    copy.objMode = source.objMode;
+    copy.subspriteMode = source.subspriteMode;
+    copy.coordOffsetEnabled = source.coordOffsetEnabled;
+    copy.hFlip = source.hFlip;
+    copy.vFlip = source.vFlip;
+    // Copie l'OAM source (tileId/palette/shape/size/flip/affine), puis override pos.
+    dstOam.tileId = srcOam.tileId;
+    dstOam.flipH = srcOam.flipH;
+    dstOam.flipV = srcOam.flipV;
+    dstOam.objMode = srcOam.objMode;
+    // 1:1 : x/y/subpriority overridden.
+    copy.x = x;
+    copy.y = y;
+    copy.subpriority = subpriority;
+    return spriteId;
+  }
+
   /** 1:1 décomp `CreateSprite(template, x, y, subpriority)` (src/sprite.c:502) pour
    *  les templates INLINE (tileTag == TAG_NONE + `images`) = sprites de combat
    *  (mons/dresseur) qui n'ont pas de sheet taggée : leurs tiles viennent du buffer
