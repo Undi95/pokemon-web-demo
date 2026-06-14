@@ -11,10 +11,8 @@
  *     RemoveBerryTree, GetBerryType/StageByBerryTreeId, ItemIdToBerryType/BerryTypeToItemId,
  *     GetBerry{Name,CountString}ByBerryType, AllowBerryTreeGrowth,
  *     BerryTreeGetNumStagesWatered, GetStageDurationByBerryType, ClearBerryTrees.
- *
- * NOTE : `BerryTreeGrow` + `BerryTreeTimeUpdate` restent dans time-based-events.ts
- * (= time-related, déjà portés). Ce module fournit `CalcBerryYield` pour remplacer
- * le MVP `tree.berryYield = 2` hardcode.
+ *   - `BerryTreeGrow` + `BerryTreeTimeUpdate` (= berry.c:1046-1112). Appelés par
+ *     `DoTimeBasedEvents` (clock.c → time-based-events.ts) au chargement de map.
  *
  * NOTE : Les fonctions wrap ObjectEventInteraction* (= berry.c:1251-1313) demandent
  * `GetObjectEventBerryTreeId(gSelectedObjectEvent)` + script context — dette R3
@@ -338,6 +336,76 @@ export function ClearBerryTrees(): void {
   if (!trees) return;
   for (let i = 0; i < trees.length; i++) {
     Object.assign(trees[i], gBlankBerryTree);
+  }
+}
+
+/** 1:1 décomp `BerryTreeGrow(struct BerryTree *tree)` (berry.c:1046-1074) :
+ *  advance le tree d'un stade. Returns FALSE sur stage terminal à stopper.
+ *
+ *  Le décomp utilise un fallthrough (FLOWERING → PLANTED/SPROUTED/TALLER
+ *  `tree->stage++`). TS strict (noFallthroughCasesInSwitch) interdit le
+ *  fallthrough → on duplique `tree.stage++` dans le case FLOWERING. Sémantique 1:1. */
+function BerryTreeGrow(tree: typeof gSaveBlock1Ptr.berryTrees[0]): boolean {
+  if (tree.stopGrowth) return false;
+  switch (tree.stage) {
+    case BERRY_STAGE_NO_BERRY:
+      return false;
+    case BERRY_STAGE_FLOWERING:
+      // 1:1 :1056 berryYield calc à la transition FLOWERING → BERRIES, puis
+      // fallthrough décomp vers `tree->stage++` (dupliqué ici, noFallthrough TS).
+      tree.berryYield = CalcBerryYield(tree);
+      tree.stage++;
+      break;
+    case BERRY_STAGE_PLANTED:
+    case BERRY_STAGE_SPROUTED:
+    case BERRY_STAGE_TALLER:
+      tree.stage++;
+      break;
+    case BERRY_STAGE_BERRIES:
+      // 1:1 :1062-1071 : withering → clear watered + back to SPROUTED + regrowth++.
+      tree.watered1 = 0;
+      tree.watered2 = 0;
+      tree.watered3 = 0;
+      tree.watered4 = 0;
+      tree.berryYield = 0;
+      tree.stage = BERRY_STAGE_SPROUTED;
+      if (++tree.regrowthCount === 10) {
+        Object.assign(tree, gBlankBerryTree);
+      }
+      break;
+  }
+  return true;
+}
+
+/** 1:1 décomp `BerryTreeTimeUpdate(s32 minutes)` (berry.c:1076-1112).
+ *  Advance tous les berry trees actifs selon le delta minutes écoulé (appelé par
+ *  DoTimeBasedEvents = clock.c, au chargement de map + per-step + opcode RTC). */
+export function BerryTreeTimeUpdate(minutes: number): void {
+  const trees = gSaveBlock1Ptr.berryTrees;
+  if (!trees) return;
+  for (let i = 0; i < trees.length; i++) {
+    const tree = trees[i];
+    if (tree.berry && tree.stage && !tree.stopGrowth) {
+      // 1:1 :1087 : > 71 × stageDuration min écoulées → tree wilts complet (blank).
+      if (minutes >= GetStageDurationByBerryType(tree.berry) * 71) {
+        Object.assign(tree, gBlankBerryTree);
+      } else {
+        let time = minutes;
+        while (time !== 0) {
+          if (tree.minutesUntilNextStage > time) {
+            tree.minutesUntilNextStage -= time;
+            break;
+          }
+          time -= tree.minutesUntilNextStage;
+          tree.minutesUntilNextStage = GetStageDurationByBerryType(tree.berry);
+          if (!BerryTreeGrow(tree)) break;
+          // 1:1 :1106-1107 : stage BERRIES → minutesUntilNextStage ×4 (withering).
+          if (tree.stage === BERRY_STAGE_BERRIES) {
+            tree.minutesUntilNextStage *= 4;
+          }
+        }
+      }
+    }
   }
 }
 
