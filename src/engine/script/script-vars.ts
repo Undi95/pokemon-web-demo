@@ -90,8 +90,13 @@ export const gSpecialVar = {
   set LastTalked(v: number) { ED.VarSet(VARS.VAR_LAST_TALKED, v); },
   get Facing(): number { return ED.VarGet(VARS.VAR_FACING); },
   set Facing(v: number) { ED.VarSet(VARS.VAR_FACING, v); },
-  /** 1:1 décomp `gSpecialVar_ItemId` (item_menu.h:87) — global séparé. */
-  ItemId: 0,
+  /** 1:1 décomp `gSpecialVar_ItemId` = `gSpecialVars[VAR_ITEM_ID - SPECIAL_VARS_START]`
+   *  (event_data.c GetVarPointer ; VAR_ITEM_ID = 0x800E) → MÊME stockage que la var
+   *  VAR_ITEM_ID. Routé via la var (et non un champ séparé) pour que les opcodes
+   *  script `goto_if_eq VAR_ITEM_ID` / `removeitem VAR_ITEM_ID` voient ce que le sac
+   *  écrit (Bag_ChooseBerry → gSpecialVar.ItemId), 1:1 décomp. */
+  get ItemId(): number { return ED.VarGet(VARS.VAR_ITEM_ID); },
+  set ItemId(v: number) { ED.VarSet(VARS.VAR_ITEM_ID, v); },
   /** 1:1 décomp `gSpecialVar_0x8005` — slot generic. */
   Aux: 0,
 };

@@ -43,13 +43,20 @@ registerOpcode('additem', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_removeitem` (scrcmd.c:496-503). */
+/** 1:1 décomp `ScrCmd_removeitem` (scrcmd.c:496-503). L'item peut être un literal
+ *  `ITEM_X` OU une var (`removeitem VAR_ITEM_ID` = la baie choisie via Bag_ChooseBerry)
+ *  → résoudre VAR→id→itemKey (même pattern que checkitemspace/checkitemtype). */
 registerOpcode('removeitem', (_ctx, args) => {
-  const itemKey = args[0] ?? '';
+  const itemArg = args[0] ?? '';
   const count = resolveCount(args[1] ?? '1');
+  let itemKey = itemArg;
+  if (!itemKey.startsWith('ITEM_')) {
+    const itemId = VarGet(itemArg);
+    itemKey = reverseDecompConstant(itemId, 'ITEM_') ?? '';
+  }
   const ok = RemoveBagItem(itemKey, count);
   VarSet('VAR_RESULT', ok ? 1 : 0);
-  console.log(`[opcode removeitem] ${itemKey} x${count} → ${ok ? 'ok' : 'FAILED (not enough)'}`);
+  console.log(`[opcode removeitem] ${itemArg} (${itemKey}) x${count} → ${ok ? 'ok' : 'FAILED (not enough)'}`);
   return false;
 });
 
