@@ -64,6 +64,10 @@ import './engine/devtools/dev-breakpoint-tools';
 // Side-effect import : pose window.dev.bridge.* helpers (= coverage du
 // decomp-bridge.ts + tracking helpers manquants par module auto-généré).
 import './engine/devtools/dev-bridge-audit-tools';
+// Side-effect import : pose window.dev.fx.* helpers (= overworld / field effects :
+// tp, player, force-spawn FLDEFF_* via le chemin live, list sprites d'effet). Cf.
+// dev-fieldfx-tools.ts. Sert à vérifier les ports field_effect_helpers.c en jeu.
+import './engine/devtools/dev-fieldfx-tools';
 // Side-effect import : pose window.dev.movementDispatch.* — bridge string
 // action names → MovementAction_*_StepN auto-fonctions.
 import './engine/field/movement-action-dispatch';

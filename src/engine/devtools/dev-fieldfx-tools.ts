@@ -1,0 +1,188 @@
+/**
+ * dev-fieldfx-tools.ts — devtools overworld / field effects ("commandes du jeu").
+ *
+ * Side-effect import depuis `main.ts` → expose tout sur `window.dev.fx.*`.
+ * Co-existe avec `dev.audit` / `dev.breakpoint` / `dev.bridge` sans les toucher.
+ *
+ * POURQUOI un module bundlé (et pas un import() console) : ce module est dans le
+ * bundle Vite, donc il touche les MÊMES instances live que le jeu fait tourner
+ * (`gFieldEffectArguments`, `gObjectEvents`, le runtime…). Un `import()` dynamique
+ * depuis la console F12 donnerait une instance Vite FRAÎCHE (pools vides) → piège payé.
+ *
+ * RÉSISTANCE À L'OBSOLESCENCE : on importe les exports par leur NOM TYPÉ. Si une
+ * fonction décomp est renommée/déplacée, `npx tsc --noEmit` (lancé à chaque commit)
+ * casse et pointe la ligne. `dev.fx.selftest()` vérifie en plus que tout résout au
+ * runtime. La table FLDEFF est dérivée AUTOMATIQUEMENT des constantes (pas de hardcode).
+ *
+ * HORS MIROIR 1:1 — outillage dev pur, comme tout `src/engine/devtools/`. Jamais push.
+ *
+ * Usage console (F12) :
+ *   dev.fx.help()                       — liste les commandes
+ *   dev.fx.player()                     — l'object event du joueur (localId/map/pos/behavior)
+ *   dev.fx.tp('MAP_ROUTE111', 14, 70)   — fast-travel (alias __devGotoMap)
+ *   dev.fx.fldeffs()                    — table { nom: id } de tous les FLDEFF_*
+ *   dev.fx.start('FLDEFF_RIPPLE', [x, y, 0, 1])  — set args + FieldEffectStart générique
+ *   dev.fx.onPlayer('FLDEFF_SAND_PILE') — spawn un effet object-event-owned SUR le joueur
+ *   dev.fx.sandPile()                   — raccourci : inSandPile=true + spawn sand pile
+ *   dev.fx.list()                       — sprites d'effet actifs (oam x/y/tile/shape/vis)
+ *   dev.fx.behaviorAt(x, y)             — metatile behavior à (x,y) en coords map
+ *   dev.fx.selftest()                   — santé de l'outil (refs live résolues ?)
+ */
+
+import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
+import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
+import { gPlayerAvatar } from '../field/player-avatar';
+import * as FE from '../decomp-data/include/constants/field_effects-data';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/** Runtime live (posé par la scène overworld). */
+function rt(): any {
+  const w = window as any;
+  return w.dev?._rt ?? (globalThis as any).__rt ?? null;
+}
+
+// ── Table FLDEFF auto-dérivée des constantes (nom → id et id → nom) ─────────────
+const FLDEFF_BY_NAME: Record<string, number> = {};
+const FLDEFF_BY_ID: Record<number, string> = {};
+for (const [k, v] of Object.entries(FE)) {
+  if (typeof v === 'number' && k.startsWith('FLDEFF_') && !k.startsWith('FLDEFF_PAL')) {
+    FLDEFF_BY_NAME[k] = v;
+    if (FLDEFF_BY_ID[v] === undefined) FLDEFF_BY_ID[v] = k;
+  }
+}
+
+function resolveFldeff(idOrName: number | string): number {
+  if (typeof idOrName === 'number') return idOrName;
+  const key = idOrName.startsWith('FLDEFF_') ? idOrName : 'FLDEFF_' + idOrName.toUpperCase();
+  const id = FLDEFF_BY_NAME[key];
+  if (id === undefined) throw new Error(`[dev.fx] FLDEFF inconnu: "${idOrName}" (essaie dev.fx.fldeffs())`);
+  return id;
+}
+
+function playerObjEvent(): ObjectEvent | undefined {
+  for (const o of gObjectEvents) if (o && o.active && o.isPlayer) return o;
+  return undefined;
+}
+
+/** spriteIds appartenant à un object-event (NPC/joueur) → à exclure de la liste d'effets. */
+function objectEventSpriteIds(): Set<number> {
+  const ids = new Set<number>();
+  for (const o of gObjectEvents) if (o && o.active && o.spriteId >= 0) ids.add(o.spriteId);
+  if (gPlayerAvatar.spriteId >= 0) ids.add(gPlayerAvatar.spriteId);
+  return ids;
+}
+
+const fx = {
+  help() {
+    const lines = [
+      'dev.fx — overworld / field effects',
+      "  player()                 → object event du joueur (localId/map/pos/behavior)",
+      "  tp(map, x, y)            → fast-travel (alias __devGotoMap)",
+      "  fldeffs()                → table { nom: id } des FLDEFF_*",
+      "  start(idOrName, args[])  → set gFieldEffectArguments + FieldEffectStart",
+      "  onPlayer(idOrName)       → spawn effet object-event-owned sur le joueur",
+      "  sandPile() / stopSandPile()  → raccourci sand pile",
+      "  list()                   → sprites d'effet actifs (non object-event)",
+      "  behaviorAt(x, y)         → metatile behavior (coords map)",
+      "  selftest()               → santé de l'outil",
+    ];
+    console.log(lines.join('\n'));
+    return lines.length;
+  },
+
+  fldeffs() { return { ...FLDEFF_BY_NAME }; },
+
+  player() {
+    const p = playerObjEvent();
+    if (!p) return null;
+    const r = rt();
+    const spr = r && gPlayerAvatar.spriteId >= 0 ? r.gSprites.get(gPlayerAvatar.spriteId) : null;
+    return {
+      objectEventId: GetObjectEventIdByLocalIdAndMap(p.localId, p.mapNum, p.mapGroup),
+      localId: p.localId, mapNum: p.mapNum, mapGroup: p.mapGroup,
+      graphicsId: p.graphicsId, spriteId: gPlayerAvatar.spriteId,
+      currentMetatileBehavior: '0x' + (p.currentMetatileBehavior >>> 0).toString(16),
+      inSandPile: (p as any).inSandPile, inShortGrass: (p as any).inShortGrass,
+      screenX: spr?.x, screenY: spr?.y,
+    };
+  },
+
+  /** 1:1 chemin réel : pose gFieldEffectArguments[0..] puis FieldEffectStart(id). */
+  start(idOrName: number | string, args: number[] = []): number {
+    const id = resolveFldeff(idOrName);
+    for (let i = 0; i < 8; i++) gFieldEffectArguments[i] = args[i] ?? 0;
+    return FieldEffectStart(id);
+  },
+
+  /** Spawn un effet object-event-owned (args = localId/mapNum/mapGroup) sur le joueur. */
+  onPlayer(idOrName: number | string): number {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable (overworld pas chargé ?)');
+    return fx.start(idOrName, [p.localId, p.mapNum, p.mapGroup]);
+  },
+
+  /** Raccourci sand pile : force inSandPile=true (sinon l'Update despawn aussitôt) + spawn. */
+  sandPile() {
+    const p = playerObjEvent();
+    if (!p) throw new Error('[dev.fx] object event joueur introuvable');
+    (p as any).inSandPile = true;
+    const started = fx.onPlayer('FLDEFF_SAND_PILE');
+    return { started, sprites: fx.list() };
+  },
+  stopSandPile() { const p = playerObjEvent(); if (p) (p as any).inSandPile = false; return fx.list(); },
+
+  /** Sprites d'effet actifs (= tous les sprites SAUF ceux d'un object event). */
+  list() {
+    const r = rt(); if (!r) return [];
+    const owned = objectEventSpriteIds();
+    const out: any[] = [];
+    for (const s of r.gSprites.values()) {
+      if (owned.has(s.spriteId)) continue;
+      const oam = r.gba.oam[s.oamIndex];
+      out.push({
+        id: s.spriteId, x: s.x, y: s.y, y2: s.y2,
+        oamX: oam?.x, oamY: oam?.y, tile: oam?.tileId,
+        shape: oam?.shape, size: oam?.size, vis: oam?.visible,
+        prio: oam?.priority, sub: s.subpriority, coordOff: s.coordOffsetEnabled,
+      });
+    }
+    return out;
+  },
+
+  behaviorAt(x: number, y: number): string {
+    const w = window as any;
+    const fn = w.MapGridGetMetatileBehaviorAt ?? rt()?.MapGridGetMetatileBehaviorAt;
+    if (typeof fn !== 'function') return 'n/a (MapGridGetMetatileBehaviorAt absent)';
+    return '0x' + (fn(x, y) >>> 0).toString(16);
+  },
+
+  tp(map: string, x: number, y: number) {
+    const fn = (globalThis as any).__devGotoMap;
+    if (typeof fn !== 'function') throw new Error('[dev.fx] __devGotoMap absent');
+    return fn(map, x, y);
+  },
+
+  selftest() {
+    return {
+      FieldEffectStart: typeof FieldEffectStart === 'function',
+      gFieldEffectArguments: Array.isArray(gFieldEffectArguments) && gFieldEffectArguments.length === 8,
+      gObjectEvents: Array.isArray(gObjectEvents),
+      gPlayerAvatar: !!gPlayerAvatar,
+      GetObjectEventIdByLocalIdAndMap: typeof GetObjectEventIdByLocalIdAndMap === 'function',
+      runtime: !!rt(),
+      gotoMap: typeof (globalThis as any).__devGotoMap === 'function',
+      fldeffCount: Object.keys(FLDEFF_BY_NAME).length,
+      playerFound: !!playerObjEvent(),
+    };
+  },
+};
+
+if (typeof window !== 'undefined') {
+  const w = window as unknown as { dev?: Record<string, unknown> };
+  w.dev = w.dev ?? {};
+  (w.dev as Record<string, unknown>).fx = fx;
+  console.log('[dev-fieldfx-tools] window.dev.fx installed — try dev.fx.help()');
+}
+
+export {};
