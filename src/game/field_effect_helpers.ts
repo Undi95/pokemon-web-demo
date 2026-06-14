@@ -79,6 +79,7 @@ const FLDEFF_JUMP_TALL_GRASS = 12;
 const FLDEFF_JUMP_BIG_SPLASH = 14;
 const FLDEFF_JUMP_SMALL_SPLASH = 16;
 const FLDEFF_JUMP_LONG_GRASS = 18;
+const FLDEFF_DUST = 10;
 const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
@@ -711,6 +712,14 @@ const JUMP_CFG: Record<number, JumpCfg> = {
     frameWtiles: 2, frameHtiles: 2, shape: 0, size: 1,
     sheetFrames: [0, 1, 2, 3], anim: [[0, 8], [1, 8], [2, 8], [3, 8]], pal: 'g0', dx: 8, dy: 8,
   },
+  // 1:1 décomp gFieldEffectObjectTemplate_GroundImpactDust (field_effect_objects.h) :
+  // OAM 16×8 (shape 1/size 0), paletteTag GENERAL_0, sAnim_GroundImpactDust FRAME(0,8)(1,8)(2,8) END,
+  // callback UpdateJumpImpactEffect. SetSpritePosToOffsetMapCoords(8,12). ground_impact_dust.png = 48×8.
+  [FLDEFF_DUST]: {
+    tag: 'FE_GROUND_IMPACT_DUST', png: `${FE_BASE}/ground_impact_dust.png`, pngWidthTiles: 6,
+    frameWtiles: 2, frameHtiles: 1, shape: 1, size: 0,
+    sheetFrames: [0, 1, 2], anim: [[0, 8], [1, 8], [2, 8]], pal: 'g0', dx: 8, dy: 12,
+  },
 };
 
 /** Construit la table d'anim moteur depuis la config : imageValue = slot × (tiles/frame). */
@@ -802,6 +811,10 @@ export function FldEff_JumpLongGrass(rt: DecompRuntime): number { return spawnJu
 export function FldEff_JumpSmallSplash(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_SMALL_SPLASH); }
 /** 1:1 décomp `FldEff_JumpBigSplash` (field_effect_helpers.c:701). */
 export function FldEff_JumpBigSplash(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_JUMP_BIG_SPLASH); }
+/** 1:1 décomp `FldEff_Dust` (field_effect_helpers.c:1180) — nuage de poussière d'atterrissage de
+ *  saut (LAND_ON_NORMAL_GROUND). Même structure que les FldEff_Jump* (template GroundImpactDust,
+ *  callback UpdateJumpImpactEffect) → config-driven via JUMP_CFG[FLDEFF_DUST]. */
+export function FldEff_Dust(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_DUST); }
 
 // ════════════════════════════════════════════════════════════════════════════
 //  FldEff_Splash (642) + FldEff_FeetInFlowingWater (725)

@@ -141,11 +141,8 @@ import {
 } from '../game/field_effect_helpers';
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
-import {
-  preloadJumpDustEffect,
-  UpdateJumpDustEffects,
-  DestroyAllJumpDustEffects,
-} from '../engine/field/field-effect-jump-dust';
+// Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
+// (jump-impact config-driven, préchargé via preloadJumpImpactEffects, tické par le callback global).
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
 // WaitFieldEffectSpriteAnim — tické + auto-despawn par le callback global).
 import { preloadRippleEffect } from '../game/field_effect_helpers';
@@ -627,7 +624,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // callback UpdateTallGrassFieldEffect via runSpriteCallbacks.
         // FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE : migrés (game/field_effect_helpers.ts),
         // tickés par leurs callbacks (WaitFieldEffectSpriteAnim / UpdateSparkleFieldEffect) via runSpriteCallbacks.
-        UpdateJumpDustEffects(rt);
+        // FLDEFF_DUST (jump landing dust) : migré (game/field_effect_helpers.ts), tické par
+        // UpdateJumpImpactEffect via runSpriteCallbacks.
         // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) —
         // migré (game/field_effect_helpers.ts), tické par le callback global.
         // 1:1 décomp `UpdateShortGrassFieldEffect` (game/field_effect_helpers.ts) :
@@ -1133,8 +1131,7 @@ export class TestOverworldScene extends Phaser.Scene {
     // Sparkle (FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE) : assets seuls (one-shot
     // auto-despawn via callback, migrés game/field_effect_helpers.ts).
     await preloadSparkleEffect(this.rt);
-    DestroyAllJumpDustEffects(this.rt);
-    await preloadJumpDustEffect(this.rt);
+    // Jump dust (FLDEFF_DUST) : préchargé via preloadJumpImpactEffects (entrée JUMP_CFG, migré au miroir).
     // Ondulations d'eau (FLDEFF_RIPPLE) : assets seulement (one-shot auto-despawn).
     await preloadRippleEffect(this.rt);
     // Herbe haute (FLDEFF_LONG_GRASS) : assets seulement (sprite.callback, migré au miroir).

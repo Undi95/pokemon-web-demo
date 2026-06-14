@@ -37,12 +37,10 @@ import {
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
   FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
-  FldEff_TallGrass, FldEff_LongGrass,
+  FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
-import { SpawnJumpLandingDust } from './field-effect-jump-dust';
-import { MAP_OFFSET } from './map-loader';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -169,9 +167,9 @@ export function FieldEffectStart(id: number): number {
     return FldEff_TallGrass(rt);
   }
   if (id === FLDEFF_DUST) {
-    // 1:1 décomp FldEff_Dust (field_effect_helpers.c:1180) — nuage d'atterrissage de saut.
-    SpawnJumpLandingDust(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET);
-    return 64;
+    // 1:1 décomp FldEff_Dust (field_effect_helpers.c:1180) — migré dans
+    // game/field_effect_helpers.ts (jump-impact config-driven, args INTERNAL).
+    return FldEff_Dust(rt);
   }
   if (id === FLDEFF_LONG_GRASS) {
     // 1:1 décomp FldEff_LongGrass (field_effect_helpers.c:395) — migré dans

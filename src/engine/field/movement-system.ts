@@ -30,7 +30,6 @@
 
 import type { DecompRuntime } from '../system/decomp-runtime';
 import { gPlayerAvatar } from './player-avatar';
-import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import { gObjectEvents, type ObjectEvent, ObjectEventUpdateMetatileBehaviors, SetObjectEventDirection, ShiftStillObjectEventCoords, ShiftObjectEventCoords } from './object-events';
 import { ConvertMovementActionsToIds, ScriptMovement_StartObjectMovementScript, ScriptMovement_IsObjectMovementFinished } from './script-movement';
@@ -965,6 +964,10 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
         slot.previousMovementDirection = slot.movementDirection;
         slot.hasShadow = false;
         slot.triggerGroundEffectsOnStop = true;
+        // 1:1 décomp `MovementAction_Jump*_Step1` : objectEvent->landingJump = TRUE →
+        // le spine `DoGroundEffects_OnFinishStep` → GetGroundEffectFlags_JumpLanding fire
+        // GroundEffect_JumpOnTallGrass/JumpOnWater/JumpLandingDust selon la tuile (≠ dust ad-hoc).
+        slot.landingJump = true;
         ObjectEventUpdateMetatileBehaviors(slot);
       }
       // Cleanup jump state : sprite frame reset à face + shadow destroyed +
@@ -973,24 +976,20 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       gPlayerAvatar.stepFramesLeft = 0;
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
       if (_activeRt) DestroyShadowSprite(_activeRt);
-      // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c).
-      // Spawn dust cloud à landing position si on a un rt.
-      // Player jump landing : pas de flag disable côté player (= toujours dust).
-      if (_activeRt) SpawnJumpLandingDust(_activeRt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y);
+      // Le dust d'atterrissage est posé par le spine via `slot.landingJump` (ci-dessus),
+      // plus de spawn ad-hoc (1:1 : GroundEffect_JumpLandingDust depuis DoGroundEffects_OnFinishStep).
     } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
-      // Dust at NPC landing position — sauf si flag disableJumpLandingGroundEffect
-      // set par script opcode `disable_jump_landing_ground_effect`. 1:1 décomp
-      // event_object_movement.c:DoLandingEffect skip si flag set.
-      const flag = (target.npc as unknown as { disableJumpLandingGroundEffect?: boolean }).disableJumpLandingGroundEffect;
-      if (_activeRt && !flag) {
-        // SpawnJumpLandingDust signature attend LOGICAL coords. Post R3 refactor :
-        // npc.currentCoords INTERNAL → convertir.
-        SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX - MAP_OFFSET, target.npc.currentCoordsY - MAP_OFFSET);
-      }
+      // 1:1 décomp `MovementAction_Jump*_Step1` : landingJump + triggerGroundEffectsOnStop →
+      // le spine `DoGroundEffects_OnFinishStep` fire GroundEffect_JumpOnTallGrass/JumpOnWater/
+      // JumpLandingDust selon la tuile d'atterrissage. Le skip via `disableJumpLandingGroundEffect`
+      // (opcode disable_jump_landing_ground_effect) est géré par GetGroundEffectFlags_JumpLanding.
+      // Plus de dust ad-hoc → une seule implémentation (FldEff_Dust, miroir).
+      target.npc.landingJump = true;
+      target.npc.triggerGroundEffectsOnStop = true;
     }
     return true;
   }
