@@ -169,6 +169,11 @@ import {
   DestroyAllShortGrassEffects,
 } from '../engine/field/field-effect-short-grass';
 import {
+  preloadJumpImpactEffects,
+  UpdateJumpImpactEffects,
+  DestroyAllJumpImpactEffects,
+} from '../engine/field/field-effect-jump-impact';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -630,6 +635,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateShortGrassFieldEffect` : touffe herbe basse suivant le parent
         // (Route 110, etc.). Hors démo, câblé via le spine.
         UpdateShortGrassEffects(rt);
+        // 1:1 décomp `UpdateJumpImpactEffect` : jump tall/long grass + jump small/big splash
+        // (impact au saut de rebord sur herbe/eau). Hors démo, câblé via le spine.
+        UpdateJumpImpactEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1121,6 +1129,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
     DestroyAllShortGrassEffects(this.rt);
     await preloadShortGrassEffect(this.rt);
+    // Effets d'impact de saut (jump tall/long grass + jump small/big splash) assets + pool.
+    DestroyAllJumpImpactEffects(this.rt);
+    await preloadJumpImpactEffects(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

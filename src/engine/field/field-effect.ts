@@ -34,6 +34,7 @@ import { FldEff_BerryTreeGrowthSparkle } from './field-effect-sparkle';
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
+import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
 import { SpawnRippleEffect } from './field-effect-ripple';
 import { MAP_OFFSET } from './map-loader';
@@ -158,6 +159,14 @@ export function FieldEffectStart(id: number): number {
     SpawnLongGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
     return 64;
   }
+  if (id === FLDEFF_JUMP_TALL_GRASS || id === FLDEFF_JUMP_LONG_GRASS
+      || id === FLDEFF_JUMP_SMALL_SPLASH || id === FLDEFF_JUMP_BIG_SPLASH) {
+    // 1:1 décomp FldEff_Jump* (UpdateJumpImpactEffect). args[0/1] = coords INTERNAL
+    // (currentCoords, SetSpritePosToOffsetMapCoords les prend telles quelles), [2]=elevation,
+    // [3]=priority. Module générique config-driven (jump tall/long grass + small/big splash).
+    SpawnJumpImpactEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3]);
+    return 64;
+  }
   if (id === FLDEFF_SHORT_GRASS) {
     // 1:1 décomp FldEff_ShortGrass (field_effect_helpers.c:492). args[0..2] = localId/mapNum/
     // mapGroup de l'owner (StartFieldEffectForObjectEvent), PAS des coords → pas de MAP_OFFSET.
@@ -179,10 +188,6 @@ export function FieldEffectStart(id: number): number {
   // Pas de warn (ces effets peuvent fire à chaque pas sur eau/sable → spam) — on
   // retourne le sentinel MAX_SPRITES silencieusement.
   switch (id) {
-    case FLDEFF_JUMP_TALL_GRASS:
-    case FLDEFF_JUMP_LONG_GRASS:
-    case FLDEFF_JUMP_SMALL_SPLASH:
-    case FLDEFF_JUMP_BIG_SPLASH:
     case FLDEFF_SPLASH:
     case FLDEFF_SAND_FOOTPRINTS:
     case FLDEFF_DEEP_SAND_FOOTPRINTS:
