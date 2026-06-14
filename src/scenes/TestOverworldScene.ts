@@ -210,6 +210,11 @@ import {
   DestroyAllSurfBlobEffects,
 } from '../engine/field/field-effect-surf-blob';
 import {
+  preloadDisguiseEffects,
+  UpdateDisguiseEffects,
+  DestroyAllDisguiseEffects,
+} from '../engine/field/field-effect-disguise';
+import {
   preloadShadowEffect,
   CreateShadowSprite,
   UpdateShadowSprite,
@@ -696,6 +701,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // qui suit le joueur + bobbing synchronisé. + SpriteCB_UnderwaterSurfBlob (Dive).
         UpdateSurfBlobEffects(rt);
         UpdateUnderwaterSurfBlobEffects(rt);
+        // 1:1 décomp `UpdateDisguiseFieldEffect` : sprite arbre/rocher/sable recouvrant le
+        // joueur déguisé (bases secrètes) + machine de révélation. Trigger = MovementActions.
+        UpdateDisguiseEffects(rt);
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
         // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
         // auto-destroy après 60 frames.
@@ -1211,6 +1219,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // Surf blob (monture de surf qui suit le joueur + bobbing) assets + pool.
     DestroyAllSurfBlobEffects(this.rt);
     await preloadSurfBlobEffect(this.rt);
+    // Disguises (tree/mountain/sand recouvrant le joueur déguisé) assets + pool.
+    DestroyAllDisguiseEffects(this.rt);
+    await preloadDisguiseEffects(this.rt);
     // 1:1 décomp `FldEff_Shadow` : shadow spawn DYNAMIQUEMENT pendant ledge
     // jump (= InitJumpRegular → DoShadowFieldEffect, destroyed au jump end via
     // hasShadow=FALSE). Pas de spawn permanent au boot — preload assets only.

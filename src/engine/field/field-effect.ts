@@ -40,6 +40,7 @@ import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
+import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
 import { SpawnJumpImpactEffect } from './field-effect-jump-impact';
 import { SpawnJumpLandingDust } from './field-effect-jump-dust';
@@ -68,6 +69,7 @@ export const FLDEFF_BERRY_TREE_GROWTH_SPARKLE  = 23;
 export const FLDEFF_DEEP_SAND_FOOTPRINTS       = 24;
 export const FLDEFF_TREE_DISGUISE              = 28;
 export const FLDEFF_MOUNTAIN_DISGUISE          = 29;
+export const FLDEFF_SAND_DISGUISE              = 36;
 export const FLDEFF_QUESTION_MARK_ICON         = 33;
 export const FLDEFF_FEET_IN_FLOWING_WATER      = 34;
 export const FLDEFF_BIKE_TIRE_TRACKS           = 35;
@@ -120,14 +122,17 @@ export function FieldEffectStart(id: number): number {
     return 64;  // emote sprite has its own management
   }
 
-  // ─── Disguise / Sparkle (= dette H3 cascade R3 future port) ────────────────
+  // ─── Disguises tree/mountain/sand (1:1 ShowDisguiseFieldEffect) ─────────────
+  // args[0..2] = localId/mapNum/mapGroup ; le sprite recouvre le NPC + suit. Retourne le
+  // spriteId (le caller MovementAction le stocke dans objectEvent.fieldEffectSpriteId).
   if (id === FLDEFF_TREE_DISGUISE) {
-    // DETTE R3 : spawn tree sprite par-dessus NPC. Tree disguise visual.
-    return 64;
+    return ShowTreeDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
   }
   if (id === FLDEFF_MOUNTAIN_DISGUISE) {
-    // DETTE R3 : spawn mountain sprite par-dessus NPC. Mountain disguise visual.
-    return 64;
+    return ShowMountainDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+  }
+  if (id === FLDEFF_SAND_DISGUISE) {
+    return ShowSandDisguiseFieldEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
   }
   if (id === FLDEFF_BERRY_TREE_GROWTH_SPARKLE) {
     // 1:1 décomp FldEff_BerryTreeGrowthSparkle (field_effect_helpers.c:1288) :
@@ -235,8 +240,8 @@ export function FieldEffectStart(id: number): number {
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
   // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
-  // scripts) ; seul le FldEff visuel manque. RESTE : disguises
-  // (tree/mountain/sand), sparkle générique, water surfacing, Unused*. Le warn signale
+  // scripts) ; seul le FldEff visuel manque. RESTE : sparkle générique (FLDEFF_SPARKLE),
+  // water surfacing, Unused*. Le warn signale
   // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);
   return 64;
