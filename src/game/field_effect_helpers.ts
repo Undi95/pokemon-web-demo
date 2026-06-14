@@ -34,9 +34,10 @@
  *    suivre exactement (le callback recopie x/y du parent chaque frame).
  *
  * Migration en cours (1 effet = 1 commit, A/B avant chaque) :
- *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect (depuis field-effect-sand-pile.ts).
- *   ⏳ reste : reflets, grass, footprints, splash, ripple, hot springs, bubbles,
- *      ash, surf blob, disguises, sparkle, shadow, jump dust, + effets morts.
+ *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
+ *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
+ *   ⏳ reste : reflets, grass, footprints, splash, ripple, bubbles, ash, surf blob,
+ *      disguises, sparkle, shadow, jump dust, warp arrow, + effets morts.
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
@@ -53,6 +54,7 @@ import {
 // 1:1 décomp FLDEFF_* (include/constants/field_effects.h). Const LOCALES (≠ import) pour
 // éviter le cycle ESM field-effect ↔ field_effect_helpers au top-level (pitfall TDZ connu :
 // un import de FLDEFF_* utilisé hors corps de fonction casse l'init du module).
+const FLDEFF_HOT_SPRINGS_WATER = 42;
 const FLDEFF_SAND_PILE = 39;
 
 const OBJECT_EVENTS_COUNT = 16;
@@ -77,6 +79,104 @@ export function UpdateObjectEventSpriteInvisibility(rt: DecompRuntime, sprite: D
   const y2 = (y << 16 >> 16) - (sprite.centerToCornerVecY >> 1);
   if ((x << 16 >> 16) >= DISPLAY_WIDTH + 16 || x2 < -16) sprite.invisible = true;
   if ((y << 16 >> 16) >= DISPLAY_HEIGHT + 16 || y2 < -16) sprite.invisible = true;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_HotSpringsWater (field_effect_helpers.c:800)
+//  Nappe d'eau chaude (16×16, frame statique) qui SUIT le parent assis dans les sources
+//  de Lavaridge. Lape DEVANT le joueur (subpriority = parent-1), couvre le bas du corps
+//  (y = height/2 + parentY - 8). Despawn quand l'owner n'est plus inHotSprings.
+//  Assets : hot_springs_water.png (16×16, 1 frame), palette general_1.pal.
+//  Sprite data 1:1 décomp : sLocalId=data[0] sMapNum=data[1] sMapGroup=data[2]
+//  (sPrevX=data[3]/sPrevY=data[4] posés mais "// Unused" dans le décomp).
+// ════════════════════════════════════════════════════════════════════════════
+
+const HOT_SPRINGS_PNG = '/decomp/em/field_effects/hot_springs_water.png';
+const GENERAL_1_PAL = '/decomp/em/field_effects/general_1.pal';
+const TAG_HOT_SPRINGS_GFX = 'FIELD_EFFECT_HOT_SPRINGS_WATER_GFX';
+const TAG_GENERAL_1_PAL = 'FLDEFF_PAL_TAG_GENERAL_1';
+
+let _hotSpringsTileStart = -1;
+let _hotSpringsPalSlot = -1;
+let _hotSpringsInit = false;
+let _hotSpringsInitPromise: Promise<void> | null = null;
+
+/** Préchargement asset (concern plateforme). */
+export function preloadHotSpringsEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _hotSpringsInit && IndexOfSpriteTileTag(TAG_HOT_SPRINGS_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_hotSpringsInitPromise && !_hotSpringsInit) return _hotSpringsInitPromise;
+  _hotSpringsInit = false; _hotSpringsInitPromise = null;
+  _hotSpringsInitPromise = (async () => {
+    // PNG 16×16 = 4 tiles 2×2, ordre PNG brut (row-major) = ordre obj. Frame unique.
+    const png = await loadIndexedPngStrict(HOT_SPRINGS_PNG, 4);
+    _hotSpringsTileStart = LoadSpriteSheet({ data: png.charData, size: png.charData.length, tag: TAG_HOT_SPRINGS_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _hotSpringsPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _hotSpringsInit = true;
+  })();
+  return _hotSpringsInitPromise;
+}
+
+/** 1:1 décomp `FldEff_HotSpringsWater` (field_effect_helpers.c:800). Lit gFieldEffectArguments[0..2]
+ *  = localId/mapNum/mapGroup de l'owner. */
+export function FldEff_HotSpringsWater(rt: DecompRuntime): number {
+  if (!_hotSpringsInit) return 64;
+  const localId = gFieldEffectArguments[0], mapNum = gFieldEffectArguments[1], mapGroup = gFieldEffectArguments[2];
+  // 1:1 : un seul hot springs par owner (le callback despawn quand !inHotSprings).
+  for (const s of rt.gSprites.values()) {
+    if (s.inUse && s.callback === UpdateHotSpringsWaterFieldEffect &&
+        s.data[0] === localId && s.data[1] === mapNum && s.data[2] === mapGroup) return 64;
+  }
+  const objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (objectEventId >= OBJECT_EVENTS_COUNT) return 64;
+  const objectEvent = gObjectEvents[objectEventId];
+  const parentSpriteId = GetObjectEventMainSpriteId(objectEvent);
+  const parentSprite = parentSpriteId >= 0 ? rt.gSprites.get(parentSpriteId) : undefined;
+  if (!parentSprite) return 64;
+  const pOam = rt.gba.oam[parentSprite.oamIndex];
+  const result = rt.CreateSpriteAtOam({
+    tileId: _hotSpringsTileStart,
+    paletteBank: _hotSpringsPalSlot,
+    x: parentSprite.x, y: parentSprite.y,
+    shape: 0, size: 1,  // 16×16
+    // 1:1 : sprite->oam.priority = gSprites[objectEvent->spriteId].oam.priority.
+    priority: (pOam ? pOam.priority : 2) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateHotSpringsWaterFieldEffect;
+  sprite.x = parentSprite.x; sprite.y = parentSprite.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE → matcher le parent (écran-positionné).
+  sprite.coordOffsetEnabled = parentSprite.coordOffsetEnabled;
+  sprite.data[0] = localId; sprite.data[1] = mapNum; sprite.data[2] = mapGroup;
+  sprite.data[3] = parentSprite.x; sprite.data[4] = parentSprite.y; // sPrevX/Y (Unused décomp)
+  return 0;
+}
+
+/** 1:1 décomp `UpdateHotSpringsWaterFieldEffect` (field_effect_helpers.c:819). Callback per-frame. */
+export function UpdateHotSpringsWaterFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(sprite.data[0], sprite.data[1], sprite.data[2]);
+  if (notFound || !gObjectEvents[objectEventId].inHotSprings) {
+    // 1:1 décomp : FieldEffectStop(sprite, FLDEFF_HOT_SPRINGS_WATER).
+    FieldEffectStop(rt, sprite, FLDEFF_HOT_SPRINGS_WATER);
+    return;
+  }
+  const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+  const linkedSpriteId = GetObjectEventMainSpriteId(objEvent);
+  const linked = linkedSpriteId >= 0 ? rt.gSprites.get(linkedSpriteId) : undefined;
+  if (!linked) return;
+  // 1:1 : x = linkedSprite->x ; y = (height>>1) + linkedSprite->y - 8 (couvre le bas du corps) ;
+  // subpriority = linkedSprite->subpriority - 1 (DEVANT le joueur).
+  sprite.x = linked.x;
+  sprite.y = (GetObjectEventGfxHeight(objEvent.graphicsId) >> 1) + linked.y - 8;
+  sprite.coordOffsetEnabled = linked.coordOffsetEnabled;
+  sprite.subpriority = (linked.subpriority - 1) & 0xFF;
+  // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE). (Pas d'anim : tileId reste frame 0.)
+  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

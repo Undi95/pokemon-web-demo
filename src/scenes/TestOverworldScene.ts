@@ -186,12 +186,9 @@ import {
 } from '../engine/field/field-effect-footprints';
 // Sand pile : migré dans le miroir 1:1 game/field_effect_helpers.ts (modèle sprite.callback,
 // plus de pool ni d'Update manuel — le callback global runSpriteCallbacks le tique).
-import { preloadSandPileEffect } from '../game/field_effect_helpers';
-import {
-  preloadHotSpringsEffect,
-  UpdateHotSpringsEffects,
-  DestroyAllHotSpringsEffects,
-} from '../engine/field/field-effect-hot-springs';
+// Sand pile + hot springs : migrés dans le miroir 1:1 game/field_effect_helpers.ts
+// (modèle sprite.callback — le callback global runSpriteCallbacks les tique).
+import { preloadSandPileEffect, preloadHotSpringsEffect } from '../game/field_effect_helpers';
 import {
   preloadBubblesEffect,
   UpdateBubblesEffects,
@@ -688,9 +685,8 @@ export class TestOverworldScene extends Phaser.Scene {
         UpdateFootprintsEffects(rt);
         // 1:1 décomp `UpdateSandPileFieldEffect` (game/field_effect_helpers.ts) : désormais
         // tické par le callback global (sprite.callback) — plus d'appel manuel ici.
-        // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` : nappe d'eau chaude suivant le parent
-        // assis dans les sources (Lavaridge). Câblé via le spine (GroundEffect_HotSprings).
-        UpdateHotSpringsEffects(rt);
+        // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` (game/field_effect_helpers.ts) :
+        // désormais tické par le callback global (sprite.callback) — plus d'appel manuel.
         // 1:1 décomp `UpdateBubblesFieldEffect` : colonne de bulles sur les algues (plongée).
         // Câblé via le spine (GroundEffect_Seaweed → FLDEFF_BUBBLES). One-shot anim 36f.
         UpdateBubblesEffects(rt);
@@ -1206,8 +1202,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadFootprintsEffects(this.rt);
     // Sand pile : assets seulement (le sprite.callback s'auto-détruit, pas de pool à reset).
     await preloadSandPileEffect(this.rt);
-    // Hot springs water (nappe d'eau chaude suivant le joueur assis, Lavaridge) assets + pool.
-    DestroyAllHotSpringsEffects(this.rt);
+    // Hot springs water (Lavaridge) : assets seulement (le sprite.callback s'auto-détruit).
     await preloadHotSpringsEffect(this.rt);
     // Bubbles (colonne de bulles sur algues en plongée) assets + pool.
     DestroyAllBubblesEffects(this.rt);

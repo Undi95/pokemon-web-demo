@@ -36,8 +36,7 @@ import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnShortGrassEffect } from './field-effect-short-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
-import { FldEff_SandPile } from '../../game/field_effect_helpers';
-import { SpawnHotSpringsEffect } from './field-effect-hot-springs';
+import { FldEff_SandPile, FldEff_HotSpringsWater } from '../../game/field_effect_helpers';
 import { SpawnBubblesEffect } from './field-effect-bubbles';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
@@ -227,10 +226,9 @@ export function FieldEffectStart(id: number): number {
     return FldEff_SandPile(rt);
   }
   if (id === FLDEFF_HOT_SPRINGS_WATER) {
-    // 1:1 décomp FldEff_HotSpringsWater (field_effect_helpers.c:800). args[0..2] = localId/mapNum/
-    // mapGroup de l'owner → nappe d'eau chaude qui suit le joueur assis (Lavaridge).
-    SpawnHotSpringsEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-    return 64;
+    // 1:1 décomp FldEff_HotSpringsWater (field_effect_helpers.c:800). Lit gFieldEffectArguments[0..2]
+    // = localId/mapNum/mapGroup → nappe d'eau chaude qui suit le joueur assis (Lavaridge).
+    return FldEff_HotSpringsWater(rt);
   }
   if (id === FLDEFF_BUBBLES) {
     // 1:1 décomp FldEff_Bubbles (field_effect_helpers.c:1258). args[0/1] = coords MAP de l'objet
