@@ -326,18 +326,34 @@ function ContinueAnimLoop(rt: DecompRuntime, sprite: AnimDispatchSprite): void {
   ContinueAnim(rt, sprite);
 }
 
-/** 1:1 décomp `void JumpToTopOfAnimLoop(struct Sprite *sprite)` (sprite.c:1050-1064) :
- *      while (anims[animNum][animCmdIndex].type != -3 (LOOP))
- *          if (animCmdIndex == 0) break;
+/** 1:1 décomp `void JumpToTopOfAnimLoop(struct Sprite *sprite)` (sprite.c:1050-1065) :
+ *      if (sprite->animLoopCounter)
+ *      {
+ *          sprite->animCmdIndex--;
+ *          while (anims[animNum][animCmdIndex - 1].type != -3) // -3 = ANIMCMD_LOOP
+ *          {
+ *              if (animCmdIndex == 0) break;
+ *              animCmdIndex--;
+ *          }
  *          animCmdIndex--;
- * Backtrack jusqu'au LOOP cmd qui ouvre la boucle. */
+ *      }
+ *
+ * Ne fait rien si animLoopCounter == 0 (= dernier passage → on tombe sur le cmd
+ * suivant la boucle). Sinon : recule d'abord HORS du cmd LOOP courant, puis remonte
+ * tant que le cmd PRÉCÉDENT (`[animCmdIndex-1]`) n'est pas un LOOP (= borne ouvrant
+ * le bloc), enfin recule d'un cran de plus pour que le `animCmdIndex++` de ContinueAnim
+ * retombe sur la 1re frame du bloc. La décomp lit `[idx-1]` (OOB lecture en idx=0, garde
+ * par le break) ; en TS `animTable[-1]` = undefined (kind != 'loop'). */
 function JumpToTopOfAnimLoop(sprite: AnimDispatchSprite): void {
   if (!sprite.anims) return;
   const animTable = sprite.anims[sprite.animNum];
   if (!animTable) return;
-  while (sprite.animCmdIndex > 0) {
-    const cmd = animTable[sprite.animCmdIndex];
-    if (cmd && cmd.kind === 'loop') break;
+  if (sprite.animLoopCounter) {
+    sprite.animCmdIndex--;
+    while (animTable[sprite.animCmdIndex - 1]?.kind !== 'loop') {
+      if (sprite.animCmdIndex === 0) break;
+      sprite.animCmdIndex--;
+    }
     sprite.animCmdIndex--;
   }
 }
