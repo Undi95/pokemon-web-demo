@@ -6107,6 +6107,20 @@ function _spawnSingleNpcFromTemplate(
   const cam = GetCameraTopLeftCoords();
   const npc = gObjectEvents[slot];
   npc.active = true;
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1300-1301) :
+  // active = TRUE; triggerGroundEffectsOnMove = TRUE. Sans ça, DoGroundEffects_OnSpawn
+  // ne tire jamais pour un NPC statique → pas de reflet/grass-on-spawn près de l'eau/herbe
+  // (le flag est consommé au 1er tick de TickObjectEventMovements, grille déjà chargée).
+  npc.triggerGroundEffectsOnMove = true;
+  // Reset 1:1 des "once" flags ground-effect (= ClearObjectEvent zéroie tout avant le set) :
+  // un slot réutilisé peut garder hasReflection/inX stale → forcerait GetGroundEffectFlags_*
+  // à sauter le re-trigger. On les remet à false (la valeur post-ClearObjectEvent).
+  npc.hasReflection = false;
+  npc.inShortGrass = false;
+  npc.inShallowFlowingWater = false;
+  npc.inSandPile = false;
+  npc.inHotSprings = false;
+  npc.disableCoveringGroundEffects = false;
   npc.invisible = false;
   npc.graphicsId = graphicsKey;
   npc.movementType = template.movementTypeRaw ?? '';
