@@ -908,7 +908,13 @@ export function InitPlayerObjectEvent(
   npc.mapGroup = 0;
   // Bit flags reset.
   npc.singleMovementActive = false;
-  npc.triggerGroundEffectsOnMove = false;
+  // 1:1 décomp `InitObjectEventStateFromTemplate` (event_object_movement.c:1300-1301) :
+  // active = TRUE ; triggerGroundEffectsOnMove = TRUE. Le player object event (slot 0)
+  // passe par le MÊME init au spawn dans la décomp (SpawnSpecialObjectEvent → …). Sans
+  // ça, le joueur ne reflète/rustle PAS au spawn/warp/reprise-save tant qu'il n'a pas
+  // bougé (= le bug signalé "il ne se reflète que s'il a bougé"). Le 1er DoGroundEffects_
+  // OnSpawn (TickObjectEventMovements) consomme ce flag → reflet immédiat.
+  npc.triggerGroundEffectsOnMove = true;
   npc.triggerGroundEffectsOnStop = false;
   npc.disableCoveringGroundEffects = false;
   npc.landingJump = false;
@@ -3059,7 +3065,17 @@ interface GfxMeta {
 }
 const _gfxMetaCache = new Map<string, GfxMeta>();
 const _gfxMetaEmptyPic = new Uint8Array(0);
-function _getGfxMeta(graphicsId: string): GfxMeta {
+// Le slot object-event du joueur stocke un graphicsId court ('Brendan'/'May', cf.
+// InitPlayerAvatar) qui n'est PAS une clé du registre graphics-info. Pour le spine
+// ground-effect (reflet : paletteSlot=PLAYER + height 32), on l'aliase vers la vraie
+// fiche overworld du joueur (= OBJ_EVENT_GFX_BRENDAN/MAY_NORMAL, ce que le slot 0 décomp
+// porte). Les autres états (vélo/surf) restent hors démo à pied.
+const _playerGfxAlias: Readonly<Record<string, string>> = {
+  Brendan: 'OBJ_EVENT_GFX_BRENDAN_NORMAL',
+  May: 'OBJ_EVENT_GFX_MAY_NORMAL',
+};
+function _getGfxMeta(graphicsIdRaw: string): GfxMeta {
+  const graphicsId = _playerGfxAlias[graphicsIdRaw] ?? graphicsIdRaw;
   let m = _gfxMetaCache.get(graphicsId);
   if (m) return m;
   // défaut si la factory exige des pics réels (= métadonnées indispo).
@@ -3466,7 +3482,10 @@ function GetReflectionVerticalOffset(npc: ObjectEvent): number {
  *  data[7]=stillReflection. */
 function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): void {
   const npc = gObjectEvents[refl.data[0]];
-  const main = npc && npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined;
+  // 1:1 décomp : mainSprite = &gSprites[objectEvent->spriteId]. Chez nous le slot player
+  // (spriteId=-1) porte son sprite visuel sur gPlayerAvatar.spriteId → résoudre via lui.
+  const mainSpriteId = npc && npc.isPlayer ? gPlayerAvatar.spriteId : (npc ? npc.spriteId : -1);
+  const main = mainSpriteId >= 0 ? rt.gSprites.get(mainSpriteId) : undefined;
   if (!npc || !npc.active || !npc.hasReflection || npc.localId !== refl.data[1] || !main) {
     // 1:1 décomp `reflectionSprite->inUse = FALSE` → DestroySprite. Cleanup explicite
     // (notre runtime ne GC pas inUse=false → masquer l'OAM, comme les autres effets).
@@ -3843,21 +3862,21 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
     // dispatch, faceplayer sur NPCs WANDER/LOOK ne tourne PAS visuellement
     // (= user G15 bug "NPCs dehors ne se tournent pas").
     //
-    // GROUND EFFECTS : le slot player (isPlayer) est SKIPPÉ ici — ses effets
-    // (grass/dust) sont déclenchés ad-hoc dans player-avatar.ts (PlayerStep).
-    // Le player garde son chemin de mouvement bespoke ; sa migration vers le spine
-    // générique (= le faire passer par ce DoGroundEffects) est le commit suivant,
-    // sinon double-fire avec l'ad-hoc (le player pose triggerGroundEffectsOnMove sur
-    // son slot mais ne le consomme jamais). Les NPCs n'avaient AUCUN ground effect
-    // avant : le câblage est additif pour eux.
+    // GROUND EFFECTS : le slot player (isPlayer) passe MAINTENANT par le spine 1:1
+    // comme la décomp (le player object event slot 0 traverse le même DoGroundEffects).
+    // Ça lui donne reflet / tall grass / ondulations / eau peu profonde / etc. via le
+    // chemin générique. Le player pose `triggerGroundEffectsOnMove` au step start
+    // (player-avatar.ts PlayerStep) + maintient currentCoords/metatileBehavior → le spine
+    // consomme correctement. Le tall-grass ad-hoc de player-avatar a été RETIRÉ (le spine
+    // le fait). SEUL le jump landing dust reste ad-hoc dans player-avatar : son trigger
+    // décomp (`landingJump`) n'est pas posé par notre saut bespoke → GetGroundEffectFlags_
+    // JumpLanding ne fire pas pour le player (pas de double).
     // Le player a son sprite visuel sur gPlayerAvatar.spriteId (le slot a spriteId=-1) ;
-    // les NPCs sur npc.spriteId. ObjectEventUpdateSubpriority (1:1) doit tourner pour TOUS,
-    // donc on résout le bon sprite ici (incl. player).
+    // les NPCs sur npc.spriteId. ObjectEventUpdateSubpriority (1:1) tourne pour TOUS.
     const sprite = npc.isPlayer
       ? (gPlayerAvatar.spriteId >= 0 ? rt.gSprites.get(gPlayerAvatar.spriteId) : undefined)
       : (npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined);
-    const runGroundEffects = !npc.isPlayer;
-    if (runGroundEffects) DoGroundEffects_OnSpawn(rt, npc, sprite);
+    DoGroundEffects_OnSpawn(rt, npc, sprite);
 
     if (ObjectEventIsHeldMovementActive(npc)) {
       _execHeldMovementAction(rt, npc);
@@ -3880,14 +3899,11 @@ export function TickObjectEventMovements(rt: DecompRuntime): void {
       }
     }
 
-    if (runGroundEffects) {
-      DoGroundEffects_OnBeginStep(rt, npc, sprite);
-      DoGroundEffects_OnFinishStep(rt, npc, sprite);
-    }
+    DoGroundEffects_OnBeginStep(rt, npc, sprite);
+    DoGroundEffects_OnFinishStep(rt, npc, sprite);
     // 1:1 décomp `UpdateObjectEventCurrentMovement` (event_object_movement.c:4943) :
     // ObjectEventUpdateSubpriority — pose la subpriority Y-based, pour TOUS les object events
-    // y compris le player (sinon l'avatar reste à 255 → le bump grass wrap mal). Le player est
-    // skippé pour DoGroundEffects (ad-hoc) mais PAS pour la subpriority (1:1 strict).
+    // y compris le player (sinon l'avatar reste à 255 → le bump grass wrap mal).
     ObjectEventUpdateSubpriority(rt, npc, sprite);
   }
 }

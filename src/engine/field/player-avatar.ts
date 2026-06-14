@@ -41,7 +41,6 @@ import {
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
-import { SpawnTallGrassEffect } from '../field/field-effect-grass';
 import { SpawnJumpLandingDust } from '../field/field-effect-jump-dust';
 import { CreateShadowSprite, DestroyShadowSprite } from '../field/field-effect-shadow';
 import {
@@ -1435,13 +1434,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       void import('./step-callbacks').then(({ DoPerStepCallback }) => {
         DoPerStepCallback();
       });
-      // 1:1 décomp `GroundEffect_StepOnTallGrass` (event_object_movement.c:7815) :
-      // si player step ON tall grass tile → spawn rustle anim. Trigger au step
-      // end (= player vient d'arriver sur la new tile).
+      // 1:1 décomp `GroundEffect_StepOnTallGrass` : le rustle d'herbe est DÉSORMAIS géré
+      // par le spine DoGroundEffects (le player object event slot 0 traverse Tick
+      // ObjectEventMovements → DoGroundEffects_OnSpawn/OnBeginStep comme la décomp).
+      // L'ancien spawn ad-hoc ici faisait double-fire une fois le player câblé au spine →
+      // retiré. Le tall grass (+ reflet / ondulations / eau peu profonde …) sort maintenant
+      // du chemin générique. `newTileBehavior` reste lu pour le check d'encounter ci-dessous.
       const newTileBehavior = MapGridGetMetatileBehaviorAt(nx + MAP_OFFSET, ny + MAP_OFFSET);
-      if (newTileBehavior === MB_TALL_GRASS) {
-        SpawnTallGrassEffect(rt, nx, ny);
-      }
       // Phase 4.6 : check warp tile au step end. 1:1 décomp `field_control_avatar.c
       // ProcessPlayerFieldInput → TryStartWarpEventScript` qui run après le step.
       // Si player vient de finir step ON un warp tile → set pending warp + freeze.
