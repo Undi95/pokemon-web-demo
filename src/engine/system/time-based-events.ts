@@ -16,12 +16,14 @@
  *   Quand BERRIES atteint : minutesUntilNextStage *= 4 (= 4× withering time).
  *   Si 71 stages × duration > minutes : tree wilt (= reset to gBlankBerryTree).
  *
- * Most berries : stageDuration = 3 hours = 180 minutes per stage (data/berry.h).
+ * stageDuration par baie (1:1 GetStageDurationByBerryType, berry.c:1246) :
+ * GetBerryInfo(berry)->stageDuration * 60 min (3h pour la plupart, mais 1/4/6/
+ * 12/18/24h selon la baie — cf gBerries[] dans berry.ts).
  */
 
 import { RtcGetMinuteCount } from '../system/rtc';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
-import { CalcBerryYield } from '../pokemon/berry';
+import { CalcBerryYield, GetStageDurationByBerryType } from '../pokemon/berry';
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -32,17 +34,6 @@ export const BERRY_STAGE_TALLER = 3;
 export const BERRY_STAGE_FLOWER = 4;
 export const BERRY_STAGE_BERRIES = 5;
 export const BERRY_STAGE_SOWN = BERRY_STAGE_PLANTED;
-
-// ─── Helper : berry stage duration ──────────────────────────────────────────
-
-/** 1:1 décomp `GetStageDurationByBerryType(berry)` (berry.c:1246) :
- *    return GetBerryInfo(berry)->stageDuration * 60;
- *  La majorité des berries ont stageDuration = 3 (= 3h × 60 = 180min/stage).
- *  Quelques-uns ont 2/4/6/12 hours. Pour MVP on retourne 180. */
-function _stageDurationMinutes(_berry: number): number {
-  // Future : map berry id → real stageDuration via data/berry.h gBerries[].
-  return 180;
-}
 
 // ─── Berry tree growth 1:1 décomp ────────────────────────────────────────────
 
@@ -123,7 +114,7 @@ export function BerryTreeTimeUpdate(minutes: number): void {
     if (tree.berry && tree.stage && !tree.stopGrowth) {
       // 1:1 décomp : si > 71 × stageDuration minutes passed, le tree wilts complet
       // (= blank). 71 stages = trees abandonnés depuis longtemps.
-      if (minutes >= _stageDurationMinutes(tree.berry) * 71) {
+      if (minutes >= GetStageDurationByBerryType(tree.berry) * 71) {
         Object.assign(tree, _gBlankBerryTree);
       } else {
         let time = minutes;
@@ -133,7 +124,7 @@ export function BerryTreeTimeUpdate(minutes: number): void {
             break;
           }
           time -= tree.minutesUntilNextStage;
-          tree.minutesUntilNextStage = _stageDurationMinutes(tree.berry);
+          tree.minutesUntilNextStage = GetStageDurationByBerryType(tree.berry);
           if (!_BerryTreeGrow(tree)) break;
           // Stage BERRIES : duration ×4 (= longer to wither).
           if (tree.stage === BERRY_STAGE_BERRIES) {
