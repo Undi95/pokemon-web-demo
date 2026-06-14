@@ -31,14 +31,13 @@
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { FieldEffectActiveListRemove } from './field-effect-active-list';
 import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
-import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
   FldEff_JumpTallGrass, FldEff_JumpLongGrass, FldEff_JumpSmallSplash, FldEff_JumpBigSplash,
   FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
-  FldEff_TallGrass,
+  FldEff_TallGrass, FldEff_LongGrass,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { SpawnFootprintsEffect } from './field-effect-footprints';
@@ -175,14 +174,9 @@ export function FieldEffectStart(id: number): number {
     return 64;
   }
   if (id === FLDEFF_LONG_GRASS) {
-    // 1:1 décomp FldEff_LongGrass (field_effect_helpers.c:395). args identiques à TALL_GRASS
-    // (owner = (localId<<8)|mapNum en [4], mapGroup [5], elevation [2], [7]=skip-to-end).
-    const ownerLocalId = (gFieldEffectArguments[4] >> 8) & 0xFF;
-    const ownerMapNum = gFieldEffectArguments[4] & 0xFF;
-    const ownerMapGroup = gFieldEffectArguments[5] & 0xFF;
-    const elevation = gFieldEffectArguments[2];
-    SpawnLongGrassEffect(rt, gFieldEffectArguments[0] - MAP_OFFSET, gFieldEffectArguments[1] - MAP_OFFSET, gFieldEffectArguments[7] !== 0, ownerLocalId, ownerMapNum, ownerMapGroup, elevation);
-    return 64;
+    // 1:1 décomp FldEff_LongGrass (field_effect_helpers.c:395) — migré dans
+    // game/field_effect_helpers.ts (lit gFieldEffectArguments, args INTERNAL).
+    return FldEff_LongGrass(rt);
   }
   if (id === FLDEFF_JUMP_TALL_GRASS) return FldEff_JumpTallGrass(rt);
   if (id === FLDEFF_JUMP_LONG_GRASS) return FldEff_JumpLongGrass(rt);

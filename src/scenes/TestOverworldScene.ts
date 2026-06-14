@@ -149,11 +149,9 @@ import {
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
 // WaitFieldEffectSpriteAnim — tické + auto-despawn par le callback global).
 import { preloadRippleEffect } from '../game/field_effect_helpers';
-import {
-  preloadLongGrassEffect,
-  UpdateLongGrassEffects,
-  DestroyAllLongGrassEffects,
-} from '../engine/field/field-effect-long-grass';
+// Long grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback,
+// tické + auto-despawn par le callback global runSpriteCallbacks).
+import { preloadLongGrassEffect } from '../game/field_effect_helpers';
 // Short grass : migré dans le miroir 1:1 game/field_effect_helpers.ts (sprite.callback).
 import { preloadShortGrassEffect } from '../game/field_effect_helpers';
 // Jump impact (jump tall/long grass + small/big splash) : migrés dans le miroir 1:1.
@@ -632,9 +630,6 @@ export class TestOverworldScene extends Phaser.Scene {
         UpdateJumpDustEffects(rt);
         // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) —
         // migré (game/field_effect_helpers.ts), tické par le callback global.
-        // 1:1 décomp `UpdateLongGrassFieldEffect` : overlay herbe haute (Route 119/120) —
-        // anim + tracking owner + despawn. Hors démo, mais câblé via le spine.
-        UpdateLongGrassEffects(rt);
         // 1:1 décomp `UpdateShortGrassFieldEffect` (game/field_effect_helpers.ts) :
         // migré, tické par le callback global.
         // 1:1 décomp `UpdateJumpImpactEffect` (game/field_effect_helpers.ts) : jump tall/long
@@ -1142,8 +1137,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadJumpDustEffect(this.rt);
     // Ondulations d'eau (FLDEFF_RIPPLE) : assets seulement (one-shot auto-despawn).
     await preloadRippleEffect(this.rt);
-    // Herbe haute (FLDEFF_LONG_GRASS) assets + pool.
-    DestroyAllLongGrassEffects(this.rt);
+    // Herbe haute (FLDEFF_LONG_GRASS) : assets seulement (sprite.callback, migré au miroir).
     await preloadLongGrassEffect(this.rt);
     // Herbe basse (FLDEFF_SHORT_GRASS) assets + pool.
     await preloadShortGrassEffect(this.rt);

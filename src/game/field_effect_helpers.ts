@@ -56,12 +56,12 @@ import { loadIndexedPngStrict, loadGbaPal } from '../engine/gba/png-loader';
 import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
-  SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority,
+  SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority, ElevationToPriority,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../engine/field/map-loader';
-import { MetatileBehavior_IsTallGrass } from './metatile_behavior';
+import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass } from './metatile_behavior';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
@@ -90,6 +90,7 @@ const FLDEFF_TREE_DISGUISE = 28;
 const FLDEFF_MOUNTAIN_DISGUISE = 29;
 const FLDEFF_SAND_DISGUISE = 36;
 const FLDEFF_TALL_GRASS = 4;
+const FLDEFF_LONG_GRASS = 17;
 const LOCALID_PLAYER = 0xFF;
 const MAX_SPRITES = 64;
 
@@ -404,6 +405,135 @@ export function TrySpawnTallGrassOnReturnToField(rt: DecompRuntime, px: number, 
   gFieldEffectArguments[6] = loc ? (((loc.mapNum & 0xFF) << 8) | (loc.mapGroup & 0xFF)) : 0;
   gFieldEffectArguments[7] = 1;
   FieldEffectStart(FLDEFF_TALL_GRASS);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_LongGrass (field_effect_helpers.c:395)
+//  Herbe HAUTE 2× (long grass — Route 119/120). Jumeau de tall grass, fonction décomp
+//  DISTINCTE : anim 7 cmds, priority = ElevationToPriority (≠ args[3] fixe), SeekSpriteAnim(6),
+//  subprio offset TOUJOURS 0 (≠ tall grass : 4 si animCmdIndex==0), check MB_LONG_GRASS.
+//  Sprite TUILE-FIXE + coordOffset (suit la caméra). Despawn quand : owner introuvable |
+//  tuile plus long grass | (owner a quitté la tuile && anim finie).
+//  Sprite data 1:1 : sElevation=data[0] sX=data[1] sY=data[2] data[3]=(sLocalId<<8)|sMapNum
+//    sMapGroup=data[4] sCurrentMap=data[5] sObjectMoved=data[7].
+//  Assets : long_grass.png (64×16 = 4 frames 16×16), palette general_1.pal.
+// ════════════════════════════════════════════════════════════════════════════
+
+const LONG_GRASS_PNG = '/decomp/em/field_effects/long_grass.png';
+const TAG_LONG_GRASS_GFX = 'FIELD_EFFECT_LONG_GRASS_GFX';
+const LONG_GRASS_NUM_FRAMES = 4;
+const LONG_GRASS_TILES_PER_FRAME = 4; // 16×16
+
+/** 1:1 décomp `sAnim_LongGrass` (field_effect_objects.h:620) : FRAME(1,3)(2,3)(0,4)(3,4)(0,4)(3,4)(0,4) END.
+ *  imageValue = frameIdx × 4 → 4,8,0,12,0,12,0. SeekSpriteAnim(6) = cmd 6 (dernière frame 0) figée. */
+const sAnims_LongGrass: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(4, 3), ANIMCMD_FRAME(8, 3), ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(12, 4),
+   ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(12, 4), ANIMCMD_FRAME(0, 4), ANIMCMD_END],
+];
+
+let _longGrassTileStart = -1;
+let _longGrassPalSlot = -1;
+let _longGrassInit = false;
+let _longGrassInitPromise: Promise<void> | null = null;
+
+/** PNG 64×16 = 8×2 tiles row-major → frame-major (frame F = cols 2F,2F+1 sur 2 rows = 4 tiles). */
+function pngTo1dObjLayoutLongGrass(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, PNG_WIDTH_TILES = 8;
+  const out = new Uint8Array(LONG_GRASS_NUM_FRAMES * LONG_GRASS_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < LONG_GRASS_NUM_FRAMES; f++) {
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 2; col++) {
+        const pngTileIdx = row * PNG_WIDTH_TILES + (f * 2) + col;
+        const objTileIdx = f * LONG_GRASS_TILES_PER_FRAME + row * 2 + col;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement asset (concern plateforme). */
+export function preloadLongGrassEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _longGrassInit && IndexOfSpriteTileTag(TAG_LONG_GRASS_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_longGrassInitPromise && !_longGrassInit) return _longGrassInitPromise;
+  _longGrassInit = false; _longGrassInitPromise = null;
+  _longGrassInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(LONG_GRASS_PNG, 4);
+    const reordered = pngTo1dObjLayoutLongGrass(png.charData);
+    _longGrassTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_LONG_GRASS_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_1_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _longGrassPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_1_PAL });
+    _longGrassInit = true;
+  })();
+  return _longGrassInitPromise;
+}
+
+/** 1:1 décomp `FldEff_LongGrass` (field_effect_helpers.c:395). args[0/1]=tuile INTERNAL, [2]=elevation,
+ *  [4]=(localId<<8)|mapNum, [5]=mapGroup, [6]=currentMap, [7]=skip-to-end. */
+export function FldEff_LongGrass(rt: DecompRuntime): number {
+  if (!_longGrassInit) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&x, &y, 8, 8) → coords MONDE (x/y = args[0/1] INTERNAL).
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _longGrassTileStart,
+    paletteBank: _longGrassPalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    // 1:1 : sprite->oam.priority = ElevationToPriority(gFieldEffectArguments[2]) (≠ tall grass = args[3]).
+    priority: Math.max(0, Math.min(3, ElevationToPriority(gFieldEffectArguments[2]))) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: 0,     // 1:1 CreateSpriteAtEnd(..., 0)
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateLongGrassFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_LongGrass, _longGrassTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  sprite.coordOffsetEnabled = true; // 1:1 : sprite monde
+  sprite.data[0] = gFieldEffectArguments[2]; // sElevation
+  sprite.data[1] = gFieldEffectArguments[0]; // sX
+  sprite.data[2] = gFieldEffectArguments[1]; // sY
+  sprite.data[3] = gFieldEffectArguments[4]; // (sLocalId<<8)|sMapNum
+  sprite.data[4] = gFieldEffectArguments[5]; // sMapGroup
+  sprite.data[5] = gFieldEffectArguments[6]; // sCurrentMap
+  // 1:1 : if (args[7]) SeekSpriteAnim(sprite, 6) — saute à la dernière frame (overlay statique).
+  if (gFieldEffectArguments[7]) rt.SeekSpriteAnim(result.spriteId, 6);
+  return 0;
+}
+
+/** 1:1 décomp `UpdateLongGrassFieldEffect` (field_effect_helpers.c:420). Callback per-frame. */
+export function UpdateLongGrassFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  let mapNum = (sprite.data[5] >> 8) & 0xFF;
+  let mapGroup = sprite.data[5] & 0xFF;
+  // 1:1 : transition de map connectée (gCamera.active) → décale la tuile + maj sCurrentMap.
+  const loc = gSaveBlock1Ptr.location;
+  if (gCamera.active && loc && (loc.mapNum !== mapNum || loc.mapGroup !== mapGroup)) {
+    sprite.data[1] -= gCamera.x; // sX
+    sprite.data[2] -= gCamera.y; // sY
+    sprite.data[5] = ((loc.mapNum & 0xFF) << 8) | (loc.mapGroup & 0xFF);
+  }
+  const localId = (sprite.data[3] >> 8) & 0xFF; // sLocalId
+  mapNum = sprite.data[3] & 0xFF;               // sMapNum
+  mapGroup = sprite.data[4];                     // sMapGroup
+  const metatileBehavior = MapGridGetMetatileBehaviorAt(sprite.data[1], sprite.data[2]);
+  const { notFound, objectEventId } = TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup);
+  if (notFound || !MetatileBehavior_IsLongGrass(metatileBehavior) || (sprite.data[7] && sprite.animEnded)) {
+    FieldEffectStop(rt, sprite, FLDEFF_LONG_GRASS);
+  } else {
+    // 1:1 : l'objet a-t-il quitté la tuile ? (current ET previous coords != sX/sY).
+    const objEvent: ObjectEvent = gObjectEvents[objectEventId];
+    if ((objEvent.currentCoordsX !== sprite.data[1] || objEvent.currentCoordsY !== sprite.data[2])
+     && (objEvent.previousCoordsX !== sprite.data[1] || objEvent.previousCoordsY !== sprite.data[2])) {
+      sprite.data[7] = 1; // sObjectMoved
+    }
+    // 1:1 : UpdateGrassFieldEffectSubpriority(sprite, sElevation, 0) — offset TOUJOURS 0 (≠ tall grass).
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+    UpdateGrassFieldEffectSubpriority(rt, sprite, sprite.data[0], 0);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
