@@ -86,6 +86,8 @@ import {
   UnfreezeAllNpcs as UnfreezeObjectEvents,
   ApplyLevitateMovement_TickAll,
   ResetLevitateMovementTasks,
+  InitReflectionDistortion,
+  UpdateReflectionDistortionMatrices,
 } from '../engine/field/object-events';
 import { tickMovementQueues, resetMovementQueues, applyMovement, isMovementDone } from '../engine/field/movement-system';
 import { ScriptMovement_MoveObjects, ScriptMovement_Reset } from '../engine/field/script-movement';
@@ -579,6 +581,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // wander state machine de tick (= cf. tickWanderAround case 6 ne fait
         // rien si walkFramesLeft est déjà géré par movement-system).
         TickObjectEventMovements(rt);
+        // 1:1 décomp `CreateReflectionEffectSprites` affine-anims : tick les 2 matrices OAM
+        // 0/1 de distorsion (= petites vagues des reflets eau). Doit tourner avant le rendu
+        // pour que les reflets affine (affineParamIndex 0/1) lisent les matrices à jour.
+        UpdateReflectionDistortionMatrices(rt);
         // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
         UpdateObjectEvents(rt);
         // Phase 4.10 : sync child OAMs des NPCs subsprite-driven (= truck 48×48)
@@ -836,6 +842,9 @@ export class TestOverworldScene extends Phaser.Scene {
     // 1:1 décomp `InitTilesetAnimations` (tileset_anims.c:574-579).
     // Doit être appelé APRÈS CopyMapTilesetsToVram (= callbacks setté par CopyMapTilesetsToVram).
     InitTilesetAnimations();
+    // 1:1 décomp `CreateReflectionEffectSprites` (event_object_movement.c:1207, appelé par
+    // ResetObjectEvents) : démarre les 2 affine-anims pilotant les matrices OAM 0/1 (vagues reflets).
+    InitReflectionDistortion(this.rt);
 
     // 1:1 décomp `ResumeMap` (overworld.c:2138) : `ResetCameraUpdateInfo` SEUL
     // avant `InitObjectEvents` (= InitPlayerAvatar). `ResetFieldCamera` est

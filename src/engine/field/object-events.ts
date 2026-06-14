@@ -24,6 +24,10 @@ import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { loadIndexedPngStrict, loadGbaPal } from '../gba/png-loader';
 import type { LoadedPng } from '../gba/png-loader';
 import { AllocSpriteTiles, MarkObjTilesFree, LoadSpritePalette } from '../system/sprite';
+// 1:1 décomp : ObjAffineSet (BIOS, decomp-bridge) + SetOamMatrix (sprite.c:673) pour piloter
+// les matrices OAM 0/1 animées par CreateReflectionEffectSprites (= ondulation des reflets eau).
+import { ObjAffineSet } from '../system/decomp-bridge';
+import { SetOamMatrix } from '../system/decomp-helpers';
 // 1:1 STRICT décomp `base_oam.h` : OAM templates par dimensions (16x32, 32x32,
 // 16x16, 48x48-via-16x32). Au CreateSpriteAt, le décomp fait `sprite->oam =
 // *template->oam` qui set shape/size/priority depuis ce template. Notre port
@@ -3471,6 +3475,129 @@ function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): numb
   return LoadObjectRegularReflectionPalette(meta);
 }
 
+// ─── Reflection distortion = petites vagues (1:1 CreateReflectionEffectSprites) ────
+// event_object_movement.c:1207 `CreateReflectionEffectSprites` crée 2 sprites INVISIBLES
+// (FLDEFFOBJ_REFLECTION_DISTORTION) dont les affine-anims pilotent en continu les matrices
+// OAM 0 et 1. Les reflets EAU (!stillReflection) passent en affineMode NORMAL + matrixNum
+// 0/1 (UpdateObjectReflectionSprite) → ils sont transformés par ces matrices animées =
+// l'ondulation horizontale (« petites vagues »). On porte un moteur affine-anim FOCALISÉ
+// pour ces 2 matrices (réplique 1:1 ContinueAffineAnim/AffineAnimDelay/AffineAnimCmd_frame/
+// _jump + ApplyAffineAnimFrame{Absolute,RelativeAndUpdateMatrix}, sprite.c:1067-1342) qui
+// écrit gba.affineParams[0]/[1] via ObjAffineSet. Données : sAffineAnims_ReflectionDistortion
+// (field_effect_objects.h:849-881).
+
+type _ReflDistortFrame = { xScale: number; yScale: number; rotation: number; duration: number };
+type _ReflDistortCmd = _ReflDistortFrame | { jump: number };
+// Valeurs signées (0xFF00=-256, 0xFFFF=-1, 0x100=256, 0x1=1). cmd0 = ABSOLUTE (base
+// vflip / hflip+vflip via rotation 180°), puis oscillation xScale ±4 (= le wobble), JUMP(1).
+const _sAffineAnims_ReflectionDistortion: _ReflDistortCmd[][] = [
+  [ // matrix 0 (pas de hflip → vflip seul)
+    { xScale: -256, yScale: 256, rotation: -128, duration: 0 },
+    { xScale: 1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: -1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: -1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: 1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { jump: 1 },
+  ],
+  [ // matrix 1 (hflip + vflip)
+    { xScale: 256, yScale: 256, rotation: -128, duration: 0 },
+    { xScale: -1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: 1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: 1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { xScale: -1, yScale: 0, rotation: 0, duration: 4 },
+    { xScale: 0, yScale: 0, rotation: 0, duration: 8 },
+    { jump: 1 },
+  ],
+];
+interface _ReflDistortState { animCmdIndex: number; delayCounter: number; xScale: number; yScale: number; rotation: number; }
+const _reflDistortState: _ReflDistortState[] = [
+  { animCmdIndex: 0, delayCounter: 0, xScale: 0x100, yScale: 0x100, rotation: 0 },
+  { animCmdIndex: 0, delayCounter: 0, xScale: 0x100, yScale: 0x100, rotation: 0 },
+];
+let _reflDistortInited = false;
+
+const _s16 = (v: number): number => (v << 16) >> 16;
+/** 1:1 décomp `ConvertScaleParam` (sprite.c:1316) : SAFE_DIV(0x10000, scale). */
+function _convertScaleParam(scale: number): number {
+  return scale === 0 ? 0 : _s16((0x10000 / scale) | 0);
+}
+/** 1:1 décomp `ApplyAffineAnimFrameAbsolute` (sprite.c:1282). */
+function _reflDistortApplyAbsolute(m: number, f: _ReflDistortFrame): void {
+  const st = _reflDistortState[m];
+  st.xScale = _s16(f.xScale);
+  st.yScale = _s16(f.yScale);
+  st.rotation = _s16(f.rotation) << 8;
+}
+/** 1:1 décomp `ApplyAffineAnimFrameRelativeAndUpdateMatrix` (sprite.c:1302) : accumule
+ *  scale/rotation, calcule la matrice via ObjAffineSet, l'écrit dans gba.affineParams[m]. */
+function _reflDistortApplyRelative(rt: DecompRuntime, m: number, f: _ReflDistortFrame): void {
+  const st = _reflDistortState[m];
+  st.xScale = _s16(st.xScale + f.xScale);
+  st.yScale = _s16(st.yScale + f.yScale);
+  st.rotation = (st.rotation + (f.rotation << 8)) & ~0xFF;
+  const matrix = { pa: 0, pb: 0, pc: 0, pd: 0 };
+  ObjAffineSet({ xScale: _convertScaleParam(st.xScale), yScale: _convertScaleParam(st.yScale), rotation: st.rotation }, [matrix], 1, 2);
+  SetOamMatrix(rt.gba, m, matrix.pa, matrix.pb, matrix.pc, matrix.pd);
+}
+const _DUMMY_FRAME: _ReflDistortFrame = { xScale: 0, yScale: 0, rotation: 0, duration: 0 };
+/** 1:1 décomp `ApplyAffineAnimFrame` (sprite.c:1330) — renvoie le nouveau delayCounter
+ *  (= frameCmd.duration décrémenté si > 0, comme la mutation décomp consommée ensuite). */
+function _reflDistortApplyFrame(rt: DecompRuntime, m: number, f: _ReflDistortFrame): number {
+  if (f.duration > 0) {
+    _reflDistortApplyRelative(rt, m, f);
+    return f.duration - 1;
+  }
+  _reflDistortApplyAbsolute(m, f);
+  _reflDistortApplyRelative(rt, m, _DUMMY_FRAME);
+  return 0;
+}
+/** 1:1 décomp `ContinueAffineAnim` (sprite.c:1084) pour la matrice m (FRAME + JUMP only). */
+function _reflDistortTick(rt: DecompRuntime, m: number): void {
+  const st = _reflDistortState[m];
+  const anim = _sAffineAnims_ReflectionDistortion[m];
+  if (st.delayCounter) {
+    // AffineAnimDelay : décrémente puis applique les deltas du FRAME courant.
+    st.delayCounter--;
+    const cur = anim[st.animCmdIndex];
+    if (!('jump' in cur)) _reflDistortApplyRelative(rt, m, cur);
+  } else {
+    st.animCmdIndex++;
+    let cmd = anim[st.animCmdIndex];
+    if ('jump' in cmd) {            // AffineAnimCmd_jump
+      st.animCmdIndex = cmd.jump;
+      cmd = anim[st.animCmdIndex];
+    }
+    if (!('jump' in cmd)) st.delayCounter = _reflDistortApplyFrame(rt, m, cmd);
+  }
+}
+
+/** 1:1 décomp `CreateReflectionEffectSprites` (event_object_movement.c:1207). Démarre les 2
+ *  affine-anims (matrices 0/1) à leur frame de base. Appelé au map init (ResetObjectEvents). */
+export function InitReflectionDistortion(rt: DecompRuntime): void {
+  for (let m = 0; m < 2; m++) {
+    _reflDistortState[m] = { animCmdIndex: 0, delayCounter: 0, xScale: 0x100, yScale: 0x100, rotation: 0 };
+    const cmd0 = _sAffineAnims_ReflectionDistortion[m][0];
+    // BeginAffineAnim : process cmd0 (ABSOLUTE, duration 0).
+    if (!('jump' in cmd0)) _reflDistortState[m].delayCounter = _reflDistortApplyFrame(rt, m, cmd0);
+  }
+  _reflDistortInited = true;
+}
+
+/** Tick par frame des 2 matrices de distorsion. À call dans la boucle overworld AVANT le
+ *  rendu (les reflets eau lisent gba.affineParams[0]/[1] via leur affineParamIndex). */
+export function UpdateReflectionDistortionMatrices(rt: DecompRuntime): void {
+  if (!_reflDistortInited) InitReflectionDistortion(rt);
+  _reflDistortTick(rt, 0);
+  _reflDistortTick(rt, 1);
+}
+
 /** 1:1 décomp `GetReflectionVerticalOffset` (field_effect_helpers.c:70). */
 function GetReflectionVerticalOffset(npc: ObjectEvent): number {
   return _getGfxMeta(npc.graphicsId).height - 2;
@@ -3508,11 +3635,6 @@ function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): vo
   roam.paletteBank = refl.data[6] >= 0 ? refl.data[6] : moam.paletteBank;
   roam.shape = moam.shape;
   roam.size = moam.size;
-  // 1:1 : oam.matrixNum |= ST_OAM_VFLIP → reflet vflippé. Dans notre modèle split,
-  // syncSpritesToOam écrit oam.flipV/flipH DEPUIS sprite.vFlip/hFlip (après ce callback)
-  // → poser les champs SPRITE, pas oam (sinon écrasés au sync).
-  refl.vFlip = true;
-  refl.hFlip = main.hFlip;
   roam.tileId = moam.tileId;
   refl.subspriteTableNum = main.subspriteTableNum;
   refl.invisible = main.invisible;
@@ -3524,8 +3646,25 @@ function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): vo
   refl.y2 = -main.y2;
   refl.coordOffsetEnabled = main.coordOffsetEnabled;
   if (npc.hideReflection) refl.invisible = true;
-  // DETTE ondulation eau : si !stillReflection (data[7]==0), la décomp pose
-  // affineMode NORMAL + matrixNum 0/1 (matrice ripple). Non porté (vflip simple).
+  // 1:1 décomp (field_effect_helpers.c:137,153-161). Dans notre modèle split, syncSpritesToOam
+  // écrit oam.flipV/affineMode/affineParamIndex DEPUIS les champs SPRITE → on pose ceux-ci.
+  if (refl.data[7] !== 0) {
+    // ICE / stillReflection : miroir net via OAM vflip (pas d'ondulation).
+    // oam.matrixNum = mainSprite->oam.matrixNum | ST_OAM_VFLIP.
+    refl.affineMode = 0;
+    refl.matrixNum = 0;
+    refl.vFlip = true;
+    refl.hFlip = main.hFlip;
+  } else {
+    // EAU : affineMode NORMAL + matrice de distorsion ANIMÉE (matrixNum 0 = vflip,
+    // 1 = hflip+vflip si le main est hflippé) = les petites vagues. Le vflip/hflip vient
+    // de la MATRICE (gba.affineParams[0/1], pilotée par UpdateReflectionDistortionMatrices),
+    // PAS du flip OAM (ignoré en mode affine).
+    refl.affineMode = 1;
+    refl.matrixNum = (main.hFlip ? 1 : 0);
+    refl.vFlip = false;
+    refl.hFlip = false;
+  }
 }
 
 /** 1:1 décomp `SetUpReflection` (field_effect_helpers.c:47). Crée le sprite reflet
@@ -3561,7 +3700,17 @@ function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSpri
     refl.data[6] = reflBank;
     roam.paletteBank = reflBank;
   }
-  // if (!stillReflection) oam.affineMode = NORMAL → DETTE ondulation eau (vflip simple ici).
+  // 1:1 décomp (field_effect_helpers.c:66-67) : if (!stillReflection) oam.affineMode = NORMAL.
+  // Eau → mode affine dès la création (matrixNum/flip posés chaque frame par
+  // UpdateObjectReflectionSprite) ; glace → OAM vflip. Les matrices 0/1 sont animées par
+  // UpdateReflectionDistortionMatrices (= petites vagues).
+  if (!stillReflection) {
+    refl.affineMode = 1;
+    refl.matrixNum = 0;
+    refl.vFlip = false;
+    roam.affineMode = 1;
+    roam.affineParamIndex = 0;
+  }
 }
 
 // ─── DoRippleFieldEffect (1:1 event_object_movement.c:8779) ────────────────────
