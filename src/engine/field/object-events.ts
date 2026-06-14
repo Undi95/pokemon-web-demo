@@ -4881,13 +4881,22 @@ function _setupBerryTreeSpriteGraphics(npc: ObjectEvent, rt: DecompRuntime): boo
   const objTileBase = AllocSpriteTiles(objTileCount);
   if (objTileBase < 0) return false;
 
-  // Palette : on charge la palette indexée du PNG de la baie (= couleurs du stade
-  // affiché). Tag unique par baie → arbres de même baie partagent le slot.
-  // Dette web vs décomp : le décomp partage des palettes NPC pré-chargées via
-  // gBerryTreePaletteSlotTablePointers ; ici 1 slot par baie distincte (couleurs
-  // correctes, n° de slot différent — équivalent fonctionnel pour le rendu).
-  const paletteTag = `NPC_PAL_BERRY_${gfx.png}`;
-  const paletteBank = LoadSpritePalette({ data: berryPng.palette as Uint16Array, tag: paletteTag });
+  // Palette PAR STADE — 1:1 SetBerryTreeGraphics (event_object_movement.c:1909) :
+  // `sprite->oam.paletteNum = gBerryTreePaletteSlotTablePointers[berryId][stage]`.
+  // La décomp pointe l'OAM vers un slot palette DIFFÉRENT par stade : DirtPile
+  // (PLANTED, slot table[0]) et Sprout (SPROUTED, slot table[1]) ont leur PROPRE
+  // palette, distincte des frames baie (TALLER/FLOWERING/BERRIES). Concrètement
+  // sprout.png met ses feuilles aux indices 8-10 (verts) là où oran.png y met du
+  // bleu (la baie) → afficher le sprout avec la palette baie verdit/bleuit à tort.
+  // On charge donc la palette de la SOURCE du stade affiché (dirt_pile / sprout /
+  // baie). dirt_pile + sprout sont partagés (1 tag chacun) ; baie = 1 tag/baie.
+  // Dette web (slot n° divergent, cf gBerryTreePaletteSlotTablePointers) : on
+  // alloue un bank par palette distincte au lieu des slots OW partagés — couleurs
+  // 1:1, n° de slot libre.
+  const palSrc = animNum === 0 ? dirtPng : animNum === 1 ? sproutPng : berryPng;
+  const palName = animNum === 0 ? 'dirt_pile' : animNum === 1 ? 'sprout' : gfx.png;
+  const paletteTag = `NPC_PAL_BERRY_${palName}`;
+  const paletteBank = LoadSpritePalette({ data: palSrc.palette as Uint16Array, tag: paletteTag });
   if (paletteBank === 0xFF) {
     MarkObjTilesFree(objTileBase * 32, objTileCount * 32);
     return false;
