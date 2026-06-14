@@ -128,7 +128,6 @@ import {
   CreateWarpArrowSprite,
   DestroyWarpArrowSprite,
   HideShowWarpArrow,
-  UpdateWarpArrowSprite,
 } from '../engine/field/field-effect-arrow';
 import {
   LoadEmoteAssets,
@@ -623,12 +622,11 @@ export class TestOverworldScene extends Phaser.Scene {
         // (= 1:1 décomp field_camera.c:416 + event_object_movement.c:2217).
         // Plus de per-frame call ici (= éliminait le mid-step capture drift
         // qui causait "1 case trop haut" sur NPCs spawnés mid-step).
-        // Phase 4.7 : 1:1 décomp `HideShowWarpArrow` + sprite update. Per-frame
-        // check : si player on ARROW_WARP tile + facing/walking matching dir
-        // → show arrow at adjacent tile. Sinon hide. UpdateWarpArrowSprite tick
-        // anim + sync sprite OAM position avec camera scroll.
+        // 1:1 décomp `HideShowWarpArrow` (field_player_avatar.c) : per-frame check —
+        // si player sur tuile ARROW_WARP + dir de mouvement matchante → show arrow sur
+        // la tuile adjacente, sinon hide. Le clignotement est joué par le MOTEUR
+        // (CreateWarpArrowSprite/ShowWarpArrowSprite migrés game/field_effect_helpers.ts).
         HideShowWarpArrow(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
-        UpdateWarpArrowSprite(rt);
         // 1:1 décomp tall grass field effect (= field_effect_helpers.c
         // UpdateTallGrassFieldEffect) : tick anim + position tracking + auto
         // destroy après cycle.

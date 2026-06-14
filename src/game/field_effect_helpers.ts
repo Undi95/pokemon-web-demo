@@ -44,8 +44,9 @@
  *   ✅ FldEff_Bubbles + UpdateBubblesFieldEffect (bug 1:1 répliqué).
  *   ✅ FldEff_BerryTreeGrowthSparkle + FldEff_Sparkle + UpdateSparkleFieldEffect.
  *   ✅ Show{Tree,Mountain,Sand}DisguiseFieldEffect + UpdateDisguiseFieldEffect + Start/UpdateRevealDisguise.
- *   ⏳ reste : reflets, tall/long grass, footprints, surf blob,
- *      shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
+ *   ✅ CreateWarpArrowSprite + SetSpriteInvisible + ShowWarpArrowSprite (driver HideShowWarpArrow reste field-effect-arrow.ts).
+ *   ⏳ reste : reflets, shadow (stub à refaire), tall/long grass, footprints, surf blob,
+ *      jump dust, + effets morts.
  */
 
 import type { DecompRuntime, DecompSprite } from '../engine/system/decomp-runtime';
@@ -57,7 +58,7 @@ import {
   SetObjectSubpriorityByElevation,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
-import { SetSpritePosToOffsetMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt } from '../engine/field/field-camera';
+import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MAP_OFFSET } from '../engine/field/map-loader';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
@@ -132,6 +133,118 @@ function setFieldEffectAnims(
   sprite.animBeginning = true;
   sprite.animEnded = false;
   sprite.animPaused = false;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Warp arrow (field_effect_helpers.c:175-208)
+//  Flèche clignotante (16×16) affichée sur une tuile de warp directionnel (entrées de
+//  grottes, escaliers). Sprite PERSISTANT (pas FieldEffectStart) : créé 1× au map load
+//  (CreateWarpArrowSprite → objectEvent.warpArrowSpriteId), montré/caché chaque frame par
+//  HideShowWarpArrow (field_player_avatar.c, reste hors miroir). Pas de callback (template
+//  SpriteCallbackDummy) — le clignotement est joué par le MOTEUR via sAnimTable_Arrow
+//  (StartSpriteAnim(direction-1), 2 frames @32 + JUMP(0) = boucle infinie). data[0/1]=sPrevX/Y.
+//  Assets : arrow.png (128×16 = 8 frames 16×16). Palette : paletteTag=TAG_NONE → bank 0
+//  (palette player, 1:1 — l'arrow fut authored sur ces indices).
+// ════════════════════════════════════════════════════════════════════════════
+
+const ARROW_PNG = '/decomp/em/field_effects/arrow.png';
+const TAG_ARROW_GFX = 'FIELD_EFFECT_ARROW_GFX';
+const ARROW_TILES_PER_FRAME = 4; // 16×16 = 2×2 tiles 4bpp
+const ARROW_PALETTE_BANK = 0;    // 1:1 : paletteTag=TAG_NONE → bank 0 (palette player Brendan/May)
+
+/** 1:1 décomp sAnimTable_Arrow (field_effect_objects.h:260) : [South, North, West, East].
+ *  Chaque dir = 2 frames (off/on) @32 + JUMP(0) (clignotement infini). imageValue = frameIdx × 4. */
+const sAnims_Arrow: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(12, 32), ANIMCMD_FRAME(28, 32), ANIMCMD_JUMP(0)], // South (frames 3,7)
+  [ANIMCMD_FRAME(0, 32),  ANIMCMD_FRAME(16, 32), ANIMCMD_JUMP(0)], // North (frames 0,4)
+  [ANIMCMD_FRAME(4, 32),  ANIMCMD_FRAME(20, 32), ANIMCMD_JUMP(0)], // West  (frames 1,5)
+  [ANIMCMD_FRAME(8, 32),  ANIMCMD_FRAME(24, 32), ANIMCMD_JUMP(0)], // East  (frames 2,6)
+];
+
+let _arrowTileStart = -1;
+let _arrowInit = false;
+let _arrowInitPromise: Promise<void> | null = null;
+
+/** PNG 128×16 = 16×2 tiles row-major → 1D OBJ frame-major (8 frames 16×16 = 2×2 tiles/frame :
+ *  frame F = colonnes 2F,2F+1 sur 2 rows). */
+function pngTo1dObjLayoutArrow(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32, PNG_W_TILES = 16, NUM_FRAMES = 8, FW = 2, FH = 2;
+  const out = new Uint8Array(NUM_FRAMES * ARROW_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < NUM_FRAMES; f++) {
+    for (let r = 0; r < FH; r++) {
+      for (let c = 0; c < FW; c++) {
+        const pngTileIdx = r * PNG_W_TILES + (f * FW + c);
+        const objTileIdx = f * ARROW_TILES_PER_FRAME + r * FW + c;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement asset (concern plateforme) : sheet arrow (8 frames), pas de palette (bank 0). */
+export function preloadWarpArrowEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _arrowInit && IndexOfSpriteTileTag(TAG_ARROW_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_arrowInitPromise && !_arrowInit) return _arrowInitPromise;
+  _arrowInit = false; _arrowInitPromise = null;
+  _arrowInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(ARROW_PNG, 4);
+    const reordered = pngTo1dObjLayoutArrow(png.charData);
+    _arrowTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_ARROW_GFX });
+    _arrowInit = true;
+  })();
+  return _arrowInitPromise;
+}
+
+/** 1:1 décomp `CreateWarpArrowSprite` (field_effect_helpers.c:175). Crée 1 sprite 16×16 invisible
+ *  (anims câblées → clignotement par le moteur). Retourne le spriteId (caller : warpArrowSpriteId),
+ *  ou MAX_SPRITES si assets pas prêts. */
+export function CreateWarpArrowSprite(rt: DecompRuntime): number {
+  if (!_arrowInit) return MAX_SPRITES;
+  // 1:1 : CreateSpriteAtEnd(template, 0, 0, 82).
+  const result = rt.CreateSpriteAtOam({
+    tileId: _arrowTileStart,
+    paletteBank: ARROW_PALETTE_BANK,
+    x: 0, y: 0,
+    shape: 0, size: 1,  // 16×16
+    priority: 1, paletteMode: 0, affineMode: 0,
+    subpriority: 82 & 0xFF,
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return MAX_SPRITES;
+  // 1:1 : .anims = sAnimTable_Arrow, callback = SpriteCallbackDummy (pas de callback custom :
+  // le moteur tique l'anim). oam.priority=1, coordOffsetEnabled=TRUE, invisible=TRUE.
+  setFieldEffectAnims(sprite, sAnims_Arrow, _arrowTileStart);
+  sprite.invisible = true;
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = 82 & 0xFF;
+  return result.spriteId;
+}
+
+/** 1:1 décomp `SetSpriteInvisible` (field_effect_helpers.c:188). */
+export function SetSpriteInvisible(rt: DecompRuntime, spriteId: number): void {
+  const sprite = rt.gSprites.get(spriteId);
+  if (sprite) sprite.invisible = true;
+}
+
+/** 1:1 décomp `ShowWarpArrowSprite` (field_effect_helpers.c:193). mapX/mapY = INTERNAL.
+ *  Re-positionne + montre + (re)lance l'anim de direction si la cible/visibilité a changé. */
+export function ShowWarpArrowSprite(rt: DecompRuntime, spriteId: number, direction: number, x: number, y: number): void {
+  const sprite = rt.gSprites.get(spriteId);
+  if (!sprite) return;
+  // 1:1 : if (invisible || sPrevX != x || sPrevY != y).
+  if (sprite.invisible || sprite.data[0] !== x || sprite.data[1] !== y) {
+    const pos = SetSpritePosToMapCoords(x, y);
+    sprite.x = pos.x + 8;
+    sprite.y = pos.y + 8;
+    sprite.invisible = false;
+    sprite.data[0] = x; // sPrevX
+    sprite.data[1] = y; // sPrevY
+    // 1:1 : StartSpriteAnim(sprite, direction - 1) → le moteur joue le clignotement de la dir.
+    rt.StartSpriteAnim(spriteId, direction - 1);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
