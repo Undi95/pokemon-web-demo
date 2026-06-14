@@ -3183,14 +3183,96 @@ function _oamPriority(rt: DecompRuntime, sprite: DecompSprite | undefined): numb
   return sprite && sprite.oamIndex >= 0 ? (rt.gba.oam[sprite.oamIndex].priority ?? 2) : 2;
 }
 
-// ─── SetUpReflection (1:1 field_effect_helpers.c:47) — DETTE port reflets ──────
-/** 1:1 décomp `GroundEffect_WaterReflection`/`IceReflection` → SetUpReflection.
- *  DETTE field_effect_helpers.c : le visuel reflet (CreateCopySpriteAt déjà porté
- *  + UpdateObjectReflectionSprite + palette teintée) est le PROCHAIN sous-chantier.
- *  La structure du spine est 1:1 ; hasReflection est posé par
- *  GetGroundEffectFlags_Reflection, ce stub sera rempli au port reflets. */
-function SetUpReflection(_rt: DecompRuntime, _npc: ObjectEvent, _sprite: DecompSprite | undefined, _ice: boolean): void {
-  // TODO reflets : CreateCopySpriteAt + UpdateObjectReflectionSprite + LoadObjectReflectionPalette.
+// ─── Reflets (1:1 field_effect_helpers.c:47-163) ───────────────────────────────
+// GÉOMÉTRIE portée 1:1 : sprite miroir (createCopySpriteAt) vflippé sous l'objet,
+// mis à jour chaque frame par UpdateObjectReflectionSprite (= sprite.callback, tourne
+// via runSpriteCallbacks dans l'overworld). Déclenché par le spine ground-effect
+// (GroundEffect_Water/IceReflection ← hasReflection posé par GetGroundEffectFlags_Reflection).
+//
+// DETTE palette teintée (sous-chantier suivant) : la décomp remappe la palette du reflet
+// vers un slot dédié (`gReflectionEffectPaletteMap[paletteNum]`) chargé par
+// LoadObjectReflectionPalette (sPlayerReflectionPaletteSets / PatchObjectPalette /
+// UpdateSpritePaletteWithWeather). Mismatch d'archi : la décomp utilise des slots OBJ
+// FIXES (PALSLOT_*_REFLECTION) ; nous une alloc dynamique par tag. En attendant, le reflet
+// RÉUTILISE la palette du sprite principal (correct au 1er ordre pour un NPC régulier en
+// météo claire = le chemin LoadObjectRegularReflectionPalette recharge la même palette).
+// DETTE ondulation eau (!stillReflection) : la décomp passe en affineMode NORMAL +
+// matrice ripple (oam.matrixNum 0/1) ; ici vflip simple (pas de wobble) tant que les
+// matrices affine ripple ne sont pas posées.
+
+/** 1:1 décomp `GetReflectionVerticalOffset` (field_effect_helpers.c:70). */
+function GetReflectionVerticalOffset(npc: ObjectEvent): number {
+  return _getGfxMeta(npc.graphicsId).height - 2;
+}
+
+/** 1:1 décomp `UpdateObjectReflectionSprite` (field_effect_helpers.c:124). Callback
+ *  per-frame : mirroir le sprite principal (vflip, position, tileNum) ; despawn si
+ *  l'objet n'a plus de reflet. data[0]=objEventId, data[1]=localId, data[2]=vOffset,
+ *  data[7]=stillReflection. */
+function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): void {
+  const npc = gObjectEvents[refl.data[0]];
+  const main = npc && npc.spriteId >= 0 ? rt.gSprites.get(npc.spriteId) : undefined;
+  if (!npc || !npc.active || !npc.hasReflection || npc.localId !== refl.data[1] || !main) {
+    // 1:1 décomp `reflectionSprite->inUse = FALSE` → DestroySprite. Cleanup explicite
+    // (notre runtime ne GC pas inUse=false → masquer l'OAM, comme les autres effets).
+    refl.inUse = false;
+    const o = rt.gba.oam[refl.oamIndex];
+    if (o) { o.visible = false; o.tileId = 0; o.flipV = false; }
+    rt.gSprites.delete(refl.spriteId);
+    return;
+  }
+  const moam = rt.gba.oam[main.oamIndex];
+  const roam = rt.gba.oam[refl.oamIndex];
+  // 1:1 : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[main paletteNum].
+  // DETTE palette teintée → réutilise la palette du main (notre OAM = paletteBank).
+  roam.paletteBank = moam.paletteBank;
+  roam.shape = moam.shape;
+  roam.size = moam.size;
+  // 1:1 : oam.matrixNum |= ST_OAM_VFLIP → reflet vflippé. Dans notre modèle split,
+  // syncSpritesToOam écrit oam.flipV/flipH DEPUIS sprite.vFlip/hFlip (après ce callback)
+  // → poser les champs SPRITE, pas oam (sinon écrasés au sync).
+  refl.vFlip = true;
+  refl.hFlip = main.hFlip;
+  roam.tileId = moam.tileId;
+  refl.subspriteTableNum = main.subspriteTableNum;
+  refl.invisible = main.invisible;
+  refl.x = main.x;
+  refl.y = main.y + GetReflectionVerticalOffset(npc) + refl.data[2];
+  refl.centerToCornerVecX = main.centerToCornerVecX;
+  refl.centerToCornerVecY = main.centerToCornerVecY;
+  refl.x2 = main.x2;
+  refl.y2 = -main.y2;
+  refl.coordOffsetEnabled = main.coordOffsetEnabled;
+  if (npc.hideReflection) refl.invisible = true;
+  // DETTE ondulation eau : si !stillReflection (data[7]==0), la décomp pose
+  // affineMode NORMAL + matrixNum 0/1 (matrice ripple). Non porté (vflip simple).
+}
+
+/** 1:1 décomp `SetUpReflection` (field_effect_helpers.c:47). Crée le sprite reflet
+ *  (copie vflippée sous l'objet) + callback de mirroir. `stillReflection` = glace
+ *  (true, pas d'ondulation) vs eau (false). */
+function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined, stillReflection: boolean): void {
+  if (!sprite) return;
+  const reflId = rt.createCopySpriteAt(sprite, sprite.x, sprite.y, 152);
+  if (reflId === MAX_SPRITES) return;
+  const refl = rt.gSprites.get(reflId);
+  if (!refl) return;
+  refl.callback = UpdateObjectReflectionSprite;
+  const roam = rt.gba.oam[refl.oamIndex];
+  roam.priority = 3;
+  // 1:1 : oam.paletteNum = gReflectionEffectPaletteMap[...] → DETTE palette teintée :
+  // createCopySpriteAt a déjà copié la palette du main ; on la garde (réutilisation).
+  refl.usingSheet = true;
+  // 1:1 : anims = gDummySpriteAnimTable + StartSpriteAnim(0) → l'anim du reflet n'avance
+  // pas (son tileId est piloté par UpdateObjectReflectionSprite). Équivalent : animPaused.
+  refl.animPaused = true;
+  refl.subspriteMode = 'off';
+  refl.data[0] = gObjectEvents.indexOf(npc);  // sReflectionObjEventId
+  refl.data[1] = npc.localId;                  // sReflectionObjEventLocalId
+  refl.data[2] = 0;                            // sReflectionVerticalOffset (non-bridge ; DETTE bridge)
+  refl.data[7] = stillReflection ? 1 : 0;      // sIsStillReflection
+  // LoadObjectReflectionPalette(objectEvent, refl) → DETTE palette teintée (cf note section).
+  // if (!stillReflection) oam.affineMode = NORMAL → DETTE ondulation eau (vflip simple ici).
 }
 
 // ─── DoRippleFieldEffect (1:1 event_object_movement.c:8779) ────────────────────
