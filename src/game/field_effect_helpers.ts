@@ -38,7 +38,8 @@
  *   ✅ FldEff_Ripple (+ WaitFieldEffectSpriteAnim générique one-shot).
  *   ✅ FldEff_HotSpringsWater + UpdateHotSpringsWaterFieldEffect.
  *   ✅ FldEff_SandPile + UpdateSandPileFieldEffect.
- *   ⏳ reste : reflets, tall/long grass, footprints, splash, bubbles, ash, surf blob,
+ *   ✅ FldEff_Bubbles + UpdateBubblesFieldEffect (bug 1:1 répliqué).
+ *   ⏳ reste : reflets, tall/long grass, footprints, splash, ash, surf blob,
  *      disguises, sparkle, shadow (stub non-1:1 à refaire), jump dust, warp arrow, + effets morts.
  */
 
@@ -50,6 +51,7 @@ import {
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
 } from '../engine/field/object-events';
 import { ANIMCMD_FRAME, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
+import { SetSpritePosToOffsetMapCoords } from '../engine/field/field-camera';
 import {
   gFieldEffectArguments, FieldEffectStop,
 } from '../engine/field/field-effect';
@@ -61,6 +63,7 @@ const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
 const FLDEFF_SAND_PILE = 39;
+const FLDEFF_BUBBLES = 53;
 
 const OBJECT_EVENTS_COUNT = 16;
 const DISPLAY_WIDTH = 240;
@@ -561,6 +564,115 @@ export function UpdateSandPileFieldEffect(sprite: DecompSprite, rt: DecompRuntim
   sprite.subpriority = linked.subpriority & 0xFF;
   // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE).
   UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_Bubbles (field_effect_helpers.c:1258)
+//  Colonne de bulles (16×32) quand un objet marche sur des algues (seaweed) en plongée.
+//  Spawn aux coords MAP de l'objet (offset 8,0), priority 1, subpriority 82. One-shot :
+//  anim 8 frames puis END → despawn sur animEnded OU offscreen.
+//  ⚠️ BUG 1:1 RÉPLIQUÉ (Game Freak) : « Move up » mais le masque `sY &= (1<<8)` (256, pas 0xFF)
+//  efface l'accumulateur chaque frame → sY>>8 = TOUJOURS 0 → les bulles NE MONTENT JAMAIS.
+//  On réplique l'arithmétique exacte (cf. feedback-suis-la-decomp-pas-approximer).
+//  Assets : bubbles.png (128×32 = 8 frames 16×32), palette general_0.pal.
+//  Sprite data 1:1 : sY = data[0].
+// ════════════════════════════════════════════════════════════════════════════
+
+const BUBBLES_PNG = '/decomp/em/field_effects/bubbles.png';
+const TAG_BUBBLES_GFX = 'FIELD_EFFECT_BUBBLES_GFX';
+const BUBBLES_NUM_FRAMES = 8;
+const BUBBLES_FRAME_W_TILES = 2;   // 16px
+const BUBBLES_FRAME_H_TILES = 4;   // 32px
+const BUBBLES_TILES_PER_FRAME = BUBBLES_FRAME_W_TILES * BUBBLES_FRAME_H_TILES;  // 8
+const BUBBLES_PNG_W_TILES = 16;    // 128px
+
+/** 1:1 décomp `sAnim_Bubbles` : 8 frames, durées 4,4,4,6,6,4,4,4, END. imageValue = frameIdx×8. */
+const sAnims_Bubbles: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [
+    ANIMCMD_FRAME(0, 4), ANIMCMD_FRAME(8, 4), ANIMCMD_FRAME(16, 4), ANIMCMD_FRAME(24, 6),
+    ANIMCMD_FRAME(32, 6), ANIMCMD_FRAME(40, 4), ANIMCMD_FRAME(48, 4), ANIMCMD_FRAME(56, 4),
+    ANIMCMD_END,
+  ],
+];
+
+let _bubblesTileStart = -1;
+let _bubblesPalSlot = -1;
+let _bubblesInit = false;
+let _bubblesInitPromise: Promise<void> | null = null;
+
+/** PNG 128×32 = 16×4 tiles row-major → frame-major (frame F = cols 2F,2F+1 sur 4 rows = 8 tiles). */
+function pngTo1dObjLayoutBubbles(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32;
+  const out = new Uint8Array(BUBBLES_NUM_FRAMES * BUBBLES_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < BUBBLES_NUM_FRAMES; f++) {
+    for (let r = 0; r < BUBBLES_FRAME_H_TILES; r++) {
+      for (let c = 0; c < BUBBLES_FRAME_W_TILES; c++) {
+        const pngTileIdx = r * BUBBLES_PNG_W_TILES + (f * BUBBLES_FRAME_W_TILES + c);
+        const objTileIdx = f * BUBBLES_TILES_PER_FRAME + r * BUBBLES_FRAME_W_TILES + c;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement asset (concern plateforme). */
+export function preloadBubblesEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _bubblesInit && IndexOfSpriteTileTag(TAG_BUBBLES_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_bubblesInitPromise && !_bubblesInit) return _bubblesInitPromise;
+  _bubblesInit = false; _bubblesInitPromise = null;
+  _bubblesInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(BUBBLES_PNG, 4);
+    const reordered = pngTo1dObjLayoutBubbles(png.charData);
+    _bubblesTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_BUBBLES_GFX });
+    let palette: Uint16Array;
+    try { palette = await loadGbaPal(GENERAL_0_PAL); }
+    catch { palette = png.palette as Uint16Array; }
+    _bubblesPalSlot = LoadSpritePalette({ data: palette, tag: TAG_GENERAL_0_PAL });
+    _bubblesInit = true;
+  })();
+  return _bubblesInitPromise;
+}
+
+/** 1:1 décomp `FldEff_Bubbles` (field_effect_helpers.c:1258). Lit gFieldEffectArguments[0/1]
+ *  = coords MAP de l'objet (GroundEffect_Seaweed → currentCoords). */
+export function FldEff_Bubbles(rt: DecompRuntime): number {
+  if (!_bubblesInit) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&args[0], &args[1], 8, 0) → coords MONDE.
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 0);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _bubblesTileStart,
+    paletteBank: _bubblesPalSlot,
+    x: world.x, y: world.y,
+    shape: 2, size: 2,  // 16×32 (tall)
+    priority: 1,        // 1:1 : sprite->oam.priority = 1.
+    paletteMode: 0, affineMode: 0,
+    subpriority: 82,    // 1:1 : CreateSpriteAtEnd(..., 82).
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateBubblesFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_Bubbles, _bubblesTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE.
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = 82 & 0xFF;
+  sprite.data[0] = 0; // sY
+  return 0;
+}
+
+/** 1:1 décomp `UpdateBubblesFieldEffect` (field_effect_helpers.c:1273). Callback per-frame. */
+export function UpdateBubblesFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  // 1:1 BUG : sY += 128 ; sY &= 256 (→ toujours 0) ; y -= sY>>8 (→ toujours 0). Pas de montée.
+  sprite.data[0] = (sprite.data[0] + ((1 << 8) / 2)) & (1 << 8);
+  sprite.y -= sprite.data[0] >> 8;
+  // 1:1 : UpdateObjectEventSpriteInvisibility(sprite, FALSE) (l'anim est tickée par le moteur).
+  UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  // 1:1 : if (sprite->invisible || sprite->animEnded) FieldEffectStop(sprite, FLDEFF_BUBBLES).
+  if (sprite.invisible || sprite.animEnded) {
+    FieldEffectStop(rt, sprite, FLDEFF_BUBBLES);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════

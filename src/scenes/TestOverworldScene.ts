@@ -184,11 +184,8 @@ import {
 // Sand pile + hot springs : migrés dans le miroir 1:1 game/field_effect_helpers.ts
 // (modèle sprite.callback — le callback global runSpriteCallbacks les tique).
 import { preloadSandPileEffect, preloadHotSpringsEffect } from '../game/field_effect_helpers';
-import {
-  preloadBubblesEffect,
-  UpdateBubblesEffects,
-  DestroyAllBubblesEffects,
-} from '../engine/field/field-effect-bubbles';
+// Bubbles : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot sprite.callback).
+import { preloadBubblesEffect } from '../game/field_effect_helpers';
 import {
   preloadAshEffect,
   UpdateAshEffects,
@@ -680,9 +677,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // tické par le callback global (sprite.callback) — plus d'appel manuel ici.
         // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` (game/field_effect_helpers.ts) :
         // désormais tické par le callback global (sprite.callback) — plus d'appel manuel.
-        // 1:1 décomp `UpdateBubblesFieldEffect` : colonne de bulles sur les algues (plongée).
-        // Câblé via le spine (GroundEffect_Seaweed → FLDEFF_BUBBLES). One-shot anim 36f.
-        UpdateBubblesEffects(rt);
+        // 1:1 décomp `UpdateBubblesFieldEffect` (game/field_effect_helpers.ts) : migré,
+        // tické par le callback global (one-shot, GroundEffect_Seaweed → FLDEFF_BUBBLES).
         // 1:1 décomp `UpdateAshFieldEffect` : nuage de cendre + révèle la tuile ashgrass
         // (Route 113/Fallarbor). Trigger = field_tasks.c (StartAshFieldEffect), port séparé.
         UpdateAshEffects(rt);
@@ -1195,8 +1191,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadSandPileEffect(this.rt);
     // Hot springs water (Lavaridge) : assets seulement (le sprite.callback s'auto-détruit).
     await preloadHotSpringsEffect(this.rt);
-    // Bubbles (colonne de bulles sur algues en plongée) assets + pool.
-    DestroyAllBubblesEffects(this.rt);
+    // Bubbles (colonne de bulles sur algues en plongée) : assets seulement (one-shot auto-despawn).
     await preloadBubblesEffect(this.rt);
     // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) assets + pool.
     DestroyAllAshEffects(this.rt);

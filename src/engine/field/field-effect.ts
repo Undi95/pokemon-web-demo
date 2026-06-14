@@ -35,8 +35,7 @@ import { FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle } from './field-effect-sp
 import { SpawnTallGrassEffect } from './field-effect-grass';
 import { SpawnLongGrassEffect } from './field-effect-long-grass';
 import { SpawnSplashEffect } from './field-effect-splash';
-import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass } from '../../game/field_effect_helpers';
-import { SpawnBubblesEffect } from './field-effect-bubbles';
+import { FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles } from '../../game/field_effect_helpers';
 import { SpawnAshEffect } from './field-effect-ash';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 import { ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect } from './field-effect-disguise';
@@ -228,10 +227,9 @@ export function FieldEffectStart(id: number): number {
     return FldEff_HotSpringsWater(rt);
   }
   if (id === FLDEFF_BUBBLES) {
-    // 1:1 décomp FldEff_Bubbles (field_effect_helpers.c:1258). args[0/1] = coords MAP de l'objet
-    // (GroundEffect_Seaweed) → colonne de bulles 16×32 sur les algues (plongée).
-    SpawnBubblesEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1]);
-    return 64;
+    // 1:1 décomp FldEff_Bubbles (field_effect_helpers.c:1258). Lit gFieldEffectArguments[0/1]
+    // = coords MAP de l'objet (GroundEffect_Seaweed) → colonne de bulles 16×32 (plongée).
+    return FldEff_Bubbles(rt);
   }
   if (id === FLDEFF_ASH) {
     // 1:1 décomp FldEff_Ash (field_effect_helpers.c:926). args[0/1]=x/y map, [2]=subprio,
