@@ -145,6 +145,7 @@ import {
   UpdateSparkleEffects,
   DestroyAllSparkleEffects,
 } from '../engine/field/field-effect-sparkle';
+import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import {
   preloadJumpDustEffect,
   UpdateJumpDustEffects,
@@ -948,6 +949,26 @@ export class TestOverworldScene extends Phaser.Scene {
         flagId: (t as { flagId?: number | string }).flagId ?? 0,
       }));
       LoadObjEventTemplatesFromHeader(header.id, headerTemplates);
+
+      // 1:1 STRICT décomp `DoTimeBasedEvents()` (clock.c:26, déclaré clock.h).
+      // Appelé dans le flow de chargement de map AVANT le spawn des object events :
+      //   - `LoadMapFromWarp` (overworld.c:853, `if (a1 != TRUE)`) : le warp local
+      //     standard passe par CB2_LoadMap → CB2_LoadMap2 → DoMapLoadLoop →
+      //     `LoadMapInStepsLocal(state, FALSE)` → `LoadMapFromWarp(FALSE)` → RUNS.
+      //     (Le seul site `a1=TRUE` = CB2_ReturnToFieldContestHall:1599, hors démo ;
+      //      le link multiplayer LoadMapInStepsLink:1823 passe TRUE = skip.)
+      //   - `CB2_ContinueSavedGame` (overworld.c:1726, resume) : RUNS aussi, après
+      //     LoadSaveblockObjEventScripts, avant InitMapFromSavedGame.
+      // Position 1:1 : APRÈS LoadObjEventTemplatesFromHeader (overworld.c:840),
+      // AVANT RunOnTransitionMapScript (:860) + le spawn (TrySpawnObjectEvents). Calc
+      // le delta minutes RTC depuis gSaveBlock1Ptr.lastBerryTreeUpdateMin + advance
+      // les berry trees (BerryTreeTimeUpdate) → les arbres SpawnObjectEventsOnMap
+      // plus bas spawnent au stade À JOUR (= croissance par le temps, pas que manuel).
+      // Gate !returnToField : le retour bag/menu/options (ReturnToFieldLocal) ne
+      // recharge PAS la map et n'appelle PAS DoTimeBasedEvents (1:1 ; la croissance
+      // continue sinon via le per-step task RunTimeBasedEvents = field_tasks.c:157,
+      // dette per-step callbacks non encore portée).
+      DoTimeBasedEvents();
     }
 
     // 1:1 décomp `RunOnTransitionMapScript` (overworld.c:807,860). Appelé
