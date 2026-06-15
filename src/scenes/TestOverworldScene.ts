@@ -140,7 +140,7 @@ import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
-import { ResumePausedWeather, preloadWeatherAshSprites } from '../game/field_weather_effect';
+import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites } from '../game/field_weather_effect';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../game/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
@@ -904,25 +904,20 @@ export class TestOverworldScene extends Phaser.Scene {
     // session précédente persistent → BG_VOFS mal aligné post-warp.
     InstallCameraPanAheadCallback();
 
-    // 1:1 décomp `StartWeather()` + `ResumePausedWeather()` (overworld.c:2146-2147,
-    // ResumeMap, juste avant SetUpFieldTasks). StartWeather alloue la palette météo
-    // (PALTAG_WEATHER/_2) + BuildColorMaps + crée Task_WeatherInit TÔT (avant que les
-    // object events remplissent les slots OBJ → la météo a sa place, comme la décomp).
-    // ResumePausedWeather pose currWeather=nextWeather depuis la météo sauvegardée.
-    // ⚠️ STAGED : table sWeatherFuncs partielle (ASH portée) → les météos non encore
-    // portées sont des no-op (optional chaining) — aucun crash, comportement = actuel.
-    // Préchargement assets météo (plateforme, async, idempotent) : prêt avant que le
-    // fade-in pose readyForInit → Ash_InitAll (sinon busy-loop sur asset manquant).
+    // 1:1 décomp `StartWeather()` (overworld.c:2146, ResumeMap). Alloue la palette météo
+    // (PALTAG_WEATHER/_2) + BuildColorMaps + crée Task_WeatherInit TÔT (avant que les object
+    // events remplissent les slots OBJ → la météo a sa place, comme la décomp).
+    // ⚠️ ResumePausedWeather + readyForInit sont posés PLUS BAS (après RunOnTransitionMapScript)
+    // car OnTransition fait `setweather` (ex. Route113 ash selon position) → la météo SAUVEGARDÉE
+    // n'est finalisée qu'APRÈS OnTransition. Si on appliquait ici, on lirait l'ancienne valeur
+    // (cendre absente en entrant directement dans la zone).
+    // Préchargement assets météo (plateforme, async, idempotent) : prêt avant Ash_InitAll.
     void preloadWeatherFogPalette();
     void preloadWeatherAshSprites();
     StartWeather();
-    ResumePausedWeather();
-    // 1:1 décomp : `readyForInit` est posé par le fade-in du warp (FadeScreen FADE_FROM_BLACK
-    // → readyForInit=TRUE) → Task_WeatherInit avance vers Task_WeatherMain (la state-machine
-    // météo qui tick). Notre fade-in de warp ne passe pas par la FadeScreen météo → on pose
-    // readyForInit ici (sinon la météo reste bloquée en Task_WeatherInit et ne transitionne
-    // jamais, ex. coord event cendre Route 113 pose nextWeather mais currWeather ne suit pas).
-    // ⚠️ Dette : à terme faire passer le fade-in de warp par game/field_weather.FadeScreen.
+    // readyForInit : normalement posé par le fade-in du warp (FadeScreen) → Task_WeatherInit
+    // avance vers Task_WeatherMain. Notre fade n'y passe pas → on le pose ici (sinon la météo
+    // reste bloquée en Task_WeatherInit). ⚠️ Dette : passer le fade-in par game FadeScreen.
     gWeatherPtr.readyForInit = true;
 
     // 1:1 décomp `SetUpFieldTasks()` (overworld.c:2149, appelé par ResumeMap juste
@@ -1049,6 +1044,11 @@ export class TestOverworldScene extends Phaser.Scene {
     // via VAR_OBJ_GFX_ID_0). REORDER session 123 : avant on faisait spawn
     // PUIS OnTransition → rival NPC spawnait avec gfxId=0 (= invalid) →
     // skipped silencieusement → rival jamais visible.
+    // 1:1 décomp `SetSavedWeatherFromCurrMapHeader()` (overworld.c:803/854, JUSTE AVANT
+    // RunOnTransitionMapScript). Pose la météo SAUVEGARDÉE = celle par défaut du header de la
+    // NOUVELLE map → RESET la météo entre maps (sinon la cendre de Route 113 PERSISTE sur
+    // Littleroot). OnTransition (ci-dessous) peut ensuite l'override (ex. Route113 → ash).
+    SetSavedWeatherFromCurrMapHeader();
     RunOnTransitionMapScript();
 
     // 1:1 décomp `RunOnResumeMapScript()` (overworld.c:2150, ResumeMap). Ici (et pas
@@ -1059,6 +1059,12 @@ export class TestOverworldScene extends Phaser.Scene {
     // DUMMY → « les herbes ne réagissent pas ». La task per-step existe déjà (SetUpFieldTasks
     // plus haut). Était implémenté mais non câblé (dette R3).
     RunOnResumeMapScript();
+
+    // 1:1 décomp `DoCurrentWeather()` (overworld.c:818, LoadMapFromCameraTransition, APRÈS
+    // RunOnTransitionMapScript). APPLIQUE la météo sauvegardée (= header + override OnTransition)
+    // → SetNextWeather → Task_WeatherMain transitionne (ex. Route113 → cendre). Placé après
+    // OnTransition pour lire la météo finalisée (header reset + setweather éventuel).
+    DoCurrentWeather();
 
     // 1:1 décomp `LoadMapHeaderInternal` (overworld.c:870-874) — après
     // `RunOnTransitionMapScript` + `InitMap`, si on est INDOOR :

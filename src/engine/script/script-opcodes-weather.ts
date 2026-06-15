@@ -13,12 +13,26 @@ import { VarGet } from './script-vars';
 import { gMapHeader } from '../field/map-loader';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { resolveDecompConstant } from '../system/decomp-constants';
+import * as WeatherConstants from '../decomp-data/include/constants/weather-data';
+
+/** Résout un argument météo : valeur numérique, constante `WEATHER_*`/`COORD_EVENT_WEATHER_*`
+ *  (via weather-data), ou nom de VAR (`VarGet`). ⚠️ `VarGet`/`resolveDecompConstant` ne
+ *  connaissent PAS les `WEATHER_*` → sans ça `setweather WEATHER_VOLCANIC_ASH` posait 0
+ *  (la météo Route 113 ne s'activait pas en entrant dans la zone). */
+function _resolveWeatherArg(arg: string): number {
+  if (/^-?\d+$/.test(arg)) return parseInt(arg, 10);
+  const c = (WeatherConstants as unknown as Record<string, number>)[arg];
+  if (typeof c === 'number') return c;
+  return VarGet(arg);
+}
 
 /** 1:1 décomp `ScrCmd_setweather` (scrcmd.c) :
  *    SetSavedWeather(VarGet(weather));
- *  Stocke dans gSaveBlock1Ptr.weather. Effet visuel applied au prochain doweather. */
+ *  Stocke dans gSaveBlock1Ptr.weather (sync). Effet visuel appliqué par ResumePausedWeather
+ *  (map-init) / doweather. ⚠️ dette mineure : TranslateWeatherNum (cycles Route119/123) +
+ *  UpdateRainCounter de SetSavedWeather non appliqués ici (set direct) — cf. C-final. */
 registerOpcode('setweather', (_ctx, args) => {
-  const weather = VarGet(args[0] ?? '0');
+  const weather = _resolveWeatherArg(args[0] ?? '0');
   if (gSaveBlock1Ptr) gSaveBlock1Ptr.weather = weather;
   return false;
 });

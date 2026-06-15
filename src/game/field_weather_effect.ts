@@ -35,7 +35,7 @@ import { setFieldEffectAnims } from './field_effect_helpers';
 import { ANIMCMD_FRAME, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gMapHeader } from '../engine/field/map-loader';
-import { resolveDecompConstant } from '../engine/system/decomp-constants';
+import * as WeatherConstants from '../engine/decomp-data/include/constants/weather-data';
 import { IncrementGameStat } from '../engine/field/player-avatar';
 import { GAME_STAT_GOT_RAINED_ON } from '../engine/decomp-data/include/constants/game_stat-data';
 import {
@@ -253,12 +253,13 @@ function UpdateRainCounter(newWeather: number, oldWeather: number): void {
 }
 
 /** Concern plateforme : `gMapHeader.weather` peut être string "WEATHER_*" ou numérique.
- *  TranslateWeatherNum attend un id numérique → on résout (comme l'opcode resetweather). */
+ *  TranslateWeatherNum attend un id numérique → on résout via weather-data (⚠️
+ *  resolveDecompConstant ne connaît PAS les WEATHER_* → renvoyait 0). */
 function _mapHeaderWeatherId(): number {
   const w = gMapHeader?.weather;
   if (typeof w === 'number') return w;
   if (typeof w === 'string') {
-    const id = resolveDecompConstant(w);
+    const id = (WeatherConstants as unknown as Record<string, number>)[w];
     return typeof id === 'number' ? id : 0;
   }
   return 0;
