@@ -59,7 +59,6 @@ import type { PendingConnection } from '../engine/field/field-camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
-  AdvancePlayerSpriteWorldPos,
   DestroyPlayerAvatar,
   SetPlayerVisibility,
   GetPlayerFacingDirection,
@@ -493,6 +492,12 @@ export class TestOverworldScene extends Phaser.Scene {
           // pour que les scripts qui call fadescreen + enchaînent reprennent.
           ScriptContext_RunScript();
           TickFieldMessageBox();
+          // [M3-C3.2c] 1:1 décomp `OverworldBasic` : UpdateCameraPanning tourne CHAQUE
+          // frame, même pendant un fade/warp. Sans ça, pendant le fade-in de la map
+          // destination, gSpriteCoordOffset reste périmé depuis la map précédente → le
+          // sprite joueur (coords-monde) rend décalé d'1 tuile sur la/les 1ères frames
+          // intérieures (desync visible à l'entrée). On le garde frais ici.
+          UpdateCameraPanning();
           return;
         }
         // Phase 4.6 : check pending warp détecté par PlayerStep au step end
@@ -562,12 +567,12 @@ export class TestOverworldScene extends Phaser.Scene {
         ApplyLevitateMovement_TickAll(rt);
         // ── AnimateSprites (overworld.c:1469) : mouvement des object events PUIS
         //    sprite callbacks (dont SpriteCB_CameraObject) + anims + affine. ──
-        // [M3-C2] Pont forced movement : avance worldX/Y du joueur pour le seul
-        // mouvement encore inline (door warp, forceMovement≠DIR_NONE). Walk/dash/
-        // ledge passent par les held movements (worldX avancé dans TickObjectEvent
-        // Movements). C3.2 le retirera (forced→held movement + CameraObject).
-        AdvancePlayerSpriteWorldPos();
-        // Mouvement des object events : worldX/Y += dx/dy via les held movements.
+        // Mouvement des object events : worldX/Y += dx/dy via les held movements
+        // (walk/dash/ledge input ET door warp forced via forceMovement). Le pont
+        // AdvancePlayerSpriteWorldPos (C2) est SUPPRIMÉ : le forced movement passe
+        // désormais par un held WALK_NORMAL (PlayerStep forced path) → worldX avancé
+        // par _NpcTakeStep ici → le CameraObject suit. Plus aucun mouvement joueur
+        // inline ni driver caméra manuel.
         TickObjectEventMovements(rt);
         // CreateReflectionEffectSprites affine-anims : tick les matrices de distorsion
         // des reflets eau AVANT le rendu.
@@ -912,6 +917,15 @@ export class TestOverworldScene extends Phaser.Scene {
     clearOverworldTilemaps();
     DrawWholeMapView();
     flushOverworldTilemaps(this.rt);
+    // [M3-C3.2c] Rafraîchit gSpriteCoordOffset.x/y pour la NOUVELLE map (1:1 décomp
+    // UpdateCameraPanning, field_camera.c:456). Symétrique de FieldUpdateBgTilemapScroll
+    // (qui rafraîchit le BG). Sans ça, pendant le fade-in météo du 1er warp (où
+    // warpInProgress=true → le body early-return → UpdateCameraPanning ne tourne pas),
+    // gSpriteCoordOffsetY restait PÉRIMÉ depuis la map précédente (ex. -24 après un
+    // walk-up dans la porte qui a accumulé totY=16) → le sprite joueur (coords-monde
+    // depuis C2) rendait 1 tuile trop bas alors que le BG était correct = desync de
+    // quelques frames à l'entrée, qui se corrigeait au 1er UpdateCameraPanning post-fade.
+    UpdateCameraPanning();
     FieldUpdateBgTilemapScroll(this.rt);
     // ⚠️ NE PAS faire `gPlttBufferFaded.flushTo()` ici (= ancien code).
     // LoadMapTilesetPalettes a écrit les NEW colors dans gPlttBufferFaded ; un
@@ -1297,10 +1311,15 @@ export class TestOverworldScene extends Phaser.Scene {
         PlaySE(GetDoorSoundEffect(doorX, doorY));
         await FieldAnimateDoorOpen(doorX, doorY);
         // case 1 : ObjectEventSetHeldMovement(WALK_NORMAL_UP) — force walk player UP.
-        // 1:1 décomp : queue WALK_NORMAL_UP sur le player ObjectEvent via le
-        // movement queue system (= equiv MOVEMENT_ACTION_WALK_NORMAL_UP).
-        applyMovement('LOCALID_PLAYER', ['walk_up']);
-        await this.waitForPlayerMovementDone();
+        // [M3-C3.2c] 1:1 STRICT décomp `Task_DoDoorWarp` case 1 (field_screen_effect.c:699)
+        // via le mécanisme forceMovement : la scène pose forceMovement=DIR_NORTH, PlayerStep
+        // (controls locked depuis executeWarp:1281) exécute le held WALK_NORMAL_UP
+        // (ObjectEventSetHeldMovement) → worldY avance via _NpcTakeStep → le CameraObject
+        // suit. La scène attend forceMovement===DIR_NONE (posé au step end). Remplace
+        // l'ancien applyMovement (path _queues legacy = driver caméra mort, ne faisait
+        // plus avancer worldY → desync joueur/porte signalé par le user).
+        gPlayerAvatar.forceMovement = DIR_NORTH;
+        await this.waitForForceMovementDone();
         // case 2 : FieldAnimateDoorClose + **SetPlayerVisibility(FALSE)**.
         // Order décomp : ObjectEventClearHeldMovementIfFinished puis
         // SetPlayerVisibility(FALSE), puis door close.
@@ -1508,8 +1527,13 @@ export class TestOverworldScene extends Phaser.Scene {
         // WALK_NORMAL_DOWN (= door always south, behavior MB_ANIMATED_DOOR
         // retourne DIR_SOUTH via GetAdjustedInitialDirection).
         SetPlayerVisibility(this.rt, true);
-        applyMovement('LOCALID_PLAYER', [_walkActionForDirection(adjustedDir)]);
-        await this.waitForPlayerMovementDone();
+        // [M3-C3.2c] 1:1 STRICT décomp `Task_ExitDoor` case 1 (field_screen_effect.c:338) :
+        // ObjectEventSetHeldMovement(player, WALK_NORMAL_DOWN) via forceMovement → held
+        // movement avance worldY (_NpcTakeStep) → le CameraObject suit. La scène attend
+        // forceMovement===DIR_NONE. (adjustedDir = DIR_SOUTH pour une door, cf. GetAdjusted
+        // InitialDirection.) Remplace l'applyMovement legacy (driver mort → desync).
+        gPlayerAvatar.forceMovement = adjustedDir;
+        await this.waitForForceMovementDone();
         // case 2 : FieldAnimateDoorClose à la door position originale +
         // ObjectEventClearHeldMovementIfFinished (= la queue est déjà clear
         // par tickMovementQueues quand q.done est set à TRUE).
@@ -1529,8 +1553,10 @@ export class TestOverworldScene extends Phaser.Scene {
         // Donc le walk action est dérivé du facing courant, 1:1 décomp.
         LockPlayerFieldControls();
         SetPlayerVisibility(this.rt, true);
-        applyMovement('LOCALID_PLAYER', [_walkActionForDirection(adjustedDir)]);
-        await this.waitForPlayerMovementDone();
+        // [M3-C3.2c] 1:1 STRICT décomp `Task_ExitNonAnimDoor` case 1 (field_screen_effect.c:386) :
+        // ObjectEventSetHeldMovement(player, GetWalkNormalMovementAction(facing)) via forceMovement.
+        gPlayerAvatar.forceMovement = adjustedDir;
+        await this.waitForForceMovementDone();
         // case 2 : IsPlayerStandingStill → case 3 UnfreezeObjectEvents.
         UnfreezeObjectEvents();
       }
@@ -1729,6 +1755,22 @@ export class TestOverworldScene extends Phaser.Scene {
     return new Promise((resolve) => {
       const check = (): void => {
         if (isMovementDone('LOCALID_PLAYER')) {
+          resolve();
+        } else {
+          setTimeout(check, 17);
+        }
+      };
+      check();
+    });
+  }
+
+  /** [M3-C3.2c] Attend la fin d'un forced movement (door warp). 1:1 décomp : la scène
+   *  pose gPlayerAvatar.forceMovement = DIR_X, PlayerStep (locked) exécute le held
+   *  WALK_NORMAL et reset forceMovement = DIR_NONE au step end. Poll ~17ms (1 frame). */
+  private waitForForceMovementDone(): Promise<void> {
+    return new Promise((resolve) => {
+      const check = (): void => {
+        if (gPlayerAvatar.forceMovement === DIR_NONE) {
           resolve();
         } else {
           setTimeout(check, 17);

@@ -800,33 +800,11 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   sprite.y2 = jumpY;
 }
 
-/** [M3-C2] Avance le player object event en coords MONDE pour les mouvements
- *  joueur INLINE restant (= qui pilote la caméra manuellement SANS poser de held
- *  movement) : le forced movement (door warp auto-walk, PlayerStep ~1300). Le
- *  walk/dash ET le ledge jump (depuis le M3 jump-as-MovementAction) passent par
- *  ObjectEventSetHeldMovement → MovementAction → _NpcTakeStep/_DoJumpSpriteMovement
- *  qui font `worldX += dx` → ils ne doivent PAS passer ici (double-comptage = 2×).
- *
- *  Gate `forceMovement≠DIR_NONE` (fiable, posé/effacé par le forced movement) :
- *  on dérive alors worldX du driver caméra, appelé une fois par frame JUSTE avant
- *  CameraUpdate → on lit le MÊME movementSpeed que CameraUpdate consomme
- *  (gTotalCameraPixelOffsetX -= movementSpeed) → worldX delta == camera delta →
- *  joueur centré (dual du CameraObject_UpdateMove décomp).
- *
- *  C3 : convertir le forced movement en held MovementAction + activer le
- *  CameraObject → worldX devient la source unique avancée par les movement actions,
- *  ce pont + le driver manuel disparaissent (1:1 décomp). */
-export function AdvancePlayerSpriteWorldPos(): void {
-  if (gPlayerAvatar.spriteId < 0) return;
-  // Seul le forced movement (door warp) reste inline sans held movement. Le ledge
-  // jump est maintenant un held Jump2 (worldX avancé par _DoJumpSpriteMovement) → on
-  // ne le couvre PLUS ici (sinon double-comptage avec le held movement).
-  if (gPlayerAvatar.forceMovement === DIR_NONE) return;
-  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
-  if (!slot) return;
-  slot.worldX += gFieldCamera.movementSpeedX;
-  slot.worldY += gFieldCamera.movementSpeedY;
-}
+// [M3-C3.2c] Le pont AdvancePlayerSpriteWorldPos est SUPPRIMÉ. Le forced movement
+// (door warp) passe maintenant par un held WALK_NORMAL (PlayerStep forced path →
+// ObjectEventSetHeldMovement, 1:1 décomp Task_ExitDoor/Task_DoDoorWarp) → worldX/Y
+// avancé par _NpcTakeStep dans TickObjectEventMovements → le CameraObject suit. Plus
+// aucun mouvement joueur inline ni driver caméra : worldX est la source unique.
 
 // ─── Collision check ────────────────────────────────────────────────────────
 
@@ -1343,16 +1321,20 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
       gPlayerAvatar.stepFramesLeft = 16;
       gPlayerAvatar.stepDirection = gPlayerAvatar.forceMovement;
-      const speed = dirToCameraSpeed(gPlayerAvatar.forceMovement);
-      gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME;
-      gFieldCamera.movementSpeedY = speed.y * WALK_SPEED_PX_PER_FRAME;
-      // CRITICAL : `else if` ci-dessous (et NON pas un 2ème `if` indépendant)
-      // pour que le dec ne s'exécute PAS sur la frame de setup. Sinon on perd
-      // 1 tick de CameraUpdate par step (= step locked tournerait sur 16
-      // CameraUpdate calls dont la dernière a speed=0 → seulement 15 ticks de
-      // speed=1 appliqués → gFieldCamera.y stuck à 15 au lieu de wrap à 0).
-      // Avec else-if, locked path = 17 frames de CameraUpdate (= match unlocked
-      // path timing), 16 ticks de speed=1, gFieldCamera.y wrap proprement à 0.
+      // [M3-C3.2c] 1:1 décomp `Task_ExitDoor` case 1 (field_screen_effect.c:338) /
+      // `Task_ExitNonAnimDoor` case 1 (386) : le forced walk avance worldX/Y via un
+      // held WALK_NORMAL (ObjectEventSetHeldMovement), exécuté par TickObjectEventMovements
+      // → _NpcTakeStep → le CameraObject suit. Remplace l'ancien driver caméra manuel
+      // (mort : overwritten par CameraUpdateCallback) + le pont AdvancePlayerSpriteWorldPos
+      // (supprimé). gPlayerAvatar.stepFramesLeft (ci-dessus) reste pour rendre l'anim de
+      // marche (sprite joueur découplé du slot → updateSpriteFrame lit gPlayerAvatar).
+      {
+        const fmSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+        if (fmSlot && fmSlot.active && fmSlot.isPlayer) {
+          ObjectEventClearHeldMovementIfActive(fmSlot);
+          ObjectEventSetHeldMovement(fmSlot, GetWalkNormalMovementAction(gPlayerAvatar.forceMovement));
+        }
+      }
     } else if (gPlayerAvatar.runningState === MOVING && gPlayerAvatar.stepFramesLeft > 0) {
       // Finish current step (= 1:1 décomp player can't be locked mid-step,
       // OU step forced via forceMovement qui vient de démarrer ci-dessus).
@@ -1365,8 +1347,6 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         gPlayerAvatar.runningState = NOT_MOVING;
         gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
         gPlayerAvatar.stepDirection = DIR_NONE;
-        gFieldCamera.movementSpeedX = 0;
-        gFieldCamera.movementSpeedY = 0;
         gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
         // Clear forceMovement après step done → la scene attend ça pour next phase.
         gPlayerAvatar.forceMovement = DIR_NONE;
