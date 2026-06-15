@@ -6370,11 +6370,19 @@ function _spawnSingleNpcFromTemplate(
   //   if (spriteTemplate->paletteTag != TAG_NONE)
   //       LoadObjectEventPalette(spriteTemplate->paletteTag);
   // LoadObjectEventPalette → LoadSpritePaletteIfTagExists → LoadSpritePalette
-  // (sprite.c:1589-1608) : scan first-free dans `sSpritePaletteTags`. Si 2 NPCs
-  // avec même graphicsKey → tag déjà alloué → ré-utilise le même slot (= 1:1
-  // décomp authentique, palette partagée).
-  const paletteTag = `NPC_PAL_${graphicsKey}`;
-  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion.
+  // (sprite.c:1589-1608) : dédup par le `paletteTag` PARTAGÉ (OBJ_EVENT_PAL_TAG_NPC_X).
+  // FIX over-alloc palette OBJ : on utilisait `NPC_PAL_<graphicsKey>` (= 1 slot PAR
+  // graphics distinct → 14-16 slots pleins → ZÉRO place météo). La décomp partage 4
+  // palettes NPC (npc_1..4) : N graphics NPC_1 → 1 seul slot. On dédoublonne donc par le
+  // VRAI tag partagé `_graphicsInfo_1to1.paletteTag` → ≤ ~12 slots objet, [12,16) libre
+  // pour la météo (cf. PALSLOT scheme décomp, OBJ_PALSLOT_COUNT=12).
+  const _palTag1to1 = _graphicsInfo_1to1?.paletteTag;
+  const paletteTag = (typeof _palTag1to1 === 'number' && _palTag1to1 !== OBJ_EVENT_PAL_TAG_NONE)
+    ? _palTag1to1
+    : `NPC_PAL_${graphicsKey}`;
+  // png.palette est Uint16Array (loadIndexedPngStrict). Pas de conversion. Le 1er NPC d'un
+  // tag charge sa palette ; les suivants (même tag) dédup → réutilisent le slot (= partage
+  // décomp : les graphics d'un même tag sont authored sur la même palette npc_X).
   const paletteBank = LoadSpritePalette({ data: png.palette as Uint16Array, tag: paletteTag });
   if (paletteBank === 0xFF) {
     // Saturation 16 slots palette OBJ → free tiles + abort 1:1 décomp.

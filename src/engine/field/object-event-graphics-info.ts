@@ -171,13 +171,43 @@ export const OBJ_EVENT_PAL_TAG_RS_BRENDAN = 0x1122;
 export const OBJ_EVENT_PAL_TAG_RS_MAY = 0x1123;
 export const OBJ_EVENT_PAL_TAG_NONE = 0x11FF;
 
-/** 1:1 décomp `include/constants/event_object_movement.h` PALSLOT_*. */
+/** 1:1 STRICT décomp `include/event_object_movement.h:11-26` PALSLOT_* (schéma RÉSERVÉ
+ *  complet 0-11). Les object events occupent les slots OBJ fixes [0, OBJ_PALSLOT_COUNT) ;
+ *  les slots 12-15 restent libres pour field effects / interface / **météo** (commentaire
+ *  décomp). Les NPC partagent 4 palettes (npc_1..4) + 4 reflets. La météo (AllocSpritePalette)
+ *  alloue dans [12,16) grâce à gReservedSpritePaletteCount=OBJ_PALSLOT_COUNT. */
 export const PALSLOT_PLAYER = 0;
-export const PALSLOT_NPC_1 = 1;
-export const PALSLOT_NPC_2 = 2;
-export const PALSLOT_NPC_3 = 3;
-export const PALSLOT_NPC_4 = 4;
-export const PALSLOT_NPC_SPECIAL = 5;
+export const PALSLOT_PLAYER_REFLECTION = 1;
+export const PALSLOT_NPC_1 = 2;
+export const PALSLOT_NPC_2 = 3;
+export const PALSLOT_NPC_3 = 4;
+export const PALSLOT_NPC_4 = 5;
+export const PALSLOT_NPC_1_REFLECTION = 6;
+export const PALSLOT_NPC_2_REFLECTION = 7;
+export const PALSLOT_NPC_3_REFLECTION = 8;
+export const PALSLOT_NPC_4_REFLECTION = 9;
+export const PALSLOT_NPC_SPECIAL = 10;
+export const PALSLOT_NPC_SPECIAL_REFLECTION = 11;
+export const OBJ_PALSLOT_COUNT = 12;
+
+/** 1:1 STRICT décomp `gReflectionEffectPaletteMap[16]` (event_object_movement.c:182).
+ *  Mappe le slot palette MAIN d'un object event → son slot palette REFLET. */
+export const gReflectionEffectPaletteMap: ReadonlyArray<number> = (() => {
+  const m = new Array<number>(16).fill(0);
+  m[PALSLOT_PLAYER] = PALSLOT_PLAYER_REFLECTION;
+  m[PALSLOT_PLAYER_REFLECTION] = PALSLOT_PLAYER_REFLECTION;
+  m[PALSLOT_NPC_1] = PALSLOT_NPC_1_REFLECTION;
+  m[PALSLOT_NPC_2] = PALSLOT_NPC_2_REFLECTION;
+  m[PALSLOT_NPC_3] = PALSLOT_NPC_3_REFLECTION;
+  m[PALSLOT_NPC_4] = PALSLOT_NPC_4_REFLECTION;
+  m[PALSLOT_NPC_1_REFLECTION] = PALSLOT_NPC_1_REFLECTION;
+  m[PALSLOT_NPC_2_REFLECTION] = PALSLOT_NPC_2_REFLECTION;
+  m[PALSLOT_NPC_3_REFLECTION] = PALSLOT_NPC_3_REFLECTION;
+  m[PALSLOT_NPC_4_REFLECTION] = PALSLOT_NPC_4_REFLECTION;
+  m[PALSLOT_NPC_SPECIAL] = PALSLOT_NPC_SPECIAL_REFLECTION;
+  m[PALSLOT_NPC_SPECIAL_REFLECTION] = PALSLOT_NPC_SPECIAL_REFLECTION;
+  return m;
+})();
 
 /** 1:1 décomp `include/constants/event_object_movement.h` SHADOW_SIZE_*. */
 export const SHADOW_SIZE_S = 0;
