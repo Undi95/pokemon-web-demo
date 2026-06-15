@@ -1686,12 +1686,8 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         ObjectEventClearHeldMovementIfActive(ledgeSlot);
         ObjectEventSetHeldMovement(ledgeSlot, GetJump2MovementAction(inputDir));
       }
-      // Driver caméra manuel (C2) : scrolle de 2 tiles sur 32 frames, à match avec
-      // l'avance worldX du held Jump2 → joueur centré. C3 retirera ce driver
-      // (CameraObject suivra le sprite, dont worldX est avancé par le held movement).
-      const jumpSpeed = dirToCameraSpeed(inputDir);
-      gFieldCamera.movementSpeedX = jumpSpeed.x * WALK_SPEED_PX_PER_FRAME;
-      gFieldCamera.movementSpeedY = jumpSpeed.y * WALK_SPEED_PX_PER_FRAME;
+      // [M3-C3.3] Driver caméra manuel RETIRÉ : le CameraObject suit le sprite joueur
+      // (worldX/Y avancé de 2 tiles par le held Jump2 via _DoJumpSpriteMovement). 1:1 décomp.
       updateSpriteFrame(rt);
       return;
     }
@@ -1785,10 +1781,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       ObjectEventSetHeldMovement(slot, movementActionId);
     }
   }
-  const speed = dirToCameraSpeed(inputDir);
-  const speedMult = wantDash ? 2 : 1;
-  gFieldCamera.movementSpeedX = speed.x * WALK_SPEED_PX_PER_FRAME * speedMult;
-  gFieldCamera.movementSpeedY = speed.y * WALK_SPEED_PX_PER_FRAME * speedMult;
+  // [M3-C3.3] Driver caméra manuel RETIRÉ : la caméra dérive du CameraObject qui suit
+  // le sprite joueur (worldX/Y avancé par le held WalkNormal/PlayerRun posé ci-dessus,
+  // exécuté dans TickObjectEventMovements). CameraUpdateCallback écrase movementSpeedX/Y
+  // depuis le delta du sprite chaque frame → le driver était mort (overwrite). 1:1 décomp.
   updateSpriteFrame(rt);
 }
 
