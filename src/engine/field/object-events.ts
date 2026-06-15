@@ -77,7 +77,7 @@ import {
   CanCameraMoveInDirection,
 } from './map-loader';
 import { IsMetatileDirectionallyImpassable } from './metatile-behavior-helpers';
-import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera, GetBgVofsBaseline, GetCameraPanX as _getCameraPanX, GetCameraPanY as _getCameraPanY } from '../field/field-camera';
+import { GetCameraTopLeftCoords, gTotalCamera, gCamera, gFieldCamera } from '../field/field-camera';
 import { gPlayerAvatar, GetPlayerFacingDirection } from './player-avatar';
 import {
   DIR_NONE, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
@@ -7401,25 +7401,20 @@ export function SetObjectEventSpritePosToMapCoords(npc: ObjectEvent, x: number, 
 
 // ─── Update sprite positions + frame each frame ────────────────────────────
 
-/** Update sprite.x/y selon worldX/Y stored at spawn + camera scroll, ET sprite
- *  frame selon facingDirection courante. Appelé chaque frame depuis
- *  MainCB2_Overworld APRÈS TickObjectEventMovements.
+/** Update sprite.x/y des NPCs (object events) + leur frame selon facingDirection.
+ *  Appelé chaque frame depuis MainCB2_Overworld APRÈS TickObjectEventMovements.
  *
- *  1:1 décomp BuildOamBuffer (sprite.c:347-355) avec coordOffsetEnabled=TRUE :
- *    oam.x = sprite.x + sprite.x2 + centerToCornerVecX + gSpriteCoordOffsetX
- *  où gSpriteCoordOffsetX = gTotalCameraPixelOffsetX. Notre impl combine
- *  centerToCornerVec + coordOffset en un seul `sprite.x = worldX + offX` ici.
+ *  [M3-C1] 1:1 décomp : chaque object event sprite est posé en coords MONDE
+ *  (sprite.x/y = worldX/Y = le `sprite->x/y` posé par SetSpritePosToMapCoords)
+ *  avec `coordOffsetEnabled = TRUE`. Le runtime (UpdateOamCoords, sprite.c:347-356)
+ *  ajoute gSpriteCoordOffsetX/Y = gTotalCameraPixelOffsetX - pan (field_camera.c:461)
+ *  → tous les sprites monde scrollent ensemble avec la caméra. Avant (hybride
+ *  non-1:1) on bakait `+ offX - pan` à la main ici, hors du chemin décomp.
  *
- *  Le worldX stored = sprite.x_decomp_at_spawn (= constant + walk increments).
- *  Le offX = gTotalCameraPixelOffsetX (= sub-tile + cumulative camera scroll).
- *  Player + NPC tous deux subissent la même +offX → ils restent alignés
- *  relativement (1:1 décomp). Le PLAYER en revanche a sprite.x FIXED à 120
- *  dans notre impl (= bypass coordOffsetEnabled), donc on a un mismatch
- *  player↔NPC quand pixelOffsetX dérive du multiple de 16.
- *
- *  Phase 4.10 v2 : pour éviter la dérive, on snap pixelOffsetX/Y au step end
- *  avec stop dans player-avatar.ts. Avec snap, pixelOffsetX = exact multiple
- *  de 16 pour static state → sprite.x_NPC + offX aligné avec player. */
+ *  NOTE archi (M3 en cours) : le PLAYER reste pour l'instant écran-ancré
+ *  (sprite.x=120, coordOffsetEnabled=FALSE, player-avatar.ts) avec le snap
+ *  pixelOffsetX/Y au step-end (band-aid). Ces deux-là tombent en C2/C3/C4 quand
+ *  le joueur passera lui aussi en coords-monde + CameraObject (chantier-camera-M3). */
 /** 1:1 décomp `ResetSpriteData()` equivalent : quand un scene comme ChooseStarter
  *  swap le CB2 via SetMainCallback2(CB2_StarterChoose), l'OW tick s'arrête et les
  *  sprites OW ne sont plus rendus. Notre TS inline garde l'OW scene actif, donc
@@ -7436,9 +7431,6 @@ export function setObjectEventsSuspended(suspended: boolean): void {
 export function UpdateObjectEvents(rt: DecompRuntime): void {
   if (_objectEventsSuspended) return;
   const cam = GetCameraTopLeftCoords();
-  const offX = gTotalCamera.pixelOffsetX;
-  const offY = gTotalCamera.pixelOffsetY;
-  const bgVofsBaseline = GetBgVofsBaseline();
 
   for (const npc of gObjectEvents) {
     if (!npc.active || npc.spriteId < 0) continue;
@@ -7461,16 +7453,16 @@ export function UpdateObjectEvents(rt: DecompRuntime): void {
     // ne disparait pas sur la porte" pendant LittlerootTown_Movement_MomEnterHouse.
     sprite.invisible = npc.invisible;
 
-    // 1:1 décomp `gSpriteCoordOffsetX/Y` (field_camera.c:461-462) :
-    //   gSpriteCoordOffsetX = gTotalCameraPixelOffsetX - sHorizontalCameraPan;
-    //   gSpriteCoordOffsetY = gTotalCameraPixelOffsetY - sVerticalCameraPan - 8;
-    // Sprite shift INVERSE du camera pan (= 1:1 décomp behavior).
-    // visualOffsetX/Y = 1:1 décomp `sprite.x2/y2` (= used par truck box
-    // bouncing via SetObjectEventSpritePosByLocalIdAndMap).
-    const panX = _getCameraPanX();
-    const panY = _getCameraPanY();
-    sprite.x = npc.worldX + offX - panX + npc.visualOffsetX;
-    sprite.y = npc.worldY + offY - bgVofsBaseline - panY + npc.visualOffsetY;
+    // [M3-C1] 1:1 décomp : coords MONDE + coordOffsetEnabled. Le runtime
+    // (UpdateOamCoords, sprite.c:347-356) ajoute gSpriteCoordOffsetX/Y
+    // (= gTotalCameraPixelOffsetX - pan, field_camera.c:461) → plus de bake
+    // manuel `+ offX - pan` ici (c'était l'hybride non-1:1). worldX/Y = le
+    // `sprite->x/y` décomp posé par SetSpritePosToMapCoords.
+    // visualOffsetX/Y = `sprite->x2/y2` décomp (truck box bounce) — gardés
+    // foldés dans sprite.x/y (le sprite.x2/y2 runtime des NPCs reste 0).
+    sprite.coordOffsetEnabled = true;
+    sprite.x = npc.worldX + npc.visualOffsetX;
+    sprite.y = npc.worldY + npc.visualOffsetY;
 
     // Update sprite frame chaque frame (= keeps tile + flipH en sync avec
     // facingDirection, important pour interact qui change facing instantané).
