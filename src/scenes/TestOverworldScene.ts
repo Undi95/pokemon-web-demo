@@ -129,11 +129,7 @@ import {
   DestroyWarpArrowSprite,
   HideShowWarpArrow,
 } from '../engine/field/field-effect-arrow';
-import {
-  LoadEmoteAssets,
-  tickEmoteSprites,
-  DestroyAllEmoteSprites,
-} from '../engine/field/field-effect-emotes';
+import { preloadEmoteIcons } from '../game/trainer_see';
 import { UpdateTVScreensOnMap } from '../engine/ui/tv-screen';
 import {
   preloadTallGrassEffect,
@@ -644,10 +640,8 @@ export class TestOverworldScene extends Phaser.Scene {
         // par le callback global.
         // Disguises (tree/mountain/sand) : migrés (game/field_effect_helpers.ts), tickés par leur
         // callback UpdateDisguiseFieldEffect via runSpriteCallbacks. Trigger = MovementActions.
-        // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
-        // chaque emote sprite (! ? ♥) actif → bounce + position tracking +
-        // auto-destroy après 60 frames.
-        tickEmoteSprites(rt);
+        // Emotes (! ? ♥) : migrés (game/trainer_see.ts) → SpriteCB_TrainerIcons est un VRAI
+        // sprite.callback tické par runSpriteCallbacks (plus de tick externe).
         // 1:1 décomp UpdateShadowFieldEffect : shadow copie player sprite x
         // mais reste à y baseline (= no jump arc) → ground-locked effet 3D.
         UpdateShadowSprite(rt, gPlayerAvatar.spriteId);
@@ -1113,11 +1107,10 @@ export class TestOverworldScene extends Phaser.Scene {
     DestroyWarpArrowSprite(this.rt);
     await CreateWarpArrowSprite(this.rt);
     // 1:1 décomp `LoadFieldEffectGraphics` (field_effect.c) : preload tile +
-    // palette des emote sprites (!?♥) utilisés par les movement actions
-    // `emote_exclamation_mark` / `emote_question_mark` / `emote_heart`.
-    // Cleanup actifs au map switch puis re-load idempotent.
-    DestroyAllEmoteSprites(this.rt);
-    await LoadEmoteAssets(this.rt);
+    // palette des emote icons (!?♥, game/trainer_see.ts) utilisés par les movement
+    // actions `emote_exclamation_mark` / `emote_question_mark` / `emote_heart`.
+    // Idempotent ; les sprites actifs s'auto-détruisent (FieldEffectStop sur animEnded).
+    await preloadEmoteIcons(this.rt);
     // Tall grass (FLDEFF_TALL_GRASS) : assets seuls (migré game/field_effect_helpers.ts,
     // callback-driven via le dispatcher).
     await preloadTallGrassEffect(this.rt);

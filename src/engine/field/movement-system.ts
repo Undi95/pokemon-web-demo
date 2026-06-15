@@ -41,6 +41,7 @@ import {
   DIR_TO_DX, DIR_TO_DY, MoveCoords,
 } from './direction-coords';
 import { gFieldCamera } from '../field/field-camera';
+import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON } from './field-effect';
 
 // G6 — 1:1 STRICT anim helpers exposés via globalThis depuis object-events.ts
 // pour éviter cycle ESM. Voir object-events.ts pour la doc 1:1 décomp.
@@ -421,18 +422,17 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   //  trainer_see.c:SpriteCB_TrainerIcons.)
   if (action === 'emote_exclamation_mark' || action === 'emote_question_mark' ||
       action === 'emote_heart') {
-    if (rt) {
-      // Lookup le NPC : target = { isPlayer, npc }. Pour player, on utilise
-      // `LOCALID_PLAYER`. Pour NPC, on lit `target.npc.localIdRaw`.
-      const npcLocalIdRaw = target.isPlayer ? 'LOCALID_PLAYER' : (target.npc?.localIdRaw ?? '');
-      if (npcLocalIdRaw) {
-        void import('../field/field-effect-emotes').then(({ SpawnEmoteSprite }) => {
-          const emoteType = action === 'emote_exclamation_mark' ? 'exclamation'
-                          : action === 'emote_question_mark'    ? 'question'
-                          : 'heart';
-          SpawnEmoteSprite(rt, npcLocalIdRaw, emoteType);
-        });
-      }
+    // 1:1 décomp MovementAction_Emote*_Step0 : pose gFieldEffectArguments[0..2] =
+    // localId/mapNum/mapGroup de l'object event puis FieldEffectStart(FLDEFF_X_ICON) →
+    // dispatcher → FldEff_X_Icon (game/trainer_see.ts, vrai callback SpriteCB_TrainerIcons).
+    const obj = target.isPlayer ? gObjectEvents[gPlayerAvatar.objectEventId] : target.npc;
+    if (obj) {
+      gFieldEffectArguments[0] = obj.localId;
+      gFieldEffectArguments[1] = obj.mapNum;
+      gFieldEffectArguments[2] = obj.mapGroup;
+      FieldEffectStart(action === 'emote_exclamation_mark' ? FLDEFF_EXCLAMATION_MARK_ICON
+                     : action === 'emote_question_mark' ? FLDEFF_QUESTION_MARK_ICON
+                     : FLDEFF_HEART_ICON);
     }
     return true;  // 1:1 décomp : action terminée immédiatement (sprite vit indép).
   }

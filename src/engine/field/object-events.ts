@@ -4562,8 +4562,8 @@ function _MovementAction_FaceAwayPlayer_Step0(rt: DecompRuntime, npc: ObjectEven
  *    FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
  *    sActionFuncId = 1; return TRUE;
  *
- *  H3.4 fix : wire FieldEffectStart vers le port field-effect.ts (= spawn
- *  emote sprite via SpawnEmoteSprite). */
+ *  Wire FieldEffectStart → dispatcher field-effect.ts → FldEff_ExclamationMarkIcon
+ *  (game/trainer_see.ts, vrai callback SpriteCB_TrainerIcons). */
 function _MovementAction_EmoteExclamationMark_Step0(_rt: DecompRuntime, npc: ObjectEvent): boolean {
   gFieldEffectArguments[0] = npc.localId;
   gFieldEffectArguments[1] = npc.mapNum;

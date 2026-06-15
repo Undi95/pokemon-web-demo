@@ -143,7 +143,7 @@ export function UpdateObjectEventSpriteInvisibility(rt: DecompRuntime, sprite: D
  *  ANIMCMD_END. C'est l'équivalent de ce que fait CreateSprite(template) du décomp (le template
  *  porte .anims/.images). imageValue dans les tables = offset TILE (= frameIdx × tilesParFrame)
  *  car on est en mode `usingSheet` (toute la sheet est chargée d'un bloc, ≠ chemin images[]). */
-function setFieldEffectAnims(
+export function setFieldEffectAnims(
   sprite: DecompSprite, anims: ReadonlyArray<ReadonlyArray<AnimCmd>>, sheetTileStart: number,
 ): void {
   sprite.usingSheet = true;

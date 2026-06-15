@@ -13,9 +13,9 @@
  *     pour `FLDEFF_X` (= notre TS : Map<id, handler>).
  *
  * Effects portés 1:1 strict (= H3.4) :
- *   - FLDEFF_EXCLAMATION_MARK_ICON (0)  → SpawnEmoteSprite('exclamation')
- *   - FLDEFF_QUESTION_MARK_ICON (33)    → SpawnEmoteSprite('question')
- *   - FLDEFF_HEART_ICON (46)            → SpawnEmoteSprite('heart')
+ *   - FLDEFF_EXCLAMATION_MARK_ICON (0)  → FldEff_ExclamationMarkIcon (game/trainer_see.ts)
+ *   - FLDEFF_QUESTION_MARK_ICON (33)    → FldEff_QuestionMarkIcon (game/trainer_see.ts)
+ *   - FLDEFF_HEART_ICON (46)            → FldEff_HeartIcon (game/trainer_see.ts)
  *
  * Effects stub explicit (= cascade non-portée, marqué dette H3) :
  *   - FLDEFF_TREE_DISGUISE (28)         : sprite tree par-dessus NPC.
@@ -30,7 +30,7 @@
 
 import type { DecompRuntime, DecompSprite } from '../system/decomp-runtime';
 import { FieldEffectActiveListRemove } from './field-effect-active-list';
-import { SpawnEmoteSprite, type EmoteType } from './field-effect-emotes';
+import { FldEff_ExclamationMarkIcon, FldEff_QuestionMarkIcon, FldEff_HeartIcon } from '../../game/trainer_see';
 import {
   FldEff_SandPile, FldEff_HotSpringsWater, FldEff_Ripple, FldEff_ShortGrass, FldEff_Bubbles,
   FldEff_Splash, FldEff_FeetInFlowingWater,
@@ -115,26 +115,13 @@ export function FieldEffectStart(id: number): number {
   }
 
   // ─── Emote icons (= EXCLAMATION_MARK / QUESTION_MARK / HEART) ──────────────
-  // 1:1 décomp args setup par MovementAction_Emote* :
-  //   ObjectEventGetLocalIdAndMap(obj, &args[0], &args[1], &args[2]);
-  //   args[0] = localId, args[1] = mapNum, args[2] = mapGroup.
-  if (id === FLDEFF_EXCLAMATION_MARK_ICON || id === FLDEFF_QUESTION_MARK_ICON || id === FLDEFF_HEART_ICON) {
-    const localId = gFieldEffectArguments[0];
-    let emoteType: EmoteType = 'exclamation';
-    if (id === FLDEFF_QUESTION_MARK_ICON) emoteType = 'question';
-    else if (id === FLDEFF_HEART_ICON) emoteType = 'heart';
-    // 1:1 décomp `TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], ...)` :
-    // match par numeric localId. Notre SpawnEmoteSprite accepte string | number ;
-    // passer le numeric pour matcher les NPCs avec localIdRaw spécifique (=
-    // `LOCALID_PLAYERS_HOUSE_1F_MOM` etc., dont notre construct `LOCALID_<n>`
-    // jamais ne matchait avant). 0xFF reste LOCALID_PLAYER (sentinel).
-    if (localId === 0xFF) {
-      SpawnEmoteSprite(rt, 'LOCALID_PLAYER', emoteType);
-    } else {
-      SpawnEmoteSprite(rt, localId, emoteType);
-    }
-    return 64;  // emote sprite has its own management
-  }
+  // 1:1 décomp trainer_see.c : FldEff_*Icon (migré dans game/trainer_see.ts, vrai callback
+  // SpriteCB_TrainerIcons). Les MovementAction_Emote* ont posé gFieldEffectArguments[0..2] =
+  // localId/mapNum/mapGroup de l'object event (le callback retrouve l'OE via
+  // TryGetObjectEventIdByLocalIdAndMap).
+  if (id === FLDEFF_EXCLAMATION_MARK_ICON) return FldEff_ExclamationMarkIcon(rt);
+  if (id === FLDEFF_QUESTION_MARK_ICON) return FldEff_QuestionMarkIcon(rt);
+  if (id === FLDEFF_HEART_ICON) return FldEff_HeartIcon(rt);
 
   // ─── Disguises tree/mountain/sand (1:1 ShowDisguiseFieldEffect) ─────────────
   // args[0..2] = localId/mapNum/mapGroup ; le sprite recouvre le NPC + suit. Retourne le
