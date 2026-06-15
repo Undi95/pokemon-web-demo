@@ -140,7 +140,7 @@ import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
 import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
-import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites } from '../game/field_weather_effect';
+import { DoCurrentWeather, SetSavedWeatherFromCurrMapHeader, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites } from '../game/field_weather_effect';
 // Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
 import '../game/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
@@ -904,21 +904,17 @@ export class TestOverworldScene extends Phaser.Scene {
     // session précédente persistent → BG_VOFS mal aligné post-warp.
     InstallCameraPanAheadCallback();
 
-    // 1:1 décomp `StartWeather()` (overworld.c:2146, ResumeMap). Alloue la palette météo
-    // (PALTAG_WEATHER/_2) + BuildColorMaps + crée Task_WeatherInit TÔT (avant que les object
-    // events remplissent les slots OBJ → la météo a sa place, comme la décomp).
-    // ⚠️ ResumePausedWeather + readyForInit sont posés PLUS BAS (après RunOnTransitionMapScript)
-    // car OnTransition fait `setweather` (ex. Route113 ash selon position) → la météo SAUVEGARDÉE
-    // n'est finalisée qu'APRÈS OnTransition. Si on appliquait ici, on lirait l'ancienne valeur
-    // (cendre absente en entrant directement dans la zone).
-    // Préchargement assets météo (plateforme, async, idempotent) : prêt avant Ash_InitAll.
+    // Préchargement assets météo (plateforme, async, idempotent) : démarré TÔT pour laisser
+    // le temps au fetch (fog.pal / *.png) de finir avant StartWeather (déplacé APRÈS le spawn).
     void preloadWeatherFogPalette();
     void preloadWeatherAshSprites();
-    StartWeather();
-    // readyForInit : normalement posé par le fade-in du warp (FadeScreen) → Task_WeatherInit
-    // avance vers Task_WeatherMain. Notre fade n'y passe pas → on le pose ici (sinon la météo
-    // reste bloquée en Task_WeatherInit). ⚠️ Dette : passer le fade-in par game FadeScreen.
-    gWeatherPtr.readyForInit = true;
+    void preloadWeatherFogHorizontalSprites();
+    // ⚠️ StartWeather() + readyForInit + DoCurrentWeather() sont posés APRÈS SpawnObjectEventsOnMap
+    // (ordre décomp ResumeMap : objets d'abord). Avant, StartWeather tournait ICI (avant le spawn)
+    // → la palette météo (AllocSpritePalette) prenait un slot OBJ bas que les object events
+    // CLOBBAIENT ensuite (météo rendait rose ; l'ash survivait car monochrome-blanc). En le
+    // plaçant après le spawn, la météo prend un slot OBJ LIBRE (au-dessus des objets) → plus de
+    // clobber. Cf. [[chantier-palslot-object-event-palettes]].
 
     // 1:1 décomp `SetUpFieldTasks()` (overworld.c:2149, appelé par ResumeMap juste
     // après InstallCameraPanAheadCallback:2139). Crée la task persistante
@@ -1060,12 +1056,6 @@ export class TestOverworldScene extends Phaser.Scene {
     // plus haut). Était implémenté mais non câblé (dette R3).
     RunOnResumeMapScript();
 
-    // 1:1 décomp `DoCurrentWeather()` (overworld.c:818, LoadMapFromCameraTransition, APRÈS
-    // RunOnTransitionMapScript). APPLIQUE la météo sauvegardée (= header + override OnTransition)
-    // → SetNextWeather → Task_WeatherMain transitionne (ex. Route113 → cendre). Placé après
-    // OnTransition pour lire la météo finalisée (header reset + setweather éventuel).
-    DoCurrentWeather();
-
     // 1:1 décomp `LoadMapHeaderInternal` (overworld.c:870-874) — après
     // `RunOnTransitionMapScript` + `InitMap`, si on est INDOOR :
     //     UpdateTVScreensOnMap(gBackupMapLayout.width, gBackupMapLayout.height);
@@ -1122,6 +1112,18 @@ export class TestOverworldScene extends Phaser.Scene {
       destroyAllNpcSprites(this.rt);
       await SpawnObjectEventsOnReturnToField(this.rt);
     }
+
+    // 1:1 décomp ordre ResumeMap (overworld.c:2146) : StartWeather APRÈS le spawn des object
+    // events → la palette météo (AllocSpritePalette/PALTAG_WEATHER) prend un slot OBJ LIBRE
+    // au-dessus de ceux des objets (plus de clobber → la météo à sprites rend ses vraies
+    // couleurs). preloadWeatherFogPalette (démarré plus haut) a eu le temps de finir → la
+    // palette fog est chargée dans le slot. readyForInit : notre fade n'appelle pas FadeScreen
+    // → posé ici (sinon Task_WeatherInit ne passe jamais à Task_WeatherMain). Dette : fade-in
+    // via game FadeScreen. DoCurrentWeather (overworld.c:818) APPLIQUE la météo sauvegardée
+    // (header reset + override OnTransition) → SetNextWeather → transition (ex. Route113 cendre).
+    StartWeather();
+    gWeatherPtr.readyForInit = true;
+    DoCurrentWeather();
 
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
     // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran

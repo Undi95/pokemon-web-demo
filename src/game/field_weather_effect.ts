@@ -13,9 +13,9 @@
  *      DoCurrentWeather/ResumePausedWeather/TranslateWeatherNum/UpdateWeatherPerDay/
  *      UpdateRainCounter/Task_DoAbnormalWeather/CreateAbnormalWeatherTask) + l'effet
  *      ASH (WEATHER_VOLCANIC_ASH : nuages de cendre dérivants, Route 113).
- *   ✅ C3 : WEATHER_SUNNY + WEATHER_SHADE (color-map only).
- *   ⏳ C3+ : Clouds/Rain/Snow/Thunderstorm/FogHorizontal/FogDiagonal/Sandstorm/
- *      Bubbles/Drought.
+ *   ✅ C3 : WEATHER_SUNNY + WEATHER_SHADE (color-map only) + WEATHER_FOG_HORIZONTAL
+ *      (= aussi WEATHER_UNDERWATER, mêmes callbacks).
+ *   ⏳ C3+ : Clouds/Rain/Snow/Thunderstorm/FogDiagonal/Sandstorm/Bubbles/Drought.
  *
  * ⚠️ AUDIO SKIP (exception projet) : aucun PlaySE.
  */
@@ -33,7 +33,7 @@ import { REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../engine/system/decomp-runt
 import { LoadSpriteSheet } from '../engine/system/sprite';
 import { loadIndexedPngStrict } from '../engine/gba/png-loader';
 import { setFieldEffectAnims } from './field_effect_helpers';
-import { ANIMCMD_FRAME, ANIMCMD_JUMP, type AnimCmd } from '../engine/system/sprite-animation';
+import { ANIMCMD_FRAME, ANIMCMD_JUMP, ANIMCMD_END, type AnimCmd } from '../engine/system/sprite-animation';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gMapHeader } from '../engine/field/map-loader';
 import * as WeatherConstants from '../engine/decomp-data/include/constants/weather-data';
@@ -42,6 +42,7 @@ import { GAME_STAT_GOT_RAINED_ON } from '../engine/decomp-data/include/constants
 import {
   gWeatherPtr,
   GFXTAG_ASH,
+  GFXTAG_FOG_H,
   Weather_SetBlendCoeffs,
   Weather_SetTargetBlendCoeffs,
   Weather_UpdateBlend,
@@ -332,6 +333,205 @@ _registerWeatherFuncs(WEATHER_SHADE, {
   main: Shade_Main,
   initAll: Shade_InitAll,
   finish: Shade_Finish,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER_FOG_HORIZONTAL (field_weather_effect.c:1280-1514)
+//  Brouillard : 20 sprites 64×64 OBJ_BLEND (grille 5×4) couvrant l'écran, défilant
+//  horizontalement (fogHScrollPosX) + suivant la caméra en Y (y2 = coordOffsetY 8-bit).
+//  Palette = fog (PALTAG_WEATHER, allouée par StartWeather). Aussi utilisé tel quel par
+//  WEATHER_UNDERWATER (table sWeatherFuncs : mêmes 4 callbacks ; blend coeffs différents
+//  selon currWeather dans FogHorizontal_Main).
+// ════════════════════════════════════════════════════════════════════════════
+
+const FOG_H_PNG = '/decomp/em/weather/fog_horizontal.png';
+const NUM_FOG_HORIZONTAL_SPRITES = 20; // constants/field_weather.h
+
+/** 1:1 décomp `sAnims_FogH` (field_weather_effect.c:1297-1341) : 6 anims 1-frame (offsets
+ *  tile 0/32/64/96/128/160). CreateFogHorizontalSprites ne fait PAS StartSpriteAnim → tous
+ *  les sprites utilisent l'anim 0 (offset 0). fog_horizontal.png = 64×64 = uniquement le
+ *  frame 0 (tiles 0-63) ; les 5 autres anims sont des data mortes (jamais sélectionnées). */
+const sAnims_FogH: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0, 16), ANIMCMD_END],
+  [ANIMCMD_FRAME(32, 16), ANIMCMD_END],
+  [ANIMCMD_FRAME(64, 16), ANIMCMD_END],
+  [ANIMCMD_FRAME(96, 16), ANIMCMD_END],
+  [ANIMCMD_FRAME(128, 16), ANIMCMD_END],
+  [ANIMCMD_FRAME(160, 16), ANIMCMD_END],
+];
+
+let _fogHTileStart = -1;
+let _fogHCharData: Uint8Array | null = null;
+let _fogHInit = false;
+let _fogHInitPromise: Promise<void> | null = null;
+
+/** Préchargement plateforme du sprite sheet fog horizontal (le décomp l'a en INCBIN
+ *  compile-time). fog_horizontal.png = 64×64 (8 tiles de large) → layout PNG row-major =
+ *  OBJ 1D 64×64 direct. À appeler avant StartWeather (comme preloadWeatherAshSprites). */
+export async function preloadWeatherFogHorizontalSprites(): Promise<void> {
+  if (_fogHInit) return;
+  if (_fogHInitPromise) return _fogHInitPromise;
+  _fogHInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(FOG_H_PNG, 4);
+    _fogHCharData = png.charData;
+    _fogHInit = true;
+  })();
+  return _fogHInitPromise;
+}
+
+/** 1:1 décomp `FogHorizontalSpriteCallback(struct Sprite *sprite)` (field_weather_effect.c:1451).
+ *  tSpriteColumn = data[0]. */
+function FogHorizontalSpriteCallback(sprite: DecompSprite): void {
+  sprite.y2 = _rt().gSpriteCoordOffsetY & 0xFF;  // 1:1 (u8) cast
+  sprite.x = gWeatherPtr.fogHScrollPosX + 32 + sprite.data[0] * 64;
+  if (sprite.x > DISPLAY_WIDTH + 31) {
+    sprite.x = (DISPLAY_WIDTH * 2) + gWeatherPtr.fogHScrollPosX - (4 - sprite.data[0]) * 64;
+    sprite.x &= 0x1FF;
+  }
+}
+
+/** 1:1 décomp `CreateFogHorizontalSprites(void)` (field_weather_effect.c:1462). */
+function CreateFogHorizontalSprites(): void {
+  const rt = _rt();
+
+  if (!gWeatherPtr.fogHSpritesCreated) {
+    // 1:1 : LoadSpriteSheet({gWeatherFogHorizontalTiles, sizeof, GFXTAG_FOG_H}).
+    if (_fogHCharData === null) {
+      console.error('[field_weather_effect] fog_horizontal.png non préchargé — appeler preloadWeatherFogHorizontalSprites() avant StartWeather.');
+      _fogHTileStart = 0;
+    } else {
+      _fogHTileStart = LoadSpriteSheet({ data: _fogHCharData, size: _fogHCharData.length, tag: GFXTAG_FOG_H });
+    }
+    for (let i = 0; i < NUM_FOG_HORIZONTAL_SPRITES; i++) {
+      // 1:1 : CreateSpriteAtEnd(&sFogHorizontalSpriteTemplate, 0, 0, 0xFF).
+      const { spriteId } = rt.CreateSpriteAtOam({
+        tileId: _fogHTileStart,
+        paletteBank: gWeatherPtr.contrastColorMapSpritePalIndex,
+        x: 0, y: 0,
+        shape: 0, size: 3,           // SPRITE_SHAPE/SIZE(64x64)
+        priority: 2,                 // 1:1 oam.priority = 2
+        paletteMode: 0, affineMode: 0,
+        subpriority: 0xFF,
+        fromEnd: true,               // CreateSpriteAtEnd
+      });
+      if (spriteId !== MAX_SPRITES) {
+        const sprite = rt.gSprites.get(spriteId)!;
+        // 1:1 : oam.objMode = ST_OAM_OBJ_BLEND.
+        sprite.objMode = 1;
+        sprite.callback = FogHorizontalSpriteCallback;
+        setFieldEffectAnims(sprite, sAnims_FogH, _fogHTileStart);
+        sprite.data[0] = (i % 5) & 0xFF;          // tSpriteColumn
+        sprite.x = (i % 5) * 64 + 32;
+        sprite.y = ((i / 5) | 0) * 64 + 32;
+        gWeatherPtr.sprites.s2.fogHSprites[i] = sprite;
+      } else {
+        gWeatherPtr.sprites.s2.fogHSprites[i] = null;
+      }
+    }
+
+    gWeatherPtr.fogHSpritesCreated = 1;
+  }
+}
+
+/** 1:1 décomp `DestroyFogHorizontalSprites(void)` (field_weather_effect.c:1497). */
+function DestroyFogHorizontalSprites(): void {
+  if (gWeatherPtr.fogHSpritesCreated) {
+    for (let i = 0; i < NUM_FOG_HORIZONTAL_SPRITES; i++) {
+      const s = gWeatherPtr.sprites.s2.fogHSprites[i] as DecompSprite | null;
+      if (s !== null) DestroySprite(s);
+    }
+
+    FreeSpriteTilesByTag(GFXTAG_FOG_H);
+    gWeatherPtr.fogHSpritesCreated = 0;
+  }
+}
+
+/** 1:1 décomp `FogHorizontal_InitVars(void)` (field_weather_effect.c:1370). */
+function FogHorizontal_InitVars(): void {
+  gWeatherPtr.initStep = 0;
+  gWeatherPtr.weatherGfxLoaded = 0;
+  gWeatherPtr.targetColorMapIndex = 0;
+  gWeatherPtr.colorMapStepDelay = 20;
+  if (gWeatherPtr.fogHSpritesCreated === 0) {
+    gWeatherPtr.fogHScrollCounter = 0;
+    gWeatherPtr.fogHScrollOffset = 0;
+    gWeatherPtr.fogHScrollPosX = 0;
+    Weather_SetBlendCoeffs(0, 16);
+  }
+}
+
+/** 1:1 décomp `FogHorizontal_InitAll(void)` (field_weather_effect.c:1385). */
+function FogHorizontal_InitAll(): void {
+  FogHorizontal_InitVars();
+  while (gWeatherPtr.weatherGfxLoaded === 0) FogHorizontal_Main();
+}
+
+/** 1:1 décomp `FogHorizontal_Main(void)` (field_weather_effect.c:1392). */
+function FogHorizontal_Main(): void {
+  gWeatherPtr.fogHScrollPosX = (_rt().gSpriteCoordOffsetX - gWeatherPtr.fogHScrollOffset) & 0xFF;
+  if (++gWeatherPtr.fogHScrollCounter > 3) {
+    gWeatherPtr.fogHScrollCounter = 0;
+    gWeatherPtr.fogHScrollOffset++;
+  }
+  switch (gWeatherPtr.initStep) {
+    case 0:
+      CreateFogHorizontalSprites();
+      if (gWeatherPtr.currWeather === WEATHER_FOG_HORIZONTAL) {
+        Weather_SetTargetBlendCoeffs(12, 8, 3);
+      } else {
+        Weather_SetTargetBlendCoeffs(4, 16, 0);
+      }
+      gWeatherPtr.initStep++;
+      break;
+    case 1:
+      if (Weather_UpdateBlend()) {
+        gWeatherPtr.weatherGfxLoaded = 1;
+        gWeatherPtr.initStep++;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `FogHorizontal_Finish(void)` (field_weather_effect.c:1420). */
+function FogHorizontal_Finish(): boolean {
+  gWeatherPtr.fogHScrollPosX = (_rt().gSpriteCoordOffsetX - gWeatherPtr.fogHScrollOffset) & 0xFF;
+  if (++gWeatherPtr.fogHScrollCounter > 3) {
+    gWeatherPtr.fogHScrollCounter = 0;
+    gWeatherPtr.fogHScrollOffset++;
+  }
+
+  switch (gWeatherPtr.finishStep) {
+    case 0:
+      Weather_SetTargetBlendCoeffs(0, 16, 3);
+      gWeatherPtr.finishStep++;
+      break;
+    case 1:
+      if (Weather_UpdateBlend()) gWeatherPtr.finishStep++;
+      break;
+    case 2:
+      DestroyFogHorizontalSprites();
+      gWeatherPtr.finishStep++;
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+// 1:1 décomp sWeatherFuncs (field_weather.c:93,97) :
+//   [WEATHER_FOG_HORIZONTAL] = {FogHorizontal_InitVars, FogHorizontal_Main, FogHorizontal_InitAll, FogHorizontal_Finish}
+//   [WEATHER_UNDERWATER]     = {FogHorizontal_InitVars, FogHorizontal_Main, FogHorizontal_InitAll, FogHorizontal_Finish}  (mêmes callbacks)
+_registerWeatherFuncs(WEATHER_FOG_HORIZONTAL, {
+  initVars: FogHorizontal_InitVars,
+  main: FogHorizontal_Main,
+  initAll: FogHorizontal_InitAll,
+  finish: FogHorizontal_Finish,
+});
+_registerWeatherFuncs(WEATHER_UNDERWATER, {
+  initVars: FogHorizontal_InitVars,
+  main: FogHorizontal_Main,
+  initAll: FogHorizontal_InitAll,
+  finish: FogHorizontal_Finish,
 });
 
 // ════════════════════════════════════════════════════════════════════════════

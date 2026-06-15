@@ -41,7 +41,7 @@ import * as FE from '../decomp-data/include/constants/field_effects-data';
 import {
   gWeatherPtr, StartWeather, FadeScreen, ApplyWeatherColorMapIfIdle, preloadWeatherFogPalette,
 } from '../../game/field_weather';
-import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites } from '../../game/field_weather_effect';
+import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites, preloadWeatherFogHorizontalSprites } from '../../game/field_weather_effect';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../system/sprite';
 
@@ -215,6 +215,7 @@ const fx = {
     async force(weatherId = 7) {
       await preloadWeatherFogPalette();
       await preloadWeatherAshSprites();
+      await preloadWeatherFogHorizontalSprites();
       gSaveBlock1Ptr.weather = weatherId;
       ResumePausedWeather();          // curr=next=météo (réutilise la palette météo allouée tôt)
       gWeatherPtr.readyForInit = true; // Task_WeatherInit -> sWeatherFuncs[curr].initAll
@@ -227,6 +228,7 @@ const fx = {
     async transition(weatherId = 7) {
       await preloadWeatherFogPalette();
       await preloadWeatherAshSprites();
+      await preloadWeatherFogHorizontalSprites();
       SetWeather(weatherId);
       gWeatherPtr.readyForInit = true;
       return fx.weather.state();
