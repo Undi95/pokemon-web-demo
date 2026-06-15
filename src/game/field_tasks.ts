@@ -1,3 +1,4 @@
+// #100% done — miroir complet de field_tasks.c (table sPerStepCallbacks 8/8 + les 3 tasks). Seul l'audio (UpdateAmbientCry/PlaySE) est skippé (exception projet).
 /**
  * field_tasks.ts — Port 1:1 STRICT (MIROIR) de `src/field_tasks.c`.
  *
