@@ -44,7 +44,7 @@ import {
 import { CreateTask, SetGpuReg, BeginNormalPaletteFade, PLTT_ID, RGB2 } from '../engine/system/decomp-bridge';
 import { OBJ_PLTT_ID, BG_PLTT_ID, REG_OFFSET_BLDALPHA, DISPLAY_WIDTH } from '../engine/system/decomp-runtime';
 import { RGB, RGB_BLACK, RGB_WHITEALPHA, PLTT_SIZE_4BPP } from '../engine/system/decomp-helpers';
-import { AllocSpritePalette } from '../engine/system/sprite';
+import { AllocSpritePalette, sSpritePaletteTags } from '../engine/system/sprite';
 import { gSineTable } from './trig';
 import { loadGbaPal } from '../engine/gba/png-loader';
 
@@ -363,6 +363,20 @@ export function StartWeather(): void {
     gWeatherPtr.readyForInit = false;
     gWeatherPtr.weatherChangeComplete = true;
     gWeatherPtr.taskId = CreateTask(Task_WeatherInit, 80);
+  } else {
+    // WARP / re-load de map (la task météo PERSISTE → le bloc d'init ci-dessus est skippé,
+    // 1:1 décomp). MAIS le map-load (InitPlayerAvatar → FreeAllSpritePalettes) a libéré le slot
+    // palette météo → il faut le RÉ-ÉTABLIR : re-copie gFogPalette dans le slot (contrast
+    // ColorMapSpritePalIndex, persistant) + RE-MARQUE son tag pour que les object events /
+    // field-effects ne le reprennent pas. Sans ça, la météo pointe une palette d'objet/herbe
+    // résiduelle → fog rend ROSE sur les warps (le 1er load marche). Adaptation 1:1 du
+    // mécanisme PreservePalettesInWeather décomp (palette météo préservée entre maps).
+    const index = gWeatherPtr.contrastColorMapSpritePalIndex;
+    const dst = OBJ_PLTT_ID(index);
+    for (let i = 0; i < 16; i++) _rt().gPlttBufferUnfaded.set(dst + i, gFogPalette[i] ?? 0);
+    sSpritePaletteTags[index] = PALTAG_WEATHER & 0xFFFF;
+    const idx2 = gWeatherPtr.weatherPicSpritePalIndex;
+    if (idx2 >= 0 && idx2 < 16) sSpritePaletteTags[idx2] = PALTAG_WEATHER_2 & 0xFFFF;
   }
 }
 
