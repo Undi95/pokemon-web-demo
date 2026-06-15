@@ -23,9 +23,9 @@
  *      `FortreeBridgePerStepCallback` (Fortree City), `PacifidlogBridgePerStepCallback`
  *      (Pacifidlog).
  *   ✅ `EndTruckSequence` (STEP_CB_TRUCK) câblé depuis truck-cinematic.ts.
- *   ⏳ `SecretBasePerStepCallback` (STEP_CB_SECRET_BASE) : secret_base.c non porté →
- *      reste `DummyPerStepCallback` (slot activé uniquement dans une base secrète
- *      d'ami, injoignable dans la démo).
+ *   ✅ `SecretBasePerStepCallback` (STEP_CB_SECRET_BASE) porté dans secret_base.ts
+ *      (+ sa chaîne PopSecretBaseBalloon/ShatterSecretBaseBreakableDoor dans fldeff_misc.ts).
+ *      → TABLE sPerStepCallbacks 100% 1:1 (8/8 slots = vraies fonctions décomp).
  *   ⏳ `Task_MuddySlope` (follow-up) + `Task_RunTimeBasedEvents` (entremêlé avec
  *      `UpdateAmbientCry` = AUDIO hors périmètre ; `DoTimeBasedEvents` est déjà
  *      câblé au map-load 1:1).
@@ -58,6 +58,7 @@ import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
 import { GetPlayerSpeed, PLAYER_SPEED_FASTEST } from '../engine/field/field-control-avatar';
 import { EndTruckSequence } from '../engine/field/truck-cinematic';
+import { SecretBasePerStepCallback } from './secret_base';
 import { VarGet, VarSet } from './event_data';
 import {
   METATILE_Fallarbor_AshGrass,
@@ -115,7 +116,7 @@ const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_PACIFIDLOG_BRIDGE] */ PacifidlogBridgePerStepCallback,
   /* [STEP_CB_SOOTOPOLIS_ICE]    */ SootopolisGymIcePerStepCallback,
   /* [STEP_CB_TRUCK]             */ EndTruckSequence,  // field_special_scene.c (truck-cinematic.ts)
-  /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
+  /* [STEP_CB_SECRET_BASE]       */ SecretBasePerStepCallback,  // secret_base.c (secret_base.ts)
   /* [STEP_CB_CRACKED_FLOOR]     */ CrackedFloorPerStepCallback,
 ];
 
