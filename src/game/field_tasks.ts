@@ -48,6 +48,10 @@ import {
   MetatileBehavior_IsThinIce,
   MetatileBehavior_IsCrackedIce,
   MetatileBehavior_IsFortreeBridge,
+  MetatileBehavior_IsPacifidlogVerticalLogTop,
+  MetatileBehavior_IsPacifidlogVerticalLogBottom,
+  MetatileBehavior_IsPacifidlogHorizontalLogLeft,
+  MetatileBehavior_IsPacifidlogHorizontalLogRight,
 } from './metatile_behavior';
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
@@ -66,6 +70,18 @@ import {
   METATILE_Fortree_BridgeOverGrass_Lowered,
   METATILE_Fortree_BridgeOverTrees_Raised,
   METATILE_Fortree_BridgeOverTrees_Lowered,
+  METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop,
+  METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom,
+  METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft,
+  METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight,
+  METATILE_Pacifidlog_SubmergedLogs_VerticalTop,
+  METATILE_Pacifidlog_SubmergedLogs_VerticalBottom,
+  METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft,
+  METATILE_Pacifidlog_SubmergedLogs_HorizontalRight,
+  METATILE_Pacifidlog_FloatingLogs_VerticalTop,
+  METATILE_Pacifidlog_FloatingLogs_VerticalBottom,
+  METATILE_Pacifidlog_FloatingLogs_HorizontalLeft,
+  METATILE_Pacifidlog_FloatingLogs_HorizontalRight,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
 import {
   VAR_ASH_GATHER_COUNT,
@@ -94,7 +110,7 @@ const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_DUMMY]             */ DummyPerStepCallback,
   /* [STEP_CB_ASH]               */ AshGrassPerStepCallback,
   /* [STEP_CB_FORTREE_BRIDGE]    */ FortreeBridgePerStepCallback,
-  /* [STEP_CB_PACIFIDLOG_BRIDGE] */ DummyPerStepCallback,  // TODO port PacifidlogBridgePerStepCallback (field_tasks.c:366)
+  /* [STEP_CB_PACIFIDLOG_BRIDGE] */ PacifidlogBridgePerStepCallback,
   /* [STEP_CB_SOOTOPOLIS_ICE]    */ SootopolisGymIcePerStepCallback,
   /* [STEP_CB_TRUCK]             */ DummyPerStepCallback,  // TODO câbler EndTruckSequence (field_special_scene.c → truck-cinematic.ts)
   /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
@@ -513,6 +529,175 @@ function FortreeBridgePerStepCallback(task: DecompTask): void {
     }
     case 2:
       _fortreeBridgeBounce(data);
+      break;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Pacifidlog Town — ponts en rondins qui s'enfoncent (field_tasks.c:240-447)
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 décomp `struct PacifidlogMetatileOffsets` (field_tasks.c:44-49).
+interface PacifidlogMetatileOffsets { x: number; y: number; metatileId: number; }
+
+// 1:1 décomp : chaque table = 4 paires (8 entrées). Une paire = les 2 metatiles
+// d'un rondin + leur position relative. Les 4 paires :
+//   0: joueur sur le HAUT d'un rondin vertical
+//   1: joueur sur le BAS d'un rondin vertical
+//   2: joueur sur la GAUCHE d'un rondin horizontal
+//   3: joueur sur la DROITE d'un rondin horizontal
+// (l'élément à offset 0,0 = celui où se tient le joueur.)
+const sHalfSubmergedBridgeMetatileOffsets: ReadonlyArray<PacifidlogMetatileOffsets> = [
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop }, { x: 0, y: 1, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom },
+  { x: 0, y: -1, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom },
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft }, { x: 1, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight },
+  { x: -1, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight },
+];
+
+const sFullySubmergedBridgeMetatileOffsets: ReadonlyArray<PacifidlogMetatileOffsets> = [
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_VerticalTop }, { x: 0, y: 1, metatileId: METATILE_Pacifidlog_SubmergedLogs_VerticalBottom },
+  { x: 0, y: -1, metatileId: METATILE_Pacifidlog_SubmergedLogs_VerticalTop }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_VerticalBottom },
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft }, { x: 1, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_HorizontalRight },
+  { x: -1, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_SubmergedLogs_HorizontalRight },
+];
+
+const sFloatingBridgeMetatileOffsets: ReadonlyArray<PacifidlogMetatileOffsets> = [
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_VerticalTop }, { x: 0, y: 1, metatileId: METATILE_Pacifidlog_FloatingLogs_VerticalBottom },
+  { x: 0, y: -1, metatileId: METATILE_Pacifidlog_FloatingLogs_VerticalTop }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_VerticalBottom },
+  { x: 0, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_HorizontalLeft }, { x: 1, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_HorizontalRight },
+  { x: -1, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_HorizontalLeft }, { x: 0, y: 0, metatileId: METATILE_Pacifidlog_FloatingLogs_HorizontalRight },
+];
+
+// 1:1 décomp `GetPacifidlogBridgeMetatileOffsets` (field_tasks.c:240-252).
+// Retourne l'INDEX de base de la paire (0/2/4/6) selon le type de rondin, ou -1
+// (= NULL décomp, position pas un rondin).
+function GetPacifidlogBridgeMetatileOffsets(metatileBehavior: number): number {
+  if (MetatileBehavior_IsPacifidlogVerticalLogTop(metatileBehavior)) return 0 * 2;
+  else if (MetatileBehavior_IsPacifidlogVerticalLogBottom(metatileBehavior)) return 1 * 2;
+  else if (MetatileBehavior_IsPacifidlogHorizontalLogLeft(metatileBehavior)) return 2 * 2;
+  else if (MetatileBehavior_IsPacifidlogHorizontalLogRight(metatileBehavior)) return 3 * 2;
+  else return -1;
+}
+
+// 1:1 décomp `TrySetPacifidlogBridgeMetatiles` (field_tasks.c:254-270).
+function TrySetPacifidlogBridgeMetatiles(
+  table: ReadonlyArray<PacifidlogMetatileOffsets>, x: number, y: number, redrawMap: boolean,
+): void {
+  const base = GetPacifidlogBridgeMetatileOffsets(MapGridGetMetatileBehaviorAt(x, y));
+  // Si base < 0, position pas un rondin (ne rien set).
+  if (base >= 0) {
+    const o0 = table[base], o1 = table[base + 1];
+    MapGridSetMetatileIdAt(x + o0.x, y + o0.y, o0.metatileId);
+    if (redrawMap) _drawMapMetatileAt(x + o0.x, y + o0.y);
+    MapGridSetMetatileIdAt(x + o1.x, y + o1.y, o1.metatileId);
+    if (redrawMap) _drawMapMetatileAt(x + o1.x, y + o1.y);
+  }
+}
+
+// 1:1 décomp TrySetLogBridge{HalfSubmerged,FullySubmerged,Floating} (field_tasks.c:272-285).
+function TrySetLogBridgeHalfSubmerged(x: number, y: number, redrawMap: boolean): void {
+  TrySetPacifidlogBridgeMetatiles(sHalfSubmergedBridgeMetatileOffsets, x, y, redrawMap);
+}
+function TrySetLogBridgeFullySubmerged(x: number, y: number, redrawMap: boolean): void {
+  TrySetPacifidlogBridgeMetatiles(sFullySubmergedBridgeMetatileOffsets, x, y, redrawMap);
+}
+function TrySetLogBridgeFloating(x: number, y: number, redrawMap: boolean): void {
+  TrySetPacifidlogBridgeMetatiles(sFloatingBridgeMetatileOffsets, x, y, redrawMap);
+}
+
+// 1:1 décomp `ShouldRaisePacifidlogLogs` (field_tasks.c:287-320). FALSE si le joueur
+// a bougé d'un bout du rondin à l'autre (le rondin reste submergé).
+function ShouldRaisePacifidlogLogs(newX: number, newY: number, oldX: number, oldY: number): boolean {
+  const oldBehavior = MapGridGetMetatileBehaviorAt(oldX, oldY);
+  if (MetatileBehavior_IsPacifidlogVerticalLogTop(oldBehavior)) {
+    if (newY > oldY) return false;
+  } else if (MetatileBehavior_IsPacifidlogVerticalLogBottom(oldBehavior)) {
+    if (newY < oldY) return false;
+  } else if (MetatileBehavior_IsPacifidlogHorizontalLogLeft(oldBehavior)) {
+    if (newX > oldX) return false;
+  } else if (MetatileBehavior_IsPacifidlogHorizontalLogRight(oldBehavior)) {
+    if (newX < oldX) return false;
+  }
+  return true;
+}
+
+// 1:1 décomp `ShouldSinkPacifidlogLogs` (field_tasks.c:328-357).
+function ShouldSinkPacifidlogLogs(newX: number, newY: number, oldX: number, oldY: number): boolean {
+  const newBehavior = MapGridGetMetatileBehaviorAt(newX, newY);
+  if (MetatileBehavior_IsPacifidlogVerticalLogTop(newBehavior)) {
+    if (newY < oldY) return false;
+  } else if (MetatileBehavior_IsPacifidlogVerticalLogBottom(newBehavior)) {
+    if (newY > oldY) return false;
+  } else if (MetatileBehavior_IsPacifidlogHorizontalLogLeft(newBehavior)) {
+    if (newX < oldX) return false;
+  } else if (MetatileBehavior_IsPacifidlogHorizontalLogRight(newBehavior)) {
+    if (newX > oldX) return false;
+  }
+  return true;
+}
+
+// 1:1 décomp `PacifidlogBridgePerStepCallback(u8 taskId)` (field_tasks.c:366-440).
+// #define tState    data[1]
+// #define tPrevX    data[2]
+// #define tPrevY    data[3]
+// #define tToRaiseX data[4]
+// #define tToRaiseY data[5]
+// #define tDelay    data[6]
+// Le rondin foulé s'enfonce ; le précédent remonte à la surface (avec délai).
+function PacifidlogBridgePerStepCallback(task: DecompTask): void {
+  const data = task.data;
+  const { x, y } = PlayerGetDestCoords();
+  switch (data[1]) { // tState
+    case 0:
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+      // Si le joueur est déjà sur un rondin à l'activation, l'enfonce tout de suite.
+      TrySetLogBridgeFullySubmerged(x, y, true);
+      data[1] = 1; // tState
+      break;
+    case 1: {
+      // Skip if player hasn't moved.
+      if (x === data[2] && y === data[3]) return; // tPrevX / tPrevY
+
+      if (ShouldRaisePacifidlogLogs(x, y, data[2], data[3])) {
+        // Position précédente pas l'autre bout d'un rondin courant → remonte (surface).
+        // Le metatile flottant est mis en file (set sans draw) ; inutile car state 2
+        // le gère en entier, mais 1:1 décomp.
+        TrySetLogBridgeHalfSubmerged(data[2], data[3], true);
+        TrySetLogBridgeFloating(data[2], data[3], false);
+        data[4] = data[2]; // tToRaiseX = tPrevX
+        data[5] = data[3]; // tToRaiseY = tPrevY
+        data[1] = 2; // tState
+        data[6] = 8; // tDelay
+      } else {
+        // A bougé mais reste sur la même section de pont → reste submergé.
+        data[4] = -1; // tToRaiseX
+        data[5] = -1; // tToRaiseY
+      }
+
+      if (ShouldSinkPacifidlogLogs(x, y, data[2], data[3])) {
+        // Position courante pas l'autre bout d'un rondin précédent → enfonce (sinking).
+        TrySetLogBridgeHalfSubmerged(x, y, true);
+        data[1] = 2; // tState
+        data[6] = 8; // tDelay
+      }
+
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+
+      // 1:1 décomp : `if (IsPacifidlogLog(beh)) PlaySE(SE_PUDDLE)` — gate audio
+      // uniquement → omis (audio hors périmètre).
+      break;
+    }
+    case 2:
+      if ((--data[6]) === 0) { // tDelay
+        // Si position courante = rondin, enfonce-le complètement.
+        TrySetLogBridgeFullySubmerged(x, y, true);
+        // Position précédente pas l'autre bout d'un rondin courant → remonte.
+        if (data[4] !== -1 && data[5] !== -1) // tToRaiseX / tToRaiseY
+          TrySetLogBridgeFloating(data[4], data[5], true);
+        data[1] = 1; // tState
+      }
       break;
   }
 }
