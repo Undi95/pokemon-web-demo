@@ -335,6 +335,10 @@ export class MainStruct {
   newAndRepeatedKeys = 0;
   /** 1:1 décomp gMain.keyRepeatCounter — countdown until next repeat fire. */
   keyRepeatCounter = 0;
+  /** 1:1 décomp `u32 gMain.vblankCounter1` (main.h) — compteur VBlank free-running
+   *  (incrémenté chaque frame, JAMAIS reset). Utilisé par RunTimeBasedEvents
+   *  (field_tasks.c) via `vblankCounter1 & (1<<12)` pour un tick périodique. */
+  vblankCounter1 = 0;
 }
 
 /** 1:1 décomp gKeyRepeatStartDelay = 40 (frames before 1ère répétition).
@@ -2545,6 +2549,7 @@ export class DecompRuntime {
     const scanlineTick = (globalThis as any).__scanlineEffectTick;
     if (typeof scanlineTick === 'function') scanlineTick();
     this.gIntroFrameCounter++;
+    this.gMain.vblankCounter1++; // 1:1 décomp VBlank free-running counter (jamais reset).
     // Devtools : auto-pause condition poll (= dev.pauseAt). Cheap noop si non-armé.
     // Posé sur globalThis par engine-devtools.ts pour fonctionner partout.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

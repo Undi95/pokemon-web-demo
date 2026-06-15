@@ -1702,6 +1702,7 @@ export const gMain = new Proxy({} as {
   heldKeys: number;
   newAndRepeatedKeys: number;
   keyRepeatCounter: number;
+  vblankCounter1: number;
 }, {
   get(_, k) { return (rt().gMain as unknown as Record<string, unknown>)[k as string]; },
   set(_, k, v) { (rt().gMain as unknown as Record<string, unknown>)[k as string] = v; return true; },

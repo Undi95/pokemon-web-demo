@@ -26,9 +26,10 @@
  *   ✅ `SecretBasePerStepCallback` (STEP_CB_SECRET_BASE) porté dans secret_base.ts
  *      (+ sa chaîne PopSecretBaseBalloon/ShatterSecretBaseBreakableDoor dans fldeff_misc.ts).
  *      → TABLE sPerStepCallbacks 100% 1:1 (8/8 slots = vraies fonctions décomp).
- *   ⏳ `Task_MuddySlope` (follow-up) + `Task_RunTimeBasedEvents` (entremêlé avec
- *      `UpdateAmbientCry` = AUDIO hors périmètre ; `DoTimeBasedEvents` est déjà
- *      câblé au map-load 1:1).
+ *   ✅ `Task_MuddySlope` (anim pente boueuse) + `Task_RunTimeBasedEvents`
+ *      (+ `RunTimeBasedEvents`, tick périodique DoTimeBasedEvents ; `UpdateAmbientCry`
+ *      = AUDIO SKIP). → SetUpFieldTasks crée les 3 tasks 1:1.
+ *   => field_tasks.c = MIROIR COMPLET (seul l'audio UpdateAmbientCry est omis, comme PlaySE).
  */
 
 import type { DecompTask } from '../engine/system/decomp-runtime';
@@ -38,8 +39,11 @@ import {
   FuncIsActiveTask,
   GetTaskData,
   TASK_NONE,
+  gMain,
 } from '../engine/system/decomp-globals';
 import { PlayerGetDestCoords, PlayerGetElevation } from '../engine/field/player-avatar';
+import { ArePlayerFieldControlsLocked } from '../engine/script/script-runtime';
+import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from '../engine/field/map-loader';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
@@ -155,9 +159,8 @@ export function SetUpFieldTasks(): void {
   // 1:1 décomp `if (!FuncIsActiveTask(Task_MuddySlope)) CreateTask(Task_MuddySlope, 80);`
   if (!FuncIsActiveTask(Task_MuddySlope)) CreateTask(Task_MuddySlope, 80);
 
-  // 1:1 décomp : la décomp crée AUSSI Task_RunTimeBasedEvents ici. Différé :
-  // entremêlé avec UpdateAmbientCry (= AUDIO, hors périmètre) ; DoTimeBasedEvents
-  // est déjà câblé au map-load (1:1).
+  // 1:1 décomp `if (!FuncIsActiveTask(Task_RunTimeBasedEvents)) CreateTask(..., 80);`
+  if (!FuncIsActiveTask(Task_RunTimeBasedEvents)) CreateTask(Task_RunTimeBasedEvents, 80);
 }
 
 // ─── 1:1 décomp `ActivatePerStepCallback(u8 callbackId)` (field_tasks.c:196-212) ──
@@ -181,7 +184,16 @@ export function ResetFieldTasksArgs(): void {
   // 1:1 : la décomp lit gTasks[FindTaskIdByFunc(Task_RunPerStepCallback)].data
   // mais ne s'en sert pas (dead code). On conserve l'intention sans l'effet.
   void FindTaskIdByFunc(Task_RunPerStepCallback);
-  // (reset ambient-cry de Task_RunTimeBasedEvents : différé, voir SetUpFieldTasks)
+
+  // 1:1 décomp : reset les args ambient-cry de Task_RunTimeBasedEvents.
+  const taskId = FindTaskIdByFunc(Task_RunTimeBasedEvents);
+  if (taskId !== TASK_NONE) {
+    const data = GetTaskData(taskId);
+    if (data) {
+      data[1] = 0; // tAmbientCryState
+      data[2] = 0; // tAmbientCryDelay
+    }
+  }
 }
 
 // ─── 1:1 décomp `DummyPerStepCallback(u8 taskId)` (field_tasks.c:235-238) ───
@@ -803,5 +815,45 @@ function Task_MuddySlope(task: DecompTask): void {
       data[i + SLOPE_Y] -= cameraOffsetY;
       SetMuddySlopeMetatile(data, i + SLOPE_TIME, data[i + SLOPE_X], data[i + SLOPE_Y]);
     }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Évènements basés sur le temps (field_tasks.c:144-177)
+// ════════════════════════════════════════════════════════════════════════════
+// #define tState           data[0]
+// #define tAmbientCryState data[1]
+// #define tAmbientCryDelay data[2]
+const TIME_UPDATE_INTERVAL = 1 << 12;
+
+// 1:1 décomp `RunTimeBasedEvents(s16 *data)` (field_tasks.c:150-166). Appelle
+// DoTimeBasedEvents quand le bit 12 de gMain.vblankCounter1 passe à 1 (≈ toutes
+// les 4096 frames). La state machine évite de re-déclencher tant que le bit reste
+// haut.
+function RunTimeBasedEvents(data: number[]): void {
+  switch (data[0]) { // tState
+    case 0:
+      if (gMain.vblankCounter1 & TIME_UPDATE_INTERVAL) {
+        DoTimeBasedEvents();
+        data[0]++;
+      }
+      break;
+    case 1:
+      if (!(gMain.vblankCounter1 & TIME_UPDATE_INTERVAL))
+        data[0]--;
+      break;
+  }
+}
+
+// 1:1 décomp `Task_RunTimeBasedEvents(u8 taskId)` (field_tasks.c:168-177).
+// Tick périodique de DoTimeBasedEvents (berry growth / RTC) tant que les contrôles
+// joueur ne sont pas verrouillés. `DoTimeBasedEvents` est AUSSI appelé au map-load
+// (1:1) — les deux déclencheurs coexistent dans la décomp (DoTimeBasedEvents est
+// idempotent : il agit selon le temps RTC écoulé, pas le nombre d'appels).
+function Task_RunTimeBasedEvents(task: DecompTask): void {
+  if (!ArePlayerFieldControlsLocked()) {
+    RunTimeBasedEvents(task.data);
+    // 1:1 : `UpdateAmbientCry(&tAmbientCryState, &tAmbientCryDelay)` — AUDIO
+    // (cris ambiants Pokémon) SKIP (hors périmètre). data[1]/data[2] vestigiaux.
   }
 }
