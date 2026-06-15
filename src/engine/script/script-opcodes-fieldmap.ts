@@ -56,10 +56,18 @@ registerOpcode('setmaplayoutindex', (_ctx, args) => {
 // Session 132 : real dispatch via step-callbacks.ts (= 8 callback handlers
 // 1:1 décomp gPerStepCallbacks[]).
 registerOpcode('setstepcallback', (_ctx, args) => {
-  const callbackId = parseValue(args[0] ?? '0');
+  const raw = args[0] ?? '0';
   void (async () => {
-    const { ActivatePerStepCallback } = await import('../../game/field_tasks');
-    ActivatePerStepCallback(callbackId);
+    const ft = await import('../../game/field_tasks');
+    // 1:1 : l'arg est une constante STEP_CB_* (ex. "STEP_CB_ASH") OU une valeur numérique.
+    // parseValue ne connaît PAS les STEP_CB_* (constants/field_tasks.h) → on les résout via
+    // les exports de field_tasks (STEP_CB_DUMMY..STEP_CB_CRACKED_FLOOR). Sans ça la cendre
+    // (Route113_OnResume = setstepcallback STEP_CB_ASH) activait STEP_CB_DUMMY (=0) → les
+    // herbes ne réagissaient pas.
+    const callbackId = (typeof raw === 'string' && raw in ft)
+      ? (ft as unknown as Record<string, number>)[raw]
+      : parseValue(raw);
+    ft.ActivatePerStepCallback(callbackId);
   })();
   return false;
 });

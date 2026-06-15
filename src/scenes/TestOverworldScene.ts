@@ -104,6 +104,7 @@ import {
   LockPlayerFieldControls,
   UnlockPlayerFieldControls,
   RunOnTransitionMapScript,
+  RunOnResumeMapScript,
   TryRunOnFrameMapScript,
   TryRunOnWarpIntoMapScript,
 } from '../engine/script/script-runtime';
@@ -929,6 +930,10 @@ export class TestOverworldScene extends Phaser.Scene {
     // `Task_RunPerStepCallback` (idempotent via FuncIsActiveTask) qui dispatch les
     // per-step callbacks (cendres Route 113, ponts, glace…) CHAQUE FRAME via RunTasks.
     SetUpFieldTasks();
+    // NB : RunOnResumeMapScript (overworld.c:2150) est appelé PLUS BAS, après que
+    // `loadMapScripts` (async) ait peuplé _scriptsByLabel — sinon le script ON_RESUME
+    // (ex. Route113_OnResume = setstepcallback STEP_CB_ASH) est introuvable. Cf. infra
+    // juste après RunOnTransitionMapScript.
 
     // 1:1 décomp `DrawWholeMapView` (field_camera.c:94-98) — no args,
     // lit `gSaveBlock1Ptr->pos.x/y` (= `_camPos` côté TS) + gMapHeader.mapLayout
@@ -1045,6 +1050,15 @@ export class TestOverworldScene extends Phaser.Scene {
     // PUIS OnTransition → rival NPC spawnait avec gfxId=0 (= invalid) →
     // skipped silencieusement → rival jamais visible.
     RunOnTransitionMapScript();
+
+    // 1:1 décomp `RunOnResumeMapScript()` (overworld.c:2150, ResumeMap). Ici (et pas
+    // près de SetUpFieldTasks) car `loadMapScripts` (await Promise.all plus haut) a
+    // peuplé _scriptsByLabel → le script MAP_SCRIPT_ON_RESUME est trouvable. Ex. Route 113
+    // `Route113_OnResume = setstepcallback STEP_CB_ASH` → ACTIVE le per-step callback de
+    // l'ash grass (footprints en marchant). Sans ça la table sPerStepCallbacks reste sur
+    // DUMMY → « les herbes ne réagissent pas ». La task per-step existe déjà (SetUpFieldTasks
+    // plus haut). Était implémenté mais non câblé (dette R3).
+    RunOnResumeMapScript();
 
     // 1:1 décomp `LoadMapHeaderInternal` (overworld.c:870-874) — après
     // `RunOnTransitionMapScript` + `InitMap`, si on est INDOOR :
@@ -1633,6 +1647,10 @@ export class TestOverworldScene extends Phaser.Scene {
       }
       console.log(`[connection] scripts loaded for ${newHeader.id}, run OnTransition`);
       RunOnTransitionMapScript();
+      // 1:1 décomp : la décomp passe par ResumeMap aussi sur connexion → ON_RESUME tourne
+      // (ex. Route113_OnResume = setstepcallback STEP_CB_ASH → réaction de l'ash grass en
+      // marchant). Sans ça « les herbes ne réagissent pas » en entrant par une bordure.
+      RunOnResumeMapScript();
     });
 
     // 1:1 STRICT décomp `LoadMapFromCameraTransition` (overworld.c:796) :
