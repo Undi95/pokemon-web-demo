@@ -5938,6 +5938,88 @@ function _execHeldMovementAction(rt: DecompRuntime, npc: ObjectEvent): void {
   }
 }
 
+// ─── [M3-C3.4] État visuel du held movement pour le sprite joueur DÉCOUPLÉ ─────
+//
+// Le slot joueur (gObjectEvents[0]) a spriteId<0 : son sprite réel est
+// gPlayerAvatar.spriteId (découplé, hérité day-one). Dans la décomp, la
+// MovementAction anime directement le sprite du SLOT (StartSpriteAnim pour la
+// marche, sprite->y2 pour l'arc de saut via _DoJumpSpriteMovement). Le slot joueur
+// n'ayant pas de sprite, ces écritures sont no-op (gate `npc.spriteId >= 0`). On
+// recalcule donc ici, depuis l'état du mouvement (actionTimer + jumpType/Distance +
+// walkSpeed) et avec les MÊMES tables (sJumpY*, sStepTimes), les grandeurs que
+// `updateSpriteFrame` (player-avatar) applique sur le sprite joueur. Ainsi TOUT held
+// movement du slot (input, door forcé, scripté via script_movement.c) anime le joueur
+// 1:1, sans dupliquer la logique de mouvement.
+
+/** Grandeurs visuelles d'un held movement en cours (pour un sprite découplé). */
+export interface HeldMovementVisual {
+  /** Afficher l'anim de marche (alternance walk_a / face / walk_b). */
+  walking: boolean;
+  /** PLAYER_RUN → utiliser les running frames (RUN_FRAME_OFFSET). */
+  running: boolean;
+  /** sprite->y2 (arc de saut), 0 si l'action n'est pas un saut. */
+  jumpYOffset: number;
+  /** Frames restantes du pas (compte à rebours, pour la phase walk/face). */
+  framesLeft: number;
+  /** Durée totale du pas en frames. halfStep = totalFrames >> 1. */
+  totalFrames: number;
+}
+
+/** Calcule l'état visuel du held movement courant de `npc` (cf. note ci-dessus).
+ *  Retourne null si pas en plein pas d'une action de marche/saut (= afficher "face"). */
+export function GetHeldMovementVisual(npc: ObjectEvent): HeldMovementVisual | null {
+  if (!ObjectEventIsHeldMovementActive(npc)) return null;
+  // actionStep (sActionFuncId) : 0 = pré-init (held posé, pas encore tické),
+  // 2 = fini. On ne rend l'anim de mouvement que pendant le pas (1).
+  if (npc.actionStep !== 1) return null;
+  const id = npc.movementActionId;
+
+  // ── Saut : JUMP_2 / JUMP_SPECIAL / JUMP / JUMP_IN_PLACE ──
+  // 1:1 _DoJumpSpriteMovement / _DoJumpSpecialSpriteMovement : sprite->y2 =
+  // sJumpY[type][sTimer >> shift]. JUMP_SPECIAL double durées (32/32/64) + shift (1/1/2).
+  const special = (id >= MOVEMENT_ACTION_JUMP_SPECIAL_DOWN && id <= MOVEMENT_ACTION_JUMP_SPECIAL_RIGHT);
+  const isJump =
+    (id >= MOVEMENT_ACTION_JUMP_2_DOWN && id <= MOVEMENT_ACTION_JUMP_2_RIGHT) ||
+    special ||
+    (id >= MOVEMENT_ACTION_JUMP_DOWN && id <= MOVEMENT_ACTION_JUMP_RIGHT) ||
+    (id >= MOVEMENT_ACTION_JUMP_IN_PLACE_DOWN && id <= MOVEMENT_ACTION_JUMP_IN_PLACE_RIGHT);
+  if (isJump) {
+    const distanceToTime = special ? [32, 32, 64] : [16, 16, 32];
+    const distanceToShift = special ? [1, 1, 2] : [0, 0, 1];
+    const total = distanceToTime[npc.jumpDistance] ?? 16;
+    const shift = distanceToShift[npc.jumpDistance] ?? 0;
+    const idx = Math.min(15, npc.actionTimer >> shift);
+    return {
+      walking: true,
+      running: false,
+      jumpYOffset: _sJumpYTable[npc.jumpType]?.[idx] ?? 0,
+      framesLeft: Math.max(0, total - npc.actionTimer),
+      totalFrames: total,
+    };
+  }
+
+  // ── WALK_SLOW : chemin séparé (UpdateWalkSlow), 32 frames, walkSpeed non posé ──
+  if (id >= MOVEMENT_ACTION_WALK_SLOW_DOWN && id <= MOVEMENT_ACTION_WALK_SLOW_RIGHT) {
+    return { walking: true, running: false, jumpYOffset: 0, framesLeft: Math.max(0, 32 - npc.actionTimer), totalFrames: 32 };
+  }
+
+  // ── Marche via NpcTakeStep (NORMAL/FAST/FASTER/SLIDE/PLAYER_RUN) : total = sStepTimes[walkSpeed] ──
+  const running = (id >= MOVEMENT_ACTION_PLAYER_RUN_DOWN && id <= MOVEMENT_ACTION_PLAYER_RUN_RIGHT);
+  const isWalk =
+    (id >= MOVEMENT_ACTION_WALK_NORMAL_DOWN && id <= MOVEMENT_ACTION_WALK_NORMAL_RIGHT) ||
+    (id >= MOVEMENT_ACTION_WALK_FAST_DOWN && id <= MOVEMENT_ACTION_WALK_FAST_RIGHT) ||
+    (id >= MOVEMENT_ACTION_WALK_FASTER_DOWN && id <= MOVEMENT_ACTION_WALK_FASTER_RIGHT) ||
+    (id >= MOVEMENT_ACTION_SLIDE_DOWN && id <= MOVEMENT_ACTION_SLIDE_RIGHT) ||
+    running;
+  if (isWalk) {
+    const total = _sStepTimes[npc.walkSpeed] ?? 16;
+    return { walking: true, running, jumpYOffset: 0, framesLeft: Math.max(0, total - npc.actionTimer), totalFrames: total };
+  }
+
+  // Delay / face / walk_in_place / emote / etc. → pas d'anim de mouvement (face).
+  return null;
+}
+
 // ─── Spawn ──────────────────────────────────────────────────────────────────
 
 /** Index de la 1re frame image affichée par stade (= 1er `ANIMCMD_FRAME` de

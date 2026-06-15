@@ -45,6 +45,8 @@ import {
   InitPlayerObjectEvent, PLAYER_OBJECT_EVENT_SLOT, SyncPlayerObjectEvent, gObjectEvents,
   ObjectEventSetHeldMovement,
   ObjectEventClearHeldMovementIfActive,
+  ObjectEventIsHeldMovementActive,
+  GetHeldMovementVisual,
   GetWalkNormalMovementAction,
   GetPlayerRunMovementAction,
   GetJump2MovementAction,
@@ -717,7 +719,39 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const cfg = SPRITE_FRAMES[GetPlayerFacingDirection() as keyof typeof SPRITE_FRAMES];
   if (!cfg) return;
 
+  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+
+  // [M3-C3.4] Mouvement scripté / forcé (controls locked) : 1:1 décomp script_movement.c,
+  // le held movement du SLOT joueur pilote la position (worldX via _NpcTakeStep) ET l'anim.
+  // Le sprite joueur étant découplé (slot.spriteId<0), on lit l'état du held movement
+  // (phase de pas + arc de saut, vraies tables sJumpY*/sStepTimes) et on le rend ici —
+  // exactement comme la MovementAction animerait le sprite du slot dans la décomp. Le chemin
+  // input (controls NON locked : walk/dash/ledge piloté par gPlayerAvatar.*) reste INTACT.
+  const heldVis = (playerSlot && ArePlayerFieldControlsLocked())
+    ? GetHeldMovementVisual(playerSlot)
+    : null;
+
   let frameIdx: number;
+  if (heldVis) {
+    // Anim de marche dérivée du slot (walk_a/face alternance via slot.walkAnimAlt).
+    // halfStep = totalFrames>>1 (= 8 walk, 4 run/dash, 16 walk_slow) → 1:1 cycle décomp.
+    const halfStep = heldVis.totalFrames >> 1;
+    if (heldVis.framesLeft >= halfStep) {
+      frameIdx = (playerSlot.walkAnimAlt === 0) ? cfg.walk1 : cfg.walk2;
+    } else {
+      frameIdx = cfg.face;
+    }
+    const dashOffset = heldVis.running ? RUN_FRAME_OFFSET : 0;
+    oam.tileId = PLAYER_OBJ_TILE_START + (frameIdx + dashOffset) * TILES_PER_FRAME;
+    sprite.hFlip = cfg.hFlip;
+    oam.flipH = cfg.hFlip;
+    sprite.coordOffsetEnabled = true;
+    sprite.x = playerSlot.worldX;
+    sprite.y = playerSlot.worldY;
+    sprite.y2 = heldVis.jumpYOffset;
+    return;
+  }
+
   // Session 124 fix : gate étendu pour scripted movement (= applymovement
   // LOCALID_PLAYER walk_*). Le scripted movement set `stepFramesLeft` mais
   // PAS `runningState = MOVING` (= éviter double-tick PlayerStep). Donc on
@@ -788,7 +822,6 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   // → le joueur reste CENTRÉ car worldX += dx au walk pendant que la caméra scrolle
   // de dx (gSpriteCoordOffsetX -= dx) : les deux s'annulent. Avant : sprite.x=120
   // figé (écran-ancré, hybride non-1:1) → remplacé par le chemin object-event unifié.
-  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
   if (!playerSlot) return;
   sprite.coordOffsetEnabled = true;
   sprite.x = playerSlot.worldX;
@@ -1351,8 +1384,23 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
         // Clear forceMovement après step done → la scene attend ça pour next phase.
         gPlayerAvatar.forceMovement = DIR_NONE;
       }
+    } else if (
+      gPlayerAvatar.forceMovement === DIR_NONE
+      && gObjectEvents[gPlayerAvatar.objectEventId]
+      && ObjectEventIsHeldMovementActive(gObjectEvents[gPlayerAvatar.objectEventId])
+      && !gObjectEvents[gPlayerAvatar.objectEventId].heldMovementFinished
+    ) {
+      // [M3-C3.4] Mouvement scripté actif sur le slot joueur (1:1 script_movement.c) :
+      // la position avance via TickObjectEventMovements (held movement) → le CameraObject
+      // suit le sprite. On reflète "en mouvement" sur gPlayerAvatar pour skip le check
+      // défensif cam↔player de MainCB2_Overworld (qui ne vise QUE le désync à l'arrêt :
+      // runningState=NOT_MOVING). L'anim de marche/saut est rendue par updateSpriteFrame
+      // (lit GetHeldMovementVisual du slot). Le held fini-mais-non-cleared (door warp
+      // terminé, ou frame de transition entre 2 actions) ne match pas (heldMovementFinished).
+      gPlayerAvatar.runningState = MOVING;
+      gPlayerAvatar.collideFramesLeft = 0;
     } else if (gPlayerAvatar.forceMovement === DIR_NONE) {
-      // Pas de step + pas de force → freeze player.
+      // Pas de step + pas de force + pas de scripté → freeze player.
       gPlayerAvatar.runningState = NOT_MOVING;
       gPlayerAvatar.collideFramesLeft = 0;  // = pas de bump anim pendant lock
     }

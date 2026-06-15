@@ -126,26 +126,30 @@ export function applyMovement(targetLocalId: string, movementLabelOrActions: str
     return;
   }
 
-  // H2.3 — 1:1 strict migration : try ScriptMovement task path pour NPCs.
-  // Player avatar reste sur _queues legacy car le path utilise gFieldCamera
-  // .movementSpeedX/Y pour drive camera scroll (= non géré par ScriptMovement
-  // task qui set heldMovement direct sur slot 0 sans sync camera).
+  // 1:1 STRICT décomp `script_movement.c` : TOUS les object events (LE JOUEUR INCLUS)
+  // passent par `ScriptMovement_StartObjectMovementScript` → `ObjectEventSetHeldMovement`.
+  // Le slot avance worldX/Y via `_NpcTakeStep` (dans `TickObjectEventMovements`) → le
+  // CameraObject suit le sprite joueur. AVANT : le joueur était special-casé sur le
+  // `_queues` legacy + un driver caméra (gFieldCamera.movementSpeedX/Y) MORT depuis
+  // l'activation du CameraObject (CameraUpdateCallback l'écrase) → worldX VISUEL figé
+  // (joueur gelé puis téléporté, saut sur place) alors que les currentCoords logiques
+  // avançaient. Le special-case n'a plus de raison d'être (le CameraObject suit le sprite).
   //
   // ScriptMovement path :
   //   1. Convertir actions strings → numeric MOVEMENT_ACTION_X (Uint8Array).
-  //   2. Resolve targetLocalId → objEventId.
+  //   2. Resolve targetLocalId → objEventId (joueur = gPlayerAvatar.objectEventId).
   //   3. ScriptMovement_StartObjectMovementScript(objEventId, script).
   //   4. Le ScriptMovement_MoveObjects task tick avance via heldMovement +
   //      gMovementActionFuncs[] numeric dispatch (= path 1:1 décomp).
-  const isPlayerTarget = (targetLocalId === 'LOCALID_PLAYER' || targetLocalId === '255' || targetLocalId === '0xFF');
-  if (!isPlayerTarget) {
+  {
     const target = _resolveTarget(targetLocalId);
-    if (target && !target.isPlayer && target.npc) {
-      const script = ConvertMovementActionsToIds(actions);
-      if (script !== null) {
-        // Trouve objEventId du NPC dans gObjectEvents.
-        const objEventId = gObjectEvents.indexOf(target.npc);
-        if (objEventId >= 0) {
+    if (target) {
+      const objEventId = target.isPlayer
+        ? gPlayerAvatar.objectEventId
+        : (target.npc ? gObjectEvents.indexOf(target.npc) : -1);
+      if (objEventId >= 0) {
+        const script = ConvertMovementActionsToIds(actions);
+        if (script !== null) {
           const refused = ScriptMovement_StartObjectMovementScript(objEventId, script);
           if (!refused) {
             // Accepté par ScriptMovement task — skip _queues legacy.
@@ -161,7 +165,7 @@ export function applyMovement(targetLocalId: string, movementLabelOrActions: str
     }
   }
 
-  // Fallback legacy _queues path (= player avatar OU action non mappable).
+  // Fallback legacy _queues path (= action non mappable OU ScriptMovement refusé).
   _queues.set(_queueKey(targetLocalId), {
     actions: [...actions],
     currentIdx: 0,
@@ -172,19 +176,17 @@ export function applyMovement(targetLocalId: string, movementLabelOrActions: str
 
 /** True si la queue pour targetLocalId est done. Si pas de queue → true (= no-op). */
 export function isMovementDone(targetLocalId: string): boolean {
-  // H2.3 — check ScriptMovement task d'abord (= NPC migration).
-  const isPlayerTarget = (targetLocalId === 'LOCALID_PLAYER' || targetLocalId === '255' || targetLocalId === '0xFF');
-  if (!isPlayerTarget) {
-    const target = _resolveTarget(targetLocalId);
-    if (target && !target.isPlayer && target.npc) {
-      const objEventId = gObjectEvents.indexOf(target.npc);
-      if (objEventId >= 0) {
-        // Check ScriptMovement task entry.
-        if (!ScriptMovement_IsObjectMovementFinished(objEventId)) return false;
-      }
+  // 1:1 strict : check ScriptMovement task (joueur INCLUS désormais).
+  const target = _resolveTarget(targetLocalId);
+  if (target) {
+    const objEventId = target.isPlayer
+      ? gPlayerAvatar.objectEventId
+      : (target.npc ? gObjectEvents.indexOf(target.npc) : -1);
+    if (objEventId >= 0) {
+      if (!ScriptMovement_IsObjectMovementFinished(objEventId)) return false;
     }
   }
-  // Fallback _queues legacy (= player ou NPC sans ScriptMovement entry).
+  // Fallback _queues legacy (= action non mappable sans ScriptMovement entry).
   const q = _queues.get(_queueKey(targetLocalId));
   return !q || q.done;
 }
@@ -195,11 +197,10 @@ export function isAllMovementsDone(): boolean {
   for (const q of _queues.values()) {
     if (!q.done) return false;
   }
-  // Check ScriptMovement task entries.
+  // Check ScriptMovement task entries (joueur slot INCLUS).
   for (let i = 0; i < gObjectEvents.length; i++) {
     const npc = gObjectEvents[i];
     if (!npc || !npc.active) continue;
-    if (i === 0) continue;  // skip player slot (= _queues path)
     if (!ScriptMovement_IsObjectMovementFinished(i)) return false;
   }
   return true;
