@@ -93,6 +93,9 @@ import { reverseDecompConstant as _reverseDecompConstant } from '../system/decom
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSaveBlock1 } from '../save/save-system';
 import { GetStageByBerryTreeId, GetBerryTypeByBerryTreeId, BERRY_STAGE_NO_BERRY, BERRY_STAGE_FLOWERING } from '../../game/berry';
+// Reflets relocalisés au miroir 1:1 (field_effect_helpers.c) — appelé par le spine
+// GroundEffect_Water/IceReflection (corps de fonction → cycle ESM sûr).
+import { SetUpReflection } from '../../game/field_effect_helpers';
 import { FieldEffectStart, gFieldEffectArguments, FLDEFF_EXCLAMATION_MARK_ICON, FLDEFF_QUESTION_MARK_ICON, FLDEFF_HEART_ICON, FLDEFF_TREE_DISGUISE, FLDEFF_MOUNTAIN_DISGUISE,
   FLDEFF_TALL_GRASS, FLDEFF_LONG_GRASS, FLDEFF_RIPPLE, FLDEFF_DUST, FLDEFF_SAND_FOOTPRINTS, FLDEFF_DEEP_SAND_FOOTPRINTS, FLDEFF_BIKE_TIRE_TRACKS,
   FLDEFF_SPLASH, FLDEFF_SAND_PILE, FLDEFF_JUMP_TALL_GRASS, FLDEFF_JUMP_LONG_GRASS, FLDEFF_JUMP_SMALL_SPLASH, FLDEFF_JUMP_BIG_SPLASH, FLDEFF_SHORT_GRASS, FLDEFF_HOT_SPRINGS_WATER, FLDEFF_BUBBLES, FLDEFF_FEET_IN_FLOWING_WATER, FLDEFF_BERRY_TREE_GROWTH_SPARKLE } from './field-effect';
@@ -3064,7 +3067,7 @@ function GetReflectionTypeByMetatileBehavior(behavior: number): number {
 // littéraux indépendants des pics → on passe des buffers VIDES (subarray no-op) et
 // on mémoïse par graphicsId. Le spine ground-effect ne consomme QUE width/height
 // (scan reflets) + tracks (footprints), jamais les images.
-interface GfxMeta {
+export interface GfxMeta {
   width: number; height: number; tracks: number;
   paletteSlot: number; paletteTag: number; reflectionPaletteTag: number;
   disableReflectionPaletteLoad: 0 | 1;
@@ -3080,7 +3083,7 @@ const _playerGfxAlias: Readonly<Record<string, string>> = {
   Brendan: 'OBJ_EVENT_GFX_BRENDAN_NORMAL',
   May: 'OBJ_EVENT_GFX_MAY_NORMAL',
 };
-function _getGfxMeta(graphicsIdRaw: string): GfxMeta {
+export function _getGfxMeta(graphicsIdRaw: string): GfxMeta {
   const graphicsId = _playerGfxAlias[graphicsIdRaw] ?? graphicsIdRaw;
   let m = _gfxMetaCache.get(graphicsId);
   if (m) return m;
@@ -3472,7 +3475,7 @@ function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta): number {
 /** 1:1 décomp `LoadObjectReflectionPalette` (field_effect_helpers.c:75) — adapté.
  *  Pose l'offset vertical de pont sur le sprite reflet (data[2]) + dispatch pont-haut vs
  *  régulier. Renvoie le bank reflet (slot OBJ dynamique), ou -1 si non teinté. */
-function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
+export function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
   const meta = _getGfxMeta(npc.graphicsId);
   refl.data[2] = 0; // sReflectionVerticalOffset
   let bridgeType = MetatileBehavior_GetBridgeType(npc.previousMetatileBehavior);
@@ -3612,120 +3615,11 @@ export function UpdateReflectionDistortionMatrices(rt: DecompRuntime): void {
   _reflDistortTick(rt, 1);
 }
 
-/** 1:1 décomp `GetReflectionVerticalOffset` (field_effect_helpers.c:70). */
-function GetReflectionVerticalOffset(npc: ObjectEvent): number {
-  return _getGfxMeta(npc.graphicsId).height - 2;
-}
-
-/** 1:1 décomp `UpdateObjectReflectionSprite` (field_effect_helpers.c:124). Callback
- *  per-frame : mirroir le sprite principal (vflip, position, tileNum) ; despawn si
- *  l'objet n'a plus de reflet. data[0]=objEventId, data[1]=localId, data[2]=vOffset,
- *  data[7]=stillReflection. */
-function UpdateObjectReflectionSprite(refl: DecompSprite, rt: DecompRuntime): void {
-  const npc = gObjectEvents[refl.data[0]];
-  // 1:1 décomp : mainSprite = &gSprites[objectEvent->spriteId]. Chez nous le slot player
-  // (spriteId=-1) porte son sprite visuel sur gPlayerAvatar.spriteId → résoudre via lui.
-  const mainSpriteId = npc && npc.isPlayer ? gPlayerAvatar.spriteId : (npc ? npc.spriteId : -1);
-  const main = mainSpriteId >= 0 ? rt.gSprites.get(mainSpriteId) : undefined;
-  if (!npc || !npc.active || !npc.hasReflection || npc.localId !== refl.data[1] || !main) {
-    // 1:1 décomp `reflectionSprite->inUse = FALSE` → DestroySprite. Cleanup explicite
-    // (notre runtime ne GC pas inUse=false → masquer l'OAM, comme les autres effets).
-    refl.inUse = false;
-    const o = rt.gba.oam[refl.oamIndex];
-    if (o) { o.visible = false; o.tileId = 0; o.flipV = false; }
-    rt.gSprites.delete(refl.spriteId);
-    return;
-  }
-  const moam = rt.gba.oam[main.oamIndex];
-  const roam = rt.gba.oam[refl.oamIndex];
-  // 1:1 : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[main paletteNum]
-  // (= le slot reflet teinté). Notre adaptation : bank reflet résolu une fois (data[6]).
-  // Si pas encore chargé (-1 ; .pal préchargé arrivé APRÈS le SetUpReflection), on
-  // ré-essaie ; tant qu'indispo (ou disableReflectionPaletteLoad), on réutilise le main.
-  if (refl.data[6] < 0) {
-    const b = LoadObjectReflectionPalette(npc, refl);
-    if (b >= 0) refl.data[6] = b;
-  }
-  roam.paletteBank = refl.data[6] >= 0 ? refl.data[6] : moam.paletteBank;
-  roam.shape = moam.shape;
-  roam.size = moam.size;
-  roam.tileId = moam.tileId;
-  refl.subspriteTableNum = main.subspriteTableNum;
-  refl.invisible = main.invisible;
-  refl.x = main.x;
-  refl.y = main.y + GetReflectionVerticalOffset(npc) + refl.data[2];
-  refl.centerToCornerVecX = main.centerToCornerVecX;
-  refl.centerToCornerVecY = main.centerToCornerVecY;
-  refl.x2 = main.x2;
-  refl.y2 = -main.y2;
-  refl.coordOffsetEnabled = main.coordOffsetEnabled;
-  if (npc.hideReflection) refl.invisible = true;
-  // 1:1 décomp (field_effect_helpers.c:137,153-161). Dans notre modèle split, syncSpritesToOam
-  // écrit oam.flipV/affineMode/affineParamIndex DEPUIS les champs SPRITE → on pose ceux-ci.
-  if (refl.data[7] !== 0) {
-    // ICE / stillReflection : miroir net via OAM vflip (pas d'ondulation).
-    // oam.matrixNum = mainSprite->oam.matrixNum | ST_OAM_VFLIP.
-    refl.affineMode = 0;
-    refl.matrixNum = 0;
-    refl.vFlip = true;
-    refl.hFlip = main.hFlip;
-  } else {
-    // EAU : affineMode NORMAL + matrice de distorsion ANIMÉE (matrixNum 0 = vflip,
-    // 1 = hflip+vflip si le main est hflippé) = les petites vagues. Le vflip/hflip vient
-    // de la MATRICE (gba.affineParams[0/1], pilotée par UpdateReflectionDistortionMatrices),
-    // PAS du flip OAM (ignoré en mode affine).
-    refl.affineMode = 1;
-    refl.matrixNum = (main.hFlip ? 1 : 0);
-    refl.vFlip = false;
-    refl.hFlip = false;
-  }
-}
-
-/** 1:1 décomp `SetUpReflection` (field_effect_helpers.c:47). Crée le sprite reflet
- *  (copie vflippée sous l'objet) + callback de mirroir. `stillReflection` = glace
- *  (true, pas d'ondulation) vs eau (false). */
-function SetUpReflection(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined, stillReflection: boolean): void {
-  if (!sprite) return;
-  const reflId = rt.createCopySpriteAt(sprite, sprite.x, sprite.y, 152);
-  if (reflId === MAX_SPRITES) return;
-  const refl = rt.gSprites.get(reflId);
-  if (!refl) return;
-  refl.callback = UpdateObjectReflectionSprite;
-  const roam = rt.gba.oam[refl.oamIndex];
-  roam.priority = 3;
-  // 1:1 : oam.paletteNum = gReflectionEffectPaletteMap[...] → DETTE palette teintée :
-  // createCopySpriteAt a déjà copié la palette du main ; on la garde (réutilisation).
-  refl.usingSheet = true;
-  // 1:1 : anims = gDummySpriteAnimTable + StartSpriteAnim(0) → l'anim du reflet n'avance
-  // pas (son tileId est piloté par UpdateObjectReflectionSprite). Équivalent : animPaused.
-  refl.animPaused = true;
-  refl.subspriteMode = 'off';
-  refl.data[0] = gObjectEvents.indexOf(npc);  // sReflectionObjEventId
-  refl.data[1] = npc.localId;                  // sReflectionObjEventLocalId
-  refl.data[7] = stillReflection ? 1 : 0;      // sIsStillReflection
-  // 1:1 décomp : reflectionSprite->oam.paletteNum = gReflectionEffectPaletteMap[paletteNum]
-  // (slot reflet) + LoadObjectReflectionPalette(objectEvent, reflectionSprite). Notre
-  // adaptation charge la palette reflet teintée dans un slot OBJ dynamique (data[6]=bank,
-  // -1 si .pal pas encore préchargée → ré-essai par frame côté UpdateObjectReflectionSprite)
-  // et pose data[2] (sReflectionVerticalOffset = offset de pont haut, 0 sinon).
-  refl.data[6] = -1;
-  const reflBank = LoadObjectReflectionPalette(npc, refl);
-  if (reflBank >= 0) {
-    refl.data[6] = reflBank;
-    roam.paletteBank = reflBank;
-  }
-  // 1:1 décomp (field_effect_helpers.c:66-67) : if (!stillReflection) oam.affineMode = NORMAL.
-  // Eau → mode affine dès la création (matrixNum/flip posés chaque frame par
-  // UpdateObjectReflectionSprite) ; glace → OAM vflip. Les matrices 0/1 sont animées par
-  // UpdateReflectionDistortionMatrices (= petites vagues).
-  if (!stillReflection) {
-    refl.affineMode = 1;
-    refl.matrixNum = 0;
-    refl.vFlip = false;
-    roam.affineMode = 1;
-    roam.affineParamIndex = 0;
-  }
-}
+// ─── Reflets : SetUpReflection + GetReflectionVerticalOffset + UpdateObjectReflectionSprite
+//   RELOCALISÉS dans le miroir game/field_effect_helpers.ts (field_effect_helpers.c:47-163).
+//   SetUpReflection est importé (cf. haut du fichier) et appelé par le spine GroundEffect_
+//   Water/IceReflection ci-dessous. Les fonctions PALETTE (LoadObjectReflectionPalette + sets)
+//   + la distorsion affine restent ici pour l'instant (étape 2 de la relocation). ──
 
 // ─── DoRippleFieldEffect (1:1 event_object_movement.c:8779) ────────────────────
 function DoRippleFieldEffect(rt: DecompRuntime, npc: ObjectEvent, sprite: DecompSprite | undefined): void {
