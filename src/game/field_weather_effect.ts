@@ -13,9 +13,9 @@
  *      DoCurrentWeather/ResumePausedWeather/TranslateWeatherNum/UpdateWeatherPerDay/
  *      UpdateRainCounter/Task_DoAbnormalWeather/CreateAbnormalWeatherTask) + l'effet
  *      ASH (WEATHER_VOLCANIC_ASH : nuages de cendre dérivants, Route 113).
- *   ✅ C3 : WEATHER_SUNNY (color-map only, météo par défaut des maps extérieures).
+ *   ✅ C3 : WEATHER_SUNNY + WEATHER_SHADE (color-map only).
  *   ⏳ C3+ : Clouds/Rain/Snow/Thunderstorm/FogHorizontal/FogDiagonal/Sandstorm/
- *      Shade/Bubbles/Drought.
+ *      Bubbles/Drought.
  *
  * ⚠️ AUDIO SKIP (exception projet) : aucun PlaySE.
  */
@@ -298,6 +298,40 @@ _registerWeatherFuncs(WEATHER_SUNNY, {
   main: Sunny_Main,
   initAll: Sunny_InitAll,
   finish: Sunny_Finish,
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WEATHER_SHADE (field_weather_effect.c:2247-2266)
+//  Comme Sunny mais color map index 3 (teinte sombre/ombragée) — AUCUN sprite.
+//  La transition de color map vers 3 est gérée par le framework.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp `Shade_InitVars(void)` (field_weather_effect.c:2247). */
+function Shade_InitVars(): void {
+  gWeatherPtr.initStep = 0;
+  gWeatherPtr.targetColorMapIndex = 3;
+  gWeatherPtr.colorMapStepDelay = 20;
+}
+
+/** 1:1 décomp `Shade_InitAll(void)` (field_weather_effect.c:2254). */
+function Shade_InitAll(): void {
+  Shade_InitVars();
+}
+
+/** 1:1 décomp `Shade_Main(void)` (field_weather_effect.c:2259) — corps vide. */
+function Shade_Main(): void {
+}
+
+/** 1:1 décomp `Shade_Finish(void)` (field_weather_effect.c:2263) — return FALSE. */
+function Shade_Finish(): boolean {
+  return false;
+}
+
+_registerWeatherFuncs(WEATHER_SHADE, {
+  initVars: Shade_InitVars,
+  main: Shade_Main,
+  initAll: Shade_InitAll,
+  finish: Shade_Finish,
 });
 
 // ════════════════════════════════════════════════════════════════════════════
