@@ -2068,6 +2068,15 @@ export function syncSubspriteOam(): void {
     // repositionnée x = base - (sub.x + width) (l'assemblage entier est symétrisé).
     // Additif : tous les sprites à subsprites existants ont hFlip=false (inchangés).
     const _parentHFlip = !!(sprite as { hFlip?: boolean }).hFlip;
+    // 1:1 décomp `AddSubspritesToOamBuffer` (sprite.c) : le child OAM part de
+    // `sprite->oam.x/y` que `UpdateOamCoords` (sprite.c:347) a DÉJÀ offsetté de
+    // `gSpriteCoordOffsetX/Y` quand `coordOffsetEnabled`. Notre chemin single-OAM le
+    // fait (syncSpritesToOam) mais ce chemin subsprite l'oubliait → un object event
+    // world-positionné à subsprites (camion 48×48, coordOffsetEnabled=true) était décalé
+    // de l'offset caméra ET restait COLLÉ à l'écran au scroll (« le camion suit / est
+    // décalé »). Les healthbars combat (coordOffsetEnabled=false) → offset 0, inchangées.
+    const offX = sprite.coordOffsetEnabled ? r.gSpriteCoordOffsetX : 0;
+    const offY = sprite.coordOffsetEnabled ? r.gSpriteCoordOffsetY : 0;
     for (let i = 0; i < info.subsprites.length; i++) {
       const oam = r.gba.oam[info.childOamIndices[i]];
       const sub = info.subsprites[i];
@@ -2075,13 +2084,13 @@ export function syncSubspriteOam(): void {
       oam.visible = !sprite.invisible;
       if (_parentHFlip) {
         const w = _SUB_W[sub.shape & 3]?.[sub.size & 3] ?? 8;
-        oam.x = sprite.x + sprite.x2 - (sub.x + w);
+        oam.x = sprite.x + sprite.x2 - (sub.x + w) + offX;
         oam.flipH = true;
       } else {
-        oam.x = sprite.x + sprite.x2 + sub.x;
+        oam.x = sprite.x + sprite.x2 + sub.x + offX;
         oam.flipH = false;
       }
-      oam.y = sprite.y + sprite.y2 + sub.y;
+      oam.y = sprite.y + sprite.y2 + sub.y + offY;
       oam.tileId = (sprite.tileBase ?? 0) + sub.tileOffset;
       oam.paletteBank = primaryOam.paletteBank;
       oam.priority = sub.priority;
