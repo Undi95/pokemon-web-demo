@@ -39,12 +39,14 @@ import {
   TASK_NONE,
 } from '../engine/system/decomp-globals';
 import { PlayerGetDestCoords } from '../engine/field/player-avatar';
-import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt } from '../engine/field/map-loader';
+import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../engine/field/map-loader';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import {
   MetatileBehavior_IsAshGrass,
   MetatileBehavior_IsCrackedFloor,
   MetatileBehavior_IsCrackedFloorHole,
+  MetatileBehavior_IsThinIce,
+  MetatileBehavior_IsCrackedIce,
 } from './metatile_behavior';
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
@@ -57,8 +59,15 @@ import {
   METATILE_Cave_CrackedFloor,
   METATILE_Cave_CrackedFloor_Hole,
   METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole,
+  METATILE_SootopolisGym_Ice_Cracked,
+  METATILE_SootopolisGym_Ice_Broken,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
-import { VAR_ASH_GATHER_COUNT, VAR_ICE_STEP_COUNT } from './include/constants/vars';
+import {
+  VAR_ASH_GATHER_COUNT,
+  VAR_ICE_STEP_COUNT,
+  VAR_TEMP_1, VAR_TEMP_2, VAR_TEMP_3, VAR_TEMP_4, VAR_TEMP_5,
+  VAR_TEMP_6, VAR_TEMP_7, VAR_TEMP_8, VAR_TEMP_9, VAR_TEMP_A,
+} from './include/constants/vars';
 
 // ─── 1:1 décomp constants/field_tasks.h (STEP_CB_* 0..7) ────────────────────
 export const STEP_CB_DUMMY = 0;
@@ -81,7 +90,7 @@ const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_ASH]               */ AshGrassPerStepCallback,
   /* [STEP_CB_FORTREE_BRIDGE]    */ DummyPerStepCallback,  // TODO port FortreeBridgePerStepCallback (field_tasks.c:490)
   /* [STEP_CB_PACIFIDLOG_BRIDGE] */ DummyPerStepCallback,  // TODO port PacifidlogBridgePerStepCallback (field_tasks.c:366)
-  /* [STEP_CB_SOOTOPOLIS_ICE]    */ DummyPerStepCallback,  // TODO port SootopolisGymIcePerStepCallback (field_tasks.c:659)
+  /* [STEP_CB_SOOTOPOLIS_ICE]    */ SootopolisGymIcePerStepCallback,
   /* [STEP_CB_TRUCK]             */ DummyPerStepCallback,  // TODO câbler EndTruckSequence (field_special_scene.c → truck-cinematic.ts)
   /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
   /* [STEP_CB_CRACKED_FLOOR]     */ CrackedFloorPerStepCallback,
@@ -225,6 +234,144 @@ function CrackedFloorPerStepCallback(task: DecompTask): void {
       data[7] = 3;
       data[8] = x; // tFloor2X
       data[9] = y; // tFloor2Y
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Sootopolis Gym — puzzle de glace (field_tasks.c:599-736)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Boundaries of the ice puzzle in Sootopolis Gym (field_tasks.c:600-606).
+const ICE_PUZZLE_L = 3;
+const ICE_PUZZLE_R = 13;
+const ICE_PUZZLE_T = 6;
+const ICE_PUZZLE_B = 19;
+const ICE_PUZZLE_WIDTH = ICE_PUZZLE_R - ICE_PUZZLE_L + 1;  // 11
+const ICE_PUZZLE_HEIGHT = ICE_PUZZLE_B - ICE_PUZZLE_T + 1; // 14
+
+// 1:1 décomp `sSootopolisGymIceRowVars[]` (field_tasks.c:106-134). Chaque élément
+// correspond à une ROW y de Sootopolis Gym 1F. Les rows avec de la glace ont un
+// VAR_TEMP_* qui track les pas (1 bit par x depuis le bord gauche). Casse si le
+// puzzle fait > 16 cases de large.
+const sSootopolisGymIceRowVars: ReadonlyArray<number> = [
+  0, 0, 0, 0, 0, 0,
+  VAR_TEMP_1, VAR_TEMP_2, VAR_TEMP_3, VAR_TEMP_4,
+  0, 0,
+  VAR_TEMP_5, VAR_TEMP_6, VAR_TEMP_7,
+  0, 0,
+  VAR_TEMP_8, VAR_TEMP_9, VAR_TEMP_A,
+  0, 0, 0, 0, 0, 0,
+];
+
+// 1:1 décomp `CoordInIcePuzzleRegion(s16 x, s16 y)` (field_tasks.c:608-616).
+// `(u16)(coord - min) < extent` = check de range non-signé (émulé via & 0xFFFF).
+function CoordInIcePuzzleRegion(x: number, y: number): boolean {
+  return (((x - ICE_PUZZLE_L) & 0xFFFF) < ICE_PUZZLE_WIDTH
+       && ((y - ICE_PUZZLE_T) & 0xFFFF) < ICE_PUZZLE_HEIGHT
+       && sSootopolisGymIceRowVars[y] !== 0);
+}
+
+// 1:1 décomp `MarkIcePuzzleCoordVisited(s16 x, s16 y)` (field_tasks.c:618-622).
+// `*GetVarPointer(var) |= bit` → VarGet/VarSet (GetVarPointer du bridge throw).
+function MarkIcePuzzleCoordVisited(x: number, y: number): void {
+  if (CoordInIcePuzzleRegion(x, y)) {
+    const varId = sSootopolisGymIceRowVars[y];
+    VarSet(varId, VarGet(varId) | (1 << (x - ICE_PUZZLE_L)));
+  }
+}
+
+// 1:1 décomp `IsIcePuzzleCoordVisited(s16 x, s16 y)` (field_tasks.c:624-635).
+function IsIcePuzzleCoordVisited(x: number, y: number): boolean {
+  if (!CoordInIcePuzzleRegion(x, y)) return false;
+  const v = VarGet(sSootopolisGymIceRowVars[y]);
+  return (v & (1 << (x - ICE_PUZZLE_L))) !== 0;
+}
+
+// 1:1 décomp `SetSootopolisGymCrackedIceMetatiles(void)` (field_tasks.c:637-650).
+// Restaure les tuiles de glace fissurée déjà visitées au chargement du gym.
+export function SetSootopolisGymCrackedIceMetatiles(): void {
+  if (!gMapHeader?.mapLayout) return;
+  const width = gMapHeader.mapLayout.width;
+  const height = gMapHeader.mapLayout.height;
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      if (IsIcePuzzleCoordVisited(x, y))
+        MapGridSetMetatileIdAt(x + MAP_OFFSET, y + MAP_OFFSET, METATILE_SootopolisGym_Ice_Cracked);
+    }
+  }
+}
+
+// 1:1 décomp `SootopolisGymIcePerStepCallback(u8 taskId)` (field_tasks.c:652-736).
+// #define tState data[1]
+// #define tPrevX data[2]
+// #define tPrevY data[3]
+// #define tIceX  data[4]
+// #define tIceY  data[5]
+// #define tDelay data[6]
+// Thin ice → cracked (après délai 4) → broken (après délai 4). PlaySE SKIP (audio).
+function SootopolisGymIcePerStepCallback(task: DecompTask): void {
+  const data = task.data;
+  switch (data[1]) { // tState
+    case 0: {
+      const { x, y } = PlayerGetDestCoords();
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+      data[1] = 1; // tState
+      break;
+    }
+    case 1: {
+      const { x, y } = PlayerGetDestCoords();
+      // End if player hasn't moved.
+      if (x === data[2] && y === data[3]) return; // tPrevX / tPrevY
+      data[2] = x;
+      data[3] = y;
+      const tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
+      if (MetatileBehavior_IsThinIce(tileBehavior)) {
+        // Thin ice, set it to cracked ice.
+        VarSet(VAR_ICE_STEP_COUNT, VarGet(VAR_ICE_STEP_COUNT) + 1);
+        data[6] = 4; // tDelay
+        data[1] = 2; // tState
+        data[4] = x; // tIceX
+        data[5] = y; // tIceY
+      } else if (MetatileBehavior_IsCrackedIce(tileBehavior)) {
+        // Cracked ice, set it to broken ice.
+        VarSet(VAR_ICE_STEP_COUNT, 0);
+        data[6] = 4; // tDelay
+        data[1] = 3; // tState
+        data[4] = x;
+        data[5] = y;
+      }
+      break;
+    }
+    case 2: {
+      if (data[6] !== 0) { // tDelay
+        data[6]--;
+      } else {
+        // Crack ice.
+        const x = data[4], y = data[5]; // tIceX / tIceY
+        // PlaySE(SE_ICE_CRACK) — SKIP audio (1:1 contrat).
+        MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Cracked);
+        const cam = GetCameraTopLeftCoords();
+        CurrentMapDrawMetatileAt(cam.x, cam.y, x, y);
+        MarkIcePuzzleCoordVisited(x - MAP_OFFSET, y - MAP_OFFSET);
+        data[1] = 1; // tState
+      }
+      break;
+    }
+    case 3: {
+      if (data[6] !== 0) { // tDelay
+        data[6]--;
+      } else {
+        // Break ice.
+        const x = data[4], y = data[5];
+        // PlaySE(SE_ICE_BREAK) — SKIP audio (1:1 contrat).
+        MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Broken);
+        const cam = GetCameraTopLeftCoords();
+        CurrentMapDrawMetatileAt(cam.x, cam.y, x, y);
+        data[1] = 1; // tState
+      }
+      break;
     }
   }
 }
