@@ -17,14 +17,15 @@
  *   zéroie son `data[]` et set `tCallbackId = id`.
  *
  * État de ce port (staged, 1 callback = 1 commit avec A/B sur sa map) :
- *   ✅ infra dispatch + `AshGrassPerStepCallback` (Route 113, A/B vérifié).
- *   ⏳ `FortreeBridgePerStepCallback` / `PacifidlogBridgePerStepCallback` /
- *      `SootopolisGymIcePerStepCallback` / `CrackedFloorPerStepCallback` :
- *      slots encore sur `DummyPerStepCallback` (placeholders documentés), à porter
- *      ensuite (ils ont besoin de `CurrentMapDrawMetatileAt`).
- *   ⏳ `EndTruckSequence` (STEP_CB_TRUCK, field_special_scene.c → truck-cinematic.ts,
- *      déjà porté) / `SecretBasePerStepCallback` (STEP_CB_SECRET_BASE, secret_base.c
- *      non porté) : à câbler.
+ *   ✅ infra dispatch + LES 5 callbacks IN-FILE (A/B réel vérifié sur leur map) :
+ *      `AshGrassPerStepCallback` (Route 113), `CrackedFloorPerStepCallback` (Sky
+ *      Pillar), `SootopolisGymIcePerStepCallback` (Sootopolis Gym),
+ *      `FortreeBridgePerStepCallback` (Fortree City), `PacifidlogBridgePerStepCallback`
+ *      (Pacifidlog).
+ *   ✅ `EndTruckSequence` (STEP_CB_TRUCK) câblé depuis truck-cinematic.ts.
+ *   ⏳ `SecretBasePerStepCallback` (STEP_CB_SECRET_BASE) : secret_base.c non porté →
+ *      reste `DummyPerStepCallback` (slot activé uniquement dans une base secrète
+ *      d'ami, injoignable dans la démo).
  *   ⏳ `Task_MuddySlope` (follow-up) + `Task_RunTimeBasedEvents` (entremêlé avec
  *      `UpdateAmbientCry` = AUDIO hors périmètre ; `DoTimeBasedEvents` est déjà
  *      câblé au map-load 1:1).
@@ -56,6 +57,7 @@ import {
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
 import { GetPlayerSpeed, PLAYER_SPEED_FASTEST } from '../engine/field/field-control-avatar';
+import { EndTruckSequence } from '../engine/field/truck-cinematic';
 import { VarGet, VarSet } from './event_data';
 import {
   METATILE_Fallarbor_AshGrass,
@@ -112,7 +114,7 @@ const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_FORTREE_BRIDGE]    */ FortreeBridgePerStepCallback,
   /* [STEP_CB_PACIFIDLOG_BRIDGE] */ PacifidlogBridgePerStepCallback,
   /* [STEP_CB_SOOTOPOLIS_ICE]    */ SootopolisGymIcePerStepCallback,
-  /* [STEP_CB_TRUCK]             */ DummyPerStepCallback,  // TODO câbler EndTruckSequence (field_special_scene.c → truck-cinematic.ts)
+  /* [STEP_CB_TRUCK]             */ EndTruckSequence,  // field_special_scene.c (truck-cinematic.ts)
   /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
   /* [STEP_CB_CRACKED_FLOOR]     */ CrackedFloorPerStepCallback,
 ];

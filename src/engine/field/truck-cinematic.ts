@@ -57,7 +57,7 @@
  * `++tTimer == 30000` wrap correctement parce que 30000 fits dans s16.
  */
 import type { DecompRuntime, DecompTask } from '../system/decomp-runtime';
-import { PlaySE } from '../system/decomp-globals';
+import { PlaySE, FuncIsActiveTask } from '../system/decomp-globals';
 import { stopPrerenderedSE, preloadPrerenderedSEs } from '../m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
@@ -350,12 +350,10 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
  *  pas du player après la cinematic. Reset les 3 box positions à leurs offsets
  *  default SI le master Task_HandleTruckSequence n'est plus active.
  *
- *  Notre équivalent FuncIsActiveTask : scan rt.gTasks pour trouver une task
- *  qui a func === Task_HandleTruckSequence. */
-export function EndTruckSequence(rt: DecompRuntime, _taskId: number): void {
-  for (const t of rt.gTasks.values()) {
-    if (t.func === Task_HandleTruckSequence) return;
-  }
+ *  1:1 décomp `FuncIsActiveTask(Task_HandleTruckSequence)`. Le `task` arg (= taskId
+ *  décomp) est ignoré comme dans la décomp. */
+export function EndTruckSequence(_task?: DecompTask): void {
+  if (FuncIsActiveTask(Task_HandleTruckSequence)) return;
   SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_TOP',      BOX1_X_OFFSET, BOX1_Y_OFFSET);
   SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_L', BOX2_X_OFFSET, BOX2_Y_OFFSET);
   SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET, BOX3_Y_OFFSET);
