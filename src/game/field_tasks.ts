@@ -38,7 +38,7 @@ import {
   GetTaskData,
   TASK_NONE,
 } from '../engine/system/decomp-globals';
-import { PlayerGetDestCoords } from '../engine/field/player-avatar';
+import { PlayerGetDestCoords, PlayerGetElevation } from '../engine/field/player-avatar';
 import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../engine/field/map-loader';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import {
@@ -47,6 +47,7 @@ import {
   MetatileBehavior_IsCrackedFloorHole,
   MetatileBehavior_IsThinIce,
   MetatileBehavior_IsCrackedIce,
+  MetatileBehavior_IsFortreeBridge,
 } from './metatile_behavior';
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
@@ -61,6 +62,10 @@ import {
   METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole,
   METATILE_SootopolisGym_Ice_Cracked,
   METATILE_SootopolisGym_Ice_Broken,
+  METATILE_Fortree_BridgeOverGrass_Raised,
+  METATILE_Fortree_BridgeOverGrass_Lowered,
+  METATILE_Fortree_BridgeOverTrees_Raised,
+  METATILE_Fortree_BridgeOverTrees_Lowered,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
 import {
   VAR_ASH_GATHER_COUNT,
@@ -88,13 +93,21 @@ const NUM_TASK_DATA = 16;
 const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_DUMMY]             */ DummyPerStepCallback,
   /* [STEP_CB_ASH]               */ AshGrassPerStepCallback,
-  /* [STEP_CB_FORTREE_BRIDGE]    */ DummyPerStepCallback,  // TODO port FortreeBridgePerStepCallback (field_tasks.c:490)
+  /* [STEP_CB_FORTREE_BRIDGE]    */ FortreeBridgePerStepCallback,
   /* [STEP_CB_PACIFIDLOG_BRIDGE] */ DummyPerStepCallback,  // TODO port PacifidlogBridgePerStepCallback (field_tasks.c:366)
   /* [STEP_CB_SOOTOPOLIS_ICE]    */ SootopolisGymIcePerStepCallback,
   /* [STEP_CB_TRUCK]             */ DummyPerStepCallback,  // TODO câbler EndTruckSequence (field_special_scene.c → truck-cinematic.ts)
   /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
   /* [STEP_CB_CRACKED_FLOOR]     */ CrackedFloorPerStepCallback,
 ];
+
+// Adaptateur 1:1 : la décomp `CurrentMapDrawMetatileAt(x, y)` lit le
+// `sFieldCameraOffset` global ; notre signature 4-args prend la position caméra
+// explicite (= GetCameraTopLeftCoords()).
+function _drawMapMetatileAt(x: number, y: number): void {
+  const cam = GetCameraTopLeftCoords();
+  CurrentMapDrawMetatileAt(cam.x, cam.y, x, y);
+}
 
 // ─── 1:1 décomp `Task_RunPerStepCallback` (field_tasks.c:138-142) ───────────
 // #define tCallbackId data[0]
@@ -373,5 +386,133 @@ function SootopolisGymIcePerStepCallback(task: DecompTask): void {
       }
       break;
     }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Fortree City — ponts en rondins qui s'abaissent (field_tasks.c:449-590)
+// ════════════════════════════════════════════════════════════════════════════
+
+// 1:1 décomp `TryLowerFortreeBridge(s16 x, s16 y)` (field_tasks.c:449-464).
+// N'abaisse que si l'élévation joueur est paire (= sur le pont, pas dessous).
+function TryLowerFortreeBridge(x: number, y: number): void {
+  const elevation = PlayerGetElevation();
+  if ((elevation & 1) === 0) {
+    switch (MapGridGetMetatileIdAt(x, y)) {
+      case METATILE_Fortree_BridgeOverGrass_Raised:
+        MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Lowered);
+        break;
+      case METATILE_Fortree_BridgeOverTrees_Raised:
+        MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Lowered);
+        break;
+    }
+  }
+}
+
+// 1:1 décomp `TryRaiseFortreeBridge(s16 x, s16 y)` (field_tasks.c:466-481).
+function TryRaiseFortreeBridge(x: number, y: number): void {
+  const elevation = PlayerGetElevation();
+  if ((elevation & 1) === 0) {
+    switch (MapGridGetMetatileIdAt(x, y)) {
+      case METATILE_Fortree_BridgeOverGrass_Lowered:
+        MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Raised);
+        break;
+      case METATILE_Fortree_BridgeOverTrees_Lowered:
+        MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Raised);
+        break;
+    }
+  }
+}
+
+// 1:1 décomp `FortreeBridgePerStepCallback` case 2 (field_tasks.c:564-588).
+// Extrait dans un helper : le décomp tombe (fallthrough) de case 1 vers case 2
+// pour exécuter ce corps UNE fois dans la même frame → on l'appelle explicitement
+// (TS interdit le fallthrough non-vide). tBounceTime = data[6], tOldBridge* = data[4]/[5].
+function _fortreeBridgeBounce(data: number[]): void {
+  data[6]--; // tBounceTime
+  const prevX = data[4]; // tOldBridgeX
+  const prevY = data[5]; // tOldBridgeY
+  // 1:1 décomp switch(tBounceTime % 7) avec fallthrough :
+  //   case 0 → draw seul ; case 4 → lower+draw+raise ; autres → rien.
+  switch (data[6] % 7) {
+    case 0:
+      _drawMapMetatileAt(prevX, prevY);
+      break;
+    case 4:
+      // Bounce bridge section that player has stepped off of.
+      TryLowerFortreeBridge(prevX, prevY);
+      _drawMapMetatileAt(prevX, prevY);
+      TryRaiseFortreeBridge(prevX, prevY);
+      break;
+    default:
+      break;
+  }
+  if (data[6] === 0) data[1] = 1; // tState
+}
+
+// 1:1 décomp `FortreeBridgePerStepCallback(u8 taskId)` (field_tasks.c:490-590).
+// #define tState      data[1]
+// #define tPrevX      data[2]
+// #define tPrevY      data[3]
+// #define tOldBridgeX data[4]
+// #define tOldBridgeY data[5]
+// #define tBounceTime data[6]
+// Abaisse la section de pont foulée, relève la précédente, puis joue un rebond
+// (state 2). ⚠️ Chemin NON-BUGFIX (config.h: `//#define BUGFIX` commenté = ROM) :
+// `if (isFortreeBridgePrev)` seul → les sections ne s'abaissent pas en y entrant
+// depuis autre chose qu'un pont (quirk d'origine répliqué).
+function FortreeBridgePerStepCallback(task: DecompTask): void {
+  const data = task.data;
+  const { x, y } = PlayerGetDestCoords();
+  switch (data[1]) { // tState
+    default:
+      break;
+    case 0:
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+      // Si déjà sur le pont à l'activation du callback, abaisse-le tout de suite.
+      if (MetatileBehavior_IsFortreeBridge(MapGridGetMetatileBehaviorAt(x, y))) {
+        TryLowerFortreeBridge(x, y);
+        _drawMapMetatileAt(x, y);
+      }
+      data[1] = 1; // tState
+      break;
+    case 1: {
+      const prevX = data[2]; // tPrevX
+      const prevY = data[3]; // tPrevY
+      // Skip if player hasn't moved.
+      if (x === prevX && y === prevY) break;
+
+      // isFortreeBridgeCur n'est lu que par le gate PlaySE(SE_BRIDGE_WALK) — SKIP audio.
+      const isFortreeBridgePrev = MetatileBehavior_IsFortreeBridge(MapGridGetMetatileBehaviorAt(prevX, prevY));
+
+      // 1:1 décomp : `elevation`/`onBridgeElevation` ne servent qu'au gate
+      // PlaySE(SE_BRIDGE_WALK) → calcul omis (audio hors périmètre).
+
+      // Non-BUGFIX (ROM) : `if (isFortreeBridgePrev)`.
+      if (isFortreeBridgePrev) {
+        // Raise old bridge.
+        TryRaiseFortreeBridge(prevX, prevY);
+        _drawMapMetatileAt(prevX, prevY);
+        // Lower new bridge.
+        TryLowerFortreeBridge(x, y);
+        _drawMapMetatileAt(x, y);
+      }
+
+      data[4] = prevX; // tOldBridgeX
+      data[5] = prevY; // tOldBridgeY
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+      if (!isFortreeBridgePrev) break;
+
+      data[6] = 16; // tBounceTime
+      data[1] = 2;  // tState
+      // 1:1 décomp : fallthrough vers case 2 (exécute le rebond une fois).
+      _fortreeBridgeBounce(data);
+      break;
+    }
+    case 2:
+      _fortreeBridgeBounce(data);
+      break;
   }
 }
