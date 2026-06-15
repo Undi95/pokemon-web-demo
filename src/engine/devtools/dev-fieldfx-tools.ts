@@ -36,6 +36,14 @@ import { MapGridGetMetatileIdAt } from '../field/map-loader';
 import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
 import { StartRevealDisguise } from '../../game/field_effect_helpers';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
+// ── Météo (game/field_weather + field_weather_effect) — vraies instances live (bundlé).
+//    L'import de field_weather_effect déclenche _registerWeatherFuncs(ASH) sur la vraie table.
+import {
+  gWeatherPtr, StartWeather, FadeScreen, ApplyWeatherColorMapIfIdle, preloadWeatherFogPalette,
+} from '../../game/field_weather';
+import { ResumePausedWeather, preloadWeatherAshSprites } from '../../game/field_weather_effect';
+import { gSaveBlock1Ptr } from '../save/save-block-state';
+import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../system/sprite';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -191,6 +199,50 @@ const fx = {
   },
 
   metatileIdAt(x: number, y: number): number { return MapGridGetMetatileIdAt(x, y); },
+
+  // ── Météo (A/B chantier field_weather) ──────────────────────────────────────
+  weather: {
+    /** Nombre de slots palette OBJ libres (StartWeather en alloue 2). */
+    freeObjPalSlots(): number[] {
+      const free: number[] = [];
+      for (let i = 0; i < 16; i++) if (GetSpritePaletteTagByPaletteNum(i) === 0xFFFF) free.push(i);
+      return free;
+    },
+    /** Force une météo (défaut = 7 VOLCANIC_ASH) sur les vraies instances. NE rappelle
+     *  PAS StartWeather (le câblage map-init l'a fait tôt → palette déjà allouée valide ;
+     *  un re-StartWeather ré-allouerait avec les slots pleins). Pose saved weather +
+     *  ResumePausedWeather (curr=next=météo) + readyForInit (Task_WeatherInit -> *_InitAll). */
+    async force(weatherId = 7) {
+      await preloadWeatherFogPalette();
+      await preloadWeatherAshSprites();
+      gSaveBlock1Ptr.weather = weatherId;
+      ResumePausedWeather();          // curr=next=météo (réutilise la palette météo allouée tôt)
+      gWeatherPtr.readyForInit = true; // Task_WeatherInit -> sWeatherFuncs[curr].initAll
+      return fx.weather.state();
+    },
+    /** État courant du gWeatherPtr (+ compteur de sprites ash vivants). */
+    state() {
+      const w = gWeatherPtr;
+      let ashCount = 0;
+      for (let i = 0; i < 20; i++) if (w.sprites.s2.ashSprites[i]) ashCount++;
+      return {
+        curr: w.currWeather, next: w.nextWeather, palState: w.palProcessingState,
+        gfxLoaded: w.weatherGfxLoaded, ashCreated: w.ashSpritesCreated, ashCount,
+        palIdx: w.contrastColorMapSpritePalIndex, blendEVA: w.currBlendEVA, blendEVB: w.currBlendEVB,
+        ashBaseSpritesX: w.ashBaseSpritesX, freeObjPals: fx.weather.freeObjPalSlots().length,
+      };
+    },
+    /** A/B color-map seul : applique un index de color map (1..19) si IDLE. */
+    applyColorMap(idx: number) { ApplyWeatherColorMapIfIdle(idx); return fx.weather.state(); },
+    /** Dump des 16 tags de palette OBJ (0xFFFF = libre). Diagnostic budget palette. */
+    palTags(): Record<number, string> {
+      const out: Record<number, string> = {};
+      for (let i = 0; i < 16; i++) out[i] = '0x' + (GetSpritePaletteTagByPaletteNum(i) >>> 0).toString(16);
+      return out;
+    },
+    /** Libère un slot OBJ par tag (A/B : faire de la place pour la palette météo). */
+    freeByTag(tag: number) { FreeSpritePaletteByTag(tag); return fx.weather.freeObjPalSlots(); },
+  },
 
   behaviorAt(x: number, y: number): string {
     const w = window as any;

@@ -903,8 +903,11 @@ function StartStrengthAnim(objectEventId: number, direction: number): void {
  *
  *  NUM_USED_GAME_STATS = 52 (= game_stat.h:57). gSaveBlock1Ptr.gameStats[]
  *  est XOR'd avec gSaveBlock2Ptr.encryptionKey (= save protection).
- *  Cap 0xFFFFFF (16M) car compteur 24-bit dans le save format. */
-function IncrementGameStat(index: number): void {
+ *  Cap 0xFFFFFF (16M) car compteur 24-bit dans le save format.
+ *  ⚠️ DETTE 1:1 : IncrementGameStat/GetGameStat/SetGameStat vivent en décomp dans
+ *  pokemon.c, pas overworld.c/player-avatar — placement à consolider (game_stat).
+ *  Exporté ici (faute de home canonique) pour field_weather_effect.ts (UpdateRainCounter). */
+export function IncrementGameStat(index: number): void {
   if (index < NUM_USED_GAME_STATS) {
     let statVal = GetGameStat(index);
     if (statVal < 0xFFFFFF) statVal++;

@@ -138,6 +138,8 @@ import {
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
+import { StartWeather, preloadWeatherFogPalette } from '../game/field_weather';
+import { ResumePausedWeather, preloadWeatherAshSprites } from '../game/field_weather_effect';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (jump-impact config-driven, préchargé via preloadJumpImpactEffects, tické par le callback global).
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
@@ -898,6 +900,20 @@ export class TestOverworldScene extends Phaser.Scene {
     // sHorizontalCameraPan = 0 (= default). Sans ça, valeurs stale d'une
     // session précédente persistent → BG_VOFS mal aligné post-warp.
     InstallCameraPanAheadCallback();
+
+    // 1:1 décomp `StartWeather()` + `ResumePausedWeather()` (overworld.c:2146-2147,
+    // ResumeMap, juste avant SetUpFieldTasks). StartWeather alloue la palette météo
+    // (PALTAG_WEATHER/_2) + BuildColorMaps + crée Task_WeatherInit TÔT (avant que les
+    // object events remplissent les slots OBJ → la météo a sa place, comme la décomp).
+    // ResumePausedWeather pose currWeather=nextWeather depuis la météo sauvegardée.
+    // ⚠️ STAGED : table sWeatherFuncs partielle (ASH portée) → les météos non encore
+    // portées sont des no-op (optional chaining) — aucun crash, comportement = actuel.
+    // Préchargement assets météo (plateforme, async, idempotent) : prêt avant que le
+    // fade-in pose readyForInit → Ash_InitAll (sinon busy-loop sur asset manquant).
+    void preloadWeatherFogPalette();
+    void preloadWeatherAshSprites();
+    StartWeather();
+    ResumePausedWeather();
 
     // 1:1 décomp `SetUpFieldTasks()` (overworld.c:2149, appelé par ResumeMap juste
     // après InstallCameraPanAheadCallback:2139). Crée la task persistante
