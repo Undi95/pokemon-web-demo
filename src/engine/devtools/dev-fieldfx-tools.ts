@@ -230,6 +230,7 @@ const fx = {
         gfxLoaded: w.weatherGfxLoaded, ashCreated: w.ashSpritesCreated, ashCount,
         palIdx: w.contrastColorMapSpritePalIndex, blendEVA: w.currBlendEVA, blendEVB: w.currBlendEVB,
         ashBaseSpritesX: w.ashBaseSpritesX, freeObjPals: fx.weather.freeObjPalSlots().length,
+        colorMapIndex: w.colorMapIndex, target: w.targetColorMapIndex, stepDelay: w.colorMapStepDelay,
       };
     },
     /** A/B color-map seul : applique un index de color map (1..19) si IDLE. */
