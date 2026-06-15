@@ -38,9 +38,9 @@ import {
   FldEff_Ash, FldEff_BerryTreeGrowthSparkle, FldEff_Sparkle,
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
+  FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
 } from '../../game/field_effect_helpers';
 import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
-import { SpawnFootprintsEffect } from './field-effect-footprints';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -185,11 +185,12 @@ export function FieldEffectStart(id: number): number {
     // INTERNAL, [2]=elevation, [3]=priority (config-driven dans le miroir).
     return FldEff_JumpBigSplash(rt);
   }
-  if (id === FLDEFF_SAND_FOOTPRINTS || id === FLDEFF_DEEP_SAND_FOOTPRINTS || id === FLDEFF_BIKE_TIRE_TRACKS) {
-    // 1:1 décomp FldEff_{Sand,DeepSand}Footprints / BikeTireTracks (UpdateFootprintsTireTracks).
-    // args[0/1] = previousCoords INTERNAL, [2]=subprio(149), [3]=priority(2), [4]=animIdx (direction).
-    SpawnFootprintsEffect(rt, id, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2], gFieldEffectArguments[3], gFieldEffectArguments[4]);
-    return 64;
+  if (id === FLDEFF_SAND_FOOTPRINTS) return FldEff_SandFootprints(rt);
+  if (id === FLDEFF_DEEP_SAND_FOOTPRINTS) return FldEff_DeepSandFootprints(rt);
+  if (id === FLDEFF_BIKE_TIRE_TRACKS) {
+    // 1:1 décomp FldEff_{Sand,DeepSand}Footprints / BikeTireTracks (field_effect_helpers.c:554/571/588)
+    // — migrés dans game/field_effect_helpers.ts (args[0/1] INTERNAL, [2]=subprio, [3]=priority, [4]=anim).
+    return FldEff_BikeTireTracks(rt);
   }
   if (id === FLDEFF_SPLASH) {
     // 1:1 décomp FldEff_Splash (field_effect_helpers.c:642) : éclaboussure one-shot qui suit le

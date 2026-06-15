@@ -155,11 +155,9 @@ import { preloadShortGrassEffect } from '../game/field_effect_helpers';
 import { preloadJumpImpactEffects } from '../game/field_effect_helpers';
 // Splash + feet-in-flowing-water : migrés dans le miroir 1:1 game/field_effect_helpers.ts.
 import { preloadSplashEffect } from '../game/field_effect_helpers';
-import {
-  preloadFootprintsEffects,
-  UpdateFootprintsEffects,
-  DestroyAllFootprintsEffects,
-} from '../engine/field/field-effect-footprints';
+// Footprints / tire tracks : migrés dans le miroir 1:1 game/field_effect_helpers.ts
+// (sprite.callback UpdateFootprintsTireTracksFieldEffect, tické par le callback global).
+import { preloadFootprintsEffects } from '../game/field_effect_helpers';
 // Sand pile : migré dans le miroir 1:1 game/field_effect_helpers.ts (modèle sprite.callback,
 // plus de pool ni d'Update manuel — le callback global runSpriteCallbacks le tique).
 // Sand pile + hot springs : migrés dans le miroir 1:1 game/field_effect_helpers.ts
@@ -635,8 +633,7 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect`
         // (game/field_effect_helpers.ts) : migrés, tickés par le callback global.
         // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
-        // de vélo (déposées sur sable, fade après 40f). Hors démo, câblé via le spine (DoTracks).
-        UpdateFootprintsEffects(rt);
+        // de vélo — migré (game/field_effect_helpers.ts), tické par le callback global.
         // 1:1 décomp `UpdateSandPileFieldEffect` (game/field_effect_helpers.ts) : désormais
         // tické par le callback global (sprite.callback) — plus d'appel manuel ici.
         // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` (game/field_effect_helpers.ts) :
@@ -1142,8 +1139,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadJumpImpactEffects(this.rt);
     // Splash + feet-in-flowing-water (FLDEFF_SPLASH/FEET) : assets seulement (sprite.callback).
     await preloadSplashEffect(this.rt);
-    // Empreintes/traces (sand/deep footprints + bike tire tracks) assets + pool.
-    DestroyAllFootprintsEffects(this.rt);
+    // Empreintes/traces (sand/deep footprints + bike tire tracks) : assets seulement (migré au miroir).
     await preloadFootprintsEffects(this.rt);
     // Sand pile : assets seulement (le sprite.callback s'auto-détruit, pas de pool à reset).
     await preloadSandPileEffect(this.rt);

@@ -80,6 +80,9 @@ const FLDEFF_JUMP_BIG_SPLASH = 14;
 const FLDEFF_JUMP_SMALL_SPLASH = 16;
 const FLDEFF_JUMP_LONG_GRASS = 18;
 const FLDEFF_DUST = 10;
+const FLDEFF_SAND_FOOTPRINTS = 13;
+const FLDEFF_DEEP_SAND_FOOTPRINTS = 24;
+const FLDEFF_BIKE_TIRE_TRACKS = 35;
 const FLDEFF_SHORT_GRASS = 41;
 const FLDEFF_RIPPLE = 5;
 const FLDEFF_HOT_SPRINGS_WATER = 42;
@@ -815,6 +818,149 @@ export function FldEff_JumpBigSplash(rt: DecompRuntime): number { return spawnJu
  *  saut (LAND_ON_NORMAL_GROUND). Même structure que les FldEff_Jump* (template GroundImpactDust,
  *  callback UpdateJumpImpactEffect) → config-driven via JUMP_CFG[FLDEFF_DUST]. */
 export function FldEff_Dust(rt: DecompRuntime): number { return spawnJumpImpactEffect(rt, FLDEFF_DUST); }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Footprints / Tire tracks (field_effect_helpers.c:554-631) — empreintes laissées au
+//  sol sur sable (FLDEFF_SAND_FOOTPRINTS/DEEP_SAND_FOOTPRINTS) ou en vélo (BIKE_TIRE_TRACKS),
+//  via le spine DoTracksGroundEffect_*. Les 3 partagent UpdateFootprintsTireTracksFieldEffect
+//  (machine fade 2 états : Step0 attend 40f, Step1 clignote invisible^=1 puis FieldEffectStop à 56f).
+//  Sprite STATIQUE tuile-fixe : une seule frame, choisie + flippée par la DIRECTION (args[4] →
+//  StartSpriteAnim) via le VRAI moteur d'anim (ANIMCMD_FRAME supporte hFlip/vFlip). coordOffset.
+//  Sprite data 1:1 : sState=data[0], sTimer=data[1], sFldEff=data[7].
+//  Assets : sand_footprints.png (2 frames 16×16) / deep_sand_footprints.png (2) / bike_tire_tracks.png (4).
+//  Palette general_0.
+// ════════════════════════════════════════════════════════════════════════════
+
+interface FootprintsCfg {
+  tag: string; png: string; pngWidthTiles: number;
+  /** Anims indexées par direction/virage (= args[4]) : [frameIdx, hFlip, vFlip]. 1:1 sAnimTable_*. */
+  anims: ReadonlyArray<readonly [number, boolean, boolean]>;
+}
+const T = true, F = false;
+/** 1:1 sAnimTable_{Sand,DeepSand}Footprints / sAnimTable_BikeTireTracks (field_effect_objects.h:338-508).
+ *  Ordre sand/deep = [S, S, N, W, E] ; bike = [S, S, N, W, E, SE, SW, NW, NE]. */
+const FOOTPRINTS_CFG: Record<number, FootprintsCfg> = {
+  [FLDEFF_SAND_FOOTPRINTS]: {
+    tag: 'FE_SAND_FOOTPRINTS', png: `${FE_BASE}/sand_footprints.png`, pngWidthTiles: 4,
+    anims: [[0, F, T], [0, F, T], [0, F, F], [1, F, F], [1, T, F]],
+  },
+  [FLDEFF_DEEP_SAND_FOOTPRINTS]: {
+    tag: 'FE_DEEP_SAND_FOOTPRINTS', png: `${FE_BASE}/deep_sand_footprints.png`, pngWidthTiles: 4,
+    anims: [[0, F, T], [0, F, T], [0, F, F], [1, F, F], [1, T, F]],
+  },
+  [FLDEFF_BIKE_TIRE_TRACKS]: {
+    tag: 'FE_BIKE_TIRE_TRACKS', png: `${FE_BASE}/bike_tire_tracks.png`, pngWidthTiles: 8,
+    anims: [[2, F, F], [2, F, F], [2, F, F], [1, F, F], [1, F, F], [0, F, F], [0, T, F], [3, T, F], [3, F, F]],
+  },
+};
+const FOOTPRINTS_TILES_PER_FRAME = 4; // 16×16
+
+/** Construit la table d'anim moteur : chaque direction = 1 frame statique (FRAME + END) avec flip.
+ *  usingSheet → imageValue = frameIdx × tiles/frame. */
+function buildFootprintAnims(cfg: FootprintsCfg): AnimCmd[][] {
+  return cfg.anims.map(([frameIdx, hFlip, vFlip]) => [
+    ANIMCMD_FRAME(frameIdx * FOOTPRINTS_TILES_PER_FRAME, 1, { hFlip, vFlip }),
+    ANIMCMD_END,
+  ]);
+}
+const _footprintAnims: Record<number, AnimCmd[][]> = {};
+const _footprintTileStart = new Map<number, number>();
+let _footprintPalSlot = -1;
+let _footprintInit = false;
+let _footprintInitPromise: Promise<void> | null = null;
+
+/** Reorder PNG row-major → OBJ 1D frame-major (frame F 16×16 = cols 2F,2F+1 sur 2 rows). */
+function reorderFootprintSheet(charData: Uint8Array, pngWidthTiles: number, frames: number): Uint8Array {
+  const TILE_BYTES = 32;
+  const out = new Uint8Array(frames * FOOTPRINTS_TILES_PER_FRAME * TILE_BYTES);
+  let dst = 0;
+  for (let f = 0; f < frames; f++) {
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const srcOff = (r * pngWidthTiles + (f * 2) + c) * TILE_BYTES;
+        if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+        dst += TILE_BYTES;
+      }
+    }
+  }
+  return out;
+}
+
+/** Préchargement assets (3 sheets footprints + palette general_0). */
+export function preloadFootprintsEffects(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _footprintInit && IndexOfSpriteTileTag(FOOTPRINTS_CFG[FLDEFF_SAND_FOOTPRINTS].tag) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_footprintInitPromise && !_footprintInit) return _footprintInitPromise;
+  _footprintInit = false; _footprintInitPromise = null;
+  _footprintInitPromise = (async () => {
+    try { _footprintPalSlot = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _footprintPalSlot = 0; }
+    for (const key of Object.keys(FOOTPRINTS_CFG)) {
+      const fldeff = Number(key);
+      const cfg = FOOTPRINTS_CFG[fldeff];
+      const png = await loadIndexedPngStrict(cfg.png, 4);
+      const frames = (png.charData.length / 32 / FOOTPRINTS_TILES_PER_FRAME) | 0;
+      const reordered = reorderFootprintSheet(png.charData, cfg.pngWidthTiles, frames);
+      _footprintTileStart.set(fldeff, LoadSpriteSheet({ data: reordered, size: reordered.length, tag: cfg.tag }));
+      _footprintAnims[fldeff] = buildFootprintAnims(cfg);
+    }
+    _footprintInit = true;
+  })();
+  return _footprintInitPromise;
+}
+
+/** Helper commun 1:1 `FldEff_{Sand,DeepSand}Footprints` / `FldEff_BikeTireTracks` (554/571/588).
+ *  args[0/1]=previousCoords INTERNAL, [2]=subpriority, [3]=priority, [4]=anim (direction/virage). */
+function spawnFootprintsEffect(rt: DecompRuntime, fldeff: number): number {
+  if (!_footprintInit) return 64;
+  const tileStart = _footprintTileStart.get(fldeff);
+  if (tileStart === undefined) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&x, &y, 8, 8).
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: tileStart,
+    paletteBank: _footprintPalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // 16×16
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: gFieldEffectArguments[2] & 0xFF, // 1:1 CreateSpriteAtEnd(..., args[2])
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateFootprintsTireTracksFieldEffect;
+  setFieldEffectAnims(sprite, _footprintAnims[fldeff], tileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  sprite.coordOffsetEnabled = true; // 1:1 : sprite monde
+  sprite.subpriority = gFieldEffectArguments[2] & 0xFF;
+  sprite.data[7] = fldeff; // sFldEff
+  // 1:1 : StartSpriteAnim(sprite, gFieldEffectArguments[4]) → frame + flip de la direction.
+  rt.StartSpriteAnim(result.spriteId, gFieldEffectArguments[4]);
+  return 0;
+}
+
+/** 1:1 décomp `FldEff_SandFootprints` (field_effect_helpers.c:554). */
+export function FldEff_SandFootprints(rt: DecompRuntime): number { return spawnFootprintsEffect(rt, FLDEFF_SAND_FOOTPRINTS); }
+/** 1:1 décomp `FldEff_DeepSandFootprints` (field_effect_helpers.c:571). */
+export function FldEff_DeepSandFootprints(rt: DecompRuntime): number { return spawnFootprintsEffect(rt, FLDEFF_DEEP_SAND_FOOTPRINTS); }
+/** 1:1 décomp `FldEff_BikeTireTracks` (field_effect_helpers.c:588). */
+export function FldEff_BikeTireTracks(rt: DecompRuntime): number { return spawnFootprintsEffect(rt, FLDEFF_BIKE_TIRE_TRACKS); }
+
+/** 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` (610) + `FadeFootprintsTireTracks_Step0/1`.
+ *  sState=data[0], sTimer=data[1], sFldEff=data[7]. */
+export function UpdateFootprintsTireTracksFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  if (sprite.data[0] === 0) {
+    // FadeFootprintsTireTracks_Step0 : attend 40 frames avant le clignotement.
+    if (++sprite.data[1] > 40) sprite.data[0] = 1;
+    UpdateObjectEventSpriteInvisibility(rt, sprite, false);
+  } else {
+    // FadeFootprintsTireTracks_Step1 : clignote (invisible ^= 1) puis FieldEffectStop à 56.
+    sprite.invisible = !sprite.invisible;
+    sprite.data[1]++;
+    UpdateObjectEventSpriteInvisibility(rt, sprite, sprite.invisible);
+    if (sprite.data[1] > 56) FieldEffectStop(rt, sprite, sprite.data[7]);
+  }
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 //  FldEff_Splash (642) + FldEff_FeetInFlowingWater (725)
