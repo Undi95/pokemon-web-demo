@@ -39,17 +39,26 @@ import {
   TASK_NONE,
 } from '../engine/system/decomp-globals';
 import { PlayerGetDestCoords } from '../engine/field/player-avatar';
-import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt } from '../engine/field/map-loader';
-import { MetatileBehavior_IsAshGrass } from './metatile_behavior';
+import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt } from '../engine/field/map-loader';
+import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
+import {
+  MetatileBehavior_IsAshGrass,
+  MetatileBehavior_IsCrackedFloor,
+  MetatileBehavior_IsCrackedFloorHole,
+} from './metatile_behavior';
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
+import { GetPlayerSpeed, PLAYER_SPEED_FASTEST } from '../engine/field/field-control-avatar';
 import { VarGet, VarSet } from './event_data';
 import {
   METATILE_Fallarbor_AshGrass,
   METATILE_Fallarbor_NormalGrass,
   METATILE_Lavaridge_NormalGrass,
+  METATILE_Cave_CrackedFloor,
+  METATILE_Cave_CrackedFloor_Hole,
+  METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
-import { VAR_ASH_GATHER_COUNT } from './include/constants/vars';
+import { VAR_ASH_GATHER_COUNT, VAR_ICE_STEP_COUNT } from './include/constants/vars';
 
 // ─── 1:1 décomp constants/field_tasks.h (STEP_CB_* 0..7) ────────────────────
 export const STEP_CB_DUMMY = 0;
@@ -75,7 +84,7 @@ const sPerStepCallbacks: ReadonlyArray<(task: DecompTask) => void> = [
   /* [STEP_CB_SOOTOPOLIS_ICE]    */ DummyPerStepCallback,  // TODO port SootopolisGymIcePerStepCallback (field_tasks.c:659)
   /* [STEP_CB_TRUCK]             */ DummyPerStepCallback,  // TODO câbler EndTruckSequence (field_special_scene.c → truck-cinematic.ts)
   /* [STEP_CB_SECRET_BASE]       */ DummyPerStepCallback,  // TODO port SecretBasePerStepCallback (secret_base.c, non porté)
-  /* [STEP_CB_CRACKED_FLOOR]     */ DummyPerStepCallback,  // TODO port CrackedFloorPerStepCallback (field_tasks.c:801)
+  /* [STEP_CB_CRACKED_FLOOR]     */ CrackedFloorPerStepCallback,
 ];
 
 // ─── 1:1 décomp `Task_RunPerStepCallback` (field_tasks.c:138-142) ───────────
@@ -160,6 +169,62 @@ function AshGrassPerStepCallback(task: DecompTask): void {
     if (CheckBagHasItem('ITEM_SOOT_SACK', 1)) {
       const ashGatherCount = VarGet(VAR_ASH_GATHER_COUNT);
       if (ashGatherCount < 9999) VarSet(VAR_ASH_GATHER_COUNT, ashGatherCount + 1);
+    }
+  }
+}
+
+// ─── 1:1 décomp `SetCrackedFloorHoleMetatile(s16 x, s16 y)` (field_tasks.c:785-790) ──
+// Utilise les constantes de gTileset_Cave mais les autres tilesets avec le callback
+// CrackedFloorPerStepCallback réutilisent les mêmes numéros (gTileset_MirageTower…).
+function SetCrackedFloorHoleMetatile(x: number, y: number): void {
+  const metatileId = MapGridGetMetatileIdAt(x, y) === METATILE_Cave_CrackedFloor
+    ? METATILE_Cave_CrackedFloor_Hole
+    : METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole;
+  MapGridSetMetatileIdAt(x, y, metatileId);
+  const cam = GetCameraTopLeftCoords();
+  CurrentMapDrawMetatileAt(cam.x, cam.y, x, y);
+}
+
+// ─── 1:1 décomp `CrackedFloorPerStepCallback(u8 taskId)` (field_tasks.c:801-842) ──
+// #define tPrevX       data[2]
+// #define tPrevY       data[3]
+// #define tFloor1Delay data[4]
+// #define tFloor1X     data[5]
+// #define tFloor1Y     data[6]
+// #define tFloor2Delay data[7]
+// #define tFloor2X     data[8]
+// #define tFloor2Y     data[9]
+// Casse les sols fissurés (cracked floor → hole) après un délai ; suit jusqu'à 2
+// cases en parallèle. VAR_ICE_STEP_COUNT fait "double duty" (réutilisé ici).
+function CrackedFloorPerStepCallback(task: DecompTask): void {
+  const data = task.data;
+  const { x, y } = PlayerGetDestCoords();
+  const behavior = MapGridGetMetatileBehaviorAt(x, y);
+
+  // Update up to 2 previous cracked floor spaces.
+  if (data[4] !== 0 && (--data[4]) === 0) SetCrackedFloorHoleMetatile(data[5], data[6]); // tFloor1*
+  if (data[7] !== 0 && (--data[7]) === 0) SetCrackedFloorHoleMetatile(data[8], data[9]); // tFloor2*
+
+  if (MetatileBehavior_IsCrackedFloorHole(behavior))
+    VarSet(VAR_ICE_STEP_COUNT, 0); // this var does double duty
+
+  // End if player hasn't moved.
+  if (x === data[2] && y === data[3]) return; // tPrevX / tPrevY
+
+  data[2] = x; // tPrevX
+  data[3] = y; // tPrevY
+  if (MetatileBehavior_IsCrackedFloor(behavior)) {
+    if (GetPlayerSpeed() !== PLAYER_SPEED_FASTEST)
+      VarSet(VAR_ICE_STEP_COUNT, 0); // this var does double duty
+
+    if (data[4] === 0) { // tFloor1Delay
+      data[4] = 3;
+      data[5] = x; // tFloor1X
+      data[6] = y; // tFloor1Y
+    } else if (data[7] === 0) { // tFloor2Delay
+      data[7] = 3;
+      data[8] = x; // tFloor2X
+      data[9] = y; // tFloor2Y
     }
   }
 }

@@ -153,7 +153,7 @@ const T_TILE_TRANSITION  = 1;
 const T_TILE_CENTER      = 2;
 
 // 1:1 décomp PLAYER_SPEED_FASTEST (= bike.h enum).
-const PLAYER_SPEED_FASTEST = ENUM_PLAYER_0.PLAYER_SPEED_FASTEST;
+export const PLAYER_SPEED_FASTEST = ENUM_PLAYER_0.PLAYER_SPEED_FASTEST;
 
 /** 1:1 STRICT décomp `GetPlayerCurMetatileBehavior` (field_control_avatar.c:212-218) :
  *    PlayerGetDestCoords(&x, &y);
@@ -167,7 +167,7 @@ function GetPlayerCurMetatileBehavior(_runningState: number): number {
 /** 1:1 décomp `GetPlayerSpeed` (field_player_avatar.c).
  *  Returns la vitesse du player (= 1 = walking, 2 = running, 4 = fastest bike).
  *  Stub : retourne 1 normalement, 2 si dashing. */
-function GetPlayerSpeed(): number {
+export function GetPlayerSpeed(): number {
   return gPlayerAvatar.dashing ? 2 : 1;
 }
 
