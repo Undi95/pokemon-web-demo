@@ -40,7 +40,8 @@ import {
   TASK_NONE,
 } from '../engine/system/decomp-globals';
 import { PlayerGetDestCoords, PlayerGetElevation } from '../engine/field/player-avatar';
-import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader } from '../engine/field/map-loader';
+import { MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MAP_OFFSET, gMapHeader, gCamera } from '../engine/field/map-loader';
+import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { CurrentMapDrawMetatileAt, GetCameraTopLeftCoords } from '../engine/field/field-camera';
 import {
   MetatileBehavior_IsAshGrass,
@@ -53,6 +54,7 @@ import {
   MetatileBehavior_IsPacifidlogVerticalLogBottom,
   MetatileBehavior_IsPacifidlogHorizontalLogLeft,
   MetatileBehavior_IsPacifidlogHorizontalLogRight,
+  MetatileBehavior_IsMuddySlope,
 } from './metatile_behavior';
 import { StartAshFieldEffect } from './field_effect_helpers';
 import { CheckBagHasItem } from '../engine/bag/bag';
@@ -85,6 +87,10 @@ import {
   METATILE_Pacifidlog_FloatingLogs_VerticalBottom,
   METATILE_Pacifidlog_FloatingLogs_HorizontalLeft,
   METATILE_Pacifidlog_FloatingLogs_HorizontalRight,
+  METATILE_General_MuddySlope_Frame0,
+  METATILE_General_MuddySlope_Frame1,
+  METATILE_General_MuddySlope_Frame2,
+  METATILE_General_MuddySlope_Frame3,
 } from '../engine/decomp-data/include/constants/metatile_labels-data';
 import {
   VAR_ASH_GATHER_COUNT,
@@ -146,11 +152,12 @@ export function SetUpFieldTasks(): void {
     if (data) data[0] = STEP_CB_DUMMY; // tCallbackId
   }
 
-  // 1:1 décomp : la décomp crée AUSSI Task_MuddySlope + Task_RunTimeBasedEvents
-  // ici. Différés (port staged) :
-  //   - Task_MuddySlope : follow-up (anim metatile pente boueuse).
-  //   - Task_RunTimeBasedEvents : entremêlé avec UpdateAmbientCry (= AUDIO, hors
-  //     périmètre) ; DoTimeBasedEvents est déjà câblé au map-load (1:1).
+  // 1:1 décomp `if (!FuncIsActiveTask(Task_MuddySlope)) CreateTask(Task_MuddySlope, 80);`
+  if (!FuncIsActiveTask(Task_MuddySlope)) CreateTask(Task_MuddySlope, 80);
+
+  // 1:1 décomp : la décomp crée AUSSI Task_RunTimeBasedEvents ici. Différé :
+  // entremêlé avec UpdateAmbientCry (= AUDIO, hors périmètre) ; DoTimeBasedEvents
+  // est déjà câblé au map-load (1:1).
 }
 
 // ─── 1:1 décomp `ActivatePerStepCallback(u8 callbackId)` (field_tasks.c:196-212) ──
@@ -702,5 +709,99 @@ function PacifidlogBridgePerStepCallback(task: DecompTask): void {
         data[1] = 1; // tState
       }
       break;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Pentes boueuses — anim metatile au passage (field_tasks.c:853-957)
+// ════════════════════════════════════════════════════════════════════════════
+// #define tMapId data[0]
+// #define tState data[1]
+// #define tPrevX data[2]
+// #define tPrevY data[3]
+// data[4..15] = jusqu'à 4 pentes en cours d'animation, par triplets (time, x, y).
+const SLOPE_TIME = 0;
+const SLOPE_X = 1;
+const SLOPE_Y = 2;
+const SLOPE_DATA_SIZE = 3;
+const SLOPE_DATA_START = 4;
+const SLOPE_DATA_END = 3 * SLOPE_DATA_SIZE + SLOPE_DATA_START; // 13
+
+// 1:1 décomp `sMuddySlopeMetatiles[]` (field_tasks.c:870-875). Ordre : 0,3,2,1.
+const sMuddySlopeMetatiles: ReadonlyArray<number> = [
+  METATILE_General_MuddySlope_Frame0,
+  METATILE_General_MuddySlope_Frame3,
+  METATILE_General_MuddySlope_Frame2,
+  METATILE_General_MuddySlope_Frame1,
+];
+
+const SLOPE_ANIM_TIME = 32;
+const SLOPE_ANIM_STEP_TIME = (SLOPE_ANIM_TIME / sMuddySlopeMetatiles.length) | 0; // 8
+
+// 1:1 décomp `SetMuddySlopeMetatile(s16 *data, s16 x, s16 y)` (field_tasks.c:880-891).
+// La décomp passe `&data[i + SLOPE_TIME]` → on passe (data, timeIdx) à la place.
+function SetMuddySlopeMetatile(data: number[], timeIdx: number, x: number, y: number): void {
+  let metatileId: number;
+  if ((--data[timeIdx]) === 0)
+    metatileId = METATILE_General_MuddySlope_Frame0;
+  else
+    metatileId = sMuddySlopeMetatiles[(data[timeIdx] / SLOPE_ANIM_STEP_TIME) | 0];
+
+  MapGridSetMetatileIdAt(x, y, metatileId);
+  _drawMapMetatileAt(x, y);
+  // 1:1 décomp : remet immédiatement Frame0 dans la grille (l'anim n'est que dessinée).
+  MapGridSetMetatileIdAt(x, y, METATILE_General_MuddySlope_Frame0);
+}
+
+// 1:1 décomp `Task_MuddySlope(u8 taskId)` (field_tasks.c:893-957).
+function Task_MuddySlope(task: DecompTask): void {
+  const data = task.data;
+  const { x, y } = PlayerGetDestCoords();
+  const mapId = ((gSaveBlock1Ptr.location?.mapGroup ?? 0) << 8) | (gSaveBlock1Ptr.location?.mapNum ?? 0);
+  switch (data[1]) { // tState
+    case 0:
+      data[0] = mapId; // tMapId
+      data[2] = x; // tPrevX
+      data[3] = y; // tPrevY
+      data[1] = 1; // tState
+      data[SLOPE_DATA_START + 0 * SLOPE_DATA_SIZE] = 0; // tSlopeAnimTime(0) = data[4]
+      data[SLOPE_DATA_START + 1 * SLOPE_DATA_SIZE] = 0; // data[7]
+      data[SLOPE_DATA_START + 2 * SLOPE_DATA_SIZE] = 0; // data[10]
+      data[SLOPE_DATA_START + 3 * SLOPE_DATA_SIZE] = 0; // data[13]
+      break;
+    case 1:
+      // Skip if player hasn't moved.
+      if (data[2] === x && data[3] === y) break; // tPrevX / tPrevY
+      data[2] = x;
+      data[3] = y;
+      if (MetatileBehavior_IsMuddySlope(MapGridGetMetatileBehaviorAt(x, y))) {
+        for (let i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE) {
+          if (data[i] === 0) {
+            data[i + SLOPE_TIME] = SLOPE_ANIM_TIME;
+            data[i + SLOPE_X] = x;
+            data[i + SLOPE_Y] = y;
+            break;
+          }
+        }
+      }
+      break;
+  }
+
+  let cameraOffsetX: number, cameraOffsetY: number;
+  if (gCamera.active && mapId !== data[0]) { // tMapId
+    data[0] = mapId;
+    cameraOffsetX = gCamera.x;
+    cameraOffsetY = gCamera.y;
+  } else {
+    cameraOffsetX = 0;
+    cameraOffsetY = 0;
+  }
+
+  for (let i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE) {
+    if (data[i + SLOPE_TIME]) {
+      data[i + SLOPE_X] -= cameraOffsetX;
+      data[i + SLOPE_Y] -= cameraOffsetY;
+      SetMuddySlopeMetatile(data, i + SLOPE_TIME, data[i + SLOPE_X], data[i + SLOPE_Y]);
+    }
   }
 }
