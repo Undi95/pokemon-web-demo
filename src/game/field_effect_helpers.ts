@@ -58,13 +58,18 @@ import {
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
   SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority, ElevationToPriority,
   ELEVATION_DEFAULT,
-  _getGfxMeta, LoadObjectReflectionPalette,
+  _getGfxMeta, type GfxMeta,
+  LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
+  _genericNpcReflectionTag, _loadReflectionPaletteByTag,
 } from '../engine/field/object-events';
 import { MoveCoords } from '../engine/field/direction-coords';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
 import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
-import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass } from './metatile_behavior';
+import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass, MetatileBehavior_GetBridgeType } from './metatile_behavior';
+// 1:1 décomp : constantes de slot/tag palette (object-event-graphics-info). Utilisées par
+// la chaîne reflet relocalisée (LoadObjectRegularReflectionPalette/HighBridge).
+import { PALSLOT_PLAYER, PALSLOT_NPC_SPECIAL, OBJ_EVENT_PAL_TAG_NONE } from '../engine/field/object-event-graphics-info';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
 import {
@@ -2252,8 +2257,11 @@ export function UpdateJumpImpactEffect(sprite: DecompSprite, rt: DecompRuntime):
 //  runSpriteCallbacks. EAU = affineMode 1 + matrice de distorsion animée (ondulation) ; GLACE
 //  = OAM vflip net. Palette teintée bleu via LoadObjectReflectionPalette (data[6]=bank). Déclenché
 //  par le spine (GroundEffect_Water/IceReflection, object-events.ts) qui appelle SetUpReflection.
-//  ⚠️ RELOCATION étape 1 : les fonctions PALETTE (LoadObjectReflectionPalette + sets +
-//  distorsion affine) restent DANS object-events.ts (importées) ; étape 2 les déplacera ici.
+//  RELOCATION terminée (étape 2) : les 3 fonctions PALETTE de field_effect_helpers.c
+//  (LoadObjectReflectionPalette/Regular/HighBridge + sBridgeReflectionVerticalOffsets) sont
+//  ICI. Les fonctions PUBLIQUES LoadPlayer/SpecialObjectReflectionPalette + les sets statiques
+//  + la distorsion affine restent dans object-events.ts (= event_object_movement.c) et sont
+//  appelées/importées — graphe d'appels 1:1 décomp.
 //  Sprite data 1:1 : sReflectionObjEventId=data[0] sReflectionObjEventLocalId=data[1]
 //    sReflectionVerticalOffset=data[2] (bank reflet=data[6], adaptation) sIsStillReflection=data[7].
 // ════════════════════════════════════════════════════════════════════════════
@@ -2261,6 +2269,49 @@ export function UpdateJumpImpactEffect(sprite: DecompSprite, rt: DecompRuntime):
 /** 1:1 décomp `GetReflectionVerticalOffset` (field_effect_helpers.c:70). */
 function GetReflectionVerticalOffset(npc: ObjectEvent): number {
   return _getGfxMeta(npc.graphicsId).height - 2;
+}
+
+/** 1:1 décomp `bridgeReflectionVerticalOffsets[]` (local de LoadObjectReflectionPalette,
+ *  field_effect_helpers.c:78), indexé par `bridgeType - 1` (BRIDGE_TYPE_POND_LOW/MED/HIGH). */
+const sBridgeReflectionVerticalOffsets: ReadonlyArray<number> = [12, 28, 44];
+
+/** 1:1 décomp `LoadObjectReflectionPalette` (field_effect_helpers.c:75) — adapté.
+ *  Pose l'offset vertical de pont sur le sprite reflet (data[2]) + dispatch pont-haut vs
+ *  régulier. Renvoie le bank reflet (slot OBJ dynamique), ou -1 si non teinté. */
+function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
+  const meta = _getGfxMeta(npc.graphicsId);
+  refl.data[2] = 0; // sReflectionVerticalOffset
+  let bridgeType = MetatileBehavior_GetBridgeType(npc.previousMetatileBehavior);
+  if (!bridgeType) bridgeType = MetatileBehavior_GetBridgeType(npc.currentMetatileBehavior);
+  if (!meta.disableReflectionPaletteLoad && bridgeType) {
+    refl.data[2] = sBridgeReflectionVerticalOffsets[bridgeType - 1] ?? 0;
+    return LoadObjectHighBridgeReflectionPalette(meta);
+  }
+  // Régulier : la décomp ne patche que si reflectionPaletteTag != NONE ; sinon le slot
+  // garde la palette préchargée. Notre archi n'ayant pas de slot réservé, on charge
+  // TOUJOURS la palette reflet déduite du slot (= le contenu de ce slot préchargé), sauf
+  // si disableReflectionPaletteLoad (alors reflet non teinté = réutilise la palette main).
+  if (meta.disableReflectionPaletteLoad) return -1;
+  return LoadObjectRegularReflectionPalette(meta);
+}
+
+/** 1:1 décomp `LoadObjectRegularReflectionPalette` (field_effect_helpers.c:97) — adapté.
+ *  Dispatch par slot palette ; joueur/NPC spécial délèguent aux fonctions PUBLIQUES
+ *  event_object_movement.c (object-events.ts), générique NPC_1..4 charge le reflet préchargé.
+ *  Renvoie le bank reflet, ou -1. */
+function LoadObjectRegularReflectionPalette(meta: GfxMeta): number {
+  if (meta.paletteSlot === PALSLOT_PLAYER) return LoadPlayerObjectReflectionPalette(meta.paletteTag);
+  if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) return LoadSpecialObjectReflectionPalette(meta.paletteTag);
+  // Générique NPC : 1:1 décomp `PatchObjectPalette(GetObjectPaletteTag(slot), slot)` →
+  // adaptation = charge le reflet teinté npc_X_reflection préchargé pour ce slot.
+  return _loadReflectionPaletteByTag(_genericNpcReflectionTag[meta.paletteSlot] ?? 0);
+}
+
+/** 1:1 décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) — adapté.
+ *  Pont haut au-dessus d'eau sombre (Route 120) : reflet bleu sombre uni (bridge_reflection). */
+function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta): number {
+  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return -1;
+  return _loadReflectionPaletteByTag(meta.reflectionPaletteTag);
 }
 
 /** 1:1 décomp `UpdateObjectReflectionSprite` (field_effect_helpers.c:124). Callback

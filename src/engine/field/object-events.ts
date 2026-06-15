@@ -48,7 +48,7 @@ import { GetObjectEventGraphicsInfo, gObjectEventGraphicsInfoPointers, gBerryTre
 // + include/constants/event_object_movement.h). Utilisées par la chaîne palette des
 // reflets (LoadObjectReflectionPalette + sPlayerReflectionPaletteSets + sSpecialObject...).
 import {
-  PALSLOT_PLAYER, PALSLOT_NPC_1, PALSLOT_NPC_2, PALSLOT_NPC_3, PALSLOT_NPC_4, PALSLOT_NPC_SPECIAL,
+  PALSLOT_NPC_1, PALSLOT_NPC_2, PALSLOT_NPC_3, PALSLOT_NPC_4,
   OBJ_EVENT_PAL_TAG_BRENDAN, OBJ_EVENT_PAL_TAG_BRENDAN_REFLECTION,
   OBJ_EVENT_PAL_TAG_MAY, OBJ_EVENT_PAL_TAG_MAY_REFLECTION,
   OBJ_EVENT_PAL_TAG_PLAYER_UNDERWATER, OBJ_EVENT_PAL_TAG_BRIDGE_REFLECTION,
@@ -107,7 +107,7 @@ import {
   MetatileBehavior_IsSandOrDeepSand, MetatileBehavior_IsFootprints, MetatileBehavior_IsShallowFlowingWater,
   MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsHotSprings,
   MetatileBehavior_IsSeaweed, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsATile,
-  MetatileBehavior_HasRipples, MetatileBehavior_GetBridgeType,
+  MetatileBehavior_HasRipples,
 } from '../../game/metatile_behavior';
 
 const BASE = '/decomp/em';
@@ -3367,9 +3367,8 @@ function _oamPriority(rt: DecompRuntime, sprite: DecompSprite | undefined): numb
 //   ripple (oam.matrixNum 0/1) ; ici vflip simple (pas de wobble) tant que les matrices
 //   affine ripple ne sont pas posées.
 
-/** 1:1 décomp `bridgeReflectionVerticalOffsets[]` (field_effect_helpers.c:78-82),
- *  indexé par `bridgeType - 1` (BRIDGE_TYPE_POND_LOW/MED/HIGH). */
-const sBridgeReflectionVerticalOffsets: ReadonlyArray<number> = [12, 28, 44];
+// `bridgeReflectionVerticalOffsets[]` (field_effect_helpers.c:78) relocalisé au miroir
+// game/field_effect_helpers.ts (étape 2 — c'est une local de LoadObjectReflectionPalette).
 
 /** 1:1 décomp `sPlayerReflectionPaletteSets[]` (event_object_movement.c:546) aplati
  *  (colonne sCurrentReflectionType, identique sur les 4). tag joueur → tag reflet. */
@@ -3399,7 +3398,7 @@ const sSpecialObjectReflectionPaletteSets: ReadonlyArray<readonly [number, numbe
 
 /** Tag reflet générique pour un slot NPC régulier (= contenu du slot PALSLOT_NPC_X_
  *  REFLECTION préchargé par InitObjectEventPalettes via sObjectPaletteTagSets). */
-const _genericNpcReflectionTag: ReadonlyArray<number> = [
+export const _genericNpcReflectionTag: ReadonlyArray<number> = [
   0,                                  // PALSLOT_PLAYER (jamais générique)
   OBJ_EVENT_PAL_TAG_NPC_1_REFLECTION, // PALSLOT_NPC_1
   OBJ_EVENT_PAL_TAG_NPC_2_REFLECTION, // PALSLOT_NPC_2
@@ -3442,7 +3441,7 @@ export async function PreloadReflectionPalettes(): Promise<void> {
  *  ou -1 si indisponible (= reflet non teinté, réutilise la palette du main). LoadSprite
  *  Palette dédoublonne par tag → un tag reflet n'occupe qu'UN slot quel que soit le nombre
  *  de reflets (= comme la réservation permanente décomp). */
-function _loadReflectionPaletteByTag(tag: number): number {
+export function _loadReflectionPaletteByTag(tag: number): number {
   if (!tag || tag === OBJ_EVENT_PAL_TAG_NONE) return -1;
   const data = _reflectionPalData.get(tag);
   if (!data) return -1;
@@ -3450,46 +3449,26 @@ function _loadReflectionPaletteByTag(tag: number): number {
   return bank === 0xFF ? -1 : bank;
 }
 
-/** 1:1 décomp `LoadObjectRegularReflectionPalette` (field_effect_helpers.c:97) — adapté.
- *  Détermine le tag reflet selon le slot palette de l'objet (joueur / NPC spécial /
- *  générique NPC_1..4) puis charge la palette. Renvoie le bank reflet, ou -1. */
-function LoadObjectRegularReflectionPalette(meta: GfxMeta): number {
+/** 1:1 décomp `LoadPlayerObjectReflectionPalette` (event_object_movement.c:2073) — adapté.
+ *  Fonction PUBLIQUE (include/event_object_movement.h:115), appelée par la chaîne palette
+ *  reflet de field_effect_helpers.c (LoadObjectRegularReflectionPalette, désormais au miroir)
+ *  + plusieurs LoadObjectEventPalette*. Cherche le tag reflet teinté du joueur dans
+ *  `sPlayerReflectionPaletteSets` (statique, reste ici) et le charge dans un slot OBJ
+ *  dynamique. Renvoie le bank, ou -1. */
+export function LoadPlayerObjectReflectionPalette(tag: number): number {
   let reflTag = 0;
-  if (meta.paletteSlot === PALSLOT_PLAYER) {
-    for (const [tag, rt] of sPlayerReflectionPaletteSets) if (tag === meta.paletteTag) { reflTag = rt; break; }
-  } else if (meta.paletteSlot === PALSLOT_NPC_SPECIAL) {
-    for (const [tag, rt] of sSpecialObjectReflectionPaletteSets) if (tag === meta.paletteTag) { reflTag = rt; break; }
-  } else {
-    reflTag = _genericNpcReflectionTag[meta.paletteSlot] ?? 0;
-  }
+  for (const [t, rt] of sPlayerReflectionPaletteSets) if (t === tag) { reflTag = rt; break; }
   return _loadReflectionPaletteByTag(reflTag);
 }
 
-/** 1:1 décomp `LoadObjectHighBridgeReflectionPalette` (field_effect_helpers.c:114) — adapté.
- *  Pont haut au-dessus d'eau sombre (Route 120) : reflet bleu sombre uni (bridge_reflection). */
-function LoadObjectHighBridgeReflectionPalette(meta: GfxMeta): number {
-  if (meta.reflectionPaletteTag === OBJ_EVENT_PAL_TAG_NONE) return -1;
-  return _loadReflectionPaletteByTag(meta.reflectionPaletteTag);
-}
-
-/** 1:1 décomp `LoadObjectReflectionPalette` (field_effect_helpers.c:75) — adapté.
- *  Pose l'offset vertical de pont sur le sprite reflet (data[2]) + dispatch pont-haut vs
- *  régulier. Renvoie le bank reflet (slot OBJ dynamique), ou -1 si non teinté. */
-export function LoadObjectReflectionPalette(npc: ObjectEvent, refl: DecompSprite): number {
-  const meta = _getGfxMeta(npc.graphicsId);
-  refl.data[2] = 0; // sReflectionVerticalOffset
-  let bridgeType = MetatileBehavior_GetBridgeType(npc.previousMetatileBehavior);
-  if (!bridgeType) bridgeType = MetatileBehavior_GetBridgeType(npc.currentMetatileBehavior);
-  if (!meta.disableReflectionPaletteLoad && bridgeType) {
-    refl.data[2] = sBridgeReflectionVerticalOffsets[bridgeType - 1] ?? 0;
-    return LoadObjectHighBridgeReflectionPalette(meta);
-  }
-  // Régulier : la décomp ne patche que si reflectionPaletteTag != NONE ; sinon le slot
-  // garde la palette préchargée. Notre archi n'ayant pas de slot réservé, on charge
-  // TOUJOURS la palette reflet déduite du slot (= le contenu de ce slot préchargé), sauf
-  // si disableReflectionPaletteLoad (alors reflet non teinté = réutilise la palette main).
-  if (meta.disableReflectionPaletteLoad) return -1;
-  return LoadObjectRegularReflectionPalette(meta);
+/** 1:1 décomp `LoadSpecialObjectReflectionPalette` (event_object_movement.c:2088) — adapté.
+ *  Fonction PUBLIQUE (include/event_object_movement.h:116). Idem pour les objets spéciaux
+ *  (`sSpecialObjectReflectionPaletteSets` ; certains reflètent leur propre palette = pas de
+ *  tint). Renvoie le bank, ou -1. */
+export function LoadSpecialObjectReflectionPalette(tag: number): number {
+  let reflTag = 0;
+  for (const [t, rt] of sSpecialObjectReflectionPaletteSets) if (t === tag) { reflTag = rt; break; }
+  return _loadReflectionPaletteByTag(reflTag);
 }
 
 // ─── Reflection distortion = petites vagues (1:1 CreateReflectionEffectSprites) ────
