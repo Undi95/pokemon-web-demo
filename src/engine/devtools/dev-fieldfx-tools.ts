@@ -41,7 +41,7 @@ import * as FE from '../decomp-data/include/constants/field_effects-data';
 import {
   gWeatherPtr, StartWeather, FadeScreen, ApplyWeatherColorMapIfIdle, preloadWeatherFogPalette,
 } from '../../game/field_weather';
-import { ResumePausedWeather, preloadWeatherAshSprites } from '../../game/field_weather_effect';
+import { ResumePausedWeather, SetWeather, preloadWeatherAshSprites } from '../../game/field_weather_effect';
 import { gSaveBlock1Ptr } from '../save/save-block-state';
 import { GetSpritePaletteTagByPaletteNum, FreeSpritePaletteByTag } from '../system/sprite';
 
@@ -218,6 +218,17 @@ const fx = {
       gSaveBlock1Ptr.weather = weatherId;
       ResumePausedWeather();          // curr=next=météo (réutilise la palette météo allouée tôt)
       gWeatherPtr.readyForInit = true; // Task_WeatherInit -> sWeatherFuncs[curr].initAll
+      return fx.weather.state();
+    },
+    /** A/B FIDÈLE : déclenche la VRAIE transition météo (SetWeather -> SetNextWeather),
+     *  qui crée l'écart curr≠next -> Task_WeatherMain déroule finish() de l'ancienne
+     *  (cleanup sprites) puis initVars() de la nouvelle (pose target/blend). Indispensable
+     *  pour vérifier la chaîne d'init d'une météo (force() pose curr direct sans initVars). */
+    async transition(weatherId = 7) {
+      await preloadWeatherFogPalette();
+      await preloadWeatherAshSprites();
+      SetWeather(weatherId);
+      gWeatherPtr.readyForInit = true;
       return fx.weather.state();
     },
     /** État courant du gWeatherPtr (+ compteur de sprites ash vivants). */
