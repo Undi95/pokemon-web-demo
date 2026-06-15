@@ -58,6 +58,7 @@ import type { PendingConnection } from '../engine/field/field-camera';
 import {
   InitPlayerAvatar,
   PlayerStep,
+  AdvancePlayerSpriteWorldPos,
   DestroyPlayerAvatar,
   SetPlayerVisibility,
   GetPlayerFacingDirection,
@@ -534,6 +535,11 @@ export class TestOverworldScene extends Phaser.Scene {
         // pour décrémenter pixelOffsetX/Y. Si l'ordre est inversé, on perd 1 px
         // de décrément par action (= drift visuel).
         tickMovementQueues(rt);
+        // [M3-C2] Avance worldX/Y du joueur pour les mouvements INLINE (ledge/forced)
+        // qui pilotent la caméra sans held movement. Skip pour walk/dash (leur held
+        // movement avance déjà worldX via _NpcTakeStep). Lit le movementSpeed JUSTE
+        // avant que CameraUpdate ne le consomme → joueur centré. C3 retirera ce pont.
+        AdvancePlayerSpriteWorldPos();
         CameraUpdate();
         // Phase 4.8 : check seamless cross-border transition signalé par
         // CameraMove. 1:1 décomp `LoadMapFromCameraTransition` flow : NO fade,

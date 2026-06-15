@@ -5899,6 +5899,23 @@ export function GetPlayerRunMovementAction(dir: number): number {
   return gPlayerRunMovementActions[dir];
 }
 
+/** 1:1 décomp `gJump2MovementActions[]` (event_object_movement.c). */
+const gJump2MovementActions: readonly number[] = [
+  MOVEMENT_ACTION_JUMP_2_DOWN,   // DIR_NONE  → DOWN (default)
+  MOVEMENT_ACTION_JUMP_2_DOWN,   // DIR_SOUTH
+  MOVEMENT_ACTION_JUMP_2_UP,     // DIR_NORTH
+  MOVEMENT_ACTION_JUMP_2_LEFT,   // DIR_WEST
+  MOVEMENT_ACTION_JUMP_2_RIGHT,  // DIR_EAST
+];
+
+/** 1:1 décomp `GetJump2MovementAction` (event_object_movement.c:4969, via
+ *  `dirn_to_anim`). Map direction → MOVEMENT_ACTION_JUMP_2_* (= ledge hop,
+ *  JUMP_DISTANCE_FAR/JUMP_TYPE_HIGH). Utilisé par PlayerJumpLedge. */
+export function GetJump2MovementAction(dir: number): number {
+  if (dir > DIR_EAST) dir = 0;
+  return gJump2MovementActions[dir];
+}
+
 /** 1:1 décomp `ObjectEventExecHeldMovementAction` (event_object_movement.c) :
  *  dispatch sur movementActionId → gMovementActionFuncs[actionId](obj, sprite).
  *  Quand action done (= return TRUE), set heldMovementFinished = TRUE.

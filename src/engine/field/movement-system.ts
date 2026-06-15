@@ -672,9 +672,12 @@ function _tickWalk(
   const dx = (DIR_TO_DX[dir] ?? 0) * pxPerFrame;
   const dy = (DIR_TO_DY[dir] ?? 0) * pxPerFrame;
   if (target.isPlayer) {
-    // Player visual position is fixed at SCREEN_CENTER. Camera does the scrolling
-    // via gFieldCamera.movementSpeedX/Y. So we drive the camera here, and let
-    // CameraUpdate handle the BG scrolling.
+    // [M3-C2] Driver caméra manuel pour le mouvement joueur scripté. Le player
+    // object event avance en coords MONDE via le pont central
+    // AdvancePlayerSpriteWorldPos (player-avatar.ts, appelé une fois par frame
+    // dans la boucle OW avant CameraUpdate) qui fait worldX += movementSpeedX —
+    // PAS ici, pour éviter le double-comptage avec les autres drivers (ledge,
+    // forced). Voir chantier-camera-M3 (C2).
     gFieldCamera.movementSpeedX = dx;
     gFieldCamera.movementSpeedY = dy;
     // Session 124 fix : drive `stepFramesLeft` countdown pour que le sprite
@@ -937,6 +940,8 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
   const dx = (DIR_TO_DX[dir] ?? 0) * pxPerFrame;
   const dy = (DIR_TO_DY[dir] ?? 0) * pxPerFrame;
   if (target.isPlayer) {
+    // [M3-C2] Driver caméra manuel (jump scripté). worldX du joueur avancé par le
+    // pont central AdvancePlayerSpriteWorldPos (boucle OW), pas ici (cf. _tickWalk).
     gFieldCamera.movementSpeedX = dx;
     gFieldCamera.movementSpeedY = dy;
   } else if (target.npc) {

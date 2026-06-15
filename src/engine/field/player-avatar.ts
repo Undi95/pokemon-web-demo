@@ -47,6 +47,7 @@ import {
   ObjectEventClearHeldMovementIfActive,
   GetWalkNormalMovementAction,
   GetPlayerRunMovementAction,
+  GetJump2MovementAction,
   GetCollisionAtCoords as _GetCollisionAtCoords,
   GetObjectEventIdByXY,
   GetObjectEventIdByPosition,
@@ -61,6 +62,7 @@ import {
   GetCameraTopLeftCoords,
   GetCameraPanX,
   GetCameraPanY,
+  SetSpritePosToMapCoords,
 } from '../field/field-camera';
 import {
   ArePlayerFieldControlsLocked,
@@ -646,6 +648,19 @@ export async function InitPlayerAvatar(
   // BG_VOFS=40 (= sVerticalCameraPan=32 + 8) → visible window starts at metatile row 2.5,
   // player visible at row 4.5 (= centered). 1:1 décomp.
   SetCameraTopLeftCoords(mapX, mapY);
+
+  // [M3-C2] Init player worldX/Y comme un object event (1:1 décomp : le player
+  // object event est pose par SetSpritePosToMapCoords au spawn, comme tout NPC).
+  // Le sprite suit ensuite la camera via coordOffsetEnabled (updateSpriteFrame),
+  // et worldX/Y avancent de dx/dy au walk (movement-system). Convention NPC :
+  // worldX = destX + 8 (demi-tuile), worldY = destY. Au spawn (offX=0, fcX=0)
+  // -> worldX=120, worldY=112 -> oam 112/56 = position centree identique.
+  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (playerSlot) {
+    const sp = SetSpritePosToMapCoords(playerSlot.currentCoordsX, playerSlot.currentCoordsY);
+    playerSlot.worldX = sp.x + 8;
+    playerSlot.worldY = sp.y;
+  }
 }
 
 // ─── Direction → (dx, dy) helpers depuis direction-coords (= source unique) ─
@@ -675,9 +690,6 @@ function getJumpYOffset(timer: number): number {
   return sJumpY_High[idx];
 }
 
-/** Flag interne : true pendant un ledge jump pour appliquer 2-tiles move au
- *  step end. Set true quand collision = LEDGE_JUMP, cleared après step end. */
-let _pendingLedgeJump = false;
 
 // ─── Sprite frame update ─────────────────────────────────────────────────────
 
@@ -754,24 +766,51 @@ function updateSpriteFrame(rt: DecompRuntime): void {
   const jumpY = gPlayerAvatar.jumpFramesLeft > 0
     ? getJumpYOffset(32 - gPlayerAvatar.jumpFramesLeft)
     : 0;
-  // sprite.y stocké au CENTER (= 72 baseline + jumpY).
-  // 1:1 décomp `gSpriteCoordOffsetX/Y` (field_camera.c:461-462) :
-  //   gSpriteCoordOffsetX = gTotalCameraPixelOffsetX - sHorizontalCameraPan;
-  //   gSpriteCoordOffsetY = gTotalCameraPixelOffsetY - sVerticalCameraPan - 8;
-  // Sprite shift INVERSE du camera pan (= si camera shifts RIGHT via pan +1,
-  // BG_HOFS +1 → BG scrolls LEFT visually → sprite must shift LEFT to follow
-  // BG = sprite.x -= 1).
-  // Constants inline : SCREEN_CENTER_X = 120, SCREEN_CENTER_Y = 72.
-  const panX = GetCameraPanX();
-  const panY = GetCameraPanY();
-  sprite.x = 120 - panX;
+  // [M3-C2] 1:1 décomp : le player object event est posé en coords MONDE
+  // (sprite.x/y = worldX/Y, le `sprite->x/y` posé par SetSpritePosToMapCoords)
+  // avec coordOffsetEnabled=TRUE, exactement comme les NPCs depuis C1. Le runtime
+  // (UpdateOamCoords) ajoute gSpriteCoordOffsetX/Y = gTotalCameraPixelOffsetX - pan
+  // → le joueur reste CENTRÉ car worldX += dx au walk pendant que la caméra scrolle
+  // de dx (gSpriteCoordOffsetX -= dx) : les deux s'annulent. Avant : sprite.x=120
+  // figé (écran-ancré, hybride non-1:1) → remplacé par le chemin object-event unifié.
+  const playerSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!playerSlot) return;
+  sprite.coordOffsetEnabled = true;
+  sprite.x = playerSlot.worldX;
   // M3a (1:1 décomp) : l'arc de saut va dans sprite.y2 (= sprite->y2 du décomp,
   // event_object_movement.c DoJumpSpriteMovement) et NON dans sprite.y. oam.y =
-  // sprite.y + sprite.y2 + centerToCornerVecY (decomp-runtime syncSpritesToOam) →
-  // visuel IDENTIQUE, mais sprite.y devient la base AU SOL (= linkedSprite->y du
-  // shadow → ground-lock naturel pendant le saut, sans soustraire le jumpY).
-  sprite.y = 72 - panY;
+  // sprite.y + sprite.y2 + centerToCornerVecY (+ gSpriteCoordOffsetY) → sprite.y
+  // = base AU SOL (= linkedSprite->y du shadow → ground-lock naturel au saut).
+  sprite.y = playerSlot.worldY;
   sprite.y2 = jumpY;
+}
+
+/** [M3-C2] Avance le player object event en coords MONDE pour les mouvements
+ *  joueur INLINE restant (= qui pilote la caméra manuellement SANS poser de held
+ *  movement) : le forced movement (door warp auto-walk, PlayerStep ~1300). Le
+ *  walk/dash ET le ledge jump (depuis le M3 jump-as-MovementAction) passent par
+ *  ObjectEventSetHeldMovement → MovementAction → _NpcTakeStep/_DoJumpSpriteMovement
+ *  qui font `worldX += dx` → ils ne doivent PAS passer ici (double-comptage = 2×).
+ *
+ *  Gate `forceMovement≠DIR_NONE` (fiable, posé/effacé par le forced movement) :
+ *  on dérive alors worldX du driver caméra, appelé une fois par frame JUSTE avant
+ *  CameraUpdate → on lit le MÊME movementSpeed que CameraUpdate consomme
+ *  (gTotalCameraPixelOffsetX -= movementSpeed) → worldX delta == camera delta →
+ *  joueur centré (dual du CameraObject_UpdateMove décomp).
+ *
+ *  C3 : convertir le forced movement en held MovementAction + activer le
+ *  CameraObject → worldX devient la source unique avancée par les movement actions,
+ *  ce pont + le driver manuel disparaissent (1:1 décomp). */
+export function AdvancePlayerSpriteWorldPos(): void {
+  if (gPlayerAvatar.spriteId < 0) return;
+  // Seul le forced movement (door warp) reste inline sans held movement. Le ledge
+  // jump est maintenant un held Jump2 (worldX avancé par _DoJumpSpriteMovement) → on
+  // ne le couvre PLUS ici (sinon double-comptage avec le held movement).
+  if (gPlayerAvatar.forceMovement === DIR_NONE) return;
+  const slot = gObjectEvents[gPlayerAvatar.objectEventId];
+  if (!slot) return;
+  slot.worldX += gFieldCamera.movementSpeedX;
+  slot.worldY += gFieldCamera.movementSpeedY;
 }
 
 // ─── Collision check ────────────────────────────────────────────────────────
@@ -1407,33 +1446,10 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // pos = post-step value via SyncPlayerObjectEvent ci-dessous.
       const nx = gSaveBlock1Ptr.pos.x;
       const ny = gSaveBlock1Ptr.pos.y;
-      // 1:1 décomp ledge jump = 2 tiles total. Step est 32 frames → CameraMove
-      // est appelée 2 fois (= 2 tile boundaries) qui appliquent chacune `pos +=
-      // delta`. pos est déjà à old + 2 — pas de re-apply ici.
-      if (_pendingLedgeJump) {
-        _pendingLedgeJump = false;
-        // M2 (chantier unif mouvement joueur → object-event) : l'atterrissage du
-        // saut passe DÉSORMAIS par le spine ground-effect décomp, au lieu du dust
-        // ad-hoc. 1:1 décomp `MovementAction_Jump2*_Step1` (event_object_movement.c
-        // :5535) pose sur l'object event au jump end :
-        //   objectEvent->triggerGroundEffectsOnStop = TRUE;
-        //   objectEvent->landingJump = TRUE;
-        // → `DoGroundEffects_OnFinishStep` (boucle TickObjectEventMovements) lit
-        // `GetGroundEffectFlags_JumpLanding` (gate landingJump + tuile d'atterrissage)
-        // → GroundEffect_JumpOnTallGrass (RUSTLE) / JumpOnLongGrass / JumpOnShallowWater /
-        // JumpOnWater (SPLASH) / JumpLandingDust (dust sol). Avant : SpawnJumpLandingDust
-        // ad-hoc = TOUJOURS du dust, même en sautant DANS l'herbe/l'eau (trou 1:1).
-        // currentCoords du slot = tuile d'atterrissage via SyncPlayerObjectEvent (ci-dessous),
-        // lu par le spine au tick suivant (scène : PlayerStep avant TickObjectEventMovements).
-        const slot = gObjectEvents[gPlayerAvatar.objectEventId];
-        if (slot && slot.active && slot.isPlayer) {
-          slot.landingJump = true;
-          slot.triggerGroundEffectsOnStop = true;
-          // 1:1 décomp `MovementAction_Jump2*_Step1` : `objectEvent->hasShadow = FALSE`
-          // au jump end → UpdateShadowFieldEffect despawn l'ombre (FieldEffectStop).
-          slot.hasShadow = false;
-        }
-      }
+      // [M3 jump-as-MovementAction] L'atterrissage du ledge (triggerGroundEffectsOnStop
+      // + landingJump + hasShadow=FALSE) est DÉSORMAIS posé par le held Jump2 lui-même
+      // au JUMP_FINISHED (_UpdateJumpAnim / _makeJumpAction, object-events.ts) — plus
+      // de _pendingLedgeJump inline. Le spine DoGroundEffects_OnFinishStep lit ces flags.
       gPlayerAvatar.tileTransitionState = T_NOT_MOVING;
       gPlayerAvatar.stepDirection = DIR_NONE;
       gFieldCamera.movementSpeedX = 0;
@@ -1627,28 +1643,38 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       // 1:1 décomp `PlayerJumpLedge` (field_player_avatar.c:1015) :
       //   PlaySE(SE_LEDGE);
       //   PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
-      // Le MovementAction_Jump2_X (= event_object_movement.c:5525) utilise
-      // InitJumpRegular(JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH) → 32-frame anim avec
-      // sJumpY_High curve (= peak -12 px à mid-jump). Walks 2 tiles dans la dir.
-      // Notre impl : stepFramesLeft = 32 (= durée jump), jumpFramesLeft = 32
-      // (= sync compteur pour sprite y2 arc via getJumpYOffset dans updateSpriteFrame).
+      //
+      // [M3 jump-as-MovementAction] Le saut de ledge est DÉSORMAIS un held
+      // MovementAction (MOVEMENT_ACTION_JUMP_2_*, = InitJumpRegular(JUMP_DISTANCE_FAR,
+      // JUMP_TYPE_HIGH)) exécuté par TickObjectEventMovements → `_DoJumpSpriteMovement`
+      // avance worldX/Y du slot (2 tiles / 32 frames), shift les currentCoords au
+      // halfway, et pose triggerGroundEffectsOnStop + landingJump + hasShadow=FALSE
+      // au finish + DoShadowFieldEffect au start — comme la décomp. AVANT : tout
+      // était dupliqué inline (_pendingLedgeJump + DoShadowFieldEffect) et worldX
+      // n'était PAS avancé → le joueur décentrait une fois en coords-monde (C2).
+      // Maintenant le sprite reste CENTRÉ : worldX avance de 2 tiles via le held
+      // movement ET le driver caméra scrolle de 2 tiles → s'annulent.
       PlaySE(SE_LEDGE);
       gPlayerAvatar.runningState = MOVING;
       gPlayerAvatar.tileTransitionState = T_TILE_TRANSITION;
       gPlayerAvatar.stepFramesLeft = 32;
-      gPlayerAvatar.jumpFramesLeft = 32;  // = sJumpY_High curve over 32 frames
+      // jumpFramesLeft drive l'ARC visuel (sprite.y2) via updateSpriteFrame. Le held
+      // Jump2 ne pose PAS sprite.y2 pour le joueur (`_DoJumpSpriteMovement` gate sur
+      // npc.spriteId>=0, or le player slot a spriteId<0 — le sprite réel est
+      // gPlayerAvatar.spriteId) → on garde la courbe sJumpY_High ici.
+      gPlayerAvatar.jumpFramesLeft = 32;
       gPlayerAvatar.stepDirection = inputDir;
-      _pendingLedgeJump = true;  // = step end appliquera 2nd moveCoords (= 2 tiles)
-      // 1:1 décomp `InitJumpRegular` → `DoShadowFieldEffect` (event_object_movement.c:5450) :
-      // spawn l'ombre de saut sous le joueur AU START. UpdateShadowFieldEffect la garde au
-      // SOL (linked.y ; l'arc est dans sprite.y2 via M3a) pendant le saut → effet 3D ; despawn
-      // à l'atterrissage (hasShadow=FALSE).
-      {
-        const ledgeSlot = gObjectEvents[gPlayerAvatar.objectEventId];
-        if (ledgeSlot && ledgeSlot.active && ledgeSlot.isPlayer) DoShadowFieldEffect(ledgeSlot);
+      // 1:1 décomp PlayerSetAnimId → ObjectEventSetHeldMovement (clear le held
+      // movement précédent d'abord, comme le walk à PlayerWalkNormal).
+      const ledgeSlot = gObjectEvents[gPlayerAvatar.objectEventId];
+      if (ledgeSlot && ledgeSlot.active && ledgeSlot.isPlayer) {
+        ObjectEventClearHeldMovementIfActive(ledgeSlot);
+        ObjectEventSetHeldMovement(ledgeSlot, GetJump2MovementAction(inputDir));
       }
+      // Driver caméra manuel (C2) : scrolle de 2 tiles sur 32 frames, à match avec
+      // l'avance worldX du held Jump2 → joueur centré. C3 retirera ce driver
+      // (CameraObject suivra le sprite, dont worldX est avancé par le held movement).
       const jumpSpeed = dirToCameraSpeed(inputDir);
-      // Speed × 2 pour 2 tiles en 32 frames (= 1 tile per 16 frames standard).
       gFieldCamera.movementSpeedX = jumpSpeed.x * WALK_SPEED_PX_PER_FRAME;
       gFieldCamera.movementSpeedY = jumpSpeed.y * WALK_SPEED_PX_PER_FRAME;
       updateSpriteFrame(rt);
