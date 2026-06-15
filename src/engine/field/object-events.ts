@@ -84,7 +84,7 @@ import {
   DIR_SOUTHWEST, DIR_SOUTHEAST, DIR_NORTHWEST, DIR_NORTHEAST,
   DIR_TO_DX, DIR_TO_DY, OPPOSITE_DIR,
 } from './direction-coords';
-import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate } from '../field/field-globals';
+import { _registerGObjectEvents, _registerNpcHelpers, _registerUpdateObjectEventsForCameraUpdate, _registerCameraObjectHelpers } from '../field/field-globals';
 import { FlagGet, VarGet } from '../script/script-vars';
 import { Random } from '../system/random';
 // Pour OBJ_EVENT_GFX_VAR_N resolution au spawn (= rival NPC sprite genre opposé).
@@ -7606,6 +7606,136 @@ export function UpdateObjectEventsForCameraUpdate(rt: DecompRuntime, x: number, 
 _registerUpdateObjectEventsForCameraUpdate((rt, dx, dy) => {
   UpdateObjectEventsForCameraUpdate(rt as DecompRuntime, dx, dy);
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CameraObject (event_object_movement.c:2224-2330) — port 1:1 STRICT
+//  « The CameraObject functions below are responsible for an invisible sprite
+//    that follows the movements of a different sprite (normally the player's
+//    sprite) and tracks x/y movement distances for the camera so it knows where
+//    to move. »
+//  data macros (include/event_object_movement.h:75-78) :
+//    sCamera_FollowSpriteId = data[0]
+//    sCamera_State          = data[1]
+//    sCamera_MoveX          = data[2]   (s16 — Int16Array gère le wrap signé)
+//    sCamera_MoveY          = data[3]
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 1:1 décomp enum (event_object_movement.c:207-211). */
+const CAMERA_STATE_INIT = 0;
+const CAMERA_STATE_MOVE = 1;
+const CAMERA_STATE_FROZEN = 2;
+
+/** 1:1 décomp `SpriteCB_CameraObject(struct Sprite *sprite)` (event_object_movement.c:2236).
+ *  Dispatch `callbacks[sprite->sCamera_State](sprite)`. */
+function SpriteCB_CameraObject(sprite: DecompSprite): void {
+  sCameraObjectFuncs[sprite.data[1]]?.(sprite);
+}
+
+/** 1:1 décomp `CameraObject_Init(struct Sprite *sprite)` (event_object_movement.c:2244). */
+function CameraObject_Init(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  const follow = rt.gSprites.get(sprite.data[0]);
+  if (!follow) return; // garde plateforme : sprite suivi pas encore créé.
+  sprite.x = follow.x;
+  sprite.y = follow.y;
+  sprite.invisible = true;
+  sprite.data[1] = CAMERA_STATE_MOVE;
+  CameraObject_UpdateMove(sprite);
+}
+
+/** 1:1 décomp `CameraObject_UpdateMove(struct Sprite *sprite)` (event_object_movement.c:2253). */
+function CameraObject_UpdateMove(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  const follow = rt.gSprites.get(sprite.data[0]);
+  if (!follow) return;
+  const x = follow.x;
+  const y = follow.y;
+  sprite.data[2] = x - sprite.x; // sCamera_MoveX (Int16Array → s16)
+  sprite.data[3] = y - sprite.y; // sCamera_MoveY
+  sprite.x = x;
+  sprite.y = y;
+}
+
+/** 1:1 décomp `CameraObject_UpdateFrozen(struct Sprite *sprite)` (event_object_movement.c:2266).
+ *  Continue à suivre le parent mais ne produit AUCUN mouvement caméra. */
+function CameraObject_UpdateFrozen(sprite: DecompSprite): void {
+  const rt = getRuntime();
+  const follow = rt.gSprites.get(sprite.data[0]);
+  if (!follow) return;
+  sprite.x = follow.x;
+  sprite.y = follow.y;
+  sprite.data[2] = 0;
+  sprite.data[3] = 0;
+}
+
+/** 1:1 décomp `sCameraObjectFuncs[]` (event_object_movement.c:213-217). */
+const sCameraObjectFuncs: ReadonlyArray<(sprite: DecompSprite) => void> = [
+  CameraObject_Init,         // [CAMERA_STATE_INIT]
+  CameraObject_UpdateMove,   // [CAMERA_STATE_MOVE]
+  CameraObject_UpdateFrozen, // [CAMERA_STATE_FROZEN]
+];
+
+/** 1:1 décomp `AddCameraObject(u8 followSpriteId)` (event_object_movement.c:2227).
+ *  CreateSprite(&sCameraSpriteTemplate, 0, 0, 4) — OAM dummy, invisible. */
+export function AddCameraObject(followSpriteId: number): number {
+  const rt = getRuntime();
+  const { spriteId } = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0, x: 0, y: 0,
+    shape: 0, size: 0, priority: 0,
+    subpriority: 4,
+  });
+  if (spriteId === MAX_SPRITES) return MAX_SPRITES;
+  const sprite = rt.gSprites.get(spriteId)!;
+  sprite.invisible = true;
+  sprite.callback = SpriteCB_CameraObject;
+  sprite.data[0] = followSpriteId; // sCamera_FollowSpriteId
+  return spriteId;
+}
+
+/** 1:1 décomp `FindCameraSprite(void)` (event_object_movement.c:2274). */
+function FindCameraSprite(): DecompSprite | null {
+  const rt = getRuntime();
+  for (const s of rt.gSprites.values()) {
+    if (s.inUse && s.callback === SpriteCB_CameraObject) return s;
+  }
+  return null;
+}
+
+/** 1:1 décomp `CameraObjectReset(void)` (event_object_movement.c:2286). */
+export function CameraObjectReset(): void {
+  const camera = FindCameraSprite();
+  if (camera !== null) {
+    camera.data[1] = CAMERA_STATE_INIT;
+    // 1:1 décomp `camera->callback(camera)` — notre runtime passe (sprite, rt).
+    camera.callback!(camera, getRuntime());
+  }
+}
+
+/** 1:1 décomp `CameraObjectSetFollowedSpriteId(u8 spriteId)` (event_object_movement.c:2296). */
+export function CameraObjectSetFollowedSpriteId(spriteId: number): void {
+  const camera = FindCameraSprite();
+  if (camera !== null) {
+    camera.data[0] = spriteId;
+    CameraObjectReset();
+  }
+}
+
+/** 1:1 décomp `UNUSED CameraObjectGetFollowedSpriteId(void)` (event_object_movement.c:2306). */
+function CameraObjectGetFollowedSpriteId(): number {
+  const camera = FindCameraSprite();
+  if (camera === null) return MAX_SPRITES;
+  return camera.data[0];
+}
+void CameraObjectGetFollowedSpriteId;
+
+/** 1:1 décomp `CameraObjectFreeze(void)` (event_object_movement.c:2315). */
+export function CameraObjectFreeze(): void {
+  const camera = FindCameraSprite();
+  if (camera !== null) camera.data[1] = CAMERA_STATE_FROZEN;
+}
+
+// Register les helpers CameraObject pour field-camera.ts (anti-cycle via field-globals).
+_registerCameraObjectHelpers(AddCameraObject, CameraObjectReset);
 
 /** 1:1 décomp `RemoveObjectEventsOutsideView` (event_object_movement.c:1677).
  *  Removes NPCs dont currentCoords ET initialCoords sont tous deux hors view+

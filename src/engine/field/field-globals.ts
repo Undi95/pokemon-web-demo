@@ -37,6 +37,12 @@ interface FieldGlobals {
    *  Orchestrator appelé par CameraUpdate au tile boundary. Rt passé pour
    *  TrySpawn + RemoveOutsideView qui ont besoin du runtime. */
   updateObjectEventsForCameraUpdate: ((rt: unknown, deltaX: number, deltaY: number) => void) | null;
+  /** 1:1 décomp `AddCameraObject(u8 followSpriteId)` (event_object_movement.c:2227).
+   *  Crée le sprite caméra invisible qui suit `followSpriteId`. Appelé par
+   *  `InitCameraUpdateCallback` (field-camera.ts) → bridge anti-cycle. */
+  addCameraObject: ((followSpriteId: number) => number) | null;
+  /** 1:1 décomp `CameraObjectReset(void)` (event_object_movement.c:2286). */
+  cameraObjectReset: (() => void) | null;
 }
 
 const _registry: FieldGlobals = {
@@ -44,6 +50,8 @@ const _registry: FieldGlobals = {
   updateNpcSpriteFrame: null,
   unfreezeAllNpcs: null,
   updateObjectEventsForCameraUpdate: null,
+  addCameraObject: null,
+  cameraObjectReset: null,
 };
 
 // ─── Setup (= called by object-events.ts module init) ──────────────────────
@@ -92,4 +100,25 @@ export function _registerUpdateObjectEventsForCameraUpdate(
  *  No-op si pas registered yet (= boot). */
 export function callUpdateObjectEventsForCameraUpdate(rt: unknown, deltaX: number, deltaY: number): void {
   _registry.updateObjectEventsForCameraUpdate?.(rt, deltaX, deltaY);
+}
+
+/** Register les helpers CameraObject (AddCameraObject + CameraObjectReset).
+ *  À call par object-events.ts au module-level. */
+export function _registerCameraObjectHelpers(
+  addCameraObject: (followSpriteId: number) => number,
+  cameraObjectReset: () => void,
+): void {
+  _registry.addCameraObject = addCameraObject;
+  _registry.cameraObjectReset = cameraObjectReset;
+}
+
+/** Call `AddCameraObject(followSpriteId)` depuis field-camera.ts (InitCameraUpdateCallback).
+ *  Retourne MAX_SPRITES(64) si pas registered (= boot) ou échec création. */
+export function callAddCameraObject(followSpriteId: number): number {
+  return _registry.addCameraObject?.(followSpriteId) ?? 64;
+}
+
+/** Call `CameraObjectReset()` depuis l'overworld (spawn player). No-op si pas registered. */
+export function callCameraObjectReset(): void {
+  _registry.cameraObjectReset?.();
 }
