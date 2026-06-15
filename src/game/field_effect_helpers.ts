@@ -1,3 +1,4 @@
+// #100% done
 /**
  * field_effect_helpers.ts — Port 1:1 STRICT MIROIR de `src/field_effect_helpers.c`.
  *
@@ -2082,6 +2083,22 @@ export function UpdateSparkleFieldEffect(sprite: DecompSprite, rt: DecompRuntime
   if (sprite.data[0] && ++sprite.data[1] > 34) {
     FieldEffectStop(rt, sprite, FLDEFF_SPARKLE);
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  UpdateRayquazaSpotlightEffect (field_effect_helpers.c:1510) — STUB + relocation.
+//  Callback per-frame du spotlight Rayquaza (Sky Pillar). C'est le SEUL morceau de cette
+//  feature logé dans field_effect_helpers.c ; son SETUP `FldEff_RayquazaSpotlight` est dans
+//  field_effect.c (≠ ce chantier). Sans ce setup (création du sprite + BG0 spotlight) ni le
+//  support overworld BG0/BG_SCREEN(31) (cutout), elle ne peut ni rendre ni se vérifier en jeu.
+//  → présence par NOM ici (fichier 1:1) ; la VRAIE impl (machine 9 états + figure-8 +
+//  SetGpuReg(REG_OFFSET_BG0H/VOFS) + écritures tilemap BG_SCREEN_ADDR(31)) sera portée EN BLOC
+//  avec field_effect.c (FldEff_RayquazaSpotlight). 0 caller dans notre moteur.
+//  data 1:1 : sTimer=data[0] sMoveTimer=data[1] sState=data[2] sVelocity=data[3]
+//    sStartY=data[4] sCounter=data[5] sAnimCounter=data[6] sAnimState=data[7].
+// ════════════════════════════════════════════════════════════════════════════
+export function UpdateRayquazaSpotlightEffect(_sprite: DecompSprite, _rt: DecompRuntime): void {
+  // Stub : implémentation reportée au chantier field_effect.c (cf. en-tête ci-dessus).
 }
 
 // ════════════════════════════════════════════════════════════════════════════
