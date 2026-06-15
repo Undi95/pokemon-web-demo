@@ -46,6 +46,7 @@ type GlobalProbe = {
   __testMoveAnim?: (moveId: string | number) => void;
   __gObjectEvents?: Array<{ currentCoordsX?: number; currentCoordsY?: number } | undefined>;
   gSaveBlock1Ptr?: { pos: { x: number; y: number } };
+  __devGotoMap?: (mapId: string, x: number, y: number) => void;
 };
 
 function g(): GlobalProbe { return globalThis as unknown as GlobalProbe; }
@@ -87,6 +88,29 @@ let _lastRender = 0;
 const _seLog: Array<{ id: number; n: number }> = [];
 
 const PANEL_ID = 'dvt-panel';
+
+// ─── Téléport : villes avec Pokémon Center (déplacement rapide A/B) ────────────
+// Coords = tuile de la porte du PC (warp_event dest=MAP_*_POKEMON_CENTER_1F, extraites
+// des map.json de la décomp via scripts/extract-pc-warps.py). On spawn 1 tuile au SUD
+// (devant l'entrée) → `__devGotoMap(id, pcx, pcy + 1)`. Ordre = progression du jeu.
+// Littleroot n'a pas de PC (labo/maisons) → absent.
+const TELEPORT_TOWNS: ReadonlyArray<{ name: string; id: string; pcx: number; pcy: number }> = [
+  { name: 'Oldale',     id: 'MAP_OLDALE_TOWN',     pcx: 6,  pcy: 16 },
+  { name: 'Petalburg',  id: 'MAP_PETALBURG_CITY',  pcx: 20, pcy: 16 },
+  { name: 'Rustboro',   id: 'MAP_RUSTBORO_CITY',   pcx: 16, pcy: 38 },
+  { name: 'Dewford',    id: 'MAP_DEWFORD_TOWN',    pcx: 2,  pcy: 10 },
+  { name: 'Slateport',  id: 'MAP_SLATEPORT_CITY',  pcx: 19, pcy: 19 },
+  { name: 'Mauville',   id: 'MAP_MAUVILLE_CITY',   pcx: 22, pcy: 5  },
+  { name: 'Verdanturf', id: 'MAP_VERDANTURF_TOWN', pcx: 16, pcy: 3  },
+  { name: 'Fallarbor',  id: 'MAP_FALLARBOR_TOWN',  pcx: 14, pcy: 7  },
+  { name: 'Lavaridge',  id: 'MAP_LAVARIDGE_TOWN',  pcx: 9,  pcy: 6  },
+  { name: 'Fortree',    id: 'MAP_FORTREE_CITY',    pcx: 5,  pcy: 6  },
+  { name: 'Lilycove',   id: 'MAP_LILYCOVE_CITY',   pcx: 24, pcy: 14 },
+  { name: 'Mossdeep',   id: 'MAP_MOSSDEEP_CITY',   pcx: 28, pcy: 16 },
+  { name: 'Sootopolis', id: 'MAP_SOOTOPOLIS_CITY', pcx: 43, pcy: 31 },
+  { name: 'Pacifidlog', id: 'MAP_PACIFIDLOG_TOWN', pcx: 8,  pcy: 15 },
+  { name: 'Ever Grande',id: 'MAP_EVER_GRANDE_CITY',pcx: 27, pcy: 48 },
+];
 
 // ─── Montage (idempotent) ─────────────────────────────────────────────────────
 
@@ -447,6 +471,14 @@ function bootScenario(type: 'wild' | 'rival'): void {
 
 // ─── Construction du DOM + styles ─────────────────────────────────────────────
 
+/** Boutons de téléport (1 par ville à PC), spawn 1 tuile au sud de la porte (devant l'entrée). */
+function teleportButtonsHtml(): string {
+  return TELEPORT_TOWNS.map((t) =>
+    `<button data-tp="${t.id}" data-tx="${t.pcx}" data-ty="${t.pcy + 1}" `
+    + `title="${esc(t.id)} (${t.pcx},${t.pcy + 1})">${esc(t.name)}</button>`,
+  ).join('');
+}
+
 function buildDom(): void {
   const panel = document.createElement('div');
   panel.id = PANEL_ID;
@@ -468,6 +500,9 @@ function buildDom(): void {
       <button data-spd="0.1">.1×</button>
     </div>
     <div class="dvt-body">
+      <details open><summary>🗺 Téléport <span class="dvt-dim">(devant les Pokémon Centers)</span></summary>
+        <div id="dvt-tp" class="dvt-tp">${teleportButtonsHtml()}</div>
+      </details>
       <details open><summary>🎨 Palettes <span class="dvt-dim">(rendu réel)</span></summary>
         <div class="dvt-pal-ctl">
           <label><input type="checkbox" id="dvt-cb-obj" checked> OBJ</label>
@@ -548,6 +583,19 @@ function wireControls(): void {
     updateHighlight();
   });
 
+  // Téléport (délégation : survit aux re-render). Appelle le devtool live __devGotoMap.
+  document.getElementById('dvt-tp')?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-tp]') as HTMLElement | null;
+    if (!btn) return;
+    const map = btn.dataset.tp;
+    const x = parseInt(btn.dataset.tx ?? '', 10);
+    const y = parseInt(btn.dataset.ty ?? '', 10);
+    if (!map || Number.isNaN(x) || Number.isNaN(y)) return;
+    const fn = g().__devGotoMap;
+    if (fn) fn(map, x, y);
+    else console.warn('[devtools] __devGotoMap indisponible (overworld pas booté ?)');
+  });
+
   // Scénarios
   const mvInput = document.getElementById('dvt-mv-id') as HTMLInputElement | null;
   mvInput?.addEventListener('keydown', (e) => e.stopPropagation()); // ne pas piloter le jeu en tapant
@@ -625,6 +673,8 @@ function injectStyles(): void {
 #${PANEL_ID} .dvt-row.dvt-dim td{color:#67748f}
 #${PANEL_ID} .dvt-cb{max-width:84px;overflow:hidden;text-overflow:ellipsis}
 #${PANEL_ID} .dvt-kv{margin:2px 0}
+#${PANEL_ID} .dvt-tp{display:flex;flex-wrap:wrap;gap:3px}
+#${PANEL_ID} .dvt-tp button{flex:0 0 auto;padding:2px 5px;font-size:10px}
 #${PANEL_ID} .dvt-scn{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 #${PANEL_ID} .dvt-scn button{width:100%;text-align:left}
 #${PANEL_ID} .dvt-mv{display:flex;gap:3px;width:100%}
