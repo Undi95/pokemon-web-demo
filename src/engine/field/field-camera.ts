@@ -266,8 +266,23 @@ export function InitCameraUpdateCallback(trackedSpriteId: number): number {
  *  map (= ResumeMap) sinon scroll buggy après warp (= state stale du map
  *  précédent → wiggle / split visual au prochain step).
  *  Aussi reset gTotalCamera (= 1:1 décomp `InitObjectEventsLocal:2168` qui
- *  set gTotalCameraPixelOffsetX/Y = 0). */
+ *  set gTotalCameraPixelOffsetX/Y = 0).
+ *
+ *  [M3-C3.2] Détruit le CameraObject de la map précédente AVANT de zéroter
+ *  `spriteId`. Dans le décomp, le warp passe par `ResetSpriteData()` qui efface
+ *  TOUS les gSprites (dont le CameraObject) ; notre moteur ne reset pas les
+ *  sprites en bloc au warp → sans ça le CameraObject FUITE (camCount grandit de 1
+ *  par warp) et l'orphelin génère un delta de téléport parasite (caméra qui saute).
+ *  `InitCameraUpdateCallback` ne peut pas le détruire car `spriteId` est déjà 0
+ *  ici (= pourquoi le décomp s'appuie sur le reset sprite externe). */
 export function ResetCameraUpdateInfo(): void {
+  if (gFieldCamera.spriteId !== 0) {
+    const cam = getRuntime().gSprites.get(gFieldCamera.spriteId);
+    // Garde : ne détruit que si c'est bien le sprite CameraObject (slot non réutilisé).
+    if (cam && cam.callback && cam.callback.name === 'SpriteCB_CameraObject') {
+      DestroySprite(cam);
+    }
+  }
   gFieldCamera.movementSpeedX = 0;
   gFieldCamera.movementSpeedY = 0;
   gFieldCamera.x = 0;

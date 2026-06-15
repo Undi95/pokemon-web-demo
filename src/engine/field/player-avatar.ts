@@ -660,6 +660,21 @@ export async function InitPlayerAvatar(
     const sp = SetSpritePosToMapCoords(playerSlot.currentCoordsX, playerSlot.currentCoordsY);
     playerSlot.worldX = sp.x + 8;
     playerSlot.worldY = sp.y;
+    // [M3-C3.2] Positionne le SPRITE en coords-monde DÈS le spawn (1:1 décomp
+    // event_object_movement.c:1850 `SetSpritePosToMapCoords(..., &sprite->x, &sprite->y)`),
+    // AVANT que SetCameraToTrackPlayer ne crée le CameraObject. Sans ça, le sprite garde
+    // sa y de création (= SCREEN_CENTER_Y=72, écran-ancré legacy) jusqu'au 1er
+    // updateSpriteFrame, et CameraObject_Init s'aligne sur cette valeur STALE (72). Quand
+    // updateSpriteFrame corrige ensuite sprite.y=worldY (112), le CameraObject mesure ce
+    // saut de +40 → la caméra scrolle de 40px → joueur 40px trop haut en permanence
+    // après chaque warp (bug oam.y=16 au lieu de 56). En posant sprite.x/y=worldX/Y ici,
+    // le CameraObject s'aligne sur la bonne position dès l'Init (delta=0, pas de lurch).
+    const sprite = rt.gSprites.get(gPlayerAvatar.spriteId);
+    if (sprite) {
+      sprite.coordOffsetEnabled = true;
+      sprite.x = playerSlot.worldX;
+      sprite.y = playerSlot.worldY;
+    }
   }
 }
 
