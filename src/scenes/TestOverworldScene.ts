@@ -138,8 +138,10 @@ import {
 import { preloadSparkleEffect } from '../game/field_effect_helpers';
 import { DoTimeBasedEvents } from '../engine/system/time-based-events';
 import { SetUpFieldTasks } from '../game/field_tasks';
-import { StartWeather, preloadWeatherFogPalette } from '../game/field_weather';
+import { StartWeather, preloadWeatherFogPalette, gWeatherPtr } from '../game/field_weather';
 import { ResumePausedWeather, preloadWeatherAshSprites } from '../game/field_weather_effect';
+// Side-effect : enregistre DoCoordEventWeather (coord events météo, ex. cendre Route 113).
+import '../game/coord_event_weather';
 // Jump dust (FldEff_Dust) : migré dans le miroir 1:1 game/field_effect_helpers.ts
 // (jump-impact config-driven, préchargé via preloadJumpImpactEffects, tické par le callback global).
 // Ripple : migré dans le miroir 1:1 game/field_effect_helpers.ts (one-shot via
@@ -914,6 +916,13 @@ export class TestOverworldScene extends Phaser.Scene {
     void preloadWeatherAshSprites();
     StartWeather();
     ResumePausedWeather();
+    // 1:1 décomp : `readyForInit` est posé par le fade-in du warp (FadeScreen FADE_FROM_BLACK
+    // → readyForInit=TRUE) → Task_WeatherInit avance vers Task_WeatherMain (la state-machine
+    // météo qui tick). Notre fade-in de warp ne passe pas par la FadeScreen météo → on pose
+    // readyForInit ici (sinon la météo reste bloquée en Task_WeatherInit et ne transitionne
+    // jamais, ex. coord event cendre Route 113 pose nextWeather mais currWeather ne suit pas).
+    // ⚠️ Dette : à terme faire passer le fade-in de warp par game/field_weather.FadeScreen.
+    gWeatherPtr.readyForInit = true;
 
     // 1:1 décomp `SetUpFieldTasks()` (overworld.c:2149, appelé par ResumeMap juste
     // après InstallCameraPanAheadCallback:2139). Crée la task persistante

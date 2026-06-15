@@ -767,7 +767,15 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
   if (!coordEvents || coordEvents.length === 0) return false;
   for (const ce of coordEvents) {
     if (ce.x !== playerX || ce.y !== playerY) continue;
-    if (!ce.script) continue;
+    // 1:1 décomp `TryRunCoordEventScript` (field_control_avatar.c:877) :
+    //   if (coordEvent->script == NULL) { DoCoordEventWeather(coordEvent->trigger); return NULL; }
+    // Un coord event SANS script = un trigger MÉTÉO (Route 113 ash : `trigger` =
+    // COORD_EVENT_WEATHER_*). Dispatché via hook (évite le cycle ESM script-runtime ↔
+    // field_weather_effect ↔ player-avatar ↔ script-runtime).
+    if (!ce.script) {
+      if (_doCoordEventWeatherHook) _doCoordEventWeatherHook(ce.trigger);
+      return false;
+    }
     // Trigger var var_value matching : si trigger = '' → always trigger ;
     // sinon check VarGet(trigger) === index.
     if (ce.trigger && VarGet(ce.trigger) !== ce.index) continue;
@@ -783,6 +791,16 @@ export function TryRunCoordEventScript(playerX: number, playerY: number): boolea
 // Setup le hook map-loader → ce module. À call au boot une seule fois.
 import { setOnLoadMapScriptHook, gMapHeader } from '../field/map-loader';
 setOnLoadMapScriptHook(RunOnLoadMapScript);
+
+// Hook DoCoordEventWeather (game/coord_event_weather) — posé par ce module au boot via
+// `setDoCoordEventWeatherHook`. Découple TryRunCoordEventScript du sous-système météo
+// (sinon cycle ESM via field_weather_effect → player-avatar → script-runtime).
+let _doCoordEventWeatherHook: ((coordEventWeather: string | number) => void) | null = null;
+/** Enregistre le dispatcher météo des coord events (= game/coord_event_weather.DoCoordEventWeather,
+ *  wrappé pour résoudre la constante COORD_EVENT_WEATHER_* string → id). */
+export function setDoCoordEventWeatherHook(fn: (coordEventWeather: string | number) => void): void {
+  _doCoordEventWeatherHook = fn;
+}
 
 // ─── Expose pour debug ───────────────────────────────────────────────────────
 

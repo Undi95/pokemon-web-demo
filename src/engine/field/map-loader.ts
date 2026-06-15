@@ -579,6 +579,8 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     coord_events?: Array<{
       type: string; x: number; y: number; elevation: number;
       var?: string; var_value?: string; script?: string;
+      // type === 'weather' : la coord event pose une météo (COORD_EVENT_WEATHER_*).
+      weather?: string;
     }>;
     bg_events?: Array<{
       type: string; x: number; y: number; elevation: number;
@@ -625,14 +627,22 @@ export async function loadMapHeader(mapId: string): Promise<MapHeader> {
     destMap: w.dest_map,
   }));
 
+  // 1:1 décomp `struct CoordEvent` : un coord event est SOIT un trigger de script
+  // (type 'trigger' : var/var_value/script) SOIT un trigger de météo (type 'weather' :
+  // script == NULL côté décomp, `trigger` = COORD_EVENT_WEATHER_*). On garde les DEUX
+  // (avant : les weather étaient jetés → la cendre Route 113 ne se posait jamais en
+  // marchant). Pour les weather : script='' + trigger=la constante météo (1:1 décomp
+  // qui range la météo dans le champ trigger quand script est NULL).
   const coordEvents: CoordEvent[] = (json.coord_events ?? [])
-    .filter(c => c.type === 'trigger')
-    .map(c => ({
-      x: c.x, y: c.y, elevation: c.elevation,
-      trigger: c.var ?? '',
-      index: parseInt(c.var_value ?? '0', 10),
-      script: c.script ?? '',
-    }));
+    .filter(c => c.type === 'trigger' || c.type === 'weather')
+    .map(c => (c.type === 'weather'
+      ? { x: c.x, y: c.y, elevation: c.elevation, trigger: c.weather ?? '', index: 0, script: '' }
+      : {
+          x: c.x, y: c.y, elevation: c.elevation,
+          trigger: c.var ?? '',
+          index: parseInt(c.var_value ?? '0', 10),
+          script: c.script ?? '',
+        }));
 
   const bgEvents: BgEvent[] = (json.bg_events ?? []).map(b => ({
     x: b.x, y: b.y, elevation: b.elevation,
