@@ -582,6 +582,16 @@ export class DecompRuntime {
    *  saute 2 cases par appui (= bug option menu field). */
   private _runTasksCalledThisFrame = false;
 
+  /** Track animateSprites() / buildOamBuffer() per frame (= 1:1 décomp idempotency,
+   *  même pattern que _runTasksCalledThisFrame). Un CB2 qui possède sa séquence de
+   *  rendu (= MainCB2_Overworld, miroir de `OverworldBasic`) appelle lui-même
+   *  `animateSprites()` (AnimateSprites) + `buildOamBuffer()` (BuildOamBuffer) dans
+   *  l'ordre décomp ; le runtime ne les rejoue PAS (no-op via ce flag). Sur les
+   *  frames où le body early-return AVANT le rendu (warp/fade), le flag reste false
+   *  → tickFixed les exécute en fallback (sprites/fade restent vivants). */
+  private _animateSpritesCalledThisFrame = false;
+  private _buildOamCalledThisFrame = false;
+
   /** Mode vidéo courant (bits 0-2 de DISPCNT). Utilisé pour déterminer isAffine. */
   private _dispCntMode = 0;
 
@@ -2303,6 +2313,28 @@ export class DecompRuntime {
   runSpriteCallbacksPublic(): void { this.runSpriteCallbacks(); }
   syncSpritesToOamPublic(): void { this.syncSpritesToOam(); }
 
+  /** 1:1 décomp `AnimateSprites()` (sprite.c) — sprite callbacks PUIS advance des
+   *  anims + matrices affine. Idempotent par frame (guard _animateSpritesCalledThisFrame,
+   *  même pattern que runTasks). Appelé par les CB2 qui possèdent leur séquence de
+   *  rendu (= MainCB2_Overworld dans son slot AnimateSprites de `OverworldBasic`) ;
+   *  tickFixed le re-appelle en fallback no-op. */
+  animateSprites(): void {
+    if (this._animateSpritesCalledThisFrame) return;
+    this._animateSpritesCalledThisFrame = true;
+    this.runSpriteCallbacks();
+    this.tickSpriteAnims();
+    tickAllAffineAnims(this);
+  }
+
+  /** 1:1 décomp `BuildOamBuffer()` (sprite.c:1671) — sprite state → OAM. Idempotent
+   *  par frame (guard _buildOamCalledThisFrame). Appelé par MainCB2_Overworld dans
+   *  son slot BuildOamBuffer ; tickFixed le re-appelle en fallback no-op. */
+  buildOamBuffer(): void {
+    if (this._buildOamCalledThisFrame) return;
+    this._buildOamCalledThisFrame = true;
+    this.syncSpritesToOam();
+  }
+
   /** Tick toutes les sprite anims actives — 1:1 décomp anim system frame counter.
    *  Consulte d'abord _extraAnimTables/_extraAnims (= runtime registry des
    *  modules comme object-event-graphics), fallback sur SPRITE_ANIM_TABLES/
@@ -2494,12 +2526,9 @@ export class DecompRuntime {
       //    de la même frame, sinon la matrix OAM reste avec sa valeur stale
       //    (= 1-frame flicker du logo Game Freak avec scale/rot random).
       this.runTasks();
-      // 3. AnimateSprites() — partie 1 : sprite callback (= notre runSpriteCallbacks).
-      //    partie 2 : AnimateSprite qui advance les anims + applique affine
-      //    matrix dans gOamMatrices (= notre tickSpriteAnims + tickAllAffineAnims).
-      this.runSpriteCallbacks();
-      this.tickSpriteAnims();
-      tickAllAffineAnims(this);
+      // 3. AnimateSprites() — sprite callbacks + advance anims + affine. Idempotent
+      //    (no-op si un CB2 owner comme MainCB2_Overworld l'a déjà appelé ce frame).
+      this.animateSprites();
     }
     // RunTextPrinters render text into window pixel buffers,
     // then flushDirtyWindows copies modified buffers to VRAM.
@@ -2507,8 +2536,9 @@ export class DecompRuntime {
     if (typeof globalRunTextPrinters === 'function') globalRunTextPrinters();
     const globalFlushDirty = (globalThis as any).flushDirtyWindows;
     if (typeof globalFlushDirty === 'function') globalFlushDirty();
-    // 4. BuildOamBuffer() — copie gOamMatrices + sprite state → OAM.
-    this.syncSpritesToOam();
+    // 4. BuildOamBuffer() — copie gOamMatrices + sprite state → OAM. Idempotent
+    //    (no-op si un CB2 owner l'a déjà appelé ce frame via buildOamBuffer()).
+    this.buildOamBuffer();
     // 4b. Subsprite OAM sync — naming screen, summary screen, etc. install
     //     a globalThis._syncSubspriteOam hook that re-pins subsprite child
     //     OAMs + re-hides primary OAM after syncSpritesToOam clobbered them.
@@ -2531,6 +2561,8 @@ export class DecompRuntime {
     }
     this._paletteFadeCalledThisFrame = false;  // reset for next frame
     this._runTasksCalledThisFrame = false;     // reset for next frame
+    this._animateSpritesCalledThisFrame = false; // reset for next frame
+    this._buildOamCalledThisFrame = false;       // reset for next frame
     // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick + TransferPlttBuffer.
     // 1:1 décomp : VBlankCB de chaque scène call TransferPlttBuffer. SI vblankCallback
     // est NULL (= scene init via `SetVBlankCallback(NULL)`), AUCUN transfert ne

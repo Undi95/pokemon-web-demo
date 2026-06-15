@@ -529,48 +529,68 @@ export class TestOverworldScene extends Phaser.Scene {
         // 1:1 décomp field_region_map.c: tick worldmap overlay (= MoveRegionMapCursor_Full
         // input + cursor pos update). A/B = close + SignalWaitState.
         TickRegionMap();
+        // ════════════════════════════════════════════════════════════════════
+        //  [M3-C3] 1:1 décomp `OverworldBasic` (overworld.c:1465-1476) +
+        //  `VBlankCB_Field` (overworld.c:1784-1792). MainCB2_Overworld POSSÈDE
+        //  désormais sa propre séquence de rendu, dans l'ordre EXACT du décomp :
+        //    ScriptContext_RunScript → RunTasks → AnimateSprites → CameraUpdate
+        //    → UpdateCameraPanning → BuildOamBuffer → UpdatePaletteFade
+        //    → UpdateTilesetAnimations → DoScheduledBgTilemapCopiesToVram
+        //  puis (VBlankCB_Field) : FieldUpdateBgTilemapScroll → TransferTilesetAnims.
+        //  Le runtime tickFixed re-appelle runTasks/animateSprites/buildOamBuffer/
+        //  UpdatePaletteFade en FALLBACK idempotent (no-op si déjà appelés ici ;
+        //  ne tournent que sur les frames de warp où on early-return avant le rendu).
+        //  CRITIQUE C3 : CameraUpdate s'exécute APRÈS AnimateSprites → le CameraObject
+        //  (SpriteCB_CameraObject, tické dans animateSprites) a posé son delta AVANT
+        //  que CameraUpdateCallback ne le lise. (ScriptContext_RunScript a déjà tourné
+        //  en tête du body, l.508.)
+        // ════════════════════════════════════════════════════════════════════
+        // ── CB1_Overworld : input joueur (pose le held movement du pas) ──
         PlayerStep(rt.gMain.heldKeys, rt.gMain.newKeys, rt);
-        // Phase 4.10 : tick script-driven movements AVANT CameraUpdate. Le tick
-        // set gFieldCamera.movementSpeedX/Y que CameraUpdate lit ce même frame
-        // pour décrémenter pixelOffsetX/Y. Si l'ordre est inversé, on perd 1 px
-        // de décrément par action (= drift visuel).
+        // ── RunTasks (overworld.c:1468) ──
+        // tickMovementQueues : pose gFieldCamera.movementSpeedX/Y (forced/scripted).
         tickMovementQueues(rt);
-        // [M3-C2] Avance worldX/Y du joueur pour les mouvements INLINE (ledge/forced)
-        // qui pilotent la caméra sans held movement. Skip pour walk/dash (leur held
-        // movement avance déjà worldX via _NpcTakeStep). Lit le movementSpeed JUSTE
-        // avant que CameraUpdate ne le consomme → joueur centré. C3 retirera ce pont.
+        // 1:1 décomp `RunTasks()` : tick le registre gTasks (door anim, fade…).
+        // Idempotent (guard _runTasksCalledThisFrame) → tickFixed ne le rejoue pas.
+        rt.runTasks();
+        // H2 — script_movement.c : pose ObjectEventSetHeldMovement par NPC scripté.
+        // AVANT TickObjectEventMovements (même tick l'exécute). RunTasks (tâche)
+        // précède AnimateSprites (mouvement) — 1:1 décomp.
+        ScriptMovement_MoveObjects();
+        // H3.2 — ApplyLevitateMovement : sprite.y2 oscille (NPCs LEVITATE).
+        ApplyLevitateMovement_TickAll(rt);
+        // ── AnimateSprites (overworld.c:1469) : mouvement des object events PUIS
+        //    sprite callbacks (dont SpriteCB_CameraObject) + anims + affine. ──
+        // [M3-C2] Pont forced movement : avance worldX/Y du joueur pour le seul
+        // mouvement encore inline (door warp, forceMovement≠DIR_NONE). Walk/dash/
+        // ledge passent par les held movements (worldX avancé dans TickObjectEvent
+        // Movements). C3.2 le retirera (forced→held movement + CameraObject).
         AdvancePlayerSpriteWorldPos();
+        // Mouvement des object events : worldX/Y += dx/dy via les held movements.
+        TickObjectEventMovements(rt);
+        // CreateReflectionEffectSprites affine-anims : tick les matrices de distorsion
+        // des reflets eau AVANT le rendu.
+        UpdateReflectionDistortionMatrices(rt);
+        // Pose sprite.x/y = worldX/Y des NPCs (coordOffsetEnabled). Le joueur est
+        // positionné par updateSpriteFrame (dans PlayerStep).
+        UpdateObjectEvents(rt);
+        // AnimateSprites partie 2 : runSpriteCallbacks (CameraObject + field effects :
+        // tall grass / ripple / grass / splash / dust / ash / surf / disguise / emote /
+        // shadow / warp arrow = vrais sprite.callback migrés game/field_effect_helpers.ts)
+        // + tickSpriteAnims + tickAllAffineAnims. Idempotent (tickFixed no-op après).
+        rt.animateSprites();
+        // ── CameraUpdate (overworld.c:1470) : lit le delta du CameraObject (ou le
+        //    driver manuel tant que le CameraObject est inerte) → scroll + offset. ──
         CameraUpdate();
-        // Phase 4.8 : check seamless cross-border transition signalé par
-        // CameraMove. 1:1 décomp `LoadMapFromCameraTransition` flow : NO fade,
-        // sync swap des map data + tilesets. Primary tileset reste partagé
-        // entre la map sortante et la map entrante (= connections existent
-        // seulement entre maps avec primary tileset compatible).
+        // Phase 4.8 : transition cross-border seamless signalée par CameraMove.
         const pendingConn = getPendingConnection();
         if (pendingConn) {
           self.handleConnectionTransition(pendingConn);
         }
-
-        // 1:1 décomp `UpdateCameraPanning()` (field_camera.c:456-463) appelé
-        // chaque frame du `CB2_Overworld` chain (= overworld.c:2310+). Dérive
-        // `gSpriteCoordOffset.x/y` depuis gTotalCamera - pan utilisés par les
-        // sprites overworld (= OBJ avec `coordOffsetEnabled = TRUE` côté HW).
+        // ── UpdateCameraPanning (overworld.c:1471) : gSpriteCoordOffset = total - pan. ──
         UpdateCameraPanning();
-
-        // ─── Fix défensif désync `_camPos` vs `gPlayerAvatar` ────────────────
-        // Bug user-flag 2026-05-22 : après warp / menu / event scripted, le
-        // sprite player + BG apparaissent décalés d'1 case (= cam.x ≠ player.x).
-        // Cause root TS : `_camPos` (field-camera) et `gSaveBlock1Ptr.pos.x/y`
-        // (player-avatar) sont 2 vars SÉPARÉES qui peuvent diverger sur certains
-        // paths (= probablement Task_ExitDoor walk-down qui call PlayerStep step
-        // end avant CameraMove fire). Décomp n'a qu'1 seule var `gSaveBlock1Ptr
-        // ->pos`, impossible de diverger.
-        //
-        // Fix défensif (= éviter refactor invasif PHASE A qui a cassé scroll) :
-        // si player NOT_MOVING + pas de cross-border en cours + cam ≠ player,
-        // re-sync cam = player + force full redraw. Trigger seulement quand
-        // le state est stable (= player not mid-step), donc 0 effet visible
-        // sur les steps normaux.
+        // ─── Fix défensif désync cam vs player (user-flag 2026-05-22) : si player
+        // NOT_MOVING + pas de cross-border + cam ≠ player → re-sync + full redraw. ─
         if (gPlayerAvatar.runningState === 0  // NOT_MOVING
             && gPlayerAvatar.stepFramesLeft === 0
             && !pendingConn) {
@@ -583,90 +603,26 @@ export class TestOverworldScene extends Phaser.Scene {
             flushOverworldTilemaps(self.rt);
           }
         }
-        // H2 — 1:1 strict script_movement.c task tick : tick chaque NPC actif
-        // dans le ScriptMovement task, advance le script ptr via ObjectEventSet
-        // HeldMovement(actionId) + check heldMovementFinished. Doit être appelé
-        // AVANT TickObjectEventMovements pour que le held movement set ici soit
-        // exécuté par _execHeldMovementAction dans le même tick.
-        ScriptMovement_MoveObjects();
-        // H3.2 — 1:1 strict ApplyLevitateMovement task tick : sprite.y2 oscille
-        // ±1 every 4 frames, toggle direction every 16 frames. Used par NPCs en
-        // LEVITATE state (Mt. Pyre Castform, etc.).
-        ApplyLevitateMovement_TickAll(rt);
-        // Phase 4.4.c : tick NPC movement state machine (LOOK_AROUND / WANDER).
-        // NB : tickMovementQueues a déjà run avant CameraUpdate. Pour les NPCs
-        // en script-driven movement, leur walkFramesLeft non-zéro empêche le
-        // wander state machine de tick (= cf. tickWanderAround case 6 ne fait
-        // rien si walkFramesLeft est déjà géré par movement-system).
-        TickObjectEventMovements(rt);
-        // 1:1 décomp `CreateReflectionEffectSprites` affine-anims : tick les 2 matrices OAM
-        // 0/1 de distorsion (= petites vagues des reflets eau). Doit tourner avant le rendu
-        // pour que les reflets affine (affineParamIndex 0/1) lisent les matrices à jour.
-        UpdateReflectionDistortionMatrices(rt);
-        // Phase 4.4.a : update sprite positions des NPCs selon camera scroll.
-        UpdateObjectEvents(rt);
-        // Phase 4.10 : sync child OAMs des NPCs subsprite-driven (= truck 48×48)
-        // sur la position du sprite parent. 1:1 décomp BuildOamBuffer subsprite path.
-        // À call APRÈS UpdateObjectEvents qui set sprite.x/y des parents.
-        syncSubspriteOam();
-        // Phase 4.9 audit fix : `RemoveObjectEventsOutsideView` + `TrySpawn
-        // ObjectEvents` sont MAINTENANT appelés depuis `UpdateObjectEventsFor
-        // CameraUpdate` orchestrator dans `CameraUpdate` au tile boundary
-        // (= 1:1 décomp field_camera.c:416 + event_object_movement.c:2217).
-        // Plus de per-frame call ici (= éliminait le mid-step capture drift
-        // qui causait "1 case trop haut" sur NPCs spawnés mid-step).
-        // 1:1 décomp `HideShowWarpArrow` (field_player_avatar.c) : per-frame check —
-        // si player sur tuile ARROW_WARP + dir de mouvement matchante → show arrow sur
-        // la tuile adjacente, sinon hide. Le clignotement est joué par le MOTEUR
-        // (CreateWarpArrowSprite/ShowWarpArrowSprite migrés game/field_effect_helpers.ts).
+        // HideShowWarpArrow (field_player_avatar.c) : per-frame, après CameraUpdate
+        // (utilise gSaveBlock1Ptr.pos mis à jour par CameraMove au passage de tuile).
         HideShowWarpArrow(rt, gSaveBlock1Ptr.pos.x, gSaveBlock1Ptr.pos.y, GetPlayerFacingDirection());
-        // Tall grass (FLDEFF_TALL_GRASS) : migré (game/field_effect_helpers.ts), tické par son
-        // callback UpdateTallGrassFieldEffect via runSpriteCallbacks.
-        // FLDEFF_BERRY_TREE_GROWTH_SPARKLE + FLDEFF_SPARKLE : migrés (game/field_effect_helpers.ts),
-        // tickés par leurs callbacks (WaitFieldEffectSpriteAnim / UpdateSparkleFieldEffect) via runSpriteCallbacks.
-        // FLDEFF_DUST (jump landing dust) : migré (game/field_effect_helpers.ts), tické par
-        // UpdateJumpImpactEffect via runSpriteCallbacks.
-        // 1:1 décomp `WaitFieldEffectSpriteAnim` : ondulations d'eau (FLDEFF_RIPPLE) —
-        // migré (game/field_effect_helpers.ts), tické par le callback global.
-        // 1:1 décomp `UpdateShortGrassFieldEffect` (game/field_effect_helpers.ts) :
-        // migré, tické par le callback global.
-        // 1:1 décomp `UpdateJumpImpactEffect` (game/field_effect_helpers.ts) : jump tall/long
-        // grass + jump small/big splash — migrés, tickés par le callback global.
-        // 1:1 décomp `UpdateSplashFieldEffect` + `UpdateFeetInFlowingWaterFieldEffect`
-        // (game/field_effect_helpers.ts) : migrés, tickés par le callback global.
-        // 1:1 décomp `UpdateFootprintsTireTracksFieldEffect` : empreintes sable/profond + traces
-        // de vélo — migré (game/field_effect_helpers.ts), tické par le callback global.
-        // 1:1 décomp `UpdateSandPileFieldEffect` (game/field_effect_helpers.ts) : désormais
-        // tické par le callback global (sprite.callback) — plus d'appel manuel ici.
-        // 1:1 décomp `UpdateHotSpringsWaterFieldEffect` (game/field_effect_helpers.ts) :
-        // désormais tické par le callback global (sprite.callback) — plus d'appel manuel.
-        // 1:1 décomp `UpdateBubblesFieldEffect` (game/field_effect_helpers.ts) : migré,
-        // tické par le callback global (one-shot, GroundEffect_Seaweed → FLDEFF_BUBBLES).
-        // 1:1 décomp `UpdateAshFieldEffect` (game/field_effect_helpers.ts) : nuage de cendre +
-        // révèle la tuile ashgrass — migré, tické par le callback global.
-        // 1:1 décomp `UpdateSurfBlobFieldEffect` (+ Synchronize/Bobbing) + `SpriteCB_UnderwaterSurfBlob` :
-        // monture de surf qui suit le joueur + bobbing — migrés (game/field_effect_helpers.ts), tickés
-        // par le callback global.
-        // Disguises (tree/mountain/sand) : migrés (game/field_effect_helpers.ts), tickés par leur
-        // callback UpdateDisguiseFieldEffect via runSpriteCallbacks. Trigger = MovementActions.
-        // Emotes (! ? ♥) + Shadow : migrés (game/trainer_see.ts + field_effect_helpers.ts)
-        // → SpriteCB_TrainerIcons / UpdateShadowFieldEffect sont de VRAIS sprite.callback
-        // tickés par runSpriteCallbacks (plus de tick externe).
-        // 1:1 décomp `ScheduleBgCopyTilemapToVram` pattern : flush VRAM
-        // SEULEMENT quand BG buffer modifié (= copyBGToVRAM flag). Évite
-        // 18432 entries × 2 bytes copy par frame quand rien ne bouge.
-        // Le flag est set par DrawMetatile / RedrawMapSlice / DrawWholeMapView.
+        // ── BuildOamBuffer (overworld.c:1472) : sync child OAMs subsprite (truck 48×48)
+        //    PUIS sprite state → OAM (avec gSpriteCoordOffset frais). Idempotent. ──
+        syncSubspriteOam();
+        rt.buildOamBuffer();
+        // ── UpdatePaletteFade (overworld.c:1473). Idempotent (tickFixed no-op après). ──
+        rt.UpdatePaletteFade();
+        // ── UpdateTilesetAnimations (overworld.c:1474). ──
+        UpdateTilesetAnimations();
+        // ── DoScheduledBgTilemapCopiesToVram (overworld.c:1475) : flush BG buffer
+        //    modifié seulement (flag copyBGToVRAM via DrawMetatile/RedrawMapSlice). ──
         if (IsBgRedrawPending()) {
           flushOverworldTilemaps(rt);
           ClearBgRedrawPending();
         }
+        // ── VBlankCB_Field (overworld.c:1784) : registres de scroll BG depuis
+        //    sFieldCameraOffset (posé par CameraUpdate) + flush tileset anims VRAM. ──
         FieldUpdateBgTilemapScroll(rt);
-        // 1:1 décomp `UpdateTilesetAnimations` (tileset_anims.c:586-598) :
-        // tick compteurs primaire/secondaire + dispatch callbacks qui queued
-        // les writes VRAM dans le buffer.
-        UpdateTilesetAnimations();
-        // 1:1 décomp `TransferTilesetAnimsBuffer` (tileset_anims.c:564-572) :
-        // flush le buffer → gba.vram (= simule DMA3 au VBlank).
         TransferTilesetAnimsBuffer(rt);
       };
       this.rt.gMain.callback2 = MainCB2_Overworld;
