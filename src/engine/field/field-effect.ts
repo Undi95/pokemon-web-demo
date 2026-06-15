@@ -40,6 +40,7 @@ import {
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
   FldEff_SurfBlob,
+  FldEff_UnusedGrass, FldEff_UnusedGrass2, FldEff_UnusedSand, FldEff_WaterSurfacing,
 } from '../../game/field_effect_helpers';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
@@ -60,6 +61,10 @@ export const FLDEFF_SPLASH                     = 15;
 export const FLDEFF_JUMP_SMALL_SPLASH          = 16;
 export const FLDEFF_LONG_GRASS                 = 17;
 export const FLDEFF_JUMP_LONG_GRASS            = 18;
+export const FLDEFF_UNUSED_GRASS               = 19;
+export const FLDEFF_UNUSED_GRASS_2             = 20;
+export const FLDEFF_UNUSED_SAND                = 21;
+export const FLDEFF_WATER_SURFACING            = 22;
 export const FLDEFF_BERRY_TREE_GROWTH_SPARKLE  = 23;
 export const FLDEFF_DEEP_SAND_FOOTPRINTS       = 24;
 export const FLDEFF_TREE_DISGUISE              = 28;
@@ -239,12 +244,18 @@ export function FieldEffectStart(id: number): number {
     // (WaitFieldEffectSpriteAnim auto-despawn). coordOffsetEnabled=TRUE → suit la caméra.
     return FldEff_Ripple(rt);
   }
+  // ─── Effets MORTS (0 caller en Émeraude, anims en boucle infinie = jamais despawn).
+  //   Portés 1:1 pour la complétude (field_effect_helpers.c:844-908). ──
+  if (id === FLDEFF_UNUSED_GRASS) return FldEff_UnusedGrass(rt);
+  if (id === FLDEFF_UNUSED_GRASS_2) return FldEff_UnusedGrass2(rt);
+  if (id === FLDEFF_UNUSED_SAND) return FldEff_UnusedSand(rt);
+  if (id === FLDEFF_WATER_SURFACING) return FldEff_WaterSurfacing(rt);
 
   // ─── FldEff field_effect_helpers.c pas encore portés (= dette restante) ─────
   // La STRUCTURE 1:1 du spine les déclenche déjà (GroundEffect_* → FieldEffectStart /
-  // scripts) ; seul le FldEff visuel manque. RESTE (morts/spéciaux) : water surfacing
-  // (anim boucle infinie + 0 caller), Unused*. Le warn signale
-  // la dette R3 (utile pour repérer un trigger atteint) — fire rarement (maps spécifiques).
+  // scripts) ; seul le FldEff visuel manque. RESTE : shadow (stub à refaire),
+  // + RayquazaSpotlight (field_effect.c). Le warn signale la dette (utile pour repérer
+  // un trigger atteint) — fire rarement (maps spécifiques).
   console.warn(`[FieldEffectStart] FLDEFF id=${id} not yet ported — dette R3`);
   return 64;
 }

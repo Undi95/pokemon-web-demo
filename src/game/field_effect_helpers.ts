@@ -103,6 +103,10 @@ const FLDEFF_MOUNTAIN_DISGUISE = 29;
 const FLDEFF_SAND_DISGUISE = 36;
 const FLDEFF_TALL_GRASS = 4;
 const FLDEFF_LONG_GRASS = 17;
+const FLDEFF_UNUSED_GRASS = 19;
+const FLDEFF_UNUSED_GRASS_2 = 20;
+const FLDEFF_UNUSED_SAND = 21;
+const FLDEFF_WATER_SURFACING = 22;
 const FLDEFF_SURF_BLOB = 8;
 // 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
 const BOB_NONE = 0, BOB_JUST_MON = 2;
@@ -2250,6 +2254,151 @@ export function UpdateJumpImpactEffect(sprite: DecompSprite, rt: DecompRuntime):
     SetObjectSubpriorityByElevation(rt, sprite.data[0], sprite, 0);
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_UnusedGrass / UnusedGrass2 / UnusedSand / WaterSurfacing
+//  (field_effect_helpers.c:844-908) — 4 effets MORTS (0 caller en Émeraude).
+//  ⚠️ BUG 1:1 RÉPLIQUÉ : leurs anims BOUCLENT (ANIMCMD_JUMP, JAMAIS d'ANIMCMD_END)
+//  → WaitFieldEffectSpriteAnim ne pose jamais animEnded → l'effet ne se DESPAWN
+//  JAMAIS (effets unused/cassés tels quels dans le décomp). On porte la structure
+//  1:1 (au cas où un trigger appellerait FieldEffectStart(FLDEFF_UNUSED_X)).
+//  Tous gObjectEventBaseOam_16x16 (shape 0/size 1), paletteTag GENERAL_0 (sand/water)
+//  ou GENERAL_1 (grass). SetSpritePosToOffsetMapCoords(args[0],args[1],8,8) ;
+//  coordOffsetEnabled=TRUE ; oam.priority=args[3] ; subpriority=args[2] ;
+//  sWaitFldEff=data[0]. UnusedGrass = composite 9 frames (jump_long_grass[6] +
+//  unknown_17[0-7], 2 pics — 1:1 sPicTable_UnusedGrass). imageValue = slot×4.
+// ════════════════════════════════════════════════════════════════════════════
+
+interface DeadCfg {
+  fldEff: number;
+  tag: string;
+  png: string;
+  pngWidthTiles: number;
+  sheetFrames: number[];                            // frames PNG → slots de sheet (slot = index)
+  anim: ReadonlyArray<readonly [number, number]>;   // (slot, durée game-frames)
+  jumpTo: number;                                   // index ANIMCMD_JUMP (boucle)
+  pal: 'g0' | 'g1';
+}
+const DEAD_TPF = 4;  // 2×2 tiles / frame (16×16)
+
+/** 1:1 templates field_effect_objects.h (sPicTable/sAnim/Template Unused + WaterSurfacing).
+ *  UnusedGrass est composite → traité à part dans le préchargement. */
+const DEAD_CFG: DeadCfg[] = [
+  // sAnim_UnusedGrass2 : FRAME 0,1,2,3,2,1 JUMP(0). paletteTag GENERAL_1. unused_grass_2.png 8×2 tiles.
+  { fldEff: FLDEFF_UNUSED_GRASS_2, tag: 'FE_UNUSED_GRASS_2', png: `${FE_BASE}/unused_grass_2.png`, pngWidthTiles: 8,
+    sheetFrames: [0, 1, 2, 3], anim: [[0, 4], [1, 4], [2, 4], [3, 4], [2, 4], [1, 4]], jumpTo: 0, pal: 'g1' },
+  // sAnim_UnusedSand : FRAME 0,1,2,3 JUMP(0). paletteTag GENERAL_0. unused_sand.png 8×2 tiles.
+  { fldEff: FLDEFF_UNUSED_SAND, tag: 'FE_UNUSED_SAND', png: `${FE_BASE}/unused_sand.png`, pngWidthTiles: 8,
+    sheetFrames: [0, 1, 2, 3], anim: [[0, 4], [1, 4], [2, 4], [3, 4]], jumpTo: 0, pal: 'g0' },
+  // sAnim_WaterSurfacing : FRAME 0,1,2,3,2,1 JUMP(0). paletteTag GENERAL_0. water_surfacing.png 10×2 (5 frames, 0-3 utilisés).
+  { fldEff: FLDEFF_WATER_SURFACING, tag: 'FE_WATER_SURFACING', png: `${FE_BASE}/water_surfacing.png`, pngWidthTiles: 10,
+    sheetFrames: [0, 1, 2, 3], anim: [[0, 4], [1, 4], [2, 4], [3, 4], [2, 4], [1, 4]], jumpTo: 0, pal: 'g0' },
+];
+
+/** Extrait des frames 2×2 tiles d'un PNG row-major → buffer OBJ 1D frame-major. */
+function _extractFrames2x2(charData: Uint8Array, pngWidthTiles: number, frameIndices: number[]): Uint8Array {
+  const TILE_BYTES = 32, FW = 2, FH = 2;
+  const out = new Uint8Array(frameIndices.length * FW * FH * TILE_BYTES);
+  let dst = 0;
+  for (const fr of frameIndices) {
+    const colStart = fr * FW;
+    for (let r = 0; r < FH; r++) {
+      for (let c = 0; c < FW; c++) {
+        const srcOff = (r * pngWidthTiles + colStart + c) * TILE_BYTES;
+        if (srcOff + TILE_BYTES <= charData.length) out.set(charData.subarray(srcOff, srcOff + TILE_BYTES), dst);
+        dst += TILE_BYTES;
+      }
+    }
+  }
+  return out;
+}
+
+const _deadTileStart = new Map<number, number>();
+const _deadAnims: Record<number, AnimCmd[][]> = {};
+let _deadPalG0 = -1, _deadPalG1 = -1;
+let _deadInit = false;
+let _deadInitPromise: Promise<void> | null = null;
+
+/** Préchargement assets des 4 effets morts (3 sheets simples + UnusedGrass composite + pals). */
+export function preloadUnusedFieldEffects(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _deadInit && IndexOfSpriteTileTag('FE_UNUSED_GRASS') !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_deadInitPromise && !_deadInit) return _deadInitPromise;
+  _deadInit = false; _deadInitPromise = null;
+  _deadInitPromise = (async () => {
+    try { _deadPalG0 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_0.pal`), tag: TAG_GENERAL_0_PAL }); } catch { _deadPalG0 = 0; }
+    try { _deadPalG1 = LoadSpritePalette({ data: await loadGbaPal(`${FE_BASE}/general_1.pal`), tag: TAG_GENERAL_1_PAL }); } catch { _deadPalG1 = 0; }
+    // 3 effets à pic unique.
+    for (const cfg of DEAD_CFG) {
+      const png = await loadIndexedPngStrict(cfg.png, 4);
+      const sheet = _extractFrames2x2(png.charData, cfg.pngWidthTiles, cfg.sheetFrames);
+      _deadTileStart.set(cfg.fldEff, LoadSpriteSheet({ data: sheet, size: sheet.length, tag: cfg.tag }));
+      _deadAnims[cfg.fldEff] = [[
+        ...cfg.anim.map(([slot, dur]) => ANIMCMD_FRAME(slot * DEAD_TPF, dur)),
+        ANIMCMD_JUMP(cfg.jumpTo),
+      ]];
+    }
+    // UnusedGrass : composite 1:1 sPicTable_UnusedGrass = jump_long_grass[6] + unknown_17[0-7].
+    const jlg = await loadIndexedPngStrict(`${FE_BASE}/jump_long_grass.png`, 4);  // 14×2 tiles
+    const u17 = await loadIndexedPngStrict(`${FE_BASE}/unknown_17.png`, 4);        // 16×2 tiles (8 frames)
+    const part0 = _extractFrames2x2(jlg.charData, 14, [6]);
+    const part1 = _extractFrames2x2(u17.charData, 16, [0, 1, 2, 3, 4, 5, 6, 7]);
+    const comp = new Uint8Array(part0.length + part1.length);
+    comp.set(part0, 0); comp.set(part1, part0.length);
+    _deadTileStart.set(FLDEFF_UNUSED_GRASS, LoadSpriteSheet({ data: comp, size: comp.length, tag: 'FE_UNUSED_GRASS' }));
+    // sAnim_UnusedGrass : FRAME(0,10), FRAME(1..8,4), JUMP(7). imageValue = slot×4.
+    _deadAnims[FLDEFF_UNUSED_GRASS] = [[
+      ANIMCMD_FRAME(0, 10),
+      ANIMCMD_FRAME(4, 4), ANIMCMD_FRAME(8, 4), ANIMCMD_FRAME(12, 4), ANIMCMD_FRAME(16, 4),
+      ANIMCMD_FRAME(20, 4), ANIMCMD_FRAME(24, 4), ANIMCMD_FRAME(28, 4), ANIMCMD_FRAME(32, 4),
+      ANIMCMD_JUMP(7),
+    ]];
+    _deadInit = true;
+  })();
+  return _deadInitPromise;
+}
+
+/** Helper commun 1:1 `FldEff_Unused*` / `FldEff_WaterSurfacing` (field_effect_helpers.c:844-908). */
+function _spawnUnusedFieldEffect(rt: DecompRuntime, fldEff: number): number {
+  // Lazy-load : 0 caller en jeu → on ne précharge PAS upfront (≠ gaspillage VRAM OBJ
+  // permanent). Au 1er FieldEffectStart (force-spawn A/B), on amorce le préchargement et
+  // on skip cette frame ; les frames suivantes spawnent. ≈ alloc à la demande du décomp.
+  if (!_deadInit) { void preloadUnusedFieldEffects(rt); return 64; }
+  const tileStart = _deadTileStart.get(fldEff);
+  const anims = _deadAnims[fldEff];
+  if (tileStart === undefined || !anims) return 64;
+  // 1:1 : SetSpritePosToOffsetMapCoords(&args[0], &args[1], 8, 8) → coords écran de la tuile.
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const palG1 = (fldEff === FLDEFF_UNUSED_GRASS || fldEff === FLDEFF_UNUSED_GRASS_2);
+  const result = rt.CreateSpriteAtOam({
+    tileId: tileStart,
+    paletteBank: palG1 ? _deadPalG1 : _deadPalG0,
+    x: world.x, y: world.y,
+    shape: 0, size: 1,  // gObjectEventBaseOam_16x16
+    priority: (gFieldEffectArguments[3] & 3) as 0 | 1 | 2 | 3,
+    paletteMode: 0, affineMode: 0,
+    subpriority: gFieldEffectArguments[2] & 0xFF,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = WaitFieldEffectSpriteAnim;
+  setFieldEffectAnims(sprite, anims, tileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  // 1:1 : sprite->coordOffsetEnabled = TRUE (sprite tuile-monde → suit la caméra).
+  sprite.coordOffsetEnabled = true;
+  sprite.subpriority = gFieldEffectArguments[2] & 0xFF;
+  sprite.data[0] = fldEff;  // sWaitFldEff (l'id passé à FieldEffectStop — jamais atteint ici, anim boucle).
+  return 0;
+}
+
+/** 1:1 décomp `FldEff_UnusedGrass` (field_effect_helpers.c:844). */
+export function FldEff_UnusedGrass(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_UNUSED_GRASS); }
+/** 1:1 décomp `FldEff_UnusedGrass2` (field_effect_helpers.c:860). */
+export function FldEff_UnusedGrass2(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_UNUSED_GRASS_2); }
+/** 1:1 décomp `FldEff_UnusedSand` (field_effect_helpers.c:876). */
+export function FldEff_UnusedSand(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_UNUSED_SAND); }
+/** 1:1 décomp `FldEff_WaterSurfacing` (field_effect_helpers.c:892). */
+export function FldEff_WaterSurfacing(rt: DecompRuntime): number { return _spawnUnusedFieldEffect(rt, FLDEFF_WATER_SURFACING); }
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Reflets (field_effect_helpers.c:47-163) — SetUpReflection + GetReflectionVerticalOffset
