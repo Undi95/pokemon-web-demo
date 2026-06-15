@@ -58,8 +58,9 @@ import {
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
   REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
 } from '../system/decomp-runtime';
-import { callUpdateObjectEventsForCameraUpdate } from './field-globals';
+import { callUpdateObjectEventsForCameraUpdate, callAddCameraObject } from './field-globals';
 import { getRuntime } from '../system/decomp-globals';
+import { DestroySprite } from '../system/decomp-bridge';
 import { gSaveBlock1Ptr } from '../ui/gba-menu-system';
 import { CONNECTION_NONE, CONNECTION_INVALID } from '../decomp-data/include/constants/global-data';
 
@@ -234,16 +235,28 @@ export function MoveCameraAndRedrawMap(deltaX: number, deltaY: number): void {
 }
 
 /** 1:1 décomp `CameraUpdateCallback(struct CameraObject *fieldCamera)` (field_camera.c:332-339).
- *  Lit movementSpeedX/Y depuis le sprite tracké pour driver le scroll. */
+ *  Lit movementSpeedX/Y depuis le sprite caméra tracké (= AddCameraObject) pour
+ *  driver le scroll. sCamera_MoveX = data[2], sCamera_MoveY = data[3]. */
 function CameraUpdateCallback(cam: FieldCameraObject): void {
-  // Notre archi : pas de sprite tracking (= le scene driver set directement
-  // movementSpeedX/Y). Stub no-op pour 1:1 signature compatibility.
-  void cam;
+  if (cam.spriteId !== 0) {
+    const s = getRuntime().gSprites.get(cam.spriteId);
+    if (s) {
+      cam.movementSpeedX = s.data[2];
+      cam.movementSpeedY = s.data[3];
+    }
+  }
 }
 
-/** 1:1 décomp `InitCameraUpdateCallback(u8 trackedSpriteId)` (field_camera.c:351-358). */
+/** 1:1 décomp `InitCameraUpdateCallback(u8 trackedSpriteId)` (field_camera.c:351-358).
+ *  Détruit l'ancien sprite caméra, crée un CameraObject suivant `trackedSpriteId`
+ *  (= le sprite joueur) et installe CameraUpdateCallback. AddCameraObject est
+ *  appelé via field-globals (anti-cycle object-events↔field-camera). */
 export function InitCameraUpdateCallback(trackedSpriteId: number): number {
-  void trackedSpriteId;
+  if (gFieldCamera.spriteId !== 0) {
+    const old = getRuntime().gSprites.get(gFieldCamera.spriteId);
+    if (old) DestroySprite(old);
+  }
+  gFieldCamera.spriteId = callAddCameraObject(trackedSpriteId);
   gFieldCamera.callback = CameraUpdateCallback;
   return 0;
 }
