@@ -39,8 +39,8 @@ import {
   ShowTreeDisguiseFieldEffect, ShowMountainDisguiseFieldEffect, ShowSandDisguiseFieldEffect,
   FldEff_TallGrass, FldEff_LongGrass, FldEff_Dust,
   FldEff_SandFootprints, FldEff_DeepSandFootprints, FldEff_BikeTireTracks,
+  FldEff_SurfBlob,
 } from '../../game/field_effect_helpers';
-import { SpawnSurfBlobEffect } from './field-effect-surf-blob';
 
 /** 1:1 décomp `gFieldEffectArguments[8]` (field_effect.c:24). Params globals
  *  pour FieldEffectStart, set par caller avant FieldEffectStart(id). */
@@ -229,9 +229,9 @@ export function FieldEffectStart(id: number): number {
     return FldEff_Ash(rt);
   }
   if (id === FLDEFF_SURF_BLOB) {
-    // 1:1 décomp FldEff_SurfBlob (field_effect_helpers.c:999). args[0/1]=x/y map, [2]=playerObjId.
+    // 1:1 décomp FldEff_SurfBlob (field_effect_helpers.c:999) — migré dans game/field_effect_helpers.ts.
     // Retourne le spriteId du blob (le code de surf l'utilise pour SetSurfBlob_*).
-    return SpawnSurfBlobEffect(rt, gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+    return FldEff_SurfBlob(rt);
   }
   if (id === FLDEFF_RIPPLE) {
     // 1:1 décomp FldEff_Ripple (field_effect_helpers.c:780) : ondulation d'eau 16×16.

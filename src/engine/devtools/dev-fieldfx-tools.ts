@@ -33,7 +33,7 @@ import { FieldEffectStart, gFieldEffectArguments } from '../field/field-effect';
 import { gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap } from '../field/object-events';
 import { gPlayerAvatar } from '../field/player-avatar';
 import { MapGridGetMetatileIdAt } from '../field/map-loader';
-import { SetSurfBlob_BobState } from '../field/field-effect-surf-blob';
+import { SetSurfBlob_BobState } from '../../game/field_effect_helpers';
 import { StartRevealDisguise } from '../../game/field_effect_helpers';
 import * as FE from '../decomp-data/include/constants/field_effects-data';
 
@@ -168,7 +168,7 @@ const fx = {
     if (!p) throw new Error('[dev.fx] object event joueur introuvable');
     const objId = GetObjectEventIdByLocalIdAndMap(p.localId, p.mapNum, p.mapGroup);
     const blobId = fx.start('FLDEFF_SURF_BLOB', [(p as any).currentCoordsX, (p as any).currentCoordsY, objId]);
-    SetSurfBlob_BobState(blobId, 1);  // BOB_PLAYER_AND_MON
+    SetSurfBlob_BobState(rt(), blobId, 1);  // BOB_PLAYER_AND_MON
     return { blobSpriteId: blobId, sprites: fx.list() };
   },
 

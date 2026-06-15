@@ -167,12 +167,9 @@ import { preloadSandPileEffect, preloadHotSpringsEffect } from '../game/field_ef
 import { preloadBubblesEffect } from '../game/field_effect_helpers';
 // Ash : migré dans le miroir 1:1 game/field_effect_helpers.ts (machine 3 états, sprite.callback).
 import { preloadAshEffect } from '../game/field_effect_helpers';
-import {
-  preloadSurfBlobEffect,
-  UpdateSurfBlobEffects,
-  UpdateUnderwaterSurfBlobEffects,
-  DestroyAllSurfBlobEffects,
-} from '../engine/field/field-effect-surf-blob';
+// Surf blob (monture de surf) : migré dans le miroir 1:1 game/field_effect_helpers.ts
+// (sprite.callback UpdateSurfBlobFieldEffect + SpriteCB_UnderwaterSurfBlob, tickés par le callback global).
+import { preloadSurfBlobEffect } from '../game/field_effect_helpers';
 import { preloadDisguiseEffects } from '../game/field_effect_helpers';
 import {
   preloadShadowEffect,
@@ -642,10 +639,9 @@ export class TestOverworldScene extends Phaser.Scene {
         // tické par le callback global (one-shot, GroundEffect_Seaweed → FLDEFF_BUBBLES).
         // 1:1 décomp `UpdateAshFieldEffect` (game/field_effect_helpers.ts) : nuage de cendre +
         // révèle la tuile ashgrass — migré, tické par le callback global.
-        // 1:1 décomp `UpdateSurfBlobFieldEffect` (+ Synchronize/Bobbing) : monture de surf
-        // qui suit le joueur + bobbing synchronisé. + SpriteCB_UnderwaterSurfBlob (Dive).
-        UpdateSurfBlobEffects(rt);
-        UpdateUnderwaterSurfBlobEffects(rt);
+        // 1:1 décomp `UpdateSurfBlobFieldEffect` (+ Synchronize/Bobbing) + `SpriteCB_UnderwaterSurfBlob` :
+        // monture de surf qui suit le joueur + bobbing — migrés (game/field_effect_helpers.ts), tickés
+        // par le callback global.
         // Disguises (tree/mountain/sand) : migrés (game/field_effect_helpers.ts), tickés par leur
         // callback UpdateDisguiseFieldEffect via runSpriteCallbacks. Trigger = MovementActions.
         // 1:1 décomp `SpriteCB_TrainerIcons` (trainer_see.c:745-767) : tick
@@ -1149,8 +1145,7 @@ export class TestOverworldScene extends Phaser.Scene {
     await preloadBubblesEffect(this.rt);
     // Ash (nuage de cendre + révèle la tuile ashgrass, Route 113) : assets seulement (sprite.callback).
     await preloadAshEffect(this.rt);
-    // Surf blob (monture de surf qui suit le joueur + bobbing) assets + pool.
-    DestroyAllSurfBlobEffects(this.rt);
+    // Surf blob (monture de surf qui suit le joueur + bobbing) : assets seuls (migré au miroir).
     await preloadSurfBlobEffect(this.rt);
     // Disguises (tree/mountain/sand recouvrant le joueur déguisé) : assets seuls (migrés
     // game/field_effect_helpers.ts, callback-driven via le dispatcher).

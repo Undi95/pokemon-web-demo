@@ -57,10 +57,12 @@ import {
   gObjectEvents, type ObjectEvent, GetObjectEventIdByLocalIdAndMap,
   TryGetObjectEventIdByLocalIdAndMap, GetObjectEventMainSpriteId, GetObjectEventGfxHeight,
   SetObjectSubpriorityByElevation, UpdateGrassFieldEffectSubpriority, ElevationToPriority,
+  ELEVATION_DEFAULT,
 } from '../engine/field/object-events';
+import { MoveCoords } from '../engine/field/direction-coords';
 import { ANIMCMD_FRAME, ANIMCMD_END, ANIMCMD_JUMP, ANIMCMD_LOOP, type AnimCmd } from '../engine/system/sprite-animation';
 import { SetSpritePosToOffsetMapCoords, SetSpritePosToMapCoords, GetCameraTopLeftCoords, CurrentMapDrawMetatileAt, gCamera } from '../engine/field/field-camera';
-import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MAP_OFFSET } from '../engine/field/map-loader';
+import { MapGridSetMetatileIdAt, MapGridGetMetatileBehaviorAt, MapGridGetElevationAt, MAP_OFFSET } from '../engine/field/map-loader';
 import { MetatileBehavior_IsTallGrass, MetatileBehavior_IsLongGrass } from './metatile_behavior';
 import { gSaveBlock1Ptr } from '../engine/save/save-block-state';
 import { gPlayerAvatar } from '../engine/field/player-avatar';
@@ -95,6 +97,9 @@ const FLDEFF_MOUNTAIN_DISGUISE = 29;
 const FLDEFF_SAND_DISGUISE = 36;
 const FLDEFF_TALL_GRASS = 4;
 const FLDEFF_LONG_GRASS = 17;
+const FLDEFF_SURF_BLOB = 8;
+// 1:1 enum field_effect_helpers.h : états de bobbing de la monture de surf.
+const BOB_NONE = 0, BOB_JUST_MON = 2;
 const LOCALID_PLAYER = 0xFF;
 const MAX_SPRITES = 64;
 
@@ -960,6 +965,192 @@ export function UpdateFootprintsTireTracksFieldEffect(sprite: DecompSprite, rt: 
     UpdateObjectEventSpriteInvisibility(rt, sprite, sprite.invisible);
     if (sprite.data[1] > 56) FieldEffectStop(rt, sprite, sprite.data[7]);
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FldEff_SurfBlob (field_effect_helpers.c:999) — la « monture » d'eau (32×32) sur laquelle
+//  le joueur surfe. Suit le sprite joueur (x=player.x, y=player.y+8) + bobbing vertical (y2)
+//  partagé joueur+monture, anim = direction du joueur (S/N/W/E hFlip). Les setters SetSurfBlob_*
+//  (code de surf field_player_avatar.c, port futur) manipulent le bitfield data[0]. subpriority 150.
+//  Sprite data 1:1 : sBitfield=data[0] sPlayerOffset=data[1] sPlayerObjId=data[2] sVelocity=data[3]
+//    sTimer=data[4] sIntervalIdx=data[5] sPrevX=data[6] sPrevY=data[7].
+//  ⚠️ Archi : joueur ÉCRAN-positionné → on copie sa position écran + matche son coordOffsetEnabled
+//  (≠ décomp monde). Slot object-event joueur spriteId=-1 → GetObjectEventMainSpriteId.
+//  Asset : surf_blob.png (96×32 = 3 frames 32×32). Palette embarquée (décomp oam.paletteNum=0).
+// ════════════════════════════════════════════════════════════════════════════
+
+const SURF_BLOB_PNG = '/decomp/em/field_effects/surf_blob.png';
+const TAG_SURF_BLOB_GFX = 'FIELD_EFFECT_SURF_BLOB_GFX';
+const TAG_SURF_BLOB_PAL = 'FIELD_EFFECT_SURF_BLOB_PAL';
+const SURF_BLOB_NUM_FRAMES = 3;
+const SURF_BLOB_TILES_PER_FRAME = 16; // 32×32 = 4×4 tiles
+const SURF_BLOB_PNG_W_TILES = 12;     // 96px
+const DIR_SOUTH_ = 1, DIR_EAST_ = 4;  // 1:1 DIR_* (direction-coords)
+
+/** 1:1 `surfBlobDirectionAnims[]` (SynchronizeSurfAnim) : movementDirection → index sAnimTable_SurfBlob. */
+const SURF_BLOB_DIRECTION_ANIMS = [0, 0, 1, 2, 3, 0, 0, 1, 1];
+/** 1:1 sAnimTable_SurfBlob : 4 anims (S/N/W/E), chacune FRAME(frameIdx×16) + JUMP(0). E = frame 2 hFlip. */
+const sAnims_SurfBlob: ReadonlyArray<ReadonlyArray<AnimCmd>> = [
+  [ANIMCMD_FRAME(0 * SURF_BLOB_TILES_PER_FRAME, 1), ANIMCMD_JUMP(0)],
+  [ANIMCMD_FRAME(1 * SURF_BLOB_TILES_PER_FRAME, 1), ANIMCMD_JUMP(0)],
+  [ANIMCMD_FRAME(2 * SURF_BLOB_TILES_PER_FRAME, 1), ANIMCMD_JUMP(0)],
+  [ANIMCMD_FRAME(2 * SURF_BLOB_TILES_PER_FRAME, 1, { hFlip: true }), ANIMCMD_JUMP(0)],
+];
+
+let _surfBlobTileStart = -1;
+let _surfBlobPalSlot = -1;
+let _surfBlobInit = false;
+let _surfBlobInitPromise: Promise<void> | null = null;
+
+/** PNG 96×32 = 12×4 tiles row-major → frame-major (frame F 32×32 = cols 4F..4F+3, rows 0..3). */
+function pngTo1dObjLayoutSurfBlob(charData: Uint8Array): Uint8Array {
+  const TILE_BYTES = 32;
+  const out = new Uint8Array(SURF_BLOB_NUM_FRAMES * SURF_BLOB_TILES_PER_FRAME * TILE_BYTES);
+  for (let f = 0; f < SURF_BLOB_NUM_FRAMES; f++) {
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const pngTileIdx = r * SURF_BLOB_PNG_W_TILES + (f * 4 + c);
+        const objTileIdx = f * SURF_BLOB_TILES_PER_FRAME + r * 4 + c;
+        out.set(charData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES), objTileIdx * TILE_BYTES);
+      }
+    }
+  }
+  return out;
+}
+
+export function preloadSurfBlobEffect(_rt: DecompRuntime): Promise<void> {
+  const stillAlloc = _surfBlobInit && IndexOfSpriteTileTag(TAG_SURF_BLOB_GFX) !== 0xFF;
+  if (stillAlloc) return Promise.resolve();
+  if (_surfBlobInitPromise && !_surfBlobInit) return _surfBlobInitPromise;
+  _surfBlobInit = false; _surfBlobInitPromise = null;
+  _surfBlobInitPromise = (async () => {
+    const png = await loadIndexedPngStrict(SURF_BLOB_PNG, 4);
+    const reordered = pngTo1dObjLayoutSurfBlob(png.charData);
+    _surfBlobTileStart = LoadSpriteSheet({ data: reordered, size: reordered.length, tag: TAG_SURF_BLOB_GFX });
+    // Adaptation : palette embarquée du PNG dans un slot dédié (décomp oam.paletteNum=0 partagé).
+    _surfBlobPalSlot = LoadSpritePalette({ data: png.palette as Uint16Array, tag: TAG_SURF_BLOB_PAL });
+    _surfBlobInit = true;
+  })();
+  return _surfBlobInitPromise;
+}
+
+/** 1:1 décomp `FldEff_SurfBlob` (field_effect_helpers.c:999). args[0/1]=x/y INTERNAL, [2]=playerObjId.
+ *  Retourne le spriteId du blob (le code de surf l'utilise pour SetSurfBlob_*). */
+export function FldEff_SurfBlob(rt: DecompRuntime): number {
+  if (!_surfBlobInit) return 64; // MAX_SPRITES
+  const world = SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0], gFieldEffectArguments[1], 8, 8);
+  const result = rt.CreateSpriteAtOam({
+    tileId: _surfBlobTileStart,
+    paletteBank: _surfBlobPalSlot,
+    x: world.x, y: world.y,
+    shape: 0, size: 2,  // 32×32
+    priority: 2, paletteMode: 0, affineMode: 0,
+    subpriority: 150 & 0xFF, // 1:1 CreateSpriteAtEnd(..., 150)
+    fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return 64;
+  sprite.callback = UpdateSurfBlobFieldEffect;
+  setFieldEffectAnims(sprite, sAnims_SurfBlob, _surfBlobTileStart);
+  sprite.x = world.x; sprite.y = world.y;
+  sprite.coordOffsetEnabled = true; // 1:1 (snappé sur le joueur dès le 1er bobbing)
+  sprite.subpriority = 150 & 0xFF;
+  // 1:1 data : sPlayerObjId=args[2], sVelocity=-1, sPrevX=-1, sPrevY=-1 (bitfield/timer/intervalIdx=0).
+  sprite.data[2] = gFieldEffectArguments[2];
+  sprite.data[3] = -1; // sVelocity
+  sprite.data[6] = -1; // sPrevX
+  sprite.data[7] = -1; // sPrevY
+  // 1:1 décomp : FieldEffectActiveListRemove(FLDEFF_SURF_BLOB).
+  FieldEffectActiveListRemove(FLDEFF_SURF_BLOB);
+  return result.spriteId;
+}
+
+// ── Setters 1:1 décomp : manipulent le bitfield data[0] / sPlayerOffset data[1] sur gSprites[spriteId]. ──
+export function SetSurfBlob_BobState(rt: DecompRuntime, spriteId: number, state: number): void {
+  const s = rt.gSprites.get(spriteId); if (s) s.data[0] = (s.data[0] & ~0xF) | (state & 0xF);
+}
+export function SetSurfBlob_DontSyncAnim(rt: DecompRuntime, spriteId: number, dontSync: boolean): void {
+  const s = rt.gSprites.get(spriteId); if (s) s.data[0] = (s.data[0] & ~0xF0) | (((dontSync ? 1 : 0) & 0xF) << 4);
+}
+export function SetSurfBlob_PlayerOffset(rt: DecompRuntime, spriteId: number, hasOffset: boolean, offset: number): void {
+  const s = rt.gSprites.get(spriteId); if (!s) return;
+  s.data[0] = (s.data[0] & ~0xF00) | (((hasOffset ? 1 : 0) & 0xF) << 8);
+  s.data[1] = offset; // sPlayerOffset
+}
+
+/** 1:1 décomp `UpdateSurfBlobFieldEffect` (1052) = SynchronizeSurfAnim + SynchronizeSurfPosition
+ *  + UpdateBobbingEffect + oam.priority = playerSprite priority. Callback per-frame. */
+export function UpdateSurfBlobFieldEffect(sprite: DecompSprite, rt: DecompRuntime): void {
+  const playerObj = gObjectEvents[sprite.data[2]]; // sPlayerObjId
+  if (!playerObj) return;
+  const playerSpriteId = GetObjectEventMainSpriteId(playerObj);
+  const playerSprite = playerSpriteId >= 0 ? rt.gSprites.get(playerSpriteId) : undefined;
+  if (!playerSprite) return;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  const pOam = rt.gba.oam[playerSprite.oamIndex];
+
+  // ── SynchronizeSurfAnim : StartSpriteAnimIfDifferent(sprite, dirAnim[movementDirection]). ──
+  // (GetSurfBlob_DontSyncAnim = bitfield 0xF0 ; « Never TRUE » en pratique.)
+  if (((sprite.data[0] & 0xF0) >> 4) === 0) {
+    const animIdx = SURF_BLOB_DIRECTION_ANIMS[playerObj.movementDirection] ?? 0;
+    if (sprite.animNum !== animIdx) rt.StartSpriteAnim(sprite.spriteId, animIdx);
+  }
+
+  // ── SynchronizeSurfPosition : détecte le déplacement + le démontage (élévation). ──
+  const x = playerObj.currentCoordsX, y = playerObj.currentCoordsY;
+  if (sprite.y2 === 0 && (x !== sprite.data[6] || y !== sprite.data[7])) {
+    sprite.data[5] = 0; // sIntervalIdx
+    sprite.data[6] = x; sprite.data[7] = y;
+    for (let i = DIR_SOUTH_; i <= DIR_EAST_; i++) {
+      const m = MoveCoords(i, sprite.data[6], sprite.data[7]);
+      if (MapGridGetElevationAt(m.x, m.y) === ELEVATION_DEFAULT) {
+        // En train de descendre de la monture → bobbing plus lent (intervalIdx=1).
+        sprite.data[5]++;
+        break;
+      }
+    }
+  }
+
+  // ── UpdateBobbingEffect : bobbing vertical (y2) + sync joueur. ──
+  const intervals = [0x3, 0x7];
+  const bobState = sprite.data[0] & 0xF; // GetSurfBlob_BobState
+  if (bobState !== BOB_NONE) {
+    sprite.data[4] = (sprite.data[4] + 1) & 0xFFFF; // ++sTimer
+    if ((sprite.data[4] & intervals[sprite.data[5]]) === 0) sprite.y2 += sprite.data[3]; // += sVelocity
+    if ((sprite.data[4] & 15) === 0) sprite.data[3] = -sprite.data[3]; // reverse velocity
+    if (bobState !== BOB_JUST_MON) {
+      const hasOffset = (sprite.data[0] & 0xF00) >> 8;
+      playerSprite.y2 = hasOffset ? (sprite.data[1] + sprite.y2) : sprite.y2;
+      sprite.x = playerSprite.x; sprite.y = playerSprite.y + 8;
+      sprite.coordOffsetEnabled = playerSprite.coordOffsetEnabled; // archi : matcher le joueur écran.
+    }
+  }
+  // 1:1 : sprite->oam.priority = playerSprite->oam.priority.
+  if (oam && pOam) oam.priority = pOam.priority;
+}
+
+/** 1:1 décomp `StartUnderwaterSurfBlobBobbing` (1157) : un sprite dummy invisible qui fait bober
+ *  le blob underwater (Dive). data : sSpriteId=data[0], sBobY=data[1], sTimer=data[2]. */
+export function StartUnderwaterSurfBlobBobbing(rt: DecompRuntime, blobSpriteId: number): number {
+  const result = rt.CreateSpriteAtOam({
+    tileId: 0, paletteBank: 0, x: 0, y: 0, shape: 0, size: 0,
+    priority: 1, paletteMode: 0, affineMode: 0, fromEnd: true,
+  });
+  const sprite = rt.gSprites.get(result.spriteId);
+  if (!sprite) return result.spriteId;
+  sprite.callback = SpriteCB_UnderwaterSurfBlob;
+  sprite.invisible = true;
+  sprite.data[0] = blobSpriteId; // sSpriteId
+  sprite.data[1] = 1;            // sBobY
+  return result.spriteId;
+}
+
+/** 1:1 décomp `SpriteCB_UnderwaterSurfBlob` (1170). Callback per-frame du sprite dummy. */
+export function SpriteCB_UnderwaterSurfBlob(sprite: DecompSprite, rt: DecompRuntime): void {
+  const blob = rt.gSprites.get(sprite.data[0]); // sSpriteId
+  if (!blob) return;
+  if (((sprite.data[2]++) & 3) === 0) blob.y2 += sprite.data[1]; // ++sTimer & 3, += sBobY
+  if ((sprite.data[2] & 15) === 0) sprite.data[1] = -sprite.data[1]; // reverse sBobY
 }
 
 // ════════════════════════════════════════════════════════════════════════════
